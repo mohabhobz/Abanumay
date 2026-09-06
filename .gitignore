@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+*.local
+.vite
+
+# داتا المستفيدين الحقيقية مستثناة عن قصد — الريبو عام.
+# النسخة الوهمية المكافئة: src/data/project.example.js
+src/data/project.js
