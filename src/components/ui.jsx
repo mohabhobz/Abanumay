@@ -1,7 +1,22 @@
 // ═══ الكومبوننتس الأساسية للنظام ═══
 // كلها بتستخدم كلاسات الديزاين سيستم من index.css، صفر بوردر
 
-import { forwardRef, useState } from 'react'
+import { forwardRef, useState, useEffect } from 'react'
+
+/* استعلام ميديا كهوك — عشان نبدّل الكومبوننت نفسه على الموبايل
+   مش نخبّي واحد بالـCSS ونسيب التاني يترسم على الفاضي */
+export function useMediaQuery(q) {
+  const [hit, setHit] = useState(() => typeof matchMedia === 'function' && matchMedia(q).matches)
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return
+    const m = matchMedia(q)
+    const on = (e) => setHit(e.matches)
+    setHit(m.matches)
+    m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [q])
+  return hit
+}
 
 export const nf = new Intl.NumberFormat('en-US')
 
@@ -152,7 +167,8 @@ export function CeilingLadder({ amount, authority, currentRole }) {
               </div>
             </div>
             <div className="lcap">
-              <div className="lnum mono">
+              {/* الخط المونو للأرقام بس — على العربي بيبوّظ المسافات */}
+              <div className={`lnum${r.ceiling ? ' mono' : ''}`}>
                 {r.ceiling ? nf.format(r.ceiling) : r.kind === 'recommend' ? 'توصية' : 'بلا سقف'}
               </div>
               {fill !== null && (

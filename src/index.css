@@ -504,7 +504,7 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 
 /* ── سُلّم السقوف ── */
 .lad{display:flex;flex-direction:column;min-width:290px}
-.lrow{display:grid;grid-template-columns:auto 1fr auto;gap:.75rem;align-items:start;
+.lrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.75rem;align-items:start;
   position:relative;padding-bottom:.95rem}
 .lrow:last-of-type{padding-bottom:0}
 .ldot{width:10px;height:10px;border-radius:50%;margin-top:.34rem;flex:none;
@@ -781,3 +781,98 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .fprev .ascrim{display:none}
 @media (max-width:700px){.fprev{width:96vw}}
 @media (prefers-reduced-motion:reduce){.fprev{animation:none}}
+
+/* ══════════════════════════════════════════════════════════
+   نسخة الموبايل — نفس الشاشة، بترتيب مختلف
+   الريل بينزل شريط سفلي، المروحة بتبقى سُلّم رأسي،
+   وقراءة المساعد بتطلع فوق المحتوى لأنها أهم حاجة على شاشة صغيرة.
+   ═════════════════════════════════════════════════════════ */
+.mobtop{display:none}
+
+@media (max-width:860px){
+  .app{height:100dvh}
+
+  /* شريط علوي: الشعار والاسم والصورة */
+  .mobtop{display:flex;align-items:center;gap:.6rem;flex:none;
+    padding:.5rem clamp(.9rem,3vw,1.2rem);
+    box-shadow:inset 0 -1px 0 rgba(var(--edgeC),var(--edge-hair))}
+  .mobtitle{flex:1;min-width:0;font-family:var(--fd);font-weight:700;font-size:.95rem}
+  .mobtop .mark-38{width:32px;height:32px}
+
+  /* الريل بقى تابات تحت */
+  .shell{flex-direction:column}
+  .rail{position:fixed;inset-inline:0;bottom:0;z-index:35;width:auto;height:auto;
+    background:linear-gradient(180deg,rgba(248,251,250,.94),rgba(248,251,250,.99));
+    -webkit-backdrop-filter:blur(24px) saturate(1.3);backdrop-filter:blur(24px) saturate(1.3);
+    flex-direction:row;justify-content:space-around;align-items:stretch;gap:0;
+    padding:.35rem .3rem calc(.35rem + env(safe-area-inset-bottom,0px));
+    box-shadow:inset 0 1px 0 rgba(var(--edgeC),var(--edge-hair))}
+  .rail>.mark-64{display:none}
+  .rail button.nomob{display:none}
+  .rail button{width:auto;flex:1;padding:.45rem .2rem;gap:.22rem;font-size:.66rem;border-radius:var(--r1)}
+  .rail button svg{width:21px;height:21px}
+  .railfoot{margin-top:0;width:auto;flex:1;flex-direction:row;align-items:stretch;gap:0}
+  .railfoot>.pht,.railfoot>.av{display:none}
+  .aitrigger kbd{display:none}
+
+  /* مساحة تحت للشريط السفلي وشريط القرار */
+  .screen{padding:1rem clamp(.9rem,3vw,1.2rem) 0;
+    padding-bottom:calc(9.5rem + env(safe-area-inset-bottom,0px))}
+  .decdock{bottom:calc(62px + env(safe-area-inset-bottom,0px));
+    padding:0 clamp(.7rem,3vw,1rem) .55rem}
+  .decdock::before{height:150px}
+  .decbar{flex-direction:column;align-items:stretch;gap:.6rem;padding:.75rem .85rem;border-radius:var(--r2)}
+  /* الصف بيلف؛ من غير min-width:0 بيرفض يصغر عن محتواه ويوسّع الصفحة */
+  .decbar>.rowf{min-width:0;max-width:100%}
+  .decbar>.rowf:last-child{gap:.4rem;flex-wrap:nowrap;overflow-x:auto;
+    scrollbar-width:none;padding-bottom:.1rem}
+  .decbar>.rowf:last-child::-webkit-scrollbar{display:none}
+  .decbar .btn{flex:none;padding:.5rem .85rem;font-size:.78rem}
+  .decsent{font-size:.82rem}
+
+  /* الترويسة */
+  .crumb{font-size:.78rem;gap:.35rem}
+  /* column + wrap = بيلف لأعمدة، فلازم nowrap */
+  .phead{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:1rem;padding:0}
+  .pmain{flex:1 1 auto}
+  .ptitle{font-size:1.35rem;line-height:1.4}
+  .pamt{margin-top:.85rem}
+  .pamt .v{font-size:2.7rem;gap:.3rem}
+  .pgates{min-width:0;flex:1 1 100%;width:100%}
+  .ladcard{padding:1rem}
+  .lad,.lmain{min-width:0}
+  .lnote{overflow-wrap:anywhere}
+
+  /* التابات تتزحلق أفقيًا */
+  .tabs{flex:none;align-items:center;flex-wrap:nowrap;
+    overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+    margin-inline:calc(-1 * clamp(.9rem,3vw,1.2rem));
+    padding:.15rem clamp(.9rem,3vw,1.2rem) .35rem}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs .tab{flex:none}
+
+  /* قراءة المساعد أول حاجة بعد الترويسة */
+  .g2{display:flex;flex-direction:column}
+  .g2>.col:last-child{order:-1}
+
+  /* كروت وجداول */
+  .stats4{grid-template-columns:repeat(2,1fr)}
+  .imp{grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem 0}
+  .imp>div:nth-child(4)::before{display:none}
+  .glass{padding:1rem}
+  .kv{grid-template-columns:1fr;gap:.15rem}
+  .kv dt{margin-top:.5rem}
+  .tbl{font-size:.8rem}
+
+  /* المساعد والمعاينة ملء الشاشة */
+  .apanel{inset-inline-start:0;width:100%;bottom:calc(62px + env(safe-area-inset-bottom,0px))}
+  .fprev{width:96vw;max-height:88vh}
+  .fppage{min-height:38vh}
+}
+
+@media (max-width:420px){
+  .stats4{grid-template-columns:1fr}
+  .imp{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .imp>div:nth-child(odd)::before{display:none}
+  .pamt .v{font-size:2.35rem}
+}

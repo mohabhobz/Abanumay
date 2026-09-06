@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { project as P, entity as E, insights, followUpTypes, currentUser, authority } from '../data/project.js'
-import { Rail, DecisionBar, Background, Assistant } from '../components/Shell.jsx'
-import { Glass, Head, Tag, Num, Mono, KV, VSteps, CeilingLadder, GateArc, Riyal, Tabs, Timeline, Empty, Stat, Icon, icons, nf } from '../components/ui.jsx'
+import { Rail, DecisionBar, Background, Assistant, MobileTop } from '../components/Shell.jsx'
+import { Glass, Head, Tag, Num, Mono, KV, VSteps, CeilingLadder, GateArc, Riyal, Tabs, Timeline, Empty, Stat, Icon, icons, nf, useMediaQuery } from '../components/ui.jsx'
 
 const TABS = ['بيانات المشروع', 'الجهة', 'المشاريع السابقة', 'الاتفاقية', 'الدفعات', 'المتابعات', 'سجل المشروع', 'المراسلات']
 
@@ -11,6 +11,7 @@ export default function ProjectScreen() {
   const costPerBeneficiary = Math.round(P.amountRequested / P.beneficiaries)
   const breach = P.log.find((l) => l.hours > l.limit)
   const [ai, setAi] = useState(false)
+  const mobile = useMediaQuery('(max-width: 860px)')
 
   // المساعد متاح من أي شاشة بـ ⌘K، ويقفل بـ Esc
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function ProjectScreen() {
     <>
       <Background />
       <div className="app">
+        {mobile && <MobileTop user={currentUser} />}
         <div className="shell">
           <Rail active="projects" user={currentUser} onAssistant={() => setAi((v) => !v)} assistantOpen={ai} />
 
@@ -61,7 +63,14 @@ export default function ProjectScreen() {
                 </div>
 
                 <div className="pgates">
-                  <GateArc amount={P.amountRequested} authority={authority} />
+                  {mobile ? (
+                    <Glass className="ladcard">
+                      <Head title="مسار الاعتماد" meta={`المبلغ ${nf.format(P.amountRequested)}`} />
+                      <CeilingLadder amount={P.amountRequested} authority={authority} currentRole="مشرف المنح" />
+                    </Glass>
+                  ) : (
+                    <GateArc amount={P.amountRequested} authority={authority} />
+                  )}
                 </div>
               </header>
 
@@ -90,7 +99,7 @@ export default function ProjectScreen() {
 
             </div>
 
-            <DecisionBar user={currentUser} project={{ name: P.name, amount: P.amountRequested }} />
+            <DecisionBar user={currentUser} project={{ name: P.name, amount: P.amountRequested }} compact={mobile} />
           </div>
 
           <Assistant

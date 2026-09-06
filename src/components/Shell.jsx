@@ -17,15 +17,27 @@ export function Background() {
   )
 }
 
+// mob=false يعني ما يظهرش في شريط الموبايل السفلي — مساحته ٥ عناصر بس
 const NAV = [
-  { key: 'home', label: 'الرئيسية', icon: icons.home },
-  { key: 'projects', label: 'المشاريع', icon: icons.doc },
-  { key: 'entities', label: 'الجهات', icon: icons.entity },
+  { key: 'home', label: 'الرئيسية', icon: icons.home, mob: true },
+  { key: 'projects', label: 'المشاريع', icon: icons.doc, mob: true },
+  { key: 'entities', label: 'الجهات', icon: icons.entity, mob: true },
   { key: 'budget', label: 'الميزانية', icon: icons.budget },
   { key: 'contracts', label: 'الاتفاقيات', icon: icons.contract },
   { key: 'payments', label: 'الصرف', icon: icons.pay },
-  { key: 'reports', label: 'التقارير', icon: icons.chart },
+  { key: 'reports', label: 'التقارير', icon: icons.chart, mob: true },
 ]
+
+/* شريط علوي للموبايل: الشعار والصورة اللي كانوا في الريل */
+export function MobileTop({ user }) {
+  return (
+    <div className="mobtop chrome">
+      <span className="mark mark-38 logo"><Logo /></span>
+      <span className="mobtitle">منح أبانمي</span>
+      <Avatar user={user} />
+    </div>
+  )
+}
 
 export function Rail({ active = 'projects', onNav, user, onAssistant, assistantOpen }) {
   return (
@@ -36,7 +48,7 @@ export function Rail({ active = 'projects', onNav, user, onAssistant, assistantO
       {NAV.map((n) => (
         <button
           key={n.key}
-          className={n.key === active ? 'on' : ''}
+          className={`${n.key === active ? 'on' : ''}${n.mob ? '' : ' nomob'}`}
           onClick={() => onNav && onNav(n.key)}
           aria-current={n.key === active ? 'page' : undefined}
         >
@@ -87,7 +99,7 @@ export function TopBar({ crumbs, user }) {
   )
 }
 
-export function DecisionBar({ user, project }) {
+export function DecisionBar({ user, project, compact }) {
   const ref = useRef(null)
 
   /* تفاعل من بعيد: الشريط بيحسّ بالماوس قبل ما توصله،
@@ -118,9 +130,15 @@ export function DecisionBar({ user, project }) {
       <div className="rowf" style={{ gap: '.7rem', minWidth: 0 }}>
         <Avatar user={user} />
         <span className="decsent">
-          اتخذ إجراءً لـ <b>{project.name}</b>
-          <span className="decsep" />
-          المبلغ <span className="num">{nf.format(project.amount)}</span> <Riyal />
+          {compact ? (
+            <>اتخذ إجراءً · <span className="num">{nf.format(project.amount)}</span> <Riyal /></>
+          ) : (
+            <>
+              اتخذ إجراءً لـ <b>{project.name}</b>
+              <span className="decsep" />
+              المبلغ <span className="num">{nf.format(project.amount)}</span> <Riyal />
+            </>
+          )}
         </span>
       </div>
       <div className="rowf" style={{ gap: '.5rem' }}>
