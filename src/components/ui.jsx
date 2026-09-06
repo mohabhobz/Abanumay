@@ -266,6 +266,13 @@ export function GateArc({ amount, authority }) {
   }
 
   // ثلاث حالات + الأدوار اللي المبلغ ما وصلهاش
+  const paintOrder = (() => {
+    const o = roles.map((_, i) => i)
+    const n = roles.findIndex((r) => r.state === 'now')
+    if (n > -1) { o.splice(o.indexOf(n), 1); o.push(n) }
+    return o
+  })()
+
   const skin = (role, i) => {
     if (i > decider) return { fill: '#144547', op: 0.06, cls: 'skip' }
     if (role.state === 'now') return { fill: '#144547', op: 0.92, cls: 'now' }
@@ -277,21 +284,25 @@ export function GateArc({ amount, authority }) {
     <div className="garc">
       <svg viewBox="0 0 760 440" role="img" aria-label={`مسار الاعتماد، صاحب القرار ${d.role}`} onMouseLeave={() => setHi(null)}>
         <defs>
-          <linearGradient id="fanFade" x1="0" y1="0" x2="0" y2="1">
+          {/* التدرّج بإحداثيات المستخدم عشان يفضل مربوط بالقوس نفسه،
+              والمستطيل أوسع من الـviewBox عشان ما يقصّش ظل القطاع النشط */}
+          <linearGradient id="fanFade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="440">
             <stop offset="0.06" stopColor="#fff" stopOpacity="0.42" />
             <stop offset="0.38" stopColor="#fff" stopOpacity="0.82" />
             <stop offset="0.76" stopColor="#fff" stopOpacity="1" />
           </linearGradient>
-          <mask id="fanMask">
-            <rect x="0" y="0" width="760" height="440" fill="url(#fanFade)" />
+          <mask id="fanMask" maskUnits="userSpaceOnUse" x="-160" y="-160" width="1080" height="760">
+            <rect x="-160" y="-160" width="1080" height="760" fill="url(#fanFade)" />
           </mask>
-          <filter id="fanShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <filter id="fanShadow" x="-45%" y="-45%" width="190%" height="190%">
             <feDropShadow dx="0" dy="9" stdDeviation="13" floodColor="#0E3234" floodOpacity="0.28" />
           </filter>
         </defs>
 
         <g>
-          {roles.map((role, i) => {
+          {/* القطاع النشط يترسم آخر واحد عشان ظله ما يتغطّاش من اللي بعده */}
+          {paintOrder.map((i) => {
+            const role = roles[i]
             const a0 = -(i + 1) * SPAN + GAP / 2
             const a1 = -i * SPAN - GAP / 2
             const mid = (a0 + a1) / 2
