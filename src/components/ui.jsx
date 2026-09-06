@@ -199,7 +199,15 @@ function arcPath(cx, cy, R, r, a0, a1) {
   return `M${x1} ${y1} A${R} ${R} 0 ${large} 0 ${x2} ${y2} L${x3} ${y3} A${r} ${r} 0 ${large} 1 ${x4} ${y4} Z`
 }
 
-export function GateArc({ amount, authority }) {
+/* على الموبايل الاسم بيتقسم سطرين عشان يدخل في عرض القطاع */
+function splitRole(t) {
+  const w = t.split(' ')
+  if (w.length < 2) return [t]
+  const half = Math.ceil(w.length / 2)
+  return [w.slice(0, half).join(' '), w.slice(half).join(' ')]
+}
+
+export function GateArc({ amount, authority, compact = false }) {
   const roles = authority.roles
   // صاحب القرار: أول دور له سقف يستوعب المبلغ
   let decider = roles.findIndex((r) => r.ceiling !== null && r.ceiling >= amount)
@@ -280,6 +288,8 @@ export function GateArc({ amount, authority }) {
     return { fill: '#00A59B', op: 0.16, cls: 'wait' }
   }
 
+  const x = hi === null ? null : detail(roles[hi], hi)
+
   return (
     <div className="garc">
       <svg viewBox="0 0 760 440" role="img" aria-label={`مسار الاعتماد، صاحب القرار ${d.role}`} onMouseLeave={() => setHi(null)}>
@@ -320,6 +330,8 @@ export function GateArc({ amount, authority }) {
                 className={`fan ${sk.cls}${i === decider ? ' dec' : ''}${hi === i ? ' hov' : ''}`}
                 onMouseEnter={() => setHi(i)}
                 onFocus={() => setHi(i)}
+                onPointerDown={() => setHi(i)}
+                onClick={() => setHi(i)}
                 tabIndex={0}
                 role="button"
                 aria-label={role.role}
@@ -334,15 +346,17 @@ export function GateArc({ amount, authority }) {
                     filter={isNow ? 'url(#fanShadow)' : undefined}
                   />
                 </g>
-                <text x={tx} y={ty} textAnchor="middle">
-                  <tspan x={tx} dy="0" className="fanrole">{role.role}</tspan>
-                  <tspan x={tx} dy="20" className="fancap">
+                <text x={tx} y={ty + (compact ? -14 : 0)} textAnchor="middle">
+                  {(compact ? splitRole(role.role) : [role.role]).map((ln, k) => (
+                    <tspan key={k} x={tx} dy={k === 0 ? 0 : compact ? 26 : 0} className="fanrole">{ln}</tspan>
+                  ))}
+                  <tspan x={tx} dy={compact ? 25 : 20} className="fancap">
                     {role.ceiling
                       ? nf.format(role.ceiling)
                       : role.kind === 'submit'
                       ? 'تمّ'
                       : role.kind === 'recommend'
-                      ? 'توصية فقط'
+                      ? compact ? 'توصية' : 'توصية فقط'
                       : 'بلا سقف'}
                   </tspan>
                 </text>
@@ -355,35 +369,53 @@ export function GateArc({ amount, authority }) {
 
       </svg>
 
-      {/* جوف نصف الدائرة: قراءة واحدة، بتتبدّل حسب القطاع اللي تحت الماوس */}
+      {/* جوف نصف الدائرة: قراءة واحدة، بتتبدّل حسب القطاع اللي تحت الماوس.
+          على الموبايل الجوف بيشيل العنوان بس، والباقي بينزل تحت القوس. */}
       <div className="fanhole" key={hi === null ? 'base' : hi}>
-        {hi === null ? (
-          <>
-            <div className="fhk">صاحب القرار في هذا المبلغ</div>
-            <div className="fht">{d.role}</div>
-            {uplifted && (
-              <div className="fhl">
-                سقفه <b>{nf.format(d.ceiling)}</b> · يزيد حتى <b>{nf.format(uplifted)}</b> <Riyal />
-              </div>
-            )}
-            {authority.provisional && <div className="fhp">السقوف مؤقتة، بانتظار العميل</div>}
-          </>
-        ) : (
-          (() => {
-            const x = detail(roles[hi], hi)
-            return (
-              <>
-                <div className="fhk">{x.k}</div>
-                <div className="fht">{x.t}</div>
-                {x.lines.filter(Boolean).map((l, j) => (
-                  <div className="fhl" key={j}>{l}</div>
-                ))}
-                <div className="fhs">{x.src}</div>
-              </>
-            )
-          })()
+        <div className="fhk">{x ? x.k : 'صاحب القرار في هذا المبلغ'}</div>
+        <div className="fht">{x ? x.t : d.role}</div>
+        {!compact && (
+          x ? (
+            <>
+              {x.lines.filter(Boolean).map((l, j) => (
+                <div className="fhl" key={j}>{l}</div>
+              ))}
+              <div className="fhs">{x.src}</div>
+            </>
+          ) : (
+            <>
+              {uplifted && (
+                <div className="fhl">
+                  سقفه <b>{nf.format(d.ceiling)}</b> · يزيد حتى <b>{nf.format(uplifted)}</b> <Riyal />
+                </div>
+              )}
+              {authority.provisional && <div className="fhp">السقوف مؤقتة، بانتظار العميل</div>}
+            </>
+          )
         )}
       </div>
+
+      {compact && (
+        <div className="fanfoot" key={hi === null ? 'fbase' : `f${hi}`}>
+          {x ? (
+            <>
+              {x.lines.filter(Boolean).map((l, j) => (
+                <div className="fhl" key={j}>{l}</div>
+              ))}
+              <div className="fhs">{x.src}</div>
+            </>
+          ) : (
+            <>
+              {uplifted && (
+                <div className="fhl">
+                  سقف <b>{d.role}</b> {nf.format(d.ceiling)} · يزيد حتى <b>{nf.format(uplifted)}</b> <Riyal />
+                </div>
+              )}
+              {authority.provisional && <div className="fhp">السقوف مؤقتة، بانتظار العميل</div>}
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

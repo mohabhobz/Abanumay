@@ -63,14 +63,7 @@ export default function ProjectScreen() {
                 </div>
 
                 <div className="pgates">
-                  {mobile ? (
-                    <Glass className="ladcard">
-                      <Head title="مسار الاعتماد" meta="حسب المبلغ المطلوب" />
-                      <CeilingLadder amount={P.amountRequested} authority={authority} currentRole="مشرف المنح" />
-                    </Glass>
-                  ) : (
-                    <GateArc amount={P.amountRequested} authority={authority} />
-                  )}
+                  <GateArc amount={P.amountRequested} authority={authority} compact={mobile} />
                 </div>
               </header>
 

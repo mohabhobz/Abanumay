@@ -839,6 +839,23 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
   .pamt{margin-top:.85rem}
   .pamt .v{font-size:2.7rem;gap:.3rem}
   .pgates{min-width:0;flex:1 1 100%;width:100%}
+  /* المروحة نفسها على الموبايل: الخطوط بتكبر بوحدات الـviewBox
+     عشان بعد التصغير تفضل مقروءة، والجوف بيصغّر أرقامه */
+  .fanrole{font-size:22.5px}
+  .fancap{font-size:18px}
+  .fanhole{top:15%;inset-inline-start:24%;width:52%;gap:.1rem}
+  .fhk{font-size:.66rem}
+  .fht{font-size:1.02rem}
+  .fhl{font-size:.7rem;line-height:1.5}
+  /* الجوف ضيق، فسطر المصدر بيتشال عشان القراءة ما تخرجش برّه الدايرة */
+  .fanhole .fhs{display:none}
+  .fanfoot{margin-top:-1rem;text-align:center;display:flex;flex-direction:column;gap:.2rem;
+    animation:fholein .26s cubic-bezier(.22,.9,.3,1) both}
+  .fanfoot .fhl{font-size:.76rem;color:var(--t2);line-height:1.6}
+  .fanfoot .fhs{font-size:.66rem;color:var(--t3);margin-top:.1rem}
+  .fanfoot .fhp{font-size:.68rem;color:var(--warn)}
+  .fan{cursor:pointer}
+
   .ladcard{padding:1rem .9rem}
   .lad,.lmain{min-width:0}
   .lnote{overflow-wrap:anywhere}
