@@ -65,7 +65,7 @@ export default function ProjectScreen() {
                 <div className="pgates">
                   {mobile ? (
                     <Glass className="ladcard">
-                      <Head title="مسار الاعتماد" meta={`المبلغ ${nf.format(P.amountRequested)}`} />
+                      <Head title="مسار الاعتماد" meta="حسب المبلغ المطلوب" />
                       <CeilingLadder amount={P.amountRequested} authority={authority} currentRole="مشرف المنح" />
                     </Glass>
                   ) : (

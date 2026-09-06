@@ -839,9 +839,29 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
   .pamt{margin-top:.85rem}
   .pamt .v{font-size:2.7rem;gap:.3rem}
   .pgates{min-width:0;flex:1 1 100%;width:100%}
-  .ladcard{padding:1rem}
+  .ladcard{padding:1rem .9rem}
   .lad,.lmain{min-width:0}
   .lnote{overflow-wrap:anywhere}
+
+  /* الصف بيتقسم سطرين: الدور والسقف جنب بعض، والشرح تحتهم
+     بدل ما السقف يبقى على آخر الشاشة بعيد عن اسمه */
+  /* السقف بيقعد جنب اسم الدور مباشرة، مش على آخر الشاشة */
+  .lrow{grid-template-columns:auto auto minmax(0,1fr);
+    grid-template-areas:"dot role cap" "gap note note" "gap bar bar";
+    gap:.1rem .55rem;padding-bottom:1.15rem;align-items:baseline}
+  .ldot{grid-area:dot;margin-top:.42rem}
+  .lmain{display:contents}
+  .lrole{grid-area:role;font-size:.92rem}
+  .lnote{grid-area:note;margin-top:.2rem;font-size:.72rem}
+  .lcap{display:contents}
+  .lnum{grid-area:cap;min-width:0;justify-self:start}
+  .lnum::before{content:"·";color:var(--t3);margin-inline-end:.35rem;font-weight:400}
+  .lnum{font-family:var(--fd);font-weight:600;font-size:.86rem;color:var(--t1);letter-spacing:0}
+  .lrow.off .lnum{font-weight:400;color:var(--t3)}
+  .lbar{grid-area:bar;width:100%;max-width:190px;margin:.4rem 0 0}
+  .lprov{padding-inline-start:0;text-align:center;margin-top:1rem;font-size:.7rem}
+  /* الخط الرأسي يمشي مع النقطة الجديدة */
+  .lrow:not(:last-of-type)::after{top:1.3rem}
 
   /* التابات تتزحلق أفقيًا */
   .tabs{flex:none;align-items:center;flex-wrap:nowrap;
