@@ -134,7 +134,6 @@ export default function HomePage() {
         role.lens === 'own' ? mine.length : waiting.length,
         late.length,
       )}
-      autoAssistant
     >
       <div className="viewstack">
         <div className="screen col">

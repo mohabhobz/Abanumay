@@ -1,8 +1,9 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
 import { Icon, icons } from '@/components/ui'
-import { ROUTES } from '@/app/routes'
+import { AFTER_LOGIN } from '@/app/routes'
+import { signIn } from '@/data/session'
 
 /* ═══════════════════════════════════════════════════════════
    شاشة الدخول
@@ -16,6 +17,10 @@ import { ROUTES } from '@/app/routes'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const loc = useLocation()
+  /* الرابط اللي اتحوّل منه — لو فتح رابط مشروع وهو برّه، يرجعله
+     بعد الدخول بدل ما يبدأ من الأول */
+  const from = (loc.state as { from?: string } | null)?.from
   const [user, setUser] = useState('')
   const [pass, setPass] = useState('')
   const [show, setShow] = useState(false)
@@ -36,7 +41,10 @@ export default function LoginPage() {
     }
     setErr('')
     setBusy(true)
-    setTimeout(() => navigate(ROUTES.home), 700)
+    setTimeout(() => {
+      signIn(user.trim())
+      navigate(from ?? AFTER_LOGIN, { replace: true })
+    }, 700)
   }
 
   return (

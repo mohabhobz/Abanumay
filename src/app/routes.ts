@@ -36,6 +36,15 @@ export const ROUTES = {
   preferences: '/account/preferences',
 } as const
 
+/**
+ * الشاشة اللي المستخدم بيقع عليها بعد الدخول.
+ *
+ * المساعد لا «اليوم»: المستخدم بيفتح النظام وفي دماغه سؤال، مش
+ * رغبة في تصفّح لوحة. المساعد بيستقبل السؤال، ولوحة اليوم بتفضل
+ * مدخل من الريل لمّا يكون عايز يقرا الصورة كاملة.
+ */
+export const AFTER_LOGIN: string = ROUTES.assistant
+
 /** تبويبات صفحة المشروع — الـslug في الـURL والاسم المعروض */
 export const PROJECT_TABS = [
   { slug: 'data', label: 'بيانات المشروع' },

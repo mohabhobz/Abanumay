@@ -1,4 +1,4 @@
-import { Navigate, Route, BrowserRouter, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, BrowserRouter, Routes } from 'react-router-dom'
 import LoginPage from '@/features/auth/LoginPage'
 import ProjectPage from '@/features/projects/ProjectPage'
 import HomePage from '@/features/home/HomePage'
@@ -7,7 +7,8 @@ import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
 import AssistantPage from '@/features/assistant/AssistantPage'
 import { ModulePlaceholder } from '@/features/shared/ModulePlaceholder'
-import { DEFAULT_PROJECT_TAB, ROUTES } from './routes'
+import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
+import { RequireAuth } from './RequireAuth'
 
 /**
  * خريطة الشاشات.
@@ -21,6 +22,15 @@ export default function App() {
       <Routes>
         <Route path={ROUTES.login} element={<LoginPage />} />
 
+        {/* بوّابة واحدة على كل الشاشات الداخلية بدل تكرارها على كل
+            مسار: أي شاشة جديدة بتتحمي تلقائيًا لمجرد إنها جوّه. */}
+        <Route
+          element={
+            <RequireAuth>
+              <Outlet />
+            </RequireAuth>
+          }
+        >
         <Route path={ROUTES.home} element={<HomePage />} />
 
         <Route path={ROUTES.projects} element={<ProjectsListPage />} />
@@ -109,8 +119,10 @@ export default function App() {
           }
         />
 
-        {/* أي مسار غير معروف يرجع للرئيسية بدل شاشة بيضا */}
-        <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+        </Route>
+
+        {/* أي مسار غير معروف يرجع للشاشة الافتراضية بدل شاشة بيضا */}
+        <Route path="*" element={<Navigate to={AFTER_LOGIN} replace />} />
       </Routes>
     </BrowserRouter>
   )

@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { roles, savedChats, type AssistantRole, type SavedChat } from '@/data/mock/assistant'
 import { fixtures } from '@/data/repository'
 import { ROUTES } from '@/app/routes'
+import { signOut } from '@/data/session'
 import { ChatList } from './ChatList'
 
 /**
@@ -82,6 +83,16 @@ export default function AssistantPage() {
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  /* دي أول شاشة بعد الدخول، فالمؤشر بيبقى جاهز في مربع الكتابة:
+     المستخدم بيفتح النظام وفي دماغه سؤال، والمفروض يكتبه على طول
+     من غير ما يدوّر على مكان الكتابة. على الموبايل لأ — الفوكس
+     بيطلّع الكيبورد فوق نص الشاشة قبل ما يقرا حاجة. */
+  useEffect(() => {
+    if (mobile) return
+    const id = setTimeout(() => input.current?.focus(), 400)
+    return () => clearTimeout(id)
+  }, [mobile])
+
   /* عنوان الشاشة = عنوان المحادثة المفتوحة، أو أول سؤال في الجديدة.
      فاضي لحد ما يتفتح شات فعلًا. */
   const opened = chats.find((c) => c.id === openChat)
@@ -99,7 +110,7 @@ export default function AssistantPage() {
             user={fixtures.currentUser}
             onAssistant={() => {}}
             assistantOpen
-            onSignOut={() => navigate(ROUTES.login)}
+            onSignOut={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
           />
 
           <ChatList
