@@ -61,7 +61,6 @@ export function Composer({
           <button className="iact" title="إرفاق ملف" aria-label="إرفاق ملف">
             <Icon path={icons.clip} size={16} />
           </button>
-          <span className="cbox-hint sub">Enter للإرسال · Shift+Enter سطر جديد</span>
           {busy ? (
             <button className="go stop" onClick={onStop} title="إيقاف" aria-label="إيقاف">
               <span className="sq" />

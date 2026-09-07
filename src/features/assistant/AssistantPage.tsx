@@ -107,29 +107,34 @@ export default function AssistantPage() {
           />
 
           <div className="chatcol">
+            {/* العنوان جوّه عمود بنفس عرض المحادثة تحته، عشان يبدأ من
+                نفس السطر — الترويسة اللي بتاخد عرض الشاشة كانت بتسيب
+                العنوان معلّقًا في الحافة بعيدًا عن أول كلمة في الرد. */}
             <header className={`chat-top${title ? '' : ' bare'}`}>
-              {mobile && (
-                <button
-                  className="aclose"
-                  onClick={() => setListOpen((v) => !v)}
-                  aria-label="المحادثات"
-                >
-                  <Icon path={icons.menu} size={16} />
+              <div className="chat-top-in">
+                {mobile && (
+                  <button
+                    className="aclose"
+                    onClick={() => setListOpen((v) => !v)}
+                    aria-label="المحادثات"
+                  >
+                    <Icon path={icons.menu} size={16} />
+                  </button>
+                )}
+
+                {title ? (
+                  <>
+                    <span className="badge badge-30"><span className="aispark" /></span>
+                    <div className="chat-name">{title}</div>
+                  </>
+                ) : (
+                  <span className="chat-name" />
+                )}
+
+                <button className="aclose" onClick={() => navigate(-1)} aria-label="خروج">
+                  <Icon path={icons.close} size={16} />
                 </button>
-              )}
-
-              {title ? (
-                <>
-                  <span className="badge badge-30"><span className="aispark" /></span>
-                  <div className="chat-name">{title}</div>
-                </>
-              ) : (
-                <span className="chat-name" />
-              )}
-
-              <button className="aclose" onClick={() => navigate(-1)} aria-label="خروج">
-                <Icon path={icons.close} size={16} />
-              </button>
+              </div>
             </header>
 
             <div className={`chat-body${msgs.length === 0 ? ' mid' : ''}`} ref={body}>

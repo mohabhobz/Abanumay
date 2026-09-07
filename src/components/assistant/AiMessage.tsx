@@ -45,11 +45,9 @@ export function AiMessage({
             {thinking && (
               <span className="dots"><i /><i /><i /></span>
             )}
-            <Icon
-              path={icons.chevron}
-              size={16}
-              style={{ transform: openThink ? 'rotate(-90deg)' : 'rotate(90deg)' }}
-            />
+            {/* أيقونة صريحة بدل تدوير الشيفرون — التدوير كان معكوسًا،
+                و«لأعلى/لأسفل» بيتقري في الكود زي ما بيتشاف في الشاشة */}
+            <Icon path={openThink ? icons.chevronUp : icons.chevronDown} size={16} />
           </button>
 
           {openThink && (
