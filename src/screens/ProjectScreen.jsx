@@ -7,7 +7,7 @@ import { Glass, Head, Tag, Num, Mono, KV, VSteps, CeilingLadder, GateArc, Riyal,
 
 const TABS = ['بيانات المشروع', 'الجهة', 'المشاريع السابقة', 'الاتفاقية', 'الدفعات', 'المتابعات', 'سجل المشروع', 'المراسلات']
 
-export default function ProjectScreen({ onOpenChat }) {
+export default function ProjectScreen({ onOpenChat, onSignOut }) {
   const [tab, setTab] = useState(TABS[0])
   const costPerBeneficiary = Math.round(P.amountRequested / P.beneficiaries)
   const breach = P.log.find((l) => l.hours > l.limit)
@@ -50,7 +50,13 @@ export default function ProjectScreen({ onOpenChat }) {
       <div className="app">
         {mobile && <MobileTop user={currentUser} />}
         <div className="shell">
-          <Rail active="projects" user={currentUser} onAssistant={() => setAi((v) => !v)} assistantOpen={ai} />
+          <Rail
+            active="projects"
+            user={currentUser}
+            onNav={(k) => k === 'logout' && onSignOut?.()}
+            onAssistant={() => setAi((v) => !v)}
+            assistantOpen={ai}
+          />
 
           <div className="viewstack">
             <div className="screen col" ref={screenRef}>
