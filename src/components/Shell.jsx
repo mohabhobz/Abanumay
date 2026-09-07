@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Logo from '../assets/LogoColor.jsx'
-import { Icon, icons, Riyal, nf } from './ui.jsx'
+import { Icon, icons, Riyal, nf, useProximity } from './ui.jsx'
 import { useAssistant, AiMessage, Composer, Disclaimer } from './chat.jsx'
 
 /* الصورة الشخصية من صور التيمبليت، والحرف احتياطي لو الصورة ما حمّلتش */
@@ -173,6 +173,9 @@ export function Assistant({ open, onClose, onFull, ctx = CTX_FALLBACK }) {
 
   /* بدل الخطوط الفاصلة: تدرّج بيتلاشى عند حافة التمرير —
      بيظهر وأنت في النص، وبيختفي أول ما توصل الأول أو الآخر. */
+  const cardsRef = useRef(null)
+  useProximity(cardsRef, { reach: 240, selector: '.acard' })
+
   const [edge, setEdge] = useState({ top: false, bot: false })
   const measure = () => {
     const el = bodyRef.current
@@ -220,7 +223,7 @@ export function Assistant({ open, onClose, onFull, ctx = CTX_FALLBACK }) {
           {msgs.length === 0 ? (
             <div className="awelcome">
               <div className="agreet">{ctx.greet}</div>
-              <div className="acards">
+              <div className="acards" ref={cardsRef}>
                 {ctx.cards.map((c, i) => (
                   <button className="acard" key={c.title} style={{ '--d': `${i * 60}ms` }} onClick={() => ask(c.prompt)}>
                     <span className="badge badge-30"><Icon path={icons[c.icon]} /></span>

@@ -18,6 +18,37 @@ export function useMediaQuery(q) {
   return hit
 }
 
+/* ═══ التفاعل من بعيد ═══
+   نفس إحساس شريط القرار: العنصر بيحسّ بالماوس قبل ما توصله فيرتفع
+   ويلمع، والضوء بيتبع مكان المؤشر. المسافة محسوبة أفقيًا ورأسيًا
+   عشان في صف كروت الكارت الأقرب هو اللي يتأثر أكتر.
+   بيكتب --near (٠→١) و--mx/--my على كل عنصر مطابق. */
+export function useProximity(rootRef, { reach = 260, selector = null } = {}) {
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    const list = () => (selector ? Array.from(root.querySelectorAll(selector)) : [root])
+    const onMove = (e) => {
+      for (const el of list()) {
+        const r = el.getBoundingClientRect()
+        const dy = Math.max(0, r.top - e.clientY, e.clientY - r.bottom)
+        const dx = Math.max(0, r.left - e.clientX, e.clientX - r.right)
+        const near = Math.max(0, 1 - Math.hypot(dx, dy) / reach)
+        el.style.setProperty('--near', near.toFixed(3))
+        el.style.setProperty('--mx', `${e.clientX - r.left}px`)
+        el.style.setProperty('--my', `${e.clientY - r.top}px`)
+      }
+    }
+    const onLeave = () => list().forEach((el) => el.style.setProperty('--near', '0'))
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerleave', onLeave)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerleave', onLeave)
+    }
+  }, [rootRef, reach, selector])
+}
+
 export const nf = new Intl.NumberFormat('en-US')
 
 export function Icon({ path, size = 20, style }) {

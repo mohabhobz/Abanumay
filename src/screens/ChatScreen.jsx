@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { roles, savedChats } from '../data/chat.js'
 import { Rail, Background, MobileTop } from '../components/Shell.jsx'
-import { Icon, icons, useMediaQuery } from '../components/ui.jsx'
+import { Icon, icons, useMediaQuery, useProximity } from '../components/ui.jsx'
 import { useAssistant, AiMessage, Composer, Disclaimer } from '../components/chat.jsx'
 import { currentUser } from '../data/project.js'
 
@@ -292,6 +292,9 @@ export default function ChatScreen({ onExit }) {
 
 /* ═══ الحالة الأولى ═══ */
 function Welcome({ me, onPick, composer }) {
+  const cardsRef = useRef(null)
+  useProximity(cardsRef, { reach: 300, selector: '.wcard' })
+
   return (
     <div className="welcome">
       <div className="whead">
@@ -305,7 +308,7 @@ function Welcome({ me, onPick, composer }) {
       {composer}
 
       {/* الاختصارات تحت مربع الكتابة — الكتابة هي المدخل، ودي مجرد طرق سريعة */}
-      <div className="wcards">
+      <div className="wcards" ref={cardsRef}>
         {me.cards.map((c, i) => (
           <button className="wcard glass" key={c.title} style={{ '--d': `${i * 70}ms` }} onClick={() => onPick(c.prompt)}>
             <span className="badge badge-30"><Icon path={icons[c.icon]} /></span>
