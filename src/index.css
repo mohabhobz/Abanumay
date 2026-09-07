@@ -197,6 +197,9 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .btn-d{background:rgba(192,67,42,.10);color:#95341F;
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
   box-shadow:inset 0 0 0 1px rgba(192,67,42,.28)}
+.btn-ghost{background:transparent;color:var(--t2);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
+.btn-ghost:hover{background:rgba(var(--edgeC),.05);color:var(--t1)}
 .btn-off{background:rgba(255,255,255,.40);color:var(--t3);cursor:not-allowed;
   box-shadow:inset 0 1px 0 rgba(var(--edgeC),.08)}
 .btn-off:hover{transform:none;filter:none}
@@ -1280,14 +1283,6 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
   display:flex;flex-direction:column}
 .login-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
   z-index:0;pointer-events:none}
-/* التلوين: ضرب بلون الهوية + تشبّع، فالورق يميل للتيل من غير ما يبهت */
-.login-tint{position:absolute;inset:0;z-index:1;pointer-events:none;
-  background:
-    radial-gradient(78% 62% at 50% 48%, rgba(20,69,71,.30) 0%, rgba(20,69,71,.10) 55%, rgba(20,69,71,0) 100%),
-    linear-gradient(180deg, rgba(20,69,71,.30) 0%, rgba(20,69,71,.14) 38%, rgba(20,69,71,.34) 100%),
-    linear-gradient(0deg, rgba(0,165,155,.14), rgba(0,165,155,.14))}
-.login-grain{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.5}
-
 .login-mid{position:relative;z-index:3;flex:1;min-height:0;overflow:auto;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:1.1rem;padding:clamp(1.2rem,4vh,2.4rem) 1.2rem}
@@ -1296,8 +1291,9 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
    لأنه واقف على فيديو مش على خلفية هادية */
 .lcard{width:min(404px,100%);padding:clamp(1.5rem,3.4vw,2.1rem);
   border-radius:var(--r4);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair)),
-             0 30px 70px rgba(10,40,40,.28);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.45),
+             inset 0 0 0 2px rgba(var(--edgeC),var(--edge-hair)),
+             0 30px 70px rgba(10,40,40,.32);
   animation:airise .55s cubic-bezier(.22,.9,.3,1) both}
 
 .lhead{text-align:center;margin-bottom:1.35rem}
@@ -1346,23 +1342,11 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .lsep b{font-size:.72rem;color:var(--t3);font-weight:500}
 .lnote{display:block;text-align:center;font-size:.71rem;color:var(--t2);margin-top:.55rem;line-height:1.6}
 
-.lfoot{font-size:.72rem;color:rgba(255,255,255,.72);text-shadow:0 1px 3px rgba(10,40,40,.5)}
-
-/* رمز التحقق */
-.lotp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;margin:.4rem 0 .2rem}
-/* min-width:0 لازم — عرض الـinput الافتراضي بيوسّع خلية الجريد وبيطلّع الكارت */
-.lotp input{width:100%;min-width:0;height:60px;border:0;outline:none;text-align:center;
-  border-radius:var(--r2);background:rgba(255,255,255,.55);
-  font-family:var(--fm);font-size:1.5rem;color:var(--t1);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6));
-  transition:box-shadow .18s ease,background .18s ease}
-.lotp input:focus{background:#fff;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.30),0 0 0 3px rgba(0,165,155,.14)}
+.lfoot{font-size:.72rem;color:rgba(20,50,50,.62);text-shadow:0 1px 4px rgba(255,255,255,.55)}
 
 @media (max-width:760px){
   .lcard{padding:1.35rem 1.15rem;border-radius:var(--r3)}
   .lmark{width:56px;height:56px}
   .ltitle{font-size:1.16rem}
-  .lotp input{height:54px;font-size:1.3rem}
 }
 @media (prefers-reduced-motion:reduce){ .login-vid{display:none} }
