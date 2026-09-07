@@ -199,23 +199,35 @@ export default function HomePage() {
             <span className="now">اليوم</span>
           </nav>
 
+          {/* الترويسة بتقول رقمين بس — اللي عليك، واللي واقف.
+              الباقي تفصيل بيجي تحت. */}
           <header className="hhead">
-            <div>
-              <h1 className="ptitle">{GREET()}، {user.name.split(' ')[0]}</h1>
-              <p className="sub" style={{ marginTop: '.3rem' }}>
-                {TODAY()} · {user.role}
-              </p>
+            <div className="hhead-t">
+              <h1 className="htitle">{GREET()}، {user.name.split(' ')[0]}</h1>
+              <p className="hdate">{TODAY()} · {user.role}</p>
             </div>
+            <p className="hline">
+              <b className="num">{tiles[0].value}</b> {tiles[0].label}
+              <i />
+              <b className={`num${late.length ? ' bad' : ''}`}>{late.length}</b> فوق حدّ القسم
+            </p>
           </header>
 
           {/* ═══ 1 — إيه اللي عليّ؟ ═══ */}
+          {/* أول شريحة أعرض وأكبر رقمًا: الأربعة بنفس الحجم بيخلّوا
+              العين تحتار، والأولانية هي سؤال الدور الأساسي. */}
           <div className="htiles">
-            {tiles.map((t) => (
-              <Link key={t.key} to={t.to} className={`htile glass t-${t.tone}`}>
-                <Icon path={t.icon} size={18} />
+            {tiles.map((t, i) => (
+              <Link
+                key={t.key}
+                to={t.to}
+                className={`htile glass t-${t.tone}${i === 0 ? ' lead' : ''}`}
+              >
+                <span className="htile-ic"><Icon path={t.icon} size={17} /></span>
                 <span className="htile-v num">{t.value}</span>
                 <span className="htile-l">{t.label}</span>
-                <span className="htile-n sub">{t.note}</span>
+                <span className="htile-n">{t.note}</span>
+                <Icon path={icons.chevron} size={15} className="htile-go" />
               </Link>
             ))}
           </div>

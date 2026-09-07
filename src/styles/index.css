@@ -1462,7 +1462,8 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .fsel{display:inline-flex;flex-direction:column;gap:.28rem;min-width:0}
 .fsel-l{font-size:.71rem;color:var(--t3);padding-inline-start:.2rem}
 .fsel-b{position:relative;display:flex;align-items:center;gap:.35rem;
-  padding:.44rem .7rem;border-radius:var(--r1);
+  padding-block:.44rem;padding-inline-start:.8rem;padding-inline-end:.5rem;
+  border-radius:var(--r1);
   background:rgba(255,255,255,.56);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
   transition:box-shadow .16s ease}
@@ -1476,8 +1477,8 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 
 /* القائمة اللي جوّه شريط الأدوات تلبس شكل الشريحة عشان الصفّ
    كله يبقى بلغة واحدة، من غير عنوان فوقها */
-.ftool-r>.fsel .fsel-b{padding:.42rem .55rem .42rem .9rem;border-radius:var(--rp);
-  background:rgba(255,255,255,.62)}
+.ftool-r>.fsel .fsel-b{border-radius:var(--rp);background:rgba(255,255,255,.62);
+  padding-block:.42rem;padding-inline-start:.95rem;padding-inline-end:.6rem}
 .ftool-r>.fsel .fsel-b select{font-size:.79rem}
 
 .fsel.wide{grid-column:1 / -1}
@@ -1619,172 +1620,62 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 }
 
 /* ═══════════════════════════════════════════════════════════
-   القراءة السريعة — السطح الداكن الوحيد في السيستم
+   القراءة السريعة
 
-   كل حاجة تانية زجاج فاتح على خلفية فاتحة. القراءة داكنة عشان
-   العين تروح لها من غير ما تدوّر، وعشان يبان إنها **صوت تاني**:
-   مش عرض لبيانات المستخدم، ده رأي مُنتَج ومسؤوليته مختلفة.
+   نفس زجاج السيستم زي أي كارت — المساعد جزء من الواجهة مش طبقة
+   فوقها. التمييز من الشرارة والكتابة الحيّة، مش من سطح بلون تاني.
    ═══════════════════════════════════════════════════════════ */
-.qread{position:relative;isolation:isolate;flex:none;overflow:hidden;
-  border-radius:var(--r3);color:#DCEDE6;
-  background:
-    radial-gradient(120% 90% at 88% -18%, rgba(0,165,155,.34) 0%, rgba(0,165,155,0) 62%),
-    radial-gradient(90% 70% at 10% 118%, rgba(148,214,3,.16) 0%, rgba(148,214,3,0) 60%),
-    linear-gradient(158deg, #123F41 0%, #0D2E30 58%, #10393A 100%);
-  box-shadow:inset 0 0 0 1px rgba(148,214,3,.16), 0 22px 44px -26px rgba(9,32,33,.85)}
-/* حبيبات خفيفة عشان السطح الداكن ما يبقاش مسطّحًا */
-.qread::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.16;
-  mix-blend-mode:overlay;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' sc-camel-base-frequency='.9' sc-camel-num-octaves='2'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='.55'/></svg>")}
-.qread>*{position:relative;z-index:1}
+.qread{flex:none}
+.qread.strip{padding:0;overflow:hidden}
+.qread.panel{padding:0}
 
 .qr-head{display:flex;align-items:center;gap:.6rem;width:100%;text-align:right;
-  padding:.85rem 1.05rem;color:inherit;transition:background .16s ease}
-.qr-head:not(.static):hover{background:rgba(255,255,255,.05)}
-.qr-head>svg{color:rgba(220,237,230,.5);flex:none}
+  padding:.8rem 1.05rem;color:inherit;transition:background .16s ease}
+.qr-head:not(.static):hover{background:rgba(255,255,255,.28)}
+.qr-head>svg{color:var(--t3);flex:none}
 .qr-sp{flex:1}
-.qr-title{font-family:var(--fd);font-weight:600;font-size:.9rem;letter-spacing:.01em}
-.qr-count{font-size:.7rem;padding:.14rem .5rem;border-radius:var(--rp);white-space:nowrap;
-  color:rgba(220,237,230,.72);background:rgba(255,255,255,.08)}
-.qr-count.no{color:#FFC7B4;background:rgba(219,74,43,.24)}
-/* العلامة: بتنبض وهي بتقرا، وبتهدا لما تخلص */
-.qr-mark{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:10px;
-  color:var(--lime);background:rgba(148,214,3,.13);
-  box-shadow:inset 0 0 0 1px rgba(148,214,3,.28)}
-.qr-mark.live{animation:qrpulse 1.5s ease-in-out infinite}
-@keyframes qrpulse{
-  0%,100%{box-shadow:inset 0 0 0 1px rgba(148,214,3,.28), 0 0 0 0 rgba(148,214,3,.30)}
-  60%{box-shadow:inset 0 0 0 1px rgba(148,214,3,.5), 0 0 0 7px rgba(148,214,3,0)}}
-.qr-ask{font-size:.76rem;padding:.32rem .8rem;border-radius:var(--rp);color:#DCEDE6;
-  background:rgba(255,255,255,.10);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
-.qr-ask:hover:not(:disabled){background:rgba(255,255,255,.16)}
-.qr-ask:disabled{opacity:.4;cursor:default}
+.qr-title{font-family:var(--fd);font-weight:600;font-size:.89rem}
+.qr-count{font-size:.7rem;padding:.12rem .5rem;border-radius:var(--rp);white-space:nowrap;
+  color:var(--t3);background:rgba(var(--edgeC),.07)}
+.qr-count.no{color:#95341F;background:rgba(var(--noC),.10)}
 
-.qr-peek{display:flex;align-items:baseline;gap:.5rem;padding:0 1.05rem .85rem;
-  font-size:.79rem;color:rgba(220,237,230,.7);min-width:0}
-.qr-peek b{font-family:var(--fd);font-weight:700;font-size:1.05rem;color:var(--lime);
+/* لمحة السطر الأول وهو مقفول */
+.qr-peek{display:flex;align-items:baseline;gap:.45rem;padding:0 1.05rem .8rem;
+  font-size:.78rem;color:var(--t3);min-width:0;margin-top:-.3rem}
+.qr-peek b{font-family:var(--fd);font-weight:700;font-size:1rem;color:var(--t1);
   font-variant-numeric:tabular-nums;flex:none}
-.qr-peek b.bad{color:#FF9C7E}
+.qr-peek b.bad{color:var(--no)}
 
 .qr-list{padding:0 1.05rem}
-.qr-item{padding:1rem 0 1.05rem;position:relative;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.09)}
-.qr-item:first-child{box-shadow:none;padding-top:.25rem}
-/* شريط الخطر: بيقف على حافة القراءة نفسها، مش إطار حواليها */
-.qr-item.flag::before{content:"";position:absolute;top:1rem;bottom:1.05rem;
+.qr-item{padding:1rem 0;position:relative;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+.qr-item:first-child{box-shadow:none;padding-top:.2rem}
+/* شريط الخطر على حافة القراءة، مش إطار حواليها */
+.qr-item.flag::before{content:"";position:absolute;top:1rem;bottom:1rem;
   inset-inline-start:-1.05rem;width:2px;border-radius:2px;background:var(--no)}
-.qr-item:first-child.flag::before{top:.25rem}
-
-.qr-lbl{font-size:.7rem;letter-spacing:.02em;color:rgba(220,237,230,.55);margin-bottom:.35rem}
-.qr-item.flag .qr-lbl{color:#FF9C7E}
+.qr-item:first-child.flag::before{top:.2rem}
+.qr-lbl{margin-bottom:.5rem}
 
 /* الرقم قدام الجملة مش جوّاها */
-.qr-metric{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.3rem}
+.qr-metric{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.25rem}
 .qr-metric b{font-family:var(--fd);font-weight:700;line-height:1;
-  font-size:clamp(1.9rem,3.4vw,2.35rem);color:var(--lime);
+  font-size:clamp(1.7rem,3vw,2.05rem);color:var(--t1);
   font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.qr-item.flag .qr-metric b{color:#FF9C7E}
-.qr-metric span{font-size:.8rem;color:rgba(220,237,230,.72);line-height:1.4}
+.qr-item.flag .qr-metric b{color:var(--no)}
+.qr-metric span{font-size:.79rem;color:var(--t2);line-height:1.4}
 
-.qr-tx{font-size:.85rem;line-height:1.75;color:rgba(220,237,230,.86)}
-.qr-tx b{font-weight:600;color:#fff}
-.qr-tx b.bad{color:#FF9C7E}
+.qr-tx{font-size:.85rem;line-height:1.75;color:var(--t2)}
+.qr-tx b{font-weight:600;color:var(--t1)}
+.qr-tx b.bad{color:var(--no)}
 .qr-item.typing .qr-tx{min-height:1.6em}
-.qr-tx .caret{display:inline-block;width:2px;height:1em;vertical-align:-2px;
-  background:var(--lime);margin-inline-start:2px;animation:blink .9s steps(2) infinite}
 
-.qr-bar{height:5px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden;margin-top:.75rem}
-.qr-bar i{display:block;height:100%;border-radius:99px;
-  background:linear-gradient(90deg,var(--lime),var(--teal))}
-.qr-barl{display:flex;justify-content:space-between;margin-top:.35rem;
-  font-size:.7rem;color:rgba(220,237,230,.55)}
-.qr-src{margin-top:.55rem;font-size:.7rem;color:rgba(220,237,230,.45)}
-.qr-acts{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem}
-.qr-btn{display:inline-flex;align-items:center;gap:.3rem;padding:.36rem .8rem;border-radius:var(--rp);
-  font-size:.76rem;font-family:var(--fd);font-weight:500;color:rgba(220,237,230,.9);
-  background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
-  transition:background .16s ease,color .16s ease}
-.qr-btn:hover{background:rgba(255,255,255,.14);color:#fff}
-/* الاسم `qr-go` مش `go`: `.go` في نظام التصميم زرار إرسال دائري
-   بعرض 36px، فبيقصّ النص لو اتسمّى كده. نفس فخّ `.bar` بالظبط. */
-.qr-btn.qr-go{color:#0E3234;background:var(--lime);box-shadow:none;font-weight:600;line-height:1.2}
-.qr-btn.qr-go:hover{color:#0E3234;filter:brightness(1.06)}
-.qr-btn svg{transform:scaleX(1)}
-
-.qr-foot{padding:.7rem 1.05rem .85rem;font-size:.69rem;color:rgba(220,237,230,.4);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);margin-top:.3rem}
-
-.qr-skel{padding:.4rem 1.05rem 1rem;display:flex;flex-direction:column;gap:.55rem}
-.qr-skel span{display:block;height:9px;border-radius:99px;
-  background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.14),rgba(255,255,255,.06));
-  background-size:220% 100%;animation:qrshim 1.3s linear infinite}
-@keyframes qrshim{to{background-position:-220% 0}}
-
-@media (prefers-reduced-motion:reduce){
-  .qr-mark.live{animation:none}
-  .qr-skel span{animation:none}
-}
-
-/* ═══════════════════════════════════════════════════════════
-   صندوقي
-
-   الأرقام فوق مش «مؤشرات» — هي مداخل. كل شريحة رابط بيفتح نفس
-   الصفوف مفلترة، فالرقم اللي بيقلق المستخدم يوصّله للشغل بضغطة
-   بدل ما يفضل معروضًا وخلاص.
-   ═══════════════════════════════════════════════════════════ */
-.hhead{padding:.2rem}
-.htiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
-@media (max-width:820px){.htiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.htile{display:flex;flex-direction:column;gap:.15rem;padding:1rem 1.05rem;color:inherit;
-  transition:transform .18s ease,box-shadow .18s ease}
-.htile:hover{transform:translateY(-2px);color:inherit;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2))}
-.htile>svg{color:var(--t3);margin-bottom:.35rem}
-.htile-v{font-family:var(--fd);font-weight:700;font-size:1.85rem;line-height:1.1}
-.htile-l{font-size:.83rem;font-family:var(--fd);font-weight:500}
-.htile-n{font-size:.71rem}
-/* اللون على الرقم بس — الكارت نفسه بيفضل زجاجًا محايدًا */
-.htile.t-no .htile-v{color:var(--no)}
-.htile.t-no>svg{color:var(--no)}
-.htile.t-warn .htile-v{color:#A06B06}
-.htile.t-ok .htile-v{color:var(--t1)}
-
-/* صفوف الطابور — نفس تركيب صفوف مشاريع الجهة */
-.qrows{display:flex;flex-direction:column;margin-top:.9rem}
-.qrow{display:block;padding:.85rem 0;color:inherit;transition:transform .18s ease}
-.qrow:hover{transform:translateX(-3px);color:inherit}
-.qrow-h{display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--t3)}
-.qrow-n{font-family:var(--fd);font-weight:600;font-size:.88rem;margin-top:.3rem;line-height:1.5}
-.qrow-f{margin-top:.2rem}
-
-/* شريط الميزانية — ثلاث طبقات على مسطرة واحدة، مش ثلاث دواير */
-.bsplit{display:flex;height:8px;border-radius:99px;overflow:hidden;
-  background:rgba(var(--edgeC),.09);margin-bottom:.9rem}
-.bsplit>div{height:100%;transition:width .4s ease}
-.bsplit-r{background:rgba(46,127,196,.55)}
-.bsplit-c{background:rgba(0,165,155,.7)}
-.bsplit-s{background:var(--green)}
-.blist{display:flex;flex-direction:column;gap:.5rem;margin:0;font-size:.83rem}
-.blist>div{display:flex;align-items:baseline;justify-content:space-between;gap:.7rem}
-.blist dt{display:flex;align-items:center;gap:.45rem;color:var(--t2);margin:0}
-.blist dd{margin:0;font-weight:500}
-.bdot{width:8px;height:8px;border-radius:3px;flex:none}
-.b-r{background:rgba(46,127,196,.55)}
-.b-c{background:rgba(0,165,155,.7)}
-.b-s{background:var(--green)}
-
-/* توزيع المشاريع على الحالات */
-.gbars{display:flex;flex-direction:column;gap:.6rem;margin-top:.9rem}
-.gbar{display:grid;grid-template-columns:6.5rem 1fr auto;align-items:center;gap:.7rem;
-  color:inherit;font-size:.79rem}
-.gbar:hover{color:var(--teal)}
-.gbar-l{color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gbar-t{height:7px;border-radius:99px;background:rgba(var(--edgeC),.08);overflow:hidden}
-.gbar-t i{display:block;height:100%;border-radius:99px;transition:width .35s ease}
-.gbar-n{font-weight:600;min-width:1.6rem;text-align:left}
-:root{--tone-ok:var(--ok);--tone-ret:var(--ret);--tone-no:var(--no);
-  --tone-warn:var(--warn);--tone-brand:var(--lime);--tone-teal:var(--teal);
-  --tone-lime:var(--lime);--tone-mute:rgba(var(--edgeC),.3)}
+.qr-barl{display:flex;justify-content:space-between;margin-top:.35rem}
+/* المصدر معرَّف في نظام التصميم تحت `.ins .i` — القراءة مش جوّاه،
+   فبتاخد نفس القياس هنا صراحة بدل ما تطلع بحجم النص العادي. */
+.qr-item .src{font-size:.69rem;color:var(--t3);margin-top:.45rem}
+.qr-foot{padding:.7rem 1.05rem .8rem;font-size:.69rem;color:var(--t3);
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+.qread .skel{padding:.2rem 1.05rem 1rem}
 
 /* مبدّل الدور في قائمة الحساب — للنموذج فقط */
 .acct-demo{font-size:.6rem;padding:.06rem .35rem;border-radius:var(--rp);
@@ -1798,3 +1689,104 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
 .rolesw-t{font-size:.8rem;font-family:var(--fd);font-weight:500}
 .rolesw-s{font-size:.68rem;color:var(--t3)}
+
+/* ═══════════════════════════════════════════════════════════
+   اليوم
+
+   القوة هنا من الحجم والإيقاع، مش من لون جديد ولا سطح غريب:
+   ترويسة كبيرة بسطر خلاصة فيه رقمَي اليوم، وشريحة أولى أعرض
+   من الباقي — لأن أربع شرائح بنفس الحجم بتخلّي العين تحتار.
+   ═══════════════════════════════════════════════════════════ */
+.hhead{display:flex;align-items:flex-end;justify-content:space-between;
+  gap:1rem 2rem;flex-wrap:wrap;padding:.2rem .2rem .1rem}
+.hhead-t{min-width:0}
+.htitle{font-family:var(--fd);font-weight:700;letter-spacing:-.015em;line-height:1.15;
+  font-size:clamp(1.75rem,3.6vw,2.5rem)}
+.hdate{margin:.4rem 0 0;font-size:.79rem;color:var(--t3)}
+/* سطر الخلاصة: الرقم كبير جوّه الجملة، فالجملة تتقري كعنوان */
+.hline{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin:0;
+  font-size:.88rem;color:var(--t2);font-family:var(--fd)}
+.hline b{font-weight:700;font-size:clamp(1.5rem,2.6vw,1.95rem);color:var(--t1);
+  line-height:1;letter-spacing:-.01em}
+.hline b.bad{color:var(--no)}
+.hline i{width:1px;height:1.1rem;background:rgba(var(--edgeC),.18);margin-inline:.35rem}
+@media (max-width:720px){.hhead{align-items:flex-start}}
+
+/* ── الشرائح: مداخل مش مؤشرات، فكل واحدة رابط ── */
+.htiles{display:grid;grid-template-columns:1.45fr repeat(3,minmax(0,1fr));gap:var(--gap)}
+@media (max-width:1100px){.htiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.htiles{grid-template-columns:1fr}}
+
+.htile{position:relative;display:flex;flex-direction:column;gap:.1rem;
+  padding:1.05rem 1.1rem 1.1rem;color:inherit;overflow:hidden;
+  transition:transform .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease}
+.htile:hover{transform:translateY(-3px);color:inherit;
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.4))}
+/* توهّج خفيف بلون النبرة في ركن الكارت — عمق من غير حدود ملوّنة */
+.htile::before{content:"";position:absolute;inset-inline-end:-30%;top:-70%;
+  width:100%;aspect-ratio:1;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,var(--glow,transparent),transparent);
+  opacity:.5;transition:opacity .2s ease}
+.htile:hover::before{opacity:.85}
+
+.htile-ic{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;
+  color:var(--t2);background:rgba(var(--edgeC),.06);margin-bottom:.6rem}
+.htile-v{font-family:var(--fd);font-weight:700;line-height:1;letter-spacing:-.02em;
+  font-size:clamp(2rem,3.4vw,2.6rem)}
+.htile.lead .htile-v{font-size:clamp(2.6rem,5vw,3.6rem)}
+.htile-l{font-size:.87rem;font-family:var(--fd);font-weight:600;margin-top:.4rem}
+.htile.lead .htile-l{font-size:.95rem}
+.htile-n{font-size:.73rem;color:var(--t3);margin-top:.1rem}
+/* الشيفرون بيطلع مع الهوفر: الكارت رابط، والحركة بتقول كده */
+.htile-go{position:absolute;top:1.15rem;inset-inline-start:1.1rem;color:var(--t3);
+  opacity:0;transform:translateX(4px);transition:opacity .2s ease,transform .2s ease}
+.htile:hover .htile-go{opacity:1;transform:none}
+
+/* النبرة على الرقم والأيقونة والتوهّج — الكارت يفضل زجاجًا محايدًا */
+.htile.t-no{--glow:rgba(var(--noC),.13)}
+.htile.t-no .htile-v{color:var(--no)}
+.htile.t-no .htile-ic{color:var(--no);background:rgba(var(--noC),.10)}
+.htile.t-warn{--glow:rgba(var(--warnC),.14)}
+.htile.t-warn .htile-v{color:#A06B06}
+.htile.t-warn .htile-ic{color:#A06B06;background:rgba(var(--warnC),.12)}
+.htile.t-ok{--glow:rgba(0,165,155,.12)}
+.htile.t-ok .htile-v{color:var(--t1)}
+.htile.t-ok .htile-ic{color:var(--teal);background:rgba(0,165,155,.10)}
+
+/* صفوف الطابور */
+.qrows{display:flex;flex-direction:column;margin-top:.9rem}
+.qrow{display:block;padding:.85rem 0;color:inherit;transition:transform .18s ease}
+.qrow:hover{transform:translateX(-3px);color:inherit}
+.qrow-h{display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--t3)}
+.qrow-n{font-family:var(--fd);font-weight:600;font-size:.88rem;margin-top:.3rem;line-height:1.5}
+.qrow-f{margin-top:.2rem}
+
+/* الميزانية — ثلاث طبقات على مسطرة واحدة */
+.bsplit{display:flex;height:10px;border-radius:99px;overflow:hidden;
+  background:rgba(var(--edgeC),.09);margin-bottom:1rem}
+.bsplit>div{height:100%;transition:width .4s ease}
+.bsplit-r{background:rgba(46,127,196,.55)}
+.bsplit-c{background:rgba(0,165,155,.72)}
+.bsplit-s{background:var(--green)}
+.blist{display:flex;flex-direction:column;gap:.55rem;margin:0;font-size:.83rem}
+.blist>div{display:flex;align-items:baseline;justify-content:space-between;gap:.7rem}
+.blist>div:first-child dd{font-family:var(--fd);font-weight:700;font-size:1rem}
+.blist dt{display:flex;align-items:center;gap:.45rem;color:var(--t2);margin:0}
+.blist dd{margin:0;font-weight:500}
+.bdot{width:8px;height:8px;border-radius:3px;flex:none}
+.b-r{background:rgba(46,127,196,.55)}
+.b-c{background:rgba(0,165,155,.72)}
+.b-s{background:var(--green)}
+
+/* توزيع المشاريع على الحالات */
+.gbars{display:flex;flex-direction:column;gap:.6rem;margin-top:.9rem}
+.gbar{display:grid;grid-template-columns:6.5rem 1fr auto;align-items:center;gap:.7rem;
+  color:inherit;font-size:.79rem}
+.gbar:hover{color:var(--teal)}
+.gbar-l{color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gbar-t{height:8px;border-radius:99px;background:rgba(var(--edgeC),.08);overflow:hidden}
+.gbar-t i{display:block;height:100%;border-radius:99px;transition:width .35s ease}
+.gbar-n{font-family:var(--fd);font-weight:700;min-width:1.7rem;text-align:left}
+:root{--tone-ok:var(--ok);--tone-ret:var(--ret);--tone-no:var(--no);
+  --tone-warn:var(--warn);--tone-brand:var(--lime);--tone-teal:var(--teal);
+  --tone-lime:var(--lime);--tone-mute:rgba(var(--edgeC),.3)}
