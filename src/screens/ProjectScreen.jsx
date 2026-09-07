@@ -306,6 +306,7 @@ function TabData({ costPerBeneficiary, onEntity }) {
 }
 
 function TabEntity() {
+  const [prev, setPrev] = useState(null)
   return (
     <>
       <Glass>
@@ -335,12 +336,26 @@ function TabEntity() {
         <Head title="مستندات الجهة" meta={`${E.docs.filter((d) => d.uploaded).length} من ${E.docs.length}`} />
         <div style={{ overflowX: 'auto' }}>
           <table className="tbl">
-            <thead><tr><th>المستند</th><th>الحالة</th></tr></thead>
+            <thead><tr><th>المستند</th><th>الحالة</th><th className="n">إجراء</th></tr></thead>
             <tbody>
               {E.docs.map((d) => (
                 <tr key={d.name} className={d.uploaded ? '' : 'off'}>
                   <td><div className="nmc"><Icon path={icons.file} size={16} style={{ color: 'var(--t3)' }} />{d.name}</div></td>
                   <td>{d.uploaded ? <Tag tone="ok">مرفوع</Tag> : <Tag tone="warn">ناقص</Tag>}</td>
+                  <td className="n">
+                    {/* المرفوع يتقرا من مكانه، والناقص بيتطلب من الجهة — مفيش صف بلا إجراء */}
+                    {d.uploaded ? (
+                      <span className="rowf" style={{ gap: '.5rem', justifyContent: 'flex-end' }}>
+                        <button className="lnk" onClick={() => setPrev(d)}>عرض</button>
+                        <span className="dot" />
+                        <a>تحميل</a>
+                      </span>
+                    ) : (
+                      <span className="rowf" style={{ justifyContent: 'flex-end' }}>
+                        <button className="lnk">اطلبه من الجهة</button>
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -350,6 +365,8 @@ function TabEntity() {
           خمسة مستندات ناقصة، منها تقرير الحوكمة وتقرير المراجع القانوني — وهي المدخلات التي تُبنى عليها درجة الحوكمة.
         </div>
       </Glass>
+
+      {prev && <FilePreview file={prev} onClose={() => setPrev(null)} />}
 
       <Glass>
         <Head title="الحساب البنكي" meta="حساب واحد مفعّل" />
