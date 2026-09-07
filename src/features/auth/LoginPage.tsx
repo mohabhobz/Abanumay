@@ -61,23 +61,35 @@ export default function LoginPage() {
             <p className="lsub">مؤسسة سليمان أبانمي الأهلية</p>
           </div>
 
-          <form className="lform" onSubmit={submit} noValidate>
+          {/* method/action موجودين عشان مديري كلمات السر يتعرّفوا على
+              الفورم ويعرضوا الحفظ — الإرسال نفسه متوقّف بـpreventDefault */}
+          <form
+            className="lform"
+            onSubmit={submit}
+            method="post"
+            action="#"
+            noValidate
+          >
             <Field
               id="lg-user"
+              name="username"
               label="اسم المستخدم"
               icon={icons.user}
               value={user}
               onChange={setUser}
               autoComplete="username"
+              enterKeyHint="next"
             />
             <Field
               id="lg-pass"
+              name="password"
               label="كلمة المرور"
               icon={icons.lock}
               type={show ? 'text' : 'password'}
               value={pass}
               onChange={setPass}
               autoComplete="current-password"
+              enterKeyHint="go"
               trailing={
                 <button
                   type="button"
@@ -93,7 +105,7 @@ export default function LoginPage() {
 
             <div className="lrow">
               <label className="lcheck">
-                <input type="checkbox" />
+                <input type="checkbox" name="remember" />
                 <span>تذكّرني</span>
               </label>
               <a className="llink">نسيت كلمة المرور؟</a>
@@ -120,16 +132,24 @@ export default function LoginPage() {
 /* حقل بعلامة داخلية وحالة تركيز واضحة — الحدود بتغمق مش بتتلوّن */
 interface FieldProps {
   id: string
+  /** لازم للاسم عشان مديري كلمات السر والأوتوفيل يتعرّفوا على الحقل */
+  name: string
   label: string
   icon: string
   value: string
   onChange: (value: string) => void
   type?: string
   trailing?: ReactNode
+  /** توكن الأوتوفيل القياسي: username · current-password … */
   autoComplete?: string
+  /** شكل زرار الإدخال في كيبورد الموبايل */
+  enterKeyHint?: 'go' | 'next' | 'done' | 'send' | 'search' | 'enter'
 }
 
-function Field({ id, label, icon, value, onChange, type = 'text', trailing, autoComplete }: FieldProps) {
+function Field({
+  id, name, label, icon, value, onChange,
+  type = 'text', trailing, autoComplete, enterKeyHint,
+}: FieldProps) {
   return (
     <label className="lfield" htmlFor={id}>
       <span className="llbl">{label}</span>
@@ -137,10 +157,15 @@ function Field({ id, label, icon, value, onChange, type = 'text', trailing, auto
         <Icon path={icon} size={17} />
         <input
           id={id}
+          name={name}
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
+          enterKeyHint={enterKeyHint}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           dir="ltr"
         />
         {trailing}
