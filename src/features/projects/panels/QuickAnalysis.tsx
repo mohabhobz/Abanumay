@@ -130,7 +130,7 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
                       <span className="sub">
                         الحدّ <span className="num">{nf.format(breach.limit)}</span> ساعة
                       </span>
-                      <span className="sub" style={{ color: 'var(--warn)' }}>
+                      <span className="sub" style={{ color: 'var(--warn-ink)' }}>
                         المستهلَك <span className="num">{nf.format(breach.hours)}</span>
                       </span>
                     </div>

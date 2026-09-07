@@ -6,6 +6,7 @@ import {
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { nf } from '@/lib/format'
 import { ENTITY_DOCS_TOTAL, fixtures, query, type EntityQuery } from '@/data/repository'
@@ -56,7 +57,9 @@ const SORTS = [
 export default function EntitiesListPage() {
   const { values: v, set, replace, clear, activeCount } = useQueryParams<Params>(KEYS)
 
-  const view = v.view === 'table' ? 'table' : 'cards'
+  /* زي المشاريع: الجدول محتاج عرض ما بيتوفرش على الموبايل */
+  const mobile = useIsMobile()
+  const view = mobile ? 'cards' : v.view === 'table' ? 'table' : 'cards'
   const page = Math.max(1, Number(v.page) || 1)
   const advOpen = v.adv === '1'
 
@@ -201,7 +204,9 @@ export default function EntitiesListPage() {
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
               <span className="ftool-sp" />
-              <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
+              {!mobile && (
+                <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
+              )}
             </div>
 
             {advOpen && (

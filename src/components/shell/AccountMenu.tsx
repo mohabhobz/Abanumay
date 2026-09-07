@@ -7,8 +7,7 @@ import { Avatar } from './Avatar'
 import { ROLES } from '@/data/roles'
 import { useRole } from '@/hooks/useRole'
 import type { CurrentUser } from '@/types/domain'
-
-export type ThemeChoice = 'light' | 'dark' | 'system'
+import { applyTheme, readTheme, writeTheme, type ThemeChoice } from '@/lib/theme'
 
 const THEMES: { key: ThemeChoice; label: string; icon: IconName }[] = [
   { key: 'light', label: 'فاتح', icon: 'sun' },
@@ -16,22 +15,20 @@ const THEMES: { key: ThemeChoice; label: string; icon: IconName }[] = [
   { key: 'system', label: 'النظام', icon: 'device' },
 ]
 
-const THEME_KEY = 'ab-theme'
-
-function readTheme(): ThemeChoice {
-  try {
-    const saved = localStorage.getItem(THEME_KEY)
-    return saved === 'light' || saved === 'dark' ? saved : 'system'
-  } catch {
-    return 'system'
-  }
-}
-
 /**
  * قائمة الحساب — بتفتح من الصورة تحت الريل على جهة المحتوى.
  * المظهر وإعدادات الحساب والخروج هنا، عشان ما ياخدوش مكان في التنقّل.
  */
-export function AccountMenu({ user, onSignOut }: { user: CurrentUser; onSignOut?: () => void }) {
+export function AccountMenu({
+  user,
+  onSignOut,
+  /** تفتح لتحت بدل الجنب — للشريط العلوي في الموبايل */
+  drop,
+}: {
+  user: CurrentUser
+  onSignOut?: () => void
+  drop?: boolean
+}) {
   const { role, setRole } = useRole()
   const [open, setOpen] = useState(false)
   const [theme, setTheme] = useState<ThemeChoice>(readTheme)
@@ -39,14 +36,8 @@ export function AccountMenu({ user, onSignOut }: { user: CurrentUser; onSignOut?
   const navigate = useNavigate()
 
   useEffect(() => {
-    const root = document.documentElement
-    if (theme === 'system') root.removeAttribute('data-theme')
-    else root.setAttribute('data-theme', theme)
-    try {
-      localStorage.setItem(THEME_KEY, theme)
-    } catch {
-      /* التخزين ممكن يكون مقفول — الاختيار يفضل شغال للجلسة دي */
-    }
+    applyTheme(theme)
+    writeTheme(theme)
   }, [theme])
 
   useEffect(() => {
@@ -81,7 +72,7 @@ export function AccountMenu({ user, onSignOut }: { user: CurrentUser; onSignOut?
       </button>
 
       {open && (
-        <div className="acct" role="menu">
+        <div className={`acct${drop ? ' drop' : ''}`} role="menu">
           <div className="acct-id">
             <Avatar user={user} />
             <div style={{ minWidth: 0 }}>

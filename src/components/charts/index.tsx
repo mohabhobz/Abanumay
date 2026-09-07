@@ -141,7 +141,7 @@ export function Donut({
   return (
     <div className="chdonut">
       <svg viewBox="0 0 128 128" width={size} height={size} role="img" aria-hidden="true">
-        <circle cx="64" cy="64" r={r} fill="none" stroke="rgba(20,69,71,.08)" strokeWidth="15" />
+        <circle cx="64" cy="64" r={r} fill="none" stroke="var(--track)" strokeWidth="15" />
         {slices.map((s) => {
           const frac = sum > 0 ? s.value / sum : 0
           const len = Math.max(0, frac * c - gap)

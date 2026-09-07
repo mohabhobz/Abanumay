@@ -15,6 +15,16 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#144547" />
 
+    <!-- المظهر قبل أول رسمة: من غير ده الصفحة بتترسم فاتحة وبعدين
+         تقلب داكنة بعد ما ريآكت يشتغل — ومضة بيضا في وش المستخدم.
+         نفس المفتاح اللي في src/lib/theme.ts. -->
+    <script>
+      try {
+        var t = localStorage.getItem('ab-theme')
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+      } catch (e) {}
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />

@@ -5,6 +5,7 @@ import {
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { fixtures, query, type ProjectQuery, type ProjectSort } from '@/data/repository'
 import { assignOwner } from '@/data/mock/projects'
@@ -66,7 +67,10 @@ export default function ProjectsListPage() {
   const [bulkOwner, setBulkOwner] = useState<string | undefined>()
   const [, bump] = useState(0)
 
-  const view = v.view === 'table' ? 'table' : 'cards'
+  /* الجدول على الموبايل بيضغط كل عمود لحد ما كل خلية تتلف عمودًا
+     من الكلمات — مش جدول، شبكة كلمات. الكارت هو صف الموبايل. */
+  const mobile = useIsMobile()
+  const view = mobile ? 'cards' : v.view === 'table' ? 'table' : 'cards'
   const page = Math.max(1, Number(v.page) || 1)
   const advOpen = v.adv === '1'
 
@@ -251,7 +255,9 @@ export default function ProjectsListPage() {
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
               <span className="ftool-sp" />
-              <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
+              {!mobile && (
+                <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
+              )}
             </div>
 
             {advOpen && (

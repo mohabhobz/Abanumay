@@ -103,7 +103,7 @@ export default function AssistantPage() {
     <>
       <Background />
       <div className="app">
-        {mobile && <MobileTop user={fixtures.currentUser} />}
+        {mobile && <MobileTop user={fixtures.currentUser} onSignOut={() => { signOut(); navigate(ROUTES.login, { replace: true }) }} />}
 
         <div className="shell">
           <Rail

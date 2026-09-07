@@ -47,7 +47,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
     <>
       <Background />
       <div className="app">
-        {mobile && <MobileTop user={user} />}
+        {mobile && <MobileTop user={user} onSignOut={() => { signOut(); navigate(ROUTES.login, { replace: true }) }} />}
 
         <div className="shell">
           <Rail
