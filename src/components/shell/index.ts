@@ -1,0 +1,8 @@
+/** قشرة التطبيق: الخلفية والتنقّل وشريط القرار ولوح المساعد */
+export { Background } from './Background'
+export { Avatar } from './Avatar'
+export { MobileTop } from './MobileTop'
+export { Rail, type RailProps } from './Rail'
+export { AccountMenu, type ThemeChoice } from './AccountMenu'
+export { DecisionBar, type DecisionBarProps } from './DecisionBar'
+export { AssistantPanel, type AssistantPanelProps } from './AssistantPanel'

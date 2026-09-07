@@ -1,9 +1,17 @@
 node_modules
 dist
-.DS_Store
+dist-ssr
 *.local
+.DS_Store
 .vite
 
-# داتا المستفيدين الحقيقية مستثناة عن قصد — الريبو عام.
-# النسخة الوهمية المكافئة: src/data/project.example.js
-src/data/project.js
+# محرّرات
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# ⚠️ الداتا التجريبية فيها أسماء وأرقام مأخوذة من النظام العامل.
+# الملف ده متتبَّع عمدًا لأنه بيانات مشروع واحد للعرض — أي داتا
+# حقيقية إضافية (جهات، مستفيدين، آيبان) تتحط في ملف .local.ts
+# وما تتكوميتش.
+src/data/mock/*.local.ts
