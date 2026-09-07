@@ -1,6 +1,7 @@
 import { Navigate, Route, BrowserRouter, Routes } from 'react-router-dom'
 import LoginPage from '@/features/auth/LoginPage'
 import ProjectPage from '@/features/projects/ProjectPage'
+import HomePage from '@/features/home/HomePage'
 import ProjectsListPage from '@/features/projects/list/ProjectsListPage'
 import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
@@ -20,22 +21,7 @@ export default function App() {
       <Routes>
         <Route path={ROUTES.login} element={<LoginPage />} />
 
-        {/* صندوقي لسه ما اتبناش — بيوجّه لقائمة المشاريع كعرض */}
-        <Route
-          path={ROUTES.home}
-          element={
-            <ModulePlaceholder
-              title="صندوقي"
-              scope="شريط قرار: ما ينتظر قرارك والمتأخر منه · المالي بخمس قيم (مخصص · محجوز · ملتزم به · مصروف · متبقٍ) · التشغيلي: تحت التنفيذ ونسب الإنجاز ودفعات الشهر · ما يحتاج انتباه: مشاريع متأخرة وبنود استنفدت مخصصاتها ومستندات جهات منتهية."
-              facts={[
-                { k: 'في الدراسة الآن', v: '٢٩' },
-                { k: 'وسيط مدة المشرف', v: '٢٢ يوم' },
-                { k: 'مشاريع بلا مالك', v: '١٬٢٥٣' },
-              ]}
-              demoTo={{ label: 'افتح قائمة المشاريع', to: ROUTES.projects }}
-            />
-          }
-        />
+        <Route path={ROUTES.home} element={<HomePage />} />
 
         <Route path={ROUTES.projects} element={<ProjectsListPage />} />
 

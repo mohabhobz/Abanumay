@@ -10,6 +10,12 @@ export interface AppLayoutProps {
   children: ReactNode
   /** سياق لوح المساعد للصفحة الحالية */
   assistantContext?: AssistantContext
+  /**
+   * يفتح لوح المساعد لوحده أول مرة في الجلسة.
+   * مرة واحدة بس — لو فضل يفتح مع كل تنقّل يبقى إزعاج لا ترحيب،
+   * والمستخدم اللي قفله عايز يشتغل.
+   */
+  autoAssistant?: boolean
 }
 
 /**
@@ -18,13 +24,29 @@ export interface AppLayoutProps {
  * لوح المساعد هنا مش في كل صفحة على حدة، عشان يفضل مفتوح وأنت
  * بتتنقّل، ويتفتح من أي مكان بـ⌘K.
  */
-export function AppLayout({ children, assistantContext }: AppLayoutProps) {
+const AUTO_KEY = 'abanumay.assistant.greeted'
+
+export function AppLayout({ children, assistantContext, autoAssistant }: AppLayoutProps) {
   const mobile = useIsMobile()
   const navigate = useNavigate()
   const [assistantOpen, setAssistantOpen] = useState(false)
   const user = fixtures.currentUser
 
   const toggleAssistant = useCallback(() => setAssistantOpen((v) => !v), [])
+
+  /* الترحيب بيتأخّر لحظة عشان الصفحة تكون رسمت الأول — اللوح
+     بيدخل فوق محتوى ظاهر، مش فوق شاشة فاضية. */
+  useEffect(() => {
+    if (!autoAssistant) return
+    let greeted = false
+    try { greeted = sessionStorage.getItem(AUTO_KEY) === '1' } catch { greeted = false }
+    if (greeted) return
+    const id = setTimeout(() => {
+      setAssistantOpen(true)
+      try { sessionStorage.setItem(AUTO_KEY, '1') } catch { /* وضع خاص */ }
+    }, 620)
+    return () => clearTimeout(id)
+  }, [autoAssistant])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

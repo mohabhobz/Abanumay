@@ -1648,3 +1648,64 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 
 /* التبعيد اللي بيدفع مبدّل العرض لآخر شريط الأدوات */
 .ftool-sp{flex:1;min-width:.4rem}
+
+/* ═══════════════════════════════════════════════════════════
+   صندوقي
+
+   الأرقام فوق مش «مؤشرات» — هي مداخل. كل شريحة رابط بيفتح نفس
+   الصفوف مفلترة، فالرقم اللي بيقلق المستخدم يوصّله للشغل بضغطة
+   بدل ما يفضل معروضًا وخلاص.
+   ═══════════════════════════════════════════════════════════ */
+.hhead{padding:.2rem}
+.htiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+@media (max-width:820px){.htiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.htile{display:flex;flex-direction:column;gap:.15rem;padding:1rem 1.05rem;color:inherit;
+  transition:transform .18s ease,box-shadow .18s ease}
+.htile:hover{transform:translateY(-2px);color:inherit;
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2))}
+.htile>svg{color:var(--t3);margin-bottom:.35rem}
+.htile-v{font-family:var(--fd);font-weight:700;font-size:1.85rem;line-height:1.1}
+.htile-l{font-size:.83rem;font-family:var(--fd);font-weight:500}
+.htile-n{font-size:.71rem}
+/* اللون على الرقم بس — الكارت نفسه بيفضل زجاجًا محايدًا */
+.htile.t-no .htile-v{color:var(--no)}
+.htile.t-no>svg{color:var(--no)}
+.htile.t-warn .htile-v{color:#A06B06}
+.htile.t-ok .htile-v{color:var(--t1)}
+
+/* صفوف الطابور — نفس تركيب صفوف مشاريع الجهة */
+.qrows{display:flex;flex-direction:column;margin-top:.9rem}
+.qrow{display:block;padding:.85rem 0;color:inherit;transition:transform .18s ease}
+.qrow:hover{transform:translateX(-3px);color:inherit}
+.qrow-h{display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--t3)}
+.qrow-n{font-family:var(--fd);font-weight:600;font-size:.88rem;margin-top:.3rem;line-height:1.5}
+.qrow-f{margin-top:.2rem}
+
+/* شريط الميزانية — ثلاث طبقات على مسطرة واحدة، مش ثلاث دواير */
+.bsplit{display:flex;height:8px;border-radius:99px;overflow:hidden;
+  background:rgba(var(--edgeC),.09);margin-bottom:.9rem}
+.bsplit>div{height:100%;transition:width .4s ease}
+.bsplit-r{background:rgba(46,127,196,.55)}
+.bsplit-c{background:rgba(0,165,155,.7)}
+.bsplit-s{background:var(--green)}
+.blist{display:flex;flex-direction:column;gap:.5rem;margin:0;font-size:.83rem}
+.blist>div{display:flex;align-items:baseline;justify-content:space-between;gap:.7rem}
+.blist dt{display:flex;align-items:center;gap:.45rem;color:var(--t2);margin:0}
+.blist dd{margin:0;font-weight:500}
+.bdot{width:8px;height:8px;border-radius:3px;flex:none}
+.b-r{background:rgba(46,127,196,.55)}
+.b-c{background:rgba(0,165,155,.7)}
+.b-s{background:var(--green)}
+
+/* توزيع المشاريع على الحالات */
+.gbars{display:flex;flex-direction:column;gap:.6rem;margin-top:.9rem}
+.gbar{display:grid;grid-template-columns:6.5rem 1fr auto;align-items:center;gap:.7rem;
+  color:inherit;font-size:.79rem}
+.gbar:hover{color:var(--teal)}
+.gbar-l{color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gbar-t{height:7px;border-radius:99px;background:rgba(var(--edgeC),.08);overflow:hidden}
+.gbar-t i{display:block;height:100%;border-radius:99px;transition:width .35s ease}
+.gbar-n{font-weight:600;min-width:1.6rem;text-align:left}
+:root{--tone-ok:var(--ok);--tone-ret:var(--ret);--tone-no:var(--no);
+  --tone-warn:var(--warn);--tone-brand:var(--lime);--tone-teal:var(--teal);
+  --tone-lime:var(--lime);--tone-mute:rgba(var(--edgeC),.3)}

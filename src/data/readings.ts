@@ -289,3 +289,130 @@ export function readEntity(entity: EntityRow, projects: ProjectRow[]): Reading[]
 
   return out
 }
+
+/* ═══════════════════ صندوقي — قراءة عرضية للسيستم ═══════════════════ */
+
+export interface HomeReadingInput {
+  projects: ProjectRow[]
+  entities: EntityRow[]
+  /** اسم المستخدم الحالي — القراءة الأولى بتتكلم عن صندوقه هو */
+  owner: string
+  budget: { allocated: number; reserved: number; committed: number; spent: number }
+}
+
+/**
+ * القراءات اللي بتقطع الموديولات.
+ *
+ * صفحة المشاريع بتقرأ المشاريع، وصفحة الجهات بتقرأ الجهات — لكن
+ * أخطر الملاحظات بتقع **بين** الاتنين: مشروع معتمد لجهة ملفها ناقص،
+ * أو بند شغل ٦٠٪ من مخصصه في شهرين. الصفحة دي هي المكان الوحيد
+ * اللي بيشوف السيستم كله مرة واحدة، فقراءاتها عرضية بطبيعتها.
+ */
+export function readHome({ projects, entities, owner, budget }: HomeReadingInput): Reading[] {
+  const out: Reading[] = []
+
+  // ١) صندوق المستخدم نفسه — أول سؤال في دماغه الصبح
+  const mine = projects.filter((p) => p.owner === owner && p.statusGroup === 'في الدراسة')
+  const mineLate = mine.filter((p) => stagePressure(p) > 1)
+  if (mine.length) {
+    const n = units.project(mine.length, true)
+    const money = mine.reduce((s, p) => s + p.amountRequested, 0)
+    out.push({
+      id: 'inbox',
+      kind: mineLate.length ? 'flag' : 'note',
+      label: 'صندوقك',
+      text:
+        `عندك ${n} تحت الدراسة بقيمة ${nf.format(money)} ريال` +
+        (mineLate.length
+          ? `، منها ${units.project(mineLate.length, true)} فوق حدّ القسم.`
+          : `، ولا واحد منها عدّى حدّ قسمه.`),
+      bold: [n, `${nf.format(money)} ريال`,
+        ...(mineLate.length ? [units.project(mineLate.length, true)] : [])],
+      danger: mineLate.length ? [units.project(mineLate.length, true)] : [],
+      src: 'المشاريع المسندة إليك',
+      to: `${ROUTES.projects}?owner=${encodeURIComponent(owner)}&status=في الدراسة`,
+      toLabel: 'افتح صندوقك',
+    })
+  }
+
+  // ٢) القراءة العرضية: مشاريع ماشية لجهات ملفها ناقص.
+  //    دي ما تظهرش في أي شاشة لوحدها، لأنها بتقع بين موديولين.
+  const shortEntities = new Set(
+    entities.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL).map((e) => e.id),
+  )
+  const blocked = projects.filter(
+    (p) => p.statusGroup === 'في التشغيل' && shortEntities.has(p.entityId),
+  )
+  if (blocked.length) {
+    const n = units.project(blocked.length, true)
+    const money = blocked.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)
+    out.push({
+      id: 'blocked',
+      kind: 'flag',
+      label: 'مشاريع مهدَّدة بالتوقف',
+      text:
+        `فيه ${n} تحت التشغيل لجهات ملفها ناقص، بقيمة ${nf.format(money)} ريال. ` +
+        `اعتماد الاتفاقية بيقف على مستندات الجهة، مش على المشروع.`,
+      bold: [n, `${nf.format(money)} ريال`],
+      src: 'تقاطع جدول المشاريع مع ملفات الجهات',
+      to: `${ROUTES.entities}?docs=1`,
+      toLabel: 'الجهات الناقصة',
+    })
+  }
+
+  // ٣) المالي — القراءة الوحيدة اللي بتقيس الاستهلاك مقابل المخصص
+  const used = budget.reserved + budget.committed
+  const pct = budget.allocated ? Math.round((used / budget.allocated) * 100) : 0
+  out.push({
+    id: 'budget',
+    kind: 'note',
+    label: 'الميزانية',
+    text:
+      `${pct}٪ من مخصص ٢٠٢٦ محجوز أو ملتزم به — ` +
+      `${nf.format(budget.committed)} ريال التزامًا و${nf.format(budget.reserved)} حجزًا ` +
+      `مقابل مخصص ${nf.format(budget.allocated)}.`,
+    bold: [`${pct}٪`, `${nf.format(budget.committed)} ريال`, `${nf.format(budget.reserved)}`],
+    bar: {
+      value: used,
+      limit: budget.allocated,
+      valueLabel: 'محجوز وملتزم',
+      limitLabel: 'المخصص',
+    },
+    src: 'المخصص من النظام العامل · الباقي محسوب من العيّنة التجريبية',
+    to: ROUTES.budget,
+    toLabel: 'الميزانية',
+  })
+
+  // ٤) الاختناق التشغيلي — أي قسم فيه أطول طابور
+  const live = projects.filter((p) => p.stageLimit > 0)
+  const byStage = new Map<string, ProjectRow[]>()
+  for (const p of live) byStage.set(p.stage, [...(byStage.get(p.stage) ?? []), p])
+  let worstStage: [string, ProjectRow[]] | null = null
+  for (const entry of byStage) {
+    const avg = entry[1].reduce((s, p) => s + stagePressure(p), 0) / entry[1].length
+    const bestAvg = worstStage
+      ? worstStage[1].reduce((s, p) => s + stagePressure(p), 0) / worstStage[1].length
+      : 0
+    if (!worstStage || avg > bestAvg) worstStage = entry
+  }
+  if (worstStage && worstStage[1].length) {
+    const [stage, rows] = worstStage
+    const avgDays = Math.round(rows.reduce((s, p) => s + p.hoursInStage, 0) / rows.length / 24)
+    const n = units.project(rows.length, true)
+    const d = units.day(avgDays, true)
+    out.push({
+      id: 'bottleneck',
+      kind: 'note',
+      label: 'أطول طابور',
+      text:
+        `أبطأ قسم دلوقتي «${stage}» — متوسط المكوث فيه ${d} على ${n}. ` +
+        `ده المكان اللي أي تحسين في الزمن هيبان فيه أولًا.`,
+      bold: [`«${stage}»`, n, d],
+      src: 'مدة المكوث في القسم لكل مشروع',
+      to: `${ROUTES.projects}?stage=${encodeURIComponent(stage)}&sort=waiting`,
+      toLabel: 'اعرضها',
+    })
+  }
+
+  return out
+}

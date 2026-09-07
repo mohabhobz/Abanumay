@@ -1,4 +1,5 @@
 import type { AssistantAnswer, AssistantContext } from '@/components/assistant/types'
+import { units } from '@/lib/format'
 
 export interface AssistantRole {
   key: string
@@ -256,6 +257,25 @@ export const assistFor = {
       { icon: 'entity', title: 'سجل الجهة وأداؤها', prompt: `ورّيني سجل ${e.name}` },
       { icon: 'chart', title: 'قارن بجهات مشابهة', prompt: 'قارن أداء الجهة بجهات مشابهة' },
       { icon: 'doc', title: 'مشاريعها المفتوحة', prompt: 'إيه مشاريع الجهة المفتوحة؟' },
+    ],
+  }),
+  /**
+   * صندوقي — أول شاشة المستخدم بيشوفها، فالترحيب بيقول رقمين
+   * بس: كام مستني قرارك وكام متأخر. الباقي أسئلة جاهزة.
+   */
+  home: (name: string, waiting: number, late: number): AssistantContext => ({
+    title: 'صندوقي',
+    sub: name,
+    greet:
+      waiting > 0
+        ? `أهلًا ${name.split(' ')[0]} — عندك ${units.project(waiting, true)} في انتظار قرارك، ` +
+          `و${units.project(late, true)} فوق حدّ القسم في السيستم.`
+        : `أهلًا ${name.split(' ')[0]} — مفيش مشروع منتظر قرارك دلوقتي.`,
+    cards: [
+      { icon: 'alert', title: 'إيه اللي بانتظار قراري؟', prompt: 'إيه اللي بانتظار قراري؟' },
+      { icon: 'clock', title: 'إيه المتأخر عن حدّه؟', prompt: 'إيه الإجراءات المتأخرة؟' },
+      { icon: 'entity', title: 'جهات ملفها ناقص', prompt: 'أنهي جهات ملفها ناقص؟' },
+      { icon: 'budget', title: 'الميزانية واقفة فين؟', prompt: 'إيه رصيد ميزانية 2026؟' },
     ],
   }),
   /* أي صفحة تانية: العنوان اسمها، والاختصارات عامة */
