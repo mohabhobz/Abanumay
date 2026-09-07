@@ -1617,3 +1617,34 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   .plist,.elist{grid-template-columns:1fr}
   .ec-nums{grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem 0}
 }
+
+/* ═══════════════════════════════════════════════════════════
+   القراءة السريعة — شكل واحد للمساعد في كل شاشة
+
+   في صفحة المشروع فيه عمود سياق، فالقراءة بتقعد فيه ككارت.
+   في القوائم مفيش عمود، فبتبقى سطرًا فوق النتائج بينفتح.
+   المحتوى واحد في الحالتين — الشكل بيتغيّر بالمكان مش بالمعنى.
+   ═══════════════════════════════════════════════════════════ */
+/* الاسم `strip` مش `bar` عن قصد: `.bar` في نظام التصميم شريط تقدّم
+   بارتفاع ٦ بكسل، فالتسمية دي كانت هتضغط الكارت لستة بكسل.
+   و`flex:none` ضروري لأن العنصر ابن مباشر لعمود flex بارتفاع ثابت،
+   و`overflow:hidden` بيخلّي أدنى ارتفاع تلقائي = صفر. */
+.qread{flex:none}
+.qread.strip{padding:0;overflow:hidden}
+.qread-h{display:flex;align-items:center;gap:.6rem;width:100%;
+  padding:.7rem .95rem;text-align:right;
+  transition:background .16s ease}
+.qread-h:hover{background:rgba(255,255,255,.28)}
+.qread-t{font-family:var(--fd);font-weight:600;font-size:.87rem}
+.qread-n{font-size:.72rem;color:var(--t3);padding:.1rem .5rem;border-radius:var(--rp);
+  background:rgba(var(--edgeC),.07);white-space:nowrap}
+.qread-n.no{color:#95341F;background:rgba(var(--noC),.10)}
+.qread-h>svg{color:var(--t3);flex:none}
+/* لمحة السطر الأول وهو مقفول — بتقول فيه إيه من غير ما تفتح */
+.qread-peek{padding:0 .95rem .75rem;margin-top:-.35rem}
+.qread-list{padding:0 .95rem .3rem}
+.qread.strip .data.i{padding:.85rem 0}
+.qread.strip .data.i:first-child{box-shadow:none}
+
+/* التبعيد اللي بيدفع مبدّل العرض لآخر شريط الأدوات */
+.ftool-sp{flex:1;min-width:.4rem}

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Glass } from '@/components/ui'
 import { nf } from '@/lib/format'
-import { highlight } from '../components/highlight'
-import { useOnScreen } from '../hooks/useOnScreen'
-import { useTypedBlocks } from '../hooks/useTypedBlocks'
+import { highlight } from '@/components/assistant/highlight'
+import { useOnScreen } from '@/hooks/useOnScreen'
+import { useTypedBlocks } from '@/hooks/useTypedBlocks'
 import type { Insight, LogEntry } from '@/types/domain'
 
 /** المساعد بيفكّر لحظة قبل ما يبدأ يكتب — عشان القراءة تبان مُنتَجة مش محفوظة */

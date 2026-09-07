@@ -40,6 +40,7 @@ export const icons = {
   downv: '<path d="M17 4v8l-4 7a2 2 0 01-3-2l1-5H6a2 2 0 01-2-2.4l1.2-5A2 2 0 017 3h10z"/>',
   grip: '<circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>',
   chevronDown: '<path d="M6 9.5l6 6 6-6"/>',
+  sort: '<path d="M7 4v16"/><path d="M4 17l3 3 3-3"/><path d="M13 6h7"/><path d="M13 11h5"/><path d="M13 16h3"/>',
   chevronUp: '<path d="M6 14.5l6-6 6 6"/>',
   grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
   rows: '<rect x="4" y="5" width="16" height="4" rx="1.5"/><rect x="4" y="11" width="16" height="4" rx="1.5"/><rect x="4" y="17" width="16" height="2.5" rx="1.2"/>',

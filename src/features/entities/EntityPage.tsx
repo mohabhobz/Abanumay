@@ -11,6 +11,8 @@ import { entityById } from '@/data/mock/entities'
 import { ENTITY_DOCS, STATUS_GROUPS } from '@/data/mock/taxonomy'
 import { ROUTES } from '@/app/routes'
 import { activationTone, days, governanceTone, groupTone } from '@/lib/tone'
+import { QuickRead } from '@/components/assistant'
+import { readEntity } from '@/data/readings'
 
 /**
  * صفحة الجهة.
@@ -36,8 +38,7 @@ export default function EntityPage() {
   if (!entity) return <Navigate to={ROUTES.entities} replace />
 
   const shown = group ? projects.filter((p) => p.statusGroup === group) : projects
-  const docsComplete = entity.docsUploaded >= ENTITY_DOCS_TOTAL
-  const missing = ENTITY_DOCS.slice(entity.docsUploaded)
+  const readings = readEntity(entity, projects)
 
   return (
     <AppLayout assistantContext={assistFor.page(`الجهة · ${entity.name}`)}>
@@ -68,22 +69,6 @@ export default function EntityPage() {
               <Tag tone={governanceTone(entity.governance)}>الحوكمة: {entity.governance}</Tag>
             </div>
           </header>
-
-          {/* ═══ تنبيه المستندات — أعلى الصفحة لأنه بيوقف الاتفاقية ═══ */}
-          {!docsComplete && (
-            <Glass className="alertcard">
-              <div className="ec-alert">
-                <Icon path={icons.alert} size={18} style={{ color: 'var(--no)' }} />
-                <div>
-                  <b>ملف الجهة ناقص — <span className="num">{missing.length}</span> مستندات.</b>
-                  <div className="sub" style={{ marginTop: '.25rem' }}>
-                    الاتفاقية الإلكترونية ما تُعتمد قبل اكتمال الملف، فأي مشروع لهذه الجهة
-                    سيتوقف عند مرحلة الاعتماد.
-                  </div>
-                </div>
-              </div>
-            </Glass>
-          )}
 
           {/* ═══ الأرقام ═══ */}
           <div className="imp glass" style={{ '--n': 4 } as React.CSSProperties}>
@@ -167,6 +152,10 @@ export default function EntityPage() {
 
             {/* ═══ العمود الجانبي ═══ */}
             <div className="col">
+              {/* القراءة السريعة — نفس الكومبوننت المستخدم في المشاريع
+                  وصفحة المشروع، بس القراءات محسوبة من ملف الجهة */}
+              <QuickRead readings={readings} title="قراءة سريعة للجهة" />
+
               <Glass>
                 <Head
                   title="ملف المستندات"

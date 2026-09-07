@@ -55,16 +55,19 @@ export interface SelectProps {
   disabled?: boolean
   /** يخلّي الحقل واخد عرض السطر كله في الشبكة */
   wide?: boolean
+  /** أيقونة جوّه الحقل — بتغني عن عنوان فوقه في شريط الأدوات */
+  icon?: string
 }
 
 /** قائمة اختيار بمظهر النظام — الحافة شعرية والخلفية زجاج */
 export function Select({
-  label, value, options, onChange, all = 'الكل', disabled, wide,
+  label, value, options, onChange, all = 'الكل', disabled, wide, icon,
 }: SelectProps) {
   return (
     <label className={`fsel${value ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`}>
       {label && <span className="fsel-l">{label}</span>}
       <span className="fsel-b">
+        {icon && <Icon path={icon} size={15} />}
         <select
           value={value ?? ''}
           disabled={disabled}

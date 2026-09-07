@@ -13,6 +13,8 @@ import {
   ACTIVATIONS, CITIES_BY_REGION, ENTITY_TYPES, GOVERNANCE, LICENSORS, REGIONS,
 } from '@/data/mock/taxonomy'
 import { ROUTES } from '@/app/routes'
+import { QuickRead } from '@/components/assistant'
+import { readEntities } from '@/data/readings'
 import { EntityCard } from './EntityCard'
 import { activationTone, governanceTone } from '@/lib/tone'
 
@@ -112,6 +114,17 @@ export default function EntitiesListPage() {
 
   const cityOptions = v.region ? (CITIES_BY_REGION[v.region] ?? []) : []
 
+  const readings = useMemo(
+    () =>
+      readEntities(
+        all,
+        query.entities({ ...q, page: 1, pageSize: 9999 }).rows,
+        activeCount(['sort', 'page', 'view', 'adv']) > 0 || Boolean(v.q),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [q, all],
+  )
+
   const chips = (
     [
       ['activation', 'التفعيل'], ['type', 'النوع'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
@@ -133,7 +146,7 @@ export default function EntitiesListPage() {
             <span className="now">الجهات</span>
           </nav>
 
-          <header className="lhead-row">
+          <header>
             <div>
               <h1 className="ptitle">الجهات</h1>
               <p className="sub" style={{ marginTop: '.3rem' }}>
@@ -141,18 +154,6 @@ export default function EntitiesListPage() {
                 <span className="num">{all.length}</span> جهة في هذا النموذج ·{' '}
                 <span className="num">3,272</span> في النظام العامل
               </p>
-            </div>
-            <div className="lhead-a">
-              <label className="fsel">
-                <span className="fsel-l">الترتيب</span>
-                <span className="fsel-b">
-                  <select value={v.sort ?? 'granted'} onChange={(e) => set({ sort: e.target.value })}>
-                    {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-                  </select>
-                  <Icon path={icons.chevronDown} size={15} />
-                </span>
-              </label>
-              <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
             </div>
           </header>
 
@@ -182,6 +183,13 @@ export default function EntitiesListPage() {
                 }))}
                 onChange={(x) => set({ activation: x })}
               />
+              <Select
+                icon={icons.sort}
+                value={v.sort ?? 'granted'}
+                all={SORTS[0].label}
+                options={SORTS.slice(1).map((x) => ({ value: x.key, label: x.label }))}
+                onChange={(x) => set({ sort: x })}
+              />
               <Toggle label="لها مشاريع تشغيل" on={v.running === '1'} onChange={(on) => set({ running: on ? '1' : undefined })} />
               <button
                 className={`fchip${advOpen ? ' on' : ''}`}
@@ -192,6 +200,8 @@ export default function EntitiesListPage() {
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
+              <span className="ftool-sp" />
+              <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
             </div>
 
             {advOpen && (
@@ -222,6 +232,8 @@ export default function EntitiesListPage() {
               </div>
             )}
           </Glass>
+
+          <QuickRead variant="bar" title="قراءة سريعة للقائمة" readings={readings} />
 
           {result.total === 0 ? (
             <Glass>

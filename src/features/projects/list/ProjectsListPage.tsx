@@ -12,6 +12,8 @@ import {
   CITIES_BY_REGION, FIELDS_BY_TRACK, GOALS_BY_FIELD, GRANT_METHODS, OWNERS,
   REGIONS, STAGES, STATUS_GROUPS, SUPPORT_STATUS, TAGS, TRACKS, YEARS,
 } from '@/data/mock/taxonomy'
+import { QuickRead } from '@/components/assistant'
+import { readProjects } from '@/data/readings'
 import { ProjectCard } from './ProjectCard'
 import { ProjectsTable } from './ProjectsTable'
 
@@ -151,6 +153,18 @@ export default function ProjectsListPage() {
     bump((n) => n + 1)
   }
 
+  /* القراءات محسوبة من نفس الصفوف المعروضة، فما تقدرش تتعارض معاها */
+  const readings = useMemo(
+    () =>
+      readProjects({
+        all: fixtures.projects,
+        filtered: query.projects({ ...q, page: 1, pageSize: 9999 }).rows,
+        isFiltered: activeCount(['sort', 'page', 'view', 'adv']) > 0 || Boolean(v.q),
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [q],
+  )
+
   /* شرائح الفلاتر الشغّالة — كل واحدة تتشال لوحدها */
   const chips = (
     [
@@ -177,7 +191,7 @@ export default function ProjectsListPage() {
             <span className="now">المشاريع</span>
           </nav>
 
-          <header className="lhead-row">
+          <header>
             <div>
               <h1 className="ptitle">المشاريع</h1>
               <p className="sub" style={{ marginTop: '.3rem' }}>
@@ -185,23 +199,6 @@ export default function ProjectsListPage() {
                 <span className="num">{total}</span> مشروعًا في هذا النموذج ·{' '}
                 <span className="num">4,929</span> في النظام العامل
               </p>
-            </div>
-            <div className="lhead-a">
-              <label className="fsel">
-                <span className="fsel-l">الترتيب</span>
-                <span className="fsel-b">
-                  <select
-                    value={v.sort ?? 'waiting'}
-                    onChange={(e) => set({ sort: e.target.value })}
-                  >
-                    {SORTS.map((s) => (
-                      <option key={s.key} value={s.key}>{s.label}</option>
-                    ))}
-                  </select>
-                  <Icon path={icons.chevronDown} size={15} />
-                </span>
-              </label>
-              <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
             </div>
           </header>
 
@@ -237,6 +234,13 @@ export default function ProjectsListPage() {
                 }))}
                 onChange={(x) => set({ status: x })}
               />
+              <Select
+                icon={icons.sort}
+                value={v.sort ?? 'waiting'}
+                all={SORTS[0].label}
+                options={SORTS.slice(1).map((x) => ({ value: x.key, label: x.label }))}
+                onChange={(x) => set({ sort: x })}
+              />
               <button
                 className={`fchip${advOpen ? ' on' : ''}`}
                 onClick={() => set({ adv: advOpen ? undefined : '1' })}
@@ -246,6 +250,8 @@ export default function ProjectsListPage() {
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
+              <span className="ftool-sp" />
+              <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
             </div>
 
             {advOpen && (
@@ -286,6 +292,14 @@ export default function ProjectsListPage() {
               </div>
             )}
           </Glass>
+
+          {/* ═══ القراءة السريعة — نفس فكرة صفحة المشروع، بس هنا
+              بتتكلم عن الشريحة المعروضة وبتتغيّر مع الفلتر ═══ */}
+          <QuickRead
+            variant="bar"
+            title="قراءة سريعة للقائمة"
+            readings={readings}
+          />
 
           {/* ═══ شريط التحديد الجماعي ═══
               موجود لأن ١٬٢٥٣ مشروعًا في النظام بلا مالك، وإسنادهم
