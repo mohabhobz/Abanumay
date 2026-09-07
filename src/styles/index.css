@@ -1397,19 +1397,15 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .lhead-row{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
 .lhead-a{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 
-/* ── اللقطات المحفوظة ── */
-.views{display:flex;gap:.35rem;flex-wrap:wrap}
-.vw{padding:.42rem .95rem;border-radius:var(--rp);font-size:.81rem;font-family:var(--fd);font-weight:500;
-  color:var(--t2);transition:color .16s ease,background .16s ease,box-shadow .16s ease}
-.vw:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
-.vw.on{color:var(--t1);background:rgba(255,255,255,.82);
-  -webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
-
-/* ── شرائح الحالة بعدّادها ── */
+/* ── اللقطات المحفوظة ──
+   صفّ واحد بس. كان فيه صفّين — لقطات فوق وحالات تحت — فكانوا
+   بيتنافسوا على نفس الوزن البصري، والأسوأ إن نفس الفلتر كان
+   بيتكرّر في التنين. اللقطة بقت هي الصفّ (نطاق الشغل)، والحالة
+   نزلت جوّه شريط الأدوات كقائمة بعدّادها (تنقية جوّه النطاق). */
 .fsegs{display:flex;gap:.35rem;flex-wrap:wrap}
-.fseg{display:inline-flex;align-items:center;gap:.45rem;padding:.4rem .8rem;border-radius:var(--rp);
-  font-size:.79rem;color:var(--t2);transition:color .16s ease,background .16s ease;
+.fseg{display:inline-flex;align-items:center;gap:.45rem;padding:.46rem .95rem;border-radius:var(--rp);
+  font-size:.82rem;font-family:var(--fd);font-weight:500;
+  color:var(--t2);transition:color .16s ease,background .16s ease;
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
 .fseg b{font-size:.72rem;font-weight:600;color:var(--t3);padding:.06rem .38rem;border-radius:var(--rp);
   background:rgba(var(--edgeC),.07)}
@@ -1461,6 +1457,13 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .fsel.off{opacity:.55}
 .fsel.off .fsel-b{cursor:not-allowed}
 
+/* القائمة اللي جوّه شريط الأدوات تلبس شكل الشريحة عشان الصفّ
+   كله يبقى بلغة واحدة، من غير عنوان فوقها */
+.ftool-r>.fsel .fsel-b{padding:.42rem .55rem .42rem .9rem;border-radius:var(--rp);
+  background:rgba(255,255,255,.62)}
+.ftool-r>.fsel .fsel-b select{font-size:.79rem}
+
+.fsel.wide{grid-column:1 / -1}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem .8rem;
   padding-top:.85rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
 .fgrid-t{display:flex;align-items:flex-end;gap:.4rem;flex-wrap:wrap}

@@ -98,17 +98,39 @@ export default function ProjectsListPage() {
   const counts = query.projectStatusCounts(q)
   const total = fixtures.projects.length
 
+  /* عدّاد كل لقطة مطلق، لأن اللقطة مبدّل نطاق مش فلتر جوّه النطاق:
+     «بلا مالك ٨» لازم تفضل ٨ حتى وإنت واقف على لقطة تانية. */
+  const viewCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        VIEWS.map((x) => [
+          x.key,
+          query.projects({
+            owner: x.patch.owner,
+            status: x.patch.status,
+            unowned: x.patch.unowned === '1',
+            overdue: x.patch.overdue === '1',
+            pageSize: 1,
+          }).total,
+        ]),
+      ) as Record<string, number>,
+    [],
+  )
+
   /* المجالات والأهداف والمدن متسلسلة زي النظام: اختيار المسار بيحدّد
      المجالات المتاحة، والمجال بيحدّد الأهداف. لو الأب اتغيّر، الابن يتصفّر. */
   const fieldOptions = v.track ? (FIELDS_BY_TRACK[v.track] ?? []) : Object.values(FIELDS_BY_TRACK).flat()
   const goalOptions = v.field ? (GOALS_BY_FIELD[v.field] ?? []) : []
   const cityOptions = v.region ? (CITIES_BY_REGION[v.region] ?? []) : []
 
+  /* اللقطة النشطة = اللي كل مفاتيحها مطابقة. لو المستخدم زوّد فلترًا
+     فوقها، الشريحة تفضل مختارة — هو لسه جوّه نفس النطاق. */
   const activeView =
-    VIEWS.find((x) =>
-      x.key !== 'all' &&
-      Object.entries(x.patch).every(([k, val]) => v[k as keyof Params] === val),
-    )?.key ?? (activeCount(['q', 'sort', 'page', 'view', 'adv']) === 0 && !v.status ? 'all' : '')
+    VIEWS.find(
+      (x) =>
+        x.key !== 'all' &&
+        Object.entries(x.patch).every(([k, val]) => v[k as keyof Params] === val),
+    )?.key ?? 'all'
 
   const toggleOne = (id: string, on: boolean) =>
     setSelected((s) => {
@@ -132,7 +154,7 @@ export default function ProjectsListPage() {
   /* شرائح الفلاتر الشغّالة — كل واحدة تتشال لوحدها */
   const chips = (
     [
-      ['stage', 'القسم'], ['year', 'السنة'], ['track', 'المسار'], ['field', 'المجال'],
+      ['status', 'الحالة'], ['stage', 'القسم'], ['year', 'السنة'], ['track', 'المسار'], ['field', 'المجال'],
       ['goal', 'الهدف'], ['region', 'المنطقة'], ['city', 'المدينة'], ['tag', 'الوسم'],
       ['method', 'الأسلوب'], ['support', 'الدعم'], ['owner', 'المالك'],
     ] as [keyof Params, string][]
@@ -183,27 +205,19 @@ export default function ProjectsListPage() {
             </div>
           </header>
 
-          {/* ═══ اللقطات المحفوظة ═══ */}
-          <div className="views">
-            {VIEWS.map((x) => (
-              <button
-                key={x.key}
-                className={`vw${activeView === x.key ? ' on' : ''}`}
-                onClick={() => replace({ ...x.patch, view: v.view })}
-              >
-                {x.label}
-              </button>
-            ))}
-          </div>
-
-          {/* ═══ شرائح الحالة بعدّادها ═══ */}
+          {/* ═══ اللقطات المحفوظة — صفّ واحد، وهي المحور الأساسي:
+              «إيه اللي عليّ النهارده؟» ═══ */}
           <Segments
-            active={v.status}
-            onChange={(k) => set({ status: k })}
-            items={[
-              { key: '', label: 'الكل', count: Object.values(counts).reduce((a, b) => a + b, 0) },
-              ...STATUS_GROUPS.map((g) => ({ key: g, label: g, count: counts[g] ?? 0 })),
-            ]}
+            active={activeView}
+            onChange={(k) => {
+              const next = VIEWS.find((x) => x.key === k) ?? VIEWS[0]
+              replace({ ...next.patch, view: v.view })
+            }}
+            items={VIEWS.map((x) => ({
+              key: x.key,
+              label: x.label,
+              count: viewCounts[x.key],
+            }))}
           />
 
           {/* ═══ شريط الأدوات ═══ */}
@@ -214,8 +228,15 @@ export default function ProjectsListPage() {
                 onChange={(x) => set({ q: x })}
                 placeholder="ابحث برقم المشروع أو اسمه أو اسم الجهة…"
               />
-              <Toggle label="متأخر عن الحد" on={v.overdue === '1'} onChange={(on) => set({ overdue: on ? '1' : undefined })} />
-              <Toggle label="بلا مالك" on={v.unowned === '1'} onChange={(on) => set({ unowned: on ? '1' : undefined })} />
+              <Select
+                value={v.status}
+                all={`كل الحالات (${result.total})`}
+                options={STATUS_GROUPS.filter((g) => counts[g]).map((g) => ({
+                  value: g,
+                  label: `${g} (${counts[g]})`,
+                }))}
+                onChange={(x) => set({ status: x })}
+              />
               <button
                 className={`fchip${advOpen ? ' on' : ''}`}
                 onClick={() => set({ adv: advOpen ? undefined : '1' })}

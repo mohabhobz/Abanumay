@@ -39,21 +39,31 @@ export function SearchBox({
   )
 }
 
+/** خيار القائمة — نص بسيط، أو قيمة وعنوان لما العنوان يحمل عدّادًا */
+export type SelectOption = string | { value: string; label: string }
+
+const optValue = (o: SelectOption): string => (typeof o === 'string' ? o : o.value)
+const optLabel = (o: SelectOption): string => (typeof o === 'string' ? o : o.label)
+
 export interface SelectProps {
-  label: string
+  label?: string
   value?: string
-  options: readonly string[]
+  options: readonly SelectOption[]
   onChange: (v: string | undefined) => void
   /** النص اللي يظهر لما مفيش اختيار */
   all?: string
   disabled?: boolean
+  /** يخلّي الحقل واخد عرض السطر كله في الشبكة */
+  wide?: boolean
 }
 
 /** قائمة اختيار بمظهر النظام — الحافة شعرية والخلفية زجاج */
-export function Select({ label, value, options, onChange, all = 'الكل', disabled }: SelectProps) {
+export function Select({
+  label, value, options, onChange, all = 'الكل', disabled, wide,
+}: SelectProps) {
   return (
-    <label className={`fsel${value ? ' on' : ''}${disabled ? ' off' : ''}`}>
-      <span className="fsel-l">{label}</span>
+    <label className={`fsel${value ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`}>
+      {label && <span className="fsel-l">{label}</span>}
       <span className="fsel-b">
         <select
           value={value ?? ''}
@@ -62,7 +72,7 @@ export function Select({ label, value, options, onChange, all = 'الكل', disa
         >
           <option value="">{all}</option>
           {options.map((o) => (
-            <option key={o} value={o}>{o}</option>
+            <option key={optValue(o)} value={optValue(o)}>{optLabel(o)}</option>
           ))}
         </select>
         <Icon path={icons.chevronDown} size={15} />

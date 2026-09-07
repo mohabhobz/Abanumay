@@ -25,7 +25,17 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const PAGE_SIZE = 12
 
-const NOT_FILTERS: (keyof Params)[] = ['q', 'sort', 'page', 'view', 'adv', 'activation']
+const NOT_FILTERS: (keyof Params)[] = [
+  'q', 'sort', 'page', 'view', 'adv', 'activation', 'docs', 'running',
+]
+
+/** اللقطات المحفوظة — الأسئلة اللي بتوقف الشغل فعلًا */
+const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
+  { key: 'all', label: 'كل الجهات', patch: {} },
+  { key: 'new', label: 'بانتظار التفعيل', patch: { activation: 'معلق (جديد)' } },
+  { key: 'held', label: 'موقوفة', patch: { activation: 'معلق (موقوف)' } },
+  { key: 'docs', label: 'ملفها ناقص', patch: { docs: '1' } },
+]
 
 const SORTS = [
   { key: 'granted', label: 'الأكثر دعمًا' },
@@ -42,7 +52,7 @@ const SORTS = [
  * والباقي (النوع · المرخِّص · الحوكمة · المنطقة) مطوي خلف عدّاد.
  */
 export default function EntitiesListPage() {
-  const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
+  const { values: v, set, replace, clear, activeCount } = useQueryParams<Params>(KEYS)
 
   const view = v.view === 'table' ? 'table' : 'cards'
   const page = Math.max(1, Number(v.page) || 1)
@@ -69,6 +79,7 @@ export default function EntitiesListPage() {
   const result = query.entities(q)
   const all = fixtures.entities
 
+  /** عدّاد التفعيل جوّه النطاق الحالي — بيغذّي قائمة «كل الحالات» */
   const counts = useMemo(() => {
     const base = query.entities({ ...q, activation: undefined, page: 1, pageSize: 9999 }).rows
     const out: Record<string, number> = {}
@@ -76,11 +87,34 @@ export default function EntitiesListPage() {
     return out
   }, [q])
 
+  /** عدّاد اللقطات مطلق — اللقطة مبدّل نطاق مش فلتر جوّه النطاق */
+  const viewCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        VIEWS.map((x) => [
+          x.key,
+          query.entities({
+            activation: x.patch.activation,
+            docsIncomplete: x.patch.docs === '1',
+            pageSize: 1,
+          }).total,
+        ]),
+      ) as Record<string, number>,
+    [],
+  )
+
+  const activeView =
+    VIEWS.find(
+      (x) =>
+        x.key !== 'all' &&
+        Object.entries(x.patch).every(([k, val]) => v[k as keyof Params] === val),
+    )?.key ?? 'all'
+
   const cityOptions = v.region ? (CITIES_BY_REGION[v.region] ?? []) : []
 
   const chips = (
     [
-      ['type', 'النوع'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
+      ['activation', 'التفعيل'], ['type', 'النوع'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
       ['city', 'المدينة'], ['governance', 'الحوكمة'],
     ] as [keyof Params, string][]
   )
@@ -122,13 +156,14 @@ export default function EntitiesListPage() {
             </div>
           </header>
 
+          {/* ═══ اللقطات المحفوظة — صفّ واحد ═══ */}
           <Segments
-            active={v.activation}
-            onChange={(k) => set({ activation: k })}
-            items={[
-              { key: '', label: 'الكل', count: Object.values(counts).reduce((a, b) => a + b, 0) },
-              ...ACTIVATIONS.map((a) => ({ key: a, label: a, count: counts[a] ?? 0 })),
-            ]}
+            active={activeView}
+            onChange={(k) => {
+              const next = VIEWS.find((x) => x.key === k) ?? VIEWS[0]
+              replace({ ...next.patch, view: v.view })
+            }}
+            items={VIEWS.map((x) => ({ key: x.key, label: x.label, count: viewCounts[x.key] }))}
           />
 
           <Glass className="ftoolbar">
@@ -138,7 +173,15 @@ export default function EntitiesListPage() {
                 onChange={(x) => set({ q: x })}
                 placeholder="ابحث باسم الجهة أو رقم الترخيص…"
               />
-              <Toggle label="ملف المستندات ناقص" on={v.docs === '1'} onChange={(on) => set({ docs: on ? '1' : undefined })} />
+              <Select
+                value={v.activation}
+                all={`كل حالات التفعيل (${result.total})`}
+                options={ACTIVATIONS.filter((a) => counts[a]).map((a) => ({
+                  value: a,
+                  label: `${a} (${counts[a]})`,
+                }))}
+                onChange={(x) => set({ activation: x })}
+              />
               <Toggle label="لها مشاريع تشغيل" on={v.running === '1'} onChange={(on) => set({ running: on ? '1' : undefined })} />
               <button
                 className={`fchip${advOpen ? ' on' : ''}`}
