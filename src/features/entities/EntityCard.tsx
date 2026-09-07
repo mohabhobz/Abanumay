@@ -54,7 +54,13 @@ export function EntityCard({ row }: { row: EntityRow }) {
         <div><b className="num">{row.projectsRunning}</b><span>تشغيل</span></div>
         <div><b className="num">{row.projectsCompleted}</b><span>مكتمل</span></div>
         <div><b className="num">{row.projectsDeclined}</b><span>معتذر</span></div>
-        <div><b className="num over">{row.projectsStalled}</b><span>متعثر</span></div>
+        <div>
+          <b className="num">
+            {row.projectsStalled}
+            {row.projectsStalled > 0 && <span className="dotmark" />}
+          </b>
+          <span>متعثر</span>
+        </div>
       </div>
 
       <div className="ec-foot">

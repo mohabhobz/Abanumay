@@ -61,7 +61,7 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
         <div className="pc-stage-t">
           <span>{row.stage}</span>
           {live && (
-            <b className={pressure > 1 ? 'over' : ''}>
+            <b>
               <Icon path={icons.clock} size={13} />
               <span className="num">{days(row.hoursInStage)}</span> يومًا
             </b>
@@ -79,7 +79,10 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
         )}
         {live && pressure > 1 && (
           <div className="pc-over">
-            تجاوز حدّ القسم بـ<span className="num">{days(row.hoursInStage - row.stageLimit)}</span> يومًا
+            <span className="tag no mini">متأخر</span>
+            <span className="sub">
+              <span className="num">{days(row.hoursInStage - row.stageLimit)}</span> يومًا فوق الحدّ
+            </span>
           </div>
         )}
         {!live && row.declineReason && (

@@ -135,9 +135,9 @@ export default function EntityPage() {
                             {p.stageLimit > 0 && (
                               <>
                                 {' · '}
-                                <span className={over ? 'over' : ''}>
-                                  <span className="num">{days(p.hoursInStage)}</span> يومًا في القسم
-                                </span>
+                                <span className="num">{days(p.hoursInStage)}</span>
+                                {' يومًا في القسم'}
+                                {over && <span className="tag no mini">متأخر</span>}
                               </>
                             )}
                             {p.declineReason && <> · {p.declineReason}</>}
@@ -184,7 +184,12 @@ export default function EntityPage() {
                     { k: 'معتذر عنها', v: <Num>{entity.projectsDeclined}</Num> },
                     {
                       k: 'متعثرة',
-                      v: <span className={entity.projectsStalled > 0 ? 'over num' : 'num'}>{entity.projectsStalled}</span>,
+                      v: (
+                        <>
+                          <Num>{entity.projectsStalled}</Num>
+                          {entity.projectsStalled > 0 && <span className="dotmark" />}
+                        </>
+                      ),
                     },
                   ]}
                 />

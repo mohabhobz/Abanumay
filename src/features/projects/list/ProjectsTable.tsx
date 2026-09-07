@@ -69,8 +69,9 @@ export function ProjectsTable({ rows, selected, onSelect, onSelectAll }: Project
                 </td>
                 <td className="sub">{r.region}</td>
                 <td>{r.stage}</td>
-                <td className={`n num${p > 1 ? ' over' : ''}`}>
+                <td className="n num">
                   {r.stageLimit > 0 ? days(r.hoursInStage) : '—'}
+                  {p > 1 && <span className="dotmark" title="فوق الحدّ" />}
                 </td>
                 <td className="n num">
                   {nf.format(r.amountGranted > 0 ? r.amountGranted : r.amountRequested)}{' '}

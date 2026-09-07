@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Mono, Riyal, Tag, Empty } from '@/components/ui'
+import { Glass, Head, Icon, icons, Mono, Riyal, Empty } from '@/components/ui'
+import { BarList, Columns, Donut, Legend, StackBar, CHART_COLORS } from '@/components/charts'
 import { QuickRead } from '@/components/assistant'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -8,33 +9,30 @@ import { fixtures, query, stagePressure, ENTITY_DOCS_TOTAL } from '@/data/reposi
 import { useRole } from '@/hooks/useRole'
 import { readHome } from '@/data/readings'
 import { budgetForYear } from '@/data/budget'
+import {
+  ageingBuckets, byRegion, byStage, byStatusGroup, declineReasons,
+  entityHealth, grantedByTrack, median, ownerLoad, topEntities,
+} from '@/data/analytics'
 import { assistFor } from '@/data/mock/assistant'
-import { df, nf, units } from '@/lib/format'
-import { days, groupTone } from '@/lib/tone'
-import { STATUS_GROUPS } from '@/data/mock/taxonomy'
+import { df, nf } from '@/lib/format'
+import { days } from '@/lib/tone'
 
 /* ═══════════════════════════════════════════════════════════
-   اليوم
+   اليوم — لوحة قراءة، لا لوحة أرقام
 
-   مش لوحة مؤشرات. النظام العامل فيه 4,929 مشروعًا و3,272 جهة،
-   والأوديت طلّع إن اللي محتاج قرارًا فعلًا **29 مشروعًا**. فلو
-   الصفحة دي فتحت على أرقام كبيرة تكون بتخفي الشغل بدل ما تعرضه.
+   كل رسم هنا بيجاوب سؤالًا اتسأل في الأوديت:
+     المال رايح فين؟        ← الميزانية وتوزيعها على المسارات
+     الشغل واقف فين؟        ← الأقسام الإجرائية ومدد المكوث
+     الحمل موزّع إزاي؟      ← المشرفون ووسيط أيامهم
+     ليه بنعتذر؟            ← مبررات الاعتذار
+     شركاؤنا جاهزين؟        ← ملفات الجهات وتركّز الدعم
 
-   الترتيب بيتبع سؤال المستخدم الصبح، بالترتيب:
-     1 — إيه اللي عليّ؟          (شرائح القرار، أرقام قابلة للضغط)
-     2 — فيه حاجة غلط؟           (القراءة السريعة، عرضية بين الموديولات)
-     3 — أبدأ بإيه؟              (الصفوف نفسها، مرتّبة بالأطول انتظارًا)
-     4 — إحنا واقفين فين؟        (المالي والتشغيلي على الجنب)
+   وقاعدة لونية واحدة في الصفحة كلها: **اللون يوصف الحالة مش الكمية.**
+   الأرقام بلون النص العادي؛ اللون بيقع على الشريط أو الوسم الصغير،
+   والأحمر مخصوص للتجاوز الفعلي وبمساحة صغيرة.
    ═══════════════════════════════════════════════════════════ */
 
-const GREET = () => {
-  const h = new Date().getHours()
-  if (h < 12) return 'صباح الخير'
-  if (h < 17) return 'مساء الخير'
-  return 'مساء الخير'
-}
-
-const TODAY = () => df.format(new Date())
+const GREET = () => (new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير')
 
 export default function HomePage() {
   const { role, user } = useRole()
@@ -46,6 +44,12 @@ export default function HomePage() {
   const late = projects.filter((p) => stagePressure(p) > 1)
   const orphan = projects.filter((p) => p.owner === null)
   const shortDocs = entities.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL)
+  const waiting = projects.filter(
+    (p) =>
+      p.statusGroup === 'في الدراسة' &&
+      (role.financialAuthority === null || p.amountRequested > role.financialAuthority),
+  )
+  const liveDays = projects.filter((p) => p.stageLimit > 0).map((p) => days(p.hoursInStage))
 
   const readings = useMemo(
     () =>
@@ -60,181 +64,285 @@ export default function HomePage() {
     [projects, entities, role.lens, role.financialAuthority, user.name, budget],
   )
 
-  /* الطابور: مرتّب بالأطول انتظارًا، وده ترتيب مقصود — الأقدم
-     مش الأهم، لكنه اللي بيكلّف الجهة وقتًا كل يوم بيعدّي. */
   const queue = useMemo(
     () =>
       query.projects(
         role.lens === 'own'
-          ? { owner: user.name, status: 'في الدراسة', sort: 'waiting', pageSize: 5 }
-          : { status: 'في الدراسة', sort: 'amount', pageSize: 5 },
+          ? { owner: user.name, status: 'في الدراسة', sort: 'waiting', pageSize: 4 }
+          : { status: 'في الدراسة', sort: 'amount', pageSize: 4 },
       ).rows,
     [user.name, role.lens],
   )
 
   const attention = useMemo(
-    () => query.projects({ overdue: true, sort: 'waiting', pageSize: 5 }).rows,
+    () => query.projects({ overdue: true, sort: 'waiting', pageSize: 4 }).rows,
     [],
   )
 
-  const byGroup = STATUS_GROUPS.map((g) => ({
-    group: g,
-    count: projects.filter((p) => p.statusGroup === g).length,
-  }))
-  const maxGroup = Math.max(...byGroup.map((g) => g.count), 1)
+  /* ── السلاسل ── */
+  const groups = byStatusGroup(projects)
+  const stages = byStage(projects)
+  const tracks = grantedByTrack(projects)
+  const ageing = ageingBuckets(projects)
+  const owners = ownerLoad(projects)
+  const reasons = declineReasons(projects)
+  const regions = byRegion(projects)
+  const partners = topEntities(projects)
+  const health = entityHealth(entities)
 
-  /* الشرائح بتتغيّر بالدور زي القراءات: المشرف بيشوف صندوقه،
-     ومدير المنح بيشوف اللي واقف عنده وحمل فريقه، والتنفيذي بيشوف
-     المحفظة. لو الأربعة اتثبتوا لكل الأدوار، تلاتة منهم هيبقوا
-     أرقامًا ما تخصّش اللي بيبصّ عليها. */
-  const waiting = projects.filter(
-    (p) =>
-      p.statusGroup === 'في الدراسة' &&
-      (role.financialAuthority === null || p.amountRequested > role.financialAuthority),
-  )
-  const done = projects.filter((p) => p.statusGroup === 'مكتمل')
-  const declined = projects.filter((p) => p.statusGroup === 'معتذر عنه')
-  const running = projects.filter((p) => p.statusGroup === 'في التشغيل')
+  const trackSlices = tracks.map((t, i) => ({ ...t, color: CHART_COLORS[i % CHART_COLORS.length] }))
+  const grantedTotal = tracks.reduce((s, t) => s + t.value, 0)
 
-  const lateTile = {
-    key: 'late',
-    label: 'تجاوز حدّ القسم',
-    value: late.length,
-    note: 'في السيستم كله',
-    tone: late.length ? 'no' : 'ok',
-    to: `${ROUTES.projects}?overdue=1&sort=waiting`,
-    icon: icons.clock,
-  } as const
+  const budgetParts = [
+    { key: 'spent', label: 'المصروف', value: budget.spent, color: 'var(--ch-1)' },
+    { key: 'committed', label: 'ملتزم لم يُصرف', value: Math.max(0, budget.committed - budget.spent), color: 'var(--ch-2)' },
+    { key: 'reserved', label: 'المحجوز', value: budget.reserved, color: 'var(--ch-5)' },
+    { key: 'remaining', label: 'المتبقّي', value: budget.remaining, color: 'var(--ch-idle)' },
+  ]
+  const usedPct = Math.round(((budget.reserved + budget.committed) / budget.allocated) * 100)
+  const doneBeneficiaries = projects
+    .filter((p) => p.statusGroup === 'مكتمل')
+    .reduce((s, p) => s + p.beneficiaries, 0)
 
-  const docsTile = {
-    key: 'docs',
-    label: 'جهات ملفها ناقص',
-    value: shortDocs.length,
-    note: 'الاتفاقيات بتقف عندها',
-    tone: shortDocs.length ? 'warn' : 'ok',
-    to: `${ROUTES.entities}?docs=1`,
-    icon: icons.entity,
-  } as const
-
-  const orphanTile = {
-    key: 'orphan',
-    label: 'بلا مالك',
-    value: orphan.length,
-    note: 'محتاجة إسناد',
-    tone: orphan.length ? 'warn' : 'ok',
-    to: `${ROUTES.projects}?unowned=1`,
-    icon: icons.users,
-  } as const
-
-  const tiles =
+  /* ── المؤشرات، حسب الدور ── */
+  const kpis =
     role.lens === 'own'
-      ? ([
-          {
-            key: 'mine',
-            label: 'ينتظر قرارك',
-            value: mine.length,
-            note: mine.length
-              ? `${units.project(mine.filter((p) => stagePressure(p) > 1).length, true)} منها فوق الحدّ`
-              : 'صندوقك فاضي',
-            tone: mine.some((p) => stagePressure(p) > 1) ? 'no' : 'ok',
-            to: `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`,
-            icon: icons.doc,
-          },
-          lateTile,
-          orphanTile,
-          docsTile,
-        ] as const)
+      ? [
+          { k: 'ينتظر قرارك', v: String(mine.length), note: `${mine.filter((p) => stagePressure(p) > 1).length} فوق الحدّ`, to: `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`, icon: icons.doc, alert: mine.some((p) => stagePressure(p) > 1) },
+          { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`, icon: icons.clock, alert: false },
+          { k: 'تجاوز الحدّ', v: String(late.length), note: 'في السيستم كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`, icon: icons.alert, alert: late.length > 0 },
+          { k: 'بلا مالك', v: String(orphan.length), note: 'محتاجة إسناد', to: `${ROUTES.projects}?unowned=1`, icon: icons.users, alert: false },
+        ]
       : role.lens === 'team'
-        ? ([
-            {
-              key: 'approvals',
-              label: 'ينتظر اعتمادك',
-              value: waiting.length,
-              note: 'فوق سقف المشرف',
-              tone: waiting.length ? 'no' : 'ok',
-              to: `${ROUTES.projects}?status=في الدراسة&sort=amount`,
-              icon: icons.check,
-            },
-            orphanTile,
-            lateTile,
-            docsTile,
-          ] as const)
-        : ([
-            {
-              key: 'running',
-              label: 'تحت التشغيل',
-              value: running.length,
-              note: `${nf.format(running.reduce((s, p) => s + p.amountGranted, 0))} ريال التزامًا`,
-              tone: 'ok',
-              to: `${ROUTES.projects}?status=في التشغيل`,
-              icon: icons.pay,
-            },
-            {
-              key: 'done',
-              label: 'مكتمل',
-              value: done.length,
-              note: `${nf.format(done.reduce((s, p) => s + p.beneficiaries, 0))} مستفيد`,
-              tone: 'ok',
-              to: `${ROUTES.projects}?status=مكتمل`,
-              icon: icons.check,
-            },
-            {
-              key: 'declined',
-              label: 'معتذر عنه',
-              value: declined.length,
-              note: `${Math.round((declined.length / projects.length) * 100)}% من الطلبات`,
-              tone: 'warn',
-              to: `${ROUTES.projects}?status=معتذر عنه`,
-              icon: icons.close,
-            },
-            docsTile,
-          ] as const)
+        ? [
+            { k: 'ينتظر اعتمادك', v: String(waiting.length), note: 'فوق سقف المشرف', to: `${ROUTES.projects}?status=في الدراسة&sort=amount`, icon: icons.check, alert: waiting.length > 0 },
+            { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`, icon: icons.clock, alert: false },
+            { k: 'تجاوز الحدّ', v: String(late.length), note: 'في السيستم كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`, icon: icons.alert, alert: late.length > 0 },
+            { k: 'بلا مالك', v: String(orphan.length), note: 'محتاجة إسناد', to: `${ROUTES.projects}?unowned=1`, icon: icons.users, alert: false },
+          ]
+        : [
+            { k: 'الملتزم به', v: `${(budget.committed / 1_000_000).toFixed(1)} م`, note: `${usedPct}% من المخصص`, to: ROUTES.budget, icon: icons.budget, alert: false },
+            { k: 'تحت التشغيل', v: String(groups.find((g) => g.key === 'في التشغيل')?.value ?? 0), note: 'مشروعًا جاريًا', to: `${ROUTES.projects}?status=في التشغيل`, icon: icons.pay, alert: false },
+            { k: 'المستفيدون', v: nf.format(doneBeneficiaries), note: 'من المشاريع المكتملة', to: `${ROUTES.projects}?status=مكتمل`, icon: icons.check, alert: false },
+            { k: 'جهات ملفها ناقص', v: String(shortDocs.length), note: 'الاتفاقيات بتقف عندها', to: `${ROUTES.entities}?docs=1`, icon: icons.entity, alert: shortDocs.length > 0 },
+          ]
 
   return (
-    <AppLayout assistantContext={assistFor.home(user.name, role.lens === 'own' ? mine.length : waiting.length, late.length)}
-      autoAssistant>
+    <AppLayout
+      assistantContext={assistFor.home(
+        user.name,
+        role.lens === 'own' ? mine.length : waiting.length,
+        late.length,
+      )}
+      autoAssistant
+    >
       <div className="viewstack">
         <div className="screen col">
           <nav className="crumb" aria-label="مسار التنقّل">
             <span className="now">اليوم</span>
           </nav>
 
-          {/* الترويسة بتقول رقمين بس — اللي عليك، واللي واقف.
-              الباقي تفصيل بيجي تحت. */}
           <header className="hhead">
             <div className="hhead-t">
               <h1 className="htitle">{GREET()}، {user.name.split(' ')[0]}</h1>
-              <p className="hdate">{TODAY()} · {user.role}</p>
+              <p className="hdate">{df.format(new Date())} · {user.role}</p>
             </div>
-            <p className="hline">
-              <b className="num">{tiles[0].value}</b> {tiles[0].label}
-              <i />
-              <b className={`num${late.length ? ' bad' : ''}`}>{late.length}</b> فوق حدّ القسم
-            </p>
+            <Link className="btn btn-2 btn-sm" to={ROUTES.reports}>
+              <Icon path={icons.chart} size={15} />
+              التقارير الكاملة
+            </Link>
           </header>
 
-          {/* ═══ 1 — إيه اللي عليّ؟ ═══ */}
-          {/* أول شريحة أعرض وأكبر رقمًا: الأربعة بنفس الحجم بيخلّوا
-              العين تحتار، والأولانية هي سؤال الدور الأساسي. */}
-          <div className="htiles">
-            {tiles.map((t, i) => (
-              <Link
-                key={t.key}
-                to={t.to}
-                className={`htile glass t-${t.tone}${i === 0 ? ' lead' : ''}`}
-              >
-                <span className="htile-ic"><Icon path={t.icon} size={17} /></span>
-                <span className="htile-v num">{t.value}</span>
-                <span className="htile-l">{t.label}</span>
-                <span className="htile-n">{t.note}</span>
-                <Icon path={icons.chevron} size={15} className="htile-go" />
+          {/* ═══ المؤشرات ═══ */}
+          <div className="kpis">
+            {kpis.map((t) => (
+              <Link key={t.k} to={t.to} className="kpi glass">
+                <span className="kpi-h">
+                  <span className={`kpi-ic${t.alert ? ' on' : ''}`}>
+                    <Icon path={t.icon} size={15} />
+                  </span>
+                  <span className="kpi-k">{t.k}</span>
+                  <Icon path={icons.chevron} size={14} className="kpi-go" />
+                </span>
+                <span className="kpi-v num">{t.v}</span>
+                <span className="kpi-n">{t.note}</span>
               </Link>
             ))}
           </div>
 
-          <div className="g2">
+          {/* ═══ المال ═══ */}
+          <div className="dgrid g21">
+            <Glass>
+              <Head
+                title="ميزانية 2026"
+                meta={<Link className="lnk" to={ROUTES.budget}>الشجرة كاملة</Link>}
+              />
+              <div className="bighead">
+                <b className="num">{nf.format(budget.allocated)}</b>
+                <span>ريال مخصص · <b className="num">{usedPct}%</b> محجوز أو ملتزم به</span>
+              </div>
+              <StackBar parts={budgetParts} total={budget.allocated} />
+              <Legend items={budgetParts} />
+              <p className="chnote">
+                المخصص من النظام العامل. الأربعة الباقية محسوبة من العيّنة التجريبية،
+                فنسبة الاستهلاك أقل من الواقع.
+              </p>
+            </Glass>
+
+            <Glass>
+              <Head title="الملتزم به حسب المسار" />
+              <div className="dsplit">
+                <Donut
+                  slices={trackSlices}
+                  centerValue={`${(grantedTotal / 1_000_000).toFixed(1)} م`}
+                  centerLabel="ريال ملتزم به"
+                />
+                <Legend
+                  items={trackSlices}
+                  format={(v) => `${Math.round((v / Math.max(1, grantedTotal)) * 100)}%`}
+                />
+              </div>
+            </Glass>
+          </div>
+
+          {/* ═══ الزمن والتشغيل ═══ */}
+          <div className="dgrid g111">
+            <Glass>
+              <Head
+                title="مدة المكوث في القسم"
+                meta={<span className="sub">وسيط {median(liveDays)} يومًا</span>}
+              />
+              <Columns
+                unit="يومًا"
+                cols={ageing.map((b) => ({
+                  ...b,
+                  color:
+                    b.key === '+60'
+                      ? 'var(--ch-late)'
+                      : b.key === '31–60'
+                        ? 'var(--ch-warn)'
+                        : 'var(--ch-2)',
+                }))}
+              />
+              <p className="chnote">
+                الحدود مؤقتة لحين اعتمادها — النظام يقيس المدة ولا يعرّف حدًّا لكل قسم.
+              </p>
+            </Glass>
+
+            <Glass>
+              <Head
+                title="أين تقف المشاريع"
+                meta={<span className="sub">{stages.reduce((s, x) => s + x.value, 0)} جاريًا</span>}
+              />
+              <BarList
+                labelWidth="8.5rem"
+                rows={stages.map((b) => ({ ...b, color: 'var(--ch-3)' }))}
+                format={(v) => String(v)}
+              />
+            </Glass>
+
+            <Glass>
+              <Head title="الحمل على المشرفين" meta={<span className="sub">تحت الدراسة</span>} />
+              <BarList
+                labelWidth="7rem"
+                rows={owners.map((o) => ({
+                  key: o.key,
+                  label: o.label,
+                  value: o.value,
+                  color: o.key === 'بلا مالك' ? 'var(--ch-idle)' : 'var(--ch-2)',
+                  note: `${o.medianDays} يوم`,
+                }))}
+                format={(v) => String(v)}
+              />
+              <p className="chnote">الرقم الصغير وسيط أيام المكوث عند كل مشرف.</p>
+            </Glass>
+          </div>
+
+          {/* ═══ الحصيلة والشركاء ═══ */}
+          <div className="dgrid g111">
+            <Glass>
+              <Head title="حصيلة الطلبات" meta={<span className="sub">{projects.length} طلبًا</span>} />
+              <BarList
+                labelWidth="6rem"
+                rows={groups.map((g, i) => ({
+                  ...g,
+                  color: CHART_COLORS[i % CHART_COLORS.length],
+                  note: `${Math.round((g.value / projects.length) * 100)}%`,
+                }))}
+                format={(v) => String(v)}
+              />
+            </Glass>
+
+            <Glass>
+              <Head
+                title="مبررات الاعتذار"
+                meta={<Link className="lnk" to={`${ROUTES.projects}?status=معتذر عنه`}>الكل</Link>}
+              />
+              {reasons.length ? (
+                <BarList
+                  labelWidth="10rem"
+                  rows={reasons.map((r) => ({ ...r, color: 'var(--ch-6)' }))}
+                  format={(v) => String(v)}
+                />
+              ) : (
+                <Empty title="لا اعتذارات في العيّنة." />
+              )}
+            </Glass>
+
+            <Glass>
+              <Head title="جاهزية الشركاء" meta={<Link className="lnk" to={ROUTES.entities}>الجهات</Link>} />
+              <BarList
+                labelWidth="8.5rem"
+                format={(v) => String(v)}
+                rows={[
+                  { key: 'ready', label: 'مفعّلة وملفها كامل', value: health.ready, color: 'var(--ch-2)' },
+                  { key: 'incomplete', label: 'ملفها ناقص', value: health.incomplete, color: 'var(--ch-warn)' },
+                  { key: 'held', label: 'معلّقة', value: health.held, color: 'var(--ch-6)' },
+                  { key: 'stalled', label: 'لها مشروع متعثر', value: health.stalled, color: 'var(--ch-late)' },
+                ]}
+              />
+              <p className="chnote">
+                من {entities.length} جهة في هذا النموذج · 3,272 في النظام العامل.
+              </p>
+            </Glass>
+          </div>
+
+          {/* ═══ الجغرافيا وأعلى الشركاء ═══ */}
+          <div className="dgrid g11">
+            <Glass>
+              <Head title="التوزيع الجغرافي" meta={<span className="sub">أعلى ست مناطق</span>} />
+              <BarList
+                labelWidth="8rem"
+                rows={regions.map((r) => ({ ...r, color: 'var(--ch-3)' }))}
+                format={(v) => String(v)}
+              />
+            </Glass>
+
+            <Glass>
+              <Head
+                title="أعلى الجهات دعمًا"
+                meta={<Link className="lnk" to={`${ROUTES.entities}?sort=granted`}>الكل</Link>}
+              />
+              <BarList
+                labelWidth="11rem"
+                rows={partners.map((p) => ({ ...p, color: 'var(--ch-2)' }))}
+              />
+            </Glass>
+          </div>
+
+          {/* ═══ القراءة والصفوف ═══ */}
+          <div className="dgrid g11">
             <div className="col">
-              {/* ═══ 3 — أبدأ بإيه؟ ═══ */}
+              <QuickRead
+                readings={readings}
+                title="قراءة سريعة للسيستم"
+                onAsk={() =>
+                  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))
+                }
+              />
+            </div>
+
+            <div className="col">
               <Glass>
                 <Head
                   title={role.lens === 'own' ? 'طابور قرارك' : 'ينتظر اعتمادك'}
@@ -255,33 +363,26 @@ export default function HomePage() {
                   <Empty title="مفيش مشروع منتظر قرارك." note="كل اللي عندك اتحرّك." />
                 ) : (
                   <div className="qrows">
-                    {queue.map((p) => {
-                      const over = stagePressure(p) > 1
-                      return (
-                        <Link key={p.id} to={ROUTES.project(p.id)} className="qrow well">
-                          <div className="qrow-h">
-                            <Mono>{p.id}</Mono>
-                            <Tag tone={groupTone(p.statusGroup)}>{p.stage}</Tag>
-                            <span className="pc-sp" />
-                            <span className="num">{nf.format(p.amountRequested)} <Riyal /></span>
-                          </div>
-                          <div className="qrow-n">{p.name}</div>
-                          <div className="sub qrow-f">
-                            {p.entityName} ·{' '}
-                            <span className={over ? 'over' : ''}>
-                              <span className="num">{days(p.hoursInStage)}</span> يومًا في القسم
-                            </span>
-                            {' · '}وزن <span className="num">{p.weight}</span>
-                          </div>
-                        </Link>
-                      )
-                    })}
+                    {queue.map((p) => (
+                      <Link key={p.id} to={ROUTES.project(p.id)} className="qrow well">
+                        <div className="qrow-h">
+                          <Mono>{p.id}</Mono>
+                          <span className="sub">{p.stage}</span>
+                          <span className="pc-sp" />
+                          <span className="num">{nf.format(p.amountRequested)} <Riyal /></span>
+                        </div>
+                        <div className="qrow-n">{p.name}</div>
+                        <div className="sub qrow-f">
+                          {p.entityName} · <span className="num">{days(p.hoursInStage)}</span> يومًا في القسم
+                          {stagePressure(p) > 1 && <span className="tag no mini">متأخر</span>}
+                        </div>
+                      </Link>
+                    ))}
                   </div>
                 )}
               </Glass>
 
-              {/* ما يحتاج انتباه — على مستوى السيستم لا صندوقك */}
-              <Glass className={attention.length ? 'alertcard' : undefined}>
+              <Glass>
                 <Head
                   title="ما يحتاج انتباه"
                   meta={<Link className="lnk" to={`${ROUTES.projects}?overdue=1&sort=waiting`}>الكل</Link>}
@@ -296,98 +397,16 @@ export default function HomePage() {
                           <Mono>{p.id}</Mono>
                           <span className="sub">{p.stage}</span>
                           <span className="pc-sp" />
-                          <span className="over">
-                            <span className="num">
-                              +{days(p.hoursInStage - p.stageLimit)}
-                            </span>{' '}
-                            يومًا فوق الحدّ
+                          <span className="tag no mini">
+                            <span className="num">{days(p.hoursInStage - p.stageLimit)}</span> يومًا فوق الحدّ
                           </span>
                         </div>
                         <div className="qrow-n">{p.name}</div>
-                        <div className="sub qrow-f">
-                          {p.entityName} · {p.owner ?? 'بلا مالك'}
-                        </div>
+                        <div className="sub qrow-f">{p.entityName} · {p.owner ?? 'بلا مالك'}</div>
                       </Link>
                     ))}
                   </div>
                 )}
-              </Glass>
-            </div>
-
-            {/* ═══ 2 و4 — القراءة العرضية، وبعدها المالي والتشغيلي ═══ */}
-            <div className="col">
-              <QuickRead
-                readings={readings}
-                title="قراءة سريعة للسيستم"
-                onAsk={() =>
-                  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))
-                }
-              />
-
-              <Glass>
-                <Head
-                  title="ميزانية 2026"
-                  meta={<Link className="lnk" to={ROUTES.budget}>التفاصيل</Link>}
-                />
-                <div className="bsplit">
-                  <div
-                    className="bsplit-r"
-                    style={{ width: `${(budget.reserved / budget.allocated) * 100}%` }}
-                    title="محجوز"
-                  />
-                  <div
-                    className="bsplit-c"
-                    style={{ width: `${(budget.committed / budget.allocated) * 100}%` }}
-                    title="ملتزم به"
-                  />
-                  <div
-                    className="bsplit-s"
-                    style={{ width: `${(budget.spent / budget.allocated) * 100}%` }}
-                    title="مصروف"
-                  />
-                </div>
-                <dl className="blist">
-                  {([
-                    ['المخصص', budget.allocated, ''],
-                    ['المحجوز', budget.reserved, 'r'],
-                    ['الملتزم به', budget.committed, 'c'],
-                    ['المصروف', budget.spent, 's'],
-                    ['المتبقّي', budget.remaining, ''],
-                  ] as [string, number, string][]).map(([k, val, cls]) => (
-                    <div key={k}>
-                      <dt>{cls && <i className={`bdot b-${cls}`} />}{k}</dt>
-                      <dd className="num">{nf.format(val)} <Riyal /></dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="sub" style={{ marginTop: '.7rem' }}>
-                  المخصص من النظام العامل. الأربعة الباقية محسوبة من العيّنة التجريبية،
-                  فنسبة الاستهلاك أقل من الواقع.
-                </p>
-              </Glass>
-
-              <Glass>
-                <Head title="أين تقف المشاريع" meta={<span className="sub">{projects.length}</span>} />
-                <div className="gbars">
-                  {byGroup.map((g) => (
-                    <Link
-                      key={g.group}
-                      className="gbar"
-                      to={`${ROUTES.projects}?status=${encodeURIComponent(g.group)}`}
-                    >
-                      <span className="gbar-l">{g.group}</span>
-                      <span className="gbar-t">
-                        <i
-                          style={{
-                            width: `${(g.count / maxGroup) * 100}%`,
-                            background: `var(--tone-${groupTone(g.group)})`,
-                          }}
-                        />
-                      </span>
-                      <span className="gbar-n num">{g.count}</span>
-                    </Link>
-                  ))}
-                </div>
               </Glass>
             </div>
           </div>

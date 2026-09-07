@@ -164,14 +164,16 @@ function ReadingBlock({
         </div>
       )}
 
-      {r.metric && (
-        <div className="qr-metric">
-          <b className="num">{r.metric.value}</b>
-          <span>{r.metric.unit}</span>
-        </div>
-      )}
-
+      {/* الرقم في أول السطر لا فوقه: الرقم الضخم كان بياخد وزنًا
+          أكبر من الجملة نفسها، والصفحة كانت بتمتلي أرقامًا حمرا. */}
       <div className="qr-tx">
+        {r.metric && (
+          <>
+            <b className="qr-lead num">{r.metric.value}</b>
+            <span className="qr-unit">{r.metric.unit}</span>
+            {' — '}
+          </>
+        )}
         {body}
         {typing && <span className="caret" />}
       </div>
