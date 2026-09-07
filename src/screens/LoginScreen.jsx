@@ -94,7 +94,7 @@ export default function LoginScreen({ onDone }) {
                 <a className="llink">نسيت كلمة المرور؟</a>
               </div>
 
-              <button className={`lgo${busy ? ' busy' : ''}`} type="submit" disabled={busy}>
+              <button className="btn btn-3 btn-full" type="submit" disabled={busy}>
                 {busy ? 'جارٍ التحقق…' : 'تسجيل الدخول'}
               </button>
             </form>
@@ -106,10 +106,7 @@ export default function LoginScreen({ onDone }) {
           {step === 'creds' && (
             <div className="lalt">
               <span className="lsep"><i /><b>أو</b><i /></span>
-              <button className="lreg" type="button">
-                <Icon path={icons.entity} size={17} />
-                تسجيل جهة جديدة
-              </button>
+              <button className="btn btn-2 btn-full" type="button">تسجيل جهة جديدة</button>
               <p className="lnote sub">للجمعيات والمؤسسات التي لم تسجّل في المنصة بعد</p>
             </div>
           )}
@@ -182,7 +179,7 @@ function Otp({ onBack, onDone }) {
         <button type="button" className="llink">إعادة الإرسال</button>
       </div>
 
-      <button className="lgo" type="submit" disabled={!full}>تأكيد الدخول</button>
+      <button className="btn btn-3 btn-full" type="submit" disabled={!full}>تأكيد الدخول</button>
     </form>
   )
 }
