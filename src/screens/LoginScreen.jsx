@@ -42,7 +42,7 @@ export default function LoginScreen({ onDone }) {
       <span className="login-grain grain" aria-hidden="true" />
 
       <main className="login-mid">
-        <div className="lcard chrome">
+        <div className="lcard glass">
           <div className="lhead">
             <span className="lmark"><Logo /></span>
             <h1 className="ltitle">منح أبانمي</h1>

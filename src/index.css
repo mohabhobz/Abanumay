@@ -1232,7 +1232,8 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .cbox-b .go{margin-inline-start:auto}
 .cbox .go{width:34px;height:34px}
 .cbox .go:disabled{opacity:.35;cursor:default}
-.go.stop{background:var(--no)}
+/* الإيقاف مش خطر — رمادي غامق، والأحمر يفضل للرفض والحذف */
+.go.stop{background:#2B3A3A}
 .go.stop .sq{width:10px;height:10px;border-radius:2px;background:#fff;display:block}
 .cdisc{text-align:center;margin-top:.5rem;font-size:.68rem}
 
@@ -1291,26 +1292,25 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:1.1rem;padding:clamp(1.2rem,4vh,2.4rem) 1.2rem}
 
+/* نفس زجاج كروت الداخل (var(--g-card)) — فوقه ظل خارجي أعمق بس،
+   لأنه واقف على فيديو مش على خلفية هادية */
 .lcard{width:min(404px,100%);padding:clamp(1.5rem,3.4vw,2.1rem);
   border-radius:var(--r4);
-  background:linear-gradient(168deg,rgba(255,255,255,.90),rgba(255,255,255,.80));
-  -webkit-backdrop-filter:blur(30px) saturate(1.5);backdrop-filter:blur(30px) saturate(1.5);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),
-             inset 0 1px 0 rgba(255,255,255,.8),
-             0 30px 70px rgba(10,40,40,.30);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair)),
+             0 30px 70px rgba(10,40,40,.28);
   animation:airise .55s cubic-bezier(.22,.9,.3,1) both}
 
 .lhead{text-align:center;margin-bottom:1.35rem}
 .lmark{display:block;width:66px;height:66px;margin:0 auto .75rem}
 .lmark svg{width:100%;height:100%;display:block}
 .ltitle{font-size:1.32rem;letter-spacing:-.02em;margin:0}
-.lsub{font-size:.79rem;color:var(--t3);margin:.3rem 0 0;line-height:1.6}
+.lsub{font-size:.79rem;color:var(--t2);margin:.3rem 0 0;line-height:1.6}
 
 .lform{display:flex;flex-direction:column;gap:.75rem}
 .lfield{display:flex;flex-direction:column;gap:.32rem}
 .llbl{font-size:.75rem;color:var(--t2);font-family:var(--fd);font-weight:500}
 .lbox{display:flex;align-items:center;gap:.55rem;padding:.05rem .75rem;
-  height:46px;border-radius:var(--r2);background:rgba(255,255,255,.72);
+  height:46px;border-radius:var(--r2);background:rgba(255,255,255,.55);
   color:var(--t3);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6));
   transition:box-shadow .18s ease,background .18s ease}
@@ -1344,7 +1344,7 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .lsep{display:flex;align-items:center;gap:.7rem;margin-bottom:.9rem}
 .lsep i{flex:1;height:1px;background:rgba(var(--edgeC),.14)}
 .lsep b{font-size:.72rem;color:var(--t3);font-weight:500}
-.lnote{display:block;text-align:center;font-size:.71rem;margin-top:.55rem;line-height:1.6}
+.lnote{display:block;text-align:center;font-size:.71rem;color:var(--t2);margin-top:.55rem;line-height:1.6}
 
 .lfoot{font-size:.72rem;color:rgba(255,255,255,.72);text-shadow:0 1px 3px rgba(10,40,40,.5)}
 
@@ -1352,7 +1352,7 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .lotp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;margin:.4rem 0 .2rem}
 /* min-width:0 لازم — عرض الـinput الافتراضي بيوسّع خلية الجريد وبيطلّع الكارت */
 .lotp input{width:100%;min-width:0;height:60px;border:0;outline:none;text-align:center;
-  border-radius:var(--r2);background:rgba(255,255,255,.72);
+  border-radius:var(--r2);background:rgba(255,255,255,.55);
   font-family:var(--fm);font-size:1.5rem;color:var(--t1);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6));
   transition:box-shadow .18s ease,background .18s ease}
