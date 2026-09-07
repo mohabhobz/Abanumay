@@ -1092,7 +1092,9 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 /* الترحيب: البلوك كله في السنتر، والشرارة على اليمين بلا دايرة */
 .welcome{width:100%;max-width:760px;margin:0 auto;padding:clamp(1rem,5vh,3.2rem) 0 1rem;
   display:flex;flex-direction:column;align-items:center;text-align:start}
-.whead{display:flex;align-items:center;gap:.95rem}
+/* الترحيب على أول السطر (يمين في RTL) مش في النص — الكتابة والكروت
+   تحته بعرض كامل، فتوسيطه كان بيكسر محاذاة العمود */
+.whead{align-self:flex-start;display:flex;align-items:center;gap:.95rem}
 .wtext{min-width:0}
 .wspark{flex:none;display:grid;place-items:center}
 .wspark .aispark{width:52px;height:52px}
