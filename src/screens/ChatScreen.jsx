@@ -296,6 +296,9 @@ function Welcome({ me, onPick, composer }) {
         </div>
       </div>
 
+      {composer}
+
+      {/* الاختصارات تحت مربع الكتابة — الكتابة هي المدخل، ودي مجرد طرق سريعة */}
       <div className="wcards">
         {me.cards.map((c, i) => (
           <button className="wcard glass" key={c.title} style={{ '--d': `${i * 70}ms` }} onClick={() => onPick(c.prompt)}>
@@ -305,8 +308,6 @@ function Welcome({ me, onPick, composer }) {
           </button>
         ))}
       </div>
-
-      {composer}
     </div>
   )
 }

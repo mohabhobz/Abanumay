@@ -647,9 +647,9 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .ahead{display:flex;align-items:center;gap:.25rem;padding:1rem 1.15rem .9rem;
   box-shadow:inset 0 -1px 0 rgba(var(--edgeC),var(--edge-hair))}
 .ahead>.badge{margin-inline-end:.45rem}
-.atitle{font-family:var(--fd);font-weight:600;font-size:.98rem;
+.atitle{font-family:var(--fd);font-weight:600;font-size:.98rem;line-height:1.35;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ahead .sub{font-size:.72rem;margin-top:.1rem;
+.ahead .sub{font-size:.72rem;line-height:1.35;margin-top:4px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .aclose{width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;
   color:var(--t3);transition:color .16s ease,background .16s ease}
@@ -1035,17 +1035,18 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
   animation:airise .5s cubic-bezier(.22,.9,.3,1) both}
 .wsub{font-size:clamp(.95rem,1.8vw,1.1rem);color:var(--t2);margin:.25rem 0 0;font-family:var(--fd);
   animation:airise .5s cubic-bezier(.22,.9,.3,1) .08s both}
-.wcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;
-  width:100%;margin-top:1.9rem;margin-bottom:1.5rem}
+/* الكروت تحت مربع الكتابة — الكتابة هي المدخل الأساسي والكروت اختصارات */
+.wcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;
+  width:100%;margin-top:1.1rem}
 .wcard{display:flex;flex-direction:column;align-items:flex-start;gap:.15rem;
-  padding:1rem;text-align:start;cursor:pointer;
+  padding:.85rem;text-align:start;cursor:pointer;
   transition:transform .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease;
   animation:airise .45s cubic-bezier(.22,.9,.3,1) both;animation-delay:calc(var(--d,0ms) + 160ms)}
 .wcard:hover{transform:translateY(-2px);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2)),0 10px 24px rgba(20,69,71,.09)}
-.wcard .badge{margin-bottom:.55rem}
-.wc-t{font-family:var(--fd);font-weight:600;font-size:.88rem;line-height:1.45}
-.wc-s{font-size:.75rem;color:var(--t3);line-height:1.5}
+.wcard .badge{margin-bottom:.5rem}
+.wc-t{font-family:var(--fd);font-weight:600;font-size:.85rem;line-height:1.45}
+.wc-s{font-size:.68rem;color:var(--t3);line-height:1.5}
 
 /* ── الرسائل ── */
 .cmsg{animation:airise .34s cubic-bezier(.22,.9,.3,1) both}
@@ -1116,6 +1117,7 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 /* ── الكتابة ── */
 /* في الترحيب بيقعد في مجرى الصفحة تحت الكروت */
 .composer{flex:none;padding:0;position:relative;z-index:5;width:100%}
+.welcome>.composer{margin-top:1.9rem}
 
 /* بعد أول سؤال بينزل تحت كطبقة عايمة — نفس منطق شريط القرار:
    تدرّج بلور بيذوّب المحتوى وهو مارّ تحته، وتفاعل قبل ما توصله. */
@@ -1175,7 +1177,7 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
   .chat-top .sub{display:none}
   .chat-top .atitle{font-size:.9rem}
   .chat-body{padding:1rem .9rem .5rem}
-  .wcards{grid-template-columns:1fr}
+  .wcards{grid-template-columns:repeat(2,minmax(0,1fr))}
   .welcome{padding-top:1.4rem}
   .whead{gap:.7rem}
   .wspark .aispark{width:38px;height:38px}
