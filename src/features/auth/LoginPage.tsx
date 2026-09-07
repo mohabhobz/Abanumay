@@ -22,10 +22,16 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
+  /** يعرض الخطأ كتوست ويخفيه لوحده — الرسالة تنبيه مش حالة دائمة */
+  const fail = (message: string) => {
+    setErr(message)
+    setTimeout(() => setErr(''), 4000)
+  }
+
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!user.trim() || !pass) {
-      setErr('اكتب اسم المستخدم وكلمة المرور')
+      fail('اكتب اسم المستخدم وكلمة المرور')
       return
     }
     setErr('')
@@ -41,6 +47,14 @@ export default function LoginPage() {
 
       <main className="login-mid">
         <div className="lcard glass">
+          {/* توست: بيطفو فوق الفورم وما يزقّش أي حاجة، وبيختفي لوحده */}
+          {err && (
+            <div className="ltoast" role="alert">
+              <Icon path={icons.alert} size={16} />
+              <span>{err}</span>
+            </div>
+          )}
+
           <div className="lhead">
             <span className="lmark"><Logo /></span>
             <h1 className="ltitle">منح أبانمي</h1>
@@ -77,8 +91,6 @@ export default function LoginPage() {
               }
             />
 
-            {err && <div className="lerr">{err}</div>}
-
             <div className="lrow">
               <label className="lcheck">
                 <input type="checkbox" />
@@ -94,7 +106,6 @@ export default function LoginPage() {
 
           {/* مسار مختلف تمامًا، فشكله جوست — مش قرار تاني منافس للدخول */}
           <div className="lalt">
-            <span className="lsep"><i /><b>أو</b><i /></span>
             <button className="btn btn-ghost btn-full" type="button">تسجيل جهة جديدة</button>
             <p className="lnote sub">للجمعيات والمؤسسات التي لم تسجّل في المنصة بعد</p>
           </div>
