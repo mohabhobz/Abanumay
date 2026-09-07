@@ -366,7 +366,8 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    العنصر فيبان كإطار مفتوح، والمسافة كافية إن العين تقرا الكتل */
 .rail .railitem.newgroup{margin-top:.85rem}
 .railfoot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:.6rem}
-.screen{flex:1;min-height:0;overflow:auto;padding:clamp(1.6rem,3vw,2.6rem) clamp(1.4rem,3vw,2.6rem) clamp(1.2rem,2.6vw,2.2rem);
+.screen{--padt:clamp(1.6rem,3vw,2.6rem);
+  flex:1;min-height:0;overflow:auto;padding:var(--padt) clamp(1.4rem,3vw,2.6rem) clamp(1.2rem,2.6vw,2.2rem);
   scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.22) transparent}
 .screen::-webkit-scrollbar{width:9px}
 .screen::-webkit-scrollbar-thumb{background:rgba(var(--edgeC),.18);border-radius:99px}
@@ -1940,9 +1941,58 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   background:var(--no);margin-inline-start:.35rem;vertical-align:.08em;flex:none}
 .pc-over{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
 
-/* ═══ الصف الأول من اللوحة ═══
-   الخريطة عمود طويل على اليمين، وجنبها المال والزمن. المقاس مضبوط
-   عشان الأربعة يدخلوا في أول شاشة من غير تمرير على 1440×900. */
+/* ═══ الطيّة الأولى ═══
+   المطلوب إن أول شاشة تتقري كاملة من غير تمرير. القياس المعتاد
+   (كل كارت بياخد ارتفاعه الطبيعي) ما بيوصلش لده: مجموع الارتفاعات
+   بيطلع أطول من الشاشة على أي مقاس. فالقيد هنا **الارتفاع**:
+   الطيّة بتاخد طول الشاشة بالظبط، الترويسة والمؤشرات بياخدوا
+   ارتفاعهم الطبيعي، والشبكة بتاخد الباقي وتقسّمه على كروتها. */
+.fold{display:flex;flex-direction:column;gap:var(--gap)}
+
+@media (min-width:1181px) and (min-height:660px){
+  /* ‎.6rem مساحة صغيرة تحت الطيّة تلمّح إن في محتوى تحت، من غير
+     ما تاكل من ارتفاعها */
+  .fold{min-height:calc(100dvh - var(--padt) - .6rem)}
+  /* min-height:0 على السلسلة كلها: عنصر شبكة أو فليكس بيرفض
+     يصغر عن محتواه من غيرها، فالتقلّص ما بيوصلش للخريطة */
+  .fold .dtop{flex:1;min-height:0;grid-template-rows:minmax(0,auto) minmax(0,1fr)}
+  .fold .dtop>*{min-height:0}
+  /* الترويسة بتصغّر شوية عشان تسيب ارتفاع للرسوم — الرسم هو
+     اللي بيتقري، والتحية مش محتاجة تاخد سطر ونص */
+  .fold .htitle{font-size:clamp(1.5rem,2.4vw,1.9rem)}
+  .fold .hdate{margin-top:.25rem}
+  .fold .kpi{padding:.8rem 1rem .85rem}
+  .fold .kpi-h{margin-bottom:.4rem}
+  .fold .kpi-v{font-size:clamp(1.55rem,2.3vw,1.95rem)}
+
+  /* الرسوم اللي ارتفاعها مكتوب بالإيد لازم تتنازل عنه هنا، وإلا
+     بتفضل بطولها وتتقصّ من تحت بدل ما تصغر */
+  .fold .d-age{display:flex;flex-direction:column}
+  .fold .d-age .chcols{flex:1;height:auto;min-height:104px;margin-top:.75rem}
+  /* أربع بنود الميزانية على عمودين: بتوفّر سطرين من ارتفاع الصف
+     الأول، والصف التاني هو اللي محتاجهم */
+  .fold .d-budget .chleg{display:grid;grid-template-columns:1fr 1fr;
+    column-gap:1.6rem;row-gap:.4rem}
+  /* الحلقة مقاسها جاي كخاصية من المكوّن؛ هنا الارتفاع المتاح هو
+     اللي بيحكم، والنص في الجوف بيصغر معاها */
+  .fold .d-track{display:flex;flex-direction:column;justify-content:center}
+  .fold .d-track .dsplit{flex:1;min-height:0;flex-wrap:nowrap}
+  .fold .d-track .chdonut{min-height:0;align-self:stretch}
+  .fold .d-track .chdonut svg{height:100%;width:auto;max-height:124px;min-height:92px}
+  @media (max-height:820px){
+    .fold .d-track .chdonut-c b{font-size:1rem}
+    .fold .d-track .chdonut-c span{font-size:.62rem}
+  }
+
+  /* الخريطة: الخانة بتاخد الباقي، وعرض الرسم بيتحسب من ارتفاع
+     الخانة بوحدات الحاوية — فالنسبة تفضل مضبوطة سواء العرض هو
+     القيد أو الارتفاع. من غير كده الرسم بيدفع شرائح الترتيب تحته
+     برّه الكارت. */
+  .fold .map-slot{flex:1;min-height:0;container-type:size}
+  .fold .map-c{width:min(100%, calc(100cqh * 1000 / 826))}
+}
+
+/* الخريطة عمود طويل على اليمين، وجنبها المال والزمن. */
 .dtop{display:grid;gap:var(--gap);
   grid-template-columns:1.45fr 1fr 1fr;
   grid-template-areas:"map budget budget" "map track age"}
@@ -1964,10 +2014,12 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
    الخريطة بتوريها في نظرة: الدعم متكوّم في الوسط والشرق. */
 /* الكارت بيمتد على صفّين في الشبكة، فالخريطة بتاخد الارتفاع كله
    والرسم بيتوسّط جوّاه — من غير كده بيفضل نص الكارت فاضي. */
-.d-map{display:flex;flex-direction:column}
-.map{display:flex;flex-direction:column;gap:.85rem;margin-top:.6rem;flex:1;justify-content:center}
+.d-map{display:flex;flex-direction:column;min-height:0}
+.map{display:flex;flex-direction:column;gap:.85rem;margin-top:.6rem;flex:1;min-height:0;
+  justify-content:center;align-items:center}
 /* نسبة الحاوية = نسبة الـviewBox بالظبط، فمفيش هوامش فاضية جنب
    الرسم — ولا انزياح في تموضع التلميح المحسوب بالنسبة المئوية */
+.map-slot{width:100%;min-width:0;display:grid;place-items:center}
 .map-c{position:relative;width:100%;aspect-ratio:1000 / 826;min-width:0}
 .map-svg{width:100%;height:100%;display:block;overflow:visible}
 

@@ -138,6 +138,11 @@ export default function HomePage() {
     >
       <div className="viewstack">
         <div className="screen col">
+          {/* ═══ الطيّة الأولى ═══
+              كل ده بيتقفل في شاشة واحدة بلا تمرير: الترويسة والمؤشرات
+              والخريطة والمال والزمن. الارتفاع هو القيد هنا لا العرض،
+              فالشبكة بتاخد الباقي والخريطة بتتقلّص جوّاه بنسبتها. */}
+          <section className="fold">
           <nav className="crumb" aria-label="مسار التنقّل">
             <span className="now">اليوم</span>
           </nav>
@@ -221,10 +226,11 @@ export default function HomePage() {
             <Glass className="d-age">
               <Head
                 title="مدة المكوث في القسم"
-                meta={<span className="sub">وسيط {median(liveDays)} يومًا</span>}
+                meta={<span className="sub">وسيط {median(liveDays)} يومًا · بالأيام</span>}
               />
+              {/* الوحدة في الترويسة لا عايمة تحت: على كارت ضيّق كانت
+                  بتركب على تسمية آخر عمود */}
               <Columns
-                unit="يومًا"
                 cols={ageing.map((b) => ({
                   ...b,
                   color:
@@ -237,6 +243,7 @@ export default function HomePage() {
               />
             </Glass>
           </div>
+          </section>
 
           {/* ═══ التشغيل ═══ */}
           <div className="dgrid g11">

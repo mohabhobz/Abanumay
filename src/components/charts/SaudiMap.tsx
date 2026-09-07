@@ -58,6 +58,10 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
 
   return (
     <div className="map">
+      {/* الخانة بتاخد الارتفاع المتاح، والرسم جوّاها بيفضل بنسبته
+          مضبوطة — والتلميح متموضع بالنسبة المئوية من الـviewBox،
+          فأي اختلاف في النسبة كان هيزحلقه عن مكانه */}
+      <div className="map-slot">
       <div className="map-c">
         <svg
           viewBox={`0 0 ${SAUDI_VIEW.w} ${SAUDI_VIEW.h}`}
@@ -124,6 +128,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
             {activeVal.note && <span className="map-tip-n">{activeVal.note}</span>}
           </div>
         )}
+      </div>
       </div>
 
       <div className="map-foot">
