@@ -39,6 +39,15 @@ export const icons = {
   up: '<path d="M7 20v-8l4-7a2 2 0 013 2l-1 5h5a2 2 0 012 2.4l-1.2 5A2 2 0 0117 21H7z"/>',
   downv: '<path d="M17 4v8l-4 7a2 2 0 01-3-2l1-5H6a2 2 0 01-2-2.4l1.2-5A2 2 0 017 3h10z"/>',
   grip: '<circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>',
+  chevronDown: '<path d="M6 9.5l6 6 6-6"/>',
+  chevronUp: '<path d="M6 14.5l6-6 6 6"/>',
+  grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+  rows: '<rect x="4" y="5" width="16" height="4" rx="1.5"/><rect x="4" y="11" width="16" height="4" rx="1.5"/><rect x="4" y="17" width="16" height="2.5" rx="1.2"/>',
+  filter: '<path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/>',
+  clock: '<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',
+  pinMap: '<path d="M12 21s6-5.2 6-9.6A6 6 0 0 0 6 11.4C6 15.8 12 21 12 21z"/><circle cx="12" cy="11" r="2.2"/>',
+  users: '<circle cx="9" cy="8" r="3"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 5.5a3 3 0 0 1 0 5.6"/><path d="M17.5 14c2 .7 3.5 2.3 3.5 5"/>',
+  link: '<path d="M10 13a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5"/><path d="M14 11a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5L12.5 17.5"/>',
 } as const
 
 export type IconName = keyof typeof icons

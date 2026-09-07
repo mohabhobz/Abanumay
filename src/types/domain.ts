@@ -331,3 +331,78 @@ export interface Insight {
   bold: string[]
   src: string
 }
+
+// ═══════════════════ صفوف القوائم ═══════════════════
+
+/**
+ * صف في قائمة المشاريع — العمود الفقري من ١٢ حقلًا.
+ * جدول النظام فيه ٦٢ عمودًا؛ الباقي يعيش في صفحة المشروع.
+ */
+export interface ProjectRow {
+  id: string
+  name: string
+  entityId: string
+  entityName: string
+  track: string
+  field: string
+  goal: string
+  region: string
+  city: string
+  /** القسم الإجرائي الفعلي، مش المجموعة */
+  stage: string
+  statusGroup: ProjectStatusGroup
+  /** ساعات المكوث في القسم الحالي */
+  hoursInStage: number
+  /** حدّ القسم بالساعات — مؤقت لحين تأكيده */
+  stageLimit: number
+  amountRequested: number
+  amountGranted: number
+  amountSpent: number
+  weight: number
+  score: number
+  /** null = مشروع بلا مالك، وده ربع النظام */
+  owner: string | null
+  year: string
+  funding: FundingSource
+  tags: string[]
+  grantMethod: GrantMethod
+  shared: boolean
+  impact: boolean
+  supportStatus: 'معتمد' | 'مرفوض' | null
+  declineReason?: DeclineReason
+  submittedAt: string
+  decidedAt?: string
+  durationDays: number
+  beneficiaries: number
+  hasInterimReport: boolean
+  hasFinalReport: boolean
+  hasKnowledgeProduct: boolean
+  fieldVisit: boolean
+}
+
+/** صف في قائمة الجهات — التعريف + الأداء التراكمي */
+export interface EntityRow {
+  id: string
+  name: string
+  licenseNo: string
+  type: string
+  licensor: string
+  region: string
+  city: string
+  registeredAt: string
+  activation: EntityActivation
+  /** «لم تُقيَّم» لو ملف الجهة ناقص */
+  governance: string
+  /** عدد المستندات المرفوعة من ٨ */
+  docsUploaded: number
+  projectsApproved: number
+  projectsRunning: number
+  projectsDeclined: number
+  projectsStalled: number
+  projectsCompleted: number
+  grantedThisYear: number
+  grantedTotal: number
+  inDisbursement: number
+  mobile: string
+  email: string
+}

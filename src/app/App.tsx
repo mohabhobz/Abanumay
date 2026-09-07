@@ -1,13 +1,12 @@
 import { Navigate, Route, BrowserRouter, Routes } from 'react-router-dom'
 import LoginPage from '@/features/auth/LoginPage'
 import ProjectPage from '@/features/projects/ProjectPage'
+import ProjectsListPage from '@/features/projects/list/ProjectsListPage'
+import EntitiesListPage from '@/features/entities/EntitiesListPage'
+import EntityPage from '@/features/entities/EntityPage'
 import AssistantPage from '@/features/assistant/AssistantPage'
 import { ModulePlaceholder } from '@/features/shared/ModulePlaceholder'
 import { DEFAULT_PROJECT_TAB, ROUTES } from './routes'
-import { fixtures } from '@/data/repository'
-
-/** المشروع اللي البروتوتايب بيعرضه لحد ما تبقى في قائمة حقيقية */
-const DEMO_PROJECT = fixtures.project.id
 
 /**
  * خريطة الشاشات.
@@ -21,57 +20,30 @@ export default function App() {
       <Routes>
         <Route path={ROUTES.login} element={<LoginPage />} />
 
-        {/* الرئيسية لسه ما اتبنتش — بتوجّه لصفحة المشروع كعرض */}
+        {/* صندوقي لسه ما اتبناش — بيوجّه لقائمة المشاريع كعرض */}
         <Route
           path={ROUTES.home}
           element={
             <ModulePlaceholder
-              title="الرئيسية"
+              title="صندوقي"
               scope="شريط قرار: ما ينتظر قرارك والمتأخر منه · المالي بخمس قيم (مخصص · محجوز · ملتزم به · مصروف · متبقٍ) · التشغيلي: تحت التنفيذ ونسب الإنجاز ودفعات الشهر · ما يحتاج انتباه: مشاريع متأخرة وبنود استنفدت مخصصاتها ومستندات جهات منتهية."
               facts={[
                 { k: 'في الدراسة الآن', v: '٢٩' },
                 { k: 'وسيط مدة المشرف', v: '٢٢ يوم' },
                 { k: 'مشاريع بلا مالك', v: '١٬٢٥٣' },
               ]}
-              demoTo={{ label: 'افتح مشروع ٢٠٩٤٠', to: `${ROUTES.projects}/${DEMO_PROJECT}` }}
+              demoTo={{ label: 'افتح قائمة المشاريع', to: ROUTES.projects }}
             />
           }
         />
 
-        <Route
-          path={ROUTES.projects}
-          element={
-            <ModulePlaceholder
-              title="المشاريع"
-              scope="قائمة بعمود فقري من ١٢ حقلًا بدل ٦٢، والحالة هي القسم الإجرائي الفعلي لا المجموعة، ومعها مدة المكوث في القسم. الفلاتر الأربعتاشر مطوية خلف طبقات."
-              facts={[
-                { k: 'مشروع في النظام', v: '٤٬٩٢٩' },
-                { k: 'أعمدة الجدول الحالي', v: '٦٢' },
-                { k: 'حالات معروضة اليوم', v: '٥ من ٥٠' },
-              ]}
-              demoTo={{ label: 'افتح مشروع ٢٠٩٤٠', to: `${ROUTES.projects}/${DEMO_PROJECT}` }}
-            />
-          }
-        />
+        <Route path={ROUTES.projects} element={<ProjectsListPage />} />
 
         <Route path={`${ROUTES.projects}/:id`} element={<ProjectPage />} />
         <Route path={`${ROUTES.projects}/:id/:tab`} element={<ProjectPage />} />
 
-        <Route
-          path={ROUTES.entities}
-          element={
-            <ModulePlaceholder
-              title="الجهات"
-              scope="ست قوائم في النظام الحالي بنفس الستة عشر عمودًا و٢٠٠ صف في الصفحة. البديل: كارت جهة فيه سجلها وأداؤها ومستنداتها الناقصة ودرجة حوكمتها."
-              facts={[
-                { k: 'جهة مسجلة', v: '٣٬٢٧٢' },
-                { k: 'معلقة', v: '٨٩٣' },
-                { k: 'أعمدة في الصفحة', v: '١٦ × ٢٠٠ صف' },
-              ]}
-            />
-          }
-        />
-        <Route path={`${ROUTES.entities}/:id`} element={<Navigate to={ROUTES.entities} replace />} />
+        <Route path={ROUTES.entities} element={<EntitiesListPage />} />
+        <Route path={`${ROUTES.entities}/:id`} element={<EntityPage />} />
 
         <Route
           path={ROUTES.budget}

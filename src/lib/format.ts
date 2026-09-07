@@ -17,3 +17,14 @@ export const costPerBeneficiary = (amount: number, beneficiaries: number): numbe
 /** قصّ نص طويل مع الحفاظ على الكلمة الأخيرة كاملة */
 export const trim = (text: string, max = 90): string =>
   text.length <= max ? text : `${text.slice(0, text.lastIndexOf(' ', max))}…`
+
+/**
+ * الحرف الأول لشعار الجهة النصي.
+ * بيشيل الكلمة العامة («جمعية/مؤسسة/مركز») و«ال» التعريف، وإلا كل
+ * الجهات هتاخد نفس الحرف وتبقى الشعارات بلا فايدة.
+ */
+export const initial = (name: string): string =>
+  name
+    .replace(/^(جمعية|مؤسسة|مركز|هيئة|لجنة|وقف)\s+/, '')
+    .replace(/^ال/, '')
+    .charAt(0)

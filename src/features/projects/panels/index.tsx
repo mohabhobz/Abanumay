@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import { Glass, Head, Tag, Num, Mono } from '@/components/ui'
+import { ROUTES } from '@/app/routes'
 import type { Entity, LogEntry } from '@/types/domain'
 
 export { QuickAnalysis, type QuickAnalysisProps } from './QuickAnalysis'
@@ -6,14 +8,24 @@ export { QuickAnalysis, type QuickAnalysisProps } from './QuickAnalysis'
 /** مشاريع الجهة — سياق ثابت جنب المشروع المفتوح */
 export function EntityProjectsPanel({
   entity: E,
+  entityId,
   onOpen,
 }: {
   entity: Entity
+  /** لفتح ملف الجهة كامل — الربط في الاتجاه التاني */
+  entityId?: string
   onOpen: () => void
 }) {
   return (
     <Glass>
-      <Head title="مشاريع الجهة" meta={E.projects.length} />
+      <Head
+        title="مشاريع الجهة"
+        meta={
+          entityId
+            ? <Link to={ROUTES.entity(entityId)} className="lnk">ملف الجهة</Link>
+            : E.projects.length
+        }
+      />
       <div className="col-s">
         {E.projects.map((p) => (
           <button className="data li" key={p.id} style={{ padding: '.75rem 0' }} onClick={onOpen}>

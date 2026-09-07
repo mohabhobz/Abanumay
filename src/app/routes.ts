@@ -73,12 +73,20 @@ export interface NavItem {
   perm?: string
 }
 
+/**
+ * ستة عناصر فقط.
+ *
+ * النظام العامل فيه ٤٦ شاشة وقائمة جانبية بعشرات المداخل. الاختصار
+ * هنا مش تبسيط شكلي: الاتفاقيات والمراسلات والمتابعات مش موديولات
+ * مستقلة في ذهن المستخدم — هي حاجات بتحصل **جوّه مشروع**، فمكانها
+ * تبويب في صفحة المشروع لا مدخل في الريل. اللي فضل في الريل هو
+ * اللي المستخدم بيبدأ منه يومه فعلًا.
+ */
 export const NAV: NavItem[] = [
-  { key: 'home', label: 'الرئيسية', to: ROUTES.home, icon: 'home', group: 'work', mob: true },
+  { key: 'home', label: 'صندوقي', to: ROUTES.home, icon: 'home', group: 'work', mob: true },
   { key: 'projects', label: 'المشاريع', to: ROUTES.projects, icon: 'doc', group: 'work', mob: true, perm: 'projects.read' },
   { key: 'entities', label: 'الجهات', to: ROUTES.entities, icon: 'entity', group: 'work', mob: true, perm: 'entities.read' },
   { key: 'budget', label: 'الميزانية', to: ROUTES.budget, icon: 'budget', group: 'money', perm: 'budget.read' },
-  { key: 'agreements', label: 'الاتفاقيات', to: ROUTES.agreements, icon: 'contract', group: 'money', perm: 'agreements.read' },
-  { key: 'payments', label: 'الصرف', to: ROUTES.payments, icon: 'pay', group: 'money', perm: 'payments.read' },
+  { key: 'payments', label: 'الصرف', to: ROUTES.payments, icon: 'pay', group: 'money', mob: true, perm: 'payments.read' },
   { key: 'reports', label: 'التقارير', to: ROUTES.reports, icon: 'chart', group: 'knowledge', mob: true, perm: 'reports.read' },
 ]

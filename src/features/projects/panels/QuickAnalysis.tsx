@@ -53,7 +53,7 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
           text:
             `الإجراء استهلك ${nf.format(breach.hours)} ساعة مقابل حدّ ${nf.format(breach.limit)} — ` +
             `أي ${over}٪ فوق الحدّ، ومفتوح من ${openDays} يومًا بلا سبب مسجَّل. ` +
-            `المشروع واقف على الجهة منذ طلب الاستكمال.`,
+            `المشروع واقف عند «${breach.dept}».`,
           bold: [nf.format(breach.hours), nf.format(breach.limit), `${over}٪ فوق الحدّ`, `${openDays} يومًا`],
           danger: [`${over}٪ فوق الحدّ`],
         }]

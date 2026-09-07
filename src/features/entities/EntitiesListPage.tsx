@@ -1,0 +1,244 @@
+import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import {
+  Empty, Glass, Icon, icons, Mono, Pager, Riyal, SearchBox, Segments, Select, Tag, Toggle,
+  ViewToggle,
+} from '@/components/ui'
+import { AppLayout } from '@/app/layout/AppLayout'
+import { useQueryParams } from '@/hooks/useQueryParams'
+import { assistFor } from '@/data/mock/assistant'
+import { nf } from '@/lib/format'
+import { ENTITY_DOCS_TOTAL, fixtures, query, type EntityQuery } from '@/data/repository'
+import {
+  ACTIVATIONS, CITIES_BY_REGION, ENTITY_TYPES, GOVERNANCE, LICENSORS, REGIONS,
+} from '@/data/mock/taxonomy'
+import { ROUTES } from '@/app/routes'
+import { EntityCard } from './EntityCard'
+import { activationTone, governanceTone } from '@/lib/tone'
+
+const KEYS = [
+  'q', 'activation', 'type', 'licensor', 'region', 'city', 'governance',
+  'docs', 'running', 'sort', 'page', 'view', 'adv',
+] as const
+
+type Params = Record<(typeof KEYS)[number], string | undefined>
+
+const PAGE_SIZE = 12
+
+const NOT_FILTERS: (keyof Params)[] = ['q', 'sort', 'page', 'view', 'adv', 'activation']
+
+const SORTS = [
+  { key: 'granted', label: 'الأكثر دعمًا' },
+  { key: 'projects', label: 'الأكثر مشاريع' },
+  { key: 'newest', label: 'الأحدث تسجيلًا' },
+  { key: 'name', label: 'الاسم' },
+] as const
+
+/**
+ * الجهات.
+ *
+ * الفلاتر هنا مش نسخة من فلاتر النظام: هي الأسئلة اللي بتوقف الشغل
+ * فعلًا — مين معلّق؟ مين ملفه ناقص؟ مين شغّال معانا دلوقتي؟
+ * والباقي (النوع · المرخِّص · الحوكمة · المنطقة) مطوي خلف عدّاد.
+ */
+export default function EntitiesListPage() {
+  const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
+
+  const view = v.view === 'table' ? 'table' : 'cards'
+  const page = Math.max(1, Number(v.page) || 1)
+  const advOpen = v.adv === '1'
+
+  const q: EntityQuery = useMemo(
+    () => ({
+      search: v.q,
+      activation: v.activation,
+      type: v.type,
+      licensor: v.licensor,
+      region: v.region,
+      city: v.city,
+      governance: v.governance,
+      docsIncomplete: v.docs === '1',
+      hasRunning: v.running === '1',
+      sort: (v.sort as EntityQuery['sort']) ?? 'granted',
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+    [v, page],
+  )
+
+  const result = query.entities(q)
+  const all = fixtures.entities
+
+  const counts = useMemo(() => {
+    const base = query.entities({ ...q, activation: undefined, page: 1, pageSize: 9999 }).rows
+    const out: Record<string, number> = {}
+    for (const e of base) out[e.activation] = (out[e.activation] ?? 0) + 1
+    return out
+  }, [q])
+
+  const cityOptions = v.region ? (CITIES_BY_REGION[v.region] ?? []) : []
+
+  const chips = (
+    [
+      ['type', 'النوع'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
+      ['city', 'المدينة'], ['governance', 'الحوكمة'],
+    ] as [keyof Params, string][]
+  )
+    .filter(([k]) => v[k])
+    .map(([k, label]) => ({ k, label, value: v[k] as string }))
+
+  const flags = (
+    [['docs', 'ملف ناقص'], ['running', 'لها مشاريع تشغيل']] as [keyof Params, string][]
+  ).filter(([k]) => v[k] === '1')
+
+  return (
+    <AppLayout assistantContext={assistFor.page('الجهات')}>
+      <div className="viewstack">
+        <div className="screen col">
+          <nav className="crumb" aria-label="مسار التنقّل">
+            <span className="now">الجهات</span>
+          </nav>
+
+          <header className="lhead-row">
+            <div>
+              <h1 className="ptitle">الجهات</h1>
+              <p className="sub" style={{ marginTop: '.3rem' }}>
+                <span className="num">{result.total}</span> نتيجة من{' '}
+                <span className="num">{all.length}</span> جهة في هذا النموذج ·{' '}
+                <span className="num">3,272</span> في النظام العامل
+              </p>
+            </div>
+            <div className="lhead-a">
+              <label className="fsel">
+                <span className="fsel-l">الترتيب</span>
+                <span className="fsel-b">
+                  <select value={v.sort ?? 'granted'} onChange={(e) => set({ sort: e.target.value })}>
+                    {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                  </select>
+                  <Icon path={icons.chevronDown} size={15} />
+                </span>
+              </label>
+              <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
+            </div>
+          </header>
+
+          <Segments
+            active={v.activation}
+            onChange={(k) => set({ activation: k })}
+            items={[
+              { key: '', label: 'الكل', count: Object.values(counts).reduce((a, b) => a + b, 0) },
+              ...ACTIVATIONS.map((a) => ({ key: a, label: a, count: counts[a] ?? 0 })),
+            ]}
+          />
+
+          <Glass className="ftoolbar">
+            <div className="ftool-r">
+              <SearchBox
+                value={v.q ?? ''}
+                onChange={(x) => set({ q: x })}
+                placeholder="ابحث باسم الجهة أو رقم الترخيص…"
+              />
+              <Toggle label="ملف المستندات ناقص" on={v.docs === '1'} onChange={(on) => set({ docs: on ? '1' : undefined })} />
+              <Toggle label="لها مشاريع تشغيل" on={v.running === '1'} onChange={(on) => set({ running: on ? '1' : undefined })} />
+              <button
+                className={`fchip${advOpen ? ' on' : ''}`}
+                onClick={() => set({ adv: advOpen ? undefined : '1' })}
+                aria-expanded={advOpen}
+              >
+                <Icon path={icons.filter} size={15} />
+                فلاتر متقدمة
+                {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
+              </button>
+            </div>
+
+            {advOpen && (
+              <div className="fgrid">
+                <Select label="نوع الجهة" value={v.type} options={ENTITY_TYPES} onChange={(x) => set({ type: x })} />
+                <Select label="الجهة المرخِّصة" value={v.licensor} options={LICENSORS} onChange={(x) => set({ licensor: x })} />
+                <Select label="المنطقة" value={v.region} options={REGIONS} onChange={(x) => set({ region: x, city: undefined })} />
+                <Select label="المدينة" value={v.city} options={cityOptions} onChange={(x) => set({ city: x })} disabled={!v.region} all={v.region ? 'الكل' : 'اختر المنطقة أولًا'} />
+                <Select label="درجة الحوكمة" value={v.governance} options={GOVERNANCE} onChange={(x) => set({ governance: x })} />
+              </div>
+            )}
+
+            {(chips.length > 0 || flags.length > 0) && (
+              <div className="factive">
+                {chips.map((c) => (
+                  <button key={c.k as string} className="fpill" onClick={() => set({ [c.k]: undefined } as Partial<Params>)}>
+                    <span className="sub">{c.label}:</span> {c.value}
+                    <Icon path={icons.close} size={13} />
+                  </button>
+                ))}
+                {flags.map(([k, label]) => (
+                  <button key={k as string} className="fpill" onClick={() => set({ [k]: undefined } as Partial<Params>)}>
+                    {label}
+                    <Icon path={icons.close} size={13} />
+                  </button>
+                ))}
+                <button className="fclear" onClick={clear}>مسح الكل</button>
+              </div>
+            )}
+          </Glass>
+
+          {result.total === 0 ? (
+            <Glass>
+              <Empty
+                title="لا توجد جهات بهذه الفلاتر."
+                note="جرّب توسيع النطاق أو امسح الفلاتر الحالية."
+                actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
+              />
+            </Glass>
+          ) : view === 'cards' ? (
+            <div className="elist">
+              {result.rows.map((e) => <EntityCard key={e.id} row={e} />)}
+            </div>
+          ) : (
+            <Glass style={{ padding: '.4rem' }}>
+              <div className="tblwrap">
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th>الترخيص</th>
+                      <th>الجهة</th>
+                      <th>النوع</th>
+                      <th>المنطقة</th>
+                      <th>التفعيل</th>
+                      <th>الحوكمة</th>
+                      <th className="n">المستندات</th>
+                      <th className="n">تشغيل</th>
+                      <th className="n">إجمالي الممنوح</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.rows.map((e) => (
+                      <tr key={e.id}>
+                        <td><Mono>{e.licenseNo}</Mono></td>
+                        <td><Link className="tlink" to={ROUTES.entity(e.id)}>{e.name}</Link></td>
+                        <td className="sub">{e.type}</td>
+                        <td className="sub">{e.region}</td>
+                        <td><Tag tone={activationTone(e.activation)}>{e.activation}</Tag></td>
+                        <td><Tag tone={governanceTone(e.governance)}>{e.governance}</Tag></td>
+                        <td className={`n num${e.docsUploaded < ENTITY_DOCS_TOTAL ? ' over' : ''}`}>
+                          {e.docsUploaded}/{ENTITY_DOCS_TOTAL}
+                        </td>
+                        <td className="n num">{e.projectsRunning}</td>
+                        <td className="n num">{nf.format(e.grantedTotal)} <Riyal /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Glass>
+          )}
+
+          <Pager
+            page={result.page}
+            pageSize={result.pageSize}
+            total={result.total}
+            onPage={(p) => set({ page: String(p) })}
+          />
+        </div>
+      </div>
+    </AppLayout>
+  )
+}

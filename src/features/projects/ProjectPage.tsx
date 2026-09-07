@@ -6,6 +6,9 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { nf } from '@/lib/format'
 import { fixtures } from '@/data/repository'
+import { projectById } from '@/data/mock/projects'
+import { entityById } from '@/data/mock/entities'
+import { days, groupTone } from '@/lib/tone'
 import { assistFor } from '@/data/mock/assistant'
 import {
   DEFAULT_PROJECT_TAB, PROJECT_TABS, ROUTES, type ProjectTabSlug,
@@ -31,8 +34,51 @@ export default function ProjectPage() {
   const navigate = useNavigate()
   const mobile = useIsMobile()
 
-  const project = fixtures.project
-  const entity = fixtures.entity
+  /**
+   * صف القائمة لنفس المشروع.
+   *
+   * الفيكستشر المفصّل واحد بس، فأي مشروع تاني من القائمة بيتفتح
+   * بترويسته وأرقامه الحقيقية من الصف، والتفاصيل العميقة (الأهداف
+   * والمراحل والسجل) بتفضل من الفيكستشر لحد ما الباك اند يرجّعها.
+   */
+  const row = projectById(id ?? fixtures.project.id)
+
+  const project = row
+    ? {
+        ...fixtures.project,
+        id: row.id,
+        name: row.name,
+        track: row.track,
+        field: row.field,
+        goal: row.goal,
+        tags: row.tags.length ? row.tags : fixtures.project.tags,
+        region: row.region,
+        city: row.city,
+        amountRequested: row.amountRequested,
+        amountTotal: row.amountRequested,
+        amountGranted: row.amountGranted,
+        weight: row.weight,
+        score: row.score,
+        beneficiaries: row.beneficiaries,
+        durationDays: row.durationDays,
+        status: { label: row.stage, tone: groupTone(row.statusGroup) },
+      }
+    : fixtures.project
+
+  const entityRow = row ? entityById(row.entityId) : undefined
+  const entity = entityRow
+    ? {
+        ...fixtures.entity,
+        id: entityRow.id,
+        name: entityRow.name,
+        type: entityRow.type,
+        licensor: entityRow.licensor,
+        region: entityRow.region,
+        city: entityRow.city,
+        licenseNo: entityRow.licenseNo,
+        governance: entityRow.governance,
+      }
+    : fixtures.entity
   const authority = fixtures.authority
   const user = fixtures.currentUser
 
@@ -41,7 +87,23 @@ export default function ProjectPage() {
 
   const goTab = (slug: string) => navigate(ROUTES.projectTab(project.id, slug))
 
-  const breach = project.log.find((l) => l.hours > l.limit)
+  /* تجاوز مدة الإجراء بيتحسب من الصف نفسه لما يكون موجود، عشان
+     القراءة تطابق القسم اللي المشروع واقف فيه فعلًا لا قسم الفيكستشر. */
+  const rowBreach =
+    row && row.stageLimit > 0 && row.hoursInStage > row.stageLimit
+      ? {
+          ...fixtures.project.log[0],
+          action: 'تجاوز مدة الإجراء',
+          dept: row.stage,
+          by: row.owner ?? 'غير مُسنَد',
+          hours: row.hoursInStage,
+          limit: row.stageLimit,
+          days: days(row.hoursInStage),
+        }
+      : undefined
+
+  const breach = row ? rowBreach : project.log.find((l) => l.hours > l.limit)
+  const openDays = row ? days(row.hoursInStage) : OPEN_DAYS
 
   /* لما الصفحة توصل لآخرها، تدرّج البلور تحت شريط القرار بيروح
      عشان آخر سيكشن يبان كامل من غير ضبابة فوقه. */
@@ -105,7 +167,7 @@ export default function ProjectPage() {
                 standing={
                   breach && {
                     by: breach.by,
-                    days: OPEN_DAYS,
+                    days: openDays,
                     hours: breach.hours,
                     limit: breach.limit,
                     firstActionAt: '١١-٠٥-٢٠٢٦',
@@ -145,10 +207,14 @@ export default function ProjectPage() {
               <QuickAnalysis
                 breach={breach}
                 insights={fixtures.insights}
-                openDays={OPEN_DAYS}
+                openDays={openDays}
                 onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
               />
-              <EntityProjectsPanel entity={entity} onOpen={() => goTab('history')} />
+              <EntityProjectsPanel
+                entity={entity}
+                entityId={row?.entityId}
+                onOpen={() => goTab('history')}
+              />
               <LastActionPanel entry={project.log[0]} onOpen={() => goTab('log')} />
             </div>
           </div>

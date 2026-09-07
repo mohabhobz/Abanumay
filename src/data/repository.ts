@@ -4,10 +4,14 @@
  * دلوقتي بتقرأ من `data/mock/*`، وكل دالة بترجّع Promise وبتاخد
  * نفس شكل الباراميترات اللي الـAPI هياخدها. يوم ما الباك اند يجهز،
  * التغيير كله جوّه الملف ده: `return api.get('/projects/' + id)`
- * بدل `return delay(mock.project)` — ولا كومبوننت واحد بيتغيّر.
+ * بدل `return resolve(mock.project)` — ولا كومبوننت واحد بيتغيّر.
+ *
+ * الفلترة والترتيب والتقسيم بتتعمل هنا كمان بنفس أسماء الحقول اللي
+ * هتتبعت للسيرفر كـquery string، عشان الشاشة ما تتغيّرش وقت الربط.
  */
 import type {
   Project, Entity, AuthorityMatrix, CurrentUser, Insight, FollowUpType,
+  ProjectRow, EntityRow,
 } from '@/types/domain'
 import {
   project as mockProject,
@@ -17,6 +21,8 @@ import {
   insights as mockInsights,
   followUpTypes as mockFollowUpTypes,
 } from './mock/project'
+import { projectRows, projectById, projectsOfEntity } from './mock/projects'
+import { entityRows, entityById } from './mock/entities'
 
 /** تأخير بسيط عشان حالات التحميل في الواجهة تتجرّب فعلًا */
 const LATENCY_MS = 0
@@ -27,6 +33,16 @@ function resolve<T>(value: T): Promise<T> {
     : Promise.resolve(value)
 }
 
+/* ═══════════════ الاستعلامات ═══════════════ */
+
+/** ترتيب قائمة المشاريع — المفتاح واتجاهه */
+export type ProjectSort =
+  | 'waiting'      // الأطول انتظارًا في القسم — الافتراضي
+  | 'newest'
+  | 'amount'
+  | 'weight'
+  | 'name'
+
 /** فلاتر قائمة المشاريع — نفس أسماء فلاتر النظام الأربعتاشر */
 export interface ProjectQuery {
   year?: string
@@ -36,14 +52,41 @@ export interface ProjectQuery {
   tag?: string
   region?: string
   city?: string
+  /** الحالة المجمّعة */
   status?: string
+  /** القسم الإجرائي الفعلي */
+  stage?: string
   supportStatus?: string
   grantMethod?: string
+  funding?: string
+  owner?: string
+  /** true = بلا مالك فقط */
+  unowned?: boolean
+  /** true = المتجاوز حدّ القسم فقط */
+  overdue?: boolean
   shared?: boolean
   impact?: boolean
   from?: string
   to?: string
   search?: string
+  sort?: ProjectSort
+  page?: number
+  pageSize?: number
+}
+
+export interface EntityQuery {
+  activation?: string
+  type?: string
+  licensor?: string
+  region?: string
+  city?: string
+  governance?: string
+  /** true = ملف المستندات ناقص */
+  docsIncomplete?: boolean
+  /** true = لها مشاريع تحت التشغيل */
+  hasRunning?: boolean
+  search?: string
+  sort?: 'granted' | 'projects' | 'newest' | 'name'
   page?: number
   pageSize?: number
 }
@@ -55,25 +98,147 @@ export interface Page<T> {
   pageSize: number
 }
 
+/* ═══════════════ أدوات داخلية ═══════════════ */
+
+const eq = (filter: string | undefined, value: string): boolean => !filter || filter === value
+
+const paginate = <T>(rows: T[], page = 1, pageSize = 20): Page<T> => ({
+  rows: rows.slice((page - 1) * pageSize, page * pageSize),
+  total: rows.length,
+  page,
+  pageSize,
+})
+
+/** نسبة المكوث للحدّ — أساس ترتيب «الأطول انتظارًا» وتلوين الصف */
+export const stagePressure = (row: ProjectRow): number =>
+  row.stageLimit === 0 ? 0 : row.hoursInStage / row.stageLimit
+
+const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
+  if (!eq(q.year, r.year)) return false
+  if (!eq(q.track, r.track)) return false
+  if (!eq(q.field, r.field)) return false
+  if (!eq(q.goal, r.goal)) return false
+  if (!eq(q.region, r.region)) return false
+  if (!eq(q.city, r.city)) return false
+  if (!eq(q.status, r.statusGroup)) return false
+  if (!eq(q.stage, r.stage)) return false
+  if (!eq(q.grantMethod, r.grantMethod)) return false
+  if (!eq(q.funding, r.funding)) return false
+  if (q.supportStatus && r.supportStatus !== q.supportStatus) return false
+  if (q.owner && r.owner !== q.owner) return false
+  if (q.tag && !r.tags.includes(q.tag)) return false
+  if (q.unowned && r.owner !== null) return false
+  if (q.overdue && stagePressure(r) <= 1) return false
+  if (q.shared && !r.shared) return false
+  if (q.impact && !r.impact) return false
+  if (q.from && r.submittedAt < q.from) return false
+  if (q.to && r.submittedAt > q.to) return false
+  if (q.search) {
+    const needle = q.search.trim()
+    const hay = `${r.id} ${r.name} ${r.entityName} ${r.goal} ${r.city}`
+    if (!hay.includes(needle)) return false
+  }
+  return true
+}
+
+const sortProjects = (rows: ProjectRow[], sort: ProjectSort = 'waiting'): ProjectRow[] => {
+  const out = [...rows]
+  switch (sort) {
+    case 'newest':
+      return out.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
+    case 'amount':
+      return out.sort((a, b) => b.amountRequested - a.amountRequested)
+    case 'weight':
+      return out.sort((a, b) => b.weight - a.weight)
+    case 'name':
+      return out.sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    default:
+      // الأطول انتظارًا أولًا؛ اللي خلص (بلا حدّ) في الآخر
+      return out.sort((a, b) => stagePressure(b) - stagePressure(a))
+  }
+}
+
+const matchEntity = (e: EntityRow, q: EntityQuery): boolean => {
+  if (!eq(q.activation, e.activation)) return false
+  if (!eq(q.type, e.type)) return false
+  if (!eq(q.licensor, e.licensor)) return false
+  if (!eq(q.region, e.region)) return false
+  if (!eq(q.city, e.city)) return false
+  if (!eq(q.governance, e.governance)) return false
+  if (q.docsIncomplete && e.docsUploaded >= ENTITY_DOCS_TOTAL) return false
+  if (q.hasRunning && e.projectsRunning === 0) return false
+  if (q.search) {
+    const hay = `${e.id} ${e.name} ${e.licenseNo} ${e.city}`
+    if (!hay.includes(q.search.trim())) return false
+  }
+  return true
+}
+
+const sortEntities = (rows: EntityRow[], sort: EntityQuery['sort'] = 'granted'): EntityRow[] => {
+  const out = [...rows]
+  switch (sort) {
+    case 'projects':
+      return out.sort(
+        (a, b) =>
+          b.projectsApproved + b.projectsRunning - (a.projectsApproved + a.projectsRunning),
+      )
+    case 'newest':
+      return out.sort((a, b) => b.registeredAt.localeCompare(a.registeredAt))
+    case 'name':
+      return out.sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    default:
+      return out.sort((a, b) => b.grantedTotal - a.grantedTotal)
+  }
+}
+
+/** ملف الجهة كامل = ٨ مستندات */
+export const ENTITY_DOCS_TOTAL = 8
+
+/* ═══════════════ الواجهة ═══════════════ */
+
 export const repository = {
   // ── المشاريع ──
-  listProjects(query: ProjectQuery = {}): Promise<Page<Project>> {
-    const rows = [mockProject]
-    return resolve({
-      rows,
-      total: rows.length,
-      page: query.page ?? 1,
-      pageSize: query.pageSize ?? 25,
-    })
+  listProjects(query: ProjectQuery = {}): Promise<Page<ProjectRow>> {
+    const filtered = projectRows.filter((r) => matchProject(r, query))
+    return resolve(paginate(sortProjects(filtered, query.sort), query.page, query.pageSize))
   },
 
+  /** عدّاد سريع لكل مجموعة حالة — للشرائح فوق القائمة */
+  countByStatus(query: ProjectQuery = {}): Promise<Record<string, number>> {
+    const base = { ...query, status: undefined }
+    const rows = projectRows.filter((r) => matchProject(r, base))
+    const out: Record<string, number> = {}
+    for (const r of rows) out[r.statusGroup] = (out[r.statusGroup] ?? 0) + 1
+    return resolve(out)
+  },
+
+  getProjectRow(id: string): Promise<ProjectRow | null> {
+    return resolve(projectById(id) ?? null)
+  },
+
+  /** المشروع الكامل — لسه فيه فيكستشر واحد مفصّل */
   getProject(id: string): Promise<Project | null> {
     return resolve(id === mockProject.id ? mockProject : null)
   },
 
   // ── الجهات ──
+  listEntities(query: EntityQuery = {}): Promise<Page<EntityRow>> {
+    const filtered = entityRows.filter((e) => matchEntity(e, query))
+    return resolve(paginate(sortEntities(filtered, query.sort), query.page, query.pageSize))
+  },
+
+  getEntityRow(id: string): Promise<EntityRow | null> {
+    return resolve(entityById(id) ?? null)
+  },
+
+  /** ملف الجهة المفصّل — فيكستشر واحد لحد ما يتوسّع */
   getEntity(_id?: string): Promise<Entity> {
     return resolve(mockEntity)
+  },
+
+  /** الربط بين الجهة ومشاريعها في الاتجاهين */
+  listEntityProjects(entityId: string): Promise<ProjectRow[]> {
+    return resolve(sortProjects(projectsOfEntity(entityId), 'newest'))
   },
 
   // ── سياق القرار ──
@@ -107,4 +272,27 @@ export const fixtures = {
   currentUser: mockUser,
   insights: mockInsights,
   followUpTypes: mockFollowUpTypes,
+  projects: projectRows,
+  entities: entityRows,
+}
+
+/** نسخ متزامنة من نفس المنطق — الشاشات بتستعملها لحد ما يبقى فيه سيرفر */
+export const query = {
+  projects(q: ProjectQuery = {}): Page<ProjectRow> {
+    const filtered = projectRows.filter((r) => matchProject(r, q))
+    return paginate(sortProjects(filtered, q.sort), q.page, q.pageSize)
+  },
+  projectStatusCounts(q: ProjectQuery = {}): Record<string, number> {
+    const rows = projectRows.filter((r) => matchProject(r, { ...q, status: undefined }))
+    const out: Record<string, number> = {}
+    for (const r of rows) out[r.statusGroup] = (out[r.statusGroup] ?? 0) + 1
+    return out
+  },
+  entities(q: EntityQuery = {}): Page<EntityRow> {
+    const filtered = entityRows.filter((e) => matchEntity(e, q))
+    return paginate(sortEntities(filtered, q.sort), q.page, q.pageSize)
+  },
+  entityProjects(entityId: string): ProjectRow[] {
+    return sortProjects(projectsOfEntity(entityId), 'newest')
+  },
 }
