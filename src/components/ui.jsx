@@ -259,7 +259,7 @@ export function GateArc({ amount, authority, compact = false }) {
         k: 'واقف هنا الآن',
         t: role.role,
         lines: [
-          <><b>سلطان العتيبي</b> · مفتوح من <b>٨٧ يومًا</b></>,
+          <><b>عمر قاسم</b> · مفتوح من <b>٨٧ يومًا</b></>,
           <><b>2,092</b> ساعة مقابل حدّ <b>900</b> — <span className="bad">132٪ فوق الحدّ</span></>,
           'صلاحيته توصية فقط، لا قرار مالي',
         ],

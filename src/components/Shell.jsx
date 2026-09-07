@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Logo from '../assets/LogoColor.jsx'
 import { Icon, icons, Riyal, nf } from './ui.jsx'
-import { useAssistant, AiMessage, Composer } from './chat.jsx'
+import { useAssistant, AiMessage, Composer, Disclaimer } from './chat.jsx'
 
 /* الصورة الشخصية من صور التيمبليت، والحرف احتياطي لو الصورة ما حمّلتش */
 function Avatar({ user }) {
@@ -94,7 +94,7 @@ export function TopBar({ crumbs, user }) {
           <input placeholder="بحث في المشاريع…" aria-label="بحث" />
         </div>
         <button className="btn btn-2 btn-sm">تصدير</button>
-        <span className="av">{user.initial}</span>
+        <Avatar user={user} />
       </div>
     </div>
   )
@@ -230,6 +230,7 @@ export function Assistant({ open, onClose, onFull, ctx = CTX_FALLBACK }) {
 
         <div className="afoot">
           <Composer value={draft} onChange={setDraft} onSend={ask} onStop={stop} busy={busy} />
+          <Disclaimer />
         </div>
       </aside>
     </>

@@ -18,10 +18,10 @@
 export const roles = [
   {
     key: 'supervisor',
-    name: 'سلطان العتيبي',
+    name: 'عمر قاسم',
     role: 'مشرف المنح',
-    initial: 'س',
-    greet: 'أهلًا سلطان',
+    initial: 'ع',
+    greet: 'أهلًا عمر',
     scope: 'مشاريع مجالك · لا صلاحية مالية',
     cards: [
       {

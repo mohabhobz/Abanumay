@@ -301,9 +301,14 @@ export function Composer({ value, onChange, onSend, onStop, busy, inputRef, dock
           )}
         </div>
       </div>
-      <div className="cdisc sub">قد يخطئ المساعد — راجع الأرقام قبل أي قرار.</div>
+      {/* التنبيه معلومة، مش خطوة — فمكانه آخر الصفحة، مش فوق تحت الكتابة */}
+      {docked && <div className="cdisc sub">قد يخطئ المساعد — راجع الأرقام قبل أي قرار.</div>}
     </div>
   )
+}
+
+export function Disclaimer() {
+  return <div className="cdisc sub">قد يخطئ المساعد — راجع الأرقام قبل أي قرار.</div>
 }
 
 /* ماركداون خفيف: **بولد** وأسطر وبوليت */

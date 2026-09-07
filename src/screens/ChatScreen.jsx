@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { roles, savedChats } from '../data/chat.js'
 import { Rail, Background, MobileTop } from '../components/Shell.jsx'
 import { Icon, icons, useMediaQuery } from '../components/ui.jsx'
-import { useAssistant, AiMessage, Composer } from '../components/chat.jsx'
+import { useAssistant, AiMessage, Composer, Disclaimer } from '../components/chat.jsx'
+import { currentUser } from '../data/project.js'
 
 /* ═══════════════════════════════════════════════════════════
    مساعد أبانمي — الشاشة الكاملة
@@ -23,7 +24,8 @@ const TYPE_MS = 14
 
 export default function ChatScreen({ onExit }) {
   const mobile = useMediaQuery('(max-width: 860px)')
-  const me = roles[0]
+  // نفس المستخدم في كل الشاشات — الصورة والاسم من ملف واحد
+  const me = { ...roles[0], photo: currentUser.photo }
 
   const { msgs, send: ask, stop, reset, busy } = useAssistant()
   const [chats, setChats] = useState(savedChats)
@@ -238,13 +240,17 @@ export default function ChatScreen({ onExit }) {
 
             <div className={`chat-body${msgs.length === 0 ? ' mid' : ''}`} ref={bodyRef}>
               {msgs.length === 0 ? (
-                <Welcome
-                  me={me}
-                  onPick={send}
-                  composer={
-                    <Composer value={draft} onChange={setDraft} onSend={send} onStop={stop} busy={busy} inputRef={inputRef} />
-                  }
-                />
+                <>
+                  <Welcome
+                    me={me}
+                    onPick={send}
+                    composer={
+                      <Composer value={draft} onChange={setDraft} onSend={send} onStop={stop} busy={busy} inputRef={inputRef} />
+                    }
+                  />
+                  {/* التنبيه في آخر الصفحة خالص — معلومة مش خطوة */}
+                  <Disclaimer />
+                </>
               ) : (
                 <div className="thread">
                   {msgs.map((m, i) =>

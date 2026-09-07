@@ -115,7 +115,7 @@ export const project = {
       action: 'طلب استكمال',
       body: 'تحديث البيانات وإرفاق الموازنات التفصيلية ثم إرجاع المشروع.',
       dept: 'دراسة المشروع',
-      by: 'سلطان العتيبي',
+      by: 'عمر قاسم',
       at: '2026-08-06 13:11',
       days: 87,
       hours: 2092,
@@ -126,7 +126,7 @@ export const project = {
       action: 'تحويل المشروع إلى باحث آخر',
       body: 'أُعيد التصنيف إلى المنح النوعي ← العلم الشرعي ← المحفظة الشرعية المتنوعة.',
       dept: 'دراسة المشروع',
-      by: 'سلطان العتيبي',
+      by: 'عمر قاسم',
       at: '2026-05-11 09:09',
       days: 30,
       hours: 732,
@@ -249,12 +249,12 @@ export const authority = {
   ],
 }
 
-import userPhoto from '../assets/user-sultan.jpg'
+import userPhoto from '../assets/user-omar.jpg'
 
 export const currentUser = {
-  name: 'سلطان العتيبي',
+  name: 'عمر قاسم',
   role: 'مشرف المنح',
-  initial: 'س',
+  initial: 'ع',
   photo: userPhoto,
   // من قواعد المكالمة: مشرف المنح مالوش صلاحية مالية، توصية بس
   financialAuthority: null,
