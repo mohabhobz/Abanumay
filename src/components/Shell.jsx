@@ -171,9 +171,20 @@ export function Assistant({ open, onClose, onFull, ctx = CTX_FALLBACK }) {
   const [draft, setDraft] = useState('')
   const bodyRef = useRef(null)
 
+  /* بدل الخطوط الفاصلة: تدرّج بيتلاشى عند حافة التمرير —
+     بيظهر وأنت في النص، وبيختفي أول ما توصل الأول أو الآخر. */
+  const [edge, setEdge] = useState({ top: false, bot: false })
+  const measure = () => {
+    const el = bodyRef.current
+    if (!el) return
+    const more = el.scrollHeight - el.clientHeight
+    setEdge({ top: el.scrollTop > 6, bot: more > 6 && el.scrollTop < more - 6 })
+  }
+
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight
-  }, [msgs])
+    measure()
+  }, [msgs, open])
 
   const ask = (t) => {
     if (busy) return
@@ -204,7 +215,8 @@ export function Assistant({ open, onClose, onFull, ctx = CTX_FALLBACK }) {
           </button>
         </div>
 
-        <div className="abody" ref={bodyRef}>
+        <div className={`abodywrap${edge.top ? ' fadetop' : ''}${edge.bot ? ' fadebot' : ''}`}>
+        <div className="abody" ref={bodyRef} onScroll={measure}>
           {msgs.length === 0 ? (
             <div className="awelcome">
               <div className="agreet">{ctx.greet}</div>
@@ -226,6 +238,7 @@ export function Assistant({ open, onClose, onFull, ctx = CTX_FALLBACK }) {
               ),
             )
           )}
+        </div>
         </div>
 
         <div className="afoot">

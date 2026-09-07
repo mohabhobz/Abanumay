@@ -644,8 +644,8 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
   box-shadow:0 0 60px rgba(20,69,71,.14)}
 .apanel.on{transform:none;opacity:1;pointer-events:auto}
 
-.ahead{display:flex;align-items:center;gap:.25rem;padding:1rem 1.15rem .9rem;
-  box-shadow:inset 0 -1px 0 rgba(var(--edgeC),var(--edge-hair))}
+/* بلا خطوط فاصلة — الفصل بيحصل بتدرّج بيظهر مع التمرير بس */
+.ahead{display:flex;align-items:center;gap:.25rem;padding:1rem 1.15rem .9rem}
 .ahead>.badge{margin-inline-end:.45rem}
 .atitle{font-family:var(--fd);font-weight:600;font-size:.98rem;line-height:1.35;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -658,6 +658,15 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 /* بيقول لك إنه شايف نفس اللي أنت شايفه — ده اللي بيخلي الأسئلة قصيرة */
 .actx{padding:.85rem 1.15rem;box-shadow:inset 0 -1px 0 rgba(var(--edgeC),var(--edge-hair))}
 .actxv{font-family:var(--fd);font-weight:500;font-size:.88rem;margin-top:.2rem;line-height:1.5}
+
+/* غلاف بيشيل تدرّجَي الحافة فوق وتحت.
+   بيظهر كل واحد لما يكون في كلام مخفي في اتجاهه، وبيختفي عند الحافة. */
+.abodywrap{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
+.abodywrap::before,.abodywrap::after{content:"";position:absolute;inset-inline:0;height:40px;z-index:3;
+  pointer-events:none;opacity:0;transition:opacity .24s ease}
+.abodywrap::before{top:0;background:linear-gradient(180deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,0) 100%)}
+.abodywrap::after{bottom:0;background:linear-gradient(0deg,rgba(255,255,255,.92) 0%,rgba(255,255,255,0) 100%)}
+.abodywrap.fadetop::before,.abodywrap.fadebot::after{opacity:1}
 
 .abody{flex:1;min-height:0;overflow:auto;padding:1.15rem;
   display:flex;flex-direction:column;gap:.7rem;
@@ -675,8 +684,7 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .asrc{font-size:.7rem;color:var(--t3);margin-top:.4rem;padding-inline-start:.7rem;
   box-shadow:inset -2px 0 0 rgba(0,165,155,.35)}
 
-.afoot{padding:.9rem 1.15rem 1.1rem;display:flex;flex-direction:column;gap:.6rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),var(--edge-hair))}
+.afoot{padding:.4rem 1.15rem 1.1rem;display:flex;flex-direction:column;gap:.6rem}
 .afoot .cbox-hint{display:none}
 
 /* ── مقدمة اللوح: نفس منطق الرئيسية بس بسياق الصفحة ── */
