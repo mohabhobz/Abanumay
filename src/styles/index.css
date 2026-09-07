@@ -350,16 +350,21 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .viewstack{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
 /* z-index هنا عشان قائمة الحساب تطلع فوق كروت الصفحة وشريط القرار،
    مش تحتهم — الريل قبل المحتوى في الـDOM فبيغطّي عليه من غيرها */
+/* عناصر التنقّل روابط عشان الـURL يشتغل، فلازم تلغي ستايل <a> */
+.rail .railitem{text-decoration:none;cursor:pointer}
 .rail{flex:none;width:92px;display:flex;flex-direction:column;align-items:center;gap:.35rem;
   padding:1rem .5rem;position:relative;z-index:25;
   box-shadow:inset -1px 0 0 rgba(var(--edgeC),var(--edge-hair))}
-.rail button{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.45rem;
+.rail button,.rail .railitem{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.45rem;
   padding:.7rem .3rem;border-radius:var(--r2);color:var(--t3);font-size:.72rem;font-family:var(--fd);
   transition:color .16s ease,background .16s ease;text-align:center;line-height:1.2}
-.rail button:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
-.rail button.on{color:var(--t1);background:rgba(255,255,255,.80);
+.rail button:hover,.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
+.rail button.on,.rail .railitem.on{color:var(--t1);background:rgba(255,255,255,.80);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
-.rail button svg{width:22px;height:22px}
+.rail button svg,.rail .railitem svg{width:22px;height:22px}
+/* فاصل خفيف بين مجموعات التنقّل: العمل · المال · المعرفة */
+.rail .railitem.newgroup{margin-top:.5rem;padding-top:.75rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),var(--edge-hair))}
 .railfoot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:.6rem}
 .screen{flex:1;min-height:0;overflow:auto;padding:clamp(1.6rem,3vw,2.6rem) clamp(1.4rem,3vw,2.6rem) clamp(1.2rem,2.6vw,2.2rem);
   scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.22) transparent}
@@ -453,7 +458,7 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 .logo{display:block;color:var(--green)}
 .logo svg{width:100%;height:100%;display:block}
 .rail{width:88px}
-.rail button{font-size:.7rem}
+.rail button,.rail .railitem{font-size:.7rem}
 .kv dd a{cursor:pointer}
 .data.li{border-radius:0}
 .tabs .tab{cursor:pointer}
@@ -550,8 +555,8 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
 
 /* ── سايد بار أعرض وشعار أكبر ── */
 .rail{width:118px;padding:1.15rem .55rem;gap:.4rem}
-.rail button{font-size:.74rem;padding:.75rem .3rem;gap:.5rem}
-.rail button svg{width:24px;height:24px}
+.rail button,.rail .railitem{font-size:.74rem;padding:.75rem .3rem;gap:.5rem}
+.rail button svg,.rail .railitem svg{width:24px;height:24px}
 .mark-44{width:44px;height:44px}
 .mark-64{width:64px;height:64px}
 
@@ -903,9 +908,9 @@ input[type=range]{accent-color:#6E9F06;width:130px;background:transparent}
     padding:.35rem .3rem calc(.35rem + env(safe-area-inset-bottom,0px));
     box-shadow:inset 0 1px 0 rgba(var(--edgeC),var(--edge-hair))}
   .rail>.mark-64{display:none}
-  .rail button.nomob{display:none}
-  .rail button{width:auto;flex:1;padding:.45rem .2rem;gap:.22rem;font-size:.66rem;border-radius:var(--r1)}
-  .rail button svg{width:21px;height:21px}
+  .rail .railitem.nomob{display:none}
+  .rail button,.rail .railitem{width:auto;flex:1;padding:.45rem .2rem;gap:.22rem;font-size:.66rem;border-radius:var(--r1)}
+  .rail button svg,.rail .railitem svg{width:21px;height:21px}
   .railfoot{margin-top:0;width:auto;flex:1;flex-direction:row;align-items:stretch;gap:0}
   .railfoot>.pht,.railfoot>.av{display:none}
   .aitrigger kbd{display:none}

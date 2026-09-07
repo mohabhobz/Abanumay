@@ -35,9 +35,8 @@ export function Rail({ user, onAssistant, assistantOpen, onSignOut, permissions 
             to={item.to}
             end={item.to === '/'}
             className={({ isActive }) =>
-              `${isActive ? 'on' : ''}${item.mob ? '' : ' nomob'}${
-                prev && prev.group !== item.group ? ' newgroup' : ''
-              }`
+              `railitem${isActive ? ' on' : ''}${item.mob ? '' : ' nomob'}` +
+              `${prev && prev.group !== item.group ? ' newgroup' : ''}`
             }
           >
             <Icon path={icons[item.icon as IconName]} />
