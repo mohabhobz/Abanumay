@@ -4,6 +4,7 @@ import { Background, MobileTop, Rail } from '@/components/shell'
 import { Icon, icons, type IconName } from '@/components/ui'
 import { AiMessage, Composer, Disclaimer, useAssistant } from '@/components/assistant'
 import { useProximity } from '@/hooks/useProximity'
+import { useDockHeight } from '@/hooks/useDockHeight'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { roles, savedChats, type AssistantRole, type SavedChat } from '@/data/mock/assistant'
 import { fixtures } from '@/data/repository'
@@ -33,7 +34,11 @@ export default function AssistantPage() {
   const [listOpen, setListOpen] = useState(false)
 
   const body = useRef<HTMLDivElement>(null)
+  const col = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLTextAreaElement | null>(null)
+
+  /* المسافة تحت آخر رسالة = ارتفاع مربع الكتابة الحقيقي، مقيسًا */
+  useDockHeight(col)
 
   /* التمرير بيتبع الكتابة، إلا لو المستخدم طلّع بنفسه */
   const [stick, setStick] = useState(true)
@@ -106,7 +111,7 @@ export default function AssistantPage() {
             open={listOpen}
           />
 
-          <div className="chatcol">
+          <div className="chatcol" ref={col}>
             {/* العنوان جوّه عمود بنفس عرض المحادثة تحته، عشان يبدأ من
                 نفس السطر — الترويسة اللي بتاخد عرض الشاشة كانت بتسيب
                 العنوان معلّقًا في الحافة بعيدًا عن أول كلمة في الرد. */}
