@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Mono, Riyal, Empty } from '@/components/ui'
-import { BarList, Columns, Donut, Legend, StackBar, CHART_COLORS } from '@/components/charts'
+import { BarList, Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS } from '@/components/charts'
 import { QuickRead } from '@/components/assistant'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -170,9 +170,26 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* ═══ المال ═══ */}
-          <div className="dgrid g21">
-            <Glass>
+          {/* ═══ الصف الأول: اللي لازم يتشاف من غير تمرير ═══
+              الخريطة والمال والزمن. الباقي تحت، لأنه بيتقري بعد ما
+              السؤال الأول يتجاوب، مش قبله. */}
+          <div className="dtop">
+            <Glass className="d-map">
+              <Head
+                title="التوزيع الجغرافي"
+                meta={<Link className="lnk" to={ROUTES.projects}>كل المشاريع</Link>}
+              />
+              <SaudiMap
+                points={regions.map((r) => ({
+                  key: r.key,
+                  label: r.label,
+                  value: r.value,
+                  href: `${ROUTES.projects}?region=${encodeURIComponent(r.key)}`,
+                }))}
+              />
+            </Glass>
+
+            <Glass className="d-budget">
               <Head
                 title="ميزانية 2026"
                 meta={<Link className="lnk" to={ROUTES.budget}>الشجرة كاملة</Link>}
@@ -183,19 +200,16 @@ export default function HomePage() {
               </div>
               <StackBar parts={budgetParts} total={budget.allocated} />
               <Legend items={budgetParts} />
-              <p className="chnote">
-                المخصص من النظام العامل. الأربعة الباقية محسوبة من العيّنة التجريبية،
-                فنسبة الاستهلاك أقل من الواقع.
-              </p>
             </Glass>
 
-            <Glass>
+            <Glass className="d-track">
               <Head title="الملتزم به حسب المسار" />
               <div className="dsplit">
                 <Donut
                   slices={trackSlices}
                   centerValue={`${(grantedTotal / 1_000_000).toFixed(1)} م`}
                   centerLabel="ريال ملتزم به"
+                  size={124}
                 />
                 <Legend
                   items={trackSlices}
@@ -203,11 +217,8 @@ export default function HomePage() {
                 />
               </div>
             </Glass>
-          </div>
 
-          {/* ═══ الزمن والتشغيل ═══ */}
-          <div className="dgrid g111">
-            <Glass>
+            <Glass className="d-age">
               <Head
                 title="مدة المكوث في القسم"
                 meta={<span className="sub">وسيط {median(liveDays)} يومًا</span>}
@@ -224,11 +235,11 @@ export default function HomePage() {
                         : 'var(--ch-2)',
                 }))}
               />
-              <p className="chnote">
-                الحدود مؤقتة لحين اعتمادها — النظام يقيس المدة ولا يعرّف حدًّا لكل قسم.
-              </p>
             </Glass>
+          </div>
 
+          {/* ═══ التشغيل ═══ */}
+          <div className="dgrid g11">
             <Glass>
               <Head
                 title="أين تقف المشاريع"
@@ -254,7 +265,10 @@ export default function HomePage() {
                 }))}
                 format={(v) => String(v)}
               />
-              <p className="chnote">الرقم الصغير وسيط أيام المكوث عند كل مشرف.</p>
+              <p className="chnote">
+                الرقم الصغير وسيط أيام المكوث عند كل مشرف. والمخصص في الرسم فوق من
+                النظام العامل، والباقي محسوب من العيّنة التجريبية.
+              </p>
             </Glass>
           </div>
 
@@ -307,28 +321,17 @@ export default function HomePage() {
             </Glass>
           </div>
 
-          {/* ═══ الجغرافيا وأعلى الشركاء ═══ */}
-          <div className="dgrid g11">
-            <Glass>
-              <Head title="التوزيع الجغرافي" meta={<span className="sub">أعلى ست مناطق</span>} />
-              <BarList
-                labelWidth="8rem"
-                rows={regions.map((r) => ({ ...r, color: 'var(--ch-3)' }))}
-                format={(v) => String(v)}
-              />
-            </Glass>
-
-            <Glass>
-              <Head
-                title="أعلى الجهات دعمًا"
-                meta={<Link className="lnk" to={`${ROUTES.entities}?sort=granted`}>الكل</Link>}
-              />
-              <BarList
-                labelWidth="11rem"
-                rows={partners.map((p) => ({ ...p, color: 'var(--ch-2)' }))}
-              />
-            </Glass>
-          </div>
+          {/* ═══ أعلى الشركاء ═══ */}
+          <Glass>
+            <Head
+              title="أعلى الجهات دعمًا"
+              meta={<Link className="lnk" to={`${ROUTES.entities}?sort=granted`}>الكل</Link>}
+            />
+            <BarList
+              labelWidth="12rem"
+              rows={partners.map((p) => ({ ...p, color: 'var(--ch-2)' }))}
+            />
+          </Glass>
 
           {/* ═══ القراءة والصفوف ═══ */}
           <div className="dgrid g11">

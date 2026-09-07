@@ -13,6 +13,8 @@ import { nf } from '@/lib/format'
    بتتكتب بلون النص العادي؛ اللون بيقع على الشريط أو النقطة.
    ═══════════════════════════════════════════════════════════ */
 
+export { SaudiMap, type MapPoint } from './SaudiMap'
+
 export const CHART_COLORS = [
   'var(--ch-1)', 'var(--ch-2)', 'var(--ch-3)',
   'var(--ch-4)', 'var(--ch-5)', 'var(--ch-6)',

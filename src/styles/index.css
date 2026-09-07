@@ -1938,3 +1938,73 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .dotmark{display:inline-block;width:6px;height:6px;border-radius:50%;
   background:var(--no);margin-inline-start:.35rem;vertical-align:.08em;flex:none}
 .pc-over{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+
+/* ═══ الصف الأول من اللوحة ═══
+   الخريطة عمود طويل على اليمين، وجنبها المال والزمن. المقاس مضبوط
+   عشان الأربعة يدخلوا في أول شاشة من غير تمرير على 1440×900. */
+.dtop{display:grid;gap:var(--gap);
+  grid-template-columns:1.45fr 1fr 1fr;
+  grid-template-areas:"map budget budget" "map track age"}
+.d-map{grid-area:map}
+.d-budget{grid-area:budget}
+.d-track{grid-area:track}
+.d-age{grid-area:age}
+@media (max-width:1180px){
+  .dtop{grid-template-columns:1fr 1fr;
+    grid-template-areas:"map map" "budget budget" "track age"}
+}
+@media (max-width:760px){
+  .dtop{grid-template-columns:1fr;
+    grid-template-areas:"map" "budget" "track" "age"}
+}
+
+/* ═══ الخريطة ═══
+   قائمة الأشرطة كانت بتخلّي العين تركّب الجغرافيا في دماغها.
+   الخريطة بتوريها في نظرة: الدعم متكوّم في الوسط والشرق. */
+/* الكارت بيمتد على صفّين في الشبكة، فالخريطة بتاخد الارتفاع كله
+   والرسم بيتوسّط جوّاه — من غير كده بيفضل نص الكارت فاضي. */
+.d-map{display:flex;flex-direction:column}
+.map{display:flex;flex-direction:column;gap:.85rem;margin-top:.6rem;flex:1;justify-content:center}
+/* نسبة الحاوية = نسبة الـviewBox بالظبط، فمفيش هوامش فاضية جنب
+   الرسم — ولا انزياح في تموضع التلميح المحسوب بالنسبة المئوية */
+.map-c{position:relative;width:100%;aspect-ratio:6 / 5;min-width:0}
+.map-svg{width:100%;height:100%;display:block;overflow:visible}
+
+.map-g{cursor:pointer}
+.map-halo{fill:rgba(0,165,155,.10);transition:r .22s cubic-bezier(.22,.9,.3,1)}
+.map-dot{fill:var(--ch-2);fill-opacity:.9;transition:fill-opacity .2s ease,r .22s cubic-bezier(.22,.9,.3,1)}
+.map-num{fill:#fff;font-family:var(--fd);font-weight:700;font-size:30px;
+  pointer-events:none;opacity:0;transition:opacity .2s ease}
+.map-g:hover .map-dot,.map-g.on .map-dot{fill-opacity:1}
+.map-g:hover .map-halo,.map-g.on .map-halo{fill:rgba(0,165,155,.20)}
+.map-g:hover .map-num,.map-g.on .map-num{opacity:1}
+
+/* التلميح فوق النقطة — عنصر HTML عشان النص العربي يتلف صح */
+/* الإزاحة بخاصية `translate` المستقلة لا بـ`transform`: أنيميشن
+   الظهور بيكتب `transform:none` في نهايته وبيلغي أي إزاحة فيه. */
+.map-tip{position:absolute;translate:-50% calc(-100% - 26px);
+  padding:.5rem .75rem;border-radius:var(--r1);white-space:nowrap;pointer-events:none;
+  display:flex;flex-direction:column;gap:.1rem;z-index:2;
+  background:rgba(255,255,255,.92);
+  -webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2)),
+    0 10px 24px -10px rgba(20,69,71,.28);
+  animation:airise .18s ease both}
+.map-tip b{font-family:var(--fd);font-weight:600;font-size:.82rem}
+.map-tip span{font-size:.72rem;color:var(--t2)}
+.map-tip-n{color:var(--t3)}
+
+/* شرائح الترتيب تحت الخريطة */
+.map-rank{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center}
+.map-chip{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .65rem;
+  border-radius:var(--rp);font-size:.75rem;color:var(--t2);
+  background:rgba(255,255,255,.5);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.8));
+  transition:background .16s ease,color .16s ease,box-shadow .16s ease}
+a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(255,255,255,.85);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+.map-chip b{font-family:var(--fd);font-weight:700;color:var(--t1)}
+.map-chip.off{opacity:.65}
+.map-chip.off b{color:var(--t2)}
+.map-rank-l{white-space:nowrap}
+

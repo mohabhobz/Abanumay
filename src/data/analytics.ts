@@ -69,7 +69,8 @@ export const byStage = (rows: ProjectRow[]): Bucket[] => {
 export const grantedByTrack = (rows: ProjectRow[]): Bucket[] =>
   toBuckets(sumBy(rows.filter((r) => r.amountGranted > 0), (r) => r.track, (r) => r.amountGranted))
 
-export const byRegion = (rows: ProjectRow[], limit = 6): Bucket[] =>
+/** كل المناطق اللي فيها مشاريع — الخريطة محتاجة الكل مش الأعلى */
+export const byRegion = (rows: ProjectRow[], limit?: number): Bucket[] =>
   toBuckets(tally(rows, (r) => r.region), limit)
 
 export const declineReasons = (rows: ProjectRow[], limit = 5): Bucket[] =>
