@@ -158,7 +158,7 @@ export function DecisionBar({ user, project, compact }) {
    موجود في كل شاشة من نفس الزر في الريل ومن ⌘K،
    وبيفتح فوق المحتوى مش جنبه، فالشاشة ما تتزحزحش.
    ═══════════════════════════════════════════════════════════ */
-export function Assistant({ open, onClose, context }) {
+export function Assistant({ open, onClose, onFull, context }) {
   return (
     <>
       <div className={`ascrim${open ? ' on' : ''}`} onClick={onClose} aria-hidden="true" />
@@ -169,7 +169,7 @@ export function Assistant({ open, onClose, context }) {
             <div className="atitle">مساعد أبانمي</div>
             <div className="sub">استرشادي · لا يتخذ أي إجراء</div>
           </div>
-          <button className="aclose" title="فتح كصفحة كاملة" aria-label="فتح كصفحة كاملة">
+          <button className="aclose" onClick={onFull} title="فتح كصفحة كاملة" aria-label="فتح كصفحة كاملة">
             <Icon path={icons.expand} size={16} />
           </button>
           <button className="aclose" onClick={onClose} aria-label="إغلاق">

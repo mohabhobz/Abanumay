@@ -6,7 +6,7 @@ import { Glass, Head, Tag, Num, Mono, KV, VSteps, CeilingLadder, GateArc, Riyal,
 
 const TABS = ['بيانات المشروع', 'الجهة', 'المشاريع السابقة', 'الاتفاقية', 'الدفعات', 'المتابعات', 'سجل المشروع', 'المراسلات']
 
-export default function ProjectScreen() {
+export default function ProjectScreen({ onOpenChat }) {
   const [tab, setTab] = useState(TABS[0])
   const costPerBeneficiary = Math.round(P.amountRequested / P.beneficiaries)
   const breach = P.log.find((l) => l.hours > l.limit)
@@ -98,6 +98,7 @@ export default function ProjectScreen() {
           <Assistant
             open={ai}
             onClose={() => setAi(false)}
+            onFull={onOpenChat}
             context={{
               title: `مشروع ${P.id} · ${P.name}`,
               sub: <>{E.name} · {P.track} · <span className="num">{nf.format(P.amountRequested)}</span> <Riyal /></>,

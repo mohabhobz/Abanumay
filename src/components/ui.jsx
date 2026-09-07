@@ -50,6 +50,18 @@ export const icons = {
   spark: '<path d="M12 3.6l2.1 6.3 6.3 2.1-6.3 2.1-2.1 6.3-2.1-6.3L3.6 12l6.3-2.1z"/>',
   close: '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
   expand: '<path d="M14 4h6v6"/><path d="M20 4l-7 7"/><path d="M10 20H4v-6"/><path d="M4 20l7-7"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  dots: '<circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/>',
+  pin: '<path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/>',
+  edit: '<path d="M5 19h4l9-9-4-4-9 9z"/><path d="M14 6l4 4"/>',
+  trash: '<path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/>',
+  menu: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
+  down: '<path d="M12 5v13"/><path d="M6 13l6 6 6-6"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  redo: '<path d="M20 12a8 8 0 10-2.3 5.6"/><path d="M20 6v6h-6"/>',
+  up: '<path d="M7 20v-8l4-7a2 2 0 013 2l-1 5h5a2 2 0 012 2.4l-1.2 5A2 2 0 0117 21H7z"/>',
+  downv: '<path d="M17 4v8l-4 7a2 2 0 01-3-2l1-5H6a2 2 0 01-2-2.4l1.2-5A2 2 0 017 3h10z"/>',
 }
 
 export const Glass = forwardRef(function Glass({ children, className = '', ...rest }, ref) {
