@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Logo from '../assets/LogoColor.jsx'
 import { Icon, icons, Riyal, nf } from './ui.jsx'
+import { useAssistant, AiMessage, Composer } from './chat.jsx'
 
 /* الصورة الشخصية من صور التيمبليت، والحرف احتياطي لو الصورة ما حمّلتش */
 function Avatar({ user }) {
@@ -99,7 +100,7 @@ export function TopBar({ crumbs, user }) {
   )
 }
 
-export function DecisionBar({ user, project, compact }) {
+export function DecisionBar({ user, project, compact, atEnd }) {
   const ref = useRef(null)
 
   /* تفاعل من بعيد: الشريط بيحسّ بالماوس قبل ما توصله،
@@ -125,7 +126,7 @@ export function DecisionBar({ user, project, compact }) {
   }, [])
 
   return (
-    <div className="decdock">
+    <div className={`decdock${atEnd ? ' clear' : ''}`}>
     <div className="chrome decbar" ref={ref}>
       <div className="rowf" style={{ gap: '.7rem', minWidth: 0 }}>
         <Avatar user={user} />
@@ -154,21 +155,47 @@ export function DecisionBar({ user, project, compact }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   مساعد أبانمي — طبقة عابرة، مش قسم في النظام
-   موجود في كل شاشة من نفس الزر في الريل ومن ⌘K،
-   وبيفتح فوق المحتوى مش جنبه، فالشاشة ما تتزحزحش.
+   لوح المساعد — بيفتح من أي صفحة على الجانب الشمال.
+   العنوان اسم الشيء اللي أنت فيه، مش «مساعد أبانمي»،
+   والترحيب بيسأل عنه بالاسم، وتحته اختصارات لنفس السياق.
    ═══════════════════════════════════════════════════════════ */
-export function Assistant({ open, onClose, onFull, context }) {
+const CTX_FALLBACK = {
+  title: 'منح أبانمي',
+  sub: '',
+  greet: 'أقدر أساعدك إزاي؟',
+  cards: [{ icon: 'alert', title: 'إيه اللي بانتظار قراري؟', prompt: 'إيه اللي بانتظار قراري؟' }],
+}
+
+export function Assistant({ open, onClose, onFull, ctx = CTX_FALLBACK }) {
+  const { msgs, send, stop, reset, busy } = useAssistant()
+  const [draft, setDraft] = useState('')
+  const bodyRef = useRef(null)
+
+  useEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight
+  }, [msgs])
+
+  const ask = (t) => {
+    if (busy) return
+    setDraft('')
+    send(t)
+  }
+
   return (
     <>
       <div className={`ascrim${open ? ' on' : ''}`} onClick={onClose} aria-hidden="true" />
-      <aside className={`apanel chrome${open ? ' on' : ''}`} role="dialog" aria-label="مساعد أبانمي" aria-hidden={!open}>
+      <aside className={`apanel chrome${open ? ' on' : ''}`} role="dialog" aria-label={`مساعد · ${ctx.title}`} aria-hidden={!open}>
         <div className="ahead">
           <span className="badge badge-30"><span className="aispark" /></span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="atitle">مساعد أبانمي</div>
-            <div className="sub">استرشادي · لا يتخذ أي إجراء</div>
+            <div className="atitle">{ctx.title}</div>
+            <div className="sub">{ctx.sub}</div>
           </div>
+          {msgs.length > 0 && (
+            <button className="aclose" onClick={reset} title="محادثة جديدة" aria-label="محادثة جديدة">
+              <Icon path={icons.plus} size={16} />
+            </button>
+          )}
           <button className="aclose" onClick={onFull} title="فتح كصفحة كاملة" aria-label="فتح كصفحة كاملة">
             <Icon path={icons.expand} size={16} />
           </button>
@@ -177,41 +204,32 @@ export function Assistant({ open, onClose, onFull, context }) {
           </button>
         </div>
 
-        {/* بيقول لك إنه شايف نفس اللي أنت شايفه */}
-        <div className="actx">
-          <span className="lb">يقرأ الآن</span>
-          <div className="actxv">{context.title}</div>
-          <div className="sub">{context.sub}</div>
-        </div>
-
-        <div className="abody">
-          <div className="amsg me">ليه المشروع متأخر؟</div>
-
-          <div className="amsg ai">
-            الإجراء مفتوح من <b>٨٧ يومًا</b> وقد استهلك <b>2,092</b> ساعة مقابل حدّ <b>900</b>. المشروع راجع للجهة في <b>٦ أغسطس</b> بطلب استكمال، ولم يصل منها ردّ بعدها.
-            <div className="asrc">المصدر: سجل الإجراءات · حدّ قسم دراسة المشروع</div>
-          </div>
-
-          <div className="amsg ai">
-            الجهة نفسها لديها مشروع آخر في الدراسة منذ مايو، ومشروع ثالث اعتُذر عنه. النمط يشير إلى بطء في استجابة الجهة لا في المؤسسة.
-            <div className="asrc">المصدر: سجل مشاريع جمعية النوابغ</div>
-          </div>
-
-          <div className="lb" style={{ marginTop: '1.1rem', marginBottom: '.5rem' }}>اقتراحات لهذه الشاشة</div>
-          <div className="chips">
-            <button className="chip">قارن بمشاريع الجهة</button>
-            <button className="chip">راجع الموازنة المرفقة</button>
-            <button className="chip">اكتب رسالة تذكير</button>
-            <button className="chip">لخّص المشروع في نصف صفحة</button>
-          </div>
+        <div className="abody" ref={bodyRef}>
+          {msgs.length === 0 ? (
+            <div className="awelcome">
+              <div className="agreet">{ctx.greet}</div>
+              <div className="acards">
+                {ctx.cards.map((c, i) => (
+                  <button className="acard" key={c.title} style={{ '--d': `${i * 60}ms` }} onClick={() => ask(c.prompt)}>
+                    <span className="badge badge-30"><Icon path={icons[c.icon]} /></span>
+                    <span>{c.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            msgs.map((m, i) =>
+              m.who === 'me' ? (
+                <div className="cmsg me" key={i}>{m.text}</div>
+              ) : (
+                <AiMessage key={i} m={m} onFollow={ask} />
+              ),
+            )
+          )}
         </div>
 
         <div className="afoot">
-          <div className="ask free">
-            <span className="ph">اسأل عن هذا المشروع…</span>
-            <button className="attach"><Icon path={icons.clip} /></button>
-            <button className="go"><Icon path={icons.send} /></button>
-          </div>
+          <Composer value={draft} onChange={setDraft} onSend={ask} onStop={stop} busy={busy} />
         </div>
       </aside>
     </>

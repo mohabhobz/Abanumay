@@ -62,6 +62,7 @@ export const icons = {
   redo: '<path d="M20 12a8 8 0 10-2.3 5.6"/><path d="M20 6v6h-6"/>',
   up: '<path d="M7 20v-8l4-7a2 2 0 013 2l-1 5h5a2 2 0 012 2.4l-1.2 5A2 2 0 0117 21H7z"/>',
   downv: '<path d="M17 4v8l-4 7a2 2 0 01-3-2l1-5H6a2 2 0 01-2-2.4l1.2-5A2 2 0 017 3h10z"/>',
+  grip: '<circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>',
 }
 
 export const Glass = forwardRef(function Glass({ children, className = '', ...rest }, ref) {

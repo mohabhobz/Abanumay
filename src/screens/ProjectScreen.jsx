@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { project as P, entity as E, insights, followUpTypes, currentUser, authority } from '../data/project.js'
+import { assistFor } from '../data/chat.js'
 import { Rail, DecisionBar, Background, Assistant, MobileTop } from '../components/Shell.jsx'
 import { Glass, Head, Tag, Num, Mono, KV, VSteps, CeilingLadder, GateArc, Riyal, Tabs, Timeline, Empty, Stat, Icon, icons, nf, useMediaQuery } from '../components/ui.jsx'
 
@@ -12,6 +13,23 @@ export default function ProjectScreen({ onOpenChat }) {
   const breach = P.log.find((l) => l.hours > l.limit)
   const [ai, setAi] = useState(false)
   const mobile = useMediaQuery('(max-width: 860px)')
+
+  /* لما الصفحة توصل لآخرها، تدرّج البلور تحت شريط القرار بيروح
+     عشان آخر سيكشن يبان كامل من غير ضبابة فوقه. */
+  const screenRef = useRef(null)
+  const [atEnd, setAtEnd] = useState(false)
+  useEffect(() => {
+    const el = screenRef.current
+    if (!el) return
+    const check = () => setAtEnd(el.scrollHeight - el.scrollTop - el.clientHeight < 24)
+    check()
+    el.addEventListener('scroll', check)
+    window.addEventListener('resize', check)
+    return () => {
+      el.removeEventListener('scroll', check)
+      window.removeEventListener('resize', check)
+    }
+  }, [])
 
   // المساعد متاح من أي شاشة بـ ⌘K، ويقفل بـ Esc
   useEffect(() => {
@@ -35,7 +53,7 @@ export default function ProjectScreen({ onOpenChat }) {
           <Rail active="projects" user={currentUser} onAssistant={() => setAi((v) => !v)} assistantOpen={ai} />
 
           <div className="viewstack">
-            <div className="screen col">
+            <div className="screen col" ref={screenRef}>
               {/* المسار جوّه البودي، مش في هيدر منفصل */}
               <nav className="crumb" aria-label="مسار التنقّل">
                 <span className="lb">المشاريع</span>
@@ -92,17 +110,14 @@ export default function ProjectScreen({ onOpenChat }) {
 
             </div>
 
-            <DecisionBar user={currentUser} project={{ name: P.name, amount: P.amountRequested }} compact={mobile} />
+            <DecisionBar user={currentUser} project={{ name: P.name, amount: P.amountRequested }} compact={mobile} atEnd={atEnd} />
           </div>
 
           <Assistant
             open={ai}
             onClose={() => setAi(false)}
             onFull={onOpenChat}
-            context={{
-              title: `مشروع ${P.id} · ${P.name}`,
-              sub: <>{E.name} · {P.track} · <span className="num">{nf.format(P.amountRequested)}</span> <Riyal /></>,
-            }}
+            ctx={assistFor.project({ id: P.id, name: P.name, entity: E.name })}
           />
         </div>
       </div>
