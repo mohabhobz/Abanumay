@@ -1619,35 +1619,111 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 }
 
 /* ═══════════════════════════════════════════════════════════
-   القراءة السريعة — شكل واحد للمساعد في كل شاشة
+   القراءة السريعة — السطح الداكن الوحيد في السيستم
 
-   في صفحة المشروع فيه عمود سياق، فالقراءة بتقعد فيه ككارت.
-   في القوائم مفيش عمود، فبتبقى سطرًا فوق النتائج بينفتح.
-   المحتوى واحد في الحالتين — الشكل بيتغيّر بالمكان مش بالمعنى.
+   كل حاجة تانية زجاج فاتح على خلفية فاتحة. القراءة داكنة عشان
+   العين تروح لها من غير ما تدوّر، وعشان يبان إنها **صوت تاني**:
+   مش عرض لبيانات المستخدم، ده رأي مُنتَج ومسؤوليته مختلفة.
    ═══════════════════════════════════════════════════════════ */
-/* الاسم `strip` مش `bar` عن قصد: `.bar` في نظام التصميم شريط تقدّم
-   بارتفاع ٦ بكسل، فالتسمية دي كانت هتضغط الكارت لستة بكسل.
-   و`flex:none` ضروري لأن العنصر ابن مباشر لعمود flex بارتفاع ثابت،
-   و`overflow:hidden` بيخلّي أدنى ارتفاع تلقائي = صفر. */
-.qread{flex:none}
-.qread.strip{padding:0;overflow:hidden}
-.qread-h{display:flex;align-items:center;gap:.6rem;width:100%;
-  padding:.7rem .95rem;text-align:right;
-  transition:background .16s ease}
-.qread-h:hover{background:rgba(255,255,255,.28)}
-.qread-t{font-family:var(--fd);font-weight:600;font-size:.87rem}
-.qread-n{font-size:.72rem;color:var(--t3);padding:.1rem .5rem;border-radius:var(--rp);
-  background:rgba(var(--edgeC),.07);white-space:nowrap}
-.qread-n.no{color:#95341F;background:rgba(var(--noC),.10)}
-.qread-h>svg{color:var(--t3);flex:none}
-/* لمحة السطر الأول وهو مقفول — بتقول فيه إيه من غير ما تفتح */
-.qread-peek{padding:0 .95rem .75rem;margin-top:-.35rem}
-.qread-list{padding:0 .95rem .3rem}
-.qread.strip .data.i{padding:.85rem 0}
-.qread.strip .data.i:first-child{box-shadow:none}
+.qread{position:relative;isolation:isolate;flex:none;overflow:hidden;
+  border-radius:var(--r3);color:#DCEDE6;
+  background:
+    radial-gradient(120% 90% at 88% -18%, rgba(0,165,155,.34) 0%, rgba(0,165,155,0) 62%),
+    radial-gradient(90% 70% at 10% 118%, rgba(148,214,3,.16) 0%, rgba(148,214,3,0) 60%),
+    linear-gradient(158deg, #123F41 0%, #0D2E30 58%, #10393A 100%);
+  box-shadow:inset 0 0 0 1px rgba(148,214,3,.16), 0 22px 44px -26px rgba(9,32,33,.85)}
+/* حبيبات خفيفة عشان السطح الداكن ما يبقاش مسطّحًا */
+.qread::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.16;
+  mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' sc-camel-base-frequency='.9' sc-camel-num-octaves='2'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='.55'/></svg>")}
+.qread>*{position:relative;z-index:1}
 
-/* التبعيد اللي بيدفع مبدّل العرض لآخر شريط الأدوات */
-.ftool-sp{flex:1;min-width:.4rem}
+.qr-head{display:flex;align-items:center;gap:.6rem;width:100%;text-align:right;
+  padding:.85rem 1.05rem;color:inherit;transition:background .16s ease}
+.qr-head:not(.static):hover{background:rgba(255,255,255,.05)}
+.qr-head>svg{color:rgba(220,237,230,.5);flex:none}
+.qr-sp{flex:1}
+.qr-title{font-family:var(--fd);font-weight:600;font-size:.9rem;letter-spacing:.01em}
+.qr-count{font-size:.7rem;padding:.14rem .5rem;border-radius:var(--rp);white-space:nowrap;
+  color:rgba(220,237,230,.72);background:rgba(255,255,255,.08)}
+.qr-count.no{color:#FFC7B4;background:rgba(219,74,43,.24)}
+/* العلامة: بتنبض وهي بتقرا، وبتهدا لما تخلص */
+.qr-mark{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:10px;
+  color:var(--lime);background:rgba(148,214,3,.13);
+  box-shadow:inset 0 0 0 1px rgba(148,214,3,.28)}
+.qr-mark.live{animation:qrpulse 1.5s ease-in-out infinite}
+@keyframes qrpulse{
+  0%,100%{box-shadow:inset 0 0 0 1px rgba(148,214,3,.28), 0 0 0 0 rgba(148,214,3,.30)}
+  60%{box-shadow:inset 0 0 0 1px rgba(148,214,3,.5), 0 0 0 7px rgba(148,214,3,0)}}
+.qr-ask{font-size:.76rem;padding:.32rem .8rem;border-radius:var(--rp);color:#DCEDE6;
+  background:rgba(255,255,255,.10);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.qr-ask:hover:not(:disabled){background:rgba(255,255,255,.16)}
+.qr-ask:disabled{opacity:.4;cursor:default}
+
+.qr-peek{display:flex;align-items:baseline;gap:.5rem;padding:0 1.05rem .85rem;
+  font-size:.79rem;color:rgba(220,237,230,.7);min-width:0}
+.qr-peek b{font-family:var(--fd);font-weight:700;font-size:1.05rem;color:var(--lime);
+  font-variant-numeric:tabular-nums;flex:none}
+.qr-peek b.bad{color:#FF9C7E}
+
+.qr-list{padding:0 1.05rem}
+.qr-item{padding:1rem 0 1.05rem;position:relative;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09)}
+.qr-item:first-child{box-shadow:none;padding-top:.25rem}
+/* شريط الخطر: بيقف على حافة القراءة نفسها، مش إطار حواليها */
+.qr-item.flag::before{content:"";position:absolute;top:1rem;bottom:1.05rem;
+  inset-inline-start:-1.05rem;width:2px;border-radius:2px;background:var(--no)}
+.qr-item:first-child.flag::before{top:.25rem}
+
+.qr-lbl{font-size:.7rem;letter-spacing:.02em;color:rgba(220,237,230,.55);margin-bottom:.35rem}
+.qr-item.flag .qr-lbl{color:#FF9C7E}
+
+/* الرقم قدام الجملة مش جوّاها */
+.qr-metric{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.3rem}
+.qr-metric b{font-family:var(--fd);font-weight:700;line-height:1;
+  font-size:clamp(1.9rem,3.4vw,2.35rem);color:var(--lime);
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.qr-item.flag .qr-metric b{color:#FF9C7E}
+.qr-metric span{font-size:.8rem;color:rgba(220,237,230,.72);line-height:1.4}
+
+.qr-tx{font-size:.85rem;line-height:1.75;color:rgba(220,237,230,.86)}
+.qr-tx b{font-weight:600;color:#fff}
+.qr-tx b.bad{color:#FF9C7E}
+.qr-item.typing .qr-tx{min-height:1.6em}
+.qr-tx .caret{display:inline-block;width:2px;height:1em;vertical-align:-2px;
+  background:var(--lime);margin-inline-start:2px;animation:blink .9s steps(2) infinite}
+
+.qr-bar{height:5px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden;margin-top:.75rem}
+.qr-bar i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--lime),var(--teal))}
+.qr-barl{display:flex;justify-content:space-between;margin-top:.35rem;
+  font-size:.7rem;color:rgba(220,237,230,.55)}
+.qr-src{margin-top:.55rem;font-size:.7rem;color:rgba(220,237,230,.45)}
+.qr-acts{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem}
+.qr-btn{display:inline-flex;align-items:center;gap:.3rem;padding:.36rem .8rem;border-radius:var(--rp);
+  font-size:.76rem;font-family:var(--fd);font-weight:500;color:rgba(220,237,230,.9);
+  background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  transition:background .16s ease,color .16s ease}
+.qr-btn:hover{background:rgba(255,255,255,.14);color:#fff}
+/* الاسم `qr-go` مش `go`: `.go` في نظام التصميم زرار إرسال دائري
+   بعرض 36px، فبيقصّ النص لو اتسمّى كده. نفس فخّ `.bar` بالظبط. */
+.qr-btn.qr-go{color:#0E3234;background:var(--lime);box-shadow:none;font-weight:600;line-height:1.2}
+.qr-btn.qr-go:hover{color:#0E3234;filter:brightness(1.06)}
+.qr-btn svg{transform:scaleX(1)}
+
+.qr-foot{padding:.7rem 1.05rem .85rem;font-size:.69rem;color:rgba(220,237,230,.4);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);margin-top:.3rem}
+
+.qr-skel{padding:.4rem 1.05rem 1rem;display:flex;flex-direction:column;gap:.55rem}
+.qr-skel span{display:block;height:9px;border-radius:99px;
+  background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.14),rgba(255,255,255,.06));
+  background-size:220% 100%;animation:qrshim 1.3s linear infinite}
+@keyframes qrshim{to{background-position:-220% 0}}
+
+@media (prefers-reduced-motion:reduce){
+  .qr-mark.live{animation:none}
+  .qr-skel span{animation:none}
+}
 
 /* ═══════════════════════════════════════════════════════════
    صندوقي
@@ -1709,3 +1785,16 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 :root{--tone-ok:var(--ok);--tone-ret:var(--ret);--tone-no:var(--no);
   --tone-warn:var(--warn);--tone-brand:var(--lime);--tone-teal:var(--teal);
   --tone-lime:var(--lime);--tone-mute:rgba(var(--edgeC),.3)}
+
+/* مبدّل الدور في قائمة الحساب — للنموذج فقط */
+.acct-demo{font-size:.6rem;padding:.06rem .35rem;border-radius:var(--rp);
+  color:var(--t3);background:rgba(var(--edgeC),.08);margin-inline-start:.35rem}
+.rolesw{display:flex;flex-direction:column;gap:2px;padding:0 .35rem}
+.rolesw button{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;
+  width:100%;padding:.45rem .6rem;border-radius:var(--r1);text-align:right;
+  transition:background .16s ease}
+.rolesw button:hover{background:rgba(var(--edgeC),.05)}
+.rolesw button.on{background:rgba(255,255,255,.82);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+.rolesw-t{font-size:.8rem;font-family:var(--fd);font-weight:500}
+.rolesw-s{font-size:.68rem;color:var(--t3)}

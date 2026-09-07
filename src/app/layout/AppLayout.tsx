@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Background, MobileTop, Rail, AssistantPanel } from '@/components/shell'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { ROUTES } from '@/app/routes'
-import { fixtures } from '@/data/repository'
+import { useRole } from '@/hooks/useRole'
 import type { AssistantContext } from '@/components/assistant'
 
 export interface AppLayoutProps {
@@ -30,7 +30,7 @@ export function AppLayout({ children, assistantContext, autoAssistant }: AppLayo
   const mobile = useIsMobile()
   const navigate = useNavigate()
   const [assistantOpen, setAssistantOpen] = useState(false)
-  const user = fixtures.currentUser
+  const { user } = useRole()
 
   const toggleAssistant = useCallback(() => setAssistantOpen((v) => !v), [])
 

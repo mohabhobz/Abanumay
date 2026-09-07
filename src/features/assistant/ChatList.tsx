@@ -3,7 +3,7 @@ import { Icon, icons } from '@/components/ui'
 import type { SavedChat } from '@/data/mock/assistant'
 
 /** المجموعات بترتيبها في القائمة — «مثبّتة» بتسبق أي تاريخ */
-const GROUPS = ['مثبّتة', 'اليوم', 'أمس', 'آخر ٧ أيام'] as const
+const GROUPS = ['مثبّتة', 'اليوم', 'أمس', 'آخر 7 أيام'] as const
 
 export interface ChatListProps {
   chats: SavedChat[]

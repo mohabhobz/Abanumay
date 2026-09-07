@@ -60,7 +60,7 @@ export const tabSlug = (label: string): ProjectTabSlug =>
 
 /**
  * عناصر التنقّل — مبنية على موديولات النظام الفعلية.
- * `mob` يعني يظهر في شريط الموبايل السفلي (مساحته ٥ عناصر).
+ * `mob` يعني يظهر في شريط الموبايل السفلي (مساحته 5 عناصر).
  * `perm` هو مفتاح الصلاحية اللي هيتفلتر بيه لما الباك اند يرجّع صلاحيات المستخدم.
  */
 export interface NavItem {
@@ -76,14 +76,14 @@ export interface NavItem {
 /**
  * ستة عناصر فقط.
  *
- * النظام العامل فيه ٤٦ شاشة وقائمة جانبية بعشرات المداخل. الاختصار
+ * النظام العامل فيه 46 شاشة وقائمة جانبية بعشرات المداخل. الاختصار
  * هنا مش تبسيط شكلي: الاتفاقيات والمراسلات والمتابعات مش موديولات
  * مستقلة في ذهن المستخدم — هي حاجات بتحصل **جوّه مشروع**، فمكانها
  * تبويب في صفحة المشروع لا مدخل في الريل. اللي فضل في الريل هو
  * اللي المستخدم بيبدأ منه يومه فعلًا.
  */
 export const NAV: NavItem[] = [
-  { key: 'home', label: 'صندوقي', to: ROUTES.home, icon: 'home', group: 'work', mob: true },
+  { key: 'home', label: 'اليوم', to: ROUTES.home, icon: 'insight', group: 'work', mob: true },
   { key: 'projects', label: 'المشاريع', to: ROUTES.projects, icon: 'doc', group: 'work', mob: true, perm: 'projects.read' },
   { key: 'entities', label: 'الجهات', to: ROUTES.entities, icon: 'entity', group: 'work', mob: true, perm: 'entities.read' },
   { key: 'budget', label: 'الميزانية', to: ROUTES.budget, icon: 'budget', group: 'money', perm: 'budget.read' },

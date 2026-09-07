@@ -52,10 +52,10 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
           kind: 'breach' as const,
           text:
             `الإجراء استهلك ${nf.format(breach.hours)} ساعة مقابل حدّ ${nf.format(breach.limit)} — ` +
-            `أي ${over}٪ فوق الحدّ، ومفتوح من ${openDays} يومًا بلا سبب مسجَّل. ` +
+            `أي ${over}% فوق الحدّ، ومفتوح من ${openDays} يومًا بلا سبب مسجَّل. ` +
             `المشروع واقف عند «${breach.dept}».`,
-          bold: [nf.format(breach.hours), nf.format(breach.limit), `${over}٪ فوق الحدّ`, `${openDays} يومًا`],
-          danger: [`${over}٪ فوق الحدّ`],
+          bold: [nf.format(breach.hours), nf.format(breach.limit), `${over}% فوق الحدّ`, `${openDays} يومًا`],
+          danger: [`${over}% فوق الحدّ`],
         }]
       : []),
     ...insights.map((it) => ({

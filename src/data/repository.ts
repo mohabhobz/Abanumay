@@ -191,7 +191,7 @@ const sortEntities = (rows: EntityRow[], sort: EntityQuery['sort'] = 'granted'):
   }
 }
 
-/** ملف الجهة كامل = ٨ مستندات */
+/** ملف الجهة كامل = 8 مستندات */
 export const ENTITY_DOCS_TOTAL = 8
 
 /* ═══════════════ الواجهة ═══════════════ */

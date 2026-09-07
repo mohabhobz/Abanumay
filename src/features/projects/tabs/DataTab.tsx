@@ -21,7 +21,7 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
   return (
     <>
       <Glass>
-        <Head title="التعريف" meta="٧ حقول" />
+        <Head title="التعريف" meta="7 حقول" />
         <KV
           rows={[
             { k: 'الجهة', v: <a onClick={onOpenEntity}>{entityName}</a> },
@@ -44,7 +44,7 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
           value={nf.format(P.amountRequested)}
           unit={<Riyal />}
           bar={{ w: '100%', c: 'var(--teal)' }}
-          note="١٠٠٪ من إجمالي المشروع"
+          note="100% من إجمالي المشروع"
         />
         <Stat
           label="مدة التنفيذ"
@@ -80,7 +80,7 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
       </Glass>
 
       <Glass>
-        <Head title="مراحل التنفيذ" meta={`${P.phases.length} مراحل · ١١ شهرًا`} />
+        <Head title="مراحل التنفيذ" meta={`${P.phases.length} مراحل · 11 شهرًا`} />
         <Timeline
           events={P.phases.map((ph) => ({
             tone: ph.tone,
@@ -131,7 +131,7 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
 
         <div className="hd" style={{ marginTop: '1.3rem', marginBottom: '.6rem' }}>
           <h3 style={{ fontSize: '.9rem' }}>الامتثال</h3>
-          <span className="meta">٣ إقرارات</span>
+          <span className="meta">3 إقرارات</span>
         </div>
         <div className="g3" style={{ gap: '.6rem' }}>
           {P.compliance.map((c) => (

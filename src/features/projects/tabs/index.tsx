@@ -117,7 +117,7 @@ export function FollowUpsTab({
         ))}
       </div>
       <div className="sub" style={{ marginTop: '.8rem' }}>
-        المرفق أقل من ٣٢ ميجابايت · pdf doc docx txt jpg jpeg gif png xls xlsx
+        المرفق أقل من 32 ميجابايت · pdf doc docx txt jpg jpeg gif png xls xlsx
       </div>
     </Glass>
   )

@@ -6,6 +6,7 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { nf } from '@/lib/format'
 import { fixtures } from '@/data/repository'
+import { useRole } from '@/hooks/useRole'
 import { projectById } from '@/data/mock/projects'
 import { entityById } from '@/data/mock/entities'
 import { days, groupTone } from '@/lib/tone'
@@ -80,7 +81,7 @@ export default function ProjectPage() {
       }
     : fixtures.entity
   const authority = fixtures.authority
-  const user = fixtures.currentUser
+  const { user } = useRole()
 
   const active: ProjectTabSlug =
     PROJECT_TABS.find((t) => t.slug === tab)?.slug ?? DEFAULT_PROJECT_TAB
@@ -137,7 +138,7 @@ export default function ProjectPage() {
           <nav className="crumb" aria-label="مسار التنقّل">
             <a onClick={() => navigate(ROUTES.projects)} className="lb">المشاريع</a>
             <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
-            <span className="lb">دورة ٢٠٢٦ · {project.track}</span>
+            <span className="lb">دورة 2026 · {project.track}</span>
             <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
             <span className="now">مشروع <Mono>{id ?? project.id}</Mono></span>
           </nav>
@@ -170,7 +171,7 @@ export default function ProjectPage() {
                     days: openDays,
                     hours: breach.hours,
                     limit: breach.limit,
-                    firstActionAt: '١١-٠٥-٢٠٢٦',
+                    firstActionAt: '11-05-2026',
                   }
                 }
               />

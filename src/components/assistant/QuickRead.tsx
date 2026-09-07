@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Glass } from '@/components/ui/primitives'
 import { Icon } from '@/components/ui/Icon'
 import { icons } from '@/components/ui/icons'
 import { useOnScreen } from '@/hooks/useOnScreen'
@@ -15,8 +14,8 @@ const THINK_MS = 900
 export interface QuickReadProps {
   readings: Reading[]
   /**
-   * `panel` = كارت كامل في عمود السياق (صفحة المشروع والجهة).
-   * `bar`   = سطر واحد فوق النتائج بينفتح (شاشات القوائم، مفيش عمود جانبي).
+   * `panel` = كارت كامل في عمود السياق (اليوم وصفحة الجهة).
+   * `bar`   = سطر واحد فوق النتائج بينفتح (شاشات القوائم).
    */
   variant?: 'panel' | 'bar'
   title?: string
@@ -25,15 +24,16 @@ export interface QuickReadProps {
 }
 
 /**
- * القراءة السريعة — نفس فكرة صفحة المشروع، متاحة في أي شاشة.
+ * القراءة السريعة — صوت المساعد في أي شاشة.
  *
- * الشاشة ما بتكتبش نصًّا: بتسلّم `Reading[]` محسوبة من نفس الداتا
- * المعروضة (شوف `data/readings.ts`). الكومبوننت ده مسؤول عن حاجة
- * واحدة — إن القراءة تتقال بنفس الصوت في كل مكان: تفكير قصير، كتابة
- * حرف حرف، رقم مُبرز، مصدر تحته، وطريق يوصّلك للصفوف اللي بتتكلم عنها.
+ * السطح هنا **داكن عن قصد**، وهو السطح الداكن الوحيد في السيستم.
+ * كل حاجة تانية زجاج فاتح على خلفية فاتحة، فأول ما القراءة تظهر
+ * العين بتروح لها من غير ما تدوّر. والسبب مش زخرفة: ده مش عرض
+ * لبيانات المستخدم، ده **رأي مُنتَج** — لازم يبان إنه صوت تاني في
+ * الغرفة، وإنه مسؤولية مختلفة (استرشادي، غير مُلزِم).
  *
- * وشكلها بيختلف حسب المكان لا حسب المحتوى: كارت في العمود الجانبي
- * لما يكون فيه عمود، وسطر بينفتح فوق القائمة لما ما يكونش فيه.
+ * وكل قراءة بتبدأ برقمها كبيرًا: القراءة اللي رقمها جوّه فقرة
+ * بتتقري، واللي رقمها قدامها بتتشاف.
  */
 export function QuickRead({
   readings,
@@ -58,94 +58,87 @@ export function QuickRead({
 
   if (readings.length === 0) return null
 
+  const head = (
+    <>
+      <span className={`qr-mark${done ? '' : ' live'}`}>
+        <Icon path={icons.insight} size={17} />
+      </span>
+      <span className="qr-title">{title}</span>
+      {flags > 0 && (
+        <span className="qr-count no">
+          <span className="num">{flags}</span> تحتاج انتباه
+        </span>
+      )}
+      <span className="qr-count">
+        <span className="num">{readings.length}</span> قراءات
+      </span>
+    </>
+  )
+
   /* ── العرض المختصر: سطر واحد فوق النتائج ── */
   if (variant === 'bar') {
     return (
-      <Glass className={`qread strip${open ? ' open' : ''}`} ref={box}>
-        <button
-          className="qread-h"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-        >
-          <span className={`badge badge-30${done ? '' : ' pulse'}`}>
-            <span className="aispark" />
-          </span>
-          <span className="qread-t">{title}</span>
-          {flags > 0 && (
-            <span className="qread-n no">
-              <span className="num">{flags}</span> تحتاج انتباه
-            </span>
-          )}
-          <span className="qread-n">
-            <span className="num">{readings.length}</span> قراءات
-          </span>
-          <span className="pc-sp" />
+      <div className={`qread strip${open ? ' open' : ''}`} ref={box}>
+        <button className="qr-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+          {head}
+          <span className="qr-sp" />
           <Icon path={open ? icons.chevronUp : icons.chevronDown} size={16} />
         </button>
 
         {!open && readings[0] && (
-          <div className="qread-peek sub trim1">{readings[0].text}</div>
+          <div className="qr-peek">
+            {readings[0].metric && (
+              <b className={readings[0].kind === 'flag' ? 'bad' : undefined}>
+                {readings[0].metric.value}
+              </b>
+            )}
+            <span className="trim1">
+              {readings[0].metric ? `${readings[0].metric.unit} — ` : ''}
+              {readings[0].text}
+            </span>
+          </div>
         )}
 
         {open && (
-          <div className="qread-list">
+          <div className="qr-list">
             {shown.map((r, i) => (
-              <ReadingBlock
-                key={r.id}
-                reading={r}
-                typing={i === block}
-                chars={chars}
-                hidden={i > block}
-              />
+              <ReadingBlock key={r.id} reading={r} typing={i === block} chars={chars} hidden={i > block} />
             ))}
           </div>
         )}
-      </Glass>
+      </div>
     )
   }
 
   /* ── العرض الكامل: كارت في عمود السياق ── */
   return (
-    <Glass className="qread aicard" ref={box}>
-      <div className="rowf" style={{ gap: '.6rem', marginBottom: '.9rem' }}>
-        <span className={`badge badge-30${done ? '' : ' pulse'}`}>
-          <span className="aispark" />
-        </span>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '.95rem' }}>{title}</div>
-          <div className="sub">
-            {done ? (
-              'قراءة آلية · استرشادية غير مُلزِمة'
-            ) : (
-              <>مساعد أبانمي يقرأ<span className="dots"><i /><i /><i /></span></>
-            )}
-          </div>
-        </div>
+    <div className="qread panel" ref={box}>
+      <div className="qr-head static">
+        {head}
+        <span className="qr-sp" />
         {onAsk && (
-          <button className="btn btn-2 btn-sm" onClick={onAsk} disabled={!done}>اسأل</button>
+          <button className="qr-ask" onClick={onAsk} disabled={!done}>
+            اسأل
+          </button>
         )}
       </div>
 
       {onScreen && !thought && (
-        <div className="skel" aria-hidden="true">
-          <span style={{ width: '92%' }} />
-          <span style={{ width: '78%' }} />
-          <span style={{ width: '56%' }} />
+        <div className="qr-skel" aria-hidden="true">
+          <span style={{ width: '38%' }} />
+          <span style={{ width: '86%' }} />
+          <span style={{ width: '64%' }} />
         </div>
       )}
 
-      <div className="ins">
+      <div className="qr-list">
         {shown.map((r, i) => (
-          <ReadingBlock
-            key={r.id}
-            reading={r}
-            typing={i === block}
-            chars={chars}
-            hidden={i > block}
-          />
+          <ReadingBlock key={r.id} reading={r} typing={i === block} chars={chars} hidden={i > block} />
         ))}
       </div>
-    </Glass>
+
+      <div className="qr-foot">قراءة آلية · استرشادية غير مُلزِمة</div>
+    </div>
   )
 }
 
@@ -165,14 +158,17 @@ function ReadingBlock({
   const body = typing ? r.text.slice(0, chars) : highlight(r.text, r.bold, r.danger)
 
   return (
-    <div className={`data i${r.kind === 'flag' ? ' flag' : ''}${typing ? ' typing' : ''}`}>
-      {r.label && (
-        <div className="rowf" style={{ justifyContent: 'space-between', marginBottom: '.5rem' }}>
-          <span className={`itag${r.kind === 'flag' ? ' no' : ''}`}>{r.label}</span>
+    <div className={`qr-item${r.kind === 'flag' ? ' flag' : ''}${typing ? ' typing' : ''}`}>
+      {r.label && <div className="qr-lbl">{r.label}</div>}
+
+      {r.metric && (
+        <div className="qr-metric">
+          <b className="num">{r.metric.value}</b>
+          <span>{r.metric.unit}</span>
         </div>
       )}
 
-      <div className="tx">
+      <div className="qr-tx">
         {body}
         {typing && <span className="caret" />}
       </div>
@@ -181,32 +177,28 @@ function ReadingBlock({
         <div className="rise">
           {r.bar && (
             <>
-              <div className="bar over" style={{ marginTop: '.6rem' }}>
+              <div className="qr-bar">
                 <i style={{ width: `${Math.min(100, (r.bar.value / r.bar.limit) * 100)}%` }} />
               </div>
-              <div className="rowf" style={{ justifyContent: 'space-between', marginTop: '.35rem' }}>
-                <span className="sub">
-                  {r.bar.limitLabel} <span className="num">{nf.format(r.bar.limit)}</span>
-                </span>
-                <span className="sub">
-                  {r.bar.valueLabel} <span className="num">{nf.format(r.bar.value)}</span>
-                </span>
+              <div className="qr-barl">
+                <span>{r.bar.limitLabel} <span className="num">{nf.format(r.bar.limit)}</span></span>
+                <span>{r.bar.valueLabel} <span className="num">{nf.format(r.bar.value)}</span></span>
               </div>
             </>
           )}
 
-          {r.src && <div className="src">المصدر: {r.src}</div>}
+          {r.src && <div className="qr-src">المصدر: {r.src}</div>}
 
           {(r.to || r.actions) && (
-            <div className="rowf" style={{ gap: '.5rem', marginTop: '.7rem' }}>
+            <div className="qr-acts">
               {r.to && (
-                <Link className="btn btn-1 btn-sm" to={r.to}>
-                  <Icon path={icons.link} size={14} />
+                <Link className="qr-btn qr-go" to={r.to}>
                   {r.toLabel ?? 'اعرضها'}
+                  <Icon path={icons.chevron} size={14} />
                 </Link>
               )}
               {r.actions?.map((a) => (
-                <button key={a.label} className={`btn ${a.kind ?? 'btn-2'} btn-sm`} onClick={a.onClick}>
+                <button key={a.label} className="qr-btn" onClick={a.onClick}>
                   {a.label}
                 </button>
               ))}

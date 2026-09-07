@@ -32,7 +32,7 @@ export function FilePreview({ file, onClose }: { file: PreviewFile; onClose: () 
           <span className="badge badge-30"><Icon path={icons.file} /></span>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="atitle">{file.name}</div>
-            <div className="sub">{scanned ? 'صورة ممسوحة · لا تُقرأ آليًا' : 'PDF · صفحة ١ من ١'}</div>
+            <div className="sub">{scanned ? 'صورة ممسوحة · لا تُقرأ آليًا' : 'PDF · صفحة 1 من 1'}</div>
           </div>
           <button className="aclose" title="تحميل" aria-label="تحميل">
             <Icon path={icons.clip} size={16} />

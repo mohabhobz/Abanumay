@@ -14,7 +14,7 @@ interface Options {
  * المسافة محسوبة أفقيًا ورأسيًا عشان في صف كروت يبقى الكارت الأقرب
  * هو اللي يتأثر أكتر، مش كلهم مع بعض.
  *
- * بيكتب على كل عنصر: `--near` (٠→١) و`--mx`/`--my`.
+ * بيكتب على كل عنصر: `--near` (0→1) و`--mx`/`--my`.
  */
 export function useProximity(
   rootRef: RefObject<HTMLElement | null>,

@@ -13,8 +13,8 @@ export type Tone = 'ok' | 'warn' | 'no' | 'ret' | 'brand' | 'teal' | 'lime' | 'm
 export type FundingSource = 'foundation' | 'waqf'
 
 /**
- * القسم الإجرائي — النظام فيه ٥٠ قسمًا.
- * دي أكثرهم ورودًا في جدول المشاريع (١٨ قيمة على ٤٬٩٢٩ مشروعًا).
+ * القسم الإجرائي — النظام فيه 50 قسمًا.
+ * دي أكثرهم ورودًا في جدول المشاريع (18 قيمة على 4,929 مشروعًا).
  */
 export type ProcedureStage =
   | 'دراسة المشروع'
@@ -36,7 +36,7 @@ export type ProcedureStage =
   | 'مشروع معتذر عنه'
   | 'مشروع ملغي'
 
-/** الحالة المجمّعة — النظام بيفلتر بيها، ٥ قيم فقط */
+/** الحالة المجمّعة — النظام بيفلتر بيها، 5 قيم فقط */
 export type ProjectStatusGroup =
   | 'في الدراسة'
   | 'في التشغيل'
@@ -50,7 +50,7 @@ export type GrantMethod = 'بحث واستجابة' | 'ابتكار وإنضاج
 /** طريقة تحويل المبلغ للجهة */
 export type TransferMethod = 'حساب الجهة مباشر' | 'عبر منصة إحسان'
 
-/** مبررات الاعتذار المقنّنة في النظام (٩) */
+/** مبررات الاعتذار المقنّنة في النظام (9) */
 export type DeclineReason =
   | 'الاكتفاء بالمشاريع المدعومة في الهدف'
   | 'الاكتفاء بدعم المشاريع الأخرى لنفس الجهة'
@@ -171,7 +171,7 @@ export interface Gate {
 /**
  * قيد في سجل الإجراءات.
  * `hours` مقابل `limit` هو أساس تنبيه «تجاوز مدة الإجراء» —
- * والنظام بيسجّل المدة لكل مستوى فعلًا (١٣ عمود مدة في جدول المشاريع).
+ * والنظام بيسجّل المدة لكل مستوى فعلًا (13 عمود مدة في جدول المشاريع).
  */
 export interface LogEntry {
   action: string
@@ -240,9 +240,9 @@ export interface Project {
   amountTotal: number
   amountGranted: number
   amountSpent?: number
-  /** وزن المشروع ٠–١٠٠ كما في النظام */
+  /** وزن المشروع 0–100 كما في النظام */
   weight: number
-  /** التقييم ٪ */
+  /** التقييم % */
   score: number
 
   startDate: string
@@ -335,8 +335,8 @@ export interface Insight {
 // ═══════════════════ صفوف القوائم ═══════════════════
 
 /**
- * صف في قائمة المشاريع — العمود الفقري من ١٢ حقلًا.
- * جدول النظام فيه ٦٢ عمودًا؛ الباقي يعيش في صفحة المشروع.
+ * صف في قائمة المشاريع — العمود الفقري من 12 حقلًا.
+ * جدول النظام فيه 62 عمودًا؛ الباقي يعيش في صفحة المشروع.
  */
 export interface ProjectRow {
   id: string
@@ -393,7 +393,7 @@ export interface EntityRow {
   activation: EntityActivation
   /** «لم تُقيَّم» لو ملف الجهة ناقص */
   governance: string
-  /** عدد المستندات المرفوعة من ٨ */
+  /** عدد المستندات المرفوعة من 8 */
   docsUploaded: number
   projectsApproved: number
   projectsRunning: number

@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon, icons, type IconName } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
+import { nf } from '@/lib/format'
 import { Avatar } from './Avatar'
+import { ROLES } from '@/data/roles'
+import { useRole } from '@/hooks/useRole'
 import type { CurrentUser } from '@/types/domain'
 
 export type ThemeChoice = 'light' | 'dark' | 'system'
@@ -29,6 +32,7 @@ function readTheme(): ThemeChoice {
  * المظهر وإعدادات الحساب والخروج هنا، عشان ما ياخدوش مكان في التنقّل.
  */
 export function AccountMenu({ user, onSignOut }: { user: CurrentUser; onSignOut?: () => void }) {
+  const { role, setRole } = useRole()
   const [open, setOpen] = useState(false)
   const [theme, setTheme] = useState<ThemeChoice>(readTheme)
   const wrap = useRef<HTMLDivElement>(null)
@@ -99,6 +103,33 @@ export function AccountMenu({ user, onSignOut }: { user: CurrentUser; onSignOut?
                 >
                   <Icon path={icons[t.icon]} size={15} />
                   <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* مبدّل الدور — للنموذج فقط. الأدوار بتغيّر القراءات
+              والشرائح والسقوف، فمن غير المبدّل الفرق ما يتجرّبش.
+              لما يبقى فيه باك اند، الدور بييجي من التوكن والقسم ده يختفي. */}
+          <div className="acct-sec">
+            <div className="acct-lbl">
+              الدور <span className="acct-demo">للعرض</span>
+            </div>
+            <div className="rolesw" role="radiogroup" aria-label="الدور">
+              {ROLES.map((r) => (
+                <button
+                  key={r.key}
+                  role="radio"
+                  aria-checked={role.key === r.key}
+                  className={role.key === r.key ? 'on' : ''}
+                  onClick={() => setRole(r.key)}
+                >
+                  <span className="rolesw-t">{r.title}</span>
+                  <span className="rolesw-s">
+                    {r.financialAuthority === null
+                      ? 'توصية فقط'
+                      : `سقف ${nf.format(r.financialAuthority)}`}
+                  </span>
                 </button>
               ))}
             </div>

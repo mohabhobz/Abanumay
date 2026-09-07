@@ -16,7 +16,7 @@ export interface ProjectsTableProps {
 /**
  * عرض الجدول — للمسح السريع لا للقرار.
  *
- * ١٢ عمودًا مش ٦٢: الباقي عايش في صفحة المشروع. العمود الحاسم هو
+ * 12 عمودًا مش 62: الباقي عايش في صفحة المشروع. العمود الحاسم هو
  * «القسم ومدته» — هو اللي بيخلي التأخير مرئي من غير ما تفتح صف.
  */
 export function ProjectsTable({ rows, selected, onSelect, onSelectAll }: ProjectsTableProps) {

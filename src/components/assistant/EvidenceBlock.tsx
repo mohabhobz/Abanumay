@@ -69,7 +69,7 @@ export function EvidenceBlock({ block }: { block: Block }) {
               <div key={it.k}>
                 <div className="cb-bl">
                   <span>{it.k}</span>
-                  <span className="num">{it.real}٪</span>
+                  <span className="num">{it.real}%</span>
                 </div>
                 <div className="bar">
                   <i style={{ width: `${it.real}%`, background: 'var(--teal)' }} />

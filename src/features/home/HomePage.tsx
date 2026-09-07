@@ -5,25 +5,26 @@ import { QuickRead } from '@/components/assistant'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { fixtures, query, stagePressure, ENTITY_DOCS_TOTAL } from '@/data/repository'
+import { useRole } from '@/hooks/useRole'
 import { readHome } from '@/data/readings'
 import { budgetForYear } from '@/data/budget'
 import { assistFor } from '@/data/mock/assistant'
-import { nf, units } from '@/lib/format'
+import { df, nf, units } from '@/lib/format'
 import { days, groupTone } from '@/lib/tone'
 import { STATUS_GROUPS } from '@/data/mock/taxonomy'
 
 /* ═══════════════════════════════════════════════════════════
-   صندوقي
+   اليوم
 
-   مش لوحة مؤشرات. النظام العامل فيه ٤٬٩٢٩ مشروعًا و٣٬٢٧٢ جهة،
-   والأوديت طلّع إن اللي محتاج قرارًا فعلًا **٢٩ مشروعًا**. فلو
+   مش لوحة مؤشرات. النظام العامل فيه 4,929 مشروعًا و3,272 جهة،
+   والأوديت طلّع إن اللي محتاج قرارًا فعلًا **29 مشروعًا**. فلو
    الصفحة دي فتحت على أرقام كبيرة تكون بتخفي الشغل بدل ما تعرضه.
 
    الترتيب بيتبع سؤال المستخدم الصبح، بالترتيب:
-     ١ — إيه اللي عليّ؟          (شرائح القرار، أرقام قابلة للضغط)
-     ٢ — فيه حاجة غلط؟           (القراءة السريعة، عرضية بين الموديولات)
-     ٣ — أبدأ بإيه؟              (الصفوف نفسها، مرتّبة بالأطول انتظارًا)
-     ٤ — إحنا واقفين فين؟        (المالي والتشغيلي على الجنب)
+     1 — إيه اللي عليّ؟          (شرائح القرار، أرقام قابلة للضغط)
+     2 — فيه حاجة غلط؟           (القراءة السريعة، عرضية بين الموديولات)
+     3 — أبدأ بإيه؟              (الصفوف نفسها، مرتّبة بالأطول انتظارًا)
+     4 — إحنا واقفين فين؟        (المالي والتشغيلي على الجنب)
    ═══════════════════════════════════════════════════════════ */
 
 const GREET = () => {
@@ -33,13 +34,10 @@ const GREET = () => {
   return 'مساء الخير'
 }
 
-const TODAY = () =>
-  new Intl.DateTimeFormat('ar-SA-u-ca-gregory', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  }).format(new Date())
+const TODAY = () => df.format(new Date())
 
 export default function HomePage() {
-  const user = fixtures.currentUser
+  const { role, user } = useRole()
   const projects = fixtures.projects
   const entities = fixtures.entities
   const budget = useMemo(() => budgetForYear('2026-f'), [])
@@ -50,15 +48,28 @@ export default function HomePage() {
   const shortDocs = entities.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL)
 
   const readings = useMemo(
-    () => readHome({ projects, entities, owner: user.name, budget }),
-    [projects, entities, user.name, budget],
+    () =>
+      readHome({
+        projects,
+        entities,
+        lens: role.lens,
+        owner: user.name,
+        ceiling: role.financialAuthority,
+        budget,
+      }),
+    [projects, entities, role.lens, role.financialAuthority, user.name, budget],
   )
 
   /* الطابور: مرتّب بالأطول انتظارًا، وده ترتيب مقصود — الأقدم
      مش الأهم، لكنه اللي بيكلّف الجهة وقتًا كل يوم بيعدّي. */
   const queue = useMemo(
-    () => query.projects({ owner: user.name, status: 'في الدراسة', sort: 'waiting', pageSize: 5 }).rows,
-    [user.name],
+    () =>
+      query.projects(
+        role.lens === 'own'
+          ? { owner: user.name, status: 'في الدراسة', sort: 'waiting', pageSize: 5 }
+          : { status: 'في الدراسة', sort: 'amount', pageSize: 5 },
+      ).rows,
+    [user.name, role.lens],
   )
 
   const attention = useMemo(
@@ -72,53 +83,120 @@ export default function HomePage() {
   }))
   const maxGroup = Math.max(...byGroup.map((g) => g.count), 1)
 
-  const tiles = [
-    {
-      key: 'mine',
-      label: 'ينتظر قرارك',
-      value: mine.length,
-      note: mine.length
-        ? `${units.project(mine.filter((p) => stagePressure(p) > 1).length, true)} منها فوق الحدّ`
-        : 'صندوقك فاضي',
-      tone: mine.some((p) => stagePressure(p) > 1) ? 'no' : 'ok',
-      to: `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`,
-      icon: icons.doc,
-    },
-    {
-      key: 'late',
-      label: 'تجاوز حدّ القسم',
-      value: late.length,
-      note: 'في السيستم كله',
-      tone: late.length ? 'no' : 'ok',
-      to: `${ROUTES.projects}?overdue=1&sort=waiting`,
-      icon: icons.clock,
-    },
-    {
-      key: 'orphan',
-      label: 'بلا مالك',
-      value: orphan.length,
-      note: 'محتاجة إسناد',
-      tone: orphan.length ? 'warn' : 'ok',
-      to: `${ROUTES.projects}?unowned=1`,
-      icon: icons.users,
-    },
-    {
-      key: 'docs',
-      label: 'جهات ملفها ناقص',
-      value: shortDocs.length,
-      note: 'الاتفاقيات بتقف عندها',
-      tone: shortDocs.length ? 'warn' : 'ok',
-      to: `${ROUTES.entities}?docs=1`,
-      icon: icons.entity,
-    },
-  ] as const
+  /* الشرائح بتتغيّر بالدور زي القراءات: المشرف بيشوف صندوقه،
+     ومدير المنح بيشوف اللي واقف عنده وحمل فريقه، والتنفيذي بيشوف
+     المحفظة. لو الأربعة اتثبتوا لكل الأدوار، تلاتة منهم هيبقوا
+     أرقامًا ما تخصّش اللي بيبصّ عليها. */
+  const waiting = projects.filter(
+    (p) =>
+      p.statusGroup === 'في الدراسة' &&
+      (role.financialAuthority === null || p.amountRequested > role.financialAuthority),
+  )
+  const done = projects.filter((p) => p.statusGroup === 'مكتمل')
+  const declined = projects.filter((p) => p.statusGroup === 'معتذر عنه')
+  const running = projects.filter((p) => p.statusGroup === 'في التشغيل')
+
+  const lateTile = {
+    key: 'late',
+    label: 'تجاوز حدّ القسم',
+    value: late.length,
+    note: 'في السيستم كله',
+    tone: late.length ? 'no' : 'ok',
+    to: `${ROUTES.projects}?overdue=1&sort=waiting`,
+    icon: icons.clock,
+  } as const
+
+  const docsTile = {
+    key: 'docs',
+    label: 'جهات ملفها ناقص',
+    value: shortDocs.length,
+    note: 'الاتفاقيات بتقف عندها',
+    tone: shortDocs.length ? 'warn' : 'ok',
+    to: `${ROUTES.entities}?docs=1`,
+    icon: icons.entity,
+  } as const
+
+  const orphanTile = {
+    key: 'orphan',
+    label: 'بلا مالك',
+    value: orphan.length,
+    note: 'محتاجة إسناد',
+    tone: orphan.length ? 'warn' : 'ok',
+    to: `${ROUTES.projects}?unowned=1`,
+    icon: icons.users,
+  } as const
+
+  const tiles =
+    role.lens === 'own'
+      ? ([
+          {
+            key: 'mine',
+            label: 'ينتظر قرارك',
+            value: mine.length,
+            note: mine.length
+              ? `${units.project(mine.filter((p) => stagePressure(p) > 1).length, true)} منها فوق الحدّ`
+              : 'صندوقك فاضي',
+            tone: mine.some((p) => stagePressure(p) > 1) ? 'no' : 'ok',
+            to: `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`,
+            icon: icons.doc,
+          },
+          lateTile,
+          orphanTile,
+          docsTile,
+        ] as const)
+      : role.lens === 'team'
+        ? ([
+            {
+              key: 'approvals',
+              label: 'ينتظر اعتمادك',
+              value: waiting.length,
+              note: 'فوق سقف المشرف',
+              tone: waiting.length ? 'no' : 'ok',
+              to: `${ROUTES.projects}?status=في الدراسة&sort=amount`,
+              icon: icons.check,
+            },
+            orphanTile,
+            lateTile,
+            docsTile,
+          ] as const)
+        : ([
+            {
+              key: 'running',
+              label: 'تحت التشغيل',
+              value: running.length,
+              note: `${nf.format(running.reduce((s, p) => s + p.amountGranted, 0))} ريال التزامًا`,
+              tone: 'ok',
+              to: `${ROUTES.projects}?status=في التشغيل`,
+              icon: icons.pay,
+            },
+            {
+              key: 'done',
+              label: 'مكتمل',
+              value: done.length,
+              note: `${nf.format(done.reduce((s, p) => s + p.beneficiaries, 0))} مستفيد`,
+              tone: 'ok',
+              to: `${ROUTES.projects}?status=مكتمل`,
+              icon: icons.check,
+            },
+            {
+              key: 'declined',
+              label: 'معتذر عنه',
+              value: declined.length,
+              note: `${Math.round((declined.length / projects.length) * 100)}% من الطلبات`,
+              tone: 'warn',
+              to: `${ROUTES.projects}?status=معتذر عنه`,
+              icon: icons.close,
+            },
+            docsTile,
+          ] as const)
 
   return (
-    <AppLayout assistantContext={assistFor.home(user.name, mine.length, late.length)} autoAssistant>
+    <AppLayout assistantContext={assistFor.home(user.name, role.lens === 'own' ? mine.length : waiting.length, late.length)}
+      autoAssistant>
       <div className="viewstack">
         <div className="screen col">
           <nav className="crumb" aria-label="مسار التنقّل">
-            <span className="now">صندوقي</span>
+            <span className="now">اليوم</span>
           </nav>
 
           <header className="hhead">
@@ -130,7 +208,7 @@ export default function HomePage() {
             </div>
           </header>
 
-          {/* ═══ ١ — إيه اللي عليّ؟ ═══ */}
+          {/* ═══ 1 — إيه اللي عليّ؟ ═══ */}
           <div className="htiles">
             {tiles.map((t) => (
               <Link key={t.key} to={t.to} className={`htile glass t-${t.tone}`}>
@@ -144,14 +222,25 @@ export default function HomePage() {
 
           <div className="g2">
             <div className="col">
-              {/* ═══ ٣ — أبدأ بإيه؟ ═══ */}
+              {/* ═══ 3 — أبدأ بإيه؟ ═══ */}
               <Glass>
                 <Head
-                  title="طابور قرارك"
-                  meta={<Link className="lnk" to={`${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`}>الكل</Link>}
+                  title={role.lens === 'own' ? 'طابور قرارك' : 'ينتظر اعتمادك'}
+                  meta={
+                    <Link
+                      className="lnk"
+                      to={
+                        role.lens === 'own'
+                          ? `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`
+                          : `${ROUTES.projects}?status=في الدراسة&sort=amount`
+                      }
+                    >
+                      الكل
+                    </Link>
+                  }
                 />
                 {queue.length === 0 ? (
-                  <Empty title="مفيش مشروع منتظر قرارك." note="كل اللي مسند لك اتحرّك." />
+                  <Empty title="مفيش مشروع منتظر قرارك." note="كل اللي عندك اتحرّك." />
                 ) : (
                   <div className="qrows">
                     {queue.map((p) => {
@@ -213,7 +302,7 @@ export default function HomePage() {
               </Glass>
             </div>
 
-            {/* ═══ ٢ و٤ — القراءة العرضية، وبعدها المالي والتشغيلي ═══ */}
+            {/* ═══ 2 و4 — القراءة العرضية، وبعدها المالي والتشغيلي ═══ */}
             <div className="col">
               <QuickRead
                 readings={readings}
@@ -225,7 +314,7 @@ export default function HomePage() {
 
               <Glass>
                 <Head
-                  title="ميزانية ٢٠٢٦"
+                  title="ميزانية 2026"
                   meta={<Link className="lnk" to={ROUTES.budget}>التفاصيل</Link>}
                 />
                 <div className="bsplit">
