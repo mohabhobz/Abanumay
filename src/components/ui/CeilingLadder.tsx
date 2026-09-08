@@ -45,7 +45,7 @@ export function CeilingLadder({
                       <>
                         {' '}· يقدر يزيد المبلغ حتى{' '}
                         <span className="num">{nf.format(Math.round(amount * (1 + r.uplift / 100)))}</span>{' '}
-                        (+{r.uplift}%)
+                        <span className="num">(+{r.uplift}%)</span>
                       </>
                     ) : null}
                   </>

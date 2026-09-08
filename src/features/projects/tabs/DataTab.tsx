@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Glass, Head, Tag, Num, Mono, KV, Timeline, Stat, Riyal, Icon, icons,
 } from '@/components/ui'
-import { costPerBeneficiary, nf } from '@/lib/format'
+import { costPerBeneficiary, nf, pct } from '@/lib/format'
 import { FilePreview, type PreviewFile } from '../components/FilePreview'
 import type { Project } from '@/types/domain'
 
@@ -44,7 +44,7 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
           value={nf.format(P.amountRequested)}
           unit={<Riyal />}
           bar={{ w: '100%', c: 'var(--teal)' }}
-          note="100% من إجمالي المشروع"
+          note={`${pct(100)} من إجمالي المشروع`}
         />
         <Stat
           label="مدة التنفيذ"

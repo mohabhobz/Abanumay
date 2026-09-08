@@ -111,7 +111,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
               <><b>{standing.by}</b> · مفتوح من <b>{standing.days}</b> يومًا</>,
               <>
                 <b>{nf.format(standing.hours)}</b> ساعة مقابل حدّ <b>{nf.format(standing.limit)}</b>
-                {over !== null && over > 100 && <> — <span className="bad">{over}% فوق الحدّ</span></>}
+                {over !== null && over > 100 && <> — <span className="bad"><span className="num">{over}%</span> فوق الحدّ</span></>}
               </>,
               role.kind === 'recommend' ? 'صلاحيته توصية فقط، لا قرار مالي' : null,
             ]
@@ -140,7 +140,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
         role.ceiling
           ? <>سقفه <b>{nf.format(role.ceiling)}</b> — يستوعب <b>{nf.format(amount)}</b></>
           : null,
-        up ? <>يقدر يزيد حتى <b>{nf.format(up)}</b> (+{role.uplift}%) أو يخفّض</> : null,
+        up ? <>يقدر يزيد حتى <b>{nf.format(up)}</b> <span className="num">(+{role.uplift}%)</span> أو يخفّض</> : null,
       ],
       src: 'المصدر: مصفوفة الصلاحيات',
     }

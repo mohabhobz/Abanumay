@@ -18,6 +18,17 @@ export const money = (n: number): string => nf.format(n)
 export const percent = (part: number, whole: number): number =>
   whole === 0 ? 0 : Math.round((part / whole) * 100)
 
+/**
+ * نسبة جاهزة للكتابة جوّه جملة عربية.
+ *
+ * الرقم لاتيني، بس ده مش كفاية: خوارزمية الاتجاه بتحطّ علامة `%`
+ * حسب اتجاه الجملة اللي حواليها، فـ«94%» جوّه نص عربي بتترسم
+ * «%94». المحارف دي (LRI … PDI) بتقفل الرقم وعلامته في جزيرة
+ * اتجاهها ثابت. في الـJSX العزل بيتعمل بـ`.num` في الـCSS؛ الدالة
+ * دي للنصوص اللي بتتبني كسلسلة قبل ما توصل للـDOM.
+ */
+export const pct = (n: number): string => `\u2066${n}%\u2069`
+
 /** تكلفة المستفيد — مقياس المقارنة بين المشاريع */
 export const costPerBeneficiary = (amount: number, beneficiaries: number): number =>
   beneficiaries === 0 ? 0 : Math.round(amount / beneficiaries)

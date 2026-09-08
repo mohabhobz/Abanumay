@@ -14,7 +14,7 @@ import {
   entityHealth, grantedByTrack, median, ownerLoad, topEntities,
 } from '@/data/analytics'
 import { assistFor } from '@/data/mock/assistant'
-import { df, nf } from '@/lib/format'
+import { df, nf, pct } from '@/lib/format'
 import { days } from '@/lib/tone'
 
 /* ═══════════════════════════════════════════════════════════
@@ -121,7 +121,7 @@ export default function HomePage() {
             { k: 'بلا مالك', v: String(orphan.length), note: 'محتاجة إسناد', to: `${ROUTES.projects}?unowned=1`, icon: icons.users},
           ]
         : [
-            { k: 'الملتزم به', v: `${(budget.committed / 1_000_000).toFixed(1)} م`, note: `${usedPct}% من المخصص`, to: ROUTES.budget, icon: icons.budget},
+            { k: 'الملتزم به', v: `${(budget.committed / 1_000_000).toFixed(1)} م`, note: `${pct(usedPct)} من المخصص`, to: ROUTES.budget, icon: icons.budget},
             { k: 'تحت التشغيل', v: String(groups.find((g) => g.key === 'في التشغيل')?.value ?? 0), note: 'مشروعًا جاريًا', to: `${ROUTES.projects}?status=في التشغيل`, icon: icons.pay},
             { k: 'المستفيدون', v: nf.format(doneBeneficiaries), note: 'من المشاريع المكتملة', to: `${ROUTES.projects}?status=مكتمل`, icon: icons.check},
             { k: 'جهات ملفها ناقص', v: String(shortDocs.length), note: 'الاتفاقيات بتقف عندها', to: `${ROUTES.entities}?docs=1`, icon: icons.entity},
@@ -217,7 +217,7 @@ export default function HomePage() {
                 />
                 <Legend
                   items={trackSlices}
-                  format={(v) => `${Math.round((v / Math.max(1, grantedTotal)) * 100)}%`}
+                  format={(v) => pct(Math.round((v / Math.max(1, grantedTotal)) * 100))}
                 />
               </div>
             </Glass>
@@ -287,7 +287,7 @@ export default function HomePage() {
                 rows={groups.map((g, i) => ({
                   ...g,
                   color: CHART_COLORS[i % CHART_COLORS.length],
-                  note: `${Math.round((g.value / projects.length) * 100)}%`,
+                  note: pct(Math.round((g.value / projects.length) * 100)),
                 }))}
                 format={(v) => String(v)}
               />

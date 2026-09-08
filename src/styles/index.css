@@ -155,6 +155,12 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .hd h3{font-size:.98rem}
 .hd .meta{font-size:.74rem;color:var(--t3)}
 .num,.amt,.stat .v,.imp .v,.tbl td.n{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+/* كل رقم جزيرة LTR معزولة.
+   الأرقام كلها لاتينية في النظام، بس ده مش كفاية: خوارزمية الاتجاه
+   بتحطّ العلامة الملاصقة (٪ مثلًا) حسب ما حواليها، فـ«6%» جوّه جملة
+   عربية كانت بتترسم «%6». العزل بيقفل الرقم وعلامته في جزيرة
+   اتجاهها ثابت، فترتيبهما ما بيعتمدش على الجملة اللي حواليهم. */
+.num{direction:ltr;unicode-bidi:isolate}
 .mono{font-family:var(--fm);direction:ltr;display:inline-block}
 .col{display:flex;flex-direction:column;gap:var(--gap);min-height:0}
 .col-s{display:flex;flex-direction:column;gap:.7rem}
@@ -416,7 +422,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .rail .railitem{text-decoration:none;cursor:pointer}
 /* ═══ الشريط الجانبي ═══
    عرضه متغيّر بالسحب من الحافة، والقيمة جاية inline من الكومبوننت.
-   مطويّ = أيقونات والاسم كتلميح؛ ومن ١٣٢ بكسل التسمية بتبان جنب
+   مطويّ = أيقونات والاسم كتلميح؛ ومن 132 بكسل التسمية بتبان جنب
    الأيقونة. */
 .rail{flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:.25rem;
   padding:1rem .5rem;position:relative;z-index:25;
@@ -2190,7 +2196,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 @media (max-width:1180px){
   .dtop{grid-template-columns:1fr 1fr;
     grid-template-areas:"map map" "budget budget" "track age"}
-  /* الكارت بياخد عرض الشاشة، فالخريطة بنسبتها كانت بتطلع ٦٦٠ بكسل
+  /* الكارت بياخد عرض الشاشة، فالخريطة بنسبتها كانت بتطلع 660 بكسل
      طول على تابلت — بتاكل شاشة كاملة وهي رسم واحد */
   .map-c{width:min(100%,560px)}
 }
@@ -2406,7 +2412,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 
 /* ═══ شاشة الدخول في المظاهر الداكنة ═══
    الفيديو أصل ثابت وفاتح، ما بيتغيّرش مع المظهر. الكارت الزجاجي
-   طبقة بيضا ٨٪ — فوق فيديو فاتح ده معناه إنه بيختفي، والنص الفاتح
+   طبقة بيضا 8٪ — فوق فيديو فاتح ده معناه إنه بيختفي، والنص الفاتح
    بيقع على أفتح خلفية في النظام. فالكارت هنا بياخد سطحه بنفسه:
    زجاج غامق معتم، وستارة على الفيديو تحته. */
 :root[data-theme="dark"] .lcard,
@@ -2503,7 +2509,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 
 /* ضيّق: الشريط بينزل تحت الترويسة ويلف على صفّين، والاتصال بيفضل */
 @media (max-width:900px){
-  /* الدايرة بتطلع ٣٢ فوق حافة اللوحة، فالفاصل بين الصفّين لازم
+  /* الدايرة بتطلع 32 فوق حافة اللوحة، فالفاصل بين الصفّين لازم
      يزيد عنها وإلا دايرة الصفّ التاني وقعت على لوحة الصفّ الأول */
   .einf{flex-wrap:wrap;min-height:0;padding-top:32px;row-gap:50px}
   .einf{margin-inline-end:0;gap:8px}

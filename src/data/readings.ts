@@ -12,7 +12,7 @@
 import type { Reading } from '@/components/assistant/reading'
 import type { EntityRow, ProjectRow } from '@/types/domain'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
-import { nf, units } from '@/lib/format'
+import { nf, units, pct as pctText } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
 
 const days = (hours: number) => Math.round(hours / 24)
@@ -52,7 +52,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
   if (late.length) {
     const worst = late.reduce((a, b) => (a.hoursInStage > b.hoursInStage ? a : b))
     const d = units.day(days(worst.hoursInStage), true)
-    const over = `${overPct(worst)}% فوق الحدّ`
+    const over = `${pctText(overPct(worst))} فوق الحدّ`
     out.push({
       id: 'late',
       kind: 'flag',
@@ -96,7 +96,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
     const [reason, hits] = topReason
     const n = units.project(declined.length, true)
     const c = units.case(hits, true)
-    const pct = `${Math.round((hits / declined.length) * 100)}%`
+    const pct = pctText(Math.round((hits / declined.length) * 100))
     out.push({
       id: 'decline',
       kind: 'note',
