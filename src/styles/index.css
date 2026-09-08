@@ -2434,15 +2434,19 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    فاللوحة واحدة والنبرة بتتغيّر — مش أربع قواعد متكررة. */
 /* مزاح شوية ناحية اليمين: ملزوق في حافة الشاشة كان بيقطعه عن
    الترويسة. inline-end في العربي = الشمال، فالهامش هناك بيدفعه يمين. */
-.einf{display:flex;align-items:stretch;gap:0;width:100%;
+/* مسافة خفيفة بين اللوحات — الالتصاق التام كان بيخلّيها لوحًا
+   واحدًا مقسومًا لا أربع بطاقات */
+.einf{display:flex;align-items:stretch;gap:10px;width:100%;
   margin-inline-end:clamp(1rem,4vw,3.5rem);
   padding-top:36px;min-height:250px}
 
 .einf-t{position:relative;isolation:isolate;flex:1 1 0;min-width:0;color:inherit;
   /* المحتوى في نص اللوحة لا في قاعها — ملزوق تحت كان بيسيب فراغًا
      فوقه وبيقرّبه من الحافة */
-  display:flex;flex-direction:column;justify-content:center;align-items:center;
-  gap:.15rem;text-align:center;padding:3rem .55rem 1.6rem;
+  /* المحتوى تحت الدايرة مباشرة — حيث اللوحة مصمتة. أسفلها بيتلاشى
+     فما ينفعش يقع فيه نص */
+  display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
+  gap:.15rem;text-align:center;padding:2.6rem .55rem 1.2rem;
   /* كتف مقوّس فوق فقط، ومفيش تدوير تحت — الشريط بيقف على حافة مستقيمة */
   border-radius:38px 38px 0 0;
   transition:translate .22s cubic-bezier(.22,.9,.3,1);
@@ -2455,21 +2459,21 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    كسطح مثلّج بحافة — الشكل ثابت والتدرّج جوّاه. القناع بيلاشي
    الطبقة نفسها — لون وزجاج وحافة — من تحت لفوق. */
 .einf-t::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;
-  background:linear-gradient(to top,
-    rgba(var(--tone),.50) 0%, rgba(var(--tone),.30) 40%,
-    rgba(var(--tone),.14) 72%, rgba(var(--tone),0) 100%);
+  background:linear-gradient(to bottom,
+    rgba(var(--tone),.52) 0%, rgba(var(--tone),.34) 42%,
+    rgba(var(--tone),.14) 74%, rgba(var(--tone),0) 100%);
   -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
-  -webkit-mask-image:linear-gradient(to top,#000 0%,#000 34%,rgba(0,0,0,.45) 74%,transparent 96%);
-  mask-image:linear-gradient(to top,#000 0%,#000 34%,rgba(0,0,0,.45) 74%,transparent 96%);
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 40%,rgba(0,0,0,.42) 76%,transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 0%,#000 40%,rgba(0,0,0,.42) 76%,transparent 100%);
   transition:opacity .22s ease}
 
 /* الهوفر بيطلّع اللوحة كلها — الحركة هي اللي بتقول «دي قابلة
    للفتح»، أوضح من تغيّر لون بدرجة */
 .einf-t:hover{translate:0 -12px;color:inherit;z-index:2}
-.einf-t:hover::before{background:linear-gradient(to top,
-    rgba(var(--tone),.64) 0%, rgba(var(--tone),.40) 40%,
-    rgba(var(--tone),.18) 72%, rgba(var(--tone),0) 100%)}
+.einf-t:hover::before{background:linear-gradient(to bottom,
+    rgba(var(--tone),.66) 0%, rgba(var(--tone),.44) 42%,
+    rgba(var(--tone),.18) 74%, rgba(var(--tone),0) 100%)}
 
 .einf-c{position:absolute;top:-36px;inset-inline:0;margin-inline:auto;
   width:72px;height:72px;border-radius:50%;display:grid;place-items:center;
@@ -2490,9 +2494,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .einf-n{font-size:.68rem;color:var(--t2-g);line-height:1.6}
 
 /* المُعلَّمة: اللي لسه معلّقة — نفس دور الوتد الغامق في المروحة */
-.einf-t.now::before{background:linear-gradient(to top,
-    rgba(var(--tone),.62) 0%, rgba(var(--tone),.38) 40%,
-    rgba(var(--tone),.16) 72%, rgba(var(--tone),0) 100%)}
+.einf-t.now::before{background:linear-gradient(to bottom,
+    rgba(var(--tone),.64) 0%, rgba(var(--tone),.42) 42%,
+    rgba(var(--tone),.16) 74%, rgba(var(--tone),0) 100%)}
 .einf-t.now .einf-c{box-shadow:0 0 0 7px rgba(var(--tone),.5),
              inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
              0 12px 26px -12px rgba(var(--tone),.78)}
@@ -2502,8 +2506,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   /* الدايرة بتطلع ٣٢ فوق حافة اللوحة، فالفاصل بين الصفّين لازم
      يزيد عنها وإلا دايرة الصفّ التاني وقعت على لوحة الصفّ الأول */
   .einf{flex-wrap:wrap;min-height:0;padding-top:32px;row-gap:50px}
-  .einf{margin-inline-end:0}
-  .einf-t{flex:1 1 46%;min-height:150px;padding:2.4rem .55rem 1.2rem;
+  .einf{margin-inline-end:0;gap:8px}
+  .einf-t{flex:1 1 46%;min-height:190px;padding:2.2rem .55rem 1rem;
     border-radius:32px 32px 0 0}
   .einf-c{top:-32px;width:60px;height:60px}
   .einf-c svg{width:22px;height:22px}
