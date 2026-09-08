@@ -115,11 +115,20 @@ export function AccountMenu({
                   className={role.key === r.key ? 'on' : ''}
                   onClick={() => setRole(r.key)}
                 >
-                  <span className="rolesw-t">{r.title}</span>
-                  <span className="rolesw-s">
-                    {r.financialAuthority === null
-                      ? 'توصية فقط'
-                      : `سقف ${nf.format(r.financialAuthority)}`}
+                  {/* الوش قبل الاسم: الدور بيتعرّف بصاحبه، والصف
+                      بيبقى له نفس شكل السطر اللي فوق في القائمة */}
+                  {r.photo ? (
+                    <img className="pht pht-28" src={r.photo} alt="" />
+                  ) : (
+                    <span className="av av-28">{r.initial}</span>
+                  )}
+                  <span className="rolesw-tx">
+                    <span className="rolesw-t">{r.title}</span>
+                    <span className="rolesw-s">
+                      {r.financialAuthority === null
+                        ? 'توصية فقط'
+                        : `سقف ${nf.format(r.financialAuthority)}`}
+                    </span>
                   </span>
                 </button>
               ))}

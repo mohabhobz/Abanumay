@@ -23,6 +23,8 @@ export interface Role {
   key: RoleKey
   name: string
   title: string
+  /** حرفان: أول الاسم وأول اللقب — التلاتة بيبدأوا بعين،
+   *  فحرف واحد ما بيفرّقش بينهم */
   initial: string
   photo?: string
   /** null = توصية فقط، بلا سقف مالي */
@@ -37,7 +39,7 @@ export const ROLES: Role[] = [
     key: 'supervisor',
     name: 'عمر قاسم',
     title: 'مشرف المنح',
-    initial: 'ع',
+    initial: 'عق',
     photo: userPhoto,
     financialAuthority: null,
     lens: 'own',
@@ -52,7 +54,7 @@ export const ROLES: Role[] = [
     key: 'grants-manager',
     name: 'عبدالله الدوسري',
     title: 'مدير المنح',
-    initial: 'ع',
+    initial: 'عد',
     financialAuthority: 250_000,
     lens: 'team',
     actions: [
@@ -66,7 +68,7 @@ export const ROLES: Role[] = [
     key: 'ceo',
     name: 'عبدالرحمن الهليّل',
     title: 'المدير التنفيذي',
-    initial: 'ع',
+    initial: 'عه',
     financialAuthority: 500_000,
     lens: 'portfolio',
     actions: [
