@@ -132,7 +132,7 @@ export default function ProjectPage() {
         entity: entity.name,
       })}
     >
-      <div className="viewstack">
+      <div className="viewstack hasdock">
         <div className="screen col" ref={screen}>
           {/* المسار جوّه البودي، مش في هيدر منفصل */}
           <nav className="crumb" aria-label="مسار التنقّل">

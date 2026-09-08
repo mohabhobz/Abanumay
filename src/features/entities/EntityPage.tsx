@@ -12,6 +12,7 @@ import { ENTITY_DOCS, STATUS_GROUPS } from '@/data/mock/taxonomy'
 import { ROUTES } from '@/app/routes'
 import { activationTone, days, governanceTone, groupTone } from '@/lib/tone'
 import { QuickRead } from '@/components/assistant'
+import { EntityTotals } from './EntityTotals'
 import { readEntity } from '@/data/readings'
 
 /**
@@ -70,25 +71,12 @@ export default function EntityPage() {
             </div>
           </header>
 
-          {/* ═══ الأرقام ═══ */}
-          <div className="imp glass" style={{ '--n': 4 } as React.CSSProperties}>
-            <div>
-              <div className="v num">{nf.format(entity.grantedTotal)} <small><Riyal /></small></div>
-              <div className="k">إجمالي الممنوح</div>
-            </div>
-            <div>
-              <div className="v num">{nf.format(entity.grantedThisYear)} <small><Riyal /></small></div>
-              <div className="k">ممنوح هذه السنة</div>
-            </div>
-            <div>
-              <div className="v num">{nf.format(entity.inDisbursement)} <small><Riyal /></small></div>
-              <div className="k">تحت الصرف</div>
-            </div>
-            <div>
-              <div className="v num">{entity.projectsApproved}</div>
-              <div className="k">مشاريع معتمدة</div>
-            </div>
-          </div>
+          {/* ═══ الإجماليات ═══
+              الشريط المسطّح كان بيقول أربع أرقام جنب بعض بلا علاقة
+              بينها. الأربعة دي رحلة واحدة للمال، فالمربّعات بتوريها
+              كسُلَّم: التعبئة نسبة كل رقم من الإجمالي، والمُعلَّم هو
+              اللي لسه معلّق. */}
+          <EntityTotals entity={entity} />
 
           <div className="g2">
             <div className="col">
@@ -148,13 +136,6 @@ export default function EntityPage() {
                   </div>
                 )}
               </Glass>
-            </div>
-
-            {/* ═══ العمود الجانبي ═══ */}
-            <div className="col">
-              {/* القراءة السريعة — نفس الكومبوننت المستخدم في المشاريع
-                  وصفحة المشروع، بس القراءات محسوبة من ملف الجهة */}
-              <QuickRead readings={readings} title="قراءة سريعة للجهة" />
 
               <Glass>
                 <Head
@@ -175,6 +156,34 @@ export default function EntityPage() {
               </Glass>
 
               <Glass>
+                <Head title="التعريف والتواصل" />
+                <KV
+                  rows={[
+                    { k: 'رقم الترخيص', v: <Mono>{entity.licenseNo}</Mono> },
+                    { k: 'الجهة المرخِّصة', v: entity.licensor },
+                    { k: 'تاريخ التسجيل', v: <Mono>{entity.registeredAt}</Mono> },
+                    { k: 'الجوال', v: <Mono>{entity.mobile}</Mono> },
+                    { k: 'البريد', v: <Mono>{entity.email}</Mono> },
+                  ]}
+                />
+                <p className="sub" style={{ marginTop: '.7rem' }}>
+                  بيانات التواصل هنا مموّهة عمدًا — المستودع عام.
+                </p>
+              </Glass>
+
+            </div>
+
+            {/* ═══ العمود الجانبي — قراءة سريعة تفضل في العين ═══
+                التفاصيل المرجعية (المستندات والتواصل) اتنقلت للعمود
+                الرئيسي: بتتقري بالتسلسل لا بالنظرة، ووجودها هنا كان
+                بيخلّي الجانبي أطول من المحتوى — فيفضل فراغ نص الشاشة
+                على اليمين، واللزق ما بيلاقيش مسافة يلزق فيها. */}
+            <div className="col">
+              {/* القراءة السريعة — نفس الكومبوننت المستخدم في المشاريع
+                  وصفحة المشروع، بس القراءات محسوبة من ملف الجهة */}
+              <QuickRead readings={readings} title="قراءة سريعة للجهة" />
+
+              <Glass>
                 <Head title="أداء الجهة" meta="السجل التراكمي" />
                 <KV
                   rows={[
@@ -193,22 +202,6 @@ export default function EntityPage() {
                     },
                   ]}
                 />
-              </Glass>
-
-              <Glass>
-                <Head title="التعريف والتواصل" />
-                <KV
-                  rows={[
-                    { k: 'رقم الترخيص', v: <Mono>{entity.licenseNo}</Mono> },
-                    { k: 'الجهة المرخِّصة', v: entity.licensor },
-                    { k: 'تاريخ التسجيل', v: <Mono>{entity.registeredAt}</Mono> },
-                    { k: 'الجوال', v: <Mono>{entity.mobile}</Mono> },
-                    { k: 'البريد', v: <Mono>{entity.email}</Mono> },
-                  ]}
-                />
-                <p className="sub" style={{ marginTop: '.7rem' }}>
-                  بيانات التواصل هنا مموّهة عمدًا — المستودع عام.
-                </p>
               </Glass>
 
               <Glass>
