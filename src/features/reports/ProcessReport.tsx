@@ -84,27 +84,27 @@ export default function ProcessReport() {
             />
 
             {sharedGap && (
-              <div className="kpi-g kpi-gx">{isolate(sharedGap)}</div>
+              <div className="ind-g ind-gx">{isolate(sharedGap)}</div>
             )}
 
-            <ol className="kpil">
+            <ol className="indl">
               {p.kpis.map((k) => (
-                <li key={k.no} className={`kpi${k.value === null ? ' gap' : ''}`}>
-                  <span className="kpi-n num">{String(k.no).padStart(2, '0')}</span>
+                <li key={k.no} className={`ind${k.value === null ? ' gap' : ''}`}>
+                  <span className="ind-n num">{String(k.no).padStart(2, '0')}</span>
 
-                  <div className="kpi-b">
-                    <div className="kpi-t">
+                  <div className="ind-b">
+                    <div className="ind-t">
                       {isolate(k.name)}
                       {/* «مشتقّ» علامة قراءة لا حالة: `Tag` بنبرة خافتة
                           بتنزل تحت حدّ التباين، وبتتنافس بصريًّا مع
                           شارات الحالة في باقي السيستم. */}
-                      {k.derived && <span className="kpi-d">مشتقّ</span>}
+                      {k.derived && <span className="ind-d">مشتقّ</span>}
                     </div>
-                    <div className="kpi-h sub">{isolate(k.how)}</div>
+                    <div className="ind-h sub">{isolate(k.how)}</div>
 
-                    {k.gap && !sharedGap && <div className="kpi-g">{isolate(k.gap)}</div>}
+                    {k.gap && !sharedGap && <div className="ind-g">{isolate(k.gap)}</div>}
 
-                    <div className="kpi-f">
+                    <div className="ind-f">
                       {k.of && (
                         <span className="sub">
                           <span className="num">{nf.format(k.of.part)}</span> من{' '}
@@ -115,7 +115,7 @@ export default function ProcessReport() {
                         المستهدف: {k.target === null ? 'لم يُحدَّد في الوثيقة' : <span className="num">{k.target}</span>}
                       </span>
                       {k.to && (
-                        <Link to={k.to} className="kpi-to">
+                        <Link to={k.to} className="ind-to">
                           <Icon path={icons.link} size={14} />
                           الصفوف
                         </Link>
@@ -123,7 +123,7 @@ export default function ProcessReport() {
                     </div>
                   </div>
 
-                  <div className="kpi-r">
+                  <div className="ind-r">
                     <KpiValue kpi={k} />
                   </div>
                 </li>

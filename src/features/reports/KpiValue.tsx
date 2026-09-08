@@ -10,10 +10,10 @@ import type { Kpi } from '@/data/kpi'
  * اتجاهها ثابت، فالوحدة لازم تفضل جوّه العنصر المعزول.
  */
 export function KpiValue({ kpi }: { kpi: Kpi }) {
-  if (kpi.value === null) return <em className="kpi-none">—</em>
+  if (kpi.value === null) return <em className="ind-none">—</em>
 
   return (
-    <b className="kpi-v num">
+    <b className="ind-v num">
       {nf.format(kpi.value)}
       {kpi.unit === 'pct' && <small>%</small>}
       {kpi.unit === 'days' && <small> يوم</small>}
