@@ -51,7 +51,8 @@
   /* حبر على سطح فاتح-شفاف: في الداكن السطح بيبقى غامق فالحبر
      الغامق بيختفي فيه — الوسم والأيقونة كانوا بيتلاشوا */
   --ink-soft:var(--green);
-  --logo-ink:var(--green);   /* جذوع الشعار */
+  /* الشعار: جذوع وورقتان — في الداكن كله أبيض */
+  --logo-ink:var(--green); --logo-teal:#00A59B; --logo-lime:#94D603;
   --solid:var(--green); --on-solid:#fff;   /* زرار مصمت وحبره */
   --link:#3E5A08;
   --warn-ink:#8A5C05; --no-ink:#95341F; --no-ink2:#8E2F1B; --no-ink3:#AE3319;
@@ -1778,8 +1779,9 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .kpi-h{display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem}
 .kpi-ic{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;flex:none;
   color:var(--t2);background:rgba(var(--edgeC),.06)}
-/* الحالة على الأيقونة، مش على الرقم */
-.kpi-ic.on{color:var(--no-ic);background:rgba(var(--noC),.10)}
+/* الأيقونة تعريف بالمؤشر لا إنذار: الحالة بتتقال في الرقم
+   والسطر تحته، والأحمر على الأيقونة كان بيصبغ نص صف المؤشرات
+   بلون طوارئ من غير ما يضيف معلومة */
 .kpi-k{font-size:.79rem;color:var(--t2);font-family:var(--fd);font-weight:500;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi-go{margin-inline-start:auto;color:var(--t3);opacity:0;transform:translateX(3px);
@@ -2160,7 +2162,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --pop:#131717;
   --bar-bg:linear-gradient(180deg,rgba(11,13,13,.94),rgba(11,13,13,.99));
   --ink-soft:var(--t1);
-  --logo-ink:#FFFFFF;
+  --logo-ink:#FFFFFF; --logo-teal:#FFFFFF; --logo-lime:#FFFFFF;
   --solid:#2FC7B6; --on-solid:#06100F;
   --link:#A8D93C;
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
@@ -2207,7 +2209,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --pop:#0F2426;
   --bar-bg:linear-gradient(180deg,rgba(9,26,28,.94),rgba(9,26,28,.99));
   --ink-soft:var(--t1);
-  --logo-ink:#FFFFFF;
+  --logo-ink:#FFFFFF; --logo-teal:#FFFFFF; --logo-lime:#FFFFFF;
   --solid:#2FC7B6; --on-solid:#06191B;
   --link:#A8D93C;
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
