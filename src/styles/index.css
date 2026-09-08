@@ -51,6 +51,7 @@
   /* حبر على سطح فاتح-شفاف: في الداكن السطح بيبقى غامق فالحبر
      الغامق بيختفي فيه — الوسم والأيقونة كانوا بيتلاشوا */
   --ink-soft:var(--green);
+  --logo-ink:var(--green);   /* جذوع الشعار */
   --solid:var(--green); --on-solid:#fff;   /* زرار مصمت وحبره */
   --link:#3E5A08;
   --warn-ink:#8A5C05; --no-ink:#95341F; --no-ink2:#8E2F1B; --no-ink3:#AE3319;
@@ -2195,6 +2196,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
       radial-gradient(64% 58% at 8% 54%,   rgba(7,22,24,.80) 0%,    rgba(7,22,24,0) 100%);
     --mesh-blend:overlay;
     --ink-soft:var(--t1);
+  --logo-ink:#FFFFFF;
+    --logo-ink:#FFFFFF;
     --solid:#2FC7B6; --on-solid:#06191B;
   }
 }
@@ -2246,6 +2249,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
     radial-gradient(64% 58% at 8% 54%,   rgba(7,22,24,.80) 0%,    rgba(7,22,24,0) 100%);
   --mesh-blend:overlay;
   --ink-soft:var(--t1);
+  --logo-ink:#FFFFFF;
   --solid:#2FC7B6; --on-solid:#06191B;
 }
 
