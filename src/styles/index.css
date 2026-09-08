@@ -2518,3 +2518,148 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   .einf-c{top:-32px;width:60px;height:60px}
   .einf-c svg{width:22px;height:22px}
 }
+
+/* ═══════════════════════════════════════════════════════════
+   التقارير
+
+   الشاشة دي بتعرض حاجتين مختلفتين: رقم موجود، ورقم غايب. اللي
+   الاتنين محتاجينه إنهم يبانوا مختلفين من غير ما الغايب يتحوّل
+   لخطأ أحمر — هو مش عطل، هو مطلب. فالغايب بيتخفت (شفافية أقل
+   وخط مائل) والموجود بياخد وزن الرقم كامل.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ═══ حالة القياس ═══ */
+.rpcov-b{height:8px;border-radius:var(--rp);overflow:hidden;margin-bottom:1.15rem;
+  background:rgba(var(--edgeC),.12)}
+.rpcov-b>i{display:block;height:100%;border-radius:inherit;
+  background:linear-gradient(90deg,rgba(var(--tone-1),.95),rgba(var(--tone-3),.95))}
+.rpcov-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem}
+.rpcov-g>div{position:relative;padding-inline:.7rem}
+.rpcov-g>div+div::before{content:"";position:absolute;inset-block:.1rem;inset-inline-start:0;
+  width:1px;background:rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+/* `.num` بتقلب الاتجاه لـLTR، فمحاذاة البداية بتبقى الشمال والرقم
+   بيهرب بعيد عن تسميته على الشاشة العريضة. الرقم هنا مجرّد أرقام
+   بلا علامة ملاصقة، فالعزل مش محتاج قلب اتجاه. */
+.rpcov-g .v{font-family:var(--fd);font-weight:700;line-height:1;direction:rtl;
+  font-size:clamp(1.35rem,2.6vw,1.85rem);color:var(--t1)}
+.rpcov-g .k{font-family:var(--fd);font-weight:600;font-size:.8rem;color:var(--t1);margin-top:.3rem}
+.rpcov-g .sub{font-size:.71rem;margin-top:.15rem;color:var(--t2)}
+.rpcov-n{margin-top:1.1rem;font-size:.74rem;line-height:1.85;max-width:62ch;color:var(--t2)}
+@media (max-width:720px){
+  .rpcov-g{grid-template-columns:1fr;gap:1rem}
+  .rpcov-g>div+div::before{inset-block:auto;top:-.5rem;inset-inline:0;width:auto;height:1px}
+}
+
+/* قسم داخل الشاشة.
+   `.col` مش صالحة هنا: فيها `min-height:0` عشان الأعمدة اللي بتسكرول
+   جوّه ارتفاع ثابت، والقسم اللي محتواه شبكة بيتلَخبط بيها — بيتضغط
+   لصفر وشبكته تطلع فوق اللي بعده. */
+.rpsec{display:flex;flex-direction:column;gap:.85rem}
+
+/* ═══ بطاقات الإجراءات ═══ */
+.rppg{display:grid;gap:.85rem;
+  grid-template-columns:repeat(auto-fill,minmax(232px,1fr))}
+.rpp{display:flex;flex-direction:column;gap:.3rem;padding:1.05rem 1.1rem 1rem;
+  color:inherit;text-decoration:none;
+  transition:translate .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s}
+.rpp:hover{translate:0 -3px;
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2)),
+             0 14px 30px -18px rgba(var(--edgeC),.5)}
+.rpp-h{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem}
+.rpp-n{font-family:var(--fd);font-weight:700;font-size:1.05rem;color:var(--t3-g);
+  line-height:1;letter-spacing:-.02em}
+.rpp-id{font-family:var(--fm);font-size:.63rem;color:var(--t3-g);letter-spacing:.02em}
+.rpp-t{font-family:var(--fd);font-weight:600;font-size:.9rem;color:var(--t1);
+  line-height:1.45;margin-top:.35rem}
+.rpp-o{font-size:.7rem}
+.rpp-v{display:flex;flex-direction:column;gap:.1rem;margin-top:.7rem;min-height:44px}
+.rpp-v small{font-size:.67rem;line-height:1.45;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rpp-none{font-size:.8rem;color:var(--t3-g);font-style:italic}
+.rpp-c{display:flex;align-items:center;gap:.5rem;margin-top:.75rem}
+.rpp-c .sub{font-size:.68rem;white-space:nowrap}
+/* شريط التغطية: خانة لكل مؤشر. الشكل ده بيقول «كام من كام» أسرع
+   من نسبة مئوية، وبيدّي إحساس بحجم الإجراء في نفس الوقت. */
+.rpp-cb{display:flex;gap:2px;flex:1;min-width:0}
+.rpp-cb>i{flex:1 1 0;height:5px;border-radius:2px;background:rgba(var(--edgeC),.16)}
+.rpp-cb>i.on{background:rgba(var(--tone-2),.9)}
+
+/* ═══ حزم التقارير ═══ */
+.rpkg{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fill,minmax(268px,1fr))}
+.rpk{display:flex;flex-direction:column;gap:.45rem;padding:1.1rem}
+.rpk.soon{opacity:.78}
+.rpk-i{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;
+  color:var(--t1);background:rgba(var(--wC),calc(.5 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));margin-bottom:.3rem}
+.rpk-t{display:flex;align-items:center;gap:.5rem;font-family:var(--fd);font-weight:600;
+  font-size:.9rem;color:var(--t1)}
+.rpk-a{font-size:.75rem;line-height:1.75}
+.rpk-l{list-style:none;padding:0;margin:.35rem 0 0;display:flex;flex-direction:column;gap:.28rem}
+.rpk-l li{position:relative;padding-inline-start:.85rem;font-size:.73rem;color:var(--t2)}
+.rpk-l li::before{content:"";position:absolute;inset-inline-start:0;top:.5em;
+  width:4px;height:4px;border-radius:50%;background:rgba(var(--tone-3),.85)}
+.rpk-r{margin-top:auto;padding-top:.7rem;font-size:.69rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+
+/* ═══ خريطة تقارير النظام العامل ═══ */
+.rpmap{display:flex;flex-direction:column}
+.rpm{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto minmax(0,.9fr);
+  align-items:center;gap:.7rem;padding:.62rem .2rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+.rpm:first-child{box-shadow:none}
+.rpm-t{font-size:.82rem;color:var(--t1)}
+.rpm-p{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+.rpm-p code{font-family:var(--fm);direction:ltr;font-size:.68rem;color:var(--t3-g)}
+.rpm-a{color:var(--t3-g);font-size:.9rem}
+.rpm-d{font-family:var(--fd);font-weight:600;font-size:.8rem;color:var(--t1)}
+@media (max-width:700px){
+  .rpm{grid-template-columns:1fr auto;row-gap:.25rem}
+  .rpm-p{grid-column:1/-1;order:3}
+  .rpm-a{display:none}
+}
+
+/* ═══ ورقة مؤشرات إجراء ═══ */
+.rph{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.rpnav{display:flex;gap:.5rem;flex-wrap:wrap}
+.rpnav .btn{font-size:.76rem;padding:.45rem .8rem;max-width:200px}
+.rpfoot{font-size:.73rem;line-height:1.9;max-width:70ch;padding-inline:.2rem}
+
+.kpil{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.kpi{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;
+  gap:.2rem 1rem;padding:1rem .2rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+.kpi:first-child{box-shadow:none}
+.kpi-n{font-family:var(--fm);font-size:.7rem;color:var(--t3-g);padding-top:.22rem;min-width:1.4em}
+.kpi-b{display:flex;flex-direction:column;gap:.28rem;min-width:0}
+.kpi-t{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
+  font-family:var(--fd);font-weight:600;font-size:.86rem;color:var(--t1);line-height:1.5}
+.kpi-h{font-size:.73rem;line-height:1.8}
+/* علامة «مشتقّ»: حرف صغير بحافة، مش شارة حالة */
+.kpi-d{font-size:.66rem;color:var(--t1);padding:.1rem .45rem;border-radius:var(--rp);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.2))}
+/* الفجوة مش خطأ: نبرة محايدة بحافة، لا لون تحذير.
+   الحافة `border-inline-start` لا `box-shadow`: الظل بيتحسب
+   بمحاور فيزيائية، فالشريط كان بيقع على شمال الصندوق في RTL. */
+.kpi-g{font-size:.73rem;line-height:1.8;color:var(--t2);
+  padding:.5rem .7rem;border-radius:var(--r1);
+  border-inline-start:2px solid rgba(var(--warnC),.55);
+  background:rgba(var(--wC),calc(.42 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+/* نفس الصندوق لمّا السبب واحد للإجراء كله — فوق القائمة لا جوّاها */
+.kpi-gx{margin:-.35rem 0 1rem;font-size:.76rem;max-width:78ch}
+.kpi-f{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-top:.1rem}
+.kpi-f .sub{font-size:.69rem}
+.kpi-to{display:inline-flex;align-items:center;gap:.3rem;font-size:.7rem;
+  color:var(--link);text-decoration:none}
+.kpi-to:hover{text-decoration:underline}
+.kpi-r{text-align:end;padding-top:.05rem}
+.kpi-v{font-family:var(--fd);font-weight:700;line-height:1;letter-spacing:-.02em;
+  font-size:clamp(1.05rem,2vw,1.4rem);color:var(--t1);
+  display:inline-flex;align-items:baseline;gap:.12rem}
+.kpi-v small{font-size:.55em;font-weight:400;color:var(--t2-g)}
+.kpi-none{font-size:1.1rem;color:var(--t3-g);font-style:normal}
+.kpi.gap .kpi-t{color:var(--t2)}
+@media (max-width:640px){
+  .kpi{grid-template-columns:auto minmax(0,1fr);gap:.35rem .7rem}
+  .kpi-r{grid-column:2;text-align:start;padding-top:.3rem}
+}
