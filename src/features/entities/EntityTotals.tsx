@@ -11,9 +11,8 @@ import type { EntityRow } from '@/types/domain'
    الطريق ← نصيب السنة الجارية. والتدرّج اللوني من الغامق للفاتح
    بيمشي مع الرحلة، فالعين تقرا الترتيب قبل ما تقرا الأرقام.
 
-   والشريط الرفيع تحت كل بطاقة نسبتها من الإجمالي — رقم زيادة لا
-   زخرفة: «قد إيه اتصرف من اللي اتلزم» بيتقري من المساحة قبل ما
-   توصل للرقم نفسه.
+   واللوحات ملتصقة بلا فواصل — شريط واحد متّصل زي المرجع، الكتف
+   المقوّس بيفصل بينها لا المسافة. والتدرّج طالع من تحت.
    ═══════════════════════════════════════════════════════════ */
 
 interface Tile {
@@ -98,12 +97,11 @@ export function EntityTotals({ entity }: { entity: EntityRow }) {
               {nf.format(t.value)}
               <small><Riyal /></small>
             </span>
-            <span className="einf-n">{t.note}</span>
-
-            {/* النسبة من الإجمالي — شريط ورقم، مش لون بس */}
-            <span className="einf-bar" aria-hidden="true"><i /></span>
-            <span className="einf-p">
-              <span className="num">{pct}%</span> من الإجمالي
+            <span className="einf-n">
+              {t.note}
+              {t.key !== 'total' && (
+                <> · <span className="num">{pct}%</span></>
+              )}
             </span>
           </Link>
         )

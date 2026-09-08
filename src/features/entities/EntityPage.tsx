@@ -51,32 +51,34 @@ export default function EntityPage() {
             <span className="now">{entity.name}</span>
           </nav>
 
-          <header className="ehead">
-            <span className="ec-init lg">{initial(entity.name)}</span>
-            <div className="ehead-t">
-              <h1 className="ptitle">{entity.name}</h1>
-              <div className="ehead-m sub">
-                <Mono>{entity.licenseNo}</Mono>
-                <span className="pc-dot" />
-                {entity.type}
-                <span className="pc-dot" />
-                {entity.licensor}
-                <span className="pc-dot" />
-                <Icon path={icons.pinMap} size={14} /> {entity.region} · {entity.city}
+          {/* الترويسة بنفس تشكيل صفحة المشروع: الهوية على اليمين،
+              والقراءة البصرية على الشمال في نفس مكان المروحة. */}
+          <header className="phead">
+            <div className="pmain">
+              <div className="ehead-id">
+                <span className="ec-init lg">{initial(entity.name)}</span>
+                <div style={{ minWidth: 0 }}>
+                  <h1 className="ptitle">{entity.name}</h1>
+                  <div className="ehead-m sub">
+                    <Mono>{entity.licenseNo}</Mono>
+                    <span className="pc-dot" />
+                    {entity.type}
+                    <span className="pc-dot" />
+                    <Icon path={icons.pinMap} size={14} /> {entity.region} · {entity.city}
+                  </div>
+                </div>
+              </div>
+              <div className="ehead-m" style={{ marginTop: '.9rem' }}>
+                <Tag tone={activationTone(entity.activation)}>{entity.activation}</Tag>
+                <Tag tone={governanceTone(entity.governance)}>الحوكمة: {entity.governance}</Tag>
+                <span className="sub">{entity.licensor}</span>
               </div>
             </div>
-            <div className="ehead-tags">
-              <Tag tone={activationTone(entity.activation)}>{entity.activation}</Tag>
-              <Tag tone={governanceTone(entity.governance)}>الحوكمة: {entity.governance}</Tag>
+
+            <div className="pgates">
+              <EntityTotals entity={entity} />
             </div>
           </header>
-
-          {/* ═══ الإجماليات ═══
-              الشريط المسطّح كان بيقول أربع أرقام جنب بعض بلا علاقة
-              بينها. الأربعة دي رحلة واحدة للمال، فالمربّعات بتوريها
-              كسُلَّم: التعبئة نسبة كل رقم من الإجمالي، والمُعلَّم هو
-              اللي لسه معلّق. */}
-          <EntityTotals entity={entity} />
 
           <div className="g2">
             <div className="col">

@@ -81,7 +81,7 @@
   /* نبرات بطاقات إجماليات الجهة — سُلَّم من الغامق للفاتح يمشي مع
      رحلة المال. في الداكن بينقلب لسُلَّم من الخافت للساطع، لأن
      الأخضر الغامق بيختفي على أرضية غامقة. */
-  --tone-1:20,69,71; --tone-2:0,140,133; --tone-3:0,165,155; --tone-4:148,214,3;
+  --tone-1:16,92,88; --tone-2:0,150,142; --tone-3:0,186,172; --tone-4:148,214,3;
 
   /* الخلفية كتوكن عشان الوضع الداكن يقلبها من مكان التوكنز */
   --mesh-bg:#EDF3F0;
@@ -224,13 +224,18 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .lg{display:flex;gap:.9rem;flex-wrap:wrap;font-size:.71rem;color:var(--t3);margin-top:.45rem}
 .lg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-inline-end:.3rem;vertical-align:middle}
 
+/* الوسم بياخد قاعدة سطح تحت نبرته: من غيرها التعبئة الشفافة بتاخد
+   لون اللي تحتها، فالوسم اللي على أرضية الصفحة الغامقة بينزل تحت
+   حدّ التباين واللي على كارت فاتح يعدّي. */
 .tag{font-size:.68rem;padding:.16rem .6rem;border-radius:var(--rp);white-space:nowrap;
-  background:rgba(var(--edgeC),.10);color:var(--t1);display:inline-flex;align-items:center;gap:.3rem}
-.tag.ok{background:rgba(var(--okC),.16);color:var(--ok-ink)}
-.tag.ret{background:rgba(var(--retC),.15);color:var(--ret-ink)}
-.tag.no{background:rgba(var(--noC),.14);color:var(--no-ink3)}
-.tag.warn{background:rgba(var(--warnC),.18);color:var(--warn-ink)}
-.tag.brand{background:rgba(var(--limeC),.32);color:var(--brand-ink)}
+  background-color:rgba(var(--wC),calc(.66 * var(--wM)));
+  background-image:linear-gradient(rgba(var(--edgeC),.10),rgba(var(--edgeC),.10));
+  color:var(--t1);display:inline-flex;align-items:center;gap:.3rem}
+.tag.ok{background-image:linear-gradient(rgba(var(--okC),.18),rgba(var(--okC),.18));color:var(--ok-ink)}
+.tag.ret{background-image:linear-gradient(rgba(var(--retC),.17),rgba(var(--retC),.17));color:var(--ret-ink)}
+.tag.no{background-image:linear-gradient(rgba(var(--noC),.16),rgba(var(--noC),.16));color:var(--no-ink3)}
+.tag.warn{background-image:linear-gradient(rgba(var(--warnC),.20),rgba(var(--warnC),.20));color:var(--warn-ink)}
+.tag.brand{background-image:linear-gradient(rgba(var(--limeC),.34),rgba(var(--limeC),.34));color:var(--brand-ink)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
   padding:.55rem 1.1rem;border-radius:var(--rp);font-size:.83rem;font-family:var(--fd);font-weight:500;
@@ -1778,7 +1783,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .ec-alert svg{flex:none;margin-top:.15rem}
 
 /* ── صفحة الجهة ── */
-.ehead{display:flex;align-items:flex-start;gap:.9rem;flex-wrap:wrap;padding:.2rem}
+.ehead-id{display:flex;align-items:flex-start;gap:.9rem}
 .ehead-t{flex:1;min-width:220px}
 .ehead-m{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-top:.35rem}
 .ehead-m svg{vertical-align:-2px}
@@ -2326,7 +2331,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --map-2:rgba(47,199,182,.36);
   --map-3:rgba(47,199,182,.58);
   --map-4:#2FC7B6;
-  --tone-1:118,168,164; --tone-2:30,182,170; --tone-3:47,199,182; --tone-4:168,217,60;
+  --tone-1:96,164,158; --tone-2:24,186,172; --tone-3:60,214,196; --tone-4:168,217,60;
   --mesh-bg:#0A0C0C;
   --mesh-img:
     radial-gradient(64% 54% at 92% -12%, rgba(0,165,155,.16) 0%,  rgba(0,165,155,0) 100%),
@@ -2376,7 +2381,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --map-2:rgba(47,199,182,.36);
   --map-3:rgba(47,199,182,.58);
   --map-4:#2FC7B6;
-  --tone-1:118,168,164; --tone-2:30,182,170; --tone-3:47,199,182; --tone-4:168,217,60;
+  --tone-1:96,164,158; --tone-2:24,186,172; --tone-3:60,214,196; --tone-4:168,217,60;
   --mesh-bg:#08181A;
   --mesh-img:
     radial-gradient(64% 54% at 92% -12%, rgba(0,165,155,.30) 0%,  rgba(0,165,155,0) 100%),
@@ -2419,79 +2424,71 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 :root[data-theme="dark"] .lfoot,
 :root[data-theme="green"] .lfoot{color:var(--t2);text-shadow:0 1px 6px rgba(0,0,0,.6)}
 
-/* ═══ إجماليات الجهة — بطاقة بدائرة أيقونة ═══
-   الشكل: دايرة معتمة فيها الأيقونة، قاعدة على كتف البطاقة، والقيمة
-   تحتها. التدرّج اللوني بين الأربعة بيمشي مع رحلة المال — من كل
-   الممنوح للفاتح (نصيب السنة) — فالعين تقرا الترتيب قبل الأرقام.
+/* ═══ إجماليات الجهة — شريط لوحات ملتصقة ═══
+   مكانها مكان المروحة في صفحة المشروع بالظبط: شمال الترويسة،
+   جوّه `.pgates`. واللوحات ملتصقة بلا فواصل — شريط واحد متّصل،
+   الكتف المقوّس هو اللي بيفصل بينها لا المسافة. والتدرّج طالع من
+   تحت: أغمق عند القاعدة وبيروق لفوق.
 
-   وكل الألوان من ثلاثية `--tone` اللي الكومبوننت بيبعتها، فالبطاقة
-   واحدة والنبرة بتتغيّر — مش أربع قواعد متكررة. */
-.einf{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap);
-  padding-top:34px}
-@media (max-width:900px){.einf{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:calc(var(--gap) + 34px)}}
-/* اتنين في الصف حتى على أضيق شاشة: واحدة على عرض الشاشة بتبقى
-   لافتة فاضية لرقم واحد، والأربعة يبقوا أربع شاشات */
-@media (max-width:560px){
-  .einf{padding-top:26px}
-  .einf-t{padding:2.2rem .7rem .9rem;border-radius:36px 36px var(--r3) var(--r3)}
-  .einf-c{top:-26px;width:54px;height:54px}
-  .einf-c svg{width:20px;height:20px}
-  .einf-k{font-size:.78rem}
-}
+   كل الألوان من ثلاثية `--tone` اللي الكومبوننت بيبعتها كتوكن،
+   فاللوحة واحدة والنبرة بتتغيّر — مش أربع قواعد متكررة. */
+.einf{display:flex;align-items:stretch;gap:0;width:100%;
+  padding-top:36px;min-height:250px}
 
-.einf-t{position:relative;isolation:isolate;color:inherit;text-align:center;
-  display:flex;flex-direction:column;align-items:center;gap:.2rem;
-  padding:2.75rem 1rem 1.05rem;
-  /* كتف مقوّس يحتضن الدايرة — نصف دايرة كاملة كانت بتقبّب البطاقة
-     كلها فتبان كفقاعة لا كلوح */
-  border-radius:46px 46px var(--r3) var(--r3);
-  background:linear-gradient(180deg,
-    rgba(var(--tone),.26) 0%, rgba(var(--tone),.13) 52%, rgba(var(--tone),.06) 100%);
+.einf-t{position:relative;isolation:isolate;flex:1 1 0;min-width:0;color:inherit;
+  display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
+  gap:.15rem;text-align:center;padding:1rem .55rem 1.15rem;
+  /* كتف مقوّس فوق فقط — اللوحات بتكمّل بعضها لتحت */
+  border-radius:38px 38px 0 0;
+  background:linear-gradient(to top,
+    rgba(var(--tone),.34) 0%, rgba(var(--tone),.20) 46%, rgba(var(--tone),.07) 100%);
   -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
-  box-shadow:inset 0 0 0 1px rgba(var(--tone),.24);
-  transition:transform .22s cubic-bezier(.22,.9,.3,1),box-shadow .22s ease;
+  box-shadow:inset 0 1px 0 rgba(var(--tone),.30);
+  transition:translate .22s cubic-bezier(.22,.9,.3,1),box-shadow .22s ease;
   animation:airise .45s cubic-bezier(.22,.9,.3,1) both;
   animation-delay:calc(var(--n,0) * 70ms + 120ms)}
-.einf-t:hover{transform:translateY(-3px);color:inherit;
-  box-shadow:inset 0 0 0 1px rgba(var(--tone),.42),0 14px 28px -16px rgba(var(--tone),.55)}
+/* حواف الشريط من تحت مدوّرة، وجوّه مستقيمة عشان يتّصل */
+.einf-t:first-child{border-end-start-radius:var(--r3)}
+.einf-t:last-child{border-end-end-radius:var(--r3)}
+.einf-t:hover{translate:0 -3px;color:inherit;
+  box-shadow:inset 0 1px 0 rgba(var(--tone),.5),0 14px 26px -18px rgba(var(--tone),.7)}
 
-/* الدايرة: سطح معتم عشان الأيقونة تفضل مقروءة فوق أي نبرة،
-   وحلقة بلون البطاقة بتربطها بيها زي المرجع */
-.einf-c{position:absolute;top:-34px;inset-inline:0;margin-inline:auto;
-  width:68px;height:68px;border-radius:50%;display:grid;place-items:center;
+/* الدايرة على الكتف: سطح معتم عشان الأيقونة تفضل مقروءة فوق أي
+   نبرة، وحلقة بلون اللوحة بتربطها بيها زي المرجع */
+.einf-c{position:absolute;top:-36px;inset-inline:0;margin-inline:auto;
+  width:72px;height:72px;border-radius:50%;display:grid;place-items:center;
   color:rgb(var(--tone));background:var(--pop);
-  box-shadow:0 0 0 5px rgba(var(--tone),.30),
+  box-shadow:0 0 0 6px rgba(var(--tone),.34),
              inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
              0 10px 22px -12px rgba(var(--tone),.6);
   transition:box-shadow .22s ease}
-.einf-t:hover .einf-c{box-shadow:0 0 0 6px rgba(var(--tone),.42),
+.einf-t:hover .einf-c{box-shadow:0 0 0 7px rgba(var(--tone),.46),
              inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
-             0 12px 26px -12px rgba(var(--tone),.7)}
+             0 12px 26px -12px rgba(var(--tone),.72)}
 
-.einf-k{font-family:var(--fd);font-weight:600;font-size:.86rem;color:var(--t1);line-height:1.4}
+.einf-k{font-family:var(--fd);font-weight:600;font-size:.8rem;color:var(--t1);line-height:1.4}
 .einf-v{font-family:var(--fd);font-weight:700;line-height:1.05;letter-spacing:-.02em;
-  font-size:clamp(1.2rem,2vw,1.6rem);color:var(--t1);
-  display:flex;align-items:baseline;justify-content:center;gap:.25rem;margin-top:.1rem}
-.einf-v small{font-size:.5em;font-weight:400;color:var(--t2-g)}
-.einf-n{font-size:.72rem;color:var(--t2-g);line-height:1.6}
-
-/* النسبة: شريط ورقم — اللون لوحده ما بيقولش «قد إيه» */
-.einf-bar{display:block;width:100%;height:5px;margin-top:.7rem;border-radius:99px;
-  background:rgba(var(--tone),.16);overflow:hidden}
-.einf-bar i{display:block;height:100%;width:var(--pct,0%);border-radius:99px;
-  background:rgb(var(--tone));transition:width .55s cubic-bezier(.22,.9,.3,1)}
-.einf-p{font-size:.68rem;color:var(--t3-g);margin-top:.3rem}
+  font-size:clamp(.95rem,1.35vw,1.28rem);color:var(--t1);
+  display:flex;align-items:baseline;justify-content:center;gap:.2rem;margin-top:.15rem}
+.einf-v small{font-size:.55em;font-weight:400;color:var(--t2-g)}
+.einf-n{font-size:.68rem;color:var(--t2-g);line-height:1.6}
 
 /* المُعلَّمة: اللي لسه معلّقة — نفس دور الوتد الغامق في المروحة */
-.einf-t.now{box-shadow:inset 0 0 0 1.5px rgba(var(--tone),.55)}
-.einf-t.now .einf-k{color:var(--t1)}
-.einf-t.now .einf-c{box-shadow:0 0 0 6px rgba(var(--tone),.45),
+.einf-t.now{box-shadow:inset 0 1px 0 rgba(var(--tone),.6),
+            inset 0 0 0 1px rgba(var(--tone),.34)}
+.einf-t.now .einf-c{box-shadow:0 0 0 7px rgba(var(--tone),.5),
              inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
-             0 12px 26px -12px rgba(var(--tone),.75)}
+             0 12px 26px -12px rgba(var(--tone),.78)}
 
-@media (prefers-reduced-motion:reduce){
-  .einf-t{animation:none;transition:none}
-  .einf-t:hover{transform:none}
-  .einf-bar i{transition:none}
+/* ضيّق: الشريط بينزل تحت الترويسة ويلف على صفّين، والاتصال بيفضل */
+@media (max-width:900px){
+  /* الدايرة بتطلع ٣٢ فوق حافة اللوحة، فالفاصل بين الصفّين لازم
+     يزيد عنها وإلا دايرة الصفّ التاني وقعت على لوحة الصفّ الأول */
+  .einf{flex-wrap:wrap;min-height:0;padding-top:32px;row-gap:50px}
+  .einf-t{flex:1 1 46%;min-height:146px;padding-top:2.2rem;border-radius:32px 32px 0 0}
+  .einf-t:nth-child(2){border-end-end-radius:var(--r3)}
+  .einf-t:nth-child(3){border-end-start-radius:var(--r3)}
+  .einf-c{top:-32px;width:60px;height:60px}
+  .einf-c svg{width:22px;height:22px}
 }
