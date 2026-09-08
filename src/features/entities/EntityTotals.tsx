@@ -1,19 +1,19 @@
 import { Link } from 'react-router-dom'
-import { Riyal } from '@/components/ui'
+import { Icon, icons, Riyal, type IconName } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type { EntityRow } from '@/types/domain'
 
 /* ═══════════════════════════════════════════════════════════
-   إجماليات الجهة — أربع مربّعات
+   إجماليات الجهة — أربع بطاقات بدائرة أيقونة
 
-   نفس فكرة مروحة الصلاحيات في صفحة المشروع، بشكل تاني: سُلَّم
-   مرسوم، وموقعك عليه مُعلَّم. هناك السُّلَّم صلاحيات وموقعك صاحب
-   القرار؛ هنا السُّلَّم رحلة المال، والمُعلَّم هو اللي لسه معلّق —
-   **تحت الصرف**. لأن ده الرقم الوحيد في الأربعة اللي بيستدعي فعلًا.
+   الأربعة رحلة واحدة للمال: كل الممنوح ← اللي وصل ← اللي لسه في
+   الطريق ← نصيب السنة الجارية. والتدرّج اللوني من الغامق للفاتح
+   بيمشي مع الرحلة، فالعين تقرا الترتيب قبل ما تقرا الأرقام.
 
-   والتعبئة جوّه كل مربّع نسبته من الإجمالي، مش زخرفة: العين بتقرا
-   «قد إيه اتصرف من اللي اتلزم» من المساحة قبل ما توصل للرقم.
+   والشريط الرفيع تحت كل بطاقة نسبتها من الإجمالي — رقم زيادة لا
+   زخرفة: «قد إيه اتصرف من اللي اتلزم» بيتقري من المساحة قبل ما
+   توصل للرقم نفسه.
    ═══════════════════════════════════════════════════════════ */
 
 interface Tile {
@@ -21,9 +21,11 @@ interface Tile {
   label: string
   value: number
   note: string
-  /** المربّع اللي بيستدعي فعلًا */
+  icon: IconName
+  /** نبرة البطاقة — توكن في الـCSS عشان يقلب مع المظهر */
+  tone: string
+  /** البطاقة اللي بتستدعي فعلًا */
   now?: boolean
-  money?: boolean
   to: string
 }
 
@@ -39,7 +41,8 @@ export function EntityTotals({ entity }: { entity: EntityRow }) {
       label: 'إجمالي الممنوح',
       value: entity.grantedTotal,
       note: 'من أول تسجيلها',
-      money: true,
+      icon: 'budget',
+      tone: 'var(--tone-1)',
       to: byEntity,
     },
     {
@@ -47,7 +50,8 @@ export function EntityTotals({ entity }: { entity: EntityRow }) {
       label: 'المصروف لها',
       value: disbursed,
       note: 'وصل فعلًا',
-      money: true,
+      icon: 'pay',
+      tone: 'var(--tone-2)',
       to: ROUTES.payments,
     },
     {
@@ -55,7 +59,8 @@ export function EntityTotals({ entity }: { entity: EntityRow }) {
       label: 'تحت الصرف',
       value: entity.inDisbursement,
       note: 'ملتزم لها ولم يصل',
-      money: true,
+      icon: 'clock',
+      tone: 'var(--tone-3)',
       now: true,
       to: ROUTES.payments,
     },
@@ -64,7 +69,8 @@ export function EntityTotals({ entity }: { entity: EntityRow }) {
       label: 'ممنوح هذه السنة',
       value: entity.grantedThisYear,
       note: 'من دورة 2026',
-      money: true,
+      icon: 'chart',
+      tone: 'var(--tone-4)',
       to: byEntity,
     },
   ]
@@ -72,7 +78,7 @@ export function EntityTotals({ entity }: { entity: EntityRow }) {
   const base = Math.max(entity.grantedTotal, 1)
 
   return (
-    <div className="etot" role="list">
+    <div className="einf" role="list">
       {tiles.map((t, i) => {
         const pct = Math.min(100, Math.round((t.value / base) * 100))
         return (
@@ -80,24 +86,24 @@ export function EntityTotals({ entity }: { entity: EntityRow }) {
             key={t.key}
             to={t.to}
             role="listitem"
-            className={`etile glass${t.now ? ' now' : ''}`}
-            style={{ '--pct': `${pct}%`, '--n': i } as React.CSSProperties}
+            className={`einf-t${t.now ? ' now' : ''}`}
+            style={{ '--tone': t.tone, '--pct': `${pct}%`, '--n': i } as React.CSSProperties}
           >
-            {/* التعبئة من تحت: نسبة الرقم من الإجمالي */}
-            <span className="etile-f" aria-hidden="true" />
-            <span className="etile-k">{t.label}</span>
-            <span className="etile-v num">
-              {nf.format(t.value)}
-              {t.money && <small><Riyal /></small>}
+            <span className="einf-c">
+              <Icon path={icons[t.icon]} size={26} />
             </span>
-            <span className="etile-n">
-              {t.note}
-              {t.key !== 'total' && (
-                <>
-                  {' · '}
-                  <span className="num">{pct}%</span> من الإجمالي
-                </>
-              )}
+
+            <span className="einf-k">{t.label}</span>
+            <span className="einf-v num">
+              {nf.format(t.value)}
+              <small><Riyal /></small>
+            </span>
+            <span className="einf-n">{t.note}</span>
+
+            {/* النسبة من الإجمالي — شريط ورقم، مش لون بس */}
+            <span className="einf-bar" aria-hidden="true"><i /></span>
+            <span className="einf-p">
+              <span className="num">{pct}%</span> من الإجمالي
             </span>
           </Link>
         )

@@ -78,10 +78,10 @@
   --map-2:rgba(0,165,155,.38);
   --map-3:rgba(0,165,155,.62);
   --map-4:#0B857E;
-  /* تعبئة مربّعات الإجماليات — شدّتها محكومة عشان النص فوقها
-     يفضل فوق حدّ AA في المظاهر التلاتة */
-  --fill-a:linear-gradient(to top,rgba(148,214,3,.14),rgba(0,165,155,.09));
-  --fill-now:linear-gradient(to top,rgba(0,165,155,.26),rgba(0,165,155,.13));
+  /* نبرات بطاقات إجماليات الجهة — سُلَّم من الغامق للفاتح يمشي مع
+     رحلة المال. في الداكن بينقلب لسُلَّم من الخافت للساطع، لأن
+     الأخضر الغامق بيختفي على أرضية غامقة. */
+  --tone-1:20,69,71; --tone-2:0,140,133; --tone-3:0,165,155; --tone-4:148,214,3;
 
   /* الخلفية كتوكن عشان الوضع الداكن يقلبها من مكان التوكنز */
   --mesh-bg:#EDF3F0;
@@ -2314,8 +2314,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --map-2:rgba(47,199,182,.36);
   --map-3:rgba(47,199,182,.58);
   --map-4:#2FC7B6;
-  --fill-a:linear-gradient(to top,rgba(47,199,182,.16),rgba(47,199,182,.07));
-  --fill-now:linear-gradient(to top,rgba(47,199,182,.30),rgba(47,199,182,.14));
+  --tone-1:118,168,164; --tone-2:30,182,170; --tone-3:47,199,182; --tone-4:168,217,60;
   --mesh-bg:#0A0C0C;
   --mesh-img:
     radial-gradient(64% 54% at 92% -12%, rgba(0,165,155,.16) 0%,  rgba(0,165,155,0) 100%),
@@ -2365,8 +2364,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --map-2:rgba(47,199,182,.36);
   --map-3:rgba(47,199,182,.58);
   --map-4:#2FC7B6;
-  --fill-a:linear-gradient(to top,rgba(47,199,182,.16),rgba(47,199,182,.07));
-  --fill-now:linear-gradient(to top,rgba(47,199,182,.30),rgba(47,199,182,.14));
+  --tone-1:118,168,164; --tone-2:30,182,170; --tone-3:47,199,182; --tone-4:168,217,60;
   --mesh-bg:#08181A;
   --mesh-img:
     radial-gradient(64% 54% at 92% -12%, rgba(0,165,155,.30) 0%,  rgba(0,165,155,0) 100%),
@@ -2409,47 +2407,79 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 :root[data-theme="dark"] .lfoot,
 :root[data-theme="green"] .lfoot{color:var(--t2);text-shadow:0 1px 6px rgba(0,0,0,.6)}
 
-/* ═══ إجماليات الجهة — أربع مربّعات ═══
-   نفس منطق المروحة في صفحة المشروع: سُلَّم مرسوم وموقعك معلّم
-   عليه. التعبئة نسبة الرقم من الإجمالي — العين بتقرا «قد إيه
-   اتصرف» من المساحة قبل ما توصل للرقم. */
-.etot{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
-/* اتنين في الصف على الموبايل لا واحد: المربّع الواحد على عرض
-   الشاشة بيبقى لافتة فاضية لرقم واحد، والأربعة بيبقوا أربع شاشات */
-@media (max-width:900px){.etot{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:700px){.etile{min-height:104px;padding:.75rem .8rem .8rem}}
+/* ═══ إجماليات الجهة — بطاقة بدائرة أيقونة ═══
+   الشكل: دايرة معتمة فيها الأيقونة، قاعدة على كتف البطاقة، والقيمة
+   تحتها. التدرّج اللوني بين الأربعة بيمشي مع رحلة المال — من كل
+   الممنوح للفاتح (نصيب السنة) — فالعين تقرا الترتيب قبل الأرقام.
 
-.etile{position:relative;isolation:isolate;overflow:hidden;
-  display:flex;flex-direction:column;justify-content:flex-end;gap:.22rem;
-  min-height:132px;padding:.95rem 1.05rem 1rem;color:inherit;
-  border-radius:var(--r3);
+   وكل الألوان من ثلاثية `--tone` اللي الكومبوننت بيبعتها، فالبطاقة
+   واحدة والنبرة بتتغيّر — مش أربع قواعد متكررة. */
+.einf{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap);
+  padding-top:34px}
+@media (max-width:900px){.einf{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:calc(var(--gap) + 34px)}}
+/* اتنين في الصف حتى على أضيق شاشة: واحدة على عرض الشاشة بتبقى
+   لافتة فاضية لرقم واحد، والأربعة يبقوا أربع شاشات */
+@media (max-width:560px){
+  .einf{padding-top:26px}
+  .einf-t{padding:2.2rem .7rem .9rem;border-radius:36px 36px var(--r3) var(--r3)}
+  .einf-c{top:-26px;width:54px;height:54px}
+  .einf-c svg{width:20px;height:20px}
+  .einf-k{font-size:.78rem}
+}
+
+.einf-t{position:relative;isolation:isolate;color:inherit;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:.2rem;
+  padding:2.75rem 1rem 1.05rem;
+  /* كتف مقوّس يحتضن الدايرة — نصف دايرة كاملة كانت بتقبّب البطاقة
+     كلها فتبان كفقاعة لا كلوح */
+  border-radius:46px 46px var(--r3) var(--r3);
+  background:linear-gradient(180deg,
+    rgba(var(--tone),.26) 0%, rgba(var(--tone),.13) 52%, rgba(var(--tone),.06) 100%);
+  -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
+  backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
+  box-shadow:inset 0 0 0 1px rgba(var(--tone),.24);
   transition:transform .22s cubic-bezier(.22,.9,.3,1),box-shadow .22s ease;
   animation:airise .45s cubic-bezier(.22,.9,.3,1) both;
   animation-delay:calc(var(--n,0) * 70ms + 120ms)}
-.etile:hover{transform:translateY(-2px);color:inherit;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.4))}
+.einf-t:hover{transform:translateY(-3px);color:inherit;
+  box-shadow:inset 0 0 0 1px rgba(var(--tone),.42),0 14px 28px -16px rgba(var(--tone),.55)}
 
-/* التعبئة من تحت — الارتفاع هو النسبة */
-.etile-f{position:absolute;inset-inline:0;bottom:0;z-index:-1;
-  height:var(--pct,0%);
-  background:var(--fill-a);
-  transition:height .55s cubic-bezier(.22,.9,.3,1)}
+/* الدايرة: سطح معتم عشان الأيقونة تفضل مقروءة فوق أي نبرة،
+   وحلقة بلون البطاقة بتربطها بيها زي المرجع */
+.einf-c{position:absolute;top:-34px;inset-inline:0;margin-inline:auto;
+  width:68px;height:68px;border-radius:50%;display:grid;place-items:center;
+  color:rgb(var(--tone));background:var(--pop);
+  box-shadow:0 0 0 5px rgba(var(--tone),.30),
+             inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
+             0 10px 22px -12px rgba(var(--tone),.6);
+  transition:box-shadow .22s ease}
+.einf-t:hover .einf-c{box-shadow:0 0 0 6px rgba(var(--tone),.42),
+             inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
+             0 12px 26px -12px rgba(var(--tone),.7)}
 
-/* التعبئة بترفع سطوع الأرضية جوّه المربّع، فالحبر هنا حبر أرضية */
-.etile-k{font-size:.76rem;color:var(--t2-g);font-family:var(--fd);font-weight:500;
-  order:-1;margin-bottom:auto}
-.etile-v{font-family:var(--fd);font-weight:700;line-height:1.05;letter-spacing:-.02em;
-  font-size:clamp(1.15rem,1.9vw,1.5rem);color:var(--t1);
-  display:flex;align-items:baseline;gap:.25rem;flex-wrap:wrap}
-.etile-v small{font-size:.5em;font-weight:400;color:var(--t3)}
+.einf-k{font-family:var(--fd);font-weight:600;font-size:.86rem;color:var(--t1);line-height:1.4}
+.einf-v{font-family:var(--fd);font-weight:700;line-height:1.05;letter-spacing:-.02em;
+  font-size:clamp(1.2rem,2vw,1.6rem);color:var(--t1);
+  display:flex;align-items:baseline;justify-content:center;gap:.25rem;margin-top:.1rem}
+.einf-v small{font-size:.5em;font-weight:400;color:var(--t2-g)}
+.einf-n{font-size:.72rem;color:var(--t2-g);line-height:1.6}
 
-.etile-n{font-size:.7rem;color:var(--t3-g);line-height:1.6}
+/* النسبة: شريط ورقم — اللون لوحده ما بيقولش «قد إيه» */
+.einf-bar{display:block;width:100%;height:5px;margin-top:.7rem;border-radius:99px;
+  background:rgba(var(--tone),.16);overflow:hidden}
+.einf-bar i{display:block;height:100%;width:var(--pct,0%);border-radius:99px;
+  background:rgb(var(--tone));transition:width .55s cubic-bezier(.22,.9,.3,1)}
+.einf-p{font-size:.68rem;color:var(--t3-g);margin-top:.3rem}
 
-/* المُعلَّم: اللي لسه معلّق. نفس دور الوتد الغامق في المروحة —
-   واحد بس بيتنطّ، والباقي سياق له. */
-.etile.now{box-shadow:inset 0 0 0 1px rgba(0,165,155,.42)}
-.etile.now .etile-f{background:var(--fill-now)}
-.etile.now .etile-k{color:var(--t1)}
-.etile.now::after{content:"";position:absolute;inset-inline-end:1rem;top:1.15rem;
-  width:7px;height:7px;border-radius:50%;background:var(--teal)}
-@media (prefers-reduced-motion:reduce){ .etile{animation:none} .etile-f{transition:none} }
+/* المُعلَّمة: اللي لسه معلّقة — نفس دور الوتد الغامق في المروحة */
+.einf-t.now{box-shadow:inset 0 0 0 1.5px rgba(var(--tone),.55)}
+.einf-t.now .einf-k{color:var(--t1)}
+.einf-t.now .einf-c{box-shadow:0 0 0 6px rgba(var(--tone),.45),
+             inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
+             0 12px 26px -12px rgba(var(--tone),.75)}
+
+@media (prefers-reduced-motion:reduce){
+  .einf-t{animation:none;transition:none}
+  .einf-t:hover{transform:none}
+  .einf-bar i{transition:none}
+}
