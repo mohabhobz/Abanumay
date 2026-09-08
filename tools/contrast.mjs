@@ -1,3 +1,16 @@
+/**
+ * فاحص التباين — بيقيس لون النص الفعلي من البكسل مقابل خلفيته،
+ * مش من قيم الـCSS: الزجاج والـbackdrop-filter بيخلّوا الخلفية
+ * المحسوبة مختلفة عن اللي العين بتشوفه.
+ *
+ *   npm i -D pngjs          # مرة واحدة، مش في package.json عشان
+ *                           # ما يفضلش اعتماد على أداة تطوير
+ *   npm run build
+ *   node tools/contrast.mjs dark /projects
+ *
+ * بيطبع كل نص تحت حدّ AA (4.5:1، و3:1 للكبير). النسبة = 1 معناها
+ * الحروف غطّت الصندوق كله — إنذار كاذب، مش مشكلة.
+ */
 import http from 'node:http';import fs from 'node:fs';import path from 'node:path';import {chromium} from 'playwright'
 import {PNG} from 'pngjs'
 const ROOT='/home/claude/abanumay/app/dist'
