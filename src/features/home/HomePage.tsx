@@ -14,7 +14,7 @@ import {
   entityHealth, grantedByTrack, median, ownerLoad, topEntities,
 } from '@/data/analytics'
 import { assistFor } from '@/data/mock/assistant'
-import { df, nf, pct } from '@/lib/format'
+import { df, nf, pct, projectCode } from '@/lib/format'
 import { days } from '@/lib/tone'
 
 /* ═══════════════════════════════════════════════════════════
@@ -375,7 +375,7 @@ export default function HomePage() {
                     {queue.map((p) => (
                       <Link key={p.id} to={ROUTES.project(p.id)} className="qrow well">
                         <div className="qrow-h">
-                          <Mono>{p.id}</Mono>
+                          <Mono>{projectCode(p.id, p.year)}</Mono>
                           <span className="sub">{p.stage}</span>
                           <span className="pc-sp" />
                           <span className="num">{nf.format(p.amountRequested)} <Riyal /></span>
@@ -403,7 +403,7 @@ export default function HomePage() {
                     {attention.map((p) => (
                       <Link key={p.id} to={ROUTES.project(p.id)} className="qrow well">
                         <div className="qrow-h">
-                          <Mono>{p.id}</Mono>
+                          <Mono>{projectCode(p.id, p.year)}</Mono>
                           <span className="sub">{p.stage}</span>
                           <span className="pc-sp" />
                           <span className="tag no mini">

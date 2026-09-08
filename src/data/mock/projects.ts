@@ -759,6 +759,82 @@ export const assignOwner = (ids: readonly string[], owner: string): void => {
   for (const p of projectRows) if (ids.includes(p.id)) p.owner = owner
 }
 
+/* ═══════════════════════════════════════════════════════════
+   القرارات المجمّعة.
+
+   القرار على مشروع واحد بيحصل في صفحته ومعاه كل السياق. القرار
+   المجمّع لازمته مختلفة: المشرف قدّامه عشرين مشروعًا كلهم نفس
+   الحالة (معتذر عنها لنفس السبب مثلًا)، وفتح عشرين صفحة عشان
+   يسجّل نفس القرار مش مراجعة — هو نسخ ولصق بإيد.
+
+   وعشان كده القرارات المتاحة هنا **أقل** من اللي في صفحة المشروع:
+   اللي محتاج هدفًا لكل مشروع (تحويل لمشرف بعينه، إعادة لمستوى)
+   مش موجود، لأن اختياره الجماعي بيبقى تخمينًا. والإسناد لمالك له
+   حقله المستقل جنبه.
+   ═══════════════════════════════════════════════════════════ */
+
+export type BulkDecision = 'approve' | 'complete' | 'decline' | 'escalate'
+
+/** لقطة قبل القرار، عشان «تراجع» تكون رجوعًا حقيقيًا لا قرارًا مضادًا */
+interface Snapshot {
+  id: string
+  stage: ProjectRow['stage']
+  statusGroup: ProjectRow['statusGroup']
+  stageLimit: number
+  supportStatus: ProjectRow['supportStatus']
+  amountGranted: number
+}
+
+const snap = (p: ProjectRow): Snapshot => ({
+  id: p.id,
+  stage: p.stage,
+  statusGroup: p.statusGroup,
+  stageLimit: p.stageLimit,
+  supportStatus: p.supportStatus,
+  amountGranted: p.amountGranted,
+})
+
+const moveTo = (p: ProjectRow, stage: string) => {
+  const meta = stageMeta(stage)
+  p.stage = stage
+  p.statusGroup = meta?.group ?? p.statusGroup
+  p.stageLimit = meta?.limit ?? 0
+  /* المكوث بيتصفّر مع القسم الجديد، وإلا المشروع بيبان متأخرًا
+     في قسم لسه داخله دلوقتي. */
+  p.hoursInStage = 0
+}
+
+/** بينفّذ القرار ويرجّع دالة تراجع */
+export const applyDecision = (ids: readonly string[], d: BulkDecision): (() => void) => {
+  const targets = projectRows.filter((p) => ids.includes(p.id))
+  const before = targets.map(snap)
+
+  for (const p of targets) {
+    if (d === 'approve') {
+      p.supportStatus = 'معتمد'
+      if (p.amountGranted === 0) p.amountGranted = p.amountRequested
+      moveTo(p, 'اعتماد الإتفاقية')
+    } else if (d === 'complete') {
+      moveTo(p, 'استكمال بيانات المشروع')
+    } else if (d === 'decline') {
+      p.supportStatus = 'مرفوض'
+      p.amountGranted = 0
+      moveTo(p, 'مشروع معتذر عنه')
+    } else {
+      /* الرفع للمستوى الأعلى ما بيغيّرش نتيجة المشروع، بيغيّر
+         مكانه في الدراسة بس. */
+      moveTo(p, 'دراسة المشروع')
+    }
+  }
+
+  return () => {
+    for (const b of before) {
+      const p = projectRows.find((x) => x.id === b.id)
+      if (p) Object.assign(p, b)
+    }
+  }
+}
+
 export const projectById = (id: string): ProjectRow | undefined =>
   projectRows.find((p) => p.id === id)
 

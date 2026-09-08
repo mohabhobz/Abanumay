@@ -41,6 +41,25 @@ export const pct = (n: number): string => `\u2066${n}%\u2069`
 export const isolate = (text: string): string =>
   text.replace(/\d[\d,.]*(?:\s?%)?/g, (m) => `\u2066${m}\u2069`)
 
+/**
+ * كود المشروع المعروض: `prj-2026-00013`.
+ *
+ * النظام العامل بيعرض رقمًا متسلسلًا عاريًا (`20940`) ما بيقولش سنة
+ * ولا نوع، ولمّا يتنسخ في إيميل بيبقى رقمًا بلا هوية. الكود ده بيحمل
+ * النوع والسنة والتسلسل، وبيتسطر بنفس العرض دايمًا فالعين بتقارن
+ * صفّين فوق بعض.
+ *
+ * **المعرّف في الـURL وفي الـAPI بيفضل الرقم الخام.** الكود عرض لا
+ * مفتاح: تغييره بيكسر كل رابط محفوظ، وبيخلي الربط بالباك اند يحتاج
+ * ترجمة في الاتجاهين بلا فايدة.
+ */
+export const projectCode = (id: string, year?: string): string =>
+  `prj-${(year ?? '').slice(0, 4) || '____'}-${id.padStart(5, '0')}`
+
+/** يقبل الكود كامل أو أي جزء منه في البحث */
+export const matchesCode = (needle: string, id: string, year?: string): boolean =>
+  projectCode(id, year).includes(needle.trim().toLowerCase())
+
 /** تكلفة المستفيد — مقياس المقارنة بين المشاريع */
 export const costPerBeneficiary = (amount: number, beneficiaries: number): number =>
   beneficiaries === 0 ? 0 : Math.round(amount / beneficiaries)

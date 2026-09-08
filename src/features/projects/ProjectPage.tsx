@@ -4,7 +4,7 @@ import { GateArc, Icon, icons, Mono, Num, Riyal, Tabs } from '@/components/ui'
 import { DecisionBar } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
-import { nf } from '@/lib/format'
+import { nf, projectCode } from '@/lib/format'
 import { fixtures } from '@/data/repository'
 import { useRole } from '@/hooks/useRole'
 import { projectById } from '@/data/mock/projects'
@@ -140,7 +140,7 @@ export default function ProjectPage() {
             <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
             <span className="lb">دورة 2026 · {project.track}</span>
             <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
-            <span className="now">مشروع <Mono>{id ?? project.id}</Mono></span>
+            <span className="now">مشروع <Mono>{projectCode(id ?? project.id, row?.year)}</Mono></span>
           </nav>
 
           {/* ═══ الترويسة — بلا سطح، بتقعد على الخلفية مباشرة ═══ */}

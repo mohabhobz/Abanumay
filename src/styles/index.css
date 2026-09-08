@@ -1637,7 +1637,11 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .fseg.on b{color:var(--t1);background:rgba(var(--edgeC),.10)}
 
 /* ── شريط الأدوات ── */
-.ftoolbar{display:flex;flex-direction:column;gap:.85rem;padding:.9rem 1rem}
+/* `z-index` مش زينة: كارت «قراءة سريعة» بعد الشريط في الـDOM، وكل
+   كارت زجاجي بيعمل سياق تكديس بنفسه (`isolation:isolate`). من غير
+   رفع الشريط، لوحة الفلتر المفتوحة بيتقطعها الكارت اللي بعدها. */
+.ftoolbar{position:relative;z-index:20;
+  display:flex;flex-direction:column;gap:.85rem;padding:.9rem 1rem}
 .ftool-r{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 
 .srch{flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:.55rem;
@@ -2756,3 +2760,102 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
      تحته. القصّ هنا بيخلي آخر خيار مقروء ومضغوط. */
   .fmenu-l{max-height:190px}
 }
+
+/* ═══════════════════════════════════════════════════════════
+   الجدول: إجماليات وتجميع ومنتقي أعمدة وتصدير
+   ═══════════════════════════════════════════════════════════ */
+
+/* الجدول بيكبر مع الأعمدة الزيادة، فالتمرير الأفقي جوّه الحاوية
+   لا على الصفحة — الصفحة اللي بتتزحلق أفقيًا بتضيّع الترويسة. */
+.tblwrap{display:flex;flex-direction:column;gap:1.1rem}
+.tblock{min-width:0}
+
+/* عنوان المجموعة: سطر واحد بلا كارت، الجدول تحته هو الكارت */
+.tcap{display:flex;align-items:baseline;gap:.5rem;padding:.1rem .55rem .5rem}
+.tcap-k{font-family:var(--fd);font-weight:600;font-size:.86rem;color:var(--t1)}
+.tcap-n{font-size:.74rem;padding:.06rem .45rem;border-radius:var(--rp);
+  background:rgba(var(--edgeC),.07)}
+
+/* صف الإجماليات: نبرة أغمق شويّة من الصفوف، ومثبَّت أسفل الجدول */
+.tbl tfoot td{padding-block:.7rem;border-top:1px solid rgba(var(--edgeC),calc(var(--edge-hair)*3));
+  background:rgba(var(--edgeC),.045);font-size:.82rem;color:var(--t1)}
+.tbl tfoot b{font-family:var(--fd);font-weight:700}
+.tbl tfoot small{font-size:.66rem;font-weight:400}
+
+/* الإجمالي الكلي تحت المجموعات */
+.tgrand{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
+  padding:.75rem .9rem;border-radius:var(--r2);
+  background:rgba(var(--edgeC),.06);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+.tgrand-k{font-family:var(--fd);font-weight:600;font-size:.86rem;color:var(--t1)}
+.tgrand-v{display:flex;align-items:baseline;gap:1.1rem;flex-wrap:wrap;font-size:.82rem}
+.tgrand-v .sub{font-size:.72rem}
+
+/* منتقي الأعمدة — آخر خانة في الترويسة */
+.tbl th.tcolx{width:38px;padding-inline:.2rem}
+.tcolp{position:relative}
+.tcolb{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;
+  color:var(--t2);background:rgba(var(--wC),calc(.6 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+.tcolb:hover{color:var(--t1);background:rgba(var(--wC),calc(.9 * var(--wM)))}
+/* بتفتح لناحية الشمال: آخر عمود ملزوق بحافة الحاوية اليسرى */
+.tcolm{inset-inline-start:auto;inset-inline-end:0;min-width:220px}
+.fopt.fix{opacity:.6;cursor:default}
+.fopt.fix:hover{background:none}
+
+/* قائمة التصدير */
+.fexp{position:relative}
+.fexp-m{min-width:210px}
+.fexp-s{padding:.35rem .55rem .5rem;font-size:.72rem;
+  box-shadow:inset 0 -1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7));margin-bottom:.25rem}
+
+/* شريط «تمّ» بعد قرار مجمّع */
+.bulk.done{background:rgba(var(--okC),.10);
+  box-shadow:inset 0 0 0 1px rgba(var(--okC),.30)}
+.bulk.done>svg{color:var(--ok);flex:none}
+
+/* ═══ نسخة الطباعة ═══
+   مخفية تمامًا على الشاشة. وقت الطباعة بيتقفل كل حاجة تانية وتفضل
+   هي، فالورقة بتطلع جدولًا نضيفًا بلا شريط ولا فلاتر. */
+.printsheet{display:none}
+
+@media print{
+  body.printing .rail,
+  body.printing .mobtop,
+  body.printing .aidock,
+  body.printing .ftoolbar,
+  body.printing .fsegs,
+  body.printing .qread,
+  body.printing .fexp,
+  body.printing .bulk,
+  body.printing .pager,
+  body.printing .plist,
+  body.printing .tblwrap,
+  body.printing .tblcard,
+  body.printing header,
+  body.printing .crumb{display:none !important}
+
+  body.printing .printsheet{display:block}
+  body.printing{background:#fff;color:#000}
+  body.printing .mesh,body.printing .grain{display:none}
+
+  .printsheet .ps-head{margin-bottom:14px}
+  .printsheet h1{font-size:18px;margin:0 0 4px}
+  .printsheet p{font-size:11px;color:#444;margin:0}
+  .printsheet table{width:100%;border-collapse:collapse;font-size:10.5px}
+  .printsheet th,.printsheet td{border:1px solid #bbb;padding:5px 7px;text-align:right}
+  .printsheet thead th{background:#144547;color:#fff;font-weight:600}
+  .printsheet tfoot td{background:#e6efec;font-weight:700}
+  .printsheet thead{display:table-header-group}
+  @page{size:A4 landscape;margin:12mm}
+}
+
+@media (max-width:900px){
+  .tgrand{flex-direction:column;align-items:flex-start;gap:.5rem}
+  .tgrand-v{gap:.75rem}
+}
+
+/* الكود والمالك ما يتكسروش على سطرين: الكود هوية بتتقري كوحدة،
+   والاسم اللي بينقسم بيوهم إن الصف فيه اسمين */
+.tbl td .mono,.tbl th.tcolx{white-space:nowrap}
+.plist-t td:nth-last-child(3){white-space:nowrap}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, Pager, PAGE_SIZES, SearchBox, Segments, Select,
@@ -9,7 +9,14 @@ import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { fixtures, query, type ProjectQuery, type ProjectSort } from '@/data/repository'
-import { assignOwner } from '@/data/mock/projects'
+import { applyDecision, assignOwner, type BulkDecision } from '@/data/mock/projects'
+import { useRole } from '@/hooks/useRole'
+import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
+import {
+  GROUPS, aggregate, groupByKey, orderCols, readCols, splitGroups, writeCols,
+} from './columns'
+import { units } from '@/lib/format'
+import { PrintSheet } from './PrintSheet'
 import {
   CITIES_BY_REGION, FIELDS_BY_TRACK, GOALS_BY_FIELD, GRANT_METHODS, OWNERS,
   REGIONS, STAGES, STATUS_GROUPS, SUPPORT_STATUS, TAGS, TRACKS, YEARS,
@@ -24,7 +31,7 @@ import { ProjectsTable } from './ProjectsTable'
 const KEYS = [
   'q', 'status', 'stage', 'year', 'track', 'field', 'goal', 'region', 'city',
   'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact',
-  'sort', 'page', 'size', 'view', 'adv',
+  'sort', 'page', 'size', 'view', 'adv', 'group',
 ] as const
 
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -34,7 +41,7 @@ const PAGE_SIZE = PAGE_SIZES[0]
 /* البحث والحالة والتبديلات الظاهرة ليها مكانها فوق، فما تتحسبش في
    عدّاد «الفلاتر المتقدمة» — العدّاد بيقول اللي مخفي بس. */
 const NOT_FILTERS: (keyof Params)[] = [
-  'q', 'sort', 'page', 'size', 'view', 'adv', 'status', 'unowned', 'overdue',
+  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'status', 'unowned', 'overdue',
 ]
 
 /** اللقطات المحفوظة — الأسئلة اللي المشرف بيسألها كل يوم */
@@ -44,6 +51,19 @@ const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
   { key: 'overdue', label: 'متأخر عن الحد', patch: { overdue: '1' } },
   { key: 'unowned', label: 'بلا مالك', patch: { unowned: '1' } },
 ]
+
+/* إجراءات الدور اللي يصحّ تنفيذها على دفعة. اللي مش هنا محتاج هدفًا
+   لكل مشروع (تحويل لمشرف بعينه، إعادة لمستوى)، وتنفيذه جماعيًا
+   بيبقى تخمينًا. */
+const BULK_OF: Record<string, BulkDecision> = {
+  'توصية بالموافقة': 'approve',
+  'اعتماد': 'approve',
+  'طلب استكمال': 'complete',
+  'توصية بالرفض': 'decline',
+  'اعتذار': 'decline',
+  'رفع للجنة التنفيذية': 'escalate',
+  'رفع لمجلس الأمناء': 'escalate',
+}
 
 const SORTS: { key: ProjectSort; label: string }[] = [
   { key: 'waiting', label: 'الأطول انتظارًا' },
@@ -64,9 +84,27 @@ const SORTS: { key: ProjectSort; label: string }[] = [
  */
 export default function ProjectsListPage() {
   const { values: v, set, replace, clear, activeCount } = useQueryParams<Params>(KEYS)
+  const { role } = useRole()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwner, setBulkOwner] = useState<string | undefined>()
   const [, bump] = useState(0)
+  const [cols, setCols] = useState<string[]>(readCols)
+  /* آخر قرار مجمّع + تراجعه. الشريط بيفضل ظاهر لحد ما المستخدم
+     يقفله، فالتراجع مش سباق مع مؤقّت. */
+  const [lastBulk, setLastBulk] = useState<{ text: string; undo: () => void } | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
+  const exportBox = useRef<HTMLDivElement>(null)
+
+  useEffect(() => writeCols(cols), [cols])
+
+  useEffect(() => {
+    if (!exportOpen) return
+    const away = (e: PointerEvent) => {
+      if (!exportBox.current?.contains(e.target as Node)) setExportOpen(false)
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [exportOpen])
 
   /* الجدول على الموبايل بيضغط كل عمود لحد ما كل خلية تتلف عمودًا
      من الكلمات — مش جدول، شبكة كلمات. الكارت هو صف الموبايل. */
@@ -105,7 +143,14 @@ export default function ProjectsListPage() {
     [v, page, size],
   )
 
-  const result = query.projects(q)
+  /* التجميع بيلغي الترقيم: المجموعة المقطوعة على صفحتين إجمالياتها
+     كذّابة، والمستخدم اللي بيجمّع بيسأل عن الصورة كاملة أصلًا.
+     ده قرار واجهة مؤقت — لما الباك اند يجمّع، بيرجّع المجموعات
+     مرقّمة بإجمالياتها وبيتشال القيد ده. */
+  const group = groupByKey(v.group)
+  const grouped = Boolean(group)
+
+  const result = query.projects(grouped ? { ...q, page: 1, pageSize: 9999 } : q)
   const counts = query.projectStatusCounts(q)
   const total = fixtures.projects.length
 
@@ -169,6 +214,49 @@ export default function ProjectsListPage() {
 
   const selectAll = (on: boolean) =>
     setSelected(on ? new Set(result.rows.map((r) => r.id)) : new Set())
+
+  /* نطاق التصدير: المحدَّد لو فيه تحديد، وإلا كل نتيجة الفلتر —
+     لا صفحة العرض. اللي بيصدّر عايز الإجابة كاملة مش أول 25 صفًّا. */
+  const allFiltered = useMemo(
+    () => query.projects({ ...q, page: 1, pageSize: 9999 }).rows,
+    [q],
+  )
+  const exportRows = selected.size
+    ? allFiltered.filter((r) => selected.has(r.id))
+    : allFiltered
+
+  const sheet: Sheet = useMemo(() => {
+    const shown = orderCols(cols).filter((c) => !group || c.key !== group.key)
+    const head = [...(group ? [group.label] : []), ...shown.map((c) => c.label)]
+    const body = exportRows.map((r) => [
+      ...(group ? [group.of(r)] : []),
+      ...shown.map((c) => c.text(r)),
+    ])
+    /* صف الإجماليات بنفس منطق الشاشة — لو اختلفوا، المستخدم هيصدّق
+       الملف ويشك في الشاشة. */
+    const totals = [
+      ...(group ? [''] : []),
+      ...shown.map((c, i) => {
+        const t = aggregate(c, exportRows)
+        return t !== null ? String(t) : i === 0 ? units.project(exportRows.length) : ''
+      }),
+    ]
+    const stamp = new Date().toISOString().slice(0, 10)
+    return { file: `abanumay-projects-${stamp}`, title: 'المشاريع', headers: head, rows: body, totals }
+  }, [cols, exportRows, group])
+
+  const exportNote = `${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${units.project(exportRows.length)}`
+
+  const runBulk = (decision: BulkDecision, label: string) => {
+    if (selected.size === 0) return
+    const ids = [...selected]
+    const undo = applyDecision(ids, decision)
+    setLastBulk({ text: `${label} — ${units.project(ids.length)}`, undo })
+    setSelected(new Set())
+    bump((n) => n + 1)
+  }
+
+  const bulkActions = role.actions.filter((a) => BULK_OF[a.label])
 
   const applyBulk = () => {
     if (!bulkOwner || selected.size === 0) return
@@ -278,6 +366,46 @@ export default function ProjectsListPage() {
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
+              {/* التجميع سؤال مختلف عن الفلتر: الفلتر بيقلّل الصفوف،
+                  والتجميع بيعيد ترتيبها لجداول بإجمالياتها. */}
+              {view === 'table' && (
+                <Select
+                  icon={icons.rows}
+                  value={v.group}
+                  all="بلا تجميع"
+                  options={GROUPS.map((g) => ({ value: g.key, label: `تجميع حسب ${g.label}` }))}
+                  onChange={(x) => set({ group: x, page: undefined })}
+                />
+              )}
+
+              <div className="fexp" ref={exportBox}>
+                <button
+                  className={`fchip${exportOpen ? ' on' : ''}`}
+                  aria-haspopup="menu"
+                  aria-expanded={exportOpen}
+                  onClick={() => setExportOpen((x) => !x)}
+                >
+                  <Icon path={icons.down} size={15} />
+                  تصدير
+                  {selected.size > 0 && <b className="num">{selected.size}</b>}
+                </button>
+
+                {exportOpen && (
+                  <div className="fmenu fexp-m">
+                    <div className="fexp-s sub">{exportNote}</div>
+                    <button className="fopt" onClick={() => { setExportOpen(false); exportXlsx(sheet) }}>
+                      <span className="fopt-t">Excel · xlsx</span>
+                    </button>
+                    <button className="fopt" onClick={() => { setExportOpen(false); setTimeout(printArea, 60) }}>
+                      <span className="fopt-t">PDF · عبر الطباعة</span>
+                    </button>
+                    <button className="fopt" onClick={() => { setExportOpen(false); exportPng(sheet) }}>
+                      <span className="fopt-t">صورة · png</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <span className="ftool-sp" />
               {!mobile && (
                 <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
@@ -359,11 +487,41 @@ export default function ProjectsListPage() {
           {/* ═══ شريط التحديد الجماعي ═══
               موجود لأن 1,253 مشروعًا في النظام بلا مالك، وإسنادهم
               واحدًا واحدًا مستحيل عمليًا. */}
+          {lastBulk && (
+            <Glass className="bulk done">
+              <Icon path={icons.check} size={16} />
+              <span>{lastBulk.text}</span>
+              <span className="pc-sp" />
+              <button
+                className="btn btn-2 btn-sm"
+                onClick={() => { lastBulk.undo(); setLastBulk(null); bump((n) => n + 1) }}
+              >
+                <Icon path={icons.redo} size={15} />
+                تراجع
+              </button>
+              <button className="btn btn-2 btn-sm" onClick={() => setLastBulk(null)}>إغلاق</button>
+            </Glass>
+          )}
+
           {selected.size > 0 && (
             <Glass className="bulk">
               <span>
                 محدَّد <span className="num">{selected.size}</span> مشروعًا
               </span>
+
+              {/* قرار على الدفعة كلها. الإجراءات هي إجراءات الدور
+                  نفسها اللي في صفحة المشروع، ناقص اللي محتاج هدفًا
+                  لكل مشروع. */}
+              {bulkActions.map((a) => (
+                <button
+                  key={a.label}
+                  className={`btn btn-sm ${a.kind}`}
+                  onClick={() => runBulk(BULK_OF[a.label], a.label)}
+                >
+                  {a.label}
+                </button>
+              ))}
+
               <span className="pc-sp" />
               <label className="fsel">
                 <span className="fsel-b">
@@ -399,23 +557,37 @@ export default function ProjectsListPage() {
               ))}
             </div>
           ) : (
-            <Glass style={{ padding: '.4rem' }}>
+            <Glass className="tblcard" style={{ padding: '.4rem' }}>
               <ProjectsTable
                 rows={result.rows}
                 selected={selected}
                 onSelect={toggleOne}
                 onSelectAll={selectAll}
+                cols={cols}
+                onCols={setCols}
+                group={group}
               />
             </Glass>
           )}
 
-          <Pager
-            page={result.page}
-            pageSize={result.pageSize}
-            total={result.total}
-            onPage={(p) => set({ page: String(p) })}
-            onPageSize={(n) => set({ size: n === PAGE_SIZE ? undefined : String(n), page: undefined })}
-          />
+          {grouped ? (
+            <p className="sub" style={{ textAlign: 'center' }}>
+              التجميع يعرض كل النتائج بلا ترقيم ·{' '}
+              <span className="num">{splitGroups(result.rows, group!).length}</span> مجموعات ·{' '}
+              <button className="lnk" onClick={() => set({ group: undefined })}>إلغاء التجميع</button>
+            </p>
+          ) : (
+            <Pager
+              page={result.page}
+              pageSize={result.pageSize}
+              total={result.total}
+              onPage={(p) => set({ page: String(p) })}
+              onPageSize={(n) => set({ size: n === PAGE_SIZE ? undefined : String(n), page: undefined })}
+            />
+          )}
+
+          {/* نسخة الطباعة: مخفية على الشاشة، وهي اللي بتطلع في الـPDF */}
+          <PrintSheet sheet={sheet} note={exportNote} />
 
           <p className="sub" style={{ textAlign: 'center', marginTop: '.4rem' }}>
             البيانات هنا تجريبية بتوزيع النظام الحقيقي ·{' '}

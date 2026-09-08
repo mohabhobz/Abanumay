@@ -23,6 +23,7 @@ import {
 } from './mock/project'
 import { projectRows, projectById, projectsOfEntity } from './mock/projects'
 import { entityRows, entityById } from './mock/entities'
+import { projectCode } from '@/lib/format'
 
 /** تأخير بسيط عشان حالات التحميل في الواجهة تتجرّب فعلًا */
 const LATENCY_MS = 0
@@ -155,9 +156,11 @@ const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
   if (q.from && r.submittedAt < q.from) return false
   if (q.to && r.submittedAt > q.to) return false
   if (q.search) {
+    /* الكود المعروض جزء من نطاق البحث: المستخدم بينسخه من الجدول
+       أو من إيميل ويلزقه هنا، ولو ما اتقبلش هيفتكر إن المشروع اتشال. */
     const needle = q.search.trim()
-    const hay = `${r.id} ${r.name} ${r.entityName} ${r.goal} ${r.city}`
-    if (!hay.includes(needle)) return false
+    const hay = `${r.id} ${projectCode(r.id, r.year)} ${r.name} ${r.entityName} ${r.goal} ${r.city}`
+    if (!hay.toLowerCase().includes(needle.toLowerCase())) return false
   }
   return true
 }

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Icon, icons, Mono, Riyal, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
+import { nf, projectCode } from '@/lib/format'
 import { stagePressure } from '@/data/repository'
 import { days, groupTone, pressureColor } from '@/lib/tone'
 import type { ProjectRow } from '@/types/domain'
@@ -35,7 +35,7 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
             aria-label={`تحديد مشروع ${row.id}`}
           />
         </label>
-        <Mono>{row.id}</Mono>
+        <Mono>{projectCode(row.id, row.year)}</Mono>
         <span className="pc-sp" />
         <Tag tone={groupTone(row.statusGroup)}>{row.statusGroup}</Tag>
       </div>
