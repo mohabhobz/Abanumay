@@ -2432,27 +2432,37 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 
    كل الألوان من ثلاثية `--tone` اللي الكومبوننت بيبعتها كتوكن،
    فاللوحة واحدة والنبرة بتتغيّر — مش أربع قواعد متكررة. */
+/* مزاح شوية ناحية اليمين: ملزوق في حافة الشاشة كان بيقطعه عن
+   الترويسة. inline-end في العربي = الشمال، فالهامش هناك بيدفعه يمين. */
 .einf{display:flex;align-items:stretch;gap:0;width:100%;
+  margin-inline-end:clamp(1rem,4vw,3.5rem);
   padding-top:36px;min-height:250px}
 
 .einf-t{position:relative;isolation:isolate;flex:1 1 0;min-width:0;color:inherit;
-  display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
-  gap:.15rem;text-align:center;padding:1rem .55rem 1.15rem;
-  /* كتف مقوّس فوق فقط — اللوحات بتكمّل بعضها لتحت */
+  /* المحتوى في نص اللوحة لا في قاعها — ملزوق تحت كان بيسيب فراغًا
+     فوقه وبيقرّبه من الحافة */
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:.15rem;text-align:center;padding:3rem .55rem 1.6rem;
+  /* كتف مقوّس فوق فقط، ومفيش تدوير تحت — الشريط بيقف على حافة
+     مستقيمة زي المرجع */
   border-radius:38px 38px 0 0;
+  /* التدرّج شفافية صافية: مصمت عند القاعدة وبيتلاشى تمامًا لفوق */
   background:linear-gradient(to top,
-    rgba(var(--tone),.34) 0%, rgba(var(--tone),.20) 46%, rgba(var(--tone),.07) 100%);
+    rgba(var(--tone),.42) 0%, rgba(var(--tone),.24) 38%,
+    rgba(var(--tone),.10) 72%, rgba(var(--tone),0) 100%);
   -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
   box-shadow:inset 0 1px 0 rgba(var(--tone),.30);
   transition:translate .22s cubic-bezier(.22,.9,.3,1),box-shadow .22s ease;
   animation:airise .45s cubic-bezier(.22,.9,.3,1) both;
   animation-delay:calc(var(--n,0) * 70ms + 120ms)}
-/* حواف الشريط من تحت مدوّرة، وجوّه مستقيمة عشان يتّصل */
-.einf-t:first-child{border-end-start-radius:var(--r3)}
-.einf-t:last-child{border-end-end-radius:var(--r3)}
-.einf-t:hover{translate:0 -3px;color:inherit;
-  box-shadow:inset 0 1px 0 rgba(var(--tone),.5),0 14px 26px -18px rgba(var(--tone),.7)}
+/* الهوفر بيطلّع اللوحة كلها — الحركة هي اللي بتقول «دي قابلة
+   للفتح»، أوضح من تغيّر لون بدرجة */
+.einf-t:hover{translate:0 -12px;color:inherit;z-index:2;
+  background:linear-gradient(to top,
+    rgba(var(--tone),.54) 0%, rgba(var(--tone),.32) 38%,
+    rgba(var(--tone),.14) 72%, rgba(var(--tone),0) 100%);
+  box-shadow:inset 0 1px 0 rgba(var(--tone),.55),0 20px 34px -20px rgba(var(--tone),.8)}
 
 /* الدايرة على الكتف: سطح معتم عشان الأيقونة تفضل مقروءة فوق أي
    نبرة، وحلقة بلون اللوحة بتربطها بيها زي المرجع */
@@ -2486,9 +2496,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   /* الدايرة بتطلع ٣٢ فوق حافة اللوحة، فالفاصل بين الصفّين لازم
      يزيد عنها وإلا دايرة الصفّ التاني وقعت على لوحة الصفّ الأول */
   .einf{flex-wrap:wrap;min-height:0;padding-top:32px;row-gap:50px}
-  .einf-t{flex:1 1 46%;min-height:146px;padding-top:2.2rem;border-radius:32px 32px 0 0}
-  .einf-t:nth-child(2){border-end-end-radius:var(--r3)}
-  .einf-t:nth-child(3){border-end-start-radius:var(--r3)}
+  .einf{margin-inline-end:0}
+  .einf-t{flex:1 1 46%;min-height:150px;padding:2.4rem .55rem 1.2rem;
+    border-radius:32px 32px 0 0}
   .einf-c{top:-32px;width:60px;height:60px}
   .einf-c svg{width:22px;height:22px}
 }
