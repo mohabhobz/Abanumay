@@ -16,13 +16,18 @@
     <meta name="theme-color" content="#144547" />
 
     <!-- المظهر قبل أول رسمة: من غير ده الصفحة بتترسم فاتحة وبعدين
-         تقلب داكنة بعد ما ريآكت يشتغل — ومضة بيضا في وش المستخدم.
-         نفس المفتاح اللي في src/lib/theme.ts. -->
+         تقلب داكنة بعد ما ريآكت يشتغل — ومضة في وش المستخدم.
+         نفس المفتاح والقيم اللي في src/lib/theme.ts. -->
     <script>
       try {
         var t = localStorage.getItem('ab-theme')
-        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
-      } catch (e) {}
+        document.documentElement.setAttribute(
+          'data-theme',
+          t === 'dark' || t === 'green' ? t : 'light'
+        )
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light')
+      }
     </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />

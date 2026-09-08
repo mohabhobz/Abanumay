@@ -2,6 +2,7 @@
 export const icons = {
   home: '<path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2"/><path d="M12 19v2"/><path d="M3 12h2"/><path d="M19 12h2"/><path d="M5.6 5.6l1.4 1.4"/><path d="M17 17l1.4 1.4"/><path d="M18.4 5.6L17 7"/><path d="M7 17l-1.4 1.4"/>',
+  leaf: '<path d="M5 19C4 12 8.5 5.5 19 5c.5 9-4.5 13.5-11 13"/><path d="M11 13c-2 1.6-3.6 3.6-4.6 6"/>',
   moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
   device: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M9 21h6"/><path d="M12 17v4"/>',
   user: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"/>',

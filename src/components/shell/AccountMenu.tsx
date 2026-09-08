@@ -9,10 +9,10 @@ import { useRole } from '@/hooks/useRole'
 import type { CurrentUser } from '@/types/domain'
 import { applyTheme, readTheme, writeTheme, type ThemeChoice } from '@/lib/theme'
 
-const THEMES: { key: ThemeChoice; label: string; icon: IconName }[] = [
+const THEME_ITEMS: { key: ThemeChoice; label: string; icon: IconName }[] = [
   { key: 'light', label: 'فاتح', icon: 'sun' },
   { key: 'dark', label: 'داكن', icon: 'moon' },
-  { key: 'system', label: 'النظام', icon: 'device' },
+  { key: 'green', label: 'أخضر', icon: 'leaf' },
 ]
 
 /**
@@ -84,7 +84,7 @@ export function AccountMenu({
           <div className="acct-sec">
             <div className="acct-lbl">المظهر</div>
             <div className="seg" role="radiogroup" aria-label="المظهر">
-              {THEMES.map((t) => (
+              {THEME_ITEMS.map((t) => (
                 <button
                   key={t.key}
                   className={theme === t.key ? 'on' : ''}

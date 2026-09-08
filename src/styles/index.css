@@ -760,7 +760,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .acard{position:relative;isolation:isolate;display:flex;align-items:center;gap:.7rem;width:100%;
   padding:.72rem .8rem;text-align:start;cursor:pointer;
   border-radius:var(--r2);
-  background:rgba(255,255,255,calc(.62 + .26 * var(--near,0)));
+  background:rgba(var(--wC),calc((.62 + .26 * var(--near,0)) * var(--wM)));
   font-family:var(--fd);font-weight:500;font-size:.86rem;line-height:1.5;
   translate:calc(3px * var(--near,0)) calc(-2px * var(--near,0));
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair) * (1 + var(--near,0)))),
@@ -829,7 +829,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   font-size:.67rem;color:var(--t3);cursor:pointer;line-height:1.2;
   transition:background .16s ease,color .16s ease,box-shadow .16s ease}
 .seg button:hover{color:var(--t2)}
-.seg button.on{color:var(--t1);background:#fff;
+.seg button.on{color:var(--t1);background:rgba(var(--wC),calc(.95 * var(--wM)));
   box-shadow:0 1px 3px rgba(20,69,71,.10),inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
 .aitrigger span{display:flex;flex-direction:column;align-items:center;gap:.28rem;line-height:1.25}
 .aitrigger kbd{font-family:var(--fm);font-size:.58rem;color:var(--t3);
@@ -1093,7 +1093,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   color:var(--t2);background:rgba(var(--wC),calc(.7 * var(--wM)));
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
   transition:color .16s ease,background .16s ease,transform .16s ease}
-.cl-new:hover{color:var(--t1);background:#fff;transform:rotate(90deg)}
+.cl-new:hover{color:var(--t1);background:rgba(var(--wC),calc(.9 * var(--wM)));transform:rotate(90deg)}
 .cl-search{display:flex;align-items:center;gap:.5rem;margin:0 .85rem .5rem;padding:.5rem .7rem;
   border-radius:var(--rp);background:rgba(var(--wC),calc(.6 * var(--wM)));
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
@@ -1383,7 +1383,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   color:var(--t3);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6));
   transition:box-shadow .18s ease,background .18s ease}
-.lbox:focus-within{background:#fff;color:var(--t2);
+.lbox:focus-within{background:rgba(var(--wC),calc(.98 * var(--wM)));color:var(--t2);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.34),0 0 0 3px rgba(var(--edgeC),.07)}
 .lbox svg{flex:none;width:17px;height:17px}
 .lbox input{flex:1;min-width:0;height:100%;border:0;background:none;outline:none;
@@ -2129,98 +2129,94 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 
 
 /* ═══════════════════════════════════════════════════════════
-   الوضع الداكن
+   المظاهر الداكنة
 
-   مش عكس الفاتح حرفيًا. الفاتح زجاج أبيض على ميش فاتح، والكونتراست
-   جاي من العتمة والحافة. الداكن نفس المنطق مقلوب: **طبقة بيضا خفيفة
-   جدًا** على أرضية عميقة — الزجاج بيفضل زجاج، والحافة بتبقى فاتحة
-   بدل غامقة. عشان كده معامل `--wM` واحد بيهبّط كل البياض الشفاف في
-   الملف مرة واحدة بدل ما نعيد كتابة أربعة وتسعين قيمة.
+   اتنين مش واحد، ومش «فاتح وعكسه»:
+     · **داكن** — أسود بميل خفيف للهوية. الأرضية شبه محايدة
+       والألوان كلها بتقع على النبرة (تيل ولايم)، فالبيانات
+       بتطلع من الخلفية بدل ما تتنافس معاها.
+     · **أخضر** — أخضر المؤسسة العميق. هوية أوضح، بس الأرضية
+       نفسها ملوّنة فبتاخد جزء من انتباه العين.
+   والاختيار صريح: مفيش «تبع النظام» لأن التالت مظهر بذاته لا
+   حالة من حالتين، وإعداد الجهاز ما بيعرفش يختار بينهم.
 
-   والألوان الدلالية بتفتح شوية: الأحمر اللي بيتقري على أبيض بيبقى
+   المنطق واحد في الاتنين: الفاتح زجاج أبيض على ميش فاتح
+   والكونتراست من العتمة والحافة؛ الداكن نفس المنطق مقلوب —
+   طبقة بيضا خفيفة جدًا على أرضية عميقة. عشان كده كل بياض شفاف
+   في الملف بيتكتب `rgba(var(--wC), calc(α * var(--wM)))`:
+   معامل واحد بيهبّط الطبقة كلها بدل إعادة كتابة كل قيمة.
+
+   والألوان الدلالية بتفتح: الأحمر اللي بيتقري على أبيض بيبقى
    طين على أسود، فلازم يعلى في السطوع لا في التشبّع.
-
-   وضع «النظام» بيتحكم بـprefers-color-scheme، والاختيار الصريح
-   بيغلبه في الاتجاهين — عشان اللي اختار فاتح على جهاز داكن يفضل
-   فاتح. الشرط `:not([data-theme="light"])` هو اللي بيضمن ده.
    ═══════════════════════════════════════════════════════════ */
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){ color-scheme:dark }
-}
-:root[data-theme="dark"]{ color-scheme:dark }
+:root[data-theme="dark"],:root[data-theme="green"]{ color-scheme:dark }
 
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --base:#08181A;
-    --t1:#E6F1EF; --t2:#B4CFCB; --t3:#A2C1BD;
-    --edgeC:174,214,209;
-    --edge-hair:.13; --edge-strong:.30; --edge-side:.12; --edge-bottom:.07;
-    --wC:255,255,255; --wM:.10;
-    --pop:#0F2426;
-  --bar-bg:linear-gradient(180deg,rgba(9,26,28,.94),rgba(9,26,28,.99));
-    --bar-bg:linear-gradient(180deg,rgba(9,26,28,.94),rgba(9,26,28,.99));
-    --link:#A8D93C;
-    --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
-    --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
-    --warn-ink:#E8B045; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FF9C85;
-    --ret-ink:#8CC2F0; --no-ic:#FF8A69; --lime-ink:#D2EE90;
-    --ok-ink:#5FE0A4; --brand-ink:#E2F4B4;
-  --t3-g:#A9C7C3; --t2-g:#C6DEDA;
-    --t3-g:#A9C7C3; --t2-g:#C6DEDA;
-    --retC:120,180,235; --limeC:168,217,60;
-    --g-card: linear-gradient(158deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
-    --g-data: linear-gradient(158deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
-    --g-chrome: linear-gradient(180deg, rgba(12,32,34,.72), rgba(12,32,34,.56));
-    --grain:.05;
-    --ch-1:#0FA69B; --ch-2:#2FC7B6; --ch-3:#6FDCC8;
-    --ch-4:#A8D93C; --ch-5:#79B4E4; --ch-6:#8AA9A6;
-    --ch-idle:rgba(174,214,209,.13);
-    --ch-warn:#E8B045; --ch-late:#F0806A;
-    --track:rgba(174,214,209,.12);
-    --map-line:rgba(8,24,26,.85);
-    --map-ink:#EAF6F3;
-    --map-halo:rgba(8,24,26,.85);
-    --map-0:rgba(174,214,209,.07);
-    --map-1:rgba(47,199,182,.20);
-    --map-2:rgba(47,199,182,.36);
-    --map-3:rgba(47,199,182,.58);
-    --map-4:#2FC7B6;
-    --mesh-bg:#08181A;
-    --mesh-img:
-      radial-gradient(64% 54% at 92% -12%, rgba(0,165,155,.30) 0%,  rgba(0,165,155,0) 100%),
-      radial-gradient(58% 46% at 66% -4%,  rgba(20,69,71,.55) 0%,   rgba(20,69,71,0) 100%),
-      radial-gradient(46% 40% at 88% 34%,  rgba(0,165,155,.20) 0%,  rgba(0,165,155,0) 100%),
-      radial-gradient(56% 44% at 62% 62%,  rgba(0,120,120,.18) 0%,  rgba(0,120,120,0) 100%),
-      radial-gradient(42% 38% at 36% 86%,  rgba(148,214,3,.08) 0%,  rgba(148,214,3,0) 100%),
-      radial-gradient(86% 76% at -4% 98%,  rgba(6,20,22,.92) 0%,    rgba(6,20,22,0) 100%),
-      radial-gradient(64% 58% at 8% 54%,   rgba(7,22,24,.80) 0%,    rgba(7,22,24,0) 100%);
-    --mesh-blend:overlay;
-    --ink-soft:var(--t1);
-  --logo-ink:#FFFFFF;
-    --logo-ink:#FFFFFF;
-    --solid:#2FC7B6; --on-solid:#06191B;
-  }
-}
-
-/* نفس القيم للاختيار الصريح. التكرار مقصود: `@media` ما ينفعش
-   يتجمّع مع محدّد تاني في CSS، والبديل (متغيّر وسيط لكل توكن)
-   بيضاعف عدد التوكنز ويخلّي التتبّع أصعب من التكرار نفسه. */
 :root[data-theme="dark"]{
+  --base:#0A0C0C;
+  --t1:#EFF2F1; --t2:#B3BEBC; --t3:#A3AFAD;
+  --edgeC:196,212,209;
+  --edge-hair:.12; --edge-strong:.28; --edge-side:.11; --edge-bottom:.06;
+  --wC:255,255,255; --wM:.085;
+  --pop:#131717;
+  --bar-bg:linear-gradient(180deg,rgba(11,13,13,.94),rgba(11,13,13,.99));
+  --ink-soft:var(--t1);
+  --logo-ink:#FFFFFF;
+  --solid:#2FC7B6; --on-solid:#06100F;
+  --link:#A8D93C;
+  --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
+  --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
+  --warn-ink:#E8B045; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FF9C85;
+  --ret-ink:#8CC2F0; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
+  --ok-ink:#5FE0A4; --brand-ink:#E2F4B4;
+  --retC:120,180,235; --limeC:168,217,60;
+  --t3-g:#B3BEBC; --t2-g:#CCD6D4;
+  --g-card: linear-gradient(158deg, rgba(255,255,255,.075), rgba(255,255,255,.03));
+  --g-data: linear-gradient(158deg, rgba(255,255,255,.05), rgba(255,255,255,.022));
+  --g-chrome: linear-gradient(180deg, rgba(14,17,17,.74), rgba(14,17,17,.58));
+  --grain:.04;
+  --ch-1:#0FA69B; --ch-2:#2FC7B6; --ch-3:#6FDCC8;
+  --ch-4:#A8D93C; --ch-5:#79B4E4; --ch-6:#9AA6A4;
+  --ch-idle:rgba(196,212,209,.12);
+  --ch-warn:#E8B045; --ch-late:#F0806A;
+  --track:rgba(196,212,209,.11);
+  --map-line:rgba(10,12,12,.88);
+  --map-ink:#EFF6F4;
+  --map-halo:rgba(10,12,12,.88);
+  --map-0:rgba(196,212,209,.06);
+  --map-1:rgba(47,199,182,.20);
+  --map-2:rgba(47,199,182,.36);
+  --map-3:rgba(47,199,182,.58);
+  --map-4:#2FC7B6;
+  --mesh-bg:#0A0C0C;
+  --mesh-img:
+    radial-gradient(64% 54% at 92% -12%, rgba(0,165,155,.16) 0%,  rgba(0,165,155,0) 100%),
+    radial-gradient(58% 46% at 66% -4%,  rgba(20,69,71,.30) 0%,   rgba(20,69,71,0) 100%),
+    radial-gradient(46% 40% at 88% 34%,  rgba(0,165,155,.10) 0%,  rgba(0,165,155,0) 100%),
+    radial-gradient(42% 38% at 36% 86%,  rgba(148,214,3,.05) 0%,  rgba(148,214,3,0) 100%),
+    radial-gradient(86% 76% at -4% 98%,  rgba(4,5,5,.94) 0%,      rgba(4,5,5,0) 100%),
+    radial-gradient(64% 58% at 8% 54%,   rgba(6,8,8,.84) 0%,      rgba(6,8,8,0) 100%);
+  --mesh-blend:overlay;
+}
+
+:root[data-theme="green"]{
   --base:#08181A;
-  --t1:#E6F1EF; --t2:#B4CFCB; --t3:#A2C1BD;
+  --t1:#E6F1EF; --t2:#A9C7C3; --t3:#A2C1BD;
   --edgeC:174,214,209;
   --edge-hair:.13; --edge-strong:.30; --edge-side:.12; --edge-bottom:.07;
   --wC:255,255,255; --wM:.10;
   --pop:#0F2426;
   --bar-bg:linear-gradient(180deg,rgba(9,26,28,.94),rgba(9,26,28,.99));
+  --ink-soft:var(--t1);
+  --logo-ink:#FFFFFF;
+  --solid:#2FC7B6; --on-solid:#06191B;
   --link:#A8D93C;
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
   --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
   --warn-ink:#E8B045; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FF9C85;
-  --ret-ink:#8CC2F0; --no-ic:#FF8A69; --lime-ink:#D2EE90;
+  --ret-ink:#8CC2F0; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
   --ok-ink:#5FE0A4; --brand-ink:#E2F4B4;
-  --t3-g:#A9C7C3; --t2-g:#C6DEDA;
   --retC:120,180,235; --limeC:168,217,60;
+  --t3-g:#A9C7C3; --t2-g:#C6DEDA;
   --g-card: linear-gradient(158deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
   --g-data: linear-gradient(158deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
   --g-chrome: linear-gradient(180deg, rgba(12,32,34,.72), rgba(12,32,34,.56));
@@ -2248,9 +2244,6 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
     radial-gradient(86% 76% at -4% 98%,  rgba(6,20,22,.92) 0%,    rgba(6,20,22,0) 100%),
     radial-gradient(64% 58% at 8% 54%,   rgba(7,22,24,.80) 0%,    rgba(7,22,24,0) 100%);
   --mesh-blend:overlay;
-  --ink-soft:var(--t1);
-  --logo-ink:#FFFFFF;
-  --solid:#2FC7B6; --on-solid:#06191B;
 }
 
 /* ═══ النص فوق أرضية الصفحة ═══
@@ -2263,25 +2256,22 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .screen>.sub .num, .phead .sub .num{color:var(--t2-g)}
 .pamt .lb,.phead .lb{color:var(--t3-g)}
 
-/* ═══ شاشة الدخول في الوضع الداكن ═══
+/* ═══ شاشة الدخول في المظاهر الداكنة ═══
    الفيديو أصل ثابت وفاتح، ما بيتغيّرش مع المظهر. الكارت الزجاجي
-   في الداكن طبقة بيضا ١٠٪ — فوق فيديو فاتح ده معناه إنه بيختفي،
-   والنص الفاتح بيقع على أفتح خلفية في النظام. فالكارت هنا بياخد
-   سطحه بنفسه: زجاج غامق معتم، وستارة خفيفة على الفيديو تحته. */
+   طبقة بيضا ٨٪ — فوق فيديو فاتح ده معناه إنه بيختفي، والنص الفاتح
+   بيقع على أفتح خلفية في النظام. فالكارت هنا بياخد سطحه بنفسه:
+   زجاج غامق معتم، وستارة على الفيديو تحته. */
 :root[data-theme="dark"] .lcard,
 :root[data-theme="dark"] .lcard.glass{
+  background:linear-gradient(158deg, rgba(10,12,12,.88), rgba(10,12,12,.76));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.16),
+             0 30px 70px rgba(0,0,0,.5)}
+:root[data-theme="green"] .lcard,
+:root[data-theme="green"] .lcard.glass{
   background:linear-gradient(158deg, rgba(8,24,26,.86), rgba(8,24,26,.74));
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.16),
              0 30px 70px rgba(0,0,0,.45)}
-:root[data-theme="dark"] .login-vid{filter:brightness(.55) saturate(.9)}
-:root[data-theme="dark"] .lfoot{color:var(--t2);text-shadow:0 1px 6px rgba(0,0,0,.6)}
-
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]) .lcard,
-  :root:not([data-theme="light"]) .lcard.glass{
-    background:linear-gradient(158deg, rgba(8,24,26,.86), rgba(8,24,26,.74));
-    box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.16),
-               0 30px 70px rgba(0,0,0,.45)}
-  :root:not([data-theme="light"]) .login-vid{filter:brightness(.55) saturate(.9)}
-  :root:not([data-theme="light"]) .lfoot{color:var(--t2);text-shadow:0 1px 6px rgba(0,0,0,.6)}
-}
+:root[data-theme="dark"] .login-vid,
+:root[data-theme="green"] .login-vid{filter:brightness(.55) saturate(.9)}
+:root[data-theme="dark"] .lfoot,
+:root[data-theme="green"] .lfoot{color:var(--t2);text-shadow:0 1px 6px rgba(0,0,0,.6)}
