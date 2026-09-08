@@ -2443,29 +2443,34 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
      فوقه وبيقرّبه من الحافة */
   display:flex;flex-direction:column;justify-content:center;align-items:center;
   gap:.15rem;text-align:center;padding:3rem .55rem 1.6rem;
-  /* كتف مقوّس فوق فقط، ومفيش تدوير تحت — الشريط بيقف على حافة
-     مستقيمة زي المرجع */
+  /* كتف مقوّس فوق فقط، ومفيش تدوير تحت — الشريط بيقف على حافة مستقيمة */
   border-radius:38px 38px 0 0;
-  /* التدرّج شفافية صافية: مصمت عند القاعدة وبيتلاشى تمامًا لفوق */
-  background:linear-gradient(to top,
-    rgba(var(--tone),.42) 0%, rgba(var(--tone),.24) 38%,
-    rgba(var(--tone),.10) 72%, rgba(var(--tone),0) 100%);
-  -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
-  backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
-  box-shadow:inset 0 1px 0 rgba(var(--tone),.30);
-  transition:translate .22s cubic-bezier(.22,.9,.3,1),box-shadow .22s ease;
+  transition:translate .22s cubic-bezier(.22,.9,.3,1);
   animation:airise .45s cubic-bezier(.22,.9,.3,1) both;
   animation-delay:calc(var(--n,0) * 70ms + 120ms)}
+
+/* اللون والزجاج في طبقة مستقلة عشان يتقنّعوا مع بعض.
+   التدرّج لوحده ما كانش بيبان: `backdrop-filter` بيتطبّق على اللوحة
+   كلها بالتساوي، فحتى المنطقة اللي شفافيتها صفر كانت لسه بتبان
+   كسطح مثلّج بحافة — الشكل ثابت والتدرّج جوّاه. القناع بيلاشي
+   الطبقة نفسها — لون وزجاج وحافة — من تحت لفوق. */
+.einf-t::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;
+  background:linear-gradient(to top,
+    rgba(var(--tone),.50) 0%, rgba(var(--tone),.30) 40%,
+    rgba(var(--tone),.14) 72%, rgba(var(--tone),0) 100%);
+  -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
+  backdrop-filter:blur(var(--g-card-blur)) saturate(1.4);
+  -webkit-mask-image:linear-gradient(to top,#000 0%,#000 34%,rgba(0,0,0,.45) 74%,transparent 96%);
+  mask-image:linear-gradient(to top,#000 0%,#000 34%,rgba(0,0,0,.45) 74%,transparent 96%);
+  transition:opacity .22s ease}
+
 /* الهوفر بيطلّع اللوحة كلها — الحركة هي اللي بتقول «دي قابلة
    للفتح»، أوضح من تغيّر لون بدرجة */
-.einf-t:hover{translate:0 -12px;color:inherit;z-index:2;
-  background:linear-gradient(to top,
-    rgba(var(--tone),.54) 0%, rgba(var(--tone),.32) 38%,
-    rgba(var(--tone),.14) 72%, rgba(var(--tone),0) 100%);
-  box-shadow:inset 0 1px 0 rgba(var(--tone),.55),0 20px 34px -20px rgba(var(--tone),.8)}
+.einf-t:hover{translate:0 -12px;color:inherit;z-index:2}
+.einf-t:hover::before{background:linear-gradient(to top,
+    rgba(var(--tone),.64) 0%, rgba(var(--tone),.40) 40%,
+    rgba(var(--tone),.18) 72%, rgba(var(--tone),0) 100%)}
 
-/* الدايرة على الكتف: سطح معتم عشان الأيقونة تفضل مقروءة فوق أي
-   نبرة، وحلقة بلون اللوحة بتربطها بيها زي المرجع */
 .einf-c{position:absolute;top:-36px;inset-inline:0;margin-inline:auto;
   width:72px;height:72px;border-radius:50%;display:grid;place-items:center;
   color:rgb(var(--tone));background:var(--pop);
@@ -2485,8 +2490,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .einf-n{font-size:.68rem;color:var(--t2-g);line-height:1.6}
 
 /* المُعلَّمة: اللي لسه معلّقة — نفس دور الوتد الغامق في المروحة */
-.einf-t.now{box-shadow:inset 0 1px 0 rgba(var(--tone),.6),
-            inset 0 0 0 1px rgba(var(--tone),.34)}
+.einf-t.now::before{background:linear-gradient(to top,
+    rgba(var(--tone),.62) 0%, rgba(var(--tone),.38) 40%,
+    rgba(var(--tone),.16) 72%, rgba(var(--tone),0) 100%)}
 .einf-t.now .einf-c{box-shadow:0 0 0 7px rgba(var(--tone),.5),
              inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
              0 12px 26px -12px rgba(var(--tone),.78)}
