@@ -656,8 +656,13 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   line-height:1.38;letter-spacing:-.015em;margin:0;text-wrap:balance}
 /* المبلغ تحت الاسم مباشرة، هو الرقم الرئيسي في الشاشة */
 .pamt{margin-top:1.1rem}
+/* `direction:rtl` بيلغي قلب الاتجاه اللي `.num` بتعمله.
+   من غيرها الصندوق فليكس باتجاه LTR، فالمبلغ بيلزق في شمال السطر
+   بعيدًا عن تسميته، والريال بيقع على يمين الرقم بدل شماله. الرقم
+   نفسه سلسلة أرقام متصلة فبيترسم صح جوّه سياق RTL. */
 .pamt .v{font-family:var(--fd);font-weight:700;line-height:.95;letter-spacing:-.03em;color:var(--ink-soft);
-  font-size:clamp(3.3rem,6.6vw,5.1rem);margin-top:.35rem;display:flex;align-items:baseline;gap:.42rem}
+  font-size:clamp(3.3rem,6.6vw,5.1rem);margin-top:.35rem;direction:rtl;
+  display:flex;align-items:baseline;justify-content:flex-start;gap:.42rem}
 .pamt .v small{font-size:.34em;font-weight:400;color:var(--ink-soft);opacity:.62;letter-spacing:0}
 .pamt .v .rs{font-size:2em;transform:translateY(.05em)}
 .pamt .sub{margin-top:.55rem}
