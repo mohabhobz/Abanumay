@@ -119,7 +119,7 @@ export default function LoginPage() {
               <a className="llink">نسيت كلمة المرور؟</a>
             </div>
 
-            <button className="btn btn-3 btn-full" type="submit" disabled={busy}>
+            <button className="btn btn-p btn-full" type="submit" disabled={busy}>
               {busy ? 'جارٍ التحقق…' : 'تسجيل الدخول'}
             </button>
           </form>

@@ -17,7 +17,11 @@
 :root{
   direction:rtl; color-scheme:light;
   --green:#144547; --lime:#94D603; --teal:#00A59B;
-  --base:#F1F5F3;
+  --base:#F1F5F3; --baseC:241,245,243;
+  /* الأزرق مش لون هوية — هو لون حالة «معاد للاستكمال» وبس.
+     كتوكن عشان ما يتنطّش في مكان مش حالته، وعشان يقلب مع المظهر. */
+  --retC2:46,110,168;
+  --no-soft:rgba(253,240,236,.94);   /* سطح التوست */
   --edgeC:20,69,71;
   --t1:#0C2527; --t2:#3E6664; --t3:#4A6B68;
   --ok:#0FA85E; --ret:#2E7FC4; --no:#DB4A2B; --warn:#C9860B;
@@ -234,9 +238,15 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .btn-2{background:rgba(var(--wC),calc(.55 * var(--wM)));color:var(--t2);
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
-.btn-3{background:rgba(46,110,168,.12);color:var(--ret-ink);
+/* زرار أساسي مصمت بلون الهوية — للفعل الرئيسي في الشاشة.
+   قبله كان الدخول بياخد `btn-3`، وده لون حالة «معاد للاستكمال»
+   لا لون فعل: الأزرق في النظام يوصف حالة مش يعمل نداء. */
+.btn-p{background:var(--solid);color:var(--on-solid);font-weight:600;
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+.btn-p:hover{filter:brightness(1.06)}
+.btn-3{background:rgba(var(--retC2),.12);color:var(--ret-ink);
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
-  box-shadow:inset 0 0 0 1px rgba(46,110,168,.32)}
+  box-shadow:inset 0 0 0 1px rgba(var(--retC2),.32)}
 .btn-d{background:rgba(192,67,42,.10);color:var(--no-ink);
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
   box-shadow:inset 0 0 0 1px rgba(192,67,42,.28)}
@@ -885,7 +895,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   transition:opacity .25s ease;
   pointer-events:none;
   -webkit-backdrop-filter:blur(26px) saturate(1.15);backdrop-filter:blur(26px) saturate(1.15);
-  background:linear-gradient(to top,rgba(241,245,243,.55),rgba(241,245,243,0));
+  background:linear-gradient(to top,rgba(var(--baseC),.55),rgba(var(--baseC),0));
   -webkit-mask-image:linear-gradient(to top,#000 0,#000 38%,rgba(0,0,0,.5) 66%,transparent 100%);
   mask-image:linear-gradient(to top,#000 0,#000 38%,rgba(0,0,0,.5) 66%,transparent 100%)}
 
@@ -1293,7 +1303,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   padding:0 clamp(1rem,2.4vw,1.7rem) clamp(.7rem,1.6vw,1.1rem);pointer-events:none}
 .composer.docked::before{content:"";position:absolute;inset-inline:0;bottom:0;height:190px;z-index:-1;
   -webkit-backdrop-filter:blur(26px) saturate(1.15);backdrop-filter:blur(26px) saturate(1.15);
-  background:linear-gradient(to top,rgba(241,245,243,.55),rgba(241,245,243,0));
+  background:linear-gradient(to top,rgba(var(--baseC),.55),rgba(var(--baseC),0));
   -webkit-mask-image:linear-gradient(to top,#000 0,#000 38%,rgba(0,0,0,.5) 66%,transparent 100%);
   mask-image:linear-gradient(to top,#000 0,#000 38%,rgba(0,0,0,.5) 66%,transparent 100%)}
 .composer.docked .cbox,.composer.docked .cdisc{pointer-events:auto}
@@ -1432,7 +1442,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   display:flex;align-items:center;gap:.5rem;
   padding:.6rem .8rem;border-radius:var(--r2);
   font-size:.78rem;line-height:1.5;color:var(--no-ink2);
-  background:rgba(253,240,236,.94);
+  background:var(--no-soft);
   -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
   box-shadow:inset 0 0 0 1px rgba(var(--noC),.26),0 8px 22px rgba(20,69,71,.14);
   animation:ltoastin .26s cubic-bezier(.22,.9,.3,1) both}
@@ -1519,10 +1529,10 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
   transition:color .16s ease,background .16s ease,box-shadow .16s ease}
 .fchip:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
-.fchip.on{color:var(--ret-ink);background:rgba(46,110,168,.10);
-  box-shadow:inset 0 0 0 1px rgba(46,110,168,.30)}
+.fchip.on{color:var(--ret-ink);background:rgba(var(--retC2),.10);
+  box-shadow:inset 0 0 0 1px rgba(var(--retC2),.30)}
 .fchip b{font-size:.7rem;font-weight:600;padding:.04rem .36rem;border-radius:var(--rp);
-  background:rgba(46,110,168,.16)}
+  background:rgba(var(--retC2),.16)}
 
 /* قائمة اختيار */
 .fsel{display:inline-flex;flex-direction:column;gap:.28rem;min-width:0}
@@ -1537,7 +1547,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .fsel-b select{flex:1;min-width:0;font-size:.8rem;color:var(--t1);cursor:pointer;
   appearance:none;-webkit-appearance:none;padding-inline-end:.2rem}
 .fsel-b svg{flex:none;color:var(--t3)}
-.fsel.on .fsel-b{background:rgba(46,110,168,.09);box-shadow:inset 0 0 0 1px rgba(46,110,168,.28)}
+.fsel.on .fsel-b{background:rgba(var(--retC2),.09);box-shadow:inset 0 0 0 1px rgba(var(--retC2),.28)}
 .fsel.off{opacity:.55}
 .fsel.off .fsel-b{cursor:not-allowed}
 
@@ -1588,7 +1598,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   transition:transform .18s ease,box-shadow .18s ease}
 .pcard:hover{transform:translateY(-2px);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2))}
-.pcard.sel{box-shadow:inset 0 0 0 1px rgba(46,110,168,.42)}
+.pcard.sel{box-shadow:inset 0 0 0 1px rgba(var(--retC2),.42)}
 .pc-top{display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--t3)}
 .pc-sp{flex:1}
 .pc-chk{display:grid;place-items:center;flex:none}
@@ -1623,7 +1633,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 
 /* ── الجدول ── */
 .tblwrap{overflow-x:auto;scrollbar-width:thin}
-.tbl tr.sel td{background:rgba(46,110,168,.07)}
+.tbl tr.sel td{background:rgba(var(--retC2),.07)}
 .tlink{color:var(--t1);font-weight:500}
 .tlink:hover{color:var(--teal)}
 .tbl td.over{color:var(--no)}
@@ -2171,7 +2181,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 :root[data-theme="dark"],:root[data-theme="green"]{ color-scheme:dark }
 
 :root[data-theme="dark"]{
-  --base:#0A0C0C;
+  --base:#0A0C0C; --baseC:10,12,12;
+  --retC2:120,180,235;
+  --no-soft:rgba(38,20,17,.94);
   --t1:#EFF2F1; --t2:#B3BEBC; --t3:#A3AFAD;
   --edgeC:196,212,209;
   --edge-hair:.12; --edge-strong:.28; --edge-side:.11; --edge-bottom:.06;
@@ -2218,7 +2230,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 }
 
 :root[data-theme="green"]{
-  --base:#08181A;
+  --base:#08181A; --baseC:8,24,26;
+  --retC2:120,180,235;
+  --no-soft:rgba(38,20,17,.94);
   --t1:#E6F1EF; --t2:#A9C7C3; --t3:#A2C1BD;
   --edgeC:174,214,209;
   --edge-hair:.13; --edge-strong:.30; --edge-side:.12; --edge-bottom:.07;

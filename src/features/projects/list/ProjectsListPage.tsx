@@ -325,7 +325,7 @@ export default function ProjectsListPage() {
                   <Icon path={icons.chevronDown} size={15} />
                 </span>
               </label>
-              <button className="btn btn-3 btn-sm" disabled={!bulkOwner} onClick={applyBulk}>
+              <button className="btn btn-p btn-sm" disabled={!bulkOwner} onClick={applyBulk}>
                 إسناد
               </button>
               <button className="btn btn-2 btn-sm" onClick={() => setSelected(new Set())}>
