@@ -19,6 +19,20 @@ export interface QueryParamsApi<T extends Record<string, string | undefined>> {
   activeCount: (ignore?: (keyof T)[]) => number
 }
 
+/**
+ * فلتر متعدد القيم في مفتاح واحد: `region=الرياض,مكة المكرمة`.
+ *
+ * الفاصلة مش مصادفة: هي أقصر شكل يفضل مقروء في شريط العنوان، والـURL
+ * لسه ينفع يتبعت لمدير المنح زي ما هو. وقيم النظام (مسارات ومجالات
+ * ومناطق ومدن وأوسمة) مفيهاش فاصلة، فمفيش لبس. لو جه يوم وفيه قيمة
+ * بفاصلة، المكان الوحيد اللي هيتغيّر هو الدالتين دول.
+ */
+export const readList = (v: string | undefined): string[] =>
+  v ? v.split(',').map((s) => s.trim()).filter(Boolean) : []
+
+export const writeList = (xs: string[]): string | undefined =>
+  xs.length ? xs.join(',') : undefined
+
 export function useQueryParams<T extends Record<string, string | undefined>>(
   keys: readonly (keyof T & string)[],
 ): QueryParamsApi<T> {

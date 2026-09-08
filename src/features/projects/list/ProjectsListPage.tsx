@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, Pager, SearchBox, Segments, Select, Toggle, ViewToggle,
+  Empty, Glass, Icon, icons, MultiSelect, Pager, PAGE_SIZES, SearchBox, Segments, Select,
+  Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
-import { useQueryParams } from '@/hooks/useQueryParams'
+import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { fixtures, query, type ProjectQuery, type ProjectSort } from '@/data/repository'
@@ -23,17 +24,17 @@ import { ProjectsTable } from './ProjectsTable'
 const KEYS = [
   'q', 'status', 'stage', 'year', 'track', 'field', 'goal', 'region', 'city',
   'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact',
-  'sort', 'page', 'view', 'adv',
+  'sort', 'page', 'size', 'view', 'adv',
 ] as const
 
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = PAGE_SIZES[0]
 
 /* البحث والحالة والتبديلات الظاهرة ليها مكانها فوق، فما تتحسبش في
    عدّاد «الفلاتر المتقدمة» — العدّاد بيقول اللي مخفي بس. */
 const NOT_FILTERS: (keyof Params)[] = [
-  'q', 'sort', 'page', 'view', 'adv', 'status', 'unowned', 'overdue',
+  'q', 'sort', 'page', 'size', 'view', 'adv', 'status', 'unowned', 'overdue',
 ]
 
 /** اللقطات المحفوظة — الأسئلة اللي المشرف بيسألها كل يوم */
@@ -74,30 +75,34 @@ export default function ProjectsListPage() {
   const page = Math.max(1, Number(v.page) || 1)
   const advOpen = v.adv === '1'
 
+  /* حجم الصفحة في الـURL زي الفلاتر: اللي بيبعت الرابط لزميله عايزه
+     يشوف نفس الصفحة بنفس عدد صفوفها. */
+  const size = Math.min(500, Math.max(1, Number(v.size) || PAGE_SIZE))
+
   const q: ProjectQuery = useMemo(
     () => ({
       search: v.q,
-      status: v.status,
-      stage: v.stage,
-      year: v.year,
-      track: v.track,
-      field: v.field,
-      goal: v.goal,
-      region: v.region,
-      city: v.city,
-      tag: v.tag,
-      grantMethod: v.method,
-      supportStatus: v.support,
-      owner: v.owner,
+      status: readList(v.status),
+      stage: readList(v.stage),
+      year: readList(v.year),
+      track: readList(v.track),
+      field: readList(v.field),
+      goal: readList(v.goal),
+      region: readList(v.region),
+      city: readList(v.city),
+      tag: readList(v.tag),
+      grantMethod: readList(v.method),
+      supportStatus: readList(v.support),
+      owner: readList(v.owner),
       unowned: v.unowned === '1',
       overdue: v.overdue === '1',
       shared: v.shared === '1',
       impact: v.impact === '1',
       sort: (v.sort as ProjectSort) ?? 'waiting',
       page,
-      pageSize: PAGE_SIZE,
+      pageSize: size,
     }),
-    [v, page],
+    [v, page, size],
   )
 
   const result = query.projects(q)
@@ -125,9 +130,25 @@ export default function ProjectsListPage() {
 
   /* المجالات والأهداف والمدن متسلسلة زي النظام: اختيار المسار بيحدّد
      المجالات المتاحة، والمجال بيحدّد الأهداف. لو الأب اتغيّر، الابن يتصفّر. */
-  const fieldOptions = v.track ? (FIELDS_BY_TRACK[v.track] ?? []) : Object.values(FIELDS_BY_TRACK).flat()
-  const goalOptions = v.field ? (GOALS_BY_FIELD[v.field] ?? []) : []
-  const cityOptions = v.region ? (CITIES_BY_REGION[v.region] ?? []) : []
+  const tracks = readList(v.track)
+  const fields = readList(v.field)
+  const regions = readList(v.region)
+
+  /* مع الاختيار المتعدد، ابن الفلتر بياخد **اتحاد** آبائه: اللي مختار
+     مسارين لازم يشوف مجالات الاتنين. والتكرار بيتشال عشان المجال
+     الواحد ما يتكتبش مرتين لو تابع لمسارين. */
+  const uniq = (xs: string[]) => [...new Set(xs)]
+
+  /* لما الأب يتغيّر، الابن ما يتصفّرش كله — بيتشال منه اللي بقى
+     خارج النطاق بس. المستخدم اللي مختار «التعليم» وزوّد مسارًا
+     تانيًا ما يستاهلش يفقد اختياره. */
+  const keep = (chosen: string[], allowed: string[]) =>
+    writeList(chosen.filter((x) => allowed.includes(x)))
+  const fieldOptions = tracks.length
+    ? uniq(tracks.flatMap((t) => FIELDS_BY_TRACK[t] ?? []))
+    : uniq(Object.values(FIELDS_BY_TRACK).flat())
+  const goalOptions = uniq(fields.flatMap((f) => GOALS_BY_FIELD[f] ?? []))
+  const cityOptions = uniq(regions.flatMap((r) => CITIES_BY_REGION[r] ?? []))
 
   /* اللقطة النشطة = اللي كل مفاتيحها مطابقة. لو المستخدم زوّد فلترًا
      فوقها، الشريحة تفضل مختارة — هو لسه جوّه نفس النطاق. */
@@ -177,8 +198,11 @@ export default function ProjectsListPage() {
       ['method', 'الأسلوب'], ['support', 'الدعم'], ['owner', 'المالك'],
     ] as [keyof Params, string][]
   )
-    .filter(([k]) => v[k])
-    .map(([k, label]) => ({ k, label, value: v[k] as string }))
+    /* شريحة لكل **قيمة** لا لكل فلتر: اللي مختار ثلاث مناطق عايز
+       يشيل واحدة منهم من غير ما يفقد الاتنين التانيين. */
+    .flatMap(([k, label]) =>
+      readList(v[k]).map((value) => ({ k, label, value })),
+    )
 
   const flags = (
     [
@@ -229,14 +253,14 @@ export default function ProjectsListPage() {
                 onChange={(x) => set({ q: x })}
                 placeholder="ابحث برقم المشروع أو اسمه أو اسم الجهة…"
               />
-              <Select
-                value={v.status}
+              <MultiSelect
+                values={readList(v.status)}
                 all={`كل الحالات (${result.total})`}
                 options={STATUS_GROUPS.filter((g) => counts[g]).map((g) => ({
                   value: g,
                   label: `${g} (${counts[g]})`,
                 }))}
-                onChange={(x) => set({ status: x })}
+                onChange={(x) => set({ status: writeList(x) })}
               />
               <Select
                 icon={icons.sort}
@@ -262,17 +286,34 @@ export default function ProjectsListPage() {
 
             {advOpen && (
               <div className="fgrid">
-                <Select label="السنة والمصدر" value={v.year} options={YEARS.map((y) => y.id)} onChange={(x) => set({ year: x })} />
-                <Select label="القسم الإجرائي" value={v.stage} options={STAGES.map((s) => s.stage)} onChange={(x) => set({ stage: x })} />
-                <Select label="المسار" value={v.track} options={TRACKS} onChange={(x) => set({ track: x, field: undefined, goal: undefined })} />
-                <Select label="المجال" value={v.field} options={fieldOptions} onChange={(x) => set({ field: x, goal: undefined })} />
-                <Select label="الهدف" value={v.goal} options={goalOptions} onChange={(x) => set({ goal: x })} disabled={!v.field} all={v.field ? 'الكل' : 'اختر المجال أولًا'} />
-                <Select label="المنطقة" value={v.region} options={REGIONS} onChange={(x) => set({ region: x, city: undefined })} />
-                <Select label="المدينة" value={v.city} options={cityOptions} onChange={(x) => set({ city: x })} disabled={!v.region} all={v.region ? 'الكل' : 'اختر المنطقة أولًا'} />
-                <Select label="الوسم" value={v.tag} options={TAGS} onChange={(x) => set({ tag: x })} />
-                <Select label="أسلوب المنح" value={v.method} options={GRANT_METHODS} onChange={(x) => set({ method: x })} />
-                <Select label="حالة الدعم" value={v.support} options={SUPPORT_STATUS} onChange={(x) => set({ support: x })} />
-                <Select label="المالك" value={v.owner} options={OWNERS} onChange={(x) => set({ owner: x })} />
+                {/* كل فلتر متعدد الاختيار. والابن بيتصفّر لما الأب يتغيّر،
+                    وإلا فضل في الـURL مجال مش تابع لأي مسار مختار. */}
+                <MultiSelect label="السنة والمصدر" values={readList(v.year)} options={YEARS.map((y) => y.id)} onChange={(x) => set({ year: writeList(x) })} />
+                <MultiSelect label="القسم الإجرائي" values={readList(v.stage)} options={STAGES.map((s) => s.stage)} onChange={(x) => set({ stage: writeList(x) })} />
+                <MultiSelect label="المسار" values={tracks} options={TRACKS} onChange={(x) => {
+                  const nextFields = x.length ? uniq(x.flatMap((t) => FIELDS_BY_TRACK[t] ?? [])) : uniq(Object.values(FIELDS_BY_TRACK).flat())
+                  const field = keep(fields, nextFields)
+                  const nextGoals = uniq(readList(field).flatMap((f) => GOALS_BY_FIELD[f] ?? []))
+                  set({ track: writeList(x), field, goal: keep(readList(v.goal), nextGoals) })
+                }} />
+                <MultiSelect label="المجال" values={fields} options={fieldOptions} onChange={(x) =>
+                  set({
+                    field: writeList(x),
+                    goal: keep(readList(v.goal), uniq(x.flatMap((f) => GOALS_BY_FIELD[f] ?? []))),
+                  })
+                } />
+                <MultiSelect label="الهدف" values={readList(v.goal)} options={goalOptions} onChange={(x) => set({ goal: writeList(x) })} disabled={fields.length === 0} all={fields.length ? 'الكل' : 'اختر المجال أولًا'} />
+                <MultiSelect label="المنطقة" values={regions} options={REGIONS} onChange={(x) =>
+                  set({
+                    region: writeList(x),
+                    city: keep(readList(v.city), uniq(x.flatMap((r) => CITIES_BY_REGION[r] ?? []))),
+                  })
+                } />
+                <MultiSelect label="المدينة" values={readList(v.city)} options={cityOptions} onChange={(x) => set({ city: writeList(x) })} disabled={regions.length === 0} all={regions.length ? 'الكل' : 'اختر المنطقة أولًا'} />
+                <MultiSelect label="الوسم" values={readList(v.tag)} options={TAGS} onChange={(x) => set({ tag: writeList(x) })} />
+                <MultiSelect label="أسلوب المنح" values={readList(v.method)} options={GRANT_METHODS} onChange={(x) => set({ method: writeList(x) })} />
+                <MultiSelect label="حالة الدعم" values={readList(v.support)} options={SUPPORT_STATUS} onChange={(x) => set({ support: writeList(x) })} />
+                <MultiSelect label="المالك" values={readList(v.owner)} options={OWNERS} onChange={(x) => set({ owner: writeList(x) })} />
                 <div className="fgrid-t">
                   <Toggle label="تمويل مشترك" on={v.shared === '1'} onChange={(on) => set({ shared: on ? '1' : undefined })} />
                   <Toggle label="مشروع أثر" on={v.impact === '1'} onChange={(on) => set({ impact: on ? '1' : undefined })} />
@@ -283,7 +324,15 @@ export default function ProjectsListPage() {
             {(chips.length > 0 || flags.length > 0) && (
               <div className="factive">
                 {chips.map((c) => (
-                  <button key={c.k as string} className="fpill" onClick={() => set({ [c.k]: undefined } as Partial<Params>)}>
+                  <button
+                    key={`${c.k as string}:${c.value}`}
+                    className="fpill"
+                    onClick={() =>
+                      set({
+                        [c.k]: writeList(readList(v[c.k]).filter((x) => x !== c.value)),
+                      } as Partial<Params>)
+                    }
+                  >
                     <span className="sub">{c.label}:</span> {c.value}
                     <Icon path={icons.close} size={13} />
                   </button>
@@ -365,6 +414,7 @@ export default function ProjectsListPage() {
             pageSize={result.pageSize}
             total={result.total}
             onPage={(p) => set({ page: String(p) })}
+            onPageSize={(n) => set({ size: n === PAGE_SIZE ? undefined : String(n), page: undefined })}
           />
 
           <p className="sub" style={{ textAlign: 'center', marginTop: '.4rem' }}>

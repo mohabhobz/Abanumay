@@ -1665,7 +1665,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 
 /* قائمة اختيار */
 .fsel{display:inline-flex;flex-direction:column;gap:.28rem;min-width:0}
-.fsel-l{font-size:.71rem;color:var(--t3);padding-inline-start:.2rem}
+.fsel-l{font-size:.71rem;color:var(--t2);padding-inline-start:.2rem}
 .fsel-b{position:relative;display:flex;align-items:center;gap:.35rem;
   padding-block:.44rem;padding-inline-start:.8rem;padding-inline-end:.5rem;
   border-radius:var(--r1);
@@ -1713,6 +1713,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 /* الترقيم */
 .pager{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
   padding:.2rem .3rem}
+.pager-c{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
 .pager-b{display:flex;align-items:center;gap:.6rem}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn:disabled:hover{transform:none;filter:none}
@@ -2677,4 +2678,81 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 @media (max-width:640px){
   .ind{grid-template-columns:auto minmax(0,1fr);gap:.35rem .7rem}
   .ind-r{grid-column:2;text-align:start;padding-top:.3rem}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   الفلتر متعدد الاختيار ومقياس الصفحة
+
+   الاتنين لوحة صغيرة بتفتح من زرار. القاعدة المشتركة: اللوحة
+   بتاخد عرض زرارها كحدّ أدنى وبتتمدّد لو الأسماء أطول، وبتفضل
+   جوّه حدود الشاشة على الموبايل بـ`max-width`.
+   ═══════════════════════════════════════════════════════════ */
+
+.fmulti{position:relative}
+/* الزرار بيلبس شكل حقل الاختيار عشان الصفّ يفضل بلغة واحدة */
+.fmulti>.fsel-b{width:100%;cursor:pointer;text-align:start}
+.fmulti.off>.fsel-b{cursor:not-allowed}
+.fmulti-s{flex:1;min-width:0;font-size:.8rem;color:var(--t1);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ftool-r>.fmulti .fmulti-s{font-size:.79rem}
+
+.fmenu{position:absolute;top:calc(100% + .35rem);inset-inline-start:0;z-index:60;
+  min-width:100%;max-width:min(300px,80vw);width:max-content;
+  display:flex;flex-direction:column;padding:.3rem;border-radius:var(--r2);
+  background:rgba(var(--wC),calc(.92 * var(--wM)));
+  -webkit-backdrop-filter:blur(26px) saturate(1.4);backdrop-filter:blur(26px) saturate(1.4);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6)),
+             0 18px 40px -20px rgba(var(--edgeC),.7)}
+/* اللوحة اللي في آخر صفّ الفلاتر بتخرج من يمين الشاشة لو فتحت
+   من البداية، فبتتعلّق بالنهاية بدلها */
+.fgrid>.fmulti:nth-child(3n)>.fmenu{inset-inline-start:auto;inset-inline-end:0}
+
+.fmenu-q{display:flex;align-items:center;gap:.4rem;padding:.4rem .55rem;margin-bottom:.25rem;
+  border-radius:var(--r1);background:rgba(var(--edgeC),.05)}
+.fmenu-q svg{color:var(--t3);flex:none}
+.fmenu-q input{flex:1;min-width:0;font-size:.78rem;color:var(--t1);background:none}
+.fmenu-l{display:flex;flex-direction:column;gap:1px;max-height:264px;overflow-y:auto;overscroll-behavior:contain}
+.fmenu-e{padding:.6rem .55rem;font-size:.76rem}
+.fmenu-f{padding-top:.3rem;margin-top:.25rem;text-align:center;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+
+.fopt{display:flex;align-items:center;gap:.5rem;width:100%;padding:.42rem .55rem;
+  border-radius:var(--r1);font-size:.79rem;color:var(--t1);text-align:start}
+.fopt:hover{background:rgba(var(--edgeC),.06)}
+.fopt-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* المربّع بيفضل مرسوم وهو فاضي: مكانه بيقول إن الاختيار متعدد */
+.fopt-x{flex:none;display:grid;place-items:center;width:16px;height:16px;border-radius:5px;
+  color:var(--on-solid);background:rgba(var(--wC),calc(.7 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+.fopt.on .fopt-x{background:var(--solid);box-shadow:none}
+.fopt.on{background:rgba(var(--retC2),.08)}
+
+/* ── مقياس الصفحة ── */
+.psize{display:flex;align-items:center;gap:.4rem}
+.psize .sub{font-size:.76rem;white-space:nowrap}
+.psize-b{position:relative;display:flex;align-items:center;border-radius:var(--r1);
+  background:rgba(var(--wC),calc(.56 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
+  transition:box-shadow .16s ease}
+.psize-b:focus-within{box-shadow:inset 0 0 0 1px rgba(var(--retC2),.42)}
+.psize-b input{width:3.4em;padding:.36rem .1rem .36rem .5rem;font-size:.79rem;color:var(--t1);
+  text-align:center;background:none}
+.psize-x{display:grid;place-items:center;padding:.36rem .45rem .36rem .35rem;color:var(--t3)}
+.psize-x:hover{color:var(--t1)}
+/* بتفتح لفوق: المقياس في آخر الصفحة، واللوحة النازلة بتقع برّه الشاشة */
+.psize-m{position:absolute;bottom:calc(100% + .35rem);inset-inline-start:0;z-index:60;
+  min-width:100%;display:flex;flex-direction:column;gap:1px;padding:.3rem;border-radius:var(--r2);
+  background:rgba(var(--wC),calc(.92 * var(--wM)));
+  -webkit-backdrop-filter:blur(26px) saturate(1.4);backdrop-filter:blur(26px) saturate(1.4);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6)),
+             0 18px 40px -20px rgba(var(--edgeC),.7)}
+.psize-m .fopt{justify-content:center}
+
+@media (max-width:640px){
+  .pager{justify-content:center}
+  .pager-c,.pager-b{flex-wrap:wrap;justify-content:center}
+  .fmenu{max-width:min(300px,86vw)}
+  /* شريط الموبايل السفلي ثابت فوق الصفحة، فاللوحة الطويلة بتختفي
+     تحته. القصّ هنا بيخلي آخر خيار مقروء ومضغوط. */
+  .fmenu-l{max-height:190px}
 }

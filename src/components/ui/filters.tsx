@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
@@ -84,6 +84,146 @@ export function Select({
   )
 }
 
+/* ═══════════════════════════════════════════════════════════
+   قائمة متعددة الاختيار.
+
+   `<select multiple>` الأصلية مرفوضة هنا: بتاخد ارتفاع صفوفها كله
+   في الشبكة، وبتطلب Ctrl+كليك عشان تختار اتنين — سلوك نص المستخدمين
+   ما يعرفوش. البديل زرار بيفتح لوحة فيها صندوق لكل خيار: الاختيار
+   بضغطة، والمختار بيفضل باين في عنوان الزرار.
+
+   والقائمة بتقفل بالضغط برّه أو بـEsc، مش بزرار «تم» — الفلتر بيسري
+   لحظة الضغط، فمفيش حاجة تتأكَّد.
+   ═══════════════════════════════════════════════════════════ */
+
+export interface MultiSelectProps {
+  label?: string
+  values: string[]
+  options: readonly SelectOption[]
+  onChange: (v: string[]) => void
+  /** النص اللي يظهر لما مفيش اختيار */
+  all?: string
+  disabled?: boolean
+  wide?: boolean
+  icon?: string
+  /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة */
+  searchAt?: number
+}
+
+export function MultiSelect({
+  label, values, options, onChange, all = 'الكل', disabled, wide, icon, searchAt = 9,
+}: MultiSelectProps) {
+  const [open, setOpen] = useState(false)
+  const [needle, setNeedle] = useState('')
+  const box = useRef<HTMLDivElement>(null)
+  const id = useId()
+
+  useEffect(() => {
+    if (!open) return
+    const away = (e: PointerEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false)
+    }
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('pointerdown', away)
+    document.addEventListener('keydown', key)
+    return () => {
+      document.removeEventListener('pointerdown', away)
+      document.removeEventListener('keydown', key)
+    }
+  }, [open])
+
+  useEffect(() => { if (!open) setNeedle('') }, [open])
+
+  const on = values.length > 0
+  const labelOf = (val: string) =>
+    optLabel(options.find((o) => optValue(o) === val) ?? val)
+
+  /* عنوان الزرار: الاسم لو واحد، والاسم و«+2» لو أكتر. عرض الأسماء
+     كلها بيمدّ الزرار لحد ما الصفّ يتكسر، وشارة عدد جنبه بتكرّر نفس
+     المعلومة مرتين. */
+  const summary = !on
+    ? all
+    : values.length === 1
+      ? labelOf(values[0])
+      : `${labelOf(values[0])} +${values.length - 1}`
+
+  const shown = needle
+    ? options.filter((o) => optLabel(o).includes(needle.trim()))
+    : options
+
+  const toggle = (val: string) =>
+    onChange(values.includes(val) ? values.filter((x) => x !== val) : [...values, val])
+
+  return (
+    <div className={`fsel fmulti${on ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`} ref={box}>
+      {label && <span className="fsel-l" id={`${id}-l`}>{label}</span>}
+
+      <button
+        type="button"
+        className="fsel-b"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-labelledby={label ? `${id}-l ${id}-b` : undefined}
+        id={`${id}-b`}
+        onClick={() => setOpen((x) => !x)}
+      >
+        {icon && <Icon path={icon} size={15} />}
+        <span className="fmulti-s">{summary}</span>
+        <Icon path={icons.chevronDown} size={15} />
+      </button>
+
+      {open && (
+        <div className="fmenu">
+          {options.length > searchAt && (
+            <label className="fmenu-q">
+              <Icon path={icons.search} size={14} />
+              <input
+                autoFocus
+                value={needle}
+                onChange={(e) => setNeedle(e.target.value)}
+                placeholder="ابحث…"
+                aria-label="ابحث في الخيارات"
+              />
+            </label>
+          )}
+
+          <div className="fmenu-l" role="listbox" aria-multiselectable="true">
+            {shown.length === 0 && <div className="fmenu-e sub">لا نتائج</div>}
+            {shown.map((o) => {
+              const val = optValue(o)
+              const sel = values.includes(val)
+              return (
+                <button
+                  type="button"
+                  key={val}
+                  role="option"
+                  aria-selected={sel}
+                  className={`fopt${sel ? ' on' : ''}`}
+                  onClick={() => toggle(val)}
+                >
+                  <span className="fopt-x" aria-hidden="true">
+                    {sel && <Icon path={icons.check} size={12} />}
+                  </span>
+                  <span className="fopt-t">{optLabel(o)}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {on && (
+            <div className="fmenu-f">
+              <button type="button" className="fclear" onClick={() => onChange([])}>
+                مسح الاختيار
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** شريحة تبديل — فلتر منطقي واحد بضغطة */
 export function Toggle({
   label,
@@ -141,16 +281,115 @@ export function Segments({
   )
 }
 
+/* ═══════════════════════════════════════════════════════════
+   عدد الصفوف في الصفحة.
+
+   قائمة جاهزة **ومعاها كتابة حرّة**: المستخدم اللي بيراجع دفعة
+   معيّنة عارف إنها 63 صفًّا وعايزها في صفحة واحدة، والقائمة المقفولة
+   بتخلّيه يقلّب على صفحتين بلا سبب. الرقم بيتقيّد بحدّ أعلى عشان
+   كتابة 99999 ما تجمّدش الشاشة.
+   ═══════════════════════════════════════════════════════════ */
+
+export const PAGE_SIZES = [25, 50, 75, 100] as const
+const SIZE_MAX = 500
+
+export function PageSize({
+  value,
+  onChange,
+  options = PAGE_SIZES,
+}: {
+  value: number
+  onChange: (n: number) => void
+  options?: readonly number[]
+}) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState(String(value))
+  const box = useRef<HTMLDivElement>(null)
+
+  useEffect(() => setDraft(String(value)), [value])
+
+  useEffect(() => {
+    if (!open) return
+    const away = (e: PointerEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [open])
+
+  /* التثبيت عند Enter أو الخروج من الحقل، لا مع كل حرف: اللي بيكتب
+     «100» بيمرّ على «1» و«10» في الطريق، وإعادة الاستعلام عندهم
+     بتقلّب الشاشة مرتين بلا داعٍ. */
+  const commit = () => {
+    const n = Math.round(Number(draft))
+    if (!Number.isFinite(n) || n < 1) return setDraft(String(value))
+    const next = Math.min(SIZE_MAX, n)
+    setDraft(String(next))
+    if (next !== value) onChange(next)
+  }
+
+  return (
+    <div className="psize" ref={box}>
+      <span className="sub">عرض</span>
+      <div className="psize-b">
+        <input
+          value={draft}
+          inputMode="numeric"
+          className="num"
+          aria-label="عدد الصفوف في الصفحة"
+          onChange={(e) => setDraft(e.target.value.replace(/[^\d]/g, ''))}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); commit(); (e.target as HTMLInputElement).blur() }
+            if (e.key === 'Escape') setDraft(String(value))
+          }}
+        />
+        <button
+          type="button"
+          className="psize-x"
+          aria-label="اختر من القائمة"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          onClick={() => setOpen((x) => !x)}
+        >
+          <Icon path={icons.chevronDown} size={14} />
+        </button>
+
+        {open && (
+          <div className="psize-m" role="listbox">
+            {options.map((n) => (
+              <button
+                type="button"
+                key={n}
+                role="option"
+                aria-selected={n === value}
+                className={`fopt${n === value ? ' on' : ''}`}
+                onClick={() => { setOpen(false); if (n !== value) onChange(n) }}
+              >
+                <span className="fopt-t num">{n}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <span className="sub">صفًّا</span>
+    </div>
+  )
+}
+
 export function Pager({
   page,
   pageSize,
   total,
   onPage,
+  onPageSize,
 }: {
   page: number
   pageSize: number
   total: number
   onPage: (p: number) => void
+  /** لما تتبعت، مقياس الصفحة بيظهر جنب الترقيم */
+  onPageSize?: (n: number) => void
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize))
   if (total === 0) return null
@@ -159,10 +398,15 @@ export function Pager({
 
   return (
     <div className="pager">
-      <span className="sub">
-        <span className="num">{from}</span>–<span className="num">{to}</span> من{' '}
-        <span className="num">{total}</span>
-      </span>
+      {/* العدّاد ومقياس الصفحة مع بعض: الاتنين بيتكلّموا عن الكمّ،
+          وأزرار التنقّل بتتكلّم عن الموضع. */}
+      <div className="pager-c">
+        <span className="sub">
+          <span className="num">{from}</span>–<span className="num">{to}</span> من{' '}
+          <span className="num">{total}</span>
+        </span>
+        {onPageSize && <PageSize value={pageSize} onChange={onPageSize} />}
+      </div>
       <div className="pager-b">
         <button className="btn btn-2 btn-sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
           السابق

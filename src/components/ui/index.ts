@@ -9,6 +9,6 @@ export { GateArc, type GateArcProps, type CurrentStandingInfo } from './GateArc'
 export { CeilingLadder } from './CeilingLadder'
 export { VSteps } from './VSteps'
 export {
-  SearchBox, Select, Toggle, Segments, Pager, ViewToggle,
-  type SelectProps, type SegItem,
+  SearchBox, Select, MultiSelect, Toggle, Segments, Pager, PageSize, PAGE_SIZES, ViewToggle,
+  type SelectProps, type MultiSelectProps, type SegItem,
 } from './filters'

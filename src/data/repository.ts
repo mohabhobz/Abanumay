@@ -44,22 +44,32 @@ export type ProjectSort =
   | 'name'
 
 /** فلاتر قائمة المشاريع — نفس أسماء فلاتر النظام الأربعتاشر */
+/**
+ * فلتر يقبل قيمة واحدة أو مجموعة قيم.
+ *
+ * المجموعة معناها «أي واحدة منها» لا «كلها»: المستخدم اللي بيختار
+ * الرياض ومكة عايز يشوف الاتنين، مش المشروع اللي في الاتنين — وده
+ * مستحيل أصلًا في الحقول دي. المصفوفة الفاضية = بلا فلتر، عشان
+ * الشاشة ما تضطرش تحوّلها لـ`undefined` قبل ما تبعتها.
+ */
+export type Filter = string | string[] | undefined
+
 export interface ProjectQuery {
-  year?: string
-  track?: string
-  field?: string
-  goal?: string
-  tag?: string
-  region?: string
-  city?: string
+  year?: Filter
+  track?: Filter
+  field?: Filter
+  goal?: Filter
+  tag?: Filter
+  region?: Filter
+  city?: Filter
   /** الحالة المجمّعة */
-  status?: string
+  status?: Filter
   /** القسم الإجرائي الفعلي */
-  stage?: string
-  supportStatus?: string
-  grantMethod?: string
-  funding?: string
-  owner?: string
+  stage?: Filter
+  supportStatus?: Filter
+  grantMethod?: Filter
+  funding?: Filter
+  owner?: Filter
   /** true = بلا مالك فقط */
   unowned?: boolean
   /** true = المتجاوز حدّ القسم فقط */
@@ -100,7 +110,16 @@ export interface Page<T> {
 
 /* ═══════════════ أدوات داخلية ═══════════════ */
 
-const eq = (filter: string | undefined, value: string): boolean => !filter || filter === value
+const eq = (filter: Filter, value: string): boolean =>
+  !filter || (Array.isArray(filter) ? filter.length === 0 || filter.includes(value) : filter === value)
+
+/** للحقول اللي الصف فيها مجموعة (الأوسمة): تقاطع مش تطابق */
+const eqAny = (filter: Filter, values: readonly string[]): boolean =>
+  !filter
+    ? true
+    : Array.isArray(filter)
+      ? filter.length === 0 || filter.some((f) => values.includes(f))
+      : values.includes(filter)
 
 const paginate = <T>(rows: T[], page = 1, pageSize = 20): Page<T> => ({
   rows: rows.slice((page - 1) * pageSize, page * pageSize),
@@ -124,9 +143,11 @@ const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
   if (!eq(q.stage, r.stage)) return false
   if (!eq(q.grantMethod, r.grantMethod)) return false
   if (!eq(q.funding, r.funding)) return false
-  if (q.supportStatus && r.supportStatus !== q.supportStatus) return false
-  if (q.owner && r.owner !== q.owner) return false
-  if (q.tag && !r.tags.includes(q.tag)) return false
+  /* `?? ''` مش تجميل: المشروع بلا مالك أو بلا قرار دعم لازم يقع
+     برّه الفلتر لما المستخدم يختار مالكًا أو حالة دعم بعينها. */
+  if (!eq(q.supportStatus, r.supportStatus ?? '')) return false
+  if (!eq(q.owner, r.owner ?? '')) return false
+  if (!eqAny(q.tag, r.tags)) return false
   if (q.unowned && r.owner !== null) return false
   if (q.overdue && stagePressure(r) <= 1) return false
   if (q.shared && !r.shared) return false
