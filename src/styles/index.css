@@ -893,7 +893,18 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
    الشيء الوحيد في الريل اللي شكله مستطيل جوّه دايرة — والاختيار
    بقى على الدايرة نفسها بحلقة خارجية بإزاحة، فمش محتاجة خلفية
    تسدّ الفراغ ولا لون يطابق الريل. */
-.acctbtn{padding:0;border-radius:50%;cursor:pointer;line-height:0;background:none}
+.acctbtn{padding:0;border-radius:50%;cursor:pointer;line-height:0;background:none;
+  display:flex;align-items:center;gap:.6rem}
+/* مفرود: الحساب صفّ زي باقي المداخل — صورة واسم ودور */
+.rail.open .acctwrap{justify-content:flex-start;width:100%}
+.rail.open .acctbtn{width:100%;border-radius:var(--r2);padding:.4rem .45rem;
+  line-height:1.35;text-align:start}
+.rail.open .acctbtn:hover{background:rgba(var(--edgeC),.05)}
+.rail.open .acct-who{display:flex;flex-direction:column;align-items:flex-start;gap:.05rem;min-width:0}
+.acct-who-n{font-family:var(--fd);font-weight:600;font-size:.82rem;color:var(--t1);
+  max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acct-who-r{font-size:.7rem;color:var(--t3);
+  max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acctbtn .av,.acctbtn .pht{transition:outline-color .18s ease,outline-width .18s ease}
 .acctbtn .av,.acctbtn .pht{outline:2px solid transparent;outline-offset:2px}
 .acctbtn:hover .av,.acctbtn:hover .pht{outline-color:rgba(var(--edgeC),.30)}
@@ -1085,6 +1096,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   .rail .rail-tip{display:none}
   /* نوعية مساوية لقاعدة الإخفاء `.rail:not(.open) .rail-l` وبعدها */
   .rail:not(.open) .rail-l,.rail .rail-l{display:flex}
+  .rail .acct-who,.rail.open .acct-who{display:none}
   .rail button:where(:not(.acctbtn)),.rail .railitem,
   .rail.open button:where(:not(.acctbtn)),.rail.open .railitem{
     flex-direction:column;justify-content:center;text-align:center}

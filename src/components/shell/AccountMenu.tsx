@@ -69,6 +69,12 @@ export function AccountMenu({
         title={`${user.name}، ${user.role}`}
       >
         <Avatar user={user} />
+        {/* الاسم والدور بيبانوا لمّا الشريط يتفرد — الحساب يفضل
+            زي أي مدخل تاني فيه، مش دايرة صامتة وسط أسماء */}
+        <span className="rail-l acct-who">
+          <span className="acct-who-n">{user.name}</span>
+          <span className="acct-who-r">{user.role}</span>
+        </span>
       </button>
 
       {open && (
