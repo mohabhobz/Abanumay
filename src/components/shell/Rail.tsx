@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react'
 import { NavLink } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
 import { Icon, icons, type IconName } from '@/components/ui'
@@ -19,50 +19,92 @@ export interface RailProps {
   permissions?: string[]
 }
 
-/**
- * حالة الطيّ محفوظة، والافتراضي مطويّ.
- *
- * الشريط المفرود بياخد عرضًا من المحتوى طول الوقت مقابل معلومة
- * المستخدم بيحفظها بعد يومين. فالافتراضي أيقونات، والاسم بيظهر
- * عند الهوفر لمّا يكون محتاجه — والفرد اختيار بيفضل محفوظ لمن
- * بيفضّله.
- */
-const RAIL_KEY = 'ab-rail'
+/* ═══════════════════════════════════════════════════════════
+   عرض الشريط — بالسحب لا بزرار
 
-const readOpen = (): boolean => {
+   الزرار بيقول «في حالتين» ويخفي إن العرض متغيّر أصلًا. الخط على
+   الحافة بيقول الحقيقة: امسك واسحب لأي عرض يريحك. والضغطة من غير
+   سحب بتقلب بين الحالتين، فاللي عايز زرار لقى زرار.
+
+   الأرقام: ٨٠ مطويّ (أيقونة مريحة بلا تسمية)، و٢٠٨ مفرود، والحدّ
+   الأقصى ٢٧٢ عشان الشريط ما ياخدش من المحتوى أكتر مما يستحق.
+   ═══════════════════════════════════════════════════════════ */
+const SHUT = 80
+const OPEN = 208
+const MAX = 272
+/** أقل عرض تبان فيه التسمية — تحته الشريط بيرجع أيقونات */
+const LABEL_AT = 132
+
+const RAIL_KEY = 'ab-rail-w'
+
+const clamp = (n: number) => Math.min(MAX, Math.max(SHUT, Math.round(n)))
+
+const readWidth = (): number => {
   try {
-    return localStorage.getItem(RAIL_KEY) === 'open'
+    const v = Number(localStorage.getItem(RAIL_KEY))
+    return Number.isFinite(v) && v > 0 ? clamp(v) : SHUT
   } catch {
-    return false
+    return SHUT
   }
 }
 
 export function Rail({ user, onAssistant, assistantOpen, onSignOut, permissions }: RailProps) {
   const allowed = NAV.filter((n) => !n.perm || !permissions || permissions.includes(n.perm))
-  const [open, setOpen] = useState(readOpen)
+
+  const [w, setW] = useState(readWidth)
+  const [dragging, setDragging] = useState(false)
+  /* مرجع للحالة وقت بداية السحب — الستيت جوّه المستمع بيبقى قديمًا */
+  const drag = useRef<{ x: number; w: number; moved: boolean } | null>(null)
+  const open = w >= LABEL_AT
 
   useEffect(() => {
     try {
-      localStorage.setItem(RAIL_KEY, open ? 'open' : 'shut')
+      localStorage.setItem(RAIL_KEY, String(w))
     } catch {
-      /* التخزين ممكن يكون مقفول — الاختيار يفضل للجلسة دي */
+      /* التخزين ممكن يكون مقفول — العرض يفضل للجلسة دي */
     }
-  }, [open])
+  }, [w])
+
+  /* RTL: الشريط على اليمين، فالسحب لليسار بيكبّره */
+  const onMove = useCallback((e: PointerEvent) => {
+    const d = drag.current
+    if (!d) return
+    const dx = d.x - e.clientX
+    if (Math.abs(dx) > 3) d.moved = true
+    setW(clamp(d.w + dx))
+  }, [])
+
+  const onUp = useCallback(() => {
+    const d = drag.current
+    drag.current = null
+    setDragging(false)
+    window.removeEventListener('pointermove', onMove)
+    /* ضغطة بلا سحب = قلب الحالة. اللي بيدوّر على زرار لقى زرار. */
+    if (d && !d.moved) setW((v) => (v >= LABEL_AT ? SHUT : OPEN))
+  }, [onMove])
+
+  useEffect(() => {
+    if (!dragging) return
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp, { once: true })
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [dragging, onMove, onUp])
+
+  const grab = (e: RPointerEvent<HTMLDivElement>) => {
+    drag.current = { x: e.clientX, w, moved: false }
+    setDragging(true)
+  }
 
   return (
-    <nav className={`rail chrome${open ? ' open' : ''}`} aria-label="التنقّل الرئيسي">
-      <div className="railtop">
-        <span className="mark mark-64 logo"><Logo /></span>
-        <button
-          className="railtog"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-label={open ? 'طيّ القائمة' : 'فرد القائمة'}
-        >
-          <Icon path={icons.chevron} size={16} />
-          <span className="rail-tip">{open ? 'طيّ القائمة' : 'فرد القائمة'}</span>
-        </button>
-      </div>
+    <nav
+      className={`rail chrome${open ? ' open' : ''}${dragging ? ' dragging' : ''}`}
+      style={{ '--rail-w': `${w}px` } as React.CSSProperties}
+      aria-label="التنقّل الرئيسي"
+    >
+      <span className="mark mark-64 logo"><Logo /></span>
 
       {allowed.map((item, i) => {
         const prev = allowed[i - 1]
@@ -98,6 +140,32 @@ export function Rail({ user, onAssistant, assistantOpen, onSignOut, permissions 
           <span className="rail-tip">مساعد أبانمي · ⌘K</span>
         </button>
         <AccountMenu user={user} onSignOut={onSignOut} />
+      </div>
+
+      {/* مقبض العرض — خط على الحافة يظهر عند الاقتراب */}
+      <div
+        className="railgrip"
+        onPointerDown={grab}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="عرض القائمة"
+        aria-valuenow={w}
+        aria-valuemin={SHUT}
+        aria-valuemax={MAX}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowLeft') { e.preventDefault(); setW((v) => clamp(v + 16)) }
+          if (e.key === 'ArrowRight') { e.preventDefault(); setW((v) => clamp(v - 16)) }
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setW((v) => (v >= LABEL_AT ? SHUT : OPEN))
+          }
+        }}
+      >
+        <span className="railgrip-l" />
+        <span className="railgrip-b" aria-hidden="true">
+          <Icon path={icons.panel} size={14} />
+        </span>
       </div>
     </nav>
   )

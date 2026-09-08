@@ -409,32 +409,46 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    مش تحتهم — الريل قبل المحتوى في الـDOM فبيغطّي عليه من غيرها */
 /* عناصر التنقّل روابط عشان الـURL يشتغل، فلازم تلغي ستايل <a> */
 .rail .railitem{text-decoration:none;cursor:pointer}
-/* ═══ الشريط الجانبي — حالتان ═══
-   مطويّ افتراضيًا: أيقونات بس، والاسم بيظهر كتلميح عند الهوفر.
-   الشريط المفرود بياخد عرضًا من المحتوى طول الوقت مقابل معلومة
-   المستخدم بيحفظها بعد يومين؛ والمطويّ بيدّيه نفس المعلومة وقت ما
-   يطلبها. والفرد اختيار محفوظ لمن بيفضّله. */
-.rail{flex:none;width:var(--rail-w);display:flex;flex-direction:column;align-items:center;gap:.25rem;
+/* ═══ الشريط الجانبي ═══
+   عرضه متغيّر بالسحب من الحافة، والقيمة جاية inline من الكومبوننت.
+   مطويّ = أيقونات والاسم كتلميح؛ ومن ١٣٢ بكسل التسمية بتبان جنب
+   الأيقونة. */
+.rail{flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:.25rem;
   padding:1rem .5rem;position:relative;z-index:25;
-  --rail-w:68px;
   transition:width .22s cubic-bezier(.22,.9,.3,1);
   box-shadow:inset -1px 0 0 rgba(var(--edgeC),var(--edge-hair))}
-.rail.open{--rail-w:196px;align-items:stretch}
+/* أثناء السحب الانتقال بيخلّي العرض يلحق الماوس متأخّرًا */
+.rail.dragging{transition:none;user-select:none}
+.rail.open{align-items:stretch}
 
-/* الشعار وزرار الطيّ */
-.railtop{display:flex;align-items:center;gap:.4rem;width:100%;
-  justify-content:center;margin-bottom:.7rem}
-.rail.open .railtop{justify-content:space-between;padding-inline:.35rem}
-.railtog{flex:none;width:28px;height:28px;display:grid;place-items:center;position:relative;
-  border-radius:var(--r1);color:var(--t3);cursor:pointer;
-  transition:color .16s ease,background .16s ease}
-.railtog:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
-/* الشيفرون بيشاور على جهة الحركة: الشريط بيكبر ناحية المحتوى */
-.railtog svg{transition:rotate .22s cubic-bezier(.22,.9,.3,1)}
-.rail.open .railtog svg{rotate:180deg}
-/* مطويّ: الشعار بياخد السطر لوحده وزرار الطيّ تحته */
-.rail:not(.open) .railtop{flex-direction:column;gap:.3rem}
-.rail:not(.open) .mark-64{width:38px;height:38px}
+/* ── مقبض العرض ──
+   الزرار بيقول «في حالتين» ويخفي إن العرض متغيّر أصلًا. الخط على
+   الحافة بيقول الحقيقة: امسك واسحب. والضغطة من غير سحب بتقلب بين
+   الحالتين، فاللي عايز زرار لقى زرار.
+   RTL: inline-end = الشمال، وهي حافة الشريط ناحية المحتوى. */
+.railgrip{position:absolute;inset-block:0;inset-inline-end:-6px;width:13px;z-index:30;
+  cursor:col-resize;display:flex;align-items:center;justify-content:center;
+  touch-action:none}
+.railgrip-l{position:absolute;inset-block:.6rem;inset-inline-end:6px;width:2px;border-radius:2px;
+  background:var(--teal);opacity:0;transition:opacity .16s ease}
+.railgrip-b{position:relative;flex:none;display:grid;place-items:center;
+  width:26px;height:26px;border-radius:50%;color:var(--t2);background:var(--pop);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2)),
+             0 6px 16px -8px rgba(0,0,0,.35);
+  opacity:0;scale:.85;transition:opacity .16s ease,scale .16s cubic-bezier(.22,.9,.3,1)}
+.railgrip:hover .railgrip-l,.railgrip:focus-visible .railgrip-l,
+.rail.dragging .railgrip-l{opacity:.85}
+.railgrip:hover .railgrip-b,.railgrip:focus-visible .railgrip-b,
+.rail.dragging .railgrip-b{opacity:1;scale:1}
+.railgrip:hover .railgrip-b,.rail.dragging .railgrip-b{color:var(--t1)}
+.railgrip:focus-visible{outline:none}
+@media (prefers-reduced-motion:reduce){
+  .rail,.railgrip-l,.railgrip-b{transition:none}
+}
+
+/* الشعار: أكبر شوية لمّا الشريط مفرود */
+.rail>.mark-64{width:42px;height:42px;flex:none;margin-bottom:.8rem}
+.rail.open>.mark-64{width:48px;height:48px;align-self:center}
 /* زرار الحساب مستثنى: هو دايرة لا عنصر تنقّل، وقواعد الريل كانت
    بتلبّسه كارت مستطيل — فالدايرة كانت قاعدة جوّه مربّع.
    الاستثناء بـ`:where` لا `:not`: الأخير بيزوّد نوعية المحدّد
@@ -444,7 +458,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    واسم جنبها. الصفّ في الحالتين بيمنع الأيقونة من إنها تنطّ لمّا
    الشريط يتفرد. */
 .rail button:where(:not(.acctbtn)),.rail .railitem{width:100%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:.6rem;position:relative;
-  padding:.62rem .3rem;border-radius:var(--r2);color:var(--t3);font-size:.8rem;font-family:var(--fd);
+  padding:.7rem .3rem;border-radius:var(--r2);color:var(--t3);font-size:.82rem;font-family:var(--fd);
   transition:color .16s ease,background .16s ease;text-align:start;line-height:1.35}
 .rail.open button:where(:not(.acctbtn)),.rail.open .railitem{justify-content:flex-start;padding-inline:.7rem}
 .rail-l{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -466,11 +480,11 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .rail:not(.open) .railitem:focus-visible .rail-tip,
 .rail:not(.open) button:focus-visible .rail-tip{opacity:1;translate:-4px -50%}
 .rail.open .rail-tip{display:none}
-@media (prefers-reduced-motion:reduce){ .rail,.rail-tip,.railtog svg{transition:none} }
+@media (prefers-reduced-motion:reduce){ .rail,.rail-tip{transition:none} }
 .rail button:where(:not(.acctbtn)):hover,.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
 .rail button:where(:not(.acctbtn)).on,.rail .railitem.on{color:var(--t1);background:rgba(var(--wC),calc(.80 * var(--wM)));
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
-.rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:22px;height:22px;flex:none}
+.rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:25px;height:25px;flex:none}
 /* المجموعات بتتفصل بمسافة بس — الخط الشعري كان بيتقوّس مع حواف
    العنصر فيبان كإطار مفتوح، والمسافة كافية إن العين تقرا الكتل */
 .rail .railitem.newgroup{margin-top:.85rem}
@@ -703,7 +717,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 /* ── الشريط: العرض من `--rail-w` في القاعدة الأساسية، والحالتان
    بيقلبوه. القواعد اللي كانت بتكتب عرضًا ثابتًا هنا اتشالت. ── */
 .rail{padding:1.05rem .5rem;gap:.28rem}
-.rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:23px;height:23px;flex:none}
+.rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:25px;height:25px;flex:none}
 .mark-44{width:44px;height:44px}
 .mark-64{width:64px;height:64px}
 
@@ -1066,7 +1080,8 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   /* الشريط السفلي مش مطويّ ولا مفرود: التسمية تحت الأيقونة زي ما
      كانت، وزرار الطيّ والتلميح مالهمش معنى هنا */
   .rail,.rail.open{--rail-w:auto;align-items:stretch}
-  .railtop{display:none}
+  .railgrip{display:none}
+  .rail>.mark-64{display:none}
   .rail .rail-tip{display:none}
   /* نوعية مساوية لقاعدة الإخفاء `.rail:not(.open) .rail-l` وبعدها */
   .rail:not(.open) .rail-l,.rail .rail-l{display:flex}
