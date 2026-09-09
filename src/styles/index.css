@@ -571,26 +571,13 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .g2{display:grid;grid-template-columns:1.35fr 1fr;gap:var(--gap);align-items:start}
 .g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--gap)}
 
-/* ═══ العمود الجانبي يمشي مع التمرير ═══
-   العمودان بيطولوا بشكل مختلف حسب التبويب المفتوح: مرة المحتوى
-   طويل والجانبي بيسيب فراغًا نص الشاشة، ومرة العكس. اللزق بيحلّ
-   الاتنين — القراءة السريعة تفضل في العين طول التمرير، والفراغ
-   ما بيبانش أصلًا لأن العمود ما بيمشيش لتحت.
-
-   الارتفاع الأقصى شرط لا زينة: من غيره العمود الأطول من الشاشة
-   ما بيلزقش أبدًا (ما فيش مسافة يلزق فيها). ولمّا يطول بيتمرّر
-   جوّه نفسه. */
-@media (min-width:961px){
-  .g2>.col:last-child{position:sticky;top:.35rem;align-self:start;
-    max-height:calc(100dvh - var(--stick-gap,1.6rem));
-    overflow:auto;overscroll-behavior:contain;
-    padding-inline-end:3px;padding-bottom:.2rem;
-    scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.22) transparent}
-  .g2>.col:last-child::-webkit-scrollbar{width:7px}
-  .g2>.col:last-child::-webkit-scrollbar-thumb{background:rgba(var(--edgeC),.18);border-radius:99px}
-  /* صفحة المشروع تحتها شريط قرار عايم، فآخر الكارت ما يقعش تحته */
-  .hasdock .g2>.col:last-child{--stick-gap:7.5rem}
-}
+/* ═══ العمود الجانبي: تمريرة واحدة ═══
+   اللزق (`position:sticky` + `max-height` + تمرير داخلي) **اتشال
+   بعد ميتنج العميل**: العمود الملزوق بياخد شريط تمرير
+   جوّه شريط تمرير، فالعجلة مرة بتحرّك الكارت ومرة بتحرّك الصفحة حسب
+   مكان المؤشر — والمستخدم ما بيعرفش ليه الصفحة وقفت. الصفحة دلوقتي
+   بتتمرّر تمريرة واحدة، والكارت اللي كان بيفضل في العين بقى يتقفل
+   ويتفتح فالطول اللي كان مشكلة بقى قرار المستخدم. */
 
 @media (max-width:960px){.two,.g2{grid-template-columns:1fr}}
 .ask{display:flex;align-items:center;gap:.75rem;padding:.5rem;padding-inline-start:1.1rem;border-radius:var(--rp);
@@ -1779,7 +1766,32 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .btn:disabled:hover{transform:none;filter:none}
 .btn-sm{padding:.4rem .85rem;font-size:.78rem}
 
-/* شريط التحديد الجماعي */
+/* ═══ شريط الإجراء المجمّع ═══
+   بيلبس `.decdock`/`.decbar` بحالهم — نفس رصيف شريط القرار ونفس
+   التدرّج ونفس الحساسية للماوس — والزيادة هنا بس: الدخلة من تحت،
+   والرقم الكبير، وزرار القفل. */
+.bulkdock{animation:bulkup .38s cubic-bezier(.22,.9,.3,1)}
+@keyframes bulkup{from{opacity:0;transform:translateY(115%)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.bulkdock{animation:none}}
+
+/* الرقم أول حاجة تتقري: «6» قبل «مشاريع محدَّدة» بيخلّي المستخدم
+   يتأكد من حجم الدفعة قبل ما يبص على الأزرار. */
+.bulkn{display:grid;place-items:center;flex:none;min-width:2rem;height:2rem;padding:0 .45rem;
+  border-radius:var(--rp);font-family:var(--fd);font-weight:700;font-size:.95rem;
+  color:var(--ret-ink);background:rgba(var(--retC2),.14);
+  box-shadow:inset 0 0 0 1px rgba(var(--retC2),.28)}
+.bulkacts{flex-wrap:wrap;justify-content:flex-end}
+/* «إلغاء التحديد» أيقونة لا زرار بنص: الشريط فيه خمس مخارج قرار،
+   وزرار سادس بنص بيتحسب معاهم بالغلط. */
+.bulkx{display:grid;place-items:center;width:32px;height:32px;flex:none;border-radius:var(--rp);
+  color:var(--t3);transition:color .16s ease,background .16s ease}
+.bulkx:hover{color:var(--t1);background:rgba(var(--edgeC),.10)}
+/* الشريط عايم فوق المحتوى: من غير المساحة دي آخر صف في الجدول
+   وشريط الترقيم بيقعوا تحته ومفيش تمرير يوصّلهم. */
+.hasdock>.screen{padding-bottom:clamp(10.5rem,17vh,13.5rem)}
+
+/* شريط «تمّ» بعد قرار مجمّع — سطر جوّه الصفحة لا رصيف عايم:
+   ده تأكيد اتقرا مرة، والعايم بيفضل ياخد مكان قدام المحتوى. */
 .bulk{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.7rem 1rem;font-size:.84rem}
 
 /* ── كروت المشاريع ── */
@@ -1895,10 +1907,17 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .qread.strip{padding:0;overflow:hidden}
 .qread.panel{padding:0}
 
+/* الترويسة هي كل الكارت وهو مقفول، فبادنجها متساوي فوق وتحت.
+   ولمّا يتفتح، المسافة اللي تحتها بتيجي من أول قراءة لا منها —
+   الاتنين مع بعض كانوا بيعملوا فجوة ضعف اللي تحت أي كارت تاني. */
 .qr-head{display:flex;align-items:center;gap:.6rem;width:100%;text-align:right;
-  padding:.8rem 1.05rem;color:inherit;transition:background .16s ease}
+  padding:.85rem 1.05rem;color:inherit;transition:background .16s ease}
 .qr-head:not(.static):hover{background:rgba(var(--wC),calc(.28 * var(--wM)))}
 .qr-head>svg{color:var(--t3);flex:none}
+/* زرار الطيّ في الكارت الكامل — نفس `.aifold` في تحليلات المشروع */
+.qr-fold{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:var(--r1);
+  color:var(--t3);transition:color .16s ease,background .16s ease}
+.qr-fold:hover{color:var(--t1);background:rgba(var(--edgeC),.10)}
 .qr-sp{flex:1}
 .qr-title{font-family:var(--fd);font-weight:600;font-size:.89rem}
 .qr-count{font-size:.7rem;padding:.12rem .5rem;border-radius:var(--rp);white-space:nowrap;
@@ -1912,14 +1931,19 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
   font-variant-numeric:tabular-nums;flex:none}
 .qr-peek b.bad{color:var(--no-ink)}
 
+/* القائمة ما بتزوّدش بادنج فوق ولا تحت: أول قراءة وآخر قراءة
+   بيحملوا مسافتهم بنفسهم، فالمسافة واحدة سواء تحتها فوتر ولا لأ. */
 .qr-list{padding:0 1.05rem}
-.qr-item{padding:1rem 0;position:relative;
+.qr-item{padding:.95rem 0;position:relative;
   box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
-.qr-item:first-child{box-shadow:none;padding-top:.2rem}
+.qr-item:first-child{box-shadow:none;padding-top:.35rem}
+.qr-item:last-child{padding-bottom:1.05rem}
+/* تحتها فوتر ببادنجه، فما تحتاجش تزوّد */
+.qread.panel .qr-item:last-child{padding-bottom:.95rem}
 /* شريط الخطر على حافة القراءة، مش إطار حواليها */
-.qr-item.flag::before{content:"";position:absolute;top:1rem;bottom:1rem;
+.qr-item.flag::before{content:"";position:absolute;top:.95rem;bottom:.95rem;
   inset-inline-start:-1.05rem;width:2px;border-radius:2px;background:rgba(var(--noC),.5)}
-.qr-item:first-child.flag::before{top:.2rem}
+.qr-item:first-child.flag::before{top:.35rem}
 .qr-lbl{margin-bottom:.5rem}
 
 /* الرقم في أول الجملة، بحجم مقروء لا صارخ */
@@ -1938,9 +1962,9 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 /* المصدر معرَّف في نظام التصميم تحت `.ins .i` — القراءة مش جوّاه،
    فبتاخد نفس القياس هنا صراحة بدل ما تطلع بحجم النص العادي. */
 .qr-item .src{font-size:.69rem;color:var(--t3);margin-top:.45rem}
-.qr-foot{padding:.7rem 1.05rem .8rem;font-size:.69rem;color:var(--t3);
+.qr-foot{padding:.75rem 1.05rem .85rem;font-size:.69rem;color:var(--t3);
   box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
-.qread .skel{padding:.2rem 1.05rem 1rem}
+.qread .skel{padding:.35rem 1.05rem 1.05rem}
 
 /* مبدّل الدور في قائمة الحساب — للنموذج فقط */
 .acct-demo{font-size:.6rem;padding:.06rem .35rem;border-radius:var(--rp);
@@ -2886,6 +2910,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   body.printing .qread,
   body.printing .fexp,
   body.printing .bulk,
+  body.printing .bulkdock,
   body.printing .pager,
   body.printing .plist,
   body.printing .tblwrap,

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, MultiSelect, Pager, PAGE_SIZES, SearchBox, Segments, Select,
-  Toggle, ViewToggle,
+  Empty, Glass, Icon, icons, MultiSelect, Pager, PAGE_SIZES, Riyal, SearchBox, Segments,
+  Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
@@ -20,13 +20,14 @@ import { COLS, GROUPS, groupByKey } from './columns'
 import {
   DataTable, aggregate, orderCols, readCols, splitGroups, writeCols,
 } from '@/components/table'
-import { units } from '@/lib/format'
+import { nf, plural, units } from '@/lib/format'
 import { PrintSheet } from './PrintSheet'
 import {
   CITIES_BY_REGION, FIELDS_BY_TRACK, GOALS_BY_FIELD, GRANT_METHODS, OWNERS,
   REGIONS, STAGES, STATUS_GROUPS, SUPPORT_STATUS, TAGS, TRACKS, YEARS,
 } from '@/data/mock/taxonomy'
 import { QuickRead } from '@/components/assistant'
+import { BulkBar } from '@/components/shell'
 import { readProjects } from '@/data/readings'
 import { ProjectCard } from './ProjectCard'
 
@@ -234,8 +235,17 @@ export default function ProjectsListPage() {
       return next
     })
 
-  const selectAll = (on: boolean) =>
-    setSelected(on ? new Set(result.rows.map((r) => r.id)) : new Set())
+  /* ضمّ وطرح لا استبدال: مع التجميع الصندوق بيخصّ مجموعته وحدها،
+     واللي متحدَّد في مجموعة تانية ما يتشالش. */
+  const selectAll = (on: boolean, ids: string[]) =>
+    setSelected((s) => {
+      const next = new Set(s)
+      for (const id of ids) {
+        if (on) next.add(id)
+        else next.delete(id)
+      }
+      return next
+    })
 
   /* نطاق التصدير: المحدَّد لو فيه تحديد، وإلا كل نتيجة الفلتر —
      لا صفحة العرض. اللي بيصدّر عايز الإجابة كاملة مش أول 25 صفًّا. */
@@ -268,6 +278,23 @@ export default function ProjectsListPage() {
   }, [cols, exportRows, group])
 
   const exportNote = `${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${units.project(exportRows.length)}`
+
+  /* مبلغ الدفعة — نفس رقم شريط القرار في صفحة المشروع، بس مجموعًا.
+     القرار على ستة مشاريع مش زي القرار على ستة ملايين، والشريط
+     لازم يقول الاتنين قبل ما تتضغط الأزرار. */
+  const selectedAmount = useMemo(
+    () => allFiltered.reduce((s, r) => (selected.has(r.id) ? s + r.amountRequested : s), 0),
+    [allFiltered, selected],
+  )
+
+  /* «6 مشاريع محدَّدة» — الرقم في الشارة والاسم في الجملة، فالصيغة
+     هنا من غير رقم. */
+  const selectedNoun = plural(selected.size, {
+    one: 'مشروع محدَّد',
+    two: 'مشروعان محدَّدان',
+    few: () => 'مشاريع محدَّدة',
+    many: () => 'مشروعًا محدَّدًا',
+  })
 
   const runBulk = (decision: BulkDecision, label: string) => {
     if (selected.size === 0) return
@@ -383,7 +410,7 @@ export default function ProjectsListPage() {
 
   return (
     <AppLayout assistantContext={assistFor.page('المشاريع')}>
-      <div className="viewstack">
+      <div className={`viewstack${selected.size > 0 ? ' hasdock' : ''}`}>
         <div className="screen col">
           <nav className="crumb" aria-label="مسار التنقّل">
             <span className="now">المشاريع</span>
@@ -558,9 +585,9 @@ export default function ProjectsListPage() {
             readings={readings}
           />
 
-          {/* ═══ شريط التحديد الجماعي ═══
-              موجود لأن 1,253 مشروعًا في النظام بلا مالك، وإسنادهم
-              واحدًا واحدًا مستحيل عمليًا. */}
+          {/* نتيجة آخر قرار مجمّع — سطر جوّه الصفحة لا شريط عايم:
+              ده تأكيد بيتقرا مرة وبيتقفل، والعايم بياخد مكانًا قدام
+              المحتوى بعد ما القرار خلص. */}
           {lastBulk && (
             <Glass className="bulk done">
               <Icon path={icons.check} size={16} />
@@ -574,44 +601,6 @@ export default function ProjectsListPage() {
                 تراجع
               </button>
               <button className="btn btn-2 btn-sm" onClick={() => setLastBulk(null)}>إغلاق</button>
-            </Glass>
-          )}
-
-          {selected.size > 0 && (
-            <Glass className="bulk">
-              <span>
-                محدَّد <span className="num">{selected.size}</span> مشروعًا
-              </span>
-
-              {/* قرار على الدفعة كلها. الإجراءات هي إجراءات الدور
-                  نفسها اللي في صفحة المشروع، ناقص اللي محتاج هدفًا
-                  لكل مشروع. */}
-              {bulkActions.map((a) => (
-                <button
-                  key={a.label}
-                  className={`btn btn-sm ${a.kind}`}
-                  onClick={() => runBulk(BULK_OF[a.label], a.label)}
-                >
-                  {a.label}
-                </button>
-              ))}
-
-              <span className="pc-sp" />
-              <label className="fsel">
-                <span className="fsel-b">
-                  <select value={bulkOwner ?? ''} onChange={(e) => setBulkOwner(e.target.value || undefined)}>
-                    <option value="">اختر المالك…</option>
-                    {OWNERS.map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                  <Icon path={icons.chevronDown} size={15} />
-                </span>
-              </label>
-              <button className="btn btn-p btn-sm" disabled={!bulkOwner} onClick={applyBulk}>
-                إسناد
-              </button>
-              <button className="btn btn-2 btn-sm" onClick={() => setSelected(new Set())}>
-                إلغاء التحديد
-              </button>
             </Glass>
           )}
 
@@ -672,6 +661,52 @@ export default function ProjectsListPage() {
             <Link to="/entities" className="lnk">انتقل إلى الجهات</Link>
           </p>
         </div>
+
+        {/* ═══ شريط الإجراء المجمّع ═══
+            موجود لأن 1,253 مشروعًا في النظام بلا مالك، وإسنادهم
+            واحدًا واحدًا مستحيل عمليًا. وشكله شكل شريط القرار عمدًا:
+            نفس اللحظة، نفس المخارج، نفس المكان. */}
+        {selected.size > 0 && (
+          <BulkBar
+            count={selected.size}
+            onClear={() => setSelected(new Set())}
+            sentence={
+              <>
+                {selectedNoun}
+                <span className="decsep" />
+                المطلوب <span className="num">{nf.format(selectedAmount)}</span> <Riyal />
+              </>
+            }
+          >
+            {/* قرار على الدفعة كلها. الإجراءات هي إجراءات الدور نفسها
+                اللي في صفحة المشروع، ناقص اللي محتاج هدفًا لكل مشروع. */}
+            {bulkActions.map((a) => (
+              <button
+                key={a.label}
+                className={`btn btn-sm ${a.kind}`}
+                onClick={() => runBulk(BULK_OF[a.label], a.label)}
+              >
+                {a.label}
+              </button>
+            ))}
+
+            <label className="fsel">
+              <span className="fsel-b">
+                <select
+                  value={bulkOwner ?? ''}
+                  onChange={(e) => setBulkOwner(e.target.value || undefined)}
+                >
+                  <option value="">اختر المالك…</option>
+                  {OWNERS.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+                <Icon path={icons.chevronDown} size={15} />
+              </span>
+            </label>
+            <button className="btn btn-p btn-sm" disabled={!bulkOwner} onClick={applyBulk}>
+              إسناد
+            </button>
+          </BulkBar>
+        )}
       </div>
     </AppLayout>
   )

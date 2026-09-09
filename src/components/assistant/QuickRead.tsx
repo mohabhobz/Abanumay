@@ -109,9 +109,17 @@ export function QuickRead({
     )
   }
 
-  /* ── العرض الكامل: كارت في عمود السياق ── */
+  /* ── العرض الكامل: كارت في عمود السياق ──
+     بيتقفل ويتفتح زي المختصر. قبل كده كان بيفتح على طوله وياخد
+     ارتفاع الشاشة كله في العمود الجانبي، فالمستخدم يوصل للمحتوى
+     اللي تحته بعد تمرير طويل قبل ما يقرر إنه عايز يقراه أصلًا.
+     ولمّا يتقفل الترويسة بتفضل بعدّادها، فاللي محتاج انتباه بيبان
+     من غير ما الكارت يتفتح. */
   return (
-    <Glass className="qread panel aicard" ref={box}>
+    <Glass className={`qread panel aicard${open ? ' open' : ''}`} ref={box}>
+      {/* الترويسة صفّ لا زرار: جوّاها زرار «اسأل»، وزرار جوّه زرار
+          ترميز غلط والمتصفح بيفكّه بطرق مختلفة. الطيّ زرارّه لوحده،
+          نفس `.aifold` في تحليلات المشروع. */}
       <div className="qr-head static">
         {head}
         <span className="qr-sp" />
@@ -120,9 +128,17 @@ export function QuickRead({
             اسأل
           </button>
         )}
+        <button
+          className="qr-fold"
+          aria-expanded={open}
+          aria-label={open ? 'طيّ القراءة' : 'فتح القراءة'}
+          onClick={() => setOpen((x) => !x)}
+        >
+          <Icon path={open ? icons.chevronUp : icons.chevronDown} size={16} />
+        </button>
       </div>
 
-      {onScreen && !thought && (
+      {open && onScreen && !thought && (
         <div className="skel" aria-hidden="true">
           <span style={{ width: '38%' }} />
           <span style={{ width: '86%' }} />
@@ -130,13 +146,31 @@ export function QuickRead({
         </div>
       )}
 
-      <div className="qr-list">
-        {shown.map((r, i) => (
-          <ReadingBlock key={r.id} reading={r} typing={i === block} chars={chars} hidden={i > block} />
-        ))}
-      </div>
+      {!open && readings[0] && (
+        <div className="qr-peek">
+          {readings[0].metric && (
+            <b className={readings[0].kind === 'flag' ? 'bad' : undefined}>
+              {readings[0].metric.value}
+            </b>
+          )}
+          <span className="trim1">
+            {readings[0].metric ? `${readings[0].metric.unit} — ` : ''}
+            {readings[0].text}
+          </span>
+        </div>
+      )}
 
-      <div className="qr-foot">قراءة آلية · استرشادية غير مُلزِمة</div>
+      {open && (
+        <>
+          <div className="qr-list">
+            {shown.map((r, i) => (
+              <ReadingBlock key={r.id} reading={r} typing={i === block} chars={chars} hidden={i > block} />
+            ))}
+          </div>
+
+          <div className="qr-foot">قراءة آلية · استرشادية غير مُلزِمة</div>
+        </>
+      )}
     </Glass>
   )
 }

@@ -13,7 +13,15 @@ export interface DataTableProps<T> {
   id: (r: T) => string
   selected?: Set<string>
   onSelect?: (id: string, on: boolean) => void
-  onSelectAll?: (on: boolean) => void
+  /**
+   * تحديد/إلغاء **صفوف الجدول اللي اتضغط فيه بس**.
+   *
+   * مع التجميع، كل مجموعة جدول بترويسته. الصندوق اللي فوق مجموعة
+   * «القصيم» يقصد أربعة صفوف القصيم لا الثلاثين كلهم — الأب بيحدّد
+   * أولاده. فبيبعت معرّفات صفوفه، والصفحة بتضمّها أو تشيلها من
+   * المحدَّد بدل ما تستبدله.
+   */
+  onSelectAll?: (on: boolean, ids: string[]) => void
   /** فتح الصف — بيخلي الصف كله كليكبول */
   onOpen?: (r: T) => void
   /** التجميع — بدونه جدول واحد */
@@ -83,7 +91,15 @@ function Block<T>({
   id: (r: T) => string
   selected?: Set<string>
   onSelect?: (id: string, on: boolean) => void
-  onSelectAll?: (on: boolean) => void
+  /**
+   * تحديد/إلغاء **صفوف الجدول اللي اتضغط فيه بس**.
+   *
+   * مع التجميع، كل مجموعة جدول بترويسته. الصندوق اللي فوق مجموعة
+   * «القصيم» يقصد أربعة صفوف القصيم لا الثلاثين كلهم — الأب بيحدّد
+   * أولاده. فبيبعت معرّفات صفوفه، والصفحة بتضمّها أو تشيلها من
+   * المحدَّد بدل ما تستبدله.
+   */
+  onSelectAll?: (on: boolean, ids: string[]) => void
   onOpen?: (r: T) => void
   picker?: { all: Col<T>[]; cols: string[]; onCols: (k: string[]) => void }
   count: (n: number) => string
@@ -111,7 +127,7 @@ function Block<T>({
                 <input
                   type="checkbox"
                   checked={allOn}
-                  onChange={(e) => onSelectAll?.(e.target.checked)}
+                  onChange={(e) => onSelectAll?.(e.target.checked, rows.map(id))}
                   aria-label="تحديد كل الصفوف المعروضة"
                 />
               </th>

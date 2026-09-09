@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, MultiSelect, PAGE_SIZES, Pager, SearchBox, Segments, Select,
-  Toggle, ViewToggle,
+  Empty, Glass, Icon, icons, MultiSelect, PAGE_SIZES, Pager, Riyal, SearchBox, Segments,
+  Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
@@ -11,13 +11,14 @@ import {
 } from '@/components/filters'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
-import { units } from '@/lib/format'
+import { nf, plural, units } from '@/lib/format'
 import { fixtures, query, type EntityQuery } from '@/data/repository'
 import {
   ACTIVATIONS, CITIES_BY_REGION, ENTITY_TYPES, GOVERNANCE, LICENSORS, REGIONS,
 } from '@/data/mock/taxonomy'
 import { ROUTES } from '@/app/routes'
 import { QuickRead } from '@/components/assistant'
+import { BulkBar } from '@/components/shell'
 import { readEntities } from '@/data/readings'
 import { EntityCard } from './EntityCard'
 import { COLS, GROUPS, groupByKey } from './columns'
@@ -74,6 +75,10 @@ export default function EntitiesListPage() {
   useEffect(() => writeFilterOrder('entities', fOrder), [fOrder])
   const [exportOpen, setExportOpen] = useState(false)
   const exportBox = useRef<HTMLDivElement>(null)
+  /* التحديد هنا نطاق تصدير لا قرار: الجهة مالهاش «موافقة» ولا «رفض»
+     يتاخدوا على دفعة — تفعيلها وإيقافها قرار بملف كل جهة. فالشريط
+     بيقول المحدَّد وبيصدّره وبس. */
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   useEffect(() => writeCols('entities', cols), [cols])
 
@@ -169,31 +174,67 @@ export default function EntitiesListPage() {
     [q, all],
   )
 
-  /* نطاق التصدير: نتيجة الفلتر كاملة لا صفحة العرض */
+  /* نطاق التصدير: نتيجة الفلتر كاملة لا صفحة العرض — إلا لو المستخدم
+     علّم صفوفًا، فالمحدَّد هو المقصود. */
   const allFiltered = useMemo(
     () => query.entities({ ...q, page: 1, pageSize: 9999 }).rows,
     [q],
   )
+  const exportRows = selected.size
+    ? allFiltered.filter((e) => selected.has(e.id))
+    : allFiltered
 
   const sheet: Sheet = useMemo(() => {
     const shown = orderCols(COLS, cols).filter((c) => !group || c.key !== group.key)
     const head = [...(group ? [group.label] : []), ...shown.map((c) => c.label)]
-    const body = allFiltered.map((e) => [
+    const body = exportRows.map((e) => [
       ...(group ? [group.of(e)] : []),
       ...shown.map((c) => c.text(e)),
     ])
     const totals = [
       ...(group ? [''] : []),
       ...shown.map((c, i) => {
-        const t = aggregate(c, allFiltered)
-        return t !== null ? String(t) : i === 0 ? units.entity(allFiltered.length) : ''
+        const t = aggregate(c, exportRows)
+        return t !== null ? String(t) : i === 0 ? units.entity(exportRows.length) : ''
       }),
     ]
     const stamp = new Date().toISOString().slice(0, 10)
     return { file: `abanumay-entities-${stamp}`, title: 'الجهات', headers: head, rows: body, totals }
-  }, [cols, allFiltered, group])
+  }, [cols, exportRows, group])
 
-  const exportNote = `نتيجة الفلتر الحالي · ${units.entity(allFiltered.length)}`
+  const exportNote = `${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${units.entity(exportRows.length)}`
+
+  const toggleOne = (id: string, on: boolean) =>
+    setSelected((s) => {
+      const next = new Set(s)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
+
+  /* ضمّ وطرح لا استبدال: مع التجميع الصندوق بيخصّ مجموعته وحدها،
+     واللي متحدَّد في مجموعة تانية ما يتشالش. */
+  const selectAll = (on: boolean, ids: string[]) =>
+    setSelected((s) => {
+      const next = new Set(s)
+      for (const id of ids) {
+        if (on) next.add(id)
+        else next.delete(id)
+      }
+      return next
+    })
+
+  const selectedGranted = useMemo(
+    () => allFiltered.reduce((sum, e) => (selected.has(e.id) ? sum + e.grantedTotal : sum), 0),
+    [allFiltered, selected],
+  )
+
+  const selectedNoun = plural(selected.size, {
+    one: 'جهة محدَّدة',
+    two: 'جهتان محدَّدتان',
+    few: () => 'جهات محدَّدة',
+    many: () => 'جهة محدَّدة',
+  })
 
   const FILTER_DEFS: FilterDef[] = [
     { key: 'type', label: 'نوع الجهة' },
@@ -234,7 +275,7 @@ export default function EntitiesListPage() {
 
   return (
     <AppLayout assistantContext={assistFor.page('الجهات')}>
-      <div className="viewstack">
+      <div className={`viewstack${selected.size > 0 ? ' hasdock' : ''}`}>
         <div className="screen col">
           <nav className="crumb" aria-label="مسار التنقّل">
             <span className="now">الجهات</span>
@@ -408,6 +449,9 @@ export default function EntitiesListPage() {
                 cols={cols}
                 onCols={setCols}
                 id={(e) => e.id}
+                selected={selected}
+                onSelect={toggleOne}
+                onSelectAll={selectAll}
                 onOpen={(e) => navigate(ROUTES.entity(e.id))}
                 group={group}
                 count={units.entity}
@@ -433,6 +477,32 @@ export default function EntitiesListPage() {
 
           <PrintSheet sheet={sheet} note={exportNote} />
         </div>
+
+        {/* نفس شريط المشاريع، بمخارج الجهات: التصدير بس */}
+        {selected.size > 0 && (
+          <BulkBar
+            count={selected.size}
+            onClear={() => setSelected(new Set())}
+            sentence={
+              <>
+                {selectedNoun}
+                <span className="decsep" />
+                الدعم التراكمي <span className="num">{nf.format(selectedGranted)}</span> <Riyal />
+              </>
+            }
+          >
+            <button className="btn btn-1 btn-sm" onClick={() => exportXlsx(sheet)}>
+              <Icon path={icons.down} size={15} />
+              إكسل
+            </button>
+            <button className="btn btn-2 btn-sm" onClick={() => setTimeout(printArea, 60)}>
+              PDF
+            </button>
+            <button className="btn btn-2 btn-sm" onClick={() => exportPng(sheet)}>
+              صورة
+            </button>
+          </BulkBar>
+        )}
       </div>
     </AppLayout>
   )
