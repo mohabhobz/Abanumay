@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { GateArc, Icon, icons, Mono, Num, Riyal, Tabs } from '@/components/ui'
 import { DecisionBar } from '@/components/shell'
@@ -19,6 +19,9 @@ import {
   HistoryTab, LogTab, PaymentsTab,
 } from './tabs'
 import { EntityProjectsPanel, LastActionPanel, QuickAnalysis } from './panels'
+import { QuickRead } from '@/components/assistant'
+import { readJourney } from '@/data/readings'
+import { journeys } from '@/data/journey'
 
 /** عدد الأيام اللي الإجراء الحالي مفتوح فيها — من سجل الإجراءات */
 const OPEN_DAYS = 87
@@ -124,6 +127,9 @@ export default function ProjectPage() {
     }
   }, [])
 
+  /* السرد محسوب من الصف نفسه، فبيتغيّر مع حالة المشروع فعلًا */
+  const journey = useMemo(() => (row ? readJourney(row, journeys.get(row.id)) : []), [row])
+
   return (
     <AppLayout
       assistantContext={assistFor.project({
@@ -177,6 +183,13 @@ export default function ProjectPage() {
               />
             </div>
           </header>
+
+          {/* ═══ رحلة المشروع ═══
+              فوق التبويبات لا جوّه عمود السياق: ده السؤال الأول اللي
+              المستخدم بيفتح المشروع عشانه — واقف فين ومحتاج إيه. */}
+          {journey.length > 0 && (
+            <QuickRead variant="bar" title="رحلة المشروع" readings={journey} />
+          )}
 
           <Tabs items={PROJECT_TABS} active={active} onChange={goTab} />
 

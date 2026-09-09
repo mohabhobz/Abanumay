@@ -141,5 +141,9 @@ export const units = {
     one: 'مصدر واحد', two: two('مصدران', 'مصدرين', gen),
     few: (x) => `${x} مصادر`, many: (x) => `${x} مصدرًا`,
   }),
+  reading: (n: number, gen = false) => plural(n, {
+    one: 'قراءة واحدة', two: two('قراءتان', 'قراءتين', gen),
+    few: (x) => `${x} قراءات`, many: (x) => `${x} قراءة`,
+  }),
   riyal: (n: number) => `${nf.format(n)} ريال`,
 }

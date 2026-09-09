@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Glass } from '@/components/ui'
-import { nf, pct } from '@/lib/format'
+import { Glass, Icon, icons } from '@/components/ui'
+import { nf, pct, units } from '@/lib/format'
 import { highlight } from '@/components/assistant/highlight'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
@@ -30,19 +30,33 @@ export interface QuickAnalysisProps {
  * تحليلات المشروع السريعة — أول كارت في عمود السياق.
  *
  * تجاوز مدة الإجراء قراءة جوّه التحليلات مش كارت لوحده، عشان كل اللي
- * المساعد شايفه عن حالة المشروع يبقى في مكان واحد. والكتابة بتبدأ أول
- * ما الكارت يوصل للشاشة، مش وقت التحميل.
+ * المساعد شايفه عن حالة المشروع يبقى في مكان واحد.
+ *
+ * **بالطلب لا تلقائيًا.** طلب الكلاينت: «يبقى موجود السكشن زي ما هو
+ * عادي صغير لسه ما اتفتحش، ولما تطلب اعمل لي تحليلات يبتدي يعمل لك
+ * التحليلات». السبب اللي وراه إن عمود السياق كان بياخد ارتفاع الشاشة
+ * كلها قبل ما المستخدم يقرا المشروع نفسه.
+ *
+ * فالكارت بيفتح مقفولًا وبيقول اللي هيطلع منه، والتحليل بيبدأ بضغطة.
+ * وبعد أول تشغيل بيفضل محسوبًا: القفل والفتح بيداري ويوري، ما
+ * بيعيدش الحساب — إعادة الكتابة كل مرة بتبقى استعراضًا لا معلومة.
+ *
+ * ⚠️ مهلة «بيقرا» في النموذج ده مكان استدعاء السيرفر. لما يبقى فيه
+ * باك اند، الحالة دي بتبقى انتظار حقيقي لا مؤقّتًا.
  */
 export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickAnalysisProps) {
   const card = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(card)
   const [thought, setThought] = useState(false)
+  /** اتطلب التحليل مرة على الأقل — بيفضل محسوبًا بعد كده */
+  const [armed, setArmed] = useState(false)
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    if (!onScreen || thought) return
+    if (!armed || !onScreen || thought) return
     const id = setTimeout(() => setThought(true), THINK_MS)
     return () => clearTimeout(id)
-  }, [onScreen, thought])
+  }, [armed, onScreen, thought])
 
   const over = breach ? Math.round((breach.hours / breach.limit - 1) * 100) : 0
 
@@ -67,7 +81,35 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
   ]
 
   const { block, chars, done } = useTypedBlocks(blocks.map((b) => b.text), thought)
-  const thinking = onScreen && !thought
+  const thinking = armed && onScreen && !thought
+
+  /* الحالة المقفولة بتقول اللي هيطلع بالظبط: «قراءتان» أوضح بكتير من
+     «اعرض التحليل»، والمستخدم بيقرّر يستاهل يفتحها ولا لأ. */
+  const promise = breach
+    ? `تجاوز مدة الإجراء و${units.reading(insights.length)}`
+    : units.reading(blocks.length)
+
+  if (!armed) {
+    return (
+      <Glass className="aicard aishut" ref={card}>
+        <div className="rowf" style={{ gap: '.6rem' }}>
+          <span className="badge badge-30"><span className="aispark" /></span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '.95rem' }}>
+              تحليلات المشروع السريعة
+            </div>
+            <div className="sub">
+              {promise}
+              {breach && <span className="itag no aishut-f">فوق الحدّ</span>}
+            </div>
+          </div>
+          <button className="btn btn-1 btn-sm" onClick={() => { setArmed(true); setOpen(true) }}>
+            حلّل المشروع
+          </button>
+        </div>
+      </Glass>
+    )
+  }
 
   return (
     <Glass className="aicard" ref={card}>
@@ -88,9 +130,17 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
           </div>
         </div>
         <button className="btn btn-2 btn-sm" onClick={onAsk} disabled={!done}>اسأل</button>
+        <button
+          className="aifold"
+          aria-expanded={open}
+          aria-label={open ? 'إخفاء التحليل' : 'إظهار التحليل'}
+          onClick={() => setOpen((x) => !x)}
+        >
+          <Icon path={open ? icons.chevronUp : icons.chevronDown} size={16} />
+        </button>
       </div>
 
-      {thinking && (
+      {open && thinking && (
         <div className="skel" aria-hidden="true">
           <span style={{ width: '92%' }} />
           <span style={{ width: '78%' }} />
@@ -98,6 +148,9 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
         </div>
       )}
 
+      {/* الرندر الشرطي لا `hidden`: `.ins` عليها `display:flex` في
+          الـCSS، والخاصية بتتغلب عليها فالكارت بيفضل مفتوحًا. */}
+      {open && (
       <div className="ins">
         {blocks.map((bl, i) => {
           if (i > block) return null
@@ -156,6 +209,7 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
           )
         })}
       </div>
+      )}
     </Glass>
   )
 }

@@ -12,6 +12,7 @@
 import type { Reading } from '@/components/assistant/reading'
 import type { EntityRow, ProjectRow } from '@/types/domain'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
+import type { Journey } from './journey'
 import { nf, units, pct as pctText } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
 
@@ -29,6 +30,124 @@ function topCount<T>(items: T[], key: (t: T) => string | null | undefined) {
   let best: [string, number] | null = null
   for (const entry of tally) if (!best || entry[1] > best[1]) best = entry
   return best
+}
+
+/* ═══════════════════ رحلة مشروع واحد ═══════════════════ */
+
+/**
+ * سرد رحلة المشروع.
+ *
+ * طلب الكلاينت: «المشروع ده كان في هنا وبعد كده رجع لهنا، ودلوقتي
+ * القرار الأخراني بتاعه كذا ومتوقف على كذا ومحتاج تاخد له أكشن كذا».
+ *
+ * الفرق بين ده وبين سجل الإجراءات إن السجل بيقول **كل** اللي حصل
+ * بالترتيب، والسرد بيقول **اللي يفرق في القرار**: فين وصل، ورجع كام
+ * مرة ولمين، وواقف عند مين وبقاله قد إيه مقابل حدّه، وإيه المطلوب
+ * منك دلوقتي. المستخدم اللي بيفتح مشروع عمره ما بيقرا السجل من أوله.
+ *
+ * كل جملة مبنية من الصف نفسه، فبتتغيّر مع حالة المشروع فعلًا —
+ * المكتمل ما بيقولش «محتاج أكشن»، والمعتذر عنه ما بيقولش «واقف».
+ */
+export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] {
+  const out: Reading[] = []
+  const over = overPct(row)
+  const late = row.stageLimit > 0 && stagePressure(row) > 1
+  const inDays = days(row.hoursInStage)
+
+  /* ١ · فين واقف دلوقتي وإيه المطلوب */
+  if (row.statusGroup === 'مكتمل') {
+    out.push({
+      id: 'j-done',
+      kind: 'note',
+      label: 'الوضع الحالي',
+      text: `المشروع مقفول. آخر محطة «${row.stage}»، و${
+        row.hasFinalReport ? 'التقرير الختامي مرفوع ومعتمد' : 'التقرير الختامي غير مرفوع'
+      }. مفيش أكشن مطلوب منك.`,
+      bold: [row.stage],
+      src: 'حالة المشروع · سجل الإجراءات',
+    })
+  } else if (row.statusGroup === 'معتذر عنه') {
+    out.push({
+      id: 'j-declined',
+      kind: 'note',
+      label: 'الوضع الحالي',
+      text: `المشروع معتذر عنه${row.declineReason ? ` — السبب المسجَّل «${row.declineReason}»` : ' بلا سبب مسجَّل'}. مفيش أكشن مطلوب منك.`,
+      bold: row.declineReason ? [row.declineReason] : [],
+      src: 'قرار المشروع',
+    })
+  } else {
+    out.push({
+      id: 'j-now',
+      kind: late ? 'flag' : 'note',
+      label: 'الوضع الحالي',
+      metric: { value: nf.format(inDays), unit: 'يومًا في القسم' },
+      text: late
+        ? `واقف عند «${row.stage}» من ${units.day(inDays)} — أي ${pctText(over)} فوق حدّ القسم. المطلوب منك: ${nextAction(row)}.`
+        : `عند «${row.stage}» من ${units.day(inDays)}، وده جوّه حدّ القسم. المطلوب منك: ${nextAction(row)}.`,
+      bold: [row.stage, units.day(inDays), nextAction(row)],
+      danger: late ? [pctText(over)] : [],
+      bar: row.stageLimit > 0
+        ? {
+            value: row.hoursInStage,
+            limit: row.stageLimit,
+            valueLabel: `المستهلَك ${nf.format(days(row.hoursInStage))} يومًا`,
+            limitLabel: `الحدّ ${nf.format(days(row.stageLimit))} يومًا`,
+          }
+        : undefined,
+      src: `حدّ قسم «${row.stage}» — مؤقت لحين اعتماده`,
+    })
+  }
+
+  /* ٢ · رجع لورا كام مرة — ده اللي السجل بيخفيه وسط الصفوف */
+  const back = (j?.toEntity ?? 0) + (j?.toSupervisor ?? 0)
+  if (back > 0) {
+    const parts: string[] = []
+    if (j?.toEntity) parts.push(`${j.toEntity === 1 ? 'مرة' : `${j.toEntity} مرات`} للجهة لاستكمال البيانات`)
+    if (j?.toSupervisor) parts.push(`${j.toSupervisor === 1 ? 'مرة' : `${j.toSupervisor} مرات`} لمشرف المنح`)
+    out.push({
+      id: 'j-back',
+      kind: back > 1 ? 'flag' : 'note',
+      label: 'رجع لورا',
+      text: `المشروع اترجّع ${parts.join(' و')}. كل إعادة بتضيف دورة مراجعة كاملة على المدة.`,
+      bold: parts,
+      src: 'سجل الإجراءات',
+    })
+  }
+
+  /* ٣ · مين اللي بتّ فيه — بيوضّح إذا كان لسه محتاج تصعيد */
+  if (j?.decidedBy) {
+    out.push({
+      id: 'j-level',
+      kind: 'note',
+      label: 'مستوى القرار',
+      text: `القرار اتاخد عند «${j.decidedBy}» — المبلغ ${nf.format(row.amountGranted || row.amountRequested)} ريال وقع في نطاق صلاحيته.`,
+      bold: [j.decidedBy, `${nf.format(row.amountGranted || row.amountRequested)} ريال`],
+      src: 'سقوف الصلاحيات · مؤقتة لحين اعتمادها',
+    })
+  }
+
+  return out
+}
+
+/** الأكشن المطلوب حسب القسم اللي المشروع واقف عنده */
+function nextAction(row: ProjectRow): string {
+  switch (row.stage) {
+    case 'دراسة المشروع': return 'تسجيل التوصية'
+    case 'استكمال بيانات المشروع': return 'متابعة الجهة على الناقص'
+    case 'اعتماد الإتفاقية':
+    case 'اعتماد الإتفاقية الكترونيًا':
+    case 'الإتفاقيات الورقية': return 'اعتماد الاتفاقية'
+    case 'المشرف إذن الصرف':
+    case 'إذن صرف معاد': return 'إصدار إذن الصرف'
+    case 'اصدار سند الصرف': return 'إصدار سند الصرف'
+    case 'رفع سند القبض والقيد': return 'رفع سند القبض'
+    case 'رفع تقرير مرحلي': return 'مطالبة الجهة بالتقرير المرحلي'
+    case 'طلب التقرير الختامي':
+    case 'رفع التقرير الختامي': return 'مطالبة الجهة بالتقرير الختامي'
+    case 'اعتماد التقرير الختامي': return 'اعتماد التقرير الختامي'
+    case 'تقييم المشروع': return 'تسجيل التقييم'
+    default: return 'مراجعة الملف'
+  }
 }
 
 /* ═══════════════════ قائمة المشاريع ═══════════════════ */

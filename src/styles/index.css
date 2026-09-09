@@ -595,7 +595,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .imp .v{font-family:var(--fd);font-weight:700;font-size:clamp(.98rem,1.7vw,1.18rem)}
 .imp .k{font-size:.72rem;color:var(--t2);margin-top:.1rem}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:.45rem 1rem;font-size:.83rem;align-items:baseline;margin:0}
-.kv dt{color:var(--t3);font-size:.76rem;white-space:nowrap}
+.kv dt{color:var(--t2);font-size:.76rem;white-space:nowrap}
 .kv dd{margin:0;font-weight:400}
 /* منيو المحادثات: إيتمز فوق بعض بدون أسطح */
 .conv{display:flex;justify-content:space-between;gap:.6rem;align-items:baseline;
@@ -1869,7 +1869,9 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 /* الرقم في أول الجملة، بحجم مقروء لا صارخ */
 .qr-lead{font-family:var(--fd);font-weight:700;font-size:1.02rem;color:var(--t1);
   font-variant-numeric:tabular-nums;margin-inline-end:.15rem}
-.qr-unit{font-weight:600;color:var(--t1)}
+/* المسافة من CSS لا من نص الوحدة: كتابتها في النص بتخلّي كل قراءة
+   جديدة محتاجة تفتكرها، ونسيانها بتلزق «87يومًا». */
+.qr-unit{font-weight:600;color:var(--t1);margin-inline-start:.28em}
 
 .qr-tx{font-size:.85rem;line-height:1.75;color:var(--t2)}
 .qr-tx b{font-weight:600;color:var(--t1)}
@@ -2924,3 +2926,11 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   .fcust-l.wide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px .6rem}
 }
 .fcust-l:not(.wide){max-width:520px}
+
+/* كارت التحليلات وهو مقفول: سطر واحد بلا حشو داخلي، عشان عمود
+   السياق يبتدي خفيفًا ويفضل المشروع نفسه هو اللي واخد المساحة */
+.aicard.aishut{padding:.8rem .95rem}
+.aishut-f{margin-inline-start:.4rem}
+.aifold{flex:none;display:grid;place-items:center;width:28px;height:28px;
+  border-radius:8px;color:var(--t3)}
+.aifold:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}

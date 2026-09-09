@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/Icon'
 import { icons } from '@/components/ui/icons'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
-import { nf } from '@/lib/format'
+import { nf, units } from '@/lib/format'
 import { highlight } from './highlight'
 import type { Reading } from './reading'
 
@@ -69,7 +69,7 @@ export function QuickRead({
         </span>
       )}
       <span className="qr-count">
-        <span className="num">{readings.length}</span> قراءات
+        {units.reading(readings.length)}
       </span>
     </>
   )
