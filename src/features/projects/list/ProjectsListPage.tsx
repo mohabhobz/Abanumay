@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, Pager, PAGE_SIZES, SearchBox, Segments, Select,
@@ -6,7 +6,9 @@ import {
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
-import { SavedViews } from '@/components/filters'
+import {
+  FilterCustomizer, SavedViews, readFilterOrder, writeFilterOrder, type FilterDef,
+} from '@/components/filters'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { fixtures, query, type ProjectQuery, type ProjectSort } from '@/data/repository'
@@ -68,6 +70,11 @@ const BULK_OF: Record<string, BulkDecision> = {
   'رفع لمجلس الأمناء': 'escalate',
 }
 
+/** ترتيب الفلاتر الافتراضي — نفس ترتيب `FILTER_DEFS` جوّه الكومبوننت */
+const FILTER_KEYS = [
+  'year', 'stage', 'track', 'field', 'goal', 'region', 'city', 'tag', 'method', 'support', 'owner',
+]
+
 const SORTS: { key: ProjectSort; label: string }[] = [
   { key: 'waiting', label: 'الأطول انتظارًا' },
   { key: 'newest', label: 'الأحدث تقديمًا' },
@@ -94,6 +101,12 @@ export default function ProjectsListPage() {
   const [bulkOwner, setBulkOwner] = useState<string | undefined>()
   const [, bump] = useState(0)
   const [cols, setCols] = useState<string[]>(() => readCols('projects', COLS))
+  const [custom, setCustom] = useState(false)
+  const [fOrder, setFOrder] = useState<string[]>(() =>
+    readFilterOrder('projects', FILTER_KEYS),
+  )
+
+  useEffect(() => writeFilterOrder('projects', fOrder), [fOrder])
   /* آخر قرار مجمّع + تراجعه. الشريط بيفضل ظاهر لحد ما المستخدم
      يقفله، فالتراجع مش سباق مع مؤقّت. */
   const [lastBulk, setLastBulk] = useState<{ text: string; undo: () => void } | null>(null)
@@ -288,6 +301,66 @@ export default function ProjectsListPage() {
   )
 
   /* شرائح الفلاتر الشغّالة — كل واحدة تتشال لوحدها */
+  /* الفلاتر كبيانات لا JSX مرصوص: التخصيص محتاج يرتّبهم ويخفيهم،
+     وده مستحيل وهم مكتوبين بالإيد في الشبكة. */
+  const FILTER_DEFS: FilterDef[] = [
+    { key: 'year', label: 'السنة والمصدر' },
+    { key: 'stage', label: 'القسم الإجرائي' },
+    { key: 'track', label: 'المسار' },
+    { key: 'field', label: 'المجال' },
+    { key: 'goal', label: 'الهدف' },
+    { key: 'region', label: 'المنطقة' },
+    { key: 'city', label: 'المدينة' },
+    { key: 'tag', label: 'الوسم' },
+    { key: 'method', label: 'أسلوب المنح' },
+    { key: 'support', label: 'حالة الدعم' },
+    { key: 'owner', label: 'المالك' },
+  ]
+
+  const FILTERS: Record<string, ReactNode> = {
+    year: <MultiSelect label="السنة والمصدر" values={readList(v.year)} options={YEARS.map((y) => y.id)} onChange={(x) => set({ year: writeList(x) })} />,
+    stage: <MultiSelect label="القسم الإجرائي" values={readList(v.stage)} options={STAGES.map((x) => x.stage)} onChange={(x) => set({ stage: writeList(x) })} />,
+    track: (
+      <MultiSelect
+        label="المسار"
+        values={tracks}
+        options={TRACKS}
+        onChange={(x) => {
+          const nextFields = x.length ? uniq(x.flatMap((t) => FIELDS_BY_TRACK[t] ?? [])) : uniq(Object.values(FIELDS_BY_TRACK).flat())
+          const field = keep(fields, nextFields)
+          const nextGoals = uniq(readList(field).flatMap((f) => GOALS_BY_FIELD[f] ?? []))
+          set({ track: writeList(x), field, goal: keep(readList(v.goal), nextGoals) })
+        }}
+      />
+    ),
+    field: (
+      <MultiSelect
+        label="المجال"
+        values={fields}
+        options={fieldOptions}
+        onChange={(x) =>
+          set({ field: writeList(x), goal: keep(readList(v.goal), uniq(x.flatMap((f) => GOALS_BY_FIELD[f] ?? []))) })
+        }
+      />
+    ),
+    goal: <MultiSelect label="الهدف" values={readList(v.goal)} options={goalOptions} onChange={(x) => set({ goal: writeList(x) })} disabled={fields.length === 0} all={fields.length ? 'الكل' : 'اختر المجال أولًا'} />,
+    region: (
+      <MultiSelect
+        label="المنطقة"
+        values={regions}
+        options={REGIONS}
+        onChange={(x) =>
+          set({ region: writeList(x), city: keep(readList(v.city), uniq(x.flatMap((r) => CITIES_BY_REGION[r] ?? []))) })
+        }
+      />
+    ),
+    city: <MultiSelect label="المدينة" values={readList(v.city)} options={cityOptions} onChange={(x) => set({ city: writeList(x) })} disabled={regions.length === 0} all={regions.length ? 'الكل' : 'اختر المنطقة أولًا'} />,
+    tag: <MultiSelect label="الوسم" values={readList(v.tag)} options={TAGS} onChange={(x) => set({ tag: writeList(x) })} />,
+    method: <MultiSelect label="أسلوب المنح" values={readList(v.method)} options={GRANT_METHODS} onChange={(x) => set({ method: writeList(x) })} />,
+    support: <MultiSelect label="حالة الدعم" values={readList(v.support)} options={SUPPORT_STATUS} onChange={(x) => set({ support: writeList(x) })} />,
+    owner: <MultiSelect label="المالك" values={readList(v.owner)} options={OWNERS} onChange={(x) => set({ owner: writeList(x) })} />,
+  }
+
   const chips = (
     [
       ['status', 'الحالة'], ['stage', 'القسم'], ['year', 'السنة'], ['track', 'المسار'], ['field', 'المجال'],
@@ -423,42 +496,32 @@ export default function ProjectsListPage() {
               )}
             </div>
 
-            {advOpen && (
-              <div className="fgrid">
-                {/* كل فلتر متعدد الاختيار. والابن بيتصفّر لما الأب يتغيّر،
-                    وإلا فضل في الـURL مجال مش تابع لأي مسار مختار. */}
-                <MultiSelect label="السنة والمصدر" values={readList(v.year)} options={YEARS.map((y) => y.id)} onChange={(x) => set({ year: writeList(x) })} />
-                <MultiSelect label="القسم الإجرائي" values={readList(v.stage)} options={STAGES.map((s) => s.stage)} onChange={(x) => set({ stage: writeList(x) })} />
-                <MultiSelect label="المسار" values={tracks} options={TRACKS} onChange={(x) => {
-                  const nextFields = x.length ? uniq(x.flatMap((t) => FIELDS_BY_TRACK[t] ?? [])) : uniq(Object.values(FIELDS_BY_TRACK).flat())
-                  const field = keep(fields, nextFields)
-                  const nextGoals = uniq(readList(field).flatMap((f) => GOALS_BY_FIELD[f] ?? []))
-                  set({ track: writeList(x), field, goal: keep(readList(v.goal), nextGoals) })
-                }} />
-                <MultiSelect label="المجال" values={fields} options={fieldOptions} onChange={(x) =>
-                  set({
-                    field: writeList(x),
-                    goal: keep(readList(v.goal), uniq(x.flatMap((f) => GOALS_BY_FIELD[f] ?? []))),
-                  })
-                } />
-                <MultiSelect label="الهدف" values={readList(v.goal)} options={goalOptions} onChange={(x) => set({ goal: writeList(x) })} disabled={fields.length === 0} all={fields.length ? 'الكل' : 'اختر المجال أولًا'} />
-                <MultiSelect label="المنطقة" values={regions} options={REGIONS} onChange={(x) =>
-                  set({
-                    region: writeList(x),
-                    city: keep(readList(v.city), uniq(x.flatMap((r) => CITIES_BY_REGION[r] ?? []))),
-                  })
-                } />
-                <MultiSelect label="المدينة" values={readList(v.city)} options={cityOptions} onChange={(x) => set({ city: writeList(x) })} disabled={regions.length === 0} all={regions.length ? 'الكل' : 'اختر المنطقة أولًا'} />
-                <MultiSelect label="الوسم" values={readList(v.tag)} options={TAGS} onChange={(x) => set({ tag: writeList(x) })} />
-                <MultiSelect label="أسلوب المنح" values={readList(v.method)} options={GRANT_METHODS} onChange={(x) => set({ method: writeList(x) })} />
-                <MultiSelect label="حالة الدعم" values={readList(v.support)} options={SUPPORT_STATUS} onChange={(x) => set({ support: writeList(x) })} />
-                <MultiSelect label="المالك" values={readList(v.owner)} options={OWNERS} onChange={(x) => set({ owner: writeList(x) })} />
-                <div className="fgrid-t">
-                  <Toggle label="تمويل مشترك" on={v.shared === '1'} onChange={(on) => set({ shared: on ? '1' : undefined })} />
-                  <Toggle label="مشروع أثر" on={v.impact === '1'} onChange={(on) => set({ impact: on ? '1' : undefined })} />
+            {advOpen && (custom ? (
+              <FilterCustomizer
+                all={FILTER_DEFS}
+                visible={fOrder}
+                onChange={setFOrder}
+                onClose={() => setCustom(false)}
+              />
+            ) : (
+              <>
+                <div className="fgrid">
+                  {fOrder.map((k) => (
+                    <div key={k} className="fgrid-i">{FILTERS[k]}</div>
+                  ))}
+                  <div className="fgrid-t">
+                    <Toggle label="تمويل مشترك" on={v.shared === '1'} onChange={(on) => set({ shared: on ? '1' : undefined })} />
+                    <Toggle label="مشروع أثر" on={v.impact === '1'} onChange={(on) => set({ impact: on ? '1' : undefined })} />
+                  </div>
                 </div>
-              </div>
-            )}
+                <div className="fgrid-x">
+                  <button className="fclear" onClick={() => setCustom(true)}>
+                    <Icon path={icons.gear} size={13} />
+                    تخصيص الفلاتر
+                  </button>
+                </div>
+              </>
+            ))}
 
             {(chips.length > 0 || flags.length > 0) && (
               <div className="factive">

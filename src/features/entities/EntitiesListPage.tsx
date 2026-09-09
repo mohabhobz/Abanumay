@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, PAGE_SIZES, Pager, SearchBox, Segments, Select,
@@ -6,7 +6,9 @@ import {
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
-import { SavedViews } from '@/components/filters'
+import {
+  FilterCustomizer, SavedViews, readFilterOrder, writeFilterOrder, type FilterDef,
+} from '@/components/filters'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { units } from '@/lib/format'
@@ -31,6 +33,9 @@ const KEYS = [
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const PAGE_SIZE = PAGE_SIZES[0]
+
+/** ترتيب الفلاتر الافتراضي — نفس ترتيب `FILTER_DEFS` جوّه الكومبوننت */
+const FILTER_KEYS = ['type', 'licensor', 'region', 'city', 'governance']
 
 const NOT_FILTERS: (keyof Params)[] = [
   'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'activation', 'docs', 'running',
@@ -63,6 +68,10 @@ export default function EntitiesListPage() {
     useQueryParams<Params>(KEYS)
   const navigate = useNavigate()
   const [cols, setCols] = useState<string[]>(() => readCols('entities', COLS))
+  const [custom, setCustom] = useState(false)
+  const [fOrder, setFOrder] = useState<string[]>(() => readFilterOrder('entities', FILTER_KEYS))
+
+  useEffect(() => writeFilterOrder('entities', fOrder), [fOrder])
   const [exportOpen, setExportOpen] = useState(false)
   const exportBox = useRef<HTMLDivElement>(null)
 
@@ -186,6 +195,31 @@ export default function EntitiesListPage() {
 
   const exportNote = `نتيجة الفلتر الحالي · ${units.entity(allFiltered.length)}`
 
+  const FILTER_DEFS: FilterDef[] = [
+    { key: 'type', label: 'نوع الجهة' },
+    { key: 'licensor', label: 'الجهة المرخِّصة' },
+    { key: 'region', label: 'المنطقة' },
+    { key: 'city', label: 'المدينة' },
+    { key: 'governance', label: 'درجة الحوكمة' },
+  ]
+
+  const FILTERS: Record<string, ReactNode> = {
+    type: <MultiSelect label="نوع الجهة" values={readList(v.type)} options={ENTITY_TYPES} onChange={(x) => set({ type: writeList(x) })} />,
+    licensor: <MultiSelect label="الجهة المرخِّصة" values={readList(v.licensor)} options={LICENSORS} onChange={(x) => set({ licensor: writeList(x) })} />,
+    region: (
+      <MultiSelect
+        label="المنطقة"
+        values={regions}
+        options={REGIONS}
+        onChange={(x) =>
+          set({ region: writeList(x), city: keep(readList(v.city), uniq(x.flatMap((r) => CITIES_BY_REGION[r] ?? []))) })
+        }
+      />
+    ),
+    city: <MultiSelect label="المدينة" values={readList(v.city)} options={cityOptions} onChange={(x) => set({ city: writeList(x) })} disabled={regions.length === 0} all={regions.length ? 'الكل' : 'اختر المنطقة أولًا'} />,
+    governance: <MultiSelect label="درجة الحوكمة" values={readList(v.governance)} options={GOVERNANCE} onChange={(x) => set({ governance: writeList(x) })} />,
+  }
+
   const chips = (
     [
       ['activation', 'التفعيل'], ['type', 'النوع'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
@@ -304,25 +338,28 @@ export default function EntitiesListPage() {
               )}
             </div>
 
-            {advOpen && (
-              <div className="fgrid">
-                <MultiSelect label="نوع الجهة" values={readList(v.type)} options={ENTITY_TYPES} onChange={(x) => set({ type: writeList(x) })} />
-                <MultiSelect label="الجهة المرخِّصة" values={readList(v.licensor)} options={LICENSORS} onChange={(x) => set({ licensor: writeList(x) })} />
-                <MultiSelect
-                  label="المنطقة"
-                  values={regions}
-                  options={REGIONS}
-                  onChange={(x) =>
-                    set({
-                      region: writeList(x),
-                      city: keep(readList(v.city), uniq(x.flatMap((r) => CITIES_BY_REGION[r] ?? []))),
-                    })
-                  }
-                />
-                <MultiSelect label="المدينة" values={readList(v.city)} options={cityOptions} onChange={(x) => set({ city: writeList(x) })} disabled={regions.length === 0} all={regions.length ? 'الكل' : 'اختر المنطقة أولًا'} />
-                <MultiSelect label="درجة الحوكمة" values={readList(v.governance)} options={GOVERNANCE} onChange={(x) => set({ governance: writeList(x) })} />
-              </div>
-            )}
+            {advOpen && (custom ? (
+              <FilterCustomizer
+                all={FILTER_DEFS}
+                visible={fOrder}
+                onChange={setFOrder}
+                onClose={() => setCustom(false)}
+              />
+            ) : (
+              <>
+                <div className="fgrid">
+                  {fOrder.map((k) => (
+                    <div key={k} className="fgrid-i">{FILTERS[k]}</div>
+                  ))}
+                </div>
+                <div className="fgrid-x">
+                  <button className="fclear" onClick={() => setCustom(true)}>
+                    <Icon path={icons.gear} size={13} />
+                    تخصيص الفلاتر
+                  </button>
+                </div>
+              </>
+            ))}
 
             {(chips.length > 0 || flags.length > 0) && (
               <div className="factive">

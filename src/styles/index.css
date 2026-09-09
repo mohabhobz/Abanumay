@@ -1846,7 +1846,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 .qr-sp{flex:1}
 .qr-title{font-family:var(--fd);font-weight:600;font-size:.89rem}
 .qr-count{font-size:.7rem;padding:.12rem .5rem;border-radius:var(--rp);white-space:nowrap;
-  color:var(--t3);background:rgba(var(--edgeC),.07)}
+  color:var(--t2);background:rgba(var(--edgeC),.07)}
 .qr-count.no{color:var(--no-ink);background:rgba(var(--noC),.10)}
 
 /* لمحة السطر الأول وهو مقفول */
@@ -2884,3 +2884,43 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .fviews-f input{flex:1;min-width:0;padding:.4rem .55rem;font-size:.78rem;color:var(--t1);
   border-radius:var(--r1);background:rgba(var(--edgeC),.05)}
 .fviews-n{padding:.35rem .1rem 0;font-size:.7rem}
+
+/* ═══ تخصيص الفلاتر ═══ */
+.fgrid-i{min-width:0;display:flex}
+.fgrid-i>*{flex:1;min-width:0}
+.fgrid-x{display:flex;justify-content:flex-end;padding-top:.5rem}
+.fgrid-x .fclear{display:inline-flex;align-items:center;gap:.35rem}
+
+.fcust{padding-top:.85rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+.fcust-h{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.7rem}
+.fcust-t{font-family:var(--fd);font-weight:600;font-size:.85rem;color:var(--t1)}
+.fcust-h .sub{font-size:.74rem}
+
+.fcust-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.fcust-r{display:flex;align-items:center;gap:.55rem;padding:.42rem .5rem;border-radius:var(--r1);
+  background:rgba(var(--wC),calc(.5 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+.fcust-r.off{background:none;box-shadow:none;opacity:.72}
+.fcust-r.dragging{opacity:.4}
+.fcust-g{flex:none;display:grid;place-items:center;width:18px;color:var(--t3);cursor:grab}
+.fcust-r:active .fcust-g{cursor:grabbing}
+/* الصندوق نفسه هو زرار الإظهار: مساحة الضغط تبقى واضحة بلا زرار تاني */
+.fcust-c{flex:none;display:grid;place-items:center;width:17px;height:17px;border-radius:5px;
+  color:var(--on-solid);background:rgba(var(--wC),calc(.7 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+.fcust-c.on{background:var(--solid);box-shadow:none}
+.fcust-n{flex:1;min-width:0;font-size:.8rem;color:var(--t1);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcust-a{flex:none;display:flex;gap:2px}
+.fcust-a button{display:grid;place-items:center;width:24px;height:22px;border-radius:6px;color:var(--t3)}
+.fcust-a button:hover:not(:disabled){color:var(--t1);background:rgba(var(--edgeC),.07)}
+.fcust-a button:disabled{opacity:.3;cursor:not-allowed}
+.fcust-s{margin:.85rem 0 .4rem;font-size:.73rem}
+
+/* القائمة القابلة للترتيب عمود واحد: «فوق» و«تحت» في شبكة بعمودين
+   بيقفزوا من عمود لعمود، فالسهم بيبقى بيعمل حاجة تانية غير اللي
+   شكله بيقولها. المخفية بس هي اللي بتتوزّع، لأن ترتيبها مالوش معنى. */
+@media (min-width:760px){
+  .fcust-l.wide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px .6rem}
+}
+.fcust-l:not(.wide){max-width:520px}
