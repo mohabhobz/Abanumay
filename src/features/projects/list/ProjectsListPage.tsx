@@ -496,7 +496,7 @@ export default function ProjectsListPage() {
                   aria-expanded={exportOpen}
                   onClick={() => setExportOpen((x) => !x)}
                 >
-                  <Icon path={icons.down} size={15} />
+                  <Icon path={icons.export} size={15} />
                   تصدير
                   {selected.size > 0 && <b className="num">{selected.size}</b>}
                 </button>

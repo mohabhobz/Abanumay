@@ -113,7 +113,7 @@
   --solid:var(--green); --on-solid:#fff;   /* زرار مصمت وحبره */
   --link:#3E5A08;
   --warn-ink:#8A5C05; --no-ink:#95341F; --no-ink2:#8E2F1B; --no-ink3:#AE3319;
-  --ret-ink:#20527D; --no-ic:#B4482C; --lime-ink:#6E9F06;
+  --ret-ink:#20527D; --on-ret:#FFFFFF; --no-ic:#B4482C; --lime-ink:#6E9F06;
   --ok-ink:#06693A; --brand-ink:#3E5A08;
   /* الأرضية أغمق من الكروت: نفس الخافت اللي بيتقري على كارت
      بينزل تحت حدّ AA فوق الميش. فالنص اللي على الأرضية له خافت
@@ -2416,7 +2416,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
   --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
   --warn-ink:#E8B045; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FF9C85;
-  --ret-ink:#8CC2F0; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
+  --ret-ink:#8CC2F0; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
   --ok-ink:#5FE0A4; --brand-ink:#E2F4B4;
   --retC:120,180,235; --limeC:168,217,60;
   --t3-g:#B3BEBC; --t2-g:#CCD6D4;
@@ -2466,7 +2466,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
   --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
   --warn-ink:#E8B045; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FF9C85;
-  --ret-ink:#8CC2F0; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
+  --ret-ink:#8CC2F0; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
   --ok-ink:#5FE0A4; --brand-ink:#E2F4B4;
   --retC:120,180,235; --limeC:168,217,60;
   --t3-g:#A9C7C3; --t2-g:#C6DEDA;
@@ -2990,11 +2990,18 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .fcust-r.dragging{opacity:.4}
 .fcust-g{flex:none;display:grid;place-items:center;width:18px;color:var(--t3);cursor:grab}
 .fcust-r:active .fcust-g{cursor:grabbing}
-/* الصندوق نفسه هو زرار الإظهار: مساحة الضغط تبقى واضحة بلا زرار تاني */
-.fcust-c{flex:none;display:grid;place-items:center;width:17px;height:17px;border-radius:5px;
-  color:var(--on-solid);background:rgba(var(--wC),calc(.7 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
-.fcust-c.on{background:var(--solid);box-shadow:none}
+/* الصندوق نفسه هو زرار الإظهار: مساحة الضغط تبقى واضحة بلا زرار تاني.
+   وشكله هو **نفس** صندوق الجدول: نفس المقاس ونفس اللون ونفس نصف
+   القطر. قبل كده كان أخضر داكن مصمت (`--solid`) بينما صناديق الجدول
+   أزرق التحديد — صندوقان بشكلين في سيستم واحد، وإحدى عشرة منهم فوق
+   بعض كانوا بيتقروا كحائط مربعات سودا مش كقائمة اختيارات. */
+.fcust-c{flex:none;display:grid;place-items:center;width:15px;height:15px;border-radius:4px;
+  color:var(--on-ret);background:rgba(var(--wC),calc(.7 * var(--wM)));
+  transition:background .14s ease,box-shadow .14s ease;
+  box-shadow:inset 0 0 0 1.5px rgba(var(--edgeC),calc(var(--edge-hair)*1.7))}
+.fcust-c:hover{box-shadow:inset 0 0 0 1.5px rgba(var(--retC2),.5)}
+.fcust-c.on{background:var(--ret-ink);box-shadow:none}
+.fcust-c.on:hover{background:var(--ret-ink);filter:brightness(1.12)}
 .fcust-n{flex:1;min-width:0;font-size:.8rem;color:var(--t1);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fcust-a{flex:none;display:flex;gap:2px}

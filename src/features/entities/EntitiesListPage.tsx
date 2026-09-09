@@ -354,7 +354,7 @@ export default function EntitiesListPage() {
                   aria-expanded={exportOpen}
                   onClick={() => setExportOpen((x) => !x)}
                 >
-                  <Icon path={icons.down} size={15} />
+                  <Icon path={icons.export} size={15} />
                   تصدير
                 </button>
                 {exportOpen && (
@@ -492,7 +492,7 @@ export default function EntitiesListPage() {
             }
           >
             <button className="btn btn-1 btn-sm" onClick={() => exportXlsx(sheet)}>
-              <Icon path={icons.down} size={15} />
+              <Icon path={icons.export} size={15} />
               إكسل
             </button>
             <button className="btn btn-2 btn-sm" onClick={() => setTimeout(printArea, 60)}>

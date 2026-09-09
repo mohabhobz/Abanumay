@@ -83,7 +83,7 @@ export function FilterCustomizer({
               aria-label={`إخفاء ${f.label}`}
               onClick={() => onChange(visible.filter((k) => k !== f.key))}
             >
-              <Icon path={icons.check} size={12} />
+              <Icon path={icons.check} size={11} />
             </button>
 
             <span className="fcust-n">{f.label}</span>

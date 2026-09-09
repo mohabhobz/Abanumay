@@ -35,6 +35,10 @@ export const icons = {
   trash: '<path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/>',
   menu: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
   down: '<path d="M12 5v13"/><path d="M6 13l6 6 6-6"/>',
+  /* التصدير ≠ سهم لتحت. السهم العاري بيتقري «رتّب تنازليًا» أو
+     «انزل للآخر» — والصينية اللي تحته هي اللي بتقول «الملف بينزل
+     على جهازك». */
+  export: '<path d="M12 4v9.5"/><path d="M8.4 10.2L12 13.8l3.6-3.6"/><path d="M5 15.5V18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2.5"/>',
   copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
   redo: '<path d="M20 12a8 8 0 10-2.3 5.6"/><path d="M20 6v6h-6"/>',
