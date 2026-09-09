@@ -17,6 +17,16 @@ export interface QueryParamsApi<T extends Record<string, string | undefined>> {
   clear: () => void
   /** عدد الفلاتر المفعّلة، بدون البحث والترتيب والصفحة */
   activeCount: (ignore?: (keyof T)[]) => number
+  /**
+   * الشاشة الحالية كنص استعلام، بلا رقم الصفحة.
+   *
+   * رقم الصفحة وحده مستثنى: «الفيو» عند المستخدم هو السؤال وشكل
+   * إجابته — الفلاتر والترتيب والتجميع وعدد الصفوف ونوع العرض —
+   * مش وقفته في التصفّح.
+   */
+  snapshot: () => string
+  /** يستبدل الشاشة كلها بلقطة محفوظة */
+  applyQuery: (q: string) => void
 }
 
 /**
@@ -78,5 +88,19 @@ export function useQueryParams<T extends Record<string, string | undefined>>(
     [params, keys.join('|')],
   )
 
-  return { values, set, replace, clear, activeCount }
+  const snapshot = useCallback(() => {
+    const sp = new URLSearchParams(params)
+    sp.delete('page')
+    /* الترتيب الأبجدي عشان مقارنة اللقطة باللي محفوظ تبقى نصّية
+       بسيطة، ما تفرقش لو المستخدم غيّر فلترين بترتيب مختلف. */
+    const sorted = new URLSearchParams([...sp.entries()].sort((a, b) => a[0].localeCompare(b[0])))
+    return sorted.toString()
+  }, [params])
+
+  const applyQuery = useCallback(
+    (q: string) => setParams(new URLSearchParams(q), { replace: true }),
+    [setParams],
+  )
+
+  return { values, set, replace, clear, activeCount, snapshot, applyQuery }
 }

@@ -6,6 +6,7 @@ import {
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
+import { SavedViews } from '@/components/filters'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { units } from '@/lib/format'
@@ -58,7 +59,8 @@ const SORTS = [
  * والباقي (النوع · المرخِّص · الحوكمة · المنطقة) مطوي خلف عدّاد.
  */
 export default function EntitiesListPage() {
-  const { values: v, set, replace, clear, activeCount } = useQueryParams<Params>(KEYS)
+  const { values: v, set, replace, clear, activeCount, snapshot, applyQuery } =
+    useQueryParams<Params>(KEYS)
   const navigate = useNavigate()
   const [cols, setCols] = useState<string[]>(() => readCols('entities', COLS))
   const [exportOpen, setExportOpen] = useState(false)
@@ -77,7 +79,8 @@ export default function EntitiesListPage() {
 
   /* زي المشاريع: الجدول محتاج عرض ما بيتوفرش على الموبايل */
   const mobile = useIsMobile()
-  const view = mobile ? 'cards' : v.view === 'table' ? 'table' : 'cards'
+  /* زي المشاريع: الجدول ديفولت، والكروت اختيار، والموبايل كروت دايمًا */
+  const view = mobile ? 'cards' : v.view === 'cards' ? 'cards' : 'table'
   const page = Math.max(1, Number(v.page) || 1)
   const advOpen = v.adv === '1'
 
@@ -267,6 +270,8 @@ export default function EntitiesListPage() {
                 />
               )}
 
+              <SavedViews table="entities" current={snapshot()} onApply={applyQuery} />
+
               <div className="fexp" ref={exportBox}>
                 <button
                   className={`fchip${exportOpen ? ' on' : ''}`}
@@ -295,7 +300,7 @@ export default function EntitiesListPage() {
 
               <span className="ftool-sp" />
               {!mobile && (
-                <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
+                <ViewToggle view={view} onChange={(x) => set({ view: x === 'table' ? undefined : x })} />
               )}
             </div>
 

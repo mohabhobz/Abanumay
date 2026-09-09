@@ -6,6 +6,7 @@ import {
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
+import { SavedViews } from '@/components/filters'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { fixtures, query, type ProjectQuery, type ProjectSort } from '@/data/repository'
@@ -85,7 +86,8 @@ const SORTS: { key: ProjectSort; label: string }[] = [
  * القسم الإجرائي الفعلي مش المجموعة الخماسية.
  */
 export default function ProjectsListPage() {
-  const { values: v, set, replace, clear, activeCount } = useQueryParams<Params>(KEYS)
+  const { values: v, set, replace, clear, activeCount, snapshot, applyQuery } =
+    useQueryParams<Params>(KEYS)
   const navigate = useNavigate()
   const { role } = useRole()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -112,7 +114,11 @@ export default function ProjectsListPage() {
   /* الجدول على الموبايل بيضغط كل عمود لحد ما كل خلية تتلف عمودًا
      من الكلمات — مش جدول، شبكة كلمات. الكارت هو صف الموبايل. */
   const mobile = useIsMobile()
-  const view = mobile ? 'cards' : v.view === 'table' ? 'table' : 'cards'
+  /* الجدول هو الديفولت والكروت اختيار — الكلاينت طلب كده، والسبب
+     إن الجدول بيوري عشرة صفوف مرة واحدة والكارت بيوري تلاتة.
+     الموبايل استثناء ثابت: الجدول على 390px بيضغط كل عمود لحد ما
+     كل خلية تلفّ عمودًا من الكلمات — مش جدول، شبكة كلمات. */
+  const view = mobile ? 'cards' : v.view === 'cards' ? 'cards' : 'table'
   const page = Math.max(1, Number(v.page) || 1)
   const advOpen = v.adv === '1'
 
@@ -381,6 +387,8 @@ export default function ProjectsListPage() {
                 />
               )}
 
+              <SavedViews table="projects" current={snapshot()} onApply={applyQuery} />
+
               <div className="fexp" ref={exportBox}>
                 <button
                   className={`fchip${exportOpen ? ' on' : ''}`}
@@ -411,7 +419,7 @@ export default function ProjectsListPage() {
 
               <span className="ftool-sp" />
               {!mobile && (
-                <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
+                <ViewToggle view={view} onChange={(x) => set({ view: x === 'table' ? undefined : x })} />
               )}
             </div>
 
