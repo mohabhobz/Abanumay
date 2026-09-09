@@ -247,7 +247,9 @@ export function exportPng(sheet: Sheet): void {
   const pad = 28
   const rowH = 34
   const headH = 40
-  const font = '"Cairo","Tahoma",sans-serif'
+  /* الخط من التوكن لا مكتوبًا هنا: الصورة المصدَّرة لازم تطلع بنفس
+     خط الشاشة، ولو اتكتب هنا بالإيد هيفضل قديمًا لما الهوية تتغيّر. */
+  const font = readVar('--ft', 'system-ui, sans-serif')
 
   const probe = document.createElement('canvas').getContext('2d')
   if (!probe) return

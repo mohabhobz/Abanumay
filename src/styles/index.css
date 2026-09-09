@@ -10,6 +10,36 @@
 .rs{font-family:'SaudiRiyal';font-weight:400;line-height:1;
   display:inline-block;font-size:1.12em;transform:translateY(.06em)}
 
+/* ═══ خط الهوية — براندو ارابيك ═══
+   مكان جاهز للملفات. حطّ الـwoff2 في `src/fonts/` وشيل التعليق،
+   وكل السيستم بيقلب عليه: مفيش اسم خط مكتوب في أي مكان تاني، كله
+   بيمرّ من `--fd`/`--ft`/`--fm`.
+
+   محتاجين من العميل: ترخيص ويب (Web/@font-face) لبراندو ارابيك
+   بأوزان 400 و500 و600 و700 — نفس الأوزان اللي الواجهة مبنية عليها.
+
+@font-face{
+  font-family:'Brando Arabic';
+  src:url('../fonts/brando-arabic-400.woff2') format('woff2');
+  font-weight:400;font-style:normal;font-display:swap;
+}
+@font-face{
+  font-family:'Brando Arabic';
+  src:url('../fonts/brando-arabic-500.woff2') format('woff2');
+  font-weight:500;font-style:normal;font-display:swap;
+}
+@font-face{
+  font-family:'Brando Arabic';
+  src:url('../fonts/brando-arabic-600.woff2') format('woff2');
+  font-weight:600;font-style:normal;font-display:swap;
+}
+@font-face{
+  font-family:'Brando Arabic';
+  src:url('../fonts/brando-arabic-700.woff2') format('woff2');
+  font-weight:700;font-style:normal;font-display:swap;
+}
+*/
+
 /* ═══════════════════════════════════════════════════════════
    نظام أبانمي البصري — جلاس فاتح على خلفية متدرجة
    كل التوكنز في :root، غيّر من هنا يتغيّر في كل الشاشات
@@ -42,9 +72,32 @@
 
   --r1:10px; --r2:15px; --r3:22px; --r4:28px; --rp:999px;
 
-  --fd:"Brando Arabic","DIN Next LT Arabic","Cairo","Tahoma",sans-serif;
-  --ft:"DIN Next LT Arabic","Brando Arabic","Cairo","Segoe UI",Tahoma,sans-serif;
-  --fm:"IBM Plex Mono",ui-monospace,monospace;
+  /* ═══ الخطوط ═══
+     خط الهوية واحد: **براندو ارابيك** — هو اللي في دليل الهوية
+     (اتعرضت ستة خيارات، والتطبيق كله بيه).
+
+     ⚠️ ملف الخط لسه ما وصلش (ترخيص تجاري)، فاللي بيترسم فعلًا هو
+     البديل المؤقت. أول ما الـwoff2 يوصل، بيتحطّ في `@font-face`
+     تحت وكل السيستم بيقلب عليه من غير أي تعديل تاني.
+
+     تلات قواعد بتحكم القائمة دي:
+
+     1. **اسم واحد قبل البديل.** الاسم اللي مش محمَّل في المشروع
+        بيتقري من جهاز المستخدم لو صادف إنه متسطّب عنده. يعني نفس
+        الشاشة بتطلع بخط مختلف على كل جهاز — وده اللي خلّى «الشهر»
+        تطلع بخط غريب. «DIN Next LT Arabic» اتشال للسبب ده بالظبط:
+        هو مش في دليل الهوية أصلًا، ومتسطّب على أجهزة كتير.
+     2. **العرض والنص نفس العائلة.** الفرق بينهم وزن لا خط:
+        `--fd` للعناوين والأرقام بوزن تقيل، `--ft` للنص الجاري.
+     3. **مفيش خط رابع.** الأكواد كانت بخط مونوسبيس من جوجل — خرجت
+        برّه الهوية وحمّلت ملفًّا زيادة بلا مقابل. بقت بخط الهوية
+        نفسه مع أرقام جدولية، والكود بيتسطر زي ما كان لأن بادئته
+        ثابتة وأرقامه متساوية العرض. */
+  --fd:"Brando Arabic","Cairo",system-ui,sans-serif;
+  --ft:"Brando Arabic","Cairo",system-ui,sans-serif;
+  /* توكن مستقل عشان النية تفضل مكتوبة: ده نص تقني (كود/رقم ترخيص).
+     لو الهوية طلعت نسخة مونو يومًا، بيتغيّر السطر ده وحده. */
+  --fm:"Brando Arabic","Cairo",system-ui,sans-serif;
 
   /* البياض الشفاف = «رفع سطح». في الفاتح بيتكتب زي ما هو (×1)،
      وفي الداكن نفس الطبقة بس أخفّ كتير — فبدل ما نعيد كتابة أربعة
@@ -167,7 +220,10 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    (`.kpi-v` · `.rpcov-g .v`)، أو اللي وحدتها كلمة عربية تنتمي لتدفّق
    الجملة (`.pamt .v` والريال). كل واحدة معلّمة عند تعريفها. */
 .num{direction:ltr;unicode-bidi:isolate}
-.mono{font-family:var(--fm);direction:ltr;display:inline-block}
+/* الكود بيتسطر بالأرقام الجدولية لا بالمونوسبيس: البادئة («prj-»)
+   واحدة في كل الصفوف، والأرقام متساوية العرض، فالعمود بيفضل مصفوفًا. */
+.mono{font-family:var(--fm);direction:ltr;display:inline-block;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum";letter-spacing:.01em}
 .col{display:flex;flex-direction:column;gap:var(--gap);min-height:0}
 .col-s{display:flex;flex-direction:column;gap:.7rem}
 .rowf{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
@@ -1851,7 +1907,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
 
 /* لمحة السطر الأول وهو مقفول */
 .qr-peek{display:flex;align-items:baseline;gap:.45rem;padding:0 1.05rem .8rem;
-  font-size:.78rem;color:var(--t3);min-width:0;margin-top:-.3rem}
+  font-size:.78rem;color:var(--t2);min-width:0;margin-top:-.3rem}
 .qr-peek b{font-family:var(--fd);font-weight:700;font-size:1rem;color:var(--t1);
   font-variant-numeric:tabular-nums;flex:none}
 .qr-peek b.bad{color:var(--no-ink)}
@@ -1952,7 +2008,7 @@ input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:au
    ملاصقة، فمفيش حاجة تنكسر. */
 .kpi-v{font-family:var(--fd);font-weight:700;line-height:1;letter-spacing:-.02em;direction:rtl;
   font-size:clamp(1.7rem,2.8vw,2.15rem);color:var(--t1)}
-.kpi-n{font-size:.72rem;color:var(--t3);margin-top:.35rem}
+.kpi-n{font-size:.72rem;color:var(--t2);margin-top:.35rem}
 
 /* ── شبكة اللوحة ── */
 .dgrid{display:grid;gap:var(--gap);align-items:start}
@@ -2841,6 +2897,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   body.printing{background:#fff;color:#000}
   body.printing .mesh,body.printing .grain{display:none}
 
+  /* الطباعة بنفس خط الشاشة: الورقة اللي بتطلع بخط تاني بتبان
+     مستخرجة من نظام تاني. */
+  .printsheet{font-family:var(--ft)}
   .printsheet .ps-head{margin-bottom:14px}
   .printsheet h1{font-size:18px;margin:0 0 4px}
   .printsheet p{font-size:11px;color:#444;margin:0}
