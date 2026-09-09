@@ -86,12 +86,12 @@ export interface ProjectQuery {
 }
 
 export interface EntityQuery {
-  activation?: string
-  type?: string
-  licensor?: string
-  region?: string
-  city?: string
-  governance?: string
+  activation?: Filter
+  type?: Filter
+  licensor?: Filter
+  region?: Filter
+  city?: Filter
+  governance?: Filter
   /** true = ملف المستندات ناقص */
   docsIncomplete?: boolean
   /** true = لها مشاريع تحت التشغيل */

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, Pager, PAGE_SIZES, SearchBox, Segments, Select,
   Toggle, ViewToggle,
@@ -11,10 +11,12 @@ import { assistFor } from '@/data/mock/assistant'
 import { fixtures, query, type ProjectQuery, type ProjectSort } from '@/data/repository'
 import { applyDecision, assignOwner, type BulkDecision } from '@/data/mock/projects'
 import { useRole } from '@/hooks/useRole'
+import { ROUTES } from '@/app/routes'
 import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
+import { COLS, GROUPS, groupByKey } from './columns'
 import {
-  GROUPS, aggregate, groupByKey, orderCols, readCols, splitGroups, writeCols,
-} from './columns'
+  DataTable, aggregate, orderCols, readCols, splitGroups, writeCols,
+} from '@/components/table'
 import { units } from '@/lib/format'
 import { PrintSheet } from './PrintSheet'
 import {
@@ -24,7 +26,7 @@ import {
 import { QuickRead } from '@/components/assistant'
 import { readProjects } from '@/data/readings'
 import { ProjectCard } from './ProjectCard'
-import { ProjectsTable } from './ProjectsTable'
+
 
 /* المفاتيح دي هي عقد الـURL: أي فلتر في الشاشة له مفتاح هنا،
    ونفس الاسم هيتبعت للسيرفر كـquery string وقت الربط. */
@@ -84,18 +86,19 @@ const SORTS: { key: ProjectSort; label: string }[] = [
  */
 export default function ProjectsListPage() {
   const { values: v, set, replace, clear, activeCount } = useQueryParams<Params>(KEYS)
+  const navigate = useNavigate()
   const { role } = useRole()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwner, setBulkOwner] = useState<string | undefined>()
   const [, bump] = useState(0)
-  const [cols, setCols] = useState<string[]>(readCols)
+  const [cols, setCols] = useState<string[]>(() => readCols('projects', COLS))
   /* آخر قرار مجمّع + تراجعه. الشريط بيفضل ظاهر لحد ما المستخدم
      يقفله، فالتراجع مش سباق مع مؤقّت. */
   const [lastBulk, setLastBulk] = useState<{ text: string; undo: () => void } | null>(null)
   const [exportOpen, setExportOpen] = useState(false)
   const exportBox = useRef<HTMLDivElement>(null)
 
-  useEffect(() => writeCols(cols), [cols])
+  useEffect(() => writeCols('projects', cols), [cols])
 
   useEffect(() => {
     if (!exportOpen) return
@@ -226,7 +229,7 @@ export default function ProjectsListPage() {
     : allFiltered
 
   const sheet: Sheet = useMemo(() => {
-    const shown = orderCols(cols).filter((c) => !group || c.key !== group.key)
+    const shown = orderCols(COLS, cols).filter((c) => !group || c.key !== group.key)
     const head = [...(group ? [group.label] : []), ...shown.map((c) => c.label)]
     const body = exportRows.map((r) => [
       ...(group ? [group.of(r)] : []),
@@ -558,14 +561,18 @@ export default function ProjectsListPage() {
             </div>
           ) : (
             <Glass className="tblcard" style={{ padding: '.4rem' }}>
-              <ProjectsTable
+              <DataTable
                 rows={result.rows}
+                all={COLS}
+                cols={cols}
+                onCols={setCols}
+                id={(r) => r.id}
                 selected={selected}
                 onSelect={toggleOne}
                 onSelectAll={selectAll}
-                cols={cols}
-                onCols={setCols}
+                onOpen={(r) => navigate(ROUTES.project(r.id))}
                 group={group}
+                count={units.project}
               />
             </Glass>
           )}

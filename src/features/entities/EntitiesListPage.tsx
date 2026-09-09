@@ -1,15 +1,15 @@
-import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, Mono, Pager, Riyal, SearchBox, Segments, Select, Tag, Toggle,
-  ViewToggle,
+  Empty, Glass, Icon, icons, MultiSelect, PAGE_SIZES, Pager, SearchBox, Segments, Select,
+  Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
-import { useQueryParams } from '@/hooks/useQueryParams'
+import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
-import { nf } from '@/lib/format'
-import { ENTITY_DOCS_TOTAL, fixtures, query, type EntityQuery } from '@/data/repository'
+import { units } from '@/lib/format'
+import { fixtures, query, type EntityQuery } from '@/data/repository'
 import {
   ACTIVATIONS, CITIES_BY_REGION, ENTITY_TYPES, GOVERNANCE, LICENSORS, REGIONS,
 } from '@/data/mock/taxonomy'
@@ -17,19 +17,22 @@ import { ROUTES } from '@/app/routes'
 import { QuickRead } from '@/components/assistant'
 import { readEntities } from '@/data/readings'
 import { EntityCard } from './EntityCard'
-import { activationTone, governanceTone } from '@/lib/tone'
+import { COLS, GROUPS, groupByKey } from './columns'
+import { DataTable, aggregate, orderCols, readCols, splitGroups, writeCols } from '@/components/table'
+import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
+import { PrintSheet } from '@/features/projects/list/PrintSheet'
 
 const KEYS = [
   'q', 'activation', 'type', 'licensor', 'region', 'city', 'governance',
-  'docs', 'running', 'sort', 'page', 'view', 'adv',
+  'docs', 'running', 'sort', 'page', 'size', 'view', 'adv', 'group',
 ] as const
 
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = PAGE_SIZES[0]
 
 const NOT_FILTERS: (keyof Params)[] = [
-  'q', 'sort', 'page', 'view', 'adv', 'activation', 'docs', 'running',
+  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'activation', 'docs', 'running',
 ]
 
 /** اللقطات المحفوظة — الأسئلة اللي بتوقف الشغل فعلًا */
@@ -56,6 +59,21 @@ const SORTS = [
  */
 export default function EntitiesListPage() {
   const { values: v, set, replace, clear, activeCount } = useQueryParams<Params>(KEYS)
+  const navigate = useNavigate()
+  const [cols, setCols] = useState<string[]>(() => readCols('entities', COLS))
+  const [exportOpen, setExportOpen] = useState(false)
+  const exportBox = useRef<HTMLDivElement>(null)
+
+  useEffect(() => writeCols('entities', cols), [cols])
+
+  useEffect(() => {
+    if (!exportOpen) return
+    const away = (e: PointerEvent) => {
+      if (!exportBox.current?.contains(e.target as Node)) setExportOpen(false)
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [exportOpen])
 
   /* زي المشاريع: الجدول محتاج عرض ما بيتوفرش على الموبايل */
   const mobile = useIsMobile()
@@ -63,25 +81,32 @@ export default function EntitiesListPage() {
   const page = Math.max(1, Number(v.page) || 1)
   const advOpen = v.adv === '1'
 
+  const size = Math.min(500, Math.max(1, Number(v.size) || PAGE_SIZE))
+
   const q: EntityQuery = useMemo(
     () => ({
       search: v.q,
-      activation: v.activation,
-      type: v.type,
-      licensor: v.licensor,
-      region: v.region,
-      city: v.city,
-      governance: v.governance,
+      activation: readList(v.activation),
+      type: readList(v.type),
+      licensor: readList(v.licensor),
+      region: readList(v.region),
+      city: readList(v.city),
+      governance: readList(v.governance),
       docsIncomplete: v.docs === '1',
       hasRunning: v.running === '1',
       sort: (v.sort as EntityQuery['sort']) ?? 'granted',
       page,
-      pageSize: PAGE_SIZE,
+      pageSize: size,
     }),
-    [v, page],
+    [v, page, size],
   )
 
-  const result = query.entities(q)
+  /* زي المشاريع: التجميع بيلغي الترقيم لأن المجموعة المقطوعة على
+     صفحتين إجمالياتها كذّابة. */
+  const group = groupByKey(v.group)
+  const grouped = Boolean(group)
+
+  const result = query.entities(grouped ? { ...q, page: 1, pageSize: 9999 } : q)
   const all = fixtures.entities
 
   /** عدّاد التفعيل جوّه النطاق الحالي — بيغذّي قائمة «كل الحالات» */
@@ -115,7 +140,11 @@ export default function EntitiesListPage() {
         Object.entries(x.patch).every(([k, val]) => v[k as keyof Params] === val),
     )?.key ?? 'all'
 
-  const cityOptions = v.region ? (CITIES_BY_REGION[v.region] ?? []) : []
+  const regions = readList(v.region)
+  const uniq = (xs: string[]) => [...new Set(xs)]
+  const cityOptions = uniq(regions.flatMap((r) => CITIES_BY_REGION[r] ?? []))
+  const keep = (chosen: string[], allowed: string[]) =>
+    writeList(chosen.filter((x) => allowed.includes(x)))
 
   const readings = useMemo(
     () =>
@@ -128,14 +157,39 @@ export default function EntitiesListPage() {
     [q, all],
   )
 
+  /* نطاق التصدير: نتيجة الفلتر كاملة لا صفحة العرض */
+  const allFiltered = useMemo(
+    () => query.entities({ ...q, page: 1, pageSize: 9999 }).rows,
+    [q],
+  )
+
+  const sheet: Sheet = useMemo(() => {
+    const shown = orderCols(COLS, cols).filter((c) => !group || c.key !== group.key)
+    const head = [...(group ? [group.label] : []), ...shown.map((c) => c.label)]
+    const body = allFiltered.map((e) => [
+      ...(group ? [group.of(e)] : []),
+      ...shown.map((c) => c.text(e)),
+    ])
+    const totals = [
+      ...(group ? [''] : []),
+      ...shown.map((c, i) => {
+        const t = aggregate(c, allFiltered)
+        return t !== null ? String(t) : i === 0 ? units.entity(allFiltered.length) : ''
+      }),
+    ]
+    const stamp = new Date().toISOString().slice(0, 10)
+    return { file: `abanumay-entities-${stamp}`, title: 'الجهات', headers: head, rows: body, totals }
+  }, [cols, allFiltered, group])
+
+  const exportNote = `نتيجة الفلتر الحالي · ${units.entity(allFiltered.length)}`
+
   const chips = (
     [
       ['activation', 'التفعيل'], ['type', 'النوع'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
       ['city', 'المدينة'], ['governance', 'الحوكمة'],
     ] as [keyof Params, string][]
   )
-    .filter(([k]) => v[k])
-    .map(([k, label]) => ({ k, label, value: v[k] as string }))
+    .flatMap(([k, label]) => readList(v[k]).map((value) => ({ k, label, value })))
 
   const flags = (
     [['docs', 'ملف ناقص'], ['running', 'لها مشاريع تشغيل']] as [keyof Params, string][]
@@ -177,14 +231,14 @@ export default function EntitiesListPage() {
                 onChange={(x) => set({ q: x })}
                 placeholder="ابحث باسم الجهة أو رقم الترخيص…"
               />
-              <Select
-                value={v.activation}
+              <MultiSelect
+                values={readList(v.activation)}
                 all={`كل حالات التفعيل (${result.total})`}
                 options={ACTIVATIONS.filter((a) => counts[a]).map((a) => ({
                   value: a,
                   label: `${a} (${counts[a]})`,
                 }))}
-                onChange={(x) => set({ activation: x })}
+                onChange={(x) => set({ activation: writeList(x) })}
               />
               <Select
                 icon={icons.sort}
@@ -203,6 +257,42 @@ export default function EntitiesListPage() {
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
+              {view === 'table' && (
+                <Select
+                  icon={icons.rows}
+                  value={v.group}
+                  all="بلا تجميع"
+                  options={GROUPS.map((g) => ({ value: g.key, label: `تجميع حسب ${g.label}` }))}
+                  onChange={(x) => set({ group: x, page: undefined })}
+                />
+              )}
+
+              <div className="fexp" ref={exportBox}>
+                <button
+                  className={`fchip${exportOpen ? ' on' : ''}`}
+                  aria-haspopup="menu"
+                  aria-expanded={exportOpen}
+                  onClick={() => setExportOpen((x) => !x)}
+                >
+                  <Icon path={icons.down} size={15} />
+                  تصدير
+                </button>
+                {exportOpen && (
+                  <div className="fmenu fexp-m">
+                    <div className="fexp-s sub">{exportNote}</div>
+                    <button className="fopt" onClick={() => { setExportOpen(false); exportXlsx(sheet) }}>
+                      <span className="fopt-t">Excel · xlsx</span>
+                    </button>
+                    <button className="fopt" onClick={() => { setExportOpen(false); setTimeout(printArea, 60) }}>
+                      <span className="fopt-t">PDF · عبر الطباعة</span>
+                    </button>
+                    <button className="fopt" onClick={() => { setExportOpen(false); exportPng(sheet) }}>
+                      <span className="fopt-t">صورة · png</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <span className="ftool-sp" />
               {!mobile && (
                 <ViewToggle view={view} onChange={(x) => set({ view: x === 'cards' ? undefined : x })} />
@@ -211,18 +301,34 @@ export default function EntitiesListPage() {
 
             {advOpen && (
               <div className="fgrid">
-                <Select label="نوع الجهة" value={v.type} options={ENTITY_TYPES} onChange={(x) => set({ type: x })} />
-                <Select label="الجهة المرخِّصة" value={v.licensor} options={LICENSORS} onChange={(x) => set({ licensor: x })} />
-                <Select label="المنطقة" value={v.region} options={REGIONS} onChange={(x) => set({ region: x, city: undefined })} />
-                <Select label="المدينة" value={v.city} options={cityOptions} onChange={(x) => set({ city: x })} disabled={!v.region} all={v.region ? 'الكل' : 'اختر المنطقة أولًا'} />
-                <Select label="درجة الحوكمة" value={v.governance} options={GOVERNANCE} onChange={(x) => set({ governance: x })} />
+                <MultiSelect label="نوع الجهة" values={readList(v.type)} options={ENTITY_TYPES} onChange={(x) => set({ type: writeList(x) })} />
+                <MultiSelect label="الجهة المرخِّصة" values={readList(v.licensor)} options={LICENSORS} onChange={(x) => set({ licensor: writeList(x) })} />
+                <MultiSelect
+                  label="المنطقة"
+                  values={regions}
+                  options={REGIONS}
+                  onChange={(x) =>
+                    set({
+                      region: writeList(x),
+                      city: keep(readList(v.city), uniq(x.flatMap((r) => CITIES_BY_REGION[r] ?? []))),
+                    })
+                  }
+                />
+                <MultiSelect label="المدينة" values={readList(v.city)} options={cityOptions} onChange={(x) => set({ city: writeList(x) })} disabled={regions.length === 0} all={regions.length ? 'الكل' : 'اختر المنطقة أولًا'} />
+                <MultiSelect label="درجة الحوكمة" values={readList(v.governance)} options={GOVERNANCE} onChange={(x) => set({ governance: writeList(x) })} />
               </div>
             )}
 
             {(chips.length > 0 || flags.length > 0) && (
               <div className="factive">
                 {chips.map((c) => (
-                  <button key={c.k as string} className="fpill" onClick={() => set({ [c.k]: undefined } as Partial<Params>)}>
+                  <button
+                    key={`${c.k as string}:${c.value}`}
+                    className="fpill"
+                    onClick={() =>
+                      set({ [c.k]: writeList(readList(v[c.k]).filter((x) => x !== c.value)) } as Partial<Params>)
+                    }
+                  >
                     <span className="sub">{c.label}:</span> {c.value}
                     <Icon path={icons.close} size={13} />
                   </button>
@@ -253,50 +359,37 @@ export default function EntitiesListPage() {
               {result.rows.map((e) => <EntityCard key={e.id} row={e} />)}
             </div>
           ) : (
-            <Glass style={{ padding: '.4rem' }}>
-              <div className="tblwrap">
-                <table className="tbl">
-                  <thead>
-                    <tr>
-                      <th>الترخيص</th>
-                      <th>الجهة</th>
-                      <th>النوع</th>
-                      <th>المنطقة</th>
-                      <th>التفعيل</th>
-                      <th>الحوكمة</th>
-                      <th className="n">المستندات</th>
-                      <th className="n">تشغيل</th>
-                      <th className="n">إجمالي الممنوح</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.rows.map((e) => (
-                      <tr key={e.id}>
-                        <td><Mono>{e.licenseNo}</Mono></td>
-                        <td><Link className="tlink" to={ROUTES.entity(e.id)}>{e.name}</Link></td>
-                        <td className="sub">{e.type}</td>
-                        <td className="sub">{e.region}</td>
-                        <td><Tag tone={activationTone(e.activation)}>{e.activation}</Tag></td>
-                        <td><Tag tone={governanceTone(e.governance)}>{e.governance}</Tag></td>
-                        <td className={`n num${e.docsUploaded < ENTITY_DOCS_TOTAL ? ' over' : ''}`}>
-                          {e.docsUploaded}/{ENTITY_DOCS_TOTAL}
-                        </td>
-                        <td className="n num">{e.projectsRunning}</td>
-                        <td className="n num">{nf.format(e.grantedTotal)} <Riyal /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <Glass className="tblcard" style={{ padding: '.4rem' }}>
+              <DataTable
+                rows={result.rows}
+                all={COLS}
+                cols={cols}
+                onCols={setCols}
+                id={(e) => e.id}
+                onOpen={(e) => navigate(ROUTES.entity(e.id))}
+                group={group}
+                count={units.entity}
+              />
             </Glass>
           )}
 
-          <Pager
-            page={result.page}
-            pageSize={result.pageSize}
-            total={result.total}
-            onPage={(p) => set({ page: String(p) })}
-          />
+          {grouped ? (
+            <p className="sub" style={{ textAlign: 'center' }}>
+              التجميع يعرض كل النتائج بلا ترقيم ·{' '}
+              <span className="num">{splitGroups(result.rows, group!).length}</span> مجموعات ·{' '}
+              <button className="lnk" onClick={() => set({ group: undefined })}>إلغاء التجميع</button>
+            </p>
+          ) : (
+            <Pager
+              page={result.page}
+              pageSize={result.pageSize}
+              total={result.total}
+              onPage={(p) => set({ page: String(p) })}
+              onPageSize={(n) => set({ size: n === PAGE_SIZE ? undefined : String(n), page: undefined })}
+            />
+          )}
+
+          <PrintSheet sheet={sheet} note={exportNote} />
         </div>
       </div>
     </AppLayout>

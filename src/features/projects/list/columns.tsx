@@ -1,8 +1,3 @@
-/* eslint-disable react-refresh/only-export-components --
-   الملف ده بيانات لا كومبوننتس: `COLS` جدول تعريف، وخلاياه دوال
-   بترجّع JSX. القاعدة بتحذّر لأن الملف `.tsx` وبيصدّر ثوابت، وتقسيمه
-   لملفين (بيانات + خلايا) بيفصل العمود عن تعريفه — وده بالظبط اللي
-   الملف موجود عشان يمنعه. */
 import { Link } from 'react-router-dom'
 import { Mono, Riyal, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
@@ -10,7 +5,7 @@ import { nf, projectCode } from '@/lib/format'
 import { days, groupTone } from '@/lib/tone'
 import { stagePressure } from '@/data/repository'
 import type { ProjectRow } from '@/types/domain'
-import type { ReactNode } from 'react'
+import type { Col as TCol, GroupBy } from '@/components/table'
 
 /* ═══════════════════════════════════════════════════════════
    تعريف أعمدة جدول المشاريع — مصدر واحد لأربع حاجات.
@@ -24,36 +19,7 @@ import type { ReactNode } from 'react'
    المصدَّر محتاج نصًّا صافيًا. الاتنين جنب بعض عشان ما يفرقوش.
    ═══════════════════════════════════════════════════════════ */
 
-/** طريقة تلخيص العمود في صف الإجماليات */
-export type Agg = 'sum' | 'avg'
-
-export interface Col {
-  key: string
-  label: string
-  /** عمود رقمي — بيتحاذي لليسار وبياخد أرقامًا جدولية */
-  n?: boolean
-  /** ما يتشالش من المنتقي: بدونه الصف بيفقد هويته */
-  fixed?: boolean
-  /** ظاهر افتراضيًا */
-  def?: boolean
-  cell: (r: ProjectRow) => ReactNode
-  /** نص صافٍ للتصدير والصورة */
-  text: (r: ProjectRow) => string
-  /** الرقم اللي بيتجمّع — غيابه معناه خانة فاضية في الإجماليات */
-  value?: (r: ProjectRow) => number
-  agg?: Agg
-  /** الإجمالي بالريال */
-  money?: boolean
-}
-
-const sum = (rows: ProjectRow[], f: (r: ProjectRow) => number) => rows.reduce((s, r) => s + f(r), 0)
-
-/** إجمالي العمود على مجموعة صفوف — `null` يعني العمود ما يتلخّصش */
-export const aggregate = (col: Col, rows: ProjectRow[]): number | null => {
-  if (!col.value || !col.agg || rows.length === 0) return null
-  const total = sum(rows, col.value)
-  return col.agg === 'avg' ? Math.round(total / rows.length) : total
-}
+export type Col = TCol<ProjectRow>
 
 export const COLS: Col[] = [
   {
@@ -157,56 +123,9 @@ export const COLS: Col[] = [
   { key: 'year', label: 'السنة والمصدر', cell: (r) => <span className="sub num">{r.year}</span>, text: (r) => r.year },
 ]
 
-export const colByKey = (key: string): Col | undefined => COLS.find((c) => c.key === key)
-
-export const DEFAULT_COLS: string[] = COLS.filter((c) => c.fixed || c.def).map((c) => c.key)
-
-/**
- * الأعمدة المختارة تفضيل شخصي لا فلتر.
- *
- * فالمكان بتاعها التخزين المحلي مش الـURL: الرابط اللي بيتبعت لمدير
- * المنح المفروض ينقل **السؤال** (الفلتر والتجميع)، مش شكل جدول
- * المرسِل. ولو حصل إن العميل طلب مشاركة العرض كمان، المفتاح ده
- * بيتحوّل لبارامتر واحد من غير ما يتغيّر أي حاجة تانية.
- */
-const COLS_KEY = 'ab-cols-projects'
-
-export const readCols = (): string[] => {
-  try {
-    const raw = localStorage.getItem(COLS_KEY)
-    if (!raw) return DEFAULT_COLS
-    const keys = JSON.parse(raw) as unknown
-    if (!Array.isArray(keys)) return DEFAULT_COLS
-    const valid = keys.filter((k): k is string => typeof k === 'string' && Boolean(colByKey(k)))
-    /* الثوابت بتترجع حتى لو التخزين قديم وما فيهوش — العمود الثابت
-       جزء من هوية الصف لا اختيار. */
-    const fixed = COLS.filter((c) => c.fixed).map((c) => c.key)
-    return valid.length ? [...new Set([...fixed, ...valid])] : DEFAULT_COLS
-  } catch {
-    return DEFAULT_COLS
-  }
-}
-
-export const writeCols = (keys: string[]): void => {
-  try {
-    localStorage.setItem(COLS_KEY, JSON.stringify(keys))
-  } catch {
-    /* التخزين ممكن يكون مقفول — الاختيار يفضل للجلسة دي */
-  }
-}
-
-/** الأعمدة بالترتيب المعرَّف هنا لا بترتيب الاختيار */
-export const orderCols = (keys: string[]): Col[] => COLS.filter((c) => keys.includes(c.key))
-
 /* ═══════════════════ التجميع ═══════════════════ */
 
-export interface GroupBy {
-  key: string
-  label: string
-  of: (r: ProjectRow) => string
-}
-
-export const GROUPS: GroupBy[] = [
+export const GROUPS: GroupBy<ProjectRow>[] = [
   { key: 'region', label: 'المنطقة', of: (r) => r.region },
   { key: 'city', label: 'المدينة', of: (r) => r.city },
   { key: 'track', label: 'المسار', of: (r) => r.track },
@@ -218,29 +137,5 @@ export const GROUPS: GroupBy[] = [
   { key: 'year', label: 'السنة والمصدر', of: (r) => r.year },
 ]
 
-export const groupByKey = (key: string | undefined): GroupBy | undefined =>
+export const groupByKey = (key: string | undefined): GroupBy<ProjectRow> | undefined =>
   GROUPS.find((g) => g.key === key)
-
-export interface Group {
-  key: string
-  rows: ProjectRow[]
-}
-
-/**
- * تقسيم الصفوف لمجموعات، مرتّبة بالأكبر أولًا.
- *
- * الترتيب بالحجم لا بالأبجدية: المستخدم اللي بيجمّع حسب المنطقة
- * بيسأل «فين تركّز المنح؟»، والإجابة هي أول مجموعة.
- */
-export const splitGroups = (rows: ProjectRow[], by: GroupBy): Group[] => {
-  const map = new Map<string, ProjectRow[]>()
-  for (const r of rows) {
-    const k = by.of(r) || '—'
-    const bucket = map.get(k)
-    if (bucket) bucket.push(r)
-    else map.set(k, [r])
-  }
-  return [...map.entries()]
-    .map(([key, rs]) => ({ key, rows: rs }))
-    .sort((a, b) => b.rows.length - a.rows.length)
-}

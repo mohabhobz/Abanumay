@@ -2859,3 +2859,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    والاسم اللي بينقسم بيوهم إن الصف فيه اسمين */
 .tbl td .mono,.tbl th.tcolx{white-space:nowrap}
 .plist-t td:nth-last-child(3){white-space:nowrap}
+
+/* الصف كله هدف للفتح: الرابط لوحده هدف صغير بيخلي المستخدم يصوّب
+   بالماوس بدل ما يقرا. والمؤشّر بيقول ده قبل ما يجرّب. */
+.tbl tbody tr.clickable{cursor:pointer}
+.tbl tbody tr.clickable:hover{background:rgba(var(--wC),calc(.55 * var(--wM)))}
