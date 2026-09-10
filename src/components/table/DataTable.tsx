@@ -116,12 +116,33 @@ function Block<T>({
 
   const { widths, dragging, start, reset } = resize
 
+  /* خط الحدّ: بيبان بمجرّد الهوفر على المقبض، وبيمتدّ على طول الجدول
+     لا على الترويسة لوحدها — الحدّ اللي هتسحبه بيقع على الصفوف،
+     فالمستخدم لازم يشوفه عليها قبل ما يسحب. وموضعه بيتقاس من حافة
+     الترويسة نفسها لا من موضع المؤشّر: المؤشّر ممكن يكون في أي مكان
+     جوّه مساحة اللمس (١١px)، فالخط كان بينحرف عن الحدّ الحقيقي. */
+  const [hover, setHover] = useState<number | null>(null)
+
+  const edgeOf = (el: HTMLElement): number | null => {
+    const th = el.closest('th')
+    const host = el.closest('.tblock')
+    if (!th || !host) return null
+    const t = th.getBoundingClientRect()
+    const h = host.getBoundingClientRect()
+    return (getComputedStyle(th).direction === 'rtl' ? t.left : t.right) - h.left
+  }
+
+  const guide = dragging ? dragging.x : hover
+
   return (
     <div className={`tblock${dragging ? ' resizing' : ''}`}>
-      {/* الخط الدليل: بيمتدّ على طول الجدول وقت السحب بس، عشان
-          المستخدم يشوف الحدّ الجديد على الصفوف مش على الترويسة
-          لوحدها. */}
-      {dragging && <span className="tguide" style={{ left: dragging.x }} aria-hidden="true" />}
+      {guide !== null && (
+        <span
+          className={`tguide${dragging ? ' on' : ''}`}
+          style={{ left: guide }}
+          aria-hidden="true"
+        />
+      )}
 
       {caption && (
         <div className="tcap">
@@ -168,6 +189,8 @@ function Block<T>({
                     aria-orientation="vertical"
                     aria-label={`تغيير عرض عمود ${c.label}`}
                     onPointerDown={(e) => start(c.key, e)}
+                    onPointerEnter={(e) => setHover(edgeOf(e.currentTarget))}
+                    onPointerLeave={() => setHover(null)}
                     onDoubleClick={() => reset(c.key)}
                     title="اسحب لتغيير العرض · دبل كليك للعرض الافتراضي"
                   />
