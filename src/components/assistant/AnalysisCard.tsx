@@ -1,23 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { Glass, Icon, icons } from '@/components/ui'
 import { units } from '@/lib/format'
-import { ReadingBlock, ReadingPeek } from '@/components/assistant/ReadingBlock'
+import { ReadingBlock, ReadingPeek } from './ReadingBlock'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
-import type { Reading } from '@/components/assistant'
+import type { Reading } from './reading'
 
 /** المساعد بيفكّر لحظة قبل ما يبدأ يكتب — عشان القراءة تبان مُنتَجة مش محفوظة */
 const THINK_MS = 900
 
-export interface QuickAnalysisProps {
-  /** كل ما المساعد بيقوله عن المشروع ده — الرحلة والقراءات */
+export interface AnalysisCardProps {
+  /** كل ما المساعد بيقوله عن الكيان ده — الرحلة والقراءات */
   readings: Reading[]
   onAsk: () => void
+  /** «تحليلات المشروع السريعة» · «تحليلات الجهة السريعة» */
+  title?: string
 }
 
 /**
- * تحليلات المشروع — **المكان الوحيد** اللي المساعد بيتكلم فيه عن
- * المشروع.
+ * كارت التحليلات — **المكان الوحيد** اللي المساعد بيتكلم فيه عن
+ * الكيان المفتوح (مشروع أو جهة).
  *
  * قبل كده كان فيه اتنين: شريط «رحلة المشروع» فوق التبويبات، وكارت
  * «تحليلات المشروع» في عمود السياق — والاتنين بيقولوا نفس الحاجة
@@ -39,7 +41,7 @@ export interface QuickAnalysisProps {
  * ⚠️ مهلة «بيقرا» في النموذج ده مكان استدعاء السيرفر. لما يبقى فيه
  * باك اند، الحالة دي بتبقى انتظار حقيقي لا مؤقّتًا.
  */
-export function QuickAnalysis({ readings, onAsk }: QuickAnalysisProps) {
+export function AnalysisCard({ readings, onAsk, title: heading = 'تحليلات المشروع السريعة' }: AnalysisCardProps) {
   const card = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(card)
   const [thought, setThought] = useState(false)
@@ -60,9 +62,7 @@ export function QuickAnalysis({ readings, onAsk }: QuickAnalysisProps) {
   if (readings.length === 0) return null
 
   const title = (
-    <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '.95rem' }}>
-      تحليلات المشروع السريعة
-    </div>
+    <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '.95rem' }}>{heading}</div>
   )
 
   /* ── مقفول: بوستر في نص الكارت ──
@@ -76,7 +76,7 @@ export function QuickAnalysis({ readings, onAsk }: QuickAnalysisProps) {
         <div className="aishut-c">
           <span className="badge badge-44"><span className="aispark" /></span>
 
-          <h2 className="aishut-t">تحليلات المشروع السريعة</h2>
+          <h2 className="aishut-t">{heading}</h2>
 
           <div className="aishut-m">
             <span className="qr-count">{units.reading(readings.length)}</span>
@@ -101,10 +101,8 @@ export function QuickAnalysis({ readings, onAsk }: QuickAnalysisProps) {
           )}
 
           <button className="btn btn-p aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
-            حلّل المشروع
+            {heading.includes('الجهة') ? 'حلّل ملف الجهة' : 'حلّل المشروع'}
           </button>
-
-          <span className="aishut-f sub">قراءة آلية · استرشادية غير مُلزِمة</span>
         </div>
       </Glass>
     )

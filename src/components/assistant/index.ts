@@ -6,6 +6,8 @@ export { Composer, type ComposerProps } from './Composer'
 export { Disclaimer } from './Disclaimer'
 export { md } from './md'
 export { QuickRead, type QuickReadProps } from './QuickRead'
+export { AnalysisCard, type AnalysisCardProps } from './AnalysisCard'
+export { ReadingBlock, ReadingPeek } from './ReadingBlock'
 export { highlight } from './highlight'
 export type { Reading, ReadingAction } from './reading'
 export type {

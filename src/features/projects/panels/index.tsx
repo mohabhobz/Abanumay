@@ -3,7 +3,6 @@ import { Glass, Head, Tag, Num, Mono } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { Entity, LogEntry } from '@/types/domain'
 
-export { QuickAnalysis, type QuickAnalysisProps } from './QuickAnalysis'
 
 /** مشاريع الجهة — سياق ثابت جنب المشروع المفتوح */
 export function EntityProjectsPanel({

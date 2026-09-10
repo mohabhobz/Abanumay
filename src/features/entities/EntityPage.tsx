@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   Empty, Glass, Head, Icon, icons, KV, Mono, Num, Riyal, Segments, Tag,
@@ -11,7 +11,8 @@ import { entityById } from '@/data/mock/entities'
 import { ENTITY_DOCS, STATUS_GROUPS } from '@/data/mock/taxonomy'
 import { ROUTES } from '@/app/routes'
 import { activationTone, days, governanceTone, groupTone } from '@/lib/tone'
-import { QuickRead } from '@/components/assistant'
+import { AnalysisCard } from '@/components/assistant'
+import { useFillHeight } from '@/hooks/useFillHeight'
 import { EntityTotals } from './EntityTotals'
 import { readEntity } from '@/data/readings'
 
@@ -36,6 +37,15 @@ export default function EntityPage() {
     return out
   }, [projects])
 
+  /* الكارت الجانبي بياخد المساحة الباقية لحدّ رصيف القرار — نفس
+     حساب صفحة المشروع بالظبط، عشان الشكل واحد في الصفحتين. */
+  const aside = useRef<HTMLDivElement>(null)
+  useFillHeight(aside, {
+    varName: '--ai-fill',
+    reserveSelector: '.decdock .chrome, .askfab',
+    min: 240,
+  })
+
   if (!entity) return <Navigate to={ROUTES.entities} replace />
 
   const shown = group ? projects.filter((p) => p.statusGroup === group) : projects
@@ -44,7 +54,7 @@ export default function EntityPage() {
   return (
     <AppLayout assistantContext={assistFor.page(`الجهة · ${entity.name}`)}>
       <div className="viewstack">
-        <div className="screen col">
+        <div className="screen col hasg2">
           <nav className="crumb" aria-label="مسار التنقّل">
             <Link to={ROUTES.entities} className="lb">الجهات</Link>
             <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
@@ -173,19 +183,6 @@ export default function EntityPage() {
                 </p>
               </Glass>
 
-            </div>
-
-            {/* ═══ العمود الجانبي ═══
-                التفاصيل المرجعية (المستندات والتواصل) اتنقلت للعمود
-                الرئيسي: بتتقري بالتسلسل لا بالنظرة، ووجودها هنا كان
-                بيخلّي الجانبي أطول من المحتوى — فيفضل فراغ نص الشاشة
-                على اليمين. */}
-            <div className="col">
-              {/* القراءة السريعة — نفس الكومبوننت المستخدم في المشاريع
-                  وصفحة المشروع، بس القراءات محسوبة من ملف الجهة.
-                  بتتقفل وتتفتح: العمود بيتمرّر مع الصفحة دلوقتي (اللزق
-                  اتشال بعد الميتنج)، فطول الكارت بقى قرار المستخدم. */}
-              <QuickRead readings={readings} title="قراءة سريعة للجهة" />
 
               <Glass>
                 <Head title="أداء الجهة" meta="السجل التراكمي" />
@@ -219,6 +216,18 @@ export default function EntityPage() {
                   </Link>
                 </div>
               </Glass>
+            </div>
+
+            {/* ═══ العمود الجانبي — كارت واحد لازق ═══
+                زي صفحة المشروع بالظبط: أداء الجهة و«اذهب إلى» نزلوا
+                للعمود الرئيسي، وفضل كارت التحليلات وحده — وده اللي
+                بيخلّي اللزق يشتغل بلا تمرير جوّه تمرير. */}
+            <div className="col aiside" ref={aside}>
+              <AnalysisCard
+                readings={readings}
+                title="تحليلات الجهة السريعة"
+                onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+              />
             </div>
           </div>
         </div>

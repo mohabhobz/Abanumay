@@ -3179,7 +3179,11 @@ body.printing .mesh,body.printing .grain{display:none}
     /* الارتفاع محسوب من مكانه الفعلي (`useFillHeight`): الشاشة ناقص
        موضعه من فوق ناقص رصيف القرار. قبل اللزق بيبقى قصيرًا ومحتواه
        ظاهر، وكل ما تنزل بيكبر لحد ما يلزق فيملا الشاشة. */
-    height:var(--ai-fill,26rem)}
+    height:var(--ai-fill,26rem);
+    /* حاوية قياس: البوستر جوّه بيقيس نفسه على ارتفاعها لا على الشاشة.
+       `size` آمنة هنا لأن الارتفاع معلوم فوق ٩٦٠px بس — تحتها الكارت
+       في السياق العادي وارتفاعه من محتواه. */
+    container-type:size}
   .aiside>.aicard{height:100%;min-height:0;display:flex;flex-direction:column}
 }
 
@@ -3202,6 +3206,23 @@ body.printing .mesh,body.printing .grain{display:none}
 .aishut-p b.bad{color:var(--no-ink)}
 .aishut-go{margin-top:.25rem}
 .aicard.aishut .aishut-f{margin:0;font-size:.69rem}
+
+/* أعلى الصفحة الكارت لسه ما لزقش، فمساحته أقل من طول البوستر الطبيعي
+   (٢٧٥px) بحوالي ٣٠px — والزرار كان بيقع تحت الحافة ويحتاج تمريرًا
+   داخليًا عشان يبان، وده بالظبط اللي البوستر موجود عشان يمنعه. فبدل
+   ما يتقصّ، بيتقلّش: سطرين لمحة بدل تلاتة وفواصل أضيق. أول ما تنزل
+   شوية ويلزق بيرجع لهيئته الكاملة.
+   لازم تيجي **بعد** قواعد البوستر: نفس النوعية، والمتأخر بيكسب. */
+@container (max-height:290px){
+  .aicard.aishut{padding:.95rem 1.15rem}
+  .aishut-c{gap:.45rem}
+  .aishut-p{-webkit-line-clamp:2;padding-top:.6rem}
+}
+/* وأضيق من كده اللمحة نفسها بتنزل: هي تشويق لا معلومة، والزرار هو
+   المقصود — يفضل يبان كاملًا على أن تبان معاه سطر ونص مقصوص. */
+@container (max-height:262px){
+  .aishut-p{display:none}
+}
 
 /* ── الحالة المفتوحة: الترويسة ثابتة والقراءات بتتمرّر ── */
 .aicard.aiopen{display:flex;flex-direction:column;min-height:0}

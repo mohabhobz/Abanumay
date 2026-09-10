@@ -19,7 +19,7 @@ import {
   AgreementTab, CorrespondenceTab, DataTab, EntityTab, FollowUpsTab,
   HistoryTab, LogTab, PaymentsTab,
 } from './tabs'
-import { QuickAnalysis } from './panels'
+import { AnalysisCard } from '@/components/assistant'
 import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { projectLog } from '@/data/mock/log'
@@ -119,7 +119,7 @@ export default function ProjectPage() {
   const screen = useRef<HTMLDivElement>(null)
   /* عمود التحليلات بيملا الباقي من مكانه لحدّ فوق شريط القرار */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock .chrome', min: 240 })
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock .chrome, .askfab', min: 240 })
   const [atEnd, setAtEnd] = useState(false)
 
   useEffect(() => {
@@ -279,7 +279,7 @@ export default function ProjectPage() {
                 رفضها العميل: عمود بكذا كارت لازق بياخد تمريرًا جوّه
                 تمرير، وكارت واحد بياخد ارتفاعه ويقف. */}
             <div className="col aiside" ref={aside}>
-              <QuickAnalysis
+              <AnalysisCard
                 readings={analysis}
                 onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
               />
