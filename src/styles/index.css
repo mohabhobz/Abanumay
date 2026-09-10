@@ -226,6 +226,11 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
   font-variant-numeric:tabular-nums;font-feature-settings:"tnum";letter-spacing:.01em}
 .col{display:flex;flex-direction:column;gap:var(--gap);min-height:0}
 .col-s{display:flex;flex-direction:column;gap:.7rem}
+/* صفوف بيفصلها خط شعري: الفجوة بين العناصر بتتشال، وإلا المسافة
+   فوق النص (البادنج) بتبقى نصّ اللي تحته (البادنج + الفجوة)
+   فالسطر بيتقري ملزوقًا في خطّه. البادنج وحده بيوسّط. */
+.col-s.flush{gap:0}
+.col-s.flush>.data{padding:.9rem 0}
 .rowf{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 .lb{font-size:.74rem;color:var(--t2)}
 .sub{font-size:.76rem;color:var(--t3);line-height:1.65}
@@ -3031,3 +3036,94 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .aifold{flex:none;display:grid;place-items:center;width:28px;height:28px;
   border-radius:8px;color:var(--t3)}
 .aifold:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
+
+/* ═══════════════════════════════════════════════════════════
+   الاتفاقية · الدفعات · المراسلة
+   ثلاث شاشات كانت حالات فارغة. الداتا الحقيقية من النظام العامل
+   بتقول إن اللي يفرق مش الجدول: القالب اللي اتاخد، ودورة الاعتماد،
+   وشرط صرف كل دفعة. فالتصميم هنا حوالين دول.
+   ═══════════════════════════════════════════════════════════ */
+
+.agr-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;
+  padding-top:.9rem;margin-top:.2rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+.agr-tpl{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.55;
+  color:var(--t1);margin:.3rem 0 .25rem}
+.agr-date{font-size:.9rem;margin-top:.35rem}
+
+/* دورة الاعتماد: خمس محطات على خط رأسي */
+.agr-flow{list-style:none;margin:0;padding:0;position:relative}
+.agr-flow::before{content:"";position:absolute;inset-block:.8rem;inset-inline-start:7px;width:1.5px;
+  background:rgba(var(--edgeC),.16)}
+.agr-step{position:relative;display:grid;grid-template-columns:auto 1fr auto;
+  align-items:center;gap:.2rem .7rem;padding:.55rem 0;padding-inline-start:1.7rem}
+.agr-dot{position:absolute;inset-inline-start:0;top:.72rem;width:16px;height:16px;border-radius:50%;
+  display:grid;place-items:center;color:#fff;
+  background:var(--g-card);box-shadow:inset 0 0 0 1.5px rgba(var(--edgeC),.22)}
+.agr-step.done .agr-dot{background:var(--ok);box-shadow:none}
+.agr-step.now .agr-dot{background:var(--warn);box-shadow:0 0 0 3px rgba(var(--warnC),.18)}
+.agr-role{font-family:var(--fd);font-weight:600;font-size:.87rem;color:var(--t1)}
+.agr-step.pending .agr-role{color:var(--t3);font-weight:500}
+.agr-note{grid-column:2;font-size:.75rem;color:var(--t3)}
+.agr-step.now .agr-note{color:var(--warn-ink)}
+.agr-at{grid-row:1;grid-column:3;font-size:.75rem;color:var(--t3)}
+
+/* نص الاتفاقية — وثيقة تتقرا، مش جدول */
+.agr-body section{padding-top:1rem;margin-top:1rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+.agr-body section:first-child{padding-top:.2rem;margin-top:0;box-shadow:none}
+.agr-body h3{font-size:.88rem;margin:0 0 .6rem;color:var(--t1)}
+.agr-body ul{margin:0;padding-inline-start:1.1rem;display:flex;flex-direction:column;gap:.55rem}
+.agr-body li{font-size:.845rem;line-height:1.85;color:var(--t2)}
+.agr-body li::marker{color:var(--t3)}
+
+/* ── الدفعات ── */
+.paylist{display:flex;flex-direction:column;gap:.7rem;margin-top:.2rem}
+.pay{padding:.95rem 1.05rem;border-radius:var(--r2);
+  background:rgba(var(--wC),calc(.42 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+.pay.done{box-shadow:inset 0 0 0 1px rgba(var(--okC),.28)}
+.pay-h{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.pay-no{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1)}
+.pay-amt{font-family:var(--fd);font-weight:700;font-size:1.02rem;color:var(--ink-soft);
+  direction:rtl}
+.pay-cond{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem;font-size:.8rem;
+  line-height:1.7;color:var(--t2)}
+.pay-cond .lb{flex:none;color:var(--t3)}
+
+.pay-steps{list-style:none;margin:.8rem 0 0;padding:.75rem 0 0;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7));
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:.7rem .6rem}
+.pay-step{display:flex;align-items:flex-start;gap:.45rem;min-width:0}
+.pay-dot{flex:none;margin-top:1px;width:15px;height:15px;border-radius:50%;
+  display:grid;place-items:center;color:#fff;background:rgba(var(--edgeC),.10);
+  box-shadow:inset 0 0 0 1.5px rgba(var(--edgeC),.2)}
+.pay-step.on .pay-dot{background:var(--ok);box-shadow:none}
+.pay-txt{display:flex;flex-direction:column;min-width:0}
+.pay-lbl{font-size:.775rem;line-height:1.4;color:var(--t2)}
+.pay-step.on .pay-lbl{color:var(--t1);font-weight:600}
+.pay-step .sub{font-size:.69rem;line-height:1.45}
+
+/* ── ثريد المراسلة ── */
+.thread{display:flex;flex-direction:column;gap:.6rem}
+.msg{padding:.8rem .95rem;border-radius:var(--r2);max-width:88%;
+  background:rgba(var(--wC),calc(.45 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+/* رسالة الجهة على الشمال ورسالة المؤسسة على اليمين: الجهة طرف تاني
+   مش زميل، والفرق لازم يبان من غير ما تقرا الاسم. */
+.msg.entity{align-self:flex-start;background:rgba(var(--retC2),.09);
+  box-shadow:inset 0 0 0 1px rgba(var(--retC2),.2)}
+.msg.staff{align-self:flex-end}
+.msg-h{display:flex;align-items:center;gap:.45rem;margin-bottom:.4rem}
+.msg-by{font-family:var(--fd);font-weight:600;font-size:.82rem;color:var(--t1)}
+.msg-role{font-size:.66rem;padding:.1rem .45rem;border-radius:var(--rp);
+  color:var(--t3);background:rgba(var(--edgeC),.08)}
+.msg.entity .msg-role{color:var(--ret-ink);background:rgba(var(--retC2),.14)}
+.msg-h .mono{font-size:.72rem;color:var(--t3)}
+.msg-b{font-size:.845rem;line-height:1.8;color:var(--t2)}
+
+@media (max-width:640px){
+  .msg{max-width:100%}
+  .agr-step{grid-template-columns:1fr auto}
+  .pay-steps{grid-template-columns:1fr}
+}

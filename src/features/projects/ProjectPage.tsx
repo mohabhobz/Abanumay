@@ -20,6 +20,7 @@ import {
 } from './tabs'
 import { EntityProjectsPanel, LastActionPanel, QuickAnalysis } from './panels'
 import { readInsights, readJourney } from '@/data/readings'
+import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { journeys } from '@/data/journey'
 
 /** عدد الأيام اللي الإجراء الحالي مفتوح فيها — من سجل الإجراءات */
@@ -131,6 +132,23 @@ export default function ProjectPage() {
      المشروع» فوق التبويبات وكارت «تحليلات المشروع» في الجانبي،
      والاتنين بيقولوا «واقف عند دراسة المشروع من 87 يومًا، 132% فوق
      الحدّ» بصياغتين. مكان واحد للمساعد في الشاشة. */
+  /* تفاصيل المشروع — مشتقّة من الصف عشان كل مشروع في النموذج يبقى
+     قابلًا للتجربة، مش المشروع الواحد اللي في الفيكستشر. */
+  const detail = useMemo(
+    () => projectDetail(row ?? fixtures.projects[0], entity.name),
+    [row, entity.name],
+  )
+
+  /* مشروع وصل للمرحلة — بيتعرض في الحالة الفارغة عشان الكلاينت
+     يشوف الشاشة مليانة بضغطة بدل ما يدوّر على مشروع مناسب. */
+  const examples = useMemo(
+    () => ({
+      agreement: exampleWith(fixtures.projects, 'agreement', row?.id),
+      payments: exampleWith(fixtures.projects, 'payments', row?.id),
+    }),
+    [row?.id],
+  )
+
   const analysis = useMemo(
     () => [...(row ? readJourney(row, journeys.get(row.id)) : []), ...readInsights(fixtures.insights)],
     [row],
@@ -204,14 +222,33 @@ export default function ProjectPage() {
               )}
               {active === 'entity' && <EntityTab entity={entity} bank={project.bank} />}
               {active === 'history' && <HistoryTab entity={entity} currentId={project.id} />}
-              {active === 'agreement' && <AgreementTab />}
-              {active === 'payments' && <PaymentsTab />}
+              {active === 'agreement' && (
+                <AgreementTab
+                  agreement={detail.agreement}
+                  payments={detail.payments}
+                  entityName={entity.name}
+                  example={examples.agreement}
+                  onOpenExample={(x) => navigate(ROUTES.projectTab(x, 'agreement'))}
+                />
+              )}
+              {active === 'payments' && (
+                <PaymentsTab
+                  payments={detail.payments}
+                  granted={project.amountGranted || project.amountRequested}
+                  example={examples.payments}
+                  onOpenExample={(x) => navigate(ROUTES.projectTab(x, 'payments'))}
+                />
+              )}
               {active === 'follow-ups' && (
-                <FollowUpsTab project={project} types={fixtures.followUpTypes} />
+                <FollowUpsTab followUps={detail.followUps} types={fixtures.followUpTypes} />
               )}
               {active === 'log' && <LogTab project={project} />}
               {active === 'correspondence' && (
-                <CorrespondenceTab project={project} entityName={entity.name} />
+                <CorrespondenceTab
+                  messages={detail.messages}
+                  entityName={entity.name}
+                  stage={project.status.label}
+                />
               )}
             </div>
 

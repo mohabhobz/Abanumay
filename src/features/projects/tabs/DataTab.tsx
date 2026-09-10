@@ -227,9 +227,11 @@ function BulletSection({ title, items }: { title: string; items: string[] }) {
         <h3 style={{ fontSize: '.9rem' }}>{title}</h3>
         <span className="meta">{items.length}</span>
       </div>
-      <div className="col-s">
+      {/* `flush`: الصفوف بيفصلها خط شعري، والفجوة بينهم بتخلّي
+          المسافة فوق السطر نصّ اللي تحته فيتقري ملزوقًا في خطّه. */}
+      <div className="col-s flush">
         {items.map((item, i) => (
-          <div className="data" key={i} style={{ padding: '.7rem 0' }}>
+          <div className="data" key={i}>
             <div style={{ fontSize: '.85rem', lineHeight: 1.7 }}>{item}</div>
           </div>
         ))}

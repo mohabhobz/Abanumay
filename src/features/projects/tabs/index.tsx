@@ -3,10 +3,13 @@ import {
   Glass, Head, Tag, Num, Mono, Empty, Timeline, Icon, icons,
 } from '@/components/ui'
 import { nf } from '@/lib/format'
-import type { Entity, FollowUpType, Project } from '@/types/domain'
+import type { Entity, FollowUp, FollowUpType, Project } from '@/types/domain'
+import type { ThreadMessage } from '@/data/mock/detail'
 
 export { DataTab } from './DataTab'
 export { EntityTab } from './EntityTab'
+export { AgreementTab, type AgreementTabProps } from './AgreementTab'
+export { PaymentsTab, type PaymentsTabProps } from './PaymentsTab'
 
 /* ═══════════════ المشاريع السابقة ═══════════════ */
 
@@ -57,57 +60,61 @@ export function HistoryTab({ entity: E, currentId }: { entity: Entity; currentId
   )
 }
 
-/* ═══════════════ الاتفاقية ═══════════════
-   بتتفتح بعد الاعتماد النهائي — الحالة الفاضية بتقول إيه اللي هيظهر
-   هنا لما توصل، عشان المستخدم يعرف إن الشاشة مش ناقصة. */
-
-export function AgreementTab() {
-  return (
-    <Glass>
-      <Head title="اتفاقية المشروع" meta="تُفتح بعد الاعتماد النهائي" />
-      <Empty
-        title="لا توجد اتفاقية — المشروع لم يصل لمرحلة الاعتماد."
-        note="عند التفعيل: اختيار القالب · استرجاع بيانات المشروع تلقائيًا · بنود الأحكام والشروط · جدول الدفعات · دورة التوقيع"
-        actions={
-          <>
-            <button className="btn btn-off">طباعة الاتفاقية</button>
-            <button className="btn btn-off">مسودة جديدة</button>
-          </>
-        }
-      />
-    </Glass>
-  )
-}
-
-/* ═══════════════ الدفعات ═══════════════ */
-
-export function PaymentsTab() {
-  return (
-    <Glass>
-      <Head title="جدول الدفعات" meta="يُفتح بعد اعتماد الاتفاقية" />
-      <Empty
-        title="لا توجد دفعات — المشروع لم يصل لمرحلة الاتفاقية."
-        note="الأعمدة عند التفعيل: الدفعة · المبلغ · تاريخ الدفعة · الحالة · إذن الصرف"
-      />
-    </Glass>
-  )
-}
-
 /* ═══════════════ المتابعات ═══════════════ */
 
+/**
+ * المتابعات.
+ *
+ * في النظام العامل المتابعة **بتتوثّق فيها شروط الصرف**: الصف اللي
+ * بيقول «متطلب الدفعة الثانية: إنجاز 50% من العمليات» هو اللي إذن
+ * الصرف اتبنى عليه بعده بأيام. فمش سجل ملاحظات — ده الدليل اللي
+ * القرار المالي بيستند له.
+ *
+ * وهي كمان **بتظهر جوّه سجل المشروع** بنفس الترتيب الزمني، لأن
+ * النظام بيحطّها في نفس التايم لاين. التاب ده عرض مركَّز ليها.
+ */
 export function FollowUpsTab({
-  project: P,
+  followUps,
   types,
 }: {
-  project: Project
+  followUps: FollowUp[]
   types: FollowUpType[]
 }) {
   return (
     <Glass>
-      <Head title="المتابعات" meta={`${P.followUps.length} متابعة`} />
-      <Empty title="لا توجد متابعات مسجّلة على هذا المشروع." />
+      <Head
+        title="المتابعات"
+        meta={followUps.length ? `${followUps.length} متابعة` : 'لا توجد'}
+      />
 
-      <div className="hd" style={{ marginTop: '1.2rem', marginBottom: '.6rem' }}>
+      {followUps.length === 0 ? (
+        <Empty
+          title="لا توجد متابعات مسجّلة على هذا المشروع."
+          note="المتابعة توثّق تواصلًا أو زيارة أو منتجًا معرفيًا أو شرط صرف — وتظهر في سجل المشروع بترتيبها الزمني."
+        />
+      ) : (
+        <div className="col-s flush">
+          {followUps.map((f, i) => (
+            <div className="data" key={i} style={{ padding: '.95rem 0' }}>
+              <div className="rowf" style={{ gap: '.5rem', marginBottom: '.45rem' }}>
+                <span className="itag">{f.type}</span>
+                <span className="pc-sp" />
+                <span className="sub">{f.by}</span>
+                <Mono>{f.at}</Mono>
+              </div>
+              <div style={{ fontSize: '.86rem', lineHeight: 1.7 }}>{f.body}</div>
+              {f.attachment && (
+                <div className="rowf" style={{ gap: '.4rem', marginTop: '.5rem' }}>
+                  <Icon path={icons.clip} size={14} style={{ color: 'var(--t3)' }} />
+                  <a className="lnk">{f.attachment}</a>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="hd" style={{ marginTop: '1.3rem', marginBottom: '.6rem' }}>
         <h3 style={{ fontSize: '.9rem' }}>إضافة متابعة</h3>
         <span className="meta">النوع والوصف إلزاميان</span>
       </div>
@@ -160,20 +167,58 @@ export function LogTab({ project: P }: { project: Project }) {
 
 /* ═══════════════ المراسلات ═══════════════ */
 
+/**
+ * المراسلة مع الجهة.
+ *
+ * القناة دي في النظام العامل **شبه ميتة**: صفر رسائل في ٣٨ مشروعًا
+ * فحصناه، والثريد الوحيد اللي لقيناه كان كله عن سند قبض اتعطّل.
+ * يعني هي مش قناة تواصل عام — بتتفتح **لما إجراء يقف على الجهة**.
+ *
+ * فبنعرضها كده بالظبط: لو الإجراء واقف على الجهة، الثريد موجود
+ * ومعاه سبب وقوفه. ولو لأ، بنقول إنها فاضية ونقول امتى بتُستخدم،
+ * بدل ما نوري صندوق شات فاضي في كل مشروع.
+ */
 export function CorrespondenceTab({
-  project: P,
+  messages,
   entityName,
+  stage,
 }: {
-  project: Project
+  messages: ThreadMessage[]
   entityName: string
+  stage: string
 }) {
   return (
     <Glass>
-      <Head title="المراسلة مع الجهة" meta={`${P.messages.length} رسائل`} />
-      <div className="sub" style={{ marginBottom: '.8rem' }}>
-        القناة الرسمية داخل المشروع، مرتبطة بطلب الاستكمال الحالي.
-      </div>
-      <Empty title="لا توجد رسائل بعد." />
+      <Head
+        title="المراسلة مع الجهة"
+        meta={messages.length ? `${messages.length} رسائل` : 'لا توجد'}
+      />
+
+      {messages.length > 0 ? (
+        <>
+          <div className="sub" style={{ marginBottom: '.9rem' }}>
+            القناة اتفتحت لأن الإجراء واقف على الجهة عند «{stage}».
+          </div>
+          <div className="thread">
+            {messages.map((m, i) => (
+              <div className={`msg ${m.from}`} key={i}>
+                <div className="msg-h">
+                  <span className="msg-by">{m.from === 'entity' ? entityName : m.by}</span>
+                  <span className="msg-role">{m.from === 'entity' ? 'الجهة' : 'المؤسسة'}</span>
+                  <span className="pc-sp" />
+                  <Mono>{m.at}</Mono>
+                </div>
+                <div className="msg-b">{m.body}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <Empty
+          title="لا توجد مراسلات على هذا المشروع."
+          note="القناة تُستخدم عمليًا حين يقف إجراء على الجهة — طلب استكمال، أو سند لم يُرفع، أو تقرير متأخر. وما عدا ذلك يجري التواصل في المتابعات."
+        />
+      )}
 
       <div className="ask free" style={{ marginTop: '1rem' }}>
         <span className="ph">اكتب رسالة لـ{entityName}…</span>
