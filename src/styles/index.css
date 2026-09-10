@@ -1046,7 +1046,14 @@ to{opacity:1;transform:none}
 /* آخر الصفحة: مفيش محتوى ماشي تحت الشريط، فالضبابة مالهاش لازمة */
 .decdock.clear::before{opacity:0}
 .decbar{position:relative;isolation:isolate;pointer-events:auto;bottom:auto;
-  background:linear-gradient(160deg,rgba(var(--wC),calc(.60 * var(--wM))),rgba(var(--wC),calc(.38 * var(--wM))));
+  /* أرضية معتمة تحت الزجاج.
+     الزرار عايم فوق محتوى بيتمرّر تحته، والبلور وحده ما بيخفيش النص
+     في الثيمات الغامقة — الطبقة البيضا فيها خفيفة أصلًا. فكان بيبان
+     رقم من الرسم شبح جوّه الزرار (قِسناه: لون النص = لون الخلفية
+     بالظبط). أرضية الصفحة نفسها تحته بتقفل ده، والزجاج والحافة
+     والظل زي ما هما. */
+  background-color:var(--mesh-bg);
+  background-image:linear-gradient(160deg,rgba(var(--wC),calc(.60 * var(--wM))),rgba(var(--wC),calc(.38 * var(--wM))));
   -webkit-backdrop-filter:blur(48px) saturate(1.6);backdrop-filter:blur(48px) saturate(1.6);
   margin:0;
   box-shadow:
@@ -1436,7 +1443,14 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   mask-image:linear-gradient(to top,#000 0,#000 38%,rgba(0,0,0,.5) 66%,transparent 100%)}
 .composer.docked .cbox,.composer.docked .cdisc{pointer-events:auto}
 .cbox.float{position:relative;isolation:isolate;
-  background:linear-gradient(160deg,rgba(var(--wC),calc(.60 * var(--wM))),rgba(var(--wC),calc(.38 * var(--wM))));
+  /* أرضية معتمة تحت الزجاج.
+     الزرار عايم فوق محتوى بيتمرّر تحته، والبلور وحده ما بيخفيش النص
+     في الثيمات الغامقة — الطبقة البيضا فيها خفيفة أصلًا. فكان بيبان
+     رقم من الرسم شبح جوّه الزرار (قِسناه: لون النص = لون الخلفية
+     بالظبط). أرضية الصفحة نفسها تحته بتقفل ده، والزجاج والحافة
+     والظل زي ما هما. */
+  background-color:var(--mesh-bg);
+  background-image:linear-gradient(160deg,rgba(var(--wC),calc(.60 * var(--wM))),rgba(var(--wC),calc(.38 * var(--wM))));
   -webkit-backdrop-filter:blur(48px) saturate(1.6);backdrop-filter:blur(48px) saturate(1.6);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*(1.5 + var(--near,0)*.9))),
     0 calc(10px + var(--near,0)*14px) calc(28px + var(--near,0)*26px) rgba(20,69,71,calc(.10 + var(--near,0)*.10));
@@ -3035,7 +3049,14 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   color:var(--t1);font-family:var(--fd);font-weight:600;font-size:.86rem;
   /* ونفس زجاجه ونفس ظله ونفس حسّه بالماوس: الاتنين قطعة واحدة
      اتقسمت، مش زرار جنب شريط. */
-  background:linear-gradient(160deg,rgba(var(--wC),calc(.60 * var(--wM))),rgba(var(--wC),calc(.38 * var(--wM))));
+  /* أرضية معتمة تحت الزجاج.
+     الزرار عايم فوق محتوى بيتمرّر تحته، والبلور وحده ما بيخفيش النص
+     في الثيمات الغامقة — الطبقة البيضا فيها خفيفة أصلًا. فكان بيبان
+     رقم من الرسم شبح جوّه الزرار (قِسناه: لون النص = لون الخلفية
+     بالظبط). أرضية الصفحة نفسها تحته بتقفل ده، والزجاج والحافة
+     والظل زي ما هما. */
+  background-color:var(--mesh-bg);
+  background-image:linear-gradient(160deg,rgba(var(--wC),calc(.60 * var(--wM))),rgba(var(--wC),calc(.38 * var(--wM))));
   -webkit-backdrop-filter:blur(48px) saturate(1.6);backdrop-filter:blur(48px) saturate(1.6);
   box-shadow:
     inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair) * (1 + var(--near,0)*.9))),
@@ -3631,3 +3652,72 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 :root[data-theme="green"] .tag.brand{
   background-color:rgba(var(--edgeC),.10);
   background-image:linear-gradient(rgba(var(--limeC),.12),rgba(var(--limeC),.12))}
+
+/* ═══════════════════════════════════════════════════════════
+   رسوم الميزانية.
+
+   التلات طبقات أجزاء من كل لا فئات، فاللون درجات من لون واحد
+   ومحايد للباقي: الفرق من الإضاءة لا من الصبغة، فبيفضل مقروءًا
+   لعمى الألوان. ومعاهم مفتاح وقيمة مكتوبة، فالهوية مش من اللون
+   وحده أبدًا.
+   ═══════════════════════════════════════════════════════════ */
+
+.chq{display:flex;flex-direction:column;gap:.35rem}
+.chq-t{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.6;color:var(--t1)}
+.chq-v>b{font-family:var(--fd);font-weight:700;font-size:2.1rem;line-height:1.1;color:var(--t1)}
+.chq-m{display:block;height:10px;border-radius:99px;overflow:hidden;margin-top:.15rem;
+  background:rgba(var(--edgeC),.10)}
+.chq-m>i{display:block;height:100%;border-radius:99px;background:var(--solid)}
+.chq-s{font-size:.75rem;line-height:1.7}
+
+.chb,.chy{display:flex;flex-direction:column;gap:.7rem}
+.chb-h{display:flex;align-items:baseline;justify-content:space-between;gap:.8rem;flex-wrap:wrap}
+.chb-t{font-family:var(--fd);font-weight:600;font-size:.9rem;color:var(--t1)}
+/* المفتاح دايمًا موجود مع أكتر من سلسلة — الهوية مش من اللون وحده */
+.chb-k{display:flex;flex-wrap:wrap;gap:.25rem .8rem;font-size:.72rem;color:var(--t1);opacity:.78}
+.chb-k>span{display:inline-flex;align-items:center;gap:.35rem}
+.chb-k i{width:10px;height:10px;border-radius:3px;flex:none}
+.chb-k i.a,.chb-tr i.a,.chy-bars i.a{background:var(--solid)}
+.chb-k i.b,.chb-tr i.b{background:rgba(var(--retC2),.42)}
+.chb-k i.c,.chb-tr i.c,.chy-bars i.c{background:rgba(var(--edgeC),.13)}
+
+.chb-rows{display:flex;flex-direction:column;gap:.42rem}
+.chb-r{display:grid;grid-template-columns:minmax(6rem,11rem) 1fr minmax(7.5rem,auto);
+  align-items:center;gap:.6rem}
+.chb-lb{font-size:.77rem;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* المسار بيتقلّص بنسبة المخصص، فطول العمود نفسه مقياس */
+.chb-tr{display:flex;height:14px;border-radius:5px;overflow:hidden;min-width:2px;
+  background:rgba(var(--edgeC),.07)}
+/* فاصل سطحي ٢px بين الطبقات عشان الحدود تبان بلا خط زيادة */
+.chb-tr>i{display:block;height:100%;box-shadow:-2px 0 0 var(--card-bg,rgba(255,255,255,.55))}
+.chb-tr>i:first-child{box-shadow:none}
+.chb-v{font-size:.75rem;color:var(--t1);text-align:start;white-space:nowrap}
+.chb-v small{font-size:.69rem}
+.chb-n{margin:0;font-size:.75rem;line-height:1.9}
+.chb-n b{font-family:var(--fd);font-weight:600;color:var(--t1)}
+
+.chy-plot{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:.6rem;align-items:end}
+.chy-col{display:flex;flex-direction:column;align-items:center;gap:.35rem;min-width:0}
+.chy-v{font-size:.7rem;color:var(--t1);opacity:.78;white-space:nowrap}
+.chy-bars{position:relative;display:flex;align-items:flex-end;justify-content:center;
+  width:100%;height:124px}
+.chy-bars>i{position:absolute;bottom:0;display:block;border-radius:5px 5px 0 0}
+.chy-bars>i.c{inset-inline:0;background:rgba(var(--edgeC),.13)}
+.chy-bars>i.a{inset-inline:22%;background:var(--solid)}
+/* الصرف اللي عدّى المخصص — لون الخطر، ومعاه سطر مكتوب تحت الرسم */
+.chy-bars>i.a.over{background:var(--no)}
+.chy-lb{font-size:.7rem;line-height:1.35;text-align:center;color:var(--t1);opacity:.78;
+  white-space:pre-line}
+
+@media (max-width:760px){
+  .chb-r{grid-template-columns:1fr;gap:.2rem}
+  .chb-lb{white-space:normal}
+  .chy-plot{gap:.35rem}
+  .chy-v{font-size:.62rem}
+}
+/* الرقم الواحد جنب رسم الزمن: الاتنين بيتقروا في نظرة واحدة */
+.chgrid{display:grid;gap:.85rem;grid-template-columns:minmax(220px,.7fr) 1.3fr}
+@media (max-width:900px){.chgrid{grid-template-columns:1fr}}
+/* القايمة اتقلبت عشان ما تخرجش برّه الشاشة — `ExportMenu` بيقيس
+   ويحطّ الكلاس ده. مرتبطة بنهاية الزرار بدل بدايته. */
+.fexp-m.flip{inset-inline-start:auto;inset-inline-end:0}

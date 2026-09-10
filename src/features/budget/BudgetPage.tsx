@@ -8,6 +8,7 @@ import {
   CYCLES, PLAN_LEVELS, chain, childSum, cycleById, imbalances, leaves,
   nodeAt, parentCount, type Imbalance, type PlanNode,
 } from '@/data/budgetPlan'
+import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from './BudgetCharts'
 
 /**
  * الميزانية.
@@ -86,6 +87,16 @@ export default function BudgetPage() {
           {root ? (
             <>
               <Balance gaps={gaps} parents={parents} onGo={goTo} root={root} />
+
+              <section className="rpsec">
+                <Head title="الصورة الكاملة" meta="نفس رسوم النظام العامل، بالداتا الحقيقية" />
+                <div className="chgrid">
+                  <SpendGauge value={cycle.spent} of={cycle.alloc} />
+                  <YearSpend />
+                </div>
+                <FieldSpend />
+                <PlanCoverage />
+              </section>
 
               <Tree
                 root={root}

@@ -11,6 +11,8 @@ import { ExportMenu } from '@/components/export'
 import { type Sheet } from '@/lib/export'
 import { LIVE_SPECS, specByKey, type LiveCol, type LiveSpec } from '@/data/liveReports'
 import { budgetTree, liveRows, type BudgetNode, type LiveRow } from '@/data/mock/liveRows'
+import { CYCLES } from '@/data/budgetPlan'
+import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from '@/features/budget/BudgetCharts'
 
 /**
  * شاشة تقرير واحد من الكتالوج.
@@ -145,51 +147,30 @@ function Charts({ spec }: { spec: LiveSpec }) {
   return (
     <section className="rpsec">
       <Head title="رسوم الشاشة" meta={`${spec.charts.length} رسمًا في النظام`} />
-      <div className="lrch">
-        {spec.charts.map((c) => (
-          <Glass key={c.title} className="lrch-c">
-            <span className="lrch-t">{c.title}</span>
-            <span className="sub lrch-k">
-              {c.kind === 'gauge' ? 'شريط نسبة واحد'
-                : c.kind === 'stack' ? `أعمدة مركّبة · ${c.series?.join(' · ')}`
-                : 'أعمدة'}
-            </span>
-            <ChartSketch kind={c.kind} seed={c.title} />
-          </Glass>
-        ))}
-      </div>
+      {spec.charts.map((c) => (
+        <RealChart key={c.title} title={c.title} />
+      ))}
     </section>
   )
 }
 
-/** رسم تخطيطي بقيم ثابتة — بيقول شكل الرسم، مش قيمه */
-function ChartSketch({ kind, seed }: { kind: 'gauge' | 'bars' | 'stack'; seed: string }) {
-  const h = useMemo(() => {
-    let s = 0
-    for (let i = 0; i < seed.length; i++) s = (s * 31 + seed.charCodeAt(i)) >>> 0
-    return Array.from({ length: 9 }, () => {
-      s = (s * 1664525 + 1013904223) >>> 0
-      return 18 + ((s >>> 8) % 78)
-    })
-  }, [seed])
-
-  if (kind === 'gauge') {
-    return (
-      <span className="lrch-g" aria-hidden="true">
-        <i style={{ width: `${h[0]}%` }} />
-        <b className="num">{h[0]}%</b>
-      </span>
-    )
+/**
+ * الرسوم مرسومة بالداتا الحقيقية، لا مخططات فاضية.
+ *
+ * أول نسخة كانت بترسم أعمدة عشوائية «بتقول شكل الرسم لا قيمه» — وده
+ * كان قرارًا غلط: شاشة بتقول «فيه رسم هنا» من غير ما ترسمه ما بتفرقش
+ * عن سطر مكتوب. الرسوم التلاتة في `reports1_1` والأربعة في `reports1_5`
+ * كلها بتتغذّى من نفس شجرة التخصيص، فكلها اترسمت.
+ */
+function RealChart({ title }: { title: string }) {
+  const c2026 = CYCLES[0]
+  if (title.includes('نسبة المصروف')) {
+    return <SpendGauge title={title} value={c2026.spent} of={c2026.alloc} />
   }
-  return (
-    <span className={`lrch-b${kind === 'stack' ? ' st' : ''}`} aria-hidden="true">
-      {h.map((v, i) => (
-        <i key={i} style={{ height: `${v}%` }}>
-          {kind === 'stack' && <u style={{ height: `${Math.round(v * 0.55)}%` }} />}
-        </i>
-      ))}
-    </span>
-  )
+  if (title.includes('حسب المجال') && title.includes('المصاريف')) return <FieldSpend />
+  if (title === 'المصاريف السنوية') return <YearSpend />
+  if (title.includes('الإنجاز')) return <PlanCoverage />
+  return null
 }
 
 /* ═══════════════════ الجدول ═══════════════════ */

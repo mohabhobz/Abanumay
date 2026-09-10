@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon, icons } from '@/components/ui'
 import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
@@ -35,7 +35,35 @@ export function ExportMenu({
   count?: number
 }) {
   const [open, setOpen] = useState(false)
+  /** جهة الفتح: `start` بتنمو ناحية بداية السطر، `end` بالعكس */
+  const [side, setSide] = useState<'start' | 'end'>('start')
   const box = useRef<HTMLDivElement>(null)
+  const menu = useRef<HTMLDivElement>(null)
+
+  /**
+   * القايمة بتتقلب لو هتخرج برّه الشاشة.
+   *
+   * زرار التصدير مكانه آخر شريط الأدوات، وفي RTL آخر الشريط هو
+   * **يسار الشاشة**. القايمة مربوطة ببداية الزرار وبتنمو لليسار،
+   * فعلى شاشة الميزانية كانت بتبدأ عند −167px وتتقصّ على حافة
+   * `.screen` (اللي `overflow:auto`). القياس بيحصل بعد الفتح مرة
+   * واحدة، والقلب بيحطّها ناحية الداخل.
+   */
+  useLayoutEffect(() => {
+    if (!open) return
+    const el = menu.current
+    const anchor = box.current
+    if (!el || !anchor) return
+    /* الحساب من **مرساة الزرار وعرض القايمة**، لا من موضع القايمة
+       الحالي: لو قِسنا الموضع الحالي، القايمة اللي اتقلبت مرة
+       بتفضل مقلوبة للأبد لأنها بقت جوّه الشاشة بالقلب. */
+    const a = anchor.getBoundingClientRect()
+    const w = el.offsetWidth
+    const rtl = getComputedStyle(el).direction === 'rtl'
+    const left = rtl ? a.right - w : a.left
+    const pad = 12
+    setSide(left < pad || left + w > window.innerWidth - pad ? 'end' : 'start')
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -73,7 +101,7 @@ export function ExportMenu({
         </button>
 
         {open && (
-          <div className="fmenu fexp-m" role="menu">
+          <div className={`fmenu fexp-m${side === 'end' ? ' flip' : ''}`} role="menu" ref={menu}>
             {note && <div className="fexp-s sub">{note}</div>}
             <button className="fopt" role="menuitem" onClick={pick(() => exportXlsx(sheet))}>
               <span className="fopt-t">Excel · xlsx</span>
