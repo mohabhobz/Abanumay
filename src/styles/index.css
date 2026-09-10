@@ -2950,8 +2950,11 @@ body.printing .mesh,body.printing .grain{display:none}
   inset-inline-end:clamp(1.4rem,3vw,2.6rem);
   bottom:clamp(1rem,2vw,1.5rem);
   display:flex;align-items:center;gap:.55rem;
-  /* نفس حشو `.decbar` بالظبط، فالارتفاع بيطلع واحد من غير رقم مثبّت */
-  width:var(--ask-w);min-height:63px;
+  /* الارتفاع من الشريط نفسه (`useMatchHeight`) — بالظبط، لا أقل ولا
+     أكتر: شريط الإجراء المجمّع 61px وشريط القرار 63، والقاع الثابت
+     كان بيخلّي الزرار أطول من المجمّع. و63 قيمة احتياطية لما ما
+     يبقاش فيه شريط أصلًا. */
+  width:var(--ask-w);height:var(--ask-h,auto);min-height:var(--ask-h,63px);
   padding:.9rem 1rem;border-radius:var(--r4);
   color:var(--t1);font-family:var(--fd);font-weight:600;font-size:.86rem;
   /* ونفس زجاجه ونفس ظله ونفس حسّه بالماوس: الاتنين قطعة واحدة

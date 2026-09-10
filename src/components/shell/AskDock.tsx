@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { useProximity } from '@/hooks/useProximity'
+import { useMatchHeight } from '@/hooks/useMatchHeight'
 
 /**
  * «اسأل أبانمي» — الزرار العايم الثابت في السيستم كله.
@@ -32,6 +33,9 @@ export interface AskDockProps {
 export function AskDock({ open, onToggle, compact }: AskDockProps) {
   const fab = useRef<HTMLButtonElement>(null)
   useProximity(fab)
+  /* بياخد ارتفاع شريط القرار بالظبط. الرقم الثابت كان بيشتغل لحد ما
+     الشريط يلفّ سطرًا تاني تحت 1440px فيبقى 108 والزرار 63. */
+  useMatchHeight(fab, '.decdock .chrome', '--ask-h')
 
   return (
     <button
