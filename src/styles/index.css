@@ -2954,7 +2954,9 @@ body.printing .mesh,body.printing .grain{display:none}
      أكتر: شريط الإجراء المجمّع 61px وشريط القرار 63، والقاع الثابت
      كان بيخلّي الزرار أطول من المجمّع. و63 قيمة احتياطية لما ما
      يبقاش فيه شريط أصلًا. */
-  width:var(--ask-w);height:var(--ask-h,auto);min-height:var(--ask-h,63px);
+  /* العرض من المحتوى لا رقمًا ثابتًا — والزرار بيكتب عرضه على
+     `:root` فالرصيف بيحجز نفس المساحة. */
+  width:max-content;height:var(--ask-h,auto);min-height:var(--ask-h,63px);
   padding:.9rem 1rem;border-radius:var(--r4);
   color:var(--t1);font-family:var(--fd);font-weight:600;font-size:.86rem;
   /* ونفس زجاجه ونفس ظله ونفس حسّه بالماوس: الاتنين قطعة واحدة
@@ -2976,8 +2978,8 @@ body.printing .mesh,body.printing .grain{display:none}
   inset 0 0 0 1px rgba(var(--retC2),.42),
   0 14px 32px rgba(20,69,71,.14)}
 .askfab .badge{flex:none}
-.askfab-t{flex:1;min-width:0;text-align:start;white-space:nowrap}
-.askfab.mini{width:auto;min-height:0;padding:0;justify-content:center;aspect-ratio:1;height:46px;border-radius:50%}
+.askfab-t{flex:none;text-align:start;white-space:nowrap}
+.askfab.mini{width:auto;height:46px;min-height:0;padding:0;justify-content:center;aspect-ratio:1;border-radius:50%}
 @media (prefers-reduced-motion:reduce){
   .askfab{transition:none;transform:none!important}
   .askfab::before{display:none}

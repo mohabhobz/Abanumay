@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useProximity } from '@/hooks/useProximity'
 import { useMatchHeight } from '@/hooks/useMatchHeight'
 
@@ -36,6 +36,26 @@ export function AskDock({ open, onToggle, compact }: AskDockProps) {
   /* بياخد ارتفاع شريط القرار بالظبط. الرقم الثابت كان بيشتغل لحد ما
      الشريط يلفّ سطرًا تاني تحت 1440px فيبقى 108 والزرار 63. */
   useMatchHeight(fab, '.decdock .chrome', '--ask-h')
+
+  /* العرض من المحتوى، والرصيف بيتعلّم منه.
+     كان عرضًا ثابتًا (11.4rem) فالنص كان بيسيب فراغًا جنبه على
+     الشاشات اللي الخط فيها أضيق. دلوقتي الزرار بياخد عرض محتواه،
+     وبيكتبه على `:root` عشان شريط القرار يحجز نفس المساحة بالظبط —
+     العلاقة معكوسة (الزرار بيقول، والرصيف بيسمع) لأن اللي بيحدّد
+     العرض هنا هو النص لا التخطيط. */
+  useEffect(() => {
+    const el = fab.current
+    if (!el) return
+    const root = document.documentElement
+    const ro = new ResizeObserver(([e]) => {
+      root.style.setProperty('--ask-w', `${Math.ceil(e.target.getBoundingClientRect().width)}px`)
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      root.style.removeProperty('--ask-w')
+    }
+  }, [])
 
   return (
     <button
