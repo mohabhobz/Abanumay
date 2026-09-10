@@ -13,6 +13,9 @@ import type { Reading, ReadingAction } from '@/components/assistant/reading'
 import type { EntityRow, Insight, ProjectRow } from '@/types/domain'
 import type { EntityDetail } from './mock/entityDetail'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
+import { projectRows } from './mock/projects'
+import { budgetForYear } from './budget'
+import { closingRows, gapOf, knowledgeRows } from './closing'
 import type { Journey } from './journey'
 import { nf, units, pct as pctText } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
@@ -968,3 +971,139 @@ export function readInsights(items: Insight[], actions?: ReadingAction[]): Readi
     actions: i === 0 ? actions : undefined,
   }))
 }
+
+/* ═══════════════════ التقارير ═══════════════════ */
+
+/**
+ * قراءات صفحة التقارير.
+ *
+ * الفرق بينها وبين كروت اللوحة: الكارت بيقول **الرقم**، والقراءة
+ * بتقول **اللي يتعمل بيه**. اللوحة بتجاوب «الميزانية واقفة فين؟»،
+ * والقراءة بتقول إن اللي مربوط ولسه ما خرجش أكبر من اللي خرج،
+ * وإن ده بيغيّر أولوية الشهر الجاي.
+ *
+ * وكلها محسوبة من نفس الداتا اللي الكروت بتعرضها، فمستحيل تتعارض
+ * معاها — نفس قاعدة صفحتَي المشروع والجهة.
+ */
+export function readReports(yearId: string): Reading[] {
+  const out: Reading[] = []
+  const rows = projectRows.filter((p) => p.year === yearId)
+  const bud = budgetForYear(yearId)
+
+  /* ١ · المربوط مقابل المصروف — ده أهم رقم في الصفحة */
+  if (bud.allocated > 0) {
+    const locked = bud.reserved + bud.committed
+    const lockedPct = Math.round((locked / bud.allocated) * 100)
+    const spentPct = Math.round((bud.spent / bud.allocated) * 100)
+    out.push({
+      id: 'r-locked',
+      kind: locked > bud.spent * 2 ? 'flag' : 'note',
+      label: 'المال المربوط',
+      metric: { value: pctText(lockedPct), unit: 'مربوطة ولم تخرج' },
+      text:
+        `${pctText(lockedPct)} من المخصص محجوزة أو ملتزم بها، مقابل ${pctText(spentPct)} وصلت للجهات فعلًا. ` +
+        `المربوط مش متاح لمشروع جديد ومش واصل للمستفيد — فهو أثقل بند في الميزانية.`,
+      bold: [pctText(lockedPct)],
+      danger: locked > bud.spent * 2 ? [pctText(lockedPct)] : undefined,
+      src: 'تقارير الميزانية · reports1_1',
+      bar: {
+        value: bud.spent,
+        limit: bud.allocated,
+        valueLabel: 'المصروف',
+        limitLabel: 'المخصص',
+      },
+    })
+  }
+
+  /* ٢ · فجوة الوعد — الرقم اللي النظام عنده وما بيعرضهوش */
+  if (closingRows.length) {
+    const g = gapOf(closingRows)
+    const missed = g.total - g.metTarget
+    out.push({
+      id: 'r-gap',
+      kind: 'flag',
+      label: 'الوعد مقابل التنفيذ',
+      metric: { value: String(missed), unit: 'مشروعًا لم يصل لعدد مستفيديه' },
+      text:
+        `من ${units.project(g.total, true)} لها تقرير ختامي، ${missed} ما وصلوش للعدد المتعاقد عليه، ` +
+        `والمدة الفعلية أطول بـ${pctText(Math.abs(g.days))} في المتوسط. الأرقام دي في «التقارير الختامية» ` +
+        `من سنين ومحدّش بيحسبها.`,
+      bold: [String(missed)],
+      danger: [String(missed)],
+      src: 'التقارير الختامية · reports1_12',
+      to: ROUTES.reportView('actual'),
+      toLabel: 'افتح المقارنة',
+    })
+  }
+
+  /* ٣ · المعرفة — حقل إلزامي بيتملّى بنقطة */
+  const empty = knowledgeRows.filter((k) => k.empty).length
+  if (knowledgeRows.length) {
+    const emptyPct = Math.round((empty / knowledgeRows.length) * 100)
+    out.push({
+      id: 'r-know',
+      kind: 'flag',
+      label: 'المعرفة',
+      metric: { value: pctText(emptyPct), unit: 'من قيود المعرفة فاضية' },
+      text:
+        `${empty} قيدًا من ${knowledgeRows.length} نصّهم نقطة واحدة. الحقل إلزامي، فبيتملّى عشان ` +
+        `يعدّي لا عشان يُقرأ — والعلاج مش حقل تاني، العلاج إن اللي بيكتبه يشوف نتيجته.`,
+      bold: [String(empty)],
+      danger: [pctText(emptyPct)],
+      src: 'تقرير المعرفة · reports1_13',
+      to: ROUTES.reportView('knowledge'),
+      toLabel: 'افتح القيود',
+    })
+  }
+
+  /* ٤ · تركّز المنح — سبب اعتذار مقنّن في النظام */
+  const byGoal = topCount(rows.filter((p) => p.amountGranted > 0), (p) => p.goal)
+  if (byGoal && byGoal[1] > 1) {
+    out.push({
+      id: 'r-conc',
+      kind: 'note',
+      label: 'تركّز',
+      metric: { value: String(byGoal[1]), unit: 'مشاريع في هدف واحد' },
+      text:
+        `«${byGoal[0]}» أخد ${units.project(byGoal[1], true)} في الفترة دي. التركّز مش غلط بالضرورة، ` +
+        `بس «مشروع مكرر لنفس الجهة» أحد مبررات الاعتذار المقنّنة — فيستحق نظرة.`,
+      bold: [byGoal[0]],
+      src: 'مخصص الصرف · reports1_5',
+      to: ROUTES.reportView('spend'),
+      toLabel: 'افتح التوزيع',
+    })
+  }
+
+  /* ٥ · المتأخر — نفس رقم لوحة العمل، بس هنا كسبب لا كعدّاد */
+  const late = rows.filter((p) => stagePressure(p) > 1)
+  if (late.length) {
+    const worst = late.reduce((a, b) => (a.hoursInStage > b.hoursInStage ? a : b))
+    out.push({
+      id: 'r-late',
+      kind: 'flag',
+      label: 'فوق الحدّ',
+      metric: { value: String(late.length), unit: 'مشروعًا فوق حدّ قسمه' },
+      text:
+        `أطولها «${worst.name}» واقف من ${units.day(days(worst.hoursInStage), true)} في «${worst.stage}». ` +
+        `المكوث بيتقاس في النظام فعلًا، والحدّ المقارَن بيه مؤقت لحين اعتماده.`,
+      bold: [worst.stage],
+      danger: [String(late.length)],
+      src: 'أداء الأقسام · reports1_15',
+      to: ROUTES.reportView('stages'),
+      toLabel: 'افتح القائمة',
+    })
+  }
+
+  if (out.length === 0) {
+    out.push({
+      id: 'r-clear',
+      kind: 'note',
+      label: 'لا ملاحظات',
+      text: 'مفيش ملاحظة على الفترة دي.',
+      src: 'محسوبة من تقارير الفترة',
+    })
+  }
+
+  return out
+}
+

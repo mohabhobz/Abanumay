@@ -3324,45 +3324,55 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   color:var(--t2);background:rgba(var(--edgeC),.07)}
 
 /* ═══ لوحة التقارير ═══
-   كل كارت سؤال وإجابته: الرقم كبير، والجملة تحته بتفسّره، والرسم
-   الصغير بيقول «فين الثقل»، والمصدر مكتوب في القاع. الترتيب ده
-   مقصود — العين بتنزل من الرقم للمعنى للتفصيل، مش العكس. */
-/* السطور المساعدة دي واقفة على خلفية الصفحة نفسها لا على زجاج،
-   والتدرّج هناك أغمق — فـ`--t3` بينزل تحت حدّ التباين. `--t2`
-   بيرجّعه فوق الحدّ بلا ما يتقل على العين. */
+   كل كارت سؤال وإجابته. والمهم في التشكيل هنا **التسطير**: الكروت
+   في صف واحد لازم أرقامها وأعمدتها ومصادرها تقع على نفس الخطوط،
+   وإلا الصف يبان مكسور. فالكارت شبكة صفوف ثابتة، والجملة مقصوصة
+   عند تلات سطور، والأعمدة بتاخد الباقي، والمصدر ملزوق في القاع. */
 .rbtop{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
 .rbtop>.sub,.ftool-f>.sub,.rbld-q>.sub{color:var(--t1);opacity:.75}
-.rbg{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:1rem}
-.rbc{position:relative;display:flex;flex-direction:column;gap:.55rem;padding:1.15rem 1.2rem;
-  cursor:pointer;
+.rbg{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.9rem}
+.rbc{display:grid;grid-template-rows:auto auto auto 1fr auto;gap:.7rem;
+  padding:1.1rem 1.15rem;cursor:pointer;
   transition:translate .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease}
 .rbc:hover{translate:0 -3px;
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2)),
              0 14px 30px rgba(20,69,71,.09)}
-.rbc.wide{grid-column:span 2}
-@media (max-width:900px){.rbc.wide{grid-column:span 1}}
+
 .rbc-h{display:flex;align-items:center;gap:.6rem}
-.rbc-q{font-family:var(--fd);font-weight:600;font-size:.95rem;color:var(--t1);flex:1;min-width:0}
+/* الأيقونة في مربّع لا في دايرة: الدايرة بتتقري كأڤاتار، والمربّع
+   المدوّر بيتقري كتصنيف — وده اللي هي بتعمله هنا. */
+.rbc-i{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:9px;
+  color:var(--brand-ink);background:rgba(var(--retC2),.10);
+  box-shadow:inset 0 0 0 1px rgba(var(--retC2),.18)}
+.rbc-q{font-family:var(--fd);font-weight:600;font-size:.92rem;line-height:1.45;color:var(--t1);
+  flex:1;min-width:0}
 .rbc-h>svg{color:var(--t3);flex:none}
 .rbc:hover .rbc-h>svg{color:var(--t1)}
-/* الرقم والوحدة على سطر واحد بمجرى عربي — نفس قاعدة `Money` */
-.rbc-v{direction:rtl;unicode-bidi:isolate;display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
-.rbc-v b{font-family:var(--fd);font-weight:700;font-size:1.85rem;line-height:1.1;letter-spacing:-.02em;
-  color:var(--t1)}
-.rbc-v small{font-size:.76rem;color:var(--t3);line-height:1.5}
-.rbc-r{font-size:.83rem;line-height:1.85;color:var(--t2);margin:0}
+
+/* الرقم والوحدة تحت بعض لا جنب بعض: الوحدة عربية طويلة («من المخصص
+   وصل فعلًا») وجنب رقم كبير بتتكسر سطرين وتفكّ التسطير. */
+.rbc-v{display:flex;flex-direction:column;gap:.15rem}
+.rbc-v b{font-family:var(--fd);font-weight:700;font-size:2rem;line-height:1;letter-spacing:-.025em;
+  color:var(--t1);direction:ltr;unicode-bidi:isolate;align-self:flex-start}
+.rbc-v small{font-size:.75rem;color:var(--t2);line-height:1.5}
+
+.rbc-r{font-size:.82rem;line-height:1.8;color:var(--t2);margin:0;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .rbc-r b{font-family:var(--fd);font-weight:600;color:var(--t1)}
 .rbc-r b.bad{color:var(--no-ink)}
-.rbc-b{display:flex;flex-direction:column;gap:.32rem;margin-top:.15rem}
-.rbc-bi{display:grid;grid-template-columns:minmax(0,7.5rem) 1fr auto;align-items:center;gap:.55rem}
-.rbc-bk{font-size:.72rem;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rbc-bt{height:7px;border-radius:99px;background:rgba(var(--edgeC),.07);overflow:hidden}
+
+.rbc-b{display:flex;flex-direction:column;gap:.34rem;align-self:end;width:100%}
+.rbc-bi{display:grid;grid-template-columns:minmax(0,6.5rem) 1fr 2.6rem;align-items:center;gap:.5rem}
+.rbc-bk{font-size:.71rem;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rbc-bt{height:6px;border-radius:99px;background:rgba(var(--edgeC),.07);overflow:hidden}
 .rbc-bt i{display:block;height:100%;border-radius:99px;background:rgba(var(--edgeC),.3)}
 .rbc-bt i.ok{background:linear-gradient(90deg,var(--teal),var(--lime))}
 .rbc-bt i.warn{background:var(--warn)}
 .rbc-bt i.no{background:var(--no)}
-.rbc-bn{font-size:.73rem;color:var(--t2);font-variant-numeric:tabular-nums}
-.rbc-s{font-size:.68rem;padding-top:.5rem;
+.rbc-bn{font-size:.72rem;color:var(--t2);text-align:end;font-variant-numeric:tabular-nums}
+
+.rbc-s{font-size:.67rem;line-height:1.5;padding-top:.55rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.6))}
 
 /* ═══ التقرير الكامل ═══ */

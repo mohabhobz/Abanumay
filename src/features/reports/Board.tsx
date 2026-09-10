@@ -1,7 +1,10 @@
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon, icons, Select } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { highlight } from '@/components/assistant'
+import { AnalysisCard, highlight } from '@/components/assistant'
+import { useFillHeight } from '@/hooks/useFillHeight'
+import { readReports } from '@/data/readings'
 import { boardCards, PERIODS, type ReportCard } from '@/data/reportDefs'
 
 /**
@@ -24,6 +27,17 @@ export function Board({
   onPeriod: (id: string) => void
 }) {
   const cards = boardCards(period)
+  const readings = readReports(period)
+
+  /* نفس عمود التحليلات اللازق اللي في المشروع والجهة — الصفحة دي
+     أكتر واحدة محتاجاه: اللوحة بتقول الأرقام، والعمود بيقول اللي
+     يتعمل بيها. */
+  const aside = useRef<HTMLDivElement>(null)
+  useFillHeight(aside, {
+    varName: '--ai-fill',
+    reserveSelector: '.decdock .chrome, .askfab',
+    min: 240,
+  })
 
   return (
     <>
@@ -35,28 +49,48 @@ export function Board({
           options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
           onChange={(v) => onPeriod(v ?? PERIODS[0].id)}
         />
-        <span className="sub">
-          كل رقم تحت محسوب للفترة دي، ومصدره مكتوب جنبه
-        </span>
+        <span className="sub">كل رقم تحت محسوب للفترة دي، ومصدره مكتوب جنبه</span>
       </div>
 
-      <div className="rbg">
-        {cards.map((c) => (
-          <Card key={c.key} c={c} />
-        ))}
+      <div className="g2">
+        <div className="col">
+          <div className="rbg">
+            {cards.map((c) => (
+              <Card key={c.key} c={c} />
+            ))}
+          </div>
+        </div>
+
+        <div className="col aiside" ref={aside}>
+          <AnalysisCard
+            readings={readings}
+            title="تحليلات التقارير السريعة"
+            cta="حلّل الفترة"
+            onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+          />
+        </div>
       </div>
     </>
   )
 }
 
+/**
+ * الكارت: شبكة صفوف ثابتة عشان الكروت تتسطّر مع بعضها.
+ *
+ * قبل كده كان عمودًا مرنًا، فالجملة اللي سطرين والجملة اللي تلاتة
+ * كانوا بيزحزحوا الأعمدة والمصدر تحتيهم — فالصف يبان مكسور. دلوقتي
+ * الجملة مقصوصة عند تلات سطور، والأعمدة بتاخد المساحة الباقية،
+ * والمصدر ملزوق في القاع. النتيجة: كل كارت في الصف بنفس الخطوط.
+ */
 function Card({ c }: { c: ReportCard }) {
   const max = c.bars?.length ? Math.max(...c.bars.map((b) => b.v)) || 1 : 1
   const total = c.bars?.reduce((s, b) => s + b.v, 0) || 1
+  const share = c.bars && c.bars.length > 2 && total > 1000
 
   return (
-    <Link to={ROUTES.reportView(c.key)} className={`rbc glass${c.wide ? ' wide' : ''}`}>
+    <Link to={ROUTES.reportView(c.key)} className="rbc glass">
       <span className="rbc-h">
-        <span className="badge badge-30"><Icon path={icons[c.icon]} /></span>
+        <span className="rbc-i"><Icon path={icons[c.icon]} size={17} /></span>
         <span className="rbc-q">{c.question}</span>
         <Icon path={icons.chevron} size={15} />
       </span>
@@ -68,18 +102,16 @@ function Card({ c }: { c: ReportCard }) {
 
       <p className="rbc-r">{highlight(c.reading, c.bold ?? [], c.danger ?? [])}</p>
 
-      {/* الرسم الصغير: نسب لا قيم مطلقة — الغرض «فين الثقل» لا
-          «كام بالظبط»، والرقم الدقيق في التقرير نفسه. */}
       {c.bars && (
         <span className="rbc-b">
           {c.bars.map((b) => (
             <span className="rbc-bi" key={b.k}>
-              <span className="rbc-bk">{b.k}</span>
+              <span className="rbc-bk" title={b.k}>{b.k}</span>
               <span className="rbc-bt">
-                <i className={b.tone ?? 'mute'} style={{ width: `${Math.round((b.v / max) * 100)}%` }} />
+                <i className={b.tone ?? 'mute'} style={{ width: `${Math.max(1, Math.round((b.v / max) * 100))}%` }} />
               </span>
               <span className="rbc-bn num">
-                {c.bars!.length > 2 && b.v >= 1000 ? `${Math.round((b.v / total) * 100)}%` : b.v.toLocaleString('en-US')}
+                {share ? `${Math.round((b.v / total) * 100)}%` : b.v.toLocaleString('en-US')}
               </span>
             </span>
           ))}

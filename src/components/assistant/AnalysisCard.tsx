@@ -14,6 +14,8 @@ export interface AnalysisCardProps {
   onAsk: () => void
   /** «تحليلات المشروع السريعة» · «تحليلات الجهة السريعة» */
   title?: string
+  /** نصّ زرار الدعوة — «حلّل المشروع» افتراضيًا */
+  cta?: string
 }
 
 /**
@@ -40,7 +42,9 @@ export interface AnalysisCardProps {
  * ⚠️ مهلة «بيقرا» في النموذج ده مكان استدعاء السيرفر. لما يبقى فيه
  * باك اند، الحالة دي بتبقى انتظار حقيقي لا مؤقّتًا.
  */
-export function AnalysisCard({ readings, onAsk, title: heading = 'تحليلات المشروع السريعة' }: AnalysisCardProps) {
+export function AnalysisCard({
+  readings, onAsk, title: heading = 'تحليلات المشروع السريعة', cta,
+}: AnalysisCardProps) {
   const card = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(card)
   const [thought, setThought] = useState(false)
@@ -102,7 +106,7 @@ export function AnalysisCard({ readings, onAsk, title: heading = 'تحليلات
           )}
 
           <button className="btn btn-p aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
-            {heading.includes('الجهة') ? 'حلّل ملف الجهة' : 'حلّل المشروع'}
+            {cta ?? (heading.includes('الجهة') ? 'حلّل ملف الجهة' : 'حلّل المشروع')}
           </button>
         </div>
       </Glass>
