@@ -3721,3 +3721,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* القايمة اتقلبت عشان ما تخرجش برّه الشاشة — `ExportMenu` بيقيس
    ويحطّ الكلاس ده. مرتبطة بنهاية الزرار بدل بدايته. */
 .fexp-m.flip{inset-inline-start:auto;inset-inline-end:0}
+/* نبضة قصيرة على شجرة التخصيص لما تقفز لها من فحص التوازن —
+   التمرير وحده مش كفاية: الصفحة بتتحرك والعين مش عارفة إيه اللي
+   اتغيّر. النبضة بتقول «أهي». */
+.bgtree{border-radius:var(--r3);transition:box-shadow .4s ease,background .4s ease}
+.bgtree.land{box-shadow:0 0 0 2px rgba(var(--retC2),.34);
+  background:rgba(var(--retC2),.05)}
+@media (prefers-reduced-motion:reduce){.bgtree{transition:none}}
+.bgchk-h{margin:0;font-size:.75rem}

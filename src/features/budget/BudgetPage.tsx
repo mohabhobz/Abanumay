@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { Glass, Head, Icon, icons, Money, Num, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
@@ -44,7 +44,41 @@ export default function BudgetPage() {
   const rows = here?.children ?? []
   const crumb = root ? chain(root, path) : []
 
-  const goTo = (p: string[]) => setPath(p)
+  /**
+   * القفز من فحص التوازن للشجرة.
+   *
+   * الضغطة كانت **بتشتغل** فعلًا — المسار بيتغيّر والشجرة بتفتح على
+   * البند — بس الشجرة تحت بـ٢١٤٢px، يعني شاشتين تحت اللي المستخدم
+   * شايفه. فالنتيجة عنده: «دوست وما حصلش حاجة».
+   *
+   * فالقفزة بقت تنقل العين معاها: تمرير للشجرة ونبضة قصيرة على
+   * السكشن عشان تقول «أهي، وصلت هنا».
+   */
+  const tree = useRef<HTMLDivElement>(null)
+  const [landed, setLanded] = useState(0)
+
+  const goTo = (p: string[], jump = false) => {
+    setPath(p)
+    if (jump) setLanded((n) => n + 1)
+  }
+
+  useEffect(() => {
+    if (!landed) return
+    const el = tree.current
+    if (!el) return
+    const soft = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.classList.add('land')
+    /* التمرير بعد الرسم: عدد صفوف الشجرة بيتغيّر مع القفزة، ولو
+       مرّرنا قبل ما الصفوف تتحسب بنقيس على ارتفاع قديم. */
+    let raf2 = 0
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: soft ? 'smooth' : 'auto', block: 'start' })
+      })
+    })
+    const id = setTimeout(() => el.classList.remove('land'), 1600)
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); clearTimeout(id) }
+  }, [landed])
 
   return (
     <AppLayout assistantContext={assistFor.page('الميزانية')}>
@@ -86,7 +120,7 @@ export default function BudgetPage() {
 
           {root ? (
             <>
-              <Balance gaps={gaps} parents={parents} onGo={goTo} root={root} />
+              <Balance gaps={gaps} parents={parents} onGo={(p) => goTo(p, true)} root={root} />
 
               <section className="rpsec">
                 <Head title="الصورة الكاملة" meta="نفس رسوم النظام العامل، بالداتا الحقيقية" />
@@ -99,6 +133,7 @@ export default function BudgetPage() {
               </section>
 
               <Tree
+                sectionRef={tree}
                 root={root}
                 here={here}
                 rows={rows}
@@ -179,6 +214,10 @@ function Cell({ k, v, tone }: { k: string; v: number; tone?: 'ok' | 'no' }) {
  * الرقم ده ما بيظهرش في النظام العامل أصلًا، وهو أول حاجة المدير
  * المالي هيسأل عنها. حطّه تحت الشجرة معناه إنه مش هيتشاف.
  */
+/** الأول بيبان، والباقي بضغطة — حائط من إحدى عشرة صفًّا بنفس الشكل
+    بيتحوّل لخلفية، وبيدفع الشجرة شاشتين تحت. */
+const TOP = 5
+
 function Balance({
   gaps, parents, onGo, root,
 }: {
@@ -187,7 +226,8 @@ function Balance({
   onGo: (p: string[]) => void
   root: PlanNode
 }) {
-  const [open, setOpen] = useState(true)
+  const [all, setAll] = useState(false)
+  const shown = all ? gaps : gaps.slice(0, TOP)
   const total = gaps.reduce((s, x) => s + Math.abs(x.gap), 0)
 
   if (gaps.length === 0) {
@@ -217,14 +257,10 @@ function Balance({
           فالرقمان ما بيتقابلوش. هنا بيتحسبوا على الشجرة كلها مرة واحدة.
         </p>
 
-        <button className="btn btn-2 btn-sm bgchk-t" onClick={() => setOpen((x) => !x)}>
-          <Icon path={open ? icons.chevronUp : icons.chevronDown} size={15} />
-          {open ? 'إخفاء البنود' : 'عرض البنود'}
-        </button>
+        <p className="sub bgchk-h">اضغط أي بند تنزل عليه في الشجرة تحت.</p>
 
-        {open && (
-          <ul className="bglist">
-            {gaps.map((x) => (
+        <ul className="bglist">
+            {shown.map((x) => (
               <li key={x.path.join('/') || 'root'}>
                 <button className="bglist-i" onClick={() => onGo(x.path)}>
                   <span className="bglist-lv sub">{PLAN_LEVELS[x.level]}</span>
@@ -247,7 +283,13 @@ function Balance({
                 </button>
               </li>
             ))}
-          </ul>
+        </ul>
+
+        {gaps.length > TOP && (
+          <button className="btn btn-2 btn-sm bgchk-t" onClick={() => setAll((x) => !x)}>
+            <Icon path={all ? icons.chevronUp : icons.chevronDown} size={15} />
+            {all ? 'أقصر قائمة' : `الباقي (${gaps.length - TOP})`}
+          </button>
         )}
       </Glass>
     </section>
@@ -257,8 +299,9 @@ function Balance({
 /* ═══════════════════ الشجرة ═══════════════════ */
 
 function Tree({
-  root, here, rows, crumb, path, view, onView, onGo, cycleLabel,
+  sectionRef, root, here, rows, crumb, path, view, onView, onGo, cycleLabel,
 }: {
+  sectionRef: React.RefObject<HTMLDivElement | null>
   root: PlanNode
   here: PlanNode | undefined
   rows: PlanNode[]
@@ -308,7 +351,7 @@ function Tree({
   }), [rows, view, path, crumb, cycleLabel])
 
   return (
-    <section className="rpsec">
+    <section className="rpsec bgtree" ref={sectionRef}>
       <Head
         title="شجرة التخصيص"
         meta={`المستوى ${level + 1} من 4 · ${PLAN_LEVELS[Math.min(level + 1, 3)]}`}
@@ -373,7 +416,7 @@ function Tree({
             <div className="tblwrap">
               <div className="tblock">
                 {view === 'alloc'
-                  ? <AllocTable rows={rows} path={path} onGo={onGo} />
+                  ? <AllocTable rows={rows} path={path} onGo={onGo} parent={here} />
                   : <UseTable rows={rows} path={path} onGo={onGo} />}
               </div>
             </div>
@@ -384,8 +427,19 @@ function Tree({
   )
 }
 
-function AllocTable({ rows, path, onGo }: { rows: PlanNode[]; path: string[]; onGo: (p: string[]) => void }) {
+/**
+ * قاع الجدول بيقارن **مجموع الأبناء بمخصص الأب**.
+ *
+ * لما تقفز هنا من فحص التوازن، الجدول بيعرض أبناء البند — ومخصص
+ * البند نفسه في المستوى اللي فوق، يعني برّه الشاشة. فالفرق اللي
+ * جيت عشانه ما بيبانش عند وصولك. القاع دلوقتي بيحطّ الرقمين تحت
+ * بعض ويحسب الفرق، فالسبب موجود في نقطة الهبوط.
+ */
+function AllocTable({
+  rows, path, onGo, parent,
+}: { rows: PlanNode[]; path: string[]; onGo: (p: string[]) => void; parent?: PlanNode }) {
   const total = rows.reduce((s, n) => s + n.alloc, 0)
+  const gap = parent ? total - parent.alloc : 0
   return (
     <table className="tbl">
       <colgroup>
@@ -439,12 +493,17 @@ function AllocTable({ rows, path, onGo }: { rows: PlanNode[]; path: string[]; on
       </tbody>
       <tfoot>
         <tr>
-          <td>الإجمالي</td>
+          <td>مجموع الأبناء</td>
           <td className="n num"><Money sm>{total}</Money></td>
-          <td className="n num">
-            <Money sm>{rows.reduce((s, n) => s + (n.children?.length ? childSum(n) : 0), 0)}</Money>
+          <td className="n num sub">مخصص {parent?.label ?? '—'}</td>
+          <td className="n num"><Money sm>{parent?.alloc ?? 0}</Money></td>
+          <td className="n" colSpan={2}>
+            {parent && (gap === 0
+              ? <Tag tone="ok">متوازن</Tag>
+              : <Tag tone={gap > 0 ? 'no' : 'warn'}>
+                  {gap > 0 ? 'زيادة' : 'نقص'} <Money sm>{Math.abs(gap)}</Money>
+                </Tag>)}
           </td>
-          <td colSpan={3} />
         </tr>
       </tfoot>
     </table>
