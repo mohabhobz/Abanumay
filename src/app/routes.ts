@@ -27,7 +27,11 @@ export const ROUTES = {
   payment: (id: string) => `/payments/${id}`,
 
   reports: '/reports',
-  report: (key: string) => `/reports/${key}`,
+  reportTab: (tab?: string) => `/reports${tab && tab !== 'board' ? `/${tab}` : ''}`,
+  /** تقرير كامل على جدولنا */
+  reportView: (key: string) => `/reports/view/${key}`,
+  /** ورقة مؤشرات إجراء — جوّه حالة القياس */
+  report: (key: string) => `/reports/process/${key}`,
 
   assistant: '/assistant',
   assistantThread: (id: string) => `/assistant/${id}`,
@@ -76,6 +80,24 @@ export const ENTITY_TABS = [
 export type EntityTabSlug = (typeof ENTITY_TABS)[number]['slug']
 
 export const DEFAULT_ENTITY_TAB: EntityTabSlug = 'data'
+
+/**
+ * تبويبات التقارير.
+ *
+ * النظام العامل فيه ١٤ شاشة تقرير، كل واحدة فورم فلترة لازم تملاه
+ * قبل ما تشوف رقم. التقسيم هنا بيقلب الترتيب: **اللوحة** بتفتح على
+ * الإجابات جاهزة، و**المُشكَّل** للسؤال اللي مش في اللوحة، و**حالة
+ * القياس** آخر حاجة لأنها بتتكلم عننا لا عن المنح.
+ */
+export const REPORT_TABS = [
+  { slug: 'board', label: 'اللوحة' },
+  { slug: 'build', label: 'تقرير مُشكَّل' },
+  { slug: 'coverage', label: 'حالة القياس' },
+] as const
+
+export type ReportTabSlug = (typeof REPORT_TABS)[number]['slug']
+
+export const DEFAULT_REPORT_TAB: ReportTabSlug = 'board'
 
 export const DEFAULT_PROJECT_TAB: ProjectTabSlug = 'data'
 

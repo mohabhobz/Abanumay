@@ -8,6 +8,7 @@ import EntityPage from '@/features/entities/EntityPage'
 import AssistantPage from '@/features/assistant/AssistantPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import ProcessReport from '@/features/reports/ProcessReport'
+import ReportView from '@/features/reports/ReportView'
 import { ModulePlaceholder } from '@/features/shared/ModulePlaceholder'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
@@ -87,7 +88,9 @@ export default function App() {
         <Route path={ROUTES.reports} element={<ReportsPage />} />
         {/* المفتاح هو slug الإجراء (`bpd-004`). أي مفتاح مش معروف
             بيرجّع للفهرس من جوّه الشاشة نفسها بدل مسار حارس هنا. */}
-        <Route path={`${ROUTES.reports}/:key`} element={<ProcessReport />} />
+        <Route path={`${ROUTES.reports}/view/:key`} element={<ReportView />} />
+        <Route path={`${ROUTES.reports}/process/:key`} element={<ProcessReport />} />
+        <Route path={`${ROUTES.reports}/:tab`} element={<ReportsPage />} />
 
         <Route path={ROUTES.assistant} element={<AssistantPage />} />
         <Route path={`${ROUTES.assistant}/:id`} element={<AssistantPage />} />

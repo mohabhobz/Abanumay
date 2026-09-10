@@ -1,29 +1,46 @@
-import { Link } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Tag } from '@/components/ui'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Glass, Head, Icon, icons, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
-import { ROUTES } from '@/app/routes'
+import {
+  DEFAULT_REPORT_TAB, REPORT_TABS, ROUTES, type ReportTabSlug,
+} from '@/app/routes'
 import { isolate, nf } from '@/lib/format'
 import { PROCESSES, coverage, headlineOf, measuredIn } from '@/data/kpi'
 import { LIVE_REPORTS, PACKS, packByKey } from '@/data/reports'
 import { KpiValue } from './KpiValue'
 import { basisText } from './basis'
+import { Board } from './Board'
+import { Builder } from './Builder'
+import { PERIODS } from '@/data/reportDefs'
 
 /* ═══════════════════════════════════════════════════════════
    التقارير.
 
-   النظام العامل فيه 13 شاشة تقرير، كل واحدة فورم فلترة لازم تملاه
-   قبل ما تشوف رقم — وتلاتة منها بتطلع فاضية بعد ما تملاه. النتيجة
-   اللي الأوديت كتبها: «داتا الأداء موجودة ولا تظهر عند القرار».
+   النظام العامل فيه ١٤ شاشة تقرير، كل واحدة **فورم فلترة** لازم
+   تملاه قبل ما تشوف رقم — وتلاتة منها بتطلع فاضية بعد ما تملاه.
+   النتيجة اللي الأوديت كتبها: «داتا الأداء موجودة ولا تظهر عند
+   القرار».
 
-   فالشاشة دي مش قائمة بـ13 لينك. هي بتفتح على **حالة القياس**:
-   66 مؤشرًا في الوثيقة، كام واحد منهم النظام يقدر يقيسه النهاردة
-   فعلًا. الرقم ده لوحده هو الحوار الحقيقي مع العميل، وهو اللي
-   بيحوّل شاشة التقارير من مخرَج لمطلب: كل مؤشر بلا قيمة مكتوب
-   جنبه ناقصه إيه بالظبط.
+   فالتقسيم هنا بيقلب الترتيب:
+
+    · **اللوحة** — الإجابات جاهزة. كل كارت سؤال ورقمه للفترة
+      المختارة وجملة بتفسّره ومصدره وطريق للصفوف. الفلترة بعد
+      الشوفان لا قبله.
+    · **تقرير مُشكَّل** — للسؤال اللي مش في اللوحة: بُعد × مقياس،
+      أربعين توليفة بشاشة واحدة بدل شاشة لكل سؤال.
+    · **حالة القياس** — كام مؤشر من الوثيقة النظام يقدر يقيسه.
+      ده بيتكلم **عننا** لا عن المنح، فمكانه آخر تاب لا أول شاشة.
    ═══════════════════════════════════════════════════════════ */
 
 export default function ReportsPage() {
+  const { tab } = useParams<{ tab?: string }>()
+  const navigate = useNavigate()
+  const [period, setPeriod] = useState<string>(PERIODS[0].id)
+
+  const active: ReportTabSlug =
+    REPORT_TABS.find((t) => t.slug === tab)?.slug ?? DEFAULT_REPORT_TAB
   const measuredPct = Math.round((coverage.measured / coverage.total) * 100)
 
   return (
@@ -38,13 +55,22 @@ export default function ReportsPage() {
             <div>
               <h1 className="ptitle">التقارير</h1>
               <p className="sub" style={{ marginTop: '.3rem' }}>
-                <span className="num">{coverage.total}</span> مؤشرًا في وثيقة الإجراءات، موزّعة على{' '}
-                <span className="num">{PROCESSES.length}</span> إجراءات ·{' '}
-                <span className="num">{LIVE_REPORTS.length}</span> شاشة تقرير في النظام العامل
+                <span className="num">{LIVE_REPORTS.length}</span> شاشة تقرير في النظام العامل ·{' '}
+                مجموعة هنا في لوحة واحدة وأداة تشكيل
               </p>
             </div>
           </header>
 
+          <Tabs
+            items={REPORT_TABS}
+            active={active}
+            onChange={(s) => navigate(ROUTES.reportTab(s))}
+          />
+
+          {active === 'board' && <Board period={period} onPeriod={setPeriod} />}
+          {active === 'build' && <Builder />}
+          {active === 'coverage' && (
+            <>
           {/* ═══ حالة القياس ═══
               مش زينة: ده الرقم اللي المشروع كله بيتقاس بيه. */}
           <Glass className="rpcov">
@@ -199,6 +225,8 @@ export default function ReportsPage() {
               })}
             </div>
           </Glass>
+            </>
+          )}
         </div>
       </div>
     </AppLayout>

@@ -3322,3 +3322,77 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .lastact-b b{font-family:var(--fd);font-weight:600;color:var(--t1)}
 .lastact-d{font-size:.72rem;padding:.12rem .5rem;border-radius:var(--rp);
   color:var(--t2);background:rgba(var(--edgeC),.07)}
+
+/* ═══ لوحة التقارير ═══
+   كل كارت سؤال وإجابته: الرقم كبير، والجملة تحته بتفسّره، والرسم
+   الصغير بيقول «فين الثقل»، والمصدر مكتوب في القاع. الترتيب ده
+   مقصود — العين بتنزل من الرقم للمعنى للتفصيل، مش العكس. */
+/* السطور المساعدة دي واقفة على خلفية الصفحة نفسها لا على زجاج،
+   والتدرّج هناك أغمق — فـ`--t3` بينزل تحت حدّ التباين. `--t2`
+   بيرجّعه فوق الحدّ بلا ما يتقل على العين. */
+.rbtop{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.rbtop>.sub,.ftool-f>.sub,.rbld-q>.sub{color:var(--t1);opacity:.75}
+.rbg{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:1rem}
+.rbc{position:relative;display:flex;flex-direction:column;gap:.55rem;padding:1.15rem 1.2rem;
+  cursor:pointer;
+  transition:translate .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease}
+.rbc:hover{translate:0 -3px;
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2)),
+             0 14px 30px rgba(20,69,71,.09)}
+.rbc.wide{grid-column:span 2}
+@media (max-width:900px){.rbc.wide{grid-column:span 1}}
+.rbc-h{display:flex;align-items:center;gap:.6rem}
+.rbc-q{font-family:var(--fd);font-weight:600;font-size:.95rem;color:var(--t1);flex:1;min-width:0}
+.rbc-h>svg{color:var(--t3);flex:none}
+.rbc:hover .rbc-h>svg{color:var(--t1)}
+/* الرقم والوحدة على سطر واحد بمجرى عربي — نفس قاعدة `Money` */
+.rbc-v{direction:rtl;unicode-bidi:isolate;display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
+.rbc-v b{font-family:var(--fd);font-weight:700;font-size:1.85rem;line-height:1.1;letter-spacing:-.02em;
+  color:var(--t1)}
+.rbc-v small{font-size:.76rem;color:var(--t3);line-height:1.5}
+.rbc-r{font-size:.83rem;line-height:1.85;color:var(--t2);margin:0}
+.rbc-r b{font-family:var(--fd);font-weight:600;color:var(--t1)}
+.rbc-r b.bad{color:var(--no-ink)}
+.rbc-b{display:flex;flex-direction:column;gap:.32rem;margin-top:.15rem}
+.rbc-bi{display:grid;grid-template-columns:minmax(0,7.5rem) 1fr auto;align-items:center;gap:.55rem}
+.rbc-bk{font-size:.72rem;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rbc-bt{height:7px;border-radius:99px;background:rgba(var(--edgeC),.07);overflow:hidden}
+.rbc-bt i{display:block;height:100%;border-radius:99px;background:rgba(var(--edgeC),.3)}
+.rbc-bt i.ok{background:linear-gradient(90deg,var(--teal),var(--lime))}
+.rbc-bt i.warn{background:var(--warn)}
+.rbc-bt i.no{background:var(--no)}
+.rbc-bn{font-size:.73rem;color:var(--t2);font-variant-numeric:tabular-nums}
+.rbc-s{font-size:.68rem;padding-top:.5rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.6))}
+
+/* ═══ التقرير الكامل ═══ */
+.rvread{display:flex;align-items:flex-start;gap:1.2rem;flex-wrap:wrap}
+.rvread-v{direction:rtl;unicode-bidi:isolate;display:flex;align-items:baseline;gap:.5rem;flex:none}
+.rvread-v b{font-family:var(--fd);font-weight:700;font-size:1.7rem;line-height:1.1;color:var(--t1)}
+.rvread-v small{font-size:.74rem;color:var(--t2)}
+.rvread p{flex:1;min-width:14rem;margin:0;font-size:.86rem;line-height:1.9;color:var(--t2)}
+.rvread p b{font-family:var(--fd);font-weight:600;color:var(--t1)}
+.rvread p b.bad{color:var(--no-ink)}
+
+/* ═══ التقرير المُشكَّل ═══
+   الجملة نفسها هي الفلتر: «أعرض [المبلغ المعتمد] حسب [المنطقة] في
+   [2026]» — المستخدم بيقرا سؤاله مكتوبًا قبل ما يشوف إجابته. */
+.rbld-q{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;
+  font-family:var(--fd);font-size:.9rem}
+.rbld-q .sub{font-size:.82rem}
+/* أعمدة أفقية: أسماء الأبعاد عربية طويلة، والرأسي بيقلب الاسم */
+.rbar{display:flex;flex-direction:column;gap:.5rem;margin-top:.9rem}
+.rbar-r{display:grid;grid-template-columns:minmax(0,11rem) 1fr auto auto auto;
+  align-items:center;gap:.7rem}
+.rbar-k{font-size:.82rem;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rbar-t{height:11px;border-radius:99px;background:rgba(var(--edgeC),.06);overflow:hidden}
+.rbar-t i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--teal),var(--lime))}
+.rbar-v{font-size:.83rem;color:var(--t1);white-space:nowrap}
+.rbar-s{font-size:.74rem;min-width:2.6rem;text-align:end}
+.rbar-n{font-size:.72rem;min-width:4.5rem;text-align:end;white-space:nowrap}
+@media (max-width:760px){
+  .rbar-r{grid-template-columns:minmax(0,1fr) auto;gap:.35rem}
+  .rbar-t{grid-column:1 / -1}
+  .rbar-n{display:none}
+}
