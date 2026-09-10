@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { Glass, Icon, icons } from '@/components/ui'
-import { units } from '@/lib/format'
 import { ReadingBlock, ReadingPeek } from './ReadingBlock'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
@@ -78,14 +77,16 @@ export function AnalysisCard({ readings, onAsk, title: heading = 'تحليلات
 
           <h2 className="aishut-t">{heading}</h2>
 
-          <div className="aishut-m">
-            <span className="qr-count">{units.reading(readings.length)}</span>
-            {flags > 0 && (
+          {/* عدّاد القراءات اتشال: رقمٌ عن حاجة لسه ما اتقرتش — بيشغل
+              سطرًا كامل من غير ما يقول للمستخدم يعمل إيه. اللي بيفضل
+              هو التنبيه لو فيه، لأنه بيغيّر القرار. */}
+          {flags > 0 && (
+            <div className="aishut-m">
               <span className="qr-count no">
                 <span className="num">{flags}</span> تحتاج انتباه
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* لمحة أهمّ قراءة: «واقف فين ومحتاج إيه» أول سؤال بيتسأل،
               فبيتقري من غير ضغطة، والتفصيل بيتحسب بالطلب. */}

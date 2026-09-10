@@ -3198,10 +3198,12 @@ body.printing .mesh,body.printing .grain{display:none}
 .aishut-m{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;justify-content:center}
 /* اللمحة بتتقصّ عند تلات سطور: الكارت بيبقى قصيرًا قبل ما يلزق،
    والفقرة الطويلة بتزقّ الزرار برّه المنظر. */
-.aishut-p{font-size:.84rem;line-height:1.8;color:var(--t2);margin:.15rem 0 .2rem;
-  padding-top:.85rem;width:100%;
-  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.6))}
+/* من غير خطّ فاصل: البوستر أربع حاجات في عمود واحد متوسّط — الشرارة
+   والعنوان واللمحة والزرار. الخطّ كان بيقسمهم لمجموعتين وهم مجموعة
+   واحدة، والفراغ لوحده كفاية للفصل. */
+.aishut-p{font-size:.84rem;line-height:1.8;color:var(--t2);margin:.3rem 0 .2rem;
+  width:100%;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .aishut-p b{font-family:var(--fd);font-weight:700;color:var(--t1)}
 .aishut-p b.bad{color:var(--no-ink)}
 .aishut-go{margin-top:.25rem}
@@ -3213,15 +3215,10 @@ body.printing .mesh,body.printing .grain{display:none}
    ما يتقصّ، بيتقلّش: سطرين لمحة بدل تلاتة وفواصل أضيق. أول ما تنزل
    شوية ويلزق بيرجع لهيئته الكاملة.
    لازم تيجي **بعد** قواعد البوستر: نفس النوعية، والمتأخر بيكسب. */
-@container (max-height:290px){
+@container (max-height:250px){
   .aicard.aishut{padding:.95rem 1.15rem}
   .aishut-c{gap:.45rem}
-  .aishut-p{-webkit-line-clamp:2;padding-top:.6rem}
-}
-/* وأضيق من كده اللمحة نفسها بتنزل: هي تشويق لا معلومة، والزرار هو
-   المقصود — يفضل يبان كاملًا على أن تبان معاه سطر ونص مقصوص. */
-@container (max-height:262px){
-  .aishut-p{display:none}
+  .aishut-p{-webkit-line-clamp:2;margin-top:.15rem}
 }
 
 /* ── الحالة المفتوحة: الترويسة ثابتة والقراءات بتتمرّر ── */
