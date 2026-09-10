@@ -44,10 +44,20 @@ export interface AiMessageModel extends AssistantAnswer {
 
 export type ChatMessage = UserMessage | AiMessageModel
 
-/** سياق اللوح الجانبي — بيتغيّر حسب الصفحة المفتوح منها */
+/**
+ * سياق اللوح الجانبي — بيتغيّر حسب الصفحة المفتوح منها.
+ *
+ * اللوح بقى نفس الحالة الأولى بتاعة الشاشة الكاملة بالظبط، فالسياق
+ * ده مسؤول عن حاجة واحدة: **الكلام اللي بيقول للمستخدم هيدوّر فين**.
+ * الترحيب الشخصي («أهلًا عمر») بييجي من المستخدم لا من هنا، لأنه
+ * ثابت في كل الصفحات.
+ */
 export interface AssistantContext {
+  /** عنوان ترويسة اللوح — اسم الشيء اللي أنت فيه */
   title: string
+  /** سطر تحت العنوان في الترويسة */
   sub: string
-  greet: string
-  cards: { icon: string; title: string; prompt: string }[]
+  /** سطر المدى تحت الترحيب: «كيف أقدر أساعدك في «س»؟» */
+  scope: string
+  cards: { icon: string; title: string; sub: string; prompt: string }[]
 }

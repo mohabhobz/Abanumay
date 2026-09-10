@@ -8,6 +8,7 @@ export { md } from './md'
 export { QuickRead, type QuickReadProps } from './QuickRead'
 export { AnalysisCard, type AnalysisCardProps } from './AnalysisCard'
 export { ReadingBlock, ReadingPeek } from './ReadingBlock'
+export { Welcome, type WelcomeProps, type WelcomeCard } from './Welcome'
 export { highlight } from './highlight'
 export type { Reading, ReadingAction } from './reading'
 export type {

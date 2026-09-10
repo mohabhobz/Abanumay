@@ -175,6 +175,10 @@ export const units = {
     one: 'شهر واحد', two: two('شهران', 'شهرين', gen),
     few: (x) => `${x} أشهر`, many: (x) => `${x} شهرًا`,
   }),
+  year: (n: number, gen = false) => plural(n, {
+    one: 'سنة واحدة', two: two('سنتان', 'سنتين', gen),
+    few: (x) => `${x} سنوات`, many: (x) => `${x} سنة`,
+  }),
   reading: (n: number, gen = false) => plural(n, {
     one: 'قراءة واحدة', two: two('قراءتان', 'قراءتين', gen),
     few: (x) => `${x} قراءات`, many: (x) => `${x} قراءة`,

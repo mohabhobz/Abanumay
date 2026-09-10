@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Background, MobileTop, Rail } from '@/components/shell'
-import { Icon, icons, type IconName } from '@/components/ui'
-import { AiMessage, Composer, Disclaimer, useAssistant } from '@/components/assistant'
-import { useProximity } from '@/hooks/useProximity'
+import { Icon, icons } from '@/components/ui'
+import { AiMessage, Composer, Disclaimer, Welcome, useAssistant } from '@/components/assistant'
 import { useDockHeight } from '@/hooks/useDockHeight'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { roles, savedChats, type AssistantRole, type SavedChat } from '@/data/mock/assistant'
@@ -156,6 +155,7 @@ export default function AssistantPage() {
                 <>
                   <Welcome
                     greet={me.greet}
+                    sub="كيف أقدر أساعدك اليوم؟"
                     cards={me.cards}
                     onPick={send}
                     composer={
@@ -210,49 +210,5 @@ export default function AssistantPage() {
         )}
       </div>
     </>
-  )
-}
-
-/* ═══ الحالة الأولى ═══ */
-
-interface WelcomeProps {
-  greet: string
-  cards: AssistantRole['cards']
-  onPick: (prompt: string) => void
-  composer: ReactNode
-}
-
-function Welcome({ greet, cards, onPick, composer }: WelcomeProps) {
-  const grid = useRef<HTMLDivElement>(null)
-  useProximity(grid, { reach: 300, selector: '.wcard' })
-
-  return (
-    <div className="welcome">
-      <div className="whead">
-        <span className="wspark"><span className="aispark" /></span>
-        <div className="wtext">
-          <h1 className="wgreet">{greet}</h1>
-          <p className="wsub">كيف أقدر أساعدك اليوم؟</p>
-        </div>
-      </div>
-
-      {composer}
-
-      {/* الاختصارات تحت مربع الكتابة — الكتابة هي المدخل، ودي طرق سريعة */}
-      <div className="wcards" ref={grid}>
-        {cards.map((c, i) => (
-          <button
-            className="wcard glass"
-            key={c.title}
-            style={{ '--d': `${i * 70}ms` } as CSSProperties}
-            onClick={() => onPick(c.prompt)}
-          >
-            <span className="badge badge-30"><Icon path={icons[c.icon as IconName]} /></span>
-            <span className="wc-t">{c.title}</span>
-            <span className="wc-s">{c.sub}</span>
-          </button>
-        ))}
-      </div>
-    </div>
   )
 }

@@ -17,6 +17,13 @@ import { nf, units, pct as pctText } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
 
 const days = (hours: number) => Math.round(hours / 24)
+
+/** سنين كاملة من تاريخ `YYYY-MM-DD` لحد النهارده — `null` لو التاريخ غلط */
+function yearsSince(iso: string): number | null {
+  const t = Date.parse(iso)
+  if (Number.isNaN(t)) return null
+  return Math.floor((Date.now() - t) / 31_557_600_000)
+}
 const millions = (n: number) => `${(n / 1_000_000).toFixed(1)} م`
 const overPct = (p: ProjectRow) => Math.round(stagePressure(p) * 100 - 100)
 
@@ -333,9 +340,44 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
 
 /* ═══════════════════ صفحة الجهة ═══════════════════ */
 
+/**
+ * قراءات ملف الجهة.
+ *
+ * السؤال اللي الصفحة بتجاوب عليه واحد: **أقدر أدّي المشروع ده للجهة
+ * دي؟** فالقراءات مرتّبة على تلات طبقات بتجاوب عليه بالترتيب:
+ *
+ *  1) **مانع** — حاجة بتوقف التعاقد أصلًا (تفعيل غير مقبول، ملف ناقص).
+ *  2) **سلوك** — إيه اللي حصل في مشاريعها معانا (تعثّر، وقوف فوق الحدّ).
+ *  3) **سجل وقدرة** — نسبة الإكمال، الاعتذارات، الحمل الحالي، وإيه
+ *     الملتزم لها ولسه ما وصلش.
+ *
+ * الأرقام كلها محسوبة من نفس الحقول اللي `EntityTotals` وبطاقة «أداء
+ * الجهة» بيعرضوها، فمستحيل يتعارضوا معاها — القراءة بتفسّر الرقم اللي
+ * قدام المستخدم، ما بتجيبش رقمًا تانيًا من مكان تاني.
+ */
 export function readEntity(entity: EntityRow, projects: ProjectRow[]): Reading[] {
   const out: Reading[] = []
   const missing = ENTITY_DOCS_TOTAL - entity.docsUploaded
+
+  /* ── ١ · موانع التعاقد ── */
+
+  /* التفعيل قبل كل حاجة: «معلق» أو «مرفوض» معناها الاتفاقية ما تتوقّعش
+     أصلًا، فما ينفعش يتقري بعد ملاحظات أخفّ منه. */
+  if (entity.activation !== 'مقبول') {
+    const stopped = entity.activation.startsWith('معلق') || entity.activation === 'مرفوض'
+    out.push({
+      id: 'activation',
+      kind: stopped ? 'flag' : 'note',
+      label: 'التفعيل',
+      metric: { value: entity.activation, unit: 'حالة التفعيل' },
+      text: stopped
+        ? 'التعاقد موقوف لحد ما التفعيل يتقبل — أي اعتماد دلوقتي هيقف عند توقيع الاتفاقية.'
+        : 'بياناتها اتحدّثت ولسه ما اتراجعتش، فالمقارنة بجهات تانية مبنية على ملف قديم.',
+      bold: [entity.activation],
+      danger: stopped ? [entity.activation] : undefined,
+      src: 'حقل التفعيل في ملف الجهة',
+    })
+  }
 
   if (missing > 0) {
     out.push({
@@ -355,16 +397,21 @@ export function readEntity(entity: EntityRow, projects: ProjectRow[]): Reading[]
     })
   }
 
-  if (entity.governance === 'لم تُقيَّم') {
+  /* ── ٢ · سلوكها في مشاريعها معانا ── */
+
+  if (entity.projectsStalled > 0) {
+    const n = units.project(entity.projectsStalled, true)
     out.push({
-      id: 'gov',
-      kind: 'note',
-      label: 'الحوكمة',
+      id: 'stalled',
+      kind: 'flag',
+      label: 'تعثّر سابق',
+      metric: { value: String(entity.projectsStalled), unit: 'متعثّر في سجلها' },
       text:
-        `درجة الحوكمة لسه غير مقيَّمة، فالمقارنة بين هذه الجهة وغيرها ` +
-        `في نفس الهدف مش مكتملة عند اتخاذ القرار.`,
-      bold: ['غير مقيَّمة'],
-      src: 'حقل الحوكمة في ملف الجهة',
+        `${n} وقف بعد الاعتماد ولم يكتمل. التعثّر السابق بيتقري مع الطلب الجديد ` +
+        `لأنه بيقول عن قدرتها على التنفيذ، لا عن ملفها الورقي.`,
+      bold: [n],
+      danger: [n],
+      src: 'أداء الجهة · السجل التراكمي',
     })
   }
 
@@ -388,6 +435,93 @@ export function readEntity(entity: EntityRow, projects: ProjectRow[]): Reading[]
     })
   }
 
+  /* ── ٣ · سجلها وقدرتها ── */
+
+  /* نسبة الإكمال هي أقرب رقم لسؤال «هل بتخلّص اللي بتبدأه؟».
+     المقام هو المعتمد لا المكتمل + الجاري، عشان المتعثّر والمعتذر
+     يفضلوا داخل الحساب — إخراجهم بيطلّع نسبة أحلى من الحقيقة. */
+  if (entity.projectsApproved > 0) {
+    const rate = Math.round((entity.projectsCompleted / entity.projectsApproved) * 100)
+    const done = units.project(entity.projectsCompleted, true)
+    out.push({
+      id: 'record',
+      kind: 'note',
+      label: 'سجل الإكمال',
+      metric: { value: pctText(rate), unit: 'من معتمداتها اكتملت' },
+      text:
+        `أكملت ${done} من ${entity.projectsApproved}` +
+        `${entity.projectsRunning > 0 ? `، و${units.project(entity.projectsRunning, true)} لسه تحت التشغيل` : ''}.`,
+      bold: [done],
+      src: 'أداء الجهة · السجل التراكمي',
+      bar: {
+        value: entity.projectsCompleted,
+        limit: entity.projectsApproved,
+        valueLabel: 'المكتمل',
+        limitLabel: 'المعتمد',
+      },
+    })
+  }
+
+  /* الاعتذارات بتتقري كنسبة لا كعدد: جهة اتعذر عن طلب من ثمانية غير
+     جهة اتعذر عن طلب من اتنين. */
+  /* تحت تلات طلبات النسبة بتكذب: جهة اتعذر عن طلبها الوحيد نسبتها
+     ١٠٠٪ وهي في الحقيقة جهة لسه ما لهاش سجل. */
+  const asked = entity.projectsApproved + entity.projectsDeclined
+  if (entity.projectsDeclined > 0 && asked >= 3) {
+    const n = units.project(entity.projectsDeclined, true)
+    out.push({
+      id: 'declines',
+      kind: 'note',
+      label: 'اعتذارات',
+      metric: { value: pctText(Math.round((entity.projectsDeclined / asked) * 100)), unit: 'من طلباتها اعتُذر عنها' },
+      text:
+        `اعتُذر عن ${n} من ${units.project(asked, true)} تقدّمت بيها. ` +
+        `سبب الاعتذار السابق بيستحق القراءة قبل الطلب الجديد — لو نفس السبب اتكرّر، القرار متكرر.`,
+      bold: [n],
+      src: 'أداء الجهة · السجل التراكمي',
+    })
+  }
+
+  /* الحمل مش تقييمًا، معلومة توقيت: جهة شغّالة على تلاتة في نفس
+     الوقت مش زي جهة فاضية، والفرق بيظهر في التنفيذ لا في الملف. */
+  if (entity.projectsRunning >= 2) {
+    const n = units.project(entity.projectsRunning, true)
+    out.push({
+      id: 'load',
+      kind: 'note',
+      label: 'الحمل الحالي',
+      metric: { value: String(entity.projectsRunning), unit: 'تحت التشغيل الآن' },
+      text: `عندها ${n} تحت التشغيل في نفس الوقت — الطلب الجديد بيضاف على الحمل ده لا على ملف فاضي.`,
+      bold: [n],
+      src: 'أداء الجهة · السجل التراكمي',
+    })
+  }
+
+  /* «تحت الصرف» = ملتزم لها وما وصلش. الرقم ده بيقول إن فيه دفعات
+     واقفة على تقارير أو مستندات، وهو أقرب مؤشر على انضباطها في
+     التقارير من غير ما نفتح كل مشروع. */
+  if (entity.inDisbursement > 0 && entity.grantedTotal > 0) {
+    const share = Math.round((entity.inDisbursement / entity.grantedTotal) * 100)
+    const amount = nf.format(entity.inDisbursement)
+    out.push({
+      id: 'pending-money',
+      kind: 'note',
+      label: 'تحت الصرف',
+      metric: { value: amount, unit: 'ملتزم لها ولم يصل' },
+      text:
+        `${pctText(share)} من إجمالي ما مُنح لها لسه في الطريق. ` +
+        `الدفعة الواقفة بتبقى مربوطة بتقرير أو مستند ناقص، فهي إشارة على انضباط التقارير.`,
+      bold: [amount],
+      src: 'ملف الصرف · إجمالي الممنوح',
+      bar: {
+        value: entity.grantedTotal - entity.inDisbursement,
+        limit: entity.grantedTotal,
+        valueLabel: 'وصل فعلًا',
+        limitLabel: 'إجمالي الممنوح',
+      },
+    })
+  }
+
   const topGoal = topCount(projects, (p) => p.goal)
   if (topGoal && topGoal[1] > 1) {
     const n = `${topGoal[1]} من مشاريعها`
@@ -401,6 +535,35 @@ export function readEntity(entity: EntityRow, projects: ProjectRow[]): Reading[]
         `«مشروع مكرر لنفس الجهة» أحد مبررات الاعتذار المقنّنة، فيستحق التدقيق.`,
       bold: [n, `«${topGoal[0]}»`],
       src: 'شجرة المسار ← المجال ← الهدف',
+    })
+  }
+
+  if (entity.governance === 'لم تُقيَّم') {
+    out.push({
+      id: 'gov',
+      kind: 'note',
+      label: 'الحوكمة',
+      text:
+        `درجة الحوكمة لسه غير مقيَّمة، فالمقارنة بين هذه الجهة وغيرها ` +
+        `في نفس الهدف مش مكتملة عند اتخاذ القرار.`,
+      bold: ['غير مقيَّمة'],
+      src: 'حقل الحوكمة في ملف الجهة',
+    })
+  }
+
+  /* حداثة التسجيل مش عيبًا، بس بتفسّر سجلًا قصيرًا: جهة عمرها سنة
+     ما ينفعش يتحاسب سجلها زي جهة عمرها عشرة. */
+  const tenure = yearsSince(entity.registeredAt)
+  if (tenure !== null && tenure < 3) {
+    const y = tenure === 0 ? 'أقل من سنة' : units.year(tenure, true)
+    out.push({
+      id: 'tenure',
+      kind: 'note',
+      label: 'جهة حديثة',
+      metric: { value: tenure === 0 ? 'أقل من سنة' : String(tenure), unit: 'منذ التسجيل' },
+      text: `مسجّلة من ${y} بس، فالسجل التراكمي فوق قصير بطبيعته — قلّته مش أداءً ضعيفًا.`,
+      bold: [y],
+      src: `تاريخ التسجيل · ${entity.registeredAt}`,
     })
   }
 

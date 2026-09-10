@@ -1,16 +1,23 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { Icon, icons, type IconName } from '@/components/ui'
+import { useEffect, useRef, useState } from 'react'
+import { Icon, icons } from '@/components/ui'
 import {
-  useAssistant, AiMessage, Composer, Disclaimer, type AssistantContext,
+  useAssistant, AiMessage, Composer, Disclaimer, Welcome, type AssistantContext,
 } from '@/components/assistant'
-import { useProximity } from '@/hooks/useProximity'
+import { fixtures } from '@/data/repository'
 import { useScrollEdges } from '@/hooks/useScrollEdges'
 
 const FALLBACK_CONTEXT: AssistantContext = {
   title: 'منح أبانمي',
   sub: '',
-  greet: 'أقدر أساعدك إزاي؟',
-  cards: [{ icon: 'alert', title: 'إيه اللي بانتظار قراري؟', prompt: 'إيه اللي بانتظار قراري؟' }],
+  scope: 'كيف أقدر أساعدك في السيستم؟',
+  cards: [
+    {
+      icon: 'alert',
+      title: 'إيه اللي بانتظار قراري؟',
+      sub: 'الواقف عندي أنا لا عند غيري',
+      prompt: 'إيه اللي بانتظار قراري؟',
+    },
+  ],
 }
 
 export interface AssistantPanelProps {
@@ -26,16 +33,20 @@ export interface AssistantPanelProps {
  * لوح المساعد — بيفتح من أي صفحة على الجانب الشمال.
  * العنوان اسم الشيء اللي أنت فيه، مش «مساعد أبانمي»، والاختصارات
  * من نفس السياق — فالمستخدم يسأل عن اللي قدامه بضغطة.
+ *
+ * وحالته الأولى **هي نفسها** حالة الشاشة الكاملة (`Welcome`): نفس
+ * الشرارة ونفس الترحيب ونفس ترتيب الكتابة والكروت. اللي بيتغيّر سطر
+ * المدى والكروت — يعني الكلام اللي بيقول هيدوّر فين. قبل كده كان
+ * اللوح شكلًا تانيًا أصغر، فالمستخدم يحسّ إنه فتح مساعدًا مختصرًا لا
+ * نفس المساعد في مكان أضيق.
  */
 export function AssistantPanel({ open, onClose, onFull, ctx = FALLBACK_CONTEXT }: AssistantPanelProps) {
   const { msgs, send, stop, reset, busy } = useAssistant()
   const [draft, setDraft] = useState('')
+  const first = fixtures.currentUser.name.split(' ')[0]
 
   const body = useRef<HTMLDivElement>(null)
-  const cards = useRef<HTMLDivElement>(null)
   const { edges, measure } = useScrollEdges(body)
-
-  useProximity(cards, { reach: 240, selector: '.acard' })
 
   useEffect(() => {
     if (body.current) body.current.scrollTop = body.current.scrollHeight
@@ -82,24 +93,16 @@ export function AssistantPanel({ open, onClose, onFull, ctx = FALLBACK_CONTEXT }
         <div className={`abodywrap${edges.top ? ' fadetop' : ''}${edges.bottom ? ' fadebot' : ''}`}>
           <div className="abody" ref={body} onScroll={measure}>
             {msgs.length === 0 ? (
-              <div className="awelcome">
-                <div className="agreet">{ctx.greet}</div>
-                <div className="acards" ref={cards}>
-                  {ctx.cards.map((c, i) => (
-                    <button
-                      className="acard"
-                      key={c.title}
-                      style={{ '--d': `${i * 60}ms` } as CSSProperties}
-                      onClick={() => ask(c.prompt)}
-                    >
-                      <span className="badge badge-30">
-                        <Icon path={icons[c.icon as IconName]} />
-                      </span>
-                      <span>{c.title}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <Welcome
+                compact
+                greet={`أهلًا ${first}`}
+                sub={ctx.scope}
+                cards={ctx.cards}
+                onPick={ask}
+                composer={
+                  <Composer value={draft} onChange={setDraft} onSend={ask} onStop={stop} busy={busy} />
+                }
+              />
             ) : (
               msgs.map((m, i) =>
                 m.who === 'me' ? (
@@ -112,8 +115,12 @@ export function AssistantPanel({ open, onClose, onFull, ctx = FALLBACK_CONTEXT }
           </div>
         </div>
 
+        {/* مربع الكتابة بينزل للرصيف بعد أول سؤال بس — قبله هو جوّه
+            الترحيب زي الشاشة الكاملة، وواحد بيكفي. */}
         <div className="afoot">
-          <Composer value={draft} onChange={setDraft} onSend={ask} onStop={stop} busy={busy} />
+          {msgs.length > 0 && (
+            <Composer value={draft} onChange={setDraft} onSend={ask} onStop={stop} busy={busy} />
+          )}
           <Disclaimer />
         </div>
       </aside>

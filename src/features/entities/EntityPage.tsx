@@ -52,7 +52,7 @@ export default function EntityPage() {
   const readings = readEntity(entity, projects)
 
   return (
-    <AppLayout assistantContext={assistFor.page(`الجهة · ${entity.name}`)}>
+    <AppLayout assistantContext={assistFor.entity(entity)}>
       <div className="viewstack">
         <div className="screen col hasg2">
           <nav className="crumb" aria-label="مسار التنقّل">
