@@ -3414,3 +3414,129 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   .rbar-t{grid-column:1 / -1}
   .rbar-n{display:none}
 }
+
+/* ═══════════════════════════════════════════════════════════
+   كتالوج التقارير — الـ١٣ شاشة كما هي في النظام العامل.
+
+   الشبكة كروت لا صفوف: كل شاشة ليها سؤال وجملة وصف وعدّادات
+   وملاحظة، والصف الواحد ما بيسعش ده بلا قصّ. والكروت صفوف ثابتة
+   عشان العدّادات والملاحظة يقعوا على نفس الخط في كل كارت.
+   ═══════════════════════════════════════════════════════════ */
+
+.catsum{display:flex;flex-direction:column}
+.catsum-g{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.catsum-s{display:flex;flex-direction:column;gap:.15rem;padding-inline-start:.85rem;
+  box-shadow:inset 1px 0 0 rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+.catsum-s:first-child{padding-inline-start:0;box-shadow:none}
+.catsum-s b{font-family:var(--fd);font-weight:700;font-size:1.5rem;line-height:1.15;color:var(--t1)}
+.catsum-s.big b{color:var(--ret2)}
+.catsum-s .sub{font-size:.73rem;line-height:1.5}
+
+.catg{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+/* صفوف بارتفاع ثابت: ترويسة · مسار · سؤال · وصف · عدّادات · ملاحظة.
+   السؤال والوصف والملاحظة كلهم مقصوصين بأرضية ثابتة، فالصفوف الستة
+   بتقع على نفس الخطوط في كل كارت.
+
+   المحاولة الأولى كانت `1fr` على الوصف عشان يبلع الفرق — وده كان
+   بيعكس المطلوب: الملاحظة (آخر صف) ارتفاعها متغيّر، فالفايض كان
+   بيروح للوصف ويزقّ العدّادات لتحت في الكارت اللي ملاحظته قصيرة.
+   الحل إن كل صف يبقى ثابتًا و`align-content:start` يسيب أي فايض
+   في القاع. */
+.catc{display:grid;grid-template-rows:repeat(6,auto);align-content:start;gap:.45rem;
+  padding:1.05rem 1.1rem;color:inherit}
+.catc:hover{transform:translateY(-1px)}
+.catc-h{display:flex;align-items:center;gap:.55rem;min-width:0}
+.catc-i{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;flex:none;
+  color:var(--ret2);background:rgba(var(--retC2),.10)}
+.catc-t{flex:1;min-width:0;font-family:var(--fd);font-weight:600;font-size:.95rem;color:var(--t1);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.catc-p{font-size:.7rem;color:var(--t3)}
+.catc-q{margin:0;font-size:.86rem;line-height:1.7;color:var(--t1);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+/* `-webkit-box` بتتقلّص على محتواها حتى جوّه صف `1fr`، فالكارت اللي
+   وصفه سطرين كان بيرفع عدّاداته ٢١px فوق جيرانه. الأرضية بتلات سطور
+   بتخلّي الصف واحدًا في كل الكروت — والقصّ عند نفس السطر. */
+.catc-w{margin:0;font-size:.76rem;line-height:1.8;min-height:4.32em;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.catc-n{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .55rem;padding-top:.55rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+.catc-n b{font-family:var(--fd);font-weight:600;font-size:.73rem;color:var(--t1);
+  padding:.16rem .45rem;border-radius:var(--r1);background:rgba(var(--edgeC),.06)}
+.catc-n .sub{font-size:.71rem}
+.catc-f{font-size:.72rem;line-height:1.85;color:var(--t2);padding:.5rem .6rem;border-radius:var(--r1);
+  min-height:calc(5.55em + 1rem);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  background:rgba(var(--retC2),.06);
+  box-shadow:inset 0 0 0 1px rgba(var(--retC2),.12)}
+
+/* ═══ شاشة تقرير واحد من الكتالوج ═══ */
+
+.lrq{display:flex;flex-direction:column;gap:.3rem}
+.lrq-q{margin:0;font-family:var(--fd);font-weight:600;font-size:1.05rem;line-height:1.65;color:var(--t1)}
+.lrq-w{margin:0;font-size:.83rem;line-height:1.9}
+/* الملاحظة اللي لقيناها في الشاشة الحقيقية — جنب الشاشة لا في مستند */
+.lrfind{display:flex;align-items:flex-start;gap:.7rem}
+.lrfind>.badge{flex:none;color:var(--ret2);background:rgba(var(--retC2),.10)}
+.lrfind p{margin:0;font-size:.84rem;line-height:1.95;color:var(--t2)}
+
+/* الفلاتر بعدد خياراتها — الرقم هو الرسالة */
+.lrf{display:flex;flex-wrap:wrap;gap:.45rem}
+.lrf-i{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .6rem;border-radius:var(--r1);
+  background:rgba(var(--wC),calc(.55 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.2))}
+.lrf-i svg{color:var(--t3);flex:none}
+.lrf-i b{font-family:var(--fd);font-weight:600;font-size:.78rem;color:var(--t1)}
+.lrf-i .sub{font-size:.71rem}
+/* القائمة الطويلة معلّمة: ٩٧ خيارًا في منسدلة بلا بحث */
+.lrf-i.long{background:rgba(var(--warnC),.08);
+  box-shadow:inset 0 0 0 1px rgba(var(--warnC),.22)}
+.lrf-i.long svg{color:var(--warn-ink)}
+
+/* رسوم الشاشة — تخطيطية: بتقول شكل الرسم لا قيمه */
+.lrch{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.lrch-c{display:grid;grid-template-rows:auto auto 1fr;gap:.35rem;padding:1rem}
+.lrch-t{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.6;color:var(--t1)}
+.lrch-k{font-size:.71rem;line-height:1.6}
+.lrch-g{display:flex;align-items:center;gap:.55rem;margin-top:.6rem}
+.lrch-g i{flex:1;height:12px;border-radius:99px;background:var(--solid);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.10)}
+.lrch-g::before{content:"";position:absolute}
+.lrch-g b{font-family:var(--fd);font-weight:700;font-size:.85rem;color:var(--t1);flex:none}
+.lrch-b{display:flex;align-items:flex-end;gap:.28rem;height:78px;margin-top:.6rem}
+.lrch-b i{flex:1;border-radius:4px 4px 0 0;background:rgba(var(--retC2),.35);position:relative;
+  display:block;min-height:4px}
+.lrch-b.st i{background:rgba(var(--retC2),.18)}
+.lrch-b.st u{position:absolute;inset-inline:0;bottom:0;border-radius:4px 4px 0 0;
+  background:var(--solid);display:block}
+
+/* مسار الفتات داخل شجرة الميزانية */
+.lrbc{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem}
+.lrbc-s{display:inline-flex;align-items:center;gap:.2rem}
+.lrbc-s svg{color:var(--t3)}
+.lrbc-i{padding:.28rem .5rem;border-radius:var(--r1);font-size:.79rem;color:var(--t2)}
+.lrbc-i:hover{background:rgba(var(--edgeC),.06);color:var(--t1)}
+.lrbc-i.on{font-family:var(--fd);font-weight:600;color:var(--t1);background:rgba(var(--edgeC),.07)}
+
+/* العمود اللي مالوش مثيل في شاشة تانية */
+.lronly{color:var(--ret2);margin-inline-start:.25rem;font-size:1.1em;line-height:0}
+.lrfile{display:inline-flex;align-items:center;gap:.3rem;color:var(--t2)}
+.lrfile svg{color:var(--t3);flex:none}
+.tbl td.bad,.tbl td.n.bad{color:var(--no-ink);font-family:var(--fd);font-weight:600}
+.tbl tr.clk{cursor:pointer}
+
+.lrnav{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+
+/* النصّ المساعد فوق تدرّج الصفحة العارية.
+   `--t3` مصمَّم للنصّ فوق الزجاج؛ على التدرّج نفسه بينزل تحت ٤.٥
+   (قِسناه ٣.٨٨ في أوضح موضع). نفس علاج `.rbtop>.sub`: الحبر من
+   `--t1` وشفافية بتخفّفه — فيفضل مساعدًا وهو مقروء. */
+.rpsec-n,
+.catsum-s>.sub,
+.lrf-i>.sub,
+.lrf-i>.num,
+.lrch-k,
+.catc-w,
+.catc-f,
+.catc-n>.sub,
+.lrq-w,
+.ftool-f>span.sub{color:var(--t1);opacity:.78}

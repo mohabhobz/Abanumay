@@ -13,6 +13,7 @@ import { KpiValue } from './KpiValue'
 import { basisText } from './basis'
 import { Board } from './Board'
 import { Builder } from './Builder'
+import { Catalog } from './Catalog'
 import { PERIODS } from '@/data/reportDefs'
 
 /* ═══════════════════════════════════════════════════════════
@@ -69,6 +70,7 @@ export default function ReportsPage() {
 
           {active === 'board' && <Board period={period} onPeriod={setPeriod} />}
           {active === 'build' && <Builder />}
+          {active === 'catalog' && <Catalog />}
           {active === 'coverage' && (
             <>
           {/* ═══ حالة القياس ═══

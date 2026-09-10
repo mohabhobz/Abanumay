@@ -9,6 +9,7 @@ import AssistantPage from '@/features/assistant/AssistantPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import ProcessReport from '@/features/reports/ProcessReport'
 import ReportView from '@/features/reports/ReportView'
+import LiveReport from '@/features/reports/LiveReport'
 import { ModulePlaceholder } from '@/features/shared/ModulePlaceholder'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
@@ -90,6 +91,7 @@ export default function App() {
             بيرجّع للفهرس من جوّه الشاشة نفسها بدل مسار حارس هنا. */}
         <Route path={`${ROUTES.reports}/view/:key`} element={<ReportView />} />
         <Route path={`${ROUTES.reports}/process/:key`} element={<ProcessReport />} />
+        <Route path={`${ROUTES.reports}/screen/:key`} element={<LiveReport />} />
         <Route path={`${ROUTES.reports}/:tab`} element={<ReportsPage />} />
 
         <Route path={ROUTES.assistant} element={<AssistantPage />} />

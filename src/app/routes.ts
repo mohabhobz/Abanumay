@@ -32,6 +32,8 @@ export const ROUTES = {
   reportView: (key: string) => `/reports/view/${key}`,
   /** ورقة مؤشرات إجراء — جوّه حالة القياس */
   report: (key: string) => `/reports/process/${key}`,
+  /** شاشة من كتالوج النظام العامل */
+  liveReport: (key: string) => `/reports/screen/${key}`,
 
   assistant: '/assistant',
   assistantThread: (id: string) => `/assistant/${id}`,
@@ -92,6 +94,7 @@ export const DEFAULT_ENTITY_TAB: EntityTabSlug = 'data'
 export const REPORT_TABS = [
   { slug: 'board', label: 'اللوحة' },
   { slug: 'build', label: 'تقرير مُشكَّل' },
+  { slug: 'catalog', label: 'كل التقارير' },
   { slug: 'coverage', label: 'حالة القياس' },
 ] as const
 
