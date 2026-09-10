@@ -267,8 +267,8 @@ export const currentUser: CurrentUser = {
   // من قواعد المكالمة: مشرف المنح مالوش صلاحية مالية، توصية بس
   financialAuthority: null,
   actions: [
-    { label: 'توصية بالموافقة', kind: 'btn-1' },
-    { label: 'طلب استكمال', kind: 'btn-3' },
+    { label: 'توصية بالموافقة', kind: 'btn-p' },
+    { label: 'طلب استكمال', kind: 'btn-2' },
     { label: 'تحويل لمشرف آخر', kind: 'btn-2' },
     { label: 'توصية بالرفض', kind: 'btn-d' },
   ],

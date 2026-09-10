@@ -69,7 +69,10 @@
   --sh-1: none;
   --sh-2: none;
 
-  --r1:10px; --r2:15px; --r3:22px; --r4:28px; --rp:999px;
+  /* `--r0` لزجاج التحكّم الصغير جدًّا (خانة التحديد ١٦px): `--r1`
+     على صندوق ١٦ بيبقى دايرة، والدايرة معناها «اختيار واحد» لا
+     «تحديد متعدّد» — ده تمييز دلالي في كل السيستمز. */
+  --r0:4px; --r1:10px; --r2:15px; --r3:22px; --r4:28px; --rp:999px;
 
   /* ═══ سلّم الارتفاعات ═══
      الوثيقة أعلنت السلّم ده، والستايل ما كانش بيعرفه — فكل شاشة
@@ -360,9 +363,19 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .btn-2{background:rgba(var(--wC),calc(.55 * var(--wM)));color:var(--t2);
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
-/* زرار أساسي مصمت بلون الهوية — للفعل الرئيسي في الشاشة.
-   قبله كان الدخول بياخد `btn-3`، وده لون حالة «معاد للاستكمال»
-   لا لون فعل: الأزرق في النظام يوصف حالة مش يعمل نداء. */
+/* ══ ترتيب الأفعال ══
+   دعوة أساسية **واحدة** في الشاشة، والباقي ثانوي بنفس الشكل،
+   واللون محجوز للمعنى لا للترتيب:
+
+     btn-p  الفعل الرئيسي — واحد بس
+     btn-2  كل فعل تاني — شكل واحد لكلهم
+     btn-d  الهدّام/الرافض — وده الوحيد اللي له لون خاص
+
+   رصيف القرار كان أربع أفعال بأربع معاملات (أبيض · أزرق · عادي ·
+   أحمر)، فالعين ما كانتش تعرف أنهي واحد المقصود — دي ملاحظتك
+   رقم ٣. والأزرق `btn-3` اتشال من الأفعال خالص لأن الأزرق في
+   نظامنا **يوصف حالة** («معاد للاستكمال») ما بيعملش نداء، وده
+   مكتوب هنا من الأول والكود كان بيخالفه. */
 .btn-p{background:var(--solid);color:var(--on-solid);font-weight:600;
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
 .btn-p:hover{filter:brightness(1.06)}
@@ -449,10 +462,12 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    مكتوبة `style` سطرية في الصفحات (٠ · ٦٫٤ · ٢٣٫٢). */
 .tblcard{--pad:7px}
 .tabs{display:flex;gap:.3rem;flex-wrap:wrap}
-.tab{padding:.45rem .95rem;border-radius:var(--rp);font-size:.82rem;font-family:var(--fd);font-weight:500;
+.tab{display:inline-flex;align-items:center;
+  min-height:var(--h-sm);padding-block:0;padding-inline:16px;
+  border-radius:var(--rp);font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   color:var(--t2-g);transition:color .16s ease,background .16s ease}
 .tab:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
-.tab.on{color:var(--t1);background:rgba(var(--wC),calc(.82 * var(--wM)));
+.tab.on{color:var(--on-solid);background:var(--solid);
   -webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
 .tl{display:flex;flex-direction:column;padding-inline-end:.2rem}
@@ -621,6 +636,13 @@ to{opacity:1;transform:none}
 .rail button:where(:not(.acctbtn)),.rail .railitem{width:100%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:.6rem;position:relative;
   padding:.7rem .3rem;border-radius:var(--r2);color:var(--t3);font-size:.82rem;font-family:var(--fd);
   transition:color .16s ease,background .16s ease;text-align:start;line-height:1.35}
+/* الشريط مطويّ ⇒ الصندوق **مربّع** ٤٤×٤٤: كان ٦٤×٤٧ (ملاحظتك
+   رقم ١). و٤٤ مش رقم عشوائي — هو الحدّ الأدنى للهدف اللمسي في
+   WCAG 2.5.5 و Apple HIG، وأكبر درجة في سلّم صناديق الأيقونات
+   عندنا. الشريط مفرود ⇒ الصفّ بيرجع بعرضه الكامل لأنه بقى صفًّا
+   بأيقونة واسم لا أيقونة لوحدها. */
+.rail:not(.open) button:where(:not(.acctbtn)),.rail:not(.open) .railitem{
+  width:44px;height:44px;padding:0;margin-inline:auto}
 .rail.open button:where(:not(.acctbtn)),.rail.open .railitem{justify-content:flex-start;padding-inline:.7rem}
 .rail-l{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rail:not(.open) .rail-l{display:none}
@@ -643,8 +665,14 @@ to{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){ .rail,.rail-tip{transition:none}
 }
 .rail button:where(:not(.acctbtn)):hover,.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
-.rail button:where(:not(.acctbtn)).on,.rail .railitem.on{color:var(--t1);background:rgba(var(--wC),calc(.80 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
+/* ══ المختار بلون الهوية ══
+   الأبيض كان بيقول «دي طبقة زجاج تانية»، واللون الأساسي بيقول
+   «دي اللي انت واقف عليها». التلات مواضع — عنصر الريل والتاب
+   وشريحة الحالة — دورهم واحد: **يعلّموا الاختيار الحالي**،
+   فلونهم واحد. */
+.rail button:where(:not(.acctbtn)).on,.rail .railitem.on{color:var(--on-solid);background:var(--solid);
+  box-shadow:none}
+.rail button:where(:not(.acctbtn)).on:hover,.rail .railitem.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}
 .rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:25px;height:25px;flex:none}
 /* المجموعات بتتفصل بمسافة بس — الخط الشعري كان بيتقوّس مع حواف
    العنصر فيبان كإطار مفتوح، والمسافة كافية إن العين تقرا الكتل */
@@ -786,7 +814,29 @@ input:focus-visible, select:focus-visible, textarea:focus-visible{
 /* السليكت الأصلي بيرسم حلقته الخاصة في سفاري إلا لو اتلغى مظهره */
 select{appearance:none;-webkit-appearance:none}
 /* الشيك بوكس بيفضل بمظهره الأصلي — إلغاؤه بيخليه مربعًا فاضيًا */
-input[type="checkbox"],input[type="radio"]{appearance:auto;-webkit-appearance:auto}
+/* ══ خانة التحديد ══
+   كانت `appearance:auto` — خانة **أصلية** بحدّ رمادي من المتصفح
+   جوّه سيستم كل تحكّماته مرسومة، ولونها `--ret-ink` الأزرق اللي
+   في نظامنا يوصف **حالة** لا يعمل فعلًا. بقت مرسومة بحافة
+   السيستم الشعرية ولون الفعل. (نفس ملاحظتك رقم ٥ بس على خانة
+   التحديد بدل المنسدلة.) */
+input[type="radio"]{appearance:auto;-webkit-appearance:auto}
+input[type="checkbox"]{appearance:none;-webkit-appearance:none;
+  width:16px;height:16px;flex:none;margin:0;position:relative;cursor:pointer;
+  border-radius:var(--r0);background:rgba(var(--wC),calc(.72 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.6));
+  transition:background .14s ease,box-shadow .14s ease}
+input[type="checkbox"]:hover{box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*4))}
+input[type="checkbox"]:checked{background:var(--solid);box-shadow:none}
+/* العلامة نفسها: ضلعان بيتلفّوا ٤٥° — أنضف من صورة أو خط */
+input[type="checkbox"]:checked::after{content:"";position:absolute;
+  inset-block-start:2px;inset-inline-start:5px;width:4px;height:8px;
+  border:solid var(--on-solid);border-width:0 2px 2px 0;rotate:45deg}
+input[type="checkbox"]:indeterminate{background:var(--solid);box-shadow:none}
+input[type="checkbox"]:indeterminate::after{content:"";position:absolute;
+  inset-block-start:7px;inset-inline-start:3px;width:10px;height:2px;
+  border-radius:1px;background:var(--on-solid)}
+input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 /* ── ترويسة المشروع، بلا سطح ── */
 .phead{display:flex;justify-content:space-between;align-items:center;
   gap:1.6rem 1.4rem;flex-wrap:wrap;padding:.2rem .2rem 0}
@@ -1721,13 +1771,25 @@ to{opacity:1;transform:none}
   font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   color:var(--t2-g);transition:color .16s ease,background .16s ease;
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
-.fseg b{font-size:.72rem;font-weight:600;color:var(--t3-g);padding:.06rem .38rem;border-radius:var(--rp);
-  background:rgba(var(--edgeC),.07)}
+/* ══ شارة العدد ══
+   كانت ٢٠×١٦ بأرضية ٧٪ — بيضاوي مفلطح شبه شفّاف، لا دايرة ولا
+   شارة. الصح: **الارتفاع والعرض الأدنى متساويين**، فرقم واحد
+   بيطلع دايرة كاملة ورقمين بيمدّوها كبسولة قصيرة. ده تعريف
+   الشارة في Material 3 و Carbon و GitHub counters — الشكل بيتبع
+   عدد الخانات لوحده من غير أي كلاس زيادة.
+   والأرضية بقت تبان: ١٤٪ بدل ٧٪. */
+.fseg b,.fchip b{display:inline-flex;align-items:center;justify-content:center;
+  min-width:var(--h-xs);height:var(--h-xs);padding-inline:5px;border-radius:var(--rp);
+  font-size:var(--fs-1);font-weight:600;font-variant-numeric:tabular-nums;
+  color:var(--t2-g);background:rgba(var(--edgeC),.14)}
+.fseg{gap:8px}
 .fseg:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
-.fseg.on{color:var(--t1);background:rgba(var(--wC),calc(.84 * var(--wM)));
-  -webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2))}
-.fseg.on b{color:var(--t1);background:rgba(var(--edgeC),.10)}
+.fseg.on{color:var(--on-solid);background:var(--solid);
+  box-shadow:none}
+.fseg.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}
+/* الشارة جوّه حبّة مصمتة بتقلب لأرضية فاتحة شفّافة — نفس الفكرة:
+   الشارة دايمًا أغمق أو أفتح من الحبّة اللي شايلاها بدرجة واحدة. */
+.fseg.on b{color:var(--on-solid);background:rgba(var(--wC),calc(.22 * var(--wM)))}
 /* ── شريط الأدوات ── */
 /* `z-index` مش زينة: كارت «قراءة سريعة» بعد الشريط في الـDOM، وكل
    كارت زجاجي بيعمل سياق تكديس بنفسه (`isolation:isolate`). من غير
@@ -1761,8 +1823,8 @@ to{opacity:1;transform:none}
 .fchip:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
 .fchip.on{color:var(--ret-ink);background:rgba(var(--retC2),.10);
   box-shadow:inset 0 0 0 1px rgba(var(--retC2),.30)}
-.fchip b{font-size:.7rem;font-weight:600;padding:.04rem .36rem;border-radius:var(--rp);
-  background:rgba(var(--retC2),.16)}
+.fchip{gap:8px}
+.fchip.on b{color:var(--ret-ink);background:rgba(var(--retC2),.20)}
 /* قائمة اختيار */
 .fsel{display:inline-flex;flex-direction:column;gap:.28rem;min-width:0}
 .fsel-l{font-size:.71rem;color:var(--t2);padding-inline-start:.2rem}
@@ -1873,7 +1935,7 @@ to{opacity:1;transform:none}
 .pc-top{display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--t3)}
 .pc-sp{flex:1}
 .pc-chk{display:grid;place-items:center;flex:none}
-.pc-chk input,.tbl input[type=checkbox]{width:15px;height:15px;accent-color:var(--ret-ink);cursor:pointer}
+.pc-chk input,.tbl input[type=checkbox]{width:16px;height:16px;cursor:pointer}
 .pc-title{font-family:var(--fd);font-weight:600;font-size:.94rem;line-height:1.5;color:var(--t1);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pc-title:hover{color:var(--teal)}

@@ -105,7 +105,10 @@ export function AnalysisCard({
             </p>
           )}
 
-          <button className="btn btn-p aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
+          {/* دعوة مساعِدة لا دعوة الشاشة: الفعل الأساسي في صفحة
+              المشروع هو «توصية بالموافقة» في رصيف القرار. دعوة
+              أساسية واحدة في الشاشة — والباقي ثانوي. */}
+          <button className="btn btn-1 aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
             {cta ?? (heading.includes('الجهة') ? 'حلّل ملف الجهة' : 'حلّل المشروع')}
           </button>
         </div>

@@ -307,7 +307,10 @@ export interface AuthorityMatrix {
 
 // ═══════════════════════ المستخدم ═══════════════════════
 
-export type DecisionKind = 'btn-1' | 'btn-2' | 'btn-3' | 'btn-d'
+/* ترتيب الأفعال: أساسي واحد · ثانوي للباقي · هدّام له لونه.
+   `btn-3` (الأزرق) اتشال من هنا عن قصد — الأزرق في النظام يوصف
+   حالة لا يعمل نداء، ووجوده في النوع كان بيسمح بالمخالفة. */
+export type DecisionKind = 'btn-p' | 'btn-1' | 'btn-2' | 'btn-d'
 
 export interface DecisionAction {
   label: string

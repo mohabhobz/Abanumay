@@ -44,8 +44,8 @@ export const ROLES: Role[] = [
     financialAuthority: null,
     lens: 'own',
     actions: [
-      { label: 'توصية بالموافقة', kind: 'btn-1' },
-      { label: 'طلب استكمال', kind: 'btn-3' },
+      { label: 'توصية بالموافقة', kind: 'btn-p' },
+      { label: 'طلب استكمال', kind: 'btn-2' },
       { label: 'تحويل لمشرف آخر', kind: 'btn-2' },
       { label: 'توصية بالرفض', kind: 'btn-d' },
     ],
@@ -58,8 +58,8 @@ export const ROLES: Role[] = [
     financialAuthority: 250_000,
     lens: 'team',
     actions: [
-      { label: 'اعتماد', kind: 'btn-1' },
-      { label: 'رفع للجنة التنفيذية', kind: 'btn-3' },
+      { label: 'اعتماد', kind: 'btn-p' },
+      { label: 'رفع للجنة التنفيذية', kind: 'btn-2' },
       { label: 'إعادة للمشرف', kind: 'btn-2' },
       { label: 'اعتذار', kind: 'btn-d' },
     ],
@@ -72,8 +72,8 @@ export const ROLES: Role[] = [
     financialAuthority: 500_000,
     lens: 'portfolio',
     actions: [
-      { label: 'اعتماد', kind: 'btn-1' },
-      { label: 'رفع لمجلس الأمناء', kind: 'btn-3' },
+      { label: 'اعتماد', kind: 'btn-p' },
+      { label: 'رفع لمجلس الأمناء', kind: 'btn-2' },
       { label: 'إعادة لمدير المنح', kind: 'btn-2' },
       { label: 'اعتذار', kind: 'btn-d' },
     ],
