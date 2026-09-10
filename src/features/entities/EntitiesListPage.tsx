@@ -274,7 +274,7 @@ export default function EntitiesListPage() {
   ).filter(([k]) => v[k] === '1')
 
   return (
-    <AppLayout assistantContext={assistFor.page('الجهات')}>
+    <AppLayout assistantContext={assistFor.entities()}>
       <div className={`viewstack${selected.size > 0 ? ' hasdock' : ''}`}>
         <div className="screen col">
           <nav className="crumb" aria-label="مسار التنقّل">

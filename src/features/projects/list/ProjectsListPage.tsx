@@ -409,7 +409,7 @@ export default function ProjectsListPage() {
   ).filter(([k]) => v[k] === '1')
 
   return (
-    <AppLayout assistantContext={assistFor.page('المشاريع')}>
+    <AppLayout assistantContext={assistFor.projects()}>
       <div className={`viewstack${selected.size > 0 ? ' hasdock' : ''}`}>
         <div className="screen col">
           <nav className="crumb" aria-label="مسار التنقّل">
