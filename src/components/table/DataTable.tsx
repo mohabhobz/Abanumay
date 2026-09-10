@@ -256,12 +256,17 @@ function Block<T>({
               {cols.map((c, i) => {
                 const total = aggregate(c, rows)
                 return (
-                  <td key={c.key} className={c.n ? 'n num' : undefined}>
+                  <td key={c.key} className={c.n ? 'n' : undefined}>
                     {total !== null ? (
-                      <>
-                        <b>{nf.format(total)}</b>
-                        {c.agg === 'avg' && <small className="sub"> وسطي</small>}
-                      </>
+                      /* الرقم والكلمة في مجموعة عربية، والعزل نازل على
+                         الأرقام وحدها — نفس قاعدة `Money`. الخلية اللي
+                         كانت `.num` كانت بتحطّ الاتنين في مجرى إنجليزي،
+                         فـ«وسطي» بتقع على الجنب الغلط ومش متسطّرة مع
+                         الرقم اللي فوقها في العمود. */
+                      <span className="tfv">
+                        <b className="num">{nf.format(total)}</b>
+                        {c.agg === 'avg' && <small className="sub">وسطي</small>}
+                      </span>
                     ) : i === 0 ? (
                       <span className="sub">{count(rows.length)}</span>
                     ) : null}

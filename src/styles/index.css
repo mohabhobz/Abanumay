@@ -2750,6 +2750,11 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   background:rgba(var(--edgeC),.045);font-size:.82rem;color:var(--t1)}
 .tbl tfoot b{font-family:var(--fd);font-weight:700}
 .tbl tfoot small{font-size:.66rem;font-weight:400}
+/* قيمة الإجمالي: الرقم على اليمين والوحدة على الشمال، ومحاذاة
+   المجموعة من الخلية. الاتنين في مجرى عربي واحد فالكلمة ما بتقعش
+   في الجنب الغلط، والرقم بيفضل جزيرة LTR فيتسطّر مع عموده. */
+.tfv{display:inline-flex;align-items:baseline;gap:.35em;
+  direction:rtl;unicode-bidi:isolate;white-space:nowrap}
 /* الإجمالي الكلي تحت المجموعات */
 .tgrand{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
   padding:.75rem .9rem;border-radius:var(--r2);
