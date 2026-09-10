@@ -1,6 +1,5 @@
-import { useState } from 'react'
-import { Glass, Head, Tag, Mono, KV, Icon, icons } from '@/components/ui'
-import { FilePreview, type PreviewFile } from '../components/FilePreview'
+import { Glass, Head, Tag, Mono, KV } from '@/components/ui'
+import { DocFile } from '@/components/docs'
 import type { BankAccount, Entity } from '@/types/domain'
 
 export interface EntityTabProps {
@@ -10,7 +9,6 @@ export interface EntityTabProps {
 
 /** ملف الجهة ومستنداتها وحسابها البنكي */
 export function EntityTab({ entity: E, bank }: EntityTabProps) {
-  const [preview, setPreview] = useState<PreviewFile | null>(null)
   const uploaded = E.docs.filter((d) => d.uploaded).length
 
   return (
@@ -55,20 +53,14 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
               {E.docs.map((d) => (
                 <tr key={d.name} className={d.uploaded ? '' : 'off'}>
                   <td>
-                    <div className="nmc">
-                      <Icon path={icons.file} size={16} style={{ color: 'var(--t3)' }} />
-                      {d.name}
-                    </div>
+                    {d.uploaded ? <DocFile name={d.name} /> : <span className="nmc sub">{d.name}</span>}
                   </td>
                   <td>{d.uploaded ? <Tag tone="ok">مرفوع</Tag> : <Tag tone="warn">ناقص</Tag>}</td>
                   <td className="n">
-                    {/* المرفوع يتقرا من مكانه، والناقص يتطلب من الجهة — مفيش صف بلا إجراء */}
+                    {/* المرفوع يتقرا من مكانه (الملف نفسه زرار)، والناقص
+                        يتطلب من الجهة — مفيش صف بلا إجراء */}
                     {d.uploaded ? (
-                      <span className="rowf" style={{ gap: '.5rem', justifyContent: 'flex-end' }}>
-                        <button className="lnk" onClick={() => setPreview(d)}>عرض</button>
-                        <span className="dot" />
-                        <a>تحميل</a>
-                      </span>
+                      <span className="sub">—</span>
                     ) : (
                       <span className="rowf" style={{ justifyContent: 'flex-end' }}>
                         <button className="lnk">اطلبه من الجهة</button>
@@ -85,8 +77,6 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
           تُبنى عليها درجة الحوكمة.
         </div>
       </Glass>
-
-      {preview && <FilePreview file={preview} onClose={() => setPreview(null)} />}
 
       <Glass>
         <Head title="الحساب البنكي" meta="حساب واحد مفعّل" />

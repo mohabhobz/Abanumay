@@ -1,4 +1,5 @@
 import { Empty, Glass, Head, Icon, icons, Mono, Num, Riyal, Stat, Tag } from '@/components/ui'
+import { DocFile } from '@/components/docs'
 import { nf, pct } from '@/lib/format'
 import type { PaymentDetail } from '@/data/mock/detail'
 
@@ -112,13 +113,12 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
               </ol>
 
               {p.voucher && (
-                <div className="rowf" style={{ gap: '.5rem', marginTop: '.7rem' }}>
-                  <button className="btn btn-2 btn-sm">
-                    <Icon path={icons.doc} size={15} />
-                    إذن الصرف <Mono>{p.voucher}</Mono>
-                  </button>
-                  <button className="btn btn-2 btn-sm">سند القبض</button>
-                  <button className="btn btn-2 btn-sm">سند القيد</button>
+                <div className="pay-docs">
+                  {/* الاسم قصير والرقم في السطر التحتاني: «إذن الصرف
+                      SV-2025-20611-1.pdf» بيتقصّ في أي عمود. */}
+                  <DocFile name="إذن الصرف.pdf" meta={p.voucher} />
+                  <DocFile name="سند القبض.pdf" meta="من الجهة" />
+                  <DocFile name="سند القيد.pdf" meta="من الجهة" />
                 </div>
               )}
             </div>

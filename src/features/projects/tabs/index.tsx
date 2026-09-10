@@ -5,6 +5,7 @@ import {
 import { nf } from '@/lib/format'
 import type { Entity, FollowUp, FollowUpType, Project } from '@/types/domain'
 import type { ThreadMessage } from '@/data/mock/detail'
+import { DocFile } from '@/components/docs'
 
 export { DataTab } from './DataTab'
 export { EntityTab } from './EntityTab'
@@ -104,9 +105,8 @@ export function FollowUpsTab({
               </div>
               <div style={{ fontSize: '.86rem', lineHeight: 1.7 }}>{f.body}</div>
               {f.attachment && (
-                <div className="rowf" style={{ gap: '.4rem', marginTop: '.5rem' }}>
-                  <Icon path={icons.clip} size={14} style={{ color: 'var(--t3)' }} />
-                  <a className="lnk">{f.attachment}</a>
+                <div style={{ marginTop: '.55rem' }}>
+                  <DocFile name={f.attachment} />
                 </div>
               )}
             </div>

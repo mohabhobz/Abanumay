@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Background, MobileTop, Rail, AssistantPanel } from '@/components/shell'
+import { AskDock, Background, MobileTop, Rail, AssistantPanel } from '@/components/shell'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -52,8 +52,6 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
         <div className="shell">
           <Rail
             user={user}
-            onAssistant={toggleAssistant}
-            assistantOpen={assistantOpen}
             onSignOut={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
           />
 
@@ -65,6 +63,10 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
             onFull={() => navigate(ROUTES.assistant)}
             ctx={assistantContext}
           />
+
+          {/* ثابت في كل شاشة، ومكانه جنب شريط القرار لا في شريط
+              التنقّل — السؤال بيتسأل عند القرار. */}
+          <AskDock open={assistantOpen} onToggle={toggleAssistant} compact={mobile} />
         </div>
       </div>
     </>

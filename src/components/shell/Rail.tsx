@@ -8,8 +8,6 @@ import type { CurrentUser } from '@/types/domain'
 
 export interface RailProps {
   user: CurrentUser
-  onAssistant: () => void
-  assistantOpen: boolean
   onSignOut?: () => void
   /**
    * مفاتيح الصلاحيات اللي المستخدم يملكها.
@@ -48,7 +46,7 @@ const readWidth = (): number => {
   }
 }
 
-export function Rail({ user, onAssistant, assistantOpen, onSignOut, permissions }: RailProps) {
+export function Rail({ user, onSignOut, permissions }: RailProps) {
   const allowed = NAV.filter((n) => !n.perm || !permissions || permissions.includes(n.perm))
 
   const [w, setW] = useState(readWidth)
@@ -127,18 +125,9 @@ export function Rail({ user, onAssistant, assistantOpen, onSignOut, permissions 
         )
       })}
 
+      {/* «اسأل أبانمي» اتنقل لرصيف القرار أسفل الشاشة — مش بند تنقّل،
+          وقربه من مكان القرار هو اللي بيخلّيه يتستخدم. */}
       <div className="railfoot">
-        <button
-          className={`aitrigger${assistantOpen ? ' on' : ''}`}
-          onClick={onAssistant}
-          aria-expanded={assistantOpen}
-        >
-          <span className="aispark" />
-          <span className="rail-l">
-            المساعد<kbd>⌘K</kbd>
-          </span>
-          <span className="rail-tip">مساعد أبانمي · ⌘K</span>
-        </button>
         <AccountMenu user={user} onSignOut={onSignOut} />
       </div>
 

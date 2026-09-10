@@ -4,7 +4,7 @@ import { GateArc, Icon, icons, Mono, Num, Riyal, Tabs } from '@/components/ui'
 import { DecisionBar } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
-import { nf, projectCode } from '@/lib/format'
+import { addDays, nf, projectCode } from '@/lib/format'
 import { fixtures } from '@/data/repository'
 import { useRole } from '@/hooks/useRole'
 import { projectById } from '@/data/mock/projects'
@@ -65,6 +65,9 @@ export default function ProjectPage() {
         score: row.score,
         beneficiaries: row.beneficiaries,
         durationDays: row.durationDays,
+        /* تاريخ البدء المطلوب في نموذج التقديم. الفيكستشر كان بيدّي
+           نفس اليوم لكل مشروع، فكل الشاشات كانت بتقول 12 أبريل. */
+        startDate: addDays(row.submittedAt, 30),
         status: { label: row.stage, tone: groupTone(row.statusGroup) },
       }
     : fixtures.project

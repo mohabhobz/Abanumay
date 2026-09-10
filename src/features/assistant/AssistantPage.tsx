@@ -108,8 +108,6 @@ export default function AssistantPage() {
         <div className="shell">
           <Rail
             user={fixtures.currentUser}
-            onAssistant={() => {}}
-            assistantOpen
             onSignOut={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
           />
 

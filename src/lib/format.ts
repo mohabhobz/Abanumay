@@ -13,6 +13,36 @@ export const df = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
 })
 
+/**
+ * تاريخ قصير: «12 أبريل 2026».
+ *
+ * `df` بتحطّ اليوم من الأسبوع كمان، وده مفيد في السجل («الأحد») لكن
+ * في صفّ تعريف بيبقى ضوضاء — التاريخ هنا حقيقة تعريفية لا حدث.
+ */
+export const dfShort = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
+  day: 'numeric', month: 'long', year: 'numeric',
+})
+
+/** يقبل `2026-04-12` أو `12/4/2026` ويرجّع تاريخًا مقروءًا */
+export const readDate = (value: string): string => {
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(value)
+  const dt = iso
+    ? new Date(value)
+    : (() => {
+        const [dd, mm, yy] = value.split('/').map(Number)
+        return new Date(yy, mm - 1, dd)
+      })()
+  return Number.isNaN(dt.getTime()) ? value : dfShort.format(dt)
+}
+
+/** تاريخ + عدد أيام = التاريخ الناتج */
+export const addDays = (value: string, days: number): string => {
+  const dt = new Date(value)
+  if (Number.isNaN(dt.getTime())) return value
+  dt.setDate(dt.getDate() + days)
+  return dt.toISOString().slice(0, 10)
+}
+
 export const money = (n: number): string => nf.format(n)
 
 export const percent = (part: number, whole: number): number =>
@@ -140,6 +170,10 @@ export const units = {
   source: (n: number, gen = false) => plural(n, {
     one: 'مصدر واحد', two: two('مصدران', 'مصدرين', gen),
     few: (x) => `${x} مصادر`, many: (x) => `${x} مصدرًا`,
+  }),
+  month: (n: number, gen = false) => plural(n, {
+    one: 'شهر واحد', two: two('شهران', 'شهرين', gen),
+    few: (x) => `${x} أشهر`, many: (x) => `${x} شهرًا`,
   }),
   reading: (n: number, gen = false) => plural(n, {
     one: 'قراءة واحدة', two: two('قراءتان', 'قراءتين', gen),

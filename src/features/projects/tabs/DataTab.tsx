@@ -1,9 +1,8 @@
-import { useState } from 'react'
 import {
-  Glass, Head, Tag, Num, Mono, KV, Timeline, Stat, Riyal, Icon, icons,
+  Glass, Head, Tag, Num, Mono, KV, Timeline, Stat, Riyal,
 } from '@/components/ui'
-import { costPerBeneficiary, nf, pct } from '@/lib/format'
-import { FilePreview, type PreviewFile } from '../components/FilePreview'
+import { DocFile } from '@/components/docs'
+import { addDays, costPerBeneficiary, nf, pct, readDate, units } from '@/lib/format'
 import type { Project } from '@/types/domain'
 
 export interface DataTabProps {
@@ -14,14 +13,13 @@ export interface DataTabProps {
 
 /** بيانات المشروع — التعريف والفكرة والمراحل والنطاق والمرفقات */
 export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) {
-  const [preview, setPreview] = useState<PreviewFile | null>(null)
   const perBeneficiary = costPerBeneficiary(P.amountRequested, P.beneficiaries)
   const uploaded = P.attachments.filter((a) => a.uploaded).length
 
   return (
     <>
       <Glass>
-        <Head title="التعريف" meta="7 حقول" />
+        <Head title="التعريف" meta="9 حقول" />
         <KV
           rows={[
             { k: 'الجهة', v: <a onClick={onOpenEntity}>{entityName}</a> },
@@ -30,6 +28,19 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
             { k: 'المسار', v: P.track },
             { k: 'المجال', v: P.field },
             { k: 'الهدف', v: P.goal },
+            /* التاريخان جنب بعض: «330 يومًا» لوحدها ما بتقولش إمتى
+               بيخلص، والنهاية هي اللي بتحدّد لو المشروع هيعدّي السنة
+               المالية. والمدة في الاتفاقية بتبدأ من صرف أول دفعة. */
+            { k: 'تاريخ البدء', v: readDate(P.startDate) },
+            {
+              k: 'الانتهاء المتوقع',
+              v: (
+                <>
+                  {readDate(addDays(P.startDate, P.durationDays))}
+                  <span className="sub"> · بعد <span className="num">{nf.format(P.durationDays)}</span> يومًا</span>
+                </>
+              ),
+            },
             {
               k: 'الوسوم',
               v: P.tags.length ? P.tags.join('، ') : <span className="sub">لا يوجد</span>,
@@ -50,7 +61,7 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
           label="مدة التنفيذ"
           value={P.durationDays}
           unit="يومًا"
-          note={<>تبدأ <Mono>{P.startDate}</Mono></>}
+          note={`≈ ${units.month(Math.round(P.durationDays / 30))} · تبدأ من صرف الدفعة الأولى`}
         />
         <Stat
           label="المستفيدون"
@@ -157,33 +168,28 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
         <div style={{ overflowX: 'auto' }}>
           <table className="tbl">
             <thead>
-              <tr><th>المرفق</th><th>الحالة</th><th className="n">إجراء</th></tr>
+              {/* مفيش عمود «إجراء»: الملف نفسه زرار المعاينة، وجنبه
+                  زرار التنزيل. عمود بيقول «اضغط الملف» بيشرح واجهة
+                  المفروض تشرح نفسها. */}
+              <tr><th>المرفق</th><th className="n">الحالة</th></tr>
             </thead>
             <tbody>
               {P.attachments.map((a) => (
                 <tr key={a.name} className={a.uploaded ? '' : 'off'}>
                   <td>
-                    <div className="nmc">
-                      <Icon path={icons.file} size={16} style={{ color: 'var(--t3)' }} />
-                      {a.name}
-                    </div>
-                  </td>
-                  <td>
+                    {/* المرفوع بيتعرض بثامبنيله — النوع بيبان قبل الفتح.
+                        وغير المرفوع مالوش ثامبنيل لأن مفيش محتوى. */}
                     {a.uploaded ? (
-                      <Tag tone="ok">مرفوع</Tag>
+                      <DocFile name={a.name} />
                     ) : (
-                      <Tag>{a.required ? 'مطلوب، غير مرفوع' : 'اختياري، غير مرفوع'}</Tag>
+                      <span className="nmc sub">{a.name}</span>
                     )}
                   </td>
                   <td className="n">
                     {a.uploaded ? (
-                      <span className="rowf" style={{ gap: '.5rem', justifyContent: 'flex-end' }}>
-                        <button className="lnk" onClick={() => setPreview(a)}>عرض</button>
-                        <span className="dot" />
-                        <a>تحميل</a>
-                      </span>
+                      <Tag tone="ok">مرفوع</Tag>
                     ) : (
-                      '—'
+                      <Tag>{a.required ? 'مطلوب، غير مرفوع' : 'اختياري، غير مرفوع'}</Tag>
                     )}
                   </td>
                 </tr>
@@ -195,8 +201,6 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
           الموازنة التفصيلية هي المطلوبة في طلب الاستكمال الحالي — الملف المرفوع صورة لا تُقرأ آليًا.
         </div>
       </Glass>
-
-      {preview && <FilePreview file={preview} onClose={() => setPreview(null)} />}
 
       <Glass>
         <Head title="جهة الاتصال والحساب البنكي" meta="من نموذج التقديم" />

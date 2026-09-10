@@ -1,5 +1,6 @@
 import { Empty, Glass, Head, Icon, icons, Mono, Num, Riyal, Tag } from '@/components/ui'
 import { nf } from '@/lib/format'
+import { DocFile } from '@/components/docs'
 import type { AgreementDetail, PaymentDetail } from '@/data/mock/detail'
 
 export interface AgreementTabProps {
@@ -76,12 +77,12 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
           </div>
         </div>
 
-        <div className="rowf" style={{ gap: '.5rem', marginTop: '1.1rem' }}>
+        <div className="rowf" style={{ gap: '.6rem', marginTop: '1.1rem' }}>
+          <DocFile name="الاتفاقية.pdf" meta={A.no} />
           <button className="btn btn-2 btn-sm">
             <Icon path={icons.doc} size={15} />
             طباعة الاتفاقية
           </button>
-          <button className="btn btn-2 btn-sm">نسخة PDF</button>
         </div>
       </Glass>
 
