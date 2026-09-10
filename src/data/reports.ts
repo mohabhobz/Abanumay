@@ -98,7 +98,11 @@ export const PACKS: ReportPack[] = [
 
 /** تقرير في النظام العامل، ومكانه هنا */
 export interface LiveReport {
-  /** مسار الشاشة في النظام العامل */
+  /**
+   * مسار الشاشة في النظام العامل — بلا بادئة `/control`.
+   * المسار الكامل `sys.abanumay.sa/control/<path>`؛ الجزء ده مشترك
+   * في الـ13 كلهم فمكتوب مرة واحدة في `LIVE_BASE` تحت.
+   */
   path: string
   title: string
   /** ملاحظة الأوديت — فاضي أو فلاتر بلا نتيجة */
@@ -118,7 +122,7 @@ export const LIVE_REPORTS: LiveReport[] = [
   { path: 'reports1_3', title: 'تقارير المشاريع', pack: 'impact' },
   { path: 'reports1_5', title: 'مخصص الصرف', pack: 'money' },
   { path: 'reports1_6', title: 'تقرير الدفعات', pack: 'money' },
-  { path: 'reports1_7', title: 'تقرير المجالات', flaw: 'فلاتر بلا نتيجة', pack: 'impact' },
+  { path: 'reports1_7', title: 'تقرير المجلات', flaw: 'فلاتر بلا نتيجة', pack: 'impact' },
   { path: 'reports1_8', title: 'تقرير العمليات', flaw: 'الشاشة فاضية', pack: 'processes' },
   { path: 'reports1_9', title: 'تقرير الموظفين', flaw: 'الشاشة فاضية', pack: 'processes' },
   { path: 'reports1_11', title: 'التقرير المرحلي', pack: 'partners' },
@@ -127,6 +131,9 @@ export const LIVE_REPORTS: LiveReport[] = [
   { path: 'reports1_14', title: 'أداء الموظفين', pack: 'processes' },
   { path: 'reports1_15', title: 'أداء الأقسام', pack: 'processes' },
 ]
+
+/** البادئة المشتركة لكل مسارات النظام العامل */
+export const LIVE_BASE = '/control/'
 
 export const packByKey = (key: string): ReportPack | undefined => PACKS.find((p) => p.key === key)
 

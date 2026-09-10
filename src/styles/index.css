@@ -2554,6 +2554,10 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    جوّه ارتفاع ثابت، والقسم اللي محتواه شبكة بيتلَخبط بيها — بيتضغط
    لصفر وشبكته تطلع فوق اللي بعده. */
 .rpsec{display:flex;flex-direction:column;gap:.85rem}
+/* سطر بيقول السكشن ده بيعمل إيه. سطر واحد مقروء عرضه محدود:
+   الجملة اللي بتفرد على عرض الشاشة كلها العين بتفقد أولها. */
+.rpsec-n{max-width:52rem;margin:-.25rem 0 0;font-size:.8rem;line-height:1.95}
+.rpsec-n b{font-family:var(--fd);font-weight:600;color:var(--t1)}
 /* ═══ بطاقات الإجراءات ═══ */
 .rppg{display:grid;gap:.85rem;
   grid-template-columns:repeat(auto-fill,minmax(232px,1fr))}
@@ -3376,7 +3380,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.6))}
 
 /* ═══ التقرير الكامل ═══ */
-.rvread{display:flex;align-items:flex-start;gap:1.2rem;flex-wrap:wrap}
+/* الرقم والجملة على **خطّ كتابة واحد**، لا على حافة صندوق واحدة.
+   `flex-start` كان بيسطّر أعلى الصندوقين، والرقم ١.٧rem والجملة
+   ٠.٨٦rem — فالقاعدتان بيبعدوا ٩px والسطر يبان مايل. `baseline`
+   بيسطّر أول سطر في الجملة مع قاعدة الرقم، وده اللي العين بتقيس عليه. */
+.rvread{display:flex;align-items:baseline;gap:1.2rem;flex-wrap:wrap}
 .rvread-v{direction:rtl;unicode-bidi:isolate;display:flex;align-items:baseline;gap:.5rem;flex:none}
 .rvread-v b{font-family:var(--fd);font-weight:700;font-size:1.7rem;line-height:1.1;color:var(--t1)}
 .rvread-v small{font-size:.74rem;color:var(--t2)}
