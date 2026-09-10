@@ -407,23 +407,70 @@ export function Pager({
         </span>
         {onPageSize && <PageSize value={pageSize} onChange={onPageSize} />}
       </div>
-      <div className="pager-b">
-        <button className="btn btn-2 btn-sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-          السابق
-        </button>
-        <span className="sub">
-          صفحة <span className="num">{page}</span> من <span className="num">{pages}</span>
-        </span>
+      {/* أرقام لا جملة، وسهمان لا كلمتان.
+          «صفحة ١ من ٢» بتقول موضعك بس وما بتوصّلكش: عايز التالتة
+          تدوس «التالي» مرتين. الأرقام هي الأزرار نفسها، فالانتقال
+          دوسة واحدة والموضع بيتقري من الرقم المضيء — والسهمان
+          للخطوة الواحدة، واتجاههما اتجاه القراءة: الرجوع لليمين. */}
+      <nav className="pager-b" aria-label="صفحات النتائج">
         <button
-          className="btn btn-2 btn-sm"
+          className="pgnav"
+          disabled={page <= 1}
+          onClick={() => onPage(page - 1)}
+          aria-label="الصفحة السابقة"
+          title="السابق"
+        >
+          <Icon path={icons.chevronBack} size={16} />
+        </button>
+
+        <div className="pgnums">
+          {pageWindow(page, pages).map((n, i) =>
+            n === '…' ? (
+              <span className="pggap" key={`gap-${i}`} aria-hidden="true">…</span>
+            ) : (
+              <button
+                key={n}
+                className={`pgn num${n === page ? ' on' : ''}`}
+                aria-current={n === page ? 'page' : undefined}
+                aria-label={`صفحة ${n}`}
+                onClick={() => n !== page && onPage(n)}
+              >
+                {n}
+              </button>
+            ),
+          )}
+        </div>
+
+        <button
+          className="pgnav"
           disabled={page >= pages}
           onClick={() => onPage(page + 1)}
+          aria-label="الصفحة التالية"
+          title="التالي"
         >
-          التالي
+          <Icon path={icons.chevron} size={16} />
         </button>
-      </div>
+      </nav>
     </div>
   )
+}
+
+/**
+ * الأرقام اللي تتعرض: الأولى والأخيرة دايمًا، والحالية وجارتيها،
+ * والباقي نقط. من غير النافذة دي، قائمة فيها ٤٠ صفحة بتلفّ سطرين
+ * وبتاخد مساحة أكتر من النتيجة نفسها.
+ */
+function pageWindow(page: number, pages: number): (number | '…')[] {
+  if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1)
+
+  const out: (number | '…')[] = [1]
+  const from = Math.max(2, Math.min(page - 1, pages - 3))
+  const to = Math.min(pages - 1, Math.max(page + 1, 4))
+  if (from > 2) out.push('…')
+  for (let i = from; i <= to; i++) out.push(i)
+  if (to < pages - 1) out.push('…')
+  out.push(pages)
+  return out
 }
 
 /** تبديل بين عرض الكروت والجدول */

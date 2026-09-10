@@ -21,6 +21,8 @@ export const icons = {
   chat: '<path d="M20 12c0 3.9-3.6 7-8 7-1 0-2-.2-2.9-.5L5 20l1.3-3.1C5.2 15.7 4 14 4 12c0-3.9 3.6-7 8-7s8 3.1 8 7z"/>',
   alert: '<circle cx="12" cy="12" r="8"/><path d="M12 8v5"/><path d="M12 16h.01"/>',
   chevron: '<path d="M14 6l-6 6 6 6"/>',
+  /* الشيفرون المعكوس — في RTL ده اتجاه «لورا» (يمين) */
+  chevronBack: '<path d="M10 6l6 6-6 6"/>',
   search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
   file: '<path d="M7 4h7l4 4v12H7z"/><path d="M14 4v4h4"/>',
   clip: '<path d="M15 8l-6 6a2.5 2.5 0 003.5 3.5l6.5-6.5a4.5 4.5 0 00-6.4-6.3L6 11.6"/>',

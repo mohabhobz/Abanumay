@@ -1673,7 +1673,25 @@ to{opacity:1;transform:none}
 .pager{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
   padding:.2rem .3rem}
 .pager-c{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
-.pager-b{display:flex;align-items:center;gap:.6rem}
+.pager-b{display:flex;align-items:center;gap:.3rem}
+.pgnums{display:flex;align-items:center;gap:.2rem}
+/* الرقم والسهم بنفس المربّع: الصفّ بيتسطّر على شبكة واحدة، ومساحة
+   الدوس ما تقلّش عن ٣٢px في أي حالة. */
+.pgn,.pgnav{min-width:32px;height:32px;display:grid;place-items:center;
+  border-radius:var(--rp);font-family:var(--fd);font-weight:500;font-size:.82rem;
+  color:var(--t2-g);transition:color .16s ease,background .16s ease,box-shadow .16s ease}
+.pgn{padding-inline:.5rem}
+.pgn:hover,.pgnav:not(:disabled):hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
+/* الصفحة الحالية بنفس تشكيل اللقطة المختارة فوق — نفس المعنى
+   («أنت هنا») لازم يبقى له نفس الشكل في الصفحة الواحدة. */
+.pgn.on{color:var(--t1);font-weight:600;background:rgba(var(--wC),calc(.84 * var(--wM)));
+  -webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2));
+  cursor:default}
+.pgnav{color:var(--t3)}
+.pgnav:disabled{opacity:.32;cursor:not-allowed}
+.pggap{min-width:20px;text-align:center;color:var(--t3);font-size:.82rem;
+  user-select:none;pointer-events:none}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn:disabled:hover{transform:none;filter:none}
 .btn-sm{padding:.4rem .85rem;font-size:.78rem}
