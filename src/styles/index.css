@@ -2848,7 +2848,6 @@ body.printing .mesh,body.printing .grain{display:none}
 .fcust-l:not(.wide){max-width:520px}
 /* كارت التحليلات وهو مقفول: سطر واحد بلا حشو داخلي، عشان عمود
    السياق يبتدي خفيفًا ويفضل المشروع نفسه هو اللي واخد المساحة */
-.aicard.aishut{padding:.8rem .95rem}
 .aishut-f{margin-inline-start:.4rem}
 /* القراءات جوّه كارت التحليلات: الكارت نفسه له حشوه، فالقائمة ما
    تزوّدش حشوًا تاني — `.qr-list` معمولة لكارت `.qread` اللي حشوه صفر. */
@@ -3152,3 +3151,61 @@ body.printing .mesh,body.printing .grain{display:none}
   background:rgba(var(--warnC),.10);
   box-shadow:inset 0 0 0 1px rgba(var(--warnC),.24)}
 .thread-why .sub{color:var(--warn-ink)}
+
+/* ═══════════════════════════════════════════════════════════
+   عمود التحليلات — كارت واحد لازق بيملا الارتفاع
+   العمود كان تلات كروت بأطوال مختلفة، فيفضل فراغ نصّه على الشمال.
+   بقى كارت واحد: بياخد الارتفاع المتاح كله، ولمّا يطول بيتمرّر
+   جوّه نفسه. واللزق هنا مالوش مشكلة العمود متعدد الكروت — مفيش
+   محتوى تحته يستنّى دوره.
+   ═══════════════════════════════════════════════════════════ */
+
+@media (min-width:961px){
+  .aiside{position:sticky;top:.35rem;align-self:start;
+    /* الارتفاع محسوب من مكانه الفعلي (`useFillHeight`): الشاشة ناقص
+       موضعه من فوق ناقص رصيف القرار. قبل اللزق بيبقى قصيرًا ومحتواه
+       ظاهر، وكل ما تنزل بيكبر لحد ما يلزق فيملا الشاشة. */
+    height:var(--ai-fill,26rem)}
+  .aiside>.aicard{height:100%;min-height:0;display:flex;flex-direction:column}
+}
+
+/* ── الحالة المقفولة: بوستر في نص الكارت ── */
+.aicard.aishut{padding:1.2rem 1.15rem;display:flex;overflow:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.2) transparent}
+.aishut-c{margin:auto;display:flex;flex-direction:column;align-items:center;text-align:center;
+  gap:.7rem;max-width:22rem}
+.badge-44{width:44px;height:44px}
+.aishut-t{font-family:var(--fd);font-weight:600;font-size:1.02rem;line-height:1.5;
+  color:var(--t1);margin:.15rem 0 0}
+.aishut-m{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;justify-content:center}
+/* اللمحة بتتقصّ عند تلات سطور: الكارت بيبقى قصيرًا قبل ما يلزق،
+   والفقرة الطويلة بتزقّ الزرار برّه المنظر. */
+.aishut-p{font-size:.84rem;line-height:1.8;color:var(--t2);margin:.15rem 0 .2rem;
+  padding-top:.85rem;width:100%;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.6))}
+.aishut-p b{font-family:var(--fd);font-weight:700;color:var(--t1)}
+.aishut-p b.bad{color:var(--no-ink)}
+.aishut-go{margin-top:.25rem}
+.aicard.aishut .aishut-f{margin:0;font-size:.69rem}
+
+/* ── الحالة المفتوحة: الترويسة ثابتة والقراءات بتتمرّر ── */
+.aicard.aiopen{display:flex;flex-direction:column;min-height:0}
+.aicard.aiopen>.rowf{flex:none}
+.aiscroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;
+  padding-inline-end:3px;
+  scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.22) transparent}
+.aiscroll::-webkit-scrollbar{width:7px}
+.aiscroll::-webkit-scrollbar-thumb{background:rgba(var(--edgeC),.18);border-radius:99px}
+
+/* ── التنزيل جنب الحالة في آخر الصف ── */
+.dstat{display:inline-flex;align-items:center;gap:.5rem;justify-content:flex-end}
+
+/* ── آخر إجراء تحت التعريف ── */
+.lastact{margin-top:1.1rem;padding-top:.9rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.6))}
+.lastact-h{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+.lastact-b{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.87rem}
+.lastact-b b{font-family:var(--fd);font-weight:600;color:var(--t1)}
+.lastact-d{font-size:.72rem;padding:.12rem .5rem;border-radius:var(--rp);
+  color:var(--t2);background:rgba(var(--edgeC),.07)}

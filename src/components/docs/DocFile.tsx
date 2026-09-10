@@ -10,6 +10,12 @@ export interface DocFileProps {
   meta?: string
   /** صف كامل بدل شريحة — للجداول والقوائم */
   block?: boolean
+  /**
+   * زرار التنزيل جوّه الصف. في الجداول بيتشال من هنا ويتحطّ في
+   * عمود الحالة (`DocDownload`)، عشان أيقونات التنزيل تتسطّر في
+   * عمود واحد بدل ما تقف بعد كل اسم في مكان مختلف.
+   */
+  download?: boolean
 }
 
 /**
@@ -24,7 +30,7 @@ export interface DocFileProps {
  * إن الموازنة **صورة ممسوحة** من الصف نفسه — وده سبب طلب الاستكمال
  * في المشروع النموذجي.
  */
-export function DocFile({ name, meta, block }: DocFileProps) {
+export function DocFile({ name, meta, block, download = true }: DocFileProps) {
   const [open, setOpen] = useState(false)
   const kind = docKind(name)
 
@@ -50,12 +56,26 @@ export function DocFile({ name, meta, block }: DocFileProps) {
 
         {/* التنزيل زرار مستقل: الضغط على الملف نفسه بيفتحه، والتنزيل
             قرار تاني — دمجهم بيخلّي كل معاينة تحميلًا. */}
-        <a className="dfile-dl" download={name} href="#" onClick={(e) => e.preventDefault()} title="تنزيل" aria-label={`تنزيل ${name}`}>
-          <Icon path={icons.export} size={15} />
-        </a>
+        {download && <DocDownload name={name} />}
       </div>
 
       {open && <DocPreview name={name} meta={meta} onClose={() => setOpen(false)} />}
     </>
+  )
+}
+
+/** زرار تنزيل لوحده — للجداول اللي بتحطّه في عمود الحالة */
+export function DocDownload({ name }: { name: string }) {
+  return (
+    <a
+      className="dfile-dl"
+      download={name}
+      href="#"
+      onClick={(e) => e.preventDefault()}
+      title="تنزيل"
+      aria-label={`تنزيل ${name}`}
+    >
+      <Icon path={icons.export} size={15} />
+    </a>
   )
 }

@@ -1,18 +1,22 @@
 import {
   Glass, Head, Tag, Num, Mono, KV, Timeline, Stat, Riyal,
 } from '@/components/ui'
-import { DocFile } from '@/components/docs'
+import { DocDownload, DocFile } from '@/components/docs'
 import { addDays, costPerBeneficiary, nf, pct, readDate, units } from '@/lib/format'
 import type { Project } from '@/types/domain'
+import type { LogEvent } from '@/data/mock/log'
 
 export interface DataTabProps {
   project: Project
   entityName: string
   onOpenEntity: () => void
+  /** أحدث قيد في السجل — بيتعرض تحت التعريف */
+  last?: LogEvent
+  onOpenLog: () => void
 }
 
 /** بيانات المشروع — التعريف والفكرة والمراحل والنطاق والمرفقات */
-export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) {
+export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog }: DataTabProps) {
   const perBeneficiary = costPerBeneficiary(P.amountRequested, P.beneficiaries)
   const uploaded = P.attachments.filter((a) => a.uploaded).length
 
@@ -47,6 +51,30 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
             },
           ]}
         />
+
+        {/* آخر إجراء تحت التعريف مباشرة — كان كارتًا في العمود الجانبي،
+            وده مكان بعيد عن السؤال اللي بيسبقه: «المشروع ده إيه، وآخر
+            حاجة حصلت فيه إيه». الاتنين بقوا في نفس الكارت. */}
+        {last && (
+          <div className="lastact">
+            <div className="lastact-h">
+              <span className="lb">آخر إجراء</span>
+              <span className="pc-sp" />
+              <button className="lnk" onClick={onOpenLog}>السجل كامل</button>
+            </div>
+            <div className="lastact-b">
+              <b>{last.action}</b>
+              <span className="lastact-d">{last.dept}</span>
+            </div>
+            <div className="sub" style={{ marginTop: '.3rem' }}>
+              {last.by} · <Mono>{last.at}</Mono>
+              {' · '}
+              <span style={{ color: last.hours > last.limit ? 'var(--no-ink)' : undefined }}>
+                <Num>{last.days}</Num> يومًا · <Num>{last.hours}</Num> من <Num>{last.limit}</Num> ساعة
+              </span>
+            </div>
+          </div>
+        )}
       </Glass>
 
       <div className="stats4">
@@ -180,17 +208,22 @@ export function DataTab({ project: P, entityName, onOpenEntity }: DataTabProps) 
                     {/* المرفوع بيتعرض بثامبنيله — النوع بيبان قبل الفتح.
                         وغير المرفوع مالوش ثامبنيل لأن مفيش محتوى. */}
                     {a.uploaded ? (
-                      <DocFile name={a.name} />
+                      <DocFile name={a.name} download={false} />
                     ) : (
                       <span className="nmc sub">{a.name}</span>
                     )}
                   </td>
+                  {/* التنزيل جنب الحالة في آخر الصف: الأيقونات بتتسطّر
+                      في عمود واحد بدل ما تقف بعد كل اسم في مكان. */}
                   <td className="n">
-                    {a.uploaded ? (
-                      <Tag tone="ok">مرفوع</Tag>
-                    ) : (
-                      <Tag>{a.required ? 'مطلوب، غير مرفوع' : 'اختياري، غير مرفوع'}</Tag>
-                    )}
+                    <span className="dstat">
+                      {a.uploaded ? (
+                        <Tag tone="ok">مرفوع</Tag>
+                      ) : (
+                        <Tag>{a.required ? 'مطلوب، غير مرفوع' : 'اختياري، غير مرفوع'}</Tag>
+                      )}
+                      {a.uploaded && <DocDownload name={a.name} />}
+                    </span>
                   </td>
                 </tr>
               ))}

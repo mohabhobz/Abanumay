@@ -65,31 +65,53 @@ export function QuickAnalysis({ readings, onAsk }: QuickAnalysisProps) {
     </div>
   )
 
-  /* ── مقفول: العنوان + عدّاد + لمحة أهمّ قراءة ── */
+  /* ── مقفول: بوستر في نص الكارت ──
+     العمود الجانبي فيه كارت واحد بيملا الارتفاع المتاح، فالحالة
+     المقفولة مش سطر صغير فوق فراغ: الشرارة والعنوان واللمحة والزرار
+     في نص الكارت رأسيًا. الفراغ اللي كان على الشمال بقى هو المساحة
+     اللي بتخلّي الدعوة تتشاف. */
   if (!armed) {
     return (
       <Glass className="aicard aishut" ref={card}>
-        <div className="rowf" style={{ gap: '.6rem' }}>
-          <span className="badge badge-30"><span className="aispark" /></span>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            {title}
-            <div className="sub">
-              {units.reading(readings.length)}
-              {flags > 0 && <span className="itag no aishut-f">{flags} تحتاج انتباه</span>}
-            </div>
+        <div className="aishut-c">
+          <span className="badge badge-44"><span className="aispark" /></span>
+
+          <h2 className="aishut-t">تحليلات المشروع السريعة</h2>
+
+          <div className="aishut-m">
+            <span className="qr-count">{units.reading(readings.length)}</span>
+            {flags > 0 && (
+              <span className="qr-count no">
+                <span className="num">{flags}</span> تحتاج انتباه
+              </span>
+            )}
           </div>
-          <button className="btn btn-1 btn-sm" onClick={() => { setArmed(true); setOpen(true) }}>
+
+          {/* لمحة أهمّ قراءة: «واقف فين ومحتاج إيه» أول سؤال بيتسأل،
+              فبيتقري من غير ضغطة، والتفصيل بيتحسب بالطلب. */}
+          {readings[0] && (
+            <p className="aishut-p">
+              {readings[0].metric && (
+                <b className={readings[0].kind === 'flag' ? 'bad' : undefined}>
+                  {readings[0].metric.value} {readings[0].metric.unit} —{' '}
+                </b>
+              )}
+              {readings[0].text}
+            </p>
+          )}
+
+          <button className="btn btn-p aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
             حلّل المشروع
           </button>
-        </div>
 
-        {readings[0] && <ReadingPeek reading={readings[0]} />}
+          <span className="aishut-f sub">قراءة آلية · استرشادية غير مُلزِمة</span>
+        </div>
       </Glass>
     )
   }
 
   return (
-    <Glass className="aicard" ref={card}>
+    <Glass className="aicard aiopen" ref={card}>
       <div className="rowf" style={{ gap: '.6rem', marginBottom: '.9rem' }}>
         <span className={`badge badge-30${done ? '' : ' pulse'}`}>
           <span className="aispark" />
@@ -128,7 +150,7 @@ export function QuickAnalysis({ readings, onAsk }: QuickAnalysisProps) {
       {/* الرندر الشرطي لا `hidden`: `.qr-list` ليها بادنج وحدود في
           الـCSS، والخاصية بتتغلب عليها فالكارت بيفضل مفتوحًا. */}
       {open && (
-        <div className="qr-list">
+        <div className="qr-list aiscroll">
           {readings.map((r, i) => (
             <ReadingBlock key={r.id} reading={r} typing={i === block} chars={chars} hidden={i > block} />
           ))}

@@ -4,6 +4,7 @@ import { GateArc, Icon, icons, Mono, Num, Riyal, Tabs } from '@/components/ui'
 import { DecisionBar } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
+import { useFillHeight } from '@/hooks/useFillHeight'
 import { addDays, nf, projectCode } from '@/lib/format'
 import { fixtures } from '@/data/repository'
 import { useRole } from '@/hooks/useRole'
@@ -18,7 +19,7 @@ import {
   AgreementTab, CorrespondenceTab, DataTab, EntityTab, FollowUpsTab,
   HistoryTab, LogTab, PaymentsTab,
 } from './tabs'
-import { EntityProjectsPanel, LastActionPanel, QuickAnalysis } from './panels'
+import { QuickAnalysis } from './panels'
 import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { projectLog } from '@/data/mock/log'
@@ -116,6 +117,9 @@ export default function ProjectPage() {
   /* لما الصفحة توصل لآخرها، تدرّج البلور تحت شريط القرار بيروح
      عشان آخر سيكشن يبان كامل من غير ضبابة فوقه. */
   const screen = useRef<HTMLDivElement>(null)
+  /* عمود التحليلات بيملا الباقي من مكانه لحدّ فوق شريط القرار */
+  const aside = useRef<HTMLDivElement>(null)
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock .chrome', min: 240 })
   const [atEnd, setAtEnd] = useState(false)
 
   useEffect(() => {
@@ -229,6 +233,10 @@ export default function ProjectPage() {
                   project={project}
                   entityName={entity.name}
                   onOpenEntity={() => goTab('entity')}
+                  /* أحدث **إجراء** لا أحدث حدث: المتابعات في نفس
+                     التايم لاين، والصف مكتوب فوقه «آخر إجراء». */
+                  last={log.find((e) => !e.followUp)}
+                  onOpenLog={() => goTab('log')}
                 />
               )}
               {active === 'entity' && <EntityTab entity={entity} bank={project.bank} />}
@@ -263,18 +271,18 @@ export default function ProjectPage() {
               )}
             </div>
 
-            {/* ═══ العمود الجانبي — سياق ثابت ═══ */}
-            <div className="col">
+            {/* ═══ العمود الجانبي — كارت واحد لازق ═══
+                كان تلات كروت: التحليلات ومشاريع الجهة وآخر إجراء.
+                مشاريع الجهة اتنقلت لتبويب «المشاريع السابقة» اللي هي
+                محتواه أصلًا، وآخر إجراء اتنقل تحت التعريف. فبقى كارت
+                واحد — وده اللي بيخلّي اللزق يشتغل من غير المشكلة اللي
+                رفضها العميل: عمود بكذا كارت لازق بياخد تمريرًا جوّه
+                تمرير، وكارت واحد بياخد ارتفاعه ويقف. */}
+            <div className="col aiside" ref={aside}>
               <QuickAnalysis
                 readings={analysis}
                 onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
               />
-              <EntityProjectsPanel
-                entity={entity}
-                entityId={row?.entityId}
-                onOpen={() => goTab('history')}
-              />
-              <LastActionPanel entry={project.log[0]} onOpen={() => goTab('log')} />
             </div>
           </div>
         </div>

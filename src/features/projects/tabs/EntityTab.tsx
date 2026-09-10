@@ -1,5 +1,5 @@
 import { Glass, Head, Tag, Mono, KV } from '@/components/ui'
-import { DocFile } from '@/components/docs'
+import { DocDownload, DocFile } from '@/components/docs'
 import type { BankAccount, Entity } from '@/types/domain'
 
 export interface EntityTabProps {
@@ -53,9 +53,14 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
               {E.docs.map((d) => (
                 <tr key={d.name} className={d.uploaded ? '' : 'off'}>
                   <td>
-                    {d.uploaded ? <DocFile name={d.name} /> : <span className="nmc sub">{d.name}</span>}
+                    {d.uploaded ? <DocFile name={d.name} download={false} /> : <span className="nmc sub">{d.name}</span>}
                   </td>
-                  <td>{d.uploaded ? <Tag tone="ok">مرفوع</Tag> : <Tag tone="warn">ناقص</Tag>}</td>
+                  <td>
+                    <span className="dstat">
+                      {d.uploaded ? <Tag tone="ok">مرفوع</Tag> : <Tag tone="warn">ناقص</Tag>}
+                      {d.uploaded && <DocDownload name={d.name} />}
+                    </span>
+                  </td>
                   <td className="n">
                     {/* المرفوع يتقرا من مكانه (الملف نفسه زرار)، والناقص
                         يتطلب من الجهة — مفيش صف بلا إجراء */}
