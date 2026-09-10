@@ -1,5 +1,5 @@
 import { nf } from '@/lib/format'
-import { Riyal } from '@/components/ui'
+import { Money } from '@/components/ui'
 import type { EvidenceBlock as Block } from './types'
 
 /**
@@ -53,7 +53,7 @@ export function EvidenceBlock({ block }: { block: Block }) {
               <div key={r.k} className={r.strong ? 'strong' : ''}>
                 <span>{r.k}</span>
                 <span className="num">
-                  {r.v} <Riyal />
+                  <Money>{r.v}</Money>
                 </span>
               </div>
             ))}

@@ -1,7 +1,6 @@
 import { useRef } from 'react'
-import { Riyal } from '@/components/ui'
+import { Money } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
-import { nf } from '@/lib/format'
 import { Avatar } from './Avatar'
 import type { CurrentUser } from '@/types/domain'
 
@@ -30,13 +29,13 @@ export function DecisionBar({ user, project, compact, atEnd }: DecisionBarProps)
           <span className="decsent">
             {compact ? (
               <>
-                اتخذ إجراءً · <span className="num">{nf.format(project.amount)}</span> <Riyal />
+                اتخذ إجراءً · <Money>{project.amount}</Money>
               </>
             ) : (
               <>
                 اتخذ إجراءً لـ <b>{project.name}</b>
                 <span className="decsep" />
-                المبلغ <span className="num">{nf.format(project.amount)}</span> <Riyal />
+                المبلغ <Money>{project.amount}</Money>
               </>
             )}
           </span>

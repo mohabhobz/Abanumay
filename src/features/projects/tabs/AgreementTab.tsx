@@ -1,5 +1,4 @@
-import { Empty, Glass, Head, Icon, icons, Mono, Num, Riyal, Tag } from '@/components/ui'
-import { nf } from '@/lib/format'
+import { Empty, Glass, Head, Icon, icons, Money, Mono, Num, Tag } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import type { AgreementDetail, PaymentDetail } from '@/data/mock/detail'
 
@@ -129,7 +128,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
                 {payments.map((p) => (
                   <tr key={p.no}>
                     <td><Num>{p.no}</Num></td>
-                    <td className="n num"><b>{nf.format(p.amount)}</b> <Riyal /></td>
+                    <td className="n"><Money>{p.amount}</Money></td>
                     <td><Mono>{p.date}</Mono></td>
                     <td className="sub">{p.condition}</td>
                   </tr>

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Mono, Riyal, Tag } from '@/components/ui'
+import { Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import { activationTone, governanceTone } from '@/lib/tone'
@@ -20,6 +20,7 @@ export type Col = TCol<EntityRow>
 export const COLS: Col[] = [
   {
     key: 'license',
+    w: 130,
     label: 'الترخيص',
     fixed: true,
     cell: (e) => <Mono>{e.licenseNo}</Mono>,
@@ -27,17 +28,19 @@ export const COLS: Col[] = [
   },
   {
     key: 'name',
+    w: 230,
     label: 'الجهة',
     fixed: true,
     cell: (e) => <Link to={ROUTES.entity(e.id)} className="tlink">{e.name}</Link>,
     text: (e) => e.name,
   },
-  { key: 'type', label: 'النوع', def: true, cell: (e) => <span className="sub">{e.type}</span>, text: (e) => e.type },
-  { key: 'licensor', label: 'الجهة المرخِّصة', cell: (e) => <span className="sub">{e.licensor}</span>, text: (e) => e.licensor },
-  { key: 'region', label: 'المنطقة', def: true, cell: (e) => <span className="sub">{e.region}</span>, text: (e) => e.region },
-  { key: 'city', label: 'المدينة', cell: (e) => <span className="sub">{e.city}</span>, text: (e) => e.city },
+  { key: 'type', w: 118, label: 'النوع', def: true, cell: (e) => <span className="sub">{e.type}</span>, text: (e) => e.type },
+  { key: 'licensor', w: 170, label: 'الجهة المرخِّصة', cell: (e) => <span className="sub">{e.licensor}</span>, text: (e) => e.licensor },
+  { key: 'region', w: 98, label: 'المنطقة', def: true, cell: (e) => <span className="sub">{e.region}</span>, text: (e) => e.region },
+  { key: 'city', w: 98, label: 'المدينة', cell: (e) => <span className="sub">{e.city}</span>, text: (e) => e.city },
   {
     key: 'activation',
+    w: 116,
     label: 'التفعيل',
     def: true,
     cell: (e) => <Tag tone={activationTone(e.activation)}>{e.activation}</Tag>,
@@ -45,6 +48,7 @@ export const COLS: Col[] = [
   },
   {
     key: 'governance',
+    w: 106,
     label: 'الحوكمة',
     def: true,
     cell: (e) => <Tag tone={governanceTone(e.governance)}>{e.governance}</Tag>,
@@ -52,6 +56,7 @@ export const COLS: Col[] = [
   },
   {
     key: 'docs',
+    w: 96,
     label: 'المستندات',
     def: true,
     n: true,
@@ -66,11 +71,12 @@ export const COLS: Col[] = [
     value: (e) => e.docsUploaded,
     agg: 'avg',
   },
-  { key: 'approved', label: 'معتمدة', n: true, cell: (e) => e.projectsApproved, text: (e) => String(e.projectsApproved), value: (e) => e.projectsApproved, agg: 'sum' },
-  { key: 'running', label: 'تحت التشغيل', def: true, n: true, cell: (e) => e.projectsRunning, text: (e) => String(e.projectsRunning), value: (e) => e.projectsRunning, agg: 'sum' },
-  { key: 'completed', label: 'مكتملة', n: true, cell: (e) => e.projectsCompleted, text: (e) => String(e.projectsCompleted), value: (e) => e.projectsCompleted, agg: 'sum' },
+  { key: 'approved', w: 84, label: 'معتمدة', n: true, cell: (e) => e.projectsApproved, text: (e) => String(e.projectsApproved), value: (e) => e.projectsApproved, agg: 'sum' },
+  { key: 'running', w: 106, label: 'تحت التشغيل', def: true, n: true, cell: (e) => e.projectsRunning, text: (e) => String(e.projectsRunning), value: (e) => e.projectsRunning, agg: 'sum' },
+  { key: 'completed', w: 84, label: 'مكتملة', n: true, cell: (e) => e.projectsCompleted, text: (e) => String(e.projectsCompleted), value: (e) => e.projectsCompleted, agg: 'sum' },
   {
     key: 'stalled',
+    w: 84,
     label: 'متعثّرة',
     n: true,
     cell: (e) => (e.projectsStalled > 0 ? <span className="over">{e.projectsStalled}</span> : <span className="sub">0</span>),
@@ -78,13 +84,14 @@ export const COLS: Col[] = [
     value: (e) => e.projectsStalled,
     agg: 'sum',
   },
-  { key: 'declined', label: 'معتذر عنها', n: true, cell: (e) => e.projectsDeclined, text: (e) => String(e.projectsDeclined), value: (e) => e.projectsDeclined, agg: 'sum' },
+  { key: 'declined', w: 96, label: 'معتذر عنها', n: true, cell: (e) => e.projectsDeclined, text: (e) => String(e.projectsDeclined), value: (e) => e.projectsDeclined, agg: 'sum' },
   {
     key: 'granted',
+    w: 126,
     label: 'إجمالي الممنوح',
     def: true,
     n: true,
-    cell: (e) => <>{nf.format(e.grantedTotal)} <Riyal /></>,
+    cell: (e) => nf.format(e.grantedTotal),
     text: (e) => String(e.grantedTotal),
     value: (e) => e.grantedTotal,
     agg: 'sum',
@@ -92,9 +99,10 @@ export const COLS: Col[] = [
   },
   {
     key: 'year',
+    w: 126,
     label: 'ممنوح هذه السنة',
     n: true,
-    cell: (e) => <>{nf.format(e.grantedThisYear)} <Riyal /></>,
+    cell: (e) => nf.format(e.grantedThisYear),
     text: (e) => String(e.grantedThisYear),
     value: (e) => e.grantedThisYear,
     agg: 'sum',
@@ -102,17 +110,18 @@ export const COLS: Col[] = [
   },
   {
     key: 'disb',
+    w: 110,
     label: 'تحت الصرف',
     n: true,
-    cell: (e) => <>{nf.format(e.inDisbursement)} <Riyal /></>,
+    cell: (e) => nf.format(e.inDisbursement),
     text: (e) => String(e.inDisbursement),
     value: (e) => e.inDisbursement,
     agg: 'sum',
     money: true,
   },
-  { key: 'registered', label: 'تاريخ التسجيل', cell: (e) => <span className="sub num">{e.registeredAt}</span>, text: (e) => e.registeredAt },
-  { key: 'mobile', label: 'الجوال', cell: (e) => <span className="sub num">{e.mobile}</span>, text: (e) => e.mobile },
-  { key: 'email', label: 'البريد', cell: (e) => <span className="sub">{e.email}</span>, text: (e) => e.email },
+  { key: 'registered', w: 112, label: 'تاريخ التسجيل', cell: (e) => <span className="sub num">{e.registeredAt}</span>, text: (e) => e.registeredAt },
+  { key: 'mobile', w: 120, label: 'الجوال', cell: (e) => <span className="sub num">{e.mobile}</span>, text: (e) => e.mobile },
+  { key: 'email', w: 170, label: 'البريد', cell: (e) => <span className="sub">{e.email}</span>, text: (e) => e.email },
 ]
 
 export const GROUPS: GroupBy<EntityRow>[] = [

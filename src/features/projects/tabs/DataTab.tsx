@@ -80,7 +80,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
       <div className="stats4">
         <Stat
           label="المبلغ المطلوب"
-          value={nf.format(P.amountRequested)}
+          value={<Num>{P.amountRequested}</Num>}
           unit={<Riyal />}
           bar={{ w: '100%', c: 'var(--teal)' }}
           note={`${pct(100)} من إجمالي المشروع`}
@@ -98,7 +98,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
         />
         <Stat
           label="تكلفة المستفيد"
-          value={perBeneficiary}
+          value={<Num>{perBeneficiary}</Num>}
           unit={<Riyal />}
           note="محسوبة، لمقارنة المشاريع"
         />

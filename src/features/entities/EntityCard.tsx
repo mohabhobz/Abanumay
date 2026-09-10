@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { Icon, icons, Mono, Riyal, Tag } from '@/components/ui'
+import { Icon, icons, Money, Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { initial, nf } from '@/lib/format'
+import { initial } from '@/lib/format'
 import { ENTITY_DOCS_TOTAL } from '@/data/repository'
 import { activationTone, governanceTone } from '@/lib/tone'
 import type { EntityRow } from '@/types/domain'
@@ -66,9 +66,8 @@ export function EntityCard({ row }: { row: EntityRow }) {
       <div className="ec-foot">
         <div className="pc-amt">
           <span className="k">إجمالي الممنوح</span>
-          <span className="v num">
-            {nf.format(row.grantedTotal)}
-            <small><Riyal /></small>
+          <span className="v">
+            <Money sm>{row.grantedTotal}</Money>
           </span>
         </div>
         <Link className="btn btn-2 btn-sm" to={ROUTES.entity(row.id)}>ملف الجهة</Link>

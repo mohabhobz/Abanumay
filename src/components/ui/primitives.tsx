@@ -46,6 +46,29 @@ export function Riyal({ style }: { style?: CSSProperties }) {
   )
 }
 
+/**
+ * مبلغ بالريال — **الشكل الوحيد لأي مبلغ في السيستم**.
+ *
+ * الرمز في العربي بييجي **على شمال الرقم**، وده كان بيتكسر في نص
+ * الأماكن لسبب واحد: الحاوية كانت `.num`، و`.num` فيها
+ * `direction:ltr` عشان الأرقام تتقري صح. فالرقم والرمز الاتنين بقوا
+ * جوّه مجرى إنجليزي، والرمز راح على اليمين.
+ *
+ * الحل إن العزل ينزل خطوة: `.num` على **الأرقام وحدها**، والحاوية
+ * تفضل عربية — فترتيب العنصرين في الـDOM (رقم ثم رمز) بيطلع على
+ * الشاشة رقمًا على اليمين ورمزًا على الشمال. ومن غير مكوّن واحد،
+ * الغلطة دي بترجع كل مرة حد يكتب مبلغًا جديدًا.
+ */
+export function Money({ children, sm }: { children: number | string; sm?: boolean }) {
+  const digits = typeof children === 'number' ? nf.format(children) : children
+  return (
+    <span className="amt">
+      <span className="num">{digits}</span>
+      {sm ? <small><Riyal /></small> : <Riyal />}
+    </span>
+  )
+}
+
 export function Mono({ children }: { children: ReactNode }) {
   return <span className="mono">{children}</span>
 }

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { GateArc, Icon, icons, Mono, Num, Riyal, Tabs } from '@/components/ui'
+import { GateArc, Icon, icons, Money, Mono, Num, Tabs } from '@/components/ui'
 import { DecisionBar } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useFillHeight } from '@/hooks/useFillHeight'
-import { addDays, nf, projectCode } from '@/lib/format'
+import { addDays, projectCode } from '@/lib/format'
 import { fixtures } from '@/data/repository'
 import { useRole } from '@/hooks/useRole'
 import { projectById } from '@/data/mock/projects'
@@ -195,9 +195,8 @@ export default function ProjectPage() {
 
               <div className="pamt">
                 <div className="lb">المبلغ المطلوب للدعم</div>
-                <div className="v num">
-                  {nf.format(project.amountRequested)}
-                  <small><Riyal /></small>
+                <div className="v">
+                  <Money sm>{project.amountRequested}</Money>
                 </div>
                 <div className="sub">
                   إجمالي المشروع <Num>{project.amountTotal}</Num> · تمويل كامل

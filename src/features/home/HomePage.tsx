@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Mono, Riyal, Empty } from '@/components/ui'
+import { Glass, Head, Icon, icons, Money, Mono, Empty } from '@/components/ui'
 import { BarList, Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS } from '@/components/charts'
 import { QuickRead } from '@/components/assistant'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -378,7 +378,7 @@ export default function HomePage() {
                           <Mono>{projectCode(p.id, p.year)}</Mono>
                           <span className="sub">{p.stage}</span>
                           <span className="pc-sp" />
-                          <span className="num">{nf.format(p.amountRequested)} <Riyal /></span>
+                          <Money>{p.amountRequested}</Money>
                         </div>
                         <div className="qrow-n">{p.name}</div>
                         <div className="sub qrow-f">

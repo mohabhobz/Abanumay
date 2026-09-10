@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Mono, Riyal, Tag } from '@/components/ui'
+import { Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { nf, projectCode } from '@/lib/format'
 import { days, groupTone } from '@/lib/tone'
@@ -24,6 +24,7 @@ export type Col = TCol<ProjectRow>
 export const COLS: Col[] = [
   {
     key: 'code',
+    w: 132,
     label: 'الكود',
     fixed: true,
     cell: (r) => <Mono>{projectCode(r.id, r.year)}</Mono>,
@@ -31,6 +32,7 @@ export const COLS: Col[] = [
   },
   {
     key: 'name',
+    w: 198,
     label: 'المشروع',
     fixed: true,
     cell: (r) => <Link to={ROUTES.project(r.id)} className="tlink">{r.name}</Link>,
@@ -38,19 +40,21 @@ export const COLS: Col[] = [
   },
   {
     key: 'entity',
+    w: 142,
     label: 'الجهة',
     def: true,
     cell: (r) => <Link to={ROUTES.entity(r.entityId)} className="tlink sub">{r.entityName}</Link>,
     text: (r) => r.entityName,
   },
-  { key: 'region', label: 'المنطقة', def: true, cell: (r) => <span className="sub">{r.region}</span>, text: (r) => r.region },
-  { key: 'city', label: 'المدينة', cell: (r) => <span className="sub">{r.city}</span>, text: (r) => r.city },
-  { key: 'track', label: 'المسار', cell: (r) => r.track, text: (r) => r.track },
-  { key: 'field', label: 'المجال', cell: (r) => r.field, text: (r) => r.field },
-  { key: 'goal', label: 'الهدف', cell: (r) => <span className="sub">{r.goal}</span>, text: (r) => r.goal },
-  { key: 'stage', label: 'القسم الإجرائي', def: true, cell: (r) => r.stage, text: (r) => r.stage },
+  { key: 'region', w: 88, label: 'المنطقة', def: true, cell: (r) => <span className="sub">{r.region}</span>, text: (r) => r.region },
+  { key: 'city', w: 88, label: 'المدينة', cell: (r) => <span className="sub">{r.city}</span>, text: (r) => r.city },
+  { key: 'track', w: 100, label: 'المسار', cell: (r) => r.track, text: (r) => r.track },
+  { key: 'field', w: 108, label: 'المجال', cell: (r) => r.field, text: (r) => r.field },
+  { key: 'goal', w: 140, label: 'الهدف', cell: (r) => <span className="sub">{r.goal}</span>, text: (r) => r.goal },
+  { key: 'stage', w: 118, label: 'القسم الإجرائي', def: true, cell: (r) => r.stage, text: (r) => r.stage },
   {
     key: 'dur',
+    w: 62,
     label: 'المدة',
     def: true,
     n: true,
@@ -68,10 +72,11 @@ export const COLS: Col[] = [
   },
   {
     key: 'requested',
+    w: 108,
     label: 'المبلغ المطلوب',
     def: true,
     n: true,
-    cell: (r) => <>{nf.format(r.amountRequested)} <Riyal /></>,
+    cell: (r) => nf.format(r.amountRequested),
     text: (r) => String(r.amountRequested),
     value: (r) => r.amountRequested,
     agg: 'sum',
@@ -79,10 +84,11 @@ export const COLS: Col[] = [
   },
   {
     key: 'granted',
+    w: 96,
     label: 'المعتمد',
     def: true,
     n: true,
-    cell: (r) => (r.amountGranted > 0 ? <>{nf.format(r.amountGranted)} <Riyal /></> : <span className="sub">—</span>),
+    cell: (r) => (r.amountGranted > 0 ? nf.format(r.amountGranted) : <span className="sub">—</span>),
     text: (r) => (r.amountGranted > 0 ? String(r.amountGranted) : ''),
     value: (r) => r.amountGranted,
     agg: 'sum',
@@ -90,18 +96,20 @@ export const COLS: Col[] = [
   },
   {
     key: 'spent',
+    w: 96,
     label: 'المصروف',
     n: true,
-    cell: (r) => (r.amountSpent > 0 ? <>{nf.format(r.amountSpent)} <Riyal /></> : <span className="sub">—</span>),
+    cell: (r) => (r.amountSpent > 0 ? nf.format(r.amountSpent) : <span className="sub">—</span>),
     text: (r) => (r.amountSpent > 0 ? String(r.amountSpent) : ''),
     value: (r) => r.amountSpent,
     agg: 'sum',
     money: true,
   },
-  { key: 'weight', label: 'الوزن', def: true, n: true, cell: (r) => r.weight, text: (r) => String(r.weight), value: (r) => r.weight, agg: 'avg' },
-  { key: 'score', label: 'التقييم', n: true, cell: (r) => r.score, text: (r) => String(r.score), value: (r) => r.score, agg: 'avg' },
+  { key: 'weight', w: 56, label: 'الوزن', def: true, n: true, cell: (r) => r.weight, text: (r) => String(r.weight), value: (r) => r.weight, agg: 'avg' },
+  { key: 'score', w: 66, label: 'التقييم', n: true, cell: (r) => r.score, text: (r) => String(r.score), value: (r) => r.score, agg: 'avg' },
   {
     key: 'benef',
+    w: 96,
     label: 'المستفيدون',
     n: true,
     cell: (r) => nf.format(r.beneficiaries),
@@ -109,18 +117,19 @@ export const COLS: Col[] = [
     value: (r) => r.beneficiaries,
     agg: 'sum',
   },
-  { key: 'owner', label: 'المالك', def: true, cell: (r) => <span className="sub">{r.owner ?? '—'}</span>, text: (r) => r.owner ?? '' },
+  { key: 'owner', w: 88, label: 'المالك', def: true, cell: (r) => <span className="sub">{r.owner ?? '—'}</span>, text: (r) => r.owner ?? '' },
   {
     key: 'status',
+    w: 96,
     label: 'الحالة',
     def: true,
     cell: (r) => <Tag tone={groupTone(r.statusGroup)}>{r.statusGroup}</Tag>,
     text: (r) => r.statusGroup,
   },
-  { key: 'method', label: 'أسلوب المنح', cell: (r) => <span className="sub">{r.grantMethod}</span>, text: (r) => r.grantMethod },
-  { key: 'support', label: 'حالة الدعم', cell: (r) => r.supportStatus ?? <span className="sub">—</span>, text: (r) => r.supportStatus ?? '' },
-  { key: 'submitted', label: 'تاريخ التقديم', cell: (r) => <span className="sub num">{r.submittedAt}</span>, text: (r) => r.submittedAt },
-  { key: 'year', label: 'السنة والمصدر', cell: (r) => <span className="sub num">{r.year}</span>, text: (r) => r.year },
+  { key: 'method', w: 110, label: 'أسلوب المنح', cell: (r) => <span className="sub">{r.grantMethod}</span>, text: (r) => r.grantMethod },
+  { key: 'support', w: 108, label: 'حالة الدعم', cell: (r) => r.supportStatus ?? <span className="sub">—</span>, text: (r) => r.supportStatus ?? '' },
+  { key: 'submitted', w: 108, label: 'تاريخ التقديم', cell: (r) => <span className="sub num">{r.submittedAt}</span>, text: (r) => r.submittedAt },
+  { key: 'year', w: 112, label: 'السنة والمصدر', cell: (r) => <span className="sub num">{r.year}</span>, text: (r) => r.year },
 ]
 
 /* ═══════════════════ التجميع ═══════════════════ */

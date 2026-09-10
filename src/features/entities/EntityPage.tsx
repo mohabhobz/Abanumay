@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import {
-  Empty, Glass, Head, Icon, icons, KV, Mono, Num, Riyal, Segments, Tag,
+  Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Segments, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
-import { initial, nf } from '@/lib/format'
+import { initial } from '@/lib/format'
 import { ENTITY_DOCS_TOTAL, query, stagePressure } from '@/data/repository'
 import { entityById } from '@/data/mock/entities'
 import { ENTITY_DOCS, STATUS_GROUPS } from '@/data/mock/taxonomy'
@@ -124,10 +124,9 @@ export default function EntityPage() {
                             <Mono>{p.id}</Mono>
                             <Tag tone={groupTone(p.statusGroup)}>{p.statusGroup}</Tag>
                             <span className="pc-sp" />
-                            <span className="num">
-                              {nf.format(p.amountGranted > 0 ? p.amountGranted : p.amountRequested)}{' '}
-                              <Riyal />
-                            </span>
+                            <Money>
+                              {p.amountGranted > 0 ? p.amountGranted : p.amountRequested}
+                            </Money>
                           </div>
                           <div className="eprj-n">{p.name}</div>
                           <div className="sub eprj-f">

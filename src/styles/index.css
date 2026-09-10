@@ -216,6 +216,12 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    (`.kpi-v` · `.rpcov-g .v`)، أو اللي وحدتها كلمة عربية تنتمي لتدفّق
    الجملة (`.pamt .v` والريال). كل واحدة معلّمة عند تعريفها. */
 .num{direction:ltr;unicode-bidi:isolate}
+/* المبلغ: رقم على اليمين ورمز على الشمال — الترتيب ده بيجي من كون
+   الحاوية **عربية** والعزل نازل على الأرقام وحدها. أي مبلغ حاويته
+   `.num` بيرمي الرمز على اليمين، وده كان السبب في كل الحالات
+   المكسورة قبل `Money`. */
+.amt{direction:rtl;unicode-bidi:isolate;
+  display:inline-flex;align-items:baseline;gap:.3em;white-space:nowrap}
 /* الكود بيتسطر بالأرقام الجدولية لا بالمونوسبيس: البادئة («prj-»)
    واحدة في كل الصفوف، والأرقام متساوية العرض، فالعمود بيفضل مصفوفًا. */
 .mono{font-family:var(--fm);direction:ltr;display:inline-block;
@@ -339,11 +345,28 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .fld.err{box-shadow:inset 0 0 0 1px rgba(192,67,42,.5)}
 .fld select{appearance:none;cursor:pointer}
 .fld input::placeholder{color:var(--t3)}
-.tbl{width:100%;border-collapse:collapse;font-size:.83rem}
-.tbl th{font-family:var(--fd);font-weight:500;font-size:.74rem;color:var(--t3);text-align:right;
+/* `fixed` مش تفصيلة أداء: في التخطيط التلقائي العمود بيتمدّد لأطول
+   محتوى فيه، يعني «أضيق من المحتوى» مش موجودة أصلًا — لا قصّ ولا
+   سحب. التثبيت بيخلّي العرض قرارًا (من `col`) والمحتوى بيتأقلم. */
+.tbl{width:100%;border-collapse:collapse;font-size:.83rem;table-layout:fixed}
+.tbl th{position:relative;font-family:var(--fd);font-weight:500;font-size:.74rem;color:var(--t3);text-align:right;
   padding:.55rem .7rem;white-space:nowrap}
+.tbl th:not(.tcolx){overflow:hidden}
+.th-t{display:block;overflow:hidden;text-overflow:ellipsis}
 .tbl th.n,.tbl td.n{text-align:left}
-.tbl td{padding:.85rem .9rem;background:rgba(var(--wC),calc(.30 * var(--wM)));box-shadow:inset 0 1px 0 rgba(var(--edgeC),.05)}
+/* سطر واحد دايمًا: العمود اللي المستخدم ضيّقه بيقصّ محتواه بنقط ما
+   بينزلش سطرًا. الصفوف بتفضل بنفس الارتفاع، والجدول بيتقري كشبكة
+   لا كفقرات — والتلميح على الخلية بيرجّع اللي اتقصّ. */
+.tbl td{padding:.85rem .9rem;background:rgba(var(--wC),calc(.30 * var(--wM)));box-shadow:inset 0 1px 0 rgba(var(--edgeC),.05);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl td>*{max-width:100%}
+.tbl td .tlink,.tbl td .mono,.tbl td .sub,.tbl td .tag{
+  display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+/* خانة التحديد: بادنج أضيق وبلا قصّ — عرض العمود ٤٤px، ولو أخد
+   بادنج الخلية العادي (٢٩px) الصندوق نفسه بيتقصّ وبتظهر نقط جنبه. */
+.tbl .tchk{padding-inline:.62rem;text-overflow:clip}
+.tbl .nmc{min-width:0}
+.tbl .nmc>span{overflow:hidden;text-overflow:ellipsis}
 .tbl tr:hover td{background:rgba(var(--wC),calc(.46 * var(--wM)))}
 .tbl tr.lv0 td{background:rgba(var(--wC),calc(.44 * var(--wM)));font-weight:500}
 .tbl tr.off td{color:var(--t3)}
@@ -1605,7 +1628,13 @@ to{opacity:1;transform:none}
    رفع الشريط، لوحة الفلتر المفتوحة بيتقطعها الكارت اللي بعدها. */
 .ftoolbar{position:relative;z-index:20;
   display:flex;flex-direction:column;gap:.85rem;padding:.9rem 1rem}
-.ftool-r{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+/* الصفّ مجموعتان لا قايمة واحدة: الفلاتر بتلفّ جوّه مجموعتها،
+   والأدوات (اللقطات · التصدير · مبدّل الفيو) مجموعة ملزوقة في آخر
+   الصفّ ما بتلفّش. من غير الفصل ده، أي فلتر بيكبر أو يختفي بيزقّ
+   مبدّل الفيو لسطر تاني وبيحرّكه أفقيًا كل مرة. */
+.ftool-r{display:flex;align-items:flex-start;gap:.5rem;flex-wrap:nowrap}
+.ftool-f{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.ftool-a{flex:none;display:flex;align-items:center;gap:.5rem}
 .srch{flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:.55rem;
   padding:.5rem .85rem;border-radius:var(--rp);color:var(--t3);
   background:var(--g-data);-webkit-backdrop-filter:blur(var(--g-data-blur));backdrop-filter:blur(var(--g-data-blur));
@@ -1645,9 +1674,9 @@ to{opacity:1;transform:none}
 .fsel.off .fsel-b{cursor:not-allowed}
 /* القائمة اللي جوّه شريط الأدوات تلبس شكل الشريحة عشان الصفّ
    كله يبقى بلغة واحدة، من غير عنوان فوقها */
-.ftool-r>.fsel .fsel-b{border-radius:var(--rp);background:rgba(var(--wC),calc(.62 * var(--wM)));
+.ftool-f>.fsel .fsel-b{border-radius:var(--rp);background:rgba(var(--wC),calc(.62 * var(--wM)));
   padding-block:.42rem;padding-inline-start:.95rem;padding-inline-end:.6rem}
-.ftool-r>.fsel .fsel-b select{font-size:.79rem}
+.ftool-f>.fsel .fsel-b select{font-size:.79rem}
 .fsel.wide{grid-column:1 / -1}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem .8rem;
   padding-top:.85rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
@@ -2647,7 +2676,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .fmulti.off>.fsel-b{cursor:not-allowed}
 .fmulti-s{flex:1;min-width:0;font-size:.8rem;color:var(--t1);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ftool-r>.fmulti .fmulti-s{font-size:.79rem}
+.ftool-f>.fmulti .fmulti-s{font-size:.79rem}
 .fmenu{position:absolute;top:calc(100% + .35rem);inset-inline-start:0;z-index:60;
   min-width:100%;max-width:min(300px,80vw);width:max-content;
   display:flex;flex-direction:column;padding:.3rem;border-radius:var(--r2);
@@ -2797,7 +2826,31 @@ body.printing .mesh,body.printing .grain{display:none}
 /* الصف كله هدف للفتح: الرابط لوحده هدف صغير بيخلي المستخدم يصوّب
    بالماوس بدل ما يقرا. والمؤشّر بيقول ده قبل ما يجرّب. */
 .tbl tbody tr.clickable{cursor:pointer}
-.tbl tbody tr.clickable:hover{background:rgba(var(--wC),calc(.55 * var(--wM)))}
+.tbl tbody tr.clickable:hover td{background:rgba(var(--wC),calc(.62 * var(--wM)))}
+/* الروابط جوّه صفّ كليكابل ما بتاخدش مؤشّرًا مختلفًا: نفس النتيجة
+   (بتفتح نفس الشيء)، والمؤشّر اللي بيتغيّر جوّه الصفّ بيوحي إن جزءًا
+   منه بس هو اللي بيفتح. */
+.tbl tbody tr.clickable .tlink{cursor:inherit}
+
+/* ═══ سحب حدود الأعمدة ═══
+   المقبض على حافة العمود الداخلية — الحدّ بينه وبين اللي بعده.
+   منطقة اللمس أوسع من الخط بكتير (٩px مقابل ٢): الخط الرفيع هدف
+   بيتصاد بالحظ، والمساحة الواسعة بتخلّي الإمساك من أول مرة. */
+.thgrip{position:absolute;inset-block:0;inset-inline-end:-5px;width:11px;z-index:2;
+  cursor:col-resize;touch-action:none}
+.thgrip::before{content:"";position:absolute;inset-block:22%;inset-inline-start:5px;width:2px;
+  border-radius:2px;background:rgba(var(--edgeC),.42);
+  opacity:0;transition:opacity .14s ease,inset-block .14s ease}
+.thgrip:hover::before{opacity:1}
+/* أثناء السحب الخط بيمتدّ على الترويسة كلها ويغمق */
+.thgrip.on::before{opacity:1;inset-block:0;background:var(--ret-ink)}
+/* الخط الدليل على طول الجدول: الحدّ الجديد بيتقاس على الصفوف نفسها
+   لا على الترويسة، فالمستخدم يشوف الاسم اللي هيتقصّ وهو بيسحب. */
+.tblock{position:relative}
+.tguide{position:absolute;top:0;bottom:0;width:2px;z-index:3;pointer-events:none;
+  background:var(--ret-ink);opacity:.5}
+.tblock.resizing{cursor:col-resize}
+body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* ═══ الفيوهات المحفوظة ═══ */
 .fviews{position:relative}
 .fviews-m{min-width:250px;max-width:300px}

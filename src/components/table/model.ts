@@ -31,6 +31,17 @@ export interface Col<T> {
   agg?: Agg
   /** الإجمالي بالريال */
   money?: boolean
+  /**
+   * العرض الافتراضي بالبكسل.
+   *
+   * الجدول `table-layout:fixed` عشان القصّ يشتغل: في التخطيط
+   * التلقائي العمود بيتمدّد لأطول محتوى فيه، فمفيش «أضيق من
+   * المحتوى» أصلًا ولا حاجة تتقصّ. والثمن إن الأعمدة بتتقسم
+   * بالتساوي لو ما حدّش قال عرضها — فالكود بياخد نفس عرض اسم
+   * المشروع. فكل عمود بيقول عرضه هنا، والمتصفح بيقسّم الزيادة أو
+   * النقصان عليهم بالتناسب.
+   */
+  w?: number
 }
 
 const sumOf = <T,>(rows: T[], f: (r: T) => number) => rows.reduce((s, r) => s + f(r), 0)
@@ -79,6 +90,39 @@ export const writeCols = (table: string, keys: string[]): void => {
     localStorage.setItem(`ab-cols-${table}`, JSON.stringify(keys))
   } catch {
     /* التخزين ممكن يكون مقفول — الاختيار يفضل للجلسة دي */
+  }
+}
+
+/* ═══════════════════ عرض الأعمدة ═══════════════════ */
+
+/** عرض بالبكسل لكل عمود المستخدم سحبه — الباقي على عرضه الافتراضي */
+export type ColWidths = Record<string, number>
+
+/** أضيق عرض مسموح: تحته العمود بيبقى شريطًا ما بيبيّنش حاجة */
+export const MIN_COL_W = 56
+
+/** العروض تفضيل شخصي زي اختيار الأعمدة، فبتتخزّن جنبه بنفس المنطق */
+export const readWidths = (table: string): ColWidths => {
+  try {
+    const raw = localStorage.getItem(`ab-colw-${table}`)
+    if (!raw) return {}
+    const v = JSON.parse(raw) as unknown
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return {}
+    const out: ColWidths = {}
+    for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+      if (typeof n === 'number' && Number.isFinite(n) && n >= MIN_COL_W) out[k] = Math.round(n)
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+export const writeWidths = (table: string, w: ColWidths): void => {
+  try {
+    localStorage.setItem(`ab-colw-${table}`, JSON.stringify(w))
+  } catch {
+    /* التخزين مقفول — العروض تفضل للجلسة دي */
   }
 }
 

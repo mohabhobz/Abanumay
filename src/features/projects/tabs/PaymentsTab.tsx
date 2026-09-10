@@ -1,6 +1,6 @@
-import { Empty, Glass, Head, Icon, icons, Mono, Num, Riyal, Stat, Tag } from '@/components/ui'
+import { Empty, Glass, Head, Icon, icons, Money, Mono, Num, Riyal, Stat, Tag } from '@/components/ui'
 import { DocFile } from '@/components/docs'
-import { nf, pct } from '@/lib/format'
+import { pct } from '@/lib/format'
 import type { PaymentDetail } from '@/data/mock/detail'
 
 export interface PaymentsTabProps {
@@ -51,21 +51,21 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
       <div className="stats4">
         <Stat
           label="المعتمد"
-          value={nf.format(granted)}
+          value={<Num>{granted}</Num>}
           unit={<Riyal />}
           bar={{ w: '100%', c: 'var(--teal)' }}
           note={`على ${payments.length === 1 ? 'دفعة واحدة' : `${payments.length} دفعات`}`}
         />
         <Stat
           label="المصروف"
-          value={nf.format(paidSum)}
+          value={<Num>{paidSum}</Num>}
           unit={<Riyal />}
           bar={{ w: `${Math.round((paidSum / granted) * 100)}%`, c: 'var(--lime)' }}
           note={`${pct(Math.round((paidSum / granted) * 100))} من المعتمد`}
         />
         <Stat
           label="المتبقي"
-          value={nf.format(rest)}
+          value={<Num>{rest}</Num>}
           unit={<Riyal />}
           note={rest > 0 ? `${payments.length - paid.length} دفعة لم تُصرف` : 'صُرفت كاملة'}
         />
@@ -84,7 +84,7 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
             <div className={`pay${p.status === 'مدفوع' ? ' done' : ''}`} key={p.no}>
               <div className="pay-h">
                 <span className="pay-no">الدفعة <Num>{p.no}</Num></span>
-                <span className="pay-amt num">{nf.format(p.amount)} <Riyal /></span>
+                <span className="pay-amt"><Money>{p.amount}</Money></span>
                 <span className="pc-sp" />
                 <Mono>{p.date}</Mono>
                 <Tag tone={p.status === 'مدفوع' ? 'ok' : 'warn'}>{p.status}</Tag>

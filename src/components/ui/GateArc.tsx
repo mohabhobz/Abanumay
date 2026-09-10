@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { nf } from '@/lib/format'
-import { Riyal } from './primitives'
+import { Money } from './primitives'
 import type { AuthorityMatrix, AuthorityRole } from '@/types/domain'
 
 /* ═══════════════════════════════════════════════════════════
@@ -170,7 +170,8 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
     <>
       {uplifted && decided.ceiling && (
         <div className="fhl">
-          سقفه <b>{nf.format(decided.ceiling)}</b> · يزيد حتى <b>{nf.format(uplifted)}</b> <Riyal />
+          سقفه <b className="num">{nf.format(decided.ceiling)}</b> · يزيد حتى{' '}
+          <Money>{uplifted}</Money>
         </div>
       )}
       {authority.provisional && <div className="fhp">السقوف مؤقتة، بانتظار العميل</div>}

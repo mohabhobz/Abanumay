@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, MultiSelect, PAGE_SIZES, Pager, Riyal, SearchBox, Segments,
+  Empty, Glass, Icon, icons, Money, MultiSelect, PAGE_SIZES, Pager, SearchBox, Segments,
   Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -11,7 +11,7 @@ import {
 } from '@/components/filters'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
-import { nf, plural, units } from '@/lib/format'
+import { plural, units } from '@/lib/format'
 import { fixtures, query, type EntityQuery } from '@/data/repository'
 import {
   ACTIVATIONS, CITIES_BY_REGION, ENTITY_TYPES, GOVERNANCE, LICENSORS, REGIONS,
@@ -311,6 +311,7 @@ export default function EntitiesListPage() {
 
           <Glass className="ftoolbar">
             <div className="ftool-r">
+              <div className="ftool-f">
               <SearchBox
                 value={v.q ?? ''}
                 onChange={(x) => set({ q: x })}
@@ -352,6 +353,14 @@ export default function EntitiesListPage() {
                 />
               )}
 
+              </div>
+
+              {/* الأدوات اللي مش فلاتر — مجموعة ثابتة في آخر الصفّ.
+                  قبل كده كانت في نفس الصفّ المرن مع الفلاتر، فأول ما
+                  فلتر يكبر أو يختفي الصفّ بيلفّ ومبدّل الفيو بينطّ
+                  لسطر تاني ويتحرّك أفقيًا. دلوقتي الفلاتر بتلفّ جوّه
+                  مجموعتها، والأدوات مكانها ثابت مهما اتغيّر اللي جنبها. */}
+              <div className="ftool-a">
               <SavedViews table="entities" current={snapshot()} onApply={applyQuery} />
 
               <div className="fexp" ref={exportBox}>
@@ -380,10 +389,10 @@ export default function EntitiesListPage() {
                 )}
               </div>
 
-              <span className="ftool-sp" />
               {!mobile && (
                 <ViewToggle view={view} onChange={(x) => set({ view: x === 'table' ? undefined : x })} />
               )}
+              </div>
             </div>
 
             {advOpen && (custom ? (
@@ -451,6 +460,7 @@ export default function EntitiesListPage() {
               <DataTable
                 rows={result.rows}
                 all={COLS}
+                table="entities"
                 cols={cols}
                 onCols={setCols}
                 id={(e) => e.id}
@@ -492,7 +502,7 @@ export default function EntitiesListPage() {
               <>
                 {selectedNoun}
                 <span className="decsep" />
-                الدعم التراكمي <span className="num">{nf.format(selectedGranted)}</span> <Riyal />
+                الدعم التراكمي <Money>{selectedGranted}</Money>
               </>
             }
           >

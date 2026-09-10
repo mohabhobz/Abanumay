@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
-import { Icon, icons, Riyal, type IconName } from '@/components/ui'
+import { Icon, icons, Money, type IconName } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
 import type { EntityRow } from '@/types/domain'
 
 /* ═══════════════════════════════════════════════════════════
@@ -93,9 +92,8 @@ export function EntityTotals({ entity }: { entity: EntityRow }) {
             </span>
 
             <span className="einf-k">{t.label}</span>
-            <span className="einf-v num">
-              {nf.format(t.value)}
-              <small><Riyal /></small>
+            <span className="einf-v">
+              <Money sm>{t.value}</Money>
             </span>
             <span className="einf-n">
               {t.note}

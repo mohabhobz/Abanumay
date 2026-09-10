@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Icon, icons, Riyal } from '@/components/ui'
+import { Icon, icons } from '@/components/ui'
 import { nf } from '@/lib/format'
 import { aggregate, defaultCols, orderCols, splitGroups, type Col, type GroupBy } from './model'
+import { useColumnResize, type ColumnResize } from './useColumnResize'
 
 export interface DataTableProps<T> {
   rows: T[]
@@ -28,6 +29,8 @@ export interface DataTableProps<T> {
   group?: GroupBy<T>
   /** اسم الوحدة في الإجماليات: «6 مشاريع» */
   count: (n: number) => string
+  /** اسم الجدول — بيتخزّن عليه عرض الأعمدة اللي المستخدم سحبها */
+  table?: string
 }
 
 /**
@@ -37,8 +40,10 @@ export interface DataTableProps<T> {
  * منتقي الأعمدة ونفس سلوك الصف. الموديول بيجيب أعمدته وبس.
  */
 export function DataTable<T>({
-  rows, all, cols, onCols, id, selected, onSelect, onSelectAll, onOpen, group, count,
+  rows, all, cols, onCols, id, selected, onSelect, onSelectAll, onOpen, group, count, table,
 }: DataTableProps<T>) {
+  const resize = useColumnResize(table)
+
   /* العمود اللي بنجمّع بيه بيتشال: قيمته مكتوبة مرة في عنوان
      المجموعة، وتكرارها في كل صف عمود ضايع. */
   const shown = orderCols(all, cols).filter((c) => !group || c.key !== group.key)
@@ -58,6 +63,7 @@ export function DataTable<T>({
           onSelectAll={onSelectAll}
           onOpen={onOpen}
           count={count}
+          resize={resize}
           picker={i === 0 ? { all, cols, onCols } : undefined}
         />
       ))}
@@ -72,7 +78,6 @@ export function DataTable<T>({
               <span key={c.key}>
                 <span className="sub">{c.label}</span>{' '}
                 <b className="num">{nf.format(aggregate(c, rows) ?? 0)}</b>
-                {c.money && <Riyal />}
               </span>
             ))}
           </span>
@@ -83,7 +88,7 @@ export function DataTable<T>({
 }
 
 function Block<T>({
-  caption, rows, cols, id, selected, onSelect, onSelectAll, onOpen, picker, count,
+  caption, rows, cols, id, selected, onSelect, onSelectAll, onOpen, picker, count, resize,
 }: {
   caption?: { label: string; value: string }
   rows: T[]
@@ -103,13 +108,21 @@ function Block<T>({
   onOpen?: (r: T) => void
   picker?: { all: Col<T>[]; cols: string[]; onCols: (k: string[]) => void }
   count: (n: number) => string
+  resize: ColumnResize
 }) {
   const pick = Boolean(selected && onSelect)
   const allOn = pick && rows.length > 0 && rows.every((r) => selected!.has(id(r)))
   const hasTotals = cols.some((c) => c.agg)
 
+  const { widths, dragging, start, reset } = resize
+
   return (
-    <div className="tblock">
+    <div className={`tblock${dragging ? ' resizing' : ''}`}>
+      {/* الخط الدليل: بيمتدّ على طول الجدول وقت السحب بس، عشان
+          المستخدم يشوف الحدّ الجديد على الصفوف مش على الترويسة
+          لوحدها. */}
+      {dragging && <span className="tguide" style={{ left: dragging.x }} aria-hidden="true" />}
+
       {caption && (
         <div className="tcap">
           <span className="tcap-k">
@@ -120,10 +133,20 @@ function Block<T>({
       )}
 
       <table className="tbl">
+        {/* العروض في `colgroup` لا على الخلايا: خانة واحدة لكل عمود
+            بدل تكرارها في كل صف، والمتصفح بيقراها مرة قبل الرسم. */}
+        <colgroup>
+          {pick && <col style={{ width: 44 }} />}
+          {cols.map((c) => (
+            <col key={c.key} style={{ width: widths[c.key] ?? c.w ?? 120 }} />
+          ))}
+          <col style={{ width: 38 }} />
+        </colgroup>
+
         <thead>
           <tr>
             {pick && (
-              <th style={{ width: 34 }}>
+              <th className="tchk">
                 <input
                   type="checkbox"
                   checked={allOn}
@@ -132,8 +155,24 @@ function Block<T>({
                 />
               </th>
             )}
-            {cols.map((c) => (
-              <th key={c.key} className={c.n ? 'n' : undefined}>{c.label}</th>
+            {cols.map((c, i) => (
+              <th key={c.key} className={c.n ? 'n' : undefined} title={c.label}>
+                <span className="th-t">{c.label}</span>
+                {/* المقبض على حافة العمود الداخلية — يعني الحدّ بينه
+                    وبين اللي بعده. آخر عمود ما لهوش مقبض: مفيش حدّ
+                    بعده يتسحب، وخانة منتقي الأعمدة جنبه. */}
+                {i < cols.length - 1 && (
+                  <span
+                    className={`thgrip${dragging?.key === c.key ? ' on' : ''}`}
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label={`تغيير عرض عمود ${c.label}`}
+                    onPointerDown={(e) => start(c.key, e)}
+                    onDoubleClick={() => reset(c.key)}
+                    title="اسحب لتغيير العرض · دبل كليك للعرض الافتراضي"
+                  />
+                )}
+              </th>
             ))}
             <th className="tcolx">
               {picker && <ColumnPicker {...picker} />}
@@ -162,7 +201,7 @@ function Block<T>({
                 }
               >
                 {pick && (
-                  <td>
+                  <td className="tchk">
                     <input
                       type="checkbox"
                       checked={selected!.has(rid)}
@@ -172,7 +211,12 @@ function Block<T>({
                   </td>
                 )}
                 {cols.map((c) => (
-                  <td key={c.key} className={c.n ? 'n num' : undefined}>{c.cell(r)}</td>
+                  /* العنوان هو نصّ التصدير نفسه: الخلية بتتقصّ لما
+                     العمود يضيق، والتلميح بيرجّع اللي اتقصّ من غير
+                     ما الصفّ يلفّ سطرًا. */
+                  <td key={c.key} className={c.n ? 'n num' : undefined} title={c.text(r)}>
+                    {c.cell(r)}
+                  </td>
                 ))}
                 <td />
               </tr>
@@ -193,7 +237,6 @@ function Block<T>({
                     {total !== null ? (
                       <>
                         <b>{nf.format(total)}</b>
-                        {c.money && <> <Riyal /></>}
                         {c.agg === 'avg' && <small className="sub"> وسطي</small>}
                       </>
                     ) : i === 0 ? (

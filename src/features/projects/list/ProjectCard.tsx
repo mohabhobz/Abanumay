@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { Icon, icons, Mono, Riyal, Tag } from '@/components/ui'
+import { Icon, icons, Money, Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf, projectCode } from '@/lib/format'
+import { projectCode } from '@/lib/format'
 import { stagePressure } from '@/data/repository'
 import { days, groupTone, pressureColor } from '@/lib/tone'
 import type { ProjectRow } from '@/types/domain'
@@ -93,9 +93,8 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
       <div className="pc-foot">
         <div className="pc-amt">
           <span className="k">{row.amountGranted > 0 ? 'الممنوح' : 'المطلوب'}</span>
-          <span className="v num">
-            {nf.format(row.amountGranted > 0 ? row.amountGranted : row.amountRequested)}
-            <small><Riyal /></small>
+          <span className="v">
+            <Money sm>{row.amountGranted > 0 ? row.amountGranted : row.amountRequested}</Money>
           </span>
         </div>
         <div className="pc-own">

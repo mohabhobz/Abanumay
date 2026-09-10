@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, MultiSelect, Pager, PAGE_SIZES, Riyal, SearchBox, Segments,
+  Empty, Glass, Icon, icons, Money, MultiSelect, Pager, PAGE_SIZES, SearchBox, Segments,
   Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -20,7 +20,7 @@ import { COLS, GROUPS, groupByKey } from './columns'
 import {
   DataTable, aggregate, orderCols, readCols, splitGroups, writeCols,
 } from '@/components/table'
-import { nf, plural, units } from '@/lib/format'
+import { plural, units } from '@/lib/format'
 import { PrintSheet } from './PrintSheet'
 import {
   CITIES_BY_REGION, FIELDS_BY_TRACK, GOALS_BY_FIELD, GRANT_METHODS, OWNERS,
@@ -456,6 +456,7 @@ export default function ProjectsListPage() {
           {/* ═══ شريط الأدوات ═══ */}
           <Glass className="ftoolbar">
             <div className="ftool-r">
+              <div className="ftool-f">
               <SearchBox
                 value={v.q ?? ''}
                 onChange={(x) => set({ q: x })}
@@ -498,6 +499,14 @@ export default function ProjectsListPage() {
                 />
               )}
 
+              </div>
+
+              {/* الأدوات اللي مش فلاتر — مجموعة ثابتة في آخر الصفّ.
+                  قبل كده كانت في نفس الصفّ المرن مع الفلاتر، فأول ما
+                  فلتر يكبر أو يختفي الصفّ بيلفّ ومبدّل الفيو بينطّ
+                  لسطر تاني ويتحرّك أفقيًا. دلوقتي الفلاتر بتلفّ جوّه
+                  مجموعتها، والأدوات مكانها ثابت مهما اتغيّر اللي جنبها. */}
+              <div className="ftool-a">
               <SavedViews table="projects" current={snapshot()} onApply={applyQuery} />
 
               <div className="fexp" ref={exportBox}>
@@ -528,10 +537,10 @@ export default function ProjectsListPage() {
                 )}
               </div>
 
-              <span className="ftool-sp" />
               {!mobile && (
                 <ViewToggle view={view} onChange={(x) => set({ view: x === 'table' ? undefined : x })} />
               )}
+              </div>
             </div>
 
             {advOpen && (custom ? (
@@ -627,6 +636,7 @@ export default function ProjectsListPage() {
               <DataTable
                 rows={result.rows}
                 all={COLS}
+                table="projects"
                 cols={cols}
                 onCols={setCols}
                 id={(r) => r.id}
@@ -677,7 +687,7 @@ export default function ProjectsListPage() {
               <>
                 {selectedNoun}
                 <span className="decsep" />
-                المطلوب <span className="num">{nf.format(selectedAmount)}</span> <Riyal />
+                المطلوب <Money>{selectedAmount}</Money>
               </>
             }
           >
