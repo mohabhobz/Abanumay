@@ -178,7 +178,7 @@ export default function ProjectPage() {
       })}
     >
       <div className="viewstack hasdock">
-        <div className="screen col" ref={screen}>
+        <div className="screen col hasg2" ref={screen}>
           {/* المسار جوّه البودي، مش في هيدر منفصل */}
           <nav className="crumb" aria-label="مسار التنقّل">
             <a onClick={() => navigate(ROUTES.projects)} className="lb">المشاريع</a>

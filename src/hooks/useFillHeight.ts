@@ -40,7 +40,13 @@ export function useFillHeight(
     let raf = 0
     const measure = () => {
       raf = 0
-      const top = el.getBoundingClientRect().top
+      /* التثبيت له سقف: العنصر اللازق بيسيب مكانه لما حاويته تخلص
+         (آخر الصفحة)، فـ`top` بيبقى بالسالب والمعادلة بتدّي ارتفاعًا
+         أكبر من الشاشة — الكارت بيتمدّ ومحتواه المتوسّط بيطلع فوق
+         حافة المنظر ويسيب زجاجًا فاضيًا. القاع هنا هو موضع اللزق
+         نفسه، فالارتفاع ما يزيدش عن خانة الشاشة أبدًا. */
+      const stick = parseFloat(getComputedStyle(el).top) || 0
+      const top = Math.max(el.getBoundingClientRect().top, stick)
       const dock = reserveSelector
         ? document.querySelector<HTMLElement>(reserveSelector)
         : null
