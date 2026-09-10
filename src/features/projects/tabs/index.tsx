@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react'
 import {
-  Glass, Head, Tag, Num, Mono, Empty, Timeline, Icon, icons,
+  Glass, Head, Tag, Num, Mono, Empty, Icon, icons,
 } from '@/components/ui'
 import { nf } from '@/lib/format'
-import type { Entity, FollowUp, FollowUpType, Project } from '@/types/domain'
+import type { Entity, FollowUp, FollowUpType } from '@/types/domain'
 import type { ThreadMessage } from '@/data/mock/detail'
 import { DocFile } from '@/components/docs'
 
@@ -11,6 +11,7 @@ export { DataTab } from './DataTab'
 export { EntityTab } from './EntityTab'
 export { AgreementTab, type AgreementTabProps } from './AgreementTab'
 export { PaymentsTab, type PaymentsTabProps } from './PaymentsTab'
+export { LogTab, type LogTabProps } from './LogTab'
 
 /* ═══════════════ المشاريع السابقة ═══════════════ */
 
@@ -130,41 +131,6 @@ export function FollowUpsTab({
   )
 }
 
-/* ═══════════════ سجل المشروع ═══════════════ */
-
-export function LogTab({ project: P }: { project: Project }) {
-  return (
-    <Glass>
-      <Head title="سجل المشروع" meta={`${P.log.length} إجراءات`} />
-      <Timeline
-        events={P.log.map((l) => ({
-          tone: l.tone,
-          title: <><b>{l.action}</b> — {l.body}</>,
-          by: (
-            <>
-              <span className="av" style={{ width: 20, height: 20, fontSize: '.6rem' }}>
-                {l.by[0]}
-              </span>
-              <span>{l.by} · {l.dept}</span>
-              <Mono>{l.at}</Mono>
-            </>
-          ),
-          foot: (
-            <>
-              {l.days} يومًا · <Num>{l.hours}</Num> من <Num>{l.limit}</Num> ساعة
-              {l.extra ? ` · ${l.extra}` : ''}
-            </>
-          ),
-          footTone: l.hours > l.limit ? 'var(--no)' : undefined,
-        }))}
-      />
-      <div className="sub" style={{ marginTop: '.9rem' }}>
-        كل إجراء يحمل: القسم · المنفّذ · الوقت · المدة مقابل حدّ القسم · سبب التأخر إن وُجد.
-      </div>
-    </Glass>
-  )
-}
-
 /* ═══════════════ المراسلات ═══════════════ */
 
 /**
@@ -181,11 +147,12 @@ export function LogTab({ project: P }: { project: Project }) {
 export function CorrespondenceTab({
   messages,
   entityName,
-  stage,
+  why,
 }: {
   messages: ThreadMessage[]
   entityName: string
-  stage: string
+  /** سبب فتح القناة — بيتقال فوق الثريد */
+  why: string
 }) {
   return (
     <Glass>
@@ -196,8 +163,9 @@ export function CorrespondenceTab({
 
       {messages.length > 0 ? (
         <>
-          <div className="sub" style={{ marginBottom: '.9rem' }}>
-            القناة اتفتحت لأن الإجراء واقف على الجهة عند «{stage}».
+          <div className="thread-why">
+            <Icon path={icons.alert} size={15} style={{ color: 'var(--warn)', flex: 'none' }} />
+            <span className="sub">{why}</span>
           </div>
           <div className="thread">
             {messages.map((m, i) => (

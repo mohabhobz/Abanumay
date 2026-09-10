@@ -2946,7 +2946,7 @@ body.printing .mesh,body.printing .grain{display:none}
 /* ═══ «اسأل أبانمي» — الزرار العايم ═══
    في نفس رصيف شريط القرار وعلى الشمال، فالسؤال بيتسأل في مكان
    القرار لا في شريط التنقّل. ثابت في كل شاشة. */
-.askfab{position:fixed;z-index:21;
+.askfab{position:fixed;z-index:21;isolation:isolate;
   inset-inline-end:clamp(1.4rem,3vw,2.6rem);
   bottom:clamp(1rem,2vw,1.5rem);
   display:flex;align-items:center;gap:.55rem;
@@ -2954,31 +2954,30 @@ body.printing .mesh,body.printing .grain{display:none}
   width:var(--ask-w);min-height:63px;
   padding:.9rem 1rem;border-radius:var(--r4);
   color:var(--t1);font-family:var(--fd);font-weight:600;font-size:.86rem;
-  background:linear-gradient(160deg,rgba(var(--wC),calc(.66 * var(--wM))),rgba(var(--wC),calc(.44 * var(--wM))));
+  /* ونفس زجاجه ونفس ظله ونفس حسّه بالماوس: الاتنين قطعة واحدة
+     اتقسمت، مش زرار جنب شريط. */
+  background:linear-gradient(160deg,rgba(var(--wC),calc(.60 * var(--wM))),rgba(var(--wC),calc(.38 * var(--wM))));
   -webkit-backdrop-filter:blur(48px) saturate(1.6);backdrop-filter:blur(48px) saturate(1.6);
   box-shadow:
-    inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.2)),
-    0 10px 28px rgba(20,69,71,.10);
-  /* نفس إزاحة `.decbar` الساكنة (8px)، فالاتنين بيقفوا على خط واحد
-     ولمّا تقرب الاتنين بيرتفعوا. */
-  transform:translateY(8px);
-  transition:transform .25s cubic-bezier(.22,.9,.3,1),box-shadow .25s ease}
-.askfab:hover{transform:translateY(-2px);
-  box-shadow:
-    inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2)),
-    0 16px 36px rgba(20,69,71,.16)}
+    inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair) * (1 + var(--near,0)*.9))),
+    0 calc(10px + var(--near,0)*14px) calc(28px + var(--near,0)*26px)
+      rgba(20,69,71,calc(.10 + var(--near,0)*.10));
+  transform:translateY(calc(8px * (1 - var(--near,0))));
+  transition:transform .3s cubic-bezier(.22,.9,.3,1),box-shadow .3s ease}
+/* الضوء بيتبع المؤشر، وبيقوى كل ما تقرب — نسخة `.decbar::before` */
+.askfab::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
+  opacity:var(--near,0);transition:opacity .25s ease;
+  background:radial-gradient(340px circle at var(--mx,50%) 60%,
+    rgba(var(--wC),calc(.95 * var(--wM))),rgba(var(--wC),calc(.42 * var(--wM))) 46%,transparent 74%)}
 .askfab.on{box-shadow:
   inset 0 0 0 1px rgba(var(--retC2),.42),
   0 14px 32px rgba(20,69,71,.14)}
 .askfab .badge{flex:none}
 .askfab-t{flex:1;min-width:0;text-align:start;white-space:nowrap}
-.askfab kbd{flex:none;font-family:var(--fm);font-size:.6rem;color:var(--t3);
-  background:rgba(var(--edgeC),.08);padding:.12rem .32rem;border-radius:5px;letter-spacing:.02em}
-.askfab.on kbd{background:rgba(var(--edgeC),.12);color:var(--t2)}
-/* مصغَّر: أيقونة بس، والعرض بيرجع للشريط */
 .askfab.mini{width:auto;min-height:0;padding:0;justify-content:center;aspect-ratio:1;height:46px;border-radius:50%}
-@media (prefers-reduced-motion:reduce){.askfab{transition:none;transform:none}
-.askfab:hover{transform:none}
+@media (prefers-reduced-motion:reduce){
+  .askfab{transition:none;transform:none!important}
+  .askfab::before{display:none}
 }
 /* الموبايل: تلات طبقات فوق بعض من تحت لفوق —
    شريط التنقّل (62px) ثم زرار السؤال (46px) ثم شريط القرار.
@@ -2988,7 +2987,6 @@ body.printing .mesh,body.printing .grain{display:none}
 .decdock{padding-inline-end:clamp(.7rem,3vw,1rem);
     bottom:calc(var(--ask-mob) + 56px)}
 .askfab{bottom:var(--ask-mob);inset-inline-end:clamp(.7rem,3vw,1rem);transform:none}
-.askfab:hover{transform:none}
 .screen{padding-bottom:calc(15rem + env(safe-area-inset-bottom,0px))}
 }
 /* ═══════════════════════════════════════════════════════════
@@ -3077,3 +3075,75 @@ body.printing .mesh,body.printing .grain{display:none}
 .pay-docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
   gap:.35rem .8rem;margin-top:.75rem;padding-top:.7rem;
   box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+
+/* ═══════════════════════════════════════════════════════════
+   سجل المشروع — قيد مصنَّف لا سطر نصّي
+   كل نوع إجراء له حقوله، والفاعل أربعة أنواع. الترويسة بتتقري
+   بالمسح، والتفصيل بينفتح بضغطة عشان ستة وعشرون قيدًا يفضلوا
+   قابلين للمسح.
+   ═══════════════════════════════════════════════════════════ */
+
+.lg{list-style:none;margin:1rem 0 0;padding:0;position:relative}
+/* الخيط الرأسي بيربط الأحداث — في RTL على اليمين */
+.lg::before{content:"";position:absolute;inset-block:.9rem;inset-inline-start:6px;width:1.5px;
+  background:linear-gradient(180deg,rgba(var(--edgeC),.04),rgba(var(--edgeC),.18) 8%,
+    rgba(var(--edgeC),.18) 92%,rgba(var(--edgeC),.04))}
+
+.lgi{position:relative;padding:.85rem 0 .85rem 0;padding-inline-start:1.6rem;
+  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.5))}
+.lgi:first-child{box-shadow:none}
+.lgdot{position:absolute;inset-inline-start:0;top:1.15rem;width:13px;height:13px;border-radius:50%;
+  background:var(--dot,rgba(var(--edgeC),.28));
+  box-shadow:0 0 0 3px rgba(var(--wC),calc(.8 * var(--wM)))}
+.lgdot.t-ok{--dot:var(--ok)}
+.lgdot.t-ret{--dot:var(--ret)}
+.lgdot.t-warn{--dot:var(--warn)}
+.lgdot.t-no{--dot:var(--no)}
+.lgdot.t-mute{--dot:rgba(var(--edgeC),.28)}
+
+/* المتابعة: نفس التايم لاين، نقطة مجوّفة تفرّقها عن الإجراء */
+.lgi.fu .lgdot{background:var(--g-card);
+  box-shadow:inset 0 0 0 2px rgba(var(--edgeC),.28),0 0 0 3px rgba(var(--wC),calc(.8 * var(--wM)))}
+
+.lghead{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.lgact{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1)}
+.lgdept{font-size:.72rem;padding:.12rem .5rem;border-radius:var(--rp);
+  color:var(--t2);background:rgba(var(--edgeC),.07);white-space:nowrap}
+.lghead .mono{font-size:.74rem;color:var(--t3)}
+.lgtime{font-size:.7rem}
+.lgbody{font-size:.85rem;line-height:1.7;color:var(--t2);margin-top:.4rem}
+
+.lgby{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:.4rem}
+.lgwho{font-size:.79rem;color:var(--t2)}
+/* الفاعل بيتفرّق بلونه: الجهة طرف تاني، والكيان الجماعي قرار لجنة،
+   والنظام مش شخص. من غير الفرق ده «مين واقف على مين» بيحتاج قراءة. */
+.lgwho.k-entity{color:var(--ret-ink);font-weight:600}
+.lgwho.k-committee{color:var(--brand-ink);font-weight:600}
+.lgwho.k-system{color:var(--t3);font-style:italic}
+.lgkind{font-size:.66rem;padding:.08rem .4rem;border-radius:var(--rp);
+  background:rgba(var(--edgeC),.06)}
+.lgdur{font-size:.72rem;color:var(--t3);margin-inline-start:auto}
+.lgdur.late{color:var(--no-ink)}
+.lgdur .mono{font-size:.72rem}
+
+.lgmore{display:inline-flex;align-items:center;gap:.3rem;margin-top:.55rem;
+  font-size:.74rem;color:var(--t3);padding:.2rem .45rem;border-radius:var(--r1);
+  transition:color .14s ease,background .14s ease}
+.lgmore:hover{color:var(--t1);background:rgba(var(--edgeC),.07)}
+
+.lgfields{margin-top:.6rem;padding:.7rem .9rem;border-radius:var(--r2);
+  background:rgba(var(--wC),calc(.5 * var(--wM)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7));
+  display:flex;flex-direction:column;gap:.5rem}
+.lgf{display:grid;grid-template-columns:minmax(0,15rem) 1fr;gap:.3rem .9rem;align-items:baseline}
+.lgf-k{font-size:.73rem;color:var(--t3);line-height:1.55}
+.lgf-v{font-size:.82rem;color:var(--t2);line-height:1.75}
+.lgf.s .lgf-v{font-family:var(--fd);font-weight:600;color:var(--t1)}
+@media (max-width:620px){.lgf{grid-template-columns:1fr}}
+
+/* ── ثريد المراسلة: عنوان سبب الفتح ── */
+.thread-why{display:flex;align-items:center;gap:.5rem;margin-bottom:.9rem;
+  padding:.55rem .75rem;border-radius:var(--r1);
+  background:rgba(var(--warnC),.10);
+  box-shadow:inset 0 0 0 1px rgba(var(--warnC),.24)}
+.thread-why .sub{color:var(--warn-ink)}

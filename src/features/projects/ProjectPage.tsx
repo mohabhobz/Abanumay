@@ -21,6 +21,7 @@ import {
 import { EntityProjectsPanel, LastActionPanel, QuickAnalysis } from './panels'
 import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
+import { projectLog } from '@/data/mock/log'
 import { journeys } from '@/data/journey'
 
 /** عدد الأيام اللي الإجراء الحالي مفتوح فيها — من سجل الإجراءات */
@@ -152,6 +153,13 @@ export default function ProjectPage() {
     [row?.id],
   )
 
+  /* السجل مولَّد من نفس التفاصيل، فالمتابعات والدفعات والاتفاقية
+     اللي في التابات هي بعينها اللي في السجل — مفيش مصدران. */
+  const log = useMemo(
+    () => projectLog({ row: row ?? fixtures.projects[0], entityName: entity.name, detail }),
+    [row, entity.name, detail],
+  )
+
   const analysis = useMemo(
     () => [...(row ? readJourney(row, journeys.get(row.id)) : []), ...readInsights(fixtures.insights)],
     [row],
@@ -245,12 +253,12 @@ export default function ProjectPage() {
               {active === 'follow-ups' && (
                 <FollowUpsTab followUps={detail.followUps} types={fixtures.followUpTypes} />
               )}
-              {active === 'log' && <LogTab project={project} />}
+              {active === 'log' && <LogTab events={log} entityName={entity.name} />}
               {active === 'correspondence' && (
                 <CorrespondenceTab
                   messages={detail.messages}
                   entityName={entity.name}
-                  stage={project.status.label}
+                  why={detail.threadWhy}
                 />
               )}
             </div>

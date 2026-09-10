@@ -132,6 +132,8 @@ export interface PaymentDetail extends Payment {
 /* ═══════════════ الحصيلة ═══════════════ */
 
 export interface ProjectDetail {
+  /** ليه ثريد المراسلة اتفتح — القناة دي ما بتتفتحش من فراغ */
+  threadWhy: string
   agreement: AgreementDetail | null
   payments: PaymentDetail[]
   followUps: FollowUp[]
@@ -292,23 +294,24 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
   /* ── المراسلة ──
      في النظام دي قناة بتتفتح لما إجراء يتعطّل، مش تواصل عام —
      ٣٨ مشروعًا مفحوصًا فيهم ثريد واحد، وكله عن سند واحد اتعطّل. */
-  const stuckOnEntity =
-    row.stage === 'رفع سند القبض والقيد' ||
-    row.stage === 'استكمال بيانات المشروع' ||
-    row.stage === 'رفع التقرير الختامي' ||
-    row.stage === 'رفع تقرير مرحلي'
+  const STUCK: Record<string, string> = {
+    'رفع سند القبض والقيد': 'رفع سند قبض المبلغ لاستكمال إجراءات سير المشروع',
+    'استكمال بيانات المشروع': 'استكمال بيانات المشروع وإرفاق الموازنة التفصيلية',
+    'رفع التقرير الختامي': 'رفع التقرير الختامي لاستكمال إجراءات إغلاق المشروع',
+    'رفع تقرير مرحلي': 'رفع تقرير الإنجاز المرحلي',
+  }
+  /* الإجراء الواقف على الجهة دلوقتي، وإلا سند من دفعة مصروفة —
+     كل ثريد قرأناه في النظام كان عن مرفق من الجهة اتعطّل. */
+  const ask = STUCK[row.stage] ?? (paidUpTo > 0 ? 'رفع سند قبض الدفعة لاستكمال إجراءات الصرف' : null)
+  const why = STUCK[row.stage]
+    ? `الإجراء واقف على الجهة عند «${row.stage}».`
+    : 'القناة اتفتحت وقت الصرف: سند القبض اترفض مرة واتعدّل.'
 
-  const messages: ThreadMessage[] = stuckOnEntity
+  const messages: ThreadMessage[] = ask
     ? [
         {
           by: finance, from: 'staff', at: d(start, 60),
-          body: `السلام عليكم، نأمل منكم ${
-            row.stage === 'رفع سند القبض والقيد'
-              ? 'رفع سند قبض المبلغ لاستكمال إجراءات سير المشروع'
-              : row.stage === 'استكمال بيانات المشروع'
-                ? 'استكمال بيانات المشروع وإرفاق الموازنة التفصيلية'
-                : 'رفع التقرير المطلوب لاستكمال إجراءات سير المشروع'
-          }.`,
+          body: `السلام عليكم، نأمل منكم ${ask}.`,
         },
         {
           by: 'الجهة', from: 'entity', at: d(start, 73),
@@ -318,6 +321,12 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
           by: finance, from: 'staff', at: d(start, 87),
           body: `نأمل منكم تعديل اسم الجهة في المرفق إلى (${entityName}) حيث تم رفض المرفق السابق بسبب وجود اسم الجهة خطأ.`,
         },
+        ...(row.statusGroup === 'مكتمل'
+          ? [{
+              by: 'الجهة' as const, from: 'entity' as const, at: d(start, 95),
+              body: 'تم تعديل السند وإعادة رفعه، جزاكم الله خيرًا.',
+            }]
+          : []),
       ]
     : []
 
@@ -343,7 +352,7 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
   if (row.hasInterimReport) actionFiles.push({ name: 'رفع التقرير المرحلي', uploaded: true, required: true })
   if (row.hasFinalReport) actionFiles.push({ name: 'رفع التقرير الختامي', uploaded: true, required: true })
 
-  return { agreement, payments, followUps, messages, minutes, correspondence, actionFiles }
+  return { threadWhy: why, agreement, payments, followUps, messages, minutes, correspondence, actionFiles }
 }
 
 /* ═══════════════ نص الاتفاقية ═══════════════ */
