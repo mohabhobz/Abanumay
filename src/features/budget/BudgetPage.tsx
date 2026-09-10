@@ -412,7 +412,7 @@ function Tree({
             <div className="ftool-a"><ExportMenu sheet={sheet} note={sheet.title} /></div>
           </div>
 
-          <Glass style={{ padding: 0, overflow: 'hidden' }}>
+          <Glass className="tblcard">
             <div className="tblwrap">
               <div className="tblock">
                 {view === 'alloc'

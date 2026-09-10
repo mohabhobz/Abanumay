@@ -38,8 +38,15 @@ const items=await p.evaluate(()=>{
         if(rect.width<6||rect.height<6||rect.top<0||rect.bottom>900||rect.left<0||rect.right>1440) continue
         if(el.ownerSVGElement||el.tagName==='svg') continue
         const cs=getComputedStyle(el)
+        /* صندوق العنصر نفسه لو خلفيته صمّاء: الشريط لازم يفضل
+           **جوّه** العنصر. الزرار الصغير نصّه بيملا صندوقه تقريبًا،
+           فشريط ٤px فوقه بيقع على حافته وبيخلط اللونين ويدّي إنذارًا
+           كاذبًا — دي كانت حالة «حلّل المشروع». */
+        const eb=el.getBoundingClientRect()
+        const solid=cs.backgroundColor&&!/rgba\(.*,\s*0(\.\d+)?\)$/.test(cs.backgroundColor)&&cs.backgroundColor!=='rgba(0, 0, 0, 0)'
         out.push({t:n.textContent.trim().slice(0,22),color:cs.color,size:parseFloat(cs.fontSize),weight:cs.fontWeight,
           x:Math.round(rect.left),y:Math.round(rect.top),w:Math.round(rect.width),h:Math.round(rect.height),
+          ex:Math.round(eb.left),ey:Math.round(eb.top),ew:Math.round(eb.width),eh:Math.round(eb.height),solid,
           cls:(el.className&&typeof el.className==='string')?el.className.split(' ')[0]:el.tagName.toLowerCase()})
       } else if(n.nodeType===1) walk(n)
     }
@@ -58,7 +65,12 @@ for(const it of items){
   const band=(y0,y1)=>{for(let y=y0;y<y1;y++){if(y<0||y>=png.height)continue
     for(let x=it.x;x<it.x+it.w;x+=2){if(x<0||x>=png.width)continue
       const k=px(x,y).join(','); counts.set(k,(counts.get(k)??0)+1)}}}
-  band(it.y-4,it.y-1); band(it.y+it.h+1,it.y+it.h+4)
+  if(it.solid){
+    /* جوّه صندوق العنصر بحافة أمان ٣px من كل ناحية */
+    const top=it.ey+3, bot=it.ey+it.eh-3
+    band(Math.max(top,it.y-4),Math.min(it.y-1,bot))
+    band(Math.max(it.y+it.h+1,top),Math.min(it.y+it.h+4,bot))
+  } else { band(it.y-4,it.y-1); band(it.y+it.h+1,it.y+it.h+4) }
   if(!counts.size) continue
   const bg=[...counts.entries()].sort((a,z)=>z[1]-a[1])[0][0].split(',').map(Number)
   const r=ratio(fg,bg)

@@ -348,7 +348,11 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 /* `fixed` مش تفصيلة أداء: في التخطيط التلقائي العمود بيتمدّد لأطول
    محتوى فيه، يعني «أضيق من المحتوى» مش موجودة أصلًا — لا قصّ ولا
    سحب. التثبيت بيخلّي العرض قرارًا (من `col`) والمحتوى بيتأقلم. */
-.tbl{width:100%;border-collapse:collapse;font-size:.83rem;table-layout:fixed}
+/* `separate` مش `collapse`: الجدول المطبَّق ما بيقبلش نصف قطر على
+   الخلية أصلًا، والجسم المرسوم لازم يدوّر أركانه جوّه الكارت.
+   `border-spacing:0` بيخلّي الشكل هو هو — الفواصل خطوط داخلية
+   (`inset box-shadow`) مش حدود خلايا، فمفيش حدود مزدوجة. */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:.83rem;table-layout:fixed}
 .tbl th{position:relative;font-family:var(--fd);font-weight:500;font-size:.74rem;color:var(--t3);text-align:right;
   padding:.55rem .7rem;white-space:nowrap}
 .th-t{display:block;overflow:hidden;text-overflow:ellipsis}
@@ -371,6 +375,33 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tbl tr.off td{color:var(--t3)}
 .tbl .nmc{display:flex;align-items:center;gap:.5rem}
 .tbl .nmc svg,.lg svg{flex:none}
+/* ── الركن المتداخل: الجسم المرسوم جوّه الكارت ──
+   الترويسة شفّافة، فالمرسوم فعليًا هو `td` — بلاطة لونها أفتح.
+   البلاطة دي كانت أركانها قائمة جوّه كارت نصف قطره ٢٢، فالشكل
+   «كارت مدوّر وجوّه مستطيل مقصوص». دي بالظبط ملاحظة رقم ٧.
+
+   القاعدة واحدة ومحسوبة لا مكتوبة:  الداخلي = الخارجي − الحشو
+   ولأن الحشو ساعات يبقى أكبر من نصف القطر، بنحطّ أرضية عند أصغر
+   درجة في السلّم بدل قيمة سالبة:
+
+       ‎--slab = max(--r1, --r3 − --pad)
+
+   و`--pad` موجود أصلًا على `.glass`، فالقيمة بتتحسب لكل كارت
+   لوحدها:  حشو ٠ ⇒ ٢٢ · حشو ٧ ⇒ ١٥ · حشو ٢٣ ⇒ ١٠ — تلاتتهم على
+   السلّم بالظبط.
+   المرجع: Cloud Four — the math behind nesting rounded corners. */
+.tbl{--slab:max(var(--r1),calc(var(--r3) - var(--pad)))}
+.tbl tbody:first-of-type tr:first-child>td:first-child{border-start-start-radius:var(--slab)}
+.tbl tbody:first-of-type tr:first-child>td:last-child{border-start-end-radius:var(--slab)}
+.tbl tbody:last-of-type tr:last-child>td:first-child{border-end-start-radius:var(--slab)}
+.tbl tbody:last-of-type tr:last-child>td:last-child{border-end-end-radius:var(--slab)}
+/* فيه تذييل ⇒ هو آخر صف مرسوم، فالجسم بيرجع قائم من تحت */
+.tbl:has(tfoot) tbody:last-of-type tr:last-child>td{border-end-start-radius:0;border-end-end-radius:0}
+.tbl tfoot tr:last-child>td:first-child{border-end-start-radius:var(--slab)}
+.tbl tfoot tr:last-child>td:last-child{border-end-end-radius:var(--slab)}
+/* كارت الجدول: كلاس واحد بحشو واحد بدل تلات معاملات مختلفة كانت
+   مكتوبة `style` سطرية في الصفحات (٠ · ٦٫٤ · ٢٣٫٢). */
+.tblcard{--pad:7px}
 .tabs{display:flex;gap:.3rem;flex-wrap:wrap}
 .tab{padding:.45rem .95rem;border-radius:var(--rp);font-size:.82rem;font-family:var(--fd);font-weight:500;
   color:var(--t2-g);transition:color .16s ease,background .16s ease}
@@ -1866,13 +1897,21 @@ to{opacity:1;transform:none}
    فوقها. التمييز من الشرارة والكتابة الحيّة، مش من سطح بلون تاني.
    ═══════════════════════════════════════════════════════════ */
 .qread{flex:none}
-.qread.strip{padding:0;overflow:hidden}
+/* الشريط بياخد حشوًا صغيرًا عشان الهوفر يقعد جوّه بركنه هو، بدل
+   ما يوصل لحافة الكارت ويتبتر على المنحنى (ملاحظة رقم ١٠).
+   حشو ٧ ⇒ ركن داخلي ١٥ = `--r2`، وحشو الصفّ نفسه بيقلّ بنفس المقدار
+   فارتفاع الكارت وموضع النصّ ما اتغيّروش ولا بكسل. */
+.qread.strip{--pad:7px;padding:var(--pad);overflow:hidden}
 .qread.panel{padding:0}
 /* الترويسة هي كل الكارت وهو مقفول، فبادنجها متساوي فوق وتحت.
    ولمّا يتفتح، المسافة اللي تحتها بتيجي من أول قراءة لا منها —
    الاتنين مع بعض كانوا بيعملوا فجوة ضعف اللي تحت أي كارت تاني. */
 .qr-head{display:flex;align-items:center;gap:.6rem;width:100%;text-align:right;
   padding:.85rem 1.05rem;color:inherit;transition:background .16s ease}
+.qread.strip>.qr-head{border-radius:max(var(--r1),calc(var(--r3) - var(--pad)));
+  padding:calc(.85rem - var(--pad)) calc(1.05rem - var(--pad))}
+.qread.strip>.qr-peek{padding:0 calc(1.05rem - var(--pad)) calc(.8rem - var(--pad))}
+.qread.strip>.qr-list{padding:0 calc(1.05rem - var(--pad))}
 .qr-head:not(.static):hover{background:rgba(var(--wC),calc(.28 * var(--wM)))}
 .qr-head>svg{color:var(--t3);flex:none}
 /* زرار الطيّ في الكارت الكامل — نفس `.aifold` في تحليلات المشروع */

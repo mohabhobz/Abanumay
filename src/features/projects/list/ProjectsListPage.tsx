@@ -595,7 +595,7 @@ export default function ProjectsListPage() {
               ))}
             </div>
           ) : (
-            <Glass className="tblcard" style={{ padding: '.4rem' }}>
+            <Glass className="tblcard">
               <DataTable
                 rows={result.rows}
                 all={COLS}

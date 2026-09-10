@@ -114,7 +114,7 @@ export default function ReportView() {
             </div>
           </div>
 
-          <Glass style={{ padding: 0, overflow: 'hidden' }}>
+          <Glass className="tblcard">
             {table.rows.length === 0 ? (
               <Empty title="لا صفوف في هذه الفترة." note="جرّب سنة أو مصدر تمويل آخر." />
             ) : (

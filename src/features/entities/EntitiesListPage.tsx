@@ -421,7 +421,7 @@ export default function EntitiesListPage() {
               {result.rows.map((e) => <EntityCard key={e.id} row={e} />)}
             </div>
           ) : (
-            <Glass className="tblcard" style={{ padding: '.4rem' }}>
+            <Glass className="tblcard">
               <DataTable
                 rows={result.rows}
                 all={COLS}

@@ -234,7 +234,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
         <div className="ftool-a"><ExportMenu sheet={sheet} note={`${spec.title} · عيّنة ${rows.length} صفًّا`} /></div>
       </div>
 
-      <Glass style={{ padding: 0, overflow: 'hidden' }}>
+      <Glass className="tblcard">
         <div className="tblwrap">
           <div className="tblock">
             <table className="tbl">
@@ -356,7 +356,7 @@ function BudgetTree() {
             <div className="ftool-a"><ExportMenu sheet={sheet} note={sheet.title} /></div>
           </div>
 
-          <Glass style={{ padding: 0, overflow: 'hidden' }}>
+          <Glass className="tblcard">
             <div className="tblwrap">
               <div className="tblock">
                 <table className="tbl">

@@ -150,8 +150,21 @@ for (const theme of themes) {
         }
       }
 
-      /* ركن الابن أكبر من ركن الأب وحاويته بتقصّ */
+      /* ركن الابن أصغر من ركن الأب وحاويته بتقصّ.
+         شرط لازم: الابن **بيرسم فعلًا** عند الركن — خلفية أو ظلّ
+         خارجي أو حدّ، أو هو نفسه حاوية بتقصّ/بتتزحلق. ابن شفّاف
+         ركنه صفر ما بيبانش أصلًا، وتعليمه إنذار كاذب بيقفل
+         التقرير. (نفس درس `.fsegs` في الجرد رقم ١.) */
       const rad = (e) => Math.round(parseFloat(getComputedStyle(e).borderTopLeftRadius) || 0)
+      const paintsAtEdge = (e) => {
+        const s = getComputedStyle(e)
+        if (s.backgroundColor && s.backgroundColor !== 'rgba(0, 0, 0, 0)') return true
+        if (s.backgroundImage && s.backgroundImage !== 'none') return true
+        if (s.boxShadow && s.boxShadow !== 'none' && !/inset/.test(s.boxShadow)) return true
+        if (parseFloat(s.borderTopWidth) > 0 || parseFloat(s.borderBottomWidth) > 0) return true
+        if (s.overflow !== 'visible') return true      /* حاوية بتقصّ لنفسها */
+        return false
+      }
       for (const parent of document.querySelectorAll('.glass,.tblock,.fmenu,.chrome')) {
         const pr = rad(parent)
         if (!pr) continue
@@ -161,7 +174,7 @@ for (const theme of themes) {
           const kr = rad(kid)
           const kb = kid.getBoundingClientRect(), pb = parent.getBoundingClientRect()
           const touches = Math.abs(kb.top - pb.top) < 2 || Math.abs(kb.bottom - pb.bottom) < 2
-          if (touches && kr < pr - 2) {
+          if (touches && kr < pr - 2 && paintsAtEdge(kid)) {
             out.nested.push({ parent: String(parent.className).split(' ')[0], kid: String(kid.className).split(' ')[0] || kid.tagName, pr, kr })
           }
         }
@@ -201,7 +214,12 @@ for (const theme of themes) {
         if (cs.overflow === 'visible') continue
         const pt = Math.round(parseFloat(cs.paddingTop) || 0)
         const first = e.firstElementChild
-        if (first && pt < 4 && cs.overflowY !== 'visible') {
+        /* الحاوية اللي بتتزحلق أفقيًا بس: المتصفح بيحوّل المحور
+           التاني لـ`auto` تلقائيًا، فما ينفعش نعتبرها قاصّة رأسيًا.
+           اللي يهمّنا هو القصّ الرأسي الحقيقي — إما `hidden` صريح
+           أو محتوى بيفيض فوق الارتفاع. */
+        const clipsY = cs.overflowY === 'hidden' || e.scrollHeight > e.clientHeight + 1
+        if (first && pt < 4 && clipsY) {
           out.clipped.push({ cls: String(e.className).split(' ')[0], paddingTop: pt })
         }
       }
