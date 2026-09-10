@@ -74,16 +74,25 @@
      «تحديد متعدّد» — ده تمييز دلالي في كل السيستمز. */
   --r0:4px; --r1:10px; --r2:15px; --r3:22px; --r4:28px; --rp:999px;
 
-  /* ═══ سلّم الارتفاعات ═══
-     الوثيقة أعلنت السلّم ده، والستايل ما كانش بيعرفه — فكل شاشة
-     كانت بتوصل لارتفاعها بالحشو والخط بالصدفة (٣٣ هنا · ٣٠ هناك
-     · ٣١ في التالتة). الارتفاع دلوقتي بيتكتب صريحًا من التوكن،
-     والحشو الأفقي بس هو اللي بيتظبط.
+  /* ═══ سلّم الارتفاعات — مبني من حشو صريح ═══
+     الارتفاع **مش رقم بيتكتب**، هو ناتج:  حشو + سطر + حشو.
+     كده «فوق وتحت» حشو حقيقي زي «يمين وشمال»، والعنصر بيحضن
+     محتواه بدل ما يتشدّ على `min-height` والحشو الرأسي صفر.
 
-     ‎--h-xs تسمية **غير تفاعلية** (الوسم) — مالهاش دعوة بالهدف
-     اللمسي ٢٤px لأن محدش بيضغطها. القياس قال ١٨ في ٣٠ موضع من
-     ٣٣، وده الصح لصفّ جدول كثيف. */
+         --h-md  34 = 8 + 18 + 8     كل تحكّم تفاعلي
+         --h-sm  28 = 6 + 16 + 6     السياق الكثيف بس
+         --h-xs  18 = 2 + 14 + 2     الوسم — تسمية غير تفاعلية
+
+     **قاعدة ملزِمة:** أي تحكّم في نفس الصفّ ارتفاعه `--h-md`:
+     الزرار والحقل والبحث والشريحة والتاب والمبدّل — كلهم واحد.
+     المقيس قبل كده في شريط أدوات **واحد**: ٣٣ · ٢٨ · ٢٨ · ٢٨ ·
+     ٣٠ · ٣٤ — ستّ قيم. والجرد كان بيقول انحراف صفر لأنه بيقارن
+     كل دور **بنفسه** ولا بيقارن الجيران في نفس الصفّ. */
   --h-xs:18px; --h-sm:28px; --h-md:34px; --h-lg:42px;
+  --pb-md:8px;  --lh-md:18px;   /* حشو وسطر التحكّم العادي */
+  --pb-sm:6px;  --lh-sm:16px;   /* الكثيف */
+  --pb-xs:2px;  --lh-xs:14px;   /* الوسم */
+  --pi-md:16px; --pi-sm:12px;   /* الحشو الأفقي */
 
   /* ═══ سلّم الخط ═══
      كان في الستايل ٨٥ مقاس مختلف. سبعة بس ليهم دور. */
@@ -340,7 +349,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    عادي · بطاقة الجهة المتدرّجة · صفّ جدول)، ولمّا كانت .66 كان
    بيورّث لون السطح تحته وبيقع تحت AA على البطاقة الملوّنة —
    ٢٫٩٩:١ في «الحوكمة:». الحبّة بتبني أرضيتها فحبرها ثابت. */
-.tag{min-height:var(--h-xs);padding-block:0;padding-inline:8px;font-size:var(--fs-1);
+.tag{padding-block:var(--pb-xs);padding-inline:8px;line-height:var(--lh-xs);font-size:var(--fs-1);
   border-radius:var(--rp);white-space:nowrap;
   background-color:rgba(var(--wC),calc(.92 * var(--wM)));
   background-image:linear-gradient(rgba(var(--edgeC),.10),rgba(var(--edgeC),.10));
@@ -350,10 +359,8 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tag.no{background-image:linear-gradient(rgba(var(--noC),.16),rgba(var(--noC),.16));color:var(--no-ink3)}
 .tag.warn{background-image:linear-gradient(rgba(var(--warnC),.20),rgba(var(--warnC),.20));color:var(--warn-ink)}
 .tag.brand{background-image:linear-gradient(rgba(var(--limeC),.34),rgba(var(--limeC),.34));color:var(--brand-ink)}
-/* الارتفاع من التوكن لا من الحشو: `min-height` بيضمن القيمة حتى
-   لو الخط اتغيّر، والحشو الرأسي صفر عشان ما يزوّدش عليها. */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
-  min-height:var(--h-md);padding-block:0;padding-inline:16px;
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;width:fit-content;
+  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
   border-radius:var(--rp);font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   transition:transform .16s ease,filter .16s ease;white-space:nowrap}
 .btn:hover{transform:translateY(-1px);filter:brightness(.97)}
@@ -391,7 +398,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .btn-off{background:rgba(var(--wC),calc(.40 * var(--wM)));color:var(--t3);cursor:not-allowed;
   box-shadow:inset 0 1px 0 rgba(var(--edgeC),.08)}
 .btn-off:hover{transform:none;filter:none}
-.btn-sm{min-height:var(--h-sm);padding-inline:12px;font-size:var(--fs-2)}
+.btn-sm{padding-block:var(--pb-sm);padding-inline:var(--pi-sm);line-height:var(--lh-sm);font-size:var(--fs-2)}
 .fld{display:flex;align-items:center;gap:.55rem;padding:.62rem .85rem;border-radius:var(--r1);
   background:var(--g-data);-webkit-backdrop-filter:blur(var(--g-data-blur));backdrop-filter:blur(var(--g-data-blur));
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.9))}
@@ -452,18 +459,29 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tbl{--slab:max(var(--r1),calc(var(--r3) - var(--pad)))}
 .tbl tbody:first-of-type tr:first-child>td:first-child{border-start-start-radius:var(--slab)}
 .tbl tbody:first-of-type tr:first-child>td:last-child{border-start-end-radius:var(--slab)}
-.tbl tbody:last-of-type tr:last-child>td:first-child{border-end-start-radius:var(--slab)}
-.tbl tbody:last-of-type tr:last-child>td:last-child{border-end-end-radius:var(--slab)}
-/* فيه تذييل ⇒ هو آخر صف مرسوم، فالجسم بيرجع قائم من تحت */
-.tbl:has(tfoot) tbody:last-of-type tr:last-child>td{border-end-start-radius:0;border-end-end-radius:0}
+/* ══ ركن التحت شرطه: **مفيش حاجة بعد الجسم** ══
+   لو تحت الجسم خطّ فاصل وتذييل (إجمالي · عدد الصفوف)، فالجسم مش
+   نهاية الجدول — والتدوير هنا بيقطع الخطّ ويبان كأنه غلط. التدوير
+   بيتحطّ على **آخر حاجة مرسومة** بس.
+
+   لازم يتكتب `:not(:has(tfoot))` لا «حطّه وبعدين شيله»: القاعدة
+   المضادّة `.tbl:has(tfoot) … td` تخصيصها (0,3,4) وقاعدة الركن
+   `.tbl … td:last-child` تخصيصها (0,4,3) — فالركن كان بيغلب
+   والإلغاء ما كانش بيشتغل أصلًا. */
+.tbl:not(:has(tfoot)) tbody:last-of-type tr:last-child>td:first-child{border-end-start-radius:var(--slab)}
+.tbl:not(:has(tfoot)) tbody:last-of-type tr:last-child>td:last-child{border-end-end-radius:var(--slab)}
+/* التذييل — لو موجود — هو آخر صفّ مرسوم، فهو اللي بياخد ركن التحت */
 .tbl tfoot tr:last-child>td:first-child{border-end-start-radius:var(--slab)}
 .tbl tfoot tr:last-child>td:last-child{border-end-end-radius:var(--slab)}
 /* كارت الجدول: كلاس واحد بحشو واحد بدل تلات معاملات مختلفة كانت
    مكتوبة `style` سطرية في الصفحات (٠ · ٦٫٤ · ٢٣٫٢). */
 .tblcard{--pad:7px}
 .tabs{display:flex;gap:.3rem;flex-wrap:wrap}
-.tab{display:inline-flex;align-items:center;
-  min-height:var(--h-sm);padding-block:0;padding-inline:16px;
+/* التاب بيحضن نصّه: عرضه `fit-content` وارتفاعه ناتج حشوه، فما
+   بيتمدّش على عرض الحاوية ولا بيتشدّ مع إخوته. */
+.tabs{width:fit-content;max-width:100%}
+.tab{display:inline-flex;align-items:center;width:fit-content;
+  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
   border-radius:var(--rp);font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   color:var(--t2-g);transition:color .16s ease,background .16s ease}
 .tab:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
@@ -1766,8 +1784,8 @@ to{opacity:1;transform:none}
    بيتكرّر في التنين. اللقطة بقت هي الصفّ (نطاق الشغل)، والحالة
    نزلت جوّه شريط الأدوات كقائمة بعدّادها (تنقية جوّه النطاق). */
 .fsegs{display:flex;gap:.35rem;flex-wrap:wrap}
-.fseg{display:inline-flex;align-items:center;gap:.45rem;
-  min-height:var(--h-sm);padding-block:0;padding-inline:16px;border-radius:var(--rp);
+.fseg{display:inline-flex;align-items:center;gap:8px;width:fit-content;
+  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);border-radius:var(--rp);
   font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   color:var(--t2-g);transition:color .16s ease,background .16s ease;
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
@@ -1804,20 +1822,27 @@ to{opacity:1;transform:none}
 .ftool-f{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .ftool-a{flex:none;display:flex;align-items:center;gap:.5rem}
 .srch{flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:.55rem;
-  padding:.5rem .85rem;border-radius:var(--rp);color:var(--t3);
+  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
+  font-size:var(--fs-3);border-radius:var(--rp);color:var(--t3);
   background:var(--g-data);-webkit-backdrop-filter:blur(var(--g-data-blur));backdrop-filter:blur(var(--g-data-blur));
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
   transition:box-shadow .16s ease}
 .srch:focus-within,.fsel-b:focus-within{
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.8))}
-.srch input{flex:1;min-width:0;font-size:.83rem;color:var(--t1)}
+/* عنصر الفورم الأصلي (`input`/`select`) ارتفاعه الجوّاني مش سطره:
+   الـ`input` بيطلع ~٢٠ والـ`select` ~١٥. فمعادلة «حشو + سطر +
+   حشو» بتتكسر — البحث كان ٣٦ والحقل ٣١ جنب زرار ٣٤. الحلّ إن
+   العنصر الجوّاني ياخد **ارتفاع السطر صريحًا**، فالحشو الرأسي
+   يفضل هو اللي بيحدّد الارتفاع زي أي تحكّم تاني. */
+.srch input{flex:1;min-width:0;height:var(--lh-md);padding:0;
+  font-size:var(--fs-3);line-height:var(--lh-md);color:var(--t1)}
 .srch input::-webkit-search-cancel-button{display:none}
 .srch-x{display:grid;place-items:center;color:var(--t3);flex:none}
 .srch-x:hover{color:var(--t1)}
 /* شريحة تبديل — نفس لغة الأزرار بس أخف */
-.fchip{display:inline-flex;align-items:center;gap:.4rem;
-  min-height:var(--h-sm);padding-block:0;padding-inline:12px;border-radius:var(--rp);
-  font-size:var(--fs-2);color:var(--t2);white-space:nowrap;
+.fchip{display:inline-flex;align-items:center;gap:8px;width:fit-content;
+  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);border-radius:var(--rp);
+  font-size:var(--fs-3);color:var(--t2);white-space:nowrap;
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
   transition:color .16s ease,background .16s ease,box-shadow .16s ease}
 .fchip:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
@@ -1832,14 +1857,15 @@ to{opacity:1;transform:none}
    كلهم كبسولات. ده عرف متقارب: الحقل بيقول «اكتب/اختار جوّايا»
    والكبسولة بتقول «اضغطني». كان كبسولة في شريط أدوات المشاريع
    والجهات ومستطيل في الميزانية والتقارير. */
-.fsel-b{position:relative;display:flex;align-items:center;gap:.35rem;font-size:var(--fs-2);
-  min-height:var(--h-sm);padding-block:0;padding-inline-start:12px;padding-inline-end:8px;
+.fsel-b{position:relative;display:flex;align-items:center;gap:.35rem;font-size:var(--fs-3);
+  padding-block:var(--pb-md);line-height:var(--lh-md);
+  padding-inline-start:var(--pi-md);padding-inline-end:var(--pi-sm);
   border-radius:var(--r2);
   background:rgba(var(--wC),calc(.56 * var(--wM)));-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
   transition:box-shadow .16s ease}
 .fsel-b:hover{box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
-.fsel-b select{flex:1;min-width:0;font-size:var(--fs-2);color:var(--t1);cursor:pointer;
+.fsel-b select{flex:1;min-width:0;height:var(--lh-md);padding:0;font-size:var(--fs-3);line-height:var(--lh-md);color:var(--t1);cursor:pointer;
   appearance:none;-webkit-appearance:none;padding-inline-end:.2rem}
 .fsel-b svg{flex:none;color:var(--t3)}
 .fsel.on .fsel-b{background:rgba(var(--retC2),.09);box-shadow:inset 0 0 0 1px rgba(var(--retC2),.28)}
@@ -1847,9 +1873,10 @@ to{opacity:1;transform:none}
 .fsel.off .fsel-b{cursor:not-allowed}
 /* القائمة اللي جوّه شريط الأدوات تلبس شكل الشريحة عشان الصفّ
    كله يبقى بلغة واحدة، من غير عنوان فوقها */
-.ftool-f>.fsel .fsel-b{background:rgba(var(--wC),calc(.62 * var(--wM)));
-  padding-block:.42rem;padding-inline-start:.95rem;padding-inline-end:.6rem}
-.ftool-f>.fsel .fsel-b select{font-size:var(--fs-2)}
+/* التجاوز ده كان بيكتب حشوه بإيده (٦٫٧٢px) ويغلب التوكن، فالحقل
+   طلع ٣١ جنب زرار ٣٤ في نفس الصفّ. الخلفية بس هي اللي تخصّه. */
+.ftool-f>.fsel .fsel-b{background:rgba(var(--wC),calc(.62 * var(--wM)))}
+.ftool-f>.fsel .fsel-b select{font-size:var(--fs-3)}
 .fsel.wide{grid-column:1 / -1}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem .8rem;
   padding-top:.85rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
@@ -1869,7 +1896,9 @@ to{opacity:1;transform:none}
 .vtog{display:flex;gap:2px;padding:0;border-radius:var(--r1);
   background:rgba(var(--wC),calc(.48 * var(--wM)));
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
-.vtog button{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--r1);color:var(--t3)}
+/* الزرار الأيقوني **مربّع بضلع = ارتفاع التحكّم**، فبيقف في نفس
+   الصفّ مع الزرار النصّي بالظبط. */
+.vtog button{display:grid;place-items:center;width:var(--h-md);height:var(--h-md);border-radius:var(--r1);color:var(--t3)}
 .vtog button:hover{color:var(--t1)}
 .vtog button.on{color:var(--t1);background:rgba(var(--wC),calc(.92 * var(--wM)))}
 /* الترقيم */
@@ -2037,10 +2066,17 @@ to{opacity:1;transform:none}
    الاتنين مع بعض كانوا بيعملوا فجوة ضعف اللي تحت أي كارت تاني. */
 .qr-head{display:flex;align-items:center;gap:.6rem;width:100%;text-align:right;
   padding:.85rem 1.05rem;color:inherit;transition:background .16s ease}
+/* الكارت مقفول ⇒ المسافة فوق الترويسة = المسافة تحت اللمحة
+   بالظبط. كانت ١٣٫٦ فوق و١٢٫٨ تحت لأن كل واحد كان بيتحسب من رقم
+   مختلف. دلوقتي الاتنين نفس التوكن. */
+.qread.strip{--qpad:14px}
 .qread.strip>.qr-head{border-radius:max(var(--r1),calc(var(--r3) - var(--pad)));
-  padding:calc(.85rem - var(--pad)) calc(1.05rem - var(--pad))}
-.qread.strip>.qr-peek{padding:0 calc(1.05rem - var(--pad)) calc(.8rem - var(--pad))}
-.qread.strip>.qr-list{padding:0 calc(1.05rem - var(--pad))}
+  padding-block:calc(var(--qpad) - var(--pad));
+  padding-inline:calc(var(--qpad) - var(--pad))}
+.qread.strip>.qr-peek{margin-top:0;
+  padding-block:0 calc(var(--qpad) - var(--pad));
+  padding-inline:calc(var(--qpad) - var(--pad))}
+.qread.strip>.qr-list{padding-inline:calc(var(--qpad) - var(--pad))}
 .qr-head:not(.static):hover{background:rgba(var(--wC),calc(.28 * var(--wM)))}
 .qr-head>svg{color:var(--t3);flex:none}
 /* زرار الطيّ في الكارت الكامل — نفس `.aifold` في تحليلات المشروع */

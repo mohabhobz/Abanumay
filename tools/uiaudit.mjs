@@ -109,6 +109,7 @@ const tabs = []
 const drop = []
 const primary = []
 const steps = []
+const rowsMix = []
 const nums = { total: 0, noTabular: 0 }
 
 for (const theme of themes) {
@@ -184,6 +185,28 @@ for (const theme of themes) {
           if (touches && kr < pr - 2 && paintsAtEdge(kid)) {
             out.nested.push({ parent: String(parent.className).split(' ')[0], kid: String(kid.className).split(' ')[0] || kid.tagName, pr, kr })
           }
+        }
+      }
+
+      /* ══ الجيران في نفس الصفّ ══
+         الفحص اللي فوق بيقارن كل دور **بنفسه** عبر الشاشات. وده
+         بيدّي انحرافًا صفرًا وشريط الأدوات فيه بحث ٣٣ وحقل ٢٨
+         وشريحة ٢٨ ومبدّل ٣٠ وزرار ٣٤ — كل واحد ثابت مع نفسه
+         ومختلف عن جاره. اللي المستخدم بيشوفه هو **الصفّ**، فلازم
+         يتقاس كصفّ. */
+      out.rows = []
+      const CTRL = '.btn,.fchip,.fseg,.tab,.srch,.fsel .fsel-b,.vtog'
+      for (const row of document.querySelectorAll('.ftool-r,.ftool-f,.ftool-a,.tabs,.fsegs,.head-a,.hd-a')) {
+        const kids = [...row.querySelectorAll(CTRL)].filter((e) => e.offsetParent !== null)
+        if (kids.length < 2) continue
+        const seen = new Map()
+        for (const e of kids) {
+          const h = Math.round(e.getBoundingClientRect().height)
+          if (!seen.has(h)) seen.set(h, String(e.className).split(' ')[0] || e.tagName)
+        }
+        if (seen.size > 1) {
+          out.rows.push({ row: String(row.className).split(' ')[0],
+            vals: [...seen.entries()].map(([h, c]) => `${c}:${h}`).join(' · ') })
         }
       }
 
@@ -277,6 +300,7 @@ for (const theme of themes) {
     nums.total += found.nums.total; nums.noTabular += found.nums.noTabular
     for (const n of found.nested) nested.push({ ...n, route, theme })
     for (const c of found.clipped) clipped.push({ ...c, route, theme })
+    for (const r of found.rows ?? []) rowsMix.push({ ...r, route, theme })
   }
   await ctx.close()
 }
@@ -324,6 +348,13 @@ console.log(`\n═══ خارج السلّم المعلَن ═══`)
   check('وسم', 'height', SCALE.label, 'الارتفاع')
   check('حقل اختيار', 'height', SCALE.control, 'الارتفاع')
   for (const r of Object.keys(bag)) check(r, 'borderRadius', SCALE.radius, 'نصف القطر')
+}
+
+console.log(`\n═══ ارتفاعات مختلفة في نفس الصفّ ═══`)
+{
+  const u = uniq(rowsMix, (x) => `${x.row}|${x.vals}`)
+  if (!u.length) console.log('  نضيف.')
+  for (const x of u) { drift += 1; console.log(`  .${x.row.padEnd(10)} ${x.vals}   ← ${x.route}`) }
 }
 
 console.log(`\n═══ أكتر من دعوة أساسية في الشاشة ═══`)

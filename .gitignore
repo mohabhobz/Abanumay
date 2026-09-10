@@ -16,3 +16,6 @@ dist-ssr
 # وما تتكوميتش.
 src/data/mock/*.local.ts
 .shots/
+
+*.tar.gz
+vite.config.ts.timestamp-*
