@@ -292,6 +292,13 @@ export default function EntitiesListPage() {
             </div>
           </header>
 
+          {/* ═══ القراءة السريعة ═══
+              مكانها بعد العنوان مباشرة لا بعد الفلاتر: هي **قراءة
+              للصفحة**، والقراءة بتيجي قبل الأدوات لا بينها وبين
+              النتيجة. في النص كانت بتقطع الطريق بين الفلتر واللي
+              رجع منه، ومحدّش بيقرا سطرًا وهو ماسك فلتر. */}
+          <QuickRead variant="bar" title="قراءة سريعة للقائمة" readings={readings} />
+
           {/* ═══ اللقطات المحفوظة — صفّ واحد ═══ */}
           <Segments
             active={activeView}
@@ -426,8 +433,6 @@ export default function EntitiesListPage() {
               </div>
             )}
           </Glass>
-
-          <QuickRead variant="bar" title="قراءة سريعة للقائمة" readings={readings} />
 
           {result.total === 0 ? (
             <Glass>
