@@ -10,6 +10,7 @@ import ReportsPage from '@/features/reports/ReportsPage'
 import ProcessReport from '@/features/reports/ProcessReport'
 import ReportView from '@/features/reports/ReportView'
 import LiveReport from '@/features/reports/LiveReport'
+import BudgetPage from '@/features/budget/BudgetPage'
 import { ModulePlaceholder } from '@/features/shared/ModulePlaceholder'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
@@ -46,20 +47,8 @@ export default function App() {
         <Route path={`${ROUTES.entities}/:id`} element={<EntityPage />} />
         <Route path={`${ROUTES.entities}/:id/:tab`} element={<EntityPage />} />
 
-        <Route
-          path={ROUTES.budget}
-          element={
-            <ModulePlaceholder
-              title="الميزانية"
-              scope="شجرة السنة ← المسار ← المجال ← الهدف بخمس قيم لكل بند: مخصص · محجوز · ملتزم به · مصروف · متبقٍ. ومعها المناقلات والتعزيزات."
-              facts={[
-                { k: 'ميزانية 2026', v: '73.7 م' },
-                { k: 'مسار · مجال · هدف', v: '15 · 55 · 97' },
-                { k: 'مصادر التمويل', v: 'المؤسسة والوقف' },
-              ]}
-            />
-          }
-        />
+        <Route path={ROUTES.budget} element={<BudgetPage />} />
+
         <Route path={`${ROUTES.budget}/:year`} element={<Navigate to={ROUTES.budget} replace />} />
 
         <Route

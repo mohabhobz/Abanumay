@@ -2329,9 +2329,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --link:#A8D93C;
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
   --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
-  --warn-ink:#E8B045; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FF9C85;
+  --warn-ink:#FFD98A; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FFB4A0;
   --ret-ink:#8CC2F0; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
-  --ok-ink:#5FE0A4; --brand-ink:#E2F4B4;
+  --ok-ink:#8DEEC4; --brand-ink:#E2F4B4;
   --retC:120,180,235; --limeC:168,217,60;
   --t3-g:#B3BEBC; --t2-g:#CCD6D4;
   --g-card: linear-gradient(158deg, rgba(255,255,255,.075), rgba(255,255,255,.03));
@@ -2378,9 +2378,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --link:#A8D93C;
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
   --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
-  --warn-ink:#E8B045; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FF9C85;
+  --warn-ink:#FFD98A; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FFB4A0;
   --ret-ink:#8CC2F0; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
-  --ok-ink:#5FE0A4; --brand-ink:#E2F4B4;
+  --ok-ink:#8DEEC4; --brand-ink:#E2F4B4;
   --retC:120,180,235; --limeC:168,217,60;
   --t3-g:#A9C7C3; --t2-g:#C6DEDA;
   --g-card: linear-gradient(158deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
@@ -3125,7 +3125,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* وسم «صورة ممسوحة» فوق الثامبنيل */
 .dthumb-scan{position:absolute;bottom:4px;inset-inline-start:3px;
   font-size:.5rem;line-height:1;padding:.12rem .22rem;border-radius:3px;
-  color:var(--warn-ink);background:rgba(var(--warnC),.9)}
+  /* الخلفية هنا كهرمانية مصمتة في كل الثيمات، فالحبر ثابت معاها:
+     `--warn-ink` بيفتح في الثيمات الغامقة، وفوق الكهرماني ده بيقلّ. */
+  color:#2A1C00;background:rgba(var(--warnC),.9)}
 .dthumb-lg .dthumb-scan{bottom:12px;inset-inline-start:12px;font-size:.72rem;padding:.25rem .5rem;border-radius:6px}
 /* ── الصف: ثامبنيل + اسم + تنزيل ── */
 .dfile{display:inline-flex;align-items:center;gap:.35rem;max-width:100%;min-width:0}
@@ -3539,4 +3541,93 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .catc-f,
 .catc-n>.sub,
 .lrq-w,
+.bgsum-c>.sub,
+.bgbar-k,
+.bgchk-n,
+.bglist-lv,
+.bglist-v,
+.wsub,
 .ftool-f>span.sub{color:var(--t1);opacity:.78}
+
+/* ═══════════════════════════════════════════════════════════
+   الميزانية — شجرة التخصيص وفحص التوازن.
+   ═══════════════════════════════════════════════════════════ */
+
+.bgsum{display:flex;flex-direction:column;gap:.7rem}
+.bgsum-g{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.bgsum-c{display:flex;flex-direction:column;gap:.2rem;padding-inline-start:.9rem;
+  box-shadow:inset 1px 0 0 rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+.bgsum-c:first-child{padding-inline-start:0;box-shadow:none}
+.bgsum-c>.sub{font-size:.73rem}
+.bgsum-c>b{font-family:var(--fd);font-weight:700;font-size:1.12rem;color:var(--t1)}
+.bgsum-c>b.bad{color:var(--no-ink)}
+
+/* شريط بثلاث طبقات: المنصرف جوّه المعتمد جوّه المخصص.
+   طبقات لا أشرطة متجاورة، عشان ما نجمعش نفس الريال مرتين. */
+.bgbar{position:relative;height:11px;border-radius:99px;overflow:hidden;
+  background:rgba(var(--edgeC),.10)}
+.bgbar>i{position:absolute;inset-block:0;inset-inline-start:0;border-radius:99px;display:block}
+.bgbar>i.commit{background:rgba(var(--retC2),.34)}
+.bgbar>i.spend{background:var(--solid)}
+.bgbar-k{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .9rem;font-size:.73rem}
+.bgbar-k>span{display:inline-flex;align-items:center;gap:.35rem}
+.bgbar-k .dot{width:9px;height:9px;border-radius:3px;flex:none}
+.bgbar-k .dot.spend{background:var(--solid)}
+.bgbar-k .dot.commit{background:rgba(var(--retC2),.34)}
+
+/* ── فحص التوازن ── */
+.bgchk{display:flex;flex-direction:column;gap:.5rem;align-items:flex-start}
+.bgchk-l{margin:0;font-size:.93rem;line-height:1.9;color:var(--t1)}
+.bgchk-l b{font-family:var(--fd);font-weight:600}
+.bgchk-l b.bad{color:var(--no-ink)}
+.bgchk-n{margin:0;font-size:.79rem;line-height:1.9;max-width:52rem}
+.bgchk-t{align-self:flex-start}
+
+.bglist{list-style:none;margin:.2rem 0 0;padding:0;display:flex;flex-direction:column;gap:2px;width:100%}
+.bglist-i{display:flex;align-items:center;gap:.7rem;width:100%;padding:.5rem .6rem;
+  border-radius:var(--r1);text-align:start;font-size:.79rem;color:var(--t1)}
+.bglist-i:hover{background:rgba(var(--edgeC),.06)}
+.bglist-i>svg{color:var(--t3);flex:none;margin-inline-start:auto}
+.bglist-lv{flex:none;width:3.6rem;font-size:.7rem}
+.bglist-t{flex:1;min-width:0;font-family:var(--fd);font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bglist-v{flex:none;font-size:.73rem;white-space:nowrap}
+.bglist-g{flex:none;white-space:nowrap}
+
+.bgok{display:flex;align-items:center;gap:.6rem;font-size:.88rem;color:var(--t1)}
+.bgok>svg{color:var(--ok);flex:none}
+
+.bgclosed{display:flex;align-items:flex-start;gap:.8rem}
+.bgclosed>svg{color:var(--t3);flex:none;margin-top:.15rem}
+.bgclosed b{font-family:var(--fd);font-weight:600;color:var(--t1)}
+.bgclosed p{margin:.25rem 0 0;font-size:.82rem;line-height:1.9}
+
+.bgleaf{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.bgleaf b{font-family:var(--fd);font-weight:600;font-size:.95rem;color:var(--t1)}
+.bgleaf p{margin:.2rem 0 0;font-size:.79rem}
+.bgleaf-v{display:flex;flex-wrap:wrap;gap:.3rem 1.2rem}
+.bgleaf-v>span{display:inline-flex;align-items:baseline;gap:.4rem;font-family:var(--fd);
+  font-weight:600;color:var(--t1)}
+.bgleaf-v .sub{font-family:var(--ft);font-weight:400;font-size:.73rem}
+
+/* نسبة الاستهلاك جوّه الصف — شريط ورقم */
+.bgpct{display:flex;align-items:center;gap:.5rem}
+.bgpct-t{flex:1;min-width:48px;height:7px;border-radius:99px;overflow:hidden;
+  background:rgba(var(--edgeC),.10)}
+.bgpct-t>i{display:block;height:100%;border-radius:99px}
+.bgpct-t>i.ok{background:var(--solid)}
+.bgpct-t>i.warn{background:var(--warn)}
+.bgpct-t>i.no{background:var(--no)}
+.bgpct>b{flex:none;font-family:var(--fd);font-weight:600;font-size:.76rem;color:var(--t1)}
+
+/* شارة الهوية في الثيمات الغامقة.
+   `.tag` الأساسية أرضيتها طبقة بيضا شفافة، وفي الغامق الطبقة دي
+   بتفضل أفتح من الأرضية — فالليمون الشاحب (`--brand-ink`) بينزل
+   على أرضية ليمون فاتحة ويطلع ٤.١. تخفيف الغسلة بيرجّع أرضية
+   الشارة غامقة، فالحبر الفاتح يتقري. باقي التونات اتظبطت من
+   حبرها؛ دي الوحيدة اللي لازم تتظبط من أرضيتها لأن الليمون
+   بطبيعته فاتح. */
+:root[data-theme="dark"] .tag.brand,
+:root[data-theme="green"] .tag.brand{
+  background-color:rgba(var(--edgeC),.10);
+  background-image:linear-gradient(rgba(var(--limeC),.12),rgba(var(--limeC),.12))}
