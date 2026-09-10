@@ -63,7 +63,7 @@ export function SpendGauge({
       <span className="chq-t">{title}</span>
       <span className="chq-v"><b className="num">{pct}%</b></span>
       <span className="chq-m" aria-hidden="true"><i style={{ width: `${Math.min(100, pct)}%` }} /></span>
-      <span className="chq-s sub">
+      <span className="chq-s mut">
         <Money sm>{value}</Money> من <Money sm>{of}</Money>
         {note ? ` · ${note}` : ''}
       </span>
@@ -114,7 +114,7 @@ export function FieldSpend({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
         ))}
       </div>
 
-      <p className="sub chb-n">
+      <p className="mut chb-n">
         النظام العامل بيرسم ده أعمدةً رأسيةً على <Num>39</Num> هدفًا، فالأسماء
         بتطلع مقلوبة ومتداخلة. الأعمدة الأفقية بتخلّي الاسم يتقري والطول هو المقياس.
       </p>
@@ -158,9 +158,11 @@ export function YearSpend() {
         })}
       </div>
 
-      <p className="sub chb-n">
-        عمود المصروف اللي بيعدّي عمود المخصص معناه صرف فوق السقف — حصل في
-        <span className="num"> 2024</span> و<span className="num">2025</span>.
+      <p className="mut chb-n">
+        {/* المسافة **برّه** الجزيرة: الفراغ جوّه `unicode-bidi:isolate`
+            بيتحطّ على الجنب اللاتيني، فبيبان «في2024». */}
+        عمود المصروف اللي بيعدّي عمود المخصص معناه صرف فوق السقف — حصل في{' '}
+        <span className="num">2024</span> و<span className="num">2025</span>.
       </p>
     </Glass>
   )
@@ -207,7 +209,7 @@ export function PlanCoverage({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
         ))}
       </div>
 
-      <p className="sub chb-n">
+      <p className="mut chb-n">
         <b><Money sm>{total - inPlan}</Money></b> من <Money sm>{total}</Money> برّه
         حساب الإنجاز: {out.map((n) => n.label).join(' و')} خطة إنجازهم <span className="num">0</span>{' '}
         وباقي المجالات <span className="num">100</span>. مفيش إشارة لده في الشاشة.

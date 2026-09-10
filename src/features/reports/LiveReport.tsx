@@ -75,7 +75,7 @@ export default function LiveReport() {
 
           <Glass className="lrq">
             <p className="lrq-q">{spec.question !== '—' ? spec.question : spec.what}</p>
-            {spec.question !== '—' && <p className="sub lrq-w">{spec.what}</p>}
+            {spec.question !== '—' && <p className="mut lrq-w">{spec.what}</p>}
           </Glass>
 
           {spec.finding && (
@@ -132,7 +132,7 @@ function Filters({ spec }: { spec: LiveSpec }) {
         ))}
       </div>
       {heavy > 0 && (
-        <p className="sub rpsec-n">
+        <p className="mut rpsec-n">
           القوائم الطويلة معلّمة: في النظام العامل هي <b>منسدلة بلا بحث</b>، فاللي
           بيدوّر على هدف بعينه بيقلّب 97 سطرًا بالإيد. عندنا نفس الفلتر ببحث داخله.
         </p>
@@ -218,7 +218,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
       />
 
       {only.length > 0 && (
-        <p className="sub rpsec-n">
+        <p className="mut rpsec-n">
           الأعمدة المعلّمة <b>ما فيش زيها في أي شاشة تانية</b>:{' '}
           {only.map((c) => c.label).join(' · ')}. يعني الرقم ده موجود في مكان
           واحد بس في النظام كله.
@@ -245,7 +245,10 @@ function Rows({ spec }: { spec: LiveSpec }) {
                 <tr>
                   {spec.cols.map((c) => (
                     <th key={c.key} className={c.kind === 'num' || c.kind === 'money' || c.kind === 'pct' ? 'n' : undefined}>
-                      {c.label}
+                      {/* نفس غلاف `DataTable`: من غيره عنوان العمود
+                          الطويل بيتقصّ بلا نقط — «مدة التنفيذ الفعلي»
+                          كانت بتتقطع في نص الكلمة. */}
+                      <span className="th-t">{c.label}</span>
                       {c.only && <span className="lronly" title="عمود لا مثيل له في شاشة أخرى">•</span>}
                     </th>
                   ))}
@@ -409,7 +412,7 @@ function BudgetTree() {
             </div>
           </Glass>
 
-          <p className="sub rpsec-n">
+          <p className="mut rpsec-n">
             <b>المتبقي = الميزانية − المعتمد.</b> الصف اللي بالسالب معناه اعتماد فوق
             السقف: حصل فعلًا في <span className="num">2024</span> و
             <span className="num">2025</span>. والنظام العامل بيعرض الرقم ده في خلية

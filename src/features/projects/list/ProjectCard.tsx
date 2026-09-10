@@ -54,7 +54,7 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
         </span>
       </div>
 
-      <div className="pc-goal sub trim1" title={row.goal}>{row.track} · {row.goal}</div>
+      <div className="pc-goal mut trim1" title={row.goal}>{row.track} · {row.goal}</div>
 
       {/* القسم الإجرائي الفعلي + مدة المكوث فيه */}
       <div className="pc-stage well">
@@ -79,14 +79,14 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
         )}
         {live && pressure > 1 && (
           <div className="pc-over">
-            <span className="tag no mini">متأخر</span>
+            <span className="tag no">متأخر</span>
             <span className="sub">
               <span className="num">{days(row.hoursInStage - row.stageLimit)}</span> يومًا فوق الحدّ
             </span>
           </div>
         )}
         {!live && row.declineReason && (
-          <div className="pc-reason sub trim1" title={row.declineReason}>{row.declineReason}</div>
+          <div className="pc-reason mut trim1" title={row.declineReason}>{row.declineReason}</div>
         )}
       </div>
 

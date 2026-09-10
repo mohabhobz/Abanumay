@@ -45,7 +45,10 @@ const ROUTES = [
  * في الستايل بيتغيّر هنا كمان — الجرد جزء من النظام لا أداة برّه.
  */
 const ROLES = [
-  { key: 'زرار أساسي', sel: '.btn', props: ['height', 'borderRadius', 'fontSize', 'paddingBlock', 'paddingInline'] },
+  /* مقاسان للزرار قرار تصميم لا درِفت — بس كل مقاس لازم يكون
+     قيمة واحدة. فالدور بينقسم بدل ما الأداة تعدّهم اختلافًا. */
+  { key: 'زرار', sel: '.btn:not(.btn-sm)', props: ['height', 'borderRadius', 'fontSize', 'paddingBlock', 'paddingInline'] },
+  { key: 'زرار صغير', sel: '.btn.btn-sm', props: ['height', 'borderRadius', 'fontSize', 'paddingBlock', 'paddingInline'] },
   { key: 'تاب', sel: '.tabs .tab', props: ['height', 'borderRadius', 'fontSize', 'paddingInline'] },
   { key: 'شريحة أدوات', sel: '.fchip', props: ['height', 'borderRadius', 'fontSize', 'paddingInline'] },
   { key: 'شريحة حالة', sel: '.fseg', props: ['height', 'borderRadius', 'fontSize', 'paddingInline'] },
@@ -55,8 +58,11 @@ const ROLES = [
   { key: 'خيار في قائمة', sel: '.fopt', props: ['borderRadius', 'fontSize', 'paddingBlock', 'paddingInline'] },
   { key: 'قائمة منسدلة', sel: '.fmenu', props: ['borderRadius', 'padding'] },
   { key: 'كارت زجاج', sel: '.glass', props: ['borderRadius'] },
-  { key: 'ترويسة جدول', sel: '.tbl thead th', props: ['height', 'fontSize', 'paddingInline'] },
-  { key: 'خلية جدول', sel: '.tbl tbody td', props: ['height', 'fontSize', 'paddingInline'] },
+  /* أعمدة التحديد ومنتقي الأعمدة عرضها ثابت ودورها مختلف —
+     تستثنى. وارتفاع الخلية بيتحدّد بالمحتوى (سطر ولا سطرين)، فاللي
+     يتقاس هو الحشو اللي الستايل بيتحكّم فيه فعلًا. */
+  { key: 'ترويسة جدول', sel: '.tbl thead th:not(.tchk):not(.tcolx)', props: ['height', 'fontSize', 'paddingInline'] },
+  { key: 'خلية جدول', sel: '.tbl tbody td:not(.tchk):not(.tcolx)', props: ['fontSize', 'paddingBlock', 'paddingInline'] },
   { key: 'عنوان صفحة', sel: '.ptitle', props: ['fontSize', 'fontWeight'] },
   { key: 'عنوان سكشن', sel: '.hd-t, .head h2, .head-t', props: ['fontSize', 'fontWeight'] },
   { key: 'نصّ مساعد', sel: '.sub', props: ['fontSize'] },
@@ -69,6 +75,7 @@ const ROLES = [
 const SCALE = {
   radius: [0, 10, 15, 22, 28, 999],
   control: [28, 34, 42],
+  label: [18],
   iconBox: [24, 30, 38, 44],
   space: [0, 2, 4, 6, 8, 12, 16, 22, 32, 48],
   font: [11.2, 12.16, 13.12, 14.4, 16.8, 24, 33.6], // rem→px عند 16px
@@ -189,6 +196,10 @@ for (const theme of themes) {
       for (const bar of document.querySelectorAll('.vsteps,.steps,.agr-steps,.fsegs,.seg')) {
         const kids = [...bar.children].filter((k) => k.offsetParent !== null)
         if (kids.length < 2) continue
+        /* فيه `gap` ⇒ دي حبّات منفصلة لا شريط مجزّأ، والتدوير الكامل
+           صح فيها. الفحص ده كان بيدّي إنذارًا كاذبًا على `.fsegs`
+           في الجرد رقم ١ واتشال بالإيد؛ دلوقتي الأداة بتعرف الفرق. */
+        if ((parseFloat(getComputedStyle(bar).gap) || 0) > 2) continue
         kids.forEach((k, i) => {
           const cs = getComputedStyle(k)
           const r = [cs.borderTopRightRadius, cs.borderBottomRightRadius,
@@ -308,7 +319,9 @@ console.log(`\n═══ خارج السلّم المعلَن ═══`)
       console.log(`  ${roleKey} · ${label}: ${[...new Set(off)].join(' · ')}px خارج [${list.join(' ')}]`)
     }
   }
-  for (const r of ['زرار أساسي', 'تاب', 'شريحة أدوات', 'شريحة حالة', 'وسم', 'بحث']) check(r, 'height', SCALE.control, 'الارتفاع')
+  for (const r of ['زرار', 'زرار صغير', 'تاب', 'شريحة أدوات', 'شريحة حالة', 'بحث']) check(r, 'height', SCALE.control, 'الارتفاع')
+  /* الوسم تسمية غير تفاعلية — سلّمه لوحده، مالوش دعوة بالهدف اللمسي */
+  check('وسم', 'height', SCALE.label, 'الارتفاع')
   check('حقل اختيار', 'height', SCALE.control, 'الارتفاع')
   for (const r of Object.keys(bag)) check(r, 'borderRadius', SCALE.radius, 'نصف القطر')
 }

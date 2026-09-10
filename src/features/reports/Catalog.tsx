@@ -53,7 +53,7 @@ export function Catalog() {
           <Stat n={catalogTotals.charts} k="رسمًا" />
           <Stat n={catalogTotals.rows} k="صفًّا في الشاشات" big />
         </div>
-        <p className="sub rpsec-n" style={{ marginTop: '.7rem' }}>
+        <p className="mut rpsec-n" style={{ marginTop: '.7rem' }}>
           كل شاشة تقرير في النظام العامل موصوفة هنا بالكامل: أعمدتها بأسمائها،
           وفلاترها بعدد خياراتها، ورسومها، ومستويات التعمّق لو فيها. اضغط أي
           شاشة تشوف جدولها بأعمدته الحقيقية — <b>القيم في الصفوف تجريبية</b>،
@@ -111,7 +111,7 @@ function Card({ s }: { s: LiveSpec }) {
       <code className="mono catc-p">control/{s.path}</code>
 
       <p className="catc-q">{s.question}</p>
-      <p className="catc-w sub">{s.what}</p>
+      <p className="catc-w mut">{s.what}</p>
 
       {/* العدّادات هي اللي بتقول «الشاشة دي فيها إيه» في نظرة */}
       <span className="catc-n">

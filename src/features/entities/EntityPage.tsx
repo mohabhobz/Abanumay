@@ -46,7 +46,7 @@ export default function EntityPage() {
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, {
     varName: '--ai-fill',
-    reserveSelector: '.decdock .chrome, .askfab',
+    reserveSelector: '.decdock, .askfab',
     min: 240,
   })
 

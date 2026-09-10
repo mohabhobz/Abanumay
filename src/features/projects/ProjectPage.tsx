@@ -119,7 +119,7 @@ export default function ProjectPage() {
   const screen = useRef<HTMLDivElement>(null)
   /* عمود التحليلات بيملا الباقي من مكانه لحدّ فوق شريط القرار */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock .chrome, .askfab', min: 240 })
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
   const [atEnd, setAtEnd] = useState(false)
 
   useEffect(() => {

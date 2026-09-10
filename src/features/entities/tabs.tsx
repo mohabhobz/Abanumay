@@ -54,7 +54,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
               v: (
                 <>
                   <Mono>{readDate(d.licenseEndsAt)}</Mono>
-                  {d.licenseExpired && <span className="tag no mini">منتهٍ</span>}
+                  {d.licenseExpired && <span className="tag no">منتهٍ</span>}
                 </>
               ),
             },
@@ -63,7 +63,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
               v: (
                 <>
                   <Mono>{readDate(d.boardMandateEndsAt)}</Mono>
-                  {d.boardExpired && <span className="tag no mini">منتهٍ</span>}
+                  {d.boardExpired && <span className="tag no">منتهٍ</span>}
                 </>
               ),
             },
@@ -345,7 +345,7 @@ export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
                     {' · '}
                     <span className="num">{days(p.hoursInStage)}</span>
                     {' يومًا في القسم'}
-                    {over && <span className="tag no mini">متأخر</span>}
+                    {over && <span className="tag no">متأخر</span>}
                   </>
                 )}
                 {p.declineReason && <> · {p.declineReason}</>}

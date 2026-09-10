@@ -154,8 +154,8 @@ export function Builder() {
                 {mea.money ? <Money>{r.v}</Money> : nf.format(r.v)}
                 {mea.unit && <small className="sub"> {mea.unit}</small>}
               </span>
-              <span className="rbar-s sub num">{total ? pct(Math.round((r.v / total) * 100)) : '—'}</span>
-              <span className="rbar-n sub">
+              <span className="rbar-s mut num">{total ? pct(Math.round((r.v / total) * 100)) : '—'}</span>
+              <span className="rbar-n mut">
                 <span className="num">{r.n}</span> مشروعًا
               </span>
             </div>

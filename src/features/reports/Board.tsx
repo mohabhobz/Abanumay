@@ -37,7 +37,7 @@ export function Board({
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, {
     varName: '--ai-fill',
-    reserveSelector: '.decdock .chrome, .askfab',
+    reserveSelector: '.decdock, .askfab',
     capSelector: '.rbg',
     min: 240,
   })
@@ -121,7 +121,7 @@ function Card({ c }: { c: ReportCard }) {
         </span>
       )}
 
-      <span className="rbc-s sub">{c.src}</span>
+      <span className="rbc-s mut">{c.src}</span>
     </Link>
   )
 }

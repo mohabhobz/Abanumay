@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { Glass, Head, Icon, icons, Money, Num, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
+import { Segments } from '@/components/ui/filters'
 import { ExportMenu } from '@/components/export'
 import { type Sheet } from '@/lib/export'
 import {
@@ -187,7 +188,7 @@ function Summary({ cycle, goals }: { cycle: ReturnType<typeof cycleById>; goals:
         <i className="commit" style={{ width: `${Math.min(100, commitPct)}%` }} />
         <i className="spend" style={{ width: `${Math.min(100, usePct)}%` }} />
       </div>
-      <div className="bgbar-k sub">
+      <div className="bgbar-k mut">
         <span><b className="dot spend" /> منصرف <span className="num">{usePct}%</span></span>
         <span><b className="dot commit" /> معتمد <span className="num">{commitPct}%</span></span>
         {goals > 0 && <span><span className="num">{goals}</span> هدفًا في الشجرة</span>}
@@ -252,12 +253,12 @@ function Balance({
           <b className="bad"><Num>{gaps.length}</Num></b> بندًا من <Num>{parents}</Num>،
           بفارق تراكمي <b className="bad"><Money sm>{total}</Money></b>.
         </p>
-        <p className="sub bgchk-n">
+        <p className="mut bgchk-n">
           في النظام العامل مخصص الأب في شاشة ومجموع أبنائه في الشاشة اللي بعدها،
           فالرقمان ما بيتقابلوش. هنا بيتحسبوا على الشجرة كلها مرة واحدة.
         </p>
 
-        <p className="sub bgchk-h">اضغط أي بند تنزل عليه في الشجرة تحت.</p>
+        <p className="mut bgchk-h">اضغط أي بند تنزل عليه في الشجرة تحت.</p>
 
         <ul className="bglist">
             {shown.map((x) => (
@@ -265,10 +266,10 @@ function Balance({
                 <button className="bglist-i" onClick={() => onGo(x.path)}>
                   <span className="bglist-lv sub">{PLAN_LEVELS[x.level]}</span>
                   <span className="bglist-t">{x.label || root.label}</span>
-                  <span className="bglist-v sub">
+                  <span className="bglist-v mut">
                     مخصص <Money sm>{x.alloc}</Money>
                   </span>
-                  <span className="bglist-v sub">
+                  <span className="bglist-v mut">
                     أبناؤه <Money sm>{x.childSum}</Money>
                   </span>
                   {/* نفس شارات النظام لا شارة جديدة: التونات متعايرة
@@ -390,23 +391,15 @@ function Tree({
         <>
           <div className="ftool-r">
             <div className="ftool-f">
-              {/* مبدّل السؤال: «خصّصنا كام» ولا «استهلكنا كام» */}
-              <div className="fsegs" role="tablist">
-                <button
-                  role="tab" aria-selected={view === 'alloc'}
-                  className={`fseg${view === 'alloc' ? ' on' : ''}`}
-                  onClick={() => onView('alloc')}
-                >
-                  <span>التخصيص</span>
-                </button>
-                <button
-                  role="tab" aria-selected={view === 'use'}
-                  className={`fseg${view === 'use' ? ' on' : ''}`}
-                  onClick={() => onView('use')}
-                >
-                  <span>الاستهلاك</span>
-                </button>
-              </div>
+              {/* مبدّل السؤال: «خصّصنا كام» ولا «استهلكنا كام».
+                  كان ماركب مكتوبًا بالإيد هنا — نسخة تانية من نفس
+                  الكمبوننت بارتفاع ٣٠ بدل ٣١، وما كانتش هتاخد أي
+                  تحسين يحصل في الأصل. بقى `Segments` زي كل مكان. */}
+              <Segments
+                items={[{ key: 'alloc', label: 'التخصيص' }, { key: 'use', label: 'الاستهلاك' }]}
+                active={view}
+                onChange={(k) => onView((k ?? 'alloc') as typeof view)}
+              />
               <span className="sub"><span className="num">{rows.length}</span> بندًا</span>
             </div>
             <div className="ftool-a"><ExportMenu sheet={sheet} note={sheet.title} /></div>
@@ -495,7 +488,7 @@ function AllocTable({
         <tr>
           <td>مجموع الأبناء</td>
           <td className="n num"><Money sm>{total}</Money></td>
-          <td className="n num sub">مخصص {parent?.label ?? '—'}</td>
+          <td className="n num mut">مخصص {parent?.label ?? '—'}</td>
           <td className="n num"><Money sm>{parent?.alloc ?? 0}</Money></td>
           <td className="n" colSpan={2}>
             {parent && (gap === 0

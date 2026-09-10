@@ -219,7 +219,7 @@ export function Stat({
       )}
       {note && (
         <div
-          className="sub trim1"
+          className="mut trim1"
           style={{ marginTop: bar ? '.4rem' : '.6rem' }}
           title={typeof note === 'string' ? note : undefined}
         >

@@ -15,3 +15,4 @@ dist-ssr
 # حقيقية إضافية (جهات، مستفيدين، آيبان) تتحط في ملف .local.ts
 # وما تتكوميتش.
 src/data/mock/*.local.ts
+.shots/

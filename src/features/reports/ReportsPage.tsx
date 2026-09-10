@@ -105,7 +105,7 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <p className="sub rpcov-n">
+            <p className="mut rpcov-n">
               الوثيقة لم تحدّد مدة مستهدفة واحدة لأي مستوى في الإجراءات الـ
               <span className="num">{PROCESSES.length}</span>، رغم أن{' '}
               <span className="num">{coverage.noTarget}</span> مؤشرات تقيس الالتزام
@@ -183,7 +183,7 @@ export default function ReportsPage() {
               title="حزم التقارير المخطَّطة"
               meta={`${PACKS.filter((p) => p.state === 'ready').length} مبنيّة · ${PACKS.filter((p) => p.state === 'next').length} في الخطة`}
             />
-            <p className="sub rpsec-n">
+            <p className="mut rpsec-n">
               مش شاشات موجودة — دي <b>خطة الموديول</b>. بدل ما نبني شاشة لكل تقرير
               زي النظام العامل، التقارير متجمّعة في حزم، كل حزمة بتجاوب على سؤال
               واحد وليها قارئ معروف. الكارت بيقول السؤال، واللي جوّه الحزمة، ومين
@@ -204,13 +204,13 @@ export default function ReportsPage() {
                       <Tag tone="mute">التالي</Tag>
                     )}
                   </span>
-                  <span className="rpk-a sub">{k.answers}</span>
+                  <span className="rpk-a mut">{k.answers}</span>
                   <ul className="rpk-l">
                     {k.contains.map((c) => (
                       <li key={c}>{c}</li>
                     ))}
                   </ul>
-                  <span className="rpk-r sub">يقرأها: {k.readers.join(' · ')}</span>
+                  <span className="rpk-r mut">يقرأها: {k.readers.join(' · ')}</span>
                 </div>
               ))}
             </div>
@@ -223,7 +223,7 @@ export default function ReportsPage() {
               title="تقارير النظام العامل ومكانها هنا"
               meta={`${LIVE_REPORTS.length} شاشة`}
             />
-            <p className="sub rpsec-n">
+            <p className="mut rpsec-n">
               كل شاشة تقرير في <span className="mono">sys.abanumay.sa</span> ورايحة
               فين في الخطة. السطر ده رد على سؤال «طيب تقاريري راحت فين؟»: مفيش
               تقرير اتشال — التلاتاشر شاشة اتلمّوا في ست حزم، لأن اللي كان بيفرّقهم

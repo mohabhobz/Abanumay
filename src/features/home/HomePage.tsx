@@ -383,7 +383,7 @@ export default function HomePage() {
                         <div className="qrow-n">{p.name}</div>
                         <div className="sub qrow-f">
                           {p.entityName} · <span className="num">{days(p.hoursInStage)}</span> يومًا في القسم
-                          {stagePressure(p) > 1 && <span className="tag no mini">متأخر</span>}
+                          {stagePressure(p) > 1 && <span className="tag no">متأخر</span>}
                         </div>
                       </Link>
                     ))}
@@ -406,7 +406,7 @@ export default function HomePage() {
                           <Mono>{projectCode(p.id, p.year)}</Mono>
                           <span className="sub">{p.stage}</span>
                           <span className="pc-sp" />
-                          <span className="tag no mini">
+                          <span className="tag no">
                             <span className="num">{days(p.hoursInStage - p.stageLimit)}</span> يومًا فوق الحدّ
                           </span>
                         </div>
