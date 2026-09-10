@@ -15,7 +15,7 @@ export const ROUTES = {
   projectTab: (id: string, tab: string) => `/projects/${id}/${tab}`,
 
   entities: '/entities',
-  entity: (id: string) => `/entities/${id}`,
+  entity: (id: string, tab?: string) => `/entities/${id}${tab && tab !== 'data' ? `/${tab}` : ''}`,
 
   budget: '/budget',
   budgetYear: (year: string | number) => `/budget/${year}`,
@@ -58,6 +58,24 @@ export const PROJECT_TABS = [
 ] as const
 
 export type ProjectTabSlug = (typeof PROJECT_TABS)[number]['slug']
+
+/**
+ * تبويبات صفحة الجهة — نفس منطق تبويبات المشروع.
+ *
+ * ملف الجهة في النظام العامل **٣٥ حقلًا** موزّعة على خمس مجموعات،
+ * ومعاها الحسابات البنكية وسجل القرارات. عرضها في عمود واحد بيخلّي
+ * الصفحة تمرير طويل، والقارئ بيدوّر على الحقل بدل ما يقراه. */
+export const ENTITY_TABS = [
+  { slug: 'data', label: 'بيانات الجهة' },
+  { slug: 'docs', label: 'المستندات' },
+  { slug: 'banks', label: 'الحسابات البنكية' },
+  { slug: 'projects', label: 'مشاريعها' },
+  { slug: 'log', label: 'سجل الجهة' },
+] as const
+
+export type EntityTabSlug = (typeof ENTITY_TABS)[number]['slug']
+
+export const DEFAULT_ENTITY_TAB: EntityTabSlug = 'data'
 
 export const DEFAULT_PROJECT_TAB: ProjectTabSlug = 'data'
 

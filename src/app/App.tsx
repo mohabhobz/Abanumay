@@ -42,6 +42,7 @@ export default function App() {
 
         <Route path={ROUTES.entities} element={<EntitiesListPage />} />
         <Route path={`${ROUTES.entities}/:id`} element={<EntityPage />} />
+        <Route path={`${ROUTES.entities}/:id/:tab`} element={<EntityPage />} />
 
         <Route
           path={ROUTES.budget}

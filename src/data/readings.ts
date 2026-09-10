@@ -11,6 +11,7 @@
  */
 import type { Reading, ReadingAction } from '@/components/assistant/reading'
 import type { EntityRow, Insight, ProjectRow } from '@/types/domain'
+import type { EntityDetail } from './mock/entityDetail'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
 import type { Journey } from './journey'
 import { nf, units, pct as pctText } from '@/lib/format'
@@ -355,7 +356,11 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
  * الجهة» بيعرضوها، فمستحيل يتعارضوا معاها — القراءة بتفسّر الرقم اللي
  * قدام المستخدم، ما بتجيبش رقمًا تانيًا من مكان تاني.
  */
-export function readEntity(entity: EntityRow, projects: ProjectRow[]): Reading[] {
+export function readEntity(
+  entity: EntityRow,
+  projects: ProjectRow[],
+  detail?: EntityDetail,
+): Reading[] {
   const out: Reading[] = []
   const missing = ENTITY_DOCS_TOTAL - entity.docsUploaded
 
@@ -376,6 +381,53 @@ export function readEntity(entity: EntityRow, projects: ProjectRow[]): Reading[]
       bold: [entity.activation],
       danger: stopped ? [entity.activation] : undefined,
       src: 'حقل التفعيل في ملف الجهة',
+    })
+  }
+
+  /* الترخيص المنتهي مانع أقوى من الملف الناقص: الملف بيتستكمل،
+     والترخيص لازم يتجدّد من جهة تانية خالص. وهو بيعدّي بالنظرة لأن
+     المستند **مرفوع** — العدّاد بيقول ٨/٨ والصلاحية خلصت. */
+  if (detail?.licenseExpired) {
+    out.push({
+      id: 'license',
+      kind: 'flag',
+      label: 'الترخيص منتهٍ',
+      metric: { value: detail.licenseEndsAt, unit: 'انتهى الترخيص في' },
+      text:
+        'الاتفاقية ما تتوقّعش بترخيص منتهٍ، والملف بيعدّي في العدّاد لأن المستند مرفوع فعلًا — ' +
+        'التجديد من الجهة المرخِّصة لا منّا.',
+      danger: [detail.licenseEndsAt],
+      src: 'ملف الجهة · تاريخ نهاية الترخيص',
+      actions: [{ label: 'تذكير الجهة', kind: 'btn-1' }],
+    })
+  }
+
+  const expiredDocs = detail?.docs.filter((d) => d.expired).length ?? 0
+  if (expiredDocs > 0) {
+    const n = units.doc(expiredDocs, true)
+    out.push({
+      id: 'docs-expired',
+      kind: 'flag',
+      label: 'مستندات منتهية',
+      metric: { value: String(expiredDocs), unit: 'مرفوع وانتهت صلاحيته' },
+      text: `${n} مرفوع في الملف بس صلاحيته خلصت، فبيتحسب مكتملًا وهو مش صالح.`,
+      bold: [n],
+      danger: [n],
+      src: 'ملف المستندات · تواريخ الصلاحية',
+    })
+  }
+
+  const deadBank = detail?.banks.every((b) => b.status !== 'مفعل')
+  if (detail && detail.banks.length > 0 && deadBank) {
+    out.push({
+      id: 'bank',
+      kind: 'flag',
+      label: 'لا حساب مفعّل',
+      text:
+        'مفيش حساب بنكي مفعّل للجهة، فالصرف موقوف حتى لو المشروع اتعتمد — ' +
+        `آخر سبب مسجَّل: «${detail.banks[0].reason ?? 'بانتظار التفعيل'}».`,
+      bold: ['الصرف موقوف'],
+      src: 'الحسابات البنكية',
     })
   }
 

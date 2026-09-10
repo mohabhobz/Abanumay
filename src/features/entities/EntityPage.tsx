@@ -1,41 +1,45 @@
-import { useMemo, useRef, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
-import {
-  Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Segments, Tag,
-} from '@/components/ui'
+import { useMemo, useRef } from 'react'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { initial } from '@/lib/format'
-import { ENTITY_DOCS_TOTAL, query, stagePressure } from '@/data/repository'
+import { query } from '@/data/repository'
 import { entityById } from '@/data/mock/entities'
-import { ENTITY_DOCS, STATUS_GROUPS } from '@/data/mock/taxonomy'
-import { ROUTES } from '@/app/routes'
-import { activationTone, days, governanceTone, groupTone } from '@/lib/tone'
+import { entityDetail } from '@/data/mock/entityDetail'
+import {
+  DEFAULT_ENTITY_TAB, ENTITY_TABS, ROUTES, type EntityTabSlug,
+} from '@/app/routes'
+import { activationTone, governanceTone } from '@/lib/tone'
 import { AnalysisCard } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { EntityTotals } from './EntityTotals'
 import { readEntity } from '@/data/readings'
+import {
+  EntityBanksTab, EntityDataTab, EntityDocsTab, EntityGoTo, EntityLogTab,
+  EntityProjectsTab, EntityRecord,
+} from './tabs'
 
 /**
  * صفحة الجهة.
  *
  * الغرض منها سؤال واحد: أقدر أدي المشروع ده للجهة دي؟
- * فبتحط قدام المشرف تلات حاجات جنب بعض — حالة التفعيل، وملف
- * المستندات الناقص، وسجل مشاريعها السابق معانا بنتيجته.
- * والربط في الاتجاهين: من هنا لكل مشروع، ومن كل مشروع لهنا.
+ *
+ * وعشان تجاوب عليه، لازم تعرض **ملف الجهة كامل** زي ما هو في النظام
+ * العامل: ٣٥ حقلًا في خمس مجموعات، وثمانية مستندات بحالة وصلاحية كل
+ * واحد، والحسابات البنكية بأسباب رفضها المقنّنة، وسجل قرارات الجهة.
+ * قبل كده كانت بتعرض تسعة حقول بس، فالمشرف كان لازم يفتح النظام
+ * القديم عشان يشوف الباقي.
+ *
+ * والتقسيم لتابات مش تنظيمًا: الملف الكامل في عمود واحد بيبقى تمريرًا
+ * طويلًا، والمشرف بيدوّر على الحقل بدل ما يقراه.
  */
 export default function EntityPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id, tab } = useParams<{ id: string; tab?: string }>()
+  const navigate = useNavigate()
   const entity = id ? entityById(id) : undefined
-  const [group, setGroup] = useState<string | undefined>()
 
   const projects = useMemo(() => (id ? query.entityProjects(id) : []), [id])
-
-  const counts = useMemo(() => {
-    const out: Record<string, number> = {}
-    for (const p of projects) out[p.statusGroup] = (out[p.statusGroup] ?? 0) + 1
-    return out
-  }, [projects])
 
   /* الكارت الجانبي بياخد المساحة الباقية لحدّ رصيف القرار — نفس
      حساب صفحة المشروع بالظبط، عشان الشكل واحد في الصفحتين. */
@@ -48,8 +52,12 @@ export default function EntityPage() {
 
   if (!entity) return <Navigate to={ROUTES.entities} replace />
 
-  const shown = group ? projects.filter((p) => p.statusGroup === group) : projects
-  const readings = readEntity(entity, projects)
+  const active: EntityTabSlug =
+    ENTITY_TABS.find((t) => t.slug === tab)?.slug ?? DEFAULT_ENTITY_TAB
+  const goTab = (slug: string) => navigate(ROUTES.entity(entity.id, slug))
+
+  const detail = entityDetail(entity)
+  const readings = readEntity(entity, projects, detail)
 
   return (
     <AppLayout assistantContext={assistFor.entity(entity)}>
@@ -81,6 +89,9 @@ export default function EntityPage() {
               <div className="ehead-m" style={{ marginTop: '.9rem' }}>
                 <Tag tone={activationTone(entity.activation)}>{entity.activation}</Tag>
                 <Tag tone={governanceTone(entity.governance)}>الحوكمة: {entity.governance}</Tag>
+                {/* الترخيص المنتهي بيوقف التعاقد، فمكانه الترويسة لا
+                    جوّه تاب — القرار بيتاخد من فوق. */}
+                {detail.licenseExpired && <Tag tone="no">الترخيص منتهٍ</Tag>}
                 <span className="sub">{entity.licensor}</span>
               </div>
             </div>
@@ -90,137 +101,23 @@ export default function EntityPage() {
             </div>
           </header>
 
+          <Tabs items={ENTITY_TABS} active={active} onChange={goTab} />
+
           <div className="g2">
             <div className="col">
-              {/* ═══ مشاريع الجهة — الربط العكسي ═══ */}
-              <Glass>
-                <Head
-                  title="مشاريع الجهة"
-                  meta={<><span className="num">{projects.length}</span> مشروعًا في هذا النموذج</>}
-                />
-                <Segments
-                  active={group}
-                  onChange={setGroup}
-                  items={[
-                    { key: '', label: 'الكل', count: projects.length },
-                    ...STATUS_GROUPS.filter((g) => counts[g]).map((g) => ({
-                      key: g, label: g, count: counts[g],
-                    })),
-                  ]}
-                />
+              {active === 'data' && <EntityDataTab e={entity} d={detail} />}
+              {active === 'docs' && <EntityDocsTab d={detail} />}
+              {active === 'banks' && <EntityBanksTab d={detail} />}
+              {active === 'projects' && <EntityProjectsTab rows={projects} />}
+              {active === 'log' && <EntityLogTab d={detail} />}
 
-                {shown.length === 0 ? (
-                  <Empty
-                    title="لا مشاريع بهذه الحالة."
-                    note="الجهة مسجّلة لكن ما لهاش مشاريع في هذا التصنيف."
-                  />
-                ) : (
-                  <div className="eprj">
-                    {shown.map((p) => {
-                      const over = stagePressure(p) > 1
-                      return (
-                        <Link key={p.id} to={ROUTES.project(p.id)} className="eprj-r well">
-                          <div className="eprj-h">
-                            <Mono>{p.id}</Mono>
-                            <Tag tone={groupTone(p.statusGroup)}>{p.statusGroup}</Tag>
-                            <span className="pc-sp" />
-                            <Money>
-                              {p.amountGranted > 0 ? p.amountGranted : p.amountRequested}
-                            </Money>
-                          </div>
-                          <div className="eprj-n">{p.name}</div>
-                          <div className="sub eprj-f">
-                            {p.stage}
-                            {p.stageLimit > 0 && (
-                              <>
-                                {' · '}
-                                <span className="num">{days(p.hoursInStage)}</span>
-                                {' يومًا في القسم'}
-                                {over && <span className="tag no mini">متأخر</span>}
-                              </>
-                            )}
-                            {p.declineReason && <> · {p.declineReason}</>}
-                          </div>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                )}
-              </Glass>
-
-              <Glass>
-                <Head
-                  title="ملف المستندات"
-                  meta={<><span className="num">{entity.docsUploaded}</span> من <span className="num">{ENTITY_DOCS_TOTAL}</span></>}
-                />
-                <ul className="docl">
-                  {ENTITY_DOCS.map((d, i) => {
-                    const up = i < entity.docsUploaded
-                    return (
-                      <li key={d} className={up ? 'up' : ''}>
-                        <Icon path={up ? icons.check : icons.close} size={15} />
-                        <span>{d}</span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </Glass>
-
-              <Glass>
-                <Head title="التعريف والتواصل" />
-                <KV
-                  rows={[
-                    { k: 'رقم الترخيص', v: <Mono>{entity.licenseNo}</Mono> },
-                    { k: 'الجهة المرخِّصة', v: entity.licensor },
-                    { k: 'تاريخ التسجيل', v: <Mono>{entity.registeredAt}</Mono> },
-                    { k: 'الجوال', v: <Mono>{entity.mobile}</Mono> },
-                    { k: 'البريد', v: <Mono>{entity.email}</Mono> },
-                  ]}
-                />
-                <p className="sub" style={{ marginTop: '.7rem' }}>
-                  بيانات التواصل هنا مموّهة عمدًا — المستودع عام.
-                </p>
-              </Glass>
-
-
-              <Glass>
-                <Head title="أداء الجهة" meta="السجل التراكمي" />
-                <KV
-                  rows={[
-                    { k: 'مشاريع معتمدة', v: <Num>{entity.projectsApproved}</Num> },
-                    { k: 'تحت التشغيل', v: <Num>{entity.projectsRunning}</Num> },
-                    { k: 'مكتملة', v: <Num>{entity.projectsCompleted}</Num> },
-                    { k: 'معتذر عنها', v: <Num>{entity.projectsDeclined}</Num> },
-                    {
-                      k: 'متعثرة',
-                      v: (
-                        <>
-                          <Num>{entity.projectsStalled}</Num>
-                          {entity.projectsStalled > 0 && <span className="dotmark" />}
-                        </>
-                      ),
-                    },
-                  ]}
-                />
-              </Glass>
-
-              <Glass>
-                <Head title="اذهب إلى" />
-                <div className="chips">
-                  <Link className="chip" to={`${ROUTES.projects}?q=${encodeURIComponent(entity.name)}`}>
-                    <Icon path={icons.link} size={14} /> مشاريعها في القائمة
-                  </Link>
-                  <Link className="chip" to={`${ROUTES.entities}?region=${encodeURIComponent(entity.region)}`}>
-                    جهات {entity.region}
-                  </Link>
-                </div>
-              </Glass>
+              {/* السجل التراكمي والروابط تحت أي تاب: سياق دايم لا
+                  محتوى تاب — المشرف محتاجه وهو بيقرا أي حاجة. */}
+              <EntityRecord e={entity} />
+              <EntityGoTo e={entity} />
             </div>
 
-            {/* ═══ العمود الجانبي — كارت واحد لازق ═══
-                زي صفحة المشروع بالظبط: أداء الجهة و«اذهب إلى» نزلوا
-                للعمود الرئيسي، وفضل كارت التحليلات وحده — وده اللي
-                بيخلّي اللزق يشتغل بلا تمرير جوّه تمرير. */}
+            {/* ═══ العمود الجانبي — كارت واحد لازق ═══ */}
             <div className="col aiside" ref={aside}>
               <AnalysisCard
                 readings={readings}
