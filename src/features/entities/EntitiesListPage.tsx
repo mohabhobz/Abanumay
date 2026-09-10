@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, Money, MultiSelect, PAGE_SIZES, Pager, SearchBox, Segments,
@@ -24,7 +24,7 @@ import { EntityCard } from './EntityCard'
 import { COLS, GROUPS, groupByKey } from './columns'
 import { DataTable, aggregate, orderCols, readCols, splitGroups, writeCols } from '@/components/table'
 import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
-import { PrintSheet } from '@/features/projects/list/PrintSheet'
+import { ExportMenu } from '@/components/export'
 
 const KEYS = [
   'q', 'activation', 'type', 'licensor', 'region', 'city', 'governance',
@@ -73,23 +73,12 @@ export default function EntitiesListPage() {
   const [fOrder, setFOrder] = useState<string[]>(() => readFilterOrder('entities', FILTER_KEYS))
 
   useEffect(() => writeFilterOrder('entities', fOrder), [fOrder])
-  const [exportOpen, setExportOpen] = useState(false)
-  const exportBox = useRef<HTMLDivElement>(null)
   /* التحديد هنا نطاق تصدير لا قرار: الجهة مالهاش «موافقة» ولا «رفض»
      يتاخدوا على دفعة — تفعيلها وإيقافها قرار بملف كل جهة. فالشريط
      بيقول المحدَّد وبيصدّره وبس. */
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   useEffect(() => writeCols('entities', cols), [cols])
-
-  useEffect(() => {
-    if (!exportOpen) return
-    const away = (e: PointerEvent) => {
-      if (!exportBox.current?.contains(e.target as Node)) setExportOpen(false)
-    }
-    document.addEventListener('pointerdown', away)
-    return () => document.removeEventListener('pointerdown', away)
-  }, [exportOpen])
 
   /* زي المشاريع: الجدول محتاج عرض ما بيتوفرش على الموبايل */
   const mobile = useIsMobile()
@@ -363,31 +352,7 @@ export default function EntitiesListPage() {
               <div className="ftool-a">
               <SavedViews table="entities" current={snapshot()} onApply={applyQuery} />
 
-              <div className="fexp" ref={exportBox}>
-                <button
-                  className={`fchip${exportOpen ? ' on' : ''}`}
-                  aria-haspopup="menu"
-                  aria-expanded={exportOpen}
-                  onClick={() => setExportOpen((x) => !x)}
-                >
-                  <Icon path={icons.export} size={15} />
-                  تصدير
-                </button>
-                {exportOpen && (
-                  <div className="fmenu fexp-m">
-                    <div className="fexp-s sub">{exportNote}</div>
-                    <button className="fopt" onClick={() => { setExportOpen(false); exportXlsx(sheet) }}>
-                      <span className="fopt-t">Excel · xlsx</span>
-                    </button>
-                    <button className="fopt" onClick={() => { setExportOpen(false); setTimeout(printArea, 60) }}>
-                      <span className="fopt-t">PDF · عبر الطباعة</span>
-                    </button>
-                    <button className="fopt" onClick={() => { setExportOpen(false); exportPng(sheet) }}>
-                      <span className="fopt-t">صورة · png</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <ExportMenu sheet={sheet} note={exportNote} count={selected.size} />
 
               {!mobile && (
                 <ViewToggle view={view} onChange={(x) => set({ view: x === 'table' ? undefined : x })} />
@@ -490,7 +455,6 @@ export default function EntitiesListPage() {
             />
           )}
 
-          <PrintSheet sheet={sheet} note={exportNote} />
         </div>
 
         {/* نفس شريط المشاريع، بمخارج الجهات: التصدير بس */}

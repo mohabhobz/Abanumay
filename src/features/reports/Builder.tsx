@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Glass, Head, Icon, icons, Money, Num, Select } from '@/components/ui'
+import { Glass, Head, Money, Num, Select } from '@/components/ui'
 import { nf, pct } from '@/lib/format'
 import { projectRows } from '@/data/mock/projects'
 import { PERIODS } from '@/data/reportDefs'
-import { exportXlsx, type Sheet } from '@/lib/export'
+import { type Sheet } from '@/lib/export'
+import { ExportMenu } from '@/components/export'
 import type { ProjectRow } from '@/types/domain'
 import { days } from '@/lib/tone'
 
@@ -78,6 +79,10 @@ export function Builder() {
   const max = rows.length ? rows[0].v || 1 : 1
   const total = rows.reduce((s, r) => s + r.v, 0)
 
+  /* نطاق التصدير مكتوب فوق القايمة: التقرير المُشكَّل بيصدّر اللي
+     على الشاشة بالظبط — نفس البُعد والمقياس والفترة. */
+  const note = `${mea.label} حسب ${dim.label} · ${PERIODS.find((p) => p.id === period)?.label ?? ''}`
+
   const sheet: Sheet = {
     file: `abanumay-${dim.key}-${mea.key}-${period}`,
     title: `${mea.label} حسب ${dim.label}`,
@@ -118,10 +123,7 @@ export function Builder() {
             onChange={(v) => setPeriod(v ?? PERIODS[0].id)}
           />
           <span className="pc-sp" />
-          <button className="fchip" onClick={() => exportXlsx(sheet)}>
-            <Icon path={icons.export} size={15} />
-            تصدير
-          </button>
+          <ExportMenu sheet={sheet} note={note} />
         </span>
       </Glass>
 

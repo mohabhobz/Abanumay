@@ -13,7 +13,8 @@ import { projectRows } from '@/data/mock/projects'
 import { entityRows } from '@/data/mock/entities'
 import { ENTITY_DOCS_TOTAL, stagePressure } from '@/data/repository'
 import { days } from '@/lib/tone'
-import { exportXlsx, type Sheet } from '@/lib/export'
+import { type Sheet } from '@/lib/export'
+import { ExportMenu } from '@/components/export'
 
 /**
  * تقرير كامل.
@@ -106,10 +107,10 @@ export default function ReportView() {
               </span>
             </div>
             <div className="ftool-a">
-              <button className="fchip" onClick={() => exportXlsx(sheet)}>
-                <Icon path={icons.export} size={15} />
-                تصدير
-              </button>
+              <ExportMenu
+                sheet={sheet}
+                note={`${card.question} · ${PERIODS.find((p) => p.id === period)?.label ?? ''} · ${nf.format(table.rows.length)} صفًّا`}
+              />
             </div>
           </div>
 

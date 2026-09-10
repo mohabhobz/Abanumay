@@ -2776,7 +2776,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .fopt.fix:hover{background:none}
 /* قائمة التصدير */
 .fexp{position:relative}
-.fexp-m{min-width:210px}
+.fexp-m{min-width:236px}
+/* خيار التصدير سطران: الصيغة، وتحتها السؤال اللي بتجاوب عليه.
+   الامتداد وحده ما بيقولش للمستخدم يختار إيه — «إكسل ولا صورة؟»
+   بيتحلّ بـ«عايز تشتغل على الأرقام ولا تحطّه في شريحة؟». */
+.fexp-m .fopt{flex-direction:column;align-items:stretch;gap:.1rem;padding:.5rem .55rem}
+.fopt-n{font-size:.7rem;line-height:1.45;white-space:normal}
 .fexp-s{padding:.35rem .55rem .5rem;font-size:.72rem;
   box-shadow:inset 0 -1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7));margin-bottom:.25rem}
 /* شريط «تمّ» بعد قرار مجمّع */
@@ -2784,25 +2789,16 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   box-shadow:inset 0 0 0 1px rgba(var(--okC),.30)}
 .bulk.done>svg{color:var(--ok);flex:none}
 /* ═══ نسخة الطباعة ═══
-   مخفية تمامًا على الشاشة. وقت الطباعة بيتقفل كل حاجة تانية وتفضل
-   هي، فالورقة بتطلع جدولًا نضيفًا بلا شريط ولا فلاتر. */
+   مخفية تمامًا على الشاشة. وقت الطباعة التطبيق كله بيتقفل وتفضل هي،
+   فالورقة بتطلع جدولًا نضيفًا بلا شريط ولا فلاتر.
+
+   الورقة بتترسم **برّه `#root`** (بورتال على `body`)، فالإخفاء بقى
+   سطرًا واحدًا بدل قايمة كلاسات. القايمة القديمة كانت بتسمّي عناصر
+   قايمة المشاريع بالاسم، فأي شاشة تانية تصدّر PDF كانت بتطبع محتواها
+   ورا الورقة — الجدول مرتين، واحد مصفوف وواحد مكسور. */
 .printsheet{display:none}
 @media print{
-  body.printing .rail,
-  body.printing .mobtop,
-  body.printing .aidock,
-  body.printing .ftoolbar,
-  body.printing .fsegs,
-  body.printing .qread,
-  body.printing .fexp,
-  body.printing .bulk,
-  body.printing .bulkdock,
-  body.printing .pager,
-  body.printing .plist,
-  body.printing .tblwrap,
-  body.printing .tblcard,
-  body.printing header,
-  body.printing .crumb{display:none !important}
+  body.printing>#root{display:none !important}
 body.printing .printsheet{display:block}
 body.printing{background:#fff;color:#000}
 body.printing .mesh,body.printing .grain{display:none}

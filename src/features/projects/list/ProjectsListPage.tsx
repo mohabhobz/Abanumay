@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, Money, MultiSelect, Pager, PAGE_SIZES, SearchBox, Segments,
@@ -15,13 +15,13 @@ import { fixtures, query, type ProjectQuery, type ProjectSort } from '@/data/rep
 import { applyDecision, assignOwner, type BulkDecision } from '@/data/mock/projects'
 import { useRole } from '@/hooks/useRole'
 import { ROUTES } from '@/app/routes'
-import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
+import { type Sheet } from '@/lib/export'
+import { ExportMenu } from '@/components/export'
 import { COLS, GROUPS, groupByKey } from './columns'
 import {
   DataTable, aggregate, orderCols, readCols, splitGroups, writeCols,
 } from '@/components/table'
 import { plural, units } from '@/lib/format'
-import { PrintSheet } from './PrintSheet'
 import {
   CITIES_BY_REGION, FIELDS_BY_TRACK, GOALS_BY_FIELD, GRANT_METHODS, OWNERS,
   REGIONS, STAGES, STATUS_GROUPS, SUPPORT_STATUS, TAGS, TRACKS, YEARS,
@@ -111,19 +111,8 @@ export default function ProjectsListPage() {
   /* آخر قرار مجمّع + تراجعه. الشريط بيفضل ظاهر لحد ما المستخدم
      يقفله، فالتراجع مش سباق مع مؤقّت. */
   const [lastBulk, setLastBulk] = useState<{ text: string; undo: () => void } | null>(null)
-  const [exportOpen, setExportOpen] = useState(false)
-  const exportBox = useRef<HTMLDivElement>(null)
 
   useEffect(() => writeCols('projects', cols), [cols])
-
-  useEffect(() => {
-    if (!exportOpen) return
-    const away = (e: PointerEvent) => {
-      if (!exportBox.current?.contains(e.target as Node)) setExportOpen(false)
-    }
-    document.addEventListener('pointerdown', away)
-    return () => document.removeEventListener('pointerdown', away)
-  }, [exportOpen])
 
   /* الجدول على الموبايل بيضغط كل عمود لحد ما كل خلية تتلف عمودًا
      من الكلمات — مش جدول، شبكة كلمات. الكارت هو صف الموبايل. */
@@ -509,33 +498,7 @@ export default function ProjectsListPage() {
               <div className="ftool-a">
               <SavedViews table="projects" current={snapshot()} onApply={applyQuery} />
 
-              <div className="fexp" ref={exportBox}>
-                <button
-                  className={`fchip${exportOpen ? ' on' : ''}`}
-                  aria-haspopup="menu"
-                  aria-expanded={exportOpen}
-                  onClick={() => setExportOpen((x) => !x)}
-                >
-                  <Icon path={icons.export} size={15} />
-                  تصدير
-                  {selected.size > 0 && <b className="num">{selected.size}</b>}
-                </button>
-
-                {exportOpen && (
-                  <div className="fmenu fexp-m">
-                    <div className="fexp-s sub">{exportNote}</div>
-                    <button className="fopt" onClick={() => { setExportOpen(false); exportXlsx(sheet) }}>
-                      <span className="fopt-t">Excel · xlsx</span>
-                    </button>
-                    <button className="fopt" onClick={() => { setExportOpen(false); setTimeout(printArea, 60) }}>
-                      <span className="fopt-t">PDF · عبر الطباعة</span>
-                    </button>
-                    <button className="fopt" onClick={() => { setExportOpen(false); exportPng(sheet) }}>
-                      <span className="fopt-t">صورة · png</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <ExportMenu sheet={sheet} note={exportNote} count={selected.size} />
 
               {!mobile && (
                 <ViewToggle view={view} onChange={(x) => set({ view: x === 'table' ? undefined : x })} />
@@ -666,8 +629,8 @@ export default function ProjectsListPage() {
             />
           )}
 
-          {/* نسخة الطباعة: مخفية على الشاشة، وهي اللي بتطلع في الـPDF */}
-          <PrintSheet sheet={sheet} note={exportNote} />
+          {/* نسخة الطباعة جوّه `ExportMenu` دلوقتي — المخارج التلاتة
+              والورقة بيتحرّكوا مع بعض. */}
 
           <p className="sub" style={{ textAlign: 'center', marginTop: '.4rem' }}>
             البيانات هنا تجريبية بتوزيع النظام الحقيقي ·{' '}
