@@ -62,6 +62,18 @@ const ROLES = [
   { key: 'نصّ مساعد', sel: '.sub', props: ['fontSize'] },
 ]
 
+/**
+ * السلالم المعلَنة في `docs/UI_STANDARDS.md`.
+ * القيمة اللي برّه السلّم خطأ، لا استثناء.
+ */
+const SCALE = {
+  radius: [0, 10, 15, 22, 28, 999],
+  control: [28, 34, 42],
+  iconBox: [24, 30, 38, 44],
+  space: [0, 2, 4, 6, 8, 12, 16, 22, 32, 48],
+  font: [11.2, 12.16, 13.12, 14.4, 16.8, 24, 33.6], // rem→px عند 16px
+}
+
 /** صناديق الأيقونات — المفروض مربّعة دايمًا */
 const ICON_BOX = '.catc-i,.rbc-i,.rpk-i,.badge,.lrfind>.badge,.htile-ic,.aclose,.vtog button,.aifold,.fopt-x,.rpp-n,.catsum-s>b'
 
@@ -88,6 +100,9 @@ const clipped = []
 const cta = []
 const tabs = []
 const drop = []
+const primary = []
+const steps = []
+const nums = { total: 0, noTabular: 0 }
 
 for (const theme of themes) {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } })
@@ -152,6 +167,33 @@ for (const theme of themes) {
         }
       }
 
+      /* أكتر من دعوة أساسية في الشاشة */
+      out.primary = document.querySelectorAll('.btn-p').length
+
+      /* الاستِبر: القطعة اللي وسط الشريط المفروض أركانها قائمة من
+         الجهتين، واللي على الطرف مدوّرة من برّه بس */
+      out.steps = []
+      for (const bar of document.querySelectorAll('.vsteps,.steps,.agr-steps,.fsegs,.seg')) {
+        const kids = [...bar.children].filter((k) => k.offsetParent !== null)
+        if (kids.length < 2) continue
+        kids.forEach((k, i) => {
+          const cs = getComputedStyle(k)
+          const r = [cs.borderTopRightRadius, cs.borderBottomRightRadius,
+            cs.borderTopLeftRadius, cs.borderBottomLeftRadius].map((v) => Math.round(parseFloat(v) || 0))
+          const mid = i > 0 && i < kids.length - 1
+          if (mid && r.some((x) => x > 2)) {
+            out.steps.push({ bar: String(bar.className).split(' ')[0], i, r: r.join('/') })
+          }
+        })
+      }
+
+      /* الأرقام في الجداول: أرقام مصفوفة؟ وفيه فاصل بين رقمين؟ */
+      out.nums = { noTabular: 0, total: 0 }
+      for (const td of document.querySelectorAll('.tbl td.num, .tbl td .num')) {
+        out.nums.total += 1
+        if (!getComputedStyle(td).fontVariantNumeric.includes('tabular-nums')) out.nums.noTabular += 1
+      }
+
       /* عنصر بيتقصّ على حدّ حاويته (سبب اختفاء الهوفر) */
       for (const e of document.querySelectorAll('.qread,.qr-list,.tblwrap,.fmenu-l,.aiscroll')) {
         if (e.offsetParent === null) continue
@@ -201,6 +243,9 @@ for (const theme of themes) {
     for (const x of found.cta) cta.push({ ...x, route, theme })
     for (const x of found.tabs) tabs.push({ ...x, route, theme })
     if (found.drop.native || found.drop.custom) drop.push({ ...found.drop, route, theme })
+    if (found.primary > 1) primary.push({ route, theme, n: found.primary })
+    for (const x of found.steps) steps.push({ ...x, route, theme })
+    nums.total += found.nums.total; nums.noTabular += found.nums.noTabular
     for (const n of found.nested) nested.push({ ...n, route, theme })
     for (const c of found.clipped) clipped.push({ ...c, route, theme })
   }
@@ -232,6 +277,38 @@ for (const [role, props] of Object.entries(bag)) {
     }
   }
 }
+
+console.log(`\n═══ خارج السلّم المعلَن ═══`)
+{
+  const near = (v, list) => list.some((x) => Math.abs(x - v) < 1.2)
+  const check = (roleKey, prop, list, label) => {
+    const m = bag[roleKey]?.[prop]
+    if (!m) return
+    const off = [...m.keys()].map((v) => parseFloat(v)).filter((v) => !Number.isNaN(v) && !near(v, list))
+    if (off.length) {
+      drift += off.length
+      console.log(`  ${roleKey} · ${label}: ${[...new Set(off)].join(' · ')}px خارج [${list.join(' ')}]`)
+    }
+  }
+  for (const r of ['زرار أساسي', 'تاب', 'شريحة أدوات', 'شريحة حالة', 'وسم', 'بحث']) check(r, 'height', SCALE.control, 'الارتفاع')
+  check('حقل اختيار', 'height', SCALE.control, 'الارتفاع')
+  for (const r of Object.keys(bag)) check(r, 'borderRadius', SCALE.radius, 'نصف القطر')
+}
+
+console.log(`\n═══ أكتر من دعوة أساسية في الشاشة ═══`)
+if (!primary.length) console.log('  نضيف.')
+for (const x of uniq(primary, (v) => v.route)) { drift += 1; console.log(`  ${x.route}  ${x.n} × .btn-p`) }
+
+console.log(`\n═══ الاستِبر: قطعة وسط الشريط مدوّرة ═══`)
+{
+  const st = uniq(steps, (x) => `${x.bar}:${x.r}`)
+  if (!st.length) console.log('  نضيف.')
+  for (const x of st.slice(0, 12)) { drift += 1; console.log(`  ${x.bar} [${x.i}]  أركان ${x.r}   ${x.route}`) }
+}
+
+console.log(`\n═══ أرقام الجداول ═══`)
+console.log(`  خلايا رقمية: ${nums.total} · بلا tabular-nums: ${nums.noTabular}`)
+if (nums.noTabular) drift += 1
 
 console.log(`\n═══ ألوان الدعوة للفعل ═══`)
 {
