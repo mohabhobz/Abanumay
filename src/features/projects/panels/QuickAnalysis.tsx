@@ -1,50 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import { Glass, Icon, icons } from '@/components/ui'
-import { nf, pct, units } from '@/lib/format'
-import { highlight } from '@/components/assistant/highlight'
+import { units } from '@/lib/format'
+import { ReadingBlock, ReadingPeek } from '@/components/assistant/ReadingBlock'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
-import type { Insight, LogEntry } from '@/types/domain'
+import type { Reading } from '@/components/assistant'
 
 /** المساعد بيفكّر لحظة قبل ما يبدأ يكتب — عشان القراءة تبان مُنتَجة مش محفوظة */
 const THINK_MS = 900
 
-interface AnalysisBlock {
-  kind: 'breach' | 'insight'
-  text: string
-  bold: string[]
-  danger?: string[]
-  src?: string
-}
-
 export interface QuickAnalysisProps {
-  /** الإجراء اللي عدّى حدّ قسمه، إن وُجد */
-  breach?: LogEntry
-  insights: Insight[]
-  /** عدد الأيام اللي الإجراء مفتوح فيها */
-  openDays?: number
+  /** كل ما المساعد بيقوله عن المشروع ده — الرحلة والقراءات */
+  readings: Reading[]
   onAsk: () => void
 }
 
 /**
- * تحليلات المشروع السريعة — أول كارت في عمود السياق.
+ * تحليلات المشروع — **المكان الوحيد** اللي المساعد بيتكلم فيه عن
+ * المشروع.
  *
- * تجاوز مدة الإجراء قراءة جوّه التحليلات مش كارت لوحده، عشان كل اللي
- * المساعد شايفه عن حالة المشروع يبقى في مكان واحد.
+ * قبل كده كان فيه اتنين: شريط «رحلة المشروع» فوق التبويبات، وكارت
+ * «تحليلات المشروع» في عمود السياق — والاتنين بيقولوا نفس الحاجة
+ * بصياغتين. «واقف عند دراسة المشروع من 87 يومًا، 132% فوق الحدّ»
+ * كانت مكتوبة مرتين في نفس الشاشة بشكلين مختلفين. اتوحّدوا هنا.
  *
  * **بالطلب لا تلقائيًا.** طلب الكلاينت: «يبقى موجود السكشن زي ما هو
  * عادي صغير لسه ما اتفتحش، ولما تطلب اعمل لي تحليلات يبتدي يعمل لك
  * التحليلات». السبب اللي وراه إن عمود السياق كان بياخد ارتفاع الشاشة
  * كلها قبل ما المستخدم يقرا المشروع نفسه.
  *
- * فالكارت بيفتح مقفولًا وبيقول اللي هيطلع منه، والتحليل بيبدأ بضغطة.
+ * ومع ذلك الكارت المقفول **بيعرض لمحة أهمّ قراءة**: السؤال الأول
+ * اللي المستخدم بيفتح المشروع عشانه («واقف فين ومحتاج إيه») يتقري
+ * من غير ضغطة، والتفصيل بيتحسب بالطلب.
+ *
  * وبعد أول تشغيل بيفضل محسوبًا: القفل والفتح بيداري ويوري، ما
  * بيعيدش الحساب — إعادة الكتابة كل مرة بتبقى استعراضًا لا معلومة.
  *
  * ⚠️ مهلة «بيقرا» في النموذج ده مكان استدعاء السيرفر. لما يبقى فيه
  * باك اند، الحالة دي بتبقى انتظار حقيقي لا مؤقّتًا.
  */
-export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickAnalysisProps) {
+export function QuickAnalysis({ readings, onAsk }: QuickAnalysisProps) {
   const card = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(card)
   const [thought, setThought] = useState(false)
@@ -58,55 +53,37 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
     return () => clearTimeout(id)
   }, [armed, onScreen, thought])
 
-  const over = breach ? Math.round((breach.hours / breach.limit - 1) * 100) : 0
-
-  const blocks: AnalysisBlock[] = [
-    ...(breach
-      ? [{
-          kind: 'breach' as const,
-          text:
-            `الإجراء استهلك ${nf.format(breach.hours)} ساعة مقابل حدّ ${nf.format(breach.limit)} — ` +
-            `أي ${pct(over)} فوق الحدّ، ومفتوح من ${openDays} يومًا بلا سبب مسجَّل. ` +
-            `المشروع واقف عند «${breach.dept}».`,
-          bold: [nf.format(breach.hours), nf.format(breach.limit), `${pct(over)} فوق الحدّ`, `${openDays} يومًا`],
-          danger: [`${pct(over)} فوق الحدّ`],
-        }]
-      : []),
-    ...insights.map((it) => ({
-      kind: 'insight' as const,
-      text: it.text,
-      bold: it.bold,
-      src: it.src,
-    })),
-  ]
-
-  const { block, chars, done } = useTypedBlocks(blocks.map((b) => b.text), thought)
+  const { block, chars, done } = useTypedBlocks(readings.map((r) => r.text), thought)
   const thinking = armed && onScreen && !thought
+  const flags = readings.filter((r) => r.kind === 'flag').length
 
-  /* الحالة المقفولة بتقول اللي هيطلع بالظبط: «قراءتان» أوضح بكتير من
-     «اعرض التحليل»، والمستخدم بيقرّر يستاهل يفتحها ولا لأ. */
-  const promise = breach
-    ? `تجاوز مدة الإجراء و${units.reading(insights.length)}`
-    : units.reading(blocks.length)
+  if (readings.length === 0) return null
 
+  const title = (
+    <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '.95rem' }}>
+      تحليلات المشروع السريعة
+    </div>
+  )
+
+  /* ── مقفول: العنوان + عدّاد + لمحة أهمّ قراءة ── */
   if (!armed) {
     return (
       <Glass className="aicard aishut" ref={card}>
         <div className="rowf" style={{ gap: '.6rem' }}>
           <span className="badge badge-30"><span className="aispark" /></span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '.95rem' }}>
-              تحليلات المشروع السريعة
-            </div>
+            {title}
             <div className="sub">
-              {promise}
-              {breach && <span className="itag no aishut-f">فوق الحدّ</span>}
+              {units.reading(readings.length)}
+              {flags > 0 && <span className="itag no aishut-f">{flags} تحتاج انتباه</span>}
             </div>
           </div>
           <button className="btn btn-1 btn-sm" onClick={() => { setArmed(true); setOpen(true) }}>
             حلّل المشروع
           </button>
         </div>
+
+        {readings[0] && <ReadingPeek reading={readings[0]} />}
       </Glass>
     )
   }
@@ -118,9 +95,7 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
           <span className="aispark" />
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '.95rem' }}>
-            تحليلات المشروع السريعة
-          </div>
+          {title}
           <div className="sub">
             {done ? (
               'قراءة آلية · استرشادية غير مُلزِمة'
@@ -148,67 +123,16 @@ export function QuickAnalysis({ breach, insights, openDays = 87, onAsk }: QuickA
         </div>
       )}
 
-      {/* الرندر الشرطي لا `hidden`: `.ins` عليها `display:flex` في
+      {!open && readings[0] && <ReadingPeek reading={readings[0]} />}
+
+      {/* الرندر الشرطي لا `hidden`: `.qr-list` ليها بادنج وحدود في
           الـCSS، والخاصية بتتغلب عليها فالكارت بيفضل مفتوحًا. */}
       {open && (
-      <div className="ins">
-        {blocks.map((bl, i) => {
-          if (i > block) return null
-          const typing = i === block
-          const body = typing ? bl.text.slice(0, chars) : highlight(bl.text, bl.bold, bl.danger)
-
-          if (bl.kind === 'breach' && breach) {
-            return (
-              <div className={`data i flag${typing ? ' typing' : ''}`} key="breach">
-                <div
-                  className="rowf"
-                  style={{ justifyContent: 'space-between', gap: '.5rem', marginBottom: '.5rem' }}
-                >
-                  <span className="itag no">تجاوز مدة الإجراء</span>
-                  <span className="sub">{breach.dept}</span>
-                </div>
-
-                <div className="tx">
-                  {body}
-                  {typing && <span className="caret" />}
-                </div>
-
-                {!typing && (
-                  <div className="rise">
-                    <div className="bar over" style={{ marginTop: '.6rem' }}>
-                      <i style={{ width: '100%' }} />
-                      <u style={{ insetInlineStart: `${Math.round((breach.limit / breach.hours) * 100)}%` }} />
-                    </div>
-                    <div className="rowf" style={{ justifyContent: 'space-between', marginTop: '.35rem' }}>
-                      <span className="sub">
-                        الحدّ <span className="num">{nf.format(breach.limit)}</span> ساعة
-                      </span>
-                      <span className="sub" style={{ color: 'var(--warn-ink)' }}>
-                        المستهلَك <span className="num">{nf.format(breach.hours)}</span>
-                      </span>
-                    </div>
-                    <div className="src">المصدر: سجل الإجراءات · حدّ قسم {breach.dept}</div>
-                    <div className="rowf" style={{ gap: '.5rem', marginTop: '.75rem' }}>
-                      <button className="btn btn-1 btn-sm">تذكير الجهة</button>
-                      <button className="btn btn-2 btn-sm">تسجيل سبب</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          }
-
-          return (
-            <div className={`data i${typing ? ' typing' : ''}`} key={i}>
-              <div className="tx">
-                {body}
-                {typing && <span className="caret" />}
-              </div>
-              {!typing && bl.src && <div className="src rise">{bl.src}</div>}
-            </div>
-          )
-        })}
-      </div>
+        <div className="qr-list">
+          {readings.map((r, i) => (
+            <ReadingBlock key={r.id} reading={r} typing={i === block} chars={chars} hidden={i > block} />
+          ))}
+        </div>
       )}
     </Glass>
   )

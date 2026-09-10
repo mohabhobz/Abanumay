@@ -42,8 +42,19 @@ export interface Reading {
   danger?: string[]
   /** من فين الرقم — من غيره القراءة مجرد رأي */
   src?: string
-  /** شريط مقارنة: المستهلَك مقابل الحدّ */
-  bar?: { value: number; limit: number; valueLabel: string; limitLabel: string }
+  /**
+   * شريط مقارنة: المستهلَك مقابل الحدّ.
+   * `valueLabel`/`limitLabel` أسماء بلا أرقام — الراسم بيحطّ الرقم
+   * والوحدة. لو الرقم اتكتب في الاسم كمان بيطلع مرتين.
+   */
+  bar?: {
+    value: number
+    limit: number
+    valueLabel: string
+    limitLabel: string
+    /** وحدة تتكتب بعد الرقم: «يومًا» · «مستندًا» */
+    unit?: string
+  }
   actions?: ReadingAction[]
   /** الرابط اللي بيودّي للصفوف اللي القراءة بتتكلم عنها */
   to?: string

@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Glass } from '@/components/ui/primitives'
 import { Icon } from '@/components/ui/Icon'
 import { icons } from '@/components/ui/icons'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
-import { nf, units } from '@/lib/format'
-import { highlight } from './highlight'
+import { units } from '@/lib/format'
+import { ReadingBlock, ReadingPeek } from './ReadingBlock'
 import type { Reading } from './reading'
 
 /** المساعد بيفكّر لحظة قبل ما يبدأ يكتب — عشان القراءة تبان مُنتَجة مش محفوظة */
@@ -84,19 +83,7 @@ export function QuickRead({
           <Icon path={open ? icons.chevronUp : icons.chevronDown} size={16} />
         </button>
 
-        {!open && readings[0] && (
-          <div className="qr-peek">
-            {readings[0].metric && (
-              <b className={readings[0].kind === 'flag' ? 'bad' : undefined}>
-                {readings[0].metric.value}
-              </b>
-            )}
-            <span className="trim1">
-              {readings[0].metric ? `${readings[0].metric.unit} — ` : ''}
-              {readings[0].text}
-            </span>
-          </div>
-        )}
+        {!open && readings[0] && <ReadingPeek reading={readings[0]} />}
 
         {open && (
           <div className="qr-list">
@@ -146,19 +133,7 @@ export function QuickRead({
         </div>
       )}
 
-      {!open && readings[0] && (
-        <div className="qr-peek">
-          {readings[0].metric && (
-            <b className={readings[0].kind === 'flag' ? 'bad' : undefined}>
-              {readings[0].metric.value}
-            </b>
-          )}
-          <span className="trim1">
-            {readings[0].metric ? `${readings[0].metric.unit} — ` : ''}
-            {readings[0].text}
-          </span>
-        </div>
-      )}
+      {!open && readings[0] && <ReadingPeek reading={readings[0]} />}
 
       {open && (
         <>
@@ -172,84 +147,5 @@ export function QuickRead({
         </>
       )}
     </Glass>
-  )
-}
-
-/* قراءة واحدة — نفس التركيب في العرضين */
-function ReadingBlock({
-  reading: r,
-  typing,
-  chars,
-  hidden,
-}: {
-  reading: Reading
-  typing: boolean
-  chars: number
-  hidden: boolean
-}) {
-  if (hidden) return null
-  const body = typing ? r.text.slice(0, chars) : highlight(r.text, r.bold, r.danger)
-
-  return (
-    <div className={`qr-item${r.kind === 'flag' ? ' flag' : ''}${typing ? ' typing' : ''}`}>
-      {r.label && (
-        <div className="qr-lbl">
-          <span className={`itag${r.kind === 'flag' ? ' no' : ''}`}>{r.label}</span>
-        </div>
-      )}
-
-      {/* الرقم في أول السطر لا فوقه: الرقم الضخم كان بياخد وزنًا
-          أكبر من الجملة نفسها، والصفحة كانت بتمتلي أرقامًا حمرا. */}
-      <div className="qr-tx">
-        {r.metric && (
-          <>
-            <b className="qr-lead num">{r.metric.value}</b>
-            <span className="qr-unit">{r.metric.unit}</span>
-            {' — '}
-          </>
-        )}
-        {body}
-        {typing && <span className="caret" />}
-      </div>
-
-      {!typing && (
-        <div className="rise">
-          {r.bar && (
-            <>
-              <div className="bar">
-                <i
-                  style={{
-                    width: `${Math.min(100, (r.bar.value / r.bar.limit) * 100)}%`,
-                    background: 'linear-gradient(90deg,var(--teal),var(--lime))',
-                  }}
-                />
-              </div>
-              <div className="qr-barl">
-                <span className="sub">{r.bar.limitLabel} <span className="num">{nf.format(r.bar.limit)}</span></span>
-                <span className="sub">{r.bar.valueLabel} <span className="num">{nf.format(r.bar.value)}</span></span>
-              </div>
-            </>
-          )}
-
-          {r.src && <div className="src">المصدر: {r.src}</div>}
-
-          {(r.to || r.actions) && (
-            <div className="qr-acts">
-              {r.to && (
-                <Link className="btn btn-1 btn-sm" to={r.to}>
-                  {r.toLabel ?? 'اعرضها'}
-                  <Icon path={icons.chevron} size={14} />
-                </Link>
-              )}
-              {r.actions?.map((a) => (
-                <button key={a.label} className={`btn ${a.kind ?? 'btn-2'} btn-sm`} onClick={a.onClick}>
-                  {a.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
   )
 }

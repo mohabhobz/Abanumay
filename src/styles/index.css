@@ -3022,6 +3022,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    السياق يبتدي خفيفًا ويفضل المشروع نفسه هو اللي واخد المساحة */
 .aicard.aishut{padding:.8rem .95rem}
 .aishut-f{margin-inline-start:.4rem}
+/* القراءات جوّه كارت التحليلات: الكارت نفسه له حشوه، فالقائمة ما
+   تزوّدش حشوًا تاني — `.qr-list` معمولة لكارت `.qread` اللي حشوه صفر. */
+.aicard .qr-list{padding:0}
+.aicard .qr-peek{padding:0;margin-top:.55rem}
+.aicard.aishut .qr-peek{margin-top:.6rem}
+.aicard .qr-item.flag::before{inset-inline-start:-.5rem}
 .aifold{flex:none;display:grid;place-items:center;width:28px;height:28px;
   border-radius:8px;color:var(--t3)}
 .aifold:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}

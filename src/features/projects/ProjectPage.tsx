@@ -19,8 +19,7 @@ import {
   HistoryTab, LogTab, PaymentsTab,
 } from './tabs'
 import { EntityProjectsPanel, LastActionPanel, QuickAnalysis } from './panels'
-import { QuickRead } from '@/components/assistant'
-import { readJourney } from '@/data/readings'
+import { readInsights, readJourney } from '@/data/readings'
 import { journeys } from '@/data/journey'
 
 /** عدد الأيام اللي الإجراء الحالي مفتوح فيها — من سجل الإجراءات */
@@ -127,8 +126,15 @@ export default function ProjectPage() {
     }
   }, [])
 
-  /* السرد محسوب من الصف نفسه، فبيتغيّر مع حالة المشروع فعلًا */
-  const journey = useMemo(() => (row ? readJourney(row, journeys.get(row.id)) : []), [row])
+  /* السرد محسوب من الصف نفسه، فبيتغيّر مع حالة المشروع فعلًا.
+     ومعاه قراءات الملف في **قائمة واحدة**: كان فيه شريط «رحلة
+     المشروع» فوق التبويبات وكارت «تحليلات المشروع» في الجانبي،
+     والاتنين بيقولوا «واقف عند دراسة المشروع من 87 يومًا، 132% فوق
+     الحدّ» بصياغتين. مكان واحد للمساعد في الشاشة. */
+  const analysis = useMemo(
+    () => [...(row ? readJourney(row, journeys.get(row.id)) : []), ...readInsights(fixtures.insights)],
+    [row],
+  )
 
   return (
     <AppLayout
@@ -184,13 +190,6 @@ export default function ProjectPage() {
             </div>
           </header>
 
-          {/* ═══ رحلة المشروع ═══
-              فوق التبويبات لا جوّه عمود السياق: ده السؤال الأول اللي
-              المستخدم بيفتح المشروع عشانه — واقف فين ومحتاج إيه. */}
-          {journey.length > 0 && (
-            <QuickRead variant="bar" title="رحلة المشروع" readings={journey} />
-          )}
-
           <Tabs items={PROJECT_TABS} active={active} onChange={goTab} />
 
           <div className="g2">
@@ -219,9 +218,7 @@ export default function ProjectPage() {
             {/* ═══ العمود الجانبي — سياق ثابت ═══ */}
             <div className="col">
               <QuickAnalysis
-                breach={breach}
-                insights={fixtures.insights}
-                openDays={openDays}
+                readings={analysis}
                 onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
               />
               <EntityProjectsPanel

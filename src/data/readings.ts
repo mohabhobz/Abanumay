@@ -9,8 +9,8 @@
  * الصفوف اللي رجعت)، يا إما يتحوّل لنداء `GET /insights/:screen`
  * بنفس شكل `Reading[]` — والواجهة ما تتغيّرش.
  */
-import type { Reading } from '@/components/assistant/reading'
-import type { EntityRow, ProjectRow } from '@/types/domain'
+import type { Reading, ReadingAction } from '@/components/assistant/reading'
+import type { EntityRow, Insight, ProjectRow } from '@/types/domain'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
 import type { Journey } from './journey'
 import { nf, units, pct as pctText } from '@/lib/format'
@@ -88,14 +88,27 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       danger: late ? [pctText(over)] : [],
       bar: row.stageLimit > 0
         ? {
-            value: row.hoursInStage,
-            limit: row.stageLimit,
-            valueLabel: `المستهلَك ${nf.format(days(row.hoursInStage))} يومًا`,
-            limitLabel: `الحدّ ${nf.format(days(row.stageLimit))} يومًا`,
+            /* بالأيام لا بالساعات: «2,088 ساعة» رقم ما حدّش بيقارن
+               بيه، و«87 يومًا مقابل 38» بتتقري من نظرة. */
+            value: days(row.hoursInStage),
+            limit: days(row.stageLimit),
+            valueLabel: 'المستهلَك',
+            limitLabel: 'الحدّ',
+            unit: 'يومًا',
           }
         : undefined,
       src: `حدّ قسم «${row.stage}» — مؤقت لحين اعتماده`,
     })
+  }
+
+  /* الإجراءان اللي بيعالجوا التأخير: جوّه القراءة نفسها لا في كارت
+     تاني. القراءة اللي بتقول «فوق الحدّ» ومالهاش مخرج بتبقى شكوى. */
+  const now = out[0]
+  if (now && now.kind === 'flag') {
+    now.actions = [
+      { label: 'تذكير الجهة', kind: 'btn-1' },
+      { label: 'تسجيل سبب التأخر', kind: 'btn-2' },
+    ]
   }
 
   /* ٢ · رجع لورا كام مرة — ده اللي السجل بيخفيه وسط الصفوف */
@@ -719,4 +732,24 @@ function bottleneckReading(projects: ProjectRow[]): Reading | null {
     to: `${ROUTES.projects}?stage=${encodeURIComponent(stage)}&sort=waiting`,
     toLabel: 'اعرضها',
   }
+}
+
+/**
+ * قراءات الملف — نفس شكل `Reading` عشان تترسم بنفس الراسم.
+ *
+ * `Insight` شكل قديم من قبل ما القراءة تتوحّد. الدالة دي بتحوّله بدل
+ * ما يفضل في السيستم راسمان لنفس المعنى، ولحد ما مصدر التحليلات
+ * يرجّع `Reading` مباشرة.
+ */
+export function readInsights(items: Insight[], actions?: ReadingAction[]): Reading[] {
+  return items.map((it, i) => ({
+    id: `ins-${i}`,
+    kind: 'note',
+    text: it.text,
+    bold: it.bold,
+    /* المصدر بييجي من الداتا وفيه «المصدر:» مكتوبة، والراسم بيضيفها
+       — فبتتشال هنا بدل ما تتكرر. */
+    src: it.src.replace(/^المصدر:\s*/, ''),
+    actions: i === 0 ? actions : undefined,
+  }))
 }
