@@ -14,6 +14,12 @@ import { useEffect, type RefObject } from 'react'
  * بيبقى قصيرًا ومحتواه ظاهر، وكل ما تنزل بيكبر لحد ما يلزق فيملا
  * الشاشة. ده بالظبط «الماكسيمام هايت = الاستيك اون توب ناقص المساحة
  * الباقية لتحت».
+ *
+ * **وسقف تاني: العمود المجاور.** المعادلة فوق بتقيس على الشاشة بس،
+ * وده صح لما المحتوى أطول من الشاشة (المشروع والجهة). لكن في لوحة
+ * التقارير الكروت أقصر من الشاشة، فالكارت اللازق كان بيمتدّ تحت آخر
+ * كارت ويسيب ذيلًا زجاجًا فاضيًا. `capSelector` بيقيس قاع المحتوى
+ * ويمنع العمود يعدّيه — «الماكسيمام هايت مع آخر الكروت».
  */
 export function useFillHeight(
   ref: RefObject<HTMLElement | null>,
@@ -22,6 +28,8 @@ export function useFillHeight(
     varName = '--fill-h',
     /** عنصر محجوز تحت (شريط القرار) — بيتقاس لو موجود */
     reserveSelector,
+    /** المحتوى اللي العمود ما يعدّيش قاعه — لو موجود */
+    capSelector,
     /** الحدّ الأدنى عشان الكارت ما يتخنقش على شاشة قصيرة */
     min = 320,
     /** فراغ بين الكارت واللي تحته */
@@ -29,6 +37,7 @@ export function useFillHeight(
   }: {
     varName?: string
     reserveSelector?: string
+    capSelector?: string
     min?: number
     gap?: number
   } = {},
@@ -54,10 +63,18 @@ export function useFillHeight(
       const reserve = dock
         ? window.innerHeight - dock.getBoundingClientRect().top + gap
         : gap
-      el.style.setProperty(
-        varName,
-        `${Math.max(min, Math.round(window.innerHeight - top - reserve))}px`,
-      )
+
+      let h = window.innerHeight - top - reserve
+
+      /* سقف المحتوى: قاع العمود المجاور ناقص موضعنا = أطول ارتفاع
+         يخلّي العمودين يخلصوا مع بعض. بيتحسب من الـrect عشان يفضل
+         صح مع اللزق والتمرير. */
+      if (capSelector) {
+        const cap = document.querySelector<HTMLElement>(capSelector)
+        if (cap) h = Math.min(h, cap.getBoundingClientRect().bottom - top)
+      }
+
+      el.style.setProperty(varName, `${Math.max(min, Math.round(h))}px`)
     }
 
     const schedule = () => {
@@ -72,6 +89,12 @@ export function useFillHeight(
     window.addEventListener('resize', schedule)
     const ro = new ResizeObserver(schedule)
     ro.observe(document.body)
+    /* الكروت ممكن تطول من غير ما جسم الصفحة يطول (الشاشة أطول منهم)،
+       فبنراقب المحتوى نفسه كمان. */
+    if (capSelector) {
+      const cap = document.querySelector<HTMLElement>(capSelector)
+      if (cap) ro.observe(cap)
+    }
 
     return () => {
       if (raf) cancelAnimationFrame(raf)
@@ -81,5 +104,5 @@ export function useFillHeight(
       ro.disconnect()
       el.style.removeProperty(varName)
     }
-  }, [ref, varName, reserveSelector, min, gap])
+  }, [ref, varName, reserveSelector, capSelector, min, gap])
 }

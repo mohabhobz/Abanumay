@@ -3255,6 +3255,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
      وفيها الكارت اللازق بيسيب مكانه ويطلع فوق. العمود بيطوّل الصف،
      والصف بيمدّ اللزق لآخر التمرير. */
   .hasg2>.g2>.col:first-child{padding-bottom:clamp(10.5rem,17vh,13.5rem)}
+  /* لوحة التقارير استثناء: العمود اللازق فيها مسقوف بقاع الكروت
+     (`capSelector`)، فهو بيخلص معاها من غير ما يحتاج مسافة لزق
+     إضافية — والحشو هنا كان بيسيب فراغًا يتمرّر فيه على لا حاجة. */
+  .hasg2.g2fit>.g2>.col:first-child{padding-bottom:0}
 
   .aiside{position:sticky;top:.35rem;align-self:start;
     /* الارتفاع محسوب من مكانه الفعلي (`useFillHeight`): الشاشة ناقص

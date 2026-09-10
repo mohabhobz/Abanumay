@@ -46,7 +46,7 @@ export default function ReportsPage() {
   return (
     <AppLayout assistantContext={assistFor.page('التقارير')}>
       <div className="viewstack">
-        <div className={`screen col${active === 'board' ? ' hasg2' : ''}`}>
+        <div className={`screen col${active === 'board' ? ' hasg2 g2fit' : ''}`}>
           <nav className="crumb" aria-label="مسار التنقّل">
             <span className="now">التقارير</span>
           </nav>

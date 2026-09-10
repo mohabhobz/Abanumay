@@ -31,11 +31,14 @@ export function Board({
 
   /* نفس عمود التحليلات اللازق اللي في المشروع والجهة — الصفحة دي
      أكتر واحدة محتاجاه: اللوحة بتقول الأرقام، والعمود بيقول اللي
-     يتعمل بيها. */
+     يتعمل بيها.
+     الفرق هنا إن الكروت أقصر من الشاشة، فمن غير `capSelector` الكارت
+     بيمتدّ تحت آخر كارت. السقف بيخلّي العمودين يخلصوا في نفس السطر. */
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, {
     varName: '--ai-fill',
     reserveSelector: '.decdock .chrome, .askfab',
+    capSelector: '.rbg',
     min: 240,
   })
 
