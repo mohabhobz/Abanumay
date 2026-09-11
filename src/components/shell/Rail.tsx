@@ -102,7 +102,20 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
       style={{ '--rail-w': `${w}px` } as React.CSSProperties}
       aria-label="التنقّل الرئيسي"
     >
-      <span className="mark mark-64 logo"><Logo /></span>
+      {/* الشريط مطويّ ⇒ العلامة وحدها. مفرود ⇒ **القفل الكامل**:
+          العلامة والاسم جنبها. اللي بيتغيّر مع فرد الشريط هو كمية
+          الهوية اللي بتتقال، لا مقاس نفس العنصر.
+
+          ⚠️ اسم المؤسسة هنا **مركّب بخط العرض** لأن ملف القفل
+          الرسمي (العلامة + الاسم المخطوط) لسه ما وصلش — زيّه زي
+          ملف براندو عربي. أول ما يوصل بيتحطّ مكانه هنا وبس. */}
+      <span className="raillock">
+        <span className="mark mark-64 logo"><Logo /></span>
+        <span className="raillock-t" aria-hidden={!open}>
+          <b>أبانمي</b>
+          <small>مؤسسة سليمان أبانمي الأهلية</small>
+        </span>
+      </span>
 
       {allowed.map((item, i) => {
         const prev = allowed[i - 1]

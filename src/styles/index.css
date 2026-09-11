@@ -609,8 +609,12 @@ to{opacity:1;transform:none}
    عرضه متغيّر بالسحب من الحافة، والقيمة جاية inline من الكومبوننت.
    مطويّ = أيقونات والاسم كتلميح؛ ومن 132 بكسل التسمية بتبان جنب
    الأيقونة. */
-.rail{flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:.25rem;
-  padding:1rem .5rem;position:relative;z-index:25;
+/* المسافة بين البنود **٨** لا ٤٫٤٨: الصندوق ٤٤×٤٤ وبداخله مؤشّر
+   مصمت، فأربعة بكسل بتخلّي الصندوقين شبه ملتصقين والمؤشّر يبان
+   كأنه بيمتدّ. والفاصل بين المجموعات **٢٢** — الاتنين من سلّم
+   المسافات، وكانوا ٤٫٤٨ و١٣٫٦ (خارج السلّم الاتنين). */
+.rail{flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:16px 8px;position:relative;z-index:25;
   transition:width .22s cubic-bezier(.22,.9,.3,1);
   box-shadow:inset -1px 0 0 rgba(var(--edgeC),var(--edge-hair))}
 /* أثناء السحب الانتقال بيخلّي العرض يلحق الماوس متأخّرًا */
@@ -641,8 +645,22 @@ to{opacity:1;transform:none}
   .rail,.railgrip-l,.railgrip-b{transition:none}
 }
 /* الشعار: أكبر شوية لمّا الشريط مفرود */
-.rail>.mark-64{width:42px;height:42px;flex:none;margin-bottom:.8rem}
-.rail.open>.mark-64{width:48px;height:48px;align-self:center}
+/* ══ القفل: العلامة والاسم ══
+   مطويّ = العلامة وحدها في مربّع ٤٤ زي بنود التنقّل، فالعمود
+   بيبقى رصّة واحدة. مفرود = العلامة والاسم في صفّ واحد. */
+.raillock{flex:none;display:flex;align-items:center;gap:10px;
+  margin-bottom:22px;min-height:44px}
+.rail:not(.open) .raillock{justify-content:center}
+.rail.open .raillock{width:100%;padding-inline:.7rem}
+.rail .mark-64{width:40px;height:40px;flex:none;margin:0}
+.raillock-t{display:none;min-width:0;flex-direction:column;gap:1px;line-height:1.25}
+.rail.open .raillock-t{display:flex}
+.raillock-t b{font-family:var(--fd);font-weight:700;font-size:var(--fs-4);color:var(--t1);
+  white-space:nowrap}
+/* الاسم الكامل **بيلفّ** لا بيتقصّ: القفل هوية، والهوية المقصوصة
+   بنقط أسوأ من سطرين. */
+.raillock-t small{font-size:var(--fs-1);color:var(--t3);
+  white-space:normal;line-height:1.35;text-wrap:balance}
 /* زرار الحساب مستثنى: هو دايرة لا عنصر تنقّل، وقواعد الريل كانت
    بتلبّسه كارت مستطيل — فالدايرة كانت قاعدة جوّه مربّع.
    الاستثناء بـ`:where` لا `:not`: الأخير بيزوّد نوعية المحدّد
@@ -694,7 +712,9 @@ to{opacity:1;transform:none}
 .rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:25px;height:25px;flex:none}
 /* المجموعات بتتفصل بمسافة بس — الخط الشعري كان بيتقوّس مع حواف
    العنصر فيبان كإطار مفتوح، والمسافة كافية إن العين تقرا الكتل */
-.rail .railitem.newgroup{margin-top:.85rem}
+/* الفاصل بين المجموعات = ٢٢ ناقص الـ٨ اللي جاية من `gap`، فالفجوة
+   المرئية بينهم ٢٢ بالظبط. */
+.rail .railitem.newgroup{margin-top:14px}
 .railfoot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:.6rem}
 .screen{--padt:clamp(1.6rem,3vw,2.6rem);
   flex:1;min-height:0;overflow:auto;padding:var(--padt) clamp(1.4rem,3vw,2.6rem) clamp(1.2rem,2.6vw,2.2rem);
@@ -928,12 +948,14 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
 .lrow.off::after{background:repeating-linear-gradient(180deg,
   rgba(var(--edgeC),.14) 0 3px,transparent 3px 7px)}
 .lprov{font-size:.68rem;color:var(--warn-ink);margin-top:.9rem;padding-inline-start:1.45rem;line-height:1.5}
-/* ── الشريط: العرض من `--rail-w` في القاعدة الأساسية، والحالتان
-   بيقلبوه. القواعد اللي كانت بتكتب عرضًا ثابتًا هنا اتشالت. ── */
-.rail{padding:1.05rem .5rem;gap:.28rem}
+/* ── الشريط ──
+   كان هنا تعريف تاني لـ`.rail` بيكتب `gap` و`padding` بإيده
+   (`.28rem` و`1.05rem`) ويغلب التعريف الأساسي بترتيب المصدر —
+   فالمسافة بين البنود فضلت ٤px مهما اتغيّرت في الأصل. نفس عائلة
+   `.btn-sm` المعرَّف مرتين و`.fsel-b` اللي كان بيكتب حشوه.
+   المسافات دلوقتي في تعريف واحد فوق. */
 .rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:25px;height:25px;flex:none}
 .mark-44{width:44px;height:44px}
-.mark-64{width:64px;height:64px}
 /* ── مروحة الاعتماد ── */
 .garc{width:100%;max-width:700px}
 .garc svg{width:100%;height:auto;display:block;overflow:visible}
@@ -1155,8 +1177,12 @@ to{opacity:1;transform:none}
 .aispark{display:block;width:24px;height:24px;flex:none;
   background:linear-gradient(115deg,#144547 0%,#00A59B 24%,#94D603 48%,#00A59B 72%,#144547 100%);
   background-size:200% 100%;
-  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2.6l2.35 7.05L21.4 12l-7.05 2.35L12 21.4l-2.35-7.05L2.6 12l7.05-2.35z'/></svg>") center/contain no-repeat;
-  mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2.6l2.35 7.05L21.4 12l-7.05 2.35L12 21.4l-2.35-7.05L2.6 12l7.05-2.35z'/></svg>") center/contain no-repeat;
+  /* نفس مسار `Sparkle` من لوسيد بالحرف — الشرارة دي مقنّعة عشان
+     التدرّج يبان من خلالها، فهي الحالة الوحيدة اللي محتاجة المسار
+     نصًّا بدل الكمبوننت. كانت نجمة مرسومة بإيدنا فشكلها كان مختلف
+     عن `icons.spark` اللي جنبها في نفس الشاشة. */
+  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'/></svg>") center/contain no-repeat;
+  mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'/></svg>") center/contain no-repeat;
   animation:aisheen 3.4s linear infinite, aiglow 2.6s ease-in-out infinite}
 /* الشرارة بتتسرّع لما تقرب من زرار السؤال أو يتفتح */
 .askfab:hover .aispark,.askfab.on .aispark{animation-duration:1.7s,1.3s}
@@ -1295,7 +1321,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
      كانت، وزرار الطيّ والتلميح مالهمش معنى هنا */
   .rail,.rail.open{--rail-w:auto;align-items:stretch}
 .railgrip{display:none}
-.rail>.mark-64{display:none}
+.rail>.raillock{display:none}
 .rail .rail-tip{display:none}
 /* نوعية مساوية لقاعدة الإخفاء `.rail:not(.open) .rail-l` وبعدها */
   .rail:not(.open) .rail-l,.rail .rail-l{display:flex}
