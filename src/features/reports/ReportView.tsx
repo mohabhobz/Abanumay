@@ -94,7 +94,7 @@ export default function ReportView() {
               <Select
                 icon={icons.chart}
                 value={period}
-                all={PERIODS[0].label}
+                allowEmpty={false}
                 options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
                 onChange={(v) => setPeriod(v ?? PERIODS[0].id)}
               />

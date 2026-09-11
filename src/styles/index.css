@@ -308,6 +308,19 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   border-radius:var(--r3);padding:var(--pad);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
+/* ══ الكارت اللي فيه منسدلة مفتوحة بيعلا فوق اللي بعده ══
+   `isolation:isolate` فوق بتعمل **سياق تراصّ** لكل كارت · وده
+   مقصود (بيحبس الطبقات الداخلية جوّه الكارت). نتيجته الجانبية إن
+   `z-index:60` بتاعة المنسدلة بتترتّب **جوّه الكارت بس**، فالكارت
+   اللي بعده في نفس المستوى بيترسم فوقها. القياس:
+   `elementFromPoint` عند طرف المنسدلة السفلي بيرجّع `.rbar` · يعني
+   الرسم اللي تحت مرسوم فوق القايمة، والمستخدم بيشوف خيارًا واحدًا
+   ومدفون الباقي.
+
+   الحلّ من الجذر: الكارت نفسه هو اللي يعلا وقت ما يكون فيه قايمة
+   مفتوحة · مش المنسدلة. و٥ لا ٤٠: كفاية عشان يغلب الكروت اللي
+   بعده (كلها `auto`)، وتحت رصيف القرار (٢٠) فالكارت ما يركبش عليه. */
+.glass:has(.fmenu),.glass:has(.acct){z-index:5}
 /* **الفراغ فوق زي تحت في كل كارت.**
    الحشو نفسه كان متساويًا (٢٣٫٢ فوق وتحت)، بس آخر ابن في الكارت
    بيزوّد هامشه تحته فوق الحشو: الإحصاء بيدّي ٢٩٫٢ والكارت اللي
@@ -431,10 +444,23 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .bar[data-empty]{background:none}
 .bar i{display:block;height:100%;border-radius:var(--rp)}
 .stat.acc .v{color:var(--link)}
-/* نوت الستات على سطر واحد، والباقي بالهوفر · عشان الكروت تتساوى */
 .trim1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stat .trim1{font-size:var(--fs-2)}
-.stat .trim1:hover{white-space:normal;overflow:visible}
+/* ── نوت الإحصاء · سطران لا سطر ──
+   كان سطرًا واحدًا مقصوصًا «عشان الكروت تتساوى»، والكروت **ما
+   كانتش بتتساوى** أصلًا: `repeat(4,1fr)` حدّها الأدنى `auto`،
+   فالقصّ كان بيداري عرَضًا والسبب شغّال. دلوقتي القسمة حقيقية
+   (`minmax(0,1fr)`)، فالقصّ بقى بيخفي كلامًا من غير داعي.
+
+   وباقي النصّ كان بيبان **بالهوفر** · ودي مش قراءة: مش موجودة
+   على اللمس، ومحدّش بيعرف إن فيه كلام مخبّى. سطران بيوَرّوا الجملة
+   كاملة في كل الأحوال اللي عندنا، والكروت بتفضل متساوية لأن صفّ
+   الشبكة بيمدّهم لأطولهم. */
+.stat .trim1{font-size:var(--fs-2);white-space:normal;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;
+  overflow:hidden;text-overflow:clip}
+/* الرقم ووحدته سطر واحد · «2,200,000» و«﷼» كانوا بينفصلوا لمّا
+   الكارت يضيق، فالوحدة بتنزل لوحدها وتتقري رقمًا تاني */
+.stat .v{white-space:nowrap}
 .li{display:grid;grid-template-columns:1fr auto;gap:.6rem 1rem;align-items:center;
   padding:1rem 1.15rem;cursor:pointer;transition:transform .18s ease;text-align:right;width:100%}
 .li:hover{transform:translateX(-3px)}
@@ -1027,8 +1053,16 @@ input[type=range]{accent-color:var(--lime-ink);width:130px;background:transparen
 .tl .ev:not(:last-child)::before{inset-inline-end:auto;inset-inline-start:5px}
 /* أول بوابة مفيش خطوة قبلها فالشريط رمادي */
 .step:first-child.now::after{background:rgba(var(--edgeC),.12)}
-.stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap)}
-@media (max-width:1200px){.stats4{grid-template-columns:repeat(2,1fr)}
+/* ── أربع إحصاءات في صفّ ──
+   ⚠️ `repeat(4,1fr)` **مش أربع خانات متساوية**. الـ`1fr` معناها
+   `minmax(auto,1fr)`، و`auto` هنا = عرض المحتوى الأدنى · فالخانة
+   اللي فيها سطر طويل («تقدير الجهة، لم يُراجَع من المشرف») بتكبر
+   على حساب الباقي. القياس كان ١٧٦ · ٢٤٤ · ٢٠٩ · ١٦٧ لأربع كروت
+   المفروض بمقاس واحد.
+   `minmax(0,1fr)` بتصفّر الحدّ الأدنى، فالقسمة بتبقى قسمة فعلًا
+   والنصّ بيلفّ جوّه خانته بدل ما يوسّعها. */
+.stats4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+@media (max-width:1200px){.stats4{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:620px){.stats4{grid-template-columns:1fr}
 }
@@ -1600,7 +1634,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   .g2{display:flex;flex-direction:column}
 .g2>.col:last-child{order:-1}
 /* كروت وجداول */
-  .stats4{grid-template-columns:repeat(2,1fr)}
+  .stats4{grid-template-columns:repeat(2,minmax(0,1fr))}
 .imp{grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem 0}
 .imp>div:nth-child(4)::before{display:none}
 .glass{padding:1rem}
@@ -3352,22 +3386,42 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* ═══ الفيوهات المحفوظة ═══ */
 .fviews{position:relative}
 .fviews-m{min-width:250px;max-width:300px}
-.fview{display:flex;align-items:center;gap:.2rem;padding:0}
+/* ── صفّ الفيو ──
+   الصفّ كان `padding:0`، فزرار الحذف بيقع **ملزوق في حافة
+   القايمة** بالظبط (قياس: حدّ الصفّ وحدّ الزرار الاتنين عند نفس
+   البكسل). الزرار الأحمر الملزوق في الحافة بيتقري «طالع من
+   الصندوق» لا «جوّه الصفّ». الحشو هنا بيدّيه مكانه. */
+.fview{display:flex;align-items:center;gap:.25rem;padding:2px 4px}
 .fview:hover{background:rgba(var(--edgeC),.06)}
-.fview-t{flex:1;min-width:0;padding:.42rem .55rem;font-size:.79rem;color:var(--t1);
+.fview-t{flex:1;min-width:0;display:flex;align-items:center;gap:.45rem;
+  padding:.42rem .45rem;font-size:.79rem;color:var(--t1);
   text-align:start;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fview-t svg{flex:none;width:14px;height:14px;color:var(--t3)}
 .fview.on .fview-t{font-weight:600}
+.fview.on .fview-t svg{color:var(--solid)}
+/* «العرض الأصلي» مدخل ثابت، فمالوش زرار حذف · وفاصل تحته بيقول
+   إنه مش واحدًا من المحفوظات */
+.fview-0{margin-bottom:2px;padding-bottom:4px;box-shadow:inset 0 -1px 0 var(--edge-d)}
 /* الحذف بيبان عند الهوفر بس: زرار حذف دايم جنب كل صف بيخلي القائمة
    تبان خطرة، والفيو بيتشال بالغلط */
-.fview-x{flex:none;display:grid;place-items:center;width:24px;height:24px;
-  border-radius:var(--r0);color:var(--t3);opacity:0}
+.fview-x{flex:none;display:grid;place-items:center;width:28px;height:28px;
+  border-radius:var(--r0);color:var(--t3);opacity:0;
+  transition:color .14s ease,background .14s ease}
 .fview:hover .fview-x,.fview-x:focus-visible{opacity:1}
 .fview-x:hover{color:var(--no);background:rgba(var(--noC),.10)}
-.fviews-f{display:flex;align-items:center;gap:.4rem;padding-top:.4rem;margin-top:.3rem;
+/* ── صفّ الحفظ ──
+   الحقل كان حشوه مكتوبًا بالإيد فطلع ~٣٠ جنب زرار ٤٤ · صفّ فيه
+   ارتفاعان، وهو نفس الكسر اللي الجرد بيمسكه في شريط الأدوات. بقى
+   الاتنين من نفس التوكنات. والحشو الجانبي بيخلّي الصفّ على نفس خطّ
+   الصفوف اللي فوقه بدل ما يطلع برّه. */
+.fviews-f{display:flex;align-items:center;gap:.4rem;
+  padding:.45rem 4px 0;margin-top:.3rem;
   box-shadow:inset 0 1px 0 var(--edge-d)}
-.fviews-f input{flex:1;min-width:0;padding:.4rem .55rem;font-size:.78rem;color:var(--t1);
+.fviews-f input{flex:1;min-width:0;height:var(--h-md);
+  padding-block:var(--pb-md);padding-inline:10px;line-height:var(--lh-md);
+  font-size:var(--fs-3);color:var(--t1);
   border-radius:var(--r1);background:rgba(var(--edgeC),.05)}
-.fviews-n{padding:.35rem .1rem 0;font-size:.7rem}
+.fviews-n{padding:.35rem 4px 0;font-size:.7rem}
 /* ═══ تخصيص الفلاتر ═══ */
 .fgrid-i{min-width:0;display:flex}
 .fgrid-i>*{flex:1;min-width:0}
@@ -3932,7 +3986,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .rbar-t{height:11px;border-radius:var(--rp);background:rgba(var(--edgeC),.06);overflow:hidden}
 .rbar-t i{display:block;height:100%;border-radius:var(--rp);
   background:linear-gradient(90deg,var(--teal),var(--lime))}
-.rbar-v{font-size:.83rem;color:var(--t1);white-space:nowrap}
+/* خانة الرقم بعرض ثابت · كانت `auto`، فعرضها بيتغيّر مع عدد
+   الخانات («2,200,000» جنب «0») والعمود `1fr` اللي فيه البار بياخد
+   الفرق · فنهاية البار بتتزحلق من صفّ لصفّ والشبكة بتبان مايلة.
+   العرض الثابت بيخلّي البار ينتهي عند نفس الحدّ في كل الصفوف. */
+.rbar-v{font-size:.83rem;color:var(--t1);white-space:nowrap;min-width:8.2rem}
 .rbar-s{font-size:var(--fs-2);min-width:2.6rem;text-align:end}
 .rbar-n{font-size:var(--fs-2);min-width:4.5rem;text-align:end;white-space:nowrap}
 @media (max-width:760px){

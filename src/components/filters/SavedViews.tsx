@@ -48,6 +48,26 @@ export function SavedViews({
 
       {open && (
         <div className="fmenu fviews-m">
+          {/* ══ العرض الأصلي ══
+              القايمة كانت بتوَدّي ومَتِرجَّعش: تدوس فيو، الشاشة
+              تتغيّر، وما فيش طريق معلوم للرجوع · اللي عايز يرجع
+              لازم يفضل يشيل الفلاتر واحدًا واحدًا لحدّ ما الشريحة
+              تطفي. الصفّ ده هو الطريق، وهو كمان **حالة**: بيتعلّم
+              لمّا ما يكونش في فيو مختار، فالقايمة بتقول «إنت فين»
+              لا «روح فين» بس. */}
+          <div className="fmenu-l" role="menu">
+            <div className={`fopt fview fview-0${active ? '' : ' on'}`}>
+              <button
+                type="button"
+                className="fview-t"
+                onClick={() => { setOpen(false); onApply('') }}
+              >
+                <Icon name={icons.redo} size={14} />
+                العرض الأصلي
+              </button>
+            </div>
+          </div>
+
           {views.length === 0 ? (
             <div className="fmenu-e sub">
               مفيش فيوهات محفوظة. اضبط الفلاتر اللي بتستخدمها كل يوم واحفظها باسم.
@@ -63,13 +83,17 @@ export function SavedViews({
                   >
                     {v.name}
                   </button>
+                  {/* سلّة لا إكس · الإكس معناها «اقفل» في كل مكان
+                      تاني في السيستم، والصفّ ده بيتشال لا بيتقفل.
+                      ونفس المكتبة (لوسيد) زي كل أيقونة. */}
                   <button
                     type="button"
                     className="fview-x"
                     aria-label={`حذف ${v.name}`}
+                    title={`حذف ${v.name}`}
                     onClick={() => remove(v.id)}
                   >
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.trash} size={15} />
                   </button>
                 </div>
               ))}

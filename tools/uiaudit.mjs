@@ -94,6 +94,79 @@ const SCALE = {
  */
 const ICON_BOX = '.catc-i,.rbc-i,.rpk-i,.badge,.lrfind>.badge,.htile-ic,.aclose,.vtog button,.aifold,.fopt-x'
 
+/**
+ * فحص الشبكة «المتساوية» · **بيتقاس على أكتر من عرض، والمحدّدات
+ * بتتقرا من الملف لا من المتصفّح**.
+ *
+ * غلطتان في أول نسختين منه، والاتنين بيرجّعوا «نضيف» والبَق قدّامهم:
+ *
+ * ١) كان بيقيس على ١٦٠٠ بس. و`repeat(4,1fr)` عند ١٦٠٠ بتدّي خانات
+ *    متساوية فعلًا · المساحة الحرّة أكبر من كل حدّ أدنى فالخوارزمية
+ *    بتوزّع بالتساوي. المشكلة بتظهر عند ١٤٤٠ لمّا سطر طويل في خانة
+ *    يبقى أعرض من نصيبها. يعني فحص **مرهون بالعرض**، وعرض واحد
+ *    فيه معناه أخضر دايمًا.
+ *
+ * ٢) كان بيقرا `document.styleSheets[].cssRules` من جوّه الصفحة،
+ *    والمتصفّح بيرمي `SecurityError` عليها · والـ`try/catch` كان
+ *    بيبلعها في صمت، فالفحص بيلفّ على **صفر قاعدة** ويطلع أخضر.
+ *    المحدّدات بقت بتتقرا من `src/styles/index.css` في نود
+ *    مباشرةً: نفس المصدر اللي بنصلّح فيه، وما فيش أمان أصل بينهم.
+ */
+const GRID_WIDTHS = [1600, 1440, 1180]
+
+/**
+ * المحدّدات اللي الورقة بتقول عنها «خانات متساوية»، **ومعاها عدد
+ * خاناتها**.
+ *
+ * العدد مش تفصيلة · هو اللي بيفرّق بين القاعدة اللي شغّالة دلوقتي
+ * والقاعدة التانية لنفس المحدّد جوّه ميديا-كويري. `.dtop` مثلًا
+ * عندها `1fr 1fr` في الموبايل و`1.45fr 1fr 1fr` على الديسكتوب.
+ * من غير العدد، الفحص بيقرا القاعدة الأولى ويقيس الحالة التانية
+ * ويقول «مش متساوية» · وهي مقصودة كده. الفحص بيشتغل بس لمّا عدد
+ * الخانات المرسومة = عدد الخانات في القاعدة المتساوية.
+ */
+const EQ_GRID_SELECTORS = (() => {
+  const css = fs.readFileSync(new URL('../src/styles/index.css', import.meta.url), 'utf8')
+  const re = /([^{}@]+)\{[^{}]*grid-template-columns\s*:\s*(repeat\(\s*(\d+)\s*,\s*1fr\s*\)|1fr(?:\s+1fr)+)\s*[;}]/g
+  const out = new Map()
+  for (const m of css.matchAll(re)) {
+    const sel = m[1].split('\n').pop().trim()
+    if (!sel || sel.startsWith('@')) continue
+    const n = m[3] ? Number(m[3]) : m[2].trim().split(/\s+/).length
+    if (!out.has(sel)) out.set(sel, new Set())
+    out.get(sel).add(n)
+  }
+  return [...out].map(([sel, ns]) => ({ sel, ns: [...ns] }))
+})()
+
+/** بيشتغل جوّه الصفحة · بياخد المحدّدات من برّه */
+const gridProbe = (sels) => {
+  const out = []
+  for (const { sel, ns } of sels) {
+    let list = []
+    try { list = [...document.querySelectorAll(sel)] } catch { continue }
+    for (const g of list) {
+      const cs = getComputedStyle(g)
+      if (cs.display !== 'grid' && cs.display !== 'inline-grid') continue
+      /* القيمة المحسوبة بتيجي «175.969px 243.797px …» ·
+         `Number('175.969px')` بيرجّع NaN، والفلتر كان بيرميهم كلهم
+         فالمصفوفة بتطلع فاضية والفحص بيعدّي. `parseFloat` بياخد
+         الرقم ويسيب الوحدة. */
+      const tracks = cs.gridTemplateColumns.split(' ')
+        .map((t) => parseFloat(t)).filter((n) => !Number.isNaN(n))
+      if (tracks.length < 2) continue
+      /* القاعدة المتساوية هي اللي شغّالة؟ لو العدد مختلف يبقى في
+         قاعدة تانية لنفس المحدّد بتحكم دلوقتي · مش شغلنا. */
+      if (!ns.includes(tracks.length)) continue
+      const lo = Math.min(...tracks), hi = Math.max(...tracks)
+      if (hi - lo <= 1) continue
+      out.push({ cls: String(g.className).split(' ')[0] || g.tagName, sel,
+        tracks: tracks.map((t) => Math.round(t)).join(' · ') })
+    }
+  }
+  return out
+}
+
 const serve = () => new Promise((res) => {
   const s = http.createServer((q, r) => {
     const u = new URL(q.url, 'http://x')
@@ -122,6 +195,7 @@ const dots = new Map()
 const edgeRings = new Map()
 const edgePartial = new Map()
 const rowsMix = []
+const gridsMix = []
 const nums = { total: 0, noTabular: 0 }
 
 for (const theme of themes) {
@@ -364,6 +438,12 @@ for (const theme of themes) {
       }
     }
     for (const s of found.squares) squares.push({ ...s, route, theme })
+    for (const w of GRID_WIDTHS) {
+      await page.setViewportSize({ width: w, height: 1000 })
+      await page.waitForTimeout(160)
+      for (const g of await page.evaluate(gridProbe, EQ_GRID_SELECTORS)) gridsMix.push({ ...g, route, theme, w })
+    }
+    await page.setViewportSize({ width: 1600, height: 1000 })
     for (const x of found.cta) cta.push({ ...x, route, theme })
     for (const x of found.tabs) tabs.push({ ...x, route, theme })
     if (found.drop.native || found.drop.custom) drop.push({ ...found.drop, route, theme })
@@ -433,6 +513,16 @@ console.log(`\n═══ ارتفاعات مختلفة في نفس الصفّ �
   const u = uniq(rowsMix, (x) => `${x.row}|${x.vals}`)
   if (!u.length) console.log('  نضيف.')
   for (const x of u) { drift += 1; console.log(`  .${x.row.padEnd(10)} ${x.vals}   ← ${x.route}`) }
+}
+
+console.log(`\n═══ شبكة «متساوية» وخاناتها مش متساوية ═══`)
+{
+  const u = uniq(gridsMix, (x) => `${x.sel}|${x.w}`)
+  if (!u.length) console.log('  نضيف.')
+  for (const g of u.slice(0, 20)) {
+    console.log(`  ${String(g.cls).padEnd(14)} ${g.sel}`)
+    console.log(`  ${''.padEnd(14)} ${g.tracks}   @${g.w}   ${g.route}·${g.theme}`)
+  }
 }
 
 console.log(`\n═══ أكتر من دعوة أساسية في الشاشة ═══`)

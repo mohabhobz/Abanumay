@@ -102,23 +102,27 @@ export function Builder() {
       <Glass className="rbld">
         <span className="rbld-q">
           <span className="sub">أعرض</span>
+          {/* `allowEmpty={false}` لا `all` · المقياس **دايمًا**
+              مختار، فخانة «الكل» كانت بتعرض اسم أول مقياس فوق
+              القايمة وهو موجود تحتها كخيار · «عدد المشاريع» مرّتين
+              في قايمة واحدة. */}
           <Select
             value={meaKey}
-            all={MEASURES[0].label}
+            allowEmpty={false}
             options={MEASURES.map((m) => ({ value: m.key, label: m.label }))}
             onChange={(v) => setMea(v ?? 'count')}
           />
           <span className="sub">حسب</span>
           <Select
             value={dimKey}
-            all={DIMS[0].label}
+            allowEmpty={false}
             options={DIMS.map((d) => ({ value: d.key, label: d.label }))}
             onChange={(v) => setDim(v ?? 'region')}
           />
           <span className="sub">في</span>
           <Select
             value={period}
-            all={PERIODS[0].label}
+            allowEmpty={false}
             options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
             onChange={(v) => setPeriod(v ?? PERIODS[0].id)}
           />
