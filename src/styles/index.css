@@ -1324,6 +1324,15 @@ to{opacity:1;transform:none}
   transition:transform .26s cubic-bezier(.22,.9,.3,1),opacity .2s ease;
   box-shadow:0 0 60px rgba(20,69,71,.14)}
 .apanel.on{transform:none;opacity:1;pointer-events:auto}
+/* ══ الحالة الكاملة ══
+   بتفرد من الحافة للحافة. والمحتوى جوّاها **ما بيتمدّش معاها**:
+   سطر الدردشة اللي عرضه ١٤٠٠ بكسل ما بيتقريش · العين بتفقد بداية
+   السطر وهي رايحة لآخره. فالجسم بياخد عرض قراءة وبيتوسّط، والباقي
+   فراغ مقصود. */
+.apanel.wide{width:auto;inset-inline-start:0}
+.apanel.wide .ahead,
+.apanel.wide .abody,
+.apanel.wide .afoot{width:min(100%,52rem);margin-inline:auto}
 /* بلا خطوط فاصلة · الفصل بيحصل بتدرّج بيظهر مع التمرير بس */
 .ahead{display:flex;align-items:center;gap:.25rem;padding:1rem 1.15rem .9rem}
 .ahead>.badge{margin-inline-end:.45rem}
@@ -1810,9 +1819,9 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .wcard{display:flex;flex-direction:column;align-items:flex-start;gap:.15rem;
   padding:.85rem;text-align:start;cursor:pointer;
   translate:0 calc(-4px * var(--near,0));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair) * (1 + var(--near,0)))),
-             0 calc(4px + 14px * var(--near,0)) calc(10px + 20px * var(--near,0))
-             rgba(20,69,71,calc(.03 + .085 * var(--near,0)));
+  /* الاقتراب بيقوّي **الحلقة** لا يضيف ظلًّا · الكارت واقف في
+     شبكته، والرفع بيتقال بالإزاحة اللي فوق. */
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair) * (1 + var(--near,0) * 1.8)));
   transition:translate .22s cubic-bezier(.22,.9,.3,1),box-shadow .22s ease;
   animation:airise .45s cubic-bezier(.22,.9,.3,1) both;animation-delay:calc(var(--d,0ms) + 160ms)}
 .wcard::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
@@ -2246,8 +2255,12 @@ to{opacity:1;transform:none}
 /* المختار **إبهام مرفوع** لا خلفية مسطّحة. وحافة الحاوية هي
    **الحافة الوحيدة** في المبدّل: الإبهام بيبان بالظلّ لا بخطّ
    تاني جنب خطّ، وده كان نصّ مشكلة «البوردر مش مظبوط». */
+/* المختار سطح أكتف وحلقة · **بلا ظلّ**، زي الشريحة المفعَّلة
+   بالظبط. الإبهام مش مرفوع عن الصفحة، هو جوّه حاويته · والظلّ كان
+   بيخلّي حالة «مختار» في المبدّل تتقال بلغة مختلفة عن حالة
+   «مفعَّل» في الشريحة اللي جنبه في نفس الصفّ. */
 .vtog button.on{color:var(--t1);background:rgba(var(--wC),calc(.98 * var(--wM)));
-  box-shadow:0 1px 3px rgba(var(--edgeC),.16),0 1px 1px rgba(var(--edgeC),.06)}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 /* الترقيم */
 .pager{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
   padding:.2rem .3rem}
@@ -3830,8 +3843,8 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .dthumb{position:relative;flex:none;display:block;overflow:hidden;
   width:34px;height:44px;border-radius:var(--r0);
   background:var(--g-card);
-  box-shadow:inset 0 0 0 1px var(--edge-2),
-    0 1px 3px rgba(20,69,71,.06)}
+  /* الحلقة وحدها · الثامبنيل ملزوق في صفّه مش عايم فوقه */
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .dthumb-lg{width:min(300px,62vw);height:min(390px,52vh);border-radius:var(--r1);margin-inline:auto}
 /* طيّة الورقة · بتقول «صفحة» من غير أيقونة */
 .dthumb-corner{position:absolute;top:0;inset-inline-end:0;width:9px;height:9px;

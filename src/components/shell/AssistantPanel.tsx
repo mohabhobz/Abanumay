@@ -23,8 +23,6 @@ const FALLBACK_CONTEXT: AssistantContext = {
 export interface AssistantPanelProps {
   open: boolean
   onClose: () => void
-  /** يفتح نفس المحادثة في الشاشة الكاملة */
-  onFull: () => void
   /** عنوان اللوح وترحيبه واختصاراته · بتيجي من الصفحة المفتوح منها */
   ctx?: AssistantContext
 }
@@ -39,10 +37,22 @@ export interface AssistantPanelProps {
  * المدى والكروت · يعني الكلام اللي بيقول هيدوّر فين. قبل كده كان
  * اللوح شكلًا تانيًا أصغر، فالمستخدم يحسّ إنه فتح مساعدًا مختصرًا لا
  * نفس المساعد في مكان أضيق.
+ *
+ * ═══ بيفتح كامل، والزرار بيصغّره ═══
+ *
+ * كان بيفتح لوحًا ضيّقًا وزراره بيوَدّي لصفحة تانية · يعني الفعل
+ * الأول اللي بيشوفه المستخدم هو **مغادرة الشاشة**. دلوقتي بيفتح
+ * على مساحته الكاملة (السؤال محتاج مكان)، والزرار بيصغّره للوح
+ * الجانبي لمّا يحبّ يشوف الصفحة وهو بيسأل. يعني الزرار بقى
+ * **مبدّل مقاس** لا انتقال، والحالتان في نفس المحادثة.
  */
-export function AssistantPanel({ open, onClose, onFull, ctx = FALLBACK_CONTEXT }: AssistantPanelProps) {
+export function AssistantPanel({ open, onClose, ctx = FALLBACK_CONTEXT }: AssistantPanelProps) {
   const { msgs, send, stop, reset, busy } = useAssistant()
   const [draft, setDraft] = useState('')
+  /* الفتحة الجديدة بتبدأ كاملة دايمًا · اللي صغّره المرة اللي فاتت
+     كان بيصغّره لسبب في وقته، مش تفضيلًا دايمًا */
+  const [wide, setWide] = useState(true)
+  useEffect(() => { if (open) setWide(true) }, [open])
   const first = fixtures.currentUser.name.split(' ')[0]
 
   const body = useRef<HTMLDivElement>(null)
@@ -64,7 +74,7 @@ export function AssistantPanel({ open, onClose, onFull, ctx = FALLBACK_CONTEXT }
       <div className={`ascrim${open ? ' on' : ''}`} onClick={onClose} aria-hidden="true" />
 
       <aside
-        className={`apanel chrome${open ? ' on' : ''}`}
+        className={`apanel chrome${open ? ' on' : ''}${wide ? ' wide' : ''}`}
         role="dialog"
         aria-label={`مساعد · ${ctx.title}`}
         aria-hidden={!open}
@@ -81,8 +91,14 @@ export function AssistantPanel({ open, onClose, onFull, ctx = FALLBACK_CONTEXT }
               <Icon name={icons.plus} size={16} />
             </button>
           )}
-          <button className="aclose" onClick={onFull} title="فتح كصفحة كاملة" aria-label="فتح كصفحة كاملة">
-            <Icon name={icons.expand} size={16} />
+          <button
+            className="aclose"
+            onClick={() => setWide((v) => !v)}
+            title={wide ? 'تصغير للوح الجانبي' : 'فرد على الشاشة'}
+            aria-label={wide ? 'تصغير للوح الجانبي' : 'فرد على الشاشة'}
+            aria-pressed={wide}
+          >
+            <Icon name={wide ? icons.shrink : icons.expand} size={16} />
           </button>
           <button className="aclose" onClick={onClose} aria-label="إغلاق">
             <Icon name={icons.close} size={16} />

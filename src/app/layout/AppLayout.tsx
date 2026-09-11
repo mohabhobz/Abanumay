@@ -60,7 +60,6 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
           <AssistantPanel
             open={assistantOpen}
             onClose={() => setAssistantOpen(false)}
-            onFull={() => navigate(ROUTES.assistant)}
             ctx={assistantContext}
           />
 

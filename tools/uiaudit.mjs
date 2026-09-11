@@ -112,6 +112,21 @@ const ICON_BOX = '.catc-i,.rbc-i,.rpk-i,.badge,.lrfind>.badge,.htile-ic,.aclose,
  *    المحدّدات بقت بتتقرا من `src/styles/index.css` في نود
  *    مباشرةً: نفس المصدر اللي بنصلّح فيه، وما فيش أمان أصل بينهم.
  */
+/**
+ * الطبقات اللي **مرفوعة فعلًا** عن الصفحة، وهي وحدها اللي ليها ظلّ.
+ *
+ * الظلّ في السيستم ده معناه واحد: «ده فوق اللي تحته». المنسدلة
+ * والنافذة ولوح المساعد ورصيف القرار والتلميح والزرار العايم ·
+ * دول عايمين، ومن غير الظلّ ما بيتفرّقوش عن الصفحة.
+ *
+ * أي حاجة تانية (كارت · شريحة · إبهام مبدّل · ثامبنيل) **مش
+ * مرفوعة**، فالظلّ عليها بيدّيها خاصية تالتة تفرّقها عن جيرانها
+ * بلا سبب · وده اللي العميل شافه لما الشريحة المفعَّلة كان ليها
+ * ظلّ والحقل اللي جنبها لأ.
+ */
+const RAISED = ['apanel', 'askfab', 'cbox', 'decbar', 'rail-tip', 'railgrip-b',
+  'fmenu', 'fexp-m', 'acct', 'gpeek', 'fprev', 'toast', 'pop', 'aitip']
+
 const GRID_WIDTHS = [1600, 1440, 1180]
 
 /**
@@ -196,6 +211,7 @@ const edgeRings = new Map()
 const edgePartial = new Map()
 const rowsMix = []
 const gridsMix = []
+const shadows = []
 const nums = { total: 0, noTabular: 0 }
 
 for (const theme of themes) {
@@ -210,7 +226,7 @@ for (const theme of themes) {
     await page.goto(`http://localhost:${PORT}${route}`, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(900)
 
-    const found = await page.evaluate(({ ROLES, ICON_BOX }) => {
+    const found = await page.evaluate(({ ROLES, ICON_BOX, RAISED }) => {
       const px = (v) => Math.round(parseFloat(v) || 0)
       const out = { roles: {}, squares: [], nested: [], clipped: [] }
 
@@ -293,6 +309,26 @@ for (const theme of themes) {
         if (seen.size > 1) {
           out.rows.push({ row: String(row.className).split(' ')[0],
             vals: [...seen.entries()].map(([h, c]) => `${c}:${h}`).join(' · ') })
+        }
+      }
+
+      /* ══ الظلّ · اللي مالوش سبب ══
+         ظلّ حقيقي = **تغبيش أكبر من صفر**. الإزاحة بتغبيش صفر
+         مش ظلًّا، هي خطّ مرسوم (زي الدرزة ٢px بين طبقات الشريط)،
+         والخطوط ليها فحصها في «الحافة». */
+      out.shadows = []
+      for (const e of document.querySelectorAll('*')) {
+        const cs = getComputedStyle(e)
+        if (e.offsetParent === null && cs.position !== 'fixed') continue
+        const bs = cs.boxShadow
+        if (!bs || bs === 'none') continue
+        for (const part of bs.split(/,(?![^(]*\))/).map((x) => x.trim())) {
+          if (part.startsWith('inset') || part.includes(' inset')) continue
+          const nums = (part.match(/-?\d*\.?\d+px/g) || []).map(parseFloat)
+          if (!(nums[2] > 0)) continue
+          const cls = String(e.className).split(' ')
+          if (cls.some((c) => RAISED.includes(c))) continue
+          out.shadows.push({ cls: cls.slice(0, 2).join('.') || e.tagName, shadow: part })
         }
       }
 
@@ -425,7 +461,7 @@ for (const theme of themes) {
         custom: document.querySelectorAll('[aria-haspopup="menu"],[aria-haspopup="listbox"]').length,
       }
       return out
-    }, { ROLES, ICON_BOX })
+    }, { ROLES, ICON_BOX, RAISED })
 
     for (const [role, props] of Object.entries(found.roles)) {
       bag[role] ??= {}
@@ -438,6 +474,7 @@ for (const theme of themes) {
       }
     }
     for (const s of found.squares) squares.push({ ...s, route, theme })
+    for (const x of found.shadows ?? []) shadows.push({ ...x, route, theme })
     for (const w of GRID_WIDTHS) {
       await page.setViewportSize({ width: w, height: 1000 })
       await page.waitForTimeout(160)
@@ -513,6 +550,13 @@ console.log(`\n═══ ارتفاعات مختلفة في نفس الصفّ �
   const u = uniq(rowsMix, (x) => `${x.row}|${x.vals}`)
   if (!u.length) console.log('  نضيف.')
   for (const x of u) { drift += 1; console.log(`  .${x.row.padEnd(10)} ${x.vals}   ← ${x.route}`) }
+}
+
+console.log(`\n═══ ظلّ على حاجة مش مرفوعة ═══`)
+{
+  const u = uniq(shadows, (x) => `${x.cls}|${x.shadow}`)
+  if (!u.length) console.log('  نضيف · الظلّ على الطبقات العايمة وحدها.')
+  for (const x of u.slice(0, 20)) console.log(`  ${String(x.cls).padEnd(22)} ${x.shadow.slice(0, 46)}   ${x.route}·${x.theme}`)
 }
 
 console.log(`\n═══ شبكة «متساوية» وخاناتها مش متساوية ═══`)
