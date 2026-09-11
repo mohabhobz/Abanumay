@@ -609,11 +609,23 @@ to{opacity:1;transform:none}
    عرضه متغيّر بالسحب من الحافة، والقيمة جاية inline من الكومبوننت.
    مطويّ = أيقونات والاسم كتلميح؛ ومن 132 بكسل التسمية بتبان جنب
    الأيقونة. */
-/* المسافة بين البنود **٨** لا ٤٫٤٨: الصندوق ٤٤×٤٤ وبداخله مؤشّر
-   مصمت، فأربعة بكسل بتخلّي الصندوقين شبه ملتصقين والمؤشّر يبان
-   كأنه بيمتدّ. والفاصل بين المجموعات **٢٢** — الاتنين من سلّم
-   المسافات، وكانوا ٤٫٤٨ و١٣٫٦ (خارج السلّم الاتنين). */
-.rail{flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:8px;
+/* ══ إيقاع الشريط ══
+   اللي العين بتقراه مش فجوة الصناديق — **فجوة الأيقونات**. وكانت
+   الاتنين مختلفين: الصناديق ٨ والأيقونات ٢٧، لأن كل أيقونة قاعدة
+   في صندوق ٤٤ بحشو ١٠ حواليها (١٠ + ٨ + ١٠).
+
+   فالصندوق اتشدّ على محتواه بدل ما يتوسّع:
+
+       الصندوق   ٣٨×٣٨   (كان ٤٤)
+       الأيقونة  ٢٢      (كانت ٢٥)
+       الحشو     ٨       حوالين الأيقونة
+       الفجوة    ٦ · ١٦  بين البنود · بين المجموعات
+
+   ⇒ فجوة الأيقونات ٨ + ٦ + ٨ = **٢٢** بدل ٢٧، والإيقاع بقى واحدًا.
+
+   والهدف اللمسي لسه مستوفى: **٣٨ + ٦ = ٤٤** خطوة رأسية لكل بند،
+   وWCAG 2.5.5 بيقبل المسافة بديلًا عن الحجم. */
+.rail{flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:6px;
   padding:16px 8px;position:relative;z-index:25;
   transition:width .22s cubic-bezier(.22,.9,.3,1);
   box-shadow:inset -1px 0 0 rgba(var(--edgeC),var(--edge-hair))}
@@ -649,10 +661,10 @@ to{opacity:1;transform:none}
    مطويّ = العلامة وحدها في مربّع ٤٤ زي بنود التنقّل، فالعمود
    بيبقى رصّة واحدة. مفرود = العلامة والاسم في صفّ واحد. */
 .raillock{flex:none;display:flex;align-items:center;gap:10px;
-  margin-bottom:22px;min-height:44px}
+  margin-bottom:16px;min-height:38px}
 .rail:not(.open) .raillock{justify-content:center}
 .rail.open .raillock{width:100%;padding-inline:.7rem}
-.rail .mark-64{width:40px;height:40px;flex:none;margin:0}
+.rail .mark-64{width:38px;height:38px;flex:none;margin:0}
 .raillock-t{display:none;min-width:0;flex-direction:column;gap:1px;line-height:1.25}
 .rail.open .raillock-t{display:flex}
 .raillock-t b{font-family:var(--fd);font-weight:700;font-size:var(--fs-4);color:var(--t1);
@@ -672,13 +684,11 @@ to{opacity:1;transform:none}
 .rail button:where(:not(.acctbtn)),.rail .railitem{width:100%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:.6rem;position:relative;
   padding:.7rem .3rem;border-radius:var(--r2);color:var(--t3);font-size:.82rem;font-family:var(--fd);
   transition:color .16s ease,background .16s ease;text-align:start;line-height:1.35}
-/* الشريط مطويّ ⇒ الصندوق **مربّع** ٤٤×٤٤: كان ٦٤×٤٧ (ملاحظتك
-   رقم ١). و٤٤ مش رقم عشوائي — هو الحدّ الأدنى للهدف اللمسي في
-   WCAG 2.5.5 و Apple HIG، وأكبر درجة في سلّم صناديق الأيقونات
-   عندنا. الشريط مفرود ⇒ الصفّ بيرجع بعرضه الكامل لأنه بقى صفًّا
-   بأيقونة واسم لا أيقونة لوحدها. */
+/* الشريط مطويّ ⇒ الصندوق **مربّع** ٣٨×٣٨ (كان ٦٤×٤٧ مستطيلًا —
+   ملاحظتك رقم ١). مفرود ⇒ الصفّ بعرضه الكامل لأنه بقى أيقونة واسم
+   لا أيقونة لوحدها. */
 .rail:not(.open) button:where(:not(.acctbtn)),.rail:not(.open) .railitem{
-  width:44px;height:44px;padding:0;margin-inline:auto}
+  width:38px;height:38px;padding:0;margin-inline:auto}
 .rail.open button:where(:not(.acctbtn)),.rail.open .railitem{justify-content:flex-start;padding-inline:.7rem}
 .rail-l{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rail:not(.open) .rail-l{display:none}
@@ -709,12 +719,15 @@ to{opacity:1;transform:none}
 .rail button:where(:not(.acctbtn)).on,.rail .railitem.on{color:var(--on-solid);background:var(--solid);
   box-shadow:none}
 .rail button:where(:not(.acctbtn)).on:hover,.rail .railitem.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}
-.rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:25px;height:25px;flex:none}
+/* ٢٢ داخل صندوق ٣٨ ⇒ حشو ٨ حوالين الأيقونة، وهو نفس رقم الفجوة
+   جهة المحتوى — فالإيقاع واحد. كانت ٢٥ (خارج أي سلّم). */
+.rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:22px;height:22px;flex:none}
 /* المجموعات بتتفصل بمسافة بس — الخط الشعري كان بيتقوّس مع حواف
    العنصر فيبان كإطار مفتوح، والمسافة كافية إن العين تقرا الكتل */
 /* الفاصل بين المجموعات = ٢٢ ناقص الـ٨ اللي جاية من `gap`، فالفجوة
    المرئية بينهم ٢٢ بالظبط. */
-.rail .railitem.newgroup{margin-top:14px}
+/* الفاصل بين المجموعات = ١٦ ناقص الـ٦ اللي جاية من `gap` */
+.rail .railitem.newgroup{margin-top:10px}
 .railfoot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:.6rem}
 .screen{--padt:clamp(1.6rem,3vw,2.6rem);
   flex:1;min-height:0;overflow:auto;padding:var(--padt) clamp(1.4rem,3vw,2.6rem) clamp(1.2rem,2.6vw,2.2rem);
@@ -949,12 +962,13 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
   rgba(var(--edgeC),.14) 0 3px,transparent 3px 7px)}
 .lprov{font-size:.68rem;color:var(--warn-ink);margin-top:.9rem;padding-inline-start:1.45rem;line-height:1.5}
 /* ── الشريط ──
-   كان هنا تعريف تاني لـ`.rail` بيكتب `gap` و`padding` بإيده
-   (`.28rem` و`1.05rem`) ويغلب التعريف الأساسي بترتيب المصدر —
-   فالمسافة بين البنود فضلت ٤px مهما اتغيّرت في الأصل. نفس عائلة
-   `.btn-sm` المعرَّف مرتين و`.fsel-b` اللي كان بيكتب حشوه.
-   المسافات دلوقتي في تعريف واحد فوق. */
-.rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:25px;height:25px;flex:none}
+   كان هنا تعريف تاني لـ`.rail` بيكتب `gap` و`padding` بإيده،
+   **وتعريف تالت لمقاس الأيقونة** (٢٥) — الاتنين بيغلبوا الأصل
+   بترتيب المصدر. فمقاس الأيقونة الواحد كان مكتوب في تلات مواضع
+   بتلات قيم: ٢٢ و٢٥ و٢١. نفس عائلة `.btn-sm` المعرَّف مرتين
+   و`.fsel-b` اللي كان بيكتب حشوه و`.rail` نفسه.
+   المقاس والمسافات دلوقتي في تعريف واحد فوق، والاستثناء الوحيد
+   المسموح هو `@media` الموبايل. */
 .mark-44{width:44px;height:44px}
 /* ── مروحة الاعتماد ── */
 .garc{width:100%;max-width:700px}
