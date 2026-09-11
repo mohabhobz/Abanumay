@@ -13,7 +13,7 @@ import {
 import { activationTone, governanceTone } from '@/lib/tone'
 import { AnalysisCard } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
-import { EntityTotals } from './EntityTotals'
+import { EntityFlow } from './EntityFlow'
 import { readEntity } from '@/data/readings'
 import {
   EntityBanksTab, EntityDataTab, EntityDocsTab, EntityGoTo, EntityLogTab,
@@ -92,8 +92,15 @@ export default function EntityPage() {
               </div>
             </div>
 
-            <div className="pgates">
-              <EntityTotals entity={entity} />
+            {/* مش `.pgates`: دي مقاسة على المروحة في صفحة المشروع
+                (٥٦٠ حدّ أدنى وأساس ٧٠٠). الرحلة شبكة بـ`fr`،
+                و`fr` جوّه حاوية بتتقاس بمحتواها بتتحسب من **نسبة
+                العمودين** · عمود ٩٤fr جنب عمود ٦fr بيطلب ١٥ ضعف
+                عرض الصغير، فالحاوية طلبت ٣٠٥٢ بكسل وخرجت من
+                الشاشة. الشبكة محتاجة عرضًا **معلومًا**، فالحاوية
+                بتاخد الباقي ولا تطلب من محتواها. */}
+            <div className="pflow">
+              <EntityFlow entity={entity} />
             </div>
           </header>
 

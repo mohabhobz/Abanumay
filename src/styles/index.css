@@ -1216,8 +1216,25 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
 to{opacity:1;transform:none}
 }
 .garc{position:relative}
-.fanhole{position:absolute;top:13.2%;inset-inline-start:28%;width:44%;
-  display:flex;flex-direction:column;align-items:center;gap:.2rem;text-align:center;
+/* صندوق الرسم · مرجع النِّسَب للجوف */
+.garc-p{position:relative}
+/* ══ صندوق الجوف · محسوب لا مكتوب ══
+   الجوف نصف قرص نصف قطره **١٨٠** في viewBox ٧٦٠×٤٤٠ ومركزه
+   (٣٨٠،٤٤). أكبر مستطيل بيدخل جوّه وضلعه العلوي على القُطر:
+   العرض `R√2` = ٢٥٤٫٦ والارتفاع `R/√2` = ١٢٧٫٣ · فالصندوق
+   ما يقدرش يخرج مهما كان محتواه.
+
+       العرض   254.6 / 760 = 33.5٪
+       الجانب  (100 − 33.5) / 2 = 33.25٪
+       الأعلى  44 / 440 = 10٪
+       الطول   127.3 / 440 = 28.9٪
+
+   وكان `top:13.2%` و`width:44%` بلا طول · فالصندوق بيطول مع
+   المحتوى. القياس ساعتها: أبعد ركن على بُعد **٢٨٠** من المركز
+   والحدّ ١٨٠. */
+.fanhole{position:absolute;top:10%;inset-inline:33.25%;height:28.9%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.2rem;text-align:center;
   pointer-events:none;animation:fholein .26s cubic-bezier(.22,.9,.3,1) both}
 .fhk{font-family:var(--fd);font-weight:500;font-size:.72rem;color:var(--t3);line-height:1.4}
 .fht{font-family:var(--fd);font-weight:700;font-size:1.32rem;color:var(--t1);line-height:1.25;margin-bottom:.12rem}
@@ -1226,6 +1243,16 @@ to{opacity:1;transform:none}
 .fhl .bad{color:var(--no-ink);font-weight:600}
 .fhs{font-size:.66rem;color:var(--t3);margin-top:.3rem;opacity:.9}
 .fhp{font-size:.68rem;color:var(--warn-ink);margin-top:.2rem}
+/* ── سطر التفصيل تحت القوس ──
+   كان ده سلوك الموبايل وحده، والديسكتوب كان بيحشر التفصيل جوّه
+   الجوف · وهو مساحة ثابتة والمحتوى متغيّر. الوضعان بقوا واحدًا،
+   فالفيضان ما يقدرش يرجع من الباب التاني. */
+.fanfoot{margin-top:-1.1rem;text-align:center;display:flex;flex-direction:column;
+  gap:.2rem;align-items:center;
+  animation:fholein .26s cubic-bezier(.22,.9,.3,1) both}
+.fanfoot .fhl{font-size:.78rem;color:var(--t2);line-height:1.7}
+.fanfoot .fhs{font-size:.68rem;color:var(--t3);margin-top:.15rem}
+.fanfoot .fhp{font-size:.7rem;color:var(--warn-ink)}
 @media (max-width:1180px){.fht{font-size:1.12rem}
 .fhl{font-size:.72rem}
 }
@@ -1610,17 +1637,11 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
      عشان بعد التصغير تفضل مقروءة، والجوف بيصغّر أرقامه */
   .fanrole{font-size:22.5px}
 .fancap{font-size:18px}
-.fanhole{top:15%;inset-inline-start:24%;width:52%;gap:.1rem}
+/* الصندوق نفسه محسوب من الهندسة فما بيتغيّرش مع الشاشة · اللي
+     بيصغر هو الخطّ جوّاه */
+  .fanhole{gap:.1rem}
 .fhk{font-size:.66rem}
 .fht{font-size:1.02rem}
-.fhl{font-size:.7rem;line-height:1.5}
-/* الجوف ضيق، فسطر المصدر بيتشال عشان القراءة ما تخرجش برّه الدايرة */
-  .fanhole .fhs{display:none}
-.fanfoot{margin-top:-1rem;text-align:center;display:flex;flex-direction:column;gap:.2rem;
-    animation:fholein .26s cubic-bezier(.22,.9,.3,1) both}
-.fanfoot .fhl{font-size:.76rem;color:var(--t2);line-height:1.6}
-.fanfoot .fhs{font-size:.66rem;color:var(--t3);margin-top:.1rem}
-.fanfoot .fhp{font-size:.68rem;color:var(--warn-ink)}
 .fan{cursor:pointer}
 .ladcard{padding:1rem .9rem}
 .lad,.lmain{min-width:0}
@@ -3000,6 +3021,105 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    الترويسة. inline-end في العربي = الشمال، فالهامش هناك بيدفعه يمين. */
 /* مسافة خفيفة بين اللوحات · الالتصاق التام كان بيخلّيها لوحًا
    واحدًا مقسومًا لا أربع بطاقات */
+/* حاوية الرحلة في ترويسة الجهة · عرضها **معلوم** لا مطلوب من
+   محتواها: `flex:1 1 0` + `min-width:0` بيخلّوا الشبكة تقسّم
+   مساحة موجودة بدل ما تطلب مساحة بنسبة أعمدتها. */
+.pflow{flex:1 1 0;min-width:min(100%,20rem);max-width:44rem;
+  display:flex;justify-content:flex-end}
+@media (max-width:900px){.pflow{flex:1 1 100%;max-width:none}}
+
+/* ═══ رحلة الريال في الجهة · طبقات على أرضية بنسبة حقيقية ═══
+   الأربع أرقام مش أربع خطوات: ٠١ هو الكلّ، و٠٢ و٠٣ جزآه، و٠٤ مقطع
+   زمني منه. فالتخطيط: سطر كامل، وتحته سطر متقسّم بنسبتهم، والرابع
+   برّه بشكل مختلف · الترقيم بيقول ترتيبًا حقيقيًّا لا زينة.
+
+   الطبقات: كل صفّ فيه **أرضية ملوّنة** تحت وكارت زجاجي فوقها
+   متزحزح، فالعين تقرا «الكارت واقف على نصيبه». الرقم الكبير باهت
+   ورا الكارت زي المرجع، بس مقاسه ثابت فما بيزاحمش النصّ. */
+.eflow{display:flex;flex-direction:column;gap:10px;width:100%;min-width:0}
+.eflow-h{display:flex;flex-direction:column;gap:.15rem;margin-bottom:.1rem}
+.eflow-t{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1);line-height:1.5}
+.eflow-s{font-size:var(--fs-2);line-height:1.7}
+.eflow-none{gap:.35rem}
+.eflow-none p{margin:0;font-size:var(--fs-2);line-height:1.8}
+
+/* ── الصفّ ── */
+.eflow-r{position:relative;isolation:isolate;display:flex;align-items:center;gap:.7rem;
+  min-width:0;padding:.85rem .9rem;border-radius:var(--r2);color:inherit;
+  background:rgba(var(--wC),calc(.72 * var(--wM)));
+  box-shadow:inset 0 0 0 1px var(--edge-1);
+  transition:translate .18s cubic-bezier(.22,.9,.3,1),box-shadow .18s ease}
+.eflow-r:hover{translate:0 -2px;color:inherit;
+  box-shadow:inset 0 0 0 1px var(--edge-i),0 8px 20px -14px rgba(var(--edgeC),.6)}
+/* الأرضية · طبقة تحت الكارت بلون النبرة، بتخفت لتحت فالكارت
+   بيبان واقفًا عليها لا محاطًا بيها */
+.eflow-ground{position:absolute;inset:0;z-index:-1;border-radius:inherit;
+  background:linear-gradient(to bottom,
+    rgba(var(--tone),.30) 0%, rgba(var(--tone),.16) 55%, rgba(var(--tone),.04) 100%)}
+/* صفّ الكلّ بعرض كامل، فالقيمة بتروح للطرف التاني · الصفّ بيتقري
+   «الاسم … القيمة» بدل ما يفضل تلتاه فاضيًا */
+.eflow-all{--tone:var(--tone-1)}
+.eflow-all .eflow-b{flex-direction:row;align-items:baseline;justify-content:space-between;
+  gap:.6rem;flex-wrap:wrap}
+.eflow-paid{--tone:var(--tone-2)}
+.eflow-pend{--tone:var(--tone-3)}
+/* اللي لسه معلّق · نفس دور الوتد الغامق في المروحة */
+.eflow-pend.now{box-shadow:inset 0 0 0 1px var(--edge-i),0 6px 18px -12px rgba(var(--tone),.8)}
+
+/* الرقم · باهت ورا النصّ، ومقاسه ثابت فما بيزاحمش */
+.eflow-n{flex:none;font-family:var(--fd);font-weight:700;font-size:1.5rem;
+  line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;direction:ltr;
+  color:rgb(var(--tone));opacity:.42;min-width:2.1rem}
+.eflow-n.sm{font-size:1.15rem;min-width:1.5rem}
+.eflow-b{display:flex;flex-direction:column;gap:.1rem;min-width:0;flex:1}
+/* الاسم بيلفّ ما بيتقصّش · «تحت الصرف» في كارت ضيّق كان بيطلع
+   «تحت الصر…»، والاسم المقصوص مش اسم */
+.eflow-k{font-family:var(--fd);font-weight:600;font-size:.8rem;color:var(--t1);
+  line-height:1.45;overflow-wrap:anywhere}
+.eflow-v{font-family:var(--fd);font-weight:700;line-height:1.1;letter-spacing:-.02em;
+  font-size:clamp(1rem,1.5vw,1.3rem);color:var(--t1);
+  display:flex;align-items:baseline;gap:.2rem}
+.eflow-v small{font-size:.55em;font-weight:400;color:var(--t2-g)}
+.eflow-m{font-size:var(--fs-2);color:var(--t2-g);line-height:1.6}
+
+/* ── القسمة · العرض هو النسبة ──
+   ٠٢ و٠٣ في صفّ واحد، وعرض كل واحد نصيبه من الإجمالي.
+
+   ⚠️ **مش `flex-basis` بنسبة مئوية.** أول محاولة كانت
+   `flex:1 1 94%` و`flex:1 1 6%` · المجموع ١٠٠٪ زائد الفجوة، فلازم
+   يتقلّصوا، والتقلّص بيقف عند عرض المحتوى · فالكارت الصغير خرج
+   برّه الشاشة. الشبكة بـ`fr` بتقسّم **المساحة الفاضلة** لا العرض
+   الكلّي، و`minmax` بتدّي أرضية حقيقية للجزء الصغير.
+
+   والأرضية ٩٫٥rem مقصودة: من غيرها «تحت الصرف ٦٪» بيبقى شريحة ما
+   تشيلش رقمها. */
+.eflow-split{display:grid;gap:10px;min-width:0;
+  grid-template-columns:minmax(11rem,var(--a)) minmax(11rem,var(--b));
+  /* الكارتان بيتداخلوا مع الصفّ اللي فوقهم شويّة · ده اللي بيخلّي
+     العين تقرا «الاتنين دول طالعين من اللي فوق» لا «تلات صفوف» */
+  margin-top:-14px}
+/* الكارتان طبقة فوق · الظلّ هو اللي بيقول «دول مرفوعين عن اللي
+   تحتهم»، والتداخل وحده ما بيبانش لأن الخلفيات شبه معتمة */
+.eflow-split>.eflow-r{min-width:0;
+  box-shadow:inset 0 0 0 1px var(--edge-1),0 10px 24px -18px rgba(var(--edgeC),.7)}
+
+/* ── ٠٤ · برّه الرحلة ──
+   مش صفًّا في القسمة، فشكله مختلف: بلا أرضية ملوّنة، وبحدّ منقّط
+   بيقول «ده مقطع تاني» */
+.eflow-side{display:flex;align-items:baseline;flex-wrap:wrap;gap:.3rem .7rem;
+  padding:.7rem .9rem;border-radius:var(--r2);color:inherit;
+  border:1px dashed var(--edge-i);
+  transition:background .16s ease}
+.eflow-side:hover{color:inherit;background:rgba(var(--edgeC),.05)}
+.eflow-side .eflow-n{--tone:var(--tone-4);align-self:center}
+.eflow-side .eflow-v{font-size:1rem}
+.eflow-side .eflow-m{flex:1 1 100%}
+
+@media (max-width:560px){
+  .eflow-split{grid-template-columns:1fr}
+  .eflow-pend{margin-top:0}
+}
+
 .einf{display:flex;align-items:stretch;gap:10px;width:100%;
   margin-inline-end:clamp(1rem,4vw,3.5rem);
   padding-top:36px;min-height:250px}

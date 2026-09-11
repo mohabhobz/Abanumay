@@ -48,7 +48,7 @@ export interface CurrentStandingInfo {
 export interface GateArcProps {
   amount: number
   authority: AuthorityMatrix
-  /** يقسّم أسماء الأدوار سطرين ويحرّك التفاصيل تحت القوس */
+  /** يقسّم أسماء الأدوار سطرين · التفاصيل تحت القوس في الحالتين */
   compact?: boolean
   standing?: CurrentStandingInfo
 }
@@ -189,6 +189,11 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
 
   return (
     <div className="garc">
+      {/* الرسم والجوف في صندوق واحد · النِّسَب في `.fanhole` لازم
+          تتحسب من **صندوق الرسم** لا من الكارت كله، وإلا سطر
+          التفصيل تحت بيطوّل الأب فالنسبة تدّي رقمًا أكبر والصندوق
+          يفيض تاني. */}
+      <div className="garc-p">
       <svg
         viewBox="0 0 760 440"
         role="img"
@@ -264,15 +269,6 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
                             : 'بلا سقف'}
                     </tspan>
                   </text>
-                  <title>
-                    {`${role.role}، ${
-                      role.ceiling
-                        ? `سقفه ${nf.format(role.ceiling)}`
-                        : role.kind === 'recommend'
-                          ? 'توصية فقط'
-                          : 'بلا سقف'
-                    }`}
-                  </title>
                 </g>
               </g>
             )
@@ -280,19 +276,30 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
         </g>
       </svg>
 
-      {/* جوف نصف الدائرة: قراءة واحدة بتتبدّل حسب القطاع تحت الماوس.
-          على الموبايل الجوف بيشيل العنوان بس، والباقي بينزل تحت القوس. */}
+      {/* ══ جوف نصف الدائرة ══
+          الجوف **مساحته ثابتة ومعروفة**: نصف قرص نصف قطره ١٨٠
+          (`R_IN` ناقص التوسعة اللي بتاخدها الخطوة الواقفة). واللي
+          كان جوّاه **متغيّر الطول**: مفتاح وعنوان وتلات أو أربع
+          أسطر تفصيل حسب القطاع تحت الماوس.
+
+          محتوى متغيّر في مساحة ثابتة = فيضان. القياس: أبعد ركن في
+          صندوق النصّ كان على بُعد **٢٨٠** من مركز القوس والحدّ
+          **١٨٠** · يعني ١٠٠ بكسل داخلة جوّه القطاعات، وده اللي
+          كان بيخلّي «سقفه ١,٠٠٠,٠٠٠» مدفونًا تحت «تقديم الجهة».
+
+          الصح: الجوف بياخد **الثابت وحده** (المفتاح والاسم)،
+          والتفصيل المتغيّر بينزل تحت القوس · زي ما كان بيحصل في
+          الوضع المضغوط بالظبط. الوضعان بقوا سلوكًا واحدًا، فالخطأ
+          ما بيرجعش من الباب التاني. */}
       <div className="fanhole" key={hover === null ? 'base' : hover}>
         <div className="fhk">{active ? active.k : 'صاحب القرار في هذا المبلغ'}</div>
         <div className="fht">{active ? active.t : decided.role}</div>
-        {!compact && (active ? activeLines : fallbackLines)}
+      </div>
       </div>
 
-      {compact && (
-        <div className="fanfoot" key={hover === null ? 'fbase' : `f${hover}`}>
-          {active ? activeLines : fallbackLines}
-        </div>
-      )}
+      <div className="fanfoot" key={hover === null ? 'fbase' : `f${hover}`}>
+        {active ? activeLines : fallbackLines}
+      </div>
     </div>
   )
 }
