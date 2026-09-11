@@ -117,16 +117,18 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
         </span>
       </span>
 
-      {allowed.map((item, i) => {
-        const prev = allowed[i - 1]
+      {allowed.map((item) => {
         return (
           <NavLink
             key={item.key}
             to={item.to}
             end={item.to === '/'}
+            /* التجميع كان بيتعلّم بهامش على أول بند في كل مجموعة
+               (`.newgroup`). يعني إيقاعان في قايمة من ستّة بنود،
+               وفاصل قبل بند واحد في الآخر بيتقري «ده منفصل» لا
+               «هنا مجموعة». اتشال، والمسافة بقت واحدة. */
             className={({ isActive }) =>
-              `railitem${isActive ? ' on' : ''}${item.mob ? '' : ' nomob'}` +
-              `${prev && prev.group !== item.group ? ' newgroup' : ''}`
+              `railitem${isActive ? ' on' : ''}${item.mob ? '' : ' nomob'}`
             }
           >
             <Icon name={icons[item.icon as IconName]} />

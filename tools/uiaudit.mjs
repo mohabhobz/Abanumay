@@ -72,7 +72,9 @@ const SCALE = {
      ٤٤ = الحدّ الأدنى للهدف اللمسي في WCAG 2.5.5، والتحكّم
      بيوصله **بجسمه** لا بحيلة «مقاس + مسافة». */
   control: [44],
-  label: [18],
+  /* ٢٠ لا ١٨: سطر الوسم بقى ١٦ عشان ذيل الياء العربي يلاقي مكانه
+     جوّه الكبسولة بدل ما يلزق في حافتها. ٢ + ١٦ + ٢. */
+  label: [20],
   badge: [24],
   iconBox: [24, 30, 38, 44],
   space: [0, 2, 4, 6, 8, 12, 16, 22, 32, 48],
@@ -107,6 +109,8 @@ const tabs = []
 const drop = []
 const primary = []
 const dots = new Map()
+const edgeRings = new Map()
+const edgePartial = new Map()
 const rowsMix = []
 const nums = { total: 0, noTabular: 0 }
 
@@ -238,6 +242,61 @@ for (const theme of themes) {
       }
       out.dots = [...new Set(out.dots)]
 
+      /* ══ الحافة ══
+         ملاحظة العميل: «اليمين واضح وتحت مش ظاهر». السبب مكانش
+         حافة ناقصة — كان إن **الحافة الشعرية الواحدة مكتوبة
+         بأربعتاشر قوّة** في الستايل، فكارتان جنب بعض ليهم حافتان
+         مختلفتان فعلًا، وعلى خلفية متدرّجة واحدة بتبان والتانية
+         بتختفي.
+
+         الفحص ده بيمسك التنين:
+           أ · **صندوق حافته على بعض الجهات بس** — خلفية وركن
+               ومعاه `inset` من جهة واحدة بلا حلقة كاملة
+           ب · **جرد قوّات الحافة** — المفروض خمس درجات لا أكتر */
+      out.edges = { partial: [], rings: [] }
+      for (const e of document.querySelectorAll('*')) {
+        if (e.offsetParent === null) continue
+        const cs = getComputedStyle(e)
+        const sh = cs.boxShadow
+        if (!sh || sh === 'none' || !sh.includes('inset')) continue
+        /* خلية الجدول مستثناة: ركنها المدوّر جايّ من بلاطة الجدول
+           (`--slab`) لا من كونها صندوقًا، وخطّها العلوي **فاصل صفوف**.
+           الخلية مش صندوق قائم بذاته. */
+        if (e.tagName === 'TD' || e.tagName === 'TH') continue
+        const b = e.getBoundingClientRect()
+        if (b.width < 24 || b.height < 16) continue
+
+        /* الظلال بتتفصل بفاصلة برّه الأقواس */
+        const parts = []
+        let depth = 0, cur = ''
+        for (const ch of sh) {
+          if (ch === '(') depth++
+          if (ch === ')') depth--
+          if (ch === ',' && depth === 0) { parts.push(cur); cur = '' } else cur += ch
+        }
+        parts.push(cur)
+
+        let ring = null, sided = 0
+        for (const raw of parts) {
+          const t = raw.trim()
+          if (!t.includes('inset')) continue
+          const nums = t.replace(/rgba?\([^)]*\)/g, '').match(/-?\d*\.?\d+px/g) ?? []
+          const [x, y, blur, spread] = nums.map((v) => parseFloat(v))
+          const col = (t.match(/rgba?\([^)]*\)/) ?? [''])[0]
+          if (x === 0 && y === 0 && (blur ?? 0) === 0 && (spread ?? 0) > 0) ring = col
+          else if ((blur ?? 0) === 0 && (x !== 0 || y !== 0)) sided += 1
+        }
+        const painted = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.backgroundImage !== 'none'
+        const rounded = (parseFloat(cs.borderTopLeftRadius) || 0) >= 8
+        if (ring) out.edges.rings.push(ring)
+        /* صندوق = مرسوم ومدوّر. الفاصل بين إخوة مش صندوق. */
+        else if (sided && painted && rounded) {
+          out.edges.partial.push(`${String(e.className).split(' ')[0] || e.tagName}  ${Math.round(b.width)}×${Math.round(b.height)}`)
+        }
+      }
+      out.edges.rings = [...new Set(out.edges.rings)]
+      out.edges.partial = [...new Set(out.edges.partial)]
+
       /* الأرقام في الجداول: أرقام مصفوفة؟ وفيه فاصل بين رقمين؟ */
       out.nums = { noTabular: 0, total: 0 }
       for (const td of document.querySelectorAll('.tbl td.num, .tbl td .num')) {
@@ -300,6 +359,8 @@ for (const theme of themes) {
     for (const x of found.tabs) tabs.push({ ...x, route, theme })
     if (found.drop.native || found.drop.custom) drop.push({ ...found.drop, route, theme })
     if (found.primary > 1) primary.push({ route, theme, n: found.primary })
+    for (const r of found.edges?.rings ?? []) if (!edgeRings.has(r)) edgeRings.set(r, `${route}·${theme}`)
+    for (const x of found.edges?.partial ?? []) if (!edgePartial.has(x)) edgePartial.set(x, route)
     for (const d of found.dots ?? []) {
       const [cls, px] = d.split(':')
       if (!dots.has(cls)) dots.set(cls, new Map())
@@ -381,6 +442,27 @@ console.log(`\n═══ العلامات الدائرية — كل نقطة و�
     const v = [...sizes.entries()].map(([px, r]) => `${px}px (${r})`).join('  ·  ')
     console.log(`  ${many ? '🔴' : '  '} ${cls.padEnd(12)} ${v}`)
   }
+}
+
+console.log(`\n═══ الحافة: صندوق مرسوم من بعض جهاته ═══`)
+{
+  if (!edgePartial.size) console.log('  نضيف — كل صندوق حلقته كاملة.')
+  for (const [x, r] of [...edgePartial].slice(0, 14)) { drift += 1; console.log(`  🔴 ${x}   ${r}`) }
+}
+
+console.log(`\n═══ الحافة: كام قوّة مختلفة للحلقة ═══`)
+{
+  /* الحياد بس. الحافة الملوّنة (حالة) محور تاني. */
+  const neutral = [...edgeRings].filter(([c]) => {
+    const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+    if (!m) return false
+    const [r, g, b] = [+m[1], +m[2], +m[3]]
+    return Math.abs(r - g) < 60 && Math.abs(g - b) < 60
+  })
+  console.log(`  محايدة: ${neutral.length} · ملوّنة (حالة): ${edgeRings.size - neutral.length}`)
+  for (const [c, w] of neutral.slice(0, 12)) console.log(`     ${c.padEnd(30)} ${w}`)
+  /* السلّم خمس درجات × تلات ثيمات — كل ثيم بيحسب ألفا تانية */
+  if (neutral.length > 5 * themes.length) drift += 1
 }
 
 console.log(`\n═══ أرقام الجداول ═══`)

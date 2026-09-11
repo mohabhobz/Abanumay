@@ -80,7 +80,7 @@
      محتواه بدل ما يتشدّ على `min-height` والحشو الرأسي صفر.
 
          --h-md  44 = 12 + 20 + 12   **كل تحكّم تفاعلي، بلا استثناء**
-         --h-xs  18 =  2 + 14 +  2   الوسم — تسمية غير تفاعلية
+         --h-xs  20 =  2 + 16 +  2   الوسم — تسمية غير تفاعلية
 
      **قاعدة ملزِمة:** أي تحكّم في نفس الصفّ ارتفاعه `--h-md`:
      الزرار والحقل والبحث والشريحة والتاب والمبدّل — كلهم واحد.
@@ -97,19 +97,37 @@
 
      والحشو ١٢ على الجهات الأربعة: «فوق وتحت» = «يمين وشمال»
      رقمًا واحدًا لا رقمين قريبين من بعض. */
-  --h-xs:18px; --h-md:44px; --h-lg:42px;
+  --h-xs:20px; --h-md:44px; --h-lg:42px;
   --pb-md:12px; --lh-md:20px;   /* 12 + 20 + 12 = 44 */
-  --pb-xs:2px;  --lh-xs:14px;   /* الوسم */
+  /* سطر الوسم **١٦ لا ١٤**: ١٤ على خطّ ١١٫٢ = ١٫٢٥، وده ضيّق على
+     العربي. ذيل الياء في «في التشغيل» كان بينزل لحدّ حافة الكبسولة
+     والحروف بتتقري ملزوقة في التحت، فالحشو ٢ فوق و٢ تحت بيبقى
+     مكتوبًا متساويًا ومقروءًا غير متساوٍ. */
+  --pb-xs:2px;  --lh-xs:16px;   /* الوسم */
   --pi-md:12px;                 /* الحشو الأفقي — نفس الرأسي */
+
+  /* ═══ سلّم الحافة — خمس درجات، كل واحدة ليها دور ═══
+     كانت الحافة الشعرية الواحدة مكتوبة بـ**أربعتاشر قوّة**:
+     ×.7 ×.8 ×.9 ×1 ×1.5 ×1.6 ×1.7 ×1.8 ×2 ×2.2 ×2.4 ×2.6 ×2.8 ×4.
+     يعني كارتان جنب بعض ليهم حافتان مختلفتان فعلًا — واحدة بتبان
+     على الخلفية المتدرّجة والتانية بتختفي. ودي كانت ملاحظة العميل:
+     «اليمين واضح وتحت مش ظاهر».
+
+     الدرجة هنا **دور لا رقم**، والرقم بيتكتب مرة واحدة. */
+  --edge-d: rgba(var(--edgeC), calc(var(--edge-hair)*.55));  /* فاصل بين إخوة */
+  --edge-1: rgba(var(--edgeC), var(--edge-hair));            /* حافة أي صندوق ساكن */
+  --edge-2: rgba(var(--edgeC), calc(var(--edge-hair)*1.7));  /* صندوق عايم فوق المحتوى */
+  --edge-i: rgba(var(--edgeC), calc(var(--edge-hair)*2));    /* هوفر */
+  --edge-f: rgba(var(--edgeC), calc(var(--edge-hair)*2.8));  /* تركيز */
 
   /* ═══ الحقل — خلفية وحافة واحدة ═══
      البحث والحقل المنسدل كانوا بخلفيتين مختلفتين (تدرّج `--g-data`
      بضبابية ٢٢px مقابل لون مسطّح ٥٦٪) وبثلاث قيم للخلفية لو حسبنا
      تجاوز شريط الأدوات. دلوقتي توكن واحدة. */
   --fld-bg: rgba(var(--wC),calc(.62 * var(--wM)));
-  --fld-line: rgba(var(--edgeC),var(--edge-hair));
-  --fld-line-h: rgba(var(--edgeC),calc(var(--edge-hair)*2));
-  --fld-line-f: rgba(var(--edgeC),calc(var(--edge-hair)*2.8));
+  --fld-line: var(--edge-1);
+  --fld-line-h: var(--edge-i);
+  --fld-line-f: var(--edge-f);
 
   /* شارة العدد جوّه تاب أو شريحة — دايرة ٢٤ لرقم من خانة واحدة،
      وبتمدّ كبسولة لرقمين. مش `--h-xs`: الوسم تسمية والشارة عدّاد،
@@ -237,24 +255,24 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
   -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   border-radius:var(--r3);padding:var(--pad);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
   background:linear-gradient(128deg,rgba(var(--wC),calc(.45 * var(--wM))) 0%,rgba(var(--wC),calc(.14 * var(--wM))) 45%,
     rgba(var(--wC),calc(0 * var(--wM))) 100%)}
 /* السطح الداخلي: صفوف مفصولة بخط شعري بدل كارت جوّه كارت */
 .data{position:relative;background:transparent;border-radius:0;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .data:first-child{box-shadow:none}
 .col-s>.data:first-child,.ins>.data:first-child,.al>.data:first-child{box-shadow:none}
 /* مفيش كارت جوّه كارت: السطح الداخلي خط شعري بس */
 .well{position:relative;background:transparent;border-radius:0;
   -webkit-backdrop-filter:none;backdrop-filter:none;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .well:first-child{box-shadow:none}
 .chrome{position:relative;background:var(--g-chrome);
   -webkit-backdrop-filter:blur(var(--g-chrome-blur)) saturate(1.35);
   backdrop-filter:blur(var(--g-chrome-blur)) saturate(1.35);
-  box-shadow:inset 0 -1px 0 rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 -1px 0 var(--edge-d)}
 .hd{display:flex;align-items:baseline;justify-content:space-between;gap:.7rem;margin-bottom:1.15rem}
 .hd h3{font-size:.98rem}
 .hd .meta{font-size:.74rem;color:var(--t3)}
@@ -317,7 +335,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .mark-64{width:64px;height:64px}
 .badge{flex:none;display:grid;place-items:center;border-radius:50%;color:var(--ink-soft);
   background:rgba(var(--wC),calc(.75 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .badge svg{width:64%;height:64%}
 .badge-30{width:34px;height:34px}
 .badge-34{width:40px;height:40px}
@@ -331,15 +349,15 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
   /* صندوق السطر بيزوّد فراغًا تحت الحرف العربي أكتر من فوقه،
      فالحرف بيقعد أعلى من نص الدايرة. `line-height:1` بيلغي الفرق. */
   line-height:1;letter-spacing:0;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .av-28{width:28px;height:28px;font-size:.64rem}
 .pht-28{width:28px;height:28px}
 .pht{border-radius:50%;object-fit:cover;flex:none;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .pht-34{width:34px;height:34px}
 .pfp{width:34px;height:34px;flex:none;border-radius:50%;overflow:hidden;position:relative;
   background:repeating-linear-gradient(135deg,rgba(var(--edgeC),.10) 0 5px,rgba(var(--edgeC),.04) 5px 10px);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .pfp img{width:100%;height:100%;object-fit:cover;display:block}
 .ic{width:20px;height:20px;flex:none;display:block;stroke:currentColor;fill:none;stroke-width:1.75;
   stroke-linecap:round;stroke-linejoin:round}
@@ -394,10 +412,10 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .btn:hover{transform:translateY(-1px);filter:brightness(.97)}
 .btn-1{background:rgba(var(--wC),calc(.85 * var(--wM)));color:var(--t1);
   -webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .btn-2{background:rgba(var(--wC),calc(.55 * var(--wM)));color:var(--t2);
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 /* ══ ترتيب الأفعال ══
    دعوة أساسية **واحدة** في الشاشة، والباقي ثانوي بنفس الشكل،
    واللون محجوز للمعنى لا للترتيب:
@@ -412,7 +430,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    نظامنا **يوصف حالة** («معاد للاستكمال») ما بيعملش نداء، وده
    مكتوب هنا من الأول والكود كان بيخالفه. */
 .btn-p{background:var(--solid);color:var(--on-solid);font-weight:600;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .btn-p:hover{filter:brightness(1.06)}
 .btn-3{background:rgba(var(--retC2),.12);color:var(--ret-ink);
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
@@ -421,7 +439,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
   box-shadow:inset 0 0 0 1px rgba(192,67,42,.28)}
 .btn-ghost{background:transparent;color:var(--t2);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .btn-ghost:hover{background:rgba(var(--edgeC),.05);color:var(--t1)}
 .btn-off{background:rgba(var(--wC),calc(.40 * var(--wM)));color:var(--t3);cursor:not-allowed;
   box-shadow:inset 0 1px 0 rgba(var(--edgeC),.08)}
@@ -432,9 +450,9 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .btn-sm{font-size:var(--fs-2)}
 .fld{display:flex;align-items:center;gap:.55rem;padding:.62rem .85rem;border-radius:var(--r1);
   background:var(--g-data);-webkit-backdrop-filter:blur(var(--g-data-blur));backdrop-filter:blur(var(--g-data-blur));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.9))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .fld input,.fld select{flex:1;font-size:.84rem;min-width:0}
-.fld:focus-within{box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.8))}
+.fld:focus-within{box-shadow:inset 0 0 0 1px var(--edge-f)}
 .fld.pill{border-radius:var(--rp)}
 .fld.err{box-shadow:inset 0 0 0 1px rgba(192,67,42,.5)}
 .fld select{appearance:none;cursor:pointer}
@@ -460,8 +478,15 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tbl td{height:48px;padding-block:0;padding-inline:12px;font-size:var(--fs-3);background:rgba(var(--wC),calc(.30 * var(--wM)));box-shadow:inset 0 1px 0 rgba(var(--edgeC),.05);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tbl td>*{max-width:100%}
-.tbl td .tlink,.tbl td .mono,.tbl td .sub,.tbl td .tag{
-  display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+/* `vertical-align` كان **bottom**، فالرقم والوسم بيتعلّقوا في قاع
+   صندوق السطر لا بيتراكزوا مع نصّ الخلية اللي جنبهم — ودي كانت
+   ملاحظة «خلي الأرقام في السنتر مع التكست».
+   و`display:inline-block` كان بيلغي `inline-flex` بتاعة `.tag`،
+   فالوسم بيفقد `align-items:center` جوّه الجدول بس: نفس الوسم
+   بيتراكز برّه الجدول وما بيتراكزش جوّاه. */
+.tbl td .tlink,.tbl td .mono,.tbl td .sub{
+  display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.tbl td .tag{max-width:100%;overflow:hidden;vertical-align:middle}
 /* خانة التحديد: بادنج أضيق وبلا قصّ — عرض العمود ٤٤px، ولو أخد
    بادنج الخلية العادي (٢٩px) الصندوق نفسه بيتقصّ وبتظهر نقط جنبه. */
 .tbl .tchk{padding-inline:.62rem;text-overflow:clip}
@@ -511,6 +536,11 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 /* التاب بيحضن نصّه: عرضه `fit-content` وارتفاعه ناتج حشوه، فما
    بيتمدّش على عرض الحاوية ولا بيتشدّ مع إخوته. */
 .tabs{width:fit-content;max-width:100%}
+/* التاب حشوه الأفقي **١٠** لا ١٢ — بطلب العميل. هو التحكّم الوحيد
+   اللي حشوه مش زي الباقي، لأنه التنقّل جوّه الصفحة لا أداة عليها،
+   وبيتكرّر ستّ مرات في صفّ واحد فالفرق بيتراكم. الارتفاع ٤٤ زي
+   الباقي. */
+.tabs .tab{padding-inline:10px}
 .tab{display:inline-flex;align-items:center;width:fit-content;
   padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
   border-radius:var(--rp);font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
@@ -518,7 +548,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tab:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
 .tab.on{color:var(--on-solid);background:var(--solid);
   -webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 /* نقطة الحدث: **معنى واحد، قطر واحد**.
    الخطّ الزمني كان بينقّط ١١ والسجل ١٣ — نفس الشيء بالظبط (حصل
    حاجة، وده وقتها ولونها) بمقاسين. والقارئ بيشوف الاتنين في نفس
@@ -600,7 +630,7 @@ to{opacity:1;transform:none}
 .chip{font-size:.76rem;padding:.42rem .8rem;border-radius:var(--rp);white-space:nowrap;
   background:rgba(var(--wC),calc(.62 * var(--wM)));color:var(--t1);
   -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .chip:hover{filter:brightness(.96)}
 .modal{padding:0;overflow:hidden;max-width:420px;border-radius:var(--r4)}
 .modal .mh{padding:1rem 1.1rem .8rem;display:flex;align-items:center;gap:.6rem}
@@ -643,10 +673,10 @@ to{opacity:1;transform:none}
 
    والهدف اللمسي لسه مستوفى: **٣٨ + ٦ = ٤٤** خطوة رأسية لكل بند،
    وWCAG 2.5.5 بيقبل المسافة بديلًا عن الحجم. */
-.rail{flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:6px;
+.rail{flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:12px;
   padding:16px 8px;position:relative;z-index:25;
   transition:width .22s cubic-bezier(.22,.9,.3,1);
-  box-shadow:inset -1px 0 0 rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset -1px 0 0 var(--edge-d)}
 /* أثناء السحب الانتقال بيخلّي العرض يلحق الماوس متأخّرًا */
 .rail.dragging{transition:none;user-select:none}
 .rail.open{align-items:stretch}
@@ -662,7 +692,7 @@ to{opacity:1;transform:none}
   background:var(--teal);opacity:0;transition:opacity .16s ease}
 .railgrip-b{position:relative;flex:none;display:grid;place-items:center;
   width:26px;height:26px;border-radius:50%;color:var(--t2);background:var(--pop);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2)),
+  box-shadow:inset 0 0 0 1px var(--edge-i),
              0 6px 16px -8px rgba(0,0,0,.35);
   opacity:0;scale:.85;transition:opacity .16s ease,scale .16s cubic-bezier(.22,.9,.3,1)}
 .railgrip:hover .railgrip-l,.railgrip:focus-visible .railgrip-l,
@@ -718,7 +748,7 @@ to{opacity:1;transform:none}
   z-index:70;white-space:nowrap;pointer-events:none;
   padding:.32rem .6rem;border-radius:var(--r1);
   font-size:.76rem;font-family:var(--fd);font-weight:500;color:var(--t1);background:var(--pop);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.4)),
+  box-shadow:inset 0 0 0 1px var(--edge-i),
              0 10px 22px -10px rgba(0,0,0,.35);
   opacity:0;transition:opacity .14s ease,translate .14s ease}
 .rail:not(.open) .railitem:hover .rail-tip,
@@ -745,7 +775,6 @@ to{opacity:1;transform:none}
 /* الفاصل بين المجموعات = ٢٢ ناقص الـ٨ اللي جاية من `gap`، فالفجوة
    المرئية بينهم ٢٢ بالظبط. */
 /* الفاصل بين المجموعات = ١٦ ناقص الـ٦ اللي جاية من `gap` */
-.rail .railitem.newgroup{margin-top:10px}
 .railfoot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:.6rem}
 .screen{--padt:clamp(1.6rem,3vw,2.6rem);
   flex:1;min-height:0;overflow:auto;padding:var(--padt) clamp(1.4rem,3vw,2.6rem) clamp(1.2rem,2.6vw,2.2rem);
@@ -767,9 +796,9 @@ to{opacity:1;transform:none}
 }
 .ask{display:flex;align-items:center;gap:.75rem;padding:.5rem;padding-inline-start:1.1rem;border-radius:var(--rp);
   background:var(--g-data);-webkit-backdrop-filter:blur(var(--g-data-blur));backdrop-filter:blur(var(--g-data-blur));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.9))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .ask.free{background:var(--g-card);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*(1 + var(--near,0)*.8)));
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*(1 + var(--near,0)*.7)));
   transition:box-shadow .12s linear,background .12s linear;position:relative;overflow:hidden}
 /* إضاءة تتبع الماوس فوق الزجاج */
 .ask.free::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
@@ -778,9 +807,9 @@ to{opacity:1;transform:none}
     rgba(var(--wC),calc(.75 * var(--wM))),rgba(var(--wC),calc(.35 * var(--wM))) 45%,transparent 72%)}
 .ask.free:hover::before{opacity:1}
 .ask.free:hover{background:rgba(var(--wC),calc(.62 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.7))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .ask.free:focus-within{background:rgba(var(--wC),calc(.78 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.8))}
+  box-shadow:inset 0 0 0 1px var(--edge-f)}
 .ask.free:hover .ph{color:var(--t2)}
 .ask.free .ph{transition:color .2s ease}
 /* فقاعة رسالة المستخدم: كارت كامل */
@@ -789,13 +818,13 @@ to{opacity:1;transform:none}
   font-size:.86rem;line-height:1.85;
   -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .msg>div{font-size:inherit;line-height:inherit}
 /* كارت مدمج داخل رد المساعد (محتوى منسوق، مش نص حر) */
 .acard{padding:var(--pad);border-radius:var(--r3);background:var(--g-card);
   -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .bars{display:flex;align-items:flex-end;gap:.55rem;height:110px;padding-top:.4rem}
 .bars>div{flex:1;display:flex;flex-direction:column;align-items:center;gap:.45rem;height:100%;justify-content:flex-end}
 .bars i{width:100%;max-width:26px;border-radius:4px 4px 0 0;display:block}
@@ -806,10 +835,10 @@ to{opacity:1;transform:none}
 .attach:hover{color:var(--t1);background:rgba(var(--edgeC),.08)}
 .go{width:36px;height:36px;flex:none;border-radius:var(--rp);display:grid;place-items:center;color:var(--on-solid);
   background:var(--solid);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .decbar{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;
   gap:.8rem;flex-wrap:wrap;padding:.9rem 1.1rem;border-radius:var(--r4);z-index:3;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .swatch{height:64px;border-radius:var(--r2);display:flex;align-items:flex-end;padding:.45rem .6rem;
   font-size:.68rem;font-family:var(--fm);direction:ltr;color:#04191A}
 .radio{display:grid;place-items:center;height:64px;font-size:.7rem;color:var(--t2);font-family:var(--fm);direction:ltr}
@@ -893,9 +922,9 @@ input[type="radio"]{appearance:auto;-webkit-appearance:auto}
 input[type="checkbox"]{appearance:none;-webkit-appearance:none;
   width:16px;height:16px;flex:none;margin:0;position:relative;cursor:pointer;
   border-radius:var(--r0);background:rgba(var(--wC),calc(.72 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.6));
+  box-shadow:inset 0 0 0 1px var(--edge-i);
   transition:background .14s ease,box-shadow .14s ease}
-input[type="checkbox"]:hover{box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*4))}
+input[type="checkbox"]:hover{box-shadow:inset 0 0 0 1px var(--edge-f)}
 input[type="checkbox"]:checked{background:var(--solid);box-shadow:none}
 /* العلامة نفسها: ضلعان بيتلفّوا ٤٥° — أنضف من صورة أو خط */
 input[type="checkbox"]:checked::after{content:"";position:absolute;
@@ -1070,7 +1099,7 @@ to{opacity:1;transform:none}
   color:var(--t3);transition:color .16s ease,background .16s ease}
 .aclose:hover{color:var(--t1);background:rgba(var(--edgeC),.07)}
 /* بيقول لك إنه شايف نفس اللي أنت شايفه — ده اللي بيخلي الأسئلة قصيرة */
-.actx{padding:.85rem 1.15rem;box-shadow:inset 0 -1px 0 rgba(var(--edgeC),var(--edge-hair))}
+.actx{padding:.85rem 1.15rem;box-shadow:inset 0 -1px 0 var(--edge-d)}
 .actxv{font-family:var(--fd);font-weight:500;font-size:.88rem;margin-top:.2rem;line-height:1.5}
 /* غلاف بيشيل تدرّجَي الحافة فوق وتحت.
    بيظهر كل واحد لما يكون في كلام مخفي في اتجاهه، وبيختفي عند الحافة. */
@@ -1088,7 +1117,7 @@ to{opacity:1;transform:none}
 .amsg{font-size:.86rem;line-height:1.85;border-radius:var(--r2)}
 .amsg.me{align-self:flex-start;max-width:82%;padding:.6rem .9rem;
   background:rgba(var(--wC),calc(.78 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .amsg.ai{padding:0 0 .1rem}
 .amsg.ai b{font-weight:600;color:var(--t1)}
 /* كل إجابة تحتها مصدرها — دي القاعدة اللي بتخلي مدير عام يثق فيها */
@@ -1145,7 +1174,7 @@ to{opacity:1;transform:none}
   width:236px;padding:.35rem;border-radius:var(--r2);
   display:flex;flex-direction:column;gap:.2rem;
   background:var(--pop);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.8)),
+  box-shadow:inset 0 0 0 1px var(--edge-2),
              0 18px 44px rgba(20,69,71,.20);
   animation:acctin .18s cubic-bezier(.22,.9,.3,1) both}
 @keyframes acctin{from{opacity:0;transform:translateY(6px) scale(.985)}
@@ -1159,7 +1188,7 @@ to{opacity:1;transform:none}
 .acct-name{font-family:var(--fd);font-weight:600;font-size:.85rem;line-height:1.4;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acct-role{font-size:.72rem;margin-top:1px}
-.acct-sec{padding:.3rem 0;box-shadow:inset 0 1px 0 rgba(var(--edgeC),var(--edge-hair))}
+.acct-sec{padding:.3rem 0;box-shadow:inset 0 1px 0 var(--edge-d)}
 .acct-lbl{font-size:.68rem;color:var(--t3);padding:.25rem .6rem .35rem}
 /* بتلغي ستايل أزرار الريل (عمودي وفي النص) لأن القائمة جوّه الريل */
 .acct-sec>button{width:100%;display:flex;flex-direction:row;align-items:center;
@@ -1180,7 +1209,7 @@ to{opacity:1;transform:none}
   transition:background .16s ease,color .16s ease,box-shadow .16s ease}
 .seg button:hover{color:var(--t2)}
 .seg button.on{color:var(--t1);background:rgba(var(--wC),calc(.95 * var(--wM)));
-  box-shadow:0 1px 3px rgba(20,69,71,.10),inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:0 1px 3px rgba(20,69,71,.10),inset 0 0 0 1px var(--edge-1)}
 /* شرارة المساعد — تدرّج الهوية بيمرّ عليها ولمعة خفيفة تلفت النظر.
    الشكل نفسه ماسك، فالتدرّج والجلو بياخدوا حدود النجمة بالظبط. */
 @keyframes aisheen{0%{background-position:0% 50%}
@@ -1288,10 +1317,10 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   border-radius:var(--r3);overflow:hidden;
   background:linear-gradient(180deg,rgba(var(--wC),calc(.88 * var(--wM))),rgba(var(--wC),calc(.78 * var(--wM))));
   -webkit-backdrop-filter:blur(40px) saturate(1.4);backdrop-filter:blur(40px) saturate(1.4);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6)),0 24px 60px rgba(20,69,71,.18);
+  box-shadow:inset 0 0 0 1px var(--edge-2),0 24px 60px rgba(20,69,71,.18);
   animation:fprevin .26s cubic-bezier(.22,.9,.3,1) both}
 .fphead{display:flex;align-items:center;gap:.25rem;padding:.9rem 1.1rem;
-  box-shadow:inset 0 -1px 0 rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 -1px 0 var(--edge-d)}
 .fphead>.badge{margin-inline-end:.45rem}
 .fpbody{flex:1;min-height:0;overflow:auto;padding:1.1rem;background:rgba(var(--edgeC),.045)}
 /* الصفحة البيضا بتحتضن المستند، ما بتفرشش مساحة فاضية حواليه:
@@ -1302,7 +1331,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .fpph{display:flex;flex-direction:column;align-items:center;gap:.4rem;color:var(--t3);text-align:center}
 .fpph svg{width:34px;height:34px;opacity:.5;fill:none;stroke:currentColor;stroke-width:1.6}
 .fpfoot{display:flex;align-items:center;gap:.6rem;padding:.85rem 1.1rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .fprev .ascrim{display:none}
 @media (max-width:700px){.fprev{width:96vw}
 }
@@ -1322,7 +1351,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
      بتترسم تحته وبتتقفل قبل ما توصل لها */
   .mobtop{display:flex;align-items:center;gap:.6rem;flex:none;position:relative;z-index:45;
     padding:.5rem clamp(.9rem,3vw,1.2rem);
-    box-shadow:inset 0 -1px 0 rgba(var(--edgeC),var(--edge-hair))}
+    box-shadow:inset 0 -1px 0 var(--edge-d)}
 .mobtitle{flex:1;min-width:0;font-family:var(--fd);font-weight:700;font-size:.95rem}
 .mobtop .mark-38{width:32px;height:32px}
 /* الريل بقى تابات تحت */
@@ -1332,7 +1361,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
     -webkit-backdrop-filter:blur(24px) saturate(1.3);backdrop-filter:blur(24px) saturate(1.3);
     flex-direction:row;justify-content:space-around;align-items:stretch;gap:0;
     padding:.35rem .3rem calc(.35rem + env(safe-area-inset-bottom,0px));
-    box-shadow:inset 0 1px 0 rgba(var(--edgeC),var(--edge-hair))}
+    box-shadow:inset 0 1px 0 var(--edge-d)}
 /* الشريط السفلي مش مطويّ ولا مفرود: التسمية تحت الأيقونة زي ما
      كانت، وزرار الطيّ والتلميح مالهمش معنى هنا */
   .rail,.rail.open{--rail-w:auto;align-items:stretch}
@@ -1452,17 +1481,17 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .chatlist{flex:none;width:274px;display:flex;flex-direction:column;min-height:0;
   margin:var(--gap) 0 var(--gap) 0;margin-inline-start:var(--gap);
   border-radius:var(--r3);overflow:hidden;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .cl-head{display:flex;align-items:center;gap:.6rem;padding:.85rem .95rem .55rem}
 .cl-title{flex:1;font-family:var(--fd);font-weight:700;font-size:.92rem}
 .cl-new{width:32px;height:32px;flex:none;border-radius:50%;display:grid;place-items:center;
   color:var(--t2);background:rgba(var(--wC),calc(.7 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
+  box-shadow:inset 0 0 0 1px var(--edge-1);
   transition:color .16s ease,background .16s ease,transform .16s ease}
 .cl-new:hover{color:var(--t1);background:rgba(var(--wC),calc(.9 * var(--wM)));transform:rotate(90deg)}
 .cl-search{display:flex;align-items:center;gap:.5rem;margin:0 .85rem .5rem;padding:.5rem .7rem;
   border-radius:var(--rp);background:rgba(var(--wC),calc(.6 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .cl-search input{flex:1;min-width:0;font-size:.8rem}
 .cl-body{flex:1;min-height:0;overflow:auto;padding:.3rem 1.05rem 1rem;
   scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.2) transparent}
@@ -1481,7 +1510,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cl-row.over{box-shadow:inset 0 2px 0 var(--teal)}
 .cl-row:hover{background:rgba(var(--edgeC),.05)}
 .cl-row.on{background:rgba(var(--wC),calc(.8 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.5))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .cl-main{flex:1;min-width:0;text-align:start;padding:.52rem .5rem}
 .cl-t{font-family:var(--fd);font-weight:500;font-size:.83rem;line-height:1.4;
   display:flex;align-items:center;gap:.35rem;
@@ -1496,7 +1525,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   display:flex;flex-direction:column;
   background:var(--pop);
   -webkit-backdrop-filter:none;backdrop-filter:none;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.8)),0 16px 38px rgba(20,69,71,.18);
+  box-shadow:inset 0 0 0 1px var(--edge-2),0 16px 38px rgba(20,69,71,.18);
   animation:airise .18s ease both}
 .cl-menu button{display:flex;align-items:center;gap:.5rem;padding:.5rem .6rem;border-radius:var(--r1);
   font-size:.8rem;color:var(--t2);text-align:start}
@@ -1504,11 +1533,11 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cl-menu button.danger{color:var(--no)}
 .cl-menu button.danger:hover{background:rgba(var(--noC),.09)}
 .cl-empty{padding:1.6rem .8rem;text-align:center}
-.cl-foot{padding:.7rem .95rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),var(--edge-hair));font-size:.7rem}
+.cl-foot{padding:.7rem .95rem;box-shadow:inset 0 1px 0 var(--edge-d);font-size:.7rem}
 /* ── عمود المحادثة ── */
 .chatcol{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;position:relative}
 .chat-top{padding:.85rem clamp(1rem,2.4vw,1.7rem);
-  box-shadow:inset 0 -1px 0 rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 -1px 0 var(--edge-d)}
 /* نفس عرض `.thread` و`.welcome` بالظبط — الترويسة والمحتوى عمود واحد */
 .chat-top-in{width:100%;max-width:760px;margin-inline:auto;
   display:flex;align-items:center;gap:.25rem;min-height:30px}
@@ -1569,7 +1598,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cmsg{animation:airise .34s cubic-bezier(.22,.9,.3,1) both}
 .cmsg.me{align-self:flex-start;max-width:78%;padding:.75rem 1.05rem;border-radius:var(--r3);
   background:rgba(var(--wC),calc(.82 * var(--wM)));font-size:.88rem;line-height:1.75;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .cmsg.ai{max-width:100%}
 .ctext{font-size:.9rem;line-height:1.95}
 .mdp{margin:0}
@@ -1579,7 +1608,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* ── التفكير ── */
 .think{margin-bottom:.9rem;border-radius:var(--r2);
   background:rgba(var(--wC),calc(.4 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .th-head{display:flex;align-items:center;gap:.5rem;width:100%;padding:.6rem .8rem;
   font-size:.8rem;color:var(--t2);font-family:var(--fd);text-align:start}
 .th-head svg{margin-inline-start:auto;color:var(--t3);transition:transform .2s ease}
@@ -1593,7 +1622,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* ── بلوكات الأدلة ── */
 .cblock{margin-top:.9rem;padding:.95rem 1.05rem;border-radius:var(--r2);
   background:rgba(var(--wC),calc(.55 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .cb-h{display:flex;align-items:baseline;justify-content:space-between;gap:.7rem;margin-bottom:.5rem}
 .cb-v{font-family:var(--fd);font-weight:700;font-size:1.1rem}
 .cb-v small{font-size:.62em;font-weight:400;color:var(--t2)}
@@ -1603,14 +1632,14 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cb-n{font-family:var(--fd);font-weight:700;font-size:1.15rem;margin-top:.15rem}
 .cb-led{display:flex;flex-direction:column}
 .cb-led>div{display:flex;justify-content:space-between;padding:.5rem 0;font-size:.85rem;color:var(--t2);
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .cb-led>div:first-child{box-shadow:none}
 .cb-led .strong{color:var(--t1);font-family:var(--fd);font-weight:700}
 .cb-bars{display:flex;flex-direction:column;gap:.75rem}
 .cb-bl{display:flex;justify-content:space-between;font-size:.8rem;color:var(--t2);margin-bottom:.3rem}
 .cb-list{display:flex;flex-direction:column}
 .cb-list>div{display:grid;grid-template-columns:auto 1fr;gap:.6rem;align-items:start;padding:.6rem 0;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .cb-list>div:first-child{box-shadow:none}
 .cb-dot{width:7px;height:7px;border-radius:50%;margin-top:.45rem;background:rgba(var(--edgeC),.2)}
 .cb-dot.no{background:var(--no)}
@@ -1651,7 +1680,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   background-color:var(--mesh-bg);
   background-image:linear-gradient(160deg,rgba(var(--wC),calc(.60 * var(--wM))),rgba(var(--wC),calc(.38 * var(--wM))));
   -webkit-backdrop-filter:blur(48px) saturate(1.6);backdrop-filter:blur(48px) saturate(1.6);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*(1.5 + var(--near,0)*.9))),
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*(1 + var(--near,0)*.7))),
     0 calc(10px + var(--near,0)*14px) calc(28px + var(--near,0)*26px) rgba(20,69,71,calc(.10 + var(--near,0)*.10));
   transform:translateY(calc(6px * (1 - var(--near,0))));
   transition:transform .3s cubic-bezier(.22,.9,.3,1),box-shadow .3s}
@@ -1661,14 +1690,14 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cbox.float::before{display:none}
 }
 .cbox{max-width:760px;margin:0 auto;border-radius:var(--r3);padding:.55rem .7rem .5rem;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.5)),0 8px 26px rgba(20,69,71,.07);
+  box-shadow:inset 0 0 0 1px var(--edge-2),0 8px 26px rgba(20,69,71,.07);
   transition:box-shadow .2s ease}
-.cbox:focus-within{box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.8)),0 10px 30px rgba(20,69,71,.10)}
+.cbox:focus-within{box-shadow:inset 0 0 0 1px var(--edge-f),0 10px 30px rgba(20,69,71,.10)}
 .cbox textarea{width:100%;resize:none;font-size:.9rem;line-height:1.75;padding:.4rem .35rem;
   max-height:190px;overflow-y:auto;outline:none;border:0;box-shadow:none}
 .cbox textarea:focus,.cbox textarea:focus-visible{outline:none;box-shadow:none}
 .cl-search input:focus,.cl-search input:focus-visible{outline:none;box-shadow:none}
-.cl-search:focus-within{box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.8))}
+.cl-search:focus-within{box-shadow:inset 0 0 0 1px var(--edge-f)}
 .cbox-b{display:flex;align-items:center;gap:.5rem;padding-top:.15rem}
 /* الإرسال/الإيقاف دايمًا في آخر الصف — حتى لو التلميح متخفي في اللوح */
 .cbox-b .go{margin-inline-start:auto}
@@ -1680,7 +1709,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cdisc{text-align:center;margin-top:.5rem;font-size:var(--fs-1)}
 .tobottom{position:absolute;bottom:120px;inset-inline-start:50%;transform:translateX(50%);
   width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--t2);z-index:6;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6)),0 8px 20px rgba(20,69,71,.12);
+  box-shadow:inset 0 0 0 1px var(--edge-2),0 8px 20px rgba(20,69,71,.12);
   animation:airise .2s ease both}
 .tobottom:hover{color:var(--t1)}
 @media (max-width:1100px){
@@ -1740,7 +1769,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .lbox{display:flex;align-items:center;gap:.55rem;padding:.05rem .75rem;
   height:46px;border-radius:var(--r2);background:rgba(var(--wC),calc(.55 * var(--wM)));
   color:var(--t3);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6));
+  box-shadow:inset 0 0 0 1px var(--edge-2);
   transition:box-shadow .18s ease,background .18s ease}
 .lbox:focus-within{background:rgba(var(--wC),calc(.98 * var(--wM)));color:var(--t2);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.34),0 0 0 3px rgba(var(--edgeC),.07)}
@@ -1830,7 +1859,7 @@ to{opacity:1;transform:none}
   padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);border-radius:var(--rp);
   font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   color:var(--t2-g);transition:color .16s ease,background .16s ease;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 /* ══ شارة العدد ══
    كانت ٢٠×١٦ بأرضية ٧٪ — بيضاوي مفلطح شبه شفّاف، لا دايرة ولا
    شارة. الصح: **الارتفاع والعرض الأدنى متساويين**، فرقم واحد
@@ -1938,14 +1967,14 @@ to{opacity:1;transform:none}
 .ftool-f>.fsel .fsel-b select{font-size:var(--fs-3)}
 .fsel.wide{grid-column:1 / -1}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem .8rem;
-  padding-top:.85rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  padding-top:.85rem;box-shadow:inset 0 1px 0 var(--edge-d)}
 .fgrid-t{display:flex;align-items:flex-end;gap:.4rem;flex-wrap:wrap}
 /* الفلاتر الشغّالة — كل واحدة تتشال لوحدها */
 .factive{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;
-  padding-top:.75rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  padding-top:.75rem;box-shadow:inset 0 1px 0 var(--edge-d)}
 .fpill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .6rem;border-radius:var(--rp);
   font-size:.75rem;color:var(--t1);background:rgba(var(--wC),calc(.62 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .fpill:hover{background:rgba(var(--noC),.08);color:var(--no-ink)}
 .fpill svg{color:var(--t3);flex:none}
 .fclear{font-size:.75rem;color:var(--t3);padding:.3rem .5rem}
@@ -1992,7 +2021,7 @@ to{opacity:1;transform:none}
    («أنت هنا») لازم يبقى له نفس الشكل في الصفحة الواحدة. */
 .pgn.on{color:var(--t1);font-weight:600;background:rgba(var(--wC),calc(.84 * var(--wM)));
   -webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2));
+  box-shadow:inset 0 0 0 1px var(--edge-i);
   cursor:default}
 .pgnav{color:var(--t3)}
 .pgnav:disabled{opacity:.32;cursor:not-allowed}
@@ -2033,7 +2062,7 @@ to{opacity:1;transform:none}
 .pcard{display:flex;flex-direction:column;gap:.6rem;padding:1rem 1.05rem;
   transition:transform .18s ease,box-shadow .18s ease}
 .pcard:hover{transform:translateY(-2px);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .pcard.sel{box-shadow:inset 0 0 0 1px rgba(var(--retC2),.42)}
 .pc-top{display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--t3)}
 .pc-sp{flex:1}
@@ -2059,7 +2088,7 @@ to{opacity:1;transform:none}
 .pc-over{font-size:.72rem}
 .pc-reason{font-size:.73rem}
 .pc-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:.6rem;
-  padding-top:.7rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  padding-top:.7rem;box-shadow:inset 0 1px 0 var(--edge-d)}
 .pc-amt{display:flex;flex-direction:column;gap:.1rem}
 .pc-amt .k{font-size:.7rem;color:var(--t3)}
 .pc-amt .v{font-family:var(--fd);font-weight:700;font-size:1rem}
@@ -2075,12 +2104,12 @@ to{opacity:1;transform:none}
 .ecard{display:flex;flex-direction:column;gap:.65rem;padding:1rem 1.05rem;
   transition:transform .18s ease,box-shadow .18s ease}
 .ecard:hover{transform:translateY(-2px);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .ec-top{display:flex;align-items:flex-start;gap:.65rem}
 .ec-init{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:12px;
   font-family:var(--fd);font-weight:700;font-size:1rem;color:var(--ink-soft);
   background:rgba(var(--wC),calc(.75 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .ec-init.lg{width:54px;height:54px;border-radius:16px;font-size:1.35rem}
 .ec-id{flex:1;min-width:0}
 .ec-name{display:block;font-family:var(--fd);font-weight:600;font-size:.92rem;color:var(--t1);
@@ -2092,12 +2121,12 @@ to{opacity:1;transform:none}
 .ec-docs-t{display:flex;align-items:center;justify-content:space-between;font-size:.78rem}
 .ec-docs-t b{font-size:.75rem;font-weight:600;color:var(--t2)}
 .ec-nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));text-align:center;
-  padding-top:.6rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  padding-top:.6rem;box-shadow:inset 0 1px 0 var(--edge-d)}
 .ec-nums div{display:flex;flex-direction:column;gap:.1rem}
 .ec-nums b{font-family:var(--fd);font-weight:700;font-size:1rem}
 .ec-nums span{font-size:.68rem;color:var(--t3)}
 .ec-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:.6rem;
-  padding-top:.65rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  padding-top:.65rem;box-shadow:inset 0 1px 0 var(--edge-d)}
 .ec-alert{display:flex;align-items:flex-start;gap:.7rem;font-size:.85rem;line-height:1.6}
 .ec-alert svg{flex:none;margin-top:.15rem}
 /* ── صفحة الجهة ── */
@@ -2182,7 +2211,7 @@ to{opacity:1;transform:none}
    بيحملوا مسافتهم بنفسهم، فالمسافة واحدة سواء تحتها فوتر ولا لأ. */
 .qr-list{padding:0 1.05rem}
 .qr-item{padding:.95rem 0;position:relative;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .qr-item:first-child{box-shadow:none;padding-top:.35rem}
 .qr-item:last-child{padding-bottom:1.05rem}
 /* تحتها فوتر ببادنجه، فما تحتاجش تزوّد */
@@ -2207,7 +2236,7 @@ to{opacity:1;transform:none}
    فبتاخد نفس القياس هنا صراحة بدل ما تطلع بحجم النص العادي. */
 .qr-item .src{font-size:.69rem;color:var(--t3);margin-top:.45rem}
 .qr-foot{padding:.75rem 1.05rem .85rem;font-size:.69rem;color:var(--t3);
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .qread .skel{padding:.35rem 1.05rem 1.05rem}
 /* مبدّل الدور في قائمة الحساب — للنموذج فقط */
 .acct-demo{font-size:.6rem;padding:.06rem .35rem;border-radius:var(--rp);
@@ -2219,7 +2248,7 @@ to{opacity:1;transform:none}
 .rolesw-tx{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;min-width:0}
 .rolesw button:hover{background:rgba(var(--edgeC),.05)}
 .rolesw button.on{background:rgba(var(--wC),calc(.82 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .rolesw-t{font-size:.8rem;font-family:var(--fd);font-weight:500}
 .rolesw-s{font-size:.68rem;color:var(--t3)}
 /* ═══════════════════════════════════════════════════════════
@@ -2256,7 +2285,7 @@ to{opacity:1;transform:none}
   padding:.95rem 1.05rem 1rem;color:inherit;
   transition:transform .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease}
 .kpi:hover{transform:translateY(-2px);color:inherit;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .kpi-h{display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem}
 .kpi-ic{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;flex:none;
   color:var(--t2);background:rgba(var(--edgeC),.06)}
@@ -2355,7 +2384,7 @@ to{opacity:1;transform:none}
 .rolesw-tx{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;min-width:0}
 .rolesw button:hover{background:rgba(var(--edgeC),.05)}
 .rolesw button.on{background:rgba(var(--wC),calc(.82 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .rolesw-t{font-size:.8rem;font-family:var(--fd);font-weight:500}
 .rolesw-s{font-size:.68rem;color:var(--t3)}
 /* ═══════════════════════════════════════════════════════════
@@ -2390,7 +2419,7 @@ to{opacity:1;transform:none}
   padding:1.05rem 1.1rem 1.1rem;color:inherit;overflow:hidden;
   transition:transform .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease}
 .htile:hover{transform:translateY(-3px);color:inherit;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.4))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 /* توهّج خفيف بلون النبرة في ركن الكارت — عمق من غير حدود ملوّنة */
 .htile::before{content:"";position:absolute;inset-inline-end:-30%;top:-70%;
   width:100%;aspect-ratio:1;border-radius:50%;pointer-events:none;
@@ -2564,7 +2593,7 @@ to{opacity:1;transform:none}
      والزجاج بياخد لونها فيبقى النص فاتح على فاتح. نفس سطح
      القوائم المنبثقة عشان يقرا فوق أي درجة على الخريطة. */
   color:var(--t1);background:var(--pop);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.4)),
+  box-shadow:inset 0 0 0 1px var(--edge-i),
     0 12px 26px -10px rgba(0,0,0,.35);
   animation:airise .18s ease both}
 .map-tip b{font-family:var(--fd);font-weight:600;font-size:.82rem}
@@ -2577,17 +2606,17 @@ to{opacity:1;transform:none}
 .map-scale{display:flex;align-items:center;gap:.25rem;direction:ltr;
   font-size:.68rem;color:var(--t3)}
 .map-scale i{width:24px;height:8px;border-radius:2px;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .map-scale i:first-of-type{border-start-start-radius:4px;border-end-start-radius:4px}
 .map-scale i:last-of-type{border-start-end-radius:4px;border-end-end-radius:4px}
 .map-rank{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center}
 .map-chip{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .65rem;
   border-radius:var(--rp);font-size:.75rem;color:var(--t2);
   background:rgba(var(--wC),calc(.5 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.8));
+  box-shadow:inset 0 0 0 1px var(--edge-1);
   transition:background .16s ease,color .16s ease,box-shadow .16s ease}
 a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .map-chip b{font-family:var(--fd);font-weight:700;color:var(--t1)}
 .map-chip.off{opacity:.65}
 .map-chip.off b{color:var(--t2)}
@@ -2794,11 +2823,11 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   width:72px;height:72px;border-radius:50%;display:grid;place-items:center;
   color:rgb(var(--tone));background:var(--pop);
   box-shadow:0 0 0 6px rgba(var(--tone),.34),
-             inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
+             inset 0 0 0 1px var(--edge-2),
              0 10px 22px -12px rgba(var(--tone),.6);
   transition:box-shadow .22s ease}
 .einf-t:hover .einf-c{box-shadow:0 0 0 7px rgba(var(--tone),.46),
-             inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
+             inset 0 0 0 1px var(--edge-2),
              0 12px 26px -12px rgba(var(--tone),.72)}
 .einf-k{font-family:var(--fd);font-weight:600;font-size:.8rem;color:var(--t1);line-height:1.4}
 .einf-v{font-family:var(--fd);font-weight:700;line-height:1.05;letter-spacing:-.02em;
@@ -2811,7 +2840,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
     rgba(var(--tone),.64) 0%, rgba(var(--tone),.42) 42%,
     rgba(var(--tone),.16) 74%, rgba(var(--tone),0) 100%)}
 .einf-t.now .einf-c{box-shadow:0 0 0 7px rgba(var(--tone),.5),
-             inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
+             inset 0 0 0 1px var(--edge-2),
              0 12px 26px -12px rgba(var(--tone),.78)}
 /* ضيّق: الشريط بينزل تحت الترويسة ويلف على صفّين، والاتصال بيفضل */
 @media (max-width:900px){
@@ -2841,7 +2870,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .rpcov-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem}
 .rpcov-g>div{position:relative;padding-inline:.7rem}
 .rpcov-g>div+div::before{content:"";position:absolute;inset-block:.1rem;inset-inline-start:0;
-  width:1px;background:rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+  width:1px;background:var(--edge-d)}
 /* زي `.kpi-v`: رقم بلوك بلا علامة ملاصقة، محتاج يرجع rtl */
 .rpcov-g .v{font-family:var(--fd);font-weight:700;line-height:1;direction:rtl;
   font-size:clamp(1.35rem,2.6vw,1.85rem);color:var(--t1)}
@@ -2868,7 +2897,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   color:inherit;text-decoration:none;
   transition:translate .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s}
 .rpp:hover{translate:0 -3px;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2)),
+  box-shadow:inset 0 0 0 1px var(--edge-i),
              0 14px 30px -18px rgba(var(--edgeC),.5)}
 .rpp-h{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem}
 .rpp-n{font-family:var(--fd);font-weight:700;font-size:1.05rem;color:var(--t3-g);
@@ -2894,7 +2923,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .rpk.soon{opacity:.78}
 .rpk-i{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;
   color:var(--t1);background:rgba(var(--wC),calc(.5 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));margin-bottom:.3rem}
+  box-shadow:inset 0 0 0 1px var(--edge-1);margin-bottom:.3rem}
 .rpk-t{display:flex;align-items:center;gap:.5rem;font-family:var(--fd);font-weight:600;
   font-size:.9rem;color:var(--t1)}
 .rpk-a{font-size:var(--fs-2);line-height:1.75}
@@ -2903,12 +2932,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .rpk-l li::before{content:"";position:absolute;inset-inline-start:0;top:.5em;
   width:4px;height:4px;border-radius:50%;background:rgba(var(--tone-3),.85)}
 .rpk-r{margin-top:auto;padding-top:.7rem;font-size:var(--fs-1);
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 /* ═══ خريطة تقارير النظام العامل ═══ */
 .rpmap{display:flex;flex-direction:column}
 .rpm{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto minmax(0,.9fr);
   align-items:center;gap:.7rem;padding:.62rem .2rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .rpm:first-child{box-shadow:none}
 .rpm-t{font-size:.82rem;color:var(--t1)}
 .rpm-p{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
@@ -2932,7 +2961,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .indl{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
 .ind{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;
   gap:.2rem 1rem;padding:1rem .2rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .ind:first-child{box-shadow:none}
 .ind-n{font-family:var(--fm);font-size:.7rem;color:var(--t3-g);padding-top:.22rem;min-width:1.4em}
 .ind-b{display:flex;flex-direction:column;gap:.28rem;min-width:0}
@@ -2941,7 +2970,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ind-h{font-size:.73rem;line-height:1.8}
 /* علامة «مشتقّ»: حرف صغير بحافة، مش شارة حالة */
 .ind-d{font-size:.66rem;color:var(--t1);padding:.1rem .45rem;border-radius:var(--rp);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.2))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 /* الفجوة مش خطأ: نبرة محايدة بحافة، لا لون تحذير.
    الحافة `border-inline-start` لا `box-shadow`: الظل بيتحسب
    بمحاور فيزيائية، فالشريط كان بيقع على شمال الصندوق في RTL. */
@@ -2949,7 +2978,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   padding:.5rem .7rem;border-radius:var(--r1);
   border-inline-start:2px solid rgba(var(--warnC),.55);
   background:rgba(var(--wC),calc(.42 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 /* نفس الصندوق لمّا السبب واحد للإجراء كله — فوق القائمة لا جوّاها */
 .ind-gx{margin:-.35rem 0 1rem;font-size:.76rem;max-width:78ch}
 .ind-f{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-top:.1rem}
@@ -2986,7 +3015,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   display:flex;flex-direction:column;padding:.3rem;border-radius:var(--r2);
   background:rgba(var(--wC),calc(.92 * var(--wM)));
   -webkit-backdrop-filter:blur(26px) saturate(1.4);backdrop-filter:blur(26px) saturate(1.4);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6)),
+  box-shadow:inset 0 0 0 1px var(--edge-2),
              0 18px 40px -20px rgba(var(--edgeC),.7)}
 /* اللوحة اللي في آخر صفّ الفلاتر بتخرج من يمين الشاشة لو فتحت
    من البداية، فبتتعلّق بالنهاية بدلها */
@@ -2998,7 +3027,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .fmenu-l{display:flex;flex-direction:column;gap:1px;max-height:264px;overflow-y:auto;overscroll-behavior:contain}
 .fmenu-e{padding:.6rem .55rem;font-size:.76rem}
 .fmenu-f{padding-top:.3rem;margin-top:.25rem;text-align:center;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .fopt{display:flex;align-items:center;gap:.5rem;width:100%;padding:.42rem .55rem;
   border-radius:var(--r1);font-size:.79rem;color:var(--t1);text-align:start}
 .fopt:hover{background:rgba(var(--edgeC),.06)}
@@ -3006,7 +3035,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 /* المربّع بيفضل مرسوم وهو فاضي: مكانه بيقول إن الاختيار متعدد */
 .fopt-x{flex:none;display:grid;place-items:center;width:16px;height:16px;border-radius:5px;
   color:var(--on-solid);background:rgba(var(--wC),calc(.7 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .fopt.on .fopt-x{background:var(--solid);box-shadow:none}
 .fopt.on{background:rgba(var(--retC2),.08)}
 /* الاختيار الواحد: **علامة على المختار، ومفيش صندوق على الباقي**.
@@ -3060,7 +3089,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .tcap-n{font-size:.74rem;padding:.06rem .45rem;border-radius:var(--rp);
   background:rgba(var(--edgeC),.07)}
 /* صف الإجماليات: نبرة أغمق شويّة من الصفوف، ومثبَّت أسفل الجدول */
-.tbl tfoot td{padding-block:.7rem;border-top:1px solid rgba(var(--edgeC),calc(var(--edge-hair)*3));
+.tbl tfoot td{padding-block:.7rem;border-top:1px solid var(--edge-f);
   background:rgba(var(--edgeC),.045);font-size:.82rem;color:var(--t1)}
 .tbl tfoot b{font-family:var(--fd);font-weight:700}
 .tbl tfoot small{font-size:var(--fs-1);font-weight:400}
@@ -3073,7 +3102,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .tgrand{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
   padding:.75rem .9rem;border-radius:var(--r2);
   background:rgba(var(--edgeC),.06);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .tgrand-k{font-family:var(--fd);font-weight:600;font-size:.86rem;color:var(--t1)}
 .tgrand-v{display:flex;align-items:baseline;gap:1.1rem;flex-wrap:wrap;font-size:.82rem}
 /* منتقي الأعمدة — آخر خانة في الترويسة */
@@ -3081,7 +3110,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .tcolp{position:relative}
 .tcolb{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;
   color:var(--t2);background:rgba(var(--wC),calc(.6 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .tcolb:hover{color:var(--t1);background:rgba(var(--wC),calc(.9 * var(--wM)))}
 /* بتفتح لناحية الشمال: آخر عمود ملزوق بحافة الحاوية اليسرى */
 .tcolm{inset-inline-start:auto;inset-inline-end:0;min-width:220px}
@@ -3096,7 +3125,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .fexp-m .fopt{flex-direction:column;align-items:stretch;gap:.1rem;padding:.5rem .55rem}
 .fopt-n{font-size:.7rem;line-height:1.45;white-space:normal}
 .fexp-s{padding:.35rem .55rem .5rem;font-size:.72rem;
-  box-shadow:inset 0 -1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7));margin-bottom:.25rem}
+  box-shadow:inset 0 -1px 0 var(--edge-d);margin-bottom:.25rem}
 /* شريط «تمّ» بعد قرار مجمّع */
 .bulk.done{background:rgba(var(--okC),.10);
   box-shadow:inset 0 0 0 1px rgba(var(--okC),.30)}
@@ -3183,7 +3212,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .fview:hover .fview-x,.fview-x:focus-visible{opacity:1}
 .fview-x:hover{color:var(--no);background:rgba(var(--noC),.10)}
 .fviews-f{display:flex;align-items:center;gap:.4rem;padding-top:.4rem;margin-top:.3rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .fviews-f input{flex:1;min-width:0;padding:.4rem .55rem;font-size:.78rem;color:var(--t1);
   border-radius:var(--r1);background:rgba(var(--edgeC),.05)}
 .fviews-n{padding:.35rem .1rem 0;font-size:.7rem}
@@ -3192,13 +3221,13 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .fgrid-i>*{flex:1;min-width:0}
 .fgrid-x{display:flex;justify-content:flex-end;padding-top:.5rem}
 .fgrid-x .fclear{display:inline-flex;align-items:center;gap:.35rem}
-.fcust{padding-top:.85rem;box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+.fcust{padding-top:.85rem;box-shadow:inset 0 1px 0 var(--edge-d)}
 .fcust-h{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.7rem}
 .fcust-t{font-family:var(--fd);font-weight:600;font-size:.85rem;color:var(--t1)}
 .fcust-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
 .fcust-r{display:flex;align-items:center;gap:.55rem;padding:.42rem .5rem;border-radius:var(--r1);
   background:rgba(var(--wC),calc(.5 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .fcust-r.off{background:none;box-shadow:none;opacity:.72}
 .fcust-r.dragging{opacity:.4}
 .fcust-g{flex:none;display:grid;place-items:center;width:18px;color:var(--t3);cursor:grab}
@@ -3211,7 +3240,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .fcust-c{flex:none;display:grid;place-items:center;width:15px;height:15px;border-radius:4px;
   color:var(--on-ret);background:rgba(var(--wC),calc(.7 * var(--wM)));
   transition:background .14s ease,box-shadow .14s ease;
-  box-shadow:inset 0 0 0 1.5px rgba(var(--edgeC),calc(var(--edge-hair)*1.7))}
+  box-shadow:inset 0 0 0 1.5px var(--edge-2)}
 .fcust-c:hover{box-shadow:inset 0 0 0 1.5px rgba(var(--retC2),.5)}
 .fcust-c.on{background:var(--ret-ink);box-shadow:none}
 .fcust-c.on:hover{background:var(--ret-ink);filter:brightness(1.12)}
@@ -3250,7 +3279,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 .agr-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;
   padding-top:.9rem;margin-top:.2rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .agr-tpl{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.55;
   color:var(--t1);margin:.3rem 0 .25rem}
 .agr-date{font-size:.9rem;margin-top:.35rem}
@@ -3289,7 +3318,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    بتحطّ المحطة الخامسة تحت الأولى، والخط ساعتها بيكدب على الترتيب */
 .stp-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:.7rem .6rem;
   margin-top:.8rem;padding-top:.75rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .stp-row .stp-i{display:grid;grid-template-columns:auto 1fr;align-items:start;column-gap:.45rem}
 .stp-row .stp-dot{grid-row:1;grid-column:1;margin-top:1px}
 .stp-row .stp-l{grid-row:1;grid-column:2}
@@ -3298,7 +3327,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 /* نص الاتفاقية — وثيقة تتقرا، مش جدول */
 .agr-body section{padding-top:1rem;margin-top:1rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.55))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .agr-body section:first-child{padding-top:.2rem;margin-top:0;box-shadow:none}
 .agr-body h3{font-size:.88rem;margin:0 0 .6rem;color:var(--t1)}
 .agr-body ul{margin:0;padding-inline-start:1.1rem;display:flex;flex-direction:column;gap:.55rem}
@@ -3308,7 +3337,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .paylist{display:flex;flex-direction:column;gap:.7rem;margin-top:.2rem}
 .pay{padding:.95rem 1.05rem;border-radius:var(--r2);
   background:rgba(var(--wC),calc(.42 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .pay.done{box-shadow:inset 0 0 0 1px rgba(var(--okC),.28)}
 .pay-h{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 .pay-no{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1)}
@@ -3321,7 +3350,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .thread{display:flex;flex-direction:column;gap:.6rem}
 .msg{padding:.8rem .95rem;border-radius:var(--r2);max-width:88%;
   background:rgba(var(--wC),calc(.45 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 /* رسالة الجهة على الشمال ورسالة المؤسسة على اليمين: الجهة طرف تاني
    مش زميل، والفرق لازم يبان من غير ما تقرا الاسم. */
 .msg.entity{align-self:flex-start;background:rgba(var(--retC2),.09);
@@ -3406,7 +3435,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .dthumb{position:relative;flex:none;display:block;overflow:hidden;
   width:34px;height:44px;border-radius:5px;
   background:var(--g-card);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
+  box-shadow:inset 0 0 0 1px var(--edge-2),
     0 1px 3px rgba(20,69,71,.06)}
 .dthumb-lg{width:min(300px,62vw);height:min(390px,52vh);border-radius:10px;margin-inline:auto}
 /* طيّة الورقة — بتقول «صفحة» من غير أيقونة */
@@ -3478,13 +3507,13 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   color:var(--t3);transition:color .14s ease,background .14s ease}
 .dfile-dl:hover{color:var(--t1);background:rgba(var(--edgeC),.09)}
 /* صفحة المعاينة الكبيرة */
-.fppage .dthumb-lg{box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.4)),
+.fppage .dthumb-lg{box-shadow:inset 0 0 0 1px var(--edge-2),
   0 10px 30px rgba(20,69,71,.10)}
 .fpnote{text-align:center;margin-top:.9rem}
 /* مستندات الدفعة: تلاتة في صفّ، وبيلفّوا لعمود على الضيّق */
 .pay-docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
   gap:.35rem .8rem;margin-top:.75rem;padding-top:.7rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 
 /* ═══════════════════════════════════════════════════════════
    سجل المشروع — قيد مصنَّف لا سطر نصّي
@@ -3501,7 +3530,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
     rgba(var(--edgeC),.18) 92%,rgba(var(--edgeC),.04))}
 
 .lgi{position:relative;padding:.85rem 0 .85rem 0;padding-inline-start:1.6rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.5))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .lgi:first-child{box-shadow:none}
 .lgdot{position:absolute;inset-inline-start:0;top:1.15rem;border-radius:50%;
   width:var(--ev-dot);height:var(--ev-dot);
@@ -3545,7 +3574,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 .lgfields{margin-top:.6rem;padding:.7rem .9rem;border-radius:var(--r2);
   background:rgba(var(--wC),calc(.5 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*.7));
+  box-shadow:inset 0 0 0 1px var(--edge-1);
   display:flex;flex-direction:column;gap:.5rem}
 .lgf{display:grid;grid-template-columns:minmax(0,15rem) 1fr;gap:.3rem .9rem;align-items:baseline}
 .lgf-k{font-size:.73rem;color:var(--t3);line-height:1.55}
@@ -3556,7 +3585,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .lgnote{margin:.6rem 0 0;padding:.6rem .85rem;border-radius:var(--r2);
   font-size:.83rem;line-height:1.8;color:var(--t2);
   background:rgba(var(--edgeC),.045);
-  box-shadow:inset 2px 0 0 rgba(var(--retC2),.35)}
+  /* الشريط الملوّن **علامة** لا حافة — فالصندوق بياخد حلقته
+     الكاملة كمان. من غيرها كان صندوقًا مرسومًا من جهة واحدة، وهي
+     الحالة اللي العميل طلب إنها تختفي من السيستم كله. */
+  box-shadow:inset 2px 0 0 rgba(var(--retC2),.35),inset 0 0 0 1px var(--edge-1)}
 @media (max-width:620px){.lgf{grid-template-columns:1fr}}
 
 /* ── ثريد المراسلة: عنوان سبب الفتح ── */
@@ -3653,7 +3685,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 /* ── آخر إجراء تحت التعريف ── */
 .lastact{margin-top:1.1rem;padding-top:.9rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.6))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .lastact-h{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
 .lastact-b{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.87rem}
 .lastact-b b{font-family:var(--fd);font-weight:600;color:var(--t1)}
@@ -3672,7 +3704,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   padding:1.1rem 1.15rem;cursor:pointer;
   transition:translate .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease}
 .rbc:hover{translate:0 -3px;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2)),
+  box-shadow:inset 0 0 0 1px var(--edge-i),
              0 14px 30px rgba(20,69,71,.09)}
 
 .rbc-h{display:flex;align-items:center;gap:.6rem}
@@ -3710,7 +3742,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 .rbc-s{font-size:var(--fs-1);line-height:1.5;padding-top:.55rem;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.6))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 
 /* ═══ التقرير الكامل ═══ */
 /* الرقم والجملة على **خطّ كتابة واحد**، لا على حافة صندوق واحدة.
@@ -3758,7 +3790,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .catsum{display:flex;flex-direction:column}
 .catsum-g{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
 .catsum-s{display:flex;flex-direction:column;gap:.15rem;padding-inline-start:.85rem;
-  box-shadow:inset 1px 0 0 rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+  box-shadow:inset 1px 0 0 var(--edge-d)}
 .catsum-s:first-child{padding-inline-start:0;box-shadow:none}
 .catsum-s b{font-family:var(--fd);font-weight:700;font-size:1.5rem;line-height:1.15;color:var(--t1)}
 .catsum-s.big b{color:var(--ret2)}
@@ -3791,7 +3823,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .catc-w{margin:0;font-size:var(--fs-2);line-height:1.8;min-height:4.32em;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .catc-n{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .55rem;padding-top:.55rem;
-  box-shadow:inset 0 1px 0 rgba(var(--edgeC),calc(var(--edge-hair)*.7))}
+  box-shadow:inset 0 1px 0 var(--edge-d)}
 .catc-n b{font-family:var(--fd);font-weight:600;font-size:.73rem;color:var(--t1);
   padding:.16rem .45rem;border-radius:var(--r1);background:rgba(var(--edgeC),.06)}
 .catc-f{font-size:.72rem;line-height:1.85;color:var(--t2);padding:.5rem .6rem;border-radius:var(--r1);
@@ -3814,7 +3846,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .lrf{display:flex;flex-wrap:wrap;gap:.45rem}
 .lrf-i{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .6rem;border-radius:var(--r1);
   background:rgba(var(--wC),calc(.55 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.2))}
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
 .lrf-i svg{color:var(--t3);flex:none}
 .lrf-i b{font-family:var(--fd);font-weight:600;font-size:.78rem;color:var(--t1)}
 /* القائمة الطويلة معلّمة: ٩٧ خيارًا في منسدلة بلا بحث */
@@ -3884,7 +3916,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .bgsum{display:flex;flex-direction:column;gap:.7rem}
 .bgsum-g{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
 .bgsum-c{display:flex;flex-direction:column;gap:.2rem;padding-inline-start:.9rem;
-  box-shadow:inset 1px 0 0 rgba(var(--edgeC),calc(var(--edge-hair)*.8))}
+  box-shadow:inset 1px 0 0 var(--edge-d)}
 .bgsum-c:first-child{padding-inline-start:0;box-shadow:none}
 .bgsum-c>b{font-family:var(--fd);font-weight:700;font-size:1.12rem;color:var(--t1)}
 .bgsum-c>b.bad{color:var(--no-ink)}
