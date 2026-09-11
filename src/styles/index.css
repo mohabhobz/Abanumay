@@ -2124,9 +2124,28 @@ to{opacity:1;transform:none}
   box-shadow:inset 0 0 0 1px var(--fld-line);
   transition:color .16s ease,background .16s ease,box-shadow .16s ease}
 .fchip:hover{color:var(--t1);box-shadow:inset 0 0 0 1px var(--fld-line-h)}
-.fchip.on{color:var(--ret-ink);background:rgba(var(--retC2),.10);
-  box-shadow:inset 0 0 0 1px rgba(var(--retC2),.30)}
-.fchip.on b{color:var(--ret-ink);background:rgba(var(--retC2),.20)}
+/* ══ الحالة «مفعَّل» بيضا لا زرقا ══
+   التوكن `--retC2` مكتوب جنبه في `:root` إنه **مش لون هوية · هو
+   لون حالة «معاد للاستكمال» وبس**. واستعماله للفلتر المفعَّل كان
+   بيكسر ده: نفس الأزرق بيقول «الفلتر شغّال» في شريط الأدوات
+   و«المشروع اترجّع للجهة» في الوسم · معنيان بلون واحد.
+
+   الحالة دلوقتي بتتقال بنفس لغة السيستم: **السطح بيرتفع** ·
+   أبيض أكتف وحلقة أقوى وظلّ خفيف، زي إبهام مبدّل العرض بالظبط.
+   ولا لون جديد ولا معنى مسروق. */
+.fchip.on{color:var(--t1);background:rgba(var(--wC),calc(.98 * var(--wM)));
+  box-shadow:inset 0 0 0 1px var(--edge-i),
+             0 1px 3px rgba(var(--edgeC),.14),0 1px 1px rgba(var(--edgeC),.05)}
+/* الشارة على شريحة مفعَّلة بتقلب صلبة · نفس قاعدة `.tab.on b`:
+   الشارة دايمًا أغمق أو أفتح من اللي شايلها بدرجة واحدة */
+.fchip.on b{color:var(--on-solid);background:var(--solid)}
+/* على أرضية غامقة «الأبيض» بيبقى ٨٫٥٪ بس (`--wM`)، والفرق بينه
+   وبين السطح الساكن (٦٪) ما بيتشافش · نفس النسبة مش نفس الظهور.
+   الحالة المفعَّلة بتاخد رقمها بنفسها هنا. */
+:root[data-theme="dark"] .fchip.on,:root[data-theme="green"] .fchip.on,
+:root[data-theme="dark"] .fsel.on .fsel-b,:root[data-theme="green"] .fsel.on .fsel-b{
+  background:rgba(var(--wC),.17);
+  box-shadow:inset 0 0 0 1px var(--edge-f),0 1px 3px rgba(0,0,0,.4)}
 /* قائمة اختيار */
 /* `position:relative` هنا لا على `.fmulti`: بعد ما القائمة الواحدة
    والمتعددة بقوا نفس البنية، اللوحة بتتعلّق بالحقل **أيًّا كان
@@ -2149,7 +2168,9 @@ to{opacity:1;transform:none}
 .fsel-b select{flex:1;min-width:0;height:var(--lh-md);padding:0;font-size:var(--fs-3);line-height:var(--lh-md);color:var(--t1);cursor:pointer;
   appearance:none;-webkit-appearance:none;padding-inline-end:.2rem}
 .fsel-b svg{flex:none;color:var(--t3)}
-.fsel.on .fsel-b{background:rgba(var(--retC2),.09);box-shadow:inset 0 0 0 1px rgba(var(--retC2),.28)}
+.fsel.on .fsel-b{color:var(--t1);background:rgba(var(--wC),calc(.98 * var(--wM)));
+  box-shadow:inset 0 0 0 1px var(--edge-i),
+             0 1px 3px rgba(var(--edgeC),.14),0 1px 1px rgba(var(--edgeC),.05)}
 .fsel.off{opacity:.55}
 .fsel.off .fsel-b{cursor:not-allowed}
 /* القائمة اللي جوّه شريط الأدوات تلبس شكل الشريحة عشان الصفّ
@@ -3244,7 +3265,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   color:var(--on-solid);background:rgba(var(--wC),calc(.7 * var(--wM)));
   box-shadow:inset 0 0 0 1px var(--edge-i)}
 .fopt.on .fopt-x{background:var(--solid);box-shadow:none}
-.fopt.on{background:rgba(var(--retC2),.08)}
+/* الخيار المختار في القايمة · محايد، عشان القايمة تبقى بلغة
+   الحقل اللي فتحها */
+.fopt.on{background:rgba(var(--edgeC),.07)}
 /* الاختيار الواحد: **علامة على المختار، ومفيش صندوق على الباقي**.
    الصندوق الفاضي بيقول «تقدر تختار أكتر من واحد» · وده مش صح هنا.
    المساحة بتفضل محجوزة عشان الأسماء ما تزحلقش لما الاختيار يتغيّر. */
@@ -3468,9 +3491,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   color:var(--on-ret);background:rgba(var(--wC),calc(.7 * var(--wM)));
   transition:background .14s ease,box-shadow .14s ease;
   box-shadow:inset 0 0 0 1.5px var(--edge-2)}
-.fcust-c:hover{box-shadow:inset 0 0 0 1.5px rgba(var(--retC2),.5)}
-.fcust-c.on{background:var(--ret-ink);box-shadow:none}
-.fcust-c.on:hover{background:var(--ret-ink);filter:brightness(1.12)}
+.fcust-c:hover{box-shadow:inset 0 0 0 1.5px var(--edge-f)}
+/* المربّع لازم يتملّى، فالأبيض مايصحّش هنا · بيتملّى بأخضر
+   المؤسسة زي أي «مختار» تاني في السيستم، مش بالأزرق */
+.fcust-c.on{color:var(--on-solid);background:var(--solid);box-shadow:none}
+.fcust-c.on:hover{background:var(--solid);filter:brightness(1.12)}
 .fcust-n{flex:1;min-width:0;font-size:.8rem;color:var(--t1);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fcust-a{flex:none;display:flex;gap:2px}
