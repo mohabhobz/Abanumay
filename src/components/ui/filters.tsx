@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useMenu } from '@/hooks/useMenu'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
@@ -40,6 +41,19 @@ export function SearchBox({
   )
 }
 
+/* ═══════════════════════════════════════════════════════════
+   القائمة المنسدلة — **سلوك واحد مكتوب مرة واحدة**.
+
+   قبل كده كان في نمطان في السيستم: `Select` بـ`<select>` أصلية،
+   و`MultiSelect` بلوحة مرسومة. يعني في **نفس شريط الأدوات**،
+   المستخدم بيضغط حقلين شكلهم واحد فبيفتحوا حاجتين مختلفين:
+   واحدة قايمة النظام (خطّ النظام ولونه وسلوكه — وفي الويندوز
+   شكل تالت خالص)، وواحدة لوحة زجاج بحافة شعرية.
+
+   الهوك ده هو السلوك المشترك: يقفل بالضغط برّه أو بـEsc.
+   والاتنين دلوقتي بيرسموا `.fsel-b` و`.fmenu` نفسهم.
+   ═══════════════════════════════════════════════════════════ */
+
 /** خيار القائمة — نص بسيط، أو قيمة وعنوان لما العنوان يحمل عدّادًا */
 export type SelectOption = string | { value: string; label: string }
 
@@ -58,30 +72,118 @@ export interface SelectProps {
   wide?: boolean
   /** أيقونة جوّه الحقل — بتغني عن عنوان فوقه في شريط الأدوات */
   icon?: LucideIcon
+  /** الفلتر بيحتاج «الكل»؛ المبدّل اللي قيمته إلزامية لأ */
+  allowEmpty?: boolean
+  /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة */
+  searchAt?: number
 }
 
-/** قائمة اختيار بمظهر النظام — الحافة شعرية والخلفية زجاج */
+/**
+ * قائمة اختيار واحد.
+ *
+ * كانت `<select>` أصلية. المشكلة مش شكلها بس: قايمتها بترسمها
+ * **نظام التشغيل** — خطّها وخلفيتها وطريقة فتحها كلها برّه
+ * السيستم، وفي الثيم الغامق بتفتح صندوقًا رماديًّا بخطّ لاتيني
+ * وسط واجهة زجاج عربية. وبتتصرّف مختلف على كل نظام.
+ *
+ * دلوقتي هي `MultiSelect` بقيد واحد: خيار واحد، والضغط بيقفل.
+ * فالحقلين في شريط الأدوات بيفتحوا **نفس اللوحة**.
+ *
+ * `all` لسّه موجود لأن الفلتر محتاج «الكل»؛ لو `allowEmpty`
+ * قفلت، الخيار الفاضي ما بيظهرش — ده حال مبدّل الدورة في
+ * الميزانية: الدورة **دايمًا** مختارة.
+ */
 export function Select({
   label, value, options, onChange, all = 'الكل', disabled, wide, icon,
+  allowEmpty = true, searchAt = 9,
 }: SelectProps) {
+  const { open, setOpen, box } = useMenu<HTMLDivElement>()
+  const [needle, setNeedle] = useState('')
+  const id = useId()
+
+  useEffect(() => { if (!open) setNeedle('') }, [open])
+
+  const current = options.find((o) => optValue(o) === value)
+  const summary = current ? optLabel(current) : all
+  const shown = needle
+    ? options.filter((o) => optLabel(o).includes(needle.trim()))
+    : options
+
+  const pick = (v: string | undefined) => { onChange(v); setOpen(false) }
+
   return (
-    <label className={`fsel${value ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`}>
-      {label && <span className="fsel-l">{label}</span>}
-      <span className="fsel-b">
+    <div className={`fsel${value ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`} ref={box}>
+      {label && <span className="fsel-l" id={`${id}-l`}>{label}</span>}
+
+      <button
+        type="button"
+        className="fsel-b"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-labelledby={label ? `${id}-l ${id}-b` : undefined}
+        id={`${id}-b`}
+        onClick={() => setOpen((x) => !x)}
+      >
         {icon && <Icon name={icon} size={15} />}
-        <select
-          value={value ?? ''}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value || undefined)}
-        >
-          <option value="">{all}</option>
-          {options.map((o) => (
-            <option key={optValue(o)} value={optValue(o)}>{optLabel(o)}</option>
-          ))}
-        </select>
+        <span className="fmulti-s">{summary}</span>
         <Icon name={icons.chevronDown} size={15} />
-      </span>
-    </label>
+      </button>
+
+      {open && (
+        <div className="fmenu one">
+          {options.length > searchAt && (
+            <label className="fmenu-q">
+              <Icon name={icons.search} size={14} />
+              <input
+                autoFocus
+                value={needle}
+                onChange={(e) => setNeedle(e.target.value)}
+                placeholder="ابحث…"
+                aria-label="ابحث في الخيارات"
+              />
+            </label>
+          )}
+
+          <div className="fmenu-l" role="listbox">
+            {allowEmpty && !needle && (
+              <button
+                type="button"
+                role="option"
+                aria-selected={!value}
+                className={`fopt${!value ? ' on' : ''}`}
+                onClick={() => pick(undefined)}
+              >
+                <span className="fopt-x" aria-hidden="true">
+                  {!value && <Icon name={icons.check} size={12} />}
+                </span>
+                <span className="fopt-t">{all}</span>
+              </button>
+            )}
+            {shown.length === 0 && <div className="fmenu-e sub">لا نتائج</div>}
+            {shown.map((o) => {
+              const val = optValue(o)
+              const sel = val === value
+              return (
+                <button
+                  type="button"
+                  key={val}
+                  role="option"
+                  aria-selected={sel}
+                  className={`fopt${sel ? ' on' : ''}`}
+                  onClick={() => pick(val)}
+                >
+                  <span className="fopt-x" aria-hidden="true">
+                    {sel && <Icon name={icons.check} size={12} />}
+                  </span>
+                  <span className="fopt-t">{optLabel(o)}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -114,24 +216,9 @@ export interface MultiSelectProps {
 export function MultiSelect({
   label, values, options, onChange, all = 'الكل', disabled, wide, icon, searchAt = 9,
 }: MultiSelectProps) {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, box } = useMenu<HTMLDivElement>()
   const [needle, setNeedle] = useState('')
-  const box = useRef<HTMLDivElement>(null)
   const id = useId()
-
-  useEffect(() => {
-    if (!open) return
-    const away = (e: PointerEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('pointerdown', away)
-    document.addEventListener('keydown', key)
-    return () => {
-      document.removeEventListener('pointerdown', away)
-      document.removeEventListener('keydown', key)
-    }
-  }, [open])
 
   useEffect(() => { if (!open) setNeedle('') }, [open])
 
@@ -303,20 +390,9 @@ export function PageSize({
   onChange: (n: number) => void
   options?: readonly number[]
 }) {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, box } = useMenu<HTMLDivElement>()
   const [draft, setDraft] = useState(String(value))
-  const box = useRef<HTMLDivElement>(null)
-
   useEffect(() => setDraft(String(value)), [value])
-
-  useEffect(() => {
-    if (!open) return
-    const away = (e: PointerEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('pointerdown', away)
-    return () => document.removeEventListener('pointerdown', away)
-  }, [open])
 
   /* التثبيت عند Enter أو الخروج من الحقل، لا مع كل حرف: اللي بيكتب
      «100» بيمرّ على «1» و«10» في الطريق، وإعادة الاستعلام عندهم
@@ -357,7 +433,7 @@ export function PageSize({
         </button>
 
         {open && (
-          <div className="psize-m" role="listbox">
+          <div className="fmenu one up psize-m" role="listbox">
             {options.map((n) => (
               <button
                 type="button"
@@ -367,6 +443,12 @@ export function PageSize({
                 className={`fopt${n === value ? ' on' : ''}`}
                 onClick={() => { setOpen(false); if (n !== value) onChange(n) }}
               >
+                {/* نفس صفّ الخيار في أي قائمة تانية: علامة على
+                    المختار ومساحة محجوزة على الباقي. كانت الأرقام
+                    متراكزة بلا علامة — شكل رابع لنفس الصفّ. */}
+                <span className="fopt-x" aria-hidden="true">
+                  {n === value && <Icon name={icons.check} size={12} />}
+                </span>
                 <span className="fopt-t num">{n}</span>
               </button>
             ))}

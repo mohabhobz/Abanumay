@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { Glass, Head, Icon, icons, Money, Num, Tag } from '@/components/ui'
+import { Glass, Head, Icon, icons, Money, Num, Select, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { Segments } from '@/components/ui/filters'
@@ -97,24 +97,19 @@ export default function BudgetPage() {
               </p>
             </div>
             {/* مبدّل الدورة مش فلتر: الدورة **دايمًا** مختارة، فمفيش
-                خيار «الكل». `Select` العامّة بتضيف خيارًا فاضيًا لأنها
-                مبنيّة للفلاتر، فهنا `select` مباشرة بنفس اللبس. */}
-            <label className="fsel on" aria-label="الدورة">
-              <span className="fsel-b">
-                <Icon name={icons.budget} size={15} />
-                <select
-                  value={cycleId}
-                  onChange={(e) => { setCycleId(e.target.value); setPath([]) }}
-                >
-                  {CYCLES.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.active ? `${c.label} — مفعَّلة` : c.label}
-                    </option>
-                  ))}
-                </select>
-                <Icon name={icons.chevronDown} size={15} />
-              </span>
-            </label>
+                خيار «الكل» — `allowEmpty={false}`. كان `select`
+                أصلية بحجّة إن `Select` العامّة بتضيف خيارًا فاضيًا؛
+                دلوقتي القيد خاصية لا سبب لنمط تاني. */}
+            <Select
+              icon={icons.budget}
+              value={cycleId}
+              allowEmpty={false}
+              options={CYCLES.map((c) => ({
+                value: c.id,
+                label: c.active ? `${c.label} — مفعَّلة` : c.label,
+              }))}
+              onChange={(v) => { if (v) { setCycleId(v); setPath([]) } }}
+            />
           </header>
 
           <Summary cycle={cycle} goals={goals.length} />

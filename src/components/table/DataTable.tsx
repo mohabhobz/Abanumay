@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import { useMenu } from '@/hooks/useMenu'
 import { Icon, icons } from '@/components/ui'
 import { nf } from '@/lib/format'
 import { aggregate, defaultCols, orderCols, splitGroups, type Col, type GroupBy } from './model'
@@ -286,22 +287,7 @@ function Block<T>({
 function ColumnPicker<T>({
   all, cols, onCols,
 }: { all: Col<T>[]; cols: string[]; onCols: (k: string[]) => void }) {
-  const [open, setOpen] = useState(false)
-  const box = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const away = (e: PointerEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('pointerdown', away)
-    document.addEventListener('keydown', key)
-    return () => {
-      document.removeEventListener('pointerdown', away)
-      document.removeEventListener('keydown', key)
-    }
-  }, [open])
+  const { open, setOpen, box } = useMenu<HTMLDivElement>()
 
   const toggle = (key: string) =>
     onCols(cols.includes(key) ? cols.filter((k) => k !== key) : [...cols, key])
@@ -314,7 +300,7 @@ function ColumnPicker<T>({
         aria-haspopup="listbox"
         aria-expanded={open}
         title="الأعمدة"
-        onClick={() => setOpen((x) => !x)}
+        onClick={() => setOpen((x: boolean) => !x)}
       >
         <Icon name={icons.plus} size={15} />
       </button>

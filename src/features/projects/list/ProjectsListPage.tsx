@@ -666,18 +666,12 @@ export default function ProjectsListPage() {
               </button>
             ))}
 
-            <label className="fsel">
-              <span className="fsel-b">
-                <select
-                  value={bulkOwner ?? ''}
-                  onChange={(e) => setBulkOwner(e.target.value || undefined)}
-                >
-                  <option value="">اختر المالك…</option>
-                  {OWNERS.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-                <Icon name={icons.chevronDown} size={15} />
-              </span>
-            </label>
+            <Select
+              value={bulkOwner}
+              all="اختر المالك…"
+              options={OWNERS}
+              onChange={setBulkOwner}
+            />
             <button className="btn btn-p btn-sm" disabled={!bulkOwner} onClick={applyBulk}>
               إسناد
             </button>

@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { useMenu } from '@/hooks/useMenu'
 import { createPortal } from 'react-dom'
 import { Icon, icons } from '@/components/ui'
 import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
@@ -34,10 +35,9 @@ export function ExportMenu({
   note?: string
   count?: number
 }) {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, box } = useMenu<HTMLDivElement>()
   /** جهة الفتح: `start` بتنمو ناحية بداية السطر، `end` بالعكس */
   const [side, setSide] = useState<'start' | 'end'>('start')
-  const box = useRef<HTMLDivElement>(null)
   const menu = useRef<HTMLDivElement>(null)
 
   /**
@@ -63,21 +63,7 @@ export function ExportMenu({
     const left = rtl ? a.right - w : a.left
     const pad = 12
     setSide(left < pad || left + w > window.innerWidth - pad ? 'end' : 'start')
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return
-    const away = (e: MouseEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', away)
-    document.addEventListener('keydown', esc)
-    return () => {
-      document.removeEventListener('mousedown', away)
-      document.removeEventListener('keydown', esc)
-    }
-  }, [open])
+  }, [open, box])
 
   const pick = (run: () => void) => () => {
     setOpen(false)

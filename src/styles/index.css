@@ -102,6 +102,15 @@
   --pb-xs:2px;  --lh-xs:14px;   /* الوسم */
   --pi-md:12px;                 /* الحشو الأفقي — نفس الرأسي */
 
+  /* ═══ الحقل — خلفية وحافة واحدة ═══
+     البحث والحقل المنسدل كانوا بخلفيتين مختلفتين (تدرّج `--g-data`
+     بضبابية ٢٢px مقابل لون مسطّح ٥٦٪) وبثلاث قيم للخلفية لو حسبنا
+     تجاوز شريط الأدوات. دلوقتي توكن واحدة. */
+  --fld-bg: rgba(var(--wC),calc(.62 * var(--wM)));
+  --fld-line: rgba(var(--edgeC),var(--edge-hair));
+  --fld-line-h: rgba(var(--edgeC),calc(var(--edge-hair)*2));
+  --fld-line-f: rgba(var(--edgeC),calc(var(--edge-hair)*2.8));
+
   /* شارة العدد جوّه تاب أو شريحة — دايرة ٢٤ لرقم من خانة واحدة،
      وبتمدّ كبسولة لرقمين. مش `--h-xs`: الوسم تسمية والشارة عدّاد،
      والاتنين كانوا بالصدفة على نفس الرقم. */
@@ -1861,14 +1870,17 @@ to{opacity:1;transform:none}
 .ftool-r{display:flex;align-items:flex-start;gap:.5rem;flex-wrap:nowrap}
 .ftool-f{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .ftool-a{flex:none;display:flex;align-items:center;gap:.5rem}
+/* البحث والحقل **نفس العنصر بمحتوى مختلف**: نفس الحشو ونفس
+   الارتفاع ونفس الركن ونفس الحافة ونفس الخلفية. اللي بيفرّقهم
+   إن ده بيتكتب فيه وده بيتضغط. */
 .srch{flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:.55rem;
   padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
   font-size:var(--fs-3);border-radius:var(--rp);color:var(--t3);
-  background:var(--g-data);-webkit-backdrop-filter:blur(var(--g-data-blur));backdrop-filter:blur(var(--g-data-blur));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
+  background:var(--fld-bg);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  box-shadow:inset 0 0 0 1px var(--fld-line);
   transition:box-shadow .16s ease}
-.srch:focus-within,.fsel-b:focus-within{
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2.8))}
+.srch:hover,.fsel-b:hover{box-shadow:inset 0 0 0 1px var(--fld-line-h)}
+.srch:focus-within,.fsel-b:focus-within{box-shadow:inset 0 0 0 1px var(--fld-line-f)}
 /* عنصر الفورم الأصلي (`input`/`select`) ارتفاعه الجوّاني مش سطره:
    الـ`input` بيطلع ~٢٠ والـ`select` ~١٥. فمعادلة «حشو + سطر +
    حشو» بتتكسر — البحث كان ٣٦ والحقل ٣١ جنب زرار ٣٤. الحلّ إن
@@ -1880,31 +1892,39 @@ to{opacity:1;transform:none}
 .srch-x{display:grid;place-items:center;color:var(--t3);flex:none}
 .srch-x:hover{color:var(--t1)}
 /* شريحة تبديل — نفس لغة الأزرار بس أخف */
+/* الشريحة دي **بتفتح لوحة** زي الحقل بالظبط (فلاتر متقدمة ·
+   الفيوهات · تصدير)، فبتاخد نفس أرضية الحقل. كانت شفّافة بحافة
+   شعرية جنب حقل مليان في نفس الصفّ — فالصفّ الواحد كان فيه لغتين
+   لنفس الفعل: «اضغطني تنزل لوحة». */
 .fchip{display:inline-flex;align-items:center;gap:8px;width:fit-content;
   padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);border-radius:var(--rp);
   font-size:var(--fs-3);color:var(--t2);white-space:nowrap;
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
+  background:var(--fld-bg);
+  box-shadow:inset 0 0 0 1px var(--fld-line);
   transition:color .16s ease,background .16s ease,box-shadow .16s ease}
-.fchip:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
+.fchip:hover{color:var(--t1);box-shadow:inset 0 0 0 1px var(--fld-line-h)}
 .fchip.on{color:var(--ret-ink);background:rgba(var(--retC2),.10);
   box-shadow:inset 0 0 0 1px rgba(var(--retC2),.30)}
-.fchip{gap:8px}
 .fchip.on b{color:var(--ret-ink);background:rgba(var(--retC2),.20)}
 /* قائمة اختيار */
-.fsel{display:inline-flex;flex-direction:column;gap:.28rem;min-width:0}
+/* `position:relative` هنا لا على `.fmulti`: بعد ما القائمة الواحدة
+   والمتعددة بقوا نفس البنية، اللوحة بتتعلّق بالحقل **أيًّا كان
+   نوعه**. لما كانت على `.fmulti` بس، لوحة القائمة الواحدة كانت
+   بتدوّر على أقرب أب موضوع فبتتعلّق بالصفحة وتتمدّد عرض الشاشة. */
+.fsel{position:relative;display:inline-flex;flex-direction:column;gap:.28rem;min-width:0}
 .fsel-l{font-size:.71rem;color:var(--t2);padding-inline-start:.2rem}
-/* الحقل هو **الوحيد المستطيل** في السيستم — الزرار والشريحة والوسم
-   كلهم كبسولات. ده عرف متقارب: الحقل بيقول «اكتب/اختار جوّايا»
-   والكبسولة بتقول «اضغطني». كان كبسولة في شريط أدوات المشاريع
-   والجهات ومستطيل في الميزانية والتقارير. */
+/* كان مستطيلًا (`--r2`) بقاعدة «الحقل هو الوحيد المستطيل: بيقول
+   اكتب جوّايا، والكبسولة بتقول اضغطني». القاعدة دي **اتلغت
+   بقرار العميل**: البحث كان كبسولة والحقل مستطيلًا وهما جنب بعض
+   في نفس الشريط، فالتمييز الدلالي كان بيتقري تفاوتًا لا معنى.
+   الشريط دلوقتي عايلة واحدة. */
 .fsel-b{position:relative;display:flex;align-items:center;gap:.35rem;font-size:var(--fs-3);
   padding-block:var(--pb-md);line-height:var(--lh-md);
   padding-inline:var(--pi-md);
-  border-radius:var(--r2);
-  background:rgba(var(--wC),calc(.56 * var(--wM)));-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
+  border-radius:var(--rp);
+  background:var(--fld-bg);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  box-shadow:inset 0 0 0 1px var(--fld-line);
   transition:box-shadow .16s ease}
-.fsel-b:hover{box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
 .fsel-b select{flex:1;min-width:0;height:var(--lh-md);padding:0;font-size:var(--fs-3);line-height:var(--lh-md);color:var(--t1);cursor:pointer;
   appearance:none;-webkit-appearance:none;padding-inline-end:.2rem}
 .fsel-b svg{flex:none;color:var(--t3)}
@@ -1915,7 +1935,6 @@ to{opacity:1;transform:none}
    كله يبقى بلغة واحدة، من غير عنوان فوقها */
 /* التجاوز ده كان بيكتب حشوه بإيده (٦٫٧٢px) ويغلب التوكن، فالحقل
    طلع ٣١ جنب زرار ٣٤ في نفس الصفّ. الخلفية بس هي اللي تخصّه. */
-.ftool-f>.fsel .fsel-b{background:rgba(var(--wC),calc(.62 * var(--wM)))}
 .ftool-f>.fsel .fsel-b select{font-size:var(--fs-3)}
 .fsel.wide{grid-column:1 / -1}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem .8rem;
@@ -1931,16 +1950,31 @@ to{opacity:1;transform:none}
 .fpill svg{color:var(--t3);flex:none}
 .fclear{font-size:.75rem;color:var(--t3);padding:.3rem .5rem}
 .fclear:hover{color:var(--no)}
-/* تبديل الكروت/الجدول */
-/* الصندوق مربّع: ٣٢×٣٠ كانت أول ملاحظة في قايمة العميل. */
-.vtog{display:flex;gap:2px;padding:0;border-radius:var(--r1);
-  background:rgba(var(--wC),calc(.48 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair))}
-/* الزرار الأيقوني **مربّع بضلع = ارتفاع التحكّم**، فبيقف في نفس
-   الصفّ مع الزرار النصّي بالظبط. */
-.vtog button{display:grid;place-items:center;width:var(--h-md);height:var(--h-md);border-radius:var(--r1);color:var(--t3)}
+/* ── تبديل الكروت/الجدول ──
+   كان مكسورًا من تلات جهات مع بعض:
+     · حشو صفر وركن الابن = ركن الأب (`--r1` الاتنين) — يعني ركن
+       المختار بيقطع ركن الحاوية، وده بالظبط اللي قاعدة التداخل
+       موجودة عشانه
+     · `gap:2px` بلا حشو ⇒ خلفية الحاوية بتبان **درزة رأسية**
+       بين النصّين، فالمبدّل بيتقري حاجتين لا حاجة واحدة
+     · الجهة غير المختارة ملزوقة في الحافة الشعرية للحاوية
+   الصح: الحاوية بتحضن، والإبهام بيتحرّك جوّاها بحشو حقيقي.
+   والركن بيتحسب: `max(--r1, --rp − الحشو)` = كبسولة جوّه كبسولة. */
+.vtog{--pad:4px;display:flex;gap:0;padding:var(--pad);border-radius:var(--rp);
+  background:var(--fld-bg);
+  box-shadow:inset 0 0 0 1px var(--fld-line)}
+/* ضلع الإبهام = ارتفاع التحكّم ناقص حشو الحاوية من الجهتين،
+   فالمبدّل كله بيفضل ٤٤ ويقف في صفّه. */
+.vtog button{display:grid;place-items:center;color:var(--t3);
+  width:calc(var(--h-md) - var(--pad) * 2);height:calc(var(--h-md) - var(--pad) * 2);
+  border-radius:max(var(--r1),calc(var(--rp) - var(--pad)));
+  transition:color .16s ease,background .16s ease,box-shadow .16s ease}
 .vtog button:hover{color:var(--t1)}
-.vtog button.on{color:var(--t1);background:rgba(var(--wC),calc(.92 * var(--wM)))}
+/* المختار **إبهام مرفوع** لا خلفية مسطّحة. وحافة الحاوية هي
+   **الحافة الوحيدة** في المبدّل: الإبهام بيبان بالظلّ لا بخطّ
+   تاني جنب خطّ، وده كان نصّ مشكلة «البوردر مش مظبوط». */
+.vtog button.on{color:var(--t1);background:rgba(var(--wC),calc(.98 * var(--wM)));
+  box-shadow:0 1px 3px rgba(var(--edgeC),.16),0 1px 1px rgba(var(--edgeC),.06)}
 /* الترقيم */
 .pager{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
   padding:.2rem .3rem}
@@ -2941,13 +2975,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    جوّه حدود الشاشة على الموبايل بـ`max-width`.
    ═══════════════════════════════════════════════════════════ */
 
-.fmulti{position:relative}
 /* الزرار بيلبس شكل حقل الاختيار عشان الصفّ يفضل بلغة واحدة */
-.fmulti>.fsel-b{width:100%;cursor:pointer;text-align:start}
-.fmulti.off>.fsel-b{cursor:not-allowed}
+.fsel>.fsel-b{width:100%;cursor:pointer;text-align:start}
+.fsel.off>.fsel-b{cursor:not-allowed}
 .fmulti-s{flex:1;min-width:0;font-size:.8rem;color:var(--t1);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ftool-f>.fmulti .fmulti-s{font-size:.79rem}
+.ftool-f>.fsel .fmulti-s{font-size:.79rem}
 .fmenu{position:absolute;top:calc(100% + .35rem);inset-inline-start:0;z-index:60;
   min-width:100%;max-width:min(300px,80vw);width:max-content;
   display:flex;flex-direction:column;padding:.3rem;border-radius:var(--r2);
@@ -2957,7 +2990,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
              0 18px 40px -20px rgba(var(--edgeC),.7)}
 /* اللوحة اللي في آخر صفّ الفلاتر بتخرج من يمين الشاشة لو فتحت
    من البداية، فبتتعلّق بالنهاية بدلها */
-.fgrid>.fmulti:nth-child(3n)>.fmenu{inset-inline-start:auto;inset-inline-end:0}
+.fgrid>.fsel:nth-child(3n)>.fmenu{inset-inline-start:auto;inset-inline-end:0}
 .fmenu-q{display:flex;align-items:center;gap:.4rem;padding:.4rem .55rem;margin-bottom:.25rem;
   border-radius:var(--r1);background:rgba(var(--edgeC),.05)}
 .fmenu-q svg{color:var(--t3);flex:none}
@@ -2976,26 +3009,35 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*2))}
 .fopt.on .fopt-x{background:var(--solid);box-shadow:none}
 .fopt.on{background:rgba(var(--retC2),.08)}
+/* الاختيار الواحد: **علامة على المختار، ومفيش صندوق على الباقي**.
+   الصندوق الفاضي بيقول «تقدر تختار أكتر من واحد» — وده مش صح هنا.
+   المساحة بتفضل محجوزة عشان الأسماء ما تزحلقش لما الاختيار يتغيّر. */
+.fmenu.one .fopt-x{background:none;box-shadow:none;border-radius:0;color:var(--solid)}
+.fmenu.one .fopt.on .fopt-x{background:none}
+.fmenu.one .fopt.on{font-weight:600}
 /* ── مقياس الصفحة ── */
 .psize{display:flex;align-items:center;gap:.4rem}
 .psize .sub{white-space:nowrap}
-.psize-b{position:relative;display:flex;align-items:center;border-radius:var(--r1);
-  background:rgba(var(--wC),calc(.56 * var(--wM)));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),var(--edge-hair));
+/* ده **حقل فيه قائمة** — نفس عايلة البحث والحقل المنسدل بالظبط،
+   مش شكلًا رابعًا. كان ركنه `--r1` وخلفيته ٥٦٪ وحافة التركيز
+   زرقا، جوّه سيستم حافة التركيز فيه شعرية غامقة. */
+.psize-b{position:relative;display:flex;align-items:center;
+  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
+  border-radius:var(--rp);background:var(--fld-bg);
+  box-shadow:inset 0 0 0 1px var(--fld-line);
   transition:box-shadow .16s ease}
-.psize-b:focus-within{box-shadow:inset 0 0 0 1px rgba(var(--retC2),.42)}
-.psize-b input{width:3.4em;padding:.36rem .1rem .36rem .5rem;font-size:.79rem;color:var(--t1);
-  text-align:center;background:none}
-.psize-x{display:grid;place-items:center;padding:.36rem .45rem .36rem .35rem;color:var(--t3)}
+.psize-b:hover{box-shadow:inset 0 0 0 1px var(--fld-line-h)}
+.psize-b:focus-within{box-shadow:inset 0 0 0 1px var(--fld-line-f)}
+.psize-b input{width:2.6em;height:var(--lh-md);padding:0;font-size:var(--fs-3);
+  line-height:var(--lh-md);color:var(--t1);text-align:center;background:none}
+.psize-x{display:grid;place-items:center;padding:0;margin-inline-start:.2rem;color:var(--t3)}
 .psize-x:hover{color:var(--t1)}
 /* بتفتح لفوق: المقياس في آخر الصفحة، واللوحة النازلة بتقع برّه الشاشة */
-.psize-m{position:absolute;bottom:calc(100% + .35rem);inset-inline-start:0;z-index:60;
-  min-width:100%;display:flex;flex-direction:column;gap:1px;padding:.3rem;border-radius:var(--r2);
-  background:rgba(var(--wC),calc(.92 * var(--wM)));
-  -webkit-backdrop-filter:blur(26px) saturate(1.4);backdrop-filter:blur(26px) saturate(1.4);
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--edge-hair)*1.6)),
-             0 18px 40px -20px rgba(var(--edgeC),.7)}
-.psize-m .fopt{justify-content:center}
+/* اللوحة بقت `.fmenu` زي أي قائمة تانية — كانت نمطًا تالتًا
+   بخلفيتها وركنها وظلّها. اللي بقي خاصّ بيها إنها **بتفتح لفوق**،
+   لأن مكانها في تذييل الصفحة. */
+.fmenu.up{top:auto;bottom:calc(100% + .35rem)}
+.psize-m{min-width:100%}
 @media (max-width:640px){
   .pager{justify-content:center}
 .pager-c,.pager-b{flex-wrap:wrap;justify-content:center}

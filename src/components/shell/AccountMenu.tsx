@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useMenu } from '@/hooks/useMenu'
 import { useNavigate } from 'react-router-dom'
 import { Icon, icons, type IconName } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
@@ -30,29 +31,14 @@ export function AccountMenu({
   drop?: boolean
 }) {
   const { role, setRole } = useRole()
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, box: wrap } = useMenu<HTMLDivElement>()
   const [theme, setTheme] = useState<ThemeChoice>(readTheme)
-  const wrap = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
     applyTheme(theme)
     writeTheme(theme)
   }, [theme])
-
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: PointerEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    window.addEventListener('pointerdown', onDown)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('pointerdown', onDown)
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [open])
 
   const go = (to: string) => {
     setOpen(false)

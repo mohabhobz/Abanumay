@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useMenu } from '@/hooks/useMenu'
 import { Icon, icons } from '@/components/ui'
 import { readViews, writeViews, type SavedView } from './views'
 
@@ -10,25 +11,9 @@ export function SavedViews({
   current: string
   onApply: (query: string) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, box } = useMenu<HTMLDivElement>()
   const [views, setViews] = useState<SavedView[]>(() => readViews(table))
   const [name, setName] = useState('')
-  const box = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const away = (e: PointerEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('pointerdown', away)
-    document.addEventListener('keydown', key)
-    return () => {
-      document.removeEventListener('pointerdown', away)
-      document.removeEventListener('keydown', key)
-    }
-  }, [open])
-
   useEffect(() => { if (!open) setName('') }, [open])
 
   const active = views.find((v) => v.query === current)
