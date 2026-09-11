@@ -134,6 +134,13 @@
      والاتنين كانوا بالصدفة على نفس الرقم. */
   --h-badge:24px;
 
+  /* ═══ ارتفاع صفّ الجدول ═══
+     ناتج زي أي ارتفاع تاني: **حشو + أطول محتوى شرعي + حشو**.
+     وأطول محتوى في خلية عندنا هو ثامبنيل الملف (٤٤)، فالصفّ
+     `6 + 44 + 6 = 56`. كان ٤٨ مكتوبًا، فصفّ فيه ثامبنيل بيطلع
+     ٥٣٫٦ وصفّ من غيره بيفضل ٤٨ — نفس الجدول بارتفاعين. */
+  --row-h:56px;
+
   /* بداية محتوى الصفحة · نقطة مشتركة بين الشريط والبودي */
   --screen-pt:clamp(1.6rem,3vw,2.6rem);
 
@@ -486,13 +493,13 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    يعني عنوان العمود مزحلق ٣px عن أرقامه. دي نص ملاحظة «أرقام
    الجداول مش متحاذية». */
 .tbl th{position:relative;font-family:var(--fd);font-weight:500;font-size:var(--fs-1);color:var(--t3);text-align:right;
-  height:44px;padding-block:0;padding-inline:12px;white-space:nowrap}
+  height:var(--h-md);padding-block:0;padding-inline:12px;white-space:nowrap}
 .th-t{display:block;overflow:hidden;text-overflow:ellipsis}
 .tbl th.n,.tbl td.n{text-align:left}
 /* سطر واحد دايمًا: العمود اللي المستخدم ضيّقه بيقصّ محتواه بنقط ما
    بينزلش سطرًا. الصفوف بتفضل بنفس الارتفاع، والجدول بيتقري كشبكة
    لا كفقرات · والتلميح على الخلية بيرجّع اللي اتقصّ. */
-.tbl td{height:48px;padding-block:0;padding-inline:12px;font-size:var(--fs-3);background:rgba(var(--wC),calc(.30 * var(--wM)));box-shadow:inset 0 1px 0 rgba(var(--edgeC),.05);
+.tbl td{height:var(--row-h);padding-block:0;padding-inline:12px;font-size:var(--fs-3);background:rgba(var(--wC),calc(.30 * var(--wM)));box-shadow:inset 0 1px 0 rgba(var(--edgeC),.05);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tbl td>*{max-width:100%}
 /* `vertical-align` كان **bottom**، فالرقم والوسم بيتعلّقوا في قاع
@@ -3523,8 +3530,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    بدل ما يقف بعد كل اسم في مكان مختلف. */
 .tbl td>.dfile{display:flex;width:100%}
 .dfile.block{display:flex;width:100%}
+/* الحشو `6` فوق وتحت: الثامبنيل ٤٤، فالزرار ٥٦ = ارتفاع الصفّ
+   بالظبط، والصفّ اللي فيه ملف والصفّ اللي من غيره بيطلعوا واحد. */
 .dfile-b{display:flex;align-items:center;gap:.6rem;min-width:0;flex:1;
-  padding:.3rem .4rem;border-radius:var(--r1);text-align:start;color:inherit;
+  padding:6px 8px;border-radius:var(--r1);text-align:start;color:inherit;
   transition:background .14s ease}
 /* من غير أرضية عند الهوفر: الصفّ نفسه بيفتح لونه، فالأرضية التانية
    كانت بتطلع **بلوك أبيض في نصّ الصفّ** بينتهي فجأة قبل آخره.

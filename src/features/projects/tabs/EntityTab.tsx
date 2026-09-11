@@ -45,10 +45,9 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
       <Glass>
         <Head title="مستندات الجهة" meta={`${uploaded} من ${E.docs.length}`} />
         <div style={{ overflowX: 'auto' }}>
-          <table className="tbl">
-            <thead>
-              <tr><th>المستند</th><th>الحالة</th><th className="n">إجراء</th></tr>
-            </thead>
+          {/* بلا ترويسة أعمدة · نفس سبب جدول المرفقات: العنوان فوق
+              بيقولها، والخلية بتوصف نفسها. */}
+          <table className="tbl" aria-label="مستندات الجهة وحالتها">
             <tbody>
               {E.docs.map((d) => (
                 <tr key={d.name} className={d.uploaded ? '' : 'off'}>

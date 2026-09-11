@@ -194,13 +194,11 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
       <Glass>
         <Head title="المرفقات" meta={`${uploaded} من ${P.attachments.length} مرفوعة`} />
         <div style={{ overflowX: 'auto' }}>
-          <table className="tbl">
-            <thead>
-              {/* مفيش عمود «إجراء»: الملف نفسه زرار المعاينة، وجنبه
-                  زرار التنزيل. عمود بيقول «اضغط الملف» بيشرح واجهة
-                  المفروض تشرح نفسها. */}
-              <tr><th>المرفق</th><th className="n">الحالة</th></tr>
-            </thead>
+          {/* بلا ترويسة أعمدة: عنوان الكارت فوق بيقول «المرفقات»،
+              و«المرفق · الحالة» تحته بيكرّروه. وكل خلية بتوصف
+              نفسها — اسم ملف ووسم حالة. عمود «إجراء» مش موجود
+              أصلًا: الملف نفسه زرار المعاينة وجنبه زرار التنزيل. */}
+          <table className="tbl" aria-label="مرفقات المشروع وحالتها">
             <tbody>
               {P.attachments.map((a) => (
                 <tr key={a.name} className={a.uploaded ? '' : 'off'}>
