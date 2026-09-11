@@ -33,6 +33,15 @@ const OPEN = 208
 const MAX = 272
 /** أقل عرض تبان فيه التسمية · تحته الشريط بيرجع أيقونات */
 const LABEL_AT = 132
+/**
+ * أقل عرض يظهر فيه **القفل الكامل** (العلامة ومعاها الاسم).
+ *
+ * مش نفس عتبة التسميات: القفل عرضه ١٠٣ عند ارتفاع ٥٥، وعايز
+ * هوامش على الجهتين عشان ما يلزقش في حافة الشريط. `152 = 103 +
+ * حشو الشريط (16) + هامشين (2×16)`. تحت الرقم ده الاسم ما بيبقاش
+ * مقروءًا أصلًا، فالعلامة وحدها أصدق.
+ */
+const LOCK_AT = 168
 
 const RAIL_KEY = 'ab-rail-w'
 
@@ -55,6 +64,8 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
   /* مرجع للحالة وقت بداية السحب · الستيت جوّه المستمع بيبقى قديمًا */
   const drag = useRef<{ x: number; w: number; moved: boolean } | null>(null)
   const open = w >= LABEL_AT
+  /** القفل الكامل له عتبته: الاسم محتاج عرضًا أكبر من التسمية */
+  const wide = w >= LOCK_AT
 
   useEffect(() => {
     try {
@@ -99,24 +110,26 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
 
   return (
     <nav
-      className={`rail chrome${open ? ' open' : ''}${dragging ? ' dragging' : ''}`}
+      className={`rail chrome${open ? ' open' : ''}${wide ? ' lockwide' : ''}${dragging ? ' dragging' : ''}`}
       style={{ '--rail-w': `${w}px` } as React.CSSProperties}
       aria-label="التنقّل الرئيسي"
     >
-      {/* الشريط مطويّ ⇒ العلامة وحدها. مفرود ⇒ **ملف القفل الرسمي
-          زي ما هو**.
+      {/* **رسمان، لا رسم بيتشال منه حاجة**: العلامة وحدها، والقفل
+          الكامل (علامة + اسم مخطوط + السطر اللاتيني) · الاتنين ملفّا
+          المؤسسة زي ما باعتتهم.
 
-          الاسم كان متنضّدًا هنا بخطّ العرض (`<b>أبانمي</b>` وتحته
-          اسم المؤسسة)، وده مش شعار · ده اسم متكتب. الخطّ المخطوط
-          في القفل الرسمي مرسوم مسارات، ومحدش بيعيد تنضيده.
-          المصدر: `Logo/abanumay-lockup-currentcolor.svg`. */}
-      {/* الطبقتان فوق بعض في نفس الصندوق: القفل الكامل والعلامة
-          وحدها. القفل بيتطوى من ناحية الاسم (عرضه بيروح لصفر
-          و`overflow:hidden` بيقصّه)، والعلامة بتظهر مكانها · فالعين
-          بتقرا الاسم **بيتداخل جوّه العلامة** لا شاشتين بيتبدّلوا. */}
+          الاتنين فوق بعض في نفس الصندوق: القفل عرضه بيروح لصفر
+          و`overflow:hidden` بيقصّه من ناحية الاسم، والعلامة بتظهر
+          مكانها · فالعين بتقرا **الاسم بيتداخل جوّه العلامة** لا
+          صورة بتتبدّل بصورة. والشجرة في الرسمين بنفس المقاس
+          بالظبط، فما بتتحرّكش.
+
+          والقفل ما بيظهرش إلا لمّا الشريط يوسع كفاية له (`LOCK_AT`)
+          · تحت كده الاسم بيتقصّ أو يبقى غير مقروء، والعلامة وحدها
+          أصدق. */}
       <span className="raillock" aria-label="مؤسسة سليمان أبانمي الأهلية">
-        <LogoLockup className="lock-full" aria-hidden={!open} />
-        <span className="lock-mark" aria-hidden={open}><Logo /></span>
+        <LogoLockup className="lock-full" aria-hidden={!wide} />
+        <span className="lock-mark" aria-hidden={wide}><Logo /></span>
       </span>
 
       {allowed.map((item) => {
