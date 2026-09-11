@@ -31,6 +31,7 @@ const SRC = new URL('../src/', import.meta.url).pathname
 /** مش أيقونات: هوية أو رسم بياني أو ملمس */
 const NOT_ICONS = [
   'assets/Logo.tsx', 'assets/LogoColor.tsx',      // الشعار
+  'assets/LogoLockup.tsx',                        // قفل الهوية الرسمي
   'components/charts/SaudiMap.tsx',               // خريطة السعودية
   'components/charts/index.tsx',                  // الرسوم البيانية
   'components/ui/GateArc.tsx',                    // مروحة الاعتماد

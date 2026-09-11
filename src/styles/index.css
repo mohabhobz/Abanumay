@@ -143,6 +143,11 @@
 
   /* بداية محتوى الصفحة · نقطة مشتركة بين الشريط والبودي */
   --screen-pt:clamp(1.6rem,3vw,2.6rem);
+  /* سطر ترويسة الصفحة · المرجع اللي الهوية في الشريط بتتراكز عليه.
+     عناوين الصفحات مقاسها مختلف عن قصد (تحية اليوم أكبر من عنوان
+     المشروع)، والفرق بين صندوقَي سطرهم ٢px · تحت عتبة الإدراك،
+     فمرجع واحد بيخدم الاتنين. */
+  --head-line:40px;
 
   /* ═══ سلّم الخط ═══
      كان في الستايل ٨٥ مقاس مختلف. سبعة بس ليهم دور. */
@@ -361,7 +366,6 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .mark{flex:none;display:block;object-fit:contain;opacity:.96}
 .mark-30{width:30px;height:30px}
 .mark-38{width:38px;height:38px}
-.mark-64{width:64px;height:64px}
 .badge{flex:none;display:grid;place-items:center;border-radius:50%;color:var(--ink-soft);
   background:rgba(var(--wC),calc(.75 * var(--wM)));
   box-shadow:inset 0 0 0 1px var(--edge-2)}
@@ -697,8 +701,9 @@ to{opacity:1;transform:none}
 
    والهدف اللمسي لسه مستوفى: **٣٨ + ٦ = ٤٤** خطوة رأسية لكل بند،
    وWCAG 2.5.5 بيقبل المسافة بديلًا عن الحجم. */
-.rail{flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:12px;
-  padding:16px 8px;position:relative;z-index:25;
+.rail{--rail-pt:16px;
+  flex:none;width:var(--rail-w,80px);display:flex;flex-direction:column;align-items:center;gap:12px;
+  padding:var(--rail-pt) 8px;position:relative;z-index:25;
   transition:width .22s cubic-bezier(.22,.9,.3,1);
   box-shadow:inset -1px 0 0 var(--edge-d)}
 /* أثناء السحب الانتقال بيخلّي العرض يلحق الماوس متأخّرًا */
@@ -732,20 +737,54 @@ to{opacity:1;transform:none}
 /* ══ القفل: العلامة والاسم ══
    مطويّ = العلامة وحدها في مربّع ٤٤ زي بنود التنقّل، فالعمود
    بيبقى رصّة واحدة. مفرود = العلامة والاسم في صفّ واحد. */
-/* **القفل بيبدأ من عند ما البودي بيبدأ.** كان ملزوقًا في حشو
-   الشريط (١٦) والبودي بيبدأ من `--screen-pt` (٤١٫٦) — فالهوية في
-   الشريط أعلى من أول عنصر في الصفحة بـ٢٥ بكسل بلا سبب. التوكن
-   واحدة، فالخطّ ما بيفرقش لو الحشو اتغيّر. */
-.raillock{flex:none;display:flex;align-items:center;gap:10px;
-  margin-top:calc(var(--screen-pt) - 16px);
-  margin-bottom:16px;min-height:38px}
-.rail:not(.open) .raillock{justify-content:center}
-.rail.open .raillock{width:100%;padding-inline:.7rem}
-.rail .mark-64{width:38px;height:38px;flex:none;margin:0}
-/* القفل الرسمي: عرضه عرض الشريط ناقص حشوه، وارتفاعه بيتبع نسبته
-   (2205 × 1177). `currentColor` جوّه الملف بتخلّيه ياخد لون الحبر،
-   فملف واحد بيشتغل في التلات ثيمات. */
-.raillock-full{width:100%;height:auto;color:var(--t1)}
+/* ══ قفل الهوية ══
+   طبقتان في نفس الصندوق: القفل الكامل (اسم + علامة ملوّنة) والعلامة
+   وحدها. الشريط لمّا يتقفل، عرض القفل بيروح لصفر و`overflow:hidden`
+   بيقصّه **من ناحية الاسم**، والعلامة بتظهر في مكانها · فالحركة
+   بتتقري «الاسم بيتداخل جوّه العلامة» لا «صورة بتتبدّل بصورة».
+
+   والاتنين على نفس زمن ومنحنى عرض الشريط، فالحركتان حركة واحدة. */
+.raillock{
+  /* العلامة ٤٤ زي أي هدف في الشريط، وارتفاع القفل بيتحسب منها
+     **بنسبة الرسم نفسه**: القفل ١١٧٧ ارتفاعًا وعلامته ٩٤٣٫٣١ · يعني
+     الشجرة في الحالتين بنفس المقاس بالظبط، فالانتقال بينهم بيتقري
+     طيّ للاسم لا تغيير مقاس. */
+  --mark-h:44px;
+  --lock-h:calc(var(--mark-h) * 1176.81 / 943.31);
+  flex:none;position:relative;display:flex;align-items:center;
+  align-self:stretch;height:var(--lock-h);
+  padding-inline:calc((var(--rail-w,80px) - 44px) / 2);
+  /* **مركز الهوية على سطر عنوان الصفحة.**
+     البداية في البودي = `--screen-pt`، وسطرها الأول `--head-line`.
+     فمركز السطر = `--screen-pt + --head-line/2`، ومركز القفل لازم
+     يقع عليه · فالهامش هو الفرق ناقص حشو الشريط. محسوب لا مكتوب،
+     فلو أي واحد من التلاتة اتغيّر الخطّ يفضل صح. */
+  margin-top:calc(var(--screen-pt) + (var(--head-line) - var(--lock-h)) / 2 - var(--rail-pt));
+  margin-bottom:16px}
+.rail.open .raillock{padding-inline:12px}
+.rail.open .lock-mark{inset-inline-start:12px}
+
+/* القفل: ارتفاعه ثابت وعرضه بيتقصّ من ناحية الاسم.
+   `max-width` لا `width`: العنصر بيفضل بعرضه الطبيعي ويتقصّ، فما
+   بيتزقّش ولا بيتشوّه وهو بيتطوى. */
+.lock-full{height:var(--lock-h);width:auto;color:var(--t1);
+  max-width:14rem;opacity:1;
+  transition:max-width .22s cubic-bezier(.22,.9,.3,1),opacity .16s ease .06s}
+.rail:not(.open) .lock-full{max-width:0;opacity:0;transition-delay:0s,0s}
+
+/* العلامة وحدها · بتظهر مكان علامة القفل بالظبط لمّا الاسم يختفي */
+/* العلامة بتقعد في **نفس مكان ومقاس** شجرة القفل: الشجرة ملزوقة
+   في بداية السطر وفي أعلى الرسم، فالطبقة دي كذلك. */
+.lock-mark{position:absolute;top:0;
+  inset-inline-start:calc((var(--rail-w,80px) - var(--mark-h)) / 2);
+  width:var(--mark-h);height:var(--mark-h);display:block;opacity:0;pointer-events:none;
+  transition:opacity .16s ease}
+.rail:not(.open) .lock-mark{opacity:1;transition-delay:.1s}
+.lock-mark svg{width:100%;height:100%;display:block}
+
+@media (prefers-reduced-motion:reduce){
+  .lock-full,.lock-mark{transition:none}
+}
 /* زرار الحساب مستثنى: هو دايرة لا عنصر تنقّل، وقواعد الريل كانت
    بتلبّسه كارت مستطيل · فالدايرة كانت قاعدة جوّه مربّع.
    الاستثناء بـ`:where` لا `:not`: الأخير بيزوّد نوعية المحدّد
@@ -760,8 +799,9 @@ to{opacity:1;transform:none}
 /* الشريط مطويّ ⇒ الصندوق **مربّع** ٣٨×٣٨ (كان ٦٤×٤٧ مستطيلًا ·
    ملاحظتك رقم ١). مفرود ⇒ الصفّ بعرضه الكامل لأنه بقى أيقونة واسم
    لا أيقونة لوحدها. */
+/* ٤٤×٤٤ · نفس مقاس أي هدف تفاعلي في السيستم */
 .rail:not(.open) button:where(:not(.acctbtn)),.rail:not(.open) .railitem{
-  width:38px;height:38px;padding:0;margin-inline:auto}
+  width:var(--h-md);height:var(--h-md);padding:0;margin-inline:auto}
 .rail.open button:where(:not(.acctbtn)),.rail.open .railitem{justify-content:flex-start;padding-inline:.7rem}
 .rail-l{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rail:not(.open) .rail-l{display:none}
@@ -3679,7 +3719,12 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 }
 
 /* ── الحالة المقفولة: بوستر في نص الكارت ── */
-.aicard.aishut{padding:1.2rem 1.15rem;display:flex;overflow:auto;
+/* **متراكز دايمًا وهو مقفول.** الحاوية كانت `stretch`، فالمحتوى
+   بيتمدّ على طول الكارت و`margin:auto` مالقتش فراغًا يوزّعه ·
+   فالبوستر بيقعد فوق والفراغ كله تحت. `align-items:center`
+   بيخلّي الابن على طوله الطبيعي، و`margin:auto` بتتوسّطه من غير
+   ما تقطع أوّله لو طال (بعكس `justify-content`). */
+.aicard.aishut{padding:1.2rem 1.15rem;display:flex;align-items:center;justify-content:center;overflow:auto;
   scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.2) transparent}
 .aishut-c{margin:auto;display:flex;flex-direction:column;align-items:center;text-align:center;
   gap:.7rem;max-width:22rem}

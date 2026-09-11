@@ -110,10 +110,13 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
           اسم المؤسسة)، وده مش شعار · ده اسم متكتب. الخطّ المخطوط
           في القفل الرسمي مرسوم مسارات، ومحدش بيعيد تنضيده.
           المصدر: `Logo/abanumay-lockup-currentcolor.svg`. */}
-      <span className="raillock">
-        {open
-          ? <LogoLockup className="raillock-full" />
-          : <span className="mark mark-64 logo"><Logo /></span>}
+      {/* الطبقتان فوق بعض في نفس الصندوق: القفل الكامل والعلامة
+          وحدها. القفل بيتطوى من ناحية الاسم (عرضه بيروح لصفر
+          و`overflow:hidden` بيقصّه)، والعلامة بتظهر مكانها · فالعين
+          بتقرا الاسم **بيتداخل جوّه العلامة** لا شاشتين بيتبدّلوا. */}
+      <span className="raillock" aria-label="مؤسسة سليمان أبانمي الأهلية">
+        <LogoLockup className="lock-full" aria-hidden={!open} />
+        <span className="lock-mark" aria-hidden={open}><Logo /></span>
       </span>
 
       {allowed.map((item) => {
