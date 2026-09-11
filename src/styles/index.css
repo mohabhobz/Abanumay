@@ -72,7 +72,10 @@
   /* `--r0` لزجاج التحكّم الصغير جدًّا (خانة التحديد ١٦px): `--r1`
      على صندوق ١٦ بيبقى دايرة، والدايرة معناها «اختيار واحد» لا
      «تحديد متعدّد» · ده تمييز دلالي في كل السيستمز. */
-  --r0:4px; --r1:10px; --r2:15px; --r3:22px; --r4:28px; --rp:999px;
+  /* `--r1` بقى **١٢** (كان ١٠): ده ركن كل تحكّم تفاعلي بقرار
+     العميل، والدرجة الصغيرة في السلّم واحدة · مفيش ١٠ للخيار
+     و١٢ للزرار وهما نفس حجم الصندوق. */
+  --r0:4px; --r1:12px; --r2:15px; --r3:22px; --r4:28px; --rp:999px;
 
   /* ═══ سلّم الارتفاعات · مبني من حشو صريح ═══
      الارتفاع **مش رقم بيتكتب**، هو ناتج:  حشو + سطر + حشو.
@@ -442,7 +445,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tag.brand{background-image:linear-gradient(rgba(var(--limeC),.34),rgba(var(--limeC),.34));color:var(--brand-ink)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;width:fit-content;
   padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
-  border-radius:var(--rp);font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
+  border-radius:var(--r1);font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   transition:transform .16s ease,filter .16s ease;white-space:nowrap}
 .btn:hover{transform:translateY(-1px);filter:brightness(.97)}
 /* ══ ترتيب الأفعال · **أساسي وثانوي وبس** ══
@@ -563,6 +566,10 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tabs{display:flex;gap:.3rem;flex-wrap:wrap}
 /* التاب بيحضن نصّه: عرضه `fit-content` وارتفاعه ناتج حشوه، فما
    بيتمدّش على عرض الحاوية ولا بيتشدّ مع إخوته. */
+/* **التاب هو الاستثناء الوحيد: بيفضل كبسولة كاملة.**
+   كل تحكّم تفاعلي تاني ركنه `--r1` (١٢) بقرار العميل · والتاب
+   بيفضل `--rp` عشان يفرق عن الأدوات اللي حواليه: هو تنقّل جوّه
+   الصفحة لا أداة عليها. */
 .tabs{width:fit-content;max-width:100%}
 /* التاب حشوه الأفقي **١٠** لا ١٢ · بطلب العميل. هو التحكّم الوحيد
    اللي حشوه مش زي الباقي، لأنه التنقّل جوّه الصفحة لا أداة عليها،
@@ -1144,7 +1151,7 @@ to{opacity:1;transform:none}
    ياخدش وزن الفعل، بس لازم يقرا كزرار. */
 .backto{display:inline-flex;align-items:center;gap:.3rem;width:fit-content;
   padding-block:6px;padding-inline:10px 6px;margin-bottom:.35rem;
-  border-radius:var(--rp);font-size:var(--fs-2);font-family:var(--fd);font-weight:500;
+  border-radius:var(--r1);font-size:var(--fs-2);font-family:var(--fd);font-weight:500;
   color:var(--t3);transition:color .16s ease,background .16s ease}
 .backto:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .backto svg{flex:none}
@@ -1934,7 +1941,7 @@ to{opacity:1;transform:none}
    نزلت جوّه شريط الأدوات كقائمة بعدّادها (تنقية جوّه النطاق). */
 .fsegs{display:flex;gap:.35rem;flex-wrap:wrap}
 .fseg{display:inline-flex;align-items:center;gap:8px;width:fit-content;
-  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);border-radius:var(--rp);
+  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);border-radius:var(--r1);
   font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   color:var(--t2-g);transition:color .16s ease,background .16s ease;
   box-shadow:inset 0 0 0 1px var(--edge-1)}
@@ -1982,7 +1989,7 @@ to{opacity:1;transform:none}
    إن ده بيتكتب فيه وده بيتضغط. */
 .srch{flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:.55rem;
   padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
-  font-size:var(--fs-3);border-radius:var(--rp);color:var(--t3);
+  font-size:var(--fs-3);border-radius:var(--r1);color:var(--t3);
   background:var(--fld-bg);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   box-shadow:inset 0 0 0 1px var(--fld-line);
   transition:box-shadow .16s ease}
@@ -2004,7 +2011,7 @@ to{opacity:1;transform:none}
    شعرية جنب حقل مليان في نفس الصفّ · فالصفّ الواحد كان فيه لغتين
    لنفس الفعل: «اضغطني تنزل لوحة». */
 .fchip{display:inline-flex;align-items:center;gap:8px;width:fit-content;
-  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);border-radius:var(--rp);
+  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);border-radius:var(--r1);
   font-size:var(--fs-3);color:var(--t2);white-space:nowrap;
   background:var(--fld-bg);
   box-shadow:inset 0 0 0 1px var(--fld-line);
@@ -2028,7 +2035,7 @@ to{opacity:1;transform:none}
 .fsel-b{position:relative;display:flex;align-items:center;gap:.35rem;font-size:var(--fs-3);
   padding-block:var(--pb-md);line-height:var(--lh-md);
   padding-inline:var(--pi-md);
-  border-radius:var(--rp);
+  border-radius:var(--r1);
   background:var(--fld-bg);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   box-shadow:inset 0 0 0 1px var(--fld-line);
   transition:box-shadow .16s ease}
@@ -2067,14 +2074,14 @@ to{opacity:1;transform:none}
      · الجهة غير المختارة ملزوقة في الحافة الشعرية للحاوية
    الصح: الحاوية بتحضن، والإبهام بيتحرّك جوّاها بحشو حقيقي.
    والركن بيتحسب: `max(--r1, --rp − الحشو)` = كبسولة جوّه كبسولة. */
-.vtog{--pad:4px;display:flex;gap:0;padding:var(--pad);border-radius:var(--rp);
+.vtog{--pad:4px;display:flex;gap:0;padding:var(--pad);border-radius:var(--r1);
   background:var(--fld-bg);
   box-shadow:inset 0 0 0 1px var(--fld-line)}
 /* ضلع الإبهام = ارتفاع التحكّم ناقص حشو الحاوية من الجهتين،
    فالمبدّل كله بيفضل ٤٤ ويقف في صفّه. */
 .vtog button{display:grid;place-items:center;color:var(--t3);
   width:calc(var(--h-md) - var(--pad) * 2);height:calc(var(--h-md) - var(--pad) * 2);
-  border-radius:max(var(--r1),calc(var(--rp) - var(--pad)));
+  border-radius:calc(var(--r1) - var(--pad));
   transition:color .16s ease,background .16s ease,box-shadow .16s ease}
 .vtog button:hover{color:var(--t1)}
 /* المختار **إبهام مرفوع** لا خلفية مسطّحة. وحافة الحاوية هي
@@ -3133,7 +3140,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    زرقا، جوّه سيستم حافة التركيز فيه شعرية غامقة. */
 .psize-b{position:relative;display:flex;align-items:center;
   padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
-  border-radius:var(--rp);background:var(--fld-bg);
+  border-radius:var(--r1);background:var(--fld-bg);
   box-shadow:inset 0 0 0 1px var(--fld-line);
   transition:box-shadow .16s ease}
 .psize-b:hover{box-shadow:inset 0 0 0 1px var(--fld-line-h)}
