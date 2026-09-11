@@ -127,10 +127,27 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
           والقفل ما بيظهرش إلا لمّا الشريط يوسع كفاية له (`LOCK_AT`)
           · تحت كده الاسم بيتقصّ أو يبقى غير مقروء، والعلامة وحدها
           أصدق. */}
-      <span className="raillock" aria-label="مؤسسة سليمان أبانمي الأهلية">
-        <LogoLockup className="lock-full" aria-hidden={!wide} />
-        <span className="lock-mark" aria-hidden={wide}><Logo /></span>
-      </span>
+      <div className="raillock">
+        <span className="raillock-b" aria-label="مؤسسة سليمان أبانمي الأهلية">
+          <LogoLockup className="lock-full" aria-hidden={!wide} />
+          <span className="lock-mark" aria-hidden={wide}><Logo /></span>
+        </span>
+
+        {/* زرار الطيّ · بيبان بس والقايمة مفتوحة.
+            المقبض على الحافة لسّه شغّال وهو اللي بيفرد بالسحب، بس
+            المقبض ما بيبانش غير عند الاقتراب منه · فاللي فتح
+            القايمة بالضغط ما بيلاقيش حاجة واضحة تقفلها. الزرار هنا
+            في الصفّ قصاد الهوية، وده مكانه المتوقَّع. */}
+        <button
+          type="button"
+          className="railshut"
+          onClick={() => setW(SHUT)}
+          aria-label="طيّ القائمة"
+          title="طيّ القائمة"
+        >
+          <Icon name={icons.panel} size={18} />
+        </button>
+      </div>
 
       {allowed.map((item) => {
         return (

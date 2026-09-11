@@ -684,8 +684,25 @@ to{opacity:1;transform:none}
 .ali .tx{font-size:.85rem;line-height:1.55}
 .ali .tx b{font-weight:500}
 .ali .src{font-size:.7rem;color:var(--t3);margin-top:.2rem}
+/* ── الشريحة المضغوطة ──
+   كبسولة في صفّ ملفوف، وكل واحدة فيها **فعل**: رابط بيوَدّي، أو
+   زرار بيضيف، أو اقتراح متابعة. يعني هدف لمسي، لا تسمية.
+
+   كان حشوها مكتوبًا بالإيد (`.42rem .8rem`) فارتفاعها طلع **٣٠**
+   جنب تابات ٤٤ وحقول ٤٤ · وهي نفس شكل الكبسولة بالظبط، فالعين
+   بتقراها «نفس الحاجة بمقاسين». والقاعدة المكتوبة في `:root` من
+   أول موجة: **٤٤ للتحكّم، و«صغير» مقاس خطّ لا مقاس صندوق**، ودي
+   آخر حتّة كانت لسّه كاسراها.
+
+   الجيومتري بقى من نفس توكنات التاب بالظبط (حشو ١٢/١٠ وسطر ٢٠ ⇒
+   ٤٤، وركن كبسولة). اللي فضل مختلف هو **الملء** وحده: الشريحة
+   ليها خلفية زجاجية لأنها بتتضغط من غير ما تبقى «مختارة»، والتاب
+   شفّاف لأن المختار فيه بيتعلّم بالملء الصلب. دورين مختلفين بنفس
+   المقاس، لا مقاسين لنفس الدور. */
 .chips{display:flex;flex-wrap:wrap;gap:.4rem}
-.chip{font-size:.76rem;padding:.42rem .8rem;border-radius:var(--rp);white-space:nowrap;
+.chip{display:inline-flex;align-items:center;gap:8px;width:fit-content;
+  padding-block:var(--pb-md);padding-inline:10px;line-height:var(--lh-md);
+  font-size:var(--fs-3);border-radius:var(--rp);white-space:nowrap;
   background:rgba(var(--wC),calc(.62 * var(--wM)));color:var(--t1);
   -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
@@ -789,7 +806,7 @@ to{opacity:1;transform:none}
      بتقع ٨ برّه المركز. الترَكُّز بالتخطيط لا بالحساب: الحاوية
      بتتوسّط أولادها، فما فيش رقمين ممكن يفرقوا. */
   flex:none;position:relative;display:flex;align-items:center;justify-content:center;
-  align-self:stretch;height:var(--lock-h);
+  align-self:stretch;height:var(--lock-h);width:100%;
   /* **مركز الهوية على سطر عنوان الصفحة.**
      البداية في البودي = `--screen-pt`، وسطرها الأول `--head-line`.
      فمركز السطر = `--screen-pt + --head-line/2`، ومركز القفل لازم
@@ -797,6 +814,26 @@ to{opacity:1;transform:none}
      فلو أي واحد من التلاتة اتغيّر الخطّ يفضل صح. */
   margin-top:calc(var(--screen-pt) + (var(--head-line) - var(--lock-h)) / 2 - var(--rail-pt));
   margin-bottom:16px}
+
+/* ── صندوق الهوية جوّه الصفّ ──
+   الطبقتان (القفل والعلامة) بقوا جوّه صندوق خاص بيهم عشان الصفّ
+   يقدر يحطّ الهوية في البداية وزرار الطيّ في النهاية. الصندوق ده
+   هو اللي بياخد `position:relative` اللي الطبقة المطلقة بتتعلّق
+   عليه، لا الصفّ · وإلا العلامة هتتوسّط الصفّ كله بدل ما تتوسّط
+   الهوية. */
+.raillock-b{position:relative;flex:none;display:flex;align-items:center;
+  height:var(--lock-h)}
+/* مطويّ ⇒ الهوية وحدها في النص · مفرود ⇒ الهوية يمين والزرار شمال */
+.rail.lockwide .raillock{justify-content:space-between}
+
+/* زرار الطيّ · تحكّم ٤٤ زي أي هدف في الشريط، فالركن `--r1` */
+.railshut{flex:none;display:none;place-items:center;
+  width:var(--h-md);height:var(--h-md);border-radius:var(--r1);
+  color:var(--t3);cursor:pointer;
+  transition:color .16s ease,background .16s ease}
+.rail.lockwide .railshut{display:grid}
+.railshut:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
+.railshut svg{width:18px;height:18px;flex:none}
 
 /* القفل: ارتفاعه ثابت وعرضه بيتقصّ من ناحية الاسم.
    `max-width` لا `width`: العنصر بيفضل بعرضه الطبيعي ويتقصّ، فما
@@ -827,16 +864,18 @@ to{opacity:1;transform:none}
 /* العنصر صفّ في الحالتين: مطويّ = أيقونة متوسّطة، مفرود = أيقونة
    واسم جنبها. الصفّ في الحالتين بيمنع الأيقونة من إنها تنطّ لمّا
    الشريط يتفرد. */
-.rail button:where(:not(.acctbtn)),.rail .railitem{width:100%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:.6rem;position:relative;
-  padding:.7rem .3rem;border-radius:var(--r2);color:var(--t3);font-size:.82rem;font-family:var(--fd);
+.rail button:where(:not(.acctbtn):not(.railshut)),.rail .railitem{width:100%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:.6rem;position:relative;
+  /* ركن التحكّم `--r1` · كان `--r2` هنا و`--r1` في الشريط السفلي،
+     يعني نفس البند بركنين حسب الشاشة */
+  padding:.7rem .3rem;border-radius:var(--r1);color:var(--t3);font-size:.82rem;font-family:var(--fd);
   transition:color .16s ease,background .16s ease;text-align:start;line-height:1.35}
 /* الشريط مطويّ ⇒ الصندوق **مربّع** ٣٨×٣٨ (كان ٦٤×٤٧ مستطيلًا ·
    ملاحظتك رقم ١). مفرود ⇒ الصفّ بعرضه الكامل لأنه بقى أيقونة واسم
    لا أيقونة لوحدها. */
 /* ٤٤×٤٤ · نفس مقاس أي هدف تفاعلي في السيستم */
-.rail:not(.open) button:where(:not(.acctbtn)),.rail:not(.open) .railitem{
+.rail:not(.open) button:where(:not(.acctbtn):not(.railshut)),.rail:not(.open) .railitem{
   width:var(--h-md);height:var(--h-md);padding:0;margin-inline:auto}
-.rail.open button:where(:not(.acctbtn)),.rail.open .railitem{justify-content:flex-start;padding-inline:.7rem}
+.rail.open button:where(:not(.acctbtn):not(.railshut)),.rail.open .railitem{justify-content:flex-start;padding-inline:.7rem}
 .rail-l{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rail:not(.open) .rail-l{display:none}
 /* التلميح: عنصر مستقل لا `title` · تلميح المتصفح بيتأخّر ثانية
@@ -857,18 +896,18 @@ to{opacity:1;transform:none}
 .rail.open .rail-tip{display:none}
 @media (prefers-reduced-motion:reduce){ .rail,.rail-tip{transition:none}
 }
-.rail button:where(:not(.acctbtn)):hover,.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
+.rail button:where(:not(.acctbtn):not(.railshut)):hover,.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
 /* ══ المختار بلون الهوية ══
    الأبيض كان بيقول «دي طبقة زجاج تانية»، واللون الأساسي بيقول
    «دي اللي انت واقف عليها». التلات مواضع · عنصر الريل والتاب
    وشريحة الحالة · دورهم واحد: **يعلّموا الاختيار الحالي**،
    فلونهم واحد. */
-.rail button:where(:not(.acctbtn)).on,.rail .railitem.on{color:var(--on-solid);background:var(--solid);
+.rail button:where(:not(.acctbtn):not(.railshut)).on,.rail .railitem.on{color:var(--on-solid);background:var(--solid);
   box-shadow:none}
-.rail button:where(:not(.acctbtn)).on:hover,.rail .railitem.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}
+.rail button:where(:not(.acctbtn):not(.railshut)).on:hover,.rail .railitem.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}
 /* ٢٢ داخل صندوق ٣٨ ⇒ حشو ٨ حوالين الأيقونة، وهو نفس رقم الفجوة
    جهة المحتوى · فالإيقاع واحد. كانت ٢٥ (خارج أي سلّم). */
-.rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:22px;height:22px;flex:none}
+.rail button:where(:not(.acctbtn):not(.railshut)) svg,.rail .railitem svg{width:22px;height:22px;flex:none}
 /* المجموعات بتتفصل بمسافة بس · الخط الشعري كان بيتقوّس مع حواف
    العنصر فيبان كإطار مفتوح، والمسافة كافية إن العين تقرا الكتل */
 /* الفاصل بين المجموعات = ٢٢ ناقص الـ٨ اللي جاية من `gap`، فالفجوة
@@ -980,7 +1019,7 @@ input[type=range]{accent-color:var(--lime-ink);width:130px;background:transparen
 /* ── إضافات وتصحيحات ── */
 .logo{display:block;color:var(--green)}
 .logo svg{width:100%;height:100%;display:block}
-.rail button:where(:not(.acctbtn)),.rail .railitem{font-size:.8rem}
+.rail button:where(:not(.acctbtn):not(.railshut)),.rail .railitem{font-size:.8rem}
 .kv dd a{cursor:pointer}
 .data.li{border-radius:0}
 .tabs .tab{cursor:pointer}
@@ -1479,12 +1518,12 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* نوعية مساوية لقاعدة الإخفاء `.rail:not(.open) .rail-l` وبعدها */
   .rail:not(.open) .rail-l,.rail .rail-l{display:flex}
 .rail .acct-who,.rail.open .acct-who{display:none}
-.rail button:where(:not(.acctbtn)),.rail .railitem,
-  .rail.open button:where(:not(.acctbtn)),.rail.open .railitem{
+.rail button:where(:not(.acctbtn):not(.railshut)),.rail .railitem,
+  .rail.open button:where(:not(.acctbtn):not(.railshut)),.rail.open .railitem{
     flex-direction:column;justify-content:center;text-align:center}
 .rail .railitem.nomob{display:none}
-.rail button:where(:not(.acctbtn)),.rail .railitem{width:auto;flex:1;padding:.45rem .2rem;gap:.22rem;font-size:.66rem;border-radius:var(--r1)}
-.rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:21px;height:21px}
+.rail button:where(:not(.acctbtn):not(.railshut)),.rail .railitem{width:auto;flex:1;padding:.45rem .2rem;gap:.22rem;font-size:.66rem;border-radius:var(--r1)}
+.rail button:where(:not(.acctbtn):not(.railshut)) svg,.rail .railitem svg{width:21px;height:21px}
 .railfoot{margin-top:0;width:auto;flex:1;flex-direction:row;align-items:stretch;gap:0}
 .railfoot>.pht,.railfoot>.av{display:none}
 /* قائمة الحساب انتقلت للشريط العلوي: نسختين منها على شاشة واحدة
@@ -2986,6 +3025,18 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    `.col` مش صالحة هنا: فيها `min-height:0` عشان الأعمدة اللي بتسكرول
    جوّه ارتفاع ثابت، والقسم اللي محتواه شبكة بيتلَخبط بيها · بيتضغط
    لصفر وشبكته تطلع فوق اللي بعده. */
+/* ══ ترويسة الشاشة ══
+   كانت **بلا أي قاعدة** · `<header>` عنصر بلوك ساده، فالعنوان
+   والأكشن بيترصّوا فوق بعض بمسافة صفر. الأكشن كان لازق في آخر سطر
+   من النصّ، وباين كأنه جزء منه.
+   الترويسة صفّ: كتلة العنوان في البداية والأفعال في النهاية، وتلفّ
+   لما الشاشة تضيق · فالمسافة موجودة في الحالتين. */
+.screen>header{display:flex;align-items:flex-end;justify-content:space-between;
+  gap:.7rem 1.2rem;flex-wrap:wrap}
+.screen>header>div:first-child{min-width:0;flex:1 1 22rem}
+/* الأفعال في الترويسة صفّ واحد، وكلها بنفس ارتفاع التحكّم */
+.screen>header>:not(div:first-child){flex:none}
+
 .rpsec{display:flex;flex-direction:column;gap:.85rem}
 /* سطر بيقول السكشن ده بيعمل إيه. سطر واحد مقروء عرضه محدود:
    الجملة اللي بتفرد على عرض الشاشة كلها العين بتفقد أولها. */
@@ -4054,14 +4105,21 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .bgchk-t{align-self:flex-start}
 
 .bglist{list-style:none;margin:.2rem 0 0;padding:0;display:flex;flex-direction:column;gap:2px;width:100%}
-.bglist-i{display:flex;align-items:center;gap:.7rem;width:100%;padding:.5rem .6rem;
+.bglist-i{display:flex;align-items:center;gap:1.1rem;width:100%;padding:.5rem .6rem;
   border-radius:var(--r1);text-align:start;font-size:.79rem;color:var(--t1)}
 .bglist-i:hover{background:rgba(var(--edgeC),.06)}
 .bglist-i>svg{color:var(--t3);flex:none;margin-inline-start:auto}
 .bglist-lv{flex:none;width:3.6rem;font-size:.7rem}
 .bglist-t{flex:1;min-width:0;font-family:var(--fd);font-weight:600;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bglist-v{flex:none;font-size:var(--fs-2);white-space:nowrap}
+/* ── خانتا الرقمين ──
+   الرقمان بيتقارنوا، والمقارنة بتحتاج **عمودًا** لا سطرًا. الخانة
+   بعرض ثابت فبدايتها واحدة في كل الصفوف، والتسمية جوّاها بعرض ثابت
+   كمان · فالرقم بيبدأ عند نفس الحدّ، وفي RTL بيمتدّ للشمال وآحاده
+   ملزوقة في التسمية، يعني الآحاد فوق بعضها. */
+.bglist-v{flex:none;display:flex;align-items:baseline;gap:.45rem;
+  min-width:10.4rem;font-size:var(--fs-2);white-space:nowrap}
+.bglist-v>.sub{flex:none;width:2.9rem}
 .bglist-g{flex:none;white-space:nowrap}
 
 .bgok{display:flex;align-items:center;gap:.6rem;font-size:.88rem;color:var(--t1)}
@@ -4202,9 +4260,21 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .fexp-m.flip{inset-inline-start:auto;inset-inline-end:0}
 /* نبضة قصيرة على شجرة التخصيص لما تقفز لها من فحص التوازن ·
    التمرير وحده مش كفاية: الصفحة بتتحرك والعين مش عارفة إيه اللي
-   اتغيّر. النبضة بتقول «أهي». */
-.bgtree{border-radius:var(--r3);transition:box-shadow .4s ease,background .4s ease}
-.bgtree.land{box-shadow:0 0 0 2px rgba(var(--retC2),.34);
-  background:rgba(var(--retC2),.05)}
-@media (prefers-reduced-motion:reduce){.bgtree{transition:none}}
+   اتغيّر. النبضة بتقول «أهي».
+
+   ⚠️ كانت `box-shadow:0 0 0 2px` · حلقة حادّة بلا تغبيش، يعني
+   **بوردر** حوالين السكشن. والسكشن ده مفيهوش بوردر في أي حالة
+   تانية، فالعين بتقراه «ظهر إطار من غير سبب» لا «دي نبضة». وأي
+   حاجة بتقعد ١٫٦ ثانية بتتقري ثابتة لا عابرة.
+
+   بقت **هالة مغبّشة** بتخفت لوحدها: مالهاش حافة أصلًا، فما ينفعش
+   تتقري بوردر · والحركة بتشيل نفسها من غير ما حد يشيل كلاس. */
+.bgtree{border-radius:var(--r3)}
+.bgtree.land{animation:bgland 1.5s cubic-bezier(.3,0,.2,1) both}
+@keyframes bgland{
+  0%   {box-shadow:0 0 0 10px rgba(var(--retC2),0);   background:rgba(var(--retC2),0)}
+  18%  {box-shadow:0 0 22px 2px rgba(var(--retC2),.30);background:rgba(var(--retC2),.05)}
+  100% {box-shadow:0 0 22px 2px rgba(var(--retC2),0);  background:rgba(var(--retC2),0)}
+}
+@media (prefers-reduced-motion:reduce){.bgtree.land{animation:none}}
 .bgchk-h{margin:0;font-size:var(--fs-2)}

@@ -257,11 +257,18 @@ function Balance({
                 <button className="bglist-i" onClick={() => onGo(x.path)}>
                   <span className="bglist-lv sub">{PLAN_LEVELS[x.level]}</span>
                   <span className="bglist-t">{x.label || root.label}</span>
+                  {/* التسمية بعرض ثابت والرقم بعدها · في RTL الرقم
+                      بيمتدّ للشمال وحرفه الأخير ملزوق في التسمية،
+                      فالخانات بتقع فوق بعضها والآحاد بتتراصّ. قبل
+                      كده كان الاتنين نصًّا واحدًا بعرض متغيّر، فكل
+                      صفّ بيبدأ في مكان مختلف والمقارنة بتتعب. */}
                   <span className="bglist-v mut">
-                    مخصص <Money sm>{x.alloc}</Money>
+                    <span className="sub">مخصص</span>
+                    <Money sm>{x.alloc}</Money>
                   </span>
                   <span className="bglist-v mut">
-                    أبناؤه <Money sm>{x.childSum}</Money>
+                    <span className="sub">أبناؤه</span>
+                    <Money sm>{x.childSum}</Money>
                   </span>
                   {/* نفس شارات النظام لا شارة جديدة: التونات متعايرة
                       مرة واحدة في `.tag`، وأي بديل هنا بيفتح ملفًا تانيًا
@@ -280,7 +287,7 @@ function Balance({
         {gaps.length > TOP && (
           <button className="btn btn-2 btn-sm bgchk-t" onClick={() => setAll((x) => !x)}>
             <Icon name={all ? icons.chevronUp : icons.chevronDown} size={15} />
-            {all ? 'أقصر قائمة' : `الباقي (${gaps.length - TOP})`}
+            {all ? 'أقصر قائمة' : `المزيد (${gaps.length - TOP})`}
           </button>
         )}
       </Glass>

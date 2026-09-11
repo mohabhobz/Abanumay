@@ -3,10 +3,7 @@ import { useMenu } from '@/hooks/useMenu'
 import { useNavigate } from 'react-router-dom'
 import { Icon, icons, type IconName } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
 import { Avatar } from './Avatar'
-import { ROLES } from '@/data/roles'
-import { useRole } from '@/hooks/useRole'
 import type { CurrentUser } from '@/types/domain'
 import { applyTheme, readTheme, writeTheme, type ThemeChoice } from '@/lib/theme'
 
@@ -30,7 +27,6 @@ export function AccountMenu({
   onSignOut?: () => void
   drop?: boolean
 }) {
-  const { role, setRole } = useRole()
   const { open, setOpen, box: wrap } = useMenu<HTMLDivElement>()
   const [theme, setTheme] = useState<ThemeChoice>(readTheme)
   const navigate = useNavigate()
@@ -91,42 +87,11 @@ export function AccountMenu({
             </div>
           </div>
 
-          {/* مبدّل الدور · للنموذج فقط. الأدوار بتغيّر القراءات
-              والشرائح والسقوف، فمن غير المبدّل الفرق ما يتجرّبش.
-              لما يبقى فيه باك اند، الدور بييجي من التوكن والقسم ده يختفي. */}
-          <div className="acct-sec">
-            <div className="acct-lbl">
-              الدور <span className="acct-demo">للعرض</span>
-            </div>
-            <div className="rolesw" role="radiogroup" aria-label="الدور">
-              {ROLES.map((r) => (
-                <button
-                  key={r.key}
-                  role="radio"
-                  aria-checked={role.key === r.key}
-                  className={role.key === r.key ? 'on' : ''}
-                  onClick={() => setRole(r.key)}
-                >
-                  {/* الوش قبل الاسم: الدور بيتعرّف بصاحبه، والصف
-                      بيبقى له نفس شكل السطر اللي فوق في القائمة */}
-                  {r.photo ? (
-                    <img className="pht pht-28" src={r.photo} alt="" />
-                  ) : (
-                    <span className="av av-28">{r.initial}</span>
-                  )}
-                  <span className="rolesw-tx">
-                    <span className="rolesw-t">{r.title}</span>
-                    <span className="rolesw-s">
-                      {r.financialAuthority === null
-                        ? 'توصية فقط'
-                        : `سقف ${nf.format(r.financialAuthority)}`}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
+          {/* مبدّل الدور اتشال من القايمة بطلب العميل.
+              ⚠️ الدور لسّه بيغيّر القراءات والشرائح والسقوف في
+              الصفحات (`useRole`)، بس مفيش واجهة تبدّله دلوقتي ·
+              فالنموذج بيفضل على الدور المخزَّن. مكانه الطبيعي شاشة
+              «إعدادات الحساب» لما تتبني. */}
           <div className="acct-sec">
             <button role="menuitem" onClick={() => go(ROUTES.account)}>
               <Icon name={icons.user} size={16} />
