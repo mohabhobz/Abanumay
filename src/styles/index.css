@@ -485,8 +485,15 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .li image-slot{width:34px;height:34px;flex:none}
 .stack{display:flex;height:9px;border-radius:var(--rp);overflow:hidden;background:rgba(var(--edgeC),.10)}
 .stack span{height:100%}
-.lg{display:flex;gap:.9rem;flex-wrap:wrap;font-size:.71rem;color:var(--t3);margin-top:.45rem}
-.lg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-inline-end:.3rem;vertical-align:middle}
+/* ⚠️ كان هنا مفتاح رسم اسمه `.lg` · **ميّت** (مفيش عنصر في
+   السيستم بيستعمله مفتاحًا) و**ضارّ**: نفس الاسم مستعمل لقايمة
+   السجل الزمني في §الأسفل، فالقايمة كانت بتاخد منه
+   `display:flex;flex-wrap:wrap` · يعني صفوف السجل بتترصّ **جنب
+   بعض وتلفّ** بدل ما تنزل خطًّا زمنيًّا. القياس: تلات صفوف عند
+   x=855 و775 و919 بعروض مختلفة.
+   واسم من حرفين زي `lg` بيتصادم بالصدفة: كان كمان بيمسك مُعدِّل
+   المقاس في `.ec-init.lg`، فالأڤاتار كان بياخد الخيط الرأسي بتاع
+   السجل جوّه المربّع. */
 /* الوسم بياخد قاعدة سطح تحت نبرته: من غيرها التعبئة الشفافة بتاخد
    لون اللي تحتها، فالوسم اللي على أرضية الصفحة الغامقة بينزل تحت
    حدّ التباين واللي على كارت فاتح يعدّي. */
@@ -2154,9 +2161,13 @@ to{opacity:1;transform:none}
    الحالة دلوقتي بتتقال بنفس لغة السيستم: **السطح بيرتفع** ·
    أبيض أكتف وحلقة أقوى وظلّ خفيف، زي إبهام مبدّل العرض بالظبط.
    ولا لون جديد ولا معنى مسروق. */
+/* الحالة بتتقال بالسطح والحلقة وحدهم · **بلا ظلّ**. الظلّ في
+   السيستم ده معناه «مرفوع عن السطح» (المنسدلة · النافذة · إبهام
+   المبدّل)، وشريحة في شريط أدوات مش مرفوعة عن حاجة · فالظلّ كان
+   بيدّي الشريحة ارتفاعًا مالهوش سبب، وبيخلّيها مختلفة عن جيرانها
+   في خاصية تالتة غير الخلفية والحلقة. */
 .fchip.on{color:var(--t1);background:rgba(var(--wC),calc(.98 * var(--wM)));
-  box-shadow:inset 0 0 0 1px var(--edge-i),
-             0 1px 3px rgba(var(--edgeC),.14),0 1px 1px rgba(var(--edgeC),.05)}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 /* الشارة على شريحة مفعَّلة بتقلب صلبة · نفس قاعدة `.tab.on b`:
    الشارة دايمًا أغمق أو أفتح من اللي شايلها بدرجة واحدة */
 .fchip.on b{color:var(--on-solid);background:var(--solid)}
@@ -2166,7 +2177,7 @@ to{opacity:1;transform:none}
 :root[data-theme="dark"] .fchip.on,:root[data-theme="green"] .fchip.on,
 :root[data-theme="dark"] .fsel.on .fsel-b,:root[data-theme="green"] .fsel.on .fsel-b{
   background:rgba(var(--wC),.17);
-  box-shadow:inset 0 0 0 1px var(--edge-f),0 1px 3px rgba(0,0,0,.4)}
+  box-shadow:inset 0 0 0 1px var(--edge-f)}
 /* قائمة اختيار */
 /* `position:relative` هنا لا على `.fmulti`: بعد ما القائمة الواحدة
    والمتعددة بقوا نفس البنية، اللوحة بتتعلّق بالحقل **أيًّا كان
@@ -2190,8 +2201,7 @@ to{opacity:1;transform:none}
   appearance:none;-webkit-appearance:none;padding-inline-end:.2rem}
 .fsel-b svg{flex:none;color:var(--t3)}
 .fsel.on .fsel-b{color:var(--t1);background:rgba(var(--wC),calc(.98 * var(--wM)));
-  box-shadow:inset 0 0 0 1px var(--edge-i),
-             0 1px 3px rgba(var(--edgeC),.14),0 1px 1px rgba(var(--edgeC),.05)}
+  box-shadow:inset 0 0 0 1px var(--edge-i)}
 .fsel.off{opacity:.55}
 .fsel.off .fsel-b{cursor:not-allowed}
 /* القائمة اللي جوّه شريط الأدوات تلبس شكل الشريحة عشان الصفّ
@@ -2340,11 +2350,24 @@ to{opacity:1;transform:none}
 .ecard:hover{transform:translateY(-2px);
   box-shadow:inset 0 0 0 1px var(--edge-i)}
 .ec-top{display:flex;align-items:flex-start;gap:.65rem}
+/* الحرف متراكز بالتخطيط **وبالسطر**: `place-items:center` بتوسّط
+   صندوق السطر لا الحبر، و`line-height` الوراثي بيسيب فراغًا تحت
+   الحرف العربي · فالحرف بيبان نازل. `line-height:1` بتلزّق صندوق
+   السطر على الحرف فالتوسيط بيبقى بصريًّا كمان. */
 .ec-init{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:var(--r1);
-  font-family:var(--fd);font-weight:700;font-size:1rem;color:var(--ink-soft);
+  font-family:var(--fd);font-weight:700;font-size:1.15rem;line-height:1;color:var(--ink-soft);
+  /* الحرف العربي بيقع تحت مركز صندوق السطر لأن الخطّ بيحجز مكانًا
+     للنازل (نقطة الباء). القياس على الحبر نفسه: الحرف كان نازل
+     ٠٫٢em عن مركز المربّع. الحشو السفلي بيقصّر صندوق المحتوى من
+     تحت، فمركزه بيطلع نصّ الحشو · `.4em` تحت = رفع `.2em`. */
+  padding-block-end:.4em;
   background:rgba(var(--wC),calc(.75 * var(--wM)));
   box-shadow:inset 0 0 0 1px var(--edge-2)}
-.ec-init.lg{width:54px;height:54px;border-radius:var(--r2);font-size:1.35rem}
+/* ⚠️ المُعدِّل كان اسمه `lg` · وده اسم **بلوك** مستعمل لقايمة
+   السجل، فالأڤاتار كان بياخد `.lg::before` (الخيط الرأسي بتاع
+   الخطّ الزمني) جوّه المربّع. مُعدِّل المقاس لازم يبقى مرتبطًا
+   بالبلوك بتاعه: `ec-init-lg` ما ينفعش يتصادم مع حاجة. */
+.ec-init-lg{width:58px;height:58px;border-radius:var(--r2);font-size:1.75rem}
 .ec-id{flex:1;min-width:0}
 .ec-name{display:block;font-family:var(--fd);font-weight:600;font-size:.92rem;color:var(--t1);
   line-height:1.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -4397,13 +4420,17 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    الفراغ اللي الرسم الجنبه بيفرضه بدل ما يسيبه فاضيًا */
 .chq{display:flex;flex-direction:column;gap:.8rem;container-type:inline-size}
 .chq-h{display:flex;flex-direction:column;gap:.2rem}
+/* الفجوة بين الرقم واللي تحته أكبر من باقي الفجوات · الرقم ٨٠
+   بكسل، والمسافة اللي كانت كافية لرقم ٤٢ بتبقى ملزوقة عنده */
 .chq-b{flex:1;min-height:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:.5rem;text-align:center}
+  align-items:center;justify-content:center;gap:1.15rem;text-align:center}
+.chq-b>.chq-m{margin-top:-.5rem}
 .chq-t{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.6;color:var(--t1)}
 .chq-d{font-size:var(--fs-2);line-height:1.75}
-/* الرقم هو الخبر، فمقاسه بيكبر مع الكارت لحدّ سقف */
+/* الرقم هو الخبر · **٨٠ بكسل على الويب** بطلب العميل، وبيصغر
+   على الشاشة الضيّقة عشان ما يكسرش الكارت */
 .chq-v>b{font-family:var(--fd);font-weight:700;line-height:1;color:var(--t1);
-  font-size:clamp(2.6rem,7cqw,4.2rem);letter-spacing:-.02em}
+  font-size:min(80px,22cqw);letter-spacing:-.025em}
 .chq-m{display:block;width:100%;height:10px;border-radius:var(--rp);overflow:hidden;margin-top:.15rem;
   background:rgba(var(--edgeC),.10)}
 .chq-m>i{display:block;height:100%;border-radius:var(--rp);background:var(--solid)}
@@ -4453,13 +4480,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .chy-line{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .chy-line.a{stroke:var(--ch-a)}
 .chy-line.c{stroke:rgba(var(--edgeC),.28);stroke-dasharray:5 4;stroke-width:1.25}
-.chy-glow{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:5}
-.chy-glow.a{stroke:rgba(var(--limeC),.42)}
-/* على أرضية غامقة اللايم بيلمع أكتر · نفس النسبة مش نفس الظهور */
-:root[data-theme="dark"] .chy-glow.a,
-:root[data-theme="green"] .chy-glow.a{stroke:rgba(var(--limeC),.26)}
-/* السقف خطّ مرجعي، مش قيمة بتتوهّج · بلا هالة خالص */
-.chy-glow.c{stroke:none}
+/* التوهّج اتشال خالص بطلب العميل · الخطّ وحده بيقول الاتجاه،
+   والمملوء الوحيد في الرسم فضل منطقة التجاوز. */
+.chy-glow{display:none}
 /* منطقة التجاوز · اللون الوحيد اللي بيقول «فيه مشكلة» في الرسم.
    كانت `.20` وما كانتش بتبان فوق مساحة المصروف · واللي ما يتشافش
    ما بيقولش حاجة، فالرقم اتحدّد من الصورة لا من الذوق */
@@ -4529,9 +4552,14 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .gpeek{position:fixed;z-index:60;left:50%;top:50%;transform:translate(-50%,-50%);
   width:min(560px,92vw);max-height:86vh;display:flex;flex-direction:column;
   border-radius:var(--r3);overflow:hidden;
-  background:linear-gradient(180deg,rgba(var(--wC),calc(.9 * var(--wM))),rgba(var(--wC),calc(.8 * var(--wM))));
-  -webkit-backdrop-filter:blur(40px) saturate(1.4);backdrop-filter:blur(40px) saturate(1.4);
-  box-shadow:inset 0 0 0 1px var(--edge-2),0 24px 60px rgba(20,69,71,.18);
+  /* **نفس سطح الكارت بالظبط** · `--g-card` و`--g-card-blur` هما
+     اللي بيعرّفوا كل كارت في الموقع، فالنافذة بقت من نفس العايلة
+     لا سطحًا خامسًا بتدرّج خاص بيه. اللي يخصّها وحدها هو الظلّ
+     الخارجي: هي **مرفوعة** عن الصفحة، والكارت لأ. */
+  background:var(--g-card);
+  -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
+  backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
+  box-shadow:inset 0 0 0 1px var(--edge-1),0 24px 60px -18px rgba(var(--edgeC),.45);
   animation:fprevin .26s cubic-bezier(.22,.9,.3,1) both}
 .gpeek-h{display:flex;align-items:flex-start;gap:.5rem;padding:1rem 1.1rem .8rem}
 .gpeek-h .sub{font-size:var(--fs-2)}
@@ -4560,8 +4588,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* المجموع سطر في نفس الشبكة عشان أرقامه تقع تحت أرقام الأبناء */
 .gpeek-sum{margin-top:.3rem;padding-top:.45rem;
   box-shadow:inset 0 1px 0 var(--edge-d);font-family:var(--fd);font-weight:600}
+/* الرصيف مالوش سطح خاص بيه · لو خد أبيض ٧٢٪ بيتقري شريطًا مصمتًا
+   جوّه لوح زجاجي، فالزجاج بيتكسر عند آخره. خيط فاصل وبس. */
 .gpeek-f{display:flex;align-items:center;gap:.5rem;padding:.85rem 1.1rem;
-  background:rgba(var(--wC),calc(.72 * var(--wM)));
   box-shadow:inset 0 1px 0 var(--edge-d)}
 @media (max-width:560px){
   .gpeek-l>li{grid-template-columns:minmax(0,1fr) 7rem}

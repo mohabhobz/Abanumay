@@ -70,7 +70,7 @@ export default function EntityPage() {
           <header className="phead">
             <div className="pmain">
               <div className="ehead-id">
-                <span className="ec-init lg">{initial(entity.name)}</span>
+                <span className="ec-init ec-init-lg">{initial(entity.name)}</span>
                 <div style={{ minWidth: 0 }}>
                   <h1 className="ptitle">{entity.name}</h1>
                   <div className="ehead-m sub">
