@@ -14,7 +14,7 @@ export interface DecisionBarProps {
 }
 
 /**
- * شريط القرار — ثابت أسفل الشاشة، فيه المبلغ ومخارج الدور.
+ * شريط القرار · ثابت أسفل الشاشة، فيه المبلغ ومخارج الدور.
  * بيحسّ بالماوس قبل ما توصله فيرتفع، والضوء بيتبع مكان المؤشر.
  */
 export function DecisionBar({ user, project, compact, atEnd }: DecisionBarProps) {

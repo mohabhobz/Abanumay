@@ -2,7 +2,7 @@ import { nf } from '@/lib/format'
 import type { AuthorityMatrix } from '@/types/domain'
 
 /**
- * سُلّم السقوف — نفس منطق قوس الاعتماد، بس كقائمة رأسية.
+ * سُلّم السقوف · نفس منطق قوس الاعتماد، بس كقائمة رأسية.
  * بيحسب أول دور سقفه يستوعب المبلغ، ويبيّن إن اللي فوقه غير مطلوب وليه.
  */
 export function CeilingLadder({
@@ -54,7 +54,7 @@ export function CeilingLadder({
               </div>
             </div>
             <div className="lcap">
-              {/* الخط المونو للأرقام بس — على العربي بيبوّظ المسافات */}
+              {/* الخط المونو للأرقام بس · على العربي بيبوّظ المسافات */}
               <div className={`lnum${r.ceiling ? ' mono' : ''}`}>
                 {r.ceiling ? nf.format(r.ceiling) : r.kind === 'recommend' ? 'توصية' : 'بلا سقف'}
               </div>

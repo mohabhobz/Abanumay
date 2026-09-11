@@ -10,12 +10,12 @@ export interface DataTabProps {
   project: Project
   entityName: string
   onOpenEntity: () => void
-  /** أحدث قيد في السجل — بيتعرض تحت التعريف */
+  /** أحدث قيد في السجل · بيتعرض تحت التعريف */
   last?: LogEvent
   onOpenLog: () => void
 }
 
-/** بيانات المشروع — التعريف والفكرة والمراحل والنطاق والمرفقات */
+/** بيانات المشروع · التعريف والفكرة والمراحل والنطاق والمرفقات */
 export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog }: DataTabProps) {
   const perBeneficiary = costPerBeneficiary(P.amountRequested, P.beneficiaries)
   const uploaded = P.attachments.filter((a) => a.uploaded).length
@@ -52,7 +52,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
           ]}
         />
 
-        {/* آخر إجراء تحت التعريف مباشرة — كان كارتًا في العمود الجانبي،
+        {/* آخر إجراء تحت التعريف مباشرة · كان كارتًا في العمود الجانبي،
             وده مكان بعيد عن السؤال اللي بيسبقه: «المشروع ده إيه، وآخر
             حاجة حصلت فيه إيه». الاتنين بقوا في نفس الكارت. */}
         {last && (
@@ -123,7 +123,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
         <Timeline
           events={P.phases.map((ph) => ({
             tone: ph.tone,
-            title: <><b>{ph.name}</b> — {ph.tasks}</>,
+            title: <><b>{ph.name}</b>، {ph.tasks}</>,
             by: <Mono>{ph.months}</Mono>,
           }))}
         />
@@ -205,7 +205,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
               {P.attachments.map((a) => (
                 <tr key={a.name} className={a.uploaded ? '' : 'off'}>
                   <td>
-                    {/* المرفوع بيتعرض بثامبنيله — النوع بيبان قبل الفتح.
+                    {/* المرفوع بيتعرض بثامبنيله · النوع بيبان قبل الفتح.
                         وغير المرفوع مالوش ثامبنيل لأن مفيش محتوى. */}
                     {a.uploaded ? (
                       <DocFile name={a.name} download={false} />
@@ -231,7 +231,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
           </table>
         </div>
         <div className="sub" style={{ marginTop: '.8rem' }}>
-          الموازنة التفصيلية هي المطلوبة في طلب الاستكمال الحالي — الملف المرفوع صورة لا تُقرأ آليًا.
+          الموازنة التفصيلية هي المطلوبة في طلب الاستكمال الحالي، الملف المرفوع صورة لا تُقرأ آليًا.
         </div>
       </Glass>
 
@@ -256,7 +256,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
   )
 }
 
-/** قائمة بنود بعنوان وعدّاد — بتتكرر ثلاث مرات في نفس الكارت */
+/** قائمة بنود بعنوان وعدّاد · بتتكرر ثلاث مرات في نفس الكارت */
 function BulletSection({ title, items }: { title: string; items: string[] }) {
   return (
     <>

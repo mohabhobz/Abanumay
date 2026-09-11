@@ -1,5 +1,5 @@
 /**
- * فاحص التباين — بيقيس لون النص الفعلي من البكسل مقابل خلفيته،
+ * فاحص التباين، بيقيس لون النص الفعلي من البكسل مقابل خلفيته،
  * مش من قيم الـCSS: الزجاج والـbackdrop-filter بيخلّوا الخلفية
  * المحسوبة مختلفة عن اللي العين بتشوفه.
  *
@@ -9,7 +9,7 @@
  *   node tools/contrast.mjs dark /projects
  *
  * بيطبع كل نص تحت حدّ AA (4.5:1، و3:1 للكبير). النسبة = 1 معناها
- * الحروف غطّت الصندوق كله — إنذار كاذب، مش مشكلة.
+ * الحروف غطّت الصندوق كله، إنذار كاذب، مش مشكلة.
  */
 import http from 'node:http';import fs from 'node:fs';import path from 'node:path';import {chromium} from 'playwright'
 import {PNG} from 'pngjs'
@@ -20,8 +20,7 @@ await new Promise(r=>s.listen(4440,r))
 const lum=([r,g,b])=>{const f=c=>{c/=255;return c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4)};return .2126*f(r)+.7152*f(g)+.0722*f(b)}
 const ratio=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p);return (x+.05)/(y+.05)}
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'})
-/* `--all` بيمشي على كل المسارات في التلات ثيمات بمتصفّح واحد —
-   ٤٢ صفحة في تشغيلة واحدة بدل ٤٢ تشغيلة. */
+/* `--all` بيمشي على كل المسارات في التلات ثيمات بمتصفّح واحد، ٤٢ صفحة في تشغيلة واحدة بدل ٤٢ تشغيلة. */
 import{ROUTES as ALL_ROUTES}from'./routes.mjs'
 const all=process.argv.includes('--all')
 const THEMES=all?['light','dark','green']:[process.argv[2]||'dark']
@@ -45,15 +44,23 @@ const items=await p.evaluate(()=>{
         const rect=r.getBoundingClientRect()
         if(rect.width<6||rect.height<6||rect.top<0||rect.bottom>900||rect.left<0||rect.right>1440) continue
         if(el.ownerSVGElement||el.tagName==='svg') continue
+        /* **النصّ المحجوب مش نصّ.** رصيف القرار مثبّت فوق الصفحة،
+           والمحتوى اللي تحته بيتمرّر ورا الزرار المصمت. الفحص كان
+           بياخد بكسلات الزرار كخلفية للوسم اللي ورا، فيطلع
+           ١٫٥٧:١ لنصّ محدش بيقراه أصلًا. الاختبار: لو نقطة وسط
+           النصّ مش راجعة العنصر ولا ابنه، فهو محجوب. */
+        const cx=Math.round(rect.left+rect.width/2), cy=Math.round(rect.top+rect.height/2)
+        const hit=document.elementFromPoint(cx,cy)
+        if(!hit||(hit!==el&&!el.contains(hit)&&!hit.contains(el))) continue
         const cs=getComputedStyle(el)
         /* الخلفية لازم تتقاس من بكسلات **بتخصّ العنصر نفسه**.
            الشريط اللي فوق أو تحت صندوق النصّ بيقع أحيانًا على عنصر
-           تاني خالص — تحت فقرة فيها زرار مثلًا — فيطلع تباينًا
+           تاني خالص، تحت فقرة فيها زرار مثلًا، فيطلع تباينًا
            كاذبًا بين نصّ الفقرة ولون الزرار.
 
            فبدل الشريط الأعمى: بنجيب صندوق كل **سطر** من النطاق،
            والصفوف اللي بين السطور (المسافة السطرية) وبين أول سطر
-           وحافة العنصر خالية من الحروف **وجوّه العنصر** — وهي
+           وحافة العنصر خالية من الحروف **وجوّه العنصر**، وهي
            بالظبط اللي بتدّي لون الخلفية الحقيقي. */
         const eb=el.getBoundingClientRect()
         const lines0=[...r.getClientRects()].sort((a,c)=>a.top-c.top)
@@ -66,13 +73,13 @@ const items=await p.evaluate(()=>{
           push(lines[lines.length-1].b+1,eb.bottom-1)
         }
         /* الحبّة (`.tag`) ارتفاعها ١٨ ونصّها ١١٫٢، فالفراغ فوق وتحت
-           ٣px بس وواقع على المنحنى المصقول — بيخلط لون الحبّة بلون
+           ٣px بس وواقع على المنحنى المصقول، بيخلط لون الحبّة بلون
            السطح ويدّي إنذارًا كاذبًا. في العنصر القصير الفراغ
            **الجانبي** (الحشو الأفقي) أوسع ومسطّح، فبيتقاس منه. */
         const sides=[]
         if(lines.length){
           /* الشريط الجانبي مسموح **بس** لو العنصر له حشو أفقي
-             معلَن — يعني الفراغ ده أرضيته هو، مش عنصر جنبه.
+             معلَن، يعني الفراغ ده أرضيته هو، مش عنصر جنبه.
              من غير الشرط ده الـ`span` الملزوق بمربّع لون في وسيلة
              إيضاح بيقرأ لون المربّع ويدّي إنذارًا كاذبًا. */
           const ps=parseFloat(cs.paddingInlineStart)||0, pe=parseFloat(cs.paddingInlineEnd)||0
@@ -81,7 +88,7 @@ const items=await p.evaluate(()=>{
           if(ps>=5&&L.left-eb.left>=4) sides.push({x0:Math.round(eb.left+2),x1:Math.round(L.left-2),yy})
           if(pe>=5&&eb.right-R.right>=4) sides.push({x0:Math.round(R.right+2),x1:Math.round(eb.right-2),yy})
         }
-        /* آخر ملاذ: العنصر اللي نصّه بيملا صندوقه وملوش حشو — مفيش
+        /* آخر ملاذ: العنصر اللي نصّه بيملا صندوقه وملوش حشو، مفيش
            فيه بكسل خالٍ من حرف. الشريط برّه بيقع على نصّ الجار
            وبيقرأ لون حروفه. فبنحسب الخلفية من **سلسلة الآباء**:
            بنركّب ألوان الخلفية لحد أول لون صمّاء. */
@@ -130,7 +137,7 @@ for(const it of items){
   else { band(it.y-4,it.y-1); band(it.y+it.h+1,it.y+it.h+4) }
   if(!counts.size) continue
   const bg=[...counts.entries()].sort((a,z)=>z[1]-a[1])[0][0].split(',').map(Number)
-  /* النسبة ١ معناها الحروف غطّت كل اللي اتقاس — مفيش خلفية
+  /* النسبة ١ معناها الحروف غطّت كل اللي اتقاس، مفيش خلفية
      اتشافت، فمفيش حكم. */
   if(fg.join()===bg.join()) continue
   const r=ratio(fg,bg)
@@ -139,7 +146,7 @@ for(const it of items){
   if(r<need) bad.push({...it,r:+r.toFixed(2),need,bg:bg.join(','),fg:fg.join(',')})
 }
 grand+=bad.length
-if(!all||bad.length) console.log(`${theme} ${url} — نصوص مفحوصة: ${items.length} · تحت الحدّ: ${bad.length}`)
+if(!all||bad.length) console.log(`${theme} ${url}، نصوص مفحوصة: ${items.length} · تحت الحدّ: ${bad.length}`)
 for(const x of bad.slice(0,14)) console.log(`  ${String(x.r).padStart(5)} (<${x.need}) ${x.cls.padEnd(14)} ${x.size}px  "${x.t}"  fg ${x.fg} / bg ${x.bg}`)
 }
 await c.close()

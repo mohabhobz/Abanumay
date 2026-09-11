@@ -32,7 +32,7 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
               k: 'التأسيس',
               v: <><Mono>{E.founded}</Mono> <span className="sub">{E.foundedH}</span></>,
             },
-            { k: 'المدير التنفيذي', v: `${E.ceo} — ${E.ceoMobile}` },
+            { k: 'المدير التنفيذي', v: `${E.ceo}، ${E.ceoMobile}` },
             { k: 'مدخل البيانات', v: E.dataEntry },
             { k: 'جوال الجهة', v: <Mono>{E.mobile}</Mono> },
             { k: 'البريد', v: <Mono>{E.email}</Mono> },
@@ -63,9 +63,9 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
                   </td>
                   <td className="n">
                     {/* المرفوع يتقرا من مكانه (الملف نفسه زرار)، والناقص
-                        يتطلب من الجهة — مفيش صف بلا إجراء */}
+                        يتطلب من الجهة · مفيش صف بلا إجراء */}
                     {d.uploaded ? (
-                      <span className="sub">—</span>
+                      <span className="sub"> </span>
                     ) : (
                       <span className="rowf" style={{ justifyContent: 'flex-end' }}>
                         <button className="lnk">اطلبه من الجهة</button>
@@ -78,7 +78,7 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
           </table>
         </div>
         <div className="sub" style={{ marginTop: '.8rem' }}>
-          خمسة مستندات ناقصة، منها تقرير الحوكمة وتقرير المراجع القانوني — وهي المدخلات التي
+          خمسة مستندات ناقصة، منها تقرير الحوكمة وتقرير المراجع القانوني، وهي المدخلات التي
           تُبنى عليها درجة الحوكمة.
         </div>
       </Glass>

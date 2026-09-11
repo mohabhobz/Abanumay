@@ -18,7 +18,7 @@ import { df, nf, pct, projectCode } from '@/lib/format'
 import { days } from '@/lib/tone'
 
 /* ═══════════════════════════════════════════════════════════
-   اليوم — لوحة قراءة، لا لوحة أرقام
+   اليوم · لوحة قراءة، لا لوحة أرقام
 
    كل رسم هنا بيجاوب سؤالًا اتسأل في الأوديت:
      المال رايح فين؟        ← الميزانية وتوزيعها على المسارات
@@ -142,10 +142,6 @@ export default function HomePage() {
               والخريطة والمال والزمن. الارتفاع هو القيد هنا لا العرض،
               فالشبكة بتاخد الباقي والخريطة بتتقلّص جوّاه بنسبتها. */}
           <section className="fold">
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <span className="now">اليوم</span>
-          </nav>
-
           <header className="hhead">
             <div className="hhead-t">
               <h1 className="htitle">{GREET()}، {user.name.split(' ')[0]}</h1>

@@ -1,7 +1,7 @@
 import { projectRows } from './mock/projects'
 
 /**
- * التقرير الختامي — **المخطط مقابل الفعلي**.
+ * التقرير الختامي · **المخطط مقابل الفعلي**.
  *
  * ده أهم اكتشاف من قراءة `reports1_12` في النظام العامل: التقرير
  * الختامي فيه ١٨ عمودًا و٩٧٦ صفًّا، وأربعة منهم مش موجودين في أي
@@ -11,12 +11,12 @@ import { projectRows } from './mock/projects'
  *   `موازنة المشروع الفعلية` · `مخرجات المشروع الفعلية`
  *
  * يعني المؤسسة **عندها** الفرق بين اللي وعدت بيه الجهة واللي حصل
- * فعلًا — على ٩٧٦ مشروعًا — وما فيش شاشة بتحسبه. التقرير الختامي
+ * فعلًا · على ٩٧٦ مشروعًا · وما فيش شاشة بتحسبه. التقرير الختامي
  * معروض كقايمة مرفقات لا كمقارنة.
  *
  * ولذلك القيم دي مولَّدة هنا بانحياز مقصود: المدة الفعلية بتطول،
  * والمستفيدون بيقلّوا، والموازنة بتقرب من المعتمد. ده **مش تشاؤمًا**
- * — ده الشكل اللي بيطلع في المنح عمومًا، والغرض إن الشاشة تورّي
+ * · ده الشكل اللي بيطلع في المنح عمومًا، والغرض إن الشاشة تورّي
  * السؤال ده شغّالًا. لما الباك اند يجهز بتتبدّل بالقيم الحقيقية.
  *
  * ⚠️ نموذج. `GET /reports/closing` بنفس الشكل.
@@ -31,7 +31,7 @@ export interface Closing {
   goal: string
   region: string
   year: string
-  /** المعتمد — المخطط */
+  /** المعتمد · المخطط */
   granted: number
   /** موازنة المشروع الفعلية من التقرير الختامي */
   actualBudget: number
@@ -43,7 +43,7 @@ export interface Closing {
   planBeneficiaries: number
   /** عدد المستفيدين الفعلي */
   actualBeneficiaries: number
-  /** مخرجات المشروع الفعلية — نص من الجهة */
+  /** مخرجات المشروع الفعلية · نص من الجهة */
   outputs: string
   /** تاريخ رفع التقرير */
   at: string
@@ -66,14 +66,14 @@ const OUTPUTS = [
   'اكتملت المخرجات، وسُلّمت المنتجات المعرفية في موعدها.',
 ]
 
-/** مشاريع لها تقرير ختامي فعلًا — زي النظام، القايمة دي منها بس */
+/** مشاريع لها تقرير ختامي فعلًا · زي النظام، القايمة دي منها بس */
 export const closingRows: Closing[] = projectRows
   .filter((p) => p.hasFinalReport && p.amountGranted > 0)
   .map((p) => {
     const rnd = seeded(p.id)
     const int = (lo: number, hi: number) => lo + Math.floor(rnd() * (hi - lo + 1))
 
-    /* المدة بتطول في أغلب المشاريع وبتقصر في القليل — التوزيع مش
+    /* المدة بتطول في أغلب المشاريع وبتقصر في القليل · التوزيع مش
        متماثل، وده بالظبط اللي بيخلّي «المتوسط» يقول حاجة. */
     const drift = rnd() < 0.72 ? int(5, 70) : -int(2, 25)
     const actualDays = Math.max(30, p.durationDays + drift)
@@ -85,7 +85,7 @@ export const closingRows: Closing[] = projectRows
       Math.round(p.beneficiaries * (1 + bDrift / 100)),
     )
 
-    /* الموازنة الفعلية بتقرب من المعتمد وبتقلّ عنه شويّة — الوفر
+    /* الموازنة الفعلية بتقرب من المعتمد وبتقلّ عنه شويّة · الوفر
        ده هو «مشروع وفرة» في النظام. */
     const saving = rnd() < 0.35 ? int(1, 12) / 100 : 0
     const actualBudget = Math.round(p.amountGranted * (1 - saving))
@@ -111,7 +111,7 @@ export const closingRows: Closing[] = projectRows
   })
 
 export interface Gap {
-  /** متوسط الانحراف بالنسبة المئوية — موجب يعني زيادة عن المخطط */
+  /** متوسط الانحراف بالنسبة المئوية · موجب يعني زيادة عن المخطط */
   days: number
   beneficiaries: number
   budget: number
@@ -139,7 +139,7 @@ export const gapOf = (rows: Closing[]): Gap => ({
 /* ═══════════════════ المعرفة ═══════════════════ */
 
 /**
- * تقرير المعرفة — ونتيجة فحصه في النظام العامل.
+ * تقرير المعرفة · ونتيجة فحصه في النظام العامل.
  *
  * ٩٤٦ قيدًا، نوعان: `دروس مستفادة` (٨٢٤) و`رفض` (١٢٢). وقياس طول
  * النصّ قال الآتي: **٤٤٠ قيدًا نصّهم ثلاثة أحرف أو أقل** (أغلبهم
@@ -167,9 +167,9 @@ export interface Knowledge {
   spent: number
   kind: KnowledgeKind
   text: string
-  /** فاضٍ فعليًا — نقطة أو حرفان */
+  /** فاضٍ فعليًا · نقطة أو حرفان */
   empty: boolean
-  /** فيه درس مكتوب — أربعون حرفًا فأكثر */
+  /** فيه درس مكتوب · أربعون حرفًا فأكثر */
   real: boolean
 }
 
@@ -210,7 +210,7 @@ export const knowledgeRows: Knowledge[] = projectRows
       track: p.track,
       field: p.field,
       goal: p.goal,
-      owner: p.owner ?? '—',
+      owner: p.owner ?? 'بلا مالك',
       at: p.decidedAt ?? p.submittedAt,
       granted: p.amountGranted,
       spent: p.amountSpent,

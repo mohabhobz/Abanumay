@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 /* ═══════════════════════════════════════════════════════════
-   نموذج الجدول — عام لأي كيان.
+   نموذج الجدول · عام لأي كيان.
 
    الكلاينت طلب إن **كل الجداول** في السيستم تمشي بنفس الطريقة:
    نفس اختيار عدد الصفوف، نفس التجميع، نفس منتقي الأعمدة، نفس
@@ -17,7 +17,7 @@ export type Agg = 'sum' | 'avg'
 export interface Col<T> {
   key: string
   label: string
-  /** عمود رقمي — بيتحاذي لليسار وبياخد أرقامًا جدولية */
+  /** عمود رقمي · بيتحاذي لليسار وبياخد أرقامًا جدولية */
   n?: boolean
   /** ما يتشالش من المنتقي: بدونه الصف بيفقد هويته */
   fixed?: boolean
@@ -26,7 +26,7 @@ export interface Col<T> {
   cell: (r: T) => ReactNode
   /** نص صافٍ للتصدير والصورة */
   text: (r: T) => string
-  /** الرقم اللي بيتجمّع — غيابه معناه خانة فاضية في الإجماليات */
+  /** الرقم اللي بيتجمّع · غيابه معناه خانة فاضية في الإجماليات */
   value?: (r: T) => number
   agg?: Agg
   /** الإجمالي بالريال */
@@ -37,7 +37,7 @@ export interface Col<T> {
    * الجدول `table-layout:fixed` عشان القصّ يشتغل: في التخطيط
    * التلقائي العمود بيتمدّد لأطول محتوى فيه، فمفيش «أضيق من
    * المحتوى» أصلًا ولا حاجة تتقصّ. والثمن إن الأعمدة بتتقسم
-   * بالتساوي لو ما حدّش قال عرضها — فالكود بياخد نفس عرض اسم
+   * بالتساوي لو ما حدّش قال عرضها · فالكود بياخد نفس عرض اسم
    * المشروع. فكل عمود بيقول عرضه هنا، والمتصفح بيقسّم الزيادة أو
    * النقصان عليهم بالتناسب.
    */
@@ -46,7 +46,7 @@ export interface Col<T> {
 
 const sumOf = <T,>(rows: T[], f: (r: T) => number) => rows.reduce((s, r) => s + f(r), 0)
 
-/** إجمالي العمود على مجموعة صفوف — `null` يعني العمود ما يتلخّصش */
+/** إجمالي العمود على مجموعة صفوف · `null` يعني العمود ما يتلخّصش */
 export const aggregate = <T,>(col: Col<T>, rows: T[]): number | null => {
   if (!col.value || !col.agg || rows.length === 0) return null
   const total = sumOf(rows, col.value)
@@ -89,13 +89,13 @@ export const writeCols = (table: string, keys: string[]): void => {
   try {
     localStorage.setItem(`ab-cols-${table}`, JSON.stringify(keys))
   } catch {
-    /* التخزين ممكن يكون مقفول — الاختيار يفضل للجلسة دي */
+    /* التخزين ممكن يكون مقفول · الاختيار يفضل للجلسة دي */
   }
 }
 
 /* ═══════════════════ عرض الأعمدة ═══════════════════ */
 
-/** عرض بالبكسل لكل عمود المستخدم سحبه — الباقي على عرضه الافتراضي */
+/** عرض بالبكسل لكل عمود المستخدم سحبه · الباقي على عرضه الافتراضي */
 export type ColWidths = Record<string, number>
 
 /** أضيق عرض مسموح: تحته العمود بيبقى شريطًا ما بيبيّنش حاجة */
@@ -122,7 +122,7 @@ export const writeWidths = (table: string, w: ColWidths): void => {
   try {
     localStorage.setItem(`ab-colw-${table}`, JSON.stringify(w))
   } catch {
-    /* التخزين مقفول — العروض تفضل للجلسة دي */
+    /* التخزين مقفول · العروض تفضل للجلسة دي */
   }
 }
 
@@ -148,7 +148,7 @@ export interface Group<T> {
 export const splitGroups = <T,>(rows: T[], by: GroupBy<T>): Group<T>[] => {
   const map = new Map<string, T[]>()
   for (const r of rows) {
-    const k = by.of(r) || '—'
+    const k = by.of(r) || 'بلا قيمة'
     const bucket = map.get(k)
     if (bucket) bucket.push(r)
     else map.set(k, [r])

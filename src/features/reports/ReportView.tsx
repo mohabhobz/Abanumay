@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Empty, Glass, Icon, icons, Mono, Money, Num, Select } from '@/components/ui'
+import { BackTo, Empty, Glass, icons, Mono, Money, Num, Select } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
@@ -20,7 +20,7 @@ import { ExportMenu } from '@/components/export'
  * تقرير كامل.
  *
  * كل كارت في اللوحة بيفتح هنا. والصفحة بتفضل على نفس القاعدة:
- * **القراءة فوق والصفوف تحت**. اللي فوق هو نفس نصّ الكارت — مش
+ * **القراءة فوق والصفوف تحت**. اللي فوق هو نفس نصّ الكارت · مش
  * تكرارًا، ده الجسر: المستخدم دخل من جملة، فأول حاجة يشوفها هي
  * نفس الجملة ومعاها الصفوف اللي بنتها.
  *
@@ -71,11 +71,7 @@ export default function ReportView() {
     <AppLayout assistantContext={assistFor.page(card.question)}>
       <div className="viewstack">
         <div className="screen col">
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <Link to={ROUTES.reports} className="lb">التقارير</Link>
-            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
-            <span className="now">{card.question}</span>
-          </nav>
+          <BackTo to={ROUTES.reports} label="التقارير" />
 
           <header>
             <div>
@@ -84,7 +80,7 @@ export default function ReportView() {
             </div>
           </header>
 
-          {/* القراءة نفسها اللي في اللوحة — الجسر بين الجملة والصفوف */}
+          {/* القراءة نفسها اللي في اللوحة · الجسر بين الجملة والصفوف */}
           <Glass className="rvread">
             <span className="rvread-v">
               <b className="num">{card.value}</b>
@@ -163,7 +159,7 @@ export default function ReportView() {
 }
 
 function render(v: string | number | undefined, c: Table['cols'][number]) {
-  if (v === undefined || v === '') return <span className="sub">—</span>
+  if (v === undefined || v === '') return <span className="sub"> </span>
   if (c.money && typeof v === 'number') return <Money>{v}</Money>
   if (c.n && typeof v === 'number') return <Num>{v}</Num>
   const s = String(v)
@@ -177,7 +173,7 @@ function buildTable(key: string, yearId: string): Table | null {
   const rows = projectRows.filter((p) => p.year === yearId)
 
   switch (key) {
-    /* المخصص والمصروف على المسارات — القيم الخمس اللي النظام بيمسكها */
+    /* المخصص والمصروف على المسارات · القيم الخمس اللي النظام بيمسكها */
     case 'budget': {
       const total = budgetForYear(yearId)
       const lines = [...budgetByTrack(yearId), { ...total, label: 'الإجمالي' }]
@@ -201,9 +197,9 @@ function buildTable(key: string, yearId: string): Table | null {
       }
     }
 
-    /* المخطط مقابل الفعلي — الأعمدة الأربعة اللي في reports1_12 وبس */
+    /* المخطط مقابل الفعلي · الأعمدة الأربعة اللي في reports1_12 وبس */
     case 'actual': {
-      /* تراكمي زي الكارت — راجع التعليق في `reportDefs` */
+      /* تراكمي زي الكارت · راجع التعليق في `reportDefs` */
       const cs = closingRows
       return {
         cols: [
@@ -235,7 +231,7 @@ function buildTable(key: string, yearId: string): Table | null {
       }
     }
 
-    /* الصرف حسب الهدف — الرسم اللي في مخصص الصرف، بس كأرقام */
+    /* الصرف حسب الهدف · الرسم اللي في مخصص الصرف، بس كأرقام */
     case 'spend': {
       const by = new Map<string, { granted: number; spent: number; n: number }>()
       for (const p of rows) {
@@ -271,7 +267,7 @@ function buildTable(key: string, yearId: string): Table | null {
       }
     }
 
-    /* الشركاء — نفس أعمدة تقرير الشركاء في النظام */
+    /* الشركاء · نفس أعمدة تقرير الشركاء في النظام */
     case 'partners':
       return {
         cols: [
@@ -302,7 +298,7 @@ function buildTable(key: string, yearId: string): Table | null {
         })),
       }
 
-    /* الأداء — المكوث مقابل الحدّ، وهو اللي النظام بيقيسه ولا بيعرضه عند القرار */
+    /* الأداء · المكوث مقابل الحدّ، وهو اللي النظام بيقيسه ولا بيعرضه عند القرار */
     case 'stages': {
       const late = rows.filter((p) => stagePressure(p) > 1)
       return {
@@ -331,7 +327,7 @@ function buildTable(key: string, yearId: string): Table | null {
       }
     }
 
-    /* المعرفة — ومعاها عمود بيقول القيد ده فيه درس ولا نقطة */
+    /* المعرفة · ومعاها عمود بيقول القيد ده فيه درس ولا نقطة */
     case 'knowledge': {
       const ks = knowledgeRows
       return {

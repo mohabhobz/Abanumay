@@ -7,7 +7,7 @@ import type { AuthorityMatrix, AuthorityRole } from '@/types/domain'
    قوس الاعتماد
 
    مسار الاعتماد مش ثابت، هو دالة في المبلغ: القوس بيمتلي لحدّ الدور
-   اللي سقفه يستوعب المبلغ، واللي بعده يبهت — فالمستخدم يشوف مين
+   اللي سقفه يستوعب المبلغ، واللي بعده يبهت · فالمستخدم يشوف مين
    صاحب القرار قبل ما يقرأ رقم.
    ═══════════════════════════════════════════════════════════ */
 
@@ -35,7 +35,7 @@ function splitRole(text: string): string[] {
   return [words.slice(0, half).join(' '), words.slice(half).join(' ')]
 }
 
-/** حالة الدور الواقف عنده المشروع — بتيجي من سجل الإجراءات، مش مكتوبة هنا */
+/** حالة الدور الواقف عنده المشروع · بتيجي من سجل الإجراءات، مش مكتوبة هنا */
 export interface CurrentStandingInfo {
   by: string
   days: number
@@ -79,7 +79,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
   const decided = roles[decider] as AuthorityRole
   const uplifted = decided.uplift ? Math.round(amount * (1 + decided.uplift / 100)) : null
 
-  /** القراءة اللي تظهر في جوف القوس — لكل حالة سؤال مختلف */
+  /** القراءة اللي تظهر في جوف القوس · لكل حالة سؤال مختلف */
   const detail = (role: AuthorityRole, i: number): Detail => {
     if (i > decider) {
       // مش مطلوبة: الأهم هو الرقم اللي بيفعّلها
@@ -95,7 +95,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
           gate ? <>تبدأ من فوق <b>{nf.format(gate)}</b></> : null,
           role.ceiling
             ? <>سقفها <b>{nf.format(role.ceiling)}</b>{role.note ? ` ${role.note}` : ''}</>
-            : 'بلا سقف — آخر مرجع',
+            : 'بلا سقف، آخر مرجع',
         ],
         src: 'المصدر: مصفوفة الصلاحيات',
       }
@@ -111,7 +111,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
               <><b>{standing.by}</b> · مفتوح من <b>{standing.days}</b> يومًا</>,
               <>
                 <b>{nf.format(standing.hours)}</b> ساعة مقابل حدّ <b>{nf.format(standing.limit)}</b>
-                {over !== null && over > 100 && <> — <span className="bad"><span className="num">{over}%</span> فوق الحدّ</span></>}
+                {over !== null && over > 100 && <>، <span className="bad"><span className="num">{over}%</span> فوق الحدّ</span></>}
               </>,
               role.kind === 'recommend' ? 'صلاحيته توصية فقط، لا قرار مالي' : null,
             ]
@@ -138,7 +138,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
       t: role.role,
       lines: [
         role.ceiling
-          ? <>سقفه <b>{nf.format(role.ceiling)}</b> — يستوعب <b>{nf.format(amount)}</b></>
+          ? <>سقفه <b>{nf.format(role.ceiling)}</b>، يستوعب <b>{nf.format(amount)}</b></>
           : null,
         up ? <>يقدر يزيد حتى <b>{nf.format(up)}</b> <span className="num">(+{role.uplift}%)</span> أو يخفّض</> : null,
       ],
@@ -265,7 +265,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
                     </tspan>
                   </text>
                   <title>
-                    {`${role.role} — ${
+                    {`${role.role}، ${
                       role.ceiling
                         ? `سقفه ${nf.format(role.ceiling)}`
                         : role.kind === 'recommend'

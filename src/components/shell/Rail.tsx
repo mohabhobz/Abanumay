@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react'
 import { NavLink } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
+import LogoLockup from '@/assets/LogoLockup'
 import { Icon, icons, type IconName } from '@/components/ui'
 import { NAV } from '@/app/routes'
 import { AccountMenu } from './AccountMenu'
@@ -11,14 +12,14 @@ export interface RailProps {
   onSignOut?: () => void
   /**
    * مفاتيح الصلاحيات اللي المستخدم يملكها.
-   * لو مش متبعتة بيتعرض كل شيء — لما الباك اند يرجّع الصلاحيات،
+   * لو مش متبعتة بيتعرض كل شيء · لما الباك اند يرجّع الصلاحيات،
    * الريل بيتفلتر لوحده من غير أي تعديل هنا.
    */
   permissions?: string[]
 }
 
 /* ═══════════════════════════════════════════════════════════
-   عرض الشريط — بالسحب لا بزرار
+   عرض الشريط · بالسحب لا بزرار
 
    الزرار بيقول «في حالتين» ويخفي إن العرض متغيّر أصلًا. الخط على
    الحافة بيقول الحقيقة: امسك واسحب لأي عرض يريحك. والضغطة من غير
@@ -30,7 +31,7 @@ export interface RailProps {
 const SHUT = 80
 const OPEN = 208
 const MAX = 272
-/** أقل عرض تبان فيه التسمية — تحته الشريط بيرجع أيقونات */
+/** أقل عرض تبان فيه التسمية · تحته الشريط بيرجع أيقونات */
 const LABEL_AT = 132
 
 const RAIL_KEY = 'ab-rail-w'
@@ -51,7 +52,7 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
 
   const [w, setW] = useState(readWidth)
   const [dragging, setDragging] = useState(false)
-  /* مرجع للحالة وقت بداية السحب — الستيت جوّه المستمع بيبقى قديمًا */
+  /* مرجع للحالة وقت بداية السحب · الستيت جوّه المستمع بيبقى قديمًا */
   const drag = useRef<{ x: number; w: number; moved: boolean } | null>(null)
   const open = w >= LABEL_AT
 
@@ -59,7 +60,7 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
     try {
       localStorage.setItem(RAIL_KEY, String(w))
     } catch {
-      /* التخزين ممكن يكون مقفول — العرض يفضل للجلسة دي */
+      /* التخزين ممكن يكون مقفول · العرض يفضل للجلسة دي */
     }
   }, [w])
 
@@ -102,19 +103,17 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
       style={{ '--rail-w': `${w}px` } as React.CSSProperties}
       aria-label="التنقّل الرئيسي"
     >
-      {/* الشريط مطويّ ⇒ العلامة وحدها. مفرود ⇒ **القفل الكامل**:
-          العلامة والاسم جنبها. اللي بيتغيّر مع فرد الشريط هو كمية
-          الهوية اللي بتتقال، لا مقاس نفس العنصر.
+      {/* الشريط مطويّ ⇒ العلامة وحدها. مفرود ⇒ **ملف القفل الرسمي
+          زي ما هو**.
 
-          ⚠️ اسم المؤسسة هنا **مركّب بخط العرض** لأن ملف القفل
-          الرسمي (العلامة + الاسم المخطوط) لسه ما وصلش — زيّه زي
-          ملف براندو عربي. أول ما يوصل بيتحطّ مكانه هنا وبس. */}
+          الاسم كان متنضّدًا هنا بخطّ العرض (`<b>أبانمي</b>` وتحته
+          اسم المؤسسة)، وده مش شعار · ده اسم متكتب. الخطّ المخطوط
+          في القفل الرسمي مرسوم مسارات، ومحدش بيعيد تنضيده.
+          المصدر: `Logo/abanumay-lockup-currentcolor.svg`. */}
       <span className="raillock">
-        <span className="mark mark-64 logo"><Logo /></span>
-        <span className="raillock-t" aria-hidden={!open}>
-          <b>أبانمي</b>
-          <small>مؤسسة سليمان أبانمي الأهلية</small>
-        </span>
+        {open
+          ? <LogoLockup className="raillock-full" />
+          : <span className="mark mark-64 logo"><Logo /></span>}
       </span>
 
       {allowed.map((item) => {
@@ -140,13 +139,13 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
         )
       })}
 
-      {/* «اسأل أبانمي» اتنقل لرصيف القرار أسفل الشاشة — مش بند تنقّل،
+      {/* «اسأل أبانمي» اتنقل لرصيف القرار أسفل الشاشة · مش بند تنقّل،
           وقربه من مكان القرار هو اللي بيخلّيه يتستخدم. */}
       <div className="railfoot">
         <AccountMenu user={user} onSignOut={onSignOut} />
       </div>
 
-      {/* مقبض العرض — خط على الحافة يظهر عند الاقتراب */}
+      {/* مقبض العرض · خط على الحافة يظهر عند الاقتراب */}
       <div
         className="railgrip"
         onPointerDown={grab}

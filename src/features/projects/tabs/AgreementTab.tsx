@@ -6,7 +6,7 @@ export interface AgreementTabProps {
   agreement: AgreementDetail | null
   payments: PaymentDetail[]
   entityName: string
-  /** مشروع وصل للمرحلة دي — للحالة الفارغة */
+  /** مشروع وصل للمرحلة دي · للحالة الفارغة */
   example?: { id: string; name: string }
   onOpenExample?: (id: string) => void
 }
@@ -20,7 +20,7 @@ export interface AgreementTabProps {
  * ومعاه اللي النظام بيخبّيه: **القالب اللي اتاخد ومنين اتحدد**،
  * و**دورة الاعتماد الرباعية**، و**حلقة الإرجاع** لو الاتفاقية رجعت.
  *
- * الاتفاقية الورقية في النظام تابها فاضي (قيمته `-`) — الورقة برّه
+ * الاتفاقية الورقية في النظام تابها فاضي (قيمته `-`) · الورقة برّه
  * النظام. فبنقولها صراحة بدل ما نوري شاشة فاضية.
  */
 export function AgreementTab({ agreement: A, payments, entityName, example, onOpenExample }: AgreementTabProps) {
@@ -29,7 +29,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
       <Glass>
         <Head title="اتفاقية المشروع" meta="تُفتح بعد الاعتماد النهائي" />
         <Empty
-          title="لا توجد اتفاقية — المشروع لم يصل لمرحلة الاعتماد."
+          title="لا توجد اتفاقية، المشروع لم يصل لمرحلة الاعتماد."
           note="عند الوصول: يختار المشرف القالب، ويعبّي النظام بيانات المشروع والجهة، فيُولَّد النص وجدول الدفعات ثم تمرّ الاتفاقية على مدير المنح والمالية والمدير التنفيذي وأخيرًا الجهة."
           actions={
             example && onOpenExample ? (
@@ -66,13 +66,13 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
             <div className="lb">القالب المستخدَم</div>
             <div className="agr-tpl">{A.template}</div>
             {/* القالب مش اختيارًا حرًّا: النظام عنده عشرة، والاسم نفسه
-                بيقول قاعدة الاختيار — مصدر التمويل × حجم المنحة ×
+                بيقول قاعدة الاختيار · مصدر التمويل × حجم المنحة ×
                 الظهور الإعلامي. */}
             <div className="sub">يُختار آليًا من مصدر التمويل وحجم المنحة والظهور الإعلامي · 10 قوالب</div>
           </div>
           <div>
             <div className="lb">التوقيع</div>
-            <div className="agr-date">{A.signedAt ? <Mono>{A.signedAt}</Mono> : '—'}</div>
+            <div className="agr-date">{A.signedAt ? <Mono>{A.signedAt}</Mono> : 'لم تُوقَّع'}</div>
           </div>
         </div>
 
@@ -106,7 +106,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
             </div>
             <div className="tx">{A.returned.note}</div>
             <div className="src">
-              الاتفاقية رجعت للمشرف مرة واحدة قبل الاعتماد — الإرجاع مسجَّل في السجل كإجراء مستقل.
+              الاتفاقية رجعت للمشرف مرة واحدة قبل الاعتماد، الإرجاع مسجَّل في السجل كإجراء مستقل.
             </div>
           </div>
         )}
@@ -127,8 +127,8 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
                     <td className="n"><Money>{p.amount}</Money></td>
                     <td><Mono>{p.date}</Mono></td>
                     {/* `mut` لا `sub`: الغرض كان **يخفّت** العمود، و`sub`
-                        بتخفّت وبتصغّر. الصغر ما نفعش أصلًا — `.tbl td`
-                        أقوى تحديدًا منها فالمقاس فضل مقاس الجدول — فكان
+                        بتخفّت وبتصغّر. الصغر ما نفعش أصلًا · `.tbl td`
+                        أقوى تحديدًا منها فالمقاس فضل مقاس الجدول · فكان
                         المطلوب حاصل والمكتوب بيقول حاجة تانية. `mut`
                         بتقول اللي بيحصل فعلًا: لون بس. */}
                     <td className="mut">{p.condition}</td>
@@ -138,7 +138,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
             </table>
           </div>
           <div className="sub" style={{ marginTop: '.8rem' }}>
-            الجدول ده بيتحقن في نص الاتفاقية بمتغيّر <Mono>payments_table</Mono> — نفس أرقام تاب الدفعات.
+            الجدول ده بيتحقن في نص الاتفاقية بمتغيّر <Mono>payments_table</Mono>، نفس أرقام تاب الدفعات.
           </div>
         </Glass>
       )}
@@ -156,7 +156,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
           ))}
         </div>
         <div className="sub" style={{ marginTop: '1rem' }}>
-          الاسم والمبلغ والمدة والدفعات كلها متغيّرات — النص ده هو نفسه لكل مشروع بنفس القالب،
+          الاسم والمبلغ والمدة والدفعات كلها متغيّرات، النص ده هو نفسه لكل مشروع بنفس القالب،
           والفروق دي بس. توقيع {entityName} مسجَّل في السجل كإجراء «قبول الإتفاقية».
         </div>
       </Glass>

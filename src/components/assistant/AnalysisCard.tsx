@@ -5,25 +5,25 @@ import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
 import type { Reading } from './reading'
 
-/** المساعد بيفكّر لحظة قبل ما يبدأ يكتب — عشان القراءة تبان مُنتَجة مش محفوظة */
+/** المساعد بيفكّر لحظة قبل ما يبدأ يكتب · عشان القراءة تبان مُنتَجة مش محفوظة */
 const THINK_MS = 900
 
 export interface AnalysisCardProps {
-  /** كل ما المساعد بيقوله عن الكيان ده — الرحلة والقراءات */
+  /** كل ما المساعد بيقوله عن الكيان ده · الرحلة والقراءات */
   readings: Reading[]
   onAsk: () => void
   /** «تحليلات المشروع السريعة» · «تحليلات الجهة السريعة» */
   title?: string
-  /** نصّ زرار الدعوة — «حلّل المشروع» افتراضيًا */
+  /** نصّ زرار الدعوة · «حلّل المشروع» افتراضيًا */
   cta?: string
 }
 
 /**
- * كارت التحليلات — **المكان الوحيد** اللي المساعد بيتكلم فيه عن
+ * كارت التحليلات · **المكان الوحيد** اللي المساعد بيتكلم فيه عن
  * الكيان المفتوح (مشروع أو جهة).
  *
  * قبل كده كان فيه اتنين: شريط «رحلة المشروع» فوق التبويبات، وكارت
- * «تحليلات المشروع» في عمود السياق — والاتنين بيقولوا نفس الحاجة
+ * «تحليلات المشروع» في عمود السياق · والاتنين بيقولوا نفس الحاجة
  * بصياغتين. «واقف عند دراسة المشروع من 87 يومًا، 132% فوق الحدّ»
  * كانت مكتوبة مرتين في نفس الشاشة بشكلين مختلفين. اتوحّدوا هنا.
  *
@@ -37,7 +37,7 @@ export interface AnalysisCardProps {
  * من غير ضغطة، والتفصيل بيتحسب بالطلب.
  *
  * وبعد أول تشغيل بيفضل محسوبًا: القفل والفتح بيداري ويوري، ما
- * بيعيدش الحساب — إعادة الكتابة كل مرة بتبقى استعراضًا لا معلومة.
+ * بيعيدش الحساب · إعادة الكتابة كل مرة بتبقى استعراضًا لا معلومة.
  *
  * ⚠️ مهلة «بيقرا» في النموذج ده مكان استدعاء السيرفر. لما يبقى فيه
  * باك اند، الحالة دي بتبقى انتظار حقيقي لا مؤقّتًا.
@@ -48,7 +48,7 @@ export function AnalysisCard({
   const card = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(card)
   const [thought, setThought] = useState(false)
-  /** اتطلب التحليل مرة على الأقل — بيفضل محسوبًا بعد كده */
+  /** اتطلب التحليل مرة على الأقل · بيفضل محسوبًا بعد كده */
   const [armed, setArmed] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -81,7 +81,7 @@ export function AnalysisCard({
 
           <h2 className="aishut-t">{heading}</h2>
 
-          {/* عدّاد القراءات اتشال: رقمٌ عن حاجة لسه ما اتقرتش — بيشغل
+          {/* عدّاد القراءات اتشال: رقمٌ عن حاجة لسه ما اتقرتش · بيشغل
               سطرًا كامل من غير ما يقول للمستخدم يعمل إيه. اللي بيفضل
               هو التنبيه لو فيه، لأنه بيغيّر القرار. */}
           {flags > 0 && (
@@ -98,7 +98,7 @@ export function AnalysisCard({
             <p className="aishut-p">
               {readings[0].metric && (
                 <b className={readings[0].kind === 'flag' ? 'bad' : undefined}>
-                  {readings[0].metric.value} {readings[0].metric.unit} —{' '}
+                  {readings[0].metric.value} {readings[0].metric.unit} {' '}
                 </b>
               )}
               {readings[0].text}
@@ -107,8 +107,8 @@ export function AnalysisCard({
 
           {/* دعوة مساعِدة لا دعوة الشاشة: الفعل الأساسي في صفحة
               المشروع هو «توصية بالموافقة» في رصيف القرار. دعوة
-              أساسية واحدة في الشاشة — والباقي ثانوي. */}
-          <button className="btn btn-1 aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
+              أساسية واحدة في الشاشة · والباقي ثانوي. */}
+          <button className="btn btn-2 aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
             {cta ?? (heading.includes('الجهة') ? 'حلّل ملف الجهة' : 'حلّل المشروع')}
           </button>
         </div>

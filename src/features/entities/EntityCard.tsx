@@ -36,7 +36,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
         <span>الحوكمة: <Tag tone={governanceTone(row.governance)}>{row.governance}</Tag></span>
       </div>
 
-      {/* ملف المستندات — الرقم ده هو اللي بيوقف الاتفاقيات */}
+      {/* ملف المستندات · الرقم ده هو اللي بيوقف الاتفاقيات */}
       <div className="ec-docs well">
         <div className="ec-docs-t">
           <span>ملف المستندات</span>

@@ -3,11 +3,11 @@ import { Icon, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 
 export interface BulkBarProps {
-  /** عدد الصفوف المحدَّدة — بيتكتب كبيرًا قبل الجملة */
+  /** عدد الصفوف المحدَّدة · بيتكتب كبيرًا قبل الجملة */
   count: number
   /** الجملة: «مشروعًا محدَّدًا · المبلغ 1,240,000 ﷼» */
   sentence: ReactNode
-  /** الأزرار — إجراءات الدور وأي تحكّم إضافي */
+  /** الأزرار · إجراءات الدور وأي تحكّم إضافي */
   children?: ReactNode
   onClear: () => void
 }
@@ -24,7 +24,7 @@ export interface BulkBarProps {
  * وبيطلع من تحت لفوق لأنه مش كان موجود: الحركة بتقول «ده جديد بسبب
  * اللي عملته»، والكارت اللي بيظهر فجأة في نص الصفحة بيتقري كخطأ.
  *
- * الشريط عايم فوق المحتوى، فالصفحة اللي تحته لازم تزوّد مساحة —
+ * الشريط عايم فوق المحتوى، فالصفحة اللي تحته لازم تزوّد مساحة ·
  * كلاس `hasdock` على `.viewstack` بيعمل ده.
  */
 export function BulkBar({ count, sentence, children, onClear }: BulkBarProps) {

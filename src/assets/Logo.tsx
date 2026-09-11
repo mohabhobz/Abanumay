@@ -2,8 +2,8 @@ import type { SVGProps } from 'react'
 
 export default function Logo(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1028.19 943.17" role="img" aria-label="شعار مؤسسة سليمان أبانمي الأهلية — الأيقونة">
-    {/*شعار مؤسسة سليمان أبانمي الأهلية — الأيقونة*/}
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1028.19 943.17" role="img" aria-label="شعار مؤسسة سليمان أبانمي الأهلية، الأيقونة">
+    {/*شعار مؤسسة سليمان أبانمي الأهلية · الأيقونة*/}
     <g transform="translate(-8.570583,951.681964) scale(0.100000,-0.100000)" fill="currentColor" stroke="none">
     <path d="M4190 9491 c-412 -122 -620 -282 -718 -553 -35 -96 -39 -293 -8 -370
     19 -48 19 -48 48 -30 96 55 334 335 413 486 53 99 57 89 7 -17 -79 -169 -220

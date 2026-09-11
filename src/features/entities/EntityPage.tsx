@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { BackTo, Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { initial } from '@/lib/format'
@@ -41,7 +41,7 @@ export default function EntityPage() {
 
   const projects = useMemo(() => (id ? query.entityProjects(id) : []), [id])
 
-  /* الكارت الجانبي بياخد المساحة الباقية لحدّ رصيف القرار — نفس
+  /* الكارت الجانبي بياخد المساحة الباقية لحدّ رصيف القرار · نفس
      حساب صفحة المشروع بالظبط، عشان الشكل واحد في الصفحتين. */
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, {
@@ -63,11 +63,7 @@ export default function EntityPage() {
     <AppLayout assistantContext={assistFor.entity(entity)}>
       <div className="viewstack">
         <div className="screen col hasg2">
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <Link to={ROUTES.entities} className="lb">الجهات</Link>
-            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
-            <span className="now">{entity.name}</span>
-          </nav>
+          <BackTo to={ROUTES.entities} label="الجهات" />
 
           {/* الترويسة بنفس تشكيل صفحة المشروع: الهوية على اليمين،
               والقراءة البصرية على الشمال في نفس مكان المروحة. */}
@@ -90,7 +86,7 @@ export default function EntityPage() {
                 <Tag tone={activationTone(entity.activation)}>{entity.activation}</Tag>
                 <Tag tone={governanceTone(entity.governance)}>الحوكمة: {entity.governance}</Tag>
                 {/* الترخيص المنتهي بيوقف التعاقد، فمكانه الترويسة لا
-                    جوّه تاب — القرار بيتاخد من فوق. */}
+                    جوّه تاب · القرار بيتاخد من فوق. */}
                 {detail.licenseExpired && <Tag tone="no">الترخيص منتهٍ</Tag>}
                 <span className="sub">{entity.licensor}</span>
               </div>
@@ -112,12 +108,12 @@ export default function EntityPage() {
               {active === 'log' && <EntityLogTab d={detail} />}
 
               {/* السجل التراكمي والروابط تحت أي تاب: سياق دايم لا
-                  محتوى تاب — المشرف محتاجه وهو بيقرا أي حاجة. */}
+                  محتوى تاب · المشرف محتاجه وهو بيقرا أي حاجة. */}
               <EntityRecord e={entity} />
               <EntityGoTo e={entity} />
             </div>
 
-            {/* ═══ العمود الجانبي — كارت واحد لازق ═══ */}
+            {/* ═══ العمود الجانبي · كارت واحد لازق ═══ */}
             <div className="col aiside" ref={aside}>
               <AnalysisCard
                 readings={readings}

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-/** ماركداون خفيف: **بولد** وأسطر وبوليت — كفاية للنص اللي بيوصل من المساعد */
+/** ماركداون خفيف: **بولد** وأسطر وبوليت · كفاية للنص اللي بيوصل من المساعد */
 export function md(text: string): ReactNode[] {
   return String(text)
     .split('\n')

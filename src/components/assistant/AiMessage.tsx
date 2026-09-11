@@ -6,7 +6,7 @@ import type { AiMessageModel } from './types'
 
 /**
  * رسالة المساعد.
- * التفكير بيقول للمستخدم إيه المصادر اللي اتفتحت — دي مش زينة،
+ * التفكير بيقول للمستخدم إيه المصادر اللي اتفتحت · دي مش زينة،
  * دي اللي بتخلّي الإجابة قابلة للتصديق.
  */
 export function AiMessage({
@@ -45,7 +45,7 @@ export function AiMessage({
             {thinking && (
               <span className="dots"><i /><i /><i /></span>
             )}
-            {/* أيقونة صريحة بدل تدوير الشيفرون — التدوير كان معكوسًا،
+            {/* أيقونة صريحة بدل تدوير الشيفرون · التدوير كان معكوسًا،
                 و«لأعلى/لأسفل» بيتقري في الكود زي ما بيتشاف في الشاشة */}
             <Icon name={openThink ? icons.chevronUp : icons.chevronDown} size={16} />
           </button>
@@ -78,7 +78,7 @@ export function AiMessage({
       {done && message.advisory && (
         <div className="advisory rise">
           <Icon name={icons.alert} size={16} />
-          قراءة استرشادية — القرار والتوقيع يفضلوا عليك.
+          قراءة استرشادية، القرار والتوقيع يفضلوا عليك.
         </div>
       )}
 

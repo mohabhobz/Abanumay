@@ -1,10 +1,10 @@
 /**
- * طبقة الوصول للبيانات — نقطة التماس الوحيدة مع مصدر الداتا.
+ * طبقة الوصول للبيانات · نقطة التماس الوحيدة مع مصدر الداتا.
  *
  * دلوقتي بتقرأ من `data/mock/*`، وكل دالة بترجّع Promise وبتاخد
  * نفس شكل الباراميترات اللي الـAPI هياخدها. يوم ما الباك اند يجهز،
  * التغيير كله جوّه الملف ده: `return api.get('/projects/' + id)`
- * بدل `return resolve(mock.project)` — ولا كومبوننت واحد بيتغيّر.
+ * بدل `return resolve(mock.project)` · ولا كومبوننت واحد بيتغيّر.
  *
  * الفلترة والترتيب والتقسيم بتتعمل هنا كمان بنفس أسماء الحقول اللي
  * هتتبعت للسيرفر كـquery string، عشان الشاشة ما تتغيّرش وقت الربط.
@@ -36,20 +36,20 @@ function resolve<T>(value: T): Promise<T> {
 
 /* ═══════════════ الاستعلامات ═══════════════ */
 
-/** ترتيب قائمة المشاريع — المفتاح واتجاهه */
+/** ترتيب قائمة المشاريع · المفتاح واتجاهه */
 export type ProjectSort =
-  | 'waiting'      // الأطول انتظارًا في القسم — الافتراضي
+  | 'waiting'      // الأطول انتظارًا في القسم · الافتراضي
   | 'newest'
   | 'amount'
   | 'weight'
   | 'name'
 
-/** فلاتر قائمة المشاريع — نفس أسماء فلاتر النظام الأربعتاشر */
+/** فلاتر قائمة المشاريع · نفس أسماء فلاتر النظام الأربعتاشر */
 /**
  * فلتر يقبل قيمة واحدة أو مجموعة قيم.
  *
  * المجموعة معناها «أي واحدة منها» لا «كلها»: المستخدم اللي بيختار
- * الرياض ومكة عايز يشوف الاتنين، مش المشروع اللي في الاتنين — وده
+ * الرياض ومكة عايز يشوف الاتنين، مش المشروع اللي في الاتنين · وده
  * مستحيل أصلًا في الحقول دي. المصفوفة الفاضية = بلا فلتر، عشان
  * الشاشة ما تضطرش تحوّلها لـ`undefined` قبل ما تبعتها.
  */
@@ -129,7 +129,7 @@ const paginate = <T>(rows: T[], page = 1, pageSize = 20): Page<T> => ({
   pageSize,
 })
 
-/** نسبة المكوث للحدّ — أساس ترتيب «الأطول انتظارًا» وتلوين الصف */
+/** نسبة المكوث للحدّ · أساس ترتيب «الأطول انتظارًا» وتلوين الصف */
 export const stagePressure = (row: ProjectRow): number =>
   row.stageLimit === 0 ? 0 : row.hoursInStage / row.stageLimit
 
@@ -227,7 +227,7 @@ export const repository = {
     return resolve(paginate(sortProjects(filtered, query.sort), query.page, query.pageSize))
   },
 
-  /** عدّاد سريع لكل مجموعة حالة — للشرائح فوق القائمة */
+  /** عدّاد سريع لكل مجموعة حالة · للشرائح فوق القائمة */
   countByStatus(query: ProjectQuery = {}): Promise<Record<string, number>> {
     const base = { ...query, status: undefined }
     const rows = projectRows.filter((r) => matchProject(r, base))
@@ -240,7 +240,7 @@ export const repository = {
     return resolve(projectById(id) ?? null)
   },
 
-  /** المشروع الكامل — لسه فيه فيكستشر واحد مفصّل */
+  /** المشروع الكامل · لسه فيه فيكستشر واحد مفصّل */
   getProject(id: string): Promise<Project | null> {
     return resolve(id === mockProject.id ? mockProject : null)
   },
@@ -255,7 +255,7 @@ export const repository = {
     return resolve(entityById(id) ?? null)
   },
 
-  /** ملف الجهة المفصّل — فيكستشر واحد لحد ما يتوسّع */
+  /** ملف الجهة المفصّل · فيكستشر واحد لحد ما يتوسّع */
   getEntity(_id?: string): Promise<Entity> {
     return resolve(mockEntity)
   },
@@ -300,7 +300,7 @@ export const fixtures = {
   entities: entityRows,
 }
 
-/** نسخ متزامنة من نفس المنطق — الشاشات بتستعملها لحد ما يبقى فيه سيرفر */
+/** نسخ متزامنة من نفس المنطق · الشاشات بتستعملها لحد ما يبقى فيه سيرفر */
 export const query = {
   projects(q: ProjectQuery = {}): Page<ProjectRow> {
     const filtered = projectRows.filter((r) => matchProject(r, q))

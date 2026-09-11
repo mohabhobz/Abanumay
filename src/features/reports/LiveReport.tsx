@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  Empty, Glass, Head, Icon, icons, Mono, Money, Num, Tag,
+  BackTo, Empty, Glass, Head, Icon, icons, Mono, Money, Num, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
@@ -20,13 +20,13 @@ import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from '@/features/budg
  * الصفحة دي **بتوصف الشاشة الحقيقية وبتشغّلها في نفس الوقت**:
  *
  *  · فوق: السؤال اللي بتجاوب عليه، ومسارها في النظام، وعدد صفوفها هناك.
- *  · بعده: الفلاتر زي ما هي — بعدد خياراتها الحقيقي مكتوبًا على كل واحد،
+ *  · بعده: الفلاتر زي ما هي · بعدد خياراتها الحقيقي مكتوبًا على كل واحد،
  *    لأن «٩٧ خيارًا في قائمة واحدة» هي المشكلة نفسها ولازم تتشاف.
  *  · وبعده: الجدول بأعمدته الحقيقية وصفوف بشكلها.
  *  · والميزانية استثناء: شجرة بأربع مستويات بدل جدول واحد.
  *
  * وأي ملاحظة لقيناها في الشاشة الحقيقية مكتوبة في مكانها، مش مخبّاية
- * في مستند جنب — العميل بيفتح الشاشة فيلاقي اللي إحنا شفناه.
+ * في مستند جنب · العميل بيفتح الشاشة فيلاقي اللي إحنا شفناه.
  */
 export default function LiveReport() {
   const { key = '' } = useParams<{ key: string }>()
@@ -52,13 +52,7 @@ export default function LiveReport() {
     <AppLayout assistantContext={assistFor.page(spec.title)}>
       <div className="viewstack">
         <div className="screen col">
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <Link to={ROUTES.reports} className="lb">التقارير</Link>
-            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
-            <Link to={ROUTES.reportTab('catalog')} className="lb">الكتالوج</Link>
-            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
-            <span className="now">{spec.title}</span>
-          </nav>
+          <BackTo to={ROUTES.reportTab('catalog')} label="الكتالوج" />
 
           <header>
             <div>
@@ -74,8 +68,8 @@ export default function LiveReport() {
           </header>
 
           <Glass className="lrq">
-            <p className="lrq-q">{spec.question !== '—' ? spec.question : spec.what}</p>
-            {spec.question !== '—' && <p className="mut lrq-w">{spec.what}</p>}
+            <p className="lrq-q">{spec.question ? spec.question : spec.what}</p>
+            {spec.question && <p className="mut lrq-w">{spec.what}</p>}
           </Glass>
 
           {spec.finding && (
@@ -103,7 +97,7 @@ export default function LiveReport() {
 /**
  * الفلاتر معروضة **بعدد خياراتها**.
  *
- * ده مش تزويقًا: «الهدف — ٩٧ خيارًا» في قائمة منسدلة واحدة بلا بحث
+ * ده مش تزويقًا: «الهدف · ٩٧ خيارًا» في قائمة منسدلة واحدة بلا بحث
  * هي أكبر مشكلة في شاشات النظام، والرقم لازم يبان جنب الفلتر عشان
  * العميل يشوف السبب لا الشكوى.
  */
@@ -157,7 +151,7 @@ function Charts({ spec }: { spec: LiveSpec }) {
 /**
  * الرسوم مرسومة بالداتا الحقيقية، لا مخططات فاضية.
  *
- * أول نسخة كانت بترسم أعمدة عشوائية «بتقول شكل الرسم لا قيمه» — وده
+ * أول نسخة كانت بترسم أعمدة عشوائية «بتقول شكل الرسم لا قيمه» · وده
  * كان قرارًا غلط: شاشة بتقول «فيه رسم هنا» من غير ما ترسمه ما بتفرقش
  * عن سطر مكتوب. الرسوم التلاتة في `reports1_1` والأربعة في `reports1_5`
  * كلها بتتغذّى من نفس شجرة التخصيص، فكلها اترسمت.
@@ -176,7 +170,7 @@ function RealChart({ title }: { title: string }) {
 /* ═══════════════════ الجدول ═══════════════════ */
 
 function cellOf(v: string | number | undefined, c: LiveCol) {
-  if (v === undefined || v === '') return <span className="sub">—</span>
+  if (v === undefined || v === '') return <span className="sub"> </span>
   if (c.kind === 'money' && typeof v === 'number') return <Money>{v}</Money>
   if (c.kind === 'num' && typeof v === 'number') return <Num>{v}</Num>
   if (c.kind === 'id') return <Mono>{String(v)}</Mono>
@@ -195,7 +189,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
       <Glass>
         <Empty
           title="الشاشة دي فاضية في النظام العامل."
-          note="اتفتحت وما فيهاش جدول ولا فلاتر ولا رسوم — اسمها في القائمة وبس. مكتوبة هنا عشان الجرد يفضل كاملًا، ولأنها بند في قائمة المطالب للباك اند."
+          note="اتفتحت وما فيهاش جدول ولا فلاتر ولا رسوم، اسمها في القائمة وبس. مكتوبة هنا عشان الجرد يفضل كاملًا، ولأنها بند في قائمة المطالب للباك اند."
         />
       </Glass>
     )
@@ -246,7 +240,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
                   {spec.cols.map((c) => (
                     <th key={c.key} className={c.kind === 'num' || c.kind === 'money' || c.kind === 'pct' ? 'n' : undefined}>
                       {/* نفس غلاف `DataTable`: من غيره عنوان العمود
-                          الطويل بيتقصّ بلا نقط — «مدة التنفيذ الفعلي»
+                          الطويل بيتقصّ بلا نقط · «مدة التنفيذ الفعلي»
                           كانت بتتقطع في نص الكلمة. */}
                       <span className="th-t">{c.label}</span>
                       {c.only && <span className="lronly" title="عمود لا مثيل له في شاشة أخرى">•</span>}
@@ -346,7 +340,7 @@ function BudgetTree() {
       </div>
 
       {leaf ? (
-        <Glass><Empty title="آخر مستوى في الشجرة." note="الهدف ما تحتهوش تقسيم — ارجع لمستوى أعلى من المسار فوق." /></Glass>
+        <Glass><Empty title="آخر مستوى في الشجرة." note="الهدف ما تحتهوش تقسيم، ارجع لمستوى أعلى من المسار فوق." /></Glass>
       ) : (
         <>
           <div className="ftool-r">

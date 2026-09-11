@@ -4,14 +4,14 @@ import { ROUTES } from '@/app/routes'
 import type { Entity, LogEntry } from '@/types/domain'
 
 
-/** مشاريع الجهة — سياق ثابت جنب المشروع المفتوح */
+/** مشاريع الجهة · سياق ثابت جنب المشروع المفتوح */
 export function EntityProjectsPanel({
   entity: E,
   entityId,
   onOpen,
 }: {
   entity: Entity
-  /** لفتح ملف الجهة كامل — الربط في الاتجاه التاني */
+  /** لفتح ملف الجهة كامل · الربط في الاتجاه التاني */
   entityId?: string
   onOpen: () => void
 }) {
@@ -43,7 +43,7 @@ export function EntityProjectsPanel({
   )
 }
 
-/** آخر إجراء — الاختصار اللي بيغني عن فتح السجل كامل */
+/** آخر إجراء · الاختصار اللي بيغني عن فتح السجل كامل */
 export function LastActionPanel({
   entry,
   onOpen,
@@ -58,7 +58,7 @@ export function LastActionPanel({
       <Head title="آخر إجراء" meta={<a onClick={onOpen}>السجل كامل</a>} />
       <div className="well" style={{ padding: '.9rem 0 0' }}>
         <div style={{ fontSize: '.86rem', lineHeight: 1.7 }}>
-          <b>{entry.action}</b> — {entry.body}
+          <b>{entry.action}</b>، {entry.body}
         </div>
         <div className="sub" style={{ marginTop: '.45rem' }}>
           {entry.by} · <Mono>{entry.at}</Mono>

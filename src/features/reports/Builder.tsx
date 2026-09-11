@@ -14,8 +14,8 @@ import { days } from '@/lib/tone'
  * اللوحة بتجاوب على الأسئلة المعروفة. ده للسؤال اللي مش فيها:
  * **بُعد × مقياس**، والجدول والأعمدة بيتغيّروا مع الاختيار.
  *
- * ليه أداة واحدة بدل شاشة لكل سؤال؟ لأن النظام العامل جرّب العكس —
- * أربعتاشر شاشة، كل واحدة بفلاترها — والنتيجة إن السؤال اللي مش
+ * ليه أداة واحدة بدل شاشة لكل سؤال؟ لأن النظام العامل جرّب العكس ·
+ * أربعتاشر شاشة، كل واحدة بفلاترها · والنتيجة إن السؤال اللي مش
  * متوقَّع في التصميم ما لهوش مكان أصلًا، فبيروح Excel. الأداة دي
  * بتغطّي التوليفات كلها (٧ أبعاد × ٦ مقاييس = ٤٢ تقريرًا) بشاشة
  * واحدة يتعلّمها المستخدم مرة.
@@ -65,7 +65,7 @@ export function Builder() {
     const src = projectRows.filter((p) => p.year === period)
     const by = new Map<string, { n: number; total: number }>()
     for (const p of src) {
-      const k = dim.of(p) || '—'
+      const k = dim.of(p) || 'بلا قيمة'
       const g = by.get(k) ?? { n: 0, total: 0 }
       g.n += 1
       g.total += mea.of(p)
@@ -80,7 +80,7 @@ export function Builder() {
   const total = rows.reduce((s, r) => s + r.v, 0)
 
   /* نطاق التصدير مكتوب فوق القايمة: التقرير المُشكَّل بيصدّر اللي
-     على الشاشة بالظبط — نفس البُعد والمقياس والفترة. */
+     على الشاشة بالظبط · نفس البُعد والمقياس والفترة. */
   const note = `${mea.label} حسب ${dim.label} · ${PERIODS.find((p) => p.id === period)?.label ?? ''}`
 
   const sheet: Sheet = {
@@ -154,7 +154,7 @@ export function Builder() {
                 {mea.money ? <Money>{r.v}</Money> : nf.format(r.v)}
                 {mea.unit && <small className="sub"> {mea.unit}</small>}
               </span>
-              <span className="rbar-s mut num">{total ? pct(Math.round((r.v / total) * 100)) : '—'}</span>
+              <span className="rbar-s mut num">{total ? pct(Math.round((r.v / total) * 100)) : 'لا يوجد'}</span>
               <span className="rbar-n mut">
                 <span className="num">{r.n}</span> مشروعًا
               </span>

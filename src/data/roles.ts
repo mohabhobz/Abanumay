@@ -23,7 +23,7 @@ export interface Role {
   key: RoleKey
   name: string
   title: string
-  /** حرفان: أول الاسم وأول اللقب — التلاتة بيبدأوا بعين،
+  /** حرفان: أول الاسم وأول اللقب · التلاتة بيبدأوا بعين،
    *  فحرف واحد ما بيفرّقش بينهم */
   initial: string
   photo?: string

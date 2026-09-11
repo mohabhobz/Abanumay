@@ -8,7 +8,7 @@ import { YEARS } from './mock/taxonomy'
 import type { IconName } from '@/components/ui'
 
 /**
- * لوحة التقارير — **كل كارت سؤال وإجابته**.
+ * لوحة التقارير · **كل كارت سؤال وإجابته**.
  *
  * الملاحظة اللي طلعت من قراءة النظام العامل: أربعتاشر شاشة تقرير،
  * كل واحدة **فورم فلترة** لازم تملاه قبل ما تشوف رقم، وتلاتة منها
@@ -27,7 +27,7 @@ import type { IconName } from '@/components/ui'
 
 export interface ReportCard {
   key: string
-  /** السؤال اللي الكارت بيجاوب عليه — مش اسم التقرير */
+  /** السؤال اللي الكارت بيجاوب عليه · مش اسم التقرير */
   question: string
   icon: IconName
   /** الرقم الكبير */
@@ -67,7 +67,7 @@ export function boardCards(yearId: string): ReportCard[] {
 
   const out: ReportCard[] = []
 
-  /* ١ · الميزانية — الرقم اللي المؤسسة كلها بتتقاس بيه */
+  /* ١ · الميزانية · الرقم اللي المؤسسة كلها بتتقاس بيه */
   const usedPct = bud.allocated ? Math.round((bud.spent / bud.allocated) * 100) : 0
   const lockedPct = bud.allocated
     ? Math.round(((bud.reserved + bud.committed) / bud.allocated) * 100)
@@ -80,7 +80,7 @@ export function boardCards(yearId: string): ReportCard[] {
     unit: 'من المخصص وصل فعلًا',
     reading:
       `المخصص ${money(bud.allocated)} ريال، منها ${money(bud.spent)} مصروف و${money(bud.committed)} ملتزم بها ` +
-      `و${money(bud.reserved)} محجوزة لطلبات تحت الدراسة — يعني ${pct(lockedPct)} مربوطة ولسه ما خرجتش.`,
+      `و${money(bud.reserved)} محجوزة لطلبات تحت الدراسة، يعني ${pct(lockedPct)} مربوطة ولسه ما خرجتش.`,
     bold: [money(bud.spent), pct(lockedPct)],
     src: 'تقارير الميزانية · reports1_1',
     /* الأربعة بيقسّموا المخصص بلا تداخل: المصروف جزء من الملتزم،
@@ -96,7 +96,7 @@ export function boardCards(yearId: string): ReportCard[] {
     wide: true,
   })
 
-  /* ٢ · المخطط مقابل الفعلي — أهم سؤال، وأول مرة يتعرض */
+  /* ٢ · المخطط مقابل الفعلي · أهم سؤال، وأول مرة يتعرض */
   if (closing.length) {
     const g = gapOf(closing)
     out.push({
@@ -111,7 +111,7 @@ export function boardCards(yearId: string): ReportCard[] {
         `وصل للعدد المتعاقد عليه.`,
       bold: [pct(Math.abs(g.days)), pct(Math.abs(g.beneficiaries))],
       danger: [pct(Math.abs(g.days))],
-      src: 'التقارير الختامية · reports1_12 — كل ما اكتمل، لا سنة المنحة',
+      src: 'التقارير الختامية · reports1_12) كل ما اكتمل، لا سنة المنحة',
       bars: [
         { k: 'تجاوز مدته', v: g.lateCount, tone: 'no' },
         { k: 'في موعده', v: g.total - g.lateCount, tone: 'ok' },
@@ -120,7 +120,7 @@ export function boardCards(yearId: string): ReportCard[] {
     })
   }
 
-  /* ٣ · الصرف حسب الهدف — فين تركّز المال */
+  /* ٣ · الصرف حسب الهدف · فين تركّز المال */
   const byGoal = new Map<string, number>()
   for (const p of rows) if (p.amountGranted > 0) byGoal.set(p.goal, (byGoal.get(p.goal) ?? 0) + p.amountGranted)
   const goals = [...byGoal.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
@@ -137,12 +137,12 @@ export function boardCards(yearId: string): ReportCard[] {
         `أعلى هدف استهلاكًا «${goals[0][0]}» بـ${money(goals[0][1])} ريال من إجمالي ${money(total)}. ` +
         `أعلى خمسة أهداف بياخدوا ${pct(Math.round((goals.reduce((s, g) => s + g[1], 0) / total) * 100))} من المعتمد.`,
       bold: [goals[0][0], money(goals[0][1])],
-      src: 'مخصص الصرف · reports1_5 — المصاريف السنوية حسب الهدف',
+      src: 'مخصص الصرف · reports1_5) المصاريف السنوية حسب الهدف',
       bars: goals.map(([k, v]) => ({ k, v, tone: 'ok' as const })),
     })
   }
 
-  /* ٤ · الشركاء — الجهة اللي هتوقف الاتفاقية */
+  /* ٤ · الشركاء · الجهة اللي هتوقف الاتفاقية */
   const short = entityRows.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL)
   const stalled = entityRows.filter((e) => e.projectsStalled > 0)
   out.push({
@@ -163,7 +163,7 @@ export function boardCards(yearId: string): ReportCard[] {
     ],
   })
 
-  /* ٥ · الأداء الداخلي — فين المشاريع بتقف */
+  /* ٥ · الأداء الداخلي · فين المشاريع بتقف */
   const late = rows.filter((p) => stagePressure(p) > 1)
   const byStage = new Map<string, number>()
   for (const p of late) byStage.set(p.stage, (byStage.get(p.stage) ?? 0) + 1)
@@ -184,7 +184,7 @@ export function boardCards(yearId: string): ReportCard[] {
     bars: worst.map(([k, v]) => ({ k, v, tone: 'no' as const })),
   })
 
-  /* ٦ · المعرفة — الحقل الإلزامي اللي بيتملّى بنقطة */
+  /* ٦ · المعرفة · الحقل الإلزامي اللي بيتملّى بنقطة */
   if (know.length) {
     const real = know.filter((k) => k.real).length
     const empty = know.filter((k) => k.empty).length
@@ -199,7 +199,7 @@ export function boardCards(yearId: string): ReportCard[] {
         `و${nf.format(real)} بس فيها درس فعلي. الحقل إلزامي، فبيتملّى عشان يعدّي لا عشان يُقرأ.`,
       bold: [nf.format(real)],
       danger: [nf.format(empty)],
-      src: 'تقرير المعرفة · reports1_13 — كل القيود المرفوعة',
+      src: 'تقرير المعرفة · reports1_13) كل القيود المرفوعة',
       bars: [
         { k: 'درس مكتوب', v: real, tone: 'ok' },
         { k: 'نصّ قصير', v: know.length - real - empty, tone: 'warn' },

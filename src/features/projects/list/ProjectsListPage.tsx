@@ -45,12 +45,12 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 const PAGE_SIZE = PAGE_SIZES[0]
 
 /* البحث والحالة والتبديلات الظاهرة ليها مكانها فوق، فما تتحسبش في
-   عدّاد «الفلاتر المتقدمة» — العدّاد بيقول اللي مخفي بس. */
+   عدّاد «الفلاتر المتقدمة» · العدّاد بيقول اللي مخفي بس. */
 const NOT_FILTERS: (keyof Params)[] = [
   'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'status', 'unowned', 'overdue',
 ]
 
-/** اللقطات المحفوظة — الأسئلة اللي المشرف بيسألها كل يوم */
+/** اللقطات المحفوظة · الأسئلة اللي المشرف بيسألها كل يوم */
 const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
   { key: 'all', label: 'كل المشاريع', patch: {} },
   { key: 'mine', label: 'ما ينتظر قراري', patch: { owner: 'عمر قاسم', status: 'في الدراسة' } },
@@ -71,7 +71,7 @@ const BULK_OF: Record<string, BulkDecision> = {
   'رفع لمجلس الأمناء': 'escalate',
 }
 
-/** ترتيب الفلاتر الافتراضي — نفس ترتيب `FILTER_DEFS` جوّه الكومبوننت */
+/** ترتيب الفلاتر الافتراضي · نفس ترتيب `FILTER_DEFS` جوّه الكومبوننت */
 const FILTER_KEYS = [
   'year', 'stage', 'track', 'field', 'goal', 'region', 'city', 'tag', 'method', 'support', 'owner',
 ]
@@ -115,12 +115,12 @@ export default function ProjectsListPage() {
   useEffect(() => writeCols('projects', cols), [cols])
 
   /* الجدول على الموبايل بيضغط كل عمود لحد ما كل خلية تتلف عمودًا
-     من الكلمات — مش جدول، شبكة كلمات. الكارت هو صف الموبايل. */
+     من الكلمات · مش جدول، شبكة كلمات. الكارت هو صف الموبايل. */
   const mobile = useIsMobile()
-  /* الجدول هو الديفولت والكروت اختيار — الكلاينت طلب كده، والسبب
+  /* الجدول هو الديفولت والكروت اختيار · الكلاينت طلب كده، والسبب
      إن الجدول بيوري عشرة صفوف مرة واحدة والكارت بيوري تلاتة.
      الموبايل استثناء ثابت: الجدول على 390px بيضغط كل عمود لحد ما
-     كل خلية تلفّ عمودًا من الكلمات — مش جدول، شبكة كلمات. */
+     كل خلية تلفّ عمودًا من الكلمات · مش جدول، شبكة كلمات. */
   const view = mobile ? 'cards' : v.view === 'cards' ? 'cards' : 'table'
   const page = Math.max(1, Number(v.page) || 1)
   const advOpen = v.adv === '1'
@@ -157,7 +157,7 @@ export default function ProjectsListPage() {
 
   /* التجميع بيلغي الترقيم: المجموعة المقطوعة على صفحتين إجمالياتها
      كذّابة، والمستخدم اللي بيجمّع بيسأل عن الصورة كاملة أصلًا.
-     ده قرار واجهة مؤقت — لما الباك اند يجمّع، بيرجّع المجموعات
+     ده قرار واجهة مؤقت · لما الباك اند يجمّع، بيرجّع المجموعات
      مرقّمة بإجمالياتها وبيتشال القيد ده. */
   const group = groupByKey(v.group)
   const grouped = Boolean(group)
@@ -196,7 +196,7 @@ export default function ProjectsListPage() {
      الواحد ما يتكتبش مرتين لو تابع لمسارين. */
   const uniq = (xs: string[]) => [...new Set(xs)]
 
-  /* لما الأب يتغيّر، الابن ما يتصفّرش كله — بيتشال منه اللي بقى
+  /* لما الأب يتغيّر، الابن ما يتصفّرش كله · بيتشال منه اللي بقى
      خارج النطاق بس. المستخدم اللي مختار «التعليم» وزوّد مسارًا
      تانيًا ما يستاهلش يفقد اختياره. */
   const keep = (chosen: string[], allowed: string[]) =>
@@ -208,7 +208,7 @@ export default function ProjectsListPage() {
   const cityOptions = uniq(regions.flatMap((r) => CITIES_BY_REGION[r] ?? []))
 
   /* اللقطة النشطة = اللي كل مفاتيحها مطابقة. لو المستخدم زوّد فلترًا
-     فوقها، الشريحة تفضل مختارة — هو لسه جوّه نفس النطاق. */
+     فوقها، الشريحة تفضل مختارة · هو لسه جوّه نفس النطاق. */
   const activeView =
     VIEWS.find(
       (x) =>
@@ -236,7 +236,7 @@ export default function ProjectsListPage() {
       return next
     })
 
-  /* نطاق التصدير: المحدَّد لو فيه تحديد، وإلا كل نتيجة الفلتر —
+  /* نطاق التصدير: المحدَّد لو فيه تحديد، وإلا كل نتيجة الفلتر ·
      لا صفحة العرض. اللي بيصدّر عايز الإجابة كاملة مش أول 25 صفًّا. */
   const allFiltered = useMemo(
     () => query.projects({ ...q, page: 1, pageSize: 9999 }).rows,
@@ -253,7 +253,7 @@ export default function ProjectsListPage() {
       ...(group ? [group.of(r)] : []),
       ...shown.map((c) => c.text(r)),
     ])
-    /* صف الإجماليات بنفس منطق الشاشة — لو اختلفوا، المستخدم هيصدّق
+    /* صف الإجماليات بنفس منطق الشاشة · لو اختلفوا، المستخدم هيصدّق
        الملف ويشك في الشاشة. */
     const totals = [
       ...(group ? [''] : []),
@@ -268,7 +268,7 @@ export default function ProjectsListPage() {
 
   const exportNote = `${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${units.project(exportRows.length)}`
 
-  /* مبلغ الدفعة — نفس رقم شريط القرار في صفحة المشروع، بس مجموعًا.
+  /* مبلغ الدفعة · نفس رقم شريط القرار في صفحة المشروع، بس مجموعًا.
      القرار على ستة مشاريع مش زي القرار على ستة ملايين، والشريط
      لازم يقول الاتنين قبل ما تتضغط الأزرار. */
   const selectedAmount = useMemo(
@@ -276,7 +276,7 @@ export default function ProjectsListPage() {
     [allFiltered, selected],
   )
 
-  /* «6 مشاريع محدَّدة» — الرقم في الشارة والاسم في الجملة، فالصيغة
+  /* «6 مشاريع محدَّدة» · الرقم في الشارة والاسم في الجملة، فالصيغة
      هنا من غير رقم. */
   const selectedNoun = plural(selected.size, {
     one: 'مشروع محدَّد',
@@ -289,7 +289,7 @@ export default function ProjectsListPage() {
     if (selected.size === 0) return
     const ids = [...selected]
     const undo = applyDecision(ids, decision)
-    setLastBulk({ text: `${label} — ${units.project(ids.length)}`, undo })
+    setLastBulk({ text: `${label}، ${units.project(ids.length)}`, undo })
     setSelected(new Set())
     bump((n) => n + 1)
   }
@@ -316,7 +316,7 @@ export default function ProjectsListPage() {
     [q],
   )
 
-  /* شرائح الفلاتر الشغّالة — كل واحدة تتشال لوحدها */
+  /* شرائح الفلاتر الشغّالة · كل واحدة تتشال لوحدها */
   /* الفلاتر كبيانات لا JSX مرصوص: التخصيص محتاج يرتّبهم ويخفيهم،
      وده مستحيل وهم مكتوبين بالإيد في الشبكة. */
   const FILTER_DEFS: FilterDef[] = [
@@ -401,10 +401,6 @@ export default function ProjectsListPage() {
     <AppLayout assistantContext={assistFor.projects()}>
       <div className={`viewstack${selected.size > 0 ? ' hasdock' : ''}`}>
         <div className="screen col">
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <span className="now">المشاريع</span>
-          </nav>
-
           <header>
             <div>
               <h1 className="ptitle">المشاريع</h1>
@@ -427,7 +423,7 @@ export default function ProjectsListPage() {
             readings={readings}
           />
 
-          {/* ═══ اللقطات المحفوظة — صفّ واحد، وهي المحور الأساسي:
+          {/* ═══ اللقطات المحفوظة · صفّ واحد، وهي المحور الأساسي:
               «إيه اللي عليّ النهارده؟» ═══ */}
           <Segments
             active={activeView}
@@ -490,7 +486,7 @@ export default function ProjectsListPage() {
 
               </div>
 
-              {/* الأدوات اللي مش فلاتر — مجموعة ثابتة في آخر الصفّ.
+              {/* الأدوات اللي مش فلاتر · مجموعة ثابتة في آخر الصفّ.
                   قبل كده كانت في نفس الصفّ المرن مع الفلاتر، فأول ما
                   فلتر يكبر أو يختفي الصفّ بيلفّ ومبدّل الفيو بينطّ
                   لسطر تاني ويتحرّك أفقيًا. دلوقتي الفلاتر بتلفّ جوّه
@@ -560,7 +556,7 @@ export default function ProjectsListPage() {
             )}
           </Glass>
 
-          {/* نتيجة آخر قرار مجمّع — سطر جوّه الصفحة لا شريط عايم:
+          {/* نتيجة آخر قرار مجمّع · سطر جوّه الصفحة لا شريط عايم:
               ده تأكيد بيتقرا مرة وبيتقفل، والعايم بياخد مكانًا قدام
               المحتوى بعد ما القرار خلص. */}
           {lastBulk && (
@@ -629,7 +625,7 @@ export default function ProjectsListPage() {
             />
           )}
 
-          {/* نسخة الطباعة جوّه `ExportMenu` دلوقتي — المخارج التلاتة
+          {/* نسخة الطباعة جوّه `ExportMenu` دلوقتي · المخارج التلاتة
               والورقة بيتحرّكوا مع بعض. */}
 
           <p className="sub" style={{ textAlign: 'center', marginTop: '.4rem' }}>

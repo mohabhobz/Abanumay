@@ -21,13 +21,13 @@ import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from './BudgetCharts'
  *
  * فالموديول ده مبنيّ على قلب الترتيب:
  *
- *  · **فحص التوازن أول حاجة** — قبل الشجرة، لا بعدها. الرقم اللي
+ *  · **فحص التوازن أول حاجة** · قبل الشجرة، لا بعدها. الرقم اللي
  *    بيغيّر قرارًا يتقال في أول سطر.
- *  · **الشجرة بمستوى واحد ومسار فتات** — التنقّل جوّه الشاشة، والأعمدة
+ *  · **الشجرة بمستوى واحد ومسار فتات** · التنقّل جوّه الشاشة، والأعمدة
  *    واحدة في كل المستويات (النظام بيقلّلها من ست لتلاتة في آخر مستوى).
- *  · **عمودان للعين لا لقاعدة البيانات** — «مجموع الأبناء» و«الفرق»
+ *  · **عمودان للعين لا لقاعدة البيانات** · «مجموع الأبناء» و«الفرق»
  *    جنب «المخصص»، فالخلل يبان في الصف نفسه.
- *  · **مبدّل بين التخصيص والاستهلاك** — نفس الشجرة، سؤالان.
+ *  · **مبدّل بين التخصيص والاستهلاك** · نفس الشجرة، سؤالان.
  */
 export default function BudgetPage() {
   const [cycleId, setCycleId] = useState(CYCLES[0].id)
@@ -48,8 +48,8 @@ export default function BudgetPage() {
   /**
    * القفز من فحص التوازن للشجرة.
    *
-   * الضغطة كانت **بتشتغل** فعلًا — المسار بيتغيّر والشجرة بتفتح على
-   * البند — بس الشجرة تحت بـ٢١٤٢px، يعني شاشتين تحت اللي المستخدم
+   * الضغطة كانت **بتشتغل** فعلًا · المسار بيتغيّر والشجرة بتفتح على
+   * البند · بس الشجرة تحت بـ٢١٤٢px، يعني شاشتين تحت اللي المستخدم
    * شايفه. فالنتيجة عنده: «دوست وما حصلش حاجة».
    *
    * فالقفزة بقت تنقل العين معاها: تمرير للشجرة ونبضة قصيرة على
@@ -85,19 +85,15 @@ export default function BudgetPage() {
     <AppLayout assistantContext={assistFor.page('الميزانية')}>
       <div className="viewstack">
         <div className="screen col">
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <span className="now">الميزانية</span>
-          </nav>
-
           <header>
             <div>
               <h1 className="ptitle">الميزانية</h1>
               <p className="sub" style={{ marginTop: '.3rem' }}>
-                التخصيص على أربع مستويات — الدورة والمسار والمجال والهدف — ومعه ما استُهلك منه
+                التخصيص على أربع مستويات، الدورة والمسار والمجال والهدف، ومعه ما استُهلك منه
               </p>
             </div>
             {/* مبدّل الدورة مش فلتر: الدورة **دايمًا** مختارة، فمفيش
-                خيار «الكل» — `allowEmpty={false}`. كان `select`
+                خيار «الكل» · `allowEmpty={false}`. كان `select`
                 أصلية بحجّة إن `Select` العامّة بتضيف خيارًا فاضيًا؛
                 دلوقتي القيد خاصية لا سبب لنمط تاني. */}
             <Select
@@ -106,7 +102,7 @@ export default function BudgetPage() {
               allowEmpty={false}
               options={CYCLES.map((c) => ({
                 value: c.id,
-                label: c.active ? `${c.label} — مفعَّلة` : c.label,
+                label: c.active ? `${c.label}، مفعَّلة` : c.label,
               }))}
               onChange={(v) => { if (v) { setCycleId(v); setPath([]) } }}
             />
@@ -210,7 +206,7 @@ function Cell({ k, v, tone }: { k: string; v: number; tone?: 'ok' | 'no' }) {
  * الرقم ده ما بيظهرش في النظام العامل أصلًا، وهو أول حاجة المدير
  * المالي هيسأل عنها. حطّه تحت الشجرة معناه إنه مش هيتشاف.
  */
-/** الأول بيبان، والباقي بضغطة — حائط من إحدى عشرة صفًّا بنفس الشكل
+/** الأول بيبان، والباقي بضغطة · حائط من إحدى عشرة صفًّا بنفس الشكل
     بيتحوّل لخلفية، وبيدفع الشجرة شاشتين تحت. */
 const TOP = 5
 
@@ -230,7 +226,7 @@ function Balance({
     return (
       <Glass className="bgok">
         <Icon name={icons.check} size={18} />
-        <span>الشجرة متوازنة — مجموع أبناء كل بند يساوي مخصصه.</span>
+        <span>الشجرة متوازنة، مجموع أبناء كل بند يساوي مخصصه.</span>
       </Glass>
     )
   }
@@ -374,7 +370,7 @@ function Tree({
         <Glass className="bgleaf">
           <div>
             <b>{here?.label}</b>
-            <p className="sub">آخر مستوى في الشجرة — الهدف ما تحتهوش تقسيم.</p>
+            <p className="sub">آخر مستوى في الشجرة، الهدف ما تحتهوش تقسيم.</p>
           </div>
           <div className="bgleaf-v">
             <span><span className="sub">المخصص</span> <Money sm>{here?.alloc ?? 0}</Money></span>
@@ -387,7 +383,7 @@ function Tree({
           <div className="ftool-r">
             <div className="ftool-f">
               {/* مبدّل السؤال: «خصّصنا كام» ولا «استهلكنا كام».
-                  كان ماركب مكتوبًا بالإيد هنا — نسخة تانية من نفس
+                  كان ماركب مكتوبًا بالإيد هنا · نسخة تانية من نفس
                   الكمبوننت بارتفاع ٣٠ بدل ٣١، وما كانتش هتاخد أي
                   تحسين يحصل في الأصل. بقى `Segments` زي كل مكان. */}
               <Segments
@@ -418,7 +414,7 @@ function Tree({
 /**
  * قاع الجدول بيقارن **مجموع الأبناء بمخصص الأب**.
  *
- * لما تقفز هنا من فحص التوازن، الجدول بيعرض أبناء البند — ومخصص
+ * لما تقفز هنا من فحص التوازن، الجدول بيعرض أبناء البند · ومخصص
  * البند نفسه في المستوى اللي فوق، يعني برّه الشاشة. فالفرق اللي
  * جيت عشانه ما بيبانش عند وصولك. القاع دلوقتي بيحطّ الرقمين تحت
  * بعض ويحسب الفرق، فالسبب موجود في نقطة الهبوط.
@@ -465,16 +461,16 @@ function AllocTable({
               <td className="n num">
                 {n.alloc === 0 ? <Tag tone="warn">بلا مخصص</Tag> : <Money sm>{n.alloc}</Money>}
               </td>
-              <td className="n num">{sum === null ? <span className="sub">—</span> : <Money sm>{sum}</Money>}</td>
+              <td className="n num">{sum === null ? <span className="sub"> </span> : <Money sm>{sum}</Money>}</td>
               <td className={`n num${gap !== 0 ? ' bad' : ''}`}>
-                {sum === null ? <span className="sub">—</span>
+                {sum === null ? <span className="sub"> </span>
                   : gap === 0 ? <Tag tone="ok">متوازن</Tag>
                   : <>{gap > 0 ? '+' : '−'}<Money sm>{Math.abs(gap)}</Money></>}
               </td>
               <td className="n num">
                 {n.plan === 0 ? <Tag tone="warn">خارج الخطة</Tag> : `${n.plan}%`}
               </td>
-              <td title={n.owner ?? ''}>{n.owner ?? <span className="sub">—</span>}</td>
+              <td title={n.owner ?? ''}>{n.owner ?? <span className="sub"> </span>}</td>
             </tr>
           )
         })}
@@ -483,7 +479,7 @@ function AllocTable({
         <tr>
           <td>مجموع الأبناء</td>
           <td className="n num"><Money sm>{total}</Money></td>
-          <td className="n num mut">مخصص {parent?.label ?? '—'}</td>
+          <td className="n num mut">مخصص {parent?.label ?? 'الإجمالي'}</td>
           <td className="n num"><Money sm>{parent?.alloc ?? 0}</Money></td>
           <td className="n" colSpan={2}>
             {parent && (gap === 0

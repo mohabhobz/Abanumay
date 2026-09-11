@@ -12,7 +12,7 @@ export interface ColumnResize {
   dragging: Dragging | null
   /** بيتربط على `onPointerDown` في مقبض العمود */
   start: (key: string, e: React.PointerEvent<HTMLElement>) => void
-  /** بيرجّع العمود لعرضه الافتراضي — دبل كليك على المقبض */
+  /** بيرجّع العمود لعرضه الافتراضي · دبل كليك على المقبض */
   reset: (key: string) => void
 }
 

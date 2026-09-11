@@ -1,5 +1,5 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { Glass, Head, Icon, icons } from '@/components/ui'
+import { BackTo, Glass, Head, Icon, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
@@ -14,7 +14,7 @@ import { basisText } from './basis'
    ثلاث قواعد بتحكم الشاشة دي:
 
    1. **آلية القياس تحت كل رقم، دايمًا.** الوثيقة كاتبة لكل مؤشر
-      صيغته، والرقم من غير صيغته بيتقري غلط — «نسبة المشاريع
+      صيغته، والرقم من غير صيغته بيتقري غلط · «نسبة المشاريع
       المرفوضة» من إيه؟ من المعروض ولا من الكل؟ الفرق بيغيّر القرار.
 
    2. **المؤشر اللي مالوش قيمة بيتكتب برضو.** إخفاؤه بيخلي الفجوة
@@ -45,11 +45,7 @@ export default function ProcessReport() {
     <AppLayout assistantContext={assistFor.page(`مؤشرات ${p.title}`)}>
       <div className="viewstack">
         <div className="screen col">
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <Link to={ROUTES.reports}>التقارير</Link>
-            <span aria-hidden="true">/</span>
-            <span className="now">{p.title}</span>
-          </nav>
+          <BackTo to={ROUTES.reports} label="التقارير" />
 
           <header className="rph">
             <div>

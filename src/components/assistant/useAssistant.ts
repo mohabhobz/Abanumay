@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { respond } from '@/data/mock/assistant'
 import type { AiMessageModel, ChatMessage } from './types'
 
-/** إيقاع العرض — بطيء بما يكفي إن المستخدم يقرا خطوات التفكير */
+/** إيقاع العرض · بطيء بما يكفي إن المستخدم يقرا خطوات التفكير */
 const THINK_STEP_MS = 620
 const TYPE_CHARS = 3
 const TYPE_MS = 14

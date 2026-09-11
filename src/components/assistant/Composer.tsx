@@ -14,7 +14,7 @@ export interface ComposerProps {
   docked?: boolean
 }
 
-/** مربع الكتابة — بيكبر مع النص، وبيحسّ بالماوس قبل ما توصله */
+/** مربع الكتابة · بيكبر مع النص، وبيحسّ بالماوس قبل ما توصله */
 export function Composer({
   value,
   onChange,

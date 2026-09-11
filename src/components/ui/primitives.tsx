@@ -1,4 +1,7 @@
 import { forwardRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { Icon } from './Icon'
+import { icons } from './icons'
 import { nf } from '@/lib/format'
 import type { Tone } from '@/types/domain'
 
@@ -47,7 +50,7 @@ export function Riyal({ style }: { style?: CSSProperties }) {
 }
 
 /**
- * مبلغ بالريال — **الشكل الوحيد لأي مبلغ في السيستم**.
+ * مبلغ بالريال · **الشكل الوحيد لأي مبلغ في السيستم**.
  *
  * الرمز في العربي بييجي **على شمال الرقم**، وده كان بيتكسر في نص
  * الأماكن لسبب واحد: الحاوية كانت `.num`، و`.num` فيها
@@ -55,7 +58,7 @@ export function Riyal({ style }: { style?: CSSProperties }) {
  * جوّه مجرى إنجليزي، والرمز راح على اليمين.
  *
  * الحل إن العزل ينزل خطوة: `.num` على **الأرقام وحدها**، والحاوية
- * تفضل عربية — فترتيب العنصرين في الـDOM (رقم ثم رمز) بيطلع على
+ * تفضل عربية · فترتيب العنصرين في الـDOM (رقم ثم رمز) بيطلع على
  * الشاشة رقمًا على اليمين ورمزًا على الشمال. ومن غير مكوّن واحد،
  * الغلطة دي بترجع كل مرة حد يكتب مبلغًا جديدًا.
  */
@@ -167,6 +170,42 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
   )
 }
 
+/* ═══════════════ الرجوع ═══════════════ */
+
+/**
+ * زرار الرجوع · **بديل مسار التنقّل**.
+ *
+ * كان في `.crumb` فوق كل شاشة: «المشاريع ← دورة 2026 ← مشروع
+ * prj-2026-20852». وده بيدّي تلات معلومات المستخدم عارفها أصلًا
+ * (هو اللي ضغط عشان يوصل)، وبياخد سطرًا من فوق كل صفحة، وبيكرّر
+ * اسم الصفحة اللي تحته بالظبط.
+ *
+ * واللي المستخدم محتاجه فعلًا من السطر ده حاجة واحدة: **يرجع**.
+ * فبقى زرار واحد فيه اسم المكان اللي راجع له.
+ *
+ * وبيظهر في **الصفحات الفرعية بس**. الصفحة الأولية (المشاريع ·
+ * الجهات · الميزانية · التقارير · اليوم) مالهاش «فوق» ترجع له ·
+ * الريل هو التنقّل بينهم.
+ */
+export function BackTo({ to, label, onClick }: {
+  /** مسار الأب */
+  to?: string
+  /** اسم المكان اللي راجع له */
+  label: string
+  onClick?: () => void
+}) {
+  const body = (
+    <>
+      {/* في RTL «لقدّام» شمال، فالرجوع يمين */}
+      <Icon name={icons.chevronBack} size={16} />
+      {label}
+    </>
+  )
+  return onClick
+    ? <button type="button" className="backto" onClick={onClick}>{body}</button>
+    : <Link className="backto" to={to ?? '..'}>{body}</Link>
+}
+
 /* ═══════════════ حالات فارغة وإحصاءات ═══════════════ */
 
 export function Empty({
@@ -212,15 +251,18 @@ export function Stat({
         {value}
         {unit && <small>{unit}</small>}
       </div>
-      {bar && (
-        <div className="bar">
-          <i style={{ width: bar.w, background: bar.c }} />
-        </div>
-      )}
+      {/* الشريط **بياخد مكانه سواء اتعرض ولا لأ**.
+          الأربع إحصاءات في صفّ واحد بيتساووا في الطول (شبكة)، فاللي
+          مالوش شريط كان بيسيب فراغه كله تحت: فوق ١٦٫٨ وتحت ٢٩٫٢ في
+          نفس الصفّ. الخانة المحجوزة بتخلّي الأربعة نفس التخطيط،
+          فالفراغ فوق وتحت واحد من غير ما الأسطر تتزحلق عن بعضها. */}
+      <div className="bar" aria-hidden={!bar} data-empty={bar ? undefined : ''}>
+        {bar && <i style={{ width: bar.w, background: bar.c }} />}
+      </div>
       {note && (
         <div
           className="mut trim1"
-          style={{ marginTop: bar ? '.4rem' : '.6rem' }}
+          style={{ marginTop: '.4rem' }}
           title={typeof note === 'string' ? note : undefined}
         >
           {note}

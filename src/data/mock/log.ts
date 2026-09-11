@@ -3,12 +3,12 @@ import { nf } from '@/lib/format'
 import type { AgreementDetail, PaymentDetail, ProjectDetail } from './detail'
 
 /**
- * سجل المشروع — الدورة كاملة، مولَّدة من حالة المشروع.
+ * سجل المشروع · الدورة كاملة، مولَّدة من حالة المشروع.
  *
  * **الاكتشاف اللي بنى الملف ده:** قيد السجل في النظام العامل مش
  * موحَّد. كل نوع إجراء له **حقوله**: «دراسة المشروع» فيه ٣٧ حقلًا
  * (عشرين معيار وزن وسبع إجابات نعم/لا وتوصية نصية طويلة)، و«صرف
- * الدفعة» فيه تلاتة، و«توصية» فيه واحد. فالسجل مش تايم لاين نصوص —
+ * الدفعة» فيه تلاتة، و«توصية» فيه واحد. فالسجل مش تايم لاين نصوص ·
  * ده **سجل أحداث لكل حدث حمولته**.
  *
  * والفاعل نوعه بيفرق: موظف، ولا الجهة نفسها (بترفع السندات والتقارير
@@ -17,9 +17,9 @@ import type { AgreementDetail, PaymentDetail, ProjectDetail } from './detail'
  * لازم يتفرّقوا بصريًا.
  *
  * والمتابعات **بتيجي جوّه نفس التايم لاين** مرتّبة بالتاريخ بين
- * إجراءات العمل — مش تاب منفصل. ده اللي النظام بيعمله فعلًا.
+ * إجراءات العمل · مش تاب منفصل. ده اللي النظام بيعمله فعلًا.
  *
- * المصدر: `12940` · `20191` · `12935` · `14982` — راجع
+ * المصدر: `12940` · `20191` · `12935` · `14982` · راجع
  * `Abanumay_Project_Tabs_Data.md`.
  *
  * ⚠️ نموذج. مكانه في الإنتاج `GET /projects/:id/log`.
@@ -30,13 +30,13 @@ export type ActorKind = 'staff' | 'entity' | 'committee' | 'system'
 export interface LogField {
   k: string
   v: string
-  /** قيمة قرار لا تفصيلة — بتتبرز */
+  /** قيمة قرار لا تفصيلة · بتتبرز */
   strong?: boolean
 }
 
 export interface LogEvent {
   id: string
-  /** «طلب استكمال» — بالظبط زي ما النظام بيسمّيه */
+  /** «طلب استكمال» · بالظبط زي ما النظام بيسمّيه */
   action: string
   dept: string
   by: string
@@ -50,7 +50,7 @@ export interface LogEvent {
   fields: LogField[]
   files?: string[]
   tone: Tone
-  /** متابعة لا إجراء — نفس التايم لاين، وسم مختلف */
+  /** متابعة لا إجراء · نفس التايم لاين، وسم مختلف */
   followUp?: string
 }
 
@@ -131,7 +131,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
   const grant = row.amountGranted || row.amountRequested
   const media = row.impact || grant >= 500_000
 
-  /* ٠ · التحويل — ربع النظام بلا مالك، والتحويل بين الباحثين شائع.
+  /* ٠ · التحويل · ربع النظام بلا مالك، والتحويل بين الباحثين شائع.
      القيد ده بيحمل إعادة تصنيف كاملة زي ما شفناه في النظام. */
   if (row.owner) {
     b.add({
@@ -152,7 +152,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     })
   }
 
-  /* ١ · الدراسة عند المشرف — أضخم قيد في النظام */
+  /* ١ · الدراسة عند المشرف · أضخم قيد في النظام */
   b.add({
     after: 2,
     action: 'دراسة المشروع',
@@ -185,7 +185,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     ],
   })
 
-  /* ٢ · مسار الاعتذار — خمسة قيود وخلاص */
+  /* ٢ · مسار الاعتذار · خمسة قيود وخلاص */
   if (row.statusGroup === 'معتذر عنه') {
     b.add({
       after: 3, action: 'معتذر عنه', dept: 'اعتماد دراسة المشروع', by: manager,
@@ -213,7 +213,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     return merge(b.done(), detail.followUps)
   }
 
-  /* ٢ب · طلب الاستكمال — الوحيد اللي سببه نص حرّ في النظام، بينما
+  /* ٢ب · طلب الاستكمال · الوحيد اللي سببه نص حرّ في النظام، بينما
      الاعتذار ورفض الحساب البنكي أسبابهم مقنّنة. */
   if (row.stage === 'استكمال بيانات المشروع' || row.hoursInStage > row.stageLimit) {
     b.add({
@@ -279,7 +279,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     agreementEvents(b, row, detail.agreement, entityName, owner, manager, director, finance, grant, media)
   }
 
-  /* ٤ · الصرف — دورة رباعية لكل دفعة */
+  /* ٤ · الصرف · دورة رباعية لكل دفعة */
   detail.payments.forEach((p) => paymentEvents(b, p, entityName, owner, finance))
 
   /* ٥ · التقارير */
@@ -441,7 +441,7 @@ function paymentEvents(
     after: 16, action: 'إذن صرف', dept: 'المشرف إذن الصرف', by: owner,
     actor: 'staff', tone: 'ret',
     fields: [
-      { k: 'الدفعة', v: `${p.no} — ${nf.format(p.amount)} ريال`, strong: true },
+      { k: 'الدفعة', v: `${p.no}، ${nf.format(p.amount)} ريال`, strong: true },
       { k: 'ملاحظات', v: p.condition ?? '' },
     ],
   })

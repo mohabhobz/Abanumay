@@ -1,5 +1,5 @@
 /**
- * نموذج البيانات — مشتق من النظام العامل `sys.abanumay.sa`
+ * نموذج البيانات · مشتق من النظام العامل `sys.abanumay.sa`
  * (راجع `Abanumay_System_Live_Audit.md` في مجلد المشروع).
  *
  * أي حقل هنا له مقابل حقيقي في النظام. لما الباك اند يسلّم الـAPI
@@ -9,11 +9,11 @@
 /** درجة اللون المستخدمة في الشارات والمؤشرات */
 export type Tone = 'ok' | 'warn' | 'no' | 'ret' | 'brand' | 'teal' | 'lime' | 'mute'
 
-/** مصدر التمويل — النظام بيفصل بينهم بأقسام إجرائية مستقلة */
+/** مصدر التمويل · النظام بيفصل بينهم بأقسام إجرائية مستقلة */
 export type FundingSource = 'foundation' | 'waqf'
 
 /**
- * القسم الإجرائي — النظام فيه 50 قسمًا.
+ * القسم الإجرائي · النظام فيه 50 قسمًا.
  * دي أكثرهم ورودًا في جدول المشاريع (18 قيمة على 4,929 مشروعًا).
  */
 export type ProcedureStage =
@@ -36,7 +36,7 @@ export type ProcedureStage =
   | 'مشروع معتذر عنه'
   | 'مشروع ملغي'
 
-/** الحالة المجمّعة — النظام بيفلتر بيها، 5 قيم فقط */
+/** الحالة المجمّعة · النظام بيفلتر بيها، 5 قيم فقط */
 export type ProjectStatusGroup =
   | 'في الدراسة'
   | 'في التشغيل'
@@ -170,7 +170,7 @@ export interface Gate {
 
 /**
  * قيد في سجل الإجراءات.
- * `hours` مقابل `limit` هو أساس تنبيه «تجاوز مدة الإجراء» —
+ * `hours` مقابل `limit` هو أساس تنبيه «تجاوز مدة الإجراء» ·
  * والنظام بيسجّل المدة لكل مستوى فعلًا (13 عمود مدة في جدول المشاريع).
  */
 export interface LogEntry {
@@ -225,7 +225,7 @@ export interface Agreement {
 export interface Project {
   id: string
   name: string
-  /** المسار ← المجال ← الهدف — شجرة الميزانية */
+  /** المسار ← المجال ← الهدف · شجرة الميزانية */
   track: string
   field: string
   goal: string
@@ -251,7 +251,7 @@ export interface Project {
   region: string
   city: string
   beneficiaries: number
-  /** العدد بعد مراجعة المشرف — النظام بيفصله عن تقدير الجهة */
+  /** العدد بعد مراجعة المشرف · النظام بيفصله عن تقدير الجهة */
   beneficiariesVerified: number
   audiences: string[]
 
@@ -308,9 +308,9 @@ export interface AuthorityMatrix {
 // ═══════════════════════ المستخدم ═══════════════════════
 
 /* ترتيب الأفعال: أساسي واحد · ثانوي للباقي · هدّام له لونه.
-   `btn-3` (الأزرق) اتشال من هنا عن قصد — الأزرق في النظام يوصف
+   `btn-3` (الأزرق) اتشال من هنا عن قصد · الأزرق في النظام يوصف
    حالة لا يعمل نداء، ووجوده في النوع كان بيسمح بالمخالفة. */
-export type DecisionKind = 'btn-p' | 'btn-1' | 'btn-2' | 'btn-d'
+export type DecisionKind = 'btn-p' | 'btn-2' | 'btn-d'
 
 export interface DecisionAction {
   label: string
@@ -338,7 +338,7 @@ export interface Insight {
 // ═══════════════════ صفوف القوائم ═══════════════════
 
 /**
- * صف في قائمة المشاريع — العمود الفقري من 12 حقلًا.
+ * صف في قائمة المشاريع · العمود الفقري من 12 حقلًا.
  * جدول النظام فيه 62 عمودًا؛ الباقي يعيش في صفحة المشروع.
  */
 export interface ProjectRow {
@@ -356,7 +356,7 @@ export interface ProjectRow {
   statusGroup: ProjectStatusGroup
   /** ساعات المكوث في القسم الحالي */
   hoursInStage: number
-  /** حدّ القسم بالساعات — مؤقت لحين تأكيده */
+  /** حدّ القسم بالساعات · مؤقت لحين تأكيده */
   stageLimit: number
   amountRequested: number
   amountGranted: number
@@ -383,7 +383,7 @@ export interface ProjectRow {
   fieldVisit: boolean
 }
 
-/** صف في قائمة الجهات — التعريف + الأداء التراكمي */
+/** صف في قائمة الجهات · التعريف + الأداء التراكمي */
 export interface EntityRow {
   id: string
   name: string

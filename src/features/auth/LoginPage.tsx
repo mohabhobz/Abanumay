@@ -19,7 +19,7 @@ import { signIn } from '@/data/session'
 export default function LoginPage() {
   const navigate = useNavigate()
   const loc = useLocation()
-  /* الرابط اللي اتحوّل منه — لو فتح رابط مشروع وهو برّه، يرجعله
+  /* الرابط اللي اتحوّل منه · لو فتح رابط مشروع وهو برّه، يرجعله
      بعد الدخول بدل ما يبدأ من الأول */
   const from = (loc.state as { from?: string } | null)?.from
   const [user, setUser] = useState('')
@@ -28,7 +28,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
-  /** يعرض الخطأ كتوست ويخفيه لوحده — الرسالة تنبيه مش حالة دائمة */
+  /** يعرض الخطأ كتوست ويخفيه لوحده · الرسالة تنبيه مش حالة دائمة */
   const fail = (message: string) => {
     setErr(message)
     setTimeout(() => setErr(''), 4000)
@@ -71,7 +71,7 @@ export default function LoginPage() {
           </div>
 
           {/* method/action موجودين عشان مديري كلمات السر يتعرّفوا على
-              الفورم ويعرضوا الحفظ — الإرسال نفسه متوقّف بـpreventDefault */}
+              الفورم ويعرضوا الحفظ · الإرسال نفسه متوقّف بـpreventDefault */}
           <form
             className="lform"
             onSubmit={submit}
@@ -125,9 +125,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* مسار مختلف تمامًا، فشكله جوست — مش قرار تاني منافس للدخول */}
+          {/* مسار مختلف تمامًا، فشكله جوست · مش قرار تاني منافس للدخول */}
           <div className="lalt">
-            <button className="btn btn-ghost btn-full" type="button">تسجيل جهة جديدة</button>
+            <button className="btn btn-2 btn-full" type="button">تسجيل جهة جديدة</button>
             <p className="lnote sub">للجمعيات والمؤسسات التي لم تسجّل في المنصة بعد</p>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function LoginPage() {
   )
 }
 
-/* حقل بعلامة داخلية وحالة تركيز واضحة — الحدود بتغمق مش بتتلوّن */
+/* حقل بعلامة داخلية وحالة تركيز واضحة · الحدود بتغمق مش بتتلوّن */
 interface FieldProps {
   id: string
   /** لازم للاسم عشان مديري كلمات السر والأوتوفيل يتعرّفوا على الحقل */

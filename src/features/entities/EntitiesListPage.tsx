@@ -35,14 +35,14 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const PAGE_SIZE = PAGE_SIZES[0]
 
-/** ترتيب الفلاتر الافتراضي — نفس ترتيب `FILTER_DEFS` جوّه الكومبوننت */
+/** ترتيب الفلاتر الافتراضي · نفس ترتيب `FILTER_DEFS` جوّه الكومبوننت */
 const FILTER_KEYS = ['type', 'licensor', 'region', 'city', 'governance']
 
 const NOT_FILTERS: (keyof Params)[] = [
   'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'activation', 'docs', 'running',
 ]
 
-/** اللقطات المحفوظة — الأسئلة اللي بتوقف الشغل فعلًا */
+/** اللقطات المحفوظة · الأسئلة اللي بتوقف الشغل فعلًا */
 const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
   { key: 'all', label: 'كل الجهات', patch: {} },
   { key: 'new', label: 'بانتظار التفعيل', patch: { activation: 'معلق (جديد)' } },
@@ -61,7 +61,7 @@ const SORTS = [
  * الجهات.
  *
  * الفلاتر هنا مش نسخة من فلاتر النظام: هي الأسئلة اللي بتوقف الشغل
- * فعلًا — مين معلّق؟ مين ملفه ناقص؟ مين شغّال معانا دلوقتي؟
+ * فعلًا · مين معلّق؟ مين ملفه ناقص؟ مين شغّال معانا دلوقتي؟
  * والباقي (النوع · المرخِّص · الحوكمة · المنطقة) مطوي خلف عدّاد.
  */
 export default function EntitiesListPage() {
@@ -74,7 +74,7 @@ export default function EntitiesListPage() {
 
   useEffect(() => writeFilterOrder('entities', fOrder), [fOrder])
   /* التحديد هنا نطاق تصدير لا قرار: الجهة مالهاش «موافقة» ولا «رفض»
-     يتاخدوا على دفعة — تفعيلها وإيقافها قرار بملف كل جهة. فالشريط
+     يتاخدوا على دفعة · تفعيلها وإيقافها قرار بملف كل جهة. فالشريط
      بيقول المحدَّد وبيصدّره وبس. */
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
@@ -115,7 +115,7 @@ export default function EntitiesListPage() {
   const result = query.entities(grouped ? { ...q, page: 1, pageSize: 9999 } : q)
   const all = fixtures.entities
 
-  /** عدّاد التفعيل جوّه النطاق الحالي — بيغذّي قائمة «كل الحالات» */
+  /** عدّاد التفعيل جوّه النطاق الحالي · بيغذّي قائمة «كل الحالات» */
   const counts = useMemo(() => {
     const base = query.entities({ ...q, activation: undefined, page: 1, pageSize: 9999 }).rows
     const out: Record<string, number> = {}
@@ -123,7 +123,7 @@ export default function EntitiesListPage() {
     return out
   }, [q])
 
-  /** عدّاد اللقطات مطلق — اللقطة مبدّل نطاق مش فلتر جوّه النطاق */
+  /** عدّاد اللقطات مطلق · اللقطة مبدّل نطاق مش فلتر جوّه النطاق */
   const viewCounts = useMemo(
     () =>
       Object.fromEntries(
@@ -163,7 +163,7 @@ export default function EntitiesListPage() {
     [q, all],
   )
 
-  /* نطاق التصدير: نتيجة الفلتر كاملة لا صفحة العرض — إلا لو المستخدم
+  /* نطاق التصدير: نتيجة الفلتر كاملة لا صفحة العرض · إلا لو المستخدم
      علّم صفوفًا، فالمحدَّد هو المقصود. */
   const allFiltered = useMemo(
     () => query.entities({ ...q, page: 1, pageSize: 9999 }).rows,
@@ -266,10 +266,6 @@ export default function EntitiesListPage() {
     <AppLayout assistantContext={assistFor.entities()}>
       <div className={`viewstack${selected.size > 0 ? ' hasdock' : ''}`}>
         <div className="screen col">
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <span className="now">الجهات</span>
-          </nav>
-
           <header>
             <div>
               <h1 className="ptitle">الجهات</h1>
@@ -288,7 +284,7 @@ export default function EntitiesListPage() {
               رجع منه، ومحدّش بيقرا سطرًا وهو ماسك فلتر. */}
           <QuickRead variant="bar" title="قراءة سريعة للقائمة" readings={readings} />
 
-          {/* ═══ اللقطات المحفوظة — صفّ واحد ═══ */}
+          {/* ═══ اللقطات المحفوظة · صفّ واحد ═══ */}
           <Segments
             active={activeView}
             onChange={(k) => {
@@ -344,7 +340,7 @@ export default function EntitiesListPage() {
 
               </div>
 
-              {/* الأدوات اللي مش فلاتر — مجموعة ثابتة في آخر الصفّ.
+              {/* الأدوات اللي مش فلاتر · مجموعة ثابتة في آخر الصفّ.
                   قبل كده كانت في نفس الصفّ المرن مع الفلاتر، فأول ما
                   فلتر يكبر أو يختفي الصفّ بيلفّ ومبدّل الفيو بينطّ
                   لسطر تاني ويتحرّك أفقيًا. دلوقتي الفلاتر بتلفّ جوّه
@@ -470,7 +466,7 @@ export default function EntitiesListPage() {
               </>
             }
           >
-            <button className="btn btn-1 btn-sm" onClick={() => exportXlsx(sheet)}>
+            <button className="btn btn-2 btn-sm" onClick={() => exportXlsx(sheet)}>
               <Icon name={icons.export} size={15} />
               إكسل
             </button>

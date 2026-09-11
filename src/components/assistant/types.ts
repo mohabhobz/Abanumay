@@ -23,7 +23,7 @@ export interface AssistantAnswer {
   sources?: string[]
   actions?: AssistantAction[]
   follow?: string[]
-  /** مخرجات AI مساندة وغير مُلزِمة — القاعدة دي بتتعلّم في الواجهة */
+  /** مخرجات AI مساندة وغير مُلزِمة · القاعدة دي بتتعلّم في الواجهة */
   advisory?: boolean
 }
 
@@ -46,7 +46,7 @@ export interface AiMessageModel extends AssistantAnswer {
 export type ChatMessage = UserMessage | AiMessageModel
 
 /**
- * سياق اللوح الجانبي — بيتغيّر حسب الصفحة المفتوح منها.
+ * سياق اللوح الجانبي · بيتغيّر حسب الصفحة المفتوح منها.
  *
  * اللوح بقى نفس الحالة الأولى بتاعة الشاشة الكاملة بالظبط، فالسياق
  * ده مسؤول عن حاجة واحدة: **الكلام اللي بيقول للمستخدم هيدوّر فين**.
@@ -54,7 +54,7 @@ export type ChatMessage = UserMessage | AiMessageModel
  * ثابت في كل الصفحات.
  */
 export interface AssistantContext {
-  /** عنوان ترويسة اللوح — اسم الشيء اللي أنت فيه */
+  /** عنوان ترويسة اللوح · اسم الشيء اللي أنت فيه */
   title: string
   /** سطر تحت العنوان في الترويسة */
   sub: string

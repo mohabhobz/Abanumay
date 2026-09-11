@@ -1,4 +1,4 @@
-/** تنسيقات الأرقام والتواريخ — مكان واحد عشان كل الشاشات تعرض بنفس الشكل */
+/** تنسيقات الأرقام والتواريخ · مكان واحد عشان كل الشاشات تعرض بنفس الشكل */
 
 /**
  * كل الأرقام في السيستم بالخانات اللاتينية (0–9)، حتى داخل النص
@@ -17,7 +17,7 @@ export const df = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
  * تاريخ قصير: «12 أبريل 2026».
  *
  * `df` بتحطّ اليوم من الأسبوع كمان، وده مفيد في السجل («الأحد») لكن
- * في صفّ تعريف بيبقى ضوضاء — التاريخ هنا حقيقة تعريفية لا حدث.
+ * في صفّ تعريف بيبقى ضوضاء · التاريخ هنا حقيقة تعريفية لا حدث.
  */
 export const dfShort = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
   day: 'numeric', month: 'long', year: 'numeric',
@@ -90,7 +90,7 @@ export const projectCode = (id: string, year?: string): string =>
 export const matchesCode = (needle: string, id: string, year?: string): boolean =>
   projectCode(id, year).includes(needle.trim().toLowerCase())
 
-/** تكلفة المستفيد — مقياس المقارنة بين المشاريع */
+/** تكلفة المستفيد · مقياس المقارنة بين المشاريع */
 export const costPerBeneficiary = (amount: number, beneficiaries: number): number =>
   beneficiaries === 0 ? 0 : Math.round(amount / beneficiaries)
 

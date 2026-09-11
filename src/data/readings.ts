@@ -1,13 +1,13 @@
 /**
- * قراءات المساعد — محسوبة، مش مكتوبة.
+ * قراءات المساعد · محسوبة، مش مكتوبة.
  *
  * كل دالة هنا بتاخد نفس الداتا اللي الشاشة بتعرضها وترجّع قراءات.
  * يعني القراءة ما تقدرش تتعارض مع اللي قدام المستخدم، ولا تبقى
- * قديمة لما الداتا تتغيّر — وده الفرق بين مساعد وبين نص ثابت.
+ * قديمة لما الداتا تتغيّر · وده الفرق بين مساعد وبين نص ثابت.
  *
  * لما الباك اند يجهز، الملف ده يا إما يفضل زي ما هو (بيحسب من
  * الصفوف اللي رجعت)، يا إما يتحوّل لنداء `GET /insights/:screen`
- * بنفس شكل `Reading[]` — والواجهة ما تتغيّرش.
+ * بنفس شكل `Reading[]` · والواجهة ما تتغيّرش.
  */
 import type { Reading, ReadingAction } from '@/components/assistant/reading'
 import type { EntityRow, Insight, ProjectRow } from '@/types/domain'
@@ -22,7 +22,7 @@ import { ROUTES } from '@/app/routes'
 
 const days = (hours: number) => Math.round(hours / 24)
 
-/** سنين كاملة من تاريخ `YYYY-MM-DD` لحد النهارده — `null` لو التاريخ غلط */
+/** سنين كاملة من تاريخ `YYYY-MM-DD` لحد النهارده · `null` لو التاريخ غلط */
 function yearsSince(iso: string): number | null {
   const t = Date.parse(iso)
   if (Number.isNaN(t)) return null
@@ -56,7 +56,7 @@ function topCount<T>(items: T[], key: (t: T) => string | null | undefined) {
  * مرة ولمين، وواقف عند مين وبقاله قد إيه مقابل حدّه، وإيه المطلوب
  * منك دلوقتي. المستخدم اللي بيفتح مشروع عمره ما بيقرا السجل من أوله.
  *
- * كل جملة مبنية من الصف نفسه، فبتتغيّر مع حالة المشروع فعلًا —
+ * كل جملة مبنية من الصف نفسه، فبتتغيّر مع حالة المشروع فعلًا ·
  * المكتمل ما بيقولش «محتاج أكشن»، والمعتذر عنه ما بيقولش «واقف».
  */
 export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] {
@@ -82,7 +82,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       id: 'j-declined',
       kind: 'note',
       label: 'الوضع الحالي',
-      text: `المشروع معتذر عنه${row.declineReason ? ` — السبب المسجَّل «${row.declineReason}»` : ' بلا سبب مسجَّل'}. مفيش أكشن مطلوب منك.`,
+      text: `المشروع معتذر عنه${row.declineReason ? `، السبب المسجَّل «${row.declineReason}»` : ' بلا سبب مسجَّل'}. مفيش أكشن مطلوب منك.`,
       bold: row.declineReason ? [row.declineReason] : [],
       src: 'قرار المشروع',
     })
@@ -93,7 +93,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       label: 'الوضع الحالي',
       metric: { value: nf.format(inDays), unit: 'يومًا في القسم' },
       text: late
-        ? `واقف عند «${row.stage}» من ${units.day(inDays)} — أي ${pctText(over)} فوق حدّ القسم. المطلوب منك: ${nextAction(row)}.`
+        ? `واقف عند «${row.stage}» من ${units.day(inDays)}، أي ${pctText(over)} فوق حدّ القسم. المطلوب منك: ${nextAction(row)}.`
         : `عند «${row.stage}» من ${units.day(inDays)}، وده جوّه حدّ القسم. المطلوب منك: ${nextAction(row)}.`,
       bold: [row.stage, units.day(inDays), nextAction(row)],
       danger: late ? [pctText(over)] : [],
@@ -108,7 +108,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
             unit: 'يومًا',
           }
         : undefined,
-      src: `حدّ قسم «${row.stage}» — مؤقت لحين اعتماده`,
+      src: `حدّ قسم «${row.stage}»، مؤقت لحين اعتماده`,
     })
   }
 
@@ -117,12 +117,12 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
   const now = out[0]
   if (now && now.kind === 'flag') {
     now.actions = [
-      { label: 'تذكير الجهة', kind: 'btn-1' },
+      { label: 'تذكير الجهة', kind: 'btn-2' },
       { label: 'تسجيل سبب التأخر', kind: 'btn-2' },
     ]
   }
 
-  /* ٢ · رجع لورا كام مرة — ده اللي السجل بيخفيه وسط الصفوف */
+  /* ٢ · رجع لورا كام مرة · ده اللي السجل بيخفيه وسط الصفوف */
   const back = (j?.toEntity ?? 0) + (j?.toSupervisor ?? 0)
   if (back > 0) {
     const parts: string[] = []
@@ -138,13 +138,13 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
     })
   }
 
-  /* ٣ · مين اللي بتّ فيه — بيوضّح إذا كان لسه محتاج تصعيد */
+  /* ٣ · مين اللي بتّ فيه · بيوضّح إذا كان لسه محتاج تصعيد */
   if (j?.decidedBy) {
     out.push({
       id: 'j-level',
       kind: 'note',
       label: 'مستوى القرار',
-      text: `القرار اتاخد عند «${j.decidedBy}» — المبلغ ${nf.format(row.amountGranted || row.amountRequested)} ريال وقع في نطاق صلاحيته.`,
+      text: `القرار اتاخد عند «${j.decidedBy}»، المبلغ ${nf.format(row.amountGranted || row.amountRequested)} ريال وقع في نطاق صلاحيته.`,
       bold: [j.decidedBy, `${nf.format(row.amountGranted || row.amountRequested)} ريال`],
       src: 'سقوف الصلاحيات · مؤقتة لحين اعتمادها',
     })
@@ -177,7 +177,7 @@ function nextAction(row: ProjectRow): string {
 /* ═══════════════════ قائمة المشاريع ═══════════════════ */
 
 export interface ProjectsReadingInput {
-  /** كل المشاريع — أساس القراءات المطلقة */
+  /** كل المشاريع · أساس القراءات المطلقة */
   all: ProjectRow[]
   /** الصفوف بعد الفلتر الحالي */
   filtered: ProjectRow[]
@@ -189,7 +189,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
   const out: Reading[] = []
   const scope = isFiltered ? filtered : all
 
-  // 1) المتأخر — أول قراءة دايمًا، لأنه السبب الوحيد اللي بيخلي
+  // 1) المتأخر · أول قراءة دايمًا، لأنه السبب الوحيد اللي بيخلي
   //    مشروعًا يقعد شهورًا من غير ما حد ياخد باله
   const late = scope.filter((p) => stagePressure(p) > 1)
   if (late.length) {
@@ -203,7 +203,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
       metric: { value: String(late.length), unit: 'فوق حدّ القسم' },
       text:
         `${late.length === 1 ? 'وهو' : 'أطولها'} «${worst.name}» واقف من ${d} ` +
-        `في «${worst.stage}» — أي ${over}.`,
+        `في «${worst.stage}»، أي ${over}.`,
       bold: [d, over],
       danger: [over],
       src: 'حدّ القسم الإجرائي · قيم مؤقتة لحين اعتمادها',
@@ -212,7 +212,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
     })
   }
 
-  // 2) بلا مالك — ربع النظام، وما حدش مسؤول عنها
+  // 2) بلا مالك · ربع النظام، وما حدش مسؤول عنها
   const orphan = scope.filter((p) => p.owner === null)
   if (orphan.length) {
     const money = orphan.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)
@@ -232,7 +232,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
     })
   }
 
-  // 3) سبب الاعتذار الأكثر تكرارًا — ده اللي بيقول فين الخلل فعلًا
+  // 3) سبب الاعتذار الأكثر تكرارًا · ده اللي بيقول فين الخلل فعلًا
   const declined = scope.filter((p) => p.declineReason)
   const topReason = topCount(declined, (p) => p.declineReason)
   if (topReason && declined.length >= 3) {
@@ -245,7 +245,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
       kind: 'note',
       label: 'أنماط الاعتذار',
       metric: { value: pct, unit: 'من الاعتذارات' },
-      text: `سببها «${reason}» — ${c} من ${n} معتذر عنها في هذه الشريحة.`,
+      text: `سببها «${reason}»، ${c} من ${n} معتذر عنها في هذه الشريحة.`,
       bold: [`«${reason}»`, c],
       src: 'مبررات الاعتذار المقنّنة (9 مبررات)',
       to: `${ROUTES.projects}?status=معتذر عنه`,
@@ -253,7 +253,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
     })
   }
 
-  // 4) قراءة الشريحة الحالية — تظهر فقط لما يكون في فلتر شغّال
+  // 4) قراءة الشريحة الحالية · تظهر فقط لما يكون في فلتر شغّال
   if (isFiltered && filtered.length) {
     const money = filtered.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)
     const avgWeight = Math.round(filtered.reduce((s, p) => s + p.weight, 0) / filtered.length)
@@ -350,13 +350,13 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
  * السؤال اللي الصفحة بتجاوب عليه واحد: **أقدر أدّي المشروع ده للجهة
  * دي؟** فالقراءات مرتّبة على تلات طبقات بتجاوب عليه بالترتيب:
  *
- *  1) **مانع** — حاجة بتوقف التعاقد أصلًا (تفعيل غير مقبول، ملف ناقص).
- *  2) **سلوك** — إيه اللي حصل في مشاريعها معانا (تعثّر، وقوف فوق الحدّ).
- *  3) **سجل وقدرة** — نسبة الإكمال، الاعتذارات، الحمل الحالي، وإيه
+ *  1) **مانع** · حاجة بتوقف التعاقد أصلًا (تفعيل غير مقبول، ملف ناقص).
+ *  2) **سلوك** · إيه اللي حصل في مشاريعها معانا (تعثّر، وقوف فوق الحدّ).
+ *  3) **سجل وقدرة** · نسبة الإكمال، الاعتذارات، الحمل الحالي، وإيه
  *     الملتزم لها ولسه ما وصلش.
  *
  * الأرقام كلها محسوبة من نفس الحقول اللي `EntityTotals` وبطاقة «أداء
- * الجهة» بيعرضوها، فمستحيل يتعارضوا معاها — القراءة بتفسّر الرقم اللي
+ * الجهة» بيعرضوها، فمستحيل يتعارضوا معاها · القراءة بتفسّر الرقم اللي
  * قدام المستخدم، ما بتجيبش رقمًا تانيًا من مكان تاني.
  */
 export function readEntity(
@@ -379,7 +379,7 @@ export function readEntity(
       label: 'التفعيل',
       metric: { value: entity.activation, unit: 'حالة التفعيل' },
       text: stopped
-        ? 'التعاقد موقوف لحد ما التفعيل يتقبل — أي اعتماد دلوقتي هيقف عند توقيع الاتفاقية.'
+        ? 'التعاقد موقوف لحد ما التفعيل يتقبل، أي اعتماد دلوقتي هيقف عند توقيع الاتفاقية.'
         : 'بياناتها اتحدّثت ولسه ما اتراجعتش، فالمقارنة بجهات تانية مبنية على ملف قديم.',
       bold: [entity.activation],
       danger: stopped ? [entity.activation] : undefined,
@@ -389,7 +389,7 @@ export function readEntity(
 
   /* الترخيص المنتهي مانع أقوى من الملف الناقص: الملف بيتستكمل،
      والترخيص لازم يتجدّد من جهة تانية خالص. وهو بيعدّي بالنظرة لأن
-     المستند **مرفوع** — العدّاد بيقول ٨/٨ والصلاحية خلصت. */
+     المستند **مرفوع** · العدّاد بيقول ٨/٨ والصلاحية خلصت. */
   if (detail?.licenseExpired) {
     out.push({
       id: 'license',
@@ -397,11 +397,11 @@ export function readEntity(
       label: 'الترخيص منتهٍ',
       metric: { value: detail.licenseEndsAt, unit: 'انتهى الترخيص في' },
       text:
-        'الاتفاقية ما تتوقّعش بترخيص منتهٍ، والملف بيعدّي في العدّاد لأن المستند مرفوع فعلًا — ' +
+        'الاتفاقية ما تتوقّعش بترخيص منتهٍ، والملف بيعدّي في العدّاد لأن المستند مرفوع فعلًا، ' +
         'التجديد من الجهة المرخِّصة لا منّا.',
       danger: [detail.licenseEndsAt],
       src: 'ملف الجهة · تاريخ نهاية الترخيص',
-      actions: [{ label: 'تذكير الجهة', kind: 'btn-1' }],
+      actions: [{ label: 'تذكير الجهة', kind: 'btn-2' }],
     })
   }
 
@@ -427,7 +427,7 @@ export function readEntity(
       kind: 'flag',
       label: 'لا حساب مفعّل',
       text:
-        'مفيش حساب بنكي مفعّل للجهة، فالصرف موقوف حتى لو المشروع اتعتمد — ' +
+        'مفيش حساب بنكي مفعّل للجهة، فالصرف موقوف حتى لو المشروع اتعتمد، ' +
         `آخر سبب مسجَّل: «${detail.banks[0].reason ?? 'بانتظار التفعيل'}».`,
       bold: ['الصرف موقوف'],
       src: 'الحسابات البنكية',
@@ -448,7 +448,7 @@ export function readEntity(
         valueLabel: 'المرفوع',
         limitLabel: 'المطلوب',
       },
-      actions: [{ label: 'تذكير الجهة', kind: 'btn-1' }, { label: 'تسجيل ملاحظة', kind: 'btn-2' }],
+      actions: [{ label: 'تذكير الجهة', kind: 'btn-2' }, { label: 'تسجيل ملاحظة', kind: 'btn-2' }],
     })
   }
 
@@ -494,7 +494,7 @@ export function readEntity(
 
   /* نسبة الإكمال هي أقرب رقم لسؤال «هل بتخلّص اللي بتبدأه؟».
      المقام هو المعتمد لا المكتمل + الجاري، عشان المتعثّر والمعتذر
-     يفضلوا داخل الحساب — إخراجهم بيطلّع نسبة أحلى من الحقيقة. */
+     يفضلوا داخل الحساب · إخراجهم بيطلّع نسبة أحلى من الحقيقة. */
   if (entity.projectsApproved > 0) {
     const rate = Math.round((entity.projectsCompleted / entity.projectsApproved) * 100)
     const done = units.project(entity.projectsCompleted, true)
@@ -531,7 +531,7 @@ export function readEntity(
       metric: { value: pctText(Math.round((entity.projectsDeclined / asked) * 100)), unit: 'من طلباتها اعتُذر عنها' },
       text:
         `اعتُذر عن ${n} من ${units.project(asked, true)} تقدّمت بيها. ` +
-        `سبب الاعتذار السابق بيستحق القراءة قبل الطلب الجديد — لو نفس السبب اتكرّر، القرار متكرر.`,
+        `سبب الاعتذار السابق بيستحق القراءة قبل الطلب الجديد، لو نفس السبب اتكرّر، القرار متكرر.`,
       bold: [n],
       src: 'أداء الجهة · السجل التراكمي',
     })
@@ -546,7 +546,7 @@ export function readEntity(
       kind: 'note',
       label: 'الحمل الحالي',
       metric: { value: String(entity.projectsRunning), unit: 'تحت التشغيل الآن' },
-      text: `عندها ${n} تحت التشغيل في نفس الوقت — الطلب الجديد بيضاف على الحمل ده لا على ملف فاضي.`,
+      text: `عندها ${n} تحت التشغيل في نفس الوقت، الطلب الجديد بيضاف على الحمل ده لا على ملف فاضي.`,
       bold: [n],
       src: 'أداء الجهة · السجل التراكمي',
     })
@@ -616,7 +616,7 @@ export function readEntity(
       kind: 'note',
       label: 'جهة حديثة',
       metric: { value: tenure === 0 ? 'أقل من سنة' : String(tenure), unit: 'منذ التسجيل' },
-      text: `مسجّلة من ${y} بس، فالسجل التراكمي فوق قصير بطبيعته — قلّته مش أداءً ضعيفًا.`,
+      text: `مسجّلة من ${y} بس، فالسجل التراكمي فوق قصير بطبيعته، قلّته مش أداءً ضعيفًا.`,
       bold: [y],
       src: `تاريخ التسجيل · ${entity.registeredAt}`,
     })
@@ -635,14 +635,14 @@ export function readEntity(
   return out
 }
 
-/* ═══════════════════ اليوم — قراءة عرضية للسيستم ═══════════════════ */
+/* ═══════════════════ اليوم · قراءة عرضية للسيستم ═══════════════════ */
 
 export interface HomeReadingInput {
   projects: ProjectRow[]
   entities: EntityRow[]
   /** الدور بيحدّد **أي** قراءات تتحسب أصلًا، مش ترتيبها بس */
   lens: 'own' | 'team' | 'portfolio'
-  /** اسم المستخدم — للعدسة الشخصية */
+  /** اسم المستخدم · للعدسة الشخصية */
   owner: string
   /** سقف الاعتماد، null = توصية فقط */
   ceiling: number | null
@@ -652,7 +652,7 @@ export interface HomeReadingInput {
 /**
  * القراءات اللي بتقطع الموديولات.
  *
- * صفحة المشاريع بتقرأ المشاريع، وصفحة الجهات بتقرأ الجهات — لكن
+ * صفحة المشاريع بتقرأ المشاريع، وصفحة الجهات بتقرأ الجهات · لكن
  * أخطر الملاحظات بتقع **بين** الاتنين: مشروع معتمد لجهة ملفها ناقص،
  * أو بند شغل نص مخصصه في شهرين. الشاشة دي هي المكان الوحيد اللي
  * بيشوف السيستم كله مرة واحدة، فقراءاتها عرضية بطبيعتها.
@@ -697,7 +697,7 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
 
   out.push(...blockedReading(projects, entities))
 
-  // أطول ما وقف في صندوقه هو — رقم شخصي، مش متوسط السيستم
+  // أطول ما وقف في صندوقه هو · رقم شخصي، مش متوسط السيستم
   const mineSorted = [...mine].sort((a, b) => stagePressure(b) - stagePressure(a))
   const worst = mineSorted[0]
   if (worst && worst.stageLimit > 0) {
@@ -723,7 +723,7 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
 function readForManager({ projects, entities, ceiling, budget }: HomeReadingInput): Reading[] {
   const out: Reading[] = []
 
-  // ما ينتظر اعتماده هو — اللي فوق سقف المشرف
+  // ما ينتظر اعتماده هو · اللي فوق سقف المشرف
   const waiting = projects.filter(
     (p) => p.statusGroup === 'في الدراسة' && (ceiling === null || p.amountRequested > ceiling),
   )
@@ -744,14 +744,14 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
     })
   }
 
-  // توزيع الحمل — الاختلال ده هو اللي بيصنع التأخير أصلًا
+  // توزيع الحمل · الاختلال ده هو اللي بيصنع التأخير أصلًا
   const load = new Map<string, ProjectRow[]>()
   for (const p of projects) {
     if (p.statusGroup !== 'في الدراسة') continue
-    const k = p.owner ?? '—'
+    const k = p.owner ?? 'بلا مالك'
     load.set(k, [...(load.get(k) ?? []), p])
   }
-  const owned = [...load.entries()].filter(([k]) => k !== '—')
+  const owned = [...load.entries()].filter(([k]) => k !== 'بلا مالك')
   if (owned.length > 1) {
     const heaviest = owned.reduce((a, b) => (a[1].length > b[1].length ? a : b))
     const lightest = owned.reduce((a, b) => (a[1].length < b[1].length ? a : b))
@@ -770,7 +770,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
     })
   }
 
-  // بلا مالك — قرار الإسناد قراره هو
+  // بلا مالك · قرار الإسناد قراره هو
   const orphan = projects.filter((p) => p.owner === null)
   if (orphan.length) {
     const money = orphan.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)
@@ -801,7 +801,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
 
   out.push(budgetReading(budget))
 
-  // الأثر: المكتمل مقابل المعتذر عنه — النسبة دي هي حصيلة السنة
+  // الأثر: المكتمل مقابل المعتذر عنه · النسبة دي هي حصيلة السنة
   const done = projects.filter((p) => p.statusGroup === 'مكتمل')
   const declined = projects.filter((p) => p.statusGroup === 'معتذر عنه')
   const beneficiaries = done.reduce((s, p) => s + p.beneficiaries, 0)
@@ -839,7 +839,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
     })
   }
 
-  // الشركاء: التركّز — كام جهة ماسكة أغلب الدعم
+  // الشركاء: التركّز · كام جهة ماسكة أغلب الدعم
   const byEntity = new Map<string, number>()
   for (const p of projects) {
     if (p.amountGranted > 0) {
@@ -873,7 +873,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
 
 /* ── قراءات مشتركة بين أكتر من دور ── */
 
-/** التقاطع بين المشاريع وملفات الجهات — ما يظهرش في أي شاشة لوحده */
+/** التقاطع بين المشاريع وملفات الجهات · ما يظهرش في أي شاشة لوحده */
 function blockedReading(projects: ProjectRow[], entities: EntityRow[]): Reading[] {
   const short = new Set(
     entities.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL).map((e) => e.id),
@@ -907,7 +907,7 @@ function budgetReading(budget: HomeReadingInput['budget']): Reading {
     label: 'الميزانية',
     metric: { value: `${pct}%`, unit: 'من مخصص 2026' },
     text:
-      `محجوز أو ملتزم به — ${nf.format(budget.committed)} ريال التزامًا ` +
+      `محجوز أو ملتزم به، ${nf.format(budget.committed)} ريال التزامًا ` +
       `و${nf.format(budget.reserved)} حجزًا مقابل مخصص ${nf.format(budget.allocated)}.`,
     bold: [`${nf.format(budget.committed)} ريال`, `${nf.format(budget.reserved)}`],
     bar: {
@@ -922,7 +922,7 @@ function budgetReading(budget: HomeReadingInput['budget']): Reading {
   }
 }
 
-/** أي قسم إجرائي فيه أطول طابور — مكان أول تحسين في الزمن */
+/** أي قسم إجرائي فيه أطول طابور · مكان أول تحسين في الزمن */
 function bottleneckReading(projects: ProjectRow[]): Reading | null {
   const live = projects.filter((p) => p.stageLimit > 0)
   const byStage = new Map<string, ProjectRow[]>()
@@ -953,7 +953,7 @@ function bottleneckReading(projects: ProjectRow[]): Reading | null {
 }
 
 /**
- * قراءات الملف — نفس شكل `Reading` عشان تترسم بنفس الراسم.
+ * قراءات الملف · نفس شكل `Reading` عشان تترسم بنفس الراسم.
  *
  * `Insight` شكل قديم من قبل ما القراءة تتوحّد. الدالة دي بتحوّله بدل
  * ما يفضل في السيستم راسمان لنفس المعنى، ولحد ما مصدر التحليلات
@@ -966,7 +966,7 @@ export function readInsights(items: Insight[], actions?: ReadingAction[]): Readi
     text: it.text,
     bold: it.bold,
     /* المصدر بييجي من الداتا وفيه «المصدر:» مكتوبة، والراسم بيضيفها
-       — فبتتشال هنا بدل ما تتكرر. */
+       · فبتتشال هنا بدل ما تتكرر. */
     src: it.src.replace(/^المصدر:\s*/, ''),
     actions: i === 0 ? actions : undefined,
   }))
@@ -983,14 +983,14 @@ export function readInsights(items: Insight[], actions?: ReadingAction[]): Readi
  * وإن ده بيغيّر أولوية الشهر الجاي.
  *
  * وكلها محسوبة من نفس الداتا اللي الكروت بتعرضها، فمستحيل تتعارض
- * معاها — نفس قاعدة صفحتَي المشروع والجهة.
+ * معاها · نفس قاعدة صفحتَي المشروع والجهة.
  */
 export function readReports(yearId: string): Reading[] {
   const out: Reading[] = []
   const rows = projectRows.filter((p) => p.year === yearId)
   const bud = budgetForYear(yearId)
 
-  /* ١ · المربوط مقابل المصروف — ده أهم رقم في الصفحة */
+  /* ١ · المربوط مقابل المصروف · ده أهم رقم في الصفحة */
   if (bud.allocated > 0) {
     const locked = bud.reserved + bud.committed
     const lockedPct = Math.round((locked / bud.allocated) * 100)
@@ -1002,7 +1002,7 @@ export function readReports(yearId: string): Reading[] {
       metric: { value: pctText(lockedPct), unit: 'مربوطة ولم تخرج' },
       text:
         `${pctText(lockedPct)} من المخصص محجوزة أو ملتزم بها، مقابل ${pctText(spentPct)} وصلت للجهات فعلًا. ` +
-        `المربوط مش متاح لمشروع جديد ومش واصل للمستفيد — فهو أثقل بند في الميزانية.`,
+        `المربوط مش متاح لمشروع جديد ومش واصل للمستفيد، فهو أثقل بند في الميزانية.`,
       bold: [pctText(lockedPct)],
       danger: locked > bud.spent * 2 ? [pctText(lockedPct)] : undefined,
       src: 'تقارير الميزانية · reports1_1',
@@ -1015,7 +1015,7 @@ export function readReports(yearId: string): Reading[] {
     })
   }
 
-  /* ٢ · فجوة الوعد — الرقم اللي النظام عنده وما بيعرضهوش */
+  /* ٢ · فجوة الوعد · الرقم اللي النظام عنده وما بيعرضهوش */
   if (closingRows.length) {
     const g = gapOf(closingRows)
     const missed = g.total - g.metTarget
@@ -1036,7 +1036,7 @@ export function readReports(yearId: string): Reading[] {
     })
   }
 
-  /* ٣ · المعرفة — حقل إلزامي بيتملّى بنقطة */
+  /* ٣ · المعرفة · حقل إلزامي بيتملّى بنقطة */
   const empty = knowledgeRows.filter((k) => k.empty).length
   if (knowledgeRows.length) {
     const emptyPct = Math.round((empty / knowledgeRows.length) * 100)
@@ -1047,7 +1047,7 @@ export function readReports(yearId: string): Reading[] {
       metric: { value: pctText(emptyPct), unit: 'من قيود المعرفة فاضية' },
       text:
         `${empty} قيدًا من ${knowledgeRows.length} نصّهم نقطة واحدة. الحقل إلزامي، فبيتملّى عشان ` +
-        `يعدّي لا عشان يُقرأ — والعلاج مش حقل تاني، العلاج إن اللي بيكتبه يشوف نتيجته.`,
+        `يعدّي لا عشان يُقرأ، والعلاج مش حقل تاني، العلاج إن اللي بيكتبه يشوف نتيجته.`,
       bold: [String(empty)],
       danger: [pctText(emptyPct)],
       src: 'تقرير المعرفة · reports1_13',
@@ -1056,7 +1056,7 @@ export function readReports(yearId: string): Reading[] {
     })
   }
 
-  /* ٤ · تركّز المنح — سبب اعتذار مقنّن في النظام */
+  /* ٤ · تركّز المنح · سبب اعتذار مقنّن في النظام */
   const byGoal = topCount(rows.filter((p) => p.amountGranted > 0), (p) => p.goal)
   if (byGoal && byGoal[1] > 1) {
     out.push({
@@ -1066,7 +1066,7 @@ export function readReports(yearId: string): Reading[] {
       metric: { value: String(byGoal[1]), unit: 'مشاريع في هدف واحد' },
       text:
         `«${byGoal[0]}» أخد ${units.project(byGoal[1], true)} في الفترة دي. التركّز مش غلط بالضرورة، ` +
-        `بس «مشروع مكرر لنفس الجهة» أحد مبررات الاعتذار المقنّنة — فيستحق نظرة.`,
+        `بس «مشروع مكرر لنفس الجهة» أحد مبررات الاعتذار المقنّنة، فيستحق نظرة.`,
       bold: [byGoal[0]],
       src: 'مخصص الصرف · reports1_5',
       to: ROUTES.reportView('spend'),
@@ -1074,7 +1074,7 @@ export function readReports(yearId: string): Reading[] {
     })
   }
 
-  /* ٥ · المتأخر — نفس رقم لوحة العمل، بس هنا كسبب لا كعدّاد */
+  /* ٥ · المتأخر · نفس رقم لوحة العمل، بس هنا كسبب لا كعدّاد */
   const late = rows.filter((p) => stagePressure(p) > 1)
   if (late.length) {
     const worst = late.reduce((a, b) => (a.hoursInStage > b.hoursInStage ? a : b))

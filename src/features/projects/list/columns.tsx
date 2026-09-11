@@ -8,11 +8,11 @@ import type { ProjectRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
 /* ═══════════════════════════════════════════════════════════
-   تعريف أعمدة جدول المشاريع — مصدر واحد لأربع حاجات.
+   تعريف أعمدة جدول المشاريع · مصدر واحد لأربع حاجات.
 
    الجدول والإجماليات والتصدير والتجميع كلهم بيقرأوا من هنا. لو كل
    واحد فيهم عرّف أعمدته لوحده، أول عمود يتزوّد هيظهر في واحد ويغيب
-   عن التلاتة، والتصدير هيطلع مختلفًا عن اللي على الشاشة — وده أسوأ
+   عن التلاتة، والتصدير هيطلع مختلفًا عن اللي على الشاشة · وده أسوأ
    من غياب التصدير أصلًا.
 
    ولكل عمود `text` جنب `cell`: الخلية فيها روابط وشارات، والملف
@@ -62,11 +62,11 @@ export const COLS: Col[] = [
        المكوث مقابل الحدّ في دماغه لكل صف. */
     cell: (r) => (
       <>
-        {r.stageLimit > 0 ? days(r.hoursInStage) : '—'}
+        {r.stageLimit > 0 ? days(r.hoursInStage) : 'بلا حدّ'}
         {stagePressure(r) > 1 && <span className="dotmark" title="فوق الحدّ" />}
       </>
     ),
-    text: (r) => (r.stageLimit > 0 ? String(Math.round(r.hoursInStage / 24)) : '—'),
+    text: (r) => (r.stageLimit > 0 ? String(Math.round(r.hoursInStage / 24)) : 'بلا حدّ'),
     value: (r) => Math.round(r.hoursInStage / 24),
     agg: 'avg',
   },
@@ -88,7 +88,7 @@ export const COLS: Col[] = [
     label: 'المعتمد',
     def: true,
     n: true,
-    cell: (r) => (r.amountGranted > 0 ? nf.format(r.amountGranted) : <span className="sub">—</span>),
+    cell: (r) => (r.amountGranted > 0 ? nf.format(r.amountGranted) : <span className="sub"> </span>),
     text: (r) => (r.amountGranted > 0 ? String(r.amountGranted) : ''),
     value: (r) => r.amountGranted,
     agg: 'sum',
@@ -99,7 +99,7 @@ export const COLS: Col[] = [
     w: 114,
     label: 'المصروف',
     n: true,
-    cell: (r) => (r.amountSpent > 0 ? nf.format(r.amountSpent) : <span className="sub">—</span>),
+    cell: (r) => (r.amountSpent > 0 ? nf.format(r.amountSpent) : <span className="sub"> </span>),
     text: (r) => (r.amountSpent > 0 ? String(r.amountSpent) : ''),
     value: (r) => r.amountSpent,
     agg: 'sum',
@@ -117,7 +117,7 @@ export const COLS: Col[] = [
     value: (r) => r.beneficiaries,
     agg: 'sum',
   },
-  { key: 'owner', w: 88, label: 'المالك', def: true, cell: (r) => <span className="sub">{r.owner ?? '—'}</span>, text: (r) => r.owner ?? '' },
+  { key: 'owner', w: 88, label: 'المالك', def: true, cell: (r) => <span className="sub">{r.owner ?? 'بلا مالك'}</span>, text: (r) => r.owner ?? '' },
   {
     key: 'status',
     w: 96,
@@ -127,7 +127,7 @@ export const COLS: Col[] = [
     text: (r) => r.statusGroup,
   },
   { key: 'method', w: 110, label: 'أسلوب المنح', cell: (r) => <span className="sub">{r.grantMethod}</span>, text: (r) => r.grantMethod },
-  { key: 'support', w: 108, label: 'حالة الدعم', cell: (r) => r.supportStatus ?? <span className="sub">—</span>, text: (r) => r.supportStatus ?? '' },
+  { key: 'support', w: 108, label: 'حالة الدعم', cell: (r) => r.supportStatus ?? <span className="sub"> </span>, text: (r) => r.supportStatus ?? '' },
   { key: 'submitted', w: 108, label: 'تاريخ التقديم', cell: (r) => <span className="sub num">{r.submittedAt}</span>, text: (r) => r.submittedAt },
   { key: 'year', w: 112, label: 'السنة والمصدر', cell: (r) => <span className="sub num">{r.year}</span>, text: (r) => r.year },
 ]

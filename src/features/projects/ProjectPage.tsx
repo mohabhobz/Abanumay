@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { GateArc, Icon, icons, Money, Mono, Num, Tabs } from '@/components/ui'
+import { BackTo, GateArc, Money, Num, Tabs } from '@/components/ui'
 import { DecisionBar } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useFillHeight } from '@/hooks/useFillHeight'
-import { addDays, projectCode } from '@/lib/format'
+import { addDays } from '@/lib/format'
 import { fixtures } from '@/data/repository'
 import { useRole } from '@/hooks/useRole'
 import { projectById } from '@/data/mock/projects'
@@ -25,14 +25,14 @@ import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { projectLog } from '@/data/mock/log'
 import { journeys } from '@/data/journey'
 
-/** عدد الأيام اللي الإجراء الحالي مفتوح فيها — من سجل الإجراءات */
+/** عدد الأيام اللي الإجراء الحالي مفتوح فيها · من سجل الإجراءات */
 const OPEN_DAYS = 87
 
 /**
- * صفحة المشروع — الشاشة المحورية في النظام.
+ * صفحة المشروع · الشاشة المحورية في النظام.
  *
  * التبويب جزء من الـURL (`/projects/20940/entity`) عشان يتشارك ويترجع
- * له، والعمود الجانبي سياق ثابت مش تبويب — القراءة السريعة ومشاريع
+ * له، والعمود الجانبي سياق ثابت مش تبويب · القراءة السريعة ومشاريع
  * الجهة وآخر إجراء بتفضل ظاهرة مهما اتنقّلت بين التبويبات.
  */
 export default function ProjectPage() {
@@ -140,14 +140,14 @@ export default function ProjectPage() {
      المشروع» فوق التبويبات وكارت «تحليلات المشروع» في الجانبي،
      والاتنين بيقولوا «واقف عند دراسة المشروع من 87 يومًا، 132% فوق
      الحدّ» بصياغتين. مكان واحد للمساعد في الشاشة. */
-  /* تفاصيل المشروع — مشتقّة من الصف عشان كل مشروع في النموذج يبقى
+  /* تفاصيل المشروع · مشتقّة من الصف عشان كل مشروع في النموذج يبقى
      قابلًا للتجربة، مش المشروع الواحد اللي في الفيكستشر. */
   const detail = useMemo(
     () => projectDetail(row ?? fixtures.projects[0], entity.name),
     [row, entity.name],
   )
 
-  /* مشروع وصل للمرحلة — بيتعرض في الحالة الفارغة عشان الكلاينت
+  /* مشروع وصل للمرحلة · بيتعرض في الحالة الفارغة عشان الكلاينت
      يشوف الشاشة مليانة بضغطة بدل ما يدوّر على مشروع مناسب. */
   const examples = useMemo(
     () => ({
@@ -158,7 +158,7 @@ export default function ProjectPage() {
   )
 
   /* السجل مولَّد من نفس التفاصيل، فالمتابعات والدفعات والاتفاقية
-     اللي في التابات هي بعينها اللي في السجل — مفيش مصدران. */
+     اللي في التابات هي بعينها اللي في السجل · مفيش مصدران. */
   const log = useMemo(
     () => projectLog({ row: row ?? fixtures.projects[0], entityName: entity.name, detail }),
     [row, entity.name, detail],
@@ -180,15 +180,9 @@ export default function ProjectPage() {
       <div className="viewstack hasdock">
         <div className="screen col hasg2" ref={screen}>
           {/* المسار جوّه البودي، مش في هيدر منفصل */}
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <a onClick={() => navigate(ROUTES.projects)} className="lb">المشاريع</a>
-            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
-            <span className="lb">دورة 2026 · {project.track}</span>
-            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
-            <span className="now">مشروع <Mono>{projectCode(id ?? project.id, row?.year)}</Mono></span>
-          </nav>
+          <BackTo label="المشاريع" onClick={() => navigate(ROUTES.projects)} />
 
-          {/* ═══ الترويسة — بلا سطح، بتقعد على الخلفية مباشرة ═══ */}
+          {/* ═══ الترويسة · بلا سطح، بتقعد على الخلفية مباشرة ═══ */}
           <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">{project.name}</h1>
@@ -270,11 +264,11 @@ export default function ProjectPage() {
               )}
             </div>
 
-            {/* ═══ العمود الجانبي — كارت واحد لازق ═══
+            {/* ═══ العمود الجانبي · كارت واحد لازق ═══
                 كان تلات كروت: التحليلات ومشاريع الجهة وآخر إجراء.
                 مشاريع الجهة اتنقلت لتبويب «المشاريع السابقة» اللي هي
                 محتواه أصلًا، وآخر إجراء اتنقل تحت التعريف. فبقى كارت
-                واحد — وده اللي بيخلّي اللزق يشتغل من غير المشكلة اللي
+                واحد · وده اللي بيخلّي اللزق يشتغل من غير المشكلة اللي
                 رفضها العميل: عمود بكذا كارت لازق بياخد تمريرًا جوّه
                 تمرير، وكارت واحد بياخد ارتفاعه ويقف. */}
             <div className="col aiside" ref={aside}>

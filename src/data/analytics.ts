@@ -1,7 +1,7 @@
 /**
  * السلاسل والتجميعات اللي الداشبورد بيرسمها.
  *
- * محسوبة من نفس الصفوف اللي الشاشات بتعرضها — مفيش أرقام مكتوبة
+ * محسوبة من نفس الصفوف اللي الشاشات بتعرضها · مفيش أرقام مكتوبة
  * بالإيد هنا. لما الباك اند يجهز، الملف ده يا يفضل زي ما هو (بيجمّع
  * الصفوف اللي رجعت) يا يتحوّل لـ`GET /analytics/*` بنفس الشكل.
  */
@@ -39,7 +39,7 @@ const toBuckets = (m: Map<string, number>, limit?: number): Bucket[] =>
     .sort((a, b) => b.value - a.value)
     .slice(0, limit)
 
-/** الوسيط — أصدق من المتوسط لما فيه صفوف شاذّة، وهي موجودة هنا */
+/** الوسيط · أصدق من المتوسط لما فيه صفوف شاذّة، وهي موجودة هنا */
 export const median = (values: number[]): number => {
   if (!values.length) return 0
   const s = [...values].sort((a, b) => a - b)
@@ -65,18 +65,18 @@ export const byStage = (rows: ProjectRow[]): Bucket[] => {
     .map((s) => ({ key: s.stage, label: s.stage, value: counts.get(s.stage) ?? 0 }))
 }
 
-/** الملتزم به لكل مسار — التوزيع المالي مش عدد المشاريع */
+/** الملتزم به لكل مسار · التوزيع المالي مش عدد المشاريع */
 export const grantedByTrack = (rows: ProjectRow[]): Bucket[] =>
   toBuckets(sumBy(rows.filter((r) => r.amountGranted > 0), (r) => r.track, (r) => r.amountGranted))
 
-/** كل المناطق اللي فيها مشاريع — الخريطة محتاجة الكل مش الأعلى */
+/** كل المناطق اللي فيها مشاريع · الخريطة محتاجة الكل مش الأعلى */
 export const byRegion = (rows: ProjectRow[], limit?: number): Bucket[] =>
   toBuckets(tally(rows, (r) => r.region), limit)
 
 export const declineReasons = (rows: ProjectRow[], limit = 5): Bucket[] =>
   toBuckets(tally(rows, (r) => r.declineReason), limit)
 
-/* ═══ الزمن — أهم قراءة في الأوديت ═══ */
+/* ═══ الزمن · أهم قراءة في الأوديت ═══ */
 
 /**
  * توزيع مدة المكوث في القسم الحالي.
@@ -109,7 +109,7 @@ export interface OwnerLoad {
   overdue: number
 }
 
-/** حمل المشرفين — الاختلال بيظهر في مدد الانتظار قبل أي تقرير */
+/** حمل المشرفين · الاختلال بيظهر في مدد الانتظار قبل أي تقرير */
 export const ownerLoad = (rows: ProjectRow[]): OwnerLoad[] => {
   const live = rows.filter((r) => r.statusGroup === 'في الدراسة')
   const names = [...new Set(live.map((r) => r.owner ?? 'بلا مالك'))]
@@ -145,7 +145,7 @@ export const entityHealth = (entities: EntityRow[]): EntityHealth => ({
   stalled: entities.filter((e) => e.projectsStalled > 0).length,
 })
 
-/** أعلى الجهات دعمًا — التركّز مؤشر أثر ومخاطرة في نفس الوقت */
+/** أعلى الجهات دعمًا · التركّز مؤشر أثر ومخاطرة في نفس الوقت */
 export const topEntities = (rows: ProjectRow[], limit = 5): Bucket[] =>
   toBuckets(
     sumBy(rows.filter((r) => r.amountGranted > 0), (r) => r.entityName, (r) => r.amountGranted),

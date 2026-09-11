@@ -10,7 +10,7 @@ import type { Kpi } from '@/data/kpi'
  * اتجاهها ثابت، فالوحدة لازم تفضل جوّه العنصر المعزول.
  */
 export function KpiValue({ kpi }: { kpi: Kpi }) {
-  if (kpi.value === null) return <em className="ind-none">—</em>
+  if (kpi.value === null) return <em className="ind-none"> </em>
 
   return (
     <b className="ind-v num">

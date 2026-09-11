@@ -5,7 +5,7 @@ import { assistFor } from '@/data/mock/assistant'
 
 export interface ModulePlaceholderProps {
   title: string
-  /** اللي هيظهر في الشاشة دي لما تتبني — بيمنع إحساس إن الشاشة ناقصة */
+  /** اللي هيظهر في الشاشة دي لما تتبني · بيمنع إحساس إن الشاشة ناقصة */
   scope: string
   /** الأرقام الحقيقية من النظام العامل، عشان الحجم يبان من دلوقتي */
   facts?: { k: string; v: string }[]
@@ -26,10 +26,6 @@ export function ModulePlaceholder({ title, scope, facts, demoTo }: ModulePlaceho
     <AppLayout assistantContext={assistFor.page(title)}>
       <div className="viewstack">
         <div className="screen col">
-          <nav className="crumb" aria-label="مسار التنقّل">
-            <span className="now">{title}</span>
-          </nav>
-
           <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">{title}</h1>
@@ -53,7 +49,7 @@ export function ModulePlaceholder({ title, scope, facts, demoTo }: ModulePlaceho
           <Glass>
             <Head title="الشاشة قيد البناء" />
             <Empty
-              title={`${title} — لم تُبنَ بعد في هذا النموذج.`}
+              title={`${title}، لم تُبنَ بعد في هذا النموذج.`}
               note={scope}
               actions={
                 demoTo && (

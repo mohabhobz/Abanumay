@@ -7,7 +7,7 @@ import type { Reading } from './reading'
 
 export interface ReadingBlockProps {
   reading: Reading
-  /** بيتكتب دلوقتي — بيعرض النص مقصوصًا ومعاه المؤشر */
+  /** بيتكتب دلوقتي · بيعرض النص مقصوصًا ومعاه المؤشر */
   typing: boolean
   chars: number
   /** لسه ما وصلش دوره في الكتابة */
@@ -18,7 +18,7 @@ export interface ReadingBlockProps {
  * قراءة واحدة.
  *
  * الكومبوننت ده هو **الراسم الوحيد للقراءة في السيستم**: الشريط
- * المختصر فوق القوائم، وكارت السياق الكامل، وتحليلات المشروع — كلهم
+ * المختصر فوق القوائم، وكارت السياق الكامل، وتحليلات المشروع · كلهم
  * بيستدعوه. قبل كده كانت تحليلات المشروع بترسم بلوكاتها بإيدها،
  * فكانت نفس المعلومة (تجاوز مدة الإجراء) بتتكتب مرتين بشكلين
  * مختلفين في نفس الصفحة.
@@ -42,7 +42,7 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
           <>
             <b className="qr-lead num">{r.metric.value}</b>
             <span className="qr-unit">{r.metric.unit}</span>
-            {' — '}
+            {'، '}
           </>
         )}
         {body}
@@ -88,7 +88,7 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
           {(r.to || r.actions) && (
             <div className="qr-acts">
               {r.to && (
-                <Link className="btn btn-1 btn-sm" to={r.to}>
+                <Link className="btn btn-2 btn-sm" to={r.to}>
                   {r.toLabel ?? 'اعرضها'}
                   <Icon name={icons.chevron} size={14} />
                 </Link>
@@ -106,7 +106,7 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
   )
 }
 
-/** لمحة سطر واحد لأهمّ قراءة — بتتعرض والكارت مقفول */
+/** لمحة سطر واحد لأهمّ قراءة · بتتعرض والكارت مقفول */
 export function ReadingPeek({ reading: r }: { reading: Reading }) {
   return (
     <div className="qr-peek">
@@ -114,7 +114,7 @@ export function ReadingPeek({ reading: r }: { reading: Reading }) {
         <b className={r.kind === 'flag' ? 'bad' : undefined}>{r.metric.value}</b>
       )}
       <span className="trim1">
-        {r.metric ? `${r.metric.unit} — ` : ''}
+        {r.metric ? `${r.metric.unit}، ` : ''}
         {r.text}
       </span>
     </div>

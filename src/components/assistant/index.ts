@@ -1,4 +1,4 @@
-/** محرّك المساعد المشترك — الشاشة الكاملة واللوح الجانبي بيستعملوه سوا */
+/** محرّك المساعد المشترك · الشاشة الكاملة واللوح الجانبي بيستعملوه سوا */
 export { useAssistant, type AssistantController } from './useAssistant'
 export { AiMessage } from './AiMessage'
 export { EvidenceBlock } from './EvidenceBlock'

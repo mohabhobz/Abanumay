@@ -9,13 +9,13 @@
 }
 .rs{font-family:'SaudiRiyal';font-weight:400;line-height:1;
   display:inline-block;font-size:1.12em;transform:translateY(.06em)}
-/* ═══ خط الهوية — براندو ارابيك ═══
+/* ═══ خط الهوية · براندو ارابيك ═══
    مكان جاهز للملفات. حطّ الـwoff2 في `src/fonts/` وشيل التعليق،
    وكل السيستم بيقلب عليه: مفيش اسم خط مكتوب في أي مكان تاني، كله
    بيمرّ من `--fd`/`--ft`/`--fm`.
 
    محتاجين من العميل: ترخيص ويب (Web/@font-face) لبراندو ارابيك
-   بأوزان 400 و500 و600 و700 — نفس الأوزان اللي الواجهة مبنية عليها.
+   بأوزان 400 و500 و600 و700 · نفس الأوزان اللي الواجهة مبنية عليها.
 
 @font-face{
   font-family:'Brando Arabic';
@@ -40,14 +40,14 @@
 */
 
 /* ═══════════════════════════════════════════════════════════
-   نظام أبانمي البصري — جلاس فاتح على خلفية متدرجة
+   نظام أبانمي البصري · جلاس فاتح على خلفية متدرجة
    كل التوكنز في :root، غيّر من هنا يتغيّر في كل الشاشات
    ═══════════════════════════════════════════════════════════ */
 :root{
   direction:rtl; color-scheme:light;
   --green:#144547; --lime:#94D603; --teal:#00A59B;
   --base:#F1F5F3; --baseC:241,245,243;
-  /* الأزرق مش لون هوية — هو لون حالة «معاد للاستكمال» وبس.
+  /* الأزرق مش لون هوية · هو لون حالة «معاد للاستكمال» وبس.
      كتوكن عشان ما يتنطّش في مكان مش حالته، وعشان يقلب مع المظهر. */
   --retC2:46,110,168;
   --no-soft:rgba(253,240,236,.94);   /* سطح التوست */
@@ -71,25 +71,25 @@
 
   /* `--r0` لزجاج التحكّم الصغير جدًّا (خانة التحديد ١٦px): `--r1`
      على صندوق ١٦ بيبقى دايرة، والدايرة معناها «اختيار واحد» لا
-     «تحديد متعدّد» — ده تمييز دلالي في كل السيستمز. */
+     «تحديد متعدّد» · ده تمييز دلالي في كل السيستمز. */
   --r0:4px; --r1:10px; --r2:15px; --r3:22px; --r4:28px; --rp:999px;
 
-  /* ═══ سلّم الارتفاعات — مبني من حشو صريح ═══
+  /* ═══ سلّم الارتفاعات · مبني من حشو صريح ═══
      الارتفاع **مش رقم بيتكتب**، هو ناتج:  حشو + سطر + حشو.
      كده «فوق وتحت» حشو حقيقي زي «يمين وشمال»، والعنصر بيحضن
      محتواه بدل ما يتشدّ على `min-height` والحشو الرأسي صفر.
 
          --h-md  44 = 12 + 20 + 12   **كل تحكّم تفاعلي، بلا استثناء**
-         --h-xs  20 =  2 + 16 +  2   الوسم — تسمية غير تفاعلية
+         --h-xs  20 =  2 + 16 +  2   الوسم · تسمية غير تفاعلية
 
      **قاعدة ملزِمة:** أي تحكّم في نفس الصفّ ارتفاعه `--h-md`:
-     الزرار والحقل والبحث والشريحة والتاب والمبدّل — كلهم واحد.
+     الزرار والحقل والبحث والشريحة والتاب والمبدّل · كلهم واحد.
      المقيس قبل كده في شريط أدوات **واحد**: ٣٣ · ٢٨ · ٢٨ · ٢٨ ·
-     ٣٠ · ٣٤ — ستّ قيم. والجرد كان بيقول انحراف صفر لأنه بيقارن
+     ٣٠ · ٣٤ · ستّ قيم. والجرد كان بيقول انحراف صفر لأنه بيقارن
      كل دور **بنفسه** ولا بيقارن الجيران في نفس الصفّ.
 
      **٤٤ لا ٣٤، و«صغير» بقى مقاس خطّ لا مقاس صندوق.**
-     ٤٤ هو الحدّ الأدنى للهدف اللمسي في WCAG 2.5.5 و Apple HIG —
+     ٤٤ هو الحدّ الأدنى للهدف اللمسي في WCAG 2.5.5 و Apple HIG ·
      فالتحكّم بيوصله بجسمه، مش بحيلة «مقاس + مسافة». وكان عندنا
      سلّمان للزرار (٣٤ و٢٨)، والسلّم التاني كان بيكسر القاعدة
      الملزِمة فوق كل مرة الزرار الصغير يقع جنب حقل. دلوقتي
@@ -104,12 +104,12 @@
      والحروف بتتقري ملزوقة في التحت، فالحشو ٢ فوق و٢ تحت بيبقى
      مكتوبًا متساويًا ومقروءًا غير متساوٍ. */
   --pb-xs:2px;  --lh-xs:16px;   /* الوسم */
-  --pi-md:12px;                 /* الحشو الأفقي — نفس الرأسي */
+  --pi-md:12px;                 /* الحشو الأفقي · نفس الرأسي */
 
-  /* ═══ سلّم الحافة — خمس درجات، كل واحدة ليها دور ═══
+  /* ═══ سلّم الحافة · خمس درجات، كل واحدة ليها دور ═══
      كانت الحافة الشعرية الواحدة مكتوبة بـ**أربعتاشر قوّة**:
      ×.7 ×.8 ×.9 ×1 ×1.5 ×1.6 ×1.7 ×1.8 ×2 ×2.2 ×2.4 ×2.6 ×2.8 ×4.
-     يعني كارتان جنب بعض ليهم حافتان مختلفتان فعلًا — واحدة بتبان
+     يعني كارتان جنب بعض ليهم حافتان مختلفتان فعلًا · واحدة بتبان
      على الخلفية المتدرّجة والتانية بتختفي. ودي كانت ملاحظة العميل:
      «اليمين واضح وتحت مش ظاهر».
 
@@ -120,7 +120,7 @@
   --edge-i: rgba(var(--edgeC), calc(var(--edge-hair)*2));    /* هوفر */
   --edge-f: rgba(var(--edgeC), calc(var(--edge-hair)*2.8));  /* تركيز */
 
-  /* ═══ الحقل — خلفية وحافة واحدة ═══
+  /* ═══ الحقل · خلفية وحافة واحدة ═══
      البحث والحقل المنسدل كانوا بخلفيتين مختلفتين (تدرّج `--g-data`
      بضبابية ٢٢px مقابل لون مسطّح ٥٦٪) وبثلاث قيم للخلفية لو حسبنا
      تجاوز شريط الأدوات. دلوقتي توكن واحدة. */
@@ -129,10 +129,13 @@
   --fld-line-h: var(--edge-i);
   --fld-line-f: var(--edge-f);
 
-  /* شارة العدد جوّه تاب أو شريحة — دايرة ٢٤ لرقم من خانة واحدة،
+  /* شارة العدد جوّه تاب أو شريحة · دايرة ٢٤ لرقم من خانة واحدة،
      وبتمدّ كبسولة لرقمين. مش `--h-xs`: الوسم تسمية والشارة عدّاد،
      والاتنين كانوا بالصدفة على نفس الرقم. */
   --h-badge:24px;
+
+  /* بداية محتوى الصفحة · نقطة مشتركة بين الشريط والبودي */
+  --screen-pt:clamp(1.6rem,3vw,2.6rem);
 
   /* ═══ سلّم الخط ═══
      كان في الستايل ٨٥ مقاس مختلف. سبعة بس ليهم دور. */
@@ -145,7 +148,7 @@
   --fs-7:2.1rem;   /* 33.6  الرقم البطل */
 
   /* ═══ الخطوط ═══
-     خط الهوية واحد: **براندو ارابيك** — هو اللي في دليل الهوية
+     خط الهوية واحد: **براندو ارابيك** · هو اللي في دليل الهوية
      (اتعرضت ستة خيارات، والتطبيق كله بيه).
 
      ⚠️ ملف الخط لسه ما وصلش (ترخيص تجاري)، فاللي بيترسم فعلًا هو
@@ -156,12 +159,12 @@
 
      1. **اسم واحد قبل البديل.** الاسم اللي مش محمَّل في المشروع
         بيتقري من جهاز المستخدم لو صادف إنه متسطّب عنده. يعني نفس
-        الشاشة بتطلع بخط مختلف على كل جهاز — وده اللي خلّى «الشهر»
+        الشاشة بتطلع بخط مختلف على كل جهاز · وده اللي خلّى «الشهر»
         تطلع بخط غريب. «DIN Next LT Arabic» اتشال للسبب ده بالظبط:
         هو مش في دليل الهوية أصلًا، ومتسطّب على أجهزة كتير.
      2. **العرض والنص نفس العائلة.** الفرق بينهم وزن لا خط:
         `--fd` للعناوين والأرقام بوزن تقيل، `--ft` للنص الجاري.
-     3. **مفيش خط رابع.** الأكواد كانت بخط مونوسبيس من جوجل — خرجت
+     3. **مفيش خط رابع.** الأكواد كانت بخط مونوسبيس من جوجل · خرجت
         برّه الهوية وحمّلت ملفًّا زيادة بلا مقابل. بقت بخط الهوية
         نفسه مع أرقام جدولية، والكود بيتسطر زي ما كان لأن بادئته
         ثابتة وأرقامه متساوية العرض. */
@@ -172,24 +175,25 @@
   --fm:"Brando Arabic","Cairo",system-ui,sans-serif;
 
   /* البياض الشفاف = «رفع سطح». في الفاتح بيتكتب زي ما هو (×1)،
-     وفي الداكن نفس الطبقة بس أخفّ كتير — فبدل ما نعيد كتابة أربعة
+     وفي الداكن نفس الطبقة بس أخفّ كتير · فبدل ما نعيد كتابة أربعة
      وتسعين قيمة في الملف، بنغيّر المعامل مرة واحدة. */
   --wC:255,255,255; --wM:1;
-  --pop:#FBFDFC;              /* سطح القوائم المنبثقة — معتم لا زجاج */
+  --pop:#FBFDFC;              /* سطح القوائم المنبثقة · معتم لا زجاج */
   --bar-bg:linear-gradient(180deg,rgba(248,251,250,.94),rgba(248,251,250,.99));
   /* حبر على سطح فاتح-شفاف: في الداكن السطح بيبقى غامق فالحبر
-     الغامق بيختفي فيه — الوسم والأيقونة كانوا بيتلاشوا */
+     الغامق بيختفي فيه · الوسم والأيقونة كانوا بيتلاشوا */
   --ink-soft:var(--green);
-  /* الشعار: جذوع وورقتان — في الداكن كله أبيض */
+  /* الشعار: جذوع وورقتان · في الداكن كله أبيض */
   --logo-ink:var(--green); --logo-teal:#00A59B; --logo-lime:#94D603;
   --solid:var(--green); --on-solid:#fff;   /* زرار مصمت وحبره */
+  --solidC:20,69,71;                       /* نفس اللون أرقامًا · للثانوي */
   --link:#3E5A08;
   --warn-ink:#8A5C05; --no-ink:#95341F; --no-ink2:#8E2F1B; --no-ink3:#AE3319;
   --ret-ink:#20527D; --ret-ink3:#20527D; --on-ret:#FFFFFF; --no-ic:#B4482C; --lime-ink:#6E9F06;
   --ok-ink:#06693A; --ok-ink3:#06693A; --brand-ink:#3E5A08; --mute-ink:#4A6B68;
   /* الأرضية أغمق من الكروت: نفس الخافت اللي بيتقري على كارت
      بينزل تحت حدّ AA فوق الميش. فالنص اللي على الأرضية له خافت
-     أغمق — الحل في اللون لا في تفتيح الخلفية، عشان الميش يفضل
+     أغمق · الحل في اللون لا في تفتيح الخلفية، عشان الميش يفضل
      هو هو. */
   --t3-g:#2B4C4A; --t2-g:#1E3E3D;
   --retC:46,127,196; --limeC:148,214,3;
@@ -203,7 +207,7 @@
   --map-2:rgba(0,165,155,.38);
   --map-3:rgba(0,165,155,.62);
   --map-4:#0B857E;
-  /* نبرات بطاقات إجماليات الجهة — سُلَّم من الغامق للفاتح يمشي مع
+  /* نبرات بطاقات إجماليات الجهة · سُلَّم من الغامق للفاتح يمشي مع
      رحلة المال. في الداكن بينقلب لسُلَّم من الخافت للساطع، لأن
      الأخضر الغامق بيختفي على أرضية غامقة. */
   --tone-1:16,92,88; --tone-2:0,150,142; --tone-3:0,186,172; --tone-4:148,214,3;
@@ -234,9 +238,15 @@ body{margin:0;font-family:var(--ft);font-weight:400;font-size:16px;color:var(--t
 a{color:var(--link);text-decoration:none}
 a:hover{color:var(--teal)}
 h1,h2,h3,h4{margin:0;font-family:var(--fd);font-weight:700}
+/* **`p` كان ناقصًا من الريسِت.** العناوين اتصفّرت والفقرة لأ، فكل
+   `<p>` في السيستم شايل هامش المتصفح (1em فوق وتحت). وده اللي كان
+   بيخلّي الفراغ تحت الكارت أكبر من اللي فوقه: هامش آخر فقرة بيهرب
+   من الصندوق اللي جوّاه ويزوّد طول الكارت. المسافة في السيستم ده
+   بتتكتب صراحة، فالهامش الوراثي ده مسافة **مش حد كاتبها**. */
+p{margin:0}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 input,select,textarea{font:inherit;color:inherit;border:0;background:none;outline:none}
-/* الخلفية — ميش جراديانت واحد متصل، مفيش دواير منفصلة.
+/* الخلفية · ميش جراديانت واحد متصل، مفيش دواير منفصلة.
    أغمق فوق يمين (مكان الريل) وبيروق لحد ما يبقى شبه أبيض تحت شمال.
    التلات ألوان بس: 20,69,71 · 0,165,155 · 148,214,3 */
 .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--base);pointer-events:none}
@@ -251,11 +261,23 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
   mask-image:radial-gradient(closest-side at 62% 34%,#000,transparent 78%)}
 .grain{position:absolute;inset:0;opacity:var(--grain);mix-blend-mode:var(--mesh-blend);
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' sc-camel-base-frequency='.85' sc-camel-num-octaves='3'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='.5'/></svg>")}
-.glass{position:relative;isolation:isolate;background:var(--g-card);
+/* `flow-root` مش تفصيلة: من غيرها **هامش آخر حفيد بيهرب من
+   الكارت** ويتجمّع مع هامشه، فالفراغ اللي تحت بيبقى الحشو زائد
+   هامش مش شايفه (٣٩٫٢ تحت مقابل ٢٣٫٢ فوق في كارت «آخر إجراء»).
+   الكارت بيبقى سياق تنسيق مستقل، فاللي جوّاه يفضل جوّاه. */
+.glass{position:relative;isolation:isolate;display:flow-root;background:var(--g-card);
   -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   border-radius:var(--r3);padding:var(--pad);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
+/* **الفراغ فوق زي تحت في كل كارت.**
+   الحشو نفسه كان متساويًا (٢٣٫٢ فوق وتحت)، بس آخر ابن في الكارت
+   بيزوّد هامشه تحته فوق الحشو: الإحصاء بيدّي ٢٩٫٢ والكارت اللي
+   آخره سطر مصدر بيدّي ٣٤٫٤ واللي آخره سطر «آخر إجراء» ٣٩٫٢ ·
+   يعني تلات فراغات سفلية مختلفة على نفس الكارت. القاعدة: الفراغ
+   اللي تحت هو **حشو الكارت**، مش حشوه زائد هامش ابنه. */
+.glass>*:first-child{margin-block-start:0}
+.glass>*:last-child{margin-block-end:0}
 .glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
   background:linear-gradient(128deg,rgba(var(--wC),calc(.45 * var(--wM))) 0%,rgba(var(--wC),calc(.14 * var(--wM))) 45%,
     rgba(var(--wC),calc(0 * var(--wM))) 100%)}
@@ -284,12 +306,12 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    بيقفل الرقم وعلامته في جزيرة ترتيبها ثابت.
 
    الثمن: العنصر البلوك اللي عليه `.num` بتبقى بدايته الشمال، فالرقم
-   بيلزق بعيد عن تسميته. الحل مش شيل الاتجاه — ده بيكسر «8%» — لكن
+   بيلزق بعيد عن تسميته. الحل مش شيل الاتجاه · ده بيكسر «8%» · لكن
    إرجاعه `rtl` على الحاويات اللي الرقم فيها بلوك وبلا علامة ملاصقة
    (`.kpi-v` · `.rpcov-g .v`)، أو اللي وحدتها كلمة عربية تنتمي لتدفّق
    الجملة (`.pamt .v` والريال). كل واحدة معلّمة عند تعريفها. */
 .num{direction:ltr;unicode-bidi:isolate}
-/* المبلغ: رقم على اليمين ورمز على الشمال — الترتيب ده بيجي من كون
+/* المبلغ: رقم على اليمين ورمز على الشمال · الترتيب ده بيجي من كون
    الحاوية **عربية** والعزل نازل على الأرقام وحدها. أي مبلغ حاويته
    `.num` بيرمي الرمز على اليمين، وده كان السبب في كل الحالات
    المكسورة قبل `Money`. */
@@ -309,15 +331,15 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .rowf{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 .lb{font-size:.74rem;color:var(--t2)}
 /* دور واحد ⇒ مقاس واحد. كان في الملف مقاس أساسي و**خمستاشر**
-   تجاوز يدوي بين .68 و.82rem — كل شاشة بتصغّره شوية عن اللي
+   تجاوز يدوي بين .68 و.82rem · كل شاشة بتصغّره شوية عن اللي
    قبلها. المقاس بقى `--fs-1` وبس. */
 /* دور واحد ⇒ مقاس واحد. كان في الملف مقاس أساسي و**خمستاشر**
    تجاوز يدوي بين .68 و.82rem، وفوقهم سبعتاشر كلاس تاني بيتحطّ مع
-   `.sub` وبيغلبه بالتخصيص — يعني الدور الواحد كان بأربعتاشر مقاس.
+   `.sub` وبيغلبه بالتخصيص · يعني الدور الواحد كان بأربعتاشر مقاس.
    الحلّ فصل المسؤوليتين:
 
    ‎.sub  نصّ مساعد كامل: اللون + المقاس + الارتفاع السطري
-   ‎.mut  **اللون بس** — للعنصر اللي مقاسه دور مختلف بيحدّده بنفسه
+   ‎.mut  **اللون بس** · للعنصر اللي مقاسه دور مختلف بيحدّده بنفسه
 
    العنصر اللي ليه مقاس خاص بياخد `.mut`، فما يبقاش مدّعي دورًا
    مش دوره. */
@@ -325,7 +347,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .mut{color:var(--t3)}
 /* مخفي بصريًّا، مقروء لقارئ الشاشة.
    `position:absolute` مقصودة: العنصر بيخرج من التدفّق خالص، فما
-   بياخدش خانة في الشبكة اللي حواليه. و`display:none` ما تنفعش —
+   بياخدش خانة في الشبكة اللي حواليه. و`display:none` ما تنفعش ·
    دي بتخفيه عن قارئ الشاشة كمان، واللي إحنا عايزينه العكس. */
 .vis-h{position:absolute;width:1px;height:1px;margin:-1px;padding:0;
   overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
@@ -368,9 +390,11 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .stat .v{font-family:var(--fd);font-weight:700;font-size:clamp(1.05rem,1.9vw,1.35rem);margin-top:.15rem;letter-spacing:-.01em}
 .stat .v small{font-size:.6em;font-weight:400;color:var(--t2);margin-inline-start:.25rem}
 .bar{height:6px;border-radius:var(--rp);background:rgba(var(--edgeC),.12);margin-top:.6rem;overflow:hidden}
+/* الخانة المحجوزة: بتاخد مكانها وما بترسمش */
+.bar[data-empty]{background:none}
 .bar i{display:block;height:100%;border-radius:var(--rp)}
 .stat.acc .v{color:var(--link)}
-/* نوت الستات على سطر واحد، والباقي بالهوفر — عشان الكروت تتساوى */
+/* نوت الستات على سطر واحد، والباقي بالهوفر · عشان الكروت تتساوى */
 .trim1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat .trim1{font-size:var(--fs-2)}
 .stat .trim1:hover{white-space:normal;overflow:visible}
@@ -393,7 +417,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    حدّ التباين واللي على كارت فاتح يعدّي. */
 /* الأرضية شبه صمّاء عن قصد: الوسم بيقع على أسطح مختلفة (كارت
    عادي · بطاقة الجهة المتدرّجة · صفّ جدول)، ولمّا كانت .66 كان
-   بيورّث لون السطح تحته وبيقع تحت AA على البطاقة الملوّنة —
+   بيورّث لون السطح تحته وبيقع تحت AA على البطاقة الملوّنة ·
    ٢٫٩٩:١ في «الحوكمة:». الحبّة بتبني أرضيتها فحبرها ثابت. */
 .tag{padding-block:var(--pb-xs);padding-inline:8px;line-height:var(--lh-xs);font-size:var(--fs-1);
   border-radius:var(--rp);white-space:nowrap;
@@ -410,43 +434,36 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
   border-radius:var(--rp);font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   transition:transform .16s ease,filter .16s ease;white-space:nowrap}
 .btn:hover{transform:translateY(-1px);filter:brightness(.97)}
-.btn-1{background:rgba(var(--wC),calc(.85 * var(--wM)));color:var(--t1);
-  -webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);
-  box-shadow:inset 0 0 0 1px var(--edge-i)}
-.btn-2{background:rgba(var(--wC),calc(.55 * var(--wM)));color:var(--t2);
-  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
-  box-shadow:inset 0 0 0 1px var(--edge-1)}
-/* ══ ترتيب الأفعال ══
-   دعوة أساسية **واحدة** في الشاشة، والباقي ثانوي بنفس الشكل،
-   واللون محجوز للمعنى لا للترتيب:
+/* ══ ترتيب الأفعال · **أساسي وثانوي وبس** ══
+   كان في ستّ معاملات: `btn-1` أبيض ٨٥٪ · `btn-2` أبيض ٥٥٪ ·
+   `btn-3` أزرق · `btn-p` مصمت · `btn-ghost` شفّاف · `btn-d` أحمر.
+   يعني أربع طرق للفعل التاني، **تلاتة منهم أبيض بدرجات**. والعين
+   ما بتقراش «أبيض ٨٥ أهمّ من أبيض ٥٥» · بتقرا تفاوتًا.
 
-     btn-p  الفعل الرئيسي — واحد بس
-     btn-2  كل فعل تاني — شكل واحد لكلهم
-     btn-d  الهدّام/الرافض — وده الوحيد اللي له لون خاص
+   والأبيض نفسه غلط كنداء: هو **لون السطح** في السيستم ده (الحقل
+   والكارت والشريط كلهم أبيض شفّاف)، فالزرار الأبيض بيتقري سطحًا
+   لا فعلًا. النداء لازم ياخد **لون العلامة**.
 
-   رصيف القرار كان أربع أفعال بأربع معاملات (أبيض · أزرق · عادي ·
-   أحمر)، فالعين ما كانتش تعرف أنهي واحد المقصود — دي ملاحظتك
-   رقم ٣. والأزرق `btn-3` اتشال من الأفعال خالص لأن الأزرق في
-   نظامنا **يوصف حالة** («معاد للاستكمال») ما بيعملش نداء، وده
-   مكتوب هنا من الأول والكود كان بيخالفه. */
+     btn-p   الفعل الرئيسي · واحد بس في الشاشة، مصمت
+     btn-2   كل فعل تاني · لون العلامة مخفّف، شكل واحد لكلهم
+     btn-d   الهدّام/الرافض · وده الوحيد اللي له لون خاص
+
+   والأزرق `btn-3` اتشال من الأفعال خالص لأن الأزرق في نظامنا
+   **يوصف حالة** («معاد للاستكمال») ما بيعملش نداء. */
 .btn-p{background:var(--solid);color:var(--on-solid);font-weight:600;
   box-shadow:inset 0 0 0 1px var(--edge-i)}
 .btn-p:hover{filter:brightness(1.06)}
-.btn-3{background:rgba(var(--retC2),.12);color:var(--ret-ink);
-  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
-  box-shadow:inset 0 0 0 1px rgba(var(--retC2),.32)}
+.btn-2{background:rgba(var(--solidC),.10);color:var(--solid);
+  box-shadow:inset 0 0 0 1px rgba(var(--solidC),.26)}
+.btn-2:hover{background:rgba(var(--solidC),.16)}
 .btn-d{background:rgba(192,67,42,.10);color:var(--no-ink);
-  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
   box-shadow:inset 0 0 0 1px rgba(192,67,42,.28)}
-.btn-ghost{background:transparent;color:var(--t2);
-  box-shadow:inset 0 0 0 1px var(--edge-2)}
-.btn-ghost:hover{background:rgba(var(--edgeC),.05);color:var(--t1)}
 .btn-off{background:rgba(var(--wC),calc(.40 * var(--wM)));color:var(--t3);cursor:not-allowed;
   box-shadow:inset 0 1px 0 rgba(var(--edgeC),.08)}
 .btn-off:hover{transform:none;filter:none}
 /* «صغير» = خطّ أصغر، **مش صندوق أصغر**. الصندوق ٤٤ زي أي تحكّم
    تفاعلي تاني، فالزرار ده لما يقع جنب حقل بحث في نفس الصفّ
-   بيبقى على خطّه — وده كان بيتكسر كل مرة وهو ٢٨. */
+   بيبقى على خطّه · وده كان بيتكسر كل مرة وهو ٢٨. */
 .btn-sm{font-size:var(--fs-2)}
 .fld{display:flex;align-items:center;gap:.55rem;padding:.62rem .85rem;border-radius:var(--r1);
   background:var(--g-data);-webkit-backdrop-filter:blur(var(--g-data-blur));backdrop-filter:blur(var(--g-data-blur));
@@ -458,14 +475,14 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .fld select{appearance:none;cursor:pointer}
 .fld input::placeholder{color:var(--t3)}
 /* `fixed` مش تفصيلة أداء: في التخطيط التلقائي العمود بيتمدّد لأطول
-   محتوى فيه، يعني «أضيق من المحتوى» مش موجودة أصلًا — لا قصّ ولا
+   محتوى فيه، يعني «أضيق من المحتوى» مش موجودة أصلًا · لا قصّ ولا
    سحب. التثبيت بيخلّي العرض قرارًا (من `col`) والمحتوى بيتأقلم. */
 /* `separate` مش `collapse`: الجدول المطبَّق ما بيقبلش نصف قطر على
    الخلية أصلًا، والجسم المرسوم لازم يدوّر أركانه جوّه الكارت.
-   `border-spacing:0` بيخلّي الشكل هو هو — الفواصل خطوط داخلية
+   `border-spacing:0` بيخلّي الشكل هو هو · الفواصل خطوط داخلية
    (`inset box-shadow`) مش حدود خلايا، فمفيش حدود مزدوجة. */
 .tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:.83rem;table-layout:fixed}
-/* الترويسة والخلية بنفس الحشو الأفقي — قبل كده كانوا ١١ و١٤،
+/* الترويسة والخلية بنفس الحشو الأفقي · قبل كده كانوا ١١ و١٤،
    يعني عنوان العمود مزحلق ٣px عن أرقامه. دي نص ملاحظة «أرقام
    الجداول مش متحاذية». */
 .tbl th{position:relative;font-family:var(--fd);font-weight:500;font-size:var(--fs-1);color:var(--t3);text-align:right;
@@ -474,12 +491,12 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tbl th.n,.tbl td.n{text-align:left}
 /* سطر واحد دايمًا: العمود اللي المستخدم ضيّقه بيقصّ محتواه بنقط ما
    بينزلش سطرًا. الصفوف بتفضل بنفس الارتفاع، والجدول بيتقري كشبكة
-   لا كفقرات — والتلميح على الخلية بيرجّع اللي اتقصّ. */
+   لا كفقرات · والتلميح على الخلية بيرجّع اللي اتقصّ. */
 .tbl td{height:48px;padding-block:0;padding-inline:12px;font-size:var(--fs-3);background:rgba(var(--wC),calc(.30 * var(--wM)));box-shadow:inset 0 1px 0 rgba(var(--edgeC),.05);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tbl td>*{max-width:100%}
 /* `vertical-align` كان **bottom**، فالرقم والوسم بيتعلّقوا في قاع
-   صندوق السطر لا بيتراكزوا مع نصّ الخلية اللي جنبهم — ودي كانت
+   صندوق السطر لا بيتراكزوا مع نصّ الخلية اللي جنبهم · ودي كانت
    ملاحظة «خلي الأرقام في السنتر مع التكست».
    و`display:inline-block` كان بيلغي `inline-flex` بتاعة `.tag`،
    فالوسم بيفقد `align-items:center` جوّه الجدول بس: نفس الوسم
@@ -487,7 +504,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tbl td .tlink,.tbl td .mono,.tbl td .sub{
   display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 .tbl td .tag{max-width:100%;overflow:hidden;vertical-align:middle}
-/* خانة التحديد: بادنج أضيق وبلا قصّ — عرض العمود ٤٤px، ولو أخد
+/* خانة التحديد: بادنج أضيق وبلا قصّ · عرض العمود ٤٤px، ولو أخد
    بادنج الخلية العادي (٢٩px) الصندوق نفسه بيتقصّ وبتظهر نقط جنبه. */
 .tbl .tchk{padding-inline:.62rem;text-overflow:clip}
 .tbl .nmc{min-width:0}
@@ -498,7 +515,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .tbl .nmc{display:flex;align-items:center;gap:.5rem}
 .tbl .nmc svg,.lg svg{flex:none}
 /* ── الركن المتداخل: الجسم المرسوم جوّه الكارت ──
-   الترويسة شفّافة، فالمرسوم فعليًا هو `td` — بلاطة لونها أفتح.
+   الترويسة شفّافة، فالمرسوم فعليًا هو `td` · بلاطة لونها أفتح.
    البلاطة دي كانت أركانها قائمة جوّه كارت نصف قطره ٢٢، فالشكل
    «كارت مدوّر وجوّه مستطيل مقصوص». دي بالظبط ملاحظة رقم ٧.
 
@@ -509,24 +526,24 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
        ‎--slab = max(--r1, --r3 − --pad)
 
    و`--pad` موجود أصلًا على `.glass`، فالقيمة بتتحسب لكل كارت
-   لوحدها:  حشو ٠ ⇒ ٢٢ · حشو ٧ ⇒ ١٥ · حشو ٢٣ ⇒ ١٠ — تلاتتهم على
+   لوحدها:  حشو ٠ ⇒ ٢٢ · حشو ٧ ⇒ ١٥ · حشو ٢٣ ⇒ ١٠ · تلاتتهم على
    السلّم بالظبط.
-   المرجع: Cloud Four — the math behind nesting rounded corners. */
+   المرجع: Cloud Four · the math behind nesting rounded corners. */
 .tbl{--slab:max(var(--r1),calc(var(--r3) - var(--pad)))}
 .tbl tbody:first-of-type tr:first-child>td:first-child{border-start-start-radius:var(--slab)}
 .tbl tbody:first-of-type tr:first-child>td:last-child{border-start-end-radius:var(--slab)}
 /* ══ ركن التحت شرطه: **مفيش حاجة بعد الجسم** ══
    لو تحت الجسم خطّ فاصل وتذييل (إجمالي · عدد الصفوف)، فالجسم مش
-   نهاية الجدول — والتدوير هنا بيقطع الخطّ ويبان كأنه غلط. التدوير
+   نهاية الجدول · والتدوير هنا بيقطع الخطّ ويبان كأنه غلط. التدوير
    بيتحطّ على **آخر حاجة مرسومة** بس.
 
    لازم يتكتب `:not(:has(tfoot))` لا «حطّه وبعدين شيله»: القاعدة
    المضادّة `.tbl:has(tfoot) … td` تخصيصها (0,3,4) وقاعدة الركن
-   `.tbl … td:last-child` تخصيصها (0,4,3) — فالركن كان بيغلب
+   `.tbl … td:last-child` تخصيصها (0,4,3) · فالركن كان بيغلب
    والإلغاء ما كانش بيشتغل أصلًا. */
 .tbl:not(:has(tfoot)) tbody:last-of-type tr:last-child>td:first-child{border-end-start-radius:var(--slab)}
 .tbl:not(:has(tfoot)) tbody:last-of-type tr:last-child>td:last-child{border-end-end-radius:var(--slab)}
-/* التذييل — لو موجود — هو آخر صفّ مرسوم، فهو اللي بياخد ركن التحت */
+/* التذييل · لو موجود · هو آخر صفّ مرسوم، فهو اللي بياخد ركن التحت */
 .tbl tfoot tr:last-child>td:first-child{border-end-start-radius:var(--slab)}
 .tbl tfoot tr:last-child>td:last-child{border-end-end-radius:var(--slab)}
 /* كارت الجدول: كلاس واحد بحشو واحد بدل تلات معاملات مختلفة كانت
@@ -536,7 +553,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 /* التاب بيحضن نصّه: عرضه `fit-content` وارتفاعه ناتج حشوه، فما
    بيتمدّش على عرض الحاوية ولا بيتشدّ مع إخوته. */
 .tabs{width:fit-content;max-width:100%}
-/* التاب حشوه الأفقي **١٠** لا ١٢ — بطلب العميل. هو التحكّم الوحيد
+/* التاب حشوه الأفقي **١٠** لا ١٢ · بطلب العميل. هو التحكّم الوحيد
    اللي حشوه مش زي الباقي، لأنه التنقّل جوّه الصفحة لا أداة عليها،
    وبيتكرّر ستّ مرات في صفّ واحد فالفرق بيتراكم. الارتفاع ٤٤ زي
    الباقي. */
@@ -550,7 +567,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
   -webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);
   box-shadow:inset 0 0 0 1px var(--edge-i)}
 /* نقطة الحدث: **معنى واحد، قطر واحد**.
-   الخطّ الزمني كان بينقّط ١١ والسجل ١٣ — نفس الشيء بالظبط (حصل
+   الخطّ الزمني كان بينقّط ١١ والسجل ١٣ · نفس الشيء بالظبط (حصل
    حاجة، وده وقتها ولونها) بمقاسين. والقارئ بيشوف الاتنين في نفس
    الصفحة. التوكن هنا فوق الاتنين، وموضع الخيط بيتحسب من القطر. */
 .tl,.lg{--ev-dot:12px; --ev-line:1.5px}
@@ -570,7 +587,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .ins .i .tx{font-size:.86rem;line-height:1.7}
 .ins .i .tx b{font-weight:600;color:var(--link)}
 .ins .i .src{font-size:.69rem;color:var(--t3);margin-top:.35rem}
-/* قراءة مرفوعة كتنبيه — حافة متدرجة بتخفّ لتحت، مش خط تقيل */
+/* قراءة مرفوعة كتنبيه · حافة متدرجة بتخفّ لتحت، مش خط تقيل */
 .ins .i.flag{position:relative;padding-inline-start:.9rem}
 .ins .i.flag::after{content:"";position:absolute;inset-block:.15rem 0;inset-inline-start:0;width:2px;
   border-radius:var(--rp);pointer-events:none;
@@ -650,7 +667,7 @@ to{opacity:1;transform:none}
 .shell{flex:1;min-height:0;display:flex}
 .viewstack{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
 /* z-index هنا عشان قائمة الحساب تطلع فوق كروت الصفحة وشريط القرار،
-   مش تحتهم — الريل قبل المحتوى في الـDOM فبيغطّي عليه من غيرها */
+   مش تحتهم · الريل قبل المحتوى في الـDOM فبيغطّي عليه من غيرها */
 /* عناصر التنقّل روابط عشان الـURL يشتغل، فلازم تلغي ستايل <a> */
 .rail .railitem{text-decoration:none;cursor:pointer}
 /* ═══ الشريط الجانبي ═══
@@ -658,7 +675,7 @@ to{opacity:1;transform:none}
    مطويّ = أيقونات والاسم كتلميح؛ ومن 132 بكسل التسمية بتبان جنب
    الأيقونة. */
 /* ══ إيقاع الشريط ══
-   اللي العين بتقراه مش فجوة الصناديق — **فجوة الأيقونات**. وكانت
+   اللي العين بتقراه مش فجوة الصناديق · **فجوة الأيقونات**. وكانت
    الاتنين مختلفين: الصناديق ٨ والأيقونات ٢٧، لأن كل أيقونة قاعدة
    في صندوق ٤٤ بحشو ١٠ حواليها (١٠ + ٨ + ١٠).
 
@@ -708,21 +725,22 @@ to{opacity:1;transform:none}
 /* ══ القفل: العلامة والاسم ══
    مطويّ = العلامة وحدها في مربّع ٤٤ زي بنود التنقّل، فالعمود
    بيبقى رصّة واحدة. مفرود = العلامة والاسم في صفّ واحد. */
+/* **القفل بيبدأ من عند ما البودي بيبدأ.** كان ملزوقًا في حشو
+   الشريط (١٦) والبودي بيبدأ من `--screen-pt` (٤١٫٦) — فالهوية في
+   الشريط أعلى من أول عنصر في الصفحة بـ٢٥ بكسل بلا سبب. التوكن
+   واحدة، فالخطّ ما بيفرقش لو الحشو اتغيّر. */
 .raillock{flex:none;display:flex;align-items:center;gap:10px;
+  margin-top:calc(var(--screen-pt) - 16px);
   margin-bottom:16px;min-height:38px}
 .rail:not(.open) .raillock{justify-content:center}
 .rail.open .raillock{width:100%;padding-inline:.7rem}
 .rail .mark-64{width:38px;height:38px;flex:none;margin:0}
-.raillock-t{display:none;min-width:0;flex-direction:column;gap:1px;line-height:1.25}
-.rail.open .raillock-t{display:flex}
-.raillock-t b{font-family:var(--fd);font-weight:700;font-size:var(--fs-4);color:var(--t1);
-  white-space:nowrap}
-/* الاسم الكامل **بيلفّ** لا بيتقصّ: القفل هوية، والهوية المقصوصة
-   بنقط أسوأ من سطرين. */
-.raillock-t small{font-size:var(--fs-1);color:var(--t3);
-  white-space:normal;line-height:1.35;text-wrap:balance}
+/* القفل الرسمي: عرضه عرض الشريط ناقص حشوه، وارتفاعه بيتبع نسبته
+   (2205 × 1177). `currentColor` جوّه الملف بتخلّيه ياخد لون الحبر،
+   فملف واحد بيشتغل في التلات ثيمات. */
+.raillock-full{width:100%;height:auto;color:var(--t1)}
 /* زرار الحساب مستثنى: هو دايرة لا عنصر تنقّل، وقواعد الريل كانت
-   بتلبّسه كارت مستطيل — فالدايرة كانت قاعدة جوّه مربّع.
+   بتلبّسه كارت مستطيل · فالدايرة كانت قاعدة جوّه مربّع.
    الاستثناء بـ`:where` لا `:not`: الأخير بيزوّد نوعية المحدّد
    فيغلب قواعد القائمة المنبثقة اللي جوّه الريل ويقلب أزرارها
    أعمدة. `:where` بينفي من غير ما يضيف وزن. */
@@ -732,7 +750,7 @@ to{opacity:1;transform:none}
 .rail button:where(:not(.acctbtn)),.rail .railitem{width:100%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:.6rem;position:relative;
   padding:.7rem .3rem;border-radius:var(--r2);color:var(--t3);font-size:.82rem;font-family:var(--fd);
   transition:color .16s ease,background .16s ease;text-align:start;line-height:1.35}
-/* الشريط مطويّ ⇒ الصندوق **مربّع** ٣٨×٣٨ (كان ٦٤×٤٧ مستطيلًا —
+/* الشريط مطويّ ⇒ الصندوق **مربّع** ٣٨×٣٨ (كان ٦٤×٤٧ مستطيلًا ·
    ملاحظتك رقم ١). مفرود ⇒ الصفّ بعرضه الكامل لأنه بقى أيقونة واسم
    لا أيقونة لوحدها. */
 .rail:not(.open) button:where(:not(.acctbtn)),.rail:not(.open) .railitem{
@@ -740,7 +758,7 @@ to{opacity:1;transform:none}
 .rail.open button:where(:not(.acctbtn)),.rail.open .railitem{justify-content:flex-start;padding-inline:.7rem}
 .rail-l{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rail:not(.open) .rail-l{display:none}
-/* التلميح: عنصر مستقل لا `title` — تلميح المتصفح بيتأخّر ثانية
+/* التلميح: عنصر مستقل لا `title` · تلميح المتصفح بيتأخّر ثانية
    كاملة، والشريط المطويّ محتاج الاسم فورًا.
    RTL: inline-start = يمين، فـ100% بتطلّعه على شمال العنصر جهة
    المحتوى. */
@@ -761,22 +779,24 @@ to{opacity:1;transform:none}
 .rail button:where(:not(.acctbtn)):hover,.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
 /* ══ المختار بلون الهوية ══
    الأبيض كان بيقول «دي طبقة زجاج تانية»، واللون الأساسي بيقول
-   «دي اللي انت واقف عليها». التلات مواضع — عنصر الريل والتاب
-   وشريحة الحالة — دورهم واحد: **يعلّموا الاختيار الحالي**،
+   «دي اللي انت واقف عليها». التلات مواضع · عنصر الريل والتاب
+   وشريحة الحالة · دورهم واحد: **يعلّموا الاختيار الحالي**،
    فلونهم واحد. */
 .rail button:where(:not(.acctbtn)).on,.rail .railitem.on{color:var(--on-solid);background:var(--solid);
   box-shadow:none}
 .rail button:where(:not(.acctbtn)).on:hover,.rail .railitem.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}
 /* ٢٢ داخل صندوق ٣٨ ⇒ حشو ٨ حوالين الأيقونة، وهو نفس رقم الفجوة
-   جهة المحتوى — فالإيقاع واحد. كانت ٢٥ (خارج أي سلّم). */
+   جهة المحتوى · فالإيقاع واحد. كانت ٢٥ (خارج أي سلّم). */
 .rail button:where(:not(.acctbtn)) svg,.rail .railitem svg{width:22px;height:22px;flex:none}
-/* المجموعات بتتفصل بمسافة بس — الخط الشعري كان بيتقوّس مع حواف
+/* المجموعات بتتفصل بمسافة بس · الخط الشعري كان بيتقوّس مع حواف
    العنصر فيبان كإطار مفتوح، والمسافة كافية إن العين تقرا الكتل */
 /* الفاصل بين المجموعات = ٢٢ ناقص الـ٨ اللي جاية من `gap`، فالفجوة
    المرئية بينهم ٢٢ بالظبط. */
 /* الفاصل بين المجموعات = ١٦ ناقص الـ٦ اللي جاية من `gap` */
 .railfoot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:.6rem}
-.screen{--padt:clamp(1.6rem,3vw,2.6rem);
+/* حشو أعلى الصفحة توكن على `:root` لا قيمة محلية: قفل الشعار في
+   الشريط بيبدأ من نفس الرقم، فالاتنين على خطّ واحد في كل صفحة. */
+.screen{--padt:var(--screen-pt);
   flex:1;min-height:0;overflow:auto;padding:var(--padt) clamp(1.4rem,3vw,2.6rem) clamp(1.2rem,2.6vw,2.2rem);
   scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.22) transparent}
 .screen::-webkit-scrollbar{width:9px}
@@ -788,7 +808,7 @@ to{opacity:1;transform:none}
    اللزق (`position:sticky` + `max-height` + تمرير داخلي) **اتشال
    بعد ميتنج العميل**: العمود الملزوق بياخد شريط تمرير
    جوّه شريط تمرير، فالعجلة مرة بتحرّك الكارت ومرة بتحرّك الصفحة حسب
-   مكان المؤشر — والمستخدم ما بيعرفش ليه الصفحة وقفت. الصفحة دلوقتي
+   مكان المؤشر · والمستخدم ما بيعرفش ليه الصفحة وقفت. الصفحة دلوقتي
    بتتمرّر تمريرة واحدة، والكارت اللي كان بيفضل في العين بقى يتقفل
    ويتفتح فالطول اللي كان مشكلة بقى قرار المستخدم. */
 
@@ -898,7 +918,7 @@ input[type=range]{accent-color:var(--lime-ink);width:130px;background:transparen
 .empty{padding:1.1rem 0 .3rem;text-align:center}
 .empty .t{font-size:.86rem;color:var(--t2)}
 /* ═══ الفوكس ═══
-   القاعدة: الحقل نفسه ما بياخدش حلقة أبدًا — **الحاوية** هي اللي
+   القاعدة: الحقل نفسه ما بياخدش حلقة أبدًا · **الحاوية** هي اللي
    بتتكلم، وحافتها بتغمق مش بتتلوّن. الحلقة الملوّنة على العنصر
    الخام بتبان كإطار عايم جوّه الكارت وبتكسر الزجاج.
    العناصر اللي بتتنقّل بالكيبورد (أزرار وروابط وتابات) هي بس اللي
@@ -911,9 +931,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible{
   outline:none !important; box-shadow:none}
 /* السليكت الأصلي بيرسم حلقته الخاصة في سفاري إلا لو اتلغى مظهره */
 select{appearance:none;-webkit-appearance:none}
-/* الشيك بوكس بيفضل بمظهره الأصلي — إلغاؤه بيخليه مربعًا فاضيًا */
+/* الشيك بوكس بيفضل بمظهره الأصلي · إلغاؤه بيخليه مربعًا فاضيًا */
 /* ══ خانة التحديد ══
-   كانت `appearance:auto` — خانة **أصلية** بحدّ رمادي من المتصفح
+   كانت `appearance:auto` · خانة **أصلية** بحدّ رمادي من المتصفح
    جوّه سيستم كل تحكّماته مرسومة، ولونها `--ret-ink` الأزرق اللي
    في نظامنا يوصف **حالة** لا يعمل فعلًا. بقت مرسومة بحافة
    السيستم الشعرية ولون الفعل. (نفس ملاحظتك رقم ٥ بس على خانة
@@ -926,7 +946,7 @@ input[type="checkbox"]{appearance:none;-webkit-appearance:none;
   transition:background .14s ease,box-shadow .14s ease}
 input[type="checkbox"]:hover{box-shadow:inset 0 0 0 1px var(--edge-f)}
 input[type="checkbox"]:checked{background:var(--solid);box-shadow:none}
-/* العلامة نفسها: ضلعان بيتلفّوا ٤٥° — أنضف من صورة أو خط */
+/* العلامة نفسها: ضلعان بيتلفّوا ٤٥° · أنضف من صورة أو خط */
 input[type="checkbox"]:checked::after{content:"";position:absolute;
   inset-block-start:2px;inset-inline-start:5px;width:4px;height:8px;
   border:solid var(--on-solid);border-width:0 2px 2px 0;rotate:45deg}
@@ -977,7 +997,7 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
 .lrow.now .ldot{background:var(--lime);
   box-shadow:0 0 0 3px rgba(var(--wC),calc(.65 * var(--wM))),0 0 0 6px rgba(148,214,3,.18)}
 .lrow.now .lrole{color:var(--t1)}
-/* صاحب القرار — هنا بيقف المبلغ */
+/* صاحب القرار · هنا بيقف المبلغ */
 .lrow.decide .ldot{background:var(--ok);
   box-shadow:0 0 0 3px rgba(var(--wC),calc(.65 * var(--wM))),0 0 0 6px rgba(30,143,91,.14)}
 .lrow.decide .lrole{color:var(--t1)}
@@ -994,7 +1014,7 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
 .lprov{font-size:.68rem;color:var(--warn-ink);margin-top:.9rem;padding-inline-start:1.45rem;line-height:1.5}
 /* ── الشريط ──
    كان هنا تعريف تاني لـ`.rail` بيكتب `gap` و`padding` بإيده،
-   **وتعريف تالت لمقاس الأيقونة** (٢٥) — الاتنين بيغلبوا الأصل
+   **وتعريف تالت لمقاس الأيقونة** (٢٥) · الاتنين بيغلبوا الأصل
    بترتيب المصدر. فمقاس الأيقونة الواحد كان مكتوب في تلات مواضع
    بتلات قيم: ٢٢ و٢٥ و٢١. نفس عائلة `.btn-sm` المعرَّف مرتين
    و`.fsel-b` اللي كان بيكتب حشوه و`.rail` نفسه.
@@ -1048,7 +1068,7 @@ to{opacity:1;transform:none}
 }
 .garc svg{transform-box:view-box}
 .fanslot,.fan,.fanin{transform-box:view-box;transform-origin:380px 44px}
-/* الدخول على مجموعة برّه، والهوفر على اللي جوّه —
+/* الدخول على مجموعة برّه، والهوفر على اللي جوّه ·
    عشان الأنيميشن بـ fill:both ما يلغيش ترانسفورم الهوفر */
 .fanslot{animation:fanopen .62s cubic-bezier(.22,.9,.3,1) both;animation-delay:var(--d,0ms)}
 .fan{transition:transform .28s cubic-bezier(.22,.9,.3,1),opacity .2s ease;cursor:pointer;outline:none}
@@ -1068,8 +1088,15 @@ to{opacity:1;transform:none}
 .fan:hover,.fan.now:hover{transform:none}
 }
 /* ── شريط المسار داخل البودي، بدل الهيدر ── */
-.crumb{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;padding:0 .2rem;margin-bottom:.2rem}
-.crumb .now{font-size:.82rem;font-family:var(--fd);font-weight:500}
+/* زرار الرجوع · بديل مسار التنقّل.
+   بيلبس شكل الثانوي الصغير من غير أرضية: هو تنقّل لا نداء، فما
+   ياخدش وزن الفعل، بس لازم يقرا كزرار. */
+.backto{display:inline-flex;align-items:center;gap:.3rem;width:fit-content;
+  padding-block:6px;padding-inline:10px 6px;margin-bottom:.35rem;
+  border-radius:var(--rp);font-size:var(--fs-2);font-family:var(--fd);font-weight:500;
+  color:var(--t3);transition:color .16s ease,background .16s ease}
+.backto:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
+.backto svg{flex:none}
 .pgates{min-width:560px;flex:0 1 700px;padding-top:0;display:flex;justify-content:flex-end}
 @media (max-width:820px){.pgates{min-width:0}
 }
@@ -1080,7 +1107,7 @@ to{opacity:1;transform:none}
   opacity:0;pointer-events:none;transition:opacity .22s ease;
   -webkit-backdrop-filter:blur(1.5px);backdrop-filter:blur(1.5px)}
 .ascrim.on{opacity:1;pointer-events:auto}
-/* اللوح بيفتح من الجانب الشمال — بعيد عن الريل اللي على اليمين،
+/* اللوح بيفتح من الجانب الشمال · بعيد عن الريل اللي على اليمين،
    فالصفحة نفسها فاضلة مكشوفة جنبه والمستخدم ما بيفقدش مكانه. */
 .apanel{position:fixed;top:0;bottom:0;inset-inline-end:0;inset-inline-start:auto;z-index:41;
   width:min(520px,92vw);display:flex;flex-direction:column;
@@ -1088,7 +1115,7 @@ to{opacity:1;transform:none}
   transition:transform .26s cubic-bezier(.22,.9,.3,1),opacity .2s ease;
   box-shadow:0 0 60px rgba(20,69,71,.14)}
 .apanel.on{transform:none;opacity:1;pointer-events:auto}
-/* بلا خطوط فاصلة — الفصل بيحصل بتدرّج بيظهر مع التمرير بس */
+/* بلا خطوط فاصلة · الفصل بيحصل بتدرّج بيظهر مع التمرير بس */
 .ahead{display:flex;align-items:center;gap:.25rem;padding:1rem 1.15rem .9rem}
 .ahead>.badge{margin-inline-end:.45rem}
 .atitle{font-family:var(--fd);font-weight:600;font-size:.98rem;line-height:1.35;
@@ -1098,7 +1125,7 @@ to{opacity:1;transform:none}
 .aclose{width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;
   color:var(--t3);transition:color .16s ease,background .16s ease}
 .aclose:hover{color:var(--t1);background:rgba(var(--edgeC),.07)}
-/* بيقول لك إنه شايف نفس اللي أنت شايفه — ده اللي بيخلي الأسئلة قصيرة */
+/* بيقول لك إنه شايف نفس اللي أنت شايفه · ده اللي بيخلي الأسئلة قصيرة */
 .actx{padding:.85rem 1.15rem;box-shadow:inset 0 -1px 0 var(--edge-d)}
 .actxv{font-family:var(--fd);font-weight:500;font-size:.88rem;margin-top:.2rem;line-height:1.5}
 /* غلاف بيشيل تدرّجَي الحافة فوق وتحت.
@@ -1120,14 +1147,14 @@ to{opacity:1;transform:none}
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 .amsg.ai{padding:0 0 .1rem}
 .amsg.ai b{font-weight:600;color:var(--t1)}
-/* كل إجابة تحتها مصدرها — دي القاعدة اللي بتخلي مدير عام يثق فيها */
+/* كل إجابة تحتها مصدرها · دي القاعدة اللي بتخلي مدير عام يثق فيها */
 .asrc{font-size:.7rem;color:var(--t3);margin-top:.4rem;padding-inline-start:.7rem;
   box-shadow:inset -2px 0 0 rgba(0,165,155,.35)}
 .afoot{padding:.4rem 1.15rem 1.1rem;display:flex;flex-direction:column;gap:.6rem}
 /* ── مقدمة اللوح ──
    مفيش تشكيل خاص باللوح: الحالة الأولى هي `.welcome` نفسها بتاعة
    الشاشة الكاملة، و`.wmini` بيصغّر مقاساتها للعمود الضيّق بس. القواعد
-   الخاصة اللي كانت هنا (`.awelcome`/`.agreet`/`.acards`) اتشالت — كانت
+   الخاصة اللي كانت هنا (`.awelcome`/`.agreet`/`.acards`) اتشالت · كانت
    بتخلّي اللوح شكلًا تانيًا لا نفس المساعد في مكان أضيق. */
 .welcome.wmini{padding:0;margin-block:auto;max-width:none}
 .welcome.wmini .whead{gap:.7rem}
@@ -1145,17 +1172,17 @@ to{opacity:1;transform:none}
 .anote{font-size:.72rem;animation:airise .45s cubic-bezier(.22,.9,.3,1) .42s both}
 @media (max-width:760px){.apanel{inset-inline:0;width:100%}
 }
-/* ── زر المساعد في الريل — نفس عرض وبادنج باقي أزرار الريل ── */
+/* ── زر المساعد في الريل · نفس عرض وبادنج باقي أزرار الريل ── */
 .railfoot{width:100%}
-/* ── قائمة الحساب — بتفتح من الصورة لجهة المحتوى ── */
+/* ── قائمة الحساب · بتفتح من الصورة لجهة المحتوى ── */
 .acctwrap{position:relative;display:flex;justify-content:center}
 /* الدايرة هي الزرار: الكارت اللي كان حواليها كان بيخلّي الحساب
-   الشيء الوحيد في الريل اللي شكله مستطيل جوّه دايرة — والاختيار
+   الشيء الوحيد في الريل اللي شكله مستطيل جوّه دايرة · والاختيار
    بقى على الدايرة نفسها بحلقة خارجية بإزاحة، فمش محتاجة خلفية
    تسدّ الفراغ ولا لون يطابق الريل. */
 .acctbtn{padding:0;border-radius:50%;cursor:pointer;line-height:0;background:none;
   display:flex;align-items:center;gap:.6rem}
-/* مفرود: الحساب صفّ زي باقي المداخل — صورة واسم ودور */
+/* مفرود: الحساب صفّ زي باقي المداخل · صورة واسم ودور */
 .rail.open .acctwrap{justify-content:flex-start;width:100%}
 .rail.open .acctbtn{width:100%;border-radius:var(--r2);padding:.4rem .45rem;
   line-height:1.35;text-align:start}
@@ -1180,7 +1207,7 @@ to{opacity:1;transform:none}
 @keyframes acctin{from{opacity:0;transform:translateY(6px) scale(.985)}
 to{opacity:1;transform:none}
 }
-/* في الشريط العلوي بتفتح لتحت وبتتلزّق بحافة الشاشة — الفتح جنبًا
+/* في الشريط العلوي بتفتح لتحت وبتتلزّق بحافة الشاشة · الفتح جنبًا
    من زرار في الحافة كان بيطلّع القائمة برّه الشاشة */
 .acct.drop{bottom:auto;top:calc(100% + 10px);inset-inline-start:auto;inset-inline-end:0;
   max-width:calc(100vw - 1.6rem)}
@@ -1199,7 +1226,7 @@ to{opacity:1;transform:none}
 .acct-sec>button:hover{background:rgba(var(--edgeC),.07);color:var(--t1)}
 .acct-sec>button.danger{color:var(--no)}
 .acct-sec>button.danger:hover{background:rgba(var(--noC),.09)}
-/* مبدّل المظهر — ثلاث حالات في مسار واحد */
+/* مبدّل المظهر · ثلاث حالات في مسار واحد */
 .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;
   padding:3px;margin:0 .35rem .15rem;border-radius:var(--r1);
   background:rgba(var(--edgeC),.05)}
@@ -1210,7 +1237,7 @@ to{opacity:1;transform:none}
 .seg button:hover{color:var(--t2)}
 .seg button.on{color:var(--t1);background:rgba(var(--wC),calc(.95 * var(--wM)));
   box-shadow:0 1px 3px rgba(20,69,71,.10),inset 0 0 0 1px var(--edge-1)}
-/* شرارة المساعد — تدرّج الهوية بيمرّ عليها ولمعة خفيفة تلفت النظر.
+/* شرارة المساعد · تدرّج الهوية بيمرّ عليها ولمعة خفيفة تلفت النظر.
    الشكل نفسه ماسك، فالتدرّج والجلو بياخدوا حدود النجمة بالظبط. */
 @keyframes aisheen{0%{background-position:0% 50%}
 100%{background-position:200% 50%}
@@ -1222,7 +1249,7 @@ to{opacity:1;transform:none}
 .aispark{display:block;width:24px;height:24px;flex:none;
   background:linear-gradient(115deg,#144547 0%,#00A59B 24%,#94D603 48%,#00A59B 72%,#144547 100%);
   background-size:200% 100%;
-  /* نفس مسار `Sparkle` من لوسيد بالحرف — الشرارة دي مقنّعة عشان
+  /* نفس مسار `Sparkle` من لوسيد بالحرف · الشرارة دي مقنّعة عشان
      التدرّج يبان من خلالها، فهي الحالة الوحيدة اللي محتاجة المسار
      نصًّا بدل الكمبوننت. كانت نجمة مرسومة بإيدنا فشكلها كان مختلف
      عن `icons.spark` اللي جنبها في نفس الشاشة. */
@@ -1235,18 +1262,18 @@ to{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.aispark{animation:none}
 }
 /* ══════════════════════════════════════════════════════════
-   شريط القرار — عايم ومثبّت تحت الشاشة دايمًا
+   شريط القرار · عايم ومثبّت تحت الشاشة دايمًا
    فوقه تدرّج بلور بيذوّب المحتوى وهو مارّ تحته، فالشريط
    يفضل مقروء من غير ما يحجب، وبيتفاعل قبل ما توصله.
    ═════════════════════════════════════════════════════════ */
 /* ارتفاع رصيف القرار **توكن واحد**: الحشو المحجوز تحت الشاشة،
    وارتفاع التدرّج اللي بيذوّب المحتوى، والمساحة اللي الكارت اللازق
-   بيحجزها — كلهم نفس الرقم.
+   بيحجزها · كلهم نفس الرقم.
 
    قبل كده كانوا تلات أرقام: الحشو ١١٢–١٥٢px، والتدرّج **٢١٠px**،
    والكارت اللازق بيحجز ارتفاع الشريط بس (~٦٢px). فالنتيجة إن
-   المحتوى المستقرّ في آخر الكارت — ومنه **دعوة «حلّل المشروع»
-   الأساسية** — كان قاعد جوّه التدرّج وبيترسم باهتًا: ٣٫٩:١ بدل
+   المحتوى المستقرّ في آخر الكارت · ومنه **دعوة «حلّل المشروع»
+   الأساسية** · كان قاعد جوّه التدرّج وبيترسم باهتًا: ٣٫٩:١ بدل
    ١١:١، يعني تحت AA على زرار شغّال. التدرّج وظيفته يذوّب اللي
    **بيعدّي تحته وهو ماشي**، لا اللي واقف مستقرّ. */
 .viewstack{position:relative}
@@ -1276,7 +1303,7 @@ to{opacity:1;transform:none}
 .decbar{position:relative;isolation:isolate;pointer-events:auto;bottom:auto;
   /* أرضية معتمة تحت الزجاج.
      الزرار عايم فوق محتوى بيتمرّر تحته، والبلور وحده ما بيخفيش النص
-     في الثيمات الغامقة — الطبقة البيضا فيها خفيفة أصلًا. فكان بيبان
+     في الثيمات الغامقة · الطبقة البيضا فيها خفيفة أصلًا. فكان بيبان
      رقم من الرسم شبح جوّه الزرار (قِسناه: لون النص = لون الخلفية
      بالظبط). أرضية الصفحة نفسها تحته بتقفل ده، والزجاج والحافة
      والظل زي ما هما. */
@@ -1307,7 +1334,7 @@ to{opacity:1;transform:none}
 .lnk{font-size:inherit;color:var(--link);transition:color .16s ease}
 .lnk:hover{color:var(--teal)}
 .dot{width:3px;height:3px;border-radius:50%;background:rgba(var(--edgeC),.3);display:inline-block}
-/* ══ معاينة المرفق — المراجع يقرأ الملف من مكانه بلا تحميل ══ */
+/* ══ معاينة المرفق · المراجع يقرأ الملف من مكانه بلا تحميل ══ */
 @keyframes fprevin{
   from{opacity:0;transform:translate(-50%,calc(-50% + 10px)) scale(.985)}
 to{opacity:1;transform:translate(-50%,-50%) scale(1)}
@@ -1338,7 +1365,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 @media (prefers-reduced-motion:reduce){.fprev{animation:none}
 }
 /* ══════════════════════════════════════════════════════════
-   نسخة الموبايل — نفس الشاشة، بترتيب مختلف
+   نسخة الموبايل · نفس الشاشة، بترتيب مختلف
    الريل بينزل شريط سفلي، المروحة بتبقى سُلّم رأسي،
    وقراءة المساعد بتطلع فوق المحتوى لأنها أهم حاجة على شاشة صغيرة.
    ═════════════════════════════════════════════════════════ */
@@ -1397,7 +1424,6 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .decbar .btn{flex:none;padding:.5rem .85rem;font-size:.78rem}
 .decsent{font-size:.82rem}
 /* الترويسة */
-  .crumb{font-size:.78rem;gap:.35rem}
 /* column + wrap = بيلف لأعمدة، فلازم nowrap */
   .phead{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:1rem;padding:0}
 .pmain{flex:1 1 auto}
@@ -1473,7 +1499,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .pamt .v{font-size:2.35rem}
 }
 /* ══════════════════════════════════════════════════════════
-   مساعد أبانمي — الشاشة الكاملة
+   مساعد أبانمي · الشاشة الكاملة
    ثلاث مناطق: الريل · قائمة المحادثات · عمود المحادثة.
    ═════════════════════════════════════════════════════════ */
 
@@ -1538,7 +1564,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .chatcol{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;position:relative}
 .chat-top{padding:.85rem clamp(1rem,2.4vw,1.7rem);
   box-shadow:inset 0 -1px 0 var(--edge-d)}
-/* نفس عرض `.thread` و`.welcome` بالظبط — الترويسة والمحتوى عمود واحد */
+/* نفس عرض `.thread` و`.welcome` بالظبط · الترويسة والمحتوى عمود واحد */
 .chat-top-in{width:100%;max-width:760px;margin-inline:auto;
   display:flex;align-items:center;gap:.25rem;min-height:30px}
 /* قبل ما يتفتح شات الترويسة فاضية، فالخط الفاصل مالوش لازمة */
@@ -1562,7 +1588,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* الترحيب: البلوك كله في السنتر، والشرارة على اليمين بلا دايرة */
 .welcome{width:100%;max-width:760px;margin:0 auto;padding:clamp(1rem,5vh,3.2rem) 0 1rem;
   display:flex;flex-direction:column;align-items:center;text-align:start}
-/* الترحيب على أول السطر (يمين في RTL) مش في النص — الكتابة والكروت
+/* الترحيب على أول السطر (يمين في RTL) مش في النص · الكتابة والكروت
    تحته بعرض كامل، فتوسيطه كان بيكسر محاذاة العمود */
 .whead{align-self:flex-start;display:flex;align-items:center;gap:.95rem}
 .wtext{min-width:0}
@@ -1572,10 +1598,10 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   animation:airise .5s cubic-bezier(.22,.9,.3,1) both}
 .wsub{font-size:clamp(.95rem,1.8vw,1.1rem);color:var(--t2);margin:.25rem 0 0;font-family:var(--fd);
   animation:airise .5s cubic-bezier(.22,.9,.3,1) .08s both}
-/* الكروت تحت مربع الكتابة — الكتابة هي المدخل الأساسي والكروت اختصارات */
+/* الكروت تحت مربع الكتابة · الكتابة هي المدخل الأساسي والكروت اختصارات */
 .wcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;
   width:100%;margin-top:1.1rem}
-/* الكروت بتتأثر بقرب الماوس زي شريط القرار ومربع الكتابة —
+/* الكروت بتتأثر بقرب الماوس زي شريط القرار ومربع الكتابة ·
    الرفع على خاصية translate عشان ما يتخانقش مع أنيميشن الدخول
    اللي ماسك transform. */
 .wcard{display:flex;flex-direction:column;align-items:flex-start;gap:.15rem;
@@ -1660,7 +1686,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* في الترحيب بيقعد في مجرى الصفحة تحت الكروت */
 .composer{flex:none;padding:0;position:relative;z-index:5;width:100%}
 .welcome>.composer{margin-top:1.9rem}
-/* بعد أول سؤال بينزل تحت كطبقة عايمة — نفس منطق شريط القرار:
+/* بعد أول سؤال بينزل تحت كطبقة عايمة · نفس منطق شريط القرار:
    تدرّج بلور بيذوّب المحتوى وهو مارّ تحته، وتفاعل قبل ما توصله. */
 .composer.docked{position:absolute;inset-inline:0;bottom:0;
   padding:0 clamp(1rem,2.4vw,1.7rem) clamp(.7rem,1.6vw,1.1rem);pointer-events:none}
@@ -1673,7 +1699,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cbox.float{position:relative;isolation:isolate;
   /* أرضية معتمة تحت الزجاج.
      الزرار عايم فوق محتوى بيتمرّر تحته، والبلور وحده ما بيخفيش النص
-     في الثيمات الغامقة — الطبقة البيضا فيها خفيفة أصلًا. فكان بيبان
+     في الثيمات الغامقة · الطبقة البيضا فيها خفيفة أصلًا. فكان بيبان
      رقم من الرسم شبح جوّه الزرار (قِسناه: لون النص = لون الخلفية
      بالظبط). أرضية الصفحة نفسها تحته بتقفل ده، والزجاج والحافة
      والظل زي ما هما. */
@@ -1699,11 +1725,11 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cl-search input:focus,.cl-search input:focus-visible{outline:none;box-shadow:none}
 .cl-search:focus-within{box-shadow:inset 0 0 0 1px var(--edge-f)}
 .cbox-b{display:flex;align-items:center;gap:.5rem;padding-top:.15rem}
-/* الإرسال/الإيقاف دايمًا في آخر الصف — حتى لو التلميح متخفي في اللوح */
+/* الإرسال/الإيقاف دايمًا في آخر الصف · حتى لو التلميح متخفي في اللوح */
 .cbox-b .go{margin-inline-start:auto}
 .cbox .go{width:34px;height:34px}
 .cbox .go:disabled{opacity:.35;cursor:default}
-/* الإيقاف مش خطر — رمادي غامق، والأحمر يفضل للرفض والحذف */
+/* الإيقاف مش خطر · رمادي غامق، والأحمر يفضل للرفض والحذف */
 .go.stop{background:#2B3A3A}
 .go.stop .sq{width:10px;height:10px;border-radius:2px;background:#fff;display:block}
 .cdisc{text-align:center;margin-top:.5rem;font-size:var(--fs-1)}
@@ -1741,7 +1767,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
    شاشة الدخول
    الفيديو خلفية، وفوقه طبقتان: تلوين بهوية المؤسسة (لأن أخضر
    الشجر طبيعي مش تيل الهوية)، وتعتيم خفيف عشان نص الكارت الغامق
-   يفضل مقروء مهما اختلف الفريم — الفتحة في النص فاتحة جدًا.
+   يفضل مقروء مهما اختلف الفريم · الفتحة في النص فاتحة جدًا.
    ═══════════════════════════════════════════════════════════ */
 .login{position:fixed;inset:0;overflow:hidden;background:var(--base);
   display:flex;flex-direction:column}
@@ -1750,7 +1776,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .login-mid{position:relative;z-index:3;flex:1;min-height:0;overflow:auto;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:1.1rem;padding:clamp(1.2rem,4vh,2.4rem) 1.2rem}
-/* نفس زجاج كروت الداخل (var(--g-card)) — فوقه ظل خارجي أعمق بس،
+/* نفس زجاج كروت الداخل (var(--g-card)) · فوقه ظل خارجي أعمق بس،
    لأنه واقف على فيديو مش على خلفية هادية */
 .lcard{width:min(404px,100%);padding:clamp(1.5rem,3.4vw,2.1rem);
   border-radius:var(--r4);
@@ -1799,7 +1825,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .leye{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
   color:var(--t3);cursor:pointer;transition:color .16s ease,background .16s ease}
 .leye:hover{color:var(--t1);background:rgba(var(--edgeC),.07)}
-/* توست الخطأ — بيطفو فوق الفورم، ما بيزقّش أي عنصر، وبيختفي لوحده */
+/* توست الخطأ · بيطفو فوق الفورم، ما بيزقّش أي عنصر، وبيختفي لوحده */
 .ltoast{position:absolute;top:.65rem;inset-inline:.65rem;z-index:6;
   display:flex;align-items:center;gap:.5rem;
   padding:.6rem .8rem;border-radius:var(--r2);
@@ -1819,10 +1845,11 @@ to{opacity:1;transform:none}
 .llink{font-size:.76rem;color:var(--t2);cursor:pointer;background:none;
   transition:color .16s ease}
 .llink:hover{color:var(--t1);text-decoration:underline;text-underline-offset:3px}
-/* أزرار النظام نفسها — .btn-3 للإجراء الأساسي و.btn-2 للثانوي،
-   وفارياشن واحدة: عرض كامل وارتفاع أكبر لأنها شاشة دخول */
-.btn-full{width:100%;height:48px;padding-inline:1rem;font-size:.9rem;font-weight:600;margin-top:.5rem}
-/* المسار التاني — الجهة الجديدة مش نفس القرار، فالزرار ثانوي شكلًا */
+/* أزرار النظام نفسها. الفارياشن الوحيدة **العرض** لا الارتفاع:
+   كانت `height:48px` وهي بتكسر قاعدة الـ٤٤، والزرار في شاشة
+   الدخول مش نوع تاني من الزرار · هو نفس الزرار بعرض كامل. */
+.btn-full{width:100%;padding-inline:1rem;font-size:.9rem;font-weight:600;margin-top:.5rem}
+/* المسار التاني · الجهة الجديدة مش نفس القرار، فالزرار ثانوي شكلًا */
 .lalt{margin-top:1.25rem}
 .lnote{display:block;text-align:center;font-size:.71rem;color:var(--t2);margin-top:.55rem;line-height:1.6}
 .lfoot{font-size:.72rem;color:rgba(20,50,50,.62);text-shadow:0 1px 4px rgba(var(--wC),calc(.55 * var(--wM)))}
@@ -1834,7 +1861,7 @@ to{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){ .login-vid{display:none}
 }
 /* ═══════════════════════════════════════════════════════════
-   القوائم — المشاريع والجهات
+   القوائم · المشاريع والجهات
 
    القاعدة: الفلاتر مش كلها في وش المستخدم. اللقطات المحفوظة فوق،
    الحالة كشرائح بعدّادها، والباقي مطوي خلف عدّاد. والكارت هو
@@ -1843,14 +1870,14 @@ to{opacity:1;transform:none}
    ═══════════════════════════════════════════════════════════ */
 
 /* `background-image` مش `background`: المختصر كان بيمسح أرضية
-   الحبّة الصمّاء، فالحبّة الصامتة كانت بتورّث لون السطح — وعلى
+   الحبّة الصمّاء، فالحبّة الصامتة كانت بتورّث لون السطح · وعلى
    بطاقة الجهة الغامقة طلعت ٢٫٩٩:١. */
 .tag.mute{background-image:linear-gradient(rgba(var(--edgeC),.08),rgba(var(--edgeC),.08));color:var(--mute-ink)}
 /* ── ترويسة القائمة ── */
 .lhead-row{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
 .lhead-a{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 /* ── اللقطات المحفوظة ──
-   صفّ واحد بس. كان فيه صفّين — لقطات فوق وحالات تحت — فكانوا
+   صفّ واحد بس. كان فيه صفّين · لقطات فوق وحالات تحت · فكانوا
    بيتنافسوا على نفس الوزن البصري، والأسوأ إن نفس الفلتر كان
    بيتكرّر في التنين. اللقطة بقت هي الصفّ (نطاق الشغل)، والحالة
    نزلت جوّه شريط الأدوات كقائمة بعدّادها (تنقية جوّه النطاق). */
@@ -1861,14 +1888,14 @@ to{opacity:1;transform:none}
   color:var(--t2-g);transition:color .16s ease,background .16s ease;
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 /* ══ شارة العدد ══
-   كانت ٢٠×١٦ بأرضية ٧٪ — بيضاوي مفلطح شبه شفّاف، لا دايرة ولا
+   كانت ٢٠×١٦ بأرضية ٧٪ · بيضاوي مفلطح شبه شفّاف، لا دايرة ولا
    شارة. الصح: **الارتفاع والعرض الأدنى متساويين**، فرقم واحد
    بيطلع دايرة كاملة ورقمين بيمدّوها كبسولة قصيرة. ده تعريف
-   الشارة في Material 3 و Carbon و GitHub counters — الشكل بيتبع
+   الشارة في Material 3 و Carbon و GitHub counters · الشكل بيتبع
    عدد الخانات لوحده من غير أي كلاس زيادة.
    والأرضية بقت تبان: ١٤٪ بدل ٧٪.
 
-   **الشارة ٢٤ والسطر ٢٠ — فبتفضل فوق السطر لا بتكبّر الصندوق.**
+   **الشارة ٢٤ والسطر ٢٠ · فبتفضل فوق السطر لا بتكبّر الصندوق.**
    من غير الهامش تحت، الشريحة بتبقى ١٢+٢٤+١٢ = ٤٨ وتكسر صفّ
    الـ٤٤. والهامش ده مش رقم مكتوب: هو `(السطر − الشارة) ÷ ٢`،
    يعني الشارة بتتدلّى على السطر بالتساوي من فوق وتحت وتفضل
@@ -1883,7 +1910,7 @@ to{opacity:1;transform:none}
 .fseg.on{color:var(--on-solid);background:var(--solid);
   box-shadow:none}
 .fseg.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}
-/* الشارة جوّه حبّة مصمتة بتقلب لأرضية فاتحة شفّافة — نفس الفكرة:
+/* الشارة جوّه حبّة مصمتة بتقلب لأرضية فاتحة شفّافة · نفس الفكرة:
    الشارة دايمًا أغمق أو أفتح من الحبّة اللي شايلاها بدرجة واحدة. */
 .fseg.on b{color:var(--on-solid);background:rgba(var(--wC),calc(.22 * var(--wM)))}
 /* ── شريط الأدوات ── */
@@ -1912,7 +1939,7 @@ to{opacity:1;transform:none}
 .srch:focus-within,.fsel-b:focus-within{box-shadow:inset 0 0 0 1px var(--fld-line-f)}
 /* عنصر الفورم الأصلي (`input`/`select`) ارتفاعه الجوّاني مش سطره:
    الـ`input` بيطلع ~٢٠ والـ`select` ~١٥. فمعادلة «حشو + سطر +
-   حشو» بتتكسر — البحث كان ٣٦ والحقل ٣١ جنب زرار ٣٤. الحلّ إن
+   حشو» بتتكسر · البحث كان ٣٦ والحقل ٣١ جنب زرار ٣٤. الحلّ إن
    العنصر الجوّاني ياخد **ارتفاع السطر صريحًا**، فالحشو الرأسي
    يفضل هو اللي بيحدّد الارتفاع زي أي تحكّم تاني. */
 .srch input{flex:1;min-width:0;height:var(--lh-md);padding:0;
@@ -1920,10 +1947,10 @@ to{opacity:1;transform:none}
 .srch input::-webkit-search-cancel-button{display:none}
 .srch-x{display:grid;place-items:center;color:var(--t3);flex:none}
 .srch-x:hover{color:var(--t1)}
-/* شريحة تبديل — نفس لغة الأزرار بس أخف */
+/* شريحة تبديل · نفس لغة الأزرار بس أخف */
 /* الشريحة دي **بتفتح لوحة** زي الحقل بالظبط (فلاتر متقدمة ·
    الفيوهات · تصدير)، فبتاخد نفس أرضية الحقل. كانت شفّافة بحافة
-   شعرية جنب حقل مليان في نفس الصفّ — فالصفّ الواحد كان فيه لغتين
+   شعرية جنب حقل مليان في نفس الصفّ · فالصفّ الواحد كان فيه لغتين
    لنفس الفعل: «اضغطني تنزل لوحة». */
 .fchip{display:inline-flex;align-items:center;gap:8px;width:fit-content;
   padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);border-radius:var(--rp);
@@ -1969,7 +1996,7 @@ to{opacity:1;transform:none}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem .8rem;
   padding-top:.85rem;box-shadow:inset 0 1px 0 var(--edge-d)}
 .fgrid-t{display:flex;align-items:flex-end;gap:.4rem;flex-wrap:wrap}
-/* الفلاتر الشغّالة — كل واحدة تتشال لوحدها */
+/* الفلاتر الشغّالة · كل واحدة تتشال لوحدها */
 .factive{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;
   padding-top:.75rem;box-shadow:inset 0 1px 0 var(--edge-d)}
 .fpill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .6rem;border-radius:var(--rp);
@@ -1981,7 +2008,7 @@ to{opacity:1;transform:none}
 .fclear:hover{color:var(--no)}
 /* ── تبديل الكروت/الجدول ──
    كان مكسورًا من تلات جهات مع بعض:
-     · حشو صفر وركن الابن = ركن الأب (`--r1` الاتنين) — يعني ركن
+     · حشو صفر وركن الابن = ركن الأب (`--r1` الاتنين) · يعني ركن
        المختار بيقطع ركن الحاوية، وده بالظبط اللي قاعدة التداخل
        موجودة عشانه
      · `gap:2px` بلا حشو ⇒ خلفية الحاوية بتبان **درزة رأسية**
@@ -2017,7 +2044,7 @@ to{opacity:1;transform:none}
   color:var(--t2-g);transition:color .16s ease,background .16s ease,box-shadow .16s ease}
 .pgn{padding-inline:.5rem}
 .pgn:hover,.pgnav:not(:disabled):hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
-/* الصفحة الحالية بنفس تشكيل اللقطة المختارة فوق — نفس المعنى
+/* الصفحة الحالية بنفس تشكيل اللقطة المختارة فوق · نفس المعنى
    («أنت هنا») لازم يبقى له نفس الشكل في الصفحة الواحدة. */
 .pgn.on{color:var(--t1);font-weight:600;background:rgba(var(--wC),calc(.84 * var(--wM)));
   -webkit-backdrop-filter:blur(20px) saturate(1.3);backdrop-filter:blur(20px) saturate(1.3);
@@ -2030,8 +2057,8 @@ to{opacity:1;transform:none}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn:disabled:hover{transform:none;filter:none}
 /* ═══ شريط الإجراء المجمّع ═══
-   بيلبس `.decdock`/`.decbar` بحالهم — نفس رصيف شريط القرار ونفس
-   التدرّج ونفس الحساسية للماوس — والزيادة هنا بس: الدخلة من تحت،
+   بيلبس `.decdock`/`.decbar` بحالهم · نفس رصيف شريط القرار ونفس
+   التدرّج ونفس الحساسية للماوس · والزيادة هنا بس: الدخلة من تحت،
    والرقم الكبير، وزرار القفل. */
 .bulkdock{animation:bulkup .38s cubic-bezier(.22,.9,.3,1)}
 @keyframes bulkup{from{opacity:0;transform:translateY(115%)}
@@ -2054,7 +2081,7 @@ to{opacity:1;transform:none}
 /* الشريط عايم فوق المحتوى: من غير المساحة دي آخر صف في الجدول
    وشريط الترقيم بيقعوا تحته ومفيش تمرير يوصّلهم. */
 .hasdock>.screen{padding-bottom:clamp(10.5rem,17vh,13.5rem)}
-/* شريط «تمّ» بعد قرار مجمّع — سطر جوّه الصفحة لا رصيف عايم:
+/* شريط «تمّ» بعد قرار مجمّع · سطر جوّه الصفحة لا رصيف عايم:
    ده تأكيد اتقرا مرة، والعايم بيفضل ياخد مكان قدام المحتوى. */
 .bulk{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.7rem 1rem;font-size:.84rem}
 /* ── كروت المشاريع ── */
@@ -2154,7 +2181,7 @@ to{opacity:1;transform:none}
 /* ═══════════════════════════════════════════════════════════
    القراءة السريعة
 
-   نفس زجاج السيستم زي أي كارت — المساعد جزء من الواجهة مش طبقة
+   نفس زجاج السيستم زي أي كارت · المساعد جزء من الواجهة مش طبقة
    فوقها. التمييز من الشرارة والكتابة الحيّة، مش من سطح بلون تاني.
    ═══════════════════════════════════════════════════════════ */
 .qread{flex:none}
@@ -2165,7 +2192,7 @@ to{opacity:1;transform:none}
 .qread.strip{--pad:7px;padding:var(--pad);overflow:hidden}
 .qread.panel{padding:0}
 /* الترويسة هي كل الكارت وهو مقفول، فبادنجها متساوي فوق وتحت.
-   ولمّا يتفتح، المسافة اللي تحتها بتيجي من أول قراءة لا منها —
+   ولمّا يتفتح، المسافة اللي تحتها بتيجي من أول قراءة لا منها ·
    الاتنين مع بعض كانوا بيعملوا فجوة ضعف اللي تحت أي كارت تاني. */
 .qr-head{display:flex;align-items:center;gap:.6rem;width:100%;text-align:right;
   padding:.85rem 1.05rem;color:inherit;transition:background .16s ease}
@@ -2176,7 +2203,7 @@ to{opacity:1;transform:none}
 .qread.strip>.qr-head{border-radius:max(var(--r1),calc(var(--r3) - var(--pad)));
   padding-block:calc(var(--qpad) - var(--pad));
   padding-inline:calc(var(--qpad) - var(--pad))}
-/* الكارت المقفول: نفس القاعدة — **فوق زي تحت**. كان فوق صفرًا
+/* الكارت المقفول: نفس القاعدة · **فوق زي تحت**. كان فوق صفرًا
    بحجّة إن الترويسة بتحمل المسافة، فالنتيجة كانت لمحة ملزوقة في
    الترويسة ومسافة تحتها. */
 .qread.strip>.qr-peek{margin-top:0;
@@ -2185,21 +2212,21 @@ to{opacity:1;transform:none}
 .qread.strip>.qr-list{padding-inline:calc(var(--qpad) - var(--pad))}
 .qr-head:not(.static):hover{background:rgba(var(--wC),calc(.28 * var(--wM)))}
 .qr-head>svg{color:var(--t3);flex:none}
-/* زرار الطيّ في الكارت الكامل — نفس `.aifold` في تحليلات المشروع */
+/* زرار الطيّ في الكارت الكامل · نفس `.aifold` في تحليلات المشروع */
 .qr-fold{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:var(--r1);
   color:var(--t3);transition:color .16s ease,background .16s ease}
 .qr-fold:hover{color:var(--t1);background:rgba(var(--edgeC),.10)}
 .qr-sp{flex:1}
 .qr-title{font-family:var(--fd);font-weight:600;font-size:.89rem}
 /* الحبّة أرضيتها فاتحة جدًّا (٧٪ حبر)، فحبر `--t2` عليها كان
-   ٤٫٤١:١ — تحت AA بشعرة. الحبر الأغمق أرخص من تغميق الأرضية. */
+   ٤٫٤١:١ · تحت AA بشعرة. الحبر الأغمق أرخص من تغميق الأرضية. */
 .qr-count{font-size:var(--fs-1);padding:.12rem .5rem;border-radius:var(--rp);white-space:nowrap;
   color:var(--t1);background:rgba(var(--edgeC),.07)}
 .qr-count.no{color:var(--no-ink);background:rgba(var(--noC),.10)}
 /* لمحة السطر الأول وهو مقفول.
    الحشو `.45rem` **فوق وتحت بالتساوي**. قبل كده كان فوق صفرًا
    وتحت `.8rem`، والمسافة اللي فوق بتتعمل بـ`margin-top:-.3rem`
-   — يعني الرقمين كانوا تعويضًا عن بعض لا حشوًا. الهامش السالب
+   · يعني الرقمين كانوا تعويضًا عن بعض لا حشوًا. الهامش السالب
    اتشال: الحشو بقى حشو. */
 .qr-peek{display:flex;align-items:baseline;gap:.45rem;
   padding-block:.45rem;padding-inline:1.05rem;
@@ -2232,13 +2259,13 @@ to{opacity:1;transform:none}
 .qr-tx b.bad{color:var(--no-ink)}
 .qr-item.typing .qr-tx{min-height:1.6em}
 .qr-barl{display:flex;justify-content:space-between;margin-top:.35rem}
-/* المصدر معرَّف في نظام التصميم تحت `.ins .i` — القراءة مش جوّاه،
+/* المصدر معرَّف في نظام التصميم تحت `.ins .i` · القراءة مش جوّاه،
    فبتاخد نفس القياس هنا صراحة بدل ما تطلع بحجم النص العادي. */
 .qr-item .src{font-size:.69rem;color:var(--t3);margin-top:.45rem}
 .qr-foot{padding:.75rem 1.05rem .85rem;font-size:.69rem;color:var(--t3);
   box-shadow:inset 0 1px 0 var(--edge-d)}
 .qread .skel{padding:.35rem 1.05rem 1.05rem}
-/* مبدّل الدور في قائمة الحساب — للنموذج فقط */
+/* مبدّل الدور في قائمة الحساب · للنموذج فقط */
 .acct-demo{font-size:.6rem;padding:.06rem .35rem;border-radius:var(--rp);
   color:var(--t3);background:rgba(var(--edgeC),.08);margin-inline-start:.35rem}
 .rolesw{display:flex;flex-direction:column;gap:2px;padding:0 .35rem}
@@ -2252,14 +2279,14 @@ to{opacity:1;transform:none}
 .rolesw-t{font-size:.8rem;font-family:var(--fd);font-weight:500}
 .rolesw-s{font-size:.68rem;color:var(--t3)}
 /* ═══════════════════════════════════════════════════════════
-   اليوم — لوحة قراءة
+   اليوم · لوحة قراءة
 
    قاعدة اللون في الصفحة كلها: **اللون يوصف الحالة مش الكمية.**
    الأرقام كلها بلون النص العادي؛ اللون بيقع على الشريط أو الوسم
    الصغير. الأحمر مخصوص للتجاوز الفعلي، وبمساحة صغيرة.
    ═══════════════════════════════════════════════════════════ */
 :root{
-  /* بالتة الرسوم — مشتقة من ألوان الهوية التلاتة، بتدرّج واحد
+  /* بالتة الرسوم · مشتقة من ألوان الهوية التلاتة، بتدرّج واحد
      من الأغمق للأفتح عشان الترتيب البصري يبان من غير وسيلة إيضاح */
   --ch-1:#144547;   /* الأخضر الغامق */
   --ch-2:#00A59B;   /* التيل */
@@ -2281,8 +2308,10 @@ to{opacity:1;transform:none}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
 @media (max-width:960px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+/* كان `.95rem 1.05rem 1rem` · يعني فوق ١٢٫٨ وتحت ١٣٫٦، رقمان
+   قريبان من بعض ومختلفان. الحشو دلوقتي من سلّم المسافات. */
 .kpi{position:relative;display:flex;flex-direction:column;gap:.1rem;
-  padding:.95rem 1.05rem 1rem;color:inherit;
+  padding:16px;color:inherit;
   transition:transform .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease}
 .kpi:hover{transform:translateY(-2px);color:inherit;
   box-shadow:inset 0 0 0 1px var(--edge-i)}
@@ -2345,7 +2374,7 @@ to{opacity:1;transform:none}
   background:rgba(var(--edgeC),.05);border-radius:8px;overflow:hidden}
 .chcol-t i{display:block;width:100%;border-radius:8px;
   transition:height .45s cubic-bezier(.22,.9,.3,1)}
-/* «0–7» في فقرة عربية بتتقري «7–0» — العزل بيثبّت اتجاه المدى */
+/* «0–7» في فقرة عربية بتتقري «7–0» · العزل بيثبّت اتجاه المدى */
 .chcol-l{position:absolute;bottom:0;font-size:.7rem;color:var(--t3);
   font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
 .chcol-u{position:absolute;bottom:0;inset-inline-end:0;font-size:.68rem;color:var(--t3)}
@@ -2374,7 +2403,7 @@ to{opacity:1;transform:none}
 .qrow-n{font-family:var(--fd);font-weight:600;font-size:.88rem;margin-top:.3rem;line-height:1.5}
 .qrow-f{margin-top:.2rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
 /* وسم صغير بدل رقم أحمر */
-/* مبدّل الدور في قائمة الحساب — للنموذج فقط */
+/* مبدّل الدور في قائمة الحساب · للنموذج فقط */
 .acct-demo{font-size:.6rem;padding:.06rem .35rem;border-radius:var(--rp);
   color:var(--t3);background:rgba(var(--edgeC),.08);margin-inline-start:.35rem}
 .rolesw{display:flex;flex-direction:column;gap:2px;padding:0 .35rem}
@@ -2392,7 +2421,7 @@ to{opacity:1;transform:none}
 
    القوة هنا من الحجم والإيقاع، مش من لون جديد ولا سطح غريب:
    ترويسة كبيرة بسطر خلاصة فيه رقمَي اليوم، وشريحة أولى أعرض
-   من الباقي — لأن أربع شرائح بنفس الحجم بتخلّي العين تحتار.
+   من الباقي · لأن أربع شرائح بنفس الحجم بتخلّي العين تحتار.
    ═══════════════════════════════════════════════════════════ */
 .hhead{display:flex;align-items:flex-end;justify-content:space-between;
   gap:1rem 2rem;flex-wrap:wrap;padding:.2rem .2rem .1rem}
@@ -2420,7 +2449,7 @@ to{opacity:1;transform:none}
   transition:transform .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease}
 .htile:hover{transform:translateY(-3px);color:inherit;
   box-shadow:inset 0 0 0 1px var(--edge-i)}
-/* توهّج خفيف بلون النبرة في ركن الكارت — عمق من غير حدود ملوّنة */
+/* توهّج خفيف بلون النبرة في ركن الكارت · عمق من غير حدود ملوّنة */
 .htile::before{content:"";position:absolute;inset-inline-end:-30%;top:-70%;
   width:100%;aspect-ratio:1;border-radius:50%;pointer-events:none;
   background:radial-gradient(closest-side,var(--glow,transparent),transparent);
@@ -2438,7 +2467,7 @@ to{opacity:1;transform:none}
 .htile-go{position:absolute;top:1.15rem;inset-inline-start:1.1rem;color:var(--t3);
   opacity:0;transform:translateX(4px);transition:opacity .2s ease,transform .2s ease}
 .htile:hover .htile-go{opacity:1;transform:none}
-/* النبرة على الرقم والأيقونة والتوهّج — الكارت يفضل زجاجًا محايدًا */
+/* النبرة على الرقم والأيقونة والتوهّج · الكارت يفضل زجاجًا محايدًا */
 .htile.t-no{--glow:rgba(var(--noC),.13)}
 .htile.t-no .htile-v{color:var(--no)}
 .htile.t-no .htile-ic{color:var(--no);background:rgba(var(--noC),.10)}
@@ -2455,7 +2484,7 @@ to{opacity:1;transform:none}
 .qrow-h{display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--t3)}
 .qrow-n{font-family:var(--fd);font-weight:600;font-size:.88rem;margin-top:.3rem;line-height:1.5}
 .qrow-f{margin-top:.2rem}
-/* الميزانية — ثلاث طبقات على مسطرة واحدة */
+/* الميزانية · ثلاث طبقات على مسطرة واحدة */
 .bsplit{display:flex;height:10px;border-radius:99px;overflow:hidden;
   background:rgba(var(--edgeC),.09);margin-bottom:1rem}
 .bsplit>div{height:100%;transition:width .4s ease}
@@ -2483,7 +2512,7 @@ to{opacity:1;transform:none}
 :root{--tone-ok:var(--ok);--tone-ret:var(--ret);--tone-no:var(--no);
   --tone-warn:var(--warn);--tone-brand:var(--lime);--tone-teal:var(--teal);
   --tone-lime:var(--lime);--tone-mute:rgba(var(--edgeC),.3)}
-/* نقطة الحالة — بديل الرقم الأحمر.
+/* نقطة الحالة · بديل الرقم الأحمر.
    الرقم بيفضل بلون النص، والنقطة بتقول «فيه حاجة هنا» بمساحة
    صغيرة. الرقم الأحمر بيصرخ في كل صف؛ النقطة بتشاور. */
 .dotmark{display:inline-block;width:6px;height:6px;border-radius:50%;
@@ -2504,11 +2533,13 @@ to{opacity:1;transform:none}
      يصغر عن محتواه من غيرها، فالتقلّص ما بيوصلش للخريطة */
   .fold .dtop{flex:1;min-height:0;grid-template-rows:minmax(0,auto) minmax(0,1fr)}
 .fold .dtop>*{min-height:0}
-/* الترويسة بتصغّر شوية عشان تسيب ارتفاع للرسوم — الرسم هو
+/* الترويسة بتصغّر شوية عشان تسيب ارتفاع للرسوم · الرسم هو
      اللي بيتقري، والتحية مش محتاجة تاخد سطر ونص */
   .fold .htitle{font-size:clamp(1.5rem,2.4vw,1.9rem)}
 .fold .hdate{margin-top:.25rem}
-.fold .kpi{padding:.8rem 1rem .85rem}
+/* كان `.8rem 1rem .85rem` · فوق ١٢٫٨ وتحت ١٣٫٦، رقمان قريبان من
+   بعض ومختلفان، وهو اللي كان بيغلب حشو `.kpi` نفسه. */
+.fold .kpi{padding:14px 16px}
 .fold .kpi-h{margin-bottom:.4rem}
 .fold .kpi-v{font-size:clamp(1.55rem,2.3vw,1.95rem)}
 /* الرسوم اللي ارتفاعها مكتوب بالإيد لازم تتنازل عنه هنا، وإلا
@@ -2530,7 +2561,7 @@ to{opacity:1;transform:none}
 .fold .d-track .chdonut-c span{font-size:.62rem}
 }
 /* الخريطة: الخانة بتاخد الباقي، وعرض الرسم بيتحسب من ارتفاع
-     الخانة بوحدات الحاوية — فالنسبة تفضل مضبوطة سواء العرض هو
+     الخانة بوحدات الحاوية · فالنسبة تفضل مضبوطة سواء العرض هو
      القيد أو الارتفاع. من غير كده الرسم بيدفع شرائح الترتيب تحته
      برّه الكارت. */
   .fold .map-slot{flex:1;min-height:0;container-type:size}
@@ -2548,7 +2579,7 @@ to{opacity:1;transform:none}
   .dtop{grid-template-columns:1fr 1fr;
     grid-template-areas:"map map" "budget budget" "track age"}
 /* الكارت بياخد عرض الشاشة، فالخريطة بنسبتها كانت بتطلع 660 بكسل
-     طول على تابلت — بتاكل شاشة كاملة وهي رسم واحد */
+     طول على تابلت · بتاكل شاشة كاملة وهي رسم واحد */
   .map-c{width:min(100%,560px)}
 }
 @media (max-width:760px){
@@ -2559,12 +2590,12 @@ to{opacity:1;transform:none}
    قائمة الأشرطة كانت بتخلّي العين تركّب الجغرافيا في دماغها.
    الخريطة بتوريها في نظرة: الدعم متكوّم في الوسط والشرق. */
 /* الكارت بيمتد على صفّين في الشبكة، فالخريطة بتاخد الارتفاع كله
-   والرسم بيتوسّط جوّاه — من غير كده بيفضل نص الكارت فاضي. */
+   والرسم بيتوسّط جوّاه · من غير كده بيفضل نص الكارت فاضي. */
 .d-map{display:flex;flex-direction:column;min-height:0}
 .map{display:flex;flex-direction:column;gap:.85rem;margin-top:.6rem;flex:1;min-height:0;
   justify-content:center;align-items:center}
 /* نسبة الحاوية = نسبة الـviewBox بالظبط، فمفيش هوامش فاضية جنب
-   الرسم — ولا انزياح في تموضع التلميح المحسوب بالنسبة المئوية */
+   الرسم · ولا انزياح في تموضع التلميح المحسوب بالنسبة المئوية */
 .map-slot{width:100%;min-width:0;display:grid;place-items:center}
 .map-c{position:relative;width:100%;aspect-ratio:1000 / 826;min-width:0}
 .map-svg{width:100%;height:100%;display:block;overflow:visible}
@@ -2578,12 +2609,12 @@ to{opacity:1;transform:none}
 .map-r.has{cursor:pointer}
 .map-r.on{stroke:var(--map-halo);stroke-width:2.2;
   filter:drop-shadow(0 6px 14px rgba(20,69,71,.35))}
-/* الرقم بيظهر على المنطقة المؤشَّر عليها بس — تلتاشر رقم مع بعض
+/* الرقم بيظهر على المنطقة المؤشَّر عليها بس · تلتاشر رقم مع بعض
    بيخنقوا الخريطة */
 .map-num{fill:var(--map-ink);font-family:var(--fd);font-weight:700;font-size:34px;
   paint-order:stroke;stroke:var(--map-halo);stroke-width:5px;stroke-linejoin:round;
   pointer-events:none}
-/* التلميح فوق النقطة — عنصر HTML عشان النص العربي يتلف صح */
+/* التلميح فوق النقطة · عنصر HTML عشان النص العربي يتلف صح */
 /* الإزاحة بخاصية `translate` المستقلة لا بـ`transform`: أنيميشن
    الظهور بيكتب `transform:none` في نهايته وبيلغي أي إزاحة فيه. */
 .map-tip{position:absolute;translate:-50% calc(-100% - 26px);
@@ -2625,16 +2656,16 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    المظاهر الداكنة
 
    اتنين مش واحد، ومش «فاتح وعكسه»:
-     · **داكن** — أسود بميل خفيف للهوية. الأرضية شبه محايدة
+     · **داكن** · أسود بميل خفيف للهوية. الأرضية شبه محايدة
        والألوان كلها بتقع على النبرة (تيل ولايم)، فالبيانات
        بتطلع من الخلفية بدل ما تتنافس معاها.
-     · **أخضر** — أخضر المؤسسة العميق. هوية أوضح، بس الأرضية
+     · **أخضر** · أخضر المؤسسة العميق. هوية أوضح، بس الأرضية
        نفسها ملوّنة فبتاخد جزء من انتباه العين.
    والاختيار صريح: مفيش «تبع النظام» لأن التالت مظهر بذاته لا
    حالة من حالتين، وإعداد الجهاز ما بيعرفش يختار بينهم.
 
    المنطق واحد في الاتنين: الفاتح زجاج أبيض على ميش فاتح
-   والكونتراست من العتمة والحافة؛ الداكن نفس المنطق مقلوب —
+   والكونتراست من العتمة والحافة؛ الداكن نفس المنطق مقلوب ·
    طبقة بيضا خفيفة جدًا على أرضية عميقة. عشان كده كل بياض شفاف
    في الملف بيتكتب `rgba(var(--wC), calc(α * var(--wM)))`:
    معامل واحد بيهبّط الطبقة كلها بدل إعادة كتابة كل قيمة.
@@ -2655,7 +2686,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --bar-bg:linear-gradient(180deg,rgba(11,13,13,.94),rgba(11,13,13,.99));
   --ink-soft:var(--t1);
   --logo-ink:#FFFFFF; --logo-teal:#FFFFFF; --logo-lime:#FFFFFF;
-  --solid:#2FC7B6; --on-solid:#06100F;
+  --solid:#2FC7B6; --on-solid:#06100F; --solidC:47,199,182;
   --link:#A8D93C;
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
   --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
@@ -2706,7 +2737,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --bar-bg:linear-gradient(180deg,rgba(9,26,28,.94),rgba(9,26,28,.99));
   --ink-soft:var(--t1);
   --logo-ink:#FFFFFF; --logo-teal:#FFFFFF; --logo-lime:#FFFFFF;
-  --solid:#2FC7B6; --on-solid:#06191B;
+  --solid:#2FC7B6; --on-solid:#06191B; --solidC:47,199,182;
   --link:#A8D93C;
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
   --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
@@ -2748,14 +2779,13 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    العنصر اللي مالوش كارت تحته بيقع على الميش، والميش في أعلى
    الصفحة (مكان الترويسة وفتات الطريق) هو أغمق مكان فيه. نفس
    الخافت اللي بيتقري على كارت بيبقى 2.7:1 هنا. */
-.crumb, .crumb *{color:var(--t3-g)}
-.crumb .now{color:var(--t2-g)}
+.backto{color:var(--t3-g)}
 .screen>.sub, .screen>header .sub, .phead .sub, .hhead .sub{color:var(--t3-g)}
 .screen>.sub .num, .phead .sub .num{color:var(--t2-g)}
 .pamt .lb,.phead .lb{color:var(--t3-g)}
 /* ═══ شاشة الدخول في المظاهر الداكنة ═══
    الفيديو أصل ثابت وفاتح، ما بيتغيّرش مع المظهر. الكارت الزجاجي
-   طبقة بيضا 8٪ — فوق فيديو فاتح ده معناه إنه بيختفي، والنص الفاتح
+   طبقة بيضا 8٪ · فوق فيديو فاتح ده معناه إنه بيختفي، والنص الفاتح
    بيقع على أفتح خلفية في النظام. فالكارت هنا بياخد سطحه بنفسه:
    زجاج غامق معتم، وستارة على الفيديو تحته. */
 :root[data-theme="dark"] .lcard,
@@ -2772,29 +2802,29 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 :root[data-theme="green"] .login-vid{filter:brightness(.55) saturate(.9)}
 :root[data-theme="dark"] .lfoot,
 :root[data-theme="green"] .lfoot{color:var(--t2);text-shadow:0 1px 6px rgba(0,0,0,.6)}
-/* ═══ إجماليات الجهة — شريط لوحات ملتصقة ═══
+/* ═══ إجماليات الجهة · شريط لوحات ملتصقة ═══
    مكانها مكان المروحة في صفحة المشروع بالظبط: شمال الترويسة،
-   جوّه `.pgates`. واللوحات ملتصقة بلا فواصل — شريط واحد متّصل،
+   جوّه `.pgates`. واللوحات ملتصقة بلا فواصل · شريط واحد متّصل،
    الكتف المقوّس هو اللي بيفصل بينها لا المسافة. والتدرّج طالع من
    تحت: أغمق عند القاعدة وبيروق لفوق.
 
    كل الألوان من ثلاثية `--tone` اللي الكومبوننت بيبعتها كتوكن،
-   فاللوحة واحدة والنبرة بتتغيّر — مش أربع قواعد متكررة. */
+   فاللوحة واحدة والنبرة بتتغيّر · مش أربع قواعد متكررة. */
 /* مزاح شوية ناحية اليمين: ملزوق في حافة الشاشة كان بيقطعه عن
    الترويسة. inline-end في العربي = الشمال، فالهامش هناك بيدفعه يمين. */
-/* مسافة خفيفة بين اللوحات — الالتصاق التام كان بيخلّيها لوحًا
+/* مسافة خفيفة بين اللوحات · الالتصاق التام كان بيخلّيها لوحًا
    واحدًا مقسومًا لا أربع بطاقات */
 .einf{display:flex;align-items:stretch;gap:10px;width:100%;
   margin-inline-end:clamp(1rem,4vw,3.5rem);
   padding-top:36px;min-height:250px}
 .einf-t{position:relative;isolation:isolate;flex:1 1 0;min-width:0;color:inherit;
-  /* المحتوى في نص اللوحة لا في قاعها — ملزوق تحت كان بيسيب فراغًا
+  /* المحتوى في نص اللوحة لا في قاعها · ملزوق تحت كان بيسيب فراغًا
      فوقه وبيقرّبه من الحافة */
-  /* المحتوى تحت الدايرة مباشرة — حيث اللوحة مصمتة. أسفلها بيتلاشى
+  /* المحتوى تحت الدايرة مباشرة · حيث اللوحة مصمتة. أسفلها بيتلاشى
      فما ينفعش يقع فيه نص */
   display:flex;flex-direction:column;justify-content:flex-start;align-items:center;
   gap:.15rem;text-align:center;padding:2.6rem .55rem 1.2rem;
-  /* كتف مقوّس فوق فقط، ومفيش تدوير تحت — الشريط بيقف على حافة مستقيمة */
+  /* كتف مقوّس فوق فقط، ومفيش تدوير تحت · الشريط بيقف على حافة مستقيمة */
   border-radius:38px 38px 0 0;
   transition:translate .22s cubic-bezier(.22,.9,.3,1);
   animation:airise .45s cubic-bezier(.22,.9,.3,1) both;
@@ -2802,8 +2832,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 /* اللون والزجاج في طبقة مستقلة عشان يتقنّعوا مع بعض.
    التدرّج لوحده ما كانش بيبان: `backdrop-filter` بيتطبّق على اللوحة
    كلها بالتساوي، فحتى المنطقة اللي شفافيتها صفر كانت لسه بتبان
-   كسطح مثلّج بحافة — الشكل ثابت والتدرّج جوّاه. القناع بيلاشي
-   الطبقة نفسها — لون وزجاج وحافة — من تحت لفوق. */
+   كسطح مثلّج بحافة · الشكل ثابت والتدرّج جوّاه. القناع بيلاشي
+   الطبقة نفسها · لون وزجاج وحافة · من تحت لفوق. */
 .einf-t::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;
   background:linear-gradient(to bottom,
     rgba(var(--tone),.52) 0%, rgba(var(--tone),.34) 42%,
@@ -2813,7 +2843,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 40%,rgba(0,0,0,.42) 76%,transparent 100%);
   mask-image:linear-gradient(to bottom,#000 0%,#000 40%,rgba(0,0,0,.42) 76%,transparent 100%);
   transition:opacity .22s ease}
-/* الهوفر بيطلّع اللوحة كلها — الحركة هي اللي بتقول «دي قابلة
+/* الهوفر بيطلّع اللوحة كلها · الحركة هي اللي بتقول «دي قابلة
    للفتح»، أوضح من تغيّر لون بدرجة */
 .einf-t:hover{translate:0 -12px;color:inherit;z-index:2}
 .einf-t:hover::before{background:linear-gradient(to bottom,
@@ -2835,7 +2865,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   display:flex;align-items:baseline;justify-content:center;gap:.2rem;margin-top:.15rem}
 .einf-v small{font-size:.55em;font-weight:400;color:var(--t2-g)}
 .einf-n{font-size:.68rem;color:var(--t2-g);line-height:1.6}
-/* المُعلَّمة: اللي لسه معلّقة — نفس دور الوتد الغامق في المروحة */
+/* المُعلَّمة: اللي لسه معلّقة · نفس دور الوتد الغامق في المروحة */
 .einf-t.now::before{background:linear-gradient(to bottom,
     rgba(var(--tone),.64) 0%, rgba(var(--tone),.42) 42%,
     rgba(var(--tone),.16) 74%, rgba(var(--tone),0) 100%)}
@@ -2858,7 +2888,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 
    الشاشة دي بتعرض حاجتين مختلفتين: رقم موجود، ورقم غايب. اللي
    الاتنين محتاجينه إنهم يبانوا مختلفين من غير ما الغايب يتحوّل
-   لخطأ أحمر — هو مش عطل، هو مطلب. فالغايب بيتخفت (شفافية أقل
+   لخطأ أحمر · هو مش عطل، هو مطلب. فالغايب بيتخفت (شفافية أقل
    وخط مائل) والموجود بياخد وزن الرقم كامل.
    ═══════════════════════════════════════════════════════════ */
 
@@ -2883,7 +2913,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 }
 /* قسم داخل الشاشة.
    `.col` مش صالحة هنا: فيها `min-height:0` عشان الأعمدة اللي بتسكرول
-   جوّه ارتفاع ثابت، والقسم اللي محتواه شبكة بيتلَخبط بيها — بيتضغط
+   جوّه ارتفاع ثابت، والقسم اللي محتواه شبكة بيتلَخبط بيها · بيتضغط
    لصفر وشبكته تطلع فوق اللي بعده. */
 .rpsec{display:flex;flex-direction:column;gap:.85rem}
 /* سطر بيقول السكشن ده بيعمل إيه. سطر واحد مقروء عرضه محدود:
@@ -2952,7 +2982,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 /* ═══ ورقة مؤشرات إجراء ═══
    البادئة `ind-` لا `kpi-`: كروت الرئيسية بتستخدم `.kpi` و`.kpi-v`
    و`.kpi-n` من قبل، وأي قاعدة بنفس الاسم هنا (وهي بتيجي بعدها في
-   الملف) بتدهسها بصمت — والنتيجة كانت نصّ الكروت بيتحوّل لخط
+   الملف) بتدهسها بصمت · والنتيجة كانت نصّ الكروت بيتحوّل لخط
    مونوسبيس والتخطيط بيتفكّ. */
 .rph{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
 .rpnav{display:flex;gap:.5rem;flex-wrap:wrap}
@@ -2979,7 +3009,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   border-inline-start:2px solid rgba(var(--warnC),.55);
   background:rgba(var(--wC),calc(.42 * var(--wM)));
   box-shadow:inset 0 0 0 1px var(--edge-1)}
-/* نفس الصندوق لمّا السبب واحد للإجراء كله — فوق القائمة لا جوّاها */
+/* نفس الصندوق لمّا السبب واحد للإجراء كله · فوق القائمة لا جوّاها */
 .ind-gx{margin:-.35rem 0 1rem;font-size:.76rem;max-width:78ch}
 .ind-f{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-top:.1rem}
 .ind-to{display:inline-flex;align-items:center;gap:.3rem;font-size:.7rem;
@@ -3039,7 +3069,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .fopt.on .fopt-x{background:var(--solid);box-shadow:none}
 .fopt.on{background:rgba(var(--retC2),.08)}
 /* الاختيار الواحد: **علامة على المختار، ومفيش صندوق على الباقي**.
-   الصندوق الفاضي بيقول «تقدر تختار أكتر من واحد» — وده مش صح هنا.
+   الصندوق الفاضي بيقول «تقدر تختار أكتر من واحد» · وده مش صح هنا.
    المساحة بتفضل محجوزة عشان الأسماء ما تزحلقش لما الاختيار يتغيّر. */
 .fmenu.one .fopt-x{background:none;box-shadow:none;border-radius:0;color:var(--solid)}
 .fmenu.one .fopt.on .fopt-x{background:none}
@@ -3047,7 +3077,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 /* ── مقياس الصفحة ── */
 .psize{display:flex;align-items:center;gap:.4rem}
 .psize .sub{white-space:nowrap}
-/* ده **حقل فيه قائمة** — نفس عايلة البحث والحقل المنسدل بالظبط،
+/* ده **حقل فيه قائمة** · نفس عايلة البحث والحقل المنسدل بالظبط،
    مش شكلًا رابعًا. كان ركنه `--r1` وخلفيته ٥٦٪ وحافة التركيز
    زرقا، جوّه سيستم حافة التركيز فيه شعرية غامقة. */
 .psize-b{position:relative;display:flex;align-items:center;
@@ -3062,7 +3092,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .psize-x{display:grid;place-items:center;padding:0;margin-inline-start:.2rem;color:var(--t3)}
 .psize-x:hover{color:var(--t1)}
 /* بتفتح لفوق: المقياس في آخر الصفحة، واللوحة النازلة بتقع برّه الشاشة */
-/* اللوحة بقت `.fmenu` زي أي قائمة تانية — كانت نمطًا تالتًا
+/* اللوحة بقت `.fmenu` زي أي قائمة تانية · كانت نمطًا تالتًا
    بخلفيتها وركنها وظلّها. اللي بقي خاصّ بيها إنها **بتفتح لفوق**،
    لأن مكانها في تذييل الصفحة. */
 .fmenu.up{top:auto;bottom:calc(100% + .35rem)}
@@ -3080,7 +3110,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    ═══════════════════════════════════════════════════════════ */
 
 /* الجدول بيكبر مع الأعمدة الزيادة، فالتمرير الأفقي جوّه الحاوية
-   لا على الصفحة — الصفحة اللي بتتزحلق أفقيًا بتضيّع الترويسة. */
+   لا على الصفحة · الصفحة اللي بتتزحلق أفقيًا بتضيّع الترويسة. */
 .tblwrap{display:flex;flex-direction:column;gap:1.1rem}
 .tblock{min-width:0}
 /* عنوان المجموعة: سطر واحد بلا كارت، الجدول تحته هو الكارت */
@@ -3105,7 +3135,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 .tgrand-k{font-family:var(--fd);font-weight:600;font-size:.86rem;color:var(--t1)}
 .tgrand-v{display:flex;align-items:baseline;gap:1.1rem;flex-wrap:wrap;font-size:.82rem}
-/* منتقي الأعمدة — آخر خانة في الترويسة */
+/* منتقي الأعمدة · آخر خانة في الترويسة */
 .tbl th.tcolx{width:38px;padding-inline:.2rem}
 .tcolp{position:relative}
 .tcolb{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;
@@ -3120,7 +3150,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .fexp{position:relative}
 .fexp-m{min-width:236px}
 /* خيار التصدير سطران: الصيغة، وتحتها السؤال اللي بتجاوب عليه.
-   الامتداد وحده ما بيقولش للمستخدم يختار إيه — «إكسل ولا صورة؟»
+   الامتداد وحده ما بيقولش للمستخدم يختار إيه · «إكسل ولا صورة؟»
    بيتحلّ بـ«عايز تشتغل على الأرقام ولا تحطّه في شريحة؟». */
 .fexp-m .fopt{flex-direction:column;align-items:stretch;gap:.1rem;padding:.5rem .55rem}
 .fopt-n{font-size:.7rem;line-height:1.45;white-space:normal}
@@ -3137,7 +3167,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    الورقة بتترسم **برّه `#root`** (بورتال على `body`)، فالإخفاء بقى
    سطرًا واحدًا بدل قايمة كلاسات. القايمة القديمة كانت بتسمّي عناصر
    قايمة المشاريع بالاسم، فأي شاشة تانية تصدّر PDF كانت بتطبع محتواها
-   ورا الورقة — الجدول مرتين، واحد مصفوف وواحد مكسور. */
+   ورا الورقة · الجدول مرتين، واحد مصفوف وواحد مكسور. */
 .printsheet{display:none}
 @media print{
   body.printing>#root{display:none !important}
@@ -3175,19 +3205,19 @@ body.printing .mesh,body.printing .grain{display:none}
 .tbl tbody tr.clickable .tlink{cursor:inherit}
 
 /* ═══ سحب حدود الأعمدة ═══
-   المقبض على حافة العمود الداخلية — الحدّ بينه وبين اللي بعده.
+   المقبض على حافة العمود الداخلية · الحدّ بينه وبين اللي بعده.
    منطقة اللمس أوسع من الخط بكتير (٩px مقابل ٢): الخط الرفيع هدف
    بيتصاد بالحظ، والمساحة الواسعة بتخلّي الإمساك من أول مرة. */
-/* المقبض جوّه عموده بالكامل — ما بيطلعش على اللي جنبه.
+/* المقبض جوّه عموده بالكامل · ما بيطلعش على اللي جنبه.
    قبل كده كان مركّبًا على الحدّ (نصّه هنا ونصّه هناك)، فالهوفر على
-   آخر العمود الشمال كان بيطلّع خطًّا بيصغّر العمود اليمين — إيد على
+   آخر العمود الشمال كان بيطلّع خطًّا بيصغّر العمود اليمين · إيد على
    خانة وأثر على خانة تانية. دلوقتي آخر ١٠px من العمود هي مقبضه هو،
    والخطّ بيترسم على حدّه الشمال من جوّه. */
 .thgrip{position:absolute;inset-block:0;inset-inline-end:0;width:10px;z-index:4;
   cursor:col-resize;touch-action:none}
 /* الخط نفسه مش جوّه المقبض: المقبض جوّه `th`، وأي حاجة جوّه الترويسة
    بتقف عند آخرها. فالخط عنصر مستقل في حاوية الجدول بيمتدّ من الترويسة
-   لآخر صفّ — والمقبض بيقول له مكانه بس. */
+   لآخر صفّ · والمقبض بيقول له مكانه بس. */
 .tblock{position:relative}
 .tguide{position:absolute;top:0;bottom:0;width:2px;z-index:3;pointer-events:none;
   border-radius:2px;background:var(--ret-ink);opacity:.5;
@@ -3235,7 +3265,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* الصندوق نفسه هو زرار الإظهار: مساحة الضغط تبقى واضحة بلا زرار تاني.
    وشكله هو **نفس** صندوق الجدول: نفس المقاس ونفس اللون ونفس نصف
    القطر. قبل كده كان أخضر داكن مصمت (`--solid`) بينما صناديق الجدول
-   أزرق التحديد — صندوقان بشكلين في سيستم واحد، وإحدى عشرة منهم فوق
+   أزرق التحديد · صندوقان بشكلين في سيستم واحد، وإحدى عشرة منهم فوق
    بعض كانوا بيتقروا كحائط مربعات سودا مش كقائمة اختيارات. */
 .fcust-c{flex:none;display:grid;place-items:center;width:15px;height:15px;border-radius:4px;
   color:var(--on-ret);background:rgba(var(--wC),calc(.7 * var(--wM)));
@@ -3262,7 +3292,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    السياق يبتدي خفيفًا ويفضل المشروع نفسه هو اللي واخد المساحة */
 .aishut-f{margin-inline-start:.4rem}
 /* القراءات جوّه كارت التحليلات: الكارت نفسه له حشوه، فالقائمة ما
-   تزوّدش حشوًا تاني — `.qr-list` معمولة لكارت `.qread` اللي حشوه صفر. */
+   تزوّدش حشوًا تاني · `.qr-list` معمولة لكارت `.qread` اللي حشوه صفر. */
 .aicard .qr-list{padding:0}
 .aicard .qr-peek{padding:0;margin-top:.55rem}
 .aicard.aishut .qr-peek{margin-top:.6rem}
@@ -3283,9 +3313,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .agr-tpl{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.55;
   color:var(--t1);margin:.3rem 0 .25rem}
 .agr-date{font-size:.9rem;margin-top:.35rem}
-/* ── سُلّم المحطات — علامة واحدة، تدفّقان ──
+/* ── سُلّم المحطات · علامة واحدة، تدفّقان ──
    الأرقام تحت **بتتحسب لا بتتكتب**: مركز الخط = (قطر النقطة −
-   عرض الخط) ÷ ٢. قبل كده كان مكتوب 7px جنب نقطة قطرها 16 — ربع
+   عرض الخط) ÷ ٢. قبل كده كان مكتوب 7px جنب نقطة قطرها 16 · ربع
    بكسل برّا المركز، والرقم المكتوب بيفضل «صح» لحد أول مرة القطر
    يتغيّر، وساعتها بيغلط في صمت. */
 .stp{--stp-dot:16px; --stp-line:1.5px;
@@ -3303,7 +3333,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .stp-i.now .stp-n{color:var(--warn-ink)}
 .stp-at{font-size:var(--fs-2);color:var(--t3)}
 
-/* سُلّم: الترتيب معلومة — الخط بيقول «الواحدة بعد التانية» */
+/* سُلّم: الترتيب معلومة · الخط بيقول «الواحدة بعد التانية» */
 .stp-ladder{position:relative}
 .stp-ladder::before{content:"";position:absolute;inset-block:.8rem;
   inset-inline-start:calc((var(--stp-dot) - var(--stp-line)) / 2);
@@ -3314,7 +3344,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .stp-ladder .stp-n{grid-column:2}
 .stp-ladder .stp-at{grid-row:1;grid-column:3}
 
-/* صفّ: قائمة تحقّق بتلفّ — **من غير خط**، لأن الشبكة اللي بتلفّ
+/* صفّ: قائمة تحقّق بتلفّ · **من غير خط**، لأن الشبكة اللي بتلفّ
    بتحطّ المحطة الخامسة تحت الأولى، والخط ساعتها بيكدب على الترتيب */
 .stp-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:.7rem .6rem;
   margin-top:.8rem;padding-top:.75rem;
@@ -3325,7 +3355,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .stp-row .stp-i.todo .stp-l{font-weight:500}
 .stp-row .stp-n{grid-row:2;grid-column:2}
 
-/* نص الاتفاقية — وثيقة تتقرا، مش جدول */
+/* نص الاتفاقية · وثيقة تتقرا، مش جدول */
 .agr-body section{padding-top:1rem;margin-top:1rem;
   box-shadow:inset 0 1px 0 var(--edge-d)}
 .agr-body section:first-child{padding-top:.2rem;margin-top:0;box-shadow:none}
@@ -3368,18 +3398,18 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .stp-ladder .stp-i{grid-template-columns:1fr auto}
 .stp-row{grid-template-columns:1fr}
 }
-/* ═══ «اسأل أبانمي» — الزرار العايم ═══
+/* ═══ «اسأل أبانمي» · الزرار العايم ═══
    في نفس رصيف شريط القرار وعلى الشمال، فالسؤال بيتسأل في مكان
    القرار لا في شريط التنقّل. ثابت في كل شاشة. */
 .askfab{position:fixed;z-index:21;isolation:isolate;
   inset-inline-end:clamp(1.4rem,3vw,2.6rem);
   bottom:clamp(1rem,2vw,1.5rem);
   display:flex;align-items:center;gap:.55rem;
-  /* الارتفاع من الشريط نفسه (`useMatchHeight`) — بالظبط، لا أقل ولا
+  /* الارتفاع من الشريط نفسه (`useMatchHeight`) · بالظبط، لا أقل ولا
      أكتر: شريط الإجراء المجمّع 61px وشريط القرار 63، والقاع الثابت
      كان بيخلّي الزرار أطول من المجمّع. و63 قيمة احتياطية لما ما
      يبقاش فيه شريط أصلًا. */
-  /* العرض من المحتوى لا رقمًا ثابتًا — والزرار بيكتب عرضه على
+  /* العرض من المحتوى لا رقمًا ثابتًا · والزرار بيكتب عرضه على
      `:root` فالرصيف بيحجز نفس المساحة. */
   width:max-content;height:var(--ask-h,auto);min-height:var(--ask-h,63px);
   padding:.9rem 1rem;border-radius:var(--r4);
@@ -3388,7 +3418,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
      اتقسمت، مش زرار جنب شريط. */
   /* أرضية معتمة تحت الزجاج.
      الزرار عايم فوق محتوى بيتمرّر تحته، والبلور وحده ما بيخفيش النص
-     في الثيمات الغامقة — الطبقة البيضا فيها خفيفة أصلًا. فكان بيبان
+     في الثيمات الغامقة · الطبقة البيضا فيها خفيفة أصلًا. فكان بيبان
      رقم من الرسم شبح جوّه الزرار (قِسناه: لون النص = لون الخلفية
      بالظبط). أرضية الصفحة نفسها تحته بتقفل ده، والزجاج والحافة
      والظل زي ما هما. */
@@ -3401,7 +3431,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
       rgba(20,69,71,calc(.10 + var(--near,0)*.10));
   transform:translateY(calc(8px * (1 - var(--near,0))));
   transition:transform .3s cubic-bezier(.22,.9,.3,1),box-shadow .3s ease}
-/* الضوء بيتبع المؤشر، وبيقوى كل ما تقرب — نسخة `.decbar::before` */
+/* الضوء بيتبع المؤشر، وبيقوى كل ما تقرب · نسخة `.decbar::before` */
 .askfab::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
   opacity:var(--near,0);transition:opacity .25s ease;
   background:radial-gradient(340px circle at var(--mx,50%) 60%,
@@ -3416,7 +3446,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   .askfab{transition:none;transform:none!important}
   .askfab::before{display:none}
 }
-/* الموبايل: تلات طبقات فوق بعض من تحت لفوق —
+/* الموبايل: تلات طبقات فوق بعض من تحت لفوق ·
    شريط التنقّل (62px) ثم زرار السؤال (46px) ثم شريط القرار.
    الزرار بيبقى دايرة، والشريط بياخد العرض كله لأن مفيش مكان لصفّ. */
 @media (max-width:960px){
@@ -3427,7 +3457,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .screen{padding-bottom:calc(15rem + env(safe-area-inset-bottom,0px))}
 }
 /* ═══════════════════════════════════════════════════════════
-   المستندات — ثامبنيل يقول شكل المحتوى
+   المستندات · ثامبنيل يقول شكل المحتوى
    الأيقونة الواحدة بتقول «ده ملف». الثامبنيل بيقول ده جدول ولا نص
    ولا صورة، فصفّ فيه ستة مرفقات يتقري بالنظرة لا بالقراءة.
    ═══════════════════════════════════════════════════════════ */
@@ -3438,13 +3468,13 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   box-shadow:inset 0 0 0 1px var(--edge-2),
     0 1px 3px rgba(20,69,71,.06)}
 .dthumb-lg{width:min(300px,62vw);height:min(390px,52vh);border-radius:10px;margin-inline:auto}
-/* طيّة الورقة — بتقول «صفحة» من غير أيقونة */
+/* طيّة الورقة · بتقول «صفحة» من غير أيقونة */
 .dthumb-corner{position:absolute;top:0;inset-inline-end:0;width:9px;height:9px;
   background:linear-gradient(225deg,rgba(var(--edgeC),.20) 50%,transparent 50%)}
 .dthumb-lg .dthumb-corner{width:26px;height:26px}
 .dthumb-p{position:absolute;inset:5px 4px;display:block}
 .dthumb-lg .dthumb-p{inset:26px 22px}
-/* شريط النوع على الحافة السفلية — لون واحد لكل نوع */
+/* شريط النوع على الحافة السفلية · لون واحد لكل نوع */
 .dthumb::after{content:"";position:absolute;inset-inline:0;bottom:0;height:3px;
   background:var(--dk,rgba(var(--edgeC),.3))}
 .dthumb-lg::after{height:6px}
@@ -3475,7 +3505,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   border-radius:50%;background:rgba(var(--edgeC),.30)}
 .dt-img .hill.b{inset-inline-start:auto;inset-inline-end:-24%;width:66%;
   background:rgba(var(--edgeC),.20)}
-/* أرشيف مضغوط — أسنان السحّاب */
+/* أرشيف مضغوط · أسنان السحّاب */
 .dt-zip{display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;padding-top:10%}
 .dthumb-lg .dt-zip{gap:12px;padding-top:14%}
 .dt-zip i{display:block;width:26%;height:3px;border-radius:1px;background:rgba(var(--edgeC),.30)}
@@ -3496,7 +3526,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .dfile-b{display:flex;align-items:center;gap:.6rem;min-width:0;flex:1;
   padding:.3rem .4rem;border-radius:var(--r1);text-align:start;color:inherit;
   transition:background .14s ease}
-.dfile-b:hover{background:rgba(var(--wC),calc(.55 * var(--wM)))}
+/* من غير أرضية عند الهوفر: الصفّ نفسه بيفتح لونه، فالأرضية التانية
+   كانت بتطلع **بلوك أبيض في نصّ الصفّ** بينتهي فجأة قبل آخره.
+   الاسم بيتحوّل للون العلامة، وده كفاية كإشارة إنه قابل للضغط. */
 .dfile-t{display:flex;flex-direction:column;min-width:0;gap:.1rem}
 .dfile-n{font-size:.82rem;color:var(--t1);line-height:1.45;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3516,14 +3548,14 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   box-shadow:inset 0 1px 0 var(--edge-d)}
 
 /* ═══════════════════════════════════════════════════════════
-   سجل المشروع — قيد مصنَّف لا سطر نصّي
+   سجل المشروع · قيد مصنَّف لا سطر نصّي
    كل نوع إجراء له حقوله، والفاعل أربعة أنواع. الترويسة بتتقري
    بالمسح، والتفصيل بينفتح بضغطة عشان ستة وعشرون قيدًا يفضلوا
    قابلين للمسح.
    ═══════════════════════════════════════════════════════════ */
 
 .lg{list-style:none;margin:1rem 0 0;padding:0;position:relative}
-/* الخيط الرأسي بيربط الأحداث — في RTL على اليمين */
+/* الخيط الرأسي بيربط الأحداث · في RTL على اليمين */
 .lg::before{content:"";position:absolute;inset-block:.9rem;
   inset-inline-start:calc((var(--ev-dot) - var(--ev-line)) / 2);width:var(--ev-line);
   background:linear-gradient(180deg,rgba(var(--edgeC),.04),rgba(var(--edgeC),.18) 8%,
@@ -3580,12 +3612,12 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .lgf-k{font-size:.73rem;color:var(--t3);line-height:1.55}
 .lgf-v{font-size:.82rem;color:var(--t2);line-height:1.75}
 .lgf.s .lgf-v{font-family:var(--fd);font-weight:600;color:var(--t1)}
-/* الملاحظة الإدارية: نصّ القرار نفسه لا تعليق — إلزامية في النظام
+/* الملاحظة الإدارية: نصّ القرار نفسه لا تعليق · إلزامية في النظام
    على كل قبول أو رفض، فبتاخد وزنًا بصريًا يفرّقها عن الحقول. */
 .lgnote{margin:.6rem 0 0;padding:.6rem .85rem;border-radius:var(--r2);
   font-size:.83rem;line-height:1.8;color:var(--t2);
   background:rgba(var(--edgeC),.045);
-  /* الشريط الملوّن **علامة** لا حافة — فالصندوق بياخد حلقته
+  /* الشريط الملوّن **علامة** لا حافة · فالصندوق بياخد حلقته
      الكاملة كمان. من غيرها كان صندوقًا مرسومًا من جهة واحدة، وهي
      الحالة اللي العميل طلب إنها تختفي من السيستم كله. */
   box-shadow:inset 2px 0 0 rgba(var(--retC2),.35),inset 0 0 0 1px var(--edge-1)}
@@ -3599,10 +3631,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .thread-why .sub{color:var(--warn-ink)}
 
 /* ═══════════════════════════════════════════════════════════
-   عمود التحليلات — كارت واحد لازق بيملا الارتفاع
+   عمود التحليلات · كارت واحد لازق بيملا الارتفاع
    العمود كان تلات كروت بأطوال مختلفة، فيفضل فراغ نصّه على الشمال.
    بقى كارت واحد: بياخد الارتفاع المتاح كله، ولمّا يطول بيتمرّر
-   جوّه نفسه. واللزق هنا مالوش مشكلة العمود متعدد الكروت — مفيش
+   جوّه نفسه. واللزق هنا مالوش مشكلة العمود متعدد الكروت · مفيش
    محتوى تحته يستنّى دوره.
    ═══════════════════════════════════════════════════════════ */
 
@@ -3616,13 +3648,13 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   .hasdock>.screen.hasg2,.viewstack>.screen.hasg2{padding-bottom:1.2rem}
   /* الحشو جوّه العمود الرئيسي لا على الشبكة ولا على `.screen`:
      حشو الشبكة برّه صفوفها، وخانة العنصر اللازق هي **الصف**. وحشو
-     `.screen` برّه المحتوى كله فبيسيب مسافة تمرير بعد نهاية الصف —
+     `.screen` برّه المحتوى كله فبيسيب مسافة تمرير بعد نهاية الصف ·
      وفيها الكارت اللازق بيسيب مكانه ويطلع فوق. العمود بيطوّل الصف،
      والصف بيمدّ اللزق لآخر التمرير. */
   .hasg2>.g2>.col:first-child{padding-bottom:clamp(10.5rem,17vh,13.5rem)}
   /* لوحة التقارير استثناء: العمود اللازق فيها مسقوف بقاع الكروت
      (`capSelector`)، فهو بيخلص معاها من غير ما يحتاج مسافة لزق
-     إضافية — والحشو هنا كان بيسيب فراغًا يتمرّر فيه على لا حاجة. */
+     إضافية · والحشو هنا كان بيسيب فراغًا يتمرّر فيه على لا حاجة. */
   .hasg2.g2fit>.g2>.col:first-child{padding-bottom:0}
 
   .aiside{position:sticky;top:.35rem;align-self:start;
@@ -3631,7 +3663,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
        ظاهر، وكل ما تنزل بيكبر لحد ما يلزق فيملا الشاشة. */
     height:var(--ai-fill,26rem);
     /* حاوية قياس: البوستر جوّه بيقيس نفسه على ارتفاعها لا على الشاشة.
-       `size` آمنة هنا لأن الارتفاع معلوم فوق ٩٦٠px بس — تحتها الكارت
+       `size` آمنة هنا لأن الارتفاع معلوم فوق ٩٦٠px بس · تحتها الكارت
        في السياق العادي وارتفاعه من محتواه. */
     container-type:size}
   .aiside>.aicard{height:100%;min-height:0;display:flex;flex-direction:column}
@@ -3648,7 +3680,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .aishut-m{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;justify-content:center}
 /* اللمحة بتتقصّ عند تلات سطور: الكارت بيبقى قصيرًا قبل ما يلزق،
    والفقرة الطويلة بتزقّ الزرار برّه المنظر. */
-/* من غير خطّ فاصل: البوستر أربع حاجات في عمود واحد متوسّط — الشرارة
+/* من غير خطّ فاصل: البوستر أربع حاجات في عمود واحد متوسّط · الشرارة
    والعنوان واللمحة والزرار. الخطّ كان بيقسمهم لمجموعتين وهم مجموعة
    واحدة، والفراغ لوحده كفاية للفصل. */
 .aishut-p{font-size:.84rem;line-height:1.8;color:var(--t2);margin:.3rem 0 .2rem;
@@ -3660,7 +3692,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .aicard.aishut .aishut-f{margin:0;font-size:.69rem}
 
 /* أعلى الصفحة الكارت لسه ما لزقش، فمساحته أقل من طول البوستر الطبيعي
-   (٢٧٥px) بحوالي ٣٠px — والزرار كان بيقع تحت الحافة ويحتاج تمريرًا
+   (٢٧٥px) بحوالي ٣٠px · والزرار كان بيقع تحت الحافة ويحتاج تمريرًا
    داخليًا عشان يبان، وده بالظبط اللي البوستر موجود عشان يمنعه. فبدل
    ما يتقصّ، بيتقلّش: سطرين لمحة بدل تلاتة وفواصل أضيق. أول ما تنزل
    شوية ويلزق بيرجع لهيئته الكاملة.
@@ -3709,7 +3741,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 .rbc-h{display:flex;align-items:center;gap:.6rem}
 /* الأيقونة في مربّع لا في دايرة: الدايرة بتتقري كأڤاتار، والمربّع
-   المدوّر بيتقري كتصنيف — وده اللي هي بتعمله هنا. */
+   المدوّر بيتقري كتصنيف · وده اللي هي بتعمله هنا. */
 .rbc-i{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:9px;
   color:var(--brand-ink);background:rgba(var(--retC2),.10);
   box-shadow:inset 0 0 0 1px rgba(var(--retC2),.18)}
@@ -3747,7 +3779,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* ═══ التقرير الكامل ═══ */
 /* الرقم والجملة على **خطّ كتابة واحد**، لا على حافة صندوق واحدة.
    `flex-start` كان بيسطّر أعلى الصندوقين، والرقم ١.٧rem والجملة
-   ٠.٨٦rem — فالقاعدتان بيبعدوا ٩px والسطر يبان مايل. `baseline`
+   ٠.٨٦rem · فالقاعدتان بيبعدوا ٩px والسطر يبان مايل. `baseline`
    بيسطّر أول سطر في الجملة مع قاعدة الرقم، وده اللي العين بتقيس عليه. */
 .rvread{display:flex;align-items:baseline;gap:1.2rem;flex-wrap:wrap}
 .rvread-v{direction:rtl;unicode-bidi:isolate;display:flex;align-items:baseline;gap:.5rem;flex:none}
@@ -3759,7 +3791,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 /* ═══ التقرير المُشكَّل ═══
    الجملة نفسها هي الفلتر: «أعرض [المبلغ المعتمد] حسب [المنطقة] في
-   [2026]» — المستخدم بيقرا سؤاله مكتوبًا قبل ما يشوف إجابته. */
+   [2026]» · المستخدم بيقرا سؤاله مكتوبًا قبل ما يشوف إجابته. */
 .rbld-q{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;
   font-family:var(--fd);font-size:.9rem}
 /* أعمدة أفقية: أسماء الأبعاد عربية طويلة، والرأسي بيقلب الاسم */
@@ -3780,7 +3812,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 }
 
 /* ═══════════════════════════════════════════════════════════
-   كتالوج التقارير — الـ١٣ شاشة كما هي في النظام العامل.
+   كتالوج التقارير · الـ١٣ شاشة كما هي في النظام العامل.
 
    الشبكة كروت لا صفوف: كل شاشة ليها سؤال وجملة وصف وعدّادات
    وملاحظة، والصف الواحد ما بيسعش ده بلا قصّ. والكروت صفوف ثابتة
@@ -3801,7 +3833,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    السؤال والوصف والملاحظة كلهم مقصوصين بأرضية ثابتة، فالصفوف الستة
    بتقع على نفس الخطوط في كل كارت.
 
-   المحاولة الأولى كانت `1fr` على الوصف عشان يبلع الفرق — وده كان
+   المحاولة الأولى كانت `1fr` على الوصف عشان يبلع الفرق · وده كان
    بيعكس المطلوب: الملاحظة (آخر صف) ارتفاعها متغيّر، فالفايض كان
    بيروح للوصف ويزقّ العدّادات لتحت في الكارت اللي ملاحظته قصيرة.
    الحل إن كل صف يبقى ثابتًا و`align-content:start` يسيب أي فايض
@@ -3819,7 +3851,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
 /* `-webkit-box` بتتقلّص على محتواها حتى جوّه صف `1fr`، فالكارت اللي
    وصفه سطرين كان بيرفع عدّاداته ٢١px فوق جيرانه. الأرضية بتلات سطور
-   بتخلّي الصف واحدًا في كل الكروت — والقصّ عند نفس السطر. */
+   بتخلّي الصف واحدًا في كل الكروت · والقصّ عند نفس السطر. */
 .catc-w{margin:0;font-size:var(--fs-2);line-height:1.8;min-height:4.32em;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .catc-n{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .55rem;padding-top:.55rem;
@@ -3837,12 +3869,12 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .lrq{display:flex;flex-direction:column;gap:.3rem}
 .lrq-q{margin:0;font-family:var(--fd);font-weight:600;font-size:1.05rem;line-height:1.65;color:var(--t1)}
 .lrq-w{margin:0;font-size:var(--fs-3);line-height:1.9}
-/* الملاحظة اللي لقيناها في الشاشة الحقيقية — جنب الشاشة لا في مستند */
+/* الملاحظة اللي لقيناها في الشاشة الحقيقية · جنب الشاشة لا في مستند */
 .lrfind{display:flex;align-items:flex-start;gap:.7rem}
 .lrfind>.badge{flex:none;color:var(--ret2);background:rgba(var(--retC2),.10)}
 .lrfind p{margin:0;font-size:.84rem;line-height:1.95;color:var(--t2)}
 
-/* الفلاتر بعدد خياراتها — الرقم هو الرسالة */
+/* الفلاتر بعدد خياراتها · الرقم هو الرسالة */
 .lrf{display:flex;flex-wrap:wrap;gap:.45rem}
 .lrf-i{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .6rem;border-radius:var(--r1);
   background:rgba(var(--wC),calc(.55 * var(--wM)));
@@ -3854,7 +3886,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   box-shadow:inset 0 0 0 1px rgba(var(--warnC),.22)}
 .lrf-i.long svg{color:var(--warn-ink)}
 
-/* رسوم الشاشة — تخطيطية: بتقول شكل الرسم لا قيمه */
+/* رسوم الشاشة · تخطيطية: بتقول شكل الرسم لا قيمه */
 .lrch{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 .lrch-c{display:grid;grid-template-rows:auto auto 1fr;gap:.35rem;padding:1rem}
 .lrch-t{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.6;color:var(--t1)}
@@ -3891,7 +3923,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* النصّ المساعد فوق تدرّج الصفحة العارية.
    `--t3` مصمَّم للنصّ فوق الزجاج؛ على التدرّج نفسه بينزل تحت ٤.٥
    (قِسناه ٣.٨٨ في أوضح موضع). نفس علاج `.rbtop>.sub`: الحبر من
-   `--t1` وشفافية بتخفّفه — فيفضل مساعدًا وهو مقروء. */
+   `--t1` وشفافية بتخفّفه · فيفضل مساعدًا وهو مقروء. */
 .rpsec-n,
 .catsum-s>.sub,
 .lrf-i>.sub,
@@ -3910,7 +3942,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .ftool-f>span.sub{color:var(--t1);opacity:.78}
 
 /* ═══════════════════════════════════════════════════════════
-   الميزانية — شجرة التخصيص وفحص التوازن.
+   الميزانية · شجرة التخصيص وفحص التوازن.
    ═══════════════════════════════════════════════════════════ */
 
 .bgsum{display:flex;flex-direction:column;gap:.7rem}
@@ -3969,7 +4001,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   font-weight:600;color:var(--t1)}
 .bgleaf-v .sub{font-family:var(--ft);font-weight:400;}
 
-/* نسبة الاستهلاك جوّه الصف — شريط ورقم */
+/* نسبة الاستهلاك جوّه الصف · شريط ورقم */
 .bgpct{display:flex;align-items:center;gap:.5rem}
 .bgpct-t{flex:1;min-width:48px;height:7px;border-radius:99px;overflow:hidden;
   background:rgba(var(--edgeC),.10)}
@@ -3981,7 +4013,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 /* شارة الهوية في الثيمات الغامقة.
    `.tag` الأساسية أرضيتها طبقة بيضا شفافة، وفي الغامق الطبقة دي
-   بتفضل أفتح من الأرضية — فالليمون الشاحب (`--brand-ink`) بينزل
+   بتفضل أفتح من الأرضية · فالليمون الشاحب (`--brand-ink`) بينزل
    على أرضية ليمون فاتحة ويطلع ٤.١. تخفيف الغسلة بيرجّع أرضية
    الشارة غامقة، فالحبر الفاتح يتقري. باقي التونات اتظبطت من
    حبرها؛ دي الوحيدة اللي لازم تتظبط من أرضيتها لأن الليمون
@@ -4011,7 +4043,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .chb,.chy{display:flex;flex-direction:column;gap:.7rem}
 .chb-h{display:flex;align-items:baseline;justify-content:space-between;gap:.8rem;flex-wrap:wrap}
 .chb-t{font-family:var(--fd);font-weight:600;font-size:.9rem;color:var(--t1)}
-/* المفتاح دايمًا موجود مع أكتر من سلسلة — الهوية مش من اللون وحده */
+/* المفتاح دايمًا موجود مع أكتر من سلسلة · الهوية مش من اللون وحده */
 .chb-k{display:flex;flex-wrap:wrap;gap:.25rem .8rem;font-size:.72rem;color:var(--t1);opacity:.78}
 .chb-k>span{display:inline-flex;align-items:center;gap:.35rem}
 .chb-k i{width:10px;height:10px;border-radius:3px;flex:none}
@@ -4042,7 +4074,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .chy-bars>i{position:absolute;bottom:0;display:block;border-radius:5px 5px 0 0}
 .chy-bars>i.c{inset-inline:0;background:rgba(var(--edgeC),.13)}
 .chy-bars>i.a{inset-inline:22%;background:var(--solid)}
-/* الصرف اللي عدّى المخصص — لون الخطر، ومعاه سطر مكتوب تحت الرسم */
+/* الصرف اللي عدّى المخصص · لون الخطر، ومعاه سطر مكتوب تحت الرسم */
 .chy-bars>i.a.over{background:var(--no)}
 .chy-lb{font-size:.7rem;line-height:1.35;text-align:center;color:var(--t1);opacity:.78;
   white-space:pre-line}
@@ -4056,10 +4088,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* الرقم الواحد جنب رسم الزمن: الاتنين بيتقروا في نظرة واحدة */
 .chgrid{display:grid;gap:.85rem;grid-template-columns:minmax(220px,.7fr) 1.3fr}
 @media (max-width:900px){.chgrid{grid-template-columns:1fr}}
-/* القايمة اتقلبت عشان ما تخرجش برّه الشاشة — `ExportMenu` بيقيس
+/* القايمة اتقلبت عشان ما تخرجش برّه الشاشة · `ExportMenu` بيقيس
    ويحطّ الكلاس ده. مرتبطة بنهاية الزرار بدل بدايته. */
 .fexp-m.flip{inset-inline-start:auto;inset-inline-end:0}
-/* نبضة قصيرة على شجرة التخصيص لما تقفز لها من فحص التوازن —
+/* نبضة قصيرة على شجرة التخصيص لما تقفز لها من فحص التوازن ·
    التمرير وحده مش كفاية: الصفحة بتتحرك والعين مش عارفة إيه اللي
    اتغيّر. النبضة بتقول «أهي». */
 .bgtree{border-radius:var(--r3);transition:box-shadow .4s ease,background .4s ease}

@@ -1,9 +1,9 @@
 /**
- * مؤشرات الإجراءات — 66 مؤشرًا موزّعة على 11 إجراءً.
+ * مؤشرات الإجراءات · 66 مؤشرًا موزّعة على 11 إجراءً.
  *
  * المصدر: وثيقة الإجراءات اللي بعتها العميل، القسم `x.7 قياس مستوى
  * الأداء` في كل إجراء. الأسماء وآليات القياس **منقولة حرفيًا** من
- * الوثيقة — مش إعادة صياغة، عشان لما مظفر يراجع يلاقي نص وثيقته.
+ * الوثيقة · مش إعادة صياغة، عشان لما مظفر يراجع يلاقي نص وثيقته.
  *
  * القرار التصميمي الأهم هنا:
  *
@@ -27,7 +27,7 @@ import { median } from './analytics'
 import { ROUTES } from '@/app/routes'
 import { YEARS } from './mock/taxonomy'
 
-/** وحدة المقام — «10 من 30» لازم تقول 30 إيه */
+/** وحدة المقام · «10 من 30» لازم تقول 30 إيه */
 export type Basis = 'project' | 'entity' | 'line' | 'source' | 'riyal'
 
 /** وحدة المؤشر كما في عمود «وحدة القياس» بالوثيقة */
@@ -36,22 +36,22 @@ export type KpiUnit = 'pct' | 'days' | 'count' | 'avg'
 export interface Kpi {
   /** رقمه في جدول الوثيقة */
   no: number
-  /** اسم المؤشر — حرفيًا */
+  /** اسم المؤشر · حرفيًا */
   name: string
-  /** آلية القياس — حرفيًا */
+  /** آلية القياس · حرفيًا */
   how: string
   unit: KpiUnit
   /** القيمة المحسوبة. `null` = الداتا اللازمة مش موجودة */
   value: number | null
-  /** ناقصه إيه — بيظهر مكان الرقم */
+  /** ناقصه إيه · بيظهر مكان الرقم */
   gap?: string
   /** البسط والمقام ووحدتهما، عشان الرقم يبان مبني على كام */
   of?: { part: number; whole: number; basis: Basis }
-  /** الاتجاه الأحسن — بيحدّد لون المؤشر لما يبقى فيه مستهدف */
+  /** الاتجاه الأحسن · بيحدّد لون المؤشر لما يبقى فيه مستهدف */
   better: 'up' | 'down' | 'flat'
-  /** المستهدف — `null` في كلها: الوثيقة مافيهاش أي SLA */
+  /** المستهدف · `null` في كلها: الوثيقة مافيهاش أي SLA */
   target: number | null
-  /** الصفوف اللي طلّعت الرقم — الرقم اللي مايوصّلش لصفوفه تقرير ميّت */
+  /** الصفوف اللي طلّعت الرقم · الرقم اللي مايوصّلش لصفوفه تقرير ميّت */
   to?: string
   /** الرقم مشتقّ من `journey.ts` مش من عمود حقيقي */
   derived?: boolean
@@ -162,11 +162,11 @@ export const PROCESSES: ProcessKpis[] = [
       { no: 3, name: 'نسبة الحجز من الميزانية', how: 'إجمالي المبالغ المحجوزة ÷ إجمالي المبالغ المخصصة × 100%.', unit: 'pct', ...ratio(bud.reserved, bud.allocated, 'riyal'), better: 'flat', target: null, to: link('status=في الدراسة') },
       { no: 4, name: 'عدد البنود المستغلة', how: 'عدد بنود الميزانية التي تم استخدامها مقارنة بإجمالي البنود.', unit: 'pct', ...ratio(usedLines.length, lines.length, 'line'), better: 'up', target: null, to: ROUTES.budget },
       { no: 5, name: 'نسبة البنود غير المستخدمة', how: 'عدد البنود التي لم يتم الحجز أو الصرف عليها ÷ إجمالي البنود × 100%.', unit: 'pct', ...ratio(lines.length - usedLines.length, lines.length, 'line'), better: 'down', target: null, to: ROUTES.budget },
-      { no: 6, name: 'عدد المناقلات المالية', how: 'إجمالي طلبات المناقلات المنفذة خلال السنة المالية.', unit: 'count', value: null, gap: 'المناقلة مش ممثّلة في النموذج — شاشة المناقلات في النظام العامل ما اتقريتش (الأوديت قراءة فقط).', better: 'flat', target: null },
+      { no: 6, name: 'عدد المناقلات المالية', how: 'إجمالي طلبات المناقلات المنفذة خلال السنة المالية.', unit: 'count', value: null, gap: 'المناقلة مش ممثّلة في النموذج، شاشة المناقلات في النظام العامل ما اتقريتش (الأوديت قراءة فقط).', better: 'flat', target: null },
       { no: 7, name: 'نسبة البنود التي استنفدت مخصصاتها', how: 'عدد البنود التي وصل رصيدها إلى صفر ÷ إجمالي البنود × 100%.', unit: 'pct', ...ratio(drained.length, lines.length, 'line'), better: 'down', target: null, to: ROUTES.budget },
       { no: 8, name: 'نسبة استغلال مصدر التمويل', how: 'إجمالي المبالغ المصروفة من مصدر التمويل ÷ إجمالي المبلغ المخصص من المصدر × 100%.', unit: 'pct', ...ratio(found.spent, found.allocated, 'riyal'), better: 'up', target: null, to: link('funding=foundation') },
       { no: 9, name: 'نسبة الحجز لكل مصدر تمويل', how: 'إجمالي المبالغ المحجوزة من المصدر ÷ إجمالي المبلغ المخصص من المصدر × 100%.', unit: 'pct', ...ratio(found.reserved, found.allocated, 'riyal'), better: 'flat', target: null, to: link('funding=foundation&status=في الدراسة') },
-      { no: 10, name: 'نسبة البنود متعددة مصادر التمويل', how: 'عدد البنود المرتبطة بأكثر من مصدر تمويل ÷ إجمالي بنود الميزانية × 100%.', unit: 'pct', value: null, gap: 'ربط البند بأكثر من مصدر مش ممثّل — النموذج بيربط المشروع بمصدر واحد.', better: 'flat', target: null },
+      { no: 10, name: 'نسبة البنود متعددة مصادر التمويل', how: 'عدد البنود المرتبطة بأكثر من مصدر تمويل ÷ إجمالي بنود الميزانية × 100%.', unit: 'pct', value: null, gap: 'ربط البند بأكثر من مصدر مش ممثّل، النموذج بيربط المشروع بمصدر واحد.', better: 'flat', target: null },
       { no: 11, name: 'نسبة المشاريع ذات التمويل المشترك', how: 'عدد المشاريع الممولة من أكثر من مصدر ÷ إجمالي المشاريع الممولة × 100%.', unit: 'pct', ...ratio(countOf(approved, (r) => r.shared), approved.length), better: 'flat', target: null, to: link('shared=1') },
       { no: 12, name: 'نسبة مصادر التمويل غير المستخدمة', how: 'عدد مصادر التمويل التي لم يتم الحجز أو الصرف منها ÷ إجمالي مصادر التمويل المعتمدة × 100%.', unit: 'pct', ...ratio(sourcesUnused, 2, 'source'), better: 'down', target: null },
       { no: 13, name: 'نسبة الأرصدة غير المستغلة حسب المصدر', how: 'الرصيد غير المستخدم في مصدر التمويل ÷ إجمالي مخصصات المصدر × 100%.', unit: 'pct', ...ratio(Math.max(0, waqf.allocated - waqf.spent), waqf.allocated, 'riyal'), better: 'down', target: null, to: link('funding=waqf') },
@@ -180,8 +180,8 @@ export const PROCESSES: ProcessKpis[] = [
     title: 'تسجيل واعتماد الجهات المستفيدة',
     owner: 'إدارة المنح',
     kpis: [
-      { no: 1, name: 'متوسط مدة معالجة طلب التسجيل', how: 'متوسط الوقت من تاريخ تقديم الطلب حتى إصدار قرار الاعتماد أو الرفض.', unit: 'days', value: null, gap: 'تاريخ قرار الجهة مش في النموذج — النظام بيعرض تاريخ التسجيل وآخر تعديل بس.', better: 'down', target: null },
-      { no: 2, name: 'نسبة طلبات التسجيل المعتمدة من أول مراجعة', how: 'عدد الطلبات المعتمدة دون إعادة للاستكمال ÷ إجمالي الطلبات × 100%.', unit: 'pct', value: null, gap: 'مفيش سجل إعادة لطلب الجهة — الحالة الحالية بس هي المحفوظة.', better: 'up', target: null },
+      { no: 1, name: 'متوسط مدة معالجة طلب التسجيل', how: 'متوسط الوقت من تاريخ تقديم الطلب حتى إصدار قرار الاعتماد أو الرفض.', unit: 'days', value: null, gap: 'تاريخ قرار الجهة مش في النموذج، النظام بيعرض تاريخ التسجيل وآخر تعديل بس.', better: 'down', target: null },
+      { no: 2, name: 'نسبة طلبات التسجيل المعتمدة من أول مراجعة', how: 'عدد الطلبات المعتمدة دون إعادة للاستكمال ÷ إجمالي الطلبات × 100%.', unit: 'pct', value: null, gap: 'مفيش سجل إعادة لطلب الجهة، الحالة الحالية بس هي المحفوظة.', better: 'up', target: null },
       { no: 3, name: 'متوسط عدد مرات إعادة الطلب للاستكمال', how: 'إجمالي مرات إعادة الطلبات ÷ إجمالي الطلبات.', unit: 'avg', value: null, gap: 'نفس السبب: مفيش سجل حالات لطلب التسجيل.', better: 'down', target: null },
       { no: 4, name: 'نسبة الطلبات المرفوضة بسبب عدم صحة البيانات أو الوثائق', how: 'عدد الطلبات المرفوضة لهذا السبب ÷ إجمالي الطلبات × 100%.', unit: 'pct', value: null, gap: 'سبب الرفض مقنّن للمشاريع (9 مبررات) مش للجهات.', better: 'down', target: null },
       { no: 5, name: 'عدد الجهات الجديدة المعتمدة', how: 'إجمالي الجهات التي تم اعتمادها خلال الفترة.', unit: 'count', value: ents.filter((e) => e.activation === 'مقبول').length, better: 'up', target: null, to: `${ROUTES.entities}?activation=مقبول` },
@@ -243,7 +243,7 @@ export const PROCESSES: ProcessKpis[] = [
     owner: 'اللجنة التنفيذية',
     kpis: [
       { no: 1, name: 'متوسط مدة دراسة المشروع في اللجنة التنفيذية', how: 'متوسط عدد الأيام من تاريخ إحالة المشروع إلى اللجنة حتى صدور القرار النهائي.', unit: 'days', value: medianDays(decided, (r) => j(r)?.committee), better: 'down', target: null, derived: true },
-      { no: 2, name: 'متوسط مدة إصدار قرار اللجنة', how: 'متوسط الزمن من تاريخ انعقاد الاجتماع حتى اعتماد القرار في النظام.', unit: 'days', value: null, gap: 'تاريخ انعقاد الاجتماع مش في النظام — المحاضر مرفوعة كملفات بلا تاريخ منظّم.', better: 'down', target: null },
+      { no: 2, name: 'متوسط مدة إصدار قرار اللجنة', how: 'متوسط الزمن من تاريخ انعقاد الاجتماع حتى اعتماد القرار في النظام.', unit: 'days', value: null, gap: 'تاريخ انعقاد الاجتماع مش في النظام، المحاضر مرفوعة كملفات بلا تاريخ منظّم.', better: 'down', target: null },
       { no: 3, name: 'نسبة المشاريع المعتمدة من أول عرض', how: '(عدد المشاريع التي تمت التوصية بالموافقة عليها من أول عرض ÷ إجمالي المشاريع المعروضة) × 100%.', unit: 'pct', ...(() => { const pool = decided.filter((r) => j(r)?.committee !== null); return ratio(countOf(pool, (r) => j(r)?.firstPass === true), pool.length) })(), better: 'up', target: null, derived: true },
       { no: 4, name: 'نسبة المشاريع المرفوضة', how: '(عدد المشاريع التي أوصت اللجنة برفضها ÷ إجمالي المشاريع المعروضة) × 100%.', unit: 'pct', ...(() => { const pool = decided.filter((r) => j(r)?.committee !== null); return ratio(countOf(pool, (r) => r.supportStatus === 'مرفوض'), pool.length) })(), better: 'down', target: null },
     ],
@@ -273,7 +273,7 @@ export const PROCESSES: ProcessKpis[] = [
       { no: 1, name: 'متوسط مدة إعداد الاتفاقية', how: 'متوسط عدد الأيام من إحالة المشروع إلى مرحلة إعداد الاتفاقية حتى اعتماد الاتفاقية.', unit: 'days', value: medianDays(rows, (r) => j(r)?.agreement), better: 'down', target: null, derived: true, to: link('stage=اعتماد الإتفاقية') },
       { no: 2, name: 'نسبة الاتفاقيات المنجزة ضمن المدة المستهدفة', how: '(عدد الاتفاقيات المعتمدة ضمن المدة المستهدفة ÷ إجمالي الاتفاقيات) × 100%.', unit: 'pct', value: null, gap: 'مفيش مدة مستهدفة لإعداد الاتفاقية في الوثيقة.', better: 'up', target: null },
       { no: 3, name: 'متوسط مدة دورة اعتماد الاتفاقية', how: 'متوسط الزمن من إرسال الاتفاقية للاعتماد حتى اكتمال جميع الاعتمادات.', unit: 'days', value: null, gap: 'دورة الاعتماد سبع مراحل (إلكترونية وورقية ومالية وتنفيذية)، والنموذج بيمسك المدة الكلية بس.', better: 'down', target: null },
-      { no: 4, name: 'نسبة الاتفاقيات المعادة للتعديل', how: '(عدد الاتفاقيات المعادة للمراجعة أو التعديل ÷ إجمالي الاتفاقيات) × 100%.', unit: 'pct', value: null, gap: 'الإعادة للتعديل مش حدثًا مسجّلًا — «اعتماد الإتفاقية» قسم واحد بلا حالات فرعية.', better: 'down', target: null },
+      { no: 4, name: 'نسبة الاتفاقيات المعادة للتعديل', how: '(عدد الاتفاقيات المعادة للمراجعة أو التعديل ÷ إجمالي الاتفاقيات) × 100%.', unit: 'pct', value: null, gap: 'الإعادة للتعديل مش حدثًا مسجّلًا، «اعتماد الإتفاقية» قسم واحد بلا حالات فرعية.', better: 'down', target: null },
     ],
   },
 
@@ -333,5 +333,5 @@ export const measuredIn = (p: ProcessKpis): number => p.kpis.filter((k) => k.val
 export const processByKey = (key: string): ProcessKpis | undefined =>
   PROCESSES.find((p) => p.key === key)
 
-/** المؤشر الرئيسي للإجراء — أول مؤشر له قيمة */
+/** المؤشر الرئيسي للإجراء · أول مؤشر له قيمة */
 export const headlineOf = (p: ProcessKpis): Kpi | undefined => p.kpis.find((k) => k.value !== null)

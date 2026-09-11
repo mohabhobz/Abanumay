@@ -12,7 +12,7 @@ export interface QueryParamsApi<T extends Record<string, string | undefined>> {
   values: T
   /** بيصفّر الصفحة تلقائيًا مع أي تغيير فلتر */
   set: (patch: Partial<Record<keyof T, string | undefined>>) => void
-  /** بيستبدل كل الفلاتر دفعة واحدة — للّقطات المحفوظة */
+  /** بيستبدل كل الفلاتر دفعة واحدة · للّقطات المحفوظة */
   replace: (next: Partial<Record<keyof T, string | undefined>>) => void
   clear: () => void
   /** عدد الفلاتر المفعّلة، بدون البحث والترتيب والصفحة */
@@ -21,7 +21,7 @@ export interface QueryParamsApi<T extends Record<string, string | undefined>> {
    * الشاشة الحالية كنص استعلام، بلا رقم الصفحة.
    *
    * رقم الصفحة وحده مستثنى: «الفيو» عند المستخدم هو السؤال وشكل
-   * إجابته — الفلاتر والترتيب والتجميع وعدد الصفوف ونوع العرض —
+   * إجابته · الفلاتر والترتيب والتجميع وعدد الصفوف ونوع العرض ·
    * مش وقفته في التصفّح.
    */
   snapshot: () => string

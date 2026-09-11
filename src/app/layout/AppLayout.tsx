@@ -20,7 +20,7 @@ export interface AppLayoutProps {
  * بتتنقّل، ويتفتح من أي مكان بـ⌘K.
  *
  * ما بيفتحش لوحده في أي صفحة: المستخدم بيقع على شاشة المساعد
- * الكاملة بعد الدخول، فالترحيب بيحصل هناك مرة واحدة — ولوح
+ * الكاملة بعد الدخول، فالترحيب بيحصل هناك مرة واحدة · ولوح
  * جانبي بيفتح لوحده فوق كده يبقى إزعاج لا ترحيب.
  */
 export function AppLayout({ children, assistantContext }: AppLayoutProps) {
@@ -65,7 +65,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
           />
 
           {/* ثابت في كل شاشة، ومكانه جنب شريط القرار لا في شريط
-              التنقّل — السؤال بيتسأل عند القرار. */}
+              التنقّل · السؤال بيتسأل عند القرار. */}
           <AskDock open={assistantOpen} onToggle={toggleAssistant} compact={mobile} />
         </div>
       </div>

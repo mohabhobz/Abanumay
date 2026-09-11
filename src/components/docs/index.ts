@@ -1,4 +1,4 @@
-/** المستندات — شكل واحد لأي ملف في السيستم: ثامبنيل · معاينة · تنزيل */
+/** المستندات · شكل واحد لأي ملف في السيستم: ثامبنيل · معاينة · تنزيل */
 export { DocFile, DocDownload, type DocFileProps } from './DocFile'
 export { DocThumb } from './DocThumb'
 export { DocPreview, type DocPreviewProps } from './DocPreview'

@@ -89,7 +89,7 @@ export function SavedViews({
             </button>
           </div>
           {existing && (
-            <div className="fviews-n sub">فيه فيو بنفس الاسم — الحفظ هيحدّثه.</div>
+            <div className="fviews-n sub">فيه فيو بنفس الاسم، الحفظ هيحدّثه.</div>
           )}
         </div>
       )}

@@ -8,7 +8,7 @@ import { units } from '@/lib/format'
 import { ReadingBlock, ReadingPeek } from './ReadingBlock'
 import type { Reading } from './reading'
 
-/** المساعد بيفكّر لحظة قبل ما يبدأ يكتب — عشان القراءة تبان مُنتَجة مش محفوظة */
+/** المساعد بيفكّر لحظة قبل ما يبدأ يكتب · عشان القراءة تبان مُنتَجة مش محفوظة */
 const THINK_MS = 900
 
 export interface QuickReadProps {
@@ -24,7 +24,7 @@ export interface QuickReadProps {
 }
 
 /**
- * القراءة السريعة — صوت المساعد في أي شاشة.
+ * القراءة السريعة · صوت المساعد في أي شاشة.
  *
  * بتلبس نفس زجاج السيستم زي أي كارت تاني: المساعد جزء من الواجهة
  * مش طبقة فوقها، والتمييز بييجي من **الشرارة والكتابة الحيّة**

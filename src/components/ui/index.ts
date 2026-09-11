@@ -1,8 +1,8 @@
-/** نقطة الدخول لعناصر نظام التصميم — الاستيراد دايمًا من هنا */
+/** نقطة الدخول لعناصر نظام التصميم · الاستيراد دايمًا من هنا */
 export { Icon, type IconProps } from './Icon'
 export { icons, type IconName } from './icons'
 export {
-  Glass, Head, Tag, Num, Riyal, Money, Mono, KV, Tabs, Timeline, Empty, Stat,
+  Glass, Head, Tag, Num, Riyal, Money, Mono, KV, Tabs, Timeline, Empty, Stat, BackTo,
   type GlassProps, type KVRow, type TabItem, type TimelineEvent, type StatBar,
 } from './primitives'
 export { GateArc, type GateArcProps, type CurrentStandingInfo } from './GateArc'

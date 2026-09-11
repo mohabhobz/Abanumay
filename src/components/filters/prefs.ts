@@ -21,7 +21,7 @@ export const readFilterOrder = (table: string, all: string[]): string[] => {
     const keys = JSON.parse(raw) as unknown
     if (!Array.isArray(keys)) return all
     /* الفلاتر اللي اتشالت من الكود بتتصفّى، والجديدة اللي اتضافت
-       بعد آخر حفظ ما بتظهرش تلقائيًا — المستخدم اللي رصّ خمسة
+       بعد آخر حفظ ما بتظهرش تلقائيًا · المستخدم اللي رصّ خمسة
        ما يستاهلش سادسًا يقتحم ترتيبه. بتلاقيه في لوحة التخصيص. */
     return keys.filter((k): k is string => typeof k === 'string' && all.includes(k))
   } catch {
@@ -33,6 +33,6 @@ export const writeFilterOrder = (table: string, keys: string[]): void => {
   try {
     localStorage.setItem(KEY(table), JSON.stringify(keys))
   } catch {
-    /* التخزين ممكن يكون مقفول — الترتيب يفضل للجلسة دي */
+    /* التخزين ممكن يكون مقفول · الترتيب يفضل للجلسة دي */
   }
 }

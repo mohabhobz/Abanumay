@@ -67,8 +67,8 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
                 </>
               ),
             },
-            { k: 'استثناء عام', v: d.exceptionGeneral ? <Tag tone="ret">مستثناة</Tag> : '—' },
-            { k: 'استثناء وقف', v: d.exceptionWaqf ? <Tag tone="ret">مستثناة</Tag> : '—' },
+            { k: 'استثناء عام', v: d.exceptionGeneral ? <Tag tone="ret">مستثناة</Tag> : 'لا' },
+            { k: 'استثناء وقف', v: d.exceptionWaqf ? <Tag tone="ret">مستثناة</Tag> : 'لا' },
           ]}
         />
       </Glass>
@@ -84,7 +84,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
           ]}
         />
         <p className="sub" style={{ marginTop: '.7rem' }}>
-          بيانات التواصل هنا مموّهة عمدًا — المستودع عام.
+          بيانات التواصل هنا مموّهة عمدًا، المستودع عام.
         </p>
       </Glass>
 
@@ -130,7 +130,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
  * ثمانية مستندات، وكل واحد بحالته وتاريخه.
  *
  * الفرق عن العرض القديم (علامة صح/خطأ): المستند المرفوع اللي
- * **انتهت صلاحيته** كان بيعدّي كأنه مكتمل. وده أخطر من الناقص —
+ * **انتهت صلاحيته** كان بيعدّي كأنه مكتمل. وده أخطر من الناقص ·
  * الناقص بيبان، والمنتهي بيعدّي.
  */
 export function EntityDocsTab({ d }: { d: EntityDetail }) {
@@ -171,9 +171,9 @@ export function EntityDocsTab({ d }: { d: EntityDetail }) {
                   ? <DocFile name={`${x.name}.pdf`} download={false} />
                   : <span className="sub">{x.name}</span>}
               </td>
-              <td title={x.at ?? ''}>{x.at ? <Mono>{x.at}</Mono> : <span className="sub">—</span>}</td>
+              <td title={x.at ?? ''}>{x.at ? <Mono>{x.at}</Mono> : <span className="sub"> </span>}</td>
               <td title={x.expires ?? ''}>
-                {x.expires ? <Mono>{x.expires}</Mono> : <span className="sub">—</span>}
+                {x.expires ? <Mono>{x.expires}</Mono> : <span className="sub"> </span>}
               </td>
               <td>
                 <span className="dstat">
@@ -200,7 +200,7 @@ export function EntityDocsTab({ d }: { d: EntityDetail }) {
 /**
  * الحساب البنكي بوابة الصرف: بلا حساب مفعّل مفيش دفعة تخرج.
  *
- * وأهم حاجة اتنقلت من النظام هنا إن **سبب الرفض مختار لا مكتوب** —
+ * وأهم حاجة اتنقلت من النظام هنا إن **سبب الرفض مختار لا مكتوب** ·
  * سبعة أسباب مقنّنة. ده اللي بيخلّي «ليه الحسابات بتترفض؟» سؤالًا
  * له إجابة رقمية بدل ما يبقى قراءة في خانة ملاحظات.
  */
@@ -231,7 +231,7 @@ export function EntityBanksTab({ d }: { d: EntityDetail }) {
 
           {b.reason && (
             <div className="lastact">
-              <span className="sub">سبب عدم التفعيل — من الأسباب السبعة المقنّنة</span>
+              <span className="sub">سبب عدم التفعيل، من الأسباب السبعة المقنّنة</span>
               <p>{b.reason}</p>
             </div>
           )}
@@ -271,9 +271,9 @@ const WHO: Record<EntityEvent['kind'], string> = {
 }
 
 /**
- * سجل قرارات الجهة — نفس شكل سجل المشروع: القيد له نوع وحمولة،
+ * سجل قرارات الجهة · نفس شكل سجل المشروع: القيد له نوع وحمولة،
  * مش سطر نصّ. وبيستعمل نفس الكلاسات عشان الاتنين يتقروا بنفس
- * الطريقة — اللي اتعلّمه المستخدم في المشروع بيشتغل هنا.
+ * الطريقة · اللي اتعلّمه المستخدم في المشروع بيشتغل هنا.
  *
  * والملاحظة الإدارية بتتعرض كاملة لأنها **إلزامية** في النظام على
  * كل قبول أو رفض: هي التبرير الرسمي للقرار لا تعليق جانبي.
@@ -358,7 +358,7 @@ export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
   )
 }
 
-/** أداء الجهة — السجل التراكمي، بيتعرض تحت أي تاب لأنه سياق دايم */
+/** أداء الجهة · السجل التراكمي، بيتعرض تحت أي تاب لأنه سياق دايم */
 export function EntityRecord({ e }: { e: EntityRow }) {
   return (
     <Glass>

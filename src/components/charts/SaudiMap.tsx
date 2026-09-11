@@ -3,15 +3,15 @@ import { Link } from 'react-router-dom'
 import { SAUDI_REGIONS, SAUDI_VIEW } from './saudi-regions'
 
 /* ═══════════════════════════════════════════════════════════
-   خريطة المملكة — كثافة لونية على الحدود الإدارية الحقيقية
+   خريطة المملكة · كثافة لونية على الحدود الإدارية الحقيقية
 
-   قائمة الأشرطة كانت بتقول «الرياض 6، القصيم 4» — رقم ورا رقم،
+   قائمة الأشرطة كانت بتقول «الرياض 6، القصيم 4» · رقم ورا رقم،
    والعين لازم تركّب الجغرافيا في دماغها. الخريطة بتقولها في نظرة:
    الدعم متكوّم في الوسط، والشمال شبه فاضي. ده استنتاج ما بيطلعش
    من جدول مهما رتّبته.
 
    والكثافة أصدق من النقاط هنا: النقطة بتقول «فيه حاجة في المكان
-   ده»، والتعبئة بتقول «المنطقة دي نصيبها كذا» — والمنطقة هي وحدة
+   ده»، والتعبئة بتقول «المنطقة دي نصيبها كذا» · والمنطقة هي وحدة
    القرار في النظام لا النقطة.
 
    والسُّلَّم **خمس درجات مقطوعة مش تدرّج مستمر**: العين ما بتفرّقش
@@ -19,7 +19,7 @@ import { SAUDI_REGIONS, SAUDI_VIEW } from './saudi-regions'
    واضحة.
    ═══════════════════════════════════════════════════════════ */
 
-/** درجات التعبئة — من «لا شيء» إلى «الأعلى».
+/** درجات التعبئة · من «لا شيء» إلى «الأعلى».
     القيم في الـCSS عشان الوضع الداكن يقلبها من مكان واحد. */
 const STEPS = [
   'var(--map-0)',
@@ -40,7 +40,7 @@ export interface MapPoint {
 export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint[]; unit?: string }) {
   const [hot, setHot] = useState<string | null>(null)
 
-  /** القيمة لكل منطقة بالاسم — الخريطة بتتكلم بأسماء النظام */
+  /** القيمة لكل منطقة بالاسم · الخريطة بتتكلم بأسماء النظام */
   const byName = useMemo(() => {
     const m = new Map<string, MapPoint>()
     for (const p of points) m.set(p.key, p)
@@ -51,7 +51,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
   const step = (v: number) => (v <= 0 ? 0 : Math.min(4, 1 + Math.floor((v / max) * 3.999)))
 
   const onMap = (k: string) => SAUDI_REGIONS.some((r) => r.name === k)
-  /** مناطق مالهاش موقع على الخريطة — «عموم المملكة» مثلًا */
+  /** مناطق مالهاش موقع على الخريطة · «عموم المملكة» مثلًا */
   const offMap = points.filter((p) => !onMap(p.key))
   const active = hot ? SAUDI_REGIONS.find((r) => r.name === hot) : undefined
   const activeVal = hot ? byName.get(hot) : undefined
@@ -60,7 +60,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
   return (
     <div className="map">
       {/* الخانة بتاخد الارتفاع المتاح، والرسم جوّاها بيفضل بنسبته
-          مضبوطة — والتلميح متموضع بالنسبة المئوية من الـviewBox،
+          مضبوطة · والتلميح متموضع بالنسبة المئوية من الـviewBox،
           فأي اختلاف في النسبة كان هيزحلقه عن مكانه */}
       <div className="map-slot">
       <div className="map-c">
@@ -98,7 +98,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
             )
           })}
 
-          {/* الرقم على المنطقة المؤشَّر عليها فقط — ثلاتاشر رقم على
+          {/* الرقم على المنطقة المؤشَّر عليها فقط · ثلاتاشر رقم على
               الخريطة في نفس الوقت بيخنقوها */}
           {active && activeVal && (
             <text
@@ -113,7 +113,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
           )}
         </svg>
 
-        {/* التلميح كعنصر HTML — النص العربي بيتلف أحسن بره الـSVG */}
+        {/* التلميح كعنصر HTML · النص العربي بيتلف أحسن بره الـSVG */}
         {active && activeVal && (
           <div
             className="map-tip"

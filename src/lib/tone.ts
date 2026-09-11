@@ -1,7 +1,7 @@
 /**
  * تحويل حالات النظام إلى درجات لون.
  *
- * مكان واحد عشان نفس الحالة تاخد نفس اللون في كل شاشة — الكارت
+ * مكان واحد عشان نفس الحالة تاخد نفس اللون في كل شاشة · الكارت
  * والجدول وصفحة المشروع وصفحة الجهة.
  */
 import type { Tone } from '@/types/domain'
@@ -17,7 +17,7 @@ export const groupTone = (group: string): Tone => {
   }
 }
 
-/** حالة تفعيل الجهة — أول ما يُقرأ قبل أي قرار */
+/** حالة تفعيل الجهة · أول ما يُقرأ قبل أي قرار */
 export const activationTone = (activation: string): Tone => {
   switch (activation) {
     case 'مقبول': return 'ok'
