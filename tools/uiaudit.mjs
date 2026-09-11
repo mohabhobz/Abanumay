@@ -212,7 +212,12 @@ const edgePartial = new Map()
 const rowsMix = []
 const gridsMix = []
 const shadows = []
+const bars = []
+const cols = []
 const nums = { total: 0, noTabular: 0 }
+
+/** سلّم الشريط · تلات مقاسات، ومسار وركن واحد لكلهم */
+const BAR_H = ['6px', '9px', '12px']
 
 for (const theme of themes) {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } })
@@ -329,6 +334,52 @@ for (const theme of themes) {
           const cls = String(e.className).split(' ')
           if (cls.some((c) => RAISED.includes(c))) continue
           out.shadows.push({ cls: cls.slice(0, 2).join('.') || e.tagName, shadow: part })
+        }
+      }
+
+      /* ══ الشريط · جسم واحد بتلات مقاسات ══
+         الأشرطة كانت ١٣ تعريفًا منفصلًا بـ٩ ارتفاعات و٥ شفافيات
+         للمسار وركنين. الفحص بيقيس **المرسوم**: كل شريط بيدخل
+         بمقاسه، ولو طلع مقاس مش من التلاتة أو مسار بلون تاني
+         أو ركن تاني، بيتعدّ انحرافًا.
+
+         والمقاس بيتقاس من `getBoundingClientRect` لا من
+         `--bar-h`: المتغيّر ممكن يكون مكتوبًا صحّ وقاعدة تانية
+         بتغلبه، واللي المستخدم بيشوفه هو المرسوم. */
+      out.bars = []
+      const BAR = '.bar,.stack,.lbar,.pc-bar,.chbar-t,.chstack-t,.gbar-t,'
+        + '.rbar-t,.rbc-bt,.rpcov-b,.bgbar,.chq-m,.chb-tr'
+      for (const e of document.querySelectorAll(BAR)) {
+        if (e.offsetParent === null) continue
+        const cs = getComputedStyle(e)
+        out.bars.push({
+          cls: String(e.className).split(' ')[0],
+          h: `${Math.round(e.getBoundingClientRect().height)}px`,
+          r: cs.borderTopLeftRadius,
+          track: cs.backgroundColor,
+        })
+      }
+
+      /* ══ عمود الأرقام جنب الشريط · حافة واحدة ══
+         الحافة بتتقاس من **مدى النصّ** لا من الخانة: خانة بعرض
+         ثابت ممكن يكون فيها نصّ متحاذٍ ناحية تانية، والعين بتقرا
+         النصّ. والقياس بيتجمّع **جوّه كل رسم على حدة**: رسمان في
+         كارتين مختلفين حافتهما مختلفة بطبيعة الحال، والفحص اللي
+         بيخلطهم بيطلّع إنذارًا كاذبًا في كل صفحة. */
+      out.cols = []
+      const COLS = [['.chbars', '.chbar-v'], ['.chbars', '.chbar-n'], ['.gbars', '.gbar-n'],
+        ['.rbar', '.rbar-v'], ['.rbar', '.rbar-s'], ['.rbar', '.rbar-n'],
+        ['.rbc-b', '.rbc-bn'], ['.chb-rows', '.chb-v'], ['.gpeek-l', '.gpeek-v']]
+      for (const [gs, cs2] of COLS) {
+        for (const g of document.querySelectorAll(gs)) {
+          const cells = [...g.querySelectorAll(cs2)].filter((c) => c.offsetParent !== null)
+          if (cells.length < 2) continue
+          const edges = new Set(cells.map((c) => {
+            const rg = document.createRange()
+            rg.selectNodeContents(c)
+            return Math.round(rg.getBoundingClientRect().right)
+          }))
+          if (edges.size > 1) out.cols.push({ sel: cs2, n: cells.length, edges: [...edges].join(' · ') })
         }
       }
 
@@ -475,6 +526,8 @@ for (const theme of themes) {
     }
     for (const s of found.squares) squares.push({ ...s, route, theme })
     for (const x of found.shadows ?? []) shadows.push({ ...x, route, theme })
+    for (const x of found.bars ?? []) bars.push({ ...x, route, theme })
+    for (const x of found.cols ?? []) cols.push({ ...x, route, theme })
     for (const w of GRID_WIDTHS) {
       await page.setViewportSize({ width: w, height: 1000 })
       await page.waitForTimeout(160)
@@ -557,6 +610,41 @@ console.log(`\n═══ ظلّ على حاجة مش مرفوعة ═══`)
   const u = uniq(shadows, (x) => `${x.cls}|${x.shadow}`)
   if (!u.length) console.log('  نضيف · الظلّ على الطبقات العايمة وحدها.')
   for (const x of u.slice(0, 20)) console.log(`  ${String(x.cls).padEnd(22)} ${x.shadow.slice(0, 46)}   ${x.route}·${x.theme}`)
+}
+
+console.log(`\n═══ الشريط: مقاس أو مسار أو ركن برّه الموحَّد ═══`)
+{
+  if (!bars.length) console.log('  🔴 ما اتقاسش ولا شريط · المحدّدات اتغيّرت؟')
+  else {
+    const hs = new Map(); const rs = new Map()
+    /* لون المسار بيتقارن **جوّه الثيم الواحد**: `--edgeC` قيمتها
+       مختلفة في الفاتح والغامق والأخضر، فخلطهم بيدّي تلات ألوان
+       لشريط مضبوط. والشريط المحجوز (`[data-empty]`) شفّاف بالنية
+       · بياخد مكانه وما بيرسمش، فمش لون تاني. */
+    const ts = new Map()
+    for (const b of bars) {
+      if (!hs.has(b.h)) hs.set(b.h, new Set()); hs.get(b.h).add(b.cls)
+      if (!rs.has(b.r)) rs.set(b.r, new Set()); rs.get(b.r).add(b.cls)
+      if (/,\s*0\)$/.test(b.track)) continue
+      if (!ts.has(b.theme)) ts.set(b.theme, new Map())
+      const m = ts.get(b.theme)
+      if (!m.has(b.track)) m.set(b.track, new Set()); m.get(b.track).add(b.cls)
+    }
+    const badH = [...hs].filter(([h]) => !BAR_H.includes(h))
+    const badT = [...ts].filter(([, m]) => m.size > 1)
+    console.log(`  ${bars.length} شريط · ${hs.size} مقاس · ${rs.size} ركن · مسار واحد في ${ts.size - badT.length}/${ts.size} ثيم`)
+    for (const [h, c] of badH) { drift += 1; console.log(`  🔴 مقاس ${h} برّه السلّم   ${[...c].join(' ')}`) }
+    if (rs.size > 1) for (const [r, c] of rs) { drift += 1; console.log(`  🔴 ركن ${r}   ${[...c].join(' ')}`) }
+    for (const [th, m] of badT) for (const [t, c] of m) { drift += 1; console.log(`  🔴 ${th} · مسار ${t}   ${[...c].join(' ')}`) }
+    if (!badH.length && rs.size === 1 && !badT.length) console.log('  نضيف · جسم واحد بتلات مقاسات.')
+  }
+}
+
+console.log(`\n═══ عمود أرقام جنب شريط بحافتين ═══`)
+{
+  const u = uniq(cols, (x) => `${x.sel}|${x.edges}`)
+  if (!u.length) console.log('  نضيف · كل عمود بينتهي عند حافة واحدة.')
+  for (const x of u.slice(0, 20)) { drift += 1; console.log(`  🔴 ${x.sel.padEnd(12)} ${x.n} خانة · حوافّ ${x.edges}   ${x.route}·${x.theme}`) }
 }
 
 console.log(`\n═══ شبكة «متساوية» وخاناتها مش متساوية ═══`)

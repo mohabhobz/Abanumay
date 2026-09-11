@@ -137,6 +137,31 @@
   --pb-xs:2px;  --lh-xs:16px;   /* الوسم */
   --pi-md:12px;                 /* الحشو الأفقي · نفس الرأسي */
 
+  /* ═══ الشريط · **جسم واحد بتلات مقاسات** ═══
+
+     كان في السيستم **١٣ تعريفًا** لنفس الشيء: `.bar` و`.lbar`
+     و`.pc-bar` و`.stack` و`.chbar-t` و`.chstack-t` و`.gbar-t`
+     و`.rbar-t` و`.rbc-bt` و`.rpcov-b` و`.bgbar` و`.chq-m`
+     و`.chb-tr`. والجرد وقت التشغيل طلّع منهم:
+
+       · **٩ ارتفاعات** (٤ · ٥ · ٦ · ٨ · ٩ · ١٠ · ١١ · ١٢ · ١٤)
+       · **٥ شفافيات للمسار** (٦٪ · ٧٪ · ٨٪ · ١٠٪ · ١٢٪)
+       · **ركنان** (كبسولة في ١٢ منهم، و٤px في `.chb-tr` وحده)
+
+     يعني كل شريط اتكتب من أول وجديد في مكانه، والقيمة اللي في
+     دماغ اللي كتبه هي اللي نزلت. ده نفس مرض التعريف المكرّر.
+
+     الدور بيفرّق في **المقاس وحده**: شريط هادي تحت سطر، شريط
+     رسم بيانيّ له عمود اسم وقيمة، وشريط بيحمل عنوان الكارت.
+     تلاتة، وكل واحد **قيمة واحدة**. والباقي (المسار واللون
+     والركن والفاصل) بيتكتب مرة واحدة هنا. */
+  --bar-1:6px;                  /* هادي · تحت سطر أو جوّه كارت إحصاء */
+  --bar-2:9px;                  /* رسم · معاه اسم وقيمة */
+  --bar-3:12px;                 /* عنوان · الشريط اللي الرقم الكبير قاعد عليه */
+  --bar-r:var(--rp);
+  --bar-track:rgba(var(--edgeC),.09);
+  --bar-seam:2px;               /* الفاصل السطحي بين طبقتين ملزوقتين */
+
   /* ═══ سلّم الحافة · خمس درجات، كل واحدة ليها دور ═══
      كانت الحافة الشعرية الواحدة مكتوبة بـ**أربعتاشر قوّة**:
      ×.7 ×.8 ×.9 ×1 ×1.5 ×1.6 ×1.7 ×1.8 ×2 ×2.2 ×2.4 ×2.6 ×2.8 ×4.
@@ -451,10 +476,59 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .stat{padding:clamp(.75rem,1.4vw,1.05rem)}
 .stat .v{font-family:var(--fd);font-weight:700;font-size:clamp(1.05rem,1.9vw,1.35rem);margin-top:.15rem;letter-spacing:-.01em}
 .stat .v small{font-size:.6em;font-weight:400;color:var(--t2);margin-inline-start:.25rem}
-.bar{height:6px;border-radius:var(--rp);background:rgba(var(--edgeC),.12);margin-top:.6rem;overflow:hidden}
+/* ═══════════════════════════════════════════════════════════
+   الشريط · **تعريف واحد لكل الأشرطة الأفقية في السيستم**
+
+   الأسماء تحت كانت ١٣ قاعدة منفصلة بـ٩ ارتفاعات و٥ شفافيات
+   وركنين. بقت قاعدةً واحدةً، واللي بيتغيّر بعدها هو **المقاس
+   وحده** بمُعامل `--bar-h` من السلّم اللي فوق.
+
+   والمسار `flex` لا `block`: صندوق الـblock جوّه عنصر شبكة كان
+   بيتحاذى ناحية الشمال في RTL فالشريط بيملا من الناحية الغلط.
+   عنصر الـflex بيبدأ من بداية المحور دايمًا، وهي اليمين هنا.
+   ═══════════════════════════════════════════════════════════ */
+.bar,.stack,.lbar,.pc-bar,.chbar-t,.chstack-t,.gbar-t,
+.rbar-t,.rbc-bt,.rpcov-b,.bgbar,.chq-m,.chb-tr{
+  display:flex;height:var(--bar-h,var(--bar-2));
+  border-radius:var(--bar-r);background:var(--bar-track);overflow:hidden}
+.bar>*,.stack>*,.lbar>*,.pc-bar>*,.chbar-t>*,.chstack-t>*,.gbar-t>*,
+.rbar-t>*,.rbc-bt>*,.rpcov-b>*,.bgbar>*,.chq-m>*,.chb-tr>*{
+  display:block;height:100%;border-radius:var(--bar-r)}
+
+/* ── الشريط المركّب · طبقات ملزوقة في مسار واحد ──
+   الطرف المدوّر بيقول «هنا انتهى الشريط»، فلو كل طبقة مدوّرة
+   الشريط بيتقري تلات أشرطة مرصوصة. الطبقات هنا **مربّعة**،
+   والمسار هو اللي بيقصّ الطرفين، والفاصل السطحي بيفرّق بينها
+   من غير خطّ زيادة. */
+.stack>*,.chstack-t>*,.chb-tr>*{
+  border-radius:0;box-shadow:calc(-1 * var(--bar-seam)) 0 0 var(--card-bg,rgba(255,255,255,.55))}
+.stack>*:first-child,.chstack-t>*:first-child,.chb-tr>*:first-child{box-shadow:none}
+
+/* المقاس الهادي · تحت سطر أو جوّه كارت إحصاء */
+.bar,.lbar,.pc-bar,.rbc-bt{--bar-h:var(--bar-1)}
+/* المقاس البيانيّ · معاه عمود اسم وعمود قيمة */
+.stack,.chbar-t,.gbar-t,.rpcov-b{--bar-h:var(--bar-2)}
+/* مقاس العنوان · الشريط اللي الرقم الكبير قاعد عليه */
+.chstack-t,.rbar-t,.bgbar,.chq-m,.chb-tr{--bar-h:var(--bar-3)}
+
+.bar{margin-top:.6rem}
 /* الخانة المحجوزة: بتاخد مكانها وما بترسمش */
 .bar[data-empty]{background:none}
-.bar i{display:block;height:100%;border-radius:var(--rp)}
+
+/* ── أعمدة الأرقام جنب الأشرطة · **بداية واحدة، وهي اليمين** ──
+
+   كانت متكتبة بتلات هجاءات مختلفة لنفس النية:
+     `text-align:left` (فيزيائي · في RTL دي **النهاية**)
+     `text-align:end`  (برضو الشمال في RTL)
+     `text-align:start`
+   يعني عمود بيلزق يمين وجنبه عمود بيلزق شمال في نفس الكارت،
+   وده اللي العميل شافه. الهجاء بقى **واحدًا** و`start`، ومعاه
+   `tabular-nums` عشان الخانات تقع فوق بعضها.
+
+   والعرض بقى ثابتًا في كل واحد فيهم (فوق) لا `min-width`:
+   `min-width` بتكبر مع المحتوى، فالحافة بتتزحلق. */
+.chbar-v,.chbar-n,.gbar-n,.rbar-v,.rbar-s,.rbar-n,.rbc-bn,.lcap,.gpeek-v{
+  text-align:start;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .stat.acc .v{color:var(--link)}
 .trim1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ── نوت الإحصاء · سطران لا سطر ──
@@ -483,8 +557,7 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .entlogo-sm{width:34px;height:34px;flex:none;border-radius:var(--r1);object-fit:contain;
   background:#fff;padding:2px}
 .li image-slot{width:34px;height:34px;flex:none}
-.stack{display:flex;height:9px;border-radius:var(--rp);overflow:hidden;background:rgba(var(--edgeC),.10)}
-.stack span{height:100%}
+/* المسار والارتفاع والركن من التعريف الواحد فوق */
 /* ⚠️ كان هنا مفتاح رسم اسمه `.lg` · **ميّت** (مفيش عنصر في
    السيستم بيستعمله مفتاحًا) و**ضارّ**: نفس الاسم مستعمل لقايمة
    السجل الزمني في §الأسفل، فالقايمة كانت بتاخد منه
@@ -683,11 +756,16 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .itag{font-family:var(--fd);font-weight:600;font-size:.78rem}
 .itag.no{color:var(--no-ink)}
 /* مؤشر تجاوز الحدّ: متدرج من الآمن للمتجاوز، وعلامة عند الحدّ نفسه */
-.bar.over{position:relative;overflow:visible;height:7px}
+/* علامة الحدّ بتطلع برّه المسار فوق وتحت، فالقصّ بيتقفل هنا
+   وحده · والارتفاع من نفس السلّم لا رقم تالت */
+.bar.over{position:relative;overflow:visible}
 .bar.over i{background:linear-gradient(270deg,
   rgba(0,165,155,.62) 0%, rgba(0,165,155,.5) 30%, rgba(var(--warnC),.62) 62%, rgba(var(--noC),.9) 100%)}
-.bar.over u{position:absolute;top:-3px;bottom:-3px;width:1.5px;border-radius:var(--rp);
-  background:rgba(var(--edgeC),.42)}
+/* `height:auto` بيفكّ الارتفاع الموروث من التعريف الواحد · العنصر
+   ده مطلق ومربوط بـ`top`/`bottom`، ولو فضل `100%` الاتنين
+   بيتعارضوا والعلامة بتقصر */
+.bar.over u{position:absolute;top:-3px;bottom:-3px;height:auto;width:1.5px;
+  border-radius:var(--rp);background:rgba(var(--edgeC),.42)}
 /* ═══ المساعد وهو بيقرأ ويكتب ═══ */
 @keyframes aipulse{0%,100%{opacity:.55;transform:scale(.94)}
 50%{opacity:1;transform:scale(1)}
@@ -1171,10 +1249,10 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
   inset-inline-start:4.2px;width:1.5px;background:rgba(var(--edgeC),.12)}
 .lrole{font-family:var(--fd);font-weight:600;font-size:.87rem;line-height:1.35;color:var(--t2)}
 .lnote{font-size:.7rem;color:var(--t3);margin-top:.14rem;line-height:1.45}
-.lcap{text-align:left;min-width:82px}
+.lcap{width:82px}
 .lnum{font-size:.78rem;color:var(--t2);font-variant-numeric:tabular-nums}
-.lbar{height:4px;border-radius:var(--rp);background:rgba(var(--edgeC),.10);margin-top:.4rem;overflow:hidden}
-.lbar i{display:block;height:100%;border-radius:var(--rp);background:rgba(var(--edgeC),.22)}
+.lbar{margin-top:.4rem}
+.lbar i{background:rgba(var(--edgeC),.22)}
 /* الحالية */
 .lrow.now .ldot{background:var(--lime);
   box-shadow:0 0 0 3px rgba(var(--wC),calc(.65 * var(--wM))),0 0 0 6px rgba(148,214,3,.18)}
@@ -2340,8 +2418,7 @@ to{opacity:1;transform:none}
   font-size:.79rem;font-family:var(--fd);font-weight:500}
 .pc-stage-t b{display:inline-flex;align-items:center;gap:.25rem;font-size:.74rem;font-weight:500;color:var(--t3)}
 .pc-stage-t b.over{color:var(--no)}
-.pc-bar{display:flex;height:4px;border-radius:var(--rp);background:rgba(var(--edgeC),.08);overflow:hidden}
-.pc-bar i{height:100%;border-radius:var(--rp);transition:width .3s ease}
+.pc-bar i{transition:width .3s ease}
 .pc-over{font-size:.72rem}
 .pc-reason{font-size:.73rem}
 .pc-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:.6rem;
@@ -2594,18 +2671,20 @@ to{opacity:1;transform:none}
 .dsplit .chleg{flex:1;min-width:9rem}
 /* ── أشرطة أفقية ── */
 .chbars{display:flex;flex-direction:column;gap:.55rem;margin-top:.9rem}
-.chbar{display:grid;grid-template-columns:var(--lw,9rem) minmax(0,1fr) auto auto;
+.chbar{display:grid;grid-template-columns:var(--lw,9rem) minmax(0,1fr) 5.2rem 4.2rem;
   align-items:center;gap:.6rem;font-size:.78rem}
+/* الرسم اللي مفيهوش نوت خالص ما بيحجزش خانتها · والحجز بيتقرّر
+   على **الرسم كله** لا على الصفّ، عشان صفوفه تفضل بنفس الخانات */
+.chbars:not(:has(.chbar-n))>.chbar{
+  grid-template-columns:var(--lw,9rem) minmax(0,1fr) 5.2rem}
 .chbar.pick{cursor:pointer}
 .chbar-l{color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* flex مش block: صندوق الـblock جوّه عنصر شبكة كان بيتحاذى ناحية
    الشمال في RTL، فالشريط كان بيملا من الناحية الغلط. عنصر الـflex
    بيبدأ من بداية المحور دايمًا، وهي اليمين هنا. */
-.chbar-t{display:flex;height:9px;border-radius:var(--rp);
-  background:rgba(var(--edgeC),.07);overflow:hidden}
-.chbar-t i{height:100%;border-radius:var(--rp);transition:width .45s cubic-bezier(.22,.9,.3,1)}
-.chbar-v{font-family:var(--fd);font-weight:600;color:var(--t1);min-width:2.2rem;text-align:left}
-.chbar-n{font-size:.68rem;color:var(--t3);min-width:3rem;text-align:left}
+.chbar-t i{transition:width .45s cubic-bezier(.22,.9,.3,1)}
+.chbar-v{font-family:var(--fd);font-weight:600;color:var(--t1);width:5.2rem}
+.chbar-n{font-size:.68rem;color:var(--t3);width:4.2rem}
 /* ── أعمدة رأسية ── */
 .chcols{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;
   gap:.5rem;align-items:end;height:150px;margin-top:1rem;
@@ -2629,9 +2708,7 @@ to{opacity:1;transform:none}
   letter-spacing:-.01em}
 .chdonut-c span{font-size:.66rem;color:var(--t3)}
 /* ── شريط مركّب ── */
-.chstack-t{display:flex;height:12px;border-radius:var(--rp);overflow:hidden;
-  background:rgba(var(--edgeC),.07)}
-.chstack-t i{height:100%;transition:width .5s cubic-bezier(.22,.9,.3,1)}
+.chstack-t i{transition:width .5s cubic-bezier(.22,.9,.3,1)}
 /* ── وسيلة الإيضاح ── */
 .chleg{display:flex;flex-direction:column;gap:.45rem;margin:.9rem 0 0;font-size:.78rem}
 .chleg>div{display:flex;align-items:baseline;justify-content:space-between;gap:.7rem}
@@ -2749,9 +2826,8 @@ to{opacity:1;transform:none}
   color:inherit;font-size:.79rem}
 .gbar:hover{color:var(--teal)}
 .gbar-l{color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gbar-t{display:flex;height:8px;border-radius:var(--rp);background:rgba(var(--edgeC),.08);overflow:hidden}
-.gbar-t i{height:100%;border-radius:var(--rp);transition:width .35s ease}
-.gbar-n{font-family:var(--fd);font-weight:700;min-width:1.7rem;text-align:left}
+.gbar-t i{transition:width .35s ease}
+.gbar-n{font-family:var(--fd);font-weight:700;width:2.8rem}
 :root{--tone-ok:var(--ok);--tone-ret:var(--ret);--tone-no:var(--no);
   --tone-warn:var(--warn);--tone-brand:var(--lime);--tone-teal:var(--teal);
   --tone-lime:var(--lime);--tone-mute:rgba(var(--edgeC),.3)}
@@ -3235,10 +3311,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    ═══════════════════════════════════════════════════════════ */
 
 /* ═══ حالة القياس ═══ */
-.rpcov-b{height:8px;border-radius:var(--rp);overflow:hidden;margin-bottom:1.15rem;
-  background:rgba(var(--edgeC),.12)}
-.rpcov-b>i{display:block;height:100%;border-radius:inherit;
-  background:linear-gradient(90deg,rgba(var(--tone-1),.95),rgba(var(--tone-3),.95))}
+.rpcov-b{margin-bottom:1.15rem}
+.rpcov-b>i{background:linear-gradient(90deg,rgba(var(--tone-1),.95),rgba(var(--tone-3),.95))}
 .rpcov-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem}
 .rpcov-g>div{position:relative;padding-inline:.7rem}
 .rpcov-g>div+div::before{content:"";position:absolute;inset-block:.1rem;inset-inline-start:0;
@@ -4151,12 +4225,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .rbc-b{display:flex;flex-direction:column;gap:.34rem;align-self:end;width:100%}
 .rbc-bi{display:grid;grid-template-columns:minmax(0,6.5rem) 1fr 2.6rem;align-items:center;gap:.5rem}
 .rbc-bk{font-size:.71rem;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rbc-bt{height:6px;border-radius:var(--rp);background:rgba(var(--edgeC),.07);overflow:hidden}
-.rbc-bt i{display:block;height:100%;border-radius:var(--rp);background:rgba(var(--edgeC),.3)}
+.rbc-bt i{background:rgba(var(--edgeC),.3)}
 .rbc-bt i.ok{background:linear-gradient(90deg,var(--teal),var(--lime))}
 .rbc-bt i.warn{background:var(--warn)}
 .rbc-bt i.no{background:var(--no)}
-.rbc-bn{font-size:.72rem;color:var(--t2);text-align:end;font-variant-numeric:tabular-nums}
+.rbc-bn{font-size:.72rem;color:var(--t2);font-variant-numeric:tabular-nums}
 
 .rbc-s{font-size:var(--fs-1);line-height:1.5;padding-top:.55rem;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -4182,19 +4255,17 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   font-family:var(--fd);font-size:.9rem}
 /* أعمدة أفقية: أسماء الأبعاد عربية طويلة، والرأسي بيقلب الاسم */
 .rbar{display:flex;flex-direction:column;gap:.5rem;margin-top:.9rem}
-.rbar-r{display:grid;grid-template-columns:minmax(0,11rem) 1fr auto auto auto;
+.rbar-r{display:grid;grid-template-columns:minmax(0,11rem) 1fr 8.2rem 3.2rem 5.4rem;
   align-items:center;gap:.7rem}
 .rbar-k{font-size:.82rem;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rbar-t{height:11px;border-radius:var(--rp);background:rgba(var(--edgeC),.06);overflow:hidden}
-.rbar-t i{display:block;height:100%;border-radius:var(--rp);
-  background:linear-gradient(90deg,var(--teal),var(--lime))}
+.rbar-t i{background:linear-gradient(90deg,var(--teal),var(--lime))}
 /* خانة الرقم بعرض ثابت · كانت `auto`، فعرضها بيتغيّر مع عدد
    الخانات («2,200,000» جنب «0») والعمود `1fr` اللي فيه البار بياخد
    الفرق · فنهاية البار بتتزحلق من صفّ لصفّ والشبكة بتبان مايلة.
    العرض الثابت بيخلّي البار ينتهي عند نفس الحدّ في كل الصفوف. */
-.rbar-v{font-size:.83rem;color:var(--t1);white-space:nowrap;min-width:8.2rem}
-.rbar-s{font-size:var(--fs-2);min-width:2.6rem;text-align:end}
-.rbar-n{font-size:var(--fs-2);min-width:4.5rem;text-align:end;white-space:nowrap}
+.rbar-v{font-size:.83rem;color:var(--t1);white-space:nowrap;width:8.2rem}
+.rbar-s{font-size:var(--fs-2);width:3.2rem}
+.rbar-n{font-size:var(--fs-2);width:5.4rem;white-space:nowrap}
 @media (max-width:760px){
   .rbar-r{grid-template-columns:minmax(0,1fr) auto;gap:.35rem}
   .rbar-t{grid-column:1 / -1}
@@ -4345,9 +4416,8 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 /* شريط بثلاث طبقات: المنصرف جوّه المعتمد جوّه المخصص.
    طبقات لا أشرطة متجاورة، عشان ما نجمعش نفس الريال مرتين. */
-.bgbar{position:relative;height:11px;border-radius:var(--rp);overflow:hidden;
-  background:rgba(var(--edgeC),.10)}
-.bgbar>i{position:absolute;inset-block:0;inset-inline-start:0;border-radius:var(--rp);display:block}
+.bgbar{position:relative}
+.bgbar>i{position:absolute;inset-block:0;inset-inline-start:0}
 .bgbar>i.commit{background:rgba(var(--retC2),.34)}
 .bgbar>i.spend{background:var(--solid)}
 .bgbar-k{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .9rem;font-size:var(--fs-2)}
@@ -4444,10 +4514,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    على الشاشة الضيّقة عشان ما يكسرش الكارت */
 .chq-v>b{font-family:var(--fd);font-weight:700;line-height:1;color:var(--t1);
   font-size:min(80px,22cqw);letter-spacing:-.025em}
-.chq-m{display:block;width:100%;height:10px;border-radius:var(--rp);overflow:hidden;margin-top:.15rem;
-  background:rgba(var(--edgeC),.10)}
-.chq-m>i{display:block;height:100%;border-radius:var(--rp);background:var(--solid)}
-.chq-s{font-size:var(--fs-2);line-height:1.7}
+.chq-m{width:100%;margin-top:.15rem}
+.chq-m>i{background:var(--solid)}
+.chq-s{display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;
+  gap:.2rem .55rem;font-size:var(--fs-2);line-height:1.7}
+.chq-note{color:var(--t3)}
 
 .chb,.chy{display:flex;flex-direction:column;gap:.7rem}
 .chb-h{display:flex;align-items:baseline;justify-content:space-between;gap:.8rem;flex-wrap:wrap}
@@ -4461,17 +4532,32 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .chb-k i.c,.chb-tr i.c,.chy-bars i.c{background:rgba(var(--edgeC),.13)}
 
 .chb-rows{display:flex;flex-direction:column;gap:.42rem}
-.chb-r{display:grid;grid-template-columns:minmax(6rem,11rem) 1fr minmax(7.5rem,auto);
+.chb-r{display:grid;grid-template-columns:minmax(6rem,11rem) 1fr 15.5rem;
   align-items:center;gap:.6rem}
 .chb-lb{font-size:.77rem;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* المسار بيتقلّص بنسبة المخصص، فطول العمود نفسه مقياس */
-.chb-tr{display:flex;height:14px;border-radius:var(--r0);overflow:hidden;min-width:2px;
-  background:rgba(var(--edgeC),.07)}
-/* فاصل سطحي ٢px بين الطبقات عشان الحدود تبان بلا خط زيادة */
-.chb-tr>i{display:block;height:100%;box-shadow:-2px 0 0 var(--card-bg,rgba(255,255,255,.55))}
-.chb-tr>i:first-child{box-shadow:none}
-.chb-v{font-size:var(--fs-2);color:var(--t1);text-align:start;white-space:nowrap}
+.chb-tr{min-width:2px}
+/* ── عمود القيمة · **بيبدأ من اليمين، وكل صفّ من نفس النقطة** ──
+
+   كان `class="chb-v num"`، و`.num` فيها `direction:ltr`. يعني
+   الخانة كلها بقت مجرى إنجليزيًّا، فمحتواها بيلزق في **الشمال**
+   وطوله بيتغيّر مع الأرقام · فالعمود بيطلع مشرشرًا من اليمين.
+   ودي نفس الغلطة اللي `Money` مكتوب في تعريفها تحذير منها:
+   `.num` تنزل على **الأرقام وحدها**، والحاوية تفضل عربية.
+
+   ومعاها الخانة بقى ليها **عرض ثابت** في الشبكة · العرض اللي
+   بيتحدّد بالمحتوى معناه حافة بتتزحلق من صفّ لصفّ، والحافة
+   المتزحلقة مش عمود. */
+.chb-v{display:flex;align-items:baseline;justify-content:flex-start;gap:.55rem;
+  font-size:var(--fs-2);color:var(--t1);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
 .chb-v small{font-size:var(--fs-1)}
+/* «من» رابط لا رقم · المسافة حواليه `gap` مصرّحة لا حرف مسافة.
+   والمبلغ الأول بعرض ثابت عشان «من» تقع في نفس المكان في كل
+   صفّ: من غيره الصفّ اللي رقمه ٦ خانات (٤٣٢,١٥٠) بيزحلق الكلمة
+   ناحية اليمين عن باقي الصفوف اللي أرقامها ٧. */
+.chb-v>.amt:first-child{display:inline-flex;justify-content:flex-start;width:7.4rem}
+.chb-of{color:var(--t3);font-size:var(--fs-1)}
 .chb-n{margin:0;font-size:var(--fs-2);line-height:1.9}
 .chb-n b{font-family:var(--fd);font-weight:600;color:var(--t1)}
 
@@ -4597,7 +4683,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    مالوش معنى فيه · الخانة موجودة وفاضية بلا رسم */
 .gpeek-t.empty{background:none}
 .gpeek-t>i{display:block;height:100%;border-radius:var(--rp);background:var(--solid);opacity:.5}
-.gpeek-v{text-align:start;white-space:nowrap}
+.gpeek-v{white-space:nowrap}
 /* المجموع سطر في نفس الشبكة عشان أرقامه تقع تحت أرقام الأبناء */
 .gpeek-sum{margin-top:.3rem;padding-top:.45rem;
   box-shadow:inset 0 1px 0 var(--edge-d);font-family:var(--fd);font-weight:600}

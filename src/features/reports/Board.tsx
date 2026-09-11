@@ -113,8 +113,10 @@ function Card({ c }: { c: ReportCard }) {
               <span className="rbc-bt">
                 <i className={b.tone ?? 'mute'} style={{ width: `${Math.max(1, Math.round((b.v / max) * 100))}%` }} />
               </span>
-              <span className="rbc-bn num">
-                {share ? `${Math.round((b.v / total) * 100)}%` : b.v.toLocaleString('en-US')}
+              <span className="rbc-bn">
+                <span className="num">
+                  {share ? `${Math.round((b.v / total) * 100)}%` : b.v.toLocaleString('en-US')}
+                </span>
               </span>
             </span>
           ))}

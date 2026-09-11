@@ -83,8 +83,10 @@ export function SpendGauge({
         <span className="chq-v"><b className="num">{pct}%</b></span>
         <span className="chq-m" aria-hidden="true"><i style={{ width: `${Math.min(100, pct)}%` }} /></span>
         <span className="chq-s mut">
-          <Money sm>{value}</Money> من <Money sm>{of}</Money>
-          {note ? ` · ${note}` : ''}
+          <Money sm>{value}</Money>
+          <small className="chb-of">من</small>
+          <Money sm>{of}</Money>
+          {note ? <span className="chq-note">· {note}</span> : null}
         </span>
       </span>
     </Glass>
@@ -126,9 +128,13 @@ export function FieldSpend({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
                 )
               })}
             </span>
-            <span className="chb-v num">
+            {/* المسافة حوالين «من» كانت **مكتوبة**: حرف مسافة جوّه
+                النصّ. والمسافة المكتوبة بتتلخبط مع الرمز والاتجاه،
+                وما بتكبرش لمّا نطلبها تكبر. بقت `gap` مصرّحة. */}
+            <span className="chb-v">
               <Money sm>{p.spent}</Money>
-              <small className="sub"> من <Money sm>{p.alloc}</Money></small>
+              <small className="chb-of">من</small>
+              <small className="sub"><Money sm>{p.alloc}</Money></small>
             </span>
           </div>
         ))}
@@ -414,7 +420,7 @@ export function PlanCoverage({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
                 title={`${n.label} · خطة الإنجاز ${n.plan}%`}
               />
             </span>
-            <span className="chb-v num">{n.plan}%</span>
+            <span className="chb-v"><b className="num">{n.plan}%</b></span>
           </div>
         ))}
       </div>

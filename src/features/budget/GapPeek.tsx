@@ -99,13 +99,13 @@ export function GapPeek({
                   <span className="gpeek-t" aria-hidden="true">
                     <i style={{ width: `${Math.max(2, Math.round((k.alloc / max) * 100))}%` }} />
                   </span>
-                  <span className="gpeek-v num"><Money sm>{k.alloc}</Money></span>
+                  <span className="gpeek-v"><Money sm>{k.alloc}</Money></span>
                 </li>
               ))}
               <li className="gpeek-sum">
                 <span className="gpeek-k">المجموع</span>
                 <span className="gpeek-t empty" aria-hidden="true" />
-                <span className="gpeek-v num"><Money sm>{node ? childSum(node) : gap.childSum}</Money></span>
+                <span className="gpeek-v"><Money sm>{node ? childSum(node) : gap.childSum}</Money></span>
               </li>
             </ul>
           )}

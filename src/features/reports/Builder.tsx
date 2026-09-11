@@ -154,11 +154,11 @@ export function Builder() {
               <span className="rbar-t">
                 <i style={{ width: `${Math.max(2, Math.round((r.v / max) * 100))}%` }} />
               </span>
-              <span className="rbar-v num">
+              <span className="rbar-v">
                 {mea.money ? <Money>{r.v}</Money> : nf.format(r.v)}
                 {mea.unit && <small className="sub"> {mea.unit}</small>}
               </span>
-              <span className="rbar-s mut num">{total ? pct(Math.round((r.v / total) * 100)) : 'لا يوجد'}</span>
+              <span className="rbar-s mut">{total ? <span className="num">{pct(Math.round((r.v / total) * 100))}</span> : 'لا يوجد'}</span>
               <span className="rbar-n mut">
                 <span className="num">{r.n}</span> مشروعًا
               </span>

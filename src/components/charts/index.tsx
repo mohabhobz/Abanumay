@@ -67,7 +67,7 @@ export function BarList({
               }}
             />
           </span>
-          <span className="chbar-v num">{format(r.value)}</span>
+          <span className="chbar-v"><b className="num">{format(r.value)}</b></span>
           {r.note && <span className="chbar-n">{r.note}</span>}
         </div>
       ))}
