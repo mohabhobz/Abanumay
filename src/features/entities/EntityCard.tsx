@@ -31,7 +31,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
       </div>
 
       <div className="ec-meta sub">
-        <span><Icon path={icons.pinMap} size={14} /> {row.region} · {row.city}</span>
+        <span><Icon name={icons.pinMap} size={14} /> {row.region} · {row.city}</span>
         <span className="pc-dot" />
         <span>الحوكمة: <Tag tone={governanceTone(row.governance)}>{row.governance}</Tag></span>
       </div>

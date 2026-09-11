@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
@@ -58,7 +59,7 @@ export default function LoginPage() {
           {/* توست: بيطفو فوق الفورم وما يزقّش أي حاجة، وبيختفي لوحده */}
           {err && (
             <div className="ltoast" role="alert">
-              <Icon path={icons.alert} size={16} />
+              <Icon name={icons.alert} size={16} />
               <span>{err}</span>
             </div>
           )}
@@ -106,7 +107,7 @@ export default function LoginPage() {
                   aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                   title={show ? 'إخفاء' : 'إظهار'}
                 >
-                  <Icon path={show ? icons.eyeOff : icons.eye} size={17} />
+                  <Icon name={show ? icons.eyeOff : icons.eye} size={17} />
                 </button>
               }
             />
@@ -143,7 +144,7 @@ interface FieldProps {
   /** لازم للاسم عشان مديري كلمات السر والأوتوفيل يتعرّفوا على الحقل */
   name: string
   label: string
-  icon: string
+  icon: LucideIcon
   value: string
   onChange: (value: string) => void
   type?: string
@@ -162,7 +163,7 @@ function Field({
     <label className="lfield" htmlFor={id}>
       <span className="llbl">{label}</span>
       <span className="lbox">
-        <Icon path={icon} size={17} />
+        <Icon name={icon} size={17} />
         <input
           id={id}
           name={name}

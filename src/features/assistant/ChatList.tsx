@@ -67,12 +67,12 @@ export function ChatList({ chats, onChange, openId, onOpen, onNew, open }: ChatL
       <div className="cl-head">
         <span className="cl-title">المحادثات</span>
         <button className="cl-new" onClick={onNew} title="محادثة جديدة · ⌘⇧O" aria-label="محادثة جديدة">
-          <Icon path={icons.plus} size={16} />
+          <Icon name={icons.plus} size={16} />
         </button>
       </div>
 
       <div className="cl-search">
-        <Icon path={icons.search} size={16} style={{ color: 'var(--t3)' }} />
+        <Icon name={icons.search} size={16} style={{ color: 'var(--t3)' }} />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -104,12 +104,12 @@ export function ChatList({ chats, onChange, openId, onOpen, onNew, open }: ChatL
                   onDrop={(e) => { e.preventDefault(); drop(c.id) }}
                 >
                   <span className="cl-grip" aria-hidden="true">
-                    <Icon path={icons.grip} size={16} />
+                    <Icon name={icons.grip} size={16} />
                   </span>
 
                   <button className="cl-main" onClick={() => onOpen(c.id)}>
                     <div className="cl-t">
-                      {c.pinned && <Icon path={icons.pin} size={14} />}
+                      {c.pinned && <Icon name={icons.pin} size={14} />}
                       {c.title}
                     </div>
                   </button>
@@ -119,25 +119,25 @@ export function ChatList({ chats, onChange, openId, onOpen, onNew, open }: ChatL
                     aria-label="خيارات"
                     onClick={() => setMenuId(menuId === c.id ? null : c.id)}
                   >
-                    <Icon path={icons.dots} size={16} />
+                    <Icon name={icons.dots} size={16} />
                   </button>
 
                   {menuId === c.id && (
                     <div className="cl-menu chrome">
                       <button onClick={() => togglePin(c.id)}>
-                        <Icon path={icons.pin} size={16} />
+                        <Icon name={icons.pin} size={16} />
                         {c.pinned ? 'إلغاء التثبيت' : 'تثبيت'}
                       </button>
                       <button onClick={() => setMenuId(null)}>
-                        <Icon path={icons.edit} size={16} />
+                        <Icon name={icons.edit} size={16} />
                         إعادة تسمية
                       </button>
                       <button onClick={() => setMenuId(null)}>
-                        <Icon path={icons.file} size={16} />
+                        <Icon name={icons.file} size={16} />
                         تصدير المحادثة
                       </button>
                       <button className="danger" onClick={() => remove(c.id)}>
-                        <Icon path={icons.trash} size={16} />
+                        <Icon name={icons.trash} size={16} />
                         حذف
                       </button>
                     </div>

@@ -152,7 +152,7 @@ export default function HomePage() {
               <p className="hdate">{df.format(new Date())} · {user.role}</p>
             </div>
             <Link className="btn btn-2 btn-sm" to={ROUTES.reports}>
-              <Icon path={icons.chart} size={15} />
+              <Icon name={icons.chart} size={15} />
               التقارير الكاملة
             </Link>
           </header>
@@ -163,10 +163,10 @@ export default function HomePage() {
               <Link key={t.k} to={t.to} className="kpi glass">
                 <span className="kpi-h">
                   <span className="kpi-ic">
-                    <Icon path={t.icon} size={15} />
+                    <Icon name={t.icon} size={15} />
                   </span>
                   <span className="kpi-k">{t.k}</span>
-                  <Icon path={icons.chevron} size={14} className="kpi-go" />
+                  <Icon name={icons.chevron} size={14} className="kpi-go" />
                 </span>
                 <span className="kpi-v num">{t.v}</span>
                 <span className="kpi-n">{t.note}</span>

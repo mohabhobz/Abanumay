@@ -101,7 +101,7 @@ export default function BudgetPage() {
                 مبنيّة للفلاتر، فهنا `select` مباشرة بنفس اللبس. */}
             <label className="fsel on" aria-label="الدورة">
               <span className="fsel-b">
-                <Icon path={icons.budget} size={15} />
+                <Icon name={icons.budget} size={15} />
                 <select
                   value={cycleId}
                   onChange={(e) => { setCycleId(e.target.value); setPath([]) }}
@@ -112,7 +112,7 @@ export default function BudgetPage() {
                     </option>
                   ))}
                 </select>
-                <Icon path={icons.chevronDown} size={15} />
+                <Icon name={icons.chevronDown} size={15} />
               </span>
             </label>
           </header>
@@ -148,7 +148,7 @@ export default function BudgetPage() {
             </>
           ) : (
             <Glass className="bgclosed">
-              <Icon path={icons.lock} size={22} />
+              <Icon name={icons.lock} size={22} />
               <div>
                 <b>الدورة دي مقفولة.</b>
                 <p className="sub">
@@ -234,7 +234,7 @@ function Balance({
   if (gaps.length === 0) {
     return (
       <Glass className="bgok">
-        <Icon path={icons.check} size={18} />
+        <Icon name={icons.check} size={18} />
         <span>الشجرة متوازنة — مجموع أبناء كل بند يساوي مخصصه.</span>
       </Glass>
     )
@@ -280,7 +280,7 @@ function Balance({
                       {x.gap > 0 ? 'زيادة' : 'نقص'} <Money sm>{Math.abs(x.gap)}</Money>
                     </Tag>
                   </span>
-                  <Icon path={icons.chevron} size={14} />
+                  <Icon name={icons.chevron} size={14} />
                 </button>
               </li>
             ))}
@@ -288,7 +288,7 @@ function Balance({
 
         {gaps.length > TOP && (
           <button className="btn btn-2 btn-sm bgchk-t" onClick={() => setAll((x) => !x)}>
-            <Icon path={all ? icons.chevronUp : icons.chevronDown} size={15} />
+            <Icon name={all ? icons.chevronUp : icons.chevronDown} size={15} />
             {all ? 'أقصر قائمة' : `الباقي (${gaps.length - TOP})`}
           </button>
         )}
@@ -364,7 +364,7 @@ function Tree({
         </button>
         {crumb.map((n, i) => (
           <span key={n.id} className="lrbc-s">
-            <Icon path={icons.chevron} size={14} />
+            <Icon name={icons.chevron} size={14} />
             <button
               className={`lrbc-i${i === crumb.length - 1 ? ' on' : ''}`}
               onClick={() => onGo(path.slice(0, i + 1))}
@@ -465,7 +465,7 @@ function AllocTable({
               onClick={() => kids && onGo([...path, n.id])}
             >
               <td title={n.label}>
-                {kids ? <Icon path={icons.chevron} size={13} /> : null}{' '}{n.label}
+                {kids ? <Icon name={icons.chevron} size={13} /> : null}{' '}{n.label}
               </td>
               <td className="n num">
                 {n.alloc === 0 ? <Tag tone="warn">بلا مخصص</Tag> : <Money sm>{n.alloc}</Money>}
@@ -538,7 +538,7 @@ function UseTable({ rows, path, onGo }: { rows: PlanNode[]; path: string[]; onGo
               onClick={() => kids && onGo([...path, n.id])}
             >
               <td title={n.label}>
-                {kids ? <Icon path={icons.chevron} size={13} /> : null}{' '}{n.label}
+                {kids ? <Icon name={icons.chevron} size={13} /> : null}{' '}{n.label}
               </td>
               <td className="n num"><Money sm>{n.alloc}</Money></td>
               <td className="n num"><Money sm>{n.reserved ?? 0}</Money></td>

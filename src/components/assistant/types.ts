@@ -1,3 +1,4 @@
+import type { IconName } from '@/components/ui'
 import type { DecisionKind, Tone } from '@/types/domain'
 
 /** بلوكات الأدلة اللي المساعد بيعرضها تحت الإجابة */
@@ -59,5 +60,5 @@ export interface AssistantContext {
   sub: string
   /** سطر المدى تحت الترحيب: «كيف أقدر أساعدك في «س»؟» */
   scope: string
-  cards: { icon: string; title: string; sub: string; prompt: string }[]
+  cards: { icon: IconName; title: string; sub: string; prompt: string }[]
 }

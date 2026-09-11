@@ -47,7 +47,7 @@ export function AiMessage({
             )}
             {/* أيقونة صريحة بدل تدوير الشيفرون — التدوير كان معكوسًا،
                 و«لأعلى/لأسفل» بيتقري في الكود زي ما بيتشاف في الشاشة */}
-            <Icon path={openThink ? icons.chevronUp : icons.chevronDown} size={16} />
+            <Icon name={openThink ? icons.chevronUp : icons.chevronDown} size={16} />
           </button>
 
           {openThink && (
@@ -77,7 +77,7 @@ export function AiMessage({
 
       {done && message.advisory && (
         <div className="advisory rise">
-          <Icon path={icons.alert} size={16} />
+          <Icon name={icons.alert} size={16} />
           قراءة استرشادية — القرار والتوقيع يفضلوا عليك.
         </div>
       )}
@@ -98,16 +98,16 @@ export function AiMessage({
           ))}
           <span className="cact-sp" />
           <button className="iact" onClick={copy} title="نسخ" aria-label="نسخ">
-            <Icon path={copied ? icons.check : icons.copy} size={16} />
+            <Icon name={copied ? icons.check : icons.copy} size={16} />
           </button>
           <button className="iact" title="إعادة توليد" aria-label="إعادة توليد">
-            <Icon path={icons.redo} size={16} />
+            <Icon name={icons.redo} size={16} />
           </button>
           <button className="iact" title="مفيدة" aria-label="مفيدة">
-            <Icon path={icons.up} size={16} />
+            <Icon name={icons.up} size={16} />
           </button>
           <button className="iact" title="غير مفيدة" aria-label="غير مفيدة">
-            <Icon path={icons.downv} size={16} />
+            <Icon name={icons.downv} size={16} />
           </button>
         </div>
       )}

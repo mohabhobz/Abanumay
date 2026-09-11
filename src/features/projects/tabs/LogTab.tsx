@@ -139,7 +139,7 @@ export function LogTab({ events, entityName }: LogTabProps) {
                   {has && (
                     <>
                       <button className="lgmore" onClick={() => toggle(e.id)} aria-expanded={isOpen}>
-                        <Icon path={isOpen ? icons.chevronUp : icons.chevronDown} size={14} />
+                        <Icon name={isOpen ? icons.chevronUp : icons.chevronDown} size={14} />
                         {isOpen
                           ? 'إخفاء التفاصيل'
                           : fieldCount(e) > 0

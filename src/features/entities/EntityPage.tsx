@@ -65,7 +65,7 @@ export default function EntityPage() {
         <div className="screen col hasg2">
           <nav className="crumb" aria-label="مسار التنقّل">
             <Link to={ROUTES.entities} className="lb">الجهات</Link>
-            <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
+            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
             <span className="now">{entity.name}</span>
           </nav>
 
@@ -82,7 +82,7 @@ export default function EntityPage() {
                     <span className="pc-dot" />
                     {entity.type}
                     <span className="pc-dot" />
-                    <Icon path={icons.pinMap} size={14} /> {entity.region} · {entity.city}
+                    <Icon name={icons.pinMap} size={14} /> {entity.region} · {entity.city}
                   </div>
                 </div>
               </div>

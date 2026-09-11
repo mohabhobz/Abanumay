@@ -75,7 +75,7 @@ export function FilterCustomizer({
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => dropOn(f.key)}
           >
-            <span className="fcust-g" aria-hidden="true"><Icon path={icons.grip} size={14} /></span>
+            <span className="fcust-g" aria-hidden="true"><Icon name={icons.grip} size={14} /></span>
 
             <button
               className="fcust-c on"
@@ -83,7 +83,7 @@ export function FilterCustomizer({
               aria-label={`إخفاء ${f.label}`}
               onClick={() => onChange(visible.filter((k) => k !== f.key))}
             >
-              <Icon path={icons.check} size={11} />
+              <Icon name={icons.check} size={11} />
             </button>
 
             <span className="fcust-n">{f.label}</span>
@@ -94,14 +94,14 @@ export function FilterCustomizer({
                 disabled={i === 0}
                 onClick={() => move(f.key, -1)}
               >
-                <Icon path={icons.chevronUp} size={13} />
+                <Icon name={icons.chevronUp} size={13} />
               </button>
               <button
                 aria-label={`تحريك ${f.label} لأسفل`}
                 disabled={i === shown.length - 1}
                 onClick={() => move(f.key, 1)}
               >
-                <Icon path={icons.chevronDown} size={13} />
+                <Icon name={icons.chevronDown} size={13} />
               </button>
             </span>
           </li>

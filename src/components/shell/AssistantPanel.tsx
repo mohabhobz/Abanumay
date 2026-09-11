@@ -78,14 +78,14 @@ export function AssistantPanel({ open, onClose, onFull, ctx = FALLBACK_CONTEXT }
 
           {msgs.length > 0 && (
             <button className="aclose" onClick={reset} title="محادثة جديدة" aria-label="محادثة جديدة">
-              <Icon path={icons.plus} size={16} />
+              <Icon name={icons.plus} size={16} />
             </button>
           )}
           <button className="aclose" onClick={onFull} title="فتح كصفحة كاملة" aria-label="فتح كصفحة كاملة">
-            <Icon path={icons.expand} size={16} />
+            <Icon name={icons.expand} size={16} />
           </button>
           <button className="aclose" onClick={onClose} aria-label="إغلاق">
-            <Icon path={icons.close} size={16} />
+            <Icon name={icons.close} size={16} />
           </button>
         </div>
 

@@ -90,7 +90,7 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
               {r.to && (
                 <Link className="btn btn-1 btn-sm" to={r.to}>
                   {r.toLabel ?? 'اعرضها'}
-                  <Icon path={icons.chevron} size={14} />
+                  <Icon name={icons.chevron} size={14} />
                 </Link>
               )}
               {r.actions?.map((a) => (

@@ -103,7 +103,7 @@ function Card({ s }: { s: LiveSpec }) {
   return (
     <Link to={ROUTES.liveReport(s.key)} className="catc glass">
       <span className="catc-h">
-        <span className="catc-i"><Icon path={icons[s.icon]} size={17} /></span>
+        <span className="catc-i"><Icon name={icons[s.icon]} size={17} /></span>
         <span className="catc-t">{s.title}</span>
         <Tag tone={tag.tone}>{tag.label}</Tag>
       </span>

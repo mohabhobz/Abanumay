@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Icon } from './Icon'
 import { icons } from './icons'
@@ -22,7 +23,7 @@ export function SearchBox({
 }) {
   return (
     <label className="srch">
-      <Icon path={icons.search} size={17} />
+      <Icon name={icons.search} size={17} />
       <input
         type="search"
         value={value}
@@ -32,7 +33,7 @@ export function SearchBox({
       />
       {value && (
         <button className="srch-x" onClick={() => onChange('')} aria-label="مسح البحث">
-          <Icon path={icons.close} size={15} />
+          <Icon name={icons.close} size={15} />
         </button>
       )}
     </label>
@@ -56,7 +57,7 @@ export interface SelectProps {
   /** يخلّي الحقل واخد عرض السطر كله في الشبكة */
   wide?: boolean
   /** أيقونة جوّه الحقل — بتغني عن عنوان فوقه في شريط الأدوات */
-  icon?: string
+  icon?: LucideIcon
 }
 
 /** قائمة اختيار بمظهر النظام — الحافة شعرية والخلفية زجاج */
@@ -67,7 +68,7 @@ export function Select({
     <label className={`fsel${value ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`}>
       {label && <span className="fsel-l">{label}</span>}
       <span className="fsel-b">
-        {icon && <Icon path={icon} size={15} />}
+        {icon && <Icon name={icon} size={15} />}
         <select
           value={value ?? ''}
           disabled={disabled}
@@ -78,7 +79,7 @@ export function Select({
             <option key={optValue(o)} value={optValue(o)}>{optLabel(o)}</option>
           ))}
         </select>
-        <Icon path={icons.chevronDown} size={15} />
+        <Icon name={icons.chevronDown} size={15} />
       </span>
     </label>
   )
@@ -105,7 +106,7 @@ export interface MultiSelectProps {
   all?: string
   disabled?: boolean
   wide?: boolean
-  icon?: string
+  icon?: LucideIcon
   /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة */
   searchAt?: number
 }
@@ -168,16 +169,16 @@ export function MultiSelect({
         id={`${id}-b`}
         onClick={() => setOpen((x) => !x)}
       >
-        {icon && <Icon path={icon} size={15} />}
+        {icon && <Icon name={icon} size={15} />}
         <span className="fmulti-s">{summary}</span>
-        <Icon path={icons.chevronDown} size={15} />
+        <Icon name={icons.chevronDown} size={15} />
       </button>
 
       {open && (
         <div className="fmenu">
           {options.length > searchAt && (
             <label className="fmenu-q">
-              <Icon path={icons.search} size={14} />
+              <Icon name={icons.search} size={14} />
               <input
                 autoFocus
                 value={needle}
@@ -203,7 +204,7 @@ export function MultiSelect({
                   onClick={() => toggle(val)}
                 >
                   <span className="fopt-x" aria-hidden="true">
-                    {sel && <Icon path={icons.check} size={12} />}
+                    {sel && <Icon name={icons.check} size={12} />}
                   </span>
                   <span className="fopt-t">{optLabel(o)}</span>
                 </button>
@@ -352,7 +353,7 @@ export function PageSize({
           aria-expanded={open}
           onClick={() => setOpen((x) => !x)}
         >
-          <Icon path={icons.chevronDown} size={14} />
+          <Icon name={icons.chevronDown} size={14} />
         </button>
 
         {open && (
@@ -420,7 +421,7 @@ export function Pager({
           aria-label="الصفحة السابقة"
           title="السابق"
         >
-          <Icon path={icons.chevronBack} size={16} />
+          <Icon name={icons.chevronBack} size={16} />
         </button>
 
         <div className="pgnums">
@@ -448,7 +449,7 @@ export function Pager({
           aria-label="الصفحة التالية"
           title="التالي"
         >
-          <Icon path={icons.chevron} size={16} />
+          <Icon name={icons.chevron} size={16} />
         </button>
       </nav>
     </div>
@@ -489,7 +490,7 @@ export function ViewToggle({
         aria-pressed={view === 'cards'}
         title="كروت"
       >
-        <Icon path={icons.grid} size={16} />
+        <Icon name={icons.grid} size={16} />
       </button>
       <button
         className={view === 'table' ? 'on' : ''}
@@ -497,7 +498,7 @@ export function ViewToggle({
         aria-pressed={view === 'table'}
         title="جدول"
       >
-        <Icon path={icons.rows} size={16} />
+        <Icon name={icons.rows} size={16} />
       </button>
     </div>
   )

@@ -73,7 +73,7 @@ export default function ReportView() {
         <div className="screen col">
           <nav className="crumb" aria-label="مسار التنقّل">
             <Link to={ROUTES.reports} className="lb">التقارير</Link>
-            <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
+            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
             <span className="now">{card.question}</span>
           </nav>
 

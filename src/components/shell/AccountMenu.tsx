@@ -98,7 +98,7 @@ export function AccountMenu({
                   aria-checked={theme === t.key}
                   onClick={() => setTheme(t.key)}
                 >
-                  <Icon path={icons[t.icon]} size={15} />
+                  <Icon name={icons[t.icon]} size={15} />
                   <span>{t.label}</span>
                 </button>
               ))}
@@ -143,18 +143,18 @@ export function AccountMenu({
 
           <div className="acct-sec">
             <button role="menuitem" onClick={() => go(ROUTES.account)}>
-              <Icon path={icons.user} size={16} />
+              <Icon name={icons.user} size={16} />
               إعدادات الحساب
             </button>
             <button role="menuitem" onClick={() => go(ROUTES.preferences)}>
-              <Icon path={icons.gear} size={16} />
+              <Icon name={icons.gear} size={16} />
               التفضيلات والإشعارات
             </button>
           </div>
 
           <div className="acct-sec">
             <button className="danger" role="menuitem" onClick={() => onSignOut?.()}>
-              <Icon path={icons.logout} size={16} />
+              <Icon name={icons.logout} size={16} />
               تسجيل الخروج
             </button>
           </div>

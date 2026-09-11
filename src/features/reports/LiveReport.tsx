@@ -54,9 +54,9 @@ export default function LiveReport() {
         <div className="screen col">
           <nav className="crumb" aria-label="مسار التنقّل">
             <Link to={ROUTES.reports} className="lb">التقارير</Link>
-            <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
+            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
             <Link to={ROUTES.reportTab('catalog')} className="lb">الكتالوج</Link>
-            <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
+            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
             <span className="now">{spec.title}</span>
           </nav>
 
@@ -80,7 +80,7 @@ export default function LiveReport() {
 
           {spec.finding && (
             <Glass className="lrfind">
-              <span className="badge badge-30"><Icon path={icons.insight} size={16} /></span>
+              <span className="badge badge-30"><Icon name={icons.insight} size={16} /></span>
               <p>{spec.finding}</p>
             </Glass>
           )}
@@ -119,7 +119,7 @@ function Filters({ spec }: { spec: LiveSpec }) {
         {spec.filters.map((f) => (
           <span key={f.label} className={`lrf-i${(f.count ?? 0) >= 50 ? ' long' : ''}`}>
             <Icon
-              path={f.kind === 'date' ? icons.clock : f.kind === 'text' ? icons.search : icons.filter}
+              name={f.kind === 'date' ? icons.clock : f.kind === 'text' ? icons.search : icons.filter}
               size={14}
             />
             <b>{f.label}</b>
@@ -182,7 +182,7 @@ function cellOf(v: string | number | undefined, c: LiveCol) {
   if (c.kind === 'id') return <Mono>{String(v)}</Mono>
   if (c.kind === 'date') return <Mono>{String(v)}</Mono>
   if (c.kind === 'pct') return <span className="num">{String(v)}</span>
-  if (c.kind === 'file') return <span className="lrfile"><Icon path={icons.clip} size={13} />{String(v)}</span>
+  if (c.kind === 'file') return <span className="lrfile"><Icon name={icons.clip} size={13} />{String(v)}</span>
   if (c.kind === 'link') return <span className="lnk">{String(v)}</span>
   return String(v)
 }
@@ -334,7 +334,7 @@ function BudgetTree() {
         </button>
         {path.map((n, i) => (
           <span key={n.id} className="lrbc-s">
-            <Icon path={icons.chevron} size={14} />
+            <Icon name={icons.chevron} size={14} />
             <button
               className={`lrbc-i${i === path.length - 1 ? ' on' : ''}`}
               onClick={() => setPath(path.slice(0, i + 1))}
@@ -390,7 +390,7 @@ function BudgetTree() {
                           onClick={() => n.children?.length && setPath([...path, n])}
                         >
                           <td title={n.label}>
-                            {n.children?.length ? <Icon path={icons.chevron} size={13} /> : null}
+                            {n.children?.length ? <Icon name={icons.chevron} size={13} /> : null}
                             {' '}{n.label}
                           </td>
                           <td className="n num"><Money sm>{n.budget}</Money></td>
@@ -435,7 +435,7 @@ function Nav({ spec }: { spec: LiveSpec }) {
     <nav className="lrnav">
       {prev ? (
         <Link to={ROUTES.liveReport(prev.key)} className="btn btn-2 btn-sm">
-          <Icon path={icons.chevronBack} size={15} />
+          <Icon name={icons.chevronBack} size={15} />
           {prev.title}
         </Link>
       ) : <span />}
@@ -443,7 +443,7 @@ function Nav({ spec }: { spec: LiveSpec }) {
       {next ? (
         <Link to={ROUTES.liveReport(next.key)} className="btn btn-2 btn-sm">
           {next.title}
-          <Icon path={icons.chevron} size={15} />
+          <Icon name={icons.chevron} size={15} />
         </Link>
       ) : <span />}
     </nav>

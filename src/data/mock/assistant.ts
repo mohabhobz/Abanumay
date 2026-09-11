@@ -1,3 +1,4 @@
+import type { IconName } from '@/components/ui'
 import type { AssistantAnswer, AssistantContext } from '@/components/assistant/types'
 import { units } from '@/lib/format'
 
@@ -8,7 +9,7 @@ export interface AssistantRole {
   initial: string
   greet: string
   scope: string
-  cards: { icon: string; title: string; sub: string; prompt: string }[]
+  cards: { icon: IconName; title: string; sub: string; prompt: string }[]
 }
 
 export interface SavedChat {

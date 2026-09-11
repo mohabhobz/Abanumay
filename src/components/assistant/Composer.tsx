@@ -59,7 +59,7 @@ export function Composer({
 
         <div className="cbox-b">
           <button className="iact" title="إرفاق ملف" aria-label="إرفاق ملف">
-            <Icon path={icons.clip} size={16} />
+            <Icon name={icons.clip} size={16} />
           </button>
           {busy ? (
             <button className="go stop" onClick={onStop} title="إيقاف" aria-label="إيقاف">
@@ -73,7 +73,7 @@ export function Composer({
               title="إرسال"
               aria-label="إرسال"
             >
-              <Icon path={icons.send} />
+              <Icon name={icons.send} />
             </button>
           )}
         </div>

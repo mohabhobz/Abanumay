@@ -1,33 +1,29 @@
 import type { CSSProperties } from 'react'
+import type { LucideIcon } from 'lucide-react'
 
 export interface IconProps {
-  /** مسار SVG من `icons` */
-  path: string
+  /** أيقونة من `icons` */
+  name: LucideIcon
   size?: number
   style?: CSSProperties
   className?: string
 }
 
 /**
- * أيقونة خطية على شبكة 24×24.
- * المسارات نصوص ثابتة معرَّفة عندنا في `icons.ts` — مش مدخلات مستخدم —
- * فحقنها آمن، والبديل (كومبوننت لكل أيقونة) بيضخّم الباندل بلا فايدة.
+ * أيقونة لوسيد بمقاس وسُمك موحّدين.
+ *
+ * السُمك `2` هو اللي أيقونات لوسيد **مرسومة له** على شبكة ٢٤×٢٤،
+ * فبنسيبه زي ما هو: تغييره بيخلّي الأشكال تبان مرسومة غلط عند
+ * التقاطعات والزوايا. المقاس الافتراضي ٢٠ ماشي مع `--fs-3`.
  */
-export function Icon({ path, size = 20, style, className }: IconProps) {
+export function Icon({ name: Glyph, size = 20, style, className }: IconProps) {
   return (
-    <svg
+    <Glyph
       className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      size={size}
+      strokeWidth={2}
       style={style}
       aria-hidden="true"
-      dangerouslySetInnerHTML={{ __html: path }}
     />
   )
 }

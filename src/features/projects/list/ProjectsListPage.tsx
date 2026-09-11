@@ -472,7 +472,7 @@ export default function ProjectsListPage() {
                 onClick={() => set({ adv: advOpen ? undefined : '1' })}
                 aria-expanded={advOpen}
               >
-                <Icon path={icons.filter} size={15} />
+                <Icon name={icons.filter} size={15} />
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
@@ -526,7 +526,7 @@ export default function ProjectsListPage() {
                 </div>
                 <div className="fgrid-x">
                   <button className="fclear" onClick={() => setCustom(true)}>
-                    <Icon path={icons.gear} size={13} />
+                    <Icon name={icons.gear} size={13} />
                     تخصيص الفلاتر
                   </button>
                 </div>
@@ -546,13 +546,13 @@ export default function ProjectsListPage() {
                     }
                   >
                     <span className="sub">{c.label}:</span> {c.value}
-                    <Icon path={icons.close} size={13} />
+                    <Icon name={icons.close} size={13} />
                   </button>
                 ))}
                 {flags.map(([k, label]) => (
                   <button key={k as string} className="fpill" onClick={() => set({ [k]: undefined } as Partial<Params>)}>
                     {label}
-                    <Icon path={icons.close} size={13} />
+                    <Icon name={icons.close} size={13} />
                   </button>
                 ))}
                 <button className="fclear" onClick={clear}>مسح الكل</button>
@@ -565,14 +565,14 @@ export default function ProjectsListPage() {
               المحتوى بعد ما القرار خلص. */}
           {lastBulk && (
             <Glass className="bulk done">
-              <Icon path={icons.check} size={16} />
+              <Icon name={icons.check} size={16} />
               <span>{lastBulk.text}</span>
               <span className="pc-sp" />
               <button
                 className="btn btn-2 btn-sm"
                 onClick={() => { lastBulk.undo(); setLastBulk(null); bump((n) => n + 1) }}
               >
-                <Icon path={icons.redo} size={15} />
+                <Icon name={icons.redo} size={15} />
                 تراجع
               </button>
               <button className="btn btn-2 btn-sm" onClick={() => setLastBulk(null)}>إغلاق</button>
@@ -675,7 +675,7 @@ export default function ProjectsListPage() {
                   <option value="">اختر المالك…</option>
                   {OWNERS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
-                <Icon path={icons.chevronDown} size={15} />
+                <Icon name={icons.chevronDown} size={15} />
               </span>
             </label>
             <button className="btn btn-p btn-sm" disabled={!bulkOwner} onClick={applyBulk}>

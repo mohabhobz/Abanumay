@@ -93,9 +93,9 @@ function Card({ c }: { c: ReportCard }) {
   return (
     <Link to={ROUTES.reportView(c.key)} className="rbc glass">
       <span className="rbc-h">
-        <span className="rbc-i"><Icon path={icons[c.icon]} size={17} /></span>
+        <span className="rbc-i"><Icon name={icons[c.icon]} size={17} /></span>
         <span className="rbc-q">{c.question}</span>
-        <Icon path={icons.chevron} size={15} />
+        <Icon name={icons.chevron} size={15} />
       </span>
 
       <span className="rbc-v">

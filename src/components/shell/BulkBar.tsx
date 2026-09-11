@@ -48,7 +48,7 @@ export function BulkBar({ count, sentence, children, onClear }: BulkBarProps) {
             aria-label="إلغاء التحديد"
             title="إلغاء التحديد"
           >
-            <Icon path={icons.close} size={16} />
+            <Icon name={icons.close} size={16} />
           </button>
         </div>
       </div>

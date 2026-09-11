@@ -1,68 +1,94 @@
-/** مسارات SVG للأيقونات — viewBox موحّد 24×24، خط بلا تعبئة */
+/**
+ * أيقونات النظام — **لوسيد** (lucide.dev).
+ *
+ * قبل كده كانت ٥٤ أيقونة مرسومة بإيدنا كنصوص `<path>` على شبكة
+ * ٢٤×٢٤. ده كان بيشتغل، بس كل أيقونة جديدة كانت قرار رسم مستقل:
+ * سُمك الخط والنهايات والوزن البصري بيتحدّدوا في اللحظة، فبعد
+ * خمسين أيقونة العايلة ما بقتش عايلة.
+ *
+ * لوسيد بتحلّ ده من الجذر: مكتبة واحدة، شبكة ٢٤×٢٤، سُمك ٢،
+ * نهايات دائرية — كلهم مرسومين مع بعض بنفس القواعد. وبتديّنا كمان
+ * ١٥٠٠+ أيقونة جاهزة، فالشاشة الجديدة ما بتحتاجش رسمًا.
+ *
+ * **الخريطة تحت بتختار حسب اللي الأيقونة بترسمه لا حسب اسمها
+ * عندنا** — لأن اللي المستخدم بيشوفه هو الرسم. فـ`gear` كانت
+ * بترسم مزالج (sliders) مش ترسًا، فبقت `SlidersHorizontal`.
+ *
+ * الاستعمال زي ما هو:  <Icon name={icons.home} size={20} />
+ */
+import {
+  House, Sun, PanelLeft, Leaf, Moon, Monitor, User, SlidersHorizontal,
+  LogOut, Lock, Eye, EyeOff, FileText, Building2, Wallet, FileSignature,
+  CreditCard, ChartColumn, MessageCircle, CircleAlert, ChevronLeft,
+  ChevronRight, Search, File, Paperclip, ArrowLeft, Sparkle, X, Maximize2,
+  Plus, EllipsisVertical, Pin, Pencil, Trash2, Menu, ArrowDown, Download,
+  Copy, Check, RotateCw, ThumbsUp, ThumbsDown, GripVertical, ChevronDown,
+  Sparkles, ArrowDownWideNarrow, ChevronUp, LayoutGrid, Rows3, Funnel,
+  Clock, MapPin, Users, Link2,
+  type LucideIcon,
+} from 'lucide-react'
+
 export const icons = {
-  home: '<path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2"/><path d="M12 19v2"/><path d="M3 12h2"/><path d="M19 12h2"/><path d="M5.6 5.6l1.4 1.4"/><path d="M17 17l1.4 1.4"/><path d="M18.4 5.6L17 7"/><path d="M7 17l-1.4 1.4"/>',
-  panel: '<rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M9.5 4.5v15"/>',
-  leaf: '<path d="M5 19C4 12 8.5 5.5 19 5c.5 9-4.5 13.5-11 13"/><path d="M11 13c-2 1.6-3.6 3.6-4.6 6"/>',
-  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
-  device: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M9 21h6"/><path d="M12 17v4"/>',
-  user: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"/>',
-  gear: '<path d="M5 7h14"/><path d="M5 12h14"/><path d="M5 17h14"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="17" r="2"/>',
-  logout: '<path d="M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h9"/>',
-  lock: '<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>',
-  eye: '<path d="M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
-  eyeOff: '<path d="M4 4l16 16"/><path d="M9.6 9.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-1.2"/><path d="M6.6 6.7C4.2 8.3 2.5 12 2.5 12s3.5 5.5 9.5 5.5c1.5 0 2.8-.3 4-.9"/><path d="M17.7 15.2c2.2-1.6 3.8-3.2 3.8-3.2S18 6.5 12 6.5c-.7 0-1.4.1-2 .2"/>',
-  doc: '<path d="M7 4h7l4 4v12H7z"/><path d="M14 4v4h4"/><path d="M10 13h5"/><path d="M10 16h5"/>',
-  entity: '<path d="M5 20V8l7-4 7 4v12"/><path d="M10 20v-6h4v6"/>',
-  budget: '<path d="M6 5v14"/><path d="M6 9h7"/><path d="M6 15h7"/><circle cx="17" cy="9" r="2"/><circle cx="17" cy="15" r="2"/>',
-  contract: '<path d="M6 4h12v16l-6-3-6 3z"/>',
-  pay: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 10h16"/>',
-  chart: '<path d="M5 19V9"/><path d="M10 19V5"/><path d="M15 19v-7"/><path d="M20 19v-11"/>',
-  chat: '<path d="M20 12c0 3.9-3.6 7-8 7-1 0-2-.2-2.9-.5L5 20l1.3-3.1C5.2 15.7 4 14 4 12c0-3.9 3.6-7 8-7s8 3.1 8 7z"/>',
-  alert: '<circle cx="12" cy="12" r="8"/><path d="M12 8v5"/><path d="M12 16h.01"/>',
-  chevron: '<path d="M14 6l-6 6 6 6"/>',
-  /* الشيفرون المعكوس — في RTL ده اتجاه «لورا» (يمين) */
-  chevronBack: '<path d="M10 6l6 6-6 6"/>',
-  search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
-  file: '<path d="M7 4h7l4 4v12H7z"/><path d="M14 4v4h4"/>',
-  clip: '<path d="M15 8l-6 6a2.5 2.5 0 003.5 3.5l6.5-6.5a4.5 4.5 0 00-6.4-6.3L6 11.6"/>',
-  send: '<path d="M20 12H6"/><path d="M12 6l-6 6 6 6"/>',
-  spark: '<path d="M12 3.6l2.1 6.3 6.3 2.1-6.3 2.1-2.1 6.3-2.1-6.3L3.6 12l6.3-2.1z"/>',
-  close: '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
-  expand: '<path d="M14 4h6v6"/><path d="M20 4l-7 7"/><path d="M10 20H4v-6"/><path d="M4 20l7-7"/>',
-  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
-  dots: '<circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/>',
-  pin: '<path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/>',
-  edit: '<path d="M5 19h4l9-9-4-4-9 9z"/><path d="M14 6l4 4"/>',
-  trash: '<path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/>',
-  menu: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
-  down: '<path d="M12 5v13"/><path d="M6 13l6 6 6-6"/>',
-  /* التصدير ≠ سهم لتحت. السهم العاري بيتقري «رتّب تنازليًا» أو
-     «انزل للآخر» — والصينية اللي تحته هي اللي بتقول «الملف بينزل
-     على جهازك». */
-  export: '<path d="M12 4v9.5"/><path d="M8.4 10.2L12 13.8l3.6-3.6"/><path d="M5 15.5V18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2.5"/>',
-  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/>',
-  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
-  redo: '<path d="M20 12a8 8 0 10-2.3 5.6"/><path d="M20 6v6h-6"/>',
-  up: '<path d="M7 20v-8l4-7a2 2 0 013 2l-1 5h5a2 2 0 012 2.4l-1.2 5A2 2 0 0117 21H7z"/>',
-  downv: '<path d="M17 4v8l-4 7a2 2 0 01-3-2l1-5H6a2 2 0 01-2-2.4l1.2-5A2 2 0 017 3h10z"/>',
-  grip: '<circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>',
-  chevronDown: '<path d="M6 9.5l6 6 6-6"/>',
-  /* «اليوم» — نجمة قراءة كبيرة ومعاها اتنتين صغيرين: الشرارة وحدها
-     بتقول «ذكاء اصطناعي» بس، والتلاتة مع بعض بيقولوا «قراءات». */
-  insight: '<path d="M11 3.4l1.85 5.05L17.9 10.3l-5.05 1.85L11 17.2l-1.85-5.05L4.1 10.3l5.05-1.85z"/><path d="M17.6 15.2l.62 1.68 1.68.62-1.68.62-.62 1.68-.62-1.68-1.68-.62 1.68-.62z"/><path d="M5.6 17.1l.43 1.17 1.17.43-1.17.43-.43 1.17-.43-1.17L4 18.7l1.17-.43z"/>',
-  sort: '<path d="M7 4v16"/><path d="M4 17l3 3 3-3"/><path d="M13 6h7"/><path d="M13 11h5"/><path d="M13 16h3"/>',
-  chevronUp: '<path d="M6 14.5l6-6 6 6"/>',
-  grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
-  rows: '<rect x="4" y="5" width="16" height="4" rx="1.5"/><rect x="4" y="11" width="16" height="4" rx="1.5"/><rect x="4" y="17" width="16" height="2.5" rx="1.2"/>',
-  /* القمع، لا التلات شُرَط المتناقصة. الشُرَط المتناقصة أيقونة
-     «محاذاة» أو «ترتيب» في كل مكان تاني، والمستخدم بيقراها كده —
-     والقمع هو الشكل المتعارف عليه للفلترة. */
-  filter: '<path d="M20 5H4l6.2 7.4v5.4l3.6 1.8v-7.2L20 5z"/>',
-  clock: '<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',
-  pinMap: '<path d="M12 21s6-5.2 6-9.6A6 6 0 0 0 6 11.4C6 15.8 12 21 12 21z"/><circle cx="12" cy="11" r="2.2"/>',
-  users: '<circle cx="9" cy="8" r="3"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 5.5a3 3 0 0 1 0 5.6"/><path d="M17.5 14c2 .7 3.5 2.3 3.5 5"/>',
-  link: '<path d="M10 13a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5"/><path d="M14 11a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5L12.5 17.5"/>',
-} as const
+  home: House,
+  sun: Sun,
+  panel: PanelLeft,
+  leaf: Leaf,
+  moon: Moon,
+  device: Monitor,
+  user: User,
+  /* كانت بترسم مزالج لا ترسًا — والرسم هو اللي بيتقري */
+  gear: SlidersHorizontal,
+  logout: LogOut,
+  lock: Lock,
+  eye: Eye,
+  eyeOff: EyeOff,
+  doc: FileText,
+  entity: Building2,
+  budget: Wallet,
+  contract: FileSignature,
+  pay: CreditCard,
+  chart: ChartColumn,
+  chat: MessageCircle,
+  alert: CircleAlert,
+  /* RTL: `chevron` بيشاور «لقدّام» يعني شمال، و`chevronBack` يمين */
+  chevron: ChevronLeft,
+  chevronBack: ChevronRight,
+  search: Search,
+  file: File,
+  clip: Paperclip,
+  send: ArrowLeft,
+  spark: Sparkle,
+  close: X,
+  expand: Maximize2,
+  plus: Plus,
+  dots: EllipsisVertical,
+  pin: Pin,
+  edit: Pencil,
+  trash: Trash2,
+  menu: Menu,
+  down: ArrowDown,
+  /* التصدير ≠ سهم عارٍ لتحت: السهم لوحده بيتقري «رتّب تنازليًا».
+     `Download` فيه الصينية اللي بتقول «الملف بينزل على جهازك». */
+  export: Download,
+  copy: Copy,
+  check: Check,
+  redo: RotateCw,
+  up: ThumbsUp,
+  downv: ThumbsDown,
+  grip: GripVertical,
+  chevronDown: ChevronDown,
+  /* «قراءات» — تلات نجوم. الشرارة الواحدة بتقول «ذكاء اصطناعي» بس */
+  insight: Sparkles,
+  sort: ArrowDownWideNarrow,
+  chevronUp: ChevronUp,
+  grid: LayoutGrid,
+  rows: Rows3,
+  /* القمع لا الشُرَط المتناقصة — دي أيقونة «محاذاة» في كل مكان تاني */
+  filter: Funnel,
+  clock: Clock,
+  pinMap: MapPin,
+  users: Users,
+  link: Link2,
+} as const satisfies Record<string, LucideIcon>
 
 export type IconName = keyof typeof icons

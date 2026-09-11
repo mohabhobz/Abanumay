@@ -79,7 +79,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
         <div className="rowf" style={{ gap: '.6rem', marginTop: '1.1rem' }}>
           <DocFile name="الاتفاقية.pdf" meta={A.no} />
           <button className="btn btn-2 btn-sm">
-            <Icon path={icons.doc} size={15} />
+            <Icon name={icons.doc} size={15} />
             طباعة الاتفاقية
           </button>
         </div>
@@ -91,7 +91,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
           {A.steps.map((s) => (
             <li key={s.role} className={`agr-step ${s.state}`}>
               <span className="agr-dot" aria-hidden="true">
-                {s.state === 'done' && <Icon path={icons.check} size={12} />}
+                {s.state === 'done' && <Icon name={icons.check} size={12} />}
               </span>
               <span className="agr-role">{s.role}</span>
               <span className="agr-note">

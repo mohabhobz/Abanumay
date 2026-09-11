@@ -139,7 +139,7 @@ export function AnalysisCard({
           aria-label={open ? 'إخفاء التحليل' : 'إظهار التحليل'}
           onClick={() => setOpen((x) => !x)}
         >
-          <Icon path={open ? icons.chevronUp : icons.chevronDown} size={16} />
+          <Icon name={open ? icons.chevronUp : icons.chevronDown} size={16} />
         </button>
       </div>
 

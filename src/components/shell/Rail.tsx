@@ -116,7 +116,7 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
               `${prev && prev.group !== item.group ? ' newgroup' : ''}`
             }
           >
-            <Icon path={icons[item.icon as IconName]} />
+            <Icon name={icons[item.icon as IconName]} />
             <span className="rail-l">{item.label}</span>
             {/* التلميح عنصر مستقل لا `title`: تلميح المتصفح بيتأخّر
                 ثانية كاملة، والشريط المطويّ محتاج الاسم فورًا */}
@@ -153,7 +153,7 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
       >
         <span className="railgrip-l" />
         <span className="railgrip-b" aria-hidden="true">
-          <Icon path={icons.panel} size={14} />
+          <Icon name={icons.panel} size={14} />
         </span>
       </div>
     </nav>

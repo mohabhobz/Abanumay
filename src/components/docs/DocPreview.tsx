@@ -35,7 +35,7 @@ export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
 
       <div className="fprev chrome" role="dialog" aria-label={`معاينة ${name}`}>
         <div className="fphead">
-          <span className="badge badge-30"><Icon path={icons.file} /></span>
+          <span className="badge badge-30"><Icon name={icons.file} /></span>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="atitle">{name}</div>
             <div className="sub">
@@ -45,10 +45,10 @@ export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
             </div>
           </div>
           <a className="aclose" download={name} href="#" onClick={(e) => e.preventDefault()} title="تنزيل" aria-label="تنزيل">
-            <Icon path={icons.export} size={16} />
+            <Icon name={icons.export} size={16} />
           </a>
           <button className="aclose" onClick={onClose} aria-label="إغلاق">
-            <Icon path={icons.close} size={16} />
+            <Icon name={icons.close} size={16} />
           </button>
         </div>
 

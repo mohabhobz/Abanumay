@@ -75,7 +75,7 @@ export function DocDownload({ name }: { name: string }) {
       title="تنزيل"
       aria-label={`تنزيل ${name}`}
     >
-      <Icon path={icons.export} size={15} />
+      <Icon name={icons.export} size={15} />
     </a>
   )
 }

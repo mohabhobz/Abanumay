@@ -131,7 +131,7 @@ export default function AssistantPage() {
                     onClick={() => setListOpen((v) => !v)}
                     aria-label="المحادثات"
                   >
-                    <Icon path={icons.menu} size={16} />
+                    <Icon name={icons.menu} size={16} />
                   </button>
                 )}
 
@@ -145,7 +145,7 @@ export default function AssistantPage() {
                 )}
 
                 <button className="aclose" onClick={() => navigate(-1)} aria-label="خروج">
-                  <Icon path={icons.close} size={16} />
+                  <Icon name={icons.close} size={16} />
                 </button>
               </div>
             </header>
@@ -187,7 +187,7 @@ export default function AssistantPage() {
 
             {!stick && msgs.length > 0 && (
               <button className="tobottom chrome" onClick={() => setStick(true)} aria-label="آخر المحادثة">
-                <Icon path={icons.down} size={16} />
+                <Icon name={icons.down} size={16} />
               </button>
             )}
 

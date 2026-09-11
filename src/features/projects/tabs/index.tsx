@@ -164,7 +164,7 @@ export function CorrespondenceTab({
       {messages.length > 0 ? (
         <>
           <div className="thread-why">
-            <Icon path={icons.alert} size={15} style={{ color: 'var(--warn)', flex: 'none' }} />
+            <Icon name={icons.alert} size={15} style={{ color: 'var(--warn)', flex: 'none' }} />
             <span className="sub">{why}</span>
           </div>
           <div className="thread">
@@ -190,8 +190,8 @@ export function CorrespondenceTab({
 
       <div className="ask free" style={{ marginTop: '1rem' }}>
         <span className="ph">اكتب رسالة لـ{entityName}…</span>
-        <button className="attach" aria-label="إرفاق"><Icon path={icons.clip} /></button>
-        <button className="go" aria-label="إرسال"><Icon path={icons.send} /></button>
+        <button className="attach" aria-label="إرفاق"><Icon name={icons.clip} /></button>
+        <button className="go" aria-label="إرسال"><Icon name={icons.send} /></button>
       </div>
     </Glass>
   )

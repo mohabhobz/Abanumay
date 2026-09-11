@@ -182,9 +182,9 @@ export default function ProjectPage() {
           {/* المسار جوّه البودي، مش في هيدر منفصل */}
           <nav className="crumb" aria-label="مسار التنقّل">
             <a onClick={() => navigate(ROUTES.projects)} className="lb">المشاريع</a>
-            <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
+            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
             <span className="lb">دورة 2026 · {project.track}</span>
-            <Icon path={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
+            <Icon name={icons.chevron} size={16} style={{ color: 'var(--t3)' }} />
             <span className="now">مشروع <Mono>{projectCode(id ?? project.id, row?.year)}</Mono></span>
           </nav>
 

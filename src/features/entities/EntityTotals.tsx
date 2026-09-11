@@ -88,7 +88,7 @@ export function EntityTotals({ entity }: { entity: EntityRow }) {
             style={{ '--tone': t.tone, '--pct': `${pct}%`, '--n': i } as React.CSSProperties}
           >
             <span className="einf-c">
-              <Icon path={icons[t.icon]} size={26} />
+              <Icon name={icons[t.icon]} size={26} />
             </span>
 
             <span className="einf-k">{t.label}</span>

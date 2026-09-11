@@ -3,7 +3,8 @@ import { Icon, icons, type IconName } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 
 export interface WelcomeCard {
-  icon: string
+  /** اسم الأيقونة في `icons` */
+  icon: IconName
   title: string
   /** سطر تحت العنوان: نتيجة الاختصار، مش إعادة صياغته */
   sub: string
@@ -62,7 +63,7 @@ export function Welcome({ greet, sub, cards, onPick, composer, compact }: Welcom
             style={{ '--d': `${i * 70}ms` } as CSSProperties}
             onClick={() => onPick(c.prompt)}
           >
-            <span className="badge badge-30"><Icon path={icons[c.icon as IconName]} /></span>
+            <span className="badge badge-30"><Icon name={icons[c.icon as IconName]} /></span>
             <span className="wc-t">{c.title}</span>
             <span className="wc-s">{c.sub}</span>
           </button>

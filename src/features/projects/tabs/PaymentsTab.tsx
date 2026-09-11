@@ -139,7 +139,7 @@ function Step({ label, who, on }: { label: string; who: string; on: boolean }) {
   return (
     <li className={`pay-step${on ? ' on' : ''}`}>
       <span className="pay-dot" aria-hidden="true">
-        {on && <Icon path={icons.check} size={11} />}
+        {on && <Icon name={icons.check} size={11} />}
       </span>
       {/* الاسم تحت العنوان لا جنبه: أربع محطات في صفّ واحد بأربع
           أسماء بتتقصّ كلها لـ«سند الصر…». */}

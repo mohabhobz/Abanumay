@@ -56,7 +56,7 @@ export function SavedViews({
         aria-expanded={open}
         onClick={() => setOpen((x) => !x)}
       >
-        <Icon path={icons.pin} size={15} />
+        <Icon name={icons.pin} size={15} />
         {active ? active.name : 'الفيوهات'}
         {!active && views.length > 0 && <b className="num">{views.length}</b>}
       </button>
@@ -84,7 +84,7 @@ export function SavedViews({
                     aria-label={`حذف ${v.name}`}
                     onClick={() => remove(v.id)}
                   >
-                    <Icon path={icons.close} size={13} />
+                    <Icon name={icons.close} size={13} />
                   </button>
                 </div>
               ))}

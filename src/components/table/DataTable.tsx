@@ -316,7 +316,7 @@ function ColumnPicker<T>({
         title="الأعمدة"
         onClick={() => setOpen((x) => !x)}
       >
-        <Icon path={icons.plus} size={15} />
+        <Icon name={icons.plus} size={15} />
       </button>
 
       {open && (
@@ -335,7 +335,7 @@ function ColumnPicker<T>({
                   onClick={() => !c.fixed && toggle(c.key)}
                 >
                   <span className="fopt-x" aria-hidden="true">
-                    {sel && <Icon path={icons.check} size={12} />}
+                    {sel && <Icon name={icons.check} size={12} />}
                   </span>
                   <span className="fopt-t">{c.label}</span>
                 </button>
