@@ -214,6 +214,7 @@ const gridsMix = []
 const shadows = []
 const bars = []
 const cols = []
+const rounds = []
 const nums = { total: 0, noTabular: 0 }
 
 /** سلّم الشريط · تلات مقاسات، ومسار وركن واحد لكلهم */
@@ -383,6 +384,43 @@ for (const theme of themes) {
         }
       }
 
+      /* ══ صندوق الأيقونة · ما بيبقاش دايرة ══
+         «وحّد الريدياس في كل الألمنتس» · فالصندوق اللي جوّاه
+         علامة بياخد ركن السلّم زي أي صندوق تاني. اللي بيفضل
+         دايرة حاجتان **مش صناديق أيقونات**:
+
+           · **صورة شخص** · الدايرة هنا عُرف قايم، ومالهاش علاقة
+             بسلّم الأركان.
+           · **نقطة** · النقطة شكلها هو الدايرة نفسها، ولو اتربّعت
+             بقت مربّعًا صغيرًا لا نقطة.
+
+         والفحص بيقيس **المرسوم**: أي عنصر ≥١٤px جوّاه `svg` واحدة
+         أو من قايمة صناديق الأيقونات، وركنه بيوصل لنصّ أصغر بُعد
+         فيه · يعني دايرة فعلًا مهما كانت القيمة مكتوبة `50%` ولا
+         `999px` ولا رقمًا. */
+      out.rounds = []
+      const KEEP_ROUND = /\b(av|pfp|pht|acctbtn|entlogo|ldot|dot|dotmark|stp-dot|th-dot|cb-dot|pc-dot|lgdot|dt|grain|mesh|grd)\b/
+      const PILL_OK = /\b(tab|tag|chip|fchip|pill|bar|stack|lbar|srch|map-chip|qr-count|num|lastact-d|cl-search)\b/
+      for (const e of document.querySelectorAll(`${ICON_BOX},button,a,[role="button"]`)) {
+        if (e.offsetParent === null) continue
+        const b = e.getBoundingClientRect()
+        if (b.width < 14 || b.height < 14) continue
+        const cls = String(e.className)
+        if (KEEP_ROUND.test(cls) || PILL_OK.test(cls)) continue
+        /* صندوق أيقونة = علامة واحدة جوّه صندوق · الزرار اللي فيه
+           كلام مش صندوق أيقونة، هو زرار وله فحصه */
+        const svgs = e.querySelectorAll('svg,.aispark')
+        const inBox = e.matches(ICON_BOX)
+        if (!inBox && !(svgs.length === 1 && !e.textContent.trim())) continue
+        const r = parseFloat(getComputedStyle(e).borderTopLeftRadius) || 0
+        const pct = getComputedStyle(e).borderTopLeftRadius.includes('%')
+        if (pct || r >= Math.min(b.width, b.height) / 2 - 0.5) {
+          out.rounds.push({ cls: cls.split(' ').slice(0, 2).join('.') || e.tagName,
+            w: Math.round(b.width), h: Math.round(b.height),
+            r: getComputedStyle(e).borderTopLeftRadius })
+        }
+      }
+
       /* أكتر من دعوة أساسية في الشاشة */
       out.primary = document.querySelectorAll('.btn-p').length
 
@@ -528,6 +566,7 @@ for (const theme of themes) {
     for (const x of found.shadows ?? []) shadows.push({ ...x, route, theme })
     for (const x of found.bars ?? []) bars.push({ ...x, route, theme })
     for (const x of found.cols ?? []) cols.push({ ...x, route, theme })
+    for (const x of found.rounds ?? []) rounds.push({ ...x, route, theme })
     for (const w of GRID_WIDTHS) {
       await page.setViewportSize({ width: w, height: 1000 })
       await page.waitForTimeout(160)
@@ -645,6 +684,13 @@ console.log(`\n═══ عمود أرقام جنب شريط بحافتين ═�
   const u = uniq(cols, (x) => `${x.sel}|${x.edges}`)
   if (!u.length) console.log('  نضيف · كل عمود بينتهي عند حافة واحدة.')
   for (const x of u.slice(0, 20)) { drift += 1; console.log(`  🔴 ${x.sel.padEnd(12)} ${x.n} خانة · حوافّ ${x.edges}   ${x.route}·${x.theme}`) }
+}
+
+console.log(`\n═══ صندوق أيقونة لسّه دايرة ═══`)
+{
+  const u = uniq(rounds, (x) => `${x.cls}|${x.r}`)
+  if (!u.length) console.log('  نضيف · الدايرة للصور والنقط وحدها.')
+  for (const x of u.slice(0, 20)) { drift += 1; console.log(`  🔴 ${String(x.cls).padEnd(22)} ${x.w}×${x.h}  ${x.r}   ${x.route}·${x.theme}`) }
 }
 
 console.log(`\n═══ شبكة «متساوية» وخاناتها مش متساوية ═══`)

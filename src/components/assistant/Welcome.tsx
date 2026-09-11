@@ -19,8 +19,6 @@ export interface WelcomeProps {
   cards: WelcomeCard[]
   onPick: (prompt: string) => void
   composer: ReactNode
-  /** نسخة اللوح الجانبي · نفس التشكيل بمقاسات العمود الضيّق */
-  compact?: boolean
 }
 
 /**
@@ -38,12 +36,12 @@ export interface WelcomeProps {
  * وفي اللوح «كيف أقدر أساعدك في «اسم المشروع»؟» لأن مداه الصفحة
  * المفتوح منها · والكروت كمان بتتغيّر معاه.
  */
-export function Welcome({ greet, sub, cards, onPick, composer, compact }: WelcomeProps) {
+export function Welcome({ greet, sub, cards, onPick, composer }: WelcomeProps) {
   const grid = useRef<HTMLDivElement>(null)
-  useProximity(grid, { reach: compact ? 240 : 300, selector: '.wcard' })
+  useProximity(grid, { reach: 300, selector: '.wcard' })
 
   return (
-    <div className={`welcome${compact ? ' wmini' : ''}`}>
+    <div className="welcome">
       <div className="whead">
         <span className="wspark"><span className="aispark" /></span>
         <div className="wtext">

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AskDock, Background, MobileTop, Rail, AssistantPanel } from '@/components/shell'
+import { AskDock, Background, MobileTop, Rail } from '@/components/shell'
+import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -9,7 +10,7 @@ import type { AssistantContext } from '@/components/assistant'
 
 export interface AppLayoutProps {
   children: ReactNode
-  /** سياق لوح المساعد للصفحة الحالية */
+  /** كونتنت المساعد للصفحة الحالية · سطر المدى والكروت */
   assistantContext?: AssistantContext
 }
 
@@ -57,7 +58,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
 
           {children}
 
-          <AssistantPanel
+          <AssistantOverlay
             open={assistantOpen}
             onClose={() => setAssistantOpen(false)}
             ctx={assistantContext}
