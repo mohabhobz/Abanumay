@@ -750,6 +750,9 @@ to{opacity:1;transform:none}
      الشجرة في الحالتين بنفس المقاس بالظبط، فالانتقال بينهم بيتقري
      طيّ للاسم لا تغيير مقاس. */
   --mark-h:44px;
+  /* نسبة الرسم نفسه (1028.10 ÷ 942.16) · الصندوق بياخد شكل
+     الرسم، فما فيش هوامش داخلية ولا حزام أسود. */
+  --mark-ar:1.09122;
   --lock-h:calc(var(--mark-h) * 1.26026);
   /* **متراكز أفقيًّا في الحالتين.** كان الترَكُّز محسوبًا من
      `--rail-w`، والصندوق ده جوّه حشو الشريط (٨) · فالعلامة كانت
@@ -777,7 +780,8 @@ to{opacity:1;transform:none}
 /* العلامة بتقعد في **نفس مكان ومقاس** شجرة القفل: الشجرة ملزوقة
    في بداية السطر وفي أعلى الرسم، فالطبقة دي كذلك. */
 .lock-mark{position:absolute;top:0;inset-inline:0;margin-inline:auto;
-  width:var(--mark-h);height:var(--mark-h);display:block;opacity:0;pointer-events:none;
+  width:calc(var(--mark-h) * var(--mark-ar));height:var(--mark-h);
+  display:block;opacity:0;pointer-events:none;
   transition:opacity .16s ease}
 .rail:not(.lockwide) .lock-mark{opacity:1;transition-delay:.1s}
 .lock-mark svg{width:100%;height:100%;display:block}

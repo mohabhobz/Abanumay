@@ -13,7 +13,7 @@ import type { SVGProps } from 'react'
  */
 export default function LogoColor(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1222.00 1155.00" role="img" aria-label="شعار مؤسسة سليمان أبانمي الأهلية">
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="58.62 195.31 1028.10 942.16" role="img" aria-label="شعار مؤسسة سليمان أبانمي الأهلية">
     <g transform="translate(0.000000,1155.000000) scale(0.100000,-0.100000)" fill="var(--logo-ink)" stroke="none">
     <path d="M6470 9439 c-882 -101 -1580 -755 -1816 -1702 -19 -78 -37 -148 -40
     -155 -2 -7 -31 27 -64 76 -194 290 -526 456 -910 455 -231 -1 -234 -6 -58 -90
