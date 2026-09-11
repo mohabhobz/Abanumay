@@ -72,7 +72,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
       <Link to={byEntity} className="eflow-r eflow-all">
         <span className="eflow-n">01</span>
         <span className="eflow-b">
-          <span className="eflow-k">إجمالي الممنوح</span>
+          <span className="eflow-tx"><span className="eflow-k">إجمالي الممنوح</span></span>
           <b className="eflow-v"><Money sm>{total}</Money></b>
         </span>
         <span className="eflow-ground" aria-hidden="true" />
@@ -89,12 +89,17 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
            بتتكتب كاملة من هنا. */
         style={{ '--a': `${paidPct || 1}fr`, '--b': `${pendPct || 1}fr` } as React.CSSProperties}
       >
+        {/* الاسم والنسبة في ناحية، والمبلغ في الناحية التانية ·
+            الكارت كان بيحطّهم كلهم في أول الصفّ ويسيب باقي عرضه
+            فاضيًا، فالعرض اللي **هو المقياس** كان بيتقري فراغًا */}
         <Link to={ROUTES.payments} className="eflow-r eflow-paid">
           <span className="eflow-n">02</span>
           <span className="eflow-b">
-            <span className="eflow-k">وصل فعلًا</span>
+            <span className="eflow-tx">
+              <span className="eflow-k">وصل فعلًا</span>
+              <span className="eflow-m"><Num>{paidPct}</Num>% من الإجمالي</span>
+            </span>
             <b className="eflow-v"><Money sm>{paid}</Money></b>
-            <span className="eflow-m"><Num>{paidPct}</Num>% من الإجمالي</span>
           </span>
           <span className="eflow-ground" aria-hidden="true" />
         </Link>
@@ -102,9 +107,11 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
         <Link to={ROUTES.payments} className="eflow-r eflow-pend now">
           <span className="eflow-n">03</span>
           <span className="eflow-b">
-            <span className="eflow-k">تحت الصرف</span>
+            <span className="eflow-tx">
+              <span className="eflow-k">تحت الصرف</span>
+              <span className="eflow-m"><Num>{pendPct}</Num>% من الإجمالي</span>
+            </span>
             <b className="eflow-v"><Money sm>{pending}</Money></b>
-            <span className="eflow-m"><Num>{pendPct}</Num>% من الإجمالي</span>
           </span>
           <span className="eflow-ground" aria-hidden="true" />
         </Link>
@@ -115,11 +122,15 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
           إنه مقطع، عشان الترقيم ما يكدبش */}
       <Link to={byEntity} className="eflow-side">
         <span className="eflow-n sm">04</span>
-        <span className="eflow-k">ممنوح في دورة <span className="num">2026</span></span>
-        <b className="eflow-v"><Money sm>{entity.grantedThisYear}</Money></b>
-        <span className="eflow-m">
-          <Num>{yearPct}</Num>% من الإجمالي · مقطع زمني من <span className="num">01</span>،
-          مش خطوة بعد <span className="num">03</span>
+        <span className="eflow-b">
+          <span className="eflow-tx">
+            <span className="eflow-k">ممنوح في دورة <span className="num">2026</span></span>
+            <span className="eflow-m">
+              <Num>{yearPct}</Num>% من الإجمالي · مقطع زمني من <span className="num">01</span>،
+              مش خطوة بعد <span className="num">03</span>
+            </span>
+          </span>
+          <b className="eflow-v"><Money sm>{entity.grantedThisYear}</Money></b>
         </span>
       </Link>
     </div>

@@ -50,21 +50,26 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <KV
           rows={[
             {
+              /* التاريخ والوسم كانوا ملزوقين: `<>` بيرصّ العنصرين
+                 من غير مسافة، فالسطر كان بيتقري «٢٥ مارس ٢٠١٩منتهٍ».
+                 والمسافة المكتوبة مش حلّ · الجاب بيتصرّح في الصفّ.
+                 والوسم بقى مكوّن `Tag` زي كل الوسوم، مش
+                 `<span class="tag no">` مكتوبة بالإيد. */
               k: 'نهاية الترخيص',
               v: (
-                <>
+                <span className="kvpair">
                   <Mono>{readDate(d.licenseEndsAt)}</Mono>
-                  {d.licenseExpired && <span className="tag no">منتهٍ</span>}
-                </>
+                  {d.licenseExpired && <Tag tone="no">منتهٍ</Tag>}
+                </span>
               ),
             },
             {
               k: 'نهاية تكليف أعضاء المجلس',
               v: (
-                <>
+                <span className="kvpair">
                   <Mono>{readDate(d.boardMandateEndsAt)}</Mono>
-                  {d.boardExpired && <span className="tag no">منتهٍ</span>}
-                </>
+                  {d.boardExpired && <Tag tone="no">منتهٍ</Tag>}
+                </span>
               ),
             },
             { k: 'استثناء عام', v: d.exceptionGeneral ? <Tag tone="ret">مستثناة</Tag> : 'لا' },

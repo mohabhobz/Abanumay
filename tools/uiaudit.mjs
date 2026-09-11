@@ -215,6 +215,8 @@ const shadows = []
 const bars = []
 const cols = []
 const rounds = []
+const heads = []
+const glued = []
 const nums = { total: 0, noTabular: 0 }
 
 /** سلّم الشريط · تلات مقاسات، ومسار وركن واحد لكلهم */
@@ -421,6 +423,48 @@ for (const theme of themes) {
         }
       }
 
+      /* ══ عمودا الترويسة · مركز واحد ══
+         `.phead` مكتوب فيها `align-items:center`، والقاعدة العامة
+         `.screen>header` (كلاس + عنصر) كانت بتغلبها وتحطّ
+         `flex-end` · فهوية الجهة كانت واقفة على آخر الانفوجرافيك
+         جنبها بدل نصّه، وفرق ٨٨ بكسل بين المركزين.
+
+         القياس بيتمّ **لمّا يكونوا في صفّ واحد بس**: لو الترويسة
+         لفّت على الشاشة الضيّقة، كل عمود في سطره والمركز المشترك
+         ما لوش معنى. */
+      out.heads = []
+      for (const h of document.querySelectorAll('.phead')) {
+        const kids = [...h.children].filter((k) => k.getBoundingClientRect().height > 0)
+        if (kids.length < 2) continue
+        const tops = new Set(kids.map((k) => Math.round(k.getBoundingClientRect().top)))
+        if (tops.size === 1) continue
+        const mids = kids.map((k) => { const b = k.getBoundingClientRect(); return b.top + b.height / 2 })
+        const spread = Math.round(Math.max(...mids) - Math.min(...mids))
+        if (spread > 2) {
+          out.heads.push({ cls: kids.map((k) => String(k.className).split(' ')[0]).join(' · '), spread })
+        }
+      }
+
+      /* ══ وسم ملزوق في اللي جنبه ══
+         «٢٥ مارس ٢٠١٩منتهٍ» · عنصران في `<>` من غير جاب، فالتاريخ
+         والوسم بيتقروا كلمة واحدة. والمسافة المكتوبة مش حلّ ·
+         الجاب بيتصرّح في الصفّ. الفحص بيقيس **الفراغ المرسوم** بين
+         الوسم واللي قبله في نفس السطر. */
+      out.glued = []
+      for (const t of document.querySelectorAll('.tag')) {
+        if (t.offsetParent === null) continue
+        const prev = t.previousElementSibling
+        if (!prev || prev.offsetParent === null) continue
+        const a = prev.getBoundingClientRect(), b = t.getBoundingClientRect()
+        /* نفس السطر؟ · الفرق الرأسي أقلّ من نصّ ارتفاع الوسم */
+        if (Math.abs((a.top + a.height / 2) - (b.top + b.height / 2)) > b.height / 2) continue
+        const gap = Math.round(Math.max(a.left - b.right, b.left - a.right))
+        if (gap < 3) {
+          out.glued.push({ cls: String(t.parentElement?.className || t.className).split(' ')[0],
+            txt: (prev.textContent || '').trim().slice(0, 18), gap })
+        }
+      }
+
       /* أكتر من دعوة أساسية في الشاشة */
       out.primary = document.querySelectorAll('.btn-p').length
 
@@ -567,6 +611,8 @@ for (const theme of themes) {
     for (const x of found.bars ?? []) bars.push({ ...x, route, theme })
     for (const x of found.cols ?? []) cols.push({ ...x, route, theme })
     for (const x of found.rounds ?? []) rounds.push({ ...x, route, theme })
+    for (const x of found.heads ?? []) heads.push({ ...x, route, theme })
+    for (const x of found.glued ?? []) glued.push({ ...x, route, theme })
     for (const w of GRID_WIDTHS) {
       await page.setViewportSize({ width: w, height: 1000 })
       await page.waitForTimeout(160)
@@ -691,6 +737,20 @@ console.log(`\n═══ صندوق أيقونة لسّه دايرة ═══`)
   const u = uniq(rounds, (x) => `${x.cls}|${x.r}`)
   if (!u.length) console.log('  نضيف · الدايرة للصور والنقط وحدها.')
   for (const x of u.slice(0, 20)) { drift += 1; console.log(`  🔴 ${String(x.cls).padEnd(22)} ${x.w}×${x.h}  ${x.r}   ${x.route}·${x.theme}`) }
+}
+
+console.log(`\n═══ عمودا الترويسة بمركزين ═══`)
+{
+  const u = uniq(heads, (x) => `${x.cls}|${x.spread}`)
+  if (!u.length) console.log('  نضيف · العمودان على مركز واحد.')
+  for (const x of u.slice(0, 12)) { drift += 1; console.log(`  🔴 ${x.cls.padEnd(20)} فرق ${x.spread}px   ${x.route}·${x.theme}`) }
+}
+
+console.log(`\n═══ وسم ملزوق في اللي جنبه ═══`)
+{
+  const u = uniq(glued, (x) => `${x.cls}|${x.txt}`)
+  if (!u.length) console.log('  نضيف · كل وسم وله جاب.')
+  for (const x of u.slice(0, 12)) { drift += 1; console.log(`  🔴 .${x.cls.padEnd(16)} «${x.txt}» جاب ${x.gap}px   ${x.route}·${x.theme}`) }
 }
 
 console.log(`\n═══ شبكة «متساوية» وخاناتها مش متساوية ═══`)

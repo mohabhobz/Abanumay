@@ -20,7 +20,17 @@ export const ROUTES = [
   '/', '/projects',
   '/projects/20940', '/projects/20940/agreement', '/projects/20940/payments',
   '/projects/20852', '/projects/20852/agreement', '/projects/20852/payments',
+  /* ═══ وجهتان برضو، لنفس السبب ═══
+     ٦٩٤ جهة **جديدة**: ما اتمنحش لها ريال، فـ«رحلة الريال» بترجّع
+     حالة فاضية وترخيصها سارٍ. يعني الجرد كان بيلفّ على صفحة جهة
+     وهو فاكر إنه بيقيس صفحة الجهة، والانفوجرافيك بأربع صفوفه ووسم
+     «منتهٍ» جنب التاريخ **ما كانوش بيترسموا أصلًا** · وده اللي
+     خلّى الوسم الملزوق في «٢٥ مارس ٢٠١٩منتهٍ» يعدّي من تحت
+     ٢٦ صفحة × ٣ ثيمات.
+
+     ٧٥٥ جهة شغّالة: ٩٫٧ مليون ممنوح على تلات حالات، وترخيص منتهي. */
   '/entities', '/entities/694', '/entities/694/docs', '/entities/694/banks', '/entities/694/log',
+  '/entities/755', '/entities/755/docs',
   '/budget', '/payments', '/agreements',
   '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
   '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',

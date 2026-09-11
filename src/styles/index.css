@@ -1127,6 +1127,8 @@ to{opacity:1;transform:none}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:.45rem 1rem;font-size:.83rem;align-items:baseline;margin:0}
 .kv dt{color:var(--t2);font-size:.76rem;white-space:nowrap}
 .kv dd{margin:0;font-weight:400}
+/* قيمة ومعاها وسم · الجاب مصرّح لا حرف مسافة بين العنصرين */
+.kvpair{display:inline-flex;align-items:center;flex-wrap:wrap;gap:.2rem .5rem}
 /* منيو المحادثات: إيتمز فوق بعض بدون أسطح */
 .conv{display:flex;justify-content:space-between;gap:.6rem;align-items:baseline;
   padding:.5rem .7rem;border-radius:var(--r1);font-size:.82rem;color:var(--t2);
@@ -3124,7 +3126,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 /* حاوية الرحلة في ترويسة الجهة · عرضها **معلوم** لا مطلوب من
    محتواها: `flex:1 1 0` + `min-width:0` بيخلّوا الشبكة تقسّم
    مساحة موجودة بدل ما تطلب مساحة بنسبة أعمدتها. */
-.pflow{flex:1 1 0;min-width:min(100%,20rem);max-width:44rem;
+/* الأساس ٣٠rem لا صفر: `flex:1 1 0` معناه «ابدأ من لا شيء وخد
+   نصيبك من الفاضي»، فالعمود كان بياخد نفس زيادة عمود الهوية
+   وبيقف عند ٤١٤ بكسل · الكروت بتضيق وتلفّ لعمود، وفراغ كبير
+   بيفضل في نصّ الترويسة بين الاتنين. الأساس الحقيقي بيخلّي
+   القسمة بين العمودين متقاربة والفراغ يروح. */
+.pflow{flex:1 1 30rem;min-width:min(100%,20rem);max-width:44rem;
   display:flex;justify-content:flex-end}
 @media (max-width:900px){.pflow{flex:1 1 100%;max-width:none}}
 
@@ -3156,11 +3163,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .eflow-ground{position:absolute;inset:0;z-index:-1;border-radius:inherit;
   background:linear-gradient(to bottom,
     rgba(var(--tone),.30) 0%, rgba(var(--tone),.16) 55%, rgba(var(--tone),.04) 100%)}
-/* صفّ الكلّ بعرض كامل، فالقيمة بتروح للطرف التاني · الصفّ بيتقري
-   «الاسم … القيمة» بدل ما يفضل تلتاه فاضيًا */
+/* كل الصفوف بقت «الاسم … القيمة» · ده كان استثناءً لصفّ ٠١ وحده */
 .eflow-all{--tone:var(--tone-1)}
-.eflow-all .eflow-b{flex-direction:row;align-items:baseline;justify-content:space-between;
-  gap:.6rem;flex-wrap:wrap}
 .eflow-paid{--tone:var(--tone-2)}
 .eflow-pend{--tone:var(--tone-3)}
 /* اللي لسه معلّق · نفس دور الوتد الغامق في المروحة */
@@ -3171,7 +3175,16 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;direction:ltr;
   color:rgb(var(--tone));opacity:.42;min-width:2.1rem}
 .eflow-n.sm{font-size:1.15rem;min-width:1.5rem}
-.eflow-b{display:flex;flex-direction:column;gap:.1rem;min-width:0;flex:1}
+/* ── جسم الكارت · **الاسم في ناحية والمبلغ في الناحية التانية** ──
+   كان عمودًا في أول الصفّ، فالكارت اللي عرضه ٦٤٨ بكسل (نصيبه ٩٢٪
+   من الإجمالي) بيحطّ كلامه في أول ٢٠٠ ويسيب ٤٥٠ فاضيين. والعرض
+   هنا **هو المقياس**، فالفراغ ده كان بيتقري عطلًا لا نسبة.
+
+   وبيلفّ لعمود لمّا الكارت يضيق (`flex-wrap`)، فالجزء الصغير
+   (٨٪) بيفضل يتقري بدل ما رقمه يتخنق. */
+.eflow-b{display:flex;flex-direction:row;align-items:center;justify-content:space-between;
+  gap:.15rem .9rem;flex-wrap:wrap;min-width:0;flex:1}
+.eflow-tx{display:flex;flex-direction:column;gap:.1rem;min-width:0}
 /* الاسم بيلفّ ما بيتقصّش · «تحت الصرف» في كارت ضيّق كان بيطلع
    «تحت الصر…»، والاسم المقصوص مش اسم */
 .eflow-k{font-family:var(--fd);font-weight:600;font-size:.8rem;color:var(--t1);
@@ -3206,14 +3219,13 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 /* ── ٠٤ · برّه الرحلة ──
    مش صفًّا في القسمة، فشكله مختلف: بلا أرضية ملوّنة، وبحدّ منقّط
    بيقول «ده مقطع تاني» */
-.eflow-side{display:flex;align-items:baseline;flex-wrap:wrap;gap:.3rem .7rem;
+.eflow-side{display:flex;align-items:center;gap:.7rem;
   padding:.7rem .9rem;border-radius:var(--r2);color:inherit;
   border:1px dashed var(--edge-i);
   transition:background .16s ease}
 .eflow-side:hover{color:inherit;background:rgba(var(--edgeC),.05)}
-.eflow-side .eflow-n{--tone:var(--tone-4);align-self:center}
+.eflow-side .eflow-n{--tone:var(--tone-4)}
 .eflow-side .eflow-v{font-size:1rem}
-.eflow-side .eflow-m{flex:1 1 100%}
 
 @media (max-width:560px){
   .eflow-split{grid-template-columns:1fr}
@@ -3325,11 +3337,19 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    من النصّ، وباين كأنه جزء منه.
    الترويسة صفّ: كتلة العنوان في البداية والأفعال في النهاية، وتلفّ
    لما الشاشة تضيق · فالمسافة موجودة في الحالتين. */
-.screen>header{display:flex;align-items:flex-end;justify-content:space-between;
+/* ⚠️ **و`:not(.phead)` مش تفصيلة.** `.screen>header` نوعها
+   (كلاس + عنصر) أقوى من `.phead` (كلاس وحده)، وترويسة صفحة الجهة
+   والمشروع `<header class="phead">` جوّه `.screen` · يعني القاعدة
+   العامة دي كانت بتغلب القاعدة المسمّاة وتحطّ `align-items:flex-end`
+   مكان `center`. النتيجة إن هوية الجهة كانت واقفة على **آخر**
+   الانفوجرافيك جنبها بدل نصّه، وفرق ٨٨ بكسل بين مركزيهم.
+
+   قاعدة عامة بتمدّ إيدها جوّه كمبوننت ليه اسم · نفس المرض بالظبط. */
+.screen>header:not(.phead){display:flex;align-items:flex-end;justify-content:space-between;
   gap:.7rem 1.2rem;flex-wrap:wrap}
-.screen>header>div:first-child{min-width:0;flex:1 1 22rem}
+.screen>header:not(.phead)>div:first-child{min-width:0;flex:1 1 22rem}
 /* الأفعال في الترويسة صفّ واحد، وكلها بنفس ارتفاع التحكّم */
-.screen>header>:not(div:first-child){flex:none}
+.screen>header:not(.phead)>:not(div:first-child){flex:none}
 
 .rpsec{display:flex;flex-direction:column;gap:.85rem}
 /* سطر بيقول السكشن ده بيعمل إيه. سطر واحد مقروء عرضه محدود:

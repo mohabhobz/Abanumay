@@ -393,6 +393,12 @@ export interface EntityRow {
   region: string
   city: string
   registeredAt: string
+  /** نهاية الترخيص · **قيمة في الداتا لا رقم مولَّد**.
+      كانت بتتحسب `registeredAt + int(1,6) سنة`، فجهة مسجّلة ٢٠١٦
+      وحوكمتها ممتازة وبتاخد منح لحدّ دلوقتي كان ترخيصها بينتهي
+      ٢٠١٩ · يعني عشر سنين بلا تجديد واحد، وده بيناقض حالتها
+      المكتوبة جنبه. التاريخ ده بيتقرا وبيتراجع، وما بيتخلقش. */
+  licenseEndsAt: string
   activation: EntityActivation
   /** «لم تُقيَّم» لو ملف الجهة ناقص */
   governance: string
