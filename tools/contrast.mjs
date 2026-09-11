@@ -22,11 +22,7 @@ const ratio=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p);return (x+.05)/
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'})
 /* `--all` بيمشي على كل المسارات في التلات ثيمات بمتصفّح واحد —
    ٤٢ صفحة في تشغيلة واحدة بدل ٤٢ تشغيلة. */
-const ALL_ROUTES=['/','/projects','/projects/20940','/projects/20940/agreement','/projects/20940/payments',
-  '/entities','/entities/694','/entities/694/docs','/entities/694/banks','/entities/694/log',
-  '/budget','/payments','/agreements','/reports','/reports/build','/reports/catalog','/reports/coverage',
-  '/reports/view/budget','/reports/screen/budget','/reports/screen/closing','/reports/process/p1',
-  '/assistant','/account']
+import{ROUTES as ALL_ROUTES}from'./routes.mjs'
 const all=process.argv.includes('--all')
 const THEMES=all?['light','dark','green']:[process.argv[2]||'dark']
 const URLS=all?ALL_ROUTES:[process.argv[3]||'/']

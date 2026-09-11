@@ -1,4 +1,4 @@
-import { Empty, Glass, Head, Icon, icons, Money, Mono, Num, Tag } from '@/components/ui'
+import { Empty, Glass, Head, Icon, icons, Money, Mono, Num, Steps, Tag } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import type { AgreementDetail, PaymentDetail } from '@/data/mock/detail'
 
@@ -87,20 +87,16 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
 
       <Glass>
         <Head title="دورة الاعتماد" meta={`${done} من ${A.steps.length}`} />
-        <ol className="agr-flow">
-          {A.steps.map((s) => (
-            <li key={s.role} className={`agr-step ${s.state}`}>
-              <span className="agr-dot" aria-hidden="true">
-                {s.state === 'done' && <Icon name={icons.check} size={12} />}
-              </span>
-              <span className="agr-role">{s.role}</span>
-              <span className="agr-note">
-                {s.state === 'now' ? 'بانتظاره الآن' : (s.note ?? '')}
-              </span>
-              <span className="agr-at">{s.at ? <Mono>{s.at}</Mono> : '—'}</span>
-            </li>
-          ))}
-        </ol>
+        <Steps
+          items={A.steps.map((s) => ({
+            label: s.role,
+            /* `pending` في الداتا = `todo` في المكوّن. الاسمين
+               بيقولوا نفس الحاجة، والمكوّن بيثبّت واحد. */
+            state: s.state === 'pending' ? 'todo' : s.state,
+            note: s.state === 'now' ? 'بانتظاره الآن' : s.note,
+            at: s.at ? <Mono>{s.at}</Mono> : undefined,
+          }))}
+        />
 
         {A.returned && (
           <div className="data i flag" style={{ marginTop: '.9rem', padding: '.85rem 0 .2rem' }}>
@@ -130,7 +126,12 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
                     <td><Num>{p.no}</Num></td>
                     <td className="n"><Money>{p.amount}</Money></td>
                     <td><Mono>{p.date}</Mono></td>
-                    <td className="sub">{p.condition}</td>
+                    {/* `mut` لا `sub`: الغرض كان **يخفّت** العمود، و`sub`
+                        بتخفّت وبتصغّر. الصغر ما نفعش أصلًا — `.tbl td`
+                        أقوى تحديدًا منها فالمقاس فضل مقاس الجدول — فكان
+                        المطلوب حاصل والمكتوب بيقول حاجة تانية. `mut`
+                        بتقول اللي بيحصل فعلًا: لون بس. */}
+                    <td className="mut">{p.condition}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,4 +1,5 @@
-import { Empty, Glass, Head, Icon, icons, Money, Mono, Num, Riyal, Stat, Tag } from '@/components/ui'
+import { Empty, Glass, Head, Money, Mono, Num, Riyal, Stat, Steps, Tag } from '@/components/ui'
+import { sequence } from '@/lib/steps'
 import { DocFile } from '@/components/docs'
 import { pct } from '@/lib/format'
 import type { PaymentDetail } from '@/data/mock/detail'
@@ -105,12 +106,21 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
                 </div>
               )}
 
-              <ol className="pay-steps">
-                <Step label="إذن الصرف" who="مشرف المنح" on={true} />
-                <Step label="سند الصرف والتحويل" who="القسم المالي" on={p.status === 'مدفوع'} />
-                <Step label="سند القبض والقيد" who="الجهة" on={Boolean(p.receipt)} />
-                <Step label="اعتماد السند" who="القسم المالي" on={Boolean(p.receipt)} />
-              </ol>
+              {/* المحطات متسلسلة، فحالة «الدور عليها الآن» بتتشتقّ
+                  من الترتيب لا بتتكتب لكل محطة — تحت في `sequence`.
+                  قبل كده كانت المحطة إما خضرا إما رمادية، يعني
+                  «اتنين خلصوا واتنين لأ» من غير ما حد يعرف **مين
+                  واقف** — وده السؤال الوحيد اللي المشرف بيفتح
+                  الشاشة عشانه. */}
+              <Steps
+                flow="row"
+                items={sequence([
+                  { label: 'إذن الصرف', note: 'مشرف المنح', done: true },
+                  { label: 'سند الصرف والتحويل', note: 'القسم المالي', done: p.status === 'مدفوع' },
+                  { label: 'سند القبض والقيد', note: 'الجهة', done: Boolean(p.receipt) },
+                  { label: 'اعتماد السند', note: 'القسم المالي', done: Boolean(p.receipt) },
+                ])}
+              />
 
               {p.voucher && (
                 <div className="pay-docs">
@@ -131,22 +141,5 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
         </div>
       </Glass>
     </>
-  )
-}
-
-/** محطة في دورة الدفعة */
-function Step({ label, who, on }: { label: string; who: string; on: boolean }) {
-  return (
-    <li className={`pay-step${on ? ' on' : ''}`}>
-      <span className="pay-dot" aria-hidden="true">
-        {on && <Icon name={icons.check} size={11} />}
-      </span>
-      {/* الاسم تحت العنوان لا جنبه: أربع محطات في صفّ واحد بأربع
-          أسماء بتتقصّ كلها لـ«سند الصر…». */}
-      <span className="pay-txt">
-        <span className="pay-lbl">{label}</span>
-        <span className="sub">{who}</span>
-      </span>
-    </li>
   )
 }

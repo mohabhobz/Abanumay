@@ -21,20 +21,13 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { ROUTES } from './routes.mjs'
 
 const ROOT = new URL('../dist/', import.meta.url).pathname
 const SHOTS = new URL('../.shots/', import.meta.url).pathname
 const PORT = 4456
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.mp4': 'video/mp4', '.woff2': 'font/woff2' }
 
-const ROUTES = [
-  '/', '/projects', '/projects/20940', '/projects/20940/agreement', '/projects/20940/payments',
-  '/entities', '/entities/694', '/entities/694/docs', '/entities/694/banks', '/entities/694/log',
-  '/budget', '/payments', '/agreements',
-  '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
-  '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
-  '/reports/process/p1', '/assistant', '/account',
-]
 
 const srv = http.createServer((q, r) => {
   let f = path.join(ROOT, decodeURIComponent(new URL(q.url, 'http://x').pathname))

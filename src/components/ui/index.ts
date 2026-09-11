@@ -7,7 +7,7 @@ export {
 } from './primitives'
 export { GateArc, type GateArcProps, type CurrentStandingInfo } from './GateArc'
 export { CeilingLadder } from './CeilingLadder'
-export { VSteps } from './VSteps'
+export { Steps, type StepItem, type StepState, type StepsProps } from './Steps'
 export {
   SearchBox, Select, MultiSelect, Toggle, Segments, Pager, PageSize, PAGE_SIZES, ViewToggle,
   type SelectProps, type MultiSelectProps, type SegItem,

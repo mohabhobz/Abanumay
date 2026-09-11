@@ -25,19 +25,12 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { ROUTES } from './routes.mjs'
 
 const ROOT = new URL('../dist/', import.meta.url).pathname
 const PORT = 4455
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.mp4': 'video/mp4', '.woff2': 'font/woff2' }
 
-const ROUTES = [
-  '/', '/projects', '/projects/20940', '/projects/20940/agreement', '/projects/20940/payments',
-  '/entities', '/entities/694', '/entities/694/docs', '/entities/694/banks', '/entities/694/log',
-  '/budget', '/payments', '/agreements',
-  '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
-  '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
-  '/reports/process/p1', '/assistant', '/account',
-]
 
 /**
  * الأدوار — كل صف: اسم الدور، المُحدِّد، والخصائص اللي المفروض
@@ -108,7 +101,7 @@ const cta = []
 const tabs = []
 const drop = []
 const primary = []
-const steps = []
+const dots = new Map()
 const rowsMix = []
 const nums = { total: 0, noTabular: 0 }
 
@@ -213,26 +206,32 @@ for (const theme of themes) {
       /* أكتر من دعوة أساسية في الشاشة */
       out.primary = document.querySelectorAll('.btn-p').length
 
-      /* الاستِبر: القطعة اللي وسط الشريط المفروض أركانها قائمة من
-         الجهتين، واللي على الطرف مدوّرة من برّه بس */
-      out.steps = []
-      for (const bar of document.querySelectorAll('.vsteps,.steps,.agr-steps,.fsegs,.seg')) {
-        const kids = [...bar.children].filter((k) => k.offsetParent !== null)
-        if (kids.length < 2) continue
-        /* فيه `gap` ⇒ دي حبّات منفصلة لا شريط مجزّأ، والتدوير الكامل
-           صح فيها. الفحص ده كان بيدّي إنذارًا كاذبًا على `.fsegs`
-           في الجرد رقم ١ واتشال بالإيد؛ دلوقتي الأداة بتعرف الفرق. */
-        if ((parseFloat(getComputedStyle(bar).gap) || 0) > 2) continue
-        kids.forEach((k, i) => {
-          const cs = getComputedStyle(k)
-          const r = [cs.borderTopRightRadius, cs.borderBottomRightRadius,
-            cs.borderTopLeftRadius, cs.borderBottomLeftRadius].map((v) => Math.round(parseFloat(v) || 0))
-          const mid = i > 0 && i < kids.length - 1
-          if (mid && r.some((x) => x > 2)) {
-            out.steps.push({ bar: String(bar.className).split(' ')[0], i, r: r.join('/') })
-          }
-        })
+      /* ══ العلامات الدائرية ══
+         الفحص اللي كان هنا كان بيدوّر على `.vsteps,.steps,.agr-steps`
+         — **تلات أسماء مش موجودة في الـCSS أصلًا**. فكان بيلفّ على
+         صفر عنصر ويطلع أخضر كل مرة، وإحنا فاكرين إن الاستِبر
+         متفحوصة. الانحراف الحقيقي (نقطة ١٦ في الاتفاقية و١٥ في
+         الدفعات و١٠ في اتنين ميّتين) عدّى من تحته ٢٣ صفحة × ٣ ثيمات.
+
+         الفحص ده بيقيس اللي المستخدم بيشوفه: كل دايرة صغيرة مرسومة
+         كعلامة، قطرها ومين رسمها. مش بيحكم — بيجرد. والجرد هو اللي
+         بيخلّي «١٦ و١٥» تبان في سطر واحد. */
+      out.dots = []
+      for (const e of document.querySelectorAll('span,i,b,em,div')) {
+        const bx = e.getBoundingClientRect()
+        if (!bx.width || bx.width > 24 || Math.abs(bx.width - bx.height) > 0.6) continue
+        if (e.offsetParent === null) continue
+        const cs = getComputedStyle(e)
+        /* دايرة فعلًا: نصف القطر ≥ نصف العرض */
+        if ((parseFloat(cs.borderTopLeftRadius) || 0) < bx.width / 2 - 0.6) continue
+        /* لازم تكون **مرسومة**: لون أو إطار. الفاضية مش علامة. */
+        const painted = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.boxShadow !== 'none'
+        if (!painted || cs.backgroundImage !== 'none') continue
+        const cls = String(e.className?.baseVal ?? e.className ?? '').split(' ')[0]
+        if (!cls) continue
+        out.dots.push(`${cls}:${Math.round(bx.width)}`)
       }
+      out.dots = [...new Set(out.dots)]
 
       /* الأرقام في الجداول: أرقام مصفوفة؟ وفيه فاصل بين رقمين؟ */
       out.nums = { noTabular: 0, total: 0 }
@@ -296,7 +295,11 @@ for (const theme of themes) {
     for (const x of found.tabs) tabs.push({ ...x, route, theme })
     if (found.drop.native || found.drop.custom) drop.push({ ...found.drop, route, theme })
     if (found.primary > 1) primary.push({ route, theme, n: found.primary })
-    for (const x of found.steps) steps.push({ ...x, route, theme })
+    for (const d of found.dots ?? []) {
+      const [cls, px] = d.split(':')
+      if (!dots.has(cls)) dots.set(cls, new Map())
+      if (!dots.get(cls).has(px)) dots.get(cls).set(px, route)
+    }
     nums.total += found.nums.total; nums.noTabular += found.nums.noTabular
     for (const n of found.nested) nested.push({ ...n, route, theme })
     for (const c of found.clipped) clipped.push({ ...c, route, theme })
@@ -361,11 +364,18 @@ console.log(`\n═══ أكتر من دعوة أساسية في الشاشة �
 if (!primary.length) console.log('  نضيف.')
 for (const x of uniq(primary, (v) => v.route)) { drift += 1; console.log(`  ${x.route}  ${x.n} × .btn-p`) }
 
-console.log(`\n═══ الاستِبر: قطعة وسط الشريط مدوّرة ═══`)
+console.log(`\n═══ العلامات الدائرية — كل نقطة وقطرها ═══`)
 {
-  const st = uniq(steps, (x) => `${x.bar}:${x.r}`)
-  if (!st.length) console.log('  نضيف.')
-  for (const x of st.slice(0, 12)) { drift += 1; console.log(`  ${x.bar} [${x.i}]  أركان ${x.r}   ${x.route}`) }
+  const rows = [...dots.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  if (!rows.length) console.log('  مفيش.')
+  for (const [cls, sizes] of rows) {
+    const many = sizes.size > 1
+    /* نفس الاسم بقطرين = انحراف مؤكّد. أسماء مختلفة بأقطار مختلفة
+       جرد بس — العلامة ممكن تبقى معاني مختلفة فعلًا. */
+    if (many) drift += 1
+    const v = [...sizes.entries()].map(([px, r]) => `${px}px (${r})`).join('  ·  ')
+    console.log(`  ${many ? '🔴' : '  '} ${cls.padEnd(12)} ${v}`)
+  }
 }
 
 console.log(`\n═══ أرقام الجداول ═══`)
