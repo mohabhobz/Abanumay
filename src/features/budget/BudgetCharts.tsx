@@ -53,20 +53,39 @@ const fields2026: PlanNode[] =
  * «نسبة المصروف من الميزانية السنوية» قيمة واحدة، والقيمة الواحدة
  * بلاطة رقم بمقياس، لا شريط في إطار رسم. النظام بيرسمها شريطًا
  * مخطّطًا بعرض الشاشة عشان يملا مكانًا.
+ *
+ * ═══ الفراغ ═══
+ *
+ * الكارت جنب رسم الخطّين في شبكة، فطوله بيتحدّد بالرسم لا بمحتواه ·
+ * والمحتوى كان راكب فوق والباقي فراغ بنص الكارت. الفراغ ده مش
+ * «مساحة تنفّس»، هو **مكان مش مستعمل** بيقول للعين إن في حاجة
+ * ناقصة.
+ *
+ * الحلّ إن الرقم ياخد الفراغ بدل ما يسيبه: الترويسة فوق (عنوان
+ * وسطر بيقول معنى النسبة)، والرقم في **مركز** اللي فضل بخطّ كبير،
+ * والمقياس والتفصيل تحته. فالكارت بيتقري من فوق لتحت بلا فجوة،
+ * ولو طال أكتر الرقم بيفضل في نصّه.
  */
 export function SpendGauge({
   title = 'نسبة المصروف من الميزانية السنوية',
   value, of, note,
-}: { title?: string; value: number; of: number; note?: string }) {
+  hint = 'من كل ريال مخصَّص للسنة، ده اللي اتصرف فعلًا لحدّ النهاردة',
+}: { title?: string; value: number; of: number; note?: string; hint?: string }) {
   const pct = of ? Math.round((value / of) * 100) : 0
   return (
     <Glass className="chq">
-      <span className="chq-t">{title}</span>
-      <span className="chq-v"><b className="num">{pct}%</b></span>
-      <span className="chq-m" aria-hidden="true"><i style={{ width: `${Math.min(100, pct)}%` }} /></span>
-      <span className="chq-s mut">
-        <Money sm>{value}</Money> من <Money sm>{of}</Money>
-        {note ? ` · ${note}` : ''}
+      <span className="chq-h">
+        <span className="chq-t">{title}</span>
+        <span className="chq-d mut">{hint}</span>
+      </span>
+
+      <span className="chq-b">
+        <span className="chq-v"><b className="num">{pct}%</b></span>
+        <span className="chq-m" aria-hidden="true"><i style={{ width: `${Math.min(100, pct)}%` }} /></span>
+        <span className="chq-s mut">
+          <Money sm>{value}</Money> من <Money sm>{of}</Money>
+          {note ? ` · ${note}` : ''}
+        </span>
       </span>
     </Glass>
   )
@@ -280,7 +299,9 @@ export function YearSpend() {
           {/* التوهّج · تغبيش على نسخة من الخطّ نفسه. التداخل بين
               التوهّجين بيطلع ضوءًا مش طَمْيًا، والخطّ فوقه يفضل حادًّا */}
           <filter id="chyG" x="-8%" y="-30%" width="116%" height="160%">
-            <feGaussianBlur stdDeviation="5" />
+            {/* تغبيش أوسع = هالة أنعم · التغبيش الضيّق بيدّي حافة
+                تانية جنب الخطّ، وده اللي كان بيتقري «تقيل» */}
+            <feGaussianBlur stdDeviation="8" />
           </filter>
         </defs>
 

@@ -46,6 +46,11 @@
 :root{
   direction:rtl; color-scheme:light;
   --green:#144547; --lime:#94D603; --teal:#00A59B;
+  /* خطّ الرسم البياني · تيل الهوية معتّم شويّة عشان يعدّي حدّ
+     3:1 للعناصر الرسومية (WCAG 1.4.11) على أرضية الكارت الفاتحة ·
+     `--teal` نفسه بيقيس 2.79 عليها. في الغامق التوكن بيرجع لتيل
+     أفتح لأن الأرضية اتقلبت. */
+  --ch-a:#00847B;
   --base:#F1F5F3; --baseC:241,245,243;
   /* الأزرق مش لون هوية · هو لون حالة «معاد للاستكمال» وبس.
      كتوكن عشان ما يتنطّش في مكان مش حالته، وعشان يقلب مع المظهر. */
@@ -282,7 +287,14 @@ h1,h2,h3,h4{margin:0;font-family:var(--fd);font-weight:700}
    من الصندوق اللي جوّاه ويزوّد طول الكارت. المسافة في السيستم ده
    بتتكتب صراحة، فالهامش الوراثي ده مسافة **مش حد كاتبها**. */
 p{margin:0}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+/* **`padding` كان ناقصًا من ريسِت الزرار** · نفس مرض `p` فوق.
+   المتصفّح بيدّي كل `<button>` حشوًا `1px 6px`، وأي زرار في
+   السيستم ما بيكتبش حشوه صراحةً بيفضل شايله. والنتيجة بتبان في
+   الزراير الصغيرة المرسومة بمقاس ثابت: مربّع التشيك ١٥×١٥ حشوه
+   ١٢ أفقيًّا ⇒ مساحة المحتوى **٣ بكسل**، فعلامة الصحّ ١١ بتطلع
+   برّه الصندوق وتتقري مكسورة.
+   التصفير هنا بيخلّي الحشو **اللي مكتوب** هو الحشو الوحيد. */
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 input,select,textarea{font:inherit;color:inherit;border:0;background:none;outline:none}
 /* الخلفية · ميش جراديانت واحد متصل، مفيش دواير منفصلة.
    أغمق فوق يمين (مكان الريل) وبيروق لحد ما يبقى شبه أبيض تحت شمال.
@@ -849,8 +861,17 @@ to{opacity:1;transform:none}
    الهوية. */
 .raillock-b{position:relative;flex:none;display:flex;align-items:center;
   height:var(--lock-h)}
-/* مطويّ ⇒ الهوية وحدها في النص · مفرود ⇒ الهوية يمين والزرار شمال */
-.rail.lockwide .raillock{justify-content:space-between}
+/* ⚠️ **الصندوق ده لازم يبقى ليه عرض وهو مطويّ.**
+   `.lock-full` بيروح لـ`max-width:0` و`.lock-mark` مطلقة، يعني
+   الصندوق بيبقى عرضه **صفر** · والعلامة المطلقة جوّه صندوق صفر
+   بتتحسب من حافة لا من مركز، فطلعت مزحلقة ٢٤ بكسل وخارجة من حدّ
+   الشريط. قبل ما نضيف زرار الطيّ كانت الطبقة متعلّقة على
+   `.raillock` نفسه (وعرضه كامل) فالترَكُّز كان شغّال بالصدفة.
+   العرض هنا = عرض العلامة بالظبط، فالتوسيط بيرجع تخطيطًا لا حسابًا. */
+.rail:not(.lockwide) .raillock-b{width:calc(var(--mark-h) * var(--mark-ar))}
+/* مطويّ ⇒ الهوية وحدها في النص · مفرود ⇒ الهوية يمين والزرار شمال،
+   والهوية بتاخد حشوها من حافة الشريط بدل ما تلزق فيها */
+.rail.lockwide .raillock{justify-content:space-between;padding-inline-start:12px}
 
 /* زرار الطيّ · تحكّم ٤٤ زي أي هدف في الشريط، فالركن `--r1` */
 .railshut{flex:none;display:none;place-items:center;
@@ -2817,7 +2838,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    والألوان الدلالية بتفتح: الأحمر اللي بيتقري على أبيض بيبقى
    طين على أسود، فلازم يعلى في السطوع لا في التشبّع.
    ═══════════════════════════════════════════════════════════ */
-:root[data-theme="dark"],:root[data-theme="green"]{ color-scheme:dark }
+:root[data-theme="dark"],:root[data-theme="green"]{ color-scheme:dark; --ch-a:#2FC7B6 }
 :root[data-theme="dark"]{
   --base:#0A0C0C; --baseC:10,12,12;
   --retC2:120,180,235;
@@ -4227,10 +4248,18 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    وحده أبدًا.
    ═══════════════════════════════════════════════════════════ */
 
-.chq{display:flex;flex-direction:column;gap:.35rem}
+/* الترويسة فوق، والجسم بياخد اللي فضل ويتوسّطه · فالرقم بيملا
+   الفراغ اللي الرسم الجنبه بيفرضه بدل ما يسيبه فاضيًا */
+.chq{display:flex;flex-direction:column;gap:.8rem;container-type:inline-size}
+.chq-h{display:flex;flex-direction:column;gap:.2rem}
+.chq-b{flex:1;min-height:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.5rem;text-align:center}
 .chq-t{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.6;color:var(--t1)}
-.chq-v>b{font-family:var(--fd);font-weight:700;font-size:2.1rem;line-height:1.1;color:var(--t1)}
-.chq-m{display:block;height:10px;border-radius:var(--rp);overflow:hidden;margin-top:.15rem;
+.chq-d{font-size:var(--fs-2);line-height:1.75}
+/* الرقم هو الخبر، فمقاسه بيكبر مع الكارت لحدّ سقف */
+.chq-v>b{font-family:var(--fd);font-weight:700;line-height:1;color:var(--t1);
+  font-size:clamp(2.6rem,7cqw,4.2rem);letter-spacing:-.02em}
+.chq-m{display:block;width:100%;height:10px;border-radius:var(--rp);overflow:hidden;margin-top:.15rem;
   background:rgba(var(--edgeC),.10)}
 .chq-m>i{display:block;height:100%;border-radius:var(--rp);background:var(--solid)}
 .chq-s{font-size:var(--fs-2);line-height:1.7}
@@ -4266,14 +4295,26 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    هنا عن **اتجاه** لا عن كمية، والاتجاه بيتقري من خطّ. */
 .chy-svg{width:100%;height:auto;display:block;overflow:visible}
 .chy-grid{stroke:rgba(var(--edgeC),.10);stroke-width:1}
-.chy-line{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.chy-line.a{stroke:var(--solid)}
-.chy-line.c{stroke:rgba(var(--edgeC),.34);stroke-dasharray:5 4}
-/* التوهّج · نسخة عريضة مغبّشة من نفس الخطّ. عريضة عشان التغبيش
-   يبان، وشفّافة عشان التداخل يزوّد الضوء ما يعتّمهوش */
-.chy-glow{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:7}
-.chy-glow.a{stroke:rgba(var(--solidC),.42)}
-.chy-glow.c{stroke:rgba(var(--edgeC),.16)}
+/* ── الخطّ والتوهّج ──
+   كان الخطّ `--solid` (أخضر المؤسسة الغامق) بسُمك ٢، والتوهّج
+   نسخة منه بنفس اللون بشفافية ٤٢٪ · يعني **ضعف نفس اللون الغامق**
+   فوق بعضه. النتيجة كتلة تقيلة حوالين خطّ تقيل، والتوهّج بيتقري
+   «ظلّ متّسخ» لا ضوءًا.
+
+   التوهّج **ضوء**، والضوء بيبقى أفتح من اللي بيطلع منه لا أغمق:
+   بقى **اللايم** (`--limeC`، أخضر الهوية الفاتح) بشفافية أقلّ
+   وتغبيش أوسع · فبيتقري هالة. والخطّ نفسه بقى `--teal` بدل
+   الغامق وسُمكه ١٫٥، فالرسم بيفضّى والاتجاه لسّه واضح. */
+.chy-line{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.chy-line.a{stroke:var(--ch-a)}
+.chy-line.c{stroke:rgba(var(--edgeC),.28);stroke-dasharray:5 4;stroke-width:1.25}
+.chy-glow{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:5}
+.chy-glow.a{stroke:rgba(var(--limeC),.42)}
+/* على أرضية غامقة اللايم بيلمع أكتر · نفس النسبة مش نفس الظهور */
+:root[data-theme="dark"] .chy-glow.a,
+:root[data-theme="green"] .chy-glow.a{stroke:rgba(var(--limeC),.26)}
+/* السقف خطّ مرجعي، مش قيمة بتتوهّج · بلا هالة خالص */
+.chy-glow.c{stroke:none}
 /* منطقة التجاوز · اللون الوحيد اللي بيقول «فيه مشكلة» في الرسم.
    كانت `.20` وما كانتش بتبان فوق مساحة المصروف · واللي ما يتشافش
    ما بيقولش حاجة، فالرقم اتحدّد من الصورة لا من الذوق */
@@ -4286,11 +4327,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 :root[data-theme="green"] .chb-k i.ov{background:rgba(var(--noC),.52)}
 /* مفتاح خطّي · بيرسم اللي مرسوم لا مربّعًا نايب عنه */
 .chb-k i.ln{width:16px;height:0;border-radius:0;background:none;border-block-start:2px solid}
-.chb-k i.ln.a{border-color:var(--solid)}
+.chb-k i.ln.a{border-color:var(--ch-a)}
 .chb-k i.ln.c{border-color:rgba(var(--edgeC),.42);border-block-start-style:dashed}
 .chb-k i.ov{background:rgba(var(--noC),.30)}
 .chy-dot{stroke:var(--g-dot-ring,rgba(var(--wC),calc(.9 * var(--wM))));stroke-width:1.5}
-.chy-dot.a{fill:var(--solid)}
+.chy-dot.a{fill:var(--ch-a)}
 .chy-dot.a.over{fill:var(--no)}
 .chy-dot.c{fill:rgba(var(--edgeC),.34);stroke-width:0}
 .chy-val{font-family:var(--fd);font-size:11px;font-weight:600;fill:var(--t1);
@@ -4336,3 +4377,48 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 }
 @media (prefers-reduced-motion:reduce){.bgtree.land{animation:none}}
 .bgchk-h{margin:0;font-size:var(--fs-2)}
+/* ═══ نافذة الفرق ═══
+   نفس عايلة `.fprev`: بورتال على الـbody، ستارة، ولوح في نصّ
+   الشاشة · فالضغطة بتجاوب في مكانها بدل ما تمرّر الصفحة شاشتين
+   لتحت. */
+.gpeek{position:fixed;z-index:60;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(560px,92vw);max-height:86vh;display:flex;flex-direction:column;
+  border-radius:var(--r3);overflow:hidden;
+  background:linear-gradient(180deg,rgba(var(--wC),calc(.9 * var(--wM))),rgba(var(--wC),calc(.8 * var(--wM))));
+  -webkit-backdrop-filter:blur(40px) saturate(1.4);backdrop-filter:blur(40px) saturate(1.4);
+  box-shadow:inset 0 0 0 1px var(--edge-2),0 24px 60px rgba(20,69,71,.18);
+  animation:fprevin .26s cubic-bezier(.22,.9,.3,1) both}
+.gpeek-h{display:flex;align-items:flex-start;gap:.5rem;padding:1rem 1.1rem .8rem}
+.gpeek-h .sub{font-size:var(--fs-2)}
+/* الرقمان والفرق في سطر واحد · ده اللي الشجرة ما كانتش بتدّيه */
+.gpeek-n{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem .9rem;
+  margin-inline:1.1rem;padding:.85rem .9rem;border-radius:var(--r2);
+  background:rgba(var(--edgeC),.05);box-shadow:inset 0 0 0 1px var(--edge-1)}
+.gpeek-c{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.gpeek-c .sub{font-size:var(--fs-1)}
+.gpeek-c>b{font-family:var(--fd);font-weight:700;font-size:.95rem;color:var(--t1);white-space:nowrap}
+.gpeek-op{font-family:var(--fd);font-size:1.1rem;color:var(--t3-g);flex:none}
+.gpeek-w{margin:.7rem 1.1rem 0;font-size:var(--fs-2);line-height:1.9}
+.gpeek-b{flex:1;min-height:0;overflow:auto;padding:.9rem 1.1rem 1.1rem}
+.gpeek-lb{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.5rem;
+  font-family:var(--fd);font-weight:600;font-size:.82rem;color:var(--t1)}
+.gpeek-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.gpeek-l>li{display:grid;grid-template-columns:minmax(0,9rem) minmax(0,1fr) 7.2rem;
+  align-items:center;gap:.7rem;font-size:.79rem;color:var(--t1)}
+.gpeek-k{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gpeek-t{height:8px;border-radius:var(--rp);background:rgba(var(--edgeC),.07);overflow:hidden}
+/* سطر المجموع بياخد نفس الشبكة عشان الأرقام تتراصّ، بس المقياس
+   مالوش معنى فيه · الخانة موجودة وفاضية بلا رسم */
+.gpeek-t.empty{background:none}
+.gpeek-t>i{display:block;height:100%;border-radius:var(--rp);background:var(--solid);opacity:.5}
+.gpeek-v{text-align:start;white-space:nowrap}
+/* المجموع سطر في نفس الشبكة عشان أرقامه تقع تحت أرقام الأبناء */
+.gpeek-sum{margin-top:.3rem;padding-top:.45rem;
+  box-shadow:inset 0 1px 0 var(--edge-d);font-family:var(--fd);font-weight:600}
+.gpeek-f{display:flex;align-items:center;gap:.5rem;padding:.85rem 1.1rem;
+  background:rgba(var(--wC),calc(.72 * var(--wM)));
+  box-shadow:inset 0 1px 0 var(--edge-d)}
+@media (max-width:560px){
+  .gpeek-l>li{grid-template-columns:minmax(0,1fr) 7rem}
+  .gpeek-t{display:none}
+}

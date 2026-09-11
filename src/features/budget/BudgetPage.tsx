@@ -10,6 +10,7 @@ import {
   nodeAt, parentCount, type Imbalance, type PlanNode,
 } from '@/data/budgetPlan'
 import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from './BudgetCharts'
+import { GapPeek } from './GapPeek'
 
 /**
  * الميزانية.
@@ -219,6 +220,9 @@ function Balance({
   root: PlanNode
 }) {
   const [all, setAll] = useState(false)
+  /* البند المفتوح في النافذة · الضغطة بتجاوب في مكانها بدل ما
+     تمرّر الصفحة لتحت */
+  const [peek, setPeek] = useState<Imbalance | null>(null)
   const shown = all ? gaps : gaps.slice(0, TOP)
   const total = gaps.reduce((s, x) => s + Math.abs(x.gap), 0)
 
@@ -249,12 +253,12 @@ function Balance({
           فالرقمان ما بيتقابلوش. هنا بيتحسبوا على الشجرة كلها مرة واحدة.
         </p>
 
-        <p className="mut bgchk-h">اضغط أي بند تنزل عليه في الشجرة تحت.</p>
+        <p className="mut bgchk-h">اضغط أي بند تشوف تفصيل الفرق فيه.</p>
 
         <ul className="bglist">
             {shown.map((x) => (
               <li key={x.path.join('/') || 'root'}>
-                <button className="bglist-i" onClick={() => onGo(x.path)}>
+                <button className="bglist-i" onClick={() => setPeek(x)}>
                   <span className="bglist-lv sub">{PLAN_LEVELS[x.level]}</span>
                   <span className="bglist-t">{x.label || root.label}</span>
                   {/* التسمية بعرض ثابت والرقم بعدها · في RTL الرقم
@@ -283,6 +287,15 @@ function Balance({
               </li>
             ))}
         </ul>
+
+        {peek && (
+          <GapPeek
+            gap={peek}
+            root={root}
+            onClose={() => setPeek(null)}
+            onGoTree={() => { setPeek(null); onGo(peek.path) }}
+          />
+        )}
 
         {gaps.length > TOP && (
           <button className="btn btn-2 btn-sm bgchk-t" onClick={() => setAll((x) => !x)}>
