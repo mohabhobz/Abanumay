@@ -44,7 +44,6 @@ const ROLES = [
   { key: 'زرار صغير', sel: '.btn.btn-sm', props: ['height', 'borderRadius', 'fontSize', 'paddingBlock', 'paddingInline'] },
   { key: 'تاب', sel: '.tabs .tab', props: ['height', 'borderRadius', 'fontSize', 'paddingInline'] },
   { key: 'شريحة أدوات', sel: '.fchip', props: ['height', 'borderRadius', 'fontSize', 'paddingInline'] },
-  { key: 'شريحة حالة', sel: '.fseg', props: ['height', 'borderRadius', 'fontSize', 'paddingInline'] },
   { key: 'وسم', sel: '.tag', props: ['height', 'borderRadius', 'fontSize', 'paddingInline'] },
   { key: 'حقل اختيار', sel: '.fsel .fsel-b', props: ['height', 'borderRadius', 'fontSize'] },
   { key: 'بحث', sel: '.srch', props: ['height', 'borderRadius', 'fontSize'] },
@@ -65,7 +64,7 @@ const ROLES = [
  * القيمة اللي برّه السلّم خطأ، لا استثناء.
  */
 const SCALE = {
-  radius: [0, 12, 15, 22, 28, 999],
+  radius: [0, 4, 12, 16, 24, 32, 999],
   /* **قيمة واحدة**. كان فيه تلاتة (٢٨ · ٣٤ · ٤٢)، والسلّم اللي
      فيه تلات درجات للشيء الواحد مش سلّم، هو إذن بالاختلاف.
      ٤٤ = الحدّ الأدنى للهدف اللمسي في WCAG 2.5.5، والتحكّم
@@ -81,7 +80,19 @@ const SCALE = {
 }
 
 /** صناديق الأيقونات، المفروض مربّعة دايمًا */
-const ICON_BOX = '.catc-i,.rbc-i,.rpk-i,.badge,.lrfind>.badge,.htile-ic,.aclose,.vtog button,.aifold,.fopt-x,.rpp-n,.catsum-s>b'
+/**
+ * صناديق الأيقونات · **حاوية مرسومة جوّاها علامة واحدة**.
+ *
+ * `.rpp-n` و`.catsum-s>b` كانوا في القايمة دي وهمّ **نصّ**: رقم
+ * عنوان ورقم إحصائي، مالهمش خلفية ولا حدّ ولا ركن. الفحص كان
+ * بيقيس عرضهم وطولهم ويقول «مش مربّع» · وطبعًا مش مربّع، هو
+ * سطر. تلات صفوف حمرا كل مرة معناها إن اللي بيقرا الجرد بيتعلّم
+ * يعدّي على الأحمر، وده أخطر من الخطأ نفسه.
+ *
+ * القاعدة: يدخل هنا اللي **مرسوم كصندوق** ومحتواه علامة، مش أي
+ * عنصر فيه رقم.
+ */
+const ICON_BOX = '.catc-i,.rbc-i,.rpk-i,.badge,.lrfind>.badge,.htile-ic,.aclose,.vtog button,.aifold,.fopt-x'
 
 const serve = () => new Promise((res) => {
   const s = http.createServer((q, r) => {
@@ -196,8 +207,8 @@ for (const theme of themes) {
          ومختلف عن جاره. اللي المستخدم بيشوفه هو **الصفّ**، فلازم
          يتقاس كصفّ. */
       out.rows = []
-      const CTRL = '.btn,.fchip,.fseg,.tab,.srch,.fsel .fsel-b,.vtog'
-      for (const row of document.querySelectorAll('.ftool-r,.ftool-f,.ftool-a,.tabs,.fsegs,.head-a,.hd-a')) {
+      const CTRL = '.btn,.fchip,.tab,.srch,.fsel .fsel-b,.vtog'
+      for (const row of document.querySelectorAll('.ftool-r,.ftool-f,.ftool-a,.tabs,.head-a,.hd-a')) {
         const kids = [...row.querySelectorAll(CTRL)].filter((e) => e.offsetParent !== null)
         if (kids.length < 2) continue
         const seen = new Map()

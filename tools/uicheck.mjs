@@ -77,7 +77,7 @@ for (const theme of themes) {
         }
         return false
       }
-      for (const e of document.querySelectorAll('.btn,.tag,.fseg,.fchip,.fsel-b,.tab,.sub,.mut,.tbl td,.tbl th,.ptitle,.hd-t')) {
+      for (const e of document.querySelectorAll('.btn,.tag,.fchip,.fsel-b,.tab,.sub,.mut,.tbl td,.tbl th,.ptitle,.hd-t')) {
         if (e.offsetParent === null || hidden(e)) continue
         const cs = getComputedStyle(e)
         const scrolls = cs.overflowX === 'auto' || cs.overflowX === 'scroll'

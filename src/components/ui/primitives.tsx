@@ -101,8 +101,22 @@ export function KV({ rows }: { rows: KVRow[] }) {
 export interface TabItem {
   slug: string
   label: string
+  /** عدّاد جنب الاسم · بيظهر لو اتبعت */
+  count?: number
 }
 
+/**
+ * التبويب · **الشكل الوحيد لاختيار واحد من عدة في السيستم**.
+ *
+ * كان في تنفيذان: `Tabs` (تبويب المشروع والجهة والتقارير) و
+ * `Segments` (شرائح الحالة بعدّادها في القوائم). الاتنين بيعملوا
+ * نفس الفعل · بيختاروا واحدًا من عدة وبيغيّروا اللي تحتهم ·
+ * والاتنين كانوا بيعلنوا `role="tablist"`، بس بكلاسين مختلفين
+ * (`.tab` و`.fseg`) فطلعوا بركنين مختلفين على نفس الشاشة.
+ *
+ * دلوقتي `Segments` بترسم نفس الكلاسيس، والفرق الوحيد إنها بتبعت
+ * `count`. الشكل واحد لأن الفعل واحد.
+ */
 export function Tabs({
   items,
   active,
@@ -122,7 +136,8 @@ export function Tabs({
           className={`tab ${t.slug === active ? 'on' : ''}`}
           onClick={() => onChange(t.slug)}
         >
-          {t.label}
+          <span>{t.label}</span>
+          {t.count !== undefined && <b className="num">{t.count}</b>}
         </button>
       ))}
     </div>

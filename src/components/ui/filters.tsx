@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useMenu } from '@/hooks/useMenu'
+import { Tabs } from './primitives'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
@@ -338,7 +339,14 @@ export interface SegItem {
   count?: number
 }
 
-/** شرائح الحالة · بديل التبويبات لما العدد بيهم */
+/**
+ * شرائح الحالة · **هي `Tabs` بعدّاد، مش نوع تاني**.
+ *
+ * كانت بتعلن `role="tablist"` زي التبويب بالظبط، وبترسم `.fseg`
+ * بدل `.tab` · فنفس الفعل طلع بشكلين على نفس الشاشة. الفرق
+ * الحقيقي الوحيد إن مفتاحها ممكن يكون فاضي («الكل»)، وده فرق في
+ * الداتا لا في الشكل.
+ */
 export function Segments({
   items,
   active,
@@ -349,23 +357,11 @@ export function Segments({
   onChange: (key: string | undefined) => void
 }) {
   return (
-    <div className="fsegs" role="tablist">
-      {items.map((it) => {
-        const on = (active ?? '') === it.key
-        return (
-          <button
-            key={it.key || 'all'}
-            role="tab"
-            aria-selected={on}
-            className={`fseg${on ? ' on' : ''}`}
-            onClick={() => onChange(it.key || undefined)}
-          >
-            <span>{it.label}</span>
-            {it.count !== undefined && <b className="num">{it.count}</b>}
-          </button>
-        )
-      })}
-    </div>
+    <Tabs
+      items={items.map((it) => ({ slug: it.key, label: it.label, count: it.count }))}
+      active={active ?? ''}
+      onChange={(slug) => onChange(slug || undefined)}
+    />
   )
 }
 
