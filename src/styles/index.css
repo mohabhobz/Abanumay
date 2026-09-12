@@ -640,9 +640,19 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
    والكارت والشريط كلهم أبيض شفّاف)، فالزرار الأبيض بيتقري سطحًا
    لا فعلًا. النداء لازم ياخد **لون العلامة**.
 
-     btn-p   الفعل الرئيسي · واحد بس في الشاشة، مصمت
-     btn-2   كل فعل تاني · لون العلامة مخفّف، شكل واحد لكلهم
-     btn-d   الهدّام/الرافض · وده الوحيد اللي له لون خاص
+     btn-p      الفعل الرئيسي · واحد بس في الشاشة، مصمت
+     btn-2      كل فعل تاني · لون العلامة مخفّف، شكل واحد لكلهم
+     btn-d      الهدّام/الرافض · وده الوحيد اللي له لون خاص
+     btn-ghost  **مش فعل، هو رواح** · رابط بيخرجك من الشاشة
+
+   و`btn-ghost` رجعت بعد ما اتشالت، **وبقاعدة تفرّقها**: التلاتة
+   اللي فوق كلهم أفعال على موضوع الشاشة اللي أنت فيها، والرابع
+   **بيوَدّيك لشاشة تانية**. «التقارير الكاملة» جنب عنوان الصفحة
+   مش نداءً للفعل، هو باب · فلو أخد لون العلامة زي الفعل الثاني،
+   بيزاحم الأفعال الحقيقية على نفس الانتباه.
+
+   يعني الفرق **في الدور لا في الأهمية**، وعشان كده الشكل مختلف
+   نوعًا (بلا أرضية وبلا حافة) لا أخفّ درجة.
 
    والأزرق `btn-3` اتشال من الأفعال خالص لأن الأزرق في نظامنا
    **يوصف حالة** («معاد للاستكمال») ما بيعملش نداء. */
@@ -652,6 +662,10 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 .btn-2{background:rgba(var(--solidC),.10);color:var(--solid);
   box-shadow:inset 0 0 0 1px rgba(var(--solidC),.26)}
 .btn-2:hover{background:rgba(var(--solidC),.16)}
+/* شفّاف بالكامل · لا أرضية ولا حافة. الأيقونة بتفضل معاه لأنها
+   بتقول **نوع المكان** اللي رايح له، مش زينة. */
+.btn-ghost{background:none;color:var(--t2);box-shadow:none}
+.btn-ghost:hover{color:var(--t1);background:rgba(var(--edgeC),.07)}
 .btn-d{background:rgba(192,67,42,.10);color:var(--no-ink);
   box-shadow:inset 0 0 0 1px rgba(192,67,42,.28)}
 .btn-off{background:rgba(var(--wC),calc(.40 * var(--wM)));color:var(--t3);cursor:not-allowed;

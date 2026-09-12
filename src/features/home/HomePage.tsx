@@ -147,7 +147,9 @@ export default function HomePage() {
               <h1 className="htitle">{GREET()}، {user.name.split(' ')[0]}</h1>
               <p className="hdate">{df.format(new Date())} · {user.role}</p>
             </div>
-            <Link className="btn btn-2 btn-sm" to={ROUTES.reports}>
+            {/* رابط لا فعل · بيوَدّي لشاشة التقارير، فما بياخدش
+                لون العلامة ويزاحم أفعال الصفحة */}
+            <Link className="btn btn-ghost btn-sm" to={ROUTES.reports}>
               <Icon name={icons.chart} size={15} />
               التقارير الكاملة
             </Link>
