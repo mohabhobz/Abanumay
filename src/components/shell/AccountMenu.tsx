@@ -80,7 +80,7 @@ export function AccountMenu({
                   aria-checked={theme === t.key}
                   onClick={() => setTheme(t.key)}
                 >
-                  <Icon name={icons[t.icon]} size={15} />
+                  <Icon name={icons[t.icon]} size={14} />
                   <span>{t.label}</span>
                 </button>
               ))}

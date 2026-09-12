@@ -1547,9 +1547,25 @@ to{opacity:1;transform:none}
 .acctbtn:hover .av,.acctbtn:hover .pht{outline-color:rgba(var(--edgeC),.30)}
 .acctbtn.on .av,.acctbtn.on .pht{outline-color:var(--solid)}
 /* RTL: inline-start = يمين، فـ100% بتطلّعها على شمال الزرار جهة المحتوى */
-.acct{position:absolute;bottom:0;inset-inline-start:calc(100% + 12px);z-index:60;
-  width:236px;padding:.35rem;border-radius:var(--r1);
-  display:flex;flex-direction:column;gap:.2rem;
+/* ═══════════════════════════════════════════════════════════
+   Account menu · one inline edge for everything
+
+   The menu had four different inline edges in 236px: the identity
+   row at 14.4, the "theme" label at 15.2, the items at 16.8, and
+   the segmented track at 11.2. No single one was wrong, and that
+   is exactly why the whole thing read as broken: nothing lined up
+   with anything.
+
+   One number fixes it. `--acct-pad` is the menu's own padding, so
+   every full-width surface (the segmented track, an item's hover
+   background) starts there; `--acct-gut` is the text inset inside
+   a row, so every line of text starts at `pad + gut`. Two edges,
+   and every element is on one of them.
+   ═══════════════════════════════════════════════════════════ */
+.acct{--acct-pad:.4rem;--acct-gut:.6rem;
+  position:absolute;bottom:0;inset-inline-start:calc(100% + 12px);z-index:60;
+  width:236px;padding:var(--acct-pad);border-radius:var(--r1);
+  display:flex;flex-direction:column;
   background:var(--pop);
   box-shadow:inset 0 0 0 1px var(--edge-2),
              0 18px 44px rgba(20,69,71,.20);
@@ -1557,36 +1573,58 @@ to{opacity:1;transform:none}
 @keyframes acctin{from{opacity:0;transform:translateY(6px) scale(.985)}
 to{opacity:1;transform:none}
 }
-/* في الشريط العلوي بتفتح لتحت وبتتلزّق بحافة الشاشة · الفتح جنبًا
-   من زرار في الحافة كان بيطلّع القائمة برّه الشاشة */
+/* On the top bar it opens downward and hugs the screen edge ·
+   opening sideways from a button at the edge pushed the menu off
+   the screen */
 .acct.drop{bottom:auto;top:calc(100% + 10px);inset-inline-start:auto;inset-inline-end:0;
   max-width:calc(100vw - 1.6rem)}
-.acct-id{display:flex;align-items:center;gap:.6rem;padding:.6rem .55rem .65rem}
+
+.acct-id{display:flex;align-items:center;gap:.6rem;
+  padding:.5rem var(--acct-gut) .6rem}
 .acct-name{font-family:var(--fd);font-weight:600;font-size:.85rem;line-height:1.4;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acct-role{font-size:.72rem;margin-top:1px}
-.acct-sec{padding:.3rem 0;box-shadow:inset 0 1px 0 var(--edge-d)}
-.acct-lbl{font-size:.68rem;color:var(--t3);padding:.25rem .6rem .35rem}
-/* بتلغي ستايل أزرار الريل (عمودي وفي النص) لأن القائمة جوّه الريل */
+
+/* The divider is full-bleed on purpose: it reads as the menu's own
+   rule, not as another inset box competing with the two edges. */
+.acct-sec{padding:.3rem 0;
+  box-shadow:inset 0 1px 0 var(--edge-d)}
+.acct-lbl{font-size:.68rem;color:var(--t3);
+  padding:.2rem var(--acct-gut) .3rem}
+
+/* Cancels the rail's button styling (column, centred) · the menu
+   lives inside the rail, so `.rail button` reaches it. */
 .acct-sec>button{width:100%;display:flex;flex-direction:row;align-items:center;
   justify-content:flex-start;gap:.55rem;line-height:1.5;
-  padding:.5rem .6rem;border-radius:var(--r1);font-size:.8rem;color:var(--t2);
+  padding:.48rem var(--acct-gut);border-radius:var(--ric);font-size:.8rem;color:var(--t2);
   text-align:start;cursor:pointer;transition:background .14s ease,color .14s ease}
 .acct-sec>button svg{flex:none;width:16px;height:16px}
 .acct-sec>button:hover{background:rgba(var(--edgeC),.07);color:var(--t1)}
 .acct-sec>button.danger{color:var(--no)}
 .acct-sec>button.danger:hover{background:rgba(var(--noC),.09)}
-/* مبدّل المظهر · ثلاث حالات في مسار واحد */
+
+/* ── Theme switch · three states on one track ──
+   The pill is concentric with its track: track radius `--r1` minus
+   the track's 4px padding is exactly `--ric`, so the two corners
+   share a centre. It used to be 16 minus 2px of padding drawn at a
+   14px radius — the corners crossed, and the white pill read as
+   hanging off the end of the track rather than sitting in it.
+
+   And the cell is a row, not a column: stacked icon-over-label made
+   a 53px cell, taller than the identity row above it, so the switch
+   read as the main event in an account menu. */
 .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;
-  padding:3px;margin:0 .35rem .15rem;border-radius:var(--r1);
+  padding:4px;border-radius:var(--r1);
   background:rgba(var(--edgeC),.05)}
-.seg button{display:flex;flex-direction:column;align-items:center;gap:.22rem;
-  padding:.45rem .2rem;border-radius:calc(var(--r1) - 2px);
-  font-size:.67rem;color:var(--t3);cursor:pointer;line-height:1.2;
+.seg button{display:flex;flex-direction:row;align-items:center;justify-content:center;
+  gap:.3rem;padding:.4rem .25rem;border-radius:var(--ric);
+  font-size:.7rem;color:var(--t3);cursor:pointer;line-height:1.2;
   transition:background .16s ease,color .16s ease,box-shadow .16s ease}
+.seg button svg{flex:none;width:14px;height:14px}
 .seg button:hover{color:var(--t2)}
 .seg button.on{color:var(--t1);background:rgba(var(--wC),calc(.95 * var(--wM)));
-  box-shadow:0 1px 3px rgba(20,69,71,.10),inset 0 0 0 1px var(--edge-1)}
+  box-shadow:0 1px 2px rgba(20,69,71,.09),inset 0 0 0 1px var(--edge-1)}
+
 /* شرارة المساعد · تدرّج الهوية بيمرّ عليها ولمعة خفيفة تلفت النظر.
    الشكل نفسه ماسك، فالتدرّج والجلو بياخدوا حدود النجمة بالظبط. */
 @keyframes aisheen{0%{background-position:0% 50%}
