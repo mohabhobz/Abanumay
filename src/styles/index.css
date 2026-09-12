@@ -1045,27 +1045,12 @@ to{opacity:1;transform:none}
 
 @media (prefers-reduced-motion:reduce){
   .lock-full,.lock-mark{transition:none}
-}
-/* زرار الحساب مستثنى: هو دايرة لا عنصر تنقّل، وقواعد الريل كانت
-   بتلبّسه كارت مستطيل · فالدايرة كانت قاعدة جوّه مربّع.
-   الاستثناء بـ`:where` لا `:not`: الأخير بيزوّد نوعية المحدّد
-   فيغلب قواعد القائمة المنبثقة اللي جوّه الريل ويقلب أزرارها
-   أعمدة. `:where` بينفي من غير ما يضيف وزن. */
-/* العنصر صفّ في الحالتين: مطويّ = أيقونة متوسّطة، مفرود = أيقونة
-   واسم جنبها. الصفّ في الحالتين بيمنع الأيقونة من إنها تنطّ لمّا
-   الشريط يتفرد. */
-.rail button:where(:not(.acctbtn):not(.railshut)),.rail .railitem{width:100%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:.6rem;position:relative;
+}.rail .railitem{width:100%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:.6rem;position:relative;
   /* ركن التحكّم `--r1` · كان `--r2` هنا و`--r1` في الشريط السفلي،
      يعني نفس البند بركنين حسب الشاشة */
   padding:.7rem .3rem;border-radius:var(--r1);color:var(--t3);font-size:.82rem;font-family:var(--fd);
-  transition:color .16s ease,background .16s ease;text-align:start;line-height:1.35}
-/* الشريط مطويّ ⇒ الصندوق **مربّع** ٣٨×٣٨ (كان ٦٤×٤٧ مستطيلًا ·
-   ملاحظتك رقم ١). مفرود ⇒ الصفّ بعرضه الكامل لأنه بقى أيقونة واسم
-   لا أيقونة لوحدها. */
-/* ٤٤×٤٤ · نفس مقاس أي هدف تفاعلي في السيستم */
-.rail:not(.open) button:where(:not(.acctbtn):not(.railshut)),.rail:not(.open) .railitem{
-  width:var(--h-md);height:var(--h-md);padding:0;margin-inline:auto}
-.rail.open button:where(:not(.acctbtn):not(.railshut)),.rail.open .railitem{justify-content:flex-start;padding-inline:.7rem}
+  transition:color .16s ease,background .16s ease;text-align:start;line-height:1.35}.rail:not(.open) .railitem{
+  width:var(--h-md);height:var(--h-md);padding:0;margin-inline:auto}.rail.open .railitem{justify-content:flex-start;padding-inline:.7rem}
 .rail-l{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rail:not(.open) .rail-l{display:none}
 /* التلميح: عنصر مستقل لا `title` · تلميح المتصفح بيتأخّر ثانية
@@ -1080,24 +1065,11 @@ to{opacity:1;transform:none}
              0 10px 22px -10px rgba(0,0,0,.35);
   opacity:0;transition:opacity .14s ease,translate .14s ease}
 .rail:not(.open) .railitem:hover .rail-tip,
-.rail:not(.open) button:hover .rail-tip,
-.rail:not(.open) .railitem:focus-visible .rail-tip,
-.rail:not(.open) button:focus-visible .rail-tip{opacity:1;translate:-4px -50%}
+.rail:not(.open) .railitem:focus-visible .rail-tip{opacity:1;translate:-4px -50%}
 .rail.open .rail-tip{display:none}
 @media (prefers-reduced-motion:reduce){ .rail,.rail-tip{transition:none}
-}
-.rail button:where(:not(.acctbtn):not(.railshut)):hover,.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}
-/* ══ المختار بلون الهوية ══
-   الأبيض كان بيقول «دي طبقة زجاج تانية»، واللون الأساسي بيقول
-   «دي اللي انت واقف عليها». التلات مواضع · عنصر الريل والتاب
-   وشريحة الحالة · دورهم واحد: **يعلّموا الاختيار الحالي**،
-   فلونهم واحد. */
-.rail button:where(:not(.acctbtn):not(.railshut)).on,.rail .railitem.on{color:var(--on-solid);background:var(--solid);
-  box-shadow:none}
-.rail button:where(:not(.acctbtn):not(.railshut)).on:hover,.rail .railitem.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}
-/* ٢٢ داخل صندوق ٣٨ ⇒ حشو ٨ حوالين الأيقونة، وهو نفس رقم الفجوة
-   جهة المحتوى · فالإيقاع واحد. كانت ٢٥ (خارج أي سلّم). */
-.rail button:where(:not(.acctbtn):not(.railshut)) svg,.rail .railitem svg{width:22px;height:22px;flex:none}
+}.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}.rail .railitem.on{color:var(--on-solid);background:var(--solid);
+  box-shadow:none}.rail .railitem.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}.rail .railitem svg{width:22px;height:22px;flex:none}
 /* المجموعات بتتفصل بمسافة بس · الخط الشعري كان بيتقوّس مع حواف
    العنصر فيبان كإطار مفتوح، والمسافة كافية إن العين تقرا الكتل */
 /* الفاصل بين المجموعات = ٢٢ ناقص الـ٨ اللي جاية من `gap`، فالفجوة
@@ -1210,8 +1182,7 @@ input[type=range]{accent-color:var(--lime-ink);width:130px;background:transparen
 }
 /* ── إضافات وتصحيحات ── */
 .logo{display:block;color:var(--green)}
-.logo svg{width:100%;height:100%;display:block}
-.rail button:where(:not(.acctbtn):not(.railshut)),.rail .railitem{font-size:.8rem}
+.logo svg{width:100%;height:100%;display:block}.rail .railitem{font-size:.8rem}
 .kv dd a{cursor:pointer}
 .data.li{border-radius:0}
 .tabs .tab{cursor:pointer}
@@ -1790,13 +1761,9 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .rail .rail-tip{display:none}
 /* نوعية مساوية لقاعدة الإخفاء `.rail:not(.open) .rail-l` وبعدها */
   .rail:not(.open) .rail-l,.rail .rail-l{display:flex}
-.rail .acct-who,.rail.open .acct-who{display:none}
-.rail button:where(:not(.acctbtn):not(.railshut)),.rail .railitem,
-  .rail.open button:where(:not(.acctbtn):not(.railshut)),.rail.open .railitem{
+.rail .acct-who,.rail.open .acct-who{display:none}.rail .railitem,.rail.open .railitem{
     flex-direction:column;justify-content:center;text-align:center}
-.rail .railitem.nomob{display:none}
-.rail button:where(:not(.acctbtn):not(.railshut)),.rail .railitem{width:auto;flex:1;padding:.45rem .2rem;gap:.22rem;font-size:.66rem;border-radius:var(--r1)}
-.rail button:where(:not(.acctbtn):not(.railshut)) svg,.rail .railitem svg{width:21px;height:21px}
+.rail .railitem.nomob{display:none}.rail .railitem{width:auto;flex:1;padding:.45rem .2rem;gap:.22rem;font-size:.66rem;border-radius:var(--r1)}.rail .railitem svg{width:21px;height:21px}
 .railfoot{margin-top:0;width:auto;flex:1;flex-direction:row;align-items:stretch;gap:0}
 .railfoot>.pht,.railfoot>.av{display:none}
 /* قائمة الحساب انتقلت للشريط العلوي: نسختين منها على شاشة واحدة
