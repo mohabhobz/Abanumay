@@ -87,10 +87,6 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
         <span className="ejr-glow" aria-hidden="true" />
         {cards.map((c) => (
           <Link key={c.k} to={c.to} className={`ejr-c ejr-c${c.k}${c.big ? ' big' : ''}`}>
-            {/* القرص · حلقات متداخلة والرقم في نصّها */}
-            <span className="ejr-disc" aria-hidden="true">
-              <i /><i /><i className="ejr-dot" />
-            </span>
             <span className="ejr-slot">{c.slot}</span>
             <span className="ejr-t">{c.label}</span>
             <b className="ejr-v"><Money sm>{c.value}</Money></b>

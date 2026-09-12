@@ -310,12 +310,12 @@
      ٧٫٨٠ · ٣٫٦٥ · ٢٫٤٤ · ١٫٧٧ · يعني تلاتة من الأربعة تحت الحدّ.
      وألوان المرجع نفسه أسوأ (الأصفر ١٫٧٧). فالأربعة دول من نفس
      عيلة الهوية بقيم متقاسة مع الأبيض:
-       ١٢٫٢٧ · ٧٫٨٢ · ٥٫٠٣ · ٥٫١٤ */
-  --sq-1:#0E3B3D; --sq-2:#0A5C58; --sq-3:#0E7669; --sq-4:#4A7A10;
+       ١٢٫٢٧ · ٧٫٨٢ · ٥٫٠٣ · ٥٫٨٦ */
+  --sq-1:#0E3B3D; --sq-2:#0A5C58; --sq-3:#0E7669; --sq-4:#457010;
   --sq-ink:#fff;
   /* نفس الأربعة كثلاثيّات · محتاجينهم للشفافية وللنصّ اللي بلون
      المربّع · والقيم بتتقلب مع الثيم زي الهيكس فوقها بالظبط */
-  --sq-1C:14,59,61; --sq-2C:10,92,88; --sq-3C:14,118,105; --sq-4C:74,122,16;
+  --sq-1C:14,59,61; --sq-2C:10,92,88; --sq-3C:14,118,105; --sq-4C:69,112,16;
   /* الشقّ بلون سطح معتم · هو «قصّة» في المربّع بتوَرّي الصفحة تحته */
   /* أرضية الشقّ · **من سطح الصفحة لا من الأبيض الخام**.
      `rgba(var(--wC), .86 * var(--wM))` بتدّي في الفاتح أبيض ٨٦٪،
@@ -3215,40 +3215,62 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    وكله بخصائص منطقية (`inset-inline-*`)، فالمرجع الإنجليزي
    بيتقلب لوحده: الكبار على اليمين حيث القراءة بتبدأ.
    ═══════════════════════════════════════════════════════════ */
-.ejr{flex:1 1 380px;min-width:0;display:flex;max-width:560px}
+.ejr{flex:1 1 400px;min-width:0;display:flex;max-width:600px}
 .ejr-none{flex-direction:column;gap:.35rem}
 .ejr-none p{margin:0;font-size:var(--fs-2);line-height:1.8;color:var(--t2)}
 .ejr-none .ejr-ht{font-family:var(--fd);font-weight:600;font-size:.92rem;color:var(--t1)}
 
-/* ألواح رأسية متجاورة · كل لوح قرصه فوق وكلامه تحت بلونه.
-   القرص **ما فيهوش رقم**: المرجع حلقات وقرص ملوّن وبس، والرقم
-   اللي كان جوّاه كان زيادة منّي · والأربعة مش خطوات مرقّمة
-   أصلًا (الأول هو الكلّ، والرابع مقطع زمني منه). */
-.ejr-stage{position:relative;width:100%;display:grid;gap:2px;
-  grid-template-columns:repeat(4,minmax(0,1fr));overflow:hidden;border-radius:var(--r2)}
+/* ═══════════════════════════════════════════════════════════
+   ألواح متراكبة · واحد فوق اللي بعده
+
+   ده اللي بيدّي المرجع شكله: مش أربع أعمدة متجاورة بفاصل، دي
+   **ورقة فوق ورقة**. كل لوح داخل تحت اللي قبله بقدّ `--ejr-lap`،
+   وبيرمي ظلًّا على اللي تحته · فالعين بتقرا ترتيبًا في العمق
+   (الأول فوق الكل) من غير ولا رقم مكتوب.
+
+   والترتيب بيتقلب مع اتجاه القراءة: الأول على اليمين حيث القراءة
+   بتبدأ، والظلّ بيقع ناحية الشمال على اللي بعده.
+
+   ⚠️ `box-shadow` مالوش نسخة منطقية · الإزاحة هنا **فيزيائية**
+   (سالب = شمال)، فهي متظبّطة على RTL. لو اتفتح اتجاه لاتيني
+   يومًا، السطر ده هو اللي يتقلب.
+   ═══════════════════════════════════════════════════════════ */
+.ejr-stage{--ejr-lap:30px;
+  position:relative;width:100%;display:flex;align-items:stretch;
+  border-radius:var(--r2);overflow:hidden}
 .ejr-glow{display:none}
 
-.ejr-c{position:relative;display:flex;flex-direction:column;align-items:center;
-  gap:.1rem;text-align:center;padding:1.05rem .5rem 1.15rem;color:inherit;
-  background:linear-gradient(180deg,rgba(var(--wC),calc(.78 * var(--wM))),rgba(var(--wC),calc(.5 * var(--wM))));
+.ejr-c{position:relative;flex:1 1 0;min-width:0;color:inherit;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  min-height:clamp(168px,15vw,208px);
+  padding:1rem .85rem 1.1rem;
+  /* اللوح بلون باهت من لون خانته · الدايرة اتشالت، فاللون لازم
+     يفضل في حتّة · وهي باهتة كفاية إن النصّ فوقها ما يتأثّرش */
+  background:
+    linear-gradient(180deg,rgba(var(--dc),.05),rgba(var(--dc),.13)),
+    linear-gradient(180deg,rgba(var(--wC),var(--wM)),rgba(var(--wC),calc(.72 * var(--wM))));
   -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
-  box-shadow:inset 1px 0 0 var(--edge-d);
-  transition:background .18s ease}
-.ejr-c:first-child{box-shadow:none}
-.ejr-c:hover{color:inherit;background:linear-gradient(180deg,rgba(var(--wC),calc(.92 * var(--wM))),rgba(var(--wC),calc(.62 * var(--wM))))}
-
-/* ── القرص · حلقتان فاتحتان وقرص ملوّن جوّاهم ── */
-.ejr-disc{position:relative;width:clamp(52px,5.5vw,76px);aspect-ratio:1;
-  margin-bottom:.7rem;flex:none}
-.ejr-disc>i{position:absolute;border-radius:50%;pointer-events:none}
-/* الحلقة الخارجية */
-.ejr-disc>i:first-child{inset:0;background:rgba(var(--wC),calc(.9 * var(--wM)));
-  box-shadow:0 8px 20px -12px rgba(var(--edgeC),.6)}
-/* الحلقة الداخلية */
-.ejr-disc>i:nth-child(2){inset:11%;background:rgba(var(--wC),calc(.98 * var(--wM)))}
-/* القرص الملوّن · مزاح ناحية البداية زي المرجع */
-.ejr-dot{inset:20% 16% 20% 24%;
-  background:linear-gradient(150deg,rgb(var(--dc)),rgba(var(--dc),.82))}
+  transition:background .18s ease,transform .18s ease}
+/* التراكب · كل لوح بيتسحب تحت اللي قبله، وبيتحشّى من الناحية
+   المغطّاة عشان كلامه ما يختفيش تحته */
+.ejr-c + .ejr-c{margin-inline-start:calc(-1 * var(--ejr-lap));
+  padding-inline-start:calc(.85rem + var(--ejr-lap))}
+.ejr-c:nth-child(1){z-index:4}
+.ejr-c:nth-child(2){z-index:3}
+.ejr-c:nth-child(3){z-index:2}
+.ejr-c:nth-child(4){z-index:1}
+/* الظلّ على الحافة الأمامية · هو اللي بيقول «ده فوق ده».
+   طبقتان: ظلّ واسع بيدّي العمق، وخطّ فاتح على الحافة نفسها
+   بيدّي حرف الورقة · الاتنين مع بعض هما اللي بيقروا «ورقة فوق
+   ورقة» بدل «عمودين جنب بعض». */
+.ejr-c:not(:last-child){box-shadow:
+  -20px 0 30px -14px rgba(var(--edgeC),.5),
+  -3px 0 6px -3px rgba(var(--edgeC),.3),
+  inset 1px 0 0 rgba(var(--wC),var(--wM))}
+.ejr-c:hover{color:inherit;
+  background:
+    linear-gradient(180deg,rgba(var(--dc),.09),rgba(var(--dc),.17)),
+    linear-gradient(180deg,rgba(var(--wC),calc(.96 * var(--wM))),rgba(var(--wC),calc(.68 * var(--wM))))}
 
 /* لون كل لوح · من المربّعات المتقاسة لا `--ch-*` الخام (اللايم
    بيدّي ١٫٧٧:١ مع الأبيض). و**بتتقلب مع الثيم**: الأخضر الغامق
@@ -3259,18 +3281,21 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ejr-c04{--dc:var(--sq-4C)}
 
 .ejr-slot{font-size:var(--fs-1);color:rgb(var(--dc));line-height:1.5}
-.ejr-t{font-family:var(--fd);font-weight:600;font-size:.8rem;color:var(--t1);
+.ejr-t{font-family:var(--fd);font-weight:600;font-size:.85rem;color:var(--t1);
   line-height:1.4;margin-top:.1rem}
-.ejr-v{font-family:var(--fd);font-weight:700;font-size:.95rem;line-height:1.2;
+.ejr-v{font-family:var(--fd);font-weight:700;font-size:1rem;line-height:1.2;
   letter-spacing:-.02em;color:rgb(var(--dc));display:flex;align-items:baseline;gap:.2rem;
-  margin-top:.25rem;white-space:nowrap}
+  margin-top:.35rem;white-space:nowrap}
 .ejr-s{font-size:var(--fs-1);color:var(--t2-g);line-height:1.6;margin-top:.15rem}
 
 @media (max-width:1100px){
   .ejr{max-width:none;flex-basis:100%}
 }
 @media (max-width:560px){
-  .ejr-stage{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ejr-stage{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}
+  .ejr-c{min-height:0}
+  .ejr-c + .ejr-c{margin-inline-start:0;padding-inline-start:.85rem}
+  .ejr-c:not(:last-child){box-shadow:none}
 }
 
 .einf{display:flex;align-items:stretch;gap:10px;width:100%;
