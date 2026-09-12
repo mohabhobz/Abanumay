@@ -415,3 +415,70 @@ export interface EntityRow {
   mobile: string
   email: string
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Disbursement · BPD-009
+
+   The states are "who is waiting", not "paid / unpaid". The live
+   system shows two payment states while the flow has many more, so
+   a supervisor reading "unpaid" learns nothing about what is
+   blocking it. These five come straight from the document's own
+   step list, and rule 19 requires the beneficiary to see the state
+   of the REQUEST, not the state of the payment.
+   ═══════════════════════════════════════════════════════════ */
+
+/** State of a disbursement request · BPD-009 steps 4-19 */
+export type PayState =
+  | 'supervisor'   /* steps 4-7   · with the grants supervisor      */
+  | 'returned'     /* steps 10-11 · back with the beneficiary       */
+  | 'manager'      /* steps 12-13 · with the grants manager         */
+  | 'finance'      /* steps 14-17 · with finance                    */
+  | 'paid'         /* steps 18-19 · transferred                     */
+  | 'closed'       /* rule 15     · finally rejected, kept on record */
+
+/** One pre-condition the document requires before a step may pass */
+export interface PayCheck {
+  label: string
+  ok: boolean
+  /** The rule number in BPD-009 this check enforces */
+  rule: number
+}
+
+export interface PayRequest {
+  /** رقم الطلب · not the payment number */
+  id: string
+  projectId: string
+  projectName: string
+  entityId: string
+  entityName: string
+  /** الدفعة كام من كام · from the agreement's payment schedule */
+  no: number
+  of: number
+  /** قيمة الدفعة المعتمدة في الجدول */
+  due: number
+  /** قيمة الطلب · rule 5 caps it at `due` */
+  asked: number
+  /** تاريخ الاستحقاق وفق الجدول */
+  dueAt: string
+  state: PayState
+  /** ساعات المكوث في المرحلة الحالية · feeds the escalation in 9.5 */
+  hoursInState: number
+  /** شرط الصرف · rule 6 · empty when the payment carries no condition */
+  condition?: string
+  /** الشروط اللي النظام بيتحقق منها قبل الانتقال */
+  checks: PayCheck[]
+  /** البنك المعتمد · المخرج الثاني في الوثيقة: «الحساب البنكي المعتمد» */
+  bank: { name: string; active: boolean }
+  /** مصادر التمويل · rule 12 distributes the payment across them */
+  sources: { name: string; share: number }[]
+  /** مخرج الذكاء الاصطناعي · step 6 · rule 20 makes it advisory only */
+  ai?: string
+  /** ملاحظة آخر إعادة · rules 7 و8 */
+  note?: string
+  /** مشرف المنح المسؤول */
+  owner: string
+  /** تاريخ إنشاء الطلب · step 2 */
+  at: string
+  /** تاريخ التحويل · step 17, only when paid */
+  paidAt?: string
+}

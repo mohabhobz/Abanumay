@@ -90,19 +90,14 @@
      (`24 − 8`)، ولوحة ١٦ بحشو ٤ بتدّي ١٢. الأرقام مش مختارة
      واحدة واحدة · هي متتالية والفرق بينهم من سلّم المسافات.
 
-     ═══ أنهي درجة لأنهي عنصر · **قاعدة لا ذوق** ═══
+     ⚠️ **البلوك اللي كان هنا اتشال (١٢ سبتمبر ٢٠٢٦).** كان بيقول
+     «تحكّم ٣٢ فأكتر ← `--r1` (١٢) · أقل من ٣٢ ← `--r0` (٤)»، وده
+     كلام من وقت ما `--r1` كانت ١٢. بعد ما بقت ١٦ فضل التعليق
+     مكتوب وغلط، و**اتّبعته كمبوننتس جديدة**: `.kpi-ic` (٢٦×٢٦)
+     خدت ٤px على «أقل من ٣٢» وهي المفروض `--ric`. التعليق الميّت
+     هنا مكانش وسخًا، كان مصدر باج نشط.
 
-     صناديق الأيقونات كانت ١٠ و١٢ في نفس الدور، والزراير الصغيرة
-     ٥ و٦ و٧. تلات أرقام لدور واحد معناها إن الرقم اتكتب بالعين
-     لا بقاعدة. القاعدة:
-
-         تحكّم **٣٢ فأكتر**  ← `--r1` (١٢)
-         تحكّم **أقل من ٣٢** ← `--r0` (٤)
-         تاب                ← `--rp` (دائري بالكامل)
-
-     ليه العتبة ٣٢؟ لأن ١٢ على مربّع ٢٤ = نص الضلع، يعني الصندوق
-     بيبقى دايرة · فالرقم بيلغي شكل الصندوق بدل ما يلطّفه. وعند
-     ٣٢ النسبة ٣٧٪ والركن لسّه ركن. */
+     الدكترينة السارية الوحيدة هي اللي تحت ⬇ */
   /* ═══ سلّم الركن · **أربع درجات وكبسولة** ═══
      كان خمس درجات (٤ · ١٢ · ١٦ · ٢٤ · ٣٢). العميل طلب `--r1`
      تبقى ١٦ · وساعتها `--r1` و`--r2` بيبقوا **نفس الرقم باسمين**،
@@ -119,6 +114,22 @@
      (`inner = max(--r1, outer − padding)`) بتفضل تدّي قيمة من
      السلّم لا رقمًا بينهم. */
   --r0:4px; --r1:16px; --r2:24px; --r3:32px; --rp:999px;
+  /* ═══ درجتان جديدتان · ١٢ سبتمبر ٢٠٢٦ ═══
+     الجرد طلّع **٩ أنصاف قطر خارج السلّم**، وتصنيفها بيّن إنهم
+     نوعان مش نوع واحد:
+
+       أ · دواير مشروعة اتكتبت `50%` فطلعت أرقامًا فردية
+           (٨ على نقطة ١٦ · ٦ على ١٢ · ٣ على ٩ · ١٧ على ٣٤ · ٢٩ على ٥٨)
+       ب · شعرة على شظايا، بأربعة أرقام لدور واحد (١ · ١٫٥ · ٢ · ٣)
+
+     فالدرجتان دول بيخرّجوا التسعة من قايمة الخروقات **بلا ما
+     نمنع حاجة مشروعة**: الدايرة بتاخد اسمًا، والشعرة بتاخد رقمًا
+     واحدًا. `--r0` (٤) كانت كبيرة على شظية ٢px وصغيرة على صندوق
+     أيقونة، فدورها بيتقسم بين الاتنين وهي بتتعلّم @deprecated. */
+  --r-hair:2px;   /* شظايا: خطوط ومؤشّرات وماسحات · ضلع < ١٠px */
+  --r-dot:50%;    /* نقط وصور وأفاتار **فقط** · مش تحكّم تفاعلي */
+  /* @deprecated --r0 · دوره اتقسم بين --r-hair و--ric · يتشال في الكنس
+     @deprecated --r3 · مش مستعمل ولا مرة في ٢٨ مسارًا · يتشال في الكنس */
   /* ═══ صندوق الأيقونة · ١٢ ═══
      **الركن بيتحدّد بمقاس الصندوق، مش بدوره وحده.** صندوق ٣٢×٣٢
      ركنه ١٦ = نصّ ضلعه، يعني **دايرة** · والقياس طلّع تمنية صناديق
@@ -153,6 +164,37 @@
 
      والحشو ١٢ على الجهات الأربعة: «فوق وتحت» = «يمين وشمال»
      رقمًا واحدًا لا رقمين قريبين من بعض. */
+  /* ═══ سلّم المسافات · قاعدة ٤ · اتضاف ١٢ سبتمبر ٢٠٢٦ ═══
+     ده **مكانش موجود أصلًا**. كان في توكنان بس للمسافة (`--pad`
+     و`--gap`) والاتنين `clamp()` مش سلّم · والنتيجة **٥٤٢ تصريح
+     حشو/فجوة حرفي** بيرسموا ٣١ قيمة حشو و٢١ فجوة، فيهم ٢٣ و١٧
+     و١٩ و١١ · أرقام مش على أي شبكة.
+
+     كاربون بيعرض ١٣ درجة، أتلاسيان ١٤، بوليرِس ١٨ · إحنا بنعرض
+     ١١ + أسماء دلالية. القاعدة: **الكمبوننت بيستهلك الاسم
+     الدلالي، مش الدرجة الخام** · كده عدد التوكنز ما بيفلتش. */
+  --sp-1:2px;   --sp-2:4px;   --sp-3:8px;   --sp-4:12px;
+  --sp-5:16px;  --sp-6:24px;  --sp-7:32px;  --sp-8:40px;
+  --sp-9:48px;  --sp-10:64px; --sp-11:80px;
+  /* الأسماء الدلالية · دي اللي بتتكتب في الكمبوننتس */
+  --sp-inline:var(--sp-3);  /* بين عناصر في سطر واحد */
+  --sp-cell:var(--sp-4);    /* حشو خلية الجدول · وهو الأشيع في السيستم */
+  --sp-stack:var(--sp-5);   /* بين عناصر مكدّسة رأسيًّا */
+  --sp-card:var(--sp-6);    /* حشو الكارت */
+
+  /* ═══ سلّم المادة · اتضاف ١٢ سبتمبر ٢٠٢٦ ═══
+     الجرد طلّع **٣٩ تصريح `backdrop-filter` بـ١٣ قيمة blur و٨ قيم
+     saturate**. يعني الزجاج نفسه مالوش سلّم: كل سطح بيخترع وصفته،
+     والفرق بين blur(22) وblur(24) ما بيتشافش بس بيتنسخ.
+
+     تلات درجات بس، ودورها محدّد. ⚠️ والأهم: الزجاج **ممنوع على أي
+     سطح جوّاه رقم قابل للقرار** (جدول · حقل · منسدلة) — ده توجيه
+     العميل الصريح، والجرد أثبت إنه اتخرق: حقل البحث بيفصل عن
+     خلفيته بـ١٫١٥:١ وهو سقوط WCAG 1.4.11. */
+  --mat-1:blur(16px) saturate(1.3);   /* سطح: كارت · لوح */
+  --mat-2:blur(28px) saturate(1.4);   /* كروم: توب بار · ريل */
+  --mat-3:blur(48px) saturate(1.5);   /* عايم: مودال · دوك · قايمة */
+
   --h-xs:20px; --h-md:44px; --h-lg:42px;
   --pb-md:12px; --lh-md:20px;   /* 12 + 20 + 12 = 44 */
   /* سطر الوسم **١٦ لا ١٤**: ١٤ على خطّ ١١٫٢ = ١٫٢٥، وده ضيّق على
@@ -230,15 +272,36 @@
      فمرجع واحد بيخدم الاتنين. */
   --head-line:40px;
 
-  /* ═══ سلّم الخط ═══
-     كان في الستايل ٨٥ مقاس مختلف. سبعة بس ليهم دور. */
-  --fs-1:.70rem;   /* 11.2  نصّ مساعد · وسم · تسمية عمود */
-  --fs-2:.76rem;   /* 12.16 زرار صغير · شريحة · خيار قائمة */
-  --fs-3:.82rem;   /* 13.12 الزرار · خلية الجدول · النصّ العادي */
-  --fs-4:.90rem;   /* 14.4  عنوان بطاقة */
-  --fs-5:1.05rem;  /* 16.8  عنوان سكشن */
-  --fs-6:1.5rem;   /* 24    عنوان صفحة */
-  --fs-7:2.1rem;   /* 33.6  الرقم البطل */
+  /* ═══ سلّم الخط · اتعاد توجيهه ١٢ سبتمبر ٢٠٢٦ ═══
+     السلّم كان موجود وسليم الشكل، بس **مبنيًّا تحت الأرضية**:
+     الجسم ١٣٫١٢ والثانوي ١١٫٢. وتلات أنظمة كورپوريت مستقلة
+     بتتفق على **١٤px** كأصغر مقاس متن لواجهة كثيفة:
+     Carbon `body-compact-01` ١٤/١٨ · Fluent 2 Body 1 ١٤/٢٠ ·
+     M3 `body-medium` ١٤/٢٠.
+
+     والحتّة اللي بتوجع مرّتين إن ده نظام **عربي** بالكامل. مفيش
+     مصدر أوّلي بيقول إن العربي محتاج بنطًا أكبر من اللاتيني
+     (الشائعة دي مالهاش أصل · نظام تصميم الإمارات بيستعمل نفس
+     السلّم) — **لكن** W3C alreq §٧٫٤ بيقول إن الصاعد والنازل في
+     العربي بيمتدّوا أبعد بكتير، فالنصّ الصغير بيتلخبط أسرع،
+     والتعويض المسنود هو **الليدنج**. فالأرضية طلعت، والليدنج
+     لازم يبقى ≥ ١٫٥ على نصّ المتن.
+
+     ⚠️ الارتفاعات **ما اتغيّرتش**: ١٤ × ١٫٤٣ = ٢٠ = `--lh-md`،
+     و١٢ × ١٫٣٣ = ١٦ = `--lh-xs`. فـ`--h-md` فضل ٤٤ و`--h-xs`
+     فضل ٢٠ · التغيير بيمسّ الخطّ وحده.
+
+     ⚠️ ده بيمسّ **٥٢ موضعًا** بس (اللي بيستعملوا التوكن). الـ٣٠٦
+     قيمة `rem` الحرفية في الملف لسّه على السلّم القديم لحدّ ما
+     الكوديمود يشيلها في الكنس. فالسلّم ده هو **الحقيقة الوحيدة**
+     لأي كود جديد. */
+  --fs-1:.75rem;    /* 12  الأرضية المطلقة · وسم · تسمية عمود */
+  --fs-2:.8125rem;  /* 13  شريحة · خيار قائمة */
+  --fs-3:.875rem;   /* 14  **الجسم** · خلية الجدول · الزرار */
+  --fs-4:1rem;      /* 16  عنوان بطاقة */
+  --fs-5:1.25rem;   /* 20  عنوان سكشن */
+  --fs-6:1.5rem;    /* 24  عنوان صفحة */
+  --fs-7:2rem;      /* 32  الرقم البطل */
 
   /* ═══ الخطوط ═══
      خط الهوية واحد: **براندو ارابيك** · هو اللي في دليل الهوية
@@ -591,6 +654,10 @@ input,select,textarea{font:inherit;color:inherit;border:0;background:none;outlin
 /* الرقم ووحدته سطر واحد · «2,200,000» و«﷼» كانوا بينفصلوا لمّا
    الكارت يضيق، فالوحدة بتنزل لوحدها وتتقري رقمًا تاني */
 .stat .v{white-space:nowrap}
+/* ملاحظة البطاقة بـ`--t3-g` · الكارت زجاج وتحته تدرّج الصفحة،
+   و`--t3` بيدّي 4.28:1 فوق البقعة الخضرا · المتغيّر `-g` موجود
+   أصلًا للنصّ اللي أرضيته ملوّنة */
+.stat .mut{color:var(--t3-g)}
 .li{display:grid;grid-template-columns:1fr auto;gap:.6rem 1rem;align-items:center;
   padding:1rem 1.15rem;cursor:pointer;transition:transform .18s ease;text-align:right;width:100%}
 .li:hover{transform:translateX(-3px)}
@@ -3329,6 +3396,129 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   .ejr-c{min-height:150px;padding-top:1.2rem;border-radius:var(--r2)}
   .ejr-c + .ejr-c{margin-inline-start:0;padding-inline-start:.7rem}
   .ejr-c:not(:last-child){box-shadow:inset 0 0 0 1px var(--edge-1)}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Disbursement inbox · BPD-009
+
+   The shape follows the size, not the entity count. About 72 open
+   requests live in four stages, so the object is a decision card,
+   not a table row: at this size a row hides the reason a payment
+   is stuck, and the reason is the only thing the supervisor opened
+   the screen for.
+
+   Three layers, and each answers one question:
+     · the stage strip  — where is the pressure
+     · the card head    — what and how much
+     · the check list   — which rule is blocking it
+   ═══════════════════════════════════════════════════════════ */
+
+.pay-sub{max-width:58ch;margin:.5rem 0 0}
+
+/* ── شريط المراحل · العدّاد أولًا لأنه هو اللي بيتقرا ── */
+/* ⚠️ `flex:none` مش زينة. الشريط ده ابن `.screen.col` وهي فليكس
+   عمودي · و`overflow:hidden` بيخلّي **أقلّ مقاس تلقائي للعنصر
+   صفرًا**، فالعمود المزنوق بيضغطه لارتفاع صفر ويقصّ خاناته الستة
+   كلها: العنصر موجود ومقروء لقارئ الشاشة ومرسومه 88 بكسل، والحاوية
+   بتاعته صفر. مفيش أي لون ولا تباين بيوَرّي الباج ده، بيبان في
+   القياس بس. أي عنصر فيه `overflow:hidden` جوّه عمود فليكس محتاج
+   `flex:none` أو `min-height`. */
+.payst{flex:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:1px;background:var(--edge-d);border-radius:var(--r2);overflow:hidden;
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
+.payst-i{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;
+  padding:.75rem .9rem .8rem;background:var(--g-card);cursor:pointer;
+  text-align:start;transition:background .16s ease,color .16s ease}
+.payst-i:hover{background:rgba(var(--wC),calc(.5 * var(--wM)))}
+.payst-i.on{background:var(--solid);color:var(--on-solid)}
+.payst-i.on .payst-l,.payst-i.on .payst-w{color:var(--on-solid);opacity:.9}
+.payst-n{font-family:var(--fd);font-weight:700;font-size:1.35rem;line-height:1.15;
+  letter-spacing:-.02em}
+.payst-l{font-family:var(--fd);font-weight:600;font-size:.8rem;line-height:1.4;color:var(--t1)}
+/* `--t3-g` لا `--t3` · الشريط زجاج فوق تدرّج الصفحة، و`--t3`
+   بيدّي 4.31:1 فوق البقعة الخضرا · نفس سبب `.qr-peek` بالظبط */
+.payst-w{font-size:var(--fs-1);line-height:1.5;color:var(--t3-g)}
+
+/* ── لافتة التصعيد · 9.5 بند 3 طلب «تقرير شامل»، وهو فلتر على نفس
+      الصندوق لا تقرير منفصل · المشرف ما بيسيبش مكان القرار ── */
+.payban{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
+  padding:.7rem .95rem;border-radius:var(--r1);font-size:var(--fs-2);
+  color:var(--warn-ink);background:rgba(var(--warnC),.10);
+  box-shadow:inset 0 0 0 1px rgba(var(--warnC),.22)}
+.payban b{font-weight:700}
+.payban svg{flex:none}
+
+/* ── المجموعة ── */
+.paygrp{display:flex;flex-direction:column;gap:.7rem}
+.paygrp-h{display:flex;align-items:baseline;gap:.7rem;flex-wrap:wrap;
+  padding-bottom:.5rem;box-shadow:inset 0 -1px 0 var(--edge-d)}
+.paygrp-h h2{font-family:var(--fd);font-weight:700;font-size:1rem;margin:0;line-height:1.45}
+.paygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:var(--gap)}
+
+/* ── كارت الطلب ── */
+.payq{display:flex;flex-direction:column;gap:.55rem;min-width:0;
+  padding:1rem 1.05rem 1.05rem;border-radius:var(--r2);
+  background:var(--g-card);
+  -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
+  backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
+/* الموقوف بشرط بياخد حافّة على الطرف لا لونًا في الأرضية · اللون في
+   الأرضية بيخلّي نصّ الكارت كله يتقري تحذيرًا */
+.payq.hold{box-shadow:inset 0 0 0 1px var(--edge-1),
+  inset 3px 0 0 0 var(--warn)}
+
+.payq-h{display:flex;align-items:flex-start;gap:.8rem;justify-content:space-between}
+.payq-id{min-width:0;display:flex;flex-direction:column;gap:.15rem}
+.payq-p{font-family:var(--fd);font-weight:600;font-size:.95rem;line-height:1.5;
+  color:var(--t1);display:block}
+.payq-p:hover{color:var(--link)}
+.payq-m{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;font-size:var(--fs-1);
+  line-height:1.6}
+/* «الدفعة 2 من 4» وحدة واحدة · كانت بتتكسر بين الرقم و«من» */
+.payq-pay{white-space:nowrap}
+.payq-amt{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:.1rem;
+  text-align:end}
+.payq-amt>b{font-family:var(--fd);font-weight:700;font-size:1.05rem;line-height:1.25;
+  letter-spacing:-.02em;display:flex;align-items:baseline;gap:.2rem}
+.payq-due{font-size:var(--fs-1);line-height:1.5;white-space:nowrap}
+.payq-due.bad{color:var(--no-ink);font-weight:600}
+
+.payq-tags{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:var(--fs-1)}
+
+/* شرط الدفعة · rule 6 · هو السبب اللي الدفعة اتصرفت عليه */
+.payq-cond{display:flex;gap:.5rem;align-items:baseline;font-size:var(--fs-2);
+  line-height:1.65;padding:.5rem .65rem;border-radius:var(--ric);
+  background:rgba(var(--edgeC),.05)}
+.payq-cond .lb{flex:none;font-size:var(--fs-1);color:var(--t3-g)}
+
+/* قائمة الشروط · كل سطر بقاعدته، فاللي واقف بيتسمّى لا بيتلوّن بس */
+.payq-ck{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.25rem}
+.payq-ck li{display:flex;align-items:center;gap:.45rem;font-size:var(--fs-2);
+  line-height:1.6;min-width:0}
+.payq-ck li>span:first-of-type{min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.payq-ck svg{flex:none}
+.payq-ck li.ok{color:var(--t2)}
+.payq-ck li.ok svg{color:var(--ok-ink)}
+.payq-ck li.no{color:var(--t1)}
+.payq-ck li.no svg{color:var(--warn-ink)}
+.payq-r{flex:none;margin-inline-start:auto;font-size:var(--fs-1);color:var(--t3-g);
+  white-space:nowrap}
+
+.payq-note,.payq-ai{display:flex;align-items:flex-start;gap:.45rem;
+  font-size:var(--fs-2);line-height:1.65;padding:.55rem .65rem;border-radius:var(--ric)}
+.payq-note{color:var(--t1);background:rgba(var(--warnC),.09)}
+.payq-note svg{flex:none;color:var(--warn-ink);margin-top:.2rem}
+.payq-ai{color:var(--t2);background:rgba(var(--edgeC),.05);flex-wrap:wrap}
+.payq-ai svg{flex:none;color:var(--solid);margin-top:.2rem}
+.payq-ai>span{min-width:0}
+
+.payq-f{display:flex;align-items:center;gap:.5rem;padding-top:.15rem}
+
+@media (max-width:620px){
+  .paygrid{grid-template-columns:1fr}
+  .payq-h{flex-direction:column;gap:.4rem}
+  .payq-amt{align-items:flex-start;text-align:start}
 }
 
 .einf{display:flex;align-items:stretch;gap:10px;width:100%;

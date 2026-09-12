@@ -1,0 +1,240 @@
+import type { PayCheck, PayRequest, PayState } from '@/types/domain'
+import { projectRows } from './projects'
+import { entityById } from './entities'
+
+/* ═══════════════════════════════════════════════════════════
+   Disbursement requests · built on BPD-009, not on the live system
+
+   The document is the basis here. The live system runs seven
+   sections and two extra documents (سند القبض والقيد) after the
+   transfer; the document describes four stages ending at the
+   transfer. Where they differ, the differences are recorded as
+   numbered notes in `DISBURSEMENT_MODULE_BRIEF.md` (part B) with
+   the design impact of each possible answer — so nothing is lost
+   and nothing is guessed.
+
+   What IS taken from the live system is the SIZE: about 72 open
+   disbursement transactions, not thousands. That single number
+   decides the screen: a decision card beats a table row, and full
+   context beats density.
+
+   Every request carries the checks the document actually names, so
+   a blocked request says WHICH rule blocks it:
+     rule 3  · attachments complete
+     rule 6  · the payment's own condition met
+     rule 10 · the agreement is in force
+     rule 11 · the reserved amount is still available
+   Plus the approved bank account, which the document names in its
+   second output ("صرف الدفعة إلى الحساب البنكي المعتمد") and which
+   the live system names as its only defined reason for sending a
+   permit back.
+   ═══════════════════════════════════════════════════════════ */
+
+/** حالات الطلب · اللي بيقول مين واقف، لا «مدفوع / غير مدفوع» */
+export const PAY_STATES: { key: PayState; label: string; who: string; steps: string }[] = [
+  { key: 'supervisor', label: 'بانتظار مراجعة المشرف', who: 'مشرف المنح', steps: '4–7' },
+  { key: 'returned', label: 'مُعاد للاستكمال', who: 'الجهة المستفيدة', steps: '10–11' },
+  { key: 'manager', label: 'بانتظار مدير المنح', who: 'مدير المنح', steps: '12–13' },
+  { key: 'finance', label: 'بانتظار المالية', who: 'الإدارة المالية', steps: '14–17' },
+  { key: 'paid', label: 'تم الصرف', who: '', steps: '18–19' },
+]
+
+export const payStateLabel = (s: PayState): string =>
+  PAY_STATES.find((x) => x.key === s)?.label ?? 'مغلق'
+
+export const payStateWho = (s: PayState): string =>
+  PAY_STATES.find((x) => x.key === s)?.who ?? ''
+
+/**
+ * حدّ المرحلة بالساعات · مصدره آلية التصعيد (9.5)، واللي بتقول إن
+ * عدد الأيام لكل مرحلة **من الإعدادات**. الأرقام دي مؤقتة لحدّ ما
+ * المؤسسة تدّينا المدد، زي «القيمة المستهدفة» الفاضية في المؤشرات.
+ */
+export const PAY_LIMIT: Record<PayState, number> = {
+  supervisor: 120,
+  returned: 240,
+  manager: 96,
+  finance: 72,
+  paid: 0,
+  closed: 0,
+}
+
+/** التصعيد · متأخر عند تجاوز الحدّ، ومتعثر عند تجاوز ضعفه */
+export type PayHeat = 'ok' | 'late' | 'stuck'
+
+export const payHeat = (r: PayRequest): PayHeat => {
+  const lim = PAY_LIMIT[r.state]
+  if (!lim) return 'ok'
+  if (r.hoursInState > lim * 2) return 'stuck'
+  if (r.hoursInState > lim) return 'late'
+  return 'ok'
+}
+
+/** الطلب موقوف لو فيه شرط واحد مش مستوفى · rule 3 و6 و10 و11 */
+export const payBlocked = (r: PayRequest): boolean =>
+  r.checks.some((c) => !c.ok) || !r.bank.active
+
+const BANKS = ['مصرف الراجحي', 'مصرف الإنماء', 'بنك البلاد', 'البنك الأهلي السعودي', 'بنك الرياض']
+
+const CONDITIONS = [
+  'توقيع الاتفاقية واستلام سند التعهّد',
+  'رفع التقرير المرحلي الأول',
+  'اكتمال المرحلة الأولى من خطة التنفيذ',
+  'تسليم كشف المستفيدين المسجَّلين',
+  'رفع فواتير المرحلة السابقة',
+]
+
+const AI_NOTES = [
+  'الإنجاز الفعلي يطابق خطة التنفيذ · لا ملاحظات',
+  'التقرير المرفق لا يغطّي المرحلة الثانية المذكورة في الجدول',
+  'قيمة الطلب تساوي الدفعة المعتمدة · لا فرق',
+  'المرفقات أقلّ من المطلوب في شرط الدفعة',
+  'مدة التنفيذ متقدّمة على الجدول بأسبوعين',
+  'الفواتير المرفقة لا تحمل رقم المشروع',
+]
+
+const RETURN_NOTES = [
+  'التقرير المرفق ناقص · مطلوب كشف المستفيدين',
+  'الفواتير غير مختومة من الجهة',
+  'قيمة الطلب أعلى من الدفعة المعتمدة في الجدول',
+  'المرفق المرسل صورة غير واضحة · مطلوب إعادة الرفع',
+]
+
+/* مولّد ثابت · نفس الداتا في كل تشغيلة، فالمقارنة البصرية تنفع */
+let seed = 909
+const rnd = () => {
+  seed = (seed * 1103515245 + 12345) & 0x7fffffff
+  return seed / 0x7fffffff
+}
+const int = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1))
+const pick = <T,>(a: readonly T[]): T => a[int(0, a.length - 1)] as T
+
+/** توزيع الطلبات على المراحل · مأخوذ من أحجام النظام العامل */
+const PLAN: { state: PayState; n: number }[] = [
+  { state: 'supervisor', n: 26 },
+  { state: 'returned', n: 6 },
+  { state: 'manager', n: 9 },
+  { state: 'finance', n: 12 },
+  { state: 'paid', n: 19 },
+]
+
+const checksFor = (state: PayState, cond: boolean): PayCheck[] => {
+  /* المرحلة بتحدّد الشروط اللي النظام بيتحقق منها · rule 10 و11
+     بيتحققوا قبل الإحالة للمالية، فما بيظهروش على طلب لسّه عند
+     المشرف إلا كمعلومة. */
+  const base: PayCheck[] = [
+    { label: 'المرفقات والمستندات مكتملة', ok: rnd() > 0.18, rule: 3 },
+  ]
+  if (cond) base.push({ label: 'شرط الدفعة مستوفى', ok: rnd() > 0.22, rule: 6 })
+  base.push({ label: 'الاتفاقية سارية', ok: rnd() > 0.05, rule: 10 })
+  base.push({ label: 'المبلغ المحجوز متوفّر', ok: rnd() > 0.08, rule: 11 })
+  if (state === 'paid') return base.map((c) => ({ ...c, ok: true }))
+  return base
+}
+
+/** المشاريع اللي عدّت الاتفاقية · rule 1: الصرف بعد التفعيل بس */
+const eligible = projectRows.filter(
+  (p) => p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل',
+)
+
+export const payRequests: PayRequest[] = (() => {
+  const out: PayRequest[] = []
+  let n = 0
+  for (const { state, n: count } of PLAN) {
+    for (let i = 0; i < count; i++) {
+      const p = eligible[(n * 7 + i * 3) % eligible.length]
+      if (!p) continue
+      const e = entityById(p.entityId)
+      const of = pick([1, 2, 2, 3, 3, 4])
+      const no = int(1, of)
+      const granted = p.amountGranted || p.amountRequested
+      /* الدفعة = نصيبها من المعتمد · والأخيرة بتاخد الباقي فالمجموع
+         يساوي قيمة المنحة بالظبط (rule 14 وقاعدة الاتفاقية 8) */
+      const even = Math.round(granted / of / 1000) * 1000
+      const due = no === of ? granted - even * (of - 1) : even
+      const cond = rnd() > 0.35
+      const lim = PAY_LIMIT[state] || 120
+      /* التوزيع مقصود: أغلب الطلبات جوّه الحدّ، وشوية متأخرة، وأقل
+         متعثرة · الصندوق الحقيقي مش كله أحمر */
+      const h = rnd() > 0.72 ? int(lim + 1, lim * 3) : int(2, lim)
+
+      out.push({
+        id: `SR-2026-${String(11_400 + n).padStart(5, '0')}`,
+        projectId: p.id,
+        projectName: p.name,
+        entityId: p.entityId,
+        entityName: e?.name ?? p.entityName,
+        no,
+        of,
+        due,
+        asked: due,
+        dueAt: `2026-0${int(6, 9)}-${String(int(1, 28)).padStart(2, '0')}`,
+        state,
+        hoursInState: state === 'paid' ? 0 : h,
+        condition: cond ? pick(CONDITIONS) : undefined,
+        checks: checksFor(state, cond),
+        bank: { name: pick(BANKS), active: rnd() > 0.07 },
+        /* مصدر واحد في الأغلب · وتعدّد المصادر هو اللي rule 12 بيخصّه */
+        sources:
+          rnd() > 0.8
+            ? [
+                { name: 'ميزانية المنح 2026', share: 70 },
+                { name: 'وقف سليمان أبانمي', share: 30 },
+              ]
+            : [{ name: 'ميزانية المنح 2026', share: 100 }],
+        ai: state === 'paid' ? undefined : pick(AI_NOTES),
+        note: state === 'returned' ? pick(RETURN_NOTES) : undefined,
+        owner: p.owner ?? 'عمر قاسم',
+        at: `2026-0${int(5, 8)}-${String(int(1, 28)).padStart(2, '0')}`,
+        /* تاريخ التحويل مشتَقّ من الاستحقاق لا مستقلًّا عنه · كان
+           تاريخًا ثابتًا في سبتمبر، فكل دفعة مستحقة في يونيو طلعت
+           متأخرة و«نسبة الالتزام بجدول الدفعات» نزلت 16% · رقم
+           بيتقري كارثة وهو أثر جانبي للمولّد لا معلومة. */
+        paidAt: undefined,
+      })
+      n++
+    }
+  }
+  /* ~78% في موعدها · الباقي بتأخير أيام قليلة */
+  for (const r of out) {
+    if (r.state !== 'paid') continue
+    const d = new Date(r.dueAt)
+    d.setDate(d.getDate() + (rnd() > 0.78 ? int(3, 21) : -int(0, 6)))
+    r.paidAt = d.toISOString().slice(0, 10)
+  }
+  return out
+})()
+
+/* ═══════════════ مؤشرات الأداء · 9.8 ═══════════════
+   الأربعة كلها من الوثيقة، و**عمود «القيمة المستهدفة» فاضي فيها
+   كلها** · فالرقم بيتعرض قيمةً لا حالةً، ولا بيتلوّن، لحد ما
+   المؤسسة تدّينا الأهداف. */
+
+export const payKpi = () => {
+  const open = payRequests.filter((r) => r.state !== 'paid' && r.state !== 'closed')
+  const paid = payRequests.filter((r) => r.state === 'paid')
+  const onTime = paid.filter((r) => (r.paidAt ?? '') <= r.dueAt).length
+  return {
+    /** عدد الطلبات المفتوحة · مش مؤشرًا في الوثيقة، لكنه حجم الصندوق */
+    open: open.length,
+    /** قيمة الطلبات المفتوحة */
+    openSum: open.reduce((s, r) => s + r.asked, 0),
+    /** مؤشر 1 · متوسط مدة معالجة طلب الصرف (أيام) */
+    avgDays: Math.round(
+      payRequests.reduce((s, r) => s + r.hoursInState, 0) / payRequests.length / 24,
+    ),
+    /** مؤشر 4 · نسبة الالتزام بجدول الدفعات */
+    onSchedule: paid.length ? Math.round((onTime / paid.length) * 100) : 0,
+    /** المتأخر والمتعثر · التصعيد 9.5 بند 3 */
+    late: open.filter((r) => payHeat(r) === 'late').length,
+    stuck: open.filter((r) => payHeat(r) === 'stuck').length,
+    /** الموقوف بشرط · rule 3 و6 و10 و11 */
+    blocked: open.filter(payBlocked).length,
+  }
+}
+
+export const payByState = (s: PayState): PayRequest[] =>
+  payRequests.filter((r) => r.state === s)
+
+export const payRequestById = (id: string): PayRequest | undefined =>
+  payRequests.find((r) => r.id === id)
