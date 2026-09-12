@@ -310,9 +310,12 @@
      ٧٫٨٠ · ٣٫٦٥ · ٢٫٤٤ · ١٫٧٧ · يعني تلاتة من الأربعة تحت الحدّ.
      وألوان المرجع نفسه أسوأ (الأصفر ١٫٧٧). فالأربعة دول من نفس
      عيلة الهوية بقيم متقاسة مع الأبيض:
-       ١٢٫٢٧ · ٧٫٨٢ · ٤٫٨٨ · ٥٫١٤ */
-  --sq-1:#0E3B3D; --sq-2:#0A5C58; --sq-3:#0F7F72; --sq-4:#4A7A10;
+       ١٢٫٢٧ · ٧٫٨٢ · ٥٫٠٣ · ٥٫١٤ */
+  --sq-1:#0E3B3D; --sq-2:#0A5C58; --sq-3:#0E7669; --sq-4:#4A7A10;
   --sq-ink:#fff;
+  /* نفس الأربعة كثلاثيّات · محتاجينهم للشفافية وللنصّ اللي بلون
+     المربّع · والقيم بتتقلب مع الثيم زي الهيكس فوقها بالظبط */
+  --sq-1C:14,59,61; --sq-2C:10,92,88; --sq-3C:14,118,105; --sq-4C:74,122,16;
   /* الشقّ بلون سطح معتم · هو «قصّة» في المربّع بتوَرّي الصفحة تحته */
   /* أرضية الشقّ · **من سطح الصفحة لا من الأبيض الخام**.
      `rgba(var(--wC), .86 * var(--wM))` بتدّي في الفاتح أبيض ٨٦٪،
@@ -2596,7 +2599,10 @@ to{opacity:1;transform:none}
    اتشال: الحشو بقى حشو. */
 .qr-peek{display:flex;align-items:baseline;gap:.45rem;
   padding-block:.45rem;padding-inline:1.05rem;
-  font-size:.78rem;color:var(--t2);min-width:0}
+  /* `--t2-g` لا `--t2`: اللمحة دي بتقع على زجاج فوق تدرّج الصفحة،
+     وفوق البقعة الخضرا الفاتحة `--t2` بيدّي ٤٫٤٥:١ · والمتغيّر
+     `-g` موجود أصلًا للنصّ اللي أرضيته ملوّنة */
+  font-size:.78rem;color:var(--t2-g);min-width:0}
 .qr-peek b{font-family:var(--fd);font-weight:700;font-size:1rem;color:var(--t1);
   font-variant-numeric:tabular-nums;flex:none}
 .qr-peek b.bad{color:var(--no-ink)}
@@ -3045,6 +3051,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
      فاتحة وحبر داكن · متقاسة مع `#06100F`:
        ٧٫٩٢ · ١١٫٢٣ · ١٢٫١٦ · ١١٫٦٢ */
   --sq-1:#3FB8A6; --sq-2:#5FD9C6; --sq-3:#86E0A8; --sq-4:#A8D93C;
+  --sq-1C:63,184,166; --sq-2C:95,217,198; --sq-3C:134,224,168; --sq-4C:168,217,60;
   --sq-ink:#06100F;
   --sq-cut:17,21,21; --sq-cut-a:.82 }
 :root[data-theme="dark"]{
@@ -3213,64 +3220,63 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ejr-none p{margin:0;font-size:var(--fs-2);line-height:1.8;color:var(--t2)}
 .ejr-none .ejr-ht{font-family:var(--fd);font-weight:600;font-size:.92rem;color:var(--t1)}
 
-/* شبكة لا تموضع مطلق · الفرق بينهم **٢٤ بكسل متساوية** في
-   الاتجاهين، والنسب المئوية ما بتضمنش ده. العمود الأول (اليمين)
-   أوسع لأن فيه الرقمين الكبيرين. */
-.ejr-stage{position:relative;width:100%;display:grid;gap:24px;
-  grid-template-columns:repeat(4,minmax(0,1fr))}
-@media (max-width:1100px){.ejr-stage{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .ejr-c:nth-child(2) .ejr-go{display:none}}
+/* ألواح رأسية متجاورة · كل لوح قرصه فوق وكلامه تحت بلونه */
+.ejr-stage{position:relative;width:100%;display:grid;gap:2px;
+  grid-template-columns:repeat(4,minmax(0,1fr));overflow:hidden;border-radius:var(--r2)}
+.ejr-glow{display:none}
 
-/* الأرضية · بقعة مغبّشة بلون المنتج بتربط الأربعة من غير عمود
-   ولا خطوط · هي اللي بتخلّيهم مجموعة واحدة */
-.ejr-glow{position:absolute;inset:8%;border-radius:var(--r3);pointer-events:none;
-  background:
-    radial-gradient(58% 66% at 74% 24%, rgba(var(--ch-1C),.62), transparent 72%),
-    radial-gradient(60% 68% at 26% 78%, rgba(var(--ch-2C),.68), transparent 72%);
-  filter:blur(30px)}
+.ejr-c{position:relative;display:flex;flex-direction:column;align-items:center;
+  gap:.1rem;text-align:center;padding:1.4rem 1rem 1.6rem;color:inherit;
+  background:linear-gradient(180deg,rgba(var(--wC),calc(.78 * var(--wM))),rgba(var(--wC),calc(.5 * var(--wM))));
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  box-shadow:inset 1px 0 0 var(--edge-d);
+  transition:background .18s ease}
+.ejr-c:first-child{box-shadow:none}
+.ejr-c:hover{color:inherit;background:linear-gradient(180deg,rgba(var(--wC),calc(.92 * var(--wM))),rgba(var(--wC),calc(.62 * var(--wM))))}
 
-/* البطاقة · زجاج بلون المنتج */
-.ejr-c{position:relative;display:flex;flex-direction:column;justify-content:center;gap:.12rem;
-  min-height:172px;
-  padding:1rem 1.05rem;border-radius:var(--r2);color:inherit;
-  /* زجاج بلون المنتج · لمسة من لون الرسوم فوق الأبيض الشفّاف */
-  background:
-    linear-gradient(158deg,rgba(var(--ch-2C),.10),rgba(var(--ch-1C),.06)),
-    linear-gradient(158deg,rgba(var(--wC),calc(.74 * var(--wM))),rgba(var(--wC),calc(.52 * var(--wM))));
-  -webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),0 14px 34px -20px rgba(var(--edgeC),.6);
-  transition:translate .18s cubic-bezier(.22,.9,.3,1),box-shadow .18s ease}
-.ejr-c:hover{color:inherit;translate:0 -2px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 18px 38px -18px rgba(var(--edgeC),.6)}
-.ejr-slot{font-size:var(--fs-1);color:var(--t3-g);line-height:1.4}
-.ejr-n{font-family:var(--fd);font-weight:700;line-height:1;letter-spacing:-.03em;color:var(--t3-g)}
-.ejr-t{font-family:var(--fd);font-weight:600;color:var(--t1);line-height:1.4;margin-top:.3rem}
-.ejr-v{font-family:var(--fd);font-weight:700;line-height:1.15;letter-spacing:-.02em;
-  color:var(--t1);display:flex;align-items:baseline;gap:.2rem}
-.ejr-s{font-size:var(--fs-1);color:var(--t2-g);line-height:1.6}
+/* ── القرص · حلقتان فاتحتان وقرص ملوّن جوّاهم ── */
+.ejr-disc{position:relative;display:grid;place-items:center;
+  width:clamp(96px,11vw,132px);aspect-ratio:1;margin-bottom:1.1rem;flex:none}
+.ejr-disc>i{position:absolute;border-radius:50%;pointer-events:none}
+/* الحلقة الخارجية */
+.ejr-disc>i:first-child{inset:0;background:rgba(var(--wC),calc(.9 * var(--wM)));
+  box-shadow:0 8px 20px -12px rgba(var(--edgeC),.6)}
+/* الحلقة الداخلية */
+.ejr-disc>i:nth-child(2){inset:11%;background:rgba(var(--wC),calc(.98 * var(--wM)))}
+/* القرص الملوّن · مزاح ناحية البداية زي المرجع.
+   **عنصر حقيقي لا `::after`**: الرقم جوّاه لا جنبه، فأي فاحص
+   تباين (وأي قارئ شاشة بيحسب الأرضية) يشوف الأرضية الصح ·
+   الأرضية دي كانت في صورة زائفة وهي بتقرا اللوح تحتها. */
+.ejr-dot{position:absolute;inset:20% 16% 20% 24%;border-radius:50%;
+  display:grid;place-items:center;
+  background:linear-gradient(150deg,rgb(var(--dc)),rgba(var(--dc),.82))}
+.ejr-dot>b{position:relative;z-index:1;font-family:var(--fd);font-weight:700;
+  font-size:clamp(1.6rem,2.4vw,2.2rem);line-height:1;color:var(--sq-ink);
+  letter-spacing:-.03em}
 
-/* أكبر بمرّة ونص · الكبيرتان بيشيلوا الرقمين الكبيرين */
-/* الأربعة بنفس المقاس · الصفّ الواحد بيقول «أربع خطوات» فالحجم
-   المتفاوت كان هيقول حاجة تانية */
-.ejr-n{font-size:2.2rem}
-.ejr-t{font-size:.95rem}
-.ejr-v{font-size:1.25rem}
-.ejr-slot{font-size:.72rem}
+/* لون كل لوح · من المربّعات المتقاسة لا `--ch-*` الخام (اللايم
+   بيدّي ١٫٧٧:١ مع الأبيض). و**بتتقلب مع الثيم**: الأخضر الغامق
+   اللي بيتقري على لوح فاتح بيبقى ٣٫٥:١ على لوح غامق، فالغامق
+   بياخد الطاقم الفاتح والحبر اللي جوّه القرص بينعكس معاه. */
+.ejr-c01{--dc:var(--sq-1C)}
+.ejr-c02{--dc:var(--sq-2C)}
+.ejr-c03{--dc:var(--sq-3C)}
+.ejr-c04{--dc:var(--sq-4C)}
 
-/* الأماكن · متقاربة، وفراغ صغير في النصّ بس */
-/* الوصلة · شارة صغيرة على حافة الكارت بتشاور للي بعده */
-.ejr-go{position:absolute;inset-inline-end:-13px;top:50%;translate:0 -50%;
-  width:26px;height:26px;display:grid;place-items:center;z-index:2;
-  border-radius:var(--ric);color:var(--on-solid);background:var(--solid);
-  box-shadow:0 4px 12px -6px rgba(var(--edgeC),.7)}
-.ejr-c:last-child .ejr-go{display:none}
+.ejr-slot{font-size:var(--fs-1);color:rgb(var(--dc));line-height:1.5}
+.ejr-t{font-family:var(--fd);font-weight:600;font-size:.95rem;color:var(--t1);
+  line-height:1.45;margin-top:.15rem}
+.ejr-v{font-family:var(--fd);font-weight:700;font-size:1.25rem;line-height:1.2;
+  letter-spacing:-.02em;color:rgb(var(--dc));display:flex;align-items:baseline;gap:.2rem;
+  margin-top:.3rem}
+.ejr-s{font-size:var(--fs-1);color:var(--t2-g);line-height:1.7;margin-top:.25rem;max-width:22ch}
 
+@media (max-width:900px){
+  .ejr-stage{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media (max-width:560px){
-  .ejr-stage{grid-template-columns:1fr;gap:12px}
-  .ejr-go{display:none}
-  .ejr-glow{display:none}
-  .ejr-c{min-height:0}
-  .ejr-c.big .ejr-n{font-size:1.7rem}
+  .ejr-stage{grid-template-columns:1fr}
+  .ejr-disc{width:88px;margin-bottom:.8rem}
 }
 
 .einf{display:flex;align-items:stretch;gap:10px;width:100%;

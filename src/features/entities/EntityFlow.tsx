@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Glass, Icon, icons, Money, Num } from '@/components/ui'
+import { Glass, Money, Num } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
 
@@ -87,18 +87,18 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
         <span className="ejr-glow" aria-hidden="true" />
         {cards.map((c) => (
           <Link key={c.k} to={c.to} className={`ejr-c ejr-c${c.k}${c.big ? ' big' : ''}`}>
+            {/* القرص · حلقات متداخلة والرقم في نصّها */}
+            <span className="ejr-disc" aria-hidden="true">
+              <i /><i />
+              <i className="ejr-dot"><b className="num">{c.k}</b></i>
+            </span>
             <span className="ejr-slot">{c.slot}</span>
-            <span className="ejr-n"><span className="num">{c.k}</span></span>
             <span className="ejr-t">{c.label}</span>
             <b className="ejr-v"><Money sm>{c.value}</Money></b>
             <span className="ejr-s">
               {c.pct === null
                 ? c.note
                 : <><Num>{c.pct}</Num>% من الإجمالي{c.note ? ` · ${c.note}` : ''}</>}
-            </span>
-            {/* وصلة للكارت اللي بعده · آخر واحد مالوش */}
-            <span className="ejr-go" aria-hidden="true">
-              <Icon name={icons.chevron} size={14} />
             </span>
           </Link>
         ))}

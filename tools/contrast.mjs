@@ -102,7 +102,14 @@ const items=await p.evaluate(()=>{
           let out=[null,null,null], acc=[0,0,0], a=0
           let q=el
           while(q){
-            const m=getComputedStyle(q).backgroundColor.match(/[\d.]+/g)
+            const qs=getComputedStyle(q)
+            /* تدرّج مش لون · `backgroundColor` بيبقى شفّافًا فالسلسلة
+               بتعدّيه وبتقرا اللي تحته، يعني أرضية غلط تمامًا (رقم
+               على قرص ملوّن بيتقاس على أرضية الصفحة). مفيش حساب
+               للتدرّج هنا، فالتركيب بيعلن إنه ما يعرفش · والفاحص
+               بيرجع لقياس البكسل الحقيقي فوق النصّ وتحته. */
+            if(qs.backgroundImage&&qs.backgroundImage!=='none') return null
+            const m=qs.backgroundColor.match(/[\d.]+/g)
             if(m){ const [r0,g0,b0]=m.slice(0,3).map(Number); const al=m[3]!==undefined?Number(m[3]):1
               if(al>0){ const k=(1-a)*al; acc=[acc[0]+r0*k,acc[1]+g0*k,acc[2]+b0*k]; a+=k }
               if(a>=.995) break }
