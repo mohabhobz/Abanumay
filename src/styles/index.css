@@ -1278,6 +1278,12 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
 /* ── ترويسة المشروع، بلا سطح ── */
 .phead{display:flex;justify-content:space-between;align-items:center;
   gap:1.6rem 1.4rem;flex-wrap:wrap;padding:.2rem .2rem 0}
+/* الترويسة بأعمدة `.g2` · نفس النسبة ونفس الفجوة، فالعمودان فوق
+   بيقعوا على العمودين تحت بالظبط · والحشو الجانبي بيتشال عشان
+   الحافّة تكون هي الحافّة، لا هي ناقص ٣ بكسل */
+.phead-g2{display:grid;grid-template-columns:1.35fr 1fr;gap:var(--gap);
+  align-items:center;padding-inline:0}
+@media (max-width:960px){.phead-g2{grid-template-columns:1fr}}
 .pmain{min-width:0;flex:1 1 420px}
 .ptitle{font-family:var(--fd);font-weight:700;font-size:clamp(1.3rem,2.5vw,1.75rem);
   line-height:1.38;letter-spacing:-.015em;margin:0;text-wrap:balance}
@@ -3215,62 +3221,69 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    وكله بخصائص منطقية (`inset-inline-*`)، فالمرجع الإنجليزي
    بيتقلب لوحده: الكبار على اليمين حيث القراءة بتبدأ.
    ═══════════════════════════════════════════════════════════ */
-.ejr{flex:1 1 400px;min-width:0;display:flex;max-width:600px}
+.ejr{min-width:0;display:flex}
 .ejr-none{flex-direction:column;gap:.35rem}
 .ejr-none p{margin:0;font-size:var(--fs-2);line-height:1.8;color:var(--t2)}
 .ejr-none .ejr-ht{font-family:var(--fd);font-weight:600;font-size:.92rem;color:var(--t1)}
 
 /* ═══════════════════════════════════════════════════════════
-   ألواح متراكبة · واحد فوق اللي بعده
+   ألواح متراكبة · واحد فوق اللي بعده، وطالعة من الخلفية
 
-   ده اللي بيدّي المرجع شكله: مش أربع أعمدة متجاورة بفاصل، دي
-   **ورقة فوق ورقة**. كل لوح داخل تحت اللي قبله بقدّ `--ejr-lap`،
-   وبيرمي ظلًّا على اللي تحته · فالعين بتقرا ترتيبًا في العمق
-   (الأول فوق الكل) من غير ولا رقم مكتوب.
+   ورقة فوق ورقة: كل لوح داخل تحت اللي قبله بقدّ `--ejr-lap`
+   وبيرمي ظلًّا عليه · فالعين بتقرا ترتيبًا في العمق من غير ولا
+   رقم مكتوب.
 
-   والترتيب بيتقلب مع اتجاه القراءة: الأول على اليمين حيث القراءة
-   بتبدأ، والظلّ بيقع ناحية الشمال على اللي بعده.
+   ومفيش حافّة مرسومة. الألواح بتتلاشى في الخلفية من فوق ومن
+   تحت، والأول بيتلاشى من ناحية البداية والأخير من ناحية النهاية
+   · فالشكل مالوش إطار ولا ركن، هو طالع من الصفحة نفسها.
 
-   ⚠️ `box-shadow` مالوش نسخة منطقية · الإزاحة هنا **فيزيائية**
-   (سالب = شمال)، فهي متظبّطة على RTL. لو اتفتح اتجاه لاتيني
-   يومًا، السطر ده هو اللي يتقلب.
+   ⚠️ `box-shadow` و`mask` الاتنين مالهمش نسخة منطقية · الإزاحات
+   والاتجاهات هنا **فيزيائية** ومتظبّطة على RTL. لو اتفتح اتجاه
+   لاتيني يومًا، السطور دي هي اللي تتقلب.
    ═══════════════════════════════════════════════════════════ */
-.ejr-stage{--ejr-lap:30px;
+.ejr-stage{--ejr-lap:30px;--ejr-fade:44px;--ejr-sheet:.97;
   position:relative;width:100%;display:flex;align-items:stretch;
-  border-radius:var(--r2);overflow:hidden}
+  /* التلاشي فوق وتحت · على المسرح كله فيشمل الأربعة وظلالهم */
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 16%,#000 84%,transparent 100%);
+  mask-image:linear-gradient(180deg,transparent 0,#000 16%,#000 84%,transparent 100%)}
 .ejr-glow{display:none}
 
+/* في الغامق «الأبيض» ما ينفعش يكون صمّاء · بيبقى ورقة فاتحة
+   شفّافة فوق أرضية الصفحة */
+:root[data-theme="dark"] .ejr-stage,
+:root[data-theme="green"] .ejr-stage{--ejr-sheet:.14}
+
 .ejr-c{position:relative;flex:1 1 0;min-width:0;color:inherit;
-  display:flex;flex-direction:column;justify-content:flex-end;
-  min-height:clamp(168px,15vw,208px);
-  padding:1rem .85rem 1.1rem;
-  /* اللوح بلون باهت من لون خانته · الدايرة اتشالت، فاللون لازم
-     يفضل في حتّة · وهي باهتة كفاية إن النصّ فوقها ما يتأثّرش */
-  background:
-    linear-gradient(180deg,rgba(var(--dc),.05),rgba(var(--dc),.13)),
-    linear-gradient(180deg,rgba(var(--wC),var(--wM)),rgba(var(--wC),calc(.72 * var(--wM))));
-  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
-  transition:background .18s ease,transform .18s ease}
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;min-height:clamp(232px,21vw,300px);
+  padding:1.2rem .7rem;
+  background:rgba(var(--wC),var(--ejr-sheet));
+  transition:background .18s ease}
 /* التراكب · كل لوح بيتسحب تحت اللي قبله، وبيتحشّى من الناحية
-   المغطّاة عشان كلامه ما يختفيش تحته */
+   المغطّاة عشان كلامه يفضل في نصّ الجزء **الظاهر** */
 .ejr-c + .ejr-c{margin-inline-start:calc(-1 * var(--ejr-lap));
-  padding-inline-start:calc(.85rem + var(--ejr-lap))}
+  padding-inline-start:calc(.7rem + var(--ejr-lap))}
 .ejr-c:nth-child(1){z-index:4}
 .ejr-c:nth-child(2){z-index:3}
 .ejr-c:nth-child(3){z-index:2}
 .ejr-c:nth-child(4){z-index:1}
-/* الظلّ على الحافة الأمامية · هو اللي بيقول «ده فوق ده».
-   طبقتان: ظلّ واسع بيدّي العمق، وخطّ فاتح على الحافة نفسها
-   بيدّي حرف الورقة · الاتنين مع بعض هما اللي بيقروا «ورقة فوق
-   ورقة» بدل «عمودين جنب بعض». */
+/* الظلّ على الحافة الأمامية · هو اللي بيقول «ده فوق ده» */
 .ejr-c:not(:last-child){box-shadow:
   -20px 0 30px -14px rgba(var(--edgeC),.5),
   -3px 0 6px -3px rgba(var(--edgeC),.3),
   inset 1px 0 0 rgba(var(--wC),var(--wM))}
-.ejr-c:hover{color:inherit;
-  background:
-    linear-gradient(180deg,rgba(var(--dc),.09),rgba(var(--dc),.17)),
-    linear-gradient(180deg,rgba(var(--wC),calc(.96 * var(--wM))),rgba(var(--wC),calc(.68 * var(--wM))))}
+.ejr-c:hover{color:inherit;background:rgba(var(--wC),calc(var(--ejr-sheet) * 1.03))}
+/* الطرفان بيدخلوا في الخلفية · اليمين للأول، الشمال للأخير.
+   التلاشي بمسافة ثابتة لا بنسبة: النسبة بتكبر مع اللوح فبتاكل
+   من الكلام · والطرفان بياخدوا عرضًا زيادة وحشوًا قدّ التلاشي،
+   فالكلام بيفضل في نصّ الجزء **الصامت** لا في نصّ الصندوق. */
+.ejr-c:first-child,.ejr-c:last-child{flex-grow:1.3}
+.ejr-c:first-child{padding-inline-start:calc(.7rem + var(--ejr-fade));
+  -webkit-mask-image:linear-gradient(to left,transparent 0,#000 var(--ejr-fade));
+  mask-image:linear-gradient(to left,transparent 0,#000 var(--ejr-fade))}
+.ejr-c:last-child{padding-inline-end:calc(.7rem + var(--ejr-fade));
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 var(--ejr-fade));
+  mask-image:linear-gradient(to right,transparent 0,#000 var(--ejr-fade))}
 
 /* لون كل لوح · من المربّعات المتقاسة لا `--ch-*` الخام (اللايم
    بيدّي ١٫٧٧:١ مع الأبيض). و**بتتقلب مع الثيم**: الأخضر الغامق
@@ -3281,21 +3294,20 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ejr-c04{--dc:var(--sq-4C)}
 
 .ejr-slot{font-size:var(--fs-1);color:rgb(var(--dc));line-height:1.5}
-.ejr-t{font-family:var(--fd);font-weight:600;font-size:.85rem;color:var(--t1);
-  line-height:1.4;margin-top:.1rem}
-.ejr-v{font-family:var(--fd);font-weight:700;font-size:1rem;line-height:1.2;
-  letter-spacing:-.02em;color:rgb(var(--dc));display:flex;align-items:baseline;gap:.2rem;
-  margin-top:.35rem;white-space:nowrap}
-.ejr-s{font-size:var(--fs-1);color:var(--t2-g);line-height:1.6;margin-top:.15rem}
+.ejr-t{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1);
+  line-height:1.4;margin-top:.15rem}
+.ejr-v{font-family:var(--fd);font-weight:700;font-size:1.05rem;line-height:1.2;
+  letter-spacing:-.02em;color:rgb(var(--dc));display:flex;align-items:baseline;
+  justify-content:center;gap:.2rem;margin-top:.4rem;white-space:nowrap}
+.ejr-s{font-size:var(--fs-1);color:var(--t2-g);line-height:1.6;margin-top:.2rem}
 
-@media (max-width:1100px){
-  .ejr{max-width:none;flex-basis:100%}
-}
 @media (max-width:560px){
   .ejr-stage{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}
-  .ejr-c{min-height:0}
-  .ejr-c + .ejr-c{margin-inline-start:0;padding-inline-start:.85rem}
+  .ejr-c{min-height:150px}
+  .ejr-c + .ejr-c{margin-inline-start:0;padding-inline-start:.7rem}
+  .ejr-c:first-child,.ejr-c:last-child{flex-grow:1;padding-inline:.7rem}
   .ejr-c:not(:last-child){box-shadow:none}
+  .ejr-c:first-child,.ejr-c:last-child{-webkit-mask-image:none;mask-image:none}
 }
 
 .einf{display:flex;align-items:stretch;gap:10px;width:100%;

@@ -66,8 +66,11 @@ export default function EntityPage() {
           <BackTo to={ROUTES.entities} label="الجهات" />
 
           {/* الترويسة بنفس تشكيل صفحة المشروع: الهوية على اليمين،
-              والقراءة البصرية على الشمال في نفس مكان المروحة. */}
-          <header className="phead">
+              والقراءة البصرية على الشمال في نفس مكان المروحة ·
+              و`phead-g2` بتدّيها **نفس أعمدة `.g2`** اللي تحتها،
+              فحافّة الشكل بتقع على حافّة «تحليلات الجهة السريعة»
+              بالظبط بدل رقم عرض مكتوب بالإيد. */}
+          <header className="phead phead-g2">
             <div className="pmain">
               <div className="ehead-id">
                 <span className="ec-init ec-init-lg">{initial(entity.name)}</span>
