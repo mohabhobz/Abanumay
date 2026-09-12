@@ -314,7 +314,12 @@
   --sq-1:#0E3B3D; --sq-2:#0A5C58; --sq-3:#0F7F72; --sq-4:#4A7A10;
   --sq-ink:#fff;
   /* الشقّ بلون سطح معتم · هو «قصّة» في المربّع بتوَرّي الصفحة تحته */
-  --sq-cut:var(--pop);
+  /* أرضية الشقّ · **من سطح الصفحة لا من الأبيض الخام**.
+     `rgba(var(--wC), .86 * var(--wM))` بتدّي في الفاتح أبيض ٨٦٪،
+     وفي الغامق `--wM` بتساوي ٠٫٠٨٥ · يعني الشقّ بيبقى شفّافًا
+     بالكامل ويختفي فوق مربّع فاتح. الأرضية هنا بتتبع الثيم:
+     فاتحة فوق الغامق، وغامقة فوق الفاتح. */
+  --sq-cut:250,253,252; --sq-cut-a:.80;
 
   /* الخلفية كتوكن عشان الوضع الداكن يقلبها من مكان التوكنز */
   --mesh-bg:#EDF3F0;
@@ -2641,6 +2646,8 @@ to{opacity:1;transform:none}
   --ch-4:#94D603;   /* اللايم */
   --ch-5:#5E93BE;
   --ch-6:#9DB3B1;
+  /* نفس ألوان الجراف كثلاثيات · عشان تتاخد بشفافية */
+  --ch-1C:20,69,71; --ch-2C:0,165,155; --ch-3C:95,191,166; --ch-4C:148,214,3;
   --ch-idle:rgba(20,69,71,.10);
   --ch-warn:#D9A02B;
   --ch-late:#D9694A;
@@ -3024,7 +3031,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
      فاتحة وحبر داكن · متقاسة مع `#06100F`:
        ٧٫٩٢ · ١١٫٢٣ · ١٢٫١٦ · ١١٫٦٢ */
   --sq-1:#3FB8A6; --sq-2:#5FD9C6; --sq-3:#86E0A8; --sq-4:#A8D93C;
-  --sq-ink:#06100F }
+  --sq-ink:#06100F;
+  --sq-cut:17,21,21; --sq-cut-a:.82 }
 :root[data-theme="dark"]{
   --base:#0A0C0C; --baseC:10,12,12;
   --retC2:120,180,235;
@@ -3054,6 +3062,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   --grain:.04;
   --ch-1:#0FA69B; --ch-2:#2FC7B6; --ch-3:#6FDCC8;
   --ch-4:#A8D93C; --ch-5:#79B4E4; --ch-6:#9AA6A4;
+  --ch-1C:15,166,155; --ch-2C:47,199,182; --ch-3C:111,220,200; --ch-4C:168,217,60;
   --ch-idle:rgba(196,212,209,.12);
   --ch-warn:#E8B045; --ch-late:#F0806A;
   --track:rgba(196,212,209,.11);
@@ -3168,14 +3177,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 /* حاوية الرحلة في ترويسة الجهة · عرضها **معلوم** لا مطلوب من
    محتواها: `flex:1 1 0` + `min-width:0` بيخلّوا الشبكة تقسّم
    مساحة موجودة بدل ما تطلب مساحة بنسبة أعمدتها. */
-/* الأساس ٣٠rem لا صفر: `flex:1 1 0` معناه «ابدأ من لا شيء وخد
-   نصيبك من الفاضي»، فالعمود كان بياخد نفس زيادة عمود الهوية
-   وبيقف عند ٤١٤ بكسل · الكروت بتضيق وتلفّ لعمود، وفراغ كبير
-   بيفضل في نصّ الترويسة بين الاتنين. الأساس الحقيقي بيخلّي
-   القسمة بين العمودين متقاربة والفراغ يروح. */
-.pflow{flex:1 1 30rem;min-width:min(100%,20rem);max-width:44rem;
-  display:flex;justify-content:flex-end}
-@media (max-width:900px){.pflow{flex:1 1 100%;max-width:none}}
+/* الرحلة شريط بعرض الصفحة · حدوده هي حدود القسم اللي تحته */
+.pflow{width:100%;min-width:0;display:flex}
 
 /* ═══════════════════════════════════════════════════════════
    رحلة الريال في الجهة · **أربع مربّعات بشقّ دائري في الرُّكن**
@@ -3194,15 +3197,19 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .esq-ht{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1);line-height:1.5}
 .esq-hs{font-size:var(--fs-2);line-height:1.7}
 .esq-none{gap:.35rem}
-.esq-none p{margin:0;font-size:var(--fs-2);line-height:1.8}
+.esq-none .esq-ht{font-size:.92rem}
+/* حبر أغمق درجة · الكارت هنا واقع فوق أغمق نقطة في الميش
+   (الشريط بقى بعرض الصفحة)، والزجاج بيمرّرها · فـ`--t3` بتدّي
+   ٤٫٣٨ وهي تحت الحدّ بشعرة. */
+.esq-none p{margin:0;font-size:var(--fs-2);line-height:1.8;color:var(--t2)}
 
 /* الشبكة · خانتان متساويتان، والفجوة هي اللي الوردة بتتكوّن حواليها */
 .esq-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:var(--sq-gap,14px);min-width:0}
+  gap:var(--sq-gap,16px);min-width:0;width:100%}
 
 .esq-c{position:relative;isolation:isolate;overflow:hidden;
   display:flex;flex-direction:column;justify-content:center;gap:.1rem;
-  min-height:var(--sq-h,138px);padding:.9rem 1rem;
+  min-height:var(--sq-h,172px);padding:1.05rem 1.2rem;
   border-radius:var(--r2);color:var(--sq-ink);
   background:var(--sq-1);
   transition:translate .18s cubic-bezier(.22,.9,.3,1),filter .18s ease}
@@ -3220,9 +3227,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    وهو نفس اللي المرجع بيعمله (نصّه أضيق من المربّع). */
 .esq-b{display:flex;flex-direction:column;gap:.12rem;min-width:0;
   padding-inline-end:var(--sq-pad)}
-.esq-k{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.45}
-.esq-v{font-family:var(--fd);font-weight:700;line-height:1.15;letter-spacing:-.02em;
-  font-size:clamp(1.05rem,1.7vw,1.35rem);
+.esq-k{font-family:var(--fd);font-weight:600;font-size:.92rem;line-height:1.45}
+.esq-v{font-family:var(--fd);font-weight:700;line-height:1.1;letter-spacing:-.025em;
+  font-size:clamp(1.3rem,2.3vw,2.05rem);
   display:flex;align-items:baseline;gap:.2rem;margin-top:.12rem}
 /* الحبر الباهت جوّه المربّع بيتعمل بالشفافية لا بلون تاني · لون
    تاني معناه أربع قيم جديدة لازم تتقاس على أربع أرضيات */
@@ -3242,17 +3249,35 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 
    الحشو بيقفل التلات أرباع المخفية، و`place-items:center` بتتوسّط
    الربع الباقي وحده · منطقيّ بالكامل، وما فيش إشارة تتقلب. */
-.esq-cut{--sq-d:88px;--sq-r:44px;
+.esq-cut{--sq-d:124px;--sq-r:62px;
   position:absolute;z-index:1;width:var(--sq-d);height:var(--sq-d);
-  border-radius:50%;background:var(--sq-cut);
+  border-radius:50%;
+  /* ── زجاج لا ورق ──
+     كان `--pop` معتمًا، يعني «قصّة» بيضا. الزجاج بيخلّي لون
+     المربّع نفسه يبان من خلاله، فالشقّ بيتقري **طبقة فوق
+     المربّع** لا فتحة فيه · ومعاه لمسة من لون الجراف بتاع
+     الصفحة (`--ch-*`) عشان الشكل ده يبقى من نفس عيلة الرسوم
+     في باقي السيستم لا لوحة لوحدها.
+
+     والنسبة ٨٦٪ مقصودة: الأيقونة فوقه لونها أرضية المربّع
+     (غامق)، ولو الزجاج شفّ أكتر من كده الأيقونة بتقع على لون
+     قريب منها وتختفي. */
+  background:
+    linear-gradient(150deg, rgba(var(--sq-tint),.22), rgba(var(--sq-tint),.06)),
+    rgba(var(--sq-cut),var(--sq-cut-a));
+  -webkit-backdrop-filter:blur(14px) saturate(1.35);backdrop-filter:blur(14px) saturate(1.35);
+  box-shadow:inset 0 0 0 1px rgba(var(--sq-cut),.6);
   display:grid;place-items:center;color:var(--sq-1);pointer-events:none}
-.esq-c:nth-child(2) .esq-cut{color:var(--sq-2)}
-.esq-c:nth-child(3) .esq-cut{color:var(--sq-3)}
-.esq-c:nth-child(4) .esq-cut{color:var(--sq-4)}
+/* ألوان الجراف نفسها · `--ch-1..4` هي اللي بترسم كل الرسوم البيانية */
+.esq-c:nth-child(1) .esq-cut{--sq-tint:var(--ch-1C)}
+.esq-c:nth-child(2) .esq-cut{--sq-tint:var(--ch-2C);color:var(--sq-2)}
+.esq-c:nth-child(3) .esq-cut{--sq-tint:var(--ch-3C);color:var(--sq-3)}
+.esq-c:nth-child(4) .esq-cut{--sq-tint:var(--ch-4C);color:var(--sq-4)}
 
 /* الرُّكن الداخلي لكل خانة · منطقيّ فبينقلب مع الاتجاه.
    و`--sq-pad` بيحجز مكان الشقّ في كتلة الكلام. */
-.esq{--sq-pad:3.1rem}
+/* حجز مكان الشقّ في كتلة الكلام · لازم يزيد عن نصف قطره */
+.esq{--sq-pad:4.7rem}
 .esq-c:nth-child(1) .esq-cut,.esq-c:nth-child(2) .esq-cut{
   inset-block-end:calc(-1 * var(--sq-r));padding-block-end:var(--sq-r)}
 .esq-c:nth-child(3) .esq-cut,.esq-c:nth-child(4) .esq-cut{

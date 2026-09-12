@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Icon, icons, Money, Num } from '@/components/ui'
+import { Glass, Icon, icons, Money, Num } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
 
@@ -43,14 +43,17 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
 
   const share = (v: number) => (total ? Math.round((v / total) * 100) : 0)
 
+  /* الحالة الفاضية **كارت** لا نصًّا عريانًا على أرضية الصفحة ·
+     الشريط بقى بعرض الصفحة، والميش تحته بيغمق في نصّها، فالنصّ
+     الرمادي وقع على ٣٫٣٣:١. الكارت بيدّيه أرضية معروفة. */
   if (total <= 0) {
     return (
-      <div className="esq esq-none">
-        <span className="esq-t">رحلة الريال في هذه الجهة</span>
+      <Glass className="esq esq-none">
+        <span className="esq-ht">رحلة الريال في هذه الجهة</span>
         <p className="mut">
           ما اتمنحش لها ريال لحدّ دلوقتي · الجهة مسجَّلة ولسّه ما دخلتش دورة صرف.
         </p>
-      </div>
+      </Glass>
     )
   }
 

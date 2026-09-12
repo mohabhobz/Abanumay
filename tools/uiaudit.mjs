@@ -231,6 +231,23 @@ for (const theme of themes) {
     localStorage.setItem('ab-theme', t)
   }, theme)
   const page = await ctx.newPage()
+  /* ══ الانتقالات بتتقفل قبل القياس ══
+     الجرد كان بيدّي **نتيجتين مختلفتين لنفس الكود**: مرة انحراف
+     ٠ ومرة ١، والفرق قوّة حافة واحدة في `/assistant` الغامق
+     (`.13` مرة و`.224` مرة). السبب إن القياس كان بيقع وسط
+     `transition` شغّالة، فالقيمة المحسوبة بتبقى نقطة في نصّ
+     الطريق بين قيمتين · لا هي القيمة دي ولا دي.
+
+     وفحص بيدّي إجابة مختلفة على نفس المدخل مش فحص. */
+  await ctx.addInitScript(() => {
+    const kill = () => {
+      const st = document.createElement('style')
+      st.textContent = '*,*::before,*::after{transition:none!important;animation:none!important}'
+      document.head.appendChild(st)
+    }
+    if (document.head) kill()
+    else document.addEventListener('DOMContentLoaded', kill)
+  })
 
   for (const route of ROUTES) {
     await page.goto(`http://localhost:${PORT}${route}`, { waitUntil: 'domcontentloaded' })
