@@ -22,7 +22,13 @@ const ratio=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p);return (x+.05)/
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'})
 /* `--all` بيمشي على كل المسارات في التلات ثيمات بمتصفّح واحد، ٤٢ صفحة في تشغيلة واحدة بدل ٤٢ تشغيلة. */
 import{ROUTES as ALL_ROUTES}from'./routes.mjs'
-const all=process.argv.includes('--all')
+/* ⚠️ **`--themes` مرادف لـ`--all`.** باقي الأدوات كلها بتاخد
+   `--themes`، ودي وحدها كانت بتاخد `--all` · فـ`--themes` كانت
+   بتعدّي من غير ما تتقرا، والأداة بترجع لحالتها الافتراضية:
+   **صفحة واحدة في ثيم واحد**. يعني تقرير بيقول «تباين ٠» وهو
+   قاس صفحة من ٢٨ وثيمًا من تلاتة · اختلاف في اسم فلاج بيدّي
+   أخضر كاذب. الاسمان بيشتغلوا دلوقتي. */
+const all=process.argv.includes('--all')||process.argv.includes('--themes')
 const THEMES=all?['light','dark','green']:[process.argv[2]||'dark']
 const URLS=all?ALL_ROUTES:[process.argv[3]||'/']
 let grand=0

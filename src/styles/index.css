@@ -280,6 +280,17 @@
      الأخضر الغامق بيختفي على أرضية غامقة. */
   --tone-1:16,92,88; --tone-2:0,150,142; --tone-3:0,186,172; --tone-4:148,214,3;
 
+  /* ═══ مربّعات «رحلة الريال» · أربع أرضيات مصمتة ═══
+     سُلّم النبرة فوق (`--tone-*`) **ما ينفعش** أرضيةً لحبر أبيض:
+     ٧٫٨٠ · ٣٫٦٥ · ٢٫٤٤ · ١٫٧٧ · يعني تلاتة من الأربعة تحت الحدّ.
+     وألوان المرجع نفسه أسوأ (الأصفر ١٫٧٧). فالأربعة دول من نفس
+     عيلة الهوية بقيم متقاسة مع الأبيض:
+       ١٢٫٢٧ · ٧٫٨٢ · ٤٫٨٨ · ٥٫١٤ */
+  --sq-1:#0E3B3D; --sq-2:#0A5C58; --sq-3:#0F7F72; --sq-4:#4A7A10;
+  --sq-ink:#fff;
+  /* الشقّ بلون سطح معتم · هو «قصّة» في المربّع بتوَرّي الصفحة تحته */
+  --sq-cut:var(--pop);
+
   /* الخلفية كتوكن عشان الوضع الداكن يقلبها من مكان التوكنز */
   --mesh-bg:#EDF3F0;
   --mesh-img:
@@ -2982,7 +2993,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    والألوان الدلالية بتفتح: الأحمر اللي بيتقري على أبيض بيبقى
    طين على أسود، فلازم يعلى في السطوع لا في التشبّع.
    ═══════════════════════════════════════════════════════════ */
-:root[data-theme="dark"],:root[data-theme="green"]{ color-scheme:dark; --ch-a:#2FC7B6 }
+:root[data-theme="dark"],:root[data-theme="green"]{ color-scheme:dark; --ch-a:#2FC7B6;
+  /* في الغامق الأرضية المعتمة بتختفي في الخلفية، فبتتقلب: أرضية
+     فاتحة وحبر داكن · متقاسة مع `#06100F`:
+       ٧٫٩٢ · ١١٫٢٣ · ١٢٫١٦ · ١١٫٦٢ */
+  --sq-1:#3FB8A6; --sq-2:#5FD9C6; --sq-3:#86E0A8; --sq-4:#A8D93C;
+  --sq-ink:#06100F }
 :root[data-theme="dark"]{
   --base:#0A0C0C; --baseC:10,12,12;
   --retC2:120,180,235;
@@ -3135,101 +3151,105 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   display:flex;justify-content:flex-end}
 @media (max-width:900px){.pflow{flex:1 1 100%;max-width:none}}
 
-/* ═══ رحلة الريال في الجهة · طبقات على أرضية بنسبة حقيقية ═══
-   الأربع أرقام مش أربع خطوات: ٠١ هو الكلّ، و٠٢ و٠٣ جزآه، و٠٤ مقطع
-   زمني منه. فالتخطيط: سطر كامل، وتحته سطر متقسّم بنسبتهم، والرابع
-   برّه بشكل مختلف · الترقيم بيقول ترتيبًا حقيقيًّا لا زينة.
+/* ═══════════════════════════════════════════════════════════
+   رحلة الريال في الجهة · **أربع مربّعات بشقّ دائري في الرُّكن**
 
-   الطبقات: كل صفّ فيه **أرضية ملوّنة** تحت وكارت زجاجي فوقها
-   متزحزح، فالعين تقرا «الكارت واقف على نصيبه». الرقم الكبير باهت
-   ورا الكارت زي المرجع، بس مقاسه ثابت فما بيزاحمش النصّ. */
-.eflow{display:flex;flex-direction:column;gap:10px;width:100%;min-width:0}
-.eflow-h{display:flex;flex-direction:column;gap:.15rem;margin-bottom:.1rem}
-.eflow-t{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1);line-height:1.5}
-.eflow-s{font-size:var(--fs-2);line-height:1.7}
-.eflow-none{gap:.35rem}
-.eflow-none p{margin:0;font-size:var(--fs-2);line-height:1.8}
+   المرجع: ٢×٢ مربّعات مصمتة، كل واحد مقطوع من الرُّكن اللي ناحية
+   النصّ بربع دايرة بلون الصفحة، والأيقونة قاعدة في الشقّ · فالأربع
+   شقوق بيعملوا وردة في نصّ الشبكة.
 
-/* ── الصفّ ── */
-.eflow-r{position:relative;isolation:isolate;display:flex;align-items:center;gap:.7rem;
-  min-width:0;padding:.85rem .9rem;border-radius:var(--r2);color:inherit;
-  background:rgba(var(--wC),calc(.72 * var(--wM)));
-  box-shadow:inset 0 0 0 1px var(--edge-1);
-  transition:translate .18s cubic-bezier(.22,.9,.3,1),box-shadow .18s ease}
-.eflow-r:hover{translate:0 -2px;color:inherit;
-  box-shadow:inset 0 0 0 1px var(--edge-i),0 8px 20px -14px rgba(var(--edgeC),.6)}
-/* الأرضية · طبقة تحت الكارت بلون النبرة، بتخفت لتحت فالكارت
-   بيبان واقفًا عليها لا محاطًا بيها */
-.eflow-ground{position:absolute;inset:0;z-index:-1;border-radius:inherit;
-  background:linear-gradient(to bottom,
-    rgba(var(--tone),.30) 0%, rgba(var(--tone),.16) 55%, rgba(var(--tone),.04) 100%)}
-/* كل الصفوف بقت «الاسم … القيمة» · ده كان استثناءً لصفّ ٠١ وحده */
-.eflow-all{--tone:var(--tone-1)}
-.eflow-paid{--tone:var(--tone-2)}
-.eflow-pend{--tone:var(--tone-3)}
-/* اللي لسه معلّق · نفس دور الوتد الغامق في المروحة */
-.eflow-pend.now{box-shadow:inset 0 0 0 1px var(--edge-i),0 6px 18px -12px rgba(var(--tone),.8)}
+   الشقّ **قصّة في المربّع** لا صندوق أيقونة · دايرة بلون سطح
+   الصفحة متراكزة بالظبط على الرُّكن، فربعها بس هو اللي بيبان جوّه
+   المربّع. وعشان كده مالهاش علاقة بقاعدة «الدايرة للصور والنقط
+   وحدها»: هي شكل مقطوع، مش حاوية بترسم حدّها.
+   ═══════════════════════════════════════════════════════════ */
+.esq{display:flex;flex-direction:column;gap:.85rem;width:100%;min-width:0}
+.esq-h{display:flex;flex-direction:column;gap:.15rem}
+.esq-ht{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1);line-height:1.5}
+.esq-hs{font-size:var(--fs-2);line-height:1.7}
+.esq-none{gap:.35rem}
+.esq-none p{margin:0;font-size:var(--fs-2);line-height:1.8}
 
-/* الرقم · باهت ورا النصّ، ومقاسه ثابت فما بيزاحمش */
-.eflow-n{flex:none;font-family:var(--fd);font-weight:700;font-size:1.5rem;
-  line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;direction:ltr;
-  color:rgb(var(--tone));opacity:.42;min-width:2.1rem}
-.eflow-n.sm{font-size:1.15rem;min-width:1.5rem}
-/* ── جسم الكارت · **الاسم في ناحية والمبلغ في الناحية التانية** ──
-   كان عمودًا في أول الصفّ، فالكارت اللي عرضه ٦٤٨ بكسل (نصيبه ٩٢٪
-   من الإجمالي) بيحطّ كلامه في أول ٢٠٠ ويسيب ٤٥٠ فاضيين. والعرض
-   هنا **هو المقياس**، فالفراغ ده كان بيتقري عطلًا لا نسبة.
+/* الشبكة · خانتان متساويتان، والفجوة هي اللي الوردة بتتكوّن حواليها */
+.esq-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:var(--sq-gap,14px);min-width:0}
 
-   وبيلفّ لعمود لمّا الكارت يضيق (`flex-wrap`)، فالجزء الصغير
-   (٨٪) بيفضل يتقري بدل ما رقمه يتخنق. */
-.eflow-b{display:flex;flex-direction:row;align-items:center;justify-content:space-between;
-  gap:.15rem .9rem;flex-wrap:wrap;min-width:0;flex:1}
-.eflow-tx{display:flex;flex-direction:column;gap:.1rem;min-width:0}
-/* الاسم بيلفّ ما بيتقصّش · «تحت الصرف» في كارت ضيّق كان بيطلع
-   «تحت الصر…»، والاسم المقصوص مش اسم */
-.eflow-k{font-family:var(--fd);font-weight:600;font-size:.8rem;color:var(--t1);
-  line-height:1.45;overflow-wrap:anywhere}
-.eflow-v{font-family:var(--fd);font-weight:700;line-height:1.1;letter-spacing:-.02em;
-  font-size:clamp(1rem,1.5vw,1.3rem);color:var(--t1);
-  display:flex;align-items:baseline;gap:.2rem}
-.eflow-v small{font-size:.55em;font-weight:400;color:var(--t2-g)}
-.eflow-m{font-size:var(--fs-2);color:var(--t2-g);line-height:1.6}
+.esq-c{position:relative;isolation:isolate;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;gap:.1rem;
+  min-height:var(--sq-h,138px);padding:.9rem 1rem;
+  border-radius:var(--r3);color:var(--sq-ink);
+  background:var(--sq-1);
+  transition:translate .18s cubic-bezier(.22,.9,.3,1),filter .18s ease}
+.esq-c:hover{color:var(--sq-ink);translate:0 -2px;filter:brightness(1.06)}
+.esq-c:nth-child(2){background:var(--sq-2)}
+.esq-c:nth-child(3){background:var(--sq-3)}
+.esq-c:nth-child(4){background:var(--sq-4)}
 
-/* ── القسمة · العرض هو النسبة ──
-   ٠٢ و٠٣ في صفّ واحد، وعرض كل واحد نصيبه من الإجمالي.
+/* الرقم في الرُّكن الخارجي · بعيد عن الشقّ بحكم مكانه */
+.esq-n{position:absolute;inset-block-start:.7rem;inset-inline-start:1rem;
+  font-family:var(--fd);font-weight:700;font-size:.72rem;
+  letter-spacing:.06em;opacity:.55;line-height:1}
+/* كل الكلام في كتلة واحدة، ومسافته عن الشقّ **مرة واحدة** ·
+   الحجز بالحشو على كل الكتلة أبسط وأأمن من حجز كل سطر على حدة،
+   وهو نفس اللي المرجع بيعمله (نصّه أضيق من المربّع). */
+.esq-b{display:flex;flex-direction:column;gap:.12rem;min-width:0;
+  padding-inline-end:var(--sq-pad)}
+.esq-k{font-family:var(--fd);font-weight:600;font-size:.86rem;line-height:1.45}
+.esq-v{font-family:var(--fd);font-weight:700;line-height:1.15;letter-spacing:-.02em;
+  font-size:clamp(1.05rem,1.7vw,1.35rem);
+  display:flex;align-items:baseline;gap:.2rem;margin-top:.12rem}
+/* الحبر الباهت جوّه المربّع بيتعمل بالشفافية لا بلون تاني · لون
+   تاني معناه أربع قيم جديدة لازم تتقاس على أربع أرضيات */
+.esq-v small,.esq-s{opacity:.82}
+.esq-s{font-size:var(--fs-2);line-height:1.6;margin-top:.1rem}
 
-   ⚠️ **مش `flex-basis` بنسبة مئوية.** أول محاولة كانت
-   `flex:1 1 94%` و`flex:1 1 6%` · المجموع ١٠٠٪ زائد الفجوة، فلازم
-   يتقلّصوا، والتقلّص بيقف عند عرض المحتوى · فالكارت الصغير خرج
-   برّه الشاشة. الشبكة بـ`fr` بتقسّم **المساحة الفاضلة** لا العرض
-   الكلّي، و`minmax` بتدّي أرضية حقيقية للجزء الصغير.
+/* ── الشقّ ──
+   دايرة قطرها `--sq-d` **متراكزة بالظبط على الرُّكن**، فالظاهر منها
+   جوّه المربّع ربعها.
 
-   والأرضية ٩٫٥rem مقصودة: من غيرها «تحت الصرف ٦٪» بيبقى شريحة ما
-   تشيلش رقمها. */
-.eflow-split{display:grid;gap:10px;min-width:0;
-  grid-template-columns:minmax(11rem,var(--a)) minmax(11rem,var(--b));
-  /* الكارتان بيتداخلوا مع الصفّ اللي فوقهم شويّة · ده اللي بيخلّي
-     العين تقرا «الاتنين دول طالعين من اللي فوق» لا «تلات صفوف» */
-  margin-top:-14px}
-/* الكارتان طبقة فوق · الظلّ هو اللي بيقول «دول مرفوعين عن اللي
-   تحتهم»، والتداخل وحده ما بيبانش لأن الخلفيات شبه معتمة */
-.eflow-split>.eflow-r{min-width:0;
-  box-shadow:inset 0 0 0 1px var(--edge-1),0 10px 24px -18px rgba(var(--edgeC),.7)}
+   ⚠️ **والأيقونة بتتحطّ بالحشو لا بالإزاحة.** أول محاولة كانت
+   `translate` بنسبة، والنسبة في `translate` بتتحسب من مقاس
+   **العنصر نفسه** (أيقونة ٢٠px) مش من الدايرة · وبالبكسل كمان
+   فضلت غلط، لأن `translate` محاورها **فيزيائية** والشقّ متموضع
+   بخصائص **منطقية**، فالإشارة بتتقلب في RTL والأيقونة بتخرج برّه
+   المربّع ويقصّها `overflow:hidden`.
 
-/* ── ٠٤ · برّه الرحلة ──
-   مش صفًّا في القسمة، فشكله مختلف: بلا أرضية ملوّنة، وبحدّ منقّط
-   بيقول «ده مقطع تاني» */
-.eflow-side{display:flex;align-items:center;gap:.7rem;
-  padding:.7rem .9rem;border-radius:var(--r2);color:inherit;
-  border:1px dashed var(--edge-i);
-  transition:background .16s ease}
-.eflow-side:hover{color:inherit;background:rgba(var(--edgeC),.05)}
-.eflow-side .eflow-n{--tone:var(--tone-4)}
-.eflow-side .eflow-v{font-size:1rem}
+   الحشو بيقفل التلات أرباع المخفية، و`place-items:center` بتتوسّط
+   الربع الباقي وحده · منطقيّ بالكامل، وما فيش إشارة تتقلب. */
+.esq-cut{--sq-d:88px;--sq-r:44px;
+  position:absolute;z-index:1;width:var(--sq-d);height:var(--sq-d);
+  border-radius:50%;background:var(--sq-cut);
+  display:grid;place-items:center;color:var(--sq-1);pointer-events:none}
+.esq-c:nth-child(2) .esq-cut{color:var(--sq-2)}
+.esq-c:nth-child(3) .esq-cut{color:var(--sq-3)}
+.esq-c:nth-child(4) .esq-cut{color:var(--sq-4)}
+
+/* الرُّكن الداخلي لكل خانة · منطقيّ فبينقلب مع الاتجاه.
+   و`--sq-pad` بيحجز مكان الشقّ في كتلة الكلام. */
+.esq{--sq-pad:3.1rem}
+.esq-c:nth-child(1) .esq-cut,.esq-c:nth-child(2) .esq-cut{
+  inset-block-end:calc(-1 * var(--sq-r));padding-block-end:var(--sq-r)}
+.esq-c:nth-child(3) .esq-cut,.esq-c:nth-child(4) .esq-cut{
+  inset-block-start:calc(-1 * var(--sq-r));padding-block-start:var(--sq-r)}
+.esq-c:nth-child(1) .esq-cut,.esq-c:nth-child(3) .esq-cut{
+  inset-inline-end:calc(-1 * var(--sq-r));padding-inline-end:var(--sq-r)}
+.esq-c:nth-child(2) .esq-cut,.esq-c:nth-child(4) .esq-cut{
+  inset-inline-start:calc(-1 * var(--sq-r));padding-inline-start:var(--sq-r)}
+/* الشقّ في ناحية البداية → حجز الكلام بيتقلب لنفس الناحية،
+   والرقم بيروح للركن التاني */
+.esq-c:nth-child(2) .esq-b,.esq-c:nth-child(4) .esq-b{
+  padding-inline-end:0;padding-inline-start:var(--sq-pad)}
+.esq-c:nth-child(2) .esq-n,.esq-c:nth-child(4) .esq-n{
+  inset-inline-start:auto;inset-inline-end:1rem}
 
 @media (max-width:560px){
-  .eflow-split{grid-template-columns:1fr}
-  .eflow-pend{margin-top:0}
+  .esq-g{grid-template-columns:1fr}
+  /* عمود واحد · الوردة ما بتتكوّنش، فالشقّ بيروح لركن واحد ثابت */
+  .esq-c .esq-cut{inset-block-start:auto;inset-block-end:calc(-1 * var(--sq-r));
+    inset-inline-start:auto;inset-inline-end:calc(-1 * var(--sq-r));
+    padding:0 var(--sq-r) var(--sq-r) 0;padding-inline:0 var(--sq-r)}
+  .esq-c .esq-b{padding-inline-start:0;padding-inline-end:var(--sq-pad)}
+  .esq-c .esq-n{inset-inline-start:1rem;inset-inline-end:auto}
 }
 
 .einf{display:flex;align-items:stretch;gap:10px;width:100%;

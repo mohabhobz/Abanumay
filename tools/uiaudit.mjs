@@ -217,6 +217,7 @@ const cols = []
 const rounds = []
 const heads = []
 const glued = []
+const numbox = []
 const nums = { total: 0, noTabular: 0 }
 
 /** سلّم الشريط · تلات مقاسات، ومسار وركن واحد لكلهم */
@@ -465,6 +466,47 @@ for (const theme of themes) {
         }
       }
 
+      /* ══ `.num` على حاوية لا على أرقام ══
+         `.num` فيها `direction:ltr` عشان الأرقام تتقري صح ·
+         ولمّا تنزل على **صندوق** بدل ما تنزل على الأرقام وحدها،
+         المجرى الإنجليزي بيبلع الصندوق كله: المحتوى بيلزق في
+         الشمال، و`inset-inline-*` و`text-align:start` بيتقلبوا.
+
+         حصلت تلات مرات: `.chb-v num` (عمود «س من ص» كان مشرشرًا)،
+         و`.gpeek-v num`، و`.esq-n num` (رقم المربّع راح للركن
+         الغلط ووقع تحت الشقّ). والتعريف مكتوب فيه تحذير من دي
+         من الأساس.
+
+         الحاوية = عندها أبناء عناصر، أو بترسم تخطيطًا (flex/grid)،
+         أو متموضعة بإزاحات. الـ`<span>` اللي جوّاه أرقام بس مش
+         حاوية · ده استعمالها الصحّ. */
+      out.numbox = []
+      for (const e of document.querySelectorAll('.num')) {
+        if (e.offsetParent === null) continue
+        const cs = getComputedStyle(e)
+        /* **مش كل `.num` على صندوق غلط.** زرار الصفحة (`.pgn`)
+           شبكة متراكزة محتواها رقم واحد · التراكز متماثل فالاتجاه
+           ما بيغيّرش حاجة. وخلية جدول فيها مبلغ واحد قيست
+           والريال طلع على شماله صح في ٦٠ و٤٨ حالة.
+
+           اللي بيتكسر فعلًا اتنان:
+             · **صندوق متموضع بإزاحة منطقية** · `inset-inline-*`
+               بتتقلب فالعنصر بيروح للركن التاني (`.esq-n`).
+             · **صندوق فيه أكتر من ابن** · الترتيب بيتقلب
+               (`.chb-v` كان «س ﷼ من ص ﷼» ملزوقًا في الشمال).
+
+           والفحص اللي بيطلّع خمس صفوف حمرا مالهاش أثر مرسوم
+           بيعلّم اللي بيقراه إنه يعدّي على الأحمر · وده أخطر من
+           الغلطة نفسها. */
+        if (cs.direction !== 'ltr') continue
+        const kids = e.childElementCount >= 2
+        const posd = (cs.position === 'absolute' || cs.position === 'fixed')
+          && (cs.insetInlineStart !== 'auto' || cs.insetInlineEnd !== 'auto')
+        if (!kids && !posd) continue
+        out.numbox.push({ cls: String(e.className).split(' ').filter((c) => c !== 'num')[0] || 'num',
+          why: [kids && `${e.childElementCount} أبناء`, posd && 'إزاحة منطقية'].filter(Boolean).join(' · ') })
+      }
+
       /* أكتر من دعوة أساسية في الشاشة */
       out.primary = document.querySelectorAll('.btn-p').length
 
@@ -613,6 +655,7 @@ for (const theme of themes) {
     for (const x of found.rounds ?? []) rounds.push({ ...x, route, theme })
     for (const x of found.heads ?? []) heads.push({ ...x, route, theme })
     for (const x of found.glued ?? []) glued.push({ ...x, route, theme })
+    for (const x of found.numbox ?? []) numbox.push({ ...x, route, theme })
     for (const w of GRID_WIDTHS) {
       await page.setViewportSize({ width: w, height: 1000 })
       await page.waitForTimeout(160)
@@ -751,6 +794,13 @@ console.log(`\n═══ وسم ملزوق في اللي جنبه ═══`)
   const u = uniq(glued, (x) => `${x.cls}|${x.txt}`)
   if (!u.length) console.log('  نضيف · كل وسم وله جاب.')
   for (const x of u.slice(0, 12)) { drift += 1; console.log(`  🔴 .${x.cls.padEnd(16)} «${x.txt}» جاب ${x.gap}px   ${x.route}·${x.theme}`) }
+}
+
+console.log(`\n═══ \`.num\` على حاوية لا على أرقام ═══`)
+{
+  const u = uniq(numbox, (x) => `${x.cls}|${x.why}`)
+  if (!u.length) console.log('  نضيف · العزل على الأرقام وحدها.')
+  for (const x of u.slice(0, 14)) { drift += 1; console.log(`  🔴 .${String(x.cls).padEnd(16)} (${x.why})   ${x.route}·${x.theme}`) }
 }
 
 console.log(`\n═══ شبكة «متساوية» وخاناتها مش متساوية ═══`)

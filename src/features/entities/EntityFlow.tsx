@@ -1,37 +1,36 @@
 import { Link } from 'react-router-dom'
-import { Money, Num } from '@/components/ui'
+import { Icon, icons, Money, Num } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
 
 /* ═══════════════════════════════════════════════════════════
-   رحلة الريال في الجهة · كروت متداخلة على أرضية بنسبة حقيقية
+   رحلة الريال في الجهة · **أربع مربّعات بشقّ دائري في الرُّكن**
 
-   المرجع اللي اتبعت كان قالبًا جاهزًا: كروت بيضا متداخلة بأرقام
-   كبيرة على أشكال ملوّنة، ومعاها خطوط واصلة ونقط. اللي أخدناه منه
-   هو **التركيب**: طبقات متداخلة، ورقم كبير بيرسّي كل كارت، وأرضية
-   ملوّنة تحتهم.
+   المرجع اللي العميل باعته: أربع مربّعات ملوّنة ٢×٢، كل واحد
+   مقطوع من الرُّكن اللي ناحية النصّ بربع دايرة بلون الصفحة،
+   والأيقونة قاعدة في الشقّ · فالأربع شقوق بيعملوا وردة في النصّ.
 
-   واللي ما أخدناهوش، وليه:
+   ═══ اللي اتاخد منه، واللي اتغيّر، وليه ═══
 
-   · **«OPTION 01» بترقيم ما بيقولش حاجة.** الترقيم هنا بيقول
-     ترتيبًا حقيقيًّا في رحلة المال، ولو ما كانش فيه ترتيب ما
-     بيتكتبش.
-   · **الخطوط والنقط الواصلة.** في القالب زينة · العلاقة هنا
-     بتتقال بالعرض نفسه: عرض كل جزء = نصيبه من الإجمالي.
-   · **الظلال التقيلة.** الظلّ في السيستم ده بيتصرف بالدور، والكارت
-     المرفوع واحد بس.
+   · **التركيب اتاخد كامل**: ٢×٢، الشقّ في الرُّكن الداخلي،
+     الأيقونة جوّه الشقّ، عنوان وسطر تحته في كل مربّع.
 
-   ═══ والبنية مش أربع خطوات ═══
+   · **الألوان اتغيّرت.** المرجع أصفر وتركوازي وكحلي وأحمر، وحبره
+     أبيض فوقهم · والأصفر دُه **١٫٧٧:١** مع الأبيض، يعني العنوان
+     في المربّع الأول في المرجع نفسه **مش مقروء**. وألوان السيستم
+     كمان: `--tone-2` بتدّي ٣٫٦٥ و`--tone-3` ٢٫٤٤ و`--tone-4`
+     ١٫٧٧. فالأربعة اتاخدوا من نفس عيلة الهوية (أخضر غامق ←
+     تركوازي ← لايم) بقيم **متقاسة**: ١٢٫٢٧ · ٧٫٨٢ · ٤٫٨٨ · ٥٫١٤.
 
-   الأربع أرقام **مش متتالية**. العلاقة الحقيقية:
+   · **الترتيب مش أربع خطوات.** العلاقة الحقيقية:
 
-       ٠١ إجمالي الممنوح  =  ٠٢ المصروف  +  ٠٣ تحت الصرف
-       ٠٤ ممنوح هذه السنة =  مقطع زمني من ٠١
+         ٠١ إجمالي الممنوح  =  ٠٢ وصل فعلًا  +  ٠٣ تحت الصرف
+         ٠٤ ممنوح هذه الدورة =  مقطع زمني من ٠١
 
-   فلو رسمناهم أربع درجات نازلة، الرسم هيقول إن ٠٣ بعد ٠٢ وأصغر
-   منه · وده غلط: هما **جزآن من كلّ** لا خطوتان. الرسم بيقول
-   الحقيقة: سطر كامل للكلّ، وتحته سطر واحد متقسّم بنسبتهم، والرابع
-   برّه الرحلة بعلامته.
+     الشبكة ٢×٢ بتقول «أربعة أنداد»، وده مش صح · فالنسبة مكتوبة
+     جوّه كل مربّع (`٩٢٪ من الإجمالي`)، والمربّع الأول مكتوب عليه
+     إنه **الكلّ** لا واحد من أربعة. الترقيم بيقول ترتيب القراءة
+     لا ترتيب الخطوات.
    ═══════════════════════════════════════════════════════════ */
 
 export function EntityFlow({ entity }: { entity: EntityRow }) {
@@ -43,14 +42,11 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
   const byEntity = `${ROUTES.projects}?q=${encodeURIComponent(entity.name)}`
 
   const share = (v: number) => (total ? Math.round((v / total) * 100) : 0)
-  const paidPct = share(paid)
-  const pendPct = share(pending)
-  const yearPct = share(entity.grantedThisYear)
 
   if (total <= 0) {
     return (
-      <div className="eflow eflow-none">
-        <span className="eflow-t">رحلة الريال في هذه الجهة</span>
+      <div className="esq esq-none">
+        <span className="esq-t">رحلة الريال في هذه الجهة</span>
         <p className="mut">
           ما اتمنحش لها ريال لحدّ دلوقتي · الجهة مسجَّلة ولسّه ما دخلتش دورة صرف.
         </p>
@@ -58,81 +54,52 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
     )
   }
 
+  /* المربّع الأول هو **الكلّ** فمالوش نسبة · التلاتة الباقية
+     نسبتهم منه، والنسبة مكتوبة عشان الشبكة ٢×٢ ما تقولش
+     «أربعة أنداد» وهمّ مش كده. */
+  const tiles = [
+    { k: '01', icon: icons.pay, label: 'إجمالي الممنوح', value: total,
+      pct: null, tail: 'كل ما اتمنح لها من أول تسجيلها', to: byEntity },
+    { k: '02', icon: icons.check, label: 'وصل فعلًا', value: paid,
+      pct: share(paid), tail: 'من الإجمالي', to: ROUTES.payments },
+    { k: '03', icon: icons.clock, label: 'تحت الصرف', value: pending,
+      pct: share(pending), tail: 'من الإجمالي', to: ROUTES.payments },
+    { k: '04', icon: icons.chart, label: 'ممنوح في دورة 2026',
+      value: entity.grantedThisYear, pct: share(entity.grantedThisYear),
+      tail: 'من الإجمالي · مقطع زمني منه', to: byEntity },
+  ]
+
   return (
-    <div className="eflow">
-      <div className="eflow-h">
-        <span className="eflow-t">رحلة الريال في هذه الجهة</span>
-        <span className="eflow-s mut">
+    <div className="esq">
+      <div className="esq-h">
+        <span className="esq-ht">رحلة الريال في هذه الجهة</span>
+        <span className="esq-hs mut">
           كل ما اتمنح لها من أول تسجيلها، وفين وصل دلوقتي
         </span>
       </div>
 
-      {/* ═══ ٠١ · الكلّ ═══
-          سطر بعرض كامل: هو المرجع اللي النِّسَب تحته بتتقاس منه */}
-      <Link to={byEntity} className="eflow-r eflow-all">
-        <span className="eflow-n">01</span>
-        <span className="eflow-b">
-          <span className="eflow-tx"><span className="eflow-k">إجمالي الممنوح</span></span>
-          <b className="eflow-v"><Money sm>{total}</Money></b>
-        </span>
-        <span className="eflow-ground" aria-hidden="true" />
-      </Link>
-
-      {/* ═══ ٠٢ و٠٣ · جزآن من الكلّ ═══
-          الاتنين في صفّ واحد وعرض كل واحد = نصيبه · فالعين بتقرا
-          القسمة من الشكل قبل ما تقرا النسبة مكتوبة. والحدّ الأدنى
-          للعرض عشان الجزء الصغير يفضل يتقري لا يختفي. */}
-      <div
-        className="eflow-split"
-        /* `fr` جوّه `calc()` **غير صالحة** · الوحدة مش طول،
-           فالتصريح كله بيتلغي والشبكة بترجع عمودًا واحدًا. القيمة
-           بتتكتب كاملة من هنا. */
-        style={{ '--a': `${paidPct || 1}fr`, '--b': `${pendPct || 1}fr` } as React.CSSProperties}
-      >
-        {/* الاسم والنسبة في ناحية، والمبلغ في الناحية التانية ·
-            الكارت كان بيحطّهم كلهم في أول الصفّ ويسيب باقي عرضه
-            فاضيًا، فالعرض اللي **هو المقياس** كان بيتقري فراغًا */}
-        <Link to={ROUTES.payments} className="eflow-r eflow-paid">
-          <span className="eflow-n">02</span>
-          <span className="eflow-b">
-            <span className="eflow-tx">
-              <span className="eflow-k">وصل فعلًا</span>
-              <span className="eflow-m"><Num>{paidPct}</Num>% من الإجمالي</span>
+      <div className="esq-g">
+        {tiles.map((t) => (
+          <Link key={t.k} to={t.to} className="esq-c">
+            {/* `.num` على **الأرقام وحدها** · لو نزلت على الخانة،
+                `direction:ltr` اللي جوّاها بتقلب `inset-inline-*`
+                فالرقم بيروح للركن الغلط ويقع تحت الشقّ */}
+            <span className="esq-n"><span className="num">{t.k}</span></span>
+            <span className="esq-b">
+              <span className="esq-k">{t.label}</span>
+              <b className="esq-v"><Money sm>{t.value}</Money></b>
+              <span className="esq-s">
+                {t.pct === null ? t.tail : <><Num>{t.pct}</Num>% {t.tail}</>}
+              </span>
             </span>
-            <b className="eflow-v"><Money sm>{paid}</Money></b>
-          </span>
-          <span className="eflow-ground" aria-hidden="true" />
-        </Link>
-
-        <Link to={ROUTES.payments} className="eflow-r eflow-pend now">
-          <span className="eflow-n">03</span>
-          <span className="eflow-b">
-            <span className="eflow-tx">
-              <span className="eflow-k">تحت الصرف</span>
-              <span className="eflow-m"><Num>{pendPct}</Num>% من الإجمالي</span>
+            {/* الشقّ · ربع دايرة بلون الصفحة في الرُّكن الداخلي،
+                والأيقونة قاعدة جوّاه · ده توقيع المرجع */}
+            <span className="esq-cut" aria-hidden="true">
+              <Icon name={t.icon} size={20} />
             </span>
-            <b className="eflow-v"><Money sm>{pending}</Money></b>
-          </span>
-          <span className="eflow-ground" aria-hidden="true" />
-        </Link>
+          </Link>
+        ))}
       </div>
-
-      {/* ═══ ٠٤ · برّه الرحلة ═══
-          مقطع زمني من ٠١ لا خطوة بعد ٠٣ · فشكله مختلف ومكتوب جنبه
-          إنه مقطع، عشان الترقيم ما يكدبش */}
-      <Link to={byEntity} className="eflow-side">
-        <span className="eflow-n sm">04</span>
-        <span className="eflow-b">
-          <span className="eflow-tx">
-            <span className="eflow-k">ممنوح في دورة <span className="num">2026</span></span>
-            <span className="eflow-m">
-              <Num>{yearPct}</Num>% من الإجمالي · مقطع زمني من <span className="num">01</span>،
-              مش خطوة بعد <span className="num">03</span>
-            </span>
-          </span>
-          <b className="eflow-v"><Money sm>{entity.grantedThisYear}</Money></b>
-        </span>
-      </Link>
     </div>
   )
 }
