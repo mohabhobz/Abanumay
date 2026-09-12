@@ -3248,8 +3248,10 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ejr-c{position:relative;flex:1 1 0;min-width:0;color:inherit;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;min-height:clamp(232px,21vw,300px);
-  padding:1.2rem .7rem;
-  background:var(--g-card);border-radius:var(--r2);
+  /* الحشو العلوي أكبر من السفلي · المحتوى متمركز في الصندوق
+     المحشو، فبيتزقّ لتحت بنص الفرق من غير ما يتلزق في القاع */
+  padding:3rem .7rem 1.2rem;
+  background:var(--g-card);
   -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   transition:background .18s ease}
@@ -3257,6 +3259,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    المغطّاة عشان كلامه يفضل في نصّ الجزء **الظاهر** */
 .ejr-c + .ejr-c{margin-inline-start:calc(-1 * var(--ejr-lap));
   padding-inline-start:calc(.7rem + var(--ejr-lap))}
+/* الكيرف على حوافّ المجموعة من برّه بس · الحوافّ الداخلية بين
+   كارت وكارت مستقيمة، فالأربعة بيقروا لوحًا واحدًا متراكبًا لا
+   أربع كروت منفصلة */
+.ejr-c{border-radius:0}
+.ejr-c:first-child{border-start-start-radius:var(--r2);border-end-start-radius:var(--r2)}
+.ejr-c:last-child{border-start-end-radius:var(--r2);border-end-end-radius:var(--r2)}
 .ejr-c:nth-child(1){z-index:4}
 .ejr-c:nth-child(2){z-index:3}
 .ejr-c:nth-child(3){z-index:2}
@@ -3278,6 +3286,14 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ejr-c03{--dc:var(--sq-3C)}
 .ejr-c04{--dc:var(--sq-4C)}
 
+/* الدايرة الزجاجية · دايرة كاملة بطلب صريح، وهي استثناء مقصود
+   من سُلّم الريدياس (الدايرة محجوزة للصور والنقط) · والأيقونة
+   جوّاها بلون الخانة، فاللون رجع للكارت الأبيض */
+.ejr-ic{width:clamp(44px,4.4vw,58px);aspect-ratio:1;border-radius:50%;flex:none;
+  display:grid;place-items:center;margin-bottom:1.15rem;color:rgb(var(--dc));
+  background:rgba(var(--wC),calc(.62 * var(--wM)));
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  box-shadow:inset 0 0 0 1px var(--edge-1),0 8px 18px -12px rgba(var(--edgeC),.55)}
 .ejr-slot{font-size:var(--fs-1);color:rgb(var(--dc));line-height:1.5}
 .ejr-t{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1);
   line-height:1.4;margin-top:.15rem}
@@ -3288,7 +3304,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 
 @media (max-width:560px){
   .ejr-stage{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
-  .ejr-c{min-height:150px}
+  .ejr-c{min-height:150px;padding-top:1.2rem;border-radius:var(--r2)}
   .ejr-c + .ejr-c{margin-inline-start:0;padding-inline-start:.7rem}
   .ejr-c:not(:last-child){box-shadow:inset 0 0 0 1px var(--edge-1)}
 }

@@ -125,8 +125,12 @@ const ICON_BOX = '.catc-i,.rbc-i,.rpk-i,.badge,.lrfind>.badge,.htile-ic,.aclose,
  * بلا سبب · وده اللي العميل شافه لما الشريحة المفعَّلة كان ليها
  * ظلّ والحقل اللي جنبها لأ.
  */
+/* اللي مسموح له ظلّ · يعني **مرفوع فعلًا** فوق اللي تحته.
+   `ejr-c` و`ejr-ic` من دول: الشكل كله ورقة فوق ورقة، والظلّ هو
+   اللي بيقول الترتيب · من غيره بيبقى أربع أعمدة جنب بعض. */
 const RAISED = ['apanel', 'askfab', 'cbox', 'decbar', 'rail-tip', 'railgrip-b',
-  'fmenu', 'fexp-m', 'acct', 'gpeek', 'fprev', 'toast', 'pop', 'aitip']
+  'fmenu', 'fexp-m', 'acct', 'gpeek', 'fprev', 'toast', 'pop', 'aitip',
+  'ejr-c', 'ejr-ic']
 
 const GRID_WIDTHS = [1600, 1440, 1180]
 

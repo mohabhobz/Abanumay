@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Glass, Money, Num } from '@/components/ui'
+import { Glass, Icon, icons, Money, Num } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
 
@@ -59,22 +59,22 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
 
   const cards = [
     {
-      k: '01', slot: 'الكلّ', big: true,
+      k: '01', slot: 'الكلّ', big: true, icon: 'budget' as const,
       label: 'إجمالي الممنوح', value: total, pct: null,
       note: 'من أول تسجيلها', to: byEntity,
     },
     {
-      k: '02', slot: 'الجزء الأكبر', big: true,
+      k: '02', slot: 'الجزء الأكبر', big: true, icon: 'check' as const,
       label: 'وصل فعلًا', value: paid, pct: share(paid),
       note: '', to: ROUTES.payments,
     },
     {
-      k: '03', slot: 'الباقي', big: false,
+      k: '03', slot: 'الباقي', big: false, icon: 'clock' as const,
       label: 'تحت الصرف', value: pending, pct: share(pending),
       note: '', to: ROUTES.payments,
     },
     {
-      k: '04', slot: 'مقطع زمني', big: false,
+      k: '04', slot: 'مقطع زمني', big: false, icon: 'chart' as const,
       label: 'دورة 2026', value: entity.grantedThisYear, pct: share(entity.grantedThisYear),
       note: '', to: byEntity,
     },
@@ -87,6 +87,11 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
         <span className="ejr-glow" aria-hidden="true" />
         {cards.map((c) => (
           <Link key={c.k} to={c.to} className={`ejr-c ejr-c${c.k}${c.big ? ' big' : ''}`}>
+            {/* دايرة زجاجية فوق · الأيقونة بلون الخانة، وهي اللي
+                بترجّع اللون للكارت الأبيض */}
+            <span className="ejr-ic" aria-hidden="true">
+              <Icon name={icons[c.icon]} size={22} />
+            </span>
             <span className="ejr-slot">{c.slot}</span>
             <span className="ejr-t">{c.label}</span>
             <b className="ejr-v"><Money sm>{c.value}</Money></b>
