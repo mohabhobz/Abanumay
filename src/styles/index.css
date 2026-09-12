@@ -3219,7 +3219,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 
 /* الأرضية · بقعة مغبّشة بلون المنتج بتربط الأربعة من غير عمود
    ولا خطوط · هي اللي بتخلّيهم مجموعة واحدة */
-.ejr-glow{position:absolute;inset:12% 14%;border-radius:var(--r3);pointer-events:none;
+.ejr-glow{position:absolute;inset:12% 22% 12% 6%;border-radius:var(--r3);pointer-events:none;
   background:
     radial-gradient(58% 66% at 74% 24%, rgba(var(--ch-1C),.62), transparent 72%),
     radial-gradient(60% 68% at 26% 78%, rgba(var(--ch-2C),.68), transparent 72%);
@@ -3255,10 +3255,10 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ejr-c:not(.big) .ejr-slot{font-size:.72rem}
 
 /* الأماكن · متقاربة، وفراغ صغير في النصّ بس */
-.ejr-c01{inset-block-start:0;inset-inline-start:4%;width:47%}
-.ejr-c02{inset-block-end:0;inset-inline-start:2%;width:49%}
-.ejr-c03{inset-block-end:6%;inset-inline-end:4%;width:38%}
-.ejr-c04{inset-block-start:4%;inset-inline-end:2%;width:40%}
+.ejr-c01{inset-block-start:0;inset-inline-start:0;width:47%}
+.ejr-c02{inset-block-end:0;inset-inline-start:0;width:49%}
+.ejr-c03{inset-block-end:6%;inset-inline-end:14%;width:38%}
+.ejr-c04{inset-block-start:4%;inset-inline-end:12%;width:40%}
 
 @media (max-width:560px){
   .ejr-stage{aspect-ratio:auto;min-height:0;max-height:none;display:grid;
