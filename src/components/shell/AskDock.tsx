@@ -67,7 +67,10 @@ export function AskDock({ open, onToggle, compact }: AskDockProps) {
       aria-label="اسأل أبانمي"
       title="اسأل أبانمي · ⌘K"
     >
-      <span className="badge badge-30"><span className="aispark" /></span>
+      {/* الشرارة عارية · كانت جوّه `.badge`، والصندوق ده حاوية
+          مرسومة بخلفيتها وحدّها وركنها · يعني صندوق جوّه صندوق،
+          والزرار نفسه هو الحاوية. */}
+      <span className="aispark" />
       {!compact && <span className="askfab-t">اسأل أبانمي</span>}
     </button>
   )

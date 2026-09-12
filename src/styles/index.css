@@ -3947,7 +3947,8 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .askfab.on{box-shadow:
   inset 0 0 0 1px rgba(var(--retC2),.42),
   0 14px 32px rgba(20,69,71,.14)}
-.askfab .badge{flex:none}
+/* الشرارة عارية جوّه الزرار · مقاسها من التحكّم لا من صندوق جوّاه */
+.askfab .aispark{width:26px;height:26px}
 .askfab-t{flex:none;text-align:start;white-space:nowrap}
 .askfab.mini{width:auto;height:46px;min-height:0;padding:0;justify-content:center;aspect-ratio:1;border-radius:var(--r1)}
 @media (prefers-reduced-motion:reduce){
