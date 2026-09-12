@@ -2954,15 +2954,36 @@ to{opacity:1;transform:none}
      الأول، والصف التاني هو اللي محتاجهم */
   .fold .d-budget .chleg{display:grid;grid-template-columns:1fr 1fr;
     column-gap:1.6rem;row-gap:.4rem}
-/* الحلقة مقاسها جاي كخاصية من المكوّن؛ هنا الارتفاع المتاح هو
-     اللي بيحكم، والنص في الجوف بيصغر معاها */
+/* ═══ الحلقة تملا كارتها ═══
+     كانت مقصوصة عند `max-height:124px` والكارت ارتفاعه 419 على
+     ١٤٤٠×٩٠٠ و599 على ١٩٢٠×١٠٨٠ · يعني الحلقة بتاخد رُبع المساحة
+     المتاحة وتلاتة أرباع الكارت فاضي، والرسم اللي هو الحدث
+     الرئيسي في الكارت بيتقري حاشية.
+
+     والقيد الحقيقي كان **العرض لا الارتفاع**: الحلقة والترتيب
+     كانوا صفًّا واحدًا، فأي كِبَر في الحلقة بياكل من عرض الترتيب.
+     فالاتنين بقوا عمودًا: الحلقة فوق بتاخد الارتفاع الفاضي كله،
+     والترتيب تحتها بعرض الكارت الكامل · والمساحة اللي كانت فاضية
+     بقت هي مقاس الرسم.
+
+     والنصّ في الجوف بيكبر معاها، لأن رقمًا بمقاس ثابت في حلقة
+     بقت ضعف مقاسها بيتقري تائهًا في نصّها. */
   .fold .d-track{display:flex;flex-direction:column;justify-content:center}
-.fold .d-track .dsplit{flex:1;min-height:0;flex-wrap:nowrap}
-.fold .d-track .chdonut{min-height:0;align-self:stretch}
-.fold .d-track .chdonut svg{height:100%;width:auto;max-height:124px;min-height:92px}
+.fold .d-track .dsplit{flex:1;min-height:0;flex-wrap:nowrap;
+    flex-direction:column;justify-content:center;gap:1.1rem}
+.fold .d-track .chdonut{flex:1;min-height:0;width:100%;align-self:center}
+.fold .d-track .chdonut svg{height:100%;width:auto;max-width:100%;
+    max-height:none;min-height:112px}
+.fold .d-track .chleg{flex:none;width:100%;min-width:0}
+/* ⚠️ مقاسان مكتوبان لا `cqmin` · `cqmin` من غير حاوية استعلام
+     (`container-type`) بيرجع لوحدة الشاشة الصغيرة، فالرقم بيبقى
+     نسبة من **ارتفاع الشاشة** لا من الحلقة · قيمة شغّالة بالغلط.
+     والحلقة هنا ارتفاعها معروف من الكارت، فمقاس صريح أصدق. */
+  .fold .d-track .chdonut-c b{font-size:1.5rem}
+.fold .d-track .chdonut-c span{font-size:.72rem}
 @media (max-height:820px){
-    .fold .d-track .chdonut-c b{font-size:1rem}
-.fold .d-track .chdonut-c span{font-size:.62rem}
+    .fold .d-track .chdonut-c b{font-size:1.05rem}
+.fold .d-track .chdonut-c span{font-size:.64rem}
 }
 /* الخريطة: الخانة بتاخد الباقي، وعرض الرسم بيتحسب من ارتفاع
      الخانة بوحدات الحاوية · فالنسبة تفضل مضبوطة سواء العرض هو
