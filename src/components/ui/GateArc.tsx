@@ -166,26 +166,36 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
 
   const active = hover === null ? null : detail(roles[hover] as AuthorityRole, hover)
 
-  const fallbackLines = (
-    <>
-      {uplifted && decided.ceiling && (
-        <div className="fhl">
-          سقفه <b className="num">{nf.format(decided.ceiling)}</b> · يزيد حتى{' '}
-          <Money>{uplifted}</Money>
-        </div>
-      )}
-      {authority.provisional && <div className="fhp">السقوف مؤقتة، بانتظار العميل</div>}
-    </>
-  )
+  /* ═══════════════════════════════════════════════════════════
+     Three fixed rows, always · so hover cannot move the page
 
-  const activeLines = active && (
-    <>
-      {active.lines.filter(Boolean).map((line, j) => (
-        <div className="fhl" key={j}>{line}</div>
-      ))}
-      <div className="fhs">{active.src}</div>
-    </>
-  )
+     The caption used to render only the rows it had: one line at
+     rest, three on hover. The block grew, the card grew with it,
+     and everything below the fan slid down the moment the pointer
+     touched a sector. Reading a chart must never move the page
+     you are reading it on.
+
+     So the caption is always exactly three rows — two detail lines
+     and a source — and an empty row holds a non-breaking space.
+     The height is then structural, not a number someone has to
+     keep in sync with the longest state.
+     ═══════════════════════════════════════════════════════════ */
+  const NB = '\u00A0'
+
+  const fallback: (ReactNode | null)[] = [
+    uplifted && decided.ceiling ? (
+      <>
+        سقفه <b className="num">{nf.format(decided.ceiling)}</b> · يزيد حتى{' '}
+        <Money>{uplifted}</Money>
+      </>
+    ) : null,
+    authority.provisional ? (
+      <span className="fhp">السقوف مؤقتة، بانتظار العميل</span>
+    ) : null,
+  ]
+
+  const rows = active ? active.lines.filter(Boolean) : fallback.filter(Boolean)
+  const src = active ? active.src : null
 
   return (
     <div className="garc">
@@ -298,7 +308,9 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
       </div>
 
       <div className="fanfoot" key={hover === null ? 'fbase' : `f${hover}`}>
-        {active ? activeLines : fallbackLines}
+        <div className="fhl">{rows[0] ?? NB}</div>
+        <div className="fhl">{rows[1] ?? NB}</div>
+        <div className="fhs">{src ?? NB}</div>
       </div>
     </div>
   )
