@@ -36,7 +36,8 @@ export default function AssistantPage() {
         {mobile && <MobileTop user={fixtures.currentUser} onSignOut={out} />}
 
         <div className="shell">
-          <Rail user={fixtures.currentUser} onSignOut={out} />
+          {/* شاشة المساعد كلها للمحادثة · الشريط مقفول هنا دايمًا */}
+          <Rail user={fixtures.currentUser} onSignOut={out} shut />
 
           <AssistantScreen
             greet={role.greet}

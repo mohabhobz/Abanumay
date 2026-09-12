@@ -1,36 +1,39 @@
 import { Link } from 'react-router-dom'
-import { Glass, Icon, icons, Money, Num } from '@/components/ui'
+import { Glass, Money, Num } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
 
 /* ═══════════════════════════════════════════════════════════
-   رحلة الريال في الجهة · **أربع مربّعات بشقّ دائري في الرُّكن**
+   رحلة الريال في الجهة · **عمود ملوّن وأربع بطاقات متداخلة**
 
-   المرجع اللي العميل باعته: أربع مربّعات ملوّنة ٢×٢، كل واحد
-   مقطوع من الرُّكن اللي ناحية النصّ بربع دايرة بلون الصفحة،
-   والأيقونة قاعدة في الشقّ · فالأربع شقوق بيعملوا وردة في النصّ.
+   المرجع اللي العميل باعته: عمود رأسي بلونين في النصّ، وأربع
+   بطاقات بيضا متداخلة معاه من أركانه · اتنين كبار واتنين صغار،
+   وخطوط رفيعة بنقط بتخرج للحوافّ.
 
-   ═══ اللي اتاخد منه، واللي اتغيّر، وليه ═══
+   ═══ اللي اتاخد، واللي اتغيّر ═══
 
-   · **التركيب اتاخد كامل**: ٢×٢، الشقّ في الرُّكن الداخلي،
-     الأيقونة جوّه الشقّ، عنوان وسطر تحته في كل مربّع.
+   · **التركيب اتاخد كامل**: العمود بلونين، الأربع بطاقات متداخلة
+     معاه، الكبير جنب الصغير، والخطوط والنقط.
 
-   · **الألوان اتغيّرت.** المرجع أصفر وتركوازي وكحلي وأحمر، وحبره
-     أبيض فوقهم · والأصفر دُه **١٫٧٧:١** مع الأبيض، يعني العنوان
-     في المربّع الأول في المرجع نفسه **مش مقروء**. وألوان السيستم
-     كمان: `--tone-2` بتدّي ٣٫٦٥ و`--tone-3` ٢٫٤٤ و`--tone-4`
-     ١٫٧٧. فالأربعة اتاخدوا من نفس عيلة الهوية (أخضر غامق ←
-     تركوازي ← لايم) بقيم **متقاسة**: ١٢٫٢٧ · ٧٫٨٢ · ٤٫٨٨ · ٥٫١٤.
+   · **الاتجاه اتقلب.** المرجع إنجليزي فالكبار على الشمال. هنا
+     القراءة بتبدأ من اليمين، فالبطاقتان الكبيرتان على اليمين ·
+     والتخطيط كله بخصائص منطقية فبيتقلب لوحده.
 
-   · **الترتيب مش أربع خطوات.** العلاقة الحقيقية:
+   · **الألوان من السيستم.** المرجع أزرق وبرتقالي · العمود هنا
+     بلونَي الرسوم البيانية (`--ch-1` و`--ch-2`)، وهمّ اللي
+     بيرسموا كل جراف في السيستم.
 
-         ٠١ إجمالي الممنوح  =  ٠٢ وصل فعلًا  +  ٠٣ تحت الصرف
-         ٠٤ ممنوح هذه الدورة =  مقطع زمني من ٠١
+   · **الحجم بيقول حاجة.** في المرجع الكبير والصغير زينة. هنا
+     الكبيرتان هما الرقمان الكبيران فعلًا (الإجمالي واللي وصل)،
+     والصغيرتان الجزء الصغير والمقطع الزمني.
 
-     الشبكة ٢×٢ بتقول «أربعة أنداد»، وده مش صح · فالنسبة مكتوبة
-     جوّه كل مربّع (`٩٢٪ من الإجمالي`)، والمربّع الأول مكتوب عليه
-     إنه **الكلّ** لا واحد من أربعة. الترقيم بيقول ترتيب القراءة
-     لا ترتيب الخطوات.
+   ═══ والعلاقة مش أربع خطوات ═══
+
+       ٠١ إجمالي الممنوح  =  ٠٢ وصل فعلًا  +  ٠٣ تحت الصرف
+       ٠٤ ممنوح هذه الدورة =  مقطع زمني من ٠١
+
+   فالنسبة مكتوبة في كل بطاقة، والأولى مكتوب عليها إنها **الكلّ**
+   لا واحدة من أربعة.
    ═══════════════════════════════════════════════════════════ */
 
 export function EntityFlow({ entity }: { entity: EntityRow }) {
@@ -43,62 +46,80 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
 
   const share = (v: number) => (total ? Math.round((v / total) * 100) : 0)
 
-  /* الحالة الفاضية **كارت** لا نصًّا عريانًا على أرضية الصفحة ·
-     الشريط بقى بعرض الصفحة، والميش تحته بيغمق في نصّها، فالنصّ
-     الرمادي وقع على ٣٫٣٣:١. الكارت بيدّيه أرضية معروفة. */
+  /* الحالة الفاضية كارت له أرضية معروفة · النصّ العريان على الميش
+     كان بيقع تحت حدّ التباين */
   if (total <= 0) {
     return (
-      <Glass className="esq esq-none">
-        <span className="esq-ht">رحلة الريال في هذه الجهة</span>
-        <p className="mut">
-          ما اتمنحش لها ريال لحدّ دلوقتي · الجهة مسجَّلة ولسّه ما دخلتش دورة صرف.
-        </p>
+      <Glass className="ejr ejr-none">
+        <span className="ejr-ht">رحلة الريال في هذه الجهة</span>
+        <p>ما اتمنحش لها ريال لحدّ دلوقتي · الجهة مسجَّلة ولسّه ما دخلتش دورة صرف.</p>
       </Glass>
     )
   }
 
-  /* المربّع الأول هو **الكلّ** فمالوش نسبة · التلاتة الباقية
-     نسبتهم منه، والنسبة مكتوبة عشان الشبكة ٢×٢ ما تقولش
-     «أربعة أنداد» وهمّ مش كده. */
-  const tiles = [
-    { k: '01', icon: icons.pay, label: 'إجمالي الممنوح', value: total,
-      pct: null, tail: 'كل ما اتمنح لها من أول تسجيلها', to: byEntity },
-    { k: '02', icon: icons.check, label: 'وصل فعلًا', value: paid,
-      pct: share(paid), tail: 'من الإجمالي', to: ROUTES.payments },
-    { k: '03', icon: icons.clock, label: 'تحت الصرف', value: pending,
-      pct: share(pending), tail: 'من الإجمالي', to: ROUTES.payments },
-    { k: '04', icon: icons.chart, label: 'ممنوح في دورة 2026',
-      value: entity.grantedThisYear, pct: share(entity.grantedThisYear),
-      tail: 'من الإجمالي · مقطع زمني منه', to: byEntity },
+  const cards = [
+    {
+      k: '01', slot: 'الكلّ', big: true,
+      label: 'إجمالي الممنوح', value: total, pct: null,
+      note: 'من أول تسجيلها', to: byEntity,
+    },
+    {
+      k: '02', slot: 'الجزء الأكبر', big: true,
+      label: 'وصل فعلًا', value: paid, pct: share(paid),
+      note: 'دفعات اتصرفت', to: ROUTES.payments,
+    },
+    {
+      k: '03', slot: 'الباقي', big: false,
+      label: 'تحت الصرف', value: pending, pct: share(pending),
+      note: '', to: ROUTES.payments,
+    },
+    {
+      k: '04', slot: 'مقطع زمني', big: false,
+      label: 'دورة 2026', value: entity.grantedThisYear, pct: share(entity.grantedThisYear),
+      note: '', to: byEntity,
+    },
   ]
 
   return (
-    <div className="esq">
-      <div className="esq-h">
-        <span className="esq-ht">رحلة الريال في هذه الجهة</span>
-        <span className="esq-hs mut">
-          كل ما اتمنح لها من أول تسجيلها، وفين وصل دلوقتي
-        </span>
+    <div className="ejr">
+      <div className="ejr-h">
+        <span className="ejr-ht">رحلة الريال في هذه الجهة</span>
+        <span className="ejr-hs">كل ما اتمنح لها من أول تسجيلها، وفين وصل دلوقتي</span>
       </div>
 
-      <div className="esq-g">
-        {tiles.map((t) => (
-          <Link key={t.k} to={t.to} className="esq-c">
-            {/* `.num` على **الأرقام وحدها** · لو نزلت على الخانة،
-                `direction:ltr` اللي جوّاها بتقلب `inset-inline-*`
-                فالرقم بيروح للركن الغلط ويقع تحت الشقّ */}
-            <span className="esq-n"><span className="num">{t.k}</span></span>
-            <span className="esq-b">
-              <span className="esq-k">{t.label}</span>
-              <b className="esq-v"><Money sm>{t.value}</Money></b>
-              <span className="esq-s">
-                {t.pct === null ? t.tail : <><Num>{t.pct}</Num>% {t.tail}</>}
-              </span>
-            </span>
-            {/* الشقّ · ربع دايرة بلون الصفحة في الرُّكن الداخلي،
-                والأيقونة قاعدة جوّاه · ده توقيع المرجع */}
-            <span className="esq-cut" aria-hidden="true">
-              <Icon name={t.icon} size={20} />
+      <div className="ejr-stage">
+        {/* العمود · لونان، الأعلى للكلّ والأسفل لللي وصل منه */}
+        <span className="ejr-bar" aria-hidden="true"><i /><i /></span>
+
+        {/* الخطوط والنقط · زينة المرجع، مرسومة في SVG عشان تفضل
+            رفيعة على أي مقاس */}
+        <svg className="ejr-wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M3 20 H15 V7 H43" />
+          <path d="M97 28 H86 V13 H63" />
+          <path d="M3 76 H17 V92 H41" />
+          <path d="M97 84 H88 V97 H61" />
+          {/* النقط **مسارات بطول صفر بطرف مدوّر**، مش `circle` ·
+              الـ`viewBox` متمطّط (`preserveAspectRatio:none`)
+              فالدايرة بتطلع بيضاوية. سُمك الخطّ غير متمطّط
+              (`vector-effect`)، فالطرف المدوّر بيفضل دايرة. */}
+          <g className="ejr-dot">
+            <path d="M3 20 H3" /><path d="M43 7 H43" />
+            <path d="M97 28 H97" /><path d="M63 13 H63" />
+            <path d="M3 76 H3" /><path d="M41 92 H41" />
+            <path d="M97 84 H97" /><path d="M61 97 H61" />
+          </g>
+        </svg>
+
+        {cards.map((c) => (
+          <Link key={c.k} to={c.to} className={`ejr-c ejr-c${c.k}${c.big ? ' big' : ''}`}>
+            <span className="ejr-slot">{c.slot}</span>
+            <span className="ejr-n"><span className="num">{c.k}</span></span>
+            <span className="ejr-t">{c.label}</span>
+            <b className="ejr-v"><Money sm>{c.value}</Money></b>
+            <span className="ejr-s">
+              {c.pct === null
+                ? c.note
+                : <><Num>{c.pct}</Num>% من الإجمالي{c.note ? ` · ${c.note}` : ''}</>}
             </span>
           </Link>
         ))}

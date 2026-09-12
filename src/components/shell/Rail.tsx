@@ -16,6 +16,16 @@ export interface RailProps {
    * الريل بيتفلتر لوحده من غير أي تعديل هنا.
    */
   permissions?: string[]
+  /**
+   * يتقفل غصبًا · والمستخدم ما بيفقدش عرضه.
+   *
+   * المساعد بياخد الشاشة كلها، والشريط المفرود جنبه بيزاحمه على
+   * مساحة القراءة وبيفضل مفتوحًا على كلام مش بتاعه. فبيتقفل لوحده
+   * لمّا المساعد يفتح، **ويرجع لعرضه الأصلي** لمّا يتقفل ·
+   * والعرض ده ما بيتكتبش في التخزين وهو مقفول غصبًا، فتفضيل
+   * المستخدم ما بيتمسحش.
+   */
+  shut?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -56,10 +66,12 @@ const readWidth = (): number => {
   }
 }
 
-export function Rail({ user, onSignOut, permissions }: RailProps) {
+export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
   const allowed = NAV.filter((n) => !n.perm || !permissions || permissions.includes(n.perm))
 
   const [w, setW] = useState(readWidth)
+  /* العرض المحفوظ قبل القفل الغصب · `null` يعني مش مقفول غصبًا */
+  const held = useRef<number | null>(null)
   const [dragging, setDragging] = useState(false)
   /* مرجع للحالة وقت بداية السحب · الستيت جوّه المستمع بيبقى قديمًا */
   const drag = useRef<{ x: number; w: number; moved: boolean } | null>(null)
@@ -68,6 +80,21 @@ export function Rail({ user, onSignOut, permissions }: RailProps) {
   const wide = w >= LOCK_AT
 
   useEffect(() => {
+    setW((cur) => {
+      if (shut) {
+        if (held.current === null) held.current = cur
+        return SHUT
+      }
+      if (held.current === null) return cur
+      const back = held.current
+      held.current = null
+      return back
+    })
+  }, [shut])
+
+  useEffect(() => {
+    /* وهو مقفول غصبًا، القيمة دي مش اختيار المستخدم · ما تتحفظش */
+    if (held.current !== null) return
     try {
       localStorage.setItem(RAIL_KEY, String(w))
     } catch {

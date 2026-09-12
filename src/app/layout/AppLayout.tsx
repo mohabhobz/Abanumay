@@ -54,6 +54,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
           <Rail
             user={user}
             onSignOut={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
+            shut={assistantOpen}
           />
 
           {children}
