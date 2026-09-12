@@ -3209,77 +3209,63 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    وكله بخصائص منطقية (`inset-inline-*`)، فالمرجع الإنجليزي
    بيتقلب لوحده: الكبار على اليمين حيث القراءة بتبدأ.
    ═══════════════════════════════════════════════════════════ */
-.ejr{display:flex;flex-direction:column;gap:.7rem;width:100%;min-width:0}
-.ejr-h{display:flex;flex-direction:column;gap:.15rem}
-.ejr-ht{font-family:var(--fd);font-weight:600;font-size:.88rem;color:var(--t1);line-height:1.5}
-.ejr-hs{font-size:var(--fs-2);line-height:1.7;color:var(--t2-g)}
-.ejr-none{gap:.35rem}
+.ejr{display:flex;width:100%;min-width:0}
+.ejr-none{flex-direction:column;gap:.35rem}
 .ejr-none p{margin:0;font-size:var(--fs-2);line-height:1.8;color:var(--t2)}
-.ejr-none .ejr-ht{font-size:.92rem}
+.ejr-none .ejr-ht{font-family:var(--fd);font-weight:600;font-size:.92rem;color:var(--t1)}
 
-/* الارتفاع محدود · الترويسة مش المفروض تاخد نصّ الشاشة */
-.ejr-stage{position:relative;width:100%;aspect-ratio:1 / .6;
-  min-height:290px;max-height:370px}
+.ejr-stage{position:relative;width:100%;aspect-ratio:1 / .66;
+  min-height:330px;max-height:420px}
 
-/* ── العمود · لونان من لوحة الرسوم ── */
-.ejr-bar{position:absolute;inset-block:6% 10%;inset-inline:34% 33%;
-  border-radius:var(--r2);overflow:hidden;display:flex;flex-direction:column}
-.ejr-bar>i{flex:1;display:block}
-.ejr-bar>i:first-child{background:var(--ch-1)}
-.ejr-bar>i:last-child{background:var(--ch-2)}
+/* الأرضية · بقعة مغبّشة بلون المنتج بتربط الأربعة من غير عمود
+   ولا خطوط · هي اللي بتخلّيهم مجموعة واحدة */
+.ejr-glow{position:absolute;inset:12% 14%;border-radius:var(--r3);pointer-events:none;
+  background:
+    radial-gradient(58% 66% at 74% 24%, rgba(var(--ch-1C),.62), transparent 72%),
+    radial-gradient(60% 68% at 26% 78%, rgba(var(--ch-2C),.68), transparent 72%);
+  filter:blur(30px)}
 
-/* ── الخطوط والنقط ──
-   `vector-effect` بيخلّي السُّمك ثابتًا مهما اتمطّ الـviewBox ·
-   من غيرها الخطّ بيتشوّه مع `preserveAspectRatio:none`. */
-.ejr-wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-.ejr-wires path{fill:none;stroke:rgba(var(--edgeC),.3);stroke-width:1;
-  vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
-/* نقطة عند كل طرف · نفس نقطة المرجع */
-.ejr-wires .ejr-dot path{stroke-width:5;stroke:rgba(var(--edgeC),.34)}
-
-/* ── البطاقة ── */
-.ejr-c{position:absolute;display:flex;flex-direction:column;gap:.1rem;
-  padding:.75rem .8rem;border-radius:var(--r1);color:inherit;
-  /* **معتمة لا زجاجية.** البطاقة قاعدة فوق العمود الملوّن، والزجاج
-     بيمرّر لونه تحت النصّ · فكلام البطاقة اللي فوق النصّ الغامق
-     كان بيتقري على أخضر غامق. المرجع نفسه بطاقاته بيضا صريحة. */
-  background:var(--pop);
-  box-shadow:inset 0 0 0 1px var(--edge-1),0 12px 28px -16px rgba(var(--edgeC),.5);
+/* البطاقة · زجاج بلون المنتج */
+.ejr-c{position:absolute;display:flex;flex-direction:column;gap:.12rem;
+  padding:1rem 1.05rem;border-radius:var(--r2);color:inherit;
+  /* زجاج بلون المنتج · لمسة من لون الرسوم فوق الأبيض الشفّاف */
+  background:
+    linear-gradient(158deg,rgba(var(--ch-2C),.10),rgba(var(--ch-1C),.06)),
+    linear-gradient(158deg,rgba(var(--wC),calc(.74 * var(--wM))),rgba(var(--wC),calc(.52 * var(--wM))));
+  -webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),0 14px 34px -20px rgba(var(--edgeC),.6);
   transition:translate .18s cubic-bezier(.22,.9,.3,1),box-shadow .18s ease}
 .ejr-c:hover{color:inherit;translate:0 -2px;
-  box-shadow:inset 0 0 0 1px var(--edge-i),0 16px 32px -14px rgba(var(--edgeC),.55)}
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 18px 38px -18px rgba(var(--edgeC),.6)}
 .ejr-slot{font-size:var(--fs-1);color:var(--t3-g);line-height:1.4}
-.ejr-n{font-family:var(--fd);font-weight:700;line-height:1;letter-spacing:-.03em;
-  color:var(--t3-g);opacity:.85}
-.ejr-t{font-family:var(--fd);font-weight:600;color:var(--t1);line-height:1.4;margin-top:.25rem}
+.ejr-n{font-family:var(--fd);font-weight:700;line-height:1;letter-spacing:-.03em;color:var(--t3-g)}
+.ejr-t{font-family:var(--fd);font-weight:600;color:var(--t1);line-height:1.4;margin-top:.3rem}
 .ejr-v{font-family:var(--fd);font-weight:700;line-height:1.15;letter-spacing:-.02em;
   color:var(--t1);display:flex;align-items:baseline;gap:.2rem}
 .ejr-s{font-size:var(--fs-1);color:var(--t2-g);line-height:1.6}
 
-/* الكبيرتان بيشيلوا الرقمين الكبيرين · الحجم بيقول أهمية */
-.ejr-c.big .ejr-n{font-size:1.9rem}
-.ejr-c.big .ejr-t{font-size:.88rem}
-.ejr-c.big .ejr-v{font-size:1.3rem}
-.ejr-c:not(.big) .ejr-n{font-size:1.45rem}
-.ejr-c:not(.big) .ejr-t{font-size:.8rem;margin-top:.2rem}
-.ejr-c:not(.big) .ejr-v{font-size:1rem}
-.ejr-c:not(.big) .ejr-slot{font-size:.63rem}
+/* أكبر بمرّة ونص · الكبيرتان بيشيلوا الرقمين الكبيرين */
+.ejr-c.big .ejr-n{font-size:2.7rem}
+.ejr-c.big .ejr-t{font-size:1.05rem}
+.ejr-c.big .ejr-v{font-size:1.7rem}
+.ejr-c.big .ejr-slot{font-size:.76rem}
+.ejr-c:not(.big) .ejr-n{font-size:2rem}
+.ejr-c:not(.big) .ejr-t{font-size:.95rem;margin-top:.25rem}
+.ejr-c:not(.big) .ejr-v{font-size:1.3rem}
+.ejr-c:not(.big) .ejr-slot{font-size:.72rem}
 
-/* ── الأماكن · نسبة من المسرح، ومنطقية فبتتقلب مع الاتجاه ──
-   الكبيرتان ناحية البداية (اليمين في العربي) والصغيرتان ناحية
-   النهاية، وكلهم متداخلين مع العمود. */
-.ejr-c01{inset-block-start:0%;inset-inline-start:11%;width:37%}
-.ejr-c02{inset-block-end:0%;inset-inline-start:4%;width:40%}
-.ejr-c03{inset-block-end:10%;inset-inline-end:14%;width:26%}
-.ejr-c04{inset-block-start:12%;inset-inline-end:9%;width:28%}
+/* الأماكن · متقاربة، وفراغ صغير في النصّ بس */
+.ejr-c01{inset-block-start:0;inset-inline-start:4%;width:47%}
+.ejr-c02{inset-block-end:0;inset-inline-start:2%;width:49%}
+.ejr-c03{inset-block-end:6%;inset-inline-end:4%;width:38%}
+.ejr-c04{inset-block-start:4%;inset-inline-end:2%;width:40%}
 
 @media (max-width:560px){
-  /* المسرح المتداخل ما بيشتغلش في عمود ضيّق · البطاقات بترجع شبكة */
-  .ejr-stage{aspect-ratio:auto;min-height:0;display:grid;
+  .ejr-stage{aspect-ratio:auto;min-height:0;max-height:none;display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .ejr-bar,.ejr-wires{display:none}
+  .ejr-glow{display:none}
   .ejr-c{position:static;width:auto}
-  .ejr-c.big .ejr-n{font-size:1.6rem}
+  .ejr-c.big .ejr-n{font-size:1.7rem}
 }
 
 .einf{display:flex;align-items:stretch;gap:10px;width:100%;

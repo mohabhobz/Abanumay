@@ -82,34 +82,9 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
 
   return (
     <div className="ejr">
-      <div className="ejr-h">
-        <span className="ejr-ht">رحلة الريال في هذه الجهة</span>
-        <span className="ejr-hs">كل ما اتمنح لها من أول تسجيلها، وفين وصل دلوقتي</span>
-      </div>
-
       <div className="ejr-stage">
-        {/* العمود · لونان، الأعلى للكلّ والأسفل لللي وصل منه */}
-        <span className="ejr-bar" aria-hidden="true"><i /><i /></span>
-
-        {/* الخطوط والنقط · زينة المرجع، مرسومة في SVG عشان تفضل
-            رفيعة على أي مقاس */}
-        <svg className="ejr-wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M3 20 H15 V7 H43" />
-          <path d="M97 28 H86 V13 H63" />
-          <path d="M3 76 H17 V92 H41" />
-          <path d="M97 84 H88 V97 H61" />
-          {/* النقط **مسارات بطول صفر بطرف مدوّر**، مش `circle` ·
-              الـ`viewBox` متمطّط (`preserveAspectRatio:none`)
-              فالدايرة بتطلع بيضاوية. سُمك الخطّ غير متمطّط
-              (`vector-effect`)، فالطرف المدوّر بيفضل دايرة. */}
-          <g className="ejr-dot">
-            <path d="M3 20 H3" /><path d="M43 7 H43" />
-            <path d="M97 28 H97" /><path d="M63 13 H63" />
-            <path d="M3 76 H3" /><path d="M41 92 H41" />
-            <path d="M97 84 H97" /><path d="M61 97 H61" />
-          </g>
-        </svg>
-
+        {/* أرضية واحدة مغبّشة بتربط الأربعة · بديل العمود والخطوط */}
+        <span className="ejr-glow" aria-hidden="true" />
         {cards.map((c) => (
           <Link key={c.k} to={c.to} className={`ejr-c ejr-c${c.k}${c.big ? ' big' : ''}`}>
             <span className="ejr-slot">{c.slot}</span>
