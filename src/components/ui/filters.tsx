@@ -138,7 +138,15 @@ export function Select({
         onClick={() => setOpen((x) => !x)}
       >
         {icon && <Icon name={icon} size={15} />}
-        <span className="fmulti-s">{summary}</span>
+        {/* The ghosts reserve the widest option's width, so picking
+            a value never resizes the control (see `.fsel-sz`). */}
+        <span className="fmulti-s fsel-sz">
+          <span>{summary}</span>
+          {allowEmpty && <span aria-hidden="true">{all}</span>}
+          {options.map((o) => (
+            <span key={`sz-${optValue(o)}`} aria-hidden="true">{optLabel(o)}</span>
+          ))}
+        </span>
         <Icon name={icons.chevronDown} size={15} />
       </button>
 
@@ -269,7 +277,19 @@ export function MultiSelect({
         onClick={() => setOpen((x) => !x)}
       >
         {icon && <Icon name={icon} size={15} />}
-        <span className="fmulti-s">{summary}</span>
+        {/* Same ghosts as `Select`: the widest label the button can
+            ever show, so toggling a value never resizes the row.
+            `+N` is measured on the widest label, since that is the
+            longest form the summary takes. */}
+        <span className="fmulti-s fsel-sz">
+          <span>{summary}</span>
+          <span aria-hidden="true">{all}</span>
+          {options.map((o) => (
+            <span key={`sz-${optValue(o)}`} aria-hidden="true">
+              {optLabel(o)}{options.length > 1 ? ` +${options.length - 1}` : ''}
+            </span>
+          ))}
+        </span>
         <Icon name={icons.chevronDown} size={15} />
       </button>
 

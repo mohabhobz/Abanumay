@@ -2647,6 +2647,12 @@ to{opacity:1;transform:none}
      وفوق البقعة الخضرا الفاتحة `--t2` بيدّي ٤٫٤٥:١ · والمتغيّر
      `-g` موجود أصلًا للنصّ اللي أرضيته ملوّنة */
   font-size:.78rem;color:var(--t2-g);min-width:0}
+/* The clip needs room. `overflow:hidden` cuts at the content box,
+   so without an end padding the sentence is sliced flush against
+   the container edge and reads as damage rather than as "there is
+   more". The padding sits outside the content box, so the ellipsis
+   lands with a gap after it. */
+.qr-peek .trim1{padding-inline-end:.5rem}
 .qr-peek b{font-family:var(--fd);font-weight:700;font-size:1rem;color:var(--t1);
   font-variant-numeric:tabular-nums;flex:none}
 .qr-peek b.bad{color:var(--no-ink)}
@@ -3596,6 +3602,30 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .fsel.off>.fsel-b{cursor:not-allowed}
 .fmulti-s{flex:1;min-width:0;font-size:.8rem;color:var(--t1);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ═══════════════════════════════════════════════════════════
+   A single-select that does not resize when you pick
+
+   The control was as wide as its current label, so choosing
+   "مقبول (10)" after "كل حالات التفعيل (14)" shrank it by ~70px —
+   and the search field beside it is `flex:1`, so it grew by the
+   same amount. Every pick shifted the whole toolbar, and the row
+   under it moved with the field. Picking a filter should change
+   the list, not the layout.
+
+   So the control reserves the width of its WIDEST option: all the
+   labels sit in one grid cell, the ghosts hidden but measured, and
+   the column takes the widest of them. Width is then a property of
+   the filter, not of what happens to be selected.
+
+   `height:0` on the ghosts keeps them out of the row's height ·
+   `visibility:hidden` alone still reserves it, and the field grows
+   as tall as the option list.
+   ═══════════════════════════════════════════════════════════ */
+.fsel-sz{display:grid;grid-template-columns:1fr;min-width:0;max-width:15rem}
+.fsel-sz>span{grid-area:1/1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsel-sz>span[aria-hidden]{visibility:hidden;height:0;pointer-events:none}
 .ftool-f>.fsel .fmulti-s{font-size:.79rem}
 .fmenu{position:absolute;top:calc(100% + .35rem);inset-inline-start:0;z-index:60;
   min-width:100%;max-width:min(300px,80vw);width:max-content;
