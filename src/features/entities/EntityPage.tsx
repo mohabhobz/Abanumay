@@ -92,13 +92,12 @@ export default function EntityPage() {
               </div>
             </div>
 
-            {/* الرحلة في نفس خانة المروحة في صفحة المشروع ·
-                الشكل ده تركيب مربّع (عمود في النصّ وبطاقات
-                حواليه)، فمكانه الطبيعي جنب الهوية لا شريط ممدود */}
-            <div className="pflow">
-              <EntityFlow entity={entity} />
-            </div>
           </header>
+
+          {/* صفّ من أربع خطوات · محتاج عرض الصفحة لا نصّها */}
+          <div className="pflow">
+            <EntityFlow entity={entity} />
+          </div>
 
           <Tabs items={ENTITY_TABS} active={active} onChange={goTab} />
 

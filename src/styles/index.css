@@ -3193,8 +3193,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    مساحة موجودة بدل ما تطلب مساحة بنسبة أعمدتها. */
 /* خانة الرحلة في ترويسة الجهة · نفس مقاس خانة المروحة في صفحة
    المشروع، فالصفحتان بيتقروا بنفس التركيب */
-.pflow{flex:0 1 620px;min-width:min(100%,26rem);display:flex;justify-content:flex-end}
-@media (max-width:900px){.pflow{flex:1 1 100%}}
+.pflow{width:100%;min-width:0;display:flex}
 
 /* ═══════════════════════════════════════════════════════════
    رحلة الريال في الجهة · **عمود ملوّن وأربع بطاقات متداخلة**
@@ -3218,8 +3217,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    الاتجاهين، والنسب المئوية ما بتضمنش ده. العمود الأول (اليمين)
    أوسع لأن فيه الرقمين الكبيرين. */
 .ejr-stage{position:relative;width:100%;display:grid;gap:24px;
-  grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);
-  grid-template-areas:"a d" "b c"}
+  grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1100px){.ejr-stage{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ejr-c:nth-child(2) .ejr-go{display:none}}
 
 /* الأرضية · بقعة مغبّشة بلون المنتج بتربط الأربعة من غير عمود
    ولا خطوط · هي اللي بتخلّيهم مجموعة واحدة */
@@ -3250,23 +3250,24 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ejr-s{font-size:var(--fs-1);color:var(--t2-g);line-height:1.6}
 
 /* أكبر بمرّة ونص · الكبيرتان بيشيلوا الرقمين الكبيرين */
-.ejr-c.big .ejr-n{font-size:2.7rem}
-.ejr-c.big .ejr-t{font-size:1.05rem}
-.ejr-c.big .ejr-v{font-size:1.7rem}
-.ejr-c.big .ejr-slot{font-size:.76rem}
-.ejr-c:not(.big) .ejr-n{font-size:2rem}
-.ejr-c:not(.big) .ejr-t{font-size:.95rem;margin-top:.25rem}
-.ejr-c:not(.big) .ejr-v{font-size:1.3rem}
-.ejr-c:not(.big) .ejr-slot{font-size:.72rem}
+/* الأربعة بنفس المقاس · الصفّ الواحد بيقول «أربع خطوات» فالحجم
+   المتفاوت كان هيقول حاجة تانية */
+.ejr-n{font-size:2.2rem}
+.ejr-t{font-size:.95rem}
+.ejr-v{font-size:1.25rem}
+.ejr-slot{font-size:.72rem}
 
 /* الأماكن · متقاربة، وفراغ صغير في النصّ بس */
-.ejr-c01{grid-area:a}
-.ejr-c02{grid-area:b}
-.ejr-c03{grid-area:c}
-.ejr-c04{grid-area:d}
+/* الوصلة · شارة صغيرة على حافة الكارت بتشاور للي بعده */
+.ejr-go{position:absolute;inset-inline-end:-13px;top:50%;translate:0 -50%;
+  width:26px;height:26px;display:grid;place-items:center;z-index:2;
+  border-radius:var(--ric);color:var(--on-solid);background:var(--solid);
+  box-shadow:0 4px 12px -6px rgba(var(--edgeC),.7)}
+.ejr-c:last-child .ejr-go{display:none}
 
 @media (max-width:560px){
-  .ejr-stage{grid-template-columns:1fr;grid-template-areas:"a" "d" "b" "c";gap:12px}
+  .ejr-stage{grid-template-columns:1fr;gap:12px}
+  .ejr-go{display:none}
   .ejr-glow{display:none}
   .ejr-c{min-height:0}
   .ejr-c.big .ejr-n{font-size:1.7rem}

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Glass, Money, Num } from '@/components/ui'
+import { Glass, Icon, icons, Money, Num } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
 
@@ -95,6 +95,10 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
               {c.pct === null
                 ? c.note
                 : <><Num>{c.pct}</Num>% من الإجمالي{c.note ? ` · ${c.note}` : ''}</>}
+            </span>
+            {/* وصلة للكارت اللي بعده · آخر واحد مالوش */}
+            <span className="ejr-go" aria-hidden="true">
+              <Icon name={icons.chevron} size={14} />
             </span>
           </Link>
         ))}
