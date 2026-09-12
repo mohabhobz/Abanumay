@@ -66,7 +66,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
     {
       k: '02', slot: 'الجزء الأكبر', big: true,
       label: 'وصل فعلًا', value: paid, pct: share(paid),
-      note: 'دفعات اتصرفت', to: ROUTES.payments,
+      note: '', to: ROUTES.payments,
     },
     {
       k: '03', slot: 'الباقي', big: false,
@@ -89,8 +89,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
           <Link key={c.k} to={c.to} className={`ejr-c ejr-c${c.k}${c.big ? ' big' : ''}`}>
             {/* القرص · حلقات متداخلة والرقم في نصّها */}
             <span className="ejr-disc" aria-hidden="true">
-              <i /><i />
-              <i className="ejr-dot"><b className="num">{c.k}</b></i>
+              <i /><i /><i className="ejr-dot" />
             </span>
             <span className="ejr-slot">{c.slot}</span>
             <span className="ejr-t">{c.label}</span>
