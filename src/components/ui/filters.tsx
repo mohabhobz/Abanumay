@@ -113,7 +113,18 @@ export function Select({
   const pick = (v: string | undefined) => { onChange(v); setOpen(false) }
 
   return (
-    <div className={`fsel${value ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`} ref={box}>
+    /* ⚠️ **الحالة المفعَّلة = المستخدم اختار، مش الحقل له قيمة.**
+       كانت `value ? 'on' : ''`، والترتيب بيتبعتله قيمة افتراضية
+       دايمًا (`v.sort ?? 'waiting'`) · فالحقل كان **دايمًا مفعَّلًا**
+       وياخد حافة `--edge-i` الخضرا، وجنبه «كل الحالات» بحافة
+       `--fld-line` المحايدة. حافتان مختلفتان في صفّ واحد لنفس
+       الكمبوننت، وواحدة منهم بتقول «فيه فلتر شغّال» وهي كدّابة.
+
+       و`current` هو المعيار الصح: القيمة الافتراضية مش من
+       `options` (هي نصّ `all`)، فـ`current` بتبقى `undefined`
+       والحقل بيفضل محايدًا · زي `MultiSelect` بالظبط اللي بيقيس
+       `values.length > 0`. */
+    <div className={`fsel${current ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`} ref={box}>
       {label && <span className="fsel-l" id={`${id}-l`}>{label}</span>}
 
       <button

@@ -219,6 +219,7 @@ const rounds = []
 const heads = []
 const glued = []
 const numbox = []
+const edges = []
 const nums = { total: 0, noTabular: 0 }
 
 /** سلّم الشريط · تلات مقاسات، ومسار وركن واحد لكلهم */
@@ -525,6 +526,34 @@ for (const theme of themes) {
           why: [kids && `${e.childElementCount} أبناء`, posd && 'إزاحة منطقية'].filter(Boolean).join(' · ') })
       }
 
+      /* ══ حافة واحدة لصفّ الأدوات ══
+         البحث والقوائم والشرايح في صفّ واحد، ونفس **الحالة
+         المحايدة** · فحافتهم لازم تبقى قيمة واحدة. وكانت اتنين:
+         `Select` بيحسب «مفعَّل» من وجود قيمة لا من اختيار
+         المستخدم، والترتيب بيتبعتله قيمة افتراضية دايمًا · فكان
+         بياخد الحافة الخضرا وجنبه «كل الحالات» بالمحايدة.
+
+         المفعَّل بيتستثنى بالنية: هو **المفروض** يبان مختلفًا.
+         اللي بيتقاس هو المحايدين وحدهم. */
+      out.trow = []
+      for (const row of document.querySelectorAll('.ftool-f')) {
+        const seen = new Map()
+        for (const el of row.children) {
+          if (el.offsetParent === null) continue
+          if (el.classList.contains('on')) continue
+          const box = el.classList.contains('fsel') ? el.querySelector('.fsel-b') : el
+          if (!box) continue
+          const cs = getComputedStyle(box)
+          if (!/inset/.test(cs.boxShadow)) continue
+          const key = cs.boxShadow.replace(/\s+/g, ' ')
+          if (!seen.has(key)) seen.set(key, [])
+          seen.get(key).push(String(el.className).split(' ')[0])
+        }
+        if (seen.size > 1) {
+          out.trow.push([...seen].map(([k, v]) => `${v.join('/')}: ${k.slice(0, 40)}`).join('  |  '))
+        }
+      }
+
       /* أكتر من دعوة أساسية في الشاشة */
       out.primary = document.querySelectorAll('.btn-p').length
 
@@ -674,6 +703,8 @@ for (const theme of themes) {
     for (const x of found.heads ?? []) heads.push({ ...x, route, theme })
     for (const x of found.glued ?? []) glued.push({ ...x, route, theme })
     for (const x of found.numbox ?? []) numbox.push({ ...x, route, theme })
+    for (const x of found.trow ?? []) edges.push({ row: x, route, theme })
+
     for (const w of GRID_WIDTHS) {
       await page.setViewportSize({ width: w, height: 1000 })
       await page.waitForTimeout(160)
@@ -819,6 +850,22 @@ console.log(`\n═══ \`.num\` على حاوية لا على أرقام ═�
   const u = uniq(numbox, (x) => `${x.cls}|${x.why}`)
   if (!u.length) console.log('  نضيف · العزل على الأرقام وحدها.')
   for (const x of u.slice(0, 14)) { drift += 1; console.log(`  🔴 .${String(x.cls).padEnd(16)} (${x.why})   ${x.route}·${x.theme}`) }
+}
+
+/* ⚠️ كان هنا فحص بيفتح القوايم ويتأكد إن فيها خيارًا متعلّمًا ·
+   **اتشال**. الفحص كان بيسيب الحقل في حالة «مفتوح» وبيقيس حقولًا
+   تانية بعد كده، فطلّع حافة `.3` على `/entities` وهي حافة الفتح
+   لا درِفت. فحص بيغيّر اللي بيقيسه بيدّي نتيجة مش عن الصفحة، هي
+   عن الفحص نفسه · وده أسوأ من مفيش فحص.
+
+   الحالة اللي كان بيدوّر عليها (حقل مرسوم «مفعَّلًا» وقيمته
+   الافتراضية) اتقفلت في `Select` نفسها: «مفعَّل» بقت من
+   `current` لا من `value`. */
+console.log(`\n═══ صفّ الأدوات بحافتين ═══`)
+{
+  const u = uniq(edges, (x) => x.row)
+  if (!u.length) console.log('  نضيف · المحايدون كلهم بحافة واحدة.')
+  for (const x of u.slice(0, 8)) { drift += 1; console.log(`  🔴 ${x.route}·${x.theme}\n     ${x.row}`) }
 }
 
 console.log(`\n═══ شبكة «متساوية» وخاناتها مش متساوية ═══`)
