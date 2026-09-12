@@ -3243,7 +3243,6 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
    ═══════════════════════════════════════════════════════════ */
 .ejr-stage{--ejr-lap:30px;
   position:relative;width:100%;display:flex;align-items:stretch}
-.ejr-glow{display:none}
 
 .ejr-c{position:relative;flex:1 1 0;min-width:0;color:inherit;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -3251,7 +3250,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   /* الحشو العلوي أكبر من السفلي · المحتوى متمركز في الصندوق
      المحشو، فبيتزقّ لتحت بنص الفرق من غير ما يتلزق في القاع */
   padding:3rem .7rem 1.2rem;
-  background:var(--g-card);
+  /* زجاج مصبوغ بدرجة خانته · نفس ألوان جراف المشاريع (`--ch-*`)
+     فوق سطح الكارت، فالكارت لسّه كارت بس له هوية لونية */
+  background:linear-gradient(180deg,rgba(var(--gc),.15),rgba(var(--gc),.055)),var(--g-card);
   -webkit-backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   backdrop-filter:blur(var(--g-card-blur)) saturate(1.5);
   transition:background .18s ease}
@@ -3276,15 +3277,20 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
   inset 0 0 0 1px var(--edge-1),
   -20px 0 30px -14px rgba(var(--edgeC),.5),
   -3px 0 6px -3px rgba(var(--edgeC),.3)}
-.ejr-c:hover{color:inherit;background:var(--g-card-h,var(--g-card))}
+.ejr-c:hover{color:inherit;
+  background:linear-gradient(180deg,rgba(var(--gc),.23),rgba(var(--gc),.09)),var(--g-card)}
 
 /* لون كل لوح · من المربّعات المتقاسة لا `--ch-*` الخام (اللايم
    بيدّي ١٫٧٧:١ مع الأبيض). و**بتتقلب مع الثيم**: الأخضر الغامق
    اللي بيتقري على لوح فاتح بيبقى ٣٫٥:١ على لوح غامق. */
-.ejr-c01{--dc:var(--sq-1C)}
-.ejr-c02{--dc:var(--sq-2C)}
-.ejr-c03{--dc:var(--sq-3C)}
-.ejr-c04{--dc:var(--sq-4C)}
+/* `--gc` صبغة الزجاج · من جراف المشاريع بالظبط.
+   و`--dc` لون الكتابة · من المربّعات المتقاسة لا `--ch-*` الخام،
+   لأن اللايم بيدّي ١٫٧٧:١ لو اتكتب بيه. اتنين مختلفين عن قصد:
+   واحد أرضية والتاني حبر. */
+.ejr-c01{--gc:var(--ch-1C);--dc:var(--sq-1C)}
+.ejr-c02{--gc:var(--ch-2C);--dc:var(--sq-2C)}
+.ejr-c03{--gc:var(--ch-3C);--dc:var(--sq-3C)}
+.ejr-c04{--gc:var(--ch-4C);--dc:var(--sq-4C)}
 
 /* الدايرة الزجاجية · دايرة كاملة بطلب صريح، وهي استثناء مقصود
    من سُلّم الريدياس (الدايرة محجوزة للصور والنقط) · والأيقونة

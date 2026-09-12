@@ -83,8 +83,6 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
   return (
     <div className="ejr">
       <div className="ejr-stage">
-        {/* أرضية واحدة مغبّشة بتربط الأربعة · بديل العمود والخطوط */}
-        <span className="ejr-glow" aria-hidden="true" />
         {cards.map((c) => (
           <Link key={c.k} to={c.to} className={`ejr-c ejr-c${c.k}${c.big ? ' big' : ''}`}>
             {/* دايرة زجاجية فوق · الأيقونة بلون الخانة، وهي اللي
