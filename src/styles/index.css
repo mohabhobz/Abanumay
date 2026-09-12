@@ -3214,19 +3214,24 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ejr-none p{margin:0;font-size:var(--fs-2);line-height:1.8;color:var(--t2)}
 .ejr-none .ejr-ht{font-family:var(--fd);font-weight:600;font-size:.92rem;color:var(--t1)}
 
-.ejr-stage{position:relative;width:100%;aspect-ratio:1 / .66;
-  min-height:330px;max-height:420px}
+/* شبكة لا تموضع مطلق · الفرق بينهم **٢٤ بكسل متساوية** في
+   الاتجاهين، والنسب المئوية ما بتضمنش ده. العمود الأول (اليمين)
+   أوسع لأن فيه الرقمين الكبيرين. */
+.ejr-stage{position:relative;width:100%;display:grid;gap:24px;
+  grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);
+  grid-template-areas:"a d" "b c"}
 
 /* الأرضية · بقعة مغبّشة بلون المنتج بتربط الأربعة من غير عمود
    ولا خطوط · هي اللي بتخلّيهم مجموعة واحدة */
-.ejr-glow{position:absolute;inset:12% 22% 12% 6%;border-radius:var(--r3);pointer-events:none;
+.ejr-glow{position:absolute;inset:8%;border-radius:var(--r3);pointer-events:none;
   background:
     radial-gradient(58% 66% at 74% 24%, rgba(var(--ch-1C),.62), transparent 72%),
     radial-gradient(60% 68% at 26% 78%, rgba(var(--ch-2C),.68), transparent 72%);
   filter:blur(30px)}
 
 /* البطاقة · زجاج بلون المنتج */
-.ejr-c{position:absolute;display:flex;flex-direction:column;gap:.12rem;
+.ejr-c{position:relative;display:flex;flex-direction:column;justify-content:center;gap:.12rem;
+  min-height:172px;
   padding:1rem 1.05rem;border-radius:var(--r2);color:inherit;
   /* زجاج بلون المنتج · لمسة من لون الرسوم فوق الأبيض الشفّاف */
   background:
@@ -3255,16 +3260,15 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:rgba(var(--wC),calc(.85
 .ejr-c:not(.big) .ejr-slot{font-size:.72rem}
 
 /* الأماكن · متقاربة، وفراغ صغير في النصّ بس */
-.ejr-c01{inset-block-start:0;inset-inline-start:0;width:47%}
-.ejr-c02{inset-block-end:0;inset-inline-start:0;width:49%}
-.ejr-c03{inset-block-end:6%;inset-inline-end:14%;width:38%}
-.ejr-c04{inset-block-start:4%;inset-inline-end:12%;width:40%}
+.ejr-c01{grid-area:a}
+.ejr-c02{grid-area:b}
+.ejr-c03{grid-area:c}
+.ejr-c04{grid-area:d}
 
 @media (max-width:560px){
-  .ejr-stage{aspect-ratio:auto;min-height:0;max-height:none;display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .ejr-stage{grid-template-columns:1fr;grid-template-areas:"a" "d" "b" "c";gap:12px}
   .ejr-glow{display:none}
-  .ejr-c{position:static;width:auto}
+  .ejr-c{min-height:0}
   .ejr-c.big .ejr-n{font-size:1.7rem}
 }
 
