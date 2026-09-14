@@ -10,8 +10,9 @@
  * بنفس شكل `Reading[]` · والواجهة ما تتغيّرش.
  */
 import type { Reading, ReadingAction } from '@/components/assistant/reading'
-import type { EntityRow, Insight, PayRequest, ProjectRow } from '@/types/domain'
+import type { AgreementRow, EntityRow, Insight, PayRequest, ProjectRow } from '@/types/domain'
 import { PAY_STATES, payBlocked, payHeat, payStateWho } from './mock/disbursements'
+import { agrBlocked, agrPaymentsBalance, agrReserveGap } from './mock/agreements'
 import type { EntityDetail } from './mock/entityDetail'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
 import { projectRows } from './mock/projects'
@@ -1200,6 +1201,83 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       src: 'توزيع الطلبات على المراحل',
       to: `${ROUTES.payments}?state=${peak[0]}`,
       toLabel: 'افتح المرحلة',
+    })
+  }
+
+  return out
+}
+
+/* ═══════════════════ الاتفاقيات ═══════════════════ */
+
+/**
+ * قراءات صندوق الاتفاقيات · BPD-008.
+ *
+ * السؤال هنا مش «فيه كام اتفاقية»، هو **إيه اللي واقف قبل التفعيل**.
+ * لأن الاتفاقية هي اللي بتفتح الصرف كله: قاعدة 1 في إجراء الصرف
+ * بتقول مفيش طلب قبل تفعيل الاتفاقية، فكل يوم وقوف هنا بيأخّر دفعة
+ * هناك · وده اللي القراءة التانية بتقوله بالرقم.
+ */
+export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Reading[] {
+  const out: Reading[] = []
+  const open = rows.filter((a) => a.stage !== 'active' && a.stage !== 'cancelled')
+  if (open.length === 0) return out
+
+  const scope = isFiltered ? 'في النطاق الحالي' : 'تحت الإعداد'
+
+  /* ١ · الموقوف عن الاعتماد · وأنهي تحقّق بيوقفه */
+  const blocked = open.filter(agrBlocked)
+  if (blocked.length) {
+    const unbalanced = blocked.filter((a) => !agrPaymentsBalance(a).balanced).length
+    const gapped = blocked.filter((a) => agrReserveGap(a) !== 0).length
+    const worst = unbalanced >= gapped
+      ? { n: unbalanced, why: 'جدول الدفعات لا يساوي قيمة المنحة', rule: 'القاعدة 8' }
+      : { n: gapped, why: 'فرق بين قيمة الاتفاقية والمخصص المحجوز', rule: 'الخطوة 11' }
+    out.push({
+      id: 'a-block',
+      kind: 'flag',
+      label: 'موقوفة عن الاعتماد',
+      metric: { value: String(blocked.length), unit: `اتفاقية ${scope}` },
+      text:
+        `أكتر سبب «${worst.why}» في ${worst.n} منها · ${worst.rule} بتمنع ` +
+        `الإرسال للاعتماد قبل استيفائه.`,
+      bold: [`«${worst.why}»`, worst.rule],
+      src: 'قواعد الاتفاقيات 8 و9 · الخطوة 11',
+      to: `${ROUTES.agreements}?hold=1`,
+      toLabel: 'اعرضها',
+    })
+  }
+
+  /* ٢ · الأثر على الصرف · ده اللي بيفرق فعلًا */
+  const waiting = open.filter((a) => a.stage !== 'draft')
+  if (waiting.length) {
+    const sum = waiting.reduce((s, a) => s + a.amount, 0)
+    const pays = waiting.reduce((s, a) => s + a.payments.length, 0)
+    out.push({
+      id: 'a-block-pay',
+      kind: 'note',
+      label: 'الأثر على الصرف',
+      metric: { value: nf.format(sum), unit: 'ريال موقوفة في دورة الاعتماد' },
+      text:
+        `على ${pays} دفعة مجدولة · ` +
+        `القاعدة 1 في إجراء الصرف بتمنع أي طلب قبل تفعيل الاتفاقية، ` +
+        `فكل يوم وقوف هنا بيأخّر دفعة هناك.`,
+      bold: [`${pays} دفعة`],
+      src: 'BPD-009 قاعدة 1 · جداول الدفعات في الاتفاقيات',
+    })
+  }
+
+  /* ٣ · الإعادة · كل إعادة دورة اعتماد كاملة (قاعدة 12) */
+  const again = rows.filter((a) => a.version > 1)
+  if (again.length) {
+    out.push({
+      id: 'a-again',
+      kind: again.length > rows.length / 4 ? 'flag' : 'note',
+      label: 'دورات متكرّرة',
+      metric: { value: pctText(Math.round((again.length / rows.length) * 100)), unit: 'لها إصدار ثانٍ' },
+      text:
+        `القاعدة 12 بتقول إن الإعادة للتعديل بتعيد دورة الاعتماد كاملة ` +
+        `مع الاحتفاظ بالاعتمادات السابقة · فده مؤشر 4 في الوثيقة.`,
+      src: 'إصدارات الاتفاقيات · قاعدة 24',
     })
   }
 

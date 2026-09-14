@@ -3834,7 +3834,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   /* حبر الوسم أفتح من حبر الزرار: أرضية الحبّة أغمق من أرضية
      الزرار في الغامق، فنفس اللون بيقع تحت AA عليها وحده. */
   --ret-ink:#8CC2F0; --ret-ink3:#B6D9F7; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
-  --ok-ink:#8DEEC4; --ok-ink3:#B4F5DA; --brand-ink:#E2F4B4; --mute-ink:#BCD4D0;
+  /* ⚠️ `--mute-ink` كان `#BCD4D0` وبيدّي **4.47** فوق أرضية
+     وسم `.tag.mute` في الغامق والأخضر · تحت 4.5 بـ0.03. والرقم
+     كان بيعدّي في صفحة ويقع في التانية لأن خلفية الصفحة تدرّج،
+     فنفس اللون بيتقاس فوق نقطتين مختلفتين · قيمة بتشتغل بالصدفة.
+     `#C6DCD8` بيدّي 4.86 · هامش يكفي كل نقط التدرّج. */
+  --ok-ink:#8DEEC4; --ok-ink3:#B4F5DA; --brand-ink:#E2F4B4; --mute-ink:#C6DCD8;
   --retC:120,180,235; --limeC:168,217,60;
   --t3-g:#B3BEBC; --t2-g:#CCD6D4;
   --g-card: linear-gradient(158deg, rgba(255,255,255,.075), rgba(255,255,255,.03));
@@ -3888,7 +3893,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
   --warn-ink:#FFD98A; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FFC7B7;
   --ret-ink:#8CC2F0; --ret-ink3:#B6D9F7; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
-  --ok-ink:#8DEEC4; --ok-ink3:#B4F5DA; --brand-ink:#E2F4B4; --mute-ink:#BCD4D0;
+  --ok-ink:#8DEEC4; --ok-ink3:#B4F5DA; --brand-ink:#E2F4B4; --mute-ink:#C6DCD8;
   --retC:120,180,235; --limeC:168,217,60;
   --t3-g:#A9C7C3; --t2-g:#C6DEDA;
   --g-card: linear-gradient(158deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
@@ -4189,6 +4194,23 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 .paynotif li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
   font-size:var(--fs-2);line-height:var(--lh-2)}
 .paynotif svg{flex:none;color:var(--solid)}
+
+/* ═══ الاتفاقيات ═══
+   كارت الاتفاقية بيلبس نفس صندوق كارت الصرف · نفس السؤال ونفس
+   الشكل، واللي بيختلف هو الشروط اللي جوّاه. */
+.agrq{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0;
+  padding:var(--sp-4) var(--sp-5) var(--sp-5)}
+.agrq .payq-f{margin-top:auto}
+
+/* جدول الدفعات · صفّ الإجمالي هو **التحقّق** لا التلخيص، فهو
+   اللي بياخد اللون لما المجموع ما يساويش قيمة المنحة (قاعدة 8) */
+.agrpay{width:100%;border-collapse:collapse;font-size:var(--fs-2)}
+.agrpay th,.agrpay td{padding:var(--sp-2) var(--sp-3);text-align:start;
+  box-shadow:inset 0 -1px 0 var(--edge-d);white-space:nowrap}
+.agrpay th{font-size:var(--fs-1);color:var(--t3-g);font-weight:500}
+.agrpay td:last-child{white-space:normal;min-width:11rem}
+.agrpay tfoot td{font-weight:700;box-shadow:inset 0 1px 0 var(--edge-1)}
+.agrpay tfoot tr.bad td{color:var(--no-ink)}
 
 /* ═══ تقرير المتأخر والمتعثر ═══ */
 .paylim{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));

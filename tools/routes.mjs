@@ -41,7 +41,7 @@ export const ROUTES = [
   '/entities/755', '/entities/755/docs',
   '/budget', '/payments', '/payments/SR-2026-11407', '/payments/new',
   '/payments/SR-2026-11415/order', '/payments/late',
-  '/payments/SR-2026-11410/edit', '/agreements',
+  '/payments/SR-2026-11410/edit', '/agreements', '/agreements/AG-2026-3101',
   '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
   '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
   '/reports/process/p1', '/assistant',

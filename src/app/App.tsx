@@ -11,6 +11,8 @@ import ProcessReport from '@/features/reports/ProcessReport'
 import ReportView from '@/features/reports/ReportView'
 import LiveReport from '@/features/reports/LiveReport'
 import BudgetPage from '@/features/budget/BudgetPage'
+import AgreementsPage from '@/features/agreements/AgreementsPage'
+import AgreementPage from '@/features/agreements/AgreementPage'
 import PaymentsPage from '@/features/payments/PaymentsPage'
 import RequestPage from '@/features/payments/RequestPage'
 import RequestForm from '@/features/payments/RequestForm'
@@ -56,17 +58,10 @@ export default function App() {
 
         <Route path={`${ROUTES.budget}/:year`} element={<Navigate to={ROUTES.budget} replace />} />
 
-        <Route
-          path={ROUTES.agreements}
-          element={
-            <ModulePlaceholder
-              title="الاتفاقيات"
-              scope="سبع مراحل مستقلة عن حالة المشروع: إلكترونية وورقية، واعتماد مدير المنح والقسم المالي والمدير التنفيذي، ومعها ثلاثة عشر نموذجًا."
-              facts={[{ k: 'مراحل الاتفاقية', v: '7' }, { k: 'نماذج جاهزة', v: '13' }]}
-            />
-          }
-        />
-        <Route path={`${ROUTES.agreements}/:id`} element={<Navigate to={ROUTES.agreements} replace />} />
+        {/* الاتفاقيات · BPD-008 · إجراء مستقل عن المشروع (قاعدة 23)،
+            وانتقاله بين مراحله ما بيغيّرش حالة المشروع (قاعدة 25) */}
+        <Route path={ROUTES.agreements} element={<AgreementsPage />} />
+        <Route path={`${ROUTES.agreements}/:id`} element={<AgreementPage />} />
 
         {/* الصرف · BPD-009 · مبني على الوثيقة، والفروق عن النظام
             العامل مسجَّلة نوتس في `DISBURSEMENT_MODULE_BRIEF.md` */}
