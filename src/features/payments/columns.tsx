@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { DateText, Mono, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
-import { payHeat, payStateLabel } from '@/data/mock/disbursements'
+import { PAY_LIMIT, payHeat, payStateLabel } from '@/data/mock/disbursements'
 import type { PayRequest } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
@@ -25,6 +25,19 @@ export type Col = TCol<PayRequest>
 const HEAT_TONE = { ok: 'ok', late: 'warn', stuck: 'no' } as const
 const HEAT_SAY = { ok: 'في المدة', late: 'متأخر', stuck: 'متعثر' } as const
 
+/**
+ * تاريخ بدء التأخير · اليوم اللي الطلب عدّى فيه حدّ مرحلته.
+ * بيتحسب للورا: النهارده ناقص (المكوث ناقص الحدّ) · فاضي لو الطلب
+ * لسّه جوّه مدته.
+ */
+const lateSince = (r: PayRequest): string | null => {
+  const lim = PAY_LIMIT[r.state]
+  if (!lim || r.hoursInState <= lim) return null
+  const d = new Date()
+  d.setDate(d.getDate() - Math.round((r.hoursInState - lim) / 24))
+  return d.toISOString().slice(0, 10)
+}
+
 const okCount = (r: PayRequest) => r.checks.filter((c) => c.ok).length + (r.bank.active ? 1 : 0)
 const allCount = (r: PayRequest) => r.checks.length + 1
 
@@ -34,7 +47,7 @@ export const COLS: Col[] = [
     w: 130,
     label: 'رقم الطلب',
     fixed: true,
-    cell: (r) => <Mono>{r.id}</Mono>,
+    cell: (r) => <Link to={ROUTES.payment(r.id)} className="tlink"><Mono>{r.id}</Mono></Link>,
     text: (r) => r.id,
   },
   {
@@ -114,6 +127,20 @@ export const COLS: Col[] = [
     text: (r) => (payHeat(r) === 'ok' ? `${Math.round(r.hoursInState / 24)} يومًا` : HEAT_SAY[payHeat(r)]),
     value: (r) => Math.round(r.hoursInState / 24),
     agg: 'avg',
+  },
+  {
+    /* آلية التصعيد (9.5 بند 3) بتطلب «تقرير شامل بالمتأخرة والمتعثرة:
+       المرحلة الحالية · **تاريخ بدء التأخير** · عدد الأيام · المسؤول».
+       التلاتة التانيين أعمدة موجودة، والرابع كان ناقص — فالتقرير مش
+       شاشة تانية، هو الجدول ده مفلتَرًا على المتأخر. */
+    key: 'lateSince',
+    w: 118,
+    label: 'بدء التأخير',
+    cell: (r) => {
+      const since = lateSince(r)
+      return since ? <DateText>{since}</DateText> : <span className="sub">·</span>
+    },
+    text: (r) => lateSince(r) ?? '',
   },
   {
     key: 'checks',

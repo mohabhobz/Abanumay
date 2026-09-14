@@ -247,6 +247,7 @@ export default function ProjectPage() {
                 <PaymentsTab
                   payments={detail.payments}
                   granted={project.amountGranted || project.amountRequested}
+                  projectId={project.id}
                   example={examples.payments}
                   onOpenExample={(x) => navigate(ROUTES.projectTab(x, 'payments'))}
                 />

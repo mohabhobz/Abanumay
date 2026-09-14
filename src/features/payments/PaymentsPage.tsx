@@ -211,12 +211,16 @@ export default function PaymentsPage() {
     <AppLayout assistantContext={assistFor.page('الصرف')}>
       <div className="viewstack">
         <div className="screen col">
-          {/* ═══ الترويسة بعمودين ═══
-              العنوان وسطره على اليمين، والقراءة قصاده على الشمال ·
-              نفس تركيب ترويسة صفحة الجهة والمشروع، فالعين بتلاقي
-              العنوان في نفس المكان في كل شاشة. */}
-          <header className="phead phead-g2">
-            <div className="pmain">
+          {/* ⚠️ **ترويسة قائمة، مش ترويسة تفاصيل.** كانت
+              `phead phead-g2` والقراءة جوّاها في العمود التاني —
+              ودي ترويسة **صفحة الجهة والمشروع**، يعني صفحة تفاصيل.
+              والنتيجة إن القراءة بتتزنق في نص العرض فسطرها بيتقصّ
+              بنقط، بينما نفس القراءة في المشاريع والجهات بتاخد
+              السطر كامل وتتقري لآخرها.
+              القائمة ترويستها `<header>` بسيطة، والقراءة **صفّ
+              مستقل تحتها** — زي `/projects` و`/entities` بالحرف. */}
+          <header>
+            <div>
               <h1 className="ptitle">الصرف</h1>
               <p className="sub mt-1">
                 <span className="num">{rows.length}</span> طلب من{' '}
@@ -224,8 +228,13 @@ export default function PaymentsPage() {
                 أربع مراحل من إنشاء الجهة للطلب حتى تنفيذ التحويل
               </p>
             </div>
-            <QuickRead variant="bar" title="قراءة سريعة للصندوق" readings={readings} />
           </header>
+
+          {/* ═══ القراءة السريعة ═══
+              مكانها بعد العنوان مباشرة لا بعد الفلاتر: هي **قراءة
+              للصفحة**، والقراءة بتيجي قبل الأدوات لا بينها وبين
+              النتيجة. */}
+          <QuickRead variant="bar" title="قراءة سريعة للصندوق" readings={readings} />
 
           <div className="stats4">
             <Stat
@@ -427,13 +436,13 @@ export default function PaymentsPage() {
                   selected={selected}
                   onSelect={toggleOne}
                   onSelectAll={selectAll}
-                  onOpen={(r) => navigate(ROUTES.project(r.projectId))}
+                  onOpen={(r) => navigate(ROUTES.payment(r.id))}
                   group={group}
                   count={(n) => `${n} طلب`}
                 />
               </Glass>
               {grouped && (
-                <p className="sub" style={{ textAlign: 'center' }}>
+                <p className="sub tcen">
                   التجميع يعرض كل النتائج ·{' '}
                   <span className="num">{splitGroups(sorted, group!).length}</span> مجموعات ·{' '}
                   <button className="lnk" onClick={() => set({ group: undefined })}>

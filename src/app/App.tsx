@@ -12,6 +12,7 @@ import ReportView from '@/features/reports/ReportView'
 import LiveReport from '@/features/reports/LiveReport'
 import BudgetPage from '@/features/budget/BudgetPage'
 import PaymentsPage from '@/features/payments/PaymentsPage'
+import RequestPage from '@/features/payments/RequestPage'
 import { ModulePlaceholder } from '@/features/shared/ModulePlaceholder'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
@@ -67,7 +68,7 @@ export default function App() {
         {/* الصرف · BPD-009 · مبني على الوثيقة، والفروق عن النظام
             العامل مسجَّلة نوتس في `DISBURSEMENT_MODULE_BRIEF.md` */}
         <Route path={ROUTES.payments} element={<PaymentsPage />} />
-        <Route path={`${ROUTES.payments}/:id`} element={<Navigate to={ROUTES.payments} replace />} />
+        <Route path={`${ROUTES.payments}/:id`} element={<RequestPage />} />
 
         <Route path={ROUTES.reports} element={<ReportsPage />} />
         {/* المفتاح هو slug الإجراء (`bpd-004`). أي مفتاح مش معروف

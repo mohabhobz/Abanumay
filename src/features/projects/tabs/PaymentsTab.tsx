@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Money, Num, Riyal, Stat, Steps, Tag } from '@/components/ui'
+import { ROUTES } from '@/app/routes'
 import { sequence } from '@/lib/steps'
 import { DocFile } from '@/components/docs'
 import { isolate, pct } from '@/lib/format'
@@ -7,6 +9,8 @@ import type { PaymentDetail } from '@/data/mock/detail'
 export interface PaymentsTabProps {
   payments: PaymentDetail[]
   granted: number
+  /** رقم المشروع · بيوصّل التاب بصندوق الصرف */
+  projectId?: string
   example?: { id: string; name: string }
   onOpenExample?: (id: string) => void
 }
@@ -23,7 +27,7 @@ export interface PaymentsTabProps {
  * الشاشة دي بتجمّعهم: الصف بيقول المبلغ والحالة، وتحته الدورة
  * والشرط. فالسؤال «فين الدفعة التانية؟» بيتجاوب من غير ما تفتح السجل.
  */
-export function PaymentsTab({ payments, granted, example, onOpenExample }: PaymentsTabProps) {
+export function PaymentsTab({ payments, granted, projectId, example, onOpenExample }: PaymentsTabProps) {
   if (payments.length === 0) {
     return (
       <Glass>
@@ -78,7 +82,22 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
       </div>
 
       <Glass>
-        <Head title="جدول الدفعات المعتمدة" meta={`${paid.length} مصروفة من ${payments.length}`} />
+        <Head
+          title="جدول الدفعات المعتمدة"
+          meta={
+            <>
+              <span className="sub"><Num>{paid.length}</Num> مصروفة من <Num>{payments.length}</Num></span>
+              {projectId && (
+                <>
+                  <span className="decsep" />
+                  <Link className="lnk" to={`${ROUTES.payments}?q=${projectId}`}>
+                    طلبات الصرف
+                  </Link>
+                </>
+              )}
+            </>
+          }
+        />
 
         <div className="paylist">
           {payments.map((p) => (
@@ -137,6 +156,14 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
           ))}
         </div>
 
+        {/* ⚠️ الدورة المرسومة فوق هي **دورة النظام العامل** بأربع
+            محطات (إذن الصرف · سند الصرف · سند القبض · اعتماده)،
+            ووثيقة BPD-009 بتوصف أربع مراحل بتنتهي عند التحويل بلا
+            سند قبض. الفرق ده مسجَّل نوتة ن-1 و ن-3 في
+            `DISBURSEMENT_MODULE_BRIEF.md` وبانتظار ردّ المؤسسة ·
+            فالتاب بيفضل على المرسوم في النظام لحدّ الردّ، لأن اللي
+            في النظام دليل واللي في الوثيقة مواصفة، وإحنا ما نشيلش
+            الدليل قبل ما نتأكد. */}
         <div className="sub mt-4">
           «إذن الصرف» مستند مستقل قابل للطباعة، فيه بيانات الجهة وحسابها البنكي والمبلغ كتابةً، وهو اللي المالية بتحوّل بناءً عليه.
         </div>

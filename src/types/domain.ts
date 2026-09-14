@@ -481,4 +481,39 @@ export interface PayRequest {
   at: string
   /** تاريخ التحويل · step 17, only when paid */
   paidAt?: string
+
+  /* ── ما يلزم صفحة الطلب الواحد ── */
+
+  /** الاتفاقية وسريانها · rule 10 checks it before finance */
+  agreement: { id: string; active: boolean; endsAt: string }
+  /** قيمة المنحة كاملة · rule 14 caps the total at it */
+  granted: number
+  /** المصروف من المنحة قبل هذه الدفعة · rule 14 */
+  spent: number
+  /** المحجوز على هذه الدفعة · rule 11 then rule 13 turns it into spent */
+  reserved: number
+  /** المرفقات · rule 21 keeps them on the request itself */
+  docs: PayDoc[]
+  /** سجل التدقيق · rule 16 · every transition, with its step number */
+  log: PayEvent[]
+}
+
+/** مستند مرفق بالطلب · rule 21 */
+export interface PayDoc {
+  name: string
+  kind: string
+  at: string
+  size: string
+}
+
+/** حدث في سجل التدقيق · rule 16 · `step` is the step in BPD-009 */
+export interface PayEvent {
+  at: string
+  who: string
+  role: string
+  what: string
+  note?: string
+  step: number
+  /** الإشعار المرسل مع الانتقال · rule 17 */
+  notified?: string
 }

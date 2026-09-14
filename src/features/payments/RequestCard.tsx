@@ -127,8 +127,10 @@ export function RequestCard({ r, showState }: RequestCardProps) {
       <footer className="payq-f">
         <Person name={r.owner} />
         <span className="pc-sp" />
-        <Link className="btn btn-2 btn-sm" to={ROUTES.project(r.projectId)}>
-          افتح المشروع
+        {/* الطلب لا المشروع · الكارت بيلخّص القرار وصفحة الطلب
+            بتاخده · فالزرار بيكمّل الطريق بدل ما يخرج منه */}
+        <Link className="btn btn-2 btn-sm" to={ROUTES.payment(r.id)}>
+          افتح الطلب
           <Icon name={icons.chevron} size={14} />
         </Link>
       </footer>

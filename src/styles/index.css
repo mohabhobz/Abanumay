@@ -300,6 +300,12 @@
 .mt-2{margin-block-start:var(--sp-3)}   /*  8 */
 .mt-3{margin-block-start:var(--sp-4)}   /* 12 */
 .mt-4{margin-block-start:var(--sp-5)}   /* 16 */
+/* سطر الشرح آخر البطاقة · هامش فوق ولا حاجة تحت، لأن حافة البطاقة
+   هي اللي بتقفل. كان بيتكتب `style={{marginBottom:0}}` في كل مكان،
+   وسبع مرات من نفس القيمة الحرفية معناها كلاس ناقص لا سبع حالات. */
+.cnote{margin:var(--sp-4) 0 0}
+/* نصّ في النص · الترقيم وسطر التجميع تحت الجدول */
+.tcen{text-align:center}
 .mb-1{margin-block-end:var(--sp-2)}
 .mb-2{margin-block-end:var(--sp-3)}
 .mb-3{margin-block-end:var(--sp-4)}
@@ -4076,6 +4082,55 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
    قائمة — والتصعيد بقى قراءة في `QuickRead` ليها طريق يوصّل
    للمتعثر. تركيبان مكتوبان من الصفر اتشالوا لصالح تركيب واحد
    موجود. */
+
+/* ═══ صفحة الطلب الواحد ═══
+   المرفقات والسجل والمصادر · تلات قوايم بنفس الصفّ: أيقونة، اسم
+   بيتقصّ، وقيمة على الطرف. اللي بيفرقهم هو المحتوى لا الشكل. */
+
+.prow{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
+
+.paydocs,.paysrc{list-style:none;margin:0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.paydocs li,.paysrc li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  font-size:var(--fs-2);line-height:var(--lh-2)}
+.paydocs svg{flex:none;color:var(--t3-g)}
+.paysrc-v{margin-inline-start:auto}
+
+/* ⚠️ السجل مرقَّم بخطوة الوثيقة لا بترتيب العرض · الرقم ده هو
+   اللي بيخلّي المراجِع يربط اللي حصل بالخطوة اللي في BPD-009،
+   وعشان كده هو مكتوب في الداتا مش محسوب من `index`. */
+.paylog{list-style:none;margin:0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-4)}
+.paylog li{display:flex;align-items:flex-start;gap:var(--sp-3);min-width:0}
+.paylog-s{flex:none;display:grid;place-items:center;width:24px;height:24px;
+  border-radius:var(--rp);font-size:var(--fs-1);font-weight:600;
+  color:var(--t2);background:var(--fl-5);
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
+.paylog-b{min-width:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+/* ⚠️ `.pc-dot` نقطة بعرض ٣ بكسل · والعرض ما بيسريش على عنصر
+   `inline`، فالفاصل بيختفي خالص جوّه سطر نصّ عادي. أي سطر فيه
+   `.pc-dot` لازم يكون فليكس، وإلا الكلمتين بيلزقوا في بعض. */
+.paylog-b>.sub{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;min-width:0}
+.paylog-t{font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t1)}
+.paylog-n{font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t1);
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--r1);
+  background:rgba(var(--warnC),.09)}
+.paylog-i{display:flex;align-items:center;gap:var(--sp-2)}
+.paylog-i svg{flex:none;color:var(--solid)}
+
+/* شريط استهلاك المنحة · قاعدة 14 */
+.paybar{height:6px;border-radius:var(--rp);margin:var(--sp-3) 0 var(--sp-2);
+  background:var(--fl-5);overflow:hidden}
+.paybar>span{display:block;height:100%;border-radius:var(--rp);background:var(--solid)}
+
+/* ── شريط المخارج · نفس صندوق شريط القرار بحقل ملاحظة زيادة ── */
+.payact{flex-wrap:wrap;gap:var(--sp-3)}
+.payact-w{flex:1 1 auto;min-width:0}
+.payact-n{flex:1 1 16rem;min-width:0;display:flex}
+.payact-n input{width:100%;min-width:0;font:inherit;color:var(--t1);
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--ric);
+  border:1px solid var(--ctl-edge);background:var(--g-card)}
+.payact-n input::placeholder{color:var(--t3-g)}
 
 /* ── المجموعة ── */
 .paygrp{display:flex;flex-direction:column;gap:var(--sp-4)}

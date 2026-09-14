@@ -1,4 +1,4 @@
-import type { PayCheck, PayRequest, PayState } from '@/types/domain'
+import type { PayCheck, PayEvent, PayRequest, PayState } from '@/types/domain'
 import { projectRows } from './projects'
 import { entityById } from './entities'
 
@@ -135,6 +135,57 @@ const checksFor = (state: PayState, cond: boolean): PayCheck[] => {
   return base
 }
 
+/* ═══════════════ المرفقات وسجل التدقيق ═══════════════
+   rule 21 بيقول المستندات تتحفظ **مربوطة بالطلب** لا في مكان تاني،
+   وrule 16 بيطلب سجل تدقيق لكل العمليات. الاتنين دول مش زينة في
+   صفحة الطلب · هما اللي بيخلّوا المراجِع يقدر يقول «ليه الطلب ده
+   وصل لهنا» بدل ما يسأل اللي قبله. */
+
+const DOC_KINDS = [
+  { name: 'التقرير المرحلي', kind: 'تقرير' },
+  { name: 'كشف المستفيدين', kind: 'كشف' },
+  { name: 'فواتير المرحلة السابقة', kind: 'فواتير' },
+  { name: 'صور التنفيذ', kind: 'صور' },
+  { name: 'سند التعهّد الموقّع', kind: 'سند' },
+]
+
+/** الخطوات اللي كل مرحلة بتعدّي عليها · مصدرها جدول الخطوات نفسه */
+const PASSED: Record<PayState, number[]> = {
+  supervisor: [1, 2, 3, 4],
+  returned: [1, 2, 3, 4, 5, 6, 7, 10],
+  manager: [1, 2, 3, 4, 5, 6, 7, 12],
+  finance: [1, 2, 3, 4, 5, 6, 7, 12, 13, 14],
+  paid: [1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19],
+  closed: [1, 2, 3, 4, 15],
+}
+
+/** نصّ كل خطوة في السجل · الفاعل والفعل والإشعار اللي اتبعت معاه */
+const STEP_SAY: Record<number, { role: string; what: string; notified?: string }> = {
+  1: { role: 'النظام', what: 'أتاح إنشاء طلب صرف · الدفعة استحقّت وشروط التقديم مستوفاة' },
+  2: { role: 'الجهة المستفيدة', what: 'أنشأت طلب الصرف وأرفقت التقارير والمستندات' },
+  3: { role: 'النظام', what: 'تحقّق من اكتمال البيانات والمتطلبات الإلزامية' },
+  4: { role: 'النظام', what: 'أحال الطلب لمشرف المنح', notified: 'مشرف المنح · طلب صرف جديد' },
+  5: { role: 'مشرف المنح', what: 'راجع الطلب وتحقّق من المتطلبات والتقارير' },
+  6: { role: 'الذكاء الاصطناعي', what: 'حلّل التقارير وقارن الإنجاز بخطة التنفيذ' },
+  7: { role: 'مشرف المنح', what: 'سجّل التوصية' },
+  10: { role: 'النظام', what: 'حدّث حالة الطلب وأشعر الجهة بالملاحظات', notified: 'الجهة المستفيدة · الطلب معاد للاستكمال' },
+  12: { role: 'النظام', what: 'أحال الطلب لمدير المنح', notified: 'مدير المنح · طلب بانتظار الموافقة' },
+  13: { role: 'مدير المنح', what: 'راجع الطلب ووافق عليه' },
+  14: { role: 'النظام', what: 'تحقّق من سريان الاتفاقية وتوفّر المبلغ المحجوز ثم أحال للمالية', notified: 'الإدارة المالية · طلب بانتظار أمر الصرف' },
+  15: { role: 'الإدارة المالية', what: 'راجعت الطلب واعتمدت أمر الصرف' },
+  16: { role: 'النظام', what: 'أنشأ أمر الصرف وربطه بالمشروع والاتفاقية والدفعة ومصادر التمويل' },
+  17: { role: 'الإدارة المالية', what: 'نفّذت التحويل المالي للحساب البنكي المعتمد' },
+  18: { role: 'النظام', what: 'حدّث حالة الدفعة إلى (تم الصرف) وحوّل المبلغ من محجوز إلى مصروف' },
+  19: { role: 'النظام', what: 'أرسل إشعارًا للجهة بتنفيذ عملية الصرف', notified: 'الجهة المستفيدة · تم تنفيذ الصرف' },
+}
+
+/** تواريخ السجل بتتولّد للورا من تاريخ الإنشاء، بيوم لكل خطوة */
+const dayAfter = (iso: string, n: number): string => {
+  const d = new Date(iso)
+  d.setDate(d.getDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
 /** المشاريع اللي عدّت الاتفاقية · rule 1: الصرف بعد التفعيل بس */
 const eligible = projectRows.filter(
   (p) => p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل',
@@ -189,6 +240,18 @@ export const payRequests: PayRequest[] = (() => {
         note: state === 'returned' ? pick(RETURN_NOTES) : undefined,
         owner: p.owner ?? 'عمر قاسم',
         at: `2026-0${int(5, 8)}-${String(int(1, 28)).padStart(2, '0')}`,
+        /* rule 10 · الاتفاقية وسريانها معروضة في الطلب لا مستنتجة */
+        agreement: {
+          id: `AG-${p.id.replace(/\D/g, '').slice(-5)}`,
+          active: rnd() > 0.05,
+          endsAt: `2027-0${int(1, 9)}-${String(int(1, 28)).padStart(2, '0')}`,
+        },
+        granted,
+        /* المصروف قبل الدفعة دي · rule 14 بيقيس السقف عليه */
+        spent: even * (no - 1),
+        reserved: due,
+        docs: [],
+        log: [],
         /* تاريخ التحويل مشتَقّ من الاستحقاق لا مستقلًّا عنه · كان
            تاريخًا ثابتًا في سبتمبر، فكل دفعة مستحقة في يونيو طلعت
            متأخرة و«نسبة الالتزام بجدول الدفعات» نزلت 16% · رقم
@@ -198,6 +261,45 @@ export const payRequests: PayRequest[] = (() => {
       n++
     }
   }
+  /* المرفقات وسجل التدقيق · بيتبنوا بعد ما الطلب يكتمل عشان
+     السجل يقرأ من حالة الطلب نفسها لا من قيم منفصلة */
+  for (const r of out) {
+    const n = 2 + Math.floor(rnd() * 3)
+    r.docs = DOC_KINDS.slice(0, n).map((d, i) => ({
+      name: d.name,
+      kind: d.kind,
+      at: dayAfter(r.at, i),
+      size: `${int(120, 4800)} ك.ب`,
+    }))
+
+    const steps = PASSED[r.state]
+    r.log = steps.map((step, i): PayEvent => {
+      const say = STEP_SAY[step]!
+      const who =
+        say.role === 'مشرف المنح' ? r.owner
+        : say.role === 'الجهة المستفيدة' ? r.entityName
+        : say.role === 'مدير المنح' ? 'عبدالله الدوسري'
+        : say.role === 'الإدارة المالية' ? 'ريم الشمري'
+        : say.role
+      /* خطوة 7 ليها مخرجان · النص بيتبع اللي حصل فعلًا لا ثابتًا */
+      const what =
+        step === 7 && r.state === 'returned'
+          ? 'أعاد الطلب للجهة مع توضيح الملاحظات'
+          : step === 7
+            ? 'سجّل التوصية بالموافقة'
+            : say.what
+      return {
+        at: dayAfter(r.at, i),
+        who,
+        role: say.role,
+        what,
+        note: step === 7 && r.state === 'returned' ? r.note : undefined,
+        step,
+        notified: say.notified,
+      }
+    })
+  }
+
   /* ~78% في موعدها · الباقي بتأخير أيام قليلة */
   for (const r of out) {
     if (r.state !== 'paid') continue
