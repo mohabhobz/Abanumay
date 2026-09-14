@@ -1,9 +1,12 @@
 import { useMemo } from 'react'
-import { Glass, Head, Icon, icons, Num, Riyal, SearchBox, Segments, Select, Stat, Toggle } from '@/components/ui'
+import {
+  Empty, Glass, Icon, icons, Num, Riyal, SearchBox, Segments, Select, Stat, Toggle,
+} from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
-import { pct } from '@/lib/format'
+import { QuickRead } from '@/components/assistant'
 import { assistFor } from '@/data/mock/assistant'
+import { readPayments } from '@/data/readings'
 import { OWNERS } from '@/data/mock/taxonomy'
 import {
   PAY_STATES, payBlocked, payHeat, payKpi, payRequests,
@@ -26,6 +29,24 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
    الصفّ بيخفي السبب والكارت بيوَرّيه، وده اللي خلّى كل كارت يحمل
    الشروط الأربعة اللي الوثيقة بتمنع الانتقال عليها.
 
+   ═══ ترتيب الشاشة · نفس ترتيب كل قائمة في السيستم ═══
+
+   عنوان بسيط → قراءة سريعة → شرائح النطاق → شريط الفلاتر → النتيجة.
+   الشاشة دي كانت خارجة عن الترتيب ده في أربع حاجات، وكلها اتصلّحت:
+
+     · ترويسة `phead phead-g2` · دي ترويسة **صفحة تفاصيل** (عمودين،
+       الشمال فيها رسم). القائمة ترويستها `<header>` بسيطة، والعنوان
+       تحته سطر واحد بالعدد.
+     · المساعد ما كانش موجود خالص · كل قائمة في السيستم لها
+       `QuickRead` بعد العنوان مباشرة، وهو اللي بيقول **السبب** مش
+       العدد. `readPayments` بتحسبه من نفس الصفوف المعروضة.
+     · الفلاتر كانت في `<div className="ftool">` · كلاس **مش موجود
+       في الـCSS أصلًا**، فالشريط كان بيقع على ستايل افتراضي. الصح
+       `<Glass className="ftoolbar">` بنفس `ftool-r/f/a`.
+     · الشرائح كانت جدول مخصّص (`.payst`) بأربع أعمدة وعدّادات وأسماء
+       أصحاب · تركيب اتكتب من الصفر بينما `Segments` بيعمله بعدّاده.
+       واتشال معاه البانر: التصعيد بقى قراءة ليها طريق، لا رقم أصم.
+
    ═══ اللي اتعمل بالوثيقة، واللي اتسجّل ملاحظة ═══
 
    بنينا على `BPD-009`: أربع مراحل تنتهي عند التحويل (خطوة 17–18)،
@@ -43,10 +64,11 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
    ═══════════════════════════════════════════════════════════ */
 
 const HEATS = [
-  { key: '', label: 'الكل' },
-  { key: 'late', label: 'متأخر' },
-  { key: 'stuck', label: 'متعثر' },
+  { value: 'late', label: 'متأخر عن مدة المرحلة' },
+  { value: 'stuck', label: 'متعثر · تجاوز الضعف' },
 ]
+
+const NOT_FILTERS: (keyof Params)[] = ['q', 'state']
 
 export default function PaymentsPage() {
   const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
@@ -74,18 +96,24 @@ export default function PaymentsPage() {
     [rows],
   )
 
+  const filtered = activeCount([]) > 0
+  const readings = useMemo(() => readPayments(rows, filtered), [rows, filtered])
+
   /** عدّاد كل مرحلة جوّه النطاق الحالي، مش على الكل */
   const counts = useMemo(() => {
+    const needle = v.q?.trim()
     const base = payRequests.filter((r) => {
       if (v.heat && payHeat(r) !== v.heat) return false
       if (v.owner && r.owner !== v.owner) return false
       if (v.hold === '1' && !payBlocked(r)) return false
+      if (needle && !`${r.id} ${r.projectName} ${r.entityName} ${r.projectId}`.includes(needle))
+        return false
       return true
     })
     const m = new Map<PayState, number>()
     for (const r of base) m.set(r.state, (m.get(r.state) ?? 0) + 1)
-    return m
-  }, [v.heat, v.owner, v.hold])
+    return { m, total: base.length }
+  }, [v.heat, v.owner, v.hold, v.q])
 
   const groups = v.state
     ? [{ key: v.state as PayState, rows: sorted }]
@@ -98,20 +126,20 @@ export default function PaymentsPage() {
     <AppLayout assistantContext={assistFor.page('الصرف')}>
       <div className="viewstack">
         <div className="screen col">
-          <header className="phead phead-g2">
-            <div className="pmain">
+          <header>
+            <div>
               <h1 className="ptitle">الصرف</h1>
-              <p className="sub pay-sub">
-                طلبات صرف الدفعات · أربع مراحل من إنشاء الجهة للطلب حتى تنفيذ
-                التحويل، وكل طلب بيقول أي قاعدة واقفة قصاده.
+              <p className="sub" style={{ marginTop: '.3rem' }}>
+                <span className="num">{rows.length}</span> طلب من{' '}
+                <span className="num">{payRequests.length}</span> في هذا النموذج ·{' '}
+                أربع مراحل من إنشاء الجهة للطلب حتى تنفيذ التحويل
               </p>
             </div>
-
-            {/* الترويسة كانت فيها سُلّم بالمراحل الأربعة، واتشال:
-                شريط المراحل تحت بيقول نفس التركيب **ومعاه عدّاد**،
-                والسُّلّم كل محطاته `todo` فبيتقري «مفيش حاجة خلصت»
-                لا «دي بنية الإجراء». تركيب واحد يتقال مرة واحدة. */}
           </header>
+
+          {/* القراءة قبل الأدوات · هي قراءة **للصفحة**، فمكانها بعد
+              العنوان لا بين الفلتر واللي رجع منه */}
+          <QuickRead variant="bar" title="قراءة سريعة للصندوق" readings={readings} />
 
           <div className="stats4">
             <Stat
@@ -134,43 +162,31 @@ export default function PaymentsPage() {
               unit="يومًا"
               note="المستهدف: بانتظار المؤسسة"
             />
-            {/* مؤشر 4 في الوثيقة · نفس الملاحظة.
-                وعلامة النسبة **جوّه** الرقم لا جنبه: `<Num>` بتعزل
-                الرقم وحده، فالـ`%` اللي برّه الجزيرة بتفضل محايدة
-                وموضعها بيتحدّد بجيرانها لا برقمها. */}
+            {/* مؤشر 4 في الوثيقة · نفس الملاحظة */}
             <Stat
               label="الالتزام بجدول الدفعات"
-              value={<Num>{pct(k.onSchedule)}</Num>}
+              value={<><Num>{k.onSchedule}</Num>%</>}
               note="المستهدف: بانتظار المؤسسة"
               bar={{ w: `${k.onSchedule}%`, c: 'var(--lime)' }}
             />
           </div>
 
-          {/* التصعيد (9.5 بند 3) بيطلب «تقرير شامل بالمتأخرة
-              والمتعثرة» · هو مش تقرير منفصل، هو فلتر على نفس الصندوق،
-              فالمشرف ما بيسيبش مكان القرار عشان يشوف المتأخر */}
-          {(k.late > 0 || k.stuck > 0) && (
-            <div className="payban">
-              <Icon name={icons.alert} size={16} />
-              <span>
-                <b><Num>{k.stuck}</Num></b> متعثر و<b><Num>{k.late}</Num></b> متأخر
-                عن مدة المرحلة.
-              </span>
-              <span className="pc-sp" />
-              <button
-                /* `btn-p` لا `btn-1` · مفيش كلاس اسمه `btn-1` في
-                   السيستم، فالزرار كان بيقع على `.btn` العريان
-                   وقت التفعيل · جرد الأزرار في `uiaudit` هو اللي
-                   وَرّى الاسم المخترع. */
-                className={`btn btn-sm ${v.heat === 'stuck' ? 'btn-p' : 'btn-2'}`}
-                onClick={() => set({ heat: v.heat === 'stuck' ? undefined : 'stuck' })}
-              >
-                اعرض المتعثر
-              </button>
-            </div>
-          )}
+          {/* شرائح المراحل · نفس صفّ اللقطات في باقي القوائم، وكل
+              شريحة بعدّادها جوّه النطاق الحالي */}
+          <Segments
+            active={v.state ?? ''}
+            onChange={(x) => set({ state: x })}
+            items={[
+              { key: '', label: 'كل المراحل', count: counts.total },
+              ...PAY_STATES.map((s) => ({
+                key: s.key,
+                label: s.label,
+                count: counts.m.get(s.key) ?? 0,
+              })),
+            ]}
+          />
 
-          <div className="ftool">
+          <Glass className="ftoolbar">
             <div className="ftool-r">
               <div className="ftool-f">
                 <SearchBox
@@ -182,13 +198,14 @@ export default function PaymentsPage() {
                   icon={icons.users}
                   value={v.owner}
                   all="كل المشرفين"
-                  people
                   options={OWNERS as unknown as string[]}
                   onChange={(x) => set({ owner: x })}
                 />
-                <Segments
-                  items={HEATS}
-                  active={v.heat ?? ''}
+                <Select
+                  icon={icons.clock}
+                  value={v.heat}
+                  all="كل المدد"
+                  options={HEATS}
                   onChange={(x) => set({ heat: x })}
                 />
                 <Toggle
@@ -197,45 +214,41 @@ export default function PaymentsPage() {
                   onChange={(on) => set({ hold: on ? '1' : undefined })}
                 />
               </div>
-              <div className="ftool-a">
-                {activeCount([]) > 0 && (
-                  <button className="btn btn-2 btn-sm" onClick={clear}>
-                    مسح الفلاتر
+            </div>
+
+            {activeCount(NOT_FILTERS) > 0 && (
+              <div className="factive">
+                {v.heat && (
+                  <button className="fpill" onClick={() => set({ heat: undefined })}>
+                    <span className="sub">المدة:</span>{' '}
+                    {HEATS.find((h) => h.value === v.heat)?.label}
+                    <Icon name={icons.close} size={13} />
                   </button>
                 )}
+                {v.owner && (
+                  <button className="fpill" onClick={() => set({ owner: undefined })}>
+                    <span className="sub">المشرف:</span> {v.owner}
+                    <Icon name={icons.close} size={13} />
+                  </button>
+                )}
+                {v.hold === '1' && (
+                  <button className="fpill" onClick={() => set({ hold: undefined })}>
+                    الموقوف بشرط
+                    <Icon name={icons.close} size={13} />
+                  </button>
+                )}
+                <button className="fclear" onClick={clear}>مسح الكل</button>
               </div>
-            </div>
-          </div>
-
-          {/* شرائح المراحل · كل واحدة بعدّادها، فالمشرف يعرف فين
-              الضغط قبل ما يفتح */}
-          <div className="payst">
-            <button
-              className={`payst-i${!v.state ? ' on' : ''}`}
-              onClick={() => set({ state: undefined })}
-            >
-              <span className="payst-n num">{rows.length}</span>
-              <span className="payst-l">الكل</span>
-            </button>
-            {PAY_STATES.map((s) => (
-              <button
-                key={s.key}
-                className={`payst-i${v.state === s.key ? ' on' : ''}`}
-                onClick={() => set({ state: v.state === s.key ? undefined : s.key })}
-              >
-                <span className="payst-n num">{counts.get(s.key) ?? 0}</span>
-                <span className="payst-l">{s.label}</span>
-                <span className="payst-w sub">{s.who || 'مكتملة'}</span>
-              </button>
-            ))}
-          </div>
+            )}
+          </Glass>
 
           {sorted.length === 0 ? (
             <Glass>
-              <Head title="لا توجد طلبات" meta="بالفلاتر الحالية" />
-              <p className="sub" style={{ margin: 0 }}>
-                جرّب تمسح الفلاتر، أو شوف مرحلة تانية من الشرائح فوق.
-              </p>
+              <Empty
+                title="لا توجد طلبات بهذه الفلاتر."
+                note="جرّب توسيع النطاق، أو اختر مرحلة تانية من الشرائح فوق."
+                actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
+              />
             </Glass>
           ) : (
             groups.map((g) => {

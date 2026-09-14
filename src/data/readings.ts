@@ -10,7 +10,8 @@
  * بنفس شكل `Reading[]` · والواجهة ما تتغيّرش.
  */
 import type { Reading, ReadingAction } from '@/components/assistant/reading'
-import type { EntityRow, Insight, ProjectRow } from '@/types/domain'
+import type { EntityRow, Insight, PayRequest, ProjectRow } from '@/types/domain'
+import { PAY_STATES, payBlocked, payHeat, payStateWho } from './mock/disbursements'
 import type { EntityDetail } from './mock/entityDetail'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
 import { projectRows } from './mock/projects'
@@ -1107,3 +1108,100 @@ export function readReports(yearId: string): Reading[] {
   return out
 }
 
+
+/* ═══════════════════ صندوق الصرف ═══════════════════ */
+
+/**
+ * قراءات صندوق الصرف · BPD-009.
+ *
+ * السؤال اللي الصندوق بيجاوبه واحد: **إيه اللي واقف، وليه؟** فالقراءة
+ * ما بتعدّش الطلبات (الشرائح فوق بتعمل كده)، بتقول السبب: مين متعثر،
+ * وأنهي قاعدة بتوقف أكتر طلب، وفين الضغط.
+ *
+ * التصعيد (9.5 بند 3) كان بانر مستقل فوق الفلاتر، واتحوّل لقراءة
+ * هنا · مش عشان الشكل، لكن لأن البانر بيقول رقمًا والقراءة بتقول
+ * سببه ومعاها طريق يوصّل له، وده نفس اللي كل شاشة في السيستم بتعمله.
+ */
+export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[] {
+  const out: Reading[] = []
+  const open = rows.filter((r) => r.state !== 'paid' && r.state !== 'closed')
+  if (open.length === 0) return out
+
+  const scope = isFiltered ? 'في النطاق الحالي' : 'في الصندوق'
+
+  /* ١ · المتعثر · تجاوز ضعف حدّ المرحلة */
+  const stuck = open.filter((r) => payHeat(r) === 'stuck')
+  if (stuck.length) {
+    const worst = stuck.reduce((a, b) => (a.hoursInState > b.hoursInState ? a : b))
+    const d = `${days(worst.hoursInState)} يومًا`
+    out.push({
+      id: 'p-stuck',
+      kind: 'flag',
+      label: 'تعثّر',
+      metric: { value: String(stuck.length), unit: `طلب متعثر ${scope}` },
+      text:
+        `أطولها «${worst.projectName}» واقف ${d} عند ${payStateWho(worst.state)}. ` +
+        `آلية التصعيد بتطلب تقريرًا شاملًا بالمتأخر والمتعثر.`,
+      bold: [`«${worst.projectName}»`, d],
+      danger: [d],
+      src: 'مدة المرحلة · آلية التصعيد 9.5',
+      to: `${ROUTES.payments}?heat=stuck`,
+      toLabel: 'اعرضها',
+    })
+  }
+
+  /* ٢ · الموقوف بشرط · وأنهي قاعدة بتوقف أكتر */
+  const blocked = open.filter(payBlocked)
+  if (blocked.length) {
+    const tally = new Map<number, { label: string; n: number }>()
+    for (const r of blocked) {
+      for (const c of r.checks) {
+        if (c.ok) continue
+        const cur = tally.get(c.rule)
+        tally.set(c.rule, { label: c.label, n: (cur?.n ?? 0) + 1 })
+      }
+    }
+    let top: { rule: number; label: string; n: number } | null = null
+    for (const [rule, x] of tally) if (!top || x.n > top.n) top = { rule, ...x }
+    const sum = blocked.reduce((s, r) => s + r.asked, 0)
+    out.push({
+      id: 'p-hold',
+      kind: 'flag',
+      label: 'موقوف بشرط',
+      metric: { value: String(blocked.length), unit: `طلب لا يمكن تمريره` },
+      text: top
+        ? `بقيمة ${millions(sum)} ريال. أكتر سبب متكرر «${top.label}» في ` +
+          `${top.n} طلبًا · قاعدة ${top.rule} في الوثيقة.`
+        : `بقيمة ${millions(sum)} ريال، وسببها الحساب البنكي غير المعتمد.`,
+      bold: [`${millions(sum)} ريال`, ...(top ? [`«${top.label}»`] : [])],
+      src: 'قواعد الصرف 3 · 6 · 10 · 11',
+      to: `${ROUTES.payments}?hold=1`,
+      toLabel: 'اعرضها',
+    })
+  }
+
+  /* ٣ · فين الضغط · المرحلة اللي شايلة أكتر طلبات */
+  const byState = new Map<string, number>()
+  for (const r of open) byState.set(r.state, (byState.get(r.state) ?? 0) + 1)
+  let peak: [string, number] | null = null
+  for (const e of byState) if (!peak || e[1] > peak[1]) peak = e
+  if (peak) {
+    const meta = PAY_STATES.find((s) => s.key === peak![0])
+    const share = Math.round((peak[1] / open.length) * 100)
+    out.push({
+      id: 'p-load',
+      kind: 'note',
+      label: 'مكان الضغط',
+      metric: { value: String(peak[1]), unit: `طلب عند ${meta?.who ?? 'المرحلة'}` },
+      text:
+        `يعني ${pctText(share)} من المفتوح واقف في مرحلة واحدة ` +
+        `(خطوات ${meta?.steps} في الوثيقة).`,
+      bold: [pctText(share)],
+      src: 'توزيع الطلبات على المراحل',
+      to: `${ROUTES.payments}?state=${peak[0]}`,
+      toLabel: 'افتح المرحلة',
+    })
+  }
+
+  return out
+}
