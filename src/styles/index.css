@@ -4101,11 +4101,19 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 
 .prow{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
 
-.paydocs,.paysrc{list-style:none;margin:0;padding:0;
+/* `.paydocs` اتشال · المرفقات بقت `DocFile` زي المشروع والجهة،
+   فالقائمة المكتوبة بالإيد (أيقونة ورقة واحدة لكل نوع) ما بقاش
+   ليها لازمة · شكل رابع لنفس الحاجة كان بيتولد من غير ما حد
+   ياخد باله. */
+.paysrc{list-style:none;margin:0;padding:0;
   display:flex;flex-direction:column;gap:var(--sp-2)}
-.paydocs li,.paysrc li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+.paysrc li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
   font-size:var(--fs-2);line-height:var(--lh-2)}
-.paydocs svg{flex:none;color:var(--t3-g)}
+
+/* شبكة مستندات جوّه بطاقة · نفس أعمدة `.pay-docs` بلا الفاصل
+   العلوي، لأن ترويسة البطاقة فوقها هي اللي بتفصل */
+.docgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:var(--sp-2) var(--sp-4)}
 .paysrc-v{margin-inline-start:auto}
 
 /* ⚠️ السجل مرقَّم بخطوة الوثيقة لا بترتيب العرض · الرقم ده هو

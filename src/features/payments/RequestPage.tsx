@@ -7,9 +7,10 @@ import {
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
+import { DocFile } from '@/components/docs'
 import { assistFor } from '@/data/mock/assistant'
 import { PAY_LIMIT, PAY_STATES, payHeat, payRequestById, payStateWho } from '@/data/mock/disbursements'
-import { isolate, pct } from '@/lib/format'
+import { isolate, pct, readDate } from '@/lib/format'
 import type { PayRequest } from '@/types/domain'
 import { ActionDock, actionsFor } from './ActionDock'
 
@@ -274,24 +275,24 @@ export default function RequestPage() {
                 </Glass>
               )}
 
-              {/* المرفقات · قاعدة 21: مربوطة بالطلب لا في مكان تاني */}
+              {/* المرفقات · قاعدة 21: مربوطة بالطلب لا في مكان تاني.
+
+                  ⚠️ و`DocFile` هي الشكل الواحد لأي ملف في السيستم ·
+                  كانت هنا قائمة مكتوبة بالإيد (أيقونة ورقة واحدة +
+                  اسم + حجم)، يعني **شكل رابع** لنفس الحاجة اللي
+                  اتوحّدت في المشروع والجهة والمتابعة. والثامبنيل مش
+                  زينة: بيقول نوع المحتوى قبل الفتح، فالمراجع يعرف
+                  إن «كشف المستفيدين» جدول من الصف نفسه. */}
               <Glass>
                 <Head
                   title="المرفقات"
                   meta={<span className="sub"><Num>{r.docs.length}</Num> مستندًا</span>}
                 />
-                <ul className="paydocs">
+                <div className="docgrid">
                   {r.docs.map((d) => (
-                    <li key={d.name}>
-                      <Icon name={icons.doc} size={15} />
-                      <span className="trim1">{d.name}</span>
-                      <span className="sub">{d.kind}</span>
-                      <span className="pc-sp" />
-                      <span className="sub num">{d.size}</span>
-                      <DateText>{d.at}</DateText>
-                    </li>
+                    <DocFile key={d.name} name={d.name} meta={readDate(d.at)} />
                   ))}
-                </ul>
+                </div>
               </Glass>
 
               {/* سجل التدقيق · قاعدة 16 · وكل انتقال بإشعاره (قاعدة 17) */}
