@@ -112,13 +112,26 @@ const rnd = () => {
 const int = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1))
 const pick = <T,>(a: readonly T[]): T => a[int(0, a.length - 1)] as T
 
-/** توزيع الطلبات على المراحل · مأخوذ من أحجام النظام العامل */
-const PLAN: { state: PayState; n: number }[] = [
-  { state: 'supervisor', n: 26 },
-  { state: 'returned', n: 6 },
-  { state: 'manager', n: 9 },
-  { state: 'finance', n: 12 },
-  { state: 'paid', n: 19 },
+/* ⚠️ **النسب من النظام العامل، والعدد من سعة النموذج.**
+   الأرقام الأصلية (26 · 6 · 9 · 12 · 19 = 72) هي أحجام النظام
+   العامل، وهو فيه آلاف المشاريع. النموذج ده فيه ثلاثين مشروعًا،
+   وكل اتفاقية دفعاتها من اتنين لأربعة، وآخر دفعة بتفضل بلا طلب ·
+   فالسعة الحقيقية أقلّ من 72 بكتير.
+
+   وحشر 72 في السعة دي كان بيدّي مشروعًا واحدًا تلات طلبات مفتوحة
+   في نفس الوقت — رقم بيتقري صح في الصندوق وبيكدب على الواقع.
+   والأسوأ إن المحاولة الفاضية كانت بتاكل من حصّة المرحلة، فالخطة
+   طلعت 17/2/0/0/0: المراحل الأولى بلعت المشاريع والأخيرة فضيت
+   خالص، والمؤشران 2 و3 طلعوا أصفارًا لأن مفيش ولا طلب مصروف.
+
+   فالنسب هي اللي اتاخدت من النظام العامل (36% · 8% · 13% · 17% ·
+   26%)، والعدد بيتحسب من السعة الفعلية وقت التشغيل. */
+const MIX: { state: PayState; share: number }[] = [
+  { state: 'supervisor', share: 0.36 },
+  { state: 'returned', share: 0.08 },
+  { state: 'manager', share: 0.13 },
+  { state: 'finance', share: 0.17 },
+  { state: 'paid', share: 0.26 },
 ]
 
 const checksFor = (state: PayState, cond: boolean): PayCheck[] => {
@@ -202,7 +215,7 @@ const SCHEDULE = new Map<string, number>()
 const scheduleOf = (projectId: string): number => {
   const known = SCHEDULE.get(projectId)
   if (known) return known
-  const of = pick([1, 2, 2, 3, 3, 4])
+  const of = pick([2, 2, 3, 3, 4, 4])
   SCHEDULE.set(projectId, of)
   return of
 }
@@ -212,24 +225,55 @@ const TAKEN = new Map<string, Set<number>>()
 
 export const payRequests: PayRequest[] = (() => {
   const out: PayRequest[] = []
+
+  /* السعة الفعلية · مجموع الدفعات القابلة للطلب في كل المشاريع
+     المؤهّلة، بعد ما آخر دفعة تتحجز في الاتفاقيات المتعددة */
+  const capacity = eligible.reduce((sum, p) => {
+    const of = scheduleOf(p.id)
+    return sum + (of > 1 ? of - 1 : of)
+  }, 0)
+
+  /* الخطة = النسب × السعة · والباقي من القسمة بيروح لأكبر شريحة
+     عشان المجموع يطابق السعة بالظبط لا يقلّ عنها */
+  const PLAN = MIX.map((m) => ({ state: m.state, n: Math.floor(capacity * m.share) }))
+  const spare = capacity - PLAN.reduce((s, x) => s + x.n, 0)
+  if (PLAN[0]) PLAN[0].n += spare
+
   let n = 0
   for (const { state, n: count } of PLAN) {
     for (let i = 0; i < count; i++) {
-      const p = eligible[(n * 7 + i * 3) % eligible.length]
-      if (!p) continue
+      /* ⚠️ **بندوّر على مشروع لسّه عنده دفعة فاضية، ما بنتخطّاش.**
+         الأول كان `continue` لما المشروع يبقى ملْيان · والنتيجة إن
+         المحاولة الفاضية بتاكل من حصّة المرحلة، فالخطة 26/6/9/12/19
+         طلعت 17/2/0/0/0: المراحل الأولى بلعت المشاريع والأخيرة
+         فضيت خالص، والمؤشران 2 و3 طلعوا أصفارًا لأن مفيش ولا طلب
+         مصروف. العدّاد اللي بيتقري من حلقة بتتخطّى بيكدب على
+         الخطة، ومفيش تحقّق بيمسك ده · الخطة بتقول 72 والشاشة
+         بتعرض 19 والاتنين «شغّالين». */
+      let p = null as (typeof eligible)[number] | null
+      let taken = new Set<number>()
+      let of = 0
+      let cap = 0
+      for (let k = 0; k < eligible.length; k++) {
+        const cand = eligible[(n * 7 + i * 3 + k) % eligible.length]
+        if (!cand) continue
+        const candOf = scheduleOf(cand.id)
+        const candTaken = TAKEN.get(cand.id) ?? new Set<number>()
+        TAKEN.set(cand.id, candTaken)
+        /* ⚠️ الدفعة الأخيرة بتفضل **بلا طلب** في الاتفاقيات المتعددة.
+           مش تزويقًا للنموذج: الدفعة الختامية بتيجي بعد التقرير
+           الختامي، فالاتفاقية اللي كل دفعاتها ليها طلب مفتوح حالة
+           نادرة لا القاعدة. ولولا ده كانت شاشة إنشاء الطلب بتفتح
+           على جدول كل صفوفه مقفولة — شاشة سليمة بتوصف عالمًا
+           مستحيلًا. */
+        const candCap = candOf > 1 ? candOf - 1 : candOf
+        if (candTaken.size >= candCap) continue
+        p = cand; taken = candTaken; of = candOf; cap = candCap
+        break
+      }
+      if (!p) break
       const e = entityById(p.entityId)
-      const of = scheduleOf(p.id)
-      /* قاعدة 4 · طلب واحد مفتوح لكل دفعة · فالرقم اللي اتاخد
-         ما يتكرّرش، والمشروع اللي دفعاته كلها اتاخدت بيتخطّى */
-      const taken = TAKEN.get(p.id) ?? new Set<number>()
-      TAKEN.set(p.id, taken)
-      /* ⚠️ الدفعة الأخيرة بتفضل **بلا طلب** في الاتفاقيات المتعددة.
-         مش تزويقًا للنموذج: الدفعة الختامية بتيجي بعد التقرير
-         الختامي، فالاتفاقية اللي كل دفعاتها ليها طلب مفتوح حالة
-         نادرة لا القاعدة. ولولا ده كانت شاشة إنشاء الطلب بتفتح على
-         جدول كل صفوفه مقفولة — شاشة سليمة بتوصف عالمًا مستحيلًا. */
-      const cap = of > 1 ? of - 1 : of
-      if (taken.size >= cap) { n++; continue }
+      /* قاعدة 4 · طلب واحد مفتوح لكل دفعة · فالرقم ما يتكرّرش */
       let no = int(1, cap)
       while (taken.has(no)) no = (no % cap) + 1
       taken.add(no)
@@ -243,6 +287,8 @@ export const payRequests: PayRequest[] = (() => {
       /* التوزيع مقصود: أغلب الطلبات جوّه الحدّ، وشوية متأخرة، وأقل
          متعثرة · الصندوق الحقيقي مش كله أحمر */
       const h = rnd() > 0.72 ? int(lim + 1, lim * 3) : int(2, lim)
+      const dueMonth = int(6, 9)
+      const dueDay = int(1, 28)
 
       out.push({
         id: `SR-2026-${String(11_400 + n).padStart(5, '0')}`,
@@ -254,7 +300,7 @@ export const payRequests: PayRequest[] = (() => {
         of,
         due,
         asked: due,
-        dueAt: `2026-0${int(6, 9)}-${String(int(1, 28)).padStart(2, '0')}`,
+        dueAt: `2026-0${dueMonth}-${String(dueDay).padStart(2, '0')}`,
         state,
         hoursInState: state === 'paid' ? 0 : h,
         condition: cond ? pick(CONDITIONS) : undefined,
@@ -271,7 +317,20 @@ export const payRequests: PayRequest[] = (() => {
         ai: state === 'paid' ? undefined : pick(AI_NOTES),
         note: state === 'returned' ? pick(RETURN_NOTES) : undefined,
         owner: p.owner ?? 'عمر قاسم',
-        at: `2026-0${int(5, 8)}-${String(int(1, 28)).padStart(2, '0')}`,
+        /* ⚠️ تاريخ الإنشاء **مربوط بالاستحقاق**: الجهة بتطلب الصرف
+           قبل موعد الدفعة بأسبوعين لتلاتة، مش في شهر عشوائي.
+           لما كان مستقلًّا كان بيطلع طلبات اتعملت **بعد** ما
+           الدفعة استحقّت بشهرين، والمؤشرات كلها بتتحسب من المسافة
+           دي. */
+        at: dayAfter(
+          `2026-0${dueMonth}-${String(dueDay).padStart(2, '0')}`,
+          /* المدى واسع عن قصد: الجهة اللي بتطلب قبل الاستحقاق
+             بأسبوعين بتتصرف في موعدها، واللي بتطلب قبله بيومين
+             بتتأخر مهما كانت المعالجة سريعة · ومؤشر 4 بيقيس ده
+             بالظبط. مدى ضيّق كان بيدّي 100% في موعدها، وهي نسبة
+             ما بتحصلش ولا في نظام. */
+          -int(2, 26),
+        ),
         /* rule 10 · الاتفاقية وسريانها معروضة في الطلب لا مستنتجة */
         agreement: {
           id: `AG-${p.id.replace(/\D/g, '').slice(-5)}`,
@@ -304,6 +363,25 @@ export const payRequests: PayRequest[] = (() => {
       size: `${int(120, 4800)} ك.ب`,
     }))
 
+    /* ⚠️ **خط زمني واحد للطلب، والسجل والتحويل بيقروا منه.**
+       كان كل واحد فيهم بيتولّد لوحده: السجل يوم لكل خطوة من تاريخ
+       الإنشاء، وتاريخ التحويل مشتقًّا من الاستحقاق · فمؤشر 3 (من
+       اعتماد المدير حتى التحويل) طلع **64 يومًا**، وهو مسافة بين
+       تاريخين مالهمش علاقة ببعض أصلًا. الرقم بيتقري كارثة تشغيلية
+       وهو أثر جانبي للمولّد. نفس عيلة الباج اللي ضربت «الالتزام
+       بجدول الدفعات» قبل كده.
+
+       والخطوات مش بتاخد نفس الوقت كمان: خطوات النظام (إحالة ·
+       تحقّق · تحديث حالة) بتحصل في نفس اللحظة، واللي بتاخد أيام هي
+       خطوات البني آدمين. فالمسافة بتتحسب بالخطوة لا بالفهرس. */
+    const HUMAN = new Set([2, 5, 7, 11, 13, 15, 17])
+    const offsets: number[] = []
+    let cursor = 0
+    for (const step of PASSED[r.state]) {
+      offsets.push(cursor)
+      if (HUMAN.has(step)) cursor += int(1, 3)
+    }
+
     const steps = PASSED[r.state]
     r.log = steps.map((step, i): PayEvent => {
       const say = STEP_SAY[step]!
@@ -321,7 +399,7 @@ export const payRequests: PayRequest[] = (() => {
             ? 'سجّل التوصية بالموافقة'
             : say.what
       return {
-        at: dayAfter(r.at, i),
+        at: dayAfter(r.at, offsets[i] ?? 0),
         who,
         role: say.role,
         what,
@@ -332,12 +410,13 @@ export const payRequests: PayRequest[] = (() => {
     })
   }
 
-  /* ~78% في موعدها · الباقي بتأخير أيام قليلة */
+  /* تاريخ التحويل = آخر يوم في سجل الطلب · مش رقمًا تاني جنبه.
+     والالتزام بجدول الدفعات (مؤشر 4) بيتقاس بمقارنته بالاستحقاق،
+     فالمؤشر بقى بيقيس **الفرق بين الخط الزمني والجدول** لا فرقًا
+     بين رقمين مولَّدين. */
   for (const r of out) {
     if (r.state !== 'paid') continue
-    const d = new Date(r.dueAt)
-    d.setDate(d.getDate() + (rnd() > 0.78 ? int(3, 21) : -int(0, 6)))
-    r.paidAt = d.toISOString().slice(0, 10)
+    r.paidAt = r.log[r.log.length - 1]?.at
   }
   return out
 })()

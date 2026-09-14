@@ -213,12 +213,14 @@ export default function PaymentsPage() {
     <AppLayout assistantContext={assistFor.page('الصرف')}>
       <div className="viewstack">
         <div className="screen col">
-          {/* ═══ الترويسة بعمودين ═══
-              العنوان وسطره على اليمين، والقراءة قصاده على الشمال ·
-              نفس تركيب ترويسة صفحة الجهة والمشروع، فالعين بتلاقي
-              العنوان في نفس المكان في كل شاشة. */}
-          <header className="phead phead-g2">
-            <div className="pmain">
+          {/* ⚠️ **ترويسة قائمة، مش ترويسة تفاصيل.** كانت
+              `phead phead-g2` والقراءة جوّاها في العمود التاني — ودي
+              ترويسة **صفحة الجهة والمشروع**، يعني صفحة تفاصيل.
+              والنتيجة إن القراءة بتتزنق في نص العرض فسطرها بيتقصّ
+              بنقط، بينما نفس القراءة في المشاريع والجهات بتاخد
+              السطر كامل وتتقري لآخرها. */}
+          <header>
+            <div>
               <h1 className="ptitle">الصرف</h1>
               <p className="sub mt-1">
                 <span className="num">{rows.length}</span> طلب من{' '}
@@ -228,8 +230,14 @@ export default function PaymentsPage() {
                 <span className="num">{k.blocked}</span> منها موقوف بشرط
               </p>
             </div>
-            <QuickRead variant="bar" title="قراءة سريعة للصندوق" readings={readings} />
           </header>
+
+          {/* ═══ القراءة السريعة ═══
+              صفّ مستقل بعد العنوان مباشرة وقبل الأدوات · نفس مكانها
+              بالحرف في `/projects` و`/entities`. هي **قراءة للصفحة**،
+              فبتيجي قبل الأدوات لا بينها وبين النتيجة، وبتاخد السطر
+              كامل لأن جملتها بتتقري لآخرها. */}
+          <QuickRead variant="bar" title="قراءة سريعة للصندوق" readings={readings} />
 
           {/* ⚠️ **البطاقات الأربعة دي هي مؤشرات الوثيقة الأربعة**
               (9.8)، لا أربعة أرقام مختارة. كانت اتنين منهم مؤشرات
