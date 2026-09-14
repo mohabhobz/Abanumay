@@ -39,9 +39,9 @@ export const ROUTES = [
      ٧٥٥ جهة شغّالة: ٩٫٧ مليون ممنوح على تلات حالات، وترخيص منتهي. */
   '/entities', '/entities/694', '/entities/694/docs', '/entities/694/banks', '/entities/694/log',
   '/entities/755', '/entities/755/docs',
-  '/budget', '/payments', '/payments/SR-2026-11410', '/payments/new',
-  '/payments/SR-2026-11447/order', '/payments/late',
-  '/payments/SR-2026-11430/edit', '/agreements',
+  '/budget', '/payments', '/payments/SR-2026-11407', '/payments/new',
+  '/payments/SR-2026-11415/order', '/payments/late',
+  '/payments/SR-2026-11410/edit', '/agreements',
   '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
   '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
   '/reports/process/p1', '/assistant',

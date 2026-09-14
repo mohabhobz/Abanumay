@@ -71,6 +71,13 @@ export default function RequestForm() {
 
   /* وضعان: إنشاء جديد، أو إعادة إرسال طلب معاد (خطوة 11) */
   const resend = id ? payRequestById(id) : undefined
+  /* ⚠️ **رقم طلب غلط ≠ طلب جديد.**
+     كان `payRequestById` بيرجّع `undefined` والشاشة بتكمّل كأنها
+     «طلب صرف جديد» · يعني `/payments/SR-9999/edit` بيفتح فورم
+     فاضية بدل ما يقول إن الطلب مش موجود. والأسوأ إن الصفحة بتفضل
+     **سليمة**: مفيش خطأ في الكونسول ولا نصّ مقصوص، فكل أدوات
+     الفحص بترجع خضرا وهي بتقيس شاشة غلط. */
+  const missingId = Boolean(id) && !resend
   const projectId = resend?.projectId ?? v.project
   const projects = useMemo(payProjects, [])
   const project = projects.find((p) => p.id === projectId)
@@ -100,6 +107,29 @@ export default function RequestForm() {
     })
 
   const title = resend ? 'إعادة إرسال طلب الصرف' : 'طلب صرف جديد'
+
+  if (missingId) {
+    return (
+      <AppLayout assistantContext={assistFor.page('الصرف')}>
+        <div className="viewstack">
+          <div className="screen col">
+            <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
+            <Glass>
+              <Empty
+                title="الطلب غير موجود."
+                note="يمكن يكون اتقفل أو الرابط قديم."
+                actions={
+                  <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
+                    ارجع للصندوق
+                  </button>
+                }
+              />
+            </Glass>
+          </div>
+        </div>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout assistantContext={assistFor.page(title, project?.name ?? '')}>

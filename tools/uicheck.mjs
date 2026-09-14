@@ -63,7 +63,18 @@ for (const theme of themes) {
     await page.waitForTimeout(1100)
 
     const o = await page.evaluate(() => {
-      const out = { overflowX: false, clipped: [], offscreen: [], arabicDigits: [] }
+      const out = { overflowX: false, clipped: [], offscreen: [], arabicDigits: [], notFound: '' }
+      /* ⚠️ **المسار اللي بيرجّع «غير موجود» بيعدّي كل الفحوص.**
+         صفحة الفراغ سليمة تمامًا: مفيش خطأ كونسول ولا نصّ مقصوص
+         ولا تباين واقع · فلو معرّف في `routes.mjs` بقى ميّتًا
+         (الداتا اتغيّرت مثلًا)، كل الأدوات بتفضل خضرا وهي بتقيس
+         شاشة فاضية بدل الشاشة المقصودة. ده بالظبط اللي حصل لما
+         مولّد الطلبات اتغيّر وأرقام الطلبات في `routes.mjs`
+         ماتت. */
+      const empty = document.querySelector('.empty .t')
+      if (empty && /غير موجود|لا يوجد|غير متاح/.test(empty.textContent || '')) {
+        out.notFound = (empty.textContent || '').trim().slice(0, 60)
+      }
       out.overflowX = document.documentElement.scrollWidth > window.innerWidth + 2
       /* اللوحة المقفولة (المساعد) بتتحطّ برّه المنظر عن قصد،
          ومحتواها لسه `offsetParent` ليه قيمة. اللي جوّه طبقة
@@ -106,7 +117,7 @@ for (const theme of themes) {
     page.off('console', onMsg)
     page.off('pageerror', onErr)
 
-    const hit = errs.length || o.overflowX || o.clipped.length || o.offscreen.length || o.arabicDigits.length
+    const hit = errs.length || o.overflowX || o.clipped.length || o.offscreen.length || o.arabicDigits.length || o.notFound
     if (hit) {
       problems += 1
       console.log(`\n🔴 ${theme} ${route}`)
@@ -115,6 +126,7 @@ for (const theme of themes) {
       for (const c of o.clipped) console.log(`   قصّ بلا نقط: ${c}`)
       if (o.offscreen.length) console.log(`   خرج عن المنظر: ${o.offscreen.join(' · ')}`)
       if (o.arabicDigits.length) console.log(`   أرقام عربية-هندية: ${o.arabicDigits.join(' · ')}`)
+      if (o.notFound) console.log(`   🔴 المسار بيرجّع «${o.notFound}» · المعرّف في routes.mjs ميّت، والفحوص كلها بتقيس شاشة فراغ`)
     }
     if (wantShots) await page.screenshot({ path: `${SHOTS}${theme}${route.replace(/\//g, '_') || '_'}.png` })
   }

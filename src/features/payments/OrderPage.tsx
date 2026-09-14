@@ -32,6 +32,11 @@ import { printArea } from '@/lib/export'
    ما تطبع ورقة مالهاش سند.
    ═══════════════════════════════════════════════════════════ */
 
+/* ⚠️ أرقام الأقسام **لاتينية** زي كل رقم في السيستم · كانت
+   عربية-هندية (١ ٢ ٣) وعدّت على كل الفحوص، لأن المسار اللي
+   بيفحصها في `routes.mjs` كان معرّفه ميّتًا فالأداة كانت بتقيس
+   شاشة «الطلب غير موجود». الخرق ما بانش إلا لما المسار اتصلّح. */
+
 export default function OrderPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
@@ -107,7 +112,7 @@ export default function OrderPage() {
 
               {/* ١ · المشروع */}
               <section className="order-s">
-                <h3>١ · المشروع</h3>
+                <h3><span className="num">1</span> · المشروع</h3>
                 <dl className="kv">
                   <dt>اسم المشروع</dt><dd>{r.projectName}</dd>
                   <dt>رقم المشروع</dt><dd><Mono>{r.projectId}</Mono></dd>
@@ -117,7 +122,7 @@ export default function OrderPage() {
 
               {/* ٢ · الاتفاقية */}
               <section className="order-s">
-                <h3>٢ · الاتفاقية</h3>
+                <h3><span className="num">2</span> · الاتفاقية</h3>
                 <dl className="kv">
                   <dt>رقم الاتفاقية</dt><dd><Mono>{r.agreement.id}</Mono></dd>
                   <dt>سريانها</dt>
@@ -128,7 +133,7 @@ export default function OrderPage() {
 
               {/* ٣ · الدفعة */}
               <section className="order-s">
-                <h3>٣ · الدفعة</h3>
+                <h3><span className="num">3</span> · الدفعة</h3>
                 <dl className="kv">
                   <dt>الدفعة</dt>
                   <dd><span className="num">{r.no}</span> من <span className="num">{r.of}</span></dd>
@@ -151,7 +156,7 @@ export default function OrderPage() {
 
               {/* ٤ · مصادر التمويل · قاعدة 12 */}
               <section className="order-s">
-                <h3>٤ · مصادر التمويل</h3>
+                <h3><span className="num">4</span> · مصادر التمويل</h3>
                 <table className="order-t">
                   <thead>
                     <tr><th>المصدر</th><th>النسبة</th><th>المبلغ</th></tr>
@@ -182,7 +187,7 @@ export default function OrderPage() {
 
               {/* الحساب البنكي · المخرج التاني في الوثيقة */}
               <section className="order-s">
-                <h3>٥ · الحساب البنكي المعتمد</h3>
+                <h3><span className="num">5</span> · الحساب البنكي المعتمد</h3>
                 <dl className="kv">
                   <dt>البنك</dt><dd>{r.bank.name}</dd>
                   <dt>حالة الحساب</dt>
