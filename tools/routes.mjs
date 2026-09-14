@@ -42,5 +42,10 @@ export const ROUTES = [
   '/budget', '/payments', '/agreements',
   '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
   '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
-  '/reports/process/p1', '/assistant', '/account',
+  '/reports/process/p1', '/assistant',
+  /* ⚠️ التلاتة دول اتضافوا لمّا `routecover.mjs` مسكهم (١٤ سبتمبر):
+     محادثة محفوظة وصفحة التفضيلات كانوا **خارج الحراسة تمامًا** —
+     كل الأدوات المقيسة كانت بترجع خضرا وهي ما زارتهمش. */
+  '/assistant/c1',
+  '/account', '/account/preferences',
 ]

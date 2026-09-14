@@ -1,51 +1,48 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, Num, Riyal, SearchBox, Segments, Select, Stat, Toggle,
+  Empty, Glass, Icon, icons, MultiSelect, Num, Riyal, SearchBox, Segments, Select, Stat,
+  Toggle, ViewToggle,
 } from '@/components/ui'
+import { pct } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
-import { useQueryParams } from '@/hooks/useQueryParams'
+import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { QuickRead } from '@/components/assistant'
+import { DataTable, aggregate, orderCols, readCols, splitGroups, writeCols } from '@/components/table'
+import { ExportMenu } from '@/components/export'
+import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { readPayments } from '@/data/readings'
 import { OWNERS } from '@/data/mock/taxonomy'
-import {
-  PAY_STATES, payBlocked, payHeat, payKpi, payRequests,
-} from '@/data/mock/disbursements'
+import { BANK_STATES, PAY_STATES, payBlocked, payHeat, payKpi, payRequests } from '@/data/mock/disbursements'
 import type { PayRequest, PayState } from '@/types/domain'
+import type { Sheet } from '@/lib/export'
 import { RequestCard } from './RequestCard'
+import { COLS, GROUPS, groupByKey } from './columns'
 
-const KEYS = ['q', 'state', 'heat', 'owner', 'hold'] as const
+const KEYS = ['q', 'state', 'heat', 'owner', 'entity', 'bank', 'hold', 'view', 'group', 'adv'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* ═══════════════════════════════════════════════════════════
    صندوق الصرف · BPD-009
 
    الشاشة دي مش «قائمة دفعات». دي **صندوق قرارات**: 72 طلبًا في
-   أربع مراحل، وكل مرحلة ليها صاحب. فالتجميع بالمرحلة لا بالمشروع،
-   والسؤال اللي الشاشة بتجاوبه واحد: **إيه اللي واقف عندي، وليه؟**
+   أربع مراحل، وكل مرحلة ليها صاحب. والسؤال اللي بتجاوبه واحد:
+   **إيه اللي واقف عندي، وليه؟**
 
-   والحجم هو اللي حسم الشكل. النظام العامل فيه ٣١ طلبًا عند المشرف
-   و١٠ عند المالية و٣٠ عند الجهة · مش آلاف الصفوف. عند الحجم ده
-   الصفّ بيخفي السبب والكارت بيوَرّيه، وده اللي خلّى كل كارت يحمل
-   الشروط الأربعة اللي الوثيقة بتمنع الانتقال عليها.
+   ═══ الشكل: نفس عقد القوائم، بلا استثناء ═══
 
-   ═══ ترتيب الشاشة · نفس ترتيب كل قائمة في السيستم ═══
+   ترويسة بعمودين (العنوان يمين والقراءة قصاده) → المؤشرات →
+   الشرائح → شريط الأدوات → النتيجة. ونفس المبدّل اللي في المشاريع
+   والجهات: **جدول وكروت**، لأن الشاشة بتجاوب سؤالين مش واحد.
+   الكارت بيقول «ليه ده واقف» بالشروط الأربعة قدامك، والجدول بيقول
+   «شكل الطابور كله» · تقارن مبالغ وتواريخ ومشرفين وتصدّرهم.
 
-   عنوان بسيط → قراءة سريعة → شرائح النطاق → شريط الفلاتر → النتيجة.
-   الشاشة دي كانت خارجة عن الترتيب ده في أربع حاجات، وكلها اتصلّحت:
-
-     · ترويسة `phead phead-g2` · دي ترويسة **صفحة تفاصيل** (عمودين،
-       الشمال فيها رسم). القائمة ترويستها `<header>` بسيطة، والعنوان
-       تحته سطر واحد بالعدد.
-     · المساعد ما كانش موجود خالص · كل قائمة في السيستم لها
-       `QuickRead` بعد العنوان مباشرة، وهو اللي بيقول **السبب** مش
-       العدد. `readPayments` بتحسبه من نفس الصفوف المعروضة.
-     · الفلاتر كانت في `<div className="ftool">` · كلاس **مش موجود
-       في الـCSS أصلًا**، فالشريط كان بيقع على ستايل افتراضي. الصح
-       `<Glass className="ftoolbar">` بنفس `ftool-r/f/a`.
-     · الشرائح كانت جدول مخصّص (`.payst`) بأربع أعمدة وعدّادات وأسماء
-       أصحاب · تركيب اتكتب من الصفر بينما `Segments` بيعمله بعدّاده.
-       واتشال معاه البانر: التصعيد بقى قراءة ليها طريق، لا رقم أصم.
+   وكل عنصر هنا من مكتبة السيستم لا مكتوب للشاشة دي: `Segments`
+   للشرائح، `Glass.ftoolbar` للأدوات، `MultiSelect` للفلاتر،
+   `DataTable` للجدول، `Empty` للفراغ، `Face` للمشرف. الشاشة اللي
+   بتخترع تركيبها بتبان غريبة حتى لو ألوانها مضبوطة.
 
    ═══ اللي اتعمل بالوثيقة، واللي اتسجّل ملاحظة ═══
 
@@ -68,18 +65,39 @@ const HEATS = [
   { value: 'stuck', label: 'متعثر · تجاوز الضعف' },
 ]
 
-const NOT_FILTERS: (keyof Params)[] = ['q', 'state']
+/* اللي فوق مش بيتحسب في عدّاد «الفلاتر المتقدمة» · العدّاد بيقول
+   اللي **مخفي** بس، وإلا بيعدّ حاجة المستخدم شايفها قدامه */
+const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'state', 'heat', 'hold']
 
 export default function PaymentsPage() {
   const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
+  const navigate = useNavigate()
   const k = payKpi()
+  const [cols, setCols] = useState<string[]>(() => readCols('payments', COLS))
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  useEffect(() => writeCols('payments', cols), [cols])
+
+  /* الجدول على الموبايل بيضغط كل عمود لحد ما كل خلية تلفّ عمودًا من
+     الكلمات · الكارت هو صف الموبايل. وهنا الكارت هو الديفولت كمان
+     على الديسكتوب، عكس المشاريع: الطابور ٧٢ طلبًا لا ٤٩٢٩، والقرار
+     محتاج سببه قدامه. الجدول للمقارنة والتصدير. */
+  const mobile = useIsMobile()
+  const view = mobile ? 'cards' : v.view === 'table' ? 'table' : 'cards'
+  const advOpen = v.adv === '1'
 
   const rows = useMemo(() => {
     const needle = v.q?.trim()
+    const states = readList(v.state)
+    const owners = readList(v.owner)
+    const entities = readList(v.entity)
+    const banks = readList(v.bank)
     return payRequests.filter((r) => {
-      if (v.state && r.state !== v.state) return false
+      if (states.length && !states.includes(r.state)) return false
       if (v.heat && payHeat(r) !== v.heat) return false
-      if (v.owner && r.owner !== v.owner) return false
+      if (owners.length && !owners.includes(r.owner)) return false
+      if (entities.length && !entities.includes(r.entityName)) return false
+      if (banks.length && !banks.includes(r.bank.active ? 'معتمد' : 'معطَّل')) return false
       if (v.hold === '1' && !payBlocked(r)) return false
       if (needle) {
         const hay = `${r.id} ${r.projectName} ${r.entityName} ${r.projectId}`
@@ -96,15 +114,20 @@ export default function PaymentsPage() {
     [rows],
   )
 
-  const filtered = activeCount([]) > 0
+  const filtered = activeCount(['view', 'group', 'adv']) > 0
   const readings = useMemo(() => readPayments(rows, filtered), [rows, filtered])
 
   /** عدّاد كل مرحلة جوّه النطاق الحالي، مش على الكل */
   const counts = useMemo(() => {
     const needle = v.q?.trim()
+    const owners = readList(v.owner)
+    const entities = readList(v.entity)
+    const banks = readList(v.bank)
     const base = payRequests.filter((r) => {
       if (v.heat && payHeat(r) !== v.heat) return false
-      if (v.owner && r.owner !== v.owner) return false
+      if (owners.length && !owners.includes(r.owner)) return false
+      if (entities.length && !entities.includes(r.entityName)) return false
+      if (banks.length && !banks.includes(r.bank.active ? 'معتمد' : 'معطَّل')) return false
       if (v.hold === '1' && !payBlocked(r)) return false
       if (needle && !`${r.id} ${r.projectName} ${r.entityName} ${r.projectId}`.includes(needle))
         return false
@@ -113,33 +136,96 @@ export default function PaymentsPage() {
     const m = new Map<PayState, number>()
     for (const r of base) m.set(r.state, (m.get(r.state) ?? 0) + 1)
     return { m, total: base.length }
-  }, [v.heat, v.owner, v.hold, v.q])
+  }, [v.heat, v.owner, v.entity, v.bank, v.hold, v.q])
 
-  const groups = v.state
-    ? [{ key: v.state as PayState, rows: sorted }]
-    : PAY_STATES.map((s) => ({
-        key: s.key,
-        rows: sorted.filter((r) => r.state === s.key),
-      })).filter((g) => g.rows.length > 0)
+  /** الجهات اللي ليها طلبات فعلًا · فلتر ما بيعرضش خيارًا بلا نتيجة */
+  const entityOptions = useMemo(
+    () => [...new Set(payRequests.map((r) => r.entityName))].sort((a, b) => a.localeCompare(b, 'ar')),
+    [],
+  )
+
+  const group = groupByKey(v.group)
+  const grouped = Boolean(group)
+
+  /* التجميع في الكروت بالمرحلة دايمًا · الصندوق بيتقري بالمرحلة،
+     والشريحة بتضيّق النطاق مش بتلغي التجميع */
+  const cardGroups = useMemo(() => {
+    const pick = readList(v.state)
+    const list = pick.length ? PAY_STATES.filter((s) => pick.includes(s.key)) : PAY_STATES
+    return list
+      .map((s) => ({ key: s.key, rows: sorted.filter((r) => r.state === s.key) }))
+      .filter((g) => g.rows.length > 0)
+  }, [sorted, v.state])
+
+  const sheet: Sheet = useMemo(() => {
+    const shown = orderCols(COLS, cols).filter((c) => !group || c.key !== group.key)
+    const pick = selected.size ? sorted.filter((r) => selected.has(r.id)) : sorted
+    const head = [...(group ? [group.label] : []), ...shown.map((c) => c.label)]
+    const body = pick.map((r) => [
+      ...(group ? [group.of(r)] : []),
+      ...shown.map((c) => c.text(r)),
+    ])
+    const totals = [
+      ...(group ? [''] : []),
+      ...shown.map((c, i) => {
+        const t = aggregate(c, pick)
+        return t !== null ? String(t) : i === 0 ? `${pick.length} طلب` : ''
+      }),
+    ]
+    const stamp = new Date().toISOString().slice(0, 10)
+    return { file: `abanumay-payments-${stamp}`, title: 'الصرف', headers: head, rows: body, totals }
+  }, [cols, sorted, selected, group])
+
+  const toggleOne = (id: string, on: boolean) =>
+    setSelected((s) => {
+      const next = new Set(s)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
+
+  const selectAll = (on: boolean, ids: string[]) =>
+    setSelected((s) => {
+      const next = new Set(s)
+      for (const id of ids) {
+        if (on) next.add(id)
+        else next.delete(id)
+      }
+      return next
+    })
+
+  const chips = (
+    [
+      ['state', 'المرحلة'], ['owner', 'المشرف'], ['entity', 'الجهة'], ['bank', 'الحساب'],
+    ] as [keyof Params, string][]
+  ).flatMap(([key, label]) =>
+    readList(v[key]).map((value) => ({
+      key,
+      label,
+      value,
+      text: key === 'state' ? PAY_STATES.find((s) => s.key === value)?.label ?? value : value,
+    })),
+  )
 
   return (
     <AppLayout assistantContext={assistFor.page('الصرف')}>
       <div className="viewstack">
         <div className="screen col">
-          <header>
-            <div>
+          {/* ═══ الترويسة بعمودين ═══
+              العنوان وسطره على اليمين، والقراءة قصاده على الشمال ·
+              نفس تركيب ترويسة صفحة الجهة والمشروع، فالعين بتلاقي
+              العنوان في نفس المكان في كل شاشة. */}
+          <header className="phead phead-g2">
+            <div className="pmain">
               <h1 className="ptitle">الصرف</h1>
-              <p className="sub" style={{ marginTop: '.3rem' }}>
+              <p className="sub mt-1">
                 <span className="num">{rows.length}</span> طلب من{' '}
                 <span className="num">{payRequests.length}</span> في هذا النموذج ·{' '}
                 أربع مراحل من إنشاء الجهة للطلب حتى تنفيذ التحويل
               </p>
             </div>
+            <QuickRead variant="bar" title="قراءة سريعة للصندوق" readings={readings} />
           </header>
-
-          {/* القراءة قبل الأدوات · هي قراءة **للصفحة**، فمكانها بعد
-              العنوان لا بين الفلتر واللي رجع منه */}
-          <QuickRead variant="bar" title="قراءة سريعة للصندوق" readings={readings} />
 
           <div className="stats4">
             <Stat
@@ -162,10 +248,13 @@ export default function PaymentsPage() {
               unit="يومًا"
               note="المستهدف: بانتظار المؤسسة"
             />
-            {/* مؤشر 4 في الوثيقة · نفس الملاحظة */}
+            {/* مؤشر 4 في الوثيقة · نفس الملاحظة.
+                وعلامة النسبة **جوّه** الرقم لا جنبه: `<Num>` بتعزل
+                الرقم وحده، فالـ`%` اللي برّه الجزيرة بتفضل محايدة
+                وموضعها بيتحدّد بجيرانها لا برقمها. */}
             <Stat
               label="الالتزام بجدول الدفعات"
-              value={<><Num>{k.onSchedule}</Num>%</>}
+              value={<Num>{pct(k.onSchedule)}</Num>}
               note="المستهدف: بانتظار المؤسسة"
               bar={{ w: `${k.onSchedule}%`, c: 'var(--lime)' }}
             />
@@ -174,8 +263,8 @@ export default function PaymentsPage() {
           {/* شرائح المراحل · نفس صفّ اللقطات في باقي القوائم، وكل
               شريحة بعدّادها جوّه النطاق الحالي */}
           <Segments
-            active={v.state ?? ''}
-            onChange={(x) => set({ state: x })}
+            active={readList(v.state).length === 1 ? readList(v.state)[0] : ''}
+            onChange={(x) => set({ state: writeList(x ? [x] : []) })}
             items={[
               { key: '', label: 'كل المراحل', count: counts.total },
               ...PAY_STATES.map((s) => ({
@@ -194,12 +283,16 @@ export default function PaymentsPage() {
                   onChange={(x) => set({ q: x || undefined })}
                   placeholder="ابحث برقم الطلب أو المشروع أو الجهة…"
                 />
-                <Select
+                {/* `people` هي اللي بتنزّل الوش في القائمة · نفس الوش
+                    اللي في الكارت وفي عمود الجدول، فالشخص واحد في
+                    التلات أماكن */}
+                <MultiSelect
                   icon={icons.users}
-                  value={v.owner}
-                  all="كل المشرفين"
+                  values={readList(v.owner)}
+                  all={`كل المشرفين (${OWNERS.length})`}
+                  people
                   options={OWNERS as unknown as string[]}
-                  onChange={(x) => set({ owner: x })}
+                  onChange={(x) => set({ owner: writeList(x) })}
                 />
                 <Select
                   icon={icons.clock}
@@ -213,21 +306,92 @@ export default function PaymentsPage() {
                   on={v.hold === '1'}
                   onChange={(on) => set({ hold: on ? '1' : undefined })}
                 />
+                {/* الباقي مطوي ومعاه عدّاد · نفس قاعدة المشاريع
+                    والجهات: اللي بيتفلتر بيه كل يوم فوق، والباقي
+                    خلف الزرار. الصفّ اللي بيلفّ سطرين معناه إن
+                    فلترًا نزل تحت وباظ ترتيبه. */}
+                <button
+                  className={`fchip${advOpen ? ' on' : ''}`}
+                  onClick={() => set({ adv: advOpen ? undefined : '1' })}
+                  aria-expanded={advOpen}
+                >
+                  <Icon name={icons.filter} size={15} />
+                  فلاتر متقدمة
+                  {activeCount(NOT_FILTERS) > 0 && (
+                    <b className="num">{activeCount(NOT_FILTERS)}</b>
+                  )}
+                </button>
+                {view === 'table' && (
+                  <Select
+                    icon={icons.rows}
+                    value={v.group}
+                    all="بلا تجميع"
+                    options={GROUPS.map((g) => ({ value: g.key, label: `تجميع حسب ${g.label}` }))}
+                    onChange={(x) => set({ group: x })}
+                  />
+                )}
+              </div>
+
+              {/* الأدوات اللي مش فلاتر · مجموعة ثابتة في آخر الصفّ،
+                  فالفلاتر بتلفّ جوّه مجموعتها والمبدّل ما بينطّش */}
+              <div className="ftool-a">
+                <ExportMenu
+                  sheet={sheet}
+                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} طلب`}
+                  count={selected.size}
+                />
+                {!mobile && (
+                  <ViewToggle
+                    view={view}
+                    onChange={(x) => set({ view: x === 'cards' ? undefined : x })}
+                  />
+                )}
               </div>
             </div>
 
-            {activeCount(NOT_FILTERS) > 0 && (
+            {advOpen && (
+              <div className="fgrid">
+                <div className="fgrid-i">
+                  <MultiSelect
+                    label="الجهة"
+                    values={readList(v.entity)}
+                    all={`كل الجهات (${entityOptions.length})`}
+                    options={entityOptions}
+                    onChange={(x) => set({ entity: writeList(x) })}
+                  />
+                </div>
+                <div className="fgrid-i">
+                  <MultiSelect
+                    label="الحساب البنكي"
+                    values={readList(v.bank)}
+                    all="كل الحسابات"
+                    options={BANK_STATES}
+                    onChange={(x) => set({ bank: writeList(x) })}
+                  />
+                </div>
+              </div>
+            )}
+
+            {(chips.length > 0 || v.heat || v.hold === '1') && (
               <div className="factive">
+                {chips.map((c) => (
+                  <button
+                    key={`${c.key as string}:${c.value}`}
+                    className="fpill"
+                    onClick={() =>
+                      set({
+                        [c.key]: writeList(readList(v[c.key]).filter((x) => x !== c.value)),
+                      } as Partial<Params>)
+                    }
+                  >
+                    <span className="sub">{c.label}:</span> {c.text}
+                    <Icon name={icons.close} size={13} />
+                  </button>
+                ))}
                 {v.heat && (
                   <button className="fpill" onClick={() => set({ heat: undefined })}>
                     <span className="sub">المدة:</span>{' '}
                     {HEATS.find((h) => h.value === v.heat)?.label}
-                    <Icon name={icons.close} size={13} />
-                  </button>
-                )}
-                {v.owner && (
-                  <button className="fpill" onClick={() => set({ owner: undefined })}>
-                    <span className="sub">المشرف:</span> {v.owner}
                     <Icon name={icons.close} size={13} />
                   </button>
                 )}
@@ -250,8 +414,36 @@ export default function PaymentsPage() {
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
+          ) : view === 'table' ? (
+            <>
+              <Glass className="tblcard">
+                <DataTable
+                  rows={sorted}
+                  all={COLS}
+                  table="payments"
+                  cols={cols}
+                  onCols={setCols}
+                  id={(r) => r.id}
+                  selected={selected}
+                  onSelect={toggleOne}
+                  onSelectAll={selectAll}
+                  onOpen={(r) => navigate(ROUTES.project(r.projectId))}
+                  group={group}
+                  count={(n) => `${n} طلب`}
+                />
+              </Glass>
+              {grouped && (
+                <p className="sub" style={{ textAlign: 'center' }}>
+                  التجميع يعرض كل النتائج ·{' '}
+                  <span className="num">{splitGroups(sorted, group!).length}</span> مجموعات ·{' '}
+                  <button className="lnk" onClick={() => set({ group: undefined })}>
+                    إلغاء التجميع
+                  </button>
+                </p>
+              )}
+            </>
           ) : (
-            groups.map((g) => {
+            cardGroups.map((g) => {
               const meta = PAY_STATES.find((s) => s.key === g.key)
               return (
                 <section className="paygrp" key={g.key}>
@@ -265,7 +457,7 @@ export default function PaymentsPage() {
                   </div>
                   <div className="paygrid">
                     {g.rows.map((r: PayRequest) => (
-                      <RequestCard key={r.id} r={r} showState={Boolean(v.state)} />
+                      <RequestCard key={r.id} r={r} />
                     ))}
                   </div>
                 </section>

@@ -15,7 +15,10 @@
     "audit:lock": "node tools/audit.mjs --lock",
     "css:balance": "node tools/cssbalance.mjs",
     "clean": "rm -rf dist",
-    "audit:fast": "node tools/cssbalance.mjs && node tools/audit.mjs && node tools/ctlaudit.mjs"
+    "audit:fast": "node tools/cssbalance.mjs && node tools/audit.mjs && node tools/ctlaudit.mjs",
+    "routes:cover": "node tools/routecover.mjs",
+    "hooks:install": "git config core.hooksPath .githooks",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "lucide-react": "^1.44.0",
