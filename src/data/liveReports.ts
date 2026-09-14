@@ -20,7 +20,7 @@ import type { IconName } from '@/components/ui'
 
 /** نوع العمود · بيحدّد شكل الخلية والمولِّد */
 export type ColKind =
-  | 'id' | 'text' | 'long' | 'num' | 'money' | 'pct' | 'date' | 'file' | 'link'
+  | 'id' | 'text' | 'long' | 'num' | 'money' | 'pct' | 'date' | 'file' | 'link' | 'person'
 
 export interface LiveCol {
   key: string
@@ -82,7 +82,7 @@ const C = {
   field: { key: 'field', label: 'المجال', kind: 'text', w: 120 } as LiveCol,
   goal: { key: 'goal', label: 'الهدف', kind: 'text', w: 200 } as LiveCol,
   region: { key: 'region', label: 'المنطقة', kind: 'text', w: 110 } as LiveCol,
-  owner: { key: 'owner', label: 'مالك المشروع', kind: 'text', w: 130 } as LiveCol,
+  owner: { key: 'owner', label: 'مالك المشروع', kind: 'person', w: 150 } as LiveCol,
   attTitle: { key: 'attTitle', label: 'عنوان المرفق', kind: 'text', w: 150 } as LiveCol,
   attDate: { key: 'attDate', label: 'تاريخ المرفق', kind: 'date', w: 105 } as LiveCol,
   att: { key: 'att', label: 'المرفق', kind: 'file', w: 100 } as LiveCol,

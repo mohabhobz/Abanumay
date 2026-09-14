@@ -2,9 +2,10 @@
 export { Icon, type IconProps } from './Icon'
 export { icons, type IconName } from './icons'
 export {
-  Glass, Head, Tag, Num, Riyal, Money, Mono, KV, Tabs, Timeline, Empty, Stat, BackTo,
+  Glass, Head, Tag, Num, Riyal, Money, Mono, DateText, KV, Tabs, Timeline, Empty, Stat, BackTo,
   type GlassProps, type KVRow, type TabItem, type TimelineEvent, type StatBar,
 } from './primitives'
+export { Person, Face, type PersonProps } from './Person'
 export { GateArc, type GateArcProps, type CurrentStandingInfo } from './GateArc'
 export { CeilingLadder } from './CeilingLadder'
 export { Steps, type StepItem, type StepState, type StepsProps } from './Steps'

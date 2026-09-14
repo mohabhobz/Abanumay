@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { nf } from '@/lib/format'
 import { Money } from './primitives'
+import { Person } from './Person'
 import type { AuthorityMatrix, AuthorityRole } from '@/types/domain'
 
 /* ═══════════════════════════════════════════════════════════
@@ -108,7 +109,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
         t: role.role,
         lines: standing
           ? [
-              <><b>{standing.by}</b> · مفتوح من <b>{standing.days}</b> يومًا</>,
+              <><Person name={standing.by} quiet={false} /> · مفتوح من <b>{standing.days}</b> يومًا</>,
               <>
                 <b>{nf.format(standing.hours)}</b> ساعة مقابل حدّ <b>{nf.format(standing.limit)}</b>
                 {over !== null && over > 100 && <>، <span className="bad"><span className="num">{over}%</span> فوق الحدّ</span></>}

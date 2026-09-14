@@ -1,7 +1,7 @@
-import { Empty, Glass, Head, Money, Mono, Num, Riyal, Stat, Steps, Tag } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Money, Num, Riyal, Stat, Steps, Tag } from '@/components/ui'
 import { sequence } from '@/lib/steps'
 import { DocFile } from '@/components/docs'
-import { pct } from '@/lib/format'
+import { isolate, pct } from '@/lib/format'
 import type { PaymentDetail } from '@/data/mock/detail'
 
 export interface PaymentsTabProps {
@@ -87,7 +87,7 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
                 <span className="pay-no">الدفعة <Num>{p.no}</Num></span>
                 <span className="pay-amt"><Money>{p.amount}</Money></span>
                 <span className="pc-sp" />
-                <Mono>{p.date}</Mono>
+                <DateText>{p.date}</DateText>
                 <Tag tone={p.status === 'مدفوع' ? 'ok' : 'warn'}>{p.status}</Tag>
               </div>
 
@@ -96,7 +96,9 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
               {p.condition && (
                 <div className="pay-cond">
                   <span className="lb">شرط الصرف</span>
-                  <span>{p.condition}</span>
+                  {/* الشرط جملة عربية جوّاها «إنجاز 50%» · بلا عزل
+                      علامة الـ`%` بتقفز لناحية الرقم الغلط */}
+                  <span>{isolate(p.condition)}</span>
                 </div>
               )}
               {p.via && (
@@ -135,7 +137,7 @@ export function PaymentsTab({ payments, granted, example, onOpenExample }: Payme
           ))}
         </div>
 
-        <div className="sub" style={{ marginTop: '.9rem' }}>
+        <div className="sub mt-4">
           «إذن الصرف» مستند مستقل قابل للطباعة، فيه بيانات الجهة وحسابها البنكي والمبلغ كتابةً، وهو اللي المالية بتحوّل بناءً عليه.
         </div>
       </Glass>

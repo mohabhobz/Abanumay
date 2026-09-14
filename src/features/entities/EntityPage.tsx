@@ -85,7 +85,7 @@ export default function EntityPage() {
                   </div>
                 </div>
               </div>
-              <div className="ehead-m" style={{ marginTop: '.9rem' }}>
+              <div className="ehead-m mt-4">
                 <Tag tone={activationTone(entity.activation)}>{entity.activation}</Tag>
                 <Tag tone={governanceTone(entity.governance)}>الحوكمة: {entity.governance}</Tag>
                 {/* الترخيص المنتهي بيوقف التعاقد، فمكانه الترويسة لا

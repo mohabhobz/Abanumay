@@ -77,7 +77,7 @@ export function EvidenceBlock({ block }: { block: Block }) {
               </div>
             ))}
           </div>
-          {block.note && <div className="sub" style={{ marginTop: '.6rem' }}>{block.note}</div>}
+          {block.note && <div className="sub mt-2">{block.note}</div>}
         </div>
       )
 

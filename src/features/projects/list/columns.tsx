@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Mono, Tag } from '@/components/ui'
+import { Mono, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { nf, projectCode } from '@/lib/format'
 import { days, groupTone } from '@/lib/tone'
@@ -117,7 +117,11 @@ export const COLS: Col[] = [
     value: (r) => r.beneficiaries,
     agg: 'sum',
   },
-  { key: 'owner', w: 88, label: 'المالك', def: true, cell: (r) => <span className="sub">{r.owner ?? 'بلا مالك'}</span>, text: (r) => r.owner ?? '' },
+  /* ⚠️ العرض طلع من ٨٨ لـ١٤٨ لمّا الوش دخل الخانة. ٨٨ كان مقاس
+     **نصّ وحده** وكان بيقصّ «أحمد العبداللطيف» أصلًا؛ ومع الوش
+     (٢٨ + فجوة ٨) بقى بيقصّ عند الكلمة الأولى — «عزام …» —
+     والوش بيعوّض الهوية بس الاسم بيبقى بلا فايدة. */
+  { key: 'owner', w: 148, label: 'المالك', def: true, cell: (r) => <Person name={r.owner} />, text: (r) => r.owner ?? '' },
   {
     key: 'status',
     w: 96,

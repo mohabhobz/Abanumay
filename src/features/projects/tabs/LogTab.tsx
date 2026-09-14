@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Empty, Glass, Head, Icon, icons, Mono, Segments } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Icon, Mono, Segments, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import type { ActorKind, LogEvent } from '@/data/mock/log'
 
@@ -94,7 +94,7 @@ export function LogTab({ events, entityName }: LogTabProps) {
       />
 
       {shown.length === 0 ? (
-        <div style={{ marginTop: '1rem' }}>
+        <div style={{ marginTop: 'var(--sp-5)' }}>
           <Empty title="لا توجد أحداث بهذا التصنيف." />
         </div>
       ) : (
@@ -117,7 +117,7 @@ export function LogTab({ events, entityName }: LogTabProps) {
                     )}
                     <span className="lgdept">{e.followUp ? 'متابعة' : e.dept}</span>
                     <span className="pc-sp" />
-                    <Mono>{e.at}</Mono>
+                    <DateText>{e.at}</DateText>
                     <span className="lgtime sub">{e.time}</span>
                   </div>
 
@@ -174,7 +174,7 @@ export function LogTab({ events, entityName }: LogTabProps) {
         </ol>
       )}
 
-      <div className="sub" style={{ marginTop: '1rem' }}>
+      <div className="sub mt-4">
         كل إجراء يحمل: القسم · المنفّذ · الوقت · المدة مقابل حدّ القسم · وحقول خاصة بنوعه.
         الحدّ <Mono>900</Mono> ساعة مطبَّق على كل الأقسام في النظام الحالي، قيمة واحدة لا حدّ لكل قسم.
       </div>

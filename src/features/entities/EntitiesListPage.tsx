@@ -269,7 +269,7 @@ export default function EntitiesListPage() {
           <header>
             <div>
               <h1 className="ptitle">الجهات</h1>
-              <p className="sub" style={{ marginTop: '.3rem' }}>
+              <p className="sub mt-1">
                 <span className="num">{result.total}</span> نتيجة من{' '}
                 <span className="num">{all.length}</span> جهة في هذا النموذج ·{' '}
                 <span className="num">3,272</span> في النظام العامل

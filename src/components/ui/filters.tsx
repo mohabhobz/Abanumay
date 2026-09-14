@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { Tabs } from './primitives'
+import { Face } from './Person'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
@@ -77,6 +78,16 @@ export interface SelectProps {
   allowEmpty?: boolean
   /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة */
   searchAt?: number
+  /**
+   * خيارات الفلتر دي **أشخاص** · كل خيار بياخد وشّه.
+   *
+   * ⚠️ **خاصية لا استنتاج.** الإغراء إن الكمبوننت يشوف إن الخيار
+   * اسم شخص ويحطّ وشًّا لوحده — والغلط إن «الرياض» و«أحمد» نصّان
+   * لا فرق بينهم برّه السياق، والاستنتاج بيغلط في الطرفين: مدينة
+   * بتاخد أفاتار، وشخص جديد بلا سجلّ ما بياخدش. الشاشة اللي
+   * بتعرف إن العمود ده مالك هي اللي بتقول.
+   */
+  people?: boolean
 }
 
 /**
@@ -96,7 +107,7 @@ export interface SelectProps {
  */
 export function Select({
   label, value, options, onChange, all = 'الكل', disabled, wide, icon,
-  allowEmpty = true, searchAt = 9,
+  allowEmpty = true, searchAt = 9, people,
 }: SelectProps) {
   const { open, setOpen, box } = useMenu<HTMLDivElement>()
   const [needle, setNeedle] = useState('')
@@ -123,8 +134,15 @@ export function Select({
        و`current` هو المعيار الصح: القيمة الافتراضية مش من
        `options` (هي نصّ `all`)، فـ`current` بتبقى `undefined`
        والحقل بيفضل محايدًا · زي `MultiSelect` بالظبط اللي بيقيس
-       `values.length > 0`. */
-    <div className={`fsel${current ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`} ref={box}>
+       `values.length > 0`.
+
+       ⚠️ **و`allowEmpty` شرط تاني، وده اللي كان ناقص.** الحقل اللي
+       `allowEmpty={false}` (دورة الميزانية · فترة التقرير) **عمره
+       ما بيفضى** — فـ`current` دايمًا موجودة وكان بيتعلّم مفعَّلًا
+       طول الوقت. و«مفعَّل» معناها «المستخدم ضيّق النتيجة»، وهي
+       كدّابة على حقل مالوش حالة فاضية أصلًا. العميل شافها: خلفية
+       الترتيب مختلفة عن جيرانها في نفس الصفّ. */
+    <div className={`fsel${current && allowEmpty ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`} ref={box}>
       {label && <span className="fsel-l" id={`${id}-l`}>{label}</span>}
 
       <button
@@ -137,7 +155,13 @@ export function Select({
         id={`${id}-b`}
         onClick={() => setOpen((x) => !x)}
       >
-        {icon && <Icon name={icon} size={15} />}
+        {/* ⚠️ **الوش بيحلّ محلّ الأيقونة، ما بيزوّدش عليها.** أيقونة
+            «مستخدمين» بتقول «الفلتر ده أشخاص»، والوش بيقول **مين** —
+            فوجودهم سوا بيكرّر نصف المعلومة. والخانة بعرض ثابت عشان
+            اختيار شخص ما يزحزحش شريط الأدوات كله. */}
+        {people
+          ? <span className="fsel-face">{current ? <Face name={optValue(current)} /> : icon && <Icon name={icon} size={15} />}</span>
+          : icon && <Icon name={icon} size={15} />}
         {/* The ghosts reserve the widest option's width, so picking
             a value never resizes the control (see `.fsel-sz`). */}
         <span className="fmulti-s fsel-sz">
@@ -177,6 +201,10 @@ export function Select({
                 <span className="fopt-x" aria-hidden="true">
                   {!value && <Icon name={icons.check} size={12} />}
                 </span>
+                {/* ⚠️ «الكل» مش شخص فمالوش وش — **لكن له خانته**.
+                    من غير الفراغ ده اسمه بيبدأ ٢٨px يمين باقي
+                    الأسماء، فالقايمة بتتقرا مسنّنة. */}
+                {people && <span className="prs-gap" aria-hidden="true" />}
                 <span className="fopt-t">{all}</span>
               </button>
             )}
@@ -196,6 +224,7 @@ export function Select({
                   <span className="fopt-x" aria-hidden="true">
                     {sel && <Icon name={icons.check} size={12} />}
                   </span>
+                  {people && <Face name={optValue(o)} />}
                   <span className="fopt-t">{optLabel(o)}</span>
                 </button>
               )
@@ -231,10 +260,20 @@ export interface MultiSelectProps {
   icon?: LucideIcon
   /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة */
   searchAt?: number
+  /**
+   * خيارات الفلتر دي **أشخاص** · كل خيار بياخد وشّه.
+   *
+   * ⚠️ **خاصية لا استنتاج.** الإغراء إن الكمبوننت يشوف إن الخيار
+   * اسم شخص ويحطّ وشًّا لوحده — والغلط إن «الرياض» و«أحمد» نصّان
+   * لا فرق بينهم برّه السياق، والاستنتاج بيغلط في الطرفين: مدينة
+   * بتاخد أفاتار، وشخص جديد بلا سجلّ ما بياخدش. الشاشة اللي
+   * بتعرف إن العمود ده مالك هي اللي بتقول.
+   */
+  people?: boolean
 }
 
 export function MultiSelect({
-  label, values, options, onChange, all = 'الكل', disabled, wide, icon, searchAt = 9,
+  label, values, options, onChange, all = 'الكل', disabled, wide, icon, searchAt = 9, people,
 }: MultiSelectProps) {
   const { open, setOpen, box } = useMenu<HTMLDivElement>()
   const [needle, setNeedle] = useState('')
@@ -276,7 +315,14 @@ export function MultiSelect({
         id={`${id}-b`}
         onClick={() => setOpen((x) => !x)}
       >
-        {icon && <Icon name={icon} size={15} />}
+        {/* ⚠️ **الوش بيتبع الاسم المعروض، مش عدد المختارين.** كان
+            شرطه `values.length === 1`، فلمّا تختار اتنين العنوان
+            بيقول «عمر قاسم +1» والخانة جنبه **بتفضل فاضية** — فراغ
+            ٢٨px في وش المستخدم بلا سبب. العنوان بيعرض أول اسم في
+            الحالتين، فالوش بيعرض وشّه في الحالتين. */}
+        {people
+          ? <span className="fsel-face">{values.length ? <Face name={values[0]} /> : icon && <Icon name={icon} size={15} />}</span>
+          : icon && <Icon name={icon} size={15} />}
         {/* Same ghosts as `Select`: the widest label the button can
             ever show, so toggling a value never resizes the row.
             `+N` is measured on the widest label, since that is the
@@ -325,6 +371,7 @@ export function MultiSelect({
                   <span className="fopt-x" aria-hidden="true">
                     {sel && <Icon name={icons.check} size={12} />}
                   </span>
+                  {people && <Face name={optValue(o)} />}
                   <span className="fopt-t">{optLabel(o)}</span>
                 </button>
               )

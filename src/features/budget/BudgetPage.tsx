@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { Glass, Head, Icon, icons, Money, Num, Select, Tag } from '@/components/ui'
+import { Glass, Head, Icon, icons, Money, Num, Person, Select, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { Segments } from '@/components/ui/filters'
@@ -89,7 +89,7 @@ export default function BudgetPage() {
           <header>
             <div>
               <h1 className="ptitle">الميزانية</h1>
-              <p className="sub" style={{ marginTop: '.3rem' }}>
+              <p className="sub mt-1">
                 التخصيص على أربع مستويات، الدورة والمسار والمجال والهدف، ومعه ما استُهلك منه
               </p>
             </div>
@@ -490,7 +490,7 @@ function AllocTable({
               <td className="n num">
                 {n.plan === 0 ? <Tag tone="warn">خارج الخطة</Tag> : `${n.plan}%`}
               </td>
-              <td title={n.owner ?? ''}>{n.owner ?? <span className="sub"> </span>}</td>
+              <td title={n.owner ?? ''}>{n.owner ? <Person name={n.owner} /> : <span className="sub"> </span>}</td>
             </tr>
           )
         })}

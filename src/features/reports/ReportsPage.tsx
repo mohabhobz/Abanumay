@@ -51,7 +51,7 @@ export default function ReportsPage() {
           <header>
             <div>
               <h1 className="ptitle">التقارير</h1>
-              <p className="sub" style={{ marginTop: '.3rem' }}>
+              <p className="sub mt-1">
                 <span className="num">{LIVE_REPORTS.length}</span> شاشة تقرير في النظام العامل ·{' '}
                 مجموعة هنا في لوحة واحدة وأداة تشكيل
               </p>

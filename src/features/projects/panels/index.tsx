@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
-import { Glass, Head, Tag, Num, Mono } from '@/components/ui'
+import { DateText, Glass, Head, Mono, Num, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { Entity, LogEntry } from '@/types/domain'
+import { isolate } from '@/lib/format'
 
 
 /** مشاريع الجهة · سياق ثابت جنب المشروع المفتوح */
@@ -27,7 +28,7 @@ export function EntityProjectsPanel({
       />
       <div className="col-s">
         {E.projects.map((p) => (
-          <button className="data li" key={p.id} style={{ padding: '.75rem 0' }} onClick={onOpen}>
+          <button className="data li" key={p.id} style={{ padding: 'var(--sp-4) 0' }} onClick={onOpen}>
             <div>
               <div className="t">{p.name}</div>
               <div className="s">
@@ -56,14 +57,14 @@ export function LastActionPanel({
   return (
     <Glass>
       <Head title="آخر إجراء" meta={<a onClick={onOpen}>السجل كامل</a>} />
-      <div className="well" style={{ padding: '.9rem 0 0' }}>
-        <div style={{ fontSize: '.86rem', lineHeight: 1.7 }}>
-          <b>{entry.action}</b>، {entry.body}
+      <div className="well" style={{ padding: 'var(--sp-5) 0 0' }}>
+        <div className="prose">
+          <b>{entry.action}</b>، {isolate(entry.body)}
         </div>
-        <div className="sub" style={{ marginTop: '.45rem' }}>
-          {entry.by} · <Mono>{entry.at}</Mono>
+        <div className="sub mt-2">
+          {entry.by} · <DateText>{entry.at}</DateText>
         </div>
-        <div className="sub" style={{ marginTop: '.25rem', color: 'var(--no)' }}>
+        <div className="sub" style={{ marginTop: 'var(--sp-2)', color: 'var(--no)' }}>
           {entry.days} يومًا · <Num>{entry.hours}</Num> من <Num>{entry.limit}</Num> ساعة
         </div>
       </div>

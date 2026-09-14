@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Icon, icons, Money, Mono, Tag } from '@/components/ui'
+import { Icon, icons, Money, Mono, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { projectCode } from '@/lib/format'
 import { stagePressure } from '@/data/repository'
@@ -99,8 +99,9 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
         </div>
         <div className="pc-own">
           {row.owner ? (
-            <span className="sub">{row.owner}</span>
+            <Person name={row.owner} />
           ) : (
+            /* «بلا مالك» تحذير لا شخص · الوسم بيفضل وسمًا */
             <Tag tone="warn">بلا مالك</Tag>
           )}
         </div>

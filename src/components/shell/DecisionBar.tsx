@@ -24,7 +24,7 @@ export function DecisionBar({ user, project, compact, atEnd }: DecisionBarProps)
   return (
     <div className={`decdock${atEnd ? ' clear' : ''}`}>
       <div className="chrome decbar" ref={bar}>
-        <div className="rowf" style={{ gap: '.7rem', minWidth: 0 }}>
+        <div className="rowf" style={{ gap: 'var(--sp-4)', minWidth: 0 }}>
           <Avatar user={user} />
           <span className="decsent">
             {compact ? (
@@ -41,7 +41,7 @@ export function DecisionBar({ user, project, compact, atEnd }: DecisionBarProps)
           </span>
         </div>
 
-        <div className="rowf" style={{ gap: '.5rem' }}>
+        <div className="rowf gp-2">
           {user.actions.map((a) => (
             <button key={a.label} className={`btn ${a.kind}`}>
               {a.label}

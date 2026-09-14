@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, Money, MultiSelect, Pager, PAGE_SIZES, SearchBox, Segments,
+  Empty, Glass, Icon, icons, Money, MultiSelect, Pager, PAGE_SIZES, Person, SearchBox, Segments,
   Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -374,7 +374,7 @@ export default function ProjectsListPage() {
     tag: <MultiSelect label="الوسم" values={readList(v.tag)} options={TAGS} onChange={(x) => set({ tag: writeList(x) })} />,
     method: <MultiSelect label="أسلوب المنح" values={readList(v.method)} options={GRANT_METHODS} onChange={(x) => set({ method: writeList(x) })} />,
     support: <MultiSelect label="حالة الدعم" values={readList(v.support)} options={SUPPORT_STATUS} onChange={(x) => set({ support: writeList(x) })} />,
-    owner: <MultiSelect label="المالك" values={readList(v.owner)} options={OWNERS} onChange={(x) => set({ owner: writeList(x) })} />,
+    owner: <MultiSelect label="المالك" people values={readList(v.owner)} options={OWNERS} onChange={(x) => set({ owner: writeList(x) })} />,
   }
 
   const chips = (
@@ -404,7 +404,7 @@ export default function ProjectsListPage() {
           <header>
             <div>
               <h1 className="ptitle">المشاريع</h1>
-              <p className="sub" style={{ marginTop: '.3rem' }}>
+              <p className="sub mt-1">
                 <span className="num">{result.total}</span> نتيجة من{' '}
                 <span className="num">{total}</span> مشروعًا في هذا النموذج ·{' '}
                 <span className="num">4,929</span> في النظام العامل
@@ -541,7 +541,8 @@ export default function ProjectsListPage() {
                       } as Partial<Params>)
                     }
                   >
-                    <span className="sub">{c.label}:</span> {c.value}
+                    <span className="sub">{c.label}:</span>{' '}
+                    {c.k === 'owner' ? <Person name={c.value} quiet={false} /> : c.value}
                     <Icon name={icons.close} size={13} />
                   </button>
                 ))}
@@ -628,7 +629,7 @@ export default function ProjectsListPage() {
           {/* نسخة الطباعة جوّه `ExportMenu` دلوقتي · المخارج التلاتة
               والورقة بيتحرّكوا مع بعض. */}
 
-          <p className="sub" style={{ textAlign: 'center', marginTop: '.4rem' }}>
+          <p className="sub" style={{ textAlign: 'center', marginTop: 'var(--sp-3)' }}>
             البيانات هنا تجريبية بتوزيع النظام الحقيقي ·{' '}
             <Link to="/entities" className="lnk">انتقل إلى الجهات</Link>
           </p>
@@ -665,6 +666,7 @@ export default function ProjectsListPage() {
             <Select
               value={bulkOwner}
               all="اختر المالك…"
+              people
               options={OWNERS}
               onChange={setBulkOwner}
             />

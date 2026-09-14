@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Empty, Glass, Icon, icons, Num, SearchBox, Segments, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
+import { isolate, nf } from '@/lib/format'
 import { LIVE_SPECS, catalogTotals, type LiveSpec } from '@/data/liveReports'
 
 /**
@@ -53,7 +53,7 @@ export function Catalog() {
           <Stat n={catalogTotals.charts} k="رسمًا" />
           <Stat n={catalogTotals.rows} k="صفًّا في الشاشات" big />
         </div>
-        <p className="mut rpsec-n" style={{ marginTop: '.7rem' }}>
+        <p className="mut rpsec-n mt-3">
           كل شاشة تقرير في النظام العامل موصوفة هنا بالكامل: أعمدتها بأسمائها،
           وفلاترها بعدد خياراتها، ورسومها، ومستويات التعمّق لو فيها. اضغط أي
           شاشة تشوف جدولها بأعمدته الحقيقية، <b>القيم في الصفوف تجريبية</b>،
@@ -124,7 +124,7 @@ function Card({ s }: { s: LiveSpec }) {
         )}
       </span>
 
-      {s.finding && <span className="catc-f">{s.finding}</span>}
+      {s.finding && <span className="catc-f">{isolate(s.finding)}</span>}
     </Link>
   )
 }

@@ -14,7 +14,7 @@
  * و18 ملف صلاحيات في النظام العامل؛ التلاتة دول هم الأدوار اللي
  * الشاشات اتصمّمت لها.
  */
-import userPhoto from '@/assets/user-omar.jpg'
+import { person } from './people'
 import type { CurrentUser, DecisionAction } from '@/types/domain'
 
 export type RoleKey = 'supervisor' | 'grants-manager' | 'ceo'
@@ -39,8 +39,8 @@ export const ROLES: Role[] = [
     key: 'supervisor',
     name: 'عمر قاسم',
     title: 'مشرف المنح',
-    initial: 'عق',
-    photo: userPhoto,
+    initial: person('عمر قاسم').initial,
+    photo: person('عمر قاسم').photo,
     financialAuthority: null,
     lens: 'own',
     actions: [
@@ -54,7 +54,8 @@ export const ROLES: Role[] = [
     key: 'grants-manager',
     name: 'عبدالله الدوسري',
     title: 'مدير المنح',
-    initial: 'عد',
+    initial: person('عبدالله الدوسري').initial,
+    photo: person('عبدالله الدوسري').photo,
     financialAuthority: 250_000,
     lens: 'team',
     actions: [
@@ -68,7 +69,8 @@ export const ROLES: Role[] = [
     key: 'ceo',
     name: 'عبدالرحمن الهليّل',
     title: 'المدير التنفيذي',
-    initial: 'عه',
+    initial: person('عبدالرحمن الهليّل').initial,
+    photo: person('عبدالرحمن الهليّل').photo,
     financialAuthority: 500_000,
     lens: 'portfolio',
     actions: [

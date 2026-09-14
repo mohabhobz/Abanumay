@@ -1,8 +1,6 @@
-import {
-  Glass, Head, Tag, Num, Mono, KV, Timeline, Stat, Riyal,
-} from '@/components/ui'
+import { DateText, Glass, Head, KV, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
 import { DocDownload, DocFile } from '@/components/docs'
-import { addDays, costPerBeneficiary, nf, pct, readDate, units } from '@/lib/format'
+import { addDays, costPerBeneficiary, isolate, nf, pct, readDate, units } from '@/lib/format'
 import type { Project } from '@/types/domain'
 import type { LogEvent } from '@/data/mock/log'
 
@@ -66,8 +64,8 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
               <b>{last.action}</b>
               <span className="lastact-d">{last.dept}</span>
             </div>
-            <div className="sub" style={{ marginTop: '.3rem' }}>
-              {last.by} · <Mono>{last.at}</Mono>
+            <div className="sub mt-1">
+              {last.by} · <DateText>{last.at}</DateText>
               {' · '}
               <span style={{ color: last.hours > last.limit ? 'var(--no-ink)' : undefined }}>
                 <Num>{last.days}</Num> يومًا · <Num>{last.hours}</Num> من <Num>{last.limit}</Num> ساعة
@@ -106,11 +104,11 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
 
       <Glass>
         <Head title="فكرة المشروع" meta="من نموذج التقديم" />
-        <p style={{ fontSize: '.87rem', lineHeight: 1.9, margin: 0 }}>{P.idea}</p>
+        <p className="prose">{isolate(P.idea)}</p>
 
-        <div className="well" style={{ padding: '.9rem 0 0', marginTop: '1rem' }}>
+        <div className="well" style={{ padding: 'var(--sp-5) 0 0', marginTop: 'var(--sp-5)' }}>
           <div className="lb">الهدف العام</div>
-          <div style={{ fontSize: '.86rem', lineHeight: 1.8, marginTop: '.25rem' }}>{P.mainGoal}</div>
+          <div className="prose mt-1">{isolate(P.mainGoal)}</div>
         </div>
 
         <BulletSection title="الأهداف التفصيلية" items={P.goals} />
@@ -127,7 +125,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
             by: <Mono>{ph.months}</Mono>,
           }))}
         />
-        <div className="sub" style={{ marginTop: '.9rem' }}>
+        <div className="sub mt-4">
           في النظام الحالي هذه المراحل نصٌّ حر داخل حقل واحد. هنا كيان له بنود وتواريخ، ويصلح
           لربط دفعات الصرف به.
         </div>
@@ -152,12 +150,12 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
             {
               k: 'الفئة المستهدفة',
               v: (
-                <div className="chips" style={{ gap: '.35rem' }}>
+                <div className="chips gp-1">
                   {P.audiences.map((a) => (
                     <span
                       className="chip"
                       key={a}
-                      style={{ fontSize: '.72rem', padding: '.28rem .65rem' }}
+                      style={{ fontSize: 'var(--fs-1)', padding: 'var(--sp-2) var(--sp-4)' }}
                     >
                       {a}
                     </span>
@@ -168,20 +166,20 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
           ]}
         />
 
-        <div className="hd" style={{ marginTop: '1.3rem', marginBottom: '.6rem' }}>
-          <h3 style={{ fontSize: '.9rem' }}>الامتثال</h3>
+        <div className="hd" style={{ marginTop: 'var(--sp-6)', marginBottom: 'var(--sp-3)' }}>
+          <h3 style={{ fontSize: 'var(--fs-3)' }}>الامتثال</h3>
           <span className="meta">3 إقرارات</span>
         </div>
-        <div className="g3" style={{ gap: '.6rem' }}>
+        <div className="g3 gp-2">
           {P.compliance.map((c) => (
-            <div className="well" key={c.k} style={{ padding: '.75rem 0 0' }}>
+            <div className="well" key={c.k} style={{ padding: 'var(--sp-4) 0 0' }}>
               <div className="lb">{c.k}</div>
               <div
                 style={{
-                  fontSize: '.9rem',
+                  fontSize: 'var(--fs-3)',
                   fontFamily: 'var(--fd)',
                   fontWeight: 600,
-                  marginTop: '.2rem',
+                  marginTop: 'var(--sp-2)',
                 }}
               >
                 {c.v}
@@ -228,7 +226,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
             </tbody>
           </table>
         </div>
-        <div className="sub" style={{ marginTop: '.8rem' }}>
+        <div className="sub mt-3">
           الموازنة التفصيلية هي المطلوبة في طلب الاستكمال الحالي، الملف المرفوع صورة لا تُقرأ آليًا.
         </div>
       </Glass>
@@ -246,7 +244,7 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
             { k: 'حالة الحساب', v: <Tag tone="ok">{P.bank.status}</Tag> },
           ]}
         />
-        <div className="sub" style={{ marginTop: '.8rem' }}>
+        <div className="sub mt-3">
           البيانات البنكية مصدرها ملف الجهة، معروضة هنا للمراجعة فقط ولا تُحرَّر من المشروع.
         </div>
       </Glass>
@@ -258,8 +256,8 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
 function BulletSection({ title, items }: { title: string; items: string[] }) {
   return (
     <>
-      <div className="hd" style={{ marginTop: '1.4rem', marginBottom: '.7rem' }}>
-        <h3 style={{ fontSize: '.9rem' }}>{title}</h3>
+      <div className="hd" style={{ marginTop: 'var(--sp-7)', marginBottom: 'var(--sp-4)' }}>
+        <h3 style={{ fontSize: 'var(--fs-3)' }}>{title}</h3>
         <span className="meta">{items.length}</span>
       </div>
       {/* `flush`: الصفوف بيفصلها خط شعري، والفجوة بينهم بتخلّي
@@ -267,7 +265,7 @@ function BulletSection({ title, items }: { title: string; items: string[] }) {
       <div className="col-s flush">
         {items.map((item, i) => (
           <div className="data" key={i}>
-            <div style={{ fontSize: '.85rem', lineHeight: 1.7 }}>{item}</div>
+            <div className="prose">{isolate(item)}</div>
           </div>
         ))}
       </div>

@@ -17,7 +17,7 @@
 import type {
   Project, Entity, AuthorityMatrix, CurrentUser, Insight, FollowUpType,
 } from '@/types/domain'
-import userPhoto from '@/assets/user-omar.jpg'
+import { person } from '@/data/people'
 
 export const project: Project = {
   id: '20940',
@@ -262,8 +262,8 @@ export const authority: AuthorityMatrix = {
 export const currentUser: CurrentUser = {
   name: 'عمر قاسم',
   role: 'مشرف المنح',
-  initial: 'ع',
-  photo: userPhoto,
+  initial: person('عمر قاسم').initial,
+  photo: person('عمر قاسم').photo,
   // من قواعد المكالمة: مشرف المنح مالوش صلاحية مالية، توصية بس
   financialAuthority: null,
   actions: [

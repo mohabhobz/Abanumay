@@ -65,7 +65,7 @@ export function AnalysisCard({
   if (readings.length === 0) return null
 
   const title = (
-    <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: '.95rem' }}>{heading}</div>
+    <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: 'var(--fs-4)' }}>{heading}</div>
   )
 
   /* ── مقفول: بوستر في نص الكارت ──
@@ -118,7 +118,7 @@ export function AnalysisCard({
 
   return (
     <Glass className="aicard aiopen" ref={card}>
-      <div className="rowf" style={{ gap: '.6rem', marginBottom: '.9rem' }}>
+      <div className="rowf" style={{ gap: 'var(--sp-3)', marginBottom: 'var(--sp-5)' }}>
         <span className={`badge badge-30${done ? '' : ' pulse'}`}>
           <span className="aispark" />
         </span>

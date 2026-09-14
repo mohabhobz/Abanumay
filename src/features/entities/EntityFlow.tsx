@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
-import { Glass, Icon, icons, Money, Num } from '@/components/ui'
+import { Glass, Icon, icons, Money } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
+import { pct } from '@/lib/format'
 
 /* ═══════════════════════════════════════════════════════════
    رحلة الريال في الجهة · **عمود ملوّن وأربع بطاقات متداخلة**
@@ -96,7 +97,9 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
             <span className="ejr-s">
               {c.pct === null
                 ? c.note
-                : <><Num>{c.pct}</Num>% من الإجمالي{c.note ? ` · ${c.note}` : ''}</>}
+                : <>{/* ⚠️ علامة `%` **جوّه** العزل · كانت برّاه فبتنطّ
+                       لأول الجملة العربية (قاعدة ٥ في العقد) */}
+                  <span className="num">{pct(c.pct)}</span> من الإجمالي{c.note ? ` · ${c.note}` : ''}</>}
             </span>
           </Link>
         ))}

@@ -1,8 +1,6 @@
 import type { CSSProperties } from 'react'
-import {
-  Glass, Head, Tag, Num, Mono, Empty, Icon, icons,
-} from '@/components/ui'
-import { nf } from '@/lib/format'
+import { DateText, Empty, Glass, Head, Icon, Mono, Num, Tag, icons } from '@/components/ui'
+import { isolate, nf } from '@/lib/format'
 import type { Entity, FollowUp, FollowUpType } from '@/types/domain'
 import type { ThreadMessage } from '@/data/mock/detail'
 import { DocFile } from '@/components/docs'
@@ -53,7 +51,7 @@ export function HistoryTab({ entity: E, currentId }: { entity: Entity; currentId
             </tbody>
           </table>
         </div>
-        <div className="sub" style={{ marginTop: '.8rem' }}>
+        <div className="sub mt-3">
           مشروع واحد اعتُذر عنه بوزن <Num>96</Num>، وهو أعلى وزن سُجّل للجهة. سبب الاعتذار غير
           مسجّل في النظام الحالي.
         </div>
@@ -97,16 +95,16 @@ export function FollowUpsTab({
       ) : (
         <div className="col-s flush">
           {followUps.map((f, i) => (
-            <div className="data" key={i} style={{ padding: '.95rem 0' }}>
-              <div className="rowf" style={{ gap: '.5rem', marginBottom: '.45rem' }}>
+            <div className="data" key={i} style={{ padding: 'var(--sp-5) 0' }}>
+              <div className="rowf" style={{ gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
                 <span className="itag">{f.type}</span>
                 <span className="pc-sp" />
                 <span className="sub">{f.by}</span>
-                <Mono>{f.at}</Mono>
+                <DateText>{f.at}</DateText>
               </div>
-              <div style={{ fontSize: '.86rem', lineHeight: 1.7 }}>{f.body}</div>
+              <div className="prose">{isolate(f.body)}</div>
               {f.attachment && (
-                <div style={{ marginTop: '.55rem' }}>
+                <div style={{ marginTop: 'var(--sp-3)' }}>
                   <DocFile name={f.attachment} />
                 </div>
               )}
@@ -115,8 +113,8 @@ export function FollowUpsTab({
         </div>
       )}
 
-      <div className="hd" style={{ marginTop: '1.3rem', marginBottom: '.6rem' }}>
-        <h3 style={{ fontSize: '.9rem' }}>إضافة متابعة</h3>
+      <div className="hd" style={{ marginTop: 'var(--sp-6)', marginBottom: 'var(--sp-3)' }}>
+        <h3 style={{ fontSize: 'var(--fs-3)' }}>إضافة متابعة</h3>
         <span className="meta">النوع والوصف إلزاميان</span>
       </div>
       <div className="chips">
@@ -124,7 +122,7 @@ export function FollowUpsTab({
           <button className="chip" key={t}>{t}</button>
         ))}
       </div>
-      <div className="sub" style={{ marginTop: '.8rem' }}>
+      <div className="sub mt-3">
         المرفق أقل من 32 ميجابايت · pdf doc docx txt jpg jpeg gif png xls xlsx
       </div>
     </Glass>
@@ -174,7 +172,7 @@ export function CorrespondenceTab({
                   <span className="msg-by">{m.from === 'entity' ? entityName : m.by}</span>
                   <span className="msg-role">{m.from === 'entity' ? 'الجهة' : 'المؤسسة'}</span>
                   <span className="pc-sp" />
-                  <Mono>{m.at}</Mono>
+                  <DateText>{m.at}</DateText>
                 </div>
                 <div className="msg-b">{m.body}</div>
               </div>
@@ -188,7 +186,7 @@ export function CorrespondenceTab({
         />
       )}
 
-      <div className="ask free" style={{ marginTop: '1rem' }}>
+      <div className="ask free mt-4">
         <span className="ph">اكتب رسالة لـ{entityName}…</span>
         <button className="attach" aria-label="إرفاق"><Icon name={icons.clip} /></button>
         <button className="go" aria-label="إرسال"><Icon name={icons.send} /></button>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { BackTo, Empty, Glass, icons, Mono, Money, Num, Select } from '@/components/ui'
+import { BackTo, Empty, Glass, icons, Mono, Money, Num, Person, Select } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
@@ -31,7 +31,8 @@ import { ExportMenu } from '@/components/export'
 type Row = Record<string, string | number>
 
 interface Table {
-  cols: { key: string; label: string; n?: boolean; money?: boolean }[]
+  /* `person` بيقول إن قيمة العمود اسم بني آدم · الخلية بتاخد وشّه */
+  cols: { key: string; label: string; n?: boolean; money?: boolean; person?: boolean }[]
   rows: Row[]
 }
 
@@ -76,7 +77,7 @@ export default function ReportView() {
           <header>
             <div>
               <h1 className="ptitle">{card.question}</h1>
-              <p className="sub" style={{ marginTop: '.3rem' }}>{card.src}</p>
+              <p className="sub mt-1">{card.src}</p>
             </div>
           </header>
 
@@ -160,6 +161,7 @@ export default function ReportView() {
 
 function render(v: string | number | undefined, c: Table['cols'][number]) {
   if (v === undefined || v === '') return <span className="sub"> </span>
+  if (c.person) return <Person name={String(v)} quiet={false} />
   if (c.money && typeof v === 'number') return <Money>{v}</Money>
   if (c.n && typeof v === 'number') return <Num>{v}</Num>
   const s = String(v)
@@ -306,7 +308,7 @@ function buildTable(key: string, yearId: string): Table | null {
           { key: 'id', label: 'المشروع' },
           { key: 'name', label: 'الاسم' },
           { key: 'stage', label: 'القسم الإجرائي' },
-          { key: 'owner', label: 'المالك' },
+          { key: 'owner', label: 'المالك', person: true },
           { key: 'inDays', label: 'المكوث', n: true },
           { key: 'limit', label: 'الحدّ', n: true },
           { key: 'over', label: 'التجاوز' },
@@ -337,7 +339,7 @@ function buildTable(key: string, yearId: string): Table | null {
           { key: 'entityName', label: 'الجهة' },
           { key: 'region', label: 'المنطقة' },
           { key: 'goal', label: 'الهدف' },
-          { key: 'owner', label: 'مالك المشروع' },
+          { key: 'owner', label: 'مالك المشروع', person: true },
           { key: 'kind', label: 'النوع' },
           { key: 'quality', label: 'حالة النصّ' },
           { key: 'text', label: 'نصّ المعرفة' },

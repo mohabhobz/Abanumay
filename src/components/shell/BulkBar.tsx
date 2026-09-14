@@ -34,12 +34,12 @@ export function BulkBar({ count, sentence, children, onClear }: BulkBarProps) {
   return (
     <div className="decdock bulkdock">
       <div className="chrome decbar bulkbar" ref={bar}>
-        <div className="rowf" style={{ gap: '.7rem', minWidth: 0 }}>
+        <div className="rowf" style={{ gap: 'var(--sp-4)', minWidth: 0 }}>
           <span className="bulkn num">{count}</span>
           <span className="decsent">{sentence}</span>
         </div>
 
-        <div className="rowf bulkacts" style={{ gap: '.5rem' }}>
+        <div className="rowf bulkacts gp-2">
           {children}
           <button
             type="button"

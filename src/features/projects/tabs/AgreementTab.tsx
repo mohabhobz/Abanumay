@@ -1,4 +1,4 @@
-import { Empty, Glass, Head, Icon, icons, Money, Mono, Num, Steps, Tag } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Icon, Money, Mono, Num, Steps, Tag, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import type { AgreementDetail, PaymentDetail } from '@/data/mock/detail'
 
@@ -58,7 +58,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
         <div className="agr-top">
           <div>
             <div className="lb">حالة الاتفاقية</div>
-            <div style={{ marginTop: '.35rem' }}>
+            <div style={{ marginTop: 'var(--sp-2)' }}>
               <Tag tone={A.signedAt ? 'ok' : 'warn'}>{A.status}</Tag>
             </div>
           </div>
@@ -72,11 +72,11 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
           </div>
           <div>
             <div className="lb">التوقيع</div>
-            <div className="agr-date">{A.signedAt ? <Mono>{A.signedAt}</Mono> : 'لم تُوقَّع'}</div>
+            <div className="agr-date">{A.signedAt ? <DateText>{A.signedAt}</DateText> : 'لم تُوقَّع'}</div>
           </div>
         </div>
 
-        <div className="rowf" style={{ gap: '.6rem', marginTop: '1.1rem' }}>
+        <div className="rowf" style={{ gap: 'var(--sp-3)', marginTop: 'var(--sp-5)' }}>
           <DocFile name="الاتفاقية.pdf" meta={A.no} />
           <button className="btn btn-2 btn-sm">
             <Icon name={icons.doc} size={15} />
@@ -94,15 +94,15 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
                بيقولوا نفس الحاجة، والمكوّن بيثبّت واحد. */
             state: s.state === 'pending' ? 'todo' : s.state,
             note: s.state === 'now' ? 'بانتظاره الآن' : s.note,
-            at: s.at ? <Mono>{s.at}</Mono> : undefined,
+            at: s.at ? <DateText>{s.at}</DateText> : undefined,
           }))}
         />
 
         {A.returned && (
-          <div className="data i flag" style={{ marginTop: '.9rem', padding: '.85rem 0 .2rem' }}>
-            <div className="rowf" style={{ justifyContent: 'space-between', marginBottom: '.4rem' }}>
+          <div className="data i flag" style={{ marginTop: 'var(--sp-5)', padding: 'var(--sp-4) 0 var(--sp-2)' }}>
+            <div className="rowf" style={{ justifyContent: 'space-between', marginBottom: 'var(--sp-3)' }}>
               <span className="itag no">طلب التعديل على الاتفاقية</span>
-              <span className="sub">{A.returned.by} · <Mono>{A.returned.at}</Mono></span>
+              <span className="sub">{A.returned.by} · <DateText>{A.returned.at}</DateText></span>
             </div>
             <div className="tx">{A.returned.note}</div>
             <div className="src">
@@ -125,7 +125,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
                   <tr key={p.no}>
                     <td><Num>{p.no}</Num></td>
                     <td className="n"><Money>{p.amount}</Money></td>
-                    <td><Mono>{p.date}</Mono></td>
+                    <td><DateText>{p.date}</DateText></td>
                     {/* `mut` لا `sub`: الغرض كان **يخفّت** العمود، و`sub`
                         بتخفّت وبتصغّر. الصغر ما نفعش أصلًا · `.tbl td`
                         أقوى تحديدًا منها فالمقاس فضل مقاس الجدول · فكان
@@ -137,7 +137,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
               </tbody>
             </table>
           </div>
-          <div className="sub" style={{ marginTop: '.8rem' }}>
+          <div className="sub mt-3">
             الجدول ده بيتحقن في نص الاتفاقية بمتغيّر <Mono>payments_table</Mono>، نفس أرقام تاب الدفعات.
           </div>
         </Glass>
@@ -155,7 +155,7 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
             </section>
           ))}
         </div>
-        <div className="sub" style={{ marginTop: '1rem' }}>
+        <div className="sub mt-4">
           الاسم والمبلغ والمدة والدفعات كلها متغيّرات، النص ده هو نفسه لكل مشروع بنفس القالب،
           والفروق دي بس. توقيع {entityName} مسجَّل في السجل كإجراء «قبول الإتفاقية».
         </div>

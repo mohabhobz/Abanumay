@@ -113,7 +113,7 @@ export function AiMessage({
       )}
 
       {done && message.follow && message.follow.length > 0 && (
-        <div className="chips rise" style={{ marginTop: '.9rem' }}>
+        <div className="chips rise mt-4">
           {message.follow.map((f) => (
             <button className="chip" key={f} onClick={() => onFollow(f)}>{f}</button>
           ))}

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Glass, Head, Icon, icons, Num, Riyal, SearchBox, Segments, Select, Stat, Toggle } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
+import { pct } from '@/lib/format'
 import { assistFor } from '@/data/mock/assistant'
 import { OWNERS } from '@/data/mock/taxonomy'
 import {
@@ -133,10 +134,13 @@ export default function PaymentsPage() {
               unit="يومًا"
               note="المستهدف: بانتظار المؤسسة"
             />
-            {/* مؤشر 4 في الوثيقة · نفس الملاحظة */}
+            {/* مؤشر 4 في الوثيقة · نفس الملاحظة.
+                وعلامة النسبة **جوّه** الرقم لا جنبه: `<Num>` بتعزل
+                الرقم وحده، فالـ`%` اللي برّه الجزيرة بتفضل محايدة
+                وموضعها بيتحدّد بجيرانها لا برقمها. */}
             <Stat
               label="الالتزام بجدول الدفعات"
-              value={<><Num>{k.onSchedule}</Num>%</>}
+              value={<Num>{pct(k.onSchedule)}</Num>}
               note="المستهدف: بانتظار المؤسسة"
               bar={{ w: `${k.onSchedule}%`, c: 'var(--lime)' }}
             />
@@ -178,6 +182,7 @@ export default function PaymentsPage() {
                   icon={icons.users}
                   value={v.owner}
                   all="كل المشرفين"
+                  people
                   options={OWNERS as unknown as string[]}
                   onChange={(x) => set({ owner: x })}
                 />

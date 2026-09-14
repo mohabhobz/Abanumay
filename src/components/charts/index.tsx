@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { nf } from '@/lib/format'
+import { nf, pct } from '@/lib/format'
 
 /* ═══════════════════════════════════════════════════════════
    مجموعة الرسوم
@@ -18,6 +18,12 @@ export { SaudiMap, type MapPoint } from './SaudiMap'
 export const CHART_COLORS = [
   'var(--ch-1)', 'var(--ch-2)', 'var(--ch-3)',
   'var(--ch-4)', 'var(--ch-5)', 'var(--ch-6)',
+] as const
+
+/** حبر النصّ فوق كل لون · مقيس على ٤٫٥:١ · شوف `:root` في الـCSS */
+export const CHART_INKS = [
+  'var(--on-ch-1)', 'var(--on-ch-2)', 'var(--on-ch-3)',
+  'var(--on-ch-4)', 'var(--on-ch-5)', 'var(--on-ch-6)',
 ] as const
 
 /* ── قائمة أشرطة أفقية ──
@@ -109,39 +115,70 @@ export function Columns({ cols, unit }: { cols: Column[]; unit?: string }) {
   )
 }
 
-/* ── حلقة ──
-   للنِّسب من كل: الحلقة بتقول «من إجمالي» من غير محور، والرقم
-   في النص بيمنع القارئ من تقدير الزوايا بعينه. */
+/* ── الشريحة ──
+   نوع مشترك بين الحلقة والشريط المركّب ووسيلة الإيضاح. */
 export interface Slice {
   key: string
   label: string
   value: number
   color: string
+  /** حبر النصّ فوق اللون ده · لازم لو الحلقة بتكتب النسبة على القوس */
+  ink?: string
 }
 
+/* ── حلقة ──
+   ⚠️ **الحلقة رجعت بقرار العميل (١٣ سبتمبر).** كانت اتحوّلت لعمود
+   مكدّس لأن الزاوية أسوأ ترميز بعد المساحة، والقارئ بيقرا النسبة
+   من اللِّيجند لا من القوس.
+
+   والاعتراض ده **اتعالج في نفس القرار**: النسبة بقت مكتوبة **على
+   القوس نفسه**، فالقارئ ما بقاش محتاج يقدّر زاوية ولا يلفّ عينه
+   للِّيجند — الرقم عند الشكل اللي بيمثّله. واللِّيجند تحت بقى
+   تسميات وألوان بس.
+
+   وده بيخلّق شرطًا جديدًا: **نصّ فوق لون = ٤٫٥:١** (WCAG 1.4.3).
+   فكل لون جراف بقى معاه حبره المقيس (`--on-ch-1…6`)، والحلقة
+   بتاخده من `slice.ink`. */
 export function Donut({
   slices,
   total,
   centerValue,
   centerLabel,
-  size = 148,
+  size,
+  /** أصغر نسبة تستاهل رقمًا على القوس · تحتها القوس أقصر من الرقم */
+  minLabel = 0.07,
 }: {
   slices: Slice[]
   total?: number
   centerValue: ReactNode
   centerLabel: string
   size?: number
+  minLabel?: number
 }) {
   const sum = total ?? slices.reduce((s, x) => s + x.value, 0)
-  const r = 54
+  /* ⚠️ **عرض الشريط بيتحدّد بعرض الرقم، مش بالذوق.** أول رسم كان
+     شريطًا ١٥ ووحدة والرقم ٩ — و«٥١٪» عرضها ٢٢ وحدة، فعند الساعة
+     ٣ (الشريط رأسي هناك) الرقم كان بيطلع برّه القوس على خلفية
+     الكارت. الحالة الحرجة هي ٣ و٩، لأن النصّ أفقي والشريط رأسي:
+     المطلوب أن **عرض الرقم < سُمك الشريط**.
+       الرقم ٨ ⇒ «٥١٪» ≈ ١٧ وحدة · الشريط ٢٢ ⇒ هامش ٢٫٥ كل جهة.
+     ونصف القطر نزل لـ٥٢ عشان الحافة الخارجية (٥٢+١١=٦٣) تفضل
+     جوّه الـviewBox ١٢٨. */
+  const r = 52
+  const w = 22
   const c = 2 * Math.PI * r
   const gap = slices.length > 1 ? 1.6 : 0
   let offset = 0
 
   return (
     <div className="chdonut">
-      <svg viewBox="0 0 128 128" width={size} height={size} role="img" aria-hidden="true">
-        <circle cx="64" cy="64" r={r} fill="none" stroke="var(--track)" strokeWidth="15" />
+      <svg
+        viewBox="0 0 128 128"
+        {...(size ? { width: size, height: size } : {})}
+        role="img"
+        aria-hidden="true"
+      >
+        <circle cx="64" cy="64" r={r} fill="none" stroke="var(--track)" strokeWidth={w} />
         {slices.map((s) => {
           const frac = sum > 0 ? s.value / sum : 0
           const len = Math.max(0, frac * c - gap)
@@ -156,14 +193,38 @@ export function Donut({
               r={r}
               fill="none"
               stroke={s.color}
-              strokeWidth="15"
+              strokeWidth={w}
               strokeDasharray={dash}
               strokeLinecap="butt"
               transform={`rotate(${rot} 64 64)`}
-              style={{ transition: 'stroke-dasharray .5s ease' }}
             />
           )
         })}
+
+        {/* النسب على الأقواس · بتترسم بعد كل الأقواس عشان ما يتغطّوش */}
+        {(() => {
+          let at = 0
+          return slices.map((s) => {
+            const frac = sum > 0 ? s.value / sum : 0
+            /* منتصف القوس · الرسم بيبدأ من الساعة ١٢ ويلفّ مع عقرب الساعة */
+            const mid = ((at + frac / 2) * 360 - 90) * (Math.PI / 180)
+            at += frac
+            if (frac < minLabel) return null
+            return (
+              <text
+                key={s.key}
+                x={64 + r * Math.cos(mid)}
+                y={64 + r * Math.sin(mid)}
+                textAnchor="middle"
+                dominantBaseline="central"
+                className="chdonut-p"
+                fill={s.ink ?? 'var(--ch-ink)'}
+              >
+                {pct(Math.round(frac * 100))}
+              </text>
+            )
+          })
+        })()}
       </svg>
 
       <div className="chdonut-c">
@@ -196,16 +257,19 @@ export function StackBar({ parts, total }: { parts: Slice[]; total: number }) {
 export function Legend({
   items,
   format = (v: number) => nf.format(v),
+  /** صفّ أفقي بلا قيم · لمّا القيمة مكتوبة على الرسم نفسه */
+  inline,
 }: {
   items: Slice[]
   format?: (v: number) => string
+  inline?: boolean
 }) {
   return (
-    <dl className="chleg">
+    <dl className={`chleg${inline ? ' chleg-in' : ''}`}>
       {items.map((i) => (
         <div key={i.key}>
           <dt><span className="chdot" style={{ background: i.color }} />{i.label}</dt>
-          <dd className="num">{format(i.value)}</dd>
+          {!inline && <dd className="num">{format(i.value)}</dd>}
         </div>
       ))}
     </dl>

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import { Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Tag } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
 import { DocDownload, DocFile } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
-import { readDate } from '@/lib/format'
+import {  } from '@/lib/format'
 import { activationTone, days, governanceTone, groupTone } from '@/lib/tone'
 import { ENTITY_DOCS_TOTAL, stagePressure } from '@/data/repository'
 import type { EntityDetail, EntityEvent } from '@/data/mock/entityDetail'
@@ -30,8 +30,8 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
             { k: 'رقم الترخيص', v: <Mono>{e.licenseNo}</Mono> },
             { k: 'المنطقة', v: e.region },
             { k: 'المحافظة / المدينة', v: e.city },
-            { k: 'تاريخ التأسيس', v: <Mono>{readDate(d.foundedAt)}</Mono> },
-            { k: 'تاريخ التسجيل عندنا', v: <Mono>{readDate(e.registeredAt)}</Mono> },
+            { k: 'تاريخ التأسيس', v: <DateText>{d.foundedAt}</DateText> },
+            { k: 'تاريخ التسجيل عندنا', v: <DateText>{e.registeredAt}</DateText> },
           ]}
         />
       </Glass>
@@ -58,7 +58,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
               k: 'نهاية الترخيص',
               v: (
                 <span className="kvpair">
-                  <Mono>{readDate(d.licenseEndsAt)}</Mono>
+                  <DateText>{d.licenseEndsAt}</DateText>
                   {d.licenseExpired && <Tag tone="no">منتهٍ</Tag>}
                 </span>
               ),
@@ -67,7 +67,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
               k: 'نهاية تكليف أعضاء المجلس',
               v: (
                 <span className="kvpair">
-                  <Mono>{readDate(d.boardMandateEndsAt)}</Mono>
+                  <DateText>{d.boardMandateEndsAt}</DateText>
                   {d.boardExpired && <Tag tone="no">منتهٍ</Tag>}
                 </span>
               ),
@@ -88,7 +88,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
             { k: 'الموقع الإلكتروني', v: <Mono>{d.website}</Mono> },
           ]}
         />
-        <p className="sub" style={{ marginTop: '.7rem' }}>
+        <p className="sub mt-3">
           بيانات التواصل هنا مموّهة عمدًا، المستودع عام.
         </p>
       </Glass>
@@ -97,9 +97,13 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <Head title="الأشخاص" meta="المدير التنفيذي ومدخل البيانات" />
         <KV
           rows={[
-            { k: 'المدير التنفيذي', v: d.directorName },
+            /* كارت اسمه «الأشخاص» · الوش هنا مش زخرفة، هو محتوى
+               الكارت. والاتنين دول مش في سجلّ الموظّفين (أسماء
+               الجهات بتتولّد) فبيرجعوا لحروفهم الأوّلية — وده
+               الشكل الصحيح لشخص مالوش ملفّ في النظام. */
+            { k: 'المدير التنفيذي', v: <Person name={d.directorName} quiet={false} /> },
             { k: 'جوال المدير', v: <Mono>{d.directorMobile}</Mono> },
-            { k: 'مدخل البيانات', v: d.clerkName },
+            { k: 'مدخل البيانات', v: <Person name={d.clerkName} quiet={false} /> },
             { k: 'جوال مدخل البيانات', v: <Mono>{d.clerkMobile}</Mono> },
             { k: 'بريد مدخل البيانات', v: <Mono>{d.clerkEmail}</Mono> },
           ]}
@@ -115,7 +119,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
             { k: 'نوع الحساب', v: d.accountType },
             { k: 'اسم المستخدم', v: <Mono>{d.username}</Mono> },
             { k: 'رقم المستخدم', v: <Mono>{d.userNo}</Mono> },
-            { k: 'آخر تعديل', v: <Mono>{d.updatedAt}</Mono> },
+            { k: 'آخر تعديل', v: <DateText>{d.updatedAt}</DateText> },
           ]}
         />
         {/* الملاحظة الإدارية إلزامية في النظام على كل قبول أو رفض،
@@ -176,7 +180,7 @@ export function EntityDocsTab({ d }: { d: EntityDetail }) {
                   ? <DocFile name={`${x.name}.pdf`} download={false} />
                   : <span className="sub">{x.name}</span>}
               </td>
-              <td title={x.at ?? ''}>{x.at ? <Mono>{x.at}</Mono> : <span className="sub"> </span>}</td>
+              <td title={x.at ?? ''}>{x.at ? <DateText>{x.at}</DateText> : <span className="sub"> </span>}</td>
               <td title={x.expires ?? ''}>
                 {x.expires ? <Mono>{x.expires}</Mono> : <span className="sub"> </span>}
               </td>
@@ -241,7 +245,7 @@ export function EntityBanksTab({ d }: { d: EntityDetail }) {
             </div>
           )}
 
-          <div className="col-s flush" style={{ marginTop: '.8rem' }}>
+          <div className="col-s flush mt-3">
             <DocFile name={b.certificate} meta="الشهادة البنكية" />
             {b.attachment && <DocFile name={b.attachment} meta="المرفق" />}
           </div>

@@ -6,10 +6,16 @@
   "description": "نظام منح مؤسسة سليمان أبانمي الأهلية — بروتوتايب الواجهة",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "node tools/cssbalance.mjs && tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "audit": "node tools/audit.mjs",
+    "audit:full": "node tools/audit.mjs --full",
+    "audit:lock": "node tools/audit.mjs --lock",
+    "css:balance": "node tools/cssbalance.mjs",
+    "clean": "rm -rf dist",
+    "audit:fast": "node tools/cssbalance.mjs && node tools/audit.mjs && node tools/ctlaudit.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.44.0",

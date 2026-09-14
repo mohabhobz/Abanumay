@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
-import { Icon, icons, Money, Mono, Num, Tag } from '@/components/ui'
+import { DateText, Icon, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { payHeat, payStateWho } from '@/data/mock/disbursements'
 import type { PayRequest } from '@/types/domain'
+import { isolate } from '@/lib/format'
 
 /* ═══════════════════════════════════════════════════════════
    One disbursement request, as a decision
@@ -30,12 +31,14 @@ const HEAT_SAY = { ok: '', late: 'متأخر', stuck: 'متعثر' } as const
 
 export function RequestCard({ r, showState }: RequestCardProps) {
   const heat = payHeat(r)
-  const blocked = r.checks.some((c) => !c.ok) || !r.bank.active
   const days = Math.round(r.hoursInState / 24)
   const multi = r.sources.length > 1
 
+  /* الكارت بياخد `.glass` زي `.pcard` و`.ecard` — سطح واحد معرّف
+     في مكان واحد. وكلاس `hold` اتشال: الحالة بتتقال بالوسم وصفوف
+     الفحص وسطر الملاحظة، والشريط الجانبي اللي كان بيرسمها راح. */
   return (
-    <article className={`payq${blocked ? ' hold' : ''}`}>
+    <article className="payq glass">
       <header className="payq-h">
         <div className="payq-id">
           <Link className="payq-p" to={ROUTES.project(r.projectId)}>{r.projectName}</Link>
@@ -57,7 +60,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
               الدفعة المعتمدة <Money sm>{r.due}</Money>
             </span>
           )}
-          <span className="payq-due sub">استحقاقها <Mono>{r.dueAt}</Mono></span>
+          <span className="payq-due sub">استحقاقها <DateText>{r.dueAt}</DateText></span>
         </div>
       </header>
 
@@ -72,7 +75,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
           <span className="sub">في المرحلة <Num>{days}</Num> يومًا</span>
         )}
         {r.state === 'paid' && r.paidAt && (
-          <Tag tone="ok">اتصرفت <Mono>{r.paidAt}</Mono></Tag>
+          <Tag tone="ok">اتصرفت <DateText>{r.paidAt}</DateText></Tag>
         )}
         {multi && <Tag tone="teal">تمويل من مصدرين</Tag>}
       </div>
@@ -82,7 +85,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
       {r.condition && (
         <div className="payq-cond">
           <span className="lb">شرط الدفعة</span>
-          <span>{r.condition}</span>
+          <span>{isolate(r.condition)}</span>
         </div>
       )}
 
@@ -122,7 +125,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
       )}
 
       <footer className="payq-f">
-        <span className="sub">{r.owner}</span>
+        <Person name={r.owner} />
         <span className="pc-sp" />
         <Link className="btn btn-2 btn-sm" to={ROUTES.project(r.projectId)}>
           افتح المشروع

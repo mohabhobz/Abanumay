@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Money, Mono, Empty } from '@/components/ui'
-import { BarList, Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS } from '@/components/charts'
+import { BarList, Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS, CHART_INKS } from '@/components/charts'
 import { QuickRead } from '@/components/assistant'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -90,7 +90,13 @@ export default function HomePage() {
   const partners = topEntities(projects)
   const health = entityHealth(entities)
 
-  const trackSlices = tracks.map((t, i) => ({ ...t, color: CHART_COLORS[i % CHART_COLORS.length] }))
+  /* اللون وحبره بيتاخدوا مع بعض من نفس الفهرس · النسبة بتتكتب
+     على القوس، فلازم يكون فيه حبر مقيس فوق كل لون */
+  const trackSlices = tracks.map((t, i) => ({
+    ...t,
+    color: CHART_COLORS[i % CHART_COLORS.length],
+    ink: CHART_INKS[i % CHART_INKS.length],
+  }))
   const grantedTotal = tracks.reduce((s, t) => s + t.value, 0)
 
   const budgetParts = [
@@ -204,20 +210,25 @@ export default function HomePage() {
               <Legend items={budgetParts} />
             </Glass>
 
+            {/* ═══ حلقة · بالنسب على الأقواس ═══
+                الاعتراض على الحلقة إن القارئ ما بيقدرش يقدّر ٥١٪ من
+                زاوية، فبيقراها من اللِّيجند — يعني الرسم زخرفة والرقم
+                جنبه هو اللي بيشتغل.
+
+                فالنسبة اتحطّت **على القوس نفسه**: الرقم عند الشكل
+                اللي بيمثّله، واللِّيجند تحت بقى تسميات وألوان بس في
+                صفّ واحد.
+
+                ⚠️ ونصّ فوق لون = **٤٫٥:١** (WCAG 1.4.3) — عشان كده
+                كل شريحة بتاخد `ink` مقيسًا مع لونها. */}
             <Glass className="d-track">
               <Head title="الملتزم به حسب المسار" />
-              <div className="dsplit">
-                <Donut
-                  slices={trackSlices}
-                  centerValue={`${(grantedTotal / 1_000_000).toFixed(1)} م`}
-                  centerLabel="ريال ملتزم به"
-                  size={124}
-                />
-                <Legend
-                  items={trackSlices}
-                  format={(v) => pct(Math.round((v / Math.max(1, grantedTotal)) * 100))}
-                />
-              </div>
+              <Donut
+                slices={trackSlices}
+                centerValue={`${(grantedTotal / 1_000_000).toFixed(1)} م`}
+                centerLabel="ريال ملتزم به"
+              />
+              <Legend items={trackSlices} inline />
             </Glass>
 
             <Glass className="d-age">

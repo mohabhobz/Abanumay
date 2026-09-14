@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BackTo, Empty, Glass, Head, Icon, icons, Mono, Money, Num, Tag,
+  BackTo, Empty, Glass, Head, Icon, icons, Mono, Money, Num, Person, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
@@ -57,7 +57,7 @@ export default function LiveReport() {
           <header>
             <div>
               <h1 className="ptitle">{spec.title}</h1>
-              <p className="sub" style={{ marginTop: '.3rem' }}>
+              <p className="sub mt-1">
                 <code className="mono">control/{spec.path}</code>
                 {spec.rowsLive !== null && (
                   <> · <span className="num">{nf.format(spec.rowsLive)}</span> صفًّا في النظام العامل</>
@@ -178,6 +178,7 @@ function cellOf(v: string | number | undefined, c: LiveCol) {
   if (c.kind === 'pct') return <span className="num">{String(v)}</span>
   if (c.kind === 'file') return <span className="lrfile"><Icon name={icons.clip} size={13} />{String(v)}</span>
   if (c.kind === 'link') return <span className="lnk">{String(v)}</span>
+  if (c.kind === 'person') return <Person name={String(v)} quiet={false} />
   return String(v)
 }
 

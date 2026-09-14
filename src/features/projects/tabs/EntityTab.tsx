@@ -76,7 +76,7 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
             </tbody>
           </table>
         </div>
-        <div className="sub" style={{ marginTop: '.8rem' }}>
+        <div className="sub mt-3">
           خمسة مستندات ناقصة، منها تقرير الحوكمة وتقرير المراجع القانوني، وهي المدخلات التي
           تُبنى عليها درجة الحوكمة.
         </div>

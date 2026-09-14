@@ -2,7 +2,7 @@ import { forwardRef, type CSSProperties, type HTMLAttributes, type ReactNode } f
 import { Link } from 'react-router-dom'
 import { Icon } from './Icon'
 import { icons } from './icons'
-import { nf } from '@/lib/format'
+import { nf, readDate } from '@/lib/format'
 import type { Tone } from '@/types/domain'
 
 /* ═══════════════ أسطح ═══════════════ */
@@ -74,6 +74,27 @@ export function Money({ children, sm }: { children: number | string; sm?: boolea
 
 export function Mono({ children }: { children: ReactNode }) {
   return <span className="mono">{children}</span>
+}
+
+/**
+ * تاريخ مقروء · **المدخل الوحيد للتواريخ في الواجهة**.
+ *
+ * ═══ غلطتان كانوا بيتكرّروا مع بعض ═══
+ *
+ * **١ · التاريخ الخام.** `2026-04-12` صيغة تخزين لا صيغة عرض ·
+ * المستخدم بيقرا «١٢ أبريل ٢٠٢٦». الدالة `readDate` موجودة من
+ * زمان، و**١٣ موضع** كانوا بيرسموا الخام جنبها.
+ *
+ * **٢ · و`.mono` كانت بتقلبه.** الكلاس دي عليها `direction:ltr`
+ * (صح للكود `prj-2026-00013`)، فالتاريخ العربي جوّاها بيتقلب
+ * بصريًّا. يعني الموضعان اللي كانوا مظبوطين كان فيهم غلطة تانية.
+ *
+ * المكوّن بيحلّ الاتنين: بيصيغ بـ`readDate` وبيعزل الرقم بـ`.num`
+ * من غير `direction` مقلوبة.
+ */
+export function DateText({ children }: { children: string | undefined | null }) {
+  if (!children) return null
+  return <span className="num">{readDate(children)}</span>
 }
 
 /* ═══════════════ عرض الحقول ═══════════════ */
@@ -174,7 +195,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
             <div className="tx">{e.title}</div>
             {e.by && <div className="by">{e.by}</div>}
             {e.foot && (
-              <div className="sub" style={{ marginTop: '.35rem', color: e.footTone }}>
+              <div className="sub" style={{ marginTop: 'var(--sp-2)', color: e.footTone }}>
                 {e.foot}
               </div>
             )}
@@ -235,7 +256,7 @@ export function Empty({
   return (
     <div className="well empty">
       <div className="t">{title}</div>
-      {note && <div className="sub" style={{ marginTop: '.3rem' }}>{note}</div>}
+      {note && <div className="sub mt-1">{note}</div>}
       {actions && <div className="emptyact">{actions}</div>}
     </div>
   )
@@ -276,8 +297,7 @@ export function Stat({
       </div>
       {note && (
         <div
-          className="mut trim1"
-          style={{ marginTop: '.4rem' }}
+          className="mut trim1 mt-2"
           title={typeof note === 'string' ? note : undefined}
         >
           {note}
