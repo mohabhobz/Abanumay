@@ -25,6 +25,15 @@ export const ROUTES = {
 
   payments: '/payments',
   payment: (id: string) => `/payments/${id}`,
+  /** إنشاء طلب صرف · خطوات 1 و2 · والمشروع اختياري في الرابط */
+  paymentNew: (projectId?: string) =>
+    `/payments/new${projectId ? `?project=${projectId}` : ''}`,
+  /** إعادة إرسال طلب معاد · خطوة 11 */
+  paymentEdit: (id: string) => `/payments/${id}/edit`,
+  /** أمر الصرف · خطوة 16 · المخرج الأول */
+  paymentOrder: (id: string) => `/payments/${id}/order`,
+  /** تقرير المتأخر والمتعثر · آلية التصعيد 9.5 بند 3 */
+  paymentsLate: '/payments/late',
 
   reports: '/reports',
   reportTab: (tab?: string) => `/reports${tab && tab !== 'board' ? `/${tab}` : ''}`,

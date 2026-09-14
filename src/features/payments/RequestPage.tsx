@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
   Steps, Tag, type StepItem,
@@ -160,6 +160,17 @@ export default function RequestPage() {
             </div>
           </header>
 
+          {/* قاعدة 15 · المقفول بيقول إنه مقفول، وسجله باقٍ تحته */}
+          {r.state === 'closed' && (
+            <Glass>
+              <Head title="الطلب مغلق" meta={<Tag tone="no">رفض نهائي</Tag>} />
+              <p className="sub cnote">
+                القاعدة 15 بتقول إن النظام يغلق الطلب عند الرفض النهائي
+                <b> مع الاحتفاظ بسجل إجراءاته</b> · السجل تحت كامل، والتعديل مقفول.
+              </p>
+            </Glass>
+          )}
+
           {/* شريط الحالة · مين واقف وبقاله قد إيه مقابل حدّه */}
           <div className="prow">
             <Tag tone={heat === 'stuck' ? 'no' : heat === 'late' ? 'warn' : 'mute'}>
@@ -176,6 +187,17 @@ export default function RequestPage() {
             )}
             <span className="pc-sp" />
             <Person name={r.owner} />
+            {/* المخرج الأول · الورقة اللي المالية بتحوّل بناءً عليها */}
+            <Link className="btn btn-2 btn-sm" to={ROUTES.paymentOrder(r.id)}>
+              <Icon name={icons.doc} size={14} />
+              أمر الصرف
+            </Link>
+            {/* خطوة 11 · الجهة بتستكمل وتعيد الإرسال */}
+            {r.state === 'returned' && (
+              <Link className="btn btn-p btn-sm" to={ROUTES.paymentEdit(r.id)}>
+                استكمال وإعادة إرسال
+              </Link>
+            )}
           </div>
 
           <div className="g2">
@@ -350,6 +372,32 @@ export default function RequestPage() {
                   {pct(Math.round((after / r.granted) * 100))} من المنحة بعد تنفيذ الدفعة دي ·
                   القاعدة 14 بتمنع أي صرف يتجاوز قيمة المنحة.
                 </p>
+              </Glass>
+
+              {/* ⚠️ قاعدة 17 · «إشعارات تلقائية في كل مراحل الطلب».
+                  الإشعارات موجودة جوّه السجل كسطر تحت كل انتقال،
+                  بس السجل بيتقري بالترتيب الزمني والسؤال «مين
+                  اتبلّغ؟» بيتقري بالمستقبِل · نفس الداتا مقروءة
+                  بمحورين، فبطاقة مستقلة بتجاوب السؤال التاني بلا
+                  تكرار في التخزين. */}
+              <Glass>
+                <Head
+                  title="الإشعارات"
+                  meta={<span className="sub">قاعدة 17 · لكل انتقال إشعار</span>}
+                />
+                <ul className="paynotif">
+                  {r.log.filter((e) => e.notified).map((e, i) => (
+                    <li key={`${e.step}-${i}`}>
+                      <Icon name={icons.send} size={14} />
+                      <span className="trim1">{e.notified}</span>
+                      <span className="pc-sp" />
+                      <DateText>{e.at}</DateText>
+                    </li>
+                  ))}
+                  {r.log.every((e) => !e.notified) && (
+                    <li className="sub">لا إشعارات بعد · الطلب لسّه في أول مرحلة.</li>
+                  )}
+                </ul>
               </Glass>
 
               {/* قاعدة 12 · الصرف وفق التوزيع المعتمد للمصادر */}

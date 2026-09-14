@@ -185,3 +185,69 @@ export const units = {
   }),
   riyal: (n: number) => `${nf.format(n)} ريال`,
 }
+
+/* ═══════════════ المبلغ بالحروف ═══════════════
+   ⚠️ ده مش زينة. أمر الصرف ورقة بتروح للبنك، والرقم اللي فيه خانة
+   زيادة أو ناقصة بيتقرا غلط ومفيش حاجة تكشفه · الحروف هي اللي
+   بتمسك الرقم، وعشان كده كل سند صرف في الدنيا مكتوب مرتين.
+
+   المدى المدعوم لحدّ الملايين · أكبر منحة في النظام العامل أقلّ من
+   عشرة ملايين، فما فيش داعي للمليارات ولا للكسور (الدفعات كلها
+   أرقام صحيحة بالريال). */
+
+const ONES = [
+  '', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة',
+  'عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر',
+  'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر',
+]
+const TENS = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون']
+const HUNDREDS = [
+  '', 'مئة', 'مئتان', 'ثلاثمئة', 'أربعمئة', 'خمسمئة',
+  'ستمئة', 'سبعمئة', 'ثمانمئة', 'تسعمئة',
+]
+
+/** أقلّ من ألف بالحروف */
+function under1000(n: number): string {
+  const parts: string[] = []
+  const h = Math.floor(n / 100)
+  const rest = n % 100
+  if (h) parts.push(HUNDREDS[h]!)
+  if (rest < 20) {
+    if (rest) parts.push(ONES[rest]!)
+  } else {
+    const u = rest % 10
+    const t = Math.floor(rest / 10)
+    /* العربية بتقول «واحد وعشرون» · الآحاد قبل العشرات */
+    parts.push(u ? `${ONES[u]} و${TENS[t]}` : TENS[t]!)
+  }
+  return parts.join(' و')
+}
+
+/** صيغة الوحدة حسب العدد · مثنّى وجمع قلّة وجمع كثرة */
+function unitOf(n: number, one: string, two: string, few: string, many: string): string {
+  if (n === 1) return one
+  if (n === 2) return two
+  if (n % 100 >= 3 && n % 100 <= 10) return `${under1000(n)} ${few}`
+  return `${under1000(n)} ${many}`
+}
+
+/**
+ * المبلغ بالحروف العربية · «فقط مئتا ألف ريال لا غير» بيتكوّن حواليها.
+ * بيرجّع الرقم بلا كلمة «فقط» ولا «لا غير» · اللي بيستعملها بيحطّهم.
+ */
+export function riyals(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return 'صفر ريال'
+  const amount = Math.round(n)
+
+  const mil = Math.floor(amount / 1_000_000)
+  const th = Math.floor((amount % 1_000_000) / 1000)
+  const rest = amount % 1000
+
+  const parts: string[] = []
+  if (mil) parts.push(unitOf(mil, 'مليون', 'مليونان', 'ملايين', 'مليونًا'))
+  /* «ألفا» لا «ألفان» في الإضافة · مئتا ألف، لا مئتان ألف */
+  if (th) parts.push(unitOf(th, 'ألف', 'ألفان', 'آلاف', 'ألفًا'))
+  if (rest) parts.push(under1000(rest))
+
+  return `${parts.join(' و')} ريال`
+}

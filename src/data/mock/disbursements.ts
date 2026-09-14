@@ -191,6 +191,25 @@ const eligible = projectRows.filter(
   (p) => p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل',
 )
 
+/* ⚠️ **عدد الدفعات صفة في الاتفاقية، لا في الطلب.**
+   كان `of` بيتولّد مع كل طلب لوحده، فالمشروع الواحد بيطلع بطلب
+   «الدفعة 2 من 2» وجنبه «الدفعة 1 من 4» · يعني جدولان للاتفاقية
+   الواحدة. الباج ده ما كانش بيبان في صندوق الصرف خالص (كل كارت
+   بيتقري لوحده وكل واحد فيهم متّسق مع نفسه)، وبان أول ما شاشة
+   إنشاء الطلب طلبت **الجدول كله** فلقت نفسها بتقرا `of` من أول طلب
+   وتتجاهل الباقي. الجدول بيتعرّف مرة واحدة للمشروع هنا. */
+const SCHEDULE = new Map<string, number>()
+const scheduleOf = (projectId: string): number => {
+  const known = SCHEDULE.get(projectId)
+  if (known) return known
+  const of = pick([1, 2, 2, 3, 3, 4])
+  SCHEDULE.set(projectId, of)
+  return of
+}
+
+/** الدفعات اللي اتحجزت لكل مشروع · قاعدة 4: واحدة لكل رقم */
+const TAKEN = new Map<string, Set<number>>()
+
 export const payRequests: PayRequest[] = (() => {
   const out: PayRequest[] = []
   let n = 0
@@ -199,8 +218,21 @@ export const payRequests: PayRequest[] = (() => {
       const p = eligible[(n * 7 + i * 3) % eligible.length]
       if (!p) continue
       const e = entityById(p.entityId)
-      const of = pick([1, 2, 2, 3, 3, 4])
-      const no = int(1, of)
+      const of = scheduleOf(p.id)
+      /* قاعدة 4 · طلب واحد مفتوح لكل دفعة · فالرقم اللي اتاخد
+         ما يتكرّرش، والمشروع اللي دفعاته كلها اتاخدت بيتخطّى */
+      const taken = TAKEN.get(p.id) ?? new Set<number>()
+      TAKEN.set(p.id, taken)
+      /* ⚠️ الدفعة الأخيرة بتفضل **بلا طلب** في الاتفاقيات المتعددة.
+         مش تزويقًا للنموذج: الدفعة الختامية بتيجي بعد التقرير
+         الختامي، فالاتفاقية اللي كل دفعاتها ليها طلب مفتوح حالة
+         نادرة لا القاعدة. ولولا ده كانت شاشة إنشاء الطلب بتفتح على
+         جدول كل صفوفه مقفولة — شاشة سليمة بتوصف عالمًا مستحيلًا. */
+      const cap = of > 1 ? of - 1 : of
+      if (taken.size >= cap) { n++; continue }
+      let no = int(1, cap)
+      while (taken.has(no)) no = (no % cap) + 1
+      taken.add(no)
       const granted = p.amountGranted || p.amountRequested
       /* الدفعة = نصيبها من المعتمد · والأخيرة بتاخد الباقي فالمجموع
          يساوي قيمة المنحة بالظبط (rule 14 وقاعدة الاتفاقية 8) */
@@ -315,10 +347,37 @@ export const payRequests: PayRequest[] = (() => {
    كلها** · فالرقم بيتعرض قيمةً لا حالةً، ولا بيتلوّن، لحد ما
    المؤسسة تدّينا الأهداف. */
 
+/**
+ * المدة المستهدفة لمعالجة الطلب كاملًا · مجموع حدود المراحل الأربعة.
+ * مؤقتة زي كل مدة في الإجراء، لأن آلية التصعيد بتقول إن الأيام
+ * **من الإعدادات** والمؤسسة لسّه ما دّتناش الأرقام.
+ */
+export const PAY_TARGET_DAYS = Math.round(
+  (PAY_LIMIT.supervisor + PAY_LIMIT.manager + PAY_LIMIT.finance) / 24,
+)
+
+/** أيام بين تاريخين بصيغة YYYY-MM-DD */
+const daysBetween = (a: string, b: string): number =>
+  Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
+
 export const payKpi = () => {
   const open = payRequests.filter((r) => r.state !== 'paid' && r.state !== 'closed')
   const paid = payRequests.filter((r) => r.state === 'paid')
   const onTime = paid.filter((r) => (r.paidAt ?? '') <= r.dueAt).length
+  /* مؤشر 2 · المنجزة **ضمن المدة المستهدفة** · من الإنشاء للتحويل،
+     مش مقابل تاريخ الاستحقاق (ده مؤشر 4) · مؤشران مختلفان بيتخلطوا
+     بسهولة لأن الاتنين نسبة على المصروف */
+  const inTarget = paid.filter(
+    (r) => r.paidAt && daysBetween(r.at, r.paidAt) <= PAY_TARGET_DAYS,
+  ).length
+  /* مؤشر 3 · من **اعتماد مدير المنح** (خطوة 13) لحد تنفيذ التحويل
+     (خطوة 17) · مش من إنشاء الطلب */
+  const finance = paid
+    .map((r) => {
+      const approved = r.log.find((e) => e.step === 13)
+      return approved && r.paidAt ? daysBetween(approved.at, r.paidAt) : null
+    })
+    .filter((x): x is number => x !== null && x >= 0)
   return {
     /** عدد الطلبات المفتوحة · مش مؤشرًا في الوثيقة، لكنه حجم الصندوق */
     open: open.length,
@@ -328,6 +387,12 @@ export const payKpi = () => {
     avgDays: Math.round(
       payRequests.reduce((s, r) => s + r.hoursInState, 0) / payRequests.length / 24,
     ),
+    /** مؤشر 2 · نسبة الطلبات المنجزة ضمن المدة المستهدفة */
+    inTarget: paid.length ? Math.round((inTarget / paid.length) * 100) : 0,
+    /** مؤشر 3 · متوسط مدة تنفيذ الصرف المالي · اعتماد المدير ← التحويل */
+    financeDays: finance.length
+      ? Math.round(finance.reduce((s, d) => s + d, 0) / finance.length)
+      : 0,
     /** مؤشر 4 · نسبة الالتزام بجدول الدفعات */
     onSchedule: paid.length ? Math.round((onTime / paid.length) * 100) : 0,
     /** المتأخر والمتعثر · التصعيد 9.5 بند 3 */
@@ -336,6 +401,116 @@ export const payKpi = () => {
     /** الموقوف بشرط · rule 3 و6 و10 و11 */
     blocked: open.filter(payBlocked).length,
   }
+}
+
+/* ═══════════════ جدول الدفعات · شاشة إنشاء الطلب ═══════════════
+   الشاشة اللي الجهة بتنشئ منها الطلب مش فورم فاضي · هي **جدول
+   الدفعات المعتمد** (المدخل التاني في الوثيقة) وكل دفعة فيه بحالتها.
+   وده اللي بيخلّي أربع قواعد يتنفّذوا بالعرض لا بالتحقّق:
+
+     قاعدة 1 · مفيش طلب قبل تفعيل الاتفاقية وحالة «تحت التنفيذ»
+     قاعدة 2 · الطلب للدفعات **المستحقة** بس، والباقي معروض ومقفول
+     قاعدة 4 · دفعة لها طلب مفتوح ما تقبلش تاني
+     قاعدة 6 · الدفعة المشروطة ما تترسلش قبل استيفاء شرطها
+
+   خطوة 1 بتقول «النظام **يتيح** الإنشاء عند حلول الاستحقاق واستيفاء
+   الشروط» · فالإتاحة نفسها معلومة معروضة، لا زرار بيرفض بعد الضغط.
+   ═══════════════════════════════════════════════════════════ */
+
+export type PaySlotState =
+  /** مستحقة وجاهزة للطلب */
+  | 'open'
+  /** لسّه ما استحقّتش · قاعدة 2 */
+  | 'early'
+  /** ليها طلب مفتوح · قاعدة 4 */
+  | 'pending'
+  /** اتصرفت */
+  | 'paid'
+  /** مستحقة بس شرطها مش مستوفى · قاعدة 6 */
+  | 'held'
+
+export interface PaySlot {
+  no: number
+  of: number
+  amount: number
+  dueAt: string
+  condition?: string
+  conditionMet: boolean
+  state: PaySlotState
+  /** الطلب المرتبط بالدفعة، لو موجود */
+  requestId?: string
+}
+
+/** النهارده في النموذج · ثابت عشان الجدول ما يتغيّرش كل تشغيلة */
+export const TODAY = '2026-09-14'
+
+/**
+ * جدول دفعات مشروع · مبني من طلباته الموجودة + الدفعات الباقية.
+ * الدفعة اللي ليها طلب بتاخد حالته، واللي مالهاش بتتحسب من تاريخ
+ * استحقاقها وشرطها.
+ */
+export function paySchedule(projectId: string): PaySlot[] {
+  const mine = payRequests.filter((r) => r.projectId === projectId)
+  const first = mine[0]
+  if (!first) return []
+
+  const of = first.of
+  const even = Math.round(first.granted / of / 1000) * 1000
+  const out: PaySlot[] = []
+
+  for (let no = 1; no <= of; no++) {
+    const req = mine.find((r) => r.no === no)
+    const amount = no === of ? first.granted - even * (of - 1) : even
+    /* الاستحقاق بيتباعد شهرين بين الدفعة والتانية · جدول الاتفاقية */
+    const base = new Date(first.dueAt)
+    base.setMonth(base.getMonth() + (no - first.no) * 2)
+    const dueAt = req?.dueAt ?? base.toISOString().slice(0, 10)
+    const condition = req?.condition
+    const conditionMet = req ? (req.checks.find((c) => c.rule === 6)?.ok ?? true) : true
+
+    const state: PaySlotState =
+      req?.state === 'paid' ? 'paid'
+      : req ? 'pending'
+      : dueAt > TODAY ? 'early'
+      : condition && !conditionMet ? 'held'
+      : 'open'
+
+    out.push({ no, of, amount, dueAt, condition, conditionMet, state, requestId: req?.id })
+  }
+  return out
+}
+
+export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; rule?: number }> = {
+  open: { label: 'مستحقة', why: 'جاهزة لإنشاء طلب صرف' },
+  early: { label: 'لم تستحق', why: 'الطلب للدفعات المستحقة وفق الجدول المعتمد', rule: 2 },
+  pending: { label: 'لها طلب مفتوح', why: 'طلب صرف واحد مفتوح لكل دفعة', rule: 4 },
+  paid: { label: 'مصروفة', why: 'اكتمل تحويلها' },
+  held: { label: 'موقوفة بشرط', why: 'الدفعة المرتبطة بتقارير لا تُرسل قبل استيفائها', rule: 6 },
+}
+
+/**
+ * المشاريع اللي تقدر تطلب صرفًا · قاعدة 1.
+ * المشروع اللي اتفاقيته مش سارية بيفضل معروضًا ومعاه السبب، لأن
+ * إخفاءه بيخلّي الجهة تدوّر على حاجة مش موجودة بدل ما تعرف ليه.
+ */
+export function payProjects(): {
+  id: string; name: string; entity: string; can: boolean; why?: string; open: number
+}[] {
+  const seen = new Map<string, PayRequest>()
+  for (const r of payRequests) if (!seen.has(r.projectId)) seen.set(r.projectId, r)
+  const out = [...seen.values()].map((r) => ({
+    id: r.projectId,
+    name: r.projectName,
+    entity: r.entityName,
+    can: r.agreement.active,
+    why: r.agreement.active ? undefined : 'الاتفاقية غير سارية · القاعدة 1',
+    /* كام دفعة مستحقة وجاهزة للطلب · ده اللي بيرتّب القائمة */
+    open: paySchedule(r.projectId).filter((x) => x.state === 'open').length,
+  }))
+  /* اللي عنده دفعة مستحقة فوق · القائمة بتبدأ باللي **ينفع تعمل
+     عليه حاجة**، لا بأول مشروع في الداتا · الجهة اللي فاتحة الشاشة
+     دي جاية تطلب صرفًا، مش تتصفّح مشاريعها. */
+  return out.sort((a, b) => Number(b.can) - Number(a.can) || b.open - a.open)
 }
 
 export const payByState = (s: PayState): PayRequest[] =>

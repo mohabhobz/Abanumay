@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, MultiSelect, Num, Riyal, SearchBox, Segments, Select, Stat,
+  Empty, Glass, Icon, icons, MultiSelect, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
-import { pct } from '@/lib/format'
+import { nf, pct } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -15,7 +15,9 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { readPayments } from '@/data/readings'
 import { OWNERS } from '@/data/mock/taxonomy'
-import { BANK_STATES, PAY_STATES, payBlocked, payHeat, payKpi, payRequests } from '@/data/mock/disbursements'
+import {
+  BANK_STATES, PAY_STATES, PAY_TARGET_DAYS, payBlocked, payHeat, payKpi, payRequests,
+} from '@/data/mock/disbursements'
 import type { PayRequest, PayState } from '@/types/domain'
 import type { Sheet } from '@/lib/export'
 import { RequestCard } from './RequestCard'
@@ -211,60 +213,57 @@ export default function PaymentsPage() {
     <AppLayout assistantContext={assistFor.page('الصرف')}>
       <div className="viewstack">
         <div className="screen col">
-          {/* ⚠️ **ترويسة قائمة، مش ترويسة تفاصيل.** كانت
-              `phead phead-g2` والقراءة جوّاها في العمود التاني —
-              ودي ترويسة **صفحة الجهة والمشروع**، يعني صفحة تفاصيل.
-              والنتيجة إن القراءة بتتزنق في نص العرض فسطرها بيتقصّ
-              بنقط، بينما نفس القراءة في المشاريع والجهات بتاخد
-              السطر كامل وتتقري لآخرها.
-              القائمة ترويستها `<header>` بسيطة، والقراءة **صفّ
-              مستقل تحتها** — زي `/projects` و`/entities` بالحرف. */}
-          <header>
-            <div>
+          {/* ═══ الترويسة بعمودين ═══
+              العنوان وسطره على اليمين، والقراءة قصاده على الشمال ·
+              نفس تركيب ترويسة صفحة الجهة والمشروع، فالعين بتلاقي
+              العنوان في نفس المكان في كل شاشة. */}
+          <header className="phead phead-g2">
+            <div className="pmain">
               <h1 className="ptitle">الصرف</h1>
               <p className="sub mt-1">
                 <span className="num">{rows.length}</span> طلب من{' '}
                 <span className="num">{payRequests.length}</span> في هذا النموذج ·{' '}
-                أربع مراحل من إنشاء الجهة للطلب حتى تنفيذ التحويل
+                <span className="num">{k.open}</span> مفتوح بقيمة{' '}
+                <span className="num">{nf.format(k.openSum)}</span> ريال ·{' '}
+                <span className="num">{k.blocked}</span> منها موقوف بشرط
               </p>
             </div>
+            <QuickRead variant="bar" title="قراءة سريعة للصندوق" readings={readings} />
           </header>
 
-          {/* ═══ القراءة السريعة ═══
-              مكانها بعد العنوان مباشرة لا بعد الفلاتر: هي **قراءة
-              للصفحة**، والقراءة بتيجي قبل الأدوات لا بينها وبين
-              النتيجة. */}
-          <QuickRead variant="bar" title="قراءة سريعة للصندوق" readings={readings} />
+          {/* ⚠️ **البطاقات الأربعة دي هي مؤشرات الوثيقة الأربعة**
+              (9.8)، لا أربعة أرقام مختارة. كانت اتنين منهم مؤشرات
+              واتنين حجم الصندوق (طلبات مفتوحة وقيمتها) · يعني
+              مؤشران من الإجراء ناقصان ومكانهما محجوز بأرقام
+              بتتقري من سطر العنوان أصلًا. الحجم رجع لسطر العنوان،
+              والأربعة بقوا هم الأربعة.
 
+              وعمود «القيمة المستهدفة» **فاضي في الوثيقة في
+              الأربعة** · فالرقم بيتعرض قيمةً لا حالةً، وما بيتلوّنش
+              نجاحًا ولا فشلًا لحدّ ما المؤسسة تدّينا الأهداف. */}
           <div className="stats4">
             <Stat
-              label="طلبات مفتوحة"
-              value={<Num>{k.open}</Num>}
-              note={`${k.blocked} منها موقوف بشرط`}
-              bar={{ w: `${Math.round((k.blocked / k.open) * 100)}%`, c: 'var(--warn)' }}
-            />
-            <Stat
-              label="قيمة الطلبات المفتوحة"
-              value={<Num>{k.openSum}</Num>}
-              unit={<Riyal />}
-              note="بانتظار اعتماد أو تحويل"
-            />
-            {/* مؤشر 1 في الوثيقة · والقيمة المستهدفة **فاضية** في
-                الوثيقة، فالرقم بيتعرض قيمةً ولا بيتلوّن حالةً */}
-            <Stat
-              label="متوسط مدة المعالجة"
+              label="متوسط مدة معالجة الطلب"
               value={<Num>{k.avgDays}</Num>}
               unit="يومًا"
-              note="المستهدف: بانتظار المؤسسة"
+              note="مؤشر 1 · المستهدف بانتظار المؤسسة"
             />
-            {/* مؤشر 4 في الوثيقة · نفس الملاحظة.
-                وعلامة النسبة **جوّه** الرقم لا جنبه: `<Num>` بتعزل
-                الرقم وحده، فالـ`%` اللي برّه الجزيرة بتفضل محايدة
-                وموضعها بيتحدّد بجيرانها لا برقمها. */}
+            <Stat
+              label="المنجزة ضمن المدة المستهدفة"
+              value={<Num>{pct(k.inTarget)}</Num>}
+              note={`مؤشر 2 · المدة المؤقتة ${PAY_TARGET_DAYS} يومًا`}
+              bar={{ w: `${k.inTarget}%`, c: 'var(--teal)' }}
+            />
+            <Stat
+              label="متوسط مدة تنفيذ الصرف المالي"
+              value={<Num>{k.financeDays}</Num>}
+              unit="يومًا"
+              note="مؤشر 3 · من اعتماد مدير المنح حتى التحويل"
+            />
             <Stat
               label="الالتزام بجدول الدفعات"
               value={<Num>{pct(k.onSchedule)}</Num>}
-              note="المستهدف: بانتظار المؤسسة"
+              note="مؤشر 4 · المستهدف بانتظار المؤسسة"
               bar={{ w: `${k.onSchedule}%`, c: 'var(--lime)' }}
             />
           </div>
@@ -344,6 +343,22 @@ export default function PaymentsPage() {
               {/* الأدوات اللي مش فلاتر · مجموعة ثابتة في آخر الصفّ،
                   فالفلاتر بتلفّ جوّه مجموعتها والمبدّل ما بينطّش */}
               <div className="ftool-a">
+                {/* خطوة 2 · إنشاء الطلب · الفعل الوحيد اللي بيضيف
+                    للصندوق، فمكانه في مجموعة الأدوات لا بين الفلاتر */}
+                <Link className="btn btn-p btn-sm" to={ROUTES.paymentNew()}>
+                  <Icon name={icons.plus} size={15} />
+                  طلب صرف
+                </Link>
+                {/* شاشة 6 · التقرير اللي آلية التصعيد بتطلبه ·
+                    مش فلتر على الصندوق: بيتطبع ويتصدّر ومجمَّع
+                    بالمرحلة عشان يقول فين الاختناق */}
+                {(k.late > 0 || k.stuck > 0) && (
+                  <Link className="btn btn-2 btn-sm" to={ROUTES.paymentsLate}>
+                    <Icon name={icons.alert} size={15} />
+                    المتأخر
+                    <b className="num">{k.late + k.stuck}</b>
+                  </Link>
+                )}
                 <ExportMenu
                   sheet={sheet}
                   note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} طلب`}

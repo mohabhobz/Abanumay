@@ -1145,8 +1145,8 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       bold: [`«${worst.projectName}»`, d],
       danger: [d],
       src: 'مدة المرحلة · آلية التصعيد 9.5',
-      to: `${ROUTES.payments}?heat=stuck`,
-      toLabel: 'اعرضها',
+      to: ROUTES.paymentsLate,
+      toLabel: 'افتح التقرير',
     })
   }
 

@@ -51,6 +51,10 @@ export function actionsFor(role: RoleKey, state: PayState): PayAction[] {
     return [
       { label: 'موافقة وإحالة للمالية', kind: 'btn-p', step: 13 },
       { label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true, step: 13 },
+      /* قاعدة 15 · الرفض النهائي بيقفل الطلب **مع الاحتفاظ بسجل
+         إجراءاته** · الإغلاق مش حذف، والسجل بيفضل مقروءًا. وهو
+         مخرج مدير المنح وحده: المشرف بيوصي، والإغلاق قرار. */
+      { label: 'رفض نهائي وإغلاق', kind: 'btn-d', needsNote: true, step: 15 },
     ]
   }
   /* المالية مش دور في المبدّل · المدير التنفيذي بيشوف مخارجها

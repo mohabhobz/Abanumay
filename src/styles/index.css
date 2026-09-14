@@ -1370,7 +1370,6 @@ to{opacity:1;transform:none}
 }
 .rise{animation:airise .32s cubic-bezier(.22,.9,.3,1) both}
 .ins .i{animation:airise .3s cubic-bezier(.22,.9,.3,1) both}
-.btn:disabled{opacity:.42;cursor:default}
 @media (prefers-reduced-motion:reduce){
   .badge.pulse,.dots i,.skel span,.caret{animation:none}
 .rise,.ins .i{animation:none}
@@ -3037,8 +3036,21 @@ to{opacity:1;transform:none}
 .pgnav:disabled{opacity:.32;cursor:not-allowed}
 .pggap{min-width:20px;text-align:center;color:var(--t3);font-size:var(--fs-2);
   user-select:none;pointer-events:none}
-.btn:disabled{opacity:.4;cursor:not-allowed}
+/* ⚠️ **الحالة المعطَّلة مش شفافية.**
+   `opacity` بتخفّف النصّ والخلفية **بنفس القدر**، فالتباين اللي
+   بينهم بيقع: الأبيض على الأخضر الأساسي 7:1، وبـ`opacity:.4` فوق
+   خلفية فاتحة بينزل 2.25 · تحت AA بكتير. والزرار المعطَّل هو
+   بالظبط اللي لازم يتقرا، لأن اسمه بيقول **اللي لسّه ما ينفعش
+   تعمله** والسبب في `title` جنبه.
+
+   فالتعطيل بقى سطحًا هادئًا وحبرًا مخفَّتًا: العين تفرّق بينه وبين
+   المفعَّل، والقارئ يفضل قادر يقراه. (الحدّ الأدنى ما بيسريش على
+   التحكّم المعطَّل في WCAG، بس الاستثناء ده عذر لا هدف.) */
+.btn:disabled{cursor:not-allowed}
 .btn:disabled:hover{transform:none;filter:none}
+.btn-p:disabled,.btn-d:disabled{background:var(--fl-7);color:var(--t3);
+  box-shadow:inset 0 0 0 1px var(--edge-1);text-shadow:none}
+.btn-2:disabled,.btn-ghost:disabled,.btn:not([class*="btn-"]):disabled{color:var(--t3)}
 /* ═══ شريط الإجراء المجمّع ═══
    بيلبس `.decdock`/`.decbar` بحالهم · نفس رصيف شريط القرار ونفس
    التدرّج ونفس الحساسية للماوس · والزيادة هنا بس: الدخلة من تحت،
@@ -4122,6 +4134,100 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 .paybar{height:6px;border-radius:var(--rp);margin:var(--sp-3) 0 var(--sp-2);
   background:var(--fl-5);overflow:hidden}
 .paybar>span{display:block;height:100%;border-radius:var(--rp);background:var(--solid)}
+
+/* ═══ جدول الدفعات في شاشة الطلب ═══
+   الصف مقفول أو مفتوح، والقفل معلومة لا عقوبة: الوسم بيقول الحالة
+   و`title` بيقول القاعدة، فالجهة تعرف **ليه** مش بس إن ما ينفعش. */
+
+.payslots{list-style:none;margin:0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.payslot-b{display:flex;align-items:center;gap:var(--sp-3);width:100%;min-width:0;
+  text-align:start;padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
+  background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1);
+  font-size:var(--fs-2);line-height:var(--lh-2);cursor:pointer;
+  transition:background .16s ease}
+.payslot-b:hover:not(:disabled){background:var(--fl-5)}
+.payslot-b:disabled{cursor:default}
+.payslot.off .payslot-b{opacity:.62}
+.payslot.on .payslot-b{background:var(--fl-6);box-shadow:inset 0 0 0 1px var(--edge-i)}
+.payslot-n{flex:none;font-weight:600;color:var(--t1)}
+.payslot-a{flex:none;color:var(--t1)}
+.payslot-c{flex:0 1 18rem}
+.payslot-b svg{flex:none;color:var(--solid)}
+
+/* قائمة المتطلبات · قاعدة 3 */
+.paycheckl{list-style:none;margin:0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.paycheckl label{display:flex;align-items:center;gap:var(--sp-3);cursor:pointer;
+  font-size:var(--fs-2);line-height:var(--lh-2)}
+.paycheckl input{flex:none;accent-color:var(--solid);width:16px;height:16px}
+
+/* حقل المبلغ · قاعدة 5 */
+.payamt{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
+.payamt .lb{flex:1 1 100%;font-size:var(--fs-1);color:var(--t3-g)}
+.payamt input{flex:1 1 8rem;min-width:0;font:inherit;font-weight:600;
+  font-size:var(--fs-4);color:var(--t1);padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--ric);border:1px solid var(--ctl-edge);background:var(--g-card)}
+
+.paysum{list-style:none;margin:0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.paysum li{display:flex;align-items:baseline;gap:var(--sp-3);min-width:0;
+  font-size:var(--fs-2);line-height:var(--lh-2)}
+.paysum li>span:first-child{flex:none;width:5.5rem;color:var(--t3-g);font-size:var(--fs-1)}
+
+/* الإشعارات · نفس صفّ المرفقات، والداتا من السجل لا نسخة منها */
+.paynotif{list-style:none;margin:0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.paynotif li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  font-size:var(--fs-2);line-height:var(--lh-2)}
+.paynotif svg{flex:none;color:var(--solid)}
+
+/* ═══ تقرير المتأخر والمتعثر ═══ */
+.paylim{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:var(--gap)}
+.paylim-i{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
+.paylim-i .lb{flex:1 1 100%;font-size:var(--fs-1);color:var(--t3-g)}
+.paylim-i input{flex:none;width:4.5rem;font:inherit;font-weight:600;color:var(--t1);
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--ric);
+  border:1px solid var(--ctl-edge);background:var(--g-card)}
+
+.latetbl{width:100%;border-collapse:collapse;font-size:var(--fs-2)}
+.latetbl th,.latetbl td{padding:var(--sp-3) var(--sp-4);text-align:start;
+  box-shadow:inset 0 -1px 0 var(--edge-d);vertical-align:middle}
+.latetbl th{font-size:var(--fs-1);color:var(--t3-g);font-weight:500;white-space:nowrap}
+.latetbl tbody tr{cursor:pointer;transition:background .14s ease}
+.latetbl tbody tr:hover{background:var(--fl-2)}
+.latetbl td:first-child{min-width:0;max-width:22rem}
+
+/* ═══ أمر الصرف · ورقة بتتطبع ═══ */
+.order-s{padding-block-start:var(--sp-5)}
+.order-s h3{font-family:var(--fd);font-weight:700;font-size:var(--fs-3);
+  line-height:var(--lh-3);margin:0 0 var(--sp-3)}
+.order-amt{margin-block-start:var(--sp-4);padding:var(--sp-4);
+  border-radius:var(--r1);background:var(--fl-5);
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
+.order-amt .lb{font-size:var(--fs-1);color:var(--t3-g)}
+.order-amt .v{font-family:var(--fd);font-weight:700;font-size:var(--fs-6);
+  line-height:var(--lh-6);color:var(--t1)}
+/* المبلغ بالحروف · هو اللي بيمسك الرقم لما خانة تزيد أو تنقص */
+.order-w{font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t2);
+  margin-block-start:var(--sp-2)}
+.order-t{width:100%;border-collapse:collapse;font-size:var(--fs-2)}
+.order-t th,.order-t td{padding:var(--sp-2) var(--sp-3);text-align:start;
+  box-shadow:inset 0 -1px 0 var(--edge-d)}
+.order-t th{font-size:var(--fs-1);color:var(--t3-g);font-weight:500}
+.order-t tfoot td{font-weight:700;box-shadow:none}
+.order-sign{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:var(--gap);padding-block-start:var(--sp-6)}
+.order-sg .lb{font-size:var(--fs-1);color:var(--t3-g)}
+/* خطّ التوقيع · الورقة بتتمسك بإيد فالاعتماد مكانه فيها */
+.order-sl{height:var(--sp-6);box-shadow:inset 0 -1px 0 var(--edge-d);
+  margin-block:var(--sp-2)}
+
+@media (max-width:620px){
+  .payslot-b{flex-wrap:wrap}
+  .payslot-c{flex:1 1 100%}
+}
 
 /* ── شريط المخارج · نفس صندوق شريط القرار بحقل ملاحظة زيادة ── */
 .payact{flex-wrap:wrap;gap:var(--sp-3)}
