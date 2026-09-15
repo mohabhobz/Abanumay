@@ -37,6 +37,13 @@ export default function App() {
       <Routes>
         <Route path={ROUTES.login} element={<LoginPage />} />
 
+        {/* ⚠️ **التسجيل برّه البوّابة عن قصد · قاعدة 2.**
+            صاحب الطلب جهة مالهاش حساب، فحطّ الشاشة ورا `RequireAuth`
+            معناه إنها ما تُفتحش إلا من واحد مسجَّل · يعني ما تُفتحش
+            من اللي هي مبنية له أصلًا. وده هو اللي كان بيخلّي زرار
+            «تسجيل جهة جديدة» في شاشة الدخول ما يعملش حاجة. */}
+        <Route path={ROUTES.entityRegister} element={<RegisterPage />} />
+
         {/* بوّابة واحدة على كل الشاشات الداخلية بدل تكرارها على كل
             مسار: أي شاشة جديدة بتتحمي تلقائيًا لمجرد إنها جوّه. */}
         <Route
@@ -59,7 +66,6 @@ export default function App() {
             بالترتيب، ولولا كده «/entities/register» هيتقرا كرقم جهة
             اسمه register ويطلع «غير موجود» · نفس الفخّ اللي وقعنا
             فيه في «/payments/new». */}
-        <Route path={ROUTES.entityRegister} element={<RegisterPage />} />
         <Route path={ROUTES.entityRequests} element={<RequestsPage />} />
         <Route path={`${ROUTES.entityRequests}/:id`} element={<RegReviewPage />} />
         <Route path={`${ROUTES.entities}/:id`} element={<EntityPage />} />

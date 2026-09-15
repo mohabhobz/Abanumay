@@ -4,9 +4,12 @@ import {
   BackTo, Glass, Head, Icon, icons, Mono, Num, Steps, Tabs, Tag, type StepItem,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
+import { Background } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
+import { isSignedIn } from '@/data/session'
+import Logo from '@/assets/LogoColor'
 import { entityRows } from '@/data/mock/entities'
 import {
   BANKS, REG_DOCS, REG_STAGES, REG_TERMS, citiesOf, docRequired, licenseClash,
@@ -150,11 +153,36 @@ export default function RegisterPage() {
     },
   ]
 
-  return (
-    <AppLayout assistantContext={assistFor.page('تسجيل جهة جديدة')}>
-      <div className="viewstack">
+  /* ⚠️ **الشاشة دي عامة، والقاعدة 2 هي السبب.**
+     صاحب الطلب جهة **مالهاش حساب** — ده تعريف الإجراء نفسه: مفيش
+     حساب قبل الاعتماد. فحطّها ورا بوّابة الدخول معناه إنها ما
+     تُفتحش إلا من واحد مسجَّل · يعني ما تُفتحش من اللي هي مبنية
+     له. عشان كده مسارها برّه `RequireAuth`، ومدخلها الحقيقي زرار
+     «تسجيل جهة جديدة» في شاشة الدخول (زي `/reg` في النظام
+     العامل بالظبط).
+
+     والداخل من جوّه (مسؤول النظام مثلًا) بيشوفها بريلها وبرجوعها
+     للجهات · فالغلاف بيتغيّر بالجلسة، والمحتوى واحد. */
+  const inside = isSignedIn()
+
+  const body = (
+    <div className="viewstack">
         <div className="screen col">
-          <BackTo label="الجهات" onClick={() => navigate(ROUTES.entities)} />
+          {inside ? (
+            <BackTo label="الجهات" onClick={() => navigate(ROUTES.entities)} />
+          ) : (
+            <div className="regtop">
+              <Logo className="mark mark-38" />
+              <div>
+                <b>منح أبانمي</b>
+                <span className="sub">مؤسسة سليمان أبانمي الأهلية</span>
+              </div>
+              <span className="pc-sp" />
+              <button className="btn btn-2 btn-sm" onClick={() => navigate(ROUTES.login)}>
+                لديك حساب؟ تسجيل الدخول
+              </button>
+            </div>
+          )}
 
           <header>
             <div>
@@ -489,7 +517,19 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+  )
+
+  /* الخلفية والقشرة من نفس المكوّنات · الفرق الوحيد إن الريل
+     والمساعد مش موجودين، لأن مالهمش معنى لواحد مالوش حساب */
+  return inside ? (
+    <AppLayout assistantContext={assistFor.page('تسجيل جهة جديدة')}>{body}</AppLayout>
+  ) : (
+    <>
+      <Background />
+      <div className="app">
+        <div className="shell">{body}</div>
+      </div>
+    </>
   )
 }
 

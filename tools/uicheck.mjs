@@ -21,7 +21,7 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
-import { ROUTES } from './routes.mjs'
+import { ROUTES, PUBLIC_ROUTES } from './routes.mjs'
 
 const ROOT = new URL('../dist/', import.meta.url).pathname
 const SHOTS = new URL('../.shots/', import.meta.url).pathname
@@ -46,10 +46,14 @@ let problems = 0
 
 for (const theme of themes) {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } })
-  await ctx.addInitScript((t) => {
-    sessionStorage.setItem('ab-session', 'check')
+  /* ⚠️ الجلسة مش لكل صفحة · شوف الشرح في `routes.mjs` عند
+     `PUBLIC_ROUTES`. والمسح صريح لأن `sessionStorage` بيفضل عايش
+     بين الصفحات في نفس السياق. */
+  await ctx.addInitScript(([t, pub]) => {
+    if (pub.includes(location.pathname + location.search)) sessionStorage.removeItem('ab-session')
+    else sessionStorage.setItem('ab-session', 'check')
     localStorage.setItem('ab-theme', t)
-  }, theme)
+  }, [theme, PUBLIC_ROUTES])
   const page = await ctx.newPage()
 
   for (const route of ROUTES) {

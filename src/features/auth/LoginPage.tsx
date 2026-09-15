@@ -3,7 +3,7 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
 import { Icon, icons } from '@/components/ui'
-import { AFTER_LOGIN } from '@/app/routes'
+import { AFTER_LOGIN, ROUTES } from '@/app/routes'
 import { signIn } from '@/data/session'
 
 /* ═══════════════════════════════════════════════════════════
@@ -127,7 +127,17 @@ export default function LoginPage() {
 
           {/* مسار مختلف تمامًا، فشكله جوست · مش قرار تاني منافس للدخول */}
           <div className="lalt">
-            <button className="btn btn-2 btn-full" type="button">تسجيل جهة جديدة</button>
+            {/* ⚠️ الزرار ده كان `type="button"` بلا `onClick` · شكله
+                زرار وبيعمل focus وبيتضغط، وما بيحصلش حاجة. دلوقتي
+                بيودّي للمسار العام `/entities/register` (BPD-002)،
+                وهو برّه بوّابة الدخول لأن صاحب الطلب مالوش حساب. */}
+            <button
+              className="btn btn-2 btn-full"
+              type="button"
+              onClick={() => navigate(ROUTES.entityRegister)}
+            >
+              تسجيل جهة جديدة
+            </button>
             <p className="lnote sub">للجمعيات والمؤسسات التي لم تسجّل في المنصة بعد</p>
           </div>
         </div>

@@ -21,7 +21,7 @@ const lum=([r,g,b])=>{const f=c=>{c/=255;return c<=.03928?c/12.92:Math.pow((c+.0
 const ratio=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p);return (x+.05)/(y+.05)}
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'})
 /* `--all` بيمشي على كل المسارات في التلات ثيمات بمتصفّح واحد، ٤٢ صفحة في تشغيلة واحدة بدل ٤٢ تشغيلة. */
-import{ROUTES as ALL_ROUTES}from'./routes.mjs'
+import{ROUTES as ALL_ROUTES,PUBLIC_ROUTES}from'./routes.mjs'
 /* ⚠️ **`--themes` مرادف لـ`--all`.** باقي الأدوات كلها بتاخد
    `--themes`، ودي وحدها كانت بتاخد `--all` · فـ`--themes` كانت
    بتعدّي من غير ما تتقرا، والأداة بترجع لحالتها الافتراضية:
@@ -34,7 +34,15 @@ const URLS=all?ALL_ROUTES:[process.argv[3]||'/']
 let grand=0
 for(const theme of THEMES){
 const c=await b.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1})
-await c.addInitScript(t=>{sessionStorage.setItem('ab-session','omar');localStorage.setItem('ab-theme',t)},theme)
+/* ⚠️ الجلسة **مش لكل صفحة**. `/entities/register` عنده غلافان،
+   وواحد منهم لجهة مالهاش حساب · وبجلسة محقونة على طول الغلاف
+   العام ما بيترسمش ولا مرة فبيعدّي من غير فحص. و`sessionStorage`
+   بيفضل عايش بين الصفحات في نفس السياق، فالمسح لازم صريح. */
+await c.addInitScript(([t,pub])=>{
+  if(pub.includes(location.pathname+location.search)) sessionStorage.removeItem('ab-session')
+  else sessionStorage.setItem('ab-session','omar')
+  localStorage.setItem('ab-theme',t)
+},[theme,PUBLIC_ROUTES])
 const p=await c.newPage()
 for(const url of URLS){
 await p.goto('http://localhost:4440'+url,{waitUntil:'domcontentloaded'});await p.waitForTimeout(2500)

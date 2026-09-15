@@ -5962,3 +5962,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   .regfields{grid-template-columns:1fr}
   .regdocs-m{display:none}
 }
+
+/* شريط التسجيل العام · بديل الريل لما الشاشة تتفتح من غير جلسة.
+   الخلفية والقشرة نفسهم (`Background` و`.app` و`.shell`) · اللي
+   ناقص هو الريل والمساعد وبس، لأن مالهمش معنى لواحد مالوش حساب. */
+.regtop{display:flex;align-items:center;gap:var(--sp-4);min-width:0;
+  padding-bottom:var(--sp-5);box-shadow:inset 0 -1px 0 var(--edge-d)}
+.regtop>div{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.regtop b{font-family:var(--fd);font-weight:700;font-size:var(--fs-3);color:var(--t1)}
