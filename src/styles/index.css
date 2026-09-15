@@ -57,7 +57,14 @@
   --retC2:46,110,168;
   --no-soft:rgba(253,240,236,.94);   /* سطح التوست */
   --edgeC:20,69,71;
-  --t1:#0C2527; --t2:#3E6664; --t3:#4A6B68;
+  /* ⚠️ **`--t3` كان على حدّ AA بالظبط، والحدّ بيتكسر حسب مكان
+     الكارت في التدرّج.** `#4A6B68` فوق زجاج قاعد على جزء مشبَّع من
+     خلفية الصفحة بيدّي **4.44** · تحت الحدّ بـ٠٫٠٦. وده مش خطأ
+     صفحة واحدة: الزجاج شفّاف، فأرضيته بتتغيّر بارتفاع الكارت في
+     الصفحة · نفس النصّ بيعدّي في شاشة ويقع في شاشة. نفس درس
+     `--mute-ink` بالظبط. `#476764` بيدّي 4.70 على أسوأ أرضية
+     متقاسة، والفرق عن `--t2` لسه قايم. */
+  --t1:#0C2527; --t2:#3E6664; --t3:#476764;
   --ok:#0FA85E; --ret:#2E7FC4; --no:#DB4A2B; --warn:#C9860B;
   --okC:15,168,94; --noC:219,74,43; --warnC:201,134,11;
 
@@ -4178,9 +4185,16 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 /* حقل المبلغ · قاعدة 5 */
 .payamt{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
 .payamt .lb{flex:1 1 100%;font-size:var(--fs-1);color:var(--t3-g)}
+/* ⚠️ **`--ctl-edge` رقم لا لون** · قيمته `.15`، وهي شفافية الحافة
+   لا الحافة نفسها. `border:1px solid var(--ctl-edge)` بيطلع
+   `1px solid .15` · تصريح باطل، والمتصفّح بيرميه كله من غير ما
+   يشتكي. فالحقل كان **بلا حدّ خالص** وشكله ماشي لأن الكارت تحته
+   فاتح. الحافة الحقيقية `--ctl-line` (أو `--edge-1` للصناديق). */
 .payamt input{flex:1 1 8rem;min-width:0;font:inherit;font-weight:600;
   font-size:var(--fs-4);color:var(--t1);padding:var(--sp-2) var(--sp-3);
-  border-radius:var(--ric);border:1px solid var(--ctl-edge);background:var(--g-card)}
+  border-radius:var(--ric);border:0;background:var(--ctl-bg);
+  box-shadow:inset 0 0 0 1px var(--ctl-line)}
+.payamt input:focus{outline:none;box-shadow:inset 0 0 0 1px var(--ctl-line-f)}
 
 .paysum{list-style:none;margin:0;padding:0;
   display:flex;flex-direction:column;gap:var(--sp-2)}
@@ -5863,4 +5877,88 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 @media (max-width:560px){
   .gpeek-l>li{grid-template-columns:minmax(0,1fr) 7rem}
   .gpeek-t{display:none}
+}
+
+/* ═══ تسجيل جهة جديدة · BPD-002 ═══
+   الحقول والضوابط والمستندات. كلها بتستعمل نفس الأرضيات والحوافّ
+   اللي في باقي السيستم (`--fl-*` و`--edge-*`) · مفيش قيمة لون
+   مكتوبة هنا، فالتيمات التلاتة بتشتغل بلا نسخة تانية. */
+
+/* الضوابط الخمسة · الرقم علامة ترتيب لا زخرفة، والضوابط مرقَّمة
+   في النظام العامل نفسه */
+.regterms{list-style:none;margin:0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-3)}
+.regterms li{display:flex;align-items:flex-start;gap:var(--sp-3);min-width:0;
+  font-size:var(--fs-2);line-height:var(--lh-text);color:var(--t1)}
+.regterms-n{flex:none;display:grid;place-items:center;width:24px;height:24px;
+  border-radius:var(--rp);font-size:var(--fs-1);font-weight:600;
+  color:var(--t2);background:var(--fl-5);
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
+
+.regck{display:flex;align-items:center;gap:var(--sp-3);cursor:pointer;
+  margin-top:var(--sp-5);padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
+  background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1);
+  font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t1)}
+.regck input{flex:none;accent-color:var(--solid);width:16px;height:16px}
+
+/* شبكة الحقول · عمودان على الواسع وعمود على الضيّق. الحقل الطويل
+   ما بيتمدّدش على الصفّ كله: طول الحقل بيوحي بطول المدخل، وحقل
+   بعرض الشاشة لرقم ترخيص بيغلط. */
+.regfields{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:var(--sp-4);margin-top:var(--sp-4)}
+.regf{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.regf .lb{font-size:var(--fs-1);color:var(--t3-g)}
+/* ⚠️ النجمة ملوّنة **ومقروءة**: اللون لوحده مش معلومة لقارئ
+   الشاشة، فالـ`aria-label` عليها في المكوّن نفسه. */
+.regf-r{color:var(--bad);margin-inline-start:var(--sp-1)}
+/* الحقل نفسه `.fld` من المكتبة · هو التحكّم الموجود أصلًا للـ
+   `input`/`select` في السيستم، وهو مسجَّل في `ctlaudit` فحلقة
+   التركيز بتاعته بتتفحص مع باقي التحكّمات. كتابة حقل جديد هنا
+   كانت هتدّي ركنًا سادسًا لنفس الشيء. */
+.regf .fld{width:100%}
+.regf .fld.off{opacity:.72}
+.regf-h{font-size:var(--fs-1)}
+
+/* المستندات · الصفّ بيقول الاسم والإلزام والحدّ الأقصى. والإلزام
+   بيتغيّر بتصنيف الجهة، فالوسم بيتبدّل لحظة تغيير التصنيف. */
+.regdocs{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+/* ⚠️ **الصفّ من غير أرضية عن قصد.** أول نسخة حطّت `--fl-2` تحت
+   كل صفّ · والفلّات شفّافة، فوسم «إلزامي» بقى قاعد فوق `--fl-7`
+   فوق `--fl-2` فوق الزجاج فوق التدرّج · أربع طبقات، ونزل لـ4.45
+   في التيمة الخضرا. نفس الوسم بيعدّي في كل كارت تاني في السيستم
+   لأنه قاعد على طبقتين لا أربعة. فالصفّ بقى خطًّا فاصلًا: نفس
+   القراءة، وطبقة أقلّ تحت الوسم. */
+.regdocs li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  padding:var(--sp-3) 0;box-shadow:inset 0 -1px 0 var(--edge-d);
+  font-size:var(--fs-2);line-height:var(--lh-2)}
+.regdocs li:last-child{box-shadow:none}
+.regdocs label{display:flex;align-items:center;gap:var(--sp-3);cursor:pointer;min-width:0}
+.regdocs input{flex:none;accent-color:var(--solid);width:16px;height:16px}
+.regdocs-l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--t1)}
+.regdocs-m{flex:none;font-size:var(--fs-1)}
+
+/* قائمة الناقص · كل سطر بيوَدّي لتبويبه، فالناقص مش خبر بس */
+.regmiss{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2);
+  font-size:var(--fs-2);line-height:var(--lh-text)}
+/* الغايب قائمة سطور كاملة العرض · صفّ في شبكة الثامبنيلات كان
+   بيكسر الاسم الطويل على خمس سطور جوّه خانة معمولة لملف */
+.regmiss-l{list-style:none;margin:var(--sp-2) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.regmiss-l li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
+  background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1);
+  font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t1)}
+.regmiss-l li.no{box-shadow:inset 0 0 0 1px var(--edge-i)}
+.regmiss-l li>span:first-of-type{min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.regmiss-l svg{flex:none;color:var(--t3-g)}
+
+.regsent{margin-top:var(--sp-4)}
+
+@media (max-width:560px){
+  .regfields{grid-template-columns:1fr}
+  .regdocs-m{display:none}
 }

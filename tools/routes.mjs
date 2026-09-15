@@ -39,6 +39,22 @@ export const ROUTES = [
      ٧٥٥ جهة شغّالة: ٩٫٧ مليون ممنوح على تلات حالات، وترخيص منتهي. */
   '/entities', '/entities/694', '/entities/694/docs', '/entities/694/banks', '/entities/694/log',
   '/entities/755', '/entities/755/docs',
+  /* تسجيل جهة جديدة · BPD-002.
+     ⚠️ التلاتة دول لازم يبقوا مسارات **موجودة فعلًا**: لو الراوتر
+     قرا `register` كرقم جهة، الشاشة بترجع «غير موجود» وكل الأدوات
+     بترجع خضرا وهي بتقيس شاشة فاضية · وده اللي `notFound` في
+     `uicheck.mjs` بيمسكه دلوقتي. */
+  '/entities/register',
+  /* ⚠️ **محطات النموذج مسارات لأنها غير كده ما بتتقاسش.** لما
+     المحطة كانت ستيت جوّه الكومبوننت، `/entities/register` كان
+     بيرسم بوّابة الشروط وبس · والتبويبات والحقول والمستندات ما
+     اتفحصوش ولا مرة في ٣ ثيمات، والجرد بيرجع أخضر وهو ما شافهمش.
+     `?tab=docs` هو التبويب اللي الإلزام فيه بيتغيّر بالتصنيف،
+     و`?step=sent` هي الشاشة اللي بتقول «لسه مفيش حساب». */
+  '/entities/register?step=form', '/entities/register?step=form&tab=docs',
+  '/entities/register?step=otp', '/entities/register?step=sent',
+  '/entities/requests', '/entities/requests/RG-1041',
+  '/entities/requests/RG-1039', '/entities/requests/RG-1037',
   '/budget', '/payments', '/payments/SR-2026-11407', '/payments/new',
   '/payments/SR-2026-11415/order', '/payments/late',
   '/payments/SR-2026-11410/edit', '/agreements', '/agreements/AG-2026-3101',

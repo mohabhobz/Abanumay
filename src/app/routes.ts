@@ -16,6 +16,11 @@ export const ROUTES = {
 
   entities: '/entities',
   entity: (id: string, tab?: string) => `/entities/${id}${tab && tab !== 'data' ? `/${tab}` : ''}`,
+  /** تسجيل جهة جديدة · BPD-002 · واللي بيتعمل **طلب** لا جهة (قاعدة 2) */
+  entityRegister: '/entities/register',
+  /** صندوق طلبات التسجيل · خمس حالات · قاعدة 26 */
+  entityRequests: '/entities/requests',
+  entityRequest: (id: string) => `/entities/requests/${id}`,
 
   budget: '/budget',
   budgetYear: (year: string | number) => `/budget/${year}`,

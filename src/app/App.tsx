@@ -5,6 +5,9 @@ import HomePage from '@/features/home/HomePage'
 import ProjectsListPage from '@/features/projects/list/ProjectsListPage'
 import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
+import RegisterPage from '@/features/entities/register/RegisterPage'
+import RequestsPage from '@/features/entities/register/RequestsPage'
+import RegReviewPage from '@/features/entities/register/RegReviewPage'
 import AssistantPage from '@/features/assistant/AssistantPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import ProcessReport from '@/features/reports/ProcessReport'
@@ -51,6 +54,14 @@ export default function App() {
         <Route path={`${ROUTES.projects}/:id/:tab`} element={<ProjectPage />} />
 
         <Route path={ROUTES.entities} element={<EntitiesListPage />} />
+        {/* تسجيل جهة جديدة · BPD-002.
+            ⚠️ `register` و`requests` **قبل** `:id` · الراوتر بيطابق
+            بالترتيب، ولولا كده «/entities/register» هيتقرا كرقم جهة
+            اسمه register ويطلع «غير موجود» · نفس الفخّ اللي وقعنا
+            فيه في «/payments/new». */}
+        <Route path={ROUTES.entityRegister} element={<RegisterPage />} />
+        <Route path={ROUTES.entityRequests} element={<RequestsPage />} />
+        <Route path={`${ROUTES.entityRequests}/:id`} element={<RegReviewPage />} />
         <Route path={`${ROUTES.entities}/:id`} element={<EntityPage />} />
         <Route path={`${ROUTES.entities}/:id/:tab`} element={<EntityPage />} />
 

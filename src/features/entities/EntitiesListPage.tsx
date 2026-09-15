@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, Money, MultiSelect, PAGE_SIZES, Pager, SearchBox, Segments,
   Select, Toggle, ViewToggle,
@@ -20,6 +20,7 @@ import { ROUTES } from '@/app/routes'
 import { QuickRead } from '@/components/assistant'
 import { BulkBar } from '@/components/shell'
 import { readEntities } from '@/data/readings'
+import { regKpi } from '@/data/mock/registration'
 import { EntityCard } from './EntityCard'
 import { COLS, GROUPS, groupByKey } from './columns'
 import { DataTable, aggregate, orderCols, readCols, splitGroups, writeCols } from '@/components/table'
@@ -114,6 +115,8 @@ export default function EntitiesListPage() {
 
   const result = query.entities(grouped ? { ...q, page: 1, pageSize: 9999 } : q)
   const all = fixtures.entities
+  /* عدّاد الطلبات المفتوحة · بيظهر على زرار طلبات التسجيل */
+  const reg = regKpi()
 
   /** عدّاد التفعيل جوّه النطاق الحالي · بيغذّي قائمة «كل الحالات» */
   const counts = useMemo(() => {
@@ -274,6 +277,25 @@ export default function EntitiesListPage() {
                 <span className="num">{all.length}</span> جهة في هذا النموذج ·{' '}
                 <span className="num">3,272</span> في النظام العامل
               </p>
+            </div>
+
+            {/* ═══ مدخل التسجيل · BPD-002 ═══
+                ⚠️ **الزراران دول مش نفس الفعل، وده سبب وجودهم
+                الاتنين.** «تسجيل جهة جديدة» بيفتح نموذج **الجهة**
+                (اللي في النظام العامل بوّابة عامة برّه الدخول)،
+                و«طلبات التسجيل» بيفتح دور **المراجعة** عندنا.
+                والقاعدة 2 هي اللي بتفصل بينهم: الطلب مش جهة، فما
+                ينفعش الاتنين يوَدّوا لنفس الشاشة. */}
+            <div className="rowf gp-2">
+              <Link className="btn btn-2" to={ROUTES.entityRequests}>
+                <Icon name={icons.doc} size={16} />
+                طلبات التسجيل
+                {reg.open > 0 && <b className="num">{reg.open}</b>}
+              </Link>
+              <Link className="btn btn-p" to={ROUTES.entityRegister}>
+                <Icon name={icons.plus} size={16} />
+                تسجيل جهة جديدة
+              </Link>
             </div>
           </header>
 

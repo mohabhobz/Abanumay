@@ -13,6 +13,7 @@ import type { Reading, ReadingAction } from '@/components/assistant/reading'
 import type { AgreementRow, EntityRow, Insight, PayRequest, ProjectRow } from '@/types/domain'
 import { PAY_STATES, payBlocked, payHeat, payStateWho } from './mock/disbursements'
 import { agrBlocked, agrPaymentsBalance, agrReserveGap } from './mock/agreements'
+import { regMissingDocs, type RegRequest } from './mock/registration'
 import type { EntityDetail } from './mock/entityDetail'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
 import { projectRows } from './mock/projects'
@@ -1278,6 +1279,80 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
         `القاعدة 12 بتقول إن الإعادة للتعديل بتعيد دورة الاعتماد كاملة ` +
         `مع الاحتفاظ بالاعتمادات السابقة · فده مؤشر 4 في الوثيقة.`,
       src: 'إصدارات الاتفاقيات · قاعدة 24',
+    })
+  }
+
+  return out
+}
+
+/* ═══════════════════════════════════════════════════════════
+   طلبات التسجيل · BPD-002
+
+   ⚠️ **القراءة الأولى هنا مش عن الطلبات، هي عن سببها.** أغلب
+   الطلبات في النظام العامل بتقف في «بانتظار الاستكمال» لا في
+   «مرفوض» · يعني الوقوف نواقص ملف لا عدم أهلية. والفرق ده هو
+   اللي بيحدّد الإجراء: ملف ناقص بيتحلّ برسالة، وعدم أهلية لأ.
+   ═══════════════════════════════════════════════════════════ */
+export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Reading[] {
+  const out: Reading[] = []
+  if (rows.length === 0) return out
+  const scope = isFiltered ? 'في النطاق المعروض' : 'في الصندوق'
+
+  /* ١ · النواقص · قاعدة 4، والمطلوب نفسه بيتغيّر بالتصنيف */
+  const short = rows.filter((r) => r.state !== 'rejected' && regMissingDocs(r).length > 0)
+  if (short.length) {
+    const docs = short.reduce((s, r) => s + regMissingDocs(r).length, 0)
+    out.push({
+      id: 'rg-docs',
+      kind: 'flag',
+      label: 'ملفات ناقصة',
+      metric: { value: String(short.length), unit: `طلب ملفه ناقص ${scope}` },
+      text:
+        `وإجمالي الناقص ${docs} مستندًا إلزاميًا. القاعدة 4 بتمنع الإرسال ` +
+        `قبل اكتمالها، والمطلوب نفسه بيتغيّر بتصنيف الجهة · تلات مستندات ` +
+        `إلزامية للجهات التجارية وحدها.`,
+      bold: [`${docs} مستندًا`],
+      src: 'مستندات النظام العامل · نموذج /reg/add',
+    })
+  }
+
+  /* ٢ · الحوكمة المُقرّة بصفر · النظام نفسه بيقول «حطّ 0» */
+  const zero = rows.filter((r) => r.governanceClaim === 0)
+  if (zero.length) {
+    out.push({
+      id: 'rg-gov',
+      kind: 'note',
+      label: 'حوكمة غير مقيَّمة',
+      metric: {
+        value: pctText(Math.round((zero.length / rows.length) * 100)),
+        unit: 'أقرّت بصفر',
+      },
+      text:
+        `النظام بيقول للجهة «في حال عدم إجراء تقييم الحوكمة ضع 0»، ` +
+        `فالصفر هنا معناه «لم تُقيَّم» لا «ضعيفة» · والرقم إقرار من ` +
+        `الجهة لا تقييم عندنا.`,
+      danger: ['إقرار من الجهة'],
+      src: 'حقل درجة الحوكمة في نموذج التسجيل',
+    })
+  }
+
+  /* ٣ · الوقوف نواقص لا رفض · ده أهم توزيع في الصندوق */
+  const back = rows.filter((r) => r.state === 'completion').length
+  const no = rows.filter((r) => r.state === 'rejected').length
+  if (back > no) {
+    out.push({
+      id: 'rg-back',
+      kind: 'note',
+      label: 'الوقوف نواقص',
+      metric: { value: String(back), unit: 'بانتظار الاستكمال' },
+      text:
+        `مقابل ${no} مرفوضًا. يعني اللي بيوقف الطلبات نواقص ملف ` +
+        `بتتحلّ برسالة، لا عدم أهلية · والقاعدة 31 بتلزم كتابة السبب ` +
+        `في الحالتين.`,
+      bold: [`${no} مرفوضًا`],
+      src: 'حالات الطلب · قاعدة 26',
+      to: `${ROUTES.entityRequests}?state=completion`,
+      toLabel: 'اعرضها',
     })
   }
 
