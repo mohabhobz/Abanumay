@@ -8,6 +8,7 @@ import EntityPage from '@/features/entities/EntityPage'
 import RegisterPage from '@/features/entities/register/RegisterPage'
 import RequestsPage from '@/features/entities/register/RequestsPage'
 import RegReviewPage from '@/features/entities/register/RegReviewPage'
+import EntityNewPage from '@/features/entities/register/EntityNewPage'
 import AssistantPage from '@/features/assistant/AssistantPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import ProcessReport from '@/features/reports/ProcessReport'
@@ -68,6 +69,9 @@ export default function App() {
             بالترتيب، ولولا كده «/entities/register» هيتقرا كرقم جهة
             اسمه register ويطلع «غير موجود» · نفس الفخّ اللي وقعنا
             فيه في «/payments/new». */}
+        {/* قاعدة 32 · التسجيل المباشر داخلي فبيفضل ورا البوّابة،
+            بعكس `/entities/register` اللي للجهة اللي مالهاش حساب */}
+        <Route path={ROUTES.entityNew} element={<EntityNewPage />} />
         <Route path={ROUTES.entityRequests} element={<RequestsPage />} />
         <Route path={`${ROUTES.entityRequests}/:id`} element={<RegReviewPage />} />
         <Route path={`${ROUTES.entities}/:id`} element={<EntityPage />} />

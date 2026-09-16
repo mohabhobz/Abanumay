@@ -6225,3 +6225,39 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   .btree-r>span:nth-child(2){grid-column:2}
   .cfgwide{grid-column:auto}
 }
+
+/* ═══ نوع الشراكة ═══
+   خيارات بكروت لا قائمة منسدلة: القرار ده بيقفل ويفتح خطوات في
+   إجراءات تانية، فاللي بيفتحه لازم يتقرا **وقت الاختيار** ·
+   والمنسدلة بتدّي اسمًا بلا أثر. */
+.pkinds{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-3)}
+/* ⚠️ **الاختيار هنا بيتقال بالحلقة لا بفتحة الأرضية.**
+   أول نسخة كانت بتفتّح الأرضية لما الكارت يتختار (`--fl-5`)، وفي
+   التيم الغامق ده بيرفع أرضية كل اللي جوّاه ناحية السقف · فوسم
+   «الافتراضي» وقع على **4.48** من 4.5، وحالة `.on` أسوأ منها
+   **وما اتقاستش أصلًا** لأن الاختيار كان في الستيت لا في الرابط.
+   فالأرضية بقت واطية في الحالتين، والاختيار بيتقرا من الحلقة
+   ولون العلامات · والرابط بقى فيه `?kind=` عشان الفحص يشوفه. */
+.pkind{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0;cursor:pointer;
+  padding:var(--sp-4);border-radius:var(--ric);
+  background:var(--fl-1);box-shadow:inset 0 0 0 1px var(--edge-1);
+  transition:background .16s ease,box-shadow .16s ease}
+.pkind:hover{background:var(--fl-2)}
+.pkind.on{background:var(--fl-2);box-shadow:inset 0 0 0 2px var(--edge-i)}
+.pkind input{position:absolute;opacity:0;pointer-events:none}
+.pkind-h{display:flex;align-items:center;gap:var(--sp-3);min-width:0;flex-wrap:wrap}
+.pkind-h>b{font-family:var(--fd);font-weight:600;color:var(--t1);flex:none}
+.pkind-r{flex:none;width:18px;height:18px;border-radius:var(--r-dot);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--ctl-bg);box-shadow:inset 0 0 0 1px var(--ctl-line);
+  transition:background .16s ease,box-shadow .16s ease}
+.pkind.on .pkind-r{background:var(--solid);box-shadow:none;color:var(--on-solid)}
+.pkind-o{list-style:none;margin:0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.pkind-o li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t2)}
+.pkind-o svg{flex:none;color:var(--t3-g)}
+/* المختار بيشدّ علاماته · وده اللي بيقول «دي اللي هتشتغل» */
+.pkind.on .pkind-o li{color:var(--t1)}
+.pkind.on .pkind-o svg{color:var(--ok)}

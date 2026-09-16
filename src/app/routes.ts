@@ -18,6 +18,8 @@ export const ROUTES = {
   entity: (id: string, tab?: string) => `/entities/${id}${tab && tab !== 'data' ? `/${tab}` : ''}`,
   /** تسجيل جهة جديدة · BPD-002 · واللي بيتعمل **طلب** لا جهة (قاعدة 2) */
   entityRegister: '/entities/register',
+  /** تسجيل جهة من داخل النظام · قاعدة 32 · وبتتولد فورًا بلا مراجعة */
+  entityNew: '/entities/new',
   /** صندوق طلبات التسجيل · خمس حالات · قاعدة 26 */
   entityRequests: '/entities/requests',
   entityRequest: (id: string) => `/entities/requests/${id}`,

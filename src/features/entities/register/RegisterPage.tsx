@@ -14,8 +14,8 @@ import Logo from '@/assets/LogoColor'
 import { entityRows } from '@/data/mock/entities'
 import {
   BANKS, REG_DOCS, REG_STAGES, REG_TERMS, citiesOf, docRequired, licenseClash,
-  type RegField,
 } from '@/data/mock/registration'
+import { Field } from './Field'
 
 /* ═══════════════════════════════════════════════════════════
    طلب تسجيل جهة جديدة · BPD-002 · شاشة الجهة
@@ -200,9 +200,156 @@ export default function RegisterPage() {
      الصفحة · لكن كارت أبيض ماشي تحته بيخلّي التدرّج غير مرئي
      تمامًا، فالشريط بيقع على المحتوى بحدّ حادّ. نفس العقد اللي في
      صفحة المشروع وصفحة الطلب وصفحة الاتفاقية بالظبط. */
+  /* ═══ جملة الحالة والمخارج · مرّة واحدة، ومكانها بيتغيّر ═══
+
+     ⚠️ **الرصيف مش للجهة.** رصيف القرار في السيستم ده شريط عايم
+     فوق شاشة داخلية، جنبه زرار المساعد، وبيفترض إن اللي قدامه
+     موظّف بياخد قرارات في صندوق شغل. والجهة اللي بتملا نموذج تسجيل
+     مش في شغل ولا عندها صندوق · هي في **فورم**، والفورم مخارجه
+     جوّاه في آخره زي أي فورم على الويب.
+
+     فالمخارج واحدة والمكان بيتغيّر: جوّه الكارت للجاي من برّه،
+     وعلى الرصيف للداخل من جوّه (مسؤول النظام بيسجّل جهة شريكة
+     مباشرةً · قاعدة 32). */
+  const line = (
+    <span className="decsent">
+      {phase === 'terms' && <>اقرأ الضوابط الخمسة وأقرّ بها قبل فتح النموذج</>}
+      {phase === 'form' && (
+        draft
+          ? <>اتحفظت <b>كمسودة</b> · القاعدة <Num>12</Num>، وتقدر تكمّلها في أي وقت</>
+          : <>
+              الخطوة <b><Num>{at + 1}</Num> من <Num>{REG_STAGES.length}</Num></b>
+              <span className="decsep" />
+              {REG_STAGES[at].label}
+              {missing.length > 0 && (
+                <>
+                  <span className="decsep" />
+                  <span className="sub">ناقص <Num>{missing.length}</Num> قبل الإرسال</span>
+                </>
+              )}
+            </>
+      )}
+      {phase === 'otp' && <>اكتب الرمز المرسَل للجوال · <Num>6</Num> أرقام</>}
+      {phase === 'sent' && <>رقم الطلب في هذا النموذج <b>RG-1042</b></>}
+    </span>
+  )
+
+  const nav = (
+    <div className="rowf gp-2">
+      {phase === 'terms' && (
+        <button
+          className="btn btn-p"
+          disabled={!agreed}
+          title={agreed ? 'افتح النموذج' : 'أقرّ بالضوابط أولًا'}
+          onClick={() => setPhase('form')}
+        >
+          موافقة ومتابعة
+        </button>
+      )}
+
+      {phase === 'form' && (
+        <>
+          {/* ⚠️ **«حفظ كمسودة» للداخل من جوّه وحده.**
+              قاعدة 12 بتقول إن الطلب يتحفظ مسودة ويتكمّل بعدين ·
+              والمسودة لازم تتحفظ **على حساب** عشان صاحبها يرجع
+              لها. والجهة الجديدة **مالهاش حساب** — دي القاعدة 2
+              نفسها. فالزرار للجهة كان بيوعد بحاجة مفيش لها مكان
+              ترجع منه، ونموذج `/reg/add` في النظام العامل مفيهوش
+              حفظ أصلًا.
+
+              الفجوة دي مسجَّلة: لو المؤسسة عايزة الجهة تحفظ
+              وترجع، محتاج تعريف قبل الاعتماد (رابط بالبريد أو
+              رمز) — سؤال لعمر. */}
+          {inside && (
+            <button className="btn btn-2" onClick={() => setDraft(true)}>
+              حفظ كمسودة
+            </button>
+          )}
+
+          {/* ⚠️ «السابق» **موجود ومعطَّل** في أول خطوة لا
+              مخفي · الزرار اللي بيظهر ويختفي بيخلّي مكان
+              «التالي» يتنطّ بين الخطوات، والإيد بتدوّر عليه
+              كل مرة. */}
+          <button
+            className="btn btn-2"
+            disabled={first}
+            title={first ? 'دي أول خطوة' : `ارجع لـ${REG_STAGES[at - 1].label}`}
+            onClick={() => go(-1)}
+          >
+            {/* في RTL «لورا» يمين · `chevronBack` هو اللي بيرسمها */}
+            <Icon name={icons.chevronBack} size={15} />
+            السابق
+          </button>
+
+          {/* ⚠️ **«التالي» ما بيتقفلش على النواقص.** قاعدة 4
+              بتمنع **الإرسال** عند النقص لا التنقّل · والجهة
+              بتملا على مرّات وبترجع. اللي بيتقفل هو الإرسال
+              وحده، وسببه مكتوب. */}
+          {!last ? (
+            <button
+              className="btn btn-p"
+              title={`كمّل في ${REG_STAGES[at + 1].label}`}
+              onClick={() => go(1)}
+            >
+              التالي
+              <Icon name={icons.chevron} size={15} />
+            </button>
+          ) : (
+            <button
+              className="btn btn-p"
+              disabled={!canSend}
+              title={
+                clash
+                  ? 'رقم الترخيص مكرّر · قاعدة 8'
+                  : missing.length
+                    ? `ناقص ${missing.length} من الإلزامي · قاعدة 4`
+                    : 'إرسال الطلب للمراجعة'
+              }
+              onClick={() => setPhase('otp')}
+            >
+              إرسال الطلب
+            </button>
+          )}
+        </>
+      )}
+
+      {phase === 'otp' && (
+        <button
+          className="btn btn-p"
+          disabled={otp.length !== 6}
+          title={otp.length === 6 ? 'تأكيد الرمز' : 'الرمز 6 أرقام'}
+          onClick={() => setPhase('sent')}
+        >
+          تأكيد الرمز
+        </button>
+      )}
+
+      {/* المخرج الأخير بيتغيّر بالمكان: صندوق الطلبات شاشة داخلية،
+          والجهة مالهاش فيه · بترجع لباب الدخول تستنّى بياناتها */}
+      {phase === 'sent' && (
+        inside
+          ? <button className="btn btn-2" onClick={() => navigate(ROUTES.entityRequests)}>
+              افتح صندوق الطلبات
+            </button>
+          : <button className="btn btn-2" onClick={() => navigate(ROUTES.login)}>
+              رجوع لصفحة الدخول
+            </button>
+      )}
+    </div>
+  )
+
+  /** مخارج جوّه الكارت · للجاي من برّه وحده */
+  const foot = inside ? null : (
+    <div className="regfoot">
+      {line}
+      <span className="pc-sp" />
+      {nav}
+    </div>
+  )
+
   const body = (
-    <div className="viewstack hasdock">
-        <div className="screen col hasg2">
+    <div className={`viewstack${inside ? ' hasdock' : ''}`}>
+        <div className={`screen col${inside ? ' hasg2' : ''}`}>
           {inside ? (
             <BackTo label="الجهات" onClick={() => navigate(ROUTES.entities)} />
           ) : (
@@ -269,6 +416,7 @@ export default function RegisterPage() {
                     الوثيقة تبدأ خطواتها الـ<span className="num">17</span> من تعبئة
                     النموذج مباشرة، فوجود المحطة دي فرق مسجَّل للمراجعة.
                   </p>
+                  {foot}
                 </Glass>
               )}
 
@@ -452,6 +600,7 @@ export default function RegisterPage() {
                           من <span className="num">{REG_DOCS.length}</span>.
                         </p>
                       )}
+                      {foot}
                     </Glass>
                   ))}
                 </>
@@ -482,6 +631,7 @@ export default function RegisterPage() {
                     في هذا النموذج أي <span className="num">6</span> أرقام تُقبل ·
                     التحقّق الفعلي عند الباك اند.
                   </p>
+                  {foot}
                 </Glass>
               )}
 
@@ -511,6 +661,7 @@ export default function RegisterPage() {
                     السطر الأخير مكتوب عمدًا: الجهة اللي تفتكر إنها اتسجّلت
                     بتفضل مستنية بريدًا مش جاي، وبعدين تتصل تسأل.
                   </p>
+                  {foot}
                 </Glass>
               )}
             </div>
@@ -577,121 +728,17 @@ export default function RegisterPage() {
         </div>
 
         {/* الدوك · المخارج بتتغيّر بالمحطة، ومفيش مخرج معطَّل بلا سبب */}
-        {/* ⚠️ الرصيف بيسيب مكانًا على الشمال لزرار «اسأل أبانمي»
-            العايم · والزرار ده جوّه `AppLayout` وحده. فبرّه الجلسة
-            المكان ده بيفضل فاضيًا والشريط بيبان مقصوصًا، عشان كده
-            بياخد العرض كامل. */}
-        <div className={`decdock${inside ? '' : ' wide'}`}>
-          <div className="chrome decbar payact">
-            <div className="rowf gp-3 payact-w">
-              <span className="decsent">
-                {phase === 'terms' && <>اقرأ الضوابط الخمسة وأقرّ بها قبل فتح النموذج</>}
-                {phase === 'form' && (
-                  draft
-                    ? <>اتحفظت <b>كمسودة</b> · القاعدة <Num>12</Num>، وتقدر تكمّلها في أي وقت</>
-                    : <>
-                        الخطوة <b><Num>{at + 1}</Num> من <Num>{REG_STAGES.length}</Num></b>
-                        <span className="decsep" />
-                        {REG_STAGES[at].label}
-                        {missing.length > 0 && (
-                          <>
-                            <span className="decsep" />
-                            <span className="sub">ناقص <Num>{missing.length}</Num> قبل الإرسال</span>
-                          </>
-                        )}
-                      </>
-                )}
-                {phase === 'otp' && <>اكتب الرمز المرسَل للجوال · <Num>6</Num> أرقام</>}
-                {phase === 'sent' && <>رقم الطلب في هذا النموذج <b>RG-1042</b></>}
-              </span>
-            </div>
-
-            <div className="rowf gp-2">
-              {phase === 'terms' && (
-                <button
-                  className="btn btn-p"
-                  disabled={!agreed}
-                  title={agreed ? 'افتح النموذج' : 'أقرّ بالضوابط أولًا'}
-                  onClick={() => setPhase('form')}
-                >
-                  موافقة ومتابعة
-                </button>
-              )}
-
-              {phase === 'form' && (
-                <>
-                  {/* قاعدة 12 · الحفظ كمسودة مخرج مستقل، ومتاح دايمًا ·
-                      الجهة اللي ناقصها مستند بتسيب الشغل وترجع له */}
-                  <button className="btn btn-2" onClick={() => setDraft(true)}>
-                    حفظ كمسودة
-                  </button>
-
-                  {/* ⚠️ «السابق» **موجود ومعطَّل** في أول خطوة لا
-                      مخفي · الزرار اللي بيظهر ويختفي بيخلّي مكان
-                      «التالي» يتنطّ بين الخطوات، والإيد بتدوّر عليه
-                      كل مرة. */}
-                  <button
-                    className="btn btn-2"
-                    disabled={first}
-                    title={first ? 'دي أول خطوة' : `ارجع لـ${REG_STAGES[at - 1].label}`}
-                    onClick={() => go(-1)}
-                  >
-                    {/* في RTL «لورا» يمين · `chevronBack` هو اللي بيرسمها */}
-                    <Icon name={icons.chevronBack} size={15} />
-                    السابق
-                  </button>
-
-                  {/* ⚠️ **«التالي» ما بيتقفلش على النواقص.** قاعدة 4
-                      بتمنع **الإرسال** عند النقص لا التنقّل · والجهة
-                      بتملا على مرّات وبترجع. اللي بيتقفل هو الإرسال
-                      وحده، وسببه مكتوب. */}
-                  {!last ? (
-                    <button
-                      className="btn btn-p"
-                      title={`كمّل في ${REG_STAGES[at + 1].label}`}
-                      onClick={() => go(1)}
-                    >
-                      التالي
-                      <Icon name={icons.chevron} size={15} />
-                    </button>
-                  ) : (
-                    <button
-                      className="btn btn-p"
-                      disabled={!canSend}
-                      title={
-                        clash
-                          ? 'رقم الترخيص مكرّر · قاعدة 8'
-                          : missing.length
-                            ? `ناقص ${missing.length} من الإلزامي · قاعدة 4`
-                            : 'إرسال الطلب للمراجعة'
-                      }
-                      onClick={() => setPhase('otp')}
-                    >
-                      إرسال الطلب
-                    </button>
-                  )}
-                </>
-              )}
-
-              {phase === 'otp' && (
-                <button
-                  className="btn btn-p"
-                  disabled={otp.length !== 6}
-                  title={otp.length === 6 ? 'تأكيد الرمز' : 'الرمز 6 أرقام'}
-                  onClick={() => setPhase('sent')}
-                >
-                  تأكيد الرمز
-                </button>
-              )}
-
-              {phase === 'sent' && (
-                <button className="btn btn-2" onClick={() => navigate(ROUTES.entityRequests)}>
-                  افتح صندوق الطلبات
-                </button>
-              )}
+        {/* الرصيف للداخل من جوّه وحده · شوف الشرح فوق عند `line`.
+            ⚠️ وحشوه بيسيب مكانًا على الشمال لزرار «اسأل أبانمي»
+            العايم، والزرار ده جوّه `AppLayout` وحده. */}
+        {inside && (
+          <div className="decdock">
+            <div className="chrome decbar payact">
+              <div className="rowf gp-3 payact-w">{line}</div>
+              {nav}
             </div>
           </div>
-        </div>
+        )}
       </div>
   )
 
@@ -706,61 +753,5 @@ export default function RegisterPage() {
         <div className="shell">{body}</div>
       </div>
     </>
-  )
-}
-
-/**
- * حقل واحد.
- *
- * القيم المقفولة `select` والباقي `input` · وأسماء البنوك تحديدًا
- * مقفولة بقاعدة 27 عشان الاسم ما يتكتبش بعشر صيغ فيبقى الفرز
- * مستحيل. والتلميحات المكتوبة هنا منقولة من النظام العامل حرفيًا.
- */
-function Field({
-  f, value, parent, onChange,
-}: {
-  f: RegField
-  value: string
-  parent: string
-  onChange: (x: string) => void
-}) {
-  const options = f.dependsOn ? citiesOf(parent) : f.options ?? []
-  const locked = Boolean(f.dependsOn) && !parent
-
-  return (
-    <label className="regf">
-      <span className="lb">
-        {f.label}
-        {f.req && <b className="regf-r" aria-label="إلزامي">*</b>}
-      </span>
-      {/* ⚠️ `.fld` مش كلاس شكلي · هو **التحكّم الموجود** للحقول في
-          السيستم، ومسجَّل في `ctlaudit` فحلقة تركيزه بتتفحص مع
-          البحث والفلاتر. حقل مكتوب للشاشة دي كان هيبقى الركن
-          السادس لنفس الشيء، وبحلقة تركيز مختلفة. */}
-      <span className={`fld${locked ? ' off' : ''}`}>
-        {f.kind === 'select' ? (
-          <select
-            value={value}
-            disabled={locked}
-            onChange={(e) => onChange(e.target.value)}
-            aria-label={f.label}
-          >
-            <option value="">{locked ? 'اختر المنطقة أولًا' : 'اختر'}</option>
-            {options.map((o) => (
-              <option key={o} value={o}>{o}</option>
-            ))}
-          </select>
-        ) : (
-          <input
-            type={f.kind === 'date' ? 'date' : f.kind === 'number' ? 'number' : 'text'}
-            inputMode={f.kind === 'tel' || f.kind === 'number' ? 'numeric' : undefined}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            aria-label={f.label}
-          />
-        )}
-      </span>
-      {f.hint && <span className="sub regf-h">{f.hint}</span>}
-    </label>
   )
 }

@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { DateText, Mono, Num, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import {
-  REG_DOCS, REG_STATE_SAY, REG_TONE, docRequired, regMissingDocs, type RegRequest,
+  REG_DOCS, REG_STATE_SAY, REG_TONE, docRequired, partnerKind, regMissingDocs,
+  type RegRequest,
 } from '@/data/mock/registration'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
@@ -49,6 +50,13 @@ export const COLS: Col[] = [
     def: true,
     cell: (r) => <Tag tone={REG_TONE[r.state]}>{REG_STATE_SAY[r.state]}</Tag>,
     text: (r) => REG_STATE_SAY[r.state],
+  },
+  {
+    key: 'partner',
+    w: 120,
+    label: 'نوع الشراكة',
+    cell: (r) => <span className="sub">{partnerKind(r.partner).label}</span>,
+    text: (r) => partnerKind(r.partner).label,
   },
   {
     key: 'type',

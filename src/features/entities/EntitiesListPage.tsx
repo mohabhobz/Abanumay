@@ -292,7 +292,11 @@ export default function EntitiesListPage() {
                 طلبات التسجيل
                 {reg.open > 0 && <b className="num">{reg.open}</b>}
               </Link>
-              <Link className="btn btn-p" to={ROUTES.entityRegister}>
+              {/* ⚠️ الزرار ده بيودّي **للتسجيل المباشر** لا لبوّابة
+                  الجهة · اللي واقف هنا مشرف منح داخل السيستم، وهو
+                  بيسجّل شريكًا بيديره بنفسه (قاعدة 32). وبوّابة الجهة
+                  مدخلها شاشة الدخول، لأن صاحبها مالوش حساب أصلًا. */}
+              <Link className="btn btn-p" to={ROUTES.entityNew}>
                 <Icon name={icons.plus} size={16} />
                 تسجيل جهة جديدة
               </Link>

@@ -12,7 +12,7 @@ import { isolate } from '@/lib/format'
 import { entityRows } from '@/data/mock/entities'
 import {
   BANK_REJECTS, REG_DOCS, REG_STATE_SAY, REG_STATE_WHO, REG_TONE, docRequired,
-  licenseClash, regMissingDocs, regRequestById,
+  licenseClash, partnerKind, regMissingDocs, regRequestById,
 } from '@/data/mock/registration'
 
 /* ═══════════════════════════════════════════════════════════
@@ -178,6 +178,20 @@ export default function RegReviewPage() {
                 <KV
                   rows={[
                     { k: 'اسم الجهة', v: r.name },
+                    /* ⚠️ النوع ده **الجهة ما شافتهوش** · اتحطّ
+                       أوتوماتيك لأنها جاية من البوّابة. والمراجع
+                       لازم يشوفه لأنه بيفتح كونديشنز في إجراءات
+                       بعده، ولأنه الحاجة الوحيدة في الصفحة اللي
+                       مش إقرارًا منها. */
+                    {
+                      k: 'نوع الشراكة',
+                      v: (
+                        <span className="kvpair">
+                          {partnerKind(r.partner).label}
+                          <Tag tone="mute">افتراضي للجاي من البوّابة</Tag>
+                        </span>
+                      ),
+                    },
                     { k: 'تصنيف الجهة', v: r.type },
                     { k: 'جهة الإشراف الفني', v: r.licensor },
                     { k: 'رقم الترخيص', v: <Mono>{r.licenseNo}</Mono> },
