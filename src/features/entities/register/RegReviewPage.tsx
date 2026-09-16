@@ -117,7 +117,9 @@ export default function RegReviewPage() {
   return (
     <AppLayout assistantContext={assistFor.page('مراجعة طلب تسجيل', r.name)}>
       <div className="viewstack hasdock">
-        <div className="screen col">
+        {/* `hasg2` زي صفحة الطلب والاتفاقية · المحتوى بيخلص فوق
+            الرصيف فالتدرّج بيبان، والعمود الجانبي بياخد مسافة لزقه */}
+        <div className="screen col hasg2">
           <BackTo label="طلبات التسجيل" onClick={() => navigate(ROUTES.entityRequests)} />
 
           <header>

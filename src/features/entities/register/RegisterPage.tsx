@@ -182,9 +182,15 @@ export default function RegisterPage() {
      للجهات · فالغلاف بيتغيّر بالجلسة، والمحتوى واحد. */
   const inside = isSignedIn()
 
+  /* ⚠️ `hasdock` و`hasg2` مش تزويق · همّ اللي بيخلّوا المحتوى
+     **يخلص فوق الرصيف** بدل ما يفضل ماشي تحته. الرصيف شفّاف
+     وبيضبّب اللي وراه، والتضبيب ده بيبان لما يكون وراه أرضية
+     الصفحة · لكن كارت أبيض ماشي تحته بيخلّي التدرّج غير مرئي
+     تمامًا، فالشريط بيقع على المحتوى بحدّ حادّ. نفس العقد اللي في
+     صفحة المشروع وصفحة الطلب وصفحة الاتفاقية بالظبط. */
   const body = (
-    <div className="viewstack">
-        <div className="screen col">
+    <div className="viewstack hasdock">
+        <div className="screen col hasg2">
           {inside ? (
             <BackTo label="الجهات" onClick={() => navigate(ROUTES.entities)} />
           ) : (
