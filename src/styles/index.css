@@ -310,6 +310,17 @@
 /* سطر الشرح آخر البطاقة · هامش فوق ولا حاجة تحت، لأن حافة البطاقة
    هي اللي بتقفل. كان بيتكتب `style={{marginBottom:0}}` في كل مكان،
    وسبع مرات من نفس القيمة الحرفية معناها كلاس ناقص لا سبع حالات. */
+/* ⚠️ **`.bad` كان مالوش قاعدة عامة خالص.**
+   كان متكتب في تلات أماكن مقيَّدة بأب (`.fhl .bad` و`.cb-f .bad`
+   و`.ins .i.flag .tx b.bad`) · يعني ستّ شاشات بتكتب
+   `className="bad"` على رسالة خطأ وبتطلع **بلون النصّ العادي**:
+   قوس البوّابة، وصفحة الاتفاقية، والميزانية (مرتين)، وإعدادات
+   الميزانية، وتسجيل الجهة من جوّه.
+
+   ودي نسخة تانية من «كلاس مش موجود وبيشتغل»: `deadcss` ما بيمسكهاش
+   لأن `.bad` **موجود** في الـCSS · هو بس ما بينطبقش. الرسالة اللي
+   لونها زي الكلام العادي مش رسالة، هي جملة. */
+.bad{color:var(--no-ink)}
 .cnote{margin:var(--sp-4) 0 0}
 /* نصّ في النص · الترقيم وسطر التجميع تحت الجدول */
 .tcen{text-align:center}
@@ -1339,7 +1350,6 @@ small{font-size:var(--fs-1)}
   border-radius:var(--rp);pointer-events:none;
   background:linear-gradient(180deg,var(--warn) 0%,rgba(var(--noC),.55) 38%,rgba(var(--noC),0) 100%)}
 .ins .i.flag .tx b{color:var(--t1)}
-.ins .i.flag .tx b.bad{color:var(--no-ink)}
 .itag{font-family:var(--fd);font-weight:600;font-size:var(--fs-1)}
 .itag.no{color:var(--no-ink)}
 /* مؤشر تجاوز الحدّ: متدرج من الآمن للمتجاوز، وعلامة عند الحدّ نفسه */
@@ -1950,7 +1960,7 @@ to{opacity:1;transform:none}
 .fht{font-family:var(--fd);font-weight:700;font-size:var(--fs-6);color:var(--t1);line-height:var(--lh-head);margin-bottom:var(--sp-1)}
 .fhl{font-size:var(--fs-1);color:var(--t2);line-height:var(--lh-text);font-variant-numeric:tabular-nums}
 .fhl b{font-weight:600;color:var(--t1)}
-.fhl .bad{color:var(--no-ink);font-weight:600}
+.fhl .bad{font-weight:600}
 .fhs{font-size:var(--fs-1);color:var(--t3);margin-top:var(--sp-2);opacity:.9}
 .fhp{font-size:var(--fs-1);color:var(--warn-ink);margin-top:var(--sp-2)}
 /* ── سطر التفصيل تحت القوس ──
@@ -2663,7 +2673,6 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cb-v{font-family:var(--fd);font-weight:700;font-size:var(--fs-5)}
 .cb-v small{font-size:.62em;font-weight:400;color:var(--t2)}
 .cb-f{display:flex;justify-content:space-between;margin-top:var(--sp-3)}
-.cb-f .bad{color:var(--no-ink)}
 .cb-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-5)}
 .cb-n{font-family:var(--fd);font-weight:700;font-size:var(--fs-5);margin-top:var(--sp-1)}
 .cb-led{display:flex;flex-direction:column}

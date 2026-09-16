@@ -34,6 +34,15 @@ import {
    الغلط فين وليه. الحجب بيخلّي المستخدم ما يتعلّمش الهيكل، والرسالة
    بتعلّمه · والقايمة اللي جنب الشجرة بتعرض كل الملاحظات مع مصدر
    كل قاعدة.
+
+   ⚠️ **والكلام ده كان مكتوب هنا والكود تحته بيعمل عكسه.** أول
+   نسخة كانت بتخفي حقلَي «نوع البند» و«تابع لبند» تمامًا لما الشجرة
+   فاضية، وبتكتب `kind: 'main'` من غير ما تبصّ لاختيار المستخدم،
+   وزرار الشاشة الفاضية كان اسمه «أضف البند الجذر» · أمر لا اختيار.
+   يعني المبدأ كان معلَّقًا في الترويسة والتنفيذ بيخالفه على بُعد
+   مية سطر · **مبدأ مكتوب بلا فحص بيفضل نيّة**، زي قاعدة الشرطة
+   الطويلة بالظبط. الاختيار دلوقتي مفتوح من أول بند، والقاعدة في
+   `rootRule` بتتقال في المودال قبل الحفظ.
    ═══════════════════════════════════════════════════════════ */
 
 type Draft = Omit<BudgetDoc, 'id'> & { id?: string }
@@ -70,6 +79,8 @@ export default function BudgetDocPage() {
   const [nKind, setNKind] = useState<LineKind>('main')
   const [nAmount, setNAmount] = useState('')
   const [nParent, setNParent] = useState('')
+  /** رسالة القاعدة اللي وقفت الإضافة · بتتقال في المودال لا بعد الحفظ */
+  const [blocked, setBlocked] = useState('')
 
   const nodes = doc.nodes
   const root = rootOf(nodes)
@@ -110,20 +121,53 @@ export default function BudgetDocPage() {
     /* ⚠️ النوع الافتراضي **مش استنتاج**: المستخدم بيقدر يغيّره،
        والقواعد بتقول له لو غلط. الافتراضي بيوفّر خطوة لا أكتر. */
     setNKind(parentId === null ? 'main' : 'sub')
+    setBlocked('')
     setOpen(true)
   }
 
+  /**
+   * ⚠️ **الكونديشن ده هو ج-15، والكود كان بيعمل عكسه بالظبط.**
+   *
+   * مظفر قال بالنص: «خلّي الأوبشنز موجودة عنده يختار، يجيب له رسالة
+   * خطأ». والمبدأ ده كان **مكتوب في ترويسة الملف ده نفسه** · وتحته
+   * الكود بيخفي حقلَي النوع والأب على أول بند، وبيكتب `kind: 'main'`
+   * من غير ما يبصّ لاختيار المستخدم. يعني الملف كان بيناقض نفسه.
+   *
+   * دلوقتي الاختيار مفتوح من أول بند، والقاعدة بتتقال **قبل** الحفظ
+   * لا بعده: الرسالة بتظهر في المودال وزرار الإضافة بيتقفل بسببها
+   * مكتوبًا · فالمستخدم بيتعلّم الهيكل بدل ما الشاشة تخبّيه عنه.
+   */
+  const rootRule = (kind: LineKind, parentId: string | null): string => {
+    if (nodes.length > 0) {
+      /* فرعي تحت فرعي ممنوع (قاعدة 4)، والفرعي لازم له أب (ج-12) */
+      if (kind === 'sub' && !parentId) return 'البند الفرعي لازم يكون تابعًا لبند · اختار الأب.'
+      const up = parentId ? nodes.find((x) => x.id === parentId) : undefined
+      if (kind === 'sub' && up?.kind === 'sub') return 'ما ينفعش بند فرعي تحت بند فرعي.'
+      return ''
+    }
+    /* أول بند · هو جذر الميزانية وبياخد مبلغها كاملًا (ج-10) */
+    if (kind === 'sub') {
+      return 'أول بند هو جذر الميزانية، فنوعه رئيسي · البنود الفرعية بتتحط تحته بعد كده.'
+    }
+    if (parentId) return 'مفيش بنود قبله يتبعها · أول بند بيبقى بلا أب.'
+    return ''
+  }
+
   const addNode = () => {
+    const parentId = nParent || null
+    const stop = rootRule(nKind, parentId)
+    if (stop) { setBlocked(stop); return }
+
     const amount = Number(nAmount) || 0
-    const parentId = nodes.length === 0 ? null : nParent || null
+    const root = parentId === null
     const node: BudgetNode = {
       id: `n-${Date.now()}`,
       label: nLabel.trim(),
-      kind: nodes.length === 0 ? 'main' : nKind,
+      kind: nKind,
       parentId,
       /* الجذر بياخد مبلغ الميزانية من الترويسة لا من المستخدم */
-      allocated: parentId === null ? doc.total : amount,
-      available: parentId === null ? doc.total : amount,
+      allocated: root ? doc.total : amount,
+      available: root ? doc.total : amount,
       active: true,
     }
     setDoc((d) => ({ ...d, nodes: [...d.nodes, node] }))
@@ -393,18 +437,21 @@ export default function BudgetDocPage() {
                     title="الشجرة فاضية."
                     note={
                       headReady
-                        ? 'أول بند هو جذر الميزانية، وبياخد المبلغ الإجمالي كاملًا.'
-                        : 'اكمل بيانات الميزانية فوق الأول · الجذر بياخد مبلغها.'
+                        ? 'اختار نوع البند في المودال · وأول بند بياخد المبلغ الإجمالي كاملًا.'
+                        : 'اكمل بيانات الميزانية فوق الأول · أول بند بياخد مبلغها.'
                     }
                     actions={
+                      /* ⚠️ «أضف بند» لا «أضف البند الجذر» · العنوان
+                         التاني كان بيقول إن في اختيار واحد، وهو مش صح:
+                         الاختيار مفتوح والقاعدة هي اللي بتحكم (ج-15) */
                       <button
                         className="btn btn-p"
                         disabled={!headReady}
-                        title={headReady ? 'أضف جذر الشجرة' : 'اكمل الترويسة أولًا'}
+                        title={headReady ? 'أضف بند للشجرة' : 'اكمل الترويسة أولًا'}
                         onClick={() => openAdd(null)}
                       >
                         <Icon name={icons.plus} size={16} />
-                        أضف البند الجذر
+                        أضف بند
                       </button>
                     }
                   />
@@ -628,14 +675,21 @@ export default function BudgetDocPage() {
                 </span>
               </label>
 
-              {nodes.length > 0 && (
-                <>
+              {/* ⚠️ **الحقول دي كانت مخفية على أول بند، ودي كانت
+                  المخالفة.** «خلّي الأوبشنز موجودة عنده يختار» معناها
+                  إن الاختيار بيفضل معروضًا حتى وهو غلط · الرسالة تحت
+                  هي اللي بتقول الغلط، مش غياب الحقل (ج-15). */}
+              <>
                   <label className="regf">
                     <span className="lb">نوع البند</span>
                     <span className="fld">
                       <select
                         value={nKind}
-                        onChange={(e) => setNKind(e.target.value as LineKind)}
+                        onChange={(e) => {
+                          const k = e.target.value as LineKind
+                          setNKind(k)
+                          setBlocked(rootRule(k, nParent || null))
+                        }}
                         aria-label="نوع البند"
                       >
                         <option value="main">رئيسي</option>
@@ -652,7 +706,10 @@ export default function BudgetDocPage() {
                     <span className="fld">
                       <select
                         value={nParent}
-                        onChange={(e) => setNParent(e.target.value)}
+                        onChange={(e) => {
+                          setNParent(e.target.value)
+                          setBlocked(rootRule(nKind, e.target.value || null))
+                        }}
                         aria-label="تابع لبند"
                       >
                         <option value="">بلا · بند جذر</option>
@@ -687,23 +744,28 @@ export default function BudgetDocPage() {
                       </span>
                     )}
                   </label>
-                </>
-              )}
+              </>
 
-              {nodes.length === 0 && (
-                <p className="sub cnote">
-                  أول بند هو <b>جذر الشجرة</b> · بياخد المبلغ الإجمالي{' '}
-                  <span className="num">{nf.format(doc.total)}</span> كاملًا، ونوعه رئيسي
-                  عند المستوى <span className="num">0</span>.
-                </p>
-              )}
+              {/* القاعدة بتتقال في مكان القرار · مش توست بعد الضغط
+                  ولا رسالة بتظهر لما الشاشة تتبعت */}
+              {blocked
+                ? <p className="bad cnote">{blocked}</p>
+                : nodes.length === 0 && (
+                  <p className="sub cnote">
+                    أول بند هو <b>جذر الشجرة</b> · بياخد المبلغ الإجمالي{' '}
+                    <span className="num">{nf.format(doc.total)}</span> كاملًا،
+                    والبنود اللي بعده بتتحط تحته.
+                  </p>
+                )}
             </div>
 
             <div className="mf">
               <button
                 className="btn btn-p"
-                disabled={!nLabel.trim()}
-                title={nLabel.trim() ? 'أضف البند' : 'اكتب اسم البند'}
+                disabled={!nLabel.trim() || Boolean(blocked)}
+                title={
+                  blocked || (nLabel.trim() ? 'أضف البند' : 'اكتب اسم البند')
+                }
                 onClick={addNode}
               >
                 إضافة
