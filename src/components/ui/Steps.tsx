@@ -103,6 +103,8 @@ export function Steps({ items, flow = 'ladder', onPick }: StepsProps) {
             {flow === 'ladder' && <span className="stp-at">{s.at ?? ''}</span>}
           </>
         )
+        /* في الستيبر النقطة فوق والاسم تحتها · فالمحتوى عمود
+           متمركز، والسكّة الأفقية بتعدّي من ورا النقط */
         return (
           <li key={i} className={`stp-i ${s.state}`}>
             {can

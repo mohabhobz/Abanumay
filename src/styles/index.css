@@ -717,7 +717,12 @@
   --solid:var(--green); --on-solid:#fff;   /* زرار مصمت وحبره */
   --solidC:20,69,71;                       /* نفس اللون أرقامًا · للثانوي */
   --link:#3E5A08;
-  --warn-ink:#8A5C05; --no-ink:#95341F; --no-ink2:#8E2F1B; --no-ink3:#AE3319;
+  /* ⚠️ `--warn-ink` كان على حدّ AA زي `--t3` بالظبط: `#8A5C05` فوق
+     زجاج قاعد على جزء مشبَّع من التدرّج بيدّي **4.40** · تحت الحدّ
+     بـ0.10، وبيعدّي في شاشة ويقع في شاشة حسب مكان الكارت.
+     `#825604` بيدّي 4.85 على أسوأ أرضية متقاسة و6.13 على أرضية
+     الوسم — والوسم هو أكتر مكان بيستعمله. */
+  --warn-ink:#825604; --no-ink:#95341F; --no-ink2:#8E2F1B; --no-ink3:#AE3319;
   --ret-ink:#20527D; --ret-ink3:#20527D; --on-ret:#FFFFFF; --no-ic:#B4482C; --lime-ink:#6E9F06;
   --ok-ink:#06693A; --ok-ink3:#06693A; --brand-ink:#3E5A08; --mute-ink:#4A6B68;
   /* الأرضية أغمق من الكروت: نفس الخافت اللي بيتقري على كارت
@@ -6025,39 +6030,52 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .regtop>div{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
 .regtop b{font-family:var(--fd);font-weight:700;font-size:var(--fs-3);color:var(--t1)}
 
-/* ستيبر · التدفّق الوحيد اللي بيتضغط.
-   النقطة أكبر شوية عن السُّلّم لأنها شايلة رقم مقروء لا علامة، وهو
-   ترتيب الخطوة في الإجراء · والخط بين النقط بيقول «الواحدة بعد
-   التانية» زي السُّلّم بالظبط، بس أفقيًّا. */
-.stp-stepper{--stp-dot:26px;
-  display:flex;align-items:flex-start;gap:0;flex-wrap:wrap}
-/* الكارت بيلزق على الشريط · مفيش حشو زيادة تحته */
-.regsteps{padding-block:var(--sp-4)}
-.stp-stepper .stp-i{flex:1 1 7.5rem;min-width:0;display:flex}
-/* الخط بيوصل النقطة باللي قبلها · في RTL بيطلع من ناحية اليمين */
-.stp-stepper .stp-i+.stp-i::before{content:"";flex:none;align-self:flex-start;
-  /* الخط بيقع في **نصّ النقطة** · والنقطة جوّه زرار له حشو
-     علوي، فالمسافة = الحشو + نصف القطر. من غير الحشو الخط بيطلع
-     فوق مركز النقطة بشعرة وبيبان مايلًا. */
-  width:var(--sp-4);height:var(--stp-line);
-  margin-top:calc(var(--sp-2) + var(--stp-dot) / 2);
+/* ═══ ستيبر · التدفّق الوحيد اللي بيتضغط ═══
+
+   ⚠️ **أول نسخة كانت صفًّا أفقيًّا والنقطة جنب الاسم.** والنتيجة
+   خمس كتل بعرض مختلف (اسم من كلمة واسم من كلمتين)، وخطوط واصلة
+   قصيرة معلّقة في الهوا بين كتلتين مش متساويتين، وشريحة بيضا حوالين
+   الخطوة الحالية طالعة من حدّ الكارت. الشكل كان بيقول «خمس حاجات
+   مرصوصة» لا «سلسلة».
+
+   الشكل ده: **شبكة أعمدة متساوية**، النقطة فوق والاسم تحتها،
+   و**سكّة واحدة** بتعدّي من ورا النقط وبتتوصّل بينها. العين
+   بتقرا السلسلة من السكّة، والعمود المتساوي بيخلّي الخمسة إيقاعًا
+   واحدًا مهما طالت الأسماء. والسكّة اللي ورا خطوة خلصت بتاخد لون
+   الإنجاز، فالتقدّم بيتقرا من الخطّ نفسه لا من عدّ النقط. */
+.stp-stepper{--stp-dot:30px;--stp-gap:var(--sp-4);
+  display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+.stp-stepper .stp-i{position:relative;min-width:0;display:flex}
+
+/* السكّة · قطعة بين نقطة الخطوة ونقطة اللي قبلها.
+   في RTL الإزاحة من اليمين، واللي قبلها على اليمين · فالقطعة
+   بتبدأ **برّه** العنصر بنصّ عمود وبتنتهي قبل نقطته. */
+.stp-stepper .stp-i+.stp-i::before{content:"";position:absolute;
+  top:calc(var(--sp-3) + var(--stp-dot) / 2);
+  inset-inline-start:calc(-50% + var(--stp-dot) / 2 + var(--stp-gap));
+  width:calc(100% - var(--stp-dot) - 2 * var(--stp-gap));
+  height:var(--stp-line);border-radius:var(--rp);
   background:rgba(var(--edgeC),.16)}
-/* ⚠️ **الاسم والحالة فوق بعض لا جنب بعض.** أول نسخة رصّتهم في
-   صفّ، فخمس خطوات في عرض العمود خلّت «المستندات» تبقى «المست…»
-   و«الحساب البنكي» تبقى «الحسا…». واسم الخطوة **مقصوص** بيلغي
-   الغرض من الشريط: المستخدم بيبصّ عليه عشان يعرف رايح فين.
-   فالشبكة بقت عمودين: النقطة، وتحتها الاسم والحالة سطرين. */
-.stp-stepper .stp-b{flex:1;min-width:0;display:grid;
-  grid-template-columns:auto minmax(0,1fr);align-items:center;
-  column-gap:var(--sp-3);row-gap:var(--sp-1);
-  padding:var(--sp-2) var(--sp-3);border-radius:var(--r1);cursor:pointer;text-align:start;
-  transition:background .16s ease}
+.stp-stepper .stp-i.done+.stp-i::before{background:rgba(var(--okC),.45)}
+
+.stp-stepper .stp-b{flex:1;min-width:0;display:flex;flex-direction:column;
+  align-items:center;text-align:center;gap:var(--sp-2);
+  padding:var(--sp-3) var(--sp-2) var(--sp-4);border-radius:var(--r1);
+  cursor:pointer;transition:background .16s ease}
 .stp-stepper .stp-b:hover{background:var(--fl-2)}
-.stp-stepper .stp-i.now .stp-b{background:var(--fl-5)}
-.stp-stepper .stp-dot{grid-row:1 / span 2}
-.stp-stepper .stp-l{grid-column:2;font-size:var(--fs-2);min-width:0;
+.stp-stepper .stp-dot{position:relative;z-index:1}
+.stp-stepper .stp-l{font-size:var(--fs-2);line-height:var(--lh-2);min-width:0;
   overflow-wrap:break-word}
-.stp-stepper .stp-n{grid-column:2;font-size:var(--fs-1);min-width:0}
+/* الخطوة الحالية بتتقال بالنقطة وبالوزن · مش بشريحة أرضية.
+   الشريحة كانت مستطيلًا أبيض بنصف قطر تاني جوّه كارت، وهي التفصيلة
+   اللي بتخلّي الشريط يبان مركّبًا لا مرسومًا. */
+/* تلات أوزان لتلات حالات · مش اتنين. الخطوة اللي خلصت مش زي اللي
+   لسه ما بدأتش، ومش زي اللي الدور عليها · والفرق بيتقرا من بعيد
+   من غير ما العين تدوّر على اللون. */
+.stp-stepper .stp-i.now .stp-l{font-weight:700;color:var(--t1)}
+.stp-stepper .stp-i.done .stp-l{color:var(--t2)}
+.stp-stepper .stp-n{font-size:var(--fs-1);line-height:var(--lh-2);min-width:0}
+
 /* ⚠️ **النقطة الحالية بتتغيّر لما تشيل رقمًا.**
    في السُّلّم والصفّ النقطة الحالية كهرمانية مصمتة وفاضية، وده
    سليم لأنها علامة لا حاوية نصّ. هنا بتشيل **رقم الخطوة**، وأبيض
@@ -6069,13 +6087,18 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    طبقة كهرمانية + `--warn-ink`)، وهي تركيبة **متفحوصة في التلات
    ثيمات** في كل وسم في السيستم. والحلقة الكهرمانية زي ما هي، فهي
    اللي بتقول «الدور عليها». */
-.stp-num{font-family:var(--fd);font-weight:700;font-size:var(--fs-1);color:var(--t2)}
+.stp-num{font-family:var(--fd);font-weight:700;font-size:var(--fs-2);color:var(--t2)}
 .stp-stepper .stp-i.now .stp-dot{background-color:var(--fl-7);
   background-image:linear-gradient(rgba(var(--warnC),.20),rgba(var(--warnC),.20));
   box-shadow:0 0 0 3px rgba(var(--warnC),.18)}
 .stp-stepper .stp-i.now .stp-num{color:var(--warn-ink)}
+
 @media (max-width:760px){
-  .stp-stepper{gap:var(--sp-2)}
-  .stp-stepper .stp-i{flex:1 1 100%}
+  /* الشبكة الأفقية بتخنق خمس خطوات في عرض تليفون · بتبقى عمودًا،
+     والسكّة بتتشال لأنها بتكدب على الترتيب في التخطيط الجديد */
+  .stp-stepper{grid-auto-flow:row;grid-auto-columns:auto}
+  .stp-stepper .stp-b{flex-direction:row;text-align:start;gap:var(--sp-3);
+    padding:var(--sp-3)}
+  .stp-stepper .stp-l{flex:1}
   .stp-stepper .stp-i+.stp-i::before{display:none}
 }
