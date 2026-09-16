@@ -51,7 +51,11 @@ export const ROUTES = [
      اتفحصوش ولا مرة في ٣ ثيمات، والجرد بيرجع أخضر وهو ما شافهمش.
      `?tab=docs` هو التبويب اللي الإلزام فيه بيتغيّر بالتصنيف،
      و`?step=sent` هي الشاشة اللي بتقول «لسه مفيش حساب». */
-  '/entities/register?step=form', '/entities/register?step=form&tab=docs',
+  /* ⚠️ و`up=` مش تزويق في الرابط: هي حالة **بعد الرفع**. من غيرها
+     الجرد بيشوف مناطق الرفع الفاضية وبس، والعيّنة المرفوعة
+     (`DocFile` بثامبنيله وزرار الإزالة) ما بتترسمش ولا مرة.
+     والمفتاحان دول بيخلّوا الصفحة الواحدة فيها الحالتين مع بعض. */
+  '/entities/register?step=form', '/entities/register?step=form&tab=docs&up=license,board',
   '/entities/register?step=otp', '/entities/register?step=sent',
   '/entities/requests', '/entities/requests/RG-1041',
   '/entities/requests/RG-1039', '/entities/requests/RG-1037',

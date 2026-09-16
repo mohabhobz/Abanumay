@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Glass, Head, Icon, icons, Mono, Num, Steps, Tabs, Tag, type StepItem,
+  BackTo, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, type StepItem,
 } from '@/components/ui'
+import { DocFile } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { Background } from '@/components/shell'
-import { useQueryParams } from '@/hooks/useQueryParams'
+import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { isSignedIn } from '@/data/session'
@@ -53,7 +54,7 @@ type Phase = 'terms' | 'form' | 'otp' | 'sent'
 
 const PHASES: Phase[] = ['terms', 'form', 'otp', 'sent']
 
-const KEYS = ['step', 'tab'] as const
+const KEYS = ['step', 'tab', 'up'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const EMPTY: Record<string, string> = {}
@@ -79,7 +80,15 @@ export default function RegisterPage() {
   const tab = REG_STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : REG_STAGES[0].key
   const setTab = (x: string) => set({ tab: x === REG_STAGES[0].key ? undefined : x })
   const [val, setVal] = useState<Record<string, string>>(EMPTY)
-  const [docs, setDocs] = useState<Set<string>>(new Set())
+
+  /* ⚠️ **المرفوع في الرابط، والملف المختار في الستيت.**
+     المفاتيح في `?up=` عشان حالة «بعد الرفع» تبقى شاشة ليها عنوان
+     — تتشارك، وترجع بالريفرش، **والجرد يقدر يزورها**. والملف اللي
+     المستخدم اختاره فعلًا (اسمه وحجمه) في الستيت، لأنه مش بيتحطّ
+     في رابط ولا بيعيش بعد الريفرش · فالشاشة بتعرض اسمه لو موجود،
+     وتعرض عيّنة باسم المستند لو المفتاح جه من الرابط. */
+  const docs = useMemo(() => new Set(readList(v.up)), [v.up])
+  const [files, setFiles] = useState<Record<string, { name: string; size: number }>>({})
   const [otp, setOtp] = useState('')
   const [draft, setDraft] = useState(false)
 
@@ -94,13 +103,21 @@ export default function RegisterPage() {
       return next
     })
 
-  const toggleDoc = (k: string) =>
-    setDocs((s) => {
-      const next = new Set(s)
-      if (next.has(k)) next.delete(k)
-      else next.add(k)
+  /** رفع مستند · بياخد الملف الحقيقي لو المستخدم اختار واحدًا */
+  const upload = (k: string, f?: File) => {
+    if (f) setFiles((s) => ({ ...s, [k]: { name: f.name, size: f.size } }))
+    set({ up: writeList([...new Set([...readList(v.up), k])]) })
+  }
+
+  /** إزالة المرفوع · مش حذفًا من سجل، دي مسودة لسه ما اتبعتتش */
+  const clearDoc = (k: string) => {
+    setFiles((s) => {
+      const next = { ...s }
+      delete next[k]
       return next
     })
+    set({ up: writeList(readList(v.up).filter((x) => x !== k)) })
+  }
 
   /** الناقص في كل تبويب · قاعدة 4، والمستندات بتتحسب بالتصنيف */
   const shortBy = useMemo(() => {
@@ -239,15 +256,35 @@ export default function RegisterPage() {
 
               {phase === 'form' && (
                 <>
-                  <Tabs
-                    items={REG_STAGES.map((s) => ({
-                      slug: s.key,
-                      label: s.label,
-                      count: shortBy[s.key].length || undefined,
+                  {/* ⚠️ **دي خطوات لا تبويبات، والفرق مش تسمية.**
+                      التبويب بيقول «فين إنت» وبس، وأي ترتيب فيه
+                      مقبول · الخطوات هنا **متسلسلة فعلًا**: التصنيف
+                      في الأولى بيحدّد المستندات الإلزامية في
+                      الأخيرة، والبنك ما ينفعش يتراجع قبل ما نعرف
+                      الجهة مين. فالشريط بقى ستيبر: رقم لكل خطوة،
+                      وأول ما تكتمل الرقم بيتبدّل بعلامة صح. */}
+                  {/* ⚠️ الستيبر جوّه كارت لا عريان على الخلفية.
+                      التبويبات اللي كانت مكانه كانت عريانة، والشريط
+                      الجديد فيه نصّ خافت (خطوة لسه ما بدأتش) ·
+                      و`--t3` على تدرّج الصفحة مباشرةً نزل **3.77**.
+                      الكارت بيدّي أرضية معروفة زي كل بلوك تاني في
+                      السيستم، فالنصّ الخافت بيرجع يعدّي زي ما بيعدّي
+                      جوّه أي كارت. */}
+                  <Glass className="regsteps">
+                  <Steps
+                    flow="stepper"
+                    onPick={(i) => setTab(REG_STAGES[i].key)}
+                    items={REG_STAGES.map((st) => ({
+                      label: st.label,
+                      note: shortBy[st.key].length
+                        ? `ناقص ${shortBy[st.key].length}`
+                        : 'مكتملة',
+                      state: st.key === tab
+                        ? 'now'
+                        : shortBy[st.key].length === 0 ? 'done' : 'todo',
                     }))}
-                    active={tab}
-                    onChange={setTab}
                   />
+                  </Glass>
 
                   {REG_STAGES.filter((s) => s.key === tab).map((s) => (
                     <Glass key={s.key}>
@@ -262,33 +299,101 @@ export default function RegisterPage() {
                       <p className="sub cnote">{s.note}</p>
 
                       {s.key === 'docs' ? (
-                        <ul className="regdocs">
-                          {REG_DOCS.map((d) => {
-                            const need = docRequired(d, type)
-                            const on = docs.has(d.key)
-                            return (
-                              <li key={d.key} className={need && !on ? 'no' : on ? 'ok' : ''}>
-                                <label>
-                                  <input
-                                    type="checkbox"
-                                    checked={on}
-                                    onChange={() => toggleDoc(d.key)}
-                                  />
-                                  <span className="regdocs-l">{d.label}</span>
-                                </label>
-                                <span className="pc-sp" />
-                                {need
-                                  ? <Tag tone={on ? 'ok' : 'warn'}>
-                                      {d.reqFor ? `إلزامي للتصنيف ${d.reqFor[0]}` : 'إلزامي'}
-                                    </Tag>
-                                  : <Tag tone="mute">اختياري</Tag>}
-                                <span className="sub regdocs-m">
-                                  حتى <span className="num">{d.maxMb}</span> م.ب
+                        <>
+                          {/* ⚠️ **مين بيرفع؟** الجهة نفسها — وتحديدًا
+                              مدخل البيانات اللي اسمه في خطوة
+                              «الاتصال والأشخاص»، وهو نفسه اللي
+                              هيوصله اسم المستخدم بعد الاعتماد
+                              (خطوة 15). فالسطر ده مش ترويسة زينة:
+                              هو بيقول للجهة إن المستندات مسؤوليتها
+                              هي، وإن الاسم اللي كتبته فوق هو اللي
+                              هيتسجّل مع كل ملف في سجل التدقيق
+                              (قاعدة 30). */}
+                          <div className="regwho">
+                            {val.clerkName ? (
+                              <>
+                                <Person name={val.clerkName} quiet={false} />
+                                <span className="sub">
+                                  مدخل بيانات الجهة · هو من يرفع، واسمه يُسجَّل مع كل ملف
+                                  في سجل التدقيق (قاعدة <span className="num">30</span>)
                                 </span>
-                              </li>
-                            )
-                          })}
-                        </ul>
+                              </>
+                            ) : (
+                              <>
+                                <Icon name={icons.users} size={16} />
+                                <span className="sub">
+                                  المستندات ترفعها <b>الجهة نفسها</b> · اكتب اسم مدخل
+                                  البيانات في خطوة «الاتصال والأشخاص» ليُسجَّل مع كل ملف.
+                                </span>
+                              </>
+                            )}
+                          </div>
+
+                          <ul className="regdocs">
+                            {REG_DOCS.map((d) => {
+                              const need = docRequired(d, type)
+                              const on = docs.has(d.key)
+                              const picked = files[d.key]
+                              return (
+                                <li key={d.key} className={on ? 'ok' : need ? 'no' : ''}>
+                                  <div className="regdoc-h">
+                                    <span className="regdocs-l">{d.label}</span>
+                                    <span className="pc-sp" />
+                                    {need
+                                      ? <Tag tone={on ? 'ok' : 'warn'}>
+                                          {d.reqFor ? `إلزامي للتصنيف ${d.reqFor[0]}` : 'إلزامي'}
+                                        </Tag>
+                                      : <Tag tone="mute">اختياري</Tag>}
+                                  </div>
+
+                                  {on ? (
+                                    /* عيّنة بعد الرفع · نفس `DocFile`
+                                       اللي في المشاريع والجهات
+                                       والاتفاقيات، بثامبنيله · فالمراجع
+                                       بيعرف نوع الملف قبل ما يفتحه،
+                                       والجهة بتشوف اللي رفعته زي ما
+                                       هيشوفه هو بالظبط */
+                                    <div className="regdoc-up">
+                                      <DocFile
+                                        name={picked?.name ?? `${d.label}.pdf`}
+                                        meta={
+                                          picked
+                                            ? `${(picked.size / 1024 / 1024).toFixed(2)} م.ب · بانتظار الإرسال`
+                                            : 'عيّنة · بانتظار الإرسال'
+                                        }
+                                        block
+                                        download={false}
+                                      />
+                                      <button
+                                        className="btn btn-ghost btn-sm"
+                                        onClick={() => clearDoc(d.key)}
+                                      >
+                                        <Icon name={icons.close} size={14} />
+                                        إزالة
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <label className="regdrop">
+                                      <input
+                                        type="file"
+                                        accept=".pdf,.jpg,.jpeg,.png,.gif"
+                                        onChange={(e) => upload(d.key, e.target.files?.[0])}
+                                      />
+                                      <Icon name={icons.upload} size={16} />
+                                      <span>اسحب الملف هنا أو اضغط للاختيار</span>
+                                      <span className="pc-sp" />
+                                      {/* الصيغ والحدّ من النظام العامل حرفيًا */}
+                                      <span className="sub regdocs-m">
+                                        PDF أو JPG أو PNG · حتى{' '}
+                                        <span className="num">{d.maxMb}</span> م.ب
+                                      </span>
+                                    </label>
+                                  )}
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </>
                       ) : (
                         <div className="regfields">
                           {s.fields.map((f) => (
@@ -446,7 +551,11 @@ export default function RegisterPage() {
         </div>
 
         {/* الدوك · المخارج بتتغيّر بالمحطة، ومفيش مخرج معطَّل بلا سبب */}
-        <div className="decdock">
+        {/* ⚠️ الرصيف بيسيب مكانًا على الشمال لزرار «اسأل أبانمي»
+            العايم · والزرار ده جوّه `AppLayout` وحده. فبرّه الجلسة
+            المكان ده بيفضل فاضيًا والشريط بيبان مقصوصًا، عشان كده
+            بياخد العرض كامل. */}
+        <div className={`decdock${inside ? '' : ' wide'}`}>
           <div className="chrome decbar payact">
             <div className="rowf gp-3 payact-w">
               <span className="decsent">

@@ -20,6 +20,16 @@ import { icons } from './icons'
  *   · `row`   · صفّ بيلفّ. أربع محطات جنب بعض من غير خط، لأنها
  *     بتتقري كقائمة تحقّق مش كسلسلة زمنية، والخط في شبكة بتلفّ
  *     بيكدب على الترتيب.
+ *   · `stepper` · صفّ أفقي **بيتضغط**. ده التدفّق الوحيد اللي
+ *     المستخدم بيتنقّل بيه بنفسه، وهو اللي بيلبس مكان التبويبات
+ *     في النماذج المتعدّدة المراحل.
+ *
+ * ### والرقم بيتبدّل بعلامة صح
+ * في `stepper` النقطة بتشيل **رقم الخطوة**، وأول ما الخطوة تكتمل
+ * الرقم بيروح وتيجي مكانه علامة صح · ده الفرق اللي بيخلّي الشريط
+ * «ستيبر» لا «تابس»: التابس بيقول «فين إنت»، والستيبر بيقول «فين
+ * إنت **وكام خلص**». والرقم مش زينة · هو ترتيب الخطوة في الإجراء،
+ * فمكانه النقطة نفسها لا جنب الاسم.
  *
  * اللي بيتوحّد هو **العلامة**: نقطة واحدة بقطر واحد، وحالة واحدة
  * بلغة واحدة، ونفس الألوان. التخطيط بيتغيّر، والعلامة لأ.
@@ -56,24 +66,60 @@ const SAY: Record<StepState, string> = {
 
 export interface StepsProps {
   items: StepItem[]
-  /** `ladder` سُلّم رأسي متصل · `row` صفّ بيلفّ بلا خط */
-  flow?: 'ladder' | 'row'
+  /** `ladder` سُلّم رأسي متصل · `row` صفّ بيلفّ بلا خط · `stepper` صفّ بيتضغط */
+  flow?: 'ladder' | 'row' | 'stepper'
+  /**
+   * الضغط على خطوة · بيشغّل `stepper` وحده.
+   * وجوده هو اللي بيحوّل العناصر لأزرار · من غيره الشريط بيتعرض
+   * للقراءة، فالعنصر اللي مالوش فعل ما بياخدش شكل الزرار.
+   */
+  onPick?: (index: number) => void
 }
 
-export function Steps({ items, flow = 'ladder' }: StepsProps) {
+export function Steps({ items, flow = 'ladder', onPick }: StepsProps) {
+  const stepper = flow === 'stepper'
+  const can = stepper && Boolean(onPick)
+
   return (
     <ol className={`stp stp-${flow}`}>
-      {items.map((s, i) => (
-        <li key={i} className={`stp-i ${s.state}`}>
+      {items.map((s, i) => {
+        const dot = (
           <span className="stp-dot" aria-hidden="true">
-            {s.state === 'done' && <Icon name={icons.check} size={12} />}
+            {/* ⚠️ الرقم بيتبدّل بعلامة صح · مش بيقعدوا مع بعض.
+                الاتنين في نفس النقطة معناهم «الخطوة 3 وخلصت»،
+                والرقم بعد الاكتمال ما بيضيفش معلومة · اللي بيهمّ
+                ساعتها إنها خلصت. */}
+            {s.state === 'done'
+              ? <Icon name={icons.check} size={12} />
+              : stepper ? <b className="stp-num">{i + 1}</b> : null}
           </span>
-          <span className="stp-l">{s.label}</span>
-          <span className="vis-h">{SAY[s.state]}</span>
-          {s.note != null && s.note !== '' && <span className="stp-n">{s.note}</span>}
-          {flow === 'ladder' && <span className="stp-at">{s.at ?? ''}</span>}
-        </li>
-      ))}
+        )
+        const body = (
+          <>
+            {dot}
+            <span className="stp-l">{s.label}</span>
+            <span className="vis-h">{SAY[s.state]}</span>
+            {s.note != null && s.note !== '' && <span className="stp-n">{s.note}</span>}
+            {flow === 'ladder' && <span className="stp-at">{s.at ?? ''}</span>}
+          </>
+        )
+        return (
+          <li key={i} className={`stp-i ${s.state}`}>
+            {can
+              ? (
+                <button
+                  type="button"
+                  className="stp-b"
+                  aria-current={s.state === 'now' ? 'step' : undefined}
+                  onClick={() => onPick?.(i)}
+                >
+                  {body}
+                </button>
+              )
+              : body}
+          </li>
+        )
+      })}
     </ol>
   )
 }

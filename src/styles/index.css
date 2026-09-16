@@ -2261,6 +2261,11 @@ to{opacity:1;transform:none}
 .decsep{width:1px;height:14px;background:rgba(var(--edgeC),.22);margin:0 var(--sp-2);flex:none}
 /* آخر الصفحة: مفيش محتوى ماشي تحت الشريط، فالضبابة مالهاش لازمة */
 .decdock.clear::before{opacity:0}
+/* ⚠️ الحشو الزيادة فوق موجود عشان يسيب مكان زرار «اسأل أبانمي»
+   العايم · والزرار جوّه `AppLayout` وحده. في الشاشات العامة
+   (تسجيل جهة جديدة) الزرار مش موجود، فالمكان بيفضل فاضيًا والشريط
+   بيبان مقصوصًا من ناحية · فبياخد العرض كامل. */
+.decdock.wide{padding-inline-end:clamp(var(--sp-7), 3vw, var(--sp-9))}
 .decbar{position:relative;isolation:isolate;pointer-events:auto;bottom:auto;
   /* أرضية معتمة تحت الزجاج.
      الزرار عايم فوق محتوى بيتمرّر تحته، والبلور وحده ما بيخفيش النص
@@ -5929,15 +5934,40 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    في التيمة الخضرا. نفس الوسم بيعدّي في كل كارت تاني في السيستم
    لأنه قاعد على طبقتين لا أربعة. فالصفّ بقى خطًّا فاصلًا: نفس
    القراءة، وطبقة أقلّ تحت الوسم. */
-.regdocs li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
-  padding:var(--sp-3) 0;box-shadow:inset 0 -1px 0 var(--edge-d);
+.regdocs li{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0;
+  padding:var(--sp-4) 0;box-shadow:inset 0 -1px 0 var(--edge-d);
   font-size:var(--fs-2);line-height:var(--lh-2)}
 .regdocs li:last-child{box-shadow:none}
-.regdocs label{display:flex;align-items:center;gap:var(--sp-3);cursor:pointer;min-width:0}
-.regdocs input{flex:none;accent-color:var(--solid);width:16px;height:16px}
+.regdoc-h{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
 .regdocs-l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   color:var(--t1)}
 .regdocs-m{flex:none;font-size:var(--fs-1)}
+
+/* مين بيرفع · سطر بوش، لأن الإجابة **شخص** لا إعداد */
+.regwho{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0;
+  margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
+  background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1)}
+
+/* منطقة الرفع · حدّ متقطّع لأنه **مكان فاضي مستنّي حاجة**، وده
+   الشكل الوحيد في السيستم اللي بيقول كده · باقي الحدود متصلة لأنها
+   بتحوّط محتوى موجود. */
+.regdrop{position:relative;display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  padding:var(--sp-4);border-radius:var(--ric);cursor:pointer;
+  background:var(--fl-2);
+  border:1.5px dashed rgba(var(--edgeC),.26);
+  transition:background .16s ease,border-color .16s ease}
+.regdrop:hover{background:var(--fl-5);border-color:rgba(var(--edgeC),.42)}
+.regdrop:focus-within{border-color:var(--ctl-line-f)}
+.regdrop svg{flex:none;color:var(--t3-g)}
+/* الحقل الخام مخفي بالكامل · اللابل نفسه هو المنطقة، وزرار
+   «Choose file» بتاع المتصفح ما بيتنسّقش ولا بيتعرّب */
+.regdrop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+/* بعد الرفع · الملف بشكله المعروف في السيستم كله، وجنبه الإزالة */
+.regdoc-up{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--ric);
+  background:var(--fl-5);box-shadow:inset 0 0 0 1px var(--edge-1)}
+.regdoc-up .dfile{flex:1;min-width:0}
 
 /* قائمة الناقص · كل سطر بيوَدّي لتبويبه، فالناقص مش خبر بس */
 .regmiss{list-style:none;margin:var(--sp-4) 0 0;padding:0;
@@ -5970,3 +6000,58 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   padding-bottom:var(--sp-5);box-shadow:inset 0 -1px 0 var(--edge-d)}
 .regtop>div{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
 .regtop b{font-family:var(--fd);font-weight:700;font-size:var(--fs-3);color:var(--t1)}
+
+/* ستيبر · التدفّق الوحيد اللي بيتضغط.
+   النقطة أكبر شوية عن السُّلّم لأنها شايلة رقم مقروء لا علامة، وهو
+   ترتيب الخطوة في الإجراء · والخط بين النقط بيقول «الواحدة بعد
+   التانية» زي السُّلّم بالظبط، بس أفقيًّا. */
+.stp-stepper{--stp-dot:26px;
+  display:flex;align-items:flex-start;gap:0;flex-wrap:wrap}
+/* الكارت بيلزق على الشريط · مفيش حشو زيادة تحته */
+.regsteps{padding-block:var(--sp-4)}
+.stp-stepper .stp-i{flex:1 1 7.5rem;min-width:0;display:flex}
+/* الخط بيوصل النقطة باللي قبلها · في RTL بيطلع من ناحية اليمين */
+.stp-stepper .stp-i+.stp-i::before{content:"";flex:none;align-self:flex-start;
+  /* الخط بيقع في **نصّ النقطة** · والنقطة جوّه زرار له حشو
+     علوي، فالمسافة = الحشو + نصف القطر. من غير الحشو الخط بيطلع
+     فوق مركز النقطة بشعرة وبيبان مايلًا. */
+  width:var(--sp-4);height:var(--stp-line);
+  margin-top:calc(var(--sp-2) + var(--stp-dot) / 2);
+  background:rgba(var(--edgeC),.16)}
+/* ⚠️ **الاسم والحالة فوق بعض لا جنب بعض.** أول نسخة رصّتهم في
+   صفّ، فخمس خطوات في عرض العمود خلّت «المستندات» تبقى «المست…»
+   و«الحساب البنكي» تبقى «الحسا…». واسم الخطوة **مقصوص** بيلغي
+   الغرض من الشريط: المستخدم بيبصّ عليه عشان يعرف رايح فين.
+   فالشبكة بقت عمودين: النقطة، وتحتها الاسم والحالة سطرين. */
+.stp-stepper .stp-b{flex:1;min-width:0;display:grid;
+  grid-template-columns:auto minmax(0,1fr);align-items:center;
+  column-gap:var(--sp-3);row-gap:var(--sp-1);
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--r1);cursor:pointer;text-align:start;
+  transition:background .16s ease}
+.stp-stepper .stp-b:hover{background:var(--fl-2)}
+.stp-stepper .stp-i.now .stp-b{background:var(--fl-5)}
+.stp-stepper .stp-dot{grid-row:1 / span 2}
+.stp-stepper .stp-l{grid-column:2;font-size:var(--fs-2);min-width:0;
+  overflow-wrap:break-word}
+.stp-stepper .stp-n{grid-column:2;font-size:var(--fs-1);min-width:0}
+/* ⚠️ **النقطة الحالية بتتغيّر لما تشيل رقمًا.**
+   في السُّلّم والصفّ النقطة الحالية كهرمانية مصمتة وفاضية، وده
+   سليم لأنها علامة لا حاوية نصّ. هنا بتشيل **رقم الخطوة**، وأبيض
+   على `--warn` = **3.04** · تحت AA. وأداة التباين عدّته لأنها
+   بتاخد الخلفية من الصفوف اللي حوالين الحروف جوّه العنصر، والعنصر
+   هنا أصغر من الدايرة نفسها فالعيّنة وقعت على الكارت ورا.
+
+   الحلّ مش لون جديد: نفس تركيبة `.tag.warn` بالظبط (`--fl-7` +
+   طبقة كهرمانية + `--warn-ink`)، وهي تركيبة **متفحوصة في التلات
+   ثيمات** في كل وسم في السيستم. والحلقة الكهرمانية زي ما هي، فهي
+   اللي بتقول «الدور عليها». */
+.stp-num{font-family:var(--fd);font-weight:700;font-size:var(--fs-1);color:var(--t2)}
+.stp-stepper .stp-i.now .stp-dot{background-color:var(--fl-7);
+  background-image:linear-gradient(rgba(var(--warnC),.20),rgba(var(--warnC),.20));
+  box-shadow:0 0 0 3px rgba(var(--warnC),.18)}
+.stp-stepper .stp-i.now .stp-num{color:var(--warn-ink)}
+@media (max-width:760px){
+  .stp-stepper{gap:var(--sp-2)}
+  .stp-stepper .stp-i{flex:1 1 100%}
+  .stp-stepper .stp-i+.stp-i::before{display:none}
+}

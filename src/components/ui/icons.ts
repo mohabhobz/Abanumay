@@ -17,6 +17,7 @@
  * الاستعمال زي ما هو:  <Icon name={icons.home} size={20} />
  */
 import {
+  Upload,
   House, Sun, PanelLeft, Leaf, Moon, Monitor, User, SlidersHorizontal,
   LogOut, Lock, Eye, EyeOff, FileText, Building2, Wallet, FileSignature,
   CreditCard, ChartColumn, MessageCircle, CircleAlert, ChevronLeft,
@@ -71,6 +72,8 @@ export const icons = {
   /* التصدير ≠ سهم عارٍ لتحت: السهم لوحده بيتقري «رتّب تنازليًا».
      `Download` فيه الصينية اللي بتقول «الملف بينزل على جهازك». */
   export: Download,
+  /* الرفع · الرسم سهم لفوق فوق خطّ · عكس التنزيل بالظبط */
+  upload: Upload,
   copy: Copy,
   check: Check,
   redo: RotateCw,
