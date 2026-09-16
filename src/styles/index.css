@@ -6124,3 +6124,104 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   .stp-stepper .stp-l{flex:1}
   .stp-stepper .stp-i+.stp-i::before{display:none}
 }
+
+/* مخارج الفورم جوّه الكارت · للجاي من برّه السيستم.
+   خطّ فاصل فوقها لا أرضية: دي **نهاية الكارت** مش شريط تاني، ولو
+   خدت سطحًا خاصًّا بيها بتتقري رصيفًا صغيّرًا جوّه كارت. */
+.regfoot{display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap;
+  margin-top:var(--sp-5);padding-top:var(--sp-5);
+  box-shadow:inset 0 1px 0 var(--edge-d)}
+
+/* مخارج الفورم جوّه الكارت · للجاي من برّه السيستم.
+   خطّ فاصل فوقها لا أرضية: دي **نهاية الكارت** مش شريط تاني، ولو
+   خدت سطحًا خاصًّا بيها بتتقري رصيفًا صغيّرًا جوّه كارت. */
+.regfoot{display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap;
+  margin-top:var(--sp-5);padding-top:var(--sp-5);
+  box-shadow:inset 0 1px 0 var(--edge-d)}
+
+/* ═══ شجرة الميزانية ═══
+   جدول بشبكة ثابتة · العمود الأول بيتزحزح بعمق البند (`--lvl`)،
+   والباقي بيفضل مسطَّرًا. الإزاحة على **المحتوى** لا على الصفّ،
+   عشان الحالة والمبالغ تفضل في عمود واحد مهما نزلت الشجرة. */
+.btree{display:flex;flex-direction:column;margin-top:var(--sp-4)}
+.btree-h,.btree-r{display:grid;
+  grid-template-columns:minmax(0,1fr) 7.5rem 8.5rem 8.5rem 6rem 4.5rem;
+  align-items:center;gap:var(--sp-3);
+  padding:var(--sp-3) var(--sp-3);font-size:var(--fs-2);line-height:var(--lh-2)}
+.btree-h{font-size:var(--fs-1);color:var(--t3-g);
+  box-shadow:inset 0 -1px 0 var(--edge-1)}
+.btree-r{box-shadow:inset 0 -1px 0 var(--edge-d)}
+.btree-r:last-child{box-shadow:none}
+.btree-r:hover{background:var(--fl-2)}
+/* البند اللي عليه ملاحظة · الحافة بتقول فيه حاجة والقايمة جنبه
+   بتقول إيه هي · اللون لوحده مش معلومة */
+.btree-r.no{box-shadow:inset 0 -1px 0 var(--edge-d),inset 2px 0 0 var(--no)}
+.btree-r.off{color:var(--t3)}
+/* ⚠️ **الإزاحة كلاسات لا متغيّر سطري.**
+   العمق داتا لا ستايل، فالمنطقي يتبعت كـ`style` — وده بيزوّد
+   عدّاد الستايلات السطرية، والعدّاد ده بينزل أو يثبت وما بيطلعش.
+   والمستويات «مفتوحة» في الداتا بس العين مش بتفرّق بعد شوية:
+   تمن درجات إزاحة كفاية، واللي أعمق بياخد آخر درجة · فالشجرة
+   بتفضل مفتوحة والإزاحة بتقف. */
+.btree-n{display:flex;align-items:center;gap:var(--sp-2);min-width:0}
+.btree-n.l1{padding-inline-start:var(--sp-6)}
+.btree-n.l2{padding-inline-start:var(--sp-8)}
+.btree-n.l3{padding-inline-start:var(--sp-9)}
+.btree-n.l4{padding-inline-start:var(--sp-10)}
+.btree-n.l5{padding-inline-start:var(--sp-11)}
+.btree-n.l6{padding-inline-start:var(--sp-12)}
+.btree-n>svg{flex:none;color:var(--t3-g)}
+.btree-x{flex:none;display:grid;place-items:center;width:20px;height:20px;
+  border-radius:var(--rp);color:var(--t3);cursor:pointer}
+.btree-x:hover{background:var(--fl-5);color:var(--t1)}
+.btree-o{flex:none;color:var(--t3-g);font-size:var(--fs-1)}
+.btree-l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--t1)}
+/* حقل المخصص جوّه الصفّ · بلا حدّ لحدّ ما تقرّبه، عشان الجدول
+   يفضل جدولًا لا شبكة حقول */
+.btree-a{width:100%;font:inherit;font-size:var(--fs-2);color:var(--t1);
+  text-align:start;padding:var(--sp-2) var(--sp-3);border-radius:var(--ric);
+  border:0;background:none;box-shadow:inset 0 0 0 1px transparent;
+  transition:box-shadow .16s ease,background .16s ease}
+.btree-a:hover{background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--ctl-line)}
+.btree-a:focus{outline:none;background:var(--ctl-bg);
+  box-shadow:inset 0 0 0 1px var(--ctl-line-f)}
+.btree-act{display:flex;align-items:center;gap:var(--sp-1);justify-content:flex-end}
+
+/* ملاحظات الشجرة · نفس شكل قائمة التحقّق في الصرف والاتفاقيات */
+.btree-iss{list-style:none;margin:0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-3)}
+.btree-iss li{display:flex;align-items:flex-start;gap:var(--sp-3);min-width:0;
+  font-size:var(--fs-2);line-height:var(--lh-text)}
+/* الأيقونة بتتحاذى مع أول سطر · `align-items:flex-start` فوق
+   والمحاذاة هنا بالسطر نفسه لا بإزاحة مكتوبة */
+.btree-iss svg{flex:none;align-self:center;color:var(--warn)}
+.btree-iss .payq-r{flex:none;margin-inline-start:auto}
+
+/* غطاء المودال · معتم وبيقفل بالضغط عليه */
+.bmask{position:fixed;inset:0;z-index:80;display:grid;place-items:center;
+  padding:var(--sp-5);background:rgba(var(--baseC),.55);
+  -webkit-backdrop-filter:var(--mat-2);backdrop-filter:var(--mat-2)}
+.bmask .modal{width:min(480px,100%);max-width:none}
+.bmask .modal .mb{display:flex;flex-direction:column;gap:var(--sp-4)}
+.bmask .modal .mf{align-items:center}
+
+/* صفّ الإعدادات · حقول جنب بعض وزرار إضافة في آخرها */
+.cfgrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:var(--sp-4);align-items:end;margin-top:var(--sp-4)}
+.cfgwide{grid-column:span 2}
+.cfgadd{align-self:end}
+.cfglist{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.cfglist li{display:flex;align-items:center;gap:var(--sp-4);min-width:0;
+  padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
+  background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1);
+  font-size:var(--fs-2);line-height:var(--lh-2)}
+.cfglist li>b{flex:none;font-family:var(--fd);font-weight:600;color:var(--t1)}
+
+@media (max-width:900px){
+  .btree-h{display:none}
+  .btree-r{grid-template-columns:minmax(0,1fr) auto;row-gap:var(--sp-2)}
+  .btree-r>span:nth-child(2){grid-column:2}
+  .cfgwide{grid-column:auto}
+}

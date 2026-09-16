@@ -24,6 +24,12 @@ export const ROUTES = {
 
   budget: '/budget',
   budgetYear: (year: string | number) => `/budget/${year}`,
+  /** إعدادات الميزانية · السنوات المالية ومصادر التمويل (ماستر داتا) */
+  budgetSettings: '/budget/settings',
+  /** إنشاء ميزانية · ترويسة + شجرة بنود */
+  budgetNew: '/budget/new',
+  /** ميزانية قائمة */
+  budgetDoc: (id: string) => `/budget/doc/${id}`,
 
   agreements: '/agreements',
   agreement: (id: string) => `/agreements/${id}`,

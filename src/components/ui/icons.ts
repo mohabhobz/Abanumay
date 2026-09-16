@@ -17,7 +17,7 @@
  * الاستعمال زي ما هو:  <Icon name={icons.home} size={20} />
  */
 import {
-  Upload,
+  Upload, Folder,
   House, Sun, PanelLeft, Leaf, Moon, Monitor, User, SlidersHorizontal,
   LogOut, Lock, Eye, EyeOff, FileText, Building2, Wallet, FileSignature,
   CreditCard, ChartColumn, MessageCircle, CircleAlert, ChevronLeft,
@@ -44,6 +44,8 @@ export const icons = {
   eye: Eye,
   eyeOff: EyeOff,
   doc: FileText,
+  /* المجلّد · البند اللي تحته بنود في شجرة الميزانية */
+  folder: Folder,
   entity: Building2,
   budget: Wallet,
   contract: FileSignature,

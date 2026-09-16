@@ -57,9 +57,19 @@ export const ROUTES = [
      والمفتاحان دول بيخلّوا الصفحة الواحدة فيها الحالتين مع بعض. */
   '/entities/register?step=form', '/entities/register?step=form&tab=docs&up=license,board',
   '/entities/register?step=otp', '/entities/register?step=sent',
+  /* ⚠️ ودي **نفس الشاشة بغلاف تاني**: الجاي من برّه السيستم مخارجه
+     جوّه الكارت ومفيش رصيف تحت، والداخل من جوّه بالعكس. من غير
+     المسار ده الجرد بيقيس نسخة واحدة من اتنين. */
+  '/entities/register?step=form&tab=bank',
   '/entities/requests', '/entities/requests/RG-1041',
   '/entities/requests/RG-1039', '/entities/requests/RG-1037',
-  '/budget', '/payments', '/payments/SR-2026-11407', '/payments/new',
+  '/budget',
+  /* الميزانية · الإعدادات وشجرة البنود.
+     ⚠️ التلاتة دول شاشات إنشاء وتحرير، ومن غيرهم الجرد بيقيس
+     شاشة العرض وحدها وهي **نتيجة** الشجرة لا الشجرة. */
+  '/budget/settings', '/budget/settings?tab=sources',
+  '/budget/doc/BG-2025-SA', '/budget/new',
+  '/payments', '/payments/SR-2026-11407', '/payments/new',
   '/payments/SR-2026-11415/order', '/payments/late',
   '/payments/SR-2026-11410/edit', '/agreements', '/agreements/AG-2026-3101',
   '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
@@ -83,7 +93,7 @@ export const ROUTES = [
  *
  * فالمسارات دي بتتفتح بجلسة مفضية، والباقي زي ما هو.
  */
-export const PUBLIC_ROUTES = ['/entities/register']
+export const PUBLIC_ROUTES = ['/entities/register', '/entities/register?step=form&tab=bank']
 
 /* ⚠️ المطابقة بالمسار **كاملًا بالكويري** عن قصد: `/entities/register`
    بيتفحص عامًا، و`?step=form` وإخواته بجلسة · فالغلافان الاتنين

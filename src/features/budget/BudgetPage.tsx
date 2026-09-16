@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Money, Num, Person, Select, Tag } from '@/components/ui'
+import { ROUTES } from '@/app/routes'
+import { Mono } from '@/components/ui'
+import { nf } from '@/lib/format'
+import { budgetDocs, docTitle } from '@/data/mock/budgetTree'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { Segments } from '@/components/ui/filters'
@@ -93,6 +98,22 @@ export default function BudgetPage() {
                 التخصيص على أربع مستويات، الدورة والمسار والمجال والهدف، ومعه ما استُهلك منه
               </p>
             </div>
+
+            {/* ⚠️ **الشاشة دي كانت بتعرض ولا بتنشئ.** الأرقام اللي
+                فيها نتيجة شجرة التخصيص، والشجرة نفسها ما كانش لها
+                مدخل · فمفيش زرار إنشاء ولا إعدادات. والإعدادات قبل
+                الإنشاء في الترتيب لأن الميزانية ما تتفتحش إلا لو
+                سنتها ومصدر تمويلها متعرّفين. */}
+            <div className="rowf gp-2">
+              <Link className="btn btn-2" to={ROUTES.budgetSettings}>
+                <Icon name={icons.gear} size={16} />
+                الإعدادات
+              </Link>
+              <Link className="btn btn-p" to={ROUTES.budgetNew}>
+                <Icon name={icons.plus} size={16} />
+                ميزانية جديدة
+              </Link>
+            </div>
             {/* مبدّل الدورة مش فلتر: الدورة **دايمًا** مختارة، فمفيش
                 خيار «الكل» · `allowEmpty={false}`. كان `select`
                 أصلية بحجّة إن `Select` العامّة بتضيف خيارًا فاضيًا؛
@@ -108,6 +129,34 @@ export default function BudgetPage() {
               onChange={(v) => { if (v) { setCycleId(v); setPath([]) } }}
             />
           </header>
+
+          {/* ⚠️ **الميزانيات نفسها كانت غايبة عن شاشة الميزانية.**
+              اللي تحت رسوم واستهلاك — نتيجة التخصيص — والريكوردات
+              اللي اتبنى عليها التخصيص ما كانش لها مدخل. ودي بتتعرّف
+              بـ«سنة + مصدر»، فنفس السنة بمصدرين بتدّي صفّين. */}
+          <Glass className="tblcard">
+            <Head
+              title="الميزانيات المعرَّفة"
+              meta={<span className="sub"><Num>{budgetDocs.length}</Num> ميزانية</span>}
+            />
+            <ul className="cfglist">
+              {budgetDocs.map((d) => (
+                <li key={d.id}>
+                  <b>{docTitle(d)}</b>
+                  <span className="sub"><Mono>{d.id}</Mono></span>
+                  <span className="pc-sp" />
+                  <span className="num">{nf.format(d.total)}</span>
+                  <Tag tone={d.state === 'draft' ? 'mute' : 'ok'}>
+                    {d.state === 'draft' ? 'مسودة' : 'مرسَلة'}
+                  </Tag>
+                  <Link className="btn btn-2 btn-sm" to={ROUTES.budgetDoc(d.id)}>
+                    افتح الشجرة
+                    <Icon name={icons.chevron} size={14} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Glass>
 
           <Summary cycle={cycle} goals={goals.length} />
 

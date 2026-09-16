@@ -14,6 +14,8 @@ import ProcessReport from '@/features/reports/ProcessReport'
 import ReportView from '@/features/reports/ReportView'
 import LiveReport from '@/features/reports/LiveReport'
 import BudgetPage from '@/features/budget/BudgetPage'
+import BudgetSettingsPage from '@/features/budget/BudgetSettingsPage'
+import BudgetDocPage from '@/features/budget/BudgetDocPage'
 import AgreementsPage from '@/features/agreements/AgreementsPage'
 import AgreementPage from '@/features/agreements/AgreementPage'
 import PaymentsPage from '@/features/payments/PaymentsPage'
@@ -72,6 +74,13 @@ export default function App() {
         <Route path={`${ROUTES.entities}/:id/:tab`} element={<EntityPage />} />
 
         <Route path={ROUTES.budget} element={<BudgetPage />} />
+
+        {/* ⚠️ التلاتة دول **قبل** `:year` · الراوتر بيطابق بالترتيب،
+            ولولا كده «/budget/settings» هيتقرا كسنة اسمها settings
+            ويتحوّل للميزانية · نفس فخّ «/payments/new». */}
+        <Route path={ROUTES.budgetSettings} element={<BudgetSettingsPage />} />
+        <Route path={ROUTES.budgetNew} element={<BudgetDocPage />} />
+        <Route path={`${ROUTES.budget}/doc/:id`} element={<BudgetDocPage />} />
 
         <Route path={`${ROUTES.budget}/:year`} element={<Navigate to={ROUTES.budget} replace />} />
 
