@@ -19,6 +19,7 @@ import BudgetSettingsPage from '@/features/budget/BudgetSettingsPage'
 import BudgetDocPage from '@/features/budget/BudgetDocPage'
 import AgreementsPage from '@/features/agreements/AgreementsPage'
 import AgreementPage from '@/features/agreements/AgreementPage'
+import AgreementNewPage from '@/features/agreements/AgreementNewPage'
 import PaymentsPage from '@/features/payments/PaymentsPage'
 import RequestPage from '@/features/payments/RequestPage'
 import RequestForm from '@/features/payments/RequestForm'
@@ -103,6 +104,8 @@ export default function App() {
         {/* الاتفاقيات · BPD-008 · إجراء مستقل عن المشروع (قاعدة 23)،
             وانتقاله بين مراحله ما بيغيّرش حالة المشروع (قاعدة 25) */}
         <Route path={ROUTES.agreements} element={<AgreementsPage />} />
+        {/* ⚠️ `new` قبل `:id` · نفس فخّ «/payments/new» و«/budget/settings» */}
+        <Route path="/agreements/new" element={<AgreementNewPage />} />
         <Route path={`${ROUTES.agreements}/:id`} element={<AgreementPage />} />
 
         {/* الصرف · BPD-009 · مبني على الوثيقة، والفروق عن النظام

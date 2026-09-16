@@ -228,6 +228,48 @@ export const licensorUsed = (l: string) =>
 export const cityUsed = (c: string) =>
   entityRows.filter((e) => e.city === c).length
 
+/* ═══════════════════════════════════════════════════════════
+   سلسلة المتعلقات · ج-19
+
+   ⚠️ **القاعدة واحدة والتطبيق كان في مكان واحد بس.** إعدادات
+   الميزانية كانت بتعرض «كام ميزانية على السنة دي»، والميزانية
+   نفسها والمشروع ما كانش عليهم حاجة · يعني نص القاعدة مكتوب.
+
+   والسلسلة: سنة ← ميزانية ← مشروع ← اتفاقية ودفعات.
+   وكل حلقة بتعرض **عدد اللي بعدها** مكان زرار الحذف · السبب ظاهر
+   قبل المحاولة، مش رسالة خطأ بعدها.
+
+   ⚠️ **والعدّ بيتحسب من الداتا لا مكتوب برقم** · فلو ارتبط ريكورد
+   جديد، الرقم بيكبر لوحده.
+   ═══════════════════════════════════════════════════════════ */
+export interface Deps {
+  /** العدد الكلي · صفر يعني الحذف مسموح */
+  count: number
+  /** الجملة اللي بتتقال · فاضية لو مفيش متعلقات */
+  say: string
+}
+
+/**
+ * كام مشروع مرتبط بميزانية · المشروع بيتربط بسنتها.
+ *
+ * ⚠️ المطابقة **ببداية النصّ** لا بالتساوي: سنة الميزانية `2026`
+ * وسنة المشروع `2026-f` (المؤسسة) أو `2026-w` (الوقف) · فالتساوي
+ * كان هيرجّع صفرًا دايمًا، والقاعدة تبان شغّالة وهي عمياء.
+ */
+export const budgetDeps = (yearName: string): Deps => {
+  const n = projectRows.filter((p) => p.year.startsWith(yearName)).length
+  return { count: n, say: n ? `${n} مشروعًا عليها` : '' }
+}
+
+/** المشروع عليه اتفاقيات ودفعات · آخر حلقة في السلسلة */
+export const projectDeps = (agreements: number, payments: number): Deps => {
+  const n = agreements + payments
+  const parts: string[] = []
+  if (agreements) parts.push(`${agreements} اتفاقية`)
+  if (payments) parts.push(`${payments} دفعة`)
+  return { count: n, say: parts.join(' و') }
+}
+
 export const yearUsed = (id: string) =>
   budgetDocs.filter((d) => d.yearId === id).length
 

@@ -50,6 +50,14 @@ export const ROUTES = {
 
   agreements: '/agreements',
   agreement: (id: string) => `/agreements/${id}`,
+  /**
+   * إعداد اتفاقية · BPD-008 · هـ-4
+   *
+   * ⚠️ المشروع في الرابط لأن الاتفاقية بتتعمل **لمشروع** لا من
+   * الصندوق · فالمدخل الطبيعي تاب «الاتفاقية» في صفحة المشروع.
+   */
+  agreementNew: (projectId?: string) =>
+    `/agreements/new${projectId ? `?project=${projectId}` : ''}`,
 
   payments: '/payments',
   payment: (id: string) => `/payments/${id}`,

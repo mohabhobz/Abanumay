@@ -3,6 +3,7 @@ import { DocDownload, DocFile } from '@/components/docs'
 import { addDays, costPerBeneficiary, isolate, nf, pct, readDate, units } from '@/lib/format'
 import type { Project } from '@/types/domain'
 import type { LogEvent } from '@/data/mock/log'
+import { projectDeps } from '@/data/mock/settings'
 
 export interface DataTabProps {
   project: Project
@@ -11,10 +12,23 @@ export interface DataTabProps {
   /** أحدث قيد في السجل · بيتعرض تحت التعريف */
   last?: LogEvent
   onOpenLog: () => void
+  /**
+   * المتعلقات · ج-19.
+   *
+   * ⚠️ **الكارت ده مش رسالة خطأ، هو جرد.** السلسلة سنة ← ميزانية ←
+   * مشروع ← اتفاقية ودفعات بتمنع الحذف من أولها، والقاعدة كانت
+   * متعملة في أول حلقتين بس. وهنا مفيش زرار حذف أصلًا، فالكارت
+   * بيقول **إيه المعلّق على المشروع ده** · وده اللي بيخلّي السبب
+   * ظاهرًا قبل ما حد يحاول، ويوري السلسلة في نفس الوقت.
+   */
+  deps?: { agreements: number; payments: number }
 }
 
 /** بيانات المشروع · التعريف والفكرة والمراحل والنطاق والمرفقات */
-export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog }: DataTabProps) {
+export function DataTab({
+  project: P, entityName, onOpenEntity, last, onOpenLog, deps,
+}: DataTabProps) {
+  const dep = deps ? projectDeps(deps.agreements, deps.payments) : undefined
   const perBeneficiary = costPerBeneficiary(P.amountRequested, P.beneficiaries)
   const uploaded = P.attachments.filter((a) => a.uploaded).length
 
@@ -248,6 +262,25 @@ export function DataTab({ project: P, entityName, onOpenEntity, last, onOpenLog 
           البيانات البنكية مصدرها ملف الجهة، معروضة هنا للمراجعة فقط ولا تُحرَّر من المشروع.
         </div>
       </Glass>
+
+      {dep && (
+        <Glass>
+          <Head
+            title="المتعلقات"
+            meta={
+              dep.count > 0
+                ? <Tag tone="mute">{dep.say}</Tag>
+                : <Tag tone="ok">بلا متعلقات</Tag>
+            }
+          />
+          <p className="sub">
+            {dep.count > 0
+              ? <>المشروع ده مرتبط بيه <b>{dep.say}</b> · فما يتحذفش، والسلسلة
+                  بتمنع الحذف من أولها: سنة ← ميزانية ← مشروع ← اتفاقية ودفعات.</>
+              : <>مفيش اتفاقيات ولا دفعات مرتبطة بالمشروع ده لحد دلوقتي.</>}
+          </p>
+        </Glass>
+      )}
     </>
   )
 }

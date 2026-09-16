@@ -4,7 +4,8 @@ import { Glass, Head, Icon, icons, Money, Num, Person, Select, Tag } from '@/com
 import { ROUTES } from '@/app/routes'
 import { Mono } from '@/components/ui'
 import { nf } from '@/lib/format'
-import { budgetDocs, docTitle } from '@/data/mock/budgetTree'
+import { budgetDocs, docTitle, yearById } from '@/data/mock/budgetTree'
+import { budgetDeps } from '@/data/mock/settings'
 import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
@@ -147,6 +148,17 @@ export default function BudgetPage() {
                   <span className="sub"><Mono>{d.id}</Mono></span>
                   <span className="pc-sp" />
                   <span className="num">{nf.format(d.total)}</span>
+                  {/* ⚠️ ج-19 · **عدد المتعلقات مكان زرار الحذف.**
+                      القاعدة كانت متعملة في إعدادات الميزانية بس
+                      (سنة ← ميزانية)، والحلقة اللي بعدها (ميزانية ←
+                      مشروع) ما كانش عليها حاجة · فنص القاعدة كان
+                      مكتوبًا. */}
+                  {(() => {
+                    const dep = budgetDeps(yearById(d.yearId)?.name ?? '')
+                    return dep.count > 0
+                      ? <Tag tone="mute">{dep.say}</Tag>
+                      : <Tag tone="ok">بلا متعلقات</Tag>
+                  })()}
                   <Tag tone={d.state === 'draft' ? 'mute' : 'ok'}>
                     {d.state === 'draft' ? 'مسودة' : 'مرسَلة'}
                   </Tag>

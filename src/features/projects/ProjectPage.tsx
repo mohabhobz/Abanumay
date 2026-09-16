@@ -23,6 +23,7 @@ import { AnalysisCard } from '@/components/assistant'
 import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { projectLog } from '@/data/mock/log'
+import { projectOptions } from '@/data/mock/agreementNew'
 import { journeys } from '@/data/journey'
 
 /** عدد الأيام اللي الإجراء الحالي مفتوح فيها · من سجل الإجراءات */
@@ -147,6 +148,15 @@ export default function ProjectPage() {
     [row, entity.name],
   )
 
+  /* ⚠️ **أهلية المشروع للاتفاقية بتتحسب هنا لا في التاب.**
+     القاعدة (قاعدة 1) بتقول «مفيش اتفاقية قبل اكتمال الاعتماد
+     واستمرار حجز المخصص» · والسبب بيتمرّر للزرار عشان يتقال في
+     الـtitle بدل ما الزرار يبقى معطَّلًا بلا سبب. */
+  const agreementBlock = useMemo(
+    () => (row ? projectOptions().find((p) => p.id === row.id)?.blocked ?? '' : ''),
+    [row],
+  )
+
   /* مشروع وصل للمرحلة · بيتعرض في الحالة الفارغة عشان الكلاينت
      يشوف الشاشة مليانة بضغطة بدل ما يدوّر على مشروع مناسب. */
   const examples = useMemo(
@@ -230,6 +240,10 @@ export default function ProjectPage() {
                      التايم لاين، والصف مكتوب فوقه «آخر إجراء». */
                   last={log.find((e) => !e.followUp)}
                   onOpenLog={() => goTab('log')}
+                  deps={{
+                    agreements: detail.agreement ? 1 : 0,
+                    payments: detail.payments.length,
+                  }}
                 />
               )}
               {active === 'entity' && <EntityTab entity={entity} bank={project.bank} />}
@@ -241,6 +255,8 @@ export default function ProjectPage() {
                   entityName={entity.name}
                   example={examples.agreement}
                   onOpenExample={(x) => navigate(ROUTES.projectTab(x, 'agreement'))}
+                  onStart={() => navigate(ROUTES.agreementNew(project.id))}
+                  startBlocked={agreementBlock}
                 />
               )}
               {active === 'payments' && (

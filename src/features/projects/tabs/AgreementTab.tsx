@@ -9,6 +9,17 @@ export interface AgreementTabProps {
   /** مشروع وصل للمرحلة دي · للحالة الفارغة */
   example?: { id: string; name: string }
   onOpenExample?: (id: string) => void
+  /**
+   * مدخل إعداد الاتفاقية · هـ-4.
+   *
+   * ⚠️ **ده المدخل الوحيد للبانِي**، ومفيش زرار في ترويسة صندوق
+   * الاتفاقيات · لأن الاتفاقية بتتعمل **لمشروع** لا من الصندوق
+   * (قاعدة 2). والحالة الفاضية هنا كانت بتشرح اللي هيحصل وما
+   * بتدّيش طريقة تعمله.
+   */
+  onStart?: () => void
+  /** المشروع مؤهَّل فعلًا · قاعدة 1 · وغير كده السبب بيتقال */
+  startBlocked?: string
 }
 
 /**
@@ -23,7 +34,9 @@ export interface AgreementTabProps {
  * الاتفاقية الورقية في النظام تابها فاضي (قيمته `-`) · الورقة برّه
  * النظام. فبنقولها صراحة بدل ما نوري شاشة فاضية.
  */
-export function AgreementTab({ agreement: A, payments, entityName, example, onOpenExample }: AgreementTabProps) {
+export function AgreementTab({
+  agreement: A, payments, entityName, example, onOpenExample, onStart, startBlocked,
+}: AgreementTabProps) {
   if (!A) {
     return (
       <Glass>
@@ -32,11 +45,24 @@ export function AgreementTab({ agreement: A, payments, entityName, example, onOp
           title="لا توجد اتفاقية، المشروع لم يصل لمرحلة الاعتماد."
           note="عند الوصول: يختار المشرف القالب، ويعبّي النظام بيانات المشروع والجهة، فيُولَّد النص وجدول الدفعات ثم تمرّ الاتفاقية على مدير المنح والمالية والمدير التنفيذي وأخيرًا الجهة."
           actions={
-            example && onOpenExample ? (
-              <button className="btn btn-2" onClick={() => onOpenExample(example.id)}>
-                اعرض اتفاقية مشروع وصل لهذه المرحلة
-              </button>
-            ) : undefined
+            <>
+              {onStart && (
+                <button
+                  className="btn btn-p"
+                  disabled={Boolean(startBlocked)}
+                  title={startBlocked || 'ابدأ إعداد الاتفاقية'}
+                  onClick={onStart}
+                >
+                  <Icon name={icons.plus} size={16} />
+                  ابدأ إعداد الاتفاقية
+                </button>
+              )}
+              {example && onOpenExample && (
+                <button className="btn btn-2" onClick={() => onOpenExample(example.id)}>
+                  اعرض اتفاقية مشروع وصل لهذه المرحلة
+                </button>
+              )}
+            </>
           }
         />
       </Glass>

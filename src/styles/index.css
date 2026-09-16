@@ -6019,6 +6019,39 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    بتخبّي اللي اتختار ورا «3 مختارة» */
 .pmulti{display:flex;flex-wrap:wrap;gap:var(--sp-2);min-width:0}
 
+/* ═══ محرّر جدول الدفعات · هـ-5 ═══
+   ⚠️ **شبكة لا جدول `<table>`.** الصفّ فيه حقول إدخال بارتفاع
+   التحكّم، و`<td>` بتقاوم ده وبتخلّي الحقول تطلع بارتفاعات مختلفة ·
+   والشبكة بتدّي أعمدة متطابقة وصفوفًا بتتنفّس. */
+.sched{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-4);min-width:0}
+.sched-h,.sched-r,.sched-t{display:grid;align-items:center;gap:var(--sp-3);min-width:0;
+  /* ⚠️ أول عمود **5rem لا 2.5rem** · الصفّ الأخير مكتوب فيه
+     «الإجمالي» لا رقم دفعة، وبـ2.5 الكلمة كانت بتركب على المبلغ
+     جنبها. عرض العمود بيتحدّد بأطول محتوى فيه لا بأقصرهم. */
+  grid-template-columns:5rem minmax(9rem,1fr) 4.5rem minmax(9rem,1fr) minmax(10rem,1.6fr) 2.5rem}
+.sched-h{padding:0 var(--sp-4);font-size:var(--fs-1);color:var(--t3-g)}
+.sched-r{padding:var(--sp-2) var(--sp-4);border-radius:var(--ric);
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
+.sched-n{color:var(--t3)}
+.sched-s{color:var(--t2)}
+.sched-f{width:100%}
+.sched-q{min-width:0}
+/* ⚠️ صفّ الإجمالي **تحقّق**: حلقة أقوى ولون بيتغيّر بالمطابقة ·
+   والفرق مكتوب في الوسم لا مستنتَج من فرق رقمين */
+.sched-t{padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
+  background:var(--fl-1);box-shadow:inset 0 0 0 1px var(--edge-2);
+  font-family:var(--fd);font-weight:600;color:var(--t1)}
+.sched-t.ok{box-shadow:inset 0 0 0 1px rgba(var(--okC),.35)}
+.sched-v{grid-column:span 2;justify-self:start}
+.sched-a{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
+  margin-top:var(--sp-2);min-width:0}
+
+@media (max-width:900px){
+  .sched-h{display:none}
+  .sched-r,.sched-t{grid-template-columns:5rem minmax(0,1fr) auto;row-gap:var(--sp-2)}
+  .sched-q,.sched-v{grid-column:1 / -1}
+}
+
 /* المستندات · الصفّ بيقول الاسم والإلزام والحدّ الأقصى. والإلزام
    بيتغيّر بتصنيف الجهة، فالوسم بيتبدّل لحظة تغيير التصنيف. */
 .regdocs{list-style:none;margin:var(--sp-4) 0 0;padding:0;

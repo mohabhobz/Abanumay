@@ -86,6 +86,10 @@ export const ROUTES = [
   '/payments', '/payments/SR-2026-11407', '/payments/new',
   '/payments/SR-2026-11415/order', '/payments/late',
   '/payments/SR-2026-11410/edit', '/agreements', '/agreements/AG-2026-3101',
+  /* إعداد الاتفاقية · هـ-4 ومحرّر الدفعات هـ-5 · وكل محطة مسار
+     عشان محرّر الجدول نفسه يترسم في الفحص لا يفضل ورا تاب */
+  '/agreements/new', '/agreements/new?project=20852&tab=form',
+  '/agreements/new?project=20852&tab=sched',
   '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
   '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
   '/reports/process/p1', '/assistant',
