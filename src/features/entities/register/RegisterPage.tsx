@@ -142,6 +142,18 @@ export default function RegisterPage() {
 
   const canSend = missing.length === 0 && !clash
 
+  /* ⚠️ **الستيبر بيحتاج تقدّمًا بالزرار كمان، مش بالضغط عليه بس.**
+     الضغط على خطوة بعيدة قفزة · والملء الطبيعي خطوة ورا خطوة،
+     والإيد بتفضل على الرصيف حيث الزرار. فالتنقّل بطريقتين:
+     الشريط للقفز، والرصيف للتقدّم. */
+  const at = REG_STAGES.findIndex((x) => x.key === tab)
+  const first = at <= 0
+  const last = at >= REG_STAGES.length - 1
+  const go = (d: -1 | 1) => {
+    const next = REG_STAGES[at + d]
+    if (next) setTab(next.key)
+  }
+
   const steps: StepItem[] = [
     {
       label: 'ضوابط القبول',
@@ -573,7 +585,17 @@ export default function RegisterPage() {
                 {phase === 'form' && (
                   draft
                     ? <>اتحفظت <b>كمسودة</b> · القاعدة <Num>12</Num>، وتقدر تكمّلها في أي وقت</>
-                    : <>الطلب <b>مسودة</b> لحدّ ما يتبعت · والحساب ما بيتعملش إلا بعد الاعتماد</>
+                    : <>
+                        الخطوة <b><Num>{at + 1}</Num> من <Num>{REG_STAGES.length}</Num></b>
+                        <span className="decsep" />
+                        {REG_STAGES[at].label}
+                        {missing.length > 0 && (
+                          <>
+                            <span className="decsep" />
+                            <span className="sub">ناقص <Num>{missing.length}</Num> قبل الإرسال</span>
+                          </>
+                        )}
+                      </>
                 )}
                 {phase === 'otp' && <>اكتب الرمز المرسَل للجوال · <Num>6</Num> أرقام</>}
                 {phase === 'sent' && <>رقم الطلب في هذا النموذج <b>RG-1042</b></>}
@@ -599,20 +621,51 @@ export default function RegisterPage() {
                   <button className="btn btn-2" onClick={() => setDraft(true)}>
                     حفظ كمسودة
                   </button>
+
+                  {/* ⚠️ «السابق» **موجود ومعطَّل** في أول خطوة لا
+                      مخفي · الزرار اللي بيظهر ويختفي بيخلّي مكان
+                      «التالي» يتنطّ بين الخطوات، والإيد بتدوّر عليه
+                      كل مرة. */}
                   <button
-                    className="btn btn-p"
-                    disabled={!canSend}
-                    title={
-                      clash
-                        ? 'رقم الترخيص مكرّر · قاعدة 8'
-                        : missing.length
-                          ? `ناقص ${missing.length} من الإلزامي · قاعدة 4`
-                          : 'إرسال الطلب للمراجعة'
-                    }
-                    onClick={() => setPhase('otp')}
+                    className="btn btn-2"
+                    disabled={first}
+                    title={first ? 'دي أول خطوة' : `ارجع لـ${REG_STAGES[at - 1].label}`}
+                    onClick={() => go(-1)}
                   >
-                    إرسال الطلب
+                    {/* في RTL «لورا» يمين · `chevronBack` هو اللي بيرسمها */}
+                    <Icon name={icons.chevronBack} size={15} />
+                    السابق
                   </button>
+
+                  {/* ⚠️ **«التالي» ما بيتقفلش على النواقص.** قاعدة 4
+                      بتمنع **الإرسال** عند النقص لا التنقّل · والجهة
+                      بتملا على مرّات وبترجع. اللي بيتقفل هو الإرسال
+                      وحده، وسببه مكتوب. */}
+                  {!last ? (
+                    <button
+                      className="btn btn-p"
+                      title={`كمّل في ${REG_STAGES[at + 1].label}`}
+                      onClick={() => go(1)}
+                    >
+                      التالي
+                      <Icon name={icons.chevron} size={15} />
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-p"
+                      disabled={!canSend}
+                      title={
+                        clash
+                          ? 'رقم الترخيص مكرّر · قاعدة 8'
+                          : missing.length
+                            ? `ناقص ${missing.length} من الإلزامي · قاعدة 4`
+                            : 'إرسال الطلب للمراجعة'
+                      }
+                      onClick={() => setPhase('otp')}
+                    >
+                      إرسال الطلب
+                    </button>
+                  )}
                 </>
               )}
 

@@ -2247,13 +2247,35 @@ to{opacity:1;transform:none}
   min-height:var(--dock-h);display:flex;flex-direction:column;justify-content:flex-end;
   padding:0 clamp(var(--sp-7), 3vw, var(--sp-9)) clamp(var(--sp-5), 2vw, var(--sp-7));
   padding-inline-end:calc(clamp(var(--sp-7), 3vw, var(--sp-9)) + var(--ask-w) + var(--ask-gap))}
-.decdock::before{content:"";position:absolute;inset-inline:0;bottom:0;height:100%;
+/* ⚠️ **التدرّج ده كان بيتقاس بـ0.4 من 255.**
+   قِسنا الفرق بين الصفحة وهي بالتدرّج وهي من غيره: متوسّط الفرق
+   في القناة الحمرا **0.76** في صفحة الاتفاقية و**0.38** في شاشة
+   التسجيل · يعني الطبقة موجودة في الـDOM وشغّالة نظريًّا، وعمليًّا
+   مش بتفصل حاجة عن حاجة. والسبب تلاتة مع بعض:
+
+     · الارتفاع = ارتفاع الرصيف بالظبط (112px)، والشريط نفسه 76
+       منهم · فالتدرّج الظاهر شريحة ~36px فوق الشريط وبس.
+     · الماسك بيوصل للشفافية عند 100%، فالـ36px دول نصّهم شبه
+       شفاف أصلًا.
+     · و.55 من `--base` فوق كارت أبيض = **لا شيء**، لأن الاتنين
+       نفس اللون تقريبًا.
+
+   التلاتة اتصلحوا مع بعض: الطبقة بقت أطول من الرصيف، والسلّم
+   بيبدأ من فوق بهدوء ويوصل معتمًا تحت الشريط، والقاع أعتم. والنتيجة
+   إن المحتوى بيغيب تدريجيًّا وهو داخل تحت الشريط بدل ما يتقصّ عند
+   حافته. واللون لسه `--base`، فالتيمات التلاتة بتشتغل بلا نسخة. */
+.decdock::before{content:"";position:absolute;inset-inline:0;bottom:0;
+  height:calc(100% + clamp(2.5rem, 6vh, 5rem));
   transition:opacity .25s ease;
   pointer-events:none;
   -webkit-backdrop-filter:var(--mat-2);backdrop-filter:var(--mat-2);
-  background:linear-gradient(to top,rgba(var(--baseC),.55),rgba(var(--baseC),0));
-  -webkit-mask-image:linear-gradient(to top,#000 0,#000 38%,rgba(0,0,0,.5) 66%,transparent 100%);
-  mask-image:linear-gradient(to top,#000 0,#000 38%,rgba(0,0,0,.5) 66%,transparent 100%)}
+  background:linear-gradient(to top,
+    rgba(var(--baseC),.88) 0,
+    rgba(var(--baseC),.78) 34%,
+    rgba(var(--baseC),.42) 62%,
+    rgba(var(--baseC),0) 100%);
+  -webkit-mask-image:linear-gradient(to top,#000 0,#000 46%,rgba(0,0,0,.62) 72%,transparent 100%);
+  mask-image:linear-gradient(to top,#000 0,#000 46%,rgba(0,0,0,.62) 72%,transparent 100%)}
 .decsent{font-size:var(--fs-3);color:var(--t2);line-height:var(--lh-text);display:flex;align-items:center;
   gap:var(--sp-3);flex-wrap:wrap;min-width:0}
 .decsent b{font-family:var(--fd);font-weight:600;color:var(--t1)}
