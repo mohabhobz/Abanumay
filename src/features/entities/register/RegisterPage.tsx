@@ -515,12 +515,16 @@ export default function RegisterPage() {
                       القاعدة <span className="num">4</span> مستوفاة.
                     </p>
                   ) : (
+                    /* ⚠️ اسم الخطوة هنا **عنوان مجموعة لا رابط.**
+                       كان زرارًا بكلاس `.lnk` · فبيتلوّن ويتخطّ تحته
+                       عند المرور، ووعد التخطيط ده إن فيه وجهة. والتنقّل
+                       موجود فوق في الستيبر أصلًا، فالزرار كان بيقول
+                       نفس الكلام مرتين بشكلين · والقايمة دي **قراءة**:
+                       بتجاوب «ناقص إيه وفين»، مش بتنقل. */
                     <ul className="regmiss">
                       {REG_STAGES.filter((s) => shortBy[s.key].length).map((s) => (
                         <li key={s.key}>
-                          <button className="lnk" onClick={() => setTab(s.key)}>
-                            {s.label}
-                          </button>
+                          <b>{s.label}</b>
                           <span className="sub"> · {shortBy[s.key].join(' · ')}</span>
                         </li>
                       ))}
