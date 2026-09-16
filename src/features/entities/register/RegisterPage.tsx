@@ -292,11 +292,15 @@ export default function RegisterPage() {
                   <Steps
                     flow="stepper"
                     onPick={(i) => setTab(REG_STAGES[i].key)}
+                    /* ⚠️ **الرقم الناقص اتشال من تحت الاسم.**
+                       كان مكتوبًا تلات مرات في نفس الشاشة: تحت كل
+                       خطوة، وفي وسم ترويسة الكارت، وفي جملة الرصيف
+                       — وقايمة «ما ينقص» جنبها بتقول الحقول بالاسم.
+                       والستيبر بيجاوب سؤالًا واحدًا: **إنت فين
+                       ووصلت لفين** · والحالة بتتقال بالنقطة (رقم /
+                       صح / كهرماني) من غير سطر تاني. */
                     items={REG_STAGES.map((st) => ({
                       label: st.label,
-                      note: shortBy[st.key].length
-                        ? `ناقص ${shortBy[st.key].length}`
-                        : 'مكتملة',
                       state: st.key === tab
                         ? 'now'
                         : shortBy[st.key].length === 0 ? 'done' : 'todo',

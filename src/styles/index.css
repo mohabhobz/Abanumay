@@ -6059,7 +6059,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    بتقرا السلسلة من السكّة، والعمود المتساوي بيخلّي الخمسة إيقاعًا
    واحدًا مهما طالت الأسماء. والسكّة اللي ورا خطوة خلصت بتاخد لون
    الإنجاز، فالتقدّم بيتقرا من الخطّ نفسه لا من عدّ النقط. */
-.stp-stepper{--stp-dot:30px;--stp-gap:var(--sp-4);
+/* ⚠️ الخطّ هنا **أرفع من السُّلّم**: السُّلّم خطّه رأسي قصير بين
+   نقطتين متلاصقتين، والستيبر خطّه أفقي طويل عبر الشاشة كلها ·
+   ونفس السُّمك بيتقري تخينًا لما يمتدّ، فبيسحب الانتباه من النقط
+   نفسها. */
+.stp-stepper{--stp-dot:30px;--stp-gap:var(--sp-4);--stp-line:1px;
   display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
 .stp-stepper .stp-i{position:relative;min-width:0;display:flex}
 
@@ -6075,8 +6079,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .stp-stepper .stp-i.done+.stp-i::before{background:rgba(var(--okC),.45)}
 
 .stp-stepper .stp-b{flex:1;min-width:0;display:flex;flex-direction:column;
-  align-items:center;text-align:center;gap:var(--sp-2);
-  padding:var(--sp-3) var(--sp-2) var(--sp-4);border-radius:var(--r1);
+  align-items:center;text-align:center;gap:var(--sp-3);
+  /* الحشو اتساوى فوق وتحت بعد ما السطر التاني اتشال · كان
+     مزوّدًا تحت عشان يوازن سطرين */
+  padding:var(--sp-3) var(--sp-2);border-radius:var(--r1);
   cursor:pointer;transition:background .16s ease}
 .stp-stepper .stp-b:hover{background:var(--fl-2)}
 .stp-stepper .stp-dot{position:relative;z-index:1}
