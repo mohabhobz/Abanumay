@@ -79,6 +79,9 @@ export const ROUTES = [
   '/entities/settings', '/entities/settings?tab=types',
   '/entities/settings?tab=licensors', '/entities/settings?tab=targets',
   '/projects/settings', '/projects/settings?tab=limits',
+  /* إنشاء مشروع · BPD-003 · وكل محطة مسار عشان الحقول تترسم كلها */
+  '/projects/new', '/projects/new?tab=what', '/projects/new?tab=where',
+  '/projects/new?tab=money', '/projects/new?tab=when',
   '/budget/doc/BG-2025-SA', '/budget/new',
   '/payments', '/payments/SR-2026-11407', '/payments/new',
   '/payments/SR-2026-11415/order', '/payments/late',

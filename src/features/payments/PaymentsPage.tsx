@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
 import { nf, pct } from '@/lib/format'
+import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -230,6 +231,17 @@ export default function PaymentsPage() {
                 <span className="num">{k.blocked}</span> منها موقوف بشرط
               </p>
             </div>
+
+            {/* خطوة 2 · إنشاء الطلب · والمتأخر شاشة 6، التقرير اللي
+                آلية التصعيد (9.5) بتطلبه · مش فلتر على الصندوق */}
+            <PageActions
+              secondary={
+                k.late + k.stuck > 0
+                  ? [{ label: 'المتأخر', to: ROUTES.paymentsLate, icon: 'alert', count: k.late + k.stuck }]
+                  : []
+              }
+              create={{ label: 'طلب صرف', to: ROUTES.paymentNew() }}
+            />
           </header>
 
           {/* ═══ القراءة السريعة ═══
@@ -350,23 +362,14 @@ export default function PaymentsPage() {
 
               {/* الأدوات اللي مش فلاتر · مجموعة ثابتة في آخر الصفّ،
                   فالفلاتر بتلفّ جوّه مجموعتها والمبدّل ما بينطّش */}
+              {/* ⚠️ **«طلب صرف» و«المتأخر» كانوا هنا وطلعوا للترويسة.**
+                  الشريط ده كله بيشتغل **على النتيجة المعروضة**: بحث
+                  وفلتر وتجميع وتصدير ومبدّل عرض. الإنشاء مش واحد من
+                  دول · هو بيضيف للصندوق ومالوش علاقة باللي متفلتر
+                  قدامك، والمتأخر صندوق تاني لا عرض تاني لنفس الصندوق.
+                  وطالما هما في الترويسة في الجهات والميزانية، يبقى
+                  مكانهم هناك هنا كمان (عقد `PageActions`). */}
               <div className="ftool-a">
-                {/* خطوة 2 · إنشاء الطلب · الفعل الوحيد اللي بيضيف
-                    للصندوق، فمكانه في مجموعة الأدوات لا بين الفلاتر */}
-                <Link className="btn btn-p btn-sm" to={ROUTES.paymentNew()}>
-                  <Icon name={icons.plus} size={15} />
-                  طلب صرف
-                </Link>
-                {/* شاشة 6 · التقرير اللي آلية التصعيد بتطلبه ·
-                    مش فلتر على الصندوق: بيتطبع ويتصدّر ومجمَّع
-                    بالمرحلة عشان يقول فين الاختناق */}
-                {(k.late > 0 || k.stuck > 0) && (
-                  <Link className="btn btn-2 btn-sm" to={ROUTES.paymentsLate}>
-                    <Icon name={icons.alert} size={15} />
-                    المتأخر
-                    <b className="num">{k.late + k.stuck}</b>
-                  </Link>
-                )}
                 <ExportMenu
                   sheet={sheet}
                   note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} طلب`}

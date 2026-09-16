@@ -27,7 +27,7 @@ import {
   REGIONS, STAGES, STATUS_GROUPS, SUPPORT_STATUS, TAGS, TRACKS, YEARS,
 } from '@/data/mock/taxonomy'
 import { QuickRead } from '@/components/assistant'
-import { BulkBar } from '@/components/shell'
+import { BulkBar, PageActions } from '@/components/shell'
 import { readProjects } from '@/data/readings'
 import { ProjectCard } from './ProjectCard'
 
@@ -411,13 +411,18 @@ export default function ProjectsListPage() {
               </p>
             </div>
 
-            {/* ⚠️ إعدادات المشاريع **قواعد عمل** لا ماستر داتا ·
-                السقف اللي جوّاها بيحوّل مشاريع من طاولة لطاولة، فمدخلها
-                من هنا عشان اللي بيغيّره يكون شايف اللي هيتأثر (د-2) */}
-            <Link className="btn btn-ghost" to={ROUTES.projectSettings}>
-              <Icon name={icons.gear} size={16} />
-              الإعدادات
-            </Link>
+            {/* ⚠️ **الشاشة دي كانت الوحيدة اللي مالهاش إنشاء.**
+                أكبر موديول في السيستم، وفيه ٤٩٢٩ مشروعًا، وما كانش
+                فيه طريقة تضيف واحدًا · «الإعدادات» وحدها في الركن
+                بتقول إن الشاشة دي للقراية.
+
+                إعدادات المشاريع **قواعد عمل** لا ماستر داتا · السقف
+                اللي جوّاها بيحوّل مشاريع من طاولة لطاولة، فمدخلها من
+                هنا عشان اللي بيغيّره يكون شايف اللي هيتأثر (د-2). */}
+            <PageActions
+              settings={ROUTES.projectSettings}
+              create={{ label: 'مشروع جديد', to: ROUTES.projectNew }}
+            />
           </header>
 
           {/* ═══ القراءة السريعة ═══

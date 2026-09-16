@@ -5,6 +5,7 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
+import { pct as sayPct } from '@/lib/format'
 import {
   APPROVAL_MATRIX, MONEY_LIMITS, approverFor, projectsUnder,
 } from '@/data/mock/settings'
@@ -143,7 +144,9 @@ export default function ProjectSettingsPage() {
                     <span className="num">
                       {l.unit === 'ريال'
                         ? <Money>{l.value}</Money>
-                        : <><Num>{l.value}</Num> {l.unit === '%' ? '٪' : l.unit}</>}
+                        : l.unit === '%'
+                          ? <span className="num">{sayPct(l.value)}</span>
+                          : <><Num>{l.value}</Num> {l.unit}</>}
                     </span>
                   </li>
                 ))}

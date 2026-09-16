@@ -13,6 +13,8 @@ export const ROUTES = {
   projects: '/projects',
   /** قواعد عمل المشاريع والصرف · مصفوفة الاعتماد والحدود · د-2 */
   projectSettings: '/projects/settings',
+  /** إنشاء مشروع · BPD-003 · نموذج مرحلي بنسبة اكتمال (قاعدة 31) */
+  projectNew: '/projects/new',
   project: (id: string) => `/projects/${id}`,
   projectTab: (id: string, tab: string) => `/projects/${id}/${tab}`,
 

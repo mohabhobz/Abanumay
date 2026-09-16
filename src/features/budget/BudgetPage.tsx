@@ -5,6 +5,7 @@ import { ROUTES } from '@/app/routes'
 import { Mono } from '@/components/ui'
 import { nf } from '@/lib/format'
 import { budgetDocs, docTitle } from '@/data/mock/budgetTree'
+import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { Segments } from '@/components/ui/filters'
@@ -104,20 +105,20 @@ export default function BudgetPage() {
                 مدخل · فمفيش زرار إنشاء ولا إعدادات. والإعدادات قبل
                 الإنشاء في الترتيب لأن الميزانية ما تتفتحش إلا لو
                 سنتها ومصدر تمويلها متعرّفين. */}
-            <div className="rowf gp-2">
-              <Link className="btn btn-2" to={ROUTES.budgetSettings}>
-                <Icon name={icons.gear} size={16} />
-                الإعدادات
-              </Link>
-              <Link className="btn btn-p" to={ROUTES.budgetNew}>
-                <Icon name={icons.plus} size={16} />
-                ميزانية جديدة
-              </Link>
-            </div>
-            {/* مبدّل الدورة مش فلتر: الدورة **دايمًا** مختارة، فمفيش
-                خيار «الكل» · `allowEmpty={false}`. كان `select`
-                أصلية بحجّة إن `Select` العامّة بتضيف خيارًا فاضيًا؛
-                دلوقتي القيد خاصية لا سبب لنمط تاني. */}
+            {/* ⚠️ مبدّل الدورة كان **بعد** زرار الإنشاء، فبيزقّه من
+                الركن · والمبدّل مش فعل أصلًا: بيغيّر اللي بتشوفه لا
+                بيضيف حاجة. مكانه بقى الصفّ اللي تحت، مع اللي بيحكم
+                العرض.
+
+                الدورة **دايمًا** مختارة، فمفيش خيار «الكل» ·
+                `allowEmpty={false}`. */}
+            <PageActions
+              settings={ROUTES.budgetSettings}
+              create={{ label: 'ميزانية جديدة', to: ROUTES.budgetNew }}
+            />
+          </header>
+
+          <div className="hscope">
             <Select
               icon={icons.budget}
               value={cycleId}
@@ -128,7 +129,7 @@ export default function BudgetPage() {
               }))}
               onChange={(v) => { if (v) { setCycleId(v); setPath([]) } }}
             />
-          </header>
+          </div>
 
           {/* ⚠️ **الميزانيات نفسها كانت غايبة عن شاشة الميزانية.**
               اللي تحت رسوم واستهلاك — نتيجة التخصيص — والريكوردات

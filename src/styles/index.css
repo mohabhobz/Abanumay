@@ -4580,6 +4580,17 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 .screen>header:not(.phead)>div:first-child{min-width:0;flex:1 1 22rem}
 /* الأفعال في الترويسة صفّ واحد، وكلها بنفس ارتفاع التحكّم */
 .screen>header:not(.phead)>:not(div:first-child){flex:none}
+/* ═══ مجموعة أفعال الترويسة ═══
+   ⚠️ **ملزوقة لنهاية الصفّ عشان آخر عنصر فيها يقع في الركن.**
+   دي مش تفصيلة شكل: زرار الإنشاء هو آخر عنصر، وحافته بتبقى عند
+   حافة الصفحة مهما كان عدد الأزرار اللي جنبه · فالمستخدم بيتعلّم
+   مكانًا واحدًا. أي محاذاة تانية بتخلّي الزرار يتحرّك لما شاشة
+   يبقى فيها زرار ثانوي وشاشة لأ. */
+.hacts{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
+  justify-content:flex-end;min-width:0}
+/* مبدّل السياق · صفّ لوحده تحت الترويسة، لأنه بيحكم اللي تحته لا
+   بيضيف للموديول · ومكانه هنا بيمنعه من إزاحة زرار الإنشاء */
+.hscope{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;min-width:0}
 
 .rpsec{display:flex;flex-direction:column;gap:var(--sp-4)}
 /* سطر بيقول السكشن ده بيعمل إيه. سطر واحد مقروء عرضه محدود:
@@ -5996,6 +6007,17 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .regf .fld{width:100%}
 .regf .fld.off{opacity:.72}
 .regf-h{font-size:var(--fs-1)}
+/* حقل بياخد الصفّ كله · الوصف والشرائح محتاجين عرضًا، والحشرهم في
+   عمود من تلاتة بيخلّي النصّ يلفّ على أربع كلمات في السطر */
+.regf-w{grid-column:1 / -1}
+/* ⚠️ الـ`textarea` جوّه نفس `.fld` بتاعة الحقول التانية · حقل
+   بحلقة تركيز مختلفة بيبان غريبًا جنب إخواته، والحلقة دي مفحوصة
+   في `ctlaudit` */
+.fld-a{align-items:stretch;block-size:auto}
+.fld-a textarea{width:100%;resize:vertical;line-height:var(--lh-long)}
+/* الفئات المستهدفة شرائح · الاختيار متعدّد، والمنسدلة المتعددة
+   بتخبّي اللي اتختار ورا «3 مختارة» */
+.pmulti{display:flex;flex-wrap:wrap;gap:var(--sp-2);min-width:0}
 
 /* المستندات · الصفّ بيقول الاسم والإلزام والحدّ الأقصى. والإلزام
    بيتغيّر بتصنيف الجهة، فالوسم بيتبدّل لحظة تغيير التصنيف. */

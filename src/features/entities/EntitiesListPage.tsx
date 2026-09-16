@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, Money, MultiSelect, PAGE_SIZES, Pager, SearchBox, Segments,
   Select, Toggle, ViewToggle,
@@ -18,7 +18,7 @@ import {
 } from '@/data/mock/taxonomy'
 import { ROUTES } from '@/app/routes'
 import { QuickRead } from '@/components/assistant'
-import { BulkBar } from '@/components/shell'
+import { BulkBar, PageActions } from '@/components/shell'
 import { readEntities } from '@/data/readings'
 import { regKpi } from '@/data/mock/registration'
 import { EntityCard } from './EntityCard'
@@ -286,29 +286,22 @@ export default function EntitiesListPage() {
                 و«طلبات التسجيل» بيفتح دور **المراجعة** عندنا.
                 والقاعدة 2 هي اللي بتفصل بينهم: الطلب مش جهة، فما
                 ينفعش الاتنين يوَدّوا لنفس الشاشة. */}
-            <div className="rowf gp-2">
-              {/* ⚠️ الإعدادات مدخلها من هنا لا من الريل · اللي بيفتحها
-                  مسؤول نظام مرة في السنة، واللي واقف على الشاشة دي
-                  كل يوم مشرف منح · فالتردد هو اللي بيحدد المساحة
-                  (د-1، والتفصيل في MODULE_STRUCTURE_BRIEF) */}
-              <Link className="btn btn-ghost" to={ROUTES.entitySettings}>
-                <Icon name={icons.gear} size={16} />
-                الإعدادات
-              </Link>
-              <Link className="btn btn-2" to={ROUTES.entityRequests}>
-                <Icon name={icons.doc} size={16} />
-                طلبات التسجيل
-                {reg.open > 0 && <b className="num">{reg.open}</b>}
-              </Link>
-              {/* ⚠️ الزرار ده بيودّي **للتسجيل المباشر** لا لبوّابة
-                  الجهة · اللي واقف هنا مشرف منح داخل السيستم، وهو
-                  بيسجّل شريكًا بيديره بنفسه (قاعدة 32). وبوّابة الجهة
-                  مدخلها شاشة الدخول، لأن صاحبها مالوش حساب أصلًا. */}
-              <Link className="btn btn-p" to={ROUTES.entityNew}>
-                <Icon name={icons.plus} size={16} />
-                تسجيل جهة جديدة
-              </Link>
-            </div>
+            {/* ⚠️ الترتيب مش اختيار الشاشة دي · هو عقد مكتوب مرة
+                واحدة في `PageActions`: إعدادات ← ثانوي ← إنشاء في
+                الركن. الجهات كانت أقرب شاشة للعقد أصلًا، والباقي
+                اتظبط عليها. */}
+            <PageActions
+              settings={ROUTES.entitySettings}
+              secondary={[{
+                label: 'طلبات التسجيل', to: ROUTES.entityRequests,
+                icon: 'doc', count: reg.open,
+              }]}
+              /* ⚠️ الزرار ده بيودّي **للتسجيل المباشر** لا لبوّابة
+                 الجهة · اللي واقف هنا مشرف منح داخل السيستم، وهو
+                 بيسجّل شريكًا بيديره بنفسه (قاعدة 32). وبوّابة الجهة
+                 مدخلها شاشة الدخول، لأن صاحبها مالوش حساب أصلًا. */
+              create={{ label: 'تسجيل جهة جديدة', to: ROUTES.entityNew }}
+            />
           </header>
 
           {/* ═══ القراءة السريعة ═══
