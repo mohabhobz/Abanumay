@@ -287,6 +287,14 @@ export default function EntitiesListPage() {
                 والقاعدة 2 هي اللي بتفصل بينهم: الطلب مش جهة، فما
                 ينفعش الاتنين يوَدّوا لنفس الشاشة. */}
             <div className="rowf gp-2">
+              {/* ⚠️ الإعدادات مدخلها من هنا لا من الريل · اللي بيفتحها
+                  مسؤول نظام مرة في السنة، واللي واقف على الشاشة دي
+                  كل يوم مشرف منح · فالتردد هو اللي بيحدد المساحة
+                  (د-1، والتفصيل في MODULE_STRUCTURE_BRIEF) */}
+              <Link className="btn btn-ghost" to={ROUTES.entitySettings}>
+                <Icon name={icons.gear} size={16} />
+                الإعدادات
+              </Link>
               <Link className="btn btn-2" to={ROUTES.entityRequests}>
                 <Icon name={icons.doc} size={16} />
                 طلبات التسجيل

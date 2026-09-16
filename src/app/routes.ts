@@ -11,8 +11,19 @@ export const ROUTES = {
   home: '/',
 
   projects: '/projects',
+  /** قواعد عمل المشاريع والصرف · مصفوفة الاعتماد والحدود · د-2 */
+  projectSettings: '/projects/settings',
   project: (id: string) => `/projects/${id}`,
   projectTab: (id: string, tab: string) => `/projects/${id}/${tab}`,
+
+  /**
+   * جرد الإعدادات · د-1
+   *
+   * ⚠️ **مش مدخل في الريل عن قصد.** الريل سبع عناصر ومقصود إنه
+   * سبعة، واللي بيفتح الشاشة دي مسؤول نظام بيظبّط مرة في السنة ·
+   * فمدخلها من قايمة الحساب، ومن ترويسة كل موديول لصفحته وحده.
+   */
+  settings: '/settings',
 
   entities: '/entities',
   entity: (id: string, tab?: string) => `/entities/${id}${tab && tab !== 'data' ? `/${tab}` : ''}`,
@@ -20,6 +31,8 @@ export const ROUTES = {
   entityRegister: '/entities/register',
   /** تسجيل جهة من داخل النظام · قاعدة 32 · وبتتولد فورًا بلا مراجعة */
   entityNew: '/entities/new',
+  /** ماستر داتا الجهات · المناطق والمدن والتصنيفات · د-3 */
+  entitySettings: '/entities/settings',
   /** صندوق طلبات التسجيل · خمس حالات · قاعدة 26 */
   entityRequests: '/entities/requests',
   entityRequest: (id: string) => `/entities/requests/${id}`,

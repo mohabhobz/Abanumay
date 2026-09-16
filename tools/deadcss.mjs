@@ -28,5 +28,5 @@ for(const theme of ['light','dark','green']){
 await b.close();s.close()
 const dead=[...defs].filter(c=>!seen.has(c)).sort()
 console.log(`كلاسات في CSS: ${defs.size} · ظهرت في الـDOM: ${[...defs].filter(c=>seen.has(c)).length} · **ما ظهرتش: ${dead.length}**`)
-console.log('\n(بعضها حالات hover/focus/error مش مرسومة في الجرد — فدي قايمة "للمراجعة" لا "للحذف")\n')
+console.log('\n(بعضها حالات hover/focus/error مش مرسومة في الجرد · فدي قايمة "للمراجعة" لا "للحذف")\n')
 console.log(dead.join(' · '))

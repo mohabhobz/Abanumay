@@ -13,5 +13,6 @@
   "lineHeightLiterals": 0,
   "edgeBars": 0,
   "fillLiterals": 0,
-  "shadowLiterals": 0
+  "shadowLiterals": 0,
+  "emDashInComments": 238
 }

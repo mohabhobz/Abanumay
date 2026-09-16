@@ -152,7 +152,7 @@ export default function BudgetSettingsPage() {
                       <li key={y.id}>
                         <b className="num">{y.name}</b>
                         <span className="sub">
-                          <DateText>{y.from}</DateText> — <DateText>{y.to}</DateText>
+                          <DateText>{y.from}</DateText>–<DateText>{y.to}</DateText>
                         </span>
                         <span className="pc-sp" />
                         {used > 0

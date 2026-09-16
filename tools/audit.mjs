@@ -147,7 +147,7 @@ const rows = []
 for (const [k, v] of Object.entries(metrics)) {
   if (v === null || v === undefined) continue
   const cap = budget[k]
-  if (cap === undefined) { rows.push(['🆕', k, v, '—']); continue }
+  if (cap === undefined) { rows.push(['🆕', k, v, '·']); continue }
   if (v > cap) { over++; rows.push(['🔴', k, v, cap]) }
   else if (v < cap) { under++; rows.push(['🟢', k, v, cap]) }
   else rows.push(['  ', k, v, cap])

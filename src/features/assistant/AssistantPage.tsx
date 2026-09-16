@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useQueryParams } from '@/hooks/useQueryParams'
 import { Background, MobileTop, Rail } from '@/components/shell'
 import { roles, type AssistantRole } from '@/data/mock/assistant'
 import { fixtures } from '@/data/repository'
@@ -25,6 +26,9 @@ import { AssistantScreen } from './AssistantScreen'
 export default function AssistantPage() {
   const navigate = useNavigate()
   const mobile = useIsMobile()
+  /* ⚠️ حالة الطيّ في الرابط · الشريط المطويّ شاشة برضو، ومن غير
+     المفتاح ده الجرد بيرسم الشريط مفتوحًا في كل مرة (أ-3) */
+  const { values: v, set } = useQueryParams<{ list: string | undefined }>(['list'])
 
   const role = roles[0] as AssistantRole
   const out = () => { signOut(); navigate(ROUTES.login, { replace: true }) }
@@ -46,6 +50,8 @@ export default function AssistantPage() {
             sub="كيف أقدر أساعدك اليوم؟"
             cards={role.cards}
             onClose={() => navigate(-1)}
+            listShut={v.list === 'shut'}
+            onListShut={(x) => set({ list: x ? 'shut' : undefined })}
             focusOnMount
           />
         </div>

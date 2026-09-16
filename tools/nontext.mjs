@@ -48,7 +48,7 @@ for(const theme of ['light','dark']){
   for(const [route,sel,label,must] of TARGETS){
     if(route!==last){await p.goto(`http://localhost:${PORT}${route}`,{waitUntil:'domcontentloaded'});await p.waitForTimeout(800);last=route}
     const box=await p.evaluate(s=>{const e=document.querySelector(s);if(!e)return null;const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}},sel)
-    if(!box){console.log(`  ${label.padEnd(24)} — مش موجود`);continue}
+    if(!box){console.log(`  ${label.padEnd(24)} · مش موجود`);continue}
     const shot=await p.screenshot({clip:{x:Math.max(0,box.x-6),y:Math.max(0,box.y-6),width:Math.min(60,box.w+12),height:Math.min(60,box.h+12)}})
     const png=PNG.sync.read(shot)
     const px=(x,y)=>{const i=(png.width*y+x)<<2;return [png.data[i],png.data[i+1],png.data[i+2]]}

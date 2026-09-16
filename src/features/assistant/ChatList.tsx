@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon, icons } from '@/components/ui'
+import { useMenuOf } from '@/hooks/useMenu'
 import type { SavedChat } from '@/data/mock/assistant'
 
 /** المجموعات بترتيبها في القائمة · «مثبّتة» بتسبق أي تاريخ */
@@ -13,6 +14,9 @@ export interface ChatListProps {
   onNew: () => void
   /** مفتوحة فوق المحتوى على الموبايل */
   open: boolean
+  /** مطويّة على الديسكتوب · والزرار بيرجّعها */
+  shut: boolean
+  onShut: () => void
 }
 
 /**
@@ -22,9 +26,14 @@ export interface ChatListProps {
  * فالتثبيت والبحث ردّ على طلب صريح، مش زينة. والسحب بيرتّب، والإفلات
  * في مجموعة تانية بينقل المحادثة ليها، فسحبها لـ«مثبّتة» بيثبّتها.
  */
-export function ChatList({ chats, onChange, openId, onOpen, onNew, open }: ChatListProps) {
+export function ChatList({
+  chats, onChange, openId, onOpen, onNew, open, shut, onShut,
+}: ChatListProps) {
   const [query, setQuery] = useState('')
-  const [menuId, setMenuId] = useState<string | null>(null)
+  /* ⚠️ القايمة دي كانت `useState` عريانة من غير قفل بالضغط برّه ·
+     نفس السلوك اللي مكتوب مرة واحدة في `useMenu` للست قوايم التانية،
+     والسابعة دي فاتته لأن حالتها معرّف لا بوليان (نوتة أ-4) */
+  const menu = useMenuOf<HTMLDivElement>()
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
 
@@ -54,18 +63,30 @@ export function ChatList({ chats, onChange, openId, onOpen, onNew, open }: ChatL
 
   const togglePin = (id: string) => {
     onChange(chats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)))
-    setMenuId(null)
+    menu.close()
   }
 
   const remove = (id: string) => {
     onChange(chats.filter((c) => c.id !== id))
-    setMenuId(null)
+    menu.close()
   }
 
   return (
-    <aside className={`chatlist chrome${open ? ' on' : ''}`}>
+    <aside className={`chatlist chrome${open ? ' on' : ''}${shut ? ' shut' : ''}`}>
       <div className="cl-head">
         <span className="cl-title">المحادثات</span>
+        {/* ⚠️ زرار الطيّ **جوّه الشريط** لا في ترويسة المحادثة ·
+            اللي بيطوي حاجة بيدوس عليها هي، واللي بيرجّعها بيدوس
+            على مكانها. فالزرار ده بيطوي، وزرار تاني في ترويسة
+            المحادثة بيرجّع (أ-3) */}
+        <button
+          className="cl-new"
+          onClick={onShut}
+          title="اطوِ المحادثات"
+          aria-label="اطوِ المحادثات"
+        >
+          <Icon name={icons.panel} size={16} />
+        </button>
         <button className="cl-new" onClick={onNew} title="محادثة جديدة · ⌘⇧O" aria-label="محادثة جديدة">
           <Icon name={icons.plus} size={16} />
         </button>
@@ -92,6 +113,7 @@ export function ChatList({ chats, onChange, openId, onOpen, onNew, open }: ChatL
               {rows.map((c) => (
                 <div
                   key={c.id}
+                  ref={menu.id === c.id ? menu.box : undefined}
                   className={
                     `cl-row${openId === c.id ? ' on' : ''}` +
                     `${dragId === c.id ? ' dragging' : ''}${overId === c.id ? ' over' : ''}`
@@ -117,22 +139,22 @@ export function ChatList({ chats, onChange, openId, onOpen, onNew, open }: ChatL
                   <button
                     className="cl-more"
                     aria-label="خيارات"
-                    onClick={() => setMenuId(menuId === c.id ? null : c.id)}
+                    onClick={() => menu.toggle(c.id)}
                   >
                     <Icon name={icons.dots} size={16} />
                   </button>
 
-                  {menuId === c.id && (
+                  {menu.id === c.id && (
                     <div className="cl-menu chrome">
                       <button onClick={() => togglePin(c.id)}>
                         <Icon name={icons.pin} size={16} />
                         {c.pinned ? 'إلغاء التثبيت' : 'تثبيت'}
                       </button>
-                      <button onClick={() => setMenuId(null)}>
+                      <button onClick={menu.close}>
                         <Icon name={icons.edit} size={16} />
                         إعادة تسمية
                       </button>
-                      <button onClick={() => setMenuId(null)}>
+                      <button onClick={menu.close}>
                         <Icon name={icons.file} size={16} />
                         تصدير المحادثة
                       </button>

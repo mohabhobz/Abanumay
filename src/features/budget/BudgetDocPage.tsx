@@ -483,7 +483,7 @@ export default function BudgetDocPage() {
                             </span>
 
                             <span className="tnum num">
-                              {x.active ? nf.format(x.available) : '—'}
+                              {x.active ? nf.format(x.available) : '·'}
                             </span>
 
                             <span>

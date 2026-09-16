@@ -21,6 +21,9 @@ export interface AssistantScreenProps {
   focusOnMount?: boolean
   /** بيتصفّر لمّا تتفتح من جديد · مفتاح React لا حالة داخلية */
   labelledBy?: string
+  /** الشريط مطويّ من أول ما يفتح · بييجي من الرابط في صفحة المساعد */
+  listShut?: boolean
+  onListShut?: (shut: boolean) => void
 }
 
 /**
@@ -42,6 +45,7 @@ export interface AssistantScreenProps {
  */
 export function AssistantScreen({
   greet, sub, cards, onClose, headExtra, focusOnMount, labelledBy,
+  listShut, onListShut,
 }: AssistantScreenProps) {
   const mobile = useIsMobile()
 
@@ -50,6 +54,13 @@ export function AssistantScreen({
   const [openChat, setOpenChat] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [listOpen, setListOpen] = useState(false)
+  /* ⚠️ الطيّ في **الرابط** لمّا الشاشة صفحة كاملة · لو فضل ستيت
+     جوّه الكومبوننت، الجرد عمره ما هيرسم الشريط مطويًّا · نفس عمى
+     مراحل فورم التسجيل وكارت نوع الشراكة. واللوح اللي بيفتح فوق
+     صفحة تانية مالوش رابط، فبيرجع للستيت. */
+  const [shutLocal, setShutLocal] = useState(false)
+  const shut = listShut ?? shutLocal
+  const setShut = (x: boolean) => (onListShut ? onListShut(x) : setShutLocal(x))
 
   const body = useRef<HTMLDivElement>(null)
   const col = useRef<HTMLDivElement>(null)
@@ -74,11 +85,23 @@ export function AssistantScreen({
     }
   })
 
+  /* ⚠️ **المحادثة الجديدة بتنزل في القايمة باسمها** (أ-5).
+     قبل كده أول سؤال كان بيفتح خيطًا معرّفه `'new'` وخلاص · يعني
+     الكارت اللي المستخدم دوس عليه بيودّيه محادثة **مالهاش صفّ**،
+     فلو خرج منها ما يلاقيهاش. دلوقتي بيتعمل صفّ فعلي في «اليوم»
+     عنوانه السؤال نفسه، والشاشة بتفتح عليه. */
   const send = (text: string) => {
     if (busy) return
     setDraft('')
     ask(text)
-    if (!openChat) setOpenChat('new')
+    if (openChat) return
+
+    const id = `c-${Date.now()}`
+    setChats((list) => [
+      { id, title: text.trim(), snippet: text.trim(), at: 'الآن', group: 'اليوم' },
+      ...list,
+    ])
+    setOpenChat(id)
   }
 
   const newChat = () => {
@@ -124,6 +147,8 @@ export function AssistantScreen({
         onOpen={(id) => { setOpenChat(id); reset(); setListOpen(false) }}
         onNew={newChat}
         open={listOpen}
+        shut={shut}
+        onShut={() => setShut(true)}
       />
 
       <div className="chatcol" ref={col}>
@@ -132,13 +157,24 @@ export function AssistantScreen({
             العنوان معلّقًا في الحافة بعيدًا عن أول كلمة في الرد. */}
         <header className={`chat-top${title ? '' : ' bare'}`}>
           <div className="chat-top-in">
-            {mobile && (
+            {mobile ? (
               <button
                 className="aclose"
                 onClick={() => setListOpen((v) => !v)}
                 aria-label="المحادثات"
               >
                 <Icon name={icons.menu} size={16} />
+              </button>
+            ) : shut && (
+              /* مكان الشريط المطويّ · الزرار بيرجّعه من نفس الناحية
+                 اللي راح فيها، فالحركة بتبان رجوعًا لا فتحًا لحاجة تانية */
+              <button
+                className="aclose"
+                onClick={() => setShut(false)}
+                title="رجّع المحادثات"
+                aria-label="رجّع المحادثات"
+              >
+                <Icon name={icons.panel} size={16} />
               </button>
             )}
 

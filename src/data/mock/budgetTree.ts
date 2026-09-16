@@ -189,7 +189,9 @@ export function pathOf(nodes: BudgetNode[], id: string): string {
     parts.push(cur.label)
     cur = cur.parentId ? nodes.find((x) => x.id === cur!.parentId) : undefined
   }
-  return parts.reverse().join(' — ')
+  /* ⚠️ الفاصل `·` لا الشرطة الطويلة · الشرطة الطويلة ممنوعة في
+     السيستم كله، والنقطة هي فاصل النظام في كل مكان تاني */
+  return parts.reverse().join(' · ')
 }
 
 /** البنود اللي عليها الحجز والصرف · الورق وحده */

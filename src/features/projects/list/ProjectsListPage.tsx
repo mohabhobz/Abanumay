@@ -410,6 +410,14 @@ export default function ProjectsListPage() {
                 <span className="num">4,929</span> في النظام العامل
               </p>
             </div>
+
+            {/* ⚠️ إعدادات المشاريع **قواعد عمل** لا ماستر داتا ·
+                السقف اللي جوّاها بيحوّل مشاريع من طاولة لطاولة، فمدخلها
+                من هنا عشان اللي بيغيّره يكون شايف اللي هيتأثر (د-2) */}
+            <Link className="btn btn-ghost" to={ROUTES.projectSettings}>
+              <Icon name={icons.gear} size={16} />
+              الإعدادات
+            </Link>
           </header>
 
           {/* ═══ القراءة السريعة ═══

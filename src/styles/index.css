@@ -2496,6 +2496,22 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   margin:var(--gap) 0 var(--gap) 0;margin-inline-start:var(--gap);
   border-radius:var(--r2);overflow:hidden;
   box-shadow:inset 0 0 0 1px var(--edge-1)}
+/* ═══ الشريط المطويّ · أ-3 ═══
+   ⚠️ **بيتشال من التخطيط لا بيتخبّى بـ`visibility`.** الشريط
+   ٢٧٤ بكسل، والإخفاء اللي بيسيب مكانه بيدّي عمودًا فاضيًا جنب
+   المحادثة · وده مش طيّ، ده شريط أبيض. و`width:0` مع `overflow`
+   المقفول أصلًا بيخلّي الجواية تختفي من غير ما تتزحلق.
+
+   والحركة على `width` لا على `transform` عن قصد: المحادثة جنبه
+   لازم **تتوسّع** وهو بيتطوي، والـtransform ما بيحرّكش الجيران. */
+.chatlist{transition:width .2s ease,margin-inline-start .2s ease,box-shadow .2s ease}
+/* ⚠️ `visibility:hidden` مع العرض صفر · العرض وحده بيخلّي النص
+   جوّه الشريط **مقصوصًا موجودًا**: المستخدم مش شايفه، لكنه لسّه
+   في الشجرة، وفحص القصّ مسكه (`cl-foot` 65 حرفًا في 32). وده
+   صح: محتوى مقصوص محتوى، وأول ما الشريط يتطوى محتواه بيبقى
+   **مش متاح** لا «صغير». */
+.chatlist.shut{width:0;margin-inline-start:0;box-shadow:none;
+  pointer-events:none;visibility:hidden}
 .cl-head{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-4) var(--sp-5) var(--sp-3)}
 .cl-title{flex:1;font-family:var(--fd);font-weight:700;font-size:var(--fs-3)}
 .cl-new{width:32px;height:32px;flex:none;border-radius:var(--ric);display:grid;place-items:center;
@@ -2748,6 +2764,11 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
     margin:0;border-radius:0;
     transform:translateX(102%);transition:transform .26s cubic-bezier(.22,.9,.3,1)}
 .chatlist.on{transform:none}
+  /* ⚠️ الطيّ مفهوم ديسكتوب · على الموبايل الشريط **درج** بيتفتح
+     فوق المحتوى، فمفيش مساحة تتوفّر بطيّه. ومن غير السطر ده
+     `.shut` (أعلى تخصيصًا) بيصفّر عرض الدرج وهو مفتوح، فالمستخدم
+     بيدوس زرار المحادثات وما يحصلش حاجة. */
+  .chatlist.shut{width:min(300px,86vw);margin:0;pointer-events:auto;visibility:visible}
 .chat-top{padding:var(--sp-3) var(--sp-4);gap:var(--sp-1)}
 .chat-top .sub{display:none}
 .chat-top .atitle{font-size:var(--fs-3)}
@@ -6209,7 +6230,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* صفّ الإعدادات · حقول جنب بعض وزرار إضافة في آخرها */
 .cfgrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
   gap:var(--sp-4);align-items:end;margin-top:var(--sp-4)}
-.cfgwide{grid-column:span 2}
+/* ⚠️ سقف للعرض · من غيره حقل الإضافة الوحيد بياخد الصفّ كله
+   ويبان كإنه حقل بحث فوق الليست لا فورم إضافة جنبه زرار */
+.cfgwide{grid-column:span 2;max-width:34rem}
 .cfgadd{align-self:end}
 .cfglist{list-style:none;margin:var(--sp-4) 0 0;padding:0;
   display:flex;flex-direction:column;gap:var(--sp-2)}
@@ -6218,6 +6241,47 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1);
   font-size:var(--fs-2);line-height:var(--lh-2)}
 .cfglist li>b{flex:none;font-family:var(--fd);font-weight:600;color:var(--t1)}
+/* الصف اللي القاعدة وقعت عليه · حلقة لا أرضية أفتح، عشان الأرضية
+   الأفتح في التيم الغامق بترفع أرضية كل اللي جوّاه (نفس درس `.pkind`) */
+.cfglist li.on{box-shadow:inset 0 0 0 2px var(--edge-i)}
+
+/* ═══ جرد الإعدادات ═══
+   كل مجموعة صفّ من تلات أسطر: الاسم ونوعه · بتظهر فين · مين
+   بيملكها وكام قيمة. «بتظهر فين» هو أهم سطر فيهم لأنه بيمنع
+   السؤال اللي بيتكرر: «لو غيّرت ده، هيأثر على إيه؟» */
+.cfggrid{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--sp-3)}
+/* ⚠️ **الحلقة وحدها بلا أرضية مرفوعة.** `--fl-1` هنا كان بيرفع
+   أرضية وسم «ماستر داتا» في التيم الأخضر لـ4.45 من 4.5 · نفس
+   اللي حصل بالظبط في كارت نوع الشراكة قبل كده. الدرس اتكرر مرتين
+   في يوم: **جوّه كارت زجاجي، أي أرضية مرفوعة تانية بتاكل هامش
+   التباين لكل اللي جوّاها** · فالفصل بيتقال بالحلقة. */
+.cfggrid li{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0;
+  padding:var(--sp-4);border-radius:var(--ric);
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
+.cfgg-h{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.cfgg-h>b{font-family:var(--fd);font-weight:600;color:var(--t1);min-width:0}
+.cfgg-w{font-size:var(--fs-1);line-height:var(--lh-1)}
+/* ⚠️ `margin-block-start:auto` مش تزويق: نصوص «بتظهر فين» بتطلع
+   سطرًا وسطرين، فمن غيره سطر المالك والعدد بيقع على ارتفاع مختلف
+   في كل كارت والصف بيبان مكسور */
+.cfgg-f{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  margin-block-start:auto;padding-top:var(--sp-2);font-size:var(--fs-1)}
+
+/* ═══ شرائح المنطقة ═══
+   ⚠️ **دي مبدّل لا فلتر:** المدن تابعة للمنطقة، فلازم واحدة تفضل
+   شغّالة دايمًا ومفيش «الكل» · نفس قيد مبدّل الدورة في الميزانية */
+.cfgchips{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+  display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.cfgchip{display:flex;align-items:center;gap:var(--sp-2);cursor:pointer;
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--ric);border:0;
+  font:inherit;font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t2);
+  background:var(--ctl-bg);box-shadow:inset 0 0 0 1px var(--ctl-line);
+  transition:background .16s ease,box-shadow .16s ease,color .16s ease}
+.cfgchip:hover{color:var(--t1);box-shadow:inset 0 0 0 1px var(--ctl-line-f)}
+.cfgchip.on{color:var(--t1);box-shadow:inset 0 0 0 2px var(--edge-i)}
+.cfgchip>b{font-weight:600;color:var(--t3)}
+.cfgchip.on>b{color:var(--t1)}
 
 @media (max-width:900px){
   .btree-h{display:none}

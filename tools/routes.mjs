@@ -73,6 +73,12 @@ export const ROUTES = [
      ⚠️ التلاتة دول شاشات إنشاء وتحرير، ومن غيرهم الجرد بيقيس
      شاشة العرض وحدها وهي **نتيجة** الشجرة لا الشجرة. */
   '/budget/settings', '/budget/settings?tab=sources',
+  /* إعدادات الموديولات · د-1..د-3 · وكل تاب مسار عشان ما يفضلش
+     نص الشاشة غير مقيس (نفس درس مراحل فورم التسجيل) */
+  '/settings',
+  '/entities/settings', '/entities/settings?tab=types',
+  '/entities/settings?tab=licensors', '/entities/settings?tab=targets',
+  '/projects/settings', '/projects/settings?tab=limits',
   '/budget/doc/BG-2025-SA', '/budget/new',
   '/payments', '/payments/SR-2026-11407', '/payments/new',
   '/payments/SR-2026-11415/order', '/payments/late',
@@ -84,6 +90,9 @@ export const ROUTES = [
      محادثة محفوظة وصفحة التفضيلات كانوا **خارج الحراسة تمامًا** —
      كل الأدوات المقيسة كانت بترجع خضرا وهي ما زارتهمش. */
   '/assistant/c1',
+  /* الشريط المطويّ · حالة شاشة كاملة، ومن غير المسار ده الجرد
+     بيرسمه مفتوحًا في كل مرة (أ-3) */
+  '/assistant?list=shut',
   '/account', '/account/preferences',
 ]
 

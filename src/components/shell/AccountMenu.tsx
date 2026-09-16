@@ -103,6 +103,18 @@ export function AccountMenu({
             </button>
           </div>
 
+          {/* ⚠️ **إعدادات النظام مفصولة عن التفضيلات عن قصد.**
+              التفضيلات بتغيّر شكل الشاشة **لصاحبها**، وإعدادات
+              النظام بتغيّر سلوك السيستم **لكل المستخدمين** · وخلطهم
+              في قسم واحد هو اللي بيخلّي حد يدوّر على «المدن» في
+              تفضيلاته (د-1). */}
+          <div className="acct-sec">
+            <button role="menuitem" onClick={() => go(ROUTES.settings)}>
+              <Icon name={icons.gear} size={16} />
+              إعدادات النظام
+            </button>
+          </div>
+
           <div className="acct-sec">
             <button className="danger" role="menuitem" onClick={() => onSignOut?.()}>
               <Icon name={icons.logout} size={16} />

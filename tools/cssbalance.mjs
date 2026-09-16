@@ -28,12 +28,12 @@ for (const f of files) {
       if (c === '"' || c === "'") { inStr = c; continue }
       if (c === '/' && n === '*') { open = line; i++ }
       else if (c === '*' && n === '/') {
-        console.log(`❌ ${f}:${line} — إغلاق تعليق \`*/\` بلا فتح`)
+        console.log(`❌ ${f}:${line} · إغلاق تعليق \`*/\` بلا فتح`)
         bad++; i++
       }
     } else if (c === '*' && n === '/') { open = -1; i++ }
   }
-  if (open !== -1) { console.log(`❌ ${f}:${open} — تعليق مفتوح ما اتقفلش`); bad++ }
+  if (open !== -1) { console.log(`❌ ${f}:${open} · تعليق مفتوح ما اتقفلش`); bad++ }
 }
 
 console.log(bad ? `\n${bad} خلل في توازن التعليقات` : '✅ التعليقات متوازنة')
