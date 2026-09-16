@@ -15,6 +15,13 @@ export const ROUTES = {
   projectSettings: '/projects/settings',
   /** إنشاء مشروع · BPD-003 · نموذج مرحلي بنسبة اكتمال (قاعدة 31) */
   projectNew: '/projects/new',
+  /**
+   * محفظة شريك منفّذ · ب-8.
+   *
+   * ⚠️ **المحفظة مش مشروع، فمالهاش صفّ في `/projects`.** هي كيان
+   * أب تحته مشاريع، ومسارها منفصل عشان ما تختلطش بالـ٤٩٢٩.
+   */
+  portfolio: (id: string) => `/projects/portfolio/${id}`,
   project: (id: string) => `/projects/${id}`,
   projectTab: (id: string, tab: string) => `/projects/${id}/${tab}`,
 

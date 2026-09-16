@@ -4,7 +4,8 @@ import { Glass, Head, Icon, icons, Money, Num, Person, Select, Tag } from '@/com
 import { ROUTES } from '@/app/routes'
 import { Mono } from '@/components/ui'
 import { nf } from '@/lib/format'
-import { budgetDocs, docTitle, yearById } from '@/data/mock/budgetTree'
+import { docTitle, yearById } from '@/data/mock/budgetTree'
+import { allBudgets } from '@/data/mock/chain'
 import { budgetDeps } from '@/data/mock/settings'
 import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -139,10 +140,10 @@ export default function BudgetPage() {
           <Glass className="tblcard">
             <Head
               title="الميزانيات المعرَّفة"
-              meta={<span className="sub"><Num>{budgetDocs.length}</Num> ميزانية</span>}
+              meta={<span className="sub"><Num>{allBudgets.length}</Num> ميزانية</span>}
             />
             <ul className="cfglist">
-              {budgetDocs.map((d) => (
+              {allBudgets.map((d) => (
                 <li key={d.id}>
                   <b>{docTitle(d)}</b>
                   <span className="sub"><Mono>{d.id}</Mono></span>

@@ -3918,7 +3918,13 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   --warn-ink:#FFD98A; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FFC7B7;
   /* حبر الوسم أفتح من حبر الزرار: أرضية الحبّة أغمق من أرضية
      الزرار في الغامق، فنفس اللون بيقع تحت AA عليها وحده. */
-  --ret-ink:#8CC2F0; --ret-ink3:#B6D9F7; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
+  /* ⚠️ `--ret-ink3` كان `#B6D9F7` وبيدّي **4.25** فوق أرضية وسم
+     `.tag.ret` في نقطة متشبّعة من تدرّج صفحة المشاريع · وبيعدّي
+     في صفحات تانية لأن التدرّج بيتغيّر تحته. نفس اللي حصل بالظبط
+     في `--t3` و`--warn-ink` و`--mute-ink` قبل كده: **قيمة بتشتغل
+     في صفحة وتقع في التانية مش قيمة، هي صدفة**.
+     `#CDE6FA` بيدّي 4.86 على أسوأ نقطة اتقاست. */
+  --ret-ink:#8CC2F0; --ret-ink3:#CDE6FA; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
   /* ⚠️ `--mute-ink` كان `#BCD4D0` وبيدّي **4.47** فوق أرضية
      وسم `.tag.mute` في الغامق والأخضر · تحت 4.5 بـ0.03. والرقم
      كان بيعدّي في صفحة ويقع في التانية لأن خلفية الصفحة تدرّج،
@@ -3977,7 +3983,13 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
   --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
   --warn-ink:#FFD98A; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FFC7B7;
-  --ret-ink:#8CC2F0; --ret-ink3:#B6D9F7; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
+  /* ⚠️ `--ret-ink3` كان `#B6D9F7` وبيدّي **4.25** فوق أرضية وسم
+     `.tag.ret` في نقطة متشبّعة من تدرّج صفحة المشاريع · وبيعدّي
+     في صفحات تانية لأن التدرّج بيتغيّر تحته. نفس اللي حصل بالظبط
+     في `--t3` و`--warn-ink` و`--mute-ink` قبل كده: **قيمة بتشتغل
+     في صفحة وتقع في التانية مش قيمة، هي صدفة**.
+     `#CDE6FA` بيدّي 4.86 على أسوأ نقطة اتقاست. */
+  --ret-ink:#8CC2F0; --ret-ink3:#CDE6FA; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
   --ok-ink:#8DEEC4; --ok-ink3:#B4F5DA; --brand-ink:#E2F4B4; --mute-ink:#C6DCD8;
   --retC:120,180,235; --limeC:168,217,60;
   --t3-g:#A9C7C3; --t2-g:#C6DEDA;
@@ -6046,7 +6058,56 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .sched-a{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
   margin-top:var(--sp-2);min-width:0}
 
+/* صفوف المحفظة · نفس شبكة الجدول بخمسة أعمدة بدل ستة */
+.pfh{grid-template-columns:minmax(10rem,1.6fr) minmax(7rem,1fr) minmax(8rem,1fr) minmax(9rem,1fr) minmax(7rem,auto)}
+
+/* ⚠️ كارت «اللي بيتغيّر» بيعرض **الاتنين**: اللي بيحصل واللي كان
+   بيحصل · والسطر التحتاني هو اللي بيخلّي الفرق يتقرا فرقًا لا
+   قايمة مزايا */
+/* ═══ السلسلة · هـ-7 ═══
+   ⚠️ **خط رأسي بيوصل الحلقات، ولونه بيقول حالتها.** أربع كروت
+   جنب بعض بتتقري أربع حاجات منفصلة · والخط هو اللي بيخلّيها
+   سلسلة. والحلقة المكسورة بتتلوّن، فالعين بتلاقيها من غير قراية. */
+.chain{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-4)}
+.chain li{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);
+  gap:var(--sp-4);align-items:start;min-width:0}
+/* الخط بين حلقة واللي بعدها · مش بعد الأخيرة */
+.chain li:not(:last-child)::after{content:"";position:absolute;
+  inset-inline-start:0.72rem;top:1.6rem;bottom:calc(-1 * var(--sp-4));
+  width:1.5px;background:rgba(var(--edgeC),.14)}
+.chain-i{flex:none;width:1.45rem;height:1.45rem;border-radius:var(--r-dot);
+  display:grid;place-items:center;font-size:var(--fs-1);
+  background:var(--ctl-bg);box-shadow:inset 0 0 0 1px var(--ctl-line);
+  color:var(--t2);position:relative;z-index:1}
+.chain-ok>.chain-i{background:var(--ok);color:var(--on-solid);box-shadow:none}
+.chain-gap>.chain-i{background:var(--warn);color:var(--on-solid);box-shadow:none}
+.chain-b{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.chain-h{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  font-size:var(--fs-2);line-height:var(--lh-2)}
+.chain-h>b{font-family:var(--fd);font-weight:600;color:var(--t1);flex:none}
+.chain-s{font-size:var(--fs-1);line-height:var(--lh-1);color:var(--t3-g)}
+.chain-gap .chain-s{color:var(--warn-ink)}
+
+/* شريط المحافظ فوق قايمة المشاريع · بيقول «في نوع تاني من الشغل»
+   من غير ما يدخل الجدول ويلوّث العدّ والفلاتر */
+.pfbar-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
+.pfbar-h>b{font-family:var(--fd);font-weight:700;font-size:var(--fs-3);color:var(--t1)}
+
+/* ⚠️ **شبكة لا حشو بمقاس الأيقونة.** أول نسخة كانت بتزحلق السطر
+   التحتاني بـ`calc(13px + gap)` · رقم حرفي بيكسر عدّاد المسافات،
+   وبيبوظ لو مقاس الأيقونة اتغيّر. الأيقونة عمود في الشبكة
+   بتمتدّ على الصفّين، فالمحاذاة بتحصل لوحدها. */
+.pfdiff{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-3)}
+.pfdiff li{display:grid;grid-template-columns:auto minmax(0,1fr);
+  gap:var(--sp-1) var(--sp-3);align-items:center;min-width:0}
+.pfdiff>li>svg{grid-row:1 / span 2;align-self:start;margin-top:var(--sp-1);color:var(--ok)}
+.pfdiff-on{min-width:0;font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t1)}
+.pfdiff-off{min-width:0;font-size:var(--fs-1);line-height:var(--lh-1);color:var(--t3-g)}
+
 @media (max-width:900px){
+  .pfh{grid-template-columns:minmax(0,1fr) auto}
   .sched-h{display:none}
   .sched-r,.sched-t{grid-template-columns:5rem minmax(0,1fr) auto;row-gap:var(--sp-2)}
   .sched-q,.sched-v{grid-column:1 / -1}

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, Money, MultiSelect, Pager, PAGE_SIZES, Person, SearchBox, Segments,
-  Select, Toggle, ViewToggle,
+  Empty, Glass, Icon, icons, Money, MultiSelect, Num, Pager, PAGE_SIZES, Person, SearchBox,
+  Segments, Select, Tag, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
@@ -21,13 +21,14 @@ import { COLS, GROUPS, groupByKey } from './columns'
 import {
   DataTable, aggregate, orderCols, readCols, splitGroups, writeCols,
 } from '@/components/table'
-import { plural, units } from '@/lib/format'
+import { nf, plural, units } from '@/lib/format'
 import {
   CITIES_BY_REGION, FIELDS_BY_TRACK, GOALS_BY_FIELD, GRANT_METHODS, OWNERS,
   REGIONS, STAGES, STATUS_GROUPS, SUPPORT_STATUS, TAGS, TRACKS, YEARS,
 } from '@/data/mock/taxonomy'
 import { QuickRead } from '@/components/assistant'
 import { BulkBar, PageActions } from '@/components/shell'
+import { implementerName, portfolios } from '@/data/mock/implementer'
 import { readProjects } from '@/data/readings'
 import { ProjectCard } from './ProjectCard'
 
@@ -430,6 +431,41 @@ export default function ProjectsListPage() {
               للصفحة**، والقراءة بتيجي قبل الأدوات لا بينها وبين
               النتيجة. في النص كانت بتقطع الطريق بين الفلتر واللي
               رجع منه، ومحدّش بيقرا سطرًا وهو ماسك فلتر. */}
+          {/* ═══ محافظ الشركاء المنفّذين · ب-8 ═══
+              ⚠️ **مش صفوفًا في الجدول عن قصد.** المحفظة كيان أب
+              تحته مشاريع، ومش مشروعًا · فحطّها في القايمة بيخلّي
+              العدّ غلط والفلاتر تلمسها وهي مش منها. وحطّها هنا
+              كشريط بيقول «في نوع تاني من الشغل موجود» من غير ما
+              يلوّث القايمة. */}
+          {portfolios.length > 0 && (
+            <Glass className="pfbar">
+              <div className="pfbar-h">
+                <Tag tone="ret">شريك منفّذ</Tag>
+                <b>محافظ</b>
+                <span className="sub">
+                  برّه قايمة المشاريع · كيان أب تحته مشاريع، ومفيش اتفاقية
+                </span>
+                <span className="pc-sp" />
+                <span className="sub"><Num>{portfolios.length}</Num> محفظة</span>
+              </div>
+              <ul className="cfglist">
+                {portfolios.map((p) => (
+                  <li key={p.id}>
+                    <b>{p.name}</b>
+                    <span className="sub">{implementerName(p.entityId)}</span>
+                    <span className="pc-sp" />
+                    <span className="num">{nf.format(p.total)}</span>
+                    <Tag tone="mute"><Num>{p.items.length}</Num> مشاريع</Tag>
+                    <Link className="btn btn-2 btn-sm" to={ROUTES.portfolio(p.id)}>
+                      افتح المحفظة
+                      <Icon name={icons.chevron} size={14} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Glass>
+          )}
+
           <QuickRead
             variant="bar"
             title="قراءة سريعة للقائمة"

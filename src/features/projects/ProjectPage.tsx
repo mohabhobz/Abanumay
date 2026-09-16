@@ -24,6 +24,7 @@ import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { projectLog } from '@/data/mock/log'
 import { projectOptions } from '@/data/mock/agreementNew'
+import { projectChain } from '@/data/mock/chain'
 import { journeys } from '@/data/journey'
 
 /** عدد الأيام اللي الإجراء الحالي مفتوح فيها · من سجل الإجراءات */
@@ -244,6 +245,7 @@ export default function ProjectPage() {
                     agreements: detail.agreement ? 1 : 0,
                     payments: detail.payments.length,
                   }}
+                  chain={row ? projectChain(row) : undefined}
                 />
               )}
               {active === 'entity' && <EntityTab entity={entity} bank={project.bank} />}

@@ -8,11 +8,12 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { nf } from '@/lib/format'
 import {
-  KIND_NOTE, KIND_SAY, budgetDocById, budgetDocs, childrenOf, docTitle, fiscalYears,
+  KIND_NOTE, KIND_SAY, childrenOf, docTitle, fiscalYears,
   flatten, fundSources, hasChildren, levelOf, outlineOf, pathOf, rootOf, sumChildren,
   treeIssues, yearById, yearSourceTaken,
   type BudgetDoc, type BudgetNode, type LineKind,
 } from '@/data/mock/budgetTree'
+import { allBudgets, budgetDocOf } from '@/data/mock/chain'
 
 /* ═══════════════════════════════════════════════════════════
    الميزانية · إنشاء وتحرير · شاشة واحدة
@@ -65,7 +66,7 @@ export default function BudgetDocPage() {
   const { id } = useParams()
   const navigate = useNavigate()
 
-  const existing = id ? budgetDocById(id) : undefined
+  const existing = id ? budgetDocOf(id) : undefined
   const missing = Boolean(id) && !existing
 
   const [doc, setDoc] = useState<Draft>(() => (existing ? { ...existing } : { ...BLANK }))
@@ -93,7 +94,9 @@ export default function BudgetDocPage() {
   const clash = useMemo(
     () =>
       doc.yearId && doc.sourceCode
-        ? yearSourceTaken(budgetDocs, doc.yearId, doc.sourceCode, doc.id)
+        /* التحقّق على **كل** الميزانيات لا على الفكستشر وحده ·
+           غير كده (سنة + مصدر) تعدّي وهي مكرّرة مع ميزانية مولَّدة */
+        ? yearSourceTaken(allBudgets, doc.yearId, doc.sourceCode, doc.id)
         : undefined,
     [doc.yearId, doc.sourceCode, doc.id],
   )

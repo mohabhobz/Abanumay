@@ -29,6 +29,7 @@ import SettingsIndexPage from '@/features/settings/SettingsIndexPage'
 import EntitySettingsPage from '@/features/entities/EntitySettingsPage'
 import ProjectSettingsPage from '@/features/projects/ProjectSettingsPage'
 import ProjectNewPage from '@/features/projects/ProjectNewPage'
+import PortfolioPage from '@/features/projects/PortfolioPage'
 import { ModulePlaceholder } from '@/features/shared/ModulePlaceholder'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
@@ -72,6 +73,7 @@ export default function App() {
             و«/payments/new» · الراوتر بيطابق بالترتيب */}
         <Route path={ROUTES.projectSettings} element={<ProjectSettingsPage />} />
         <Route path={ROUTES.projectNew} element={<ProjectNewPage />} />
+        <Route path="/projects/portfolio/:id" element={<PortfolioPage />} />
         <Route path={`${ROUTES.projects}/:id`} element={<ProjectPage />} />
         <Route path={`${ROUTES.projects}/:id/:tab`} element={<ProjectPage />} />
 

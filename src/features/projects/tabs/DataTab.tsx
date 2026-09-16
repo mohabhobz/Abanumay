@@ -1,9 +1,10 @@
-import { DateText, Glass, Head, KV, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
+import { DateText, Glass, Head, KV, Money, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
 import { DocDownload, DocFile } from '@/components/docs'
 import { addDays, costPerBeneficiary, isolate, nf, pct, readDate, units } from '@/lib/format'
 import type { Project } from '@/types/domain'
 import type { LogEvent } from '@/data/mock/log'
 import { projectDeps } from '@/data/mock/settings'
+import type { ChainLink } from '@/data/mock/chain'
 
 export interface DataTabProps {
   project: Project
@@ -22,13 +23,16 @@ export interface DataTabProps {
    * ظاهرًا قبل ما حد يحاول، ويوري السلسلة في نفس الوقت.
    */
   deps?: { agreements: number; payments: number }
+  /** حلقات السلسلة · هـ-7 · بتتحسب في الصفحة وبتتعرض هنا */
+  chain?: ChainLink[]
 }
 
 /** بيانات المشروع · التعريف والفكرة والمراحل والنطاق والمرفقات */
 export function DataTab({
-  project: P, entityName, onOpenEntity, last, onOpenLog, deps,
+  project: P, entityName, onOpenEntity, last, onOpenLog, deps, chain,
 }: DataTabProps) {
   const dep = deps ? projectDeps(deps.agreements, deps.payments) : undefined
+  const gaps = chain?.filter((l) => l.state === 'gap').length ?? 0
   const perBeneficiary = costPerBeneficiary(P.amountRequested, P.beneficiaries)
   const uploaded = P.attachments.filter((a) => a.uploaded).length
 
@@ -263,22 +267,53 @@ export function DataTab({
         </div>
       </Glass>
 
-      {dep && (
+      {/* ═══ السلسلة · هـ-7 ═══
+          ⚠️ **الكارت ده بيجمع حاجتين كانوا هيبقوا كارتين.**
+          «المتعلقات» (ج-19) بيقول إيه المعلّق على المشروع فما
+          يتحذفش، و«السلسلة» (هـ-7) بيقول الرقم بيمشي منين لفين ·
+          وهما نفس المعلومة من ناحيتين. كارتان جنب بعض بنفس
+          الأسماء كانوا هيقروا تكرارًا.
+
+          ⚠️ **وكل حلقة بتتفحص لا بتتعرض وبس.** مخصص الهدف لازم
+          يشيل المعتمد، وقيمة الاتفاقية لازم تساوي المعتمد (خطوة
+          11)، ومجموع الجدول لازم يساوي الاتفاقية (قاعدة 8) ·
+          والحلقة اللي بتكسر بتتقال. سلسلة بتعرض أربع أرقام من غير
+          تحقّق **بتوري اتّصالًا مش موجود**. */}
+      {chain && (
         <Glass>
           <Head
-            title="المتعلقات"
+            title="السلسلة"
             meta={
-              dep.count > 0
-                ? <Tag tone="mute">{dep.say}</Tag>
-                : <Tag tone="ok">بلا متعلقات</Tag>
+              gaps > 0
+                ? <Tag tone="warn"><Num>{gaps}</Num> حلقة مكسورة</Tag>
+                : <Tag tone="ok">متّصلة</Tag>
             }
           />
-          <p className="sub">
-            {dep.count > 0
-              ? <>المشروع ده مرتبط بيه <b>{dep.say}</b> · فما يتحذفش، والسلسلة
-                  بتمنع الحذف من أولها: سنة ← ميزانية ← مشروع ← اتفاقية ودفعات.</>
-              : <>مفيش اتفاقيات ولا دفعات مرتبطة بالمشروع ده لحد دلوقتي.</>}
-          </p>
+          <ol className="chain">
+            {chain.map((l, i) => (
+              <li key={l.key} className={`chain-${l.state}`}>
+                <span className="chain-i num">{i + 1}</span>
+                <span className="chain-b">
+                  <span className="chain-h">
+                    <b>{l.label}</b>
+                    <span className="sub trim1">· {l.name}</span>
+                    <span className="pc-sp" />
+                    {l.value > 0 && <span className="num"><Money>{l.value}</Money></span>}
+                  </span>
+                  <span className="chain-s">{l.say}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          {dep && (
+            <p className="sub cnote">
+              {dep.count > 0
+                ? <>ومرتبط بالمشروع <b>{dep.say}</b> · فما يتحذفش، والسلسلة
+                    بتمنع الحذف من أولها: سنة ← ميزانية ← مشروع ← اتفاقية ودفعات.</>
+                : <>مفيش اتفاقيات ولا دفعات مرتبطة بالمشروع ده لحد دلوقتي.</>}
+            </p>
+          )}
         </Glass>
       )}
     </>

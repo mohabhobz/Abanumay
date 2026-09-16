@@ -82,7 +82,12 @@ export const ROUTES = [
   /* إنشاء مشروع · BPD-003 · وكل محطة مسار عشان الحقول تترسم كلها */
   '/projects/new', '/projects/new?tab=what', '/projects/new?tab=where',
   '/projects/new?tab=money', '/projects/new?tab=when',
+  /* المحفظة · ب-8 · كيان أب برّه قايمة المشاريع */
+  '/projects/portfolio/PF-2026-001',
   '/budget/doc/BG-2025-SA', '/budget/new',
+  /* ميزانية 2026 · مولَّدة من المشاريع عشان السلسلة تمشي على داتا
+     واحدة (هـ-7) · وشجرتها تلات مستويات من مفردات النظام العامل */
+  '/budget/doc/BG-2026-SA',
   '/payments', '/payments/SR-2026-11407', '/payments/new',
   '/payments/SR-2026-11415/order', '/payments/late',
   '/payments/SR-2026-11410/edit', '/agreements', '/agreements/AG-2026-3101',
