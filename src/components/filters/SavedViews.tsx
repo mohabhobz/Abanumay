@@ -3,6 +3,26 @@ import { useMenu } from '@/hooks/useMenu'
 import { Icon, icons } from '@/components/ui'
 import { readViews, writeViews, type SavedView } from './views'
 
+/* ═══════════════════════════════════════════════════════════
+   ي-12 · «الفيوهات» اسم مش مفهوم
+
+   مظفر بالنص: «**ما اتفهمتش من أول مرة ولا تاني مرة، لازم
+   تتشرح**» · ومهاب وافق.
+
+   ⚠️ **والمشكلة مش ترجمة الكلمة، هي إن الاسم بيسمّي الشيء لا
+   الفعل.** «فيو» اسم لحاجة مجرّدة المستخدم ما شافهاش قبل كده، و
+   «العروض المحفوظة» ترجمة حرفية بنفس الغموض. اللي المستخدم بيعمله
+   فعليًّا هو: **حفظ الوضع الحالي** عشان يرجّعه بعدين.
+
+   فالزرار بقى «الوضع المحفوظ» والفعل جوّاه «احفظ الوضع الحالي»،
+   وتحته سطر بيقول **إيه اللي بيتحفظ بالظبط**: الفلتر والترتيب
+   والتجميع والأعمدة. الاسم الغامض بيتشرح بالجملة اللي تحته لا
+   بمحاولة اسم أذكى.
+
+   ⚠️ **وقرار الفصل اتّاخد: فيو واحد بيحفظ كل حاجة.** مظفر: «زيادة
+   فانكشنز جوّه فانكشنز بتعقّد الدنيا أكتر ما بتحلّ» · فمفيش حفظ
+   منفصل للفلاتر وحفظ منفصل للأعمدة.
+   ═══════════════════════════════════════════════════════════ */
 export function SavedViews({
   table, current, onApply,
 }: {
@@ -42,7 +62,7 @@ export function SavedViews({
         onClick={() => setOpen((x) => !x)}
       >
         <Icon name={icons.pin} size={15} />
-        {active ? active.name : 'الفيوهات'}
+        {active ? active.name : 'الوضع المحفوظ'}
         {!active && views.length > 0 && <b className="num">{views.length}</b>}
       </button>
 
@@ -70,7 +90,7 @@ export function SavedViews({
 
           {views.length === 0 ? (
             <div className="fmenu-e sub">
-              مفيش فيوهات محفوظة. اضبط الفلاتر اللي بتستخدمها كل يوم واحفظها باسم.
+              مفيش أوضاع محفوظة. اضبط الشاشة زي ما بتحبّها واحفظها باسم، وارجّعها بضغطة.
             </div>
           ) : (
             <div className="fmenu-l" role="menu">
@@ -105,15 +125,22 @@ export function SavedViews({
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save() } }}
-              placeholder="اسم الفيو…"
-              aria-label="اسم الفيو"
+              placeholder="سمّي الوضع الحالي…"
+              aria-label="اسم الوضع المحفوظ"
             />
             <button className="btn btn-p btn-sm" disabled={!trimmed} onClick={save}>
               {existing ? 'حدّث' : 'احفظ'}
             </button>
           </div>
+          {/* ⚠️ **اللي بيتحفظ مكتوب، مش متروك للتخمين.** الزرار
+              اسمه «احفظ» والمستخدم بيسأل «احفظ إيه؟» · والسطر ده
+              هو الإجابة، وهو كمان اللي بيخلّي قرار «فيو واحد
+              بيحفظ كل حاجة» مفهومًا بدل ما يبان نقصًا. */}
+          <div className="fviews-n sub">
+            بيتحفظ: الفلتر والبحث والترتيب <b>والتجميع</b> وعدد الصفوف.
+          </div>
           {existing && (
-            <div className="fviews-n sub">فيه فيو بنفس الاسم، الحفظ هيحدّثه.</div>
+            <div className="fviews-n sub">فيه واحد بنفس الاسم، الحفظ هيحدّثه.</div>
           )}
         </div>
       )}

@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, MultiSelect, Num, SearchBox, Segments, Select, Stat,
+  Empty, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
 import { pct } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
+import { useStickyGroup } from '@/hooks/useStickyGroup'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { QuickRead } from '@/components/assistant'
-import { DataTable, aggregate, orderCols, readCols, splitGroups, writeCols } from '@/components/table'
+import {
+  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols,
+} from '@/components/table'
 import { ExportMenu } from '@/components/export'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -20,7 +23,7 @@ import {
 } from '@/data/mock/registration'
 import type { Sheet } from '@/lib/export'
 import { RegCard } from './RegCard'
-import { COLS, GROUPS, groupByKey } from './columns'
+import { COLS, GROUPS } from './columns'
 
 const KEYS = ['q', 'state', 'type', 'region', 'short', 'view', 'group', 'adv'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -102,8 +105,11 @@ export default function RequestsPage() {
     return { m, total: base.length }
   }, [v.type, v.region, v.short, v.q])
 
-  const group = groupByKey(v.group)
-  const grouped = Boolean(group)
+  /* ي-13 · التجميع بيفضل مع الجلسة بدل ما يضيع مع كل خروج */
+  useStickyGroup('reg-requests', v.group, (x) => set({ group: x }))
+
+  const group = groupChain(v.group, GROUPS)
+  const grouped = group.length > 0
 
   const cardGroups = useMemo(() => {
     const pick = readList(v.state)
@@ -114,28 +120,15 @@ export default function RequestsPage() {
   }, [sorted, v.state])
 
   const sheet: Sheet = useMemo(() => {
-    const shown = orderCols(COLS, cols).filter((c) => !group || c.key !== group.key)
+    /* ⚠️ **الورقة مبنيّة في `sheetOf` لا هنا.** خمس شاشات كانت
+       بتكتب نفس التلات سطور بإيدها · وأول ما التجميع بقى سلسلة،
+       الخمسة كانوا هيحتاجوا نفس التعديل خمس مرات، واللي يتنسي
+       بيطلع ملفًا مختلفًا عن شاشته. */
+    const shown = orderCols(COLS, cols).filter((c) => !group.some((g) => g.key === c.key))
     const pickRows = selected.size ? sorted.filter((r) => selected.has(r.id)) : sorted
-    const head = [...(group ? [group.label] : []), ...shown.map((c) => c.label)]
-    const body = pickRows.map((r) => [
-      ...(group ? [group.of(r)] : []),
-      ...shown.map((c) => c.text(r)),
-    ])
-    const totals = [
-      ...(group ? [''] : []),
-      ...shown.map((c, i) => {
-        const t = aggregate(c, pickRows)
-        return t !== null ? String(t) : i === 0 ? `${pickRows.length} طلب` : ''
-      }),
-    ]
+    const parts = sheetOf(pickRows, shown, group, (n: number) => `${n} طلب`)
     const stamp = new Date().toISOString().slice(0, 10)
-    return {
-      file: `abanumay-registration-${stamp}`,
-      title: 'طلبات تسجيل الجهات',
-      headers: head,
-      rows: body,
-      totals,
-    }
+    return { file: `abanumay-registration-${stamp}`, title: 'طلبات تسجيل الجهات', ...parts }
   }, [cols, sorted, selected, group])
 
   const toggleOne = (id: string, on: boolean) =>
@@ -264,11 +257,10 @@ export default function RequestsPage() {
                   )}
                 </button>
                 {view === 'table' && (
-                  <Select
+                  <GroupPicker
                     icon={icons.rows}
                     value={v.group}
-                    all="بلا تجميع"
-                    options={GROUPS.map((g) => ({ value: g.key, label: `تجميع حسب ${g.label}` }))}
+                    options={GROUPS.map((g) => ({ value: g.key, label: g.label }))}
                     onChange={(x) => set({ group: x })}
                   />
                 )}
@@ -352,14 +344,14 @@ export default function RequestsPage() {
                   onSelect={toggleOne}
                   onSelectAll={selectAll}
                   onOpen={(r) => navigate(ROUTES.entityRequest(r.id))}
-                  group={group}
+                  group={grouped ? group : undefined}
                   count={(n) => `${n} طلب`}
                 />
               </Glass>
               {grouped && (
                 <p className="sub tcen">
                   التجميع يعرض كل النتائج ·{' '}
-                  <span className="num">{splitGroups(sorted, group!).length}</span> مجموعات ·{' '}
+                  <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
                   <button className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
                   </button>

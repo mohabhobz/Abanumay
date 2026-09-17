@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, Money, MultiSelect, Num, Pager, PAGE_SIZES, Person, SearchBox,
+  Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, Num, Pager, PAGE_SIZES, Person, SearchBox,
   Segments, Select, Tag, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
+import { useStickyGroup } from '@/hooks/useStickyGroup'
 import {
   FilterCustomizer, SavedViews, readFilterOrder, writeFilterOrder, type FilterDef,
 } from '@/components/filters'
@@ -17,9 +18,9 @@ import { useRole } from '@/hooks/useRole'
 import { ROUTES } from '@/app/routes'
 import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
-import { COLS, GROUPS, groupByKey } from './columns'
+import { COLS, GROUPS } from './columns'
 import {
-  DataTable, aggregate, orderCols, readCols, splitGroups, writeCols,
+  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols,
 } from '@/components/table'
 import { nf, plural, units } from '@/lib/format'
 import {
@@ -160,8 +161,11 @@ export default function ProjectsListPage() {
      كذّابة، والمستخدم اللي بيجمّع بيسأل عن الصورة كاملة أصلًا.
      ده قرار واجهة مؤقت · لما الباك اند يجمّع، بيرجّع المجموعات
      مرقّمة بإجمالياتها وبيتشال القيد ده. */
-  const group = groupByKey(v.group)
-  const grouped = Boolean(group)
+  /* ي-13 · التجميع بيفضل مع الجلسة بدل ما يضيع مع كل خروج */
+  useStickyGroup('projects', v.group, (x) => set({ group: x }))
+
+  const group = groupChain(v.group, GROUPS)
+  const grouped = group.length > 0
 
   const result = query.projects(grouped ? { ...q, page: 1, pageSize: 9999 } : q)
   const counts = query.projectStatusCounts(q)
@@ -248,23 +252,14 @@ export default function ProjectsListPage() {
     : allFiltered
 
   const sheet: Sheet = useMemo(() => {
-    const shown = orderCols(COLS, cols).filter((c) => !group || c.key !== group.key)
-    const head = [...(group ? [group.label] : []), ...shown.map((c) => c.label)]
-    const body = exportRows.map((r) => [
-      ...(group ? [group.of(r)] : []),
-      ...shown.map((c) => c.text(r)),
-    ])
-    /* صف الإجماليات بنفس منطق الشاشة · لو اختلفوا، المستخدم هيصدّق
-       الملف ويشك في الشاشة. */
-    const totals = [
-      ...(group ? [''] : []),
-      ...shown.map((c, i) => {
-        const t = aggregate(c, exportRows)
-        return t !== null ? String(t) : i === 0 ? units.project(exportRows.length) : ''
-      }),
-    ]
+    /* ⚠️ **الورقة مبنيّة في `sheetOf` لا هنا.** خمس شاشات كانت
+       بتكتب نفس التلات سطور بإيدها · وأول ما التجميع بقى سلسلة،
+       الخمسة كانوا هيحتاجوا نفس التعديل خمس مرات، واللي يتنسي
+       بيطلع ملفًا مختلفًا عن شاشته. */
+    const shown = orderCols(COLS, cols).filter((c) => !group.some((g) => g.key === c.key))
+    const parts = sheetOf(exportRows, shown, group, units.project)
     const stamp = new Date().toISOString().slice(0, 10)
-    return { file: `abanumay-projects-${stamp}`, title: 'المشاريع', headers: head, rows: body, totals }
+    return { file: `abanumay-projects-${stamp}`, title: 'المشاريع', ...parts }
   }, [cols, exportRows, group])
 
   const exportNote = `${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${units.project(exportRows.length)}`
@@ -524,11 +519,10 @@ export default function ProjectsListPage() {
               {/* التجميع سؤال مختلف عن الفلتر: الفلتر بيقلّل الصفوف،
                   والتجميع بيعيد ترتيبها لجداول بإجمالياتها. */}
               {view === 'table' && (
-                <Select
+                <GroupPicker
                   icon={icons.rows}
                   value={v.group}
-                  all="بلا تجميع"
-                  options={GROUPS.map((g) => ({ value: g.key, label: `تجميع حسب ${g.label}` }))}
+                  options={GROUPS.map((g) => ({ value: g.key, label: g.label }))}
                   onChange={(x) => set({ group: x, page: undefined })}
                 />
               )}
@@ -653,7 +647,7 @@ export default function ProjectsListPage() {
                 onSelect={toggleOne}
                 onSelectAll={selectAll}
                 onOpen={(r) => navigate(ROUTES.project(r.id))}
-                group={group}
+                group={grouped ? group : undefined}
                 count={units.project}
               />
             </Glass>
@@ -662,7 +656,7 @@ export default function ProjectsListPage() {
           {grouped ? (
             <p className="sub" style={{ textAlign: 'center' }}>
               التجميع يعرض كل النتائج بلا ترقيم ·{' '}
-              <span className="num">{splitGroups(result.rows, group!).length}</span> مجموعات ·{' '}
+              <span className="num">{countLeaves(groupTree(result.rows, group))}</span> مجموعات ·{' '}
               <button className="lnk" onClick={() => set({ group: undefined })}>إلغاء التجميع</button>
             </p>
           ) : (

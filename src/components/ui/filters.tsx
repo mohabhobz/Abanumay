@@ -659,3 +659,113 @@ export function ViewToggle({
     </div>
   )
 }
+
+/* ═══════════════════════════════════════════════════════════
+   منتقي التجميع · ي-1 و ي-2
+
+   ⚠️ **ليه مش `MultiSelect`؟** لأن `MultiSelect` بيقول «إيه
+   المختار»، والتجميع بيحتاج «إيه المختار **وبأي ترتيب**». الترتيب
+   هنا مش تفضيل عرض، هو **السؤال نفسه**:
+
+     منطقة ← جهة   «في الرياض، مين بياخد؟»
+     جهة ← منطقة   «جمعية البناء العلمي، بتشتغل فين؟»
+
+   نفس البُعدين ونفس الصفوف وسؤالان مختلفان · فـ«المنطقة +1» في
+   عنوان `MultiSelect` كان هيخفي اللي المستخدم محتاج يشوفه بالظبط.
+
+   عشان كده: الرقم بيحلّ محلّ علامة الصحّ في القايمة (١ · ٢ · ٣)،
+   والعنوان بيعرض السلسلة بسهم، والاختيار **بترتيب الضغط** لا
+   بترتيب القايمة.
+   ═══════════════════════════════════════════════════════════ */
+export function GroupPicker({
+  value, options, onChange, max = 3, icon,
+}: {
+  /** المفاتيح مفصولة بفاصلة · بترتيب الهرم */
+  value: string | undefined
+  options: { value: string; label: string }[]
+  onChange: (v: string | undefined) => void
+  /** سقف مستويات التداخل */
+  max?: number
+  icon?: LucideIcon
+}) {
+  const { open, setOpen, box } = useMenu<HTMLDivElement>()
+  const id = useId()
+
+  const chain = (value ?? '').split(',').filter(Boolean)
+    .filter((k) => options.some((o) => o.value === k))
+    .slice(0, max)
+
+  const labelOf = (k: string) => options.find((o) => o.value === k)?.label ?? k
+  const full = chain.length >= max
+
+  const emit = (next: string[]) => onChange(next.length ? next.join(',') : undefined)
+
+  const toggle = (k: string) => {
+    if (chain.includes(k)) emit(chain.filter((x) => x !== k))
+    else if (!full) emit([...chain, k])
+  }
+
+  return (
+    <div className={`fsel fgrp${chain.length ? ' on' : ''}`} ref={box}>
+      <button
+        type="button"
+        className="fsel-b"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        id={`${id}-b`}
+        onClick={() => setOpen((x) => !x)}
+      >
+        {icon && <Icon name={icon} size={15} />}
+        <span className="fgrp-s">
+          {chain.length === 0
+            ? 'بلا تجميع'
+            : chain.map((k, i) => (
+                <span key={k} className="fgrp-p">
+                  {i > 0 && <Icon name={icons.chevron} size={12} />}
+                  {labelOf(k)}
+                </span>
+              ))}
+        </span>
+        <Icon name={icons.chevronDown} size={15} />
+      </button>
+
+      {open && (
+        <div className="fmenu">
+          <div className="fmenu-l" role="listbox" aria-multiselectable="true">
+            {options.map((o) => {
+              const at = chain.indexOf(o.value)
+              const sel = at >= 0
+              return (
+                <button
+                  type="button"
+                  key={o.value}
+                  role="option"
+                  aria-selected={sel}
+                  disabled={!sel && full}
+                  className={`fopt${sel ? ' on' : ''}`}
+                  onClick={() => toggle(o.value)}
+                  title={sel ? `المستوى ${at + 1}` : full ? `السقف ${max} مستويات` : 'أضف مستوى'}
+                >
+                  {/* ⚠️ **رقم لا علامة صحّ.** علامة الصحّ بتقول
+                      «مختار»، والمستخدم محتاج يعرف **أب ولا ابن** ·
+                      وده اللي بيحدّد السؤال اللي الجدول بيجاوبه. */}
+                  <span className="fopt-x num" aria-hidden="true">{sel ? at + 1 : ''}</span>
+                  <span className="fopt-t">{o.label}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="fmenu-f">
+            {full && <span className="sub">السقف <span className="num">{max}</span> مستويات · تحتها المجموعة بتبقى صفًّا</span>}
+            {chain.length > 0 && (
+              <button type="button" className="fclear" onClick={() => onChange(undefined)}>
+                إلغاء التجميع
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

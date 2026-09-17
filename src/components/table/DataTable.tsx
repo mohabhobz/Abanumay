@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { Icon, icons } from '@/components/ui'
 import { nf } from '@/lib/format'
-import { aggregate, defaultCols, orderCols, splitGroups, type Col, type GroupBy } from './model'
+import {
+  aggregate, allPaths, countLeaves, defaultCols, groupTree, orderCols,
+  type Col, type GroupBy, type GroupNode,
+} from './model'
 import { useColumnResize, type ColumnResize } from './useColumnResize'
 
 export interface DataTableProps<T> {
@@ -26,8 +29,13 @@ export interface DataTableProps<T> {
   onSelectAll?: (on: boolean, ids: string[]) => void
   /** فتح الصف · بيخلي الصف كله كليكبول */
   onOpen?: (r: T) => void
-  /** التجميع · بدونه جدول واحد */
-  group?: GroupBy<T>
+  /**
+   * سلسلة التجميع · بدونها جدول واحد.
+   *
+   * ⚠️ **سلسلة لا بُعد واحد (ي-1).** والترتيب فيها هو الهرم:
+   * الأول أب واللي بعده ابن · وعكسه سؤال تاني خالص (ي-2).
+   */
+  group?: GroupBy<T>[]
   /** اسم الوحدة في الإجماليات: «6 مشاريع» */
   count: (n: number) => string
   /** اسم الجدول · بيتخزّن عليه عرض الأعمدة اللي المستخدم سحبها */
@@ -64,17 +72,20 @@ export function DataTable<T>({
   rows, all, cols, onCols, id, selected, onSelect, onSelectAll, onOpen, group, count, table,
 }: DataTableProps<T>) {
   const resize = useColumnResize(table)
+  const bys = group ?? []
+  const on = bys.length > 0
 
-  /* العمود اللي بنجمّع بيه بيتشال: قيمته مكتوبة مرة في عنوان
+  /* الأعمدة اللي بنجمّع بيها بتتشال: قيمتها مكتوبة مرة في سطر
      المجموعة، وتكرارها في كل صف عمود ضايع. */
-  const shown = orderCols(all, cols).filter((c) => !group || c.key !== group.key)
-  const groups = group ? splitGroups(rows, group) : [{ key: '', rows }]
+  const keys = new Set(bys.map((b) => b.key))
+  const shown = orderCols(all, cols).filter((c) => !keys.has(c.key))
+  const tree = on ? groupTree(rows, bys) : []
 
-  /* ⚠️ الحالة متربطة **ببُعد التجميع نفسه**: لو المستخدم غيّر من
-     «المنطقة» لـ«الجهة»، المفاتيح المفتوحة بتاعة المنطقة مالهاش
-     معنى · والمقارنة في الرندر بدل `useEffect` عشان ما يحصلش
-     رندر أول بحالة قديمة. */
-  const dim = group?.key ?? ''
+  /* ⚠️ الحالة متربطة **بالسلسلة نفسها**: لو المستخدم غيّر من
+     «المنطقة» لـ«الجهة»، أو حتى قلب ترتيب نفس البُعدين، المسارات
+     المفتوحة القديمة مالهاش معنى · والمقارنة في الرندر بدل
+     `useEffect` عشان ما يحصلش رندر أول بحالة قديمة. */
+  const dim = bys.map((b) => b.key).join(',')
   const [open, setOpen] = useState<{ dim: string; keys: ReadonlySet<string> }>({ dim, keys: NONE })
   const openKeys = open.dim === dim ? open.keys : NONE
 
@@ -86,16 +97,33 @@ export function DataTable<T>({
       return { dim, keys: next }
     })
 
-  const allOpen = groups.length > 0 && groups.every((g) => openKeys.has(g.key))
+  const every = on ? allPaths(tree) : []
+  const allOpen = every.length > 0 && every.every((p) => openKeys.has(p))
 
   return (
     <div className="tblwrap">
-      {group && (
+      {on && (
         <div className="tgbar">
           <span className="tgbar-t">
-            مجمَّع حسب <b>{group.label}</b>
+            مجمَّع حسب
+            {/* ⚠️ السلسلة بترتيبها معروضة **كسلسلة** · «المنطقة ثم
+                الجهة» غير «الجهة ثم المنطقة»، ولو الشريط قال
+                الاتنين بنفس الشكل المستخدم ما بيعرفش هو في أنهي
+                سؤال (ي-2). */}
+            {bys.map((b, i) => (
+              <span key={b.key} className="tgbar-s">
+                {i > 0 && <Icon name={icons.chevron} size={13} />}
+                <b>{b.label}</b>
+              </span>
+            ))}
             <span className="pc-dot" />
-            <span className="num">{groups.length}</span> مجموعة
+            <span className="num">{tree.length}</span> مجموعة
+            {bys.length > 1 && (
+              <>
+                <span className="pc-dot" />
+                <span className="num">{countLeaves(tree)}</span> مجموعة فرعية
+              </>
+            )}
             <span className="pc-dot" />
             <span className="num">{openKeys.size}</span> مفتوحة
           </span>
@@ -103,7 +131,7 @@ export function DataTable<T>({
           <button
             type="button"
             className="btn btn-ghost btn-sm"
-            onClick={() => setOpen({ dim, keys: allOpen ? NONE : new Set(groups.map((g) => g.key)) })}
+            onClick={() => setOpen({ dim, keys: allOpen ? NONE : new Set(every) })}
           >
             <Icon name={allOpen ? icons.shrink : icons.expand} size={14} />
             {allOpen ? 'اقفل الكل' : 'افتح الكل'}
@@ -112,28 +140,41 @@ export function DataTable<T>({
         </div>
       )}
 
-      {groups.map((g, i) => (
-        <Block
-          key={g.key || 'all'}
-          caption={group ? { label: group.label, value: g.key } : undefined}
-          rows={g.rows}
-          cols={shown}
-          id={id}
-          selected={selected}
-          onSelect={onSelect}
-          onSelectAll={onSelectAll}
-          onOpen={onOpen}
-          count={count}
-          resize={resize}
-          picker={group || i !== 0 ? undefined : { all, cols, onCols }}
-          shut={Boolean(group) && !openKeys.has(g.key)}
-          onToggle={group ? () => toggle(g.key) : undefined}
-        />
-      ))}
+      {on
+        ? tree.map((n) => (
+            <Branch
+              key={n.path}
+              node={n}
+              cols={shown}
+              id={id}
+              selected={selected}
+              onSelect={onSelect}
+              onSelectAll={onSelectAll}
+              onOpen={onOpen}
+              count={count}
+              resize={resize}
+              openKeys={openKeys}
+              onToggle={toggle}
+            />
+          ))
+        : (
+          <Block
+            rows={rows}
+            cols={shown}
+            id={id}
+            selected={selected}
+            onSelect={onSelect}
+            onSelectAll={onSelectAll}
+            onOpen={onOpen}
+            count={count}
+            resize={resize}
+            picker={{ all, cols, onCols }}
+          />
+        )}
 
       {/* الإجمالي الكلي بعد المجموعات: من غيره المستخدم بيجمع
           إجماليات المجموعات في دماغه. */}
-      {group && groups.length > 1 && (
+      {on && tree.length > 1 && (
         <div className="tgrand">
           <span className="tgrand-k">الإجمالي الكلي · {count(rows.length)}</span>
           <span className="tgrand-v">
@@ -150,14 +191,173 @@ export function DataTable<T>({
   )
 }
 
+/**
+ * فرع من شجرة التجميع.
+ *
+ * ⚠️ **العقدة الوسيطة ما بتفتحش جدولًا، بتفتح أولادها.** ودي
+ * الفكرة كلها: «الرياض» بتفتح على جمعياتها بمجاميعها، والجمعية هي
+ * اللي بتفتح على صفوفها. لو كل مستوى فتح جدولًا، التداخل كان بيبقى
+ * تكرارًا للجدول بعدد المستويات لا تلخيصًا.
+ */
+function Branch<T>({
+  node, cols, id, selected, onSelect, onSelectAll, onOpen, count, resize, openKeys, onToggle,
+}: {
+  node: GroupNode<T>
+  cols: Col<T>[]
+  id: (r: T) => string
+  selected?: Set<string>
+  onSelect?: (id: string, on: boolean) => void
+  onSelectAll?: (on: boolean, ids: string[]) => void
+  onOpen?: (r: T) => void
+  count: (n: number) => string
+  resize: ColumnResize
+  openKeys: ReadonlySet<string>
+  onToggle: (path: string) => void
+}) {
+  const shut = !openKeys.has(node.path)
+  const leaf = node.kids.length === 0
+
+  /* العقدة الوسيطة المفتوحة أولادها تحتها مباشرةً، فسطرها ما
+     بيلزقش بجدول · و`.tcap` المفتوح بيلزق بجدوله. */
+  const cap = (
+    <Cap
+      node={node}
+      cols={cols}
+      shut={shut}
+      pick={Boolean(selected && onSelect)}
+      selected={selected}
+      id={id}
+      onSelectAll={onSelectAll}
+      onToggle={() => onToggle(node.path)}
+      leafOpen={leaf && !shut}
+    />
+  )
+
+  if (leaf) {
+    return (
+      <Block
+        caption={cap}
+        rows={node.rows}
+        cols={cols}
+        id={id}
+        selected={selected}
+        onSelect={onSelect}
+        onSelectAll={onSelectAll}
+        onOpen={onOpen}
+        count={count}
+        resize={resize}
+        shut={shut}
+      />
+    )
+  }
+
+  return (
+    <div className="tbranch">
+      {cap}
+      {!shut && (
+        <div className="tkids">
+          {node.kids.map((k) => (
+            <Branch
+              key={k.path}
+              node={k}
+              cols={cols}
+              id={id}
+              selected={selected}
+              onSelect={onSelect}
+              onSelectAll={onSelectAll}
+              onOpen={onOpen}
+              count={count}
+              resize={resize}
+              openKeys={openKeys}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * سطر المجموعة · تلخيص لا عنوان.
+ *
+ * ⚠️ قبل الطيّ كان عنوانًا فوق جدول ظاهر دايمًا، والمجاميع تحت في
+ * `tfoot` · يعني المجموعة المطويّة كانت هتبقى اسمًا بلا إجابة.
+ */
+function Cap<T>({
+  node, cols, shut, pick, selected, id, onSelectAll, onToggle, leafOpen,
+}: {
+  node: GroupNode<T>
+  cols: Col<T>[]
+  shut: boolean
+  pick: boolean
+  selected?: Set<string>
+  id: (r: T) => string
+  onSelectAll?: (on: boolean, ids: string[]) => void
+  onToggle: () => void
+  /** آخر مستوى ومفتوح · وساعتها بيلزق بجدوله */
+  leafOpen: boolean
+}) {
+  const allOn = pick && node.rows.length > 0 && node.rows.every((r) => selected!.has(id(r)))
+
+  return (
+    <div
+      className={`tcap${shut ? ' shut' : ''}${leafOpen ? ' ontbl' : ''}`}
+      data-lv={node.level}
+    >
+      {pick && (
+        <input
+          type="checkbox"
+          className="tcap-x"
+          checked={allOn}
+          onChange={(e) => onSelectAll?.(e.target.checked, node.rows.map(id))}
+          aria-label={`تحديد كل صفوف ${node.key}`}
+        />
+      )}
+
+      <button
+        type="button"
+        className="tcap-b"
+        aria-expanded={!shut}
+        onClick={onToggle}
+        title={shut ? `افتح ${node.key}` : `اقفل ${node.key}`}
+      >
+        <Icon name={icons.chevronDown} size={15} />
+        <span className="tcap-k">
+          <span className="sub">{node.by.label}:</span> {node.key}
+        </span>
+        <span className="tcap-n sub num">{node.rows.length}</span>
+      </button>
+
+      <span className="pc-sp" />
+
+      {/* ⚠️ **المجاميع هنا وقت الطيّ بس.** لمّا المجموعة مفتوحة على
+          جدول، نفس الأرقام في `tfoot` **تحت أعمدتها** · وده أنفع من
+          شريحة في سطر فوق. بس العقدة الوسيطة المفتوحة مالهاش
+          `tfoot`، فمجاميعها بتفضل هنا. */}
+      {(shut || !leafOpen) && (
+        <span className="tcap-v">
+          {cols.filter((c) => c.agg).map((c) => (
+            <span key={c.key}>
+              <span className="sub">{c.label}</span>{' '}
+              <b className="num">{nf.format(aggregate(c, node.rows) ?? 0)}</b>
+              {c.agg === 'avg' && <small className="sub"> وسطي</small>}
+            </span>
+          ))}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function Block<T>({
   caption, rows, cols, id, selected, onSelect, onSelectAll, onOpen, picker, count, resize,
-  shut, onToggle,
+  shut,
 }: {
-  caption?: { label: string; value: string }
+  /** سطر المجموعة · مرسوم في `Cap` لأنه بيتشارك مع العقد الوسيطة */
+  caption?: ReactNode
   /** المجموعة مطويّة · سطر المجاميع بس */
   shut?: boolean
-  onToggle?: () => void
   rows: T[]
   cols: Col<T>[]
   id: (r: T) => string
@@ -211,59 +411,7 @@ function Block<T>({
         />
       )}
 
-      {/* ⚠️ **سطر المجموعة تلخيص لا عنوان.** قبل كده كان اسم
-          المجموعة وعدد صفوفها وبس، والمجاميع تحت في `tfoot` الجدول ·
-          يعني المجموعة المطويّة كانت هتبقى اسمًا بلا إجابة. دلوقتي
-          هو اللي شايل المجاميع، والجدول تحته تفصيل لمن يطلبه. */}
-      {caption && (
-        <div className={`tcap${shut ? ' shut' : ''}`}>
-          {pick && (
-            <input
-              type="checkbox"
-              className="tcap-x"
-              checked={allOn}
-              onChange={(e) => onSelectAll?.(e.target.checked, rows.map(id))}
-              aria-label={`تحديد كل صفوف ${caption.value}`}
-            />
-          )}
-
-          <button
-            type="button"
-            className="tcap-b"
-            aria-expanded={!shut}
-            onClick={onToggle}
-            title={shut ? `افتح ${caption.value}` : `اقفل ${caption.value}`}
-          >
-            <Icon name={icons.chevronDown} size={15} />
-            <span className="tcap-k">
-              <span className="sub">{caption.label}:</span> {caption.value}
-            </span>
-            <span className="tcap-n sub num">{rows.length}</span>
-          </button>
-
-          <span className="pc-sp" />
-
-          {/* ⚠️ **المجاميع هنا وقت الطيّ بس.** لمّا المجموعة مفتوحة،
-              نفس الأرقام موجودة في `tfoot` **تحت أعمدتها** · وده
-              أنفع من شريحة في سطر فوق. رقم واحد في مكانين على بُعد
-              سنتيمتر بيخلّي العين تقارنهم بدل ما تقراهم. */}
-          {shut && (
-            <span className="tcap-v">
-              {cols.filter((c) => c.agg).map((c) => (
-                <span key={c.key}>
-                  <span className="sub">{c.label}</span>{' '}
-                  <b className="num">{nf.format(aggregate(c, rows) ?? 0)}</b>
-                  {/* ⚠️ «وسطي» لازم تتكتب هنا زي ما بتتكتب في `tfoot`:
-                      متوسط مدة جنب مجموع مبلغ من غير علامة بيتقرا
-                      مجموعًا · «المدة 21» يعني ٢١ يومًا وسطيًّا لا
-                      ٢١ يومًا للمجموعة كلها. */}
-                  {c.agg === 'avg' && <small className="sub"> وسطي</small>}
-                </span>
-              ))}
-            </span>
-          )}
-        </div>
-      )}
+      {caption}
 
       {shut ? null : (
       <table className="tbl">
@@ -358,7 +506,8 @@ function Block<T>({
                     {c.cell(r)}
                   </td>
                 ))}
-                <td />
+                {/* خانة المنتقي · ملزوقة بالحافّة زي ترويستها (ي-7) */}
+                <td className="tcolx" />
               </tr>
             )
           })}
@@ -390,7 +539,7 @@ function Block<T>({
                   </td>
                 )
               })}
-              <td />
+              <td className="tcolx" />
             </tr>
           </tfoot>
         )}

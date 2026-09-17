@@ -157,3 +157,160 @@ export const splitGroups = <T,>(rows: T[], by: GroupBy<T>): Group<T>[] => {
     .map(([key, rs]) => ({ key, rows: rs }))
     .sort((a, b) => b.rows.length - a.rows.length)
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ي-1 و ي-2 · التجميع المتداخل
+
+   مظفر في أودو: «سيلز بيرسون ← عميل ← طريقة الدفع» · تلات أبعاد
+   متداخلة لا واحد.
+
+   ⚠️ **والترتيب مش تفصيلة، هو السؤال نفسه (ي-2).**
+     منطقة ← جهة  بيقول: «في الرياض، مين بياخد؟»
+     جهة ← منطقة  بيقول: «جمعية البناء العلمي، بتشتغل فين؟»
+   نفس البُعدين ونفس الصفوف، وسؤالان مختلفان تمامًا. فالاختيار
+   **بترتيب الضغط** لا بترتيب القايمة، والواجهة بتعرض الرقم جنب كل
+   بُعد عشان الترتيب يتقرا لا يتخمّن.
+
+   ⚠️ **وثلاثة سقف مقصود.** كل مستوى بيضرب عدد السطور، والرابع
+   بيدّي مجموعات فيها صفّ واحد · يعني شجرة بحجم الجدول وما بتلخّصش
+   حاجة.
+   ═══════════════════════════════════════════════════════════ */
+export const MAX_GROUP_DEPTH = 3
+
+export interface GroupNode<T> {
+  /** قيمة البُعد في المستوى ده */
+  key: string
+  /** مفتاح فريد عبر المستويات · حالة الفتح متخزّنة عليه */
+  path: string
+  level: number
+  by: GroupBy<T>
+  rows: T[]
+  /** فاضية عند آخر مستوى · وساعتها الجدول هو اللي بينفتح */
+  kids: GroupNode<T>[]
+}
+
+export const groupTree = <T,>(
+  rows: T[],
+  bys: GroupBy<T>[],
+  level = 0,
+  parent = '',
+): GroupNode<T>[] => {
+  const by = bys[level]
+  if (!by) return []
+  return splitGroups(rows, by).map((g) => {
+    const path = parent ? `${parent}␟${g.key}` : g.key
+    return {
+      key: g.key,
+      path,
+      level,
+      by,
+      rows: g.rows,
+      kids: groupTree(g.rows, bys, level + 1, path),
+    }
+  })
+}
+
+/** كل المسارات في الشجرة · «افتح الكل» بيحتاج المستويات كلها */
+export const allPaths = <T,>(nodes: GroupNode<T>[]): string[] =>
+  nodes.flatMap((n) => [n.path, ...allPaths(n.kids)])
+
+/** عدد المجموعات في أول مستوى · ده اللي بيتقال للمستخدم */
+export const countLeaves = <T,>(nodes: GroupNode<T>[]): number =>
+  nodes.reduce((s, n) => s + (n.kids.length ? countLeaves(n.kids) : 1), 0)
+
+/**
+ * قراية سلسلة التجميع من الرابط.
+ *
+ * ⚠️ **التنظيف هنا مش تزويق.** الرابط بيتبعت ويتحفظ ويتكتب بالإيد،
+ * فممكن ييجي فيه مفتاح ما بقاش موجود، أو نفس المفتاح مرتين (اللي
+ * بيدّي شجرة كل عقدة فيها ابن واحد بنفس اسمها)، أو عشر مستويات.
+ * التلاتة بيرسموا شاشة غلط من غير ما يرموا خطأ.
+ */
+export const groupChain = <T,>(value: string | undefined, all: GroupBy<T>[]): GroupBy<T>[] => {
+  const seen = new Set<string>()
+  const out: GroupBy<T>[] = []
+  for (const k of (value ?? '').split(',')) {
+    if (!k || seen.has(k)) continue
+    const by = all.find((g) => g.key === k)
+    if (!by) continue
+    seen.add(k)
+    out.push(by)
+    if (out.length === MAX_GROUP_DEPTH) break
+  }
+  return out
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ي-5 · الإكسبورت بنفس شكل الفيو
+
+   مظفر: «الإكسبورت لازم يطلع زي ما أنا شايفه، بالتجميع والمجاميع».
+
+   ⚠️ **والمقصود مش أعمدة التجميع في أول الصفّ.** المقصود إن الملف
+   يكون **نفس الورقة**: صفوف المجموعة، وتحتها سطر مجاميعها، وبعدها
+   المجموعة اللي بعدها · وفي الآخر الإجمالي الكلي. لو الملف طلع
+   صفوفًا سايبة وإجمالي واحد تحت، المستخدم اللي صدّر عشان يبعت
+   «تقرير في ثانية» بيقعد يعمل الجمع تاني في إكسل.
+
+   ⚠️ **وبتتكتب مرة واحدة هنا.** خمس شاشات كانت بتبني الورقة
+   بإيدها بنفس التلات سطور، ونسخة منهم اتنسيت وراء التجميع الجديد
+   هي **خمس ملفات مختلفة عن خمس شاشات**.
+   ═══════════════════════════════════════════════════════════ */
+export interface SheetParts {
+  headers: string[]
+  rows: string[][]
+  totals: string[]
+}
+
+/**
+ * سطر مجاميع.
+ *
+ * ⚠️ العمود الأول بياخد **علامة** لا رقمًا: «إجمالي الرياض» أو
+ * «٦ مشاريع». سطر مجاميع بلا علامة في ملف إكسل بيتقرا صفَّ بيانات،
+ * والمستخدم بيجمعه مع الصفوف اللي فوقه.
+ */
+const totalsRow = <T,>(cols: Col<T>[], rows: T[], lead: string[], mark: string): string[] => [
+  ...lead,
+  ...cols.map((c, i) => {
+    const t = aggregate(c, rows)
+    if (t !== null) return String(t)
+    return i === 0 ? mark : ''
+  }),
+]
+
+/** ملء الخانات الفاضية عشان كل صفّ في الملف يبقى بنفس عدد الأعمدة */
+const pad = (xs: string[], n: number): string[] =>
+  xs.length >= n ? xs.slice(0, n) : [...xs, ...Array<string>(n - xs.length).fill('')]
+
+export const sheetOf = <T,>(
+  rows: T[], cols: Col<T>[], bys: GroupBy<T>[], count: (n: number) => string,
+): SheetParts => {
+  const headers = [...bys.map((b) => b.label), ...cols.map((c) => c.label)]
+
+  if (bys.length === 0) {
+    return {
+      headers,
+      rows: rows.map((r) => cols.map((c) => c.text(r))),
+      totals: totalsRow(cols, rows, [], count(rows.length)),
+    }
+  }
+
+  const out: string[][] = []
+  const walk = (nodes: GroupNode<T>[], trail: string[]) => {
+    for (const n of nodes) {
+      const path = [...trail, n.key]
+      if (n.kids.length) walk(n.kids, path)
+      else {
+        for (const r of n.rows) out.push([...pad(path, bys.length), ...cols.map((c) => c.text(r))])
+      }
+      /* سطر مجاميع المجموعة · بعد صفوفها زي ما هو تحتها في الشاشة */
+      out.push(totalsRow(cols, n.rows, pad(path, bys.length), `إجمالي ${n.key} · ${count(n.rows.length)}`))
+    }
+  }
+  walk(groupTree(rows, bys), [])
+
+  return {
+    headers,
+    rows: out,
+    totals: totalsRow(cols, rows, pad(['الإجمالي الكلي'], bys.length), count(rows.length)),
+  }
+}
