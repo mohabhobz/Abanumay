@@ -6064,6 +6064,41 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* ⚠️ كارت «اللي بيتغيّر» بيعرض **الاتنين**: اللي بيحصل واللي كان
    بيحصل · والسطر التحتاني هو اللي بيخلّي الفرق يتقرا فرقًا لا
    قايمة مزايا */
+/* ═══ الصرف · ح-2 إلى ح-7 ═══
+
+   ⚠️ **الاتجاهان جنب بعض لا واحد فوق التاني.** الفرق بين الكرنت
+   والوثيقة فرق **اتجاه**، وعرضهم عمودين بيخلّي العين تقارن الخطوة
+   بالخطوة · عرضهم فوق بعض بيخلّيهم قايمتين. */
+.payorig{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));
+  gap:var(--sp-3);margin-top:var(--sp-4);min-width:0}
+.payorig-c{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0;
+  padding:var(--sp-4);border-radius:var(--ric);
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
+.payorig-c.on{box-shadow:inset 0 0 0 2px var(--edge-i)}
+.payorig-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
+.payorig-h>b{font-family:var(--fd);font-weight:600;color:var(--t1)}
+.payorig-f{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.payorig-f li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t2)}
+.payorig-f li>.num{flex:none;width:1.25rem;height:1.25rem;border-radius:var(--r-dot);
+  display:grid;place-items:center;font-size:var(--fs-0);
+  background:var(--ctl-bg);box-shadow:inset 0 0 0 1px var(--ctl-line);color:var(--t3)}
+.payorig-c.on .payorig-f li{color:var(--t1)}
+
+/* ح-3 · الحالة الحالية بتتعلّم، والباقي بيفضل معروضًا عشان الجهة
+   تعرف الرحلة كلها لا محطتها وحدها */
+.payeye,.paybank,.payproof{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.payeye li,.paybank li,.payproof li{display:flex;flex-direction:column;gap:var(--sp-1);
+  min-width:0;padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
+  box-shadow:inset 0 0 0 1px var(--edge-1);font-size:var(--fs-2);line-height:var(--lh-2)}
+.payeye li.on,.paybank li.on{box-shadow:inset 0 0 0 2px var(--edge-i)}
+.payeye-h,.paybank-h,.payproof-h{display:flex;align-items:center;gap:var(--sp-3);
+  flex-wrap:wrap;min-width:0}
+.payeye-h>b,.paybank-h>b,.payproof-h>b{font-family:var(--fd);font-weight:600;color:var(--t1)}
+/* الفعل المطلوب من الجهة · وده اللي بيفرّق حالة عن حالة عندها */
+.payeye-a{color:var(--warn-ink);font-weight:600}
+
 /* ═══ السلسلة · هـ-7 ═══
    ⚠️ **خط رأسي بيوصل الحلقات، ولونه بيقول حالتها.** أربع كروت
    جنب بعض بتتقري أربع حاجات منفصلة · والخط هو اللي بيخلّيها

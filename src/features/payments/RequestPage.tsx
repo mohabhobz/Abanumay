@@ -11,6 +11,10 @@ import { DocFile } from '@/components/docs'
 import { assistFor } from '@/data/mock/assistant'
 import { PAY_LIMIT, PAY_STATES, payHeat, payRequestById, payStateWho } from '@/data/mock/disbursements'
 import { isolate, pct, readDate } from '@/lib/format'
+import {
+  BANK_CHANGE_DENIED, BANK_CHANGE_ROLES, ENTITY_STATES, ORIGINS, PAY_PROOFS,
+  bankIssues, banksOf, entityStateOf, originOf, type PayOrigin,
+} from '@/data/mock/payEntity'
 import type { PayRequest } from '@/types/domain'
 import { ActionDock, actionsFor } from './ActionDock'
 
@@ -91,6 +95,19 @@ export default function RequestPage() {
 
   const ladder = useMemo(() => (r ? ladderFor(r) : []), [r])
 
+  /* ⚠️ **الهوكس دي فوق الـ`return` المبكر لأنها لازم كده.**
+     أول نسخة حطّتها تحت، جنب الحسابات التانية · وقاعدة الهوكس
+     بتقول إن الترتيب لازم يبقى واحدًا في كل رندر، والطلب اللي مش
+     لاقي بيخرج بدري فبتتخطّى. بوّابة الكوميت مسكتها (`rules-of-hooks`)
+     قبل ما توصل للجهاز · وده بالظبط شغل البوّابة.
+     والـ`r?.` ضروري: الهوك بيشتغل حتى والطلب مش موجود. */
+  const entBanks = useMemo(() => banksOf(r?.entityId ?? ''), [r?.entityId])
+  const payBank = useMemo(
+    () => entBanks.find((b) => b.bank === r?.bank.name) ?? entBanks[0],
+    [entBanks, r?.bank.name],
+  )
+  const bankBad = useMemo(() => (r ? bankIssues(r, payBank) : []), [r, payBank])
+
   if (!r) {
     return (
       <AppLayout assistantContext={assistFor.page('الصرف')}>
@@ -125,6 +142,12 @@ export default function RequestPage() {
   /* قاعدة 14 · السقف الصارم · المصروف + الدفعة دي مقابل المنحة */
   const after = r.spent + r.asked
   const left = r.granted - after
+
+  /* ح-3 · الحالة بعين الجهة · مش هوك فمكانها هنا عادي */
+  const ent = entityStateOf(r.state)
+
+  /* ح-2 · اتجاه الطلب · في النموذج ده الكرنت، والمستهدف معروض جنبه */
+  const origin: PayOrigin = 'supervisor'
 
   return (
     <AppLayout assistantContext={assistFor.page(`طلب ${r.id}`, r.projectName)}>
@@ -204,6 +227,43 @@ export default function RequestPage() {
           <div className="g2">
             {/* ═══ العمود الرئيسي · اللي بيتاخد عليه القرار ═══ */}
             <div className="col">
+              {/* ═══ ح-2 · مين بيصدر الطلب ═══
+                  ⚠️ **دي مش شاشة زيادة، دي قلب اتجاه.** الفرق مش في
+                  عدد الخطوات، هو في **مين مستنّي مين**: في الكرنت
+                  المشرف بيفتكر يعمل الطلب، وفي الوثيقة الطابور بييجي
+                  له. والكارت بيحطّ الاتنين جنب بعض لأن الفرق ده هو
+                  اللي محتاج قرار من المؤسسة. */}
+              <Glass>
+                <Head
+                  title="مين بيصدر طلب الدفعة"
+                  meta={<Tag tone="warn">فرق عن الكرنت</Tag>}
+                />
+                <div className="payorig">
+                  {ORIGINS.map((o) => (
+                    <div key={o.key} className={`payorig-c${o.key === 'entity' ? ' on' : ''}`}>
+                      <span className="payorig-h">
+                        <b>{o.label}</b>
+                        {o.key === 'entity' && <Tag tone="ok">المستهدف</Tag>}
+                      </span>
+                      <ol className="payorig-f">
+                        {o.flow.map((f, i) => (
+                          <li key={f}>
+                            <span className="num">{i + 1}</span>
+                            <span className="trim1">{f}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      <span className="sub">{o.note}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="sub cnote">
+                  الطلب ده في النموذج بدأ من <b>{originOf(origin).who}</b> ·
+                  والانتقال للاتجاه المستهدف بيفتح البوّابة للجهة، وبيخلّي
+                  المسوغات تيجي من الأول لا في نُصّ الطريق.
+                </p>
+              </Glass>
+
               {/* الشروط اللي بتمنع الانتقال · كل واحدة بقاعدتها */}
               <Glass>
                 <Head
@@ -399,6 +459,105 @@ export default function RequestPage() {
                     <li className="sub">لا إشعارات بعد · الطلب لسّه في أول مرحلة.</li>
                   )}
                 </ul>
+              </Glass>
+
+              {/* ═══ ح-3 · اللي الجهة بتشوفه ═══
+                  ⚠️ **الجهة ما بتشوفش السبعة.** «بانتظار مدير المنح»
+                  و«بانتظار المالية» بيقولوا للجهة مين واقف **عندنا
+                  إحنا**، وهي مش بتاعتها ولا بتقدر تعمل فيها حاجة ·
+                  فبيتحوّلوا لقلق لا لمعلومة. الخمسة دول هما اللي
+                  الجهة تقدر تتصرّف بناءً عليهم. */}
+              <Glass>
+                <Head
+                  title="بعين الجهة"
+                  meta={<Tag tone={ent.tone}>{ent.label}</Tag>}
+                />
+                <ul className="payeye">
+                  {ENTITY_STATES.map((x) => (
+                    <li key={x.key} className={x.key === ent.key ? 'on' : ''}>
+                      <span className="payeye-h">
+                        <b>{x.label}</b>
+                        <span className="pc-sp" />
+                        {x.act
+                          ? <span className="payeye-a">{x.act}</span>
+                          : x.waiting
+                            ? <span className="sub">تستنّى</span>
+                            : <span className="sub">خلاص</span>}
+                      </span>
+                      <span className="sub">{x.inner}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="sub cnote">
+                  الدورة عندنا <b><Num>7</Num> مراحل</b> والجهة بتشوف{' '}
+                  <b><Num>{ENTITY_STATES.length}</Num></b> · وتلاتة منهم بيتلمّوا في
+                  «تحت إجراء الدفع» لأن الجهة ما بتقدرش تعمل حاجة في التلاتة.
+                </p>
+              </Glass>
+
+              {/* ═══ ح-5 و ح-6 و ح-7 · الحساب البنكي ═══ */}
+              <Glass>
+                <Head
+                  title="حساب الدفع"
+                  meta={
+                    bankBad.length
+                      ? <Tag tone="warn"><Num>{bankBad.length}</Num> ملاحظة</Tag>
+                      : <Tag tone="ok">جاهز</Tag>
+                  }
+                />
+                {/* ⚠️ الجهة عندها حساب لكل وجه خير (تحفيظ · تفطير ·
+                    أضاحي) · فالقايمة مش زينة، هي سبب وجود القاعدة */}
+                <ul className="paybank">
+                  {entBanks.map((b) => (
+                    <li key={b.id} className={b.id === payBank?.id ? 'on' : ''}>
+                      <span className="paybank-h">
+                        <b>{b.purpose}</b>
+                        <span className="sub trim1">· {b.bank}</span>
+                        <span className="pc-sp" />
+                        {b.id === payBank?.id && <Tag tone="ret">حساب الدفعة</Tag>}
+                        {!b.active && <Tag tone="warn">غير مفعَّل</Tag>}
+                      </span>
+                      <span className="sub num">{b.iban}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {bankBad.map((b, i) => (
+                  <p key={i} className="bad cnote">
+                    {b.say} <span className="sub">· {b.rule}</span>
+                  </p>
+                ))}
+
+                <p className="sub cnote">
+                  الدفعة على <b>حساب واحد</b> · ما تتقسّمش. والتغيير صلاحية{' '}
+                  <b>{BANK_CHANGE_ROLES.join(' أو ')}</b> لا{' '}
+                  <b>{BANK_CHANGE_DENIED}</b> · اللي بيوصله كل شيء جاهز
+                  للتنفيذ ومالوش تواصل مباشر مع الجهات.
+                </p>
+              </Glass>
+
+              {/* ═══ ح-4 · المستندان مش نوعًا واحدًا ═══ */}
+              <Glass>
+                <Head title="إثبات الصرف" meta={<span className="sub">مستندان بوزنين</span>} />
+                <ul className="payproof">
+                  {PAY_PROOFS.map((x) => (
+                    <li key={x.key}>
+                      <span className="payproof-h">
+                        <b>{x.label}</b>
+                        <span className="sub">· {x.by}</span>
+                        <span className="pc-sp" />
+                        <Tag tone={x.required ? 'warn' : 'mute'}>
+                          {x.required ? 'إلزامي' : 'اختياري'}
+                        </Tag>
+                      </span>
+                      <span className="sub">{x.why}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="sub cnote">
+                  المهم إن <b>المؤسسة تثبت إنها حوّلت</b> · واستلام الجهة
+                  بيقفل الحلقة عندها، فما بيوقفش الدفعة.
+                </p>
               </Glass>
 
               {/* قاعدة 12 · الصرف وفق التوزيع المعتمد للمصادر */}
