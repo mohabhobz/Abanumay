@@ -117,7 +117,19 @@ export default function LoginPage() {
                 <input type="checkbox" name="remember" />
                 <span>تذكّرني</span>
               </label>
-              <a className="llink">نسيت كلمة المرور؟</a>
+              {/* ⚠️ **كان `<a>` بلا `href` · وده رابط كذّاب.** شكله
+                  رابط وسلوكه ولا حاجة: ما بيتفتحش في تاب، ولا
+                  بيوصله الكيبورد، ولا بيقول إنه مش شغّال. واللي
+                  بيتعمل هنا **فعل** (إرسال رابط استعادة) لا انتقال،
+                  فهو زرار · والنموذج مفيهوش صفحة استعادة لسه،
+                  فالزرار بيقول كده صريحًا بدل ما يسكت. */}
+              <button
+                type="button"
+                className="llink"
+                title="الاستعادة بتتعمل من إدارة النظام في النموذج ده"
+              >
+                نسيت كلمة المرور؟
+              </button>
             </div>
 
             <button className="btn btn-p btn-full" type="submit" disabled={busy}>

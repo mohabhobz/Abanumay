@@ -403,8 +403,16 @@ export default function RequestPage() {
                   rows={[
                     { k: 'رقم الاتفاقية', v: <Mono>{r.agreement.id}</Mono> },
                     { k: 'تنتهي في', v: <DateText>{r.agreement.endsAt}</DateText> },
-                    { k: 'المشروع', v: <Mono>{r.projectId}</Mono> },
-                    { k: 'الجهة', v: r.entityName },
+                    /* ك-2 · العلاقة اللي ليها صفحة بتبقى رابطًا، لا
+                       نصًّا المستخدم بينسخه ويدوّر بيه */
+                    {
+                      k: 'المشروع',
+                      v: <Link className="tlink" to={ROUTES.project(r.projectId)}><Mono>{r.projectId}</Mono></Link>,
+                    },
+                    {
+                      k: 'الجهة',
+                      v: <Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link>,
+                    },
                   ]}
                 />
               </Glass>

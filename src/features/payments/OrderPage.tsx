@@ -1,7 +1,8 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, Mono, Num, Riyal, Tag,
 } from '@/components/ui'
+import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -66,7 +67,16 @@ export default function OrderPage() {
     <AppLayout assistantContext={assistFor.page('أمر الصرف', r.projectName)}>
       <div className="viewstack">
         <div className="screen col">
-          <BackTo label="الطلب" onClick={() => navigate(ROUTES.payment(r.id))} />
+          {/* ⚠️ تلات مستويات حقيقية: أمر الصرف **جوّه** الطلب،
+              والطلب جوّه الصندوق · والزرار القديم كان بيرجّع للطلب
+              وبس، فالمستخدم اللي عايز الصندوق كان بيدوس مرتين */}
+          <Crumbs
+            items={[
+              { label: 'الصرف', to: ROUTES.payments },
+              { label: r.id, to: ROUTES.payment(r.id) },
+              { label: 'أمر الصرف' },
+            ]}
+          />
 
           <header className="phead">
             <div className="pmain">
@@ -116,7 +126,8 @@ export default function OrderPage() {
                 <dl className="kv">
                   <dt>اسم المشروع</dt><dd>{r.projectName}</dd>
                   <dt>رقم المشروع</dt><dd><Mono>{r.projectId}</Mono></dd>
-                  <dt>الجهة المستفيدة</dt><dd>{r.entityName}</dd>
+                  <dt>الجهة المستفيدة</dt>
+                  <dd><Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link></dd>
                 </dl>
               </section>
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { BackTo, GateArc, Money, Num, Tabs } from '@/components/ui'
-import { DecisionBar } from '@/components/shell'
+import { GateArc, Money, Num, Tabs } from '@/components/ui'
+import { DecisionBar, Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useFillHeight } from '@/hooks/useFillHeight'
@@ -190,8 +190,18 @@ export default function ProjectPage() {
     >
       <div className="viewstack hasdock">
         <div className="screen col hasg2" ref={screen}>
-          {/* المسار جوّه البودي، مش في هيدر منفصل */}
-          <BackTo label="المشاريع" onClick={() => navigate(ROUTES.projects)} />
+          {/* المسار جوّه البودي، مش في هيدر منفصل · وهرمي لا تاريخي */}
+          <Crumbs
+            items={[
+              { label: 'المشاريع', to: ROUTES.projects },
+              ...(active === 'data'
+                ? [{ label: project.name }]
+                : [
+                    { label: project.name, to: ROUTES.project(project.id) },
+                    { label: PROJECT_TABS.find((t) => t.slug === active)?.label ?? '' },
+                  ]),
+            ]}
+          />
 
           {/* ═══ الترويسة · بلا سطح، بتقعد على الخلفية مباشرة ═══ */}
           <header className="phead">
@@ -236,7 +246,7 @@ export default function ProjectPage() {
                 <DataTab
                   project={project}
                   entityName={entity.name}
-                  onOpenEntity={() => goTab('entity')}
+                  entityId={String(entity.id)}
                   /* أحدث **إجراء** لا أحدث حدث: المتابعات في نفس
                      التايم لاين، والصف مكتوب فوقه «آخر إجراء». */
                   last={log.find((e) => !e.followUp)}

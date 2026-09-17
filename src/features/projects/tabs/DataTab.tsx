@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import { DateText, Glass, Head, KV, Money, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
+import { ROUTES } from '@/app/routes'
 import { DocDownload, DocFile } from '@/components/docs'
 import { addDays, costPerBeneficiary, isolate, nf, pct, readDate, units } from '@/lib/format'
 import type { Project } from '@/types/domain'
@@ -9,7 +11,8 @@ import type { ChainLink } from '@/data/mock/chain'
 export interface DataTabProps {
   project: Project
   entityName: string
-  onOpenEntity: () => void
+  /** رقم الجهة · اللازم للرابط الحقيقي لملفها (ك-1) */
+  entityId: string
   /** أحدث قيد في السجل · بيتعرض تحت التعريف */
   last?: LogEvent
   onOpenLog: () => void
@@ -29,7 +32,7 @@ export interface DataTabProps {
 
 /** بيانات المشروع · التعريف والفكرة والمراحل والنطاق والمرفقات */
 export function DataTab({
-  project: P, entityName, onOpenEntity, last, onOpenLog, deps, chain,
+  project: P, entityName, entityId, last, onOpenLog, deps, chain,
 }: DataTabProps) {
   const dep = deps ? projectDeps(deps.agreements, deps.payments) : undefined
   const gaps = chain?.filter((l) => l.state === 'gap').length ?? 0
@@ -42,7 +45,18 @@ export function DataTab({
         <Head title="التعريف" meta="9 حقول" />
         <KV
           rows={[
-            { k: 'الجهة', v: <a onClick={onOpenEntity}>{entityName}</a> },
+            /* ⚠️ **ك-1 · غلطتان في سطر واحد.**
+               ١ · كان بيودّي لتاب «الجهة» جوّه المشروع · وده
+                   **مختصر** الجهة لا ملفها · مظفر طلب الملف الكامل،
+                   وتبويبات الجهة (المستندات · الحسابات · سجلها)
+                   مش موجودة في المختصر أصلًا.
+               ٢ · و`<a onClick>` بلا `href` **مش رابط**: ما بيتفتحش
+                   في تاب جديد، ولا بيتنسخ، ولا بيتوصّله بالكيبورد ·
+                   شكله رابط وسلوكه زرار. */
+            {
+              k: 'الجهة',
+              v: <Link className="tlink" to={ROUTES.entity(entityId)}>{entityName}</Link>,
+            },
             { k: 'رقم المشروع', v: <Mono>{P.id}</Mono> },
             { k: 'الحالة', v: <Tag tone={P.status.tone}>{P.status.label}</Tag> },
             { k: 'المسار', v: P.track },
@@ -296,7 +310,17 @@ export function DataTab({
                 <span className="chain-b">
                   <span className="chain-h">
                     <b>{l.label}</b>
-                    <span className="sub trim1">· {l.name}</span>
+                    {/* ⚠️ **`to` كان موجودًا في الداتا ومش مستعمل في
+                        الشاشة.** السلسلة بتقول «الاتفاقية ·
+                        AG-2026-3107» وهي **رحلة الريال**: اللي
+                        بيقراها بيسأل «طيب وريني الاتفاقية دي» ·
+                        والحلقة كانت بتسمّي الوجهة وما بتودّيش لها.
+                        حقل مكتوب في النوع ومحدش بيقراه = نيّة مش
+                        مطبَّقة، ودي نفس عيلة «قاعدة مكتوبة في
+                        كومنت ومفيش حاجة بتفحصها». */}
+                    {l.to
+                      ? <Link className="tlink trim1" to={l.to}>· {l.name}</Link>
+                      : <span className="sub trim1">· {l.name}</span>}
                     <span className="pc-sp" />
                     {l.value > 0 && <span className="num"><Money>{l.value}</Money></span>}
                   </span>

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tag,
+  DateText, Empty, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tag,
   type StepItem,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
+import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -72,7 +73,13 @@ export default function RegReviewPage() {
       <AppLayout assistantContext={assistFor.page('طلبات تسجيل الجهات')}>
         <div className="viewstack">
           <div className="screen col">
-            <BackTo label="طلبات التسجيل" onClick={() => navigate(ROUTES.entityRequests)} />
+            {/* الحالة الفاضية: مفيش طلب، فمفيش آخر مستوى يتسمّى */}
+            <Crumbs
+              items={[
+                { label: 'الجهات', to: ROUTES.entities },
+                { label: 'طلبات التسجيل' },
+              ]}
+            />
             <Glass>
               <Empty
                 title="الطلب غير موجود."
@@ -120,7 +127,13 @@ export default function RegReviewPage() {
         {/* `hasg2` زي صفحة الطلب والاتفاقية · المحتوى بيخلص فوق
             الرصيف فالتدرّج بيبان، والعمود الجانبي بياخد مسافة لزقه */}
         <div className="screen col hasg2">
-          <BackTo label="طلبات التسجيل" onClick={() => navigate(ROUTES.entityRequests)} />
+          <Crumbs
+            items={[
+              { label: 'الجهات', to: ROUTES.entities },
+              { label: 'طلبات التسجيل', to: ROUTES.entityRequests },
+              { label: r.id },
+            ]}
+          />
 
           <header>
             <div>
@@ -217,11 +230,19 @@ export default function RegReviewPage() {
                 <KV
                   rows={[
                     { k: 'جوال الجهة', v: <Mono>{r.mobile}</Mono> },
-                    { k: 'البريد الإلكتروني', v: <Mono>{r.email}</Mono> },
+                    /* ك-2 · البريد **حقل قابل للفعل** لا نصّ يتنسخ
+                       بالإيد · ودي أكتر حاجة بتتعمل في مراجعة طلب */
+                    {
+                      k: 'البريد الإلكتروني',
+                      v: <a className="tlink" href={`mailto:${r.email}`}><Mono>{r.email}</Mono></a>,
+                    },
                     { k: 'المدير التنفيذي', v: <Person name={r.directorName} quiet={false} /> },
                     { k: 'مدخل البيانات', v: <Person name={r.clerkName} quiet={false} /> },
                     { k: 'جوال مدخل البيانات', v: <Mono>{r.clerkMobile}</Mono> },
-                    { k: 'بريد مدخل البيانات', v: <Mono>{r.clerkEmail}</Mono> },
+                    {
+                      k: 'بريد مدخل البيانات',
+                      v: <a className="tlink" href={`mailto:${r.clerkEmail}`}><Mono>{r.clerkEmail}</Mono></a>,
+                    },
                   ]}
                 />
               </Glass>

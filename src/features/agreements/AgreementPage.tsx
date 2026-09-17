@@ -313,8 +313,15 @@ export default function AgreementPage() {
                 <Head title="البيانات المسترجعة" meta={<span className="sub">قاعدة 5</span>} />
                 <KV
                   rows={[
-                    { k: 'المشروع', v: <Mono>{a.projectId}</Mono> },
-                    { k: 'الجهة المستفيدة', v: a.entityName },
+                    /* ك-2 · العلاقة اللي ليها صفحة بتبقى رابطًا */
+                    {
+                      k: 'المشروع',
+                      v: <Link className="tlink" to={ROUTES.project(a.projectId)}><Mono>{a.projectId}</Mono></Link>,
+                    },
+                    {
+                      k: 'الجهة المستفيدة',
+                      v: <Link className="tlink" to={ROUTES.entity(a.entityId)}>{a.entityName}</Link>,
+                    },
                     { k: 'ممثل الجهة', v: a.signer.name },
                     { k: 'صفته', v: a.signer.title },
                     { k: 'المخصص المحجوز', v: <><Num>{a.reserved}</Num> <Riyal /></> },

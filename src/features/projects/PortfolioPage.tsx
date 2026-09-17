@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   BackTo, Empty, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
@@ -198,7 +198,14 @@ export default function PortfolioPage() {
                 <Head title="بيانات المحفظة" />
                 <KV
                   rows={[
-                    { k: 'الجهة', v: implementerName(p.entityId) },
+                    {
+                      k: 'الجهة',
+                      v: (
+                        <Link className="tlink" to={ROUTES.entity(p.entityId)}>
+                          {implementerName(p.entityId)}
+                        </Link>
+                      ),
+                    },
                     { k: 'نوع الشراكة', v: <Tag tone="ret">شريك منفّذ</Tag> },
                     { k: 'مبلغ المحفظة', v: <Money>{p.total}</Money> },
                     { k: 'المنصرف', v: <Money>{spent}</Money> },

@@ -4058,7 +4058,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
    العنصر اللي مالوش كارت تحته بيقع على الميش، والميش في أعلى
    الصفحة (مكان الترويسة وفتات الطريق) هو أغمق مكان فيه. نفس
    الخافت اللي بيتقري على كارت بيبقى 2.7:1 هنا. */
-.backto{color:var(--t3-g)}
+/* ⚠️ **والباث معاه، لنفس السبب بالظبط.** `.crumb` اتكتبت بـ`--t3`
+   زي أي نصّ خافت، وطلعت 2.97 على تدرّج صفحة أمر الصرف · وهي نفس
+   الغلطة اللي القاعدة اللي فوق مكتوبة عشانها. **القاعدة المكتوبة
+   في مكان واحد ما بتحرسش المكان التاني**: `--t3` بيشتغل على كارت
+   ويقع على الميش، والفرق بينهم توكن اسمه `-g` موجود من زمان. */
+.backto,.crumb{color:var(--t3-g)}
 .screen>.sub, .screen>header .sub, .phead .sub, .hhead .sub{color:var(--t3-g)}
 .screen>.sub .num, .phead .sub .num{color:var(--t2-g)}
 .pamt .lb,.phead .lb{color:var(--t3-g)}
@@ -6544,3 +6549,49 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* المختار بيشدّ علاماته · وده اللي بيقول «دي اللي هتشتغل» */
 .pkind.on .pkind-o li{color:var(--t1)}
 .pkind.on .pkind-o svg{color:var(--ok)}
+
+/* ═══ الباث · ك-3 و ك-4 ═══
+   البريف الكامل في NAVIGATION_PATH_BRIEF.md.
+
+   ⚠️ **سطر واحد أبدًا.** الباث اللي بيلفّ سطرين بيفقد كونه باثًا
+   ويبقى قايمة كلمات · فالـ`ol` بلا `wrap`، والزيادة بتتطوي في
+   «…» لا بتنزل تحت.
+
+   ⚠️ **والهدف ٤٤ في الموبايل بس.** قاعدة ٨ في البريف (وهي قاعدة
+   نيلسن نورمان ١٠) بتتكلّم عن **اللمس**: «مش أقل من سنتيمتر».
+   وتطبيقها على الديسكتوب كمان كان بيدّي شريط باث ارتفاعه ٤٤ فوق
+   كل شاشة عميقة · يعني حلّ لمشكلة مش موجودة بتمن مساحة حقيقية.
+   فالارتفاع بيكبر لـ`--h-md` تحت ٦٤٠px وبس. */
+.crumbs{min-width:0;margin-bottom:var(--sp-2)}
+.crumbs>ol{display:flex;align-items:center;gap:var(--sp-1);min-width:0;
+  margin:0;padding:0;list-style:none;flex-wrap:nowrap}
+.crumbs li{display:flex;align-items:center;gap:var(--sp-1);min-width:0}
+/* الأب بيقصر قبل الابن: مكانك الحالي أهمّ من الطريق اللي جابك */
+.crumbs li:not(:last-child) .crumb{max-width:11rem}
+.crumb{display:inline-flex;align-items:center;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  /* ⚠️ مساحة اللمس ٤٤ في الموبايل (قاعدة ٨): الارتفاع من `--h-sm`
+     والحشو بيوسّع الهدف من غير ما يزوّد المسافة البصرية */
+  padding-block:var(--sp-2);padding-inline:var(--sp-2);border-radius:var(--rp);
+  font-size:var(--fs-2);font-family:var(--fd);font-weight:500;
+  color:var(--t3-g);transition:color .16s ease,background .16s ease}
+a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
+/* ⚠️ الصفحة الحالية **مش رابط**: لونها أغمق ووزنها أتقل، ومفيش
+   هوفر · الهوفر على حاجة ما بتتضغطش بيوعد بوعد كاذب */
+.crumb.now{color:var(--t1);font-weight:600;cursor:default;max-width:22rem}
+.crumb-s{flex:none;color:var(--t3-g);opacity:.7}
+.crumb-f{position:relative;display:inline-flex}
+/* ⚠️ النقط التلاتة **حرف لا أيقونة**، فارتفاع سطرها بيتحسب من
+   صندوق الخطّ ولازم يقع في نفس ارتفاع إخواتها في السطر · والقيمة
+   من السلّم (`--lh-1`) لا `1` مكتوبة بالإيد. */
+.crumb-b{font-size:var(--fs-3);line-height:var(--lh-1);letter-spacing:.06em;cursor:pointer;
+  background:none;border:0}
+.crumb-b:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
+.crumb-m{inset-inline-start:0;min-width:200px}
+@media (max-width:640px){
+  /* الموبايل: الأب بيقصر أكتر، والحالي بياخد اللي باقي */
+  .crumbs li:not(:last-child) .crumb{max-width:6rem}
+  .crumb.now{max-width:none}
+  /* هدف اللمس · قاعدة ٨ */
+  .crumb{min-height:var(--h-md)}
+}

@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, Money, Mono, Num, Steps, Tag, icons } from '@/components/ui'
+import { ROUTES } from '@/app/routes'
 import { DocFile } from '@/components/docs'
 import type { AgreementDetail, PaymentDetail } from '@/data/mock/detail'
 
@@ -77,7 +79,9 @@ export function AgreementTab({
         <Head
           title="اتفاقية المشروع"
           meta={<>
-            <Mono>{A.no}</Mono> · {A.kind}
+            {/* ك-2 · رقم الاتفاقية له صفحة، فهو رابط لا نصّ */}
+            <Link className="tlink" to={ROUTES.agreement(A.no)}><Mono>{A.no}</Mono></Link>
+            {' · '}{A.kind}
           </>}
         />
 

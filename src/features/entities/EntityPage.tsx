@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { BackTo, Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
+import { Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
+import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { initial } from '@/lib/format'
@@ -63,7 +64,22 @@ export default function EntityPage() {
     <AppLayout assistantContext={assistFor.entity(entity)}>
       <div className="viewstack">
         <div className="screen col hasg2">
-          <BackTo to={ROUTES.entities} label="الجهات" />
+          {/* ⚠️ **الباث مكتوب بالأسماء لا مشتقّ من الـURL.**
+              `/entities/755/banks` مشتقّة بتقرا «entities ← 755 ←
+              banks» · والصفحة هي اللي بتعرف إن ٧٥٥ اسمها «جمعية
+              البناء العلمي». ودي بالظبط سلسلة مظفر:
+              الجهة ← الحساب البنكي. */}
+          <Crumbs
+            items={[
+              { label: 'الجهات', to: ROUTES.entities },
+              ...(active === DEFAULT_ENTITY_TAB
+                ? [{ label: entity.name }]
+                : [
+                    { label: entity.name, to: ROUTES.entity(entity.id) },
+                    { label: ENTITY_TABS.find((t) => t.slug === active)?.label ?? '' },
+                  ]),
+            ]}
+          />
 
           {/* الترويسة بنفس تشكيل صفحة المشروع: الهوية على اليمين،
               والقراءة البصرية على الشمال في نفس مكان المروحة ·

@@ -17,6 +17,7 @@
     "clean": "rm -rf dist",
     "audit:fast": "node tools/cssbalance.mjs && node tools/audit.mjs && node tools/ctlaudit.mjs",
     "routes:cover": "node tools/routecover.mjs",
+    "links": "node tools/linkaudit.mjs",
     "hooks:install": "git config core.hooksPath .githooks",
     "prepare": "git config core.hooksPath .githooks || true"
   },
