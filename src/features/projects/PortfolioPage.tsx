@@ -100,45 +100,62 @@ export default function PortfolioPage() {
                   }
                 />
 
-                <div className="sched">
-                  <div className="sched-h pfh">
-                    <span>المشروع</span>
-                    <span>المنطقة</span>
-                    <span className="tnum">المخصص</span>
-                    <span className="tnum">المنصرف</span>
-                    <span>الحالة</span>
-                  </div>
+                {/* ⚠️ **جدول السيستم `.tbl` لا شبكة مخترعة.** النسخة
+                    الأولى كان لها `.pfh` بمقاس خطّ وحشو وارتفاع صفّ
+                    من عندها · فصفحة المحفظة كانت شكلًا تاني عن كل
+                    جدول في السيستم، ونفس الداتا بتتعرض بمقاسين. */}
+                <div className="tblwrap">
+                  <table className="tbl t-pf" aria-label="مشاريع المحفظة">
+                    {/* العروض في الـCSS (`.t-pf`) · و`<col>` مرساة العمود */}
+                    <colgroup>
+                      <col /><col /><col /><col /><col />
+                    </colgroup>
 
-                  {p.items.map((x) => (
-                    <div className="sched-r pfh" key={x.id}>
-                      <span className="trim1">{x.name}</span>
-                      <span className="sub trim1">{x.region}</span>
-                      <span className="tnum"><Money>{x.amount}</Money></span>
-                      <span className="tnum">
-                        <Money>{x.spent}</Money>
-                        <span className="sub"> · {pct(Math.round((x.spent / x.amount) * 100))}</span>
-                      </span>
-                      <span>
-                        <Tag tone={x.status === 'مكتمل' ? 'ok' : x.status === 'لم يبدأ' ? 'mute' : 'ret'}>
-                          {x.status}
-                        </Tag>
-                      </span>
-                    </div>
-                  ))}
+                    <thead>
+                      <tr>
+                        <th><span className="th-t">المشروع</span></th>
+                        <th><span className="th-t">المنطقة</span></th>
+                        <th className="n"><span className="th-t">المخصص</span></th>
+                        <th className="n"><span className="th-t">المنصرف</span></th>
+                        <th><span className="th-t">الحالة</span></th>
+                      </tr>
+                    </thead>
 
-                  {/* ⚠️ الإجمالي **تحقّق** · نفس انضباط شجرة الميزانية
-                      وجدول الدفعات: محفظة بتلخّص وبس بتخفي الغلط */}
-                  <div className={`sched-t pfh${sum === p.total ? ' ok' : ''}`}>
-                    <span>الإجمالي</span>
-                    <span>
-                      {sum === p.total
-                        ? <Tag tone="ok">مطابق لمبلغ المحفظة</Tag>
-                        : <Tag tone="warn">غير مطابق</Tag>}
-                    </span>
-                    <span className="tnum"><Money>{sum}</Money></span>
-                    <span className="tnum"><Money>{spent}</Money></span>
-                    <span className="sub">{pct(Math.round((spent / sum) * 100))} منصرف</span>
-                  </div>
+                    <tbody>
+                      {p.items.map((x) => (
+                        <tr key={x.id}>
+                          <td>{x.name}</td>
+                          <td className="sub">{x.region}</td>
+                          <td className="n"><Money sm>{x.amount}</Money></td>
+                          <td className="n">
+                            <Money sm>{x.spent}</Money>
+                            <span className="sub"> · {pct(Math.round((x.spent / x.amount) * 100))}</span>
+                          </td>
+                          <td>
+                            <Tag tone={x.status === 'مكتمل' ? 'ok' : x.status === 'لم يبدأ' ? 'mute' : 'ret'}>
+                              {x.status}
+                            </Tag>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+
+                    {/* ⚠️ الإجمالي **تحقّق** · نفس انضباط شجرة الميزانية
+                        وجدول الدفعات: محفظة بتلخّص وبس بتخفي الغلط */}
+                    <tfoot>
+                      <tr className={sum === p.total ? '' : 'bad'}>
+                        <td>الإجمالي</td>
+                        <td>
+                          {sum === p.total
+                            ? <Tag tone="ok">مطابق</Tag>
+                            : <Tag tone="warn">غير مطابق</Tag>}
+                        </td>
+                        <td className="n"><Money sm>{sum}</Money></td>
+                        <td className="n"><Money sm>{spent}</Money></td>
+                        <td className="sub">{pct(Math.round((spent / sum) * 100))} منصرف</td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
 
                 {issues.map((i) => (

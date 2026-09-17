@@ -9,13 +9,14 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, nf, pct, readDate } from '@/lib/format'
+import { isolate, nf, readDate } from '@/lib/format'
 import {
   AGR_LIMIT, AGREEMENT_STAGES, agrHeat, agrPaymentsBalance, agrReserveGap, agrStageWho,
   agreementById,
 } from '@/data/mock/agreements'
 import type { AgreementRow } from '@/types/domain'
 import { AgrActionDock, agrActionsFor } from './AgrActionDock'
+import { ScheduleEditor, asDraft } from './ScheduleEditor'
 
 /* ═══════════════════════════════════════════════════════════
    اتفاقية واحدة · محطات الاعتماد الأربعة في مخطط الوثيقة (9.6)
@@ -190,7 +191,7 @@ export default function AgreementPage() {
           <div className="g2">
             <div className="col">
               {/* جدول الدفعات · قاعدة 7: جزء من الاتفاقية لا ملحق ليها */}
-              <Glass>
+              <Glass className="tblcard">
                 <Head
                   title="جدول صرف الدفعات"
                   meta={
@@ -199,45 +200,11 @@ export default function AgreementPage() {
                       : <Tag tone="no">غير متوازن · قاعدة 8</Tag>
                   }
                 />
-                <div className="tblwrap">
-                  <table className="agrpay">
-                    <thead>
-                      <tr>
-                        <th>الدفعة</th>
-                        <th>القيمة</th>
-                        <th>النسبة</th>
-                        <th>الاستحقاق</th>
-                        <th>متطلبات الصرف</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {a.payments.map((p) => (
-                        <tr key={p.no}>
-                          <td className="num">{p.no}</td>
-                          <td className="num">{nf.format(p.amount)}</td>
-                          <td className="num">{pct(p.share)}</td>
-                          <td><DateText>{p.dueAt}</DateText></td>
-                          <td className="sub">{p.requirement ?? 'بلا متطلبات'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      {/* ⚠️ الإجمالي مش تلخيص، هو **التحقّق**. قاعدة 8
-                          بتمنع الإرسال للاعتماد قبل ما المجموع يساوي
-                          قيمة المنحة والنسب تساوي 100. */}
-                      <tr className={balance.balanced ? '' : 'bad'}>
-                        <td>الإجمالي</td>
-                        <td className="num">{nf.format(balance.sum)}</td>
-                        <td className="num">{pct(balance.share)}</td>
-                        <td colSpan={2} className="sub">
-                          {balance.balanced
-                            ? 'يساوي قيمة المنحة'
-                            : `قيمة المنحة ${nf.format(a.amount)} · فرق ${nf.format(Math.abs(a.amount - balance.sum))}`}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
+                {/* ⚠️ **نفس المكوّن اللي في بانِي المسودة، بـ`readOnly`.**
+                    قبل كده كان هنا جدول تالت (`.agrpay`) بتحقّقه
+                    الخاص · فنفس جدول الدفعات كان ليه تلات أشكال في
+                    تلات شاشات، وتصليح في واحد ما بيوصلش للتانيين. */}
+                <ScheduleEditor rows={asDraft(a.payments)} amount={a.amount} readOnly />
               </Glass>
 
               {/* مخرج الذكاء الاصطناعي · 9.5 · والوسم من قاعدة 21 */}

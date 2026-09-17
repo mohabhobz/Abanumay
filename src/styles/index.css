@@ -1247,6 +1247,27 @@ small{font-size:var(--fs-1)}
 .tbl tr.off td{color:var(--t3)}
 .tbl .nmc{display:flex;align-items:center;gap:var(--sp-3)}
 .tbl .nmc svg,.lg svg{flex:none}
+
+/* ── عروض الأعمدة للجداول الثابتة الشكل ──
+   ⚠️ **العرض في الـCSS لا في `style` على `<col>`.** الجداول اللي
+   أعمدتها بتتغيّر بإعدادات المستخدم (`DataTable`) لازم عرضها
+   يتحسب في الجافاسكربت · أما الجدولان دول شكلهم ثابت، فعرضهم
+   خاصية ستايل زي أي خاصية تانية، ومكانه هنا.
+
+   ⚠️ **وأول عمود في جدول الدفعات ٦٫٥ لا ٤:** فيه رقم دفعة (حرف
+   واحد) في `tbody` و«الإجمالي» في `tfoot` · والعرض بيتحدّد بأطول
+   محتوى لا بأقصره، فبأربعة كانت الكلمة بتتقصّ لـ«الإجم…» في صفّ
+   التحقّق نفسه. */
+.t-sched col:nth-child(1){width:6.5rem}
+.t-sched col:nth-child(2){width:11rem}
+.t-sched col:nth-child(3){width:6rem}
+.t-sched col:nth-child(4){width:11rem}
+.t-sched col:nth-child(6){width:3.5rem}
+
+.t-pf col:nth-child(2){width:9rem}
+.t-pf col:nth-child(3){width:10rem}
+.t-pf col:nth-child(4){width:12rem}
+.t-pf col:nth-child(5){width:8rem}
 /* ── الركن المتداخل: الجسم المرسوم جوّه الكارت ──
    الترويسة شفّافة، فالمرسوم فعليًا هو `td` · بلاطة لونها أفتح.
    البلاطة دي كانت أركانها قائمة جوّه كارت نصف قطره ٢٢، فالشكل
@@ -4306,15 +4327,6 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   padding:var(--sp-4) var(--sp-5) var(--sp-5)}
 .agrq .payq-f{margin-top:auto}
 
-/* جدول الدفعات · صفّ الإجمالي هو **التحقّق** لا التلخيص، فهو
-   اللي بياخد اللون لما المجموع ما يساويش قيمة المنحة (قاعدة 8) */
-.agrpay{width:100%;border-collapse:collapse;font-size:var(--fs-2)}
-.agrpay th,.agrpay td{padding:var(--sp-2) var(--sp-3);text-align:start;
-  box-shadow:inset 0 -1px 0 var(--edge-d);white-space:nowrap}
-.agrpay th{font-size:var(--fs-1);color:var(--t3-g);font-weight:500}
-.agrpay td:last-child{white-space:normal;min-width:11rem}
-.agrpay tfoot td{font-weight:700;box-shadow:inset 0 1px 0 var(--edge-1)}
-.agrpay tfoot tr.bad td{color:var(--no-ink)}
 
 /* ═══ تقرير المتأخر والمتعثر ═══ */
 .paylim{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
@@ -6031,35 +6043,6 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    بتخبّي اللي اتختار ورا «3 مختارة» */
 .pmulti{display:flex;flex-wrap:wrap;gap:var(--sp-2);min-width:0}
 
-/* ═══ محرّر جدول الدفعات · هـ-5 ═══
-   ⚠️ **شبكة لا جدول `<table>`.** الصفّ فيه حقول إدخال بارتفاع
-   التحكّم، و`<td>` بتقاوم ده وبتخلّي الحقول تطلع بارتفاعات مختلفة ·
-   والشبكة بتدّي أعمدة متطابقة وصفوفًا بتتنفّس. */
-.sched{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-4);min-width:0}
-.sched-h,.sched-r,.sched-t{display:grid;align-items:center;gap:var(--sp-3);min-width:0;
-  /* ⚠️ أول عمود **5rem لا 2.5rem** · الصفّ الأخير مكتوب فيه
-     «الإجمالي» لا رقم دفعة، وبـ2.5 الكلمة كانت بتركب على المبلغ
-     جنبها. عرض العمود بيتحدّد بأطول محتوى فيه لا بأقصرهم. */
-  grid-template-columns:5rem minmax(9rem,1fr) 4.5rem minmax(9rem,1fr) minmax(10rem,1.6fr) 2.5rem}
-.sched-h{padding:0 var(--sp-4);font-size:var(--fs-1);color:var(--t3-g)}
-.sched-r{padding:var(--sp-2) var(--sp-4);border-radius:var(--ric);
-  box-shadow:inset 0 0 0 1px var(--edge-1)}
-.sched-n{color:var(--t3)}
-.sched-s{color:var(--t2)}
-.sched-f{width:100%}
-.sched-q{min-width:0}
-/* ⚠️ صفّ الإجمالي **تحقّق**: حلقة أقوى ولون بيتغيّر بالمطابقة ·
-   والفرق مكتوب في الوسم لا مستنتَج من فرق رقمين */
-.sched-t{padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
-  background:var(--fl-1);box-shadow:inset 0 0 0 1px var(--edge-2);
-  font-family:var(--fd);font-weight:600;color:var(--t1)}
-.sched-t.ok{box-shadow:inset 0 0 0 1px rgba(var(--okC),.35)}
-.sched-v{grid-column:span 2;justify-self:start}
-.sched-a{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
-  margin-top:var(--sp-2);min-width:0}
-
-/* صفوف المحفظة · نفس شبكة الجدول بخمسة أعمدة بدل ستة */
-.pfh{grid-template-columns:minmax(10rem,1.6fr) minmax(7rem,1fr) minmax(8rem,1fr) minmax(9rem,1fr) minmax(7rem,auto)}
 
 /* ⚠️ كارت «اللي بيتغيّر» بيعرض **الاتنين**: اللي بيحصل واللي كان
    بيحصل · والسطر التحتاني هو اللي بيخلّي الفرق يتقرا فرقًا لا
@@ -6140,13 +6123,6 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .pfdiff>li>svg{grid-row:1 / span 2;align-self:start;margin-top:var(--sp-1);color:var(--ok)}
 .pfdiff-on{min-width:0;font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t1)}
 .pfdiff-off{min-width:0;font-size:var(--fs-1);line-height:var(--lh-1);color:var(--t3-g)}
-
-@media (max-width:900px){
-  .pfh{grid-template-columns:minmax(0,1fr) auto}
-  .sched-h{display:none}
-  .sched-r,.sched-t{grid-template-columns:5rem minmax(0,1fr) auto;row-gap:var(--sp-2)}
-  .sched-q,.sched-v{grid-column:1 / -1}
-}
 
 /* المستندات · الصفّ بيقول الاسم والإلزام والحدّ الأقصى. والإلزام
    بيتغيّر بتصنيف الجهة، فالوسم بيتبدّل لحظة تغيير التصنيف. */
