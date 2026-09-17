@@ -8,9 +8,9 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { nf } from '@/lib/format'
 import {
-  KIND_NOTE, KIND_SAY, childrenOf, docTitle, fiscalYears,
-  flatten, fundSources, hasChildren, levelOf, outlineOf, pathOf, rootOf, sumChildren,
-  treeIssues, yearById, yearSourceTaken,
+  KIND_NOTE, KIND_SAY, KIND_UNDER, childrenOf, docTitle, fiscalYears,
+  flatten, fundSources, hasChildren, kindFits, kindUnder, levelOf, outlineOf, pathOf,
+  publicName, rootOf, sumChildren, treeIssues, yearById, yearSourceTaken,
   type BudgetDoc, type BudgetNode, type LineKind,
 } from '@/data/mock/budgetTree'
 import { allBudgets, budgetDocOf } from '@/data/mock/chain'
@@ -77,9 +77,27 @@ export default function BudgetDocPage() {
 
   /* حقول المودال */
   const [nLabel, setNLabel] = useState('')
-  const [nKind, setNKind] = useState<LineKind>('main')
+  const [nKind, setNKind] = useState<LineKind>('base')
   const [nAmount, setNAmount] = useState('')
   const [nParent, setNParent] = useState('')
+  /* ج-16 · الاسم الظاهر والإظهار والتفعيل */
+  const [nAlias, setNAlias] = useState('')
+  const [nShow, setNShow] = useState(true)
+  const [nActive, setNActive] = useState(true)
+  /**
+   * ⚠️ **البند اللي بيتعدّل · و`null` يعني إضافة.**
+   *
+   * النسخة القديمة كان عندها مودال **إضافة** وبس، والتعديل كان
+   * حقل مبلغ سطري في الصفّ · والجذر مبلغه من الترويسة، فالحقل
+   * ده كان بيتخفي عنه · فالنتيجة إن **البند الأساسي ما كانش له
+   * أي طريقة تعديل خالص**: لا اسمه ولا تفعيله ولا نوعه. ومهاب
+   * مسكها بالنص: «مش عارف أعمل إديت على الرئيسي».
+   *
+   * والحلّ مش زرار تعديل تالت، هو إن **المودال واحد للاتنين**:
+   * نفس الحقول ونفس القواعد ونفس الرسائل · غير كده أي قاعدة
+   * جديدة لازم تتكتب مرتين، وواحدة بتتنسي.
+   */
+  const [editId, setEditId] = useState<string | null>(null)
   /** رسالة القاعدة اللي وقفت الإضافة · بتتقال في المودال لا بعد الحفظ */
   const [blocked, setBlocked] = useState('')
 
@@ -115,15 +133,38 @@ export default function BudgetDocPage() {
       return next
     })
 
-  /** فتح المودال · الأب متحدَّد سلفًا لو جه من زرار داخل صفّ */
+  /** فتح المودال للإضافة · الأب متحدَّد سلفًا لو جه من زرار داخل صفّ */
   const openAdd = (parentId: string | null) => {
+    setEditId(null)
     setUnder(parentId)
     setNParent(parentId ?? '')
     setNLabel('')
+    setNAlias('')
+    setNShow(true)
+    setNActive(true)
     setNAmount('')
     /* ⚠️ النوع الافتراضي **مش استنتاج**: المستخدم بيقدر يغيّره،
-       والقواعد بتقول له لو غلط. الافتراضي بيوفّر خطوة لا أكتر. */
-    setNKind(parentId === null ? 'main' : 'sub')
+       والقواعد بتقول له لو غلط. الافتراضي بيوفّر خطوة لا أكتر ·
+       والترتيب أساسي ← رئيسي ← فرعي، فالابن نوعه اللي بعد أبوه. */
+    const up = parentId ? nodes.find((x) => x.id === parentId) : undefined
+    setNKind(nodes.length === 0 ? 'base' : kindUnder(up?.kind))
+    setBlocked('')
+    setOpen(true)
+  }
+
+  /** فتح المودال للتعديل · **وده شغّال على الأساسي زي أي بند** */
+  const openEdit = (nid: string) => {
+    const x = nodes.find((k) => k.id === nid)
+    if (!x) return
+    setEditId(nid)
+    setUnder(x.parentId)
+    setNParent(x.parentId ?? '')
+    setNLabel(x.label)
+    setNAlias(x.alias ?? '')
+    setNShow(x.showLabel)
+    setNActive(x.active)
+    setNAmount(String(x.allocated))
+    setNKind(x.kind)
     setBlocked('')
     setOpen(true)
   }
@@ -140,38 +181,100 @@ export default function BudgetDocPage() {
    * لا بعده: الرسالة بتظهر في المودال وزرار الإضافة بيتقفل بسببها
    * مكتوبًا · فالمستخدم بيتعلّم الهيكل بدل ما الشاشة تخبّيه عنه.
    */
-  const rootRule = (kind: LineKind, parentId: string | null): string => {
-    if (nodes.length > 0) {
-      /* فرعي تحت فرعي ممنوع (قاعدة 4)، والفرعي لازم له أب (ج-12) */
-      if (kind === 'sub' && !parentId) return 'البند الفرعي لازم يكون تابعًا لبند · اختار الأب.'
-      const up = parentId ? nodes.find((x) => x.id === parentId) : undefined
-      if (kind === 'sub' && up?.kind === 'sub') return 'ما ينفعش بند فرعي تحت بند فرعي.'
+  /**
+   * القاعدة بتتقال **قبل** الحفظ لا بعده · ج-15.
+   *
+   * ⚠️ **وبقت على الترتيب كله لا على الفرعي وحده.** النسخة القديمة
+   * كانت بتفحص «فرعي بلا أب» و«فرعي تحت فرعي» وبس · فأساسي تحت
+   * مسار كان بيعدّي، ورئيسي بلا أب كان بيعدّي. والترتيب أساسي ←
+   * رئيسي ← فرعي معناه إن كل نوع له **موضع واحد**، والقاعدة
+   * بتتقاس من الرُّتبة لا من حالات مكتوبة واحدة واحدة.
+   */
+  const shapeRule = (
+    kind: LineKind,
+    parentId: string | null,
+    show: boolean,
+    alias: string,
+  ): string => {
+    if (!show && !alias.trim()) {
+      return 'خفّيت اسم البند عن الخارج · فالاسم الظاهر للمستخدم بقى إلزاميًا، وإلا البند هيبان بلا اسم.'
+    }
+
+    const others = nodes.filter((x) => x.id !== editId)
+    const up = parentId ? nodes.find((x) => x.id === parentId) : undefined
+
+    if (kind === 'base') {
+      if (parentId) return 'البند الأساسي هو الميزانية نفسها · مفيش فوقه بند.'
+      const otherBase = others.find((x) => x.kind === 'base')
+      if (otherBase) return `في بند أساسي خلاص («${otherBase.label}») · الميزانية ليها أساسي واحد.`
       return ''
     }
-    /* أول بند · هو جذر الميزانية وبياخد مبلغها كاملًا (ج-10) */
-    if (kind === 'sub') {
-      return 'أول بند هو جذر الميزانية، فنوعه رئيسي · البنود الفرعية بتتحط تحته بعد كده.'
+
+    if (!parentId) {
+      return `البند ${KIND_SAY[kind]} لازم يكون تابعًا لبند · اللي بلا أب نوعه أساسي.`
     }
-    if (parentId) return 'مفيش بنود قبله يتبعها · أول بند بيبقى بلا أب.'
+    if (!up) return 'اختار الأب.'
+    if (!kindFits(kind, up.kind)) {
+      return `${KIND_SAY[kind]} ما ينفعش تحت ${KIND_SAY[up.kind]} · مكانه تحت ${KIND_UNDER[kind].map((k) => KIND_SAY[k]).join(' أو ')}.`
+    }
+    /* ⚠️ البند ما يبقاش أبًا لنفسه ولا لجَدّه · وده ممكن في
+       التعديل وحده، وكان هيدّي شجرة فيها حلقة مقفولة */
+    if (editId) {
+      if (parentId === editId) return 'البند ما يكونش تابعًا لنفسه.'
+      let cur: string | null = parentId
+      while (cur) {
+        if (cur === editId) return 'البند ما يكونش تابعًا لواحد من أبنائه.'
+        cur = nodes.find((x) => x.id === cur)?.parentId ?? null
+      }
+    }
     return ''
   }
 
-  const addNode = () => {
+  const saveNode = () => {
     const parentId = nParent || null
-    const stop = rootRule(nKind, parentId)
+    const stop = shapeRule(nKind, parentId, nShow, nAlias)
     if (stop) { setBlocked(stop); return }
 
     const amount = Number(nAmount) || 0
-    const root = parentId === null
+    /* الأساسي بياخد مبلغ الميزانية من الترويسة لا من المستخدم (ج-10) */
+    const base = nKind === 'base'
+    const alias = nAlias.trim() || undefined
+
+    if (editId) {
+      setDoc((d) => ({
+        ...d,
+        nodes: d.nodes.map((x) =>
+          x.id === editId
+            ? {
+                ...x,
+                label: nLabel.trim(),
+                alias,
+                showLabel: nShow,
+                active: nActive,
+                kind: nKind,
+                parentId,
+                allocated: base ? d.total : amount,
+                /* ⚠️ المتاح **ما يزيدش** عن المخصص الجديد: لو
+                   المستخدم نزّل المخصص، متاح أكبر منه بيقول إن
+                   فيه فلوس مش موجودة */
+                available: Math.min(x.available, base ? d.total : amount),
+              }
+            : x),
+      }))
+      setOpen(false)
+      return
+    }
+
     const node: BudgetNode = {
       id: `n-${Date.now()}`,
       label: nLabel.trim(),
+      alias,
+      showLabel: nShow,
       kind: nKind,
       parentId,
-      /* الجذر بياخد مبلغ الميزانية من الترويسة لا من المستخدم */
-      allocated: root ? doc.total : amount,
-      available: root ? doc.total : amount,
-      active: true,
+      allocated: base ? doc.total : amount,
+      available: base ? doc.total : amount,
+      active: nActive,
     }
     setDoc((d) => ({ ...d, nodes: [...d.nodes, node] }))
     setOpen(false)
@@ -238,7 +341,9 @@ export default function BudgetDocPage() {
 
   const title = existing ? docTitle(existing) : 'ميزانية جديدة'
   /* الآباء المتاحون · الفرعي ما يتحطّش تحت فرعي (قاعدة 4) */
-  const parents = nodes.filter((x) => !(nKind === 'sub' && x.kind === 'sub'))
+  /* الآباء المتاحون · اللي رُتبته بتسمح تكون أبًا للنوع المختار،
+     والبند نفسه مستثنى وقت التعديل */
+  const parents = nodes.filter((x) => x.id !== editId && kindFits(nKind, x.kind))
 
   return (
     <AppLayout assistantContext={assistFor.page(title)}>
@@ -506,6 +611,21 @@ export default function BudgetDocPage() {
                               <Icon name={kids ? icons.folder : icons.doc} size={15} />
                               {out && <span className="btree-o num">{out}</span>}
                               <span className="btree-l">{x.label}</span>
+                              {/* ⚠️ **الاسم المعلن جنب الداخلي لا بدله.**
+                                  اللي بيبني الشجرة محتاج يشوف الاتنين
+                                  في نفس السطر: يشوف الاسم اللي بيشتغل
+                                  بيه، ويشوف **اللي الجهة هتقراه** ·
+                                  وعين مقفولة معناها الداخلي مخفي. */}
+                              {!x.showLabel && (
+                                <span className="btree-hid" title="الاسم الداخلي مخفي عن الخارج">
+                                  <Icon name={icons.eyeOff} size={13} />
+                                </span>
+                              )}
+                              {x.alias && (
+                                <span className="btree-al sub" title={`الظاهر للمستخدم: ${publicName(x)}`}>
+                                  {x.alias}
+                                </span>
+                              )}
                             </span>
 
                             <span>
@@ -543,8 +663,24 @@ export default function BudgetDocPage() {
                             </span>
 
                             <span className="btree-act">
+                              {/* ⚠️ **التعديل على كل بند · والأساسي
+                                  واحد منهم.** قبل كده التعديل كان حقل
+                                  مبلغ سطري، والأساسي مبلغه من الترويسة
+                                  فالحقل كان بيتخفي عنه · فالنتيجة إن
+                                  البند الأساسي ما كانش له أي طريقة
+                                  تعديل خالص: لا اسمه ولا تفعيله ولا
+                                  اسمه المعلن. ومهاب مسكها بالنص:
+                                  «مش عارف أعمل إديت على الرئيسي». */}
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                title={`عدّل ${x.label}`}
+                                aria-label={`عدّل ${x.label}`}
+                                onClick={() => openEdit(x.id)}
+                              >
+                                <Icon name={icons.edit} size={14} />
+                              </button>
                               {/* الفرعي آخر الشجرة · فمفيش «أضف تحته» */}
-                              {x.kind === 'main' && (
+                              {x.kind !== 'sub' && (
                                 <button
                                   className="btn btn-ghost btn-sm"
                                   title={`أضف بندًا تحت ${x.label}`}
@@ -655,19 +791,19 @@ export default function BudgetDocPage() {
             className="chrome modal"
             role="dialog"
             aria-modal="true"
-            aria-label="إضافة بند"
+            aria-label={editId ? 'تعديل بند' : 'إضافة بند'}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mh">
-              <Icon name={icons.plus} size={18} />
-              <b>إضافة بند</b>
+              <Icon name={editId ? icons.edit : icons.plus} size={18} />
+              <b>{editId ? 'تعديل بند' : 'إضافة بند'}</b>
               <span className="pc-sp" />
               {under && <span className="sub trim1">تحت {pathOf(nodes, under)}</span>}
             </div>
 
             <div className="mb col">
               <label className="regf">
-                <span className="lb">اسم البند</span>
+                <span className="lb">اسم البند<b className="regf-r" aria-label="إلزامي">*</b></span>
                 <span className="fld">
                   <input
                     value={nLabel}
@@ -676,7 +812,71 @@ export default function BudgetDocPage() {
                     aria-label="اسم البند"
                   />
                 </span>
+                <span className="sub regf-h">الاسم الداخلي · اللي المؤسسة بتشتغل بيه</span>
               </label>
+
+              {/* ═══ الاسم المعلن · ج-16 ═══
+                  ⚠️ **ده مش ترجمة للاسم، ده اسم تاني بغرض تاني.**
+                  الاسم الداخلي بيتكتب للمحاسبة («المنح النوعي -
+                  تعليم - جامعي»)، والجهة اللي بتقرا تقريرها ما
+                  بتفهمش منه حاجة. */}
+              <label className="regf">
+                <span className="lb">
+                  الاسم الظاهر للمستخدم
+                  {!nShow && <b className="regf-r" aria-label="إلزامي">*</b>}
+                </span>
+                <span className="fld">
+                  <input
+                    value={nAlias}
+                    onChange={(e) => {
+                      setNAlias(e.target.value)
+                      setBlocked(shapeRule(nKind, nParent || null, nShow, e.target.value))
+                    }}
+                    placeholder="المنح التعليمية"
+                    aria-label="الاسم الظاهر للمستخدم"
+                  />
+                </span>
+                <span className="sub regf-h">
+                  {nShow
+                    ? 'اختياري · بيظهر للخارج بدل الاسم الداخلي لو اتكتب'
+                    : 'إلزامي · الاسم الداخلي مخفي، فده اللي هيبان'}
+                </span>
+              </label>
+
+              {/* ⚠️ **التشيكان مع بعض، والتحقّق بينهم مكتوب.** إخفاء
+                  الاسم بلا بديل بيخلّي البند يبان برّه المؤسسة **بلا
+                  اسم خالص** · والمستخدم اللي طفى الإظهار قصده يخفي
+                  التسمية الداخلية لا يخفي البند. */}
+              <div className="bchk">
+                <label className="bchk-i">
+                  <input
+                    type="checkbox"
+                    checked={nShow}
+                    onChange={(e) => {
+                      setNShow(e.target.checked)
+                      setBlocked(shapeRule(nKind, nParent || null, e.target.checked, nAlias))
+                    }}
+                  />
+                  <span>
+                    <b>أظهر اسم البند للخارج</b>
+                    <span className="sub">لو طفّيته، الاسم الظاهر للمستخدم يبقى إلزاميًا</span>
+                  </span>
+                </label>
+
+                <label className="bchk-i">
+                  <input
+                    type="checkbox"
+                    checked={nActive}
+                    onChange={(e) => setNActive(e.target.checked)}
+                  />
+                  <span>
+                    <b>البند نشط</b>
+                    <span className="sub">
+                      غير النشط بيفضل في الشجرة ومش بيدخل في المجاميع ولا بيتحجز عليه
+                    </span>
+                  </span>
+                </label>
+              </div>
 
               {/* ⚠️ **الحقول دي كانت مخفية على أول بند، ودي كانت
                   المخالفة.** «خلّي الأوبشنز موجودة عنده يختار» معناها
@@ -691,10 +891,14 @@ export default function BudgetDocPage() {
                         onChange={(e) => {
                           const k = e.target.value as LineKind
                           setNKind(k)
-                          setBlocked(rootRule(k, nParent || null))
+                          setBlocked(shapeRule(k, nParent || null, nShow, nAlias))
                         }}
                         aria-label="نوع البند"
                       >
+                        {/* ⚠️ الترتيب في القايمة = الترتيب في الهرم ·
+                            القايمة اللي ترتيبها عشوائي بتخلّي
+                            المستخدم يتعلّم الهيكل بالمحاولة */}
+                        <option value="base">أساسي</option>
                         <option value="main">رئيسي</option>
                         <option value="sub">فرعي</option>
                       </select>
@@ -711,11 +915,11 @@ export default function BudgetDocPage() {
                         value={nParent}
                         onChange={(e) => {
                           setNParent(e.target.value)
-                          setBlocked(rootRule(nKind, e.target.value || null))
+                          setBlocked(shapeRule(nKind, e.target.value || null, nShow, nAlias))
                         }}
                         aria-label="تابع لبند"
                       >
-                        <option value="">بلا · بند جذر</option>
+                        <option value="">بلا · بند أساسي</option>
                         {parents.map((p) => (
                           <option key={p.id} value={p.id}>{pathOf(nodes, p.id)}</option>
                         ))}
@@ -767,11 +971,13 @@ export default function BudgetDocPage() {
                 className="btn btn-p"
                 disabled={!nLabel.trim() || Boolean(blocked)}
                 title={
-                  blocked || (nLabel.trim() ? 'أضف البند' : 'اكتب اسم البند')
+                  blocked || (nLabel.trim()
+                    ? (editId ? 'احفظ التعديل' : 'أضف البند')
+                    : 'اكتب اسم البند')
                 }
-                onClick={addNode}
+                onClick={saveNode}
               >
-                إضافة
+                {editId ? 'احفظ التعديل' : 'إضافة'}
               </button>
               <button className="btn btn-2" onClick={() => setOpen(false)}>إلغاء</button>
               <span className="pc-sp" />

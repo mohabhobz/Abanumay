@@ -38,7 +38,7 @@ function buildNodes(): BudgetNode[] {
   const put = (
     id: string, label: string, kind: BudgetNode['kind'],
     parentId: string | null, allocated: number, available: number,
-  ) => out.push({ id, label, kind, parentId, allocated, available, active: true })
+  ) => out.push({ id, label, kind, parentId, allocated, available, active: true, showLabel: true })
 
   /* المستويات التلاتة بتتبني من تحت لفوق: الهدف بيتحسب من
      مشاريعه، والمجال من أهدافه، والمسار من مجالاته · فالتحقّق
@@ -96,7 +96,7 @@ function buildNodes(): BudgetNode[] {
     rootAvail += tAvail
   }
 
-  put('b0', 'ميزانية المنح · 2026', 'main', null, rootAlloc, rootAvail)
+  put('b0', 'ميزانية المنح · 2026', 'base', null, rootAlloc, rootAvail)
   return out
 }
 

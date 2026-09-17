@@ -6390,7 +6390,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    عشان الحالة والمبالغ تفضل في عمود واحد مهما نزلت الشجرة. */
 .btree{display:flex;flex-direction:column;margin-top:var(--sp-4)}
 .btree-h,.btree-r{display:grid;
-  grid-template-columns:minmax(0,1fr) 7.5rem 8.5rem 8.5rem 6rem 4.5rem;
+  grid-template-columns:minmax(0,1fr) 7.5rem 8.5rem 8.5rem 6rem 6.5rem;
   align-items:center;gap:var(--sp-3);
   padding:var(--sp-3) var(--sp-3);font-size:var(--fs-2);line-height:var(--lh-2)}
 .btree-h{font-size:var(--fs-1);color:var(--t3-g);
@@ -6422,6 +6422,27 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .btree-o{flex:none;color:var(--t3-g);font-size:var(--fs-1)}
 .btree-l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   color:var(--t1)}
+/* ═══ الاسم المعلن والإخفاء · ج-16 ═══
+   ⚠️ **البديل خافت والأصلي واضح.** اللي بيبني الشجرة بيشتغل
+   بالاسم الداخلي، والمعلن مرجع جنبه · فلو الاتنين بنفس الوزن
+   العين ما تعرفش أنهي واحد اللي بتقراه في التقارير. */
+.btree-al{flex:none;max-width:10rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  padding-inline:var(--sp-2);border-radius:var(--rp);
+  background:rgba(var(--edgeC),.07)}
+.btree-hid{flex:none;display:inline-flex;color:var(--warn)}
+
+/* ═══ تشيكات بند الميزانية · ج-16 ═══
+   ⚠️ **الصندوق فوق والشرح تحته، والاتنين في عمود.** النسخة الأولى
+   ساقت الوصف جنب العنوان في سطر واحد فاتلزقوا («أظهر اسم البند
+   للخارجلو طفّيته…») · والسبب إن `span` الجوّاني `inline`، فالسطر
+   ما بيتكسرش بين الاسم والشرح. */
+.bchk{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0;
+  padding:var(--sp-4);border-radius:var(--r1);
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
+.bchk-i{display:flex;align-items:flex-start;gap:var(--sp-3);min-width:0;cursor:pointer}
+.bchk-i>input{flex:none;margin-top:var(--sp-1)}
+.bchk-i>span{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.bchk-i b{font-family:var(--fd);font-weight:600;font-size:var(--fs-2);color:var(--t1)}
 /* حقل المخصص جوّه الصفّ · بلا حدّ لحدّ ما تقرّبه، عشان الجدول
    يفضل جدولًا لا شبكة حقول */
 .btree-a{width:100%;font:inherit;font-size:var(--fs-2);color:var(--t1);

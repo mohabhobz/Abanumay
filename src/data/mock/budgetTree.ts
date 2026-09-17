@@ -85,21 +85,89 @@ export const fundSources: FundSource[] = [
  * والقواعد بتقول له غلط فين وليه · نفس منطق قاعدة 4 في التسجيل:
  * القائمة قبل الزرار لا الرسالة بعده.
  */
-export type LineKind = 'main' | 'sub'
+/* ═══════════════════════════════════════════════════════════
+   ⚠️ **تلات أنواع لا اتنين · والترتيب أساسي ← رئيسي ← فرعي.**
+
+   النسخة القديمة كان فيها نوعان (رئيسي · فرعي)، والجذر كان
+   «رئيسي» برضو · يعني **نوع واحد بيوصف حاجتين مختلفتين**: البند
+   اللي هو الميزانية كلها، والبند اللي تحته أهداف. والنتيجة إن
+   القواعد ما كانتش تقدر تفرّق بينهم إلا بـ`parentId === null`،
+   وده شرط على **الموضع** لا على **النوع** · فالشجرة اللي فيها
+   جذران كان لازم تتمسك بقاعدة تانية منفصلة.
+
+   دلوقتي النوع بيقول المستوى بنفسه:
+     أساسي  · الميزانية نفسها · واحد ومفيش أب
+     رئيسي  · مسار أو مجال · تحته بنود
+     فرعي   · هدف · آخر الشجرة، وعليه الحجز والصرف
+   ═══════════════════════════════════════════════════════════ */
+export type LineKind = 'base' | 'main' | 'sub'
 
 export const KIND_SAY: Record<LineKind, string> = {
+  base: 'أساسي',
   main: 'رئيسي',
   sub: 'فرعي',
 }
 
 export const KIND_NOTE: Record<LineKind, string> = {
+  base: 'الميزانية نفسها · واحد في الشجرة، بلا أب، وبياخد المبلغ كاملًا',
   main: 'بند تحته بنود · مسار أو مجال',
   sub: 'هدف · آخر الشجرة، وعليه يتم الحجز والصرف',
 }
 
+/** الترتيب في الهرم · الرقم هو الرُّتبة لا المستوى */
+export const KIND_RANK: Record<LineKind, number> = { base: 0, main: 1, sub: 2 }
+
+/* ═══════════════════════════════════════════════════════════
+   ⚠️ **الرُّتبة مش المستوى · ودي الغلطة اللي وقعت فيها أول مرة.**
+
+   كتبت القاعدة «كل نوع تحت اللي رُتبته أقل منه بواحد»، وشغّلتها،
+   فطلعت **٦ ملاحظات على شجرة الوثيقة نفسها**: «مجال التعليم العام
+   رئيسي تحت رئيسي». وده صح في القاعدة وغلط في الواقع · مثال
+   الوثيقة بالنص **مسار ← مجال ← هدف**، والاتنين الأولانيين
+   رئيسيان.
+
+   فالترتيب اللي طلبه مهاب («أول حاجة الأساسي وبعديه رئيسي وتحتيه
+   فرعي») هو ترتيب **الأنواع** لا عدد المستويات · والمستويات
+   مفتوحة زي ما الشاشة بتقول: «تلاتة أو خمسة، طالما كل بند تابع
+   لبند أعلى منه».
+
+     أساسي · الجذر وحده، وواحد في الشجرة
+     رئيسي · تحت أساسي **أو تحت رئيسي** · فبيعمل مسار ثم مجال
+     فرعي  · تحت رئيسي وحده · وآخر الشجرة فمفيش تحته حاجة
+   ═══════════════════════════════════════════════════════════ */
+export const KIND_UNDER: Record<LineKind, LineKind[]> = {
+  base: [],
+  main: ['base', 'main'],
+  sub: ['main'],
+}
+
+export const kindFits = (kind: LineKind, parent: LineKind | undefined): boolean =>
+  parent === undefined ? kind === 'base' : KIND_UNDER[kind].includes(parent)
+
+/** النوع المتوقّع للابن · بيوفّر خطوة ولا بيمنع اختيارًا (ج-15) */
+export const kindUnder = (parent: LineKind | undefined): LineKind =>
+  parent === undefined ? 'base' : parent === 'base' ? 'main' : 'sub'
+
 export interface BudgetNode {
   id: string
+  /** اسم البند الداخلي · اللي المؤسسة بتشتغل بيه */
   label: string
+  /**
+   * الاسم الظاهر للمستخدم برّه المؤسسة.
+   *
+   * ⚠️ **ده مش ترجمة للاسم، ده اسم تاني بغرض تاني.** الاسم الداخلي
+   * بيتكتب للمحاسبة («المنح النوعي - تعليم - جامعي»)، والجهة اللي
+   * بتقرا تقريرها ما بتفهمش منه حاجة · فالبديل هو اللي بيظهر لها.
+   */
+  alias?: string
+  /**
+   * اسم البند الداخلي يظهر للخارج؟
+   *
+   * ⚠️ **ولمّا يبقى `false`، البديل إلزامي.** غير كده البند بيظهر
+   * للخارج **بلا أي اسم** · والمستخدم اللي طفى الإظهار مش قصده
+   * يخفي البند، قصده يخفي **التسمية الداخلية**.
+   */
+  showLabel: boolean
   kind: LineKind
   /** `null` لجذر الشجرة وحده · وهو «رئيسي - 0» في الوثيقة */
   parentId: string | null
@@ -136,6 +204,16 @@ export const childrenOf = (nodes: BudgetNode[], id: string | null): BudgetNode[]
 
 export const hasChildren = (nodes: BudgetNode[], id: string): boolean =>
   nodes.some((n) => n.parentId === id)
+
+/**
+ * الاسم اللي بيظهر برّه المؤسسة.
+ *
+ * ⚠️ **دالة واحدة، لأن الحساب ده هيتكرر في التقارير والبوّابة
+ * وملفات التصدير.** لو كل شاشة حسبته بإيدها، أول واحدة تتنسي
+ * بتفضح الاسم الداخلي · والتسريب ده ما بيبانش في الفحص.
+ */
+export const publicName = (n: BudgetNode): string =>
+  n.showLabel ? n.label : (n.alias?.trim() || '(بلا اسم معلن)')
 
 export const rootOf = (nodes: BudgetNode[]): BudgetNode | undefined =>
   nodes.find((n) => n.parentId === null)
@@ -236,8 +314,8 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
   const roots = nodes.filter((n) => n.parentId === null)
   if (roots.length === 0) {
     out.push({
-      text: 'الشجرة مفيهاش بند جذر · أول بند في أي ميزانية هو الرئيسي عند المستوى صفر',
-      why: 'الجذر هو الميزانية نفسها',
+      text: 'الشجرة مفيهاش بند أساسي · أول بند في أي ميزانية أساسي عند المستوى صفر',
+      why: 'الأساسي هو الميزانية نفسها',
     })
   } else if (roots.length > 1) {
     out.push({
@@ -256,13 +334,44 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     })
   }
 
-  /* 3 · الفرعي ما يكونش جذرًا */
+  /* 3 ⚠️ **النوع لازم يطابق موضعه في الهرم.**
+     النسخة القديمة كانت بتفحص «فرعي بلا أب» وبس · فبند أساسي
+     محطوط تحت مسار، أو رئيسي بلا أب، كانوا بيعدّوا. والنوع اللي
+     ما بيوصفش الموضع بيخلّي التقارير تجمع مستويين مع بعض. */
   for (const n of nodes) {
-    if (n.kind === 'sub' && !n.parentId) {
+    if (n.kind === 'base' && n.parentId) {
       out.push({
         nodeId: n.id,
-        text: `«${n.label}» فرعي بلا بند أعلى · الفرعي لازم يتبع بندًا`,
-        why: 'الفرعي آخر الشجرة',
+        text: `«${n.label}» أساسي وله أب · الأساسي هو الميزانية نفسها فمفيش فوقه حاجة`,
+        why: 'الأساسي جذر الشجرة',
+      })
+    }
+    if (n.kind !== 'base' && !n.parentId) {
+      out.push({
+        nodeId: n.id,
+        text: `«${n.label}» ${KIND_SAY[n.kind]} بلا أب · اللي بلا أب نوعه أساسي`,
+        why: 'الترتيب: أساسي ثم رئيسي ثم فرعي',
+      })
+    }
+    const up = n.parentId ? nodes.find((x) => x.id === n.parentId) : undefined
+    if (up && !kindFits(n.kind, up.kind)) {
+      out.push({
+        nodeId: n.id,
+        text: `«${n.label}» ${KIND_SAY[n.kind]} تحت ${KIND_SAY[up.kind]} «${up.label}» · ${KIND_SAY[n.kind]} مكانه تحت ${KIND_UNDER[n.kind].map((k) => KIND_SAY[k]).join(' أو ')}`,
+        why: 'الترتيب أساسي ثم رئيسي ثم فرعي',
+      })
+    }
+  }
+
+  /* 3ب ⚠️ **البديل إلزامي لمّا الاسم الداخلي مخفي.** غير كده
+     البند بيظهر برّه المؤسسة **بلا اسم خالص** · والمستخدم اللي
+     طفى الإظهار قصده يخفي التسمية الداخلية لا يخفي البند. */
+  for (const n of nodes) {
+    if (!n.showLabel && !n.alias?.trim()) {
+      out.push({
+        nodeId: n.id,
+        text: `«${n.label}» اسمه الداخلي مخفي وبلا اسم ظاهر · هيبان برّه المؤسسة بلا اسم`,
+        why: 'البديل إلزامي مع إخفاء الاسم',
       })
     }
   }
@@ -348,7 +457,13 @@ const n = (
   allocated: number,
   available: number,
   active = true,
-): BudgetNode => ({ id, label, kind, parentId, allocated, available, active })
+  /** البديل والإظهار · الافتراضي إن الاسم الداخلي معلن */
+  alias?: string,
+): BudgetNode => ({
+  id, label, kind, parentId, allocated, available, active,
+  alias,
+  showLabel: alias === undefined,
+})
 
 export const budgetDocs: BudgetDoc[] = [
   {
@@ -360,7 +475,7 @@ export const budgetDocs: BudgetDoc[] = [
     total: 30_000_000,
     state: 'submitted',
     nodes: [
-      n('b0', 'ميزانية المنح - 2025', 'main', null, 30_000_000, 30_000_000),
+      n('b0', 'ميزانية المنح - 2025', 'base', null, 30_000_000, 30_000_000),
 
       n('t1', 'مسار التعليم', 'main', 'b0', 12_000_000, 11_200_000),
       n('f11', 'مجال التعليم العام', 'main', 't1', 6_000_000, 5_400_000),
