@@ -40,6 +40,26 @@ export interface DataTableProps<T> {
  * كل جداول السيستم بتستخدمه: نفس الإجماليات ونفس التجميع ونفس
  * منتقي الأعمدة ونفس سلوك الصف. الموديول بيجيب أعمدته وبس.
  */
+/* ═══════════════════════════════════════════════════════════
+   ي-3 · طيّ وفتح المجموعات
+
+   ⚠️ **والافتراضي مقفول.** التجميع مش تلوين للجدول، هو **سؤال**:
+   «الفلوس رايحة فين؟» · والإجابة هي سطور المجاميع. لمّا الجدول
+   بيفضل مفتوح بعد التجميع، تلاتين صفًّا بيفضلوا على الشاشة والسطر
+   اللي بيجاوب بيضيع بينهم، فالمستخدم بيقعد يزحلق يدوّر على اللي
+   طلبه هو.
+
+   فأول ما التجميع يتشغّل: **المجاميع بس**، والمستخدم بيفتح اللي
+   يخصّه · «كإنك عملت تقريرًا في ثانية» (ي-4).
+
+   ⚠️ **وكل حاجة على مستوى المجموعة مكانها سطر المجموعة.** صندوق
+   «حدّد الكل» ومنتقي الأعمدة كانوا في ترويسة الجدول · والجدول
+   دلوقتي ممكن يكون مقفولًا، فالاتنين كانوا هيختفوا والمستخدم ما
+   يعرفش ليه. فالصندوق نزل لسطر المجموعة، والمنتقي طلع لشريط فوق
+   المجموعات · ومحدش منهم بيتكرّر في الاتنين.
+   ═══════════════════════════════════════════════════════════ */
+const NONE: ReadonlySet<string> = new Set()
+
 export function DataTable<T>({
   rows, all, cols, onCols, id, selected, onSelect, onSelectAll, onOpen, group, count, table,
 }: DataTableProps<T>) {
@@ -50,8 +70,48 @@ export function DataTable<T>({
   const shown = orderCols(all, cols).filter((c) => !group || c.key !== group.key)
   const groups = group ? splitGroups(rows, group) : [{ key: '', rows }]
 
+  /* ⚠️ الحالة متربطة **ببُعد التجميع نفسه**: لو المستخدم غيّر من
+     «المنطقة» لـ«الجهة»، المفاتيح المفتوحة بتاعة المنطقة مالهاش
+     معنى · والمقارنة في الرندر بدل `useEffect` عشان ما يحصلش
+     رندر أول بحالة قديمة. */
+  const dim = group?.key ?? ''
+  const [open, setOpen] = useState<{ dim: string; keys: ReadonlySet<string> }>({ dim, keys: NONE })
+  const openKeys = open.dim === dim ? open.keys : NONE
+
+  const toggle = (k: string) =>
+    setOpen(() => {
+      const next = new Set(openKeys)
+      if (next.has(k)) next.delete(k)
+      else next.add(k)
+      return { dim, keys: next }
+    })
+
+  const allOpen = groups.length > 0 && groups.every((g) => openKeys.has(g.key))
+
   return (
     <div className="tblwrap">
+      {group && (
+        <div className="tgbar">
+          <span className="tgbar-t">
+            مجمَّع حسب <b>{group.label}</b>
+            <span className="pc-dot" />
+            <span className="num">{groups.length}</span> مجموعة
+            <span className="pc-dot" />
+            <span className="num">{openKeys.size}</span> مفتوحة
+          </span>
+          <span className="pc-sp" />
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => setOpen({ dim, keys: allOpen ? NONE : new Set(groups.map((g) => g.key)) })}
+          >
+            <Icon name={allOpen ? icons.shrink : icons.expand} size={14} />
+            {allOpen ? 'اقفل الكل' : 'افتح الكل'}
+          </button>
+          <ColumnPicker all={all} cols={cols} onCols={onCols} />
+        </div>
+      )}
+
       {groups.map((g, i) => (
         <Block
           key={g.key || 'all'}
@@ -65,7 +125,9 @@ export function DataTable<T>({
           onOpen={onOpen}
           count={count}
           resize={resize}
-          picker={i === 0 ? { all, cols, onCols } : undefined}
+          picker={group || i !== 0 ? undefined : { all, cols, onCols }}
+          shut={Boolean(group) && !openKeys.has(g.key)}
+          onToggle={group ? () => toggle(g.key) : undefined}
         />
       ))}
 
@@ -90,8 +152,12 @@ export function DataTable<T>({
 
 function Block<T>({
   caption, rows, cols, id, selected, onSelect, onSelectAll, onOpen, picker, count, resize,
+  shut, onToggle,
 }: {
   caption?: { label: string; value: string }
+  /** المجموعة مطويّة · سطر المجاميع بس */
+  shut?: boolean
+  onToggle?: () => void
   rows: T[]
   cols: Col<T>[]
   id: (r: T) => string
@@ -145,15 +211,61 @@ function Block<T>({
         />
       )}
 
+      {/* ⚠️ **سطر المجموعة تلخيص لا عنوان.** قبل كده كان اسم
+          المجموعة وعدد صفوفها وبس، والمجاميع تحت في `tfoot` الجدول ·
+          يعني المجموعة المطويّة كانت هتبقى اسمًا بلا إجابة. دلوقتي
+          هو اللي شايل المجاميع، والجدول تحته تفصيل لمن يطلبه. */}
       {caption && (
-        <div className="tcap">
-          <span className="tcap-k">
-            <span className="sub">{caption.label}:</span> {caption.value}
-          </span>
-          <span className="tcap-n sub num">{rows.length}</span>
+        <div className={`tcap${shut ? ' shut' : ''}`}>
+          {pick && (
+            <input
+              type="checkbox"
+              className="tcap-x"
+              checked={allOn}
+              onChange={(e) => onSelectAll?.(e.target.checked, rows.map(id))}
+              aria-label={`تحديد كل صفوف ${caption.value}`}
+            />
+          )}
+
+          <button
+            type="button"
+            className="tcap-b"
+            aria-expanded={!shut}
+            onClick={onToggle}
+            title={shut ? `افتح ${caption.value}` : `اقفل ${caption.value}`}
+          >
+            <Icon name={icons.chevronDown} size={15} />
+            <span className="tcap-k">
+              <span className="sub">{caption.label}:</span> {caption.value}
+            </span>
+            <span className="tcap-n sub num">{rows.length}</span>
+          </button>
+
+          <span className="pc-sp" />
+
+          {/* ⚠️ **المجاميع هنا وقت الطيّ بس.** لمّا المجموعة مفتوحة،
+              نفس الأرقام موجودة في `tfoot` **تحت أعمدتها** · وده
+              أنفع من شريحة في سطر فوق. رقم واحد في مكانين على بُعد
+              سنتيمتر بيخلّي العين تقارنهم بدل ما تقراهم. */}
+          {shut && (
+            <span className="tcap-v">
+              {cols.filter((c) => c.agg).map((c) => (
+                <span key={c.key}>
+                  <span className="sub">{c.label}</span>{' '}
+                  <b className="num">{nf.format(aggregate(c, rows) ?? 0)}</b>
+                  {/* ⚠️ «وسطي» لازم تتكتب هنا زي ما بتتكتب في `tfoot`:
+                      متوسط مدة جنب مجموع مبلغ من غير علامة بيتقرا
+                      مجموعًا · «المدة 21» يعني ٢١ يومًا وسطيًّا لا
+                      ٢١ يومًا للمجموعة كلها. */}
+                  {c.agg === 'avg' && <small className="sub"> وسطي</small>}
+                </span>
+              ))}
+            </span>
+          )}
         </div>
       )}
 
+      {shut ? null : (
       <table className="tbl">
         {/* العروض في `colgroup` لا على الخلايا: خانة واحدة لكل عمود
             بدل تكرارها في كل صف، والمتصفح بيقراها مرة قبل الرسم. */}
@@ -167,14 +279,18 @@ function Block<T>({
 
         <thead>
           <tr>
+            {/* مع التجميع الصندوق ده نزل لسطر المجموعة · الخانة
+                بتفضل عشان أعمدة الصفوف تحتها ما تزحلقش */}
             {pick && (
               <th className="tchk">
-                <input
-                  type="checkbox"
-                  checked={allOn}
-                  onChange={(e) => onSelectAll?.(e.target.checked, rows.map(id))}
-                  aria-label="تحديد كل الصفوف المعروضة"
-                />
+                {!caption && (
+                  <input
+                    type="checkbox"
+                    checked={allOn}
+                    onChange={(e) => onSelectAll?.(e.target.checked, rows.map(id))}
+                    aria-label="تحديد كل الصفوف المعروضة"
+                  />
+                )}
               </th>
             )}
             {cols.map((c, i) => (
@@ -279,6 +395,7 @@ function Block<T>({
           </tfoot>
         )}
       </table>
+      )}
     </div>
   )
 }
