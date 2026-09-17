@@ -12,8 +12,8 @@ import { assistFor } from '@/data/mock/assistant'
 import { isolate } from '@/lib/format'
 import { entityRows } from '@/data/mock/entities'
 import {
-  BANK_REJECTS, REG_DOCS, REG_STATE_SAY, REG_STATE_WHO, REG_TONE, docRequired,
-  licenseClash, partnerKind, regMissingDocs, regRequestById,
+  BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_STATE_SAY, REG_STATE_WHO, REG_TONE,
+  docRequired, licenseClash, partnerKind, regMissingDocs, regRequestById,
 } from '@/data/mock/registration'
 
 /* ═══════════════════════════════════════════════════════════
@@ -310,16 +310,33 @@ export default function RegReviewPage() {
               {/* الحساب البنكي · قرار منفصل حتى لو الإدخال واحد */}
               <Glass>
                 <Head
-                  title="الحساب البنكي"
-                  meta={<Tag tone="mute">اعتماد منفصل</Tag>}
+                  title="الحسابات البنكية"
+                  meta={<>
+                    <span className="sub"><Num>{r.banks.length}</Num> حساب</span>
+                    {' '}<Tag tone="mute">اعتماد منفصل</Tag>
+                  </>}
                 />
-                <KV
-                  rows={[
-                    { k: 'البنك', v: r.bankName },
-                    { k: 'اسم صاحب الحساب', v: r.bankHolder },
-                    { k: 'الآيبان', v: <Mono>{r.iban}</Mono> },
-                  ]}
-                />
+                {/* ⚠️ **حساب لكل وجه خير (ح-5)، فالمراجعة قايمة لا
+                    صفّ.** ووثيقة كل حساب جنبه لا في كومة المستندات:
+                    المراجع بيقارن الآيبان بالورقة، وكومة مستندات
+                    مالهاش ترتيب بتخلّيه يدوّر. */}
+                <ul className="rgbanks">
+                  {r.banks.map((b, i) => (
+                    <li key={b.id}>
+                      <span className="rgbank-n num">{i + 1}</span>
+                      <div className="rgbank-b">
+                        <div className="rgbank-t">
+                          <b>{b.bankName}</b>
+                          <span className="sub">· {b.bankHolder}</span>
+                        </div>
+                        <div className="sub"><Mono>{b.iban}</Mono></div>
+                        {b.doc
+                          ? <DocFile name={b.doc} meta={BANK_DOC_LABEL} />
+                          : <span className="bad">{BANK_DOC_LABEL} ناقصة</span>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
                 {open && (
                   <label className="regf mt-3">
                     <span className="lb">سبب رفض الحساب · إن وُجد</span>

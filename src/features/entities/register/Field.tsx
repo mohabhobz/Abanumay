@@ -42,8 +42,19 @@ export function Field({
             ))}
           </select>
         ) : (
+          /* ⚠️ **`type="password"` مش تزويق، هو سلوك.** الحقل ده
+             بياخد كلمة مرور، والمتصفح لازم يعرف ده عشان يخبّي
+             الحروف ويقترح كلمة قوية وما يحفظهاش في الأوتوفيل
+             العادي · و`text` كان هيعرض اللي المستخدم بيكتبه على
+             شاشة ممكن تكون متشيَّرة في اجتماع. */
           <input
-            type={f.kind === 'date' ? 'date' : f.kind === 'number' ? 'number' : 'text'}
+            type={
+              f.kind === 'date' ? 'date'
+                : f.kind === 'number' ? 'number'
+                  : f.kind === 'password' ? 'password'
+                    : f.kind === 'email' ? 'email' : 'text'
+            }
+            autoComplete={f.kind === 'password' ? 'new-password' : undefined}
             inputMode={f.kind === 'tel' || f.kind === 'number' ? 'numeric' : undefined}
             value={value}
             onChange={(e) => onChange(e.target.value)}

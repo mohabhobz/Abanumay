@@ -13,9 +13,13 @@ import { isSignedIn } from '@/data/session'
 import Logo from '@/assets/LogoColor'
 import { entityRows } from '@/data/mock/entities'
 import {
-  BANKS, REG_DOCS, REG_STAGES, REG_TERMS, citiesOf, docRequired, licenseClash,
+  BANKS, REG_DOCS, REG_STAGES, REG_TERMS, bankIssues, citiesOf, docRequired,
+  emptyBank, licenseClash, type RegBank,
 } from '@/data/mock/registration'
+import { stageAdvice } from '@/data/mock/regPortal'
 import { Field } from './Field'
+import { BankRows } from './BankRows'
+import { RegAdvice } from './RegAdvice'
 
 /* ═══════════════════════════════════════════════════════════
    طلب تسجيل جهة جديدة · BPD-002 · شاشة الجهة
@@ -89,6 +93,9 @@ export default function RegisterPage() {
      وتعرض عيّنة باسم المستند لو المفتاح جه من الرابط. */
   const docs = useMemo(() => new Set(readList(v.up)), [v.up])
   const [files, setFiles] = useState<Record<string, { name: string; size: number }>>({})
+  /* ن-1 · الحسابات · واحد فاضي من الأول عشان الشاشة ما تبدأش
+     بحالة فاضية المستخدم لازم يضغط زرارًا عشان يخرج منها */
+  const [banks, setBanks] = useState<RegBank[]>([emptyBank(1)])
   const [otp, setOtp] = useState('')
   const [draft, setDraft] = useState(false)
 
@@ -123,13 +130,18 @@ export default function RegisterPage() {
   const shortBy = useMemo(() => {
     const out: Record<string, string[]> = {}
     for (const s of REG_STAGES) {
+      /* ⚠️ محطة البنك نواقصها **محسوبة من الصفوف لا من الحقول**:
+         مالهاش `fields` أصلًا، ولو فضلت على الحساب العام كانت
+         هتطلع «مكتمل» وهي فاضية · نفس مرض «قاعدة ملهاش فحص». */
       out[s.key] =
         s.key === 'docs'
           ? REG_DOCS.filter((d) => docRequired(d, type) && !docs.has(d.key)).map((d) => d.label)
-          : s.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label)
+          : s.key === 'bank'
+            ? bankIssues(banks).map((b) => b.say)
+            : s.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label)
     }
     return out
-  }, [val, docs, type])
+  }, [val, docs, type, banks])
 
   const missing = Object.values(shortBy).flat()
 
@@ -140,7 +152,23 @@ export default function RegisterPage() {
     [val.licenseNo, type],
   )
 
-  const canSend = missing.length === 0 && !clash
+  /* ن-3 · نصيحة المحطة اللي إنت فيها · بتتحسب من نفس الأرقام
+     اللي الوسم بيعدّها، فما ينفعش يختلفوا */
+  const advice = useMemo(
+    () => stageAdvice(
+      tab,
+      val,
+      tab === 'bank' ? [] : shortBy[tab] ?? [],
+      tab === 'bank' ? shortBy.bank ?? [] : [],
+      Object.entries(files).map(([key, f]) => ({ key, name: f.name })),
+    ),
+    [tab, val, shortBy, files],
+  )
+
+  /* ⚠️ **وتأكيد كلمة المرور مانع برضو، ومش في `shortBy`.** الحقلان
+     مليانين، فالعدّاد بيقول «مكتمل» · والطلب ما ينفعش يتبعت
+     وكلمتا المرور مختلفتان. فالمانع بيتقرا من النصيحة نفسها. */
+  const canSend = missing.length === 0 && !clash && advice.blocking.length === 0
 
   /* ⚠️ **الستيبر بيحتاج تقدّمًا بالزرار كمان، مش بالضغط عليه بس.**
      الضغط على خطوة بعيدة قفزة · والملء الطبيعي خطوة ورا خطوة،
@@ -564,6 +592,8 @@ export default function RegisterPage() {
                             })}
                           </ul>
                         </>
+                      ) : s.key === 'bank' ? (
+                        <BankRows banks={banks} onChange={setBanks} />
                       ) : (
                         <div className="regfields">
                           {s.fields.map((f) => (
@@ -577,6 +607,12 @@ export default function RegisterPage() {
                           ))}
                         </div>
                       )}
+
+                      {/* ⚠️ **المساعد جوّه المحطة لا في لوح جنبي.**
+                          اللوح الجنبي بيتقفل، والجهة اللي بتسجّل مرة
+                          واحدة في عمرها مش هتفتحه · والنصيحة اللي
+                          محدش شافها مش نصيحة. */}
+                      <RegAdvice advice={advice} stage={s.key} />
 
                       {/* قاعدة 8 و9 · التحقّق في الحقل لا بعد الإرسال،
                           والرسالة بتقول **بأي جهة** اتعارض */}

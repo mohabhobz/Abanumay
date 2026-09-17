@@ -5,6 +5,7 @@ import HomePage from '@/features/home/HomePage'
 import ProjectsListPage from '@/features/projects/list/ProjectsListPage'
 import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
+import PortalPage from '@/features/entities/register/PortalPage'
 import RegisterPage from '@/features/entities/register/RegisterPage'
 import RequestsPage from '@/features/entities/register/RequestsPage'
 import RegReviewPage from '@/features/entities/register/RegReviewPage'
@@ -52,6 +53,13 @@ export default function App() {
             من اللي هي مبنية له أصلًا. وده هو اللي كان بيخلّي زرار
             «تسجيل جهة جديدة» في شاشة الدخول ما يعملش حاجة. */}
         <Route path={ROUTES.entityRegister} element={<RegisterPage />} />
+
+        {/* ⚠️ **البوّابة برّه الحراسة الداخلية لنفس سبب التسجيل.**
+            اللي بيفتحها جهة **مالهاش حساب في النظام** لسه · عندها
+            حساب على طلبها وبس. حطّها ورا `RequireAuth` معناه إنها
+            ما تُفتحش إلا من موظف مؤسسة، يعني ما تُفتحش من اللي هي
+            مبنية له. */}
+        <Route path={ROUTES.entityPortal} element={<PortalPage />} />
 
         {/* بوّابة واحدة على كل الشاشات الداخلية بدل تكرارها على كل
             مسار: أي شاشة جديدة بتتحمي تلقائيًا لمجرد إنها جوّه. */}

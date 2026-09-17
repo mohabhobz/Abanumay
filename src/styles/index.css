@@ -6595,3 +6595,74 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
   /* هدف اللمس · قاعدة ٨ */
   .crumb{min-height:var(--h-md)}
 }
+
+/* ═══ الحسابات البنكية في مراجعة الطلب · ن-1 ═══
+   صفّ مرقَّم وتحته وثيقته · الرقم مرساة عشان المراجع يقول
+   «الحساب التاني فيه مشكلة» بدل ما يوصف البنك. */
+.rgbanks{display:flex;flex-direction:column;gap:var(--sp-4);margin:0;padding:0;list-style:none;min-width:0}
+.rgbanks>li{display:flex;gap:var(--sp-3);min-width:0}
+.rgbank-n{flex:none;display:grid;place-items:center;width:22px;height:22px;
+  border-radius:var(--rp);font-size:var(--fs-1);font-weight:700;
+  color:var(--t2);background:var(--fl-5);box-shadow:inset 0 0 0 1px var(--edge-1)}
+.rgbank-b{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.rgbank-t{display:flex;align-items:baseline;gap:var(--sp-2);flex-wrap:wrap;min-width:0;
+  font-size:var(--fs-3);color:var(--t1)}
+.rgbank-t b{font-family:var(--fd);font-weight:600}
+
+/* ═══ الحسابات البنكية في النموذج · ن-1 ═══
+   ⚠️ **كل حساب كارت بحدّه**، عشان العين تعرف إن الآيبان ده تبع
+   البنك ده · والحقول المتجاورة بلا حدّ بتتقرا نموذجًا واحدًا
+   طويلًا، وساعتها الوثيقة اللي تحت مش واضح هي تبع مين. */
+.bkrows{display:flex;flex-direction:column;gap:var(--sp-5);margin-top:var(--sp-4);min-width:0}
+/* ⚠️ **حلقة بلا أرضية.** الأرضية (`--fl-1`) كانت بتحطّ سطحًا
+   تالتًا تحت الوسم، والوسم مظبوط على سطح الكارت · «ناقصة» نزلت
+   4.43 في الثيم الأخضر. الحدّ لوحده كفاية عشان الصفّ يتقرا كتلة. */
+.bkrow{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0;
+  padding:var(--sp-5);border-radius:var(--r1);
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
+.bkrow-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0;
+  font-size:var(--fs-3);color:var(--t1)}
+.bkrow-h b{font-family:var(--fd);font-weight:600}
+.bkrow-n{flex:none;display:grid;place-items:center;width:22px;height:22px;
+  border-radius:var(--rp);font-size:var(--fs-1);font-weight:700;
+  color:var(--t2);background:var(--fl-5);box-shadow:inset 0 0 0 1px var(--edge-1)}
+.bkrow-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:var(--sp-4);min-width:0}
+.bkrows-a{align-self:flex-start}
+
+/* ═══ مساعد أبانمي في النموذج · ن-3 ═══
+   النبرة في الأيقونة واللون، والسبب في السطر التحتاني · فالسطر
+   الأول بيتقرا في لمحة والتاني لمن وقف عنده. */
+.rgadv{display:flex;flex-direction:column;min-width:0;
+  margin-top:var(--sp-5);padding-top:var(--sp-5);
+  box-shadow:inset 0 1px 0 var(--edge-d)}
+.rgadv-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
+.rgadv-h b{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
+.rgadv-l{display:flex;flex-direction:column;gap:var(--sp-3);margin:var(--sp-4) 0 0;padding:0;list-style:none;min-width:0}
+.rgadv-l>li{display:flex;gap:var(--sp-3);min-width:0}
+/* ⚠️ الأيقونة بتتسطّر مع **أول سطر** لا مع وسط الكتلة · والإزاحة
+   من السلّم (`--sp-1`) زي `.pfdiff` بالظبط، لا رقم مكتوب بالإيد */
+.rgadv-l>li>svg{flex:none;margin-top:var(--sp-1)}
+.rgadv-b{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.rgadv-t{font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t1)}
+.rgadv-ok>svg{color:var(--ok)}
+.rgadv-warn>svg{color:var(--warn)}
+.rgadv-no>svg{color:var(--no)}
+
+/* ═══ بوّابة الجهة · ن-2 ═══ */
+.ptl-miss{display:flex;flex-direction:column;gap:var(--sp-2);margin:var(--sp-4) 0 0;padding:0;list-style:none}
+.ptl-miss>li{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-2);color:var(--no-ink)}
+.ptl-miss>li>svg{flex:none;color:var(--no)}
+.ptl-mail{display:flex;flex-direction:column;gap:var(--sp-4);margin:var(--sp-4) 0 0;padding:0;list-style:none;min-width:0}
+.ptl-mail>li{display:flex;gap:var(--sp-3);min-width:0;opacity:.62}
+/* ⚠️ **الحالي واضح والباقي خافت.** القايمة دي بتقول «إيه اللي
+   هيوصلك» كله · واللي فاتح الشاشة دلوقتي عايز يعرف **هو فين**،
+   فالسطر بتاعه بياخد الوزن والباقي بيفضل مرجعًا. */
+.ptl-mail>li.now{opacity:1}
+.ptl-mail>li>svg{flex:none;margin-top:var(--sp-1);color:var(--t3)}
+.ptl-mail>li.now>svg{color:var(--solid)}
+.ptl-mail>li>div{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.ptl-mail b{font-family:var(--fd);font-weight:600;font-size:var(--fs-2);color:var(--t1)}
+.ptl-st{display:flex;flex-direction:column;gap:var(--sp-3);margin:var(--sp-4) 0 0;padding:0;list-style:none}
+.ptl-st>li{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0;opacity:.6}
+.ptl-st>li.now{opacity:1}

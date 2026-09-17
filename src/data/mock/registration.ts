@@ -151,7 +151,7 @@ export const REG_TERMS = [
    بيأجّل البنك لإجراء تاني. الفرق مسجَّل في النوتة ن-4.
    ═══════════════════════════════════════════════════════════ */
 
-export type FieldKind = 'text' | 'tel' | 'email' | 'date' | 'select' | 'number' | 'iban'
+export type FieldKind = 'text' | 'tel' | 'email' | 'date' | 'select' | 'number' | 'iban' | 'password'
 
 export interface RegField {
   key: string
@@ -177,6 +177,27 @@ export interface RegStage {
 const SUPERVISORS = [...LICENSORS, 'لا يوجد'] as const
 
 export const REG_STAGES: RegStage[] = [
+  {
+    /* ═══ ن-2 · حساب الجهة · أول محطة ═══
+       ⚠️ **قبل الفورم لا بعده، والسبب إن الطلب بيتقطع.** ملف
+       الترخيص وتاريخ انتهاء تكليف المجلس والآيبان مش حاجات
+       المستخدم حافظها · فهو بيبدأ، بيقوم يجيب ورقة، بيرجع.
+       والحساب هو اللي بيخلّي «بيرجع» دي ممكنة: من غيره كل مرة
+       بيقفل فيها الصفحة بتضيّع اللي كتبه.
+
+       ⚠️ **وده مش نقض للقاعدة 2.** الحساب ده على **طلبه هو**:
+       بيشوف طلبًا واحدًا وحالته وبس · وحساب الجهة الكامل لسه
+       بيتولد بعد الاعتماد زي ما القاعدة بتقول. الفرق مشروح في
+       `regPortal.ts` وفي شاشة البوّابة نفسها. */
+    key: 'account',
+    label: 'حساب الجهة',
+    note: 'إيميل وكلمة مرور · عشان تقدر تسيب الطلب وترجع له، وتتابع حالته بعد الإرسال',
+    fields: [
+      { key: 'acctEmail', label: 'البريد الإلكتروني', kind: 'email', req: true, hint: 'كل الإشعارات بتروح عليه' },
+      { key: 'acctPass', label: 'كلمة المرور', kind: 'password', req: true, hint: '8 حروف على الأقل' },
+      { key: 'acctPass2', label: 'تأكيد كلمة المرور', kind: 'password', req: true },
+    ],
+  },
   {
     key: 'id',
     label: 'التعريف',
@@ -217,14 +238,16 @@ export const REG_STAGES: RegStage[] = [
     ],
   },
   {
+    /* ═══ ن-1 · حسابات لا حساب ═══
+       ⚠️ **المحطة دي مالهاش `fields` لأنها قايمة لا نموذج.**
+       الجهة ممكن يكون عندها حساب لكل وجه خير (ح-5)، والفورم
+       اللي بيسأل «اسم البنك» مرة واحدة بيفترض حسابًا واحدًا ·
+       فالحقول اتحوّلت لصفوف في `banks`، وكل صفّ معاه **وثيقة
+       الحساب البنكي** إلزامية. */
     key: 'bank',
-    label: 'الحساب البنكي',
-    note: 'قاعدة 11 · البيانات الأساسية والبنكية في طلب واحد · واعتماد البنك منفصل عند المراجعة',
-    fields: [
-      { key: 'bankName', label: 'اسم البنك', kind: 'select', req: true, options: [] },
-      { key: 'bankHolder', label: 'اسم صاحب الحساب', kind: 'text', req: true, hint: 'باسم الجهة · لا باسم شخص' },
-      { key: 'iban', label: 'رقم الآيبان', kind: 'iban', req: true, hint: 'SA يليه 22 رقمًا' },
-    ],
+    label: 'الحسابات البنكية',
+    note: 'قاعدة 11 · حساب أو أكتر، وكل حساب لازم وثيقته · واعتماد البنك منفصل عند المراجعة',
+    fields: [],
   },
   {
     key: 'docs',
@@ -307,6 +330,69 @@ export const docRequired = (d: RegDoc, type: string): boolean =>
    الوقوف في النظام العامل نواقص ملف لا عدم أهلية.
    ═══════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════
+   الحساب البنكي · ن-1
+
+   ⚠️ **صفّ لا مجموعة حقول.** الجهة عندها حساب لكل وجه خير
+   («تحفيظ · تفطير صائم · أضاحي») زي ما مظفر قال في ح-5، والفورم
+   اللي فيه `bankName` واحد كان بيفترض حسابًا واحدًا · فاللي عنده
+   أربعة كان بيحطّ واحدًا ويبعت الباقي في إيميل.
+
+   ⚠️ **ووثيقة الحساب إلزامية لكل حساب.** الحساب من غير وثيقته
+   ما ينفعش يتحقّق منه، والصرف بيقف عنده · فالإلزام هنا بيمنع
+   طلبًا ناقصًا يوصل للمراجع أصلًا بدل ما يرجع بملاحظة.
+   ═══════════════════════════════════════════════════════════ */
+export interface RegBank {
+  id: string
+  bankName: string
+  /** باسم الجهة لا باسم شخص · قاعدة 27 */
+  bankHolder: string
+  iban: string
+  /** وثيقة الحساب البنكي · اسم الملف المرفوع · إلزامية */
+  doc?: string
+}
+
+export const BANK_DOC_LABEL = 'وثيقة الحساب البنكي'
+
+/** حساب فاضي جديد · الترقيم للمفتاح لا للعرض */
+export const emptyBank = (n: number): RegBank => ({
+  id: `b${n}`, bankName: '', bankHolder: '', iban: '',
+})
+
+export interface BankIssue { key: string; say: string }
+
+/**
+ * نواقص الحسابات · دي اللي بتمنع الإرسال لا رأي المساعد.
+ *
+ * ⚠️ **والآيبان المكرَّر غلط برضو.** حسابان بنفس الآيبان معناهم
+ * صفّ اتنسخ وما اتعدّلش · والمراجع بيشوفهم حسابين.
+ */
+export const bankIssues = (banks: RegBank[]): BankIssue[] => {
+  const out: BankIssue[] = []
+  if (banks.length === 0) {
+    out.push({ key: 'none', say: 'لازم حساب بنكي واحد على الأقل باسم الجهة.' })
+    return out
+  }
+  const seen = new Map<string, number>()
+  banks.forEach((b, i) => {
+    const at = `الحساب ${i + 1}`
+    if (!b.bankName) out.push({ key: `${b.id}-name`, say: `${at}: اختار البنك.` })
+    if (!b.bankHolder.trim()) out.push({ key: `${b.id}-holder`, say: `${at}: اسم صاحب الحساب ناقص.` })
+    const iban = b.iban.replace(/\s/g, '')
+    if (!iban) out.push({ key: `${b.id}-iban`, say: `${at}: الآيبان ناقص.` })
+    else if (!/^SA\d{22}$/i.test(iban)) {
+      out.push({ key: `${b.id}-ibanbad`, say: `${at}: الآيبان لازم SA ويليه ٢٢ رقمًا.` })
+    } else {
+      const before = seen.get(iban.toUpperCase())
+      if (before !== undefined) {
+        out.push({ key: `${b.id}-dup`, say: `${at}: نفس آيبان الحساب ${before + 1}.` })
+      } else seen.set(iban.toUpperCase(), i)
+    }
+    if (!b.doc) out.push({ key: `${b.id}-doc`, say: `${at}: ${BANK_DOC_LABEL} مطلوبة.` })
+  })
+  return out
+}
+
 export interface RegRequest {
   id: string
   name: string
@@ -328,9 +414,10 @@ export interface RegRequest {
   governanceClaim: number
   /** نوع الشراكة · الجاي من البوّابة بياخد «مستفيد» ومش بيشوف الحقل */
   partner: PartnerKind
-  bankName: string
-  bankHolder: string
-  iban: string
+  /** حسابات الجهة · واحد على الأقل · ن-1 */
+  banks: RegBank[]
+  /** بريد حساب البوّابة · ن-2 · وبيه بتفتح على طلبها */
+  acctEmail: string
   /** مفاتيح المستندات المرفوعة */
   docs: string[]
   state: RegState
@@ -376,9 +463,12 @@ const req = (
   clerkEmail: `clerk-${id}@example.org`,
   governanceClaim,
   partner: PORTAL_KIND,
-  bankName: 'مصرف الراجحي',
-  bankHolder: name,
-  iban: 'SA00 0000 0000 0000 0000 0000',
+  /* ⚠️ آيبان مموّه · ده نموذج في ريبو مفتوح، ومفيش داعي لرقم
+     يشبه الحقيقي */
+  banks: [
+    { id: 'b1', bankName: 'مصرف الراجحي', bankHolder: name, iban: 'SA00 0000 0000 0000 0000 0000', doc: 'وثيقة-الحساب.pdf' },
+  ],
+  acctEmail: `reg-${id}@example.org`,
   docs,
   state,
   submittedAt,

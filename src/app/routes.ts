@@ -42,6 +42,14 @@ export const ROUTES = {
   entityNew: '/entities/new',
   /** ماستر داتا الجهات · المناطق والمدن والتصنيفات · د-3 */
   entitySettings: '/entities/settings',
+  /**
+   * بوّابة الجهة · ن-2.
+   *
+   * ⚠️ **شاشة الجهة على طلبها هي، لا شاشة داخلية.** بتتفتح بحساب
+   * اتعمل وقت التسجيل، وبتعرض طلبًا واحدًا وحالته وبس · وحساب
+   * الجهة الكامل لسه بيتولد بعد الاعتماد (قاعدة 2).
+   */
+  entityPortal: '/entities/portal',
   /** صندوق طلبات التسجيل · خمس حالات · قاعدة 26 */
   entityRequests: '/entities/requests',
   entityRequest: (id: string) => `/entities/requests/${id}`,

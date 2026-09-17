@@ -71,11 +71,20 @@ export const ROUTES = [
      (`DocFile` بثامبنيله وزرار الإزالة) ما بتترسمش ولا مرة.
      والمفتاحان دول بيخلّوا الصفحة الواحدة فيها الحالتين مع بعض. */
   '/entities/register?step=form', '/entities/register?step=form&tab=docs&up=license,board',
+  /* المحطتان الجديدتان (ن-1 و ن-2): حساب الجهة، وقايمة الحسابات
+     البنكية · والاتنين شكلهم مختلف تمامًا عن محطة حقول عادية */
+  '/entities/register?step=form&tab=account',
   '/entities/register?step=otp', '/entities/register?step=sent',
   /* ⚠️ ودي **نفس الشاشة بغلاف تاني**: الجاي من برّه السيستم مخارجه
      جوّه الكارت ومفيش رصيف تحت، والداخل من جوّه بالعكس. من غير
      المسار ده الجرد بيقيس نسخة واحدة من اتنين. */
   '/entities/register?step=form&tab=bank',
+  /* ⚠️ **بوّابة الجهة تلات شاشات لا واحدة (ن-2).** نفس التخطيط
+     وكلامه مختلف بالكامل: «بانتظار الاستكمال» فيها ملاحظة وقايمة
+     ناقص وزرار تعديل، و«معتمد» فيها مدخل لحساب الجهة الكامل،
+     و«مرفوض» فيها سبب وخلاص. من غير التلاتة الجرد بيقيس واحدة
+     ويرجع أخضر. */
+  '/entities/portal', '/entities/portal?req=RG-1041', '/entities/portal?req=RG-1035',
   '/entities/requests', '/entities/requests/RG-1041',
   '/entities/requests/RG-1039', '/entities/requests/RG-1037',
   '/budget',
@@ -129,7 +138,12 @@ export const ROUTES = [
  *
  * فالمسارات دي بتتفتح بجلسة مفضية، والباقي زي ما هو.
  */
-export const PUBLIC_ROUTES = ['/entities/register', '/entities/register?step=form&tab=bank']
+/* ⚠️ والبوّابة عامّة برضو لنفس السبب: اللي بيفتحها جهة مالهاش
+   حساب في النظام · عندها حساب على طلبها وبس (ن-2). */
+export const PUBLIC_ROUTES = [
+  '/entities/register', '/entities/register?step=form&tab=bank',
+  '/entities/portal', '/entities/portal?req=RG-1041', '/entities/portal?req=RG-1035',
+]
 
 /* ⚠️ المطابقة بالمسار **كاملًا بالكويري** عن قصد: `/entities/register`
    بيتفحص عامًا، و`?step=form` وإخواته بجلسة · فالغلافان الاتنين
