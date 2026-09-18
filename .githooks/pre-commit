@@ -27,5 +27,8 @@ node tools/hacts.mjs             # عقد أفعال الترويسة · الإ�
 npm run --silent typecheck
 npm run --silent lint
 node tools/audit.mjs             # العدّادات · الرقم ينزل أو يثبت وما يطلعش
+# ⚠️ الفحص البصري **مش هنا** عن قصد: بياخد ٣ دقايق ومحتاج بِناء،
+#    والبوّابة لازم تفضل تحت العشرين ثانية وإلا الناس بتعمل
+#    `--no-verify`. مكانه `npm run check:all` قبل البوش.
 
 printf '  ✅ عدّت\n\n'
