@@ -12,10 +12,22 @@
  * صلاحيته، و`signOut` تبطّله على السيرفر كمان.
  */
 const KEY = 'ab-session'
+const ROLE = 'ab-role'
 
-export const signIn = (username: string): void => {
+/**
+ * دور الجلسة · **اتنين بس في البروتوتايب**.
+ *
+ * ⚠️ ده مش نظام صلاحيات · هو مفتاح عرض عشان العميل يقدر يفتح
+ * الرحلتين من نفس الرابط من غير ما يدوّر على مسار محفوظ. الأدوار
+ * الحقيقية (مشرف · مدير منح · مدير تنفيذي · مالية) بتتحدّد من
+ * التوكن لما الباك اند يجهز، وهي أكتر من اتنين بكتير.
+ */
+export type Role = 'staff' | 'entity'
+
+export const signIn = (username: string, role: Role = 'staff'): void => {
   try {
     sessionStorage.setItem(KEY, username || '1')
+    sessionStorage.setItem(ROLE, role)
   } catch {
     /* وضع خاص أو تخزين مقفول · الجلسة تفضل في الذاكرة لحد التحديث */
   }
@@ -24,6 +36,7 @@ export const signIn = (username: string): void => {
 export const signOut = (): void => {
   try {
     sessionStorage.removeItem(KEY)
+    sessionStorage.removeItem(ROLE)
   } catch {
     /* لا شيء نعمله */
   }
@@ -34,5 +47,14 @@ export const isSignedIn = (): boolean => {
     return sessionStorage.getItem(KEY) !== null
   } catch {
     return false
+  }
+}
+
+/** دور الجلسة الحالية · الافتراضي موظّف المؤسسة */
+export const sessionRole = (): Role => {
+  try {
+    return sessionStorage.getItem(ROLE) === 'entity' ? 'entity' : 'staff'
+  } catch {
+    return 'staff'
   }
 }

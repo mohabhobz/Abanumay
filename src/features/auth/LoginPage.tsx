@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
 import { Icon, icons } from '@/components/ui'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
-import { signIn } from '@/data/session'
+import { signIn, type Role } from '@/data/session'
 
 /* ═══════════════════════════════════════════════════════════
    شاشة الدخول
@@ -14,7 +14,17 @@ import { signIn } from '@/data/session'
 
    من النظام الحقيقي: اسم مستخدم وكلمة مرور، ومسار منفصل تمامًا
    اسمه «تسجيل جهة جديدة».
-   ═══════════════════════════════════════════════════════════ */
+
+   ⚠️ **وحسابا العرض تحت النموذج لا بدله.** العميل محتاج يفتح
+   الرحلتين بنفسه في الاجتماع من غير ما يدوّر على رابط محفوظ ·
+   والرحلتان مختلفتان فعلًا لا مجرد صلاحيات: موظّف المؤسسة بيدخل
+   النظام كله، والجهة بتفتح **بوّابتها** اللي فيها طلبها وخططها
+   وبس (شوف `PortalPage`).
+
+   ⚠️ **وضغطة واحدة بلا كلمة مرور.** حطّ كلمة مرور جاهزة في
+   الشاشة معناه كتابة بيانات دخول في الواجهة، وهي حاجة ما
+   بتتعملش حتى في نموذج · والزرار بيقول إنه عرض صراحةً فمحدش
+   بيفتكره دخولًا حقيقيًّا. */
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -32,6 +42,12 @@ export default function LoginPage() {
   const fail = (message: string) => {
     setErr(message)
     setTimeout(() => setErr(''), 4000)
+  }
+
+  /* الدخول السريع · بيسجّل الدور ويودّي لبداية رحلته */
+  const demo = (as: Role) => {
+    signIn(as === 'entity' ? 'جمعية البر بالأحساء' : 'عمر قاسم', as)
+    navigate(as === 'entity' ? ROUTES.entityPortal : AFTER_LOGIN, { replace: true })
   }
 
   const submit = (e: FormEvent) => {
@@ -136,6 +152,29 @@ export default function LoginPage() {
               {busy ? 'جارٍ التحقق…' : 'تسجيل الدخول'}
             </button>
           </form>
+
+          {/* ⚠️ حسابا العرض · مكانهم تحت النموذج لأنهم مش الطريق
+              الأساسي، وشكلهم صفّ واحد عشان يتقروا اختيارًا واحدًا
+              من اتنين لا زرارين منفصلين */}
+          <div className="ldemo">
+            <span className="lnote sub">الدخول السريع للعرض</span>
+            <div className="ldemo-r">
+              <button type="button" className="ldemo-b" onClick={() => demo('staff')}>
+                <Icon name={icons.user} size={16} />
+                <span>
+                  <b>موظّف المؤسسة</b>
+                  <span className="sub">مشرف المنح</span>
+                </span>
+              </button>
+              <button type="button" className="ldemo-b" onClick={() => demo('entity')}>
+                <Icon name={icons.entity} size={16} />
+                <span>
+                  <b>الجهة المستفيدة</b>
+                  <span className="sub">بوّابة الجهة</span>
+                </span>
+              </button>
+            </div>
+          </div>
 
           {/* مسار مختلف تمامًا، فشكله جوست · مش قرار تاني منافس للدخول */}
           <div className="lalt">
