@@ -38,6 +38,10 @@ export const ROUTES = [
   '/projects?group=region,entity',
   '/projects/20940', '/projects/20940/agreement', '/projects/20940/payments',
   '/projects/20852', '/projects/20852/agreement', '/projects/20852/payments',
+  /* ⚠️ تاب الخطة بحالتيه: ٢٠٨٤٥ ليه خطة قيد التنفيذ، و٢٠٩٤٠
+     اتقرّر إنه ما يتطلبش · والحالة التانية **جملة مكتوبة** لا
+     شاشة فاضية، فلازم تتفحص زي أي شاشة */
+  '/projects/20845/plan', '/projects/20940/plan',
   /* ═══ وجهتان برضو، لنفس السبب ═══
      ٦٩٤ جهة **جديدة**: ما اتمنحش لها ريال، فـ«رحلة الريال» بترجّع
      حالة فاضية وترخيصها سارٍ. يعني الجرد كان بيلفّ على صفحة جهة
@@ -85,6 +89,8 @@ export const ROUTES = [
      و«مرفوض» فيها سبب وخلاص. من غير التلاتة الجرد بيقيس واحدة
      ويرجع أخضر. */
   '/entities/portal', '/entities/portal?req=RG-1041', '/entities/portal?req=RG-1035',
+  /* المعتمدة · وهي الوحيدة اللي بيبان فيها كارت «خطط مشاريعك» */
+  '/entities/portal?req=RG-1034',
   '/entities/requests', '/entities/requests/RG-1041',
   '/entities/requests/RG-1039', '/entities/requests/RG-1037',
   '/budget',
@@ -114,9 +120,23 @@ export const ROUTES = [
      عشان محرّر الجدول نفسه يترسم في الفحص لا يفضل ورا تاب */
   '/agreements/new', '/agreements/new?project=20852&tab=form',
   '/agreements/new?project=20852&tab=sched',
+  /* الخطط · BPD-012 · والأربعة دول حالات مختلفة فعلًا لا نسخ:
+     واحدة قيد التنفيذ فيها طابور مراجعة، وواحدة متأخّرة ومعاها
+     طلب تعديل معتمد، وواحدة في دورة الاعتماد، وواحدة مُعادة */
+  '/plans', '/plans?view=table', '/plans/PL-1021', '/plans/PL-1018',
+  '/plans/PL-1025', '/plans/PL-1026',
+  /* ⚠️ **المحرّر شاشتان لا واحدة** · قبل الاعتماد الهيكل مفتوح
+     وبعده مقفول، والشاشتان مختلفتان بالكامل (قاعدة 21). من غير
+     الاتنين الجرد بيقيس واحدة ويرجع أخضر. */
+  '/plans/PL-1027/edit', '/plans/PL-1021/edit',
+  /* ⚠️ **عين الجهة شاشة تانية على نفس الخطة**: مفيش رصيف اعتماد،
+     وفيها زراير رفع الشواهد و«خلّصت النشاط» · ومن غير المسار ده
+     نص الموديول ما بيتفحصش. */
+  '/plans/PL-1021?as=entity',
+  '/plans/settings', '/plans/settings?tab=limits',
   '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
   '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
-  '/reports/process/p1', '/assistant',
+  '/reports/process/p1', '/reports/process/bpd-012', '/assistant',
   /* ⚠️ التلاتة دول اتضافوا لمّا `routecover.mjs` مسكهم (١٤ سبتمبر):
      محادثة محفوظة وصفحة التفضيلات كانوا **خارج الحراسة تمامًا** —
      كل الأدوات المقيسة كانت بترجع خضرا وهي ما زارتهمش. */
@@ -143,6 +163,8 @@ export const ROUTES = [
 export const PUBLIC_ROUTES = [
   '/entities/register', '/entities/register?step=form&tab=bank',
   '/entities/portal', '/entities/portal?req=RG-1041', '/entities/portal?req=RG-1035',
+  /* المعتمدة · وهي الوحيدة اللي بيبان فيها كارت «خطط مشاريعك» */
+  '/entities/portal?req=RG-1034',
 ]
 
 /* ⚠️ المطابقة بالمسار **كاملًا بالكويري** عن قصد: `/entities/register`

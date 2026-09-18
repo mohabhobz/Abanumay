@@ -613,3 +613,120 @@ export interface PayEvent {
   /** الإشعار المرسل مع الانتقال · rule 17 */
   notified?: string
 }
+
+/* ═══════════════════════════════════════════════════════════
+   خطة تنفيذ المشروع · BPD-012 · صفحات 86–92 في الوثيقة v2
+
+   ⚠️ **ده أخطر ناقص في التدقيق (أ-1).** السند في BPD-009 §9.3
+   خطوة 1 بالنص: «اعداد خطة المشروع من قبل الجهة المستفيدة
+   واعتمادها من قبل مشرف المنح ومدير المنح وذلك في حالة المشاريع
+   التي تتطلب خطة عمل». وفي النظام العامل «الخطة التنفيذية» **مرفق**
+   لا موديول · مفيش دورة اعتماد ولا متابعة إنجاز.
+
+   ⚠️ **والخطة إجراء مستقل، زي الاتفاقية بالظبط.** ده تطبيق ح-10
+   (فصل الإجراءات): «المشكلة إن السيستم بيتعامل مع المشروع كأنه
+   حاجة واحدة · المشروع هو الخطة هو الاتفاقية هو الدفع». فالخطة
+   بتتعمل **بالتوازي** مع الاتفاقية، وحالتها ما بتغيّرش حالة
+   المشروع · زي قاعدة 25 في الاتفاقيات.
+   ═══════════════════════════════════════════════════════════ */
+
+export type PlanStage =
+  /** الجهة بتكتب · مسودة ما اتبعتتش */
+  | 'draft'
+  /** عند مشرف المنح للمراجعة */
+  | 'supervisor'
+  /** عند مدير المنح للاعتماد */
+  | 'manager'
+  /** مُعادة للجهة بملاحظات */
+  | 'returned'
+  /** معتمدة · اتثبّت `Baseline V1` والتنفيذ بدأ */
+  | 'active'
+  /** كل الأنشطة اتقبلت · المشروع مؤهَّل للإغلاق */
+  | 'done'
+
+/** حالة النشاط الواحد · قاعدة 14 بتفصل «الجهة قالت» عن «المشرف قبل» */
+export type ActivityState =
+  /** ما بدأش */
+  | 'todo'
+  /** الجهة بتنفّذ */
+  | 'doing'
+  /** الجهة رفعت الشاهد وقالت خلص · **لسه ما اتحسبش إنجازًا** */
+  | 'claimed'
+  /** المشرف راجع وقبل · دي وحدها اللي بتتحسب */
+  | 'accepted'
+  /** المشرف رفض الشاهد ورجّعه */
+  | 'rejected'
+
+/** شاهد مرفوع على نشاط */
+export interface PlanEvidence {
+  id: string
+  /** نوع الشاهد المطلوب · من إعدادات الموديول */
+  kind: string
+  fileName: string
+  uploadedAt: string
+  /** مين رفعه · الجهة عادةً */
+  by: string
+}
+
+export interface PlanActivity {
+  id: string
+  name: string
+  state: ActivityState
+  /** التواريخ المخطَّطة · بتتقفل مع `Baseline V1` */
+  from: string
+  to: string
+  /** التاريخ الفعلي للقبول · فاضي لو لسه */
+  doneAt?: string
+  /** أنواع الشواهد اللي لازم ترفع قبل ما النشاط يتقال عليه خلص */
+  needs: string[]
+  evidence: PlanEvidence[]
+  /** سبب الرفض · قاعدة 14 بتلزم توضيحه */
+  note?: string
+  /** وزن النشاط في نسبة الإنجاز · مجموع أوزان أنشطة المرحلة = 100 */
+  weight: number
+}
+
+export interface PlanPhase {
+  id: string
+  name: string
+  from: string
+  to: string
+  /** تكلفة المرحلة · مجموع المراحل = قيمة المنحة */
+  cost: number
+  activities: PlanActivity[]
+}
+
+/** طلب تعديل جوهري على خطة معتمدة · قاعدة 21 */
+export interface PlanChange {
+  id: string
+  at: string
+  by: string
+  /** اللي اتطلب تغييره بالنص */
+  say: string
+  state: 'waiting' | 'approved' | 'rejected'
+  /** قرار مدير المنح وسببه */
+  note?: string
+}
+
+export interface PlanRow {
+  id: string
+  /** خطة واحدة لمشروع واحد */
+  projectId: string
+  projectName: string
+  entityId: string
+  entityName: string
+  stage: PlanStage
+  /** رقم النسخة المرجعية · 1 أول اعتماد، وبيزيد مع كل تعديل معتمد */
+  baseline: number
+  /** تاريخ تثبيت النسخة المرجعية · فاضي قبل الاعتماد */
+  baselineAt?: string
+  phases: PlanPhase[]
+  /** مشرف المنح المسؤول */
+  owner: string
+  /** مين كتب المسودة · الجهة أو المشرف بالنيابة عنها */
+  drafter: 'entity' | 'supervisor'
+  openedAt: string
+  hoursInStage: number
+  changes: PlanChange[]
+  note?: string
+}

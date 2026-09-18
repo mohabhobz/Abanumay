@@ -8,6 +8,7 @@ import { DocFile } from '@/components/docs'
 export { DataTab } from './DataTab'
 export { EntityTab } from './EntityTab'
 export { AgreementTab, type AgreementTabProps } from './AgreementTab'
+export { PlanTab, type PlanTabProps } from './PlanTab'
 export { PaymentsTab, type PaymentsTabProps } from './PaymentsTab'
 export { LogTab, type LogTabProps } from './LogTab'
 

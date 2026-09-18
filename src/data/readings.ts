@@ -10,9 +10,12 @@
  * بنفس شكل `Reading[]` · والواجهة ما تتغيّرش.
  */
 import type { Reading, ReadingAction } from '@/components/assistant/reading'
-import type { AgreementRow, EntityRow, Insight, PayRequest, ProjectRow } from '@/types/domain'
+import type { AgreementRow, EntityRow, Insight, PayRequest, PlanRow, ProjectRow } from '@/types/domain'
 import { PAY_STATES, payBlocked, payHeat, payStateWho } from './mock/disbursements'
 import { agrBlocked, agrPaymentsBalance, agrReserveGap } from './mock/agreements'
+import {
+  lateActivities, planClaimed, planDone, planPlanned, planSpi, readyToClose, waitingReview,
+} from './mock/plans'
 import { regMissingDocs, type RegRequest } from './mock/registration'
 import type { EntityDetail } from './mock/entityDetail'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
@@ -1353,6 +1356,88 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
       src: 'حالات الطلب · قاعدة 26',
       to: `${ROUTES.entityRequests}?state=completion`,
       toLabel: 'اعرضها',
+    })
+  }
+
+  return out
+}
+
+/* ═══════════════════════════════════════════════════════════
+   قراءة الخطط · BPD-012
+
+   ⚠️ **أول قراءة هي طابور المشرف نفسه، لا حالة الخطط.** السؤال
+   اللي بيفتح الصندوق عشانه مش «الخطط ماشية إزاي»، هو «إيه اللي
+   واقف عندي». والنشاط اللي الجهة رفعت شاهده وقالت خلص بيفضل
+   **مش محسوب** لحدّ ما المشرف يقبله (قاعدة 14) · فالطابور ده
+   بيوقّف نسبة إنجاز حقيقية، مش مجرد شغل إداري.
+   ═══════════════════════════════════════════════════════════ */
+export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
+  const out: Reading[] = []
+  if (rows.length === 0) return out
+  const scope = isFiltered ? 'في النطاق الحالي' : 'في الصندوق'
+
+  /* ١ · الطابور · أنشطة قالت الجهة إنها خلصت ومستنّية قبول */
+  const queue = rows.flatMap((p) => waitingReview(p).map((a) => ({ p, a })))
+  if (queue.length) {
+    const plans = new Set(queue.map((x) => x.p.id)).size
+    const worst = rows
+      .filter((p) => waitingReview(p).length > 0)
+      .sort((a, b) => planClaimed(b) - planDone(b) - (planClaimed(a) - planDone(a)))[0]
+    const gap = worst ? planClaimed(worst) - planDone(worst) : 0
+    out.push({
+      id: 'p-queue',
+      kind: 'flag',
+      label: 'مستنّي مراجعتك',
+      metric: { value: String(queue.length), unit: `نشاطًا ${scope}` },
+      text:
+        `في ${plans} خطة · وأكبر فرق في «${worst?.projectName ?? ''}»: ` +
+        `الجهة معلنة ${planClaimed(worst)}٪ والمقبول ${planDone(worst)}٪، ` +
+        `يعني ${gap} نقطة مش محسوبة لحدّ ما تتراجع.`,
+      bold: [`${gap} نقطة`],
+      src: 'قاعدة 14 · النشاط ما يتحسبش إنجازًا إلا بعد قبول المشرف',
+      to: `${ROUTES.plans}?wait=1`,
+      toLabel: 'اعرضها',
+    })
+  }
+
+  /* ٢ · المتأخّر عن جدوله · وده اللي بيغيّر قرار */
+  const behind = rows.filter((p) => {
+    const v = planSpi(p)
+    return v !== null && v < 0.8
+  })
+  if (behind.length) {
+    const worst = behind.sort((a, b) => (planSpi(a) ?? 1) - (planSpi(b) ?? 1))[0]
+    const acts = rows.reduce((s, p) => s + lateActivities(p).length, 0)
+    out.push({
+      id: 'p-late',
+      kind: 'flag',
+      label: 'متأخّر عن الخطة',
+      metric: { value: String(behind.length), unit: `خطة ${scope}` },
+      text:
+        `و${acts} نشاطًا عدّى موعده وما اتقبلش · أبعدها «${worst.projectName}» ` +
+        `بأداء جدول ${(planSpi(worst) ?? 0).toFixed(2)} (المنجَز ${planDone(worst)}٪ ` +
+        `والمخطَّط لليوم ${planPlanned(worst)}٪).`,
+      danger: [`${(planSpi(worst) ?? 0).toFixed(2)}`],
+      /* ⚠️ المقارنة بالنسخة المرجعية لا بالتواريخ الحالية · قاعدة
+         21 بتخلّي أي تمديد يعدّي باعتماد، فالانحراف له مرجع ثابت */
+      src: `النسخة المرجعية V${worst.baseline} · قاعدة 21`,
+      to: `${ROUTES.plans}?late=1`,
+      toLabel: 'اعرضها',
+    })
+  }
+
+  /* ٣ · المؤهّل للإغلاق · مانع اترفع ومحدش واخد باله */
+  const close = rows.filter((p) => readyToClose(p) && p.stage !== 'done')
+  if (close.length) {
+    out.push({
+      id: 'p-close',
+      kind: 'note',
+      label: 'مؤهَّل للإغلاق',
+      metric: { value: String(close.length), unit: 'مشروعًا' },
+      text:
+        'كل أنشطة خطته اتقبلت · الخطة رفعت مانع الإغلاق، والإغلاق نفسه ' +
+        'إجراء تاني له قواعده (التقرير الختامي · الاتصال المؤسسي · التقييم).',
+      src: 'BPD-012 · الخطة مكتملة ⇒ المشروع مؤهَّل للإغلاق',
     })
   }
 

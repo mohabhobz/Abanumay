@@ -74,6 +74,24 @@ export const ROUTES = {
   agreementNew: (projectId?: string) =>
     `/agreements/new${projectId ? `?project=${projectId}` : ''}`,
 
+  /* ═══ خطة تنفيذ المشروع · BPD-012 ═══
+     ⚠️ **موديول لا تاب، لنفس سبب الاتفاقيات بالظبط.** الخطة إجراء
+     مستقل بدورة اعتماد خاصة بيه (مشرف ← مدير)، وانتقالها بين
+     مراحلها ما بيغيّرش حالة المشروع · وده تطبيق ح-10 (فصل
+     الإجراءات). والمشرف اللي عنده سبع خطط فيها أنشطة مستنّية
+     مراجعة ما يقدرش يتابعهم من صفحات المشاريع واحدة واحدة.
+     والتاب في صفحة المشروع بيفضل مكانه: هو بيجاوب «إيه خطة المشروع
+     ده»، والصندوق بيجاوب «إيه اللي واقف عندي». */
+  plans: '/plans',
+  plan: (id: string) => `/plans/${id}`,
+  /** محرّر الخطة · قبل الاعتماد الهيكل مفتوح، وبعده بطلب تعديل */
+  planEdit: (id: string) => `/plans/${id}/edit`,
+  /** إنشاء خطة لمشروع · المشروع في الرابط زي الاتفاقية */
+  planNew: (projectId?: string) =>
+    `/plans/new${projectId ? `?project=${projectId}` : ''}`,
+  /** إعدادات الخطط · أنواع الشواهد وحدود المراحل (د-1) */
+  planSettings: '/plans/settings',
+
   payments: '/payments',
   payment: (id: string) => `/payments/${id}`,
   /** إنشاء طلب صرف · خطوات 1 و2 · والمشروع اختياري في الرابط */
@@ -117,6 +135,7 @@ export const PROJECT_TABS = [
   { slug: 'entity', label: 'الجهة' },
   { slug: 'history', label: 'المشاريع السابقة' },
   { slug: 'agreement', label: 'الاتفاقية' },
+  { slug: 'plan', label: 'الخطة' },
   { slug: 'payments', label: 'الدفعات' },
   { slug: 'follow-ups', label: 'المتابعات' },
   { slug: 'log', label: 'سجل المشروع' },
@@ -215,6 +234,9 @@ export const NAV: NavItem[] = [
   /* الاتفاقية قبل الصرف في السلسلة · قاعدة 1 في إجراء الصرف بتمنع
      أي طلب قبل تفعيلها، فترتيبها في الريل بيتبع ترتيب الشغل */
   { key: 'agreements', label: 'الاتفاقيات', to: ROUTES.agreements, icon: 'contract', group: 'money', perm: 'agreements.read' },
+  /* الخطة بعد الاتفاقية: الاتنين بيتعملوا بالتوازي بعد الاعتماد،
+     والاتفاقية هي اللي بتفتح الصرف (قاعدة 1) فهي الأسبق في الشغل */
+  { key: 'plans', label: 'الخطط', to: ROUTES.plans, icon: 'plan', group: 'money', perm: 'agreements.read' },
   { key: 'payments', label: 'الصرف', to: ROUTES.payments, icon: 'pay', group: 'money', mob: true, perm: 'payments.read' },
   { key: 'reports', label: 'التقارير', to: ROUTES.reports, icon: 'chart', group: 'knowledge', mob: true, perm: 'reports.read' },
 ]

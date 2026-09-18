@@ -12,6 +12,7 @@ import {
   BANK_DOC_LABEL, REG_STATES, REG_STATE_SAY, REG_TONE, regMissingDocs, regRequestById,
 } from '@/data/mock/registration'
 import { REG_MAILS, portalViewOf } from '@/data/mock/regPortal'
+import { planStageLabel, plansOfEntity, waitingReview } from '@/data/mock/plans'
 
 /* ═══════════════════════════════════════════════════════════
    بوّابة الجهة · ن-2 · «شاشة خاصة بيه بيشوف طلبه هو بس»
@@ -42,6 +43,8 @@ export default function PortalPage() {
   const r = regRequestById(values.req ?? DEFAULT_REQ) ?? regRequestById(DEFAULT_REQ)!
 
   const view = portalViewOf(r.state)
+  /* خطط الجهة · بتتقرا من `entityId` اللي اتولد بعد الاعتماد */
+  const plans = r.entityId ? plansOfEntity(r.entityId) : []
   const short = regMissingDocs(r)
   const mail = REG_MAILS.find((m) => m.on === r.state)
 
@@ -227,6 +230,43 @@ export default function PortalPage() {
                   ))}
                 </ul>
               </Glass>
+
+              {/* ═══ خطط الجهة · BPD-012 ═══
+                  ⚠️ **بتبان بعد الاعتماد وحده.** قبله الجهة مالهاش
+                  مشاريع أصلًا، فمالهاش خطط · وكارت فاضي اسمه «خططك»
+                  في شاشة جهة لسه بتستنّى قرار بيقول إن في حاجة ناقصة
+                  وهي مش ناقصة، هي ما بدأتش. */}
+              {r.state === 'approved' && plans.length > 0 && (
+                <Glass>
+                  <Head
+                    title="خطط مشاريعك"
+                    meta={<span className="sub"><Num>{plans.length}</Num> خطة</span>}
+                  />
+                  {/* ⚠️ الجملة دي هي اللي بتمنع أكبر سوء فهم في
+                      الموديول: «رفعت الشاهد» مش «اتحسب إنجازًا» */}
+                  <p className="sub cnote">
+                    بترفعي الشواهد وبتقولي إن النشاط خلص · والاحتساب بيحصل بعد
+                    مراجعة مشرف المنح وقبوله (القاعدة <span className="num">14</span>).
+                  </p>
+                  <ul className="ptl-miss ptl-plans">
+                    {plans.map((pl) => (
+                      <li key={pl.id}>
+                        <Icon name={icons.plan} size={14} />
+                        <Link className="lnk" to={`${ROUTES.plan(pl.id)}?as=entity`}>
+                          {pl.projectName}
+                        </Link>
+                        <span className="pc-sp" />
+                        <span className="sub">{planStageLabel(pl.stage)}</span>
+                        {waitingReview(pl).length > 0 && (
+                          <Tag tone="warn">
+                            <Num>{waitingReview(pl).length}</Num> عند المشرف
+                          </Tag>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+              )}
 
               <Glass>
                 <Head title="الحالات الخمس" meta={<span className="sub">قاعدة 26</span>} />

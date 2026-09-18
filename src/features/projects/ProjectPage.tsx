@@ -17,7 +17,7 @@ import {
 } from '@/app/routes'
 import {
   AgreementTab, CorrespondenceTab, DataTab, EntityTab, FollowUpsTab,
-  HistoryTab, LogTab, PaymentsTab,
+  HistoryTab, LogTab, PaymentsTab, PlanTab,
 } from './tabs'
 import { AnalysisCard } from '@/components/assistant'
 import { readInsights, readJourney } from '@/data/readings'
@@ -25,6 +25,7 @@ import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { projectLog } from '@/data/mock/log'
 import { projectOptions } from '@/data/mock/agreementNew'
 import { projectChain } from '@/data/mock/chain'
+import { planOfProject } from '@/data/mock/plans'
 import { journeys } from '@/data/journey'
 
 /** عدد الأيام اللي الإجراء الحالي مفتوح فيها · من سجل الإجراءات */
@@ -268,6 +269,20 @@ export default function ProjectPage() {
                   example={examples.agreement}
                   onOpenExample={(x) => navigate(ROUTES.projectTab(x, 'agreement'))}
                   onStart={() => navigate(ROUTES.agreementNew(project.id))}
+                  startBlocked={agreementBlock}
+                />
+              )}
+              {/* ⚠️ **الخطة تاب مستقلّ عن الاتفاقية، والاتنين
+                  بيتعملوا بالتوازي** · الوثيقة بتقول كده صراحة،
+                  والتاب هنا بيجاوب «إيه خطة المشروع ده» بينما
+                  الصندوق بيجاوب «إيه اللي واقف عندي». */}
+              {active === 'plan' && (
+                <PlanTab
+                  plan={planOfProject(project.id)}
+                  granted={project.amountGranted || project.amountRequested}
+                  onStart={() => navigate(ROUTES.planNew(project.id))}
+                  /* نفس مانع الاتفاقية: مفيش خطة قبل اكتمال الاعتماد،
+                     لأن الخطة بتتقاس على منحة معتمدة القيمة */
                   startBlocked={agreementBlock}
                 />
               )}

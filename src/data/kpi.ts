@@ -26,6 +26,7 @@ import { journeys } from './journey'
 import { median } from './analytics'
 import { ROUTES } from '@/app/routes'
 import { YEARS } from './mock/taxonomy'
+import { planKpi } from './mock/plans'
 
 /** وحدة المقام · «10 من 30» لازم تقول 30 إيه */
 export type Basis = 'project' | 'entity' | 'line' | 'source' | 'riyal'
@@ -274,6 +275,28 @@ export const PROCESSES: ProcessKpis[] = [
       { no: 2, name: 'نسبة الاتفاقيات المنجزة ضمن المدة المستهدفة', how: '(عدد الاتفاقيات المعتمدة ضمن المدة المستهدفة ÷ إجمالي الاتفاقيات) × 100%.', unit: 'pct', value: null, gap: 'مفيش مدة مستهدفة لإعداد الاتفاقية في الوثيقة.', better: 'up', target: null },
       { no: 3, name: 'متوسط مدة دورة اعتماد الاتفاقية', how: 'متوسط الزمن من إرسال الاتفاقية للاعتماد حتى اكتمال جميع الاعتمادات.', unit: 'days', value: null, gap: 'دورة الاعتماد سبع مراحل (إلكترونية وورقية ومالية وتنفيذية)، والنموذج بيمسك المدة الكلية بس.', better: 'down', target: null },
       { no: 4, name: 'نسبة الاتفاقيات المعادة للتعديل', how: '(عدد الاتفاقيات المعادة للمراجعة أو التعديل ÷ إجمالي الاتفاقيات) × 100%.', unit: 'pct', value: null, gap: 'الإعادة للتعديل مش حدثًا مسجّلًا، «اعتماد الإتفاقية» قسم واحد بلا حالات فرعية.', better: 'down', target: null },
+    ],
+  },
+
+  /* ═══ BPD-012 · خطط المشاريع ═══
+     ⚠️ **الوثيقة ما دّتش مؤشرات للإجراء ده خالص.** الأربعة دول
+     مشتقّون من قواعده نفسها، وكلهم `derived` و`target: null` ·
+     زي مؤشرات الاتفاقيات والصرف اللي مستهدفها فاضي بالظبط.
+     وعرضهم كأنهم من الوثيقة كان هيخلّي اللي بعدنا يبني عليهم. */
+  {
+    id: 'BPD-012',
+    key: 'bpd-012',
+    no: 12,
+    title: 'خطط المشاريع',
+    owner: 'إدارة المنح',
+    kpis: [
+      { no: 1, name: 'متوسط مدة اعتماد الخطة', how: 'متوسط الأيام من فتح الخطة حتى تثبيت النسخة المرجعية.', unit: 'days', value: planKpi().approveDays, better: 'down', target: null, derived: true, to: ROUTES.plans },
+      { no: 2, name: 'نسبة الخطط الماشية مع جدولها', how: '(الخطط اللي أداء جدولها ≥ 0.95 ÷ الخطط قيد التنفيذ) × 100%.', unit: 'pct', value: planKpi().onTrackPct, better: 'up', target: null, derived: true, to: ROUTES.plans },
+      { no: 3, name: 'نسبة الأنشطة المتأخّرة', how: '(الأنشطة اللي عدّى موعدها وما اتقبلتش ÷ إجمالي الأنشطة) × 100%.', unit: 'pct', value: planKpi().latePct, better: 'down', target: null, derived: true, to: `${ROUTES.plans}?late=1` },
+      /* ⚠️ ده مؤشر **على المؤسسة نفسها** لا على الجهات · الطابور
+         اللي بيكبر معناه إن المراجعة بتتأخّر، والجهة بتبقى شغّالة
+         والنسبة واقفة. وده اللي القاعدة 14 بتخلّيه ممكن يتقاس. */
+      { no: 4, name: 'الأنشطة المستنّية مراجعة المؤسسة', how: 'عدد الأنشطة اللي الجهة قالت إنها خلصت ولسه ما اتراجعتش (قاعدة 14).', unit: 'count', value: planKpi().waiting, better: 'down', target: null, derived: true, to: `${ROUTES.plans}?wait=1` },
     ],
   },
 

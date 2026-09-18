@@ -1431,6 +1431,19 @@ small{font-size:var(--fs-1)}
    بيتعارضوا والعلامة بتقصر */
 .bar.over u{position:absolute;top:-3px;bottom:-3px;height:auto;width:1.5px;
   border-radius:var(--rp);background:rgba(var(--edgeC),.42)}
+
+/* ── شريط الخطة · طبقتان فوق بعض وعلامة عند المخطَّط ──
+   ⚠️ **الطبقتان مطلقتان لأن `.bar` فليكس.** لو سيبناهم في المجرى
+   العادي كانوا هيتراصّوا جنب بعض فالشريط يقرا «مُعلَن + مقبول»
+   مجموعًا · وهما مش مجموع، هما **نفس المسافة مرتين**: المُعلَن
+   بيشمل المقبول وزيادة، والزيادة دي هي الشغل المستنّي مراجعة.
+   الترتيب مقصود: المُعلَن أوسع وتحت، والمقبول أضيق وفوقه. */
+.plbar{position:relative}
+.plbar>i{position:absolute;inset-block:0;inset-inline-start:0;border-radius:var(--bar-r)}
+/* المُعلَن · نبرة الانتظار، مش نبرة الإنجاز */
+.plbar-c{background:rgba(var(--warnC),.42)}
+/* المقبول · نفس تدرّج الإنجاز في تحليلات المشروع */
+.plbar-d{background:linear-gradient(90deg,var(--teal),var(--lime))}
 /* ═══ المساعد وهو بيقرأ ويكتب ═══ */
 @keyframes aipulse{0%,100%{opacity:.55;transform:scale(.94)}
 50%{opacity:1;transform:scale(1)}
@@ -6649,6 +6662,72 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
    النصيحة بقت `Reading[]` (شوف `regReadings` في `regPortal.ts`)،
    والرسم بقى `.qr-item` زي أي قراءة تانية. */
 
+
+/* ═══ شجرة مراحل الخطة · BPD-012 ═══
+   ⚠️ **المرحلة صفّ ترويسة والأنشطة قايمة تحته** · لا جدول: الأنشطة
+   محتواها مختلف الطول (اسم · تواريخ · شواهد · ملاحظة · زرارين)،
+   والجدول بيجبرها كلها على نفس الارتفاع فتقرا شبكة فاضية. */
+.phtree{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0}
+.phase{min-width:0;border-radius:var(--r1);box-shadow:inset 0 0 0 1px var(--edge-1)}
+/* الترويسة زرار بعرض الصفّ · كلها منطقة ضغط لا السهم وحده */
+.phase-h{display:flex;align-items:center;gap:var(--sp-3);width:100%;flex-wrap:wrap;
+  padding:var(--sp-4) var(--sp-4);text-align:start;border-radius:var(--r1);
+  background:var(--fl-1);font-size:var(--fs-3);color:var(--t1)}
+.phase-h:hover{background:var(--fl-2)}
+.phase-h>svg{flex:none;color:var(--t3)}
+/* رقم المرحلة · نفس خانة رقم الخطوة في الستيبر */
+.phase-n{flex:none;display:grid;place-items:center;width:22px;height:22px;
+  border-radius:var(--rp);font-size:var(--fs-1);font-weight:700;
+  color:var(--t2);background:var(--fl-4)}
+.phase-t{font-family:var(--fd);font-weight:600;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* التواريخ بتاخد الفراغ الباقي فالوسوم بتتجمّع في آخر الصفّ */
+.phase-d{flex:1;min-width:0;white-space:nowrap;font-size:var(--fs-1)}
+.phase-c{flex:none;font-size:var(--fs-2);color:var(--t2)}
+
+/* ── الأنشطة ──
+   بلا نقط قايمة: كل نشاط بلوك ليه حدّ علوي، والنقطة كانت بتزحلق
+   السطر الأول عن اللي تحته */
+.acts{list-style:none;margin:0;padding:0 var(--sp-4) var(--sp-4);
+  display:flex;flex-direction:column;gap:var(--sp-4)}
+.act{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0;
+  padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
+/* النشاط اللي المساعد ودّى له · الوسم لحظي ومن الحافة لا بخلفية
+   بتغيّر لون النصّ اللي فوقه */
+.act.on{box-shadow:inset 0 1px 0 var(--edge-d), inset 2px 0 0 var(--solid)}
+.act.on{padding-inline-start:var(--sp-3)}
+.act-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
+.act-t{font-family:var(--fd);font-weight:500;font-size:var(--fs-3);color:var(--t1);
+  min-width:0;overflow:hidden;text-overflow:ellipsis}
+.act-w{flex:none;font-size:var(--fs-1)}
+.act-m{font-size:var(--fs-1)}
+/* الشواهد · سطر لكل شاهد مطلوب، والمرفوع جنبه باسم ملفه */
+.act-ev{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.act-ev>li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;font-size:var(--fs-2)}
+.act-ev>li>svg{flex:none}
+.act-ev>li.ok>svg{color:var(--ok)}
+.act-ev>li.no>svg{color:var(--no)}
+/* اسم الملف بياخد الباقي وبيتقصّ · ملفات الجهة أسماؤها طويلة */
+.act-f{flex:1;min-width:0;text-align:end;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.act-a{display:flex;gap:var(--sp-3);flex-wrap:wrap;margin-top:var(--sp-2)}
+/* المتأخّر · حدّ جانبي أحمر، والوسم في الصفّ بيقول السبب */
+.act.late{box-shadow:inset 0 1px 0 var(--edge-d), inset 2px 0 0 rgba(var(--noC),.55)}
+.act.late{padding-inline-start:var(--sp-3)}
+
+/* ── طلبات التعديل الجوهري · قاعدة 21 ── */
+.plchg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-4)}
+.plchg>li{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0;
+  padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
+.plchg>li:first-child{padding-top:0;box-shadow:none}
+.plchg-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
+.plchg-t{margin:0;font-size:var(--fs-2);line-height:var(--lh-text);color:var(--t1)}
+/* زرار الرفع جنب الشاهد الناقص · بياخد آخر السطر بعد اسم الملف */
+.act-up{flex:none;padding-block:0;height:var(--h-sm,26px)}
+/* قايمة خطط الجهة في بوّابتها · نفس `.ptl-miss` بس بلون محايد
+   لأنها مش نواقص · هي شغل ماشي */
+.ptl-plans>li{color:var(--t1)}
+.ptl-plans>li>svg{color:var(--t3)}
 
 /* ═══ بوّابة الجهة · ن-2 ═══ */
 .ptl-miss{display:flex;flex-direction:column;gap:var(--sp-2);margin:var(--sp-4) 0 0;padding:0;list-style:none}

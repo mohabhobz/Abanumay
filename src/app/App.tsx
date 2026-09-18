@@ -21,6 +21,10 @@ import BudgetDocPage from '@/features/budget/BudgetDocPage'
 import AgreementsPage from '@/features/agreements/AgreementsPage'
 import AgreementPage from '@/features/agreements/AgreementPage'
 import AgreementNewPage from '@/features/agreements/AgreementNewPage'
+import PlansPage from '@/features/plans/PlansPage'
+import PlanPage from '@/features/plans/PlanPage'
+import PlanEditPage from '@/features/plans/PlanEditPage'
+import PlanSettingsPage from '@/features/plans/PlanSettingsPage'
 import PaymentsPage from '@/features/payments/PaymentsPage'
 import RequestPage from '@/features/payments/RequestPage'
 import RequestForm from '@/features/payments/RequestForm'
@@ -117,6 +121,15 @@ export default function App() {
         {/* ⚠️ `new` قبل `:id` · نفس فخّ «/payments/new» و«/budget/settings» */}
         <Route path="/agreements/new" element={<AgreementNewPage />} />
         <Route path={`${ROUTES.agreements}/:id`} element={<AgreementPage />} />
+
+        {/* الخطط · BPD-012 · إجراء مستقل بدورة اعتماد خاصة (ح-10)،
+            فله صندوقه زي الاتفاقيات لا تابًا في المشروع وحده */}
+        <Route path={ROUTES.plans} element={<PlansPage />} />
+        {/* الإعدادات قبل `:id` · وإلا الراوتر قرا `settings` رقم خطة
+            (نفس درس `/entities/register`) */}
+        <Route path={ROUTES.planSettings} element={<PlanSettingsPage />} />
+        <Route path={`${ROUTES.plans}/:id/edit`} element={<PlanEditPage />} />
+        <Route path={`${ROUTES.plans}/:id`} element={<PlanPage />} />
 
         {/* الصرف · BPD-009 · مبني على الوثيقة، والفروق عن النظام
             العامل مسجَّلة نوتس في `DISBURSEMENT_MODULE_BRIEF.md` */}

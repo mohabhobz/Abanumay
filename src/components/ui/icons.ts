@@ -25,7 +25,7 @@ import {
   Plus, EllipsisVertical, Pin, Pencil, Trash2, Menu, ArrowDown, Download,
   Copy, Check, RotateCw, ThumbsUp, ThumbsDown, GripVertical, ChevronDown,
   Sparkles, ArrowDownWideNarrow, ChevronUp, LayoutGrid, Rows3, Funnel,
-  Clock, MapPin, Users, Link2,
+  Clock, MapPin, Users, Link2, ListChecks,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -49,6 +49,8 @@ export const icons = {
   entity: Building2,
   budget: Wallet,
   contract: FileSignature,
+  /* الخطة · قائمة أنشطة بعلامات، لا مستندًا موقَّعًا زي الاتفاقية */
+  plan: ListChecks,
   pay: CreditCard,
   chart: ChartColumn,
   chat: MessageCircle,

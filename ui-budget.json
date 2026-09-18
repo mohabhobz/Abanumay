@@ -6,13 +6,14 @@
   "blurValues": 3,
   "saturateValues": 4,
   "pctOutsideIsolation": 0,
-  "inlineStyles": 115,
+  "inlineStyles": 118,
   "_note": "السقف · الرقم ينزل أو يثبت وما يطلعش · حدّثه بـnpm run audit:lock بعد جولة خضرا",
-  "_updated": "2026-09-14",
+  "_updated": "2026-09-18",
   "spacingLiteralsJsx": 0,
   "lineHeightLiterals": 0,
   "edgeBars": 0,
   "fillLiterals": 0,
   "shadowLiterals": 0,
-  "emDashInComments": 238
+  "emDashInComments": 238,
+  "_raise_inlineStyles": "طلع من 115 لـ118 يوم 18 سبتمبر · تلاتة في `PlanBar` وحده (عرض المُعلَن · عرض المقبول · موضع علامة المخطَّط). شريط بيانات عرضه من الداتا ما ينفعش يتكتب في CSS، ونفس النمط اللي `primitives.Stat` و`ReadingBlock` بيستعملوه · والمكوّن واحد عشان الشريط ما يتكتبش مرتين (كارت الصندوق وصفحة الخطة)."
 }

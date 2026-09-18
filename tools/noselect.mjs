@@ -1,8 +1,9 @@
 /**
- * قوائم الاختيار · قاعدتان.
+ * قواعد الواجهة اللي بقت فحصًا · تلاتة.
  *
  * ١ · ممنوع `<select>` الأصلية في الواجهة.
  * ٢ · وممنوع `label` على قائمة جوّه شريط الأدوات.
+ * ٣ · وممنوع `**` في نصّ JSX · ده مش ماركداون.
  *
  * ⚠️ **دي قاعدة كانت مكتوبة في مكان وناقصة في التاني، وعشان كده
  * رجعت.** `Select` بتاعة شريط الأدوات اتشالت منها `<select>` من
@@ -65,15 +66,33 @@ const labelInToolbar = (src) => {
   return out
 }
 
+/**
+ * ⚠️ **`**` في نصّ JSX بتطلع نجومًا على الشاشة.**
+ * التعليقات في السيستم ده مكتوبة بماركداون، فاليد بتكمّل على
+ * نفس النمط وهي بتكتب نصًّا معروضًا · وطلعت للعميل في محرّر
+ * الخطة: «اللي مفتوح هو **تحديث التنفيذ**» بالنجوم.
+ *
+ * ⚠️ **والفحص على `.tsx` وحدها.** نصوص المساعد في `data/mock`
+ * بتعدّي على `md.tsx` اللي بيحوّل `**` لعريض فعلًا · فهي ماركداون
+ * مقصود لا سهو. اللي بيطلع نجومًا هو النصّ اللي بيتحطّ في JSX
+ * مباشرةً. و`md.tsx` نفسه مستثنى لأنه المفسّر.
+ */
+const MD_OK = 'components/assistant/md.tsx'
+
 const hits = []
 const labels = []
+const stars = []
 for (const f of walk(SRC)) {
+  const rel = path.relative(SRC, f)
   const clean = strip(fs.readFileSync(f, 'utf8'))
   clean.split('\n').forEach((line, i) => {
-    if (/<select[\s>]/.test(line)) hits.push(`${path.relative(SRC, f)}:${i + 1}`)
+    if (/<select[\s>]/.test(line)) hits.push(`${rel}:${i + 1}`)
+    if (f.endsWith('.tsx') && rel !== MD_OK && line.includes('**')) {
+      stars.push(`${rel}:${i + 1}  ${line.trim().slice(0, 70)}`)
+    }
   })
   for (const l of labelInToolbar(clean)) {
-    labels.push(`${path.relative(SRC, f)}:${l.at}  <${l.what} label=…>`)
+    labels.push(`${rel}:${l.at}  <${l.what} label=…>`)
   }
 }
 
@@ -91,5 +110,11 @@ if (labels.length) {
   for (const l of labels) console.log(`   ${l}`)
   console.log('   الشريط صفّ واحد بلا عناوين · الاسم في `all`')
 }
+if (stars.length) {
+  bad = true
+  console.log(`\n🔴 \`**\` في نصّ JSX · ${stars.length} موضع`)
+  for (const l of stars) console.log(`   ${l}`)
+  console.log('   ده مش ماركداون · استعمل <b>…</b>')
+}
 if (bad) process.exit(1)
-console.log('\n✅ القوايم بتفتح لوحة السيستم · والشريط صفّ واحد\n')
+console.log('\n✅ القوايم والشريط والنصّ · كلهم على القاعدة\n')
