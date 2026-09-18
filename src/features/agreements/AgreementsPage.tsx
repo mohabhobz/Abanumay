@@ -300,17 +300,20 @@ export default function AgreementsPage() {
                     <b className="num">{activeCount(NOT_FILTERS)}</b>
                   )}
                 </button>
-                {view === 'table' && (
-                  <GroupPicker
-                    icon={icons.rows}
-                    value={v.group}
-                    options={GROUPS.map((g) => ({ value: g.key, label: g.label }))}
-                    onChange={(x) => set({ group: x })}
-                  />
-                )}
               </div>
 
               <div className="ftool-a">
+                {/* ⚠️ **التجميع تحكّم عرض لا فلتر** · مكانه ركن العرض،
+                   وكان آخر صفّ الفلاتر فبينزل لوحده في سطر تاني
+                   أول ما الشريط يلفّ (شوف `PlansPage`). */}
+                {view === 'table' && (
+                <GroupPicker
+                  icon={icons.rows}
+                  value={v.group}
+                  options={GROUPS.map((g) => ({ value: g.key, label: g.label }))}
+                  onChange={(x) => set({ group: x })}
+                />
+                )}
                 <ExportMenu
                   sheet={sheet}
                   note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} اتفاقية`}

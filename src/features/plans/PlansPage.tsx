@@ -273,6 +273,16 @@ export default function PlansPage() {
                     <b className="num">{activeCount(NOT_FILTERS)}</b>
                   )}
                 </button>
+              </div>
+
+              <div className="ftool-a">
+                {/* ⚠️ **التجميع تحكّم عرض لا فلتر** · هو بيغيّر شكل
+                    الجدول لا الصفوف اللي فيه، فمكانه ركن العرض جنب
+                    مبدّل الكروت/الجدول.
+                    وكان آخر عنصر في صفّ الفلاتر، فأول ما الشريط
+                    يلفّ (شاشة أضيق) بينزل **لوحده** في سطر تاني على
+                    حافة الشاشة · شريحة يتيمة معلّقة تحت الصفّ،
+                    والعميل شافها. */}
                 {view === 'table' && (
                   <GroupPicker
                     icon={icons.rows}
@@ -281,9 +291,6 @@ export default function PlansPage() {
                     onChange={(x) => set({ group: x })}
                   />
                 )}
-              </div>
-
-              <div className="ftool-a">
                 <ExportMenu
                   sheet={sheet}
                   note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} خطة`}

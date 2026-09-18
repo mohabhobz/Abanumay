@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom'
 import { DateText, Icon, icons, Money, Mono, Num, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, pct } from '@/lib/format'
-import { agrHeat, agrPaymentsBalance, agrReserveGap } from '@/data/mock/agreements'
+import {
+  AGR_TONE, agrHeat, agrPaymentsBalance, agrReserveGap, agrStageLabel,
+} from '@/data/mock/agreements'
 import type { AgreementRow } from '@/types/domain'
 
 /* ═══════════════════════════════════════════════════════════
@@ -16,6 +18,17 @@ import type { AgreementRow } from '@/types/domain'
      قاعدة 8  · مجموع الدفعات = قيمة المنحة، والنسب = 100%
      خطوة 11 · قيمة الاتفاقية = المبلغ المحجوز في الميزانية
    والتالتة قاعدة 9: نقص في البيانات أو المرفقات بيمنع الاعتماد.
+
+   ⚠️ **هيكل واحد لكل الكروت · والغايب بيقول إنه غايب** (نفس
+   القاعدة اللي كارت الخطة اتصلّح عليها). الكارت ده كان بيبني
+   نفسه من الحالة: صفّ الوسوم تلات فروع بيقولوا حاجات مختلفة،
+   وسطر «النسخة الورقية» بيظهر للورقية وحدها، والملاحظة ومخرج
+   الذكاء لو موجودين · فكل كارت في الصندوق طلع بطول مختلف
+   ومعلوماته في مكان مختلف، وزرار «افتح الاتفاقية» وقف في ارتفاع
+   غير جيرانه.
+
+   دلوقتي: **المرحلة دايمًا مكتوبة**، والعمر جنبها، والأربع
+   إجابات كلها موجودة · واللي ما بينطبقش بيقول «ما بينطبقش».
 
    ⚠️ **والإصدار معروض لما يبقى أكتر من واحد.** قاعدة 24 بتسمح
    بإصدارات متعددة وواحد ساري، وقاعدة 17 بتقول إن أي تعديل بعد
@@ -53,17 +66,16 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
         </div>
       </header>
 
+      {/* ⚠️ **المرحلة أول وسم في كل كارت** · كانت بتظهر بتلات
+          صور مختلفة (سخونة · عمر · تاريخ تفعيل) حسب الحالة، فمفيش
+          كارتين بيقولوا نفس النوع من المعلومة في نفس المكان. */}
       <div className="payq-tags">
+        <Tag tone={AGR_TONE[a.stage]}>{agrStageLabel(a.stage)}</Tag>
+        {a.stage === 'active' && a.activeAt
+          ? <Tag tone="ok">فُعّلت <DateText>{a.activeAt}</DateText></Tag>
+          : <span className="sub">في المرحلة دي <Num>{days}</Num> يومًا</span>}
         {heat !== 'ok' && (
-          <Tag tone={heat === 'stuck' ? 'no' : 'warn'}>
-            {HEAT_SAY[heat]} · <Num>{days}</Num> يومًا
-          </Tag>
-        )}
-        {heat === 'ok' && a.stage !== 'active' && (
-          <span className="sub">في المرحلة <Num>{days}</Num> يومًا</span>
-        )}
-        {a.stage === 'active' && a.activeAt && (
-          <Tag tone="ok">فُعّلت <DateText>{a.activeAt}</DateText></Tag>
+          <Tag tone={heat === 'stuck' ? 'no' : 'warn'}>{HEAT_SAY[heat]}</Tag>
         )}
         {a.version > 1 && <Tag tone="teal">الإصدار <Num>{a.version}</Num></Tag>}
       </div>
@@ -103,14 +115,22 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           </span>
           <span className="payq-r">قاعدة <Num>9</Num></span>
         </li>
-        {/* قاعدة 16 · الورقية لازم تُرفق موقّعة قبل التفعيل */}
-        {a.kind === 'ورقية' && (
-          <li className={a.stage === 'active' ? 'ok' : 'no'}>
-            <Icon name={a.stage === 'active' ? icons.check : icons.alert} size={13} />
-            <span>النسخة الورقية الموقّعة</span>
-            <span className="payq-r">قاعدة <Num>16</Num></span>
-          </li>
-        )}
+        {/* قاعدة 16 · الورقية لازم تُرفق موقّعة قبل التفعيل.
+            ⚠️ والسطر موجود في الكارتين · الإلكترونية بتقول «ما
+            بينطبقش» بدل ما السطر يتشال ويخلّي الكارت أقصر من
+            جاره بسطر. */}
+        <li className={a.kind !== 'ورقية' || a.stage === 'active' ? 'ok' : 'no'}>
+          <Icon
+            name={a.kind !== 'ورقية' || a.stage === 'active' ? icons.check : icons.alert}
+            size={13}
+          />
+          <span>
+            {a.kind !== 'ورقية'
+              ? 'إلكترونية · النسخة الورقية ما بتنطبقش'
+              : 'النسخة الورقية الموقّعة'}
+          </span>
+          <span className="payq-r">قاعدة <Num>16</Num></span>
+        </li>
       </ul>
 
       {/* ملاحظة الإعادة · قاعدة 10 بتلزم توضيح السبب */}
@@ -130,9 +150,10 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
         </div>
       )}
 
+      {/* الرصيف سطر واحد · المالك بياخد الباقي وبيتقصّ والزرار
+          ثابت، فالزرار بيقف في نفس الارتفاع في كل كارت */}
       <footer className="payq-f">
-        <Person name={a.owner} />
-        <span className="pc-sp" />
+        <span className="payq-when"><Person name={a.owner} /></span>
         <Link className="btn btn-2 btn-sm" to={ROUTES.agreement(a.id)}>
           افتح الاتفاقية
           <Icon name={icons.chevron} size={14} />

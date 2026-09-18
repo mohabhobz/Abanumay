@@ -108,15 +108,11 @@ export function PlanCard({ p }: { p: PlanRow }) {
         {change && <Tag tone="warn">طلب تعديل مستنّي مدير المنح</Tag>}
       </div>
 
-      {/* ── ٣ · ماشية إزاي · نفس المكان في كل كارت ── */}
-      {measured ? (
-        <PlanBar done={done} claim={claim} want={want} />
-      ) : (
-        <p className="sub plq-wait">
-          القياس بيبدأ بعد ما مدير المنح يعتمد النسخة المرجعية ·
-          قبلها مفيش مخطَّط لليوم يتقاس عليه.
-        </p>
-      )}
+      {/* ── ٣ · ماشية إزاي · **الشريط موجود دايمًا** ──
+          الفقرة النصّية اللي كانت مكان الشريط قبل الاعتماد كانت
+          بتدّي الكارت شكلًا تانيًا · فالمسار بيتعرض فاضي والحكاية
+          بتتقال تحته بنفس السطر اللي بيشيل النِسب. */}
+      <PlanBar done={done} claim={claim} want={want} pending={!measured} />
 
       {/* ── ٤ · فيه إيه · تلات إجابات ثابتة بنفس الترتيب ── */}
       <ul className="payq-ck">
@@ -154,8 +150,13 @@ export function PlanCard({ p }: { p: PlanRow }) {
         </div>
       )}
 
+      {/* ⚠️ **سطر واحد في الرصيف · والزرار في نفس المكان.** سطر
+          التواريخ كان بيلفّ لسطرين في الكروت المعتمدة (فُتحت +
+          اعتُمدت)، فالرصيف بيعلا والزرار بيقف في ارتفاع مختلف عن
+          جيرانه في نفس الصفّ · وده اللي العميل شافه. السطر بقى
+          بيتقصّ والزرار ثابت. */}
       <footer className="payq-f">
-        <span className="sub">
+        <span className="sub payq-when">
           فُتحت <DateText>{p.openedAt}</DateText>
           {p.baselineAt && <> · اعتُمدت <DateText>{p.baselineAt}</DateText></>}
         </span>

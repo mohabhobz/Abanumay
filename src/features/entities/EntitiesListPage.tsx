@@ -359,14 +359,7 @@ export default function EntitiesListPage() {
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
-              {view === 'table' && (
-                <GroupPicker
-                  icon={icons.rows}
-                  value={v.group}
-                  options={GROUPS.map((g) => ({ value: g.key, label: g.label }))}
-                  onChange={(x) => set({ group: x, page: undefined })}
-                />
-              )}
+              
 
               </div>
 
@@ -376,6 +369,17 @@ export default function EntitiesListPage() {
                   لسطر تاني ويتحرّك أفقيًا. دلوقتي الفلاتر بتلفّ جوّه
                   مجموعتها، والأدوات مكانها ثابت مهما اتغيّر اللي جنبها. */}
               <div className="ftool-a">
+                {/* ⚠️ **التجميع تحكّم عرض لا فلتر** · مكانه ركن العرض،
+                   وكان آخر صفّ الفلاتر فبينزل لوحده في سطر تاني
+                   أول ما الشريط يلفّ (شوف `PlansPage`). */}
+                {view === 'table' && (
+                <GroupPicker
+                  icon={icons.rows}
+                  value={v.group}
+                  options={GROUPS.map((g) => ({ value: g.key, label: g.label }))}
+                  onChange={(x) => set({ group: x, page: undefined })}
+                />
+              )}
               <SavedViews table="entities" current={snapshot()} onApply={applyQuery} />
 
               <ExportMenu sheet={sheet} note={exportNote} count={selected.size} />

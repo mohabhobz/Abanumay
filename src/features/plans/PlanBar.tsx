@@ -30,9 +30,31 @@ export interface PlanBarProps {
   claim: number
   /** المخطَّط لليوم · من النسخة المرجعية */
   want: number
+  /**
+   * الخطة لسه ما اتعتمدتش · مفيش نسخة مرجعية يتقاس عليها.
+   *
+   * ⚠️ **والشريط بيتقال إنه فاضي، ما بيتشالش.** الكارت كان بيرسم
+   * الشريط للخطة الشغّالة ويحطّ فقرة نصّ مكانه للمسودة · يعني
+   * صندوق الخطط فيه كروت بشريط وكروت من غيره، والعين ما بتعرفش
+   * تقارن اتنين (العميل شافها مرتين). المسار بيفضل مرسومًا
+   * والحكاية بتتقال تحته.
+   */
+  pending?: boolean
 }
 
-export function PlanBar({ done, claim, want }: PlanBarProps) {
+export function PlanBar({ done, claim, want, pending }: PlanBarProps) {
+  if (pending) {
+    return (
+      <>
+        <div className="bar over plbar plbar-w" />
+        <div className="qr-barl">
+          <span className="sub">لسه ما اتعتمدتش</span>
+          <span className="sub">القياس بيبدأ بالنسخة المرجعية</span>
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
       <div className="bar over plbar">
