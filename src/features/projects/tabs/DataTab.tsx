@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { DateText, Glass, Head, KV, Money, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { DocDownload, DocFile } from '@/components/docs'
+import { DocList } from '@/components/docs'
 import { addDays, costPerBeneficiary, isolate, nf, pct, readDate, units } from '@/lib/format'
 import type { Project } from '@/types/domain'
 import type { LogEvent } from '@/data/mock/log'
@@ -223,41 +223,12 @@ export function DataTab({
 
       <Glass>
         <Head title="المرفقات" meta={`${uploaded} من ${P.attachments.length} مرفوعة`} />
-        <div style={{ overflowX: 'auto' }}>
-          {/* بلا ترويسة أعمدة: عنوان الكارت فوق بيقول «المرفقات»،
-              و«المرفق · الحالة» تحته بيكرّروه. وكل خلية بتوصف
-              نفسها · اسم ملف ووسم حالة. عمود «إجراء» مش موجود
-              أصلًا: الملف نفسه زرار المعاينة وجنبه زرار التنزيل. */}
-          <table className="tbl" aria-label="مرفقات المشروع وحالتها">
-            <tbody>
-              {P.attachments.map((a) => (
-                <tr key={a.name} className={a.uploaded ? '' : 'off'}>
-                  <td>
-                    {/* المرفوع بيتعرض بثامبنيله · النوع بيبان قبل الفتح.
-                        وغير المرفوع مالوش ثامبنيل لأن مفيش محتوى. */}
-                    {a.uploaded ? (
-                      <DocFile name={a.name} download={false} />
-                    ) : (
-                      <span className="nmc sub">{a.name}</span>
-                    )}
-                  </td>
-                  {/* التنزيل جنب الحالة في آخر الصف: الأيقونات بتتسطّر
-                      في عمود واحد بدل ما تقف بعد كل اسم في مكان. */}
-                  <td className="n">
-                    <span className="dstat">
-                      {a.uploaded ? (
-                        <Tag tone="ok">مرفوع</Tag>
-                      ) : (
-                        <Tag>{a.required ? 'مطلوب، غير مرفوع' : 'اختياري، غير مرفوع'}</Tag>
-                      )}
-                      {a.uploaded && <DocDownload name={a.name} />}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DocList
+          label="مرفقات المشروع وحالتها"
+          rows={P.attachments.map((a) => ({
+            name: a.name, uploaded: a.uploaded, required: a.required,
+          }))}
+        />
         <div className="sub mt-3">
           الموازنة التفصيلية هي المطلوبة في طلب الاستكمال الحالي، الملف المرفوع صورة لا تُقرأ آليًا.
         </div>

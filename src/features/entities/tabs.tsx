@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
-import { DocDownload, DocFile } from '@/components/docs'
+import { DocFile, DocList } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import {  } from '@/lib/format'
 import { activationTone, days, governanceTone, groupTone } from '@/lib/tone'
@@ -157,49 +157,19 @@ export function EntityDocsTab({ d }: { d: EntityDetail }) {
           </>
         }
       />
-      <table className="tbl">
-        <colgroup>
-          <col style={{ width: 300 }} />
-          <col style={{ width: 130 }} />
-          <col style={{ width: 130 }} />
-          <col style={{ width: 120 }} />
-        </colgroup>
-        <thead>
-          <tr>
-            <th>المستند</th>
-            <th>تاريخ الرفع</th>
-            <th>نهاية الصلاحية</th>
-            <th>الحالة</th>
-          </tr>
-        </thead>
-        <tbody>
-          {d.docs.map((x) => (
-            <tr key={x.name}>
-              <td title={x.name}>
-                {x.uploaded
-                  ? <DocFile name={`${x.name}.pdf`} download={false} />
-                  : <span className="sub">{x.name}</span>}
-              </td>
-              <td title={x.at ?? ''}>{x.at ? <DateText>{x.at}</DateText> : <span className="sub"> </span>}</td>
-              <td title={x.expires ?? ''}>
-                {x.expires ? <Mono>{x.expires}</Mono> : <span className="sub"> </span>}
-              </td>
-              <td>
-                <span className="dstat">
-                  {!x.uploaded ? (
-                    <Tag tone="no">غير مرفوع</Tag>
-                  ) : x.expired ? (
-                    <Tag tone="no">منتهٍ</Tag>
-                  ) : (
-                    <Tag tone="ok">مرفوع</Tag>
-                  )}
-                  {x.uploaded && <DocDownload name={`${x.name}.pdf`} />}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <DocList
+        label="مستندات الجهة وصلاحيتها"
+        heads={['تاريخ الرفع', 'نهاية الصلاحية']}
+        rows={d.docs.map((x) => ({
+          name: `${x.name}.pdf`,
+          uploaded: x.uploaded,
+          expired: x.expired,
+          extra: [
+            x.at ? <DateText>{x.at}</DateText> : null,
+            x.expires ? <Mono>{x.expires}</Mono> : null,
+          ],
+        }))}
+      />
     </Glass>
   )
 }

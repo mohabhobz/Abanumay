@@ -4713,12 +4713,10 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 /* علامة «مشتقّ»: حرف صغير بحافة، مش شارة حالة */
 .ind-d{font-size:var(--fs-1);color:var(--t1);padding:var(--sp-1) var(--sp-3);border-radius:var(--rp);
   box-shadow:inset 0 0 0 1px var(--edge-2)}
-/* الفجوة مش خطأ: نبرة محايدة بحافة، لا لون تحذير.
-   الحافة `border-inline-start` لا `box-shadow`: الظل بيتحسب
-   بمحاور فيزيائية، فالشريط كان بيقع على شمال الصندوق في RTL. */
+/* ⚠️ **مفيش شريط جانبي** · القاعدة مكتوبة عند `.norail` تحت،
+   والصندوق بيقول نبرته بأرضيته وحلقته الكاملة. */
 .ind-g{font-size:var(--fs-1);line-height:var(--lh-long);color:var(--t2);
   padding:var(--sp-3) var(--sp-4);border-radius:var(--r1);
-  border-inline-start:2px solid rgba(var(--warnC),.55);
   background:var(--fl-2);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 /* نفس الصندوق لمّا السبب واحد للإجراء كله · فوق القائمة لا جوّاها */
@@ -4849,6 +4847,36 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
    بخلفيتها وركنها وظلّها. اللي بقي خاصّ بيها إنها **بتفتح لفوق**،
    لأن مكانها في تذييل الصفحة. */
 .fmenu.up{top:auto;bottom:calc(100% + .35rem)}
+
+/* ═══════════════════════════════════════════════════════════
+   `.norail` · **مفيش شريط ملوّن على جنب أي عنصر. نهائي.**
+
+   ⚠️ **دي قاعدة العميل قالها أكتر من مرة، وأنا كسرتها أكتر من
+   مرة** (آخرها ١٨ سبتمبر · وهو اللي فضل يشيلها صفحة صفحة).
+   كانت مكتوبة عند `.lgnote` بالنصّ: «الحالة اللي العميل طلب إنها
+   تختفي من السيستم كله» · وبرضو رجعت في `.act.late` و`.btree-r.no`
+   و`.ind-g` و`.regwho`. **قاعدة مكتوبة في تعليق وما عليهاش فحص
+   تفضل نيّة** · فبقى عليها فحص: `tools/norail.mjs`.
+
+   **وليه ممنوعة، مش بس «العميل مش عاجبه»:**
+
+   ١ · **الأحمر في السيستم ده معناه خطر.** التأخير مش خطرًا، والبند
+       اللي عليه ملاحظة مش خطرًا، والنبرة المحايدة أكيد لأ. لمّا
+       الأحمر يتحطّ على كل حاجة فيها انتباه، بيبطل يقول حاجة ·
+       والحاجة اللي **فعلًا** خطر ما بقاش ليها لون.
+
+   ٢ · **الحالة مقولة بالفعل.** الصفّ فيه وسم مكتوب («عدّى موعده»
+       · «مرفوض · بملاحظة»)، والشريط بيكرّرها بلون · تكرار بيزوّد
+       ضوضا ولا بيزوّد معلومة.
+
+   ٣ · **والشريط بيقع في الناحية الغلط.** `inset 2px 0 0` محاور
+       فيزيائية لا منطقية، فهو بيرسم على **شمال** الصندوق في
+       واجهة عربية بتبدأ من اليمين.
+
+   البديل المتّفق عليه: الوسم بيقول الحالة، والأرضية الهادية
+   (`--ctl-quiet-h`) بتقول «ده اللي قصدته»، والحلقة الكاملة
+   بتقول «كائن منفصل».
+   ═══════════════════════════════════════════════════════════ */
 
 /* ═══ التقويم · لوحة السيستم لا لوحة المتصفّح ═══
    ⚠️ **`<input type="date">` بيفتح تقويمًا بيرسمه المتصفّح** ·
@@ -5510,10 +5538,8 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .lgnote{margin:var(--sp-3) 0 0;padding:var(--sp-3) var(--sp-4);border-radius:var(--r1);
   font-size:var(--fs-2);line-height:var(--lh-long);color:var(--t2);
   background:rgba(var(--edgeC),.045);
-  /* الشريط الملوّن **علامة** لا حافة · فالصندوق بياخد حلقته
-     الكاملة كمان. من غيرها كان صندوقًا مرسومًا من جهة واحدة، وهي
-     الحالة اللي العميل طلب إنها تختفي من السيستم كله. */
-  box-shadow:inset 2px 0 0 rgba(var(--retC2),.35),inset 0 0 0 1px var(--edge-1)}
+  /* ⚠️ الشريط الجانبي اتشال · شوف `.norail` */
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 @media (max-width:620px){.lgf{grid-template-columns:1fr}}
 
 /* ── ثريد المراسلة: عنوان سبب الفتح ── */
@@ -5611,6 +5637,21 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .aiscroll::-webkit-scrollbar-thumb{background:rgba(var(--edgeC),.18);border-radius:var(--rp)}
 
 /* ── التنزيل جنب الحالة في آخر الصف ── */
+/* ⚠️ **التمرير الأفقي على الغلاف لا `style` سطري.** كل شاشة فيها
+   قائمة مستندات كانت بتكتب `style={{overflowX:'auto'}}` بإيدها ·
+   أربع نسخ لنفس السطر، وأربعة في عدّاد الستايلات السطرية. */
+.dlist{overflow-x:auto}
+/* ⚠️ **اسم الملف بياخد الفراغ الباقي** · أسماء مستندات الجهة
+   طويلة («محضر تشكيل مجلس الإدارة»)، والأعمدة التانية تاريخ أو
+   وسم بعرض ثابت · فلمّا الجدول بيوزّع بالتساوي الاسم بيتقصّ وهو
+   العمود الوحيد اللي المستخدم بيقرا منه. */
+/* ⚠️ **و`table-layout:auto` هنا · `.tbl` ثابت بطبيعته.** الثابت
+   بيوزّع الأعمدة بالتساوي من غير ما يبصّ للمحتوى، فـ`width:100%`
+   على عمود الاسم كان بيصفّر اللي بعده وياكل الوسم والتنزيل
+   (طلعوا مختفيين تمامًا في اللقطة). والأوتوماتيك بيدّي التاريخ
+   والوسم عرضهم الطبيعي والباقي للاسم. */
+.dlist .tbl{table-layout:auto}
+.dlist .tbl td:not(:first-child),.dlist .tbl th:not(:first-child){white-space:nowrap;width:1%}
 .dstat{display:inline-flex;align-items:center;gap:var(--sp-3);justify-content:flex-end}
 
 /* ── آخر إجراء تحت التعريف ── */
@@ -6296,12 +6337,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    اللي بتتداس في السيستم (`.agrq` · `.payq` · صفّ الجدول)، فالعين
    بتقراه «اضغط هنا» وبتستنى حاجة تحصل، وما بتحصلش. الأربعة اللي
    بتقول «كائن منفصل» (أرضية وحلقة وحوّاف ودايرة) بتتصرف حسب
-   الدور: المعلومة بتاخد **خط عند البداية** وبس، وهو الشكل اللي
-   السيستم بيقول بيه «اقرا» لا «اضغط». */
+   الدور: المعلومة نصّ بأيقونته وبس، بلا أرضية ولا حلقة ولا
+   شريط جانبي (شوف `.norail`). */
 .regwho{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0;
-  margin-top:var(--sp-4);padding:var(--sp-2) 0;
-  padding-inline-start:var(--sp-4);
-  border-inline-start:var(--sp-1) solid var(--edge-i)}
+  margin-top:var(--sp-4);padding:var(--sp-2) 0}
+.regwho>svg{color:var(--t3)}
 
 /* منطقة الرفع · حدّ متقطّع لأنه **مكان فاضي مستنّي حاجة**، وده
    الشكل الوحيد في السيستم اللي بيقول كده · باقي الحدود متصلة لأنها
@@ -6465,9 +6505,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .btree-r{box-shadow:inset 0 -1px 0 var(--edge-d)}
 .btree-r:last-child{box-shadow:none}
 .btree-r:hover{background:var(--fl-2)}
-/* البند اللي عليه ملاحظة · الحافة بتقول فيه حاجة والقايمة جنبه
-   بتقول إيه هي · اللون لوحده مش معلومة */
-.btree-r.no{box-shadow:inset 0 -1px 0 var(--edge-d),inset 2px 0 0 var(--no)}
+/* ⚠️ البند اللي عليه ملاحظة · **الملاحظة نفسها** معروضة جنبه،
+   والشريط الجانبي اتشال (شوف `.norail`). اللون لوحده ما كانش
+   معلومة أصلًا، والنصّ هو اللي بيقول. */
+.btree-r.no{box-shadow:inset 0 -1px 0 var(--edge-d)}
 .btree-r.off{color:var(--t3)}
 /* ⚠️ **الإزاحة كلاسات لا متغيّر سطري.**
    العمق داتا لا ستايل، فالمنطقي يتبعت كـ`style` — وده بيزوّد
@@ -6736,13 +6777,25 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
    محتواها مختلف الطول (اسم · تواريخ · شواهد · ملاحظة · زرارين)،
    والجدول بيجبرها كلها على نفس الارتفاع فتقرا شبكة فاضية. */
 .phtree{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0}
-.phase{min-width:0;border-radius:var(--r1);box-shadow:inset 0 0 0 1px var(--edge-1)}
+/* ⚠️ **الكارت ليه أرضية · مش شفاف.** كانت الترويسة وحدها
+   متملّية والجسم شفاف، فالكارت المفتوح كان بيتقري «نص كارت»:
+   شريط ملوّن وتحته كلام سايب على المِش. الأرضية دي نفس
+   `--g-card` بتاعة `.glass` · الكارت هنا هو نفسه الكارت اللي في
+   باقي السيستم، بس بترويسة بتتفتح وتتقفل. */
+.phase{min-width:0;border-radius:var(--r1);background:var(--g-card);
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 /* الترويسة زرار بعرض الصفّ · كلها منطقة ضغط لا السهم وحده */
+/* ⚠️ **والترويسة مش بتلبس لون تاني** · كانت `--fl-1` فوق كارت
+   شفاف فبانت شريطًا، ودلوقتي الكارت نفسه له أرضية فالترويسة
+   بتاخد منها · والتفرقة بالهوفر وحده. */
 .phase-h{display:flex;align-items:center;gap:var(--sp-3);width:100%;flex-wrap:wrap;
   padding:var(--sp-4) var(--sp-4);text-align:start;border-radius:var(--r1);
-  background:var(--fl-1);font-size:var(--fs-3);color:var(--t1)}
+  font-size:var(--fs-3);color:var(--t1)}
 .phase-h:hover{background:var(--fl-2)}
-.phase-h>svg{flex:none;color:var(--t3)}
+/* ⚠️ **السهم في آخر الصفّ** (طلب العميل · ١٨ سبتمبر) · `order`
+   بيحرّكه في العين والترتيب في الشجرة بيفضل زي ما هو، فقارئ
+   الشاشة لسه بيسمع «مطويّ/مفتوح» قبل اسم المرحلة. */
+.phase-h>svg{order:9;flex:none;margin-inline-start:auto;color:var(--t3)}
 /* رقم المرحلة · نفس خانة رقم الخطوة في الستيبر */
 .phase-n{flex:none;display:grid;place-items:center;width:22px;height:22px;
   border-radius:var(--rp);font-size:var(--fs-1);font-weight:700;
@@ -6758,12 +6811,18 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
    السطر الأول عن اللي تحته */
 .acts{list-style:none;margin:0;padding:0 var(--sp-4) var(--sp-4);
   display:flex;flex-direction:column;gap:var(--sp-4)}
+/* ⚠️ **الخطّ بين نشاط ونشاط · مش تحت العنوان.** أول نشاط كان
+   بياخد حدًّا علويًّا زي إخوانه، فطلع خطّ لاصق في ترويسة الكارت
+   أول ما تتفتح · وده مش فاصل بين حاجتين، ده خطّ تحت عنوان.
+   الفواصل اللي **بين** الأنشطة بتفضل زي ما هي. */
 .act{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0;
   padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
-/* النشاط اللي المساعد ودّى له · الوسم لحظي ومن الحافة لا بخلفية
-   بتغيّر لون النصّ اللي فوقه */
-.act.on{box-shadow:inset 0 1px 0 var(--edge-d), inset 2px 0 0 var(--solid)}
-.act.on{padding-inline-start:var(--sp-3)}
+.acts>.act:first-child{padding-top:0;box-shadow:none}
+/* ⚠️ النشاط اللي المساعد ودّى له · **أرضية هادية** لا شريط
+   جانبي (شوف `.norail`). الأرضية بتقول «ده اللي قصدته» من غير
+   ما تضيف خطًّا رابعًا على حافة الصفّ. */
+.act.on{background:var(--ctl-quiet-h);border-radius:var(--r1);
+  padding-inline:var(--sp-3)}
 .act-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
 .act-t{font-family:var(--fd);font-weight:500;font-size:var(--fs-3);color:var(--t1);
   min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -6779,9 +6838,9 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .act-f{flex:1;min-width:0;text-align:end;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .act-a{display:flex;gap:var(--sp-3);flex-wrap:wrap;margin-top:var(--sp-2)}
-/* المتأخّر · حدّ جانبي أحمر، والوسم في الصفّ بيقول السبب */
-.act.late{box-shadow:inset 0 1px 0 var(--edge-d), inset 2px 0 0 rgba(var(--noC),.55)}
-.act.late{padding-inline-start:var(--sp-3)}
+/* ⚠️ **المتأخّر ما بياخدش حدًّا أحمر** · الوسم «عدّى موعده» في
+   نفس الصفّ بيقول الحالة بالنصّ، والشريط كان بيكرّرها بلون
+   الخطر · واللون ده في السيستم للخطر لا للتأخير (شوف `.norail`). */
 
 /* ── طلبات التعديل الجوهري · قاعدة 21 ── */
 .plchg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-4)}

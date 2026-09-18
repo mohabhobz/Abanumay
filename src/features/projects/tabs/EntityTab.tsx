@@ -1,5 +1,5 @@
 import { Glass, Head, Tag, Mono, KV } from '@/components/ui'
-import { DocDownload, DocFile } from '@/components/docs'
+import { DocList } from '@/components/docs'
 import type { BankAccount, Entity } from '@/types/domain'
 
 export interface EntityTabProps {
@@ -44,38 +44,18 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
 
       <Glass>
         <Head title="مستندات الجهة" meta={`${uploaded} من ${E.docs.length}`} />
-        <div style={{ overflowX: 'auto' }}>
-          {/* بلا ترويسة أعمدة · نفس سبب جدول المرفقات: العنوان فوق
-              بيقولها، والخلية بتوصف نفسها. */}
-          <table className="tbl" aria-label="مستندات الجهة وحالتها">
-            <tbody>
-              {E.docs.map((d) => (
-                <tr key={d.name} className={d.uploaded ? '' : 'off'}>
-                  <td>
-                    {d.uploaded ? <DocFile name={d.name} download={false} /> : <span className="nmc sub">{d.name}</span>}
-                  </td>
-                  <td>
-                    <span className="dstat">
-                      {d.uploaded ? <Tag tone="ok">مرفوع</Tag> : <Tag tone="warn">ناقص</Tag>}
-                      {d.uploaded && <DocDownload name={d.name} />}
-                    </span>
-                  </td>
-                  <td className="n">
-                    {/* المرفوع يتقرا من مكانه (الملف نفسه زرار)، والناقص
-                        يتطلب من الجهة · مفيش صف بلا إجراء */}
-                    {d.uploaded ? (
-                      <span className="sub"> </span>
-                    ) : (
-                      <span className="rowf" style={{ justifyContent: 'flex-end' }}>
-                        <button className="lnk">اطلبه من الجهة</button>
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DocList
+          label="مستندات الجهة وحالتها"
+          rows={E.docs.map((d) => ({
+            name: d.name,
+            uploaded: d.uploaded,
+            /* المرفوع يتقرا من مكانه (الملف نفسه زرار)، والناقص
+               يتطلب من الجهة · مفيش صفّ بلا إجراء */
+            action: d.uploaded ? undefined : (
+              <button className="lnk">اطلبه من الجهة</button>
+            ),
+          }))}
+        />
         <div className="sub mt-3">
           خمسة مستندات ناقصة، منها تقرير الحوكمة وتقرير المراجع القانوني، وهي المدخلات التي
           تُبنى عليها درجة الحوكمة.
