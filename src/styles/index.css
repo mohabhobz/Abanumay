@@ -3099,7 +3099,15 @@ to{opacity:1;transform:none}
 /* القائمة اللي جوّه شريط الأدوات تلبس شكل الشريحة عشان الصفّ
    كله يبقى بلغة واحدة، من غير عنوان فوقها */
 .fsel.wide{grid-column:1 / -1}
-.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--sp-4) var(--sp-4);
+/* ⚠️ **`auto-fill` لا `auto-fit`، والفرق بينهم حقل بيمتدّ متر.**
+   `auto-fit` بيطبّق المسارات الفاضية وبيوزّع عرضها على الموجود ·
+   يعني عدد الأعمدة بيطلع من **عدد الفلاتر** لا من عرض الشاشة.
+   وصندوق طلبات التسجيل فيه فلتر متقدّم **واحد** («المنطقة»)،
+   فالقايمة كانت بتاخد عرض الشريط كله (٢٠٠٠px لقائمة مكتوب فيها
+   «الكل») · وجنبها في شاشة تانية نفس القائمة بـ١٩٠.
+   `auto-fill` بيسيب المسارات الفاضية فاضية، فالحقل بياخد مساره
+   وبس · والشاشات اللي فيها فلاتر كتير ما بتتغيّرش حرفًا. */
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:var(--sp-4) var(--sp-4);
   padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
 .fgrid-t{display:flex;align-items:flex-end;gap:var(--sp-3);flex-wrap:wrap}
 /* الفلاتر الشغّالة · كل واحدة تتشال لوحدها */
@@ -4749,7 +4757,11 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   box-shadow:inset 0 0 0 1px var(--edge-2), var(--el-3)}
 /* اللوحة اللي في آخر صفّ الفلاتر بتخرج من يمين الشاشة لو فتحت
    من البداية، فبتتعلّق بالنهاية بدلها */
-.fgrid>.fsel:nth-child(3n)>.fmenu{inset-inline-start:auto;inset-inline-end:0}
+/* ⚠️ كان `.fgrid>.fsel` · وأبناء الشبكة كلهم `.fgrid-i`، فالقاعدة
+   **ما كانتش بتنطبق ولا مرة** · لوحة آخر عمود بتخرج من الشاشة من
+   غير حارس. و`nth-child(3n)` كمان كان بيفترض تلات أعمدة ثابتة،
+   والشبكة بتتجاوب · فالحارس بقى على **آخر عمود فعليًّا**. */
+.fgrid-i:last-child>.fsel>.fmenu{inset-inline-start:auto;inset-inline-end:0}
 .fmenu-q{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3) var(--sp-3);margin-bottom:var(--sp-2);
   border-radius:var(--r1);background:rgba(var(--edgeC),.05)}
 .fmenu-q svg{color:var(--t3);flex:none}
