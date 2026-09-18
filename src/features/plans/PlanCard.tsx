@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { DateText, Icon, Mono, Num, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { isolate, pct } from '@/lib/format'
+import { isolate, units } from '@/lib/format'
 import {
   PLAN_TONE, lateActivities, planClaimed, planDone, planPlanned, planSpi,
   planStageLabel, spiSay, waitingReview,
@@ -12,17 +12,47 @@ import { PlanBar } from './PlanBar'
 /* ═══════════════════════════════════════════════════════════
    خطة واحدة، كقرار · نفس بناء كارت الاتفاقية بالحرف (`.agrq`).
 
-   ⚠️ **الشريط فيه علامة عند المخطَّط، لا نسبة وحدها.** «٦٠٪ منجَز»
+   ⚠️ **هيكل واحد لكل الكروت · والغايب بيقول إنه غايب.**
+
+   الكارت ده كان بيبني نفسه من الحالة: الشريط بيتحطّ لو الخطة
+   شغّالة، وسطر الجدول بيتحطّ معاه، وسطر التأخير بيتحطّ لو فيه
+   تأخير، والملاحظة لو فيه ملاحظة. يعني كارت المسودة كان **تلات
+   بلوكات** وكارت التنفيذ **ستة**، والاتنين جنب بعض في نفس الصندوق.
+
+   النتيجة اللي العميل شافها: صندوق كل كارت فيه بشكل تاني، ومحدش
+   يعرف يقارن اتنين ببعض، وزرار «افتح الخطة» بيقف في ارتفاع
+   مختلف في كل كارت.
+
+   **والإصلاح مش تنسيق، هو قرار في المحتوى:** الكارت بيجاوب
+   **نفس أربع أسئلة** في **نفس الترتيب** مهما كانت الحالة، والسؤال
+   اللي الخطة دي لسه ما وصلتش له بيتجاوب «لسه» لا بيتشال:
+
+     ١ · مين؟        الترويسة · المشروع والجهة وحجم الخطة
+     ٢ · فين؟        الحالة · الوسم ومين واقف والعمر
+     ٣ · ماشية إزاي؟ الشريط · أو «القياس ما بدأش» قبل الاعتماد
+     ٤ · فيه إيه؟    تلات إجابات ثابتة: الجدول · المراجعة · المواعيد
+
+   **الغياب مش إجابة** · ودي نفس القاعدة اللي المساعد اتصلّح عليها
+   (`QuickRead` كان بيختفي لمّا القراءات تفضى).
+
+   ⚠️ **والشريط فيه علامة عند المخطَّط، لا نسبة وحدها.** «٦٠٪ منجَز»
    لوحدها ما بتقولش حاجة: ٦٠ في مشروع لسه في نصّه ممتازة، و٦٠ في
-   مشروع باقي له شهر متأخّرة. العلامة بتحطّ المخطَّط لليوم على نفس
-   الشريط، فالفرق بيتشاف من غير ما المستخدم يحسب · نفس فكرة
-   `.bar.over` في تحليلات المشروع.
+   مشروع باقي له شهر متأخّرة.
 
    ⚠️ **والطبقة الفاتحة بين المقبول والمُعلَن هي الشغل المستنّي
-   مراجعة.** الجهة شايفاه إنجازًا والمؤسسة لسه لأ · والفرق ده هو
-   بالظبط اللي القاعدة 14 موجودة عشانه، فإخفاؤه بيخلّي الكارت
-   يقول نص الحقيقة.
+   مراجعة** · الفرق ده هو بالظبط اللي القاعدة 14 موجودة عشانه.
    ═══════════════════════════════════════════════════════════ */
+
+/** سطر إجابة واحد · نفس الشكل للتلاتة عشان العين تقارنهم */
+function Check({ ok, say, src }: { ok: boolean; say: React.ReactNode; src: React.ReactNode }) {
+  return (
+    <li className={ok ? 'ok' : 'no'}>
+      <Icon name={ok ? icons.check : icons.alert} size={13} />
+      <span>{say}</span>
+      <span className="payq-r">{src}</span>
+    </li>
+  )
+}
 
 export function PlanCard({ p }: { p: PlanRow }) {
   const done = planDone(p)
@@ -32,12 +62,18 @@ export function PlanCard({ p }: { p: PlanRow }) {
   const say = spiSay(spi)
   const queue = waitingReview(p).length
   const late = lateActivities(p).length
-  const live = p.stage === 'active' || p.stage === 'done'
   const days = Math.round(p.hoursInStage / 24)
   const acts = p.phases.reduce((s, ph) => s + ph.activities.length, 0)
+  const change = p.changes.some((c) => c.state === 'waiting')
+
+  /* ⚠️ **القياس بيبدأ من النسخة المرجعية لا من فتح الخطة.** قبل
+     الاعتماد مفيش «مخطَّط لليوم» يتقاس عليه، فأي نسبة هتبقى رقمًا
+     بلا مرجع · فالشريط بيتقال إنه لسه ما بدأش بدل ما يتشال. */
+  const measured = p.baseline > 0
 
   return (
     <article className="agrq glass">
+      {/* ── ١ · مين ── */}
       <header className="payq-h">
         <div className="payq-id">
           <Link className="payq-p" to={ROUTES.plan(p.id)}>{p.projectName}</Link>
@@ -46,71 +82,69 @@ export function PlanCard({ p }: { p: PlanRow }) {
             <span className="pc-dot" />
             {p.entityName}
             <span className="pc-dot" />
+            {/* ⚠️ الصفر بيتقال بجملته · «0 نشاطًا» بتقرا رقمًا،
+                و«بلا أنشطة» بتقول إن الخطة لسه فاضية */}
             <span className="payq-pay">
-              <Num>{p.phases.length}</Num> مراحل · <Num>{acts}</Num> نشاطًا
+              {acts === 0
+                ? 'بلا أنشطة'
+                : `${units.phase(p.phases.length)} · ${units.activity(acts)}`}
             </span>
           </div>
         </div>
-
-        <div className="payq-amt">
-          <b>{live ? <>{pct(done)}</> : <span className="sub">·</span>}</b>
-          <span className="payq-due sub">
-            {live ? 'مقبول' : planStageLabel(p.stage)}
-          </span>
-        </div>
       </header>
 
+      {/* ── ٢ · فين ──
+          ⚠️ **الوسم مرة واحدة بس.** كان مكتوبًا في ركن الترويسة
+          («مقبول») وتحت في الوسوم («قيد التنفيذ») · حاجتان بيقولوا
+          نفس الحاجة بكلمتين مختلفتين في نفس الكارت. */}
       <div className="payq-tags">
         <Tag tone={PLAN_TONE[p.stage]}>{planStageLabel(p.stage)}</Tag>
-        {p.baseline > 0
+        {measured
           ? <Tag tone="teal">النسخة المرجعية V<Num>{p.baseline}</Num></Tag>
-          : <span className="sub">في المرحلة <Num>{days}</Num> يومًا</span>}
+          : <span className="sub">في المرحلة دي <Num>{days}</Num> يومًا</span>}
         {/* ⚠️ «المشرف بالنيابة» مش تفصيلة إدارية · الوثيقة بتقول إن
             الجهة هي اللي بتكتب، فاللي اتكتب عنها بيتراجع بعين تانية */}
         {p.drafter === 'supervisor' && <Tag tone="ret">كتبها المشرف بالنيابة</Tag>}
+        {change && <Tag tone="warn">طلب تعديل مستنّي مدير المنح</Tag>}
       </div>
 
-      {live && (
-        <>
-          <PlanBar done={done} claim={claim} want={want} />
-        </>
+      {/* ── ٣ · ماشية إزاي · نفس المكان في كل كارت ── */}
+      {measured ? (
+        <PlanBar done={done} claim={claim} want={want} />
+      ) : (
+        <p className="sub plq-wait">
+          القياس بيبدأ بعد ما مدير المنح يعتمد النسخة المرجعية ·
+          قبلها مفيش مخطَّط لليوم يتقاس عليه.
+        </p>
       )}
 
-      {/* اللي بيمنع أو بيتأخّر · كل واحد بمصدره في الوثيقة */}
+      {/* ── ٤ · فيه إيه · تلات إجابات ثابتة بنفس الترتيب ── */}
       <ul className="payq-ck">
-        {live && (
-          <li className={say.tone === 'ok' ? 'ok' : 'no'}>
-            <Icon name={say.tone === 'ok' ? icons.check : icons.alert} size={13} />
-            <span>
-              {say.say}
-              {spi !== null && <> · أداء الجدول <span className="num">{spi.toFixed(2)}</span></>}
-            </span>
-            <span className="payq-r">SPI</span>
-          </li>
-        )}
-        <li className={queue === 0 ? 'ok' : 'no'}>
-          <Icon name={queue === 0 ? icons.check : icons.alert} size={13} />
-          <span>
-            {queue === 0
-              ? 'مفيش نشاط مستنّي مراجعة'
-              : <><Num>{queue}</Num> نشاطًا مستنّي قبولك · مش محسوب في النسبة</>}
-          </span>
-          <span className="payq-r">قاعدة <Num>14</Num></span>
-        </li>
-        {late > 0 && (
-          <li className="no">
-            <Icon name={icons.alert} size={13} />
-            <span><Num>{late}</Num> نشاطًا عدّى موعده وما اتقبلش</span>
-            <span className="payq-r">V<Num>{p.baseline}</Num></span>
-          </li>
-        )}
-        {p.changes.some((c) => c.state === 'waiting') && (
-          <li className="no">
-            <Icon name={icons.alert} size={13} />
-            <span>طلب تعديل جوهري مستنّي مدير المنح</span>
-            <span className="payq-r">قاعدة <Num>21</Num></span>
-          </li>
-        )}
+        <Check
+          ok={measured ? say.tone === 'ok' : true}
+          say={measured
+            ? <>{say.say}{spi !== null && <> · أداء الجدول <span className="num">{spi.toFixed(2)}</span></>}</>
+            : 'لسه ما بدأش القياس'}
+          src="الجدول"
+        />
+        <Check
+          ok={queue === 0}
+          say={queue === 0
+            ? 'مفيش نشاط مستنّي مراجعة'
+            /* ⚠️ الجملة قصيرة عن قصد · السطر بيتقصّ بتلات نقط لو
+               طال (عشان الصفوف تفضل بارتفاع واحد)، والمقصوص بيضيّع
+               المعلومة نفسها. و«مش محسوب في النسبة» مقولة أصلًا في
+               عمود المصدر: «قاعدة 14». */
+            : <><Num>{queue}</Num> نشاطًا مستنّي قبولك</>}
+          src={<>قاعدة <Num>14</Num></>}
+        />
+        <Check
+          ok={late === 0}
+          say={late === 0
+            ? 'مفيش نشاط عدّى موعده'
+            : <><Num>{late}</Num> نشاطًا عدّى موعده</>}
+          src="المواعيد"
+        />
       </ul>
 
       {p.note && (

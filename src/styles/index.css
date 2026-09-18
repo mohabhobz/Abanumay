@@ -4338,6 +4338,13 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 .agrq{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0;
   padding:var(--sp-4) var(--sp-5) var(--sp-5)}
 .agrq .payq-f{margin-top:auto}
+/* ⚠️ **مكان الشريط بيفضل محجوز حتى قبل ما القياس يبدأ.** الخطة
+   اللي لسه ما اتعتمدتش مالهاش مخطَّط لليوم تتقاس عليه، فالشريط
+   بيتقال بدل ما يتشال · والارتفاع بيفضل هو هو فالكروت جنب بعض
+   تفضل تتقارن سطرًا بسطر (وده كان أول اللي العميل شافه: كارت
+   بتلات بلوكات وجنبه كارت بستة). */
+.plq-wait{margin:0;min-height:38px;display:flex;align-items:center;
+  font-size:var(--fs-1);line-height:var(--lh-long)}
 
 
 /* ═══ تقرير المتأخر والمتعثر ═══ */
