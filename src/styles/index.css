@@ -4779,8 +4779,14 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 .fmenu{position:absolute;top:calc(100% + .35rem);inset-inline-start:0;z-index:60;
   min-width:100%;max-width:min(300px,80vw);width:max-content;
   display:flex;flex-direction:column;padding:var(--sp-2);border-radius:var(--r1);
-  background:var(--g-pop);
-  -webkit-backdrop-filter:var(--mat-3);backdrop-filter:var(--mat-3);
+  /* ⚠️ **اللوحة معتمة · مش زجاج** (طلب العميل · ١٨ سبتمبر).
+     كانت `--g-pop` بألفا ٠٫٩٢ + طمس · والـ٨٪ الباقية بتورّي اللي
+     تحتها: في تسجيل الجهة كان بيبان «الخطوة الحالية» وشريط التقدّم
+     من ورا القايمة، والأسماء بتتقري على خلفية بتتغيّر حسب اللي
+     صادف تحتها · يعني نفس الخيار بلون خلفية مختلف في كل صفحة.
+     `--pop` هو نفس اللون بالظبط بس معتم، والطمس اتشال معاه لأنه
+     بيرسم حاجة مش هتبان · حساب ضايع في كل فتحة. */
+  background:var(--pop);
   box-shadow:inset 0 0 0 1px var(--edge-2), var(--el-3)}
 /* اللوحة اللي في آخر صفّ الفلاتر بتخرج من يمين الشاشة لو فتحت
    من البداية، فبتتعلّق بالنهاية بدلها */
@@ -4802,7 +4808,13 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 .fopt:hover{background:rgba(var(--edgeC),.06)}
 .fopt-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* المربّع بيفضل مرسوم وهو فاضي: مكانه بيقول إن الاختيار متعدد */
-.fopt-x{flex:none;display:grid;place-items:center;width:16px;height:16px;border-radius:var(--r0);
+/* ⚠️ **العلامة في نهاية الصفّ · والكلام بيبدأ من أوّله** (طلب
+   العميل · ١٨ سبتمبر). كانت في البداية · يعني على اليمين في
+   العربي · فالأسماء بتبدأ مزحزحة ٢٨px والعين بتدوّر على أوّل
+   الكلمة بدل ما تلاقيها عند حافة واحدة. `order` بيحرّك الخانة من
+   غير ما يتغيّر ترتيب الـDOM، فقارئ الشاشة بيسمع الحالة قبل
+   الاسم زي ما هو. والقاعدة واحدة للاختيار الواحد والمتعدد. */
+.fopt-x{order:9;flex:none;display:grid;place-items:center;width:16px;height:16px;border-radius:var(--r0);
   color:var(--on-solid);background:var(--fl-5);
   box-shadow:inset 0 0 0 1px var(--edge-i)}
 .fopt.on .fopt-x{background:var(--solid);box-shadow:none}
@@ -4837,6 +4849,38 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
    بخلفيتها وركنها وظلّها. اللي بقي خاصّ بيها إنها **بتفتح لفوق**،
    لأن مكانها في تذييل الصفحة. */
 .fmenu.up{top:auto;bottom:calc(100% + .35rem)}
+
+/* ═══ التقويم · لوحة السيستم لا لوحة المتصفّح ═══
+   ⚠️ **`<input type="date">` بيفتح تقويمًا بيرسمه المتصفّح** ·
+   نفس مشكلة `<select>` الأصلية اللي اتشالت من زمان، وفضلت في
+   عشر مواضع تاريخ لحدّ ما العميل شافها (١٨ سبتمبر): خطّ لاتيني،
+   وأسماء أيام إنجليزية، و`dd/mm/yyyy` في حقل عربي، وشكل تالت
+   في الويندوز. فاللوحة هنا `.fmenu` زي أي قائمة، والشبكة جوّاها.
+
+   ⚠️ **والعرض ثابت** · التقويم اللي بيتمدّد مع الحقل بيبقى
+   مستطيلًا بخلايا مفلطحة، والشهر بيتقري شبكة غريبة. */
+.fmenu.cal{width:268px;max-width:none;padding:var(--sp-3);gap:var(--sp-3)}
+.cal-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
+.cal-t{font-weight:600;font-size:var(--fs-2)}
+.cal-n{display:grid;place-items:center;width:28px;height:28px;border-radius:var(--r1);
+  color:var(--t2)}
+.cal-n:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
+/* أسماء الأيام · أهدى نبرة في اللوحة، هي مسطرة لا بيانات */
+.cal-w,.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--sp-1)}
+.cal-w>span{display:grid;place-items:center;height:22px;
+  font-size:var(--fs-0);color:var(--t3)}
+.cal-d{display:grid;place-items:center;height:32px;border-radius:var(--r1);
+  font-size:var(--fs-1);color:var(--t1)}
+.cal-d:hover:not(:disabled){background:rgba(var(--edgeC),.07)}
+.cal-d:disabled{color:var(--t3);opacity:.4;cursor:not-allowed}
+.cal-d.off{pointer-events:none}
+/* ⚠️ النهارده **بحلقة** والمختار **بملء** · الاتنين لازم يتفرّقوا
+   وهما جنب بعض: لو الاتنين ملء، المستخدم ما يعرفش أنهي واحد
+   اختياره · ولو الاتنين حلقة، الاختيار ما بيبانش. */
+.cal-d.now{box-shadow:inset 0 0 0 1px var(--edge-i)}
+.cal-d.on{background:var(--solid);color:var(--on-solid);font-weight:600}
+.cal-d.on:hover{background:var(--solid)}
+.cal-f{display:flex;align-items:center;gap:var(--sp-4);justify-content:center}
 .psize-m{min-width:100%}
 @media (max-width:640px){
   .pager{justify-content:center}
@@ -6131,6 +6175,12 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* حقل بياخد الصفّ كله · الوصف والشرائح محتاجين عرضًا، والحشرهم في
    عمود من تلاتة بيخلّي النصّ يلفّ على أربع كلمات في السطر */
 .regf-w{grid-column:1 / -1}
+/* ⚠️ **يبدأ صفًّا جديدًا** · الحقول اللي بتتقري سوا تبان سوا.
+   المنطقة والمدينة ورقم الترخيص كانوا بيتلفّوا على سطرين فالمنطقة
+   بتقف جنب «جهة الإشراف الفني» اللي مالهاش علاقة بيها (العميل
+   شافها · ١٨ سبتمبر). و`grid-column-start:1` مع شبكة متجاوبة
+   بيضمن البداية مهما كان عدد الأعمدة. */
+.regf-nl{grid-column-start:1}
 /* ⚠️ الـ`textarea` جوّه نفس `.fld` بتاعة الحقول التانية · حقل
    بحلقة تركيز مختلفة بيبان غريبًا جنب إخواته، والحلقة دي مفحوصة
    في `ctlaudit` */
@@ -6241,9 +6291,17 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .regdocs-m{flex:none;font-size:var(--fs-1)}
 
 /* مين بيرفع · سطر بوش، لأن الإجابة **شخص** لا إعداد */
+/* ⚠️ **ده معلومة مش زرار** (العميل شافه · ١٨ سبتمبر).
+   كان أرضية كاملة + حلقة ١px + `--ric` · وده بالحرف شكل الصفوف
+   اللي بتتداس في السيستم (`.agrq` · `.payq` · صفّ الجدول)، فالعين
+   بتقراه «اضغط هنا» وبتستنى حاجة تحصل، وما بتحصلش. الأربعة اللي
+   بتقول «كائن منفصل» (أرضية وحلقة وحوّاف ودايرة) بتتصرف حسب
+   الدور: المعلومة بتاخد **خط عند البداية** وبس، وهو الشكل اللي
+   السيستم بيقول بيه «اقرا» لا «اضغط». */
 .regwho{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0;
-  margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
-  background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1)}
+  margin-top:var(--sp-4);padding:var(--sp-2) 0;
+  padding-inline-start:var(--sp-4);
+  border-inline-start:var(--sp-1) solid var(--edge-i)}
 
 /* منطقة الرفع · حدّ متقطّع لأنه **مكان فاضي مستنّي حاجة**، وده
    الشكل الوحيد في السيستم اللي بيقول كده · باقي الحدود متصلة لأنها

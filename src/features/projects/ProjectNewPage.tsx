@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem,
+  DateField, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -120,7 +120,7 @@ function PField({
         </span>
       ) : f.kind === 'date' ? (
         <span className="fld">
-          <input type="date" value={value} onChange={(e) => onChange(e.target.value)} aria-label={f.label} />
+          <DateField value={value} onChange={onChange} label={f.label} />
         </span>
       ) : (
         <span className="fld">

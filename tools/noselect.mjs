@@ -1,10 +1,11 @@
 /**
- * قواعد الواجهة اللي بقت فحصًا · تلاتة.
+ * قواعد الواجهة اللي بقت فحصًا · خمسة.
  *
  * ١ · ممنوع `<select>` الأصلية في الواجهة.
  * ٢ · وممنوع `label` على قائمة جوّه شريط الأدوات.
  * ٣ · وممنوع `**` في نصّ JSX · ده مش ماركداون.
  * ٤ · وممنوع المساعد يختفي لمّا القراءات تفضى.
+ * ٥ · وممنوع `type="date"` · تقويم المتصفّح زي قايمته بالظبط.
  *
  * ⚠️ **دي قاعدة كانت مكتوبة في مكان وناقصة في التاني، وعشان كده
  * رجعت.** `Select` بتاعة شريط الأدوات اتشالت منها `<select>` من
@@ -92,15 +93,29 @@ const MD_OK = 'components/assistant/md.tsx'
  */
 const ASSIST = ['components/assistant/QuickRead.tsx', 'components/assistant/AnalysisCard.tsx']
 
+/**
+ * ⚠️ **`<input type="date">` هي نفس عطل `<select>` بالحرف.**
+ * التقويم بيرسمه **المتصفّح**: خطّ لاتيني، وأسماء أيام إنجليزية،
+ * و`dd/mm/yyyy` مكتوبة في حقل عربي فاضي، وشكل تالت في الويندوز.
+ * لمّا شِلنا `<select>` وكتبنا الفحص، ما سألناش عن التاريخ ·
+ * فعشر مواضع فضلت نيتيف لحدّ ما العميل شافها (١٨ سبتمبر).
+ *
+ * والدرس اللي بيتكرّر: **الفحص بيمسك اللي اتسأل عنه بس** ·
+ * فالسؤال هنا اتوسّع لكل تحكّم بترسمه المنصّة بدلنا.
+ */
+const DATE = /<input[^>]*type=["']date["']/
+
 const hits = []
 const labels = []
 const stars = []
 const vanish = []
+const dates = []
 for (const f of walk(SRC)) {
   const rel = path.relative(SRC, f)
   const clean = strip(fs.readFileSync(f, 'utf8'))
   clean.split('\n').forEach((line, i) => {
     if (/<select[\s>]/.test(line)) hits.push(`${rel}:${i + 1}`)
+    if (DATE.test(line) || /^\s*type=["']date["']/.test(line)) dates.push(`${rel}:${i + 1}`)
     if (f.endsWith('.tsx') && rel !== MD_OK && line.includes('**')) {
       stars.push(`${rel}:${i + 1}  ${line.trim().slice(0, 70)}`)
     }
@@ -143,5 +158,11 @@ if (vanish.length) {
   for (const l of vanish) console.log(`   ${l}`)
   console.log('   استعمل `empty` وقول «مفيش ملاحظات» بدل ما يتشال')
 }
+if (dates.length) {
+  bad = true
+  console.log(`\n🔴 \`type="date"\` أصلية · ${dates.length} موضع`)
+  for (const d of dates) console.log(`   ${d}`)
+  console.log('   البديل: <DateField> · تقويم السيستم بأرقام لاتينية')
+}
 if (bad) process.exit(1)
-console.log('\n✅ القوايم والشريط والنصّ والمساعد · كلهم على القاعدة\n')
+console.log('\n✅ القوايم والتواريخ والشريط والنصّ والمساعد · كلهم على القاعدة\n')

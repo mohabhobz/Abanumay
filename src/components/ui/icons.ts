@@ -25,7 +25,7 @@ import {
   Plus, EllipsisVertical, Pin, Pencil, Trash2, Menu, ArrowDown, Download,
   Copy, Check, RotateCw, ThumbsUp, ThumbsDown, GripVertical, ChevronDown,
   Sparkles, ArrowDownWideNarrow, ChevronUp, LayoutGrid, Rows3, Funnel,
-  Clock, MapPin, Users, Link2, ListChecks,
+  Clock, MapPin, Users, Link2, ListChecks, CalendarDays,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -58,6 +58,8 @@ export const icons = {
   /* RTL: `chevron` بيشاور «لقدّام» يعني شمال، و`chevronBack` يمين */
   chevron: ChevronLeft,
   chevronBack: ChevronRight,
+  /* التاريخ · حقل التقويم المرسوم (لا تقويم المتصفّح) */
+  date: CalendarDays,
   search: Search,
   file: File,
   clip: Paperclip,

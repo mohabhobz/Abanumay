@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useMenu } from '@/hooks/useMenu'
-import { Icon, icons } from '@/components/ui'
+import { Icon, icons, MenuOpt, MenuPanel } from '@/components/ui'
 import { nf } from '@/lib/format'
 import {
   aggregate, allPaths, countLeaves, defaultCols, groupTree, orderCols,
@@ -583,34 +583,26 @@ function ColumnPicker<T>({
       </button>
 
       {open && (
-        <div className="fmenu tcolm">
-          <div className="fmenu-l" role="listbox" aria-multiselectable="true">
-            {all.map((c) => {
-              const sel = cols.includes(c.key)
-              return (
-                <button
-                  type="button"
-                  key={c.key}
-                  role="option"
-                  aria-selected={sel}
-                  disabled={c.fixed}
-                  className={`fopt${sel ? ' on' : ''}${c.fixed ? ' fix' : ''}`}
-                  onClick={() => !c.fixed && toggle(c.key)}
-                >
-                  <span className="fopt-x" aria-hidden="true">
-                    {sel && <Icon name={icons.check} size={12} />}
-                  </span>
-                  <span className="fopt-t">{c.label}</span>
-                </button>
-              )
-            })}
-          </div>
-          <div className="fmenu-f">
+        <MenuPanel
+          extra="tcolm"
+          foot={
             <button type="button" className="fclear" onClick={() => onCols(defaultCols(all))}>
               أعِد الأعمدة الافتراضية
             </button>
-          </div>
-        </div>
+          }
+        >
+          {all.map((c) => (
+            <MenuOpt
+              key={c.key}
+              on={cols.includes(c.key)}
+              fix={c.fixed}
+              off={c.fixed}
+              onPick={() => toggle(c.key)}
+            >
+              {c.label}
+            </MenuOpt>
+          ))}
+        </MenuPanel>
       )}
     </div>
   )

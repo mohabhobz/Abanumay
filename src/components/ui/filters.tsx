@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useMenu } from '@/hooks/useMenu'
+import { MenuOpt, MenuPanel, useMenuSearch } from './menu'
 import { Tabs } from './primitives'
 import { Face } from './Person'
 import { Icon } from './Icon'
@@ -110,10 +111,8 @@ export function Select({
   allowEmpty = true, searchAt = 9, people,
 }: SelectProps) {
   const { open, setOpen, box } = useMenu<HTMLDivElement>()
-  const [needle, setNeedle] = useState('')
+  const { needle, setNeedle, search } = useMenuSearch(open, searchAt, options.length)
   const id = useId()
-
-  useEffect(() => { if (!open) setNeedle('') }, [open])
 
   const current = options.find((o) => optValue(o) === value)
   const summary = current ? optLabel(current) : all
@@ -175,62 +174,41 @@ export function Select({
       </button>
 
       {open && (
-        <div className="fmenu one">
-          {options.length > searchAt && (
-            <label className="fmenu-q">
-              <Icon name={icons.search} size={14} />
-              <input
-                autoFocus
-                value={needle}
-                onChange={(e) => setNeedle(e.target.value)}
-                placeholder="ابحث…"
-                aria-label="ابحث في الخيارات"
-              />
-            </label>
-          )}
-
-          <div className="fmenu-l" role="listbox">
+        <MenuPanel
+          one
+          search={search}
+          needle={needle}
+          onNeedle={setNeedle}
+          empty={shown.length === 0}
+        >
+          <>
             {allowEmpty && !needle && (
-              <button
-                type="button"
-                role="option"
-                aria-selected={!value}
-                className={`fopt${!value ? ' on' : ''}`}
-                onClick={() => pick(undefined)}
+              <MenuOpt
+                on={!value}
+                onPick={() => pick(undefined)}
+                /* ⚠️ «الكل» مش شخص فمالوش وش — **لكن له خانته**.
+                   من غير الفراغ ده اسمه بيبدأ ٢٨px يمين باقي
+                   الأسماء، فالقايمة بتتقرا مسنّنة. */
+                lead={people ? <span className="prs-gap" aria-hidden="true" /> : undefined}
               >
-                <span className="fopt-x" aria-hidden="true">
-                  {!value && <Icon name={icons.check} size={12} />}
-                </span>
-                {/* ⚠️ «الكل» مش شخص فمالوش وش — **لكن له خانته**.
-                    من غير الفراغ ده اسمه بيبدأ ٢٨px يمين باقي
-                    الأسماء، فالقايمة بتتقرا مسنّنة. */}
-                {people && <span className="prs-gap" aria-hidden="true" />}
-                <span className="fopt-t">{all}</span>
-              </button>
+                {all}
+              </MenuOpt>
             )}
-            {shown.length === 0 && <div className="fmenu-e sub">لا نتائج</div>}
             {shown.map((o) => {
               const val = optValue(o)
-              const sel = val === value
               return (
-                <button
-                  type="button"
+                <MenuOpt
                   key={val}
-                  role="option"
-                  aria-selected={sel}
-                  className={`fopt${sel ? ' on' : ''}`}
-                  onClick={() => pick(val)}
+                  on={val === value}
+                  onPick={() => pick(val)}
+                  lead={people ? <Face name={val} /> : undefined}
                 >
-                  <span className="fopt-x" aria-hidden="true">
-                    {sel && <Icon name={icons.check} size={12} />}
-                  </span>
-                  {people && <Face name={optValue(o)} />}
-                  <span className="fopt-t">{optLabel(o)}</span>
-                </button>
+                  {optLabel(o)}
+                </MenuOpt>
               )
             })}
-          </div>
-        </div>
+          </>
+        </MenuPanel>
       )}
     </div>
   )
@@ -276,10 +254,8 @@ export function MultiSelect({
   label, values, options, onChange, all = 'الكل', disabled, wide, icon, searchAt = 9, people,
 }: MultiSelectProps) {
   const { open, setOpen, box } = useMenu<HTMLDivElement>()
-  const [needle, setNeedle] = useState('')
+  const { needle, setNeedle, search } = useMenuSearch(open, searchAt, options.length)
   const id = useId()
-
-  useEffect(() => { if (!open) setNeedle('') }, [open])
 
   const on = values.length > 0
   const labelOf = (val: string) =>
@@ -340,52 +316,31 @@ export function MultiSelect({
       </button>
 
       {open && (
-        <div className="fmenu">
-          {options.length > searchAt && (
-            <label className="fmenu-q">
-              <Icon name={icons.search} size={14} />
-              <input
-                autoFocus
-                value={needle}
-                onChange={(e) => setNeedle(e.target.value)}
-                placeholder="ابحث…"
-                aria-label="ابحث في الخيارات"
-              />
-            </label>
-          )}
-
-          <div className="fmenu-l" role="listbox" aria-multiselectable="true">
-            {shown.length === 0 && <div className="fmenu-e sub">لا نتائج</div>}
-            {shown.map((o) => {
-              const val = optValue(o)
-              const sel = values.includes(val)
-              return (
-                <button
-                  type="button"
-                  key={val}
-                  role="option"
-                  aria-selected={sel}
-                  className={`fopt${sel ? ' on' : ''}`}
-                  onClick={() => toggle(val)}
-                >
-                  <span className="fopt-x" aria-hidden="true">
-                    {sel && <Icon name={icons.check} size={12} />}
-                  </span>
-                  {people && <Face name={optValue(o)} />}
-                  <span className="fopt-t">{optLabel(o)}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          {on && (
-            <div className="fmenu-f">
-              <button type="button" className="fclear" onClick={() => onChange([])}>
-                مسح الاختيار
-              </button>
-            </div>
-          )}
-        </div>
+        <MenuPanel
+          search={search}
+          needle={needle}
+          onNeedle={setNeedle}
+          empty={shown.length === 0}
+          foot={on ? (
+            <button type="button" className="fclear" onClick={() => onChange([])}>
+              مسح الاختيار
+            </button>
+          ) : undefined}
+        >
+          {shown.map((o) => {
+            const val = optValue(o)
+            return (
+              <MenuOpt
+                key={val}
+                on={values.includes(val)}
+                onPick={() => toggle(val)}
+                lead={people ? <Face name={val} /> : undefined}
+              >
+                {optLabel(o)}
+              </MenuOpt>
+            )
+          })}
+        </MenuPanel>
       )}
     </div>
   )
@@ -506,27 +461,22 @@ export function PageSize({
           <Icon name={icons.chevronDown} size={14} />
         </button>
 
+        {/* نفس صفّ الخيار في أي قائمة تانية: علامة على المختار
+            ومساحة محجوزة على الباقي. كانت الأرقام متراكزة بلا
+            علامة · شكل رابع لنفس الصفّ. */}
         {open && (
-          <div className="fmenu one up psize-m" role="listbox">
+          <MenuPanel one up extra="psize-m">
             {options.map((n) => (
-              <button
-                type="button"
+              <MenuOpt
                 key={n}
-                role="option"
-                aria-selected={n === value}
-                className={`fopt${n === value ? ' on' : ''}`}
-                onClick={() => { setOpen(false); if (n !== value) onChange(n) }}
+                on={n === value}
+                onPick={() => { setOpen(false); if (n !== value) onChange(n) }}
+                textClass="num"
               >
-                {/* نفس صفّ الخيار في أي قائمة تانية: علامة على
-                    المختار ومساحة محجوزة على الباقي. كانت الأرقام
-                    متراكزة بلا علامة · شكل رابع لنفس الصفّ. */}
-                <span className="fopt-x" aria-hidden="true">
-                  {n === value && <Icon name={icons.check} size={12} />}
-                </span>
-                <span className="fopt-t num">{n}</span>
-              </button>
+                {n}
+              </MenuOpt>
             ))}
-          </div>
+          </MenuPanel>
         )}
       </div>
       <span className="sub">صفًّا</span>
@@ -730,41 +680,39 @@ export function GroupPicker({
       </button>
 
       {open && (
-        <div className="fmenu">
-          <div className="fmenu-l" role="listbox" aria-multiselectable="true">
-            {options.map((o) => {
-              const at = chain.indexOf(o.value)
-              const sel = at >= 0
-              return (
-                <button
-                  type="button"
-                  key={o.value}
-                  role="option"
-                  aria-selected={sel}
-                  disabled={!sel && full}
-                  className={`fopt${sel ? ' on' : ''}`}
-                  onClick={() => toggle(o.value)}
-                  title={sel ? `المستوى ${at + 1}` : full ? `السقف ${max} مستويات` : 'أضف مستوى'}
-                >
-                  {/* ⚠️ **رقم لا علامة صحّ.** علامة الصحّ بتقول
-                      «مختار»، والمستخدم محتاج يعرف **أب ولا ابن** ·
-                      وده اللي بيحدّد السؤال اللي الجدول بيجاوبه. */}
-                  <span className="fopt-x num" aria-hidden="true">{sel ? at + 1 : ''}</span>
-                  <span className="fopt-t">{o.label}</span>
+        <MenuPanel
+          foot={
+            <>
+              {full && <span className="sub">السقف <span className="num">{max}</span> مستويات · تحتها المجموعة بتبقى صفًّا</span>}
+              {chain.length > 0 && (
+                <button type="button" className="fclear" onClick={() => onChange(undefined)}>
+                  إلغاء التجميع
                 </button>
-              )
-            })}
-          </div>
-
-          <div className="fmenu-f">
-            {full && <span className="sub">السقف <span className="num">{max}</span> مستويات · تحتها المجموعة بتبقى صفًّا</span>}
-            {chain.length > 0 && (
-              <button type="button" className="fclear" onClick={() => onChange(undefined)}>
-                إلغاء التجميع
-              </button>
-            )}
-          </div>
-        </div>
+              )}
+            </>
+          }
+        >
+          {options.map((o) => {
+            const at = chain.indexOf(o.value)
+            const sel = at >= 0
+            return (
+              /* ⚠️ **رقم لا علامة صحّ.** علامة الصحّ بتقول «مختار»،
+                 والمستخدم محتاج يعرف **أب ولا ابن** · وده اللي
+                 بيحدّد السؤال اللي الجدول بيجاوبه. */
+              <MenuOpt
+                key={o.value}
+                on={sel}
+                off={!sel && full}
+                onPick={() => toggle(o.value)}
+                title={sel ? `المستوى ${at + 1}` : full ? `السقف ${max} مستويات` : 'أضف مستوى'}
+                mark={sel ? at + 1 : ''}
+                markClass="num"
+              >
+                {o.label}
+              </MenuOpt>
+            )
+          })}
+        </MenuPanel>
       )}
     </div>
   )

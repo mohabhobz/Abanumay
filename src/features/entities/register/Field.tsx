@@ -20,7 +20,7 @@ export function Field({
   const locked = Boolean(f.dependsOn) && !parent
 
   return (
-    <label className="regf">
+    <label className={`regf${f.wide ? ' regf-w' : ''}${f.nl ? ' regf-nl' : ''}`}>
       <span className="lb">
         {f.label}
         {f.req && <b className="regf-r" aria-label="إلزامي">*</b>}

@@ -1,6 +1,7 @@
-import { useEffect, useId, useState } from 'react'
+import { useId } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { optLabel, optValue, type SelectOption } from './filters'
+import { MenuOpt, MenuPanel, useMenuSearch } from './menu'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
@@ -44,10 +45,8 @@ export function FieldSelect({
   value, options, onChange, placeholder = 'اختر', disabled, label, searchAt = 9, end,
 }: FieldSelectProps) {
   const { open, setOpen, box } = useMenu<HTMLSpanElement>()
-  const [needle, setNeedle] = useState('')
+  const { needle, setNeedle, search } = useMenuSearch(open, searchAt, options.length)
   const id = useId()
-
-  useEffect(() => { if (!open) setNeedle('') }, [open])
 
   const current = options.find((o) => optValue(o) === value)
   const shown = needle
@@ -73,43 +72,23 @@ export function FieldSelect({
       </button>
 
       {open && (
-        <div className="fmenu one">
-          {options.length > searchAt && (
-            <label className="fmenu-q">
-              <Icon name={icons.search} size={14} />
-              <input
-                autoFocus
-                value={needle}
-                onChange={(e) => setNeedle(e.target.value)}
-                placeholder="ابحث…"
-                aria-label="ابحث في الخيارات"
-              />
-            </label>
-          )}
-
-          <div className="fmenu-l" role="listbox">
-            {shown.length === 0 && <div className="fmenu-e sub">لا نتائج</div>}
-            {shown.map((o) => {
-              const val = optValue(o)
-              const sel = val === value
-              return (
-                <button
-                  type="button"
-                  key={val}
-                  role="option"
-                  aria-selected={sel}
-                  className={`fopt${sel ? ' on' : ''}`}
-                  onClick={() => { onChange(val); setOpen(false) }}
-                >
-                  <span className="fopt-x" aria-hidden="true">
-                    {sel && <Icon name={icons.check} size={12} />}
-                  </span>
-                  <span className="fopt-t">{optLabel(o)}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <MenuPanel
+          one
+          search={search}
+          needle={needle}
+          onNeedle={setNeedle}
+          empty={shown.length === 0}
+        >
+          {shown.map((o) => (
+            <MenuOpt
+              key={optValue(o)}
+              on={optValue(o) === value}
+              onPick={() => { onChange(optValue(o)); setOpen(false) }}
+            >
+              {optLabel(o)}
+            </MenuOpt>
+          ))}
+        </MenuPanel>
       )}
     </span>
   )

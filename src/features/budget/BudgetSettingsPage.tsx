@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, DateText, Glass, Head, Icon, icons, Mono, Num, Tabs, Tag,
+  DateField, BackTo, DateText, Glass, Head, Icon, icons, Mono, Num, Tabs, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -114,13 +114,13 @@ export default function BudgetSettingsPage() {
                   <label className="regf">
                     <span className="lb">من تاريخ</span>
                     <span className="fld">
-                      <input type="date" value={yFrom} onChange={(e) => setYFrom(e.target.value)} aria-label="من تاريخ" />
+                      <DateField value={yFrom} onChange={setYFrom} label="من تاريخ" />
                     </span>
                   </label>
                   <label className="regf">
                     <span className="lb">إلى تاريخ</span>
                     <span className="fld">
-                      <input type="date" value={yTo} onChange={(e) => setYTo(e.target.value)} aria-label="إلى تاريخ" />
+                      <DateField value={yTo} onChange={setYTo} label="إلى تاريخ" min={yFrom || undefined} />
                     </span>
                   </label>
                   <button

@@ -164,6 +164,30 @@ export interface RegField {
   options?: readonly string[]
   /** الخيارات تابعة لقيمة حقل تاني · زي المدينة والمنطقة */
   dependsOn?: string
+  /**
+   * يبدأ صفًّا جديدًا في الشبكة.
+   *
+   * ⚠️ **الحقول اللي بتتقري سوا لازم تبان سوا.** المنطقة والمدينة
+   * ورقم الترخيص تلاتتهم بيوصفوا **مكان الجهة وتصريحها**، والشبكة
+   * كانت بتلفّهم على سطرين (المنطقة آخر السطر الأول، والمدينة
+   * والترخيص في اللي بعده) · فالمستخدم بيقرا المنطقة مع «جهة
+   * الإشراف» وهي مالهاش علاقة بيها. العميل شافها.
+   *
+   * والعلامة على الحقل لا عدد أعمدة على الخطوة، لأن الشبكة
+   * بتتجاوب: عدد الأعمدة بيتغيّر مع العرض، والمطلوب إن **البداية**
+   * تكون هنا مهما كان العدد.
+   */
+  nl?: boolean
+  /**
+   * الحقل بياخد الصفّ كله.
+   *
+   * ⚠️ **«جهة الإشراف الفني» اسمها أطول من عمود.** «المركز الوطني
+   * لتنمية القطاع غير الربحي» كان بيتقصّ بتلات نقط في حقل من
+   * أربعة أعمدة · والمستخدم ما بيعرفش اختار مين. وبما إنه بياخد
+   * الصفّ كله، الصفّ اللي بعده بيبدأ نضيف · فالمنطقة والمدينة
+   * ورقم الترخيص بيقعوا سوا من غير فراغ ميّت قبلهم.
+   */
+  wide?: boolean
 }
 
 export interface RegStage {
@@ -205,8 +229,8 @@ export const REG_STAGES: RegStage[] = [
     fields: [
       { key: 'name', label: 'اسم الجهة', kind: 'text', req: true, hint: 'مطابق للتصريح' },
       { key: 'type', label: 'تصنيف الجهة', kind: 'select', req: true, options: ENTITY_TYPES },
-      { key: 'licensor', label: 'جهة الإشراف الفني', kind: 'select', options: SUPERVISORS },
-      { key: 'region', label: 'المنطقة', kind: 'select', req: true, options: REGIONS },
+      { key: 'licensor', label: 'جهة الإشراف الفني', kind: 'select', options: SUPERVISORS, wide: true },
+      { key: 'region', label: 'المنطقة', kind: 'select', req: true, options: REGIONS, nl: true },
       { key: 'city', label: 'المحافظة / المدينة', kind: 'select', req: true, dependsOn: 'region' },
       { key: 'licenseNo', label: 'رقم الترخيص', kind: 'text', req: true },
     ],

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, Money, MultiSelect, Num, Tag, icons,
+  DateField, BackTo, DateText, Empty, Glass, Head, Icon, Money, MultiSelect, Num, Tag, icons,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -239,26 +239,21 @@ export default function PlanEditPage() {
 
                     <label className="regf">
                       <span className="lb">من تاريخ</span>
-                      <span className="fld">
-                        <input
-                          type="date"
-                          value={ph.from}
-                          onChange={(e) => patch(ph.id, { from: e.target.value })}
-                          aria-label={`بداية المرحلة ${i + 1}`}
-                        />
-                      </span>
+                      <DateField
+                        value={ph.from}
+                        onChange={(x) => patch(ph.id, { from: x })}
+                        label={`بداية المرحلة ${i + 1}`}
+                      />
                     </label>
 
                     <label className="regf">
                       <span className="lb">إلى تاريخ</span>
-                      <span className="fld">
-                        <input
-                          type="date"
-                          value={ph.to}
-                          onChange={(e) => patch(ph.id, { to: e.target.value })}
-                          aria-label={`نهاية المرحلة ${i + 1}`}
-                        />
-                      </span>
+                      <DateField
+                        value={ph.to}
+                        onChange={(x) => patch(ph.id, { to: x })}
+                        label={`نهاية المرحلة ${i + 1}`}
+                        min={ph.from || undefined}
+                      />
                     </label>
 
                     <label className="regf">
@@ -302,32 +297,27 @@ export default function PlanEditPage() {
 
                           <label className="regf">
                             <span className="lb">من تاريخ</span>
-                            <span className="fld">
-                              <input
-                                type="date"
+                            <DateField
                                 value={a.from}
-                                onChange={(e) => patch(ph.id, {
+                                onChange={(v) => patch(ph.id, {
                                   activities: ph.activities.map((x) =>
-                                    (x.id === a.id ? { ...x, from: e.target.value } : x)),
+                                    (x.id === a.id ? { ...x, from: v } : x)),
                                 })}
-                                aria-label={`بداية النشاط ${j + 1}`}
-                              />
-                            </span>
+                              label={`بداية النشاط ${j + 1}`}
+                            />
                           </label>
 
                           <label className="regf">
                             <span className="lb">إلى تاريخ</span>
-                            <span className="fld">
-                              <input
-                                type="date"
+                            <DateField
                                 value={a.to}
-                                onChange={(e) => patch(ph.id, {
+                                onChange={(v) => patch(ph.id, {
                                   activities: ph.activities.map((x) =>
-                                    (x.id === a.id ? { ...x, to: e.target.value } : x)),
+                                    (x.id === a.id ? { ...x, to: v } : x)),
                                 })}
-                                aria-label={`نهاية النشاط ${j + 1}`}
-                              />
-                            </span>
+                              label={`نهاية النشاط ${j + 1}`}
+                              min={a.from || undefined}
+                            />
                           </label>
 
                           <label className="regf">

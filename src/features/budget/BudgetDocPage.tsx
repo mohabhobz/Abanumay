@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, Money, Mono, Num, Riyal, Tag,
+  DateField, BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, Money, Mono, Num, Riyal, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -406,26 +406,21 @@ export default function BudgetDocPage() {
 
                   <label className="regf">
                     <span className="lb">من تاريخ</span>
-                    <span className="fld">
-                      <input
-                        type="date"
-                        value={doc.from}
-                        onChange={(e) => setDoc((d) => ({ ...d, from: e.target.value }))}
-                        aria-label="من تاريخ"
-                      />
-                    </span>
+                    <DateField
+                      value={doc.from}
+                      onChange={(x) => setDoc((d) => ({ ...d, from: x }))}
+                      label="من تاريخ"
+                    />
                   </label>
 
                   <label className="regf">
                     <span className="lb">إلى تاريخ</span>
-                    <span className="fld">
-                      <input
-                        type="date"
-                        value={doc.to}
-                        onChange={(e) => setDoc((d) => ({ ...d, to: e.target.value }))}
-                        aria-label="إلى تاريخ"
-                      />
-                    </span>
+                    <DateField
+                      value={doc.to}
+                      onChange={(x) => setDoc((d) => ({ ...d, to: x }))}
+                      label="إلى تاريخ"
+                      min={doc.from || undefined}
+                    />
                   </label>
 
                   <label className="regf">

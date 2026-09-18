@@ -14,3 +14,7 @@ export {
   type SelectProps, type MultiSelectProps, type SegItem, type SelectOption,
 } from './filters'
 export { FieldSelect, type FieldSelectProps } from './FieldSelect'
+/* ⚠️ حقل التاريخ · تقويم مرسوم لا `type="date"` (شوف tools/nonative.mjs) */
+export { DateField, type DateFieldProps } from './DateField'
+/* ⚠️ اللوحة الوحيدة · أي قائمة في السيستم بترسم منها (شوف tools/onemenu.mjs) */
+export { MenuPanel, MenuOpt, type MenuPanelProps, type MenuOptProps } from './menu'

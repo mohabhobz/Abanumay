@@ -1,4 +1,4 @@
-import { DateText, Icon, Money, Num, Riyal, Tag, icons } from '@/components/ui'
+import { DateField, DateText, Icon, Money, Num, Riyal, Tag, icons } from '@/components/ui'
 import { nf, pct } from '@/lib/format'
 import { scheduleTotal, shareOf, type DraftPay } from '@/data/mock/agreementNew'
 import type { AgreementPayment } from '@/types/domain'
@@ -122,14 +122,11 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
 
                 <td>
                   {edit ? (
-                    <span className="fld">
-                      <input
-                        type="date"
-                        value={r.dueAt}
-                        onChange={(e) => patch(i, { dueAt: e.target.value })}
-                        aria-label={`تاريخ الدفعة ${r.no}`}
-                      />
-                    </span>
+                    <DateField
+                      value={r.dueAt}
+                      onChange={(x) => patch(i, { dueAt: x })}
+                      label={`تاريخ الدفعة ${r.no}`}
+                    />
                   ) : <DateText>{r.dueAt}</DateText>}
                 </td>
 
