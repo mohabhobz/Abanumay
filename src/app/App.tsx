@@ -25,6 +25,7 @@ import PlansPage from '@/features/plans/PlansPage'
 import PlanPage from '@/features/plans/PlanPage'
 import PlanEditPage from '@/features/plans/PlanEditPage'
 import PlanSettingsPage from '@/features/plans/PlanSettingsPage'
+import PlanNewPage from '@/features/plans/PlanNewPage'
 import PaymentsPage from '@/features/payments/PaymentsPage'
 import RequestPage from '@/features/payments/RequestPage'
 import RequestForm from '@/features/payments/RequestForm'
@@ -128,6 +129,10 @@ export default function App() {
         {/* الإعدادات قبل `:id` · وإلا الراوتر قرا `settings` رقم خطة
             (نفس درس `/entities/register`) */}
         <Route path={ROUTES.planSettings} element={<PlanSettingsPage />} />
+        {/* ⚠️ قبل `:id` برضو · وإلا الراوتر قرا `new` رقم خطة
+            ورجّع «لا توجد خطة بهذا الرقم» (وده اللي حصل فعلًا:
+            الزرار كان موجود والشاشة لأ · شوف `tools/routemount.mjs`) */}
+        <Route path="/plans/new" element={<PlanNewPage />} />
         <Route path={`${ROUTES.plans}/:id/edit`} element={<PlanEditPage />} />
         <Route path={`${ROUTES.plans}/:id`} element={<PlanPage />} />
 

@@ -704,3 +704,39 @@ export const evenWeights = (ph: PlanPhase): PlanPhase => {
     })),
   }
 }
+
+/**
+ * فتح خطة لمشروع · وبترجّع رقمها.
+ *
+ * ⚠️ **بتفتح مسودة فاضية لا خطة كاملة.** القرار اللي بيتاخد هنا هو
+ * «المشروع ده يتطلب خطة عمل» · والمراحل والأنشطة بتتكتب في المحرّر
+ * بعده، من الجهة أو من المشرف بالنيابة. خلط القرار بالتعبئة كان
+ * هيخلّي الشاشة نموذجًا طويلًا قبل ما حد يقرّر أصلًا.
+ *
+ * ⚠️ **وخطة واحدة للمشروع.** لو فيه واحدة بترجّع رقمها بدل ما
+ * تفتح تانية · خطتان لمشروع معناها نسختان مرجعيتان، والانحراف
+ * يبقى محسوبًا على أنهي واحدة فيهم.
+ */
+export const openPlan = (projectId: string, drafter: 'entity' | 'supervisor'): string => {
+  const has = planOfProject(projectId)
+  if (has) return has.id
+
+  const pr = projectRows.find((x) => x.id === projectId)
+  const id = `PL-${1030 + planRows.length}`
+  planRows.push({
+    id,
+    projectId,
+    projectName: pr?.name ?? projectId,
+    entityId: pr?.entityId ?? '',
+    entityName: pr?.entityName ?? '',
+    stage: 'draft',
+    baseline: 0,
+    phases: [],
+    owner: pr?.owner ?? 'سارة القحطاني',
+    drafter,
+    openedAt: TODAY,
+    hoursInStage: 0,
+    changes: [],
+  })
+  return id
+}

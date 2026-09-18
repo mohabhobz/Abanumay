@@ -134,6 +134,12 @@ export const ROUTES = [
      نص الموديول ما بيتفحصش. */
   '/plans/PL-1021?as=entity',
   '/plans/settings', '/plans/settings?tab=limits',
+  /* ⚠️ **شاشة فتح الخطة · والزرار بتاعها كان شايل لـ«غير موجود»**
+     (١٨ سبتمبر · العميل هو اللي مسكها). `/plans/new` لازم يفضل
+     **قبل** `/plans/:id` في الراوتر، وإلا `new` بيتقرا رقم خطة.
+     والحالتان هنا مختلفتان: فاضية بينتظر اختيار مشروع، وواصلة من
+     تاب المشروع بالمشروع مختار سلفًا · شوف `tools/routemount.mjs` */
+  '/plans/new', '/plans/new?project=20845',
   '/reports', '/reports/build', '/reports/catalog', '/reports/coverage',
   '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
   '/reports/process/p1', '/reports/process/bpd-012', '/assistant',
