@@ -11,5 +11,6 @@ export { CeilingLadder } from './CeilingLadder'
 export { Steps, type StepItem, type StepState, type StepsProps } from './Steps'
 export {
   SearchBox, Select, MultiSelect, GroupPicker, Toggle, Segments, Pager, PageSize, PAGE_SIZES, ViewToggle,
-  type SelectProps, type MultiSelectProps, type SegItem,
+  type SelectProps, type MultiSelectProps, type SegItem, type SelectOption,
 } from './filters'
+export { FieldSelect, type FieldSelectProps } from './FieldSelect'

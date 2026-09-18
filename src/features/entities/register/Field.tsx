@@ -1,3 +1,4 @@
+import { FieldSelect } from '@/components/ui'
 import { citiesOf, type RegField } from '@/data/mock/registration'
 
 /**
@@ -28,25 +29,25 @@ export function Field({
           السيستم، ومسجَّل في `ctlaudit` فحلقة تركيزه بتتفحص مع
           البحث والفلاتر. حقل مكتوب للشاشة دي كان هيبقى الركن
           السادس لنفس الشيء، وبحلقة تركيز مختلفة. */}
-      <span className={`fld${locked ? ' off' : ''}`}>
-        {f.kind === 'select' ? (
-          <select
-            value={value}
-            disabled={locked}
-            onChange={(e) => onChange(e.target.value)}
-            aria-label={f.label}
-          >
-            <option value="">{locked ? 'اختر المنطقة أولًا' : 'اختر'}</option>
-            {options.map((o) => (
-              <option key={o} value={o}>{o}</option>
-            ))}
-          </select>
-        ) : (
-          /* ⚠️ **`type="password"` مش تزويق، هو سلوك.** الحقل ده
+      {f.kind === 'select' ? (
+        /* ⚠️ `FieldSelect` بيرسم `.fld` بنفسه · فمفيش `<span
+           className="fld">` حواليه، وإلا بقى حقل جوّه حقل: حافتان
+           وخلفيتان فوق بعض وارتفاع مضاعف. */
+        <FieldSelect
+          value={value}
+          options={options}
+          disabled={locked}
+          onChange={onChange}
+          label={f.label}
+          placeholder={locked ? 'اختر المنطقة أولًا' : 'اختر'}
+        />
+      ) : (
+        <span className="fld">
+          {/* ⚠️ **`type="password"` مش تزويق، هو سلوك.** الحقل ده
              بياخد كلمة مرور، والمتصفح لازم يعرف ده عشان يخبّي
              الحروف ويقترح كلمة قوية وما يحفظهاش في الأوتوفيل
              العادي · و`text` كان هيعرض اللي المستخدم بيكتبه على
-             شاشة ممكن تكون متشيَّرة في اجتماع. */
+             شاشة ممكن تكون متشيَّرة في اجتماع. */}
           <input
             type={
               f.kind === 'date' ? 'date'
@@ -60,8 +61,8 @@ export function Field({
             onChange={(e) => onChange(e.target.value)}
             aria-label={f.label}
           />
-        )}
-      </span>
+        </span>
+      )}
       {f.hint && <span className="sub regf-h">{f.hint}</span>}
     </label>
   )

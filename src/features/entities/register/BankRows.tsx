@@ -1,4 +1,4 @@
-import { Icon, Tag, icons } from '@/components/ui'
+import { FieldSelect, Icon, Tag, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { BANKS, BANK_DOC_LABEL, emptyBank, type RegBank } from '@/data/mock/registration'
 
@@ -64,16 +64,12 @@ export function BankRows({
               <span className="lb">اسم البنك<b className="regf-r" aria-label="إلزامي">*</b></span>
               {/* قائمة مقفولة · قاعدة 27: الاسم المكتوب بعشر صيغ
                   بيخلّي الفرز مستحيل */}
-              <span className="fld">
-                <select
-                  value={b.bankName}
-                  onChange={(e) => patch(b.id, { bankName: e.target.value })}
-                  aria-label={`بنك الحساب ${i + 1}`}
-                >
-                  <option value="">اختر</option>
-                  {BANKS.map((x) => <option key={x} value={x}>{x}</option>)}
-                </select>
-              </span>
+              <FieldSelect
+                value={b.bankName}
+                options={BANKS}
+                onChange={(v) => patch(b.id, { bankName: v })}
+                label={`بنك الحساب ${i + 1}`}
+              />
             </label>
 
             <label className="regf">

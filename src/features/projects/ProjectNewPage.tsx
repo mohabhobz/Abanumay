@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem,
+  BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -57,30 +57,25 @@ function PField({
         /* ⚠️ الجهة اللي وصلت الحدّ **بتفضل في القايمة** ومعاها
            السبب · اختفاؤها بيخلّي المستخدم يدوّر على جهة مش لاقيها
            ويفتكر إنها مش مسجَّلة (نفس درس ج-15) */
-        <span className="fld">
-          <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={f.label}>
-            <option value="">اختار</option>
-            {entityOptions().map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-                {e.capped ? ` · وصلت الحدّ (${e.open})` : ''}
-                {e.inactive ? ' · غير مفعَّلة' : ''}
-              </option>
-            ))}
-          </select>
-        </span>
+        <FieldSelect
+          value={value}
+          onChange={onChange}
+          label={f.label}
+          placeholder="اختار"
+          options={entityOptions().map((e) => ({
+            value: e.id,
+            label: `${e.name}${e.capped ? ` · وصلت الحدّ (${e.open})` : ''}${e.inactive ? ' · غير مفعَّلة' : ''}`,
+          }))}
+        />
       ) : f.kind === 'select' ? (
-        <span className="fld">
-          <select
-            value={value}
-            disabled={Boolean(f.dependsOn) && !parent}
-            onChange={(e) => onChange(e.target.value)}
-            aria-label={f.label}
-          >
-            <option value="">{f.dependsOn && !parent ? 'اختار اللي قبله أولًا' : 'اختار'}</option>
-            {opts.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </span>
+        <FieldSelect
+          value={value}
+          options={opts}
+          disabled={Boolean(f.dependsOn) && !parent}
+          onChange={onChange}
+          label={f.label}
+          placeholder={f.dependsOn && !parent ? 'اختار اللي قبله أولًا' : 'اختار'}
+        />
       ) : f.kind === 'multi' ? (
         /* ⚠️ الفئات المستهدفة **شرائح لا قائمة منسدلة** · الاختيار
            متعدّد، والمنسدلة المتعددة بتخبّي اللي اتختار */

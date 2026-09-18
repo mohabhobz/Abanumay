@@ -21,7 +21,7 @@
     "hooks:install": "git config core.hooksPath .githooks",
     "prepare": "git config core.hooksPath .githooks || true",
     "sweep": "node tools/sweep.mjs",
-    "check": "node tools/pathsafe.mjs && node tools/cssbalance.mjs && npm run --silent typecheck && npm run --silent lint && node tools/audit.mjs && node tools/emdash.mjs && node tools/hacts.mjs && node tools/routecover.mjs",
+    "check": "node tools/pathsafe.mjs && node tools/cssbalance.mjs && npm run --silent typecheck && npm run --silent lint && node tools/audit.mjs && node tools/emdash.mjs && node tools/hacts.mjs && node tools/noselect.mjs && node tools/routecover.mjs",
     "check:all": "npm run --silent build && npm run --silent check && node tools/sweep.mjs --themes"
   },
   "dependencies": {

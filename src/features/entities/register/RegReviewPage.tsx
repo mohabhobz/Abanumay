@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  DateText, Empty, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tag,
+  DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tag,
   type StepItem,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
@@ -340,18 +340,13 @@ export default function RegReviewPage() {
                 {open && (
                   <label className="regf mt-3">
                     <span className="lb">سبب رفض الحساب · إن وُجد</span>
-                    <span className="fld">
-                      <select
-                        value={bankNo}
-                        onChange={(e) => setBankNo(e.target.value)}
-                        aria-label="سبب رفض الحساب البنكي"
-                      >
-                        <option value="">الحساب مقبول</option>
-                        {BANK_REJECTS.map((x) => (
-                          <option key={x} value={x}>{x}</option>
-                        ))}
-                      </select>
-                    </span>
+                    <FieldSelect
+                      value={bankNo}
+                      options={BANK_REJECTS}
+                      onChange={setBankNo}
+                      label="سبب رفض الحساب البنكي"
+                      placeholder="الحساب مقبول"
+                    />
                   </label>
                 )}
                 <p className="sub cnote">

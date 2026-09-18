@@ -23,6 +23,24 @@ const ratio = (a, b) => {
 /** جمع صناديق النصّ من الصفحة · نفس كود `contrast.mjs` */
 const textBoxes = () => {
   const out = []
+  /* ⚠️ **حزام الرصيف السفلي مستثنى · وده مش تهاون.**
+     `.decdock::before` طبقة **مقصودة** بتغيّب المحتوى تدريجيًّا وهو
+     داخل تحت الشريط (التعليق عندها في الـCSS بيشرح ليه)، والصفحة
+     بتتمرّر فاللي تحتها بيطلع فوقها بمسحة. فقياس نصّ واقع جوّه
+     الحزام **عند أول موضع تمرير** بيقيس التغييب لا اللون · وبيطلع
+     «١٫٠٥» لزرار أساسي لونه سليم.
+     ودي نفس غلطة `linkaudit` القديمة: أداة بتبلّغ عن حاجة مش
+     موجودة أسوأ من أداة ساكتة.
+     نصّ الرصيف **نفسه** بيتقاس عادي · هو فوق الطبقة لا تحتها. */
+  const dock = document.querySelector('.decdock')
+  /* الطبقة `bottom:0` جوّه الرصيف وارتفاعها أطول منه · فقاعها هو
+     قاع الرصيف، وقمّتها قاعه ناقص ارتفاعها. */
+  const veil = (() => {
+    if (!dock) return null
+    const d = dock.getBoundingClientRect()
+    const h = parseFloat(getComputedStyle(dock, '::before').height) || 0
+    return h ? { top: d.bottom - h, el: dock } : null
+  })()
   const walk = (el) => {
     for (const n of el.childNodes) {
       if (n.nodeType === 3 && n.textContent.trim().length > 1) {
@@ -30,6 +48,7 @@ const textBoxes = () => {
         const rect = r.getBoundingClientRect()
         if (rect.width < 6 || rect.height < 6 || rect.top < 0 || rect.bottom > 900 || rect.left < 0 || rect.right > 1440) continue
         if (el.ownerSVGElement || el.tagName === 'svg') continue
+        if (veil && rect.bottom > veil.top && !veil.el.contains(el)) continue
         const own = el.getBoundingClientRect()
         if (own.width <= 1 || own.height <= 1) continue
         const cx = Math.round(rect.left + rect.width / 2)

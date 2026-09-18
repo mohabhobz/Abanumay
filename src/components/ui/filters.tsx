@@ -59,8 +59,8 @@ export function SearchBox({
 /** خيار القائمة · نص بسيط، أو قيمة وعنوان لما العنوان يحمل عدّادًا */
 export type SelectOption = string | { value: string; label: string }
 
-const optValue = (o: SelectOption): string => (typeof o === 'string' ? o : o.value)
-const optLabel = (o: SelectOption): string => (typeof o === 'string' ? o : o.label)
+export const optValue = (o: SelectOption): string => (typeof o === 'string' ? o : o.value)
+export const optLabel = (o: SelectOption): string => (typeof o === 'string' ? o : o.label)
 
 export interface SelectProps {
   label?: string

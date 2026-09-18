@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  BackTo, Empty, Glass, Head, Icon, icons, Money, Mono, Num, Riyal, Tag,
+  BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, Money, Mono, Num, Riyal, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -379,26 +379,15 @@ export default function BudgetDocPage() {
                 <div className="regfields">
                   <label className="regf">
                     <span className="lb">السنة المالية<b className="regf-r" aria-label="إلزامي">*</b></span>
-                    <span className="fld">
-                      <select
-                        value={doc.yearId}
-                        onChange={(e) => {
-                          const y = yearById(e.target.value)
-                          setDoc((d) => ({
-                            ...d,
-                            yearId: e.target.value,
-                            from: y?.from ?? d.from,
-                            to: y?.to ?? d.to,
-                          }))
-                        }}
-                        aria-label="السنة المالية"
-                      >
-                        <option value="">اختر</option>
-                        {fiscalYears.map((y) => (
-                          <option key={y.id} value={y.id}>{y.name}</option>
-                        ))}
-                      </select>
-                    </span>
+                    <FieldSelect
+                      value={doc.yearId}
+                      label="السنة المالية"
+                      options={fiscalYears.map((y) => ({ value: y.id, label: y.name }))}
+                      onChange={(v) => {
+                        const y = yearById(v)
+                        setDoc((d) => ({ ...d, yearId: v, from: y?.from ?? d.from, to: y?.to ?? d.to }))
+                      }}
+                    />
                     {/* ⚠️ السنة بتجيب مداها معاها · التاريخان تحت
                         بيتملوا لوحدهم وبيفضلوا قابلين للتعديل، لأن
                         ميزانية ربع سنة داخل السنة المالية واردة */}
@@ -407,18 +396,12 @@ export default function BudgetDocPage() {
 
                   <label className="regf">
                     <span className="lb">مصدر التمويل<b className="regf-r" aria-label="إلزامي">*</b></span>
-                    <span className="fld">
-                      <select
-                        value={doc.sourceCode}
-                        onChange={(e) => setDoc((d) => ({ ...d, sourceCode: e.target.value }))}
-                        aria-label="مصدر التمويل"
-                      >
-                        <option value="">اختر</option>
-                        {fundSources.map((s) => (
-                          <option key={s.code} value={s.code}>{s.name}</option>
-                        ))}
-                      </select>
-                    </span>
+                    <FieldSelect
+                      value={doc.sourceCode}
+                      label="مصدر التمويل"
+                      options={fundSources.map((s) => ({ value: s.code, label: s.name }))}
+                      onChange={(v) => setDoc((d) => ({ ...d, sourceCode: v }))}
+                    />
                   </label>
 
                   <label className="regf">
@@ -885,24 +868,23 @@ export default function BudgetDocPage() {
               <>
                   <label className="regf">
                     <span className="lb">نوع البند</span>
-                    <span className="fld">
-                      <select
-                        value={nKind}
-                        onChange={(e) => {
-                          const k = e.target.value as LineKind
-                          setNKind(k)
-                          setBlocked(shapeRule(k, nParent || null, nShow, nAlias))
-                        }}
-                        aria-label="نوع البند"
-                      >
-                        {/* ⚠️ الترتيب في القايمة = الترتيب في الهرم ·
-                            القايمة اللي ترتيبها عشوائي بتخلّي
-                            المستخدم يتعلّم الهيكل بالمحاولة */}
-                        <option value="base">أساسي</option>
-                        <option value="main">رئيسي</option>
-                        <option value="sub">فرعي</option>
-                      </select>
-                    </span>
+                    {/* ⚠️ الترتيب في القايمة = الترتيب في الهرم ·
+                        القايمة اللي ترتيبها عشوائي بتخلّي المستخدم
+                        يتعلّم الهيكل بالمحاولة */}
+                    <FieldSelect
+                      value={nKind}
+                      label="نوع البند"
+                      options={[
+                        { value: 'base', label: 'أساسي' },
+                        { value: 'main', label: 'رئيسي' },
+                        { value: 'sub', label: 'فرعي' },
+                      ]}
+                      onChange={(v) => {
+                        const k = v as LineKind
+                        setNKind(k)
+                        setBlocked(shapeRule(k, nParent || null, nShow, nAlias))
+                      }}
+                    />
                     <span className="sub regf-h">{KIND_NOTE[nKind]}</span>
                   </label>
 
@@ -910,21 +892,16 @@ export default function BudgetDocPage() {
                       عنوان، ممكن تكون تحت مسارين مختلفين */}
                   <label className="regf">
                     <span className="lb">تابع لبند</span>
-                    <span className="fld">
-                      <select
-                        value={nParent}
-                        onChange={(e) => {
-                          setNParent(e.target.value)
-                          setBlocked(shapeRule(nKind, e.target.value || null, nShow, nAlias))
-                        }}
-                        aria-label="تابع لبند"
-                      >
-                        <option value="">بلا · بند أساسي</option>
-                        {parents.map((p) => (
-                          <option key={p.id} value={p.id}>{pathOf(nodes, p.id)}</option>
-                        ))}
-                      </select>
-                    </span>
+                    <FieldSelect
+                      value={nParent}
+                      label="تابع لبند"
+                      placeholder="بلا · بند أساسي"
+                      options={parents.map((p) => ({ value: p.id, label: pathOf(nodes, p.id) }))}
+                      onChange={(v) => {
+                        setNParent(v)
+                        setBlocked(shapeRule(nKind, v || null, nShow, nAlias))
+                      }}
+                    />
                   </label>
 
                   <label className="regf">

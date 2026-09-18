@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem,
+  BackTo, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -186,21 +186,16 @@ export default function AgreementNewPage() {
                     {/* ⚠️ غير المؤهَّل **بيفضل في القايمة ومعاه سببه** ·
                         اختفاؤه بيخلّي المستخدم يدوّر على مشروع مش
                         لاقيه ويفتكر إنه اتمسح (نفس درس ج-15) */}
-                    <span className="fld">
-                      <select
-                        value={projectId}
-                        onChange={(e) => pickProject(e.target.value)}
-                        aria-label="المشروع"
-                      >
-                        <option value="">اختار</option>
-                        {projectOptions().map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                            {p.blocked ? ` · ${p.blocked}` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </span>
+                    <FieldSelect
+                      value={projectId}
+                      onChange={pickProject}
+                      label="المشروع"
+                      placeholder="اختار"
+                      options={projectOptions().map((p) => ({
+                        value: p.id,
+                        label: `${p.name}${p.blocked ? ` · ${p.blocked}` : ''}`,
+                      }))}
+                    />
                     <span className="sub regf-h">
                       مشروع واحد بالظبط · قاعدة <span className="num">2</span>
                     </span>
@@ -266,16 +261,13 @@ export default function AgreementNewPage() {
                     <span className="lb">
                       النموذج المعتمد<b className="regf-r" aria-label="إلزامي">*</b>
                     </span>
-                    <span className="fld">
-                      <select
-                        value={template}
-                        onChange={(e) => setTemplate(e.target.value)}
-                        aria-label="النموذج المعتمد"
-                      >
-                        <option value="">اختار</option>
-                        {TEMPLATES.map((t) => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </span>
+                    <FieldSelect
+                      value={template}
+                      options={TEMPLATES}
+                      onChange={setTemplate}
+                      label="النموذج المعتمد"
+                      placeholder="اختار"
+                    />
                     <span className="sub regf-h">
                       بيتحدّد بمصدر التمويل وحجم المنحة والظهور الإعلامي · قاعدة{' '}
                       <span className="num">4</span>
