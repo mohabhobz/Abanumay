@@ -22,9 +22,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { ROUTES, PUBLIC_ROUTES } from './routes.mjs'
+import { fileURLToPath } from 'node:url'
 
-const ROOT = new URL('../dist/', import.meta.url).pathname
-const SHOTS = new URL('../.shots/', import.meta.url).pathname
+const ROOT = fileURLToPath(new URL('../dist/', import.meta.url))
+const SHOTS = fileURLToPath(new URL('../.shots/', import.meta.url))
 const PORT = 4456
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.mp4': 'video/mp4', '.woff2': 'font/woff2' }
 

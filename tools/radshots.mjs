@@ -1,7 +1,8 @@
 /* لقطات مكبّرة لأركان بعينها · الحكم على التناغم بالعين مش بالرقم */
 import http from 'node:http';import fs from 'node:fs';import path from 'node:path';import {chromium} from 'playwright'
-const ROOT=new URL('../dist/',import.meta.url).pathname,PORT=4499
-const OUT=new URL('../.rad/',import.meta.url).pathname
+import { fileURLToPath } from 'node:url'
+const ROOT=fileURLToPath(new URL('../dist/', import.meta.url)),PORT=4499
+const OUT=fileURLToPath(new URL('../.rad/', import.meta.url))
 fs.mkdirSync(OUT,{recursive:true})
 const MIME={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.ico':'image/x-icon','.woff2':'font/woff2'}
 const s=http.createServer((q,r)=>{const u=new URL(q.url,'http://x');let f=path.join(ROOT,decodeURIComponent(u.pathname));if(!fs.existsSync(f)||fs.statSync(f).isDirectory())f=path.join(ROOT,'index.html');r.setHeader('Content-Type',MIME[path.extname(f)]??'application/octet-stream');fs.createReadStream(f).pipe(r)})

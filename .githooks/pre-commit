@@ -20,6 +20,7 @@ set -e
 
 printf '\n  ── بوّابة الكوميت ──\n'
 
+node tools/pathsafe.mjs          # `.pathname` بيكوّد المسافات · أداة بتطيح على جهاز وتعدّي على جهاز
 node tools/cssbalance.mjs        # تعليق ناقص بيوقع البِناء ويخلّي الجرد يشتغل على dist قديم
 node tools/routecover.mjs        # شاشة جديدة بلا مسار مفحوص = كل الأدوات بترجع خضرا وهي عمياها
 node tools/emdash.mjs            # الشرطة الطويلة · قاعدة كانت مكتوبة وما كانش عليها فحص

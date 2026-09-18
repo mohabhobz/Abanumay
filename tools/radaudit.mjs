@@ -16,8 +16,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { ROUTES } from './routes.mjs'
+import { fileURLToPath } from 'node:url'
 
-const ROOT = new URL('../dist/', import.meta.url).pathname
+const ROOT = fileURLToPath(new URL('../dist/', import.meta.url))
 const PORT = 4497
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2' }
 const server = await new Promise((res) => {
@@ -82,7 +83,7 @@ await ctx.addInitScript(() => {
 let REVEAL = ''
 if (process.argv.includes('--reveal')) {
   const { execFileSync } = await import('node:child_process')
-  REVEAL = execFileSync('node', [new URL('./reveal.mjs', import.meta.url).pathname], { encoding: 'utf8' })
+  REVEAL = execFileSync('node', [fileURLToPath(new URL('./reveal.mjs', import.meta.url))], { encoding: 'utf8' })
   await ctx.addInitScript((cssText) => {
     const put = () => { const st = document.createElement('style'); st.textContent = cssText; document.head.appendChild(st) }
     document.head ? put() : document.addEventListener('DOMContentLoaded', put)

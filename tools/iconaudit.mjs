@@ -25,8 +25,9 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const SRC = new URL('../src/', import.meta.url).pathname
+const SRC = fileURLToPath(new URL('../src/', import.meta.url))
 
 /** مش أيقونات: هوية أو رسم بياني أو ملمس */
 const NOT_ICONS = [

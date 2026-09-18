@@ -18,8 +18,9 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const FILE = new URL('../src/styles/index.css', import.meta.url).pathname
+const FILE = fileURLToPath(new URL('../src/styles/index.css', import.meta.url))
 const DRY = process.argv.includes('--dry')
 const MAX = Number(process.argv[process.argv.indexOf('--max') + 1]) || 1.2
 const FLOOR = 12

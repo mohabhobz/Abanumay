@@ -45,8 +45,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { ROUTES as ALL_ROUTES, PUBLIC_ROUTES } from '../routes.mjs'
+import { fileURLToPath } from 'node:url'
 
-const DIST = new URL('../../dist/', import.meta.url).pathname
+const DIST = fileURLToPath(new URL('../../dist/', import.meta.url))
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
   '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png',

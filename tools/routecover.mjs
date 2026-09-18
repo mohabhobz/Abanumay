@@ -14,8 +14,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { ROUTES as AUDITED } from './routes.mjs'
+import { fileURLToPath } from 'node:url'
 
-const APP = new URL('../', import.meta.url).pathname
+const APP = fileURLToPath(new URL('../', import.meta.url))
 const read = (p) => fs.readFileSync(path.join(APP, p), 'utf8')
 
 /* ── ١ · خريطة `ROUTES` من `src/app/routes.ts` (القيم النصّية بس) ── */

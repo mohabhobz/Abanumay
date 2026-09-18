@@ -10,6 +10,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const DRY = process.argv.includes('--dry')
 const SCALE = [[2,'--sp-1'],[4,'--sp-2'],[8,'--sp-3'],[12,'--sp-4'],[16,'--sp-5'],[20,'--sp-6'],
@@ -20,7 +21,7 @@ const near = (px) => SCALE.reduce((b,[v,n]) => (!b || Math.abs(v-px) < Math.abs(
 const toPx = (t) => { const m=/^(-?[\d.]+)(px|rem)$/.exec(t); return m ? Number(m[1])*(m[2]==='rem'?16:1) : null }
 
 const walk = (d) => fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)])
-const files = walk(new URL('../src/',import.meta.url).pathname).filter(f=>f.endsWith('.tsx'))
+const files = walk(fileURLToPath(new URL('../src/', import.meta.url))).filter(f=>f.endsWith('.tsx'))
 
 let moved=0, bound=0, held=[]
 for (const f of files) {

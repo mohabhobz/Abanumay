@@ -43,12 +43,13 @@ import path from 'node:path'
 import { chromium } from 'playwright'
 import { PNG } from 'pngjs'
 import { ROUTES } from './routes.mjs'
+import { fileURLToPath } from 'node:url'
 
 const ONLY = process.argv[2] && process.argv[2].startsWith('/') ? process.argv[2] : null
 const ALL = process.argv.includes('--all')
 /** عيّنة فيها كل أنواع الطبقات مرّة على الأقل */
 const SAMPLE = ['/entities', '/projects', '/budget', '/assistant']
-const ROOT = new URL('../dist/', import.meta.url).pathname
+const ROOT = fileURLToPath(new URL('../dist/', import.meta.url))
 const PORT = 4641
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2' }
 const server = await new Promise((res) => {

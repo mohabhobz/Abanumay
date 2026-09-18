@@ -99,3 +99,37 @@ export const myProbe = {
 كود تنقّل.
 
 **ما تكتبش أداة بتلفّ على `ROUTES` بنفسها تاني** · دي كانت المشكلة.
+
+---
+
+## ⚠️ المسار اللي فيه مسافة · عطل كان مستخفي
+
+أوّل مرة شغّلت الأدوات دي على جهازك طاحت:
+
+```
+Error: ENOENT: no such file or directory, open
+'/Users/mohabsmacpro/Desktop/Claude%20Work%20Projects/.../src/styles/index.css'
+    at tools/audit.mjs:26
+```
+
+الـ`%20` هو الدليل. `new URL(x, import.meta.url).pathname` بيرجّع
+المسار **مكوَّدًا** · و`fs` ما بيفكّش الترميز. مجلّدك اسمه «Claude
+Work Projects» فيه مسافتان، والمسار عندي في السحابة
+`/home/claude/abanumay/app` مفيش فيه ولا مسافة · فالتكويد ما كانش
+بيغيّر حرفًا واحدًا والعطل عدّى على ٢٨ أداة من غير ما يبان.
+
+**الصحّ:**
+
+```js
+import { fileURLToPath } from 'node:url'
+const ROOT = fileURLToPath(new URL('../dist/', import.meta.url))
+```
+
+(تمرير كائن `URL` مباشرة لـ`fs.readFileSync` سليم كمان · نود بيفكّ
+الترميز بنفسه. اللي بيكسر هو `.pathname` وحده.)
+
+**والدرس اتحوّل لفاحص لا لتعليق:** `tools/pathsafe.mjs` في بوّابة
+الكوميت بيرفض أي `.pathname` على `import.meta.url` · لأن **بيئة
+واحدة مش كفاية للتأكّد**، والأداة اللي بتعدّي عندي وبتطيح عندك
+أسوأ من أداة ساكتة. والتأكّد اتعمل بنسخ المشروع لمجلّد فيه مسافة
+وتشغيل الجولة كلها منه · ٧٩ زيارة، صفر ملاحظة.

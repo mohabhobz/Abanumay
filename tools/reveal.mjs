@@ -18,8 +18,9 @@
  *   node tools/reveal.mjs          # يطبع الستايل
  */
 import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
-const css = fs.readFileSync(new URL('../src/styles/index.css', import.meta.url).pathname, 'utf8')
+const css = fs.readFileSync(fileURLToPath(new URL('../src/styles/index.css', import.meta.url)), 'utf8')
   .replace(/\/\*[\s\S]*?\*\//g, '')
 
 const targets = new Set()

@@ -1,7 +1,8 @@
 /* كلاسات معرَّفة في CSS وما ظهرتش في الـDOM عبر كل المسارات */
 import http from 'node:http';import fs from 'node:fs';import path from 'node:path';import {chromium} from 'playwright'
 import {ROUTES,PUBLIC_ROUTES} from './routes.mjs'
-const ROOT=new URL('../dist/',import.meta.url).pathname,PORT=4501
+import { fileURLToPath } from 'node:url'
+const ROOT=fileURLToPath(new URL('../dist/', import.meta.url)),PORT=4501
 const MIME={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.ico':'image/x-icon','.woff2':'font/woff2'}
 const s=http.createServer((q,r)=>{const u=new URL(q.url,'http://x');let f=path.join(ROOT,decodeURIComponent(u.pathname));if(!fs.existsSync(f)||fs.statSync(f).isDirectory())f=path.join(ROOT,'index.html');r.setHeader('Content-Type',MIME[path.extname(f)]??'application/octet-stream');fs.createReadStream(f).pipe(r)})
 await new Promise(r=>s.listen(PORT,r))

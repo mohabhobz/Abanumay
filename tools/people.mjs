@@ -16,8 +16,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { ROUTES } from './routes.mjs'
+import { fileURLToPath } from 'node:url'
 
-const APP = new URL('../', import.meta.url).pathname
+const APP = fileURLToPath(new URL('../', import.meta.url))
 const ROOT = path.join(APP, 'dist/')
 const PORT = 4853
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2' }

@@ -8,13 +8,14 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 const DRY = process.argv.includes('--dry')
 const FLOOR = 12
 const SCALE = [[12,'--fs-1'],[13,'--fs-2'],[14,'--fs-3'],[16,'--fs-4'],[18,'--fs-5'],
                [20,'--fs-6'],[24,'--fs-7'],[32,'--fs-8'],[40,'--fs-9']]
 const near = (px) => SCALE.reduce((b,[v,n]) => (!b || Math.abs(v-px) < Math.abs(b.v-px)) ? {v,n} : b, null)
 const walk = (d) => fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)])
-const files = walk(new URL('../src/',import.meta.url).pathname).filter(f=>f.endsWith('.tsx'))
+const files = walk(fileURLToPath(new URL('../src/', import.meta.url))).filter(f=>f.endsWith('.tsx'))
 let done=0, lifted=0; const review=[]
 for (const f of files) {
   const orig = fs.readFileSync(f,'utf8')
