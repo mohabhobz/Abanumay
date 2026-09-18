@@ -17,7 +17,7 @@ import {
   REG_DOCS, REG_STAGES, REG_TERMS, bankIssues, citiesOf, docRequired,
   emptyBank, licenseClash, type RegBank,
 } from '@/data/mock/registration'
-import { regReadings, stageAdvice } from '@/data/mock/regPortal'
+import { regReadings, stageAdvice, stepState } from '@/data/mock/regPortal'
 import { Field } from './Field'
 import { BankRows } from './BankRows'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
@@ -455,11 +455,14 @@ export default function RegisterPage() {
                        والستيبر بيجاوب سؤالًا واحدًا: **إنت فين
                        ووصلت لفين** · والحالة بتتقال بالنقطة (رقم /
                        صح / كهرماني) من غير سطر تاني. */
-                    items={REG_STAGES.map((st) => ({
+                    /* ⚠️ «مفيش ناقص» مش «خلصت» · شوف `stepState` */
+                    items={REG_STAGES.map((st, i) => ({
                       label: st.label,
-                      state: st.key === tab
-                        ? 'now'
-                        : shortBy[st.key].length === 0 ? 'done' : 'todo',
+                      state: stepState(
+                        i,
+                        REG_STAGES.findIndex((x) => x.key === tab),
+                        shortBy[st.key].length,
+                      ),
                     }))}
                   />
                   </Glass>

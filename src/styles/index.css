@@ -5260,6 +5260,15 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .stp-at{font-size:var(--fs-2);color:var(--t3)}
 
 /* سُلّم: الترتيب معلومة · الخط بيقول «الواحدة بعد التانية» */
+/* ⚠️ **الصندوق `.stp-c` بيختفي من الشبكة في السُلّم والصفّ.**
+   الاتنين دول **شبكات**: النقطة والاسم والملاحظة والوقت كل واحد
+   خلية بمكانها. لمّا الصندوق اتضاف (عشان الستيبر يشتغل من غير
+   ضغط) بقى **خلية واحدة** شايلاهم كلهم، فالاسم والملاحظة
+   اتلزقوا في بعض بلا فراغ («تسجيل البياناتمشرف المنح»).
+   `display:contents` بيخلّي أولاده يتوزّعوا على الشبكة كإنه مش
+   موجود · والستيبر وحده هو اللي محتاجه صندوقًا فعليًّا. */
+.stp-ladder .stp-c,.stp-row .stp-c{display:contents}
+
 .stp-ladder{position:relative}
 .stp-ladder::before{content:"";position:absolute;inset-block:.8rem;
   inset-inline-start:calc((var(--stp-dot) - var(--stp-line)) / 2);
@@ -6437,12 +6446,16 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   background:rgba(var(--edgeC),.16)}
 .stp-stepper .stp-i.done+.stp-i::before{background:rgba(var(--okC),.45)}
 
-.stp-stepper .stp-b{flex:1;min-width:0;display:flex;flex-direction:column;
+/* ⚠️ **التخطيط على `.stp-c` · والزرار سلوك زيادة بس.** كان كله
+   مكتوبًا على `.stp-b` اللي ما بتترسمش إلا مع `onPick` · فالشريط
+   اللي للقراءة (صفحة الخطة) كان بيتفكّك: نقطة جنب اسم في صفّ،
+   والسكّة المحسوبة لعمود متمركز بتعدّي من مكان غلط. */
+.stp-stepper .stp-c{flex:1;min-width:0;display:flex;flex-direction:column;
   align-items:center;text-align:center;gap:var(--sp-3);
   /* الحشو اتساوى فوق وتحت بعد ما السطر التاني اتشال · كان
      مزوّدًا تحت عشان يوازن سطرين */
-  padding:var(--sp-3) var(--sp-2);border-radius:var(--r1);
-  cursor:pointer;transition:background .16s ease}
+  padding:var(--sp-3) var(--sp-2);border-radius:var(--r1)}
+.stp-stepper .stp-b{cursor:pointer;transition:background .16s ease}
 .stp-stepper .stp-b:hover{background:var(--fl-2)}
 .stp-stepper .stp-dot{position:relative;z-index:1}
 .stp-stepper .stp-l{font-size:var(--fs-2);line-height:var(--lh-2);min-width:0;

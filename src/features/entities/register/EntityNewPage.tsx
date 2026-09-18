@@ -1,14 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BackTo, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, type StepItem,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
+import { AnalysisCard } from '@/components/assistant'
 import { AppLayout } from '@/app/layout/AppLayout'
+import { useFillHeight } from '@/hooks/useFillHeight'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { entityRows } from '@/data/mock/entities'
+import { regReadings, stageAdvice, stepState } from '@/data/mock/regPortal'
 import {
   PARTNER_KINDS, REG_DOCS, REG_STAGES, docRequired, licenseClash, partnerKind,
   type PartnerKind,
@@ -119,7 +122,21 @@ export default function EntityNewPage() {
     [val.licenseNo, type],
   )
 
-  const canSave = missing.length === 0 && !clash
+  /* ⚠️ **نفس نصيحة البوّابة بالحرف.** الشاشة دي كانت بلا مساعد
+     خالص · يعني مشرف المنح اللي بيسجّل من جوّه بيملا نفس النموذج
+     من غير اللي بيوجّه الجهة برّه، والفرق ده مالوش سبب: النواقص
+     والموانع واحدة، والحاسب واحد (`stageAdvice`)، واللي كان ناقص
+     هو **توصيل** الكارت لا كتابة واحد جديد. */
+  const advice = useMemo(
+    () => stageAdvice(tab, val, shortBy[tab] ?? [], [], []),
+    [tab, val, shortBy],
+  )
+
+  /* العمود الجانبي بيلزق ويتمدّد لآخر الشاشة · نفس البوّابة */
+  const aside = useRef<HTMLDivElement>(null)
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
+
+  const canSave = missing.length === 0 && !clash && advice.blocking.length === 0
 
   const at = STAGES.findIndex((x) => x.key === tab)
   const first = at <= 0
@@ -166,11 +183,12 @@ export default function EntityNewPage() {
             <Steps
               flow="stepper"
               onPick={(i) => setTab(STAGES[i].key)}
-              items={STAGES.map((st) => ({
+              /* ⚠️ «مفيش ناقص» مش «خلصت» · محطة الحسابات البنكية
+                 مالهاش حقول محسوبة فكانت بتطلع مكتملة والمستخدم
+                 لسه في المحطة الأولى. شوف `stepState`. */
+              items={STAGES.map((st, i) => ({
                 label: st.label,
-                state: st.key === tab
-                  ? 'now'
-                  : shortBy[st.key].length === 0 ? 'done' : 'todo',
+                state: stepState(i, at, shortBy[st.key]?.length ?? 0),
               }))}
             />
           </Glass>
@@ -359,7 +377,29 @@ export default function EntityNewPage() {
               </Glass>
             </div>
 
-            <div className="col">
+            <div className="col aiside" ref={aside}>
+              {/* ⚠️ **نفس كارت مساعد البوّابة بالحرف** · `AnalysisCard`
+                  و`regReadings`، لا كارت مكتوب للشاشة دي. اللي بيعرض
+                  «مساعد أبانمي» بشكلين حسب المستخدم واقف فين بيخلّي
+                  المساعد يبان حاجتين لا حاجة واحدة. */}
+              <AnalysisCard
+                title="مراجعة مساعد أبانمي"
+                cta="راجع الطلب"
+                empty="المحطة دي مفيهاش مانع · كمّل للّي بعدها."
+                ask
+                onAsk={() => window.dispatchEvent(
+                  new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
+                )}
+                readings={regReadings(
+                  tab,
+                  STAGES.map((st) => ({
+                    key: st.key, label: st.label, short: shortBy[st.key] ?? [],
+                  })),
+                  advice,
+                  setTab,
+                )}
+              />
+
               <Glass>
                 <Head title="مسار التسجيل" meta={<span className="sub">ثلاث محطات</span>} />
                 <Steps items={steps} flow="ladder" />
@@ -399,22 +439,10 @@ export default function EntityNewPage() {
                 </Glass>
               )}
 
-              {missing.length > 0 && (
-                <Glass>
-                  <Head
-                    title="ما ينقص قبل التسجيل"
-                    meta={<Tag tone="warn"><Num>{missing.length}</Num> عنصرًا</Tag>}
-                  />
-                  <ul className="regmiss">
-                    {STAGES.filter((s) => shortBy[s.key].length).map((s) => (
-                      <li key={s.key}>
-                        <b>{s.label}</b>
-                        <span className="sub"> · {shortBy[s.key].join(' · ')}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Glass>
-              )}
+              {/* ⚠️ كارت «ما ينقص قبل التسجيل» اتشال · المساعد فوق
+                  بيقول نفس الحاجة مرتّبة بالأولوية ومعاها السبب
+                  والزرار اللي بيودّي للمحطة · فالكارت كان بيكرّره
+                  كقايمة صمّاء. */}
             </div>
           </div>
         </div>
