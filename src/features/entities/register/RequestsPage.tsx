@@ -111,14 +111,6 @@ export default function RequestsPage() {
   const group = groupChain(v.group, GROUPS)
   const grouped = group.length > 0
 
-  const cardGroups = useMemo(() => {
-    const pick = readList(v.state)
-    const list = pick.length ? REG_STATES.filter((s) => pick.includes(s.key)) : REG_STATES
-    return list
-      .map((s) => ({ key: s.key, rows: sorted.filter((r) => r.state === s.key) }))
-      .filter((g) => g.rows.length > 0)
-  }, [sorted, v.state])
-
   const sheet: Sheet = useMemo(() => {
     /* ⚠️ **الورقة مبنيّة في `sheetOf` لا هنا.** خمس شاشات كانت
        بتكتب نفس التلات سطور بإيدها · وأول ما التجميع بقى سلسلة،
@@ -233,8 +225,13 @@ export default function RequestsPage() {
                   onChange={(x) => set({ q: x || undefined })}
                   placeholder="ابحث برقم الطلب أو اسم الجهة أو رقم الترخيص…"
                 />
+                {/* ⚠️ **بلا `label` · القاعدة مكتوبة عند `.fsel-b`:**
+                    القائمة اللي جوّه شريط الأدوات بتلبس شكل الشريحة
+                    عشان الصفّ كله يبقى بلغة واحدة، **من غير عنوان
+                    فوقها**. الشاشة دي كانت الوحيدة اللي بتبعت عنوانًا،
+                    فالحقل ده كان بيطول عن جيرانه والعنوان بيتعلّق فوق
+                    الصفّ · والاسم مكتوب أصلًا في `all` («كل التصنيفات»). */}
                 <MultiSelect
-                  label="تصنيف الجهة"
                   values={readList(v.type)}
                   all={`كل التصنيفات (${ENTITY_TYPES.length})`}
                   options={ENTITY_TYPES as unknown as string[]}
@@ -359,24 +356,18 @@ export default function RequestsPage() {
               )}
             </>
           ) : (
-            cardGroups.map((g) => {
-              const meta = REG_STATES.find((s) => s.key === g.key)
-              return (
-                <section className="paygrp" key={g.key}>
-                  <div className="paygrp-h">
-                    <h2>{meta?.label}</h2>
-                    <span className="sub">
-                      {meta?.who} · <span className="num">{g.rows.length}</span> طلب
-                    </span>
-                  </div>
-                  <div className="paygrid">
-                    {g.rows.map((r) => (
-                      <RegCard key={r.id} r={r} />
-                    ))}
-                  </div>
-                </section>
-              )
-            })
+            /* ⚠️ **شبكة واحدة · الشرائح فوق هي الفلتر.**
+               الكروت كانت متقسّمة بترويسة لكل حالة · والشرائح فوق
+               بتفلتر بنفس الحالات وبتعدّها، فالتقسيم كان بيرسم نفس
+               التصنيف تاني على الداتا نفسها: المستخدم بيدوس «قيد
+               المراجعة» فبيلاقي قسمًا واحدًا عنوانه «قيد المراجعة».
+               وفي «كل الطلبات» كان بيحوّل قايمة لخمس قوايم مالهاش
+               ترتيب مشترك. (مهاب · ١٨ سبتمبر) */
+            <div className="paygrid">
+              {sorted.map((r) => (
+                <RegCard key={r.id} r={r} />
+              ))}
+            </div>
           )}
 
           {/* ⚠️ القاعدتان 28 و29 مكتوبتان في الشاشة لأنهما بيفسّروا

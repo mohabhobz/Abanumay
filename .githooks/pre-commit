@@ -25,7 +25,7 @@ node tools/cssbalance.mjs        # تعليق ناقص بيوقع البِناء
 node tools/routecover.mjs        # شاشة جديدة بلا مسار مفحوص = كل الأدوات بترجع خضرا وهي عمياها
 node tools/emdash.mjs            # الشرطة الطويلة · قاعدة كانت مكتوبة وما كانش عليها فحص
 node tools/hacts.mjs             # عقد أفعال الترويسة · الإنشاء في الركن لا في شريط الأدوات
-node tools/noselect.mjs          # `<select>` أصلية = قايمة نظام التشغيل وسط واجهة زجاج
+node tools/noselect.mjs          # `<select>` أصلية · وعنوان فوق قائمة في شريط الأدوات
 npm run --silent typecheck
 npm run --silent lint
 node tools/audit.mjs             # العدّادات · الرقم ينزل أو يثبت وما يطلعش
