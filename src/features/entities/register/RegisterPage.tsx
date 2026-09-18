@@ -1,25 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, type StepItem,
+  BackTo, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { Background } from '@/components/shell'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
+import { useFillHeight } from '@/hooks/useFillHeight'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { isSignedIn } from '@/data/session'
 import Logo from '@/assets/LogoColor'
 import { entityRows } from '@/data/mock/entities'
 import {
-  BANKS, REG_DOCS, REG_STAGES, REG_TERMS, bankIssues, citiesOf, docRequired,
+  REG_DOCS, REG_STAGES, REG_TERMS, bankIssues, citiesOf, docRequired,
   emptyBank, licenseClash, type RegBank,
 } from '@/data/mock/registration'
 import { stageAdvice } from '@/data/mock/regPortal'
 import { Field } from './Field'
 import { BankRows } from './BankRows'
-import { RegAdvice } from './RegAdvice'
+import { RegAssist } from './RegAssist'
 
 /* ═══════════════════════════════════════════════════════════
    طلب تسجيل جهة جديدة · BPD-002 · شاشة الجهة
@@ -174,6 +175,11 @@ export default function RegisterPage() {
      الضغط على خطوة بعيدة قفزة · والملء الطبيعي خطوة ورا خطوة،
      والإيد بتفضل على الرصيف حيث الزرار. فالتنقّل بطريقتين:
      الشريط للقفز، والرصيف للتقدّم. */
+  /* الكارت اللازق بياخد ارتفاعه من مكانه الفعلي · قبل اللزق قصير
+     ومحتواه ظاهر، وكل ما تنزل بيكبر لحد ما يملا الشاشة */
+  const aside = useRef<HTMLDivElement>(null)
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
+
   const at = REG_STAGES.findIndex((x) => x.key === tab)
   const first = at <= 0
   const last = at >= REG_STAGES.length - 1
@@ -182,33 +188,7 @@ export default function RegisterPage() {
     if (next) setTab(next.key)
   }
 
-  const steps: StepItem[] = [
-    {
-      label: 'ضوابط القبول',
-      note: 'خمسة شروط قبل فتح النموذج',
-      state: phase === 'terms' ? 'now' : 'done',
-    },
-    {
-      label: 'تعبئة الطلب',
-      note: 'خمسة تبويبات · قاعدة 25',
-      state: phase === 'terms' ? 'todo' : phase === 'form' ? 'now' : 'done',
-    },
-    {
-      label: 'تحقّق من جوال مدخل البيانات',
-      note: 'رمز لمرة واحدة · قاعدة 19',
-      state: phase === 'otp' ? 'now' : phase === 'sent' ? 'done' : 'todo',
-    },
-    {
-      label: 'مراجعة مسؤول النظام',
-      note: 'اعتماد · إعادة للاستكمال · رفض',
-      state: phase === 'sent' ? 'now' : 'todo',
-    },
-    {
-      label: 'إنشاء حساب الجهة',
-      note: 'بعد الاعتماد وحده · قاعدة 2',
-      state: 'todo',
-    },
-  ]
+
 
   /* ⚠️ **الشاشة دي عامة، والقاعدة 2 هي السبب.**
      صاحب الطلب جهة **مالهاش حساب** — ده تعريف الإجراء نفسه: مفيش
@@ -377,7 +357,7 @@ export default function RegisterPage() {
 
   const body = (
     <div className={`viewstack${inside ? ' hasdock' : ''}`}>
-        <div className={`screen col${inside ? ' hasg2' : ''}`}>
+        <div className="screen col hasg2">
           {inside ? (
             <BackTo label="الجهات" onClick={() => navigate(ROUTES.entities)} />
           ) : (
@@ -608,12 +588,6 @@ export default function RegisterPage() {
                         </div>
                       )}
 
-                      {/* ⚠️ **المساعد جوّه المحطة لا في لوح جنبي.**
-                          اللوح الجنبي بيتقفل، والجهة اللي بتسجّل مرة
-                          واحدة في عمرها مش هتفتحه · والنصيحة اللي
-                          محدش شافها مش نصيحة. */}
-                      <RegAdvice advice={advice} stage={s.key} />
-
                       {/* قاعدة 8 و9 · التحقّق في الحقل لا بعد الإرسال،
                           والرسالة بتقول **بأي جهة** اتعارض */}
                       {s.key === 'id' && clash && (
@@ -702,62 +676,26 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div className="col">
-              <Glass>
-                <Head title="مسار الطلب" meta={<span className="sub">خمس محطات</span>} />
-                <Steps items={steps} flow="ladder" />
-              </Glass>
+            {/* ═══ العمود الجانبي · كارت واحد لازق ═══
+                ⚠️ **كان تلات كروت واتشالوا بقرار العميل:** «مسار
+                الطلب» كان بيعيد الستيبر اللي فوق بشكل تاني، و«ما
+                ينقص قبل الإرسال» كان بيعدّ من غير ما يقول ليه،
+                و«الحساب البنكي» كان شرحًا مرجعيًّا مالوش علاقة
+                بالخطوة اللي المستخدم واقف فيها. تلاتة بيجاوبوا نفس
+                السؤال بتلات لغات · والمستخدم بيقرا واحدًا.
 
+                وكارت **واحد** هو اللي بيخلّي اللزق يشتغل: عمود بكذا
+                كارت لازق بياخد تمريرًا جوّه تمرير. */}
+            <div className="col aiside" ref={aside}>
               {phase === 'form' && (
-                <Glass>
-                  <Head
-                    title="ما ينقص قبل الإرسال"
-                    meta={
-                      missing.length
-                        ? <Tag tone="warn"><Num>{missing.length}</Num> عنصرًا</Tag>
-                        : <Tag tone="ok">مكتمل</Tag>
-                    }
-                  />
-                  {missing.length === 0 ? (
-                    <p className="sub cnote">
-                      كل الحقول والمستندات الإلزامية للتصنيف الحالي مكتملة ·
-                      القاعدة <span className="num">4</span> مستوفاة.
-                    </p>
-                  ) : (
-                    /* ⚠️ اسم الخطوة هنا **عنوان مجموعة لا رابط.**
-                       كان زرارًا بكلاس `.lnk` · فبيتلوّن ويتخطّ تحته
-                       عند المرور، ووعد التخطيط ده إن فيه وجهة. والتنقّل
-                       موجود فوق في الستيبر أصلًا، فالزرار كان بيقول
-                       نفس الكلام مرتين بشكلين · والقايمة دي **قراءة**:
-                       بتجاوب «ناقص إيه وفين»، مش بتنقل. */
-                    <ul className="regmiss">
-                      {REG_STAGES.filter((s) => shortBy[s.key].length).map((s) => (
-                        <li key={s.key}>
-                          <b>{s.label}</b>
-                          <span className="sub"> · {shortBy[s.key].join(' · ')}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Glass>
-              )}
-
-              {phase === 'form' && (
-                <Glass>
-                  <Head title="الحساب البنكي" meta={<Tag tone="ret">فرق عن النظام</Tag>} />
-                  <p className="sub cnote">
-                    القاعدة <span className="num">11</span> بتسجّل البيانات الأساسية
-                    والبنكية في طلب <b>واحد</b>، والنظام العامل بيأجّل البنك لإجراء
-                    تاني باعتماد منفصل وسبعة أسباب رفض مكوَّدة. اللي مبني هنا:
-                    إدخال واحد، واعتماد بنكي منفصل في شاشة المراجعة.
-                  </p>
-                  <p className="sub cnote">
-                    أسماء البنوك قائمة مقفولة ·{' '}
-                    <span className="num">{BANKS.length}</span> بنكًا (قاعدة{' '}
-                    <span className="num">27</span>) لا حقل نصّ، عشان الاسم ما يتكتبش
-                    بعشر صيغ.
-                  </p>
-                </Glass>
+                <RegAssist
+                  advice={advice}
+                  stage={tab}
+                  onPick={setTab}
+                  steps={REG_STAGES.map((st) => ({
+                    key: st.key, label: st.label, short: shortBy[st.key] ?? [],
+                  }))}
+                />
               )}
             </div>
           </div>

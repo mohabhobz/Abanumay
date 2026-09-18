@@ -7,7 +7,7 @@ await new Promise(r=>s.listen(4441,r))
 const lum=([r,g,b])=>{const f=c=>{c/=255;return c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4)};return .2126*f(r)+.7152*f(g)+.0722*f(b)}
 const ratio=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((m,n)=>n-m);return (x+.05)/(y+.05)}
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'})
-for(const theme of ['light','dark','green']){
+for(const theme of ['light','dark']){
   const c=await b.newContext({viewport:{width:1560,height:1000},deviceScaleFactor:2})
   await c.addInitScript(t=>{sessionStorage.setItem('ab-session','1');sessionStorage.setItem('abanumay.assistant.greeted','1');localStorage.setItem('ab-theme',t)},theme)
   const p=await c.newPage()

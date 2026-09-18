@@ -10,7 +10,6 @@ import { applyTheme, readTheme, writeTheme, type ThemeChoice } from '@/lib/theme
 const THEME_ITEMS: { key: ThemeChoice; label: string; icon: IconName }[] = [
   { key: 'light', label: 'فاتح', icon: 'sun' },
   { key: 'dark', label: 'داكن', icon: 'moon' },
-  { key: 'green', label: 'أخضر', icon: 'leaf' },
 ]
 
 /**

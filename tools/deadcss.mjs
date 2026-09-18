@@ -11,7 +11,7 @@ const defs=new Set()
 for(const m of css.matchAll(/(^|[\s,>+~(])\.([a-zA-Z][a-zA-Z0-9_-]*)/g)) defs.add(m[2])
 const seen=new Set()
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'})
-for(const theme of ['light','dark','green']){
+for(const theme of ['light','dark']){
   const ctx=await b.newContext({viewport:{width:1600,height:1000}})
   await ctx.addInitScript(([t,pub])=>{
     if(pub.includes(location.pathname+location.search)) sessionStorage.removeItem('ab-session')

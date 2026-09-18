@@ -26,7 +26,7 @@ const server = await new Promise((res) => {
 })
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' })
-const themes = ['light', 'dark', 'green']
+const themes = ['light', 'dark']
 
 /** prop -> value -> {n, ex:Set} */
 const H = {}

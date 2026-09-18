@@ -54,7 +54,10 @@ const MIME = {
   '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.mp4': 'video/mp4',
 }
 
-export const THEMES = ['light', 'dark', 'green']
+/* ⚠️ **كانوا تلاتة · الأخضر اتشال بقرار العميل (١٨ سبتمبر).**
+   التعليقات اللي في الأدوات التانية وبتقول «× ٣ ثيمات» سجلّ
+   لقياسات اتعملت وقتها · صحيحة كتاريخ، والعدد الحالي هنا. */
+export const THEMES = ['light', 'dark']
 
 /** سيرفر ستاتيك على بورت حرّ · الأداة ما بتحجزش رقمًا ثابتًا */
 async function serve() {

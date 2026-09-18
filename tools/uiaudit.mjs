@@ -200,7 +200,7 @@ const serve = () => new Promise((res) => {
 })
 
 const server = await serve()
-const themes = process.argv.includes('--themes') ? ['light', 'dark', 'green'] : ['light']
+const themes = process.argv.includes('--themes') ? ['light', 'dark'] : ['light']
 const browser = await chromium.launch({ executablePath: process.env.CHROME ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' })
 
 /** role → prop → value → [{route, sample}] */

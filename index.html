@@ -23,7 +23,7 @@
         var t = localStorage.getItem('ab-theme')
         document.documentElement.setAttribute(
           'data-theme',
-          t === 'dark' || t === 'green' ? t : 'light'
+          t === 'dark' ? t : 'light'
         )
       } catch (e) {
         document.documentElement.setAttribute('data-theme', 'light')

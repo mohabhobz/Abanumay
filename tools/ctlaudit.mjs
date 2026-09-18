@@ -66,7 +66,7 @@ const ROUTES_C = ['/', '/projects', '/entities', '/payments', '/budget', '/repor
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' })
 const out = {}
 
-for (const theme of ['light', 'dark', 'green']) {
+for (const theme of ['light', 'dark']) {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } })
   await ctx.addInitScript((t) => { sessionStorage.setItem('ab-session', 'audit'); localStorage.setItem('ab-theme', t) }, theme)
   const page = await ctx.newPage()

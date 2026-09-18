@@ -29,7 +29,7 @@ import{ROUTES as ALL_ROUTES,PUBLIC_ROUTES}from'./routes.mjs'
    قاس صفحة من ٢٨ وثيمًا من تلاتة · اختلاف في اسم فلاج بيدّي
    أخضر كاذب. الاسمان بيشتغلوا دلوقتي. */
 const all=process.argv.includes('--all')||process.argv.includes('--themes')
-const THEMES=all?['light','dark','green']:[process.argv[2]||'dark']
+const THEMES=all?['light','dark']:[process.argv[2]||'dark']
 const URLS=all?ALL_ROUTES:[process.argv[3]||'/']
 let grand=0
 for(const theme of THEMES){

@@ -38,7 +38,7 @@ const srv = http.createServer((q, r) => {
 })
 await new Promise((r) => srv.listen(PORT, r))
 
-const themes = process.argv.includes('--themes') ? ['light', 'dark', 'green'] : ['light']
+const themes = process.argv.includes('--themes') ? ['light', 'dark'] : ['light']
 const wantShots = process.argv.includes('--shots')
 if (wantShots) fs.mkdirSync(SHOTS, { recursive: true })
 

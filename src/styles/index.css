@@ -463,7 +463,7 @@
        غامق   ٢٫٢٧  ٢٫٧٠  ٣٫٢٠  ٣٫٧٨  ٤٫٤٣  ٥٫١٧  ٥٫٩٩
 
      ⚠️ **والقيمة الحالية خفيفة بقرار العميل (١٣ سبتمبر).** اتجرّبت
-     ٠٫٥٨ فاتح و٠٫٤٠ غامق (= ٣٫٢:١ في التلاتة · WCAG 1.4.11 أخضر)،
+     ٠٫٥٨ فاتح و٠٫٤٠ غامق (= ٣٫٢:١ في الاتنين · WCAG 1.4.11 أخضر)،
      والعميل شافها **تقيلة** ورجّعها للخفيفة.
 
      فالحدّ دلوقتي **١٫٣١:١ فاتح و١٫٦٠ غامق** — تحت ٣:١، وده
@@ -714,7 +714,7 @@
      الحلّ إن العايم له **لون أساس خاص بكل ثيم** بألفا **ثابتة**
      (`--pop-a` ٠٫٩٢)، بدل أبيض بألفا متغيّرة. فالزجاج فضل زجاجًا
      (الطمس شغّال، وفيه إحساس بالعمق) والتغطية بقت مضمونة في
-     الثيمات التلاتة. `tools/overlay.mjs` بيقيسها بالتصوير. */
+     المظهرين. `tools/overlay.mjs` بيقيسها بالتصوير. */
   --popC:251,253,252;         /* قنوات السطح العايم · بتتبدّل مع الثيم */
   --pop:rgb(var(--popC));     /* معتم · للقوائم الصغيرة */
   --pop-a:.92;                /* ألفا السطح العايم · **ثابتة عبر الثيمات** */
@@ -2342,7 +2342,7 @@ to{opacity:1;transform:none}
    التلاتة اتصلحوا مع بعض: الطبقة بقت أطول من الرصيف، والسلّم
    بيبدأ من فوق بهدوء ويوصل معتمًا تحت الشريط، والقاع أعتم. والنتيجة
    إن المحتوى بيغيب تدريجيًّا وهو داخل تحت الشريط بدل ما يتقصّ عند
-   حافته. واللون لسه `--base`، فالتيمات التلاتة بتشتغل بلا نسخة. */
+   حافته. واللون لسه `--base`، فالمظهران بيشتغلوا بلا نسخة. */
 .decdock::before{content:"";position:absolute;inset-inline:0;bottom:0;
   height:calc(100% + clamp(2.5rem, 6vh, 5rem));
   transition:opacity .25s ease;
@@ -3948,7 +3948,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
    والألوان الدلالية بتفتح: الأحمر اللي بيتقري على أبيض بيبقى
    طين على أسود، فلازم يعلى في السطوع لا في التشبّع.
    ═══════════════════════════════════════════════════════════ */
-:root[data-theme="dark"],:root[data-theme="green"]{ color-scheme:dark; --ch-a:#2FC7B6;
+:root[data-theme="dark"]{ color-scheme:dark; --ch-a:#2FC7B6;
   /* في الغامق الأرضية المعتمة بتختفي في الخلفية، فبتتقلب: أرضية
      فاتحة وحبر داكن · متقاسة مع `#06100F`:
        ٧٫٩٢ · ١١٫٢٣ · ١٢٫١٦ · ١١٫٦٢ */
@@ -4023,66 +4023,6 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
     radial-gradient(64% 58% at 8% 54%,   rgba(6,8,8,.84) 0%,      rgba(6,8,8,0) 100%);
   --mesh-blend:overlay;
 }
-:root[data-theme="green"]{
-  --el-c:0,0,0;   /* الظلّ أسود على أرضية غامقة · الملوّن ما بيبانش */
-  --ctl-bg:#264143; --ctl-bg-h:#304D4F; --ctl-bg-a:#3A585A;   /* سطح التحكّم · مقيس · شوف :root */
-  --base:#08181A; --baseC:8,24,26;
-  --retC2:120,180,235;
-  --no-soft:rgba(38,20,17,.94);
-  --t1:#E6F1EF; --t2:#A9C7C3; --t3:#A2C1BD;
-  --edgeC:174,214,209;
-  --edge-hair:.13; --edge-strong:.30; --edge-side:.12; --edge-bottom:.07;
-  --wC:255,255,255; --wM:.10;
-  --popC:15,36,38;
-  --bar-bg:linear-gradient(180deg,rgba(9,26,28,.94),rgba(9,26,28,.99));
-  --ink-soft:var(--t1);
-  --logo-ink:#FFFFFF; --logo-teal:#FFFFFF; --logo-lime:#FFFFFF;
-  --solid:#2FC7B6; --on-solid:#06191B; --solidC:47,199,182;
-  --link:#A8D93C;
-  --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
-  --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
-  --warn-ink:#FFD98A; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FFC7B7;
-  /* ⚠️ `--ret-ink3` كان `#B6D9F7` وبيدّي **4.25** فوق أرضية وسم
-     `.tag.ret` في نقطة متشبّعة من تدرّج صفحة المشاريع · وبيعدّي
-     في صفحات تانية لأن التدرّج بيتغيّر تحته. نفس اللي حصل بالظبط
-     في `--t3` و`--warn-ink` و`--mute-ink` قبل كده: **قيمة بتشتغل
-     في صفحة وتقع في التانية مش قيمة، هي صدفة**.
-     `#CDE6FA` بيدّي 4.86 على أسوأ نقطة اتقاست. */
-  --ret-ink:#8CC2F0; --ret-ink3:#CDE6FA; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
-  --ok-ink:#8DEEC4; --ok-ink3:#B4F5DA; --brand-ink:#E2F4B4; --mute-ink:#C6DCD8;
-  --retC:120,180,235; --limeC:168,217,60;
-  --t3-g:#A9C7C3; --t2-g:#C6DEDA;
-  --g-card: linear-gradient(158deg, rgba(255,255,255,.075), rgba(255,255,255,.035));
-  --g-data: linear-gradient(158deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
-  --g-chrome: linear-gradient(180deg, rgba(12,32,34,.72), rgba(12,32,34,.56));
-  --grain:.05;
-  /* كل ألوان الجراف هنا متوسّطة لفاتحة، فالحبر الغامق بيكفيها كلها */
-  --on-ch-1:var(--ch-ink);
-  --ch-1:#0FA69B; --ch-2:#2FC7B6; --ch-3:#6FDCC8;
-  --ch-4:#A8D93C; --ch-5:#79B4E4; --ch-6:#8AA9A6;
-  --ch-idle:rgba(174,214,209,.13);
-  --ch-warn:#E8B045; --ch-late:#F0806A;
-  --track:rgba(174,214,209,.12);
-  --map-line:rgba(8,24,26,.85);
-  --map-ink:#EAF6F3;
-  --map-halo:rgba(8,24,26,.85);
-  --map-0:rgba(174,214,209,.07);
-  --map-1:rgba(47,199,182,.20);
-  --map-2:rgba(47,199,182,.36);
-  --map-3:rgba(47,199,182,.58);
-  --map-4:#2FC7B6;
-  --tone-1:96,164,158; --tone-2:24,186,172; --tone-3:60,214,196; --tone-4:168,217,60;
-  --mesh-bg:#08181A;
-  --mesh-img:
-    radial-gradient(64% 54% at 92% -12%, rgba(0,165,155,.30) 0%,  rgba(0,165,155,0) 100%),
-    radial-gradient(58% 46% at 66% -4%,  rgba(20,69,71,.55) 0%,   rgba(20,69,71,0) 100%),
-    radial-gradient(46% 40% at 88% 34%,  rgba(0,165,155,.20) 0%,  rgba(0,165,155,0) 100%),
-    radial-gradient(56% 44% at 62% 62%,  rgba(0,120,120,.18) 0%,  rgba(0,120,120,0) 100%),
-    radial-gradient(42% 38% at 36% 86%,  rgba(148,214,3,.08) 0%,  rgba(148,214,3,0) 100%),
-    radial-gradient(86% 76% at -4% 98%,  rgba(6,20,22,.92) 0%,    rgba(6,20,22,0) 100%),
-    radial-gradient(64% 58% at 8% 54%,   rgba(7,22,24,.80) 0%,    rgba(7,22,24,0) 100%);
-  --mesh-blend:overlay;
-}
 /* ═══ النص فوق أرضية الصفحة ═══
    العنصر اللي مالوش كارت تحته بيقع على الميش، والميش في أعلى
    الصفحة (مكان الترويسة وفتات الطريق) هو أغمق مكان فيه. نفس
@@ -4105,14 +4045,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 :root[data-theme="dark"] .lcard.glass{
   background:linear-gradient(158deg, rgba(10,12,12,.88), rgba(10,12,12,.76));
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.16), var(--el-4)}
-:root[data-theme="green"] .lcard,
-:root[data-theme="green"] .lcard.glass{
-  background:linear-gradient(158deg, rgba(8,24,26,.86), rgba(8,24,26,.74));
-  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.16), var(--el-4)}
-:root[data-theme="dark"] .login-vid,
-:root[data-theme="green"] .login-vid{filter:brightness(.55) saturate(.9)}
-:root[data-theme="dark"] .lfoot,
-:root[data-theme="green"] .lfoot{color:var(--t2);text-shadow:0 1px 6px rgba(0,0,0,.6)}
+:root[data-theme="dark"] .login-vid{filter:brightness(.55) saturate(.9)}
+:root[data-theme="dark"] .lfoot{color:var(--t2);text-shadow:0 1px 6px rgba(0,0,0,.6)}
 /* ═══ إجماليات الجهة · شريط لوحات ملتصقة ═══
    مكانها مكان المروحة في صفحة المشروع بالظبط: شمال الترويسة،
    جوّه `.pgates`. واللوحات ملتصقة بلا فواصل · شريط واحد متّصل،
@@ -5897,8 +5831,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    الشارة غامقة، فالحبر الفاتح يتقري. باقي التونات اتظبطت من
    حبرها؛ دي الوحيدة اللي لازم تتظبط من أرضيتها لأن الليمون
    بطبيعته فاتح. */
-:root[data-theme="dark"] .tag.brand,
-:root[data-theme="green"] .tag.brand{
+:root[data-theme="dark"] .tag.brand{
   background-color:rgba(var(--edgeC),.10);
   background-image:linear-gradient(rgba(var(--limeC),.12),rgba(var(--limeC),.12))}
 
@@ -6000,10 +5933,8 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .chy-over{fill:rgba(var(--noC),.30);stroke:none}
 /* على أرضية غامقة الشفافية نفسها بتدّي لون أغمق من الأرضية، فما
    بتبانش · نفس النسبة مش نفس الظهور */
-:root[data-theme="dark"] .chy-over,
-:root[data-theme="green"] .chy-over{fill:rgba(var(--noC),.52)}
-:root[data-theme="dark"] .chb-k i.ov,
-:root[data-theme="green"] .chb-k i.ov{background:rgba(var(--noC),.52)}
+:root[data-theme="dark"] .chy-over{fill:rgba(var(--noC),.52)}
+:root[data-theme="dark"] .chb-k i.ov{background:rgba(var(--noC),.52)}
 /* مفتاح خطّي · بيرسم اللي مرسوم لا مربّعًا نايب عنه */
 .chb-k i.ln{width:16px;height:0;border-radius:0;background:none;border-block-start:2px solid}
 .chb-k i.ln.a{border-color:var(--ch-a)}
@@ -6112,7 +6043,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* ═══ تسجيل جهة جديدة · BPD-002 ═══
    الحقول والضوابط والمستندات. كلها بتستعمل نفس الأرضيات والحوافّ
    اللي في باقي السيستم (`--fl-*` و`--edge-*`) · مفيش قيمة لون
-   مكتوبة هنا، فالتيمات التلاتة بتشتغل بلا نسخة تانية. */
+   مكتوبة هنا، فالمظهران بيشتغلوا بلا نسخة تانية. */
 
 /* الضوابط الخمسة · الرقم علامة ترتيب لا زخرفة، والضوابط مرقَّمة
    في النظام العامل نفسه */
@@ -6666,7 +6597,9 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .bkrows{display:flex;flex-direction:column;gap:var(--sp-5);margin-top:var(--sp-4);min-width:0}
 /* ⚠️ **حلقة بلا أرضية.** الأرضية (`--fl-1`) كانت بتحطّ سطحًا
    تالتًا تحت الوسم، والوسم مظبوط على سطح الكارت · «ناقصة» نزلت
-   4.43 في الثيم الأخضر. الحدّ لوحده كفاية عشان الصفّ يتقرا كتلة. */
+   4.43 (اتقاست في الثيم الأخضر أيام ما كان موجودًا · اتشال بقرار
+   العميل، والقياس فضل صحيحًا لأن السبب سطح زيادة لا لون).
+   الحدّ لوحده كفاية عشان الصفّ يتقرا كتلة. */
 .bkrow{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0;
   padding:var(--sp-5);border-radius:var(--r1);
   box-shadow:inset 0 0 0 1px var(--edge-2)}
@@ -6682,10 +6615,16 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 
 /* ═══ مساعد أبانمي في النموذج · ن-3 ═══
    النبرة في الأيقونة واللون، والسبب في السطر التحتاني · فالسطر
-   الأول بيتقرا في لمحة والتاني لمن وقف عنده. */
-.rgadv{display:flex;flex-direction:column;min-width:0;
-  margin-top:var(--sp-5);padding-top:var(--sp-5);
-  box-shadow:inset 0 1px 0 var(--edge-d)}
+   الأول بيتقرا في لمحة والتاني لمن وقف عنده.
+
+   ⚠️ **الكارت اتنقل من جوّه المحطة للعمود اللازق بقرار العميل.**
+   كان مكتوبًا هنا إن «اللوح الجنبي بيتقفل والجهة مش هتفتحه» ·
+   والاعتراض ده كان على لوح **بيتقفل**، لا على عمود مفتوح دايمًا
+   وبيتمرّر مع الصفحة. العمود ده ما بيتقفلش، فالنصيحة موجودة طول
+   الرحلة من غير ما تزقّ حقول النموذج لتحت.
+
+   قوايم النبرة (`.rgadv-l` وإخواتها) مشتركة بين الاتنين · نفس
+   السطر بنفس الأيقونة في أي مكان يتعرض فيه. */
 .rgadv-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
 .rgadv-h b{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
 .rgadv-l{display:flex;flex-direction:column;gap:var(--sp-3);margin:var(--sp-4) 0 0;padding:0;list-style:none;min-width:0}
@@ -6698,6 +6637,27 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .rgadv-ok>svg{color:var(--ok)}
 .rgadv-warn>svg{color:var(--warn)}
 .rgadv-no>svg{color:var(--no)}
+
+/* ── الكارت اللازق · «مساعد أبانمي» في رحلة التسجيل ──
+   ⚠️ **الترويسة والشريط ثابتان والباقي بيتمرّر.** الكارت بياخد
+   ارتفاع الشاشة لمّا يلزق (`--ai-fill`)، فلو كله بيتمرّر بتضيع
+   «إنت فين» أول ما تنزل سطرين · ودي أول حاجة الكارت موجود
+   عشانها. نفس تقسيمة `.aicard.aiopen` بالظبط. */
+/* ⚠️ **`max-height` لا `height`.** `.aicard` بيملا العمود لأنه
+   بوستر بيتوسّط فراغه · والمساعد ده نصّ، والنصّ اللي بياخد ٨٤٢px
+   وهو ٢٠٠ بيسيب زجاجًا فاضيًا تحته. السقف بيخلّي الكارت على طول
+   محتواه، وما بيتمرّرش جوّه إلا لمّا يعدّي الشاشة فعلًا. */
+.rgass{display:flex;flex-direction:column;min-height:0;max-height:100%}
+.rgass-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0;flex:none}
+.rgass-h b{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
+.rgass-s{margin-top:var(--sp-5)}
+/* عنوان المجموعة · مش ترويسة كارت فماخدش وزنها */
+.rgass-k{font-size:var(--fs-1);color:var(--t3);margin:0 0 var(--sp-3)}
+.rgass-k b{color:var(--t1);font-weight:600}
+.rgass-k2{margin-top:var(--sp-5);padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
+.rgass-n{margin-top:0}
+.rgass-l{display:flex;flex-direction:column;gap:var(--sp-3);margin:0;padding:0;list-style:none;min-width:0}
+.rgass-l>li{font-size:var(--fs-2);line-height:var(--lh-2);min-width:0}
 
 /* ═══ بوّابة الجهة · ن-2 ═══ */
 .ptl-miss{display:flex;flex-direction:column;gap:var(--sp-2);margin:var(--sp-4) 0 0;padding:0;list-style:none}
