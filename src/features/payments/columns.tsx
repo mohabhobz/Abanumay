@@ -125,8 +125,10 @@ export const COLS: Col[] = [
         : <Tag tone={HEAT_TONE[h]}>{HEAT_SAY[h]}</Tag>
     },
     text: (r) => (payHeat(r) === 'ok' ? `${Math.round(r.hoursInState / 24)} يومًا` : HEAT_SAY[payHeat(r)]),
+    /* نفس حكاية الاتفاقيات · الخلية أيام أو كلمة، فالوسط بيقول وحدته */
     value: (r) => Math.round(r.hoursInState / 24),
     agg: 'avg',
+    aggSay: 'يومًا وسطي',
   },
   {
     /* آلية التصعيد (9.5 بند 3) بتطلب «تقرير شامل بالمتأخرة والمتعثرة:

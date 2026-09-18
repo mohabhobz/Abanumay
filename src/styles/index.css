@@ -1276,7 +1276,11 @@ small{font-size:var(--fs-1)}
 .tbl .tchk{padding-inline:var(--sp-3);text-overflow:clip}
 .tbl .nmc{min-width:0}
 .tbl .nmc>span{overflow:hidden;text-overflow:ellipsis}
-.tbl tr:hover td{background:var(--fl-2)}
+/* ⚠️ **`tbody` لا `tr` · التحويم كان بيطول صفّ الإجماليات كمان.**
+   تخصيصه (0,2,2) بيغلب `.tbl tfoot td` (0,1,2)، فأول ما الماوس
+   تعدّي على صفّ المجاميع بياخد لون الصفوف العادية ويفقد نبرته ·
+   والإجمالي مش صفًّا بتقراه بالتحويم أصلًا، هو تلخيص. */
+.tbl tbody tr:hover td{background:var(--fl-2)}
 .tbl tr.lv0 td{background:var(--fl-2);font-weight:500}
 .tbl tr.off td{color:var(--t3)}
 .tbl .nmc{display:flex;align-items:center;gap:var(--sp-3)}
@@ -4895,8 +4899,16 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 .fgrp .fopt-x{font-family:var(--fd);font-weight:700;font-size:var(--fs-1);
   display:grid;place-items:center;color:var(--ok)}
 /* صف الإجماليات: نبرة أغمق شويّة من الصفوف، ومثبَّت أسفل الجدول */
+/* ⚠️ **اللون في متغيّر لأنه بيتكتب في مكانين، وواحد منهم اتنسي.**
+   خانة منتقي الأعمدة (`.tcolx`) ملزوقة بالحافّة وبتاخد خلفيتها
+   بنفسها (من غيرها الصفوف بتعدّي من تحتها) · وتخصيصها `.tbl
+   td.tcolx` (0,2,1) بيغلب `.tbl tfoot td` (0,1,2). فصفّ الإجماليات
+   كان بيقف قبل آخر الجدول بـ38px وتفضل قطعة بلون الصفوف في ركنه ·
+   والعميل شافها درجة مختلفة في آخر الشريط. */
+.tbl{--tfoot-bg:rgba(var(--edgeC),.045)}
 .tbl tfoot td{padding-block:var(--sp-4);border-top:1px solid var(--edge-f);
-  background:rgba(var(--edgeC),.045);font-size:var(--fs-2);color:var(--t1)}
+  background:var(--tfoot-bg);font-size:var(--fs-2);color:var(--t1)}
+.tbl tfoot td.tcolx{background:var(--tfoot-bg)}
 .tbl tfoot b{font-family:var(--fd);font-weight:700}
 .tbl tfoot small{font-size:var(--fs-1);font-weight:400}
 /* قيمة الإجمالي: الرقم على اليمين والوحدة على الشمال، ومحاذاة
@@ -4924,7 +4936,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   position:sticky;inset-inline-end:0;z-index:2;background:var(--g-card)}
 .tbl td.tcolx{width:38px;padding:0;
   position:sticky;inset-inline-end:0;z-index:1;background:var(--fl-1)}
-.tbl tr:hover td.tcolx{background:var(--fl-2)}
+/* التحويم على الصفوف وحدها · صفّ الإجماليات مش صفًّا بتقراه
+   بالتحويم، وكان بيفقد لونه أول ما الماوس تعدّي عليه */
+.tbl tbody tr:hover td.tcolx{background:var(--fl-2)}
 .tcolp{position:relative}
 .tcolb{display:grid;place-items:center;width:26px;height:26px;border-radius:var(--r0);
   color:var(--t2);background:var(--fl-4);

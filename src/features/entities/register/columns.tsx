@@ -90,8 +90,12 @@ export const COLS: Col[] = [
       )
     },
     text: (r) => `${needCount(r) - regMissingDocs(r).length}/${needCount(r)}`,
+    /* ⚠️ **الخلية بتعدّ المكتمل والإجمالي بيعدّ الناقص** · فلازم
+       يقول كده. من غير الكلمة كان بيطلع رقم أسود عريان (5) تحت
+       عمود خلاياه «١ من ٢»، والقارئ ما يقدرش يوصله بحاجة. */
     value: (r) => regMissingDocs(r).length,
     agg: 'sum',
+    aggSay: 'مستندًا ناقصًا',
   },
   {
     key: 'governance',
@@ -103,8 +107,10 @@ export const COLS: Col[] = [
         ? <span className="num">{r.governanceClaim}</span>
         : <span className="sub">لم تُقيَّم</span>,
     text: (r) => (r.governanceClaim > 0 ? String(r.governanceClaim) : 'لم تُقيَّم'),
-    value: (r) => r.governanceClaim,
+    /* «لم تُقيَّم» تتشال من الحسبة · صفر بيقول «درجتها صفر» */
+    value: (r) => (r.governanceClaim > 0 ? r.governanceClaim : null),
     agg: 'avg',
+    aggSay: 'وسطي المُقيَّم',
   },
   {
     key: 'licensor',
@@ -145,8 +151,11 @@ export const COLS: Col[] = [
         ? <span className="num">{r.reviewDays}</span>
         : <span className="sub">لم تُغلق</span>,
     text: (r) => (r.reviewDays ? String(r.reviewDays) : 'لم تُغلق'),
-    value: (r) => r.reviewDays ?? 0,
+    /* ⚠️ `null` لا `0` · «لم تُغلق» مش مدّة صفر، هي غياب مدّة.
+       كانت `?? 0` فالمتوسّط بيقسم على طلبات لسه مفتوحة. */
+    value: (r) => r.reviewDays ?? null,
     agg: 'avg',
+    aggSay: 'يومًا وسطي للمغلَق',
   },
   {
     key: 'clerk',

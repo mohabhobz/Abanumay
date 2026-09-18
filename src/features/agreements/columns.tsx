@@ -115,8 +115,11 @@ export const COLS: Col[] = [
         : <Tag tone={HEAT_TONE[h]}>{HEAT_SAY[h]}</Tag>
     },
     text: (a) => (agrHeat(a) === 'ok' ? `${Math.round(a.hoursInStage / 24)} يومًا` : HEAT_SAY[agrHeat(a)]),
+    /* الخلية بتقول أيامًا في صفّ وكلمة («متأخر») في صفّ · فالوسط
+       لازم يقول وحدته، وإلا بقى رقمًا معلّقًا تحت عمود فيه كلام */
     value: (a) => Math.round(a.hoursInStage / 24),
     agg: 'avg',
+    aggSay: 'يومًا وسطي',
   },
   {
     key: 'version',

@@ -68,8 +68,11 @@ export const COLS: Col[] = [
       </span>
     ),
     text: (e) => `${e.docsUploaded}/${ENTITY_DOCS_TOTAL}`,
+    /* الخلية نسبة والإجمالي وسط · «وسطي» لوحدها بتضيّع المقام،
+       فالكلمة بتقوله */
     value: (e) => e.docsUploaded,
     agg: 'avg',
+    aggSay: `وسطي المرفوع من ${ENTITY_DOCS_TOTAL}`,
   },
   { key: 'approved', w: 92, label: 'معتمدة', n: true, cell: (e) => e.projectsApproved, text: (e) => String(e.projectsApproved), value: (e) => e.projectsApproved, agg: 'sum' },
   { key: 'running', w: 110, label: 'تحت التشغيل', def: true, n: true, cell: (e) => e.projectsRunning, text: (e) => String(e.projectsRunning), value: (e) => e.projectsRunning, agg: 'sum' },

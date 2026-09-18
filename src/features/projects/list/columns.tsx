@@ -67,8 +67,11 @@ export const COLS: Col[] = [
       </>
     ),
     text: (r) => (r.stageLimit > 0 ? String(Math.round(r.hoursInStage / 24)) : 'بلا حدّ'),
+    /* «بلا حدّ» في الخلية مدّة موجودة بلا سقف · فهي بتتحسب،
+       والوسط بيقول وحدته */
     value: (r) => Math.round(r.hoursInStage / 24),
     agg: 'avg',
+    aggSay: 'يومًا وسطي',
   },
   {
     key: 'requested',

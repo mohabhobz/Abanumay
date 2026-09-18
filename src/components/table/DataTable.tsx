@@ -182,6 +182,9 @@ export function DataTable<T>({
               <span key={c.key}>
                 <span className="sub">{c.label}</span>{' '}
                 <b className="num">{nf.format(aggregate(c, rows) ?? 0)}</b>
+                {(c.aggSay ?? (c.agg === 'avg' ? 'وسطي' : '')) && (
+                  <small className="sub"> {c.aggSay ?? 'وسطي'}</small>
+                )}
               </span>
             ))}
           </span>
@@ -341,7 +344,11 @@ function Cap<T>({
             <span key={c.key}>
               <span className="sub">{c.label}</span>{' '}
               <b className="num">{nf.format(aggregate(c, node.rows) ?? 0)}</b>
-              {c.agg === 'avg' && <small className="sub"> وسطي</small>}
+              {/* نفس كلمة `tfoot` · الرقم اللي في الترويسة المطويّة
+                  واللي في الإجماليات لازم يقولوا نفس الحاجة */}
+              {(c.aggSay ?? (c.agg === 'avg' ? 'وسطي' : '')) && (
+                <small className="sub"> {c.aggSay ?? 'وسطي'}</small>
+              )}
             </span>
           ))}
         </span>
@@ -531,7 +538,11 @@ function Block<T>({
                          الرقم اللي فوقها في العمود. */
                       <span className="tfv">
                         <b className="num">{nf.format(total)}</b>
-                        {c.agg === 'avg' && <small className="sub">وسطي</small>}
+                        {/* الكلمة من العمود · و«وسطي» هي الافتراضية
+                            للمتوسّط وحده. شوف `aggSay` في `model.ts`. */}
+                        {(c.aggSay ?? (c.agg === 'avg' ? 'وسطي' : '')) && (
+                          <small className="sub">{c.aggSay ?? 'وسطي'}</small>
+                        )}
                       </span>
                     ) : i === 0 ? (
                       <span className="sub">{count(rows.length)}</span>
