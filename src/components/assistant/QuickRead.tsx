@@ -21,6 +21,19 @@ export interface QuickReadProps {
   title?: string
   /** يفتح لوح المساعد الكامل */
   onAsk?: () => void
+  /**
+   * الجملة اللي بتتقال لمّا مفيش ملاحظات في النطاق الحالي.
+   *
+   * ⚠️ **المساعد ما بيختفيش · هو بيقول إنه مفيش حاجة.** الكومبوننت
+   * كان بيرجّع `null` لمّا القراءات تفضى، والقراءات محسوبة من
+   * **الصفوف بعد الفلتر** · يعني أول ما المستخدم يضيّق النطاق
+   * لصفوف مفيهاش مشاكل، الشريط بيتشال من الشاشة والتخطيط بينطّ.
+   *
+   * والأسوأ من النطّ إن الاختفاء بيتقري **عطلًا**: المستخدم اللي
+   * شاف المساعد وهو بيفلتر بيفتكر إنه كسر حاجة، لا إنه وصل لنطاق
+   * نضيف. وسطر «مفيش ملاحظات» إجابة، والغياب مش إجابة.
+   */
+  empty?: string
 }
 
 /**
@@ -38,6 +51,7 @@ export function QuickRead({
   variant = 'panel',
   title = 'قراءة سريعة',
   onAsk,
+  empty,
 }: QuickReadProps) {
   const box = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(box)
@@ -50,11 +64,18 @@ export function QuickRead({
     return () => clearTimeout(id)
   }, [onScreen, thought])
 
-  const shown = open ? readings : readings.slice(0, 1)
-  const { block, chars, done } = useTypedBlocks(shown.map((r) => r.text), thought)
-  const flags = readings.filter((r) => r.kind === 'flag').length
+  /* ⚠️ القراءة الهادية **مبنيّة هنا لا في كل شاشة** · خمس شاشات
+     كانت هتكتب نفس السطر، واللي يتنسي فيهم بيرجع يختفي. */
+  const calm: Reading[] = [{
+    id: 'qr-calm',
+    kind: 'note',
+    text: empty ?? 'مفيش ملاحظات في النطاق الحالي · وسّع الفلتر تشوف أكتر.',
+  }]
+  const list = readings.length > 0 ? readings : calm
 
-  if (readings.length === 0) return null
+  const shown = open ? list : list.slice(0, 1)
+  const { block, chars, done } = useTypedBlocks(shown.map((r) => r.text), thought)
+  const flags = list.filter((r) => r.kind === 'flag').length
 
   const head = (
     <>
@@ -67,8 +88,10 @@ export function QuickRead({
           <span className="num">{flags}</span> تحتاج انتباه
         </span>
       )}
+      {/* العدّاد من القايمة المعروضة · وفي الحالة الهادية بيقول
+          «قراءة واحدة» لأن دي فعلًا اللي معروضة */}
       <span className="qr-count">
-        {units.reading(readings.length)}
+        {units.reading(list.length)}
       </span>
     </>
   )
@@ -83,7 +106,7 @@ export function QuickRead({
           <Icon name={open ? icons.chevronUp : icons.chevronDown} size={16} />
         </button>
 
-        {!open && readings[0] && <ReadingPeek reading={readings[0]} />}
+        {!open && list[0] && <ReadingPeek reading={list[0]} />}
 
         {open && (
           <div className="qr-list">
@@ -133,7 +156,7 @@ export function QuickRead({
         </div>
       )}
 
-      {!open && readings[0] && <ReadingPeek reading={readings[0]} />}
+      {!open && list[0] && <ReadingPeek reading={list[0]} />}
 
       {open && (
         <>

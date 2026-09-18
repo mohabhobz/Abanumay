@@ -211,7 +211,12 @@ export default function AgreementsPage() {
                 «للاتّساق» ويكسر القاعدة الحقيقية. */}
           </header>
 
-          <QuickRead variant="bar" title="قراءة سريعة للاتفاقيات" readings={readings} />
+          <QuickRead
+            variant="bar"
+            title="قراءة سريعة للاتفاقيات"
+            readings={readings}
+            empty="مفيش اتفاقية موقوفة عن الاعتماد في النطاق الحالي · وسّع الفلتر تشوف أكتر."
+          />
 
           {/* ⚠️ الأربعة دي هي مؤشرات الوثيقة الأربعة (9.7)، لا أربعة
               أرقام مختارة · وعمود «القيمة المستهدفة» فاضي فيها كلها،

@@ -465,6 +465,7 @@ export default function ProjectsListPage() {
             variant="bar"
             title="قراءة سريعة للقائمة"
             readings={readings}
+            empty="المشاريع في النطاق الحالي مفيهاش متجاوز للحدّ ولا بلا مالك · وسّع الفلتر تشوف أكتر."
           />
 
           {/* ═══ اللقطات المحفوظة · صفّ واحد، وهي المحور الأساسي:

@@ -4,6 +4,7 @@
  * ١ · ممنوع `<select>` الأصلية في الواجهة.
  * ٢ · وممنوع `label` على قائمة جوّه شريط الأدوات.
  * ٣ · وممنوع `**` في نصّ JSX · ده مش ماركداون.
+ * ٤ · وممنوع المساعد يختفي لمّا القراءات تفضى.
  *
  * ⚠️ **دي قاعدة كانت مكتوبة في مكان وناقصة في التاني، وعشان كده
  * رجعت.** `Select` بتاعة شريط الأدوات اتشالت منها `<select>` من
@@ -79,9 +80,22 @@ const labelInToolbar = (src) => {
  */
 const MD_OK = 'components/assistant/md.tsx'
 
+/**
+ * ⚠️ **المساعد ما بيختفيش · هو بيقول إنه مفيش حاجة.**
+ * `QuickRead` و`AnalysisCard` كانوا بيرجّعوا `null` لمّا القراءات
+ * تفضى · والقراءات محسوبة من **الصفوف بعد الفلتر**، يعني أول ما
+ * المستخدم يضيّق النطاق لصفوف مفيهاش مشاكل، المساعد بيتشال من
+ * الشاشة والتخطيط بينطّ (وفي لوحة التقارير العمود الجانبي كله).
+ *
+ * والأسوأ من النطّ إن الاختفاء بيتقري **عطلًا**: المستخدم بيفتكر
+ * إنه كسر حاجة، لا إنه وصل لنطاق نضيف. الغياب مش إجابة.
+ */
+const ASSIST = ['components/assistant/QuickRead.tsx', 'components/assistant/AnalysisCard.tsx']
+
 const hits = []
 const labels = []
 const stars = []
+const vanish = []
 for (const f of walk(SRC)) {
   const rel = path.relative(SRC, f)
   const clean = strip(fs.readFileSync(f, 'utf8'))
@@ -93,6 +107,13 @@ for (const f of walk(SRC)) {
   })
   for (const l of labelInToolbar(clean)) {
     labels.push(`${rel}:${l.at}  <${l.what} label=…>`)
+  }
+  if (ASSIST.includes(rel)) {
+    clean.split('\n').forEach((line, i) => {
+      if (/readings\.length === 0\s*\)?\s*return null/.test(line)) {
+        vanish.push(`${rel}:${i + 1}  ${line.trim().slice(0, 60)}`)
+      }
+    })
   }
 }
 
@@ -116,5 +137,11 @@ if (stars.length) {
   for (const l of stars) console.log(`   ${l}`)
   console.log('   ده مش ماركداون · استعمل <b>…</b>')
 }
+if (vanish.length) {
+  bad = true
+  console.log(`\n🔴 المساعد بيختفي لمّا القراءات تفضى · ${vanish.length} موضع`)
+  for (const l of vanish) console.log(`   ${l}`)
+  console.log('   استعمل `empty` وقول «مفيش ملاحظات» بدل ما يتشال')
+}
 if (bad) process.exit(1)
-console.log('\n✅ القوايم والشريط والنصّ · كلهم على القاعدة\n')
+console.log('\n✅ القوايم والشريط والنصّ والمساعد · كلهم على القاعدة\n')

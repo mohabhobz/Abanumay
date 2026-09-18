@@ -17,6 +17,18 @@ export interface AnalysisCardProps {
   /** نصّ زرار الدعوة · «حلّل المشروع» افتراضيًا */
   cta?: string
   /**
+   * الجملة اللي بتتقال لمّا مفيش قراءات.
+   *
+   * ⚠️ **الكارت ما بيختفيش · هو بيقول إنه مفيش حاجة.** كان بيرجّع
+   * `null`، وفي لوحة التقارير القراءات محسوبة من **الفترة
+   * المختارة** · يعني تبديل الفترة كان بيشيل العمود الجانبي كله
+   * من الشاشة، والتخطيط بينطّ من عمودين لعمود.
+   *
+   * وده نفس اللي حصل في `QuickRead` مع الفلاتر · الغياب بيتقري
+   * عطلًا، و«مفيش ملاحظات» إجابة.
+   */
+  empty?: string
+  /**
    * زرار «اسأل» ظاهر؟
    *
    * ⚠️ **بوّابة التسجيل مالهاش مساعد أصلًا.** الجهة اللي بتسجّل
@@ -51,7 +63,7 @@ export interface AnalysisCardProps {
  * باك اند، الحالة دي بتبقى انتظار حقيقي لا مؤقّتًا.
  */
 export function AnalysisCard({
-  readings, onAsk, title: heading = 'تحليلات المشروع السريعة', cta, ask = true,
+  readings, onAsk, title: heading = 'تحليلات المشروع السريعة', cta, ask = true, empty,
 }: AnalysisCardProps) {
   const card = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(card)
@@ -66,11 +78,17 @@ export function AnalysisCard({
     return () => clearTimeout(id)
   }, [armed, onScreen, thought])
 
-  const { block, chars, done } = useTypedBlocks(readings.map((r) => r.text), thought)
-  const thinking = armed && onScreen && !thought
-  const flags = readings.filter((r) => r.kind === 'flag').length
+  /* ⚠️ القراءة الهادية مبنيّة هنا لا في كل شاشة · نفس `QuickRead` */
+  const calm: Reading[] = [{
+    id: 'ai-calm',
+    kind: 'note',
+    text: empty ?? 'مفيش ملاحظات في النطاق الحالي · غيّر النطاق تشوف أكتر.',
+  }]
+  const list = readings.length > 0 ? readings : calm
 
-  if (readings.length === 0) return null
+  const { block, chars, done } = useTypedBlocks(list.map((r) => r.text), thought)
+  const thinking = armed && onScreen && !thought
+  const flags = list.filter((r) => r.kind === 'flag').length
 
   const title = (
     <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: 'var(--fs-4)' }}>{heading}</div>
@@ -102,14 +120,14 @@ export function AnalysisCard({
 
           {/* لمحة أهمّ قراءة: «واقف فين ومحتاج إيه» أول سؤال بيتسأل،
               فبيتقري من غير ضغطة، والتفصيل بيتحسب بالطلب. */}
-          {readings[0] && (
+          {list[0] && (
             <p className="aishut-p">
-              {readings[0].metric && (
-                <b className={readings[0].kind === 'flag' ? 'bad' : undefined}>
-                  {readings[0].metric.value} {readings[0].metric.unit} {' '}
+              {list[0].metric && (
+                <b className={list[0].kind === 'flag' ? 'bad' : undefined}>
+                  {list[0].metric.value} {list[0].metric.unit} {' '}
                 </b>
               )}
-              {readings[0].text}
+              {list[0].text}
             </p>
           )}
 
@@ -161,13 +179,13 @@ export function AnalysisCard({
         </div>
       )}
 
-      {!open && readings[0] && <ReadingPeek reading={readings[0]} />}
+      {!open && list[0] && <ReadingPeek reading={list[0]} />}
 
       {/* الرندر الشرطي لا `hidden`: `.qr-list` ليها بادنج وحدود في
           الـCSS، والخاصية بتتغلب عليها فالكارت بيفضل مفتوحًا. */}
       {open && (
         <div className="qr-list aiscroll">
-          {readings.map((r, i) => (
+          {list.map((r, i) => (
             <ReadingBlock key={r.id} reading={r} typing={i === block} chars={chars} hidden={i > block} />
           ))}
         </div>

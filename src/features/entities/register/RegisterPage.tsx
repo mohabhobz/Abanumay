@@ -701,6 +701,7 @@ export default function RegisterPage() {
                 <AnalysisCard
                   title="مراجعة مساعد أبانمي"
                   cta="راجع طلبي"
+                  empty="الخطوة دي مفيهاش مانع · كمّل للّي بعدها."
                   ask={inside}
                   onAsk={() => window.dispatchEvent(
                     new KeyboardEvent('keydown', { key: 'k', metaKey: true }),

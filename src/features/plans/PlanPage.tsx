@@ -371,6 +371,7 @@ export default function PlanPage() {
               <AnalysisCard
                 title="قراءة الخطة"
                 cta="اقرأ الخطة"
+                empty="الخطة دي مفيهاش ملاحظات دلوقتي."
                 readings={readings}
                 onAsk={() => window.dispatchEvent(
                   new KeyboardEvent('keydown', { key: 'k', metaKey: true }),

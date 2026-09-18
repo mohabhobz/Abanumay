@@ -172,7 +172,12 @@ export default function RequestsPage() {
             </Link>
           </header>
 
-          <QuickRead variant="bar" title="قراءة سريعة للطلبات" readings={readings} />
+          <QuickRead
+            variant="bar"
+            title="قراءة سريعة للطلبات"
+            readings={readings}
+            empty="الطلبات في النطاق الحالي ملفاتها مكتملة ومفيش منها واقف · وسّع الفلتر تشوف أكتر."
+          />
 
           {/* ⚠️ الأربعة دي من مؤشرات الإجراء الستة · والاتنين
               الباقيين (عدد الطلبات ونسبة المرفوضة) مكتوبين في

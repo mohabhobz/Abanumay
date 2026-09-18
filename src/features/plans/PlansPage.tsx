@@ -183,7 +183,12 @@ export default function PlansPage() {
             <PageActions settings={ROUTES.planSettings} />
           </header>
 
-          <QuickRead variant="bar" title="قراءة سريعة للخطط" readings={readings} />
+          <QuickRead
+            variant="bar"
+            title="قراءة سريعة للخطط"
+            readings={readings}
+            empty="الخطط في النطاق الحالي مفيهاش نشاط مستنّي مراجعة ولا متأخّر · وسّع الفلتر تشوف أكتر."
+          />
 
           {/* ⚠️ **مفيش مؤشرات للموديول ده في الوثيقة** · الأربعة دي
               مشتقّة من قواعده، ومسجَّلة في البريف كافتراض زي مؤشرات

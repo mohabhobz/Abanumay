@@ -69,6 +69,7 @@ export function Board({
             readings={readings}
             title="تحليلات التقارير السريعة"
             cta="حلّل الفترة"
+            empty="مفيش ملاحظات على الفترة المختارة · جرّب فترة تانية."
             onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
           />
         </div>

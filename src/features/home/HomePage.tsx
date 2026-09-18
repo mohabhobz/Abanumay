@@ -354,6 +354,7 @@ export default function HomePage() {
               <QuickRead
                 readings={readings}
                 title="قراءة سريعة للسيستم"
+                empty="مفيش حاجة محتاجة انتباهك في السيستم دلوقتي"
                 onAsk={() =>
                   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))
                 }
