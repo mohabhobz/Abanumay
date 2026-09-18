@@ -17,10 +17,10 @@ import {
   REG_DOCS, REG_STAGES, REG_TERMS, bankIssues, citiesOf, docRequired,
   emptyBank, licenseClash, type RegBank,
 } from '@/data/mock/registration'
-import { stageAdvice } from '@/data/mock/regPortal'
+import { regReadings, stageAdvice } from '@/data/mock/regPortal'
 import { Field } from './Field'
 import { BankRows } from './BankRows'
-import { RegAssist } from './RegAssist'
+import { AnalysisCard } from '@/components/assistant/AnalysisCard'
 
 /* ═══════════════════════════════════════════════════════════
    طلب تسجيل جهة جديدة · BPD-002 · شاشة الجهة
@@ -687,14 +687,32 @@ export default function RegisterPage() {
                 وكارت **واحد** هو اللي بيخلّي اللزق يشتغل: عمود بكذا
                 كارت لازق بياخد تمريرًا جوّه تمرير. */}
             <div className="col aiside" ref={aside}>
+              {/* ⚠️ **نفس كارت تحليلات المشروع والجهة بالحرف.**
+                  كان كارتًا مكتوبًا لهذه الشاشة وحدها بقايمة ونبرة
+                  خاصّين بيه · فالمستخدم بيشوف «مساعد أبانمي» بشكلين
+                  حسب هو فين. و`ReadingBlock` مكتوب فوقه إنه **الراسم
+                  الوحيد للقراءة في السيستم**، ونفس الغلطة اللي
+                  التعليق ده متكتوب عشانها وقعت تاني.
+
+                  و«راجع طلبي» بالطلب لا تلقائيًا: القراءة بتتحسب
+                  لمّا المستخدم يطلبها، وبعدها بتفضل محسوبة ·
+                  والكارت المقفول بيعرض أهمّ سطر من غير ضغطة. */}
               {phase === 'form' && (
-                <RegAssist
-                  advice={advice}
-                  stage={tab}
-                  onPick={setTab}
-                  steps={REG_STAGES.map((st) => ({
-                    key: st.key, label: st.label, short: shortBy[st.key] ?? [],
-                  }))}
+                <AnalysisCard
+                  title="مراجعة مساعد أبانمي"
+                  cta="راجع طلبي"
+                  ask={inside}
+                  onAsk={() => window.dispatchEvent(
+                    new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
+                  )}
+                  readings={regReadings(
+                    tab,
+                    REG_STAGES.map((st) => ({
+                      key: st.key, label: st.label, short: shortBy[st.key] ?? [],
+                    })),
+                    advice,
+                    setTab,
+                  )}
                 />
               )}
             </div>

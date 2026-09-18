@@ -16,6 +16,14 @@ export interface AnalysisCardProps {
   title?: string
   /** نصّ زرار الدعوة · «حلّل المشروع» افتراضيًا */
   cta?: string
+  /**
+   * زرار «اسأل» ظاهر؟
+   *
+   * ⚠️ **بوّابة التسجيل مالهاش مساعد أصلًا.** الجهة اللي بتسجّل
+   * مالهاش حساب، فمفيش ريل ولا محادثات ولا ⌘K · وزرار بيفتح حاجة
+   * مش موجودة أسوأ من غيابه. الكارت بيتقفل على القراءة وحدها هناك.
+   */
+  ask?: boolean
 }
 
 /**
@@ -43,7 +51,7 @@ export interface AnalysisCardProps {
  * باك اند، الحالة دي بتبقى انتظار حقيقي لا مؤقّتًا.
  */
 export function AnalysisCard({
-  readings, onAsk, title: heading = 'تحليلات المشروع السريعة', cta,
+  readings, onAsk, title: heading = 'تحليلات المشروع السريعة', cta, ask = true,
 }: AnalysisCardProps) {
   const card = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(card)
@@ -132,7 +140,9 @@ export function AnalysisCard({
             )}
           </div>
         </div>
-        <button className="btn btn-2 btn-sm" onClick={onAsk} disabled={!done}>اسأل</button>
+        {ask && (
+          <button className="btn btn-2 btn-sm" onClick={onAsk} disabled={!done}>اسأل</button>
+        )}
         <button
           className="aifold"
           aria-expanded={open}

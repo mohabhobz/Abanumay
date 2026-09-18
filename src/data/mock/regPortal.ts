@@ -1,3 +1,4 @@
+import type { Reading } from '@/components/assistant/reading'
 import { REG_DOCS, type RegState } from './registration'
 
 /* ═══════════════════════════════════════════════════════════
@@ -259,4 +260,98 @@ export const stageAdvice = (
   }
 
   return { blocking, notes }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   نصيحة المحطة كـ**قراءات** · ن-3
+
+   ⚠️ **الكارت اللي كان هنا كان بيرسم السطور بإيده.** `ReadingBlock`
+   مكتوب فوقه بالحرف إنه «الراسم الوحيد للقراءة في السيستم»، وإن
+   تحليلات المشروع كانت بترسم بلوكاتها بإيدها فطلعت نفس المعلومة
+   مكتوبة مرتين بشكلين. وأنا عملت **نفس الغلطة** في مساعد التسجيل:
+   `.rgadv-l` بقايمة ونبرة ولون خاصّين بيه · فالمستخدم بيشوف مساعدًا
+   في صفحة الجهة بشكل، ومساعدًا في تسجيل الجهة بشكل تاني.
+
+   الدالة دي بتحوّل النصيحة لـ`Reading[]`، والرسم بقى `AnalysisCard`
+   نفسه · نفس الشرارة ونفس «راجع» ونفس الطيّ ونفس الكتابة المتدرّجة.
+
+   ⚠️ **والترتيب هو الرسالة: المانع الأول.** الكارت المقفول بيعرض
+   `readings[0]` لمحةً، فلو التطمين فوق المستخدم بيقرا «تمام»
+   ويقفل وهو ناقصه أربع حقول.
+   ═══════════════════════════════════════════════════════════ */
+
+/** خطوة في الرحلة · اسمها والناقص فيها */
+export interface RegStepShort {
+  key: string
+  label: string
+  short: string[]
+}
+
+export const regReadings = (
+  stage: string,
+  steps: RegStepShort[],
+  advice: StageAdvice,
+  goto: (key: string) => void,
+): Reading[] => {
+  const here = steps.find((s) => s.key === stage)
+  /* ⚠️ الخطوة اللي إنت فيها بتتشال من «اللي فاضل» · نواقصها فوق
+     بالفعل كسطور، وتكرارها تحت بيقول إن فيه نواقص تانية. */
+  const left = steps.filter((s) => s.key !== stage && s.short.length > 0)
+  const out: Reading[] = []
+
+  advice.blocking.forEach((a, i) => {
+    out.push({
+      id: `b-${a.key}`,
+      kind: 'flag',
+      label: i === 0 ? here?.label : undefined,
+      metric: i === 0
+        ? { value: String(advice.blocking.length), unit: 'يمنع الإرسال' }
+        : undefined,
+      text: a.fix ? `${a.say} ${a.fix}` : a.say,
+      /* ⚠️ المصدر مش تزويق · هو اللي بيفرّق بين قاعدة ورأي.
+         القاعدة 21 بتقول إن اللي بيمنع هو الحقول الإلزامية وحدها،
+         فالسطر بيقول إنه بيشرحها لا بيزوّد عليها.
+
+         ⚠️ **وعلى أول سطر وحده.** مكتوب تحت كل واحد كان بيتكرّر
+         بالحرف تلات مرات في كارت واحد · والمصدر اللي بيتكرّر
+         بيتحوّل لخلفية بتتقفل العين عليها، فيضيع لما يبقى مختلفًا. */
+      src: i === 0 ? 'الحقول الإلزامية للتصنيف الحالي · القاعدة 21' : undefined,
+    })
+  })
+
+  advice.notes.forEach((a) => {
+    out.push({
+      id: `n-${a.key}`,
+      kind: 'note',
+      text: a.fix ? `${a.say} ${a.fix}` : a.say,
+      /* فحص المرفق على الملف لا على محتواه · الجملة اللي بتوحي
+         بمراجعة ما حصلتش بتخلّي الجهة تبعت وهي مطمّنة غلط */
+      src: a.key.endsWith('-ok') || a.key.endsWith('-scan') || a.key.endsWith('-ext')
+        ? 'فحص شكل الملف · المراجع هو اللي بيقرا الورقة'
+        : undefined,
+    })
+  })
+
+  for (const s of left) {
+    out.push({
+      id: `s-${s.key}`,
+      kind: 'flag',
+      label: s.label,
+      metric: { value: String(s.short.length), unit: 'ناقص' },
+      text: s.short.join(' · '),
+      actions: [{ label: `افتح ${s.label}`, onClick: () => goto(s.key) }],
+    })
+  }
+
+  if (out.length === 0 || (advice.blocking.length === 0 && left.length === 0)) {
+    out.push({
+      id: 'done',
+      kind: 'note',
+      label: 'مكتمل',
+      text: 'كل الحقول والمستندات الإلزامية للتصنيف الحالي مكتملة · تقدر تبعت الطلب من الشريط تحت.',
+      src: 'محسوبة من الحقول لا من رأي المساعد',
+    })
+  }
+
+  return out
 }

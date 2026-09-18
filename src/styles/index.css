@@ -6640,50 +6640,15 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .bkrows-a{align-self:flex-start}
 
 /* ═══ مساعد أبانمي في النموذج · ن-3 ═══
-   النبرة في الأيقونة واللون، والسبب في السطر التحتاني · فالسطر
-   الأول بيتقرا في لمحة والتاني لمن وقف عنده.
+   ⚠️ **اتشال كله · الكارت بقى `AnalysisCard` نفسه.** كان هنا
+   `.rgadv-*`: قايمة ونبرة وأيقونات مكتوبة للشاشة دي وحدها ·
+   فالمساعد في صفحة الجهة شكل، والمساعد في تسجيل الجهة شكل تاني،
+   وهو نفس المساعد. و`ReadingBlock` مكتوب فوقه بالحرف إنه **الراسم
+   الوحيد للقراءة في السيستم** · والتعليق ده كان متكتوبًا عشان
+   نفس الغلطة دي لما وقعت في تحليلات المشروع.
+   النصيحة بقت `Reading[]` (شوف `regReadings` في `regPortal.ts`)،
+   والرسم بقى `.qr-item` زي أي قراءة تانية. */
 
-   ⚠️ **الكارت اتنقل من جوّه المحطة للعمود اللازق بقرار العميل.**
-   كان مكتوبًا هنا إن «اللوح الجنبي بيتقفل والجهة مش هتفتحه» ·
-   والاعتراض ده كان على لوح **بيتقفل**، لا على عمود مفتوح دايمًا
-   وبيتمرّر مع الصفحة. العمود ده ما بيتقفلش، فالنصيحة موجودة طول
-   الرحلة من غير ما تزقّ حقول النموذج لتحت.
-
-   قوايم النبرة (`.rgadv-l` وإخواتها) مشتركة بين الاتنين · نفس
-   السطر بنفس الأيقونة في أي مكان يتعرض فيه. */
-.rgadv-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
-.rgadv-h b{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
-.rgadv-l{display:flex;flex-direction:column;gap:var(--sp-3);margin:var(--sp-4) 0 0;padding:0;list-style:none;min-width:0}
-.rgadv-l>li{display:flex;gap:var(--sp-3);min-width:0}
-/* ⚠️ الأيقونة بتتسطّر مع **أول سطر** لا مع وسط الكتلة · والإزاحة
-   من السلّم (`--sp-1`) زي `.pfdiff` بالظبط، لا رقم مكتوب بالإيد */
-.rgadv-l>li>svg{flex:none;margin-top:var(--sp-1)}
-.rgadv-b{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
-.rgadv-t{font-size:var(--fs-2);line-height:var(--lh-2);color:var(--t1)}
-.rgadv-ok>svg{color:var(--ok)}
-.rgadv-warn>svg{color:var(--warn)}
-.rgadv-no>svg{color:var(--no)}
-
-/* ── الكارت اللازق · «مساعد أبانمي» في رحلة التسجيل ──
-   ⚠️ **الترويسة والشريط ثابتان والباقي بيتمرّر.** الكارت بياخد
-   ارتفاع الشاشة لمّا يلزق (`--ai-fill`)، فلو كله بيتمرّر بتضيع
-   «إنت فين» أول ما تنزل سطرين · ودي أول حاجة الكارت موجود
-   عشانها. نفس تقسيمة `.aicard.aiopen` بالظبط. */
-/* ⚠️ **`max-height` لا `height`.** `.aicard` بيملا العمود لأنه
-   بوستر بيتوسّط فراغه · والمساعد ده نصّ، والنصّ اللي بياخد ٨٤٢px
-   وهو ٢٠٠ بيسيب زجاجًا فاضيًا تحته. السقف بيخلّي الكارت على طول
-   محتواه، وما بيتمرّرش جوّه إلا لمّا يعدّي الشاشة فعلًا. */
-.rgass{display:flex;flex-direction:column;min-height:0;max-height:100%}
-.rgass-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0;flex:none}
-.rgass-h b{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
-.rgass-s{margin-top:var(--sp-5)}
-/* عنوان المجموعة · مش ترويسة كارت فماخدش وزنها */
-.rgass-k{font-size:var(--fs-1);color:var(--t3);margin:0 0 var(--sp-3)}
-.rgass-k b{color:var(--t1);font-weight:600}
-.rgass-k2{margin-top:var(--sp-5);padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
-.rgass-n{margin-top:0}
-.rgass-l{display:flex;flex-direction:column;gap:var(--sp-3);margin:0;padding:0;list-style:none;min-width:0}
-.rgass-l>li{font-size:var(--fs-2);line-height:var(--lh-2);min-width:0}
 
 /* ═══ بوّابة الجهة · ن-2 ═══ */
 .ptl-miss{display:flex;flex-direction:column;gap:var(--sp-2);margin:var(--sp-4) 0 0;padding:0;list-style:none}
