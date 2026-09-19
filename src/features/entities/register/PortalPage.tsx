@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   DateText, Glass, Head, Icon, KV, Mono, Num, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
-import { DocFile } from '@/components/docs'
+import { DocFile, DocList } from '@/components/docs'
 import { Thread } from '@/components/thread'
 import { Background } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
@@ -122,23 +122,24 @@ export default function PortalPage() {
             </div>
           </header>
 
+          {/* ⚠️ **الستيبر في سكشن مستقلّ · زي باقي السيستم.** كان
+              جوّه كارت الطلب هنا، وفي كل شاشة تانية (التسجيل من
+              البوّابة ومن جوّه وصفحة الخطة) هو كارت `regsteps` لوحده
+              فوق المحتوى · نفس العنصر في مكانين مختلفين. */}
+          <Glass className="regsteps">
+            <Steps items={steps} flow="stepper" />
+          </Glass>
+
           <div className="g2">
             {/* ═══ يمين · كارت الطلب ═══
-                كل اللي الجهة محتاجاه في كارت واحد: فين وصل، والمؤسسة
-                قالت إيه، وإيه الناقص، وزرار بيبعت · بالترتيب ده. */}
+                كل اللي الجهة محتاجاه في كارت واحد: المؤسسة قالت إيه،
+                وإيه الناقص، وزرار بيبعت · بالترتيب ده. */}
             <div className="col">
               <Glass className="ptl-req">
                 <Head
                   title="طلبك"
                   meta={<Tag tone={REG_TONE[r.state]}>{REG_STATE_SAY[r.state]}</Tag>}
                 />
-
-                {/* ⚠️ **ستيبر زي باقي السيستم** · كان سُلّمًا رأسيًّا
-                    هنا وستيبر أفقي في كل شاشة تانية فيها محطات ·
-                    نفس المعنى بشكلين. */}
-                <div className="ptl-steps">
-                  <Steps items={steps} flow="stepper" />
-                </div>
 
                 <p className="sub cnote">{view.say}</p>
 
@@ -156,25 +157,33 @@ export default function PortalPage() {
                 {/* ── الناقص · كل واحد بزرار رفعه في مكانه ──
                     ⚠️ **الرفع من هنا لا من الفورم من أوّله.** الزرار
                     القديم كان بيودّي `?step=form` · يعني عشان ترفع
-                    ورقتين بتعدّي على ست محطات كلها متملّية. */}
+                    ورقتين بتعدّي على ست محطات كلها متملّية.
+
+                    ⚠️ **وبـ`DocList` لا بقايمة مكتوبة هنا.** كتبت
+                    `.ptl-short` بإيدي وهي **خامس** صورة لنفس الجدول
+                    اللي وحّدناه إمبارح · نفس الغلطة اللي `onedoc`
+                    اتكتب عشانها، وأنا كسرتها بعدها بيوم. الفاحص
+                    بيمسك `.dstat` و`DocDownload` وما كانش بيشوف
+                    قايمة متكتوبة من الصفر. */}
                 {view.editable && short.length > 0 && (
                   <>
-                    <div className="ptl-short-h">
-                      <b>الناقص</b>
-                      <Tag tone="warn"><Num>{short.length}</Num> مستند</Tag>
-                    </div>
-                    <ul className="ptl-short">
-                      {short.map((d) => (
-                        <li key={d.key}>
-                          <Icon name={icons.file} size={15} />
-                          <span className="ptl-short-l">{d.label}</span>
+                    <Head
+                      title="الناقص"
+                      meta={<Tag tone="warn"><Num>{short.length}</Num> مستند</Tag>}
+                    />
+                    <DocList
+                      label="المستندات الناقصة في الطلب"
+                      rows={short.map((d) => ({
+                        name: d.label,
+                        uploaded: false,
+                        action: (
                           <button className="btn btn-2 btn-sm">
                             <Icon name={icons.upload} size={14} />
                             ارفع
                           </button>
-                        </li>
-                      ))}
-                    </ul>
+                        ),
+                      }))}
+                    />
                   </>
                 )}
 
