@@ -73,7 +73,7 @@ export default function EntitySettingsPage() {
         ? ENTITY_TYPES.map((t) => ({
           k: t,
           used: typeUsed(t),
-          note: t === 'تجارية' ? 'بتفتح تلات مستندات إلزامية · قاعدتا 8 و9' : undefined,
+          note: t === 'شركة غير ربحية' ? 'بتفتح تلات مستندات إلزامية · قاعدتا 8 و9' : undefined,
         }))
         : tab === 'licensors'
           ? LICENSORS.map((l) => ({ k: l, used: licensorUsed(l) }))

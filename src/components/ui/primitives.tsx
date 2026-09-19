@@ -1,4 +1,4 @@
-import { forwardRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
+import { forwardRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from './Icon'
 import { icons } from './icons'
@@ -74,6 +74,41 @@ export function Money({ children, sm }: { children: number | string; sm?: boolea
 
 export function Mono({ children }: { children: ReactNode }) {
   return <span className="mono">{children}</span>
+}
+
+/**
+ * رقم مرجعي + زرار نسخ.
+ *
+ * ⚠️ **الرقم المرجعي بيتنسخ لا بيتكتب.** `REQ-2026-947141` أربعة
+ * عشر حرفًا، والجهة بتحتاجه لمّا تتكلّم مع المؤسسة · فاللي مفيش
+ * جنبه زرار نسخ بيتنقل بالعين ومعاه غلط. وده من شاشات العميل
+ * (١٩ سبتمبر): الرقم عندهم جنبه أيقونة نسخ.
+ *
+ * ⚠️ **والزرار بيقول إنه نسخ فعلًا** · العلامة بتتبدّل لصحّ
+ * ثانيتين · من غيرها المستخدم بيضغط تاني وهو مش عارف حصل ولا لأ.
+ */
+export function CopyId({ children }: { children: string }) {
+  const [done, setDone] = useState(false)
+  const copy = () => {
+    void navigator.clipboard?.writeText(children).then(() => {
+      setDone(true)
+      window.setTimeout(() => setDone(false), 2000)
+    }).catch(() => {})
+  }
+  return (
+    <span className="cpid">
+      <span className="mono">{children}</span>
+      <button
+        type="button"
+        className="iact iact-sm"
+        onClick={copy}
+        title={done ? 'اتنسخ' : 'انسخ الرقم المرجعي'}
+        aria-label={done ? 'اتنسخ' : 'انسخ الرقم المرجعي'}
+      >
+        <Icon name={done ? icons.check : icons.copy} size={14} />
+      </button>
+    </span>
+  )
 }
 
 /**

@@ -8,7 +8,7 @@ import { payRequests } from './disbursements'
 /* ═══════════════════════════════════════════════════════════
    إغلاق المشروع · BPD-011 · آخر إجراء في دورة حياة المنحة
 
-   الوثيقة ص 62–67 · ١٨ خطوة رئيسية · **٢١** قاعدة عمل · أربعة
+   الوثيقة ص 62–67 · 18 خطوة رئيسية · **21** قاعدة عمل · أربعة
    مخرجات للذكاء الاصطناعي · أربعة مؤشرات أداء · مخططان.
 
    ═══ الفكرة اللي الموديول مبني عليها ═══
@@ -337,7 +337,7 @@ export const closeRows: CloseRow[] = [
   row('CL-2041', '20852', 'draft', {
     report: mkReport({
       beneficiaries: 780,
-      outcomes: 'اتنفّذت ٤٢ جلسة من ٤٨ · والباقي اتأجّل لظروف المقر.',
+      outcomes: 'اتنفّذت 42 جلسة من 48 · والباقي اتأجّل لظروف المقر.',
       docs: ['final', 'photos'],
     }),
     hoursInStage: 800,
@@ -350,7 +350,7 @@ export const closeRows: CloseRow[] = [
       beneficiaries: 1120,
       budget: 296_400,
       days: 214,
-      outcomes: 'البرنامج اتنفّذ بالكامل · ١٢ فعالية و٣ ورش تدريبية.',
+      outcomes: 'البرنامج اتنفّذ بالكامل · 12 فعالية و3 ورش تدريبية.',
       risks: 'تأخّر التوريد شهرًا في المرحلة التانية.',
       docs: ['final', 'photos', 'invoices', 'media'],
       links: [{ label: 'صور ومقاطع التنفيذ', url: 'https://drive.google.com/drive/folders/ab-20838' }],
@@ -385,7 +385,7 @@ export const closeRows: CloseRow[] = [
   /* ٤ · مُعاد بملاحظات · إصدار تاني · قاعدة 19 */
   row('CL-2044', '20866', 'returned', {
     returnedTo: 'draft',
-    note: 'الفواتير المرفوعة بتغطّي ٦٠٪ من الميزانية الفعلية المكتوبة · الفرق محتاج مستندات.',
+    note: 'الفواتير المرفوعة بتغطّي 60٪ من الميزانية الفعلية المكتوبة · الفرق محتاج مستندات.',
     report: mkReport({
       beneficiaries: 410,
       budget: 338_000,
@@ -413,7 +413,7 @@ export const closeRows: CloseRow[] = [
       beneficiaries: 2300,
       budget: 1_940_000,
       days: 330,
-      outcomes: 'برنامج الاستدامة اتنفّذ لخمس جمعيات · ٣٦ ورشة و٥ خطط مالية.',
+      outcomes: 'برنامج الاستدامة اتنفّذ لخمس جمعيات · 36 ورشة و5 خطط مالية.',
       risks: 'جمعيتان تأخّرتا في تسليم بياناتهما.',
       docs: ['final', 'photos', 'invoices', 'media', 'beneficiaries'],
       links: [{ label: 'أرشيف المشروع', url: 'https://drive.google.com/drive/folders/ab-20802' }],

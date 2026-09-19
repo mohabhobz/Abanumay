@@ -2,7 +2,7 @@
 export { Icon, type IconProps } from './Icon'
 export { icons, type IconName } from './icons'
 export {
-  Glass, Head, Tag, Num, Riyal, Money, Mono, DateText, KV, Tabs, Timeline, Empty, Stat, BackTo,
+  Glass, Head, Tag, Num, Riyal, Money, Mono, CopyId, DateText, KV, Tabs, Timeline, Empty, Stat, BackTo,
   type GlassProps, type KVRow, type TabItem, type TimelineEvent, type StatBar,
 } from './primitives'
 export { Person, Face, type PersonProps } from './Person'

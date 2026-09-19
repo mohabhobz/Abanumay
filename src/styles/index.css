@@ -2795,6 +2795,11 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .iact{width:32px;height:32px;flex:none;border-radius:var(--ric);display:grid;place-items:center;color:var(--t3);
   transition:color .16s ease,background .16s ease}
 .iact:hover{color:var(--t1);background:var(--ctl-quiet-h)}
+/* نسخة أصغر · جنب رقم مرجعي في سطر نصّ لا في صفّ أزرار */
+.iact-sm{width:24px;height:24px}
+/* ⚠️ الرقم وزرّاره وحدة واحدة · `inline-flex` عشان ما يتقطعوش على
+   سطرين، و`align-items` عشان الأيقونة تقعد على خطّ الأرقام */
+.cpid{display:inline-flex;align-items:center;gap:var(--sp-1);vertical-align:middle}
 /* ── الكتابة ── */
 /* في الترحيب بيقعد في مجرى الصفحة تحت الكروت */
 .composer{flex:none;padding:0;position:relative;z-index:5;width:100%}

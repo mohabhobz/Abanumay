@@ -92,11 +92,11 @@ export const ROUTES = [
      ناقص وزرار تعديل، و«معتمد» فيها مدخل لحساب الجهة الكامل،
      و«مرفوض» فيها سبب وخلاص. من غير التلاتة الجرد بيقيس واحدة
      ويرجع أخضر. */
-  '/entities/portal', '/entities/portal?req=RG-1041', '/entities/portal?req=RG-1035',
+  '/entities/portal', '/entities/portal?req=REQ-2026-947141', '/entities/portal?req=REQ-2026-947135',
   /* المعتمدة · وهي الوحيدة اللي بيبان فيها كارت «خطط مشاريعك» */
-  '/entities/portal?req=RG-1034',
-  '/entities/requests', '/entities/requests/RG-1041',
-  '/entities/requests/RG-1039', '/entities/requests/RG-1037',
+  '/entities/portal?req=REQ-2026-947134',
+  '/entities/requests', '/entities/requests/REQ-2026-947141',
+  '/entities/requests/REQ-2026-947139', '/entities/requests/REQ-2026-947137',
   '/budget',
   /* الميزانية · الإعدادات وشجرة البنود.
      ⚠️ التلاتة دول شاشات إنشاء وتحرير، ومن غيرهم الجرد بيقيس
@@ -189,9 +189,9 @@ export const ROUTES = [
    حساب في النظام · عندها حساب على طلبها وبس (ن-2). */
 export const PUBLIC_ROUTES = [
   '/entities/register', '/entities/register?step=form&tab=bank',
-  '/entities/portal', '/entities/portal?req=RG-1041', '/entities/portal?req=RG-1035',
+  '/entities/portal', '/entities/portal?req=REQ-2026-947141', '/entities/portal?req=REQ-2026-947135',
   /* المعتمدة · وهي الوحيدة اللي بيبان فيها كارت «خطط مشاريعك» */
-  '/entities/portal?req=RG-1034',
+  '/entities/portal?req=REQ-2026-947134',
 ]
 
 /* ⚠️ المطابقة بالمسار **كاملًا بالكويري** عن قصد: `/entities/register`

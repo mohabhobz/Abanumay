@@ -84,6 +84,22 @@ export function BankRows({
               <span className="sub regf-h">باسم الجهة · لا باسم شخص</span>
             </label>
 
+            {/* ⚠️ **الاسم المختصر · إلزامي من شاشات العميل** ·
+                وتلميحه بيقول تفسيرنا له صراحةً (الاسم في الكشوف)
+                لأن العميل ما شرحهوش، وسؤال ق-د لسه مفتوح · فالجهة
+                ما تخمّنش والمراجع يعرف إن ده تفسيرنا. */}
+            <label className="regf">
+              <span className="lb">الاسم المختصر<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <span className="fld">
+                <input
+                  value={b.shortName}
+                  onChange={(e) => patch(b.id, { shortName: e.target.value })}
+                  aria-label={`الاسم المختصر للحساب ${i + 1}`}
+                />
+              </span>
+              <span className="sub regf-h">اللي الحساب بيتعرف بيه في الكشوف · «تحفيظ» مثلًا</span>
+            </label>
+
             <label className="regf">
               <span className="lb">رقم الآيبان<b className="regf-r" aria-label="إلزامي">*</b></span>
               <span className="fld">

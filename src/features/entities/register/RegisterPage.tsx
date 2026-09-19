@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag,
+  BackTo, CopyId, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -58,6 +58,18 @@ import { AnalysisCard } from '@/components/assistant/AnalysisCard'
 type Phase = 'terms' | 'form' | 'otp' | 'sent'
 
 const PHASES: Phase[] = ['terms', 'form', 'otp', 'sent']
+
+/**
+ * طول رمز التحقّق · **خمس خانات**.
+ *
+ * ⚠️ **الرقم من شاشات العميل (١٩ سبتمبر)** · كان مكتوبًا ٦ عندنا
+ * في أربع أماكن (السطر الإرشادي · شرط الزرار · `maxLength` ·
+ * وسطر النموذج)، ومودال العميل خمس خانات.
+ *
+ * ⚠️ **ومكتوب مرة واحدة عن قصد** · الرقم المكرّر في أربع أماكن
+ * بيخلّي زرارًا بيتفتح على خمسة وحقلًا بيقبل ستة.
+ */
+export const OTP_LEN = 5
 
 const KEYS = ['step', 'tab', 'up'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -188,6 +200,24 @@ export default function RegisterPage() {
     if (next) setTab(next.key)
   }
 
+  /**
+   * «تعديل» جنب الرقم في مودال التحقّق.
+   *
+   * ⚠️ **بيرجّع للمحطة ويفوكس الحقل** · الرجوع للفورم وحده كان
+   * بيسيب الجهة تدوّر على الحقل في تسع حقول، والفوكس هو اللي
+   * بيخلّي الزرار يعمل الحاجة اللي اسمه بيوعد بها.
+   */
+  const editMobile = () => {
+    const field = REG_STAGES.find((x) => x.fields.some((f) => f.key === 'clerkMobile'))
+    set({ step: undefined, tab: field && field.key !== REG_STAGES[0].key ? field.key : undefined })
+    /* الفوكس بعد ما الشاشة ترسم المحطة الجديدة · قبلها الحقل
+       ما بيكونش موجود في الصفحة أصلًا */
+    requestAnimationFrame(() => {
+      const el = document.getElementById('rf-clerkMobile')
+      if (el instanceof HTMLInputElement) { el.focus(); el.select() }
+    })
+  }
+
 
 
   /* ⚠️ **الشاشة دي عامة، والقاعدة 2 هي السبب.**
@@ -237,8 +267,9 @@ export default function RegisterPage() {
               )}
             </>
       )}
-      {phase === 'otp' && <>اكتب الرمز المرسَل للجوال · <Num>6</Num> أرقام</>}
-      {phase === 'sent' && <>رقم الطلب في هذا النموذج <b>RG-1042</b></>}
+      {phase === 'otp' && <>اكتب الرمز المرسَل للجوال · <Num>{OTP_LEN}</Num> أرقام</>}
+      {phase === 'sent' && <>رقم الطلب في هذا النموذج <b>REQ-2026-947142</b></>}
+
     </span>
   )
 
@@ -324,8 +355,8 @@ export default function RegisterPage() {
       {phase === 'otp' && (
         <button
           className="btn btn-p"
-          disabled={otp.length !== 6}
-          title={otp.length === 6 ? 'تأكيد الرمز' : 'الرمز 6 أرقام'}
+          disabled={otp.length !== OTP_LEN}
+          title={otp.length === OTP_LEN ? 'تأكيد الرمز' : `الرمز ${OTP_LEN} أرقام`}
           onClick={() => setPhase('sent')}
         >
           تأكيد الرمز
@@ -510,6 +541,23 @@ export default function RegisterPage() {
                             )}
                           </div>
 
+                          {/* ⚠️ **تحذير الرفع القانوني · من شاشات
+                              العميل (١٩ سبتمبر)** بنصّه: «يمنع منعًا
+                              باتًا تحميل بيانات الشركة أو أي ملفات
+                              محظورة أخرى».
+
+                              ⚠️ **وهو سطر لا وسم أحمر ولا شريط
+                              جانبي.** القاعدة اللي العميل كرّرها
+                              تلات مرات: الأحمر مؤشّر **خطر** ·
+                              والتحذير اللي بيتلوّن أحمر قبل ما حد
+                              يغلط بيخلّي الأحمر ما يعنيش حاجة لمّا
+                              يحصل غلط فعلًا. */}
+                          <p className="sub cnote">
+                            يمنع منعًا باتًا رفع بيانات الشركة أو أي ملفات محظورة
+                            أخرى · والملفات المرفوعة تُسجَّل باسم مدخل البيانات في سجل
+                            التدقيق (قاعدة <span className="num">30</span>).
+                          </p>
+
                           <ul className="regdocs">
                             {REG_DOCS.map((d) => {
                               const need = docRequired(d, type)
@@ -625,24 +673,34 @@ export default function RegisterPage() {
                     title="تحقّق من جوال مدخل البيانات"
                     meta={<span className="sub">قاعدة 19</span>}
                   />
+                  {/* ⚠️ **«تعديل» جنب الرقم · من شاشات العميل** ·
+                      الجهة اللي كتبت رقمًا غلط كانت لازم تلغي
+                      الإرسال وترجع للفورم وتدوّر على الحقل. وهنا
+                      الزرار **بيعمل حاجة فعلًا**: بيرجّع لمحطة
+                      الاتصال ويفوكس الحقل نفسه · نفس درس «اكتب أول
+                      رسالة» اللي العميل مسكه: زرار ما بيعملش حاجة
+                      أسوأ من زرار مش موجود. */}
                   <p className="sub cnote">
                     أُرسل رمز لمرة واحدة إلى{' '}
-                    <Mono>{val.clerkMobile || '9665XXXXXXXX'}</Mono> · وهو نفس الرقم
-                    الذي ستصل إليه بيانات الدخول بعد الاعتماد.
+                    <Mono>{val.clerkMobile || '9665XXXXXXXX'}</Mono>
+                    {' · '}
+                    <button className="lnk" onClick={editMobile}>تعديل</button>
+                    {' · '}
+                    وهو نفس الرقم الذي ستصل إليه بيانات الدخول بعد الاعتماد.
                   </p>
                   <label className="payamt">
                     <span className="lb">رمز التحقّق</span>
                     <input
                       inputMode="numeric"
                       value={otp}
-                      maxLength={6}
+                      maxLength={OTP_LEN}
                       onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                       aria-label="رمز التحقّق"
                     />
                   </label>
                   <p className="sub cnote">
-                    في هذا النموذج أي <span className="num">6</span> أرقام تُقبل ·
-                    التحقّق الفعلي عند الباك اند.
+                    في هذا النموذج أي <span className="num">{OTP_LEN}</span> أرقام
+                    تُقبل · التحقّق الفعلي عند الباك اند.
                   </p>
                   {foot}
                 </Glass>
@@ -651,6 +709,16 @@ export default function RegisterPage() {
               {phase === 'sent' && (
                 <Glass>
                   <Head title="أُرسل الطلب" meta={<Tag tone="ok">قيد المراجعة</Tag>} />
+                  {/* ⚠️ **الرقم المرجعي وزرار نسخه · من شاشات
+                      العميل (١٩ سبتمبر)** · الصيغة عندهم
+                      `REQ-2026-947124` لا `RG-1039`، وجنبها أيقونة
+                      نسخ. والجهة محتاجة الرقم ده لمّا تتكلّم مع
+                      المؤسسة، وأربعة عشر حرفًا بتتنقل بالعين ومعاها
+                      غلط. */}
+                  <p className="sub cnote">
+                    رقمك المرجعي <CopyId>REQ-2026-947142</CopyId> · احتفظ بيه، وهو
+                    اللي بتتابع بيه حالة طلبك.
+                  </p>
                   <ul className="payq-ck regsent">
                     <li className="ok">
                       <Icon name={icons.check} size={13} />

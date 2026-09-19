@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  DateText, Glass, Head, Icon, KV, Mono, Num, Steps, Tag, icons, type StepItem,
+  CopyId, DateText, Glass, Head, Icon, KV, Mono, Num, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { Thread } from '@/components/thread'
@@ -49,7 +49,7 @@ import { planStageLabel, plansOfEntity, waitingReview } from '@/data/mock/plans'
    ═══════════════════════════════════════════════════════════ */
 
 /** الطلب اللي الجهة داخلة عليه · في النموذج بيتحدّد بالرابط */
-const DEFAULT_REQ = 'RG-1039'
+const DEFAULT_REQ = 'REQ-2026-947139'
 
 export default function PortalPage() {
   const navigate = useNavigate()
@@ -116,7 +116,7 @@ export default function PortalPage() {
             <div className="pmain">
               <h1 className="ptitle">{r.name}</h1>
               <p className="sub mt-1">
-                طلب تسجيل <Mono>{r.id}</Mono> · اتبعت في{' '}
+                طلب تسجيل <CopyId>{r.id}</CopyId> · اتبعت في{' '}
                 <DateText>{r.submittedAt}</DateText>
               </p>
             </div>
