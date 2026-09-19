@@ -10,6 +10,7 @@ export { DataTab } from './DataTab'
 export { EntityTab } from './EntityTab'
 export { AgreementTab, type AgreementTabProps } from './AgreementTab'
 export { PlanTab, type PlanTabProps } from './PlanTab'
+export { CloseTab, type CloseTabProps } from './CloseTab'
 export { PaymentsTab, type PaymentsTabProps } from './PaymentsTab'
 export { LogTab, type LogTabProps } from './LogTab'
 

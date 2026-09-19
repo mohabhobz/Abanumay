@@ -4522,6 +4522,11 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
 .payq-ck li.ok svg{color:var(--ok-ink)}
 .payq-ck li.no{color:var(--t1)}
 .payq-ck li.no svg{color:var(--warn-ink)}
+/* ⚠️ حالة تالتة: **مستنّي دوره** لا ناقص. الإغلاق فيه شروط مش
+   الجهة اللي بتعملها (اعتماد التنفيذي مثلًا)، فتلوينها تحذيرًا
+   بيقول للمشرف إن فيه غلط وهو مفيش · هي بس لسه ما جاش وقتها. */
+.payq-ck li.ret{color:var(--t2)}
+.payq-ck li.ret svg{color:var(--ret-ink)}
 .payq-r{flex:none;margin-inline-start:auto;font-size:var(--fs-1);color:var(--t3-g);
   white-space:nowrap}
 
@@ -5310,6 +5315,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .stp-i.now .stp-dot{background:var(--warn);box-shadow:0 0 0 3px rgba(var(--warnC),.18)}
 .stp-l{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);line-height:var(--lh-ui);color:var(--t1)}
 .stp-i.todo .stp-l{color:var(--t3);font-weight:500}
+/* ⚠️ المحطة المتخطّاة: نقطة فاضية واسم باهت · موجودة في الشريط
+   عشان المسار يفضل مقروءًا، ومطفيّة عشان محدش يستنّاها */
+.stp-i.skip .stp-dot{background:var(--fl-2);box-shadow:none}
+.stp-i.skip .stp-l{color:var(--t3);font-weight:500;text-decoration:line-through;
+  text-decoration-color:var(--edge-2)}
 .stp-n{font-size:var(--fs-2);line-height:var(--lh-ui);color:var(--t3)}
 .stp-i.now .stp-n{color:var(--warn-ink)}
 .stp-at{font-size:var(--fs-2);color:var(--t3)}

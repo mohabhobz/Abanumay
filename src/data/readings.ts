@@ -10,13 +10,14 @@
  * بنفس شكل `Reading[]` · والواجهة ما تتغيّرش.
  */
 import type { Reading, ReadingAction } from '@/components/assistant/reading'
-import type { AgreementRow, EntityRow, Insight, PayRequest, PlanRow, ProjectRow } from '@/types/domain'
+import type { AgreementRow, CloseRow, EntityRow, Insight, PayRequest, PlanRow, ProjectRow } from '@/types/domain'
 import { PAY_STATES, payBlocked, payHeat, payStateWho } from './mock/disbursements'
 import { agrBlocked, agrPaymentsBalance, agrReserveGap } from './mock/agreements'
 import {
   lateActivities, planClaimed, planDone, planPlanned, planSpi, readyToClose, waitingReview,
 } from './mock/plans'
 import { regMissingDocs, type RegRequest } from './mock/registration'
+import { closeRows, reportBlockers } from './mock/closing'
 import type { EntityDetail } from './mock/entityDetail'
 import { stagePressure, ENTITY_DOCS_TOTAL } from './repository'
 import { projectRows } from './mock/projects'
@@ -702,6 +703,29 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
   }
 
   out.push(...blockedReading(projects, entities))
+
+  /* ⚠️ **الإغلاق بيقف في صندوق المشرف بحاجتين مختلفتين** ·
+     واحدة مش شغله (الجهة بتكتب التقرير)، وواحدة شغله بالكامل
+     (التقييم بيعدّه هو بعد اعتماد التنفيذي · قاعدة 6). الأولى
+     بتتحلّ برسالة، والتانية بشغل · فاللي عليه فعلًا هو اللي
+     بيتقال. */
+  const mineClose = closeRows.filter((c) => c.owner === owner)
+  const evalDue = mineClose.filter((c) => c.stage === 'reportDone' || c.stage === 'evalDraft')
+  if (evalDue.length) {
+    out.push({
+      id: 'cl-mine',
+      kind: 'flag',
+      label: 'تقييم عليك',
+      metric: { value: String(evalDue.length), unit: 'مشروع مستنّي تقييمك' },
+      text:
+        `التقرير الختامي اتعتمد من المدير التنفيذي، فالقاعدة 6 اتحقّقت · ` +
+        `وتقييم المشروع بتعدّه إنت لا الجهة، ودورة اعتماده منفصلة.`,
+      bold: ['القاعدة 6'],
+      src: 'قواعد الإغلاق 6 و17',
+      to: ROUTES.closings,
+      toLabel: 'افتح الإغلاق',
+    })
+  }
 
   // أطول ما وقف في صندوقه هو · رقم شخصي، مش متوسط السيستم
   const mineSorted = [...mine].sort((a, b) => stagePressure(b) - stagePressure(a))
@@ -1438,6 +1462,93 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
         'كل أنشطة خطته اتقبلت · الخطة رفعت مانع الإغلاق، والإغلاق نفسه ' +
         'إجراء تاني له قواعده (التقرير الختامي · الاتصال المؤسسي · التقييم).',
       src: 'BPD-012 · الخطة مكتملة ⇒ المشروع مؤهَّل للإغلاق',
+    })
+  }
+
+  return out
+}
+
+/* ═══════════════════════════════════════════════════════════
+   قراءة الإغلاق · BPD-011
+
+   ⚠️ **أول قراءة هي اللي واقف على الجهة، لا عدد الطلبات.** قاعدة
+   3 و4 بتحمّلا الجهة إكمال التقرير قبل الإرسال، والوقوف الطبيعي
+   في الموديول ده بيحصل هناك: طلب مفتوح والجهة ما بعتتش. ودي
+   قراءة بتتحلّ برسالة لا بقرار.
+
+   ⚠️ **والتانية بتقول حاجة مش في أي شاشة تانية: الانحراف.** قاعدة
+   4 بتلزم المستفيدين الفعلي والميزانية الفعلية · فأول ما التقرير
+   يوصل، الفرق بين المعتمد والفعلي بيبقى **محسوبًا**. والفرق ده هو
+   اللي المؤسسة عندها في ٩٧٦ تقريرًا وما فيش شاشة بتقوله.
+   ═══════════════════════════════════════════════════════════ */
+export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
+  const out: Reading[] = []
+  if (rows.length === 0) return out
+  const scope = isFiltered ? 'في النطاق الحالي' : 'في الصندوق'
+
+  /* ١ · واقف على الجهة · قاعدة 3 */
+  const atEntity = rows.filter((c) => c.stage === 'draft' || c.stage === 'returned')
+  if (atEntity.length) {
+    const docs = atEntity.reduce((s, c) => s + reportBlockers(c).length, 0)
+    const worst = [...atEntity].sort((a, b) => b.hoursInStage - a.hoursInStage)[0]
+    out.push({
+      id: 'cl-entity',
+      kind: 'flag',
+      label: 'واقف على الجهة',
+      metric: { value: String(atEntity.length), unit: `طلب ${scope}` },
+      text:
+        `${docs} بندًا ناقصًا في المجموع · وأطولها «${worst.projectName}» ` +
+        `واقف ${Math.round(worst.hoursInStage / 24)} يومًا · القاعدة 3 بتمنع ` +
+        `الإرسال قبل اكتمال البيانات والمرفقات.`,
+      bold: [`${docs} بندًا`, 'القاعدة 3'],
+      src: 'قواعد الإغلاق 3 و4 و10',
+      to: ROUTES.closings,
+      toLabel: 'اعرضها',
+    })
+  }
+
+  /* ٢ · الانحراف · المعتمد مقابل الفعلي · قاعدة 4 */
+  const withReport = rows.filter(
+    (c) => c.report.beneficiaries !== null && c.report.budget !== null,
+  )
+  if (withReport.length) {
+    const gaps = withReport.map((c) => {
+      const pr = projectRows.find((p) => p.id === c.projectId)
+      const planned = pr?.beneficiaries ?? 0
+      const actual = c.report.beneficiaries ?? 0
+      return { c, planned, actual, diff: planned > 0 ? Math.round(((actual - planned) / planned) * 100) : 0 }
+    })
+    const under = gaps.filter((g) => g.diff < -10)
+    const worst = [...gaps].sort((a, b) => a.diff - b.diff)[0]
+    out.push({
+      id: 'cl-gap',
+      kind: under.length > 0 ? 'flag' : 'note',
+      label: 'المعتمد مقابل الفعلي',
+      metric: { value: String(under.length), unit: 'تقرير تحت المستهدف بأكتر من 10%' },
+      text:
+        `من ${withReport.length} تقريرًا وصل · وأكبر فرق في «${worst.c.projectName}»: ` +
+        `${nf.format(worst.actual)} مستفيدًا مقابل ${nf.format(worst.planned)} معتمدًا · ` +
+        `القاعدة 4 هي اللي بتخلّي المقارنة دي ممكنة.`,
+      bold: [`${nf.format(worst.actual)} مستفيدًا`, 'القاعدة 4'],
+      src: 'قاعدة 4 في إجراء الإغلاق · بيانات المشروع المعتمدة',
+    })
+  }
+
+  /* ٣ · التقييم اللي مستنّي دوره · قاعدة 6 */
+  const ready = rows.filter((c) => c.stage === 'reportDone')
+  if (ready.length) {
+    out.push({
+      id: 'cl-eval',
+      kind: 'note',
+      label: 'تقييم مستحقّ',
+      metric: { value: String(ready.length), unit: 'تقرير معتمد والتقييم ما بدأش' },
+      text:
+        `القاعدة 6 بتمنع بدء التقييم قبل اعتماد المدير التنفيذي · ` +
+        `والاعتماد ده حصل، فالكرة عند مشرف المنح دلوقتي.`,
+      bold: ['القاعدة 6'],
+      src: 'قاعدة 6 · دورتان مستقلّتان (قاعدة 17)',
+      to: ROUTES.closings,
+      toLabel: 'اعرضها',
     })
   }
 

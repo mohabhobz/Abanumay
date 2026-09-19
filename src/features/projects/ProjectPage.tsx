@@ -16,9 +16,10 @@ import {
   DEFAULT_PROJECT_TAB, PROJECT_TABS, ROUTES, type ProjectTabSlug,
 } from '@/app/routes'
 import {
-  AgreementTab, CorrespondenceTab, DataTab, EntityTab, FollowUpsTab,
+  AgreementTab, CloseTab, CorrespondenceTab, DataTab, EntityTab, FollowUpsTab,
   HistoryTab, LogTab, PaymentsTab, PlanTab,
 } from './tabs'
+import { closeOfProject, openClose } from '@/data/mock/closing'
 import { AnalysisCard } from '@/components/assistant'
 import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
@@ -284,6 +285,16 @@ export default function ProjectPage() {
                   /* نفس مانع الاتفاقية: مفيش خطة قبل اكتمال الاعتماد،
                      لأن الخطة بتتقاس على منحة معتمدة القيمة */
                   startBlocked={agreementBlock}
+                />
+              )}
+              {/* ⚠️ **الإغلاق تاب مستقلّ برضو** · قاعدة 16 بتقول إن
+                  محطاته ما بتأثّرش على حالة المشروع، فهو سجلّ بحاله ·
+                  والتاب بيجاوب «فين إغلاق المشروع ده». */}
+              {active === 'closing' && (
+                <CloseTab
+                  row={closeOfProject(project.id)}
+                  projectId={project.id}
+                  onOpen={() => navigate(ROUTES.closing(openClose(project.id)))}
                 />
               )}
               {active === 'payments' && (

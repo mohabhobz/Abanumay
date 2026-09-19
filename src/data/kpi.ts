@@ -27,6 +27,7 @@ import { median } from './analytics'
 import { ROUTES } from '@/app/routes'
 import { YEARS } from './mock/taxonomy'
 import { planKpi } from './mock/plans'
+import { CLOSE_TARGET_DAYS, closeKpi } from './mock/closing'
 
 /** وحدة المقام · «10 من 30» لازم تقول 30 إيه */
 export type Basis = 'project' | 'entity' | 'line' | 'source' | 'riyal'
@@ -320,11 +321,19 @@ export const PROCESSES: ProcessKpis[] = [
     no: 11,
     title: 'إغلاق المشروع',
     owner: 'إدارة المنح',
+    /* ⚠️ **المؤشران 2 و3 بقوا مقيسين بعد ما الموديول اتبنى.**
+       قبل كده كانوا `gap` بسببين مختلفين: التاني مالوش مدة مستهدفة
+       في الوثيقة، والتالت «الطلب والرفع قسمان مستقلان وتاريخ كل
+       منهما مش في النموذج» · والاتنين اتحلّوا هنا لا في النظام
+       العامل: المدة المستهدفة **مؤقتة عندنا** (`CLOSE_TARGET_DAYS`
+       · س-18 مفتوح)، وتاريخ الإرسال بقى في سجلّ التدقيق (قاعدة 11).
+       فالرقم بقى من نموذجنا لا من الحقول الناقصة، والسطر ده مكتوب
+       عشان اللي بعدنا يعرف إن التاني مستهدفه لسه افتراضًا. */
     kpis: [
-      { no: 1, name: 'متوسط مدة إغلاق المشروع', how: 'متوسط عدد الأيام من إنشاء طلب التقرير الختامي حتى اعتماد الإغلاق النهائي للمشروع.', unit: 'days', value: medianDays(rows, (r) => j(r)?.closing), better: 'down', target: null, derived: true, to: link('status=مكتمل') },
-      { no: 2, name: 'نسبة المشاريع المغلقة ضمن المدة المستهدفة', how: '(عدد المشاريع التي تم إغلاقها ضمن المدة المستهدفة ÷ إجمالي المشاريع المغلقة) × 100%.', unit: 'pct', value: null, gap: 'مفيش مدة مستهدفة للإغلاق في الوثيقة.', better: 'up', target: null },
-      { no: 3, name: 'متوسط مدة إعداد التقرير الختامي', how: 'متوسط الزمن من إنشاء طلب التقرير الختامي حتى إرسال التقرير من الجهة المستفيدة.', unit: 'days', value: null, gap: 'الطلب والرفع قسمان مستقلان في النظام، وتاريخ كل منهما مش في النموذج.', better: 'down', target: null },
-      { no: 4, name: 'نسبة المشاريع التي تم إغلاقها بعد استكمال جميع المتطلبات', how: '(عدد المشاريع التي استوفت جميع متطلبات الإغلاق ÷ إجمالي المشاريع المغلقة) × 100%.', unit: 'pct', ...(() => { const pool = rows.filter((r) => r.statusGroup === 'مكتمل'); return ratio(countOf(pool, (r) => r.hasFinalReport), pool.length) })(), better: 'up', target: null, to: link('status=مكتمل') },
+      { no: 1, name: 'متوسط مدة إغلاق المشروع', how: 'متوسط عدد الأيام من إنشاء طلب التقرير الختامي حتى اعتماد الإغلاق النهائي للمشروع.', unit: 'days', value: closeKpi().avg, better: 'down', target: null, derived: true, to: ROUTES.closings },
+      { no: 2, name: 'نسبة المشاريع المغلقة ضمن المدة المستهدفة', how: `(عدد المشاريع التي تم إغلاقها ضمن المدة المستهدفة ÷ إجمالي المشاريع المغلقة) × 100%. والمدة المستهدفة ${CLOSE_TARGET_DAYS} يومًا · مؤقتة عندنا لا من الوثيقة.`, unit: 'pct', value: closeKpi().inTimePct, better: 'up', target: null, derived: true, to: ROUTES.closings },
+      { no: 3, name: 'متوسط مدة إعداد التقرير الختامي', how: 'متوسط الزمن من إنشاء طلب التقرير الختامي حتى إرسال التقرير من الجهة المستفيدة · من سجلّ التدقيق (قاعدة 11).', unit: 'days', value: closeKpi().prepDays, better: 'down', target: null, derived: true, to: ROUTES.closings },
+      { no: 4, name: 'نسبة المشاريع التي تم إغلاقها بعد استكمال جميع المتطلبات', how: '(عدد المشاريع التي استوفت جميع متطلبات الإغلاق ÷ إجمالي المشاريع المغلقة) × 100%. والمتطلبات المحسوبة هي اللي السيستم يعرفها (قاعدة 8 · س-15 مفتوح).', unit: 'pct', value: closeKpi().fullPct, better: 'up', target: null, derived: true, to: ROUTES.closings },
     ],
   },
 ]

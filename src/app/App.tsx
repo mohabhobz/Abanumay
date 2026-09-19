@@ -21,6 +21,11 @@ import BudgetDocPage from '@/features/budget/BudgetDocPage'
 import AgreementsPage from '@/features/agreements/AgreementsPage'
 import AgreementPage from '@/features/agreements/AgreementPage'
 import AgreementNewPage from '@/features/agreements/AgreementNewPage'
+import ClosingPage from '@/features/closing/ClosingPage'
+import ClosePage from '@/features/closing/ClosePage'
+import ReportEditPage from '@/features/closing/ReportEditPage'
+import EvalEditPage from '@/features/closing/EvalEditPage'
+import CloseSettingsPage from '@/features/closing/CloseSettingsPage'
 import PlansPage from '@/features/plans/PlansPage'
 import PlanPage from '@/features/plans/PlanPage'
 import PlanEditPage from '@/features/plans/PlanEditPage'
@@ -135,6 +140,15 @@ export default function App() {
         <Route path="/plans/new" element={<PlanNewPage />} />
         <Route path={`${ROUTES.plans}/:id/edit`} element={<PlanEditPage />} />
         <Route path={`${ROUTES.plans}/:id`} element={<PlanPage />} />
+
+        {/* الإغلاق · BPD-011 · إجراء مستقل بدورتي اعتماد (قاعدة 17)،
+            وانتقاله بين محطاته ما بيغيّرش حالة المشروع (قاعدة 16) */}
+        <Route path={ROUTES.closings} element={<ClosingPage />} />
+        {/* ⚠️ الإعدادات قبل `:id` · نفس فخّ «/plans/settings» */}
+        <Route path={ROUTES.closingSettings} element={<CloseSettingsPage />} />
+        <Route path={`${ROUTES.closings}/:id/report`} element={<ReportEditPage />} />
+        <Route path={`${ROUTES.closings}/:id/evaluation`} element={<EvalEditPage />} />
+        <Route path={`${ROUTES.closings}/:id`} element={<ClosePage />} />
 
         {/* الصرف · BPD-009 · مبني على الوثيقة، والفروق عن النظام
             العامل مسجَّلة نوتس في `DISBURSEMENT_MODULE_BRIEF.md` */}

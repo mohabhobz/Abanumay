@@ -45,7 +45,16 @@ import { icons } from './icons'
  * تحرّك». ودي الحالة الوحيدة اللي المستخدم بياخد عليها إجراء.
  */
 
-export type StepState = 'done' | 'now' | 'todo'
+/**
+ * حالة المحطة.
+ *
+ * ⚠️ **و`skip` حالة رابعة عن قصد** · محطة ما بتنطبقش على الحالة
+ * دي (مراجعة الاتصال المؤسسي في إغلاق مشروع بلا التزام نشر ·
+ * قاعدة 9 «متى كانت مطلوبة») **بتتقال إنها اتخطّت لا بتختفي** ·
+ * نفس قاعدة الغياب اللي الكروت اتصلّحت عليها. وشيلها من الشريط
+ * بيخلّي مسارين مختلفين بنفس عدد المحطات ومحدش يعرف إيه اللي فرق.
+ */
+export type StepState = 'done' | 'now' | 'todo' | 'skip'
 
 export interface StepItem {
   /** اسم المحطة · دور أو إجراء */
@@ -62,6 +71,7 @@ const SAY: Record<StepState, string> = {
   done: 'تمّت',
   now: 'الدور عليها الآن',
   todo: 'لم تبدأ',
+  skip: 'لا تنطبق على هذه الحالة',
 }
 
 export interface StepsProps {
@@ -91,6 +101,10 @@ export function Steps({ items, flow = 'ladder', onPick }: StepsProps) {
                 ساعتها إنها خلصت. */}
             {s.state === 'done'
               ? <Icon name={icons.check} size={12} />
+              /* المتخطّاة نقطتها فاضية · الرقم فيها بيوعد بخطوة
+                 هتحصل، وهي مش هتحصل */
+              : s.state === 'skip'
+                ? null
               : stepper ? <b className="stp-num">{i + 1}</b> : null}
           </span>
         )

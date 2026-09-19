@@ -92,6 +92,23 @@ export const ROUTES = {
   /** إعدادات الخطط · أنواع الشواهد وحدود المراحل (د-1) */
   planSettings: '/plans/settings',
 
+  /* ═══ إغلاق المشروع · BPD-011 ═══
+     ⚠️ **موديول لا تاب، لنفس سبب الاتفاقية والخطة** · وأقوى:
+     قاعدة 16 بتقول بالنصّ إن انتقال التقرير الختامي بين مراحل
+     المراجعة **ما بيأثّرش على حالة المشروع**، وإنها بتفضل «تحت
+     التنفيذ» لحدّ ما التقرير والتقييم والمتطلبات يكتملوا مع بعض
+     (قاعدة 8 و18). يعني الإغلاق **سجلّ مستقل بحالته هو** ·
+     والتاب في صفحة المشروع بيفضل مكانه بيجاوب «فين إغلاق المشروع
+     ده»، والصندوق بيجاوب «إيه اللي واقف عندي». */
+  closings: '/closings',
+  closing: (id: string) => `/closings/${id}`,
+  /** محرّر التقرير الختامي · الجهة بتكتبه (قاعدة 4) */
+  closingReport: (id: string) => `/closings/${id}/report`,
+  /** محرّر تقييم المشروع · المشرف بيكتبه بعد اعتماد التقرير (قاعدة 6) */
+  closingEval: (id: string) => `/closings/${id}/evaluation`,
+  /** إعدادات الإغلاق · المستندات الداعمة وحدود المحطات */
+  closingSettings: '/closings/settings',
+
   payments: '/payments',
   payment: (id: string) => `/payments/${id}`,
   /** إنشاء طلب صرف · خطوات 1 و2 · والمشروع اختياري في الرابط */
@@ -137,6 +154,9 @@ export const PROJECT_TABS = [
   { slug: 'agreement', label: 'الاتفاقية' },
   { slug: 'plan', label: 'الخطة' },
   { slug: 'payments', label: 'الدفعات' },
+  /* الإغلاق بعد الدفعات · قاعدة 2 بتمنع فتحه قبل تسويتها، فترتيبه
+     في التابات بيتبع ترتيبه في الشغل */
+  { slug: 'closing', label: 'الإغلاق' },
   { slug: 'follow-ups', label: 'المتابعات' },
   { slug: 'log', label: 'سجل المشروع' },
   { slug: 'correspondence', label: 'المراسلات' },
@@ -238,5 +258,8 @@ export const NAV: NavItem[] = [
      والاتفاقية هي اللي بتفتح الصرف (قاعدة 1) فهي الأسبق في الشغل */
   { key: 'plans', label: 'الخطط', to: ROUTES.plans, icon: 'plan', group: 'money', perm: 'agreements.read' },
   { key: 'payments', label: 'الصرف', to: ROUTES.payments, icon: 'pay', group: 'money', mob: true, perm: 'payments.read' },
+  /* الإغلاق آخر السلسلة · وقاعدة 2 بتمنع فتحه قبل ما الدفعات
+     تتسوّى، فمكانه بعد الصرف في الريل زي ما هو بعده في الشغل */
+  { key: 'closings', label: 'الإغلاق', to: ROUTES.closings, icon: 'check', group: 'money', perm: 'agreements.read' },
   { key: 'reports', label: 'التقارير', to: ROUTES.reports, icon: 'chart', group: 'knowledge', mob: true, perm: 'reports.read' },
 ]
