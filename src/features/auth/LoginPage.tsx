@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from './AuthShell'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
-import { signIn, type Role } from '@/data/session'
+import { signIn } from '@/data/session'
 
 /* ═══════════════════════════════════════════════════════════
    شاشة الدخول
@@ -19,16 +19,19 @@ import { signIn, type Role } from '@/data/session'
    نفس المنظر كان أسهل حاجة إني أنسخهم · وده اللي بيخلّي حاجتين
    بيقولوا نفس المعنى بشكلين بعد شهر.
 
-   ⚠️ **وحسابا العرض تحت النموذج لا بدله.** العميل محتاج يفتح
-   الرحلتين بنفسه في الاجتماع من غير ما يدوّر على رابط محفوظ ·
-   والرحلتان مختلفتان فعلًا لا مجرد صلاحيات: موظّف المؤسسة بيدخل
-   النظام كله، والجهة بتفتح **بوّابتها** اللي فيها طلبها وخططها
-   وبس (شوف `PortalPage`).
+   ⚠️ **وحسابا العرض اتشالوا · ١٩ سبتمبر.** كان تحت النموذج صفّ
+   «الدخول السريع للعرض» بزرارين (موظّف المؤسسة · الجهة
+   المستفيدة)، اتعملوا عشان العميل يفتح الرحلتين في الاجتماع من
+   غير ما يدوّر على رابط.
 
-   ⚠️ **وضغطة واحدة بلا كلمة مرور.** حطّ كلمة مرور جاهزة في
-   الشاشة معناه كتابة بيانات دخول في الواجهة، وهي حاجة ما
-   بتتعملش حتى في نموذج · والزرار بيقول إنه عرض صراحةً فمحدش
-   بيفتكره دخولًا حقيقيًّا. */
+   واتشالوا لأن **باب النظام مش مكان أدوات العرض.** أول شاشة في
+   المنتج هي اللي بتقول إيه ده، وصفّ مكتوب عليه «للعرض» بيقول إن
+   اللي فوقه نموذج · فالشاشة بتاخد نبرة ديمو بدل نبرة منتج.
+
+   والرحلتان لسه مفتوحتين، بمداخلهم الحقيقية لا باختصار:
+     · موظّف المؤسسة · النموذج نفسه فوق
+     · الجهة · «تسجيل جهة جديدة» تحت، ومنها «عندك حساب بالفعل؟
+       افتح بوّابة طلبك» · وهو الطريق اللي الجهة بتمشيه فعلًا. */
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -46,12 +49,6 @@ export default function LoginPage() {
   const fail = (message: string) => {
     setErr(message)
     setTimeout(() => setErr(''), 4000)
-  }
-
-  /* الدخول السريع · بيسجّل الدور ويودّي لبداية رحلته */
-  const demo = (as: Role) => {
-    signIn(as === 'entity' ? 'جمعية البر بالأحساء' : 'عمر قاسم', as)
-    navigate(as === 'entity' ? ROUTES.entityPortal : AFTER_LOGIN, { replace: true })
   }
 
   const submit = (e: FormEvent) => {
@@ -136,29 +133,6 @@ export default function LoginPage() {
               {busy ? 'جارٍ التحقق…' : 'تسجيل الدخول'}
             </button>
           </form>
-
-          {/* ⚠️ حسابا العرض · مكانهم تحت النموذج لأنهم مش الطريق
-              الأساسي، وشكلهم صفّ واحد عشان يتقروا اختيارًا واحدًا
-              من اتنين لا زرارين منفصلين */}
-          <div className="ldemo">
-            <span className="lnote sub">الدخول السريع للعرض</span>
-            <div className="ldemo-r">
-              <button type="button" className="ldemo-b" onClick={() => demo('staff')}>
-                <Icon name={icons.user} size={16} />
-                <span>
-                  <b>موظّف المؤسسة</b>
-                  <span className="sub">مشرف المنح</span>
-                </span>
-              </button>
-              <button type="button" className="ldemo-b" onClick={() => demo('entity')}>
-                <Icon name={icons.entity} size={16} />
-                <span>
-                  <b>الجهة المستفيدة</b>
-                  <span className="sub">بوّابة الجهة</span>
-                </span>
-              </button>
-            </div>
-          </div>
 
           {/* مسار مختلف تمامًا، فشكله جوست · مش قرار تاني منافس للدخول */}
           <div className="lalt">

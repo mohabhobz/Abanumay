@@ -2991,23 +2991,11 @@ to{opacity:1;transform:none}
 .lsteps{margin-top:var(--sp-5)}
 .lalt{margin-top:var(--sp-6)}
 .lnote{display:block;text-align:center;font-size:var(--fs-1);color:var(--t2);margin-top:var(--sp-3);line-height:var(--lh-text)}
-/* ── حسابا العرض ──
-   ⚠️ صفّ من اتنين بنفس الوزن · الاختيار بينهم مش قرار خطر،
-   والشكل جوست عشان ما ينافسش زرار الدخول الأساسي. */
-.ldemo{display:flex;flex-direction:column;gap:var(--sp-3);align-items:center;
-  margin-top:var(--sp-4);padding-top:var(--sp-4);
-  box-shadow:inset 0 1px 0 var(--edge-1)}
-.ldemo-r{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);width:100%}
-.ldemo-b{display:flex;align-items:center;gap:var(--sp-3);min-width:0;text-align:start;
-  padding:var(--sp-3) var(--sp-4);border-radius:var(--r1);color:var(--t1);
-  background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1);
-  cursor:pointer;transition:background .16s ease}
-.ldemo-b:hover{background:var(--fl-4)}
-.ldemo-b>svg{flex:none;color:var(--t3)}
-.ldemo-b>span{display:flex;flex-direction:column;min-width:0}
-.ldemo-b b{font-size:var(--fs-2);font-weight:600}
-.ldemo-b .sub{font-size:var(--fs-1)}
-@media (max-width:420px){.ldemo-r{grid-template-columns:1fr}}
+/* ⚠️ **صفّ «الدخول السريع للعرض» اتشال · ١٩ سبتمبر** · وكلاسّاته
+   (`.ldemo` وإخواتها) اتشالوا معاه. باب النظام مش مكان أدوات
+   العرض: صفّ مكتوب عليه «للعرض» بيقول إن اللي فوقه نموذج،
+   فالشاشة بتاخد نبرة ديمو بدل نبرة منتج. والسبب مكتوب في
+   `LoginPage.tsx` مع مداخل الرحلتين البديلة. */
 
 .lfoot{font-size:var(--fs-1);color:rgba(20,50,50,.62);text-shadow:0 1px 4px var(--fl-3)}
 @media (max-width:760px){
