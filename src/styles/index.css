@@ -5371,7 +5371,13 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   box-shadow:inset 0 0 0 1px rgba(var(--retC2),.2)}
 .thread .msg{align-self:flex-start}
 .thread .msg.mine{align-self:flex-end}
-.msg-h{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+/* ⚠️ **الوقت سطر تحت الاسم.** كان متعلّقًا على الطرف التاني من
+   الفقاعة (`pc-sp` بينهم)، فالعين بتقرا الاسم هنا والتاريخ هناك
+   وترجع · وهو تابع للاسم لا معلومة مستقلّة. فالترويسة بقت شبكة:
+   الاسم والدور في السطر الأول، والوقت تحتهم مباشرةً. */
+.msg-h{display:grid;grid-template-columns:auto auto;justify-content:start;
+  align-items:center;gap:var(--sp-1) var(--sp-3);margin-bottom:var(--sp-3)}
+.msg-at{grid-column:1 / -1;font-size:var(--fs-1)}
 .msg-by{font-family:var(--fd);font-weight:600;font-size:var(--fs-2);color:var(--t1)}
 .msg-role{font-size:var(--fs-1);padding:var(--sp-1) var(--sp-3);border-radius:var(--rp);
   color:var(--t3);background:rgba(var(--edgeC),.08)}
@@ -6977,3 +6983,24 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 /* الثريد بياخد طول العمود · القناة هي شغل الشاشة التانية */
 .ptl-talk .thread{max-width:none;gap:var(--sp-4)}
 .ptl-talk .msg{max-width:92%}
+
+
+/* ═══ القناة وهي فاضية ═══
+   ⚠️ **الفراغ هنا هو المنظر الأساسي لا الاستثناء** · صفر رسائل في
+   ٣٨ مشروعًا في النظام العامل. فبياخد نفس بوستر المساعد المقفول
+   (`.aishut-c`): شارة وعنوان وسطر وزرار في عمود متوسّط. */
+.thread-blank{display:flex;min-height:230px;padding:var(--sp-5) 0}
+.thread-blank .aishut-p{-webkit-line-clamp:4}
+/* ⚠️ الشارة هنا بتشيل أيقونة لا الشرارة · دي قناة مع بني آدمين
+   مش مساعد، والشرارة علامة المساعد في السيستم كله. */
+.thread-blank .badge{color:var(--t2)}
+
+/* ═══ خانة الكتابة ═══
+   ⚠️ **البار كان بيتقري فاضيًا لا قابلًا للكتابة.** النصّ البديل
+   على طرف والزرارين على الطرف التاني بفراغ نص الكارت بينهم ·
+   فالعين ما بتربطش الاتنين ببعض. الزرارين بقوا مجموعة واحدة
+   ملزوقة، والبار واخد ارتفاعًا ثابتًا يقول إنه حقل. */
+.ask.free{min-height:52px;gap:var(--sp-2)}
+.ask.free .ph{padding-inline-end:var(--sp-3)}
+/* الحالة المسلَّحة · الزرار في البوستر بيضوّي الخانة */
+.ask.free.on{background:var(--fl-5);box-shadow:inset 0 0 0 1px var(--edge-f)}
