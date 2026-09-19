@@ -1,8 +1,7 @@
-import type { LucideIcon } from 'lucide-react'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import Logo from '@/assets/LogoColor'
 import { Icon, icons } from '@/components/ui'
+import { AuthShell, AuthField } from './AuthShell'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
 import { signIn, type Role } from '@/data/session'
 
@@ -14,6 +13,11 @@ import { signIn, type Role } from '@/data/session'
 
    من النظام الحقيقي: اسم مستخدم وكلمة مرور، ومسار منفصل تمامًا
    اسمه «تسجيل جهة جديدة».
+
+   ⚠️ **والغلاف بقى `AuthShell`** · الفيديو والكارت والعلامة وسطر
+   الحقوق كانوا مكتوبين هنا، ولمّا شاشة إنشاء حساب الجهة احتاجت
+   نفس المنظر كان أسهل حاجة إني أنسخهم · وده اللي بيخلّي حاجتين
+   بيقولوا نفس المعنى بشكلين بعد شهر.
 
    ⚠️ **وحسابا العرض تحت النموذج لا بدله.** العميل محتاج يفتح
    الرحلتين بنفسه في الاجتماع من غير ما يدوّر على رابط محفوظ ·
@@ -65,27 +69,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login">
-      <video className="login-vid" autoPlay muted loop playsInline poster="./login-poster.jpg">
-        <source src="./login-bg.mp4" type="video/mp4" />
-      </video>
-
-      <main className="login-mid">
-        <div className="lcard glass">
-          {/* توست: بيطفو فوق الفورم وما يزقّش أي حاجة، وبيختفي لوحده */}
-          {err && (
-            <div className="ltoast" role="alert">
-              <Icon name={icons.alert} size={16} />
-              <span>{err}</span>
-            </div>
-          )}
-
-          <div className="lhead">
-            <span className="lmark"><Logo /></span>
-            <h1 className="ltitle">منح أبانمي</h1>
-            <p className="lsub">مؤسسة سليمان أبانمي الأهلية</p>
-          </div>
-
+    <AuthShell title="منح أبانمي" sub="مؤسسة سليمان أبانمي الأهلية" err={err}>
           {/* method/action موجودين عشان مديري كلمات السر يتعرّفوا على
               الفورم ويعرضوا الحفظ · الإرسال نفسه متوقّف بـpreventDefault */}
           <form
@@ -95,7 +79,7 @@ export default function LoginPage() {
             action="#"
             noValidate
           >
-            <Field
+            <AuthField
               id="lg-user"
               name="username"
               label="اسم المستخدم"
@@ -105,7 +89,7 @@ export default function LoginPage() {
               autoComplete="username"
               enterKeyHint="next"
             />
-            <Field
+            <AuthField
               id="lg-pass"
               name="password"
               label="كلمة المرور"
@@ -191,55 +175,6 @@ export default function LoginPage() {
             </button>
             <p className="lnote sub">للجمعيات والمؤسسات التي لم تسجّل في المنصة بعد</p>
           </div>
-        </div>
-
-        <p className="lfoot sub">جميع الحقوق محفوظة · مؤسسة سليمان أبانمي الأهلية</p>
-      </main>
-    </div>
-  )
-}
-
-/* حقل بعلامة داخلية وحالة تركيز واضحة · الحدود بتغمق مش بتتلوّن */
-interface FieldProps {
-  id: string
-  /** لازم للاسم عشان مديري كلمات السر والأوتوفيل يتعرّفوا على الحقل */
-  name: string
-  label: string
-  icon: LucideIcon
-  value: string
-  onChange: (value: string) => void
-  type?: string
-  trailing?: ReactNode
-  /** توكن الأوتوفيل القياسي: username · current-password … */
-  autoComplete?: string
-  /** شكل زرار الإدخال في كيبورد الموبايل */
-  enterKeyHint?: 'go' | 'next' | 'done' | 'send' | 'search' | 'enter'
-}
-
-function Field({
-  id, name, label, icon, value, onChange,
-  type = 'text', trailing, autoComplete, enterKeyHint,
-}: FieldProps) {
-  return (
-    <label className="lfield" htmlFor={id}>
-      <span className="llbl">{label}</span>
-      <span className="lbox">
-        <Icon name={icon} size={17} />
-        <input
-          id={id}
-          name={name}
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete={autoComplete}
-          enterKeyHint={enterKeyHint}
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          dir="ltr"
-        />
-        {trailing}
-      </span>
-    </label>
+    </AuthShell>
   )
 }

@@ -25,7 +25,7 @@ import {
   Plus, EllipsisVertical, Pin, Pencil, Trash2, Menu, ArrowDown, Download,
   Copy, Check, RotateCw, ThumbsUp, ThumbsDown, GripVertical, ChevronDown,
   Sparkles, ArrowDownWideNarrow, ChevronUp, LayoutGrid, Rows3, Funnel,
-  Clock, MapPin, Users, Link2, ListChecks, CalendarDays,
+  Clock, MapPin, Users, Link2, ListChecks, CalendarDays, Mail,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -41,6 +41,8 @@ export const icons = {
   gear: SlidersHorizontal,
   logout: LogOut,
   lock: Lock,
+  /** البريد · حقل التسجيل والإشعارات */
+  mail: Mail,
   eye: Eye,
   eyeOff: EyeOff,
   doc: FileText,

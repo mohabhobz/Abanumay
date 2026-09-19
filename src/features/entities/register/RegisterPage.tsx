@@ -14,8 +14,8 @@ import { isSignedIn } from '@/data/session'
 import Logo from '@/assets/LogoColor'
 import { entityRows } from '@/data/mock/entities'
 import {
-  REG_DOCS, REG_STAGES, REG_TERMS, bankIssues, citiesOf, docRequired,
-  emptyBank, licenseClash, type RegBank,
+  FIRST_FORM_STAGE, FORM_STAGES, REG_DOCS, REG_STAGES, REG_TERMS, bankIssues,
+  citiesOf, docRequired, emptyBank, licenseClash, regAccount, type RegBank,
 } from '@/data/mock/registration'
 import { regReadings, stageAdvice, stepState } from '@/data/mock/regPortal'
 import { Field } from './Field'
@@ -94,8 +94,11 @@ export default function RegisterPage() {
   const phase: Phase = PHASES.includes(v.step as Phase) ? (v.step as Phase) : 'terms'
   const setPhase = (x: Phase) => set({ step: x === 'terms' ? undefined : x })
   const [agreed, setAgreed] = useState(false)
-  const tab = REG_STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : REG_STAGES[0].key
-  const setTab = (x: string) => set({ tab: x === REG_STAGES[0].key ? undefined : x })
+  /* ⚠️ **الفورم بيبدأ من الخطوة التانية** · «حساب الجهة» ليها
+     شاشتها (`own`)، فما بتتعرضش هنا · والافتراضي بقى أول خطوة
+     بتتعبّى فعلًا لا أول محطة في الرحلة. */
+  const tab = FORM_STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : FIRST_FORM_STAGE
+  const setTab = (x: string) => set({ tab: x === FIRST_FORM_STAGE ? undefined : x })
   const [val, setVal] = useState<Record<string, string>>(EMPTY)
 
   /* ⚠️ **المرفوع في الرابط، والملف المختار في الستيت.**
@@ -142,7 +145,7 @@ export default function RegisterPage() {
   /** الناقص في كل تبويب · قاعدة 4، والمستندات بتتحسب بالتصنيف */
   const shortBy = useMemo(() => {
     const out: Record<string, string[]> = {}
-    for (const s of REG_STAGES) {
+    for (const s of FORM_STAGES) {
       /* ⚠️ محطة البنك نواقصها **محسوبة من الصفوف لا من الحقول**:
          مالهاش `fields` أصلًا، ولو فضلت على الحساب العام كانت
          هتطلع «مكتمل» وهي فاضية · نفس مرض «قاعدة ملهاش فحص». */
@@ -192,11 +195,11 @@ export default function RegisterPage() {
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
 
-  const at = REG_STAGES.findIndex((x) => x.key === tab)
+  const at = FORM_STAGES.findIndex((x) => x.key === tab)
   const first = at <= 0
-  const last = at >= REG_STAGES.length - 1
+  const last = at >= FORM_STAGES.length - 1
   const go = (d: -1 | 1) => {
-    const next = REG_STAGES[at + d]
+    const next = FORM_STAGES[at + d]
     if (next) setTab(next.key)
   }
 
@@ -208,8 +211,8 @@ export default function RegisterPage() {
    * بيخلّي الزرار يعمل الحاجة اللي اسمه بيوعد بها.
    */
   const editMobile = () => {
-    const field = REG_STAGES.find((x) => x.fields.some((f) => f.key === 'clerkMobile'))
-    set({ step: undefined, tab: field && field.key !== REG_STAGES[0].key ? field.key : undefined })
+    const field = FORM_STAGES.find((x) => x.fields.some((f) => f.key === 'clerkMobile'))
+    set({ step: undefined, tab: field && field.key !== FIRST_FORM_STAGE ? field.key : undefined })
     /* الفوكس بعد ما الشاشة ترسم المحطة الجديدة · قبلها الحقل
        ما بيكونش موجود في الصفحة أصلًا */
     requestAnimationFrame(() => {
@@ -256,9 +259,12 @@ export default function RegisterPage() {
         draft
           ? <>اتحفظت <b>كمسودة</b> · القاعدة <Num>12</Num>، وتقدر تكمّلها في أي وقت</>
           : <>
-              الخطوة <b><Num>{at + 1}</Num> من <Num>{REG_STAGES.length}</Num></b>
+              {/* ⚠️ **العدّ على الرحلة كلها لا على الفورم** ·
+                  الجهة عدّت محطة الحساب فعلًا، فبدء العدّ من «١ من
+                  ٥» هنا بيقول لها إن اللي عملته ما اتحسبش. */}
+              الخطوة <b><Num>{at + 2}</Num> من <Num>{REG_STAGES.length}</Num></b>
               <span className="decsep" />
-              {REG_STAGES[at].label}
+              {FORM_STAGES[at].label}
               {missing.length > 0 && (
                 <>
                   <span className="decsep" />
@@ -279,8 +285,11 @@ export default function RegisterPage() {
         <button
           className="btn btn-p"
           disabled={!agreed}
-          title={agreed ? 'افتح النموذج' : 'أقرّ بالضوابط أولًا'}
-          onClick={() => setPhase('form')}
+          title={agreed ? 'كمّل بإنشاء حساب الجهة' : 'أقرّ بالضوابط أولًا'}
+          /* ⚠️ **الضوابط بتودّي لشاشة الحساب لا للفورم** · الحساب
+             هو الباب، والفورم بيتحفظ عليه · فالترتيب: ضوابط ←
+             حساب ← نموذج. */
+          onClick={() => navigate(ROUTES.entityRegisterAccount)}
         >
           موافقة ومتابعة
         </button>
@@ -312,7 +321,7 @@ export default function RegisterPage() {
           <button
             className="btn btn-2"
             disabled={first}
-            title={first ? 'دي أول خطوة' : `ارجع لـ${REG_STAGES[at - 1].label}`}
+            title={first ? 'دي أول خطوة' : `ارجع لـ${FORM_STAGES[at - 1].label}`}
             onClick={() => go(-1)}
           >
             {/* في RTL «لورا» يمين · `chevronBack` هو اللي بيرسمها */}
@@ -327,7 +336,7 @@ export default function RegisterPage() {
           {!last ? (
             <button
               className="btn btn-p"
-              title={`كمّل في ${REG_STAGES[at + 1].label}`}
+              title={`كمّل في ${FORM_STAGES[at + 1].label}`}
               onClick={() => go(1)}
             >
               التالي
@@ -478,7 +487,14 @@ export default function RegisterPage() {
                   <Glass className="regsteps">
                   <Steps
                     flow="stepper"
-                    onPick={(i) => setTab(REG_STAGES[i].key)}
+                    /* ⚠️ **الضغط على محطة ليها شاشتها ما بيعملش
+                       حاجة** · شاشتها اتعدّت خلاص، والرجوع لها
+                       معناه إنشاء حساب تاني. فالضغط بيتجاهلها بدل
+                       ما يودّي لخطوة مش موجودة في الفورم. */
+                    onPick={(i) => {
+                      const st = REG_STAGES[i]
+                      if (!st.own) setTab(st.key)
+                    }}
                     /* ⚠️ **الرقم الناقص اتشال من تحت الاسم.**
                        كان مكتوبًا تلات مرات في نفس الشاشة: تحت كل
                        خطوة، وفي وسم ترويسة الكارت، وفي جملة الرصيف
@@ -487,18 +503,34 @@ export default function RegisterPage() {
                        ووصلت لفين** · والحالة بتتقال بالنقطة (رقم /
                        صح / كهرماني) من غير سطر تاني. */
                     /* ⚠️ «مفيش ناقص» مش «خلصت» · شوف `stepState` */
+                    /* ⚠️ **محطة الحساب دايمًا «تمّت»** · مش لأننا
+                       بنفترض، لأن **الوصول للفورم ما بيحصلش من
+                       غيرها**: شاشتها هي الباب، والجاي من هنا
+                       عدّاها فعلًا. وشيلها من الشريط كان هيخلّي
+                       الجهة تفتكر إن الرحلة خمس خطوات وهي ستة. */
                     items={REG_STAGES.map((st, i) => ({
                       label: st.label,
-                      state: stepState(
+                      state: st.own ? 'done' : stepState(
                         i,
                         REG_STAGES.findIndex((x) => x.key === tab),
-                        shortBy[st.key].length,
+                        shortBy[st.key]?.length ?? 0,
                       ),
                     }))}
                   />
                   </Glass>
 
-                  {REG_STAGES.filter((s) => s.key === tab).map((s) => (
+                  {/* ⚠️ **الطلب بيتحفظ على حساب، والجهة لازم تشوفه** ·
+                      شاشة الحساب عدّت، والسطر ده هو الأثر الوحيد
+                      اللي بيفضل منها في الفورم · من غيره الجهة
+                      بتسأل «أنا عملت الحساب ده ليه». */}
+                  {regAccount.email && (
+                    <p className="sub tcen">
+                      الطلب بيتحفظ على <Mono>{regAccount.email}</Mono> · تقدر تسيبه
+                      وترجع له، والإشعارات بتروح عليه.
+                    </p>
+                  )}
+
+                  {FORM_STAGES.filter((s) => s.key === tab).map((s) => (
                     <Glass key={s.key}>
                       <Head
                         title={s.label}

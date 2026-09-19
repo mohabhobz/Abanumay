@@ -7,6 +7,7 @@ import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
 import PortalPage from '@/features/entities/register/PortalPage'
 import RegisterPage from '@/features/entities/register/RegisterPage'
+import RegisterAccountPage from '@/features/entities/register/AccountPage'
 import RequestsPage from '@/features/entities/register/RequestsPage'
 import RegReviewPage from '@/features/entities/register/RegReviewPage'
 import EntityNewPage from '@/features/entities/register/EntityNewPage'
@@ -62,6 +63,10 @@ export default function App() {
             معناه إنها ما تُفتحش إلا من واحد مسجَّل · يعني ما تُفتحش
             من اللي هي مبنية له أصلًا. وده هو اللي كان بيخلّي زرار
             «تسجيل جهة جديدة» في شاشة الدخول ما يعملش حاجة. */}
+        {/* ⚠️ **`account` قبل المسار الأب مش لازم هنا** (المسار
+            الأب حرفي لا `:param`)، بس الترتيب مكتوب زي إخواته عشان
+            اللي بعدنا ما يقلبهوش لمّا يزوّد `/entities/register/:id`. */}
+        <Route path={ROUTES.entityRegisterAccount} element={<RegisterAccountPage />} />
         <Route path={ROUTES.entityRegister} element={<RegisterPage />} />
 
         {/* ⚠️ **البوّابة برّه الحراسة الداخلية لنفس سبب التسجيل.**

@@ -79,9 +79,11 @@ export const ROUTES = [
      (`DocFile` بثامبنيله وزرار الإزالة) ما بتترسمش ولا مرة.
      والمفتاحان دول بيخلّوا الصفحة الواحدة فيها الحالتين مع بعض. */
   '/entities/register?step=form', '/entities/register?step=form&tab=docs&up=license,board',
-  /* المحطتان الجديدتان (ن-1 و ن-2): حساب الجهة، وقايمة الحسابات
-     البنكية · والاتنين شكلهم مختلف تمامًا عن محطة حقول عادية */
-  '/entities/register?step=form&tab=account',
+  /* ⚠️ **حساب الجهة بقى شاشة بذاتها لا محطة في الستيبر.** كانت
+     `?step=form&tab=account`، وهي دلوقتي بشكل شاشة الدخول (فيديو
+     + كارت زجاج) · يعني **غلاف تاني بالكامل** لا تبويب تاني،
+     فلازم تتزار لوحدها. */
+  '/entities/register/account',
   '/entities/register?step=otp', '/entities/register?step=sent',
   /* ⚠️ ودي **نفس الشاشة بغلاف تاني**: الجاي من برّه السيستم مخارجه
      جوّه الكارت ومفيش رصيف تحت، والداخل من جوّه بالعكس. من غير
@@ -188,7 +190,8 @@ export const ROUTES = [
 /* ⚠️ والبوّابة عامّة برضو لنفس السبب: اللي بيفتحها جهة مالهاش
    حساب في النظام · عندها حساب على طلبها وبس (ن-2). */
 export const PUBLIC_ROUTES = [
-  '/entities/register', '/entities/register?step=form&tab=bank',
+  '/entities/register', '/entities/register/account',
+  '/entities/register?step=form&tab=bank',
   '/entities/portal', '/entities/portal?req=REQ-2026-947141', '/entities/portal?req=REQ-2026-947135',
   /* المعتمدة · وهي الوحيدة اللي بيبان فيها كارت «خطط مشاريعك» */
   '/entities/portal?req=REQ-2026-947134',
