@@ -5360,11 +5360,17 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .msg{padding:var(--sp-4) var(--sp-5);border-radius:var(--r1);max-width:88%;
   background:var(--fl-2);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
-/* رسالة الجهة على الشمال ورسالة المؤسسة على اليمين: الجهة طرف تاني
-   مش زميل، والفرق لازم يبان من غير ما تقرا الاسم. */
-.msg.entity{align-self:flex-start;background:rgba(var(--retC2),.09);
+/* رسالة الطرف التاني على الشمال ورسالة اللي فاتح الشاشة على
+   اليمين · والفرق لازم يبان من غير ما تقرا الاسم.
+   ⚠️ **والناحية بتتحدّد باللي فاتح لا بالدور.** كانت الجهة دايمًا
+   على الشمال · وده صح في صفحة المشروع (اللي فاتحها موظّف) وغلط
+   في بوّابة الجهة: الجهة كانت بتقرا رسايلها هي كإنها جاية من
+   المؤسسة. `Thread` بياخد `me` وبيعلّم رسايله `mine`.
+   واللون بيفضل على الدور · الجهة نبرتها واحدة في السيستم كله. */
+.msg.entity{background:rgba(var(--retC2),.09);
   box-shadow:inset 0 0 0 1px rgba(var(--retC2),.2)}
-.msg.staff{align-self:flex-end}
+.thread .msg{align-self:flex-start}
+.thread .msg.mine{align-self:flex-end}
 .msg-h{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-3)}
 .msg-by{font-family:var(--fd);font-weight:600;font-size:var(--fs-2);color:var(--t1)}
 .msg-role{font-size:var(--fs-1);padding:var(--sp-1) var(--sp-3);border-radius:var(--rp);
@@ -6937,3 +6943,37 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .ptl-st{display:flex;flex-direction:column;gap:var(--sp-3);margin:var(--sp-4) 0 0;padding:0;list-style:none}
 .ptl-st>li{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0;opacity:.6}
 .ptl-st>li.now{opacity:1}
+
+
+/* ═══ بوّابة الجهة · كارت الطلب ═══
+   ⚠️ الشاشة كانت بتشرح النظام (جدول الإيميلات · الحالات الخمس)
+   لواحدة عندها **حاجة واحدة تعملها**: ترفع الناقص وتبعت. فبقت
+   كارت طلب على اليمين وثريد على الشمال. */
+.ptl-req .ptl-steps{margin-block:var(--sp-3) var(--sp-4)}
+/* الستيبر جوّه كارت · بلا الحشو اللي بياخده وهو كارت لوحده */
+.ptl-req .stp-stepper .stp-c{padding-block:0}
+
+/* نتيجة المراجعة · قرار مكتوب لا رسالة · فله سطح خاص بيه */
+.ptl-res{display:flex;align-items:flex-start;gap:var(--sp-3);
+  padding:var(--sp-4);border-radius:var(--ric);
+  background:rgba(var(--warnC),.09);color:var(--t1)}
+.ptl-res>svg{flex:none;color:var(--warn-ink);margin-top:var(--sp-1)}
+.ptl-res b{display:block;font-size:var(--fs-2);margin-bottom:var(--sp-2)}
+.ptl-res p{margin:0;font-size:var(--fs-2);line-height:var(--lh-long);color:var(--t2)}
+.ptl-res.no{background:rgba(var(--noC),.09)}
+.ptl-res.no>svg{color:var(--no)}
+
+/* الناقص · كل سطر بزرار رفعه في مكانه */
+.ptl-short-h{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-4)}
+.ptl-short{list-style:none;margin:var(--sp-3) 0 0;padding:0;
+  display:flex;flex-direction:column;gap:var(--sp-2)}
+.ptl-short>li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+  padding:var(--sp-3) var(--sp-4);border-radius:var(--r1);
+  background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1)}
+.ptl-short>li>svg{flex:none;color:var(--t3)}
+.ptl-short-l{flex:1;min-width:0;font-size:var(--fs-2);color:var(--t1);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* الثريد بياخد طول العمود · القناة هي شغل الشاشة التانية */
+.ptl-talk .thread{max-width:none;gap:var(--sp-4)}
+.ptl-talk .msg{max-width:92%}

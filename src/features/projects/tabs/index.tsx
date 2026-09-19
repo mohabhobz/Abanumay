@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react'
-import { DateText, Empty, Glass, Head, Icon, Mono, Num, Tag, icons } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Mono, Num, Tag } from '@/components/ui'
 import { isolate, nf } from '@/lib/format'
 import type { Entity, FollowUp, FollowUpType } from '@/types/domain'
 import type { ThreadMessage } from '@/data/mock/detail'
+import { Thread } from '@/components/thread'
 import { DocFile } from '@/components/docs'
 
 export { DataTab } from './DataTab'
@@ -160,38 +161,15 @@ export function CorrespondenceTab({
         meta={messages.length ? `${messages.length} رسائل` : 'لا توجد'}
       />
 
-      {messages.length > 0 ? (
-        <>
-          <div className="thread-why">
-            <Icon name={icons.alert} size={15} style={{ color: 'var(--warn)', flex: 'none' }} />
-            <span className="sub">{why}</span>
-          </div>
-          <div className="thread">
-            {messages.map((m, i) => (
-              <div className={`msg ${m.from}`} key={i}>
-                <div className="msg-h">
-                  <span className="msg-by">{m.from === 'entity' ? entityName : m.by}</span>
-                  <span className="msg-role">{m.from === 'entity' ? 'الجهة' : 'المؤسسة'}</span>
-                  <span className="pc-sp" />
-                  <DateText>{m.at}</DateText>
-                </div>
-                <div className="msg-b">{m.body}</div>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <Empty
-          title="لا توجد مراسلات على هذا المشروع."
-          note="القناة تُستخدم عمليًا حين يقف إجراء على الجهة، طلب استكمال، أو سند لم يُرفع، أو تقرير متأخر. وما عدا ذلك يجري التواصل في المتابعات."
-        />
-      )}
-
-      <div className="ask free mt-4">
-        <span className="ph">اكتب رسالة لـ{entityName}…</span>
-        <button className="attach" aria-label="إرفاق"><Icon name={icons.clip} /></button>
-        <button className="go" aria-label="إرسال"><Icon name={icons.send} /></button>
-      </div>
+      <Thread
+        messages={messages}
+        entityName={entityName}
+        me="staff"
+        why={why}
+        placeholder={`اكتب رسالة لـ${entityName}…`}
+        emptyTitle="لا توجد مراسلات على هذا المشروع."
+        emptyNote="القناة تُستخدم عمليًا حين يقف إجراء على الجهة، طلب استكمال، أو سند لم يُرفع، أو تقرير متأخر. وما عدا ذلك يجري التواصل في المتابعات."
+      />
     </Glass>
   )
 }
