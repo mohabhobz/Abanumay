@@ -12,6 +12,16 @@ export interface ComposerProps {
   inputRef?: RefObject<HTMLTextAreaElement | null>
   /** مثبّت أسفل الشاشة بعد أول سؤال */
   docked?: boolean
+  /**
+   * النصّ البديل في الخانة.
+   *
+   * ⚠️ **الكومبوننت ده مش للمساعد وحده.** ثريد المراسلة بين الجهة
+   * والمؤسسة كان بيرسم خانة كتابة بإيده (`.ask free`) · سطر واحد
+   * والزرارين على الطرف التاني، وده **مش شكل الكتابة في السيستم**
+   * ولا اتجاهه (العميل شافها). الشكل الواحد هو ده: مساحة بتكبر
+   * مع النصّ، والأزرار في صفّ تحتها.
+   */
+  placeholder?: string
 }
 
 /** مربع الكتابة · بيكبر مع النص، وبيحسّ بالماوس قبل ما توصله */
@@ -23,6 +33,7 @@ export function Composer({
   busy,
   inputRef,
   docked,
+  placeholder = 'اسأل عن مشروع، جهة، بند ميزانية…',
 }: ComposerProps) {
   const area = useRef<HTMLTextAreaElement | null>(null)
   const box = useRef<HTMLDivElement | null>(null)
@@ -53,7 +64,7 @@ export function Composer({
               onSend(value)
             }
           }}
-          placeholder="اسأل عن مشروع، جهة، بند ميزانية…"
+          placeholder={placeholder}
           aria-label="اكتب رسالتك"
         />
 

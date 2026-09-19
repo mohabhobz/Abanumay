@@ -1,5 +1,6 @@
-import { DateText, Icon, icons } from '@/components/ui'
 import { useState } from 'react'
+import { DateText, Icon, icons } from '@/components/ui'
+import { Composer } from '@/components/assistant'
 import type { ThreadMessage } from '@/data/mock/detail'
 
 /* ═══════════════════════════════════════════════════════════
@@ -38,22 +39,24 @@ export interface ThreadProps {
 /**
  * القناة وهي فاضية.
  *
- * ⚠️ **نفس بوستر مساعد أبانمي المقفول بالحرف** (`.aishut-c`):
- * شارة في النص، وعنوان، وسطر بيقول إمتى القناة بتتفتح، وزرار
- * بيبدأ. الفراغ في السيستم ده **حالة مصمَّمة** لا سطر رمادي ·
- * والقناة دي فاضية في أغلب الوقت فعلًا (صفر رسائل في ٣٨ مشروعًا)،
- * يعني ده **المنظر الأساسي** لها لا الاستثناء.
+ * ⚠️ **نفس بوستر مساعد أبانمي المقفول** (`.aishut-c`): شارة في
+ * النص، وعنوان، وسطر بيقول إمتى القناة بتتفتح. الفراغ في السيستم
+ * ده **حالة مصمَّمة** لا سطر رمادي · والقناة دي فاضية في أغلب
+ * الوقت فعلًا (صفر رسائل في ٣٨ مشروعًا)، يعني ده **المنظر
+ * الأساسي** لها لا الاستثناء.
+ *
+ * ⚠️ **وبلا زرار.** بوستر المساعد زرّاره بيشغّل التحليل فعلًا ·
+ * وهنا مفيش حاجة يعملها غير إنه يوجّه لخانة الكتابة اللي تحته
+ * على طول. **زرار بيعمل حاجة الخانة بتعملها بنفسها = زرار ما
+ * بيعملش حاجة**، والعميل شافه.
  */
-function Blank({ title, note, onStart }: { title: string; note: string; onStart: () => void }) {
+function Blank({ title, note }: { title: string; note: string }) {
   return (
     <div className="thread-blank">
       <div className="aishut-c">
         <span className="badge badge-44"><Icon name={icons.chat} size={20} /></span>
         <h2 className="aishut-t">{title}</h2>
         <p className="aishut-p">{note}</p>
-        <button type="button" className="btn btn-2 aishut-go" onClick={onStart}>
-          اكتب أول رسالة
-        </button>
       </div>
     </div>
   )
@@ -62,11 +65,7 @@ function Blank({ title, note, onStart }: { title: string; note: string; onStart:
 export function Thread({
   messages, entityName, me, why, placeholder, emptyTitle, emptyNote,
 }: ThreadProps) {
-  /* ⚠️ زرار البوستر **بيفتح خانة الكتابة** لا بيبعت · النموذج
-     مفيهوش إرسال حقيقي، والزرار اللي ما بيعملش حاجة أسوأ من
-     غيابه · فهو بيضوّي الخانة وبيخلّيها الحاجة الوحيدة الواضحة
-     في الكارت. */
-  const [armed, setArmed] = useState(false)
+  const [draft, setDraft] = useState('')
 
   return (
     <>
@@ -96,18 +95,23 @@ export function Thread({
           </div>
         </>
       ) : (
-        <Blank
-          title={emptyTitle}
-          note={emptyNote}
-          onStart={() => setArmed(true)}
-        />
+        <Blank title={emptyTitle} note={emptyNote} />
       )}
 
-      <div className={`ask free mt-4${armed ? ' on' : ''}`}>
-        <span className="ph">{placeholder}</span>
-        <button className="attach" aria-label="إرفاق"><Icon name={icons.clip} /></button>
-        <button className="go" aria-label="إرسال"><Icon name={icons.send} /></button>
-      </div>
+      {/* ⚠️ **خانة الكتابة هي `Composer` بتاعة السيستم** · كانت
+          مرسومة هنا بإيدي (`.ask free`): سطر واحد والزرارين على
+          الطرف التاني بفراغ نص الكارت بينهم · وده مش شكل الكتابة
+          في السيستم ولا اتجاهه. الشكل الواحد: مساحة بتكبر مع
+          النصّ والأزرار في صفّ تحتها · وزرار الإرسال بيفضل مقفولًا
+          لحدّ ما تكتب، فما بيوعدش بحاجة ما بتحصلش. */}
+      <Composer
+        value={draft}
+        onChange={setDraft}
+        onSend={() => setDraft('')}
+        onStop={() => {}}
+        busy={false}
+        placeholder={placeholder}
+      />
     </>
   )
 }

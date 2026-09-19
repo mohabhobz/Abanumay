@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   DateText, Glass, Head, Icon, KV, Mono, Num, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
-import { DocFile, DocList } from '@/components/docs'
+import { DocList } from '@/components/docs'
 import { Thread } from '@/components/thread'
 import { Background } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
@@ -241,6 +241,13 @@ export default function PortalPage() {
                   title="الحسابات البنكية"
                   meta={<span className="sub"><Num>{r.banks.length}</Num> حساب</span>}
                 />
+                {/* ⚠️ **الشهادة البنكية صفّ `DocList` زي أي مرفق.**
+                    كانت `DocFile` واقفة لوحدها جوّه عمود الحساب ·
+                    و`.dfile-b` حشوها معمول لصفّ **جدول** (الثامبنيل
+                    ٤٤ + الحشو = ارتفاع الصفّ)، فبرّه الجدول الحشو
+                    ده بيزيد على الفراغ اللي فوقه وتحته والصفّ بيطلع
+                    مفكوكًا وشكله غير اللي في صفحة المشروع (العميل
+                    شافها). */}
                 <ul className="rgbanks">
                   {r.banks.map((b, i) => (
                     <li key={b.id}>
@@ -251,9 +258,14 @@ export default function PortalPage() {
                           <span className="sub">· {b.bankHolder}</span>
                         </div>
                         <div className="sub"><Mono>{b.iban}</Mono></div>
-                        {b.doc
-                          ? <DocFile name={b.doc} meta={BANK_DOC_LABEL} download={false} />
-                          : <span className="bad">{BANK_DOC_LABEL} ناقصة</span>}
+                        <DocList
+                          label={`الشهادة البنكية · ${b.bankName}`}
+                          rows={[{
+                            name: b.doc || `${BANK_DOC_LABEL}.pdf`,
+                            meta: BANK_DOC_LABEL,
+                            uploaded: Boolean(b.doc),
+                          }]}
+                        />
                       </div>
                     </li>
                   ))}
