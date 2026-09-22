@@ -54,13 +54,17 @@ export interface AssistantOverlayProps {
  * وقته، والسؤال اللي سأله كان عن صفحة تانية.
  */
 export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: AssistantOverlayProps) {
-  const [wide, setWide] = useState(true)
+  /* ⚠️ **بيفتح نافذة في النص · تجربة ٢٢ سبتمبر.** كان بيفتح كامل
+     والزرار بيصغّره للدرج الجانبي · والعميل عايز يجرّب النافذة
+     الوسطية. فالافتراضي بقى النافذة، والزرار بيفردها للشاشة كلها.
+     والدرج الجانبي اتشال كحالة (شوف `.apanel:not(.wide)`). */
+  const [wide, setWide] = useState(false)
   /* عدّاد الفتحات · بيتغيّر مع كل فتحة فالشاشة بتتبني من جديد
      بحالتها الابتدائية، من غير ما المكوّن يعرف إنه في لوح */
   const [runs, setRuns] = useState(0)
   useEffect(() => {
     if (!open) return
-    setWide(true)
+    setWide(false)
     setRuns((n) => n + 1)
   }, [open])
 
@@ -68,7 +72,7 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
 
   return (
     <>
-      {/* التعتيم للوح الضيّق وحده · الكامل مش لوح فوق صفحة، هو
+      {/* التعتيم للنافذة الوسطية وحدها · الكامل مش طبقة فوق صفحة، هو
           الشاشة نفسها والريل جنبه شغّال، فتعتيمه بيقول غير الحقيقة */}
       <div
         className={`ascrim${open && !wide ? ' on' : ''}`}
@@ -95,8 +99,8 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
               <button
                 className="aclose"
                 onClick={() => setWide((v) => !v)}
-                title={wide ? 'تصغير للوح الجانبي' : 'فرد على الشاشة'}
-                aria-label={wide ? 'تصغير للوح الجانبي' : 'فرد على الشاشة'}
+                title={wide ? 'تصغير لنافذة في النص' : 'فرد على الشاشة'}
+                aria-label={wide ? 'تصغير لنافذة في النص' : 'فرد على الشاشة'}
                 aria-pressed={wide}
               >
                 <Icon name={wide ? icons.shrink : icons.expand} size={16} />

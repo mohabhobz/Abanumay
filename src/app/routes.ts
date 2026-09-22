@@ -260,7 +260,10 @@ export interface NavItem {
  * اتفاقية المشروع ده»، والصندوق بيجاوب «إيه اللي واقف عندي».
  */
 export const NAV: NavItem[] = [
-  { key: 'home', label: 'اليوم', to: ROUTES.home, icon: 'insight', group: 'work', mob: true },
+  /* ⚠️ **أيقونة لوحة لا نجمة · ٢٢ سبتمبر.** كانت `insight` (النجمة)،
+     وهي نفسها علامة المساعد في كل مكان في السيستم · فـ«اليوم» كان
+     بيتقري «مساعد تاني». واليوم لوحة أرقام وقراءات، فأيقونتها لوحة. */
+  { key: 'home', label: 'اليوم', to: ROUTES.home, icon: 'dashboard', group: 'work', mob: true },
   { key: 'projects', label: 'المشاريع', to: ROUTES.projects, icon: 'doc', group: 'work', mob: true, perm: 'projects.read' },
   { key: 'entities', label: 'الجهات', to: ROUTES.entities, icon: 'entity', group: 'work', mob: true, perm: 'entities.read' },
   { key: 'budget', label: 'الميزانية', to: ROUTES.budget, icon: 'budget', group: 'money', perm: 'budget.read' },

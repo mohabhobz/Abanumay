@@ -25,7 +25,7 @@ import {
   Plus, EllipsisVertical, Pin, Pencil, Trash2, Menu, ArrowDown, Download,
   Copy, Check, RotateCw, ThumbsUp, ThumbsDown, GripVertical, ChevronDown,
   Sparkles, ArrowDownWideNarrow, ChevronUp, LayoutGrid, Rows3, Funnel,
-  Clock, MapPin, Users, Link2, ListChecks, CalendarDays, Mail,
+  Clock, MapPin, Users, Link2, ListChecks, CalendarDays, Mail, LayoutDashboard,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -91,6 +91,8 @@ export const icons = {
   chevronDown: ChevronDown,
   /* «قراءات» · تلات نجوم. الشرارة الواحدة بتقول «ذكاء اصطناعي» بس */
   insight: Sparkles,
+  /** لوحة «اليوم» · شبكة بلاطات لا نجمة المساعد */
+  dashboard: LayoutDashboard,
   sort: ArrowDownWideNarrow,
   chevronUp: ChevronUp,
   grid: LayoutGrid,

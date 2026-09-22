@@ -2144,6 +2144,16 @@ to{opacity:1;transform:none}
   transition:transform .26s cubic-bezier(.22,.9,.3,1),opacity .2s ease;
   box-shadow:0 0 60px rgba(20,69,71,.14)}
 .apanel.on{transform:none;opacity:1;pointer-events:auto}
+/* ══ الحالة الوسطية · تجربة ٢٢ سبتمبر ══
+   ⚠️ **كانت لوحًا جانبيًّا، وبقت نافذة في نصّ الصفحة.** العميل
+   عايز يجرّب المساعد وهو فاتح في النص بدل الدرج اللي على الجنب.
+   نفس الشاشة ونفس المكوّن · الإطار بس اللي اتغيّر: بيتوسّط فوق
+   الصفحة، والتعتيم وراه بيقول إنه طبقة فوقها، والصفحة لسه باينة
+   حواليه. وللرجوع للدرج: ده البلوك الوحيد اللي يتشال. */
+.apanel:not(.wide){top:50%;bottom:auto;inset-inline:auto;left:50%;
+  width:min(760px,92vw);height:min(720px,86vh);border-radius:var(--r3);
+  transform:translate(-50%,-47%) scale(.985)}
+.apanel.on:not(.wide){transform:translate(-50%,-50%)}
 /* ══ الحالة الكاملة ══
    بتفرد لحدّ **حافة الريل الداخلية** لا لحافة الشاشة: الريل
    بيفضل مكشوفًا وشغّالًا زي ما هو في `/assistant` بالظبط، فاللي
@@ -2161,6 +2171,9 @@ to{opacity:1;transform:none}
 .apanel>.chatlist,.apanel>.chatcol{position:relative;z-index:1}
 /* الضيّق: نفس الشاشة، من غير القايمة · مش شكل تالت */
 .apanel:not(.wide)>.chatlist{display:none}
+/* وزرار «رجّع المحادثات» معاها · القايمة مش بتترسم في النافذة، فالزرار
+   كان هيبقى زرارًا ما بيعملش حاجة (شوف `tools/nodead.mjs`) */
+.apanel:not(.wide) .aclose-list{display:none}
 /* ⚠️ كان هنا تشكيل اللوح الجانبي كامل · `.ahead` و`.abodywrap`
    و`.abody` و`.amsg` و`.asrc` و`.afoot` و`.actx`. اتشال لأن اللوح
    بقى **بيعرض شاشة المساعد نفسها** لا نسخة مصغّرة منها، فالتشكيل
@@ -2191,6 +2204,9 @@ to{opacity:1;transform:none}
 .apanel:not(.wide) .welcome .wc-s{font-size:var(--fs-1)}
 .anote{font-size:var(--fs-1);animation:airise .45s cubic-bezier(.22,.9,.3,1) .42s both}
 @media (max-width:760px){.apanel{inset-inline:0;width:100%}
+  /* الموبايل ما عندوش «نصّ صفحة» · النافذة بتاخد الشاشة */
+  .apanel:not(.wide){top:0;bottom:0;left:0;height:auto;border-radius:0;transform:translateY(12px)}
+  .apanel.on:not(.wide){transform:none}
 }
 /* ── زر المساعد في الريل · نفس عرض وبادنج باقي أزرار الريل ── */
 .railfoot{width:100%}
@@ -6925,7 +6941,13 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
    جانبي (شوف `.norail`). الأرضية بتقول «ده اللي قصدته» من غير
    ما تضيف خطًّا رابعًا على حافة الصفّ. */
 .act.on{background:var(--ctl-quiet-h);border-radius:var(--r1);
-  padding-inline:var(--sp-3)}
+  padding:var(--sp-4);box-shadow:none}
+/* ⚠️ **الأرضية كانت ملزوقة في الأزرار من تحت · ٢٢ سبتمبر.** كانت
+   بتاخد حشوًا جانبيًّا بس، فـ«اقبل النشاط» قاعد على حافة الأرضية
+   بالظبط، والخطّ الفاصل (`box-shadow` بتاع `.act`) مرسوم **جوّه**
+   الأرضية فوق. دلوقتي الحشو من الأربع نواحي والخطّ متشال، والنشاط
+   اللي بعده بياخد مسافته لوحده عشان الأرضية ما تلزقش فيه. */
+.act.on+.act{margin-top:var(--sp-2)}
 .act-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
 .act-t{font-family:var(--fd);font-weight:500;font-size:var(--fs-3);color:var(--t1);
   min-width:0;overflow:hidden;text-overflow:ellipsis}

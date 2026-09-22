@@ -170,7 +170,7 @@ export function AssistantScreen({
               /* مكان الشريط المطويّ · الزرار بيرجّعه من نفس الناحية
                  اللي راح فيها، فالحركة بتبان رجوعًا لا فتحًا لحاجة تانية */
               <button
-                className="aclose"
+                className="aclose aclose-list"
                 onClick={() => setShut(false)}
                 title="رجّع المحادثات"
                 aria-label="رجّع المحادثات"

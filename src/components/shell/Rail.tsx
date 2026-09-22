@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
 import LogoLockup from '@/assets/LogoLockup'
 import { Icon, icons, type IconName } from '@/components/ui'
-import { NAV } from '@/app/routes'
+import { NAV, ROUTES } from '@/app/routes'
 import { AccountMenu } from './AccountMenu'
 import type { CurrentUser } from '@/types/domain'
 
@@ -160,10 +160,19 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
           · تحت كده الاسم بيتقصّ أو يبقى غير مقروء، والعلامة وحدها
           أصدق. */}
       <div className="raillock">
-        <span className="raillock-b" aria-label="مؤسسة سليمان أبانمي الأهلية">
+        {/* ⚠️ **العلامة بتودّي لـ«اسأل أبانمي» · ٢٢ سبتمبر.** دي
+            العادة على الويب: اللوجو بيرجّع للبداية · وبداية السيستم ده
+            المساعد لا «اليوم» (`AFTER_LOGIN`). فالضغط عليه بيفتح
+            المساعد العام من أي شاشة، زي ما بيفتح بعد الدخول. */}
+        <NavLink
+          to={ROUTES.assistant}
+          className="raillock-b"
+          aria-label="اسأل أبانمي · مؤسسة سليمان أبانمي الأهلية"
+          title="اسأل أبانمي"
+        >
           <LogoLockup className="lock-full" aria-hidden={!wide} />
           <span className="lock-mark" aria-hidden={wide}><Logo /></span>
-        </span>
+        </NavLink>
 
         {/* زرار الطيّ · بيبان بس والقايمة مفتوحة.
             المقبض على الحافة لسّه شغّال وهو اللي بيفرد بالسحب، بس
