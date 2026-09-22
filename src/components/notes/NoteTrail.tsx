@@ -86,7 +86,7 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
                   if (e.key === 'Escape') { setOpen(false); setDraft('') }
                 }}
                 aria-label="نصّ السبب"
-                placeholder="اكتب السبب"
+                placeholder="مثال: كشف المستفيدين غير مرفق"
               />
             </span>
           </label>

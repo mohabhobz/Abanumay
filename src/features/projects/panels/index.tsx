@@ -56,7 +56,7 @@ export function LastActionPanel({
 
   return (
     <Glass>
-      <Head title="آخر إجراء" meta={<a onClick={onOpen}>السجل كامل</a>} />
+      <Head title="آخر إجراء" meta={<a onClick={onOpen}>السجل كاملًا</a>} />
       <div className="well" style={{ padding: 'var(--sp-5) 0 0' }}>
         <div className="prose">
           <b>{entry.action}</b>، {isolate(entry.body)}

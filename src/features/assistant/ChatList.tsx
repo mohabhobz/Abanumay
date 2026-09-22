@@ -138,7 +138,7 @@ export function ChatList({
 
                   <button
                     className="cl-more"
-                    aria-label="خيارات"
+                    aria-label="خيارات المحادثة"
                     onClick={() => menu.toggle(c.id)}
                   >
                     <Icon name={icons.dots} size={16} />
@@ -148,19 +148,19 @@ export function ChatList({
                     <div className="cl-menu chrome">
                       <button onClick={() => togglePin(c.id)}>
                         <Icon name={icons.pin} size={16} />
-                        {c.pinned ? 'إلغاء التثبيت' : 'تثبيت'}
+                        {c.pinned ? 'ألغِ التثبيت' : 'ثبّت المحادثة'}
                       </button>
                       <button onClick={menu.close}>
                         <Icon name={icons.edit} size={16} />
-                        إعادة تسمية
+                        أعد التسمية
                       </button>
                       <button onClick={menu.close}>
                         <Icon name={icons.file} size={16} />
-                        تصدير المحادثة
+                        صدّر المحادثة
                       </button>
                       <button className="danger" onClick={() => remove(c.id)}>
                         <Icon name={icons.trash} size={16} />
-                        حذف
+                        احذف المحادثة
                       </button>
                     </div>
                   )}
@@ -170,7 +170,7 @@ export function ChatList({
           )
         })}
 
-        {!filtered.length && <div className="cl-empty sub">مفيش محادثات مطابقة</div>}
+        {!filtered.length && <div className="cl-empty sub">لا توجد محادثات مطابقة</div>}
       </div>
 
       <div className="cl-foot sub">

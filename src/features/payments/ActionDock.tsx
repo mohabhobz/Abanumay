@@ -96,9 +96,9 @@ export function ActionDock({
           <div className="rowf gp-3">
             <Icon name={icons.check} size={18} className="ok-ink" />
             <span className="decsent">
-              اتسجّل: <b>{taken}</b>
+              سُجّل الإجراء: <b>{taken}</b>
               <span className="decsep" />
-              الإشعار اتبعت · القاعدة 17
+              أُرسل الإشعار · القاعدة 17
             </span>
           </div>
           <button className="btn btn-2" onClick={() => { onTake(''); onNote('') }}>
@@ -115,7 +115,7 @@ export function ActionDock({
         <div className="rowf gp-3 payact-w">
           <Person name={user.name} size="lg" quiet={false} />
           <span className="decsent">
-            قرارك في <b>{request.projectName}</b>
+            قرارك بشأن <b>{request.projectName}</b>
             <span className="decsep" />
             <Money>{request.asked}</Money>
           </span>
@@ -128,7 +128,7 @@ export function ActionDock({
             <input
               value={note}
               onChange={(e) => onNote(e.target.value)}
-              placeholder="ملاحظات الإعادة · إلزامية"
+              placeholder="اكتب سبب الإعادة وما يلزم استكماله (إلزامي)"
             />
           </label>
         )}
@@ -139,9 +139,9 @@ export function ActionDock({
                والسبب مكتوب في `title` لا مخفي في اللون */
             const stop =
               (a.needsNote && !note.trim())
-                ? 'اكتب الملاحظات الأول · قاعدة 7 و8'
+                ? 'اكتب الملاحظات أولًا · القاعدتان 7 و8'
                 : (!a.needsNote && held)
-                  ? 'فيه شرط غير مستوفى · قاعدة 9'
+                  ? 'يوجد شرط غير مستوفى · قاعدة 9'
                   : ''
             return (
               <button

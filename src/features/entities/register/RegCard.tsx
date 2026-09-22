@@ -46,7 +46,7 @@ export function RegCard({ r }: { r: RegRequest }) {
           <b><Tag tone={REG_TONE[r.state]}>{REG_STATE_SAY[r.state]}</Tag></b>
           <span className="payq-due sub">
             {r.state === 'draft'
-              ? 'لم تُرسل بعد'
+              ? 'لم يُرسل بعد'
               : <>أُرسل <DateText>{r.submittedAt}</DateText></>}
           </span>
         </div>
@@ -63,7 +63,7 @@ export function RegCard({ r }: { r: RegRequest }) {
           <span>
             {missing.length === 0
               ? <>ملف المستندات مكتمل · <Num>{have}</Num> من <Num>{need.length}</Num></>
-              : <>ناقص <Num>{missing.length}</Num> من <Num>{need.length}</Num> إلزاميًا للتصنيف ده</>}
+              : <>ينقص <Num>{missing.length}</Num> من <Num>{need.length}</Num> مستندات إلزامية لهذا التصنيف</>}
           </span>
           <span className="payq-r">قاعدة <Num>4</Num></span>
         </li>
@@ -72,7 +72,7 @@ export function RegCard({ r }: { r: RegRequest }) {
           <span>
             {r.governanceClaim > 0
               ? <>درجة الحوكمة المُقرّة <span className="num">{r.governanceClaim}</span></>
-              : 'لم تُجرَ تقييم حوكمة · أُقرّت بصفر'}
+              : 'لم تُجرِ الجهة تقييم حوكمة · وأقرّت بدرجة صفر'}
           </span>
           <span className="payq-r">إقرار الجهة</span>
         </li>

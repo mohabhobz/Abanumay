@@ -38,8 +38,8 @@ export default function LiveReport() {
         <div className="viewstack"><div className="screen col">
           <Glass>
             <Empty
-              title="شاشة غير معروفة."
-              note="ارجع للكتالوج واختر تقريرًا منه."
+              title="هذه الشاشة غير موجودة في الكتالوج."
+              note="عُد إلى الكتالوج واختر تقريرًا منه."
               actions={<Link className="btn btn-2" to={ROUTES.reportTab('catalog')}>كتالوج التقارير</Link>}
             />
           </Glass>
@@ -60,7 +60,7 @@ export default function LiveReport() {
               <p className="sub mt-1">
                 <code className="mono">control/{spec.path}</code>
                 {spec.rowsLive !== null && (
-                  <> · <span className="num">{nf.format(spec.rowsLive)}</span> صفًّا في النظام العامل</>
+                  <> · <span className="num">{nf.format(spec.rowsLive)}</span> صفًّا في النظام الحالي</>
                 )}
                 {spec.flaw && <> · <Tag tone="no">{spec.flaw}</Tag></>}
               </p>
@@ -127,8 +127,8 @@ function Filters({ spec }: { spec: LiveSpec }) {
       </div>
       {heavy > 0 && (
         <p className="mut rpsec-n">
-          القوائم الطويلة معلّمة: في النظام العامل هي <b>منسدلة بلا بحث</b>، فاللي
-          بيدوّر على هدف بعينه بيقلّب 97 سطرًا بالإيد. عندنا نفس الفلتر ببحث داخله.
+          القوائم الطويلة معلّمة: في النظام الحالي هي <b>منسدلة بلا بحث</b>، فمن
+          يبحث عن هدف بعينه يتصفّح 97 سطرًا يدويًا. وهنا الفلتر نفسه مزوّد ببحث داخلي.
         </p>
       )}
     </section>
@@ -189,8 +189,8 @@ function Rows({ spec }: { spec: LiveSpec }) {
     return (
       <Glass>
         <Empty
-          title="الشاشة دي فاضية في النظام العامل."
-          note="اتفتحت وما فيهاش جدول ولا فلاتر ولا رسوم، اسمها في القائمة وبس. مكتوبة هنا عشان الجرد يفضل كاملًا، ولأنها بند في قائمة المطالب للباك اند."
+          title="هذه الشاشة فارغة في النظام الحالي."
+          note="تُفتح دون جدول أو فلاتر أو رسوم، ولا يوجد منها إلا اسمها في القائمة. أُدرجت هنا ليبقى الجرد كاملًا، ولأنها بند في قائمة متطلبات الواجهة الخلفية."
         />
       </Glass>
     )
@@ -214,9 +214,9 @@ function Rows({ spec }: { spec: LiveSpec }) {
 
       {only.length > 0 && (
         <p className="mut rpsec-n">
-          الأعمدة المعلّمة <b>ما فيش زيها في أي شاشة تانية</b>:{' '}
-          {only.map((c) => c.label).join(' · ')}. يعني الرقم ده موجود في مكان
-          واحد بس في النظام كله.
+          الأعمدة المعلّمة <b>لا مثيل لها في أي شاشة أخرى</b>:{' '}
+          {only.map((c) => c.label).join(' · ')}. أي أن هذا الرقم موجود في مكان
+          واحد فقط في النظام كله.
         </p>
       )}
 
@@ -297,7 +297,7 @@ function BudgetTree() {
   const sheet: Sheet = {
     file: `abanumay-budget-${path.map((n) => n.id).join('-') || 'root'}`,
     title: `الميزانية · ${path.map((n) => n.label).join(' ← ') || 'كل الدورات'}`,
-    headers: ['البند', 'الميزانية', 'المعتمد', 'المحجوز', 'المنصرف', 'المتبقي', 'نسبة المتبقي'],
+    headers: ['البند', 'الميزانية', 'المعتمد', 'المحجوز', 'المصروف', 'المتبقي', 'نسبة المتبقي'],
     rows: rows.map((n) => [
       n.label, String(n.budget), String(n.approved), String(n.reserved),
       String(n.spent), String(n.left), `${n.leftPct}%`,
@@ -341,7 +341,7 @@ function BudgetTree() {
       </div>
 
       {leaf ? (
-        <Glass><Empty title="آخر مستوى في الشجرة." note="الهدف ما تحتهوش تقسيم، ارجع لمستوى أعلى من المسار فوق." /></Glass>
+        <Glass><Empty title="آخر مستوى في الشجرة." note="لا تقسيم تحت الهدف، فعُد إلى مستوى أعلى من المسار في الأعلى." /></Glass>
       ) : (
         <>
           <div className="ftool-r">
@@ -369,7 +369,7 @@ function BudgetTree() {
                       <th className="n">الميزانية</th>
                       <th className="n">المعتمد</th>
                       <th className="n">المحجوز</th>
-                      <th className="n">المنصرف</th>
+                      <th className="n">المصروف</th>
                       <th className="n">المتبقي</th>
                       <th className="n">نسبة المتبقي</th>
                     </tr>
@@ -394,7 +394,7 @@ function BudgetTree() {
                           <td className="n num"><Money sm>{n.spent}</Money></td>
                           <td className={`n num${over ? ' bad' : ''}`}><Money sm>{n.left}</Money></td>
                           <td className="n num">
-                            {over ? <Tag tone="no">فوق السقف</Tag>
+                            {over ? <Tag tone="no">فوق الحد المالي</Tag>
                               : tight ? <Tag tone="warn">{n.leftPct}%</Tag>
                               : `${n.leftPct}%`}
                           </td>
@@ -408,10 +408,10 @@ function BudgetTree() {
           </Glass>
 
           <p className="mut rpsec-n">
-            <b>المتبقي = الميزانية − المعتمد.</b> الصف اللي بالسالب معناه اعتماد فوق
-            السقف: حصل فعلًا في <span className="num">2024</span> و
-            <span className="num">2025</span>. والنظام العامل بيعرض الرقم ده في خلية
-            جدول عادية بلا أي تنبيه، ومفيش شاشة بتقول لمدير المنح إنه بيعدّي السقف
+            <b>المتبقي = الميزانية − المعتمد.</b> الصف ذو القيمة السالبة يعني اعتمادًا يتجاوز
+            الحد المالي، وقد حدث ذلك فعلًا في <span className="num">2024</span> و
+            <span className="num">2025</span>. والنظام الحالي يعرض هذا الرقم في خلية
+            جدول عادية دون أي تنبيه، ولا توجد شاشة تنبّه مدير المنح إلى تجاوز الحد المالي
             <b> وقت</b> الاعتماد.
           </p>
         </>

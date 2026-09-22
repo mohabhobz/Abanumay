@@ -197,11 +197,11 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
           ? {
               by: 'عبدالرحمن الهليل',
               at: d(start, 33),
-              note: 'الاتفاقية فيها كلمات إنجليزية غير مفهومة، آمل النظر في الإشكال.',
+              note: 'في الاتفاقية كلمات إنجليزية غير مفهومة، نأمل معالجة ذلك.',
             }
           : undefined,
         steps: [
-          { role: 'مشرف المنح', state: 'done', at: d(start, 30), note: 'وَلّد الاتفاقية من القالب' },
+          { role: 'مشرف المنح', state: 'done', at: d(start, 30), note: 'أنشأ الاتفاقية من القالب' },
           { role: 'مدير المنح', state: 'done', at: d(start, 35) },
           { role: 'القسم المالي', state: signed ? 'done' : 'now', at: signed ? d(start, 38) : undefined },
           { role: 'المدير التنفيذي', state: signed ? 'done' : 'pending', at: signed ? d(start, 40) : undefined },
@@ -274,7 +274,7 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
   if (row.hasKnowledgeProduct) {
     followUps.push({
       type: 'منتج معرفي',
-      body: 'تسليم الدليل الإرشادي الناتج عن المشروع للاتصال المؤسسي.',
+      body: 'تسليم الدليل الإرشادي الناتج عن المشروع إلى الاتصال المؤسسي.',
       at: d(start, 240),
       by: owner,
       attachment: 'الدليل.pdf',
@@ -283,7 +283,7 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
   if (followUps.length === 0 && reached(row, 'دراسة المشروع')) {
     followUps.push({
       type: FOLLOW_TYPES[Math.floor(rnd() * FOLLOW_TYPES.length)],
-      body: 'تواصل مع الجهة لاستيضاح بنود الموازنة التفصيلية.',
+      body: 'التواصل مع الجهة لاستيضاح بنود الموازنة التفصيلية.',
       at: d(start, 12),
       by: owner,
       attachment: undefined,
@@ -304,8 +304,8 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
      كل ثريد قرأناه في النظام كان عن مرفق من الجهة اتعطّل. */
   const ask = STUCK[row.stage] ?? (paidUpTo > 0 ? 'رفع سند قبض الدفعة لاستكمال إجراءات الصرف' : null)
   const why = STUCK[row.stage]
-    ? `الإجراء واقف على الجهة عند «${row.stage}».`
-    : 'القناة اتفتحت وقت الصرف: سند القبض اترفض مرة واتعدّل.'
+    ? `الإجراء متوقف لدى الجهة في مرحلة «${row.stage}».`
+    : 'فُتحت المراسلة عند الصرف: رُفض سند القبض مرة ثم عُدّل.'
 
   const messages: ThreadMessage[] = ask
     ? [
@@ -315,16 +315,16 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
         },
         {
           by: 'الجهة', from: 'entity', at: d(start, 73),
-          body: 'وعليكم السلام ورحمة الله وبركاته، تم الإرفاق والملفات موجودة في خانة أرشيف المرفقات.',
+          body: 'وعليكم السلام ورحمة الله وبركاته، أرفقنا الملفات، وهي في خانة أرشيف المرفقات.',
         },
         {
           by: finance, from: 'staff', at: d(start, 87),
-          body: `نأمل منكم تعديل اسم الجهة في المرفق إلى (${entityName}) حيث تم رفض المرفق السابق بسبب وجود اسم الجهة خطأ.`,
+          body: `نأمل تعديل اسم الجهة في المرفق إلى (${entityName})، فقد رُفض المرفق السابق لخطأ في اسم الجهة.`,
         },
         ...(row.statusGroup === 'مكتمل'
           ? [{
               by: 'الجهة' as const, from: 'entity' as const, at: d(start, 95),
-              body: 'تم تعديل السند وإعادة رفعه، جزاكم الله خيرًا.',
+              body: 'عدّلنا السند وأعدنا رفعه، جزاكم الله خيرًا.',
             }]
           : []),
       ]

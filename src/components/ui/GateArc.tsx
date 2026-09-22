@@ -93,10 +93,10 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
         k: 'غير مطلوبة لهذا المبلغ',
         t: role.role,
         lines: [
-          gate ? <>تبدأ من فوق <b>{nf.format(gate)}</b></> : null,
+          gate ? <>تبدأ فيما يزيد على <b>{nf.format(gate)}</b></> : null,
           role.ceiling
-            ? <>سقفها <b>{nf.format(role.ceiling)}</b>{role.note ? ` ${role.note}` : ''}</>
-            : 'بلا سقف، آخر مرجع',
+            ? <>حدها المالي <b>{nf.format(role.ceiling)}</b>{role.note ? ` ${role.note}` : ''}</>
+            : 'بلا حد مالي، وهي المرجع الأخير',
         ],
         src: 'المصدر: مصفوفة الصلاحيات',
       }
@@ -105,11 +105,11 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
     if (role.state === 'now') {
       const over = standing ? Math.round((standing.hours / standing.limit) * 100) : null
       return {
-        k: 'واقف هنا الآن',
+        k: 'متوقف هنا الآن',
         t: role.role,
         lines: standing
           ? [
-              <><Person name={standing.by} quiet={false} /> · مفتوح من <b>{standing.days}</b> يومًا</>,
+              <><Person name={standing.by} quiet={false} /> · مفتوح منذ <b>{standing.days}</b> يومًا</>,
               <>
                 <b>{nf.format(standing.hours)}</b> ساعة مقابل حدّ <b>{nf.format(standing.limit)}</b>
                 {over !== null && over > 100 && <>، <span className="bad"><span className="num">{over}%</span> فوق الحدّ</span></>}
@@ -126,7 +126,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
         k: 'تمّت',
         t: role.role,
         lines: [
-          'الجهة قدّمت المشروع ودخل الدراسة',
+          'قدّمت الجهة المشروع، وانتقل إلى الدراسة',
           standing?.firstActionAt ? <>أول إجراء مسجَّل <b>{standing.firstActionAt}</b></> : null,
         ],
         src: 'المصدر: سجل المشروع',
@@ -139,9 +139,9 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
       t: role.role,
       lines: [
         role.ceiling
-          ? <>سقفه <b>{nf.format(role.ceiling)}</b>، يستوعب <b>{nf.format(amount)}</b></>
+          ? <>حده المالي <b>{nf.format(role.ceiling)}</b>، ويستوعب <b>{nf.format(amount)}</b></>
           : null,
-        up ? <>يقدر يزيد حتى <b>{nf.format(up)}</b> <span className="num">(+{role.uplift}%)</span> أو يخفّض</> : null,
+        up ? <>يمكنه الرفع حتى <b>{nf.format(up)}</b> <span className="num">(+{role.uplift}%)</span> أو التخفيض</> : null,
       ],
       src: 'المصدر: مصفوفة الصلاحيات',
     }
@@ -186,12 +186,12 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
   const fallback: (ReactNode | null)[] = [
     uplifted && decided.ceiling ? (
       <>
-        سقفه <b className="num">{nf.format(decided.ceiling)}</b> · يزيد حتى{' '}
+        حده المالي <b className="num">{nf.format(decided.ceiling)}</b> · يمكنه الرفع حتى{' '}
         <Money>{uplifted}</Money>
       </>
     ) : null,
     authority.provisional ? (
-      <span className="fhp">السقوف مؤقتة، بانتظار العميل</span>
+      <span className="fhp">الحدود المالية مؤقتة، بانتظار تأكيد العميل</span>
     ) : null,
   ]
 
@@ -277,7 +277,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
                           ? 'تمّ'
                           : role.kind === 'recommend'
                             ? compact ? 'توصية' : 'توصية فقط'
-                            : 'بلا سقف'}
+                            : 'بلا حد مالي'}
                     </tspan>
                   </text>
                 </g>

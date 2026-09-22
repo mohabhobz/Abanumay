@@ -245,7 +245,7 @@ const linkScan = () => {
       : dt.parentElement?.querySelector(':scope > dd')
     if (!dd || dd.querySelector('a[href]')) continue
     const v = near(dd)
-    if (!v || /^(مفيش|بلا|-)/.test(v)) continue
+    if (!v || /^(مفيش|لا يوجد|لا توجد|بلا|-)/.test(v)) continue
     out.push({ kind: 'علاقة بلا رابط', say: `${k}: ${v}` })
   }
   for (const a of document.querySelectorAll('a:not([href])')) {

@@ -97,7 +97,7 @@ export function Crumbs({ items }: CrumbsProps) {
                 aria-haspopup="menu"
                 aria-expanded={open}
                 aria-label={`${folded.length} مستويات مطويّة`}
-                title="المستويات اللي في النصّ"
+                title="المستويات الوسطى من المسار"
                 onClick={() => setOpen((x) => !x)}
               >
                 …

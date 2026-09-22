@@ -65,8 +65,8 @@ export default function PlanSettingsPage() {
             <div>
               <h1 className="ptitle">إعدادات الخطط</h1>
               <p className="sub mt-1">
-                أنواع الشواهد اللي الأنشطة بتطلبها · وحدود المحطات اللي
-                بتحدّد إمتى الخطة تتقال عليها متأخّرة
+                أنواع الشواهد التي تطلبها الأنشطة، وحدود المحطات التي
+                تُحدّد متى تُعدّ الخطة متأخّرة
               </p>
             </div>
             <Tag tone="warn">قيم افتراضية</Tag>
@@ -85,8 +85,8 @@ export default function PlanSettingsPage() {
                 meta={<span className="sub"><Num>{EVIDENCE_KINDS.length}</Num> نوعًا</span>}
               />
               <p className="sub cnote">
-                النشاط بيطلب نوعًا أو أكتر من دول، والجهة ما تقدرش تقول إن
-                النشاط خلص قبل ما ترفعهم · ودي اللي بتخلّي مراجعة مشرف المنح
+                يطلب النشاط نوعًا أو أكثر من هذه الأنواع، ولا تستطيع الجهة إعلان
+                اكتمال النشاط قبل رفعها · وبها تصبح مراجعة مشرف المنح
                 ممكنة أصلًا (القاعدة <span className="num">14</span>).
               </p>
               <table className="tbl">
@@ -111,7 +111,7 @@ export default function PlanSettingsPage() {
                         </td>
                         <td>
                           {n === 0
-                            ? <span className="sub">معرَّف وما حدّش طلبه في خطة</span>
+                            ? <span className="sub">معرَّف ولم تطلبه أي خطة</span>
                             : <span className="sub">·</span>}
                         </td>
                       </tr>
@@ -124,24 +124,24 @@ export default function PlanSettingsPage() {
             <Glass className="tblcard">
               <Head
                 title="حدود المحطات"
-                meta={<Tag tone="warn">الوثيقة ما حدّدتش مدة</Tag>}
+                meta={<Tag tone="warn">لم تحدّد الوثيقة مدة</Tag>}
               />
               {/* ⚠️ الجملة دي هي اللي بتفرّق بين «رقم اتّفقنا عليه»
                   و«رقم حطّيناه عشان الشاشة تشتغل» · والتاني لازم
                   يفضل موسومًا لحدّ ما المؤسسة تحسمه */}
               <p className="sub cnote">
-                BPD-012 ما دّاش مدة لأي محطة · الأرقام دي مؤقتة عشان
-                «متأخّرة» يبقى لها معنى في النموذج، ومحتاجة تتأكد مع
-                المؤسسة زي سقوف الاعتماد بالظبط.
+                لم تحدّد BPD-012 مدة لأي محطة · هذه الأرقام مؤقتة ليكون
+                لوصف «متأخّرة» معنى في النموذج، ويلزم تأكيدها مع
+                المؤسسة، مثل الحدود المالية للاعتماد تمامًا.
               </p>
               <table className="tbl">
                 <colgroup><col /><col /><col /><col /></colgroup>
                 <thead>
                   <tr>
                     <th><span className="th-t">المحطة</span></th>
-                    <th><span className="th-t">عند مين</span></th>
+                    <th><span className="th-t">المسؤول</span></th>
                     <th className="n"><span className="th-t">الحدّ بالأيام</span></th>
-                    <th className="n"><span className="th-t">واقف فيها الآن</span></th>
+                    <th className="n"><span className="th-t">الخطط فيها الآن</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -167,8 +167,8 @@ export default function PlanSettingsPage() {
                 </tbody>
               </table>
               <p className="sub cnote">
-                مدة التنفيذ نفسها مش إعدادًا · هي من تواريخ المراحل في
-                النسخة المرجعية لكل خطة، والتأخير بيتقاس عليها.
+                مدة التنفيذ نفسها ليست إعدادًا · تُؤخذ من تواريخ المراحل في
+                النسخة المرجعية لكل خطة، ويُقاس التأخير عليها.
               </p>
             </Glass>
           )}

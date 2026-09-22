@@ -403,7 +403,7 @@ export default function ProjectsListPage() {
               <p className="sub mt-1">
                 <span className="num">{result.total}</span> نتيجة من{' '}
                 <span className="num">{total}</span> مشروعًا في هذا النموذج ·{' '}
-                <span className="num">4,929</span> في النظام العامل
+                <span className="num">4,929</span> في النظام الحالي
               </p>
             </div>
 
@@ -438,7 +438,7 @@ export default function ProjectsListPage() {
                 <Tag tone="ret">شريك منفّذ</Tag>
                 <b>محافظ</b>
                 <span className="sub">
-                  برّه قايمة المشاريع · كيان أب تحته مشاريع، ومفيش اتفاقية
+                  خارج قائمة المشاريع · كيان أب تندرج تحته مشاريع، ولا اتفاقية له
                 </span>
                 <span className="pc-sp" />
                 <span className="sub"><Num>{portfolios.length}</Num> محفظة</span>
@@ -465,7 +465,7 @@ export default function ProjectsListPage() {
             variant="bar"
             title="قراءة سريعة للقائمة"
             readings={readings}
-            empty="المشاريع في النطاق الحالي مفيهاش متجاوز للحدّ ولا بلا مالك · وسّع الفلتر تشوف أكتر."
+            empty="لا توجد في النطاق الحالي مشاريع متجاوزة للحدّ أو بلا مالك · وسّع الفلتر لعرض المزيد."
           />
 
           {/* ═══ اللقطات المحفوظة · صفّ واحد، وهي المحور الأساسي:
@@ -629,7 +629,7 @@ export default function ProjectsListPage() {
             <Glass>
               <Empty
                 title="لا توجد مشاريع بهذه الفلاتر."
-                note="جرّب توسيع النطاق أو امسح الفلاتر الحالية."
+                note="وسّع النطاق أو امسح الفلاتر الحالية."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -678,7 +678,7 @@ export default function ProjectsListPage() {
               والورقة بيتحرّكوا مع بعض. */}
 
           <p className="sub" style={{ textAlign: 'center', marginTop: 'var(--sp-3)' }}>
-            البيانات هنا تجريبية بتوزيع النظام الحقيقي ·{' '}
+            البيانات هنا تجريبية بتوزيع يحاكي النظام الفعلي ·{' '}
             <Link to="/entities" className="lnk">انتقل إلى الجهات</Link>
           </p>
         </div>
@@ -719,7 +719,7 @@ export default function ProjectsListPage() {
               onChange={setBulkOwner}
             />
             <button className="btn btn-p btn-sm" disabled={!bulkOwner} onClick={applyBulk}>
-              إسناد
+              أسند المالك
             </button>
           </BulkBar>
         )}

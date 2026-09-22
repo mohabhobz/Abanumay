@@ -102,8 +102,8 @@ export function CopyId({ children }: { children: string }) {
         type="button"
         className="iact iact-sm"
         onClick={copy}
-        title={done ? 'اتنسخ' : 'انسخ الرقم المرجعي'}
-        aria-label={done ? 'اتنسخ' : 'انسخ الرقم المرجعي'}
+        title={done ? 'نُسخ الرقم المرجعي' : 'انسخ الرقم المرجعي'}
+        aria-label={done ? 'نُسخ الرقم المرجعي' : 'انسخ الرقم المرجعي'}
       >
         <Icon name={done ? icons.check : icons.copy} size={14} />
       </button>

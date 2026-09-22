@@ -78,7 +78,7 @@ export function AiMessage({
       {done && message.advisory && (
         <div className="advisory rise">
           <Icon name={icons.alert} size={16} />
-          قراءة استرشادية، القرار والتوقيع يفضلوا عليك.
+          قراءة استرشادية، والقرار والتوقيع مسؤوليتك.
         </div>
       )}
 
@@ -100,13 +100,13 @@ export function AiMessage({
           <button className="iact" onClick={copy} title="نسخ" aria-label="نسخ">
             <Icon name={copied ? icons.check : icons.copy} size={16} />
           </button>
-          <button className="iact" title="إعادة توليد" aria-label="إعادة توليد">
+          <button className="iact" title="أعد توليد الإجابة" aria-label="أعد توليد الإجابة">
             <Icon name={icons.redo} size={16} />
           </button>
-          <button className="iact" title="مفيدة" aria-label="مفيدة">
+          <button className="iact" title="إجابة مفيدة" aria-label="إجابة مفيدة">
             <Icon name={icons.up} size={16} />
           </button>
-          <button className="iact" title="غير مفيدة" aria-label="غير مفيدة">
+          <button className="iact" title="إجابة غير مفيدة" aria-label="إجابة غير مفيدة">
             <Icon name={icons.downv} size={16} />
           </button>
         </div>

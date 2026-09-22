@@ -126,7 +126,7 @@ export function FollowUpsTab({
         ))}
       </div>
       <div className="sub mt-3">
-        المرفق أقل من 32 ميجابايت · pdf doc docx txt jpg jpeg gif png xls xlsx
+        حجم المرفق أقل من 32 ميجابايت · pdf doc docx txt jpg jpeg gif png xls xlsx
       </div>
     </Glass>
   )
@@ -167,9 +167,9 @@ export function CorrespondenceTab({
         entityName={entityName}
         me="staff"
         why={why}
-        placeholder={`اكتب رسالة لـ${entityName}…`}
+        placeholder={`اكتب رسالة إلى ${entityName}…`}
         emptyTitle="لا توجد مراسلات على هذا المشروع."
-        emptyNote="القناة تُستخدم عمليًا حين يقف إجراء على الجهة، طلب استكمال، أو سند لم يُرفع، أو تقرير متأخر. وما عدا ذلك يجري التواصل في المتابعات."
+        emptyNote="تُستخدم القناة عمليًا حين يتوقف إجراء على الجهة: طلب استكمال، أو سند لم يُرفع، أو تقرير متأخر. وفي غير ذلك يجري التواصل عبر المتابعات."
       />
     </Glass>
   )

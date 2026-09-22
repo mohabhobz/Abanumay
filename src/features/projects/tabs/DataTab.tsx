@@ -90,7 +90,7 @@ export function DataTab({
             <div className="lastact-h">
               <span className="lb">آخر إجراء</span>
               <span className="pc-sp" />
-              <button className="lnk" onClick={onOpenLog}>السجل كامل</button>
+              <button className="lnk" onClick={onOpenLog}>السجل كاملًا</button>
             </div>
             <div className="lastact-b">
               <b>{last.action}</b>
@@ -124,7 +124,7 @@ export function DataTab({
         <Stat
           label="المستفيدون"
           value={nf.format(P.beneficiaries)}
-          note="تقدير الجهة، لم يُراجَع من المشرف"
+          note="تقدير الجهة، ولم يراجعه المشرف بعد"
         />
         <Stat
           label="تكلفة المستفيد"
@@ -158,8 +158,8 @@ export function DataTab({
           }))}
         />
         <div className="sub mt-4">
-          في النظام الحالي هذه المراحل نصٌّ حر داخل حقل واحد. هنا كيان له بنود وتواريخ، ويصلح
-          لربط دفعات الصرف به.
+          في النظام الحالي هذه المراحل نصٌّ حر داخل حقل واحد. وهنا كيان له بنود وتواريخ، ويمكن
+          ربط دفعات الصرف به.
         </div>
       </Glass>
 
@@ -230,7 +230,7 @@ export function DataTab({
           }))}
         />
         <div className="sub mt-3">
-          الموازنة التفصيلية هي المطلوبة في طلب الاستكمال الحالي، الملف المرفوع صورة لا تُقرأ آليًا.
+          الموازنة التفصيلية هي المطلوبة في طلب الاستكمال الحالي، لأن الملف المرفوع صورة لا تُقرأ آليًا.
         </div>
       </Glass>
 
@@ -304,9 +304,9 @@ export function DataTab({
           {dep && (
             <p className="sub cnote">
               {dep.count > 0
-                ? <>ومرتبط بالمشروع <b>{dep.say}</b> · فما يتحذفش، والسلسلة
-                    بتمنع الحذف من أولها: سنة ← ميزانية ← مشروع ← اتفاقية ودفعات.</>
-                : <>مفيش اتفاقيات ولا دفعات مرتبطة بالمشروع ده لحد دلوقتي.</>}
+                ? <>ويرتبط بالمشروع <b>{dep.say}</b> · فلا يمكن حذفه، والسلسلة
+                    تمنع الحذف من بدايتها: سنة ← ميزانية ← مشروع ← اتفاقية ودفعات.</>
+                : <>لا توجد اتفاقيات ولا دفعات مرتبطة بهذا المشروع حتى الآن.</>}
             </p>
           )}
         </Glass>

@@ -64,7 +64,7 @@ const stateTag = (r: DocRow) => {
       {r.required === false ? 'اختياري، غير مرفوع' : 'مطلوب، غير مرفوع'}
     </Tag>
   }
-  if (r.expired) return <Tag tone="no">منتهٍ</Tag>
+  if (r.expired) return <Tag tone="no">منتهي الصلاحية</Tag>
   return <Tag tone="ok">مرفوع</Tag>
 }
 

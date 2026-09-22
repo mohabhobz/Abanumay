@@ -135,7 +135,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
                     <span className="fld">
                       <input
                         value={r.requirement}
-                        placeholder="التقرير المرحلي الأول"
+                        placeholder="مثال: التقرير المرحلي الأول"
                         onChange={(e) => patch(i, { requirement: e.target.value })}
                         aria-label={`شرط الدفعة ${r.no}`}
                       />
@@ -168,11 +168,11 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
               <td className="n num">{pct(shareOf(total, amount))}</td>
               <td colSpan={edit ? 3 : 2}>
                 {amount <= 0
-                  ? <span className="sub">مفيش قيمة منحة</span>
+                  ? <span className="sub">لا توجد قيمة منحة</span>
                   : match
                     ? <Tag tone="ok">مطابق لقيمة المنحة</Tag>
                     : <Tag tone="warn">
-                        {gap > 0 ? 'ناقص' : 'زايد'} <Num>{Math.abs(gap)}</Num>
+                        {gap > 0 ? 'ينقص' : 'يزيد'} <Num>{Math.abs(gap)}</Num>
                       </Tag>}
               </td>
             </tr>
@@ -184,7 +184,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
         <div className="rowf gp-2 mt-3">
           <button className="btn btn-2 btn-sm" onClick={add}>
             <Icon name={icons.plus} size={15} />
-            دفعة
+            أضف دفعة
           </button>
           <button
             className="btn btn-ghost btn-sm"
@@ -192,14 +192,14 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
             title={
               gap === 0
                 ? 'الجدول مطابق'
-                : `حطّ الفرق (${nf.format(Math.abs(gap))}) في الدفعة الأخيرة`
+                : `اضبط الدفعة الأخيرة بمقدار الفرق (${nf.format(Math.abs(gap))})`
             }
             onClick={settle}
           >
             وزّع الباقي على الأخيرة
           </button>
           <span className="pc-sp" />
-          <span className="sub">المجموع لازم يساوي قيمة المنحة · <b>قاعدة 8</b></span>
+          <span className="sub">يلزم أن يساوي المجموع قيمة المنحة · <b>قاعدة 8</b></span>
         </div>
       )}
     </>

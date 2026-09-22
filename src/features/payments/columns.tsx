@@ -128,7 +128,7 @@ export const COLS: Col[] = [
     /* نفس حكاية الاتفاقيات · الخلية أيام أو كلمة، فالوسط بيقول وحدته */
     value: (r) => Math.round(r.hoursInState / 24),
     agg: 'avg',
-    aggSay: 'يومًا وسطي',
+    aggSay: 'يومًا في المتوسط',
   },
   {
     /* آلية التصعيد (9.5 بند 3) بتطلب «تقرير شامل بالمتأخرة والمتعثرة:
@@ -175,10 +175,10 @@ export const COLS: Col[] = [
     label: 'الحساب المعتمد',
     cell: (r) => (
       <span className={r.bank.active ? 'sub' : 'bad'}>
-        {r.bank.name}{r.bank.active ? '' : ' · معطَّل'}
+        {r.bank.name}{r.bank.active ? '' : ' · غير نشط'}
       </span>
     ),
-    text: (r) => `${r.bank.name}${r.bank.active ? '' : ' · معطل'}`,
+    text: (r) => `${r.bank.name}${r.bank.active ? '' : ' · غير نشط'}`,
   },
   {
     key: 'condition',

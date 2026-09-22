@@ -75,10 +75,10 @@ export default function ClosePage() {
             <Glass>
               <Empty
                 title="لا يوجد طلب إغلاق بهذا الرقم."
-                note="ارجع لصندوق الإغلاق واختر واحدًا."
+                note="ارجع إلى صندوق الإغلاق واختر طلبًا."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.closings)}>
-                    صندوق الإغلاق
+                    افتح صندوق الإغلاق
                   </button>
                 }
               />
@@ -102,7 +102,7 @@ export default function ClosePage() {
      بيحسبه بنفسه في الخطة، وهنا المانع بيختلف بالدورة · فالحساب
      في الشاشة اللي عارفة إحنا في أنهي دورة. */
   const stop = cycle === 'report'
-    ? (missing.length > 0 ? `${missing[0]} ناقص (قاعدة 4)` : '')
+    ? (missing.length > 0 ? `ينقص: ${missing[0]} (قاعدة 4)` : '')
     : (evalShort.length > 0 ? `${evalShort[0]} (قاعدة 10)` : '')
   const finalStop = c.stage === 'evalExecutive' && !req.ok ? `${req.say} · قاعدة 18` : stop
 
@@ -117,7 +117,7 @@ export default function ClosePage() {
     const meta = CLOSE_STAGES.find((s) => s.key === k)
     const skipped = k === 'comms' && !needsComms(c)
     return {
-      label: skipped ? 'الاتصال المؤسسي · ما بينطبقش' : meta?.label ?? k,
+      label: skipped ? 'الاتصال المؤسسي · لا ينطبق' : meta?.label ?? k,
       state: skipped
         ? 'skip'
         : i === at ? 'now' : i < at ? 'done' : 'todo',
@@ -184,10 +184,10 @@ export default function ClosePage() {
                 meta={<Tag tone="ret">الجهة المستفيدة</Tag>}
               />
               <p className="sub cnote">
-                القاعدة <span className="num">4</span> بتلزم أربع بيانات كحدّ أدنى:
-                المستفيدون الفعلي، والميزانية الفعلية، ومدة التنفيذ، وأبرز المخرجات ·
-                والمؤسسة بتقارنهم باللي اتعتمد في الاتفاقية والخطة. والقاعدة{' '}
-                <span className="num">3</span> بتمنع الإرسال قبل اكتمالهم مع
+                تُلزم القاعدة <span className="num">4</span> بأربع بيانات حدًّا أدنى:
+                عدد المستفيدين الفعلي، والميزانية الفعلية، ومدة التنفيذ، وأبرز المخرجات ·
+                وتقارنها المؤسسة بما اعتُمد في الاتفاقية والخطة. وتمنع القاعدة{' '}
+                <span className="num">3</span> الإرسال قبل اكتمالها مع
                 المستندات الداعمة.
               </p>
             </Glass>
@@ -208,9 +208,9 @@ export default function ClosePage() {
                 الستيبر لأنها بتشرح ليه الدورة التانية ما بدأتش */}
             <p className="sub cnote">
               {cycle === 'report'
-                ? <>تقييم المشروع ما يبدأش قبل اعتماد المدير التنفيذي للتقرير ·
+                ? <>لا يبدأ تقييم المشروع قبل اعتماد المدير التنفيذي للتقرير ·
                   القاعدة <span className="num">6</span>.</>
-                : <>التقرير الختامي اتعتمد، ودورة التقييم سجلّها منفصل · بيعدّه
+                : <>اعتُمد التقرير الختامي، ولدورة التقييم سجلّ منفصل · يُعدّه
                   مشرف المنح لا الجهة.</>}
             </p>
           </Glass>
@@ -222,7 +222,7 @@ export default function ClosePage() {
                 <Head
                   title="الفعلي مقابل المعتمد"
                   meta={missing.length > 0
-                    ? <Tag tone="no"><Num>{missing.length}</Num> بند ناقص</Tag>
+                    ? <Tag tone="no"><Num>{missing.length}</Num> بنود ناقصة</Tag>
                     : <Tag tone="ok">الحدّ الأدنى مكتمل</Tag>}
                 />
 
@@ -230,7 +230,7 @@ export default function ClosePage() {
                   rows={gaps.map((g) => ({
                     k: `${g.label} · المعتمد ${nf.format(g.planned)}`,
                     v: g.actual === null
-                      ? <span className="sub">ما اتكتبش بعد</span>
+                      ? <span className="sub">لم يُدخل بعد</span>
                       : (() => {
                         const diff = g.planned > 0
                           ? Math.round(((g.actual - g.planned) / g.planned) * 100)
@@ -247,7 +247,7 @@ export default function ClosePage() {
                     {
                       k: 'مدة التنفيذ الفعلية',
                       v: c.report.days === null
-                        ? <span className="sub">ما اتكتبتش بعد</span>
+                        ? <span className="sub">لم تُدخل بعد</span>
                         : <><span className="num">{c.report.days}</span>
                           <span className="sub"> يومًا</span></>,
                     },
@@ -261,8 +261,8 @@ export default function ClosePage() {
                   </div>
                 ) : (
                   <p className="sub cnote">
-                    «أبرز المخرجات والنتائج» ما اتكتبتش · والقاعدة{' '}
-                    <span className="num">4</span> بتحسبها من الحدّ الأدنى.
+                    «أبرز المخرجات والنتائج» لم تُدخل بعد · وتعدّها القاعدة{' '}
+                    <span className="num">4</span> من الحدّ الأدنى.
                   </p>
                 )}
 
@@ -317,7 +317,7 @@ export default function ClosePage() {
                   </ul>
                 ) : (
                   <p className="sub cnote">
-                    مفيش روابط سحابية · القاعدة <span className="num">5</span> بتسمح
+                    لا توجد روابط سحابية · تسمح القاعدة <span className="num">5</span>
                     بإرفاق المواد الإعلامية والفيديوهات كروابط تخزين معتمدة، وهي
                     عادةً أكبر من أي حدّ رفع.
                   </p>
@@ -332,7 +332,7 @@ export default function ClosePage() {
                     ? <Tag tone={closed ? 'ok' : 'ret'}>
                       {closed ? 'معتمَد' : closeStageLabel(c.stage)}
                     </Tag>
-                    : <Tag tone="mute">ما بدأش</Tag>}
+                    : <Tag tone="mute">لم يبدأ</Tag>}
                 />
 
                 {c.evaluation ? (
@@ -350,7 +350,7 @@ export default function ClosePage() {
                         {
                           k: 'التقدير العام · استرشادي',
                           v: c.evaluation.score === null
-                            ? <span className="sub">ما اتحدّدش</span>
+                            ? <span className="sub">لم يُحدَّد</span>
                             : <><span className="num">{c.evaluation.score}</span>
                               <span className="sub"> من 5 · قاعدة 13</span></>,
                         },
@@ -383,11 +383,11 @@ export default function ClosePage() {
                      وسؤال «فين التقييم» بلا إجابة. */
                   <p className="sub cnote">
                     {canStartEval(c)
-                      ? <>التقرير اتعتمد، فالتقييم يقدر يبدأ دلوقتي · بيعدّه مشرف
-                        المنح ودورته سجلّ منفصل (القاعدة{' '}
+                      ? <>اعتُمد التقرير، فيمكن بدء التقييم الآن · يُعدّه مشرف
+                        المنح، ولدورته سجلّ منفصل (القاعدة{' '}
                         <span className="num">17</span>).</>
-                      : <>القاعدة <span className="num">6</span> بتمنع بدء التقييم قبل
-                        اعتماد المدير التنفيذي للتقرير الختامي · فهو مستنّي دوره لا
+                      : <>تمنع القاعدة <span className="num">6</span> بدء التقييم قبل
+                        اعتماد المدير التنفيذي للتقرير الختامي · فهو بانتظار دوره لا
                         متأخّر.</>}
                   </p>
                 )}
@@ -418,10 +418,10 @@ export default function ClosePage() {
                   ))}
                 </ul>
                 <p className="sub cnote">
-                  القاعدة <span className="num">15</span> بتخلّي تقريرًا معتمدًا
-                  واحدًا للمشروع وبتحتفظ بكل الإصدارات اللي قبله · والقاعدة{' '}
-                  <span className="num">21</span> بتمنع أي تعديل بعد الإغلاق النهائي،
-                  فأي تغيير بعده بيحتاج إجراءً جديدًا.
+                  تُبقي القاعدة <span className="num">15</span> تقريرًا معتمدًا
+                  واحدًا للمشروع وتحتفظ بكل الإصدارات السابقة · وتمنع القاعدة{' '}
+                  <span className="num">21</span> أي تعديل بعد الإغلاق النهائي،
+                  فأي تغيير بعده يحتاج إجراءً جديدًا.
                 </p>
               </Glass>
 
@@ -433,8 +433,8 @@ export default function ClosePage() {
                   entityName={c.entityName}
                   me={asEntity ? 'entity' : 'staff'}
                   placeholder="اكتب ملاحظتك على التقرير الختامي…"
-                  emptyTitle="مفيش مراسلات على الإغلاق"
-                  emptyNote="القناة بتتفتح لمّا إجراء يقف على طرف · ملاحظة على التقرير أو مستند ناقص."
+                  emptyTitle="لا توجد مراسلات على الإغلاق"
+                  emptyNote="تُفتح القناة حين يتوقف إجراء على أحد الطرفين، مثل ملاحظة على التقرير أو مستند ناقص."
                 />
               </Glass>
             </div>
@@ -443,7 +443,7 @@ export default function ClosePage() {
               <AnalysisCard
                 title="قراءة التقرير الختامي"
                 cta="اقرأ التقرير"
-                empty="مفيش ملاحظات على الطلب ده دلوقتي."
+                empty="لا توجد ملاحظات على هذا الطلب حاليًا."
                 readings={readings}
                 onAsk={() => window.dispatchEvent(
                   new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
@@ -461,10 +461,10 @@ export default function ClosePage() {
               ? <> والإغلاق اكتمل في <DateText>{c.closedAt ?? ''}</DateText>.</>
               : <> والإغلاق في «{closeStageLabel(c.stage)}»، وكلاهما صحيح · القاعدة{' '}
                 <span className="num">16</span>.</>}
-            {' '}والمشروع يتحوّل «مكتمل» باعتماد التقرير والتقييم واستكمال المتطلبات
+            {' '}ويتحوّل المشروع إلى «مكتمل» باعتماد التقرير والتقييم واستكمال المتطلبات
             المالية والإدارية معًا · القاعدة <span className="num">8</span> و
             <span className="num">18</span>.
-            {!req.ok && <> ودلوقتي {req.say}.</>}
+            {!req.ok && <> وحاليًا: {req.say}.</>}
           </p>
         </div>
 
@@ -478,8 +478,8 @@ export default function ClosePage() {
                   <Icon name={icons.doc} size={18} />
                   <span className="decsent">
                     {missing.length === 0
-                      ? <>التقرير مكتمل · تقدر تبعته لمراجعة مشرف المنح</>
-                      : <><b><Num>{missing.length}</Num> بند</b> ناقص قبل الإرسال
+                      ? <>التقرير مكتمل · يمكن إرساله إلى مشرف المنح للمراجعة</>
+                      : <><b><Num>{missing.length}</Num> بنود</b> ناقصة قبل الإرسال
                         <span className="decsep" />
                         {missing[0]}</>}
                   </span>
@@ -487,7 +487,7 @@ export default function ClosePage() {
                 <button
                   className="btn btn-p"
                   disabled={missing.length > 0 || (c.stage !== 'draft' && c.stage !== 'returned')}
-                  title={missing.length > 0 ? `${missing[0]} ناقص (قاعدة 3)` : 'إرسال التقرير للمراجعة'}
+                  title={missing.length > 0 ? `ينقص: ${missing[0]} (قاعدة 3)` : 'أرسل التقرير إلى مشرف المنح للمراجعة'}
                   onClick={() => { sendReport(c); setTick((x) => x + 1) }}
                 >
                   أرسل التقرير للمراجعة

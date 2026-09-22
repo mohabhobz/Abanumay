@@ -197,33 +197,33 @@ export default function BudgetDocPage() {
     alias: string,
   ): string => {
     if (!show && !alias.trim()) {
-      return 'خفّيت اسم البند عن الخارج · فالاسم الظاهر للمستخدم بقى إلزاميًا، وإلا البند هيبان بلا اسم.'
+      return 'اسم البند مخفي عن الخارج · أدخل الاسم الظاهر للمستخدم حتى لا يظهر البند بلا اسم.'
     }
 
     const others = nodes.filter((x) => x.id !== editId)
     const up = parentId ? nodes.find((x) => x.id === parentId) : undefined
 
     if (kind === 'base') {
-      if (parentId) return 'البند الأساسي هو الميزانية نفسها · مفيش فوقه بند.'
+      if (parentId) return 'البند الأساسي هو الميزانية نفسها · لا يتبع أي بند.'
       const otherBase = others.find((x) => x.kind === 'base')
-      if (otherBase) return `في بند أساسي خلاص («${otherBase.label}») · الميزانية ليها أساسي واحد.`
+      if (otherBase) return `يوجد بند أساسي بالفعل («${otherBase.label}») · للميزانية بند أساسي واحد فقط.`
       return ''
     }
 
     if (!parentId) {
-      return `البند ${KIND_SAY[kind]} لازم يكون تابعًا لبند · اللي بلا أب نوعه أساسي.`
+      return `يلزم أن يتبع البند من نوع «${KIND_SAY[kind]}» بندًا آخر · البند الذي لا يتبع أي بند نوعه أساسي.`
     }
-    if (!up) return 'اختار الأب.'
+    if (!up) return 'اختر البند الذي يتبعه.'
     if (!kindFits(kind, up.kind)) {
-      return `${KIND_SAY[kind]} ما ينفعش تحت ${KIND_SAY[up.kind]} · مكانه تحت ${KIND_UNDER[kind].map((k) => KIND_SAY[k]).join(' أو ')}.`
+      return `لا يمكن وضع «${KIND_SAY[kind]}» تحت «${KIND_SAY[up.kind]}» · مكانه تحت ${KIND_UNDER[kind].map((k) => KIND_SAY[k]).join(' أو ')}.`
     }
     /* ⚠️ البند ما يبقاش أبًا لنفسه ولا لجَدّه · وده ممكن في
        التعديل وحده، وكان هيدّي شجرة فيها حلقة مقفولة */
     if (editId) {
-      if (parentId === editId) return 'البند ما يكونش تابعًا لنفسه.'
+      if (parentId === editId) return 'لا يمكن أن يتبع البند نفسه.'
       let cur: string | null = parentId
       while (cur) {
-        if (cur === editId) return 'البند ما يكونش تابعًا لواحد من أبنائه.'
+        if (cur === editId) return 'لا يمكن أن يتبع البند أحد أبنائه.'
         cur = nodes.find((x) => x.id === cur)?.parentId ?? null
       }
     }
@@ -325,10 +325,10 @@ export default function BudgetDocPage() {
             <Glass>
               <Empty
                 title="الميزانية غير موجودة."
-                note="يمكن يكون الرابط قديم · والميزانيات لا تُحذف طالما عليها مشاريع."
+                note="ربما يكون الرابط قديمًا · ولا تُحذف الميزانية ما دامت عليها مشاريع."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.budget)}>
-                    ارجع للميزانية
+                    ارجع إلى الميزانية
                   </button>
                 }
               />
@@ -359,8 +359,8 @@ export default function BudgetDocPage() {
             <div>
               <h1 className="ptitle">{title}</h1>
               <p className="sub mt-1">
-                الميزانية تتعرّف بـ<b>سنة مالية + مصدر تمويل</b> · والبنود شجرة،
-                والصرف بيحصل على آخرها
+                تُعرَّف الميزانية بـ<b>سنة مالية + مصدر تمويل</b> · والبنود شجرة،
+                والصرف يكون على آخر مستوياتها
               </p>
             </div>
             <Tag tone={doc.state === 'draft' ? 'mute' : 'ok'}>
@@ -374,7 +374,7 @@ export default function BudgetDocPage() {
               <Glass>
                 <Head
                   title="بيانات الميزانية"
-                  meta={<span className="sub">القسم الأول · وبيقفل على البنود تحته</span>}
+                  meta={<span className="sub">القسم الأول · ويحكم البنود التي تحته</span>}
                 />
                 <div className="regfields">
                   <label className="regf">
@@ -391,7 +391,7 @@ export default function BudgetDocPage() {
                     {/* ⚠️ السنة بتجيب مداها معاها · التاريخان تحت
                         بيتملوا لوحدهم وبيفضلوا قابلين للتعديل، لأن
                         ميزانية ربع سنة داخل السنة المالية واردة */}
-                    <span className="sub regf-h">تُعرَّف في الإعدادات، وبتجيب مداها معاها</span>
+                    <span className="sub regf-h">تُعرَّف في الإعدادات، ويُملأ مداها تلقائيًا</span>
                   </label>
 
                   <label className="regf">
@@ -435,16 +435,16 @@ export default function BudgetDocPage() {
                       />
                       <Riyal />
                     </span>
-                    <span className="sub regf-h">الجذر بياخده كاملًا</span>
+                    <span className="sub regf-h">يأخذه الجذر كاملًا</span>
                   </label>
                 </div>
 
                 {/* قاعدة الترويسة · التحقّق في الحقل لا بعد الإرسال */}
                 {clash && (
                   <p className="bad cnote">
-                    <b>{yearById(doc.yearId)?.name}</b> لها ميزانية بنفس المصدر بالفعل
-                    (<Mono>{clash.id}</Mono>) · السنة ومصدر التمويل ما يتكرروش مع بعض.
-                    نفس السنة بمصدر تاني تمام.
+                    <b>{yearById(doc.yearId)?.name}</b> لها ميزانية بالمصدر نفسه بالفعل
+                    (<Mono>{clash.id}</Mono>) · لا يتكرر الجمع بين السنة ومصدر التمويل.
+                    ويمكن إنشاء ميزانية للسنة نفسها بمصدر آخر.
                   </p>
                 )}
               </Glass>
@@ -480,24 +480,24 @@ export default function BudgetDocPage() {
               </Glass>
 
               <Glass>
-                <Head title="ازاي الشجرة بتتبني" />
+                <Head title="كيف تُبنى الشجرة" />
                 <p className="sub cnote">
-                  الجذر بياخد مبلغ الميزانية كاملًا · وتحته <b>رئيسي</b> (مسار ثم
+                  يأخذ الجذر مبلغ الميزانية كاملًا · وتحته <b>رئيسي</b> (مسار ثم
                   مجال) · وآخر الشجرة <b>فرعي</b> وهو الهدف.
                 </p>
                 <p className="sub cnote">
                   ومجموع الأبناء يساوي مخصص الأب في كل مستوى · فتغيير رقم في
-                  الآخر بيطلع لفوق لحد الجذر.
+                  المستوى الأخير ينعكس صعودًا حتى الجذر.
                 </p>
                 {/* ⚠️ الجملة دي هي أهم حاجة في الشاشة · وهي اللي
                     بتفسّر ليه بند رقمه صحيح ومع ذلك ما ينفعش يتصرف
                     منه */}
                 <p className="sub cnote">
-                  <b>الحجز والصرف على البنود الفرعية وحدها</b> · اللي فوقها للتقارير،
-                  فالبند اللي تحته بنود ما يتصرفش منه مباشرةً.
+                  <b>الحجز والصرف على البنود الفرعية وحدها</b> · وما فوقها للتقارير،
+                  فالبند الذي تتبعه بنود لا يُصرف منه مباشرةً.
                 </p>
                 <p className="sub cnote">
-                  والمستويات مفتوحة · تلاتة أو خمسة، طالما كل بند تابع لبند أعلى منه.
+                  والمستويات مفتوحة · ثلاثة أو خمسة، ما دام كل بند تابع لبند أعلى منه.
                 </p>
               </Glass>
             </div>
@@ -520,11 +520,11 @@ export default function BudgetDocPage() {
 
                 {nodes.length === 0 ? (
                   <Empty
-                    title="الشجرة فاضية."
+                    title="لا توجد بنود في الشجرة بعد."
                     note={
                       headReady
-                        ? 'اختار نوع البند في المودال · وأول بند بياخد المبلغ الإجمالي كاملًا.'
-                        : 'اكمل بيانات الميزانية فوق الأول · أول بند بياخد مبلغها.'
+                        ? 'أضف أول بند واختر نوعه · يأخذ أول بند المبلغ الإجمالي كاملًا.'
+                        : 'أكمل بيانات الميزانية أعلاه أولًا · يأخذ أول بند مبلغها.'
                     }
                     actions={
                       /* ⚠️ «أضف بند» لا «أضف البند الجذر» · العنوان
@@ -533,11 +533,11 @@ export default function BudgetDocPage() {
                       <button
                         className="btn btn-p"
                         disabled={!headReady}
-                        title={headReady ? 'أضف بند للشجرة' : 'اكمل الترويسة أولًا'}
+                        title={headReady ? 'أضف بندًا إلى الشجرة' : 'أكمل بيانات الميزانية أولًا'}
                         onClick={() => openAdd(null)}
                       >
                         <Icon name={icons.plus} size={16} />
-                        أضف بند
+                        أضف بندًا
                       </button>
                     }
                   />
@@ -571,7 +571,7 @@ export default function BudgetDocPage() {
                                 <button
                                   className="btree-x"
                                   onClick={() => toggle(x.id)}
-                                  aria-label={shut.has(x.id) ? 'افتح' : 'اطوِ'}
+                                  aria-label={shut.has(x.id) ? 'افتح البند' : 'اطوِ البند'}
                                   aria-expanded={!shut.has(x.id)}
                                 >
                                   <Icon
@@ -670,7 +670,7 @@ export default function BudgetDocPage() {
                               {x.parentId !== null && (
                                 <button
                                   className="btn btn-ghost btn-sm"
-                                  title={kids ? 'يشيل البند وكل ما تحته' : 'شيل البند'}
+                                  title={kids ? 'احذف البند وكل ما تحته' : 'احذف البند'}
                                   onClick={() => removeNode(x.id)}
                                 >
                                   <Icon name={icons.close} size={14} />
@@ -688,7 +688,7 @@ export default function BudgetDocPage() {
                         <Mono>{nf.format(root.allocated)}</Mono> ·{' '}
                         {sumChildren(nodes, root.id) === root.allocated
                           ? 'متوازن'
-                          : 'الفرق لازم يتقفل قبل الإرسال'}
+                          : 'يلزم تسوية الفرق قبل الإرسال'}
                       </p>
                     )}
                   </>
@@ -702,13 +702,13 @@ export default function BudgetDocPage() {
             <div className="rowf gp-3 payact-w">
               <span className="decsent">
                 {sent
-                  ? <>اتبعتت · الحالة <b>مرسَلة</b></>
+                  ? <>أُرسلت · الحالة <b>مرسَلة</b></>
                   : doc.state === 'draft' && doc.id
-                    ? <>اتحفظت <b>كمسودة</b> · تقدر تكمّلها في أي وقت</>
+                    ? <>حُفظت <b>كمسودة</b> · يمكن استكمالها في أي وقت</>
                     : <>
                         {headReady && root
                           ? <>الإجمالي <Money>{doc.total}</Money></>
-                          : 'اكمل السنة ومصدر التمويل والمبلغ'}
+                          : 'أكمل السنة ومصدر التمويل والمبلغ'}
                         {issues.length > 0 && (
                           <>
                             <span className="decsep" />
@@ -725,32 +725,32 @@ export default function BudgetDocPage() {
                   <button
                     className="btn btn-2"
                     disabled={!headReady}
-                    title={headReady ? 'احفظ كمسودة' : 'اكمل الترويسة أولًا'}
+                    title={headReady ? 'احفظ كمسودة' : 'أكمل بيانات الميزانية أولًا'}
                     onClick={() => setDoc((d) => ({ ...d, id: d.id ?? 'BG-NEW', state: 'draft' }))}
                   >
-                    حفظ
+                    احفظ المسودة
                   </button>
                   <button
                     className="btn btn-p"
                     disabled={!canSubmit}
                     title={
                       clash
-                        ? 'السنة ومصدر التمويل مكرّرين'
+                        ? 'السنة ومصدر التمويل مكرّران'
                         : !headReady
-                          ? 'اكمل بيانات الميزانية'
+                          ? 'أكمل بيانات الميزانية'
                           : issues.length
                             ? `${issues.length} ملاحظة على الشجرة`
-                            : 'إرسال الميزانية'
+                            : 'أرسل الميزانية'
                     }
                     onClick={() => setSent(true)}
                   >
-                    إرسال
+                    أرسل الميزانية
                   </button>
                 </>
               )}
               {sent && (
                 <button className="btn btn-2" onClick={() => navigate(ROUTES.budget)}>
-                  ارجع للميزانية
+                  ارجع إلى الميزانية
                 </button>
               )}
             </div>
@@ -786,11 +786,11 @@ export default function BudgetDocPage() {
                   <input
                     value={nLabel}
                     onChange={(e) => setNLabel(e.target.value)}
-                    placeholder="مسار التعليم"
+                    placeholder="مثال: مسار التعليم"
                     aria-label="اسم البند"
                   />
                 </span>
-                <span className="sub regf-h">الاسم الداخلي · اللي المؤسسة بتشتغل بيه</span>
+                <span className="sub regf-h">الاسم الداخلي الذي تعمل به المؤسسة</span>
               </label>
 
               {/* ═══ الاسم المعلن · ج-16 ═══
@@ -810,14 +810,14 @@ export default function BudgetDocPage() {
                       setNAlias(e.target.value)
                       setBlocked(shapeRule(nKind, nParent || null, nShow, e.target.value))
                     }}
-                    placeholder="المنح التعليمية"
+                    placeholder="مثال: المنح التعليمية"
                     aria-label="الاسم الظاهر للمستخدم"
                   />
                 </span>
                 <span className="sub regf-h">
                   {nShow
-                    ? 'اختياري · بيظهر للخارج بدل الاسم الداخلي لو اتكتب'
-                    : 'إلزامي · الاسم الداخلي مخفي، فده اللي هيبان'}
+                    ? 'اختياري · يظهر للخارج بدل الاسم الداخلي عند إدخاله'
+                    : 'إلزامي · الاسم الداخلي مخفي، فهذا الاسم هو الذي سيظهر'}
                 </span>
               </label>
 
@@ -837,7 +837,7 @@ export default function BudgetDocPage() {
                   />
                   <span>
                     <b>أظهر اسم البند للخارج</b>
-                    <span className="sub">لو طفّيته، الاسم الظاهر للمستخدم يبقى إلزاميًا</span>
+                    <span className="sub">عند إلغائه يصبح الاسم الظاهر للمستخدم إلزاميًا</span>
                   </span>
                 </label>
 
@@ -850,7 +850,7 @@ export default function BudgetDocPage() {
                   <span>
                     <b>البند نشط</b>
                     <span className="sub">
-                      غير النشط بيفضل في الشجرة ومش بيدخل في المجاميع ولا بيتحجز عليه
+                      يبقى البند غير النشط في الشجرة، لكنه لا يدخل في المجاميع ولا يُحجز عليه
                     </span>
                   </span>
                 </label>
@@ -890,7 +890,7 @@ export default function BudgetDocPage() {
                     <FieldSelect
                       value={nParent}
                       label="تابع لبند"
-                      placeholder="بلا · بند أساسي"
+                      placeholder="لا يتبع بندًا · بند أساسي"
                       options={parents.map((p) => ({ value: p.id, label: pathOf(nodes, p.id) }))}
                       onChange={(v) => {
                         setNParent(v)
@@ -931,9 +931,9 @@ export default function BudgetDocPage() {
                 ? <p className="bad cnote">{blocked}</p>
                 : nodes.length === 0 && (
                   <p className="sub cnote">
-                    أول بند هو <b>جذر الشجرة</b> · بياخد المبلغ الإجمالي{' '}
+                    أول بند هو <b>جذر الشجرة</b> · يأخذ المبلغ الإجمالي{' '}
                     <span className="num">{nf.format(doc.total)}</span> كاملًا،
-                    والبنود اللي بعده بتتحط تحته.
+                    وتوضع البنود التالية تحته.
                   </p>
                 )}
             </div>
@@ -945,11 +945,11 @@ export default function BudgetDocPage() {
                 title={
                   blocked || (nLabel.trim()
                     ? (editId ? 'احفظ التعديل' : 'أضف البند')
-                    : 'اكتب اسم البند')
+                    : 'أدخل اسم البند')
                 }
                 onClick={saveNode}
               >
-                {editId ? 'احفظ التعديل' : 'إضافة'}
+                {editId ? 'احفظ التعديل' : 'أضف البند'}
               </button>
               <button className="btn btn-2" onClick={() => setOpen(false)}>إلغاء</button>
               <span className="pc-sp" />

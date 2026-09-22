@@ -60,7 +60,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
               الدفعة المعتمدة <Money sm>{r.due}</Money>
             </span>
           )}
-          <span className="payq-due sub">استحقاقها <DateText>{r.dueAt}</DateText></span>
+          <span className="payq-due sub">تستحق في <DateText>{r.dueAt}</DateText></span>
         </div>
       </header>
 
@@ -75,7 +75,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
           <span className="sub">في المرحلة <Num>{days}</Num> يومًا</span>
         )}
         {r.state === 'paid' && r.paidAt && (
-          <Tag tone="ok">اتصرفت <DateText>{r.paidAt}</DateText></Tag>
+          <Tag tone="ok">صُرفت في <DateText>{r.paidAt}</DateText></Tag>
         )}
         {multi && <Tag tone="teal">تمويل من مصدرين</Tag>}
       </div>
@@ -101,7 +101,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
         ))}
         <li className={r.bank.active ? 'ok' : 'no'}>
           <Icon name={r.bank.active ? icons.check : icons.alert} size={13} />
-          <span>{r.bank.name}{r.bank.active ? '' : ' · الحساب معطَّل'}</span>
+          <span>{r.bank.name}{r.bank.active ? '' : ' · الحساب غير نشط'}</span>
           <span className="payq-r">الحساب المعتمد</span>
         </li>
       </ul>

@@ -91,10 +91,10 @@ export default function PlanPage() {
             <Glass>
               <Empty
                 title="لا توجد خطة بهذا الرقم."
-                note="ارجع لصندوق الخطط واختر واحدة."
+                note="عُد إلى صندوق الخطط واختر خطة منه."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.plans)}>
-                    صندوق الخطط
+                    العودة إلى صندوق الخطط
                   </button>
                 }
               />
@@ -173,14 +173,14 @@ export default function PlanPage() {
           {asEntity && (
             <Glass>
               <Head
-                title="أنت في صفحة خطتك"
+                title="صفحة خطة الجهة"
                 meta={<Tag tone="ret">الجهة المستفيدة</Tag>}
               />
               <p className="sub cnote">
-                بترفع الشواهد وبتقول إن النشاط خلص · والنشاط بيتحوّل
-                «بانتظار قبول المشرف»، وما بيتحسبش في نسبة الإنجاز قبل ما
-                مشرف المنح يراجعه ويقبله (القاعدة <span className="num">14</span>).
-                ولو رجّعه هتلاقي سبب الإعادة مكتوبًا تحت النشاط.
+                ترفع الجهة الشواهد وتعلن اكتمال النشاط، فيتحوّل إلى
+                «بانتظار قبول المشرف»، ولا يُحتسب في نسبة الإنجاز قبل أن
+                يراجعه مشرف المنح ويقبله (القاعدة <span className="num">14</span>).
+                وإن أُعيد النشاط، يظهر سبب الإعادة مكتوبًا تحته.
               </p>
             </Glass>
           )}
@@ -210,20 +210,20 @@ export default function PlanPage() {
                         {
                           k: 'أداء الجدول · SPI',
                           v: spi === null
-                            ? <span className="sub">ما بدأش</span>
+                            ? <span className="sub">لم يبدأ</span>
                             : <span className={spi < 0.8 ? 'bad' : undefined}>
                               <span className="num">{spi.toFixed(2)}</span>
                               <span className="sub"> · المقبول ÷ المخطَّط</span>
                             </span>,
                         },
                         {
-                          k: 'مستنّي مراجعة مشرف المنح',
+                          k: 'بانتظار مراجعة مشرف المنح',
                           v: queue.length === 0
                             ? <span className="sub">لا شيء</span>
                             : <Tag tone="warn"><Num>{queue.length}</Num> نشاطًا</Tag>,
                         },
                         {
-                          k: 'عدّى موعده ولم يُقبل',
+                          k: 'تجاوز موعده ولم يُقبل',
                           v: late.length === 0
                             ? <span className="sub">لا شيء</span>
                             : <Tag tone="no"><Num>{late.length}</Num> نشاطًا</Tag>,
@@ -236,16 +236,16 @@ export default function PlanPage() {
                     {claim > done && (
                       <p className="sub cnote">
                         الفرق بين المُعلَن والمقبول{' '}
-                        <span className="num">{claim - done}</span> نقطة · دي أنشطة
-                        قالت الجهة إنها خلصت ولسه ما اتراجعتش، وما بتتحسبش إنجازًا
+                        <span className="num">{claim - done}</span> نقطة · وهي أنشطة
+                        أعلنت الجهة اكتمالها ولم تُراجع بعد، ولا تُحتسب إنجازًا
                         قبل القبول (القاعدة <span className="num">14</span>).
                       </p>
                     )}
                   </>
                 ) : (
                   <p className="sub cnote">
-                    القياس بيبدأ من تثبيت النسخة المرجعية · قبلها مفيش مرجع
-                    يتقاس عليه الانحراف، والنسبة تبقى رأيًا.
+                    يبدأ القياس من تثبيت النسخة المرجعية، فقبلها لا يوجد مرجع
+                    يُقاس عليه الانحراف، وتصبح النسبة مجرد تقدير.
                   </p>
                 )}
               </Glass>
@@ -266,7 +266,7 @@ export default function PlanPage() {
                 {p.phases.length === 0 ? (
                   <Empty
                     title="الخطة بلا مراحل."
-                    note="المرحلة هي وحدة القياس · من غيرها مفيش إنجاز يتحسب."
+                    note="المرحلة هي وحدة القياس، ومن دونها لا يُحتسب أي إنجاز."
                   />
                 ) : (
                   <PhaseTree
@@ -313,7 +313,7 @@ export default function PlanPage() {
                     مجموع تكلفة المراحل <Money sm>{cost}</Money> وقيمة المنحة{' '}
                     <Money sm>{grant}</Money>
                     {cost !== grant
-                      ? ' · لازم يتساووا قبل الاعتماد.'
+                      ? ' · يجب أن يتساويا قبل الاعتماد.'
                       : ' · متطابقان.'}
                   </p>
                 )}
@@ -328,9 +328,9 @@ export default function PlanPage() {
                   />
                   {p.changes.length === 0 ? (
                     <p className="sub cnote">
-                      مفيش طلبات · أي تعديل على المراحل أو التواريخ أو التكلفة بعد
-                      الاعتماد بيعدّي من هنا، وبيرفع رقم النسخة المرجعية لمّا
-                      يتوافق عليه. من غير كده الانحراف ما يبقاش له مرجع.
+                      لا توجد طلبات · أي تعديل على المراحل أو التواريخ أو التكلفة بعد
+                      الاعتماد يمرّ من هنا، ويرفع رقم النسخة المرجعية عند
+                      اعتماده. ومن دون ذلك يفقد الانحراف مرجعه.
                     </p>
                   ) : (
                     <ul className="plchg">
@@ -351,7 +351,7 @@ export default function PlanPage() {
                               <button
                                 className="btn btn-p btn-sm"
                                 onClick={() => {
-                                  decideChange(p.id, c.id, true, 'موافقة · النسخة المرجعية ارتفعت.')
+                                  decideChange(p.id, c.id, true, 'اعتُمد التعديل · ارتفع رقم النسخة المرجعية.')
                                   setTick((x) => x + 1)
                                 }}
                               >
@@ -360,11 +360,11 @@ export default function PlanPage() {
                               <button
                                 className="btn btn-2 btn-sm"
                                 onClick={() => {
-                                  decideChange(p.id, c.id, false, 'رفض · الخطة تُنفَّذ كما اعتُمدت.')
+                                  decideChange(p.id, c.id, false, 'رُفض التعديل · تُنفَّذ الخطة كما اعتُمدت.')
                                   setTick((x) => x + 1)
                                 }}
                               >
-                                ارفض
+                                ارفض التعديل
                               </button>
                             </div>
                           )}
@@ -381,7 +381,7 @@ export default function PlanPage() {
               <AnalysisCard
                 title="قراءة الخطة"
                 cta="اقرأ الخطة"
-                empty="الخطة دي مفيهاش ملاحظات دلوقتي."
+                empty="لا توجد ملاحظات على هذه الخطة الآن."
                 readings={readings}
                 onAsk={() => window.dispatchEvent(
                   new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
@@ -399,7 +399,7 @@ export default function PlanPage() {
             في «{pr?.stage ?? ''}» والخطة في «{planStageLabel(p.stage)}»، وكلاهما صحيح.
             {readyToClose(p) && ' وكل أنشطة الخطة قُبلت، فالمشروع مؤهَّل للإغلاق.'}
             {issues.length > 0 && !live && (
-              <> · وفي <span className="num">{issues.length}</span> ملاحظة تمنع الإرسال.</>
+              <> · وتوجد <span className="num">{issues.length}</span> ملاحظة تمنع الإرسال.</>
             )}
           </p>
         </div>
@@ -415,12 +415,12 @@ export default function PlanPage() {
               className="chrome modal"
               role="dialog"
               aria-modal="true"
-              aria-label="إعادة النشاط للجهة"
+              aria-label="إعادة النشاط إلى الجهة"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mh">
                 <Icon name={icons.chat} size={18} />
-                <b>إعادة النشاط للجهة</b>
+                <b>إعادة النشاط إلى الجهة</b>
               </div>
 
               <div className="mb col">
@@ -428,7 +428,7 @@ export default function PlanPage() {
                     الجهة تعرف إن في شغل اتعمل ومحتاج تصحيح لا إعادة
                     من الصفر */}
                 <p className="sub cnote">
-                  الملاحظة بتوصل للجهة مع النشاط · والنشاط بيرجع
+                  تصل الملاحظة إلى الجهة مع النشاط، ويعود النشاط بحالة
                   «مرفوض · بملاحظة» لا «لم يبدأ».
                 </p>
                 <label className="regf">
@@ -441,7 +441,7 @@ export default function PlanPage() {
                       value={reject.note}
                       onChange={(e) => setReject({ ...reject, note: e.target.value })}
                       aria-label="سبب الإعادة"
-                      placeholder="التقرير بلا كشف مستفيدين"
+                      placeholder="مثال: التقرير لا يتضمن كشف المستفيدين"
                     />
                   </span>
                 </label>
@@ -457,7 +457,7 @@ export default function PlanPage() {
                     setTick((x) => x + 1)
                   }}
                 >
-                  أعِد النشاط
+                  أعد النشاط
                 </button>
                 <button className="btn btn-2" onClick={() => setReject(null)}>إلغاء</button>
               </div>

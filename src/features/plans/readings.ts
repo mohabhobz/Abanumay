@@ -41,8 +41,8 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
         kind: 'note',
         label: 'جاهزة',
         text:
-          'المراحل والأنشطة والشواهد المطلوبة مكتملة، ومجموع التكلفة يساوي '
-          + 'قيمة المنحة · الخطة تقدر تتبعت.',
+          'المراحل والأنشطة والشواهد المطلوبة مكتملة، ومجموع الميزانية يساوي '
+          + 'قيمة المنحة · الخطة جاهزة للإرسال.',
         src: 'محسوبة من الحقول لا من رأي المساعد',
       })
     }
@@ -56,11 +56,11 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
     out.push({
       id: 'pl-queue',
       kind: 'flag',
-      label: 'مستنّي مراجعتك',
+      label: 'بانتظار مراجعتك',
       metric: { value: String(queue.length), unit: 'نشاطًا' },
       text:
-        `الجهة معلنة ${planClaimed(p)}٪ والمقبول ${planDone(p)}٪ · `
-        + `${gap} نقطة مش محسوبة لحدّ ما تتراجع الشواهد.`,
+        `أعلنت الجهة ${planClaimed(p)}٪ والمقبول ${planDone(p)}٪ · `
+        + `${gap} نقطة لا تُحتسب حتى تُراجَع الشواهد.`,
       bold: [`${gap} نقطة`],
       src: 'قاعدة 14 · النشاط لا يُحتسب إنجازًا قبل قبول المشرف',
       actions: [{ label: `افتح «${queue[0].name}»`, onClick: () => goTo(queue[0].id) }],
@@ -77,7 +77,7 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
     out.push({
       id: 'pl-late',
       kind: 'flag',
-      label: 'عدّى موعده',
+      label: 'تجاوز موعده',
       metric: { value: String(late.length), unit: 'نشاطًا' },
       text:
         `أقدمها «${worst.name}» متأخّر ${days} يومًا عن ${worst.to}، وحالته `
@@ -101,7 +101,7 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
       metric: { value: spi.toFixed(2), unit: say.say },
       text:
         `المقبول ${planDone(p)}٪ والمخطَّط لليوم ${planPlanned(p)}٪ · `
-        + 'واحد صحيح معناه ماشية بالظبط مع جدولها المعتمد.',
+        + 'القيمة 1 تعني أن الخطة تسير وفق جدولها المعتمد تمامًا.',
       bar: {
         value: planDone(p),
         limit: planPlanned(p),
@@ -109,7 +109,7 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
         limitLabel: 'المخطَّط لليوم',
         unit: '٪',
       },
-      src: 'SPI مشتق من BPD-012 · الوثيقة ما حدّدتش مستهدفًا',
+      src: 'مؤشر SPI مشتق من BPD-012 · لم تحدّد الوثيقة قيمة مستهدفة',
     })
   }
 
@@ -135,8 +135,8 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
       kind: 'note',
       label: 'مؤهَّل للإغلاق',
       text:
-        'كل أنشطة الخطة اتقبلت · الخطة رفعت مانع الإغلاق، والإغلاق نفسه إجراء '
-        + 'تاني له قواعده (التقرير الختامي · الاتصال المؤسسي · التقييم).',
+        'قُبلت كل أنشطة الخطة، فارتفع مانع الإغلاق · أما الإغلاق نفسه فإجراء '
+        + 'مستقل له قواعده (التقرير الختامي · الاتصال المؤسسي · التقييم).',
       src: 'BPD-012 · الخطة مكتملة ⇒ المشروع مؤهَّل للإغلاق',
     })
   }

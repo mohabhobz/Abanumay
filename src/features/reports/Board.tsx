@@ -52,7 +52,7 @@ export function Board({
           options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
           onChange={(v) => onPeriod(v ?? PERIODS[0].id)}
         />
-        <span className="sub">كل رقم تحت محسوب للفترة دي، ومصدره مكتوب جنبه</span>
+        <span className="sub">كل رقم أدناه محسوب لهذه الفترة، ومصدره مكتوب بجانبه</span>
       </div>
 
       <div className="g2">
@@ -69,7 +69,7 @@ export function Board({
             readings={readings}
             title="تحليلات التقارير السريعة"
             cta="حلّل الفترة"
-            empty="مفيش ملاحظات على الفترة المختارة · جرّب فترة تانية."
+            empty="لا توجد ملاحظات على الفترة المختارة · اختر فترة أخرى."
             onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
           />
         </div>

@@ -60,7 +60,7 @@ export function planActionsFor(role: RoleKey, stage: PlanStage): PlanAction[] {
         label: 'إعادة للجهة بملاحظات',
         kind: 'btn-2',
         needsNote: true,
-        why: 'الجهة هي كاتبة الخطة، فالإعادة ترجع لها لا لمحطة وسيطة',
+        why: 'الجهة هي كاتبة الخطة، فتُعاد إليها لا إلى محطة وسيطة',
       },
     ]
   }
@@ -70,13 +70,13 @@ export function planActionsFor(role: RoleKey, stage: PlanStage): PlanAction[] {
         label: 'اعتماد وتثبيت النسخة المرجعية',
         kind: 'btn-p',
         gated: true,
-        why: 'الاعتماد يقفل الهيكل · وأي تعديل بعده بطلب رسمي (قاعدة 21)',
+        why: 'الاعتماد يثبّت الهيكل، وأي تعديل بعده يلزمه طلب رسمي (قاعدة 21)',
       },
       {
         label: 'إعادة للجهة بملاحظات',
         kind: 'btn-2',
         needsNote: true,
-        why: 'الإعادة ترجع للجهة كاتبة الخطة',
+        why: 'تُعاد الخطة إلى الجهة التي كتبتها',
       },
     ]
   }
@@ -113,9 +113,9 @@ export function PlanActionDock({
           <div className="rowf gp-3">
             <Icon name={icons.check} size={18} className="ok-ink" />
             <span className="decsent">
-              اتسجّل: <b>{taken}</b>
+              سُجّل: <b>{taken}</b>
               <span className="decsep" />
-              الإشعار اتبعت للجهة المستفيدة
+              أُرسل الإشعار إلى الجهة المستفيدة
             </span>
           </div>
           <button className="btn btn-2" onClick={() => { onTake(''); onNote('') }}>
@@ -137,9 +137,9 @@ export function PlanActionDock({
           <div className="rowf gp-3">
             <Person name={user.name} size="lg" quiet={false} />
             <span className="decsent">
-              <b><Num>{queue}</Num> نشاطًا</b> مستنّي قبولك
+              <b><Num>{queue}</Num> نشاطًا</b> بانتظار قبولك
               <span className="decsep" />
-              ما بيتحسبش إنجازًا قبل المراجعة · القاعدة <Num>14</Num>
+              لا يُحتسب إنجازًا قبل المراجعة · القاعدة <Num>14</Num>
             </span>
           </div>
           <button className="btn btn-p" onClick={onReview}>راجع أول نشاط</button>
@@ -154,7 +154,7 @@ export function PlanActionDock({
         <div className="rowf gp-3 payact-w">
           <Person name={user.name} size="lg" quiet={false} />
           <span className="decsent">
-            قرارك في خطة <b>{plan.projectName}</b>
+            قرارك بشأن خطة <b>{plan.projectName}</b>
             <span className="decsep" />
             <Num>{plan.phases.length}</Num> مراحل
           </span>
@@ -166,7 +166,7 @@ export function PlanActionDock({
             <input
               value={note}
               onChange={(e) => onNote(e.target.value)}
-              placeholder="سبب الإعادة · إلزامي"
+              placeholder="اكتب سبب الإعادة وما يلزم تعديله (إلزامي)"
             />
           </label>
         )}
@@ -177,7 +177,7 @@ export function PlanActionDock({
                بالاسم، لأن «فيه خطأ» بتخلّي المستخدم يدوّر بعينه */
             const stop =
               (x.needsNote && !note.trim())
-                ? 'اكتب سبب الإعادة الأول'
+                ? 'اكتب سبب الإعادة أولًا'
                 : (x.gated && issues.length > 0)
                   ? `${issues[0].say} (${issues[0].rule})`
                   : ''

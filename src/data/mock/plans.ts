@@ -43,9 +43,9 @@ import { projectRows } from './projects'
 export const PLAN_STAGES: {
   key: PlanStage; label: string; who: string; note: string
 }[] = [
-  { key: 'draft', label: 'مسودة', who: 'الجهة المستفيدة', note: 'بتتكتب وما اتبعتتش' },
+  { key: 'draft', label: 'مسودة', who: 'الجهة المستفيدة', note: 'قيد الإعداد ولم تُرسل بعد' },
   { key: 'supervisor', label: 'مراجعة مشرف المنح', who: 'مشرف المنح', note: 'مراجعة فنية للمراحل والأنشطة' },
-  { key: 'manager', label: 'اعتماد مدير المنح', who: 'مدير المنح', note: 'الاعتماد بيثبّت النسخة المرجعية' },
+  { key: 'manager', label: 'اعتماد مدير المنح', who: 'مدير المنح', note: 'الاعتماد يثبّت النسخة المرجعية' },
   { key: 'returned', label: 'مُعادة للجهة', who: 'الجهة المستفيدة', note: 'بملاحظات مكتوبة' },
   { key: 'active', label: 'قيد التنفيذ', who: 'الجهة المستفيدة', note: 'أنشطة وشواهد ومراجعة' },
   { key: 'done', label: 'مكتملة', who: '', note: 'المشروع مؤهَّل للإغلاق' },
@@ -192,8 +192,8 @@ export const planSpi = (p: PlanRow, today = TODAY): number | null => {
 }
 
 export const spiSay = (v: number | null): { say: string; tone: 'ok' | 'warn' | 'no' | 'mute' } => {
-  if (v === null) return { say: 'ما بدأش', tone: 'mute' }
-  if (v >= 0.95) return { say: 'ماشي مع الخطة', tone: 'ok' }
+  if (v === null) return { say: 'لم يبدأ', tone: 'mute' }
+  if (v >= 0.95) return { say: 'وفق الخطة', tone: 'ok' }
   if (v >= 0.8) return { say: 'متأخّر قليلًا', tone: 'warn' }
   return { say: 'متأخّر عن الخطة', tone: 'no' }
 }
@@ -220,25 +220,25 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
   const out: PlanIssue[] = []
 
   if (p.phases.length === 0) {
-    out.push({ key: 'phases', say: 'الخطة بلا مراحل.', rule: 'BPD-012' })
+    out.push({ key: 'phases', say: 'الخطة بلا مراحل. أضف مرحلة واحدة على الأقل.', rule: 'BPD-012' })
     return out
   }
 
   p.phases.forEach((ph, i) => {
     if (!ph.name.trim()) {
-      out.push({ key: `nm-${ph.id}`, say: `المرحلة ${i + 1} بلا اسم.`, rule: 'BPD-012' })
+      out.push({ key: `nm-${ph.id}`, say: `المرحلة ${i + 1} بلا اسم. اكتب اسمًا لها.`, rule: 'BPD-012' })
     }
     if (ph.activities.length === 0) {
       out.push({
         key: `ac-${ph.id}`,
-        say: `«${ph.name || `المرحلة ${i + 1}`}» بلا أنشطة · المرحلة بتتقاس بأنشطتها.`,
+        say: `«${ph.name || `المرحلة ${i + 1}`}» بلا أنشطة · يُقاس إنجاز المرحلة بأنشطتها.`,
         rule: 'قاعدة 14',
       })
     }
     if (ph.from && ph.to && ph.from > ph.to) {
       out.push({
         key: `dt-${ph.id}`,
-        say: `«${ph.name}» بدايتها بعد نهايتها.`,
+        say: `تاريخ بداية «${ph.name}» بعد تاريخ نهايتها.`,
         rule: 'BPD-012',
       })
     }
@@ -248,21 +248,21 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
       if (ph.from && a.from && a.from < ph.from) {
         out.push({
           key: `ab-${a.id}`,
-          say: `نشاط «${a.name}» بيبدأ قبل مرحلته.`,
+          say: `يبدأ نشاط «${a.name}» قبل بداية مرحلته.`,
           rule: 'BPD-012',
         })
       }
       if (ph.to && a.to && a.to > ph.to) {
         out.push({
           key: `aa-${a.id}`,
-          say: `نشاط «${a.name}» بيخلص بعد مرحلته.`,
+          say: `ينتهي نشاط «${a.name}» بعد نهاية مرحلته.`,
           rule: 'BPD-012',
         })
       }
       if (a.needs.length === 0) {
         out.push({
           key: `ev-${a.id}`,
-          say: `نشاط «${a.name}» بلا شاهد مطلوب · مفيش حاجة تتراجع عليه.`,
+          say: `نشاط «${a.name}» بلا شاهد مطلوب · فلا يمكن مراجعة إنجازه.`,
           rule: 'قاعدة 14',
         })
       }
@@ -271,7 +271,7 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
     if (ph.activities.length > 0 && w !== 100) {
       out.push({
         key: `wt-${ph.id}`,
-        say: `أوزان أنشطة «${ph.name}» مجموعها ${w} لا 100.`,
+        say: `مجموع أوزان أنشطة «${ph.name}» ${w}، ويلزم أن يساوي 100.`,
         rule: 'BPD-012',
       })
     }
@@ -284,7 +284,7 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
   if (grant > 0 && cost !== grant) {
     out.push({
       key: 'cost',
-      say: `مجموع تكلفة المراحل ${cost.toLocaleString('en-US')} وقيمة المنحة ${grant.toLocaleString('en-US')}.`,
+      say: `مجموع تكلفة المراحل ${cost.toLocaleString('en-US')} لا يساوي قيمة المنحة ${grant.toLocaleString('en-US')}.`,
       rule: 'BPD-012',
     })
   }
@@ -414,7 +414,7 @@ export const planRows: PlanRow[] = [
             kind: 'reject',
             by: 'سارة القحطاني',
             at: '2026-08-06T10:20',
-            say: 'التقرير بلا كشف مستفيدين · والقاعدة بتطلب الاتنين لإثبات العدد.',
+            say: 'التقرير بلا كشف مستفيدين · والقاعدة تشترط الاثنين لإثبات العدد.',
           }],
         }),
       act('a5', 'المتابعة الميدانية', 'todo', '2026-07-01', '2026-08-31', 20,
@@ -426,7 +426,7 @@ export const planRows: PlanRow[] = [
       id: 'ch1', at: '2026-06-18', by: 'الجهة المستفيدة',
       say: 'تمديد مدة التنفيذ شهرين لتأخّر تسليم المقر من البلدية.',
       state: 'approved',
-      note: 'موافقة · التأخير خارج عن الجهة، والنسخة المرجعية بقت 2.',
+      note: 'معتمد · التأخير خارج عن إرادة الجهة، وأصبحت النسخة المرجعية 2.',
     }],
   }),
 
@@ -463,7 +463,7 @@ export const planRows: PlanRow[] = [
         ['مادة إعلامية']),
     ]),
   ], 'سارة القحطاني', '2026-09-06', 62, {
-    note: 'مرحلة واحدة لأربعة شهور بنشاط واحد · قسّميها لمراحل يتقاس عليها إنجاز.',
+    note: 'مرحلة واحدة لأربعة أشهر بنشاط واحد · يلزم تقسيمها إلى مراحل يُقاس عليها الإنجاز.',
   }),
 
   /* مسودة عند الجهة · لسه بتتكتب.

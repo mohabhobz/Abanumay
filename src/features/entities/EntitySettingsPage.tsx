@@ -73,7 +73,7 @@ export default function EntitySettingsPage() {
         ? ENTITY_TYPES.map((t) => ({
           k: t,
           used: typeUsed(t),
-          note: t === 'شركة غير ربحية' ? 'بتفتح تلات مستندات إلزامية · قاعدتا 8 و9' : undefined,
+          note: t === 'شركة غير ربحية' ? 'تجعل ثلاثة مستندات إلزامية · قاعدتا 8 و9' : undefined,
         }))
         : tab === 'licensors'
           ? LICENSORS.map((l) => ({ k: l, used: licensorUsed(l) }))
@@ -89,8 +89,8 @@ export default function EntitySettingsPage() {
             <div>
               <h1 className="ptitle">إعدادات الجهات</h1>
               <p className="sub mt-1">
-                القوايم اللي فورم تسجيل الجهة وملفها مبنيين عليها ·
-                أي قائمة منسدلة في الفورم ليها مجموعة هنا
+                القوائم التي يُبنى عليها نموذج تسجيل الجهة وملفها ·
+                لكل قائمة منسدلة في النموذج مجموعة هنا
               </p>
             </div>
           </header>
@@ -124,8 +124,8 @@ export default function EntitySettingsPage() {
                 ))}
               </ul>
               <p className="sub cnote">
-                الرقم جنب المنطقة هو عدد الجهات المسجَّلة فيها ·
-                والمنطقة اللي عليها جهات ما تتحذفش.
+                الرقم بجانب المنطقة هو عدد الجهات المسجَّلة فيها ·
+                ولا تُحذف منطقة مرتبطة بجهات.
               </p>
             </Glass>
           )}
@@ -153,13 +153,13 @@ export default function EntitySettingsPage() {
                 disabled={!draft.trim() || rows.some((r) => r.k === draft.trim())}
                 title={
                   rows.some((r) => r.k === draft.trim())
-                    ? 'القيمة دي موجودة قبل كده'
+                    ? 'هذه القيمة موجودة مسبقًا'
                     : `أضف ${addLabel}`
                 }
                 onClick={clear}
               >
                 <Icon name={icons.plus} size={16} />
-                إضافة
+                أضف
               </button>
             </div>
 
@@ -171,8 +171,8 @@ export default function EntitySettingsPage() {
                   <span className="pc-sp" />
                   {r.used !== null && (
                     r.used > 0
-                      ? <Tag tone="mute"><Num>{r.used}</Num> جهة عليها</Tag>
-                      : <Tag tone="ok">بلا متعلقات</Tag>
+                      ? <Tag tone="mute"><Num>{r.used}</Num> جهة مرتبطة</Tag>
+                      : <Tag tone="ok">بلا جهات مرتبطة</Tag>
                   )}
                 </li>
               ))}
@@ -180,8 +180,8 @@ export default function EntitySettingsPage() {
 
             <p className="sub cnote">
               {tab === 'types'
-                ? 'التصنيف مش وسمًا · هو اللي بيحدد المستندات الإلزامية في فورم التسجيل، فتغييره بيغيّر شرط قبول.'
-                : 'القيمة اللي متعلّق بيها ريكورد ما تتحذفش · الرقم جنبها بيقول السبب قبل المحاولة.'}
+                ? 'التصنيف ليس وسمًا · فهو يحدّد المستندات الإلزامية في نموذج التسجيل، وتغييره يغيّر شرط قبول.'
+                : 'لا تُحذف قيمة مرتبطة بسجلات · والرقم بجانبها يوضّح السبب قبل المحاولة.'}
             </p>
           </Glass>
         </div>

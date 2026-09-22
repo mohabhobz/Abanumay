@@ -25,8 +25,8 @@ import type { PartnerKind } from './registration'
 
 /** الشركاء المنفّذون · بيتحطّوا من جوّه النظام (قاعدة 32) */
 export const IMPLEMENTERS: { id: string; name: string; note: string }[] = [
-  { id: '860', name: 'منصة إحسان', note: 'منصة حكومية بتدعم جهات خيرية · ما بتدخلش المنصة' },
-  { id: '861', name: 'المحافظ الخيرية', note: 'نفس الترتيب · إدارة داخلية كاملة' },
+  { id: '860', name: 'منصة إحسان', note: 'منصة حكومية تدعم الجهات الخيرية · لا تدخل النظام' },
+  { id: '861', name: 'المحافظ الخيرية', note: 'الترتيب نفسه · إدارة داخلية كاملة' },
 ]
 
 export const isImplementer = (entityId: string): boolean =>
@@ -50,10 +50,10 @@ export const implementerName = (entityId: string): string =>
 export interface KindDiff { on: string; off: string }
 
 export const IMPLEMENTER_DIFF: KindDiff[] = [
-  { on: 'المشروع بيتنشئ من جوّه', off: 'الجهة بتتقدّم من بوّابتها' },
-  { on: 'مفيش اتفاقية · الدفعات بتتعمل مباشرةً', off: 'الاتفاقية إلزامية قبل أي صرف' },
-  { on: 'مفيش مسوغات من الجهة · المشرف بيرفعها', off: 'الجهة بترفع مسوغات كل دفعة' },
-  { on: 'ممكن يبقى مشروعًا واحدًا أو محفظة', off: 'مشروع واحد في كل مرة' },
+  { on: 'يُنشأ المشروع داخل النظام', off: 'تتقدم الجهة عبر بوابة المنح' },
+  { on: 'لا توجد اتفاقية · تُسجَّل الدفعات مباشرة', off: 'الاتفاقية إلزامية قبل أي صرف' },
+  { on: 'لا ترفع الجهة مسوغات · يرفعها مشرف المنح', off: 'ترفع الجهة مسوغات كل دفعة' },
+  { on: 'قد يكون مشروعًا واحدًا أو محفظة', off: 'مشروع واحد في كل مرة' },
 ]
 
 /* ═══ المحفظة ═══ */
@@ -121,9 +121,9 @@ export const portfolioIssues = (p: Portfolio): PfIssue[] => {
     out.push({
       key: 'sum',
       say: gap > 0
-        ? `مجموع مشاريع المحفظة ناقص ${gap.toLocaleString('en-US')} عن مبلغها.`
-        : `مجموع مشاريع المحفظة زايد ${Math.abs(gap).toLocaleString('en-US')} عن مبلغها.`,
-      rule: 'مجموع الأبناء = مبلغ الأب',
+        ? `مجموع مشاريع المحفظة أقل من مبلغها بـ${gap.toLocaleString('en-US')}.`
+        : `مجموع مشاريع المحفظة أكثر من مبلغها بـ${Math.abs(gap).toLocaleString('en-US')}.`,
+      rule: 'مجموع المشاريع يساوي مبلغ المحفظة',
     })
   }
 
@@ -131,8 +131,8 @@ export const portfolioIssues = (p: Portfolio): PfIssue[] => {
   if (over.length) {
     out.push({
       key: 'over',
-      say: `«${over[0].name}» منصرف عليه أكتر من مخصصه.`,
-      rule: 'الصرف داخل المخصص',
+      say: `المصروف على «${over[0].name}» يتجاوز مخصصه.`,
+      rule: 'الصرف في حدود المخصص',
     })
   }
 

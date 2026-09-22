@@ -23,8 +23,8 @@ const stateOf = (s: LiveSpec): Exclude<Filter, 'all'> =>
 
 const STATE_TAG: Record<Exclude<Filter, 'all'>, { label: string; tone: 'ok' | 'warn' | 'no' }> = {
   live: { label: 'جدول جاهز', tone: 'ok' },
-  form: { label: 'فورم قبل النتيجة', tone: 'warn' },
-  empty: { label: 'فاضية في النظام', tone: 'no' },
+  form: { label: 'نموذج قبل النتيجة', tone: 'warn' },
+  empty: { label: 'فارغة في النظام', tone: 'no' },
 }
 
 const ORDER: Record<string, number> = { live: 0, form: 1, empty: 2 }
@@ -55,8 +55,8 @@ export function Catalog() {
         </div>
         <p className="mut rpsec-n mt-3">
           كل شاشة تقرير في النظام العامل موصوفة هنا بالكامل: أعمدتها بأسمائها،
-          وفلاترها بعدد خياراتها، ورسومها، ومستويات التعمّق لو فيها. اضغط أي
-          شاشة تشوف جدولها بأعمدته الحقيقية، <b>القيم في الصفوف تجريبية</b>،
+          وفلاترها بعدد خياراتها، ورسومها، ومستويات التعمّق إن وُجدت. اضغط أي
+          شاشة لعرض جدولها بأعمدته الحقيقية، <b>القيم في الصفوف تجريبية</b>،
           والأعمدة والفلاتر منقولة كما هي.
         </p>
       </Glass>
@@ -69,15 +69,15 @@ export function Catalog() {
             onChange={(v) => setState((v as Filter) ?? 'all')}
             items={[
               { key: 'live', label: 'جداول جاهزة', count: LIVE_SPECS.filter((s) => stateOf(s) === 'live').length },
-              { key: 'form', label: 'فورم قبل النتيجة', count: LIVE_SPECS.filter((s) => stateOf(s) === 'form').length },
-              { key: 'empty', label: 'فاضية', count: catalogTotals.broken },
+              { key: 'form', label: 'نموذج قبل النتيجة', count: LIVE_SPECS.filter((s) => stateOf(s) === 'form').length },
+              { key: 'empty', label: 'فارغة', count: catalogTotals.broken },
             ]}
           />
         </div>
       </div>
 
       {list.length === 0 ? (
-        <Glass><Empty title="لا شاشة بهذا الوصف." note="جرّب اسمًا آخر أو امسح البحث." /></Glass>
+        <Glass><Empty title="لا توجد شاشة بهذا الوصف." note="ابحث باسم آخر أو امسح البحث." /></Glass>
       ) : (
         <div className="catg">
           {list.map((s) => <Card key={s.key} s={s} />)}

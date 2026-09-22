@@ -101,11 +101,11 @@ export function PlanCard({ p }: { p: PlanRow }) {
         <Tag tone={PLAN_TONE[p.stage]}>{planStageLabel(p.stage)}</Tag>
         {measured
           ? <Tag tone="teal">النسخة المرجعية V<Num>{p.baseline}</Num></Tag>
-          : <span className="sub">في المرحلة دي <Num>{days}</Num> يومًا</span>}
+          : <span className="sub">في هذه المرحلة منذ <Num>{days}</Num> يومًا</span>}
         {/* ⚠️ «المشرف بالنيابة» مش تفصيلة إدارية · الوثيقة بتقول إن
             الجهة هي اللي بتكتب، فاللي اتكتب عنها بيتراجع بعين تانية */}
         {p.drafter === 'supervisor' && <Tag tone="ret">كتبها المشرف بالنيابة</Tag>}
-        {change && <Tag tone="warn">طلب تعديل مستنّي مدير المنح</Tag>}
+        {change && <Tag tone="warn">طلب تعديل بانتظار مدير المنح</Tag>}
       </div>
 
       {/* ── ٣ · ماشية إزاي · **الشريط موجود دايمًا** ──
@@ -120,25 +120,25 @@ export function PlanCard({ p }: { p: PlanRow }) {
           ok={measured ? say.tone === 'ok' : true}
           say={measured
             ? <>{say.say}{spi !== null && <> · أداء الجدول <span className="num">{spi.toFixed(2)}</span></>}</>
-            : 'لسه ما بدأش القياس'}
+            : 'لم يبدأ القياس بعد'}
           src="الجدول"
         />
         <Check
           ok={queue === 0}
           say={queue === 0
-            ? 'مفيش نشاط مستنّي مراجعة'
+            ? 'لا يوجد نشاط بانتظار المراجعة'
             /* ⚠️ الجملة قصيرة عن قصد · السطر بيتقصّ بتلات نقط لو
                طال (عشان الصفوف تفضل بارتفاع واحد)، والمقصوص بيضيّع
                المعلومة نفسها. و«مش محسوب في النسبة» مقولة أصلًا في
                عمود المصدر: «قاعدة 14». */
-            : <><Num>{queue}</Num> نشاطًا مستنّي قبولك</>}
+            : <><Num>{queue}</Num> نشاطًا بانتظار قبولك</>}
           src={<>قاعدة <Num>14</Num></>}
         />
         <Check
           ok={late === 0}
           say={late === 0
-            ? 'مفيش نشاط عدّى موعده'
-            : <><Num>{late}</Num> نشاطًا عدّى موعده</>}
+            ? 'لا يوجد نشاط تجاوز موعده'
+            : <><Num>{late}</Num> نشاطًا تجاوز موعده</>}
           src="المواعيد"
         />
       </ul>

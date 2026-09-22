@@ -129,7 +129,7 @@ export default function PortalPage() {
               onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
             >
               <Icon name={icons.logout} size={15} />
-              خروج
+              تسجيل الخروج
             </button>
           </div>
 
@@ -137,7 +137,7 @@ export default function PortalPage() {
             <div className="pmain">
               <h1 className="ptitle">{r.name}</h1>
               <p className="sub mt-1">
-                طلب تسجيل <CopyId>{r.id}</CopyId> · اتبعت في{' '}
+                طلب تسجيل <CopyId>{r.id}</CopyId> · أُرسل في{' '}
                 <DateText>{r.submittedAt}</DateText>
               </p>
             </div>
@@ -173,7 +173,7 @@ export default function PortalPage() {
                   <div className={`ptl-res${r.state === 'rejected' ? ' no' : ''}`}>
                     <Icon name={icons.alert} size={15} />
                     <div>
-                      <b>{r.state === 'rejected' ? 'سبب الرفض' : 'اللي المؤسسة طلبته'}</b>
+                      <b>{r.state === 'rejected' ? 'سبب الرفض' : 'ما طلبته المؤسسة'}</b>
                       <p>{r.note}</p>
                     </div>
                   </div>
@@ -196,7 +196,7 @@ export default function PortalPage() {
                 {view.editable && !resent && missing.length > 0 && (
                   <>
                     <Head
-                      title="الناقص"
+                      title="المستندات الناقصة"
                       meta={short.length > 0
                         ? <Tag tone="warn"><Num>{short.length}</Num> مستند</Tag>
                         : <Tag tone="ok">اكتمل</Tag>}
@@ -223,8 +223,8 @@ export default function PortalPage() {
 
                 {resent && (
                   <p className="sub cnote">
-                    رجع الطلب للمؤسسة وحالته «قيد المراجعة» · هتوصلك رسالة على
-                    بريد الحساب أول ما يتراجع.
+                    أُرسل الطلب إلى المؤسسة وحالته «قيد المراجعة» · ستصل رسالة إلى
+                    بريد الحساب فور مراجعته.
                   </p>
                 )}
 
@@ -233,7 +233,7 @@ export default function PortalPage() {
                     ناقصًا وتردّ الطلب للمراجعة. */}
                 <footer className="payq-f">
                   <span className="sub payq-when">
-                    اتبعت <DateText>{r.submittedAt}</DateText>
+                    أُرسل <DateText>{r.submittedAt}</DateText>
                     {' · '}<Mono>{r.id}</Mono>
                   </span>
                   {view.act && !resent && (
@@ -241,7 +241,7 @@ export default function PortalPage() {
                       className="btn btn-p"
                       disabled={view.editable && short.length > 0}
                       title={view.editable && short.length > 0
-                        ? 'ارفع الناقص الأول'
+                        ? 'ارفع المستندات الناقصة أولًا'
                         : undefined}
                       onClick={() => {
                         if (r.state === 'approved') navigate(ROUTES.entity(r.entityId ?? '755'))
@@ -249,14 +249,14 @@ export default function PortalPage() {
                       }}
                     >
                       <Icon name={r.state === 'approved' ? icons.entity : icons.send} size={15} />
-                      {r.state === 'approved' ? view.act : 'ابعت الطلب تاني'}
+                      {r.state === 'approved' ? view.act : 'أعد إرسال الطلب'}
                     </button>
                   )}
                 </footer>
               </Glass>
 
               <Glass>
-                <Head title="بيانات الطلب" meta={<span className="sub">زي ما بعتّها</span>} />
+                <Head title="بيانات الطلب" meta={<span className="sub">كما أرسلتها الجهة</span>} />
                 <KV
                   rows={[
                     { k: 'التصنيف', v: r.type },
@@ -272,8 +272,8 @@ export default function PortalPage() {
                 />
                 {!view.editable && (
                   <p className="sub cnote">
-                    البيانات مقفولة دلوقتي · بتتفتح للتعديل لمّا المؤسسة ترجّع
-                    الطلب لك، عشان ما تبقاش بتعدّل نسخة والمراجع بيقرا نسخة تانية.
+                    البيانات مقفلة الآن · وتُفتح للتعديل عندما تعيد المؤسسة الطلب
+                    للاستكمال، حتى لا تُعدَّل نسخة بينما يقرأ المراجع نسخة أخرى.
                   </p>
                 )}
               </Glass>
@@ -328,7 +328,7 @@ export default function PortalPage() {
                   {/* ⚠️ الجملة دي هي اللي بتمنع أكبر سوء فهم في
                       الموديول: «رفعت الشاهد» مش «اتحسب إنجازًا» */}
                   <p className="sub cnote">
-                    بترفعي الشواهد وبتقولي إن النشاط خلص · والاحتساب بيحصل بعد
+                    ترفع الجهة الشواهد وتُبلغ باكتمال النشاط · ويُحتسب الإنجاز بعد
                     مراجعة مشرف المنح وقبوله (القاعدة <span className="num">14</span>).
                   </p>
                   <ul className="ptl-miss ptl-plans">
@@ -342,7 +342,7 @@ export default function PortalPage() {
                         <span className="sub">{planStageLabel(pl.stage)}</span>
                         {waitingReview(pl).length > 0 && (
                           <Tag tone="warn">
-                            <Num>{waitingReview(pl).length}</Num> عند المشرف
+                            <Num>{waitingReview(pl).length}</Num> بانتظار المشرف
                           </Tag>
                         )}
                       </li>
@@ -370,9 +370,9 @@ export default function PortalPage() {
                   messages={thread}
                   entityName={r.name}
                   me="entity"
-                  placeholder="اكتب رسالة للمؤسسة…"
-                  emptyTitle="القناة مفتوحة لو احتجتيها"
-                  emptyNote="اكتبي للمؤسسة لو فيه حاجة مش واضحة في الطلب · مستند مش عارفة تجيبيه منين، أو ملاحظة محتاجة توضيح. وغير كده حالة الطلب بتتابعيها من الكارت جنبك."
+                  placeholder="اكتب رسالة إلى المؤسسة…"
+                  emptyTitle="قناة التواصل مفتوحة عند الحاجة"
+                  emptyNote="راسل المؤسسة إن كان في الطلب ما يحتاج إلى توضيح · مثل مستند لا يُعرف مصدره، أو ملاحظة تحتاج إلى شرح. أما حالة الطلب فتُتابع من البطاقة المجاورة."
                 />
               </Glass>
 
@@ -384,7 +384,7 @@ export default function PortalPage() {
           </div>
 
           <p className="sub tcen cnote">
-            مش طلبك؟{' '}
+            ليس طلبك؟{' '}
             <Link className="lnk" to={ROUTES.entityRegister}>ابدأ طلب تسجيل جديد</Link>
             {' · '}
             {readDate(r.submittedAt)}

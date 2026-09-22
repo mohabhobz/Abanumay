@@ -109,9 +109,9 @@ export const KIND_SAY: Record<LineKind, string> = {
 }
 
 export const KIND_NOTE: Record<LineKind, string> = {
-  base: 'الميزانية نفسها · واحد في الشجرة، بلا أب، وبياخد المبلغ كاملًا',
+  base: 'الميزانية نفسها · بند واحد في الشجرة، بلا أب، ويأخذ المبلغ كاملًا',
   main: 'بند تحته بنود · مسار أو مجال',
-  sub: 'هدف · آخر الشجرة، وعليه يتم الحجز والصرف',
+  sub: 'هدف · آخر الشجرة، وعليه يكون الحجز والصرف',
 }
 
 /** الترتيب في الهرم · الرقم هو الرُّتبة لا المستوى */
@@ -314,13 +314,13 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
   const roots = nodes.filter((n) => n.parentId === null)
   if (roots.length === 0) {
     out.push({
-      text: 'الشجرة مفيهاش بند أساسي · أول بند في أي ميزانية أساسي عند المستوى صفر',
+      text: 'لا يوجد بند أساسي في الشجرة · أول بند في أي ميزانية أساسي عند المستوى صفر',
       why: 'الأساسي هو الميزانية نفسها',
     })
   } else if (roots.length > 1) {
     out.push({
-      text: `في ${roots.length} بنود بلا أب · الميزانية ليها جذر واحد`,
-      why: 'الجذر يونيك',
+      text: `يوجد ${roots.length} بنود بلا أب · للميزانية جذر واحد فقط`,
+      why: 'الجذر واحد لا يتكرر',
     })
   }
 
@@ -329,8 +329,8 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
   if (root && root.allocated !== total) {
     out.push({
       nodeId: root.id,
-      text: `الجذر ${nf.format(root.allocated)} والميزانية ${nf.format(total)}`,
-      why: 'الجذر بياخد كامل المبلغ',
+      text: `مخصص الجذر ${nf.format(root.allocated)} ومبلغ الميزانية ${nf.format(total)}`,
+      why: 'الجذر يأخذ كامل المبلغ',
     })
   }
 
@@ -342,14 +342,14 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     if (n.kind === 'base' && n.parentId) {
       out.push({
         nodeId: n.id,
-        text: `«${n.label}» أساسي وله أب · الأساسي هو الميزانية نفسها فمفيش فوقه حاجة`,
+        text: `«${n.label}» أساسي وله أب · الأساسي هو الميزانية نفسها، فلا يعلوه بند`,
         why: 'الأساسي جذر الشجرة',
       })
     }
     if (n.kind !== 'base' && !n.parentId) {
       out.push({
         nodeId: n.id,
-        text: `«${n.label}» ${KIND_SAY[n.kind]} بلا أب · اللي بلا أب نوعه أساسي`,
+        text: `«${n.label}» ${KIND_SAY[n.kind]} بلا أب · البند الذي بلا أب نوعه أساسي`,
         why: 'الترتيب: أساسي ثم رئيسي ثم فرعي',
       })
     }
@@ -370,7 +370,7 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     if (!n.showLabel && !n.alias?.trim()) {
       out.push({
         nodeId: n.id,
-        text: `«${n.label}» اسمه الداخلي مخفي وبلا اسم ظاهر · هيبان برّه المؤسسة بلا اسم`,
+        text: `«${n.label}» اسمه الداخلي مخفي وليس له اسم ظاهر · سيظهر خارج المؤسسة بلا اسم`,
         why: 'البديل إلزامي مع إخفاء الاسم',
       })
     }
@@ -383,7 +383,7 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     if (n.kind === 'sub' && hasChildren(nodes, n.id)) {
       out.push({
         nodeId: n.id,
-        text: `«${n.label}» فرعي وتحته بنود · اللي تحته بنود بيبقى رئيسيًا`,
+        text: `«${n.label}» فرعي وتحته بنود · البند الذي تحته بنود يكون رئيسيًا`,
         why: 'الفرعي آخر الشجرة',
       })
     }
@@ -396,7 +396,7 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     if (s !== n.allocated) {
       out.push({
         nodeId: n.id,
-        text: `أبناء «${n.label}» مجموعهم ${nf.format(s)} ومخصصه ${nf.format(n.allocated)}`,
+        text: `مجموع أبناء «${n.label}» ${nf.format(s)} ومخصصه ${nf.format(n.allocated)}`,
         why: 'مجموع الأبناء = مخصص الأب',
       })
     }
@@ -413,7 +413,7 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     if (new Set(kids.map((k) => k.kind)).size > 1) {
       out.push({
         nodeId: n.id,
-        text: `«${n.label}» تحته بنود رئيسية وفرعية مع بعض · الأهداف بتتسجّل على البنود اللي تحته لا عليه`,
+        text: `«${n.label}» تحته بنود رئيسية وفرعية معًا · تُسجَّل الأهداف على البنود التي تحته لا عليه`,
         why: 'أبناء البند من نوع واحد',
       })
     }
@@ -423,8 +423,8 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
   const leaves = leavesOf(live)
   if (root && (leaves.length === 0 || (leaves.length === 1 && leaves[0]?.id === root.id))) {
     out.push({
-      text: 'الشجرة بند واحد · محتاجة على الأقل بندًا رئيسيًا وبندًا فرعيًا يتصرف منه',
-      why: 'الصرف بيحصل على آخر الشجرة',
+      text: 'الشجرة بند واحد · تحتاج على الأقل إلى بند رئيسي وبند فرعي يُصرف منه',
+      why: 'الصرف يكون على آخر الشجرة',
     })
   }
 

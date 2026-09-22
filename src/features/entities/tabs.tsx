@@ -31,7 +31,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
             { k: 'المنطقة', v: e.region },
             { k: 'المحافظة / المدينة', v: e.city },
             { k: 'تاريخ التأسيس', v: <DateText>{d.foundedAt}</DateText> },
-            { k: 'تاريخ التسجيل عندنا', v: <DateText>{e.registeredAt}</DateText> },
+            { k: 'تاريخ التسجيل في المؤسسة', v: <DateText>{e.registeredAt}</DateText> },
           ]}
         />
       </Glass>
@@ -89,7 +89,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
           ]}
         />
         <p className="sub mt-3">
-          بيانات التواصل هنا مموّهة عمدًا، المستودع عام.
+          بيانات الاتصال هنا مموّهة عمدًا لأن المستودع عام.
         </p>
       </Glass>
 
@@ -185,7 +185,7 @@ export function EntityDocsTab({ d }: { d: EntityDetail }) {
  */
 export function EntityBanksTab({ d }: { d: EntityDetail }) {
   if (d.banks.length === 0) {
-    return <Glass><Empty title="لا حسابات بنكية مسجّلة." note="الصرف موقوف لحد ما تُسجّل الجهة حسابًا وتُفعّله." /></Glass>
+    return <Glass><Empty title="لا توجد حسابات بنكية مسجّلة." note="الصرف موقوف حتى تسجّل الجهة حسابًا بنكيًا ويُفعَّل." /></Glass>
   }
 
   return (
@@ -299,7 +299,7 @@ export function EntityLogTab({ d }: { d: EntityDetail }) {
 
 export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
   if (rows.length === 0) {
-    return <Glass><Empty title="لا مشاريع لهذه الجهة." note="الجهة مسجّلة لكن ما تقدّمتش بمشروع في هذا النموذج." /></Glass>
+    return <Glass><Empty title="لا توجد مشاريع لهذه الجهة." note="الجهة مسجّلة، لكنها لم تتقدّم بأي مشروع في هذا النموذج." /></Glass>
   }
 
   return (
@@ -370,7 +370,7 @@ export function EntityGoTo({ e }: { e: EntityRow }) {
       <Head title="اذهب إلى" />
       <div className="chips">
         <Link className="chip" to={`${ROUTES.projects}?q=${encodeURIComponent(e.name)}`}>
-          <Icon name={icons.link} size={14} /> مشاريعها في القائمة
+          <Icon name={icons.link} size={14} /> مشاريع الجهة في القائمة
         </Link>
         <Link className="chip" to={`${ROUTES.entities}?region=${encodeURIComponent(e.region)}`}>
           جهات {e.region}

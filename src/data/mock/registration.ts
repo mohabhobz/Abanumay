@@ -27,11 +27,11 @@ import { REG_TYPES, LICENSORS, REGIONS, CITIES_BY_REGION } from './taxonomy'
 export type RegState = 'draft' | 'review' | 'completion' | 'approved' | 'rejected'
 
 export const REG_STATES: { key: RegState; label: string; who: string }[] = [
-  { key: 'draft', label: 'مسودة', who: 'عند الجهة · لسه ما اتبعتش' },
+  { key: 'draft', label: 'مسودة', who: 'عند الجهة · لم يُرسل بعد' },
   { key: 'review', label: 'قيد المراجعة', who: 'عند مسؤول النظام' },
-  { key: 'completion', label: 'بانتظار الاستكمال', who: 'رجعت للجهة بملاحظات' },
-  { key: 'approved', label: 'معتمد', who: 'الجهة اتولدت وبيانات الدخول اتبعتت' },
-  { key: 'rejected', label: 'مرفوض', who: 'مؤرشف بسببه · قاعدة 28' },
+  { key: 'completion', label: 'بانتظار الاستكمال', who: 'أُعيد إلى الجهة مع ملاحظات' },
+  { key: 'approved', label: 'معتمد', who: 'أُنشئت الجهة وأُرسلت بيانات الدخول' },
+  { key: 'rejected', label: 'مرفوض', who: 'مؤرشف مع سبب الرفض · قاعدة 28' },
 ]
 
 export const REG_STATE_SAY: Record<RegState, string> =
@@ -88,10 +88,10 @@ export const PARTNER_KINDS: PartnerKindDef[] = [
     key: 'beneficiary',
     label: 'شريك مستفيد',
     from: 'portal',
-    example: 'الجمعيات والمؤسسات اللي بتتقدّم بمشاريع',
+    example: 'الجمعيات والمؤسسات التي تتقدّم بمشاريع',
     opens: [
-      'بتتقدّم بمشاريع من بوّابتها',
-      'المشروع بيمرّ بدورة الاعتماد كاملة',
+      'تتقدّم بمشاريعها من بوابة المنح',
+      'يمرّ المشروع بدورة الاعتماد كاملة',
       'الاتفاقية إلزامية قبل أي صرف',
     ],
   },
@@ -101,21 +101,21 @@ export const PARTNER_KINDS: PartnerKindDef[] = [
     from: 'internal',
     example: 'منصة إحسان · المحافظ',
     opens: [
-      'ما بتدخلش المنصة · مشرف المنح بيدير مشاريعها داخليًا',
-      'المشروع بيتنشئ من جوّه لا من بوّابة الجهة',
-      'مفيش اتفاقية · الدفعات بتتعمل مباشرةً',
-      'ممكن يكون مشروعًا واحدًا أو محفظة',
+      'لا تدخل النظام · يدير مشرف المنح مشاريعها داخليًا',
+      'يُنشأ المشروع داخليًا لا من بوابة الجهة',
+      'لا توجد اتفاقية · تُصرف الدفعات مباشرةً',
+      'قد يكون مشروعًا واحدًا أو محفظة',
     ],
   },
   {
     key: 'strategic',
     label: 'شريك استراتيجي',
     from: 'internal',
-    example: 'شراكات طويلة المدى بترتيب خاص',
+    example: 'شراكات طويلة المدى بترتيبات خاصة',
     opens: [
-      'بتتسجّل من جوّه · قاعدة 32',
-      'مشاريعها بتتدار داخليًا',
-      'شروط الصرف بترتيب الشراكة لا بالدورة العامة',
+      'تُسجَّل داخليًا · قاعدة 32',
+      'تُدار مشاريعها داخليًا',
+      'شروط الصرف وفق ترتيب الشراكة لا الدورة العامة',
     ],
   },
 ]
@@ -243,17 +243,17 @@ export const REG_STAGES: RegStage[] = [
     key: 'account',
     own: true,
     label: 'حساب الجهة',
-    note: 'إيميل وكلمة مرور · عشان تقدر تسيب الطلب وترجع له، وتتابع حالته بعد الإرسال',
+    note: 'البريد الإلكتروني وكلمة المرور · لحفظ الطلب والعودة إليه، ومتابعة حالته بعد الإرسال',
     fields: [
-      { key: 'acctEmail', label: 'البريد الإلكتروني', kind: 'email', req: true, hint: 'كل الإشعارات بتروح عليه' },
-      { key: 'acctPass', label: 'كلمة المرور', kind: 'password', req: true, hint: '8 حروف على الأقل' },
+      { key: 'acctEmail', label: 'البريد الإلكتروني', kind: 'email', req: true, hint: 'تصل إليه جميع الإشعارات' },
+      { key: 'acctPass', label: 'كلمة المرور', kind: 'password', req: true, hint: '8 أحرف على الأقل' },
       { key: 'acctPass2', label: 'تأكيد كلمة المرور', kind: 'password', req: true },
     ],
   },
   {
     key: 'id',
     label: 'التعريف',
-    note: 'الاسم والترخيص · وده اللي بيثبّت الجهة، وبيتقارن بالتصريح',
+    note: 'الاسم والترخيص · بهما تُثبت هوية الجهة، ويُطابَقان مع التصريح',
     fields: [
       { key: 'name', label: 'اسم الجهة', kind: 'text', req: true, hint: 'مطابق للتصريح' },
       { key: 'type', label: 'تصنيف الجهة', kind: 'select', req: true, options: REG_TYPES },
@@ -271,7 +271,7 @@ export const REG_STAGES: RegStage[] = [
   {
     key: 'dates',
     label: 'التواريخ',
-    note: 'التاريخان الأخيران بيوقفوا التعاقد لو انتهوا · قاعدتا 18 و19 في إجراء التحديث',
+    note: 'انتهاء أيٍّ من التاريخين الأخيرين يوقف التعاقد · القاعدتان 18 و19 في إجراء التحديث',
     fields: [
       { key: 'foundedAt', label: 'تاريخ التأسيس', kind: 'date', req: true },
       { key: 'licenseEndsAt', label: 'تاريخ نهاية الترخيص', kind: 'date', req: true },
@@ -281,7 +281,7 @@ export const REG_STAGES: RegStage[] = [
   {
     key: 'contact',
     label: 'الاتصال والأشخاص',
-    note: 'مدخل البيانات هو اللي بيوصله اسم المستخدم بعد الاعتماد · خطوة 15',
+    note: 'يصل اسم المستخدم إلى مدخل البيانات بعد الاعتماد · خطوة 15',
     fields: [
       { key: 'phone', label: 'الهاتف', kind: 'tel' },
       { key: 'mobile', label: 'جوال الجهة', kind: 'tel', req: true },
@@ -303,13 +303,13 @@ export const REG_STAGES: RegStage[] = [
        الحساب البنكي** إلزامية. */
     key: 'bank',
     label: 'الحسابات البنكية',
-    note: 'قاعدة 11 · حساب أو أكتر، وكل حساب لازم وثيقته · واعتماد البنك منفصل عند المراجعة',
+    note: 'قاعدة 11 · حساب واحد أو أكثر، ولكل حساب وثيقته · ويُعتمد الحساب البنكي منفصلًا عند المراجعة',
     fields: [],
   },
   {
     key: 'docs',
     label: 'المستندات',
-    note: 'الإلزام بيتغيّر مع تصنيف الجهة · تلات مستندات إلزامية للشركات غير الربحية وحدها',
+    note: 'تختلف المستندات الإلزامية باختلاف تصنيف الجهة · ثلاثة منها إلزامية للشركات غير الربحية وحدها',
     fields: [],
   },
 ]
@@ -479,28 +479,28 @@ export interface BankIssue { key: string; say: string }
 export const bankIssues = (banks: RegBank[]): BankIssue[] => {
   const out: BankIssue[] = []
   if (banks.length === 0) {
-    out.push({ key: 'none', say: 'لازم حساب بنكي واحد على الأقل باسم الجهة.' })
+    out.push({ key: 'none', say: 'أضف حسابًا بنكيًا واحدًا على الأقل باسم الجهة.' })
     return out
   }
   const seen = new Map<string, number>()
   banks.forEach((b, i) => {
     const at = `الحساب ${i + 1}`
-    if (!b.bankName) out.push({ key: `${b.id}-name`, say: `${at}: اختار البنك.` })
-    if (!b.bankHolder.trim()) out.push({ key: `${b.id}-holder`, say: `${at}: اسم صاحب الحساب ناقص.` })
+    if (!b.bankName) out.push({ key: `${b.id}-name`, say: `${at}: اختر البنك.` })
+    if (!b.bankHolder.trim()) out.push({ key: `${b.id}-holder`, say: `${at}: أدخل اسم صاحب الحساب.` })
     /* ت-6 · إلزامي عند العميل · وبيدخل في نواقص الإرسال زي غيره
        لأن الحقل اللي اسمه إلزامي وما بيمنعش الإرسال مش إلزامي */
-    if (!b.shortName.trim()) out.push({ key: `${b.id}-short`, say: `${at}: الاسم المختصر ناقص.` })
+    if (!b.shortName.trim()) out.push({ key: `${b.id}-short`, say: `${at}: أدخل الاسم المختصر للحساب.` })
     const iban = b.iban.replace(/\s/g, '')
-    if (!iban) out.push({ key: `${b.id}-iban`, say: `${at}: الآيبان ناقص.` })
+    if (!iban) out.push({ key: `${b.id}-iban`, say: `${at}: أدخل رقم الآيبان.` })
     else if (!/^SA\d{22}$/i.test(iban)) {
-      out.push({ key: `${b.id}-ibanbad`, say: `${at}: الآيبان لازم SA ويليه ٢٢ رقمًا.` })
+      out.push({ key: `${b.id}-ibanbad`, say: `${at}: أدخل رقم آيبان يبدأ بـSA ويليه 22 رقمًا.` })
     } else {
       const before = seen.get(iban.toUpperCase())
       if (before !== undefined) {
-        out.push({ key: `${b.id}-dup`, say: `${at}: نفس آيبان الحساب ${before + 1}.` })
+        out.push({ key: `${b.id}-dup`, say: `${at}: الآيبان مطابق لآيبان الحساب ${before + 1}. تحقّق منه.` })
       } else seen.set(iban.toUpperCase(), i)
     }
-    if (!b.doc) out.push({ key: `${b.id}-doc`, say: `${at}: ${BANK_DOC_LABEL} مطلوبة.` })
+    if (!b.doc) out.push({ key: `${b.id}-doc`, say: `${at}: يلزم رفع ${BANK_DOC_LABEL}.` })
   })
   return out
 }
@@ -597,10 +597,10 @@ export const regRows: RegRequest[] = [
   req('REQ-2026-947141', 'جمعية إحسان للرعاية الصحية', 'جمعية أهلية', HRSD, 'الرياض', 'الخرج', '1004412', 'review', '2026-09-08', ['license', 'board', 'annual'], 0),
   req('REQ-2026-947140', 'مؤسسة نماء الوقفية', 'وقف', AWQAF, 'القصيم', 'بريدة', '1004398', 'review', '2026-09-06', ['license', 'board', 'governance', 'annual'], 78),
   req('REQ-2026-947139', 'شركة تمكين للاستشارات التنموية', 'شركة غير ربحية', TRADE, 'الرياض', 'الرياض', '1004377', 'completion', '2026-08-30', ['license', 'board', 'activity'], 0, {
-    note: 'ناقص شهادة هيئة الزكاة والدخل وشهادة ضريبة القيمة المضافة · إلزاميتان للشركات غير الربحية.',
+    note: 'تنقص شهادة هيئة الزكاة والدخل وشهادة ضريبة القيمة المضافة · وهما إلزاميتان للشركات غير الربحية.',
   }),
   req('REQ-2026-947138', 'جمعية مسارات للتنمية الأسرية', 'جمعية أهلية', HRSD, 'عسير', 'خميس مشيط', '1004360', 'completion', '2026-08-27', ['license'], 55, {
-    note: 'قرار تكليف أعضاء المجلس المرفوع منتهي الصلاحية · مطلوب القرار الساري.',
+    note: 'قرار تكليف أعضاء المجلس المرفوع منتهي الصلاحية · يلزم رفع القرار الساري.',
   }),
   req('REQ-2026-947137', 'مؤسسة البناء الوقفية بالمدينة', 'مؤسسة أهلية', NCNP, 'المدينة المنورة', 'ينبع', '1004341', 'approved', '2026-08-18', ALL_DOCS, 84, {
     decidedAt: '2026-08-24', entityId: '803', reviewDays: 6,
@@ -610,7 +610,7 @@ export const regRows: RegRequest[] = [
   }),
   req('REQ-2026-947135', 'مركز الأثر للدراسات', 'حكومي', 'أخرى', 'الرياض', 'الرياض', '1004310', 'rejected', '2026-08-04', ['license'], 0, {
     decidedAt: '2026-08-10', reviewDays: 6,
-    note: 'الترخيص المرفوع صادر لجهة أخرى · ورقم الترخيص مسجَّل لجهة قائمة بنفس التصنيف (قاعدة 8).',
+    note: 'الترخيص المرفوع صادر لجهة أخرى · ورقم الترخيص مسجَّل لجهة قائمة بالتصنيف نفسه (قاعدة 8).',
   }),
   req('REQ-2026-947134', 'جمعية عطاء بجازان', 'جمعية أهلية', HRSD, 'جيزان', 'صبيا', '1004288', 'approved', '2026-07-21', ALL_DOCS.slice(0, 7), 63, {
     decidedAt: '2026-07-29', entityId: '774', reviewDays: 8,

@@ -101,10 +101,10 @@ export default function AgreementPage() {
             <Glass>
               <Empty
                 title="الاتفاقية غير موجودة."
-                note="يمكن تكون ملغاة أو الرابط قديم."
+                note="ربما أُلغيت، أو أن الرابط قديم."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.agreements)}>
-                    ارجع للصندوق
+                    ارجع إلى الصندوق
                   </button>
                 }
               />
@@ -163,7 +163,7 @@ export default function AgreementPage() {
             </Tag>
             {a.stage !== 'active' && (
               <span className="sub">
-                عند {agrStageWho(a.stage)} من <Num>{days}</Num> يومًا
+                عند {agrStageWho(a.stage)} منذ <Num>{days}</Num> يومًا
                 {limitDays > 0 && <> · حدّ المرحلة <Num>{limitDays}</Num> يومًا</>}
               </span>
             )}
@@ -184,7 +184,7 @@ export default function AgreementPage() {
           {a.stage !== 'active' && (
             <p className="sub cnote tcen">
               مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «إعداد الاتفاقية» حتى
-              الاعتماد النهائي، والقاعدة <span className="num">25</span> في الوثيقة.
+              الاعتماد النهائي، وفق القاعدة <span className="num">25</span> في الوثيقة.
             </p>
           )}
 
@@ -216,8 +216,8 @@ export default function AgreementPage() {
                     <span>{a.ai}</span>
                   </div>
                   <p className="sub cnote">
-                    الذكاء الاصطناعي بيقترح النموذج وبيعبّي المسودة وبيكتشف التعارض
-                    والنقص في البنود (البند 9.5) · والقاعدة 21 بتقول إن مخرجاته
+                    يقترح الذكاء الاصطناعي النموذج ويعبّئ المسودة ويكتشف التعارض
+                    والنقص في البنود (البند 9.5) · وتنص القاعدة 21 على أن مخرجاته
                     <b> أدوات دعم</b> ولا تُعتمد الاتفاقية بناءً عليها وحدها.
                   </p>
                 </Glass>
@@ -226,7 +226,7 @@ export default function AgreementPage() {
               {/* ملاحظة الإعادة · قاعدة 10 بتلزم توضيح السبب */}
               {a.note && (
                 <Glass>
-                  <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">مطلوب استكمالها</Tag>} />
+                  <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">بانتظار الاستكمال</Tag>} />
                   <div className="payq-note">
                     <Icon name={icons.chat} size={15} />
                     <span>{isolate(a.note)}</span>
@@ -251,7 +251,7 @@ export default function AgreementPage() {
               <Glass>
                 <Head
                   title="سجل التدقيق"
-                  meta={<span className="sub">كل انتقال بخطوته في الوثيقة</span>}
+                  meta={<span className="sub">كل انتقال مع رقم خطوته في الوثيقة</span>}
                 />
                 <ol className="paylog">
                   {[...a.log].reverse().map((e, i) => (
@@ -298,12 +298,12 @@ export default function AgreementPage() {
                   rows={[
                     { k: 'نوع الاتفاقية', v: a.kind },
                     { k: 'النموذج المعتمد', v: a.template },
-                    { k: 'الإصدار', v: <><Num>{a.version}</Num> · واحد ساري</> },
+                    { k: 'الإصدار', v: <><Num>{a.version}</Num> · إصدار واحد ساري</> },
                     { k: 'بدء الإعداد', v: <DateText>{a.openedAt}</DateText> },
                   ]}
                 />
                 <p className="sub cnote">
-                  القاعدة 3 بتثبّت النوع عند الإنشاء · تغييره بعد بدء دورة الاعتماد
+                  تُثبّت القاعدة 3 النوع عند الإنشاء · تغييره بعد بدء دورة الاعتماد
                   يستلزم <b>إصدارًا جديدًا</b>.
                 </p>
               </Glass>
@@ -323,13 +323,13 @@ export default function AgreementPage() {
                       v: <Link className="tlink" to={ROUTES.entity(a.entityId)}>{a.entityName}</Link>,
                     },
                     { k: 'ممثل الجهة', v: a.signer.name },
-                    { k: 'صفته', v: a.signer.title },
+                    { k: 'صفة الممثل', v: a.signer.title },
                     { k: 'المخصص المحجوز', v: <><Num>{a.reserved}</Num> <Riyal /></> },
                   ]}
                 />
                 <p className="sub cnote">
-                  النظام بيسترجعها من المشروع والجهة والميزانية · تعديلها يتمّ في
-                  <b> المشروع الأصلي</b> لا هنا، والقاعدة 5 في الوثيقة.
+                  يسترجعها النظام من المشروع والجهة والميزانية · وتُعدَّل في
+                  <b> المشروع الأصلي</b> لا هنا، وفق القاعدة 5 في الوثيقة.
                 </p>
               </Glass>
 
@@ -361,7 +361,7 @@ export default function AgreementPage() {
                   )}
                 </ul>
                 <p className="sub cnote">
-                  القاعدة 19 بتمنع التفعيل وتمكين طلبات الصرف قبل اكتمال كل
+                  تمنع القاعدة 19 التفعيل وتمكين طلبات الصرف قبل اكتمال جميع
                   الاعتمادات والتوقيعات واعتماد النسخة النهائية.
                 </p>
               </Glass>

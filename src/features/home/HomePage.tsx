@@ -116,21 +116,21 @@ export default function HomePage() {
       ? [
           { k: 'ينتظر قرارك', v: String(mine.length), note: `${mine.filter((p) => stagePressure(p) > 1).length} فوق الحدّ`, to: `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`, icon: icons.doc},
           { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`, icon: icons.clock},
-          { k: 'تجاوز الحدّ', v: String(late.length), note: 'في السيستم كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`, icon: icons.alert},
-          { k: 'بلا مالك', v: String(orphan.length), note: 'محتاجة إسناد', to: `${ROUTES.projects}?unowned=1`, icon: icons.users},
+          { k: 'تجاوز الحدّ', v: String(late.length), note: 'في النظام كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`, icon: icons.alert},
+          { k: 'بلا مالك', v: String(orphan.length), note: 'تحتاج إلى إسناد', to: `${ROUTES.projects}?unowned=1`, icon: icons.users},
         ]
       : role.lens === 'team'
         ? [
-            { k: 'ينتظر اعتمادك', v: String(waiting.length), note: 'فوق سقف المشرف', to: `${ROUTES.projects}?status=في الدراسة&sort=amount`, icon: icons.check},
+            { k: 'ينتظر اعتمادك', v: String(waiting.length), note: 'فوق الحد المالي للمشرف', to: `${ROUTES.projects}?status=في الدراسة&sort=amount`, icon: icons.check},
             { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`, icon: icons.clock},
-            { k: 'تجاوز الحدّ', v: String(late.length), note: 'في السيستم كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`, icon: icons.alert},
-            { k: 'بلا مالك', v: String(orphan.length), note: 'محتاجة إسناد', to: `${ROUTES.projects}?unowned=1`, icon: icons.users},
+            { k: 'تجاوز الحدّ', v: String(late.length), note: 'في النظام كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`, icon: icons.alert},
+            { k: 'بلا مالك', v: String(orphan.length), note: 'تحتاج إلى إسناد', to: `${ROUTES.projects}?unowned=1`, icon: icons.users},
           ]
         : [
             { k: 'الملتزم به', v: `${(budget.committed / 1_000_000).toFixed(1)} م`, note: `${pct(usedPct)} من المخصص`, to: ROUTES.budget, icon: icons.budget},
             { k: 'تحت التشغيل', v: String(groups.find((g) => g.key === 'في التشغيل')?.value ?? 0), note: 'مشروعًا جاريًا', to: `${ROUTES.projects}?status=في التشغيل`, icon: icons.pay},
             { k: 'المستفيدون', v: nf.format(doneBeneficiaries), note: 'من المشاريع المكتملة', to: `${ROUTES.projects}?status=مكتمل`, icon: icons.check},
-            { k: 'جهات ملفها ناقص', v: String(shortDocs.length), note: 'الاتفاقيات بتقف عندها', to: `${ROUTES.entities}?docs=1`, icon: icons.entity},
+            { k: 'جهات ملفها ناقص', v: String(shortDocs.length), note: 'تتوقف عندها الاتفاقيات', to: `${ROUTES.entities}?docs=1`, icon: icons.entity},
           ]
 
   return (
@@ -281,8 +281,8 @@ export default function HomePage() {
                 format={(v) => String(v)}
               />
               <p className="chnote">
-                الرقم الصغير وسيط أيام المكوث عند كل مشرف. والمخصص في الرسم فوق من
-                النظام العامل، والباقي محسوب من العيّنة التجريبية.
+                الرقم الصغير هو وسيط أيام المكوث عند كل مشرف. المبلغ المخصص في الرسم
+                أعلاه من النظام العامل، والباقي محسوب من العيّنة التجريبية.
               </p>
             </Glass>
           </div>
@@ -314,12 +314,12 @@ export default function HomePage() {
                   format={(v) => String(v)}
                 />
               ) : (
-                <Empty title="لا اعتذارات في العيّنة." />
+                <Empty title="لا توجد اعتذارات في العيّنة." />
               )}
             </Glass>
 
             <Glass>
-              <Head title="جاهزية الشركاء" meta={<Link className="lnk" to={ROUTES.entities}>الجهات</Link>} />
+              <Head title="جاهزية الجهات" meta={<Link className="lnk" to={ROUTES.entities}>الجهات</Link>} />
               <BarList
                 labelWidth="8.5rem"
                 format={(v) => String(v)}
@@ -353,8 +353,8 @@ export default function HomePage() {
             <div className="col">
               <QuickRead
                 readings={readings}
-                title="قراءة سريعة للسيستم"
-                empty="مفيش حاجة محتاجة انتباهك في السيستم دلوقتي"
+                title="قراءة سريعة للنظام"
+                empty="لا يوجد في النظام الآن ما يحتاج إلى انتباهك."
                 onAsk={() =>
                   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))
                 }
@@ -364,7 +364,7 @@ export default function HomePage() {
             <div className="col">
               <Glass>
                 <Head
-                  title={role.lens === 'own' ? 'طابور قرارك' : 'ينتظر اعتمادك'}
+                  title={role.lens === 'own' ? 'بانتظار قرارك' : 'ينتظر اعتمادك'}
                   meta={
                     <Link
                       className="lnk"
@@ -379,7 +379,7 @@ export default function HomePage() {
                   }
                 />
                 {queue.length === 0 ? (
-                  <Empty title="مفيش مشروع منتظر قرارك." note="كل اللي عندك اتحرّك." />
+                  <Empty title="لا يوجد مشروع بانتظار قرارك." note="تحرّكت كل المشاريع المسندة إليك." />
                 ) : (
                   <div className="qrows">
                     {queue.map((p) => (
@@ -403,11 +403,11 @@ export default function HomePage() {
 
               <Glass>
                 <Head
-                  title="ما يحتاج انتباه"
+                  title="ما يحتاج إلى انتباه"
                   meta={<Link className="lnk" to={`${ROUTES.projects}?overdue=1&sort=waiting`}>الكل</Link>}
                 />
                 {attention.length === 0 ? (
-                  <Empty title="مفيش إجراء متجاوز حدّه." note="كل الأقسام داخل حدودها." />
+                  <Empty title="لا يوجد إجراء تجاوز حدّه الزمني." note="كل الأقسام ضمن حدودها." />
                 ) : (
                   <div className="qrows">
                     {attention.map((p) => (

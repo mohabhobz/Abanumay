@@ -90,7 +90,7 @@ export function SavedViews({
 
           {views.length === 0 ? (
             <div className="fmenu-e sub">
-              مفيش أوضاع محفوظة. اضبط الشاشة زي ما بتحبّها واحفظها باسم، وارجّعها بضغطة.
+              لا توجد أوضاع محفوظة. اضبط الشاشة كما تريد واحفظها باسم لتستعيدها بضغطة.
             </div>
           ) : (
             <div className="fmenu-l" role="menu">
@@ -125,7 +125,7 @@ export function SavedViews({
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save() } }}
-              placeholder="سمّي الوضع الحالي…"
+              placeholder="سمِّ الوضع الحالي…"
               aria-label="اسم الوضع المحفوظ"
             />
             <button className="btn btn-p btn-sm" disabled={!trimmed} onClick={save}>
@@ -137,10 +137,10 @@ export function SavedViews({
               هو الإجابة، وهو كمان اللي بيخلّي قرار «فيو واحد
               بيحفظ كل حاجة» مفهومًا بدل ما يبان نقصًا. */}
           <div className="fviews-n sub">
-            بيتحفظ: الفلتر والبحث والترتيب <b>والتجميع</b> وعدد الصفوف.
+            يُحفظ: الفلتر والبحث والترتيب <b>والتجميع</b> وعدد الصفوف.
           </div>
           {existing && (
-            <div className="fviews-n sub">فيه واحد بنفس الاسم، الحفظ هيحدّثه.</div>
+            <div className="fviews-n sub">يوجد وضع بالاسم نفسه، وسيُحدَّث عند الحفظ.</div>
           )}
         </div>
       )}

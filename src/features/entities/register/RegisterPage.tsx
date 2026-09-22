@@ -257,7 +257,7 @@ export default function RegisterPage() {
       {phase === 'terms' && <>اقرأ الضوابط الخمسة وأقرّ بها قبل فتح النموذج</>}
       {phase === 'form' && (
         draft
-          ? <>اتحفظت <b>كمسودة</b> · القاعدة <Num>12</Num>، وتقدر تكمّلها في أي وقت</>
+          ? <>حُفظ الطلب <b>مسودةً</b> · القاعدة <Num>12</Num>، ويمكن إكماله في أي وقت</>
           : <>
               {/* ⚠️ **العدّ على الرحلة كلها لا على الفورم** ·
                   الجهة عدّت محطة الحساب فعلًا، فبدء العدّ من «١ من
@@ -268,12 +268,12 @@ export default function RegisterPage() {
               {missing.length > 0 && (
                 <>
                   <span className="decsep" />
-                  <span className="sub">ناقص <Num>{missing.length}</Num> قبل الإرسال</span>
+                  <span className="sub">ينقص <Num>{missing.length}</Num> قبل الإرسال</span>
                 </>
               )}
             </>
       )}
-      {phase === 'otp' && <>اكتب الرمز المرسَل للجوال · <Num>{OTP_LEN}</Num> أرقام</>}
+      {phase === 'otp' && <>أدخل الرمز المرسَل إلى الجوال · <Num>{OTP_LEN}</Num> أرقام</>}
       {phase === 'sent' && <>رقم الطلب في هذا النموذج <b>REQ-2026-947142</b></>}
 
     </span>
@@ -285,13 +285,13 @@ export default function RegisterPage() {
         <button
           className="btn btn-p"
           disabled={!agreed}
-          title={agreed ? 'كمّل بإنشاء حساب الجهة' : 'أقرّ بالضوابط أولًا'}
+          title={agreed ? 'تابع إلى إنشاء حساب الجهة' : 'أقرّ بالضوابط أولًا'}
           /* ⚠️ **الضوابط بتودّي لشاشة الحساب لا للفورم** · الحساب
              هو الباب، والفورم بيتحفظ عليه · فالترتيب: ضوابط ←
              حساب ← نموذج. */
           onClick={() => navigate(ROUTES.entityRegisterAccount)}
         >
-          موافقة ومتابعة
+          تابع إلى إنشاء الحساب
         </button>
       )}
 
@@ -310,7 +310,7 @@ export default function RegisterPage() {
               رمز) — سؤال لعمر. */}
           {inside && (
             <button className="btn btn-2" onClick={() => setDraft(true)}>
-              حفظ كمسودة
+              احفظ مسودة
             </button>
           )}
 
@@ -321,7 +321,7 @@ export default function RegisterPage() {
           <button
             className="btn btn-2"
             disabled={first}
-            title={first ? 'دي أول خطوة' : `ارجع لـ${FORM_STAGES[at - 1].label}`}
+            title={first ? 'هذه أول خطوة' : `ارجع إلى ${FORM_STAGES[at - 1].label}`}
             onClick={() => go(-1)}
           >
             {/* في RTL «لورا» يمين · `chevronBack` هو اللي بيرسمها */}
@@ -336,7 +336,7 @@ export default function RegisterPage() {
           {!last ? (
             <button
               className="btn btn-p"
-              title={`كمّل في ${FORM_STAGES[at + 1].label}`}
+              title={`انتقل إلى ${FORM_STAGES[at + 1].label}`}
               onClick={() => go(1)}
             >
               التالي
@@ -350,12 +350,12 @@ export default function RegisterPage() {
                 clash
                   ? 'رقم الترخيص مكرّر · قاعدة 8'
                   : missing.length
-                    ? `ناقص ${missing.length} من الإلزامي · قاعدة 4`
-                    : 'إرسال الطلب للمراجعة'
+                    ? `ينقص ${missing.length} من الحقول الإلزامية · قاعدة 4`
+                    : 'أرسل الطلب للمراجعة'
               }
               onClick={() => setPhase('otp')}
             >
-              إرسال الطلب
+              أرسل الطلب
             </button>
           )}
         </>
@@ -365,10 +365,10 @@ export default function RegisterPage() {
         <button
           className="btn btn-p"
           disabled={otp.length !== OTP_LEN}
-          title={otp.length === OTP_LEN ? 'تأكيد الرمز' : `الرمز ${OTP_LEN} أرقام`}
+          title={otp.length === OTP_LEN ? 'أكّد الرمز' : `الرمز ${OTP_LEN} أرقام`}
           onClick={() => setPhase('sent')}
         >
-          تأكيد الرمز
+          أكّد الرمز
         </button>
       )}
 
@@ -380,7 +380,7 @@ export default function RegisterPage() {
               افتح صندوق الطلبات
             </button>
           : <button className="btn btn-2" onClick={() => navigate(ROUTES.login)}>
-              رجوع لصفحة الدخول
+              العودة إلى صفحة الدخول
             </button>
       )}
     </div>
@@ -409,7 +409,7 @@ export default function RegisterPage() {
               </div>
               <span className="pc-sp" />
               <button className="btn btn-2 btn-sm" onClick={() => navigate(ROUTES.login)}>
-                لديك حساب؟ تسجيل الدخول
+                لديك حساب؟ سجّل الدخول
               </button>
             </div>
           )}
@@ -418,7 +418,7 @@ export default function RegisterPage() {
             <div>
               <h1 className="ptitle">طلب تسجيل جهة جديدة</h1>
               <p className="sub mt-1">
-                اللي بيتعمل هنا <b>طلب</b> لا حساب · الجهة تُنشأ بعد اعتماد
+                ما يُقدَّم هنا <b>طلب</b> لا حساب · وتُنشأ الجهة بعد اعتماد
                 مسؤول النظام وحده (قاعدة <span className="num">2</span>)
               </p>
             </div>
@@ -460,9 +460,9 @@ export default function RegisterPage() {
                       الجهة عشرين دقيقة في نموذج مصيره الرفض. النوتة
                       ن-1 في البريف. */}
                   <p className="sub cnote">
-                    الضوابط من صفحة «ضوابط قبول الجهة» في النظام العامل ·
-                    الوثيقة تبدأ خطواتها الـ<span className="num">17</span> من تعبئة
-                    النموذج مباشرة، فوجود المحطة دي فرق مسجَّل للمراجعة.
+                    الضوابط مأخوذة من صفحة «ضوابط قبول الجهة» في النظام العامل ·
+                    والوثيقة تبدأ خطواتها الـ<span className="num">17</span> من تعبئة
+                    النموذج مباشرة، فوجود هذه المحطة فرق مسجَّل للمراجعة.
                   </p>
                   {foot}
                 </Glass>
@@ -525,8 +525,8 @@ export default function RegisterPage() {
                       بتسأل «أنا عملت الحساب ده ليه». */}
                   {regAccount.email && (
                     <p className="sub tcen">
-                      الطلب بيتحفظ على <Mono>{regAccount.email}</Mono> · تقدر تسيبه
-                      وترجع له، والإشعارات بتروح عليه.
+                      يُحفظ الطلب على <Mono>{regAccount.email}</Mono> · يمكن تركه
+                      والعودة إليه، وتصل إليه الإشعارات.
                     </p>
                   )}
 
@@ -630,7 +630,7 @@ export default function RegisterPage() {
                                         onClick={() => clearDoc(d.key)}
                                       >
                                         <Icon name={icons.close} size={14} />
-                                        إزالة
+                                        أزل الملف
                                       </button>
                                     </div>
                                   ) : (
@@ -641,7 +641,7 @@ export default function RegisterPage() {
                                         onChange={(e) => upload(d.key, e.target.files?.[0])}
                                       />
                                       <Icon name={icons.upload} size={16} />
-                                      <span>اسحب الملف هنا أو اضغط للاختيار</span>
+                                      <span>اسحب الملف هنا أو اضغط لاختياره</span>
                                       <span className="pc-sp" />
                                       {/* الصيغ والحدّ من النظام العامل حرفيًا */}
                                       <span className="sub regdocs-m">
@@ -678,7 +678,7 @@ export default function RegisterPage() {
                           رقم الترخيص <Mono>{val.licenseNo}</Mono> مسجَّل لـ
                           «{clash.name}» بنفس التصنيف · القاعدة{' '}
                           <span className="num">8</span> تمنع التكرار، والقاعدة{' '}
-                          <span className="num">9</span> تستثنيه لو التصنيف مختلف.
+                          <span className="num">9</span> تستثنيه إذا اختلف التصنيف.
                         </p>
                       )}
 
@@ -732,7 +732,7 @@ export default function RegisterPage() {
                   </label>
                   <p className="sub cnote">
                     في هذا النموذج أي <span className="num">{OTP_LEN}</span> أرقام
-                    تُقبل · التحقّق الفعلي عند الباك اند.
+                    تُقبل · والتحقّق الفعلي يجري على الخادم.
                   </p>
                   {foot}
                 </Glass>
@@ -748,13 +748,13 @@ export default function RegisterPage() {
                       المؤسسة، وأربعة عشر حرفًا بتتنقل بالعين ومعاها
                       غلط. */}
                   <p className="sub cnote">
-                    رقمك المرجعي <CopyId>REQ-2026-947142</CopyId> · احتفظ بيه، وهو
-                    اللي بتتابع بيه حالة طلبك.
+                    رقمك المرجعي <CopyId>REQ-2026-947142</CopyId> · احتفظ به، فبه
+                    تُتابَع حالة الطلب.
                   </p>
                   <ul className="payq-ck regsent">
                     <li className="ok">
                       <Icon name={icons.check} size={13} />
-                      <span>وصل الطلب لمسؤول النظام، وحالته «قيد المراجعة»</span>
+                      <span>وصل الطلب إلى مسؤول النظام، وحالته «قيد المراجعة»</span>
                       <span className="payq-r">قاعدة <Num>26</Num></span>
                     </li>
                     <li className="ok">
@@ -771,8 +771,8 @@ export default function RegisterPage() {
                     </li>
                   </ul>
                   <p className="sub cnote">
-                    السطر الأخير مكتوب عمدًا: الجهة اللي تفتكر إنها اتسجّلت
-                    بتفضل مستنية بريدًا مش جاي، وبعدين تتصل تسأل.
+                    السطر الأخير مكتوب عمدًا: الجهة التي تظن أنها سُجّلت تبقى
+                    بانتظار بريد لن يصل، ثم تتصل لتسأل.
                   </p>
                   {foot}
                 </Glass>
@@ -804,7 +804,7 @@ export default function RegisterPage() {
                 <AnalysisCard
                   title="مراجعة مساعد أبانمي"
                   cta="راجع طلبي"
-                  empty="الخطوة دي مفيهاش مانع · كمّل للّي بعدها."
+                  empty="لا يوجد مانع في هذه الخطوة · انتقل إلى الخطوة التالية."
                   ask={inside}
                   onAsk={() => window.dispatchEvent(
                     new KeyboardEvent('keydown', { key: 'k', metaKey: true }),

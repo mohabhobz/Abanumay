@@ -69,7 +69,7 @@ export function QuickRead({
   const calm: Reading[] = [{
     id: 'qr-calm',
     kind: 'note',
-    text: empty ?? 'مفيش ملاحظات في النطاق الحالي · وسّع الفلتر تشوف أكتر.',
+    text: empty ?? 'لا توجد ملاحظات في النطاق الحالي. وسّع الفلتر لعرض المزيد.',
   }]
   const list = readings.length > 0 ? readings : calm
 
@@ -85,7 +85,7 @@ export function QuickRead({
       <span className="qr-title">{title}</span>
       {flags > 0 && (
         <span className="qr-count no">
-          <span className="num">{flags}</span> تحتاج انتباه
+          <span className="num">{flags}</span> تحتاج إلى انتباه
         </span>
       )}
       {/* العدّاد من القايمة المعروضة · وفي الحالة الهادية بيقول
@@ -141,7 +141,7 @@ export function QuickRead({
         <button
           className="qr-fold"
           aria-expanded={open}
-          aria-label={open ? 'طيّ القراءة' : 'فتح القراءة'}
+          aria-label={open ? 'إخفاء القراءة' : 'إظهار القراءة'}
           onClick={() => setOpen((x) => !x)}
         >
           <Icon name={open ? icons.chevronUp : icons.chevronDown} size={16} />

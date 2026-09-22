@@ -56,7 +56,7 @@ export default function PlanEditPage() {
           <div className="screen col">
             <BackTo label="الخطط" onClick={() => navigate(ROUTES.plans)} />
             <Glass>
-              <Empty title="لا توجد خطة بهذا الرقم." note="ارجع لصندوق الخطط." />
+              <Empty title="لا توجد خطة بهذا الرقم." note="تحقّق من رقم الخطة، أو عُد إلى صندوق الخطط." />
             </Glass>
           </div>
         </div>
@@ -84,27 +84,27 @@ export default function PlanEditPage() {
                   من <DateText>{p.baselineAt ?? ''}</DateText>
                 </p>
               </div>
-              <Tag tone="ret">مقفولة · قاعدة <Num>21</Num></Tag>
+              <Tag tone="ret">مغلقة · قاعدة <Num>21</Num></Tag>
             </header>
 
             <Glass>
               <Head
-                title="الهيكل مقفول بعد الاعتماد"
+                title="الهيكل مغلق بعد الاعتماد"
                 meta={<Tag tone="ret">قاعدة <Num>21</Num></Tag>}
               />
               {/* ⚠️ السبب مكتوب لا مفترَض · القفل من غير سبب بيتقري
                   عطلًا، والمستخدم بيدوّر على طريقة يلفّ حواليها */}
               <p className="sub cnote">
-                المراحل والأنشطة والتواريخ والتكلفة اتثبّتوا في النسخة المرجعية
-                لما مدير المنح اعتمد الخطة · والانحراف كله بيتقاس عليها. لو
-                عدّلناها هنا، «متأخّر عن الخطة» تفقد معناها لأن الخطة نفسها
-                بتتغيّر مع التأخير.
+                ثُبّتت المراحل والأنشطة والتواريخ والتكلفة في النسخة المرجعية
+                عند اعتماد مدير المنح للخطة، ويُقاس عليها كل انحراف. ولو عُدّلت
+                هنا لفقدت عبارة «متأخر عن الخطة» معناها، لأن الخطة نفسها
+                ستتغيّر مع التأخير.
               </p>
               <p className="sub cnote">
                 {/* ⚠️ النجمتان ما بيبقوش عريضًا في JSX · ده مش
                     ماركداون، والنصّ بيطلع بنجومه. `<b>` هي الصح. */}
-                اللي مفتوح دلوقتي هو <b>تحديث التنفيذ</b>: حالة النشاط ورفع
-                الشواهد · وده مكانه{' '}
+                المتاح الآن هو <b>تحديث التنفيذ</b>: حالة النشاط ورفع
+                الشواهد، ومكانه{' '}
                 <Link to={ROUTES.plan(p.id)} className="lnk">صفحة الخطة</Link>.
               </p>
 
@@ -123,8 +123,8 @@ export default function PlanEditPage() {
                     />
                   </span>
                   <span className="sub regf-h">
-                    الطلب بيروح لمدير المنح · والموافقة بترفع رقم النسخة
-                    المرجعية لـV<span className="num">{p.baseline + 1}</span>
+                    يُرسل الطلب إلى مدير المنح، واعتماده يرفع رقم النسخة
+                    المرجعية إلى V<span className="num">{p.baseline + 1}</span>
                   </span>
                 </label>
               </div>
@@ -132,19 +132,19 @@ export default function PlanEditPage() {
               <div className="regfoot">
                 <span className="decsent sub">
                   {p.changes.filter((c) => c.state === 'waiting').length > 0
-                    ? 'فيه طلب مستنّي مدير المنح بالفعل'
-                    : 'مفيش طلبات مستنّية'}
+                    ? 'يوجد طلب بانتظار مدير المنح بالفعل'
+                    : 'لا توجد طلبات معلّقة'}
                 </span>
                 <div className="rowf gp-2">
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.plan(p.id))}>
-                    رجوع للخطة
+                    العودة إلى الخطة
                   </button>
                   <button
                     className="btn btn-p"
                     disabled={!ask.trim() || sent}
                     onClick={() => { askChange(p.id, ask.trim()); setSent(true) }}
                   >
-                    {sent ? 'الطلب اتبعت' : 'ابعت طلب التعديل'}
+                    {sent ? 'أُرسل الطلب' : 'أرسل طلب التعديل'}
                   </button>
                 </div>
               </div>
@@ -166,7 +166,7 @@ export default function PlanEditPage() {
             <div>
               <h1 className="ptitle">تحرير خطة {p.projectName}</h1>
               <p className="sub mt-1">
-                {planStageLabel(p.stage)} · الهيكل مفتوح لحدّ اعتماد مدير المنح ·{' '}
+                {planStageLabel(p.stage)} · الهيكل مفتوح حتى اعتماد مدير المنح ·{' '}
                 قيمة المنحة <Money sm>{grant}</Money>
               </p>
             </div>
@@ -181,7 +181,7 @@ export default function PlanEditPage() {
             <Glass>
               <Empty
                 title="الخطة بلا مراحل."
-                note="المرحلة هي وحدة القياس · ومن غيرها مفيش إنجاز يتحسب ولا نسبة تتقارن."
+                note="المرحلة هي وحدة القياس، ومن دونها لا يُحتسب إنجاز ولا تُقارن نسبة."
                 actions={
                   <button
                     className="btn btn-p"
@@ -269,7 +269,7 @@ export default function PlanEditPage() {
                           aria-label={`تكلفة المرحلة ${i + 1}`}
                         />
                       </span>
-                      <span className="sub regf-h">مجموع المراحل لازم يساوي قيمة المنحة</span>
+                      <span className="sub regf-h">يجب أن يساوي مجموع تكلفة المراحل قيمة المنحة</span>
                     </label>
                   </div>
 
@@ -356,7 +356,7 @@ export default function PlanEditPage() {
                               })}
                             />
                             <span className="sub regf-h">
-                              اللي الجهة لازم ترفعه قبل ما تقول إن النشاط خلص
+                              ما يلزم الجهة رفعه قبل إعلان اكتمال النشاط
                             </span>
                           </label>
                         </div>
@@ -421,26 +421,26 @@ export default function PlanEditPage() {
                     </li>
                   ))}
                   {issues.length > 8 && (
-                    <li className="sub">و<span className="num">{issues.length - 8}</span> كمان</li>
+                    <li className="sub">و<span className="num">{issues.length - 8}</span> ملاحظات أخرى</li>
                   )}
                 </ul>
               )}
 
               <div className="regfoot">
                 <span className="decsent sub">
-                  الحفظ بيسيب الخطة مسودة · والإرسال بيوديها لمراجعة مشرف المنح
+                  الحفظ يُبقي الخطة مسودة، والإرسال يرسلها إلى مشرف المنح للمراجعة
                 </span>
                 <div className="rowf gp-2">
                   <button
                     className="btn btn-2"
                     onClick={() => { savePhases(p.id, phases); navigate(ROUTES.plan(p.id)) }}
                   >
-                    احفظ كمسودة
+                    احفظ المسودة
                   </button>
                   <button
                     className="btn btn-p"
                     disabled={issues.length > 0}
-                    title={issues.length > 0 ? issues[0].say : 'الخطة مستوفية · تروح لمشرف المنح'}
+                    title={issues.length > 0 ? issues[0].say : 'الخطة مستوفية وستُرسل إلى مشرف المنح'}
                     onClick={() => {
                       savePhases(p.id, phases)
                       sendPlan(p.id)

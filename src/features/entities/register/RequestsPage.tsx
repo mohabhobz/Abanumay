@@ -168,7 +168,7 @@ export default function RequestsPage() {
             </div>
             <Link className="btn btn-p" to={ROUTES.entityRegister}>
               <Icon name={icons.plus} size={16} />
-              تسجيل جهة جديدة
+              سجّل جهة جديدة
             </Link>
           </header>
 
@@ -176,7 +176,7 @@ export default function RequestsPage() {
             variant="bar"
             title="قراءة سريعة للطلبات"
             readings={readings}
-            empty="الطلبات في النطاق الحالي ملفاتها مكتملة ومفيش منها واقف · وسّع الفلتر تشوف أكتر."
+            empty="ملفات الطلبات في النطاق الحالي مكتملة، ولا يوجد طلب متوقف. وسّع الفلتر لعرض المزيد."
           />
 
           {/* ⚠️ الأربعة دي من مؤشرات الإجراء الستة · والاتنين
@@ -198,7 +198,7 @@ export default function RequestsPage() {
             <Stat
               label="المعادة للاستكمال"
               value={<Num>{pct(k.backPct)}</Num>}
-              note="مؤشر 5 · وقوف نواقص لا رفض"
+              note="مؤشر 5 · توقف لاستكمال النواقص لا رفض"
               bar={{ w: `${k.backPct}%`, c: 'var(--warn)' }}
             />
             <Stat
@@ -331,7 +331,7 @@ export default function RequestsPage() {
             <Glass>
               <Empty
                 title="لا توجد طلبات بهذه الفلاتر."
-                note="جرّب توسيع النطاق، أو اختر حالة تانية من الشرائح فوق."
+                note="وسّع النطاق، أو اختر حالة أخرى من الشرائح أعلاه."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>

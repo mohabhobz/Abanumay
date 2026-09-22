@@ -215,7 +215,7 @@ export default function AgreementsPage() {
             variant="bar"
             title="قراءة سريعة للاتفاقيات"
             readings={readings}
-            empty="مفيش اتفاقية موقوفة عن الاعتماد في النطاق الحالي · وسّع الفلتر تشوف أكتر."
+            empty="لا توجد اتفاقية موقوفة عن الاعتماد في النطاق الحالي · وسّع الفلتر لعرض المزيد."
           />
 
           {/* ⚠️ الأربعة دي هي مؤشرات الوثيقة الأربعة (9.7)، لا أربعة
@@ -380,7 +380,7 @@ export default function AgreementsPage() {
             <Glass>
               <Empty
                 title="لا توجد اتفاقيات بهذه الفلاتر."
-                note="جرّب توسيع النطاق، أو اختر مرحلة تانية من الشرائح فوق."
+                note="وسّع النطاق، أو اختر مرحلة أخرى من الشرائح أعلاه."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -420,7 +420,7 @@ export default function AgreementsPage() {
                   <div className="paygrp-h">
                     <h2>{meta?.label ?? 'ملغاة'}</h2>
                     <span className="sub">
-                      {meta?.who ? `عند ${meta.who}` : 'مفعّلة'} ·{' '}
+                      {meta?.who ? `عند ${meta.who}` : 'سارية'} ·{' '}
                       <span className="num">{g.rows.length}</span> اتفاقية ·{' '}
                       خطوات <span className="num">{meta?.steps}</span> في الوثيقة
                     </span>
@@ -440,7 +440,7 @@ export default function AgreementsPage() {
               التنفيذي» ومشروعها مكتوب عليه «إعداد الاتفاقية». */}
           <p className="sub tcen">
             مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «إعداد الاتفاقية» حتى
-            اعتمادها النهائي، والقاعدة <span className="num">25</span> في الوثيقة.
+            اعتمادها النهائي، وفق القاعدة <span className="num">25</span> في الوثيقة.
             وإجمالي قيمة الاتفاقيات تحت الإعداد{' '}
             <span className="num">{nf.format(k.openSum)}</span> ريال.
           </p>

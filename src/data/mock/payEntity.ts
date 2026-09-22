@@ -36,17 +36,17 @@ export interface OriginDef {
 export const ORIGINS: OriginDef[] = [
   {
     key: 'entity',
-    label: 'الوثيقة · الجهة بتبدأ',
+    label: 'الوثيقة · الجهة تبدأ',
     who: 'الجهة المستفيدة',
-    flow: ['الجهة بتصدر الطلب ومعاه مسوغاتها', 'مشرف المنح', 'مدير المنح', 'الإدارة المالية'],
-    note: 'الطابور بييجي للمشرف · ما بيفتكرش يعمله',
+    flow: ['تُصدر الجهة الطلب مع مسوغاته', 'مشرف المنح', 'مدير المنح', 'الإدارة المالية'],
+    note: 'تصل الطلبات إلى المشرف دون أن يضطر إلى تذكّرها',
   },
   {
     key: 'supervisor',
-    label: 'الكرنت · المشرف بيبدأ',
+    label: 'النظام الحالي · المشرف يبدأ',
     who: 'مشرف المنح',
-    flow: ['المشرف بيعمل الطلب', 'يروح للجهة تحطّ المسوغات', 'يرجع للمشرف', 'الإدارة المالية'],
-    note: 'المشرف بيفتكر · والجهة بتستنّى طلبًا ما تعرفش إمتى ييجي',
+    flow: ['ينشئ المشرف الطلب', 'يُرسل إلى الجهة لإرفاق المسوغات', 'يعود إلى المشرف', 'الإدارة المالية'],
+    note: 'يعتمد على تذكّر المشرف · والجهة تنتظر طلبًا لا تعرف موعده',
   },
 ]
 
@@ -89,18 +89,18 @@ export interface EntityStateDef {
 
 export const ENTITY_STATES: EntityStateDef[] = [
   {
-    key: 'draft', label: 'مسودة', act: 'كمّل البيانات وابعت',
-    tone: 'mute', inner: 'لسه ما اتبعتتش · عند الجهة',
+    key: 'draft', label: 'مسودة', act: 'أكمل البيانات وأرسل الطلب',
+    tone: 'mute', inner: 'لم يُرسل بعد · لدى الجهة',
   },
   {
     key: 'inflight', label: 'تحت إجراء الدفع', act: '', waiting: true,
-    tone: 'ret', inner: 'مراجعة المشرف · مدير المنح · المالية',
+    tone: 'ret', inner: 'مشرف المنح · مدير المنح · الإدارة المالية',
   },
   {
-    key: 'complete', label: 'لاستكمال البيانات', act: 'ارفع الناقص وابعت تاني',
-    tone: 'warn', inner: 'مُعاد من المشرف',
+    key: 'complete', label: 'لاستكمال البيانات', act: 'ارفع الناقص وأعد الإرسال',
+    tone: 'warn', inner: 'أعاده مشرف المنح',
   },
-  { key: 'paid', label: 'مدفوع', act: '', tone: 'ok', inner: 'تم التحويل' },
+  { key: 'paid', label: 'مدفوع', act: '', tone: 'ok', inner: 'حُوّل المبلغ' },
   { key: 'rejected', label: 'مرفوض', act: '', tone: 'no', inner: 'رفض نهائي' },
 ]
 
@@ -148,14 +148,14 @@ export const PAY_PROOFS: PayProof[] = [
     label: 'إثبات التحويل',
     by: 'الإدارة المالية',
     required: true,
-    why: 'المخرج اللي بيحوّل الطلب لـ«مدفوع» · بلاه الدفعة ما اتقفلتش',
+    why: 'به تتحول حالة الطلب إلى «مدفوع» · ولا تُغلق الدفعة دونه',
   },
   {
     key: 'receipt',
     label: 'سند القبض',
     by: 'الجهة المستفيدة',
     required: false,
-    why: 'ورقة بترويسة الجهة أو إشعار البنك · بيقفل الحلقة عندها لا عندنا',
+    why: 'خطاب بترويسة الجهة أو إشعار البنك · يُغلق الحلقة لدى الجهة لا لدى المؤسسة',
   },
 ]
 
@@ -207,12 +207,12 @@ export interface BankIssue { say: string; rule: string }
 export const bankIssues = (r: PayRequest, chosen: EntityBank | undefined): BankIssue[] => {
   const out: BankIssue[] = []
   if (!chosen) {
-    out.push({ say: 'ما اتحدّدش حساب للدفعة.', rule: 'ح-5' })
+    out.push({ say: 'لم يُحدَّد حساب للدفعة.', rule: 'ح-5' })
     return out
   }
   if (!chosen.active) {
     out.push({
-      say: `«${chosen.purpose}» حساب غير مفعَّل · وده السبب الوحيد المسمّى لإعادة إذن الصرف.`,
+      say: `حساب «${chosen.purpose}» غير مفعَّل · وهو السبب الوحيد المحدد لإعادة إذن الصرف.`,
       rule: 'النظام العامل',
     })
   }

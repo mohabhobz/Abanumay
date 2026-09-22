@@ -106,7 +106,7 @@ export const P_STAGES: PStageDef[] = [
   {
     key: 'who',
     label: 'الجهة',
-    note: 'مين مقدّم المشروع · والحدّ بيتقاس هنا قبل أي حاجة تانية',
+    note: 'الجهة التي تقدّم المشروع · ويُتحقَّق هنا من حدّ مشاريعها قبل أي خطوة أخرى',
     fields: [
       { key: 'entityId', label: 'الجهة المستفيدة', kind: 'select', req: true },
     ],
@@ -114,19 +114,19 @@ export const P_STAGES: PStageDef[] = [
   {
     key: 'what',
     label: 'تعريف المشروع',
-    note: 'الاسم والتصنيف · والمجال تابع للمسار، والهدف تابع للمجال',
+    note: 'الاسم والتصنيف · المجال يتبع المسار، والهدف يتبع المجال',
     fields: [
-      { key: 'name', label: 'اسم المشروع', kind: 'text', req: true, hint: 'زي ما هيظهر في الاتفاقية' },
+      { key: 'name', label: 'اسم المشروع', kind: 'text', req: true, hint: 'كما سيظهر في الاتفاقية' },
       { key: 'track', label: 'المسار', kind: 'select', req: true, options: TRACKS },
       { key: 'field', label: 'المجال', kind: 'select', req: true, dependsOn: 'track' },
       { key: 'goal', label: 'الهدف', kind: 'select', req: true, dependsOn: 'field' },
-      { key: 'summary', label: 'وصف المشروع', kind: 'long', req: true, hint: 'المشكلة والحل في فقرة' },
+      { key: 'summary', label: 'وصف المشروع', kind: 'long', req: true, hint: 'المشكلة والحل في فقرة واحدة' },
     ],
   },
   {
     key: 'where',
     label: 'النطاق والمستفيدون',
-    note: 'فين بيتنفّذ ومين بيستفيد · ودي اللي تقارير الأثر بتتبني عليها',
+    note: 'مكان التنفيذ والمستفيدون · وعليهما تُبنى تقارير الأثر',
     fields: [
       { key: 'region', label: 'المنطقة', kind: 'select', req: true, options: REGIONS },
       { key: 'city', label: 'المحافظة / المدينة', kind: 'select', req: true, dependsOn: 'region' },
@@ -137,12 +137,12 @@ export const P_STAGES: PStageDef[] = [
   {
     key: 'money',
     label: 'التمويل',
-    note: 'المطلوب وتكلفة المستفيد · والمعتمد بيتحدّد في الدراسة لا هنا',
+    note: 'المبلغ المطلوب وتكلفة المستفيد · ويُحدَّد المبلغ المعتمد في الدراسة لا هنا',
     fields: [
       { key: 'amountRequested', label: 'المبلغ المطلوب', kind: 'num', req: true, unit: 'ريال' },
       {
         key: 'selfFund', label: 'مساهمة الجهة', kind: 'num', unit: 'ريال',
-        hint: 'اختياري · بيرفع أولوية المشروع في الدراسة',
+        hint: 'اختياري · يرفع أولوية المشروع في الدراسة',
       },
     ],
   },
@@ -151,12 +151,12 @@ export const P_STAGES: PStageDef[] = [
     label: 'المدة',
     note: 'قاعدة 13 · تاريخ التنفيذ الفعلي مستقل عن تاريخ التقديم',
     fields: [
-      { key: 'startAt', label: 'بداية التنفيذ الفعلي', kind: 'date', req: true, hint: 'مش تاريخ تقديم الطلب' },
+      { key: 'startAt', label: 'بداية التنفيذ الفعلي', kind: 'date', req: true, hint: 'يختلف عن تاريخ تقديم الطلب' },
       { key: 'endAt', label: 'نهاية التنفيذ', kind: 'date', req: true },
       {
-        key: 'multiYear', label: 'يمتدّ لأكتر من سنة مالية', kind: 'select',
+        key: 'multiYear', label: 'يمتد لأكثر من سنة مالية', kind: 'select',
         options: ['لا', 'نعم'],
-        hint: 'بيتأكّد في الدراسة (خطوة 14–15)',
+        hint: 'يُتحقَّق منه في الدراسة (الخطوتان 14 و15)',
       },
     ],
   },
@@ -199,14 +199,14 @@ export const projectIssues = (val: PValues): PIssue[] => {
   if (ent?.capped) {
     out.push({
       key: 'cap',
-      say: `«${ent.name}» عندها ${ent.open} مشاريع مفتوحة · الحدّ ${ENTITY_PROJECT_CAP} في الفترة.`,
+      say: `لدى «${ent.name}» ${ent.open} مشاريع مفتوحة، والحدّ ${ENTITY_PROJECT_CAP} مشاريع في الفترة. اختر جهة أخرى أو انتظر إغلاق أحد مشاريعها.`,
       rule: 'قاعدة 12',
     })
   }
   if (ent?.inactive) {
     out.push({
       key: 'inactive',
-      say: `«${ent.name}» غير مفعَّلة · الجهة الموقوفة ما تقدّمش مشاريع.`,
+      say: `«${ent.name}» غير نشطة، ولا تُقبل مشاريع من جهة غير نشطة.`,
       rule: 'تسجيل الجهات',
     })
   }
@@ -214,7 +214,7 @@ export const projectIssues = (val: PValues): PIssue[] => {
   /* ⚠️ المقارنة على النصّ مباشرةً · التواريخ هنا `yyyy-mm-dd`
      فالترتيب المعجمي هو الترتيب الزمني، ومفيش داعي لـ`Date` */
   if (val.startAt && val.endAt && val.endAt < val.startAt) {
-    out.push({ key: 'dates', say: 'نهاية التنفيذ قبل بدايته.', rule: 'قاعدة 13' })
+    out.push({ key: 'dates', say: 'تاريخ نهاية التنفيذ يسبق تاريخ بدايته. عدّل أحد التاريخين.', rule: 'قاعدة 13' })
   }
 
   const asked = Number(val.amountRequested) || 0
@@ -224,7 +224,7 @@ export const projectIssues = (val: PValues): PIssue[] => {
     if (per > 50_000) {
       out.push({
         key: 'per',
-        say: `تكلفة المستفيد ${per.toLocaleString('en-US')} ريال · راجع العدد أو المبلغ.`,
+        say: `تكلفة المستفيد ${per.toLocaleString('en-US')} ريال، وهي مرتفعة. راجع عدد المستفيدين أو المبلغ المطلوب.`,
         rule: 'مؤشر الأثر',
       })
     }

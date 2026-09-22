@@ -54,7 +54,7 @@ export default function LoginPage() {
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!user.trim() || !pass) {
-      fail('اكتب اسم المستخدم وكلمة المرور')
+      fail('أدخل اسم المستخدم وكلمة المرور')
       return
     }
     setErr('')
@@ -123,7 +123,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="llink"
-                title="الاستعادة بتتعمل من إدارة النظام في النموذج ده"
+                title="تُستعاد كلمة المرور عن طريق مدير النظام في هذا النموذج"
               >
                 نسيت كلمة المرور؟
               </button>
@@ -147,7 +147,7 @@ export default function LoginPage() {
             >
               تسجيل جهة جديدة
             </button>
-            <p className="lnote sub">للجمعيات والمؤسسات التي لم تسجّل في المنصة بعد</p>
+            <p className="lnote sub">للجهات التي لم تسجّل في بوابة المنح بعد</p>
           </div>
     </AuthShell>
   )

@@ -261,7 +261,7 @@ export default function EntitiesListPage() {
     .flatMap(([k, label]) => readList(v[k]).map((value) => ({ k, label, value })))
 
   const flags = (
-    [['docs', 'ملف ناقص'], ['running', 'لها مشاريع تشغيل']] as [keyof Params, string][]
+    [['docs', 'ملف ناقص'], ['running', 'لها مشاريع تحت التشغيل']] as [keyof Params, string][]
   ).filter(([k]) => v[k] === '1')
 
   return (
@@ -312,7 +312,7 @@ export default function EntitiesListPage() {
             variant="bar"
             title="قراءة سريعة للقائمة"
             readings={readings}
-            empty="الجهات في النطاق الحالي ملفاتها مكتملة وتراخيصها سارية · وسّع الفلتر تشوف أكتر."
+            empty="ملفات الجهات في النطاق الحالي مكتملة وتراخيصها سارية · وسّع الفلتر لعرض المزيد."
           />
 
           {/* ═══ اللقطات المحفوظة · صفّ واحد ═══ */}
@@ -349,7 +349,7 @@ export default function EntitiesListPage() {
                 options={SORTS.slice(1).map((x) => ({ value: x.key, label: x.label }))}
                 onChange={(x) => set({ sort: x })}
               />
-              <Toggle label="لها مشاريع تشغيل" on={v.running === '1'} onChange={(on) => set({ running: on ? '1' : undefined })} />
+              <Toggle label="لها مشاريع تحت التشغيل" on={v.running === '1'} onChange={(on) => set({ running: on ? '1' : undefined })} />
               <button
                 className={`fchip${advOpen ? ' on' : ''}`}
                 onClick={() => set({ adv: advOpen ? undefined : '1' })}

@@ -55,10 +55,10 @@ export default function RegisterAccountPage() {
     /* ⚠️ **الشروط بتتقال بالترتيب اللي المستخدم بيقع فيه** · رسالة
        واحدة في المرة، وبتسمّي الحقل · «تأكد من البيانات» بتخلّيه
        يدوّر بعينه على اللي هو غلط فيه. */
-    if (!email.trim()) { fail('اكتب البريد الإلكتروني للجهة'); return }
-    if (!email.includes('@')) { fail('البريد الإلكتروني مش بالشكل الصحيح'); return }
-    if (pass.length < MIN_PASS) { fail(`كلمة المرور ${MIN_PASS} حروف على الأقل`); return }
-    if (pass !== pass2) { fail('كلمتا المرور مش متطابقتين'); return }
+    if (!email.trim()) { fail('أدخل البريد الإلكتروني للجهة'); return }
+    if (!email.includes('@')) { fail('أدخل بريدًا إلكترونيًا صحيحًا، مثل name@org.sa'); return }
+    if (pass.length < MIN_PASS) { fail(`أدخل كلمة مرور من ${MIN_PASS} أحرف على الأقل`); return }
+    if (pass !== pass2) { fail('كلمتا المرور غير متطابقتين. أعد إدخال التأكيد.'); return }
 
     setErr('')
     setBusy(true)
@@ -91,7 +91,7 @@ export default function RegisterAccountPage() {
           المجلس والآيبان مش حاجات حافظها، فهي بتبدأ وتقوم تجيب
           ورقة وترجع. والحساب هو اللي بيخلّي «ترجع» دي ممكنة. */}
       <p className="lnote sub lwhy">
-        الطلب بيتحفظ على الحساب ده · تقدر تسيبه في أي خطوة وترجع له، وتتابع
+        يُحفظ الطلب على هذا الحساب · يمكن تركه في أي خطوة والعودة إليه، ومتابعة
         حالته بعد الإرسال.
       </p>
 
@@ -106,7 +106,7 @@ export default function RegisterAccountPage() {
           onChange={setEmail}
           autoComplete="email"
           enterKeyHint="next"
-          hint="كل الإشعارات بتروح عليه"
+          hint="تصل إليه جميع الإشعارات"
         />
         <AuthField
           id="ra-pass"
@@ -119,7 +119,7 @@ export default function RegisterAccountPage() {
           autoComplete="new-password"
           enterKeyHint="next"
           trailing={eye}
-          hint={<><span className="num">{MIN_PASS}</span> حروف على الأقل</>}
+          hint={<><span className="num">{MIN_PASS}</span> أحرف على الأقل</>}
         />
         <AuthField
           id="ra-pass2"
@@ -135,12 +135,12 @@ export default function RegisterAccountPage() {
               الشرط اللي بيتقال بعد الضغط بيخلّي المستخدم يرجع
               يمسح حقلين بدل ما يصلّح حرفًا. */
           hint={pass2 && pass !== pass2
-            ? <span className="bad">مش مطابقة لكلمة المرور</span>
+            ? <span className="bad">لا تطابق كلمة المرور</span>
             : undefined}
         />
 
         <button className="btn btn-p btn-full" type="submit" disabled={busy}>
-          {busy ? 'جارٍ إنشاء الحساب…' : 'إنشاء الحساب ومتابعة التسجيل'}
+          {busy ? 'جارٍ إنشاء الحساب…' : 'أنشئ الحساب وتابع التسجيل'}
         </button>
       </form>
 
@@ -151,10 +151,10 @@ export default function RegisterAccountPage() {
           type="button"
           onClick={() => navigate(ROUTES.entityPortal)}
         >
-          عندك حساب بالفعل؟ افتح بوّابة طلبك
+          لديك حساب بالفعل؟ افتح بوابة طلبك
         </button>
         <p className="lnote sub">
-          الجهة اللي قدّمت طلبًا بتتابع حالته من بوّابتها بحسابها ده نفسه.
+          تتابع الجهة التي قدّمت طلبًا حالته من بوابتها بالحساب نفسه.
         </p>
       </div>
     </AuthShell>

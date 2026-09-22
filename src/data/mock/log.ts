@@ -147,7 +147,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
         { k: 'المسار', v: row.track },
         { k: 'المجال', v: row.field },
         { k: 'الهدف', v: row.goal },
-        { k: 'الملاحظات', v: 'المشروع ضمن تخصص الزميل، محوّل لاستكمال الدراسة.' },
+        { k: 'الملاحظات', v: 'المشروع ضمن تخصص الزميل، وحُوّل إليه لاستكمال الدراسة.' },
       ],
     })
   }
@@ -177,10 +177,10 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
       {
         k: 'توصيات الباحث',
         v:
-          `الجهة ${row.weight >= 85 ? 'ذات سجل جيد معنا' : 'جديدة علينا'} والمشروع في ` +
-          `${row.region} وهي منطقة ${row.weight >= 80 ? 'محتاجة' : 'مخدومة نسبيًا'}. ` +
-          `التكلفة ${row.beneficiaries > 0 ? `${nf.format(Math.round(row.amountRequested / Math.max(1, row.beneficiaries)))} ريالًا للمستفيد` : 'غير محسوبة لغياب عدد المستفيدين'}، ` +
-          `وأرى ${row.statusGroup === 'معتذر عنه' ? 'الاعتذار لتكرار الدعم في نفس الهدف' : `منحهم ${nf.format(grant)} ريال`}.`,
+          `الجهة ${row.weight >= 85 ? 'ذات سجل جيد لدى المؤسسة' : 'جديدة على المؤسسة'}، والمشروع في ` +
+          `${row.region}، وهي منطقة ${row.weight >= 80 ? 'ذات حاجة' : 'مخدومة نسبيًا'}. ` +
+          `التكلفة ${row.beneficiaries > 0 ? `${nf.format(Math.round(row.amountRequested / Math.max(1, row.beneficiaries)))} ريالًا للمستفيد` : 'غير محسوبة لعدم توفر عدد المستفيدين'}، ` +
+          `وأرى ${row.statusGroup === 'معتذر عنه' ? 'الاعتذار لتكرار الدعم في الهدف نفسه' : `منح الجهة ${nf.format(grant)} ريال`}.`,
       },
     ],
   })
@@ -192,7 +192,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
       actor: 'staff', tone: 'no',
       fields: [
         { k: 'سبب الاعتذار', v: row.declineReason ?? 'الاكتفاء بالمشاريع المدعومة في الهدف', strong: true },
-        { k: 'سبب الإعتذار عن دعم المشروع', v: 'ممارسة الجهة في هذا النوع من المشاريع ليست الأفضل، والجهة غير معروفة لدينا.' },
+        { k: 'سبب الإعتذار عن دعم المشروع', v: 'ممارسة الجهة في هذا النوع من المشاريع ليست الأفضل، وهي غير معروفة لدى المؤسسة.' },
       ],
     })
     b.add({
@@ -224,7 +224,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
       actor: 'staff',
       tone: 'warn',
       fields: [
-        { k: 'الملاحظات', v: 'كرمًا تحديث البيانات وإرفاق الموازنة التفصيلية ثم إرجاع المشروع بعد الحفظ.' },
+        { k: 'الملاحظات', v: 'نأمل تحديث البيانات وإرفاق الموازنة التفصيلية، ثم إعادة إرسال المشروع بعد الحفظ.' },
         { k: 'سبب التأخر في الإجراء', v: '.' },
       ],
     })
@@ -235,7 +235,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     b.add({
       after: 7, action: 'إرجاع المشروع للباحث', dept: 'اعتماد دراسة المشروع', by: manager,
       actor: 'staff', tone: 'warn',
-      fields: [{ k: 'ملاحظات', v: 'جهد مشكور، ومهم إرفاق كراسة المواصفات ورسم إطار المخرجات قبل الاعتماد.' }],
+      fields: [{ k: 'ملاحظات', v: 'جهد مشكور، ويلزم إرفاق كراسة المواصفات ورسم إطار المخرجات قبل الاعتماد.' }],
     })
   }
 
@@ -324,7 +324,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
       after: 60, action: 'قبول التقرير الختامي', dept: 'اعتماد التقرير الختامي', by: owner,
       actor: 'staff', tone: 'ok',
       fields: [
-        { k: 'ملاحظات', v: 'الجهة متفاعلة والمشروع مقبول بعرض واضح.' },
+        { k: 'ملاحظات', v: 'الجهة متفاعلة، والمشروع مقبول وعرضه واضح.' },
         { k: 'سبب التأخر في الإجراء', v: 'لا يوجد تأخر' },
       ],
     })
@@ -384,7 +384,7 @@ function agreementEvents(
     { k: 'نص النموذج', v: `تلتزم المؤسسة تجاه مشروع (${row.name}) المقدم على بوابة المنح…` },
     { k: 'مدة التنفيذ', v: String(row.durationDays) },
     { k: 'عدد المستفيدين', v: nf.format(row.beneficiaries) },
-    { k: 'مخرجات المشروع', v: 'المخرجات المتفق عليها في الدراسة، مصاغة في بنود الاتفاقية.' },
+    { k: 'مخرجات المشروع', v: 'المخرجات المتفق عليها في الدراسة، مصوغة في بنود الاتفاقية.' },
   ]
 
   b.add({

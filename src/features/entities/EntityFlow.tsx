@@ -53,7 +53,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
     return (
       <Glass className="ejr ejr-none">
         <span className="ejr-ht">رحلة الريال في هذه الجهة</span>
-        <p>ما اتمنحش لها ريال لحدّ دلوقتي · الجهة مسجَّلة ولسّه ما دخلتش دورة صرف.</p>
+        <p>لم تُمنح هذه الجهة أي مبلغ حتى الآن · الجهة مسجَّلة ولم تدخل دورة صرف بعد.</p>
       </Glass>
     )
   }
@@ -62,7 +62,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
     {
       k: '01', slot: 'الكلّ', big: true, icon: 'budget' as const,
       label: 'إجمالي الممنوح', value: total, pct: null,
-      note: 'من أول تسجيلها', to: byEntity,
+      note: 'منذ تسجيلها', to: byEntity,
     },
     {
       k: '02', slot: 'الجزء الأكبر', big: true, icon: 'check' as const,
@@ -70,7 +70,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
       note: '', to: ROUTES.payments,
     },
     {
-      k: '03', slot: 'الباقي', big: false, icon: 'clock' as const,
+      k: '03', slot: 'المتبقي', big: false, icon: 'clock' as const,
       label: 'تحت الصرف', value: pending, pct: share(pending),
       note: '', to: ROUTES.payments,
     },

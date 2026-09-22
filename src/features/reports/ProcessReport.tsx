@@ -113,7 +113,7 @@ export default function ProcessReport() {
                       {k.to && (
                         <Link to={k.to} className="ind-to">
                           <Icon name={icons.link} size={14} />
-                          الصفوف
+                          اعرض الصفوف
                         </Link>
                       )}
                     </div>
@@ -128,10 +128,10 @@ export default function ProcessReport() {
           </Glass>
 
           <p className="sub rpfoot">
-            «مشتقّ» يعني الرقم محسوب من بيانات الصف لا من عمود مستقل. النظام العامل
-            بيسجّل مدد المستويات فعلًا (<span className="num">13</span> عمود مدة في جدول
-            المشاريع)، والأعمدة دي هتحلّ محل الاشتقاق أول ما الـ<span className="num">API</span>{' '}
-            يسلّمها.
+            «مشتقّ» يعني أن الرقم محسوب من بيانات الصف لا من عمود مستقل. يسجّل النظام
+            العامل مدد المستويات فعلًا (<span className="num">13</span> عمود مدة في جدول
+            المشاريع)، وحين تتيحها الـ<span className="num">API</span>{' '}
+            ستحلّ هذه الأعمدة محل الاشتقاق.
           </p>
         </div>
       </div>

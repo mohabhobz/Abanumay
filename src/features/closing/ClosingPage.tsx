@@ -185,7 +185,7 @@ export default function ClosingPage() {
             variant="bar"
             title="قراءة سريعة للإغلاق"
             readings={readings}
-            empty="مفيش طلب إغلاق واقف في النطاق الحالي · وسّع الفلتر تشوف أكتر."
+            empty="لا يوجد طلب إغلاق متوقف في النطاق الحالي · وسّع الفلتر لعرض المزيد."
           />
 
           {/* مؤشرات الوثيقة الأربعة · 11.7 · لا أربعة أرقام مختارة */}
@@ -350,7 +350,7 @@ export default function ClosingPage() {
             <Glass>
               <Empty
                 title="لا توجد طلبات إغلاق بهذه الفلاتر."
-                note="جرّب توسيع النطاق، أو اختر محطة تانية من الشرائح فوق."
+                note="جرّب توسيع النطاق، أو اختر محطة أخرى من الشرائح أعلاه."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>

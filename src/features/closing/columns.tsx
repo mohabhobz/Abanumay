@@ -91,7 +91,7 @@ export const COLS: Col[] = [
   {
     key: 'beneficiaries',
     w: 120,
-    label: 'المستفيدون الفعلي',
+    label: 'المستفيدون الفعليون',
     n: true,
     def: true,
     cell: (c) => (c.report.beneficiaries === null
@@ -131,7 +131,7 @@ export const COLS: Col[] = [
        وكلمة في صفّ · فالوسط لازم يقول وحدته */
     value: (c) => Math.round(c.hoursInStage / 24),
     agg: 'avg',
-    aggSay: 'يومًا وسطي',
+    aggSay: 'يومًا في المتوسط',
   },
   {
     key: 'version',
@@ -147,8 +147,8 @@ export const COLS: Col[] = [
     w: 128,
     label: 'النشر الإعلامي',
     /* قاعدة 9 · محطة الاتصال المؤسسي «متى كانت مطلوبة» */
-    cell: (c) => <span className="sub">{c.mediaRequired ? 'مطلوب' : 'ما بينطبقش'}</span>,
-    text: (c) => (c.mediaRequired ? 'مطلوب' : 'ما بينطبقش'),
+    cell: (c) => <span className="sub">{c.mediaRequired ? 'مطلوب' : 'لا ينطبق'}</span>,
+    text: (c) => (c.mediaRequired ? 'مطلوب' : 'لا ينطبق'),
   },
   {
     key: 'owner',
@@ -161,7 +161,7 @@ export const COLS: Col[] = [
   {
     key: 'openedAt',
     w: 112,
-    label: 'فتح الطلب',
+    label: 'تاريخ فتح الطلب',
     cell: (c) => <DateText>{c.openedAt}</DateText>,
     text: (c) => c.openedAt,
   },

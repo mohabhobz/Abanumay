@@ -80,7 +80,7 @@ export const COLS: Col[] = [
     text: (p) => `${planDone(p)}%`,
     value: (p) => planDone(p),
     agg: 'avg',
-    aggSay: '٪ وسطي',
+    aggSay: '٪ في المتوسط',
   },
   {
     key: 'planned',
@@ -91,7 +91,7 @@ export const COLS: Col[] = [
     text: (p) => `${planPlanned(p)}%`,
     value: (p) => planPlanned(p),
     agg: 'avg',
-    aggSay: '٪ وسطي',
+    aggSay: '٪ في المتوسط',
   },
   {
     key: 'spi',
@@ -102,23 +102,23 @@ export const COLS: Col[] = [
     /* SPI = المنجَز ÷ المخطَّط · واحد صحيح يعني ماشي بالظبط */
     cell: (p) => {
       const v = planSpi(p)
-      if (v === null) return <span className="sub">ما بدأش</span>
+      if (v === null) return <span className="sub">لم يبدأ</span>
       return (
         <span className={v < 0.8 ? 'over' : undefined}>
           <span className="num">{v.toFixed(2)}</span>
         </span>
       )
     },
-    text: (p) => { const v = planSpi(p); return v === null ? 'ما بدأش' : v.toFixed(2) },
+    text: (p) => { const v = planSpi(p); return v === null ? 'لم يبدأ' : v.toFixed(2) },
     /* ⚠️ `null` لا `0` · «ما بدأش» مش أداءً صفرًا، هي غياب قياس */
     value: (p) => planSpi(p),
     agg: 'avg',
-    aggSay: 'وسطي المُقاس',
+    aggSay: 'متوسط المقيس',
   },
   {
     key: 'waiting',
     w: 132,
-    label: 'مستنّي مراجعة',
+    label: 'بانتظار المراجعة',
     def: true,
     n: true,
     /* طابور شغل المشرف · الصفر خافت عشان اللي فوقه يبان */
@@ -131,7 +131,7 @@ export const COLS: Col[] = [
     text: (p) => String(waitingReview(p).length),
     value: (p) => waitingReview(p).length,
     agg: 'sum',
-    aggSay: 'نشاطًا مستنّيًا',
+    aggSay: 'نشاطًا بانتظار المراجعة',
   },
   {
     key: 'late',
@@ -155,7 +155,7 @@ export const COLS: Col[] = [
        بتقول كده، لأن رقم صفر في عمود نسخ بيتقري خطأ بيانات */
     cell: (p) => (p.baseline > 0
       ? <span>V<span className="num">{p.baseline}</span></span>
-      : <span className="sub">ما اتعتمدتش</span>),
+      : <span className="sub">لم تُعتمد</span>),
     text: (p) => (p.baseline > 0 ? `V${p.baseline}` : 'لم تُعتمد'),
   },
   {

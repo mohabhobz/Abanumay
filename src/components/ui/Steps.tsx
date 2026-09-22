@@ -69,7 +69,7 @@ export interface StepItem {
 /** الحالة مقروءة لقارئ الشاشة · اللون والعلامة لوحدهم مش معلومة */
 const SAY: Record<StepState, string> = {
   done: 'تمّت',
-  now: 'الدور عليها الآن',
+  now: 'المحطة الحالية',
   todo: 'لم تبدأ',
   skip: 'لا تنطبق على هذه الحالة',
 }

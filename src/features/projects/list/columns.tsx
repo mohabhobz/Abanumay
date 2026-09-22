@@ -63,7 +63,7 @@ export const COLS: Col[] = [
     cell: (r) => (
       <>
         {r.stageLimit > 0 ? days(r.hoursInStage) : 'بلا حدّ'}
-        {stagePressure(r) > 1 && <span className="dotmark" title="فوق الحدّ" />}
+        {stagePressure(r) > 1 && <span className="dotmark" title="تجاوز الحدّ" />}
       </>
     ),
     text: (r) => (r.stageLimit > 0 ? String(Math.round(r.hoursInStage / 24)) : 'بلا حدّ'),
@@ -71,7 +71,7 @@ export const COLS: Col[] = [
        والوسط بيقول وحدته */
     value: (r) => Math.round(r.hoursInStage / 24),
     agg: 'avg',
-    aggSay: 'يومًا وسطي',
+    aggSay: 'يومًا في المتوسط',
   },
   {
     key: 'requested',

@@ -59,9 +59,9 @@ export function FilterCustomizer({
         </span>
         <span className="ftool-sp" />
         <button className="fclear" onClick={() => onChange(all.map((f) => f.key))}>
-          أعِد الافتراضي
+          أعد الترتيب الافتراضي
         </button>
-        <button className="btn btn-2 btn-sm" onClick={onClose}>تمّ</button>
+        <button className="btn btn-2 btn-sm" onClick={onClose}>أغلق</button>
       </div>
 
       <ul className="fcust-l">

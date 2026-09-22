@@ -61,10 +61,10 @@ function PField({
           value={value}
           onChange={onChange}
           label={f.label}
-          placeholder="اختار"
+          placeholder="اختر"
           options={entityOptions().map((e) => ({
             value: e.id,
-            label: `${e.name}${e.capped ? ` · وصلت الحدّ (${e.open})` : ''}${e.inactive ? ' · غير مفعَّلة' : ''}`,
+            label: `${e.name}${e.capped ? ` · بلغت الحدّ (${e.open})` : ''}${e.inactive ? ' · غير نشطة' : ''}`,
           }))}
         />
       ) : f.kind === 'select' ? (
@@ -74,7 +74,7 @@ function PField({
           disabled={Boolean(f.dependsOn) && !parent}
           onChange={onChange}
           label={f.label}
-          placeholder={f.dependsOn && !parent ? 'اختار اللي قبله أولًا' : 'اختار'}
+          placeholder={f.dependsOn && !parent ? 'اختر الحقل السابق أولًا' : 'اختر'}
         />
       ) : f.kind === 'multi' ? (
         /* ⚠️ الفئات المستهدفة **شرائح لا قائمة منسدلة** · الاختيار
@@ -193,7 +193,7 @@ export default function ProjectNewPage() {
               <h1 className="ptitle">مشروع جديد</h1>
               <p className="sub mt-1">
                 نموذج مرحلي · <span className="num">{P_STAGES.length}</span> محطات ·
-                والمبلغ المعتمد بيتحدّد في الدراسة لا هنا
+                والمبلغ المعتمد يُحدَّد في الدراسة لا هنا
               </p>
             </div>
             {/* ⚠️ **`pct` من المكتبة لا علامة مكتوبة بالإيد.**
@@ -224,7 +224,7 @@ export default function ProjectNewPage() {
                   title={stage.label}
                   meta={
                     shortBy[tab].length
-                      ? <Tag tone="warn"><Num>{shortBy[tab].length}</Num> ناقص</Tag>
+                      ? <Tag tone="warn"><Num>{shortBy[tab].length}</Num> نواقص</Tag>
                       : <Tag tone="ok">مكتمل</Tag>
                   }
                 />
@@ -266,7 +266,7 @@ export default function ProjectNewPage() {
                     <button
                       className="btn btn-2"
                       disabled={first}
-                      title={first ? 'دي أول خطوة' : `ارجع لـ${P_STAGES[at - 1].label}`}
+                      title={first ? 'هذه الخطوة الأولى' : `العودة إلى ${P_STAGES[at - 1].label}`}
                       onClick={() => go(-1)}
                     >
                       <Icon name={icons.chevronBack} size={15} />
@@ -275,7 +275,7 @@ export default function ProjectNewPage() {
                     {!last && (
                       <button
                         className="btn btn-p"
-                        title={`كمّل في ${P_STAGES[at + 1].label}`}
+                        title={`الانتقال إلى ${P_STAGES[at + 1].label}`}
                         onClick={() => go(1)}
                       >
                         التالي
@@ -294,7 +294,7 @@ export default function ProjectNewPage() {
                 {/* قاعدة 24 · توصية المشرف مش قرارًا · والسطر ده بيمنع
                     توقّعًا غلط من أول شاشة */}
                 <p className="sub cnote">
-                  توصية المشرف بالموافقة <b>ما بيترتّب عليها</b> اعتماد ولا صرف ·
+                  توصية المشرف بالموافقة <b>لا يترتّب عليها</b> اعتماد ولا صرف ·
                   القرار النهائي حسب مصفوفة السقوف.
                 </p>
               </Glass>
@@ -305,17 +305,17 @@ export default function ProjectNewPage() {
                     title="الجهة"
                     meta={
                       ent.capped
-                        ? <Tag tone="warn">وصلت الحدّ</Tag>
-                        : <Tag tone="ok">تقدر تقدّم</Tag>
+                        ? <Tag tone="warn">بلغت الحدّ</Tag>
+                        : <Tag tone="ok">يمكنها التقديم</Tag>
                     }
                   />
                   <p className="sub">
-                    «{ent.name}» عندها <b className="num">{ent.open}</b> مشاريع مفتوحة ·
-                    الحدّ <b className="num">{ENTITY_PROJECT_CAP}</b> في الفترة.
+                    «{ent.name}» لديها <b className="num">{ent.open}</b> مشاريع مفتوحة ·
+                    والحدّ <b className="num">{ENTITY_PROJECT_CAP}</b> في الفترة.
                   </p>
                   <p className="sub cnote">
-                    الحدّ <b>افتراضي</b> · الوثيقة بتقول إنه من الإعدادات من غير
-                    ما تدّي رقمًا (قاعدة 12).
+                    الحدّ <b>افتراضي</b> · تنصّ الوثيقة على أنه من الإعدادات دون
+                    أن تحدّد رقمًا (قاعدة 12).
                   </p>
                 </Glass>
               )}
@@ -355,7 +355,7 @@ export default function ProjectNewPage() {
             <div className="rowf gp-3 payact-w">
               <span className="decsent">
                 {sent
-                  ? <>اتبعت · <b>{val.name}</b> دخل الدراسة</>
+                  ? <>أُرسل الطلب · <b>{val.name}</b> في مرحلة الدراسة الآن</>
                   : <>
                       {/* ⚠️ النسبة في الدوك · هنا اللي المستخدم بيقرّر
                           فيه «أبعت ولا لأ»، والرقم في الترويسة بيتقري
@@ -363,11 +363,11 @@ export default function ProjectNewPage() {
                       الاكتمال <b className="num">{sayPct(pct)}</b>
                       <span className="decsep" />
                       {missing.length
-                        ? <><Num>{missing.length}</Num> حقلًا إلزاميًا ناقص</>
+                        ? <><Num>{missing.length}</Num> حقلًا إلزاميًا ناقصًا</>
                         : issues.length
                           ? <><Num>{issues.length}</Num> ملاحظة على الطلب</>
                           : 'جاهز للإرسال'}
-                      {saved && <><span className="decsep" />اتحفظ كمسودة</>}
+                      {saved && <><span className="decsep" />حُفظت المسودة</>}
                     </>}
               </span>
             </div>
@@ -378,29 +378,29 @@ export default function ProjectNewPage() {
                   <button
                     className="btn btn-2"
                     disabled={!val.entityId}
-                    title={val.entityId ? 'احفظ كمسودة' : 'اختار الجهة الأول'}
+                    title={val.entityId ? 'احفظ الطلب مسودةً' : 'اختر الجهة أولًا'}
                     onClick={() => setSaved(true)}
                   >
-                    حفظ كمسودة
+                    احفظ المسودة
                   </button>
                   <button
                     className="btn btn-p"
                     disabled={!canSend}
                     title={
                       missing.length
-                        ? `ناقص ${missing.length} من الإلزامي`
+                        ? `ينقص ${missing.length} من الحقول الإلزامية`
                         : issues.length
                           ? issues[0].say
                           : 'أرسل الطلب للدراسة'
                     }
                     onClick={() => setSent(true)}
                   >
-                    إرسال للدراسة
+                    أرسل للدراسة
                   </button>
                 </>
               ) : (
                 <button className="btn btn-2" onClick={() => navigate(ROUTES.projects)}>
-                  ارجع للمشاريع
+                  العودة إلى المشاريع
                 </button>
               )}
             </div>

@@ -36,19 +36,19 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
           title="إغلاق المشروع"
           meta={gate.ok
             ? <Tag tone="ok">مؤهَّل للإغلاق</Tag>
-            : <Tag tone="mute">لسه مش مؤهَّل</Tag>}
+            : <Tag tone="mute">غير مؤهَّل بعد</Tag>}
         />
         <Empty
           title={gate.ok
             ? 'المشروع مؤهَّل ولم يُفتح له طلب تقرير ختامي بعد.'
             : `لا يمكن بدء الإغلاق الآن · ${gate.why}`}
           note={gate.ok
-            ? 'مشرف المنح هو اللي يفتح الطلب، فيوصل للجهة المستفيدة لتعبئة التقرير الختامي · ثم يمرّ بدورتي اعتماد مستقلتين: التقرير الختامي ثم تقييم المشروع (القاعدة 17).'
+            ? 'يفتح مشرف المنح الطلب، فيصل إلى الجهة المستفيدة لتعبئة التقرير الختامي · ثم يمرّ بدورتي اعتماد مستقلتين: التقرير الختامي ثم تقييم المشروع (القاعدة 17).'
             : 'القاعدة 1 تشترط انتهاء مدة التنفيذ أو اكتمال الأنشطة، والقاعدة 2 تشترط استكمال جميع الدفعات المستحقة أو تسوية الالتزامات · والشرطان معًا لا أحدهما.'}
           actions={gate.ok && onOpen && (
             <button
               className="btn btn-p"
-              title="يفتح طلب التقرير الختامي ويحيله للجهة لتعبئته"
+              title="يفتح طلب التقرير الختامي ويرسله إلى الجهة لتعبئته"
               onClick={onOpen}
             >
               <Icon name={icons.plus} size={16} />
@@ -83,21 +83,21 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
             </>,
           },
           {
-            k: 'عند مين',
+            k: 'المسؤول الآن',
             v: closeStageWho(c.stage)
               ? closeStageWho(c.stage)
               : <span className="sub">اكتمل</span>,
           },
           {
-            k: 'المستفيدون الفعلي',
+            k: 'المستفيدون الفعليون',
             v: c.report.beneficiaries === null
-              ? <span className="sub">ما اتكتبش بعد</span>
+              ? <span className="sub">لم يُسجَّل بعد</span>
               : <><Num>{c.report.beneficiaries}</Num> <span className="sub">مستفيد</span></>,
           },
           {
             k: 'الميزانية الفعلية',
             v: c.report.budget === null
-              ? <span className="sub">ما اتكتبتش بعد</span>
+              ? <span className="sub">لم تُسجَّل بعد</span>
               : <Money sm>{c.report.budget}</Money>,
           },
           {
@@ -115,8 +115,8 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
             v: needsComms(c)
               ? (done
                 ? <Tag tone="ok">اعتمده الاتصال المؤسسي</Tag>
-                : <Tag tone="ret">محتاج مراجعة الاتصال</Tag>)
-              : <span className="sub">ما بينطبقش · بلا التزام نشر</span>,
+                : <Tag tone="ret">يحتاج مراجعة الاتصال المؤسسي</Tag>)
+              : <span className="sub">لا ينطبق · لا التزام بالنشر</span>,
           },
           {
             k: 'الإصدارات',
@@ -139,16 +139,16 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
           مالهاش نتيجة. */}
       {closed ? (
         <p className="ok cnote">
-          التقرير والتقييم اتعتمدوا والمتطلبات اكتملت · المشروع «مكتمل»، وأي
-          تعديل بعد كده بيحتاج إجراءً جديدًا (القاعدة <span className="num">21</span>).
+          اعتُمد التقرير والتقييم واكتملت المتطلبات · المشروع «مكتمل»، وأي
+          تعديل بعد ذلك يحتاج إجراءً جديدًا (القاعدة <span className="num">21</span>).
         </p>
       ) : (
         <p className="sub cnote">
-          محطة الإغلاق لا تغيّر حالة المشروع · بيفضل «تحت التنفيذ» لحدّ ما
-          التلاتة يكتملوا: اعتماد التقرير الختامي، واعتماد التقييم، واستكمال
+          محطة الإغلاق لا تغيّر حالة المشروع · يبقى «تحت التنفيذ» حتى تكتمل
+          الثلاثة: اعتماد التقرير الختامي، واعتماد التقييم، واستكمال
           المتطلبات المالية والإدارية (القاعدة <span className="num">8</span> و
           <span className="num">18</span>).
-          {!req.ok && <> ودلوقتي {req.say}.</>}
+          {!req.ok && <> والوضع الآن: {req.say}.</>}
         </p>
       )}
 

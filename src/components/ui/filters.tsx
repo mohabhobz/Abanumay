@@ -594,7 +594,7 @@ export function ViewToggle({
         className={view === 'cards' ? 'on' : ''}
         onClick={() => onChange('cards')}
         aria-pressed={view === 'cards'}
-        title="كروت"
+        title="بطاقات"
       >
         <Icon name={icons.grid} size={16} />
       </button>
@@ -683,7 +683,7 @@ export function GroupPicker({
         <MenuPanel
           foot={
             <>
-              {full && <span className="sub">السقف <span className="num">{max}</span> مستويات · تحتها المجموعة بتبقى صفًّا</span>}
+              {full && <span className="sub">الحد الأقصى <span className="num">{max}</span> مستويات، وبعدها تصبح كل مجموعة صفًّا واحدًا</span>}
               {chain.length > 0 && (
                 <button type="button" className="fclear" onClick={() => onChange(undefined)}>
                   إلغاء التجميع
@@ -704,7 +704,7 @@ export function GroupPicker({
                 on={sel}
                 off={!sel && full}
                 onPick={() => toggle(o.value)}
-                title={sel ? `المستوى ${at + 1}` : full ? `السقف ${max} مستويات` : 'أضف مستوى'}
+                title={sel ? `المستوى ${at + 1}` : full ? `الحد الأقصى ${max} مستويات` : 'أضف مستوى'}
                 mark={sel ? at + 1 : ''}
                 markClass="num"
               >

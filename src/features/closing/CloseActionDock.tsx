@@ -61,7 +61,7 @@ export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[]
         label: 'إعادة للجهة بملاحظات',
         kind: 'btn-2',
         needsNote: true,
-        why: 'قاعدة 19 · الإعادة ترجع للجهة كاتبة التقرير وتخلّي إصدارًا جديدًا',
+        why: 'قاعدة 19 · تعود الإعادة إلى الجهة كاتبة التقرير وتُنشئ إصدارًا جديدًا',
       },
     ]
   }
@@ -81,7 +81,7 @@ export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[]
         label: 'إعادة للجهة بملاحظات',
         kind: 'btn-2',
         needsNote: true,
-        why: 'نقص في المواد الإعلامية يرجع للجهة لا لمشرف المنح',
+        why: 'يُعاد نقص المواد الإعلامية إلى الجهة لا إلى مشرف المنح',
       },
     ]
   }
@@ -97,7 +97,7 @@ export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[]
         label: 'إعادة للجهة بملاحظات',
         kind: 'btn-2',
         needsNote: true,
-        why: 'قاعدة 19 · كل إعادة إصدار جديد والقديم بيفضل في السجلّ',
+        why: 'قاعدة 19 · كل إعادة تُنشئ إصدارًا جديدًا، ويبقى القديم في السجلّ',
       },
     ]
   }
@@ -107,13 +107,13 @@ export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[]
         label: 'اعتماد التقرير الختامي',
         kind: 'btn-p',
         gated: true,
-        why: 'قاعدة 6 · اعتماد المدير التنفيذي هو اللي بيفتح إجراءات التقييم',
+        why: 'قاعدة 6 · اعتماد المدير التنفيذي هو ما يفتح إجراءات التقييم',
       },
       {
         label: 'إعادة للجهة بملاحظات',
         kind: 'btn-2',
         needsNote: true,
-        why: 'الإعادة ترجع للجهة كاتبة التقرير',
+        why: 'تعود الإعادة إلى الجهة كاتبة التقرير',
       },
     ]
   }
@@ -124,7 +124,7 @@ export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[]
     return [{
       label: 'ابدأ تقييم المشروع',
       kind: 'btn-p',
-      why: 'قاعدة 6 · التقييم يبدأ بعد اعتماد المدير التنفيذي، وبيعدّه مشرف المنح',
+      why: 'قاعدة 6 · يبدأ التقييم بعد اعتماد المدير التنفيذي، ويُعدّه مشرف المنح',
     }]
   }
   if (stage === 'evalDraft' && role === 'supervisor') {
@@ -146,7 +146,7 @@ export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[]
         label: 'إعادة لمشرف المنح بملاحظات',
         kind: 'btn-2',
         needsNote: true,
-        why: 'التقييم بيعدّه المشرف، فإعادته ترجع له لا للجهة',
+        why: 'يُعدّ المشرف التقييم، فتعود إعادته إليه لا إلى الجهة',
       },
     ]
   }
@@ -162,7 +162,7 @@ export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[]
         label: 'إعادة لمشرف المنح بملاحظات',
         kind: 'btn-2',
         needsNote: true,
-        why: 'الإعادة ترجع لكاتب التقييم',
+        why: 'تعود الإعادة إلى كاتب التقييم',
       },
     ]
   }
@@ -198,9 +198,9 @@ export function CloseActionDock({
           <div className="rowf gp-3">
             <Icon name={icons.check} size={18} className="ok-ink" />
             <span className="decsent">
-              اتسجّل: <b>{taken}</b>
+              سُجّل: <b>{taken}</b>
               <span className="decsep" />
-              الإشعار اتبعت لأطراف الإجراء
+              أُرسل الإشعار إلى أطراف الإجراء
             </span>
           </div>
           <button className="btn btn-2" onClick={() => { onTake(''); onNote('') }}>
@@ -226,7 +226,7 @@ export function CloseActionDock({
               <span className="decsep" />
               {cycle === 'report' ? 'دورة التقرير الختامي' : 'دورة تقييم المشروع'}
               <span className="decsep" />
-              مفيش قرار مستنّيك هنا
+              لا يوجد قرار بانتظارك هنا
             </span>
           </div>
         </div>
@@ -248,7 +248,7 @@ export function CloseActionDock({
             {missing.length > 0 && (
               <>
                 <span className="decsep" />
-                <Num>{missing.length}</Num> بند ناقص
+                <Num>{missing.length}</Num> بنود ناقصة
               </>
             )}
           </span>
@@ -271,7 +271,7 @@ export function CloseActionDock({
                بالاسم، لأن «فيه ناقص» بتخلّي المستخدم يدوّر بعينه */
             const why =
               (x.needsNote && !note.trim())
-                ? 'اكتب سبب الإعادة الأول'
+                ? 'اكتب سبب الإعادة أولًا'
                 : (x.gated && stop) ? stop : ''
             return (
               <button

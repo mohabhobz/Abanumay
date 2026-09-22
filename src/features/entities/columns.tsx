@@ -72,7 +72,7 @@ export const COLS: Col[] = [
        فالكلمة بتقوله */
     value: (e) => e.docsUploaded,
     agg: 'avg',
-    aggSay: `وسطي المرفوع من ${ENTITY_DOCS_TOTAL}`,
+    aggSay: `متوسط المرفوع من ${ENTITY_DOCS_TOTAL}`,
   },
   { key: 'approved', w: 92, label: 'معتمدة', n: true, cell: (e) => e.projectsApproved, text: (e) => String(e.projectsApproved), value: (e) => e.projectsApproved, agg: 'sum' },
   { key: 'running', w: 110, label: 'تحت التشغيل', def: true, n: true, cell: (e) => e.projectsRunning, text: (e) => String(e.projectsRunning), value: (e) => e.projectsRunning, agg: 'sum' },
@@ -124,7 +124,7 @@ export const COLS: Col[] = [
   },
   { key: 'registered', w: 112, label: 'تاريخ التسجيل', cell: (e) => <span className="sub num">{e.registeredAt}</span>, text: (e) => e.registeredAt },
   { key: 'mobile', w: 120, label: 'الجوال', cell: (e) => <span className="sub num">{e.mobile}</span>, text: (e) => e.mobile },
-  { key: 'email', w: 170, label: 'البريد', cell: (e) => <span className="sub">{e.email}</span>, text: (e) => e.email },
+  { key: 'email', w: 170, label: 'البريد الإلكتروني', cell: (e) => <span className="sub">{e.email}</span>, text: (e) => e.email },
 ]
 
 export const GROUPS: GroupBy<EntityRow>[] = [

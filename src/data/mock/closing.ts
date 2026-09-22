@@ -54,16 +54,16 @@ export const TODAY = '2026-09-18'
 export const CLOSE_STAGES: {
   key: CloseStage; label: string; who: string; note: string; cycle: CloseCycle
 }[] = [
-  { key: 'draft', label: 'عند الجهة', who: 'الجهة المستفيدة', note: 'بتكتب التقرير الختامي وبترفق شواهده', cycle: 'report' },
+  { key: 'draft', label: 'عند الجهة', who: 'الجهة المستفيدة', note: 'تكتب التقرير الختامي وترفق شواهده', cycle: 'report' },
   { key: 'supervisor', label: 'مراجعة مشرف المنح', who: 'مشرف المنح', note: 'مقارنة المعتمد بالتنفيذ الفعلي', cycle: 'report' },
   { key: 'comms', label: 'مراجعة الاتصال المؤسسي', who: 'إدارة الاتصال المؤسسي', note: 'التحقّق من النشر الإعلامي · قاعدة 9', cycle: 'report' },
   { key: 'manager', label: 'اعتماد مدير المنح', who: 'مدير المنح', note: 'قرار اعتماد أو إعادة بملاحظات', cycle: 'report' },
-  { key: 'executive', label: 'اعتماد المدير التنفيذي', who: 'المدير التنفيذي', note: 'اعتماده بيقفل دورة التقرير', cycle: 'report' },
-  { key: 'reportDone', label: 'التقرير معتمد', who: 'مشرف المنح', note: 'التقييم يقدر يبدأ · قاعدة 6', cycle: 'eval' },
+  { key: 'executive', label: 'اعتماد المدير التنفيذي', who: 'المدير التنفيذي', note: 'باعتماده تُغلق دورة التقرير', cycle: 'report' },
+  { key: 'reportDone', label: 'التقرير معتمد', who: 'مشرف المنح', note: 'يمكن بدء التقييم · قاعدة 6', cycle: 'eval' },
   { key: 'evalDraft', label: 'إعداد التقييم', who: 'مشرف المنح', note: 'الأثر والمؤشرات والدروس المستفادة', cycle: 'eval' },
   { key: 'evalManager', label: 'التقييم عند مدير المنح', who: 'مدير المنح', note: 'دورة اعتماد مستقلّة · قاعدة 17', cycle: 'eval' },
   { key: 'evalExecutive', label: 'التقييم عند المدير التنفيذي', who: 'المدير التنفيذي', note: 'آخر اعتماد قبل الإغلاق', cycle: 'eval' },
-  { key: 'closed', label: 'مغلق · مكتمل', who: '', note: 'التقرير والتقييم والمتطلبات كلها اكتملت', cycle: 'eval' },
+  { key: 'closed', label: 'مغلق · مكتمل', who: '', note: 'اكتمل التقرير والتقييم والمتطلبات كلها', cycle: 'eval' },
   { key: 'returned', label: 'مُعاد بملاحظات', who: 'حسب الإعادة', note: 'إصدار جديد بعد التعديل · قاعدة 19', cycle: 'report' },
 ]
 
@@ -145,13 +145,13 @@ export const CLOSE_DOCS: { key: string; label: string; req?: boolean }[] = [
  */
 export const canOpenClose = (projectId: string): { ok: boolean; why: string } => {
   const pr = projectRows.find((p) => p.id === projectId)
-  if (!pr) return { ok: false, why: 'مشروع غير معروف' }
+  if (!pr) return { ok: false, why: 'المشروع غير موجود' }
 
   /* قاعدة 1 · الخطة مكتملة = الأنشطة اكتملت */
   const plan = planOfProject(projectId)
   const activitiesDone = plan ? planDone(plan) >= 100 : false
   if (plan && !activitiesDone) {
-    return { ok: false, why: 'الخطة لسه ما اكتملتش · قاعدة 1' }
+    return { ok: false, why: 'لم تكتمل خطة التنفيذ بعد · قاعدة 1' }
   }
 
   /* قاعدة 2 · مفيش دفعة مستحقّة ما اتصرفتش */
@@ -159,7 +159,7 @@ export const canOpenClose = (projectId: string): { ok: boolean; why: string } =>
     (r) => r.projectId === projectId && r.state !== 'paid' && r.state !== 'closed',
   )
   if (open.length > 0) {
-    return { ok: false, why: `${open.length} دفعة لسه ما اتسوّتش · قاعدة 2` }
+    return { ok: false, why: `${open.length} دفعة لم تُسوَّ بعد · قاعدة 2` }
   }
 
   return { ok: true, why: 'المشروع مؤهَّل للإغلاق' }
@@ -189,7 +189,7 @@ export const reportBlockers = (c: CloseRow): string[] => {
 export const evalBlockers = (c: CloseRow): string[] => {
   const out: string[] = []
   const e = c.evaluation
-  if (!e) return ['التقييم ما اتفتحش']
+  if (!e) return ['لم يبدأ التقييم بعد']
   if (e.indicators.some((i) => i.actual === null)) out.push('مؤشرات بلا قيمة متحقّقة')
   if (!e.impact.trim()) out.push('الأثر المرصود')
   if (!e.lessons.trim()) out.push('الدروس المستفادة')
@@ -238,7 +238,7 @@ export const closeRequirements = (c: CloseRow): { ok: boolean; say: string } => 
     (r) => r.projectId === c.projectId && r.state !== 'paid' && r.state !== 'closed',
   )
   if (open.length > 0) return { ok: false, say: `${open.length} دفعة معلّقة` }
-  return { ok: true, say: 'مفيش التزام مالي معلّق' }
+  return { ok: true, say: 'لا يوجد التزام مالي معلّق' }
 }
 
 /** متأخّر عن حدّ محطته؟ */
@@ -337,7 +337,7 @@ export const closeRows: CloseRow[] = [
   row('CL-2041', '20852', 'draft', {
     report: mkReport({
       beneficiaries: 780,
-      outcomes: 'اتنفّذت 42 جلسة من 48 · والباقي اتأجّل لظروف المقر.',
+      outcomes: 'نُفّذت 42 جلسة من 48، وأُجّل الباقي لظروف تتعلق بالمقر.',
       docs: ['final', 'photos'],
     }),
     hoursInStage: 800,
@@ -350,8 +350,8 @@ export const closeRows: CloseRow[] = [
       beneficiaries: 1120,
       budget: 296_400,
       days: 214,
-      outcomes: 'البرنامج اتنفّذ بالكامل · 12 فعالية و3 ورش تدريبية.',
-      risks: 'تأخّر التوريد شهرًا في المرحلة التانية.',
+      outcomes: 'نُفّذ البرنامج بالكامل: 12 فعالية و3 ورش تدريبية.',
+      risks: 'تأخّر التوريد شهرًا في المرحلة الثانية.',
       docs: ['final', 'photos', 'invoices', 'media'],
       links: [{ label: 'صور ومقاطع التنفيذ', url: 'https://drive.google.com/drive/folders/ab-20838' }],
     }),
@@ -370,7 +370,7 @@ export const closeRows: CloseRow[] = [
       budget: 512_000,
       days: 180,
       outcomes: 'ترميم ثمانية مساجد وتسليمها للجهة المشغّلة.',
-      risks: 'مسجدان احتاجوا أعمالًا إنشائية زيادة.',
+      risks: 'احتاج مسجدان إلى أعمال إنشائية إضافية.',
       docs: ['final', 'photos', 'invoices', 'media', 'handover'],
     }),
     hoursInStage: 400,
@@ -378,19 +378,19 @@ export const closeRows: CloseRow[] = [
     audit: [
       a('2026-08-01', 'حصة النملة', 'إنشاء طلب التقرير الختامي'),
       a('2026-09-01', 'جمعية العناية بالمساجد بالقصيم', 'إرسال التقرير الختامي'),
-      a('2026-09-09', 'حصة النملة', 'اعتماد مشرف المنح · إحالة للاتصال المؤسسي'),
+      a('2026-09-09', 'حصة النملة', 'اعتماد مشرف المنح · إحالة إلى الاتصال المؤسسي'),
     ],
   }),
 
   /* ٤ · مُعاد بملاحظات · إصدار تاني · قاعدة 19 */
   row('CL-2044', '20866', 'returned', {
     returnedTo: 'draft',
-    note: 'الفواتير المرفوعة بتغطّي 60٪ من الميزانية الفعلية المكتوبة · الفرق محتاج مستندات.',
+    note: 'الفواتير المرفوعة تغطي 60٪ فقط من الميزانية الفعلية المذكورة. أرفق مستندات تغطي الفرق.',
     report: mkReport({
       beneficiaries: 410,
       budget: 338_000,
       days: 160,
-      outcomes: 'الدورات القرآنية الموسمية اتنفّذت في ستة مراكز.',
+      outcomes: 'نُفّذت الدورات القرآنية الموسمية في ستة مراكز.',
       docs: ['final', 'photos'],
     }),
     hoursInStage: 600,
@@ -413,7 +413,7 @@ export const closeRows: CloseRow[] = [
       beneficiaries: 2300,
       budget: 1_940_000,
       days: 330,
-      outcomes: 'برنامج الاستدامة اتنفّذ لخمس جمعيات · 36 ورشة و5 خطط مالية.',
+      outcomes: 'نُفّذ برنامج الاستدامة لخمس جمعيات: 36 ورشة و5 خطط مالية.',
       risks: 'جمعيتان تأخّرتا في تسليم بياناتهما.',
       docs: ['final', 'photos', 'invoices', 'media', 'beneficiaries'],
       links: [{ label: 'أرشيف المشروع', url: 'https://drive.google.com/drive/folders/ab-20802' }],
@@ -424,7 +424,7 @@ export const closeRows: CloseRow[] = [
         { name: 'ورش التدريب', target: 30, actual: 36, unit: 'ورشة' },
         { name: 'خطط مالية معتمدة', target: 5, actual: 4, unit: 'خطة' },
       ],
-      impact: 'أربع جمعيات من خمسة بقى عندها خطة مالية معتمدة ومصدر دخل تاني.',
+      impact: 'أصبح لدى أربع جمعيات من خمس خطة مالية معتمدة ومصدر دخل إضافي.',
       lessons: 'الورش الجماعية أنفع من الاستشارة الفردية في المرحلة الأولى.',
       score: 4,
     }),
@@ -438,8 +438,8 @@ export const closeRows: CloseRow[] = [
       a('2026-08-02', 'عمر قاسم', 'اعتماد مشرف المنح'),
       a('2026-08-10', 'الاتصال المؤسسي', 'اعتماد النشر الإعلامي'),
       a('2026-08-20', 'مدير المنح', 'اعتماد التقرير'),
-      a('2026-09-01', 'المدير التنفيذي', 'اعتماد التقرير الختامي · قفل الدورة الأولى'),
-      a('2026-09-10', 'عمر قاسم', 'إرسال التقييم لمدير المنح'),
+      a('2026-09-01', 'المدير التنفيذي', 'اعتماد التقرير الختامي · إقفال الدورة الأولى'),
+      a('2026-09-10', 'عمر قاسم', 'إرسال التقييم إلى مدير المنح'),
     ],
   }),
 
@@ -450,7 +450,7 @@ export const closeRows: CloseRow[] = [
       budget: 240_000,
       days: 200,
       outcomes: 'تأسيس الجمعية واستخراج ترخيصها وتشكيل مجلس إدارتها.',
-      risks: 'مفيش.',
+      risks: 'لا يوجد.',
       docs: ['final', 'photos', 'invoices', 'handover'],
     }),
     evaluation: mkEval({
@@ -459,8 +459,8 @@ export const closeRows: CloseRow[] = [
         { name: 'أعضاء مجلس الإدارة', target: 7, actual: 7, unit: 'عضو' },
         { name: 'نسبة اكتمال الحوكمة', target: 80, actual: 92, unit: '%' },
       ],
-      impact: 'جمعية أهلية جديدة شغّالة في الخرج بمجلس مكتمل ولائحة معتمدة.',
-      lessons: 'ربط الصرف بمراحل الترخيص قلّل التأخير لشهر واحد بدل تلاتة.',
+      impact: 'جمعية أهلية جديدة تعمل في الخرج بمجلس مكتمل ولائحة معتمدة.',
+      lessons: 'ربط الصرف بمراحل الترخيص قلّل التأخير إلى شهر واحد بدل ثلاثة.',
       score: 5,
     }),
     closedAt: '2026-09-05',
@@ -545,7 +545,7 @@ export const approveReport = (c: CloseRow, by: string): void => {
   if (!to) return
   c.stage = to
   c.hoursInStage = 0
-  log(c, by, to === 'reportDone' ? 'اعتماد التقرير الختامي · قفل الدورة الأولى' : `اعتماد · إحالة لـ${closeStageLabel(to)}`)
+  log(c, by, to === 'reportDone' ? 'اعتماد التقرير الختامي · إقفال الدورة الأولى' : `اعتماد · إحالة إلى ${closeStageLabel(to)}`)
 }
 
 /** مشرف المنح بيبدأ التقييم · قاعدة 6 */
@@ -562,14 +562,14 @@ export const sendEval = (c: CloseRow, by: string): void => {
   if (evalBlockers(c).length > 0) return
   c.stage = 'evalManager'
   c.hoursInStage = 0
-  log(c, by, 'إرسال التقييم لمدير المنح')
+  log(c, by, 'إرسال التقييم إلى مدير المنح')
 }
 
 export const approveEval = (c: CloseRow, by: string): void => {
   if (c.stage === 'evalManager') {
     c.stage = 'evalExecutive'
     c.hoursInStage = 0
-    log(c, by, 'اعتماد التقييم · إحالة للمدير التنفيذي')
+    log(c, by, 'اعتماد التقييم · إحالة إلى المدير التنفيذي')
     return
   }
   if (c.stage !== 'evalExecutive') return

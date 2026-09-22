@@ -33,8 +33,8 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
       <Glass>
         <Head title="جدول الدفعات" meta="يُفتح بعد اعتماد الاتفاقية" />
         <Empty
-          title="لا توجد دفعات، المشروع لم يصل لمرحلة الصرف."
-          note="عند الوصول: يصدر المشرف إذن الصرف، ثم تُصدر المالية سند الصرف وتحوّل المبلغ، ثم ترفع الجهة سند القبض والقيد، ثم تعتمده المالية."
+          title="لا توجد دفعات بعد، فالمشروع لم يصل إلى مرحلة الصرف."
+          note="عند الوصول إليها يُصدر المشرف إذن الصرف، ثم تُصدر الإدارة المالية سند الصرف وتحوّل المبلغ، ثم ترفع الجهة سند القبض والقيد، وتعتمده الإدارة المالية."
           actions={
             example && onOpenExample ? (
               <button className="btn btn-2" onClick={() => onOpenExample(example.id)}>
@@ -137,9 +137,9 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
                 flow="row"
                 items={sequence([
                   { label: 'إذن الصرف', note: 'مشرف المنح', done: true },
-                  { label: 'سند الصرف والتحويل', note: 'القسم المالي', done: p.status === 'مدفوع' },
+                  { label: 'سند الصرف والتحويل', note: 'الإدارة المالية', done: p.status === 'مدفوع' },
                   { label: 'سند القبض والقيد', note: 'الجهة', done: Boolean(p.receipt) },
-                  { label: 'اعتماد السند', note: 'القسم المالي', done: Boolean(p.receipt) },
+                  { label: 'اعتماد السند', note: 'الإدارة المالية', done: Boolean(p.receipt) },
                 ])}
               />
 
@@ -165,7 +165,7 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
             في النظام دليل واللي في الوثيقة مواصفة، وإحنا ما نشيلش
             الدليل قبل ما نتأكد. */}
         <div className="sub mt-4">
-          «إذن الصرف» مستند مستقل قابل للطباعة، فيه بيانات الجهة وحسابها البنكي والمبلغ كتابةً، وهو اللي المالية بتحوّل بناءً عليه.
+          «إذن الصرف» مستند مستقل قابل للطباعة، يتضمن بيانات الجهة وحسابها البنكي والمبلغ كتابةً، وعلى أساسه تحوّل الإدارة المالية المبلغ.
         </div>
       </Glass>
     </>

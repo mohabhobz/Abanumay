@@ -78,9 +78,9 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       id: 'j-done',
       kind: 'note',
       label: 'الوضع الحالي',
-      text: `المشروع مقفول. آخر محطة «${row.stage}»، و${
-        row.hasFinalReport ? 'التقرير الختامي مرفوع ومعتمد' : 'التقرير الختامي غير مرفوع'
-      }. مفيش أكشن مطلوب منك.`,
+      text: `المشروع مغلق. آخر مرحلة «${row.stage}»، و${
+        row.hasFinalReport ? 'التقرير الختامي مرفوع ومعتمد' : 'التقرير الختامي لم يُرفع'
+      }. لا يلزمك أي إجراء.`,
       bold: [row.stage],
       src: 'حالة المشروع · سجل الإجراءات',
     })
@@ -89,7 +89,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       id: 'j-declined',
       kind: 'note',
       label: 'الوضع الحالي',
-      text: `المشروع معتذر عنه${row.declineReason ? `، السبب المسجَّل «${row.declineReason}»` : ' بلا سبب مسجَّل'}. مفيش أكشن مطلوب منك.`,
+      text: `المشروع معتذر عنه${row.declineReason ? `، السبب المسجَّل «${row.declineReason}»` : ' بلا سبب مسجَّل'}. لا يلزمك أي إجراء.`,
       bold: row.declineReason ? [row.declineReason] : [],
       src: 'قرار المشروع',
     })
@@ -100,8 +100,8 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       label: 'الوضع الحالي',
       metric: { value: nf.format(inDays), unit: 'يومًا في القسم' },
       text: late
-        ? `واقف عند «${row.stage}» من ${units.day(inDays)}، أي ${pctText(over)} فوق حدّ القسم. المطلوب منك: ${nextAction(row)}.`
-        : `عند «${row.stage}» من ${units.day(inDays)}، وده جوّه حدّ القسم. المطلوب منك: ${nextAction(row)}.`,
+        ? `متوقف عند «${row.stage}» منذ ${units.day(inDays)}، أي ${pctText(over)} فوق حدّ القسم. المطلوب منك: ${nextAction(row)}.`
+        : `في «${row.stage}» منذ ${units.day(inDays)}، ضمن حدّ القسم. المطلوب منك: ${nextAction(row)}.`,
       bold: [row.stage, units.day(inDays), nextAction(row)],
       danger: late ? [pctText(over)] : [],
       bar: row.stageLimit > 0
@@ -124,8 +124,8 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
   const now = out[0]
   if (now && now.kind === 'flag') {
     now.actions = [
-      { label: 'تذكير الجهة', kind: 'btn-2' },
-      { label: 'تسجيل سبب التأخر', kind: 'btn-2' },
+      { label: 'ذكّر الجهة', kind: 'btn-2' },
+      { label: 'سجّل سبب التأخر', kind: 'btn-2' },
     ]
   }
 
@@ -134,12 +134,12 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
   if (back > 0) {
     const parts: string[] = []
     if (j?.toEntity) parts.push(`${j.toEntity === 1 ? 'مرة' : `${j.toEntity} مرات`} للجهة لاستكمال البيانات`)
-    if (j?.toSupervisor) parts.push(`${j.toSupervisor === 1 ? 'مرة' : `${j.toSupervisor} مرات`} لمشرف المنح`)
+    if (j?.toSupervisor) parts.push(`${j.toSupervisor === 1 ? 'مرة' : `${j.toSupervisor} مرات`} إلى مشرف المنح`)
     out.push({
       id: 'j-back',
       kind: back > 1 ? 'flag' : 'note',
-      label: 'رجع لورا',
-      text: `المشروع اترجّع ${parts.join(' و')}. كل إعادة بتضيف دورة مراجعة كاملة على المدة.`,
+      label: 'مرات الإعادة',
+      text: `أُعيد المشروع ${parts.join(' و')}. كل إعادة تضيف دورة مراجعة كاملة إلى المدة.`,
       bold: parts,
       src: 'سجل الإجراءات',
     })
@@ -151,9 +151,9 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       id: 'j-level',
       kind: 'note',
       label: 'مستوى القرار',
-      text: `القرار اتاخد عند «${j.decidedBy}»، المبلغ ${nf.format(row.amountGranted || row.amountRequested)} ريال وقع في نطاق صلاحيته.`,
+      text: `اتُّخذ القرار عند «${j.decidedBy}»، والمبلغ ${nf.format(row.amountGranted || row.amountRequested)} ريال ضمن نطاق صلاحيته.`,
       bold: [j.decidedBy, `${nf.format(row.amountGranted || row.amountRequested)} ريال`],
-      src: 'سقوف الصلاحيات · مؤقتة لحين اعتمادها',
+      src: 'حدود الصلاحيات · مؤقتة لحين اعتمادها',
     })
   }
 
@@ -164,7 +164,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
 function nextAction(row: ProjectRow): string {
   switch (row.stage) {
     case 'دراسة المشروع': return 'تسجيل التوصية'
-    case 'استكمال بيانات المشروع': return 'متابعة الجهة على الناقص'
+    case 'استكمال بيانات المشروع': return 'متابعة الجهة لاستكمال النواقص'
     case 'اعتماد الإتفاقية':
     case 'اعتماد الإتفاقية الكترونيًا':
     case 'الإتفاقيات الورقية': return 'اعتماد الاتفاقية'
@@ -209,7 +209,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
       label: 'تجاوز مدة الإجراء',
       metric: { value: String(late.length), unit: 'فوق حدّ القسم' },
       text:
-        `${late.length === 1 ? 'وهو' : 'أطولها'} «${worst.name}» واقف من ${d} ` +
+        `${late.length === 1 ? 'وهو' : 'أطولها'} «${worst.name}»، متوقف منذ ${d} ` +
         `في «${worst.stage}»، أي ${over}.`,
       bold: [d, over],
       danger: [over],
@@ -230,12 +230,12 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
       label: 'بلا مالك',
       metric: { value: String(orphan.length), unit: 'بلا مالك' },
       text:
-        `بقيمة ${m}. ما فيش موظف مسؤول عن متابعة أيٍّ منها، ` +
-        `فبتتأخر من غير ما حد يلاحظ.`,
+        `بقيمة ${m}. لا يتابع أيًّا منها موظف مسؤول، ` +
+        `فتتأخر دون أن يلاحظ أحد.`,
       bold: [m],
       src: 'عمود المالك في جدول المشاريع',
       to: `${ROUTES.projects}?unowned=1`,
-      toLabel: 'إسناد جماعي',
+      toLabel: 'أسندها جماعيًا',
     })
   }
 
@@ -300,8 +300,8 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
       label: 'ملفات ناقصة',
       metric: { value: String(incomplete.length), unit: `من ${scope.length} ملفها ناقص` },
       text:
-        `وعندها ${r} تحت التشغيل. الاتفاقية الإلكترونية ما تُعتمد قبل ` +
-        `اكتمال الملف، فالمشاريع دي هتقف.`,
+        `ولديها ${r} تحت التنفيذ. لا تُعتمد الاتفاقية الإلكترونية قبل ` +
+        `اكتمال الملف، فستتوقف هذه المشاريع.`,
       bold: [r],
       src: 'ملف الجهة = 8 مستندات',
       to: `${ROUTES.entities}?docs=1`,
@@ -319,8 +319,8 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
       label: 'جهات معلّقة',
       metric: { value: String(held.length), unit: 'جهة معلّقة' },
       text:
-        `ولها ${d} معتذر عنها. يستحق المراجعة: هل التعليق هو السبب ` +
-        `في الاعتذار؟`,
+        `ولها ${d} معتذر عنها. يستحق التحقق: هل التعليق هو سبب ` +
+        `الاعتذار؟`,
       bold: [d],
       src: 'حالة التفعيل في سجل الشركاء',
     })
@@ -386,8 +386,8 @@ export function readEntity(
       label: 'التفعيل',
       metric: { value: entity.activation, unit: 'حالة التفعيل' },
       text: stopped
-        ? 'التعاقد موقوف لحد ما التفعيل يتقبل، أي اعتماد دلوقتي هيقف عند توقيع الاتفاقية.'
-        : 'بياناتها اتحدّثت ولسه ما اتراجعتش، فالمقارنة بجهات تانية مبنية على ملف قديم.',
+        ? 'التعاقد موقوف حتى يُقبل التفعيل، وأي اعتماد الآن سيتوقف عند توقيع الاتفاقية.'
+        : 'حُدّثت بياناتها ولم تُراجع بعد، فالمقارنة بالجهات الأخرى مبنية على ملف قديم.',
       bold: [entity.activation],
       danger: stopped ? [entity.activation] : undefined,
       src: 'حقل التفعيل في ملف الجهة',
@@ -404,11 +404,11 @@ export function readEntity(
       label: 'الترخيص منتهٍ',
       metric: { value: detail.licenseEndsAt, unit: 'انتهى الترخيص في' },
       text:
-        'الاتفاقية ما تتوقّعش بترخيص منتهٍ، والملف بيعدّي في العدّاد لأن المستند مرفوع فعلًا، ' +
-        'التجديد من الجهة المرخِّصة لا منّا.',
+        'لا تُوقَّع الاتفاقية بترخيص منتهٍ، ويظهر الملف مكتملًا في العدّاد لأن المستند مرفوع فعلًا. ' +
+        'ويُجدَّد الترخيص لدى الجهة المرخِّصة لا لدى المؤسسة.',
       danger: [detail.licenseEndsAt],
       src: 'ملف الجهة · تاريخ نهاية الترخيص',
-      actions: [{ label: 'تذكير الجهة', kind: 'btn-2' }],
+      actions: [{ label: 'ذكّر الجهة', kind: 'btn-2' }],
     })
   }
 
@@ -420,7 +420,7 @@ export function readEntity(
       kind: 'flag',
       label: 'مستندات منتهية',
       metric: { value: String(expiredDocs), unit: 'مرفوع وانتهت صلاحيته' },
-      text: `${n} مرفوع في الملف بس صلاحيته خلصت، فبيتحسب مكتملًا وهو مش صالح.`,
+      text: `${n} مرفوع في الملف لكن صلاحيته انتهت، فيُحتسب مكتملًا وهو غير صالح.`,
       bold: [n],
       danger: [n],
       src: 'ملف المستندات · تواريخ الصلاحية',
@@ -434,7 +434,7 @@ export function readEntity(
       kind: 'flag',
       label: 'لا حساب مفعّل',
       text:
-        'مفيش حساب بنكي مفعّل للجهة، فالصرف موقوف حتى لو المشروع اتعتمد، ' +
+        'لا يوجد حساب بنكي مفعّل للجهة، فالصرف موقوف حتى لو اعتُمد المشروع. ' +
         `آخر سبب مسجَّل: «${detail.banks[0].reason ?? 'بانتظار التفعيل'}».`,
       bold: ['الصرف موقوف'],
       src: 'الحسابات البنكية',
@@ -447,7 +447,7 @@ export function readEntity(
       kind: 'flag',
       label: 'ملف ناقص',
       metric: { value: String(missing), unit: `مستندات ناقصة من ${ENTITY_DOCS_TOTAL}` },
-      text: 'أي مشروع لها هيقف عند اعتماد الاتفاقية لحد ما الملف يكتمل.',
+      text: 'سيتوقف أي مشروع لها عند اعتماد الاتفاقية حتى يكتمل الملف.',
       src: 'ملف الجهة المطلوب',
       bar: {
         value: entity.docsUploaded,
@@ -455,7 +455,7 @@ export function readEntity(
         valueLabel: 'المرفوع',
         limitLabel: 'المطلوب',
       },
-      actions: [{ label: 'تذكير الجهة', kind: 'btn-2' }, { label: 'تسجيل ملاحظة', kind: 'btn-2' }],
+      actions: [{ label: 'ذكّر الجهة', kind: 'btn-2' }, { label: 'سجّل ملاحظة', kind: 'btn-2' }],
     })
   }
 
@@ -469,8 +469,8 @@ export function readEntity(
       label: 'تعثّر سابق',
       metric: { value: String(entity.projectsStalled), unit: 'متعثّر في سجلها' },
       text:
-        `${n} وقف بعد الاعتماد ولم يكتمل. التعثّر السابق بيتقري مع الطلب الجديد ` +
-        `لأنه بيقول عن قدرتها على التنفيذ، لا عن ملفها الورقي.`,
+        `${n} توقف بعد الاعتماد ولم يكتمل. يُقرأ التعثّر السابق مع الطلب الجديد ` +
+        `لأنه يدل على قدرتها على التنفيذ، لا على ملفها الورقي.`,
       bold: [n],
       danger: [n],
       src: 'أداء الجهة · السجل التراكمي',
@@ -484,10 +484,10 @@ export function readEntity(
     out.push({
       id: 'late',
       kind: 'flag',
-      label: 'مشروع واقف',
+      label: 'مشروع متوقف',
       metric: { value: String(late.length), unit: 'من مشاريعها فوق الحدّ' },
       text:
-        `${late.length === 1 ? 'وهو' : 'أطولها'} «${worst.name}» واقف من ${d} ` +
+        `${late.length === 1 ? 'وهو' : 'أطولها'} «${worst.name}»، متوقف منذ ${d} ` +
         `في «${worst.stage}».`,
       bold: [d],
       danger: [d],
@@ -512,7 +512,7 @@ export function readEntity(
       metric: { value: pctText(rate), unit: 'من معتمداتها اكتملت' },
       text:
         `أكملت ${done} من ${entity.projectsApproved}` +
-        `${entity.projectsRunning > 0 ? `، و${units.project(entity.projectsRunning, true)} لسه تحت التشغيل` : ''}.`,
+        `${entity.projectsRunning > 0 ? `، و${units.project(entity.projectsRunning, true)} لا تزال تحت التنفيذ` : ''}.`,
       bold: [done],
       src: 'أداء الجهة · السجل التراكمي',
       bar: {
@@ -537,8 +537,8 @@ export function readEntity(
       label: 'اعتذارات',
       metric: { value: pctText(Math.round((entity.projectsDeclined / asked) * 100)), unit: 'من طلباتها اعتُذر عنها' },
       text:
-        `اعتُذر عن ${n} من ${units.project(asked, true)} تقدّمت بيها. ` +
-        `سبب الاعتذار السابق بيستحق القراءة قبل الطلب الجديد، لو نفس السبب اتكرّر، القرار متكرر.`,
+        `اعتُذر عن ${n} من ${units.project(asked, true)} تقدّمت بها. ` +
+        `يستحق سبب الاعتذار السابق القراءة قبل الطلب الجديد، فإن تكرّر السبب تكرّر القرار.`,
       bold: [n],
       src: 'أداء الجهة · السجل التراكمي',
     })
@@ -552,8 +552,8 @@ export function readEntity(
       id: 'load',
       kind: 'note',
       label: 'الحمل الحالي',
-      metric: { value: String(entity.projectsRunning), unit: 'تحت التشغيل الآن' },
-      text: `عندها ${n} تحت التشغيل في نفس الوقت، الطلب الجديد بيضاف على الحمل ده لا على ملف فاضي.`,
+      metric: { value: String(entity.projectsRunning), unit: 'تحت التنفيذ الآن' },
+      text: `لديها ${n} تحت التنفيذ في الوقت نفسه، والطلب الجديد يُضاف إلى هذا الحمل لا إلى ملف فارغ.`,
       bold: [n],
       src: 'أداء الجهة · السجل التراكمي',
     })
@@ -571,8 +571,8 @@ export function readEntity(
       label: 'تحت الصرف',
       metric: { value: amount, unit: 'ملتزم لها ولم يصل' },
       text:
-        `${pctText(share)} من إجمالي ما مُنح لها لسه في الطريق. ` +
-        `الدفعة الواقفة بتبقى مربوطة بتقرير أو مستند ناقص، فهي إشارة على انضباط التقارير.`,
+        `${pctText(share)} من إجمالي ما مُنح لها لم يصل بعد. ` +
+        `الدفعة المتوقفة ترتبط عادةً بتقرير أو مستند ناقص، فهي مؤشر على انضباط التقارير.`,
       bold: [amount],
       src: 'ملف الصرف · إجمالي الممنوح',
       bar: {
@@ -606,8 +606,8 @@ export function readEntity(
       kind: 'note',
       label: 'الحوكمة',
       text:
-        `درجة الحوكمة لسه غير مقيَّمة، فالمقارنة بين هذه الجهة وغيرها ` +
-        `في نفس الهدف مش مكتملة عند اتخاذ القرار.`,
+        `درجة الحوكمة غير مقيَّمة بعد، فالمقارنة بين هذه الجهة وغيرها ` +
+        `في الهدف نفسه غير مكتملة عند اتخاذ القرار.`,
       bold: ['غير مقيَّمة'],
       src: 'حقل الحوكمة في ملف الجهة',
     })
@@ -623,7 +623,7 @@ export function readEntity(
       kind: 'note',
       label: 'جهة حديثة',
       metric: { value: tenure === 0 ? 'أقل من سنة' : String(tenure), unit: 'منذ التسجيل' },
-      text: `مسجّلة من ${y} بس، فالسجل التراكمي فوق قصير بطبيعته، قلّته مش أداءً ضعيفًا.`,
+      text: `مسجّلة منذ ${y} فقط، فالسجل التراكمي أعلاه قصير بطبيعته، وقلّته لا تعني ضعف الأداء.`,
       bold: [y],
       src: `تاريخ التسجيل · ${entity.registeredAt}`,
     })
@@ -692,7 +692,7 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
         `قيمتها ${nf.format(money)} ريال` +
         (mineLate.length
           ? `، منها ${units.project(mineLate.length, true)} فوق حدّ القسم.`
-          : `، ولا واحد منها عدّى حدّ قسمه.`),
+          : `، ولم يتجاوز أيٌّ منها حدّ قسمه.`),
       bold: [`${nf.format(money)} ريال`,
         ...(mineLate.length ? [units.project(mineLate.length, true)] : [])],
       danger: mineLate.length ? [units.project(mineLate.length, true)] : [],
@@ -715,11 +715,11 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
     out.push({
       id: 'cl-mine',
       kind: 'flag',
-      label: 'تقييم عليك',
-      metric: { value: String(evalDue.length), unit: 'مشروع مستنّي تقييمك' },
+      label: 'تقييم مطلوب منك',
+      metric: { value: String(evalDue.length), unit: 'مشروع بانتظار تقييمك' },
       text:
-        `التقرير الختامي اتعتمد من المدير التنفيذي، فالقاعدة 6 اتحقّقت · ` +
-        `وتقييم المشروع بتعدّه إنت لا الجهة، ودورة اعتماده منفصلة.`,
+        `اعتمد المدير التنفيذي التقرير الختامي، فتحقّقت القاعدة 6 · ` +
+        `وإعداد تقييم المشروع مسؤولية مشرف المنح لا الجهة، ودورة اعتماده منفصلة.`,
       bold: ['القاعدة 6'],
       src: 'قواعد الإغلاق 6 و17',
       to: ROUTES.closings,
@@ -735,10 +735,10 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
       id: 'oldest',
       kind: stagePressure(worst) > 1 ? 'flag' : 'note',
       label: 'أقدم ما عندك',
-      metric: { value: String(days(worst.hoursInStage)), unit: 'يومًا واقف' },
+      metric: { value: String(days(worst.hoursInStage)), unit: 'يومًا دون تقدّم' },
       text:
-        `«${worst.name}» في «${worst.stage}». كل يوم زيادة هنا هو يوم ` +
-        `الجهة مستنية فيه ردًّا.`,
+        `«${worst.name}» في «${worst.stage}». كل يوم إضافي هنا يوم ` +
+        `تنتظر فيه الجهة ردًّا.`,
       bold: [`«${worst.name}»`],
       src: 'مدة المكوث في القسم',
       to: ROUTES.project(worst.id),
@@ -763,12 +763,12 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
       id: 'approvals',
       kind: 'flag',
       label: 'ينتظر اعتمادك',
-      metric: { value: String(waiting.length), unit: 'فوق سقف المشرف' },
+      metric: { value: String(waiting.length), unit: 'فوق حد صلاحية المشرف' },
       text:
-        `قيمتها ${nf.format(money)} ريال. المشرف يوصي، لكن الاعتماد ` +
-        `عند هذا المبلغ قرارك أنت.`,
+        `قيمتها ${nf.format(money)} ريال. يوصي المشرف، أما اعتماد ` +
+        `هذا المبلغ فقرارك أنت.`,
       bold: [`${nf.format(money)} ريال`],
-      src: 'سقوف الاعتماد · قيم مؤقتة لحين اعتمادها',
+      src: 'حدود الاعتماد · قيم مؤقتة لحين اعتمادها',
       to: `${ROUTES.projects}?status=في الدراسة&sort=amount`,
       toLabel: 'اعرضها',
     })
@@ -792,7 +792,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
       metric: { value: String(heaviest[1].length), unit: `عند ${heaviest[0]}` },
       text:
         `مقابل ${units.project(lightest[1].length, true)} عند ${lightest[0]}. ` +
-        `الفرق ده بيظهر في مدد الانتظار قبل ما يظهر في أي تقرير.`,
+        `يظهر هذا الفرق في مدد الانتظار قبل أن يظهر في أي تقرير.`,
       bold: [units.project(lightest[1].length, true), lightest[0]],
       src: 'المشاريع تحت الدراسة لكل مشرف',
       to: `${ROUTES.projects}?owner=${encodeURIComponent(heaviest[0])}&status=في الدراسة`,
@@ -808,14 +808,14 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
       id: 'orphan',
       kind: 'flag',
       label: 'بلا مالك',
-      metric: { value: String(orphan.length), unit: 'محتاجة إسناد' },
+      metric: { value: String(orphan.length), unit: 'بحاجة إلى إسناد' },
       text:
-        `بقيمة ${nf.format(money)} ريال. ما فيش موظف مسؤول عن متابعة ` +
-        `أيٍّ منها، فبتتأخر من غير ما حد يلاحظ.`,
+        `بقيمة ${nf.format(money)} ريال. لا يتابع أيًّا منها موظف ` +
+        `مسؤول، فتتأخر دون أن يلاحظ أحد.`,
       bold: [`${nf.format(money)} ريال`],
       src: 'عمود المالك في جدول المشاريع',
       to: `${ROUTES.projects}?unowned=1`,
-      toLabel: 'إسناد جماعي',
+      toLabel: 'أسندها جماعيًا',
     })
   }
 
@@ -860,7 +860,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
       metric: { value: `${rate}%`, unit: 'من الطلبات' },
       text:
         `${units.project(declined.length, true)} من ${projects.length}. ` +
-        `المعدل العالي بيعني إمّا أن الطلبات خارج النطاق، وإمّا أن ` +
+        `ارتفاع المعدل يعني إمّا أن الطلبات خارج النطاق، وإمّا أن ` +
         `الشروط غير واضحة للجهات قبل التقديم.`,
       bold: [units.project(declined.length, true)],
       src: 'مبررات الاعتذار المقنّنة',
@@ -884,11 +884,11 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
     out.push({
       id: 'concentration',
       kind: share > 60 ? 'flag' : 'note',
-      label: 'تركّز الشركاء',
+      label: 'تركّز الدعم',
       metric: { value: `${share}%`, unit: 'عند ثلاث جهات' },
       text:
         `من إجمالي الممنوح، وأعلاها «${ranked[0][0]}» بـ${nf.format(ranked[0][1])} ريال. ` +
-        `التركّز بيرفع الأثر وبيرفع المخاطرة في نفس الوقت.`,
+        `التركّز يرفع الأثر ويرفع المخاطرة في الوقت نفسه.`,
       bold: [`«${ranked[0][0]}»`, `${nf.format(ranked[0][1])} ريال`],
       src: 'الممنوح لكل جهة',
       to: `${ROUTES.entities}?sort=granted`,
@@ -919,12 +919,12 @@ function blockedReading(projects: ProjectRow[], entities: EntityRow[]): Reading[
     label: 'مهدَّدة بالتوقف',
     metric: { value: String(blocked.length), unit: 'لجهات ملفها ناقص' },
     text:
-      `بقيمة ${nf.format(money)} ريال تحت التشغيل. اعتماد الاتفاقية ` +
-      `بيقف على مستندات الجهة، مش على المشروع.`,
+      `بقيمة ${nf.format(money)} ريال تحت التنفيذ. اعتماد الاتفاقية ` +
+      `يتوقف على مستندات الجهة، لا على المشروع.`,
     bold: [`${nf.format(money)} ريال`],
     src: 'تقاطع جدول المشاريع مع ملفات الجهات',
     to: `${ROUTES.entities}?docs=1`,
-    toLabel: 'الجهات الناقصة',
+    toLabel: 'اعرض الجهات',
   }]
 }
 
@@ -974,7 +974,7 @@ function bottleneckReading(projects: ProjectRow[]): Reading | null {
     metric: { value: String(avgDays), unit: 'يومًا متوسط المكوث' },
     text:
       `في «${stage}»، على ${units.project(rows.length, true)}. ` +
-      `ده المكان اللي أي تحسين في الزمن هيبان فيه أولًا.`,
+      `هنا يظهر أثر أي تحسين في الزمن أولًا.`,
     bold: [`«${stage}»`, units.project(rows.length, true)],
     src: 'مدة المكوث في القسم لكل مشروع',
     to: `${ROUTES.projects}?stage=${encodeURIComponent(stage)}&sort=waiting`,
@@ -1031,8 +1031,8 @@ export function readReports(yearId: string): Reading[] {
       label: 'المال المربوط',
       metric: { value: pctText(lockedPct), unit: 'مربوطة ولم تخرج' },
       text:
-        `${pctText(lockedPct)} من المخصص محجوزة أو ملتزم بها، مقابل ${pctText(spentPct)} وصلت للجهات فعلًا. ` +
-        `المربوط مش متاح لمشروع جديد ومش واصل للمستفيد، فهو أثقل بند في الميزانية.`,
+        `${pctText(lockedPct)} من المخصص محجوزة أو ملتزم بها، مقابل ${pctText(spentPct)} وصلت إلى الجهات فعلًا. ` +
+        `المربوط غير متاح لمشروع جديد ولم يصل إلى المستفيد، فهو أثقل بند في الميزانية.`,
       bold: [pctText(lockedPct)],
       danger: locked > bud.spent * 2 ? [pctText(lockedPct)] : undefined,
       src: 'تقارير الميزانية · reports1_1',
@@ -1055,9 +1055,9 @@ export function readReports(yearId: string): Reading[] {
       label: 'الوعد مقابل التنفيذ',
       metric: { value: String(missed), unit: 'مشروعًا لم يصل لعدد مستفيديه' },
       text:
-        `من ${units.project(g.total, true)} لها تقرير ختامي، ${missed} ما وصلوش للعدد المتعاقد عليه، ` +
-        `والمدة الفعلية أطول بـ${pctText(Math.abs(g.days))} في المتوسط. الأرقام دي في «التقارير الختامية» ` +
-        `من سنين ومحدّش بيحسبها.`,
+        `من ${units.project(g.total, true)} لها تقرير ختامي، ${missed} لم تصل إلى العدد المتعاقد عليه، ` +
+        `والمدة الفعلية أطول بـ${pctText(Math.abs(g.days))} في المتوسط. هذه الأرقام موجودة في «التقارير الختامية» ` +
+        `منذ سنوات ولا يحسبها أحد.`,
       bold: [String(missed)],
       danger: [String(missed)],
       src: 'التقارير الختامية · reports1_12',
@@ -1074,10 +1074,10 @@ export function readReports(yearId: string): Reading[] {
       id: 'r-know',
       kind: 'flag',
       label: 'المعرفة',
-      metric: { value: pctText(emptyPct), unit: 'من قيود المعرفة فاضية' },
+      metric: { value: pctText(emptyPct), unit: 'من قيود المعرفة فارغة' },
       text:
-        `${empty} قيدًا من ${knowledgeRows.length} نصّهم نقطة واحدة. الحقل إلزامي، فبيتملّى عشان ` +
-        `يعدّي لا عشان يُقرأ، والعلاج مش حقل تاني، العلاج إن اللي بيكتبه يشوف نتيجته.`,
+        `${empty} قيدًا من ${knowledgeRows.length} نصّها نقطة واحدة. الحقل إلزامي، فيُملأ لتجاوزه ` +
+        `لا ليُقرأ. والعلاج ليس حقلًا آخر، بل أن يرى كاتبه أثر ما يكتب.`,
       bold: [String(empty)],
       danger: [pctText(emptyPct)],
       src: 'تقرير المعرفة · reports1_13',
@@ -1095,8 +1095,8 @@ export function readReports(yearId: string): Reading[] {
       label: 'تركّز',
       metric: { value: String(byGoal[1]), unit: 'مشاريع في هدف واحد' },
       text:
-        `«${byGoal[0]}» أخد ${units.project(byGoal[1], true)} في الفترة دي. التركّز مش غلط بالضرورة، ` +
-        `بس «مشروع مكرر لنفس الجهة» أحد مبررات الاعتذار المقنّنة، فيستحق نظرة.`,
+        `«${byGoal[0]}» نال ${units.project(byGoal[1], true)} في هذه الفترة. التركّز ليس خطأً بالضرورة، ` +
+        `لكن «مشروع مكرر لنفس الجهة» أحد مبررات الاعتذار المقنّنة، فيستحق نظرة.`,
       bold: [byGoal[0]],
       src: 'مخصص الصرف · reports1_5',
       to: ROUTES.reportView('spend'),
@@ -1114,8 +1114,8 @@ export function readReports(yearId: string): Reading[] {
       label: 'فوق الحدّ',
       metric: { value: String(late.length), unit: 'مشروعًا فوق حدّ قسمه' },
       text:
-        `أطولها «${worst.name}» واقف من ${units.day(days(worst.hoursInStage), true)} في «${worst.stage}». ` +
-        `المكوث بيتقاس في النظام فعلًا، والحدّ المقارَن بيه مؤقت لحين اعتماده.`,
+        `أطولها «${worst.name}»، متوقف منذ ${units.day(days(worst.hoursInStage), true)} في «${worst.stage}». ` +
+        `المكوث يُقاس فعلًا في النظام، والحدّ المقارَن به مؤقت لحين اعتماده.`,
       bold: [worst.stage],
       danger: [String(late.length)],
       src: 'أداء الأقسام · reports1_15',
@@ -1129,7 +1129,7 @@ export function readReports(yearId: string): Reading[] {
       id: 'r-clear',
       kind: 'note',
       label: 'لا ملاحظات',
-      text: 'مفيش ملاحظة على الفترة دي.',
+      text: 'لا توجد ملاحظات على هذه الفترة.',
       src: 'محسوبة من تقارير الفترة',
     })
   }
@@ -1169,8 +1169,8 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       label: 'تعثّر',
       metric: { value: String(stuck.length), unit: `طلب متعثر ${scope}` },
       text:
-        `أطولها «${worst.projectName}» واقف ${d} عند ${payStateWho(worst.state)}. ` +
-        `آلية التصعيد بتطلب تقريرًا شاملًا بالمتأخر والمتعثر.`,
+        `أطولها «${worst.projectName}»، متوقف ${d} عند ${payStateWho(worst.state)}. ` +
+        `تتطلب آلية التصعيد تقريرًا شاملًا بالمتأخر والمتعثر.`,
       bold: [`«${worst.projectName}»`, d],
       danger: [d],
       src: 'مدة المرحلة · آلية التصعيد 9.5',
@@ -1199,7 +1199,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       label: 'موقوف بشرط',
       metric: { value: String(blocked.length), unit: `طلب لا يمكن تمريره` },
       text: top
-        ? `بقيمة ${millions(sum)} ريال. أكتر سبب متكرر «${top.label}» في ` +
+        ? `بقيمة ${millions(sum)} ريال. أكثر الأسباب تكرارًا «${top.label}» في ` +
           `${top.n} طلبًا · قاعدة ${top.rule} في الوثيقة.`
         : `بقيمة ${millions(sum)} ريال، وسببها الحساب البنكي غير المعتمد.`,
       bold: [`${millions(sum)} ريال`, ...(top ? [`«${top.label}»`] : [])],
@@ -1223,8 +1223,8 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       label: 'مكان الضغط',
       metric: { value: String(peak[1]), unit: `طلب عند ${meta?.who ?? 'المرحلة'}` },
       text:
-        `يعني ${pctText(share)} من المفتوح واقف في مرحلة واحدة ` +
-        `(خطوات ${meta?.steps} في الوثيقة).`,
+        `أي أن ${pctText(share)} من الطلبات المفتوحة متوقفة في مرحلة واحدة ` +
+        `(الخطوات ${meta?.steps} في الوثيقة).`,
       bold: [pctText(share)],
       src: 'توزيع الطلبات على المراحل',
       to: `${ROUTES.payments}?state=${peak[0]}`,
@@ -1266,7 +1266,7 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
       label: 'موقوفة عن الاعتماد',
       metric: { value: String(blocked.length), unit: `اتفاقية ${scope}` },
       text:
-        `أكتر سبب «${worst.why}» في ${worst.n} منها · ${worst.rule} بتمنع ` +
+        `أكثر الأسباب «${worst.why}» في ${worst.n} منها · و${worst.rule} تمنع ` +
         `الإرسال للاعتماد قبل استيفائه.`,
       bold: [`«${worst.why}»`, worst.rule],
       src: 'قواعد الاتفاقيات 8 و9 · الخطوة 11',
@@ -1287,8 +1287,8 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
       metric: { value: nf.format(sum), unit: 'ريال موقوفة في دورة الاعتماد' },
       text:
         `على ${pays} دفعة مجدولة · ` +
-        `القاعدة 1 في إجراء الصرف بتمنع أي طلب قبل تفعيل الاتفاقية، ` +
-        `فكل يوم وقوف هنا بيأخّر دفعة هناك.`,
+        `القاعدة 1 في إجراء الصرف تمنع أي طلب قبل تفعيل الاتفاقية، ` +
+        `فكل يوم توقف هنا يؤخّر دفعة هناك.`,
       bold: [`${pays} دفعة`],
       src: 'BPD-009 قاعدة 1 · جداول الدفعات في الاتفاقيات',
     })
@@ -1303,8 +1303,8 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
       label: 'دورات متكرّرة',
       metric: { value: pctText(Math.round((again.length / rows.length) * 100)), unit: 'لها إصدار ثانٍ' },
       text:
-        `القاعدة 12 بتقول إن الإعادة للتعديل بتعيد دورة الاعتماد كاملة ` +
-        `مع الاحتفاظ بالاعتمادات السابقة · فده مؤشر 4 في الوثيقة.`,
+        `تنص القاعدة 12 على أن الإعادة للتعديل تعيد دورة الاعتماد كاملة ` +
+        `مع الاحتفاظ بالاعتمادات السابقة · وهذا هو المؤشر 4 في الوثيقة.`,
       src: 'إصدارات الاتفاقيات · قاعدة 24',
     })
   }
@@ -1335,8 +1335,8 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
       label: 'ملفات ناقصة',
       metric: { value: String(short.length), unit: `طلب ملفه ناقص ${scope}` },
       text:
-        `وإجمالي الناقص ${docs} مستندًا إلزاميًا. القاعدة 4 بتمنع الإرسال ` +
-        `قبل اكتمالها، والمطلوب نفسه بيتغيّر بتصنيف الجهة · تلات مستندات ` +
+        `وإجمالي النواقص ${docs} مستندًا إلزاميًا. القاعدة 4 تمنع الإرسال ` +
+        `قبل اكتمالها، والمطلوب نفسه يتغيّر بتصنيف الجهة · ثلاثة مستندات ` +
         `إلزامية للجهات التجارية وحدها.`,
       bold: [`${docs} مستندًا`],
       src: 'مستندات النظام العامل · نموذج /reg/add',
@@ -1355,9 +1355,9 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
         unit: 'أقرّت بصفر',
       },
       text:
-        `النظام بيقول للجهة «في حال عدم إجراء تقييم الحوكمة ضع 0»، ` +
-        `فالصفر هنا معناه «لم تُقيَّم» لا «ضعيفة» · والرقم إقرار من ` +
-        `الجهة لا تقييم عندنا.`,
+        `يطلب النظام من الجهة «في حال عدم إجراء تقييم الحوكمة ضع 0»، ` +
+        `فالصفر هنا يعني «لم تُقيَّم» لا «ضعيفة» · والرقم إقرار من ` +
+        `الجهة لا تقييم من المؤسسة.`,
       danger: ['إقرار من الجهة'],
       src: 'حقل درجة الحوكمة في نموذج التسجيل',
     })
@@ -1370,11 +1370,11 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
     out.push({
       id: 'rg-back',
       kind: 'note',
-      label: 'الوقوف نواقص',
+      label: 'التوقف بسبب النواقص',
       metric: { value: String(back), unit: 'بانتظار الاستكمال' },
       text:
-        `مقابل ${no} مرفوضًا. يعني اللي بيوقف الطلبات نواقص ملف ` +
-        `بتتحلّ برسالة، لا عدم أهلية · والقاعدة 31 بتلزم كتابة السبب ` +
+        `مقابل ${no} مرفوضًا. أي أن ما يوقف الطلبات نواقص ملف ` +
+        `تُحل برسالة، لا عدم أهلية · والقاعدة 31 تُلزم بكتابة السبب ` +
         `في الحالتين.`,
       bold: [`${no} مرفوضًا`],
       src: 'حالات الطلب · قاعدة 26',
@@ -1411,14 +1411,14 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
     out.push({
       id: 'p-queue',
       kind: 'flag',
-      label: 'مستنّي مراجعتك',
+      label: 'بانتظار مراجعتك',
       metric: { value: String(queue.length), unit: `نشاطًا ${scope}` },
       text:
         `في ${plans} خطة · وأكبر فرق في «${worst?.projectName ?? ''}»: ` +
-        `الجهة معلنة ${planClaimed(worst)}٪ والمقبول ${planDone(worst)}٪، ` +
-        `يعني ${gap} نقطة مش محسوبة لحدّ ما تتراجع.`,
+        `أعلنت الجهة ${planClaimed(worst)}٪ والمقبول ${planDone(worst)}٪، ` +
+        `أي ${gap} نقطة غير محسوبة حتى تُراجع.`,
       bold: [`${gap} نقطة`],
-      src: 'قاعدة 14 · النشاط ما يتحسبش إنجازًا إلا بعد قبول المشرف',
+      src: 'قاعدة 14 · لا يُحتسب النشاط إنجازًا إلا بعد قبول المشرف',
       to: `${ROUTES.plans}?wait=1`,
       toLabel: 'اعرضها',
     })
@@ -1438,7 +1438,7 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
       label: 'متأخّر عن الخطة',
       metric: { value: String(behind.length), unit: `خطة ${scope}` },
       text:
-        `و${acts} نشاطًا عدّى موعده وما اتقبلش · أبعدها «${worst.projectName}» ` +
+        `و${acts} نشاطًا تجاوز موعده ولم يُقبل · أبعدها «${worst.projectName}» ` +
         `بأداء جدول ${(planSpi(worst) ?? 0).toFixed(2)} (المنجَز ${planDone(worst)}٪ ` +
         `والمخطَّط لليوم ${planPlanned(worst)}٪).`,
       danger: [`${(planSpi(worst) ?? 0).toFixed(2)}`],
@@ -1459,8 +1459,8 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
       label: 'مؤهَّل للإغلاق',
       metric: { value: String(close.length), unit: 'مشروعًا' },
       text:
-        'كل أنشطة خطته اتقبلت · الخطة رفعت مانع الإغلاق، والإغلاق نفسه ' +
-        'إجراء تاني له قواعده (التقرير الختامي · الاتصال المؤسسي · التقييم).',
+        'قُبلت كل أنشطة خطته · ورفعت الخطة مانع الإغلاق، والإغلاق نفسه ' +
+        'إجراء آخر له قواعده (التقرير الختامي · الاتصال المؤسسي · التقييم).',
       src: 'BPD-012 · الخطة مكتملة ⇒ المشروع مؤهَّل للإغلاق',
     })
   }
@@ -1494,11 +1494,11 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
     out.push({
       id: 'cl-entity',
       kind: 'flag',
-      label: 'واقف على الجهة',
+      label: 'بانتظار الجهة',
       metric: { value: String(atEntity.length), unit: `طلب ${scope}` },
       text:
-        `${docs} بندًا ناقصًا في المجموع · وأطولها «${worst.projectName}» ` +
-        `واقف ${Math.round(worst.hoursInStage / 24)} يومًا · القاعدة 3 بتمنع ` +
+        `${docs} بندًا ناقصًا في المجموع · وأطولها «${worst.projectName}»، ` +
+        `متوقف منذ ${Math.round(worst.hoursInStage / 24)} يومًا · القاعدة 3 تمنع ` +
         `الإرسال قبل اكتمال البيانات والمرفقات.`,
       bold: [`${docs} بندًا`, 'القاعدة 3'],
       src: 'قواعد الإغلاق 3 و4 و10',
@@ -1524,11 +1524,11 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
       id: 'cl-gap',
       kind: under.length > 0 ? 'flag' : 'note',
       label: 'المعتمد مقابل الفعلي',
-      metric: { value: String(under.length), unit: 'تقرير تحت المستهدف بأكتر من 10%' },
+      metric: { value: String(under.length), unit: 'تقرير تحت المستهدف بأكثر من 10%' },
       text:
         `من ${withReport.length} تقريرًا وصل · وأكبر فرق في «${worst.c.projectName}»: ` +
         `${nf.format(worst.actual)} مستفيدًا مقابل ${nf.format(worst.planned)} معتمدًا · ` +
-        `القاعدة 4 هي اللي بتخلّي المقارنة دي ممكنة.`,
+        `والقاعدة 4 هي التي تجعل هذه المقارنة ممكنة.`,
       bold: [`${nf.format(worst.actual)} مستفيدًا`, 'القاعدة 4'],
       src: 'قاعدة 4 في إجراء الإغلاق · بيانات المشروع المعتمدة',
     })
@@ -1541,10 +1541,10 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
       id: 'cl-eval',
       kind: 'note',
       label: 'تقييم مستحقّ',
-      metric: { value: String(ready.length), unit: 'تقرير معتمد والتقييم ما بدأش' },
+      metric: { value: String(ready.length), unit: 'تقرير معتمد لم يبدأ تقييمه' },
       text:
-        `القاعدة 6 بتمنع بدء التقييم قبل اعتماد المدير التنفيذي · ` +
-        `والاعتماد ده حصل، فالكرة عند مشرف المنح دلوقتي.`,
+        `القاعدة 6 تمنع بدء التقييم قبل اعتماد المدير التنفيذي · ` +
+        `وقد اعتُمد، فالخطوة التالية الآن عند مشرف المنح.`,
       bold: ['القاعدة 6'],
       src: 'قاعدة 6 · دورتان مستقلّتان (قاعدة 17)',
       to: ROUTES.closings,

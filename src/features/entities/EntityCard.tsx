@@ -51,7 +51,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
       </div>
 
       <div className="ec-nums">
-        <div><b className="num">{row.projectsRunning}</b><span>تشغيل</span></div>
+        <div><b className="num">{row.projectsRunning}</b><span>تحت التشغيل</span></div>
         <div><b className="num">{row.projectsCompleted}</b><span>مكتمل</span></div>
         <div><b className="num">{row.projectsDeclined}</b><span>معتذر</span></div>
         <div>

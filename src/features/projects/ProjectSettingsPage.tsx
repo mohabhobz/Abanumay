@@ -58,8 +58,8 @@ export default function ProjectSettingsPage() {
             <div>
               <h1 className="ptitle">إعدادات المشاريع والصرف</h1>
               <p className="sub mt-1">
-                الأرقام اللي بتحدد مين يعتمد وإمتى يتأخّر ·
-                وكلها بتغيّر سلوك إجراء لا محتوى قايمة
+                الأرقام التي تحدّد صاحب الاعتماد ومتى يُعدّ الإجراء متأخّرًا ·
+                وكلها تغيّر سلوك الإجراء لا محتوى قائمة
               </p>
             </div>
             <Tag tone="warn">قيم افتراضية</Tag>
@@ -75,7 +75,7 @@ export default function ProjectSettingsPage() {
               <Glass>
                 <Head
                   title="جرّب المبلغ"
-                  meta={<span className="sub">القاعدة بتتقري من تحت لفوق</span>}
+                  meta={<span className="sub">تُقرأ القاعدة من الأسفل إلى الأعلى</span>}
                 />
                 <div className="cfgrow">
                   <label className="regf cfgwide">
@@ -92,8 +92,8 @@ export default function ProjectSettingsPage() {
                   </label>
                 </div>
                 <p className="sub cnote">
-                  مبلغ <Money>{amount}</Money> بيعتمده <b>{who.role}</b> ·
-                  أول صف سقفه أكبر من المبلغ هو صاحب القرار.
+                  مبلغ <Money>{amount}</Money> يعتمده <b>{who.role}</b> ·
+                  صاحب القرار هو أول مستوى حدّه المالي أكبر من المبلغ.
                 </p>
               </Glass>
 
@@ -110,8 +110,8 @@ export default function ProjectSettingsPage() {
                         <b>{r.role}</b>
                         <span className="sub">
                           {r.upTo === null
-                            ? 'ومافوق · بلا سقف'
-                            : <>لغاية <Money>{r.upTo}</Money></>}
+                            ? 'فما فوق · بلا حدّ مالي'
+                            : <>حتى <Money>{r.upTo}</Money></>}
                         </span>
                         <span className="pc-sp" />
                         {on && <Tag tone="ret">يعتمد المبلغ المجرَّب</Tag>}
@@ -121,8 +121,8 @@ export default function ProjectSettingsPage() {
                   })}
                 </ul>
                 <p className="sub cnote">
-                  الأرقام دي <b>افتراضات</b> · الوثيقة بتقول إن السقوف «من
-                  الإعدادات» من غير ما تدّي قيمة، والمؤسسة هي اللي بتحسمها.
+                  هذه الأرقام <b>افتراضات</b> · تنصّ الوثيقة على أن السقوف «من
+                  الإعدادات» دون أن تحدّد قيمة، والمؤسسة هي التي تحسمها.
                 </p>
               </Glass>
             </>
@@ -152,8 +152,8 @@ export default function ProjectSettingsPage() {
                 ))}
               </ul>
               <p className="sub cnote">
-                كل رقم هنا بيظهر في إجراء · والعمود التاني بيقول فين
-                بالظبط، عشان اللي بيغيّره يعرف هيلمس إيه.
+                كل رقم هنا يظهر في إجراء · والعمود الثاني يبيّن موضعه
+                بالتحديد، ليعرف من يغيّره أثر التغيير.
               </p>
             </Glass>
           )}

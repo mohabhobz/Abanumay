@@ -47,7 +47,7 @@ type Outcome = 'approve' | 'return' | 'reject'
 
 const OUT_SAY: Record<Outcome, string> = {
   approve: 'اعتماد وتفعيل · أُنشئت الجهة وأُرسل اسم المستخدم',
-  return: 'إعادة للاستكمال · رجع الطلب للجهة بالملاحظة',
+  return: 'إعادة للاستكمال · أُعيد الطلب إلى الجهة مع الملاحظة',
   reject: 'رفض وإيقاف · أُرشف الطلب بسببه',
 }
 
@@ -83,10 +83,10 @@ export default function RegReviewPage() {
             <Glass>
               <Empty
                 title="الطلب غير موجود."
-                note="يمكن يكون اتأرشف أو الرابط قديم · والطلبات لا تُحذف (قاعدة 28)."
+                note="ربما أُرشف الطلب أو أن الرابط قديم · علمًا بأن الطلبات لا تُحذف (قاعدة 28)."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.entityRequests)}>
-                    ارجع للصندوق
+                    العودة إلى صندوق الطلبات
                   </button>
                 }
               />
@@ -160,7 +160,7 @@ export default function RegReviewPage() {
                     <span>
                       {clash
                         ? <>رقم الترخيص مسجَّل لـ «{clash.name}» بنفس التصنيف</>
-                        : <>رقم الترخيص <Mono>{r.licenseNo}</Mono> غير مكرَّر في التصنيف ده</>}
+                        : <>رقم الترخيص <Mono>{r.licenseNo}</Mono> غير مكرَّر في هذا التصنيف</>}
                     </span>
                     <span className="payq-r">قاعدة <Num>8</Num></span>
                   </li>
@@ -168,8 +168,8 @@ export default function RegReviewPage() {
                     <Icon name={missingDocs.length ? icons.alert : icons.check} size={13} />
                     <span>
                       {missingDocs.length
-                        ? <>ناقص <Num>{missingDocs.length}</Num>: {missingDocs.map((d) => d.label).join(' · ')}</>
-                        : 'كل المستندات الإلزامية للتصنيف ده مرفوعة'}
+                        ? <>ينقص <Num>{missingDocs.length}</Num>: {missingDocs.map((d) => d.label).join(' · ')}</>
+                        : 'كل المستندات الإلزامية لهذا التصنيف مرفوعة'}
                     </span>
                     <span className="payq-r">قاعدة <Num>4</Num></span>
                   </li>
@@ -178,7 +178,7 @@ export default function RegReviewPage() {
                     <span>
                       درجة الحوكمة{' '}
                       {r.governanceClaim > 0
-                        ? <><span className="num">{r.governanceClaim}</span> · <b>إقرار الجهة</b> لا تقييمنا</>
+                        ? <><span className="num">{r.governanceClaim}</span> · <b>إقرار الجهة</b> لا تقييم المؤسسة</>
                         : <>أُقرّت بصفر · النظام يطلب ذلك عند عدم إجراء التقييم</>}
                     </span>
                     <span className="payq-r">نوتة ن-<Num>2</Num></span>
@@ -201,7 +201,7 @@ export default function RegReviewPage() {
                       v: (
                         <span className="kvpair">
                           {partnerKind(r.partner).label}
-                          <Tag tone="mute">افتراضي للجاي من البوّابة</Tag>
+                          <Tag tone="mute">افتراضي للقادم من البوابة</Tag>
                         </span>
                       ),
                     },
@@ -350,8 +350,8 @@ export default function RegReviewPage() {
                   </label>
                 )}
                 <p className="sub cnote">
-                  الأسباب السبعة دي مكوَّدة في النظام العامل · الحساب بياخد قراره
-                  لوحده حتى لو اتدخل في نفس الطلب (قاعدة{' '}
+                  هذه الأسباب السبعة مُرمَّزة في النظام العامل · ويُتّخذ قرار الحساب
+                  مستقلًا حتى لو أُدخل في الطلب نفسه (قاعدة{' '}
                   <span className="num">11</span>).
                 </p>
               </Glass>
@@ -372,7 +372,7 @@ export default function RegReviewPage() {
               <Glass>
                 <Head title="ما لا يوجد في هذه الشاشة" />
                 <p className="sub cnote">
-                  مفيش زرار حذف · القاعدة <span className="num">28</span> تمنع الحذف
+                  لا يوجد زر حذف · القاعدة <span className="num">28</span> تمنع الحذف
                   نهائيًا، والمرفوض يُؤرشف والقائم يُعطَّل. والمؤرشف يظهر لمسؤول
                   النظام وحده ببحث مخصّص (القاعدة <span className="num">29</span>)،
                   وهي شاشة لم تُبنَ بعد.
@@ -390,7 +390,7 @@ export default function RegReviewPage() {
                 <div className="rowf gp-3">
                   <Icon name={icons.check} size={18} className="ok-ink" />
                   <span className="decsent">
-                    اتسجّل: <b>{OUT_SAY[taken]}</b>
+                    سُجّل القرار: <b>{OUT_SAY[taken]}</b>
                     {bankNo && <><span className="decsep" />الحساب البنكي مرفوض · {bankNo}</>}
                   </span>
                 </div>
@@ -402,10 +402,10 @@ export default function RegReviewPage() {
               <div className="rowf gp-3 payact-w">
                 <span className="decsent">
                   {r.state === 'draft'
-                    ? <>الطلب <b>مسودة عند الجهة</b> · ما وصلش للمراجعة بعد (قاعدة <Num>12</Num>)</>
+                    ? <>الطلب <b>مسودة عند الجهة</b> · لم يصل إلى المراجعة بعد (قاعدة <Num>12</Num>)</>
                     : r.state === 'completion'
-                      ? <>الطلب <b>عند الجهة للاستكمال</b> · المخارج بترجع لما يتبعت تاني</>
-                      : <>الطلب <b>{REG_STATE_SAY[r.state]}</b> · القرار اتاخد ومفيش مخارج بعده</>}
+                      ? <>الطلب <b>عند الجهة للاستكمال</b> · تُتاح القرارات عند إعادة إرساله</>
+                      : <>الطلب <b>{REG_STATE_SAY[r.state]}</b> · اتُّخذ القرار ولا إجراء بعده</>}
                 </span>
               </div>
             ) : (
@@ -446,7 +446,7 @@ export default function RegReviewPage() {
                   <button
                     className="btn btn-2"
                     disabled={!note.trim()}
-                    title={note.trim() ? 'يرجع للجهة بالملاحظة' : 'اكتب الملاحظة الإدارية أولًا'}
+                    title={note.trim() ? 'يُعاد إلى الجهة مع الملاحظة' : 'اكتب الملاحظة الإدارية أولًا'}
                     onClick={() => setTaken('return')}
                   >
                     إعادة للاستكمال

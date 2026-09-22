@@ -164,11 +164,11 @@ export function projectChain(p: ProjectRow): ChainLink[] {
   links.push({
     key: 'budget',
     label: 'الميزانية',
-    name: node ? node.label : 'مش متربط ببند',
+    name: node ? node.label : 'غير مرتبط ببند',
     value: node?.allocated ?? 0,
     say: node
       ? `مخصص الهدف · والمشروع واحد من ${rows2026.filter((x) => x.goal === p.goal).length} تحته`
-      : 'المشروع مش متربط ببند في الميزانية',
+      : 'المشروع غير مرتبط ببند في الميزانية',
     state: node ? (node.allocated >= p.amountGranted ? 'ok' : 'gap') : 'none',
     to: node ? `/budget/doc/${budget2026.id}` : undefined,
   })
@@ -179,7 +179,7 @@ export function projectChain(p: ProjectRow): ChainLink[] {
     label: 'المشروع',
     name: p.name,
     value: p.amountGranted,
-    say: p.amountGranted > 0 ? 'المبلغ المعتمد بعد الدراسة' : 'ما اتحجزش له مخصص لسه',
+    say: p.amountGranted > 0 ? 'المبلغ المعتمد بعد الدراسة' : 'لم يُحجز له مخصص بعد',
     state: p.amountGranted > 0 ? 'ok' : 'none',
   })
 
@@ -187,13 +187,13 @@ export function projectChain(p: ProjectRow): ChainLink[] {
   links.push({
     key: 'agreement',
     label: 'الاتفاقية',
-    name: ag ? ag.id : 'مفيش اتفاقية',
+    name: ag ? ag.id : 'غير موجودة',
     value: ag?.amount ?? 0,
     say: ag
       ? ag.amount === p.amountGranted
         ? 'قيمتها تساوي المعتمد · خطوة 11'
         : 'قيمتها مختلفة عن المعتمد · خطوة 11'
-      : 'الاتفاقية بتتعمل بعد الاعتماد',
+      : 'تُعدّ الاتفاقية بعد الاعتماد',
     state: ag ? (ag.amount === p.amountGranted ? 'ok' : 'gap') : 'none',
     to: ag ? `/agreements/${ag.id}` : undefined,
   })
@@ -202,7 +202,7 @@ export function projectChain(p: ProjectRow): ChainLink[] {
   links.push({
     key: 'payments',
     label: 'جدول الدفعات',
-    name: ag ? `${ag.payments.length} دفعات` : 'مفيش جدول',
+    name: ag ? `${ag.payments.length} دفعات` : 'غير موجود',
     value: schedule,
     say: ag
       ? schedule === ag.amount

@@ -117,10 +117,10 @@ export default function RequestForm() {
             <Glass>
               <Empty
                 title="الطلب غير موجود."
-                note="يمكن يكون اتقفل أو الرابط قديم."
+                note="ربما أُغلق الطلب، أو أن الرابط قديم."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
-                    ارجع للصندوق
+                    العودة إلى صندوق الصرف
                   </button>
                 }
               />
@@ -146,7 +146,7 @@ export default function RequestForm() {
               <p className="sub mt-1">
                 {project
                   ? <>{project.name} · {project.entity}</>
-                  : 'اختر المشروع، والجدول المعتمد هو اللي بيقول أي دفعة تقدر تطلبها'}
+                  : 'اختر المشروع، ويحدّد جدول الدفعات المعتمد الدفعات المتاحة للطلب'}
               </p>
             </div>
           </header>
@@ -186,14 +186,14 @@ export default function RequestForm() {
             <Glass>
               <Empty
                 title="اختر المشروع أولًا."
-                note="جدول الدفعات المعتمد هو اللي بيحدّد أي دفعة تقدر تطلبها."
+                note="يحدّد جدول الدفعات المعتمد الدفعات المتاحة للطلب."
               />
             </Glass>
           ) : !project.can ? (
             /* قاعدة 1 · الشاشة مقفولة والسبب مكتوب، مش مخفية */
             <Glass>
               <Empty
-                title="ما ينفعش تنشئ طلب صرف على المشروع ده."
+                title="لا يمكن إنشاء طلب صرف لهذا المشروع."
                 note={project.why}
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.project(project.id))}>
@@ -252,8 +252,8 @@ export default function RequestForm() {
                         ))}
                       </ul>
                       <p className="sub cnote">
-                        القاعدة 3 بتشترط استيفاء كل المتطلبات <b>قبل</b> الإرسال، وخطوة 3
-                        بترفض الإرسال عند النواقص · فالقائمة قبل الزرار لا بعده.
+                        تشترط القاعدة 3 استيفاء كل المتطلبات <b>قبل</b> الإرسال، وترفض خطوة 3
+                        الإرسال عند وجود نواقص، لذلك تظهر القائمة قبل زر الإرسال.
                       </p>
                     </Glass>
 
@@ -289,8 +289,8 @@ export default function RequestForm() {
                       </label>
                       <p className={over ? 'bad cnote' : 'sub cnote'}>
                         {over
-                          ? <>أعلى من الدفعة المعتمدة <Mono>{nf.format(picked.amount)}</Mono> · القاعدة 5 بتمنع التجاوز</>
-                          : <>الدفعة المعتمدة في الجدول <Mono>{nf.format(picked.amount)}</Mono> · استحقاقها <DateText>{picked.dueAt}</DateText></>}
+                          ? <>المبلغ أعلى من الدفعة المعتمدة <Mono>{nf.format(picked.amount)}</Mono>. أدخل مبلغًا لا يتجاوزها (قاعدة 5)</>
+                          : <>الدفعة المعتمدة في الجدول <Mono>{nf.format(picked.amount)}</Mono> · تستحق في <DateText>{picked.dueAt}</DateText></>}
                       </p>
                     </Glass>
 
@@ -320,7 +320,7 @@ export default function RequestForm() {
               <div className="rowf gp-3 payact-w">
                 <span className="decsent">
                   {sent
-                    ? <>الطلب اتبعت · <b>{resend ? 'أعيد إرساله للمشرف' : 'أحيل لمشرف المنح'}</b> والإشعار اتبعت (قاعدة 17)</>
+                    ? <>أُرسل الطلب · <b>{resend ? 'أُعيد إرساله إلى المشرف' : 'أُحيل إلى مشرف المنح'}</b>، وأُرسل الإشعار (قاعدة 17)</>
                     : <>
                         الدفعة <b><Num>{picked.no}</Num> من <Num>{picked.of}</Num></b>
                         <span className="decsep" />
@@ -334,17 +334,17 @@ export default function RequestForm() {
                   disabled={!canSend}
                   title={
                     over ? 'القيمة أعلى من الدفعة المعتمدة · قاعدة 5'
-                    : missing.length ? `ناقص ${missing.length} من المتطلبات · قاعدة 3`
+                    : missing.length ? `ينقص ${missing.length} من المتطلبات · قاعدة 3`
                     : 'خطوة 2 في الوثيقة'
                   }
                   onClick={() => setSent(true)}
                 >
-                  {resend ? 'إعادة الإرسال' : 'إرسال الطلب'}
+                  {resend ? 'أعد إرسال الطلب' : 'أرسل الطلب'}
                 </button>
               )}
               {sent && (
                 <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
-                  ارجع للصندوق
+                  العودة إلى صندوق الصرف
                 </button>
               )}
             </div>

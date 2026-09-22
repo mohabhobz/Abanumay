@@ -38,12 +38,12 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
         <Head title="خطة تنفيذ المشروع" meta="قرار مدير المنح قبل الاعتماد" />
         <Empty
           title="هذا المشروع لم تُفتح له خطة تنفيذ."
-          note="خطة التنفيذ تُفتح للمشاريع التي يقرّر مدير المنح أنها تتطلب خطة عمل · وهي إجراء مستقل يمشي بالتوازي مع الاتفاقية: الجهة تكتب المراحل والأنشطة والشواهد، ويعتمدها مشرف المنح ثم مدير المنح، فتُثبَّت نسخة مرجعية يُقاس عليها الإنجاز."
+          note="تُفتح خطة التنفيذ للمشاريع التي يقرّر مدير المنح أنها تتطلب خطة عمل · وهي إجراء مستقل يسير بالتوازي مع الاتفاقية: تكتب الجهة المراحل والأنشطة والشواهد، ويعتمدها مشرف المنح ثم مدير المنح، فتُثبَّت نسخة مرجعية يُقاس عليها الإنجاز."
           actions={onStart && (
             <button
               className="btn btn-p"
               disabled={Boolean(startBlocked)}
-              title={startBlocked || 'يفتح الخطة ويحيلها للجهة لتعبئتها'}
+              title={startBlocked || 'يفتح الخطة ويرسلها إلى الجهة لتعبئتها'}
               onClick={onStart}
             >
               <Icon name={icons.plus} size={16} />
@@ -91,7 +91,7 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
             </>,
           },
           {
-            k: 'تكلفة المراحل',
+            k: 'ميزانية المراحل',
             v: <>
               <Money sm>{cost}</Money>
               {granted > 0 && cost !== granted && (
@@ -103,20 +103,20 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
             {
               k: 'أداء الجدول · SPI',
               v: spi === null
-                ? <span className="sub">ما بدأش</span>
+                ? <span className="sub">لم يبدأ التنفيذ</span>
                 : <span className={spi < 0.8 ? 'bad' : undefined}>
                   <span className="num">{spi.toFixed(2)}</span>
                   <span className="sub"> · {say.say}</span>
                 </span>,
             },
             {
-              k: 'مستنّي مراجعة المشرف',
+              k: 'بانتظار مراجعة المشرف',
               v: queue === 0
                 ? <span className="sub">لا شيء</span>
                 : <Tag tone="warn"><Num>{queue}</Num> نشاطًا</Tag>,
             },
             {
-              k: 'عدّى موعده ولم يُقبل',
+              k: 'تجاوز موعده ولم يُقبل',
               v: late === 0
                 ? <span className="sub">لا شيء</span>
                 : <Tag tone="no"><Num>{late}</Num> نشاطًا</Tag>,
@@ -131,13 +131,13 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
           الإجراءات · ح-10). */}
       {readyToClose(p) ? (
         <p className="ok cnote">
-          كل أنشطة الخطة قُبلت · المشروع مؤهَّل للإغلاق، والإغلاق إجراء تاني
+          قُبلت كل أنشطة الخطة · المشروع مؤهَّل للإغلاق، والإغلاق إجراء مستقل
           له قواعده (التقرير الختامي · الاتصال المؤسسي · التقييم).
         </p>
       ) : (
         <p className="sub cnote">
-          مرحلة الخطة لا تغيّر حالة المشروع · إجراءان مستقلان. والمشروع
-          ما يبقاش مؤهَّلًا للإغلاق قبل قبول كل أنشطة خطته
+          مرحلة الخطة لا تغيّر حالة المشروع · فهما إجراءان مستقلان. ولا يصبح
+          المشروع مؤهَّلًا للإغلاق قبل قبول كل أنشطة خطته
           {live && <> · المقبول الآن {pct(done)}</>}.
         </p>
       )}

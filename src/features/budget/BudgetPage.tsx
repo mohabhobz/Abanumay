@@ -127,7 +127,7 @@ export default function BudgetPage() {
               allowEmpty={false}
               options={CYCLES.map((c) => ({
                 value: c.id,
-                label: c.active ? `${c.label}، مفعَّلة` : c.label,
+                label: c.active ? `${c.label}، نشطة` : c.label,
               }))}
               onChange={(v) => { if (v) { setCycleId(v); setPath([]) } }}
             />
@@ -179,7 +179,7 @@ export default function BudgetPage() {
               <Balance gaps={gaps} parents={parents} onGo={(p) => goTo(p, true)} root={root} />
 
               <section className="rpsec">
-                <Head title="الصورة الكاملة" meta="نفس رسوم النظام العامل، بالداتا الحقيقية" />
+                <Head title="الصورة الكاملة" meta="رسوم النظام العامل نفسها، بالبيانات الحقيقية" />
                 <div className="chgrid">
                   <SpendGauge value={cycle.spent} of={cycle.alloc} />
                   <YearSpend />
@@ -205,11 +205,11 @@ export default function BudgetPage() {
             <Glass className="bgclosed">
               <Icon name={icons.lock} size={22} />
               <div>
-                <b>الدورة دي مقفولة.</b>
+                <b>هذه الدورة مغلقة.</b>
                 <p className="sub">
-                  شجرة التخصيص الكاملة متاحة للدورة المفعَّلة فقط
-                  (<span className="num">2026</span> · المؤسسة). للدورات السابقة عندنا
-                  الإجماليات اللي فوق، وهي اللي النظام بيعرضها.
+                  شجرة التخصيص الكاملة متاحة للدورة النشطة فقط
+                  (<span className="num">2026</span> · المؤسسة). وللدورات السابقة تتوفر
+                  الإجماليات أعلاه فقط، وهي ما يعرضه النظام.
                 </p>
               </div>
             </Glass>
@@ -312,11 +312,11 @@ function Balance({
           بفارق تراكمي <b className="bad"><Money sm>{total}</Money></b>.
         </p>
         <p className="mut bgchk-n">
-          في النظام العامل مخصص الأب في شاشة ومجموع أبنائه في الشاشة اللي بعدها،
-          فالرقمان ما بيتقابلوش. هنا بيتحسبوا على الشجرة كلها مرة واحدة.
+          في النظام العامل يظهر مخصص الأب في شاشة ومجموع أبنائه في الشاشة التالية،
+          فلا يلتقي الرقمان. وهنا يُحسبان على الشجرة كلها مرة واحدة.
         </p>
 
-        <p className="mut bgchk-h">اضغط أي بند تشوف تفصيل الفرق فيه.</p>
+        <p className="mut bgchk-h">اضغط أي بند لعرض تفصيل الفرق فيه.</p>
 
         <ul className="bglist">
             {shown.map((x) => (
@@ -363,7 +363,7 @@ function Balance({
         {gaps.length > TOP && (
           <button className="btn btn-2 btn-sm bgchk-t" onClick={() => setAll((x) => !x)}>
             <Icon name={all ? icons.chevronUp : icons.chevronDown} size={15} />
-            {all ? 'أقصر قائمة' : `المزيد (${gaps.length - TOP})`}
+            {all ? 'اعرض أقل' : `اعرض المزيد (${gaps.length - TOP})`}
           </button>
         )}
       </Glass>
@@ -453,7 +453,7 @@ function Tree({
         <Glass className="bgleaf">
           <div>
             <b>{here?.label}</b>
-            <p className="sub">آخر مستوى في الشجرة، الهدف ما تحتهوش تقسيم.</p>
+            <p className="sub">آخر مستوى في الشجرة، ولا يتفرّع الهدف إلى بنود أخرى.</p>
           </div>
           <div className="bgleaf-v">
             <span><span className="sub">المخصص</span> <Money sm>{here?.alloc ?? 0}</Money></span>

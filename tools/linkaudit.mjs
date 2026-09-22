@@ -119,7 +119,7 @@ for (const route of ROUTES) {
       if (dd.querySelector('a[href]')) continue
       const v = near(dd)
       /* القيمة الفاضية أو «مفيش» مش علاقة ناقصة، هي غياب معلن */
-      if (!v || /^(مفيش|بلا|-)/.test(v)) continue
+      if (!v || /^(مفيش|لا يوجد|لا توجد|بلا|-)/.test(v)) continue
       out.push({ kind: 'علاقة بلا رابط', say: `${k}: ${v}` })
     }
 

@@ -157,7 +157,7 @@ export default function EntityNewPage() {
       note: 'فورًا · بلا مراجعة (قاعدة 32)',
       state: done ? 'done' : 'todo',
     },
-    { label: 'إنشاء مشاريعها', note: 'من جوّه لا من بوّابتها', state: 'todo' },
+    { label: 'إنشاء مشاريعها', note: 'من داخل النظام لا من بوابتها', state: 'todo' },
   ]
 
   return (
@@ -170,8 +170,8 @@ export default function EntityNewPage() {
             <div>
               <h1 className="ptitle">تسجيل جهة مباشرةً</h1>
               <p className="sub mt-1">
-                قاعدة <span className="num">32</span> · مسؤول النظام يسجّل جهة شريكة
-                بدون البوّابة · والجهة تُنشأ فورًا بلا مراجعة
+                قاعدة <span className="num">32</span> · يسجّل مسؤول النظام جهة شريكة
+                دون المرور بالبوابة · وتُنشأ الجهة فورًا بلا مراجعة
               </p>
             </div>
             <Tag tone={missing.length ? 'warn' : 'ok'}>
@@ -235,7 +235,7 @@ export default function EntityNewPage() {
                               <span className="sub trim1">· {k.example}</span>
                               <span className="pc-sp" />
                               {k.from === 'portal' && (
-                                <Tag tone="mute">الافتراضي للجاي من البوّابة</Tag>
+                                <Tag tone="mute">الافتراضي للقادم من البوابة</Tag>
                               )}
                             </span>
                             <ul className="pkind-o">
@@ -251,8 +251,8 @@ export default function EntityNewPage() {
                       ))}
                     </ul>
                     <p className="sub cnote">
-                      الجاي من البوّابة العامة بياخد <b>شريك مستفيد</b> أوتوماتيك
-                      وما بيشوفش الحقل ده · وهو الفرق الحقيقي بين المدخلين.
+                      القادم من البوابة العامة يُصنَّف <b>شريك مستفيد</b> تلقائيًا
+                      ولا يظهر له هذا الحقل · وهذا هو الفرق الحقيقي بين المدخلين.
                     </p>
                   </>
                 )}
@@ -262,8 +262,8 @@ export default function EntityNewPage() {
                     <div className="regwho">
                       <Person name="مشرف المنح" quiet={false} />
                       <span className="sub">
-                        المستندات هنا <b>المؤسسة</b> بترفعها عن الشريك · لأنه ما
-                        بيدخلش المنصة أصلًا
+                        المستندات هنا ترفعها <b>المؤسسة</b> نيابةً عن الشريك · لأنه لا
+                        يدخل المنصة أصلًا
                       </span>
                     </div>
                     <ul className="regdocs">
@@ -297,7 +297,7 @@ export default function EntityNewPage() {
                                   onClick={() => clearDoc(d.key)}
                                 >
                                   <Icon name={icons.close} size={14} />
-                                  إزالة
+                                  أزل الملف
                                 </button>
                               </div>
                             ) : (
@@ -308,7 +308,7 @@ export default function EntityNewPage() {
                                   onChange={(e) => upload(d.key, e.target.files?.[0])}
                                 />
                                 <Icon name={icons.upload} size={16} />
-                                <span>اسحب الملف هنا أو اضغط للاختيار</span>
+                                <span>اسحب الملف هنا أو اضغط لاختياره</span>
                                 <span className="pc-sp" />
                                 <span className="sub regdocs-m">
                                   PDF أو JPG أو PNG · حتى{' '}
@@ -356,7 +356,7 @@ export default function EntityNewPage() {
                     <button
                       className="btn btn-2"
                       disabled={first}
-                      title={first ? 'دي أول خطوة' : `ارجع لـ${STAGES[at - 1].label}`}
+                      title={first ? 'هذه أول خطوة' : `ارجع إلى ${STAGES[at - 1].label}`}
                       onClick={() => go(-1)}
                     >
                       <Icon name={icons.chevronBack} size={15} />
@@ -365,7 +365,7 @@ export default function EntityNewPage() {
                     {!last && (
                       <button
                         className="btn btn-p"
-                        title={`كمّل في ${STAGES[at + 1].label}`}
+                        title={`انتقل إلى ${STAGES[at + 1].label}`}
                         onClick={() => go(1)}
                       >
                         التالي
@@ -385,7 +385,7 @@ export default function EntityNewPage() {
               <AnalysisCard
                 title="مراجعة مساعد أبانمي"
                 cta="راجع الطلب"
-                empty="المحطة دي مفيهاش مانع · كمّل للّي بعدها."
+                empty="لا يوجد مانع في هذه المحطة · انتقل إلى المحطة التالية."
                 ask
                 onAsk={() => window.dispatchEvent(
                   new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
@@ -407,8 +407,8 @@ export default function EntityNewPage() {
                     المحطات · خمسة هناك وتلاتة هنا، والسبب هو إن
                     الطرفين مختلفين لا إن الشاشة مختصرة */}
                 <p className="sub cnote">
-                  مفيش ضوابط قبول ولا رمز تحقّق ولا مراجعة · دول للطرف اللي برّه
-                  السيستم، والمشرف معروف بجلسته والجهة بتتولد فورًا.
+                  لا ضوابط قبول ولا رمز تحقّق ولا مراجعة · فهذه للطرف القادم من خارج
+                  النظام، أما المشرف فمعروف بجلسته، والجهة تُنشأ فورًا.
                 </p>
               </Glass>
 
@@ -419,8 +419,8 @@ export default function EntityNewPage() {
               {partner && tab !== 'partner' && (
                 <Glass>
                   <Head
-                    title={`اللي بيفتحه «${partnerKind(partner).label}»`}
-                    meta={<Tag tone="ret">كونديشنز</Tag>}
+                    title={`ما يتيحه «${partnerKind(partner).label}»`}
+                    meta={<Tag tone="ret">شروط</Tag>}
                   />
                   <ul className="payq-ck">
                     {partnerKind(partner).opens.map((o) => (
@@ -432,8 +432,8 @@ export default function EntityNewPage() {
                   </ul>
                   {partner !== 'beneficiary' && (
                     <p className="sub cnote">
-                      زي منصة إحسان · المؤسسة بتدّيها دعمًا وهي بتصرفه، وما
-                      بتدخلش المنصة · فالمشروع والدفعات بيتداروا من جوّه.
+                      مثل منصة إحسان · تمنحها المؤسسة دعمًا وهي تتولى صرفه، ولا
+                      تدخل المنصة · فيُدار المشروع والدفعات من داخل النظام.
                     </p>
                   )}
                 </Glass>
@@ -452,10 +452,10 @@ export default function EntityNewPage() {
             <div className="rowf gp-3 payact-w">
               <span className="decsent">
                 {done
-                  ? <>اتسجّلت · <b>{val.name}</b> بقت جهة نشطة، ونوعها{' '}
+                  ? <>سُجّلت الجهة · <b>{val.name}</b> أصبحت جهة نشطة، ونوعها{' '}
                       {partner && partnerKind(partner).label}</>
                   : <>
-                      الجهة بتتولد <b>فورًا</b> · مفيش طلب يتراجَع
+                      تُنشأ الجهة <b>فورًا</b> · لا يوجد طلب للمراجعة
                       {partner && (
                         <>
                           <span className="decsep" />
@@ -474,16 +474,16 @@ export default function EntityNewPage() {
                     clash
                       ? 'رقم الترخيص مكرّر · قاعدة 8'
                       : missing.length
-                        ? `ناقص ${missing.length} من الإلزامي`
+                        ? `ينقص ${missing.length} من الحقول الإلزامية`
                         : 'سجّل الجهة'
                   }
                   onClick={() => setDone(true)}
                 >
-                  تسجيل الجهة
+                  سجّل الجهة
                 </button>
               ) : (
                 <button className="btn btn-2" onClick={() => navigate(ROUTES.entities)}>
-                  ارجع للجهات
+                  العودة إلى الجهات
                 </button>
               )}
             </div>

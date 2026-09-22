@@ -239,7 +239,7 @@ export default function PaymentsPage() {
                   ? [{ label: 'المتأخر', to: ROUTES.paymentsLate, icon: 'alert', count: k.late + k.stuck }]
                   : []
               }
-              create={{ label: 'طلب صرف', to: ROUTES.paymentNew() }}
+              create={{ label: 'طلب صرف جديد', to: ROUTES.paymentNew() }}
             />
           </header>
 
@@ -252,7 +252,7 @@ export default function PaymentsPage() {
             variant="bar"
             title="قراءة سريعة للصندوق"
             readings={readings}
-            empty="مفيش طلب صرف موقوف ولا متأخّر في النطاق الحالي · وسّع الفلتر تشوف أكتر."
+            empty="لا يوجد طلب صرف موقوف أو متأخر في النطاق الحالي. وسّع الفلتر لعرض المزيد."
           />
 
           {/* ⚠️ **البطاقات الأربعة دي هي مؤشرات الوثيقة الأربعة**
@@ -452,7 +452,7 @@ export default function PaymentsPage() {
             <Glass>
               <Empty
                 title="لا توجد طلبات بهذه الفلاتر."
-                note="جرّب توسيع النطاق، أو اختر مرحلة تانية من الشرائح فوق."
+                note="وسّع النطاق، أو اختر مرحلة أخرى من الشرائح أعلاه."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>

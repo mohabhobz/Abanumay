@@ -51,7 +51,7 @@ export function BankRows({
               type="button"
               className="btn btn-ghost btn-sm"
               disabled={banks.length <= 1}
-              title={banks.length <= 1 ? 'لازم حساب واحد على الأقل' : `احذف الحساب ${i + 1}`}
+              title={banks.length <= 1 ? 'يلزم حساب واحد على الأقل' : `احذف الحساب ${i + 1}`}
               aria-label={`احذف الحساب ${i + 1}`}
               onClick={() => drop(b.id)}
             >
@@ -97,7 +97,7 @@ export function BankRows({
                   aria-label={`الاسم المختصر للحساب ${i + 1}`}
                 />
               </span>
-              <span className="sub regf-h">اللي الحساب بيتعرف بيه في الكشوف · «تحفيظ» مثلًا</span>
+              <span className="sub regf-h">الاسم الذي يُعرف به الحساب في الكشوف، مثل «تحفيظ»</span>
             </label>
 
             <label className="regf">
@@ -118,7 +118,7 @@ export function BankRows({
               <DocFile name={b.doc} meta={`${BANK_DOC_LABEL} · بانتظار الإرسال`} block download={false} />
               <button className="btn btn-ghost btn-sm" onClick={() => patch(b.id, { doc: undefined })}>
                 <Icon name={icons.close} size={14} />
-                إزالة
+                أزل الوثيقة
               </button>
             </div>
           ) : (
@@ -142,7 +142,7 @@ export function BankRows({
 
       <button className="btn btn-2 btn-sm bkrows-a" onClick={add}>
         <Icon name={icons.plus} size={15} />
-        حساب بنكي آخر
+        أضف حسابًا بنكيًا آخر
       </button>
     </div>
   )

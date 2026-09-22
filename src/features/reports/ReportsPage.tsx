@@ -53,7 +53,7 @@ export default function ReportsPage() {
               <h1 className="ptitle">التقارير</h1>
               <p className="sub mt-1">
                 <span className="num">{LIVE_REPORTS.length}</span> شاشة تقرير في النظام العامل ·{' '}
-                مجموعة هنا في لوحة واحدة وأداة تشكيل
+                مجمّعة هنا في لوحة واحدة وأداة لتشكيل التقارير
               </p>
             </div>
           </header>
@@ -91,8 +91,8 @@ export default function ReportsPage() {
               </div>
               <div>
                 <div className="v num">{coverage.missing}</div>
-                <div className="k">مؤشرًا بلا داتا</div>
-                <div className="sub">كل واحد مكتوب جنبه ناقصه إيه</div>
+                <div className="k">مؤشرًا بلا بيانات</div>
+                <div className="sub">يُذكر بجانب كل مؤشر ما ينقصه</div>
               </div>
               <div>
                 <div className="v num">{coverage.noTarget}</div>
@@ -180,10 +180,10 @@ export default function ReportsPage() {
               meta={`${PACKS.filter((p) => p.state === 'ready').length} مبنيّة · ${PACKS.filter((p) => p.state === 'next').length} في الخطة`}
             />
             <p className="mut rpsec-n">
-              مش شاشات موجودة، دي <b>خطة الموديول</b>. بدل ما نبني شاشة لكل تقرير
-              زي النظام العامل، التقارير متجمّعة في حزم، كل حزمة بتجاوب على سؤال
-              واحد وليها قارئ معروف. الكارت بيقول السؤال، واللي جوّه الحزمة، ومين
-              بيقراها.
+              هذه ليست شاشات قائمة، بل <b>خطة وحدة التقارير</b>. بدل بناء شاشة لكل تقرير
+              كما في النظام العامل، تُجمَع التقارير في حزم، تجيب كل حزمة عن سؤال
+              واحد ولها قارئ محدد. تعرض كل بطاقة السؤال، ومحتوى الحزمة، ومن
+              يقرؤها.
             </p>
 
             <div className="rpkg">
@@ -220,10 +220,10 @@ export default function ReportsPage() {
               meta={`${LIVE_REPORTS.length} شاشة`}
             />
             <p className="mut rpsec-n">
-              كل شاشة تقرير في <span className="mono">sys.abanumay.sa</span> ورايحة
-              فين في الخطة. السطر ده رد على سؤال «طيب تقاريري راحت فين؟»: مفيش
-              تقرير اتشال، التلاتاشر شاشة اتلمّوا في ست حزم، لأن اللي كان بيفرّقهم
-              هو <b>اسم التقرير</b> لا السؤال اللي بيجاوبوا عليه.
+              كل شاشة تقرير في <span className="mono">sys.abanumay.sa</span> وموقعها
+              في الخطة. هذا الجدول يجيب عن سؤال «أين ذهبت تقاريري؟»: لم يُحذف
+              أي تقرير، بل جُمعت الشاشات الثلاث عشرة في ست حزم، لأن ما كان يفرّق بينها
+              هو <b>اسم التقرير</b> لا السؤال الذي تجيب عنه.
             </p>
             <div className="rpmap">
               {LIVE_REPORTS.map((r) => {

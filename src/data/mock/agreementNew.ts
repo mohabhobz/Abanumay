@@ -48,12 +48,12 @@ export const KINDS: { key: AgreementKind; label: string; note: string }[] = [
   {
     key: 'إلكترونية',
     label: 'إلكترونية',
-    note: 'بتتبنى على نموذج معتمد مسبقًا · والتوقيع من بوّابة الجهة (قاعدة 4)',
+    note: 'تُبنى على نموذج معتمد مسبقًا، وتوقّعها الجهة من بوابة المنح (قاعدة 4)',
   },
   {
     key: 'ورقية',
     label: 'ورقية',
-    note: 'لازم تُرفق موقّعة قبل التفعيل · شرط زيادة في التفعيل (قاعدة 16)',
+    note: 'يلزم إرفاق النسخة الموقّعة قبل التفعيل، وهو شرط إضافي للتفعيل (قاعدة 16)',
   },
 ]
 
@@ -84,9 +84,9 @@ export const projectOptions = (): ProjectOption[] =>
     entityName: p.entityName,
     amount: p.amountGranted,
     blocked:
-      hasAgreement(p.id) ? 'له اتفاقية بالفعل'
-        : p.amountGranted <= 0 ? 'ما اتحجزش له مخصص'
-          : p.statusGroup === 'في الدراسة' ? 'لسه في الدراسة · الاعتماد ما اكتملش'
+      hasAgreement(p.id) ? 'له اتفاقية قائمة'
+        : p.amountGranted <= 0 ? 'لم يُحجز له مخصص'
+          : p.statusGroup === 'في الدراسة' ? 'ما زال في الدراسة، ولم يكتمل اعتماده'
             : p.statusGroup === 'معتذر عنه' ? 'معتذر عنه'
               : '',
   }))
@@ -120,7 +120,7 @@ export const seedSchedule = (amount: number, from: string): DraftPay[] => {
   }
   return [
     { no: 1, amount: half, dueAt: later(from, 14), requirement: 'توقيع الاتفاقية' },
-    { no: 2, amount: amount - half, dueAt: later(from, 120), requirement: 'التقرير النهائي ومخرجات المشروع' },
+    { no: 2, amount: amount - half, dueAt: later(from, 120), requirement: 'التقرير الختامي ومخرجات المشروع' },
   ]
 }
 
@@ -164,7 +164,7 @@ export const agreementIssues = (v: {
   if (v.projectId && v.amount !== v.reserved) {
     out.push({
       key: 'reserved',
-      say: `قيمة الاتفاقية ${v.amount.toLocaleString('en-US')} والمحجوز في الميزانية ${v.reserved.toLocaleString('en-US')}.`,
+      say: `قيمة الاتفاقية ${v.amount.toLocaleString('en-US')} ريال، والمبلغ المحجوز في الميزانية ${v.reserved.toLocaleString('en-US')} ريال. يلزم أن يتطابقا.`,
       rule: 'خطوة 11',
     })
   }
@@ -176,14 +176,14 @@ export const agreementIssues = (v: {
     out.push({
       key: 'sum',
       say: gap > 0
-        ? `مجموع الدفعات ناقص ${gap.toLocaleString('en-US')} عن قيمة المنحة.`
-        : `مجموع الدفعات زايد ${Math.abs(gap).toLocaleString('en-US')} عن قيمة المنحة.`,
+        ? `مجموع الدفعات أقل من قيمة المنحة بـ${gap.toLocaleString('en-US')} ريال.`
+        : `مجموع الدفعات يزيد على قيمة المنحة بـ${Math.abs(gap).toLocaleString('en-US')} ريال.`,
       rule: 'قاعدة 8',
     })
   }
 
   if (v.rows.length === 0) {
-    out.push({ key: 'empty', say: 'مفيش دفعات · الجدول جزء من الاتفاقية لا ملحق بيها.', rule: 'قاعدة 7' })
+    out.push({ key: 'empty', say: 'لا يوجد أي دفعة. أضف دفعة واحدة على الأقل، فالجدول جزء من الاتفاقية لا ملحق بها.', rule: 'قاعدة 7' })
   }
 
   /* الدفعة بلا شرط استحقاق · المخرج الرابع بيقول «مرتبط بشروط
@@ -192,7 +192,7 @@ export const agreementIssues = (v: {
   if (noReq.length) {
     out.push({
       key: 'req',
-      say: `الدفعة ${noReq.join('، ')} بلا شرط استحقاق.`,
+      say: `الدفعة ${noReq.join('، ')} بلا شرط استحقاق. حدّد شرط استحقاقها.`,
       rule: 'المخرج 4',
     })
   }
@@ -204,17 +204,17 @@ export const agreementIssues = (v: {
     if (a.dueAt && b.dueAt && b.dueAt < a.dueAt) {
       out.push({
         key: 'order',
-        say: `تاريخ الدفعة ${b.no} قبل الدفعة ${a.no}.`,
+        say: `تاريخ الدفعة ${b.no} يسبق تاريخ الدفعة ${a.no}. رتّب التواريخ تصاعديًا.`,
         rule: 'ترتيب الجدول',
       })
       break
     }
   }
 
-  if (!v.template) out.push({ key: 'template', say: 'النموذج ما اتحدّدش.', rule: 'قاعدة 4' })
-  if (!v.kind) out.push({ key: 'kind', say: 'نوع الاتفاقية ما اتحدّدش.', rule: 'قاعدة 3' })
+  if (!v.template) out.push({ key: 'template', say: 'اختر نموذج الاتفاقية.', rule: 'قاعدة 4' })
+  if (!v.kind) out.push({ key: 'kind', say: 'حدّد نوع الاتفاقية.', rule: 'قاعدة 3' })
   if (!v.signerName.trim() || !v.signerTitle.trim()) {
-    out.push({ key: 'signer', say: 'ممثل الجهة المخوّل بالتوقيع ناقص.', rule: 'المدخل 3' })
+    out.push({ key: 'signer', say: 'أدخل اسم ممثل الجهة المخوّل بالتوقيع وصفته.', rule: 'المدخل 3' })
   }
 
   return out

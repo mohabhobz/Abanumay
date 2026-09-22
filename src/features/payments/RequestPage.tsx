@@ -117,10 +117,10 @@ export default function RequestPage() {
             <Glass>
               <Empty
                 title="الطلب غير موجود."
-                note="يمكن يكون اتقفل أو الرابط قديم."
+                note="ربما أُغلق الطلب، أو أن الرابط قديم."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
-                    ارجع للصندوق
+                    العودة إلى صندوق الصرف
                   </button>
                 }
               />
@@ -171,9 +171,9 @@ export default function RequestPage() {
                 <div className="sub">
                   {/* قاعدة 5 · قيمة الطلب ما تتجاوزش الدفعة المعتمدة */}
                   {r.asked === r.due
-                    ? <>مطابقة للدفعة المعتمدة · استحقاقها <DateText>{r.dueAt}</DateText></>
+                    ? <>مطابقة للدفعة المعتمدة · تستحق في <DateText>{r.dueAt}</DateText></>
                     : <span className="bad">
-                        أعلى من الدفعة المعتمدة <Money sm>{r.due}</Money> · مخالفة القاعدة 5
+                        أعلى من الدفعة المعتمدة <Money sm>{r.due}</Money> · مخالفة للقاعدة 5
                       </span>}
                 </div>
               </div>
@@ -189,8 +189,8 @@ export default function RequestPage() {
             <Glass>
               <Head title="الطلب مغلق" meta={<Tag tone="no">رفض نهائي</Tag>} />
               <p className="sub cnote">
-                القاعدة 15 بتقول إن النظام يغلق الطلب عند الرفض النهائي
-                <b> مع الاحتفاظ بسجل إجراءاته</b> · السجل تحت كامل، والتعديل مقفول.
+                تنص القاعدة 15 على أن يُغلق النظام الطلب عند الرفض النهائي
+                <b> مع الاحتفاظ بسجل إجراءاته</b> · السجل كامل أدناه، والتعديل مغلق.
               </p>
             </Glass>
           )}
@@ -207,7 +207,7 @@ export default function RequestPage() {
               </span>
             )}
             {r.state === 'paid' && r.paidAt && (
-              <span className="sub">اتصرفت في <DateText>{r.paidAt}</DateText></span>
+              <span className="sub">صُرفت في <DateText>{r.paidAt}</DateText></span>
             )}
             <span className="pc-sp" />
             <Person name={r.owner} />
@@ -219,7 +219,7 @@ export default function RequestPage() {
             {/* خطوة 11 · الجهة بتستكمل وتعيد الإرسال */}
             {r.state === 'returned' && (
               <Link className="btn btn-p btn-sm" to={ROUTES.paymentEdit(r.id)}>
-                استكمال وإعادة إرسال
+                أكمل الطلب وأعد إرساله
               </Link>
             )}
           </div>
@@ -235,8 +235,8 @@ export default function RequestPage() {
                   اللي محتاج قرار من المؤسسة. */}
               <Glass>
                 <Head
-                  title="مين بيصدر طلب الدفعة"
-                  meta={<Tag tone="warn">فرق عن الكرنت</Tag>}
+                  title="من يُصدر طلب الدفعة"
+                  meta={<Tag tone="warn">يختلف عن النظام الحالي</Tag>}
                 />
                 <div className="payorig">
                   {ORIGINS.map((o) => (
@@ -258,9 +258,9 @@ export default function RequestPage() {
                   ))}
                 </div>
                 <p className="sub cnote">
-                  الطلب ده في النموذج بدأ من <b>{originOf(origin).who}</b> ·
-                  والانتقال للاتجاه المستهدف بيفتح البوّابة للجهة، وبيخلّي
-                  المسوغات تيجي من الأول لا في نُصّ الطريق.
+                  بدأ هذا الطلب في النموذج من <b>{originOf(origin).who}</b> ·
+                  والانتقال إلى الاتجاه المستهدف يفتح بوابة المنح للجهة، فتصل
+                  المسوّغات من البداية لا في منتصف الطريق.
                 </p>
               </Glass>
 
@@ -292,15 +292,15 @@ export default function RequestPage() {
                   ))}
                   <li className={bankOk ? 'ok' : 'no'}>
                     <Icon name={bankOk ? icons.check : icons.alert} size={14} />
-                    <span>{r.bank.name}{bankOk ? '' : ' · الحساب معطَّل'}</span>
+                    <span>{r.bank.name}{bankOk ? '' : ' · الحساب غير نشط'}</span>
                     <span className="payq-r">الحساب المعتمد</span>
                   </li>
                 </ul>
                 {/* قاعدة 9 · ممنوع التنفيذ قبل اكتمال الاعتمادات */}
                 {(blocked.length > 0 || !bankOk) && (
                   <p className="sub cnote">
-                    الطلب ما يتحرّكش قبل استيفاء دي · القاعدة 9 بتمنع التنفيذ قبل
-                    اكتمال كل الاعتمادات.
+                    لا ينتقل الطلب قبل استيفاء هذه الشروط · تمنع القاعدة 9 التنفيذ
+                    قبل اكتمال كل الاعتمادات.
                   </p>
                 )}
               </Glass>
@@ -317,8 +317,8 @@ export default function RequestPage() {
                     <span>{r.ai}</span>
                   </div>
                   <p className="sub cnote">
-                    التحليل بيقارن التقارير والمرفقات ببنود الاتفاقية وجدول الدفعات
-                    (البند 9.6) · والقاعدة 20 بتقول إنه ما يغنيش عن اعتماد صاحب
+                    يقارن التحليل التقارير والمرفقات ببنود الاتفاقية وجدول الدفعات
+                    (البند 9.6) · وتنص القاعدة 20 على أنه لا يغني عن اعتماد صاحب
                     الصلاحية.
                   </p>
                 </Glass>
@@ -438,8 +438,8 @@ export default function RequestPage() {
                   <span style={{ width: `${Math.min(100, Math.round((after / r.granted) * 100))}%` }} />
                 </div>
                 <p className="sub cnote">
-                  {pct(Math.round((after / r.granted) * 100))} من المنحة بعد تنفيذ الدفعة دي ·
-                  القاعدة 14 بتمنع أي صرف يتجاوز قيمة المنحة.
+                  {pct(Math.round((after / r.granted) * 100))} من المنحة بعد تنفيذ هذه الدفعة ·
+                  تمنع القاعدة 14 أي صرف يتجاوز قيمة المنحة.
                 </p>
               </Glass>
 
@@ -464,7 +464,7 @@ export default function RequestPage() {
                     </li>
                   ))}
                   {r.log.every((e) => !e.notified) && (
-                    <li className="sub">لا إشعارات بعد · الطلب لسّه في أول مرحلة.</li>
+                    <li className="sub">لا توجد إشعارات بعد، فالطلب ما زال في مرحلته الأولى.</li>
                   )}
                 </ul>
               </Glass>
@@ -477,7 +477,7 @@ export default function RequestPage() {
                   الجهة تقدر تتصرّف بناءً عليهم. */}
               <Glass>
                 <Head
-                  title="بعين الجهة"
+                  title="كما تراه الجهة"
                   meta={<Tag tone={ent.tone}>{ent.label}</Tag>}
                 />
                 <ul className="payeye">
@@ -489,17 +489,17 @@ export default function RequestPage() {
                         {x.act
                           ? <span className="payeye-a">{x.act}</span>
                           : x.waiting
-                            ? <span className="sub">تستنّى</span>
-                            : <span className="sub">خلاص</span>}
+                            ? <span className="sub">بالانتظار</span>
+                            : <span className="sub">اكتملت</span>}
                       </span>
                       <span className="sub">{x.inner}</span>
                     </li>
                   ))}
                 </ul>
                 <p className="sub cnote">
-                  الدورة عندنا <b><Num>7</Num> مراحل</b> والجهة بتشوف{' '}
-                  <b><Num>{ENTITY_STATES.length}</Num></b> · وتلاتة منهم بيتلمّوا في
-                  «تحت إجراء الدفع» لأن الجهة ما بتقدرش تعمل حاجة في التلاتة.
+                  للدورة في المؤسسة <b><Num>7</Num> مراحل</b>، وترى الجهة منها{' '}
+                  <b><Num>{ENTITY_STATES.length}</Num></b> · وتُجمع ثلاث منها في
+                  «تحت إجراء الدفع» لأن الجهة لا تملك أي إجراء فيها.
                 </p>
               </Glass>
 
@@ -523,7 +523,7 @@ export default function RequestPage() {
                         <span className="sub trim1">· {b.bank}</span>
                         <span className="pc-sp" />
                         {b.id === payBank?.id && <Tag tone="ret">حساب الدفعة</Tag>}
-                        {!b.active && <Tag tone="warn">غير مفعَّل</Tag>}
+                        {!b.active && <Tag tone="warn">غير نشط</Tag>}
                       </span>
                       <span className="sub num">{b.iban}</span>
                     </li>
@@ -537,16 +537,16 @@ export default function RequestPage() {
                 ))}
 
                 <p className="sub cnote">
-                  الدفعة على <b>حساب واحد</b> · ما تتقسّمش. والتغيير صلاحية{' '}
+                  تُصرف الدفعة إلى <b>حساب واحد</b> ولا تُقسَّم. وتغيير الحساب من صلاحية{' '}
                   <b>{BANK_CHANGE_ROLES.join(' أو ')}</b> لا{' '}
-                  <b>{BANK_CHANGE_DENIED}</b> · اللي بيوصله كل شيء جاهز
-                  للتنفيذ ومالوش تواصل مباشر مع الجهات.
+                  <b>{BANK_CHANGE_DENIED}</b>، إذ يصله كل شيء جاهزًا
+                  للتنفيذ، ولا يتواصل مباشرة مع الجهات.
                 </p>
               </Glass>
 
               {/* ═══ ح-4 · المستندان مش نوعًا واحدًا ═══ */}
               <Glass>
-                <Head title="إثبات الصرف" meta={<span className="sub">مستندان بوزنين</span>} />
+                <Head title="إثبات الصرف" meta={<span className="sub">مستندان بوزنين مختلفين</span>} />
                 <ul className="payproof">
                   {PAY_PROOFS.map((x) => (
                     <li key={x.key}>
@@ -563,8 +563,8 @@ export default function RequestPage() {
                   ))}
                 </ul>
                 <p className="sub cnote">
-                  المهم إن <b>المؤسسة تثبت إنها حوّلت</b> · واستلام الجهة
-                  بيقفل الحلقة عندها، فما بيوقفش الدفعة.
+                  الأهم أن <b>تُثبت المؤسسة أنها حوّلت المبلغ</b> · أما إقرار الجهة
+                  بالاستلام فيُغلق الدورة من جهتها، ولا يوقف الدفعة.
                 </p>
               </Glass>
 
@@ -591,7 +591,7 @@ export default function RequestPage() {
                 </ul>
                 {r.sources.length > 1 && (
                   <p className="sub cnote">
-                    القاعدة 12 بتلزم الصرف بالتوزيع ده، وأمر الصرف بيتولد بيه.
+                    تُلزم القاعدة 12 بالصرف وفق هذا التوزيع، ويُنشأ أمر الصرف على أساسه.
                   </p>
                 )}
               </Glass>

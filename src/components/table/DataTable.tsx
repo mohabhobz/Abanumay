@@ -134,7 +134,7 @@ export function DataTable<T>({
             onClick={() => setOpen({ dim, keys: allOpen ? NONE : new Set(every) })}
           >
             <Icon name={allOpen ? icons.shrink : icons.expand} size={14} />
-            {allOpen ? 'اقفل الكل' : 'افتح الكل'}
+            {allOpen ? 'اطوِ الكل' : 'افتح الكل'}
           </button>
           <ColumnPicker all={all} cols={cols} onCols={onCols} />
         </div>
@@ -323,7 +323,7 @@ function Cap<T>({
         className="tcap-b"
         aria-expanded={!shut}
         onClick={onToggle}
-        title={shut ? `افتح ${node.key}` : `اقفل ${node.key}`}
+        title={shut ? `افتح ${node.key}` : `اطوِ ${node.key}`}
       >
         <Icon name={icons.chevronDown} size={15} />
         <span className="tcap-k">
@@ -464,7 +464,7 @@ function Block<T>({
                     onPointerEnter={(e) => setHover(edgeOf(e.currentTarget))}
                     onPointerLeave={() => setHover(null)}
                     onDoubleClick={() => reset(c.key)}
-                    title="اسحب لتغيير العرض · دبل كليك للعرض الافتراضي"
+                    title="اسحب لتغيير العرض، وانقر مرتين لاستعادة العرض الافتراضي"
                   />
                 )}
               </th>
@@ -587,7 +587,7 @@ function ColumnPicker<T>({
           extra="tcolm"
           foot={
             <button type="button" className="fclear" onClick={() => onCols(defaultCols(all))}>
-              أعِد الأعمدة الافتراضية
+              أعد الأعمدة الافتراضية
             </button>
           }
         >

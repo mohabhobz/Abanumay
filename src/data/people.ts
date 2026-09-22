@@ -55,8 +55,8 @@ const ROSTER: ReadonlyArray<Omit<Person, 'photo' | 'initial'> & { initial?: stri
   /* الاسم ده مكتوب في `log.ts` بلا شدّة على اللام · الاتنين نفس الشخص */
   { name: 'عبدالرحمن الهليل', slug: 'abdulrahman-alhulail', title: 'المدير التنفيذي' },
   { name: 'تركي الخنيزان', slug: 'turki-alkhunaizan', title: 'مدير الإدارة' },
-  { name: 'محمد المطيري', slug: 'mohammed-almutairi', title: 'القسم المالي' },
-  { name: 'سلطان العتيبي', slug: 'sultan-alotaibi', title: 'القسم المالي' },
+  { name: 'محمد المطيري', slug: 'mohammed-almutairi', title: 'الإدارة المالية' },
+  { name: 'سلطان العتيبي', slug: 'sultan-alotaibi', title: 'الإدارة المالية' },
 
   /* شخصيات المساعد الذكي */
   { name: 'ريم الشمري', slug: 'reem-alshammari', title: 'محللة بيانات' },

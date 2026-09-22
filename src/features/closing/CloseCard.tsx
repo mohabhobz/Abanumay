@@ -69,8 +69,8 @@ export function CloseCard({ c }: { c: CloseRow }) {
         <Tag tone={CLOSE_TONE[c.stage]}>{closeStageLabel(c.stage)}</Tag>
         {evalApproved(c) && c.closedAt
           ? <Tag tone="ok">أُغلق <Mono>{c.closedAt}</Mono></Tag>
-          : <span className="sub">في المحطة دي <Num>{days}</Num> يومًا</span>}
-        {closeLate(c) && <Tag tone="warn">متأخر عن حدّ المحطة</Tag>}
+          : <span className="sub">في هذه المحطة منذ <Num>{days}</Num> يومًا</span>}
+        {closeLate(c) && <Tag tone="warn">تجاوز مهلة المحطة</Tag>}
         {c.versions.length > 1 && <Tag tone="teal">الإصدار <Num>{c.versions.length}</Num></Tag>}
       </div>
 
@@ -86,7 +86,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
           <span>
             {missing.length === 0
               ? 'التقرير الختامي مكتمل'
-              : <>ناقص <Num>{missing.length}</Num> بند · {isolate(missing[0])}</>}
+              : <><Num>{missing.length}</Num> بنود ناقصة · {isolate(missing[0])}</>}
           </span>
           <span className="payq-r">قاعدة <Num>4</Num></span>
         </li>
@@ -96,8 +96,8 @@ export function CloseCard({ c }: { c: CloseRow }) {
           <Icon name={!needsComms(c) || done ? icons.check : icons.clock} size={13} />
           <span>
             {needsComms(c)
-              ? (done ? 'الاتصال المؤسسي اعتمد النشر' : 'النشر الإعلامي محتاج مراجعة الاتصال')
-              : 'بلا التزام نشر · مراجعة الاتصال ما بتنطبقش'}
+              ? (done ? 'اعتمد الاتصال المؤسسي النشر' : 'النشر الإعلامي بانتظار مراجعة الاتصال المؤسسي')
+              : 'لا التزام بالنشر · مراجعة الاتصال لا تنطبق'}
           </span>
           <span className="payq-r">قاعدة <Num>9</Num></span>
         </li>
@@ -106,7 +106,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
           <span>
             {done
               ? 'التقرير معتمد من المدير التنفيذي'
-              : 'التقييم ما يبدأش قبل اعتماد التنفيذي'}
+              : 'لا يبدأ التقييم قبل اعتماد المدير التنفيذي'}
           </span>
           <span className="payq-r">قاعدة <Num>6</Num></span>
         </li>

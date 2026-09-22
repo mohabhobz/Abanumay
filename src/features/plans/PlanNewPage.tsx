@@ -60,10 +60,10 @@ export default function PlanNewPage() {
           <div className="screen col">
             <BackTo label="الخطط" onClick={() => navigate(ROUTES.plans)} />
             <Glass>
-              <Head title="المشروع ده له خطة بالفعل" meta={<Tag tone="ret">خطة واحدة للمشروع</Tag>} />
+              <Head title="لهذا المشروع خطة بالفعل" meta={<Tag tone="ret">خطة واحدة للمشروع</Tag>} />
               <Empty
-                title={`«${has.projectName}» مفتوح له ${has.id}.`}
-                note="الخطة واحدة للمشروع · التعديل على الموجودة، مش فتح تانية."
+                title={`فُتحت لمشروع «${has.projectName}» الخطة ${has.id}.`}
+                note="للمشروع خطة واحدة، فيكون التعديل على الخطة الموجودة لا بفتح خطة أخرى."
                 actions={
                   <Link className="btn btn-p" to={ROUTES.plan(has.id)}>افتح الخطة</Link>
                 }
@@ -85,7 +85,7 @@ export default function PlanNewPage() {
             <div>
               <h1 className="ptitle">فتح خطة تنفيذ لمشروع</h1>
               <p className="sub mt-1">
-                قرار إن المشروع يتطلب خطة عمل · والمراحل والأنشطة بتتكتب
+                قرار بأن المشروع يتطلب خطة عمل · وتُكتب المراحل والأنشطة
                 في المحرّر بعد الفتح
               </p>
             </div>
@@ -101,7 +101,7 @@ export default function PlanNewPage() {
             {options.length === 0 ? (
               <Empty
                 title="كل المشاريع المعتمدة لها خطط."
-                note="الخطة بتتفتح لمشروع اتعتمد وله قيمة منحة · ومشروع لسه في الدراسة مالوش رقم تتقاس عليه الخطة."
+                note="تُفتح الخطة لمشروع معتمد له قيمة منحة، أما المشروع الذي ما زال في الدراسة فليس له مبلغ تُقاس عليه الخطة."
               />
             ) : (
               <>
@@ -122,7 +122,7 @@ export default function PlanNewPage() {
                       placeholder="اختر مشروعًا معتمدًا"
                     />
                     <span className="sub regf-h">
-                      المشاريع اللي ليها خطة مش في القايمة · خطة واحدة للمشروع
+                      لا تظهر في القائمة المشاريع التي لها خطة، فللمشروع خطة واحدة
                     </span>
                   </label>
 
@@ -134,15 +134,15 @@ export default function PlanNewPage() {
                     <FieldSelect
                       value={by}
                       options={[
-                        { value: 'entity', label: 'الجهة المستفيدة · من بوّابتها' },
+                        { value: 'entity', label: 'الجهة المستفيدة · من بوابة المنح' },
                         { value: 'supervisor', label: 'مشرف المنح بالنيابة عنها' },
                       ]}
                       onChange={(x) => set({ by: x === 'supervisor' ? 'supervisor' : undefined })}
                       label="كاتب المسودة"
                     />
                     <span className="sub regf-h">
-                      الوثيقة بتقول إن الجهة هي اللي بتكتب · والنيابة استثناء
-                      بيتسجّل، لأن «الجهة كتبتها» و«اتكتبت عنها» مش سواء في مراجعة
+                      تنص الوثيقة على أن الجهة هي من تكتب الخطة، والكتابة بالنيابة استثناء
+                      يُسجَّل، لأن ما كتبته الجهة وما كُتب عنها لا يُراجعان بالطريقة نفسها
                     </span>
                   </label>
                 </div>
@@ -166,16 +166,16 @@ export default function PlanNewPage() {
                 {/* ⚠️ الجملة دي بتقول **اللي هيحصل بعد الضغطة** · الزرار
                     اللي مش قايل وجهته بيخلّي المستخدم يتردّد */}
                 <p className="sub cnote">
-                  الفتح بيعمل خطة <b>مسودة</b> فاضية ويوديك للمحرّر · والجهة بتقدر
-                  تكتبها من بوّابتها. ومفيش قياس ولا انحراف قبل ما مدير المنح
-                  يعتمدها ويثبّت النسخة المرجعية.
+                  يُنشئ الفتح خطة <b>مسودة</b> فارغة وينقلك إلى المحرّر، ويمكن للجهة
+                  كتابتها من بوابة المنح. ولا يبدأ القياس ولا حساب الانحراف قبل أن
+                  يعتمدها مدير المنح ويثبّت النسخة المرجعية.
                 </p>
 
                 <div className="regfoot">
                   <span className="decsent sub">
                     {pr
                       ? <>خطة لـ<b>{pr.name}</b></>
-                      : 'اختر المشروع الأول'}
+                      : 'اختر المشروع أولًا'}
                   </span>
                   <div className="rowf gp-2">
                     <button className="btn btn-2" onClick={() => navigate(ROUTES.plans)}>
@@ -184,7 +184,7 @@ export default function PlanNewPage() {
                     <button
                       className="btn btn-p"
                       disabled={!pr}
-                      title={pr ? 'يفتح مسودة ويوديك للمحرّر' : 'اختر المشروع الأول'}
+                      title={pr ? 'يفتح مسودة وينقلك إلى المحرّر' : 'اختر المشروع أولًا'}
                       onClick={() => {
                         if (!pr) return
                         const id = openPlan(pr.id, by)

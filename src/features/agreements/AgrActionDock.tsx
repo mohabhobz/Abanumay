@@ -97,9 +97,9 @@ export function AgrActionDock({
           <div className="rowf gp-3">
             <Icon name={icons.check} size={18} className="ok-ink" />
             <span className="decsent">
-              اتسجّل: <b>{taken}</b>
+              سُجّل: <b>{taken}</b>
               <span className="decsep" />
-              الإشعار اتبعت لكل الأطراف · القاعدة 20
+              أُرسل الإشعار إلى جميع الأطراف · القاعدة 20
             </span>
           </div>
           <button className="btn btn-2" onClick={() => { onTake(''); onNote('') }}>
@@ -139,9 +139,9 @@ export function AgrActionDock({
                أو جدول الدفعات · والسبب مكتوب لا مخفي في اللون */
             const stop =
               (x.needsNote && !note.trim())
-                ? 'اكتب سبب الإعادة الأول · قاعدة 10'
+                ? 'اكتب سبب الإعادة أولًا · قاعدة 10'
                 : (x.kind === 'btn-p' && held)
-                  ? 'جدول الدفعات أو المخصص أو المرفقات ناقصة · قاعدة 9'
+                  ? 'يلزم استكمال جدول الدفعات والمخصص والمرفقات · قاعدة 9'
                   : ''
             return (
               <button

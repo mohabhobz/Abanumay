@@ -82,7 +82,7 @@ export function AnalysisCard({
   const calm: Reading[] = [{
     id: 'ai-calm',
     kind: 'note',
-    text: empty ?? 'مفيش ملاحظات في النطاق الحالي · غيّر النطاق تشوف أكتر.',
+    text: empty ?? 'لا توجد ملاحظات في النطاق الحالي. وسّع النطاق لعرض المزيد.',
   }]
   const list = readings.length > 0 ? readings : calm
 
@@ -113,7 +113,7 @@ export function AnalysisCard({
           {flags > 0 && (
             <div className="aishut-m">
               <span className="qr-count no">
-                <span className="num">{flags}</span> تحتاج انتباه
+                <span className="num">{flags}</span> تحتاج إلى انتباه
               </span>
             </div>
           )}

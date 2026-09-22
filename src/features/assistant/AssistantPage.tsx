@@ -47,7 +47,7 @@ export default function AssistantPage() {
             greet={role.greet}
             /* المدى هنا السيستم كله · دي الصفحة اللي مالهاش سياق
                صفحة قبلها، فالسؤال مفتوح */
-            sub="كيف أقدر أساعدك اليوم؟"
+            sub="كيف أساعدك اليوم؟"
             cards={role.cards}
             onClose={() => navigate(-1)}
             /* ⚠️ **مقفولة لحدّ ما يطلبها · ٢٢ سبتمبر.** كانت مفتوحة

@@ -63,7 +63,7 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
       </Glass>
 
       <Glass>
-        <Head title="الحساب البنكي" meta="حساب واحد مفعّل" />
+        <Head title="الحساب البنكي" meta="حساب واحد نشط" />
         <div style={{ overflowX: 'auto' }}>
           <table className="tbl">
             <thead>

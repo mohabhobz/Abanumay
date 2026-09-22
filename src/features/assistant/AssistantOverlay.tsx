@@ -8,13 +8,13 @@ import { AssistantScreen } from './AssistantScreen'
 const FALLBACK_CONTEXT: AssistantContext = {
   title: 'منح أبانمي',
   sub: '',
-  scope: 'كيف أقدر أساعدك في السيستم؟',
+  scope: 'كيف أساعدك في النظام؟',
   cards: [
     {
       icon: 'alert',
-      title: 'إيه اللي بانتظار قراري؟',
-      sub: 'الواقف عندي أنا لا عند غيري',
-      prompt: 'إيه اللي بانتظار قراري؟',
+      title: 'ما الذي بانتظار قراري؟',
+      sub: 'ما ينتظرني أنا لا غيري',
+      prompt: 'ما الأمور التي بانتظار قراري؟',
     },
   ],
 }
@@ -99,8 +99,8 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
               <button
                 className="aclose"
                 onClick={() => setWide((v) => !v)}
-                title={wide ? 'تصغير لنافذة في النص' : 'فرد على الشاشة'}
-                aria-label={wide ? 'تصغير لنافذة في النص' : 'فرد على الشاشة'}
+                title={wide ? 'صغّر إلى نافذة وسطية' : 'وسّع إلى ملء الشاشة'}
+                aria-label={wide ? 'صغّر إلى نافذة وسطية' : 'وسّع إلى ملء الشاشة'}
                 aria-pressed={wide}
               >
                 <Icon name={wide ? icons.shrink : icons.expand} size={16} />

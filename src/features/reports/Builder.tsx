@@ -101,7 +101,7 @@ export function Builder() {
           قبل ما يشوف إجابته، فيتأكد إنه سأل اللي قصده. */}
       <Glass className="rbld">
         <span className="rbld-q">
-          <span className="sub">أعرض</span>
+          <span className="sub">اعرض</span>
           {/* `allowEmpty={false}` لا `all` · المقياس **دايمًا**
               مختار، فخانة «الكل» كانت بتعرض اسم أول مقياس فوق
               القايمة وهو موجود تحتها كخيار · «عدد المشاريع» مرّتين

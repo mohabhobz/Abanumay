@@ -168,7 +168,7 @@ export default function PlansPage() {
                 <span className="num">{planKpi().total}</span> في هذا النموذج ·{' '}
                 <span className="num">{k.live}</span> قيد التنفيذ و
                 <span className="num">{k.open}</span> في دورة الاعتماد ·{' '}
-                <span className="num">{k.waiting}</span> نشاطًا مستنّي مراجعة
+                <span className="num">{k.waiting}</span> نشاطًا بانتظار المراجعة
               </p>
             </div>
 
@@ -187,7 +187,7 @@ export default function PlansPage() {
             variant="bar"
             title="قراءة سريعة للخطط"
             readings={readings}
-            empty="الخطط في النطاق الحالي مفيهاش نشاط مستنّي مراجعة ولا متأخّر · وسّع الفلتر تشوف أكتر."
+            empty="لا توجد في النطاق الحالي أنشطة بانتظار المراجعة أو متأخّرة · وسّع الفلتر لعرض المزيد."
           />
 
           {/* ⚠️ **مفيش مؤشرات للموديول ده في الوثيقة** · الأربعة دي
@@ -195,13 +195,13 @@ export default function PlansPage() {
               الصرف اللي مستهدفها فاضي. */}
           <div className="stats4">
             <Stat
-              label="أنشطة مستنّية مراجعتك"
+              label="أنشطة بانتظار مراجعتك"
               value={<Num>{k.waiting}</Num>}
               unit="نشاطًا"
               note="قاعدة 14 · لا تُحتسب إنجازًا قبل القبول"
             />
             <Stat
-              label="الخطط الماشية مع جدولها"
+              label="الخطط الملتزمة بجدولها"
               value={<Num>{pct(k.onTrackPct)}</Num>}
               note="أداء الجدول ≥ 0.95 · مشتق من BPD-012"
               bar={{ w: `${k.onTrackPct}%`, c: 'var(--teal)' }}
@@ -253,12 +253,12 @@ export default function PlansPage() {
                     هما سؤال المشرف اليومي، واللي بيتسأل كل يوم
                     ما يتخبّاش خلف زرار */}
                 <Toggle
-                  label="مستنّي مراجعتي"
+                  label="بانتظار مراجعتي"
                   on={v.wait === '1'}
                   onChange={(on) => set({ wait: on ? '1' : undefined })}
                 />
                 <Toggle
-                  label="فيه متأخّر"
+                  label="بها نشاط متأخّر"
                   on={v.late === '1'}
                   onChange={(on) => set({ late: on ? '1' : undefined })}
                 />
@@ -336,13 +336,13 @@ export default function PlansPage() {
                 ))}
                 {v.wait === '1' && (
                   <button className="fpill" onClick={() => set({ wait: undefined })}>
-                    مستنّي مراجعتي
+                    بانتظار مراجعتي
                     <Icon name={icons.close} size={13} />
                   </button>
                 )}
                 {v.late === '1' && (
                   <button className="fpill" onClick={() => set({ late: undefined })}>
-                    فيه متأخّر
+                    بها نشاط متأخّر
                     <Icon name={icons.close} size={13} />
                   </button>
                 )}
@@ -355,7 +355,7 @@ export default function PlansPage() {
             <Glass>
               <Empty
                 title="لا توجد خطط بهذه الفلاتر."
-                note="جرّب توسيع النطاق، أو اختر مرحلة تانية من الشرائح فوق."
+                note="وسّع النطاق، أو اختر مرحلة أخرى من الشرائح في الأعلى."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -398,7 +398,7 @@ export default function PlansPage() {
           {/* ⚠️ القاعدتان اللي بيتلخبطوا مكتوبتان في الشاشة لا في
               التعليق بس · زي قاعدة 25 في الاتفاقيات بالظبط. */}
           <p className="sub tcen">
-            مرحلة الخطة لا تغيّر حالة المشروع · إجراءان مستقلان يمشيان بالتوازي
+            مرحلة الخطة لا تغيّر حالة المشروع · فهما إجراءان مستقلان يسيران بالتوازي
             مع الاتفاقية. والنشاط لا يُحتسب إنجازًا إلا بعد قبول مشرف المنح
             (القاعدة <span className="num">14</span>) ·{' '}
             <span className="num">{k.closable}</span> مشروعًا اكتملت خطته وصار

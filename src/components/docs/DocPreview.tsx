@@ -56,7 +56,7 @@ export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
           <div className="fppage">
             <DocThumb name={name} size="lg" />
             <div className="fpnote sub">
-              المعاينة تُقرأ من مخزن المرفقات مباشرة، بلا تحميل.
+              تُعرض المعاينة من مخزن المرفقات مباشرة دون تنزيل.
             </div>
           </div>
         </div>
@@ -65,8 +65,8 @@ export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
           <div className="fpfoot">
             <span className="tag warn">صورة</span>
             <span className="sub">
-              الملف صورة، فبنود الموازنة ما تتقارنش آليًا بالمبلغ المطلوب. طلب الاستكمال الحالي
-              يطلب نسخة قابلة للقراءة.
+              الملف صورة، فلا يمكن مقارنة بنود الموازنة آليًا بالمبلغ المطلوب. ولهذا
+              يطلب طلب الاستكمال الحالي نسخة قابلة للقراءة.
             </span>
           </div>
         )}

@@ -42,10 +42,10 @@ export default function PortfolioPage() {
             <Glass>
               <Empty
                 title="المحفظة غير موجودة."
-                note="المحافظ بتتسجّل للشركاء المنفّذين وحدهم."
+                note="تُسجَّل المحافظ للشركاء المنفّذين وحدهم."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.projects)}>
-                    ارجع للمشاريع
+                    العودة إلى المشاريع
                   </button>
                 }
               />
@@ -63,7 +63,7 @@ export default function PortfolioPage() {
 
   /* مسار المحفظة · تلات محطات لا أربعة · والاتفاقية مش واحدة منهم */
   const steps: StepItem[] = [
-    { label: 'تسجيل المحفظة', note: 'مشرف المنح · من جوّه', state: 'done' },
+    { label: 'تسجيل المحفظة', note: 'مشرف المنح · داخليًا', state: 'done' },
     { label: 'تنفيذ مشاريعها', note: `${done} من ${p.items.length} مكتمل`, state: 'now' },
     { label: 'الإغلاق', note: 'بعد آخر مشروع', state: 'todo' },
   ]
@@ -116,7 +116,7 @@ export default function PortfolioPage() {
                         <th><span className="th-t">المشروع</span></th>
                         <th><span className="th-t">المنطقة</span></th>
                         <th className="n"><span className="th-t">المخصص</span></th>
-                        <th className="n"><span className="th-t">المنصرف</span></th>
+                        <th className="n"><span className="th-t">المصروف</span></th>
                         <th><span className="th-t">الحالة</span></th>
                       </tr>
                     </thead>
@@ -152,7 +152,7 @@ export default function PortfolioPage() {
                         </td>
                         <td className="n"><Money sm>{sum}</Money></td>
                         <td className="n"><Money sm>{spent}</Money></td>
-                        <td className="sub">{pct(Math.round((spent / sum) * 100))} منصرف</td>
+                        <td className="sub">{pct(Math.round((spent / sum) * 100))} مصروف</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -170,19 +170,19 @@ export default function PortfolioPage() {
               {/* ⚠️ الكارت ده هو **قلب ب-8**: بيقول اللي **مش**
                   موجود، لأن الغياب اللي مش مكتوب بيتقرا سهوًا */}
               <Glass>
-                <Head title="اللي بيتغيّر مع الشريك المنفّذ" meta={<Tag tone="ret">كونديشنز</Tag>} />
+                <Head title="ما يتغيّر مع الشريك المنفّذ" meta={<Tag tone="ret">الشروط</Tag>} />
                 <ul className="pfdiff">
                   {IMPLEMENTER_DIFF.map((d) => (
                     <li key={d.on}>
                       <Icon name={icons.check} size={13} />
                       <span className="pfdiff-on">{d.on}</span>
-                      <span className="pfdiff-off">بدل: {d.off}</span>
+                      <span className="pfdiff-off">بدلًا من: {d.off}</span>
                     </li>
                   ))}
                 </ul>
                 <p className="sub cnote">
-                  إحسان <b>ما بتدخلش المنصة أصلًا</b> · فكل حاجة بتفترض وجودها
-                  بتسقط: البوّابة والتوقيع والاتفاقية ومسوغات الجهة.
+                  إحسان <b>لا تدخل المنصة أصلًا</b> · فيسقط كل ما يفترض وجودها:
+                  البوّابة والتوقيع والاتفاقية ومسوغات الجهة.
                 </p>
               </Glass>
 
@@ -190,7 +190,7 @@ export default function PortfolioPage() {
                 <Head title="مسار المحفظة" meta={<span className="sub">ثلاث محطات</span>} />
                 <Steps items={steps} flow="ladder" />
                 <p className="sub cnote">
-                  مفيش محطة اتفاقية · الدفعات بتتعمل مباشرةً على مشاريع المحفظة.
+                  لا توجد محطة اتفاقية · تُصرف الدفعات مباشرةً على مشاريع المحفظة.
                 </p>
               </Glass>
 
@@ -208,9 +208,9 @@ export default function PortfolioPage() {
                     },
                     { k: 'نوع الشراكة', v: <Tag tone="ret">شريك منفّذ</Tag> },
                     { k: 'مبلغ المحفظة', v: <Money>{p.total}</Money> },
-                    { k: 'المنصرف', v: <Money>{spent}</Money> },
+                    { k: 'المصروف', v: <Money>{spent}</Money> },
                     { k: 'المتبقّي', v: <Money>{p.total - spent}</Money> },
-                    { k: 'الاتفاقية', v: <span className="sub">مفيش · شريك منفّذ</span> },
+                    { k: 'الاتفاقية', v: <span className="sub">لا يوجد · شريك منفّذ</span> },
                   ]}
                 />
               </Glass>

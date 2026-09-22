@@ -36,9 +36,9 @@ const KEYS = ['tab', 'project'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const STAGES = [
-  { key: 'project', label: 'المشروع', note: 'المشروع المعتمد اللي الاتفاقية بتتعمل له · واحد بالظبط' },
-  { key: 'form', label: 'النموذج والتوقيع', note: 'النوع والنموذج وممثل الجهة · بيتقفلوا عند الإنشاء' },
-  { key: 'sched', label: 'جدول الدفعات', note: 'جزء من الاتفاقية لا ملحق بيها · والمجموع لازم يطابق المنحة' },
+  { key: 'project', label: 'المشروع', note: 'المشروع المعتمد الذي تُعدّ له الاتفاقية · مشروع واحد فقط' },
+  { key: 'form', label: 'النموذج والتوقيع', note: 'النوع والنموذج وممثل الجهة · تُثبَّت عند الإنشاء' },
+  { key: 'sched', label: 'جدول الدفعات', note: 'جزء من الاتفاقية لا ملحق بها · ويلزم أن يطابق مجموعه قيمة المنحة' },
 ]
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -124,7 +124,7 @@ export default function AgreementNewPage() {
 
   /* المحطات الأربع · والشاشة دي الأولى وحدها */
   const steps: StepItem[] = [
-    { label: 'إعداد', note: 'مشرف المنح · هنا', state: sent ? 'done' : 'now' },
+    { label: 'إعداد', note: 'مشرف المنح · المحطة الحالية', state: sent ? 'done' : 'now' },
     { label: 'مراجعة', note: 'مدير المنح', state: sent ? 'now' : 'todo' },
     { label: 'اعتماد نهائي', note: 'المدير التنفيذي', state: 'todo' },
     { label: 'توقيع', note: 'الجهة المستفيدة', state: 'todo' },
@@ -143,13 +143,13 @@ export default function AgreementNewPage() {
             <div>
               <h1 className="ptitle">إعداد اتفاقية</h1>
               <p className="sub mt-1">
-                المحطة الأولى من <span className="num">4</span> · مخرجها <b>مسودة</b>،
-                والإرسال للجهة ما بيحصلش إلا بعد اعتماد المؤسسة
+                المحطة الأولى من <span className="num">4</span> · ينتج عنها <b>مسودة</b>،
+                ولا تُرسل إلى الجهة إلا بعد اعتماد المؤسسة
               </p>
             </div>
             <Tag tone={missing.length || issues.length ? 'warn' : 'ok'}>
               {missing.length || issues.length
-                ? <><Num>{missing.length + issues.length}</Num> قبل الإرسال</>
+                ? <><Num>{missing.length + issues.length}</Num> بنود قبل الإرسال</>
                 : 'جاهزة'}
             </Tag>
           </header>
@@ -170,7 +170,7 @@ export default function AgreementNewPage() {
               title={stage.label}
               meta={
                 shortOf(tab)
-                  ? <Tag tone="warn"><Num>{shortOf(tab)}</Num> ناقص</Tag>
+                  ? <Tag tone="warn"><Num>{shortOf(tab)}</Num> بنود ناقصة</Tag>
                   : <Tag tone="ok">مكتمل</Tag>
               }
             />
@@ -190,14 +190,14 @@ export default function AgreementNewPage() {
                       value={projectId}
                       onChange={pickProject}
                       label="المشروع"
-                      placeholder="اختار"
+                      placeholder="اختر المشروع"
                       options={projectOptions().map((p) => ({
                         value: p.id,
                         label: `${p.name}${p.blocked ? ` · ${p.blocked}` : ''}`,
                       }))}
                     />
                     <span className="sub regf-h">
-                      مشروع واحد بالظبط · قاعدة <span className="num">2</span>
+                      مشروع واحد فقط · قاعدة <span className="num">2</span>
                     </span>
                   </label>
                 </div>
@@ -252,7 +252,7 @@ export default function AgreementNewPage() {
                   ))}
                 </ul>
                 <p className="sub cnote">
-                  النوع بيتحدّد عند الإنشاء و<b>ما يتغيّرش</b> بعدها إلا بإصدار
+                  يُحدَّد النوع عند الإنشاء و<b>لا يتغيّر</b> بعد ذلك إلا بإصدار
                   جديد · قاعدة <span className="num">3</span>.
                 </p>
 
@@ -266,10 +266,10 @@ export default function AgreementNewPage() {
                       options={TEMPLATES}
                       onChange={setTemplate}
                       label="النموذج المعتمد"
-                      placeholder="اختار"
+                      placeholder="اختر النموذج"
                     />
                     <span className="sub regf-h">
-                      بيتحدّد بمصدر التمويل وحجم المنحة والظهور الإعلامي · قاعدة{' '}
+                      يُحدَّد بحسب مصدر التمويل وحجم المنحة والظهور الإعلامي · قاعدة{' '}
                       <span className="num">4</span>
                     </span>
                   </label>
@@ -289,7 +289,7 @@ export default function AgreementNewPage() {
 
                   <label className="regf">
                     <span className="lb">
-                      صفته<b className="regf-r" aria-label="إلزامي">*</b>
+                      صفة الموقّع<b className="regf-r" aria-label="إلزامي">*</b>
                     </span>
                     <span className="fld">
                       <input
@@ -308,7 +308,7 @@ export default function AgreementNewPage() {
             {tab === 'sched' && (
               project
                 ? <ScheduleEditor rows={rows} amount={amount} onChange={setRows} />
-                : <p className="sub cnote">اختار المشروع الأول · قيمة المنحة هي اللي الجدول بيتطابق معاها.</p>
+                : <p className="sub cnote">اختر المشروع أولًا · يُطابَق الجدول مع قيمة المنحة.</p>
             )}
 
             {/* القواعد بتتقال في محطتها لا في رسالة بعد الإرسال */}
@@ -329,7 +329,7 @@ export default function AgreementNewPage() {
                 <button
                   className="btn btn-2"
                   disabled={first}
-                  title={first ? 'دي أول خطوة' : `ارجع لـ${STAGES[at - 1].label}`}
+                  title={first ? 'هذه الخطوة الأولى' : `ارجع إلى ${STAGES[at - 1].label}`}
                   onClick={() => go(-1)}
                 >
                   <Icon name={icons.chevronBack} size={15} />
@@ -338,7 +338,7 @@ export default function AgreementNewPage() {
                 {!last && (
                   <button
                     className="btn btn-p"
-                    title={`كمّل في ${STAGES[at + 1].label}`}
+                    title={`انتقل إلى ${STAGES[at + 1].label}`}
                     onClick={() => go(1)}
                   >
                     التالي
@@ -356,7 +356,7 @@ export default function AgreementNewPage() {
                 <Steps items={steps} flow="ladder" />
                 {/* قاعدة 25 · والسطر ده بيمنع توقّعًا غلط من أول شاشة */}
                 <p className="sub cnote">
-                  انتقال الاتفاقية بين محطاتها <b>ما بيغيّرش حالة المشروع</b> ·
+                  انتقال الاتفاقية بين محطاتها <b>لا يغيّر حالة المشروع</b> ·
                   قاعدة <span className="num">25</span>.
                 </p>
               </Glass>
@@ -394,11 +394,11 @@ export default function AgreementNewPage() {
             <div className="rowf gp-3 payact-w">
               <span className="decsent">
                 {sent
-                  ? <>اتبعتت · <b>بانتظار مدير المنح</b></>
+                  ? <>أُرسلت · <b>بانتظار مدير المنح</b></>
                   : <>
                       {project
                         ? <>قيمة المنحة <b><Money>{amount}</Money></b></>
-                        : 'اختار المشروع الأول'}
+                        : 'اختر المشروع أولًا'}
                       {rows.length > 0 && (
                         <>
                           <span className="decsep" />
@@ -406,7 +406,7 @@ export default function AgreementNewPage() {
                           <Money>{scheduleTotal(rows)}</Money>
                         </>
                       )}
-                      {saved && <><span className="decsep" />اتحفظت كمسودة</>}
+                      {saved && <><span className="decsep" />حُفظت المسودة</>}
                     </>}
               </span>
             </div>
@@ -416,10 +416,10 @@ export default function AgreementNewPage() {
                   <button
                     className="btn btn-2"
                     disabled={!projectId}
-                    title={projectId ? 'احفظ كمسودة' : 'اختار المشروع الأول'}
+                    title={projectId ? 'احفظ الاتفاقية مسودةً' : 'اختر المشروع أولًا'}
                     onClick={() => setSaved(true)}
                   >
-                    حفظ كمسودة
+                    احفظ المسودة
                   </button>
                   {/* ⚠️ «إرسال للجهة» **مش موجود هنا** · قاعدة 13
                       بتمنعه قبل اعتمادات المؤسسة، والمخرج الوحيد من
@@ -429,14 +429,14 @@ export default function AgreementNewPage() {
                     disabled={!canSend}
                     title={
                       missing.length
-                        ? `ناقص ${missing.length}`
+                        ? `بنود ناقصة: ${missing.length}`
                         : issues.length
                           ? issues[0].say
-                          : 'أحِل الاتفاقية لمدير المنح'
+                          : 'أرسل الاتفاقية إلى مدير المنح'
                     }
                     onClick={() => setSent(true)}
                   >
-                    إحالة لمدير المنح
+                    أرسل إلى مدير المنح
                   </button>
                 </>
               ) : (

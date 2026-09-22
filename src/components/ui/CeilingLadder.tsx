@@ -43,20 +43,20 @@ export function CeilingLadder({
                     صاحب القرار
                     {r.uplift ? (
                       <>
-                        {' '}· يقدر يزيد المبلغ حتى{' '}
+                        {' '}· يمكنه رفع المبلغ حتى{' '}
                         <span className="num">{nf.format(Math.round(amount * (1 + r.uplift / 100)))}</span>{' '}
                         <span className="num">(+{r.uplift}%)</span>
                       </>
                     ) : null}
                   </>
                 )}
-                {!isNow && !isDecider && (off ? 'غير مطلوبة، المبلغ دون السقف' : 'ضمن المسار')}
+                {!isNow && !isDecider && (off ? 'غير مطلوبة، فالمبلغ دون الحد المالي' : 'ضمن المسار')}
               </div>
             </div>
             <div className="lcap">
               {/* الخط المونو للأرقام بس · على العربي بيبوّظ المسافات */}
               <div className={`lnum${r.ceiling ? ' mono' : ''}`}>
-                {r.ceiling ? nf.format(r.ceiling) : r.kind === 'recommend' ? 'توصية' : 'بلا سقف'}
+                {r.ceiling ? nf.format(r.ceiling) : r.kind === 'recommend' ? 'توصية' : 'بلا حد مالي'}
               </div>
               {fill !== null && (
                 <div className="lbar">
@@ -69,7 +69,7 @@ export function CeilingLadder({
       })}
 
       {authority.provisional && (
-        <div className="lprov">السقوف مؤقتة لحين تأكيدها من العميل</div>
+        <div className="lprov">الحدود المالية مؤقتة حتى يؤكدها العميل</div>
       )}
     </div>
   )

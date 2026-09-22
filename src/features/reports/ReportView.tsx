@@ -50,9 +50,9 @@ export default function ReportView() {
           <div className="screen col">
             <Glass>
               <Empty
-                title="تقرير غير معروف."
-                note="ارجع للوحة واختر تقريرًا منها."
-                actions={<Link className="btn btn-2" to={ROUTES.reports}>لوحة التقارير</Link>}
+                title="التقرير غير موجود."
+                note="عُد إلى لوحة التقارير واختر تقريرًا منها."
+                actions={<Link className="btn btn-2" to={ROUTES.reports}>العودة إلى لوحة التقارير</Link>}
               />
             </Glass>
           </div>
@@ -113,7 +113,7 @@ export default function ReportView() {
 
           <Glass className="tblcard">
             {table.rows.length === 0 ? (
-              <Empty title="لا صفوف في هذه الفترة." note="جرّب سنة أو مصدر تمويل آخر." />
+              <Empty title="لا توجد صفوف في هذه الفترة." note="جرّب سنة أو مصدر تمويل آخر." />
             ) : (
               <div className="tblwrap">
                 <div className="tblock">
@@ -149,8 +149,8 @@ export default function ReportView() {
 
           {table.rows.length > 200 && (
             <p className="sub" style={{ textAlign: 'center' }}>
-              معروض أول <span className="num">200</span> صفًّا من{' '}
-              <span className="num">{nf.format(table.rows.length)}</span> · التصدير بيطلع الكل
+              تُعرض أول <span className="num">200</span> صف من{' '}
+              <span className="num">{nf.format(table.rows.length)}</span> · يشمل التصدير جميع الصفوف
             </p>
           )}
         </div>
@@ -211,10 +211,10 @@ function buildTable(key: string, yearId: string): Table | null {
           { key: 'planDays', label: 'المدة المخططة', n: true },
           { key: 'actualDays', label: 'المدة الفعلية', n: true },
           { key: 'dDays', label: 'الفرق', n: true },
-          { key: 'planBeneficiaries', label: 'مستفيدو العقد', n: true },
+          { key: 'planBeneficiaries', label: 'مستفيدو الاتفاقية', n: true },
           { key: 'actualBeneficiaries', label: 'المستفيدون الفعليون', n: true },
           { key: 'granted', label: 'المعتمد', n: true, money: true },
-          { key: 'actualBudget', label: 'الموازنة الفعلية', n: true, money: true },
+          { key: 'actualBudget', label: 'الميزانية الفعلية', n: true, money: true },
           { key: 'outputs', label: 'المخرجات الفعلية' },
         ],
         rows: cs.map((c) => ({
@@ -247,7 +247,7 @@ function buildTable(key: string, yearId: string): Table | null {
       return {
         cols: [
           { key: 'goal', label: 'الهدف' },
-          { key: 'n', label: 'مشاريع', n: true },
+          { key: 'n', label: 'المشاريع', n: true },
           { key: 'granted', label: 'المعتمد', n: true, money: true },
           { key: 'spent', label: 'المصروف', n: true, money: true },
           { key: 'rest', label: 'لم يُصرف', n: true, money: true },
@@ -282,7 +282,7 @@ function buildTable(key: string, yearId: string): Table | null {
           { key: 'completed', label: 'مكتملة', n: true },
           { key: 'stalled', label: 'متعثّرة', n: true },
           { key: 'declined', label: 'معتذر عنها', n: true },
-          { key: 'grantedTotal', label: 'كامل الممنوح', n: true, money: true },
+          { key: 'grantedTotal', label: 'إجمالي الممنوح', n: true, money: true },
           { key: 'inDisbursement', label: 'تحت الصرف', n: true, money: true },
         ],
         rows: entityRows.map((e) => ({

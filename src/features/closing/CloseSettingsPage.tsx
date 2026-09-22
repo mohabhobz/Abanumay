@@ -58,8 +58,8 @@ export default function CloseSettingsPage() {
             <div>
               <h1 className="ptitle">إعدادات الإغلاق</h1>
               <p className="sub mt-1">
-                المستندات اللي التقرير الختامي بيطلبها · وحدود المحطات اللي
-                بتحدّد إمتى الطلب يتقال عليه متأخّر
+                المستندات التي يطلبها التقرير الختامي · وحدود المحطات التي
+                تحدّد متى يُعدّ الطلب متأخرًا
               </p>
             </div>
             <Tag tone="warn">قيم افتراضية</Tag>
@@ -78,10 +78,10 @@ export default function CloseSettingsPage() {
                 meta={<span className="sub"><Num>{CLOSE_DOCS.length}</Num> مستندًا</span>}
               />
               <p className="sub cnote">
-                القاعدة <span className="num">3</span> بتلزم إرفاق المستندات الداعمة
-                قبل إرسال التقرير، والقاعدة <span className="num">5</span> بتسمح إن
-                المواد الإعلامية والفيديوهات تتبعت <b>روابط تخزين سحابي معتمدة</b>
-                بدل الرفع · وهي عادةً أكبر من أي حدّ رفع.
+                تُلزم القاعدة <span className="num">3</span> بإرفاق المستندات الداعمة
+                قبل إرسال التقرير، وتسمح القاعدة <span className="num">5</span> بإرسال
+                المواد الإعلامية والفيديوهات <b>روابط تخزين سحابي معتمدة</b>
+                بدل رفعها · فهي عادةً أكبر من أي حدّ رفع.
               </p>
               <table className="tbl">
                 <colgroup><col /><col /><col /></colgroup>
@@ -106,7 +106,7 @@ export default function CloseSettingsPage() {
                         <td className="n">
                           {n > 0
                             ? <><span className="num">{n}</span> طلب</>
-                            : <span className="sub">لا شيء</span>}
+                            : <span className="sub">لم يُرفع</span>}
                         </td>
                       </tr>
                     )
@@ -118,14 +118,14 @@ export default function CloseSettingsPage() {
             <Glass className="tblcard">
               <Head
                 title="حدود المحطات"
-                meta={<Tag tone="warn">الوثيقة ما حدّدتش مدة</Tag>}
+                meta={<Tag tone="warn">لم تحدّد الوثيقة مدة</Tag>}
               />
               {/* ⚠️ الجملة دي هي اللي بتفرّق بين «رقم اتّفقنا عليه»
                   و«رقم حطّيناه عشان الشاشة تشتغل» */}
               <p className="sub cnote">
-                BPD-011 بتقيس متوسط مدة الإغلاق (مؤشر <span className="num">1</span>)
-                وما بتحطّش حدًّا لأي محطة · الأرقام دي مؤقتة عشان «متأخّر» يبقى له
-                معنى في النموذج، ومحتاجة تتأكد مع المؤسسة (السؤال س-18).
+                تقيس BPD-011 متوسط مدة الإغلاق (مؤشر <span className="num">1</span>)
+                ولا تضع حدًّا لأي محطة · هذه الأرقام مؤقتة ليكون لوصف «متأخّر»
+                معنى في النموذج، وتحتاج إلى تأكيد المؤسسة (السؤال س-18).
               </p>
               <table className="tbl">
                 <colgroup><col /><col /><col /><col /><col /></colgroup>
@@ -133,9 +133,9 @@ export default function CloseSettingsPage() {
                   <tr>
                     <th><span className="th-t">المحطة</span></th>
                     <th><span className="th-t">الدورة</span></th>
-                    <th><span className="th-t">عند مين</span></th>
+                    <th><span className="th-t">المسؤول</span></th>
                     <th className="n"><span className="th-t">الحدّ بالأيام</span></th>
-                    <th className="n"><span className="th-t">واقف فيها الآن</span></th>
+                    <th className="n"><span className="th-t">الطلبات فيها الآن</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -165,9 +165,9 @@ export default function CloseSettingsPage() {
                 </tbody>
               </table>
               <p className="sub cnote">
-                محطة الاتصال المؤسسي بتتخطّى لمّا الاتفاقية مفيهاش التزام نشر
-                إعلامي (القاعدة <span className="num">9</span>) · فحدّها بيتحسب على
-                الطلبات اللي بتعدّي منها وحدها.
+                تُتخطّى محطة الاتصال المؤسسي إذا خلت الاتفاقية من التزام نشر
+                إعلامي (القاعدة <span className="num">9</span>) · فيُحسب حدّها على
+                الطلبات التي تمرّ بها فقط.
               </p>
             </Glass>
           )}

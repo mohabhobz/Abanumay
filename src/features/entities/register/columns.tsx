@@ -110,7 +110,7 @@ export const COLS: Col[] = [
     /* «لم تُقيَّم» تتشال من الحسبة · صفر بيقول «درجتها صفر» */
     value: (r) => (r.governanceClaim > 0 ? r.governanceClaim : null),
     agg: 'avg',
-    aggSay: 'وسطي المُقيَّم',
+    aggSay: 'متوسط المُقيَّم',
   },
   {
     key: 'licensor',
@@ -155,7 +155,7 @@ export const COLS: Col[] = [
        كانت `?? 0` فالمتوسّط بيقسم على طلبات لسه مفتوحة. */
     value: (r) => r.reviewDays ?? null,
     agg: 'avg',
-    aggSay: 'يومًا وسطي للمغلَق',
+    aggSay: 'يومًا في المتوسط للمغلَق',
   },
   {
     key: 'clerk',
@@ -167,7 +167,7 @@ export const COLS: Col[] = [
   {
     key: 'entityId',
     w: 128,
-    label: 'الجهة المتولّدة',
+    label: 'الجهة المُنشأة',
     /* قاعدة 2 · الجهة مالهاش وجود قبل الاعتماد، فالخانة فاضية عن
        قصد في كل حالة غير «معتمد» */
     cell: (r) =>

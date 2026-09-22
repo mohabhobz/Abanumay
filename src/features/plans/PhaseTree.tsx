@@ -83,7 +83,7 @@ export function PhaseTree({
               <Tag tone={done === 100 ? 'ok' : done > 0 ? 'ret' : 'mute'}>
                 {pct(done)}
               </Tag>
-              {queue > 0 && <Tag tone="warn"><Num>{queue}</Num> مستنّي</Tag>}
+              {queue > 0 && <Tag tone="warn"><Num>{queue}</Num> بانتظار</Tag>}
               {late > 0 && <Tag tone="no"><Num>{late}</Num> متأخّر</Tag>}
             </button>
 
@@ -92,7 +92,7 @@ export function PhaseTree({
                 {ph.activities.length === 0 && (
                   <li className="act">
                     <span className="sub">
-                      المرحلة بلا أنشطة · المرحلة بتتقاس بأنشطتها، فمفيش حاجة تتراجع.
+                      المرحلة بلا أنشطة · تُقاس المرحلة بأنشطتها، فلا يوجد ما يُراجَع.
                     </span>
                   </li>
                 )}
@@ -107,7 +107,7 @@ export function PhaseTree({
                       <Tag tone={ACTIVITY_TONE[a.state]}>{ACTIVITY_SAY[a.state]}</Tag>
                       {/* ⚠️ التأخير وسم مستقلّ عن الحالة · «جارٍ»
                           وموعده عدّى من شهر معلومتان مختلفتان */}
-                      {isLate(a) && <Tag tone="no">عدّى موعده</Tag>}
+                      {isLate(a) && <Tag tone="no">تجاوز موعده</Tag>}
                       <span className="pc-sp" />
                       <span className="sub act-w">
                         الوزن <span className="num">{a.weight}</span>
@@ -143,7 +143,7 @@ export function PhaseTree({
                                 onClick={() => onUpload(a.id, need)}
                               >
                                 <Icon name={icons.upload} size={13} />
-                                ارفع
+                                ارفع الشاهد
                               </button>
                             )}
                           </li>
@@ -179,7 +179,7 @@ export function PhaseTree({
                                 className="btn btn-p btn-sm"
                                 disabled={missing.length > 0}
                                 title={missing.length > 0
-                                  ? `ناقص: ${missing.join(' · ')}`
+                                  ? `ينقص: ${missing.join(' · ')}`
                                   : 'يُحتسب إنجازًا من لحظة القبول · قاعدة 14'}
                                 onClick={() => onAccept?.(a.id)}
                               >
@@ -189,7 +189,7 @@ export function PhaseTree({
                                 className="btn btn-2 btn-sm"
                                 onClick={() => onReject?.(a.id)}
                               >
-                                أعِده بملاحظة
+                                أعده بملاحظة
                               </button>
                             </>
                           )
@@ -205,11 +205,11 @@ export function PhaseTree({
                           className="btn btn-2 btn-sm"
                           disabled={a.needs.some((n) => !a.evidence.some((e) => e.kind === n))}
                           title={a.needs.some((n) => !a.evidence.some((e) => e.kind === n))
-                            ? 'ارفع الشواهد المطلوبة الأول'
-                            : 'المشرف هو اللي بيحتسبه إنجازًا بعد المراجعة'}
+                            ? 'ارفع الشواهد المطلوبة أولًا'
+                            : 'يحتسبه المشرف إنجازًا بعد المراجعة'}
                           onClick={() => onClaim?.(a.id)}
                         >
-                          خلّصت النشاط · للمراجعة
+                          أرسل النشاط المكتمل للمراجعة
                         </button>
                       </div>
                     )}

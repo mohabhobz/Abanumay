@@ -50,7 +50,7 @@ export default function OrderPage() {
           <div className="screen col">
             <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
             <Glass>
-              <Empty title="الطلب غير موجود." note="يمكن يكون اتقفل أو الرابط قديم." />
+              <Empty title="الطلب غير موجود." note="ربما أُغلق الطلب، أو أن الرابط قديم." />
             </Glass>
           </div>
         </div>
@@ -98,13 +98,13 @@ export default function OrderPage() {
               <Empty
                 title="أمر الصرف لم يُنشأ بعد."
                 note={
-                  `الطلب لسّه عند ${r.state === 'supervisor' ? 'مشرف المنح' : 'مدير المنح'}. ` +
-                  'القاعدة 9 بتمنع تنفيذ الصرف قبل اكتمال كل الاعتمادات، والأمر بيتولّد ' +
+                  `الطلب ما زال بانتظار ${r.state === 'supervisor' ? 'مشرف المنح' : 'مدير المنح'}. ` +
+                  'تمنع القاعدة 9 تنفيذ الصرف قبل اكتمال كل الاعتمادات، ويُنشأ الأمر ' +
                   'في خطوة 16 بعد اعتماد الإدارة المالية.'
                 }
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payment(r.id))}>
-                    ارجع للطلب
+                    العودة إلى الطلب
                   </button>
                 }
               />
@@ -191,7 +191,7 @@ export default function OrderPage() {
                 </table>
                 {r.sources.length > 1 && (
                   <p className="sub cnote">
-                    القاعدة 12 بتلزم الصرف بالتوزيع المعتمد ده عند تعدّد المصادر.
+                    تُلزم القاعدة 12 بالصرف وفق هذا التوزيع المعتمد عند تعدّد المصادر.
                   </p>
                 )}
               </section>
@@ -202,7 +202,7 @@ export default function OrderPage() {
                 <dl className="kv">
                   <dt>البنك</dt><dd>{r.bank.name}</dd>
                   <dt>حالة الحساب</dt>
-                  <dd>{r.bank.active ? 'معتمد' : <span className="bad">معطَّل · لا يُحوَّل إليه</span>}</dd>
+                  <dd>{r.bank.active ? 'معتمد' : <span className="bad">غير نشط · لا يُحوَّل إليه</span>}</dd>
                   <dt>اسم المستفيد</dt><dd>{r.entityName}</dd>
                 </dl>
               </section>

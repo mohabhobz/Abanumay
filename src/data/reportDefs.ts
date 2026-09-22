@@ -74,13 +74,13 @@ export function boardCards(yearId: string): ReportCard[] {
     : 0
   out.push({
     key: 'budget',
-    question: 'الميزانية واقفة فين؟',
+    question: 'أين وصلت الميزانية؟',
     icon: 'budget',
     value: pct(usedPct),
-    unit: 'من المخصص وصل فعلًا',
+    unit: 'من المخصص صُرف فعلًا',
     reading:
-      `المخصص ${money(bud.allocated)} ريال، منها ${money(bud.spent)} مصروف و${money(bud.committed)} ملتزم بها ` +
-      `و${money(bud.reserved)} محجوزة لطلبات تحت الدراسة، يعني ${pct(lockedPct)} مربوطة ولسه ما خرجتش.`,
+      `المخصص ${money(bud.allocated)} ريال، منها ${money(bud.spent)} مصروفة و${money(bud.committed)} ملتزم بها ` +
+      `و${money(bud.reserved)} محجوزة لطلبات تحت الدراسة، أي أن ${pct(lockedPct)} مربوطة ولم تُصرف بعد.`,
     bold: [money(bud.spent), pct(lockedPct)],
     src: 'تقارير الميزانية · reports1_1',
     /* الأربعة بيقسّموا المخصص بلا تداخل: المصروف جزء من الملتزم،
@@ -101,17 +101,17 @@ export function boardCards(yearId: string): ReportCard[] {
     const g = gapOf(closing)
     out.push({
       key: 'actual',
-      question: 'الوعد اتنفّذ ولا لأ؟',
+      question: 'هل نُفّذ ما وُعد به؟',
       icon: 'chart',
       value: `${g.days > 0 ? '+' : ''}${pct(g.days)}`,
       unit: 'فرق المدة الفعلية عن المخططة',
       reading:
         `على ${nf.format(g.total)} تقريرًا ختاميًا: المدة الفعلية أطول بـ${pct(Math.abs(g.days))} في المتوسط، ` +
-        `والمستفيدون الفعليون أقل بـ${pct(Math.abs(g.beneficiaries))}، و${nf.format(g.metTarget)} مشروعًا بس ` +
-        `وصل للعدد المتعاقد عليه.`,
+        `والمستفيدون الفعليون أقل بـ${pct(Math.abs(g.beneficiaries))}، و${nf.format(g.metTarget)} مشروعًا فقط ` +
+        `وصل إلى العدد المتعاقد عليه.`,
       bold: [pct(Math.abs(g.days)), pct(Math.abs(g.beneficiaries))],
       danger: [pct(Math.abs(g.days))],
-      src: 'التقارير الختامية · reports1_12) كل ما اكتمل، لا سنة المنحة',
+      src: 'التقارير الختامية · reports1_12 · كل ما اكتمل، لا سنة المنحة',
       bars: [
         { k: 'تجاوز مدته', v: g.lateCount, tone: 'no' },
         { k: 'في موعده', v: g.total - g.lateCount, tone: 'ok' },
@@ -129,15 +129,15 @@ export function boardCards(yearId: string): ReportCard[] {
     const topShare = Math.round((goals[0][1] / total) * 100)
     out.push({
       key: 'spend',
-      question: 'المال رايح فين؟',
+      question: 'أين يذهب المال؟',
       icon: 'chart',
       value: pct(topShare),
       unit: 'من المعتمد في هدف واحد',
       reading:
         `أعلى هدف استهلاكًا «${goals[0][0]}» بـ${money(goals[0][1])} ريال من إجمالي ${money(total)}. ` +
-        `أعلى خمسة أهداف بياخدوا ${pct(Math.round((goals.reduce((s, g) => s + g[1], 0) / total) * 100))} من المعتمد.`,
+        `وتستحوذ أعلى خمسة أهداف على ${pct(Math.round((goals.reduce((s, g) => s + g[1], 0) / total) * 100))} من المعتمد.`,
       bold: [goals[0][0], money(goals[0][1])],
-      src: 'مخصص الصرف · reports1_5) المصاريف السنوية حسب الهدف',
+      src: 'مخصص الصرف · reports1_5 · المصروفات السنوية حسب الهدف',
       bars: goals.map(([k, v]) => ({ k, v, tone: 'ok' as const })),
     })
   }
@@ -147,13 +147,13 @@ export function boardCards(yearId: string): ReportCard[] {
   const stalled = entityRows.filter((e) => e.projectsStalled > 0)
   out.push({
     key: 'partners',
-    question: 'مين من الجهات هيوقفني؟',
+    question: 'أي الجهات ستعطّل الاعتماد؟',
     icon: 'entity',
     value: nf.format(short.length),
     unit: `جهة ملفها ناقص من ${nf.format(entityRows.length)}`,
     reading:
-      `${nf.format(short.length)} جهة ملفها الورقي ناقص، فأي اعتماد لها بيقف عند توقيع الاتفاقية. ` +
-      `و${nf.format(stalled.length)} جهة عندها مشروع متعثّر لم يُغلق.`,
+      `${nf.format(short.length)} جهة ملفها الورقي ناقص، فأي اعتماد لها يتوقف عند توقيع الاتفاقية. ` +
+      `و${nf.format(stalled.length)} جهة لديها مشروع متعثّر لم يُغلق.`,
     bold: [`${nf.format(short.length)} جهة`],
     danger: [`${nf.format(short.length)} جهة`],
     src: 'تقارير الشركاء · reports1_2',
@@ -170,14 +170,14 @@ export function boardCards(yearId: string): ReportCard[] {
   const worst = [...byStage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4)
   out.push({
     key: 'stages',
-    question: 'المشاريع بتقف فين؟',
+    question: 'أين تتوقف المشاريع؟',
     icon: 'clock',
     value: nf.format(late.length),
     unit: 'مشروعًا فوق حدّ قسمه',
     reading: worst.length
-      ? `أكتر قسم بيوقف عنده المشاريع «${worst[0][0]}» بـ${nf.format(worst[0][1])} مشروعًا. ` +
-        `المكوث بيتقاس فعلًا في النظام، والحدّ المقارَن بيه مؤقت لحين اعتماده.`
-      : 'مفيش مشروع فوق حدّ قسمه في الفترة دي.',
+      ? `أكثر قسم تتوقف عنده المشاريع «${worst[0][0]}» بـ${nf.format(worst[0][1])} مشروعًا. ` +
+        `المكوث يُقاس فعلًا في النظام، والحدّ المقارَن به مؤقت لحين اعتماده.`
+      : 'لا يوجد مشروع فوق حدّ قسمه في هذه الفترة.',
     bold: worst.length ? [worst[0][0]] : [],
     danger: [nf.format(late.length)],
     src: 'أداء الأقسام · reports1_15',
@@ -190,16 +190,16 @@ export function boardCards(yearId: string): ReportCard[] {
     const empty = know.filter((k) => k.empty).length
     out.push({
       key: 'knowledge',
-      question: 'بنتعلّم من اللي عملناه؟',
+      question: 'هل نتعلّم مما أنجزناه؟',
       icon: 'doc',
       value: pct(Math.round((real / know.length) * 100)),
       unit: 'من قيود المعرفة فيها درس مكتوب',
       reading:
         `${nf.format(know.length)} قيدًا في تقرير المعرفة، ${nf.format(empty)} منها نصّها نقطة واحدة ` +
-        `و${nf.format(real)} بس فيها درس فعلي. الحقل إلزامي، فبيتملّى عشان يعدّي لا عشان يُقرأ.`,
+        `و${nf.format(real)} فقط فيها درس فعلي. الحقل إلزامي، فيُملأ لتجاوزه لا ليُقرأ.`,
       bold: [nf.format(real)],
       danger: [nf.format(empty)],
-      src: 'تقرير المعرفة · reports1_13) كل القيود المرفوعة',
+      src: 'تقرير المعرفة · reports1_13 · كل القيود المرفوعة',
       bars: [
         { k: 'درس مكتوب', v: real, tone: 'ok' },
         { k: 'نصّ قصير', v: know.length - real - empty, tone: 'warn' },

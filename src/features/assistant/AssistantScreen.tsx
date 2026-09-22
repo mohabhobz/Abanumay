@@ -172,8 +172,8 @@ export function AssistantScreen({
               <button
                 className="aclose aclose-list"
                 onClick={() => setShut(false)}
-                title="رجّع المحادثات"
-                aria-label="رجّع المحادثات"
+                title="أظهر المحادثات"
+                aria-label="أظهر المحادثات"
               >
                 <Icon name={icons.panel} size={16} />
               </button>
@@ -190,7 +190,7 @@ export function AssistantScreen({
 
             {headExtra}
 
-            <button className="aclose" onClick={onClose} aria-label="خروج">
+            <button className="aclose" onClick={onClose} aria-label="أغلق المساعد">
               <Icon name={icons.close} size={16} />
             </button>
           </div>
@@ -232,7 +232,7 @@ export function AssistantScreen({
         </div>
 
         {!stick && msgs.length > 0 && (
-          <button className="tobottom chrome" onClick={() => setStick(true)} aria-label="آخر المحادثة">
+          <button className="tobottom chrome" onClick={() => setStick(true)} aria-label="انتقل إلى آخر المحادثة">
             <Icon name={icons.down} size={16} />
           </button>
         )}

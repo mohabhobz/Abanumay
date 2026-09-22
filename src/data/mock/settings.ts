@@ -159,12 +159,12 @@ export const SETTING_MODULES: SettingModule[] = [
     groups: [
       {
         key: 'years', label: 'السنوات المالية', kind: 'master', owner: 'الإدارة المالية',
-        where: 'ترويسة أي ميزانية · وما تعرفش تفتح ميزانية من غيرها',
+        where: 'ترويسة كل ميزانية · ولا تُفتح ميزانية بدونها',
         count: fiscalYears.length,
       },
       {
         key: 'sources', label: 'مصادر التمويل', kind: 'master', owner: 'الإدارة المالية',
-        where: 'ترويسة الميزانية · والميزانية بتتعرّف بـ(سنة + مصدر)',
+        where: 'ترويسة الميزانية · وتُعرَّف الميزانية بالسنة والمصدر معًا',
         count: fundSources.length,
       },
     ],
@@ -176,27 +176,27 @@ export const SETTING_MODULES: SettingModule[] = [
     groups: [
       {
         key: 'regions', label: 'المناطق', kind: 'master', owner: 'مسؤول النظام',
-        where: 'فورم تسجيل الجهة · وفلتر المنطقة في كل قايمة',
+        where: 'نموذج تسجيل الجهة · وتصفية المنطقة في كل قائمة',
         count: REGIONS.length,
       },
       {
         key: 'cities', label: 'المدن', kind: 'master', owner: 'مسؤول النظام',
-        where: 'فورم تسجيل الجهة · والمدينة تابعة للمنطقة',
+        where: 'نموذج تسجيل الجهة · والمدينة تتبع المنطقة',
         count: cityCount,
       },
       {
         key: 'types', label: 'تصنيفات الجهة', kind: 'master', owner: 'إدارة المنح',
-        where: 'فورم التسجيل · والتصنيف بيغيّر المستندات الإلزامية',
+        where: 'نموذج التسجيل · والتصنيف يحدد المستندات الإلزامية',
         count: ENTITY_TYPES.length,
       },
       {
         key: 'licensors', label: 'جهات الإشراف الفني', kind: 'master', owner: 'مسؤول النظام',
-        where: 'فورم التسجيل · وملف الجهة',
+        where: 'نموذج التسجيل · وملف الجهة',
         count: LICENSORS.length,
       },
       {
         key: 'targets', label: 'الفئات المستهدفة', kind: 'master', owner: 'إدارة المنح',
-        where: 'فورم المشروع · وتقارير الأثر',
+        where: 'نموذج المشروع · وتقارير الأثر',
         count: TARGET_GROUPS.length,
       },
     ],
@@ -263,7 +263,7 @@ export interface Deps {
  */
 export const budgetDeps = (yearName: string): Deps => {
   const n = projectRows.filter((p) => p.year.startsWith(yearName)).length
-  return { count: n, say: n ? `${n} مشروعًا عليها` : '' }
+  return { count: n, say: n ? `مشاريع مرتبطة بها: ${n}` : '' }
 }
 
 /** المشروع عليه اتفاقيات ودفعات · آخر حلقة في السلسلة */

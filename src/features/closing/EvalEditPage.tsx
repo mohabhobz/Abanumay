@@ -53,10 +53,10 @@ export default function EvalEditPage() {
             <Glass>
               <Empty
                 title="لا يوجد طلب إغلاق بهذا الرقم."
-                note="ارجع لصندوق الإغلاق واختر واحدًا."
+                note="ارجع إلى صندوق الإغلاق واختر طلبًا منه."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.closings)}>
-                    صندوق الإغلاق
+                    العودة إلى صندوق الإغلاق
                   </button>
                 }
               />
@@ -76,14 +76,14 @@ export default function EvalEditPage() {
           <div className="screen col">
             <BackTo label="صفحة الإغلاق" onClick={() => navigate(ROUTES.closing(c.id))} />
             <Glass>
-              <Head title="تقييم المشروع ما بدأش" meta={<Tag tone="ret">قاعدة <Num>6</Num></Tag>} />
+              <Head title="لم يبدأ تقييم المشروع بعد" meta={<Tag tone="ret">قاعدة <Num>6</Num></Tag>} />
               <Empty
                 title={canStartEval(c)
-                  ? 'التقرير اتعتمد · التقييم يقدر يبدأ دلوقتي.'
-                  : 'التقييم ما يبدأش قبل اعتماد المدير التنفيذي للتقرير الختامي.'}
+                  ? 'اعتُمد التقرير · يمكن بدء التقييم الآن.'
+                  : 'لا يبدأ التقييم قبل اعتماد المدير التنفيذي للتقرير الختامي.'}
                 note={canStartEval(c)
-                  ? 'ابدأه من رصيف صفحة الطلب · بيعدّه مشرف المنح، ودورته سجلّ منفصل (قاعدة 17).'
-                  : 'القاعدة 6 بتربط بدء التقييم باعتماد المدير التنفيذي تحديدًا، لا باعتماد المشرف ولا المدير.'}
+                  ? 'ابدأه من رصيف صفحة الطلب · يُعدّه مشرف المنح، ودورته سجلّ منفصل (قاعدة 17).'
+                  : 'تربط القاعدة 6 بدء التقييم باعتماد المدير التنفيذي تحديدًا، لا باعتماد المشرف ولا المدير.'}
                 actions={
                   <Link className="btn btn-p" to={ROUTES.closing(c.id)}>افتح الطلب</Link>
                 }
@@ -110,8 +110,8 @@ export default function EvalEditPage() {
               <h1 className="ptitle">تقييم المشروع · {c.projectName}</h1>
               <p className="sub mt-1">
                 {closed
-                  ? 'الإغلاق اكتمل · الصفحة للقراءة (قاعدة 21)'
-                  : <>بيعدّه مشرف المنح بعد اعتماد التقرير الختامي · ودورة اعتماده
+                  ? 'اكتمل الإغلاق · الصفحة للقراءة فقط (قاعدة 21)'
+                  : <>يُعدّه مشرف المنح بعد اعتماد التقرير الختامي · ودورة اعتماده
                     مستقلّة بسجلّ منفصل (القاعدة <span className="num">17</span>)</>}
               </p>
             </div>
@@ -131,9 +131,9 @@ export default function EvalEditPage() {
                 لكل مشروع مؤشراته من خطته؟ الوثيقة ما بتقولش · واللي
                 هنا مأخوذ من مستهدفات المشروع لحدّ ما العميل يحسمها. */}
             <p className="sub cnote">
-              المستهدف جنب كل مؤشر · والمتحقّق اللي بتكتبه هو اللي المقارنة
-              بتتبنى عليه. والمؤشرات دي من مستهدفات المشروع لحدّ ما المؤسسة
-              تحدّد قايمتها (السؤال س-17).
+              المستهدف بجانب كل مؤشر · والمتحقّق الذي يُكتب هنا هو ما تُبنى عليه
+              المقارنة. وهذه المؤشرات مأخوذة من مستهدفات المشروع إلى أن تحدّد
+              المؤسسة قائمتها (السؤال س-17).
             </p>
 
             <div className="regfields">
@@ -178,11 +178,11 @@ export default function EvalEditPage() {
                   disabled={closed}
                   onChange={(e) => setImpact(e.target.value)}
                   aria-label="الأثر المرصود"
-                  placeholder="أربع جمعيات من خمسة بقى عندها خطة مالية معتمدة"
+                  placeholder="أربع جمعيات من خمس أصبحت لديها خطة مالية معتمدة"
                 />
               </span>
               <span className="sub regf-h">
-                الأثر مش تكرار للمخرجات · المخرج «36 ورشة»، والأثر «اللي اتغيّر بعدها»
+                الأثر ليس تكرارًا للمخرجات · المخرج «36 ورشة»، والأثر «ما تغيّر بعدها»
               </span>
             </label>
 
@@ -200,12 +200,12 @@ export default function EvalEditPage() {
                   disabled={closed}
                   onChange={(e) => setLessons(e.target.value)}
                   aria-label="الدروس المستفادة"
-                  placeholder="ربط الصرف بمراحل الترخيص قلّل التأخير لشهر بدل تلاتة"
+                  placeholder="ربط الصرف بمراحل الترخيص قلّل التأخير إلى شهر بدل ثلاثة"
                 />
               </span>
               <span className="sub regf-h">
-                دي بتتقري وإحنا بندرس مشروعًا مشابهًا للجهة دي أو لغيرها · فاللي
-                يتكتب هنا بيرجع في دراسة جاية
+                تُقرأ عند دراسة مشروع مشابه لهذه الجهة أو لغيرها · فما يُكتب هنا
+                يُرجع إليه في الدراسات اللاحقة
               </span>
             </label>
 
@@ -221,7 +221,7 @@ export default function EvalEditPage() {
                 placeholder="اختر تقديرًا من 5"
               />
               <span className="sub regf-h">
-                استرشادي · القاعدة <span className="num">13</span> بتقول إن مخرجات
+                استرشادي · تنص القاعدة <span className="num">13</span> على أن مخرجات
                 التحليل دعم للمراجعة لا بديل عن اعتماد أصحاب الصلاحية
               </span>
             </label>
@@ -230,14 +230,14 @@ export default function EvalEditPage() {
           {!closed && (
             <div className="act-a">
               <Link className="btn btn-p" to={ROUTES.closing(c.id)}>
-                احفظ وارجع للطلب
+                احفظ وارجع إلى الطلب
               </Link>
               <Link className="btn btn-2" to={ROUTES.closing(c.id)}>إلغاء</Link>
             </div>
           )}
 
           <p className="sub tcen">
-            الحفظ ما بيبعتش · الإرسال لمدير المنح من صفحة الطلب، ودورة اعتماد
+            الحفظ لا يُرسل التقييم · الإرسال إلى مدير المنح من صفحة الطلب، ودورة اعتماد
             التقييم منفصلة عن دورة التقرير (القاعدة <span className="num">17</span>).
           </p>
         </div>

@@ -69,7 +69,7 @@ const fields2026: PlanNode[] =
 export function SpendGauge({
   title = 'نسبة المصروف من الميزانية السنوية',
   value, of, note,
-  hint = 'من كل ريال مخصَّص للسنة، ده اللي اتصرف فعلًا لحدّ النهاردة',
+  hint = 'ما صُرف فعلًا حتى اليوم من الميزانية المخصَّصة للسنة',
 }: { title?: string; value: number; of: number; note?: string; hint?: string }) {
   const pct = of ? Math.round((value / of) * 100) : 0
   return (
@@ -141,8 +141,8 @@ export function FieldSpend({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
       </div>
 
       <p className="mut chb-n">
-        النظام العامل بيرسم ده أعمدةً رأسيةً على <Num>39</Num> هدفًا، فالأسماء
-        بتطلع مقلوبة ومتداخلة. الأعمدة الأفقية بتخلّي الاسم يتقري والطول هو المقياس.
+        يعرض النظام العامل هذا الرسم أعمدةً رأسيةً على <Num>39</Num> هدفًا، فتظهر الأسماء
+        مقلوبة ومتداخلة. الأعمدة الأفقية تجعل الاسم مقروءًا، والطول هو المقياس.
       </p>
     </Glass>
   )
@@ -291,7 +291,7 @@ export function YearSpend() {
         <span className="chb-k">
           <span><i className="ln a" />المصروف</span>
           <span><i className="ln c" />المخصص</span>
-          <span><i className="ov" />فوق السقف</span>
+          <span><i className="ov" />تجاوز المخصص</span>
         </span>
       </span>
 
@@ -372,13 +372,13 @@ export function YearSpend() {
       )}
 
       <p className="mut chb-n">
-        المنطقة الملوّنة بين الخطّين معناها صرف فوق السقف، حصل في{' '}
+        المنطقة الملوّنة بين الخطّين تعني صرفًا تجاوز المخصص، وقد حدث في{' '}
         {overYears.map((y, i) => (
           <span key={y}>
             {i > 0 && ' و'}
             <span className="num">{y}</span>
           </span>
-        ))}. والوقف خارج الخطّ لأنه جهة تانية في نفس السنة، لا سنة تالية.
+        ))}. ويظهر الوقف خارج الخطّ لأنه جهة أخرى في السنة نفسها، لا سنة تالية.
       </p>
     </Glass>
   )
@@ -426,9 +426,9 @@ export function PlanCoverage({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
       </div>
 
       <p className="mut chb-n">
-        <b><Money sm>{total - inPlan}</Money></b> من <Money sm>{total}</Money> برّه
-        حساب الإنجاز: {out.map((n) => n.label).join(' و')} خطة إنجازهم <span className="num">0</span>{' '}
-        وباقي المجالات <span className="num">100</span>. مفيش إشارة لده في الشاشة.
+        <b><Money sm>{total - inPlan}</Money></b> من <Money sm>{total}</Money> خارج
+        حساب الإنجاز: {out.map((n) => n.label).join(' و')} خطة إنجازها <span className="num">0</span>{' '}
+        وباقي المجالات <span className="num">100</span>. ولا توجد إشارة إلى ذلك في الشاشة.
       </p>
     </Glass>
   )

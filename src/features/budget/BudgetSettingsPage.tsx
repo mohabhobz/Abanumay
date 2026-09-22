@@ -84,8 +84,8 @@ export default function BudgetSettingsPage() {
             <div>
               <h1 className="ptitle">إعدادات الميزانية</h1>
               <p className="sub mt-1">
-                القيم اللي أي ميزانية بتتبني عليها · ما تعرفش تفتح ميزانية
-                إلا لو سنتها ومصدر تمويلها متعرّفين هنا
+                القيم التي تُبنى عليها كل ميزانية · لا يمكن فتح ميزانية
+                إلا بعد تعريف سنتها ومصدر تمويلها هنا
               </p>
             </div>
           </header>
@@ -97,7 +97,7 @@ export default function BudgetSettingsPage() {
               <Glass>
                 <Head
                   title="سنة مالية جديدة"
-                  meta={<span className="sub">الاسم والمدى · والاسم ما يتكررش</span>}
+                  meta={<span className="sub">الاسم والمدى · ولا يتكرر الاسم</span>}
                 />
                 <div className="cfgrow">
                   <label className="regf">
@@ -106,7 +106,7 @@ export default function BudgetSettingsPage() {
                       <input
                         value={yName}
                         onChange={(e) => setYName(e.target.value)}
-                        placeholder="2027"
+                        placeholder="مثال: 2027"
                         aria-label="اسم السنة"
                       />
                     </span>
@@ -126,16 +126,16 @@ export default function BudgetSettingsPage() {
                   <button
                     className="btn btn-p cfgadd"
                     disabled={!canAddYear}
-                    title={yearTaken ? 'السنة دي متعرَّفة قبل كده' : 'أضف السنة'}
+                    title={yearTaken ? 'هذه السنة معرَّفة من قبل' : 'أضف السنة'}
                     onClick={addYear}
                   >
                     <Icon name={icons.plus} size={16} />
-                    إضافة
+                    أضف السنة
                   </button>
                 </div>
                 {yearTaken && (
                   <p className="bad cnote">
-                    السنة <b>{yName}</b> متعرَّفة قبل كده · السنة المالية ما تتكررش.
+                    السنة <b>{yName}</b> معرَّفة من قبل · أدخل اسمًا آخر، فالسنة المالية لا تتكرر.
                   </p>
                 )}
               </Glass>
@@ -163,8 +163,8 @@ export default function BudgetSettingsPage() {
                   })}
                 </ul>
                 <p className="sub cnote">
-                  السنة اللي عليها ميزانية ما تتحذفش · والميزانية عليها مشاريع،
-                  والمشروع عليه اتفاقيات ودفعات · السلسلة بتمنع الحذف من أولها.
+                  لا تُحذف سنة عليها ميزانية · فالميزانية عليها مشاريع، والمشروع
+                  عليه اتفاقيات ودفعات، وهذه السلسلة تمنع الحذف من أولها.
                 </p>
               </Glass>
             </>
@@ -173,7 +173,7 @@ export default function BudgetSettingsPage() {
               <Glass>
                 <Head
                   title="مصدر تمويل جديد"
-                  meta={<span className="sub">الرمز والاسم · والرمز ما يتكررش</span>}
+                  meta={<span className="sub">الرمز والاسم · ولا يتكرر الرمز</span>}
                 />
                 <div className="cfgrow">
                   <label className="regf">
@@ -182,7 +182,7 @@ export default function BudgetSettingsPage() {
                       <input
                         value={sCode}
                         onChange={(e) => setSCode(e.target.value)}
-                        placeholder="SA"
+                        placeholder="مثال: SA"
                         aria-label="رمز المصدر"
                       />
                     </span>
@@ -193,7 +193,7 @@ export default function BudgetSettingsPage() {
                       <input
                         value={sName}
                         onChange={(e) => setSName(e.target.value)}
-                        placeholder="وقف …"
+                        placeholder="مثال: وقف …"
                         aria-label="اسم المصدر"
                       />
                     </span>
@@ -201,18 +201,18 @@ export default function BudgetSettingsPage() {
                   <button
                     className="btn btn-p cfgadd"
                     disabled={!canAddSource}
-                    title={codeTaken ? 'الرمز مستعمل' : 'أضف المصدر'}
+                    title={codeTaken ? 'الرمز مستعمل من قبل' : 'أضف المصدر'}
                     onClick={addSource}
                   >
                     <Icon name={icons.plus} size={16} />
-                    إضافة
+                    أضف المصدر
                   </button>
                 </div>
                 {/* ⚠️ الرمز هو اللي بيربط الحركة المالية بمصدرها لما
                     الانتجريشن ييجي · الاسم بيتغيّر، الرمز لأ. */}
                 <p className="sub cnote">
-                  الرمز بيفضل ثابتًا مدى عمر المصدر · الاسم ممكن يتعدّل،
-                  والرمز هو اللي الحركات المالية بتتربط بيه.
+                  يبقى الرمز ثابتًا طوال عمر المصدر · يمكن تعديل الاسم،
+                  أما الرمز فهو ما تُربط به الحركات المالية.
                 </p>
               </Glass>
 
@@ -237,8 +237,8 @@ export default function BudgetSettingsPage() {
                   })}
                 </ul>
                 <p className="sub cnote">
-                  الميزانية بتتعرّف بـ<b>سنة + مصدر</b> · فنفس السنة بمصدرين
-                  بتدّي ميزانيتين منفصلتين، وده الوضع الطبيعي هنا.
+                  تُعرَّف الميزانية بـ<b>سنة + مصدر</b> · فالسنة نفسها بمصدرين
+                  تعطي ميزانيتين منفصلتين، وهذا هو الوضع الطبيعي.
                 </p>
               </Glass>
             </>

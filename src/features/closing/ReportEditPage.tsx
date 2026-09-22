@@ -54,10 +54,10 @@ export default function ReportEditPage() {
             <Glass>
               <Empty
                 title="لا يوجد طلب إغلاق بهذا الرقم."
-                note="ارجع لصندوق الإغلاق واختر واحدًا."
+                note="ارجع إلى صندوق الإغلاق واختر طلبًا منه."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.closings)}>
-                    صندوق الإغلاق
+                    العودة إلى صندوق الإغلاق
                   </button>
                 }
               />
@@ -100,9 +100,9 @@ export default function ReportEditPage() {
               <h1 className="ptitle">التقرير الختامي · {c.projectName}</h1>
               <p className="sub mt-1">
                 {closed
-                  ? 'الإغلاق اكتمل · الصفحة للقراءة، وأي تعديل بعده بيحتاج إجراءً جديدًا (قاعدة 21)'
-                  : <>القاعدة <span className="num">4</span> بتحدّد أربع بيانات كحدّ
-                    أدنى · وكل واحد فيهم جنبه المعتمد عشان الفرق يبان وإنت بتكتب</>}
+                  ? 'اكتمل الإغلاق · الصفحة للقراءة فقط، وأي تعديل بعده يحتاج إلى إجراء جديد (قاعدة 21)'
+                  : <>تحدّد القاعدة <span className="num">4</span> أربع بيانات حدًّا
+                    أدنى · وبجانب كل منها القيمة المعتمدة ليظهر الفرق أثناء الكتابة</>}
               </p>
             </div>
             {closed
@@ -171,7 +171,7 @@ export default function ReportEditPage() {
                     placeholder="0"
                   />
                 </span>
-                <span className="sub regf-h">بالأيام · من بداية التنفيذ لنهايته</span>
+                <span className="sub regf-h">بالأيام · من بداية التنفيذ إلى نهايته</span>
               </label>
             </div>
           </Glass>
@@ -190,12 +190,12 @@ export default function ReportEditPage() {
                   disabled={closed}
                   onChange={(e) => setOutcomes(e.target.value)}
                   aria-label="أبرز المخرجات والنتائج المحققة"
-                  placeholder="اتنفّذت 42 جلسة من 48 · وخدمت 780 مستفيدًا في ستة مراكز"
+                  placeholder="نُفّذت 42 جلسة من 48 · وخدمت 780 مستفيدًا في ستة مراكز"
                 />
               </span>
               <span className="sub regf-h">
-                دي رابع بيانات القاعدة <span className="num">4</span> · والمراجع
-                بيقارنها بأهداف المشروع في الاتفاقية والخطة
+                هذا البيان الرابع في القاعدة <span className="num">4</span> · ويقارنه
+                المراجع بأهداف المشروع في الاتفاقية والخطة
               </span>
             </label>
 
@@ -212,12 +212,12 @@ export default function ReportEditPage() {
                   disabled={closed}
                   onChange={(e) => setRisks(e.target.value)}
                   aria-label="التحديات والانحرافات"
-                  placeholder="تأخّر التوريد شهرًا في المرحلة التانية"
+                  placeholder="تأخّر التوريد شهرًا في المرحلة الثانية"
                 />
               </span>
               <span className="sub regf-h">
-                اختياري · بس أي فرق عن المعتمد بلا تفسير بيرجع سؤالًا من المراجعة،
-                والإعادة بتخلّي إصدارًا جديدًا (قاعدة <span className="num">19</span>)
+                اختياري · لكن أي فرق عن المعتمد بلا تفسير يعود سؤالًا من المراجعة،
+                والإعادة تُنشئ إصدارًا جديدًا (قاعدة <span className="num">19</span>)
               </span>
             </label>
           </Glass>
@@ -247,8 +247,8 @@ export default function ReportEditPage() {
                 />
               </span>
               <span className="sub regf-h">
-                القاعدة <span className="num">5</span> بتسمح بالمواد الإعلامية
-                والفيديوهات كروابط تخزين معتمدة · وهي عادةً أكبر من أي حدّ رفع
+                تسمح القاعدة <span className="num">5</span> بإرسال المواد الإعلامية
+                والفيديوهات روابطَ تخزين معتمدة · فهي عادةً أكبر من أي حدّ رفع
               </span>
             </label>
           </Glass>
@@ -256,15 +256,15 @@ export default function ReportEditPage() {
           {!closed && (
             <div className="act-a">
               <Link className="btn btn-p" to={ROUTES.closing(c.id)}>
-                احفظ وارجع للطلب
+                احفظ وارجع إلى الطلب
               </Link>
               <Link className="btn btn-2" to={ROUTES.closing(c.id)}>إلغاء</Link>
             </div>
           )}
 
           <p className="sub tcen">
-            الحفظ ما بيبعتش · الإرسال للمراجعة من صفحة الطلب، والقاعدة{' '}
-            <span className="num">3</span> بتمنعه قبل اكتمال البيانات والمستندات.
+            الحفظ لا يُرسل التقرير · الإرسال للمراجعة من صفحة الطلب، وتمنعه القاعدة{' '}
+            <span className="num">3</span> قبل اكتمال البيانات والمستندات.
           </p>
         </div>
       </div>

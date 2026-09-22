@@ -122,7 +122,7 @@ export default function LatePage() {
             <div className="rowf gp-2">
               <button className="btn btn-2 btn-sm" onClick={() => exportXlsx(sheet)}>
                 <Icon name={icons.export} size={15} />
-                إكسل
+                صدّر إلى إكسل
               </button>
               <button className="btn btn-2 btn-sm" onClick={() => setTimeout(printArea, 60)}>
                 اطبع
@@ -156,20 +156,20 @@ export default function LatePage() {
               ))}
             </div>
             <p className="sub cnote">
-              البند 4 بيخلّي إعداد الآلية صلاحية مدير النظام مباشرة بلا مسار موافقات ·
-              والتجاوز بيدّي تنبيهًا <b>مرة واحدة</b>، والتعثّر تنبيهًا <b>يوميًا</b> لحدّ
-              الإجراء أو الانتقال.
+              يجعل البند 4 إعداد الآلية صلاحية لمدير النظام مباشرة بلا مسار موافقات ·
+              ويُطلق التجاوز تنبيهًا <b>مرة واحدة</b>، والتعثّر تنبيهًا <b>يوميًا</b> حتى
+              اتخاذ الإجراء أو الانتقال.
             </p>
           </Glass>
 
           {rows.length === 0 ? (
             <Glass>
               <Empty
-                title="مفيش طلب متأخر ولا متعثر."
-                note="كل الطلبات المفتوحة جوّه مدة مرحلتها."
+                title="لا يوجد طلب متأخر أو متعثر."
+                note="كل الطلبات المفتوحة ضمن مدة مرحلتها."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
-                    ارجع للصندوق
+                    العودة إلى صندوق الصرف
                   </button>
                 }
               />

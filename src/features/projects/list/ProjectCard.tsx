@@ -81,7 +81,7 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
           <div className="pc-over">
             <span className="tag no">متأخر</span>
             <span className="sub">
-              <span className="num">{days(row.hoursInStage - row.stageLimit)}</span> يومًا فوق الحدّ
+              <span className="num">{days(row.hoursInStage - row.stageLimit)}</span> يومًا بعد تجاوز الحدّ
             </span>
           </div>
         )}

@@ -73,7 +73,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
         <Tag tone={AGR_TONE[a.stage]}>{agrStageLabel(a.stage)}</Tag>
         {a.stage === 'active' && a.activeAt
           ? <Tag tone="ok">فُعّلت <DateText>{a.activeAt}</DateText></Tag>
-          : <span className="sub">في المرحلة دي <Num>{days}</Num> يومًا</span>}
+          : <span className="sub">في هذه المرحلة منذ <Num>{days}</Num> يومًا</span>}
         {heat !== 'ok' && (
           <Tag tone={heat === 'stuck' ? 'no' : 'warn'}>{HEAT_SAY[heat]}</Tag>
         )}
@@ -93,7 +93,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           <span>
             {balance.balanced
               ? 'جدول الدفعات متوازن'
-              : <>مجموع الدفعات <Mono>{nf.format(balance.sum)}</Mono> والمنحة <Mono>{nf.format(a.amount)}</Mono></>}
+              : <>مجموع الدفعات <Mono>{nf.format(balance.sum)}</Mono> وقيمة المنحة <Mono>{nf.format(a.amount)}</Mono></>}
           </span>
           <span className="payq-r">قاعدة <Num>8</Num></span>
         </li>
@@ -102,7 +102,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           <span>
             {gap === 0
               ? 'مطابقة للمخصص المحجوز'
-              : <>فرق عن المحجوز <Mono>{nf.format(Math.abs(gap))}</Mono> ريال</>}
+              : <>الفرق عن المحجوز <Mono>{nf.format(Math.abs(gap))}</Mono> ريال</>}
           </span>
           <span className="payq-r">خطوة <Num>11</Num></span>
         </li>
@@ -111,7 +111,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           <span>
             {a.docs.length > 0
               ? <>المرفقات والملاحق · <Num>{a.docs.length}</Num></>
-              : 'لا مرفقات · الاعتماد ممنوع'}
+              : 'لا توجد مرفقات · لا يمكن الاعتماد'}
           </span>
           <span className="payq-r">قاعدة <Num>9</Num></span>
         </li>
@@ -126,7 +126,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           />
           <span>
             {a.kind !== 'ورقية'
-              ? 'إلكترونية · النسخة الورقية ما بتنطبقش'
+              ? 'إلكترونية · النسخة الورقية لا تنطبق'
               : 'النسخة الورقية الموقّعة'}
           </span>
           <span className="payq-r">قاعدة <Num>16</Num></span>

@@ -119,7 +119,7 @@ export const COLS: Col[] = [
        لازم يقول وحدته، وإلا بقى رقمًا معلّقًا تحت عمود فيه كلام */
     value: (a) => Math.round(a.hoursInStage / 24),
     agg: 'avg',
-    aggSay: 'يومًا وسطي',
+    aggSay: 'يومًا في المتوسط',
   },
   {
     key: 'version',

@@ -53,7 +53,7 @@ export function GapPeek({
             <span className="sub">{PLAN_LEVELS[gap.level]}</span>
             <div className="atitle">{gap.label || root.label}</div>
           </div>
-          <button className="aclose" onClick={onClose} aria-label="إغلاق">
+          <button className="aclose" onClick={onClose} aria-label="أغلق النافذة">
             <Icon name={icons.close} size={16} />
           </button>
         </div>
@@ -80,8 +80,8 @@ export function GapPeek({
 
         <p className="mut gpeek-w">
           {over
-            ? 'الأبناء خُصِّص لهم أكثر من مخصص أبيهم، فالزيادة دي مصروفة من بند تاني بلا قيد.'
-            : 'مخصص البند أكبر من مجموع أبنائه، فالفرق ده غير موزَّع ومش مربوط بهدف.'}
+            ? 'خُصِّص للأبناء أكثر من مخصص أبيهم، فهذه الزيادة مصروفة من بند آخر بلا قيد.'
+            : 'مخصص البند أكبر من مجموع أبنائه، فهذا الفرق غير موزَّع وغير مربوط بهدف.'}
         </p>
 
         <div className="gpeek-b">
@@ -90,7 +90,7 @@ export function GapPeek({
             <span className="sub"><Num>{kids.length}</Num></span>
           </div>
           {kids.length === 0 ? (
-            <p className="mut" style={{ margin: 0 }}>البند ده مالوش أبناء في الخطة.</p>
+            <p className="mut" style={{ margin: 0 }}>لا توجد أبناء لهذا البند في الخطة.</p>
           ) : (
             <ul className="gpeek-l">
               {kids.map((k) => (
@@ -118,7 +118,7 @@ export function GapPeek({
             <Icon name={icons.chart} size={15} />
             افتحه في شجرة التخصيص
           </button>
-          <button className="btn btn-2" onClick={onClose}>تمّ</button>
+          <button className="btn btn-2" onClick={onClose}>أغلق</button>
         </div>
       </div>
     </>,

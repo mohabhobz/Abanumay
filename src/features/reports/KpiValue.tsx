@@ -16,7 +16,7 @@ export function KpiValue({ kpi }: { kpi: Kpi }) {
     <b className="ind-v num">
       {nf.format(kpi.value)}
       {kpi.unit === 'pct' && <small>%</small>}
-      {kpi.unit === 'days' && <small> يوم</small>}
+      {kpi.unit === 'days' && <small> يومًا</small>}
     </b>
   )
 }
