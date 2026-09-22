@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Glass } from '@/components/ui/primitives'
 import { Icon } from '@/components/ui/Icon'
+import { AiOrb } from '@/components/ui/AiOrb'
 import { icons } from '@/components/ui/icons'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
@@ -34,6 +35,13 @@ export interface QuickReadProps {
    * نضيف. وسطر «مفيش ملاحظات» إجابة، والغياب مش إجابة.
    */
   empty?: string
+  /**
+   * تجربة: كرة المساعد الزجاجية بدل الشرارة.
+   *
+   * ⚠️ **تجربة في شاشة «اليوم» وحدها لحدّ ما الشكل يتقرّ** ·
+   * بتفكّر وهي بتكتب، وبتهدا أوّل ما القراءة تخلص.
+   */
+  orb?: boolean
 }
 
 /**
@@ -52,6 +60,7 @@ export function QuickRead({
   title = 'قراءة سريعة',
   onAsk,
   empty,
+  orb,
 }: QuickReadProps) {
   const box = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(box)
@@ -79,9 +88,13 @@ export function QuickRead({
 
   const head = (
     <>
-      <span className={`badge badge-30${done ? '' : ' pulse'}`}>
-        <span className="aispark" />
-      </span>
+      {orb
+        ? <AiOrb className="qr-orb" state={done ? 'idle' : 'thinking'} />
+        : (
+          <span className={`badge badge-30${done ? '' : ' pulse'}`}>
+            <span className="aispark" />
+          </span>
+        )}
       <span className="qr-title">{title}</span>
       {flags > 0 && (
         <span className="qr-count no">

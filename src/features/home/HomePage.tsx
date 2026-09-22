@@ -352,6 +352,7 @@ export default function HomePage() {
           <div className="dgrid g11">
             <div className="col">
               <QuickRead
+                orb
                 readings={readings}
                 title="قراءة سريعة للنظام"
                 empty="لا يوجد في النظام الآن ما يحتاج إلى انتباهك."

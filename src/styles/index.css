@@ -2347,6 +2347,13 @@ to{opacity:1;transform:none}
   mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'/></svg>") center/contain no-repeat;
   animation:aisheen 3.4s linear infinite, aiglow 2.6s ease-in-out infinite}
 /* الشرارة بتتسرّع لما تقرب من زرار السؤال أو يتفتح */
+/* كرة المساعد · تجربة مكان الشرارة (٢٢ سبتمبر) · الرسم في WebGL،
+   والحجم من الحاوية وحدها عشان تقعد في أي مكان الشرارة قاعدة فيه */
+.aiorb{display:block;width:24px;height:24px;flex:none;aspect-ratio:1}
+.aiorb>canvas{display:block;width:100%;height:100%}
+/* بلا WebGL: حلقة بتدرّج الهوية بدل مربّع فاضي */
+.aiorb.noGl{border-radius:var(--rp);background:radial-gradient(circle,var(--solid) 0,var(--solid-off) 46%,var(--ok) 72%,transparent 74%)}
+.qr-orb{width:34px;height:34px}
 .askfab:hover .aispark,.askfab.on .aispark{animation-duration:1.7s,1.3s}
 .badge .aispark{width:var(--bdg-ic);height:var(--bdg-ic)}
 @media (prefers-reduced-motion:reduce){.aispark{animation:none}
