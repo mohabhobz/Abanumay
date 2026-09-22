@@ -2984,11 +2984,8 @@ to{opacity:1;transform:none}
    الدخول مش نوع تاني من الزرار · هو نفس الزرار بعرض كامل. */
 .btn-full{width:100%;padding-inline:var(--sp-5);font-size:var(--fs-3);font-weight:600;margin-top:var(--sp-3)}
 /* المسار التاني · الجهة الجديدة مش نفس القرار، فالزرار ثانوي شكلًا */
-/* ⚠️ السطرين دول قبل الفورم وبعده، وشكلهم واحد · اللي بيفرق هو
-   مكانهم: «ليه الحساب» فوق قبل ما يكتب، و«اللي بعده» تحت بعد ما
-   يخلص. والاتنين بيستعملوا `.lnote` نفسها فمفيش شكل جديد. */
+/* سطر «ليه الحساب» فوق الفورم · بيستعمل `.lnote` نفسها */
 .lwhy{margin-bottom:var(--sp-5)}
-.lsteps{margin-top:var(--sp-5)}
 .lalt{margin-top:var(--sp-6)}
 .lnote{display:block;text-align:center;font-size:var(--fs-1);color:var(--t2);margin-top:var(--sp-3);line-height:var(--lh-text)}
 /* ⚠️ **صفّ «الدخول السريع للعرض» اتشال · ١٩ سبتمبر** · وكلاسّاته

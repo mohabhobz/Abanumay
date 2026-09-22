@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from '@/features/auth/AuthShell'
 import { ROUTES } from '@/app/routes'
-import { REG_STAGES, setRegAccount } from '@/data/mock/registration'
+import { setRegAccount } from '@/data/mock/registration'
 
 /* ═══════════════════════════════════════════════════════════
    إنشاء حساب الجهة · شاشة بذاتها
@@ -143,14 +143,6 @@ export default function RegisterAccountPage() {
           {busy ? 'جارٍ إنشاء الحساب…' : 'إنشاء الحساب ومتابعة التسجيل'}
         </button>
       </form>
-
-      {/* ⚠️ **الرحلة كلها مكتوبة، والمستخدم عارف هو فين منها** ·
-          الشاشة دي لوحدها بتقول «إنشاء حساب» وبس، والجهة ما
-          تعرفش إن وراها خمس خطوات · فالسطر بيقولها. */}
-      <p className="lnote sub lsteps">
-        بعدها <span className="num">{REG_STAGES.length - 1}</span> خطوات:{' '}
-        {REG_STAGES.filter((s) => !s.own).map((s) => s.label).join(' · ')}
-      </p>
 
       {/* مسارات تانية · شكلها جوست عشان ما تنافسش الزرار الأساسي */}
       <div className="lalt">
