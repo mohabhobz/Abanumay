@@ -2,12 +2,10 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Money, Mono, Empty, Riyal} from '@/components/ui'
 import { BarList, Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS, CHART_INKS } from '@/components/charts'
-import { QuickRead } from '@/components/assistant'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { fixtures, query, stagePressure, ENTITY_DOCS_TOTAL } from '@/data/repository'
 import { useRole } from '@/hooks/useRole'
-import { readHome } from '@/data/readings'
 import { budgetForYear } from '@/data/budget'
 import {
   ageingBuckets, byRegion, byStage, byStatusGroup, declineReasons,
@@ -50,19 +48,6 @@ export default function HomePage() {
       (role.financialAuthority === null || p.amountRequested > role.financialAuthority),
   )
   const liveDays = projects.filter((p) => p.stageLimit > 0).map((p) => days(p.hoursInStage))
-
-  const readings = useMemo(
-    () =>
-      readHome({
-        projects,
-        entities,
-        lens: role.lens,
-        owner: user.name,
-        ceiling: role.financialAuthority,
-        budget,
-      }),
-    [projects, entities, role.lens, role.financialAuthority, user.name, budget],
-  )
 
   const queue = useMemo(
     () =>
@@ -348,19 +333,11 @@ export default function HomePage() {
             />
           </Glass>
 
-          {/* ═══ القراءة والصفوف ═══ */}
-          <div className="dgrid g11">
-            <div className="col">
-              <QuickRead
-                readings={readings}
-                title="قراءة سريعة للنظام"
-                empty="لا يوجد في النظام الآن ما يحتاج إلى انتباهك."
-                onAsk={() =>
-                  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))
-                }
-              />
-            </div>
-
+          {/* ═══ الصفوف ═══
+              ⚠️ **كارت «قراءة سريعة للنظام» اتشال من الصفحة دي**
+              (العميل، ٢٢ سبتمبر) · المساعد لسه موجود في «اسأل
+              أبانمي» وفي باقي الشاشات، والصفوف بقت على عرض الصفحة. */}
+          <div className="dgrid">
             <div className="col">
               <Glass>
                 <Head
