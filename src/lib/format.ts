@@ -23,6 +23,36 @@ export const dfShort = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
   day: 'numeric', month: 'long', year: 'numeric',
 })
 
+/** الساعة بالعربي وبخانات لاتينية: «11:40 ص» */
+export const tf = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
+  hour: 'numeric', minute: '2-digit',
+})
+
+/**
+ * تاريخ ووقت: «22 سبتمبر 2026 · 11:40 ص».
+ *
+ * ⚠️ **للتعليقات والملاحظات لا للتواريخ التعريفية.** التعليق حدث،
+ * واتنين اتكتبوا في نفس اليوم ما بيتفرقوش من غير الساعة · والتاريخ
+ * التعريفي (تأسيس · ترخيص) ساعته مالهاش معنى، فبيفضل `readDate`.
+ */
+export const readDateTime = (iso: string): string => {
+  const dt = new Date(iso)
+  if (Number.isNaN(dt.getTime())) return iso
+  /* ⚠️ **الساعة وحدة واحدة في العزل** · `isolate` بيعزل كل مجموعة
+     أرقام لوحدها، فـ«10:20» بتتقسم «10» و«20» والنقطتين بينهم بياخدوا
+     اتجاه السطر العربي · فبتتقري «20:10». هنا الساعة كلها جوّه عزل
+     واحد، والتاريخ بيتعزل بالطريقة العادية. */
+  const clock = tf.format(dt).replace(/\d{1,2}:\d{2}/, (m) => `\u2066${m}\u2069`)
+  return `${isolate(dfShort.format(dt))} · ${clock}`
+}
+
+/** دلوقتي بصيغة `YYYY-MM-DDTHH:mm` المحلية · لختم التعليقات */
+export const nowStamp = (): string => {
+  const d = new Date()
+  const z = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`
+}
+
 /** يقبل `2026-04-12` أو `12/4/2026` ويرجّع تاريخًا مقروءًا */
 export const readDate = (value: string): string => {
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(value)

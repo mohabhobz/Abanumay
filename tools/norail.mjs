@@ -52,6 +52,25 @@ clean.split('\n').forEach((line, i) => {
   }
 })
 
+/* ⚠️ **الشريط المرسوم بـ`::before`/`::after`** · ٢٢ سبتمبر.
+   الفحص كان بيدوّر على `border` و`box-shadow` بس، والعميل لقى
+   شريطين أحمر في «قراءة سريعة» مرسومين بعنصر وهمي: `position:
+   absolute` + `width:2px` + خلفية ملوّنة على الحافة. نفس الشريط
+   بالظبط بطريقة رسم تانية، والفحص كان أخضر وهو أعمى عنه.
+   فالقاعدة بقت على **الشكل** لا على الخاصية: عنصر وهمي عرضه ٤px
+   أو أقل، ممدود طوليًّا، وخلفيته لون حالة. */
+const STATE = /(--no|--warn|--ok|--ret|--teal|--danger)\b|--(no|warn|ok|ret|teal)C/
+for (const m of clean.matchAll(/([^{}]*::(?:before|after)[^{}]*)\{([^{}]*)\}/g)) {
+  const body = m[2]
+  const w = /(?<![-\w])width\s*:\s*([\d.]+)px/.exec(body)
+  const tall = /\b(top|bottom|inset-block|inset)\s*:/.test(body)
+  const bg = /background[^;]*/.exec(body)
+  if (w && Number(w[1]) <= 4 && tall && bg && STATE.test(bg[0])) {
+    const line = clean.slice(0, m.index).split('\n').length
+    rails.push(`index.css:${line}  ${m[1].trim().split('\n').pop()} · عنصر وهمي عرضه ${w[1]}px بلون حالة`)
+  }
+}
+
 console.log('\n═══ الشرايط الجانبية ═══')
 if (rails.length) {
   console.log(`\n🔴 شريط ملوّن على جنب عنصر · ${rails.length} موضع`)

@@ -13,7 +13,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { isolate } from '@/lib/format'
 import {
   PLAN_STAGES, PLAN_TONE, acceptActivity, approvePlan, decideChange, lateActivities,
-  addEvidence, claimActivity, planById, planClaimed, planDone, planIssues, planPlanned,
+  addEvidence, claimActivity, commentActivity, planById, planClaimed, planDone, planIssues, planPlanned,
   planSpi, planStageLabel, readyToClose, rejectActivity, returnPlan, sendPlan, spiSay,
   toManager, waitingReview,
 } from '@/data/mock/plans'
@@ -292,6 +292,12 @@ export default function PlanPage() {
                     })}
                     onAccept={(actId) => { acceptActivity(p.id, actId); setTick((x) => x + 1) }}
                     onReject={(actId) => setReject({ id: actId, note: '' })}
+                    /* الجهة بتعلّق باسمها، والمؤسسة باسم المستخدم */
+                    me={asEntity ? p.entityName : user.name}
+                    onComment={(actId, say) => {
+                      commentActivity(p.id, actId, say, asEntity ? p.entityName : user.name)
+                      setTick((x) => x + 1)
+                    }}
                   />
                 )}
 
@@ -442,7 +448,7 @@ export default function PlanPage() {
                   className="btn btn-p"
                   disabled={!reject.note.trim()}
                   onClick={() => {
-                    rejectActivity(p.id, reject.id, reject.note.trim())
+                    rejectActivity(p.id, reject.id, reject.note.trim(), user.name)
                     setReject(null)
                     setTick((x) => x + 1)
                   }}

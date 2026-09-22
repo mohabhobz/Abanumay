@@ -2,8 +2,9 @@ import { DateText, Icon, Money, Num, Tag, icons } from '@/components/ui'
 import {
   ACTIVITY_SAY, ACTIVITY_TONE, TODAY, phaseDone,
 } from '@/data/mock/plans'
-import { isolate, pct } from '@/lib/format'
+import { pct } from '@/lib/format'
 import type { PlanActivity, PlanPhase } from '@/types/domain'
+import { NoteTrail } from '@/components/notes'
 
 /* ═══════════════════════════════════════════════════════════
    شجرة المراحل والأنشطة · قلب الخطة
@@ -38,6 +39,10 @@ export interface PhaseTreeProps {
   onClaim?: (actId: string) => void
   /** رفع شاهد · بوّابة الجهة وحدها */
   onUpload?: (actId: string, kind: string) => void
+  /** تعليق على نشاط · باسم اللي فاتح الشاشة (`me`) */
+  onComment?: (actId: string, say: string) => void
+  /** اللي فاتح الشاشة · التعليقات بتتنسب له */
+  me?: string
   /** النشاط اللي الصفحة بتودّي له · بيتوسم لحظة */
   focus?: string
 }
@@ -46,7 +51,7 @@ const isLate = (a: PlanActivity) => a.state !== 'accepted' && a.to < TODAY
 
 export function PhaseTree({
   phases, live, canReview, canClaim, open, onToggle, onAccept, onReject, onClaim,
-  onUpload, focus,
+  onUpload, focus, onComment, me = '',
 }: PhaseTreeProps) {
   return (
     <div className="phtree">
@@ -146,12 +151,19 @@ export function PhaseTree({
                       })}
                     </ul>
 
-                    {a.note && (
-                      <div className="payq-note">
-                        <Icon name={icons.chat} size={14} />
-                        <span>{isolate(a.note)}</span>
-                      </div>
-                    )}
+                    {/* ⚠️ **سجلّ لا سطر** · كل ملاحظة باسم صاحبها ووقتها،
+                        وزرار الإضافة بيفتح حقلًا باسم اللي فاتح الشاشة.
+                        والزرار بيظهر على النشاط اللي عليه ملاحظة أو
+                        اللي في المراجعة، لا على كل نشاط في الشجرة ·
+                        زرار تعليق على نشاط «لم يبدأ» مالوش كلام يتقال. */}
+                    <NoteTrail
+                      notes={a.notes ?? []}
+                      me={me}
+                      onAdd={onComment && live
+                        && ((a.notes?.length ?? 0) > 0 || a.state === 'claimed' || a.state === 'rejected')
+                        ? (say) => onComment(a.id, say)
+                        : undefined}
+                    />
 
                     {/* ⚠️ القرار على النشاط · والقبول مقفول لو
                         شاهد مطلوب ناقص، والسبب مكتوب في التلميح */}

@@ -1,6 +1,7 @@
 import type {
   ActivityState, PlanActivity, PlanChange, PlanPhase, PlanRow, PlanStage,
 } from '@/types/domain'
+import { nowStamp } from '@/lib/format'
 import { projectRows } from './projects'
 
 /* ═══════════════════════════════════════════════════════════
@@ -408,7 +409,14 @@ export const planRows: PlanRow[] = [
       act('a4', 'الدفعة الثانية من الورش', 'rejected', '2026-06-01', '2026-07-31', 40,
         ['تقرير مرحلي', 'كشف مستفيدين'],
         [ev('e5', 'تقرير مرحلي', 'ws-2-draft.pdf', '2026-08-05')],
-        { note: 'التقرير بلا كشف مستفيدين · والقاعدة بتطلب الاتنين لإثبات العدد.' }),
+        {
+          notes: [{
+            kind: 'reject',
+            by: 'سارة القحطاني',
+            at: '2026-08-06T10:20',
+            say: 'التقرير بلا كشف مستفيدين · والقاعدة بتطلب الاتنين لإثبات العدد.',
+          }],
+        }),
       act('a5', 'المتابعة الميدانية', 'todo', '2026-07-01', '2026-08-31', 20,
         ['تقرير مرحلي']),
     ]),
@@ -547,7 +555,9 @@ export const approvePlan = (id: string): void => {
 /** الجهة بتقول إن النشاط خلص · `claimed` لا `accepted` (قاعدة 14) */
 export const claimActivity = (planId: string, actId: string): void => {
   const a = planById(planId)?.phases.flatMap((ph) => ph.activities).find((x) => x.id === actId)
-  if (a) { a.state = 'claimed'; a.note = undefined }
+  /* ⚠️ الملاحظات **ما بتتمسحش** لمّا النشاط يتعلّن تاني · هي سجلّ،
+     والمشرف اللي بيراجع التانية محتاج يشوف ليه اترفضت الأولى */
+  if (a) a.state = 'claimed'
 }
 
 export const acceptActivity = (planId: string, actId: string): void => {
@@ -556,13 +566,28 @@ export const acceptActivity = (planId: string, actId: string): void => {
   if (!a || !p) return
   a.state = 'accepted'
   a.doneAt = TODAY
-  a.note = undefined
   if (readyToClose(p)) p.stage = 'done'
 }
 
-export const rejectActivity = (planId: string, actId: string, note: string): void => {
+/** الرفض بسببه · وبيتسجّل باسم اللي رفض ووقته (قاعدة 14) */
+export const rejectActivity = (planId: string, actId: string, note: string, by: string): void => {
   const a = planById(planId)?.phases.flatMap((ph) => ph.activities).find((x) => x.id === actId)
-  if (a) { a.state = 'rejected'; a.note = note }
+  if (!a) return
+  a.state = 'rejected'
+  a.notes = [...(a.notes ?? []), { kind: 'reject', by, at: nowStamp(), say: note }]
+}
+
+/**
+ * تعليق على النشاط · من أي طرف.
+ *
+ * ⚠️ **التعليق ما بيغيّرش حالة النشاط.** الرفض قرار، والتعليق كلام ·
+ * الجهة تقدر تردّ على سبب الرفض، والمدير يقدر يضيف رأيه، والنشاط
+ * بيفضل في حالته لحدّ ما حد ياخد قرار.
+ */
+export const commentActivity = (planId: string, actId: string, say: string, by: string): void => {
+  const a = planById(planId)?.phases.flatMap((ph) => ph.activities).find((x) => x.id === actId)
+  if (!a) return
+  a.notes = [...(a.notes ?? []), { kind: 'comment', by, at: nowStamp(), say }]
 }
 
 export const addEvidence = (
