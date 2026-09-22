@@ -574,7 +574,7 @@ export const rejectActivity = (planId: string, actId: string, note: string, by: 
   const a = planById(planId)?.phases.flatMap((ph) => ph.activities).find((x) => x.id === actId)
   if (!a) return
   a.state = 'rejected'
-  a.notes = [...(a.notes ?? []), { kind: 'reject', by, at: nowStamp(), say: note }]
+  a.notes = [...(a.notes ?? []), { kind: 'reject', by, at: nowStamp(), say: note, from: 'staff' }]
 }
 
 /**
@@ -584,10 +584,12 @@ export const rejectActivity = (planId: string, actId: string, note: string, by: 
  * الجهة تقدر تردّ على سبب الرفض، والمدير يقدر يضيف رأيه، والنشاط
  * بيفضل في حالته لحدّ ما حد ياخد قرار.
  */
-export const commentActivity = (planId: string, actId: string, say: string, by: string): void => {
+export const commentActivity = (
+  planId: string, actId: string, say: string, by: string, from: 'staff' | 'entity' = 'staff',
+): void => {
   const a = planById(planId)?.phases.flatMap((ph) => ph.activities).find((x) => x.id === actId)
   if (!a) return
-  a.notes = [...(a.notes ?? []), { kind: 'comment', by, at: nowStamp(), say }]
+  a.notes = [...(a.notes ?? []), { kind: 'comment', by, at: nowStamp(), say, from }]
 }
 
 export const addEvidence = (

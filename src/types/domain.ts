@@ -674,8 +674,10 @@ export interface ActivityNote {
   /** `YYYY-MM-DDTHH:mm` · الوقت جزء من المعلومة لا زينة */
   at: string
   say: string
-  /** سبب رفض (قاعدة 14) ولا تعليق عادي · بيتقال في الوسم */
+  /** سبب رفض (قاعدة 14) ولا سبب مضاف عليه · الأول بس بيتوسم */
   kind: 'reject' | 'comment'
+  /** الطرف · بيحدّد لون الفقاعة زي ثريد المراسلة بالظبط */
+  from?: 'staff' | 'entity'
 }
 
 export interface PlanActivity {

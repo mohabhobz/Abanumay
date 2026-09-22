@@ -12,20 +12,21 @@ import type { ActivityNote } from '@/types/domain'
    **تتنسب لصاحبها بوقتها وتاريخها**، و**حد تاني يقدر يضيف عليها**.
    يعني دي محادثة قصيرة على البند، لا لافتة.
 
-   ⚠️ **ومفيش شكل جديد.** القايمة هي `.plchg` · نفس قايمة طلبات
-   التعديل الجوهري وسجلّ الإغلاق، اللي كل سطر فيها صاحبه وتاريخه
-   فوق نصّه. والاسم بـ`Person` زي أي اسم في السيستم، والحقل `.fld`
-   زي أي حقل. اللي اتضاف هنا الربط بس.
+   ⚠️ **ومفيش شكل جديد.** كل ملاحظة **فقاعة ثريد المراسلة نفسها**
+   (`.thread` و`.msg` · ٢٢ سبتمبر، العميل طلب «كارت شبه الشات»):
+   الاسم والوسم في السطر الأول والوقت تحتهم، واللي فاتح الشاشة
+   رسايله على الناحية التانية (`mine`)، والجهة بنبرتها (`entity`).
+   كانت قايمة `.plchg` مسطّحة، فالسبب والردّ عليه كانوا بيتقروا
+   كإنهم سطرين في سجلّ لا كلام بين طرفين.
 
    ⚠️ **والتعليق باسم اللي فاتح الشاشة، لا اسمًا بيتكتب.** الملاحظة
    اللي صاحبها بيتكتب بإيد حد تاني ما بتتنسبش لحد · فالاسم بييجي
    من الجلسة (`me`)، وتغيير الدور في النموذج بيغيّر صاحب التعليق.
    ═══════════════════════════════════════════════════════════ */
 
-const KIND = {
-  reject: { say: 'سبب الرفض', tone: 'warn' },
-  comment: { say: 'تعليق', tone: 'mute' },
-} as const
+/* الوسم على قرار الرفض وحده · الأسباب المضافة بعده مفهومة من مكانها
+   في الثريد، ووسم على كل فقاعة بيكرّر نفس الكلمة لحدّ ما تفقد معناها */
+const REJECT = 'سبب الرفض'
 
 export interface NoteTrailProps {
   notes: ActivityNote[]
@@ -52,24 +53,29 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
   return (
     <div className="notes">
       {notes.length > 0 && (
-        <ul className="plchg">
+        <div className="thread">
           {notes.map((n, i) => (
-            <li key={`${n.at}-${i}`}>
-              <div className="plchg-h">
+            <div
+              key={`${n.at}-${i}`}
+              className={`msg${n.from === 'entity' ? ' entity' : ''}${n.by === me ? ' mine' : ''}`}
+            >
+              <div className="msg-h">
                 <Person name={n.by} quiet={false} />
-                <span className="sub">{readDateTime(n.at)}</span>
-                <Tag tone={KIND[n.kind].tone}>{KIND[n.kind].say}</Tag>
+                {n.kind === 'reject'
+                  ? <Tag tone="warn">{REJECT}</Tag>
+                  : <span className="msg-role">{n.from === 'entity' ? 'الجهة' : 'المؤسسة'}</span>}
+                <span className="msg-at sub">{readDateTime(n.at)}</span>
               </div>
-              <p className="plchg-t">{isolate(n.say)}</p>
-            </li>
+              <div className="msg-b">{isolate(n.say)}</div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {onAdd && (open ? (
         <div className="notes-add">
           <label className="regf">
-            <span className="lb">تعليق باسم {me}</span>
+            <span className="lb">السبب · باسم {me}</span>
             <span className="fld">
               <input
                 autoFocus
@@ -79,14 +85,14 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
                   if (e.key === 'Enter') add()
                   if (e.key === 'Escape') { setOpen(false); setDraft('') }
                 }}
-                aria-label="نصّ التعليق"
-                placeholder="اكتب تعليقك"
+                aria-label="نصّ السبب"
+                placeholder="اكتب السبب"
               />
             </span>
           </label>
           <div className="act-a">
             <button className="btn btn-p btn-sm" disabled={!draft.trim()} onClick={add}>
-              أضف التعليق
+              أضف السبب
             </button>
             <button className="btn btn-2 btn-sm" onClick={() => { setOpen(false); setDraft('') }}>
               إلغاء
@@ -94,12 +100,14 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
           </div>
         </div>
       ) : (
-        /* ⚠️ **الاسم بيتقال أول ما الحقل يتفتح** («تعليق باسم عمر
-           قاسم») · عشان المستخدم ما يفتكرش إنه هيكتب اسمه بنفسه، أو
-           إن التعليق هيطلع بلا اسم زي الملاحظة القديمة. */
+        /* ⚠️ **«إضافة سبب» لا «أضف تعليقًا» · ٢٢ سبتمبر.** الكلام
+           هنا عن سبب الرفض: المشرف بيضيف سببًا تانيًا، والجهة بتردّ
+           عليه · و«تعليق» كانت بتخلّيه يتقري دردشة جانبية مالهاش
+           وزن. والاسم بيتقال أول ما الحقل يتفتح («السبب · باسم عمر
+           قاسم»)، عشان محدش يفتكر إنه هيكتب اسمه بنفسه. */
         <button className="btn btn-ghost btn-sm notes-open" onClick={() => setOpen(true)}>
-          <Icon name={icons.chat} size={14} />
-          أضف تعليقًا
+          <Icon name={icons.plus} size={14} />
+          إضافة سبب
         </button>
       ))}
     </div>

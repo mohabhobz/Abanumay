@@ -6974,9 +6974,13 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .plchg>li:first-child{padding-top:0;box-shadow:none}
 .plchg-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
 .plchg-t{margin:0;font-size:var(--fs-2);line-height:var(--lh-text);color:var(--t1)}
-/* ⚠️ سجلّ الملاحظات (`NoteTrail`) · القايمة هي `.plchg` نفسها، واللي
-   هنا بس المسافة بينها وبين زرار الإضافة والحقل تحتها */
+/* ⚠️ سجلّ الملاحظات (`NoteTrail`) · الفقاعات هي `.thread`/`.msg` بتوع
+   المراسلة. و`.thread` متعرّف مرتين في الملف (ثريد المساعد وثريد
+   المراسلة)، والأول بيحطّ عرضًا أقصى وحشوًا تحت لمربع الكتابة ·
+   جوّه نشاط الاتنين غلط، فبيتصفّروا هنا. */
 .notes{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-2)}
+.notes .thread{max-width:none;margin:0;padding-bottom:0;gap:var(--sp-3)}
+.notes .msg{max-width:88%}
 .notes-add{display:flex;flex-direction:column;gap:var(--sp-3)}
 .notes-open{align-self:flex-start}
 /* زرار الرفع جنب الشاهد الناقص · بياخد آخر السطر بعد اسم الملف */

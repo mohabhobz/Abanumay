@@ -295,7 +295,11 @@ export default function PlanPage() {
                     /* الجهة بتعلّق باسمها، والمؤسسة باسم المستخدم */
                     me={asEntity ? p.entityName : user.name}
                     onComment={(actId, say) => {
-                      commentActivity(p.id, actId, say, asEntity ? p.entityName : user.name)
+                      commentActivity(
+                        p.id, actId, say,
+                        asEntity ? p.entityName : user.name,
+                        asEntity ? 'entity' : 'staff',
+                      )
                       setTick((x) => x + 1)
                     }}
                   />
