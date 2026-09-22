@@ -224,7 +224,7 @@ export const projectIssues = (val: PValues): PIssue[] => {
     if (per > 50_000) {
       out.push({
         key: 'per',
-        say: `تكلفة المستفيد ${per.toLocaleString('en-US')} ريال، وهي مرتفعة. راجع عدد المستفيدين أو المبلغ المطلوب.`,
+        say: `تكلفة المستفيد ${per.toLocaleString('en-US')} ⃁، وهي مرتفعة. راجع عدد المستفيدين أو المبلغ المطلوب.`,
         rule: 'مؤشر الأثر',
       })
     }

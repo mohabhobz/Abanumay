@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
+  Riyal,
 } from '@/components/ui'
 import { nf, pct } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -442,7 +443,7 @@ export default function AgreementsPage() {
             مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «إعداد الاتفاقية» حتى
             اعتمادها النهائي، وفق القاعدة <span className="num">25</span> في الوثيقة.
             وإجمالي قيمة الاتفاقيات تحت الإعداد{' '}
-            <span className="num">{nf.format(k.openSum)}</span> ريال.
+            <span className="num">{nf.format(k.openSum)}</span> <Riyal />.
           </p>
         </div>
       </div>

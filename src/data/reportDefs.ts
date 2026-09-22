@@ -79,7 +79,7 @@ export function boardCards(yearId: string): ReportCard[] {
     value: pct(usedPct),
     unit: 'من المخصص صُرف فعلًا',
     reading:
-      `المخصص ${money(bud.allocated)} ريال، منها ${money(bud.spent)} مصروفة و${money(bud.committed)} ملتزم بها ` +
+      `المخصص ${money(bud.allocated)} ⃁، منها ${money(bud.spent)} مصروفة و${money(bud.committed)} ملتزم بها ` +
       `و${money(bud.reserved)} محجوزة لطلبات تحت الدراسة، أي أن ${pct(lockedPct)} مربوطة ولم تُصرف بعد.`,
     bold: [money(bud.spent), pct(lockedPct)],
     src: 'تقارير الميزانية · reports1_1',
@@ -134,7 +134,7 @@ export function boardCards(yearId: string): ReportCard[] {
       value: pct(topShare),
       unit: 'من المعتمد في هدف واحد',
       reading:
-        `أعلى هدف استهلاكًا «${goals[0][0]}» بـ${money(goals[0][1])} ريال من إجمالي ${money(total)}. ` +
+        `أعلى هدف استهلاكًا «${goals[0][0]}» بـ${money(goals[0][1])} ⃁ من إجمالي ${money(total)}. ` +
         `وتستحوذ أعلى خمسة أهداف على ${pct(Math.round((goals.reduce((s, g) => s + g[1], 0) / total) * 100))} من المعتمد.`,
       bold: [goals[0][0], money(goals[0][1])],
       src: 'مخصص الصرف · reports1_5 · المصروفات السنوية حسب الهدف',

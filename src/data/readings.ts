@@ -151,8 +151,8 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       id: 'j-level',
       kind: 'note',
       label: 'مستوى القرار',
-      text: `اتُّخذ القرار عند «${j.decidedBy}»، والمبلغ ${nf.format(row.amountGranted || row.amountRequested)} ريال ضمن نطاق صلاحيته.`,
-      bold: [j.decidedBy, `${nf.format(row.amountGranted || row.amountRequested)} ريال`],
+      text: `اتُّخذ القرار عند «${j.decidedBy}»، والمبلغ ${nf.format(row.amountGranted || row.amountRequested)} ⃁ ضمن نطاق صلاحيته.`,
+      bold: [j.decidedBy, `${nf.format(row.amountGranted || row.amountRequested)} ⃁`],
       src: 'حدود الصلاحيات · مؤقتة لحين اعتمادها',
     })
   }
@@ -223,7 +223,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
   const orphan = scope.filter((p) => p.owner === null)
   if (orphan.length) {
     const money = orphan.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)
-    const m = `${millions(money)} ريال`
+    const m = `${millions(money)} ⃁`
     out.push({
       id: 'orphan',
       kind: 'flag',
@@ -265,7 +265,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
     const money = filtered.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)
     const avgWeight = Math.round(filtered.reduce((s, p) => s + p.weight, 0) / filtered.length)
     const topEntity = topCount(filtered, (p) => p.entityName)
-    const m = `${nf.format(money)} ريال`
+    const m = `${nf.format(money)} ⃁`
     out.push({
       id: 'scope',
       kind: 'note',
@@ -337,8 +337,8 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
       metric: { value: String(stalled.length), unit: 'جهة بمشاريع متعثرة' },
       text:
         `أبرزها «${worst.name}» بـ${w} رغم أن إجمالي دعمها ` +
-        `${millions(worst.grantedTotal)} ريال.`,
-      bold: [`«${worst.name}»`, w, `${millions(worst.grantedTotal)} ريال`],
+        `${millions(worst.grantedTotal)} ⃁.`,
+      bold: [`«${worst.name}»`, w, `${millions(worst.grantedTotal)} ⃁`],
       danger: [w],
       src: 'تقارير الشركاء',
       to: ROUTES.entity(worst.id),
@@ -689,11 +689,11 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
       label: 'صندوقك',
       metric: { value: String(mine.length), unit: 'تحت الدراسة' },
       text:
-        `قيمتها ${nf.format(money)} ريال` +
+        `قيمتها ${nf.format(money)} ⃁` +
         (mineLate.length
           ? `، منها ${units.project(mineLate.length, true)} فوق حدّ القسم.`
           : `، ولم يتجاوز أيٌّ منها حدّ قسمه.`),
-      bold: [`${nf.format(money)} ريال`,
+      bold: [`${nf.format(money)} ⃁`,
         ...(mineLate.length ? [units.project(mineLate.length, true)] : [])],
       danger: mineLate.length ? [units.project(mineLate.length, true)] : [],
       src: 'المشاريع المسندة إليك',
@@ -765,9 +765,9 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
       label: 'ينتظر اعتمادك',
       metric: { value: String(waiting.length), unit: 'فوق حد صلاحية المشرف' },
       text:
-        `قيمتها ${nf.format(money)} ريال. يوصي المشرف، أما اعتماد ` +
+        `قيمتها ${nf.format(money)} ⃁. يوصي المشرف، أما اعتماد ` +
         `هذا المبلغ فقرارك أنت.`,
-      bold: [`${nf.format(money)} ريال`],
+      bold: [`${nf.format(money)} ⃁`],
       src: 'حدود الاعتماد · قيم مؤقتة لحين اعتمادها',
       to: `${ROUTES.projects}?status=في الدراسة&sort=amount`,
       toLabel: 'اعرضها',
@@ -810,9 +810,9 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
       label: 'بلا مالك',
       metric: { value: String(orphan.length), unit: 'بحاجة إلى إسناد' },
       text:
-        `بقيمة ${nf.format(money)} ريال. لا يتابع أيًّا منها موظف ` +
+        `بقيمة ${nf.format(money)} ⃁. لا يتابع أيًّا منها موظف ` +
         `مسؤول، فتتأخر دون أن يلاحظ أحد.`,
-      bold: [`${nf.format(money)} ريال`],
+      bold: [`${nf.format(money)} ⃁`],
       src: 'عمود المالك في جدول المشاريع',
       to: `${ROUTES.projects}?unowned=1`,
       toLabel: 'أسندها جماعيًا',
@@ -843,7 +843,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
       metric: { value: nf.format(beneficiaries), unit: 'مستفيد من المكتمل' },
       text:
         `عبر ${units.project(done.length, true)} مكتمل بتكلفة وسيطة ` +
-        `${nf.format(Math.round(done.reduce((s, p) => s + p.amountGranted, 0) / Math.max(1, beneficiaries)))} ريال للمستفيد.`,
+        `${nf.format(Math.round(done.reduce((s, p) => s + p.amountGranted, 0) / Math.max(1, beneficiaries)))} ⃁ للمستفيد.`,
       bold: [units.project(done.length, true)],
       src: 'المشاريع المكتملة وتقاريرها الختامية',
       to: `${ROUTES.projects}?status=مكتمل`,
@@ -887,9 +887,9 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
       label: 'تركّز الدعم',
       metric: { value: `${share}%`, unit: 'عند ثلاث جهات' },
       text:
-        `من إجمالي الممنوح، وأعلاها «${ranked[0][0]}» بـ${nf.format(ranked[0][1])} ريال. ` +
+        `من إجمالي الممنوح، وأعلاها «${ranked[0][0]}» بـ${nf.format(ranked[0][1])} ⃁. ` +
         `التركّز يرفع الأثر ويرفع المخاطرة في الوقت نفسه.`,
-      bold: [`«${ranked[0][0]}»`, `${nf.format(ranked[0][1])} ريال`],
+      bold: [`«${ranked[0][0]}»`, `${nf.format(ranked[0][1])} ⃁`],
       src: 'الممنوح لكل جهة',
       to: `${ROUTES.entities}?sort=granted`,
       toLabel: 'الجهات',
@@ -919,9 +919,9 @@ function blockedReading(projects: ProjectRow[], entities: EntityRow[]): Reading[
     label: 'مهدَّدة بالتوقف',
     metric: { value: String(blocked.length), unit: 'لجهات ملفها ناقص' },
     text:
-      `بقيمة ${nf.format(money)} ريال تحت التنفيذ. اعتماد الاتفاقية ` +
+      `بقيمة ${nf.format(money)} ⃁ تحت التنفيذ. اعتماد الاتفاقية ` +
       `يتوقف على مستندات الجهة، لا على المشروع.`,
-    bold: [`${nf.format(money)} ريال`],
+    bold: [`${nf.format(money)} ⃁`],
     src: 'تقاطع جدول المشاريع مع ملفات الجهات',
     to: `${ROUTES.entities}?docs=1`,
     toLabel: 'اعرض الجهات',
@@ -937,9 +937,9 @@ function budgetReading(budget: HomeReadingInput['budget']): Reading {
     label: 'الميزانية',
     metric: { value: `${pct}%`, unit: 'من مخصص 2026' },
     text:
-      `محجوز أو ملتزم به، ${nf.format(budget.committed)} ريال التزامًا ` +
+      `محجوز أو ملتزم به، ${nf.format(budget.committed)} ⃁ التزامًا ` +
       `و${nf.format(budget.reserved)} حجزًا مقابل مخصص ${nf.format(budget.allocated)}.`,
-    bold: [`${nf.format(budget.committed)} ريال`, `${nf.format(budget.reserved)}`],
+    bold: [`${nf.format(budget.committed)} ⃁`, `${nf.format(budget.reserved)}`],
     bar: {
       value: used,
       limit: budget.allocated,
@@ -1199,10 +1199,10 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       label: 'موقوف بشرط',
       metric: { value: String(blocked.length), unit: `طلب لا يمكن تمريره` },
       text: top
-        ? `بقيمة ${millions(sum)} ريال. أكثر الأسباب تكرارًا «${top.label}» في ` +
+        ? `بقيمة ${millions(sum)} ⃁. أكثر الأسباب تكرارًا «${top.label}» في ` +
           `${top.n} طلبًا · قاعدة ${top.rule} في الوثيقة.`
-        : `بقيمة ${millions(sum)} ريال، وسببها الحساب البنكي غير المعتمد.`,
-      bold: [`${millions(sum)} ريال`, ...(top ? [`«${top.label}»`] : [])],
+        : `بقيمة ${millions(sum)} ⃁، وسببها الحساب البنكي غير المعتمد.`,
+      bold: [`${millions(sum)} ⃁`, ...(top ? [`«${top.label}»`] : [])],
       src: 'قواعد الصرف 3 · 6 · 10 · 11',
       to: `${ROUTES.payments}?hold=1`,
       toLabel: 'اعرضها',
@@ -1284,7 +1284,7 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
       id: 'a-block-pay',
       kind: 'note',
       label: 'الأثر على الصرف',
-      metric: { value: nf.format(sum), unit: 'ريال موقوفة في دورة الاعتماد' },
+      metric: { value: nf.format(sum), unit: '⃁ موقوفة في دورة الاعتماد' },
       text:
         `على ${pays} دفعة مجدولة · ` +
         `القاعدة 1 في إجراء الصرف تمنع أي طلب قبل تفعيل الاتفاقية، ` +

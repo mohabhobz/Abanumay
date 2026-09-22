@@ -224,7 +224,7 @@ export const units = {
     one: 'نشاط واحد', two: two('نشاطان', 'نشاطين', gen),
     few: (x) => `${x} أنشطة`, many: (x) => `${x} نشاطًا`,
   }),
-  riyal: (n: number) => `${nf.format(n)} ريال`,
+  riyal: (n: number) => `${nf.format(n)} ⃁`,
 }
 
 /* ═══════════════ المبلغ بالحروف ═══════════════

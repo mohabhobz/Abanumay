@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
+  Riyal,
 } from '@/components/ui'
 import { nf, pct } from '@/lib/format'
 import { PageActions } from '@/components/shell'
@@ -226,7 +227,7 @@ export default function PaymentsPage() {
                 <span className="num">{rows.length}</span> طلب من{' '}
                 <span className="num">{payRequests.length}</span> في هذا النموذج ·{' '}
                 <span className="num">{k.open}</span> مفتوح بقيمة{' '}
-                <span className="num">{nf.format(k.openSum)}</span> ريال ·{' '}
+                <span className="num">{nf.format(k.openSum)}</span> <Riyal /> ·{' '}
                 <span className="num">{k.blocked}</span> منها موقوف بشرط
               </p>
             </div>

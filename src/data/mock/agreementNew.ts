@@ -164,7 +164,7 @@ export const agreementIssues = (v: {
   if (v.projectId && v.amount !== v.reserved) {
     out.push({
       key: 'reserved',
-      say: `قيمة الاتفاقية ${v.amount.toLocaleString('en-US')} ريال، والمبلغ المحجوز في الميزانية ${v.reserved.toLocaleString('en-US')} ريال. يلزم أن يتطابقا.`,
+      say: `قيمة الاتفاقية ${v.amount.toLocaleString('en-US')} ⃁، والمبلغ المحجوز في الميزانية ${v.reserved.toLocaleString('en-US')} ⃁. يلزم أن يتطابقا.`,
       rule: 'خطوة 11',
     })
   }
@@ -176,8 +176,8 @@ export const agreementIssues = (v: {
     out.push({
       key: 'sum',
       say: gap > 0
-        ? `مجموع الدفعات أقل من قيمة المنحة بـ${gap.toLocaleString('en-US')} ريال.`
-        : `مجموع الدفعات يزيد على قيمة المنحة بـ${Math.abs(gap).toLocaleString('en-US')} ريال.`,
+        ? `مجموع الدفعات أقل من قيمة المنحة بـ${gap.toLocaleString('en-US')} ⃁.`
+        : `مجموع الدفعات يزيد على قيمة المنحة بـ${Math.abs(gap).toLocaleString('en-US')} ⃁.`,
       rule: 'قاعدة 8',
     })
   }

@@ -8,7 +8,6 @@ export {
 export { Person, Face, type PersonProps } from './Person'
 export { GateArc, type GateArcProps, type CurrentStandingInfo } from './GateArc'
 export { CeilingLadder } from './CeilingLadder'
-export { AiOrb, type AiOrbProps, type OrbState } from './AiOrb'
 export { Steps, type StepItem, type StepState, type StepsProps } from './Steps'
 export {
   SearchBox, Select, MultiSelect, GroupPicker, Toggle, Segments, Pager, PageSize, PAGE_SIZES, ViewToggle,

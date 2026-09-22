@@ -179,8 +179,8 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
         v:
           `الجهة ${row.weight >= 85 ? 'ذات سجل جيد لدى المؤسسة' : 'جديدة على المؤسسة'}، والمشروع في ` +
           `${row.region}، وهي منطقة ${row.weight >= 80 ? 'ذات حاجة' : 'مخدومة نسبيًا'}. ` +
-          `التكلفة ${row.beneficiaries > 0 ? `${nf.format(Math.round(row.amountRequested / Math.max(1, row.beneficiaries)))} ريالًا للمستفيد` : 'غير محسوبة لعدم توفر عدد المستفيدين'}، ` +
-          `وأرى ${row.statusGroup === 'معتذر عنه' ? 'الاعتذار لتكرار الدعم في الهدف نفسه' : `منح الجهة ${nf.format(grant)} ريال`}.`,
+          `التكلفة ${row.beneficiaries > 0 ? `${nf.format(Math.round(row.amountRequested / Math.max(1, row.beneficiaries)))} ⃁ للمستفيد` : 'غير محسوبة لعدم توفر عدد المستفيدين'}، ` +
+          `وأرى ${row.statusGroup === 'معتذر عنه' ? 'الاعتذار لتكرار الدعم في الهدف نفسه' : `منح الجهة ${nf.format(grant)} ⃁`}.`,
       },
     ],
   })
@@ -441,7 +441,7 @@ function paymentEvents(
     after: 16, action: 'إذن صرف', dept: 'المشرف إذن الصرف', by: owner,
     actor: 'staff', tone: 'ret',
     fields: [
-      { k: 'الدفعة', v: `${p.no}، ${nf.format(p.amount)} ريال`, strong: true },
+      { k: 'الدفعة', v: `${p.no}، ${nf.format(p.amount)} ⃁`, strong: true },
       { k: 'ملاحظات', v: p.condition ?? '' },
     ],
   })

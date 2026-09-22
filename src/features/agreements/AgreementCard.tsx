@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { DateText, Icon, icons, Money, Mono, Num, Person, Tag } from '@/components/ui'
+import { DateText, Icon, icons, Money, Mono, Num, Person, Tag, Riyal} from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, pct } from '@/lib/format'
 import {
@@ -102,7 +102,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           <span>
             {gap === 0
               ? 'مطابقة للمخصص المحجوز'
-              : <>الفرق عن المحجوز <Mono>{nf.format(Math.abs(gap))}</Mono> ريال</>}
+              : <>الفرق عن المحجوز <Mono>{nf.format(Math.abs(gap))}</Mono> <Riyal /></>}
           </span>
           <span className="payq-r">خطوة <Num>11</Num></span>
         </li>

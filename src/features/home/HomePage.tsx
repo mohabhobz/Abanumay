@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Money, Mono, Empty } from '@/components/ui'
+import { Glass, Head, Icon, icons, Money, Mono, Empty, Riyal} from '@/components/ui'
 import { BarList, Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS, CHART_INKS } from '@/components/charts'
 import { QuickRead } from '@/components/assistant'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -204,7 +204,7 @@ export default function HomePage() {
               />
               <div className="bighead">
                 <b className="num">{nf.format(budget.allocated)}</b>
-                <span>ريال مخصص · <b className="num">{usedPct}%</b> محجوز أو ملتزم به</span>
+                <span><Riyal /> مخصص · <b className="num">{usedPct}%</b> محجوز أو ملتزم به</span>
               </div>
               <StackBar parts={budgetParts} total={budget.allocated} />
               <Legend items={budgetParts} />
@@ -226,7 +226,7 @@ export default function HomePage() {
               <Donut
                 slices={trackSlices}
                 centerValue={`${(grantedTotal / 1_000_000).toFixed(1)} م`}
-                centerLabel="ريال ملتزم به"
+                centerLabel="⃁ ملتزم به"
               />
               <Legend items={trackSlices} inline />
             </Glass>
@@ -352,7 +352,6 @@ export default function HomePage() {
           <div className="dgrid g11">
             <div className="col">
               <QuickRead
-                orb
                 readings={readings}
                 title="قراءة سريعة للنظام"
                 empty="لا يوجد في النظام الآن ما يحتاج إلى انتباهك."

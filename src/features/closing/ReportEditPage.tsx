@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { BackTo, Empty, Glass, Head, Num, Tag } from '@/components/ui'
+import { BackTo, Empty, Glass, Head, Num, Tag, Riyal} from '@/components/ui'
 import { DocList, UploadButton, type DocRow } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -153,7 +153,7 @@ export default function ReportEditPage() {
                   />
                 </span>
                 <span className="sub regf-h">
-                  قيمة المنحة <span className="num">{nf.format(planBudget)}</span> ريال
+                  قيمة المنحة <span className="num">{nf.format(planBudget)}</span> <Riyal />
                 </span>
               </label>
 
