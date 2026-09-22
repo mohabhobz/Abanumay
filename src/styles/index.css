@@ -55,7 +55,7 @@
   /* الأزرق مش لون هوية · هو لون حالة «معاد للاستكمال» وبس.
      كتوكن عشان ما يتنطّش في مكان مش حالته، وعشان يقلب مع المظهر. */
   --retC2:46,110,168;
-  --no-soft:rgba(253,240,236,.94);   /* سطح التوست */
+  --no-soft:rgba(252,236,238,.94);   /* سطح التوست */
   --edgeC:20,69,71;
   /* ⚠️ **`--t3` كان على حدّ AA بالظبط، والحدّ بيتكسر حسب مكان
      الكارت في التدرّج.** `#4A6B68` فوق زجاج قاعد على جزء مشبَّع من
@@ -65,8 +65,10 @@
      `--mute-ink` بالظبط. `#476764` بيدّي 4.70 على أسوأ أرضية
      متقاسة، والفرق عن `--t2` لسه قايم. */
   --t1:#0C2527; --t2:#3E6664; --t3:#476764;
-  --ok:#0FA85E; --ret:#2E7FC4; --no:#DB4A2B; --warn:#C9860B;
-  --okC:15,168,94; --noC:219,74,43; --warnC:201,134,11;
+  /* ألوان الحالة من لوحة العميل (٢٢ سبتمبر): النجاح #2D912D (Success 800) · الخطر #DC3545 · التحذير #FFC107.
+     التحذير أصفر فاتح، فنصّه دائمًا بـ`--warn-ink` الغامق لا بلونه نفسه. */
+  --ok:#2D912D; --ret:#2E7FC4; --no:#DC3545; --warn:#FFC107;
+  --okC:45,145,45; --noC:220,53,69; --warnC:255,193,7;
 
   /* الجلاس، تعبئة داكنة شفافة، الكونتراست من العتمة والحافة مش من التفتيح */
   --g-card: linear-gradient(158deg, var(--fl-3), var(--fl-2));
@@ -738,9 +740,9 @@
      بـ0.10، وبيعدّي في شاشة ويقع في شاشة حسب مكان الكارت.
      `#825604` بيدّي 4.85 على أسوأ أرضية متقاسة و6.13 على أرضية
      الوسم — والوسم هو أكتر مكان بيستعمله. */
-  --warn-ink:#825604; --no-ink:#95341F; --no-ink2:#8E2F1B; --no-ink3:#AE3319;
-  --ret-ink:#20527D; --ret-ink3:#20527D; --on-ret:#FFFFFF; --no-ic:#B4482C; --lime-ink:#6E9F06;
-  --ok-ink:#06693A; --ok-ink3:#06693A; --brand-ink:#3E5A08; --mute-ink:#4A6B68;
+  --warn-ink:#664D03; --no-ink:#A71D2A; --no-ink2:#9E1C28; --no-ink3:#B02A37;
+  --ret-ink:#20527D; --ret-ink3:#20527D; --on-ret:#FFFFFF; --no-ic:#C82333; --lime-ink:#6E9F06;
+  --ok-ink:#1E611E; --ok-ink3:#1E611E; --brand-ink:#3E5A08; --mute-ink:#4A6B68;
   /* الأرضية أغمق من الكروت: نفس الخافت اللي بيتقري على كارت
      بينزل تحت حدّ AA فوق الميش. فالنص اللي على الأرضية له خافت
      أغمق · الحل في اللون لا في تفتيح الخلفية، عشان الميش يفضل
@@ -2995,7 +2997,7 @@ to{opacity:1;transform:none}
 .lrow{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);
   margin-top:var(--sp-1)}
 .lcheck{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-1);color:var(--t2);cursor:pointer}
-.lcheck input{width:15px;height:15px;accent-color:#0FA85E;cursor:pointer}
+.lcheck input{width:15px;height:15px;accent-color:var(--ok);cursor:pointer}
 .llink{font-size:var(--fs-1);color:var(--t2);cursor:pointer;background:none;
   transition:color .16s ease}
 .llink:hover{color:var(--t1);text-decoration:underline;text-underline-offset:3px}
@@ -3594,8 +3596,8 @@ to{opacity:1;transform:none}
   /* نفس ألوان الجراف كثلاثيات · عشان تتاخد بشفافية */
   --ch-1C:20,69,71; --ch-2C:0,165,155; --ch-3C:95,191,166; --ch-4C:148,214,3;
   --ch-idle:rgba(20,69,71,.10);
-  --ch-warn:#D9A02B;
-  --ch-late:#D9694A;
+  --ch-warn:#FFC107;
+  --ch-late:#DC3545;
 }
 .hhead{display:flex;align-items:flex-end;justify-content:space-between;
   gap:var(--sp-5) var(--sp-8);flex-wrap:wrap;padding:var(--sp-2) var(--sp-2) var(--sp-1)}
@@ -4052,7 +4054,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   --ctl-bg:#252A2A; --ctl-bg-h:#2F3434; --ctl-bg-a:#3A4040;   /* سطح التحكّم · مقيس · شوف :root */
   --base:#0A0C0C; --baseC:10,12,12;
   --retC2:120,180,235;
-  --no-soft:rgba(38,20,17,.94);
+  --no-soft:rgba(40,16,19,.94);
   --t1:#EFF2F1; --t2:#B3BEBC; --t3:#A3AFAD;
   --edgeC:196,212,209;
   --edge-hair:.12; --edge-strong:.28; --edge-side:.11; --edge-bottom:.06;
@@ -4065,9 +4067,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   /* نفس المزج في الداكن · الحبر الغامق عليه = 5.67 */
   --solid-off:#289B8E;
   --link:#A8D93C;
-  --ok:#3ECB86; --ret:#68AEE8; --no:#FF7A5C; --warn:#E8B045;
-  --okC:62,203,134; --noC:255,122,92; --warnC:232,176,69;
-  --warn-ink:#FFD98A; --no-ink:#FF9377; --no-ink2:#FFA98F; --no-ink3:#FFC7B7;
+  --ok:#3DC13C; --ret:#68AEE8; --no:#E4606D; --warn:#FFC107;
+  --okC:61,193,60; --noC:228,96,109; --warnC:255,193,7;
+  --warn-ink:#FFDA6A; --no-ink:#F1AEB5; --no-ink2:#F5C2C7; --no-ink3:#F8D7DA;
   /* حبر الوسم أفتح من حبر الزرار: أرضية الحبّة أغمق من أرضية
      الزرار في الغامق، فنفس اللون بيقع تحت AA عليها وحده. */
   /* ⚠️ `--ret-ink3` كان `#B6D9F7` وبيدّي **4.25** فوق أرضية وسم
@@ -4076,13 +4078,13 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
      في `--t3` و`--warn-ink` و`--mute-ink` قبل كده: **قيمة بتشتغل
      في صفحة وتقع في التانية مش قيمة، هي صدفة**.
      `#CDE6FA` بيدّي 4.86 على أسوأ نقطة اتقاست. */
-  --ret-ink:#8CC2F0; --ret-ink3:#CDE6FA; --on-ret:#0B2338; --no-ic:#FF8A69; --lime-ink:#E2F4B4;
+  --ret-ink:#8CC2F0; --ret-ink3:#CDE6FA; --on-ret:#0B2338; --no-ic:#EA868F; --lime-ink:#E2F4B4;
   /* ⚠️ `--mute-ink` كان `#BCD4D0` وبيدّي **4.47** فوق أرضية
      وسم `.tag.mute` في الغامق والأخضر · تحت 4.5 بـ0.03. والرقم
      كان بيعدّي في صفحة ويقع في التانية لأن خلفية الصفحة تدرّج،
      فنفس اللون بيتقاس فوق نقطتين مختلفتين · قيمة بتشتغل بالصدفة.
      `#C6DCD8` بيدّي 4.86 · هامش يكفي كل نقط التدرّج. */
-  --ok-ink:#8DEEC4; --ok-ink3:#B4F5DA; --brand-ink:#E2F4B4; --mute-ink:#C6DCD8;
+  --ok-ink:#9DE09D; --ok-ink3:#CEEFCE; --brand-ink:#E2F4B4; --mute-ink:#C6DCD8;
   --retC:120,180,235; --limeC:168,217,60;
   --t3-g:#B3BEBC; --t2-g:#CCD6D4;
   --g-card: linear-gradient(158deg, rgba(255,255,255,.075), rgba(255,255,255,.03));
@@ -4095,7 +4097,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   --ch-4:#A8D93C; --ch-5:#79B4E4; --ch-6:#9AA6A4;
   --ch-1C:15,166,155; --ch-2C:47,199,182; --ch-3C:111,220,200; --ch-4C:168,217,60;
   --ch-idle:rgba(196,212,209,.12);
-  --ch-warn:#E8B045; --ch-late:#F0806A;
+  --ch-warn:#FFC107; --ch-late:#E4606D;
   --track:rgba(196,212,209,.11);
   --map-line:rgba(10,12,12,.88);
   --map-ink:#EFF6F4;
