@@ -50,8 +50,15 @@ export default function AssistantPage() {
             sub="كيف أقدر أساعدك اليوم؟"
             cards={role.cards}
             onClose={() => navigate(-1)}
-            listShut={v.list === 'shut'}
-            onListShut={(x) => set({ list: x ? 'shut' : undefined })}
+            /* ⚠️ **مقفولة لحدّ ما يطلبها · ٢٢ سبتمبر.** كانت مفتوحة
+               أول ما الشاشة تفتح، فالمستخدم اللي جاي بسؤال بيلاقي
+               تلت الشاشة قايمة محادثات قديمة قبل ما يكتب. والمساعد
+               هو أول شاشة بعد الدخول (`AFTER_LOGIN`)، فده كان أول
+               منظر في السيستم كله · والشريط بيتفتح بزرار المحادثات
+               جنب العنوان. فالرابط بيقول الاستثناء (`?list=open`)
+               لا الافتراضي. */
+            listShut={v.list !== 'open'}
+            onListShut={(x) => set({ list: x ? undefined : 'open' })}
             focusOnMount
           />
         </div>

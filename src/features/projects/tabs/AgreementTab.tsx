@@ -108,7 +108,8 @@ export function AgreementTab({
 
         <div className="rowf" style={{ gap: 'var(--sp-3)', marginTop: 'var(--sp-5)' }}>
           <DocFile name="الاتفاقية.pdf" meta={A.no} />
-          <button className="btn btn-2 btn-sm">
+          {/* ⚠️ كان زرارًا بلا فعل · دلوقتي بيفتح طباعة المتصفح */}
+          <button className="btn btn-2 btn-sm" onClick={() => window.print()}>
             <Icon name={icons.doc} size={15} />
             طباعة الاتفاقية
           </button>

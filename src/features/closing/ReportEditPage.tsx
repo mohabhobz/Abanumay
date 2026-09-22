@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BackTo, Empty, Glass, Head, Num, Tag } from '@/components/ui'
-import { DocList, type DocRow } from '@/components/docs'
+import { DocList, UploadButton, type DocRow } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -42,6 +42,8 @@ export default function ReportEditPage() {
   const [outcomes, setOutcomes] = useState(c?.report.outcomes ?? '')
   const [risks, setRisks] = useState(c?.report.risks ?? '')
   const [link, setLink] = useState('')
+  /* بيرسم الصفّ «مرفوع» بعد الرفع · الداتا في `c.report.docs` */
+  const [, setTick] = useState(0)
 
   if (!c) {
     return (
@@ -78,7 +80,12 @@ export default function ReportEditPage() {
     uploaded: c.report.docs.includes(d.key),
     required: d.req,
     action: !c.report.docs.includes(d.key) && !closed
-      ? <button className="btn btn-2 btn-sm">ارفع</button>
+      ? (
+        <UploadButton
+          label={`ارفع ${d.label}`}
+          onPick={() => { c.report.docs.push(d.key); setTick((x) => x + 1) }}
+        />
+      )
       : undefined,
   }))
 

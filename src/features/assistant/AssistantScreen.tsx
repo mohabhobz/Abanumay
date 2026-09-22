@@ -58,7 +58,8 @@ export function AssistantScreen({
      جوّه الكومبوننت، الجرد عمره ما هيرسم الشريط مطويًّا · نفس عمى
      مراحل فورم التسجيل وكارت نوع الشراكة. واللوح اللي بيفتح فوق
      صفحة تانية مالوش رابط، فبيرجع للستيت. */
-  const [shutLocal, setShutLocal] = useState(false)
+  /* مقفولة افتراضيًا · نفس قرار الصفحة الكاملة (شوف `AssistantPage`) */
+  const [shutLocal, setShutLocal] = useState(true)
   const shut = listShut ?? shutLocal
   const setShut = (x: boolean) => (onListShut ? onListShut(x) : setShutLocal(x))
 

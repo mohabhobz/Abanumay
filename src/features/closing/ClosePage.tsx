@@ -5,7 +5,7 @@ import {
   icons, type StepItem,
 } from '@/components/ui'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
-import { DocList, type DocRow } from '@/components/docs'
+import { DocList, UploadButton, type DocRow } from '@/components/docs'
 import { Thread } from '@/components/thread/Thread'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -131,7 +131,12 @@ export default function ClosePage() {
     uploaded: c.report.docs.includes(d.key),
     required: d.req,
     action: !c.report.docs.includes(d.key) && asEntity && !closed
-      ? <button className="btn btn-2 btn-sm">ارفع</button>
+      ? (
+        <UploadButton
+          label={`ارفع ${d.label}`}
+          onPick={() => { c.report.docs.push(d.key); setTick((x) => x + 1) }}
+        />
+      )
       : undefined,
   }))
 

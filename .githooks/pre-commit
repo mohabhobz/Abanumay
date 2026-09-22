@@ -30,6 +30,7 @@ node tools/noselect.mjs          # `<select>` و`type="date"` الأصليين �
 node tools/onemenu.mjs           # لوحة القائمة مرسومة في مكان واحد · مش منسوخة ست مرّات
 node tools/onedoc.mjs            # قائمة المستندات كمان · المكوّن بيحلّ العنصر مش التركيب
 node tools/norail.mjs            # الشرايط الجانبية الملوّنة · قاعدة العميل اللي كسرتها تلات مرّات
+node tools/nodead.mjs            # مفيش زرار بلا فعل · «خروج» و«ارفع» كانوا ما بيعملوش حاجة
 npm run --silent typecheck
 npm run --silent lint
 node tools/audit.mjs             # العدّادات · الرقم ينزل أو يثبت وما يطلعش

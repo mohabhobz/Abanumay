@@ -1,12 +1,14 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   CopyId, DateText, Glass, Head, Icon, KV, Mono, Num, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
-import { DocList } from '@/components/docs'
+import { DocList, UploadButton } from '@/components/docs'
 import { Thread } from '@/components/thread'
 import { Background } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
 import { ROUTES } from '@/app/routes'
+import { signOut } from '@/data/session'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { readDate } from '@/lib/format'
 import {
@@ -59,7 +61,16 @@ export default function PortalPage() {
   const view = portalViewOf(r.state)
   /* خطط الجهة · بتتقرا من `entityId` اللي اتولد بعد الاعتماد */
   const plans = r.entityId ? plansOfEntity(r.entityId) : []
-  const short = regMissingDocs(r)
+  const missing = regMissingDocs(r)
+
+  /* ⚠️ **الرفع هنا لازم يعمل حاجة، والإرسال بعده كمان.** «ارفع»
+     و«ابعت الطلب تاني» كانوا زرارين بلا فعل · وده الفعل الوحيد
+     اللي الجهة جت البوّابة عشانه. دلوقتي كل مستند بيترفع بيتعلّم
+     باسم ملفه، والزرار بيتفتح لما الناقص يخلص، والإرسال بيرجّع
+     الطلب «قيد المراجعة» فعلًا في الشاشة. */
+  const [up, setUp] = useState<Record<string, string>>({})
+  const [resent, setResent] = useState(false)
+  const short = missing.filter((d) => !up[d.key])
 
   /* ⚠️ المسار **مراحل الطلب لا مراحلنا الداخلية.** الجهة ما
      بتشوفش «عند مسؤول النظام» ولا «عند مدير المنح» · دي حالات
@@ -72,9 +83,12 @@ export default function PortalPage() {
      الجهة تاني، فمحطته هي الأولى. */
   const done = (k: string) => {
     const order = ['draft', 'review', 'decided']
-    const at = r.state === 'draft' || r.state === 'completion'
-      ? 0
-      : r.state === 'review' ? 1 : 2
+    /* بعد «ابعت تاني» الطلب رجع للمؤسسة فعلًا · فالمحطة بتتحرّك */
+    const at = resent
+      ? 1
+      : r.state === 'draft' || r.state === 'completion'
+        ? 0
+        : r.state === 'review' ? 1 : 2
     return order.indexOf(k) < at ? 'done' : order.indexOf(k) === at ? 'now' : 'todo'
   }
 
@@ -106,7 +120,14 @@ export default function PortalPage() {
               <span className="sub">بوّابة الجهة · طلبك أنت</span>
             </div>
             <span className="pc-sp" />
-            <button className="btn btn-2 btn-sm">
+            {/* ⚠️ **كان زرارًا بلا `onClick`** · شكله خروج وبيتضغط
+                وما بيحصلش حاجة، والعميل مسكه. دلوقتي بيمسح الجلسة
+                وبيرجّع لشاشة الدخول بـ`replace`، عشان «رجوع»
+                المتصفح ما يفتحش البوّابة تاني بعد الخروج. */}
+            <button
+              className="btn btn-2 btn-sm"
+              onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
+            >
               <Icon name={icons.logout} size={15} />
               خروج
             </button>
@@ -138,10 +159,14 @@ export default function PortalPage() {
               <Glass className="ptl-req">
                 <Head
                   title="طلبك"
-                  meta={<Tag tone={REG_TONE[r.state]}>{REG_STATE_SAY[r.state]}</Tag>}
+                  /* الوسم بيتبع الإرسال · من غيره الكارت بيقول
+                     «بانتظار الاستكمال» والستيبر فوقه بيقول «مراجعة» */
+                  meta={resent
+                    ? <Tag tone={REG_TONE.review}>{REG_STATE_SAY.review}</Tag>
+                    : <Tag tone={REG_TONE[r.state]}>{REG_STATE_SAY[r.state]}</Tag>}
                 />
 
-                <p className="sub cnote">{view.say}</p>
+                {!resent && <p className="sub cnote">{view.say}</p>}
 
                 {/* ── نتيجة المراجعة · اللي المؤسسة قالته بالنصّ ── */}
                 {r.note && (
@@ -165,26 +190,42 @@ export default function PortalPage() {
                     اتكتب عشانها، وأنا كسرتها بعدها بيوم. الفاحص
                     بيمسك `.dstat` و`DocDownload` وما كانش بيشوف
                     قايمة متكتوبة من الصفر. */}
-                {view.editable && short.length > 0 && (
+                {/* ⚠️ **الصفّ بيفضل بعد الرفع ويتقلب «مرفوع»** · لو
+                    اختفى، الجهة ما بتعرفش اترفع ولا ضاع، والكارت
+                    بيقصر تحت إيدها وهي بترفع اللي بعده. */}
+                {view.editable && !resent && missing.length > 0 && (
                   <>
                     <Head
                       title="الناقص"
-                      meta={<Tag tone="warn"><Num>{short.length}</Num> مستند</Tag>}
+                      meta={short.length > 0
+                        ? <Tag tone="warn"><Num>{short.length}</Num> مستند</Tag>
+                        : <Tag tone="ok">اكتمل</Tag>}
                     />
                     <DocList
                       label="المستندات الناقصة في الطلب"
-                      rows={short.map((d) => ({
-                        name: d.label,
-                        uploaded: false,
-                        action: (
-                          <button className="btn btn-2 btn-sm">
-                            <Icon name={icons.upload} size={14} />
-                            ارفع
-                          </button>
-                        ),
+                      rows={missing.map((d) => ({
+                        name: up[d.key] ?? d.label,
+                        meta: up[d.key] ? `${d.label} · بانتظار الإرسال` : undefined,
+                        uploaded: Boolean(up[d.key]),
+                        required: true,
+                        action: up[d.key]
+                          ? undefined
+                          : (
+                            <UploadButton
+                              label={`ارفع ${d.label}`}
+                              onPick={(f) => setUp((x) => ({ ...x, [d.key]: f.name }))}
+                            />
+                          ),
                       }))}
                     />
                   </>
+                )}
+
+                {resent && (
+                  <p className="sub cnote">
+                    رجع الطلب للمؤسسة وحالته «قيد المراجعة» · هتوصلك رسالة على
+                    بريد الحساب أول ما يتراجع.
+                  </p>
                 )}
 
                 {/* ⚠️ **زرار واحد · وبيقول اللي بعده.** «ابعت تاني»
@@ -195,7 +236,7 @@ export default function PortalPage() {
                     اتبعت <DateText>{r.submittedAt}</DateText>
                     {' · '}<Mono>{r.id}</Mono>
                   </span>
-                  {view.act && (
+                  {view.act && !resent && (
                     <button
                       className="btn btn-p"
                       disabled={view.editable && short.length > 0}
@@ -204,6 +245,7 @@ export default function PortalPage() {
                         : undefined}
                       onClick={() => {
                         if (r.state === 'approved') navigate(ROUTES.entity(r.entityId ?? '755'))
+                        else setResent(true)
                       }}
                     >
                       <Icon name={r.state === 'approved' ? icons.entity : icons.send} size={15} />
