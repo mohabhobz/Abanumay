@@ -5714,22 +5714,30 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
        في السياق العادي وارتفاعه من محتواه. */
     container-type:size}
   .aiside>.aicard{height:100%;min-height:0;display:flex;flex-direction:column}
+  /* ٢٣ سبتمبر: وهو مقفول الكارت بياخد طول محتواه بس. كان بيملا
+     الشاشة (~٧٨٠px) وفي نصّه أربع سطور، فنص الصفحة الشمال كان لوح
+     زجاج فاضي في كل شاشة تفاصيل. المِلء للحالة المفتوحة، اللي فيها
+     قايمة قراءات بتتمرّر فعلًا. */
+  .aiside:has(>.aicard.aishut){height:auto;container-type:normal}
 }
 
-/* ── الحالة المقفولة: بوستر في نص الكارت ── */
+/* ── الحالة المقفولة: بداية الكارت زي أي كارت (٢٣ سبتمبر) ──
+   كانت «بوستر» متوسّط: علامة فوق، عنوان، سطر، زرار في عمود في النصّ ·
+   وده قالب «أيقونة فوق العنوان» المتكرّر. دلوقتي المحتوى بيبدأ من
+   بداية الكارت ومحاذي للبداية، زي باقي الكروت جنبه. */
 /* **متراكز دايمًا وهو مقفول.** الحاوية كانت `stretch`، فالمحتوى
    بيتمدّ على طول الكارت و`margin:auto` مالقتش فراغًا يوزّعه ·
    فالبوستر بيقعد فوق والفراغ كله تحت. `align-items:center`
    بيخلّي الابن على طوله الطبيعي، و`margin:auto` بتتوسّطه من غير
    ما تقطع أوّله لو طال (بعكس `justify-content`). */
-.aicard.aishut{padding:var(--sp-6) var(--sp-6);display:flex;align-items:center;justify-content:center;overflow:auto;
+.aicard.aishut{padding:var(--sp-6) var(--sp-6);display:flex;align-items:flex-start;justify-content:flex-start;overflow:auto;
   scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.2) transparent}
-.aishut-c{margin:auto;display:flex;flex-direction:column;align-items:center;text-align:center;
-  gap:var(--sp-4);max-width:22rem}
+.aishut-c{display:flex;flex-direction:column;align-items:flex-start;text-align:start;
+  gap:var(--sp-4);max-width:28rem}
 .badge-44{width:44px;height:44px}
 .aishut-t{font-family:var(--fd);font-weight:600;font-size:var(--fs-4);line-height:var(--lh-text);
   color:var(--t1);margin:var(--sp-1) 0 0}
-.aishut-m{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;justify-content:center}
+.aishut-m{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;justify-content:flex-start}
 /* اللمحة بتتقصّ عند تلات سطور: الكارت بيبقى قصيرًا قبل ما يلزق،
    والفقرة الطويلة بتزقّ الزرار برّه المنظر. */
 /* من غير خطّ فاصل: البوستر أربع حاجات في عمود واحد متوسّط · الشرارة
