@@ -98,14 +98,17 @@ export function Columns({ cols, unit }: { cols: Column[]; unit?: string }) {
     <div className="chcols">
       {cols.map((c) => (
         <div className="chcol" key={c.key}>
-          <span className="chcol-v num">{c.value}</span>
+          {/* الرقم جوّه العمود وقاعد على راسه · كان في سطر لوحده فوق
+              كل الأعمدة، بعيدًا عن الشكل اللي بيوصفه */}
           <span className="chcol-t">
             <i
               style={{
                 height: `${Math.max(3, (c.value / max) * 100)}%`,
                 background: c.color ?? 'var(--ch-2)',
               }}
-            />
+            >
+              <span className="chcol-v num">{c.value}</span>
+            </i>
           </span>
           <span className="chcol-l">{c.label}</span>
         </div>
@@ -122,50 +125,33 @@ export interface Slice {
   label: string
   value: number
   color: string
-  /** حبر النصّ فوق اللون ده · لازم لو الحلقة بتكتب النسبة على القوس */
+  /** حبر النصّ فوق اللون ده · لو اتكتب رقم فوق اللون */
   ink?: string
 }
 
 /* ── حلقة ──
-   ⚠️ **الحلقة رجعت بقرار العميل (١٣ سبتمبر).** كانت اتحوّلت لعمود
-   مكدّس لأن الزاوية أسوأ ترميز بعد المساحة، والقارئ بيقرا النسبة
-   من اللِّيجند لا من القوس.
-
-   والاعتراض ده **اتعالج في نفس القرار**: النسبة بقت مكتوبة **على
-   القوس نفسه**، فالقارئ ما بقاش محتاج يقدّر زاوية ولا يلفّ عينه
-   للِّيجند — الرقم عند الشكل اللي بيمثّله. واللِّيجند تحت بقى
-   تسميات وألوان بس.
-
-   وده بيخلّق شرطًا جديدًا: **نصّ فوق لون = ٤٫٥:١** (WCAG 1.4.3).
-   فكل لون جراف بقى معاه حبره المقيس (`--on-ch-1…6`)، والحلقة
-   بتاخده من `slice.ink`. */
+   رجعت بقرار العميل (١٣ سبتمبر) بدل العمود المكدّس. في ٢٣ سبتمبر
+   بقت أرفع (شريط ١٢) والنسبة اتنقلت من على القوس لجنب اسمها في
+   اللِّيجند: القارئ بيقرا «المنح النوعي ٥١٪» سطرًا واحدًا، والحلقة
+   بتدّي النِّسَب شكلها. ⚠️ ده عكس قرار «الرقم على القوس» · مكتوب في
+   تقرير الأوديت كبند محتاج موافقة العميل. */
 export function Donut({
   slices,
   total,
   centerValue,
   centerLabel,
   size,
-  /** أصغر نسبة تستاهل رقمًا على القوس · تحتها القوس أقصر من الرقم */
-  minLabel = 0.07,
 }: {
   slices: Slice[]
   total?: number
   centerValue: ReactNode
   centerLabel: string
   size?: number
-  minLabel?: number
 }) {
   const sum = total ?? slices.reduce((s, x) => s + x.value, 0)
-  /* ⚠️ **عرض الشريط بيتحدّد بعرض الرقم، مش بالذوق.** أول رسم كان
-     شريطًا ١٥ ووحدة والرقم ٩ — و«٥١٪» عرضها ٢٢ وحدة، فعند الساعة
-     ٣ (الشريط رأسي هناك) الرقم كان بيطلع برّه القوس على خلفية
-     الكارت. الحالة الحرجة هي ٣ و٩، لأن النصّ أفقي والشريط رأسي:
-     المطلوب أن **عرض الرقم < سُمك الشريط**.
-       الرقم ٨ ⇒ «٥١٪» ≈ ١٧ وحدة · الشريط ٢٢ ⇒ هامش ٢٫٥ كل جهة.
-     ونصف القطر نزل لـ٥٢ عشان الحافة الخارجية (٥٢+١١=٦٣) تفضل
-     جوّه الـviewBox ١٢٨. */
+  /* نصف القطر ٥٢ والشريط ١٢ ⇒ الحافة الخارجية ٥٨ جوّه الـviewBox ١٢٨ */
   const r = 52
-  const w = 22
+  const w = 12
   const c = 2 * Math.PI * r
   const gap = slices.length > 1 ? 1.6 : 0
   let offset = 0
@@ -201,30 +187,6 @@ export function Donut({
           )
         })}
 
-        {/* النسب على الأقواس · بتترسم بعد كل الأقواس عشان ما يتغطّوش */}
-        {(() => {
-          let at = 0
-          return slices.map((s) => {
-            const frac = sum > 0 ? s.value / sum : 0
-            /* منتصف القوس · الرسم بيبدأ من الساعة ١٢ ويلفّ مع عقرب الساعة */
-            const mid = ((at + frac / 2) * 360 - 90) * (Math.PI / 180)
-            at += frac
-            if (frac < minLabel) return null
-            return (
-              <text
-                key={s.key}
-                x={64 + r * Math.cos(mid)}
-                y={64 + r * Math.sin(mid)}
-                textAnchor="middle"
-                dominantBaseline="central"
-                className="chdonut-p"
-                fill={s.ink ?? 'var(--ch-ink)'}
-              >
-                {pct(Math.round(frac * 100))}
-              </text>
-            )
-          })
-        })()}
       </svg>
 
       <div className="chdonut-c">
@@ -259,10 +221,13 @@ export function Legend({
   format = (v: number) => nf.format(v),
   /** صفّ أفقي بلا قيم · لمّا القيمة مكتوبة على الرسم نفسه */
   inline,
+  /** مجموع النِّسَب · لمّا يتبعت، الصفّ الأفقي بيكتب النسبة جنب الاسم */
+  pctOf,
 }: {
   items: Slice[]
   format?: (v: number) => string
   inline?: boolean
+  pctOf?: number
 }) {
   return (
     <dl className={`chleg${inline ? ' chleg-in' : ''}`}>
@@ -270,6 +235,7 @@ export function Legend({
         <div key={i.key}>
           <dt><span className="chdot" style={{ background: i.color }} />{i.label}</dt>
           {!inline && <dd className="num">{format(i.value)}</dd>}
+          {inline && pctOf ? <dd className="num">{pct(Math.round((i.value / pctOf) * 100))}</dd> : null}
         </div>
       ))}
     </dl>

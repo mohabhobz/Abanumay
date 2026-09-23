@@ -21,10 +21,10 @@ import {
   House, Sun, PanelLeft, Leaf, Moon, Monitor, User, SlidersHorizontal,
   LogOut, Lock, Eye, EyeOff, FileText, Building2, Wallet, FileSignature,
   CreditCard, ChartColumn, MessageCircle, CircleAlert, ChevronLeft,
-  ChevronRight, Search, File, Paperclip, ArrowLeft, Sparkle, X, Maximize2, Minimize2,
+  ChevronRight, Search, File, Paperclip, ArrowLeft, X, Maximize2, Minimize2,
   Plus, EllipsisVertical, Pin, Pencil, Trash2, Menu, ArrowDown, Download,
   Copy, Check, RotateCw, ThumbsUp, ThumbsDown, GripVertical, ChevronDown,
-  Sparkles, ArrowDownWideNarrow, ChevronUp, LayoutGrid, Rows3, Funnel,
+  ArrowDownWideNarrow, ChevronUp, LayoutGrid, Rows3, Funnel,
   Clock, MapPin, Users, Link2, ListChecks, CalendarDays, Mail, LayoutDashboard,
   type LucideIcon,
 } from 'lucide-react'
@@ -66,7 +66,8 @@ export const icons = {
   file: File,
   clip: Paperclip,
   send: ArrowLeft,
-  spark: Sparkle,
+  /* المساعد = ورقة من شجرة الهوية · مش شرارة ✦ (٢٣ سبتمبر) */
+  spark: Leaf,
   close: X,
   expand: Maximize2,
   shrink: Minimize2,
@@ -90,7 +91,7 @@ export const icons = {
   grip: GripVertical,
   chevronDown: ChevronDown,
   /* «قراءات» · تلات نجوم. الشرارة الواحدة بتقول «ذكاء اصطناعي» بس */
-  insight: Sparkles,
+  insight: Leaf,
   /** لوحة «اليوم» · شبكة بلاطات لا نجمة المساعد */
   dashboard: LayoutDashboard,
   sort: ArrowDownWideNarrow,

@@ -87,7 +87,7 @@ export default function HomePage() {
   const budgetParts = [
     { key: 'spent', label: 'المصروف', value: budget.spent, color: 'var(--ch-1)' },
     { key: 'committed', label: 'ملتزم لم يُصرف', value: Math.max(0, budget.committed - budget.spent), color: 'var(--ch-2)' },
-    { key: 'reserved', label: 'المحجوز', value: budget.reserved, color: 'var(--ch-5)' },
+    { key: 'reserved', label: 'المحجوز', value: budget.reserved, color: 'var(--ch-3)' },
     { key: 'remaining', label: 'المتبقّي', value: budget.remaining, color: 'var(--ch-idle)' },
   ]
   const usedPct = Math.round(((budget.reserved + budget.committed) / budget.allocated) * 100)
@@ -99,23 +99,23 @@ export default function HomePage() {
   const kpis =
     role.lens === 'own'
       ? [
-          { k: 'ينتظر قرارك', v: String(mine.length), note: `${mine.filter((p) => stagePressure(p) > 1).length} فوق الحدّ`, to: `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`, icon: icons.doc},
-          { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`, icon: icons.clock},
-          { k: 'تجاوز الحدّ', v: String(late.length), note: 'في النظام كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`, icon: icons.alert},
-          { k: 'بلا مالك', v: String(orphan.length), note: 'تحتاج إلى إسناد', to: `${ROUTES.projects}?unowned=1`, icon: icons.users},
+          { k: 'ينتظر قرارك', v: String(mine.length), note: `${mine.filter((p) => stagePressure(p) > 1).length} فوق الحدّ`, to: `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`},
+          { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`},
+          { k: 'تجاوز الحدّ', v: String(late.length), note: 'في النظام كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`},
+          { k: 'بلا مالك', v: String(orphan.length), note: 'تحتاج إلى إسناد', to: `${ROUTES.projects}?unowned=1`},
         ]
       : role.lens === 'team'
         ? [
-            { k: 'ينتظر اعتمادك', v: String(waiting.length), note: 'فوق الحد المالي للمشرف', to: `${ROUTES.projects}?status=في الدراسة&sort=amount`, icon: icons.check},
-            { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`, icon: icons.clock},
-            { k: 'تجاوز الحدّ', v: String(late.length), note: 'في النظام كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`, icon: icons.alert},
-            { k: 'بلا مالك', v: String(orphan.length), note: 'تحتاج إلى إسناد', to: `${ROUTES.projects}?unowned=1`, icon: icons.users},
+            { k: 'ينتظر اعتمادك', v: String(waiting.length), note: 'فوق الحد المالي للمشرف', to: `${ROUTES.projects}?status=في الدراسة&sort=amount`},
+            { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`},
+            { k: 'تجاوز الحدّ', v: String(late.length), note: 'في النظام كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`},
+            { k: 'بلا مالك', v: String(orphan.length), note: 'تحتاج إلى إسناد', to: `${ROUTES.projects}?unowned=1`},
           ]
         : [
-            { k: 'الملتزم به', v: `${(budget.committed / 1_000_000).toFixed(1)} م`, note: `${pct(usedPct)} من المخصص`, to: ROUTES.budget, icon: icons.budget},
-            { k: 'تحت التشغيل', v: String(groups.find((g) => g.key === 'في التشغيل')?.value ?? 0), note: 'مشروعًا جاريًا', to: `${ROUTES.projects}?status=في التشغيل`, icon: icons.pay},
-            { k: 'المستفيدون', v: nf.format(doneBeneficiaries), note: 'من المشاريع المكتملة', to: `${ROUTES.projects}?status=مكتمل`, icon: icons.check},
-            { k: 'جهات ملفها ناقص', v: String(shortDocs.length), note: 'تتوقف عندها الاتفاقيات', to: `${ROUTES.entities}?docs=1`, icon: icons.entity},
+            { k: 'الملتزم به', v: `${(budget.committed / 1_000_000).toFixed(1)} م`, note: `${pct(usedPct)} من المخصص`, to: ROUTES.budget},
+            { k: 'تحت التشغيل', v: String(groups.find((g) => g.key === 'في التشغيل')?.value ?? 0), note: 'مشروعًا جاريًا', to: `${ROUTES.projects}?status=في التشغيل`},
+            { k: 'المستفيدون', v: nf.format(doneBeneficiaries), note: 'من المشاريع المكتملة', to: `${ROUTES.projects}?status=مكتمل`},
+            { k: 'جهات ملفها ناقص', v: String(shortDocs.length), note: 'تتوقف عندها الاتفاقيات', to: `${ROUTES.entities}?docs=1`},
           ]
 
   return (
@@ -151,9 +151,6 @@ export default function HomePage() {
             {kpis.map((t) => (
               <Link key={t.k} to={t.to} className="kpi glass">
                 <span className="kpi-h">
-                  <span className="kpi-ic">
-                    <Icon name={t.icon} size={15} />
-                  </span>
                   <span className="kpi-k">{t.k}</span>
                   <Icon name={icons.chevron} size={14} className="kpi-go" />
                 </span>
@@ -213,7 +210,7 @@ export default function HomePage() {
                 centerValue={`${(grantedTotal / 1_000_000).toFixed(1)} م`}
                 centerLabel="⃁ ملتزم به"
               />
-              <Legend items={trackSlices} inline />
+              <Legend items={trackSlices} inline pctOf={trackSlices.reduce((a, x) => a + x.value, 0)} />
             </Glass>
 
             <Glass className="d-age">

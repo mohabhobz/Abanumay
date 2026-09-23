@@ -56,6 +56,7 @@
 :root{
   direction:rtl; color-scheme:light;
   --green:#144547; --lime:#94D603; --teal:#00A59B;
+  --ai-mark:var(--green);   /* علامة المساعد · الورقة */
   /* خطّ الرسم البياني · تيل الهوية معتّم شويّة عشان يعدّي حدّ
      3:1 للعناصر الرسومية (WCAG 1.4.11) على أرضية الكارت الفاتحة ·
      `--teal` نفسه بيقيس 2.79 عليها. في الغامق التوكن بيرجع لتيل
@@ -2341,30 +2342,16 @@ to{opacity:1;transform:none}
 .seg button.on{color:var(--t1);background:var(--fl-7);
   box-shadow: var(--el-1),inset 0 0 0 1px var(--edge-1)}
 
-/* شرارة المساعد · تدرّج الهوية بيمرّ عليها ولمعة خفيفة تلفت النظر.
-   الشكل نفسه ماسك، فالتدرّج والجلو بياخدوا حدود النجمة بالظبط. */
-@keyframes aisheen{0%{background-position:0% 50%}
-100%{background-position:200% 50%}
-}
-@keyframes aiglow{
-  0%,100%{filter:drop-shadow(0 0 0 rgba(0,165,155,0));transform:scale(1)}
-50%{filter:drop-shadow(0 0 7px rgba(0,165,155,.6)) drop-shadow(0 0 14px rgba(148,214,3,.22));transform:scale(1.07)}
-}
-.aispark{display:block;width:24px;height:24px;flex:none;
-  background:linear-gradient(115deg,#144547 0%,#00A59B 24%,#94D603 48%,#00A59B 72%,#144547 100%);
-  background-size:200% 100%;
-  /* نفس مسار `Sparkle` من لوسيد بالحرف · الشرارة دي مقنّعة عشان
-     التدرّج يبان من خلالها، فهي الحالة الوحيدة اللي محتاجة المسار
-     نصًّا بدل الكمبوننت. كانت نجمة مرسومة بإيدنا فشكلها كان مختلف
-     عن `icons.spark` اللي جنبها في نفس الشاشة. */
-  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'/></svg>") center/contain no-repeat;
-  mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'/></svg>") center/contain no-repeat;
-  animation:aisheen 3.4s linear infinite, aiglow 2.6s ease-in-out infinite}
-/* الشرارة بتتسرّع لما تقرب من زرار السؤال أو يتفتح */
-.askfab:hover .aispark,.askfab.on .aispark{animation-duration:1.7s,1.3s}
+/* علامة المساعد · ورقة من شجرة الهوية (٢٣ سبتمبر)
+   كانت شرارة ✦ بتدرّج بيلفّ ولمعة بتنبض · ودي رمز كل منتجات الـAI،
+   فالمساعد كان بيتقري «أداة AI عامة» مش «مساعد أبانمي». الورقة
+   جاية من اللوجو نفسه، ثابتة، بلون واحد: أخضر الهوية نهارًا
+   وليموني بالليل. الحركة الوحيدة الباقية هي نبض الـ`.badge` وقت
+   ما المساعد شغّال فعلًا (حالة بتتغيّر، مش زينة). */
+.aispark{display:block;width:24px;height:24px;flex:none;background:var(--ai-mark);
+  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill-rule='evenodd' d='M20.5 3C10.8 3 4 8.7 4 16.7c0 1.5.3 2.9.8 4.3C11.8 20.6 20.5 14 20.5 3zM6.2 19.6c1.6-3.7 4.4-6.8 8.5-9.4l.5.6c-3.8 2.6-6.4 5.6-7.9 9.2z'/></svg>") center/contain no-repeat;
+  mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill-rule='evenodd' d='M20.5 3C10.8 3 4 8.7 4 16.7c0 1.5.3 2.9.8 4.3C11.8 20.6 20.5 14 20.5 3zM6.2 19.6c1.6-3.7 4.4-6.8 8.5-9.4l.5.6c-3.8 2.6-6.4 5.6-7.9 9.2z'/></svg>") center/contain no-repeat}
 .badge .aispark{width:var(--bdg-ic);height:var(--bdg-ic)}
-@media (prefers-reduced-motion:reduce){.aispark{animation:none}
-}
 /* ══════════════════════════════════════════════════════════
    شريط القرار · عايم ومثبّت تحت الشاشة دايمًا
    فوقه تدرّج بلور بيذوّب المحتوى وهو مارّ تحته، فالشريط
@@ -3606,14 +3593,14 @@ to{opacity:1;transform:none}
   --on-ch-4:var(--ch-ink); --on-ch-5:var(--ch-ink); --on-ch-6:var(--ch-ink);
   --ch-1:#144547;   /* الأخضر الغامق */
   --ch-2:#00A59B;   /* التيل */
-  --ch-3:#5FBFA6;
+  --ch-3:#3E9E90;   /* كان #5FBFA6 · ٢٫٢:١ على الكارت (تحت 1.4.11) · دلوقتي ٣٫٢ */
   --ch-4:#94D603;   /* اللايم */
   --ch-5:#5E93BE;
   --ch-6:#9DB3B1;
   /* نفس ألوان الجراف كثلاثيات · عشان تتاخد بشفافية */
-  --ch-1C:20,69,71; --ch-2C:0,165,155; --ch-3C:95,191,166; --ch-4C:148,214,3;
+  --ch-1C:20,69,71; --ch-2C:0,165,155; --ch-3C:62,158,144; --ch-4C:148,214,3;
   --ch-idle:rgba(20,69,71,.10);
-  --ch-warn:#FFC107;
+  --ch-warn:#B97C00;   /* أصفر الحالة على الكارت الفاتح ١٫٥:١ · كهرماني ٣٫٣ للعمود المرسوم */
   --ch-late:#DC3545;
 }
 .hhead{display:flex;align-items:flex-end;justify-content:space-between;
@@ -3626,30 +3613,27 @@ to{opacity:1;transform:none}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
 @media (max-width:960px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-/* كان `.95rem 1.05rem 1rem` · يعني فوق ١٢٫٨ وتحت ١٣٫٦، رقمان
-   قريبان من بعض ومختلفان. الحشو دلوقتي من سلّم المسافات. */
-.kpi{position:relative;display:flex;flex-direction:column;gap:var(--sp-1);
-  padding:var(--sp-5);color:inherit;
-  transition:transform .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s ease}
-.kpi:hover{transform:translateY(-2px);color:inherit;
-  box-shadow:inset 0 0 0 1px var(--edge-i)}
-.kpi-h{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-3)}
-.kpi-ic{display:grid;place-items:center;width:26px;height:26px;flex:none;
-  color:var(--t2)}
-/* الأيقونة تعريف بالمؤشر لا إنذار: الحالة بتتقال في الرقم
-   والسطر تحته، والأحمر على الأيقونة كان بيصبغ نص صف المؤشرات
-   بلون طوارئ من غير ما يضيف معلومة */
-.kpi-k{font-size:var(--fs-2);color:var(--t2);font-family:var(--fd);font-weight:500;
+/* ══ المؤشر · كارت أفقي (٢٣ سبتمبر · اختيار مهاب) ══
+   كانت ٤ كروت متطابقة بأيقونة فوق كل تسمية والرقم تحتها · ودي
+   صيغة «Hero metrics» اللي بتتكرّر في كل داشبورد معمول بالـAI.
+   دلوقتي: التسمية والملاحظة في البداية (يمين) على سطرين، والرقم
+   في الآخر (شمال) بطول الكارت. بلا أيقونة وبلا رفعة مع الهوفر ·
+   الحركة للتغيير بس، والسهم بيظهر مع الهوفر عشان يقول «ده رابط». */
+.kpi{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"h v" "n v";column-gap:var(--sp-5);row-gap:var(--sp-1);align-items:center;
+  padding:var(--sp-5) var(--sp-6);color:inherit;transition:box-shadow .2s ease}
+.kpi:hover{color:inherit;box-shadow:inset 0 0 0 1px var(--edge-i)}
+.kpi-h{grid-area:h;align-self:end;display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.kpi-k{font-size:var(--fs-3);color:var(--t2);font-family:var(--fd);font-weight:500;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kpi-go{margin-inline-start:auto;color:var(--t3);opacity:0;transform:translateX(3px);
+.kpi-go{color:var(--t3);opacity:0;transform:translateX(3px);
   transition:opacity .18s ease,transform .18s ease}
 .kpi:hover .kpi-go{opacity:1;transform:none}
-/* `direction:rtl` بيلغي قلب الاتجاه اللي `.num` بتعمله. من غيرها
-   الرقم بيلزق في شمال الكارت بعيد عن تسميته. رقم صافي بلا علامة
-   ملاصقة، فمفيش حاجة تنكسر. */
-.kpi-v{font-family:var(--fd);font-weight:700;line-height:var(--lh-flat);letter-spacing:-.02em;direction:rtl;
-  font-size:var(--fd-5);color:var(--t1)}
-.kpi-n{font-size:var(--fs-1);color:var(--t2);margin-top:var(--sp-2)}
+/* `direction:rtl` بيلغي قلب الاتجاه اللي `.num` بتعمله. رقم صافي
+   بلا علامة ملاصقة، فمفيش حاجة تنكسر. */
+.kpi-v{grid-area:v;min-width:2ch;text-align:end;font-family:var(--fd);font-weight:700;
+  line-height:var(--lh-flat);letter-spacing:-.02em;direction:rtl;font-size:var(--fd-5);color:var(--t1)}
+.kpi-n{grid-area:n;align-self:start;font-size:var(--fs-2);color:var(--t2)}
 /* ── شبكة اللوحة ── */
 .dgrid{display:grid;gap:var(--gap);align-items:start}
 .g21{grid-template-columns:1.7fr 1fr}
@@ -3684,10 +3668,15 @@ to{opacity:1;transform:none}
 /* ── أعمدة رأسية ── */
 .chcols{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;
   gap:var(--sp-3);align-items:end;height:150px;margin-top:var(--sp-5);
-  padding-bottom:var(--sp-6)}
+  /* فوق: مكان رقم أطول عمود · تحت: التسميات. وخطّ أساس واحد بدل
+     مسار رمادي ورا كل عمود */
+  padding-top:var(--sp-6);padding-bottom:var(--sp-6);
+  background:linear-gradient(var(--edge-1),var(--edge-1)) bottom var(--sp-6) left 0 / 100% 1px no-repeat}
 .chcol{display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);height:100%;
   justify-content:flex-end}
-.chcol-v{font-family:var(--fd);font-weight:700;font-size:var(--fs-3);color:var(--t1)}
+/* الرقم على راس عموده (جوّه `i`) · كان في سطر لوحده فوق الأعمدة */
+.chcol-v{position:absolute;bottom:calc(100% + var(--sp-2));inset-inline:0;text-align:center;
+  font-style:normal;font-family:var(--fd);font-weight:600;font-size:var(--fs-3);line-height:var(--lh-flat);color:var(--t1)}
 /* ═══ أعمدة الجراف الرأسية **مستثناة من نطاقات الصندوق** ═══
    النسبة بتتحسب من أصغر ضلع، والعمود عرضه ٤٦ · وأي ركن محسوس
    عليه بياكل من طوله، **والطول هو البيانات**. فالعمود بياخد `--r0`
@@ -3700,35 +3689,23 @@ to{opacity:1;transform:none}
    ⚠️ ملاحظة مفتوحة: الشريط الأفقي `--rp` (كبسولة) والعمود الرأسي
    `--r0` · يعني عيلة الجراف بلغتين. توحيدهم قرار عرض بيانات لا
    قرار توكن، ومطروح في `UI_FIX_PLAN` بند ٢٤. */
-.chcol-t{--r-exempt:1;flex:1;width:100%;max-width:46px;display:flex;align-items:flex-end;
-  background:rgba(var(--edgeC),.05);border-radius:var(--r0);overflow:hidden}
-.chcol-t i{--r-exempt:1;display:block;width:100%;border-radius:var(--r0);
+.chcol-t{--r-exempt:1;flex:1;width:100%;max-width:28px;display:flex;align-items:flex-end}
+.chcol-t i{--r-exempt:1;position:relative;display:block;width:100%;border-radius:var(--r0) var(--r0) 0 0;
   transition:height .45s cubic-bezier(.22,.9,.3,1)}
 /* «0–7» في فقرة عربية بتتقري «7–0» · العزل بيثبّت اتجاه المدى */
 .chcol-l{position:absolute;bottom:0;font-size:var(--fs-1);color:var(--t3);
   font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
 .chcol-u{position:absolute;bottom:0;inset-inline-end:0;font-size:var(--fs-1);color:var(--t3)}
 /* ── الحلقة ── */
-/* ⚠️ الرقمان دول **مقترنان**: مقاس الرقم لازم يفضل أصغر من سُمك
-   الشريط، وإلا الرقم بيطلع برّه القوس عند الساعة ٣ و٩. مكتوبان
-   جنب بعض عشان اللي يغيّر واحد يشوف التاني.
-   والوحدة هنا **وحدة viewBox لا بكسل شاشة**: الـ`px` جوّه SVG
-   له viewBox معناها وحدة رسم، فبتكبر مع الحلقة — عشان كده هي
-   برّه سلّم الخطّ عن قصد، زي أي قيمة مشتقّة من هندسة جارها.
-   (سُمك الشريط نفسه في `Donut` — الرسم مصدره.) */
-.chdonut{--ring-fs:8;   /* مقابل سُمك شريط ٢٢ */
-  position:relative;flex:none;display:grid;place-items:center;min-width:0}
+.chdonut{position:relative;flex:none;display:grid;place-items:center;min-width:0}
 .chdonut svg{display:block;max-width:100%}
 .chdonut circle{transition:stroke-dasharray .5s ease}
 @media (prefers-reduced-motion:reduce){.chdonut circle{transition:none}
 }
 .chdonut-c{position:absolute;text-align:center;line-height:var(--lh-head)}
-.chdonut-c b{display:block;font-family:var(--fd);font-weight:700;font-size:var(--fs-7);
+.chdonut-c b{display:block;font-family:var(--fd);font-weight:700;font-size:var(--fs-8);
   letter-spacing:-.02em;color:var(--t1)}
-.chdonut-c span{font-size:var(--fs-1);color:var(--t3)}
-/* النسبة على القوس · المقاس بوحدات الـviewBox فبيكبر مع الحلقة */
-.chdonut-p{font-family:var(--fd);font-weight:700;letter-spacing:-.02em;
-  font-size:calc(var(--ring-fs) * 1px)}
+.chdonut-c span{font-size:var(--fs-2);color:var(--t3)}
 /* ── شريط مركّب ── */
 .chstack-t i{transition:width .5s cubic-bezier(.22,.9,.3,1)}
 /* ── وسيلة الإيضاح ── */
@@ -3738,12 +3715,10 @@ to{opacity:1;transform:none}
 .chleg dd{margin:0;font-family:var(--fd);font-weight:600;color:var(--t1)}
 .chdot{width:9px;height:9px;border-radius:var(--r-hair);flex:none}
 /* ── وسيلة إيضاح في صفّ ──
-   لمّا القيمة مكتوبة على الرسم نفسه، اللِّيجند بيبقى **تسميات
-   وألوان بس** — فما بياخدش عمودًا كاملًا، بيتلمّ في صفّ واحد
-   تحت الرسم. */
+   تسمية + نسبتها (`pctOf`) في صفّ واحد تحت الرسم، بدل عمود كامل. */
 .chleg-in{flex-direction:row;flex-wrap:wrap;justify-content:center;
-  gap:var(--sp-3) var(--sp-5)}
-.chleg-in>div{justify-content:flex-start;gap:0}
+  gap:var(--sp-2) var(--sp-4);font-size:var(--fs-2)}
+.chleg-in>div{justify-content:flex-start;gap:var(--sp-2)}
 /* ── صفوف الطابور ── */
 .qrows{display:flex;flex-direction:column;margin-top:var(--sp-5)}
 .qrow{display:block;padding:var(--sp-4) 0;color:inherit;transition:transform .18s ease}
@@ -3876,7 +3851,9 @@ to{opacity:1;transform:none}
 @media (min-width:1181px) and (min-height:660px){
   /* ‎.6rem مساحة صغيرة تحت الطيّة تلمّح إن في محتوى تحت، من غير
      ما تاكل من ارتفاعها */
-  .fold{min-height:calc(100dvh - var(--padt) - .6rem)}
+  /* ويسيب مكان زرار «اسأل أبانمي» العايم تحت: من غيره الزرار كان
+     قاعد على تسميات أول عمودين في «مدة المكوث» (+60 و31–60) */
+  .fold{min-height:calc(100dvh - var(--padt) - var(--ask-h, 63px) - var(--sp-5))}
 /* min-height:0 على السلسلة كلها: عنصر شبكة أو فليكس بيرفض
      يصغر عن محتواه من غيرها، فالتقلّص ما بيوصلش للخريطة */
   .fold .dtop{flex:1;min-height:0;grid-template-rows:minmax(0,auto) minmax(0,1fr)}
@@ -3885,19 +3862,15 @@ to{opacity:1;transform:none}
      اللي بيتقري، والتحية مش محتاجة تاخد سطر ونص */
   .fold .htitle{font-size:var(--fd-4)}
 .fold .hdate{margin-top:var(--sp-2)}
-/* كان `.8rem 1rem .85rem` · فوق ١٢٫٨ وتحت ١٣٫٦، رقمان قريبان من
-   بعض ومختلفان، وهو اللي كان بيغلب حشو `.kpi` نفسه. */
-.fold .kpi{padding:var(--sp-4) var(--sp-5)}
-.fold .kpi-h{margin-bottom:var(--sp-3)}
-.fold .kpi-v{font-size:var(--fd-4)}
 /* الرسوم اللي ارتفاعها مكتوب بالإيد لازم تتنازل عنه هنا، وإلا
      بتفضل بطولها وتتقصّ من تحت بدل ما تصغر */
   .fold .d-age{display:flex;flex-direction:column}
 .fold .d-age .chcols{flex:1;height:auto;min-height:104px;margin-top:var(--sp-4)}
-/* أربع بنود الميزانية على عمودين: بتوفّر سطرين من ارتفاع الصف
-     الأول، والصف التاني هو اللي محتاجهم */
-  .fold .d-budget .chleg{display:grid;grid-template-columns:1fr 1fr;
-    column-gap:var(--sp-7);row-gap:var(--sp-3)}
+/* أربع بنود الميزانية في صفّ واحد بنفس ترتيب الشريط، كل بند اسمه
+     فوق رقمه · كانوا عمودين والرقم قاعد جنب اسم البند التاني
+     («5,685,000» جنب «ملتزم لم يُصرف») فكانت بتتقري غلط */
+  .fold .d-budget .chleg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+    column-gap:var(--sp-5);row-gap:var(--sp-3)}
 /* الحلقة مقاسها جاي كخاصية من المكوّن؛ هنا الارتفاع المتاح هو
      اللي بيحكم، والنص في الجوف بيصغر معاها */
 /* ═══ الحلقة تملا كارتها ═══
@@ -3941,11 +3914,16 @@ to{opacity:1;transform:none}
    الارتفاع** (طلب العميل) واللِّيجند صفّ واحد تحتها، والباقي هامش
    متوازن. الحلقة مربّعة فعرضها بيتحسب من ارتفاعها لا العكس —
    عشان كده `height` هي المقيَّدة و`width:auto`. */
-.d-track{grid-area:track;display:flex;flex-direction:column;justify-content:center;
+.d-track{grid-area:track;display:flex;flex-direction:column;justify-content:space-between;
   gap:var(--sp-5)}
-.d-track .chdonut{flex:none;height:72%;min-height:150px;width:100%}
+.d-track .chdonut{flex:none;height:66%;min-height:150px;width:100%}
 .d-track .chdonut svg{height:100%;width:auto}
 .d-track .chleg{margin:0}
+/* بند الميزانية: الاسم فوق والرقم تحته في عموده */
+.d-budget .chleg>div{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:var(--sp-2)}
+.d-budget .chleg dt{font-size:var(--fs-2)}
+.d-budget .chleg dd{font-size:var(--fs-5);font-variant-numeric:tabular-nums;
+  padding-inline-start:calc(var(--sp-3) + var(--sp-2))}
 .d-age{grid-area:age}
 @media (max-width:1180px){
   .dtop{grid-template-columns:1fr 1fr;
@@ -4011,26 +3989,18 @@ to{opacity:1;transform:none}
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 .map-scale i:first-of-type{border-start-start-radius:4px;border-end-start-radius:4px}
 .map-scale i:last-of-type{border-start-end-radius:4px;border-end-end-radius:4px}
-.map-rank{display:flex;flex-wrap:wrap;gap:var(--sp-2);justify-content:center}
-/* ═══ الشريحة كبرت لهدف لمس شرعي · ١٢ سبتمبر ٢٠٢٦ ═══
-   كانت **٢٢px ارتفاعًا** وهي رابط تفاعلي. ده **مش سقوط في
-   WCAG 2.5.8**: استثناء التباعد بينقذها لأن المسافة بين مراكز
-   الشرايح ≈٨٣px فدواير الـ٢٤ ما بتتلامسش. بس «بيعدّي بالاستثناء»
-   مش نفس «مريح»: ٢٢px هدف صغير على شاشة لمس، والشريحة دي فلتر
-   بيتضغط كتير.
-
-   الحشو الرأسي طلع درجة (٤ ← ٨) فالارتفاع بقى ٣٠ · بيعدّي الحدّ
-   بهامش وفاضل مضغوطًا. والكبسولة صحّ هنا: الشريحة **حالة/فلتر**،
-   وده دور `--rp` بالظبط في السلّم. */
-.map-chip{display:inline-flex;align-items:center;gap:var(--sp-3);
-  padding:var(--sp-3) var(--sp-4);
-  border-radius:var(--rp);font-size:var(--fs-1);color:var(--t2);
-  background:var(--fl-3);
-  box-shadow:inset 0 0 0 1px var(--edge-1);
-  transition:background .16s ease,color .16s ease,box-shadow .16s ease}
-a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
-  box-shadow:inset 0 0 0 1px var(--edge-i)}
-.map-chip b{font-family:var(--fd);font-weight:700;color:var(--t1)}
+.map-rank{display:flex;flex-wrap:wrap;gap:0 var(--sp-2);justify-content:center}
+/* ═══ ترتيب المناطق · قايمة نصّية لا صفّ كبسولات (٢٣ سبتمبر) ═══
+   صفّ «pills» تحت الرسم كان بيتقري أزرارًا بتتنافس مع الخريطة،
+   وآخرها بيلفّ لوحده في سطر. دلوقتي سطر قراءة مفصول بنقط: الاسم
+   ورقمه، والرابط بيبان بالخط تحته مع الهوفر. الحشو الرأسي ٨ فاضل
+   عشان الهدف يفضل ٣٠px (WCAG 2.5.8 · ١٢ سبتمبر). */
+.map-chip{display:inline-flex;align-items:center;gap:var(--sp-2);
+  padding:var(--sp-2);border-radius:var(--r0);font-size:var(--fs-2);color:var(--t2);
+  transition:color .16s ease}
+.map-chip+.map-chip::before{content:"·";color:var(--t3);margin-inline-end:var(--sp-3)}
+a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-underline-offset:4px}
+.map-chip b{font-family:var(--fd);font-weight:600;color:var(--t1)}
 /* المطفيّة بلون أخفت لا بشفافية: `opacity` بتضرب النصّ والحلقة
    والأرضية مع بعض، فالتباين بيتغيّر حسب اللي ورا الشريحة وما
    ينفعش يتحسب. اللون بيتقاس. */
@@ -4067,6 +4037,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);background:var(--fl-6);
   --sq-ink:#06100F;
   --sq-cut:17,21,21; --sq-cut-a:.82 }
 :root[data-theme="dark"]{
+  --ai-mark:var(--lime);
   --el-c:0,0,0;   /* الظلّ أسود على أرضية غامقة · الملوّن ما بيبانش */
   --ctl-bg:#252A2A; --ctl-bg-h:#2F3434; --ctl-bg-a:#3A4040;   /* سطح التحكّم · مقيس · شوف :root */
   --base:#0A0C0C; --baseC:10,12,12;
