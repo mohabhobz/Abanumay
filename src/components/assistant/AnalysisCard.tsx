@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Aurora } from './Aurora'
 import { Glass, Icon, icons } from '@/components/ui'
 import { ReadingBlock, ReadingPeek } from './ReadingBlock'
 import { useOnScreen } from '@/hooks/useOnScreen'
@@ -102,6 +103,7 @@ export function AnalysisCard({
   if (!armed) {
     return (
       <Glass className="aicard aishut" ref={card}>
+        <Aurora />
         <div className="aishut-c">
           <span className="badge badge-44"><span className="aispark" /></span>
 
@@ -144,6 +146,7 @@ export function AnalysisCard({
 
   return (
     <Glass className="aicard aiopen" ref={card}>
+      <Aurora live={!done} />
       <div className="rowf" style={{ gap: 'var(--sp-3)', marginBottom: 'var(--sp-5)' }}>
         <span className={`badge badge-30${done ? '' : ' pulse'}`}>
           <span className="aispark" />

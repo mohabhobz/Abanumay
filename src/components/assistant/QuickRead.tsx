@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Aurora } from './Aurora'
 import { Glass } from '@/components/ui/primitives'
 import { Icon } from '@/components/ui/Icon'
 import { icons } from '@/components/ui/icons'
@@ -100,6 +101,7 @@ export function QuickRead({
   if (variant === 'bar') {
     return (
       <Glass className={`qread strip${open ? ' open' : ''}`} ref={box}>
+        <Aurora live={!done} />
         <button className="qr-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
           {head}
           <span className="qr-sp" />
@@ -127,6 +129,7 @@ export function QuickRead({
      من غير ما الكارت يتفتح. */
   return (
     <Glass className={`qread panel aicard${open ? ' open' : ''}`} ref={box}>
+      <Aurora live={!done} />
       {/* الترويسة صفّ لا زرار: جوّاها زرار «اسأل»، وزرار جوّه زرار
           ترميز غلط والمتصفح بيفكّه بطرق مختلفة. الطيّ زرارّه لوحده،
           نفس `.aifold` في تحليلات المشروع. */}
