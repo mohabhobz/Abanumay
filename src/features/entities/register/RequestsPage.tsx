@@ -4,7 +4,7 @@ import {
   Empty, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
-import { pct } from '@/lib/format'
+import { pct, REQUEST_NOUN, nounAfter } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useStickyGroup } from '@/hooks/useStickyGroup'
@@ -160,7 +160,7 @@ export default function RequestsPage() {
             <div>
               <h1 className="ptitle">طلبات تسجيل الجهات</h1>
               <p className="sub mt-1">
-                <span className="num">{rows.length}</span> طلب من{' '}
+                <span className="num">{rows.length}</span> {nounAfter(rows.length, REQUEST_NOUN)} من{' '}
                 <span className="num">{regRows.length}</span> في هذا النموذج ·{' '}
                 <span className="num">{k.open}</span> قيد المراجعة · والجهة لا تُنشأ
                 إلا بعد الاعتماد (قاعدة <span className="num">2</span>)

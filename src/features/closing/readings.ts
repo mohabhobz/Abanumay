@@ -3,7 +3,7 @@ import {
   CLOSE_DOCS, canStartEval, closeCycle, closeLate, closeRequirements, closeStageWho,
   evalBlockers, needsComms, reportApproved, reportBlockers, reportGap,
 } from '@/data/mock/closing'
-import { nf } from '@/lib/format'
+import { nf, MISSING_ITEM, nounAfter } from '@/lib/format'
 import type { CloseRow } from '@/types/domain'
 
 /* ═══════════════════════════════════════════════════════════
@@ -35,7 +35,7 @@ export function closeReadings(c: CloseRow): Reading[] {
       id: 'cl-short',
       kind: 'flag',
       label: 'يمنع إرسال التقرير',
-      metric: { value: String(missing.length), unit: 'بند ناقص' },
+      metric: { value: String(missing.length), unit: nounAfter(missing.length, MISSING_ITEM) },
       text:
         `${missing.slice(0, 3).join(' · ')}${missing.length > 3 ? ' وغيرها' : ''} · ` +
         `${docs.length} منها مرفقات إلزامية · تمنع القاعدة 3 الإرسال قبل ` +
@@ -98,7 +98,7 @@ export function closeReadings(c: CloseRow): Reading[] {
         id: 'cl-eval-short',
         kind: 'flag',
         label: 'يمنع إرسال التقييم',
-        metric: { value: String(evalShort.length), unit: 'بند ناقص' },
+        metric: { value: String(evalShort.length), unit: nounAfter(evalShort.length, MISSING_ITEM) },
         text: evalShort.join(' · '),
         src: 'قاعدة 10 · مطبَّقة على الدورة الثانية',
       })

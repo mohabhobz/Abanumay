@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { MISSING_ITEM, nounAfter } from '@/lib/format'
 import { useNavigate } from 'react-router-dom'
 import {
   BackTo, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem,
@@ -170,7 +171,7 @@ export default function AgreementNewPage() {
               title={stage.label}
               meta={
                 shortOf(tab)
-                  ? <Tag tone="warn"><Num>{shortOf(tab)}</Num> بنود ناقصة</Tag>
+                  ? <Tag tone="warn"><Num>{shortOf(tab)}</Num> {nounAfter(shortOf(tab), MISSING_ITEM)}</Tag>
                   : <Tag tone="ok">مكتمل</Tag>
               }
             />

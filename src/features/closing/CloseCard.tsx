@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Icon, icons, Money, Mono, Num, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { isolate, nf } from '@/lib/format'
+import { isolate, nf, MISSING_ITEM, nounAfter } from '@/lib/format'
 import {
   CLOSE_TONE, closeCycle, closeLate, closeRequirements, closeStageLabel,
   evalApproved, needsComms, reportApproved, reportBlockers,
@@ -86,7 +86,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
           <span>
             {missing.length === 0
               ? 'التقرير الختامي مكتمل'
-              : <><Num>{missing.length}</Num> بنود ناقصة · {isolate(missing[0])}</>}
+              : <><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)} · {isolate(missing[0])}</>}
           </span>
           <span className="payq-r">قاعدة <Num>4</Num></span>
         </li>

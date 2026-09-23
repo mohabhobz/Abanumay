@@ -12,7 +12,7 @@ import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, nf } from '@/lib/format'
+import { isolate, nf, MISSING_ITEM, nounAfter } from '@/lib/format'
 import {
   CLOSE_DOCS, CLOSE_STAGES, CLOSE_TONE, approveEval, approveReport, canStartEval,
   closeById, closeCycle, closeRequirements, closeStageLabel, closeStageWho, evalApproved,
@@ -222,7 +222,7 @@ export default function ClosePage() {
                 <Head
                   title="الفعلي مقابل المعتمد"
                   meta={missing.length > 0
-                    ? <Tag tone="no"><Num>{missing.length}</Num> بنود ناقصة</Tag>
+                    ? <Tag tone="no"><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
                     : <Tag tone="ok">الحدّ الأدنى مكتمل</Tag>}
                 />
 

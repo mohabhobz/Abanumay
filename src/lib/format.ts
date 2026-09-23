@@ -164,6 +164,20 @@ export const plural = (n: number, f: PluralForms): string => {
 }
 
 /**
+ * الاسم بعد رقم معروض لوحده (`<Num>` قبله) · «1 بند ناقص» · «3 بنود
+ * ناقصة» · «11 بندًا ناقصًا». الرقم بيفضل ظاهر عشان العين بتلقطه
+ * من بعيد، والاسم بيتصرّف معاه (٢٣ سبتمبر · «1 بنود ناقصة» و«3 بند
+ * ناقص» كانوا في شاشات الإغلاق والاتفاقيات).
+ */
+export const nounAfter = (n: number, f: { one: string; few: string; many: string }): string => {
+  const mod = n % 100
+  if (n <= 2) return f.one
+  return mod >= 3 && mod <= 10 ? f.few : f.many
+}
+export const MISSING_ITEM = { one: 'بند ناقص', few: 'بنود ناقصة', many: 'بندًا ناقصًا' }
+export const REQUEST_NOUN = { one: 'طلب', few: 'طلبات', many: 'طلبًا' }
+
+/**
  * الوحدات المتكرّرة في القراءات.
  *
  * `gen` = الصيغة بعد حرف جر («من يومين» مش «من يومان»). العربية

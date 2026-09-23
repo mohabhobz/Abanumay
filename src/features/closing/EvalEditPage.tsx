@@ -4,7 +4,7 @@ import { BackTo, Empty, FieldSelect, Glass, Head, Num, Tag } from '@/components/
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { nf } from '@/lib/format'
+import { nf, MISSING_ITEM, nounAfter } from '@/lib/format'
 import { canStartEval, closeById, evalApproved, evalBlockers } from '@/data/mock/closing'
 
 /* ═══════════════════════════════════════════════════════════
@@ -118,7 +118,7 @@ export default function EvalEditPage() {
             {closed
               ? <Tag tone="ok">معتمَد</Tag>
               : missing.length > 0
-                ? <Tag tone="no"><Num>{missing.length}</Num> بند ناقص</Tag>
+                ? <Tag tone="no"><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
                 : <Tag tone="ok">جاهز للإرسال</Tag>}
           </header>
 

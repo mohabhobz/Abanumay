@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { MISSING_ITEM, nounAfter } from '@/lib/format'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import {
@@ -105,7 +106,7 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
             v: <>
               <Num>{c.report.docs.length}</Num> من <Num>{CLOSE_DOCS.length}</Num>
               {missing.length > 0 && (
-                <span className="bad"> · <Num>{missing.length}</Num> بند ناقص</span>
+                <span className="bad"> · <Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</span>
               )}
             </>,
           },

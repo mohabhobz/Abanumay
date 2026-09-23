@@ -5,7 +5,7 @@ import { DocList, UploadButton, type DocRow } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { nf } from '@/lib/format'
+import { nf, MISSING_ITEM, nounAfter } from '@/lib/format'
 import {
   CLOSE_DOCS, closeById, evalApproved, reportBlockers, reportGap,
 } from '@/data/mock/closing'
@@ -108,7 +108,7 @@ export default function ReportEditPage() {
             {closed
               ? <Tag tone="ok">مغلق · للقراءة</Tag>
               : missing.length > 0
-                ? <Tag tone="no"><Num>{missing.length}</Num> بند ناقص</Tag>
+                ? <Tag tone="no"><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
                 : <Tag tone="ok">الحدّ الأدنى مكتمل</Tag>}
           </header>
 

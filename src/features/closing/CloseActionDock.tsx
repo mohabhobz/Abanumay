@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { MISSING_ITEM, nounAfter } from '@/lib/format'
 import { Icon, Num, Person, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import {
@@ -248,7 +249,7 @@ export function CloseActionDock({
             {missing.length > 0 && (
               <>
                 <span className="decsep" />
-                <Num>{missing.length}</Num> بنود ناقصة
+                <Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}
               </>
             )}
           </span>

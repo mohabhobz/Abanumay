@@ -4,7 +4,7 @@ import {
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
-import { pct } from '@/lib/format'
+import { pct, REQUEST_NOUN, nounAfter } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useStickyGroup } from '@/hooks/useStickyGroup'
@@ -172,7 +172,7 @@ export default function ClosingPage() {
             <div>
               <h1 className="ptitle">إغلاق المشاريع</h1>
               <p className="sub mt-1">
-                <span className="num">{rows.length}</span> طلب من{' '}
+                <span className="num">{rows.length}</span> {nounAfter(rows.length, REQUEST_NOUN)} من{' '}
                 <span className="num">{closeRows.length}</span> في هذا النموذج ·{' '}
                 <span className="num">{k.open}</span> تحت الإجراء و
                 <span className="num">{k.closed}</span> مغلق ·{' '}

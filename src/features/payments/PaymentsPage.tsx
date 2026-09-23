@@ -5,7 +5,7 @@ import {
   Toggle, ViewToggle,
   Riyal,
 } from '@/components/ui'
-import { nf, pct } from '@/lib/format'
+import { nf, pct, REQUEST_NOUN, nounAfter } from '@/lib/format'
 import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
@@ -224,7 +224,7 @@ export default function PaymentsPage() {
             <div>
               <h1 className="ptitle">الصرف</h1>
               <p className="sub mt-1">
-                <span className="num">{rows.length}</span> طلب من{' '}
+                <span className="num">{rows.length}</span> {nounAfter(rows.length, REQUEST_NOUN)} من{' '}
                 <span className="num">{payRequests.length}</span> في هذا النموذج ·{' '}
                 <span className="num">{k.open}</span> مفتوح بقيمة{' '}
                 <span className="num">{nf.format(k.openSum)}</span> <Riyal /> ·{' '}
