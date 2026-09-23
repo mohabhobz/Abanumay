@@ -277,7 +277,7 @@ export default function ClosePage() {
                   <div className="act-a">
                     <Link className="btn btn-2 btn-sm" to={ROUTES.closingReport(c.id)}>
                       {closed ? 'اعرض التقرير' : 'حرّر التقرير الختامي'}
-                      <Icon name={icons.chevron} size={14} />
+                      <Icon name={icons.chevron} size="sm" />
                     </Link>
                   </div>
                 )}
@@ -372,7 +372,7 @@ export default function ClosePage() {
                       <div className="act-a">
                         <Link className="btn btn-2 btn-sm" to={ROUTES.closingEval(c.id)}>
                           حرّر التقييم
-                          <Icon name={icons.chevron} size={14} />
+                          <Icon name={icons.chevron} size="sm" />
                         </Link>
                       </div>
                     )}
@@ -475,7 +475,7 @@ export default function ClosePage() {
             <div className="decdock">
               <div className="chrome decbar">
                 <div className="rowf gp-3">
-                  <Icon name={icons.doc} size={18} />
+                  <Icon name={icons.doc} size="md" />
                   <span className="decsent">
                     {missing.length === 0
                       ? <>التقرير مكتمل · يمكن إرساله إلى مشرف المنح للمراجعة</>

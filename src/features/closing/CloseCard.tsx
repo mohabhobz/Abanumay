@@ -82,7 +82,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
 
       <ul className="payq-ck">
         <li className={missing.length === 0 ? 'ok' : 'no'}>
-          <Icon name={missing.length === 0 ? icons.check : icons.alert} size={13} />
+          <Icon name={missing.length === 0 ? icons.check : icons.alert} size="sm" />
           <span>
             {missing.length === 0
               ? 'التقرير الختامي مكتمل'
@@ -93,7 +93,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
         {/* ⚠️ قاعدة 9 · «متى كانت مطلوبة» · واللي مش مطلوب فيه
             بيتقال لا بيتشال، وإلا الكارت بقى أقصر من جاره بسطر */}
         <li className={!needsComms(c) || done ? 'ok' : 'ret'}>
-          <Icon name={!needsComms(c) || done ? icons.check : icons.clock} size={13} />
+          <Icon name={!needsComms(c) || done ? icons.check : icons.clock} size="sm" />
           <span>
             {needsComms(c)
               ? (done ? 'اعتمد الاتصال المؤسسي النشر' : 'النشر الإعلامي بانتظار مراجعة الاتصال المؤسسي')
@@ -102,7 +102,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
           <span className="payq-r">قاعدة <Num>9</Num></span>
         </li>
         <li className={done ? 'ok' : 'ret'}>
-          <Icon name={done ? icons.check : icons.clock} size={13} />
+          <Icon name={done ? icons.check : icons.clock} size="sm" />
           <span>
             {done
               ? 'التقرير معتمد من المدير التنفيذي'
@@ -111,7 +111,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
           <span className="payq-r">قاعدة <Num>6</Num></span>
         </li>
         <li className={req.ok ? 'ok' : 'no'}>
-          <Icon name={req.ok ? icons.check : icons.alert} size={13} />
+          <Icon name={req.ok ? icons.check : icons.alert} size="sm" />
           <span>{req.say}</span>
           <span className="payq-r">قاعدة <Num>18</Num></span>
         </li>
@@ -120,7 +120,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
       {/* ملاحظة الإعادة · قاعدة 19 بتلزم توضيح سبب الإصدار الجديد */}
       {c.note && (
         <div className="payq-note">
-          <Icon name={icons.chat} size={14} />
+          <Icon name={icons.chat} size="sm" />
           <span>{isolate(c.note)}</span>
         </div>
       )}
@@ -129,7 +129,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
         <span className="payq-when"><Person name={c.owner} /></span>
         <Link className="btn btn-2 btn-sm" to={ROUTES.closing(c.id)}>
           افتح الإغلاق
-          <Icon name={icons.chevron} size={14} />
+          <Icon name={icons.chevron} size="sm" />
         </Link>
       </footer>
     </article>

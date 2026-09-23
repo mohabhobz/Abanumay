@@ -104,7 +104,7 @@ export default function LoginPage() {
                   aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                   title={show ? 'إخفاء' : 'إظهار'}
                 >
-                  <Icon name={show ? icons.eyeOff : icons.eye} size={17} />
+                  <Icon name={show ? icons.eyeOff : icons.eye} size="md" />
                 </button>
               }
             />

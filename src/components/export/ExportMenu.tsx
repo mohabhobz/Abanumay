@@ -81,7 +81,7 @@ export function ExportMenu({
           aria-expanded={open}
           onClick={() => setOpen((x) => !x)}
         >
-          <Icon name={icons.export} size={15} />
+          <Icon name={icons.export} size="sm" />
           تصدير
           {count ? <b className="num">{count}</b> : null}
         </button>

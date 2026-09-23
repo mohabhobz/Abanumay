@@ -87,7 +87,7 @@ export default function OrderPage() {
             </div>
             {ready && (
               <button className="btn btn-2" onClick={() => setTimeout(printArea, 60)}>
-                <Icon name={icons.export} size={15} />
+                <Icon name={icons.export} size="sm" />
                 اطبع
               </button>
             )}

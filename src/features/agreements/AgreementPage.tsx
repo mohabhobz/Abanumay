@@ -173,7 +173,7 @@ export default function AgreementPage() {
             <span className="pc-sp" />
             <Person name={a.owner} />
             <Link className="btn btn-2 btn-sm" to={ROUTES.project(a.projectId)}>
-              <Icon name={icons.doc} size={14} />
+              <Icon name={icons.doc} size="sm" />
               المشروع
             </Link>
           </div>
@@ -212,7 +212,7 @@ export default function AgreementPage() {
                 <Glass>
                   <Head title="تحليل الذكاء الاصطناعي" meta={<Tag tone="mute">استرشادي</Tag>} />
                   <div className="payq-ai">
-                    <Icon name={icons.spark} size={15} />
+                    <Icon name={icons.spark} size="sm" />
                     <span>{a.ai}</span>
                   </div>
                   <p className="sub cnote">
@@ -228,7 +228,7 @@ export default function AgreementPage() {
                 <Glass>
                   <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">بانتظار الاستكمال</Tag>} />
                   <div className="payq-note">
-                    <Icon name={icons.chat} size={15} />
+                    <Icon name={icons.chat} size="sm" />
                     <span>{isolate(a.note)}</span>
                   </div>
                 </Glass>
@@ -276,7 +276,7 @@ export default function AgreementPage() {
                         {e.note && <div className="paylog-n">{isolate(e.note)}</div>}
                         {e.notified && (
                           <div className="paylog-i sub">
-                            <Icon name={icons.send} size={13} />
+                            <Icon name={icons.send} size="sm" />
                             إشعار · {e.notified}
                           </div>
                         )}
@@ -338,23 +338,23 @@ export default function AgreementPage() {
                 <Head title="شروط التفعيل" meta={<span className="sub">قواعد 13 · 16 · 19</span>} />
                 <ul className="payq-ck">
                   <li className={balance.balanced ? 'ok' : 'no'}>
-                    <Icon name={balance.balanced ? icons.check : icons.alert} size={14} />
+                    <Icon name={balance.balanced ? icons.check : icons.alert} size="sm" />
                     <span>جدول الدفعات متوازن</span>
                     <span className="payq-r">قاعدة <Num>8</Num></span>
                   </li>
                   <li className={gap === 0 ? 'ok' : 'no'}>
-                    <Icon name={gap === 0 ? icons.check : icons.alert} size={14} />
+                    <Icon name={gap === 0 ? icons.check : icons.alert} size="sm" />
                     <span>مطابقة للمخصص المحجوز</span>
                     <span className="payq-r">خطوة <Num>11</Num></span>
                   </li>
                   <li className={a.docs.length > 0 ? 'ok' : 'no'}>
-                    <Icon name={a.docs.length > 0 ? icons.check : icons.alert} size={14} />
+                    <Icon name={a.docs.length > 0 ? icons.check : icons.alert} size="sm" />
                     <span>المرفقات والملاحق مكتملة</span>
                     <span className="payq-r">قاعدة <Num>9</Num></span>
                   </li>
                   {a.kind === 'ورقية' && (
                     <li className={a.stage === 'active' ? 'ok' : 'no'}>
-                      <Icon name={a.stage === 'active' ? icons.check : icons.alert} size={14} />
+                      <Icon name={a.stage === 'active' ? icons.check : icons.alert} size="sm" />
                       <span>النسخة الورقية الموقّعة مرفقة</span>
                       <span className="payq-r">قاعدة <Num>16</Num></span>
                     </li>

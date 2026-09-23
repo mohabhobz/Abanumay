@@ -103,7 +103,7 @@ export function QuickRead({
         <button className="qr-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
           {head}
           <span className="qr-sp" />
-          <Icon name={open ? icons.chevronUp : icons.chevronDown} size={16} />
+          <Icon name={open ? icons.chevronUp : icons.chevronDown} size="sm" />
         </button>
 
         {!open && list[0] && <ReadingPeek reading={list[0]} />}
@@ -144,7 +144,7 @@ export function QuickRead({
           aria-label={open ? 'إخفاء القراءة' : 'إظهار القراءة'}
           onClick={() => setOpen((x) => !x)}
         >
-          <Icon name={open ? icons.chevronUp : icons.chevronDown} size={16} />
+          <Icon name={open ? icons.chevronUp : icons.chevronDown} size="sm" />
         </button>
       </div>
 

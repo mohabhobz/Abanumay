@@ -295,7 +295,7 @@ export default function AgreementsPage() {
                   onClick={() => set({ adv: advOpen ? undefined : '1' })}
                   aria-expanded={advOpen}
                 >
-                  <Icon name={icons.filter} size={15} />
+                  <Icon name={icons.filter} size="sm" />
                   فلاتر متقدمة
                   {activeCount(NOT_FILTERS) > 0 && (
                     <b className="num">{activeCount(NOT_FILTERS)}</b>
@@ -356,20 +356,20 @@ export default function AgreementsPage() {
                     }
                   >
                     <span className="sub">{c.label}:</span> {c.text}
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 ))}
                 {v.heat && (
                   <button className="fpill" onClick={() => set({ heat: undefined })}>
                     <span className="sub">المدة:</span>{' '}
                     {HEATS.find((h) => h.value === v.heat)?.label}
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 )}
                 {v.hold === '1' && (
                   <button className="fpill" onClick={() => set({ hold: undefined })}>
                     الموقوفة عن الاعتماد
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 )}
                 <button className="fclear" onClick={clear}>مسح الكل</button>

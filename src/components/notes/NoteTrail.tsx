@@ -106,7 +106,7 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
            وزن. والاسم بيتقال أول ما الحقل يتفتح («السبب · باسم عمر
            قاسم»)، عشان محدش يفتكر إنه هيكتب اسمه بنفسه. */
         <button className="btn btn-ghost btn-sm notes-open" onClick={() => setOpen(true)}>
-          <Icon name={icons.plus} size={14} />
+          <Icon name={icons.plus} size="sm" />
           إضافة سبب
         </button>
       ))}

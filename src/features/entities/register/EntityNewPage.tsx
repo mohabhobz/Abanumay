@@ -228,7 +228,7 @@ export default function EntityNewPage() {
                             <span className="pkind-h">
                               <span className="pkind-r" aria-hidden="true">
                                 {partner === k.key && (
-                                  <Icon name={icons.check} size={12} />
+                                  <Icon name={icons.check} size="sm" />
                                 )}
                               </span>
                               <b>{k.label}</b>
@@ -241,7 +241,7 @@ export default function EntityNewPage() {
                             <ul className="pkind-o">
                               {k.opens.map((o) => (
                                 <li key={o}>
-                                  <Icon name={icons.check} size={13} />
+                                  <Icon name={icons.check} size="sm" />
                                   <span>{o}</span>
                                 </li>
                               ))}
@@ -296,7 +296,7 @@ export default function EntityNewPage() {
                                   className="btn btn-ghost btn-sm"
                                   onClick={() => clearDoc(d.key)}
                                 >
-                                  <Icon name={icons.close} size={14} />
+                                  <Icon name={icons.close} size="sm" />
                                   أزل الملف
                                 </button>
                               </div>
@@ -307,7 +307,7 @@ export default function EntityNewPage() {
                                   accept=".pdf,.jpg,.jpeg,.png,.gif"
                                   onChange={(e) => upload(d.key, e.target.files?.[0])}
                                 />
-                                <Icon name={icons.upload} size={16} />
+                                <Icon name={icons.upload} size="sm" />
                                 <span>اسحب الملف هنا أو اضغط لاختياره</span>
                                 <span className="pc-sp" />
                                 <span className="sub regdocs-m">
@@ -359,7 +359,7 @@ export default function EntityNewPage() {
                       title={first ? 'هذه أول خطوة' : `ارجع إلى ${STAGES[at - 1].label}`}
                       onClick={() => go(-1)}
                     >
-                      <Icon name={icons.chevronBack} size={15} />
+                      <Icon name={icons.chevronBack} size="sm" />
                       السابق
                     </button>
                     {!last && (
@@ -369,7 +369,7 @@ export default function EntityNewPage() {
                         onClick={() => go(1)}
                       >
                         التالي
-                        <Icon name={icons.chevron} size={15} />
+                        <Icon name={icons.chevron} size="sm" />
                       </button>
                     )}
                   </div>
@@ -425,7 +425,7 @@ export default function EntityNewPage() {
                   <ul className="payq-ck">
                     {partnerKind(partner).opens.map((o) => (
                       <li key={o} className="ok">
-                        <Icon name={icons.check} size={13} />
+                        <Icon name={icons.check} size="sm" />
                         <span>{o}</span>
                       </li>
                     ))}

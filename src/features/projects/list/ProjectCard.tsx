@@ -44,12 +44,12 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
 
       <div className="pc-meta sub">
         <Link className="pc-ent" to={ROUTES.entity(row.entityId)}>
-          <Icon name={icons.entity} size={14} />
+          <Icon name={icons.entity} size="sm" />
           {row.entityName}
         </Link>
         <span className="pc-dot" />
         <span className="pc-loc">
-          <Icon name={icons.pinMap} size={14} />
+          <Icon name={icons.pinMap} size="sm" />
           {row.city}
         </span>
       </div>
@@ -62,7 +62,7 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
           <span>{row.stage}</span>
           {live && (
             <b>
-              <Icon name={icons.clock} size={13} />
+              <Icon name={icons.clock} size="sm" />
               <span className="num">{days(row.hoursInStage)}</span> يومًا
             </b>
           )}

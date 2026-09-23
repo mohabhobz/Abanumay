@@ -68,7 +68,7 @@ export function FieldSelect({
         <span className={`fldsel-t${current ? '' : ' ph'}`}>
           {current ? optLabel(current) : placeholder}
         </span>
-        <Icon name={icons.chevronDown} size={15} />
+        <Icon name={icons.chevronDown} size="sm" />
       </button>
 
       {open && (

@@ -129,7 +129,7 @@ export default function BudgetSettingsPage() {
                     title={yearTaken ? 'هذه السنة معرَّفة من قبل' : 'أضف السنة'}
                     onClick={addYear}
                   >
-                    <Icon name={icons.plus} size={16} />
+                    <Icon name={icons.plus} size="sm" />
                     أضف السنة
                   </button>
                 </div>
@@ -204,7 +204,7 @@ export default function BudgetSettingsPage() {
                     title={codeTaken ? 'الرمز مستعمل من قبل' : 'أضف المصدر'}
                     onClick={addSource}
                   >
-                    <Icon name={icons.plus} size={16} />
+                    <Icon name={icons.plus} size="sm" />
                     أضف المصدر
                   </button>
                 </div>

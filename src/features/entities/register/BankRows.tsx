@@ -55,7 +55,7 @@ export function BankRows({
               aria-label={`احذف الحساب ${i + 1}`}
               onClick={() => drop(b.id)}
             >
-              <Icon name={icons.close} size={15} />
+              <Icon name={icons.close} size="sm" />
             </button>
           </div>
 
@@ -117,7 +117,7 @@ export function BankRows({
             <div className="regdoc-up">
               <DocFile name={b.doc} meta={`${BANK_DOC_LABEL} · بانتظار الإرسال`} block download={false} />
               <button className="btn btn-ghost btn-sm" onClick={() => patch(b.id, { doc: undefined })}>
-                <Icon name={icons.close} size={14} />
+                <Icon name={icons.close} size="sm" />
                 أزل الوثيقة
               </button>
             </div>
@@ -131,7 +131,7 @@ export function BankRows({
                   if (f) patch(b.id, { doc: f.name })
                 }}
               />
-              <Icon name={icons.upload} size={16} />
+              <Icon name={icons.upload} size="sm" />
               <span>{BANK_DOC_LABEL}</span>
               <span className="pc-sp" />
               <span className="sub regdocs-m">PDF أو صورة · إلزامية لكل حساب</span>
@@ -141,7 +141,7 @@ export function BankRows({
       ))}
 
       <button className="btn btn-2 btn-sm bkrows-a" onClick={add}>
-        <Icon name={icons.plus} size={15} />
+        <Icon name={icons.plus} size="sm" />
         أضف حسابًا بنكيًا آخر
       </button>
     </div>

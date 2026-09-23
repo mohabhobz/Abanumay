@@ -54,7 +54,7 @@ function Blank({ title, note }: { title: string; note: string }) {
   return (
     <div className="thread-blank">
       <div className="aishut-c">
-        <span className="badge badge-44"><Icon name={icons.chat} size={20} /></span>
+        <span className="badge badge-44"><Icon name={icons.chat} size="md" /></span>
         <h2 className="aishut-t">{title}</h2>
         <p className="aishut-p">{note}</p>
       </div>
@@ -73,7 +73,7 @@ export function Thread({
         <>
           {why && (
             <div className="thread-why">
-              <Icon name={icons.alert} size={15} />
+              <Icon name={icons.alert} size="sm" />
               <span className="sub">{why}</span>
             </div>
           )}

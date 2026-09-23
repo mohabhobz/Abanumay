@@ -89,7 +89,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
             {/* دايرة زجاجية فوق · الأيقونة بلون الخانة، وهي اللي
                 بترجّع اللون للكارت الأبيض */}
             <span className="ejr-ic" aria-hidden="true">
-              <Icon name={icons[c.icon]} size={22} />
+              <Icon name={icons[c.icon]} size="lg" />
             </span>
             <span className="ejr-slot">{c.slot}</span>
             <span className="ejr-t">{c.label}</span>

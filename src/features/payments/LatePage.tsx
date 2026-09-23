@@ -121,7 +121,7 @@ export default function LatePage() {
             </div>
             <div className="rowf gp-2">
               <button className="btn btn-2 btn-sm" onClick={() => exportXlsx(sheet)}>
-                <Icon name={icons.export} size={15} />
+                <Icon name={icons.export} size="sm" />
                 صدّر إلى إكسل
               </button>
               <button className="btn btn-2 btn-sm" onClick={() => setTimeout(printArea, 60)}>

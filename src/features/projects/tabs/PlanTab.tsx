@@ -46,7 +46,7 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
               title={startBlocked || 'يفتح الخطة ويرسلها إلى الجهة لتعبئتها'}
               onClick={onStart}
             >
-              <Icon name={icons.plus} size={16} />
+              <Icon name={icons.plus} size="sm" />
               افتح خطة للمشروع
             </button>
           )}
@@ -145,7 +145,7 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
       <div className="rowf gp-2">
         <Link to={ROUTES.plan(p.id)} className="btn btn-p">
           افتح الخطة
-          <Icon name={icons.chevron} size={15} />
+          <Icon name={icons.chevron} size="sm" />
         </Link>
         <Link to={ROUTES.plans} className="btn btn-2">صندوق الخطط</Link>
       </div>

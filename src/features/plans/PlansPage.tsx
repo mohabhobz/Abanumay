@@ -267,7 +267,7 @@ export default function PlansPage() {
                   onClick={() => set({ adv: advOpen ? undefined : '1' })}
                   aria-expanded={advOpen}
                 >
-                  <Icon name={icons.filter} size={15} />
+                  <Icon name={icons.filter} size="sm" />
                   فلاتر متقدمة
                   {activeCount(NOT_FILTERS) > 0 && (
                     <b className="num">{activeCount(NOT_FILTERS)}</b>
@@ -331,19 +331,19 @@ export default function PlansPage() {
                     }
                   >
                     <span className="sub">{c.label}:</span> {c.text}
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 ))}
                 {v.wait === '1' && (
                   <button className="fpill" onClick={() => set({ wait: undefined })}>
                     بانتظار مراجعتي
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 )}
                 {v.late === '1' && (
                   <button className="fpill" onClick={() => set({ late: undefined })}>
                     بها نشاط متأخّر
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 )}
                 <button className="fclear" onClick={clear}>مسح الكل</button>

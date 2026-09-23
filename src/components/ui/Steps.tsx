@@ -100,7 +100,7 @@ export function Steps({ items, flow = 'ladder', onPick }: StepsProps) {
                 والرقم بعد الاكتمال ما بيضيفش معلومة · اللي بيهمّ
                 ساعتها إنها خلصت. */}
             {s.state === 'done'
-              ? <Icon name={icons.check} size={12} />
+              ? <Icon name={icons.check} size="sm" />
               /* المتخطّاة نقطتها فاضية · الرقم فيها بيوعد بخطوة
                  هتحصل، وهي مش هتحصل */
               : s.state === 'skip'

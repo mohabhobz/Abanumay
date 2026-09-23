@@ -269,7 +269,7 @@ export default function ProjectNewPage() {
                       title={first ? 'هذه الخطوة الأولى' : `العودة إلى ${P_STAGES[at - 1].label}`}
                       onClick={() => go(-1)}
                     >
-                      <Icon name={icons.chevronBack} size={15} />
+                      <Icon name={icons.chevronBack} size="sm" />
                       السابق
                     </button>
                     {!last && (
@@ -279,7 +279,7 @@ export default function ProjectNewPage() {
                         onClick={() => go(1)}
                       >
                         التالي
-                        <Icon name={icons.chevron} size={15} />
+                        <Icon name={icons.chevron} size="sm" />
                       </button>
                     )}
                   </div>

@@ -103,7 +103,7 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
                 aria-label={wide ? 'صغّر إلى نافذة وسطية' : 'وسّع إلى ملء الشاشة'}
                 aria-pressed={wide}
               >
-                <Icon name={wide ? icons.shrink : icons.expand} size={16} />
+                <Icon name={wide ? icons.shrink : icons.expand} size="sm" />
               </button>
             )}
           />

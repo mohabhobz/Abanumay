@@ -213,7 +213,7 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
           aria-label="طيّ القائمة"
           title="طيّ القائمة"
         >
-          <Icon name={icons.panel} size={18} />
+          <Icon name={icons.panel} size="md" />
         </button>
       </div>
 
@@ -231,11 +231,16 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
               `railitem${isActive ? ' on' : ''}${item.mob ? '' : ' nomob'}`
             }
           >
-            <Icon name={icons[item.icon as IconName]} />
-            <span className="rail-l">{item.label}</span>
-            {/* التلميح عنصر مستقل لا `title`: تلميح المتصفح بيتأخّر
-                ثانية كاملة، والشريط المطويّ محتاج الاسم فورًا */}
-            <span className="rail-tip">{item.label}</span>
+            {({ isActive }) => (
+              <>
+                {/* النشِط أيقونته مملوءة · خطّ = عادي، ملء = هنا (DDR-013) */}
+                <Icon name={icons[item.icon as IconName]} active={isActive} />
+                <span className="rail-l">{item.label}</span>
+                {/* التلميح عنصر مستقل لا `title`: تلميح المتصفح بيتأخّر
+                    ثانية كاملة، والشريط المطويّ محتاج الاسم فورًا */}
+                <span className="rail-tip">{item.label}</span>
+              </>
+            )}
           </NavLink>
         )
       })}
@@ -268,7 +273,7 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
       >
         <span className="railgrip-l" />
         <span className="railgrip-b" aria-hidden="true">
-          <Icon name={icons.panel} size={14} />
+          <Icon name={icons.panel} size="sm" />
         </span>
       </div>
     </nav>

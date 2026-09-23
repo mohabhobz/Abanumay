@@ -174,7 +174,7 @@ export default function PortfolioPage() {
                 <ul className="pfdiff">
                   {IMPLEMENTER_DIFF.map((d) => (
                     <li key={d.on}>
-                      <Icon name={icons.check} size={13} />
+                      <Icon name={icons.check} size="sm" />
                       <span className="pfdiff-on">{d.on}</span>
                       <span className="pfdiff-off">بدلًا من: {d.off}</span>
                     </li>

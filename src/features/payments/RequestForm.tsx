@@ -157,7 +157,7 @@ export default function RequestForm() {
             <Glass>
               <Head title="ملاحظات المشرف" meta={<Tag tone="warn">مطلوب استكمالها</Tag>} />
               <div className="payq-note">
-                <Icon name={icons.chat} size={15} />
+                <Icon name={icons.chat} size="sm" />
                 <span>{isolate(resend.note)}</span>
               </div>
             </Glass>
@@ -385,7 +385,7 @@ function SlotRow({
           <span className="sub trim1 payslot-c">{isolate(slot.condition)}</span>
         )}
         <Tag tone={SLOT_TONE[slot.state] ?? 'mute'}>{say.label}</Tag>
-        {picked && <Icon name={icons.check} size={15} />}
+        {picked && <Icon name={icons.check} size="sm" />}
       </button>
     </li>
   )

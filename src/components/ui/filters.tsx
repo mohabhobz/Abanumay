@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react'
+import type { IconGlyph } from '@/components/ui/icons'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { MenuOpt, MenuPanel, useMenuSearch } from './menu'
@@ -27,7 +27,7 @@ export function SearchBox({
 }) {
   return (
     <label className="srch">
-      <Icon name={icons.search} size={17} />
+      <Icon name={icons.search} size="md" />
       <input
         type="search"
         value={value}
@@ -37,7 +37,7 @@ export function SearchBox({
       />
       {value && (
         <button className="srch-x" onClick={() => onChange('')} aria-label="مسح البحث">
-          <Icon name={icons.close} size={15} />
+          <Icon name={icons.close} size="sm" />
         </button>
       )}
     </label>
@@ -74,7 +74,7 @@ export interface SelectProps {
   /** يخلّي الحقل واخد عرض السطر كله في الشبكة */
   wide?: boolean
   /** أيقونة جوّه الحقل · بتغني عن عنوان فوقه في شريط الأدوات */
-  icon?: LucideIcon
+  icon?: IconGlyph
   /** الفلتر بيحتاج «الكل»؛ المبدّل اللي قيمته إلزامية لأ */
   allowEmpty?: boolean
   /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة */
@@ -159,8 +159,8 @@ export function Select({
             فوجودهم سوا بيكرّر نصف المعلومة. والخانة بعرض ثابت عشان
             اختيار شخص ما يزحزحش شريط الأدوات كله. */}
         {people
-          ? <span className="fsel-face">{current ? <Face name={optValue(current)} /> : icon && <Icon name={icon} size={15} />}</span>
-          : icon && <Icon name={icon} size={15} />}
+          ? <span className="fsel-face">{current ? <Face name={optValue(current)} /> : icon && <Icon name={icon} size="sm" />}</span>
+          : icon && <Icon name={icon} size="sm" />}
         {/* The ghosts reserve the widest option's width, so picking
             a value never resizes the control (see `.fsel-sz`). */}
         <span className="fmulti-s fsel-sz">
@@ -170,7 +170,7 @@ export function Select({
             <span key={`sz-${optValue(o)}`} aria-hidden="true">{optLabel(o)}</span>
           ))}
         </span>
-        <Icon name={icons.chevronDown} size={15} />
+        <Icon name={icons.chevronDown} size="sm" />
       </button>
 
       {open && (
@@ -235,7 +235,7 @@ export interface MultiSelectProps {
   all?: string
   disabled?: boolean
   wide?: boolean
-  icon?: LucideIcon
+  icon?: IconGlyph
   /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة */
   searchAt?: number
   /**
@@ -297,8 +297,8 @@ export function MultiSelect({
             ٢٨px في وش المستخدم بلا سبب. العنوان بيعرض أول اسم في
             الحالتين، فالوش بيعرض وشّه في الحالتين. */}
         {people
-          ? <span className="fsel-face">{values.length ? <Face name={values[0]} /> : icon && <Icon name={icon} size={15} />}</span>
-          : icon && <Icon name={icon} size={15} />}
+          ? <span className="fsel-face">{values.length ? <Face name={values[0]} /> : icon && <Icon name={icon} size="sm" />}</span>
+          : icon && <Icon name={icon} size="sm" />}
         {/* Same ghosts as `Select`: the widest label the button can
             ever show, so toggling a value never resizes the row.
             `+N` is measured on the widest label, since that is the
@@ -312,7 +312,7 @@ export function MultiSelect({
             </span>
           ))}
         </span>
-        <Icon name={icons.chevronDown} size={15} />
+        <Icon name={icons.chevronDown} size="sm" />
       </button>
 
       {open && (
@@ -458,7 +458,7 @@ export function PageSize({
           aria-expanded={open}
           onClick={() => setOpen((x) => !x)}
         >
-          <Icon name={icons.chevronDown} size={14} />
+          <Icon name={icons.chevronDown} size="sm" />
         </button>
 
         {/* نفس صفّ الخيار في أي قائمة تانية: علامة على المختار
@@ -527,7 +527,7 @@ export function Pager({
           aria-label="الصفحة السابقة"
           title="السابق"
         >
-          <Icon name={icons.chevronBack} size={16} />
+          <Icon name={icons.chevronBack} size="sm" />
         </button>
 
         <div className="pgnums">
@@ -555,7 +555,7 @@ export function Pager({
           aria-label="الصفحة التالية"
           title="التالي"
         >
-          <Icon name={icons.chevron} size={16} />
+          <Icon name={icons.chevron} size="sm" />
         </button>
       </nav>
     </div>
@@ -596,7 +596,7 @@ export function ViewToggle({
         aria-pressed={view === 'cards'}
         title="بطاقات"
       >
-        <Icon name={icons.grid} size={16} />
+        <Icon name={icons.grid} size="sm" />
       </button>
       <button
         className={view === 'table' ? 'on' : ''}
@@ -604,7 +604,7 @@ export function ViewToggle({
         aria-pressed={view === 'table'}
         title="جدول"
       >
-        <Icon name={icons.rows} size={16} />
+        <Icon name={icons.rows} size="sm" />
       </button>
     </div>
   )
@@ -636,7 +636,7 @@ export function GroupPicker({
   onChange: (v: string | undefined) => void
   /** سقف مستويات التداخل */
   max?: number
-  icon?: LucideIcon
+  icon?: IconGlyph
 }) {
   const { open, setOpen, box } = useMenu<HTMLDivElement>()
   const id = useId()
@@ -665,18 +665,18 @@ export function GroupPicker({
         id={`${id}-b`}
         onClick={() => setOpen((x) => !x)}
       >
-        {icon && <Icon name={icon} size={15} />}
+        {icon && <Icon name={icon} size="sm" />}
         <span className="fgrp-s">
           {chain.length === 0
             ? 'بلا تجميع'
             : chain.map((k, i) => (
                 <span key={k} className="fgrp-p">
-                  {i > 0 && <Icon name={icons.chevron} size={12} />}
+                  {i > 0 && <Icon name={icons.chevron} size="sm" />}
                   {labelOf(k)}
                 </span>
               ))}
         </span>
-        <Icon name={icons.chevronDown} size={15} />
+        <Icon name={icons.chevronDown} size="sm" />
       </button>
 
       {open && (

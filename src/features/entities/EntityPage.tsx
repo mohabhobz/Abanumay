@@ -97,7 +97,7 @@ export default function EntityPage() {
                     <span className="pc-dot" />
                     {entity.type}
                     <span className="pc-dot" />
-                    <Icon name={icons.pinMap} size={14} /> {entity.region} · {entity.city}
+                    <Icon name={icons.pinMap} size="sm" /> {entity.region} · {entity.city}
                   </div>
                 </div>
               </div>

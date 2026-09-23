@@ -164,7 +164,7 @@ export function AssistantScreen({
                 onClick={() => setListOpen((v) => !v)}
                 aria-label="المحادثات"
               >
-                <Icon name={icons.menu} size={16} />
+                <Icon name={icons.menu} size="sm" />
               </button>
             ) : shut && (
               /* مكان الشريط المطويّ · الزرار بيرجّعه من نفس الناحية
@@ -175,7 +175,7 @@ export function AssistantScreen({
                 title="أظهر المحادثات"
                 aria-label="أظهر المحادثات"
               >
-                <Icon name={icons.panel} size={16} />
+                <Icon name={icons.panel} size="sm" />
               </button>
             )}
 
@@ -191,7 +191,7 @@ export function AssistantScreen({
             {headExtra}
 
             <button className="aclose" onClick={onClose} aria-label="أغلق المساعد">
-              <Icon name={icons.close} size={16} />
+              <Icon name={icons.close} size="sm" />
             </button>
           </div>
         </header>
@@ -233,7 +233,7 @@ export function AssistantScreen({
 
         {!stick && msgs.length > 0 && (
           <button className="tobottom chrome" onClick={() => setStick(true)} aria-label="انتقل إلى آخر المحادثة">
-            <Icon name={icons.down} size={16} />
+            <Icon name={icons.down} size="sm" />
           </button>
         )}
 

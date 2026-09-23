@@ -419,7 +419,7 @@ export default function PlanPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mh">
-                <Icon name={icons.chat} size={18} />
+                <Icon name={icons.chat} size="md" />
                 <b>إعادة النشاط إلى الجهة</b>
               </div>
 

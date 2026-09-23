@@ -59,7 +59,7 @@ export function RegCard({ r }: { r: RegRequest }) {
 
       <ul className="payq-ck">
         <li className={missing.length === 0 ? 'ok' : 'no'}>
-          <Icon name={missing.length === 0 ? icons.check : icons.alert} size={13} />
+          <Icon name={missing.length === 0 ? icons.check : icons.alert} size="sm" />
           <span>
             {missing.length === 0
               ? <>ملف المستندات مكتمل · <Num>{have}</Num> من <Num>{need.length}</Num></>
@@ -68,7 +68,7 @@ export function RegCard({ r }: { r: RegRequest }) {
           <span className="payq-r">قاعدة <Num>4</Num></span>
         </li>
         <li className={r.governanceClaim > 0 ? 'ok' : 'no'}>
-          <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size={13} />
+          <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size="sm" />
           <span>
             {r.governanceClaim > 0
               ? <>درجة الحوكمة المُقرّة <span className="num">{r.governanceClaim}</span></>
@@ -77,7 +77,7 @@ export function RegCard({ r }: { r: RegRequest }) {
           <span className="payq-r">إقرار الجهة</span>
         </li>
         <li className="ok">
-          <Icon name={icons.check} size={13} />
+          <Icon name={icons.check} size="sm" />
           <span>تكليف المجلس حتى <DateText>{r.boardEndsAt}</DateText></span>
           <span className="payq-r">قاعدة <Num>18</Num></span>
         </li>
@@ -86,7 +86,7 @@ export function RegCard({ r }: { r: RegRequest }) {
       {/* الملاحظة الإدارية · إلزامية مع الإعادة والرفض · قاعدة 31 */}
       {r.note && (
         <div className="payq-note">
-          <Icon name={icons.chat} size={14} />
+          <Icon name={icons.chat} size="sm" />
           <span>{isolate(r.note)}</span>
         </div>
       )}
@@ -96,7 +96,7 @@ export function RegCard({ r }: { r: RegRequest }) {
         <span className="pc-sp" />
         <Link className="btn btn-2 btn-sm" to={ROUTES.entityRequest(r.id)}>
           افتح الطلب
-          <Icon name={icons.chevron} size={14} />
+          <Icon name={icons.chevron} size="sm" />
         </Link>
       </footer>
     </article>

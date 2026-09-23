@@ -54,7 +54,7 @@ export function MenuPanel({
     <div className={`fmenu${one ? ' one' : ''}${up ? ' up' : ''}${end ? ' flip' : ''}${extra ? ` ${extra}` : ''}`}>
       {search && onNeedle && (
         <label className="fmenu-q">
-          <Icon name={icons.search} size={14} />
+          <Icon name={icons.search} size="sm" />
           <input
             autoFocus
             value={needle}
@@ -109,7 +109,7 @@ export function MenuOpt({
       {/* ⚠️ الخانة بتتكتب حتى وهي فاضية · مساحتها محجوزة عشان
           الأسماء ما تزحلقش لما الاختيار يتغيّر */}
       <span className={`fopt-x${markClass ? ` ${markClass}` : ''}`} aria-hidden="true">
-        {mark ?? (on && <Icon name={icons.check} size={12} />)}
+        {mark ?? (on && <Icon name={icons.check} size="sm" />)}
       </span>
       {lead}
       <span className={`fopt-t${textClass ? ` ${textClass}` : ''}`}>{children}</span>

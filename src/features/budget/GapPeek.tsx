@@ -54,7 +54,7 @@ export function GapPeek({
             <div className="atitle">{gap.label || root.label}</div>
           </div>
           <button className="aclose" onClick={onClose} aria-label="أغلق النافذة">
-            <Icon name={icons.close} size={16} />
+            <Icon name={icons.close} size="sm" />
           </button>
         </div>
 
@@ -115,7 +115,7 @@ export function GapPeek({
             مخرج، فمكانه بعده لا قبله */}
         <div className="gpeek-f">
           <button className="btn btn-p" onClick={onGoTree}>
-            <Icon name={icons.chart} size={15} />
+            <Icon name={icons.chart} size="sm" />
             افتحه في شجرة التخصيص
           </button>
           <button className="btn btn-2" onClick={onClose}>أغلق</button>

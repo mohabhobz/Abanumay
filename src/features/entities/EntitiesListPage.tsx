@@ -355,7 +355,7 @@ export default function EntitiesListPage() {
                 onClick={() => set({ adv: advOpen ? undefined : '1' })}
                 aria-expanded={advOpen}
               >
-                <Icon name={icons.filter} size={15} />
+                <Icon name={icons.filter} size="sm" />
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
@@ -406,7 +406,7 @@ export default function EntitiesListPage() {
                 </div>
                 <div className="fgrid-x">
                   <button className="fclear" onClick={() => setCustom(true)}>
-                    <Icon name={icons.gear} size={13} />
+                    <Icon name={icons.gear} size="sm" />
                     تخصيص الفلاتر
                   </button>
                 </div>
@@ -424,13 +424,13 @@ export default function EntitiesListPage() {
                     }
                   >
                     <span className="sub">{c.label}:</span> {c.value}
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 ))}
                 {flags.map(([k, label]) => (
                   <button key={k as string} className="fpill" onClick={() => set({ [k]: undefined } as Partial<Params>)}>
                     {label}
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 ))}
                 <button className="fclear" onClick={clear}>مسح الكل</button>
@@ -501,7 +501,7 @@ export default function EntitiesListPage() {
             }
           >
             <button className="btn btn-2 btn-sm" onClick={() => exportXlsx(sheet)}>
-              <Icon name={icons.export} size={15} />
+              <Icon name={icons.export} size="sm" />
               إكسل
             </button>
             <button className="btn btn-2 btn-sm" onClick={() => setTimeout(printArea, 60)}>

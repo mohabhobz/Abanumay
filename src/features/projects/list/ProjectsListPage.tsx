@@ -453,7 +453,7 @@ export default function ProjectsListPage() {
                     <Tag tone="mute"><Num>{p.items.length}</Num> مشاريع</Tag>
                     <Link className="btn btn-2 btn-sm" to={ROUTES.portfolio(p.id)}>
                       افتح المحفظة
-                      <Icon name={icons.chevron} size={14} />
+                      <Icon name={icons.chevron} size="sm" />
                     </Link>
                   </li>
                 ))}
@@ -513,7 +513,7 @@ export default function ProjectsListPage() {
                 onClick={() => set({ adv: advOpen ? undefined : '1' })}
                 aria-expanded={advOpen}
               >
-                <Icon name={icons.filter} size={15} />
+                <Icon name={icons.filter} size="sm" />
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
               </button>
@@ -570,7 +570,7 @@ export default function ProjectsListPage() {
                 </div>
                 <div className="fgrid-x">
                   <button className="fclear" onClick={() => setCustom(true)}>
-                    <Icon name={icons.gear} size={13} />
+                    <Icon name={icons.gear} size="sm" />
                     تخصيص الفلاتر
                   </button>
                 </div>
@@ -591,13 +591,13 @@ export default function ProjectsListPage() {
                   >
                     <span className="sub">{c.label}:</span>{' '}
                     {c.k === 'owner' ? <Person name={c.value} quiet={false} /> : c.value}
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 ))}
                 {flags.map(([k, label]) => (
                   <button key={k as string} className="fpill" onClick={() => set({ [k]: undefined } as Partial<Params>)}>
                     {label}
-                    <Icon name={icons.close} size={13} />
+                    <Icon name={icons.close} size="sm" />
                   </button>
                 ))}
                 <button className="fclear" onClick={clear}>مسح الكل</button>
@@ -610,14 +610,14 @@ export default function ProjectsListPage() {
               المحتوى بعد ما القرار خلص. */}
           {lastBulk && (
             <Glass className="bulk done">
-              <Icon name={icons.check} size={16} />
+              <Icon name={icons.check} size="sm" />
               <span>{lastBulk.text}</span>
               <span className="pc-sp" />
               <button
                 className="btn btn-2 btn-sm"
                 onClick={() => { lastBulk.undo(); setLastBulk(null); bump((n) => n + 1) }}
               >
-                <Icon name={icons.redo} size={15} />
+                <Icon name={icons.redo} size="sm" />
                 تراجع
               </button>
               <button className="btn btn-2 btn-sm" onClick={() => setLastBulk(null)}>إغلاق</button>

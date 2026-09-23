@@ -94,7 +94,7 @@ export function ActionDock({
       <div className="decdock">
         <div className="chrome decbar" ref={bar}>
           <div className="rowf gp-3">
-            <Icon name={icons.check} size={18} className="ok-ink" />
+            <Icon name={icons.check} size="md" className="ok-ink" />
             <span className="decsent">
               سُجّل الإجراء: <b>{taken}</b>
               <span className="decsep" />

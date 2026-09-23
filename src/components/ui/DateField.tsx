@@ -115,7 +115,7 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
         <span className={`fldsel-t${value ? '' : ' ph'}`}>
           {value ? say(value) : 'اختر التاريخ'}
         </span>
-        <Icon name={icons.date} size={15} />
+        <Icon name={icons.date} size="sm" />
       </button>
 
       {open && (
@@ -125,13 +125,13 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
                 في العربي · السهم اللي بيروح لورا في تقويم المتصفّح
                 كان بيمشي بالعكس لأنه متسمّر على اللاتيني */}
             <button type="button" className="cal-n" aria-label="الشهر السابق" onClick={() => step(-1)}>
-              <Icon name={icons.chevronBack} size={16} />
+              <Icon name={icons.chevronBack} size="sm" />
             </button>
             <span className="cal-t">
               {MONTHS[at.m]} <span className="num">{at.y}</span>
             </span>
             <button type="button" className="cal-n" aria-label="الشهر التالي" onClick={() => step(1)}>
-              <Icon name={icons.chevron} size={16} />
+              <Icon name={icons.chevron} size="sm" />
             </button>
           </div>
 

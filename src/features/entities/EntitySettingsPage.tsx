@@ -158,7 +158,7 @@ export default function EntitySettingsPage() {
                 }
                 onClick={clear}
               >
-                <Icon name={icons.plus} size={16} />
+                <Icon name={icons.plus} size="sm" />
                 أضف
               </button>
             </div>

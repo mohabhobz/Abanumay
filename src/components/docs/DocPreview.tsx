@@ -45,10 +45,10 @@ export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
             </div>
           </div>
           <a className="aclose" download={name} href="#" onClick={(e) => e.preventDefault()} title="تنزيل" aria-label="تنزيل">
-            <Icon name={icons.export} size={16} />
+            <Icon name={icons.export} size="sm" />
           </a>
           <button className="aclose" onClick={onClose} aria-label="إغلاق">
-            <Icon name={icons.close} size={16} />
+            <Icon name={icons.close} size="sm" />
           </button>
         </div>
 

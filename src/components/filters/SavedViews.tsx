@@ -61,7 +61,7 @@ export function SavedViews({
         aria-expanded={open}
         onClick={() => setOpen((x) => !x)}
       >
-        <Icon name={icons.pin} size={15} />
+        <Icon name={icons.pin} size="sm" />
         {active ? active.name : 'الوضع المحفوظ'}
         {!active && views.length > 0 && <b className="num">{views.length}</b>}
       </button>
@@ -82,7 +82,7 @@ export function SavedViews({
                 className="fview-t"
                 onClick={() => { setOpen(false); onApply('') }}
               >
-                <Icon name={icons.redo} size={14} />
+                <Icon name={icons.redo} size="sm" />
                 العرض الأصلي
               </button>
             </div>
@@ -113,7 +113,7 @@ export function SavedViews({
                     title={`حذف ${v.name}`}
                     onClick={() => remove(v.id)}
                   >
-                    <Icon name={icons.trash} size={15} />
+                    <Icon name={icons.trash} size="sm" />
                   </button>
                 </div>
               ))}

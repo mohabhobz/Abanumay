@@ -470,7 +470,7 @@ export default function BudgetDocPage() {
                   <ul className="btree-iss">
                     {issues.map((i, k) => (
                       <li key={k}>
-                        <Icon name={icons.alert} size={14} />
+                        <Icon name={icons.alert} size="sm" />
                         <span>{i.text}</span>
                         <span className="payq-r">{i.why}</span>
                       </li>
@@ -536,7 +536,7 @@ export default function BudgetDocPage() {
                         title={headReady ? 'أضف بندًا إلى الشجرة' : 'أكمل بيانات الميزانية أولًا'}
                         onClick={() => openAdd(null)}
                       >
-                        <Icon name={icons.plus} size={16} />
+                        <Icon name={icons.plus} size="sm" />
                         أضف بندًا
                       </button>
                     }
@@ -576,7 +576,7 @@ export default function BudgetDocPage() {
                                 >
                                   <Icon
                                     name={shut.has(x.id) ? icons.chevronBack : icons.chevronDown}
-                                    size={14}
+                                    size="sm"
                                   />
                                 </button>
                               ) : (
@@ -586,7 +586,7 @@ export default function BudgetDocPage() {
                                   اللي عليها الحجز والصرف، والمجلّد
                                   للتقارير · الفرق ده بيتقري من الأيقونة
                                   قبل ما المستخدم يجرّب ويتقفل عليه */}
-                              <Icon name={kids ? icons.folder : icons.doc} size={15} />
+                              <Icon name={kids ? icons.folder : icons.doc} size="sm" />
                               {out && <span className="btree-o num">{out}</span>}
                               <span className="btree-l">{x.label}</span>
                               {/* ⚠️ **الاسم المعلن جنب الداخلي لا بدله.**
@@ -596,7 +596,7 @@ export default function BudgetDocPage() {
                                   وعين مقفولة معناها الداخلي مخفي. */}
                               {!x.showLabel && (
                                 <span className="btree-hid" title="الاسم الداخلي مخفي عن الخارج">
-                                  <Icon name={icons.eyeOff} size={13} />
+                                  <Icon name={icons.eyeOff} size="sm" />
                                 </span>
                               )}
                               {x.alias && (
@@ -655,7 +655,7 @@ export default function BudgetDocPage() {
                                 aria-label={`عدّل ${x.label}`}
                                 onClick={() => openEdit(x.id)}
                               >
-                                <Icon name={icons.edit} size={14} />
+                                <Icon name={icons.edit} size="sm" />
                               </button>
                               {/* الفرعي آخر الشجرة · فمفيش «أضف تحته» */}
                               {x.kind !== 'sub' && (
@@ -664,7 +664,7 @@ export default function BudgetDocPage() {
                                   title={`أضف بندًا تحت ${x.label}`}
                                   onClick={() => openAdd(x.id)}
                                 >
-                                  <Icon name={icons.plus} size={14} />
+                                  <Icon name={icons.plus} size="sm" />
                                 </button>
                               )}
                               {x.parentId !== null && (
@@ -673,7 +673,7 @@ export default function BudgetDocPage() {
                                   title={kids ? 'احذف البند وكل ما تحته' : 'احذف البند'}
                                   onClick={() => removeNode(x.id)}
                                 >
-                                  <Icon name={icons.close} size={14} />
+                                  <Icon name={icons.close} size="sm" />
                                 </button>
                               )}
                             </span>
@@ -773,7 +773,7 @@ export default function BudgetDocPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mh">
-              <Icon name={editId ? icons.edit : icons.plus} size={18} />
+              <Icon name={editId ? icons.edit : icons.plus} size="md" />
               <b>{editId ? 'تعديل بند' : 'إضافة بند'}</b>
               <span className="pc-sp" />
               {under && <span className="sub trim1">تحت {pathOf(nodes, under)}</span>}

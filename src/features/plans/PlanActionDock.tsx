@@ -111,7 +111,7 @@ export function PlanActionDock({
       <div className="decdock">
         <div className="chrome decbar" ref={bar}>
           <div className="rowf gp-3">
-            <Icon name={icons.check} size={18} className="ok-ink" />
+            <Icon name={icons.check} size="md" className="ok-ink" />
             <span className="decsent">
               سُجّل: <b>{taken}</b>
               <span className="decsep" />

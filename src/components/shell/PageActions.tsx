@@ -68,14 +68,14 @@ export function PageActions({ settings, secondary, create, extra }: PageActionsP
     <div className="hacts">
       {settings && (
         <Link className="btn btn-ghost" to={settings}>
-          <Icon name={icons.gear} size={16} />
+          <Icon name={icons.gear} size="sm" />
           الإعدادات
         </Link>
       )}
 
       {secondary?.map((a) => (
         <Link key={a.to} className="btn btn-2" to={a.to}>
-          {a.icon && <Icon name={icons[a.icon as keyof typeof icons]} size={16} />}
+          {a.icon && <Icon name={icons[a.icon as keyof typeof icons]} size="sm" />}
           {a.label}
           {a.count !== undefined && a.count > 0 && <b className="num">{a.count}</b>}
         </Link>
@@ -85,7 +85,7 @@ export function PageActions({ settings, secondary, create, extra }: PageActionsP
 
       {create && (
         <Link className="btn btn-p" to={create.to}>
-          <Icon name={icons.plus} size={16} />
+          <Icon name={icons.plus} size="sm" />
           {create.label}
         </Link>
       )}

@@ -73,7 +73,7 @@ export function Crumbs({ items }: CrumbsProps) {
     )
 
   const sep = (k: string) => (
-    <Icon key={`s-${k}`} name={icons.chevron} size={14} className="crumb-s" />
+    <Icon key={`s-${k}`} name={icons.chevron} size="sm" className="crumb-s" />
   )
 
   return (

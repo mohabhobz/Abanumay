@@ -105,7 +105,7 @@ export function CopyId({ children }: { children: string }) {
         title={done ? 'نُسخ الرقم المرجعي' : 'انسخ الرقم المرجعي'}
         aria-label={done ? 'نُسخ الرقم المرجعي' : 'انسخ الرقم المرجعي'}
       >
-        <Icon name={done ? icons.check : icons.copy} size={14} />
+        <Icon name={done ? icons.check : icons.copy} size="sm" />
       </button>
     </span>
   )
@@ -269,7 +269,7 @@ export function BackTo({ to, label, onClick }: {
   const body = (
     <>
       {/* في RTL «لقدّام» شمال، فالرجوع يمين */}
-      <Icon name={icons.chevronBack} size={16} />
+      <Icon name={icons.chevronBack} size="sm" />
       {label}
     </>
   )

@@ -1,5 +1,14 @@
 /**
- * أيقونات النظام · **لوسيد** (lucide.dev).
+ * أيقونات النظام · **Phosphor** (phosphoricons.com) من ٢٣ سبتمبر.
+ *
+ * ليه اتنقلنا من لوسيد: لوسيد خطّ بس، مالهاش نسخة مملوءة، فقاعدة
+ * «خطّ = عادي · ملء = نشِط» ما كانتش ممكنة، والبند النشِط في الريل
+ * كان بيتعرف من أرضيته وبس. وهي كمان الافتراضي في shadcn فبتتكرّر
+ * في معظم اللوحات. Phosphor نفس الشبكة ونفس التغطية تقريبًا، وستّ
+ * أوزان: `regular` افتراضي · `fill` للنشِط · `duotone` للحالات
+ * الفاضية والنجاح بس. DDR-013.
+ *
+ * ── التاريخ القديم (لوسيد) ──
  *
  * قبل كده كانت ٥٤ أيقونة مرسومة بإيدنا كنصوص `<path>` على شبكة
  * ٢٤×٢٤. ده كان بيشتغل، بس كل أيقونة جديدة كانت قرار رسم مستقل:
@@ -17,93 +26,95 @@
  * الاستعمال زي ما هو:  <Icon name={icons.home} size={20} />
  */
 import {
-  Upload, Folder,
-  House, Sun, PanelLeft, Leaf, Moon, Monitor, User, SlidersHorizontal,
-  LogOut, Lock, Eye, EyeOff, FileText, Building2, Wallet, FileSignature,
-  CreditCard, ChartColumn, MessageCircle, CircleAlert, ChevronLeft,
-  ChevronRight, Search, File, Paperclip, ArrowLeft, X, Maximize2, Minimize2,
-  Plus, EllipsisVertical, Pin, Pencil, Trash2, Menu, ArrowDown, Download,
-  Copy, Check, RotateCw, ThumbsUp, ThumbsDown, GripVertical, ChevronDown,
-  ArrowDownWideNarrow, ChevronUp, LayoutGrid, Rows3, Funnel,
-  Clock, MapPin, Users, Link2, ListChecks, CalendarDays, Mail, LayoutDashboard,
-  type LucideIcon,
-} from 'lucide-react'
+  ArrowClockwise, ArrowDown, ArrowLeft, ArrowsIn, ArrowsOut, Buildings, CalendarDots, CaretDown,
+  CaretLeft, CaretRight, CaretUp, ChartBar, ChatCircle, Check, Clock, Copy,
+  CreditCard, DotsSixVertical, DotsThreeVertical, DownloadSimple, Envelope, Eye, EyeSlash, File,
+  FileText, Folder, Funnel, GridFour, House, Leaf, LinkSimple, List, ListChecks,
+  Lock, MagnifyingGlass, MapPin, Monitor, Moon, Paperclip, PencilSimple, Plus,
+  PushPin, Rows, SidebarSimple, SignOut, Signature, SlidersHorizontal, SortDescending, SquaresFour,
+  Sun, ThumbsDown, ThumbsUp, Trash, UploadSimple, User, Users, Wallet,
+  WarningCircle, X,
+  type Icon as PhIcon,
+} from '@phosphor-icons/react'
+
+/** شكل الأيقونة · مكوّن من Phosphor */
+export type IconGlyph = PhIcon
 
 export const icons = {
   home: House,
   sun: Sun,
-  panel: PanelLeft,
+  panel: SidebarSimple,
   leaf: Leaf,
   moon: Moon,
   device: Monitor,
   user: User,
   /* كانت بترسم مزالج لا ترسًا · والرسم هو اللي بيتقري */
   gear: SlidersHorizontal,
-  logout: LogOut,
+  logout: SignOut,
   lock: Lock,
   /** البريد · حقل التسجيل والإشعارات */
-  mail: Mail,
+  mail: Envelope,
   eye: Eye,
-  eyeOff: EyeOff,
+  eyeOff: EyeSlash,
   doc: FileText,
   /* المجلّد · البند اللي تحته بنود في شجرة الميزانية */
   folder: Folder,
-  entity: Building2,
+  entity: Buildings,
   budget: Wallet,
-  contract: FileSignature,
+  contract: Signature,
   /* الخطة · قائمة أنشطة بعلامات، لا مستندًا موقَّعًا زي الاتفاقية */
   plan: ListChecks,
   pay: CreditCard,
-  chart: ChartColumn,
-  chat: MessageCircle,
-  alert: CircleAlert,
+  chart: ChartBar,
+  chat: ChatCircle,
+  alert: WarningCircle,
   /* RTL: `chevron` بيشاور «لقدّام» يعني شمال، و`chevronBack` يمين */
-  chevron: ChevronLeft,
-  chevronBack: ChevronRight,
+  chevron: CaretLeft,
+  chevronBack: CaretRight,
   /* التاريخ · حقل التقويم المرسوم (لا تقويم المتصفّح) */
-  date: CalendarDays,
-  search: Search,
+  date: CalendarDots,
+  search: MagnifyingGlass,
   file: File,
   clip: Paperclip,
   send: ArrowLeft,
   /* المساعد = ورقة من شجرة الهوية · مش شرارة ✦ (٢٣ سبتمبر) */
   spark: Leaf,
   close: X,
-  expand: Maximize2,
-  shrink: Minimize2,
+  expand: ArrowsOut,
+  shrink: ArrowsIn,
   plus: Plus,
-  dots: EllipsisVertical,
-  pin: Pin,
-  edit: Pencil,
-  trash: Trash2,
-  menu: Menu,
+  dots: DotsThreeVertical,
+  pin: PushPin,
+  edit: PencilSimple,
+  trash: Trash,
+  menu: List,
   down: ArrowDown,
   /* التصدير ≠ سهم عارٍ لتحت: السهم لوحده بيتقري «رتّب تنازليًا».
      `Download` فيه الصينية اللي بتقول «الملف بينزل على جهازك». */
-  export: Download,
+  export: DownloadSimple,
   /* الرفع · الرسم سهم لفوق فوق خطّ · عكس التنزيل بالظبط */
-  upload: Upload,
+  upload: UploadSimple,
   copy: Copy,
   check: Check,
-  redo: RotateCw,
+  redo: ArrowClockwise,
   up: ThumbsUp,
   downv: ThumbsDown,
-  grip: GripVertical,
-  chevronDown: ChevronDown,
+  grip: DotsSixVertical,
+  chevronDown: CaretDown,
   /* «قراءات» · تلات نجوم. الشرارة الواحدة بتقول «ذكاء اصطناعي» بس */
   insight: Leaf,
   /** لوحة «اليوم» · شبكة بلاطات لا نجمة المساعد */
-  dashboard: LayoutDashboard,
-  sort: ArrowDownWideNarrow,
-  chevronUp: ChevronUp,
-  grid: LayoutGrid,
-  rows: Rows3,
+  dashboard: SquaresFour,
+  sort: SortDescending,
+  chevronUp: CaretUp,
+  grid: GridFour,
+  rows: Rows,
   /* القمع لا الشُرَط المتناقصة · دي أيقونة «محاذاة» في كل مكان تاني */
   filter: Funnel,
   clock: Clock,
   pinMap: MapPin,
   users: Users,
-  link: Link2,
-} as const satisfies Record<string, LucideIcon>
+  link: LinkSimple,
+} as const satisfies Record<string, IconGlyph>
 
 export type IconName = keyof typeof icons

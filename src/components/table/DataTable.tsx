@@ -112,7 +112,7 @@ export function DataTable<T>({
                 سؤال (ي-2). */}
             {bys.map((b, i) => (
               <span key={b.key} className="tgbar-s">
-                {i > 0 && <Icon name={icons.chevron} size={13} />}
+                {i > 0 && <Icon name={icons.chevron} size="sm" />}
                 <b>{b.label}</b>
               </span>
             ))}
@@ -133,7 +133,7 @@ export function DataTable<T>({
             className="btn btn-ghost btn-sm"
             onClick={() => setOpen({ dim, keys: allOpen ? NONE : new Set(every) })}
           >
-            <Icon name={allOpen ? icons.shrink : icons.expand} size={14} />
+            <Icon name={allOpen ? icons.shrink : icons.expand} size="sm" />
             {allOpen ? 'اطوِ الكل' : 'افتح الكل'}
           </button>
           <ColumnPicker all={all} cols={cols} onCols={onCols} />
@@ -325,7 +325,7 @@ function Cap<T>({
         onClick={onToggle}
         title={shut ? `افتح ${node.key}` : `اطوِ ${node.key}`}
       >
-        <Icon name={icons.chevronDown} size={15} />
+        <Icon name={icons.chevronDown} size="sm" />
         <span className="tcap-k">
           <span className="sub">{node.by.label}:</span> {node.key}
         </span>
@@ -579,7 +579,7 @@ function ColumnPicker<T>({
         title="الأعمدة"
         onClick={() => setOpen((x: boolean) => !x)}
       >
-        <Icon name={icons.plus} size={15} />
+        <Icon name={icons.plus} size="sm" />
       </button>
 
       {open && (

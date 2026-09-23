@@ -213,7 +213,7 @@ export default function RequestPage() {
             <Person name={r.owner} />
             {/* المخرج الأول · الورقة اللي المالية بتحوّل بناءً عليها */}
             <Link className="btn btn-2 btn-sm" to={ROUTES.paymentOrder(r.id)}>
-              <Icon name={icons.doc} size={14} />
+              <Icon name={icons.doc} size="sm" />
               أمر الصرف
             </Link>
             {/* خطوة 11 · الجهة بتستكمل وتعيد الإرسال */}
@@ -285,13 +285,13 @@ export default function RequestPage() {
                 <ul className="payq-ck">
                   {r.checks.map((c) => (
                     <li key={c.rule} className={c.ok ? 'ok' : 'no'}>
-                      <Icon name={c.ok ? icons.check : icons.alert} size={14} />
+                      <Icon name={c.ok ? icons.check : icons.alert} size="sm" />
                       <span>{c.label}</span>
                       <span className="payq-r">قاعدة <Num>{c.rule}</Num></span>
                     </li>
                   ))}
                   <li className={bankOk ? 'ok' : 'no'}>
-                    <Icon name={bankOk ? icons.check : icons.alert} size={14} />
+                    <Icon name={bankOk ? icons.check : icons.alert} size="sm" />
                     <span>{r.bank.name}{bankOk ? '' : ' · الحساب غير نشط'}</span>
                     <span className="payq-r">الحساب المعتمد</span>
                   </li>
@@ -313,7 +313,7 @@ export default function RequestPage() {
                     meta={<Tag tone="mute">استرشادي</Tag>}
                   />
                   <div className="payq-ai">
-                    <Icon name={icons.spark} size={15} />
+                    <Icon name={icons.spark} size="sm" />
                     <span>{r.ai}</span>
                   </div>
                   <p className="sub cnote">
@@ -329,7 +329,7 @@ export default function RequestPage() {
                 <Glass>
                   <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">للاستكمال</Tag>} />
                   <div className="payq-note">
-                    <Icon name={icons.chat} size={15} />
+                    <Icon name={icons.chat} size="sm" />
                     <span>{isolate(r.note)}</span>
                   </div>
                 </Glass>
@@ -376,7 +376,7 @@ export default function RequestPage() {
                         {e.note && <div className="paylog-n">{isolate(e.note)}</div>}
                         {e.notified && (
                           <div className="paylog-i sub">
-                            <Icon name={icons.send} size={13} />
+                            <Icon name={icons.send} size="sm" />
                             إشعار · {e.notified}
                           </div>
                         )}
@@ -457,7 +457,7 @@ export default function RequestPage() {
                 <ul className="paynotif">
                   {r.log.filter((e) => e.notified).map((e, i) => (
                     <li key={`${e.step}-${i}`}>
-                      <Icon name={icons.send} size={14} />
+                      <Icon name={icons.send} size="sm" />
                       <span className="trim1">{e.notified}</span>
                       <span className="pc-sp" />
                       <DateText>{e.at}</DateText>

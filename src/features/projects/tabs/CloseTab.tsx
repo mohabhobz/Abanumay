@@ -52,7 +52,7 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
               title="يفتح طلب التقرير الختامي ويرسله إلى الجهة لتعبئته"
               onClick={onOpen}
             >
-              <Icon name={icons.plus} size={16} />
+              <Icon name={icons.plus} size="sm" />
               افتح طلب التقرير الختامي
             </button>
           )}
@@ -156,7 +156,7 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
       <div className="rowf gp-2">
         <Link to={ROUTES.closing(c.id)} className="btn btn-p">
           افتح الإغلاق
-          <Icon name={icons.chevron} size={15} />
+          <Icon name={icons.chevron} size="sm" />
         </Link>
         <Link to={ROUTES.closings} className="btn btn-2">صندوق الإغلاق</Link>
       </div>

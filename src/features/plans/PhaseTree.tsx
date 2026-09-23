@@ -69,7 +69,7 @@ export function PhaseTree({
               aria-expanded={!shut}
               onClick={() => onToggle(ph.id)}
             >
-              <Icon name={shut ? icons.chevronDown : icons.chevronUp} size={15} />
+              <Icon name={shut ? icons.chevronDown : icons.chevronUp} size="sm" />
               <span className="phase-n num">{i + 1}</span>
               <span className="phase-t">{ph.name || 'مرحلة بلا اسم'}</span>
 
@@ -126,7 +126,7 @@ export function PhaseTree({
                         const got = a.evidence.find((e) => e.kind === need)
                         return (
                           <li key={need} className={got ? 'ok' : 'no'}>
-                            <Icon name={got ? icons.check : icons.alert} size={13} />
+                            <Icon name={got ? icons.check : icons.alert} size="sm" />
                             <span>{need}</span>
                             {got
                               ? <span className="sub act-f">{got.fileName}</span>
@@ -142,7 +142,7 @@ export function PhaseTree({
                                 className="btn btn-ghost btn-sm act-up"
                                 onClick={() => onUpload(a.id, need)}
                               >
-                                <Icon name={icons.upload} size={13} />
+                                <Icon name={icons.upload} size="sm" />
                                 ارفع الشاهد
                               </button>
                             )}

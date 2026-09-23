@@ -70,7 +70,7 @@ export function Composer({
 
         <div className="cbox-b">
           <button className="iact" title="إرفاق ملف" aria-label="إرفاق ملف">
-            <Icon name={icons.clip} size={16} />
+            <Icon name={icons.clip} size="sm" />
           </button>
           {busy ? (
             <button className="go stop" onClick={onStop} title="إيقاف" aria-label="إيقاف">

@@ -85,15 +85,15 @@ export function ChatList({
           title="اطوِ المحادثات"
           aria-label="اطوِ المحادثات"
         >
-          <Icon name={icons.panel} size={16} />
+          <Icon name={icons.panel} size="sm" />
         </button>
         <button className="cl-new" onClick={onNew} title="محادثة جديدة · ⌘⇧O" aria-label="محادثة جديدة">
-          <Icon name={icons.plus} size={16} />
+          <Icon name={icons.plus} size="sm" />
         </button>
       </div>
 
       <div className="cl-search">
-        <Icon name={icons.search} size={16} style={{ color: 'var(--t3)' }} />
+        <Icon name={icons.search} size="sm" style={{ color: 'var(--t3)' }} />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -126,12 +126,12 @@ export function ChatList({
                   onDrop={(e) => { e.preventDefault(); drop(c.id) }}
                 >
                   <span className="cl-grip" aria-hidden="true">
-                    <Icon name={icons.grip} size={16} />
+                    <Icon name={icons.grip} size="sm" />
                   </span>
 
                   <button className="cl-main" onClick={() => onOpen(c.id)}>
                     <div className="cl-t">
-                      {c.pinned && <Icon name={icons.pin} size={14} />}
+                      {c.pinned && <Icon name={icons.pin} size="sm" />}
                       {c.title}
                     </div>
                   </button>
@@ -141,25 +141,25 @@ export function ChatList({
                     aria-label="خيارات المحادثة"
                     onClick={() => menu.toggle(c.id)}
                   >
-                    <Icon name={icons.dots} size={16} />
+                    <Icon name={icons.dots} size="sm" />
                   </button>
 
                   {menu.id === c.id && (
                     <div className="cl-menu chrome">
                       <button onClick={() => togglePin(c.id)}>
-                        <Icon name={icons.pin} size={16} />
+                        <Icon name={icons.pin} size="sm" />
                         {c.pinned ? 'ألغِ التثبيت' : 'ثبّت المحادثة'}
                       </button>
                       <button onClick={menu.close}>
-                        <Icon name={icons.edit} size={16} />
+                        <Icon name={icons.edit} size="sm" />
                         أعد التسمية
                       </button>
                       <button onClick={menu.close}>
-                        <Icon name={icons.file} size={16} />
+                        <Icon name={icons.file} size="sm" />
                         صدّر المحادثة
                       </button>
                       <button className="danger" onClick={() => remove(c.id)}>
-                        <Icon name={icons.trash} size={16} />
+                        <Icon name={icons.trash} size="sm" />
                         احذف المحادثة
                       </button>
                     </div>

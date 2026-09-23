@@ -60,14 +60,14 @@ export default function ProcessReport() {
             <nav className="rpnav" aria-label="التنقّل بين الإجراءات">
               {prev && (
                 <Link to={ROUTES.report(prev.key)} className="btn btn-2">
-                  <Icon name={icons.chevron} size={15} />
+                  <Icon name={icons.chevron} size="sm" />
                   {prev.title}
                 </Link>
               )}
               {next && (
                 <Link to={ROUTES.report(next.key)} className="btn btn-2">
                   {next.title}
-                  <Icon name={icons.chevron} size={15} style={{ rotate: '180deg' }} />
+                  <Icon name={icons.chevron} size="sm" style={{ rotate: '180deg' }} />
                 </Link>
               )}
             </nav>
@@ -112,7 +112,7 @@ export default function ProcessReport() {
                       </span>
                       {k.to && (
                         <Link to={k.to} className="ind-to">
-                          <Icon name={icons.link} size={14} />
+                          <Icon name={icons.link} size="sm" />
                           اعرض الصفوف
                         </Link>
                       )}

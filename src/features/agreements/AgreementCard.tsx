@@ -89,7 +89,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
       {/* اللي بيمنع الإرسال للاعتماد · كل واحد بمصدره في الوثيقة */}
       <ul className="payq-ck">
         <li className={balance.balanced ? 'ok' : 'no'}>
-          <Icon name={balance.balanced ? icons.check : icons.alert} size={13} />
+          <Icon name={balance.balanced ? icons.check : icons.alert} size="sm" />
           <span>
             {balance.balanced
               ? 'جدول الدفعات متوازن'
@@ -98,7 +98,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           <span className="payq-r">قاعدة <Num>8</Num></span>
         </li>
         <li className={gap === 0 ? 'ok' : 'no'}>
-          <Icon name={gap === 0 ? icons.check : icons.alert} size={13} />
+          <Icon name={gap === 0 ? icons.check : icons.alert} size="sm" />
           <span>
             {gap === 0
               ? 'مطابقة للمخصص المحجوز'
@@ -107,7 +107,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           <span className="payq-r">خطوة <Num>11</Num></span>
         </li>
         <li className={a.docs.length > 0 ? 'ok' : 'no'}>
-          <Icon name={a.docs.length > 0 ? icons.check : icons.alert} size={13} />
+          <Icon name={a.docs.length > 0 ? icons.check : icons.alert} size="sm" />
           <span>
             {a.docs.length > 0
               ? <>المرفقات والملاحق · <Num>{a.docs.length}</Num></>
@@ -122,7 +122,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
         <li className={a.kind !== 'ورقية' || a.stage === 'active' ? 'ok' : 'no'}>
           <Icon
             name={a.kind !== 'ورقية' || a.stage === 'active' ? icons.check : icons.alert}
-            size={13}
+            size="sm"
           />
           <span>
             {a.kind !== 'ورقية'
@@ -136,7 +136,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
       {/* ملاحظة الإعادة · قاعدة 10 بتلزم توضيح السبب */}
       {a.note && (
         <div className="payq-note">
-          <Icon name={icons.chat} size={14} />
+          <Icon name={icons.chat} size="sm" />
           <span>{isolate(a.note)}</span>
         </div>
       )}
@@ -144,7 +144,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
       {/* مخرج الذكاء الاصطناعي · 9.5 · والوسم من قاعدة 21 */}
       {a.ai && (
         <div className="payq-ai">
-          <Icon name={icons.spark} size={14} />
+          <Icon name={icons.spark} size="sm" />
           <span>{a.ai}</span>
           <Tag tone="mute">استرشادي</Tag>
         </div>
@@ -156,7 +156,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
         <span className="payq-when"><Person name={a.owner} /></span>
         <Link className="btn btn-2 btn-sm" to={ROUTES.agreement(a.id)}>
           افتح الاتفاقية
-          <Icon name={icons.chevron} size={14} />
+          <Icon name={icons.chevron} size="sm" />
         </Link>
       </footer>
     </article>

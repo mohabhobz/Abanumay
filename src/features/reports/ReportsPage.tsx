@@ -190,7 +190,7 @@ export default function ReportsPage() {
               {PACKS.map((k) => (
                 <div key={k.key} className={`rpk glass${k.state === 'next' ? ' soon' : ''}`}>
                   <span className="rpk-i">
-                    <Icon name={icons[k.icon]} size={20} />
+                    <Icon name={icons[k.icon]} size="md" />
                   </span>
                   <span className="rpk-t">
                     {k.title}

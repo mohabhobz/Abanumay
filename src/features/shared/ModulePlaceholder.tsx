@@ -54,7 +54,7 @@ export function ModulePlaceholder({ title, scope, facts, demoTo }: ModulePlaceho
               actions={
                 demoTo && (
                   <button className="btn btn-2" onClick={() => navigate(demoTo.to)}>
-                    <Icon name={icons.doc} size={16} />
+                    <Icon name={icons.doc} size="sm" />
                     {demoTo.label}
                   </button>
                 )

@@ -156,7 +156,7 @@ export default function RegReviewPage() {
                 />
                 <ul className="payq-ck">
                   <li className={clash ? 'no' : 'ok'}>
-                    <Icon name={clash ? icons.alert : icons.check} size={13} />
+                    <Icon name={clash ? icons.alert : icons.check} size="sm" />
                     <span>
                       {clash
                         ? <>رقم الترخيص مسجَّل لـ «{clash.name}» بنفس التصنيف</>
@@ -165,7 +165,7 @@ export default function RegReviewPage() {
                     <span className="payq-r">قاعدة <Num>8</Num></span>
                   </li>
                   <li className={missingDocs.length ? 'no' : 'ok'}>
-                    <Icon name={missingDocs.length ? icons.alert : icons.check} size={13} />
+                    <Icon name={missingDocs.length ? icons.alert : icons.check} size="sm" />
                     <span>
                       {missingDocs.length
                         ? <>ينقص <Num>{missingDocs.length}</Num>: {missingDocs.map((d) => d.label).join(' · ')}</>
@@ -174,7 +174,7 @@ export default function RegReviewPage() {
                     <span className="payq-r">قاعدة <Num>4</Num></span>
                   </li>
                   <li className={r.governanceClaim > 0 ? 'ok' : 'no'}>
-                    <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size={13} />
+                    <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size="sm" />
                     <span>
                       درجة الحوكمة{' '}
                       {r.governanceClaim > 0
@@ -286,7 +286,7 @@ export default function RegReviewPage() {
                         const need = docRequired(d, r.type)
                         return (
                           <li key={d.key} className={need ? 'no' : ''}>
-                            <Icon name={need ? icons.alert : icons.doc} size={15} />
+                            <Icon name={need ? icons.alert : icons.doc} size="sm" />
                             <span className={need ? '' : 'sub'}>{d.label}</span>
                             <span className="pc-sp" />
                             <Tag tone={need ? 'no' : 'mute'}>
@@ -363,7 +363,7 @@ export default function RegReviewPage() {
                     meta={<Tag tone={r.state === 'rejected' ? 'no' : 'ret'}>قاعدة 31</Tag>}
                   />
                   <div className="payq-note">
-                    <Icon name={icons.chat} size={15} />
+                    <Icon name={icons.chat} size="sm" />
                     <span>{isolate(r.note)}</span>
                   </div>
                 </Glass>
@@ -388,7 +388,7 @@ export default function RegReviewPage() {
             {taken ? (
               <>
                 <div className="rowf gp-3">
-                  <Icon name={icons.check} size={18} className="ok-ink" />
+                  <Icon name={icons.check} size="md" className="ok-ink" />
                   <span className="decsent">
                     سُجّل القرار: <b>{OUT_SAY[taken]}</b>
                     {bankNo && <><span className="decsep" />الحساب البنكي مرفوض · {bankNo}</>}

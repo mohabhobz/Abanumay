@@ -55,7 +55,7 @@ export default function SettingsIndexPage() {
                 title={m.label}
                 meta={
                   <Link className="btn btn-2 btn-sm" to={m.to}>
-                    <Icon name={icons.gear} size={15} />
+                    <Icon name={icons.gear} size="sm" />
                     افتح الإعدادات
                   </Link>
                 }

@@ -325,7 +325,7 @@ export default function RegisterPage() {
             onClick={() => go(-1)}
           >
             {/* في RTL «لورا» يمين · `chevronBack` هو اللي بيرسمها */}
-            <Icon name={icons.chevronBack} size={15} />
+            <Icon name={icons.chevronBack} size="sm" />
             السابق
           </button>
 
@@ -340,7 +340,7 @@ export default function RegisterPage() {
               onClick={() => go(1)}
             >
               التالي
-              <Icon name={icons.chevron} size={15} />
+              <Icon name={icons.chevron} size="sm" />
             </button>
           ) : (
             <button
@@ -564,7 +564,7 @@ export default function RegisterPage() {
                               </>
                             ) : (
                               <>
-                                <Icon name={icons.users} size={16} />
+                                <Icon name={icons.users} size="sm" />
                                 <span className="sub">
                                   المستندات ترفعها <b>الجهة نفسها</b> · اكتب اسم مدخل
                                   البيانات في خطوة «الاتصال والأشخاص» ليُسجَّل مع كل ملف.
@@ -629,7 +629,7 @@ export default function RegisterPage() {
                                         className="btn btn-ghost btn-sm"
                                         onClick={() => clearDoc(d.key)}
                                       >
-                                        <Icon name={icons.close} size={14} />
+                                        <Icon name={icons.close} size="sm" />
                                         أزل الملف
                                       </button>
                                     </div>
@@ -640,7 +640,7 @@ export default function RegisterPage() {
                                         accept=".pdf,.jpg,.jpeg,.png,.gif"
                                         onChange={(e) => upload(d.key, e.target.files?.[0])}
                                       />
-                                      <Icon name={icons.upload} size={16} />
+                                      <Icon name={icons.upload} size="sm" />
                                       <span>اسحب الملف هنا أو اضغط لاختياره</span>
                                       <span className="pc-sp" />
                                       {/* الصيغ والحدّ من النظام العامل حرفيًا */}
@@ -753,17 +753,17 @@ export default function RegisterPage() {
                   </p>
                   <ul className="payq-ck regsent">
                     <li className="ok">
-                      <Icon name={icons.check} size={13} />
+                      <Icon name={icons.check} size="sm" />
                       <span>وصل الطلب إلى مسؤول النظام، وحالته «قيد المراجعة»</span>
                       <span className="payq-r">قاعدة <Num>26</Num></span>
                     </li>
                     <li className="ok">
-                      <Icon name={icons.check} size={13} />
+                      <Icon name={icons.check} size="sm" />
                       <span>سُجّل الطلب في سجل التدقيق بوقته ومُدخله</span>
                       <span className="payq-r">قاعدة <Num>30</Num></span>
                     </li>
                     <li className="no">
-                      <Icon name={icons.alert} size={13} />
+                      <Icon name={icons.alert} size="sm" />
                       <span>
                         <b>لم يُنشأ حساب بعد</b> · اسم المستخدم يصل بعد الاعتماد وحده
                       </span>

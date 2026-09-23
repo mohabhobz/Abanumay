@@ -192,7 +192,7 @@ export default function PlanNewPage() {
                         navigate(ROUTES.planEdit(id))
                       }}
                     >
-                      <Icon name={icons.plus} size={15} />
+                      <Icon name={icons.plus} size="sm" />
                       افتح الخطة
                     </button>
                   </div>

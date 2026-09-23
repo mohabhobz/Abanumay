@@ -55,7 +55,7 @@ export function AgreementTab({
                   title={startBlocked || 'ابدأ إعداد الاتفاقية'}
                   onClick={onStart}
                 >
-                  <Icon name={icons.plus} size={16} />
+                  <Icon name={icons.plus} size="sm" />
                   ابدأ إعداد الاتفاقية
                 </button>
               )}
@@ -110,7 +110,7 @@ export function AgreementTab({
           <DocFile name="الاتفاقية.pdf" meta={A.no} />
           {/* ⚠️ كان زرارًا بلا فعل · دلوقتي بيفتح طباعة المتصفح */}
           <button className="btn btn-2 btn-sm" onClick={() => window.print()}>
-            <Icon name={icons.doc} size={15} />
+            <Icon name={icons.doc} size="sm" />
             اطبع الاتفاقية
           </button>
         </div>

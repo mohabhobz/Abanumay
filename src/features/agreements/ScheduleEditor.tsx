@@ -151,7 +151,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
                       aria-label={`احذف الدفعة ${r.no}`}
                       onClick={() => drop(i)}
                     >
-                      <Icon name={icons.close} size={15} />
+                      <Icon name={icons.close} size="sm" />
                     </button>
                   </td>
                 )}
@@ -183,7 +183,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
       {edit && (
         <div className="rowf gp-2 mt-3">
           <button className="btn btn-2 btn-sm" onClick={add}>
-            <Icon name={icons.plus} size={15} />
+            <Icon name={icons.plus} size="sm" />
             أضف دفعة
           </button>
           <button

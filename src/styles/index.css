@@ -413,6 +413,8 @@
   --h-xs:20px; --h-md:44px; --h-lg:42px;
   /* صندوق أيقونة الترويسة · مصدر `.badge-30` */
   --h-ic:34px;
+  /* مقاس الأيقونة · تلات درجات بس (DDR-013) · نفس قيم `Icon size` */
+  --ic-sm:16px; --ic-md:20px; --ic-lg:24px;
   --pb-md:12px; --lh-md:20px;   /* 12 + 20 + 12 = 44 */
   /* سطر الوسم **١٦ لا ١٤**: ١٤ على خطّ ١١٫٢ = ١٫٢٥، وده ضيّق على
      العربي. ذيل الياء في «في التشغيل» كان بينزل لحدّ حافة الكبسولة
@@ -1720,7 +1722,7 @@ to{opacity:1;transform:none}
   transition:color .16s ease,background .16s ease}
 .rail.lockwide .railshut{display:grid}
 .railshut:hover{color:var(--t1);background:rgba(var(--edgeC),.06)}
-.railshut svg{width:18px;height:18px;flex:none}
+.railshut svg{width:var(--ic-md);height:var(--ic-md);flex:none}
 
 /* القفل: ارتفاعه ثابت وعرضه بيتقصّ من ناحية الاسم.
    `max-width` لا `width`: العنصر بيفضل بعرضه الطبيعي ويتقصّ، فما
@@ -1800,7 +1802,7 @@ to{opacity:1;transform:none}
 .rail.open .rail-tip{display:none}
 @media (prefers-reduced-motion:reduce){ .rail,.rail-tip{transition:none}
 }.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}.rail .railitem.on{color:var(--on-solid);background:var(--solid);
-  box-shadow:none}.rail .railitem.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}.rail .railitem svg{width:22px;height:22px;flex:none}
+  box-shadow:none}.rail .railitem.on:hover{color:var(--on-solid);background:var(--solid);filter:brightness(1.08)}.rail .railitem svg{width:var(--ic-md);height:var(--ic-md);flex:none}
 /* المجموعات بتتفصل بمسافة بس · الخط الشعري كان بيتقوّس مع حواف
    العنصر فيبان كإطار مفتوح، والمسافة كافية إن العين تقرا الكتل */
 /* الفاصل بين المجموعات = ٢٢ ناقص الـ٨ اللي جاية من `gap`، فالفجوة
@@ -2354,7 +2356,7 @@ to{opacity:1;transform:none}
   justify-content:flex-start;gap:var(--sp-3);line-height:var(--lh-text);
   padding:var(--sp-3) var(--acct-gut);border-radius:var(--ric);font-size:var(--fs-2);color:var(--t2);
   text-align:start;cursor:pointer;transition:background .14s ease,color .14s ease}
-.acct-sec>button svg{flex:none;width:16px;height:16px}
+.acct-sec>button svg{flex:none;width:var(--ic-sm);height:var(--ic-sm)}
 .acct-sec>button:hover{background:var(--ctl-quiet-h);color:var(--t1)}
 .acct-sec>button.danger{color:var(--no)}
 .acct-sec>button.danger:hover{background:rgba(var(--noC),.09)}
@@ -2376,7 +2378,7 @@ to{opacity:1;transform:none}
   gap:var(--sp-2);padding:var(--sp-3) var(--sp-2);border-radius:var(--ric);
   font-size:var(--fs-1);color:var(--t3);cursor:pointer;line-height:var(--lh-head);
   transition:background .16s ease,color .16s ease,box-shadow .16s ease}
-.seg button svg{flex:none;width:14px;height:14px}
+.seg button svg{flex:none;width:var(--ic-sm);height:var(--ic-sm)}
 .seg button:hover{color:var(--t2)}
 .seg button.on{color:var(--t1);background:var(--fl-7);
   box-shadow: var(--el-1),inset 0 0 0 1px var(--edge-1)}
@@ -2555,7 +2557,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   .rail:not(.open) .rail-l,.rail .rail-l{display:flex}
 .rail .acct-who,.rail.open .acct-who{display:none}.rail .railitem,.rail.open .railitem{
     flex-direction:column;justify-content:center;text-align:center}
-.rail .railitem.nomob{display:none}.rail .railitem{width:auto;flex:1;padding:var(--sp-3) var(--sp-2);gap:var(--sp-2);font-size:var(--fs-1);border-radius:var(--r1)}.rail .railitem svg{width:21px;height:21px}
+.rail .railitem.nomob{display:none}.rail .railitem{width:auto;flex:1;padding:var(--sp-3) var(--sp-2);gap:var(--sp-2);font-size:var(--fs-1);border-radius:var(--r1)}.rail .railitem svg{width:var(--ic-md);height:var(--ic-md)}
 .railfoot{margin-top:0;width:auto;flex:1;flex-direction:row;align-items:stretch;gap:0}
 .railfoot>.pht,.railfoot>.av{display:none}
 /* قائمة الحساب انتقلت للشريط العلوي: نسختين منها على شاشة واحدة
@@ -2710,7 +2712,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cl-t{font-family:var(--fd);font-weight:500;font-size:var(--fs-2);line-height:var(--lh-ui);
   display:flex;align-items:center;gap:var(--sp-2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cl-t svg{width:14px;height:14px;color:var(--teal);flex:none}
+.cl-t svg{width:var(--ic-sm);height:var(--ic-sm);color:var(--teal);flex:none}
 .cl-more{width:30px;height:30px;flex:none;border-radius:var(--ric);display:grid;place-items:center;
   color:var(--t3);opacity:0;transition:opacity .16s ease,background .16s ease}
 .cl-row:hover .cl-more,.cl-row.on .cl-more{opacity:1}
@@ -2846,7 +2848,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cb-t{font-family:var(--fd);font-weight:500;font-size:var(--fs-3)}
 /* ── التنويه والمصادر والأكشنز ── */
 .advisory{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-5);font-size:var(--fs-1);color:var(--warn-ink)}
-.advisory svg{width:16px;height:16px;flex:none}
+.advisory svg{width:var(--ic-sm);height:var(--ic-sm);flex:none}
 .csrc{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;margin-top:var(--sp-5)}
 .srcchip{font-size:var(--fs-1);color:var(--t3);padding:var(--sp-2) var(--sp-3);border-radius:var(--rp);
   background:rgba(var(--edgeC),.055)}
@@ -2998,7 +3000,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
    مطابق. بقى عليها بالظبط، وحلقة التركيز من نفس المفتاح. */
 .lbox:focus-within{background:var(--ctl-bg-a);color:var(--t2);
   box-shadow:inset 0 0 0 1px var(--ctl-line-f),0 0 0 3px var(--ctl-quiet-h)}
-.lbox svg{flex:none;width:17px;height:17px}
+.lbox svg{flex:none;width:var(--ic-md);height:var(--ic-md)}
 .lbox input{flex:1;min-width:0;height:100%;border:0;background:none;outline:none;
   font-family:var(--fm);font-size:var(--fs-3);color:var(--t1);letter-spacing:.01em}
 .lbox input::placeholder{color:var(--t3)}
@@ -4678,7 +4680,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .einf-t{flex:1 1 46%;min-height:190px;
     padding:calc(var(--einf-c) / 2 + var(--sp-2)) var(--sp-2) var(--sp-5);
     border-radius:var(--r3) var(--r3) 0 0}
-.einf-c svg{width:22px;height:22px}
+.einf-c svg{width:var(--ic-lg);height:var(--ic-lg)}
 }
 /* ═══════════════════════════════════════════════════════════
    التقارير
@@ -5252,7 +5254,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .fview-t{flex:1;min-width:0;display:flex;align-items:center;gap:var(--sp-3);
   padding:var(--sp-3) var(--sp-3);font-size:var(--fs-2);color:var(--t1);
   text-align:start;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fview-t svg{flex:none;width:14px;height:14px;color:var(--t3)}
+.fview-t svg{flex:none;width:var(--ic-sm);height:var(--ic-sm);color:var(--t3)}
 .fview.on .fview-t{font-weight:600}
 .fview.on .fview-t svg{color:var(--solid)}
 /* «العرض الأصلي» مدخل ثابت، فمالوش زرار حذف · وفاصل تحته بيقول

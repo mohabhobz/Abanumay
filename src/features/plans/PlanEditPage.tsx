@@ -215,7 +215,7 @@ export default function PlanEditPage() {
                           className="btn btn-ghost btn-sm"
                           onClick={() => setPhases((xs) => xs.filter((x) => x.id !== ph.id))}
                         >
-                          <Icon name={icons.trash} size={14} />
+                          <Icon name={icons.trash} size="sm" />
                           احذف المرحلة
                         </button>
                       </div>
@@ -368,7 +368,7 @@ export default function PlanEditPage() {
                               activities: ph.activities.filter((x) => x.id !== a.id),
                             })}
                           >
-                            <Icon name={icons.trash} size={14} />
+                            <Icon name={icons.trash} size="sm" />
                             احذف النشاط
                           </button>
                         </div>
@@ -383,7 +383,7 @@ export default function PlanEditPage() {
                         activities: [...ph.activities, newActivity(ph.activities.length)],
                       })}
                     >
-                      <Icon name={icons.plus} size={14} />
+                      <Icon name={icons.plus} size="sm" />
                       أضف نشاطًا
                     </button>
                   </div>
@@ -399,7 +399,7 @@ export default function PlanEditPage() {
                   className="btn btn-2"
                   onClick={() => setPhases((xs) => [...xs, newPhase(xs.length)])}
                 >
-                  <Icon name={icons.plus} size={15} />
+                  <Icon name={icons.plus} size="sm" />
                   أضف مرحلة
                 </button>
                 <span className="pc-sp" />

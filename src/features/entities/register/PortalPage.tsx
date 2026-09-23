@@ -128,7 +128,7 @@ export default function PortalPage() {
               className="btn btn-2 btn-sm"
               onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
             >
-              <Icon name={icons.logout} size={15} />
+              <Icon name={icons.logout} size="sm" />
               تسجيل الخروج
             </button>
           </div>
@@ -171,7 +171,7 @@ export default function PortalPage() {
                 {/* ── نتيجة المراجعة · اللي المؤسسة قالته بالنصّ ── */}
                 {r.note && (
                   <div className={`ptl-res${r.state === 'rejected' ? ' no' : ''}`}>
-                    <Icon name={icons.alert} size={15} />
+                    <Icon name={icons.alert} size="sm" />
                     <div>
                       <b>{r.state === 'rejected' ? 'سبب الرفض' : 'ما طلبته المؤسسة'}</b>
                       <p>{r.note}</p>
@@ -248,7 +248,7 @@ export default function PortalPage() {
                         else setResent(true)
                       }}
                     >
-                      <Icon name={r.state === 'approved' ? icons.entity : icons.send} size={15} />
+                      <Icon name={r.state === 'approved' ? icons.entity : icons.send} size="sm" />
                       {r.state === 'approved' ? view.act : 'أعد إرسال الطلب'}
                     </button>
                   )}
@@ -334,7 +334,7 @@ export default function PortalPage() {
                   <ul className="ptl-miss ptl-plans">
                     {plans.map((pl) => (
                       <li key={pl.id}>
-                        <Icon name={icons.plan} size={14} />
+                        <Icon name={icons.plan} size="sm" />
                         <Link className="lnk" to={`${ROUTES.plan(pl.id)}?as=entity`}>
                           {pl.projectName}
                         </Link>

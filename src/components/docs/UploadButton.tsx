@@ -44,7 +44,7 @@ export function UploadButton({
           e.target.value = ''
         }}
       />
-      <Icon name={icons.upload} size={14} />
+      <Icon name={icons.upload} size="sm" />
       ارفع
     </label>
   )

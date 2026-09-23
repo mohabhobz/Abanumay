@@ -141,7 +141,7 @@ export default function HomePage() {
             {/* رابط لا فعل · بيوَدّي لشاشة التقارير، فما بياخدش
                 لون العلامة ويزاحم أفعال الصفحة */}
             <Link className="btn btn-ghost btn-sm" to={ROUTES.reports}>
-              <Icon name={icons.chart} size={15} />
+              <Icon name={icons.chart} size="sm" />
               التقارير الكاملة
             </Link>
           </header>
@@ -152,7 +152,7 @@ export default function HomePage() {
               <Link key={t.k} to={t.to} className="kpi glass">
                 <span className="kpi-h">
                   <span className="kpi-k">{t.k}</span>
-                  <Icon name={icons.chevron} size={14} className="kpi-go" />
+                  <Icon name={icons.chevron} size="sm" className="kpi-go" />
                 </span>
                 <span className="kpi-v num">{t.v}</span>
                 <span className="kpi-n">{t.note}</span>

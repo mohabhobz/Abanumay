@@ -79,7 +79,7 @@ export function AccountMenu({
                   aria-checked={theme === t.key}
                   onClick={() => setTheme(t.key)}
                 >
-                  <Icon name={icons[t.icon]} size={14} />
+                  <Icon name={icons[t.icon]} size="sm" />
                   <span>{t.label}</span>
                 </button>
               ))}
@@ -93,11 +93,11 @@ export function AccountMenu({
               «إعدادات الحساب» لما تتبني. */}
           <div className="acct-sec">
             <button role="menuitem" onClick={() => go(ROUTES.account)}>
-              <Icon name={icons.user} size={16} />
+              <Icon name={icons.user} size="sm" />
               إعدادات الحساب
             </button>
             <button role="menuitem" onClick={() => go(ROUTES.preferences)}>
-              <Icon name={icons.gear} size={16} />
+              <Icon name={icons.gear} size="sm" />
               التفضيلات والإشعارات
             </button>
           </div>
@@ -109,14 +109,14 @@ export function AccountMenu({
               تفضيلاته (د-1). */}
           <div className="acct-sec">
             <button role="menuitem" onClick={() => go(ROUTES.settings)}>
-              <Icon name={icons.gear} size={16} />
+              <Icon name={icons.gear} size="sm" />
               إعدادات النظام
             </button>
           </div>
 
           <div className="acct-sec">
             <button className="danger" role="menuitem" onClick={() => onSignOut?.()}>
-              <Icon name={icons.logout} size={16} />
+              <Icon name={icons.logout} size="sm" />
               تسجيل الخروج
             </button>
           </div>

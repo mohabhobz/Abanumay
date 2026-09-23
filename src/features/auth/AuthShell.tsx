@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react'
+import type { IconGlyph } from '@/components/ui/icons'
 import type { ReactNode } from 'react'
 import Logo from '@/assets/LogoColor'
 import { Icon, icons } from '@/components/ui'
@@ -44,7 +44,7 @@ export function AuthShell({ title, sub, children, err }: AuthShellProps) {
           {/* توست: بيطفو فوق الفورم وما يزقّش أي حاجة، وبيختفي لوحده */}
           {err && (
             <div className="ltoast" role="alert">
-              <Icon name={icons.alert} size={16} />
+              <Icon name={icons.alert} size="sm" />
               <span>{err}</span>
             </div>
           )}
@@ -70,7 +70,7 @@ export interface AuthFieldProps {
   /** لازم للاسم عشان مديري كلمات السر والأوتوفيل يتعرّفوا على الحقل */
   name: string
   label: string
-  icon: LucideIcon
+  icon: IconGlyph
   value: string
   onChange: (value: string) => void
   type?: string
@@ -91,7 +91,7 @@ export function AuthField({
     <label className="lfield" htmlFor={id}>
       <span className="llbl">{label}</span>
       <span className="lbox">
-        <Icon name={icon} size={17} />
+        <Icon name={icon} size="md" />
         <input
           id={id}
           name={name}

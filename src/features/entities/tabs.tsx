@@ -370,7 +370,7 @@ export function EntityGoTo({ e }: { e: EntityRow }) {
       <Head title="اذهب إلى" />
       <div className="chips">
         <Link className="chip" to={`${ROUTES.projects}?q=${encodeURIComponent(e.name)}`}>
-          <Icon name={icons.link} size={14} /> مشاريع الجهة في القائمة
+          <Icon name={icons.link} size="sm" /> مشاريع الجهة في القائمة
         </Link>
         <Link className="chip" to={`${ROUTES.entities}?region=${encodeURIComponent(e.region)}`}>
           جهات {e.region}

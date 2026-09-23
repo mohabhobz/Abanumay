@@ -243,7 +243,7 @@ export default function AgreementNewPage() {
                         />
                         <span className="pkind-h">
                           <span className="pkind-r" aria-hidden="true">
-                            {kind === k.key && <Icon name={icons.check} size={12} />}
+                            {kind === k.key && <Icon name={icons.check} size="sm" />}
                           </span>
                           <b>{k.label}</b>
                           <span className="sub trim1">· {k.note}</span>
@@ -333,7 +333,7 @@ export default function AgreementNewPage() {
                   title={first ? 'هذه الخطوة الأولى' : `ارجع إلى ${STAGES[at - 1].label}`}
                   onClick={() => go(-1)}
                 >
-                  <Icon name={icons.chevronBack} size={15} />
+                  <Icon name={icons.chevronBack} size="sm" />
                   السابق
                 </button>
                 {!last && (
@@ -343,7 +343,7 @@ export default function AgreementNewPage() {
                     onClick={() => go(1)}
                   >
                     التالي
-                    <Icon name={icons.chevron} size={15} />
+                    <Icon name={icons.chevron} size="sm" />
                   </button>
                 )}
               </div>

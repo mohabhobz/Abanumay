@@ -47,7 +47,7 @@ import { PlanBar } from './PlanBar'
 function Check({ ok, say, src }: { ok: boolean; say: React.ReactNode; src: React.ReactNode }) {
   return (
     <li className={ok ? 'ok' : 'no'}>
-      <Icon name={ok ? icons.check : icons.alert} size={13} />
+      <Icon name={ok ? icons.check : icons.alert} size="sm" />
       <span>{say}</span>
       <span className="payq-r">{src}</span>
     </li>
@@ -145,7 +145,7 @@ export function PlanCard({ p }: { p: PlanRow }) {
 
       {p.note && (
         <div className="payq-note">
-          <Icon name={icons.chat} size={14} />
+          <Icon name={icons.chat} size="sm" />
           <span>{isolate(p.note)}</span>
         </div>
       )}
@@ -162,7 +162,7 @@ export function PlanCard({ p }: { p: PlanRow }) {
         </span>
         <Link to={ROUTES.plan(p.id)} className="btn btn-2 btn-sm">
           افتح الخطة
-          <Icon name={icons.chevron} size={14} />
+          <Icon name={icons.chevron} size="sm" />
         </Link>
       </footer>
     </article>

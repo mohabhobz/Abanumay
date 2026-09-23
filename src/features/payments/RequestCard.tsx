@@ -94,13 +94,13 @@ export function RequestCard({ r, showState }: RequestCardProps) {
       <ul className="payq-ck">
         {r.checks.map((c) => (
           <li key={c.rule} className={c.ok ? 'ok' : 'no'}>
-            <Icon name={c.ok ? icons.check : icons.alert} size={13} />
+            <Icon name={c.ok ? icons.check : icons.alert} size="sm" />
             <span>{c.label}</span>
             <span className="payq-r">قاعدة <Num>{c.rule}</Num></span>
           </li>
         ))}
         <li className={r.bank.active ? 'ok' : 'no'}>
-          <Icon name={r.bank.active ? icons.check : icons.alert} size={13} />
+          <Icon name={r.bank.active ? icons.check : icons.alert} size="sm" />
           <span>{r.bank.name}{r.bank.active ? '' : ' · الحساب غير نشط'}</span>
           <span className="payq-r">الحساب المعتمد</span>
         </li>
@@ -109,7 +109,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
       {/* ملاحظة الإعادة · rules 7 و8 بيلزموا توضيح الملاحظات */}
       {r.note && (
         <div className="payq-note">
-          <Icon name={icons.chat} size={14} />
+          <Icon name={icons.chat} size="sm" />
           <span>{r.note}</span>
         </div>
       )}
@@ -118,7 +118,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
           «استرشادية ولا تغني عن اعتماد أصحاب الصلاحية» */}
       {r.ai && (
         <div className="payq-ai">
-          <Icon name={icons.spark} size={14} />
+          <Icon name={icons.spark} size="sm" />
           <span>{r.ai}</span>
           <Tag tone="mute">استرشادي</Tag>
         </div>
@@ -131,7 +131,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
             بتاخده · فالزرار بيكمّل الطريق بدل ما يخرج منه */}
         <Link className="btn btn-2 btn-sm" to={ROUTES.payment(r.id)}>
           افتح الطلب
-          <Icon name={icons.chevron} size={14} />
+          <Icon name={icons.chevron} size="sm" />
         </Link>
       </footer>
     </article>
