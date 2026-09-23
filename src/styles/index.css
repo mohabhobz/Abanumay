@@ -163,11 +163,18 @@
 
      ⚠️ الكبسولة (`--rp`) والدايرة (`--r-dot`) **مش درجات مقاس**،
      هما دورَان. فما بينزلوش مع الأساس ولا بيتأثروا بيه. */
-  --r-base:14px;   /* ٢٣ سبتمبر: ٢٠ ← ١٤ · الركن الكبير على كل حاجة من علامات «المعمول بالـAI» */
-  --r3:calc(var(--r-base) * 1.4);
+  /* ٢٣ سبتمبر: ٢٠ ← ١٤ · الركن الكبير على كل حاجة من علامات «المعمول بالـAI».
+     والدرجات بتتقرّب لأقرب بكسل (`round`) والنِّسَب الصغيرة كبرت شوية:
+     بالنسب القديمة (٠٫٦ · ٠٫٤ · ٠٫٢ · ٠٫١) الأساس ١٤ كان بيدّي ٨٫٤ و٢٫٨
+     و١٫٤، ودول بيقعوا **تحت أرضية ١٢٪** على عناصر كتير (زرار ٦٩px بركن
+     ٨ = ١١٪ · مربّع ٢٨ بركن ٣ = ١١٪ · `radaudit` مسكها ٢٣٢ مرة).
+     السلّم دلوقتي: ٢٠ · ١٤ · ١٠ · ٧ · ٤ · ٢ · وكل درجة جوّه نطاقها
+     بين ١٢٪ و٤٥٪ */
+  --r-base:14px;
+  --r3:round(calc(var(--r-base) * 1.43), 1px);
   --r2:var(--r-base);
-  --r1:calc(var(--r-base) * .6);
-  --r0:calc(var(--r-base) * .2);
+  --r1:round(calc(var(--r-base) * .72), 1px);
+  --r0:round(calc(var(--r-base) * .29), 1px);
   --rp:999px;
   /* ═══ درجتان جديدتان · ١٢ سبتمبر ٢٠٢٦ ═══
      الجرد طلّع **٩ أنصاف قطر خارج السلّم**، وتصنيفها بيّن إنهم
@@ -181,7 +188,7 @@
      نمنع حاجة مشروعة**: الدايرة بتاخد اسمًا، والشعرة بتاخد رقمًا
      واحدًا. `--r0` (٤) كانت كبيرة على شظية ٢px وصغيرة على صندوق
      أيقونة، فدورها بيتقسم بين الاتنين وهي بتتعلّم @deprecated. */
-  --r-hair:max(1px, calc(var(--r-base) * .1));   /* شظايا · ضلع < ١٢px */
+  --r-hair:max(1px, round(calc(var(--r-base) * .15), 1px));   /* شظايا · ضلع < ١٢px */
   /* ⚠️ **الصورة والأفاتار خرجوا من هنا (قرار العميل).** الدايرة
      بقت للنقطة وحدها — النقطة شكلها دايرة بطبيعتها ومالهاش بديل،
      أما الصورة فصندوق وبتاخد `--ric` زي أي صندوق، فتمشي مع
@@ -228,7 +235,7 @@
 
      `border-radius:50%` مكتوب بالإيد = خرق، حتى لو الشكل صح ·
      اكتب `var(--r-dot)` عشان القصد يبان والجرد ما يعدّهوش خرقًا. */
-  --ric:calc(var(--r-base) * .4);
+  --ric:round(calc(var(--r-base) * .5), 1px);
 
   /* ═══ سلّم الارتفاعات · مبني من حشو صريح ═══
      الارتفاع **مش رقم بيتكتب**، هو ناتج:  حشو + سطر + حشو.
@@ -760,7 +767,7 @@
      `#825604` بيدّي 4.85 على أسوأ أرضية متقاسة و6.13 على أرضية
      الوسم — والوسم هو أكتر مكان بيستعمله. */
   --warn-ink:#8A3F00; --no-ink:#A8192A; --no-ink2:#9E1C28; --no-ink3:#A8192A;
-  --ok-tag:#117A11; --no-tag:#AA1828; --warn-tag:#A04700;   /* نصّ وسوم الحالة · أزهى من الحبر العام */
+  --ok-tag:#0F7210; --no-tag:#AA1828; --warn-tag:#A04700;   /* نصّ وسوم الحالة · أزهى من الحبر العام · ok كان #117A11 = ٤٫٣٣ على صفّ المرفوع */
   --teal-tag:#0A6660;
   --ret-ink:#20527D; --ret-ink3:#20527D; --on-ret:#FFFFFF; --no-ic:#DC3545; --lime-ink:#6E9F06;
   --ok-ink:#0F6E0F; --ok-ink3:#0F6E0F; --brand-ink:#3E5A08; --mute-ink:#4A6B68;
@@ -1782,10 +1789,14 @@ to{opacity:1;transform:none}
   font-size:var(--fs-1);font-family:var(--fd);font-weight:500;
   color:var(--base);background:var(--t1);
   box-shadow:var(--el-2);
-  opacity:0;transition:opacity 80ms ease-in,translate 80ms ease-in}
-.rail:not(.open) .railitem:hover .rail-tip{opacity:1;translate:0 -50%;
-  transition:opacity 120ms ease-out,translate 120ms ease-out;transition-delay:var(--tip-delay)}
-.rail:not(.open) .railitem:focus-visible .rail-tip{opacity:1;translate:0 -50%}
+  /* `visibility` مع الشفافية: المخفي مخفي فعلًا (مش بس شفاف) فما
+     بيتقاسش ولا بيتقري لقارئ الشاشة وهو مقفول */
+  opacity:0;visibility:hidden;
+  transition:opacity 80ms ease-in,translate 80ms ease-in,visibility 0s linear 80ms}
+.rail:not(.open) .railitem:hover .rail-tip{opacity:1;visibility:visible;translate:0 -50%;
+  transition:opacity 120ms ease-out var(--tip-delay),translate 120ms ease-out var(--tip-delay),
+    visibility 0s linear var(--tip-delay)}
+.rail:not(.open) .railitem:focus-visible .rail-tip{opacity:1;visibility:visible;translate:0 -50%;transition-delay:0s}
 .rail.open .rail-tip{display:none}
 @media (prefers-reduced-motion:reduce){ .rail,.rail-tip{transition:none}
 }.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}.rail .railitem.on{color:var(--on-solid);background:var(--solid);
@@ -4566,7 +4577,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   white-space:nowrap}
 
 .payq-note,.payq-ai{display:flex;align-items:flex-start;gap:var(--sp-3);
-  font-size:var(--fs-2);line-height:var(--lh-text);padding:var(--sp-3) var(--sp-4);border-radius:var(--ric)}
+  font-size:var(--fs-2);line-height:var(--lh-text);padding:var(--sp-3) var(--sp-4);border-radius:var(--r1)}
 .payq-note{color:var(--t1);background:rgba(var(--warnC),.09)}
 .payq-note svg{flex:none;color:var(--warn-ink);margin-top:var(--sp-2)}
 .payq-ai{color:var(--t2);background:rgba(var(--edgeC),.05);flex-wrap:wrap}
@@ -6516,7 +6527,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 /* بعد الرفع · الملف بشكله المعروف في السيستم كله، وجنبه الإزالة */
 .regdoc-up{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
-  padding:var(--sp-2) var(--sp-3);border-radius:var(--ric);
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--r1);
   background:var(--fl-5);box-shadow:inset 0 0 0 1px var(--edge-1)}
 .regdoc-up .dfile{flex:1;min-width:0}
 
@@ -7067,7 +7078,7 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 
 /* نتيجة المراجعة · قرار مكتوب لا رسالة · فله سطح خاص بيه */
 .ptl-res{display:flex;align-items:flex-start;gap:var(--sp-3);
-  padding:var(--sp-4);border-radius:var(--ric);
+  padding:var(--sp-4);border-radius:var(--r1);
   background:rgba(var(--warnC),.09);color:var(--t1)}
 .ptl-res>svg{flex:none;color:var(--warn-ink);margin-top:var(--sp-1)}
 .ptl-res b{display:block;font-size:var(--fs-2);margin-bottom:var(--sp-2)}

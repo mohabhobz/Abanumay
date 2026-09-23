@@ -56,6 +56,10 @@ const textBoxes = () => {
         const hit = document.elementFromPoint(cx, cy)
         if (!hit || (hit !== el && !el.contains(hit) && !hit.contains(el))) continue
         const cs = getComputedStyle(el)
+        /* نصّ مخفي بالشفافية أو `visibility` مش نصًّا بيتقري · التلميح
+           المقفول كان بيتقاس «١٫٠٦» لأن `elementFromPoint` بيعدّيه
+           (`pointer-events:none`) ويرجّع جدّه (٢٣ سبتمبر) */
+        if (cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue
         const eb = el.getBoundingClientRect()
         const lines0 = [...r.getClientRects()].sort((a, c) => a.top - c.top)
         const lines = lines0.map((q) => ({ t: Math.round(q.top), b: Math.round(q.bottom) }))
