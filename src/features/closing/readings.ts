@@ -55,7 +55,8 @@ export function closeReadings(c: CloseRow): Reading[] {
       id: `cl-gap-${g.key}`,
       kind: off ? 'flag' : 'note',
       label: off ? `انحراف في ${g.label}` : `${g.label} مطابقة`,
-      metric: { value: `${diff > 0 ? '+' : ''}${diff}%`, unit: 'عن المعتمد' },
+      /* الإشارة جوّه نفس العزل · برّه كانت بتتقري «146%+» */
+      metric: { value: `\u2066${diff > 0 ? '+' : ''}${diff}%\u2069`, unit: 'عن المعتمد' },
       text:
         `الفعلي ${nf.format(actual)} ${g.unit} والمعتمد ${nf.format(g.planned)} · ` +
         (off

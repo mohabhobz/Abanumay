@@ -124,12 +124,13 @@ export function CopyId({ children }: { children: string }) {
  * (صح للكود `prj-2026-00013`)، فالتاريخ العربي جوّاها بيتقلب
  * بصريًّا. يعني الموضعان اللي كانوا مظبوطين كان فيهم غلطة تانية.
  *
- * المكوّن بيحلّ الاتنين: بيصيغ بـ`readDate` وبيعزل الرقم بـ`.num`
- * من غير `direction` مقلوبة.
+ * المكوّن بيحلّ الاتنين: بيصيغ بـ`readDate` وبيعزل التاريخ بـ`.date`
+ * (عزل بلا `direction`). ⚠️ كان بيلبس `.num`، و`.num` بقت `ltr` بعد
+ * كده، فالتاريخ رجع يتقلب «يوليو 2026 17» في ١٠ شاشات (٢٣ سبتمبر).
  */
 export function DateText({ children }: { children: string | undefined | null }) {
   if (!children) return null
-  return <span className="num">{readDate(children)}</span>
+  return <span className="date">{readDate(children)}</span>
 }
 
 /* ═══════════════ عرض الحقول ═══════════════ */

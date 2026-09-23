@@ -103,7 +103,7 @@ export function boardCards(yearId: string): ReportCard[] {
       key: 'actual',
       question: 'هل نُفّذ ما وُعد به؟',
       icon: 'chart',
-      value: `${g.days > 0 ? '+' : ''}${pct(g.days)}`,
+      value: `\u2066${g.days > 0 ? '+' : ''}${g.days}%\u2069`,
       unit: 'فرق المدة الفعلية عن المخططة',
       reading:
         `على ${nf.format(g.total)} تقريرًا ختاميًا: المدة الفعلية أطول بـ${pct(Math.abs(g.days))} في المتوسط، ` +
