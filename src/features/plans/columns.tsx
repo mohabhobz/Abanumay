@@ -184,7 +184,7 @@ export const COLS: Col[] = [
        لأن «الجهة كتبتها» و«اتكتبت عنها» مش نفس الحاجة في مراجعة. */
     cell: (p) => (p.drafter === 'entity'
       ? <span className="sub">الجهة</span>
-      : <Tag tone="ret">المشرف بالنيابة</Tag>),
+      : <Tag tone="mute">المشرف بالنيابة</Tag>),
     text: (p) => (p.drafter === 'entity' ? 'الجهة' : 'المشرف بالنيابة'),
   },
   {

@@ -114,7 +114,7 @@ export default function ProjectSettingsPage() {
                             : <>حتى <Money>{r.upTo}</Money></>}
                         </span>
                         <span className="pc-sp" />
-                        {on && <Tag tone="ret">يعتمد المبلغ المجرَّب</Tag>}
+                        {on && <Tag tone="mute">يعتمد المبلغ المجرَّب</Tag>}
                         <Tag tone="mute"><Num>{projectsUnder(r)}</Num> مشروعًا تحته</Tag>
                       </li>
                     )

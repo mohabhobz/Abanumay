@@ -57,9 +57,9 @@ export const agrStageWho = (s: AgreementStage): string =>
  */
 export const AGR_TONE: Record<AgreementStage, 'mute' | 'warn' | 'ret' | 'ok' | 'no' | 'teal'> = {
   draft: 'mute',
-  manager: 'ret',
-  executive: 'ret',
-  entity: 'ret',
+  manager: 'teal',
+  executive: 'teal',
+  entity: 'teal',
   returned: 'warn',
   active: 'ok',
   /* الملغاة موجودة في النوع · وسمها 'لا' زي أي حاجة اتقفلت */

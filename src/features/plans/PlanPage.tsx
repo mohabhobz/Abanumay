@@ -174,7 +174,7 @@ export default function PlanPage() {
             <Glass>
               <Head
                 title="صفحة خطة الجهة"
-                meta={<Tag tone="ret">الجهة المستفيدة</Tag>}
+                meta={<Tag tone="mute">الجهة المستفيدة</Tag>}
               />
               <p className="sub cnote">
                 ترفع الجهة الشواهد وتعلن اكتمال النشاط، فيتحوّل إلى
@@ -324,7 +324,7 @@ export default function PlanPage() {
                 <Glass>
                   <Head
                     title="طلبات التعديل الجوهري"
-                    meta={<Tag tone="ret">قاعدة <Num>21</Num></Tag>}
+                    meta={<Tag tone="mute">قاعدة <Num>21</Num></Tag>}
                   />
                   {p.changes.length === 0 ? (
                     <p className="sub cnote">

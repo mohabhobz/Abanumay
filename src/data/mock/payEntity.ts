@@ -82,7 +82,7 @@ export interface EntityStateDef {
   act: string
   /** لسه ماشي · بس دي اللي بيتقال جنبها «تستنّى» */
   waiting?: boolean
-  tone: 'mute' | 'ret' | 'warn' | 'ok' | 'no'
+  tone: 'mute' | 'ret' | 'warn' | 'ok' | 'no' | 'teal'
   /** الحالات الداخلية اللي بتتلمّ تحته */
   inner: string
 }
@@ -94,7 +94,7 @@ export const ENTITY_STATES: EntityStateDef[] = [
   },
   {
     key: 'inflight', label: 'تحت إجراء الدفع', act: '', waiting: true,
-    tone: 'ret', inner: 'مشرف المنح · مدير المنح · الإدارة المالية',
+    tone: 'teal', inner: 'مشرف المنح · مدير المنح · الإدارة المالية',
   },
   {
     key: 'complete', label: 'لاستكمال البيانات', act: 'ارفع الناقص وأعد الإرسال',

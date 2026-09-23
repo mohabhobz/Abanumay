@@ -522,7 +522,7 @@ export default function RequestPage() {
                         <b>{b.purpose}</b>
                         <span className="sub trim1">· {b.bank}</span>
                         <span className="pc-sp" />
-                        {b.id === payBank?.id && <Tag tone="ret">حساب الدفعة</Tag>}
+                        {b.id === payBank?.id && <Tag tone="mute">حساب الدفعة</Tag>}
                         {!b.active && <Tag tone="warn">غير نشط</Tag>}
                       </span>
                       <span className="sub num">{b.iban}</span>

@@ -761,6 +761,7 @@
      الوسم — والوسم هو أكتر مكان بيستعمله. */
   --warn-ink:#8A3F00; --no-ink:#A8192A; --no-ink2:#9E1C28; --no-ink3:#A8192A;
   --ok-tag:#117A11; --no-tag:#AA1828; --warn-tag:#A04700;   /* نصّ وسوم الحالة · أزهى من الحبر العام */
+  --teal-tag:#0A6660;
   --ret-ink:#20527D; --ret-ink3:#20527D; --on-ret:#FFFFFF; --no-ic:#DC3545; --lime-ink:#6E9F06;
   --ok-ink:#0F6E0F; --ok-ink3:#0F6E0F; --brand-ink:#3E5A08; --mute-ink:#4A6B68;
   /* الأرضية أغمق من الكروت: نفس الخافت اللي بيتقري على كارت
@@ -1184,6 +1185,12 @@ small{font-size:var(--fs-1)}
 /* وسوم الحالة · صبغة خفيفة + حلقة رفيعة من اللون نفسه + نصّ مشبّع (العميل ٢٢ سبتمبر: «النصّ باهت جدًا») */
 .tag.ok{background-image:linear-gradient(rgba(var(--okC),.12),rgba(var(--okC),.12));color:var(--ok-tag);box-shadow:inset 0 0 0 1px rgba(var(--okC),.30)}
 .tag.ret{background-image:linear-gradient(rgba(var(--retC),.17),rgba(var(--retC),.17));color:var(--ret-ink3)}
+/* قيد المراجعة / قيد التنفيذ · تيل الهوية (٢٣ سبتمبر). الأزرق كان
+   واخد الدور ده في ٢٠ مكان، وهو مالوش أصل في اللوحة ومعناه في
+   السيستم «مُعاد للاستكمال» بس. و`teal` كانت نبرة معرّفة في النوع
+   من غير ستايل، فوسم «عند الجهة» كان بيترسم نصًّا عاريًا. */
+.tag.teal{background-image:linear-gradient(rgba(var(--ch-2C),.14),rgba(var(--ch-2C),.14));color:var(--teal-tag);
+  box-shadow:inset 0 0 0 1px rgba(var(--ch-2C),.28)}
 .tag.no{background-image:linear-gradient(rgba(var(--noC),.10),rgba(var(--noC),.10));color:var(--no-tag);box-shadow:inset 0 0 0 1px rgba(var(--noC),.22)}
 .tag.warn{background-image:linear-gradient(rgba(var(--warnC),.20),rgba(var(--warnC),.20));color:var(--warn-tag);box-shadow:inset 0 0 0 1px rgba(var(--warnC),.38)}
 .tag.brand{background-image:linear-gradient(rgba(var(--limeC),.34),rgba(var(--limeC),.34));color:var(--brand-ink)}
@@ -4080,7 +4087,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   --ok:#3DC13C; --ret:#68AEE8; --no:#DC3545; --warn:#FFC107;
   --okC:61,193,60; --noC:220,53,69; --warnC:255,193,7;
   --warn-ink:#FFD55C; --no-ink:#FF9AA3; --no-ink2:#FFA8B0; --no-ink3:#FFB3BA;
-  --ok-tag:#6FDC6E; --no-tag:#FF9AA3; --warn-tag:#FFD55C;
+  --ok-tag:#6FDC6E; --no-tag:#FF9AA3; --warn-tag:#FFD55C; --teal-tag:#7FE3D6;
   /* حبر الوسم أفتح من حبر الزرار: أرضية الحبّة أغمق من أرضية
      الزرار في الغامق، فنفس اللون بيقع تحت AA عليها وحده. */
   /* ⚠️ `--ret-ink3` كان `#B6D9F7` وبيدّي **4.25** فوق أرضية وسم

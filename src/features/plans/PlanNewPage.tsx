@@ -60,7 +60,7 @@ export default function PlanNewPage() {
           <div className="screen col">
             <BackTo label="الخطط" onClick={() => navigate(ROUTES.plans)} />
             <Glass>
-              <Head title="لهذا المشروع خطة بالفعل" meta={<Tag tone="ret">خطة واحدة للمشروع</Tag>} />
+              <Head title="لهذا المشروع خطة بالفعل" meta={<Tag tone="mute">خطة واحدة للمشروع</Tag>} />
               <Empty
                 title={`فُتحت لمشروع «${has.projectName}» الخطة ${has.id}.`}
                 note="للمشروع خطة واحدة، فيكون التعديل على الخطة الموجودة لا بفتح خطة أخرى."
@@ -89,7 +89,7 @@ export default function PlanNewPage() {
                 في المحرّر بعد الفتح
               </p>
             </div>
-            <Tag tone="ret">BPD-012</Tag>
+            <Tag tone="mute">BPD-012</Tag>
           </header>
 
           <Glass>

@@ -80,7 +80,7 @@ export function PhaseTree({
               <span className="phase-c"><Money sm>{ph.cost}</Money></span>
 
               {/* النسبة من المقبول وحده · قاعدة 14 */}
-              <Tag tone={done === 100 ? 'ok' : done > 0 ? 'ret' : 'mute'}>
+              <Tag tone={done === 100 ? 'ok' : done > 0 ? 'teal' : 'mute'}>
                 {pct(done)}
               </Tag>
               {queue > 0 && <Tag tone="warn"><Num>{queue}</Num> بانتظار</Tag>}

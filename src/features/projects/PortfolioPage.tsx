@@ -83,7 +83,7 @@ export default function PortfolioPage() {
               </p>
             </div>
             <div className="hacts">
-              <Tag tone="ret">شريك منفّذ</Tag>
+              <Tag tone="mute">شريك منفّذ</Tag>
               <Tag tone="warn">افتراض · بانتظار تأكيد</Tag>
             </div>
           </header>
@@ -132,7 +132,7 @@ export default function PortfolioPage() {
                             <span className="sub"> · {pct(Math.round((x.spent / x.amount) * 100))}</span>
                           </td>
                           <td>
-                            <Tag tone={x.status === 'مكتمل' ? 'ok' : x.status === 'لم يبدأ' ? 'mute' : 'ret'}>
+                            <Tag tone={x.status === 'مكتمل' ? 'ok' : x.status === 'لم يبدأ' ? 'mute' : 'teal'}>
                               {x.status}
                             </Tag>
                           </td>
@@ -170,7 +170,7 @@ export default function PortfolioPage() {
               {/* ⚠️ الكارت ده هو **قلب ب-8**: بيقول اللي **مش**
                   موجود، لأن الغياب اللي مش مكتوب بيتقرا سهوًا */}
               <Glass>
-                <Head title="ما يتغيّر مع الشريك المنفّذ" meta={<Tag tone="ret">الشروط</Tag>} />
+                <Head title="ما يتغيّر مع الشريك المنفّذ" meta={<Tag tone="mute">الشروط</Tag>} />
                 <ul className="pfdiff">
                   {IMPLEMENTER_DIFF.map((d) => (
                     <li key={d.on}>
@@ -206,7 +206,7 @@ export default function PortfolioPage() {
                         </Link>
                       ),
                     },
-                    { k: 'نوع الشراكة', v: <Tag tone="ret">شريك منفّذ</Tag> },
+                    { k: 'نوع الشراكة', v: <Tag tone="mute">شريك منفّذ</Tag> },
                     { k: 'مبلغ المحفظة', v: <Money>{p.total}</Money> },
                     { k: 'المصروف', v: <Money>{spent}</Money> },
                     { k: 'المتبقّي', v: <Money>{p.total - spent}</Money> },

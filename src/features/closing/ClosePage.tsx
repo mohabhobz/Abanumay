@@ -181,7 +181,7 @@ export default function ClosePage() {
             <Glass>
               <Head
                 title="أنت في صفحة تقريرك الختامي"
-                meta={<Tag tone="ret">الجهة المستفيدة</Tag>}
+                meta={<Tag tone="mute">الجهة المستفيدة</Tag>}
               />
               <p className="sub cnote">
                 تُلزم القاعدة <span className="num">4</span> بأربع بيانات حدًّا أدنى:
@@ -329,7 +329,7 @@ export default function ClosePage() {
                 <Head
                   title="تقييم المشروع"
                   meta={c.evaluation
-                    ? <Tag tone={closed ? 'ok' : 'ret'}>
+                    ? <Tag tone={closed ? 'ok' : 'teal'}>
                       {closed ? 'معتمَد' : closeStageLabel(c.stage)}
                     </Tag>
                     : <Tag tone="mute">لم يبدأ</Tag>}

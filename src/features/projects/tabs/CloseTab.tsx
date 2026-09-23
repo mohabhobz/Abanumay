@@ -115,7 +115,7 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
             v: needsComms(c)
               ? (done
                 ? <Tag tone="ok">اعتمده الاتصال المؤسسي</Tag>
-                : <Tag tone="ret">يحتاج مراجعة الاتصال المؤسسي</Tag>)
+                : <Tag tone="mute">يحتاج مراجعة الاتصال المؤسسي</Tag>)
               : <span className="sub">لا ينطبق · لا التزام بالنشر</span>,
           },
           {

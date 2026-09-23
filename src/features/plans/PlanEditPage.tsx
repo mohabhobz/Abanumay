@@ -84,13 +84,13 @@ export default function PlanEditPage() {
                   من <DateText>{p.baselineAt ?? ''}</DateText>
                 </p>
               </div>
-              <Tag tone="ret">مغلقة · قاعدة <Num>21</Num></Tag>
+              <Tag tone="mute">مغلقة · قاعدة <Num>21</Num></Tag>
             </header>
 
             <Glass>
               <Head
                 title="الهيكل مغلق بعد الاعتماد"
-                meta={<Tag tone="ret">قاعدة <Num>21</Num></Tag>}
+                meta={<Tag tone="mute">قاعدة <Num>21</Num></Tag>}
               />
               {/* ⚠️ السبب مكتوب لا مفترَض · القفل من غير سبب بيتقري
                   عطلًا، والمستخدم بيدوّر على طريقة يلفّ حواليها */}

@@ -142,7 +142,7 @@ export const project: Project = {
       hours: 732,
       limit: 900,
       extra: 'سنة 2026، تمويل المؤسسة',
-      tone: 'ret',
+      tone: 'teal',
     },
   ],
 
@@ -200,7 +200,7 @@ export const entity: Entity = {
     { k: 'دعم السنة الحالية', v: 0 },
   ],
   projects: [
-    { id: '22444', name: 'البرنامج العلمي في جمعية الرياحين', region: 'الرياض', status: 'دراسة المشروع', tone: 'ret', weight: 0 },
+    { id: '22444', name: 'البرنامج العلمي في جمعية الرياحين', region: 'الرياض', status: 'دراسة المشروع', tone: 'teal', weight: 0 },
     { id: '22442', name: 'صناعة معايير التربية العلمية وتفعيلها', region: 'الرياض', status: 'معتذر عنه', tone: 'no', weight: 96 },
     { id: '20940', name: 'المكملات المعرفية لطالب العلم', region: 'الرياض', status: 'الحالي', tone: 'brand', weight: 0 },
   ],

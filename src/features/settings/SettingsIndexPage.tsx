@@ -66,7 +66,7 @@ export default function SettingsIndexPage() {
                     <span className="cfgg-h">
                       <b>{g.label}</b>
                       <span className="pc-sp" />
-                      <Tag tone={g.kind === 'master' ? 'ret' : 'warn'}>
+                      <Tag tone={g.kind === 'master' ? 'mute' : 'warn'}>
                         {g.kind === 'master' ? 'بيانات أساسية' : 'قاعدة عمل'}
                       </Tag>
                     </span>

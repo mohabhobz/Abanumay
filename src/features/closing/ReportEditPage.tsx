@@ -115,7 +115,7 @@ export default function ReportEditPage() {
           <Glass>
             <Head
               title="التنفيذ الفعلي"
-              meta={<Tag tone="ret">قاعدة <Num>4</Num></Tag>}
+              meta={<Tag tone="mute">قاعدة <Num>4</Num></Tag>}
             />
 
             <div className="regfields">

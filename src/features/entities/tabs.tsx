@@ -72,8 +72,8 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
                 </span>
               ),
             },
-            { k: 'استثناء عام', v: d.exceptionGeneral ? <Tag tone="ret">مستثناة</Tag> : 'لا' },
-            { k: 'استثناء وقف', v: d.exceptionWaqf ? <Tag tone="ret">مستثناة</Tag> : 'لا' },
+            { k: 'استثناء عام', v: d.exceptionGeneral ? <Tag tone="mute">مستثناة</Tag> : 'لا' },
+            { k: 'استثناء وقف', v: d.exceptionWaqf ? <Tag tone="mute">مستثناة</Tag> : 'لا' },
           ]}
         />
       </Glass>

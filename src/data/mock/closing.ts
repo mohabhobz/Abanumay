@@ -85,14 +85,14 @@ export const closeStageNote = (s: CloseStage): string =>
  */
 export const CLOSE_TONE: Record<CloseStage, 'mute' | 'warn' | 'ret' | 'ok' | 'no' | 'teal'> = {
   draft: 'mute',
-  supervisor: 'ret',
-  comms: 'ret',
-  manager: 'ret',
-  executive: 'ret',
+  supervisor: 'teal',
+  comms: 'teal',
+  manager: 'teal',
+  executive: 'teal',
   reportDone: 'teal',
-  evalDraft: 'ret',
-  evalManager: 'ret',
-  evalExecutive: 'ret',
+  evalDraft: 'teal',
+  evalManager: 'teal',
+  evalExecutive: 'teal',
   closed: 'ok',
   returned: 'warn',
 }

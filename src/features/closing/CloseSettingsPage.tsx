@@ -100,7 +100,7 @@ export default function CloseSettingsPage() {
                         <td>{d.label}</td>
                         <td>
                           {d.req
-                            ? <Tag tone="ret">إلزامي · قاعدة 4</Tag>
+                            ? <Tag tone="mute">إلزامي · قاعدة 4</Tag>
                             : <span className="sub">داعم</span>}
                         </td>
                         <td className="n">

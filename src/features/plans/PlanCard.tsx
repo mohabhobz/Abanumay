@@ -104,7 +104,7 @@ export function PlanCard({ p }: { p: PlanRow }) {
           : <span className="sub">في هذه المرحلة منذ <Num>{days}</Num> يومًا</span>}
         {/* ⚠️ «المشرف بالنيابة» مش تفصيلة إدارية · الوثيقة بتقول إن
             الجهة هي اللي بتكتب، فاللي اتكتب عنها بيتراجع بعين تانية */}
-        {p.drafter === 'supervisor' && <Tag tone="ret">كتبها المشرف بالنيابة</Tag>}
+        {p.drafter === 'supervisor' && <Tag tone="mute">كتبها المشرف بالنيابة</Tag>}
         {change && <Tag tone="warn">طلب تعديل بانتظار مدير المنح</Tag>}
       </div>
 

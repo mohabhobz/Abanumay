@@ -420,7 +420,7 @@ export default function EntityNewPage() {
                 <Glass>
                   <Head
                     title={`ما يتيحه «${partnerKind(partner).label}»`}
-                    meta={<Tag tone="ret">شروط</Tag>}
+                    meta={<Tag tone="mute">شروط</Tag>}
                   />
                   <ul className="payq-ck">
                     {partnerKind(partner).opens.map((o) => (

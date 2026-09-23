@@ -322,7 +322,7 @@ export default function ProjectNewPage() {
 
               {asked > 0 && reach > 0 && (
                 <Glass>
-                  <Head title="تكلفة المستفيد" meta={<Tag tone="ret">محسوبة</Tag>} />
+                  <Head title="تكلفة المستفيد" meta={<Tag tone="mute">محسوبة</Tag>} />
                   <p className="sub">
                     <Money>{asked}</Money> على <b className="num">{nf.format(reach)}</b>{' '}
                     مستفيد = <b><Money>{Math.round(asked / reach)}</Money></b> للمستفيد.

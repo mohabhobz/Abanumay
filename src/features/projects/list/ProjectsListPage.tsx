@@ -435,7 +435,7 @@ export default function ProjectsListPage() {
           {portfolios.length > 0 && (
             <Glass className="pfbar">
               <div className="pfbar-h">
-                <Tag tone="ret">شريك منفّذ</Tag>
+                <Tag tone="mute">شريك منفّذ</Tag>
                 <b>محافظ</b>
                 <span className="sub">
                   خارج قائمة المشاريع · كيان أب تندرج تحته مشاريع، ولا اتفاقية له

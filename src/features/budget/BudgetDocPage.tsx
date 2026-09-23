@@ -607,7 +607,7 @@ export default function BudgetDocPage() {
                             </span>
 
                             <span>
-                              <Tag tone={x.kind === 'sub' ? 'ret' : 'mute'}>
+                              <Tag tone="mute">
                                 {KIND_SAY[x.kind]} · <Num>{lvl}</Num>
                               </Tag>
                             </span>

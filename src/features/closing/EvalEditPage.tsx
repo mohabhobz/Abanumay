@@ -76,7 +76,7 @@ export default function EvalEditPage() {
           <div className="screen col">
             <BackTo label="صفحة الإغلاق" onClick={() => navigate(ROUTES.closing(c.id))} />
             <Glass>
-              <Head title="لم يبدأ تقييم المشروع بعد" meta={<Tag tone="ret">قاعدة <Num>6</Num></Tag>} />
+              <Head title="لم يبدأ تقييم المشروع بعد" meta={<Tag tone="mute">قاعدة <Num>6</Num></Tag>} />
               <Empty
                 title={canStartEval(c)
                   ? 'اعتُمد التقرير · يمكن بدء التقييم الآن.'

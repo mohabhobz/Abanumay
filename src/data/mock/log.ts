@@ -159,7 +159,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     dept: 'دراسة المشروع',
     by: owner,
     actor: 'staff',
-    tone: 'ret',
+    tone: 'teal',
     fields: [
       { k: 'السنة', v: `${row.year.slice(0, 4)} · ${row.funding === 'waqf' ? 'الوقف' : 'المؤسسة'}` },
       { k: 'المجال', v: row.field },
