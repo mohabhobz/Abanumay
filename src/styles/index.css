@@ -751,7 +751,7 @@
      `--green` ممزوج ٧٥٪ مع سطح `--pop` · **معتم** عشان التباين ما
      يعتمدش على المِش اللي تحته (الدرس المكتوب تحت عند
      `.btn-p:disabled`). أبيض عليه = 5.21 · فوق الحدّ. */
-  --solid-off:#4E7374;
+  --solid-off:#4E7374; --on-solid-off:var(--on-solid);
   --solidC:20,69,71;                       /* نفس اللون أرقامًا · للثانوي */
   --link:#3E5A08;
   /* ⚠️ `--warn-ink` كان على حدّ AA زي `--t3` بالظبط: `#8A5C05` فوق
@@ -3326,8 +3326,12 @@ to{opacity:1;transform:none}
    لسه تلاتة زي ما هي (أرضية أخفّ · حبر مخفَّت · وزن أقلّ).
 
    والدرس: **تباين بيعتمد على اللي وراه مش تباينًا مضمونًا.** */
-.btn-p:disabled,.btn-d:disabled{background:var(--solid-off);color:var(--on-solid);
+.btn-p:disabled{background:var(--solid-off);color:var(--on-solid-off);
   box-shadow:none;text-shadow:none}
+/* الرفض المعطَّل بيفضل رفضًا (أرضية حمرا خفيفة) بحبر مخفَّت · كان
+   بياخد أرضية الأساسي المعطَّل، فبالليل «رفض وإيقاف» كان بيترسم تيل
+   مصمت زي «اعتماد وتفعيل» اللي جنبه (٢٣ سبتمبر) */
+.btn-d:disabled{color:var(--t3);box-shadow:none}
 .btn-2:disabled,.btn-ghost:disabled,.btn:not([class*="btn-"]):disabled{color:var(--t3)}
 /* ═══ شريط الإجراء المجمّع ═══
    بيلبس `.decdock`/`.decbar` بحالهم · نفس رصيف شريط القرار ونفس
@@ -4082,7 +4086,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   --logo-ink:#FFFFFF; --logo-teal:#FFFFFF; --logo-lime:#FFFFFF;
   --solid:#2FC7B6; --on-solid:#06100F; --solidC:47,199,182;
   /* نفس المزج في الداكن · الحبر الغامق عليه = 5.67 */
-  --solid-off:#289B8E;
+  /* المعطَّل بالليل كان #289B8E · تيل مشبّع قريب من المفعَّل (#2FC7B6)
+     فالزرار المقفول كان بيبان شغّالًا. دلوقتي تيل مطفي بحبر فاتح */
+  --solid-off:#24403D; --on-solid-off:var(--t2);
   --link:#A8D93C;
   --ok:#3DC13C; --ret:#68AEE8; --no:#DC3545; --warn:#FFC107;
   --okC:61,193,60; --noC:220,53,69; --warnC:255,193,7;
@@ -6371,8 +6377,12 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* ⚠️ الـ`textarea` جوّه نفس `.fld` بتاعة الحقول التانية · حقل
    بحلقة تركيز مختلفة بيبان غريبًا جنب إخواته، والحلقة دي مفحوصة
    في `ctlaudit` */
-.fld-a{align-items:stretch;block-size:auto}
-.fld-a textarea{width:100%;resize:vertical;line-height:var(--lh-long)}
+/* أي `textarea` جوّه `.fld` · مش `.fld-a` بس. نماذج التقرير الختامي
+   والتقييم كانت بتحطّه في `.fld` عادية، فكان بياخد عرضه الافتراضي
+   (٢٠ عمود = ١٧٨px) في حقل عرضه ١٢٥٢ · والنص بيلفّ بعد تلات كلمات
+   ومقبض التحجيم في نصّ الحقل (٢٣ سبتمبر). */
+.fld-a,.fld:has(>textarea){align-items:stretch;block-size:auto}
+.fld textarea{flex:1;min-width:0;width:100%;resize:vertical;line-height:var(--lh-long)}
 /* الفئات المستهدفة شرائح · الاختيار متعدّد، والمنسدلة المتعددة
    بتخبّي اللي اتختار ورا «3 مختارة» */
 .pmulti{display:flex;flex-wrap:wrap;gap:var(--sp-2);min-width:0}
