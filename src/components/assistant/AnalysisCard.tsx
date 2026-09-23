@@ -103,7 +103,6 @@ export function AnalysisCard({
   if (!armed) {
     return (
       <Glass className="aicard aishut" ref={card}>
-        <Aurora />
         <div className="aishut-c">
           <span className="badge badge-44"><span className="aispark" /></span>
 

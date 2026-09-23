@@ -90,6 +90,7 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
         {open && (
           <AssistantScreen
             key={runs}
+            label="مساعد أبانمي"
             greet={`أهلًا ${first}`}
             sub={ctx.scope}
             cards={ctx.cards}

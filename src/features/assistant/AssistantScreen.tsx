@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Aurora } from '@/components/assistant/Aurora'
 import { Icon, icons } from '@/components/ui'
 import {
   AiMessage, Composer, Disclaimer, Welcome, useAssistant, type WelcomeCard,
@@ -9,6 +10,8 @@ import { savedChats, type SavedChat } from '@/data/mock/assistant'
 import { ChatList } from './ChatList'
 
 export interface AssistantScreenProps {
+  /** اسم الترويسة قبل ما المحادثة تبدأ (النافذة: «مساعد أبانمي») */
+  label?: string
   /** الترحيب الشخصي · «أهلًا عمر» · ثابت في كل مكان */
   greet: string
   /** سطر المدى · **ده وحده اللي بيتغيّر حسب الصفحة** */
@@ -44,7 +47,7 @@ export interface AssistantScreenProps {
  * أقدر أساعدك في «س»؟») والكروت الأربعة. مفيش تشكيل خاص بمكان.
  */
 export function AssistantScreen({
-  greet, sub, cards, onClose, headExtra, focusOnMount, labelledBy,
+  label, greet, sub, cards, onClose, headExtra, focusOnMount, labelledBy,
   listShut, onListShut,
 }: AssistantScreenProps) {
   const mobile = useIsMobile()
@@ -137,7 +140,7 @@ export function AssistantScreen({
      فاضي لحد ما يتفتح شات فعلًا. */
   const opened = chats.find((c) => c.id === openChat)
   const firstAsk = msgs.find((m) => m.who === 'me')?.text
-  const title = opened ? opened.title : firstAsk ?? ''
+  const title = opened ? opened.title : firstAsk ?? label ?? ''
 
   return (
     <>
@@ -153,6 +156,8 @@ export function AssistantScreen({
       />
 
       <div className="chatcol" ref={col}>
+        {/* الشفق ورا مربع الكتابة وقت ما المساعد بيرد · بيختفي لمّا يخلص */}
+        <Aurora live={busy} />
         {/* العنوان جوّه عمود بنفس عرض المحادثة تحته، عشان يبدأ من
             نفس السطر · الترويسة اللي بتاخد عرض الشاشة كانت بتسيب
             العنوان معلّقًا في الحافة بعيدًا عن أول كلمة في الرد. */}
