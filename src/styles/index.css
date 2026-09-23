@@ -2270,6 +2270,10 @@ to{opacity:1;transform:none}
    في شاشة ١١٠٠ (مهاب · ٢٤ سبتمبر). والتحية سطرها مضغوط عشان نصف
    المسافة بين السطور ما يزوّدش الفراغ اللي فوق عن اللي على الجنب. */
 .apanel:not(.wide){--wpad:var(--sp-7)}
+/* تحت مربع الكتابة في النافذة أرضية معتمة بلون النافذة نفسها · البلور
+   وحده كان بيسيب شرايح المتابعة تبان من ورا سطر التنبيه وتتقري معاه */
+.apanel:not(.wide) .composer.docked::before{-webkit-mask-image:none;mask-image:none;
+  background:linear-gradient(to top,rgb(var(--popC)) 0,rgb(var(--popC)) 55%,rgba(var(--popC),0))}
 .apanel:not(.wide) .chat-top{padding:var(--sp-4) var(--wpad);box-shadow:inset 0 -1px 0 var(--edge-d)}
 .apanel:not(.wide) .chat-body{padding:var(--wpad)}
 .apanel:not(.wide) .chat-body.mid{justify-content:flex-start}
@@ -2961,7 +2965,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .go.stop{background:#2B3A3A}
 .go.stop .sq{width:10px;height:10px;border-radius:var(--r-hair);background:#fff;display:block}
 .cdisc{text-align:center;margin-top:var(--sp-3);font-size:var(--fs-1)}
-.tobottom{position:absolute;bottom:120px;inset-inline-start:50%;transform:translateX(50%);
+.tobottom{position:absolute;bottom:calc(var(--dock, var(--sp-12)) + var(--sp-3));inset-inline-start:50%;transform:translateX(50%);
   width:36px;height:36px;border-radius:var(--ric);display:grid;place-items:center;color:var(--t2);z-index:6;
   box-shadow:inset 0 0 0 1px var(--edge-2), var(--el-2);
   animation:airise .2s ease both}
@@ -2994,7 +2998,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .composer.docked::before{height:210px}
 .cmsg.me{max-width:88%}
 .cb-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-.tobottom{bottom:170px}
+
 }
 /* ═══════════════════════════════════════════════════════════
    شاشة الدخول

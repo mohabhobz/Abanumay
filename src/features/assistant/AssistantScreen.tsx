@@ -72,21 +72,33 @@ export function AssistantScreen({
   /* المسافة تحت آخر رسالة = ارتفاع مربع الكتابة الحقيقي، مقيسًا */
   useDockHeight(col)
 
-  /* التمرير بيتبع الكتابة، إلا لو المستخدم طلّع بنفسه */
-  const [stick, setStick] = useState(true)
+  /* ⚠️ **الرد بيتقري من أوله.** قبل كده التمرير كان لازق في آخر
+     المحادثة، فالرد الطويل بيبان من ذيله وأوله مستخبي تحت الترويسة.
+     دلوقتي كل سؤال جديد بيطلع لأول المساحة والرد بيكمّل تحته، ومفيش
+     تمرير تلقائي بعد كده · اللي عايز الآخر عنده زرار «لآخر المحادثة». */
+  const [atEnd, setAtEnd] = useState(true)
   useEffect(() => {
     const el = body.current
     if (!el) return
-    const onScroll = () => setStick(el.scrollHeight - el.scrollTop - el.clientHeight < 90)
+    const onScroll = () => setAtEnd(el.scrollHeight - el.scrollTop - el.clientHeight < 90)
+    onScroll()
     el.addEventListener('scroll', onScroll)
     return () => el.removeEventListener('scroll', onScroll)
   })
+  const asks = msgs.filter((m) => m.who === 'me').length
   useEffect(() => {
-    // من غير شرط الرسائل، الحالة الأولى بتتزحلق لتحت وترحيبها ما يبانش
-    if (msgs.length && stick && body.current) {
-      body.current.scrollTop = body.current.scrollHeight
-    }
-  })
+    const el = body.current
+    if (!asks || !el) return
+    const mine = el.querySelectorAll<HTMLElement>('.cmsg.me')
+    const last = mine[mine.length - 1]
+    if (!last) return
+    const pad = parseFloat(getComputedStyle(el).paddingTop) || 0
+    el.scrollTo({
+      top: last.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - pad,
+      behavior: asks > 1 ? 'smooth' : 'auto',
+    })
+  }, [asks])
+  const toEnd = () => body.current?.scrollTo({ top: body.current.scrollHeight, behavior: 'smooth' })
 
   /* ⚠️ **المحادثة الجديدة بتنزل في القايمة باسمها** (أ-5).
      قبل كده أول سؤال كان بيفتح خيطًا معرّفه `'new'` وخلاص · يعني
@@ -233,8 +245,8 @@ export function AssistantScreen({
           )}
         </div>
 
-        {!stick && msgs.length > 0 && (
-          <button className="tobottom chrome" onClick={() => setStick(true)} aria-label="انتقل إلى آخر المحادثة">
+        {!atEnd && msgs.length > 0 && (
+          <button className="tobottom chrome" onClick={toEnd} aria-label="انتقل إلى آخر المحادثة">
             <Icon name={icons.down} size="sm" />
           </button>
         )}
