@@ -2282,16 +2282,19 @@ to{opacity:1;transform:none}
 .apanel:not(.wide) .welcome .wgreet{font-size:var(--fs-6)}
 .apanel:not(.wide) .welcome .wsub{font-size:var(--fs-3);line-height:var(--lh-text);margin-top:var(--sp-1)}
 .apanel:not(.wide) .welcome>.composer{margin-top:var(--sp-5)}
-.apanel:not(.wide) .welcome .wcards{display:flex;flex-direction:column;gap:0;margin-top:var(--sp-4)}
-.apanel:not(.wide) .welcome .wcard{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"i t" "i s";
-  column-gap:var(--sp-4);row-gap:0;align-items:center;padding:var(--pad-in);border-radius:var(--r1);
-  background:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;translate:none}
+.apanel:not(.wide) .welcome .wcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
+/* الاقتراحات الأربعة جنب بعض (مهاب) · صندوق خفيف: الأيقونة جنب العنوان
+   والشرح تحتهم · من غير رفعة ولا توهّج مع الماوس */
+.apanel:not(.wide) .welcome .wcard{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"i t" "s s";
+  column-gap:var(--sp-2);row-gap:var(--sp-1);align-items:center;align-content:start;padding:var(--pad-in);border-radius:var(--r1);
+  background:none;-webkit-backdrop-filter:none;backdrop-filter:none;translate:none;
+  box-shadow:inset 0 0 0 1px var(--edge-1)}
 .apanel:not(.wide) .welcome .wcard::before,.apanel:not(.wide) .welcome .wcard::after{display:none}
-.apanel:not(.wide) .welcome .wcard+.wcard{box-shadow:inset 0 1px 0 var(--edge-d)}
 .apanel:not(.wide) .welcome .wcard:hover{background:var(--fl-3)}
-.apanel:not(.wide) .welcome .wcard .badge{grid-area:i;margin:0;background:none;box-shadow:none;color:var(--t2)}
-.apanel:not(.wide) .welcome .wc-t{grid-area:t;font-size:var(--fs-3)}
-.apanel:not(.wide) .welcome .wc-s{grid-area:s;font-size:var(--fs-2)}
+.apanel:not(.wide) .welcome .wcard .badge{grid-area:i;width:auto;height:auto;margin:0;background:none;box-shadow:none;color:var(--t2)}
+.apanel:not(.wide) .welcome .wcard .badge svg{width:var(--ic-sm);height:var(--ic-sm)}
+.apanel:not(.wide) .welcome .wc-t{grid-area:t;font-size:var(--fs-2)}
+.apanel:not(.wide) .welcome .wc-s{grid-area:s;font-size:var(--fs-1)}
 .apanel:not(.wide) .cdisc{margin-top:var(--sp-4)}
 .anote{font-size:var(--fs-1);animation:airise .45s cubic-bezier(.22,.9,.3,1) .42s both}
 @media (max-width:760px){.apanel{inset-inline:0;width:100%}
@@ -5837,8 +5840,6 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   opacity:0;transition:opacity .6s ease}
 /* بيظهر وقت الشغل بس · وهو ساكن مخفي والحركة واقفة */
 .aur.live{opacity:1}
-/* في عمود المحادثة الشفق في الثلث الأخير بس · ورا مربع الكتابة */
-.chatcol>.aur{top:auto;height:40%}
 .aur:not(.live) .aur-lift>b{animation-play-state:paused}
 .aur-lift{position:absolute;inset-inline:-18%;bottom:-26%;height:150%;display:block;
   transform:scaleY(.72);transform-origin:bottom;transition:transform .6s cubic-bezier(.22,.9,.3,1);

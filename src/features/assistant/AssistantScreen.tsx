@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Aurora } from '@/components/assistant/Aurora'
 import { Icon, icons } from '@/components/ui'
 import {
   AiMessage, Composer, Disclaimer, Welcome, useAssistant, type WelcomeCard,
@@ -156,8 +155,6 @@ export function AssistantScreen({
       />
 
       <div className="chatcol" ref={col}>
-        {/* الشفق ورا مربع الكتابة وقت ما المساعد بيرد · بيختفي لمّا يخلص */}
-        <Aurora live={busy} />
         {/* العنوان جوّه عمود بنفس عرض المحادثة تحته، عشان يبدأ من
             نفس السطر · الترويسة اللي بتاخد عرض الشاشة كانت بتسيب
             العنوان معلّقًا في الحافة بعيدًا عن أول كلمة في الرد. */}
