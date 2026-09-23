@@ -845,6 +845,14 @@
      درجات**: بين درجتين لا بين رقمين مخترَعين. */
   --gap: clamp(var(--sp-4), 1.6vw, var(--sp-6));
   --pad: clamp(var(--sp-5), 1.8vw, var(--sp-7));
+  /* ═══ الحشو · تلات أدوار بس (٢٣ سبتمبر · مهاب: «توحيد البادنج») ═══
+     المقيس قبل: الكروت كانت بـ٥ قيم (٢٤ · ٢٠ · ١٦ · ١٢/١٦ · ٨)،
+     والصناديق جوّه الكروت بـ٧ قيم (٤/١٢ · ٨/١٢ · ٨/٨ · ١٢/١٢ · ١٦ · ٤/٨ …).
+       --pad      أي كارت (زجاج · لوح)
+       --pad-bar  شريط صفّ واحد (شريط الأدوات · شريط القراءة)
+       --pad-in   صندوق جوّه كارت (صفّ قايمة · ملاحظة · مجموع · تنبيه) */
+  --pad-bar: var(--sp-5);
+  --pad-in: var(--sp-4) var(--sp-5);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -1089,7 +1097,7 @@ small{font-size:var(--fs-1)}
 .ic-14{width:16px;height:16px}
 .badge,.attach,.go{line-height:var(--lh-0)}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--gap)}
-.stat{padding:clamp(var(--sp-4), 1.4vw, var(--sp-5))}
+.stat{padding:var(--pad)}
 .stat .v{font-family:var(--fd);font-weight:700;font-size:var(--fd-3);margin-top:var(--sp-1);letter-spacing:-.01em}
 .stat .v small{font-size:.6em;font-weight:400;color:var(--t2);margin-inline-start:var(--sp-2)}
 /* ═══════════════════════════════════════════════════════════
@@ -1797,8 +1805,10 @@ to{opacity:1;transform:none}
   z-index:70;white-space:nowrap;pointer-events:none;
   padding:var(--sp-2) var(--sp-3);border-radius:var(--r0);
   font-size:var(--fs-1);font-family:var(--fd);font-weight:500;
-  color:var(--base);background:var(--t1);
-  box-shadow:var(--el-2);
+  /* نفس سطح القوايم (`--pop`) بحبر النصّ العادي · كان صندوقًا غامقًا
+     بحبر فاتح، شكل غريب على السيستم (مهاب · ٢٣ سبتمبر) */
+  color:var(--t1);background:var(--pop);
+  box-shadow:inset 0 0 0 1px var(--edge-1),var(--el-2);
   /* `visibility` مع الشفافية: المخفي مخفي فعلًا (مش بس شفاف) فما
      بيتقاسش ولا بيتقري لقارئ الشاشة وهو مقفول */
   opacity:0;visibility:hidden;
@@ -1856,7 +1866,7 @@ to{opacity:1;transform:none}
 .ask.free:hover .ph{color:var(--t2)}
 .ask.free .ph{transition:color .2s ease}
 /* فقاعة رسالة المستخدم: كارت كامل */
-.msg{max-width:70%;padding:var(--sp-4) var(--sp-5);border-radius:var(--r2);
+.msg{max-width:70%;padding:var(--pad-in);border-radius:var(--r2);
   background:linear-gradient(158deg,var(--fl-6),var(--fl-4));
   font-size:var(--fs-3);line-height:var(--lh-long);
   -webkit-backdrop-filter:var(--mat-1);
@@ -3127,7 +3137,7 @@ to{opacity:1;transform:none}
    كارت زجاجي بيعمل سياق تكديس بنفسه (`isolation:isolate`). من غير
    رفع الشريط، لوحة الفلتر المفتوحة بيتقطعها الكارت اللي بعدها. */
 .ftoolbar{position:relative;z-index:20;
-  display:flex;flex-direction:column;gap:var(--sp-4);padding:var(--sp-5) var(--sp-5)}
+  display:flex;flex-direction:column;gap:var(--sp-4);padding:var(--pad-bar)}
 /* الصفّ مجموعتان لا قايمة واحدة: الفلاتر بتلفّ جوّه مجموعتها،
    والأدوات (اللقطات · التصدير · مبدّل الفيو) مجموعة ملزوقة في آخر
    الصفّ ما بتلفّش. من غير الفصل ده، أي فلتر بيكبر أو يختفي بيزقّ
@@ -3520,7 +3530,7 @@ to{opacity:1;transform:none}
 /* الكارت مقفول ⇒ المسافة فوق الترويسة = المسافة تحت اللمحة
    بالظبط. كانت ١٣٫٦ فوق و١٢٫٨ تحت لأن كل واحد كان بيتحسب من رقم
    مختلف. دلوقتي الاتنين نفس التوكن. */
-.qread.strip{--qpad:var(--sp-4)}
+.qread.strip{--qpad:var(--pad-bar)}
 .qread.strip>.qr-head{border-radius:max(var(--r1),calc(var(--r2) - var(--pad)));
   padding-block:calc(var(--qpad) - var(--pad));
   padding-inline:calc(var(--qpad) - var(--pad))}
@@ -4443,7 +4453,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    كارت الاتفاقية بيلبس نفس صندوق كارت الصرف · نفس السؤال ونفس
    الشكل، واللي بيختلف هو الشروط اللي جوّاه. */
 .agrq{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0;
-  padding:var(--sp-4) var(--sp-5) var(--sp-5)}
+  padding:var(--pad)}
 .agrq .payq-f{margin-top:auto}
 /* ⚠️ **مكان الشريط بيفضل محجوز حتى قبل ما القياس يبدأ.** الخطة
    اللي لسه ما اتعتمدتش مالهاش مخطَّط لليوم تتقاس عليه، فالشريط
@@ -4477,7 +4487,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .order-s{padding-block-start:var(--sp-5)}
 .order-s h3{font-family:var(--fd);font-weight:700;font-size:var(--fs-3);
   line-height:var(--lh-3);margin:0 0 var(--sp-3)}
-.order-amt{margin-block-start:var(--sp-4);padding:var(--sp-4);
+.order-amt{margin-block-start:var(--sp-4);padding:var(--pad-in);
   border-radius:var(--r1);background:var(--fl-5);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 .order-amt .lb{font-size:var(--fs-1);color:var(--t3-g)}
@@ -4540,7 +4550,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    الطرف.** ولا كارت تاني في النظام بيعمل كده — `.pcard.sel`
    بتاخد حلقة كاملة لا شريطًا جانبيًّا. */
 .payq{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0;
-  padding:var(--sp-5);
+  padding:var(--pad);
   transition:transform .18s ease,box-shadow .18s ease}
 .payq:hover{transform:translateY(-2px);
   box-shadow:inset 0 0 0 1px var(--edge-i)}
@@ -4589,7 +4599,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   white-space:nowrap}
 
 .payq-note,.payq-ai{display:flex;align-items:flex-start;gap:var(--sp-3);
-  font-size:var(--fs-2);line-height:var(--lh-text);padding:var(--sp-3) var(--sp-4);border-radius:var(--r1)}
+  font-size:var(--fs-2);line-height:var(--lh-text);padding:var(--pad-in);border-radius:var(--r1)}
 .payq-note{color:var(--t1);background:rgba(var(--warnC),.09)}
 .payq-note svg{flex:none;color:var(--warn-ink);margin-top:var(--sp-2)}
 .payq-ai{color:var(--t2);background:rgba(var(--edgeC),.05);flex-wrap:wrap}
@@ -4786,7 +4796,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .rpp-cb>i.on{background:rgba(var(--tone-2),.9)}
 /* ═══ حزم التقارير ═══ */
 .rpkg{display:grid;gap:var(--sp-4);grid-template-columns:repeat(auto-fill,minmax(268px,1fr))}
-.rpk{display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-5)}
+.rpk{display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--pad)}
 .rpk.soon{opacity:.78}
 .rpk-i{display:grid;place-items:center;width:38px;height:38px;border-radius:var(--ric);
   color:var(--t1);background:var(--fl-3);
@@ -5058,7 +5068,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    يتضغط عليها · وإلا المستخدم بيبصّ على قايمة أسطر عايمة ما
    بتقولش إن فيه حاجة تتفتح. */
 .tcap{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
-  padding-inline:var(--sp-4);padding-block:var(--sp-2);
+  padding:var(--pad-in);
   border-radius:var(--r1);background:var(--fl-1);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 /* ⚠️ **اللي بيلزق بجدوله هو آخر مستوى وحده (`.ontbl`).** العقدة
@@ -5138,7 +5148,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   direction:rtl;unicode-bidi:isolate;white-space:nowrap}
 /* الإجمالي الكلي تحت المجموعات */
 .tgrand{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;
-  padding:var(--sp-4) var(--sp-5);border-radius:var(--r1);
+  padding:var(--pad-in);border-radius:var(--r1);
   background:rgba(var(--edgeC),.06);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 .tgrand-k{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
@@ -5439,7 +5449,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .agr-body li::marker{color:var(--t3)}
 /* ── الدفعات ── */
 .paylist{display:flex;flex-direction:column;gap:var(--sp-4);margin-top:var(--sp-2)}
-.pay{padding:var(--sp-5) var(--sp-5);border-radius:var(--r1);
+.pay{padding:var(--pad-in);border-radius:var(--r1);
   background:var(--fl-2);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 .pay.done{box-shadow:inset 0 0 0 1px rgba(var(--okC),.28)}
@@ -5452,7 +5462,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .pay-cond .lb{flex:none;color:var(--t3)}
 /* ── ثريد المراسلة ── */
 .thread{display:flex;flex-direction:column;gap:var(--sp-3)}
-.msg{padding:var(--sp-4) var(--sp-5);border-radius:var(--r1);max-width:88%;
+.msg{padding:var(--pad-in);border-radius:var(--r1);max-width:88%;
   background:var(--fl-2);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 /* رسالة الطرف التاني على الشمال ورسالة اللي فاتح الشاشة على
@@ -5692,7 +5702,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   transition:color .14s ease,background .14s ease}
 .lgmore:hover{color:var(--t1);background:var(--ctl-quiet-h)}
 
-.lgfields{margin-top:var(--sp-3);padding:var(--sp-4) var(--sp-5);border-radius:var(--r1);
+.lgfields{margin-top:var(--sp-3);padding:var(--pad-in);border-radius:var(--r1);
   background:var(--fl-3);
   box-shadow:inset 0 0 0 1px var(--edge-1);
   display:flex;flex-direction:column;gap:var(--sp-3)}
@@ -5769,7 +5779,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    فالبوستر بيقعد فوق والفراغ كله تحت. `align-items:center`
    بيخلّي الابن على طوله الطبيعي، و`margin:auto` بتتوسّطه من غير
    ما تقطع أوّله لو طال (بعكس `justify-content`). */
-.aicard.aishut{padding:var(--sp-6) var(--sp-6);display:flex;align-items:flex-start;justify-content:flex-start;overflow:auto;
+.aicard.aishut{padding:var(--pad);display:flex;align-items:flex-start;justify-content:flex-start;overflow:auto;
   scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.2) transparent}
 .aishut-c{display:flex;flex-direction:column;align-items:flex-start;text-align:start;
   gap:var(--sp-4);max-width:28rem}
@@ -6029,7 +6039,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* كان `--r1` · ١٦ على سطر ارتفاعه ١٩ = **٨٤٪** · ده وسم عدّاد لا لوح */
 .catc-n b{font-family:var(--fd);font-weight:600;font-size:var(--fs-1);color:var(--t1);
   padding:var(--sp-1) var(--sp-3);border-radius:var(--rp);background:rgba(var(--edgeC),.06)}
-.catc-f{font-size:var(--fs-1);line-height:var(--lh-long);color:var(--t2);padding:var(--sp-3) var(--sp-3);border-radius:var(--r1);
+.catc-f{font-size:var(--fs-1);line-height:var(--lh-long);color:var(--t2);padding:var(--pad-in);border-radius:var(--r1);
   min-height:calc(5.55em + 1rem);
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
   background:rgba(var(--retC2),.06);
@@ -6595,7 +6605,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 /* بعد الرفع · الملف بشكله المعروف في السيستم كله، وجنبه الإزالة */
 .regdoc-up{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
-  padding:var(--sp-2) var(--sp-3);border-radius:var(--r1);
+  padding:var(--pad-in);border-radius:var(--r1);
   background:var(--fl-5);box-shadow:inset 0 0 0 1px var(--edge-1)}
 .regdoc-up .dfile{flex:1;min-width:0}
 
@@ -6829,7 +6839,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .cfglist{list-style:none;margin:var(--sp-4) 0 0;padding:0;
   display:flex;flex-direction:column;gap:var(--sp-2)}
 .cfglist li{display:flex;align-items:center;gap:var(--sp-4);min-width:0;
-  padding:var(--sp-3) var(--sp-4);border-radius:var(--ric);
+  padding:var(--pad-in);border-radius:var(--r1);
   background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1);
   font-size:var(--fs-2);line-height:var(--lh-2)}
 .cfglist li>b{flex:none;font-family:var(--fd);font-weight:600;color:var(--t1)}
@@ -6849,7 +6859,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    في يوم: **جوّه كارت زجاجي، أي أرضية مرفوعة تانية بتاكل هامش
    التباين لكل اللي جوّاها** · فالفصل بيتقال بالحلقة. */
 .cfggrid li{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0;
-  padding:var(--sp-4);border-radius:var(--ric);
+  padding:var(--pad-in);border-radius:var(--r1);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 .cfgg-h{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
 .cfgg-h>b{font-family:var(--fd);font-weight:600;color:var(--t1);min-width:0}
@@ -6990,7 +7000,7 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
    العميل، والقياس فضل صحيحًا لأن السبب سطح زيادة لا لون).
    الحدّ لوحده كفاية عشان الصفّ يتقرا كتلة. */
 .bkrow{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0;
-  padding:var(--sp-5);border-radius:var(--r1);
+  padding:var(--pad-in);border-radius:var(--r1);
   box-shadow:inset 0 0 0 1px var(--edge-2)}
 .bkrow-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0;
   font-size:var(--fs-3);color:var(--t1)}
@@ -7146,7 +7156,7 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 
 /* نتيجة المراجعة · قرار مكتوب لا رسالة · فله سطح خاص بيه */
 .ptl-res{display:flex;align-items:flex-start;gap:var(--sp-3);
-  padding:var(--sp-4);border-radius:var(--r1);
+  padding:var(--pad-in);border-radius:var(--r1);
   background:rgba(var(--warnC),.09);color:var(--t1)}
 .ptl-res>svg{flex:none;color:var(--warn-ink);margin-top:var(--sp-1)}
 .ptl-res b{display:block;font-size:var(--fs-2);margin-bottom:var(--sp-2)}
