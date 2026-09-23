@@ -2405,15 +2405,17 @@ to{opacity:1;transform:none}
    And the cell is a row, not a column: stacked icon-over-label made
    a 53px cell, taller than the identity row above it, so the switch
    read as the main event in an account menu. */
-.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-1);
+/* الخانات بعدد الخيارات لا ٣ ثابتة · لما خيار «النظام» اتشال فضلت
+   خانة تالتة فاضية والخيارين مزقوقين على ناحية (٢٤ سبتمبر) */
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:var(--sp-1);
   padding:var(--sp-2);border-radius:var(--r1);
   background:rgba(var(--edgeC),.05)}
 .seg button{display:flex;flex-direction:row;align-items:center;justify-content:center;
-  gap:var(--sp-2);padding:var(--sp-3) var(--sp-2);border-radius:var(--ric);
-  font-size:var(--fs-1);color:var(--t3);cursor:pointer;line-height:var(--lh-head);
+  gap:var(--sp-3);padding:var(--sp-3) var(--sp-2);border-radius:var(--ric);
+  font-size:var(--fs-2);color:var(--t2);cursor:pointer;line-height:var(--lh-head);
   transition:background .16s ease,color .16s ease,box-shadow .16s ease}
 .seg button svg{flex:none;width:var(--ic-sm);height:var(--ic-sm)}
-.seg button:hover{color:var(--t2)}
+.seg button:hover{color:var(--t1)}
 .seg button.on{color:var(--t1);background:var(--fl-7);
   box-shadow: var(--el-1),inset 0 0 0 1px var(--edge-1)}
 
