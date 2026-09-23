@@ -1757,21 +1757,25 @@ to{opacity:1;transform:none}
    ⚠️ **والتلميح صلب لا زجاج**، خلافًا لقاعدة الطبقات العايمة:
    هو لازم يتقري فوق **أي** محتوى تحته، والزجاج بيخلّي المقروئية
    تتغيّر حسب اللي وراه. نفس سبب منع الزجاج على الجداول. */
-.rail-tip{position:absolute;inset-inline-start:calc(100% + 10px);top:50%;translate:0 -50%;
+/* ══ تلميح البند · السلوك المتعارف عليه (٢٣ سبتمبر) ══
+   كان بيظهر فورًا مع أي مرور، لازق في الأيقونة تقريبًا، وبسنّ.
+   دلوقتي (Radix Tooltip · Linear · Vercel · macOS):
+     · تأخير ٥٠٠ms أول مرة، وبعده فوري طول ما الماوس في الريل (Rail.tsx)
+     · ٨px من الأيقونة · بلا سنّ · صغير ١٢/٥٠٠
+     · دخول ١٢٠ms ease-out بانزلاق ٤px · خروج أسرع ٨٠ms بلا تأخير
+     · فوري مع التركيز بالكيبورد */
+.rail{--tip-delay:500ms}
+.rail[data-tipwarm]{--tip-delay:0ms}
+.rail-tip{position:absolute;inset-inline-start:calc(100% + var(--sp-3));top:50%;translate:var(--sp-2) -50%;
   z-index:70;white-space:nowrap;pointer-events:none;
   padding:var(--sp-2) var(--sp-3);border-radius:var(--r0);
   font-size:var(--fs-1);font-family:var(--fd);font-weight:500;
   color:var(--base);background:var(--t1);
-  box-shadow: var(--el-2);
-  opacity:0;transition:opacity .14s ease,translate .14s ease}
-/* السنّ: مربّع مدوّر بنصّ درجة، متلفّت ٤٥° · نفس لون السطح فبيندمج
-   معاه ويبان امتدادًا لا شكلًا تاني.
-   RTL: `inline-start` هي اليمين، وهي الجهة اللي فيها الأيقونة. */
-.rail-tip::after{content:"";position:absolute;inset-inline-start:-3px;top:50%;
-  width:8px;height:8px;translate:0 -50%;rotate:45deg;
-  background:var(--t1);border-radius:var(--r-hair)}
-.rail:not(.open) .railitem:hover .rail-tip,
-.rail:not(.open) .railitem:focus-visible .rail-tip{opacity:1;translate:-4px -50%}
+  box-shadow:var(--el-2);
+  opacity:0;transition:opacity 80ms ease-in,translate 80ms ease-in}
+.rail:not(.open) .railitem:hover .rail-tip{opacity:1;translate:0 -50%;
+  transition:opacity 120ms ease-out,translate 120ms ease-out;transition-delay:var(--tip-delay)}
+.rail:not(.open) .railitem:focus-visible .rail-tip{opacity:1;translate:0 -50%}
 .rail.open .rail-tip{display:none}
 @media (prefers-reduced-motion:reduce){ .rail,.rail-tip{transition:none}
 }.rail .railitem:hover{color:var(--t1);background:rgba(var(--edgeC),.05)}.rail .railitem.on{color:var(--on-solid);background:var(--solid);

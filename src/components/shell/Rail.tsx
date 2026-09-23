@@ -135,6 +135,30 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
     }
   }, [dragging, onMove, onUp])
 
+  /* ══ تلميح البند · «skip delay» (٢٣ سبتمبر) ══
+     أول تلميح بيستنّى ٥٠٠ms (في الـCSS) عشان المرور العابر على الريل
+     ما يفتحش سلسلة تلميحات. أول ما يظهر، الريل بياخد `data-tipwarm`
+     فاللي بعده بيظهر فورًا، ولـ٣٠٠ms بعد ما الماوس يطلع · نفس سلوك
+     Radix Tooltip.Provider وLinear. */
+  const warmT = useRef<number | undefined>(undefined)
+  const coolT = useRef<number | undefined>(undefined)
+  const [warm, setWarm] = useState(false)
+  const tipOver = (e: RPointerEvent<HTMLElement>) => {
+    if (!(e.target as Element).closest('.railitem')) return
+    window.clearTimeout(coolT.current)
+    if (warm) return
+    window.clearTimeout(warmT.current)
+    warmT.current = window.setTimeout(() => setWarm(true), 500)
+  }
+  const tipLeave = () => {
+    window.clearTimeout(warmT.current)
+    coolT.current = window.setTimeout(() => setWarm(false), 300)
+  }
+  useEffect(() => () => {
+    window.clearTimeout(warmT.current)
+    window.clearTimeout(coolT.current)
+  }, [])
+
   const grab = (e: RPointerEvent<HTMLDivElement>) => {
     drag.current = { x: e.clientX, w, moved: false }
     setDragging(true)
@@ -145,6 +169,9 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
       className={`rail chrome${open ? ' open' : ''}${wide ? ' lockwide' : ''}${dragging ? ' dragging' : ''}`}
       style={{ '--rail-w': `${w}px` } as React.CSSProperties}
       aria-label="التنقّل الرئيسي"
+      data-tipwarm={warm || undefined}
+      onPointerOver={tipOver}
+      onPointerLeave={tipLeave}
     >
       {/* **رسمان، لا رسم بيتشال منه حاجة**: العلامة وحدها، والقفل
           الكامل (علامة + اسم مخطوط + السطر اللاتيني) · الاتنين ملفّا
