@@ -57,6 +57,9 @@
   direction:rtl; color-scheme:light;
   --green:#144547; --lime:#94D603; --teal:#00A59B;
   --ai-mark:var(--green);   /* علامة المساعد · الورقة */
+  /* كارت الجدول مصمت (القاعدة ٣: مفيش زجاج تحت رقم قابل للقرار) ·
+     والخانة الملزوقة بتاخد نفس اللون بالظبط فما بتبانش كمستطيل تاني */
+  --tbl-bg:#F7FBFA;
   /* خطّ الرسم البياني · تيل الهوية معتّم شويّة عشان يعدّي حدّ
      3:1 للعناصر الرسومية (WCAG 1.4.11) على أرضية الكارت الفاتحة ·
      `--teal` نفسه بيقيس 2.79 عليها. في الغامق التوكن بيرجع لتيل
@@ -832,6 +835,10 @@ body{margin:0;font-family:var(--ft);font-weight:400;font-size:var(--fs-4);color:
 a{color:var(--link);text-decoration:none}
 a:hover{color:var(--teal)}
 h1,h2,h3,h4{margin:0;font-family:var(--fd);font-weight:700}
+/* `<b>` بياخد `bolder` افتراضيًّا · جوّه أب وزنه ٦٠٠ أو ٧٠٠ بيطلع ٩٠٠،
+   وده كان مصدر الوزن الخامس (٣٤ رقم بـ٩٠٠). السقف ٧٠٠ · تلات أوزان
+   للنصّ (٤٠٠ · ٥٠٠ · ٦٠٠) و٧٠٠ للرقم البطل والعنوان الكبير. */
+b,strong{font-weight:700}
 /* **`p` كان ناقصًا من الريسِت.** العناوين اتصفّرت والفقرة لأ، فكل
    `<p>` في السيستم شايل هامش المتصفح (1em فوق وتحت). وده اللي كان
    بيخلّي الفراغ تحت الكارت أكبر من اللي فوقه: هامش آخر فقرة بيهرب
@@ -926,7 +933,7 @@ small{font-size:var(--fs-1)}
   backdrop-filter:var(--mat-2);
   box-shadow:inset 0 -1px 0 var(--edge-d)}
 .hd{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-4);margin-bottom:var(--sp-6)}
-.hd h3{font-size:var(--fs-4)}
+.hd h3{font-size:var(--fs-4);font-weight:600}
 .hd .meta{font-size:var(--fs-1);color:var(--t3)}
 .num,.amt,.stat .v,.imp .v,.tbl td.n{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 /* كل رقم جزيرة LTR معزولة.
@@ -973,7 +980,11 @@ small{font-size:var(--fs-1)}
 
    العنصر اللي ليه مقاس خاص بياخد `.mut`، فما يبقاش مدّعي دورًا
    مش دوره. */
-.sub{font-size:var(--fs-1);color:var(--t3);line-height:var(--lh-text)}
+/* ٢٣ سبتمبر: ١٢ ← ١٣ · نصّ ١٢px كان ٥٢٪ من كل النصّ المرسوم في
+   السيستم، وأكبر مصدر له `.sub` (السطر الثانوي تحت الاسم والوصف).
+   ده محتوى بيتقري، مش وسم · فبياخد درجة الشريحة. الـ١٢ فاضلة
+   للوسم وتسمية العمود والتاريخ وميتا الترويسة. */
+.sub{font-size:var(--fs-2);color:var(--t3);line-height:var(--lh-text)}
 .mut{color:var(--t3)}
 /* مخفي بصريًّا، مقروء لقارئ الشاشة.
    `position:absolute` مقصودة: العنصر بيخرج من التدفّق خالص، فما
@@ -1173,8 +1184,10 @@ small{font-size:var(--fs-1)}
 .tag.no{background-image:linear-gradient(rgba(var(--noC),.10),rgba(var(--noC),.10));color:var(--no-tag);box-shadow:inset 0 0 0 1px rgba(var(--noC),.22)}
 .tag.warn{background-image:linear-gradient(rgba(var(--warnC),.20),rgba(var(--warnC),.20));color:var(--warn-tag);box-shadow:inset 0 0 0 1px rgba(var(--warnC),.38)}
 .tag.brand{background-image:linear-gradient(rgba(var(--limeC),.34),rgba(var(--limeC),.34));color:var(--brand-ink)}
+/* الزرار: ١٦ جنب · ٨ بين الأيقونة والكلمة (٢٣ سبتمبر · كان ١٢ و٨،
+   فالكلمة كانت لازقة في الحافة والأيقونة أبعد منها) */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-3);width:fit-content;
-  padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
+  padding-block:var(--pb-md);padding-inline:var(--sp-5);line-height:var(--lh-md);
   border-radius:var(--r1);font-size:var(--fs-3);font-family:var(--fd);font-weight:500;
   transition:transform .16s ease,filter .16s ease;white-space:nowrap}
 .btn:hover{transform:translateY(-1px);filter:brightness(.97)}
@@ -1212,7 +1225,7 @@ small{font-size:var(--fs-1)}
 .btn-2:hover{background:var(--ctl-tone-h)}
 /* شفّاف بالكامل · لا أرضية ولا حافة. الأيقونة بتفضل معاه لأنها
    بتقول **نوع المكان** اللي رايح له، مش زينة. */
-.btn-ghost{background:none;color:var(--t2);box-shadow:none}
+.btn-ghost{background:none;color:var(--t2);box-shadow:none;padding-inline:var(--sp-4)}
 .btn-ghost:hover{color:var(--t1);background:var(--ctl-quiet-h)}
 .btn-d{background:rgba(192,67,42,.10);color:var(--no-ink);
   box-shadow:inset 0 0 0 1px rgba(192,67,42,.28)}
@@ -1374,7 +1387,8 @@ small{font-size:var(--fs-1)}
    الحشو دلوقتي **هو حشو أي كارت**: الكلاس ما بيلمسش `--pad` خالص
    فبياخد قيمة الجذر · وفضل عشان الزحلقة الأفقية والركن المحسوب
    بيتعلّقوا بيه، مش عشان يغيّر الحشو. */
-.tblcard{--tblcard:1}
+.tblcard{--tblcard:1;background:var(--tbl-bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+.tblcard::before{display:none}
 .tabs{display:flex;gap:var(--sp-2);flex-wrap:wrap}
 /* التاب بيحضن نصّه: عرضه `fit-content` وارتفاعه ناتج حشوه، فما
    بيتمدّش على عرض الحاوية ولا بيتشدّ مع إخوته. */
@@ -1847,7 +1861,7 @@ to{opacity:1;transform:none}
 .imp .v{font-family:var(--fd);font-weight:700;font-size:var(--fd-2)}
 .imp .k{font-size:var(--fs-1);color:var(--t2);margin-top:var(--sp-1)}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-3) var(--sp-5);font-size:var(--fs-2);align-items:baseline;margin:0}
-.kv dt{color:var(--t2);font-size:var(--fs-1);white-space:nowrap}
+.kv dt{color:var(--t2);font-size:var(--fs-2);white-space:nowrap}
 .kv dd{margin:0;font-weight:400}
 /* قيمة ومعاها وسم · الجاب مصرّح لا حرف مسافة بين العنصرين */
 .kvpair{display:inline-flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2) var(--sp-3)}
@@ -4038,6 +4052,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   --sq-cut:17,21,21; --sq-cut-a:.82 }
 :root[data-theme="dark"]{
   --ai-mark:var(--lime);
+  --tbl-bg:#1D2120;
   --el-c:0,0,0;   /* الظلّ أسود على أرضية غامقة · الملوّن ما بيبانش */
   --ctl-bg:#252A2A; --ctl-bg-h:#2F3434; --ctl-bg-a:#3A4040;   /* سطح التحكّم · مقيس · شوف :root */
   --base:#0A0C0C; --baseC:10,12,12;
@@ -4689,7 +4704,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    حافة الصفحة مهما كان عدد الأزرار اللي جنبه · فالمستخدم بيتعلّم
    مكانًا واحدًا. أي محاذاة تانية بتخلّي الزرار يتحرّك لما شاشة
    يبقى فيها زرار ثانوي وشاشة لأ. */
-.hacts{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
+.hacts{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
   justify-content:flex-end;min-width:0}
 /* مبدّل السياق · صفّ لوحده تحت الترويسة، لأنه بيحكم اللي تحته لا
    بيضيف للموديول · ومكانه هنا بيمنعه من إزاحة زرار الإنشاء */
@@ -5070,7 +5085,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .tbl{--tfoot-bg:rgba(var(--edgeC),.045)}
 .tbl tfoot td{padding-block:var(--sp-4);border-top:1px solid var(--edge-f);
   background:var(--tfoot-bg);font-size:var(--fs-2);color:var(--t1)}
-.tbl tfoot td.tcolx{background:var(--tfoot-bg)}
+.tbl tfoot td.tcolx{background:linear-gradient(var(--tfoot-bg),var(--tfoot-bg)),var(--tbl-bg)}
 .tbl tfoot b{font-family:var(--fd);font-weight:700}
 .tbl tfoot small{font-size:var(--fs-1);font-weight:400}
 /* قيمة الإجمالي: الرقم على اليمين والوحدة على الشمال، ومحاذاة
@@ -5095,17 +5110,19 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    `sticky` بيخلّيها تفضل عند الحافّة مهما اتزحلق الجدول، والخلفية
    إجبارية: من غيرها الصفوف بتعدّي من تحتها. */
 .tbl th.tcolx{width:38px;padding-inline:var(--sp-2);
-  position:sticky;inset-inline-end:0;z-index:2;background:var(--g-card)}
+  position:sticky;inset-inline-end:0;z-index:2;background:var(--tbl-bg)}
+/* لون الصفّ فوق لون الكارت · نفس الطبقتين اللي الصفّ نفسه عاملهم،
+   فالخانة بتكمّل الصفّ بدل ما تبان مستطيلًا بدرجة تانية */
 .tbl td.tcolx{width:38px;padding:0;
-  position:sticky;inset-inline-end:0;z-index:1;background:var(--fl-1)}
+  position:sticky;inset-inline-end:0;z-index:1;background:linear-gradient(var(--fl-1),var(--fl-1)),var(--tbl-bg)}
 /* التحويم على الصفوف وحدها · صفّ الإجماليات مش صفًّا بتقراه
    بالتحويم، وكان بيفقد لونه أول ما الماوس تعدّي عليه */
-.tbl tbody tr:hover td.tcolx{background:var(--fl-2)}
+.tbl tbody tr:hover td.tcolx{background:linear-gradient(var(--fl-2),var(--fl-2)),var(--tbl-bg)}
 .tcolp{position:relative}
-.tcolb{display:grid;place-items:center;width:26px;height:26px;border-radius:var(--r0);
-  color:var(--t2);background:var(--fl-4);
-  box-shadow:inset 0 0 0 1px var(--edge-1)}
-.tcolb:hover{color:var(--t1);background:var(--fl-7)}
+.tcolb{display:grid;place-items:center;width:26px;height:26px;border-radius:var(--ric);
+  color:var(--t2);background:transparent;
+  box-shadow:inset 0 0 0 1px var(--edge-2)}
+.tcolb:hover{color:var(--t1);background:var(--fl-3)}
 /* بتفتح لناحية الشمال: آخر عمود ملزوق بحافة الحاوية اليسرى */
 .tcolm{inset-inline-start:auto;inset-inline-end:0;min-width:220px}
 .fopt.fix{opacity:.6;cursor:default}

@@ -21,6 +21,10 @@ import type { Col as TCol, GroupBy } from '@/components/table'
 
 export type Col = TCol<ProjectRow>
 
+/* العروض الافتراضية بتتجمع لـ١٢٤٦ · يعني الأعمدة الافتراضية كلها بتدخل
+   في عرض الكارت على شاشة ١٤٤٠ (١٢٥٢). كانت ١٣٣٨ فالجدول كان أعرض من
+   كارته بـ٨٦px، و«الحالة» · آخر عمود وأهمّه · مستخبية تحت زرار الأعمدة
+   الملزوق (٢٣ سبتمبر). اللي صغر: الأرقام والوزن والمدة والمالك. */
 export const COLS: Col[] = [
   {
     key: 'code',
@@ -54,7 +58,7 @@ export const COLS: Col[] = [
   { key: 'stage', w: 100, label: 'القسم الإجرائي', def: true, cell: (r) => r.stage, text: (r) => r.stage },
   {
     key: 'dur',
-    w: 88,
+    w: 72,
     label: 'المدة',
     def: true,
     n: true,
@@ -75,7 +79,7 @@ export const COLS: Col[] = [
   },
   {
     key: 'requested',
-    w: 118,
+    w: 104,
     label: 'المبلغ المطلوب',
     def: true,
     n: true,
@@ -87,7 +91,7 @@ export const COLS: Col[] = [
   },
   {
     key: 'granted',
-    w: 114,
+    w: 100,
     label: 'المعتمد',
     def: true,
     n: true,
@@ -99,7 +103,7 @@ export const COLS: Col[] = [
   },
   {
     key: 'spent',
-    w: 114,
+    w: 100,
     label: 'المصروف',
     n: true,
     cell: (r) => (r.amountSpent > 0 ? nf.format(r.amountSpent) : <span className="sub"> </span>),
@@ -108,8 +112,8 @@ export const COLS: Col[] = [
     agg: 'sum',
     money: true,
   },
-  { key: 'weight', w: 88, label: 'الوزن', def: true, n: true, cell: (r) => r.weight, text: (r) => String(r.weight), value: (r) => r.weight, agg: 'avg' },
-  { key: 'score', w: 88, label: 'التقييم', n: true, cell: (r) => r.score, text: (r) => String(r.score), value: (r) => r.score, agg: 'avg' },
+  { key: 'weight', w: 60, label: 'الوزن', def: true, n: true, cell: (r) => r.weight, text: (r) => String(r.weight), value: (r) => r.weight, agg: 'avg' },
+  { key: 'score', w: 60, label: 'التقييم', n: true, cell: (r) => r.score, text: (r) => String(r.score), value: (r) => r.score, agg: 'avg' },
   {
     key: 'benef',
     w: 96,
@@ -124,7 +128,7 @@ export const COLS: Col[] = [
      **نصّ وحده** وكان بيقصّ «أحمد العبداللطيف» أصلًا؛ ومع الوش
      (٢٨ + فجوة ٨) بقى بيقصّ عند الكلمة الأولى — «عزام …» —
      والوش بيعوّض الهوية بس الاسم بيبقى بلا فايدة. */
-  { key: 'owner', w: 148, label: 'المالك', def: true, cell: (r) => <Person name={r.owner} />, text: (r) => r.owner ?? '' },
+  { key: 'owner', w: 128, label: 'المالك', def: true, cell: (r) => <Person name={r.owner} />, text: (r) => r.owner ?? '' },
   {
     key: 'status',
     /* ⚠️ **١١٢ لا ٩٦ · والفرق اتكشف لمّا الفحص اتوحّد.**
