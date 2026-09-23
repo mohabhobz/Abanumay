@@ -2274,20 +2274,24 @@ to{opacity:1;transform:none}
 .apanel:not(.wide) .welcome .wgreet{font-size:var(--fs-6)}
 .apanel:not(.wide) .welcome .wsub{font-size:var(--fs-3);line-height:var(--lh-text);margin-top:var(--sp-1)}
 .apanel:not(.wide) .welcome>.composer{margin-top:var(--sp-5)}
-.apanel:not(.wide) .welcome .wcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
-/* الاقتراحات الأربعة جنب بعض (مهاب) · صندوق خفيف: الأيقونة جنب العنوان
-   والشرح تحتهم · من غير رفعة ولا توهّج مع الماوس */
+.apanel:not(.wide) .welcome .wcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-4);margin-top:var(--sp-5)}
+/* الاقتراحات الأربعة جنب بعض · مصبوغة بتيل الهوية (مهاب · ٢٤ سبتمبر):
+   أرضية تيل خفيفة وحلقة من نفس اللون، والأيقونة
+   بلون التيل جنب العنوان. العنوان بحبر النصّ والشرح تحته بمسافة تنفّس. */
 .apanel:not(.wide) .welcome .wcard{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"i t" "s s";
-  column-gap:var(--sp-2);row-gap:var(--sp-1);align-items:center;align-content:start;padding:var(--pad-in);border-radius:var(--r1);
-  background:none;-webkit-backdrop-filter:none;backdrop-filter:none;translate:none;
-  box-shadow:inset 0 0 0 1px var(--edge-1)}
+  column-gap:var(--sp-2);row-gap:var(--sp-2);align-items:center;align-content:start;
+  padding:var(--sp-4) var(--sp-4) var(--sp-5);border-radius:var(--r1);translate:none;
+  background:rgba(var(--ch-2C),.07);-webkit-backdrop-filter:none;backdrop-filter:none;
+  box-shadow:inset 0 0 0 1px rgba(var(--ch-2C),.20);
+  transition:background .16s ease,box-shadow .16s ease}
 .apanel:not(.wide) .welcome .wcard::before,.apanel:not(.wide) .welcome .wcard::after{display:none}
-.apanel:not(.wide) .welcome .wcard:hover{background:var(--fl-3)}
-.apanel:not(.wide) .welcome .wcard .badge{grid-area:i;width:auto;height:auto;margin:0;background:none;box-shadow:none;color:var(--t2)}
+.apanel:not(.wide) .welcome .wcard:hover{background:rgba(var(--ch-2C),.13);box-shadow:inset 0 0 0 1px rgba(var(--ch-2C),.34)}
+.apanel:not(.wide) .welcome .wcard .badge{grid-area:i;width:auto;height:auto;margin:0;
+  background:none;box-shadow:none;color:var(--teal-tag)}
 .apanel:not(.wide) .welcome .wcard .badge svg{width:var(--ic-sm);height:var(--ic-sm)}
-.apanel:not(.wide) .welcome .wc-t{grid-area:t;font-size:var(--fs-2)}
-.apanel:not(.wide) .welcome .wc-s{grid-area:s;font-size:var(--fs-1)}
-.apanel:not(.wide) .cdisc{margin-top:var(--sp-4)}
+.apanel:not(.wide) .welcome .wc-t{grid-area:t;font-size:var(--fs-2);line-height:var(--lh-ui)}
+.apanel:not(.wide) .welcome .wc-s{grid-area:s;font-size:var(--fs-1);line-height:var(--lh-text);color:var(--t2)}
+.apanel:not(.wide) .cdisc{margin-top:var(--sp-5)}
 .anote{font-size:var(--fs-1);animation:airise .45s cubic-bezier(.22,.9,.3,1) .42s both}
 @media (max-width:760px){.apanel{inset-inline:0;width:100%}
   /* الموبايل ما عندوش «نصّ صفحة» · النافذة بتاخد الشاشة */
