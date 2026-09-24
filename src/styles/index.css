@@ -2290,7 +2290,10 @@ to{opacity:1;transform:none}
   /* الطمس نفسه بيتدرّج مع اللون · من غيره حافته العليا بتتقطع خطًّا */
   -webkit-mask-image:linear-gradient(to top,var(--mask) 0,var(--mask) 40%,transparent 100%);
   mask-image:linear-gradient(to top,var(--mask) 0,var(--mask) 40%,transparent 100%)}
-.apanel:not(.wide) .chat-top{padding:var(--sp-4) var(--wpad);box-shadow:inset 0 -1px 0 var(--edge-d)}
+/* الترويسة حشوها متساوٍ على الجهات · الزرار في الركن بيبعد عن الحافتين نفس المسافة */
+.apanel:not(.wide) .chat-top{padding:var(--sp-5);box-shadow:inset 0 -1px 0 var(--edge-d)}
+/* الزراير بنفس ضلع العلامة اللي قصادها (٣٤) · فالأربع مسافات للحافة بقت ١٦ بالظبط */
+.apanel:not(.wide) .chat-top .aclose{width:34px;height:34px}
 .apanel:not(.wide) .chat-body{padding:var(--wpad)}
 .apanel:not(.wide) .chat-body.mid{justify-content:flex-start}
 .apanel:not(.wide) .chat-body.mid .welcome{margin-block:0}
