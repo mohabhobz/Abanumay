@@ -2285,11 +2285,11 @@ to{opacity:1;transform:none}
 .apanel:not(.wide){--wpad:var(--sp-7)}
 /* تحت مربع الكتابة في النافذة أرضية معتمة بلون النافذة نفسها · البلور
    وحده كان بيسيب شرايح المتابعة تبان من ورا سطر التنبيه وتتقري معاه */
-.apanel:not(.wide) .composer.docked::before{height:calc(100% + var(--sp-10));
-  background:linear-gradient(to top,rgb(var(--popC)) 0,rgb(var(--popC)) 38%,rgba(var(--popC),.55) 68%,rgba(var(--popC),0));
+.apanel:not(.wide) .composer.docked::before{height:calc(100% + var(--sp-12) + var(--sp-9));
+  background:linear-gradient(to top,rgb(var(--popC)) 0,rgb(var(--popC)) 30%,rgba(var(--popC),.55) 62%,rgba(var(--popC),0));
   /* الطمس نفسه بيتدرّج مع اللون · من غيره حافته العليا بتتقطع خطًّا */
-  -webkit-mask-image:linear-gradient(to top,var(--mask) 0,var(--mask) 50%,transparent 100%);
-  mask-image:linear-gradient(to top,var(--mask) 0,var(--mask) 50%,transparent 100%)}
+  -webkit-mask-image:linear-gradient(to top,var(--mask) 0,var(--mask) 40%,transparent 100%);
+  mask-image:linear-gradient(to top,var(--mask) 0,var(--mask) 40%,transparent 100%)}
 .apanel:not(.wide) .chat-top{padding:var(--sp-4) var(--wpad);box-shadow:inset 0 -1px 0 var(--edge-d)}
 .apanel:not(.wide) .chat-body{padding:var(--wpad)}
 .apanel:not(.wide) .chat-body.mid{justify-content:flex-start}
