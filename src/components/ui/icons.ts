@@ -33,7 +33,7 @@ import {
   Lock, MagnifyingGlass, MapPin, Monitor, Moon, Paperclip, PencilSimple, Plus,
   PushPin, Rows, SidebarSimple, SignOut, Signature, SlidersHorizontal, SortDescending, SquaresFour,
   Sun, ThumbsDown, ThumbsUp, Trash, UploadSimple, User, Users, Wallet,
-  WarningCircle, X,
+  WarningCircle, Info, X,
   type Icon as PhIcon,
 } from '@phosphor-icons/react'
 
@@ -68,6 +68,8 @@ export const icons = {
   chart: ChartBar,
   chat: ChatCircle,
   alert: WarningCircle,
+  /* ملاحظة لا تحذير · التنبيهات الاسترشادية والإفصاحات */
+  info: Info,
   /* RTL: `chevron` بيشاور «لقدّام» يعني شمال، و`chevronBack` يمين */
   chevron: CaretLeft,
   chevronBack: CaretRight,

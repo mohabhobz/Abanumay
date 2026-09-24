@@ -748,6 +748,7 @@
   --popC:251,253,252;         /* قنوات السطح العايم · بتتبدّل مع الثيم */
   --pop:rgb(var(--popC));     /* معتم · للقوائم الصغيرة */
   --mask:#000;               /* لون الماسك · اللي بيتقري منه الألفا وحدها */
+  --agg-w:10rem;             /* خانة مجموع في ترويسة المجموعة · أطول «رقم + يومًا في المتوسط» */
   --pop-a:.92;                /* ألفا السطح العايم · **ثابتة عبر الثيمات** */
   --g-pop:rgba(var(--popC),var(--pop-a));   /* زجاج عايم · بيغطّي لا بيرتفع */
   --bar-bg:linear-gradient(180deg,rgba(248,251,250,.94),rgba(248,251,250,.99));
@@ -2052,7 +2053,7 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
 .lrow.off .lbar{display:none}
 .lrow.off::after{background:repeating-linear-gradient(180deg,
   rgba(var(--edgeC),.14) 0 3px,transparent 3px 7px)}
-.lprov{font-size:var(--fs-1);color:var(--warn-ink);margin-top:var(--sp-5);padding-inline-start:var(--sp-7);line-height:var(--lh-text)}
+.lprov{font-size:var(--fs-1);color:var(--t2);margin-top:var(--sp-5);padding-inline-start:var(--sp-7);line-height:var(--lh-text)}
 /* ── الشريط ──
    كان هنا تعريف تاني لـ`.rail` بيكتب `gap` و`padding` بإيده،
    **وتعريف تالت لمقاس الأيقونة** (٢٥) · الاتنين بيغلبوا الأصل
@@ -2119,7 +2120,7 @@ to{opacity:1;transform:none}
 .fhl b{font-weight:600;color:var(--t1)}
 .fhl .bad{font-weight:600}
 .fhs{font-size:var(--fs-1);color:var(--t3);margin-top:var(--sp-2);opacity:.9}
-.fhp{font-size:var(--fs-1);color:var(--warn-ink);margin-top:var(--sp-2)}
+.fhp{font-size:var(--fs-1);color:var(--t2);margin-top:var(--sp-2)}
 /* ── سطر التفصيل تحت القوس ──
    كان ده سلوك الموبايل وحده، والديسكتوب كان بيحشر التفصيل جوّه
    الجوف · وهو مساحة ثابتة والمحتوى متغيّر. الوضعان بقوا واحدًا،
@@ -2137,7 +2138,7 @@ to{opacity:1;transform:none}
   min-height:28px;display:flex;align-items:center;justify-content:center;
   flex-wrap:wrap;gap:var(--sp-2)}
 .fanfoot .fhs{font-size:var(--fs-1);color:var(--t3);margin-top:var(--sp-1);line-height:var(--lh-text)}
-.fanfoot .fhp{font-size:var(--fs-1);color:var(--warn-ink)}
+.fanfoot .fhp{font-size:var(--fs-1);color:var(--t2)}
 
 /* The action row had no rule at all, so the button sat flush
    against the source line above it · a control needs to be told
@@ -2906,7 +2907,9 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cb-dot.warn{background:var(--warn)}
 .cb-t{font-family:var(--fd);font-weight:500;font-size:var(--fs-3)}
 /* ── التنويه والمصادر والأكشنز ── */
-.advisory{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-5);font-size:var(--fs-1);color:var(--warn-ink)}
+/* ⚠️ **إفصاح لا تحذير · محايد عن قصد.** كان بلون `--warn-ink` وبيطلع
+   تحت كل رد، فالعين بتقراه خطأ في كل رسالة · والبرتقالي يفضل للحالة. */
+.advisory{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-5);font-size:var(--fs-1);color:var(--t2)}
 .advisory svg{width:var(--ic-sm);height:var(--ic-sm);flex:none}
 .csrc{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;margin-top:var(--sp-5)}
 .srcchip{font-size:var(--fs-1);color:var(--t3);padding:var(--sp-2) var(--sp-3);border-radius:var(--rp);
@@ -5127,8 +5130,16 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .tcap-n{flex:none;font-size:var(--fs-1);padding:var(--sp-1) var(--sp-3);border-radius:var(--rp);
   background:rgba(var(--edgeC),.07)}
 /* مجاميع المجموعة المطويّة · نفس نبرة الإجمالي الكلي */
-.tcap-v{display:flex;align-items:baseline;gap:var(--sp-5);flex-wrap:wrap;
-  min-width:0;font-size:var(--fs-2)}
+/* ⚠️ **المجاميع أعمدة لا جملة.** كانت فليكس بيلفّ: كل مجموعة عرض
+   رقمها غير اللي تحتها، فـ«المعتمد» في صفّ بيقع تحت «المبلغ» في
+   اللي بعده والعين ما تقدرش تقارن. دلوقتي كل مجموع خانة بعرض ثابت
+   (`--agg-w`)، التسمية فوق والرقم تحتها، فالخانات بتتصفّ عمودًا
+   عبر كل المجموعات والإجمالي الكلي. */
+.tcap-v,.tgrand-v{display:grid;grid-auto-flow:column;grid-auto-columns:var(--agg-w);
+  gap:var(--sp-5);align-items:start;min-width:0;font-size:var(--fs-2)}
+.tagg{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.tagg-l{font-size:var(--fs-1)}
+.tagg-v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* شريط التجميع · بيقول إيه المشغّل ومعاه افتح/اقفل الكل ومنتقي
    الأعمدة · ودول ما لهمش مكان تاني لمّا كل المجموعات مطويّة */
 .tgbar{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
@@ -5191,7 +5202,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   background:rgba(var(--edgeC),.06);
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 .tgrand-k{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
-.tgrand-v{display:flex;align-items:baseline;gap:var(--sp-5);flex-wrap:wrap;font-size:var(--fs-2)}
+
 /* منتقي الأعمدة · آخر خانة في الترويسة */
 /* ═══ خانة منتقي الأعمدة · ي-7 ═══
    ⚠️ **ملزوقة بحافّة المنظر لا بآخر الجدول.** ملاحظة مظفر بالنص:
@@ -5262,7 +5273,8 @@ body.printing .mesh,body.printing .grain{display:none}
 }
 @media (max-width:900px){
   .tgrand{flex-direction:column;align-items:flex-start;gap:var(--sp-3)}
-.tgrand-v{gap:var(--sp-4)}
+  .tcap{flex-wrap:wrap}
+  .tcap-v,.tgrand-v{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-4)}
 }
 /* الكود والمالك ما يتكسروش على سطرين: الكود هوية بتتقري كوحدة،
    والاسم اللي بينقسم بيوهم إن الصف فيه اسمين */

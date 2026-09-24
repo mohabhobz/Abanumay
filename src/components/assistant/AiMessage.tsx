@@ -77,7 +77,7 @@ export function AiMessage({
 
       {done && message.advisory && (
         <div className="advisory rise">
-          <Icon name={icons.alert} size="sm" />
+          <Icon name={icons.info} size="sm" />
           قراءة استرشادية، والقرار والتوقيع مسؤوليتك.
         </div>
       )}

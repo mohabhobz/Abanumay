@@ -179,12 +179,14 @@ export function DataTable<T>({
           <span className="tgrand-k">الإجمالي الكلي · {count(rows.length)}</span>
           <span className="tgrand-v">
             {shown.filter((c) => c.agg).map((c) => (
-              <span key={c.key}>
-                <span className="sub">{c.label}</span>{' '}
-                <b className="num">{nf.format(aggregate(c, rows) ?? 0)}</b>
-                {(c.aggSay ?? (c.agg === 'avg' ? 'وسطي' : '')) && (
-                  <small className="sub"> {c.aggSay ?? 'وسطي'}</small>
-                )}
+              <span className="tagg" key={c.key}>
+                <span className="sub tagg-l">{c.label}</span>
+                <span className="tagg-v">
+                  <b className="num">{nf.format(aggregate(c, rows) ?? 0)}</b>
+                  {(c.aggSay ?? (c.agg === 'avg' ? 'وسطي' : '')) && (
+                    <small className="sub"> {c.aggSay ?? 'وسطي'}</small>
+                  )}
+                </span>
               </span>
             ))}
           </span>
@@ -341,14 +343,16 @@ function Cap<T>({
       {(shut || !leafOpen) && (
         <span className="tcap-v">
           {cols.filter((c) => c.agg).map((c) => (
-            <span key={c.key}>
-              <span className="sub">{c.label}</span>{' '}
+            <span className="tagg" key={c.key}>
+              <span className="sub tagg-l">{c.label}</span>
+              <span className="tagg-v">
               <b className="num">{nf.format(aggregate(c, node.rows) ?? 0)}</b>
               {/* نفس كلمة `tfoot` · الرقم اللي في الترويسة المطويّة
                   واللي في الإجماليات لازم يقولوا نفس الحاجة */}
               {(c.aggSay ?? (c.agg === 'avg' ? 'وسطي' : '')) && (
                 <small className="sub"> {c.aggSay ?? 'وسطي'}</small>
               )}
+              </span>
             </span>
           ))}
         </span>
