@@ -2265,6 +2265,18 @@ to{opacity:1;transform:none}
      · الاقتراحات قايمة صفوف: أيقونة صغيرة جنب العنوان وشرحه تحته
      · التنبيه تحت الاقتراحات على طول */
 .apanel:not(.wide):has(.chat-body.mid){height:auto;max-height:86vh}
+/* ⚠️ **أول ما المحادثة تبدأ، النافذة بتنزل تلمس قاع الشاشة وتطلع لفوق.**
+   الترحيب نافذة في النصّ لأنه لحظة اختيار · المحادثة قراءة طويلة،
+   والنافذة العايمة كانت بتسيب شريط صفحة تحتها وبتقصّ الرد من فوق
+   ومن تحت. فبقت شيت مسنود على الحافة، بطول الشاشة إلا هامش من فوق
+   يسيب الصفحة باينة إنها وراه. */
+@media (min-width:761px){
+  .apanel:not(.wide):has(.thread){top:auto;bottom:0;height:calc(100vh - var(--sp-10));
+    border-radius:var(--r3) var(--r3) 0 0;transition:opacity .2s ease}
+  .apanel.on:not(.wide):has(.thread){transform:translate(-50%,0);animation:asheet .34s cubic-bezier(.22,.9,.3,1) both}
+}
+@keyframes asheet{from{transform:translate(-50%,var(--sp-12))}to{transform:translate(-50%,0)}}
+@media (prefers-reduced-motion:reduce){.apanel.on:not(.wide):has(.thread){animation:none}}
 /* حشو النافذة ثابت ٢٤ من الأربع جهات · مش `--pad` المرن (١٦–٢٤ حسب
    عرض الشاشة) لأن النافذة عرضها ثابت، فالحشو كان بيطلع ١٩٫٨ على الجنبين
    في شاشة ١١٠٠ (مهاب · ٢٤ سبتمبر). والتحية سطرها مضغوط عشان نصف
