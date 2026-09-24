@@ -747,6 +747,7 @@
      المظهرين. `tools/overlay.mjs` بيقيسها بالتصوير. */
   --popC:251,253,252;         /* قنوات السطح العايم · بتتبدّل مع الثيم */
   --pop:rgb(var(--popC));     /* معتم · للقوائم الصغيرة */
+  --mask:#000;               /* لون الماسك · اللي بيتقري منه الألفا وحدها */
   --pop-a:.92;                /* ألفا السطح العايم · **ثابتة عبر الثيمات** */
   --g-pop:rgba(var(--popC),var(--pop-a));   /* زجاج عايم · بيغطّي لا بيرتفع */
   --bar-bg:linear-gradient(180deg,rgba(248,251,250,.94),rgba(248,251,250,.99));
@@ -2284,8 +2285,11 @@ to{opacity:1;transform:none}
 .apanel:not(.wide){--wpad:var(--sp-7)}
 /* تحت مربع الكتابة في النافذة أرضية معتمة بلون النافذة نفسها · البلور
    وحده كان بيسيب شرايح المتابعة تبان من ورا سطر التنبيه وتتقري معاه */
-.apanel:not(.wide) .composer.docked::before{-webkit-mask-image:none;mask-image:none;
-  background:linear-gradient(to top,rgb(var(--popC)) 0,rgb(var(--popC)) 55%,rgba(var(--popC),0))}
+.apanel:not(.wide) .composer.docked::before{height:calc(100% + var(--sp-10));
+  background:linear-gradient(to top,rgb(var(--popC)) 0,rgb(var(--popC)) 38%,rgba(var(--popC),.55) 68%,rgba(var(--popC),0));
+  /* الطمس نفسه بيتدرّج مع اللون · من غيره حافته العليا بتتقطع خطًّا */
+  -webkit-mask-image:linear-gradient(to top,var(--mask) 0,var(--mask) 50%,transparent 100%);
+  mask-image:linear-gradient(to top,var(--mask) 0,var(--mask) 50%,transparent 100%)}
 .apanel:not(.wide) .chat-top{padding:var(--sp-4) var(--wpad);box-shadow:inset 0 -1px 0 var(--edge-d)}
 .apanel:not(.wide) .chat-body{padding:var(--wpad)}
 .apanel:not(.wide) .chat-body.mid{justify-content:flex-start}
