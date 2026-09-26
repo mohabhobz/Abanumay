@@ -1,11 +1,11 @@
 /**
- * الميزانية · القيم الخمس اللي النظام بيمسك بيها كل بند:
- * مخصص · محجوز · ملتزم به · مصروف · متبقٍ.
+ * Budget · the five values the system tracks for every line item: allocated, held, committed,
+ * spent, remaining.
  *
- * المخصص رقم حقيقي من النظام العامل (73,700,000 لسنة 2026).
- * الأربعة الباقية **محسوبة من المشاريع التجريبية**، وهي عيّنة صغيرة
- * من 4,929 مشروعًا · فنسبة الاستهلاك اللي هتظهر منخفضة بطبيعتها.
- * الشاشة بتقول ده صراحة بدل ما تسيب الرقم يتقري غلط.
+ * Allocated is a real number from the live system (73,700,000 for 2026). The other four are
+ * **computed from sample projects** — a small sample out of 4,929 projects — so the usage ratio
+ * shown will naturally read low. The screen states this explicitly instead of letting the number be
+ * misread.
  */
 import { projectRows } from './mock/projects'
 import { YEARS } from './mock/taxonomy'
@@ -14,15 +14,15 @@ import type { ProjectRow } from '@/types/domain'
 export interface BudgetLine {
   key: string
   label: string
-  /** المخصص */
+  /** Allocated */
   allocated: number
-  /** المحجوز · طلبات تحت الدراسة، لسه ما اتقرّرش فيها */
+  /** Held · requests under review, not yet decided */
   reserved: number
-  /** الملتزم به · معتمد وموقّعة اتفاقيته */
+  /** Committed · approved, with a signed agreement */
   committed: number
-  /** المصروف فعلًا */
+  /** Actually spent */
   spent: number
-  /** المتبقّي = المخصص − المحجوز − الملتزم به */
+  /** Remaining = allocated minus held minus committed */
   remaining: number
 }
 
@@ -44,16 +44,16 @@ function line(key: string, label: string, allocated: number, rows: ProjectRow[])
   }
 }
 
-/** ميزانية سنة كاملة */
+/** A full year's budget */
 export function budgetForYear(yearId = '2026-f'): BudgetLine {
   const year = YEARS.find((y) => y.id === yearId) ?? YEARS[0]
   return line(year.id, year.label, year.budget, projectRows.filter((p) => p.year === year.id))
 }
 
 /**
- * توزيع الميزانية على المسارات.
- * المخصص لكل مسار غير معلوم في النظام العامل (ما وصلناش لشجرة
- * التخصيص)، فبنقسّمه بالتساوي مؤقتًا · سؤال قائم لمظفر.
+ * Budget split across tracks.
+ * Allocation per track isn't known in the live system (the allocation tree wasn't reachable), so
+ * it's split evenly for now — an open question, still pending.
  */
 export function budgetByTrack(yearId = '2026-f'): BudgetLine[] {
   const year = YEARS.find((y) => y.id === yearId) ?? YEARS[0]

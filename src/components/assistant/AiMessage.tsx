@@ -3,11 +3,12 @@ import { Icon, icons } from '@/components/ui'
 import { EvidenceBlock } from './EvidenceBlock'
 import { md } from './md'
 import type { AiMessageModel } from './types'
+import { AbLeaf } from '@/components/soul'
 
 /**
- * رسالة المساعد.
- * التفكير بيقول للمستخدم إيه المصادر اللي اتفتحت · دي مش زينة،
- * دي اللي بتخلّي الإجابة قابلة للتصديق.
+ * Assistant message.
+ * The reasoning tells the user which sources were opened — this isn't decoration, it's what makes
+ * the answer credible.
  */
 export function AiMessage({
   message,
@@ -24,7 +25,7 @@ export function AiMessage({
   const done = message.state === 'done'
   const shown = typing ? (message.text ?? '').slice(0, message.chars) : message.text ?? ''
 
-  // خطوات التفكير بتتطوي لوحدها لما الإجابة تكمل
+  // Reasoning steps collapse on their own once the answer finishes.
   useEffect(() => {
     if (done) setOpenThink(false)
   }, [done])
@@ -40,13 +41,14 @@ export function AiMessage({
       {message.think.length > 0 && (
         <div className={`think${thinking ? ' live' : ''}`}>
           <button className="th-head" onClick={() => setOpenThink((v) => !v)}>
-            <span className="aispark th-spark" />
+            {/* One breath when the answer finishes, then stillness. */}
+            <AbLeaf className={`aispark th-spark${done ? ' breath' : ''}`} />
             <span>{thinking ? 'يفكّر' : `فكّر في ${message.think.length} خطوات`}</span>
             {thinking && (
               <span className="dots"><i /><i /><i /></span>
             )}
-            {/* أيقونة صريحة بدل تدوير الشيفرون · التدوير كان معكوسًا،
-                و«لأعلى/لأسفل» بيتقري في الكود زي ما بيتشاف في الشاشة */}
+            {/* An explicit icon instead of rotating the chevron — the rotation direction was
+                reversed, and "up/down" should read the same in code as it looks on screen. */}
             <Icon name={openThink ? icons.chevronUp : icons.chevronDown} size="sm" />
           </button>
 
@@ -55,7 +57,7 @@ export function AiMessage({
               {message.think
                 .slice(0, thinking ? message.step : message.think.length)
                 .map((step, i) => (
-                  <div className="th-step" key={i} style={{ '--d': `${i * 60}ms` } as CSSProperties}>
+                  <div className="th-step" key={i} style={{ '--d': `calc(var(--mo-stagger) * ${i})` } as CSSProperties}>
                     <span className="th-dot" />
                     {step}
                   </div>

@@ -9,25 +9,24 @@ import { signOut } from '@/data/session'
 import { AssistantScreen } from './AssistantScreen'
 
 /**
- * مساعد أبانمي · الشاشة الكاملة على مسارها.
+ * The Abanumay assistant - the full screen, on its own route.
  *
- * الصفحة دي بقت **إطارًا**: خلفية وريل وشاشة المساعد. كل اللي
- * كان مكتوبًا هنا (القايمة والترويسة والترحيب والكتابة والكروت)
- * نزل `AssistantScreen`، لأن اللوح اللي بيفتح من أي صفحة بقى
- * بيعرض **نفس الشاشة** · فلو فضلت مكتوبة هنا، لازم تتكتب هناك
- * تاني، وأي تعديل بعد كده يتعمل مرتين.
+ * This page is now a shell: background, reel, and the assistant screen. Everything that used to be
+ * written here (list, header, welcome, input, cards) moved into `AssistantScreen`, because the
+ * panel that opens from any page now shows the same screen - if it stayed here, it would need to be
+ * rewritten there too, and any later change would need to be made twice.
  *
- * ومحكومة بثلاث قواعد من الوثيقة والمكالمة:
- * 1 · مخرجات AI مساندة وغير مُلزِمة، فكل إجابة فيها قرار بتتعلّم في الواجهة.
- * 2 · «لو الـAI هو المدخل الوحيد، اليوزر ممكن يتسحل في فلو ما يجاوبوش»،
- *     فالكروت اختصارات نتيجتها معروفة مش دعوات لمحادثة مفتوحة.
- * 3 · التثبيت والبحث في المحادثات جزء أساسي مش زينة.
+ * Governed by three rules from the spec:
+ * 1. AI output is advisory, not binding, so any answer involving a decision is flagged in the UI.
+ * 2. If AI is the only entry point, a user can get stuck in a flow with no answer, so the cards are
+ * shortcuts to known outcomes, not invitations to an open-ended conversation.
+ * 3. Pinning and searching conversations are core, not decoration.
  */
 export default function AssistantPage() {
   const navigate = useNavigate()
   const mobile = useIsMobile()
-  /* ⚠️ حالة الطيّ في الرابط · الشريط المطويّ شاشة برضو، ومن غير
-     المفتاح ده الجرد بيرسم الشريط مفتوحًا في كل مرة (أ-3) */
+  /* Note: collapsed state lives in the URL - a collapsed sidebar is still a state, and without this
+     key the inventory would render the sidebar open every time. */
   const { values: v, set } = useQueryParams<{ list: string | undefined }>(['list'])
 
   const role = roles[0] as AssistantRole
@@ -37,26 +36,25 @@ export default function AssistantPage() {
     <>
       <Background />
       <div className="app">
-        {mobile && <MobileTop user={fixtures.currentUser} onSignOut={out} />}
+        {mobile && <MobileTop user={fixtures.currentUser} />}
 
         <div className="shell">
-          {/* شاشة المساعد كلها للمحادثة · الشريط مقفول هنا دايمًا */}
+          {/* The whole assistant screen is for the conversation - the sidebar stays closed here. */}
           <Rail user={fixtures.currentUser} onSignOut={out} shut />
 
           <AssistantScreen
             greet={role.greet}
-            /* المدى هنا السيستم كله · دي الصفحة اللي مالهاش سياق
-               صفحة قبلها، فالسؤال مفتوح */
+            /* Scope here is the whole system - this page has no prior-page context, so the question
+               is open-ended. */
             sub="كيف أساعدك اليوم؟"
             cards={role.cards}
             onClose={() => navigate(-1)}
-            /* ⚠️ **مقفولة لحدّ ما يطلبها · ٢٢ سبتمبر.** كانت مفتوحة
-               أول ما الشاشة تفتح، فالمستخدم اللي جاي بسؤال بيلاقي
-               تلت الشاشة قايمة محادثات قديمة قبل ما يكتب. والمساعد
-               هو أول شاشة بعد الدخول (`AFTER_LOGIN`)، فده كان أول
-               منظر في السيستم كله · والشريط بيتفتح بزرار المحادثات
-               جنب العنوان. فالرابط بيقول الاستثناء (`?list=open`)
-               لا الافتراضي. */
+            /* Note: closed until requested. It used to open automatically as soon as the screen
+               loaded, so a user arriving with a question found a third of the screen taken up by an
+               old chat list before they could even type. The assistant is also the first screen
+               after login, so this used to be the very first thing shown in the whole system. The
+               sidebar opens via the conversations button next to the title, so the URL states the
+               exception (`?list=open`), not the default. */
             listShut={v.list !== 'open'}
             onListShut={(x) => set({ list: x ? undefined : 'open' })}
             focusOnMount

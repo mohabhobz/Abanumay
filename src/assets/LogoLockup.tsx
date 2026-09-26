@@ -1,23 +1,18 @@
 import type { SVGProps } from 'react'
 
 /**
- * **قفل الهوية الرسمي بألوانه.**
- *
- * المؤسسة باعتت القفل بلون واحد (`currentcolor`) والعلامة الملوّنة
- * (`icon-color`) **منفصلة** · مفيش ملف قفل ملوّن. وشجرة القفل مش
- * نفس مسارات العلامة (٣٢ مسار مبسّط مقابل ١٢٣)، فمفيش تلوين
- * مسارًا بمسار.
- *
- * فالمركّب هنا **استبدال طبقة بطبقة**: تخطيط القفل زي ما هو (مواضع
- * الاسم المخطوط والسطر اللاتيني)، وشجرته اتشالت واتحطّ مكانها
- * **محتوى** العلامة الملوّنة متطابقًا حدًّا بحدّ · حدود المحتوى لا
- * حدود الـviewBox، لأن الأيقونة فيها هوامش جوّه إطارها وتجاهُلها
- * بيخلّي الشجرة أصغر وأوطى من مكانها الأصلي.
- *
- * الأرقام كلها **مقيسة من الرسم**:
- *   شجرة القفل   1176.8 -0.0 1028.3×943.3
- *   محتوى العلامة 58.6 195.3 1028.1×942.2
- *   نسبة القفل لعلامته  1.26026
+ * **Official color lockup.**
+ * The org supplied the lockup in a single color (`currentcolor`) and the colored mark
+ * (`icon-color`) **separately** — there's no colored lockup file. The lockup's icon tree doesn't
+ * share paths with the mark (32 simplified paths vs. 123), so there's no path-by-path coloring.
+ * So the approach here is **layer replacement**: keep the lockup layout as-is (wordmark and Latin
+ * line positions), remove its icon tree, and put the colored mark's **content** in its place,
+ * aligned edge to edge — content bounds, not viewBox bounds, since the icon has margin inside its
+ * frame and ignoring that would make the tree smaller and lower than its original position.
+ * All figures are **measured from the artwork**:
+ *   lockup icon tree   1176.8 -0.0 1028.3x943.3
+ *   mark content       58.6 195.3 1028.1x942.2
+ *   lockup-to-mark ratio  1.26026
  */
 export default function LogoLockup(props: SVGProps<SVGSVGElement>) {
   return (

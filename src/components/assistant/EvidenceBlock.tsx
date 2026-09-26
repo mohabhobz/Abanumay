@@ -3,8 +3,8 @@ import { Money } from '@/components/ui'
 import type { EvidenceBlock as Block } from './types'
 
 /**
- * بلوك الأدلة تحت إجابة المساعد.
- * كل شكل بيجاوب على سؤال مختلف، فمفيش بلوك واحد لكل الحالات.
+ * Evidence block under an assistant answer.
+ * Each shape answers a different question, so there's no single block for every case.
  */
 export function EvidenceBlock({ block }: { block: Block }) {
   switch (block.kind) {

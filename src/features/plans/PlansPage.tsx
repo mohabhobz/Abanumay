@@ -4,7 +4,7 @@ import {
   Empty, Glass, GroupPicker, Icon, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle, icons,
 } from '@/components/ui'
-import { pct } from '@/lib/format'
+import { countOf, NOUN, nounAfter, pct } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useStickyGroup } from '@/hooks/useStickyGroup'
@@ -30,28 +30,22 @@ import { COLS, GROUPS } from './columns'
 const KEYS = ['q', 'stage', 'owner', 'wait', 'late', 'entity', 'view', 'group', 'adv'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/* ═══════════════════════════════════════════════════════════
-   صندوق الخطط · BPD-012 · أخطر ناقص في التدقيق (أ-1)
+/* Plans inbox - the most significant gap found in the audit.
 
-   ⚠️ **الخطة إجراء مستقل، مش تاب في المشروع** · نفس منطق
-   الاتفاقيات بالحرف. ده تطبيق ح-10، أهم فكرة في ميتنج مظفر:
-   «المشكلة إن السيستم بيتعامل مع المشروع كأنه حاجة واحدة».
-   انتقال الخطة بين مراحلها ما بيغيّرش حالة المشروع، والمشرف اللي
-   عنده سبع خطط فيها أنشطة مستنّية مراجعة ما يقدرش يتابعهم من
-   صفحات المشاريع واحدة واحدة.
+   Note: a plan is an independent process, not a project tab - same logic as agreements exactly.
+   This applies the core idea: the system treats a project as a single unit, when a plan moving
+   through its stages doesn't change the project's status, and a supervisor with seven plans whose
+   activities await review can't track them one project page at a time.
 
-   ⚠️ **والشاشة مبنيّة على سؤال واحد: «إيه اللي واقف عندي».**
-   عشان كده الترتيب الافتراضي بالطابور (الأنشطة المستنّية) لا
-   بالتاريخ، وفلتر «مستنّي مراجعتي» شريحة ظاهرة لا فلترًا متقدّمًا.
-   الصندوق اللي بيترتّب بالتاريخ بيخلّي المشرف يدوّر على شغله.
+   Note: the screen is built on one question: what's on my desk? That's why the default order is by
+   queue (pending activities) rather than date, and "awaiting my review" is a visible tab, not an
+   advanced filter. An inbox sorted by date makes the supervisor go looking for their own work.
 
-   ═══ الشكل: نفس عقد القوائم ═══
-   عنوان → قراءة سريعة → أربع إحصاءات → شرائح المراحل → شريط
-   الأدوات → جدول أو كروت. كل عنصر من المكتبة، ولا تركيب مكتوب
-   للشاشة دي.
-   ═══════════════════════════════════════════════════════════ */
+   === Layout: the same list contract ===
+   Title -> quick read -> four stats -> stage tabs -> toolbar -> table or cards. Every element from
+   the library, no composition written just for this screen. */
 
-/* اللي فوق مش بيتحسب في عدّاد الفلاتر المتقدمة */
+/* What's above doesn't count toward the advanced-filters badge. */
 const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'stage', 'wait', 'late']
 
 export default function PlansPage() {
@@ -90,9 +84,9 @@ export default function PlansPage() {
 
   const rows = useMemo(() => planRows.filter((p) => match(p)), [v])
 
-  /* ⚠️ **الترتيب بالطابور لا بالتاريخ.** الخطة اللي فيها خمس أنشطة
-     مستنّية قبول هي شغل النهاردة · والتاريخ بيرتّب بالقِدم، وده
-     سؤال تاني خالص. وبعد الطابور المتأخّر، وبعدهم المكوث. */
+  /* Note: order is by queue, not date. A plan with five activities awaiting acceptance is today's
+     work - date sorts by age, an entirely different question. After the queue comes late items,
+     then dwell time. */
   const sorted = useMemo(
     () => [...rows].sort((a, b) =>
       waitingReview(b).length - waitingReview(a).length
@@ -104,7 +98,7 @@ export default function PlansPage() {
   const filtered = activeCount(['view', 'group', 'adv']) > 0
   const readings = useMemo(() => readPlans(rows, filtered), [rows, filtered])
 
-  /** عدّاد كل مرحلة جوّه النطاق الحالي · بلا فلتر المرحلة نفسه */
+  /** Count per stage within the current scope, excluding the stage filter itself. */
   const counts = useMemo(() => {
     const base = planRows.filter((p) => match(p, true))
     const m = new Map<PlanStage, number>()
@@ -120,7 +114,7 @@ export default function PlansPage() {
   const sheet: Sheet = useMemo(() => {
     const shown = orderCols(COLS, cols).filter((c) => !group.some((g) => g.key === c.key))
     const pickRows = selected.size ? sorted.filter((p) => selected.has(p.id)) : sorted
-    const parts = sheetOf(pickRows, shown, group, (n: number) => `${n} خطة`)
+    const parts = sheetOf(pickRows, shown, group, (n: number) => `${countOf(n, NOUN.plan)}`)
     const stamp = new Date().toISOString().slice(0, 10)
     return { file: `abanumay-plans-${stamp}`, title: 'خطط المشاريع', ...parts }
   }, [cols, sorted, selected, group])
@@ -164,22 +158,20 @@ export default function PlansPage() {
             <div>
               <h1 className="ptitle">خطط المشاريع</h1>
               <p className="sub mt-1">
-                <span className="num">{rows.length}</span> خطة من{' '}
+                <span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.plan)} من{' '}
                 <span className="num">{planKpi().total}</span> في هذا النموذج ·{' '}
                 <span className="num">{k.live}</span> قيد التنفيذ و
                 <span className="num">{k.open}</span> في دورة الاعتماد ·{' '}
-                <span className="num">{k.waiting}</span> نشاطًا بانتظار المراجعة
+                <span className="num">{k.waiting}</span> {nounAfter(k.waiting, NOUN.activity)} بانتظار المراجعة
               </p>
             </div>
 
-            {/* ⚠️ **الإعدادات وحدها في الركن · مفيش «خطة جديدة».**
-                عقد `PageActions` بيقول إن الإنشاء مكانه الترويسة ·
-                وهو ما بيقولش إن كل شاشة لازم يكون فيها إنشاء. الخطة
-                بتتولد **لمشروع اتقرّر إنه يتطلب خطة**، فمدخلها تاب
-                «الخطة» في صفحة المشروع. والصندوق بيجاوب «إيه اللي
-                واقف عندي» لا «اعمل خطة جديدة».
-                والسطر ده مكتوب عشان اللي جاي ما يضيفش زرارًا
-                «للاتّساق» ويكسر القاعدة الحقيقية. */}
+            {/* Note: only settings sits in the corner - there's no "new plan". The `PageActions`
+                contract says creation belongs in the header - it doesn't say every screen must have
+                a creation action. A plan is generated for a project already decided to require one,
+                so its entry point is the "plan" tab on the project page. The inbox answers "what's
+                on my desk", not "make a new plan". This line is written so whoever comes next
+                doesn't add a button "for consistency" and break the actual rule. */}
             <PageActions settings={ROUTES.planSettings} />
           </header>
 
@@ -190,9 +182,9 @@ export default function PlansPage() {
             empty="لا توجد في النطاق الحالي أنشطة بانتظار المراجعة أو متأخّرة · وسّع الفلتر لعرض المزيد."
           />
 
-          {/* ⚠️ **مفيش مؤشرات للموديول ده في الوثيقة** · الأربعة دي
-              مشتقّة من قواعده، ومسجَّلة في البريف كافتراض زي مؤشرات
-              الصرف اللي مستهدفها فاضي. */}
+          {/* Note: the spec has no indicators for this module - these four are derived from its own
+              rules, and logged elsewhere as placeholders, the same way the disbursement indicators
+              have an empty target. */}
           <div className="stats4">
             <Stat
               label="أنشطة بانتظار مراجعتك"
@@ -209,7 +201,7 @@ export default function PlansPage() {
             <Stat
               label="الأنشطة المتأخّرة"
               value={<Num>{pct(k.latePct)}</Num>}
-              note={`${k.late} من ${k.acts} نشاطًا · مقاسة على النسخة المرجعية`}
+              note={`${k.late} من ${countOf(k.acts, NOUN.activity)} · مقاسة على النسخة المرجعية`}
               bar={{ w: `${k.latePct}%`, c: 'var(--warn)' }}
             />
             <Stat
@@ -249,9 +241,9 @@ export default function PlansPage() {
                   options={OWNERS as unknown as string[]}
                   onChange={(x) => set({ owner: writeList(x) })}
                 />
-                {/* ⚠️ الاتنين دول شرائح ظاهرة لا فلاتر متقدّمة ·
-                    هما سؤال المشرف اليومي، واللي بيتسأل كل يوم
-                    ما يتخبّاش خلف زرار */}
+                {/* Note: these two are visible tabs, not advanced filters - they're the
+                    supervisor's daily question, and a daily question shouldn't hide behind a
+                    button. */}
                 <Toggle
                   label="بانتظار مراجعتي"
                   on={v.wait === '1'}
@@ -276,13 +268,11 @@ export default function PlansPage() {
               </div>
 
               <div className="ftool-a">
-                {/* ⚠️ **التجميع تحكّم عرض لا فلتر** · هو بيغيّر شكل
-                    الجدول لا الصفوف اللي فيه، فمكانه ركن العرض جنب
-                    مبدّل الكروت/الجدول.
-                    وكان آخر عنصر في صفّ الفلاتر، فأول ما الشريط
-                    يلفّ (شاشة أضيق) بينزل **لوحده** في سطر تاني على
-                    حافة الشاشة · شريحة يتيمة معلّقة تحت الصفّ،
-                    والعميل شافها. */}
+                {/* Note: grouping is a display control, not a filter - it changes the table's
+                    shape, not its rows, so it belongs in the display corner next to the cards/table
+                    switch. It used to be the last item in the filter row, so as soon as the bar
+                    wrapped (a narrower screen) it dropped alone to a second line at the screen's
+                    edge - an orphaned tab hanging under the row, which is what the client saw. */}
                 {view === 'table' && (
                   <GroupPicker
                     icon={icons.rows}
@@ -293,7 +283,7 @@ export default function PlansPage() {
                 )}
                 <ExportMenu
                   sheet={sheet}
-                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} خطة`}
+                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${countOf(selected.size || sorted.length, NOUN.plan)}`}
                   count={selected.size}
                 />
                 {!mobile && (
@@ -374,7 +364,7 @@ export default function PlansPage() {
                   onSelectAll={selectAll}
                   onOpen={(p) => navigate(ROUTES.plan(p.id))}
                   group={grouped ? group : undefined}
-                  count={(n) => `${n} خطة`}
+                  count={(n) => `${countOf(n, NOUN.plan)}`}
                 />
               </Glass>
               {grouped && (
@@ -388,20 +378,20 @@ export default function PlansPage() {
               )}
             </>
           ) : (
-            /* ⚠️ شبكة واحدة · الشرائح فوق هي الفلتر، وتقسيمها تحت
-               بيرسم نفس التصنيف تاني على نفس الداتا (درس ١٨ سبتمبر) */
+            /* Note: a single grid - the tabs above are the filter, and splitting it below draws the
+               same grouping twice over the same data. */
             <div className="paygrid">
               {sorted.map((p) => <PlanCard key={p.id} p={p} />)}
             </div>
           )}
 
-          {/* ⚠️ القاعدتان اللي بيتلخبطوا مكتوبتان في الشاشة لا في
-              التعليق بس · زي قاعدة 25 في الاتفاقيات بالظبط. */}
+          {/* Note: the two rules that cause confusion are documented on the screen, not only in a
+              comment - exactly like rule 25 on agreements. */}
           <p className="sub tcen">
             مرحلة الخطة لا تغيّر حالة المشروع · فهما إجراءان مستقلان يسيران بالتوازي
             مع الاتفاقية. والنشاط لا يُحتسب إنجازًا إلا بعد قبول مشرف المنح
             (القاعدة <span className="num">14</span>) ·{' '}
-            <span className="num">{k.closable}</span> مشروعًا اكتملت خطته وصار
+            <span className="num">{k.closable}</span> {nounAfter(k.closable, NOUN.project)} اكتملت خطته وصار
             مؤهَّلًا للإغلاق.
           </p>
         </div>

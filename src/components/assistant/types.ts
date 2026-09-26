@@ -1,7 +1,7 @@
 import type { IconName } from '@/components/ui'
 import type { DecisionKind, Tone } from '@/types/domain'
 
-/** بلوكات الأدلة اللي المساعد بيعرضها تحت الإجابة */
+/** Evidence blocks the assistant shows under an answer. */
 export type EvidenceBlock =
   | { kind: 'meter'; label: string; value: number; limit: number; note: string }
   | { kind: 'stats'; items: { k: string; v: string | number; u?: string }[] }
@@ -14,7 +14,7 @@ export interface AssistantAction {
   kind: DecisionKind
 }
 
-/** الإجابة المُعدّة سلفًا لسؤال معروف */
+/** Pre-written answer for a known question. */
 export interface AssistantAnswer {
   think: string[]
   text: string
@@ -23,7 +23,7 @@ export interface AssistantAnswer {
   sources?: string[]
   actions?: AssistantAction[]
   follow?: string[]
-  /** مخرجات AI مساندة وغير مُلزِمة · القاعدة دي بتتعلّم في الواجهة */
+  /** AI output is advisory, not binding — this rule is stated in the UI. */
   advisory?: boolean
 }
 
@@ -37,28 +37,26 @@ export interface UserMessage {
 export interface AiMessageModel extends AssistantAnswer {
   who: 'ai'
   state: MessageState
-  /** كام خطوة تفكير ظهرت لحد دلوقتي */
+  /** How many reasoning steps have appeared so far. */
   step: number
-  /** كام حرف اتكتب لحد دلوقتي */
+  /** How many characters have been typed so far. */
   chars: number
 }
 
 export type ChatMessage = UserMessage | AiMessageModel
 
 /**
- * سياق اللوح الجانبي · بيتغيّر حسب الصفحة المفتوح منها.
- *
- * اللوح بقى نفس الحالة الأولى بتاعة الشاشة الكاملة بالظبط، فالسياق
- * ده مسؤول عن حاجة واحدة: **الكلام اللي بيقول للمستخدم هيدوّر فين**.
- * الترحيب الشخصي («أهلًا عمر») بييجي من المستخدم لا من هنا، لأنه
- * ثابت في كل الصفحات.
+ * Side panel context — changes with the page it's opened from.
+ * The panel is now exactly the full screen's initial state, so this context is responsible for one
+ * thing: **what tells the user where it will search**. The personalized welcome ("Welcome, [name]")
+ * comes from the user, not from here, since it's the same on every page.
  */
 export interface AssistantContext {
-  /** عنوان ترويسة اللوح · اسم الشيء اللي أنت فيه */
+  /** Panel header title — the name of what you're in. */
   title: string
-  /** سطر تحت العنوان في الترويسة */
+  /** Line under the title in the header. */
   sub: string
-  /** سطر المدى تحت الترحيب: «كيف أقدر أساعدك في «س»؟» */
+  /** Scope line under the welcome: "How can I help you with [x]?" */
   scope: string
   cards: { icon: IconName; title: string; sub: string; prompt: string }[]
 }

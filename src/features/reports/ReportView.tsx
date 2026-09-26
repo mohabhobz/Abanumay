@@ -4,7 +4,7 @@ import { BackTo, Empty, Glass, icons, Mono, Money, Num, Person, Select } from '@
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
-import { nf, pct } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter, pct, unitAfter } from '@/lib/format'
 import { highlight } from '@/components/assistant'
 import { boardCards, PERIODS } from '@/data/reportDefs'
 import { closingRows, knowledgeRows } from '@/data/closing'
@@ -17,23 +17,28 @@ import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
 
 /**
- * تقرير كامل.
+ * Full report.
  *
- * كل كارت في اللوحة بيفتح هنا. والصفحة بتفضل على نفس القاعدة:
- * **القراءة فوق والصفوف تحت**. اللي فوق هو نفس نصّ الكارت · مش
- * تكرارًا، ده الجسر: المستخدم دخل من جملة، فأول حاجة يشوفها هي
- * نفس الجملة ومعاها الصفوف اللي بنتها.
+ * Every card on the dashboard opens here. The page keeps the same rule:
+ * reading text on top, rows below. What's on top is the same text as the
+ * card — not a repeat, but the bridge: the user came in from a sentence,
+ * so the first thing they see is that same sentence together with the
+ * rows it's built on.
  *
- * والتصدير موجود في كل تقرير: ده أكتر طلب في الأوديت، وأول سبب
- * بيخلّي المستخدم يفتح النظام القديم بعد ما نسلّم.
+ * Export exists on every report: it's the most requested item in the
+ * review, and the first reason a user would go back to the old system
+ * after this ships.
  */
 
 type Row = Record<string, string | number>
 
 interface Table {
-  /* `person` بيقول إن قيمة العمود اسم بني آدم · الخلية بتاخد وشّه */
+  /* `person` marks a column's value as a person's name — the cell gets
+     their avatar. */
   cols: { key: string; label: string; n?: boolean; money?: boolean; person?: boolean }[]
   rows: Row[]
+  /** Totals row — rendered in `tfoot`, not the table body. */
+  foot?: Row
 }
 
 export default function ReportView() {
@@ -65,7 +70,7 @@ export default function ReportView() {
     file: `abanumay-report-${key}-${period}`,
     title: `${card.question} · ${PERIODS.find((p) => p.id === period)?.label ?? ''}`,
     headers: table.cols.map((c) => c.label),
-    rows: table.rows.map((r) => table.cols.map((c) => String(r[c.key] ?? ''))),
+    rows: [...table.rows, ...(table.foot ? [table.foot] : [])].map((r) => table.cols.map((c) => String(r[c.key] ?? ''))),
   }
 
   return (
@@ -81,11 +86,12 @@ export default function ReportView() {
             </div>
           </header>
 
-          {/* القراءة نفسها اللي في اللوحة · الجسر بين الجملة والصفوف */}
+          {/* The same reading text as the dashboard — the bridge between the
+              sentence and the rows. */}
           <Glass className="rvread">
             <span className="rvread-v">
               <b className="num">{card.value}</b>
-              <small>{card.unit}</small>
+              <small>{unitAfter(card.value, card.unit)}</small>
             </span>
             <p>{highlight(card.reading, card.bold ?? [], card.danger ?? [])}</p>
           </Glass>
@@ -100,13 +106,13 @@ export default function ReportView() {
                 onChange={(v) => setPeriod(v ?? PERIODS[0].id)}
               />
               <span className="sub">
-                <span className="num">{nf.format(table.rows.length)}</span> صفًّا
+                <span className="num">{nf.format(table.rows.length)}</span> {nounAfter(table.rows.length, NOUN.row)}
               </span>
             </div>
             <div className="ftool-a">
               <ExportMenu
                 sheet={sheet}
-                note={`${card.question} · ${PERIODS.find((p) => p.id === period)?.label ?? ''} · ${nf.format(table.rows.length)} صفًّا`}
+                note={`${card.question} · ${PERIODS.find((p) => p.id === period)?.label ?? ''} · ${countOf(table.rows.length, NOUN.row)}`}
               />
             </div>
           </div>
@@ -134,13 +140,26 @@ export default function ReportView() {
                       {table.rows.slice(0, 200).map((r, i) => (
                         <tr key={i}>
                           {table.cols.map((c) => (
-                            <td key={c.key} className={c.n ? 'n num' : undefined} title={String(r[c.key] ?? '')}>
+                            <td key={c.key} className={c.n ? 'n' : undefined} title={String(r[c.key] ?? '')}>
                               {render(r[c.key], c)}
                             </td>
                           ))}
                         </tr>
                       ))}
                     </tbody>
+                    {/* The total is a summary, not a fourth row of data — it used to be a row
+                        with equal weight inside the body. `tfoot` gives it the border and
+                        weight from the table's own foundation, and a screen reader announces
+                        it as a summary. */}
+                    {table.foot && (
+                      <tfoot>
+                        <tr>
+                          {table.cols.map((c) => (
+                            <td key={c.key} className={c.n ? 'n' : undefined}>{render(table.foot![c.key], c)}</td>
+                          ))}
+                        </tr>
+                      </tfoot>
+                    )}
                   </table>
                 </div>
               </div>
@@ -169,17 +188,21 @@ function render(v: string | number | undefined, c: Table['cols'][number]) {
   return s
 }
 
-/* ═══════════════════ تعريف كل تقرير ═══════════════════ */
+/* Definition of each report */
 
 function buildTable(key: string, yearId: string): Table | null {
   const rows = projectRows.filter((p) => p.year === yearId)
 
   switch (key) {
-    /* المخصص والمصروف على المسارات · القيم الخمس اللي النظام بيمسكها */
+    /* Allocated and spent by track — the five values the system tracks. */
     case 'budget': {
       const total = budgetForYear(yearId)
-      const lines = [...budgetByTrack(yearId), { ...total, label: 'الإجمالي' }]
+      const line = (l: typeof total & { label: string }) => ({
+        label: l.label, allocated: l.allocated, reserved: l.reserved,
+        committed: l.committed, spent: l.spent, remaining: l.remaining,
+      })
       return {
+        foot: line({ ...total, label: 'الإجمالي' }),
         cols: [
           { key: 'label', label: 'المسار' },
           { key: 'allocated', label: 'المخصص', n: true, money: true },
@@ -188,20 +211,13 @@ function buildTable(key: string, yearId: string): Table | null {
           { key: 'spent', label: 'المصروف', n: true, money: true },
           { key: 'remaining', label: 'المتبقّي', n: true, money: true },
         ],
-        rows: lines.map((l) => ({
-          label: l.label,
-          allocated: l.allocated,
-          reserved: l.reserved,
-          committed: l.committed,
-          spent: l.spent,
-          remaining: l.remaining,
-        })),
+        rows: budgetByTrack(yearId).map((l) => line(l)),
       }
     }
 
-    /* المخطط مقابل الفعلي · الأعمدة الأربعة اللي في reports1_12 وبس */
+    /* Planned versus actual — only the four columns present in `reports1_12`. */
     case 'actual': {
-      /* تراكمي زي الكارت · راجع التعليق في `reportDefs` */
+      /* Cumulative, like the card — see the comment in `reportDefs`. */
       const cs = closingRows
       return {
         cols: [
@@ -233,7 +249,8 @@ function buildTable(key: string, yearId: string): Table | null {
       }
     }
 
-    /* الصرف حسب الهدف · الرسم اللي في مخصص الصرف، بس كأرقام */
+    /* Spending by goal — the same chart as in disbursement allocation, but
+       as numbers. */
     case 'spend': {
       const by = new Map<string, { granted: number; spent: number; n: number }>()
       for (const p of rows) {
@@ -269,7 +286,7 @@ function buildTable(key: string, yearId: string): Table | null {
       }
     }
 
-    /* الشركاء · نفس أعمدة تقرير الشركاء في النظام */
+    /* Partners — the same columns as the system's partner report. */
     case 'partners':
       return {
         cols: [
@@ -300,7 +317,8 @@ function buildTable(key: string, yearId: string): Table | null {
         })),
       }
 
-    /* الأداء · المكوث مقابل الحدّ، وهو اللي النظام بيقيسه ولا بيعرضه عند القرار */
+    /* Performance — time-in-stage against the threshold, which the system
+       measures but doesn't surface at decision time. */
     case 'stages': {
       const late = rows.filter((p) => stagePressure(p) > 1)
       return {
@@ -329,7 +347,8 @@ function buildTable(key: string, yearId: string): Table | null {
       }
     }
 
-    /* المعرفة · ومعاها عمود بيقول القيد ده فيه درس ولا نقطة */
+    /* Knowledge — with a column stating whether an entry holds a lesson or
+       just a note. */
     case 'knowledge': {
       const ks = knowledgeRows
       return {

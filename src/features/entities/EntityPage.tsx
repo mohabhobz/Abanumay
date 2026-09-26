@@ -1,17 +1,15 @@
 import { useMemo, useRef } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
+import { EntityMark, Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
 import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
-import { initial } from '@/lib/format'
 import { query } from '@/data/repository'
 import { entityById } from '@/data/mock/entities'
 import { entityDetail } from '@/data/mock/entityDetail'
 import {
   DEFAULT_ENTITY_TAB, ENTITY_TABS, ROUTES, type EntityTabSlug,
 } from '@/app/routes'
-import { activationTone, governanceTone } from '@/lib/tone'
 import { AnalysisCard } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { EntityFlow } from './EntityFlow'
@@ -22,18 +20,17 @@ import {
 } from './tabs'
 
 /**
- * صفحة الجهة.
+ * Entity page.
  *
- * الغرض منها سؤال واحد: أقدر أدي المشروع ده للجهة دي؟
+ * Its purpose is one question: can this project go to this entity?
  *
- * وعشان تجاوب عليه، لازم تعرض **ملف الجهة كامل** زي ما هو في النظام
- * العامل: ٣٥ حقلًا في خمس مجموعات، وثمانية مستندات بحالة وصلاحية كل
- * واحد، والحسابات البنكية بأسباب رفضها المقنّنة، وسجل قرارات الجهة.
- * قبل كده كانت بتعرض تسعة حقول بس، فالمشرف كان لازم يفتح النظام
- * القديم عشان يشوف الباقي.
+ * Answering it requires showing the entity's full file, as it exists in the live system: 35 fields
+ * across five groups, eight documents each with its own status and validity, bank accounts with
+ * their standardized rejection reasons, and the entity's decision log. This used to show only nine
+ * fields, so a supervisor had to open the old system to see the rest.
  *
- * والتقسيم لتابات مش تنظيمًا: الملف الكامل في عمود واحد بيبقى تمريرًا
- * طويلًا، والمشرف بيدوّر على الحقل بدل ما يقراه.
+ * Splitting into tabs isn't organization for its own sake: the full file in one column becomes a
+ * long scroll, and a supervisor ends up hunting for a field rather than reading it.
  */
 export default function EntityPage() {
   const { id, tab } = useParams<{ id: string; tab?: string }>()
@@ -42,8 +39,8 @@ export default function EntityPage() {
 
   const projects = useMemo(() => (id ? query.entityProjects(id) : []), [id])
 
-  /* الكارت الجانبي بياخد المساحة الباقية لحدّ رصيف القرار · نفس
-     حساب صفحة المشروع بالظبط، عشان الشكل واحد في الصفحتين. */
+  /* The side card takes the remaining space up to the decision footer - the same calculation as the
+     project page, so the layout matches across both. */
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, {
     varName: '--ai-fill',
@@ -64,11 +61,10 @@ export default function EntityPage() {
     <AppLayout assistantContext={assistFor.entity(entity)}>
       <div className="viewstack">
         <div className="screen col hasg2">
-          {/* ⚠️ **الباث مكتوب بالأسماء لا مشتقّ من الـURL.**
-              `/entities/755/banks` مشتقّة بتقرا «entities ← 755 ←
-              banks» · والصفحة هي اللي بتعرف إن ٧٥٥ اسمها «جمعية
-              البناء العلمي». ودي بالظبط سلسلة مظفر:
-              الجهة ← الحساب البنكي. */}
+          {/* Note: the path is written with names, not derived from the URL. `/entities/755/banks`
+              derived reads as "entities -> 755 -> banks", and only the page itself knows that 755
+              is "Scientific Building Association". This is exactly the chain: entity -> bank
+              account. */}
           <Crumbs
             items={[
               { label: 'الجهات', to: ROUTES.entities },
@@ -81,15 +77,14 @@ export default function EntityPage() {
             ]}
           />
 
-          {/* الترويسة بنفس تشكيل صفحة المشروع: الهوية على اليمين،
-              والقراءة البصرية على الشمال في نفس مكان المروحة ·
-              و`phead-g2` بتدّيها **نفس أعمدة `.g2`** اللي تحتها،
-              فحافّة الشكل بتقع على حافّة «تحليلات الجهة السريعة»
-              بالظبط بدل رقم عرض مكتوب بالإيد. */}
+          {/* The header follows the same layout as the project page: identity on the right, and the
+              visual summary on the left in the same spot as the gauge - and `phead-g2` gives it the
+              same `.g2` columns as the section below it, so the shape's edge lands exactly on the
+              edge of "quick entity analytics" instead of a hand-picked width. */}
           <header className="phead phead-g2">
             <div className="pmain">
               <div className="ehead-id">
-                <span className="ec-init ec-init-lg">{initial(entity.name)}</span>
+                <EntityMark logo={entity.logo} size="lg" />
                 <div style={{ minWidth: 0 }}>
                   <h1 className="ptitle">{entity.name}</h1>
                   <div className="ehead-m sub">
@@ -102,17 +97,19 @@ export default function EntityPage() {
                 </div>
               </div>
               <div className="ehead-m mt-4">
-                <Tag tone={activationTone(entity.activation)}>{entity.activation}</Tag>
-                <Tag tone={governanceTone(entity.governance)}>الحوكمة: {entity.governance}</Tag>
-                {/* الترخيص المنتهي بيوقف التعاقد، فمكانه الترويسة لا
-                    جوّه تاب · القرار بيتاخد من فوق. */}
-                {detail.licenseExpired && <Tag tone="no">الترخيص منتهٍ</Tag>}
+                {/* The page header isn't a card's status field - tags here are neutral, and colored
+                    detail lives in the tab cards. */}
+                <Tag tone="mute">{entity.activation}</Tag>
+                <Tag tone="mute">الحوكمة: {entity.governance}</Tag>
+                {/* An expired license blocks contracting, so it belongs in the header, not inside a
+                    tab - the decision is made from the top. */}
+                {detail.licenseExpired && <Tag tone="mute">الترخيص منتهٍ</Tag>}
                 <span className="sub">{entity.licensor}</span>
               </div>
             </div>
 
-            {/* الشكل في العمود الشمال قصاد الهوية · نفس مكان
-                المروحة في صفحة المشروع */}
+            {/* The visual sits in the left column facing identity - same position as the gauge on
+                the project page. */}
             <EntityFlow entity={entity} />
           </header>
 
@@ -126,13 +123,13 @@ export default function EntityPage() {
               {active === 'projects' && <EntityProjectsTab rows={projects} />}
               {active === 'log' && <EntityLogTab d={detail} />}
 
-              {/* السجل التراكمي والروابط تحت أي تاب: سياق دايم لا
-                  محتوى تاب · المشرف محتاجه وهو بيقرا أي حاجة. */}
+              {/* The running log and links sit below every tab: persistent context, not tab content
+                  - a supervisor needs it while reading anything. */}
               <EntityRecord e={entity} />
               <EntityGoTo e={entity} />
             </div>
 
-            {/* ═══ العمود الجانبي · كارت واحد لازق ═══ */}
+            {/* Side column - one sticky card */}
             <div className="col aiside" ref={aside}>
               <AnalysisCard
                 readings={readings}

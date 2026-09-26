@@ -2,43 +2,38 @@ import type {
   ActivityState, PlanActivity, PlanChange, PlanPhase, PlanRow, PlanStage,
 } from '@/types/domain'
 import { nowStamp } from '@/lib/format'
+import { TONE } from '@/lib/tone'
+import type { Tone } from '@/types/domain'
 import { projectRows } from './projects'
 
-/* ═══════════════════════════════════════════════════════════
-   خطة تنفيذ المشروع · BPD-012 · أخطر ناقص في التدقيق (أ-1)
+/* Project execution plan · addresses a significant gap identified during review.
 
-   السند في BPD-009 §9.3 خطوة 1 بالنص: «اعداد خطة المشروع من قبل
-   الجهة المستفيدة واعتمادها من قبل مشرف المنح ومدير المنح وذلك في
-   حالة المشاريع التي تتطلب خطة عمل».
+   Per spec: the plan is prepared by the beneficiary entity and approved by the grants officer and
+   grants manager, for projects that require a work plan.
 
-   وفي النظام العامل «الخطة التنفيذية» **مرفق** جوّه المشروع ·
-   ملف PDF بيترفع ويتنسي. مفيش دورة اعتماد، مفيش أنشطة، مفيش
-   شواهد، مفيش متابعة إنجاز. يعني السؤال «المشروع ماشي حسب خطته
-   ولا لأ؟» ما كانش له إجابة في السيستم كله.
+   In the live system, the "execution plan" is just an attachment inside the project — a PDF that
+   gets uploaded and forgotten. No approval cycle, no activities, no evidence, no progress tracking.
+   So the question "is the project on track per its plan?" had no answer anywhere in the system.
 
-   ═══ الفكرة اللي الموديول مبني عليها ═══
+   The idea this module is built on
 
-   ⚠️ **الخطة إجراء مستقل، زي الاتفاقية بالظبط.** ده تطبيق ح-10
-   (أهم فكرة في ميتنج مظفر · فصل الإجراءات): «المشكلة إن السيستم
-   بيتعامل مع المشروع كأنه حاجة واحدة · المشروع هو الخطة هو
-   الاتفاقية هو الدفع هو إغلاق المشروع، وحالة المشروع بتتغيّر
-   تبعًا لمستند تاني جزء منه».
+   The plan is an independent action, exactly like the agreement. The system used to treat the
+   project as a single thing — the project is the plan is the agreement is the payment is the
+   closure, and project status changed based on documents that were really part of something else.
 
-   فالخطة بتتعمل **بالتوازي** مع الاتفاقية، وانتقالها بين مراحلها
-   **ما بيغيّرش حالة المشروع** · نفس قاعدة 25 في الاتفاقيات. خطة
-   عند مدير المنح ومشروعها مكتوب عليه «قيد التنفيذ»، والاتنين صح.
+   So the plan proceeds in parallel with the agreement, and its own stage transitions do not change
+   the project's status — the same principle used for agreements. A plan can sit with the grants
+   manager while its project shows "in progress", and both are correct.
 
-   ⚠️ **وأهم قاعدة في الموديول هي 14: الجهة بتقول، والمشرف بيقرّر.**
-   النشاط اللي الجهة رفعت شاهده وقالت خلص بيبقى `claimed` **لا
-   `accepted`** · وما بيتحسبش في نسبة الإنجاز. من غير الفصل ده
-   نسبة الإنجاز بتبقى إقرارًا ذاتيًا، والمؤسسة بتدفع على كلام.
+   The most important rule in this module: the entity reports, the officer decides. An activity the
+   entity has uploaded evidence for and marked done becomes `claimed`, not `accepted` — and it isn't
+   counted toward the completion percentage. Without that separation, the completion percentage
+   becomes self-reported, and the organization pays based on claims.
 
-   ⚠️ **و`Baseline` مش نسخة احتياطية · هو المرجع اللي الانحراف
-   بيتقاس عليه.** بعد الاعتماد الهيكل بيتقفل، وأي تعديل جوهري
-   بيعدّي بطلب رسمي يعتمده مدير المنح (قاعدة 21) وبيرفع رقم النسخة.
-   من غير كده الجهة اللي اتأخرت بتعدّل تواريخها فتبقى منضبطة على
-   الورق دايمًا.
-   ═══════════════════════════════════════════════════════════ */
+   And `Baseline` isn't a backup — it's the reference that deviation is measured against. Once
+   approved, the structure locks, and any material change goes through a formal request approved by
+   the grants manager, which bumps the version number. Otherwise an entity that has fallen behind
+   could simply edit its own dates and always look compliant on paper. */
 
 export const PLAN_STAGES: {
   key: PlanStage; label: string; who: string; note: string
@@ -57,19 +52,19 @@ export const planStageLabel = (s: PlanStage): string =>
 export const planStageWho = (s: PlanStage): string =>
   PLAN_STAGES.find((x) => x.key === s)?.who ?? ''
 
-export const PLAN_TONE: Record<PlanStage, 'mute' | 'warn' | 'ret' | 'ok' | 'no'> = {
-  draft: 'mute',
-  supervisor: 'warn',
-  manager: 'warn',
-  returned: 'no',
-  active: 'ret',
-  done: 'ok',
+export const PLAN_TONE: Record<PlanStage, Tone> = {
+  draft: TONE.draft,
+  supervisor: TONE.review,
+  manager: TONE.review,
+  returned: TONE.returned,
+  active: TONE.active,
+  done: TONE.done,
 }
 
 /**
- * حدّ المرحلة بالساعات · مؤقت زي كل مدة في السيستم.
- * ⚠️ الوثيقة ما دّتش مدة لكل محطة · والأرقام دي **افتراضات**
- * مسجَّلة في البريف، زي مدد الاتفاقيات والصرف بالظبط.
+ * Stage time limit in hours · provisional like every duration in the system.
+ * The spec gave no duration per milestone — these numbers are assumptions recorded during planning,
+ * same as the agreement and disbursement durations.
  */
 export const PLAN_LIMIT: Record<PlanStage, number> = {
   draft: 336,
@@ -97,8 +92,8 @@ export const ACTIVITY_TONE: Record<ActivityState, 'mute' | 'warn' | 'ret' | 'ok'
 }
 
 /**
- * أنواع الشواهد · ماستر داتا (د-3).
- * أي قائمة منسدلة في السيستم = ماستر داتا، فمكانها الإعدادات.
+ * Evidence types · master data.
+ * Any dropdown in the system is master data, so it belongs in settings.
  */
 export const EVIDENCE_KINDS = [
   'تقرير مرحلي',
@@ -110,13 +105,13 @@ export const EVIDENCE_KINDS = [
   'شهادة أو إفادة جهة',
 ] as const
 
-/* ═══════════════════ الحساب ═══════════════════ */
+/* Calculation */
 
 /**
- * ⚠️ **الإنجاز بيتحسب من `accepted` وحدها · قاعدة 14.**
- * `claimed` معناها «الجهة قالت خلص» · وحسابها في النسبة بيحوّل
- * المتابعة لإقرار ذاتي. النسبة دي هي اللي بيتبني عليها قرار
- * الإغلاق، فلازم تبقى **مراجَعة** لا مُعلَنة.
+ * Completion is calculated from `accepted` only.
+ * `claimed` means "the entity says it's done" — counting it toward the percentage would turn review
+ * into self-reporting. This percentage feeds the closure decision, so it must be reviewed, not just
+ * announced.
  */
 export const phaseDone = (p: PlanPhase): number => {
   const w = p.activities.reduce((s, a) => s + a.weight, 0)
@@ -127,7 +122,7 @@ export const phaseDone = (p: PlanPhase): number => {
   return Math.round((got / w) * 100)
 }
 
-/** نسبة الإنجاز الكلية · موزونة بتكلفة المرحلة لا بعددها */
+/** Overall completion percentage · weighted by stage cost, not stage count */
 export const planDone = (p: PlanRow): number => {
   const total = p.phases.reduce((s, ph) => s + ph.cost, 0)
   if (total === 0) return 0
@@ -136,9 +131,9 @@ export const planDone = (p: PlanRow): number => {
 }
 
 /**
- * ⚠️ **النسبة اللي الجهة بتقولها · معروضة جنب المراجَعة لا بدالها.**
- * الفرق بين الاتنين هو بالظبط «شغل مستنّي مراجعة»، وإخفاؤه بيخلّي
- * المشرف ما يعرفش إن عنده طابور.
+ * The percentage the entity reports · shown next to the reviewed one, not in place of it.
+ * The gap between the two is exactly "work waiting on review", and hiding it would leave the
+ * officer unaware they have a backlog.
  */
 export const planClaimed = (p: PlanRow): number => {
   const total = p.phases.reduce((s, ph) => s + ph.cost, 0)
@@ -155,9 +150,9 @@ export const planClaimed = (p: PlanRow): number => {
 }
 
 /**
- * النسبة **المخطَّطة** لليوم · كام المفروض يكون خلص لو الخطة ماشية.
- * بتتحسب من التواريخ المرجعية: النشاط اللي تاريخ نهايته عدّى
- * المفروض يكون خلص، واللي جوّه مداه بيتحسب بالتناسب.
+ * The **planned** percentage for today · what should be done if the plan is on schedule.
+ * Calculated from reference dates: an activity whose end date has passed should be done, and one
+ * within its window is calculated proportionally.
  */
 export const planPlanned = (p: PlanRow, today = TODAY): number => {
   const total = p.phases.reduce((s, ph) => s + ph.cost, 0)
@@ -179,11 +174,11 @@ export const planPlanned = (p: PlanRow, today = TODAY): number => {
 }
 
 /**
- * `SPI` · مؤشر أداء الجدول (المنجَز ÷ المخطَّط).
+ * `SPI` · schedule performance index (actual ÷ planned).
  *
- * ⚠️ **واحد صحيح معناه «ماشي بالظبط»، لا «تمام».** الرقم لوحده
- * بيتقري تقييمًا، فالشاشة بتعرض معاه النسبتين اللي طلعوه ·
- * `SPI` من غير طرفيه بيبقى حكمًا بلا سند.
+ * A value of exactly one means "on schedule", not "good". The number alone reads as a verdict, so
+ * the screen shows both figures behind it — an `SPI` without its two components is a judgment with
+ * no support.
  */
 export const planSpi = (p: PlanRow, today = TODAY): number | null => {
   const want = planPlanned(p, today)
@@ -195,24 +190,24 @@ export const spiSay = (v: number | null): { say: string; tone: 'ok' | 'warn' | '
   if (v === null) return { say: 'لم يبدأ', tone: 'mute' }
   if (v >= 0.95) return { say: 'وفق الخطة', tone: 'ok' }
   if (v >= 0.8) return { say: 'متأخّر قليلًا', tone: 'warn' }
-  return { say: 'متأخّر عن الخطة', tone: 'no' }
+  return { say: 'متأخّر عن الخطة', tone: TONE.late }
 }
 
-/** أنشطة مستنّية مراجعة المشرف · ده طابور شغله */
+/** Activities waiting on officer review · this is their backlog */
 export const waitingReview = (p: PlanRow): PlanActivity[] =>
   p.phases.flatMap((ph) => ph.activities.filter((a) => a.state === 'claimed'))
 
-/** أنشطة عدّى تاريخ نهايتها وما اتقبلتش */
+/** Activities past their end date and not yet accepted */
 export const lateActivities = (p: PlanRow, today = TODAY): PlanActivity[] =>
   p.phases.flatMap((ph) =>
     ph.activities.filter((a) => a.state !== 'accepted' && a.to < today))
 
-/* ═══════════════════ القواعد قبل الأفعال ═══════════════════ */
+/* Rules checked before actions */
 
 /**
- * ⚠️ **الكونديشنز بتتشيّك عند الأكشن لا عند الكتابة (ج-8).**
- * والرسالة بتقول **إيه** و**ليه**، لأن «فيه خطأ» بتخلّي المستخدم
- * يدوّر بعينه على اللي هو مش شايفه.
+ * Conditions are checked at the action, not at write time.
+ * The message states both what and why, since "there's an error" makes the user hunt for what they
+ * can't see.
  */
 export interface PlanIssue { key: string; say: string; rule: string }
 
@@ -242,8 +237,8 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
         rule: 'BPD-012',
       })
     }
-    /* ⚠️ النشاط لازم يقع **جوّه** مدى مرحلته · نشاط بيخلص بعد
-       مرحلته بيخلّي نسبة المرحلة تكمل وهي لسه شغّالة */
+    /* An activity must fall **within** its stage's date range — an activity ending after its stage
+       would let the stage's percentage keep climbing while it's supposedly still running */
     for (const a of ph.activities) {
       if (ph.from && a.from && a.from < ph.from) {
         out.push({
@@ -277,9 +272,9 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
     }
   })
 
-  /* ⚠️ **مجموع المراحل = قيمة المنحة** · نفس انضباط شجرة الميزانية
-     وجدول الدفعات. خطة تكلفتها غير المنحة معناها إن جزءًا من المال
-     مالوش شغل مكتوب، أو إن الخطة بتعد بشغل مالوش تمويل. */
+  /* The sum of stages must equal the grant amount — same discipline as the budget tree and payment
+     schedule. A plan costing more or less than the grant means either unaccounted-for money or a
+     plan promising work with no funding. */
   const cost = p.phases.reduce((s, ph) => s + ph.cost, 0)
   if (grant > 0 && cost !== grant) {
     out.push({
@@ -292,23 +287,23 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
   return out
 }
 
-/** الخطة تقدر تتبعت؟ · نفس الدالة للجهة وللمشرف */
+/** Can the plan be submitted? · same function for both the entity and the officer */
 export const canSend = (p: PlanRow, grant: number): boolean =>
   planIssues(p, grant).length === 0
 
 /**
- * الخطة مكتملة ⇒ المشروع مؤهَّل للإغلاق.
+ * Plan complete ⇒ project eligible for closure.
  *
- * ⚠️ **مؤهَّل لا مُغلَق.** الإغلاق إجراء تاني له قواعده (BPD-011:
- * التقرير الختامي · الاتصال المؤسسي · التقييم). الخطة بترفع
- * **مانعًا**، ما بتعملش الإغلاق · وده فصل الإجراءات نفسه.
+ * Eligible, not closed. Closure is a separate action with its own rules (final report,
+ * institutional contact, evaluation). The plan lifts a blocker, it doesn't perform the closure —
+ * the same separation of actions as elsewhere.
  */
 export const readyToClose = (p: PlanRow): boolean =>
   p.phases.length > 0 && p.phases.every((ph) => phaseDone(ph) === 100)
 
-/* ═══════════════════ الداتا ═══════════════════ */
+/* Data */
 
-/** اليوم في النموذج · نفس اللي باقي الموديولات بتقيس عليه */
+/** "Today" in the mock · the same reference date every module measures against */
 export const TODAY = '2026-09-18'
 
 const ev = (id: string, kind: string, fileName: string, at: string): {
@@ -351,7 +346,7 @@ const plan = (
 }
 
 export const planRows: PlanRow[] = [
-  /* خطة ماشية مع جدولها · ومعاها نشاطان مستنّيان مراجعة */
+  /* An on-track plan with its schedule · two activities waiting on review */
   plan('PL-1021', '20845', 'active', 1, [
     phase('ph1', 'التهيئة والتعاقد', '2026-03-01', '2026-04-30', 380_000, [
       act('a1', 'تشكيل فريق التنفيذ', 'accepted', '2026-03-01', '2026-03-15', 30,
@@ -389,7 +384,7 @@ export const planRows: PlanRow[] = [
     ]),
   ], 'سارة القحطاني', '2026-02-18', 36, { baselineAt: '2026-02-26' }),
 
-  /* خطة متأخّرة · نشاطان عدّى موعدهم وما اتقبلوش */
+  /* A delayed plan · two activities past due and not accepted */
   plan('PL-1018', '20852', 'active', 2, [
     phase('ph1', 'الإعداد', '2026-01-15', '2026-03-15', 700_000, [
       act('a1', 'دراسة الاحتياج', 'accepted', '2026-01-15', '2026-02-15', 50,
@@ -430,7 +425,7 @@ export const planRows: PlanRow[] = [
     }],
   }),
 
-  /* خطة عند مدير المنح · اتراجعت من المشرف */
+  /* A plan with the grants manager · returned by the officer */
   plan('PL-1024', '20802', 'manager', 0, [
     phase('ph1', 'التهيئة', '2026-10-01', '2026-11-15', 450_000, [
       act('a1', 'التعاقد مع المدرّبين', 'todo', '2026-10-01', '2026-10-20', 50,
@@ -446,7 +441,7 @@ export const planRows: PlanRow[] = [
     ]),
   ], 'سارة القحطاني', '2026-09-02', 78),
 
-  /* خطة عند المشرف · أول مراجعة */
+  /* A plan with the officer · first review */
   plan('PL-1025', '20824', 'supervisor', 0, [
     phase('ph1', 'الإعداد', '2026-10-05', '2026-12-05', 750_000, [
       act('a1', 'حصر المستفيدين', 'todo', '2026-10-05', '2026-11-05', 60,
@@ -456,7 +451,7 @@ export const planRows: PlanRow[] = [
     ]),
   ], 'سارة القحطاني', '2026-09-11', 26),
 
-  /* خطة مُعادة للجهة بملاحظة */
+  /* A plan returned to the entity with a note */
   plan('PL-1026', '20831', 'returned', 0, [
     phase('ph1', 'التنفيذ', '2026-11-01', '2027-02-28', 640_000, [
       act('a1', 'الحملة التوعوية', 'todo', '2026-11-01', '2027-02-28', 100,
@@ -466,16 +461,16 @@ export const planRows: PlanRow[] = [
     note: 'مرحلة واحدة لأربعة أشهر بنشاط واحد · يلزم تقسيمها إلى مراحل يُقاس عليها الإنجاز.',
   }),
 
-  /* مسودة عند الجهة · لسه بتتكتب.
-     ⚠️ ومشروعها **متعثّر** عن قصد: ده بالظبط المشروع اللي الخطة
-     موجودة عشانه · ولو كل الأمثلة مشاريع سليمة، الشاشة بتتفحص في
-     أحسن حالاتها وحدها. وجهته (774) ليها طلب تسجيل معتمد، فكارت
-     «خطط مشاريعك» في بوّابة الجهة بيترسم فعلًا لا يفضل كودًا ميتًا. */
+  /* A draft still being written by the entity.
+     Its project is deliberately stalled: this is exactly the project this feature exists for — if
+     every example were a healthy project, the screen would only ever be tested at its best. Its
+     entity has an approved registration request, so the "your project plans" card in the entity
+     portal actually renders instead of staying dead code. */
   plan('PL-1027', '20705', 'draft', 0, [
     phase('ph1', 'الإعداد', '2026-11-01', '2026-12-31', 0, []),
   ], 'سارة القحطاني', '2026-09-15', 70, { drafter: 'supervisor' }),
 
-  /* خطة مكتملة · المشروع مؤهَّل للإغلاق */
+  /* A completed plan · project eligible for closure */
   plan('PL-1009', '20611', 'done', 1, [
     phase('ph1', 'التنفيذ', '2025-09-01', '2026-05-31', 400_000, [
       act('a1', 'تجهيز المسجد', 'accepted', '2025-09-01', '2026-01-31', 60,
@@ -500,24 +495,24 @@ export const plansOfEntity = (entityId: string): PlanRow[] =>
   planRows.filter((p) => p.entityId === entityId)
 
 /**
- * المشروع يتطلب خطة؟
+ * Does the project require a plan?
  *
- * ⚠️ **قرار مدير المنح قبل الاعتماد، مش خاصية للمشروع.** الوثيقة
- * بتقول «في حالة المشاريع التي تتطلب خطة عمل» · فالقرار بيتاخد
- * مرة وبيحكم وجود إجراء كامل بعده. واللي مالوش خطة ما بينتظرش
- * حاجة، فالإغلاق عنده مانع أقل.
+ * A decision made by the grants manager before approval, not a property of the project. The spec
+ * applies it for projects that require a work plan — the decision is made once and governs a whole
+ * subsequent action. A project without a plan has one less thing to wait on, so it has fewer
+ * blockers to closure.
  *
- * في النموذج: المشروع اللي ليه خطة **هو اللي اتقرّر إنه يتطلبها**.
+ * In the mock: a project has a plan because it was decided that it requires one.
  */
 export const needsPlan = (projectId: string): boolean =>
   planRows.some((p) => p.projectId === projectId)
 
-/* ═══════════════════ الأفعال ═══════════════════ */
+/* Actions */
 
 /**
- * ⚠️ **الأفعال بتغيّر الأراي في مكانه.** النموذج مالوش باك إند،
- * والشاشات بتقرا من نفس المصفوفة · فالفعل لازم يبان في الصندوق
- * وفي صفحة المشروع وفي بوّابة الجهة مرة واحدة.
+ * Actions mutate the array in place. This mock has no backend, and every screen reads from the same
+ * array — an action must be reflected in the card, the project page, and the entity portal all at
+ * once.
  */
 const touch = (p: PlanRow, stage: PlanStage, note?: string) => {
   p.stage = stage
@@ -541,8 +536,8 @@ export const toManager = (id: string): void => {
 }
 
 /**
- * الاعتماد · **وده اللي بيثبّت النسخة المرجعية**.
- * قبله الهيكل مفتوح، وبعده أي تعديل جوهري بطلب رسمي (قاعدة 21).
+ * Approval · this is what locks in the baseline. Before it the structure stays open; after it, any
+ * material change requires a formal request.
  */
 export const approvePlan = (id: string): void => {
   const p = planById(id)
@@ -552,11 +547,11 @@ export const approvePlan = (id: string): void => {
   touch(p, 'active')
 }
 
-/** الجهة بتقول إن النشاط خلص · `claimed` لا `accepted` (قاعدة 14) */
+/** The entity marks an activity done · `claimed`, not `accepted` */
 export const claimActivity = (planId: string, actId: string): void => {
   const a = planById(planId)?.phases.flatMap((ph) => ph.activities).find((x) => x.id === actId)
-  /* ⚠️ الملاحظات **ما بتتمسحش** لمّا النشاط يتعلّن تاني · هي سجلّ،
-     والمشرف اللي بيراجع التانية محتاج يشوف ليه اترفضت الأولى */
+  /* Notes aren't cleared when the activity is resubmitted — they're a record, and the officer
+     reviewing the second submission needs to see why the first was rejected */
   if (a) a.state = 'claimed'
 }
 
@@ -569,7 +564,7 @@ export const acceptActivity = (planId: string, actId: string): void => {
   if (readyToClose(p)) p.stage = 'done'
 }
 
-/** الرفض بسببه · وبيتسجّل باسم اللي رفض ووقته (قاعدة 14) */
+/** Rejection with its reason · recorded with who rejected it and when */
 export const rejectActivity = (planId: string, actId: string, note: string, by: string): void => {
   const a = planById(planId)?.phases.flatMap((ph) => ph.activities).find((x) => x.id === actId)
   if (!a) return
@@ -578,11 +573,11 @@ export const rejectActivity = (planId: string, actId: string, note: string, by: 
 }
 
 /**
- * تعليق على النشاط · من أي طرف.
+ * A comment on the activity · from either side.
  *
- * ⚠️ **التعليق ما بيغيّرش حالة النشاط.** الرفض قرار، والتعليق كلام ·
- * الجهة تقدر تردّ على سبب الرفض، والمدير يقدر يضيف رأيه، والنشاط
- * بيفضل في حالته لحدّ ما حد ياخد قرار.
+ * A comment doesn't change the activity's status. Rejection is a decision, a comment is discussion
+ * — the entity can respond to a rejection reason, a manager can add their view, and the activity
+ * stays in its state until someone makes a decision.
  */
 export const commentActivity = (
   planId: string, actId: string, say: string, by: string, from: 'staff' | 'entity' = 'staff',
@@ -602,7 +597,7 @@ export const addEvidence = (
   }]
 }
 
-/** طلب تعديل جوهري · قاعدة 21 */
+/** Request for a material change */
 export const askChange = (planId: string, say: string): void => {
   const p = planById(planId)
   if (!p) return
@@ -619,19 +614,19 @@ export const decideChange = (
   if (!c || !p) return
   c.state = ok ? 'approved' : 'rejected'
   c.note = note
-  /* ⚠️ الموافقة بترفع رقم النسخة · ده اللي بيخلّي «متأخّر عن
-     الخطة» جملة لها مرجع معروف، لا مقارنة بخطة اتغيّرت بهدوء */
+  /* Approval bumps the version number — this is what makes "behind the plan" a statement with a
+     known reference point, rather than a comparison against a plan that quietly changed */
   if (ok) { p.baseline += 1; p.baselineAt = TODAY }
 }
 
 export type { PlanChange }
 
-/* ═══════════════════ مؤشرات الموديول ═══════════════════ */
+/* Module indicators */
 
 /**
- * ⚠️ **الوثيقة ما دّتش مؤشرات لـBPD-012** · دول مشتقّون من قواعده
- * نفسها، ومسجَّلون في البريف كـ**افتراض** زي مؤشرات الصرف اللي
- * مستهدفها فاضي. الرقم بيتعرض قيمةً لا حالةً.
+ * The spec gave no indicators for this feature — these are derived from its own rules and recorded
+ * as an assumption, same as the disbursement indicators with an empty target. The number is
+ * displayed as a value, not a verdict.
  */
 export const planKpi = () => {
   const live = planRows.filter((p) => p.stage === 'active' || p.stage === 'done')
@@ -648,7 +643,7 @@ export const planKpi = () => {
     (s, p) => s + p.phases.reduce((x, ph) => x + ph.activities.length, 0), 0,
   )
 
-  /** متوسط مدة الاعتماد بالأيام · من الفتح لتثبيت النسخة المرجعية */
+  /** Average approval duration in days · from opening to locking in the baseline */
   const approved = planRows.filter((p) => p.baselineAt)
   const days = approved.length === 0 ? 0 : Math.round(
     approved.reduce((s, p) => {
@@ -668,21 +663,21 @@ export const planKpi = () => {
     approveDays: days,
     onTrackPct: spis.length === 0 ? 0 : Math.round((onTrack / spis.length) * 100),
     latePct: acts === 0 ? 0 : Math.round((late / acts) * 100),
-    /** الخطط اللي كل أنشطتها اتقبلت · يعني مشاريع مؤهّلة للإغلاق */
+    /** Plans whose activities are all accepted · i.e. projects eligible for closure */
     closable: planRows.filter((p) => readyToClose(p) && p.stage !== 'done').length,
   }
 }
 
-/* ═══════════════════ المحرّر ═══════════════════ */
+/* Editor */
 
 /**
- * ⚠️ **الهيكل بيتقفل بعد الاعتماد · قاعدة 21.**
- * قبل النسخة المرجعية أي حاجة تتعدّل · وبعدها المسموح هو تحديث
- * التنفيذ (حالة النشاط والشواهد) لا تغيير الهيكل. اللي عايز يغيّر
- * مرحلة أو تاريخًا أو تكلفة بيعدّي من طلب تعديل رسمي.
+ * The structure locks after approval.
+ * Before the baseline, anything can be edited; after it, only execution updates are allowed
+ * (activity status and evidence), not structural changes. Changing a stage, date, or cost requires
+ * a formal change request.
  *
- * والدالة دي هي **المصدر الوحيد** للقرار ده · لو كل شاشة حسبته
- * بنفسها، واحدة منهم هتنساه وتسمح بتعديل صامت على خطة معتمدة.
+ * This function is the single source of that decision — if every screen computed it independently,
+ * one of them would eventually forget and allow a silent edit to an approved plan.
  */
 export const canEditShape = (p: PlanRow): boolean => p.baseline === 0
 
@@ -706,17 +701,17 @@ export const newActivity = (n: number): PlanActivity => ({
   evidence: [],
 })
 
-/** يكتب الهيكل الجديد · بيتنادى من المحرّر عند الحفظ */
+/** Writes the new structure · called by the editor on save */
 export const savePhases = (id: string, phases: PlanPhase[]): void => {
   const p = planById(id)
   if (p) p.phases = phases
 }
 
 /**
- * ⚠️ **توزيع الأوزان بالتساوي · زرار لا سلوك تلقائي.**
- * القاعدة إن مجموع أوزان أنشطة المرحلة = 100، والتلقائي كان
- * هيدوس على وزن كتبه المستخدم بإيده. الزرار بيخلّي التوزيع
- * **قرارًا**، والرسالة بتقول إن المجموع غلط لحدّ ما يتصلّح.
+ * Equal weight distribution is a button, not automatic behavior.
+ * The rule is that a stage's activity weights sum to 100, and doing this automatically would
+ * overwrite a weight the user typed in by hand. The button makes distribution a deliberate action,
+ * and the message states the total is wrong until it's fixed.
  */
 export const evenWeights = (ph: PlanPhase): PlanPhase => {
   const n = ph.activities.length
@@ -726,23 +721,23 @@ export const evenWeights = (ph: PlanPhase): PlanPhase => {
     ...ph,
     activities: ph.activities.map((a, i) => ({
       ...a,
-      /* الباقي بيروح لأول نشاط · المجموع لازم يبقى 100 بالظبط */
+      /* The remainder goes to the first activity · the total must equal exactly 100 */
       weight: i === 0 ? base + (100 - base * n) : base,
     })),
   }
 }
 
 /**
- * فتح خطة لمشروع · وبترجّع رقمها.
+ * Opens a plan for a project · returns its id.
  *
- * ⚠️ **بتفتح مسودة فاضية لا خطة كاملة.** القرار اللي بيتاخد هنا هو
- * «المشروع ده يتطلب خطة عمل» · والمراحل والأنشطة بتتكتب في المحرّر
- * بعده، من الجهة أو من المشرف بالنيابة. خلط القرار بالتعبئة كان
- * هيخلّي الشاشة نموذجًا طويلًا قبل ما حد يقرّر أصلًا.
+ * Opens an empty draft, not a complete plan. The decision made here is "this project requires a
+ * work plan" — stages and activities are filled in afterward, in the editor, by the entity or by
+ * the officer on its behalf. Combining the decision with the data entry would turn the screen into
+ * a long form before anyone has actually decided anything.
  *
- * ⚠️ **وخطة واحدة للمشروع.** لو فيه واحدة بترجّع رقمها بدل ما
- * تفتح تانية · خطتان لمشروع معناها نسختان مرجعيتان، والانحراف
- * يبقى محسوبًا على أنهي واحدة فيهم.
+ * A project has only one plan. If one already exists, its id is returned instead of opening another
+ * — two plans for one project would mean two baselines, and deviation would end up measured against
+ * whichever one is convenient.
  */
 export const openPlan = (projectId: string, drafter: 'entity' | 'supervisor'): string => {
   const has = planOfProject(projectId)

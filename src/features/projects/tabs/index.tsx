@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { DateText, Empty, Glass, Head, Mono, Num, Tag } from '@/components/ui'
-import { isolate, nf } from '@/lib/format'
+import { countOf, isolate, nf, NOUN } from '@/lib/format'
 import type { Entity, FollowUp, FollowUpType } from '@/types/domain'
 import type { ThreadMessage } from '@/data/mock/detail'
 import { Thread } from '@/components/thread'
@@ -14,7 +14,7 @@ export { CloseTab, type CloseTabProps } from './CloseTab'
 export { PaymentsTab, type PaymentsTabProps } from './PaymentsTab'
 export { LogTab, type LogTabProps } from './LogTab'
 
-/* ═══════════════ المشاريع السابقة ═══════════════ */
+/* Previous projects */
 
 export function HistoryTab({ entity: E, currentId }: { entity: Entity; currentId: string }) {
   return (
@@ -32,7 +32,7 @@ export function HistoryTab({ entity: E, currentId }: { entity: Entity; currentId
       </Glass>
 
       <Glass>
-        <Head title="مشاريع الجهة" meta={`${E.projects.length} مشاريع`} />
+        <Head title="مشاريع الجهة" meta={`${countOf(E.projects.length, NOUN.project)}`} />
         <div style={{ overflowX: 'auto' }}>
           <table className="tbl">
             <thead>
@@ -48,7 +48,7 @@ export function HistoryTab({ entity: E, currentId }: { entity: Entity; currentId
                   <td>{p.name}</td>
                   <td>{p.region}</td>
                   <td><Tag tone={p.tone}>{p.status}</Tag></td>
-                  <td className="n num">{p.weight}</td>
+                  <td className="n">{p.weight}</td>
                 </tr>
               ))}
             </tbody>
@@ -63,18 +63,20 @@ export function HistoryTab({ entity: E, currentId }: { entity: Entity; currentId
   )
 }
 
-/* ═══════════════ المتابعات ═══════════════ */
+/* Follow-ups */
 
 /**
- * المتابعات.
+ * Follow-ups.
  *
- * في النظام العامل المتابعة **بتتوثّق فيها شروط الصرف**: الصف اللي
- * بيقول «متطلب الدفعة الثانية: إنجاز 50% من العمليات» هو اللي إذن
- * الصرف اتبنى عليه بعده بأيام. فمش سجل ملاحظات · ده الدليل اللي
- * القرار المالي بيستند له.
+ * In the current system, a follow-up is where disbursement conditions get
+ * documented: an entry stating "second payment requirement: 50% of
+ * operations complete" is what the disbursement authorization issued days
+ * later was based on. So it isn't a notes log — it's the evidence a
+ * financial decision rests on.
  *
- * وهي كمان **بتظهر جوّه سجل المشروع** بنفس الترتيب الزمني، لأن
- * النظام بيحطّها في نفس التايم لاين. التاب ده عرض مركَّز ليها.
+ * It also appears inside the project log in the same chronological order,
+ * because the system places it in the same timeline. This tab is a
+ * focused view of it.
  */
 export function FollowUpsTab({
   followUps,
@@ -132,18 +134,20 @@ export function FollowUpsTab({
   )
 }
 
-/* ═══════════════ المراسلات ═══════════════ */
+/* Correspondence */
 
 /**
- * المراسلة مع الجهة.
+ * Correspondence with the entity.
  *
- * القناة دي في النظام العامل **شبه ميتة**: صفر رسائل في ٣٨ مشروعًا
- * فحصناه، والثريد الوحيد اللي لقيناه كان كله عن سند قبض اتعطّل.
- * يعني هي مش قناة تواصل عام · بتتفتح **لما إجراء يقف على الجهة**.
+ * This channel is nearly inactive in the current system: zero messages
+ * across the 38 projects examined, and the one thread found was entirely
+ * about a stalled receipt voucher. So it isn't a general communication
+ * channel — it opens when an action is blocked on the entity.
  *
- * فبنعرضها كده بالظبط: لو الإجراء واقف على الجهة، الثريد موجود
- * ومعاه سبب وقوفه. ولو لأ، بنقول إنها فاضية ونقول امتى بتُستخدم،
- * بدل ما نوري صندوق شات فاضي في كل مشروع.
+ * We show it exactly as that: if an action is blocked on the entity, the
+ * thread exists with the reason it's blocked. Otherwise, we say it's empty
+ * and state when it's used, instead of showing an empty chat box on every
+ * project.
  */
 export function CorrespondenceTab({
   messages,
@@ -152,7 +156,7 @@ export function CorrespondenceTab({
 }: {
   messages: ThreadMessage[]
   entityName: string
-  /** سبب فتح القناة · بيتقال فوق الثريد */
+  /** Reason the channel is open — stated above the thread. */
   why: string
 }) {
   return (

@@ -1,62 +1,58 @@
 import { Link } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
 import { useMenu } from '@/hooks/useMenu'
+import { Trail } from '@/components/soul'
 
-/* ═══════════════════════════════════════════════════════════
-   الباث · ك-3 و ك-4 · والبريف الكامل في NAVIGATION_PATH_BRIEF.md
+/* Breadcrumbs.
 
-   ⚠️ **هرم لا تاريخ.** ده اللي اتحسم في الميتنج بمثال الفولدرات،
-   واللي البحث بيقوله كأول قاعدة. والسبب العملي عندنا تحديدًا:
-   **نصّ الدخول للنظام بييجي من إشعار أو رابط متبعوت** (قاعدة 20
-   بتلزم إشعارًا لكل انتقال)، واللي جاي من برّه **مالوش هيستوري
-   أصلًا** · فباث الهيستوري كان هيطلع فاضي في أكتر حالة بنتصمّم لها.
+   ⚠️ **A hierarchy, not a history.** This was settled with the folder-path analogy, and it's the
+   first rule any research on the subject states. The practical reason here specifically: **the way
+   into the system usually comes from a notification or a shared link** (every transition requires a
+   notification), and anything arriving from outside **has no history at all** — so a history-based
+   path would come up empty in the most common case this is designed for.
 
-   والهيستوري موجود خلاص: زرار الرجوع في البراوزر. ده سلوك براوزر
-   لا سلوك تطبيق.
+   History already exists: the browser's back button. That's browser behavior, not application
+   behavior.
 
-   ⚠️ **والمسار بيتكتب في الصفحة، ما بيتشتقّش من الـURL.** الاشتقاق
-   بيدّي «entities ← 755 ← banks»: أرقام وسلاجات مش أسماء. والصفحة
-   هي الوحيدة اللي بتعرف إن `755` اسمها «جمعية البناء العلمي».
+   ⚠️ **And the path is written on the page, not derived from the URL.** Deriving it gives ids and
+   slugs, not names. The page is the only place that knows an id like `755` means, for example,
+   "Scientific Building Society."
 
-   ⚠️ **وآخر عنصر مش رابط.** رابط بيودّي لنفس الشاشة اللي إنت فيها
-   بيكسر التوقّع: المستخدم بيدوس وما بيحصلش حاجة، فيفتكر إن الشاشة
-   علّقت. وهو كمان اللي بيخلّي `aria-current="page"` صادقة.
+   ⚠️ **And the last item isn't a link.** A link leading to the screen you're already on breaks
+   expectations — the user clicks and nothing happens, and assumes the screen is stuck. It's also
+   what keeps `aria-current="page"` truthful.
 
-   ⚠️ **وسطر واحد أبدًا.** الباث اللي بيلفّ سطرين بيفقد كونه باثًا
-   ويبقى قايمة كلمات. الزيادة بتتطوي في «…» بقايمة، ما بتنزلش تحت.
-   ═══════════════════════════════════════════════════════════ */
+   ⚠️ **And never two lines.** A path that wraps to two lines stops being a path and becomes a list
+   of words. The overflow collapses into an ellipsis with a list, it never wraps down. */
 
 export interface Crumb {
   label: string
-  /** غيابه معناه إن العنصر ده هو الصفحة الحالية */
+  /** Its absence means this item is the current page. */
   to?: string
 }
 
 export interface CrumbsProps {
-  /** من الجذر للصفحة الحالية · آخر عنصر هو مكانك */
+  /** From the root to the current page — the last item is where you are. */
   items: Crumb[]
 }
 
 /**
- * فوق العدد ده بتتطوي الأوساط في «…».
- *
- * ⚠️ **أربعة مش رقم مخترَع:** أعمق باث في السيستم أربع مستويات
- * (الصرف ← الطلب ← أمر الصرف · والمشاريع ← المشروع ← تاب ← فرع)،
- * فالطيّ بيشتغل لمّا نعدّي العمق ده لا قبله · يعني القايمة ما
- * بتظهرش في الحالة العادية خالص.
+ * Above this count, the middle items collapse into an ellipsis.
+ * ⚠️ **Four isn't an arbitrary number:** the deepest path in the system is four levels, so the
+ * collapse kicks in only past that depth — meaning it practically never shows in the normal case.
  */
 const FLAT = 4
 
 export function Crumbs({ items }: CrumbsProps) {
   const { open, setOpen, box } = useMenu<HTMLSpanElement>()
 
-  /* قاعدة ٥ في البريف: مفيش باث في الشاشة المسطّحة · مستوى واحد
-     يعني مفيش هرم يتعرض، وعنصر واحد في `nav` بيبقى ضوضاء. */
+  /* No path on a flat screen: a single level means there's no hierarchy to show, and one item in a
+     nav element is just noise. */
   if (items.length < 2) return null
 
   const deep = items.length > FLAT
-  /* الجذر وآخر اتنين بيفضلوا ظاهرين · الأوساط هي اللي بتتطوي،
-     لأن الجذر بيقول «إنت في أنهي موديول» والآخر بيقول «إنت فين». */
+  /* The root and the last two items stay visible; the middle ones are what collapses, because the
+     root says which module you're in and the last one says where you are. */
   const head = deep ? items[0] : undefined
   const folded = deep ? items.slice(1, items.length - 2) : []
   const tail = deep ? items.slice(items.length - 2) : items
@@ -76,10 +72,12 @@ export function Crumbs({ items }: CrumbsProps) {
     <Icon key={`s-${k}`} name={icons.chevron} size="sm" className="crumb-s" />
   )
 
+  /* A secondary visual layer: an underline beneath the path with two leaves at its end. */
   return (
+    <div className="waypoint">
     <nav className="crumbs" aria-label="مسار الصفحة">
-      {/* `ol` لأن الترتيب معنى: الأول أب والآخر ابن · وقارئ الشاشة
-          بيقول «عنصر ٢ من ٤» فبيدّي العمق بلا بصر */}
+      {/* An ordered list, because order carries meaning: the first is the parent, the last is the
+          child, and a screen reader says "item 2 of 4," giving depth with no need for sight. */}
       <ol>
         {head && (
           <li>
@@ -134,5 +132,7 @@ export function Crumbs({ items }: CrumbsProps) {
         ))}
       </ol>
     </nav>
+    <Trail />
+    </div>
   )
 }

@@ -5,12 +5,13 @@ import type { CurrentUser } from '@/types/domain'
 const EVENT = 'ab:role'
 
 /**
- * الدور الحالي، مشترك بين كل الكومبوننتس.
+ * Current role, shared across all components.
  *
- * التبديل بيبعت حدثًا على الويندو بدل ما يحطّ كونتكست فوق التطبيق ·
- * الحالة الوحيدة المشتركة هنا هي دي، والكونتكست كان هيبقى بنية أكبر
- * من الحاجة. ولما التوكن يبقى هو مصدر الدور، الهوك ده بيتحوّل لسطر
- * واحد بيقرأ من الجلسة والمبدّل بيختفي.
+ * Switching dispatches a window event instead of putting a context
+ * around the app — this is the only piece of shared state here, and a
+ * context would have been more structure than needed. Once the auth
+ * token becomes the source of the role, this hook collapses to a single
+ * line reading from the session, and the switcher disappears.
  */
 export function useRole(): {
   role: Role

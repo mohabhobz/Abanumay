@@ -2,35 +2,28 @@ import type { PayCheck, PayEvent, PayRequest, PayState } from '@/types/domain'
 import { projectRows } from './projects'
 import { entityById } from './entities'
 
-/* ═══════════════════════════════════════════════════════════
-   Disbursement requests · built on BPD-009, not on the live system
+/* Disbursement requests · built on the procedures document, not on the live system
 
-   The document is the basis here. The live system runs seven
-   sections and two extra documents (سند القبض والقيد) after the
-   transfer; the document describes four stages ending at the
-   transfer. Where they differ, the differences are recorded as
-   numbered notes in `DISBURSEMENT_MODULE_BRIEF.md` (part B) with
-   the design impact of each possible answer — so nothing is lost
-   and nothing is guessed.
+   The document is the basis here. The live system runs seven sections and two extra documents (the
+   receipt voucher and the ledger entry) after the transfer; the document describes four stages
+   ending at the transfer. Where they differ, the differences are recorded as numbered notes with
+   the design impact of each possible answer, so nothing is lost and nothing is guessed.
 
-   What IS taken from the live system is the SIZE: about 72 open
-   disbursement transactions, not thousands. That single number
-   decides the screen: a decision card beats a table row, and full
+   What IS taken from the live system is the size: about 72 open disbursement transactions, not
+   thousands. That single number decides the screen: a decision card beats a table row, and full
    context beats density.
 
-   Every request carries the checks the document actually names, so
-   a blocked request says WHICH rule blocks it:
-     rule 3  · attachments complete
-     rule 6  · the payment's own condition met
-     rule 10 · the agreement is in force
-     rule 11 · the reserved amount is still available
-   Plus the approved bank account, which the document names in its
-   second output ("صرف الدفعة إلى الحساب البنكي المعتمد") and which
-   the live system names as its only defined reason for sending a
-   permit back.
-   ═══════════════════════════════════════════════════════════ */
+   Every request carries the checks the document actually names, so a blocked request says WHICH
+   rule blocks it:
+     rule 3  attachments complete
+     rule 6  the payment's own condition met
+     rule 10 the agreement is in force
+     rule 11 the reserved amount is still available
+   Plus the approved bank account, which the document names in its second output ("disbursing the
+   payment to the approved bank account") and which the live system names as its only defined reason
+   for sending a permit back. */
 
-/** حالات الطلب · اللي بيقول مين واقف، لا «مدفوع / غير مدفوع» */
+/** Request statuses · states who's holding it, not "paid / unpaid" */
 export const PAY_STATES: { key: PayState; label: string; who: string; steps: string }[] = [
   { key: 'supervisor', label: 'بانتظار مشرف المنح', who: 'مشرف المنح', steps: '4–7' },
   { key: 'returned', label: 'مُعاد للاستكمال', who: 'الجهة المستفيدة', steps: '10–11' },
@@ -46,9 +39,9 @@ export const payStateWho = (s: PayState): string =>
   PAY_STATES.find((x) => x.key === s)?.who ?? ''
 
 /**
- * حدّ المرحلة بالساعات · مصدره آلية التصعيد (9.5)، واللي بتقول إن
- * عدد الأيام لكل مرحلة **من الإعدادات**. الأرقام دي مؤقتة لحدّ ما
- * المؤسسة تدّينا المدد، زي «القيمة المستهدفة» الفاضية في المؤشرات.
+ * Stage limit in hours · sourced from the escalation mechanism (9.5), which states that the day
+ * count per stage comes **from settings**. These numbers are provisional until the Foundation gives
+ * us the durations, like the empty "target value" in the indicators.
  */
 export const PAY_LIMIT: Record<PayState, number> = {
   supervisor: 120,
@@ -59,7 +52,7 @@ export const PAY_LIMIT: Record<PayState, number> = {
   closed: 0,
 }
 
-/** التصعيد · متأخر عند تجاوز الحدّ، ومتعثر عند تجاوز ضعفه */
+/** Escalation · delayed once past the limit, stalled once past double it */
 export type PayHeat = 'ok' | 'late' | 'stuck'
 
 export const payHeat = (r: PayRequest): PayHeat => {
@@ -70,13 +63,13 @@ export const payHeat = (r: PayRequest): PayHeat => {
   return 'ok'
 }
 
-/** الطلب موقوف لو فيه شرط واحد مش مستوفى · rule 3 و6 و10 و11 */
+/** A request is held if even one condition isn't met · rules 3, 6, 10, and 11 */
 export const payBlocked = (r: PayRequest): boolean =>
   r.checks.some((c) => !c.ok) || !r.bank.active
 
 const BANKS = ['مصرف الراجحي', 'مصرف الإنماء', 'بنك البلاد', 'البنك الأهلي السعودي', 'بنك الرياض']
 
-/** حالة الحساب البنكي كخيارَي فلتر · مخرج الوثيقة التاني بيشترط اعتماده */
+/** Bank account status as two filter options · the document's second output requires it approved */
 export const BANK_STATES = ['معتمد', 'معطَّل']
 
 const CONDITIONS = [
@@ -103,7 +96,7 @@ const RETURN_NOTES = [
   'المرفق صورة غير واضحة · يلزم رفعه مرة أخرى',
 ]
 
-/* مولّد ثابت · نفس الداتا في كل تشغيلة، فالمقارنة البصرية تنفع */
+/* A fixed generator · same data on every run, so visual comparison works */
 let seed = 909
 const rnd = () => {
   seed = (seed * 1103515245 + 12345) & 0x7fffffff
@@ -112,20 +105,20 @@ const rnd = () => {
 const int = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1))
 const pick = <T,>(a: readonly T[]): T => a[int(0, a.length - 1)] as T
 
-/* ⚠️ **النسب من النظام العامل، والعدد من سعة النموذج.**
-   الأرقام الأصلية (26 · 6 · 9 · 12 · 19 = 72) هي أحجام النظام
-   العامل، وهو فيه آلاف المشاريع. النموذج ده فيه ثلاثين مشروعًا،
-   وكل اتفاقية دفعاتها من اتنين لأربعة، وآخر دفعة بتفضل بلا طلب ·
-   فالسعة الحقيقية أقلّ من 72 بكتير.
+/* Warning: **the ratios come from the live system, and the count from the mock's capacity.**
+   The original numbers (26 · 6 · 9 · 12 · 19 = 72) are the live system's sizes, and it has
+   thousands of projects. This mock has thirty projects, and each agreement's disbursements run from
+   two to four, with the last one left with no request, so the real capacity is much smaller than
+   72.
 
-   وحشر 72 في السعة دي كان بيدّي مشروعًا واحدًا تلات طلبات مفتوحة
-   في نفس الوقت — رقم بيتقري صح في الصندوق وبيكدب على الواقع.
-   والأسوأ إن المحاولة الفاضية كانت بتاكل من حصّة المرحلة، فالخطة
-   طلعت 17/2/0/0/0: المراحل الأولى بلعت المشاريع والأخيرة فضيت
-   خالص، والمؤشران 2 و3 طلعوا أصفارًا لأن مفيش ولا طلب مصروف.
+   Cramming 72 into that capacity would give one project three open requests at once — a number that
+   reads fine in a box and lies about reality. Worse, an empty attempt was eating into the stage's
+   share, so the plan came out 17/2/0/0/0: the early stages swallowed the projects and the last ones
+   ended up completely empty, and indicators 2 and 3 came out as zeros because not a single request
+   was spent.
 
-   فالنسب هي اللي اتاخدت من النظام العامل (36% · 8% · 13% · 17% ·
-   26%)، والعدد بيتحسب من السعة الفعلية وقت التشغيل. */
+   So the ratios are the ones taken from the live system (36% · 8% · 13% · 17% · 26%), and the count
+   is computed from the actual capacity at run time. */
 const MIX: { state: PayState; share: number }[] = [
   { state: 'supervisor', share: 0.36 },
   { state: 'returned', share: 0.08 },
@@ -135,9 +128,8 @@ const MIX: { state: PayState; share: number }[] = [
 ]
 
 const checksFor = (state: PayState, cond: boolean): PayCheck[] => {
-  /* المرحلة بتحدّد الشروط اللي النظام بيتحقق منها · rule 10 و11
-     بيتحققوا قبل الإحالة للمالية، فما بيظهروش على طلب لسّه عند
-     المشرف إلا كمعلومة. */
+  /* The stage decides which conditions the system checks · rules 10 and 11 are checked before
+     referral to finance, so they only show as information on a request still with the supervisor. */
   const base: PayCheck[] = [
     { label: 'المرفقات والمستندات مكتملة', ok: rnd() > 0.18, rule: 3 },
   ]
@@ -148,17 +140,17 @@ const checksFor = (state: PayState, cond: boolean): PayCheck[] => {
   return base
 }
 
-/* ═══════════════ المرفقات وسجل التدقيق ═══════════════
-   rule 21 بيقول المستندات تتحفظ **مربوطة بالطلب** لا في مكان تاني،
-   وrule 16 بيطلب سجل تدقيق لكل العمليات. الاتنين دول مش زينة في
-   صفحة الطلب · هما اللي بيخلّوا المراجِع يقدر يقول «ليه الطلب ده
-   وصل لهنا» بدل ما يسأل اللي قبله. */
+/* -- Attachments and audit log --
+   Rule 21 requires documents to be stored **tied to the request**, not somewhere else, and rule 16
+   requires an audit log for every action. Neither of these is decoration on the request page —
+   they're what lets a reviewer say "why did this request end up here" instead of asking the person
+   before them. */
 
-/* ⚠️ **الاسم بامتداده.** `DocFile` بتقرا نوع المحتوى من الامتداد
-   وبترسم ثامبنيل بيقوله: صفحة سطور للمستند، شبكة خانات للجدول،
-   كتلة صورة للصورة. الاسم بلا امتداد بيخلّي كل مرفق يتعرض كـPDF،
-   فالمراجع ما يعرفش إن «كشف المستفيدين» جدول و«صور التنفيذ» صور
-   إلا لما يفتحهم. ودي نفس القاعدة في مرفقات المشروع والجهة. */
+/* Warning: **the name, with its extension.** `DocFile` reads content type from the extension and
+   draws a thumbnail accordingly: a lined page for a document, a grid for a spreadsheet, an image
+   block for a picture. A name with no extension makes every attachment show as a PDF, so a reviewer
+   doesn't know "beneficiary list" is a spreadsheet and "execution photos" are images until they
+   open them. Same rule as the project and entity attachments. */
 const DOC_KINDS = [
   { name: 'التقرير المرحلي.pdf', kind: 'تقرير' },
   { name: 'كشف المستفيدين.xlsx', kind: 'كشف' },
@@ -167,7 +159,7 @@ const DOC_KINDS = [
   { name: 'سند التعهّد الموقّع.pdf', kind: 'سند' },
 ]
 
-/** الخطوات اللي كل مرحلة بتعدّي عليها · مصدرها جدول الخطوات نفسه */
+/** The steps each stage passes through · sourced from the steps table itself */
 const PASSED: Record<PayState, number[]> = {
   supervisor: [1, 2, 3, 4],
   returned: [1, 2, 3, 4, 5, 6, 7, 10],
@@ -177,7 +169,7 @@ const PASSED: Record<PayState, number[]> = {
   closed: [1, 2, 3, 4, 15],
 }
 
-/** نصّ كل خطوة في السجل · الفاعل والفعل والإشعار اللي اتبعت معاه */
+/** The text for each log step · the actor, the action, and the notification sent with it */
 const STEP_SAY: Record<number, { role: string; what: string; notified?: string }> = {
   1: { role: 'النظام', what: 'أتاح إنشاء طلب الصرف · استحقت الدفعة واستُوفيت شروط التقديم' },
   2: { role: 'الجهة المستفيدة', what: 'أنشأت طلب الصرف وأرفقت التقارير والمستندات' },
@@ -197,25 +189,25 @@ const STEP_SAY: Record<number, { role: string; what: string; notified?: string }
   19: { role: 'النظام', what: 'أشعر الجهة بتنفيذ الصرف', notified: 'الجهة المستفيدة · نُفّذ الصرف' },
 }
 
-/** تواريخ السجل بتتولّد للورا من تاريخ الإنشاء، بيوم لكل خطوة */
+/** Log dates are generated backward from the creation date, a day per step */
 const dayAfter = (iso: string, n: number): string => {
   const d = new Date(iso)
   d.setDate(d.getDate() + n)
   return d.toISOString().slice(0, 10)
 }
 
-/** المشاريع اللي عدّت الاتفاقية · rule 1: الصرف بعد التفعيل بس */
+/** Projects that have passed the agreement stage · rule 1: disbursement only after activation */
 const eligible = projectRows.filter(
   (p) => p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل',
 )
 
-/* ⚠️ **عدد الدفعات صفة في الاتفاقية، لا في الطلب.**
-   كان `of` بيتولّد مع كل طلب لوحده، فالمشروع الواحد بيطلع بطلب
-   «الدفعة 2 من 2» وجنبه «الدفعة 1 من 4» · يعني جدولان للاتفاقية
-   الواحدة. الباج ده ما كانش بيبان في صندوق الصرف خالص (كل كارت
-   بيتقري لوحده وكل واحد فيهم متّسق مع نفسه)، وبان أول ما شاشة
-   إنشاء الطلب طلبت **الجدول كله** فلقت نفسها بتقرا `of` من أول طلب
-   وتتجاهل الباقي. الجدول بيتعرّف مرة واحدة للمشروع هنا. */
+/* Warning: **the disbursement count is a property of the agreement, not of the request.**
+   `of` used to be generated per request independently, so the same project would show a request
+   labeled "disbursement 2 of 2" next to "disbursement 1 of 4" — two different schedules for one
+   agreement. This bug never showed up in the disbursements inbox at all (each card reads on its own
+   and each one is internally consistent), and it showed up only once the request-creation screen
+   asked for **the whole schedule** and found itself reading `of` from the first request and
+   ignoring the rest. The schedule is now defined once per project, here. */
 const SCHEDULE = new Map<string, number>()
 const scheduleOf = (projectId: string): number => {
   const known = SCHEDULE.get(projectId)
@@ -225,21 +217,21 @@ const scheduleOf = (projectId: string): number => {
   return of
 }
 
-/** الدفعات اللي اتحجزت لكل مشروع · قاعدة 4: واحدة لكل رقم */
+/** Disbursements held per project · rule 4: one per number */
 const TAKEN = new Map<string, Set<number>>()
 
 export const payRequests: PayRequest[] = (() => {
   const out: PayRequest[] = []
 
-  /* السعة الفعلية · مجموع الدفعات القابلة للطلب في كل المشاريع
-     المؤهّلة، بعد ما آخر دفعة تتحجز في الاتفاقيات المتعددة */
+  /* Actual capacity · the total requestable disbursements across all eligible projects, once the
+     last disbursement is reserved in multi-disbursement agreements */
   const capacity = eligible.reduce((sum, p) => {
     const of = scheduleOf(p.id)
     return sum + (of > 1 ? of - 1 : of)
   }, 0)
 
-  /* الخطة = النسب × السعة · والباقي من القسمة بيروح لأكبر شريحة
-     عشان المجموع يطابق السعة بالظبط لا يقلّ عنها */
+  /* Plan = ratios x capacity · the remainder from the division goes to the largest bucket so the
+     total matches the capacity exactly rather than falling short */
   const PLAN = MIX.map((m) => ({ state: m.state, n: Math.floor(capacity * m.share) }))
   const spare = capacity - PLAN.reduce((s, x) => s + x.n, 0)
   if (PLAN[0]) PLAN[0].n += spare
@@ -247,14 +239,14 @@ export const payRequests: PayRequest[] = (() => {
   let n = 0
   for (const { state, n: count } of PLAN) {
     for (let i = 0; i < count; i++) {
-      /* ⚠️ **بندوّر على مشروع لسّه عنده دفعة فاضية، ما بنتخطّاش.**
-         الأول كان `continue` لما المشروع يبقى ملْيان · والنتيجة إن
-         المحاولة الفاضية بتاكل من حصّة المرحلة، فالخطة 26/6/9/12/19
-         طلعت 17/2/0/0/0: المراحل الأولى بلعت المشاريع والأخيرة
-         فضيت خالص، والمؤشران 2 و3 طلعوا أصفارًا لأن مفيش ولا طلب
-         مصروف. العدّاد اللي بيتقري من حلقة بتتخطّى بيكدب على
-         الخطة، ومفيش تحقّق بيمسك ده · الخطة بتقول 72 والشاشة
-         بتعرض 19 والاتنين «شغّالين». */
+      /* Warning: **looking for a project that still has an open disbursement slot, not skipping
+         ahead.**
+         It used to `continue` once a project filled up — the result being that an empty attempt was
+         eating into the stage's share, so the plan of 26/6/9/12/19 came out 17/2/0/0/0: the early
+         stages swallowed the projects and the last ones ended up completely empty, and indicators 2
+         and 3 came out as zeros because not a single request was spent. A counter read from a loop
+         that skips ahead lies about the plan, and nothing checks for that — the plan says 72 and
+         the screen shows 19, and both are 'working.' */
       let p = null as (typeof eligible)[number] | null
       let taken = new Set<number>()
       let of = 0
@@ -265,12 +257,11 @@ export const payRequests: PayRequest[] = (() => {
         const candOf = scheduleOf(cand.id)
         const candTaken = TAKEN.get(cand.id) ?? new Set<number>()
         TAKEN.set(cand.id, candTaken)
-        /* ⚠️ الدفعة الأخيرة بتفضل **بلا طلب** في الاتفاقيات المتعددة.
-           مش تزويقًا للنموذج: الدفعة الختامية بتيجي بعد التقرير
-           الختامي، فالاتفاقية اللي كل دفعاتها ليها طلب مفتوح حالة
-           نادرة لا القاعدة. ولولا ده كانت شاشة إنشاء الطلب بتفتح
-           على جدول كل صفوفه مقفولة — شاشة سليمة بتوصف عالمًا
-           مستحيلًا. */
+        /* Warning: the last disbursement stays **with no request** in multi-disbursement
+           agreements. Not a mock embellishment: the final disbursement comes after the closing
+           report, so an agreement where every disbursement has an open request is the rare case,
+           not the rule. Without this, the request-creation screen would open on a schedule with
+           every row already closed, a correct screen describing an impossible world. */
         const candCap = candOf > 1 ? candOf - 1 : candOf
         if (candTaken.size >= candCap) continue
         p = cand; taken = candTaken; of = candOf; cap = candCap
@@ -278,19 +269,19 @@ export const payRequests: PayRequest[] = (() => {
       }
       if (!p) break
       const e = entityById(p.entityId)
-      /* قاعدة 4 · طلب واحد مفتوح لكل دفعة · فالرقم ما يتكرّرش */
+      /* Rule 4 · one open request per disbursement · so the number never repeats */
       let no = int(1, cap)
       while (taken.has(no)) no = (no % cap) + 1
       taken.add(no)
       const granted = p.amountGranted || p.amountRequested
-      /* الدفعة = نصيبها من المعتمد · والأخيرة بتاخد الباقي فالمجموع
-         يساوي قيمة المنحة بالظبط (rule 14 وقاعدة الاتفاقية 8) */
+      /* Disbursement = its share of the approved amount · the last one takes the remainder so the
+         total equals the grant exactly (rule 14 and agreement rule 8) */
       const even = Math.round(granted / of / 1000) * 1000
       const due = no === of ? granted - even * (of - 1) : even
       const cond = rnd() > 0.35
       const lim = PAY_LIMIT[state] || 120
-      /* التوزيع مقصود: أغلب الطلبات جوّه الحدّ، وشوية متأخرة، وأقل
-         متعثرة · الصندوق الحقيقي مش كله أحمر */
+      /* The distribution is deliberate: most requests within the limit, a few delayed, and fewer
+         stalled — a real inbox isn't all red */
       const h = rnd() > 0.72 ? int(lim + 1, lim * 3) : int(2, lim)
       const dueMonth = int(6, 9)
       const dueDay = int(1, 28)
@@ -311,7 +302,7 @@ export const payRequests: PayRequest[] = (() => {
         condition: cond ? pick(CONDITIONS) : undefined,
         checks: checksFor(state, cond),
         bank: { name: pick(BANKS), active: rnd() > 0.07 },
-        /* مصدر واحد في الأغلب · وتعدّد المصادر هو اللي rule 12 بيخصّه */
+        /* Usually a single source · multiple sources is exactly what rule 12 addresses */
         sources:
           rnd() > 0.8
             ? [
@@ -322,43 +313,41 @@ export const payRequests: PayRequest[] = (() => {
         ai: state === 'paid' ? undefined : pick(AI_NOTES),
         note: state === 'returned' ? pick(RETURN_NOTES) : undefined,
         owner: p.owner ?? 'عمر قاسم',
-        /* ⚠️ تاريخ الإنشاء **مربوط بالاستحقاق**: الجهة بتطلب الصرف
-           قبل موعد الدفعة بأسبوعين لتلاتة، مش في شهر عشوائي.
-           لما كان مستقلًّا كان بيطلع طلبات اتعملت **بعد** ما
-           الدفعة استحقّت بشهرين، والمؤشرات كلها بتتحسب من المسافة
-           دي. */
+        /* Warning: the creation date is **tied to the due date**: an entity requests disbursement
+           two to three weeks before the disbursement is due, not in some random month. When it was
+           independent, requests came out **after** the disbursement was already two months overdue,
+           and every indicator is computed from that gap. */
         at: dayAfter(
           `2026-0${dueMonth}-${String(dueDay).padStart(2, '0')}`,
-          /* المدى واسع عن قصد: الجهة اللي بتطلب قبل الاستحقاق
-             بأسبوعين بتتصرف في موعدها، واللي بتطلب قبله بيومين
-             بتتأخر مهما كانت المعالجة سريعة · ومؤشر 4 بيقيس ده
-             بالظبط. مدى ضيّق كان بيدّي 100% في موعدها، وهي نسبة
-             ما بتحصلش ولا في نظام. */
+          /* The range is deliberately wide: an entity that requests two weeks ahead pays on time,
+             and one that requests two days ahead runs late no matter how fast processing is —
+             indicator 4 measures exactly this. A narrow range would give 100% on time, a ratio that
+             never happens in any real system. */
           -int(2, 26),
         ),
-        /* rule 10 · الاتفاقية وسريانها معروضة في الطلب لا مستنتجة */
+        /* Rule 10 · the agreement and whether it's in force are shown on the request, not inferred */
         agreement: {
           id: `AG-${p.id.replace(/\D/g, '').slice(-5)}`,
           active: rnd() > 0.05,
           endsAt: `2027-0${int(1, 9)}-${String(int(1, 28)).padStart(2, '0')}`,
         },
         granted,
-        /* المصروف قبل الدفعة دي · rule 14 بيقيس السقف عليه */
+        /* Amount spent before this disbursement · rule 14 measures the ceiling against it */
         spent: even * (no - 1),
         reserved: due,
         docs: [],
         log: [],
-        /* تاريخ التحويل مشتَقّ من الاستحقاق لا مستقلًّا عنه · كان
-           تاريخًا ثابتًا في سبتمبر، فكل دفعة مستحقة في يونيو طلعت
-           متأخرة و«نسبة الالتزام بجدول الدفعات» نزلت 16% · رقم
-           بيتقري كارثة وهو أثر جانبي للمولّد لا معلومة. */
+        /* Warning: the transfer date is derived from the due date, not independent of it · it used
+           to be a fixed date in September, so every disbursement due in June came out late and
+           "disbursement-schedule compliance" dropped to 16% — a number that reads as a disaster and
+           is really a side effect of the generator, not information. */
         paidAt: undefined,
       })
       n++
     }
   }
-  /* المرفقات وسجل التدقيق · بيتبنوا بعد ما الطلب يكتمل عشان
-     السجل يقرأ من حالة الطلب نفسها لا من قيم منفصلة */
+  /* Attachments and the audit log · built after the request is complete, so the log reads from the
+     request's own status rather than separate values */
   for (const r of out) {
     const n = 2 + Math.floor(rnd() * 3)
     r.docs = DOC_KINDS.slice(0, n).map((d, i) => ({
@@ -368,17 +357,16 @@ export const payRequests: PayRequest[] = (() => {
       size: `${int(120, 4800)} ك.ب`,
     }))
 
-    /* ⚠️ **خط زمني واحد للطلب، والسجل والتحويل بيقروا منه.**
-       كان كل واحد فيهم بيتولّد لوحده: السجل يوم لكل خطوة من تاريخ
-       الإنشاء، وتاريخ التحويل مشتقًّا من الاستحقاق · فمؤشر 3 (من
-       اعتماد المدير حتى التحويل) طلع **64 يومًا**، وهو مسافة بين
-       تاريخين مالهمش علاقة ببعض أصلًا. الرقم بيتقري كارثة تشغيلية
-       وهو أثر جانبي للمولّد. نفس عيلة الباج اللي ضربت «الالتزام
-       بجدول الدفعات» قبل كده.
+    /* Warning: **one timeline for the request, with the log and the transfer reading from it.**
+       Each one used to be generated independently: the log a day per step from the creation date,
+       and the transfer date derived from the due date, so indicator 3 (from manager approval to
+       transfer) came out as **64 days**, a gap between two dates with no relation to each other at
+       all. The number reads as an operational disaster and is a side effect of the generator. Same
+       family of bug that hit "disbursement-schedule compliance" earlier.
 
-       والخطوات مش بتاخد نفس الوقت كمان: خطوات النظام (إحالة ·
-       تحقّق · تحديث حالة) بتحصل في نفس اللحظة، واللي بتاخد أيام هي
-       خطوات البني آدمين. فالمسافة بتتحسب بالخطوة لا بالفهرس. */
+       And steps don't take the same time either: system steps (referral, validation, status update)
+       happen instantly, while the ones taking days are the human steps. So the gap is computed per
+       step, not by index. */
     const HUMAN = new Set([2, 5, 7, 11, 13, 15, 17])
     const offsets: number[] = []
     let cursor = 0
@@ -396,7 +384,7 @@ export const payRequests: PayRequest[] = (() => {
         : say.role === 'مدير المنح' ? 'عبدالله الدوسري'
         : say.role === 'الإدارة المالية' ? 'ريم الشمري'
         : say.role
-      /* خطوة 7 ليها مخرجان · النص بيتبع اللي حصل فعلًا لا ثابتًا */
+      /* Step 7 has two outputs · the text follows what actually happened, not a fixed one */
       const what =
         step === 7 && r.state === 'returned'
           ? 'أعاد الطلب للجهة مع توضيح الملاحظات'
@@ -415,10 +403,10 @@ export const payRequests: PayRequest[] = (() => {
     })
   }
 
-  /* تاريخ التحويل = آخر يوم في سجل الطلب · مش رقمًا تاني جنبه.
-     والالتزام بجدول الدفعات (مؤشر 4) بيتقاس بمقارنته بالاستحقاق،
-     فالمؤشر بقى بيقيس **الفرق بين الخط الزمني والجدول** لا فرقًا
-     بين رقمين مولَّدين. */
+  /* Transfer date = the last day in the request's log, not a separate number next to it. And
+     disbursement-schedule compliance (indicator 4) is measured by comparing it to the due date, so
+     the indicator now measures **the gap between the timeline and the schedule**, not a gap between
+     two generated numbers. */
   for (const r of out) {
     if (r.state !== 'paid') continue
     r.paidAt = r.log[r.log.length - 1]?.at
@@ -426,21 +414,21 @@ export const payRequests: PayRequest[] = (() => {
   return out
 })()
 
-/* ═══════════════ مؤشرات الأداء · 9.8 ═══════════════
-   الأربعة كلها من الوثيقة، و**عمود «القيمة المستهدفة» فاضي فيها
-   كلها** · فالرقم بيتعرض قيمةً لا حالةً، ولا بيتلوّن، لحد ما
-   المؤسسة تدّينا الأهداف. */
+/* Performance indicators · 9.8
+   All four are from the document, and **the "target value" column is empty in all of them** — so
+   the number is shown as a value, not a status, and isn't colored, until the Foundation gives us
+   the targets. */
 
 /**
- * المدة المستهدفة لمعالجة الطلب كاملًا · مجموع حدود المراحل الأربعة.
- * مؤقتة زي كل مدة في الإجراء، لأن آلية التصعيد بتقول إن الأيام
- * **من الإعدادات** والمؤسسة لسّه ما دّتناش الأرقام.
+ * Target duration for processing a request fully · the sum of the four stage limits. Provisional
+ * like every duration in the procedure, since the escalation mechanism says the day counts come
+ * **from settings** and the Foundation hasn't given us the numbers yet.
  */
 export const PAY_TARGET_DAYS = Math.round(
   (PAY_LIMIT.supervisor + PAY_LIMIT.manager + PAY_LIMIT.finance) / 24,
 )
 
-/** أيام بين تاريخين بصيغة YYYY-MM-DD */
+/** Days between two dates in YYYY-MM-DD format */
 const daysBetween = (a: string, b: string): number =>
   Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
 
@@ -448,14 +436,14 @@ export const payKpi = () => {
   const open = payRequests.filter((r) => r.state !== 'paid' && r.state !== 'closed')
   const paid = payRequests.filter((r) => r.state === 'paid')
   const onTime = paid.filter((r) => (r.paidAt ?? '') <= r.dueAt).length
-  /* مؤشر 2 · المنجزة **ضمن المدة المستهدفة** · من الإنشاء للتحويل،
-     مش مقابل تاريخ الاستحقاق (ده مؤشر 4) · مؤشران مختلفان بيتخلطوا
-     بسهولة لأن الاتنين نسبة على المصروف */
+  /* Indicator 2 · completed **within the target duration** · from creation to transfer, not against
+     the due date (that's indicator 4) · two different indicators that are easy to mix up because
+     both are a ratio over what's been spent */
   const inTarget = paid.filter(
     (r) => r.paidAt && daysBetween(r.at, r.paidAt) <= PAY_TARGET_DAYS,
   ).length
-  /* مؤشر 3 · من **اعتماد مدير المنح** (خطوة 13) لحد تنفيذ التحويل
-     (خطوة 17) · مش من إنشاء الطلب */
+  /* Indicator 3 · from **the grants manager's approval** (step 13) to executing the transfer (step
+     17) · not from the request's creation */
   const finance = paid
     .map((r) => {
       const approved = r.log.find((e) => e.step === 13)
@@ -463,54 +451,57 @@ export const payKpi = () => {
     })
     .filter((x): x is number => x !== null && x >= 0)
   return {
-    /** عدد الطلبات المفتوحة · مش مؤشرًا في الوثيقة، لكنه حجم الصندوق */
+    /** Count of open requests · not an indicator in the document, but it's the inbox's size */
     open: open.length,
-    /** قيمة الطلبات المفتوحة */
+    /** Value of open requests */
     openSum: open.reduce((s, r) => s + r.asked, 0),
-    /** مؤشر 1 · متوسط مدة معالجة طلب الصرف (أيام) */
+    /** Indicator 1 · average disbursement-request processing time (days) */
     avgDays: Math.round(
       payRequests.reduce((s, r) => s + r.hoursInState, 0) / payRequests.length / 24,
     ),
-    /** مؤشر 2 · نسبة الطلبات المنجزة ضمن المدة المستهدفة */
+    /** Indicator 2 · share of requests completed within the target duration */
     inTarget: paid.length ? Math.round((inTarget / paid.length) * 100) : 0,
-    /** مؤشر 3 · متوسط مدة تنفيذ الصرف المالي · اعتماد المدير ← التحويل */
+    /**
+     * Indicator 3 · average time to execute the financial disbursement · manager approval ->
+     * transfer
+     */
     financeDays: finance.length
       ? Math.round(finance.reduce((s, d) => s + d, 0) / finance.length)
       : 0,
-    /** مؤشر 4 · نسبة الالتزام بجدول الدفعات */
+    /** Indicator 4 · disbursement-schedule compliance rate */
     onSchedule: paid.length ? Math.round((onTime / paid.length) * 100) : 0,
-    /** المتأخر والمتعثر · التصعيد 9.5 بند 3 */
+    /** Delayed and stalled · escalation 9.5, item 3 */
     late: open.filter((r) => payHeat(r) === 'late').length,
     stuck: open.filter((r) => payHeat(r) === 'stuck').length,
-    /** الموقوف بشرط · rule 3 و6 و10 و11 */
+    /** Held pending a condition · rules 3, 6, 10, and 11 */
     blocked: open.filter(payBlocked).length,
   }
 }
 
-/* ═══════════════ جدول الدفعات · شاشة إنشاء الطلب ═══════════════
-   الشاشة اللي الجهة بتنشئ منها الطلب مش فورم فاضي · هي **جدول
-   الدفعات المعتمد** (المدخل التاني في الوثيقة) وكل دفعة فيه بحالتها.
-   وده اللي بيخلّي أربع قواعد يتنفّذوا بالعرض لا بالتحقّق:
+/* Disbursement schedule · request-creation screen
+   The screen where the entity creates a request isn't a blank form — it's **the approved
+   disbursement schedule** (the document's second output), with every disbursement shown by its
+   status. That's what lets four rules be enforced through the display rather than through
+   validation:
 
-     قاعدة 1 · مفيش طلب قبل تفعيل الاتفاقية وحالة «تحت التنفيذ»
-     قاعدة 2 · الطلب للدفعات **المستحقة** بس، والباقي معروض ومقفول
-     قاعدة 4 · دفعة لها طلب مفتوح ما تقبلش تاني
-     قاعدة 6 · الدفعة المشروطة ما تترسلش قبل استيفاء شرطها
+     Rule 1 · no request before the agreement is activated and "in progress"
+     Rule 2 · the request is for **due** disbursements only, the rest are shown and disabled
+     Rule 4 · a disbursement with an open request can't take another
+     Rule 6 · a conditional disbursement isn't sent before its condition is met
 
-   خطوة 1 بتقول «النظام **يتيح** الإنشاء عند حلول الاستحقاق واستيفاء
-   الشروط» · فالإتاحة نفسها معلومة معروضة، لا زرار بيرفض بعد الضغط.
-   ═══════════════════════════════════════════════════════════ */
+   Step 1 says "the system **allows** creation once due and conditions are met" — so availability
+   itself is information that's shown, not a button that rejects after being clicked. */
 
 export type PaySlotState =
-  /** مستحقة وجاهزة للطلب */
+  /** Due and ready to request */
   | 'open'
-  /** لسّه ما استحقّتش · قاعدة 2 */
+  /** Not yet due · rule 2 */
   | 'early'
-  /** ليها طلب مفتوح · قاعدة 4 */
+  /** Has an open request · rule 4 */
   | 'pending'
-  /** اتصرفت */
+  /** Spent */
   | 'paid'
-  /** مستحقة بس شرطها مش مستوفى · قاعدة 6 */
+  /** Due but its condition isn't met · rule 6 */
   | 'held'
 
 export interface PaySlot {
@@ -521,17 +512,17 @@ export interface PaySlot {
   condition?: string
   conditionMet: boolean
   state: PaySlotState
-  /** الطلب المرتبط بالدفعة، لو موجود */
+  /** The request tied to the disbursement, if any */
   requestId?: string
 }
 
-/** النهارده في النموذج · ثابت عشان الجدول ما يتغيّرش كل تشغيلة */
+/** "Today" in the mock · fixed so the schedule doesn't change on every run */
 export const TODAY = '2026-09-14'
 
 /**
- * جدول دفعات مشروع · مبني من طلباته الموجودة + الدفعات الباقية.
- * الدفعة اللي ليها طلب بتاخد حالته، واللي مالهاش بتتحسب من تاريخ
- * استحقاقها وشرطها.
+ * A project's disbursement schedule · built from its existing requests plus the remaining
+ * disbursements. A disbursement with a request takes its status; one without is computed from its
+ * due date and condition.
  */
 export function paySchedule(projectId: string): PaySlot[] {
   const mine = payRequests.filter((r) => r.projectId === projectId)
@@ -545,7 +536,7 @@ export function paySchedule(projectId: string): PaySlot[] {
   for (let no = 1; no <= of; no++) {
     const req = mine.find((r) => r.no === no)
     const amount = no === of ? first.granted - even * (of - 1) : even
-    /* الاستحقاق بيتباعد شهرين بين الدفعة والتانية · جدول الاتفاقية */
+    /* Due dates are two months apart between disbursements · the agreement's schedule */
     const base = new Date(first.dueAt)
     base.setMonth(base.getMonth() + (no - first.no) * 2)
     const dueAt = req?.dueAt ?? base.toISOString().slice(0, 10)
@@ -573,9 +564,9 @@ export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; ru
 }
 
 /**
- * المشاريع اللي تقدر تطلب صرفًا · قاعدة 1.
- * المشروع اللي اتفاقيته مش سارية بيفضل معروضًا ومعاه السبب، لأن
- * إخفاءه بيخلّي الجهة تدوّر على حاجة مش موجودة بدل ما تعرف ليه.
+ * Projects that can request disbursement · rule 1.
+ * A project whose agreement isn't active stays shown, with the reason, because hiding it would make
+ * the entity go looking for something that isn't there instead of knowing why.
  */
 export function payProjects(): {
   id: string; name: string; entity: string; can: boolean; why?: string; open: number
@@ -588,12 +579,12 @@ export function payProjects(): {
     entity: r.entityName,
     can: r.agreement.active,
     why: r.agreement.active ? undefined : 'الاتفاقية غير سارية · القاعدة 1',
-    /* كام دفعة مستحقة وجاهزة للطلب · ده اللي بيرتّب القائمة */
+    /* How many disbursements are due and ready to request · this is what sorts the list */
     open: paySchedule(r.projectId).filter((x) => x.state === 'open').length,
   }))
-  /* اللي عنده دفعة مستحقة فوق · القائمة بتبدأ باللي **ينفع تعمل
-     عليه حاجة**، لا بأول مشروع في الداتا · الجهة اللي فاتحة الشاشة
-     دي جاية تطلب صرفًا، مش تتصفّح مشاريعها. */
+  /* The one with a due disbursement goes on top · the list starts with what's **actionable**, not
+     the first project in the data — the entity opening this screen is here to request disbursement,
+     not to browse its projects. */
   return out.sort((a, b) => Number(b.can) - Number(a.can) || b.open - a.open)
 }
 

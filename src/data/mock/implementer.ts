@@ -1,29 +1,23 @@
 import { entityRows } from './entities'
 import type { PartnerKind } from './registration'
 
-/* ═══════════════════════════════════════════════════════════
-   الشريك المنفّذ والمحفظة · ب-8 · سيناريو منصة إحسان
+/* Implementing partner and portfolio · scenario: a partner such as a government platform that
+   supports charitable entities and never accesses our platform at all. The grant officer adds it as
+   an entity, creates the project, manages it entirely internally, can assign a single project or a
+   portfolio, and handles payments — with no agreement in place.
 
-   مظفر: «إحسان منصة حكومية بتدعم جهات خيرية · **ما بتدخلش منصتنا
-   خالص**. مشرف المنح بيضيف إحسان كجهة، وبينشئ المشروع، وبيديره
-   **داخليًا كاملًا**، وبيحدد مشروع واحد ولا **محفظة**، وبيعمل
-   الدفعات · **ومفيش اتفاقية**».
+   This is not an edge case, it's a different kind of counterpart: the other party simply doesn't
+   exist in the platform, so anything assuming their presence — the portal, signing, agreements,
+   entity justifications — breaks down.
 
-   ⚠️ **ودي مش حالة استثناء، دي طرف تاني.** الفرق مش إن الشاشة
-   مختصرة، الفرق إن الطرف اللي في الناحية التانية مش موجود في
-   المنصة أصلًا · فكل حاجة بتفترض وجوده بتسقط: البوّابة والتوقيع
-   والاتفاقية ومسوغات الجهة.
+   A portfolio is not a large project. It is a parent entity containing projects, each with its own
+   amount and status. The portfolio itself does not appear in the project list as a row, since it
+   isn't a project — only its children do.
 
-   ⚠️ **والمحفظة مش مشروع كبير.** هي **كيان أب** تحته مشاريع، وكل
-   مشروع له مبلغه وحالته · والمحفظة ما بتدخلش قايمة المشاريع
-   كصفّ لأنها مش مشروع. اللي بيدخل القايمة أبناؤها.
+   Open question: what exactly does "portfolio" mean on screen — a parent project containing
+   sub-projects? What's built here is that assumption, flagged on screen as an assumption. */
 
-   ⚠️ **سؤال مفتوح لمظفر (س-2 في بريف بنية الموديول):** «المحفظة
-   يعني إيه بالظبط في الشاشة؟ مشروع أب وتحته مشاريع؟» · اللي
-   مبني هنا هو **الافتراض ده**، وموسوم في الشاشة على إنه افتراض.
-   ═══════════════════════════════════════════════════════════ */
-
-/** الشركاء المنفّذون · بيتحطّوا من جوّه النظام (قاعدة 32) */
+/** Implementing partners · populated internally by the system, per a fixed platform rule */
 export const IMPLEMENTERS: { id: string; name: string; note: string }[] = [
   { id: '860', name: 'منصة إحسان', note: 'منصة حكومية تدعم الجهات الخيرية · لا تدخل النظام' },
   { id: '861', name: 'المحافظ الخيرية', note: 'الترتيب نفسه · إدارة داخلية كاملة' },
@@ -32,7 +26,7 @@ export const IMPLEMENTERS: { id: string; name: string; note: string }[] = [
 export const isImplementer = (entityId: string): boolean =>
   IMPLEMENTERS.some((x) => x.id === entityId)
 
-/** نوع شراكة الجهة · الجاي من البوّابة مستفيد، ودول منفّذون */
+/** Entity partnership type · arriving via the portal it's a beneficiary; these are implementers */
 export const partnerOf = (entityId: string): PartnerKind =>
   isImplementer(entityId) ? 'implementer' : 'beneficiary'
 
@@ -41,12 +35,10 @@ export const implementerName = (entityId: string): string =>
   entityRows.find((e) => e.id === entityId)?.name ??
   ''
 
-/* ═══════════════════════════════════════════════════════════
-   اللي بيتغيّر لمّا الشريك يبقى منفّذًا
+/* What changes when a partner becomes an implementer
 
-   ⚠️ مكتوبة هنا **مرة واحدة** وبتتقري في كل شاشة بتلمس الحالة دي ·
-   وإلا كل شاشة بتفتكر نُصّها وبتنسى نُصّها.
-   ═══════════════════════════════════════════════════════════ */
+   Written here once and read by every screen that touches this status, so no screen keeps its own
+   half-remembered copy. */
 export interface KindDiff { on: string; off: string }
 
 export const IMPLEMENTER_DIFF: KindDiff[] = [
@@ -56,7 +48,7 @@ export const IMPLEMENTER_DIFF: KindDiff[] = [
   { on: 'قد يكون مشروعًا واحدًا أو محفظة', off: 'مشروع واحد في كل مرة' },
 ]
 
-/* ═══ المحفظة ═══ */
+/* Portfolio */
 export interface PortfolioItem {
   id: string
   name: string
@@ -70,7 +62,7 @@ export interface Portfolio {
   id: string
   name: string
   entityId: string
-  /** المبلغ المتفق عليه للمحفظة كلها */
+  /** Total agreed amount for the whole portfolio */
   total: number
   year: string
   openedAt: string
@@ -103,13 +95,11 @@ export const itemsTotal = (p: Portfolio): number =>
 export const itemsSpent = (p: Portfolio): number =>
   p.items.reduce((a, x) => a + x.spent, 0)
 
-/* ═══════════════════════════════════════════════════════════
-   تحقّق المحفظة
+/* Portfolio validation
 
-   ⚠️ **نفس انضباط شجرة الميزانية وجدول الدفعات:** مجموع الأبناء
-   لازم يساوي مبلغ الأب · ومحفظة بتلخّص وبس بتخفي الغلط. والصرف
-   ما يعدّيش المخصص، لا في المحفظة ولا في مشروع جوّاها.
-   ═══════════════════════════════════════════════════════════ */
+   Same discipline as the budget tree and payment schedule: the sum of children must equal the
+   parent amount — a portfolio that only summarizes hides errors. Spending must not exceed the
+   allocation, in the portfolio or in any project within it. */
 export interface PfIssue { key: string; say: string; rule: string }
 
 export const portfolioIssues = (p: Portfolio): PfIssue[] => {

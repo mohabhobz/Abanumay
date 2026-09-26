@@ -7,14 +7,11 @@ import { Face } from './Person'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
-/* ═══════════════════════════════════════════════════════════
-   عناصر القوائم · بحث وفلاتر وشرائح وترقيم.
+/* List controls · search, filters, chips, and pagination.
 
-   القاعدة اللي بنمشي عليها: الفلاتر الأربعتاشر بتاعة النظام
-   ما تتعرضش كلها في وش المستخدم. اللي بيفلتر بيه فعلًا كل يوم
-   (الحالة · المالك · التأخير) بيبقى شرائح فوق، والباقي بيتطوي
-   خلف «فلاتر متقدمة» ومعاه عدّاد بيقول كام فلتر شغّال.
-   ═══════════════════════════════════════════════════════════ */
+   The rule we follow: the system's fourteen filters don't all show up in the user's face at once.
+   The ones actually used to filter every day (status, owner, delay) become chips up top, and the
+   rest fold behind "advanced filters" with a counter showing how many are active. */
 
 export function SearchBox({
   value,
@@ -44,20 +41,18 @@ export function SearchBox({
   )
 }
 
-/* ═══════════════════════════════════════════════════════════
-   القائمة المنسدلة · **سلوك واحد مكتوب مرة واحدة**.
+/* Dropdown · **one behavior, written once**.
 
-   قبل كده كان في نمطان في السيستم: `Select` بـ`<select>` أصلية،
-   و`MultiSelect` بلوحة مرسومة. يعني في **نفس شريط الأدوات**،
-   المستخدم بيضغط حقلين شكلهم واحد فبيفتحوا حاجتين مختلفين:
-   واحدة قايمة النظام (خطّ النظام ولونه وسلوكه · وفي الويندوز
-   شكل تالت خالص)، وواحدة لوحة زجاج بحافة شعرية.
+   There used to be two patterns in the system: `Select` using a native `<select>`, and
+   `MultiSelect` using a drawn panel. So in the **same toolbar**, the user clicks two fields that
+   look identical and gets two different things: one is the OS's own list (its font, color, and
+   behavior — a different look again on Windows), and the other is a glass panel with a hairline
+   border.
 
-   الهوك ده هو السلوك المشترك: يقفل بالضغط برّه أو بـEsc.
-   والاتنين دلوقتي بيرسموا `.fsel-b` و`.fmenu` نفسهم.
-   ═══════════════════════════════════════════════════════════ */
+   This hook is the shared behavior: closes on outside click or Esc. Both now render the same
+   `.fsel-b` and `.fmenu`. */
 
-/** خيار القائمة · نص بسيط، أو قيمة وعنوان لما العنوان يحمل عدّادًا */
+/** List option · plain text, or a value and a title when the title carries a counter */
 export type SelectOption = string | { value: string; label: string }
 
 export const optValue = (o: SelectOption): string => (typeof o === 'string' ? o : o.value)
@@ -68,43 +63,43 @@ export interface SelectProps {
   value?: string
   options: readonly SelectOption[]
   onChange: (v: string | undefined) => void
-  /** النص اللي يظهر لما مفيش اختيار */
+  /** Text shown when nothing is selected */
   all?: string
   disabled?: boolean
-  /** يخلّي الحقل واخد عرض السطر كله في الشبكة */
+  /** Makes the field take the full row width in the grid */
   wide?: boolean
-  /** أيقونة جوّه الحقل · بتغني عن عنوان فوقه في شريط الأدوات */
+  /** Icon inside the field · stands in for a title above it in the toolbar */
   icon?: IconGlyph
-  /** الفلتر بيحتاج «الكل»؛ المبدّل اللي قيمته إلزامية لأ */
+  /** The filter needs an "all" option; a required toggle does not */
   allowEmpty?: boolean
-  /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة */
+  /** Above this count, a search box appears inside the panel */
   searchAt?: number
   /**
-   * خيارات الفلتر دي **أشخاص** · كل خيار بياخد وشّه.
+   * These filter options are **people** — each option gets its own face.
    *
-   * ⚠️ **خاصية لا استنتاج.** الإغراء إن الكمبوننت يشوف إن الخيار
-   * اسم شخص ويحطّ وشًّا لوحده — والغلط إن «الرياض» و«أحمد» نصّان
-   * لا فرق بينهم برّه السياق، والاستنتاج بيغلط في الطرفين: مدينة
-   * بتاخد أفاتار، وشخص جديد بلا سجلّ ما بياخدش. الشاشة اللي
-   * بتعرف إن العمود ده مالك هي اللي بتقول.
+   * Warning: **a prop, not an inference.** The temptation is for the component to detect that an
+   * option is a person's name and add a face on its own — the flaw being that "Riyadh" and "Ahmed"
+   * are just two strings with no difference outside context, and the guess fails both ways: a city
+   * gets an avatar, and a new person with no record doesn't. It's the screen that knows this column
+   * is an owner that decides.
    */
   people?: boolean
 }
 
 /**
- * قائمة اختيار واحد.
+ * Single-select list.
  *
- * كانت `<select>` أصلية. المشكلة مش شكلها بس: قايمتها بترسمها
- * **نظام التشغيل** · خطّها وخلفيتها وطريقة فتحها كلها برّه
- * السيستم، وفي الثيم الغامق بتفتح صندوقًا رماديًّا بخطّ لاتيني
- * وسط واجهة زجاج عربية. وبتتصرّف مختلف على كل نظام.
+ * It used to be a native `<select>`. The problem wasn't only its look: its list is rendered by the
+ * **operating system** — font, background, and how it opens all sit outside the system, and in dark
+ * theme it opens a gray box in Latin script inside an Arabic glass UI. It also behaves differently
+ * on every OS.
  *
- * دلوقتي هي `MultiSelect` بقيد واحد: خيار واحد، والضغط بيقفل.
- * فالحقلين في شريط الأدوات بيفتحوا **نفس اللوحة**.
+ * It's now `MultiSelect` with one constraint: a single choice, and picking one closes the panel. So
+ * both fields in the toolbar open the **same panel**.
  *
- * `all` لسّه موجود لأن الفلتر محتاج «الكل»؛ لو `allowEmpty`
- * قفلت، الخيار الفاضي ما بيظهرش · ده حال مبدّل الدورة في
- * الميزانية: الدورة **دايمًا** مختارة.
+ * `all` still exists because the filter needs an "all" option; if `allowEmpty` is off, the empty
+ * option doesn't show — that's the case for the budget cycle switch: the cycle is **always**
+ * selected.
  */
 export function Select({
   label, value, options, onChange, all = 'الكل', disabled, wide, icon,
@@ -123,24 +118,21 @@ export function Select({
   const pick = (v: string | undefined) => { onChange(v); setOpen(false) }
 
   return (
-    /* ⚠️ **الحالة المفعَّلة = المستخدم اختار، مش الحقل له قيمة.**
-       كانت `value ? 'on' : ''`، والترتيب بيتبعتله قيمة افتراضية
-       دايمًا (`v.sort ?? 'waiting'`) · فالحقل كان **دايمًا مفعَّلًا**
-       وياخد حافة `--edge-i` الخضرا، وجنبه «كل الحالات» بحافة
-       `--fld-line` المحايدة. حافتان مختلفتان في صفّ واحد لنفس
-       الكمبوننت، وواحدة منهم بتقول «فيه فلتر شغّال» وهي كدّابة.
+    /* Warning: **the active state means the user chose something, not that the field has a value.**
+       It used to be `value ? 'on' : ''`, and sort is always passed a default (`v.sort ??
+       'waiting'`) — so the field was **always active** and took the green `--edge-i` border, while
+       "all statuses" next to it kept the neutral `--fld-line` border. Two different borders in one
+       row for the same component, one of which falsely claims a filter is active.
 
-       و`current` هو المعيار الصح: القيمة الافتراضية مش من
-       `options` (هي نصّ `all`)، فـ`current` بتبقى `undefined`
-       والحقل بيفضل محايدًا · زي `MultiSelect` بالظبط اللي بيقيس
-       `values.length > 0`.
+       `current` is the right check: the default value isn't drawn from `options` (it's the string
+       `all`), so `current` ends up `undefined` and the field stays neutral — exactly like
+       `MultiSelect` checking `values.length > 0`.
 
-       ⚠️ **و`allowEmpty` شرط تاني، وده اللي كان ناقص.** الحقل اللي
-       `allowEmpty={false}` (دورة الميزانية · فترة التقرير) **عمره
-       ما بيفضى** — فـ`current` دايمًا موجودة وكان بيتعلّم مفعَّلًا
-       طول الوقت. و«مفعَّل» معناها «المستخدم ضيّق النتيجة»، وهي
-       كدّابة على حقل مالوش حالة فاضية أصلًا. العميل شافها: خلفية
-       الترتيب مختلفة عن جيرانها في نفس الصفّ. */
+       Warning: **and `allowEmpty` is a separate condition — that's what was missing.** A field with
+       `allowEmpty={false}` (budget cycle · report period) is **never empty** — so `current` is
+       always defined and it learned to always read as active. "Active" is supposed to mean "the
+       user narrowed the results," and it's false for a field that never has an empty state to begin
+       with. */
     <div className={`fsel${current && allowEmpty ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`} ref={box}>
       {label && <span className="fsel-l" id={`${id}-l`}>{label}</span>}
 
@@ -154,10 +146,10 @@ export function Select({
         id={`${id}-b`}
         onClick={() => setOpen((x) => !x)}
       >
-        {/* ⚠️ **الوش بيحلّ محلّ الأيقونة، ما بيزوّدش عليها.** أيقونة
-            «مستخدمين» بتقول «الفلتر ده أشخاص»، والوش بيقول **مين** —
-            فوجودهم سوا بيكرّر نصف المعلومة. والخانة بعرض ثابت عشان
-            اختيار شخص ما يزحزحش شريط الأدوات كله. */}
+        {/* Warning: **the face replaces the icon, it doesn't add to it.** A "people" icon says
+            "this filter is about people," and the face says **who** — showing both together repeats
+            half the same information. The box has a fixed width so picking a person doesn't shift
+            the whole toolbar. */}
         {people
           ? <span className="fsel-face">{current ? <Face name={optValue(current)} /> : icon && <Icon name={icon} size="sm" />}</span>
           : icon && <Icon name={icon} size="sm" />}
@@ -186,9 +178,9 @@ export function Select({
               <MenuOpt
                 on={!value}
                 onPick={() => pick(undefined)}
-                /* ⚠️ «الكل» مش شخص فمالوش وش — **لكن له خانته**.
-                   من غير الفراغ ده اسمه بيبدأ ٢٨px يمين باقي
-                   الأسماء، فالقايمة بتتقرا مسنّنة. */
+                /* Warning: "all" isn't a person, so it has no face — **but it still gets the same
+                   slot**. Without that space, its label would start 28px to the right of the other
+                   names, and the list would read misaligned. */
                 lead={people ? <span className="prs-gap" aria-hidden="true" /> : undefined}
               >
                 {all}
@@ -214,38 +206,36 @@ export function Select({
   )
 }
 
-/* ═══════════════════════════════════════════════════════════
-   قائمة متعددة الاختيار.
+/* Multi-select list.
 
-   `<select multiple>` الأصلية مرفوضة هنا: بتاخد ارتفاع صفوفها كله
-   في الشبكة، وبتطلب Ctrl+كليك عشان تختار اتنين · سلوك نص المستخدمين
-   ما يعرفوش. البديل زرار بيفتح لوحة فيها صندوق لكل خيار: الاختيار
-   بضغطة، والمختار بيفضل باين في عنوان الزرار.
+   The native `<select multiple>` is rejected here: it takes up the full height of its rows in the
+   grid and requires Ctrl+click to pick more than one — a behavior half of users don't know. The
+   alternative is a button that opens a panel with a checkbox per option: pick with one click, and
+   the selection stays visible in the button's label.
 
-   والقائمة بتقفل بالضغط برّه أو بـEsc، مش بزرار «تم» · الفلتر بيسري
-   لحظة الضغط، فمفيش حاجة تتأكَّد.
-   ═══════════════════════════════════════════════════════════ */
+   The panel closes on outside click or Esc, not a "done" button — the filter applies the moment you
+   click, so there's nothing to confirm. */
 
 export interface MultiSelectProps {
   label?: string
   values: string[]
   options: readonly SelectOption[]
   onChange: (v: string[]) => void
-  /** النص اللي يظهر لما مفيش اختيار */
+  /** Text shown when nothing is selected */
   all?: string
   disabled?: boolean
   wide?: boolean
   icon?: IconGlyph
-  /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة */
+  /** Above this count, a search box appears inside the panel */
   searchAt?: number
   /**
-   * خيارات الفلتر دي **أشخاص** · كل خيار بياخد وشّه.
+   * These filter options are **people** — each option gets its own face.
    *
-   * ⚠️ **خاصية لا استنتاج.** الإغراء إن الكمبوننت يشوف إن الخيار
-   * اسم شخص ويحطّ وشًّا لوحده — والغلط إن «الرياض» و«أحمد» نصّان
-   * لا فرق بينهم برّه السياق، والاستنتاج بيغلط في الطرفين: مدينة
-   * بتاخد أفاتار، وشخص جديد بلا سجلّ ما بياخدش. الشاشة اللي
-   * بتعرف إن العمود ده مالك هي اللي بتقول.
+   * Warning: **a prop, not an inference.** The temptation is for the component to detect that an
+   * option is a person's name and add a face on its own — the flaw being that "Riyadh" and "Ahmed"
+   * are just two strings with no difference outside context, and the guess fails both ways: a city
+   * gets an avatar, and a new person with no record doesn't. It's the screen that knows this column
+   * is an owner that decides.
    */
   people?: boolean
 }
@@ -261,9 +251,9 @@ export function MultiSelect({
   const labelOf = (val: string) =>
     optLabel(options.find((o) => optValue(o) === val) ?? val)
 
-  /* عنوان الزرار: الاسم لو واحد، والاسم و«+2» لو أكتر. عرض الأسماء
-     كلها بيمدّ الزرار لحد ما الصفّ يتكسر، وشارة عدد جنبه بتكرّر نفس
-     المعلومة مرتين. */
+  /* Button label: the name if there's one, or the name plus "+2" for more. Showing every name would
+     stretch the button until the row wraps, and a count badge next to it would repeat the same
+     information twice. */
   const summary = !on
     ? all
     : values.length === 1
@@ -291,11 +281,11 @@ export function MultiSelect({
         id={`${id}-b`}
         onClick={() => setOpen((x) => !x)}
       >
-        {/* ⚠️ **الوش بيتبع الاسم المعروض، مش عدد المختارين.** كان
-            شرطه `values.length === 1`، فلمّا تختار اتنين العنوان
-            بيقول «عمر قاسم +1» والخانة جنبه **بتفضل فاضية** — فراغ
-            ٢٨px في وش المستخدم بلا سبب. العنوان بيعرض أول اسم في
-            الحالتين، فالوش بيعرض وشّه في الحالتين. */}
+        {/* Warning: **the face follows the displayed name, not the number of selections.** Its
+            condition used to be `values.length === 1`, so picking two shows a label like "Omar
+            Qasem +1" while the slot next to it **stays empty** — a 28px gap in the user's face for
+            no reason. The label shows the first name in both cases, so the face shows its face in
+            both cases. */}
         {people
           ? <span className="fsel-face">{values.length ? <Face name={values[0]} /> : icon && <Icon name={icon} size="sm" />}</span>
           : icon && <Icon name={icon} size="sm" />}
@@ -346,7 +336,7 @@ export function MultiSelect({
   )
 }
 
-/** شريحة تبديل · فلتر منطقي واحد بضغطة */
+/** Toggle chip · one boolean filter, one click */
 export function Toggle({
   label,
   on,
@@ -373,12 +363,11 @@ export interface SegItem {
 }
 
 /**
- * شرائح الحالة · **هي `Tabs` بعدّاد، مش نوع تاني**.
+ * Status chips · **these are `Tabs` with a counter, not a different type**.
  *
- * كانت بتعلن `role="tablist"` زي التبويب بالظبط، وبترسم `.fseg`
- * بدل `.tab` · فنفس الفعل طلع بشكلين على نفس الشاشة. الفرق
- * الحقيقي الوحيد إن مفتاحها ممكن يكون فاضي («الكل»)، وده فرق في
- * الداتا لا في الشكل.
+ * They used to declare `role="tablist"` exactly like tabs, while rendering `.fseg` instead of
+ * `.tab` — so the same action showed up in two shapes on the same screen. The only real difference
+ * is that its key can be empty ("all"), which is a data difference, not a visual one.
  */
 export function Segments({
   items,
@@ -398,14 +387,11 @@ export function Segments({
   )
 }
 
-/* ═══════════════════════════════════════════════════════════
-   عدد الصفوف في الصفحة.
+/* Rows per page.
 
-   قائمة جاهزة **ومعاها كتابة حرّة**: المستخدم اللي بيراجع دفعة
-   معيّنة عارف إنها 63 صفًّا وعايزها في صفحة واحدة، والقائمة المقفولة
-   بتخلّيه يقلّب على صفحتين بلا سبب. الرقم بيتقيّد بحدّ أعلى عشان
-   كتابة 99999 ما تجمّدش الشاشة.
-   ═══════════════════════════════════════════════════════════ */
+   A preset list **plus free typing**: a user reviewing a specific disbursement knows it has 63 rows
+   and wants it on one page, and a closed list would make them flip through two pages for no reason.
+   The number is capped so typing 99999 doesn't freeze the screen. */
 
 export const PAGE_SIZES = [25, 50, 75, 100] as const
 const SIZE_MAX = 500
@@ -423,9 +409,9 @@ export function PageSize({
   const [draft, setDraft] = useState(String(value))
   useEffect(() => setDraft(String(value)), [value])
 
-  /* التثبيت عند Enter أو الخروج من الحقل، لا مع كل حرف: اللي بيكتب
-     «100» بيمرّ على «1» و«10» في الطريق، وإعادة الاستعلام عندهم
-     بتقلّب الشاشة مرتين بلا داعٍ. */
+  /* Commits on Enter or on leaving the field, not on every keystroke: typing "100" passes through
+     "1" and "10" along the way, and re-querying on each of those would flicker the screen twice for
+     nothing. */
   const commit = () => {
     const n = Math.round(Number(draft))
     if (!Number.isFinite(n) || n < 1) return setDraft(String(value))
@@ -461,9 +447,9 @@ export function PageSize({
           <Icon name={icons.chevronDown} size="sm" />
         </button>
 
-        {/* نفس صفّ الخيار في أي قائمة تانية: علامة على المختار
-            ومساحة محجوزة على الباقي. كانت الأرقام متراكزة بلا
-            علامة · شكل رابع لنفس الصفّ. */}
+        {/* Same option row as any other list: a marker for the selected one, and reserved space for
+            the rest. The numbers used to be centered with no marker — a fourth shape for the same
+            row. */}
         {open && (
           <MenuPanel one up extra="psize-m">
             {options.map((n) => (
@@ -495,7 +481,7 @@ export function Pager({
   pageSize: number
   total: number
   onPage: (p: number) => void
-  /** لما تتبعت، مقياس الصفحة بيظهر جنب الترقيم */
+  /** When sent, the page size shows next to the pagination */
   onPageSize?: (n: number) => void
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize))
@@ -505,8 +491,8 @@ export function Pager({
 
   return (
     <div className="pager">
-      {/* العدّاد ومقياس الصفحة مع بعض: الاتنين بيتكلّموا عن الكمّ،
-          وأزرار التنقّل بتتكلّم عن الموضع. */}
+      {/* The counter and the page size sit together: both talk about quantity, while the navigation
+          buttons talk about position. */}
       <div className="pager-c">
         <span className="sub">
           <span className="num">{from}</span>–<span className="num">{to}</span> من{' '}
@@ -514,11 +500,11 @@ export function Pager({
         </span>
         {onPageSize && <PageSize value={pageSize} onChange={onPageSize} />}
       </div>
-      {/* أرقام لا جملة، وسهمان لا كلمتان.
-          «صفحة ١ من ٢» بتقول موضعك بس وما بتوصّلكش: عايز التالتة
-          تدوس «التالي» مرتين. الأرقام هي الأزرار نفسها، فالانتقال
-          دوسة واحدة والموضع بيتقري من الرقم المضيء · والسهمان
-          للخطوة الواحدة، واتجاههما اتجاه القراءة: الرجوع لليمين. */}
+      {/* Numbers, not a sentence, and two arrows, not two words.
+          "Page 1 of 2" only tells you where you are and doesn't get you anywhere: reaching page
+          three means clicking "next" twice. The numbers are the buttons themselves, so jumping is
+          one click and position reads off the highlighted number — the two arrows move one step at
+          a time, and their direction follows reading direction: back is to the right. */}
       <nav className="pager-b" aria-label="صفحات النتائج">
         <button
           className="pgnav"
@@ -563,9 +549,9 @@ export function Pager({
 }
 
 /**
- * الأرقام اللي تتعرض: الأولى والأخيرة دايمًا، والحالية وجارتيها،
- * والباقي نقط. من غير النافذة دي، قائمة فيها ٤٠ صفحة بتلفّ سطرين
- * وبتاخد مساحة أكتر من النتيجة نفسها.
+ * The numbers shown: first and last always, the current one and its neighbors, and dots for the
+ * rest. Without this window, a list of 40 pages would wrap to two lines and take up more room than
+ * the results themselves.
  */
 function pageWindow(page: number, pages: number): (number | '…')[] {
   if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1)
@@ -580,7 +566,7 @@ function pageWindow(page: number, pages: number): (number | '…')[] {
   return out
 }
 
-/** تبديل بين عرض الكروت والجدول */
+/** Toggle between card view and table view */
 export function ViewToggle({
   view,
   onChange,
@@ -610,31 +596,28 @@ export function ViewToggle({
   )
 }
 
-/* ═══════════════════════════════════════════════════════════
-   منتقي التجميع · ي-1 و ي-2
+/* Grouping picker · y-1 and y-2
 
-   ⚠️ **ليه مش `MultiSelect`؟** لأن `MultiSelect` بيقول «إيه
-   المختار»، والتجميع بيحتاج «إيه المختار **وبأي ترتيب**». الترتيب
-   هنا مش تفضيل عرض، هو **السؤال نفسه**:
+   Warning: **why not `MultiSelect`?** Because `MultiSelect` answers "what's selected," and grouping
+   needs "what's selected **and in what order**." The order here isn't a display preference — it's
+   **the question itself**:
 
-     منطقة ← جهة   «في الرياض، مين بياخد؟»
-     جهة ← منطقة   «جمعية البناء العلمي، بتشتغل فين؟»
+     region -> entity  "in Riyadh, who gets funded?"
+     entity -> region   "where does the Scientific Building Society operate?"
 
-   نفس البُعدين ونفس الصفوف وسؤالان مختلفان · فـ«المنطقة +1» في
-   عنوان `MultiSelect` كان هيخفي اللي المستخدم محتاج يشوفه بالظبط.
+   Same two dimensions, same rows, and two different questions — so "region +1" in a `MultiSelect`
+   label would have hidden exactly what the user needs to see.
 
-   عشان كده: الرقم بيحلّ محلّ علامة الصحّ في القايمة (١ · ٢ · ٣)،
-   والعنوان بيعرض السلسلة بسهم، والاختيار **بترتيب الضغط** لا
-   بترتيب القايمة.
-   ═══════════════════════════════════════════════════════════ */
+   Hence: a number replaces the checkmark in the list (1 · 2 · 3), the label shows the chain with an
+   arrow, and the selection is **ordered by click order**, not by list order. */
 export function GroupPicker({
   value, options, onChange, max = 3, icon,
 }: {
-  /** المفاتيح مفصولة بفاصلة · بترتيب الهرم */
+  /** Keys separated by commas · in hierarchy order */
   value: string | undefined
   options: { value: string; label: string }[]
   onChange: (v: string | undefined) => void
-  /** سقف مستويات التداخل */
+  /** Maximum nesting depth */
   max?: number
   icon?: IconGlyph
 }) {
@@ -696,9 +679,9 @@ export function GroupPicker({
             const at = chain.indexOf(o.value)
             const sel = at >= 0
             return (
-              /* ⚠️ **رقم لا علامة صحّ.** علامة الصحّ بتقول «مختار»،
-                 والمستخدم محتاج يعرف **أب ولا ابن** · وده اللي
-                 بيحدّد السؤال اللي الجدول بيجاوبه. */
+              /* Warning: **a number, not a checkmark.** A checkmark says "selected"; the user needs
+                 to know **parent or child** — and that's what decides which question the table
+                 answers. */
               <MenuOpt
                 key={o.value}
                 on={sel}

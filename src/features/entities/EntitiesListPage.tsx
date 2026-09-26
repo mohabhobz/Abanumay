@@ -12,12 +12,13 @@ import {
 } from '@/components/filters'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
-import { plural, units } from '@/lib/format'
+import { NOUN, nounAfter, plural, units } from '@/lib/format'
 import { fixtures, query, type EntityQuery } from '@/data/repository'
 import {
   ACTIVATIONS, CITIES_BY_REGION, ENTITY_TYPES, GOVERNANCE, LICENSORS, REGIONS,
 } from '@/data/mock/taxonomy'
 import { ROUTES } from '@/app/routes'
+import { ENTITY_CREATE_LABEL } from './labels'
 import { QuickRead } from '@/components/assistant'
 import { BulkBar, PageActions } from '@/components/shell'
 import { readEntities } from '@/data/readings'
@@ -39,14 +40,14 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const PAGE_SIZE = PAGE_SIZES[0]
 
-/** ترتيب الفلاتر الافتراضي · نفس ترتيب `FILTER_DEFS` جوّه الكومبوننت */
+/** Default filter order - matches `FILTER_DEFS`'s order inside the component. */
 const FILTER_KEYS = ['type', 'licensor', 'region', 'city', 'governance']
 
 const NOT_FILTERS: (keyof Params)[] = [
   'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'activation', 'docs', 'running',
 ]
 
-/** اللقطات المحفوظة · الأسئلة اللي بتوقف الشغل فعلًا */
+/** Saved views - the questions that actually block work. */
 const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
   { key: 'all', label: 'كل الجهات', patch: {} },
   { key: 'new', label: 'بانتظار التفعيل', patch: { activation: 'معلق (جديد)' } },
@@ -62,11 +63,11 @@ const SORTS = [
 ] as const
 
 /**
- * الجهات.
+ * Entities.
  *
- * الفلاتر هنا مش نسخة من فلاتر النظام: هي الأسئلة اللي بتوقف الشغل
- * فعلًا · مين معلّق؟ مين ملفه ناقص؟ مين شغّال معانا دلوقتي؟
- * والباقي (النوع · المرخِّص · الحوكمة · المنطقة) مطوي خلف عدّاد.
+ * The filters here aren't a copy of system filters: they're the questions that actually block work
+ * - who's pending? whose file is incomplete? who's active with us right now? Everything else (type,
+ * licensor, governance, region) is tucked behind a counter.
  */
 export default function EntitiesListPage() {
   const { values: v, set, replace, clear, activeCount, snapshot, applyQuery } =
@@ -77,16 +78,16 @@ export default function EntitiesListPage() {
   const [fOrder, setFOrder] = useState<string[]>(() => readFilterOrder('entities', FILTER_KEYS))
 
   useEffect(() => writeFilterOrder('entities', fOrder), [fOrder])
-  /* التحديد هنا نطاق تصدير لا قرار: الجهة مالهاش «موافقة» ولا «رفض»
-     يتاخدوا على دفعة · تفعيلها وإيقافها قرار بملف كل جهة. فالشريط
-     بيقول المحدَّد وبيصدّره وبس. */
+  /* Selection here scopes an export, not a decision: an entity has no "approve" or "reject" applied
+     in bulk - activating or suspending one is a decision made in its own file. So the bar states
+     the selection and exports it, nothing more. */
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   useEffect(() => writeCols('entities', cols), [cols])
 
-  /* زي المشاريع: الجدول محتاج عرض ما بيتوفرش على الموبايل */
+  /* Same as projects: the table needs width that isn't available on mobile. */
   const mobile = useIsMobile()
-  /* زي المشاريع: الجدول ديفولت، والكروت اختيار، والموبايل كروت دايمًا */
+  /* Same as projects: table is the default, cards are optional, and mobile is always cards. */
   const view = mobile ? 'cards' : v.view === 'cards' ? 'cards' : 'table'
   const page = Math.max(1, Number(v.page) || 1)
   const advOpen = v.adv === '1'
@@ -111,9 +112,9 @@ export default function EntitiesListPage() {
     [v, page, size],
   )
 
-  /* زي المشاريع: التجميع بيلغي الترقيم لأن المجموعة المقطوعة على
-     صفحتين إجمالياتها كذّابة. */
-  /* ي-13 · التجميع بيفضل مع الجلسة بدل ما يضيع مع كل خروج */
+  /* Same as projects: grouping disables pagination, since a group split across two pages gives
+     misleading totals. */
+  /* Grouping persists with the session instead of resetting on every logout. */
   useStickyGroup('entities', v.group, (x) => set({ group: x }))
 
   const group = groupChain(v.group, GROUPS)
@@ -121,10 +122,10 @@ export default function EntitiesListPage() {
 
   const result = query.entities(grouped ? { ...q, page: 1, pageSize: 9999 } : q)
   const all = fixtures.entities
-  /* عدّاد الطلبات المفتوحة · بيظهر على زرار طلبات التسجيل */
+  /* Open-requests counter - shown on the registration-requests button. */
   const reg = regKpi()
 
-  /** عدّاد التفعيل جوّه النطاق الحالي · بيغذّي قائمة «كل الحالات» */
+  /** Activation counter within the current scope - feeds the "all statuses" list. */
   const counts = useMemo(() => {
     const base = query.entities({ ...q, activation: undefined, page: 1, pageSize: 9999 }).rows
     const out: Record<string, number> = {}
@@ -132,7 +133,7 @@ export default function EntitiesListPage() {
     return out
   }, [q])
 
-  /** عدّاد اللقطات مطلق · اللقطة مبدّل نطاق مش فلتر جوّه النطاق */
+  /** The saved-views counter is absolute - a view switches scope rather than filtering within one. */
   const viewCounts = useMemo(
     () =>
       Object.fromEntries(
@@ -172,8 +173,8 @@ export default function EntitiesListPage() {
     [q, all],
   )
 
-  /* نطاق التصدير: نتيجة الفلتر كاملة لا صفحة العرض · إلا لو المستخدم
-     علّم صفوفًا، فالمحدَّد هو المقصود. */
+  /* Export scope: the full filtered result, not the visible page - unless the user has marked rows,
+     in which case the selection is what's meant. */
   const allFiltered = useMemo(
     () => query.entities({ ...q, page: 1, pageSize: 9999 }).rows,
     [q],
@@ -183,10 +184,9 @@ export default function EntitiesListPage() {
     : allFiltered
 
   const sheet: Sheet = useMemo(() => {
-    /* ⚠️ **الورقة مبنيّة في `sheetOf` لا هنا.** خمس شاشات كانت
-       بتكتب نفس التلات سطور بإيدها · وأول ما التجميع بقى سلسلة،
-       الخمسة كانوا هيحتاجوا نفس التعديل خمس مرات، واللي يتنسي
-       بيطلع ملفًا مختلفًا عن شاشته. */
+    /* Note: the sheet is built in `sheetOf`, not here. Five screens used to write the same three
+       lines by hand; once grouping became a pipeline, all five would have needed the same change
+       five times, and a missed one would end up out of sync with its own screen. */
     const shown = orderCols(COLS, cols).filter((c) => !group.some((g) => g.key === c.key))
     const parts = sheetOf(exportRows, shown, group, units.entity)
     const stamp = new Date().toISOString().slice(0, 10)
@@ -203,8 +203,8 @@ export default function EntitiesListPage() {
       return next
     })
 
-  /* ضمّ وطرح لا استبدال: مع التجميع الصندوق بيخصّ مجموعته وحدها،
-     واللي متحدَّد في مجموعة تانية ما يتشالش. */
+  /* Add and remove, not replace: with grouping on, the bar only concerns its own group, and
+     selections in another group stay untouched. */
   const selectAll = (on: boolean, ids: string[]) =>
     setSelected((s) => {
       const next = new Set(s)
@@ -273,41 +273,40 @@ export default function EntitiesListPage() {
               <h1 className="ptitle">الجهات</h1>
               <p className="sub mt-1">
                 <span className="num">{result.total}</span> نتيجة من{' '}
-                <span className="num">{all.length}</span> جهة في هذا النموذج ·{' '}
+                <span className="num">{all.length}</span> {nounAfter(all.length, NOUN.entity)} في هذا النموذج ·{' '}
                 <span className="num">3,272</span> في النظام العامل
               </p>
             </div>
 
-            {/* ═══ مدخل التسجيل · BPD-002 ═══
-                ⚠️ **الزراران دول مش نفس الفعل، وده سبب وجودهم
-                الاتنين.** «تسجيل جهة جديدة» بيفتح نموذج **الجهة**
-                (اللي في النظام العامل بوّابة عامة برّه الدخول)،
-                و«طلبات التسجيل» بيفتح دور **المراجعة** عندنا.
-                والقاعدة 2 هي اللي بتفصل بينهم: الطلب مش جهة، فما
-                ينفعش الاتنين يوَدّوا لنفس الشاشة. */}
-            {/* ⚠️ الترتيب مش اختيار الشاشة دي · هو عقد مكتوب مرة
-                واحدة في `PageActions`: إعدادات ← ثانوي ← إنشاء في
-                الركن. الجهات كانت أقرب شاشة للعقد أصلًا، والباقي
-                اتظبط عليها. */}
+            {/* Registration entry point.
+                Note: these two buttons aren't the same action, which is exactly why both exist.
+                "Register a new entity" opens the entity's own form (a public portal outside login
+                in the live system), and "registration requests" opens our review role. What
+                separates them is that a request isn't an entity, so the two can't lead to the same
+                screen. */}
+            {/* Note: the order isn't this screen's choice - it's a contract defined once in
+                `PageActions`: settings -> secondary -> create, in the corner. Entities happened to
+                be the closest screen to that contract already, and everything else was aligned to
+                match it. */}
             <PageActions
               settings={ROUTES.entitySettings}
               secondary={[{
                 label: 'طلبات التسجيل', to: ROUTES.entityRequests,
                 icon: 'doc', count: reg.open,
               }]}
-              /* ⚠️ الزرار ده بيودّي **للتسجيل المباشر** لا لبوّابة
-                 الجهة · اللي واقف هنا مشرف منح داخل السيستم، وهو
-                 بيسجّل شريكًا بيديره بنفسه (قاعدة 32). وبوّابة الجهة
-                 مدخلها شاشة الدخول، لأن صاحبها مالوش حساب أصلًا. */
-              create={{ label: 'تسجيل جهة جديدة', to: ROUTES.entityNew }}
+              /* Note: this button leads to direct registration, not the entity portal - whoever's
+                 using this is a grants supervisor inside the system registering a partner they
+                 manage themselves (rule 32). The entity portal's entry point is the login screen,
+                 since its owner has no account yet. */
+              create={{ label: ENTITY_CREATE_LABEL, to: ROUTES.entityNew }}
             />
           </header>
 
-          {/* ═══ القراءة السريعة ═══
-              مكانها بعد العنوان مباشرة لا بعد الفلاتر: هي **قراءة
-              للصفحة**، والقراءة بتيجي قبل الأدوات لا بينها وبين
-              النتيجة. في النص كانت بتقطع الطريق بين الفلتر واللي
-              رجع منه، ومحدّش بيقرا سطرًا وهو ماسك فلتر. */}
+          {/* Quick read.
+              Placed right after the title, not after the filters: this is a reading of the page,
+              and a reading comes before the tools, not between a filter and its result. It used to
+              sit between a filter and what it returned, and no one reads a summary line while still
+              holding a filter. */}
           <QuickRead
             variant="bar"
             title="قراءة سريعة للقائمة"
@@ -315,7 +314,7 @@ export default function EntitiesListPage() {
             empty="ملفات الجهات في النطاق الحالي مكتملة وتراخيصها سارية · وسّع الفلتر لعرض المزيد."
           />
 
-          {/* ═══ اللقطات المحفوظة · صفّ واحد ═══ */}
+          {/* Saved views - one row */}
           <Segments
             active={activeView}
             onChange={(k) => {
@@ -363,15 +362,15 @@ export default function EntitiesListPage() {
 
               </div>
 
-              {/* الأدوات اللي مش فلاتر · مجموعة ثابتة في آخر الصفّ.
-                  قبل كده كانت في نفس الصفّ المرن مع الفلاتر، فأول ما
-                  فلتر يكبر أو يختفي الصفّ بيلفّ ومبدّل الفيو بينطّ
-                  لسطر تاني ويتحرّك أفقيًا. دلوقتي الفلاتر بتلفّ جوّه
-                  مجموعتها، والأدوات مكانها ثابت مهما اتغيّر اللي جنبها. */}
+              {/* Tools that aren't filters - a fixed group at the end of the row. These used to
+                  share the same flexible row as the filters, so as soon as one filter grew or
+                  disappeared, the row wrapped and the view switcher jumped to a new line and
+                  shifted horizontally. Filters now wrap within their own group, and the tools stay
+                  put no matter what changes next to them. */}
               <div className="ftool-a">
-                {/* ⚠️ **التجميع تحكّم عرض لا فلتر** · مكانه ركن العرض،
-                   وكان آخر صفّ الفلاتر فبينزل لوحده في سطر تاني
-                   أول ما الشريط يلفّ (شوف `PlansPage`). */}
+                {/* Note: grouping is a display control, not a filter - it belongs in the view
+                    corner. As the last filter row it used to drop to its own line once the bar
+                    wrapped (see `PlansPage`). */}
                 {view === 'table' && (
                 <GroupPicker
                   icon={icons.rows}
@@ -487,7 +486,7 @@ export default function EntitiesListPage() {
 
         </div>
 
-        {/* نفس شريط المشاريع، بمخارج الجهات: التصدير بس */}
+        {/* Same toolbar as projects, with entity-specific actions: export only. */}
         {selected.size > 0 && (
           <BulkBar
             count={selected.size}

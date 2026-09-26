@@ -2,11 +2,12 @@ import type { ReactNode } from 'react'
 import type { StepItem } from '@/components/ui'
 
 /**
- * أول محطة لسّه ما خلصتش هي اللي الدور عليها.
+ * The first step not yet complete is the one currently in progress.
  *
- * المحطات المتسلسلة بتوصف في الداتا بـ«خلصت/ما خلصتش» بس، والحالة
- * `now` بتتشتقّ من الترتيب · لأنها **مش خاصية محطة**، هي موضعها
- * في السلسلة. لو كله خلص فمفيش `now`، وده صحيح.
+ * Sequential steps are described in the data only as "done/not done,"
+ * and the `now` state is derived from their order — because it isn't a
+ * property of a step, it's its position in the sequence. If everything
+ * is done, there's no `now`, and that's correct.
  */
 export function sequence(marks: { label: string; note?: ReactNode; done: boolean }[]): StepItem[] {
   const next = marks.findIndex((m) => !m.done)

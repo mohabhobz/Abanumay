@@ -1,20 +1,20 @@
 import { useEffect, type RefObject } from 'react'
 
 interface Options {
-  /** المدى بالبكسل اللي العنصر يبدأ يحسّ فيه بالماوس */
+  /** Pixel radius at which the element starts sensing the cursor. */
   reach?: number
-  /** لو اتحدد، التأثير بيتطبّق على العناصر المطابقة جوّه الحاوية */
+  /** If set, the effect applies to matching elements inside the container. */
   selector?: string
 }
 
 /**
- * تفاعل من بعيد: العنصر بيحسّ بالماوس قبل ما توصله فيرتفع ويلمع،
- * والضوء بيتبع مكان المؤشر.
+ * Proximity interaction: the element senses the cursor before it's
+ * touched, lifting and glowing, with the highlight following the cursor
+ * position. Distance is measured both horizontally and vertically so
+ * that in a row of cards, the nearest one is affected most rather than
+ * all of them equally.
  *
- * المسافة محسوبة أفقيًا ورأسيًا عشان في صف كروت يبقى الكارت الأقرب
- * هو اللي يتأثر أكتر، مش كلهم مع بعض.
- *
- * بيكتب على كل عنصر: `--near` (0→1) و`--mx`/`--my`.
+ * Writes onto each element: `--near` (0→1) and `--mx`/`--my`.
  */
 export function useProximity(
   rootRef: RefObject<HTMLElement | null>,

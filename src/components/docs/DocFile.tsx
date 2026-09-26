@@ -6,29 +6,27 @@ import { docKind, isScan, KIND_LABEL } from './kind'
 
 export interface DocFileProps {
   name: string
-  /** سطر تحت الاسم: تاريخ أو مصدر أو حجم */
+  /** Line under the name: date, source, or size. */
   meta?: string
-  /** صف كامل بدل شريحة · للجداول والقوائم */
+  /** A full row instead of a slice — for tables and lists. */
   block?: boolean
   /**
-   * زرار التنزيل جوّه الصف. في الجداول بيتشال من هنا ويتحطّ في
-   * عمود الحالة (`DocDownload`)، عشان أيقونات التنزيل تتسطّر في
-   * عمود واحد بدل ما تقف بعد كل اسم في مكان مختلف.
+   * Download button inside the row. In tables it's removed from here and placed in the status
+   * column, so download icons line up in one column instead of trailing each name in a different
+   * spot.
    */
   download?: boolean
 }
 
 /**
- * مستند قابل للفتح والتنزيل · **الشكل الواحد لأي ملف في السيستم**.
- *
- * كل مكان فيه مستند بياخده: مرفقات المشروع، ومستندات الجهة، ومرفق
- * المتابعة، وأذون الصرف وسنداتها، والاتفاقية. قبل كده كان كل مكان
- * بيعرض الملف بطريقته · مرة «الملف المرفق» كلينك، ومرة زرارين
- * «عرض/تحميل»، ومرة أيقونة ورقة جنب اسم. تلات أشكال لنفس الشيء.
- *
- * والثامبنيل مش زينة: بيقول نوع المحتوى قبل الفتح، فالمراجع يعرف
- * إن الموازنة **صورة ممسوحة** من الصف نفسه · وده سبب طلب الاستكمال
- * في المشروع النموذجي.
+ * An openable, downloadable document — **the one shape for any file in the system**.
+ * Every place with a document uses it: project attachments, entity documents, follow-up
+ * attachments, disbursement orders and their vouchers, and the agreement. Before this, each place
+ * displayed the file its own way: sometimes an "attached file" link, sometimes "view/download"
+ * buttons, sometimes a paper icon next to a name. Three shapes for the same thing.
+ * And the thumbnail isn't decoration: it states the content type before opening, so a reviewer
+ * knows the budget is a **scanned image** from the row itself, which is why the sample project has
+ * a completion request.
  */
 export function DocFile({ name, meta, block, download = true }: DocFileProps) {
   const [open, setOpen] = useState(false)
@@ -54,8 +52,8 @@ export function DocFile({ name, meta, block, download = true }: DocFileProps) {
           </span>
         </button>
 
-        {/* التنزيل زرار مستقل: الضغط على الملف نفسه بيفتحه، والتنزيل
-            قرار تاني · دمجهم بيخلّي كل معاينة تحميلًا. */}
+        {/* Download is a separate button: clicking the file itself opens it, and downloading is a
+            different decision — merging them turns every preview into a download. */}
         {download && <DocDownload name={name} />}
       </div>
 
@@ -64,7 +62,7 @@ export function DocFile({ name, meta, block, download = true }: DocFileProps) {
   )
 }
 
-/** زرار تنزيل لوحده · للجداول اللي بتحطّه في عمود الحالة */
+/** Standalone download button — for tables that place it in the status column. */
 export function DocDownload({ name }: { name: string }) {
   return (
     <a

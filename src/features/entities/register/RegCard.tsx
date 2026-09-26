@@ -1,27 +1,25 @@
 import { Link } from 'react-router-dom'
 import { DateText, Icon, icons, Mono, Num, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { isolate } from '@/lib/format'
+import { isolate, NOUN, nounAfter } from '@/lib/format'
 import {
   REG_DOCS, REG_STATE_SAY, REG_TONE, docRequired, regMissingDocs, type RegRequest,
 } from '@/data/mock/registration'
 
-/* ═══════════════════════════════════════════════════════════
-   طلب تسجيل واحد، كقرار.
+/* A single registration request, treated as a decision.
 
-   ⚠️ **الكارت ده مش كارت جهة.** الجهة مالهاش وجود لسه (قاعدة 2)،
-   فمفيش رابط لملفها ومفيش أرقام منح ومفيش حالة تفعيل. اللي موجود
-   هو **إقرار** من طرف برّه المؤسسة، وكل حاجة فيه بتتراجَع.
+   Note: this card is not an entity card. The entity doesn't exist yet (rule 2), so there is no link
+   to its file, no grant numbers, and no activation status. What exists here is a declaration from
+   an outside party, and everything in it can be reversed.
 
-   واللي بيوقف الاعتماد تلاتة، وكلهم مكتوبين في الكارت بمصدرهم:
-     قاعدة 4 · كل البيانات والمستندات الإلزامية قبل الإرسال
-     قاعدة 8 · رقم الترخيص ما يتكررش · إلا لو التصنيف مختلف (9)
-     سريان قرار تكليف المجلس والترخيص · قاعدتا 18 و19 في التحديث
+   Three things gate approval, each noted here with its source:
+     Rule 4 - all mandatory data and documents before submission
+     Rule 8 - license number must not repeat, unless the category differs (rule 9)
+     Validity of the board assignment decision and the license - rules 18 and 19, on update
 
-   والمستندات المطلوبة **بتتغيّر بتصنيف الجهة** · تلاتة منهم
-   إلزاميين للتجارية وحدها، فرقم «المطلوب» نفسه مش ثابت بين
-   الكروت. وده من النظام العامل لا من الوثيقة (نوتة ن-3).
-   ═══════════════════════════════════════════════════════════ */
+   The required documents change by entity category - three of them are mandatory for commercial
+   entities only, so the "required" count itself isn't fixed across cards. This comes from the live
+   system, not the spec document. */
 
 export function RegCard({ r }: { r: RegRequest }) {
   const need = REG_DOCS.filter((d) => docRequired(d, r.type))
@@ -63,7 +61,7 @@ export function RegCard({ r }: { r: RegRequest }) {
           <span>
             {missing.length === 0
               ? <>ملف المستندات مكتمل · <Num>{have}</Num> من <Num>{need.length}</Num></>
-              : <>ينقص <Num>{missing.length}</Num> من <Num>{need.length}</Num> مستندات إلزامية لهذا التصنيف</>}
+              : <>ينقص <Num>{missing.length}</Num> من <Num>{need.length}</Num> {nounAfter(need.length, NOUN.requiredDoc)} لهذا التصنيف</>}
           </span>
           <span className="payq-r">قاعدة <Num>4</Num></span>
         </li>
@@ -83,7 +81,7 @@ export function RegCard({ r }: { r: RegRequest }) {
         </li>
       </ul>
 
-      {/* الملاحظة الإدارية · إلزامية مع الإعادة والرفض · قاعدة 31 */}
+      {/* Admin note - required on return-for-revision and rejection - rule 31 */}
       {r.note && (
         <div className="payq-note">
           <Icon name={icons.chat} size="sm" />

@@ -1,29 +1,23 @@
-/* ═══════════════════════════════════════════════════════════
-   الفيوهات المحفوظة.
+/* Saved views.
 
-   طلب الكلاينت حرفيًا: «راح حافظ لك الفلاتر دي على إنها جروب موجود
-   معاك باسم إنت تختاره… جيت بكرة دُست على الزرار ده، على طول راحلك
-   الفلاتر دي طبّقها لك كلها مرة واحدة».
+   The intent: filters get saved as a named group, and picking it later applies all of them at once.
 
-   الفيو بيحفظ الشاشة كلها بلا رقم الصفحة: الفلاتر والترتيب والتجميع
-   وعدد الصفوف ونوع العرض. لأن «مشاريع مدينة الرياض» لو اتحفظت وهي
-   مجمّعة بالمنطقة، تستاهل ترجع مجمّعة · الفيو هو السؤال وشكل إجابته
-   مش الفلاتر لوحدها.
+   A view saves the whole screen state, not the page number: filters, sort, grouping, row count, and
+   view type. Because "Riyadh city projects," saved while grouped by region, deserves to come back
+   grouped — a view is the question and the shape of its answer, not just the filters.
 
-   ⚠️ التخزين محلي في النموذج ده. المكان الصحيح للفيوهات هو السيرفر
-   لكل مستخدم، عشان تنتقل معاه بين الأجهزة وتتشارك مع الفريق ·
-   بند مسجَّل على الباك اند.
-   ═══════════════════════════════════════════════════════════ */
+   ⚠️ Storage is local in this mock. The right home for views is per-user, on the server, so they
+   travel with the user across devices and can be shared with a team — noted as a backend item. */
 
 export interface SavedView {
   id: string
   name: string
-  /** نص الاستعلام بلا `?` وبلا رقم الصفحة */
+  /** Query string with no leading `?` and no page number. */
   query: string
 }
 
 const KEY = (table: string) => `ab-views-${table}`
-/** حدّ يمنع القائمة من إنها تبقى قائمة تانية محتاجة بحث */
+/** A limit that keeps the list from becoming another list that needs its own search. */
 const MAX = 20
 
 export const readViews = (table: string): SavedView[] => {
@@ -47,10 +41,10 @@ const write = (table: string, list: SavedView[]): SavedView[] => {
   try {
     localStorage.setItem(KEY(table), JSON.stringify(list.slice(0, MAX)))
   } catch {
-    /* التخزين ممكن يكون مقفول · الفيوهات تفضل للجلسة دي */
+    /* Storage may be blocked — views then only last for this session. */
   }
   return list
 }
 
-/** بيكتب القائمة ويرجّعها · الاستدعاء بيستعملها مباشرة كحالة */
+/** Writes the list and returns it — the caller uses it directly as state. */
 export const writeViews = (table: string, list: SavedView[]): SavedView[] => write(table, list)

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { Icon, icons, MenuOpt, MenuPanel } from '@/components/ui'
-import { nf } from '@/lib/format'
+import { nf, pct, unitAfter } from '@/lib/format'
 import {
   aggregate, allPaths, countLeaves, defaultCols, groupTree, orderCols,
   type Col, type GroupBy, type GroupNode,
@@ -10,62 +10,51 @@ import { useColumnResize, type ColumnResize } from './useColumnResize'
 
 export interface DataTableProps<T> {
   rows: T[]
-  /** كل الأعمدة المعرَّفة للكيان ده */
+  /** All columns defined for this entity. */
   all: Col<T>[]
-  /** مفاتيح الأعمدة الظاهرة */
+  /** Keys of the visible columns. */
   cols: string[]
   onCols: (keys: string[]) => void
   id: (r: T) => string
   selected?: Set<string>
   onSelect?: (id: string, on: boolean) => void
   /**
-   * تحديد/إلغاء **صفوف الجدول اللي اتضغط فيه بس**.
-   *
-   * مع التجميع، كل مجموعة جدول بترويسته. الصندوق اللي فوق مجموعة
-   * «القصيم» يقصد أربعة صفوف القصيم لا الثلاثين كلهم · الأب بيحدّد
-   * أولاده. فبيبعت معرّفات صفوفه، والصفحة بتضمّها أو تشيلها من
-   * المحدَّد بدل ما تستبدله.
+   * Select/deselect **only the table rows a click applies to**.
+   * With grouping, each group has its own header row. The checkbox above the "Qassim" group targets
+   * only Qassim's rows, not the entire table — a parent selects its own children. So it sends its
+   * own rows' ids, and the page adds or removes them from the selection instead of replacing it.
    */
   onSelectAll?: (on: boolean, ids: string[]) => void
-  /** فتح الصف · بيخلي الصف كله كليكبول */
+  /** Opening the row — makes the whole row clickable. */
   onOpen?: (r: T) => void
   /**
-   * سلسلة التجميع · بدونها جدول واحد.
-   *
-   * ⚠️ **سلسلة لا بُعد واحد (ي-1).** والترتيب فيها هو الهرم:
-   * الأول أب واللي بعده ابن · وعكسه سؤال تاني خالص (ي-2).
+   * Grouping chain — without it, it's a single table.
+   * ⚠️ **A chain, not a single dimension.** Its order is the hierarchy: the first is the parent,
+   * the next is the child, and reversing it is an entirely different question.
    */
   group?: GroupBy<T>[]
-  /** اسم الوحدة في الإجماليات: «6 مشاريع» */
+  /** Unit name in the totals: "6 projects." */
   count: (n: number) => string
-  /** اسم الجدول · بيتخزّن عليه عرض الأعمدة اللي المستخدم سحبها */
+  /** Table name — column widths the user dragged are stored against it. */
   table?: string
 }
 
 /**
- * جدول عام.
- *
- * كل جداول السيستم بتستخدمه: نفس الإجماليات ونفس التجميع ونفس
- * منتقي الأعمدة ونفس سلوك الصف. الموديول بيجيب أعمدته وبس.
+ * Generic table.
+ * Every table in the system uses it: same totals, same grouping, same column picker, same row
+ * behavior. A module only supplies its own columns.
  */
-/* ═══════════════════════════════════════════════════════════
-   ي-3 · طيّ وفتح المجموعات
-
-   ⚠️ **والافتراضي مقفول.** التجميع مش تلوين للجدول، هو **سؤال**:
-   «الفلوس رايحة فين؟» · والإجابة هي سطور المجاميع. لمّا الجدول
-   بيفضل مفتوح بعد التجميع، تلاتين صفًّا بيفضلوا على الشاشة والسطر
-   اللي بيجاوب بيضيع بينهم، فالمستخدم بيقعد يزحلق يدوّر على اللي
-   طلبه هو.
-
-   فأول ما التجميع يتشغّل: **المجاميع بس**، والمستخدم بيفتح اللي
-   يخصّه · «كإنك عملت تقريرًا في ثانية» (ي-4).
-
-   ⚠️ **وكل حاجة على مستوى المجموعة مكانها سطر المجموعة.** صندوق
-   «حدّد الكل» ومنتقي الأعمدة كانوا في ترويسة الجدول · والجدول
-   دلوقتي ممكن يكون مقفولًا، فالاتنين كانوا هيختفوا والمستخدم ما
-   يعرفش ليه. فالصندوق نزل لسطر المجموعة، والمنتقي طلع لشريط فوق
-   المجموعات · ومحدش منهم بيتكرّر في الاتنين.
-   ═══════════════════════════════════════════════════════════ */
+/* Group expand/collapse.
+   ⚠️ **Default is collapsed.** Grouping isn't a table decoration, it's **a question**: "where is
+   the money going?" — and the answer is the summary rows. When the table stays expanded after
+   grouping, dozens of rows fill the screen and the answer that responds to the question gets lost
+   among them, and the user ends up scrolling around looking for what they actually asked for.
+   So the moment grouping turns on: **summaries only**, and the user opens the one they care about —
+   like getting a report in a second.
+   ⚠️ **And anything at the group level belongs on the group row.** The "select all" checkbox and
+   the column picker used to live in the table header, and the table can now be collapsed, so both
+   would disappear with no explanation. So the checkbox moved down to the group row, and the picker
+   moved up to a bar above the groups, and neither is duplicated in both places. */
 const NONE: ReadonlySet<string> = new Set()
 
 export function DataTable<T>({
@@ -75,16 +64,16 @@ export function DataTable<T>({
   const bys = group ?? []
   const on = bys.length > 0
 
-  /* الأعمدة اللي بنجمّع بيها بتتشال: قيمتها مكتوبة مرة في سطر
-     المجموعة، وتكرارها في كل صف عمود ضايع. */
+  /* Columns used for grouping are removed: their value is already written once on the group row,
+     and repeating it in every row's own column wastes space. */
   const keys = new Set(bys.map((b) => b.key))
   const shown = orderCols(all, cols).filter((c) => !keys.has(c.key))
   const tree = on ? groupTree(rows, bys) : []
 
-  /* ⚠️ الحالة متربطة **بالسلسلة نفسها**: لو المستخدم غيّر من
-     «المنطقة» لـ«الجهة»، أو حتى قلب ترتيب نفس البُعدين، المسارات
-     المفتوحة القديمة مالهاش معنى · والمقارنة في الرندر بدل
-     `useEffect` عشان ما يحصلش رندر أول بحالة قديمة. */
+  /* ⚠️ State is tied **to the chain itself**: if the user changes from "region" to "entity," or
+     even reverses the order of the same two dimensions, the previously opened paths no longer make
+     sense — the comparison happens during render rather than in an effect, so there's no first
+     render with stale state. */
   const dim = bys.map((b) => b.key).join(',')
   const [open, setOpen] = useState<{ dim: string; keys: ReadonlySet<string> }>({ dim, keys: NONE })
   const openKeys = open.dim === dim ? open.keys : NONE
@@ -106,10 +95,9 @@ export function DataTable<T>({
         <div className="tgbar">
           <span className="tgbar-t">
             مجمَّع حسب
-            {/* ⚠️ السلسلة بترتيبها معروضة **كسلسلة** · «المنطقة ثم
-                الجهة» غير «الجهة ثم المنطقة»، ولو الشريط قال
-                الاتنين بنفس الشكل المستخدم ما بيعرفش هو في أنهي
-                سؤال (ي-2). */}
+            {/* ⚠️ The chain, in its order, is shown **as a chain** — "region then entity" is
+                different from "entity then region," and if the bar showed both the same way, the
+                user wouldn't know which question they're in. */}
             {bys.map((b, i) => (
               <span key={b.key} className="tgbar-s">
                 {i > 0 && <Icon name={icons.chevron} size="sm" />}
@@ -172,8 +160,8 @@ export function DataTable<T>({
           />
         )}
 
-      {/* الإجمالي الكلي بعد المجموعات: من غيره المستخدم بيجمع
-          إجماليات المجموعات في دماغه. */}
+      {/* The grand total after the groups: without it, the user has to add up group totals in their
+          head. */}
       {on && tree.length > 1 && (
         <div className="tgrand">
           <span className="tgrand-k">الإجمالي الكلي · {count(rows.length)}</span>
@@ -182,9 +170,9 @@ export function DataTable<T>({
               <span className="tagg" key={c.key}>
                 <span className="sub tagg-l">{c.label}</span>
                 <span className="tagg-v">
-                  <b className="num">{nf.format(aggregate(c, rows) ?? 0)}</b>
+                  <b className="num">{c.aggPct ? pct(aggregate(c, rows) ?? 0) : nf.format(aggregate(c, rows) ?? 0)}</b>
                   {(c.aggSay ?? (c.agg === 'avg' ? 'وسطي' : '')) && (
-                    <small className="sub"> {c.aggSay ?? 'وسطي'}</small>
+                    <small className="sub"> {unitAfter(aggregate(c, rows) ?? 0, c.aggSay ?? 'وسطي')}</small>
                   )}
                 </span>
               </span>
@@ -197,12 +185,11 @@ export function DataTable<T>({
 }
 
 /**
- * فرع من شجرة التجميع.
- *
- * ⚠️ **العقدة الوسيطة ما بتفتحش جدولًا، بتفتح أولادها.** ودي
- * الفكرة كلها: «الرياض» بتفتح على جمعياتها بمجاميعها، والجمعية هي
- * اللي بتفتح على صفوفها. لو كل مستوى فتح جدولًا، التداخل كان بيبقى
- * تكرارًا للجدول بعدد المستويات لا تلخيصًا.
+ * A branch of the grouping tree.
+ * ⚠️ **An intermediate node doesn't open a table, it opens its children.** That's the whole idea:
+ * an intermediate group opens onto its children with their own summaries, and a leaf group is what
+ * opens onto rows. If every level opened a table, nesting would just repeat the table once per
+ * level instead of summarizing.
  */
 function Branch<T>({
   node, cols, id, selected, onSelect, onSelectAll, onOpen, count, resize, openKeys, onToggle,
@@ -222,8 +209,8 @@ function Branch<T>({
   const shut = !openKeys.has(node.path)
   const leaf = node.kids.length === 0
 
-  /* العقدة الوسيطة المفتوحة أولادها تحتها مباشرةً، فسطرها ما
-     بيلزقش بجدول · و`.tcap` المفتوح بيلزق بجدوله. */
+  /* An expanded intermediate node's children sit directly beneath it, so its row doesn't attach to
+     a table — an expanded leaf group does attach to its own table. */
   const cap = (
     <Cap
       node={node}
@@ -284,10 +271,9 @@ function Branch<T>({
 }
 
 /**
- * سطر المجموعة · تلخيص لا عنوان.
- *
- * ⚠️ قبل الطيّ كان عنوانًا فوق جدول ظاهر دايمًا، والمجاميع تحت في
- * `tfoot` · يعني المجموعة المطويّة كانت هتبقى اسمًا بلا إجابة.
+ * Group row — a summary, not a heading.
+ * ⚠️ Before collapsing existed, it was a heading above an always-visible table, with totals below
+ * in `tfoot` — meaning a collapsed group would have been a name with no answer.
  */
 function Cap<T>({
   node, cols, shut, pick, selected, id, onSelectAll, onToggle, leafOpen,
@@ -300,7 +286,7 @@ function Cap<T>({
   id: (r: T) => string
   onSelectAll?: (on: boolean, ids: string[]) => void
   onToggle: () => void
-  /** آخر مستوى ومفتوح · وساعتها بيلزق بجدوله */
+  /** The last level, and expanded — in that case it attaches to its own table. */
   leafOpen: boolean
 }) {
   const allOn = pick && node.rows.length > 0 && node.rows.every((r) => selected!.has(id(r)))
@@ -336,21 +322,21 @@ function Cap<T>({
 
       <span className="pc-sp" />
 
-      {/* ⚠️ **المجاميع هنا وقت الطيّ بس.** لمّا المجموعة مفتوحة على
-          جدول، نفس الأرقام في `tfoot` **تحت أعمدتها** · وده أنفع من
-          شريحة في سطر فوق. بس العقدة الوسيطة المفتوحة مالهاش
-          `tfoot`، فمجاميعها بتفضل هنا. */}
+      {/* ⚠️ **These totals show only while collapsed.** When a group is expanded onto a table, the
+          same figures sit in `tfoot` **beneath their own columns** — more useful there than as a
+          chip in a header row above. But an expanded intermediate node has no `tfoot`, so its
+          totals stay here. */}
       {(shut || !leafOpen) && (
         <span className="tcap-v">
           {cols.filter((c) => c.agg).map((c) => (
             <span className="tagg" key={c.key}>
               <span className="sub tagg-l">{c.label}</span>
               <span className="tagg-v">
-              <b className="num">{nf.format(aggregate(c, node.rows) ?? 0)}</b>
-              {/* نفس كلمة `tfoot` · الرقم اللي في الترويسة المطويّة
-                  واللي في الإجماليات لازم يقولوا نفس الحاجة */}
+              <b className="num">{c.aggPct ? pct(aggregate(c, node.rows) ?? 0) : nf.format(aggregate(c, node.rows) ?? 0)}</b>
+              {/* The same wording as `tfoot` — the number in the collapsed header and the one in
+                  the totals row must say the same thing. */}
               {(c.aggSay ?? (c.agg === 'avg' ? 'وسطي' : '')) && (
-                <small className="sub"> {c.aggSay ?? 'وسطي'}</small>
+                <small className="sub"> {unitAfter(aggregate(c, node.rows) ?? 0, c.aggSay ?? 'وسطي')}</small>
               )}
               </span>
             </span>
@@ -365,9 +351,9 @@ function Block<T>({
   caption, rows, cols, id, selected, onSelect, onSelectAll, onOpen, picker, count, resize,
   shut,
 }: {
-  /** سطر المجموعة · مرسوم في `Cap` لأنه بيتشارك مع العقد الوسيطة */
+  /** Group row — drawn in a shared component because it's shared with intermediate nodes. */
   caption?: ReactNode
-  /** المجموعة مطويّة · سطر المجاميع بس */
+  /** The group is collapsed — summary row only. */
   shut?: boolean
   rows: T[]
   cols: Col<T>[]
@@ -375,12 +361,10 @@ function Block<T>({
   selected?: Set<string>
   onSelect?: (id: string, on: boolean) => void
   /**
-   * تحديد/إلغاء **صفوف الجدول اللي اتضغط فيه بس**.
-   *
-   * مع التجميع، كل مجموعة جدول بترويسته. الصندوق اللي فوق مجموعة
-   * «القصيم» يقصد أربعة صفوف القصيم لا الثلاثين كلهم · الأب بيحدّد
-   * أولاده. فبيبعت معرّفات صفوفه، والصفحة بتضمّها أو تشيلها من
-   * المحدَّد بدل ما تستبدله.
+   * Select/deselect **only the table rows a click applies to**.
+   * With grouping, each group has its own header row. The checkbox above a given group targets only
+   * that group's rows, not the entire table — a parent selects its own children. So it sends its
+   * own rows' ids, and the page adds or removes them from the selection instead of replacing it.
    */
   onSelectAll?: (on: boolean, ids: string[]) => void
   onOpen?: (r: T) => void
@@ -394,11 +378,11 @@ function Block<T>({
 
   const { widths, dragging, start, reset } = resize
 
-  /* خط الحدّ: بيبان بمجرّد الهوفر على المقبض، وبيمتدّ على طول الجدول
-     لا على الترويسة لوحدها · الحدّ اللي هتسحبه بيقع على الصفوف،
-     فالمستخدم لازم يشوفه عليها قبل ما يسحب. وموضعه بيتقاس من حافة
-     الترويسة نفسها لا من موضع المؤشّر: المؤشّر ممكن يكون في أي مكان
-     جوّه مساحة اللمس (١١px)، فالخط كان بينحرف عن الحدّ الحقيقي. */
+  /* The boundary line: appears on hover over the handle, and spans the full table, not just the
+     header — the line being dragged sits over the rows, so the user needs to see it there before
+     dragging. Its position is measured from the header's own edge, not the cursor's position: the
+     cursor can be anywhere inside the touch target, which used to make the line drift off the real
+     boundary. */
   const [hover, setHover] = useState<number | null>(null)
 
   const edgeOf = (el: HTMLElement): number | null => {
@@ -426,8 +410,8 @@ function Block<T>({
 
       {shut ? null : (
       <table className="tbl">
-        {/* العروض في `colgroup` لا على الخلايا: خانة واحدة لكل عمود
-            بدل تكرارها في كل صف، والمتصفح بيقراها مرة قبل الرسم. */}
+        {/* Widths live in `colgroup`, not on the cells: one slot per column instead of repeating it
+            in every row, and the browser reads it once before painting. */}
         <colgroup>
           {pick && <col style={{ width: 44 }} />}
           {cols.map((c) => (
@@ -438,8 +422,8 @@ function Block<T>({
 
         <thead>
           <tr>
-            {/* مع التجميع الصندوق ده نزل لسطر المجموعة · الخانة
-                بتفضل عشان أعمدة الصفوف تحتها ما تزحلقش */}
+            {/* With grouping this checkbox moves down to the group row — the slot stays reserved so
+                the row's columns below it don't shift. */}
             {pick && (
               <th className="tchk">
                 {!caption && (
@@ -455,9 +439,9 @@ function Block<T>({
             {cols.map((c, i) => (
               <th key={c.key} className={c.n ? 'n' : undefined} title={c.label}>
                 <span className="th-t">{c.label}</span>
-                {/* المقبض على حافة العمود الداخلية · يعني الحدّ بينه
-                    وبين اللي بعده. آخر عمود ما لهوش مقبض: مفيش حدّ
-                    بعده يتسحب، وخانة منتقي الأعمدة جنبه. */}
+                {/* The handle sits on the column's inner edge — meaning the boundary between it and
+                    the next one. The last column has no handle: there's no boundary after it to
+                    drag, and the column picker sits next to it. */}
                 {i < cols.length - 1 && (
                   <span
                     className={`thgrip${dragging?.key === c.key ? ' on' : ''}`}
@@ -486,9 +470,9 @@ function Block<T>({
               <tr
                 key={rid}
                 className={`${pick && selected!.has(rid) ? 'sel' : ''}${onOpen ? ' clickable' : ''}`}
-                /* الصف كله يفتح، مش الاسم بس: الهدف الصغير بيخلي
-                   المستخدم يصوّب بالماوس بدل ما يقرا. والضغط على
-                   صندوق التحديد أو رابط جوّه الصف ما يفتحش. */
+                /* The whole row opens, not just the name: a small target makes the user aim with
+                   the mouse instead of reading. Clicking the selection checkbox or a link inside
+                   the row doesn't open it. */
                 onClick={
                   onOpen
                     ? (e) => {
@@ -510,22 +494,21 @@ function Block<T>({
                   </td>
                 )}
                 {cols.map((c) => (
-                  /* العنوان هو نصّ التصدير نفسه: الخلية بتتقصّ لما
-                     العمود يضيق، والتلميح بيرجّع اللي اتقصّ من غير
-                     ما الصفّ يلفّ سطرًا. */
-                  <td key={c.key} className={c.n ? 'n num' : undefined} title={c.text(r)}>
+                  /* The title is the export text itself: the cell truncates as the column narrows,
+                     and the tooltip returns what got cut without wrapping the row to a second line. */
+                  <td key={c.key} className={c.n ? 'n' : undefined} title={c.text(r)}>
                     {c.cell(r)}
                   </td>
                 ))}
-                {/* خانة المنتقي · ملزوقة بالحافّة زي ترويستها (ي-7) */}
+                {/* Picker slot — pinned to the edge like its header. */}
                 <td className="tcolx" />
               </tr>
             )
           })}
         </tbody>
 
-        {/* الإجماليات جوّه `tfoot`: المتصفح بيثبّتها عند الطباعة،
-            وقارئ الشاشة بيقول إنها تلخيص لا بيان. */}
+        {/* Totals live inside `tfoot`: the browser keeps it fixed when printing, and a screen
+            reader announces it as a summary, not a data row. */}
         {hasTotals && rows.length > 0 && (
           <tfoot>
             <tr>
@@ -535,17 +518,16 @@ function Block<T>({
                 return (
                   <td key={c.key} className={c.n ? 'n' : undefined}>
                     {total !== null ? (
-                      /* الرقم والكلمة في مجموعة عربية، والعزل نازل على
-                         الأرقام وحدها · نفس قاعدة `Money`. الخلية اللي
-                         كانت `.num` كانت بتحطّ الاتنين في مجرى إنجليزي،
-                         فـ«وسطي» بتقع على الجنب الغلط ومش متسطّرة مع
-                         الرقم اللي فوقها في العمود. */
+                      /* The number and the word sit in an Arabic run, with isolation applied to the
+                         digits alone — same rule as `Money`. The cell used to put both in an
+                         English-direction run, so the unit word would land on the wrong side and
+                         not line up with the number above it in the column. */
                       <span className="tfv">
-                        <b className="num">{nf.format(total)}</b>
-                        {/* الكلمة من العمود · و«وسطي» هي الافتراضية
-                            للمتوسّط وحده. شوف `aggSay` في `model.ts`. */}
+                        <b className="num">{c.aggPct ? pct(total) : nf.format(total)}</b>
+                        {/* The word comes from the column, and "average" is the default for the
+                            mean alone. See `aggSay` in `model.ts`. */}
                         {(c.aggSay ?? (c.agg === 'avg' ? 'وسطي' : '')) && (
-                          <small className="sub">{c.aggSay ?? 'وسطي'}</small>
+                          <small className="sub">{unitAfter(total, c.aggSay ?? 'وسطي')}</small>
                         )}
                       </span>
                     ) : i === 0 ? (
@@ -564,7 +546,7 @@ function Block<T>({
   )
 }
 
-/** منتقي الأعمدة · زرار في آخر ترويسة الجدول */
+/** Column picker — a button at the end of the table header. */
 function ColumnPicker<T>({
   all, cols, onCols,
 }: { all: Col<T>[]; cols: string[]; onCols: (k: string[]) => void }) {

@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { Icon, icons, Money, Mono, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { projectCode } from '@/lib/format'
+import { NOUN, nounAfter, projectCode } from '@/lib/format'
 import { stagePressure } from '@/data/repository'
-import { days, groupTone, pressureColor } from '@/lib/tone'
+import { days, groupTone, pressureColor, TONE } from '@/lib/tone'
 import type { ProjectRow } from '@/types/domain'
 
 export interface ProjectCardProps {
@@ -13,12 +13,11 @@ export interface ProjectCardProps {
 }
 
 /**
- * كارت مشروع.
+ * Project card.
  *
- * جدول النظام الحالي فيه 62 عمودًا؛ الكارت ده فيه 12 حقلًا هي اللي
- * القرار بيتاخد عليها فعلًا: الحالة **بالقسم الإجرائي الحقيقي** لا
- * بالمجموعة، ومعاها مدة المكوث في القسم · ودي الرقم اللي بيقول
- * إن المشرف واقف من 87 يومًا.
+ * The system's table has 62 columns; this card surfaces the 12 fields decisions
+ * actually depend on: status by actual workflow stage, not by group, plus time
+ * spent in that stage — the number that shows a reviewer has been stuck for 87 days.
  */
 export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
   const pressure = stagePressure(row)
@@ -56,14 +55,14 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
 
       <div className="pc-goal mut trim1" title={row.goal}>{row.track} · {row.goal}</div>
 
-      {/* القسم الإجرائي الفعلي + مدة المكوث فيه */}
+      {/* Actual workflow stage plus time spent in it. */}
       <div className="pc-stage well">
         <div className="pc-stage-t">
           <span>{row.stage}</span>
           {live && (
             <b>
               <Icon name={icons.clock} size="sm" />
-              <span className="num">{days(row.hoursInStage)}</span> يومًا
+              <span className="num">{days(row.hoursInStage)}</span> {nounAfter(days(row.hoursInStage), NOUN.day)}
             </b>
           )}
         </div>
@@ -79,9 +78,9 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
         )}
         {live && pressure > 1 && (
           <div className="pc-over">
-            <span className="tag no">متأخر</span>
+            <span className={`tag ${TONE.late}`}>متأخر</span>
             <span className="sub">
-              <span className="num">{days(row.hoursInStage - row.stageLimit)}</span> يومًا بعد تجاوز الحدّ
+              <span className="num">{days(row.hoursInStage - row.stageLimit)}</span> {nounAfter(days(row.hoursInStage - row.stageLimit), NOUN.day)} بعد تجاوز الحدّ
             </span>
           </div>
         )}
@@ -101,7 +100,7 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
           {row.owner ? (
             <Person name={row.owner} />
           ) : (
-            /* «بلا مالك» تحذير لا شخص · الوسم بيفضل وسمًا */
+            /* "Unassigned" is a warning, not a person — the tag stays a tag. */
             <Tag tone="warn">بلا مالك</Tag>
           )}
         </div>

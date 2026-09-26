@@ -1,27 +1,26 @@
 import { Link } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon'
 import { icons } from '@/components/ui/icons'
-import { nf } from '@/lib/format'
+import { nf, pct, unitAfter } from '@/lib/format'
+import { DateText } from '@/components/ui/primitives'
 import { highlight } from './highlight'
 import type { Reading } from './reading'
 
 export interface ReadingBlockProps {
   reading: Reading
-  /** بيتكتب دلوقتي · بيعرض النص مقصوصًا ومعاه المؤشر */
+  /** Currently being written — shows the text truncated with the cursor. */
   typing: boolean
   chars: number
-  /** لسه ما وصلش دوره في الكتابة */
+  /** Hasn't reached its turn to be written yet. */
   hidden: boolean
 }
 
 /**
- * قراءة واحدة.
- *
- * الكومبوننت ده هو **الراسم الوحيد للقراءة في السيستم**: الشريط
- * المختصر فوق القوائم، وكارت السياق الكامل، وتحليلات المشروع · كلهم
- * بيستدعوه. قبل كده كانت تحليلات المشروع بترسم بلوكاتها بإيدها،
- * فكانت نفس المعلومة (تجاوز مدة الإجراء) بتتكتب مرتين بشكلين
- * مختلفين في نفس الصفحة.
+ * A single reading.
+ * This component is the **only renderer for a reading in the system**: the compact bar above lists,
+ * the full context card, and the analysis card all call it. Before this, the analysis card drew its
+ * own blocks by hand, so the same information (a process running over time) was written twice in
+ * two different forms on the same page.
  */
 export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlockProps) {
   if (hidden) return null
@@ -35,13 +34,12 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
         </div>
       )}
 
-      {/* الرقم في أول السطر لا فوقه: الرقم الضخم كان بياخد وزنًا
-          أكبر من الجملة نفسها، والصفحة كانت بتمتلي أرقامًا حمرا. */}
+      {/* The number leads the line rather than sitting above it: a large number used to carry more
+          weight than the sentence itself, and the page filled up with red numbers. */}
       <div className="qr-tx">
         {r.metric && (
           <>
-            <b className="qr-lead num">{r.metric.value}</b>
-            <span className="qr-unit">{r.metric.unit}</span>
+            <MetricText m={r.metric} lead />
             {'، '}
           </>
         )}
@@ -53,9 +51,8 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
         <div className="rise">
           {r.bar && (
             <>
-              {/* فوق الحدّ: الشريط بيمتلئ ومعاه علامة عند الحدّ نفسه.
-                  من غيرها الشريط الممتلئ بيتقري «تمام» بينما هو
-                  بالظبط اللي بيقول «عدّى». */}
+              {/* Over the limit: the bar fills completely, with a mark at the limit itself. Without
+                  it, a full bar reads as "fine," when it's exactly what's saying "exceeded." */}
               <div className={`bar${r.bar.value > r.bar.limit ? ' over' : ''}`}>
                 <i
                   style={{
@@ -72,12 +69,12 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
               </div>
               <div className="qr-barl">
                 <span className="sub">
-                  {r.bar.limitLabel} <span className="num">{nf.format(r.bar.limit)}</span>
-                  {r.bar.unit && ` ${r.bar.unit}`}
+                  {r.bar.limitLabel} <span className="num">{r.bar.unit === '%' ? pct(r.bar.limit) : nf.format(r.bar.limit)}</span>
+                  {r.bar.unit && r.bar.unit !== '%' && ` ${unitAfter(r.bar.limit, r.bar.unit)}`}
                 </span>
                 <span className="sub">
-                  {r.bar.valueLabel} <span className="num">{nf.format(r.bar.value)}</span>
-                  {r.bar.unit && ` ${r.bar.unit}`}
+                  {r.bar.valueLabel} <span className="num">{r.bar.unit === '%' ? pct(r.bar.value) : nf.format(r.bar.value)}</span>
+                  {r.bar.unit && r.bar.unit !== '%' && ` ${unitAfter(r.bar.value, r.bar.unit)}`}
                 </span>
               </div>
             </>
@@ -106,17 +103,36 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
   )
 }
 
-/** لمحة سطر واحد لأهمّ قراءة · بتتعرض والكارت مقفول */
+/** One-line glimpse of the most important reading, shown while the card is closed. */
 export function ReadingPeek({ reading: r }: { reading: Reading }) {
   return (
     <div className="qr-peek">
+      {/* ⚠️ The number stays **outside** `.trim1`, as before — inside it, the bold red ink fails
+          contrast against the line text, once measured. */}
       {r.metric && (
-        <b className={r.kind === 'flag' ? 'bad' : undefined}>{r.metric.value}</b>
+        <b className={r.kind === 'flag' ? 'bad' : undefined}>
+          {r.metric.date ? <>{r.metric.unit} <DateText>{r.metric.value}</DateText></> : r.metric.value}
+        </b>
       )}
       <span className="trim1">
-        {r.metric ? `${r.metric.unit}، ` : ''}
+        {r.metric ? `${r.metric.date ? '' : unitAfter(r.metric.value, r.metric.unit)}، ` : ''}
         {r.text}
       </span>
     </div>
+  )
+}
+
+/**
+ * The reading's number with its unit — a **single entry point** for three places (the reading, the
+ * glimpse, the closed card). They used to be drawn three different ways, and one of them put the
+ * raw date before its sentence.
+ */
+export function MetricText({ m, lead }: { m: NonNullable<Reading['metric']>; lead?: boolean }) {
+  if (m.date) return <>{m.unit} <DateText>{m.value}</DateText></>
+  return (
+    <>
+      <b className={lead ? 'qr-lead num' : 'num'}>{m.value}</b>{' '}
+      <span className={lead ? 'qr-unit' : undefined}>{unitAfter(m.value, m.unit)}</span>
+    </>
   )
 }

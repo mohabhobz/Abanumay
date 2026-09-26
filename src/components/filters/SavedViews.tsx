@@ -3,31 +3,26 @@ import { useMenu } from '@/hooks/useMenu'
 import { Icon, icons } from '@/components/ui'
 import { readViews, writeViews, type SavedView } from './views'
 
-/* ═══════════════════════════════════════════════════════════
-   ي-12 · «الفيوهات» اسم مش مفهوم
+/* "Views" is a name that doesn't land.
 
-   مظفر بالنص: «**ما اتفهمتش من أول مرة ولا تاني مرة، لازم
-   تتشرح**» · ومهاب وافق.
+   Feedback was blunt: it wasn't understood the first time or the second, and needed explaining.
 
-   ⚠️ **والمشكلة مش ترجمة الكلمة، هي إن الاسم بيسمّي الشيء لا
-   الفعل.** «فيو» اسم لحاجة مجرّدة المستخدم ما شافهاش قبل كده، و
-   «العروض المحفوظة» ترجمة حرفية بنفس الغموض. اللي المستخدم بيعمله
-   فعليًّا هو: **حفظ الوضع الحالي** عشان يرجّعه بعدين.
+   ⚠️ **The problem isn't the translation of the word, it's that the name names the thing, not the
+   action.** "View" names an abstract object the user has never seen before, and a literal
+   translation carries the same vagueness. What the user is actually doing is: **saving the current
+   state** to bring it back later.
 
-   فالزرار بقى «الوضع المحفوظ» والفعل جوّاه «احفظ الوضع الحالي»،
-   وتحته سطر بيقول **إيه اللي بيتحفظ بالظبط**: الفلتر والترتيب
-   والتجميع والأعمدة. الاسم الغامض بيتشرح بالجملة اللي تحته لا
-   بمحاولة اسم أذكى.
+   So the button became "Saved state," with "Save current state" as its action, and a line
+   underneath stating **exactly what gets saved**: filter, sort, grouping, and columns. The vague
+   name gets explained by the sentence under it, not by chasing a cleverer name.
 
-   ⚠️ **وقرار الفصل اتّاخد: فيو واحد بيحفظ كل حاجة.** مظفر: «زيادة
-   فانكشنز جوّه فانكشنز بتعقّد الدنيا أكتر ما بتحلّ» · فمفيش حفظ
-   منفصل للفلاتر وحفظ منفصل للأعمدة.
-   ═══════════════════════════════════════════════════════════ */
+   ⚠️ **And the decision was made not to split it: one saved state saves everything.** Splitting
+   filters and columns into separate saves would add complexity, not remove it. */
 export function SavedViews({
   table, current, onApply,
 }: {
   table: string
-  /** لقطة الشاشة الحالية */
+  /** Snapshot of the current screen. */
   current: string
   onApply: (query: string) => void
 }) {
@@ -38,8 +33,8 @@ export function SavedViews({
 
   const active = views.find((v) => v.query === current)
   const trimmed = name.trim()
-  /* الاسم المكرَّر بيحدّث الفيو القديم ما يعملش نسخة تانية: القائمة
-     اللي فيها تلات حاجات بنفس الاسم مش قائمة، هي عبء. */
+  /* A duplicate name updates the old saved state instead of creating another — a list with several
+     items sharing a name isn't a list, it's clutter. */
   const existing = views.find((v) => v.name === trimmed)
 
   const save = () => {
@@ -68,13 +63,12 @@ export function SavedViews({
 
       {open && (
         <div className="fmenu fviews-m">
-          {/* ══ العرض الأصلي ══
-              القايمة كانت بتوَدّي ومَتِرجَّعش: تدوس فيو، الشاشة
-              تتغيّر، وما فيش طريق معلوم للرجوع · اللي عايز يرجع
-              لازم يفضل يشيل الفلاتر واحدًا واحدًا لحدّ ما الشريحة
-              تطفي. الصفّ ده هو الطريق، وهو كمان **حالة**: بيتعلّم
-              لمّا ما يكونش في فيو مختار، فالقايمة بتقول «إنت فين»
-              لا «روح فين» بس. */}
+          {/* -- Original design --
+              The list used to be one-way: click a saved state, the screen changes, and there's no
+              clear way back — anyone wanting to return had to remove filters one by one until the
+              chip cleared. This row is that way back, and it's also **a status indicator**: it
+              clears when no saved state is selected, so the list says "where you are," not just
+              "where to go." */}
           <div className="fmenu-l" role="menu">
             <div className={`fopt fview fview-0${active ? '' : ' on'}`}>
               <button
@@ -103,9 +97,8 @@ export function SavedViews({
                   >
                     {v.name}
                   </button>
-                  {/* سلّة لا إكس · الإكس معناها «اقفل» في كل مكان
-                      تاني في السيستم، والصفّ ده بيتشال لا بيتقفل.
-                      ونفس المكتبة (لوسيد) زي كل أيقونة. */}
+                  {/* A trash icon, not an X — X means "close" everywhere else in the system, and
+                      this row gets removed, not closed. Same icon set as everywhere else. */}
                   <button
                     type="button"
                     className="fview-x"
@@ -132,10 +125,9 @@ export function SavedViews({
               {existing ? 'حدّث' : 'احفظ'}
             </button>
           </div>
-          {/* ⚠️ **اللي بيتحفظ مكتوب، مش متروك للتخمين.** الزرار
-              اسمه «احفظ» والمستخدم بيسأل «احفظ إيه؟» · والسطر ده
-              هو الإجابة، وهو كمان اللي بيخلّي قرار «فيو واحد
-              بيحفظ كل حاجة» مفهومًا بدل ما يبان نقصًا. */}
+          {/* ⚠️ **What gets saved is stated, not left to guessing.** The button says "Save," and
+              the user asks "save what?" — this line is the answer, and it's also what makes the
+              "one saved state saves everything" decision legible instead of looking like a gap. */}
           <div className="fviews-n sub">
             يُحفظ: الفلتر والبحث والترتيب <b>والتجميع</b> وعدد الصفوف.
           </div>

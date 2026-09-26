@@ -1,22 +1,23 @@
 /**
- * مؤشرات الإجراءات · 66 مؤشرًا موزّعة على 11 إجراءً.
+ * Procedure indicators · 66 indicators across 11 procedures.
  *
- * المصدر: وثيقة الإجراءات اللي بعتها العميل، القسم `x.7 قياس مستوى
- * الأداء` في كل إجراء. الأسماء وآليات القياس **منقولة حرفيًا** من
- * الوثيقة · مش إعادة صياغة، عشان لما مظفر يراجع يلاقي نص وثيقته.
+ * Source: the procedures document, section "x.7 performance measurement" in each procedure. Names
+ * and measurement methods are **copied verbatim** from the document, not reworded, so a review
+ * against the document finds the same text.
  *
- * القرار التصميمي الأهم هنا:
+ * The most important design decision here:
  *
- *   المؤشر اللي مش قابل للقياس بيظهر **مكتوبًا وفاضيًا**، مش مخفيًا.
+ *   an indicator that can't be measured shows up **written out and empty**, not hidden.
  *
- * النظام العامل فيه 13 شاشة تقارير، تلاتة منها فاضية أو فلاتر بلا
- * نتيجة. إخفاء المؤشر بيخلي الفجوة تتكرر؛ عرضه ومعاه سبب غيابه
- * بيحوّل شاشة التقارير لقائمة مطالب للباك اند. النِّسبة بتتحسب في
- * `coverage` تحت، فما فيش رقم مكتوب بالإيد هنا يبوظ لما الداتا تكبر.
+ * The live system has 13 report screens, three of which are empty or filtered with no results.
+ * Hiding the indicator would let the gap keep repeating; showing it along with why it's absent
+ * turns the reports screen into a request list for the backend. The ratio is computed in `coverage`
+ * below, so no hand-typed number breaks as the data grows.
  *
- * وملاحظة تانية لازم تتقال للعميل: **مفيش مستهدف واحد في الوثيقة**.
- * تمانية مؤشرات بتقيس التزامًا بـ«المدة المستهدفة» أو باتفاقية
- * مستوى خدمة، ومحدش كاتب المدة كام. فالمستهدف `null` في كلها.
+ * Another point that needs to be said to the client: **not a single target exists in the
+ * document**. Eight indicators measure compliance against a "target duration" or a service-level
+ * agreement, and no one wrote down what that duration is. So the target is `null` across all of
+ * them.
  */
 import type { EntityRow, ProjectRow } from '@/types/domain'
 import { projectRows } from './mock/projects'
@@ -28,41 +29,42 @@ import { ROUTES } from '@/app/routes'
 import { YEARS } from './mock/taxonomy'
 import { planKpi } from './mock/plans'
 import { CLOSE_TARGET_DAYS, closeKpi } from './mock/closing'
+import { NOUN, countOf as countNoun } from '@/lib/format'
 
-/** وحدة المقام · «10 من 30» لازم تقول 30 إيه */
+/** Denominator unit · "10 of 30" needs to say what the 30 is */
 export type Basis = 'project' | 'entity' | 'line' | 'source' | 'riyal'
 
-/** وحدة المؤشر كما في عمود «وحدة القياس» بالوثيقة */
+/** Indicator unit as given in the document's "unit of measurement" column */
 export type KpiUnit = 'pct' | 'days' | 'count' | 'avg'
 
 export interface Kpi {
-  /** رقمه في جدول الوثيقة */
+  /** Its number in the document's table */
   no: number
-  /** اسم المؤشر · حرفيًا */
+  /** Indicator name · verbatim */
   name: string
-  /** آلية القياس · حرفيًا */
+  /** Measurement method · verbatim */
   how: string
   unit: KpiUnit
-  /** القيمة المحسوبة. `null` = الداتا اللازمة مش موجودة */
+  /** The computed value. `null` = the needed data doesn't exist */
   value: number | null
-  /** ناقصه إيه · بيظهر مكان الرقم */
+  /** What's missing · shown in place of the number */
   gap?: string
-  /** البسط والمقام ووحدتهما، عشان الرقم يبان مبني على كام */
+  /** Numerator and denominator with their unit, so the number shows what it's built from */
   of?: { part: number; whole: number; basis: Basis }
-  /** الاتجاه الأحسن · بيحدّد لون المؤشر لما يبقى فيه مستهدف */
+  /** The better direction · decides the indicator's color once it has a target */
   better: 'up' | 'down' | 'flat'
-  /** المستهدف · `null` في كلها: الوثيقة مافيهاش أي SLA */
+  /** Target · `null` across all of them: the document has no SLA at all */
   target: number | null
-  /** الصفوف اللي طلّعت الرقم · الرقم اللي مايوصّلش لصفوفه تقرير ميّت */
+  /** The rows behind the number · a number with no rows behind it is a dead report */
   to?: string
-  /** الرقم مشتقّ من `journey.ts` مش من عمود حقيقي */
+  /** The number is derived from `journey.ts`, not a real column */
   derived?: boolean
 }
 
 export interface ProcessKpis {
-  /** رقم الإجراء في الوثيقة */
+  /** The procedure's number in the document */
   id: string
-  /** الـslug في الـURL */
+  /** The URL slug */
   key: string
   no: number
   title: string
@@ -70,7 +72,7 @@ export interface ProcessKpis {
   kpis: Kpi[]
 }
 
-/* ═══════════════════ أدوات الحساب ═══════════════════ */
+/* Calculation helpers */
 
 const rows: ProjectRow[] = projectRows
 const ents: EntityRow[] = entityRows
@@ -78,9 +80,9 @@ const ents: EntityRow[] = entityRows
 const share = (part: number, whole: number): number => (whole === 0 ? 0 : Math.round((part / whole) * 100))
 
 /**
- * مؤشر نسبة: بيرجّع القيمة ومعاها البسط والمقام ووحدتهما.
- * المقام مش تفصيلة: «100%» من مشروع واحد رقم مضلّل، والوحدة هي اللي
- * بتمنع «73,700,000 حالة» تتكتب مكان «73,700,000 ريال».
+ * Ratio indicator: returns the value along with the numerator, denominator, and their unit. The
+ * denominator isn't a detail — "100%" of one project is a misleading number, and the unit is what
+ * stops "73,700,000 cases" from being written where it should say "73,700,000 riyals."
  */
 const ratio = (part: number, whole: number, basis: Basis = 'project') => ({
   value: share(part, whole),
@@ -92,7 +94,7 @@ const approved = rows.filter((r) => r.supportStatus === 'معتمد')
 const rejected = rows.filter((r) => r.supportStatus === 'مرفوض')
 const j = (r: ProjectRow) => journeys.get(r.id)
 
-/** وسيط المدة بالأيام لحقل من حقول الرحلة */
+/** Median duration in days for a journey field */
 const medianDays = (pool: ProjectRow[], f: (r: ProjectRow) => number | null | undefined): number | null => {
   const v = pool.map((r) => f(r)).filter((h): h is number => typeof h === 'number' && h > 0)
   return v.length ? Math.round(median(v) / 24) : null
@@ -103,14 +105,17 @@ const countOf = (pool: ProjectRow[], f: (r: ProjectRow) => boolean) => pool.filt
 const P = ROUTES.projects
 const link = (qs: string) => `${P}?${qs}`
 
-/* ═══════════════════ BPD-002 · الميزانية ═══════════════════ */
+/* Budget */
 
 const bud = budgetForYear()
 const lines = budgetByTrack()
 const usedLines = lines.filter((l) => l.spent > 0 || l.committed > 0)
 const drained = lines.filter((l) => l.remaining <= 0)
 
-/** المصادر: المؤسسة والوقف. المخصص من سنوات كل مصدر، والمصروف من صفوفه. */
+/**
+ * Sources: the Foundation and the endowment. Allocated comes from each source's years, spent from
+ * its rows.
+ */
 const bySource = (src: 'foundation' | 'waqf') => {
   const suffix = src === 'foundation' ? '-f' : '-w'
   const allocated = YEARS.filter((y) => y.id.endsWith(suffix)).reduce((s, y) => s + y.budget, 0)
@@ -125,7 +130,7 @@ const found = bySource('foundation')
 const waqf = bySource('waqf')
 const sourcesUnused = [found, waqf].filter((s) => s.spent === 0 && s.reserved === 0).length
 
-/* ═══════════════════ الفهرس ═══════════════════ */
+/* Index */
 
 export const PROCESSES: ProcessKpis[] = [
   {
@@ -279,11 +284,11 @@ export const PROCESSES: ProcessKpis[] = [
     ],
   },
 
-  /* ═══ BPD-012 · خطط المشاريع ═══
-     ⚠️ **الوثيقة ما دّتش مؤشرات للإجراء ده خالص.** الأربعة دول
-     مشتقّون من قواعده نفسها، وكلهم `derived` و`target: null` ·
-     زي مؤشرات الاتفاقيات والصرف اللي مستهدفها فاضي بالظبط.
-     وعرضهم كأنهم من الوثيقة كان هيخلّي اللي بعدنا يبني عليهم. */
+  /* Project plans
+     Warning: **the document gives no indicators at all for this procedure.** These four are derived
+     from its own rules, and all are `derived` with `target: null`, exactly like the agreement and
+     disbursement indicators, whose targets are also empty. Presenting them as if they came from the
+     document would have anyone building on top of them assume they did. */
   {
     id: 'BPD-012',
     key: 'bpd-012',
@@ -294,9 +299,9 @@ export const PROCESSES: ProcessKpis[] = [
       { no: 1, name: 'متوسط مدة اعتماد الخطة', how: 'متوسط الأيام من فتح الخطة حتى تثبيت النسخة المرجعية.', unit: 'days', value: planKpi().approveDays, better: 'down', target: null, derived: true, to: ROUTES.plans },
       { no: 2, name: 'نسبة الخطط الملتزمة بجدولها', how: '(الخطط التي يبلغ أداء جدولها 0.95 فأكثر ÷ الخطط قيد التنفيذ) × 100%.', unit: 'pct', value: planKpi().onTrackPct, better: 'up', target: null, derived: true, to: ROUTES.plans },
       { no: 3, name: 'نسبة الأنشطة المتأخّرة', how: '(الأنشطة التي تجاوزت موعدها ولم تُقبل ÷ إجمالي الأنشطة) × 100%.', unit: 'pct', value: planKpi().latePct, better: 'down', target: null, derived: true, to: `${ROUTES.plans}?late=1` },
-      /* ⚠️ ده مؤشر **على المؤسسة نفسها** لا على الجهات · الطابور
-         اللي بيكبر معناه إن المراجعة بتتأخّر، والجهة بتبقى شغّالة
-         والنسبة واقفة. وده اللي القاعدة 14 بتخلّيه ممكن يتقاس. */
+      /* Warning: this indicator is **about the Foundation itself**, not about entities — a growing
+         queue means review is falling behind while the entity keeps working and the ratio stalls.
+         That's what makes this measurable at all. */
       { no: 4, name: 'الأنشطة بانتظار مراجعة المؤسسة', how: 'عدد الأنشطة التي أفادت الجهة باكتمالها ولم تُراجع بعد (قاعدة 14).', unit: 'count', value: planKpi().waiting, better: 'down', target: null, derived: true, to: `${ROUTES.plans}?wait=1` },
     ],
   },
@@ -321,24 +326,24 @@ export const PROCESSES: ProcessKpis[] = [
     no: 11,
     title: 'إغلاق المشروع',
     owner: 'إدارة المنح',
-    /* ⚠️ **المؤشران 2 و3 بقوا مقيسين بعد ما الموديول اتبنى.**
-       قبل كده كانوا `gap` بسببين مختلفين: التاني مالوش مدة مستهدفة
-       في الوثيقة، والتالت «الطلب والرفع قسمان مستقلان وتاريخ كل
-       منهما مش في النموذج» · والاتنين اتحلّوا هنا لا في النظام
-       العامل: المدة المستهدفة **مؤقتة عندنا** (`CLOSE_TARGET_DAYS`
-       · س-18 مفتوح)، وتاريخ الإرسال بقى في سجلّ التدقيق (قاعدة 11).
-       فالرقم بقى من نموذجنا لا من الحقول الناقصة، والسطر ده مكتوب
-       عشان اللي بعدنا يعرف إن التاني مستهدفه لسه افتراضًا. */
+    /* Warning: **indicators 2 and 3 became measurable only after this module was built.** They used
+       to both be `gap`, for two different reasons: the second has no target duration in the
+       document, and the third has "request and submission are two independent sections, and neither
+       has a date field in the mock." Both are resolved here rather than in the live system: the
+       target duration is **ours, provisional** (`CLOSE_TARGET_DAYS`, an open question), and the
+       submission date now comes from the audit log. So the number now comes from our own mock
+       rather than from missing columns, and this note exists so whoever comes after knows the
+       second one's target is still an assumption. */
     kpis: [
       { no: 1, name: 'متوسط مدة إغلاق المشروع', how: 'متوسط عدد الأيام من إنشاء طلب التقرير الختامي حتى اعتماد الإغلاق النهائي للمشروع.', unit: 'days', value: closeKpi().avg, better: 'down', target: null, derived: true, to: ROUTES.closings },
-      { no: 2, name: 'نسبة المشاريع المغلقة ضمن المدة المستهدفة', how: `(عدد المشاريع التي تم إغلاقها ضمن المدة المستهدفة ÷ إجمالي المشاريع المغلقة) × 100%. والمدة المستهدفة ${CLOSE_TARGET_DAYS} يومًا، وهي افتراض مؤقت وليست من الوثيقة.`, unit: 'pct', value: closeKpi().inTimePct, better: 'up', target: null, derived: true, to: ROUTES.closings },
+      { no: 2, name: 'نسبة المشاريع المغلقة ضمن المدة المستهدفة', how: `(عدد المشاريع التي تم إغلاقها ضمن المدة المستهدفة ÷ إجمالي المشاريع المغلقة) × 100%. والمدة المستهدفة ${countNoun(CLOSE_TARGET_DAYS, NOUN.day)}، وهي افتراض مؤقت وليست من الوثيقة.`, unit: 'pct', value: closeKpi().inTimePct, better: 'up', target: null, derived: true, to: ROUTES.closings },
       { no: 3, name: 'متوسط مدة إعداد التقرير الختامي', how: 'متوسط الزمن من إنشاء طلب التقرير الختامي حتى إرسال التقرير من الجهة المستفيدة · من سجلّ التدقيق (قاعدة 11).', unit: 'days', value: closeKpi().prepDays, better: 'down', target: null, derived: true, to: ROUTES.closings },
       { no: 4, name: 'نسبة المشاريع التي تم إغلاقها بعد استكمال جميع المتطلبات', how: '(عدد المشاريع التي استوفت جميع متطلبات الإغلاق ÷ إجمالي المشاريع المغلقة) × 100%. والمتطلبات المحسوبة هي التي يعرفها النظام (قاعدة 8 · س-15 مفتوح).', unit: 'pct', value: closeKpi().fullPct, better: 'up', target: null, derived: true, to: ROUTES.closings },
     ],
   },
 ]
 
-/* ═══════════════════ مجاميع ═══════════════════ */
+/* Totals */
 
 export const ALL_KPIS: Kpi[] = PROCESSES.flatMap((p) => p.kpis)
 
@@ -346,11 +351,11 @@ export interface KpiCoverage {
   total: number
   measured: number
   missing: number
-  /** مؤشرات بتقيس التزامًا بمدة مستهدفة غير موجودة أصلًا */
+  /** Indicators that measure compliance against a target duration that doesn't actually exist */
   noTarget: number
 }
 
-/** المؤشر اللي اسمه نفسه بيفترض مدة متفق عليها ومفيش مدة متفق عليها */
+/** An indicator whose own name assumes an agreed-upon duration, and there is no agreed-upon duration */
 const NEEDS_SLA = /المدة المستهدفة|المدة المحددة|مستوى الخدمة/
 
 export const coverage: KpiCoverage = {
@@ -365,5 +370,5 @@ export const measuredIn = (p: ProcessKpis): number => p.kpis.filter((k) => k.val
 export const processByKey = (key: string): ProcessKpis | undefined =>
   PROCESSES.find((p) => p.key === key)
 
-/** المؤشر الرئيسي للإجراء · أول مؤشر له قيمة */
+/** The procedure's headline indicator · the first indicator that has a value */
 export const headlineOf = (p: ProcessKpis): Kpi | undefined => p.kpis.find((k) => k.value !== null)

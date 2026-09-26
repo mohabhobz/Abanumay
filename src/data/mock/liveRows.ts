@@ -1,17 +1,15 @@
 /**
- * صفوف دومي لكل شاشة في كتالوج التقارير.
+ * Placeholder rows for every screen in the reports catalog.
  *
- * القاعدة: **الأعمدة حقيقية والقيم مولَّدة**. الشاشة لازم تورّي
- * الشكل النهائي · عرض العمود، شكل المبلغ، النص اللي بيتقصّ، التاريخ،
- * المرفق · من غير ما نحطّ داتا حد فيها.
+ * Rule: columns are real, values are generated. The screen must show the final shape — column
+ * width, amount formatting, truncated text, date, attachment — without using anyone's real data.
  *
- * والتوليد **محدَّد بالبذرة**: نفس المفتاح بيدّي نفس الصفوف في كل
- * تحميل. غير كده الديمو بيتغيّر تحت إيد العميل وهو بيقلّب، وده
- * بيخلّيه يشك في كل رقم يشوفه.
+ * Generation is seeded: the same key produces the same rows on every load. Otherwise the demo data
+ * would shift under the client's cursor while browsing, making them doubt every number they see.
  *
- * والقيم مش عشوائية على طول · بتتبع الشكل اللي قِسناه في النظام:
- * أغلب المشاريع معتذر عنها، ونص «المعرفة» أغلبه نقطة واحدة، والمدة
- * الفعلية بتطول عن المخططة.
+ * Values aren't purely random either — they follow the distribution measured in the live system:
+ * most projects are marked as excused, half of "knowledge" text is a single bullet point, and
+ * actual duration tends to run longer than planned.
  */
 import type { LiveCol, LiveSpec } from '@/data/liveReports'
 import { projectRows } from './projects'
@@ -21,7 +19,7 @@ import { LIVE_DEPTS, LIVE_FIELDS, LIVE_GOALS, LIVE_TAGS, LIVE_TRACKS } from './t
 
 export type LiveRow = Record<string, string | number>
 
-/** مولّد خطّي بسيط · نفس البذرة، نفس السلسلة */
+/** Simple linear generator · same seed, same sequence */
 function rng(seed: string) {
   let s = 0
   for (let i = 0; i < seed.length; i++) s = (s * 31 + seed.charCodeAt(i)) >>> 0
@@ -33,19 +31,20 @@ function rng(seed: string) {
 
 const pick = <T,>(r: () => number, xs: readonly T[]): T => xs[Math.floor(r() * xs.length) % xs.length]
 const int = (r: () => number, a: number, b: number) => a + Math.floor(r() * (b - a + 1))
-/** مبلغ بأرقام مدوّرة زي اللي في النظام (آلاف، مش كسور) */
+/** Amount in rounded figures matching the live system (thousands, not fractions) */
 const money = (r: () => number, a: number, b: number) => int(r, a / 1000, b / 1000) * 1000
 
 const date = (r: () => number) => {
   const d = int(r, 1, 28)
   const m = int(r, 1, 9)
-  return `${d}/${m}/2026`
+  /* ISO format · the cell renders it via `<DateText>` (previously raw "28/4/2026") */
+  return `2026-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 }
 
 /**
- * نصّ المعرفة · بنفس التوزيع اللي قِسناه على الـ٩٤٦ صفًّا:
- * ٤٦٪ ثلاثة أحرف أو أقل · ٣٤٪ أقل من أربعين حرفًا · ٢٠٪ درس فعلي.
- * التوزيع ده **هو الرسالة**، فما ينفعش نولّد نصوصًا حلوة كلها.
+ * Knowledge text · matches the distribution measured across 946 rows: 46% three characters or
+ * fewer, 34% under forty characters, 20% an actual lesson. The distribution itself is the point, so
+ * the text can't all be generated to read nicely.
  */
 const KNOW_REAL = [
   'نفّذت الجهة المشروع دون اجتماع تمهيدي، فتأخر الاستلام شهرين، وجاءت المخرجات مختلفة عن المتفق عليه.',
@@ -69,7 +68,7 @@ const OUTPUTS = [
   '1 - تسليم الأجهزة للأسر المستفيدة.\n2 - توثيق التسليم بالصور.\n3 - زيارة ميدانية للتحقق.',
 ]
 
-/** قيمة خلية واحدة حسب نوع العمود واسمه */
+/** A single cell's value, based on the column's type and name */
 function cell(col: LiveCol, r: () => number, i: number): string | number {
   const p = projectRows[i % projectRows.length]
   const e = entityRows[i % entityRows.length]
@@ -117,10 +116,10 @@ function cell(col: LiveCol, r: () => number, i: number): string | number {
 }
 
 /**
- * صفوف شاشة واحدة.
+ * Rows for a single screen.
  *
- * `n` عدد الصفوف المعروضة في النموذج، لا عدد صفوف النظام: الشاشة
- * بتقول العدد الحقيقي في ترويستها، والجدول بيعرض عيّنة منه.
+ * `n` is the number of rows shown in the mock, not the system's actual row count: the screen states
+ * the real count in its header, and the table shows a sample of it.
  */
 export function liveRows(spec: LiveSpec, n = 24): LiveRow[] {
   if (spec.cols.length === 0) return []
@@ -131,7 +130,7 @@ export function liveRows(spec: LiveSpec, n = 24): LiveRow[] {
     for (const c of spec.cols) row[c.key] = cell(c, r, i)
     out.push(row)
   }
-  /* الأداء: الوارد = المنجَز + القائم، عشان الصف يجمع صح */
+  /* Performance: incoming = completed + in-progress, so the row sums correctly */
   if (spec.key === 'perfUser' || spec.key === 'perfDept') {
     for (const row of out) {
       const done = Number(row.done), open = Number(row.open)
@@ -142,7 +141,7 @@ export function liveRows(spec: LiveSpec, n = 24): LiveRow[] {
   return out
 }
 
-/* ═══════════════════ شجرة الميزانية ═══════════════════ */
+/* Budget tree */
 
 export interface BudgetNode {
   id: string
@@ -151,7 +150,7 @@ export interface BudgetNode {
   approved: number
   reserved: number
   spent: number
-  /** المتبقي = الميزانية − المعتمد. بيطلع بالسالب لما يتعتمد فوق السقف. */
+  /** Remaining = budget - approved. Goes negative when approved exceeds the cap. */
   left: number
   leftPct: number
   children?: BudgetNode[]
@@ -168,7 +167,7 @@ const node = (
   children,
 })
 
-/** يوزّع مبلغًا على n بنود بنِسب ثابتة مشتقة من الاسم */
+/** Distributes an amount across n line items using fixed ratios derived from the name */
 function split(total: number, keys: readonly string[], seed: string): number[] {
   const r = rng(seed)
   const w = keys.map(() => 0.6 + r() * 0.8)
@@ -179,19 +178,19 @@ function split(total: number, keys: readonly string[], seed: string): number[] {
 }
 
 /**
- * يوزّع **المستهلَك** على بنود ميزانيتها معروفة، من غير ما يقلب
- * الإشارة.
+ * Distributes **consumed** amounts across budget line items with known allocations, without
+ * flipping the sign.
  *
- * الغلطة اللي كانت هنا: الميزانية والمعتمد كانوا بيتوزّعوا بوزنين
- * مستقلّين، فبند ياخد ٥٪ من الميزانية و٢٠٪ من المعتمد ويطلع «فوق
- * السقف» وأبوه لسه عنده فايض. الإشارة السالبة دي **معلومة خطيرة**
- * (اعتماد فوق الميزانية) وما ينفعش تظهر من قسمة عشوائية.
+ * The bug this replaced: budget and approved amounts were distributed using two independent
+ * weightings, so a line item could get 5% of the budget and 20% of the approved amount and appear
+ * "over the cap" while its parent still had a surplus. That negative sign is critical information
+ * (approval over budget) and must not appear from an arbitrary split.
  *
- * فالتوزيع هنا بيمشي على نسبة الاستهلاك: كل بند بياخد نسبة قريبة من
- * نسبة أبوه بتفاوت محدود، وبعدين تتعاير عشان المجموع يطابق. ولو
- * الأب تحت السقف، مفيش ابن بيعدّي سقفه · الزيادة بتترحّل للي عنده
- * فايض. ولو الأب فوق السقف (٢٠٢٤ و٢٠٢٥ فعلًا)، السالب بيتوزّع
- * وبيفضل ظاهرًا.
+ * So distribution here follows the consumption ratio: each line item gets a share close to its
+ * parent's ratio within a limited spread, then calibrated so the total matches. If the parent is
+ * under the cap, no child exceeds its own cap — the excess rolls over to items with surplus. If the
+ * parent is over the cap (as in 2024 and 2025), the negative amount gets distributed and stays
+ * visible.
  */
 function splitUsed(
   budgets: number[], total: number, seed: string,
@@ -200,12 +199,12 @@ function splitUsed(
   if (B <= 0) return budgets.map(() => 0)
   const r = rng(seed)
   const ratio = total / B
-  /* نسبة قريبة من نسبة الأب ±١٥٪ */
+  /* A ratio close to the parent's ratio, ±15% */
   let out = budgets.map((b) => b * ratio * (0.85 + r() * 0.3))
   const scale = total / (out.reduce((a, b) => a + b, 0) || 1)
   out = out.map((v) => v * scale)
 
-  /* الأب تحت السقف ⇒ محدش من الأبناء يعدّي سقفه */
+  /* Parent under the cap ⇒ no child exceeds its own cap */
   if (ratio <= 1) {
     for (let pass = 0; pass < 4; pass++) {
       let over = 0
@@ -220,9 +219,9 @@ function splitUsed(
     }
   }
 
-  /* التقريب لأقرب ألف بيسيب باقيًا، والباقي ده لازم يروح للبند اللي
-     عنده فايض · لو راح للأول ممكن يعدّي سقفه ويرجّع نفس الغلطة اللي
-     الدالة دي موجودة عشانها. */
+  /* Rounding to the nearest thousand leaves a remainder, and that remainder must go to the line
+     item with surplus — giving it to the first one could push it over its cap and reintroduce the
+     bug this function exists to avoid. */
   const rounded = out.map((v) => Math.round(v / 1000) * 1000)
   let rest = total - rounded.reduce((a, b) => a + b, 0)
   for (let pass = 0; pass < 8 && rest !== 0; pass++) {
@@ -238,7 +237,7 @@ function splitUsed(
   return rounded
 }
 
-/** المجالات تحت كل مسار، وأهدافها · من الشجرة الحقيقية */
+/** Areas under each track, and their goals · from the real tree */
 const GOALS_OF: Record<string, string[]> = {
   التعليم: ['المنح الدراسية الجامعية', 'دروس التقوية الإلكترونية', 'روضات التبيان', 'المحفظة التعليمية المتنوعة'],
   التطوير: ['الاستدامة المالية للجمعيات الأهلية', 'الدعم التشغيلي للجمعيات المتميزة', 'تأسيس الجمعيات الأهلية', 'احتضان الجمعيات'],
@@ -265,13 +264,13 @@ const QUALITY = ['التعليم', 'التطوير', 'القرآن', 'العلم
 const SPREAD = ['الإغاثة', 'الدعوة', 'المساجد', 'الحج ورمضان']
 
 /**
- * الدورات الخمس بأرقامها **الحقيقية** من `reports1_1`.
+ * The five cycles with their **real** figures from `reports1_1`.
  *
- * ⚠️ دي الأرقام الوحيدة الحقيقية في الشجرة: الإجماليات لكل دورة.
- * التوزيع تحتها على المسار والمجال والهدف مولَّد بنِسب ثابتة، لأن
- * قراءة الشجرة كاملة معناها ٥ × ٢ × ٦ × ٤ صفحة.
+ * These are the only real numbers in the tree: totals per cycle. The distribution below that, by
+ * track, area, and goal, is generated with fixed ratios, since reading the full tree would mean 5 ×
+ * 2 × 6 × 4 pages.
  *
- * والسالب في ٢٠٢٤ و٢٠٢٥ **حقيقي**: اعتماد فوق الميزانية.
+ * The negative figures in 2024 and 2025 are real: approval over budget.
  */
 const CYCLES = [
   { id: '2026-f', label: '2026 · المؤسسة', budget: 73_600_000, approved: 64_154_182, reserved: 19_503_581, spent: 44_650_601 },
@@ -299,11 +298,11 @@ function trackLevel(c: (typeof CYCLES)[number]): BudgetNode[] {
   })
 }
 
-/** جذر الشجرة · الدورات الخمس */
+/** Tree root · the five cycles */
 export const budgetTree: BudgetNode[] = CYCLES.map((c) =>
   node(c.id, c.label, c.budget, c.approved, c.reserved, c.spent, trackLevel(c)))
 
-/** يلاقي عقدة بمسار معرّفاتها */
+/** Finds a node by its path of identifiers */
 export function nodeAt(path: string[]): BudgetNode | undefined {
   let list: BudgetNode[] | undefined = budgetTree
   let found: BudgetNode | undefined

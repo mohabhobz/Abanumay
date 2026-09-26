@@ -4,23 +4,23 @@ import { Icon, icons, Money, Num, Tag } from '@/components/ui'
 import { childSum, nodeAt, PLAN_LEVELS, type Imbalance, type PlanNode } from '@/data/budgetPlan'
 
 /**
- * نافذة الفرق · **الإجابة بتيجي لك، إنت ما بتروحش لها**.
+ * Gap-detail dialog - the answer comes to you, you don't go looking for it.
  *
- * الضغط على بند في «فحص التوازن» كان بيغيّر مسار الشجرة ويمرّر
- * الصفحة لتحت. وده مش منطقي من ناحيتين:
+ * Clicking an item in the balance check used to change the tree's route and scroll the page down.
+ * That's off for two reasons:
+ * - the click promised an answer and instead moved you somewhere: whoever clicked is asking "so
+ * where's this gap?" and ends up in the middle of the page facing a table they have to read from
+ * scratch.
+ * - the tree shows the children, not the gap. The gap between a parent and its children needs both
+ * figures in one glance, and the tree only gives one of them.
  *
- *   · **الضغطة وعدت بإجابة ودّتك لمكان.** اللي دوس بيسأل «طب فين
- *     الفرق ده؟»، فبيلاقي نفسه في نصّ الصفحة قدّام جدول لازم
- *     يقراه من الأول.
- *   · **الشجرة بتوَرّي الأبناء لا الفرق.** الفرق بين الأب وأبنائه
- *     محتاج الرقمين في نفس النظرة، والشجرة بتدّي واحد فيهم بس.
+ * The dialog puts both figures side by side, along with every child and its share, so the question
+ * gets answered where it was asked. A button to go work in the tree is still there for anyone who
+ * wants it.
  *
- * النافذة بتحطّ الرقمين جنب بعض ومعاهم **كل ابن ونصيبه**، فالسؤال
- * بيتجاوب في مكانه. واللي عايز يشتغل على الشجرة لسّه ليه زرار.
- *
- * بورتال على الـ`body`: أي أب فيه `backdrop-filter` بيبقى الحاوية
- * لـ`position:fixed`، فالنافذة كانت هتقع جنب الكارت لا في نصّ
- * الشاشة.
+ * Rendered via a portal on `body`: any ancestor with `backdrop-filter` becomes the containing block
+ * for `position:fixed`, so the dialog would have landed next to the card instead of the center of
+ * the screen.
  */
 export function GapPeek({
   gap, root, onGoTree, onClose,
@@ -39,8 +39,8 @@ export function GapPeek({
   const node = nodeAt(root, gap.path)
   const kids = node?.children ?? []
   const over = gap.gap > 0
-  /* أكبر مخصص بين الأبناء هو المقياس · الشريط بيقول الحصّة النسبية
-     من غير ما نكتب نسبة تانية جنب كل سطر */
+  /* The largest child allocation sets the scale - the bar shows relative share without writing a
+     second percentage next to every row. */
   const max = Math.max(...kids.map((k) => k.alloc), 1)
 
   return createPortal(
@@ -58,7 +58,7 @@ export function GapPeek({
           </button>
         </div>
 
-        {/* الرقمان في نظرة واحدة · ده اللي الشجرة ما كانتش بتدّيه */}
+        {/* Both figures in one glance - what the tree wasn't giving. */}
         <div className="gpeek-n">
           <span className="gpeek-c">
             <span className="sub">مخصص للبند</span>
@@ -111,8 +111,8 @@ export function GapPeek({
           )}
         </div>
 
-        {/* الفعل الأساسي هنا هو الانتقال للشجرة · «تمّ» مجرد
-            مخرج، فمكانه بعده لا قبله */}
+        {/* The primary action here is jumping to the tree - "done" is just a dismiss, so it sits
+            after it, not before. */}
         <div className="gpeek-f">
           <button className="btn btn-p" onClick={onGoTree}>
             <Icon name={icons.chart} size="sm" />

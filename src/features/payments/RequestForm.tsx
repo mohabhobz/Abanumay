@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, icons, Money, Mono, Num, Riyal, Select, Tag,
+  BackTo, DateText, Empty, Glass, Head, Icon, icons, Money, MoneyField, Mono, Num, Select, Tag, DockWhy,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, nf } from '@/lib/format'
+import { isolate, nf, NOUN, nounAfter, MISSING_ITEM } from '@/lib/format'
 import {
   PAY_SLOT_SAY, payProjects, payRequestById, paySchedule, type PaySlot,
 } from '@/data/mock/disbursements'
@@ -15,40 +15,36 @@ import {
 const KEYS = ['project', 'pay'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/* ═══════════════════════════════════════════════════════════
-   طلب الصرف · شاشة 2 · خطوات 1 · 2 · 3 · 11 · قاعدة 19
+/* Disbursement request - screen 2, steps 1, 2, 3, 11 - rule 19.
 
-   ⚠️ **دي مش فورم، دي جدول الدفعات المعتمد.** الفورم الفاضي بيسأل
-   الجهة «كام؟» وبيسيبها تكتب رقمًا غلط، وبعدين يرفضه. والوثيقة
-   بتشتغل بالعكس: خطوة 1 بتقول النظام **يتيح** الإنشاء عند حلول
-   الاستحقاق واستيفاء الشروط · يعني الإتاحة معلومة معروضة قبل
-   الضغط، لا رفض بعده.
+   Note: this isn't a form, it's the approved payment schedule. An empty form asks the entity "how
+   much?" and lets them type a wrong number before rejecting it. The spec works the other way: step
+   1 says the system enables creation once due and eligible - meaning availability is shown before
+   the click, not rejection after it.
 
-   فالشاشة بتعرض **كل** دفعات الاتفاقية وكل واحدة بحالتها وسببها،
-   وأربع قواعد بتتنفّذ بالعرض لا بالتحقّق:
+   So the screen shows every payment on the agreement, each with its status and reason, and four
+   rules are enforced through display rather than validation:
 
-     قاعدة 1 · مفيش طلب قبل تفعيل الاتفاقية    → الشاشة كلها مقفولة
-                                                  والسبب مكتوب
-     قاعدة 2 · الدفعات المستحقة بس              → «لم تستحق» مقفولة
-     قاعدة 4 · طلب واحد مفتوح لكل دفعة          → «لها طلب مفتوح»
-                                                  وبتوصّل للطلب
-     قاعدة 6 · الدفعة المشروطة لا تُرسل           → «موقوفة بشرط»
-     قاعدة 5 · القيمة ما تتجاوزش المعتمدة        → تحقّق فوري في الحقل
-     قاعدة 3 · المتطلبات قبل الإرسال             → قائمة تحقّق،
-                                                  والإرسال مقفول قبلها
+     Rule 1 - no request before the agreement is active   -> the whole screen is locked with the
+     reason stated
+     Rule 2 - due payments only                            -> "not yet due" is locked
+     Rule 4 - one open request per payment                 -> "has an open request" links to it
+     Rule 6 - a conditional payment can't be submitted      -> "held pending a condition"
+     Rule 5 - amount can't exceed the approved value        -> validated live in the field
+     Rule 3 - requirements before submission                -> a checklist, and submission stays
+     locked until met
 
-   ⚠️ **وقاعدة 3 قائمة تحقّق لا رسالة خطأ.** خطوة 3 بتقول النظام
-   «يرفض الإرسال عند النواقص» · الرفض بعد الضغط بيخلّي الجهة تجرّب
-   وتفشل. القائمة قبل الضغط بتقول إيه الناقص من الأول.
+   Note: rule 3 is a checklist, not an error message. Step 3 says the system "rejects submission on
+   missing items" - rejecting after the click leaves the entity to try and fail. The checklist
+   before the click states what's missing up front.
 
-   ═══ نفس الشاشة لخطوة 11 ═══
+   === Same screen for step 11 ===
 
-   خطوة 11 «تستكمل الملاحظات وتعيد إرسال الطلب» · نفس الجدول ونفس
-   الحقل ونفس القائمة، والفرق إن ملاحظات الإعادة فوق والدفعة
-   محدَّدة سلفًا. شاشة تانية كانت هتبقى نسخة بفرق سطر.
-   ═══════════════════════════════════════════════════════════ */
+   Step 11 - "complete the notes and resubmit the request" - same table, same field, same checklist,
+   with the difference being the return notes appear on top and the payment is preselected. A
+   separate screen would have been a near-duplicate. */
 
-/** المتطلبات اللي الإرسال متوقّف عليها · قاعدة 3 */
+/** The requirements submission depends on - rule 3. */
 const NEEDS = [
   'التقرير المرحلي للفترة السابقة',
   'كشف المستفيدين المسجَّلين',
@@ -69,14 +65,13 @@ export default function RequestForm() {
   const navigate = useNavigate()
   const { values: v, set } = useQueryParams<Params>(KEYS)
 
-  /* وضعان: إنشاء جديد، أو إعادة إرسال طلب معاد (خطوة 11) */
+  /* Two modes: creating new, or resubmitting a returned request (step 11). */
   const resend = id ? payRequestById(id) : undefined
-  /* ⚠️ **رقم طلب غلط ≠ طلب جديد.**
-     كان `payRequestById` بيرجّع `undefined` والشاشة بتكمّل كأنها
-     «طلب صرف جديد» · يعني `/payments/SR-9999/edit` بيفتح فورم
-     فاضية بدل ما يقول إن الطلب مش موجود. والأسوأ إن الصفحة بتفضل
-     **سليمة**: مفيش خطأ في الكونسول ولا نصّ مقصوص، فكل أدوات
-     الفحص بترجع خضرا وهي بتقيس شاشة غلط. */
+  /* Note: a wrong request ID isn't the same as a new request. `payRequestById` used to return
+     `undefined` and the screen carried on as if it were a "new disbursement request" - meaning
+     `/payments/SR-9999/edit` opened an empty form instead of stating the request doesn't exist.
+     Worse, the page stayed looking healthy: no console error and no truncated text, so every check
+     tool returned green while measuring the wrong screen. */
   const missingId = Boolean(id) && !resend
   const projectId = resend?.projectId ?? v.project
   const projects = useMemo(payProjects, [])
@@ -92,8 +87,8 @@ export default function RequestForm() {
   const [sent, setSent] = useState(false)
 
   const value = amount === '' ? (picked?.amount ?? 0) : Number(amount) || 0
-  /* قاعدة 5 · القيمة ما تتجاوزش الدفعة المعتمدة · التحقّق في الحقل
-     نفسه لا بعد الإرسال، فالجهة تعرف قبل ما تضغط */
+  /* Rule 5 - amount can't exceed the approved payment - validated in the field itself, not after
+     submission, so the entity knows before they click. */
   const over = picked ? value > picked.amount : false
   const missing = NEEDS.filter((n) => !done.has(n))
   const canSend = Boolean(picked) && !over && value > 0 && missing.length === 0
@@ -151,8 +146,8 @@ export default function RequestForm() {
             </div>
           </header>
 
-          {/* خطوة 11 · ملاحظات الإعادة فوق، فالجهة تشوف المطلوب
-              قبل ما تفتح الجدول لا بعده */}
+          {/* Step 11 - return notes appear on top, so the entity sees what's required before
+              opening the table, not after. */}
           {resend?.note && (
             <Glass>
               <Head title="ملاحظات المشرف" meta={<Tag tone="warn">مطلوب استكمالها</Tag>} />
@@ -190,7 +185,7 @@ export default function RequestForm() {
               />
             </Glass>
           ) : !project.can ? (
-            /* قاعدة 1 · الشاشة مقفولة والسبب مكتوب، مش مخفية */
+            /* Rule 1 - the screen is locked and the reason is stated, not hidden. */
             <Glass>
               <Empty
                 title="لا يمكن إنشاء طلب صرف لهذا المشروع."
@@ -204,11 +199,11 @@ export default function RequestForm() {
             </Glass>
           ) : (
             <>
-              {/* المدخل التاني في الوثيقة · جدول الدفعات المعتمد */}
+              {/* The spec's second entry point - the approved payment schedule. */}
               <Glass>
                 <Head
                   title="جدول الدفعات المعتمد"
-                  meta={<span className="sub"><Num>{slots.length}</Num> دفعات في الاتفاقية</span>}
+                  meta={<span className="sub"><Num>{slots.length}</Num> {nounAfter(slots.length, NOUN.payment)} في الاتفاقية</span>}
                 />
                 <ul className="payslots">
                   {slots.map((s) => (
@@ -227,13 +222,13 @@ export default function RequestForm() {
               {picked && (picked.state === 'open' || resend) && (
                 <div className="g2">
                   <div className="col">
-                    {/* قاعدة 3 · قائمة تحقّق قبل الإرسال لا رسالة بعده */}
+                    {/* Rule 3 - a checklist before submission, not a message after. */}
                     <Glass>
                       <Head
                         title="متطلبات الإرسال"
                         meta={
                           missing.length
-                            ? <Tag tone="warn"><Num>{missing.length}</Num> ناقص</Tag>
+                            ? <Tag tone="warn"><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
                             : <Tag tone="ok">مكتملة</Tag>
                         }
                       />
@@ -257,7 +252,7 @@ export default function RequestForm() {
                       </p>
                     </Glass>
 
-                    {/* قاعدة 6 · شرط الدفعة معروض جنبها */}
+                    {/* Rule 6 - the payment's condition is shown next to it. */}
                     {picked.condition && (
                       <Glass>
                         <Head
@@ -278,14 +273,11 @@ export default function RequestForm() {
                       <Head title="قيمة الطلب" meta={<span className="sub">قاعدة 5</span>} />
                       <label className="payamt">
                         <span className="lb">المبلغ المطلوب</span>
-                        <input
-                          type="number"
-                          inputMode="numeric"
+                        <MoneyField
                           value={amount === '' ? picked.amount : amount}
-                          onChange={(e) => setAmount(e.target.value)}
-                          aria-label="المبلغ المطلوب"
+                          onChange={setAmount}
+                          label="المبلغ المطلوب"
                         />
-                        <Riyal />
                       </label>
                       <p className={over ? 'bad cnote' : 'sub cnote'}>
                         {over
@@ -313,7 +305,7 @@ export default function RequestForm() {
           )}
         </div>
 
-        {/* الإرسال · خطوة 2 (أو 11 في الإعادة) */}
+        {/* Submit - step 2 (or 11 on resubmission). */}
         {picked && (picked.state === 'open' || resend) && (
           <div className="decdock">
             <div className="chrome decbar payact">
@@ -325,6 +317,7 @@ export default function RequestForm() {
                         الدفعة <b><Num>{picked.no}</Num> من <Num>{picked.of}</Num></b>
                         <span className="decsep" />
                         <Money>{value}</Money>
+                        <DockWhy n={missing.length} />
                       </>}
                 </span>
               </div>
@@ -373,19 +366,19 @@ function SlotRow({
         className="payslot-b"
         onClick={can ? onPick : slot.requestId ? onOpen : undefined}
         disabled={!can && !slot.requestId}
-        /* السبب في `title` مكتوب، مش متروك للّون · اللون بيقول
-           «فيه حاجة» والنصّ بيقول «إيه هي» */
+        /* The reason is written in `title`, not left to color alone - color says "something's
+           wrong" and the text says what. */
         title={say.rule ? `${say.why} · قاعدة ${say.rule}` : say.why}
       >
         <span className="payslot-n">الدفعة <span className="num">{slot.no}</span></span>
         <span className="payslot-a num">{nf.format(slot.amount)}</span>
         <DateText>{slot.dueAt}</DateText>
-        <span className="pc-sp" />
-        {slot.condition && (
-          <span className="sub trim1 payslot-c">{isolate(slot.condition)}</span>
-        )}
+        {/* Note: fixed-width cells - the condition used to float in the row's text after a flexible
+            gap, and a row with no condition had its badge drift; the checkmark now has its own cell
+            even when unselected. */}
+        <span className="sub trim1 payslot-c">{slot.condition ? isolate(slot.condition) : ''}</span>
         <Tag tone={SLOT_TONE[slot.state] ?? 'mute'}>{say.label}</Tag>
-        {picked && <Icon name={icons.check} size="sm" />}
+        <span className="payslot-k">{picked && <Icon name={icons.check} size="sm" />}</span>
       </button>
     </li>
   )

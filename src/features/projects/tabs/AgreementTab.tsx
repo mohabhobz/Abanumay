@@ -3,38 +3,41 @@ import { DateText, Empty, Glass, Head, Icon, Money, Mono, Num, Steps, Tag, icons
 import { ROUTES } from '@/app/routes'
 import { DocFile } from '@/components/docs'
 import type { AgreementDetail, PaymentDetail } from '@/data/mock/detail'
+import { NOUN, countOf } from '@/lib/format'
 
 export interface AgreementTabProps {
   agreement: AgreementDetail | null
   payments: PaymentDetail[]
   entityName: string
-  /** مشروع وصل للمرحلة دي · للحالة الفارغة */
+  /** A project that has reached this stage — for the empty state. */
   example?: { id: string; name: string }
   onOpenExample?: (id: string) => void
   /**
-   * مدخل إعداد الاتفاقية · هـ-4.
+   * Entry point for setting up the agreement.
    *
-   * ⚠️ **ده المدخل الوحيد للبانِي**، ومفيش زرار في ترويسة صندوق
-   * الاتفاقيات · لأن الاتفاقية بتتعمل **لمشروع** لا من الصندوق
-   * (قاعدة 2). والحالة الفاضية هنا كانت بتشرح اللي هيحصل وما
-   * بتدّيش طريقة تعمله.
+   * This is the only entry point to the builder — there's no button in the
+   * agreements panel header, because an agreement is created for a project, not
+   * from the panel. The empty state here used to explain what would happen
+   * without giving a way to actually do it.
    */
   onStart?: () => void
-  /** المشروع مؤهَّل فعلًا · قاعدة 1 · وغير كده السبب بيتقال */
+  /** The project is actually eligible — otherwise the reason is stated. */
   startBlocked?: string
 }
 
 /**
- * اتفاقية المشروع.
+ * Project agreement.
  *
- * في النظام العامل الاتفاقية **مولَّدة من قالب** لا مرفوعة كملف:
- * المشرف يختار القالب، والنظام يعبّي ٢٦ متغيّرًا من ملف المشروع
- * والجهة، ويطلع نصًّا قابلًا للطباعة. والشاشة دي بتوري نفس الشيء
- * ومعاه اللي النظام بيخبّيه: **القالب اللي اتاخد ومنين اتحدد**،
- * و**دورة الاعتماد الرباعية**، و**حلقة الإرجاع** لو الاتفاقية رجعت.
+ * In the current system, an agreement is generated from a template rather
+ * than uploaded as a file: the reviewer picks a template, and the system
+ * fills 26 variables from the project and entity files to produce printable
+ * text. This screen shows the same thing plus what the system otherwise
+ * hides: which template was used and why, the four-step approval cycle, and
+ * the return loop if the agreement was sent back.
  *
- * الاتفاقية الورقية في النظام تابها فاضي (قيمته `-`) · الورقة برّه
- * النظام. فبنقولها صراحة بدل ما نوري شاشة فاضية.
+ * A paper agreement has an empty tab in the system (value "-") — the paper
+ * copy lives outside the system, so we state that explicitly instead of
+ * showing a blank screen.
  */
 export function AgreementTab({
   agreement: A, payments, entityName, example, onOpenExample, onStart, startBlocked,
@@ -44,6 +47,7 @@ export function AgreementTab({
       <Glass>
         <Head title="اتفاقية المشروع" meta="تُفتح بعد الاعتماد النهائي" />
         <Empty
+          art={{ done: 1 }}
           title="لا توجد اتفاقية بعد، فالمشروع لم يصل إلى مرحلة الاعتماد."
           note="عند الوصول إليها يختار المشرف القالب، ويعبّئ النظام بيانات المشروع والجهة، فيُولَّد النص وجدول الدفعات، ثم تمرّ الاتفاقية على مدير المنح والإدارة المالية والمدير التنفيذي، وأخيرًا الجهة."
           actions={
@@ -79,7 +83,7 @@ export function AgreementTab({
         <Head
           title="اتفاقية المشروع"
           meta={<>
-            {/* ك-2 · رقم الاتفاقية له صفحة، فهو رابط لا نصّ */}
+            {/* The agreement number has its own page, so it's a link, not plain text. */}
             <Link className="tlink" to={ROUTES.agreement(A.no)}><Mono>{A.no}</Mono></Link>
             {' · '}{A.kind}
           </>}
@@ -95,9 +99,8 @@ export function AgreementTab({
           <div>
             <div className="lb">القالب المستخدَم</div>
             <div className="agr-tpl">{A.template}</div>
-            {/* القالب مش اختيارًا حرًّا: النظام عنده عشرة، والاسم نفسه
-                بيقول قاعدة الاختيار · مصدر التمويل × حجم المنحة ×
-                الظهور الإعلامي. */}
+            {/* The template isn't a free choice: the system has ten, and the name itself
+                states the selection rule — funding source × grant size × media visibility. */}
             <div className="sub">يُختار آليًا من مصدر التمويل وحجم المنحة والظهور الإعلامي · 10 قوالب</div>
           </div>
           <div>
@@ -108,7 +111,7 @@ export function AgreementTab({
 
         <div className="rowf" style={{ gap: 'var(--sp-3)', marginTop: 'var(--sp-5)' }}>
           <DocFile name="الاتفاقية.pdf" meta={A.no} />
-          {/* ⚠️ كان زرارًا بلا فعل · دلوقتي بيفتح طباعة المتصفح */}
+          {/* Used to be a button with no action — now it opens the browser's print dialog. */}
           <button className="btn btn-2 btn-sm" onClick={() => window.print()}>
             <Icon name={icons.doc} size="sm" />
             اطبع الاتفاقية
@@ -121,8 +124,8 @@ export function AgreementTab({
         <Steps
           items={A.steps.map((s) => ({
             label: s.role,
-            /* `pending` في الداتا = `todo` في المكوّن. الاسمين
-               بيقولوا نفس الحاجة، والمكوّن بيثبّت واحد. */
+            /* `pending` in the data equals `todo` in the component. Both names mean the
+               same thing; the component standardizes on one. */
             state: s.state === 'pending' ? 'todo' : s.state,
             note: s.state === 'now' ? 'بانتظاره الآن' : s.note,
             at: s.at ? <DateText>{s.at}</DateText> : undefined,
@@ -145,7 +148,7 @@ export function AgreementTab({
 
       {payments.length > 0 && (
         <Glass>
-          <Head title="جدول الدفعات في الاتفاقية" meta={`${payments.length} دفعات`} />
+          <Head title="جدول الدفعات في الاتفاقية" meta={`${countOf(payments.length, NOUN.payment)}`} />
           <div style={{ overflowX: 'auto' }}>
             <table className="tbl">
               <thead>
@@ -157,11 +160,11 @@ export function AgreementTab({
                     <td><Num>{p.no}</Num></td>
                     <td className="n"><Money>{p.amount}</Money></td>
                     <td><DateText>{p.date}</DateText></td>
-                    {/* `mut` لا `sub`: الغرض كان **يخفّت** العمود، و`sub`
-                        بتخفّت وبتصغّر. الصغر ما نفعش أصلًا · `.tbl td`
-                        أقوى تحديدًا منها فالمقاس فضل مقاس الجدول · فكان
-                        المطلوب حاصل والمكتوب بيقول حاجة تانية. `mut`
-                        بتقول اللي بيحصل فعلًا: لون بس. */}
+                    {/* `mut`, not `sub`: the intent was to mute the column, and `sub` both mutes
+                        and shrinks. The shrinking never actually applied — `.tbl td` has stronger
+                        specificity, so the size stayed the table's size — so the intended effect
+                        worked while the class name claimed something else. `mut` states what
+                        actually happens: color only. */}
                     <td className="mut">{p.condition}</td>
                   </tr>
                 ))}

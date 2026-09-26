@@ -5,19 +5,23 @@ import { assistFor } from '@/data/mock/assistant'
 
 export interface ModulePlaceholderProps {
   title: string
-  /** اللي هيظهر في الشاشة دي لما تتبني · بيمنع إحساس إن الشاشة ناقصة */
+  /**
+   * What will appear on this screen once it's built — prevents it from
+   * feeling like something's missing.
+   */
   scope: string
-  /** الأرقام الحقيقية من النظام العامل، عشان الحجم يبان من دلوقتي */
+  /** Real figures from the current system, so the scale is visible from the start. */
   facts?: { k: string; v: string }[]
-  /** أول شاشة اتبنت في المشروع، للمقارنة */
+  /** The first screen built in the project, for comparison. */
   demoTo?: { label: string; to: string }
 }
 
 /**
- * شاشة موديول لسه ما اتبنتش.
+ * A module screen not yet built.
  *
- * مش «قريبًا» فاضية: بتقول إيه اللي هيقع هنا وبأي أرقام حقيقية،
- * فالعميل يقيس الحجم، والمطوّر يعرف إيه المطلوب.
+ * Not an empty "coming soon": it states what will go here and with what
+ * real figures, so the client can gauge scale, and the developer knows
+ * what's required.
  */
 export function ModulePlaceholder({ title, scope, facts, demoTo }: ModulePlaceholderProps) {
   const navigate = useNavigate()
@@ -48,7 +52,9 @@ export function ModulePlaceholder({ title, scope, facts, demoTo }: ModulePlaceho
 
           <Glass>
             <Head title="الشاشة قيد البناء" />
+            {/* "Germinating" (animation 3). */}
             <Empty
+              art={{ done: 0, total: 2 }}
               title={`${title}، لم تُبنَ بعد في هذا النموذج.`}
               note={scope}
               actions={

@@ -1,23 +1,56 @@
 /**
- * تحويل حالات النظام إلى درجات لون.
+ * Converts system statuses into color tones.
  *
- * مكان واحد عشان نفس الحالة تاخد نفس اللون في كل شاشة · الكارت
- * والجدول وصفحة المشروع وصفحة الجهة.
+ * One place so the same status gets the same color on every screen —
+ * the card, the table, the project page, and the entity page.
  */
 import type { Tone } from '@/types/domain'
 
-/** مجموعة حالة المشروع الخماسية */
+/**
+ * Status → tone: single source of truth.
+ *
+ * "Stalled" used to be red on `/payments/late` and amber on
+ * `/payments`, and "behind schedule" was red — because every screen
+ * kept its own mapping. Every tone table (`PLAN_TONE`, `CLOSE_TONE`,
+ * `REG_TONE`, `HEAT_TONE`, …) now takes its values from here, and a
+ * check fails if the same status text is ever rendered with two
+ * different tones.
+ *
+ * The rule: delay, stalling, missing, and returned are amber; red is
+ * reserved for rejection and termination only; ongoing review is teal;
+ * completed is green.
+ */
+export const TONE = {
+  draft: 'mute',
+  review: 'teal',
+  active: 'ret',
+  done: 'ok',
+  late: 'warn',
+  stuck: 'warn',
+  missing: 'warn',
+  returned: 'warn',
+  rejected: 'no',
+  expired: 'no',
+} as const satisfies Record<string, Tone>
+
+/**
+ * Action urgency (on time · overdue · stalled) — used in disbursement
+ * and agreement tables and cards.
+ */
+export const HEAT_TONE = { ok: TONE.done, late: TONE.late, stuck: TONE.stuck } as const
+
+/** The project's five-way status group. */
 export const groupTone = (group: string): Tone => {
   switch (group) {
     case 'في الدراسة': return 'ret'
     case 'في التشغيل': return 'brand'
     case 'مكتمل': return 'ok'
-    case 'متعثر': return 'warn'
+    case 'متعثر': return TONE.stuck
     default: return 'no'
   }
 }
 
-/** حالة تفعيل الجهة · أول ما يُقرأ قبل أي قرار */
+/** Entity activation status — the first thing read before any decision. */
 export const activationTone = (activation: string): Tone => {
   switch (activation) {
     case 'مقبول': return 'ok'
@@ -37,9 +70,9 @@ export const governanceTone = (governance: string): Tone => {
   }
 }
 
-/** الساعات في النظام، الأيام في الواجهة */
+/** Hours in the system, days in the interface. */
 export const days = (hours: number): number => Math.round(hours / 24)
 
-/** لون شريط الضغط: أخضر تحت الحد، أصفر قرب منه، أحمر فوقه */
+/** Progress bar color: green below the threshold, yellow near it, red above it. */
 export const pressureColor = (pressure: number): string =>
   pressure > 1 ? 'var(--no)' : pressure > 0.75 ? 'var(--warn)' : 'var(--teal)'

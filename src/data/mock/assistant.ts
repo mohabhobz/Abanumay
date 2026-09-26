@@ -21,23 +21,21 @@ export interface SavedChat {
   pinned?: boolean
 }
 
-// ═══════════════════════════════════════════════════════════
-// مساعد أبانمي · الداتا كلها هنا
+// Abanumay assistant · all the data lives here
 //
-// ملاحظة مهمة قبل العرض على العميل:
-// شاشة المساعد دي **مش موجودة في الـSOW**. الوثيقة بتوصّف الذكاء
-// الاصطناعي كتحليل جوّه كل إجراء، مش كمحادثة. فدي أكبر بند تصميمي
-// وأقل بند سندًا، ولازم تتعرض على مظفر كمقترح صريح.
+// Important note before showing the client:
+// This assistant screen **isn't in the SOW**. The document describes AI as analysis inside each
+// procedure, not as a conversation. So this is the biggest design addition and the least backed by
+// the document, and it needs to be presented explicitly as a proposal.
 //
-// وقاعدتان من الوثيقة محكومين في التصميم:
-//  1 · مخرجات AI مساندة وغير مُلزِمة، ولا تمنح صلاحية اعتماد.
-//      (فكل إجابة فيها قرار بتتعلّم «توصية» في الواجهة)
-//  2 · الجهة المستفيدة والمستشار الخارجي **لا يرون المساعد**،
-//      فمفيش أدوار خارجية هنا.
-// ═══════════════════════════════════════════════════════════
+// And two rules from the document are enforced in the design:
+//  1 · AI output is supporting and non-binding, and grants no approval authority.
+//      (so any answer containing a decision is labeled "recommendation" in the UI)
+//  2 · the beneficiary entity and the external advisor **do not see the assistant**,
+//      so there are no external roles here.
 
-/* ═══ الأدوار ═══
-   كل دور بيشوف كروت مختلفة، لأن السؤال اللي في دماغه مختلف. */
+/* Roles
+   Each role sees different cards, because the question on their mind is different. */
 export const roles: AssistantRole[] = [
   {
     key: 'supervisor',
@@ -211,9 +209,9 @@ export const roles: AssistantRole[] = [
   },
 ]
 
-/* ═══ المحادثات المحفوظة ═══
-   العميل قال بالنص: «أنا امبارح دورت على كذا، عايز أثبته معايا»
-   فالتثبيت مش زينة، هو ردّ على طلب صريح. */
+/* Saved conversations
+   The client said it in these words: "yesterday I looked something up, I want it kept for me" — so
+   saving isn't decoration, it's a response to an explicit request. */
 export const savedChats: SavedChat[] = [
   { id: 'c1', title: 'تأخر مشروع 20940', snippet: '2,092 ساعة مقابل حدّ 900…', at: 'اليوم 11:40', group: 'مثبّتة', pinned: true },
   { id: 'c2', title: 'حدود الاعتماد للمبالغ فوق 250 ألف', snippet: 'يُرفع المسار إلى المدير التنفيذي…', at: 'أمس', group: 'مثبّتة', pinned: true },
@@ -225,11 +223,11 @@ export const savedChats: SavedChat[] = [
   { id: 'c8', title: 'شرح المناقلة والتعزيز', snippet: 'الفرق أن التعزيز يزيد مخصص البند…', at: 'السبت', group: 'آخر 7 أيام' },
 ]
 
-/* ═══ اللوح الجانبي · بيتغيّر حسب الصفحة اللي اتفتح منها ═══
-   اللوح بيفتح بنفس حالة الشاشة الكاملة بالظبط · شرارة وترحيب وسؤال
-   ومربع كتابة وكروت. اللي بيتغيّر هنا حاجة واحدة: **الكلام اللي
-   بيقول هيدوّر فين**. `scope` هو السطر ده، والكروت اختصارات لأسئلة
-   جوّه نفس المدى، وكل كارت تحته سطر بيقول نتيجته لا إعادة صياغته. */
+/* Side panel · changes depending on the page it's opened from
+   The panel opens in exactly the same state as the full screen — a spark, a greeting, a question,
+   an input box, and cards. The one thing that changes here is **what it says it will search**.
+   `scope` is that line, and the cards are shortcuts to questions within the same scope, with a line
+   under each card stating its result rather than rephrasing it. */
 export const assistFor = {
   project: (p: { id: string; name: string; entity: string }): AssistantContext => ({
     title: p.name,
@@ -255,8 +253,8 @@ export const assistFor = {
         prompt: 'ما الناقص في الطلب؟',
       },
       {
-        /* الاسم في السطر التحتاني لا في العنوان: أسماء الجهات بتوصل
-           لأربع كلمات، فالعنوان كان بيلفّ سطرين ويكسر صفّ الكروت. */
+        /* The name sits on the line below, not in the title: entity names run up to four words, and
+           the title used to wrap two lines and break the card row. */
         icon: 'entity',
         title: 'سجل الجهة',
         sub: p.entity,
@@ -321,8 +319,8 @@ export const assistFor = {
     ],
   }),
   /**
-   * اليوم · أول شاشة المستخدم بيشوفها، فسطر المدى بيقول رقمين
-   * بس: كام مستني قرارك وكام متأخر. الباقي أسئلة جاهزة.
+   * Today · the first screen the user sees, so the scope line gives just two numbers: how many are
+   * waiting on your decision and how many are overdue. The rest are ready-made questions.
    */
   home: (name: string, waiting: number, late: number): AssistantContext => ({
     title: 'اليوم',
@@ -360,9 +358,8 @@ export const assistFor = {
     ],
   }),
   /**
-   * قائمة المشاريع · الاختصارات بتتكلم عن **الشريحة** لا عن مشروع
-   * واحد: المستخدم واقف قدام ثلاثين صفًّا، وسؤاله «مين فيهم يستاهل
-   * وقتي دلوقتي؟».
+   * Project list · shortcuts talk about **the batch**, not a single project: the user is looking at
+   * thirty rows and asking "which of these is worth my time right now?"
    */
   projects: (): AssistantContext => ({
     title: 'المشاريع',
@@ -395,7 +392,7 @@ export const assistFor = {
       },
     ],
   }),
-  /** قائمة الجهات · نفس المنطق: السؤال عن الملف لا عن جهة بعينها */
+  /** Entity list · same logic: the question is about the portfolio, not one specific entity */
   entities: (): AssistantContext => ({
     title: 'الجهات',
     sub: 'القائمة',
@@ -427,7 +424,7 @@ export const assistFor = {
       },
     ],
   }),
-  /* أي صفحة تانية: العنوان اسمها، والاختصارات عامة */
+  /* Any other page: the title is its name, and the shortcuts are generic */
   page: (title: string, sub = ''): AssistantContext => ({
     title,
     sub,
@@ -461,11 +458,11 @@ export const assistFor = {
   }),
 }
 
-/* ═══ الردود ═══
-   كل ردّ: خطوات تفكير حقيقية (مش زينة · بتقول للمستخدم إيه
-   المصادر اللي اتفتحت)، نص، بلوك أدلة، مصادر، ومتابعات. */
+/* Responses
+   Every response has: real thinking steps (not decoration — they tell the user which sources were
+   opened), text, an evidence block, sources, and follow-ups. */
 interface ScriptedAnswer extends AssistantAnswer {
-  /** الكلمات اللي بتطابق السؤال · الترتيب مهم، الأخص الأول */
+  /** Keywords that match the question · order matters, most specific first */
   match: string[]
 }
 
@@ -717,7 +714,7 @@ const fallback: AssistantAnswer = {
   follow: ['لخّص لي مشروع 20940', 'ما رصيد بند العلم الشرعي؟', 'ما المتأخر في اليوم؟'],
 }
 
-/** بيرجّع أقرب إجابة مُعدّة للسؤال، أو ردًّا صريحًا إنه مش عارف */
+/** Returns the closest prepared answer to the question, or an explicit "I don't know" response */
 export function respond(text: string): AssistantAnswer {
   const question = String(text ?? '')
   const hit = answers.find((a) => a.match.some((m) => question.includes(m)))

@@ -1,4 +1,5 @@
 import type { Reading } from '@/components/assistant/reading'
+import { NOUN, countOf, nounAfter, pct, readDate } from '@/lib/format'
 import {
   ACTIVITY_SAY, TODAY, lateActivities, phaseDone, planClaimed, planDone, planIssues,
   planPlanned, planSpi, readyToClose, spiSay, waitingReview,
@@ -6,24 +7,22 @@ import {
 import { projectById } from '@/data/mock/projects'
 import type { PlanRow } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   قراءة خطة واحدة · نفس وحدة المساعد في السيستم كله
+/* A single plan's reading - same assistant unit used across the whole system.
 
-   ⚠️ **الترتيب: اللي بيمنع، بعده اللي بيتأخّر، بعده اللي بيطمّن.**
-   الكارت المقفول بيعرض `readings[0]` لمحةً · فلو التطمين فوق،
-   المشرف بيقرا «ماشية» ويقفل وعنده خمس أنشطة مستنّية قبوله.
+   Note: order - what blocks first, then what's late, then what reassures. The closed card shows
+   `readings[0]` as a preview - if reassurance came first, the supervisor would read "on track" and
+   close it while five activities sit awaiting their acceptance.
 
-   ⚠️ **وكل قراءة معاها طريق يوصّل لها.** القراءة اللي بتقول
-   «نشاطان مستنّيان» ومحدش عارف فين، بتبقى لافتة لا أداة · فالقراءة
-   هنا بتودّي **للنشاط نفسه** في الشجرة.
-   ═══════════════════════════════════════════════════════════ */
+   Note: every reading carries a path to where it points. A reading saying "two activities pending"
+   with no way to find them is a sign, not a tool - so the reading here links to the activity itself
+   in the tree. */
 
 export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading[] {
   const out: Reading[] = []
   const live = p.stage === 'active' || p.stage === 'done'
   const grant = projectById(p.projectId)?.amountGranted ?? 0
 
-  /* ١ · قبل الاعتماد · اللي بيمنع الإرسال */
+  /* 1. Before approval - what blocks submission. */
   if (!live) {
     const issues = planIssues(p, grant)
     if (issues.length > 0) {
@@ -49,7 +48,7 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
     return out
   }
 
-  /* ٢ · الطابور · وده اللي بيوقّف نسبة إنجاز حقيقية */
+  /* 2. The queue - what actually holds back a real completion percentage. */
   const queue = waitingReview(p)
   if (queue.length > 0) {
     const gap = planClaimed(p) - planDone(p)
@@ -57,9 +56,9 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
       id: 'pl-queue',
       kind: 'flag',
       label: 'بانتظار مراجعتك',
-      metric: { value: String(queue.length), unit: 'نشاطًا' },
+      metric: { value: String(queue.length), unit: nounAfter(queue.length, NOUN.activity) },
       text:
-        `أعلنت الجهة ${planClaimed(p)}٪ والمقبول ${planDone(p)}٪ · `
+        `أعلنت الجهة ${pct(planClaimed(p))} والمقبول ${pct(planDone(p))} · `
         + `${gap} نقطة لا تُحتسب حتى تُراجَع الشواهد.`,
       bold: [`${gap} نقطة`],
       src: 'قاعدة 14 · النشاط لا يُحتسب إنجازًا قبل قبول المشرف',
@@ -67,7 +66,7 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
     })
   }
 
-  /* ٣ · المتأخّر · مقاسًا على النسخة المرجعية */
+  /* 3. Late - measured against the baseline. */
   const late = lateActivities(p, TODAY)
   if (late.length > 0) {
     const worst = [...late].sort((a, b) => a.to.localeCompare(b.to))[0]
@@ -78,19 +77,19 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
       id: 'pl-late',
       kind: 'flag',
       label: 'تجاوز موعده',
-      metric: { value: String(late.length), unit: 'نشاطًا' },
+      metric: { value: String(late.length), unit: nounAfter(late.length, NOUN.activity) },
       text:
-        `أقدمها «${worst.name}» متأخّر ${days} يومًا عن ${worst.to}، وحالته `
+        `أقدمها «${worst.name}» متأخّر ${countOf(days, NOUN.day)} عن ${readDate(worst.to)}، وحالته `
         + `«${ACTIVITY_SAY[worst.state]}».`,
-      danger: [`${days} يومًا`],
-      /* ⚠️ المرجع هو النسخة المرجعية لا التواريخ الحالية · قاعدة 21
-         بتخلّي أي تمديد يعدّي باعتماد، فالتأخير له سند ثابت */
+      danger: [countOf(days, NOUN.day)],
+      /* Note: the reference is the baseline, not the current dates - rule 21 requires any extension
+         to go through approval, so a delay has a fixed anchor. */
       src: `مقاسة على النسخة المرجعية V${p.baseline}`,
       actions: [{ label: `افتح «${worst.name}»`, onClick: () => goTo(worst.id) }],
     })
   }
 
-  /* ٤ · أداء الجدول · بطرفيه لا لوحده */
+  /* 4. Schedule performance - with both reference points, not alone. */
   const spi = planSpi(p)
   const say = spiSay(spi)
   if (spi !== null) {
@@ -100,35 +99,35 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
       label: 'أداء الجدول',
       metric: { value: spi.toFixed(2), unit: say.say },
       text:
-        `المقبول ${planDone(p)}٪ والمخطَّط لليوم ${planPlanned(p)}٪ · `
+        `المقبول ${pct(planDone(p))} والمخطَّط لليوم ${pct(planPlanned(p))} · `
         + 'القيمة 1 تعني أن الخطة تسير وفق جدولها المعتمد تمامًا.',
       bar: {
         value: planDone(p),
         limit: planPlanned(p),
         valueLabel: 'المقبول',
         limitLabel: 'المخطَّط لليوم',
-        unit: '٪',
+        unit: '%',
       },
       src: 'مؤشر SPI مشتق من BPD-012 · لم تحدّد الوثيقة قيمة مستهدفة',
     })
   }
 
-  /* ٥ · المرحلة اللي فيها الشغل دلوقتي */
+  /* 5. The phase currently active. */
   const busy = p.phases.find((ph) => phaseDone(ph) < 100)
   if (busy) {
     out.push({
       id: 'pl-phase',
       kind: 'note',
       label: 'المرحلة الجارية',
-      metric: { value: `${phaseDone(busy)}٪`, unit: busy.name },
+      metric: { value: `${pct(phaseDone(busy))}`, unit: busy.name },
       text:
         `${busy.activities.filter((a) => a.state === 'accepted').length} من `
-        + `${busy.activities.length} أنشطة مقبولة · المرحلة تنتهي ${busy.to}.`,
+        + `${busy.activities.length} أنشطة مقبولة · المرحلة تنتهي ${readDate(busy.to)}.`,
       src: 'النسبة من الأنشطة المقبولة وحدها',
     })
   }
 
-  /* ٦ · مؤهَّل للإغلاق · مانع اترفع */
+  /* 6. Eligible for closing - a blocker was resolved. */
   if (readyToClose(p)) {
     out.push({
       id: 'pl-close',

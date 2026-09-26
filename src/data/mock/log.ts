@@ -3,26 +3,21 @@ import { nf } from '@/lib/format'
 import type { AgreementDetail, PaymentDetail, ProjectDetail } from './detail'
 
 /**
- * سجل المشروع · الدورة كاملة، مولَّدة من حالة المشروع.
+ * Project history log · the full lifecycle, generated from project status.
  *
- * **الاكتشاف اللي بنى الملف ده:** قيد السجل في النظام العامل مش
- * موحَّد. كل نوع إجراء له **حقوله**: «دراسة المشروع» فيه ٣٧ حقلًا
- * (عشرين معيار وزن وسبع إجابات نعم/لا وتوصية نصية طويلة)، و«صرف
- * الدفعة» فيه تلاتة، و«توصية» فيه واحد. فالسجل مش تايم لاين نصوص ·
- * ده **سجل أحداث لكل حدث حمولته**.
+ * What shaped this file: entry records in the live system aren't uniform. Each action type has its
+ * own fields: "project review" has 37 fields (twenty weighted criteria, seven yes/no answers, and a
+ * long text recommendation), "payment disbursement" has three, and a "recommendation" has one. So
+ * the log isn't a text timeline — it's an event log where each event carries its own payload.
  *
- * والفاعل نوعه بيفرق: موظف، ولا الجهة نفسها (بترفع السندات والتقارير
- * وبتقبل الاتفاقية)، ولا كيان جماعي («اللجنة التنفيذية» · «لجنة
- * المنح»)، ولا النظام (القيود اللي مالهاش «بواسطة»). أربعة أنواع
- * لازم يتفرّقوا بصريًا.
+ * The actor's type matters too: staff, the entity itself (which uploads receipts and reports and
+ * accepts the agreement), a collective body ("executive committee", "grants committee"), or the
+ * system (entries with no "by"). These four types need to be visually distinguished.
  *
- * والمتابعات **بتيجي جوّه نفس التايم لاين** مرتّبة بالتاريخ بين
- * إجراءات العمل · مش تاب منفصل. ده اللي النظام بيعمله فعلًا.
+ * Follow-ups appear inside the same timeline, ordered by date among the work actions — not a
+ * separate tab. That's what the system actually does.
  *
- * المصدر: `12940` · `20191` · `12935` · `14982` · راجع
- * `Abanumay_Project_Tabs_Data.md`.
- *
- * ⚠️ نموذج. مكانه في الإنتاج `GET /projects/:id/log`.
+ * This is a mock; in production it lives at GET /projects/:id/log.
  */
 
 export type ActorKind = 'staff' | 'entity' | 'committee' | 'system'
@@ -30,33 +25,33 @@ export type ActorKind = 'staff' | 'entity' | 'committee' | 'system'
 export interface LogField {
   k: string
   v: string
-  /** قيمة قرار لا تفصيلة · بتتبرز */
+  /** A decision's value, not a detail · gets highlighted */
   strong?: boolean
 }
 
 export interface LogEvent {
   id: string
-  /** «طلب استكمال» · بالظبط زي ما النظام بيسمّيه */
+  /** "Request for completion" · named exactly as the system calls it */
   action: string
   dept: string
   by: string
   actor: ActorKind
   at: string
   time: string
-  /** المدة في القسم قبل الإجراء ده */
+  /** Duration spent in the department before this action */
   days: number
   hours: number
   limit: number
   fields: LogField[]
   files?: string[]
   tone: Tone
-  /** متابعة لا إجراء · نفس التايم لاين، وسم مختلف */
+  /** A follow-up, not an action · same timeline, different tag */
   followUp?: string
 }
 
 const LIMIT = 900
 
-/** الحدّ ٩٠٠ ساعة ثابت على كل الأقسام في كل قيد قرأناه */
+/** The 900-hour threshold is fixed across every department in every entry observed */
 const HH = ['08:12', '09:17', '10:04', '11:35', '13:11', '14:29', '15:52', '16:18']
 
 export interface LogInput {
@@ -65,7 +60,7 @@ export interface LogInput {
   detail: Pick<ProjectDetail, 'payments' | 'followUps' | 'agreement'>
 }
 
-/** باني السجل: بيضيف بالترتيب الزمني الصاعد وبيقلبه في الآخر */
+/** History builder: appends in ascending chronological order, then reverses it at the end */
 class Builder {
   private out: LogEvent[] = []
   private day = 0
@@ -77,7 +72,8 @@ class Builder {
     const x = new Date(this.start)
     x.setDate(x.getDate() + this.day)
     return {
-      at: `${x.getDate()}/${x.getMonth() + 1}/${x.getFullYear()}`,
+      /* ISO format · rendered via `<DateText>` */
+      at: `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`,
       time: HH[this.i % HH.length],
     }
   }
@@ -98,7 +94,7 @@ class Builder {
     })
   }
 
-  /** الأحدث أولًا، زي النظام */
+  /** Most recent first, matching the system */
   done() {
     return [...this.out].reverse()
   }
@@ -131,8 +127,8 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
   const grant = row.amountGranted || row.amountRequested
   const media = row.impact || grant >= 500_000
 
-  /* ٠ · التحويل · ربع النظام بلا مالك، والتحويل بين الباحثين شائع.
-     القيد ده بيحمل إعادة تصنيف كاملة زي ما شفناه في النظام. */
+  /* 0 · Transfer · a quarter of the system has no owner, and transfers between reviewers are
+     common. This entry carries a full reclassification, as seen in the system. */
   if (row.owner) {
     b.add({
       after: 0,
@@ -152,7 +148,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     })
   }
 
-  /* ١ · الدراسة عند المشرف · أضخم قيد في النظام */
+  /* 1 · Review by the officer · the largest entry in the system */
   b.add({
     after: 2,
     action: 'دراسة المشروع',
@@ -185,7 +181,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     ],
   })
 
-  /* ٢ · مسار الاعتذار · خمسة قيود وخلاص */
+  /* 2 · Excused path · five entries and done */
   if (row.statusGroup === 'معتذر عنه') {
     b.add({
       after: 3, action: 'معتذر عنه', dept: 'اعتماد دراسة المشروع', by: manager,
@@ -213,8 +209,8 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     return merge(b.done(), detail.followUps)
   }
 
-  /* ٢ب · طلب الاستكمال · الوحيد اللي سببه نص حرّ في النظام، بينما
-     الاعتذار ورفض الحساب البنكي أسبابهم مقنّنة. */
+  /* 2b · Completion request · the only one with a free-text reason in the system; excusal and bank
+     rejection reasons are both standardized. */
   if (row.stage === 'استكمال بيانات المشروع' || row.hoursInStage > row.stageLimit) {
     b.add({
       after: 4,
@@ -230,7 +226,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     })
   }
 
-  /* ٣ · الاعتماد */
+  /* 3 · Approval */
   if (!got(row, 'اعتماد الإتفاقية') && row.stage !== 'دراسة المشروع') {
     b.add({
       after: 7, action: 'إرجاع المشروع للباحث', dept: 'اعتماد دراسة المشروع', by: manager,
@@ -279,10 +275,10 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     agreementEvents(b, row, detail.agreement, entityName, owner, manager, director, finance, grant, media)
   }
 
-  /* ٤ · الصرف · دورة رباعية لكل دفعة */
+  /* 4 · Disbursement · a four-step cycle per payment */
   detail.payments.forEach((p) => paymentEvents(b, p, entityName, owner, finance))
 
-  /* ٥ · التقارير */
+  /* 5 · Reports */
   if (row.hasInterimReport) {
     b.add({
       after: 40, action: 'طلب تقرير مرحلي', dept: 'طلب تقرير مرحلي', by: owner,
@@ -306,8 +302,8 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
       actor: 'staff', tone: 'ret',
       fields: [{ k: 'ملاحظات', v: 'يرجى رفع التقرير الختامي.' }],
     })
-    /* أهم قيد بعد الدراسة: **المخطط مقابل الفعلي**. ده اللي التقييم
-       بعده بيتحسب عليه، وهو مدفون في النظام جوّه قيد في السجل. */
+    /* The most important entry after review: **planned vs. actual**. The later evaluation is
+       calculated from this, and it's buried inside one history entry. */
     const realBenef = Math.round(row.beneficiaries * 0.72)
     b.add({
       after: 26, action: 'رفع التقرير الختامي', dept: 'رفع التقرير الختامي', by: entityName,
@@ -338,7 +334,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     })
   }
 
-  /* ٦ · التقييم والإغلاق */
+  /* 6 · Evaluation and closure */
   if (row.statusGroup === 'مكتمل' || row.stage === 'تقييم المشروع') {
     b.add({
       after: 27, action: 'تقييم المشروع', dept: 'تقييم المشروع', by: owner,
@@ -372,7 +368,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
   return merge(b.done(), detail.followUps)
 }
 
-/* ═══ الاتفاقية: توليد ← إرجاع ← ثلاث اعتمادات ← قبول الجهة ═══ */
+/* Agreement: generation → return → three approvals → entity acceptance */
 function agreementEvents(
   b: Builder, row: ProjectRow, A: AgreementDetail | null, entityName: string,
   owner: string, manager: string, director: string, finance: string,
@@ -433,7 +429,7 @@ function agreementEvents(
   })
 }
 
-/* ═══ الدفعة: إذن ← صرف ← سند ← قبول ═══ */
+/* Payment: authorization → disbursement → receipt → acceptance */
 function paymentEvents(
   b: Builder, p: PaymentDetail, entityName: string, owner: string, finance: string,
 ) {
@@ -472,11 +468,8 @@ function paymentEvents(
   })
 }
 
-/* ═══ دمج المتابعات في نفس التايم لاين ═══ */
-const ts = (date: string) => {
-  const [d, m, y] = date.split('/').map(Number)
-  return new Date(y, m - 1, d).getTime()
-}
+/* Merging follow-ups into the same timeline */
+const ts = (date: string) => new Date(date).getTime()
 
 function merge(events: LogEvent[], follows: ProjectDetail['followUps']): LogEvent[] {
   const asEvents: LogEvent[] = follows.map((f, i) => ({

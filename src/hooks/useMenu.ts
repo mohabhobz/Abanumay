@@ -1,36 +1,42 @@
 import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react'
 
 /**
- * سلوك القائمة المنسدلة · **مكتوب مرة واحدة**.
+ * Dropdown menu behavior — written once.
  *
- * كان مكرّرًا **ستّ مرات** في السيستم: `Select` و`MultiSelect`
- * و`PageSize` و`SavedViews` ومنتقي الأعمدة وقائمة الحساب. ولمّا
- * الحاجة تتكتب ستّ مرات، بتفرق:
+ * It used to be duplicated six times across the system: `Select`,
+ * `MultiSelect`, `PageSize`, `SavedViews`, the column picker, and the
+ * account menu. When something gets written six times, it drifts:
  *
- *   · خمسة كانوا بيسمعوا `pointerdown` وواحد `mousedown` · يعني
- *     قايمة التصدير ما بتقفلش باللمس على التابلت وهي بتقفل بالماوس
- *   · خمسة على `document` وواحد على `window`
+ * - Five listened for `pointerdown` and one for `mousedown` — meaning
+ * the export menu wouldn't close on tablet touch while it closed with a mouse.
+ * - Five listened on `document` and one on `window`.
  *
- * والفرق ده **مش قرار** · هو أثر إن الكود اتنسخ في ستّ لحظات
- * مختلفة. الهوك ده بيقفل الباب: القفل بالضغط برّه أو بـEsc، بنفس
- * الحدث وعلى نفس الهدف، في كل مكان.
+ * That difference wasn't a decision — it's the result of the code being
+ * copied at six different moments. This hook closes that gap: closing on
+ * an outside click or Escape, with the same event and the same target,
+ * everywhere.
  *
- * `pointerdown` لا `click`: الضغطة اللي بتقفل القايمة ما تنفعش
- * تعدّي لعنصر تحتها وتعمل فعل تاني.
+ * `pointerdown`, not `click`: the click that closes the menu shouldn't
+ * also pass through to whatever's underneath and trigger another action.
  *
- * ⚠️ **وقايمة المحادثات كانت السابع اللي برّه الهوك.** مش لأنها
- * مختلفة في السلوك، هي مختلفة في **الحالة**: مش «مفتوحة/مقفولة»
- * لكن «مفتوحة على أنهي صفّ». فالسطر اللي بيقفل بالضغط برّه اتنسي،
- * والقايمة فضلت مفتوحة لحد ما المستخدم يدوس على الزرار تاني.
- * `useMenuOf` تحت بيدّي نفس السلوك لحالة بمعرّف بدل بوليان.
+ * The conversations menu was the seventh case, left outside this hook —
+ * not because its behavior differs, but because its state does: it
+ * isn't "open/closed" but "open on which row." The line that closes it
+ * on an outside click was missed, and the menu stayed open until the
+ * user clicked its button again. `useMenuOf` below provides the same
+ * behavior for state keyed by an id instead of a boolean.
  */
 
-/** الاستماع المشترك · اللي الاتنين مبنيين عليه، فما يفرقوش */
-function useAway(active: boolean, box: RefObject<HTMLElement | null>, close: () => void) {
+/** Shared listening logic — what both are built on, so they don't drift apart. */
+function useAway(active: boolean, box: RefObject<HTMLElement | null>, close: () => void, pop?: RefObject<HTMLElement | null>) {
   useEffect(() => {
     if (!active) return
+    /* `pop` = a panel portaled into `body` (`useFloat`) — outside `box` in
+       the DOM, so it must be treated as "inside," or the first click on it
+       would close it. */
     const away = (e: PointerEvent) => {
-      if (!box.current?.contains(e.target as Node)) close()
+      const t = e.target as Node
+      if (!box.current?.contains(t) && !pop?.current?.contains(t)) close()
     }
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
     document.addEventListener('pointerdown', away)
@@ -45,21 +51,23 @@ function useAway(active: boolean, box: RefObject<HTMLElement | null>, close: () 
 export function useMenu<T extends HTMLElement>(): {
   open: boolean
   setOpen: Dispatch<SetStateAction<boolean>>
-  /** يتحطّ على الحاوية اللي جوّاها الزرار **واللوحة** مع بعض */
+  /** Placed on the container that holds both the button and the panel together. */
   box: RefObject<T | null>
+  /** The panel, if portaled outside `box` (`useFloat`). */
+  pop: RefObject<HTMLDivElement | null>
 } {
   const [open, setOpen] = useState(false)
   const box = useRef<T>(null)
-  useAway(open, box, () => setOpen(false))
-  return { open, setOpen, box }
+  const pop = useRef<HTMLDivElement>(null)
+  useAway(open, box, () => setOpen(false), pop)
+  return { open, setOpen, box, pop }
 }
 
 /**
- * نفس السلوك لقايمة واحدة من كتير · الحالة معرّف الصفّ المفتوح.
- *
- * `box` بيتحطّ على **الصفّ** اللي قايمته مفتوحة، مش على الليست
- * كلها · غير كده الضغط على صفّ تاني ما بيقفلش قايمة الأول لأنه
- * جوّه نفس الحاوية.
+ * The same behavior for one menu among many — state is the id of the
+ * open row. `box` is placed on the row whose menu is open, not on the
+ * whole list — otherwise clicking a different row wouldn't close the
+ * first one's menu, since both are inside the same container.
  */
 export function useMenuOf<T extends HTMLElement>(): {
   id: string | null

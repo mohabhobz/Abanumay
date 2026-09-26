@@ -7,43 +7,42 @@ import { useDockHeight } from '@/hooks/useDockHeight'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { savedChats, type SavedChat } from '@/data/mock/assistant'
 import { ChatList } from './ChatList'
+import { AbLeaf } from '@/components/soul'
 
 export interface AssistantScreenProps {
-  /** اسم الترويسة قبل ما المحادثة تبدأ (النافذة: «مساعد أبانمي») */
+  /** Header title before a conversation starts (dialog name: "Abanumay assistant"). */
   label?: string
-  /** الترحيب الشخصي · «أهلًا عمر» · ثابت في كل مكان */
+  /** Personal welcome - constant everywhere. */
   greet: string
-  /** سطر المدى · **ده وحده اللي بيتغيّر حسب الصفحة** */
+  /** Scope line - the only part that changes per page. */
   sub: string
   cards: WelcomeCard[]
   onClose: () => void
-  /** زرار زيادة في الترويسة (مبدّل المقاس لمّا الشاشة بتتفتح فوق صفحة) */
+  /** Expand button in the header (resize toggle when the screen opens over a page). */
   headExtra?: ReactNode
-  /** المؤشر يبدأ جاهز في مربع الكتابة */
+  /** Cursor starts ready in the input box. */
   focusOnMount?: boolean
-  /** بيتصفّر لمّا تتفتح من جديد · مفتاح React لا حالة داخلية */
+  /** Resets on reopening - a React key, not internal state. */
   labelledBy?: string
-  /** الشريط مطويّ من أول ما يفتح · بييجي من الرابط في صفحة المساعد */
+  /** Sidebar starts collapsed - comes from the URL on the assistant page. */
   listShut?: boolean
   onListShut?: (shut: boolean) => void
 }
 
 /**
- * شاشة مساعد أبانمي · **جسم واحد، بيتعرض في مكانين**.
+ * The Abanumay assistant screen - one body, rendered in two places.
  *
- * كان في السيستم **نسختان** من نفس المساعد: صفحة `/assistant`
- * بقايمة محادثات وترحيب كبير وكروت، ولوح جانبي بيفتح من أي صفحة
- * بترويسة تانية وبلا قايمة محادثات. فاللي بيدوس «اسأل أبانمي» من
- * صفحة المشروع كان بيدخل حاجة تانية · محادثاته مش معاه، والشكل
- * مش اللي شافه أول ما دخل النظام.
+ * There used to be two versions of the same assistant: the `/assistant` page with a chat list, a
+ * large welcome, and cards, and a side panel opening from any page with a different header and no
+ * chat list. So clicking "Ask Abanumay" from a project page opened something else entirely - no
+ * saved conversations, and a layout unlike the one seen on first login.
  *
- * دلوقتي المكوّن ده هو المساعد، والمكانان بيفرّقوا في حاجة واحدة:
- * **الإطار اللي حواليه**. صفحة كاملة، أو لوح فوق الصفحة اللي أنت
- * فيها. وجوّه الاتنين: نفس القايمة، نفس الترويسة، نفس الترحيب،
- * نفس مربع الكتابة، نفس الكروت.
+ * Now this component is the assistant, and the two places differ in one thing only: the frame
+ * around it. A full page, or a panel over whatever page you're on. Inside both: the same list,
+ * header, welcome, input, and cards.
  *
- * واللي بيتغيّر حسب الصفحة **الكونتنت وحده**: سطر المدى («كيف
- * أقدر أساعدك في «س»؟») والكروت الأربعة. مفيش تشكيل خاص بمكان.
+ * What changes per page is content only: the scope line ("How can I help with <x>?") and the four
+ * cards. No layout is specific to a place.
  */
 export function AssistantScreen({
   label, greet, sub, cards, onClose, headExtra, focusOnMount, labelledBy,
@@ -56,11 +55,11 @@ export function AssistantScreen({
   const [openChat, setOpenChat] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [listOpen, setListOpen] = useState(false)
-  /* ⚠️ الطيّ في **الرابط** لمّا الشاشة صفحة كاملة · لو فضل ستيت
-     جوّه الكومبوننت، الجرد عمره ما هيرسم الشريط مطويًّا · نفس عمى
-     مراحل فورم التسجيل وكارت نوع الشراكة. واللوح اللي بيفتح فوق
-     صفحة تانية مالوش رابط، فبيرجع للستيت. */
-  /* مقفولة افتراضيًا · نفس قرار الصفحة الكاملة (شوف `AssistantPage`) */
+  /* Note: collapse state lives in the URL when the screen is a full page - if it stayed as
+     component state, the inventory would never render the sidebar collapsed, the same blind spot
+     fixed elsewhere for signup steps and the partnership-type card. A panel opening over another
+     page has no URL, so it falls back to state. */
+  /* Closed by default - same decision as the full page (see `AssistantPage`). */
   const [shutLocal, setShutLocal] = useState(true)
   const shut = listShut ?? shutLocal
   const setShut = (x: boolean) => (onListShut ? onListShut(x) : setShutLocal(x))
@@ -69,13 +68,13 @@ export function AssistantScreen({
   const col = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLTextAreaElement | null>(null)
 
-  /* المسافة تحت آخر رسالة = ارتفاع مربع الكتابة الحقيقي، مقيسًا */
+  /* Spacing below the last message equals the input box's real, measured height. */
   useDockHeight(col)
 
-  /* ⚠️ **الرد بيتقري من أوله.** قبل كده التمرير كان لازق في آخر
-     المحادثة، فالرد الطويل بيبان من ذيله وأوله مستخبي تحت الترويسة.
-     دلوقتي كل سؤال جديد بيطلع لأول المساحة والرد بيكمّل تحته، ومفيش
-     تمرير تلقائي بعد كده · اللي عايز الآخر عنده زرار «لآخر المحادثة». */
+  /* Note: the answer is read from the top. Scroll used to stick to the bottom of the conversation,
+     so a long answer showed its tail with the start hidden under the header. Now every new question
+     jumps to the top of the space and the answer continues below it, with no auto-scroll after that
+     - anyone who wants the end has a "jump to latest" button. */
   const [atEnd, setAtEnd] = useState(true)
   useEffect(() => {
     const el = body.current
@@ -100,11 +99,10 @@ export function AssistantScreen({
   }, [asks])
   const toEnd = () => body.current?.scrollTo({ top: body.current.scrollHeight, behavior: 'smooth' })
 
-  /* ⚠️ **المحادثة الجديدة بتنزل في القايمة باسمها** (أ-5).
-     قبل كده أول سؤال كان بيفتح خيطًا معرّفه `'new'` وخلاص · يعني
-     الكارت اللي المستخدم دوس عليه بيودّيه محادثة **مالهاش صفّ**،
-     فلو خرج منها ما يلاقيهاش. دلوقتي بيتعمل صفّ فعلي في «اليوم»
-     عنوانه السؤال نفسه، والشاشة بتفتح عليه. */
+  /* Note: a new conversation appears in the list under its own name. It used to be that the first
+     question opened a thread simply identified as `'new'` - meaning the card a user clicked led to
+     a conversation with no row of its own, so leaving it meant losing it. Now a real row is created
+     under "today" titled with the question itself, and the screen opens on it. */
   const send = (text: string) => {
     if (busy) return
     setDraft('')
@@ -138,17 +136,17 @@ export function AssistantScreen({
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  /* المستخدم بيفتح المساعد وفي دماغه سؤال، فالمؤشر جاهز يكتبه من
-     غير ما يدوّر على مكان الكتابة. على الموبايل لأ · الفوكس بيطلّع
-     الكيبورد فوق نص الشاشة قبل ما يقرا حاجة. */
+  /* A user opens the assistant with a question already in mind, so the cursor is ready to type
+     without hunting for the input. Not on mobile - focusing there raises the keyboard over half the
+     screen before anything is read. */
   useEffect(() => {
     if (mobile || !focusOnMount) return
     const id = setTimeout(() => input.current?.focus(), 400)
     return () => clearTimeout(id)
   }, [mobile, focusOnMount])
 
-  /* عنوان الشاشة = عنوان المحادثة المفتوحة، أو أول سؤال في الجديدة.
-     فاضي لحد ما يتفتح شات فعلًا. */
+  /* Screen title = the open conversation's title, or the first question in a new one. Empty until a
+     chat actually opens. */
   const opened = chats.find((c) => c.id === openChat)
   const firstAsk = msgs.find((m) => m.who === 'me')?.text
   const title = opened ? opened.title : firstAsk ?? label ?? ''
@@ -167,9 +165,9 @@ export function AssistantScreen({
       />
 
       <div className="chatcol" ref={col}>
-        {/* العنوان جوّه عمود بنفس عرض المحادثة تحته، عشان يبدأ من
-            نفس السطر · الترويسة اللي بتاخد عرض الشاشة كانت بتسيب
-            العنوان معلّقًا في الحافة بعيدًا عن أول كلمة في الرد. */}
+        {/* Note: the title sits in a column matching the conversation's width below it, so it
+            starts at the same edge - a full-width header left the title floating far from the first
+            word of the reply. */}
         <header className={`chat-top${title ? '' : ' bare'}`}>
           <div className="chat-top-in">
             {mobile ? (
@@ -181,8 +179,8 @@ export function AssistantScreen({
                 <Icon name={icons.menu} size="sm" />
               </button>
             ) : shut && (
-              /* مكان الشريط المطويّ · الزرار بيرجّعه من نفس الناحية
-                 اللي راح فيها، فالحركة بتبان رجوعًا لا فتحًا لحاجة تانية */
+              /* Position of the collapsed sidebar - the button restores it from the same side it
+                 left, so the motion reads as returning, not opening something new. */
               <button
                 className="aclose aclose-list"
                 onClick={() => setShut(false)}
@@ -195,7 +193,7 @@ export function AssistantScreen({
 
             {title ? (
               <>
-                <span className="badge badge-30"><span className="aispark" /></span>
+                <span className="badge badge-30"><AbLeaf /></span>
                 <div className="chat-name" id={labelledBy}>{title}</div>
               </>
             ) : (
@@ -229,7 +227,7 @@ export function AssistantScreen({
                   />
                 }
               />
-              {/* التنبيه في آخر الصفحة خالص · معلومة مش خطوة */}
+              {/* Alert sits at the very end of the page - information, not a step. */}
               <Disclaimer />
             </>
           ) : (

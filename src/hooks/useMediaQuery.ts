@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-/** بيرجّع true لو الاستعلام منطبق، وبيتابع التغيير */
+/** Returns true if the query matches, and tracks changes to it. */
 export function useMediaQuery(query: string): boolean {
   const [hit, setHit] = useState(
     () => typeof matchMedia === 'function' && matchMedia(query).matches,

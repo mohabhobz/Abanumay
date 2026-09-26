@@ -4,37 +4,36 @@ import { useProximity } from '@/hooks/useProximity'
 import { planIssues, waitingReview } from '@/data/mock/plans'
 import type { CurrentUser, DecisionKind, PlanRow, PlanStage } from '@/types/domain'
 import type { RoleKey } from '@/data/roles'
+import { NOUN, nounAfter } from '@/lib/format'
+import { noteFirst } from '@/lib/dock'
 
-/* ═══════════════════════════════════════════════════════════
-   مخارج الخطة · دورة اعتماد من محطتين
+/* Plan exits - a two-stage approval cycle.
 
-   السند في BPD-009 §9.3 خطوة 1 بالنص: «اعداد خطة المشروع من قبل
-   الجهة المستفيدة **واعتمادها من قبل مشرف المنح ومدير المنح**».
-   يعني محطتان لا واحدة، والاتنين مكتوبين.
+   The basis, per the spec, section 9.3 step 1, verbatim: "the project plan is prepared by the
+   beneficiary entity and approved by both the grants supervisor and the grants manager." Two
+   stages, not one, both stated.
 
-   ⚠️ **والإعادة بتروح للجهة، مش للمحطة اللي قبلها.** إعادة مدير
-   المنح بترجّع الخطة **للجهة المستفيدة** لا لمشرف المنح، لأن
-   اللي بيكتب الخطة هو الجهة · فالمشرف لو استلمها هيرجّعها لها
-   تاني وتبقى محطة زيادة بلا شغل. الوجهة مكتوبة في اسم الزرار
-   زي الاتفاقيات بالظبط.
+   Note: a return goes to the entity, not the preceding stage. The grants manager's return sends the
+   plan back to the beneficiary entity, not to the grants supervisor, because the entity is the one
+   who wrote the plan - if the supervisor received it, they'd just send it back to the entity again,
+   becoming an extra stage that does no work. The destination is written in the button's label,
+   exactly as on agreements.
 
-   ⚠️ **وبعد الاعتماد مفيش مخارج اعتماد · فيه مراجعة أنشطة.**
-   الخطة المعتمدة شغلها اليومي إن المشرف يقبل أو يرفض شواهد
-   (قاعدة 14)، وده بيحصل **على النشاط** في الشجرة لا في الرصيف ·
-   والرصيف وقتها بيقول الطابور ويودّي له.
+   Note: after approval there are no approval exits - there's activity review instead. An approved
+   plan's day-to-day work is the supervisor accepting or rejecting evidence (rule 14), and that
+   happens on the activity itself in the tree, not on the dock - the dock at that point states the
+   queue and links to it.
 
-   ⚠️ **والتعديل الجوهري مخرج قائم بذاته (قاعدة 21).** من غيره
-   الجهة اللي اتأخرت بتعدّل تواريخها بهدوء فتبقى منضبطة على
-   الورق دايمًا · وبيه الانحراف بيفضل له مرجع اسمه النسخة
-   المرجعية.
-   ═══════════════════════════════════════════════════════════ */
+   Note: a substantive amendment is its own exit (rule 21). Without it, an entity running late could
+   quietly push its dates and always look on schedule on paper - with it, any drift keeps a
+   reference point called the baseline. */
 
 export interface PlanAction {
   label: string
   kind: DecisionKind
-  /** الإعادة ملزومة بملاحظة · نفس قاعدة الاتفاقيات 10 */
+  /** A return requires a note - same rule as agreements (rule 10). */
   needsNote?: boolean
-  /** بيتقفل لو الخطة فيها مخالفات · الاعتماد وحده */
+  /** Locked if the plan has violations - approval alone. */
   gated?: boolean
   why: string
 }
@@ -92,7 +91,7 @@ export interface PlanActionDockProps {
   onNote: (v: string) => void
   taken: string | null
   onTake: (v: string) => void
-  /** الرصيف بيودّي لأول نشاط مستنّي مراجعة · الخطة المعتمدة */
+  /** The dock links to the first activity awaiting review - for an approved plan. */
   onReview: () => void
 }
 
@@ -126,9 +125,9 @@ export function PlanActionDock({
     )
   }
 
-  /* ⚠️ **الخطة المعتمدة رصيفها طابور لا اعتماد.** عرض أزرار اعتماد
-     على خطة اتعتمدت خلاص بيقول للمستخدم إن في قرار مستنّيه وهو
-     مفيش · والقرار الحقيقي وقتها على النشاط نفسه. */
+  /* Note: an approved plan's dock is a queue, not an approval. Showing approval buttons on an
+     already-approved plan tells the user a decision is pending when there isn't one - the real
+     decision at that point sits on the activity itself. */
   if (actions.length === 0) {
     if (queue === 0) return null
     return (
@@ -137,7 +136,7 @@ export function PlanActionDock({
           <div className="rowf gp-3">
             <Person name={user.name} size="lg" quiet={false} />
             <span className="decsent">
-              <b><Num>{queue}</Num> نشاطًا</b> بانتظار قبولك
+              <b><Num>{queue}</Num> {nounAfter(queue, NOUN.activity)}</b> بانتظار قبولك
               <span className="decsep" />
               لا يُحتسب إنجازًا قبل المراجعة · القاعدة <Num>14</Num>
             </span>
@@ -156,25 +155,28 @@ export function PlanActionDock({
           <span className="decsent">
             قرارك بشأن خطة <b>{plan.projectName}</b>
             <span className="decsep" />
-            <Num>{plan.phases.length}</Num> مراحل
+            <Num>{plan.phases.length}</Num> {nounAfter(plan.phases.length, NOUN.phase)}
           </span>
         </div>
 
+        {/* The field and buttons form one group that wraps together, so the field doesn't separate
+            from "Return" when the dock grows to two lines. */}
+        <div className="payact-g">
         {needNote && (
           <label className="payact-n">
             <span className="vis-h">ملاحظات الإعادة</span>
             <input
               value={note}
               onChange={(e) => onNote(e.target.value)}
-              placeholder="اكتب سبب الإعادة وما يلزم تعديله (إلزامي)"
+              placeholder="سبب الإعادة وما يلزم تعديله · إلزامي"
             />
           </label>
         )}
 
         <div className="rowf gp-2">
-          {actions.map((x) => {
-            /* ⚠️ السبب مكتوب لا مخفي في اللون · والمخالفة الأولى
-               بالاسم، لأن «فيه خطأ» بتخلّي المستخدم يدوّر بعينه */
+          {noteFirst(actions).map((x) => {
+            /* Note: the reason is written, not hidden in color - and the first violation is named,
+               since "something's wrong" makes the user search for it. */
             const stop =
               (x.needsNote && !note.trim())
                 ? 'اكتب سبب الإعادة أولًا'
@@ -185,6 +187,7 @@ export function PlanActionDock({
               <button
                 key={x.label}
                 className={`btn ${x.kind}`}
+                data-needs-note={x.needsNote ? '' : undefined}
                 disabled={Boolean(stop)}
                 title={stop || x.why}
                 onClick={() => onTake(x.label)}
@@ -193,6 +196,7 @@ export function PlanActionDock({
               </button>
             )
           })}
+        </div>
         </div>
       </div>
     </div>

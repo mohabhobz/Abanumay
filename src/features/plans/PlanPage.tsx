@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { TONE } from '@/lib/tone'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Steps, Tag,
   icons, type StepItem,
@@ -10,9 +11,9 @@ import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate } from '@/lib/format'
+import { isolate, NOUN, nounAfter, ver } from '@/lib/format'
 import {
-  PLAN_STAGES, PLAN_TONE, acceptActivity, approvePlan, decideChange, lateActivities,
+  PLAN_STAGES, acceptActivity, approvePlan, decideChange, lateActivities,
   addEvidence, claimActivity, commentActivity, planById, planClaimed, planDone, planIssues, planPlanned,
   planSpi, planStageLabel, readyToClose, rejectActivity, returnPlan, sendPlan, spiSay,
   toManager, waitingReview,
@@ -23,31 +24,29 @@ import { PhaseTree } from './PhaseTree'
 import { PlanBar } from './PlanBar'
 import { PlanActionDock, planActionsFor } from './PlanActionDock'
 
-/* ═══════════════════════════════════════════════════════════
-   صفحة الخطة · BPD-012
+/* Plan page.
 
-   ⚠️ **الصفحة قسمان: ترويسة + مراحل** · نفس مبدأ ج-9 اللي بيتكرّر
-   في كل شاشة في السيستم (الميزانية · الاتفاقية · أمر الصرف).
+   Note: the page is two parts - header plus phases - the same principle repeated across every
+   screen in the system (budget, agreement, disbursement order).
 
-   ⚠️ **وترويستها بتجاوب سؤالًا واحدًا: ماشية ولا لأ.** مش «إيه
-   بياناتها» · البيانات في الجدول تحت. فالترويسة فيها المقارنة:
-   المقبول والمُعلَن والمخطَّط لليوم، وأداء الجدول بينهم. والرقم
-   اللي مالوش طرفيه بيتقري حكمًا بلا سند، فالتلاتة مع بعض.
+   Note: its header answers one question: is it on track or not? Not "what's its data" - the data is
+   in the table below. The header carries the comparison: accepted, declared, and
+   planned-as-of-today, with the schedule performance between them. A number with no reference reads
+   as a verdict with no basis, so the three appear together.
 
-   ⚠️ **والمراجعة على النشاط لا على الخطة.** القاعدة 14 بتفصل
-   «الجهة قالت» عن «المشرف قبل» · فقرار واحد في رصيف الصفحة كان
-   هيقبل كل الشواهد بضغطة، وده اللي القاعدة موجودة تمنعه.
-   ═══════════════════════════════════════════════════════════ */
+   Note: review happens on the activity, not on the plan. Rule 14 separates "the entity said" from
+   "the supervisor accepted" - a single decision on the page's action dock would accept every piece
+   of evidence with one click, and that's exactly what the rule exists to prevent. */
 
 export default function PlanPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const { role, user } = useRole()
-  /* ⚠️ **نفس الشاشة بعينَين، لا شاشتان.** الجهة والمشرف بيبصّوا على
-     نفس المراحل والأنشطة والشواهد · اللي بيفرق هو **الأفعال**:
-     الجهة بتقول «خلصت» وبترفع، والمشرف بيقبل ويرفض. شاشتان كانوا
-     هيفترقوا مع أول تعديل، وده اللي حصل في مساعد التسجيل قبل كده. */
+  /* Note: the same screen through two lenses, not two screens. The entity and the supervisor look
+     at the same phases, activities and evidence - what differs is the actions: the entity marks
+     things done and uploads, the supervisor accepts or rejects. Two separate screens would have
+     drifted apart at the first edit, which is what happened before on the registration flow. */
   const asEntity = params.get('as') === 'entity'
   const p = planById(id)
   const [note, setNote] = useState('')
@@ -60,8 +59,8 @@ export default function PlanPage() {
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
 
-  /* ⚠️ المرحلة اللي فيها شغل بتتفتح لوحدها · المطوي الافتراضي
-     صحّ في الجداول (سؤالها «كام») وغلط هنا (سؤالها «أنهي نشاط») */
+  /* Note: a phase with pending work expands on its own - collapsed-by-default is right for tables
+     (their question is "how many") and wrong here (the question is "which activity"). */
   const first = useMemo(() => {
     if (!p) return new Set<string>()
     const s = new Set<string>()
@@ -119,13 +118,13 @@ export default function PlanPage() {
   const actions = asEntity ? [] : planActionsFor(role.key, p.stage)
   const cost = p.phases.reduce((s, ph) => s + ph.cost, 0)
 
-  /* ⚠️ الرحلة محطاتها من الوثيقة لا من حالات الشاشة · والمكتملة
-     محطة بذاتها لأنها اللي بترفع مانع الإغلاق */
+  /* Note: the journey's stages come from the spec, not from screen states - and "completed" is its
+     own stage since it's what lifts the block on closing. */
   const steps: StepItem[] = PLAN_STAGES
     .filter((s) => s.key !== 'returned')
-    /* ⚠️ **بلا `note` في الستيبر عن قصد.** الستيبر صفّ بيتضغط،
-       والنوتة تحت كل خطوة بتخلّي الخمس محطات سطرين متلاصقين ·
-       والشرح موجود في الشاشة نفسها. النوتة للسُلّم الرأسي. */
+    /* Note: deliberately no `note` on the stepper. The stepper is a row that compresses, and a note
+       line under each step would turn five stages into two crowded lines - the explanation lives on
+       the screen itself. The note is for the vertical ladder instead. */
     .map((s) => ({
       label: s.label,
       state: s.key === p.stage
@@ -157,19 +156,19 @@ export default function PlanPage() {
                 <Mono>{p.id}</Mono> ·{' '}
                 <Link to={ROUTES.entity(p.entityId)} className="tlink">{p.entityName}</Link> ·{' '}
                 {p.baseline > 0
-                  ? <>النسخة المرجعية V<span className="num">{p.baseline}</span>{' '}
+                  ? <>النسخة المرجعية <Num>{ver(p.baseline)}</Num>{' '}
                     {p.baselineAt && <>من <DateText>{p.baselineAt}</DateText></>}</>
                   : 'لم تُعتمد بعد · الهيكل مفتوح للتعديل'}
               </p>
             </div>
-            <Tag tone={PLAN_TONE[p.stage]}>{planStageLabel(p.stage)}</Tag>
+            <Tag tone="mute">{planStageLabel(p.stage)}</Tag>
           </header>
 
-          {/* ⚠️ **الجهة لازم تعرف إن «خلصت» مش «اتحسبت».** ده أهم
-              سوء فهم ممكن في الشاشة دي: الجهة بترفع شاهد وتقول خلص
-              فتفتكر إن النسبة زادت · والقاعدة 14 بتقول إنها ما
-              بتزيدش قبل ما المشرف يقبل. الجملة مكتوبة فوق، مش
-              مستنتَجة من وسم صغير جنب النشاط. */}
+          {/* Note: the entity needs to know that "done" isn't "counted". This is the biggest
+              possible misunderstanding on this screen: the entity uploads evidence, marks it done,
+              and assumes the percentage went up - but rule 14 says it doesn't rise until the
+              supervisor accepts it. The sentence is stated up top, not left to be inferred from a
+              small badge next to the activity. */}
           {asEntity && (
             <Glass>
               <Head
@@ -191,7 +190,7 @@ export default function PlanPage() {
 
           <div className="g2">
             <div className="col">
-              {/* ═══ الترويسة · ماشية ولا لأ ═══ */}
+              {/* === Header - on track or not === */}
               <Glass>
                 <Head
                   title="حالة التنفيذ"
@@ -202,7 +201,8 @@ export default function PlanPage() {
 
                 {live ? (
                   <>
-                    {/* ⚠️ الرقم مع طرفيه · SPI لوحده حكم بلا سند */}
+                    {/* Note: the number with its two reference points - SPI alone is a verdict with
+                        no basis. */}
                     <PlanBar done={done} claim={claim} want={want} />
 
                     <KV
@@ -220,19 +220,19 @@ export default function PlanPage() {
                           k: 'بانتظار مراجعة مشرف المنح',
                           v: queue.length === 0
                             ? <span className="sub">لا شيء</span>
-                            : <Tag tone="warn"><Num>{queue.length}</Num> نشاطًا</Tag>,
+                            : <Tag tone="warn"><Num>{queue.length}</Num> {nounAfter(queue.length, NOUN.activity)}</Tag>,
                         },
                         {
                           k: 'تجاوز موعده ولم يُقبل',
                           v: late.length === 0
                             ? <span className="sub">لا شيء</span>
-                            : <Tag tone="no"><Num>{late.length}</Num> نشاطًا</Tag>,
+                            : <Tag tone={TONE.late}><Num>{late.length}</Num> {nounAfter(late.length, NOUN.activity)}</Tag>,
                         },
                       ]}
                     />
 
-                    {/* ⚠️ الجملة دي هي كل الموديول في سطر · والفرق
-                        بين الرقمين مش تفصيلة عرض، هو شغل واقف */}
+                    {/* Note: this sentence is the whole module in one line - the gap between the
+                        two numbers isn't a display detail, it's pending work. */}
                     {claim > done && (
                       <p className="sub cnote">
                         الفرق بين المُعلَن والمقبول{' '}
@@ -250,14 +250,14 @@ export default function PlanPage() {
                 )}
               </Glass>
 
-              {/* ═══ المراحل والأنشطة ═══ */}
+              {/* === Phases and activities === */}
               <Glass>
                 <Head
                   title="المراحل والأنشطة"
                   meta={
                     <span className="sub">
-                      <Num>{p.phases.length}</Num> مراحل ·{' '}
-                      <Num>{p.phases.reduce((s, ph) => s + ph.activities.length, 0)}</Num> نشاطًا ·{' '}
+                      <Num>{p.phases.length}</Num> {nounAfter(p.phases.length, NOUN.phase)} ·{' '}
+                      <Num>{p.phases.reduce((s, ph) => s + ph.activities.length, 0)}</Num> {nounAfter(p.phases.reduce((s, ph) => s + ph.activities.length, 0), NOUN.activity)} ·{' '}
                       <Money sm>{cost}</Money>
                     </span>
                   }
@@ -275,9 +275,9 @@ export default function PlanPage() {
                     canReview={!asEntity && role.key === 'supervisor'}
                     canClaim={asEntity}
                     onClaim={(actId) => { claimActivity(p.id, actId); setTick((x) => x + 1) }}
-                    /* ⚠️ اسم الملف مولَّد في النموذج · في السيستم
-                       الحقيقي ده منتقي ملفات، والفحص الشكلي عليه
-                       هو نفس فحص مرفقات التسجيل (`docAdvice`). */
+                    /* Note: the file name is generated in the demo. In the real system this is an
+                       actual file picker, and its validation is the same as the registration
+                       attachment check (`docAdvice`). */
                     onUpload={(actId, kind) => {
                       addEvidence(p.id, actId, kind, `${kind.replace(/ /g, '-')}.pdf`)
                       setTick((x) => x + 1)
@@ -292,7 +292,8 @@ export default function PlanPage() {
                     })}
                     onAccept={(actId) => { acceptActivity(p.id, actId); setTick((x) => x + 1) }}
                     onReject={(actId) => setReject({ id: actId, note: '' })}
-                    /* الجهة بتعلّق باسمها، والمؤسسة باسم المستخدم */
+                    /* The entity comments under its own name, the institution under the signed-in
+                       user's. */
                     me={asEntity ? p.entityName : user.name}
                     onComment={(actId, say) => {
                       commentActivity(
@@ -305,9 +306,9 @@ export default function PlanPage() {
                   />
                 )}
 
-                {/* ⚠️ مجموع المراحل مقابل المنحة · نفس انضباط شجرة
-                    الميزانية وجدول الدفعات، ومكتوب تحت الجدول لأنه
-                    خاصية للمجموع لا لصفّ */}
+                {/* Note: phase totals against the grant - same discipline as the budget tree and
+                    the payment schedule, and it's written below the table since it's a property of
+                    the total, not of any single row. */}
                 {grant > 0 && (
                   <p className={`sub cnote${cost !== grant ? ' bad' : ''}`}>
                     مجموع تكلفة المراحل <Money sm>{cost}</Money> وقيمة المنحة{' '}
@@ -319,7 +320,7 @@ export default function PlanPage() {
                 )}
               </Glass>
 
-              {/* ═══ طلبات التعديل الجوهري · قاعدة 21 ═══ */}
+              {/* === Substantive amendment requests - rule 21 === */}
               {(p.changes.length > 0 || p.baseline > 0) && (
                 <Glass>
                   <Head
@@ -376,7 +377,7 @@ export default function PlanPage() {
               )}
             </div>
 
-            {/* العمود الجانبي · كارت واحد لازق زي صفحة المشروع */}
+            {/* Side column - one sticky card, like the project page. */}
             <div className="col aiside" ref={aside}>
               <AnalysisCard
                 title="قراءة الخطة"
@@ -390,9 +391,9 @@ export default function PlanPage() {
             </div>
           </div>
 
-          {/* ⚠️ القاعدة مكتوبة في الشاشة لا في التعليق بس · دي أكتر
-              حاجة بتلخبط لما تشوف خطة «قيد التنفيذ» ومشروعها في
-              مرحلة تانية خالص */}
+          {/* Note: the rule is documented on the screen, not only in a comment - this is the most
+              confusing thing to see: a plan "in progress" whose project sits at an entirely
+              different stage. */}
           <p className="sub tcen">
             مرحلة الخطة لا تغيّر حالة المشروع ·{' '}
             <Link to={ROUTES.project(p.projectId)} className="lnk">{p.projectName}</Link>{' '}
@@ -404,11 +405,11 @@ export default function PlanPage() {
           </p>
         </div>
 
-        {/* ═══ إعادة النشاط · مودال ═══
-            ⚠️ **مودال لا حقل جنب الزرار.** الملاحظة إلزامية والزرار
-            بيقفل من غيرها · وحقل صغير في صفّ النشاط بيخلّي الشجرة
-            تتحرّك تحت إيد المستخدم وهو بيكتب. ونفس شكل مودال بند
-            الميزانية بالحرف (`.bmask` + `.chrome.modal`). */}
+        {/* === Return an activity - modal ===
+            Note: a modal, not a field next to the button. The note is required and the button stays
+            locked without it - a small field in the activity row would make the tree shift under
+            the user's hand as they type. Same modal shape as the budget line item exactly (`.bmask`
+            + `.chrome.modal`). */}
         {reject && (
           <div className="bmask" role="presentation" onClick={() => setReject(null)}>
             <div
@@ -424,9 +425,8 @@ export default function PlanPage() {
               </div>
 
               <div className="mb col">
-                {/* ⚠️ القاعدة 14 بترجّعه «مرفوض» لا «لم يبدأ» · عشان
-                    الجهة تعرف إن في شغل اتعمل ومحتاج تصحيح لا إعادة
-                    من الصفر */}
+                {/* Note: rule 14 returns it as "rejected", not "not started" - so the entity knows
+                    work was done and needs correcting, not redone from scratch. */}
                 <p className="sub cnote">
                   تصل الملاحظة إلى الجهة مع النشاط، ويعود النشاط بحالة
                   «مرفوض · بملاحظة» لا «لم يبدأ».
@@ -465,8 +465,8 @@ export default function PlanPage() {
           </div>
         )}
 
-        {/* ⚠️ رصيف القرار للمؤسسة وحدها · الجهة مالهاش قرار
-            اعتماد، وأفعالها على النشاط نفسه في الشجرة */}
+        {/* Note: the decision dock belongs to the institution alone - the entity has no approval
+            decision; its actions live on the activity itself, in the tree. */}
         {!asEntity && (
         <PlanActionDock
           user={user}

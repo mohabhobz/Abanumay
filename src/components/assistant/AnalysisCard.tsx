@@ -1,66 +1,59 @@
 import { useEffect, useRef, useState } from 'react'
 import { Glass, Icon, icons } from '@/components/ui'
-import { ReadingBlock, ReadingPeek } from './ReadingBlock'
+import { MetricText, ReadingBlock, ReadingPeek } from './ReadingBlock'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
 import type { Reading } from './reading'
+import { AbLeaf } from '@/components/soul'
 
-/** المساعد بيفكّر لحظة قبل ما يبدأ يكتب · عشان القراءة تبان مُنتَجة مش محفوظة */
+/**
+ * The assistant thinks for a moment before it starts writing, so the reply reads as produced, not
+ * retrieved from cache.
+ */
 const THINK_MS = 900
 
 export interface AnalysisCardProps {
-  /** كل ما المساعد بيقوله عن الكيان ده · الرحلة والقراءات */
+  /** Everything the assistant has said about this entity — the trail and the readings. */
   readings: Reading[]
   onAsk: () => void
-  /** «تحليلات المشروع السريعة» · «تحليلات الجهة السريعة» */
+  /** "Quick project analysis" / "Quick entity analysis". */
   title?: string
-  /** نصّ زرار الدعوة · «حلّل المشروع» افتراضيًا */
+  /** CTA button text — "Analyze project" by default. */
   cta?: string
   /**
-   * الجملة اللي بتتقال لمّا مفيش قراءات.
-   *
-   * ⚠️ **الكارت ما بيختفيش · هو بيقول إنه مفيش حاجة.** كان بيرجّع
-   * `null`، وفي لوحة التقارير القراءات محسوبة من **الفترة
-   * المختارة** · يعني تبديل الفترة كان بيشيل العمود الجانبي كله
-   * من الشاشة، والتخطيط بينطّ من عمودين لعمود.
-   *
-   * وده نفس اللي حصل في `QuickRead` مع الفلاتر · الغياب بيتقري
-   * عطلًا، و«مفيش ملاحظات» إجابة.
+   * The message shown when there are no readings.
+   * ⚠️ **The card doesn't disappear — it says there's nothing.** It used to return `null`, and on
+   * the reports dashboard readings are computed from the **selected period** — so switching periods
+   * would remove the whole side column, and the layout would jump between two columns and one.
+   * Same issue as `QuickRead` with filters: absence reads as a bug, and "no notes" is an answer.
    */
   empty?: string
   /**
-   * زرار «اسأل» ظاهر؟
-   *
-   * ⚠️ **بوّابة التسجيل مالهاش مساعد أصلًا.** الجهة اللي بتسجّل
-   * مالهاش حساب، فمفيش ريل ولا محادثات ولا ⌘K · وزرار بيفتح حاجة
-   * مش موجودة أسوأ من غيابه. الكارت بيتقفل على القراءة وحدها هناك.
+   * Is the "Ask" button shown?
+   * ⚠️ **The registration gate has no assistant at all.** The entity registering has no account, so
+   * there's no rail, no conversations, no shortcut — and a button that opens something that doesn't
+   * exist is worse than no button. The card there is limited to the reading alone.
    */
   ask?: boolean
 }
 
 /**
- * كارت التحليلات · **المكان الوحيد** اللي المساعد بيتكلم فيه عن
- * الكيان المفتوح (مشروع أو جهة).
- *
- * قبل كده كان فيه اتنين: شريط «رحلة المشروع» فوق التبويبات، وكارت
- * «تحليلات المشروع» في عمود السياق · والاتنين بيقولوا نفس الحاجة
- * بصياغتين. «واقف عند دراسة المشروع من 87 يومًا، 132% فوق الحدّ»
- * كانت مكتوبة مرتين في نفس الشاشة بشكلين مختلفين. اتوحّدوا هنا.
- *
- * **بالطلب لا تلقائيًا.** طلب الكلاينت: «يبقى موجود السكشن زي ما هو
- * عادي صغير لسه ما اتفتحش، ولما تطلب اعمل لي تحليلات يبتدي يعمل لك
- * التحليلات». السبب اللي وراه إن عمود السياق كان بياخد ارتفاع الشاشة
- * كلها قبل ما المستخدم يقرا المشروع نفسه.
- *
- * ومع ذلك الكارت المقفول **بيعرض لمحة أهمّ قراءة**: السؤال الأول
- * اللي المستخدم بيفتح المشروع عشانه («واقف فين ومحتاج إيه») يتقري
- * من غير ضغطة، والتفصيل بيتحسب بالطلب.
- *
- * وبعد أول تشغيل بيفضل محسوبًا: القفل والفتح بيداري ويوري، ما
- * بيعيدش الحساب · إعادة الكتابة كل مرة بتبقى استعراضًا لا معلومة.
- *
- * ⚠️ مهلة «بيقرا» في النموذج ده مكان استدعاء السيرفر. لما يبقى فيه
- * باك اند، الحالة دي بتبقى انتظار حقيقي لا مؤقّتًا.
+ * Analysis card — the **only place** the assistant talks about the open entity (project or
+ * organization).
+ * There used to be two: the "project journey" bar above the tabs, and the "project analysis" card
+ * in the context column, both saying the same thing in two different phrasings. "87 days into the
+ * project review, 132% over the limit" appeared twice on the same screen in two different forms.
+ * They were merged here.
+ * **On request, not automatic.** The intent: keep the section present, small and unopened by
+ * default, and start producing analysis only once the user asks for it. The context column was
+ * otherwise taking up the full screen height before the user even read the project itself.
+ * Even so, the closed card **shows a glimpse of the most important reading**: the first question a
+ * user opens a project for ("where does this stand and what does it need") reads with no click, and
+ * the detail is computed on request.
+ * After the first run it stays computed: closing and opening it toggles visibility, it doesn't
+ * recompute — recomputing every time would be a show, not information.
+ * ⚠️ The "reading" delay in this mock stands in for a server call. Once there's a backend, this
+ * state becomes real waiting, not a timer.
  */
 export function AnalysisCard({
   readings, onAsk, title: heading = 'تحليلات المشروع السريعة', cta, ask = true, empty,
@@ -68,7 +61,7 @@ export function AnalysisCard({
   const card = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(card)
   const [thought, setThought] = useState(false)
-  /** اتطلب التحليل مرة على الأقل · بيفضل محسوبًا بعد كده */
+  /** Requested at least once — stays computed after that. */
   const [armed, setArmed] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -78,7 +71,7 @@ export function AnalysisCard({
     return () => clearTimeout(id)
   }, [armed, onScreen, thought])
 
-  /* ⚠️ القراءة الهادية مبنيّة هنا لا في كل شاشة · نفس `QuickRead` */
+  /* ⚠️ The empty-state reading is built here, not per screen — same as `QuickRead`. */
   const calm: Reading[] = [{
     id: 'ai-calm',
     kind: 'note',
@@ -88,52 +81,42 @@ export function AnalysisCard({
 
   const { block, chars, done } = useTypedBlocks(list.map((r) => r.text), thought)
   const thinking = armed && onScreen && !thought
-  const flags = list.filter((r) => r.kind === 'flag').length
 
   const title = (
     <div style={{ fontFamily: 'var(--fd)', fontWeight: 600, fontSize: 'var(--fs-4)' }}>{heading}</div>
   )
 
-  /* ── مقفول: بوستر في نص الكارت ──
-     العمود الجانبي فيه كارت واحد بيملا الارتفاع المتاح، فالحالة
-     المقفولة مش سطر صغير فوق فراغ: الشرارة والعنوان واللمحة والزرار
-     في نص الكارت رأسيًا. الفراغ اللي كان على الشمال بقى هو المساحة
-     اللي بتخلّي الدعوة تتشاف. */
+  /* -- Closed: a banner mid-card --
+     The side column has a single card filling the available height, so the closed state isn't a
+     small line above empty space: the spark, title, glimpse, and button sit vertically centered in
+     the card. The space that used to be on the side becomes what makes the CTA visible. */
   if (!armed) {
     return (
       <Glass className="aicard aishut" ref={card}>
         <div className="aishut-c">
-          <span className="badge badge-44"><span className="aispark" /></span>
+          <span className="badge badge-44"><AbLeaf className="aispark live" /></span>
 
           <h2 className="aishut-t">{heading}</h2>
 
-          {/* عدّاد القراءات اتشال: رقمٌ عن حاجة لسه ما اتقرتش · بيشغل
-              سطرًا كامل من غير ما يقول للمستخدم يعمل إيه. اللي بيفضل
-              هو التنبيه لو فيه، لأنه بيغيّر القرار. */}
-          {flags > 0 && (
-            <div className="aishut-m">
-              <span className="qr-count no">
-                <span className="num">{flags}</span> تحتاج إلى انتباه
-              </span>
-            </div>
-          )}
-
-          {/* لمحة أهمّ قراءة: «واقف فين ومحتاج إيه» أول سؤال بيتسأل،
-              فبيتقري من غير ضغطة، والتفصيل بيتحسب بالطلب. */}
+          {/* ⚠️ The "needs attention" tag was removed — the assistant doesn't set status tags; the
+              glimpse below states the same thing. */}
+          {/* Glimpse of the most important reading: "where does this stand and what does it need"
+              is the first question asked, so it reads with no click, and the detail is computed on
+              request. */}
           {list[0] && (
             <p className="aishut-p">
               {list[0].metric && (
-                <b className={list[0].kind === 'flag' ? 'bad' : undefined}>
-                  {list[0].metric.value} {list[0].metric.unit} {' '}
+                <b>
+                  <MetricText m={list[0].metric} />{' '}
                 </b>
               )}
               {list[0].text}
             </p>
           )}
 
-          {/* دعوة مساعِدة لا دعوة الشاشة: الفعل الأساسي في صفحة
-              المشروع هو «توصية بالموافقة» في رصيف القرار. دعوة
-              أساسية واحدة في الشاشة · والباقي ثانوي. */}
+          {/* An assistant CTA, not a screen CTA: the main action on the project page is "recommend
+              approval" in the decision bar. One primary CTA per screen — everything else is
+              secondary. */}
           <button className="btn btn-2 aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
             {cta ?? (heading.includes('الجهة') ? 'حلّل ملف الجهة' : 'حلّل المشروع')}
           </button>
@@ -145,8 +128,8 @@ export function AnalysisCard({
   return (
     <Glass className="aicard aiopen" ref={card}>
       <div className="rowf" style={{ gap: 'var(--sp-3)', marginBottom: 'var(--sp-5)' }}>
-        <span className={`badge badge-30${done ? '' : ' pulse'}`}>
-          <span className="aispark" />
+        <span className={`badge badge-30${done ? ' breath' : ''}`}>
+          <AbLeaf className="aispark live" />
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
           {title}
@@ -181,8 +164,8 @@ export function AnalysisCard({
 
       {!open && list[0] && <ReadingPeek reading={list[0]} />}
 
-      {/* الرندر الشرطي لا `hidden`: `.qr-list` ليها بادنج وحدود في
-          الـCSS، والخاصية بتتغلب عليها فالكارت بيفضل مفتوحًا. */}
+      {/* Conditional render, not `hidden`: `.qr-list` has padding and borders in the CSS that the
+          property doesn't override, so the card would stay open. */}
       {open && (
         <div className="qr-list aiscroll">
           {list.map((r, i) => (

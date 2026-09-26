@@ -2,59 +2,56 @@ import type { ReactNode } from 'react'
 import { Tag } from '@/components/ui'
 import { DocDownload, DocFile } from './DocFile'
 
-/* ═══════════════════════════════════════════════════════════
-   قائمة المستندات · **الشكل الواحد لأي قائمة مرفقات في السيستم**.
+/* Document list — **the one shape for any attachment list in the system**.
 
-   ⚠️ **`DocFile` كان مكوّنًا واحدًا فعلًا · والقائمة حواليه لأ.**
-   كل شاشة كانت بتكتب جدولها بإيدها: عمود الاسم، وعمود الحالة،
-   ووسم الحالة، وزرار التنزيل، والصفّ الباهت لغير المرفوع. النتيجة
-   إن نفس القايمة طلعت بأربع صور مختلفة (مرفقات المشروع · مستندات
-   الجهة · مستندات الاتفاقية · الحسابات البنكية)، وكل تعديل في
-   الشكل كان لازم يتعمل أربع مرّات · واللي بينسى واحدة بيسيب شاشة
-   بتتصرّف غير أخواتها.
+   ⚠️ **`DocFile` was already one component; the list around it wasn't.** Every screen wrote its own
+   table by hand: a name column, a status column, a status tag, a download button, and a dimmed row
+   for anything not uploaded. The result was the same list appearing in four different forms
+   (project attachments, entity documents, agreement documents, bank accounts), and every layout
+   change had to be made four times — and anyone who missed one left a screen behaving differently
+   from its siblings.
 
-   **المرجع هو جدول «المرفقات» في صفحة المشروع** (ده المتّفق عليه)،
-   واللي هنا هو هو بالحرف:
+   **The reference is the "Attachments" table on the project page** (the agreed baseline), and this
+   component matches it exactly:
 
-     · بلا ترويسة أعمدة · عنوان الكارت فوق بيقول «المرفقات»،
-       و«المرفق · الحالة» تحته بيكرّروه. والخلية بتوصف نفسها.
-     · الاسم زرار معاينة بثامبنيله · النوع بيبان قبل الفتح،
-       فالمراجع يعرف إن الموازنة **صورة ممسوحة** من الصفّ نفسه.
-     · التنزيل **في آخر الصفّ جنب الحالة** لا بعد الاسم · عشان
-       الأيقونات تتسطّر في عمود واحد.
-     · غير المرفوع بلا ثامبنيل (مفيش محتوى) وصفّه باهت.
+     - No column headers — the card title above already says "Attachments," and a "File / Status"
+     header underneath would just repeat it. Each cell describes itself.
+     - The name is a preview button with its thumbnail — the type shows before opening, so a
+     reviewer knows the budget is a **scanned image** from the row itself.
+     - Download sits **at the end of the row next to status**, not after the name, so the icons line
+     up in one column.
+     - Anything not uploaded has no thumbnail (there's no content), and its row is dimmed.
 
-   الأعمدة الزيادة (تاريخ الرفع · نهاية الصلاحية) بتتبعت في
-   `extra` · هي بيانات الشاشة دي، مش شكلًا تاني للقائمة.
+   The extra columns (upload date, expiry) are passed via `extra` — they're data for that particular
+   screen, not a second shape for the list.
 
-   ⚠️ **والأفعال بتتبعت، ما بتتكتبش في الصفّ** · «اطلبه من الجهة»
-   فعل الشاشة لا فعل الملف، فمكانه `action` وبيتحطّ في آخر عمود
-   بنفس المحاذاة في كل مكان.
+   ⚠️ **Actions are passed in, never written into the row** — "request it from the entity" is the
+   screen's action, not the file's, so it goes in `action` and lands in the last column with the
+   same alignment everywhere.
 
-   و`tools/onedoc.mjs` بيمنع رسم جدول مستندات بره المكوّن ده.
-   ═══════════════════════════════════════════════════════════ */
+   A build check blocks any document table drawn outside this component. */
 
 export interface DocRow {
-  /** اسم الملف بامتداده · الثامبنيل والنوع بيتقروا منه */
+  /** File name with its extension — the thumbnail and type are read from it. */
   name: string
-  /** سطر تحت الاسم: مصدر أو تاريخ */
+  /** Line under the name: source or date. */
   meta?: string
   uploaded: boolean
-  /** بيغيّر نصّ وسم «غير مرفوع» · مطلوب ولا اختياري */
+  /** Changes the "not uploaded" tag text — required or optional. */
   required?: boolean
-  /** مرفوع بس صلاحيته انتهت · وسم `منتهٍ` */
+  /** Uploaded but expired — the "Expired" tag. */
   expired?: boolean
-  /** خلايا زيادة بين الاسم والحالة · تاريخ رفع مثلًا */
+  /** Extra cells between the name and status — an upload date, for example. */
   extra?: ReactNode[]
-  /** فعل الشاشة على الصفّ ده · بيتحطّ في آخر عمود */
+  /** The screen's action on this row — placed in the last column. */
   action?: ReactNode
 }
 
 export interface DocListProps {
   rows: DocRow[]
-  /** اسم القائمة لقارئ الشاشة · «مرفقات المشروع وحالتها» */
+  /** List name for screen readers — "project attachments and their status." */
   label: string
-  /** عناوين الأعمدة الزيادة · بتظهر ترويسة بس لو اتبعتت */
+  /** Headings for the extra columns — a header row shows only if one is passed. */
   heads?: string[]
 }
 
@@ -74,14 +71,16 @@ export function DocList({ rows, label, heads }: DocListProps) {
   return (
     <div className="dlist">
       <table className="tbl" aria-label={label}>
-        {/* ⚠️ الترويسة بتظهر **بس** لو فيه أعمدة زيادة محتاجة تسمية ·
-            عمود الاسم وعمود الحالة بيوصفوا نفسهم، وترويسة «المرفق ·
-            الحالة» بتكرّر عنوان الكارت اللي فوقها. */}
+        {/* ⚠️ The header row shows **only** when there are extra columns needing a label — the name
+            and status columns describe themselves, and a "File / Status" header would just repeat
+            the card title above. */}
         {heads && heads.length > 0 && (
           <thead>
             <tr>
               <th>المستند</th>
               {heads.map((h) => <th key={h}>{h}</th>)}
+              {/* ⚠️ **Status is a word, not a number** — the header's start and the cell agree. It
+                  used to be a numeric-style column, then moved above the download icon. */}
               <th>الحالة</th>
               {acts && <th> </th>}
             </tr>
@@ -91,19 +90,35 @@ export function DocList({ rows, label, heads }: DocListProps) {
           {rows.map((r) => (
             <tr key={r.name} className={r.uploaded ? '' : 'off'}>
               <td>
+                {/* ⚠️ **A missing document uses the same geometry as an uploaded one.** It used to
+                    be a bare name with no thumbnail slot, starting well off from an uploaded row's
+                    start; the thumbnail slot is now held with a dashed border meaning "no file
+                    here." */}
                 {r.uploaded
                   ? <DocFile name={r.name} meta={r.meta} download={false} />
-                  : <span className="nmc sub">{r.name}</span>}
+                  : (
+                    <span className="dfile dmiss">
+                      <span className="dfile-b">
+                        <span className="dthumb dthumb-miss" aria-hidden="true" />
+                        <span className="dfile-t">
+                          <span className="dfile-n" title={r.name}>{r.name}</span>
+                          {r.meta && <span className="sub">{r.meta}</span>}
+                        </span>
+                      </span>
+                    </span>
+                  )}
               </td>
-              {/* ⚠️ المفتاح من **اسم العمود** لا من ترتيبه · `heads`
-                  هي نفس الأعمدة بنفس الترتيب في كل صفّ */}
+              {/* ⚠️ The key comes from the **column name**, not its position — the header list is
+                  the same columns in the same order in every row. */}
               {(r.extra ?? []).map((c, i) => (
                 <td key={`${r.name}-${heads?.[i] ?? i}`}>{c ?? <span className="sub"> </span>}</td>
               ))}
-              <td className={acts ? '' : 'n'}>
+              <td>
                 <span className="dstat">
                   {stateTag(r)}
-                  {r.uploaded && <DocDownload name={r.name} />}
+                  {/* The download cell is reserved even when empty — otherwise the status tag would
+                      jump between an uploaded and a missing row in the same column. */}
+                  {r.uploaded ? <DocDownload name={r.name} /> : <span className="dfile-dl dl-slot" aria-hidden="true" />}
                 </span>
               </td>
               {acts && <td className="n">{r.action}</td>}

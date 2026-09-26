@@ -1,46 +1,44 @@
 import type { Reading } from '@/components/assistant/reading'
 import { REG_DOCS, type RegState } from './registration'
 import type { ThreadMessage } from './detail'
+import { MISSING_ITEM, nounAfter } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   بوّابة الجهة · حساب الجهة ومتابعة طلبها
+/* Entity portal · the entity's account and its request status.
 
-   ⚠️ **ده تعديل على قاعدة 2، والتعديل مقصود ومكتوب.** القاعدة
-   بتقول «مفيش حساب قبل الاعتماد»، وكانت بتتقرا حرفيًا: الجهة
-   بتبعت الطلب وبتختفي لحدّ ما ييجيها إيميل. والنتيجة إن أكتر
-   حالة في النظام (**بانتظار الاستكمال**) كانت بتشتغل بالبريد
-   وحده: إيميل بيقول «ناقصك حاجة»، والجهة بترد بمرفق في رسالة،
-   والمراجع بينقله بإيده.
+   This is a deliberate, documented exception to the rule that there's no account before approval,
+   which used to be read literally: the entity would submit its request and disappear until an email
+   arrived. As a result the most common state in the system (pending completion) ran entirely on
+   email: an email saying something is missing, the entity replying with an attachment, and a
+   reviewer attaching it by hand.
 
-   القاعدة **لسه صحيحة**: الجهة ما بقاش لها حساب في النظام.
-   اللي اتعمل إنها بقى لها **حساب على طلبها هي**:
+   The rule still holds: the entity has no account in the system. What changed is that it now has an
+   account for its own request:
 
-     حساب الجهة (بوّابة)      حساب الجهة المعتمدة (النظام)
-     بيشوف طلبه هو وبس        بيشوف مشاريعه ودفعاته واتفاقياته
-     بيتعمل عند التسجيل       بيتولد بعد الاعتماد · قاعدة 2
-     صلاحيته: طلب واحد        صلاحيته: ملف الجهة كامل
+   Entity account (portal): sees only its own request; created at registration; scope limited to one
+   request.
+   Approved entity account (system): sees its projects, payments, and agreements; generated after
+   approval; scope covers the entity's full file.
 
-   ⚠️ **والفرق ده لازم يفضل ظاهر في الشاشة نفسها**، لأن الجهة
-   اللي بتفتح البوّابة وبتشوف طلبًا واحدًا لازم تفهم إن ده مش
-   «النظام ناقص»، ده **كل اللي ليها** لحدّ ما الطلب يُعتمد.
-   ═══════════════════════════════════════════════════════════ */
+   That distinction has to stay visible on the screen itself, because an entity opening the portal
+   and seeing one request needs to understand this isn't "the system is incomplete" — it's all they
+   have until the request is approved. */
 
-/** اللي الجهة بتشوفه في بوّابتها · حالة واحدة والفعل المطلوب منها */
+/** What the entity sees in its portal · one status and the action required of it */
 export interface PortalView {
   state: RegState
-  /** الجملة اللي بتتقال في الترويسة */
+  /** The sentence shown in the header */
   say: string
   /**
-   * الفعل المطلوب من الجهة دلوقتي · فاضي يعني مفيش.
+   * The action required of the entity right now · empty means none.
    *
-   * ⚠️ و«مفيش فعل» **مش معناها استنّى دايمًا**: المرفوض خلص،
-   * والمعتمد بقى له نظام كامل يدخل عليه. حالة نهائية مكتوب جنبها
-   * «تستنّى» بتقول للجهة إن في حاجة جاية، وهي مفيش.
+   * "No action" doesn't always mean "wait": rejected is final, and approved gets a whole system to
+   * log into. A final state labeled "wait" tells the entity something more is coming, when nothing
+   * is.
    */
   act: string
   waiting?: boolean
   tone: 'mute' | 'warn' | 'ret' | 'ok' | 'no'
-  /** الطلب ممكن يتعدّل دلوقتي؟ · الاستكمال هو الحالة الوحيدة */
+  /** Can the request still be edited? · pending completion is the only such state */
   editable: boolean
 }
 
@@ -79,14 +77,11 @@ export const portalViewOf = (s: RegState): PortalView => {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   الإشعارات اللي بتتبعت للجهة
+/* Notifications sent to the entity.
 
-   ⚠️ **البريد لكل انتقال، والرسالة القصيرة للتأكيد وحده.**
-   الأوتي بي بيتبعت مرة واحدة على جوال الجهة عشان يثبت إن اللي
-   بيبعت الطلب هو صاحب الرقم المسجَّل · وبعد كده كل حاجة بريد،
-   لأن البريد بيشيل رابطًا والرسالة لأ.
-   ═══════════════════════════════════════════════════════════ */
+   Email on every transition, SMS only for confirmation. The OTP is sent once to the entity's phone
+   to prove the submitter owns the registered number — after that everything goes by email, since
+   email can carry a link and SMS can't. */
 export interface RegMail {
   on: RegState | 'submitted' | 'otp'
   to: 'email' | 'mobile'
@@ -122,22 +117,20 @@ export const REG_MAILS: RegMail[] = [
   },
 ]
 
-/* ═══════════════════════════════════════════════════════════
-   مساعد أبانمي في البوّابة · ن-3
+/* Assistant in the portal.
 
-   مهاب: «مع كل نكست بيقوله المشاكل اللي عنده فين · لو رفع مرفق
-   يقوله إذا كان المرفق ده سليم ولا فيه مشكلة».
+   With every step it flags where the problems are; if a file is uploaded, it says whether that file
+   looks fine or has an issue.
 
-   ⚠️ **والمساعد بيقول لا بيمنع · قاعدة 21.** اللي بيمنع الإرسال
-   هو النواقص الإلزامية وحدها، ودي محسوبة من الحقول لا من رأي
-   المساعد. لو المساعد منع، بيبقى المستخدم واقف قدّام رأي مش
-   قدّام قاعدة · ومحدش يقدر يجادل رأيًا.
+   The assistant advises, it doesn't block. What blocks submission is missing required fields alone,
+   computed from the fields themselves, not from the assistant's opinion. If the assistant blocked,
+   the user would be up against an opinion rather than a rule — and no one can argue with an
+   opinion.
 
-   ⚠️ **والحكم على المستند شكلي لا مضموني.** المساعد بيقرا اسم
-   الملف وامتداده وحجمه، ما بيفتحش الورقة. فبيقول «ده يبان مش
-   المستند المطلوب» لا «الترخيص ده منتهي» · والفرق ده لازم يبان
-   في صياغة الجملة نفسها، وإلا الجهة هتفتكر إن المستند اتراجع.
-   ═══════════════════════════════════════════════════════════ */
+   The assistant's judgment on a document is about its form, not its content. It reads the file
+   name, extension, and size, it doesn't open the document. So it says "this doesn't look like the
+   required document" rather than "this license has expired" — that distinction has to be in the
+   wording itself, or the entity will think the document was actually reviewed. */
 
 export type AdviceTone = 'ok' | 'warn' | 'no'
 
@@ -145,11 +138,11 @@ export interface Advice {
   key: string
   tone: AdviceTone
   say: string
-  /** إزاي تتصلّح · فاضي لو السطر تطمين */
+  /** How to fix it · empty if the line is reassurance */
   fix?: string
 }
 
-/** فحص شكلي لاسم الملف · بيقول «يبان» لا «هو» */
+/** Formal check on the file name · says "looks like", not "is" */
 export const docAdvice = (docKey: string, fileName: string): Advice => {
   const d = REG_DOCS.find((x) => x.key === docKey)
   const label = d?.label ?? docKey
@@ -176,24 +169,21 @@ export const docAdvice = (docKey: string, fileName: string): Advice => {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   نصيحة المساعد لكل محطة · ن-3
+/* Assistant guidance per station.
 
-   ⚠️ **الفرق بين ده وبين وسم «٣ ناقص» فوق الكارت:** الوسم بيعدّ،
-   والمساعد بيقول **ليه** و**إزاي**. «ناقص ٣» بتخلّي المستخدم
-   يدوّر على التلاتة بعينه · والسطر اللي بيقول «تاريخ نهاية
-   الترخيص فاضي، وهو اللي بيمنع التعاقد لو انتهى» بيدّي السبب مع
-   الحقل.
+   The difference from a plain "3 missing" badge on the card: the badge counts, the assistant
+   explains why and how. "3 missing" makes the user hunt for which three; a line saying "license
+   expiry date is empty, and that's what blocks contracting if it's expired" gives the reason along
+   with the field.
 
-   ⚠️ **وترتيب السطور مقصود: المانع الأول.** المستخدم بيقرا أول
-   سطرين ويسيب الباقي، فلو التطمين فوق والمانع تحت، بيقفل ويفتكر
-   إنه خلص.
-   ═══════════════════════════════════════════════════════════ */
+   Line order is deliberate: the blocker comes first. Users read the first line or two and skip the
+   rest, so if the reassuring line is on top and the blocker is below, they'll close it thinking
+   they're done. */
 
 export interface StageAdvice {
-  /** بيمنع الإرسال فعلًا · محسوب من القواعد لا من رأي */
+  /** Actually blocks submission · computed from the rules, not from an opinion */
   blocking: Advice[]
-  /** ملاحظات بتحسّن الطلب ولا تمنعه */
+  /** Notes that improve the request without blocking it */
   notes: Advice[]
 }
 
@@ -237,9 +227,9 @@ export const stageAdvice = (
   }
 
   if (stage === 'contact') {
-    /* ⚠️ النوتة دي **قبل** الإرسال لا بعده: الجهة لازم تتأكّد إن
-       الرقم اللي كتبته شغّال **وهي لسه في الحقل**، لا لمّا يقف
-       الطلب على رمز ما وصلش. */
+    /* This note appears **before** submission, not after: the entity needs to confirm the number
+       they entered works while they're still in the field, not after the request is stuck on a code
+       that never arrived. */
     notes.push({
       key: 'otp', tone: 'warn',
       say: 'بعد إكمال البيانات يُرسل رمز التحقق إلى جوال الجهة.',
@@ -263,25 +253,22 @@ export const stageAdvice = (
   return { blocking, notes }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   نصيحة المحطة كـ**قراءات** · ن-3
+/* Station guidance as readings.
 
-   ⚠️ **الكارت اللي كان هنا كان بيرسم السطور بإيده.** `ReadingBlock`
-   مكتوب فوقه بالحرف إنه «الراسم الوحيد للقراءة في السيستم»، وإن
-   تحليلات المشروع كانت بترسم بلوكاتها بإيدها فطلعت نفس المعلومة
-   مكتوبة مرتين بشكلين. وأنا عملت **نفس الغلطة** في مساعد التسجيل:
-   `.rgadv-l` بقايمة ونبرة ولون خاصّين بيه · فالمستخدم بيشوف مساعدًا
-   في صفحة الجهة بشكل، ومساعدًا في تسجيل الجهة بشكل تاني.
+   The card that used to be here drew its own lines by hand. `ReadingBlock` is documented as the
+   system's single renderer for this kind of guidance, after project analytics were found drawing
+   their own blocks and duplicating the same information in two different shapes. The registration
+   assistant had made the same mistake: its own list, tone, and color, so a user would see one style
+   of assistant on the entity page and a different one during registration.
 
-   الدالة دي بتحوّل النصيحة لـ`Reading[]`، والرسم بقى `AnalysisCard`
-   نفسه · نفس الشرارة ونفس «راجع» ونفس الطيّ ونفس الكتابة المتدرّجة.
+   This function converts the guidance into `Reading[]`, and rendering now goes through the same
+   `AnalysisCard` — same highlight, same "review" label, same collapse behavior, same progressive
+   text.
 
-   ⚠️ **والترتيب هو الرسالة: المانع الأول.** الكارت المقفول بيعرض
-   `readings[0]` لمحةً، فلو التطمين فوق المستخدم بيقرا «تمام»
-   ويقفل وهو ناقصه أربع حقول.
-   ═══════════════════════════════════════════════════════════ */
+   Order is the message: the blocker comes first. A collapsed card previews `readings[0]`, so if the
+   reassuring line is first, the user reads "all good", closes it, and misses four missing fields. */
 
-/** خطوة في الرحلة · اسمها والناقص فيها */
+/** A journey step · its name and what's missing in it */
 export interface RegStepShort {
   key: string
   label: string
@@ -295,8 +282,8 @@ export const regReadings = (
   goto: (key: string) => void,
 ): Reading[] => {
   const here = steps.find((s) => s.key === stage)
-  /* ⚠️ الخطوة اللي إنت فيها بتتشال من «اللي فاضل» · نواقصها فوق
-     بالفعل كسطور، وتكرارها تحت بيقول إن فيه نواقص تانية. */
+  /* The step the user is currently on is removed from "what's left" — its gaps already show above
+     as lines, and repeating it below would suggest there are additional gaps */
   const left = steps.filter((s) => s.key !== stage && s.short.length > 0)
   const out: Reading[] = []
 
@@ -306,16 +293,15 @@ export const regReadings = (
       kind: 'flag',
       label: i === 0 ? here?.label : undefined,
       metric: i === 0
-        ? { value: String(advice.blocking.length), unit: 'يمنع الإرسال' }
+        ? { value: String(advice.blocking.length), unit: nounAfter(advice.blocking.length, MISSING_ITEM) }
         : undefined,
       text: a.fix ? `${a.say} ${a.fix}` : a.say,
-      /* ⚠️ المصدر مش تزويق · هو اللي بيفرّق بين قاعدة ورأي.
-         القاعدة 21 بتقول إن اللي بيمنع هو الحقول الإلزامية وحدها،
-         فالسطر بيقول إنه بيشرحها لا بيزوّد عليها.
+      /* The source isn't decoration — it's what separates a rule from an opinion. Only required
+         fields block submission, so the line explains that, rather than adding to it.
 
-         ⚠️ **وعلى أول سطر وحده.** مكتوب تحت كل واحد كان بيتكرّر
-         بالحرف تلات مرات في كارت واحد · والمصدر اللي بيتكرّر
-         بيتحوّل لخلفية بتتقفل العين عليها، فيضيع لما يبقى مختلفًا. */
+         And only on the first line. Repeating it under every line was literally duplicated three
+         times on one card — a repeated source turns into background noise the eye tunes out, so it
+         gets lost exactly when it differs. */
       src: i === 0 ? 'الحقول الإلزامية للتصنيف الحالي · القاعدة 21' : undefined,
     })
   })
@@ -325,8 +311,8 @@ export const regReadings = (
       id: `n-${a.key}`,
       kind: 'note',
       text: a.fix ? `${a.say} ${a.fix}` : a.say,
-      /* فحص المرفق على الملف لا على محتواه · الجملة اللي بتوحي
-         بمراجعة ما حصلتش بتخلّي الجهة تبعت وهي مطمّنة غلط */
+      /* The check covers the attachment as a file, not its content — wording that implies a real
+         review would let the entity submit with false reassurance */
       src: a.key.endsWith('-ok') || a.key.endsWith('-scan') || a.key.endsWith('-ext')
         ? 'فحص شكل الملف · والمراجِع هو من يقرأ المستند'
         : undefined,
@@ -357,23 +343,20 @@ export const regReadings = (
   return out
 }
 
-/* ═══════════════════════════════════════════════════════════
-   حالة محطة في الستيبر · **مكتوبة مرة واحدة للاتنين**
+/* A station's status in the stepper · written once, shared by both.
 
-   ⚠️ **«مفيش ناقص» مش معناها «خلصت».** المحطة اللي المستخدم لسه
-   ما وصلهاش ما ينفعش تاخد علامة صحّ · ومحطة «الحسابات البنكية»
-   بالذات مالهاش حقول إلزامية محسوبة، فكانت بتطلع **مكتملة وهو
-   لسه في المحطة الأولى** (العميل شافها في تسجيل الجهة من جوّه).
+   "Nothing missing" doesn't mean "done". A station the user hasn't reached yet shouldn't get a
+   checkmark, and the "bank accounts" station specifically has no computed required fields, so it
+   used to show as complete while the user was still on the first station.
 
-   فالقاعدة: صحّ = **عدّاها وهي نضيفة**. واللي قدّامها `todo`
-   مهما كان عدّادها، واللي هو واقف عليها `now`.
-   ═══════════════════════════════════════════════════════════ */
+   The rule: checked = passed while clean. Anything ahead of that is `todo` regardless of its count,
+   and the current one is `now`. */
 export const stepState = (
-  /** ترتيب المحطة دي */
+  /** This station's order */
   at: number,
-  /** ترتيب المحطة اللي المستخدم واقف عليها */
+  /** The order of the station the user is currently on */
   here: number,
-  /** عدد النواقص في المحطة دي */
+  /** Number of gaps in this station */
   short: number,
 ): 'done' | 'now' | 'todo' => {
   if (at === here) return 'now'
@@ -381,27 +364,24 @@ export const stepState = (
   return 'todo'
 }
 
-/* ═══════════════════════════════════════════════════════════
-   مراسلة الطلب · القناة اللي الجهة بتردّ منها
+/* Request messaging · the channel the entity replies through.
 
-   ⚠️ **القناة دي مش شات عام.** في النظام العامل لقينا صفر رسائل
-   في ٣٨ مشروعًا، والثريد الوحيد كان كله عن سند اتعطّل · يعني هي
-   بتتفتح **لما إجراء يقف على طرف**. فالرسايل هنا مربوطة بحالة
-   الطلب: الطلب اللي في المراجعة مالوش رسايل، واللي رجع بملاحظات
-   عنده رسالة المراجع بالاسم.
+   This channel isn't a general chat. The live system showed zero messages across dozens of
+   projects, and the one thread that existed was entirely about a stuck receipt — meaning it only
+   opens when an action is stuck on one side. So messages here are tied to request status: a request
+   under review has no messages, and one returned with notes carries the reviewer's message under
+   their name.
 
-   ⚠️ **والملاحظة الرسمية مش رسالة.** «اللي المؤسسة طلبته» قرار
-   مكتوب على الطلب وبيفضل ظاهر في الكارت · والرسالة كلام بين
-   الطرفين. خلطهم بيخلّي القرار يروح تحت في الثريد ويتوه.
-   ═══════════════════════════════════════════════════════════ */
-/** يوري رسايل جاهزة في الثريد · مقفول عشان الشكل يتبنى على الفاضي */
+   An official note isn't a message. "What the organization requested" is a decision recorded on the
+   request and stays visible on the card; a message is conversation between the two sides. Mixing
+   them would bury the decision down in the thread. */
+/** Shows sample messages in the thread · collapsed so the layout isn't built around an empty state */
 const SEEDED = false
 
 export const regThread = (state: RegState, name: string): ThreadMessage[] => {
-  /* ⚠️ **القناة بتبدأ فاضية** · ده المنظر الأساسي لها لا الاستثناء
-     (صفر رسائل في ٣٨ مشروعًا في النظام العامل)، والبوستر الفاضي
-     هو اللي بيتبنى عليه الشكل. الرسايل تحت بتتفتح بتغيير
-     `SEEDED` لمّا نحتاج نوري ثريد شغّال في العرض. */
+  /* The channel starts empty — this is its normal look, not the exception (zero messages across
+     dozens of projects in the live system), and the empty state is what the layout is built around.
+     Messages below appear by switching `SEEDED` when a working thread needs to be shown in a demo. */
   if (!SEEDED) return []
 
   if (state === 'completion') {

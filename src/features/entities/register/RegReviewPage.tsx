@@ -4,44 +4,41 @@ import {
   DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tag,
   type StepItem,
 } from '@/components/ui'
-import { DocFile } from '@/components/docs'
+import { DocFile, DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate } from '@/lib/format'
+import { isolate, nounAfter } from '@/lib/format'
 import { entityRows } from '@/data/mock/entities'
 import {
-  BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_STATE_SAY, REG_STATE_WHO, REG_TONE,
+  BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_STATE_SAY, REG_STATE_WHO,
   docRequired, licenseClash, partnerKind, regMissingDocs, regRequestById,
 } from '@/data/mock/registration'
 
-/* ═══════════════════════════════════════════════════════════
-   مراجعة طلب تسجيل · محطة مسؤول النظام
+/* Registration request review - system admin's screen.
 
-   ⚠️ **المراجع بيراجع إقرارًا لا سجلًا.** كل رقم في الشاشة دي
-   كتبته الجهة عن نفسها في بوّابة عامة · فدرجة الحوكمة موسومة
-   «إقرار الجهة»، ورقم الترخيص متحقَّق منه قدام المراجع لا بعد
-   القرار. المعلومة اللي المراجع محتاجها مش «إيه البيانات»، هي
-   **«إيه اللي ما اتأكّدش»**.
+   Note: the reviewer is reviewing a declaration, not a record. Every value on this screen was
+   entered by the entity about itself through a public portal, so the governance level is tagged
+   "entity declaration", and the license number is verified in front of the reviewer, not after the
+   decision. What the reviewer needs isn't "what is the data" but "what hasn't been verified".
 
-   ═══ تلات مخارج، ومخرج رابع للبنك ═══
+   Three outcomes, plus a fourth for the bank:
 
-     اعتماد وتفعيل   → الجهة **بتتولد** هنا وبيتبعت اسم المستخدم
-     إعادة للاستكمال → بترجع للجهة بملاحظة · قاعدة 26
-     رفض وإيقاف      → بيتأرشف بسببه · قاعدتا 28 و31
+     Approve and activate  - the entity is generated here and the username is sent
+     Return for completion - goes back to the entity with a note (rule 26)
+     Reject and suspend    - archived with a reason (rules 28 and 31)
 
-   والملاحظة الإدارية **إلزامية** في التانيين · النظام العامل
-   بيفرضها في «قبول و تفعيل» و«رفض وإيقاف»، والقاعدة 31 بتلزم
-   كتابة سبب الإيقاف أو سحب الاعتماد.
+   The admin note is required for the latter two - the live system enforces it on "approve and
+   activate" and "reject and suspend", and rule 31 requires writing the reason for suspension or
+   approval withdrawal.
 
-   ⚠️ **واعتماد الحساب البنكي منفصل** · النظام عنده شاشتان للبنوك
-   وسبعة أسباب رفض مكوَّدة، فالبنك بياخد قراره لوحده حتى لو اتدخل
-   في نفس الطلب (قاعدة 11). الفرق ده مسجَّل في البريف نوتة ن-4.
+   Note: bank account approval is separate - the system has two bank screens and seven coded
+   rejection reasons, so the bank makes its own decision even when tied to the same request (rule
+   11).
 
-   ⚠️ **ومفيش زرار حذف.** قاعدة 28: ممنوع الحذف نهائيًا · أرشفة أو
-   تعطيل. والغياب ده مكتوب في الشاشة لأن الغياب ما بيشرحش نفسه.
-   ═══════════════════════════════════════════════════════════ */
+   Note: there is no delete button. Rule 28: deletion is never allowed, only archive or deactivate.
+   This absence is documented on the screen because an absence doesn't explain itself. */
 
 type Outcome = 'approve' | 'return' | 'reject'
 
@@ -59,9 +56,9 @@ export default function RegReviewPage() {
   const [taken, setTaken] = useState<Outcome | null>(null)
   const [bankNo, setBankNo] = useState<string>('')
 
-  /* ⚠️ رقم طلب غلط ≠ طلب فاضي · نفس الدرس اللي اتعلم في شاشة
-     الصرف: الشاشة اللي بتكمّل على `undefined` بتفضل «سليمة»
-     فكل أدوات الفحص بترجع خضرا وهي بتقيس شاشة غلط. */
+  /* A wrong request ID is not the same as an empty request - same lesson learned on the
+     disbursement screen: a screen that renders fine on `undefined` still looks "healthy", so every
+     check tool returns green while measuring the wrong screen. */
   const missingDocs = useMemo(() => (r ? regMissingDocs(r) : []), [r])
   const clash = useMemo(
     () => (r ? licenseClash(r.licenseNo, r.type, entityRows) : null),
@@ -73,7 +70,7 @@ export default function RegReviewPage() {
       <AppLayout assistantContext={assistFor.page('طلبات تسجيل الجهات')}>
         <div className="viewstack">
           <div className="screen col">
-            {/* الحالة الفاضية: مفيش طلب، فمفيش آخر مستوى يتسمّى */}
+            {/* Empty state: no request, so there's no last stage to name. */}
             <Crumbs
               items={[
                 { label: 'الجهات', to: ROUTES.entities },
@@ -112,20 +109,21 @@ export default function RegReviewPage() {
       label: 'مراجعة مسؤول النظام',
       note: REG_STATE_WHO[r.state],
       at: r.decidedAt ? <DateText>{r.decidedAt}</DateText> : '',
-      state: decided ? 'done' : r.state === 'draft' ? 'todo' : 'now',
+      state: r.state === 'rejected' ? 'no' : decided ? 'done' : r.state === 'draft' ? 'todo' : 'now',
     },
     {
       label: 'إنشاء حساب الجهة · قاعدة 2',
       note: r.entityId ? `الجهة ${r.entityId}` : 'بعد الاعتماد وحده',
-      state: r.entityId ? 'done' : 'todo',
+      /* A rejected entity never gets an account created - this stage is skipped, not pending. */
+      state: r.entityId ? 'done' : r.state === 'rejected' ? 'skip' : 'todo',
     },
   ]
 
   return (
     <AppLayout assistantContext={assistFor.page('مراجعة طلب تسجيل', r.name)}>
       <div className="viewstack hasdock">
-        {/* `hasg2` زي صفحة الطلب والاتفاقية · المحتوى بيخلص فوق
-            الرصيف فالتدرّج بيبان، والعمود الجانبي بياخد مسافة لزقه */}
+        {/* `hasg2` as on the request and agreement pages - content ends above the dock, so the
+            gradient shows, and the side column keeps a margin from it. */}
         <div className="screen col hasg2">
           <Crumbs
             items={[
@@ -142,13 +140,13 @@ export default function RegReviewPage() {
                 <Mono>{r.id}</Mono> · {r.type} · {REG_STATE_WHO[r.state]}
               </p>
             </div>
-            <Tag tone={REG_TONE[r.state]}>{REG_STATE_SAY[r.state]}</Tag>
+            <Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag>
           </header>
 
           <div className="g2">
             <div className="col">
-              {/* ⚠️ كارت التحقّقات فوق البيانات عن قصد · المراجع
-                  محتاج «إيه اللي ما اتأكّدش» قبل «إيه البيانات» */}
+              {/* Note: the verification card sits above the data on purpose - the reviewer needs
+                  "what hasn't been verified" before "what the data is". */}
               <Glass>
                 <Head
                   title="ما يمنع الاعتماد"
@@ -191,11 +189,10 @@ export default function RegReviewPage() {
                 <KV
                   rows={[
                     { k: 'اسم الجهة', v: r.name },
-                    /* ⚠️ النوع ده **الجهة ما شافتهوش** · اتحطّ
-                       أوتوماتيك لأنها جاية من البوّابة. والمراجع
-                       لازم يشوفه لأنه بيفتح كونديشنز في إجراءات
-                       بعده، ولأنه الحاجة الوحيدة في الصفحة اللي
-                       مش إقرارًا منها. */
+                    /* Note: the entity never sees this type - it's set automatically because it
+                       comes from the portal. The reviewer must see it because it gates conditions
+                       in later steps, and it's the only thing on the page that isn't the entity's
+                       own declaration. */
                     {
                       k: 'نوع الشراكة',
                       v: (
@@ -230,8 +227,8 @@ export default function RegReviewPage() {
                 <KV
                   rows={[
                     { k: 'جوال الجهة', v: <Mono>{r.mobile}</Mono> },
-                    /* ك-2 · البريد **حقل قابل للفعل** لا نصّ يتنسخ
-                       بالإيد · ودي أكتر حاجة بتتعمل في مراجعة طلب */
+                    /* K-2: email is an actionable field, not text to copy by hand - and it's the
+                       most common action taken during a request review. */
                     {
                       k: 'البريد الإلكتروني',
                       v: <a className="tlink" href={`mailto:${r.email}`}><Mono>{r.email}</Mono></a>,
@@ -247,57 +244,35 @@ export default function RegReviewPage() {
                 />
               </Glass>
 
-              {/* المستندات بنفس معاملة المشاريع والجهات · `DocFile`
-                  بثامبنيله، عشان المراجع يعرف إن الترخيص **صورة
-                  ممسوحة** من الصف نفسه قبل ما يفتحه */}
+              {/* Documents are handled the same as for projects and entities: `DocFile` with a
+                  thumbnail, so the reviewer can tell the license is a scanned image straight from
+                  the row before opening it. */}
               <Glass>
                 <Head
                   title="المستندات"
                   meta={
                     <span className="sub">
-                      <Num>{r.docs.length}</Num> مرفوعًا · المطلوب للتصنيف{' '}
+                      <Num>{r.docs.length}</Num> {nounAfter(r.docs.length, { one: "مرفوع", few: "مرفوعة", many: "مرفوعًا" })} · المطلوب للتصنيف{' '}
                       <Num>{REG_DOCS.filter((d) => docRequired(d, r.type)).length}</Num>
                     </span>
                   }
                 />
-                {/* ⚠️ **المرفوع والغايب مش نفس الشيء، فمش نفس الصفّ.**
-                    أول نسخة حطّتهم في شبكة واحدة · والنتيجة إن اسم
-                    زي «شهادة التسجيل في ضريبة القيمة المضافة»
-                    اتكسر على خمس سطور جوّه خانة معمولة لثامبنيل
-                    ملف. المرفوع بياخد `DocFile` بثامبنيله (نفس
-                    معاملة المشاريع والجهات)، والغايب قائمة سطور ·
-                    وهي اللي المراجع بيقراها فعلًا. */}
-                <div className="docgrid">
-                  {REG_DOCS.filter((d) => r.docs.includes(d.key)).map((d) => (
-                    <DocFile
-                      key={d.key}
-                      name={`${d.label}.pdf`}
-                      meta={docRequired(d, r.type) ? 'إلزامي' : 'اختياري'}
-                      block
-                    />
-                  ))}
-                </div>
-
-                {REG_DOCS.some((d) => !r.docs.includes(d.key)) && (
-                  <>
-                    <p className="sub cnote">لم تُرفع</p>
-                    <ul className="regmiss-l">
-                      {REG_DOCS.filter((d) => !r.docs.includes(d.key)).map((d) => {
-                        const need = docRequired(d, r.type)
-                        return (
-                          <li key={d.key} className={need ? 'no' : ''}>
-                            <Icon name={need ? icons.alert : icons.doc} size="sm" />
-                            <span className={need ? '' : 'sub'}>{d.label}</span>
-                            <span className="pc-sp" />
-                            <Tag tone={need ? 'no' : 'mute'}>
-                              {need ? 'إلزامي لهذا التصنيف' : 'اختياري'}
-                            </Tag>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  </>
-                )}
+                {/* Note: the document list is now a single implementation (UA-22). There used to be
+                    a 3-column grid with names truncated at 131px (even "...pdf" got cut) plus a
+                    separate list for missing ones, and a third layout for the same role next to the
+                    `/entities/:id/docs` table and the closing rows. Now `DocList` matches all of
+                    them exactly: uploaded items with a thumbnail, missing ones with a reserved slot
+                    tagged "required/optional". Uploaded items come first. */}
+                <DocList
+                  label="مستندات طلب التسجيل وحالتها"
+                  rows={[...REG_DOCS].sort((a, b) => Number(r.docs.includes(b.key)) - Number(r.docs.includes(a.key)))
+                    .map((d) => ({
+                      name: `${d.label}.pdf`,
+                      uploaded: r.docs.includes(d.key),
+                      required: docRequired(d, r.type),
+                      meta: docRequired(d, r.type) ? 'إلزامي لهذا التصنيف' : 'اختياري',
+                    }))}
+                />
               </Glass>
             </div>
 
@@ -307,7 +282,7 @@ export default function RegReviewPage() {
                 <Steps items={steps} flow="ladder" />
               </Glass>
 
-              {/* الحساب البنكي · قرار منفصل حتى لو الإدخال واحد */}
+              {/* Bank account - a separate decision even though it's entered together. */}
               <Glass>
                 <Head
                   title="الحسابات البنكية"
@@ -316,10 +291,10 @@ export default function RegReviewPage() {
                     {' '}<Tag tone="mute">اعتماد منفصل</Tag>
                   </>}
                 />
-                {/* ⚠️ **حساب لكل وجه خير (ح-5)، فالمراجعة قايمة لا
-                    صفّ.** ووثيقة كل حساب جنبه لا في كومة المستندات:
-                    المراجع بيقارن الآيبان بالورقة، وكومة مستندات
-                    مالهاش ترتيب بتخلّيه يدوّر. */}
+                {/* Note: one account per beneficiary purpose (H-5), so the review is a list, not a
+                    row. Each account's supporting document sits next to it rather than in the
+                    general document pile: the reviewer compares the IBAN against the document, and
+                    an unordered pile of documents would make them search. */}
                 <ul className="rgbanks">
                   {r.banks.map((b, i) => (
                     <li key={b.id}>
@@ -382,7 +357,7 @@ export default function RegReviewPage() {
           </div>
         </div>
 
-        {/* ═══ الدوك ═══ */}
+        {/* === Documents === */}
         <div className="decdock">
           <div className="chrome decbar payact">
             {taken ? (
@@ -419,8 +394,11 @@ export default function RegReviewPage() {
                   </span>
                 </div>
 
-                {/* الملاحظة الإدارية · إلزامية في الإعادة والرفض ·
-                    النظام العامل بيفرضها، وقاعدة 31 بتلزمها */}
+                {/* Admin note - required on return-for-revision and rejection - the live system
+                    enforces it, and rule 31 requires it. */}
+                {/* The field and buttons form a single group that wraps together, so the field
+                    doesn't separate from "Return" if the note grows to two lines. */}
+                <div className="payact-g">
                 <label className="payact-n">
                   <span className="vis-h">الملاحظة الإدارية</span>
                   <input
@@ -431,6 +409,26 @@ export default function RegReviewPage() {
                 </label>
 
                 <div className="rowf gp-2">
+                  <button
+                    className="btn btn-2"
+                    data-needs-note=""
+                    disabled={!note.trim()}
+                    title={note.trim() ? 'يُعاد إلى الجهة مع الملاحظة' : 'اكتب الملاحظة الإدارية أولًا'}
+                    onClick={() => setTaken('return')}
+                  >
+                    إعادة للاستكمال
+                  </button>
+                  <button
+                    className="btn btn-d"
+                    data-needs-note=""
+                    disabled={!note.trim()}
+                    title={note.trim() ? 'يُؤرشف بسببه · قاعدة 28' : 'اكتب سبب الرفض أولًا'}
+                    onClick={() => setTaken('reject')}
+                  >
+                    رفض وإيقاف
+                  </button>
+                  {/* Primary action stays at line end - the field sits flush against "Return" and
+                      "Reject". */}
                   <button
                     className="btn btn-p"
                     disabled={blocked}
@@ -443,22 +441,7 @@ export default function RegReviewPage() {
                   >
                     اعتماد وتفعيل
                   </button>
-                  <button
-                    className="btn btn-2"
-                    disabled={!note.trim()}
-                    title={note.trim() ? 'يُعاد إلى الجهة مع الملاحظة' : 'اكتب الملاحظة الإدارية أولًا'}
-                    onClick={() => setTaken('return')}
-                  >
-                    إعادة للاستكمال
-                  </button>
-                  <button
-                    className="btn btn-d"
-                    disabled={!note.trim()}
-                    title={note.trim() ? 'يُؤرشف بسببه · قاعدة 28' : 'اكتب سبب الرفض أولًا'}
-                    onClick={() => setTaken('reject')}
-                  >
-                    رفض وإيقاف
-                  </button>
+                </div>
                 </div>
               </>
             )}

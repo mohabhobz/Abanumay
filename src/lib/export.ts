@@ -1,35 +1,39 @@
-/* ═══════════════════════════════════════════════════════════
-   تصدير جدول · Excel وصورة وطباعة/PDF.
+/* Table export — Excel, image, and print/PDF.
 
-   بلا أي اعتمادية جديدة، وده مقصود: كل مكتبة تصدير بتضيف نص ميجا
-   على الحزمة، ومكتبات الـPDF تحديدًا بتحتاج خطًا عربيًا مضمَّنًا
-   ومحرّك تشكيل عشان الحروف ما تطلعش مفكّكة · تكلفة كبيرة لميزة
-   المتصفح نفسه بيعملها أحسن.
+   No new dependencies, deliberately: every export library adds a few
+   megabytes to the bundle, and PDF libraries in particular need an
+   embedded Arabic font and a shaping engine or letters render
+   disconnected — a heavy cost for something the browser already does
+   better on its own.
 
-   فالطرق التلاتة بتتّكل على اللي المتصفح بيعرفه:
-     Excel  ← ملف xlsx حقيقي (zip مخزَّن + XML) مكتوب هنا بالكامل.
-     PDF    ← طباعة الصفحة، والمستخدم بيحفظها PDF من نافذة الطباعة.
-              التشكيل العربي والاتجاه بيطلعوا صح لأن المحرّك هو نفسه.
-     صورة   ← رسم على كانفاس بـ`fillText`، والمتصفح بيشكّل الحروف.
-   ═══════════════════════════════════════════════════════════ */
+   So all three methods rely on what the browser already knows how to do:
+
+   - Excel — a real xlsx file (a stored zip + XML), written entirely here.
+   - PDF — prints the page, and the user saves it as PDF from the print
+   dialog. Arabic shaping and direction come out correct because it's
+   the same rendering engine.
+   - Image — drawn on a canvas with `fillText`, letting the browser shape the letters. */
 
 export interface Sheet {
   /**
-   * اسم الملف بلا امتداد · **لاتيني**.
-   * المتصفح بيتجاهل خاصية `download` لو الاسم فيه محارف غير آمنة،
-   * والملف بينزل باسم «download» بلا امتداد. العنوان العربي بيعيش
-   * في `title` وبيظهر جوّه الملف نفسه.
+   * Filename without extension — Latin characters only. The browser
+   * ignores the `download` attribute if the name contains unsafe
+   * characters, and the file downloads as "download" with no extension.
+   * The Arabic title lives in `title` and appears inside the file itself.
    */
   file: string
-  /** العنوان المعروض · تبويب الورقة في Excel وترويسة الصورة والطباعة */
+  /**
+   * Displayed title — the sheet tab in Excel and the header for the
+   * image and print output.
+   */
   title: string
   headers: string[]
   rows: string[][]
-  /** صف الإجماليات، لو موجود */
+  /** Totals row, if present. */
   totals?: string[]
 }
 
-/* ═══════════════════ تنزيل ═══════════════════ */
+/* Download */
 
 const save = (blob: Blob, filename: string): void => {
   const url = URL.createObjectURL(blob)
@@ -39,16 +43,17 @@ const save = (blob: Blob, filename: string): void => {
   document.body.appendChild(a)
   a.click()
   a.remove()
-  /* الإفراج الفوري بيلغي التنزيل في بعض المتصفحات */
+  /* Revoking the object URL immediately cancels the download in some browsers. */
   setTimeout(() => URL.revokeObjectURL(url), 4_000)
 }
 
-/* ═══════════════════ xlsx ═══════════════════
+/* xlsx.
 
-   ملف xlsx = أرشيف zip فيه أربع ملفات XML. الأرشيف هنا بيتكتب
-   بطريقة «مخزَّن» (بلا ضغط)، وده مسموح في المواصفة وExcel بيقراه
-   عادي · وبيوفّر علينا محرّك ضغط كامل. الحجم أكبر، والجدول اللي
-   بيتصدّر من شاشة مش ميجابايتات أصلًا.                            */
+   An xlsx file is a zip archive containing four XML files. This archive
+   is written "stored" (uncompressed), which the spec allows and Excel
+   reads fine — and it saves us needing a full compression engine. The
+   file is larger, but a table exported from a screen is nowhere near
+   megabytes anyway. */
 
 const CRC = (() => {
   const t = new Uint32Array(256)
@@ -108,7 +113,7 @@ const zip = (entries: Entry[]): Blob => {
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-/** رقم صافٍ؟ الأرقام بتتكتب كأرقام عشان Excel يجمعها */
+/** Is it a plain number? Numbers are written as numbers so Excel can sum them. */
 const isNum = (s: string) => s !== '' && /^-?\d+(\.\d+)?$/.test(s)
 
 const cellXml = (v: string, ref: string, style: number) =>
@@ -135,15 +140,15 @@ export function exportXlsx(sheet: Sheet): void {
 
   const rowsXml = all
     .map((cells, ri) => {
-      /* أنماط: 1 ترويسة، 2 إجماليات، 0 عادي */
+      /* Styles: 1 header, 2 totals, 0 normal. */
       const style = ri === 0 ? 1 : sheet.totals && ri === lastRow - 1 ? 2 : 0
       const tds = cells.map((v, ci) => cellXml(v ?? '', `${colRef(ci)}${ri + 1}`, style)).join('')
       return `<row r="${ri + 1}">${tds}</row>`
     })
     .join('')
 
-  /* `rightToLeft="1"` بيخلي الورقة نفسها تفتح من اليمين في Excel،
-     وبدونه الجدول العربي بيتقري بالمقلوب. */
+  /* `rightToLeft="1"` makes the sheet itself open right-to-left in Excel;
+     without it, the Arabic table reads backwards. */
   const sheetXml =
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
@@ -174,7 +179,7 @@ export function exportXlsx(sheet: Sheet): void {
     `<xf xfId="0" fontId="1" fillId="2" applyFont="1" applyFill="1"/>` +
     `<xf xfId="0" fontId="2" fillId="3" applyFont="1" applyFill="1"/>` +
     `</cellXfs>` +
-    /* بعض القارئات بتحذّر لو مفيش نمط افتراضي مسمّى */
+    /* Some readers warn if there's no named default style. */
     `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>` +
     `</styleSheet>`
 
@@ -228,7 +233,7 @@ export function exportXlsx(sheet: Sheet): void {
   save(zip(files), `${sheet.file}.xlsx`)
 }
 
-/* ═══════════════════ صورة ═══════════════════ */
+/* Image */
 
 const readVar = (name: string, fallback: string): string => {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -236,27 +241,29 @@ const readVar = (name: string, fallback: string): string => {
 }
 
 /**
- * الجدول كصورة PNG.
+ * The table as a PNG image.
  *
- * الرسم يدوي لا لقطة شاشة: `fillText` بيخلي المتصفح يشكّل العربي
- * ويوزّعه بالاتجاه الصح، والصورة بتطلع نضيفة بضعف الدقة بدل ما تبقى
- * لقطة مضغوطة لجزء من صفحة.
+ * Drawn manually, not screenshotted: `fillText` lets the browser shape
+ * the Arabic and lay it out in the correct direction, producing a
+ * clean, double-resolution image instead of a compressed screenshot of
+ * part of a page.
  */
 export function exportPng(sheet: Sheet): void {
   const dpr = 2
   const pad = 28
   const rowH = 34
   const headH = 40
-  /* الخط من التوكن لا مكتوبًا هنا: الصورة المصدَّرة لازم تطلع بنفس
-     خط الشاشة، ولو اتكتب هنا بالإيد هيفضل قديمًا لما الهوية تتغيّر. */
+  /* The font comes from the design token, not hardcoded here: the
+     exported image needs to match the screen's font, and hardcoding it
+     here would go stale whenever the brand identity changes. */
   const font = readVar('--ft', 'system-ui, sans-serif')
 
   const probe = document.createElement('canvas').getContext('2d')
   if (!probe) return
   probe.font = `13px ${font}`
 
-  /* عرض كل عمود = أعرض نص فيه، بحدّ أقصى عشان اسم مشروع طويل
-     ما يبلعش الصورة */
+  /* Each column's width is its widest content, capped so a long project
+     name doesn't swallow the whole image. */
   const widths = sheet.headers.map((h, i) => {
     probe.font = `600 13px ${font}`
     let w = probe.measureText(h).width
@@ -295,8 +302,8 @@ export function exportPng(sheet: Sheet): void {
   c.textAlign = 'right'
   c.fillText(sheet.title, W - pad, pad + 12)
 
-  /* الأعمدة بتتحسب من اليمين لليسار: أول عمود في التعريف هو أول
-     عمود تشوفه العين في جدول عربي. */
+  /* Columns are laid out right to left: the first column in the
+     definition is the first column the eye sees in an Arabic table. */
   const x0 = W - pad
   const edges: number[] = []
   let cur = x0
@@ -343,15 +350,15 @@ export function exportPng(sheet: Sheet): void {
   cv.toBlob((b) => b && save(b, `${sheet.file}.png`), 'image/png')
 }
 
-/* ═══════════════════ طباعة / PDF ═══════════════════ */
+/* Print / PDF */
 
 /**
- * الطباعة بتشتغل على الصفحة نفسها، لا على نافذة جديدة.
+ * Printing works on the page itself, not a new window.
  *
- * النافذة الجديدة بتتمنع من مانع النوافذ في نص المتصفحات، وبتفقد
- * الخطوط المحمَّلة فالعربي بيطلع بخط احتياطي. الكلاس ده بيخفي كل
- * حاجة ما عدا منطقة الطباعة، و`@media print` في الستايل بيتكفّل
- * بالباقي.
+ * A new window gets blocked by the pop-up blocker in half of browsers,
+ * and loses the loaded fonts, so the Arabic falls back to a default
+ * font. This class hides everything except the print area, and
+ * `@media print` in the stylesheet handles the rest.
  */
 export function printArea(): void {
   document.body.classList.add('printing')
@@ -361,6 +368,6 @@ export function printArea(): void {
   }
   window.addEventListener('afterprint', done)
   window.print()
-  /* Safari أحيانًا ما بيبعتش `afterprint` */
+  /* Safari sometimes doesn't fire `afterprint`. */
   setTimeout(done, 1_500)
 }

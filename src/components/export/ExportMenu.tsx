@@ -6,29 +6,25 @@ import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
 import { PrintSheet } from './PrintSheet'
 
 /**
- * زرار التصدير · **الشكل الوحيد للتصدير في النظام**.
- *
- * قبل كده كل شاشة كانت بتكتب زرارها بإيدها: قايمة المشاريع والجهات
- * فيهم التلاتة (إكسل · PDF · صورة)، والتقارير فيها إكسل وبس. المستخدم
- * اللي اتعلّم إنه يطلع صورة من قايمة المشاريع بيدوّر عليها في التقرير
- * فما يلاقيهاش · والفرق مالوش سبب، مجرد كود مكرّر اتفرّع.
- *
- * فالمكوّن ده بيمتلك المخارج التلاتة ونسخة الطباعة مع بعض. أي شاشة
- * عندها `Sheet` بتاخد نفس القايمة بسطر واحد، ومفيش طريق تانٍ للتصدير.
- *
- * **ليه التلاتة بالذات؟** كل واحد لسؤال مختلف:
- *   إكسل · «عايز أشتغل على الأرقام» (خلايا حقيقية، فلترة، جمع).
- *   PDF  · «عايز أرفقه في محضر» (ورقة رسمية بترويسة ونطاق مكتوب).
- *   صورة · «عايز أحطه في شريحة أو أبعته في واتساب» (لقطة نضيفة).
- *
- * والتلاتة بيصدّروا **نفس النطاق**: نفس الـ`Sheet` اللي الشاشة
- * بتحسبه · الصفوف المحدَّدة لو فيه تحديد، وإلا نتيجة الفلتر كاملة.
+ * Export button — **the only export shape in the system**.
+ * Before this, every screen wrote its own button: the project and entity lists had all three
+ * (Excel, PDF, image), reports had only Excel. A user who learned to export an image from the
+ * project list would look for it in reports and not find it — a difference with no reason, just
+ * duplicated code that had drifted apart.
+ * So this component owns all three outputs and the print version together. Any screen with a
+ * `Sheet` gets the same menu in one line, and there's no other way to export.
+ * **Why these three specifically?** Each answers a different question:
+ *   Excel - "I want to work the numbers" (real cells, filtering, totals).
+ *   PDF   - "I want to attach it to a record" (a formal sheet with a header and stated scope).
+ *   Image - "I want to drop it in a slide or send it in a message" (a clean screenshot).
+ * And all three export **the same scope**: the same `Sheet` the screen computes — the selected rows
+ * if any are selected, otherwise the full filtered result.
  */
 export function ExportMenu({
   sheet,
-  /** «الصفوف المحدَّدة · ١٢ مشروعًا» · بيظهر فوق القايمة وفي ترويسة الطباعة */
+  /** "12 selected projects" — shown above the list and in the print header. */
   note,
-  /** عدّاد على الزرار (المحدَّد)، لو فيه تحديد */
+  /** A counter on the button (the selection count), if there is a selection. */
   count,
 }: {
   sheet: Sheet
@@ -36,27 +32,25 @@ export function ExportMenu({
   count?: number
 }) {
   const { open, setOpen, box } = useMenu<HTMLDivElement>()
-  /** جهة الفتح: `start` بتنمو ناحية بداية السطر، `end` بالعكس */
+  /** Open direction: `start` grows toward the start of the line, `end` the opposite. */
   const [side, setSide] = useState<'start' | 'end'>('start')
   const menu = useRef<HTMLDivElement>(null)
 
   /**
-   * القايمة بتتقلب لو هتخرج برّه الشاشة.
-   *
-   * زرار التصدير مكانه آخر شريط الأدوات، وفي RTL آخر الشريط هو
-   * **يسار الشاشة**. القايمة مربوطة ببداية الزرار وبتنمو لليسار،
-   * فعلى شاشة الميزانية كانت بتبدأ عند −167px وتتقصّ على حافة
-   * `.screen` (اللي `overflow:auto`). القياس بيحصل بعد الفتح مرة
-   * واحدة، والقلب بيحطّها ناحية الداخل.
+   * The menu flips if it would open off-screen.
+   * The export button sits at the end of the toolbar, and in RTL the end of the toolbar is **the
+   * left edge of the screen**. The menu anchors to the button's start and grows leftward, so on the
+   * budget screen it used to start off-screen and get clipped at the edge of the scrollable
+   * container. Measurement happens once after opening, and flipping moves it back inward.
    */
   useLayoutEffect(() => {
     if (!open) return
     const el = menu.current
     const anchor = box.current
     if (!el || !anchor) return
-    /* الحساب من **مرساة الزرار وعرض القايمة**، لا من موضع القايمة
-       الحالي: لو قِسنا الموضع الحالي، القايمة اللي اتقلبت مرة
-       بتفضل مقلوبة للأبد لأنها بقت جوّه الشاشة بالقلب. */
+    /* The calculation uses **the button's anchor and the menu's width**, not the menu's current
+       position: measuring the current position would leave a once-flipped menu flipped forever,
+       since flipping already placed it inside the screen. */
     const a = anchor.getBoundingClientRect()
     const w = el.offsetWidth
     const rtl = getComputedStyle(el).direction === 'rtl'
@@ -67,8 +61,8 @@ export function ExportMenu({
 
   const pick = (run: () => void) => () => {
     setOpen(false)
-    /* تأخير بسيط قبل الطباعة عشان القايمة تتقفل الأول · من غيره
-       بتطلع في الورقة. ونفس المهلة للباقي عشان الإحساس واحد. */
+    /* A brief delay before printing so the menu closes first — otherwise it would show up on the
+       printed page. The other outputs share the same delay so the feel is consistent. */
     setTimeout(run, 60)
   }
 
@@ -105,9 +99,9 @@ export function ExportMenu({
         )}
       </div>
 
-      {/* نسخة الطباعة بورتال على `body`: لو قعدت جوّه `.fexp` هتتخفي
-          معاها وقت الطباعة، ولو قعدت جوّه `#root` هتطبع ومعاها الشاشة.
-          برّه الاتنين بتبقى هي الورقة الوحيدة. */}
+      {/* The print version is a portal on `body`: sitting inside the export menu's own container
+          would hide it during printing along with everything else; sitting inside the app root
+          would print it along with the screen. Outside both, it becomes the only sheet on the page. */}
       {createPortal(<PrintSheet sheet={sheet} note={note} />, document.body)}
     </>
   )

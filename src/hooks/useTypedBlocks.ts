@@ -2,26 +2,30 @@ import { useEffect, useState } from 'react'
 
 const TICK_MS = 16
 const BLOCK_PAUSE_MS = 340
-/** أطول مدة مقبولة لكتابة المجموعة كلها · بعدها الانتظار بيبقى شغلًا */
+/**
+ * Longest acceptable duration for typing out the whole set — beyond it,
+ * waiting starts to feel like a chore.
+ */
 const BUDGET_MS = 5200
 
 export interface TypedBlocksState {
-  /** رقم البلوك اللي بيتكتب دلوقتي */
+  /** Index of the block currently being typed. */
   block: number
-  /** كام حرف اتكتب في البلوك ده */
+  /** Number of characters typed in this block so far. */
   chars: number
   done: boolean
 }
 
 /**
- * بيكتب مجموعة نصوص واحدًا ورا التاني، حرف حرف.
- * بيحترم `prefers-reduced-motion` فيعرض كل حاجة فورًا.
+ * Types out a set of texts one after another, character by character.
+ * Respects `prefers-reduced-motion` by showing everything instantly.
  *
- * السرعة مش ثابتة: بتتقسّم على ميزانية وقت ثابتة. الكتابة الحرفية
- * بتقول «بيقرا دلوقتي» وده مطلوب، بس بسرعة ثابتة كل قراءة زيادة
- * كانت بتزوّد الانتظار · ستّ قراءات كانت بتاخد تسع ثوانٍ قبل ما آخر
- * واحدة تبان. دلوقتي المجموعة كلها بتخلص في نفس المدة تقريبًا مهما
- * طالت، فزيادة القراءات بتغني الكارت ما بتأخّرهوش.
+ * Speed isn't fixed: it's divided across a fixed time budget. The
+ * typing effect signals "reading now," which is wanted, but at a
+ * constant speed each extra item added to the wait — six items used to
+ * take nine seconds before the last one appeared. Now the whole set
+ * finishes in roughly the same duration no matter how long it is, so
+ * adding more items enriches the card instead of delaying it.
  */
 export function useTypedBlocks(texts: string[], active: boolean): TypedBlocksState {
   const reduced =

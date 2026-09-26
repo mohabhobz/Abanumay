@@ -10,47 +10,43 @@ import Logo from '@/assets/LogoColor'
 import { ROUTES } from '@/app/routes'
 import { signOut } from '@/data/session'
 import { useQueryParams } from '@/hooks/useQueryParams'
-import { readDate } from '@/lib/format'
+import { NOUN, nounAfter, readDate } from '@/lib/format'
 import {
   BANK_DOC_LABEL, REG_STATE_SAY, REG_TONE, regMissingDocs, regRequestById,
 } from '@/data/mock/registration'
 import { portalViewOf, regThread } from '@/data/mock/regPortal'
 import { planStageLabel, plansOfEntity, waitingReview } from '@/data/mock/plans'
 
-/* ═══════════════════════════════════════════════════════════
-   بوّابة الجهة · ن-2 · «شاشة خاصة بيه بيشوف طلبه هو بس»
+/* Entity portal - "a screen that only shows its own application."
 
-   ⚠️ **أهم حاجة في الشاشة دي إنها فاضية عن قصد.** الجهة بتفتح
-   وبتلاقي **طلبًا واحدًا** ومفيش ريل ولا مشاريع ولا دفعات ·
-   واللي ما يتقالّهاش هتفتكره نظامًا ناقصًا أو صلاحية اتنسيت.
-   فالشاشة بتقول بالنص إن ده كل اللي ليها **لحدّ ما الطلب
-   يُعتمد**، وإن حساب الجهة الكامل بيتولد ساعتها (قاعدة 2).
+   Note: the most important thing about this screen is that it's empty on purpose. An entity opens
+   it and finds one application, with no reel, no projects, no payments - and if that's not stated,
+   it will read as a broken system or a missing permission. So the screen states outright that this
+   is all it has until the application is approved, and that the entity's full account gets created
+   at that point (rule 2).
 
-   ⚠️ **والحالة بتتقال بالفعل المطلوب لا بالاسم.** «بانتظار
-   الاستكمال» اسم إداري بيقول للجهة **مين واقف** لا **هي تعمل
-   إيه** · والسطر اللي تحته هو اللي بيقول «ارفع الناقص وابعت
-   تاني». ونفس الدرس اللي في ح-3: حالة نهائية (مرفوض) مكتوب
-   جنبها «تستنّى» بتوعد بحاجة جاية وهي مفيش.
+   Note: status is stated as the action required, not by its label. "Awaiting completion" is an
+   administrative label that tells the entity who's holding it, not what to do - the line underneath
+   is what actually says "upload what's missing and resubmit". Same lesson as elsewhere: a final
+   status (rejected) with "pending" written next to it promises something that isn't coming.
 
-   ⚠️ **والتعديل مفتوح في حالة واحدة بس.** الطلب اللي في المراجعة
-   ما يتعدّلش، وإلا المراجع بيقرا نسخة والجهة بتعدّل نسخة تانية
-   في نفس اللحظة.
+   Note: editing is open in exactly one state. An application under review can't be edited, or a
+   reviewer would be reading one version while the entity edits a different one at the same moment.
 
-   ⚠️ **والشاشة كانت بتشرح النظام بدل ما تخلّص الطلب.** كان فيها
-   «اللي بيوصلك» (جدول بالإيميلات اللي هتوصلها) و«الحالات الخمس»
-   (قاعدة 26 بحالاتها) · دول شرح نظام لواحدة عندها **حاجة واحدة
-   تعملها**: ترفع الناقص وتبعت. والأسوأ إن الزرار كان بيودّيها
-   للفورم من أوّله (`?step=form`) عشان ترفع ورقتين.
+   Note: this screen used to explain the system instead of getting the application through. It had
+   "what reaches you" (a table of emails you'd receive) and "the five statuses" (rule 26's states) -
+   system explanations for someone with exactly one thing to do: upload what's missing and submit.
+   Worse, the button used to send them back to the start of the form (`?step=form`) just to upload
+   two documents.
 
-   فالشاشة بقت حاجتين:
-     · **يمين · كارت الطلب** · الستيبر فوق زي باقي السيستم، وتحته
-       نتيجة المراجعة بالاسم، وكل ناقص جنبه زرار رفعه في مكانه،
-       وزرار واحد بيبعت تاني.
-     · **شمال · المراسلة** · نفس ثريد المشروع بالحرف (`Thread`)،
-       لأن اللي بيقف عند الجهة بيتحلّ بكلمة لا بفورم.
-   ═══════════════════════════════════════════════════════════ */
+   So the screen is now two things:
+   - right: the application card - the stepper on top like the rest of the system, the review
+   outcome by name below it, each missing item with its own upload button in place, and one button
+   to resubmit.
+   - left: correspondence - the exact same project thread (`Thread`), because whatever's stuck with
+   the entity gets resolved with a word, not a form. */
 
-/** الطلب اللي الجهة داخلة عليه · في النموذج بيتحدّد بالرابط */
+/** The application the entity is viewing - determined by the URL in this model. */
 const DEFAULT_REQ = 'REQ-2026-947139'
 
 export default function PortalPage() {
@@ -59,31 +55,30 @@ export default function PortalPage() {
   const r = regRequestById(values.req ?? DEFAULT_REQ) ?? regRequestById(DEFAULT_REQ)!
 
   const view = portalViewOf(r.state)
-  /* خطط الجهة · بتتقرا من `entityId` اللي اتولد بعد الاعتماد */
+  /* The entity's plans - read from the `entityId` created after approval. */
   const plans = r.entityId ? plansOfEntity(r.entityId) : []
   const missing = regMissingDocs(r)
 
-  /* ⚠️ **الرفع هنا لازم يعمل حاجة، والإرسال بعده كمان.** «ارفع»
-     و«ابعت الطلب تاني» كانوا زرارين بلا فعل · وده الفعل الوحيد
-     اللي الجهة جت البوّابة عشانه. دلوقتي كل مستند بيترفع بيتعلّم
-     باسم ملفه، والزرار بيتفتح لما الناقص يخلص، والإرسال بيرجّع
-     الطلب «قيد المراجعة» فعلًا في الشاشة. */
+  /* Note: upload here needs to actually do something, and so does submit after it. "Upload" and
+     "resubmit" used to be buttons with no action - and this is the one thing the entity came to the
+     portal for. Now every uploaded document is marked with its file name, the button enables once
+     nothing is missing, and submitting actually moves the application to "under review" on screen. */
   const [up, setUp] = useState<Record<string, string>>({})
   const [resent, setResent] = useState(false)
   const short = missing.filter((d) => !up[d.key])
 
-  /* ⚠️ المسار **مراحل الطلب لا مراحلنا الداخلية.** الجهة ما
-     بتشوفش «عند مسؤول النظام» ولا «عند مدير المنح» · دي حالات
-     بتقول مين واقف عندنا إحنا، وهي ما تقدرش تعمل فيها حاجة،
-     فبتتحوّل لقلق لا لمعلومة (نفس درس ح-3). */
-  /* ⚠️ **الطلب المُعاد بيرجع للمحطة الأولى.** كانت `completion`
-     بتتحسب مع القرار (`at = 2`)، فالستيبر بيقول «مراجعة المؤسسة
-     خلصت» والوسم فوقه بيقول «بانتظار الاستكمال» · حاجتان
-     بيتناقضوا في نفس الكارت. والطلب اللي رجع بملاحظات فعلًا عند
-     الجهة تاني، فمحطته هي الأولى. */
+  /* Note: the path shown is the application's own stages, not our internal ones. The entity never
+     sees "with the system admin" or "with the grants manager" - those describe who's holding it on
+     our side, and the entity can't act on them, so they turn into worry rather than information
+     (same lesson as elsewhere). */
+  /* Note: a returned application goes back to the first stage. `completion` used to be computed
+     alongside the decision (`at = 2`), so the stepper would say "institution review complete" while
+     the tag above it said "awaiting completion" - two things contradicting each other on the same
+     card. An application actually returned with comments is with the entity again, so its stage is
+     the first one. */
   const done = (k: string) => {
     const order = ['draft', 'review', 'decided']
-    /* بعد «ابعت تاني» الطلب رجع للمؤسسة فعلًا · فالمحطة بتتحرّك */
+    /* After "resubmit" the application really is back with the institution, so the stage moves. */
     const at = resent
       ? 1
       : r.state === 'draft' || r.state === 'completion'
@@ -92,24 +87,26 @@ export default function PortalPage() {
     return order.indexOf(k) < at ? 'done' : order.indexOf(k) === at ? 'now' : 'todo'
   }
 
-  /* ⚠️ **بلا `note` في الستيبر.** الشريط الأفقي بيجاوب سؤالًا
-     واحدًا: إنت فين ووصلت لفين · والسطر التاني تحت كل محطة بيحوّله
-     لفقرة، وهي مكتوبة تحت الشريط أصلًا. نفس القاعدة اللي اتطبّقت
-     على ستيبر التسجيل. */
+  /* Note: no `note` in the stepper. The horizontal bar answers one question: where are you and how
+     far along - a second line under every stage turns it into a paragraph, and that text already
+     lives below the bar. Same rule applied to the registration stepper. */
+  /* Note: the decision made is a result, not an ongoing stage - approved (check) or rejected (x).
+     `at = 2` used to keep "decision" as the current stage even after rejection. */
+  const outcome: StepItem['state'] | null =
+    resent ? null : r.state === 'approved' ? 'done' : r.state === 'rejected' ? 'no' : null
   const steps: StepItem[] = [
     { label: 'تجهيز الطلب', state: done('draft') },
     { label: 'مراجعة المؤسسة', state: done('review') },
-    { label: 'القرار', state: done('decided') },
+    { label: r.state === 'rejected' && !resent ? 'القرار · مرفوض' : 'القرار', state: outcome ?? done('decided') },
   ]
 
   const thread = regThread(r.state, r.name)
 
-  /* ⚠️ **بلا ريل وبلا مساعد داخلي · زي شاشة التسجيل بالظبط.**
-     اللي فاتح دي جهة مالهاش حساب في النظام، وريل فيه «المشاريع»
-     و«الميزانية» بيوعد بحاجات مش ليها · وأول ضغطة كانت هتوقعها
-     في شاشة دخول من غير ما تفهم ليه. القشرة العامّة هي نفسها
-     اللي في `RegisterPage`، فالجهة بتشوف نفس المكان اللي سجّلت
-     منه. */
+  /* Note: no reel and no internal assistant - exactly like the registration screen. Whoever opens
+     this is an entity with no system account, and a reel featuring "projects" and "budget" promises
+     things that aren't theirs - the first click would have dropped them onto a login screen with no
+     explanation why. The shared shell matches `RegisterPage`, so the entity sees the same
+     surroundings it registered from. */
   const body = (
       <div className="viewstack">
         <div className="screen col">
@@ -120,10 +117,10 @@ export default function PortalPage() {
               <span className="sub">بوّابة الجهة · طلبك أنت</span>
             </div>
             <span className="pc-sp" />
-            {/* ⚠️ **كان زرارًا بلا `onClick`** · شكله خروج وبيتضغط
-                وما بيحصلش حاجة، والعميل مسكه. دلوقتي بيمسح الجلسة
-                وبيرجّع لشاشة الدخول بـ`replace`، عشان «رجوع»
-                المتصفح ما يفتحش البوّابة تاني بعد الخروج. */}
+            {/* Note: this used to be a button with no `onClick` - it looked like logout, could be
+                clicked, and nothing happened; the client caught it. It now clears the session and
+                returns to the login screen with `replace`, so a browser "back" doesn't reopen the
+                portal after logout. */}
             <button
               className="btn btn-2 btn-sm"
               onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
@@ -143,24 +140,24 @@ export default function PortalPage() {
             </div>
           </header>
 
-          {/* ⚠️ **الستيبر في سكشن مستقلّ · زي باقي السيستم.** كان
-              جوّه كارت الطلب هنا، وفي كل شاشة تانية (التسجيل من
-              البوّابة ومن جوّه وصفحة الخطة) هو كارت `regsteps` لوحده
-              فوق المحتوى · نفس العنصر في مكانين مختلفين. */}
+          {/* Note: the stepper sits in its own section, like the rest of the system. It used to
+              live inside the application card here, while every other screen (portal registration,
+              internal registration, and the plan page) treats it as its own `regsteps` card above
+              the content - the same element in two different places. */}
           <Glass className="regsteps">
             <Steps items={steps} flow="stepper" />
           </Glass>
 
           <div className="g2">
-            {/* ═══ يمين · كارت الطلب ═══
-                كل اللي الجهة محتاجاه في كارت واحد: المؤسسة قالت إيه،
-                وإيه الناقص، وزرار بيبعت · بالترتيب ده. */}
+            {/* Right - application card
+                Everything the entity needs in one card: what the institution said, what's missing,
+                and a submit button, in that order. */}
             <div className="col">
               <Glass className="ptl-req">
                 <Head
                   title="طلبك"
-                  /* الوسم بيتبع الإرسال · من غيره الكارت بيقول
-                     «بانتظار الاستكمال» والستيبر فوقه بيقول «مراجعة» */
+                  /* The tag follows submission - without it the card says "awaiting completion"
+                     while the stepper above it says "review". */
                   meta={resent
                     ? <Tag tone={REG_TONE.review}>{REG_STATE_SAY.review}</Tag>
                     : <Tag tone={REG_TONE[r.state]}>{REG_STATE_SAY[r.state]}</Tag>}
@@ -168,7 +165,7 @@ export default function PortalPage() {
 
                 {!resent && <p className="sub cnote">{view.say}</p>}
 
-                {/* ── نتيجة المراجعة · اللي المؤسسة قالته بالنصّ ── */}
+                {/* Review outcome - what the institution said, verbatim */}
                 {r.note && (
                   <div className={`ptl-res${r.state === 'rejected' ? ' no' : ''}`}>
                     <Icon name={icons.alert} size="sm" />
@@ -179,27 +176,27 @@ export default function PortalPage() {
                   </div>
                 )}
 
-                {/* ── الناقص · كل واحد بزرار رفعه في مكانه ──
-                    ⚠️ **الرفع من هنا لا من الفورم من أوّله.** الزرار
-                    القديم كان بيودّي `?step=form` · يعني عشان ترفع
-                    ورقتين بتعدّي على ست محطات كلها متملّية.
+                {/* What's missing - each with its own upload button in place
+                    Note: upload happens from here, not from the start of the form. The old button
+                    used to send `?step=form`, meaning uploading two documents meant passing through
+                    six already-filled stages.
 
-                    ⚠️ **وبـ`DocList` لا بقايمة مكتوبة هنا.** كتبت
-                    `.ptl-short` بإيدي وهي **خامس** صورة لنفس الجدول
-                    اللي وحّدناه إمبارح · نفس الغلطة اللي `onedoc`
-                    اتكتب عشانها، وأنا كسرتها بعدها بيوم. الفاحص
-                    بيمسك `.dstat` و`DocDownload` وما كانش بيشوف
-                    قايمة متكتوبة من الصفر. */}
-                {/* ⚠️ **الصفّ بيفضل بعد الرفع ويتقلب «مرفوع»** · لو
-                    اختفى، الجهة ما بتعرفش اترفع ولا ضاع، والكارت
-                    بيقصر تحت إيدها وهي بترفع اللي بعده. */}
+                    Note: via `DocList`, not a list written here. `.ptl-short` was hand-written and
+                    is a fifth version of the same table we unified elsewhere yesterday - the exact
+                    mistake `onedoc` was written to prevent, broken again a day later. The checker
+                    catches `.dstat` and `DocDownload`, and wouldn't have caught a list built from
+                    scratch. */}
+                {/* Note: the row stays after upload and flips to "uploaded" - if it disappeared,
+                    the entity wouldn't know whether it uploaded or lost the file, and the card
+                    would shrink under their hand while they upload the next one. */}
                 {view.editable && !resent && missing.length > 0 && (
                   <>
                     <Head
                       title="المستندات الناقصة"
-                      meta={short.length > 0
-                        ? <Tag tone="warn"><Num>{short.length}</Num> مستند</Tag>
-                        : <Tag tone="ok">اكتمل</Tag>}
+                      /* A count inside the status card above - text, not a second tag. */
+                      meta={<span className="sub">{short.length > 0
+                        ? <><Num>{short.length}</Num> {nounAfter(short.length, NOUN.doc)}</>
+                        : 'اكتمل'}</span>}
                     />
                     <DocList
                       label="المستندات الناقصة في الطلب"
@@ -228,9 +225,9 @@ export default function PortalPage() {
                   </p>
                 )}
 
-                {/* ⚠️ **زرار واحد · وبيقول اللي بعده.** «ابعت تاني»
-                    مش «تعديل»: الجهة مش بتعدّل بياناتها، هي بتكمّل
-                    ناقصًا وتردّ الطلب للمراجعة. */}
+                {/* Note: one button, stating what happens next. "Resubmit", not "edit": the entity
+                    isn't editing its data, it's completing what's missing and returning the
+                    application for review. */}
                 <footer className="payq-f">
                   <span className="sub payq-when">
                     أُرسل <DateText>{r.submittedAt}</DateText>
@@ -267,7 +264,7 @@ export default function PortalPage() {
                       k: 'بريد الحساب',
                       v: <a className="tlink" href={`mailto:${r.acctEmail}`}><Mono>{r.acctEmail}</Mono></a>,
                     },
-                    { k: 'المستندات المرفوعة', v: <><Num>{r.docs.length}</Num> مستند</> },
+                    { k: 'المستندات المرفوعة', v: <><Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}</> },
                   ]}
                 />
                 {!view.editable && (
@@ -283,13 +280,11 @@ export default function PortalPage() {
                   title="الحسابات البنكية"
                   meta={<span className="sub"><Num>{r.banks.length}</Num> حساب</span>}
                 />
-                {/* ⚠️ **الشهادة البنكية صفّ `DocList` زي أي مرفق.**
-                    كانت `DocFile` واقفة لوحدها جوّه عمود الحساب ·
-                    و`.dfile-b` حشوها معمول لصفّ **جدول** (الثامبنيل
-                    ٤٤ + الحشو = ارتفاع الصفّ)، فبرّه الجدول الحشو
-                    ده بيزيد على الفراغ اللي فوقه وتحته والصفّ بيطلع
-                    مفكوكًا وشكله غير اللي في صفحة المشروع (العميل
-                    شافها). */}
+                {/* Note: the bank certificate is a `DocList` row like any attachment. `DocFile`
+                    used to stand alone inside the account column - and `.dfile-b`'s padding is
+                    built for a table row (44px thumbnail + padding = row height), so outside a
+                    table that padding adds to the space above and below it, leaving the row loose
+                    and unlike its counterpart on the project page (which the client has seen). */}
                 <ul className="rgbanks">
                   {r.banks.map((b, i) => (
                     <li key={b.id}>
@@ -314,19 +309,19 @@ export default function PortalPage() {
                 </ul>
               </Glass>
 
-              {/* ═══ خطط الجهة · BPD-012 ═══
-                  ⚠️ **بتبان بعد الاعتماد وحده.** قبله الجهة مالهاش
-                  مشاريع أصلًا، فمالهاش خطط · وكارت فاضي اسمه «خططك»
-                  في شاشة جهة لسه بتستنّى قرار بيقول إن في حاجة ناقصة
-                  وهي مش ناقصة، هي ما بدأتش. */}
+              {/* Entity plans - rule 12.
+                  Note: this only appears after approval. Before that, the entity has no projects at
+                  all, so it has no plans - and an empty card labeled "your plans" on a screen still
+                  awaiting a decision implies something is missing, when really it just hasn't
+                  started. */}
               {r.state === 'approved' && plans.length > 0 && (
                 <Glass>
                   <Head
                     title="خطط مشاريعك"
-                    meta={<span className="sub"><Num>{plans.length}</Num> خطة</span>}
+                    meta={<span className="sub"><Num>{plans.length}</Num> {nounAfter(plans.length, NOUN.plan)}</span>}
                   />
-                  {/* ⚠️ الجملة دي هي اللي بتمنع أكبر سوء فهم في
-                      الموديول: «رفعت الشاهد» مش «اتحسب إنجازًا» */}
+                  {/* Note: this sentence is what prevents the biggest misunderstanding in this
+                      module: "uploaded the evidence" isn't "counted as complete". */}
                   <p className="sub cnote">
                     ترفع الجهة الشواهد وتُبلغ باكتمال النشاط · ويُحتسب الإنجاز بعد
                     مراجعة مشرف المنح وقبوله (القاعدة <span className="num">14</span>).
@@ -352,16 +347,16 @@ export default function PortalPage() {
               )}
             </div>
 
-            {/* ═══ شمال · المراسلة ═══
-                ⚠️ نفس `Thread` بتاع صفحة المشروع بالحرف · اللي بيقف
-                عند الجهة بيتحلّ بكلمة لا بفورم، والقناة هي المكان
-                الطبيعي للسؤال. */}
+            {/* Left - correspondence
+                Note: the exact same `Thread` as the project page - whatever's stuck with the entity
+                gets resolved with a word, not a form, and the channel is the natural place for a
+                question. */}
             <div className="col">
               <Glass className="ptl-talk">
                 <Head
                   title="التواصل مع المؤسسة"
-                  /* ⚠️ العدّاد بيظهر لمّا يبقى فيه رسايل · «لا توجد»
-                     جنب بوستر بيقول نفس الحاجة بجملة كاملة تكرار */
+                  /* Note: the counter shows only when there are messages - "none" next to a
+                     placeholder saying the same thing in a full sentence is redundant. */
                   meta={thread.length > 0
                     ? <span className="sub"><Num>{thread.length}</Num> رسائل</span>
                     : undefined}
@@ -376,10 +371,9 @@ export default function PortalPage() {
                 />
               </Glass>
 
-              {/* ⚠️ فقرة «الحساب ده على طلبك إنت …» اتشالت بطلب
-                  العميل · كانت بتشرح قاعدة 2 لواحدة جاية تخلّص
-                  ورقتين، والترويسة فوق بتقول «بوّابة الجهة · طلبك
-                  أنت» أصلًا. */}
+              {/* Note: the paragraph "this account is for your application..." was removed at the
+                  client's request - it explained rule 2 to someone here to finish two documents,
+                  and the header above already says "entity portal - your application". */}
             </div>
           </div>
 

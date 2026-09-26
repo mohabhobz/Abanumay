@@ -5,17 +5,14 @@ dist-ssr
 .DS_Store
 .vite
 
-# محرّرات
+# Editors
 .vscode/*
 !.vscode/extensions.json
 .idea
 
-# ⚠️ الداتا التجريبية فيها أسماء وأرقام مأخوذة من النظام العامل.
-# الملف ده متتبَّع عمدًا لأنه بيانات مشروع واحد للعرض — أي داتا
-# حقيقية إضافية (جهات، مستفيدين، آيبان) تتحط في ملف .local.ts
-# وما تتكوميتش.
+# Mock data is committed on purpose (demo fixtures). Any additional real data
+# (entities, beneficiaries, IBANs) goes in a *.local.ts file and is never committed.
 src/data/mock/*.local.ts
-.shots/
 
 *.tar.gz
 vite.config.ts.timestamp-*

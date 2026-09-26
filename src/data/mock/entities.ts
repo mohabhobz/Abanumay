@@ -1,9 +1,9 @@
 /**
- * جهات تجريبية · 14 جهة بشكل سجل الشركاء في النظام.
+ * Sample entities · 14 entities representing the partner registry in the system.
  *
- * ⚠️ الأسماء والتراخيص والاتصال **وهمية**. اللي حقيقي هنا هو
- * البنية والتوزيع: نسب الحوكمة غير المقيَّمة، والمستندات الناقصة،
- * وحالات التفعيل الخمس · زي ما ظهرت في تقارير الشركاء.
+ * Names, licenses, and contact details are fictional. What's real is the structure and
+ * distribution: unassessed governance ratios, missing documents, and the five activation states,
+ * matching real-world patterns.
  */
 import type { EntityRow } from '@/types/domain'
 

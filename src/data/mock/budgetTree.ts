@@ -1,47 +1,44 @@
 /**
- * الميزانية · الإعدادات وشجرة البنود
+ * Budget · settings and the item tree
  *
- * **المصدران:** ميتنج مظفر · 15 سبتمبر 2026 · وجدول «شجرة
- * الميزانية (مثال توضيحي)» في الوثيقة.
+ * **Two sources:** the meeting on the budget, and the "budget tree (illustrative example)" table in
+ * the document.
  *
- * ⚠️ **الميزانية مش رقم، هي شجرة.** الشاشة القديمة كانت بتعرض
- * المخصص والمحجوز والمصروف لسنة كاملة — أرقام صحيحة، لكنها
- * **نتيجة** الشجرة لا الشجرة نفسها. واللي بيشتغل عليه المستخدم
- * فعلًا هو البناء: مسار جوّاه مجال جوّاه هدف، وكل أب مجموع أبنائه.
+ * Warning: **the budget isn't a number, it's a tree.** The old screen showed the allocated, held,
+ * and spent amounts for a full year — correct figures, but they're the **result** of the tree, not
+ * the tree itself. What the user actually works on is the structure: a track containing an area
+ * containing a goal, with every parent equal to the sum of its children.
  *
- * ═══ توفيق بين المصدرين ═══
+ * === Reconciling the two sources ===
  *
- * مظفر وصف **تلات أنواع**: أساسي · رئيسي · فرعي — وقال صراحةً إن
- * المسمّيات للشرح وممكن تتغيّر. وجدول الوثيقة بيعرض **نوعين**
- * (رئيسي · فرعي) ومعاهم **رقم المستوى**: «رئيسي - 0» للجذر،
- * «رئيسي - 1» للمسار، «رئيسي - 2» للمجال، «فرعي - 3» للهدف.
+ * The budget owner described **three types**: basic, primary, secondary — and said explicitly the
+ * labels are for explanation and might change. The document's table shows **two types** (primary ·
+ * secondary) along with a **level number**: "primary - 0" for the root, "primary - 1" for the
+ * track, "primary - 2" for the area, "secondary - 3" for the goal.
  *
- * فالمبنيّ هنا هو شكل الوثيقة: **نوعان ورقم مستوى محسوب**، و«البند
- * الأساسي» اللي مظفر قصده هو **الرئيسي عند المستوى صفر** — واحد
- * يونيك ومالوش أب. كده الاتنين متوفّقين والمستخدم بيشوف المسمّى
- * اللي في وثيقته.
+ * So what's built here follows the document's shape: **two types plus a computed level number**,
+ * and the "basic item" meant is **primary at level zero** — a single unique one with no parent.
+ * That reconciles both, and the user sees the label used in their own document.
  *
- * ═══ والفرق اللي بيقلب الواجهة ═══
+ * === And the difference that flips the UI ===
  *
- * **الحجز والدفع بيحصلوا على الورقة وحدها** (البند اللي مالوش
- * أبناء) · واللي فوقها **للتقارير**. يعني بند في نص الشجرة رقمه
- * صحيح ومع ذلك ما ينفعش تحجز عليه ولا تصرف منه · وده مش تفصيلة
- * تقنية، ده اللي بيخلّي المستخدم يفهم ليه الزرار مقفول.
+ * Holding and spending happen **only on the leaf** (an item with no children) — anything above it
+ * is **for reporting only**. So an item in the middle of the tree has a valid number and still
+ * can't be held against or spent from — and that's not a technical detail, it's what makes the user
+ * understand why the button is disabled.
  */
-import { nf } from '@/lib/format'
+import { countOf, nf, NOUN } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   الإعدادات · قبل أي ميزانية
+/* Settings · before any budget
 
-   ⚠️ **السنة المالية كيان مستقل، مش خانة في فورم الميزانية.**
-   «أي سيستم في الدنيا فيه فلوس لازم يعرف الفلوس دي اتصرفت في أنهي
-   سنة» — ولو السنة اتكتبت جوّه الميزانية، كل حركة مالية تانية في
-   السيستم هتحتاج تكتبها من تاني وتوفّق بينهم بالإيد.
-   ═══════════════════════════════════════════════════════════ */
+   Warning: **the fiscal year is an independent entity, not a field in the budget form.** Any system
+   anywhere that deals with money needs to know which year that money was spent in — and if the year
+   were written inside the budget, every other financial transaction in the system would need to
+   write it again and be reconciled by hand. */
 
 export interface FiscalYear {
   id: string
-  /** اسم السنة زي ما المستخدم بيكتبه · 2026 */
+  /** The year's name exactly as the user types it · 2026 */
   name: string
   from: string
   to: string
@@ -55,12 +52,12 @@ export const fiscalYears: FiscalYear[] = [
 ]
 
 /**
- * مصادر التمويل.
+ * Funding sources.
  *
- * ⚠️ **الرمز مش زينة.** المؤسسة بتدير أوقافها وأوقاف تانية (وقف
- * موضي المسفر أوقاف زوجة المؤسِّس، بتُدار عن طريق المؤسسة)، وكل
- * مصدر ميزانيته منفصلة تمامًا. والرمز هو اللي بيربط الحركة المالية
- * بمصدرها لما الانتجريشن يجي · الاسم بيتغيّر، الرمز لأ.
+ * Warning: **the symbol isn't decoration.** The Foundation manages its own endowments as well as
+ * others' (an endowment belonging to the founder's wife, managed through the Foundation), and each
+ * source's budget is fully separate. The symbol is what ties a transaction back to its source once
+ * integration happens — the name can change, the symbol doesn't.
  */
 export interface FundSource {
   code: string
@@ -72,34 +69,29 @@ export const fundSources: FundSource[] = [
   { code: 'MM', name: 'وقف موضي المسفر' },
 ]
 
-/* ═══════════════════════════════════════════════════════════
-   شجرة البنود
-   ═══════════════════════════════════════════════════════════ */
+/* Item tree */
 
 /**
- * نوع البند · زي جدول الوثيقة.
+ * Item type · as in the document's table.
  *
- * ⚠️ **النوع اختيار المستخدم، مش استنتاج من المكان.** ممكن
- * نستنتجه من العمق ونريّح نفسنا، لكن ساعتها المستخدم ما بيتعلّمش
- * الهيكل — بيحطّ حاجة ويلاقي اسمها اتغيّر لوحده. فهو بيختار،
- * والقواعد بتقول له غلط فين وليه · نفس منطق قاعدة 4 في التسجيل:
- * القائمة قبل الزرار لا الرسالة بعده.
+ * Warning: **the type is a user choice, not an inference from position.** It could be inferred from
+ * depth and save the effort, but then the user never learns the structure — they'd add something
+ * and find its name changed on its own. So they choose, and the rules tell them where it's wrong
+ * and why — the same logic as rule 4 in registration: the list comes before the button, not a
+ * message after it.
  */
-/* ═══════════════════════════════════════════════════════════
-   ⚠️ **تلات أنواع لا اتنين · والترتيب أساسي ← رئيسي ← فرعي.**
+/* Warning: **three types, not two — and the order is basic -> primary -> secondary.**
 
-   النسخة القديمة كان فيها نوعان (رئيسي · فرعي)، والجذر كان
-   «رئيسي» برضو · يعني **نوع واحد بيوصف حاجتين مختلفتين**: البند
-   اللي هو الميزانية كلها، والبند اللي تحته أهداف. والنتيجة إن
-   القواعد ما كانتش تقدر تفرّق بينهم إلا بـ`parentId === null`،
-   وده شرط على **الموضع** لا على **النوع** · فالشجرة اللي فيها
-   جذران كان لازم تتمسك بقاعدة تانية منفصلة.
+   The old version had two types (primary · secondary), and the root was also "primary" — meaning
+   **one type described two different things**: the item that is the whole budget, and an item
+   beneath it with goals under it. The result was that the rules could only tell them apart with
+   `parentId === null`, which is a condition on **position**, not on **type** — so a tree with two
+   roots would need to rely on a separate rule.
 
-   دلوقتي النوع بيقول المستوى بنفسه:
-     أساسي  · الميزانية نفسها · واحد ومفيش أب
-     رئيسي  · مسار أو مجال · تحته بنود
-     فرعي   · هدف · آخر الشجرة، وعليه الحجز والصرف
-   ═══════════════════════════════════════════════════════════ */
+   Now the type states the level itself:
+     basic     the budget itself, one, with no parent
+     primary   a track or area, has items beneath it
+     secondary a goal, the end of the tree, and where holding and spending happen */
 export type LineKind = 'base' | 'main' | 'sub'
 
 export const KIND_SAY: Record<LineKind, string> = {
@@ -114,27 +106,23 @@ export const KIND_NOTE: Record<LineKind, string> = {
   sub: 'هدف · آخر الشجرة، وعليه يكون الحجز والصرف',
 }
 
-/** الترتيب في الهرم · الرقم هو الرُّتبة لا المستوى */
+/** Order in the hierarchy · the number is rank, not level */
 export const KIND_RANK: Record<LineKind, number> = { base: 0, main: 1, sub: 2 }
 
-/* ═══════════════════════════════════════════════════════════
-   ⚠️ **الرُّتبة مش المستوى · ودي الغلطة اللي وقعت فيها أول مرة.**
+/* Warning: **rank is not level, and that's the mistake made the first time.**
 
-   كتبت القاعدة «كل نوع تحت اللي رُتبته أقل منه بواحد»، وشغّلتها،
-   فطلعت **٦ ملاحظات على شجرة الوثيقة نفسها**: «مجال التعليم العام
-   رئيسي تحت رئيسي». وده صح في القاعدة وغلط في الواقع · مثال
-   الوثيقة بالنص **مسار ← مجال ← هدف**، والاتنين الأولانيين
-   رئيسيان.
+   The rule written was "every type sits one rank below the one above it," and running it produced
+   **6 flags on the document's own tree**: "general education area is primary under primary." That's
+   correct per the rule and wrong in reality — the document's own example is literally track -> area
+   -> goal, and the first two are both primary.
 
-   فالترتيب اللي طلبه مهاب («أول حاجة الأساسي وبعديه رئيسي وتحتيه
-   فرعي») هو ترتيب **الأنواع** لا عدد المستويات · والمستويات
-   مفتوحة زي ما الشاشة بتقول: «تلاتة أو خمسة، طالما كل بند تابع
-   لبند أعلى منه».
+   So the ordering requested ("first basic, then primary, then secondary") is an ordering of
+   **types**, not a count of levels — levels stay open-ended, as the screen itself states: "three or
+   five, as long as every item belongs under one above it."
 
-     أساسي · الجذر وحده، وواحد في الشجرة
-     رئيسي · تحت أساسي **أو تحت رئيسي** · فبيعمل مسار ثم مجال
-     فرعي  · تحت رئيسي وحده · وآخر الشجرة فمفيش تحته حاجة
-   ═══════════════════════════════════════════════════════════ */
+     basic     the root alone, one per tree
+     primary   under basic **or under primary**, so it can form track then area
+     secondary under primary alone, the end of the tree, nothing beneath it */
 export const KIND_UNDER: Record<LineKind, LineKind[]> = {
   base: [],
   main: ['base', 'main'],
@@ -144,43 +132,44 @@ export const KIND_UNDER: Record<LineKind, LineKind[]> = {
 export const kindFits = (kind: LineKind, parent: LineKind | undefined): boolean =>
   parent === undefined ? kind === 'base' : KIND_UNDER[kind].includes(parent)
 
-/** النوع المتوقّع للابن · بيوفّر خطوة ولا بيمنع اختيارًا (ج-15) */
+/** Expected child type · offers a shortcut, doesn't block a choice */
 export const kindUnder = (parent: LineKind | undefined): LineKind =>
   parent === undefined ? 'base' : parent === 'base' ? 'main' : 'sub'
 
 export interface BudgetNode {
   id: string
-  /** اسم البند الداخلي · اللي المؤسسة بتشتغل بيه */
+  /** Internal item name · the one the Foundation works with */
   label: string
   /**
-   * الاسم الظاهر للمستخدم برّه المؤسسة.
+   * The name shown to users outside the Foundation.
    *
-   * ⚠️ **ده مش ترجمة للاسم، ده اسم تاني بغرض تاني.** الاسم الداخلي
-   * بيتكتب للمحاسبة («المنح النوعي - تعليم - جامعي»)، والجهة اللي
-   * بتقرا تقريرها ما بتفهمش منه حاجة · فالبديل هو اللي بيظهر لها.
+   * Warning: **this isn't a translation of the name, it's a different name for a different
+   * purpose.** The internal name is written for accounting ("education grants - qualitative -
+   * university"), and an entity reading its report wouldn't understand it, so the alternate name is
+   * what shows to them.
    */
   alias?: string
   /**
-   * اسم البند الداخلي يظهر للخارج؟
+   * Does the internal item name show externally?
    *
-   * ⚠️ **ولمّا يبقى `false`، البديل إلزامي.** غير كده البند بيظهر
-   * للخارج **بلا أي اسم** · والمستخدم اللي طفى الإظهار مش قصده
-   * يخفي البند، قصده يخفي **التسمية الداخلية**.
+   * Warning: **and when this is `false`, the alternate name becomes required.** Otherwise the item
+   * shows externally **with no name at all** — a user who turned off display didn't mean to hide
+   * the item, they meant to hide the **internal label**.
    */
   showLabel: boolean
   kind: LineKind
-  /** `null` لجذر الشجرة وحده · وهو «رئيسي - 0» في الوثيقة */
+  /** `null` for the tree root alone · that's "primary - 0" in the document */
   parentId: string | null
-  /** المبلغ المخصص */
+  /** Allocated amount */
   allocated: number
   /**
-   * المبلغ المتاح · المخصص ناقص المحجوز والمصروف.
-   * ⚠️ **رقم مستقل لا محسوب من الأبناء**: الأب ممكن يكون متاحه
-   * أقل من مجموع متاح أبنائه لأن الحجز بيحصل على الورقة، والفرق
-   * بيطلع من التقرير لا من الجمع.
+   * Available amount · allocated minus held minus spent.
+   * Warning: **an independent figure, not computed from children**: a parent's available amount can
+   * be less than the sum of its children's available amounts, because holding happens at the leaf —
+   * the discrepancy shows up in the report, not from addition.
    */
   available: number
-  /** غير النشط بيفضل في الشجرة بلا مبالغ · زي «مسار تفطير الصائمين» */
+  /** An inactive item stays in the tree with no amounts · like the "Ramadan iftar track" */
   active: boolean
 }
 
@@ -197,7 +186,7 @@ export interface BudgetDoc {
   nodes: BudgetNode[]
 }
 
-/* ═══ قراءات الشجرة ═══ */
+/* Tree readings */
 
 export const childrenOf = (nodes: BudgetNode[], id: string | null): BudgetNode[] =>
   nodes.filter((n) => n.parentId === id)
@@ -206,11 +195,11 @@ export const hasChildren = (nodes: BudgetNode[], id: string): boolean =>
   nodes.some((n) => n.parentId === id)
 
 /**
- * الاسم اللي بيظهر برّه المؤسسة.
+ * The name shown outside the Foundation.
  *
- * ⚠️ **دالة واحدة، لأن الحساب ده هيتكرر في التقارير والبوّابة
- * وملفات التصدير.** لو كل شاشة حسبته بإيدها، أول واحدة تتنسي
- * بتفضح الاسم الداخلي · والتسريب ده ما بيبانش في الفحص.
+ * Warning: **one function, because this calculation will repeat across reports, the portal, and
+ * export files.** If every screen computed it by hand, the first one that forgets would leak the
+ * internal name, and that leak wouldn't show up in a review.
  */
 export const publicName = (n: BudgetNode): string =>
   n.showLabel ? n.label : (n.alias?.trim() || '(بلا اسم معلن)')
@@ -218,11 +207,11 @@ export const publicName = (n: BudgetNode): string =>
 export const rootOf = (nodes: BudgetNode[]): BudgetNode | undefined =>
   nodes.find((n) => n.parentId === null)
 
-/** مجموع مخصص الأبناء · القيمة اللي المفروض تساوي مخصص الأب */
+/** Sum of children's allocation · what's supposed to equal the parent's allocation */
 export const sumChildren = (nodes: BudgetNode[], id: string): number =>
   childrenOf(nodes, id).filter((n) => n.active).reduce((s, n) => s + n.allocated, 0)
 
-/** رقم المستوى · الجذر صفر، زي عمود «مستوى البند» في الوثيقة */
+/** Level number · root is zero, matching the document's "item level" column */
 export function levelOf(nodes: BudgetNode[], id: string): number {
   let d = 0
   let cur = nodes.find((n) => n.id === id)
@@ -234,12 +223,11 @@ export function levelOf(nodes: BudgetNode[], id: string): number {
 }
 
 /**
- * الترقيم الهرمي · 1 · 1.1 · 1.1.2 — زي عمود «البند» في الوثيقة.
+ * Hierarchical numbering · 1 · 1.1 · 1.1.2 — matching the document's "item" column.
  *
- * ⚠️ **الرقم محسوب لا مكتوب.** لو اتكتب في الداتا، أول ما بند
- * يتشال أو يتحرّك يبقى كل اللي بعده بيكدب · والترقيم هو اللي
- * المستخدم بيقرا بيه الشجرة، فكذبه بيكسر القراءة كلها. والجذر
- * مالوش رقم لأنه الميزانية نفسها.
+ * Warning: **the number is computed, not stored.** If it were stored, the moment an item is removed
+ * or moved, everything after it would be wrong, and this numbering is how the user reads the tree,
+ * so a wrong one breaks the whole reading. The root has no number because it is the budget itself.
  */
 export function outlineOf(nodes: BudgetNode[], id: string): string {
   const parts: number[] = []
@@ -253,12 +241,12 @@ export function outlineOf(nodes: BudgetNode[], id: string): string {
 }
 
 /**
- * المسار الكامل للبند.
+ * The item's full path.
  *
- * ⚠️ **الأب اسم واحد ما بيكفيش.** لما المستخدم يختار «فرعي»
- * ويفتح قائمة الآباء، «مجال التعليم» لوحدها مش عنوان: ممكن تكون
- * تحت مسار التعليم وممكن تحت مسار آخر. المسار الكامل هو اللي
- * بيخلّي الاختيار قرارًا لا تخمينًا.
+ * Warning: **a single parent name isn't enough.** When the user picks "secondary" and opens the
+ * parent list, "education area" alone isn't a clear label — it could sit under the education track
+ * or under a different one. The full path is what turns the choice into a decision rather than a
+ * guess.
  */
 export function pathOf(nodes: BudgetNode[], id: string): string {
   const parts: string[] = []
@@ -267,16 +255,16 @@ export function pathOf(nodes: BudgetNode[], id: string): string {
     parts.push(cur.label)
     cur = cur.parentId ? nodes.find((x) => x.id === cur!.parentId) : undefined
   }
-  /* ⚠️ الفاصل `·` لا الشرطة الطويلة · الشرطة الطويلة ممنوعة في
-     السيستم كله، والنقطة هي فاصل النظام في كل مكان تاني */
+  /* Warning: the separator is a middle dot, not an em dash · the em dash is banned across the whole
+     system, and the dot is the system's separator everywhere else */
   return parts.reverse().join(' · ')
 }
 
-/** البنود اللي عليها الحجز والصرف · الورق وحده */
+/** Items where holding and spending happen · leaves only */
 export const leavesOf = (nodes: BudgetNode[]): BudgetNode[] =>
   nodes.filter((n) => !hasChildren(nodes, n.id))
 
-/** ترتيب العرض · أب ثم أبناؤه · وبيحترم المطويّ */
+/** Display order · parent then its children · respects collapsed state */
 export function flatten(
   nodes: BudgetNode[],
   parentId: string | null = null,
@@ -290,18 +278,16 @@ export function flatten(
   return out
 }
 
-/* ═══════════════════════════════════════════════════════════
-   القواعد · كلها **تُعرَض** قبل ما تُفرَض
+/* Rules · all of them are **shown** before they're enforced
 
-   المستخدم بيختار اللي هو عايزه، والقايمة بتقول الغلط فين وليه ·
-   ولا واحدة من دول بتمنع كتابة، كلها بتمنع **الإرسال**.
-   ═══════════════════════════════════════════════════════════ */
+   The user picks what they want, and the list says where it's wrong and why — none of these block
+   typing, they all block **submission**. */
 
 export interface TreeIssue {
-  /** البند اللي عليه الملاحظة · فاضي يعني الشجرة كلها */
+  /** The item the flag is about · empty means the whole tree */
   nodeId?: string
   text: string
-  /** مصدر القاعدة · بيتكتب جنب الملاحظة */
+  /** The rule's source · shown next to the flag */
   why: string
 }
 
@@ -310,7 +296,7 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
   const { nodes, total } = doc
   const live = nodes.filter((n) => n.active)
 
-  /* 1 · جذر واحد، ولا صفر ولا اتنين */
+  /* 1 · exactly one root, never zero or two */
   const roots = nodes.filter((n) => n.parentId === null)
   if (roots.length === 0) {
     out.push({
@@ -319,12 +305,12 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     })
   } else if (roots.length > 1) {
     out.push({
-      text: `يوجد ${roots.length} بنود بلا أب · للميزانية جذر واحد فقط`,
+      text: `يوجد ${countOf(roots.length, NOUN.line)} بلا أب · للميزانية جذر واحد فقط`,
       why: 'الجذر واحد لا يتكرر',
     })
   }
 
-  /* 2 · الجذر بياخد كامل مبلغ الميزانية */
+  /* 2 · the root takes the whole budget amount */
   const root = roots[0]
   if (root && root.allocated !== total) {
     out.push({
@@ -334,10 +320,10 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     })
   }
 
-  /* 3 ⚠️ **النوع لازم يطابق موضعه في الهرم.**
-     النسخة القديمة كانت بتفحص «فرعي بلا أب» وبس · فبند أساسي
-     محطوط تحت مسار، أو رئيسي بلا أب، كانوا بيعدّوا. والنوع اللي
-     ما بيوصفش الموضع بيخلّي التقارير تجمع مستويين مع بعض. */
+  /* 3 · warning: **the type must match its position in the hierarchy.**
+     The old version only checked "secondary with no parent" — so a basic item placed under a track,
+     or a primary with no parent, passed through. A type that doesn't describe its position lets
+     reports lump two levels together. */
   for (const n of nodes) {
     if (n.kind === 'base' && n.parentId) {
       out.push({
@@ -363,9 +349,9 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     }
   }
 
-  /* 3ب ⚠️ **البديل إلزامي لمّا الاسم الداخلي مخفي.** غير كده
-     البند بيظهر برّه المؤسسة **بلا اسم خالص** · والمستخدم اللي
-     طفى الإظهار قصده يخفي التسمية الداخلية لا يخفي البند. */
+  /* 3b · warning: **the alternate name is required whenever the internal name is hidden.**
+     Otherwise the item shows outside the Foundation **with no name at all** — a user who turned off
+     display meant to hide the internal label, not the item. */
   for (const n of nodes) {
     if (!n.showLabel && !n.alias?.trim()) {
       out.push({
@@ -376,9 +362,9 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     }
   }
 
-  /* 4 ⚠️ **الفرعي ما يكونش تحته بنود.** «فرعي» في الوثيقة يعني
-     هدف، والهدف هو آخر الشجرة · اللي تحته بنود بيبقى رئيسيًا
-     مهما كان اسمه، وإلا الحجز بيتوزّع على مستويين. */
+  /* 4 · warning: **a secondary item can't have items beneath it.** "Secondary" in the document
+     means a goal, and a goal is the end of the tree — anything with items beneath it is primary,
+     whatever it's named, otherwise holding gets split across two levels. */
   for (const n of nodes) {
     if (n.kind === 'sub' && hasChildren(nodes, n.id)) {
       out.push({
@@ -389,7 +375,7 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     }
   }
 
-  /* 5 · مجموع الأبناء = مخصص الأب */
+  /* 5 · children's sum = the parent's allocation */
   for (const n of live) {
     if (!hasChildren(nodes, n.id)) continue
     const s = sumChildren(nodes, n.id)
@@ -402,11 +388,11 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     }
   }
 
-  /* 6 ⚠️ **أبناء البند الواحد من نوع واحد.**
-     ده اللي مظفر وصفه بـ«ما ينفعش تسجّل هدف على مسار له مجالات» ·
-     البند اللي تحته مجالات، أهدافه بتتسجّل على المجالات لا عليه.
-     ولولا القاعدة دي، نفس المبلغ بيتحجز مرتين: مرة على الهدف
-     المباشر ومرة داخل المجال. */
+  /* 6 · warning: **an item's children must be a single type.**
+     This is what the budget owner described as "you can't log a goal against a track that has
+     areas" — an item with areas beneath it gets its goals logged against those areas, not against
+     it directly. Without this rule the same amount gets held twice: once on the direct goal and
+     once inside the area. */
   for (const n of nodes) {
     const kids = childrenOf(nodes, n.id)
     if (kids.length < 2) continue
@@ -419,7 +405,7 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     }
   }
 
-  /* 7 · الشجرة لازم توصل لورقة، وإلا مفيش حاجة يتصرف منها */
+  /* 7 · the tree must reach a leaf, or there's nothing to spend against */
   const leaves = leavesOf(live)
   if (root && (leaves.length === 0 || (leaves.length === 1 && leaves[0]?.id === root.id))) {
     out.push({
@@ -431,7 +417,7 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
   return out
 }
 
-/** (سنة + مصدر) ما يتكرروش · قاعدة الميزانية الوحيدة على الترويسة */
+/** (year + source) can't repeat · the only budget rule shown in the header */
 export const yearSourceTaken = (
   docs: BudgetDoc[],
   yearId: string,
@@ -440,14 +426,11 @@ export const yearSourceTaken = (
 ): BudgetDoc | undefined =>
   docs.find((d) => d.id !== exceptId && d.yearId === yearId && d.sourceCode === sourceCode)
 
-/* ═══════════════════════════════════════════════════════════
-   ميزانية تجريبية · **منقولة من جدول الوثيقة حرفيًا**
+/* A sample budget · **copied verbatim from the document's table**
 
-   الأرقام والمسمّيات والمستويات زي «شجرة الميزانية (مثال توضيحي)»
-   بالظبط، ومعاها «مسار تفطير الصائمين» **غير النشط بلا مبالغ** ·
-   لأن الحالة دي هي اللي بتوضّح إن غير النشط بيفضل في الشجرة ولا
-   بيدخل في المجاميع.
-   ═══════════════════════════════════════════════════════════ */
+   Numbers, labels, and levels exactly as in "budget tree (illustrative example)," including the
+   "Ramadan iftar track" **inactive with no amounts** — because that case is exactly what shows an
+   inactive item stays in the tree without entering the totals. */
 
 const n = (
   id: string,
@@ -457,7 +440,7 @@ const n = (
   allocated: number,
   available: number,
   active = true,
-  /** البديل والإظهار · الافتراضي إن الاسم الداخلي معلن */
+  /** Alternate name and display · defaults to the internal name being shown */
   alias?: string,
 ): BudgetNode => ({
   id, label, kind, parentId, allocated, available, active,
@@ -497,7 +480,7 @@ export const budgetDocs: BudgetDoc[] = [
       n('f31', 'مجال تمكين الأفراد', 'main', 't3', 4_000_000, 3_800_000),
       n('f32', 'مجال دعم المجتمع', 'main', 't3', 4_000_000, 3_900_000),
 
-      /* ⚠️ غير نشط وبلا مبالغ · موجود في الشجرة وما بيدخلش المجاميع */
+      /* Warning: inactive and with no amounts · exists in the tree and doesn't enter the totals */
       n('t4', 'مسار تفطير الصائمين', 'main', 'b0', 0, 0, false),
     ],
   },
@@ -526,6 +509,6 @@ export const yearById = (id: string): FiscalYear | undefined =>
 export const sourceByCode = (code: string): FundSource | undefined =>
   fundSources.find((s) => s.code === code)
 
-/** اسم الميزانية المعروض · مبني من السنة والمصدر لا مكتوب */
+/** The displayed budget name · built from the year and source, not typed */
 export const docTitle = (d: BudgetDoc): string =>
   `ميزانية ${yearById(d.yearId)?.name ?? ''} · ${sourceByCode(d.sourceCode)?.name ?? d.sourceCode}`

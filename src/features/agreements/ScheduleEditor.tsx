@@ -3,39 +3,36 @@ import { nf, pct } from '@/lib/format'
 import { scheduleTotal, shareOf, type DraftPay } from '@/data/mock/agreementNew'
 import type { AgreementPayment } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   جدول الدفعات · هـ-5 · **جدول واحد للقراية وللتحرير**
+/* Payment schedule - one table for both reading and editing.
 
-   ⚠️ **أول نسخة اخترعت شبكتها (`.sched`) بدل ما تستعمل `.tbl`.**
-   والنتيجة إن صفحة الاتفاقية فيها جدول دفعات بشكل، وبانِي المسودة
-   فيه نفس الجدول بشكل تاني: مقاس خطّ مختلف، وحشو كارت مختلف،
-   وارتفاع صفّ مختلف · وكل ده لنفس الداتا بالظبط.
+   Note: the first version invented its own grid (`.sched`) instead of using `.tbl`. As a result,
+   the agreement page showed one shape for the payment schedule and the draft builder showed
+   another: different font size, different card padding, different row height - for the exact same
+   data.
 
-   `.tbl` هو جدول السيستم: ارتفاع الصفّ `--row-h` **ناتج** لا رقم
-   (٨ + ٤٤ + ٨)، والتحكّم جوّه الخلية ارتفاعه `--h-md` = ٤٤ فبيقع
-   جوّه الصفّ بالظبط، والكارت حشوه `.tblcard`. يعني الجدول المحرَّر
-   والجدول المقروء **نفس الشكل**، والفرق إن الخلية فيها حقل.
+   `.tbl` is the system table: row height (`--row-h`) is a result, not a fixed number (8 + 44 + 8),
+   and the in-cell control's height (`--h-md` = 44) fits the row exactly; card padding is
+   `.tblcard`. So the edited table and the read-only table are the same shape, and the only
+   difference is that a cell holds a field.
 
-   ⚠️ **والنسبة محسوبة لا مكتوبة.** لو المستخدم كتب المبلغ والنسبة
-   بإيده، هيقع في تناقض: دفعة مكتوب عليها 40% ومبلغها ربع المنحة.
+   Note: the percentage is calculated, not entered. If a user typed both amount and percentage by
+   hand, they'd end up in conflict - a payment shown as 40% but worth a quarter of the grant.
 
-   ⚠️ **وصفّ الإجمالي تحقّق لا تلخيص (قاعدة 8).** جدول بيقول
-   «الإجمالي ٨٠٠ ألف» تحت منحة مليون **بيعرض رقمًا صحيحًا وبيخفي
-   غلطًا**.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the total row is a check, not a summary (rule 8). A table that says "total: 800,000" under
+   a grant of one million shows a correct-looking number while hiding an error. */
 
 export interface ScheduleEditorProps {
   rows: DraftPay[]
-  /** قيمة المنحة · اللي المجموع لازم يساويها */
+  /** Grant value - what the total must equal. */
   amount: number
   onChange?: (rows: DraftPay[]) => void
-  /** بعد التوقيع التعديل ممنوع · قاعدة 17 */
+  /** No edits after signing - rule 17. */
   readOnly?: boolean
 }
 
 const digits = (v: string) => Number(v.replace(/[^\d]/g, '')) || 0
 
-/** جدول الاتفاقية المحفوظ ← نفس شكل المسودة · فالمكوّن واحد */
+/** Saved agreement schedule - same shape as the draft, so it's one component. */
 export const asDraft = (ps: AgreementPayment[]): DraftPay[] =>
   ps.map((p) => ({
     no: p.no,
@@ -50,7 +47,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
   const match = amount > 0 && gap === 0
   const edit = !readOnly && Boolean(onChange)
 
-  /** الترقيم بيتعاد بعد أي إضافة أو حذف · الرقم ترتيب لا معرّف */
+  /** Numbering resets after any add or delete - the number is an order, not an identifier. */
   const renum = (xs: DraftPay[]) => xs.map((r, i) => ({ ...r, no: i + 1 }))
 
   const patch = (i: number, p: Partial<DraftPay>) =>
@@ -66,9 +63,9 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
 
   const drop = (i: number) => onChange?.(renum(rows.filter((_, x) => x !== i)))
 
-  /* ⚠️ «وزّع الباقي» مش زرار تجميلي: أكتر غلط بيحصل في الجدول ده هو
-     فرق ريالات من التقريب · والمستخدم بيقعد يعدّل رقمًا ورقمًا
-     عشان الفرق يقفل. الزرار بيحطّ الفرق كله في الدفعة الأخيرة. */
+  /* Note: "distribute remainder" isn't decorative - the most common error in this table is a
+     rounding gap of a few riyals, with users adjusting numbers one by one to close it. This button
+     puts the whole gap into the last payment. */
   const settle = () => {
     if (!rows.length || gap === 0) return
     onChange?.(rows.map((r, i) =>
@@ -79,8 +76,8 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
     <>
       <div className="tblwrap">
         <table className="tbl t-sched" aria-label="جدول الدفعات">
-          {/* ⚠️ **العروض في الـCSS (`.t-sched`) لا هنا.** `<col>` فاضي
-              عن قصد: هو مرساة العمود، والعرض خاصية ستايل. */}
+          {/* Note: widths live in CSS (`.t-sched`), not here. `<col>` is deliberately empty - it
+              anchors the column, and width is a style concern. */}
           <colgroup>
             <col /><col /><col /><col /><col />
             {edit && <col />}
@@ -100,7 +97,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
           <tbody>
             {rows.map((r, i) => (
               <tr key={i}>
-                <td className="num">{r.no}</td>
+                <td><Num>{r.no}</Num></td>
 
                 <td className="n">
                   {edit ? (
@@ -117,8 +114,8 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
                   ) : <Money sm>{r.amount}</Money>}
                 </td>
 
-                {/* محسوبة · فما لهاش حقل حتى في وضع التحرير */}
-                <td className="n num">{pct(shareOf(r.amount, amount))}</td>
+                {/* Calculated, so it has no field even in edit mode. */}
+                <td className="n">{pct(shareOf(r.amount, amount))}</td>
 
                 <td>
                   {edit ? (
@@ -159,13 +156,13 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
             ))}
           </tbody>
 
-          {/* ⚠️ `tfoot` **تحقّق**: بيقول مطابق أو بيقول الفرق وفي أي
-              اتجاه · جدول بيلخّص وبس بيخفي الغلط */}
+          {/* Note: `tfoot` is a check - it says either "balanced" or shows the difference and its
+              direction. A table that only summarizes hides the error. */}
           <tfoot>
             <tr className={match ? '' : 'bad'}>
               <td>الإجمالي</td>
               <td className="n"><Money sm>{total}</Money></td>
-              <td className="n num">{pct(shareOf(total, amount))}</td>
+              <td className="n">{pct(shareOf(total, amount))}</td>
               <td colSpan={edit ? 3 : 2}>
                 {amount <= 0
                   ? <span className="sub">لا توجد قيمة منحة</span>

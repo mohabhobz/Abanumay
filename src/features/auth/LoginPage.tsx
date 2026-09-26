@@ -5,39 +5,38 @@ import { AuthShell, AuthField } from './AuthShell'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
 import { signIn } from '@/data/session'
 
-/* ═══════════════════════════════════════════════════════════
-   شاشة الدخول
+/* Login screen.
 
-   الفيديو خلفية مش بطل: الفتحة اللي في نص الكادر هي مكان الكارت.
-   الفيديو بيتعرض بلونه الطبيعي، والكارت زجاج زي كروت الداخل.
+   The video background isn't decorative: the opening in the center of the frame is where the card
+   sits. The video plays in its natural colors, and the card is glass, like cards elsewhere in the
+   product.
 
-   من النظام الحقيقي: اسم مستخدم وكلمة مرور، ومسار منفصل تمامًا
-   اسمه «تسجيل جهة جديدة».
+   From the live system: username and password, plus a fully separate flow called "register a new
+   entity".
 
-   ⚠️ **والغلاف بقى `AuthShell`** · الفيديو والكارت والعلامة وسطر
-   الحقوق كانوا مكتوبين هنا، ولمّا شاشة إنشاء حساب الجهة احتاجت
-   نفس المنظر كان أسهل حاجة إني أنسخهم · وده اللي بيخلّي حاجتين
-   بيقولوا نفس المعنى بشكلين بعد شهر.
+   Note: the wrapper is now `AuthShell`. The video, card, logo, and copyright line used to be
+   written here, and when the entity signup screen needed the same look, copying them was the easy
+   path - which is exactly what leads to two things saying the same thing in two shapes within a
+   month.
 
-   ⚠️ **وحسابا العرض اتشالوا · ١٩ سبتمبر.** كان تحت النموذج صفّ
-   «الدخول السريع للعرض» بزرارين (موظّف المؤسسة · الجهة
-   المستفيدة)، اتعملوا عشان العميل يفتح الرحلتين في الاجتماع من
-   غير ما يدوّر على رابط.
+   Note: the demo-mode shortcuts were removed. There used to be a row below the form, "quick demo
+   login", with two buttons (institution staff / beneficiary entity), added so a presenter could
+   open both flows without hunting for a link.
 
-   واتشالوا لأن **باب النظام مش مكان أدوات العرض.** أول شاشة في
-   المنتج هي اللي بتقول إيه ده، وصفّ مكتوب عليه «للعرض» بيقول إن
-   اللي فوقه نموذج · فالشاشة بتاخد نبرة ديمو بدل نبرة منتج.
+   They were removed because the product's front door isn't a place for demo tooling. The first
+   screen in a product sets its tone, and a row labeled "for demo" tells users that what's above it
+   is a mockup - so the screen reads as a demo rather than a product.
 
-   والرحلتان لسه مفتوحتين، بمداخلهم الحقيقية لا باختصار:
-     · موظّف المؤسسة · النموذج نفسه فوق
-     · الجهة · «تسجيل جهة جديدة» تحت، ومنها «عندك حساب بالفعل؟
-       افتح بوّابة طلبك» · وهو الطريق اللي الجهة بتمشيه فعلًا. */
+   Both flows are still reachable, through their real entry points rather than a shortcut:
+   - institution staff: the same form above
+   - entity: "register a new entity" below, and from there "already have an account? open your
+   application portal" - the actual path an entity follows. */
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const loc = useLocation()
-  /* الرابط اللي اتحوّل منه · لو فتح رابط مشروع وهو برّه، يرجعله
-     بعد الدخول بدل ما يبدأ من الأول */
+  /* The URL redirected from - if a project link was opened while logged out, it returns there after
+     login instead of starting from scratch. */
   const from = (loc.state as { from?: string } | null)?.from
   const [user, setUser] = useState('')
   const [pass, setPass] = useState('')
@@ -45,7 +44,10 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
-  /** يعرض الخطأ كتوست ويخفيه لوحده · الرسالة تنبيه مش حالة دائمة */
+  /**
+   * Shows the error as a toast and hides it on its own - the message is an alert, not a persistent
+   * state.
+   */
   const fail = (message: string) => {
     setErr(message)
     setTimeout(() => setErr(''), 4000)
@@ -67,8 +69,8 @@ export default function LoginPage() {
 
   return (
     <AuthShell title="منح أبانمي" sub="مؤسسة سليمان أبانمي الأهلية" err={err}>
-          {/* method/action موجودين عشان مديري كلمات السر يتعرّفوا على
-              الفورم ويعرضوا الحفظ · الإرسال نفسه متوقّف بـpreventDefault */}
+          {/* method/action are present so password managers recognize the form and offer to save -
+              submission itself is blocked with preventDefault. */}
           <form
             className="lform"
             onSubmit={submit}
@@ -114,12 +116,11 @@ export default function LoginPage() {
                 <input type="checkbox" name="remember" />
                 <span>تذكّرني</span>
               </label>
-              {/* ⚠️ **كان `<a>` بلا `href` · وده رابط كذّاب.** شكله
-                  رابط وسلوكه ولا حاجة: ما بيتفتحش في تاب، ولا
-                  بيوصله الكيبورد، ولا بيقول إنه مش شغّال. واللي
-                  بيتعمل هنا **فعل** (إرسال رابط استعادة) لا انتقال،
-                  فهو زرار · والنموذج مفيهوش صفحة استعادة لسه،
-                  فالزرار بيقول كده صريحًا بدل ما يسكت. */}
+              {/* Note: this used to be an `<a>` with no `href` - a fake link. It looked like a link
+                  but behaved like nothing: it didn't open in a tab, keyboard couldn't reach it, and
+                  it didn't say it was disabled. What happens here is an action (sending a reset
+                  link), not a navigation, so it's a button - and since there's no reset page yet,
+                  the button says so explicitly instead of staying silent. */}
               <button
                 type="button"
                 className="llink"
@@ -134,12 +135,13 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* مسار مختلف تمامًا، فشكله جوست · مش قرار تاني منافس للدخول */}
+          {/* A completely separate flow, so it's styled as a ghost - not a second option competing
+              with login. */}
           <div className="lalt">
-            {/* ⚠️ الزرار ده كان `type="button"` بلا `onClick` · شكله
-                زرار وبيعمل focus وبيتضغط، وما بيحصلش حاجة. دلوقتي
-                بيودّي للمسار العام `/entities/register` (BPD-002)،
-                وهو برّه بوّابة الدخول لأن صاحب الطلب مالوش حساب. */}
+            {/* Note: this button used to be `type="button"` with no `onClick` - it looked like a
+                button, could be focused and clicked, and nothing happened. Now it leads to the
+                public route `/entities/register`, which sits outside the login gate because the
+                applicant has no account yet. */}
             <button
               className="btn btn-2 btn-full"
               type="button"

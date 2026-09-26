@@ -1,4 +1,4 @@
-/** محرّك المساعد المشترك · الشاشة الكاملة واللوح الجانبي بيستعملوه سوا */
+/** Shared assistant engine — used by both the full screen and the side panel. */
 export { useAssistant, type AssistantController } from './useAssistant'
 export { AiMessage } from './AiMessage'
 export { EvidenceBlock } from './EvidenceBlock'

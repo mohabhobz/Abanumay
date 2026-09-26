@@ -1,6 +1,6 @@
 import { useEffect, useState, type RefObject } from 'react'
 
-/** بيرجّع true أول ما العنصر يبان في الشاشة، وبيفضل true بعدها */
+/** Returns true as soon as the element becomes visible, and stays true afterward. */
 export function useOnScreen(ref: RefObject<HTMLElement | null>, rootMargin = '-40px'): boolean {
   const [seen, setSeen] = useState(false)
 

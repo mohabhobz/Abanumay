@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MISSING_ITEM, nounAfter } from '@/lib/format'
+import { MISSING_ITEM, NOUN, nounAfter } from '@/lib/format'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import {
@@ -8,23 +8,22 @@ import {
 } from '@/data/mock/closing'
 import type { CloseRow } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   تاب الإغلاق في صفحة المشروع · BPD-011
+/* Close tab on the project page.
 
-   ⚠️ **التاب بيجاوب «فين إغلاق المشروع ده» · الصندوق بيجاوب «إيه
-   اللي واقف عندي».** نفس منطق تاب الاتفاقية والخطة بالحرف.
+   The tab answers "where does closing this project stand," while the panel
+   answers "what's currently pending on it" — the same split as the agreement
+   and plan tabs.
 
-   ⚠️ **والتاب الفاضي بيقول ليه هو فاضي.** قاعدة 1 و2 بيحدّدوا
-   إمتى الإغلاق يقدر يبدأ: المدة خلصت أو الأنشطة اكتملت، **و**
-   الدفعات اتسوّت. فمشروع ما اتفتحش له إغلاق إما إنه لسه شغّال،
-   وإما إن عليه دفعة معلّقة · والفرق ده هو كل الإجابة، فمكتوب.
-   والتاب الفاضي اللي ما بيقولش سببه بيتقري «فيه حاجة ناقصة».
-   ═══════════════════════════════════════════════════════════ */
+   An empty tab states why it's empty. Closing can only start once the
+   duration has ended or activities are complete, and payments are settled.
+   A project with no close process open either is still active or has a
+   pending payment — that distinction is the whole answer, so it's spelled
+   out. An empty tab that doesn't say why reads as "something's missing." */
 
 export interface CloseTabProps {
   row?: CloseRow
   projectId: string
-  /** يفتح طلب التقرير الختامي · فاضي لو المستخدم مالوش الصلاحية */
+  /** Opens the final report request — empty if the user lacks permission. */
   onOpen?: () => void
 }
 
@@ -40,6 +39,8 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
             : <Tag tone="mute">غير مؤهَّل بعد</Tag>}
         />
         <Empty
+          /* The fee applies only when eligible — "blocked by rule" is text, not a fee. */
+          art={gate.ok ? { done: 3 } : undefined}
           title={gate.ok
             ? 'المشروع مؤهَّل ولم يُفتح له طلب تقرير ختامي بعد.'
             : `لا يمكن بدء الإغلاق الآن · ${gate.why}`}
@@ -93,7 +94,7 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
             k: 'المستفيدون الفعليون',
             v: c.report.beneficiaries === null
               ? <span className="sub">لم يُسجَّل بعد</span>
-              : <><Num>{c.report.beneficiaries}</Num> <span className="sub">مستفيد</span></>,
+              : <><Num>{c.report.beneficiaries}</Num> <span className="sub">{nounAfter(c.report.beneficiaries, NOUN.beneficiary)}</span></>,
           },
           {
             k: 'الميزانية الفعلية',
@@ -112,7 +113,7 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
           },
           {
             k: 'النشر الإعلامي',
-            /* قاعدة 9 · واللي مش مطلوب بيتقال لا بيتشال */
+            /* Anything not required is stated, not hidden. */
             v: needsComms(c)
               ? (done
                 ? <Tag tone="ok">اعتمده الاتصال المؤسسي</Tag>
@@ -134,10 +135,10 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
         ]}
       />
 
-      {/* ⚠️ **الجملة دي هي أثر الإغلاق على المشروع** · قاعدة 16
-          بتمنع أي أثر أثناء الدورة، وقاعدة 8 و18 بيحدّدوا التلاتة
-          اللي بيحوّلوه «مكتمل». ومن غيرها التاب بيبقى عرضًا لأرقام
-          مالهاش نتيجة. */}
+      {/* This line is closing's effect on the project — closing has no effect while
+          it's mid-cycle, and specific conditions determine the three things that
+          flip it to "complete." Without this line, the tab would just be a display
+          of numbers with no consequence. */}
       {closed ? (
         <p className="ok cnote">
           اعتُمد التقرير والتقييم واكتملت المتطلبات · المشروع «مكتمل»، وأي

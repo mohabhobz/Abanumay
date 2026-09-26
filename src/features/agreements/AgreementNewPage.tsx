@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { MISSING_ITEM, nounAfter } from '@/lib/format'
+import { MISSING_ITEM, NOUN, nounAfter } from '@/lib/format'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem,
+  BackTo, Blockers, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -15,23 +15,19 @@ import {
 import type { AgreementKind } from '@/types/domain'
 import { ScheduleEditor } from './ScheduleEditor'
 
-/* ═══════════════════════════════════════════════════════════
-   إعداد الاتفاقية · BPD-008 · هـ-4
+/* Agreement setup screen.
 
-   ⚠️ **الشاشة دي مخرجها مسودة لا اتفاقية.** المحطات الأربع في
-   المخطط هي: مشرف المنح (إعداد) ← مدير المنح (مراجعة) ← المدير
-   التنفيذي (اعتماد) ← الجهة (توقيع). الشاشة دي **المحطة الأولى
-   وحدها**، ومخرجها بيدخل الصندوق في مرحلة «مسودة».
+   Note: this screen produces a draft, not an agreement. The four stages are: grants supervisor
+   (setup) -> grants manager (review) -> executive director (approval) -> entity (signing). This is
+   stage one only; its output enters the queue as "draft".
 
-   ⚠️ **ومفيش مخرج «إرسال للجهة» هنا** · قاعدة 13 بتمنع الإرسال
-   للجهة قبل اكتمال اعتمادات المؤسسة، فالزرار ده مش موجود في
-   الشاشة أصلًا لا معطَّل. الزرار المعطَّل بيقول «تقدر لو…»،
-   والقاعدة بتقول «ما تقدرش من هنا».
+   Note: there is no "send to entity" action here. Rule 13 blocks sending to the entity before
+   institutional approvals are complete, so the button isn't present at all, not even disabled. A
+   disabled button implies "you could if...", while the rule says "you can't from here".
 
-   ⚠️ **وتلات حاجات بتتقفل عند الإنشاء وما بتتغيّرش:** المشروع
-   (قاعدة 2) والنوع (قاعدة 3) والنموذج (قاعدة 4) · وتغييرهم بعد
-   كده معناه **إصدار جديد**. الشاشة بتقول ده وقت الاختيار لا بعده.
-   ═══════════════════════════════════════════════════════════ */
+   Note: three fields lock at creation and never change afterward: project (rule 2), type (rule 3),
+   and template (rule 4). Changing them later means a new version. This is stated at selection time,
+   not after. */
 
 const KEYS = ['tab', 'project'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -50,32 +46,31 @@ export default function AgreementNewPage() {
   const tab = STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : STAGES[0].key
   const setTab = (x: string) => set({ tab: x === STAGES[0].key ? undefined : x })
 
-  /* المشروع بييجي من الرابط لمّا الشاشة تتفتح من تاب الاتفاقية في
-     صفحة المشروع · وده المدخل الطبيعي */
+  /* Project comes from the URL when the screen opens from the agreement tab on the project page -
+     the normal entry point. */
   const projectId = v.project ?? ''
   const project = projectById(projectId)
   const amount = project?.amountGranted ?? 0
-  /* المحجوز في الميزانية · خطوة 11 بتطابق القيمة بيه.
-     ⚠️ في النموذج ده هما متساويان لأن الحجز بيتعمل بالمعتمد ·
-     لما الباك اند ييجي، ده بيبقى حقلًا مستقلًا فعلًا. */
+  /* Reserved amount in the budget - step 11 matches the value against it.
+     Note: in this version they are equal because the reservation is made at the approved amount;
+     once the backend arrives, this becomes a genuinely independent field. */
   const reserved = amount
 
   const [template, setTemplate] = useState('')
   const [kind, setKind] = useState<AgreementKind | ''>('')
   const [signerName, setSignerName] = useState('')
   const [signerTitle, setSignerTitle] = useState('')
-  /* ⚠️ **الزرع لازم يشتغل على المشروع الجاي من الرابط كمان.**
-     أول نسخة كانت بتزرع الجدول في `pickProject` وبس · والمدخل
-     الطبيعي للشاشة هو `?project=` من تاب الاتفاقية في صفحة
-     المشروع، يعني الـ`onChange` عمره ما بيشتغل · فالمستخدم كان
-     بيوصل لمحطة الجدول ويلاقيها فاضية. */
+  /* Note: seeding must also work for a project coming from the URL. The first version only seeded
+     the table in `pickProject`, but the normal entry point for this screen is `?project=` from the
+     agreement tab on the project page, so `onChange` never fires - users would land on the table
+     stage and find it empty. */
   const [rows, setRows] = useState<DraftPay[]>(
     () => (project ? seedSchedule(project.amountGranted, today()) : []),
   )
   const [saved, setSaved] = useState(false)
   const [sent, setSent] = useState(false)
 
-  /** أول ما مشروع يتختار، الجدول بيتزرع · نقطة بداية تتعدّل */
+  /** Once a project is selected, the table is seeded - an editable starting point. */
   const pickProject = (id: string) => {
     set({ project: id || undefined })
     const p = projectById(id)
@@ -101,11 +96,16 @@ export default function AgreementNewPage() {
   }
   const missing = Object.values(shortBy).flat()
   const canSend = missing.length === 0 && issues.length === 0
+  /* Single count shared by the card and the doc. */
+  const blocks = [
+    ...STAGES.filter((s) => shortBy[s.key].length)
+      .map((s) => ({ head: s.label, text: shortBy[s.key].join(' · '), n: shortBy[s.key].length })),
+    ...issues.map((i) => ({ head: i.rule, text: i.say })),
+  ]
 
-  /* ⚠️ **الملاحظة بتخصّ محطة، فالوسم لازم يعرفها.**
-     أول نسخة كانت بتحسب «مكتمل» من الحقول الناقصة وحدها · فمحطة
-     الجدول كانت بتقول «مكتمل» فوق، وتحتها بالظبط «مجموع الدفعات
-     ناقص ١٬٠٢٤٬٠٠٠». تناقض على نفس الشاشة. */
+  /* Note: the note belongs to a stage, so the tag must identify it. The first version computed
+     "complete" from missing fields alone, so the table stage would say "complete" at the top and,
+     right below it, "payment total short by 1,024,000" - a contradiction on the same screen. */
   const stageIssue: Record<string, string[]> = {
     project: ['project', 'reserved'],
     form: ['template', 'kind', 'signer'],
@@ -123,7 +123,7 @@ export default function AgreementNewPage() {
     if (next) setTab(next.key)
   }
 
-  /* المحطات الأربع · والشاشة دي الأولى وحدها */
+  /* The four stages - this screen is the first only. */
   const steps: StepItem[] = [
     { label: 'إعداد', note: 'مشرف المنح · المحطة الحالية', state: sent ? 'done' : 'now' },
     { label: 'مراجعة', note: 'مدير المنح', state: sent ? 'now' : 'todo' },
@@ -148,11 +148,7 @@ export default function AgreementNewPage() {
                 ولا تُرسل إلى الجهة إلا بعد اعتماد المؤسسة
               </p>
             </div>
-            <Tag tone={missing.length || issues.length ? 'warn' : 'ok'}>
-              {missing.length || issues.length
-                ? <><Num>{missing.length + issues.length}</Num> بنود قبل الإرسال</>
-                : 'جاهزة'}
-            </Tag>
+            {/* Count tag removed from the page header - the single count lives in the doc. */}
           </header>
 
           <Glass className="regsteps">
@@ -184,9 +180,9 @@ export default function AgreementNewPage() {
                     <span className="lb">
                       المشروع<b className="regf-r" aria-label="إلزامي">*</b>
                     </span>
-                    {/* ⚠️ غير المؤهَّل **بيفضل في القايمة ومعاه سببه** ·
-                        اختفاؤه بيخلّي المستخدم يدوّر على مشروع مش
-                        لاقيه ويفتكر إنه اتمسح (نفس درس ج-15) */}
+                    {/* Note: an ineligible project stays in the list with its reason shown - hiding
+                        it would make users search for a project they can't find and assume it was
+                        deleted. */}
                     <FieldSelect
                       value={projectId}
                       onChange={pickProject}
@@ -228,9 +224,8 @@ export default function AgreementNewPage() {
 
             {tab === 'form' && (
               <>
-                {/* ⚠️ النوع بيتقفل عند الإنشاء (قاعدة 3) · والسطر ده
-                    بيتقال وقت الاختيار عشان المشرف يعرف إنه بياخد
-                    قرارًا لا بيملا خانة */}
+                {/* Note: type locks at creation (rule 3); this line is shown at selection time so
+                    the supervisor knows they're making a decision, not just filling a field. */}
                 <ul className="pkinds">
                   {KINDS.map((k) => (
                     <li key={k.key}>
@@ -312,7 +307,7 @@ export default function AgreementNewPage() {
                 : <p className="sub cnote">اختر المشروع أولًا · يُطابَق الجدول مع قيمة المنحة.</p>
             )}
 
-            {/* القواعد بتتقال في محطتها لا في رسالة بعد الإرسال */}
+            {/* Rules are stated at their own stage, not in a message after submission. */}
             {issuesIn(tab).map((i) => (
               <p key={i.key} className="bad cnote">
                 {i.say} <span className="sub">· {i.rule}</span>
@@ -355,7 +350,7 @@ export default function AgreementNewPage() {
               <Glass>
                 <Head title="محطات الاتفاقية" meta={<span className="sub">أربع محطات</span>} />
                 <Steps items={steps} flow="ladder" />
-                {/* قاعدة 25 · والسطر ده بيمنع توقّعًا غلط من أول شاشة */}
+                {/* Rule 25 - this line prevents a wrong assumption from the first screen. */}
                 <p className="sub cnote">
                   انتقال الاتفاقية بين محطاتها <b>لا يغيّر حالة المشروع</b> ·
                   قاعدة <span className="num">25</span>.
@@ -364,28 +359,10 @@ export default function AgreementNewPage() {
             </div>
 
             <div className="col">
-              {(missing.length > 0 || issues.length > 0) && (
-                <Glass>
-                  <Head
-                    title="ما يمنع الإرسال"
-                    meta={<Tag tone="warn"><Num>{missing.length + issues.length}</Num></Tag>}
-                  />
-                  <ul className="regmiss">
-                    {STAGES.filter((s) => shortBy[s.key].length).map((s) => (
-                      <li key={s.key}>
-                        <b>{s.label}</b>
-                        <span className="sub"> · {shortBy[s.key].join(' · ')}</span>
-                      </li>
-                    ))}
-                    {issues.map((i) => (
-                      <li key={i.key}>
-                        <b>{i.rule}</b>
-                        <span className="sub"> · {i.say}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Glass>
-              )}
+              <Blockers
+                items={blocks}
+                ready="كل الخطوات مكتملة · الاتفاقية جاهزة للإرسال إلى مدير المنح."
+              />
             </div>
           </div>
         </div>
@@ -403,11 +380,12 @@ export default function AgreementNewPage() {
                       {rows.length > 0 && (
                         <>
                           <span className="decsep" />
-                          <Num>{rows.length}</Num> دفعات بمجموع{' '}
+                          <Num>{rows.length}</Num> {nounAfter(rows.length, NOUN.payment)} بمجموع{' '}
                           <Money>{scheduleTotal(rows)}</Money>
                         </>
                       )}
                       {saved && <><span className="decsep" />حُفظت المسودة</>}
+                      <DockWhy n={blockerCount(blocks)} />
                     </>}
               </span>
             </div>
@@ -422,9 +400,9 @@ export default function AgreementNewPage() {
                   >
                     احفظ المسودة
                   </button>
-                  {/* ⚠️ «إرسال للجهة» **مش موجود هنا** · قاعدة 13
-                      بتمنعه قبل اعتمادات المؤسسة، والمخرج الوحيد من
-                      المحطة دي هو الإحالة لمدير المنح */}
+                  {/* Note: "send to entity" is not available here - rule 13 blocks it before
+                      institutional approvals are complete; the only action from this stage is
+                      referral to the grants manager. */}
                   <button
                     className="btn btn-p"
                     disabled={!canSend}

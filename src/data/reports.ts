@@ -1,39 +1,38 @@
 /**
- * خريطة موديول التقارير.
+ * Map of the reports module.
  *
- * مصدرها اتنين:
+ * Two sources:
  *
- *  1. الفيججام · قسم «S11 التقارير والمؤشرات» بيحدّد خمس حزم:
- *     مؤشرات الإجراءات (66 مؤشرًا على 11 إجراءً) · تقارير الميزانية
- *     والصرف · تقرير الأثر (مستفيدون · مناطق · مجالات) · تقارير
- *     مجلس الأمناء · منشئ التقارير والتصدير. وبيقول مين يشوفه:
- *     مدير المنح · التنفيذي · اللجنة والمجلس · الإدارة المالية.
+ * 1. The planning document defines five bundles: procedure indicators (66 indicators across 11
+ * procedures), budget and disbursement reports, impact report (beneficiaries, regions, areas),
+ * board reports, and a report builder/export. It also states who views each: grants manager,
+ * executive, committee/board, finance.
  *
- *  2. النظام العامل · 13 شاشة تقرير فعلية، كل واحدة فورم فلترة
- *     منفصل. تلاتة منها فاضية أو فلاتر بلا نتيجة.
+ * 2. The live system: 13 actual report screens, each a separate filter form. Three of them come up
+ * empty or return filters with no result.
  *
- * والجدول اللي تحت بيربط الاتنين: كل تقرير في النظام العامل ليه
- * مكان هنا، عشان لما نعرض على العميل يشوف إن مفيش حاجة اتشالت ·
- * اتلمّت. النقد اللي طلع من الأوديت كان: «داتا الأداء موجودة ولا
- * تظهر عند القرار · تقارير منفصلة». الحل مش تقرير رقم 14، الحل إن
- * التقرير يبقى مدخل للصفوف اللي بتتقرّر، فكل رقم هنا بيوصّل لقائمة.
+ * The table below links the two: every live-system report has a place here, so when this is shown
+ * to the client they see nothing was dropped, only consolidated. The critique that came out of the
+ * review was: performance data exists but doesn't surface at decision time, scattered across
+ * separate reports. The fix isn't a fourteenth report — it's making the report an entry point to
+ * the underlying rows being decided on, so every number here links to a list.
  */
 import { ROUTES } from '@/app/routes'
 import type { IconName } from '@/components/ui'
 
-/** حالة الحزمة في النموذج */
+/** Bundle status in the mock */
 export type PackState = 'ready' | 'next'
 
 export interface ReportPack {
   key: string
   title: string
-  /** السطر اللي بيقول التقرير بيجاوب على إيه */
+  /** The line stating what the report answers */
   answers: string
   icon: IconName
-  /** مين بيقراه · من الفيججام */
+  /** Who reads it · from the planning document */
   readers: string[]
   state: PackState
-  /** اللي جوّه الحزمة لمّا تتبني */
+  /** What's inside the bundle once built */
   contains: string[]
   to?: string
 }
@@ -96,25 +95,25 @@ export const PACKS: ReportPack[] = [
   },
 ]
 
-/** تقرير في النظام العامل، ومكانه هنا */
+/** A live-system report, and where it fits here */
 export interface LiveReport {
   /**
-   * مسار الشاشة في النظام العامل · بلا بادئة `/control`.
-   * المسار الكامل `sys.abanumay.sa/control/<path>`؛ الجزء ده مشترك
-   * في الـ13 كلهم فمكتوب مرة واحدة في `LIVE_BASE` تحت.
+   * Screen path in the live system · without the `/control` prefix.
+   * The full path is `sys.abanumay.sa/control/<path>`; that shared portion is common to all 13, so
+   * it's written once in `LIVE_BASE` below.
    */
   path: string
   title: string
-  /** ملاحظة الأوديت · فاضي أو فلاتر بلا نتيجة */
+  /** Audit note · empty, or filters with no result */
   flaw?: string
-  /** الحزمة اللي بيقع فيها هنا */
+  /** Which bundle this falls under */
   pack: string
 }
 
 /**
- * الـ13 تقريرًا كما هي في `sys.abanumay.sa`.
- * الملاحظات دي من الأوديت، مش تقدير: التلاتة المعلّمة اتفتحت وطلعت
- * فاضية أو فورم فلترة من غير نتيجة.
+ * The 13 reports as they exist in the live system.
+ * These notes come from the review, not estimation: the three flagged ones were opened and came up
+ * empty or as a filter form with no result.
  */
 export const LIVE_REPORTS: LiveReport[] = [
   { path: 'reports1_1', title: 'تقارير الميزانية', pack: 'money' },
@@ -132,7 +131,7 @@ export const LIVE_REPORTS: LiveReport[] = [
   { path: 'reports1_15', title: 'أداء الأقسام', pack: 'processes' },
 ]
 
-/** البادئة المشتركة لكل مسارات النظام العامل */
+/** The shared prefix for all live-system paths */
 export const LIVE_BASE = '/control/'
 
 export const packByKey = (key: string): ReportPack | undefined => PACKS.find((p) => p.key === key)

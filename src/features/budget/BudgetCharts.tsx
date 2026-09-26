@@ -3,26 +3,21 @@ import { nf } from '@/lib/format'
 import { CYCLES, plan2026, type PlanNode } from '@/data/budgetPlan'
 
 /**
- * رسوم الميزانية · **الرسوم اللي في `reports1_1` و`reports1_5`، مرسومة
- * بالداتا الحقيقية**.
+ * Budget charts - the charts drawn with real data.
  *
- * قبل كده كانت مخططات فاضية بأعمدة عشوائية «بتقول شكل الرسم لا قيمه».
- * وده كان قرارًا غلط: الشاشة اللي بتقول «فيه رسم هنا» من غير ما ترسمه
- * ما بتفرقش عن سطر مكتوب، والعميل بيسأل · بحق · طب فين الرسم.
+ * These used to be empty charts with random bars that showed the chart's shape rather than its
+ * values. That was the wrong call: a screen that says "there's a chart here" without drawing it
+ * reads no differently from a line of text, and a viewer rightly asks where the chart actually is.
  *
- * ═══ الشكل اتغيّر عن النظام العامل عن قصد ═══
+ * The layout intentionally differs from the live system: "annual spending by area" uses vertical
+ * bars there across 39 targets, so the Arabic labels get written vertically, overlapping and
+ * unreadable - the number is there but the width blocks it. Here the bars are horizontal: the label
+ * reads horizontally as normal, and length is the measure.
  *
- * «المصاريف السنوية حسب المجال» في النظام أعمدة **رأسية** على ٣٩ هدفًا،
- * فالأسماء العربية بتتكتب رأسية متداخلة وما تتقريش · الرقم موجود
- * والعرض بيمنعه. هنا أعمدة **أفقية**: الاسم بيتكتب أفقيًا زي ما يتقري،
- * والطول هو المقياس.
- *
- * ═══ الألوان ═══
- *
- * التلات طبقات مش فئات مستقلة · دي **أجزاء من كل**: المنصرف جزء من
- * الملتزم، والملتزم جزء من المخصص. فاللون درجات من نفس اللون مع
- * محايد للباقي، مش لوحة فئوية. الفرق بينهم من الإضاءة لا من الصبغة،
- * فبيفضل مقروءًا لعمى الألوان، ومعاه مفتاح وقيم مكتوبة.
+ * Colors: the three layers aren't independent categories, they're parts of a whole - disbursed is
+ * part of committed, and committed is part of allocated. So the color is shades of one hue with
+ * neutral for the remainder, not a categorical palette. The difference between them is lightness,
+ * not hue, so it stays legible for color blindness, backed by a legend and written values.
  */
 
 const SERIES = [
@@ -35,36 +30,34 @@ interface Part { label: string; alloc: number; spent: number; unpaid: number; fr
 
 const partsOf = (n: PlanNode): Part => {
   const spent = n.spent ?? 0
-  /* الملتزم اللي لسه ما اتصرفش = المعتمد − المصروف. لو المعتمد مش
-     معروف بناخد المحجوز، وده أضيق لكنه ما بيجمعش رقمًا مرتين. */
+  /* Committed-but-not-yet-disbursed = approved minus disbursed. When approved isn't known, we fall
+     back to the reserved amount - narrower, but it avoids double-counting. */
   const unpaid = Math.max(0, (n.approved ?? spent + (n.reserved ?? 0)) - spent)
   return { label: n.label, alloc: n.alloc, spent, unpaid, free: Math.max(0, n.alloc - spent - unpaid) }
 }
 
-/** كل المجالات الاتناشر تحت المسارين */
+/** All twelve areas across both tracks. */
 const fields2026: PlanNode[] =
   (plan2026.children ?? []).flatMap((t) => t.children ?? [])
 
-/* ═══════════════════ ١ · نسبة المصروف ═══════════════════ */
+/* 1 - percentage spent */
 
 /**
- * رقم واحد · **مش رسمًا**.
+ * A single number, not a chart.
  *
- * «نسبة المصروف من الميزانية السنوية» قيمة واحدة، والقيمة الواحدة
- * بلاطة رقم بمقياس، لا شريط في إطار رسم. النظام بيرسمها شريطًا
- * مخطّطًا بعرض الشاشة عشان يملا مكانًا.
+ * "Percentage of the annual budget spent" is one value, and one value is a number tile with a
+ * scale, not a bar inside a chart frame. The live system draws it as a full-width, gridded bar to
+ * fill space.
  *
- * ═══ الفراغ ═══
+ * Space: this card sits next to a two-line chart on a grid, so its height is set by the chart, not
+ * its own content - the content used to sit on top with the rest left empty in the middle of the
+ * card. That empty space isn't breathing room, it's unused space that tells the eye something is
+ * missing.
  *
- * الكارت جنب رسم الخطّين في شبكة، فطوله بيتحدّد بالرسم لا بمحتواه ·
- * والمحتوى كان راكب فوق والباقي فراغ بنص الكارت. الفراغ ده مش
- * «مساحة تنفّس»، هو **مكان مش مستعمل** بيقول للعين إن في حاجة
- * ناقصة.
- *
- * الحلّ إن الرقم ياخد الفراغ بدل ما يسيبه: الترويسة فوق (عنوان
- * وسطر بيقول معنى النسبة)، والرقم في **مركز** اللي فضل بخطّ كبير،
- * والمقياس والتفصيل تحته. فالكارت بيتقري من فوق لتحت بلا فجوة،
- * ولو طال أكتر الرقم بيفضل في نصّه.
+ * The fix is for the number to take that space rather than leave it: a header on top (title and a
+ * line explaining the percentage), the number centered in what's left in a large size, and the
+ * scale and detail below it. So the card reads top to bottom with no gap, and if it grows taller
+ * the number stays centered.
  */
 export function SpendGauge({
   title = 'نسبة المصروف من الميزانية السنوية',
@@ -93,7 +86,7 @@ export function SpendGauge({
   )
 }
 
-/* ═══════════════════ ٢ · المصاريف حسب المجال ═══════════════════ */
+/* 2 - spending by area */
 
 export function FieldSpend({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
   const parts = nodes.map(partsOf).sort((a, b) => b.alloc - a.alloc)
@@ -128,9 +121,9 @@ export function FieldSpend({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
                 )
               })}
             </span>
-            {/* المسافة حوالين «من» كانت **مكتوبة**: حرف مسافة جوّه
-                النصّ. والمسافة المكتوبة بتتلخبط مع الرمز والاتجاه،
-                وما بتكبرش لمّا نطلبها تكبر. بقت `gap` مصرّحة. */}
+            {/* Note: the spacing around "from" used to be typed - a space character inside the
+                text. A typed space gets tangled with the icon and direction, and doesn't scale when
+                we ask it to grow. It's now a declared `gap`. */}
             <span className="chb-v">
               <Money sm>{p.spent}</Money>
               <small className="chb-of">من</small>
@@ -148,65 +141,60 @@ export function FieldSpend({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
   )
 }
 
-/* ═══════════════════ ٣ · المصاريف السنوية ═══════════════════ */
+/* 3 - annual spending */
 
 /**
- * التغيّر عبر الزمن · خمس دورات بأسماء قصيرة، فالأعمدة الرأسية
- * تصحّ هنا: المحور فيه خمس علامات وأسماؤها بتتكتب أفقيًا تحتها.
+ * Change over time - five cycles with short labels, so vertical bars work here: the axis has five
+ * marks and their labels are written horizontally beneath them.
  */
 /**
- * المصاريف السنوية · **خطّان لا أعمدة**.
+ * Annual spending - two lines, not bars.
  *
- * الأعمدة المزدوجة كانت بتحطّ عمودين ملزوقين لكل سنة، فالعين بتقرا
- * **عشر كتل** وبتدوّر مين مع مين. والسؤال هنا مش «قدّ إيه في
- * ٢٠٢٤؟» · هو **«المصروف بيمشي مع المخصص ولا بيعدّيه؟»**، وده
- * سؤال عن **اتجاه**، والاتجاه بيتقري من خطّ لا من كتلة.
+ * Paired bars used to place two bars side by side per year, so the eye reads ten blocks and has to
+ * work out which goes with which. The question here isn't "how much in 2024?" - it's "does spending
+ * track allocation or exceed it?", which is a question about trend, and trend reads from a line,
+ * not a block.
  *
- * والخطّ بيمشي مع اتجاه القراءة: الأقدم يمين والأحدث شمال، زي
- * النصّ العربي بالظبط · فالعين بتقرا الزمن وهي ماشية طبيعي.
+ * The line follows the reading direction: oldest on the right, newest on the left, exactly like
+ * Arabic text, so the eye reads time while moving naturally.
  *
- * ═══ التوهّج ═══
+ * Glow: the glow is a blurred copy of the line itself underneath it, not a filled area under the
+ * line. The difference isn't cosmetic - a filled area says "the total under the curve", a meaning
+ * that doesn't apply to a ceiling. When both were filled areas, the overlap turned into a dirty
+ * gray block eating half the chart. The blurred version turns the overlap into light rather than
+ * sediment, and the line stays the edge.
  *
- * التوهّج **نسخة مغبّشة من الخطّ نفسه تحته**، لا مساحة مملوءة تحت
- * الخطّ. الفرق مش تجميلي: المساحة المملوءة بتقول «المجموع تحت
- * المنحنى»، وده معنى ما ينفعش يتقال عن **سقف**. لما كان الاتنين
- * مساحتين، التداخل كان بيطلع كتلة رمادية متّسخة بتاكل نص الرسم.
- * النسخة المغبّشة بتخلّي التداخل **ضوءًا** لا طَمْيًا، والخطّ يفضل
- * هو الحدّ.
- *
- * ═══ الوقف مش نقطة على الخطّ ═══
- *
- * `CYCLES` فيها خمس دورات، بس مش خمس سنين: أربعة للمؤسسة
- * (٢٠٢٦…٢٠٢٣) وواحدة **للوقف** واقفة على ٢٠٢٣. لو وصّلناهم بخطّ
- * واحد، الرسم بيقول إن ٢٠٢٣-الوقف خطوة زمنية بعد ٢٠٢٣-المؤسسة
- * وإن المصروف نزل من ٨٤٧ ألف لصفر · وده **ما حصلش**؛ دول جهتان
- * في نفس السنة. فالخطّ للمؤسسة وحدها، والوقف سطر مستقل تحته.
+ * A stop isn't a point on the line: `CYCLES` holds five cycles, not five years - four for the
+ * institution (2026...2023) and one for the endowment, sitting at 2023. Connecting them with a
+ * single line would say 2023-endowment is a time step after 2023-institution and that spending
+ * dropped from 847,000 to zero - which never happened; they're two different entities in the same
+ * year. So the line covers the institution alone, and the endowment gets its own row below it.
  */
 
-/** إحداثيات الرسم · الـviewBox قريب من المقاس الحقيقي فالسُمك يفضل طبيعيًّا */
+/** Chart coordinates - the viewBox is close to the real size so stroke width stays natural. */
 const CH = { w: 680, h: 190, top: 26, bottom: 40, side: 34 }
 
 /**
- * منحنى ناعم **بلا تجاوز** · مونوتون (Fritsch–Carlson).
+ * A smooth curve with no overshoot - monotone (Fritsch-Carlson).
  *
- * الكاردينال البسيط بيتجاوز بين نقطتين متباعدتين: من ٤٧M لـ١M
- * كان بينزل **تحت الصفر** قبل ما يطلع · يعني الرسم بيقول قيمة
- * سالبة ما حصلتش. المونوتون بيحسب الميل عند كل نقطة ويحدّه، فالخطّ
- * بيفضل بين قيمتَي النقطتين اللي هو واصل بينهم.
+ * A plain cardinal spline overshoots between two far-apart points: going from 47M to 1M it used to
+ * dip below zero before rising, showing a negative value that never happened. Monotone
+ * interpolation computes and clamps the slope at each point, so the line stays between the two
+ * values it connects.
  *
- * وبيرجّع **دالة تقييم** كمان لا مسارًا بس · عشان منطقة التجاوز
- * تتحسب بالعيّنات لا بقناع SVG.
+ * It also returns an evaluation function, not just a path, so the overshoot region can be computed
+ * by sampling rather than an SVG mask.
  */
 const spline = (pts: { x: number; y: number }[]) => {
   const n = pts.length
-  /* النقط بتيجي من اليمين للشمال (x بينقص)، والحساب عايزها صاعدة */
+  /* Points come right to left (x decreasing), and the calculation needs them ascending. */
   const p = pts[0].x > pts[n - 1].x ? [...pts].reverse() : [...pts]
   const dx: number[] = [], m: number[] = []
   for (let i = 0; i < n - 1; i++) { dx[i] = p[i + 1].x - p[i].x; m[i] = (p[i + 1].y - p[i].y) / dx[i] }
   const t: number[] = [m[0]]
   for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2
   t[n - 1] = m[n - 2]
-  /* حدّ الميل · شرط عدم التجاوز */
+  /* Slope limit - the no-overshoot condition. */
   for (let i = 0; i < n - 1; i++) {
     if (m[i] === 0) { t[i] = 0; t[i + 1] = 0; continue }
     const a = t[i] / m[i], b = t[i + 1] / m[i], h = Math.hypot(a, b)
@@ -221,7 +209,7 @@ const spline = (pts: { x: number; y: number }[]) => {
       + ` ${p[i + 1].x} ${p[i + 1].y.toFixed(2)}`
   }
 
-  /** قيمة y عند أي x · هيرميت على القطعة اللي فيها x */
+  /** y value at any x - Hermite interpolation on the containing segment. */
   const at = (x: number): number => {
     let i = 0
     while (i < n - 2 && x > p[i + 1].x) i++
@@ -233,17 +221,17 @@ const spline = (pts: { x: number; y: number }[]) => {
 }
 
 export function YearSpend() {
-  /* الأقدم أول الصفّ · وفي RTL أول الصفّ يمين، فالزمن بيمشي مع
-     اتجاه القراءة.
-     ودورة الوقف بتتشال من الخطّ: هي مش سنة تانية، هي جهة تانية في
-     نفس السنة · تحت في سطرها. */
+  /* Oldest first in the row - and in RTL the start of the row is the right side, so time follows
+     the reading direction.
+     The endowment cycle is excluded from the line: it isn't another year, it's a different entity
+     in the same year - shown below in its own row. */
   const rows = [...CYCLES].filter((c) => !c.activeWaqf).reverse()
   const waqf = CYCLES.find((c) => c.activeWaqf)
   const max = Math.max(...rows.map((c) => Math.max(c.alloc, c.spent)), 1)
   const { w, h, top, bottom, side } = CH
   const plotH = h - top - bottom
   const stepX = (w - side * 2) / (rows.length - 1)
-  /* أول نقطة على اليمين: المحور مقلوب يدويًّا لأن SVG مالوش اتجاه */
+  /* First point on the right: the axis is flipped manually since SVG has no direction. */
   const X = (i: number) => w - side - i * stepX
   const Y = (v: number) => top + plotH * (1 - v / max)
 
@@ -254,11 +242,11 @@ export function YearSpend() {
   const sSpent = spline(pSpent)
   const overYears = rows.filter((c) => c.spent > c.alloc).map((c) => c.label.split(' ')[0])
 
-  /* منطقة التجاوز · **محسوبة بالعيّنات لا بقناع**.
-     القناع بيطرح مساحة من مساحة، والنتيجة بتشمل كل اللي تحت
-     الخطّين لا اللي بينهم. هنا بنقيس عند كل عيّنة: لو المصروف فوق
-     المخصص (y أصغر) نبدأ مقطعًا ونقفله أول ما ينزل تحته · فاللي
-     بيتلوّن هو **الفرق** بالظبط. */
+  /* Overshoot region - computed by sampling, not a mask.
+     A mask subtracts one area from another, so the result covers everything under both lines rather
+     than just what's between them. Here we measure at each sample: if spending is above allocation
+     (smaller y) we start a segment and close it as soon as it drops back below - so exactly the
+     difference gets colored. */
   const SAMPLES = 160
   const x0 = Math.min(pAlloc[0].x, pAlloc[pAlloc.length - 1].x)
   const x1 = Math.max(pAlloc[0].x, pAlloc[pAlloc.length - 1].x)
@@ -284,10 +272,10 @@ export function YearSpend() {
     <Glass className="chy">
       <span className="chb-h">
         <span className="chb-t">المصاريف السنوية</span>
-        {/* المفتاح بيرسم **اللي مرسوم**: خطّ متّصل وخطّ منقّط، لا
-            مربّعين. المربّع بيقول «كتلة» والرسم فيه خطوط · والمنقّط
-            في المفتاح هو المنقّط في الرسم. والتجاوز لون بيقول «فيه
-            مشكلة»، فمكانه في المفتاح لا في الهامش وحده. */}
+        {/* The legend draws what's actually drawn: a solid line and a dotted line, not two squares.
+            A square says "block", and the chart uses lines; the dotted entry in the legend is the
+            same dotted style in the chart. The overshoot color signals a problem, so it belongs in
+            the legend, not only in a margin note. */}
         <span className="chb-k">
           <span><i className="ln a" />المصروف</span>
           <span><i className="ln c" />المخصص</span>
@@ -302,27 +290,26 @@ export function YearSpend() {
         aria-label={`المصروف مقابل المخصص عبر ${rows.length} دورات`}
       >
         <defs>
-          {/* التوهّج · تغبيش على نسخة من الخطّ نفسه. التداخل بين
-              التوهّجين بيطلع ضوءًا مش طَمْيًا، والخطّ فوقه يفضل حادًّا */}
+          {/* Glow - a blur on a copy of the line itself. Overlap between two glows turns into
+              light, not sediment, and the line on top stays sharp. */}
           <filter id="chyG" x="-8%" y="-30%" width="116%" height="160%">
-            {/* تغبيش أوسع = هالة أنعم · التغبيش الضيّق بيدّي حافة
-                تانية جنب الخطّ، وده اللي كان بيتقري «تقيل» */}
+            {/* A wider blur = a softer halo - a narrow blur gave a second edge next to the line,
+                which read as heavy. */}
             <feGaussianBlur stdDeviation="8" />
           </filter>
         </defs>
 
-        {/* خطوط الشبكة · تلاتة بس، والقيم على الطرف */}
+        {/* Grid lines - only three, with values at the edge. */}
         {[0, 0.5, 1].map((f) => (
           <line key={f} className="chy-grid"
             x1={side} x2={w - side} y1={top + plotH * f} y2={top + plotH * f} />
         ))}
 
-        {/* **مساحة واحدة مملوءة في الرسم كله، ومعناها التجاوز.**
-            كان تحت كل خطّ مساحة متدرّجة كمان، فبقى في تلات مساحات
-            والعين ما بتعرفش أنهي واحدة اللي بتقول حاجة. التوهّج
-            بيدّي الوزن، والمملوء الوحيد بيبقى هو الخبر.
-            والحساب بالعيّنات: عند كل عيّنة لو المصروف فوق المخصص
-            نفتح مقطعًا ونقفله أول ما ينزل · فاللي بيتلوّن هو الفرق. */}
+        {/* One filled area across the whole chart, meaning overshoot. There used to be a gradient
+            fill under each line too, making three fills, and the eye couldn't tell which one meant
+            something. The glow carries the weight, and the single fill becomes the actual signal.
+            Computed by sampling: at each sample, if spending is above allocation, open a segment
+            and close it as soon as it drops back - so exactly the difference gets colored. */}
         {overBands.map((d, i) => <path key={i} className="chy-over" d={d} />)}
 
         <g filter="url(#chyG)" aria-hidden="true">
@@ -338,16 +325,16 @@ export function YearSpend() {
             <circle className="chy-dot c" cx={X(i)} cy={Y(c.alloc)} r="3" />
             <circle className={`chy-dot a${c.spent > c.alloc ? ' over' : ''}`}
               cx={X(i)} cy={Y(c.spent)} r="4" />
-            {/* الرقم رقم **المصروف**، فمكانه فوق نقطة المصروف لا فوق
-                أعلى الخطّين · كان بيتحطّ فوق نقطة المخصص في ٢٠٢٦
-                فيتقري كأنه قيمتها */}
+            {/* The number is the spending figure, so it sits above the spending point, not above
+                whichever line is higher - it used to sit above the allocation point in 2026 and
+                read as if it were that value. */}
             <text className="chy-val" x={X(i)} y={Math.max(12, Y(c.spent) - 11)}>
               {nf.format(Math.round(c.spent / 1_000_000))}M
             </text>
-            {/* رقم المخصص بيتكتب **بس لما الخطّين يبعدوا** · لما
-                يكونوا ملزوقين الرقمين بيتراكبوا والرقم التاني ما
-                بيضيفش، والفرق نفسه هو الخبر لا القيمتين. عند ٢٠٢٦
-                الفرق ٢٩ مليون فالسقف لازم يتقال. */}
+            {/* The allocation figure is written only when the two lines are far enough apart - when
+                they're close together the numbers overlap and the second one adds nothing, and the
+                gap itself is the signal, not the two values. At 2026 the gap is 29 million, so the
+                ceiling has to be stated. */}
             {Math.abs(Y(c.alloc) - Y(c.spent)) > 18 && (
               <text className="chy-val c" x={X(i)}
                 y={Y(c.alloc) < Y(c.spent) ? Math.max(11, Y(c.alloc) - 9) : Y(c.alloc) + 16}>
@@ -360,7 +347,7 @@ export function YearSpend() {
         ))}
       </svg>
 
-      {/* الوقف · مش نقطة على الخطّ، فله سطره */}
+      {/* The endowment - not a point on the line, so it gets its own row. */}
       {waqf && (
         <span className="chy-side">
           <span className="chy-side-t">الوقف</span>
@@ -384,15 +371,15 @@ export function YearSpend() {
   )
 }
 
-/* ═══════════════════ ٤ · خطة الإنجاز ═══════════════════ */
+/* 4 - completion plan */
 
 /**
- * «خطة الإنجاز» حقل في محرّر التخصيص (`num`) قيمته ١٠٠ لكل بند ·
- * إلا **الدعوة** و**الحج ورمضان**: صفر. يعني تسعة مليون ونص برّه
- * حساب الإنجاز الإستراتيجي بلا أي إشارة في الشاشة.
+ * "Completion plan" is a field in the allocation editor (`num`) set to 100 for every line item,
+ * except Da'wah, and Hajj & Ramadan: zero. That means nine and a half million sits outside the
+ * strategic-completion calculation with no indicator on screen.
  *
- * ⚠️ الرسم ده بيعرض **الحقل المخزَّن**، مش نسبة الإنجاز المحسوبة
- * اللي النظام بيطلعها في `reports1_7` · ما قدرناش نقرا معادلتها.
+ * Note: this chart shows the stored field, not the computed completion percentage the live system
+ * reports - we weren't able to read that formula.
  */
 export function PlanCoverage({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
   const total = nodes.reduce((s, n) => s + n.alloc, 0)

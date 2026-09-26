@@ -2,35 +2,34 @@ import { agreements } from './agreements'
 import { projectRows } from './projects'
 import { budgetDocs, type BudgetDoc, type BudgetNode } from './budgetTree'
 import type { ProjectRow } from '@/types/domain'
+import { NOUN, countOf } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   السلسلة · هـ-7 · ميزانية ← مشروع ← اتفاقية ← دفعات
+/* Chain · budget -> project -> agreement -> disbursements
 
-   ⚠️ **أول حاجة اتكشفت لمّا جيت أوصّل السلسلة: هي مش موصولة.**
-   شجرة الميزانية `BG-2025-SA` بنودها «مسار التعليم · مجال التعليم
-   العام · هدف تطوير المدارس»، والمشاريع مساراتها «المنح النوعي ·
-   التعليم · المنح الدراسية الجامعية» · **مفرداتان مختلفتان**،
-   فأي محاولة نربط بيهم كانت هترجّع «مش لاقي» في كل مشروع.
+   Warning: **the first thing discovered while wiring the chain up: it doesn't connect.** The budget
+   tree `BG-2025-SA` has items like "education track · general education area · school development
+   goal," while project tracks are "qualitative grants · education · university scholarships" —
+   **two different vocabularies**, so any attempt to link them would return "not found" on every
+   project.
 
-   والسبب مش غلط: `BG-2025-SA` **منقولة بالحرف من مثال الوثيقة**،
-   و`taxonomy.ts` **منقولة بالحرف من النظام العامل**. مصدران
-   حقيقيان بيقولوا حاجتين · فما ينفعش نعدّل واحد فيهم عشان يطابق
-   التاني، ده بيخفي الفرق بدل ما يحلّه.
+   And the reason isn't a mistake: `BG-2025-SA` is **copied verbatim from the document's example**,
+   and `taxonomy.ts` is **copied verbatim from the live system**. Two real sources saying two
+   different things — so editing one to match the other isn't right, it would hide the discrepancy
+   instead of resolving it.
 
-   **فاللي اتعمل:** ميزانية تانية لسنة 2026 **مبنية من مفردات
-   النظام العامل**، ومولَّدة من المشاريع نفسها · فالسلسلة بتمشي
-   على داتا واحدة فعلًا لا بالتمنّي. والفرق بين المفردتين اتسجّل
-   سؤالًا لعمر بدل ما يتلمّ تحت السجادة.
+   **So what was done:** a second budget for 2026, **built from the live system's vocabulary**,
+   generated from the projects themselves — so the chain runs on genuinely one set of data rather
+   than by wishful thinking. The mismatch between the two vocabularies was logged as an open
+   question rather than swept under the rug.
 
-   ⚠️ **والتوليد مقصود.** لو الميزانية اتكتبت بالإيد، أول ما مشروع
-   يتغيّر مبلغه تبقى السلسلة مكسورة والشاشة بتقول «مطابق» · فهي
-   بتتحسب من المشاريع، والفحص بيبقى فحصًا حقيقيًا.
-   ═══════════════════════════════════════════════════════════ */
+   Warning: **and the generation is intentional.** If the budget were hand-typed, the moment a
+   project's amount changed the chain would break while the screen still said "matches" — so it's
+   computed from the projects, and the check becomes a real check. */
 
-/** مسار ← مجال ← هدف من مفردات النظام العامل */
+/** Track -> area -> goal, from the live system's vocabulary */
 const cap = (n: number) => Math.ceil(n / 100_000) * 100_000
 
-/** المشاريع اللي سنتها 2026 · دي اللي الميزانية بتتبني عليها */
+/** Projects dated 2026 · the ones the budget is built on */
 const rows2026 = projectRows.filter((p) => p.year.startsWith('2026'))
 
 function buildNodes(): BudgetNode[] {
@@ -40,9 +39,9 @@ function buildNodes(): BudgetNode[] {
     parentId: string | null, allocated: number, available: number,
   ) => out.push({ id, label, kind, parentId, allocated, available, active: true, showLabel: true })
 
-  /* المستويات التلاتة بتتبني من تحت لفوق: الهدف بيتحسب من
-     مشاريعه، والمجال من أهدافه، والمسار من مجالاته · فالتحقّق
-     «مجموع الأبناء = الأب» بيبقى صحيحًا بالبناء */
+  /* The three levels are built bottom-up: the goal is computed from its projects, the area from its
+     goals, and the track from its areas · so the check "children's sum = the parent" is true by
+     construction */
   const byTrack = new Map<string, Map<string, Map<string, ProjectRow[]>>>()
   for (const p of rows2026) {
     if (!byTrack.has(p.track)) byTrack.set(p.track, new Map())
@@ -77,8 +76,8 @@ function buildNodes(): BudgetNode[] {
         const gid = `${fid}g${gi}`
         const granted = ps.reduce((a, x) => a + x.amountGranted, 0)
         const spent = ps.reduce((a, x) => a + x.amountSpent, 0)
-        /* المخصص بيتقرّب لأعلى مئة ألف · الميزانية بتتحط بأرقام
-           مدوّرة لا بمجموع مشاريع بالقرش */
+        /* Allocation is rounded up to the nearest 100,000 · a budget is set in round figures, not a
+           penny-precise sum of projects */
         const alloc = cap(Math.max(granted, 100_000))
         put(gid, goal, 'sub', fid, alloc, alloc - spent)
         fAlloc += alloc
@@ -117,36 +116,34 @@ export const budget2026: BudgetDoc = {
   budget2026.total = nodes.find((n) => n.parentId === null)?.allocated ?? 0
 }
 
-/** كل الميزانيات · مثال الوثيقة ومعاه اللي مبنية على النظام العامل */
+/** Every budget · the document's example plus the one built on the live system */
 export const allBudgets: BudgetDoc[] = [...budgetDocs, budget2026]
 
 /**
- * ⚠️ **الحلّال ده لازم يكون هنا لا في `budgetTree`.**
- * `budget2026` مولَّدة من المشاريع، والمشاريع مالهاش علاقة بشجرة
- * الميزانية · فلو `budgetTree` استوردها كان هيبقى فيه دورة
- * استيراد. الشاشات بتقرا من هنا، والفكستشر بيفضل نضيف.
+ * Warning: **this resolver has to live here, not in `budgetTree`.**
+ * `budget2026` is generated from the projects, and the projects have no relation to the budget tree
+ * — if `budgetTree` imported it, it would create an import cycle. Screens read from here, and the
+ * fixture stays a one-way addition.
  */
 export const budgetDocOf = (id: string): BudgetDoc | undefined =>
   allBudgets.find((d) => d.id === id)
 
-/* ═══════════════════════════════════════════════════════════
-   حلقات السلسلة لمشروع واحد
+/* Chain links for a single project
 
-   كل حلقة بتقول: القيمة عندها · القيمة المتوقّعة من اللي قبلها ·
-   وهل اتطابقوا. والحلقة اللي ما بتتطابقش **بتتقال** لا بتتخفي.
-   ═══════════════════════════════════════════════════════════ */
+   Each link says: its own value, the expected value from the one before it, and whether they match.
+   A link that doesn't match **is stated**, not hidden. */
 export type LinkState = 'ok' | 'gap' | 'none'
 
 export interface ChainLink {
   key: 'budget' | 'project' | 'agreement' | 'payments'
   label: string
-  /** الاسم أو الرقم اللي بيعرّف الحلقة */
+  /** Name or number identifying the link */
   name: string
   value: number
-  /** الجملة اللي بتشرح الرقم */
+  /** The sentence explaining the number */
   say: string
   state: LinkState
-  /** رابط للحلقة لو ليها شاشة */
+  /** A link to the link's own screen, if it has one */
   to?: string
 }
 
@@ -160,7 +157,7 @@ export function projectChain(p: ProjectRow): ChainLink[] {
 
   const links: ChainLink[] = []
 
-  /* 1 · الميزانية · الهدف اللي المشروع تحته */
+  /* 1 · budget · the goal the project falls under */
   links.push({
     key: 'budget',
     label: 'الميزانية',
@@ -173,7 +170,7 @@ export function projectChain(p: ProjectRow): ChainLink[] {
     to: node ? `/budget/doc/${budget2026.id}` : undefined,
   })
 
-  /* 2 · المشروع · المعتمد */
+  /* 2 · project · the approved amount */
   links.push({
     key: 'project',
     label: 'المشروع',
@@ -183,7 +180,7 @@ export function projectChain(p: ProjectRow): ChainLink[] {
     state: p.amountGranted > 0 ? 'ok' : 'none',
   })
 
-  /* 3 · الاتفاقية · قيمتها لازم تساوي المعتمد (خطوة 11) */
+  /* 3 · agreement · its value must equal the approved amount (step 11) */
   links.push({
     key: 'agreement',
     label: 'الاتفاقية',
@@ -198,11 +195,11 @@ export function projectChain(p: ProjectRow): ChainLink[] {
     to: ag ? `/agreements/${ag.id}` : undefined,
   })
 
-  /* 4 · الدفعات · مجموع الجدول لازم يساوي الاتفاقية (قاعدة 8) */
+  /* 4 · disbursements · the schedule's total must equal the agreement (rule 8) */
   links.push({
     key: 'payments',
     label: 'جدول الدفعات',
-    name: ag ? `${ag.payments.length} دفعات` : 'غير موجود',
+    name: ag ? `${countOf(ag.payments.length, NOUN.payment)}` : 'غير موجود',
     value: schedule,
     say: ag
       ? schedule === ag.amount
@@ -215,6 +212,6 @@ export function projectChain(p: ProjectRow): ChainLink[] {
   return links
 }
 
-/** الحلقات المكسورة · صفر يعني السلسلة ماشية */
+/** Broken links · zero means the chain holds */
 export const chainGaps = (p: ProjectRow): number =>
   projectChain(p).filter((l) => l.state === 'gap').length

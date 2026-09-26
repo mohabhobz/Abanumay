@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { HEAT_TONE } from '@/lib/tone'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, Num, Person, Segments, Tag,
 } from '@/components/ui'
@@ -8,7 +9,7 @@ import { ROUTES } from '@/app/routes'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { assistFor } from '@/data/mock/assistant'
 import { exportXlsx, printArea, type Sheet } from '@/lib/export'
-import { nf } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
 import {
   PAY_LIMIT, PAY_STATES, payHeat, payKpi, payRequests, payStateLabel, payStateWho,
 } from '@/data/mock/disbursements'
@@ -17,29 +18,27 @@ import type { PayRequest, PayState } from '@/types/domain'
 const KEYS = ['heat'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/* ═══════════════════════════════════════════════════════════
-   تقرير المتأخر والمتعثر · شاشة 6 · آلية التصعيد 9.5
+/* Late and stalled requests report - screen 6, escalation mechanism 9.5.
 
-   البند 3 بيسمّي أعمدة التقرير بالحرف: «تقرير شامل بالطلبات
-   المتأخرة والمتعثرة: **المرحلة الحالية · تاريخ بدء التأخير · عدد
-   الأيام · المسؤول**». أربعة، وكلهم هنا وبالترتيب ده.
+   Clause 3 names the report columns exactly: "a comprehensive report of late and stalled requests:
+   current stage, delay start date, day count, responsible party." Four columns, all present here in
+   that order.
 
-   ⚠️ **وده تقرير لا صندوق.** الفرق مش شكلي: الصندوق بيترتّب عشان
-   تاخد قرار على طلب واحد، والتقرير بيتطبع ويتبعت وبيتقري بالمرحلة
-   عشان تعرف **فين الاختناق**. فالتجميع هنا بالمرحلة دايمًا،
-   والمخرج تصدير وطباعة لا أزرار قرار.
+   Note: this is a report, not an inbox. The difference isn't cosmetic: an inbox is ordered so you
+   can decide on one request, while a report is printed and sent and read by stage so you can see
+   where the bottleneck is. So grouping here is always by stage, and the output is export and print,
+   not decision buttons.
 
-   ═══ والبند 4 كمان ═══
+   === And clause 4 too ===
 
-   «إعداد وتعديل آلية التصعيد صلاحية **مدير النظام مباشرة بلا مسار
-   موافقات**» · فالمدد معروضة هنا وقابلة للتعديل في نفس الشاشة، مش
-   مدفونة في إعدادات بعيدة. اللي بيقرا التقرير هو اللي بيكتشف إن
-   الحدّ نفسه غلط.
+   "Configuring and editing the escalation mechanism is the system admin's authority directly, with
+   no approval path" - so the thresholds are shown here and editable on the same screen, not buried
+   in a distant settings page. Whoever reads the report is the one who discovers the threshold
+   itself is wrong.
 
-   ⚠️ والمدد **مؤقتة**: الوثيقة بتقول الأيام «من الإعدادات» وما
-   دّتش أرقامًا، زي عمود «القيمة المستهدفة» الفاضي في المؤشرات
-   الأربعة. فالشاشة بتقول كده صراحةً بدل ما الرقم يتقري التزامًا.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the thresholds are placeholders: the spec says the day counts come "from settings" without
+   giving numbers, the same as the empty "target value" column in the four indicators. So the screen
+   says this explicitly instead of letting the number read as a commitment. */
 
 const HEATS = [
   { key: '', label: 'المتأخر والمتعثر' },
@@ -47,7 +46,7 @@ const HEATS = [
   { key: 'stuck', label: 'متعثر' },
 ]
 
-/** تاريخ بدء التأخير · اليوم اللي الطلب عدّى فيه حدّ مرحلته */
+/** Delay start date - the day the request crossed its stage's threshold. */
 function lateSince(r: PayRequest): string {
   const lim = PAY_LIMIT[r.state]
   const d = new Date()
@@ -55,7 +54,7 @@ function lateSince(r: PayRequest): string {
   return d.toISOString().slice(0, 10)
 }
 
-/** أيام التأخير · فوق الحدّ لا من أول المرحلة */
+/** Delay days - over the threshold, not from the start of the stage. */
 const lateDays = (r: PayRequest) => Math.round((r.hoursInState - PAY_LIMIT[r.state]) / 24)
 
 export default function LatePage() {
@@ -80,7 +79,7 @@ export default function LatePage() {
     [v.heat],
   )
 
-  /* التجميع بالمرحلة دايمًا · التقرير بيجاوب «فين الاختناق» */
+  /* Grouping is always by stage - the report answers "where's the bottleneck". */
   const groups = PAY_STATES.map((s) => ({
     key: s.key as PayState,
     rows: rows.filter((r) => r.state === s.key),
@@ -100,7 +99,7 @@ export default function LatePage() {
         lateSince(r), String(lateDays(r)), r.owner,
         payHeat(r) === 'stuck' ? 'متعثر' : 'متأخر', nf.format(r.asked),
       ]),
-      totals: ['', '', '', '', '', '', '', `${rows.length} طلب`, nf.format(rows.reduce((s, r) => s + r.asked, 0))],
+      totals: ['', '', '', '', '', '', '', `${countOf(rows.length, NOUN.request)}`, nf.format(rows.reduce((s, r) => s + r.asked, 0))],
     }
   }, [rows])
 
@@ -132,8 +131,8 @@ export default function LatePage() {
 
           <Segments items={HEATS} active={v.heat ?? ''} onChange={(x) => set({ heat: x })} />
 
-          {/* البند 4 · الإعداد صلاحية مدير النظام مباشرة، فمكانه
-              مع التقرير اللي بيكشف إن الحدّ نفسه غلط */}
+          {/* Clause 4 - configuration is the system admin's direct authority, so it sits alongside
+              the report that reveals the threshold itself is wrong. */}
           <Glass>
             <Head
               title="مدد المراحل"
@@ -180,8 +179,8 @@ export default function LatePage() {
                 <div className="paygrp-h">
                   <h2>{payStateLabel(g.key)}</h2>
                   <span className="sub">
-                    عند {payStateWho(g.key)} · <span className="num">{g.rows.length}</span> طلب ·{' '}
-                    حدّ المرحلة <span className="num">{limits[g.key]}</span> يومًا
+                    عند {payStateWho(g.key)} · <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.request)} ·{' '}
+                    حدّ المرحلة <span className="num">{limits[g.key]}</span> {nounAfter(limits[g.key], NOUN.day)}
                   </span>
                 </div>
                 <Glass className="tblcard">
@@ -190,14 +189,13 @@ export default function LatePage() {
                       <thead>
                         <tr>
                           <th>الطلب</th>
-                          {/* ⚠️ البند 3 بيسمّي العمود «المرحلة الحالية»،
-                              وهي هنا **عنوان المجموعة** فوق · فالعمود
-                              بيقول الحالة لا يكرّر المرحلة. والملف
-                              المصدَّر فيه العمود باسمه لأن الإكسل
-                              مالوش عناوين مجموعات. */}
+                          {/* Note: clause 3 names the column "current stage", and here it's the
+                              group heading above - so the column states status instead of repeating
+                              the stage. The exported file names the column explicitly since a
+                              spreadsheet has no group headings. */}
                           <th>الحالة</th>
                           <th>تاريخ بدء التأخير</th>
-                          <th>عدد الأيام</th>
+                          <th className="n">عدد الأيام</th>
                           <th>المسؤول</th>
                         </tr>
                       </thead>
@@ -211,12 +209,12 @@ export default function LatePage() {
                                 <div className="sub trim1">{r.entityName}</div>
                               </td>
                               <td>
-                                <Tag tone={heat === 'stuck' ? 'no' : 'warn'}>
+                                <Tag tone={HEAT_TONE[heat]}>
                                   {heat === 'stuck' ? 'متعثر' : 'متأخر'}
                                 </Tag>
                               </td>
                               <td><DateText>{lateSince(r)}</DateText></td>
-                              <td className="num"><Num>{lateDays(r)}</Num></td>
+                              <td className="n"><Num>{lateDays(r)}</Num></td>
                               <td><Person name={r.owner} /></td>
                             </tr>
                           )

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Glass, Head, Money, Num, Select } from '@/components/ui'
-import { nf, pct } from '@/lib/format'
+import { nf, NOUN, nounAfter, pct, unitAfter } from '@/lib/format'
 import { projectRows } from '@/data/mock/projects'
 import { PERIODS } from '@/data/reportDefs'
 import { type Sheet } from '@/lib/export'
@@ -9,25 +9,25 @@ import type { ProjectRow } from '@/types/domain'
 import { days } from '@/lib/tone'
 
 /**
- * التقرير المُشكَّل.
+ * Report builder.
  *
- * اللوحة بتجاوب على الأسئلة المعروفة. ده للسؤال اللي مش فيها:
- * **بُعد × مقياس**، والجدول والأعمدة بيتغيّروا مع الاختيار.
- *
- * ليه أداة واحدة بدل شاشة لكل سؤال؟ لأن النظام العامل جرّب العكس ·
- * أربعتاشر شاشة، كل واحدة بفلاترها · والنتيجة إن السؤال اللي مش
- * متوقَّع في التصميم ما لهوش مكان أصلًا، فبيروح Excel. الأداة دي
- * بتغطّي التوليفات كلها (٧ أبعاد × ٦ مقاييس = ٤٢ تقريرًا) بشاشة
- * واحدة يتعلّمها المستخدم مرة.
+ * The dashboard answers known questions. This is for the question that
+ * isn't among them: dimension × metric, with the table and columns
+ * changing as you pick. Why one tool instead of a screen per question?
+ * Because the current system tried the opposite — fourteen screens, each
+ * with its own filters — and the result was that any question not
+ * anticipated in the design had no home at all, so it went to Excel. This
+ * tool covers every combination (7 dimensions × 6 metrics = 42 reports) in
+ * one screen the user learns once.
  */
 
 type Dim = { key: string; label: string; of: (p: ProjectRow) => string }
 type Measure = {
   key: string
   label: string
-  /** القيمة من صف واحد */
+  /** Value from a single row. */
   of: (p: ProjectRow) => number
-  /** جمع ولا متوسط */
+  /** Sum or average. */
   agg: 'sum' | 'avg'
   money?: boolean
   unit?: string
@@ -79,8 +79,8 @@ export function Builder() {
   const max = rows.length ? rows[0].v || 1 : 1
   const total = rows.reduce((s, r) => s + r.v, 0)
 
-  /* نطاق التصدير مكتوب فوق القايمة: التقرير المُشكَّل بيصدّر اللي
-     على الشاشة بالظبط · نفس البُعد والمقياس والفترة. */
+  /* Export scope is written above the list: the report builder exports
+     exactly what's on screen — the same dimension, metric, and period. */
   const note = `${mea.label} حسب ${dim.label} · ${PERIODS.find((p) => p.id === period)?.label ?? ''}`
 
   const sheet: Sheet = {
@@ -97,15 +97,15 @@ export function Builder() {
 
   return (
     <>
-      {/* الجملة فوق بتتغيّر مع الاختيار: المستخدم بيقرا سؤاله مكتوبًا
-          قبل ما يشوف إجابته، فيتأكد إنه سأل اللي قصده. */}
+      {/* The sentence above updates with the selection: the user reads their
+          question stated back before seeing its answer, confirming they asked
+          what they meant to. */}
       <Glass className="rbld">
         <span className="rbld-q">
           <span className="sub">اعرض</span>
-          {/* `allowEmpty={false}` لا `all` · المقياس **دايمًا**
-              مختار، فخانة «الكل» كانت بتعرض اسم أول مقياس فوق
-              القايمة وهو موجود تحتها كخيار · «عدد المشاريع» مرّتين
-              في قايمة واحدة. */}
+          {/* `allowEmpty={false}`, not `all` — the metric is always selected, so an
+              "all" option used to show the first metric's name above the list while
+              it also appeared below as a choice — "Number of Projects" twice in one list. */}
           <Select
             value={meaKey}
             allowEmpty={false}
@@ -144,9 +144,9 @@ export function Builder() {
           }
         />
 
-        {/* الأعمدة الأفقية لا الرأسية: أسماء الأبعاد عربية وطويلة
-            («رعاية مشاريع التعليم ذات التأثير») ومحدش بيقرا اسمًا
-            مقلوبًا تحت عمود. */}
+        {/* Horizontal bars, not vertical: dimension names are long Arabic phrases
+            ("Sponsoring high-impact education projects"), and nobody reads a
+            rotated label under a column. */}
         <div className="rbar">
           {rows.map((r) => (
             <div className="rbar-r" key={r.k}>
@@ -156,11 +156,11 @@ export function Builder() {
               </span>
               <span className="rbar-v">
                 {mea.money ? <Money>{r.v}</Money> : nf.format(r.v)}
-                {mea.unit && <small className="sub"> {mea.unit}</small>}
+                {mea.unit && <small className="sub"> {unitAfter(r.v, mea.unit)}</small>}
               </span>
               <span className="rbar-s mut">{total ? <span className="num">{pct(Math.round((r.v / total) * 100))}</span> : 'لا يوجد'}</span>
               <span className="rbar-n mut">
-                <span className="num">{r.n}</span> مشروعًا
+                <span className="num">{r.n}</span> {nounAfter(r.n, NOUN.project)}
               </span>
             </div>
           ))}

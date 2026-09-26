@@ -1,25 +1,24 @@
 import { projectRows } from './mock/projects'
 
 /**
- * التقرير الختامي · **المخطط مقابل الفعلي**.
+ * Closing report · **planned vs. actual**.
  *
- * ده أهم اكتشاف من قراءة `reports1_12` في النظام العامل: التقرير
- * الختامي فيه ١٨ عمودًا و٩٧٦ صفًّا، وأربعة منهم مش موجودين في أي
- * شاشة تانية:
+ * This is the most important finding from reading `reports1_12` in the live system: the closing
+ * report has 18 columns and 976 rows, four of which appear nowhere else:
  *
- *   `مدة تنفيذ المشروع الفعلية بالأيام` · `عدد المستفيدين الفعلي`
- *   `موازنة المشروع الفعلية` · `مخرجات المشروع الفعلية`
+ *   `actual project execution duration in days` · `actual beneficiary count`
+ *   `actual project budget` · `actual project outputs`
  *
- * يعني المؤسسة **عندها** الفرق بين اللي وعدت بيه الجهة واللي حصل
- * فعلًا · على ٩٧٦ مشروعًا · وما فيش شاشة بتحسبه. التقرير الختامي
- * معروض كقايمة مرفقات لا كمقارنة.
+ * Meaning the Foundation **has** the gap between what an entity promised and what actually
+ * happened, across 976 projects, and no screen computes it. The closing report is shown as a list
+ * of attachments, not as a comparison.
  *
- * ولذلك القيم دي مولَّدة هنا بانحياز مقصود: المدة الفعلية بتطول،
- * والمستفيدون بيقلّوا، والموازنة بتقرب من المعتمد. ده **مش تشاؤمًا**
- * · ده الشكل اللي بيطلع في المنح عمومًا، والغرض إن الشاشة تورّي
- * السؤال ده شغّالًا. لما الباك اند يجهز بتتبدّل بالقيم الحقيقية.
+ * So these values are generated here with a deliberate bias: actual duration runs longer,
+ * beneficiaries run lower, and budget comes close to what was approved. This is **not pessimism** —
+ * it's the shape grants generally take, and the point is to show this question actually working.
+ * Once the backend is ready, it's replaced with real values.
  *
- * ⚠️ نموذج. `GET /reports/closing` بنفس الشكل.
+ * Warning: a mock. `GET /reports/closing` with the same shape.
  */
 
 export interface Closing {
@@ -31,21 +30,21 @@ export interface Closing {
   goal: string
   region: string
   year: string
-  /** المعتمد · المخطط */
+  /** Approved · planned */
   granted: number
-  /** موازنة المشروع الفعلية من التقرير الختامي */
+  /** Actual project budget, from the closing report */
   actualBudget: number
-  /** المدة المخططة بالأيام */
+  /** Planned duration in days */
   planDays: number
-  /** مدة التنفيذ الفعلية بالأيام */
+  /** Actual execution duration in days */
   actualDays: number
-  /** المستفيدون في العقد */
+  /** Beneficiaries under contract */
   planBeneficiaries: number
-  /** عدد المستفيدين الفعلي */
+  /** Actual beneficiary count */
   actualBeneficiaries: number
-  /** مخرجات المشروع الفعلية · نص من الجهة */
+  /** Actual project outputs · free text from the entity */
   outputs: string
-  /** تاريخ رفع التقرير */
+  /** Date the report was submitted */
   at: string
 }
 
@@ -66,27 +65,30 @@ const OUTPUTS = [
   'اكتملت المخرجات، وسُلّمت المنتجات المعرفية في موعدها.',
 ]
 
-/** مشاريع لها تقرير ختامي فعلًا · زي النظام، القايمة دي منها بس */
+/**
+ * Projects that actually have a closing report · like the live system, this list is drawn only from
+ * those
+ */
 export const closingRows: Closing[] = projectRows
   .filter((p) => p.hasFinalReport && p.amountGranted > 0)
   .map((p) => {
     const rnd = seeded(p.id)
     const int = (lo: number, hi: number) => lo + Math.floor(rnd() * (hi - lo + 1))
 
-    /* المدة بتطول في أغلب المشاريع وبتقصر في القليل · التوزيع مش
-       متماثل، وده بالظبط اللي بيخلّي «المتوسط» يقول حاجة. */
+    /* Duration runs longer for most projects and shorter for a few · the distribution isn't
+       symmetric, which is exactly what makes the "average" meaningful. */
     const drift = rnd() < 0.72 ? int(5, 70) : -int(2, 25)
     const actualDays = Math.max(30, p.durationDays + drift)
 
-    /* المستفيدون بيقلّوا عن المتعاقد عليه في الغالب */
+    /* Beneficiaries usually come in below what was contracted */
     const bDrift = rnd() < 0.68 ? -int(3, 35) : int(2, 20)
     const actualBeneficiaries = Math.max(
       1,
       Math.round(p.beneficiaries * (1 + bDrift / 100)),
     )
 
-    /* الموازنة الفعلية بتقرب من المعتمد وبتقلّ عنه شويّة · الوفر
-       ده هو «مشروع وفرة» في النظام. */
+    /* Actual budget comes close to what was approved and slightly under it · that shortfall is what
+       the system calls a "surplus project." */
     const saving = rnd() < 0.35 ? int(1, 12) / 100 : 0
     const actualBudget = Math.round(p.amountGranted * (1 - saving))
 
@@ -111,20 +113,20 @@ export const closingRows: Closing[] = projectRows
   })
 
 export interface Gap {
-  /** متوسط الانحراف بالنسبة المئوية · موجب يعني زيادة عن المخطط */
+  /** Average deviation as a percentage · positive means over the plan */
   days: number
   beneficiaries: number
   budget: number
-  /** كام مشروع تجاوز مدته المخططة */
+  /** How many projects exceeded their planned duration */
   lateCount: number
-  /** كام مشروع وصل لعدد المستفيدين المتعاقد عليه */
+  /** How many projects reached the contracted beneficiary count */
   metTarget: number
   total: number
 }
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0)
 
-/** الفجوة بين المخطط والفعلي على مجموعة تقارير ختامية */
+/** The gap between planned and actual across a set of closing reports */
 export const gapOf = (rows: Closing[]): Gap => ({
   days: Math.round(avg(rows.map((r) => ((r.actualDays - r.planDays) / r.planDays) * 100))),
   beneficiaries: Math.round(
@@ -136,19 +138,18 @@ export const gapOf = (rows: Closing[]): Gap => ({
   total: rows.length,
 })
 
-/* ═══════════════════ المعرفة ═══════════════════ */
+/* Knowledge */
 
 /**
- * تقرير المعرفة · ونتيجة فحصه في النظام العامل.
+ * Knowledge report · and what checking it in the live system found.
  *
- * ٩٤٦ قيدًا، نوعان: `دروس مستفادة` (٨٢٤) و`رفض` (١٢٢). وقياس طول
- * النصّ قال الآتي: **٤٤٠ قيدًا نصّهم ثلاثة أحرف أو أقل** (أغلبهم
- * نقطة واحدة)، و٣١٨ أقل من أربعين حرفًا، و**١٨٨ بس فيهم درس
- * مكتوب فعلًا**.
+ * 946 entries, of two kinds: "lessons learned" (824) and "rejection" (122). Measuring text length
+ * showed: **440 entries with three characters or fewer** (mostly a single dot), 318 under forty
+ * characters, and **only 188 with an actual lesson written**.
  *
- * يعني ٨٠٪ من حقل المعرفة بيتملّى عشان يعدّي حقلًا إلزاميًا. والرقم
- * ده هو الرسالة: المشكلة مش إن الحقل ناقص، المشكلة إنه **إلزامي بلا
- * قيمة راجعة لمن بيملاه**. القايمة اللي تحت بتحاكي التوزيع ده.
+ * Meaning 80% of the knowledge field gets filled in just to get past a required field. That number
+ * is the point: the problem isn't that the field is missing, it's that it's **required with no
+ * value returned to whoever fills it in**. The list below mirrors this distribution.
  */
 export type KnowledgeKind = 'دروس مستفادة' | 'رفض'
 
@@ -167,9 +168,9 @@ export interface Knowledge {
   spent: number
   kind: KnowledgeKind
   text: string
-  /** فاضٍ فعليًا · نقطة أو حرفان */
+  /** Effectively empty · a dot or two characters */
   empty: boolean
-  /** فيه درس مكتوب · أربعون حرفًا فأكثر */
+  /** Has an actual lesson written · forty characters or more */
   real: boolean
 }
 
@@ -194,7 +195,7 @@ export const knowledgeRows: Knowledge[] = projectRows
     const rnd = seeded(`k${p.id}`)
     const kind: KnowledgeKind = p.supportStatus === 'مرفوض' ? 'رفض' : 'دروس مستفادة'
     const r = rnd()
-    /* نفس نسب النظام: ٤٦٪ فاضي · ٣٤٪ قصير · ٢٠٪ حقيقي */
+    /* Same ratios as the live system: 46% empty, 34% short, 20% substantial */
     const text =
       r < 0.46 ? '.'
         : r < 0.8 ? (kind === 'رفض' ? 'غير مطابق' : 'لا يوجد')

@@ -29,15 +29,15 @@ import { projectChain } from '@/data/mock/chain'
 import { planOfProject } from '@/data/mock/plans'
 import { journeys } from '@/data/journey'
 
-/** عدد الأيام اللي الإجراء الحالي مفتوح فيها · من سجل الإجراءات */
+/** Number of days the current process has been open - from the action log. */
 const OPEN_DAYS = 87
 
 /**
- * صفحة المشروع · الشاشة المحورية في النظام.
+ * Project page - the system's central screen.
  *
- * التبويب جزء من الـURL (`/projects/20940/entity`) عشان يتشارك ويترجع
- * له، والعمود الجانبي سياق ثابت مش تبويب · القراءة السريعة ومشاريع
- * الجهة وآخر إجراء بتفضل ظاهرة مهما اتنقّلت بين التبويبات.
+ * The tab is part of the URL (`/projects/20940/entity`) so it can be shared and returned to, while
+ * the side column is fixed context, not a tab - the quick read, the entity's projects, and the
+ * latest action stay visible no matter which tab is active.
  */
 export default function ProjectPage() {
   const { id, tab } = useParams<{ id: string; tab?: string }>()
@@ -45,11 +45,11 @@ export default function ProjectPage() {
   const mobile = useIsMobile()
 
   /**
-   * صف القائمة لنفس المشروع.
+   * The same project's row from the list.
    *
-   * الفيكستشر المفصّل واحد بس، فأي مشروع تاني من القائمة بيتفتح
-   * بترويسته وأرقامه الحقيقية من الصف، والتفاصيل العميقة (الأهداف
-   * والمراحل والسجل) بتفضل من الفيكستشر لحد ما الباك اند يرجّعها.
+   * There's a single detailed fixture, so any other project opened from the list gets its header
+   * and real numbers from its own row, while deeper details (goals, phases, log) stay from the
+   * fixture until the backend supplies them.
    */
   const row = projectById(id ?? fixtures.project.id)
 
@@ -71,8 +71,8 @@ export default function ProjectPage() {
         score: row.score,
         beneficiaries: row.beneficiaries,
         durationDays: row.durationDays,
-        /* تاريخ البدء المطلوب في نموذج التقديم. الفيكستشر كان بيدّي
-           نفس اليوم لكل مشروع، فكل الشاشات كانت بتقول 12 أبريل. */
+        /* The requested start date from the application form. The fixture used to return the same
+           day for every project, so every screen read the same date. */
         startDate: addDays(row.submittedAt, 30),
         status: { label: row.stage, tone: groupTone(row.statusGroup) },
       }
@@ -100,8 +100,8 @@ export default function ProjectPage() {
 
   const goTab = (slug: string) => navigate(ROUTES.projectTab(project.id, slug))
 
-  /* تجاوز مدة الإجراء بيتحسب من الصف نفسه لما يكون موجود، عشان
-     القراءة تطابق القسم اللي المشروع واقف فيه فعلًا لا قسم الفيكستشر. */
+  /* Process duration overrun is computed from the row itself when present, so the reading matches
+     the department the project is actually in, not the fixture's department. */
   const rowBreach =
     row && row.stageLimit > 0 && row.hoursInStage > row.stageLimit
       ? {
@@ -118,10 +118,10 @@ export default function ProjectPage() {
   const breach = row ? rowBreach : project.log.find((l) => l.hours > l.limit)
   const openDays = row ? days(row.hoursInStage) : OPEN_DAYS
 
-  /* لما الصفحة توصل لآخرها، تدرّج البلور تحت شريط القرار بيروح
-     عشان آخر سيكشن يبان كامل من غير ضبابة فوقه. */
+  /* Once the page reaches its end, the blur gradient under the decision bar fades out so the last
+     section shows fully, with no haze over it. */
   const screen = useRef<HTMLDivElement>(null)
-  /* عمود التحليلات بيملا الباقي من مكانه لحدّ فوق شريط القرار */
+  /* The analytics column fills the remaining space from its position up to the decision bar. */
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
   const [atEnd, setAtEnd] = useState(false)
@@ -139,29 +139,29 @@ export default function ProjectPage() {
     }
   }, [])
 
-  /* السرد محسوب من الصف نفسه، فبيتغيّر مع حالة المشروع فعلًا.
-     ومعاه قراءات الملف في **قائمة واحدة**: كان فيه شريط «رحلة
-     المشروع» فوق التبويبات وكارت «تحليلات المشروع» في الجانبي،
-     والاتنين بيقولوا «واقف عند دراسة المشروع من 87 يومًا، 132% فوق
-     الحدّ» بصياغتين. مكان واحد للمساعد في الشاشة. */
-  /* تفاصيل المشروع · مشتقّة من الصف عشان كل مشروع في النموذج يبقى
-     قابلًا للتجربة، مش المشروع الواحد اللي في الفيكستشر. */
+  /* Note: the narrative is computed from the row itself, so it actually changes with the project's
+     status. It's now combined with the file's readings into a single list - there used to be a
+     "project journey" bar above the tabs and a "project analytics" card in the side column, both
+     saying "stuck in project review for 87 days, 132% over the threshold" in two different
+     phrasings. One place for the assistant on the screen. */
+  /* Project details are derived from the row so every project in the demo is explorable, not just
+     the single one baked into the fixture. */
   const detail = useMemo(
     () => projectDetail(row ?? fixtures.projects[0], entity.name),
     [row, entity.name],
   )
 
-  /* ⚠️ **أهلية المشروع للاتفاقية بتتحسب هنا لا في التاب.**
-     القاعدة (قاعدة 1) بتقول «مفيش اتفاقية قبل اكتمال الاعتماد
-     واستمرار حجز المخصص» · والسبب بيتمرّر للزرار عشان يتقال في
-     الـtitle بدل ما الزرار يبقى معطَّلًا بلا سبب. */
+  /* Note: eligibility for an agreement is computed here, not in the tab. The rule (rule 1) states
+     no agreement before approval is complete and the allocation hold still stands - the reason is
+     passed to the button so it appears in the `title` instead of a disabled button with no
+     explanation. */
   const agreementBlock = useMemo(
     () => (row ? projectOptions().find((p) => p.id === row.id)?.blocked ?? '' : ''),
     [row],
   )
 
-  /* مشروع وصل للمرحلة · بيتعرض في الحالة الفارغة عشان الكلاينت
-     يشوف الشاشة مليانة بضغطة بدل ما يدوّر على مشروع مناسب. */
+  /* A project that reached this stage - shown in the empty state so a reviewer sees the screen
+     populated with one click instead of hunting for a suitable project. */
   const examples = useMemo(
     () => ({
       agreement: exampleWith(fixtures.projects, 'agreement', row?.id),
@@ -170,8 +170,8 @@ export default function ProjectPage() {
     [row?.id],
   )
 
-  /* السجل مولَّد من نفس التفاصيل، فالمتابعات والدفعات والاتفاقية
-     اللي في التابات هي بعينها اللي في السجل · مفيش مصدران. */
+  /* The log is generated from the same details, so the updates, payments, and agreement shown in
+     the tabs are exactly what's in the log - no second source. */
   const log = useMemo(
     () => projectLog({ row: row ?? fixtures.projects[0], entityName: entity.name, detail }),
     [row, entity.name, detail],
@@ -192,7 +192,8 @@ export default function ProjectPage() {
     >
       <div className="viewstack hasdock">
         <div className="screen col hasg2" ref={screen}>
-          {/* المسار جوّه البودي، مش في هيدر منفصل · وهرمي لا تاريخي */}
+          {/* The path sits inside the body, not a separate header - and it's hierarchical, not
+              chronological. */}
           <Crumbs
             items={[
               { label: 'المشاريع', to: ROUTES.projects },
@@ -205,7 +206,7 @@ export default function ProjectPage() {
             ]}
           />
 
-          {/* ═══ الترويسة · بلا سطح، بتقعد على الخلفية مباشرة ═══ */}
+          {/* === Header - no surface, sits directly on the background === */}
           <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">{project.name}</h1>
@@ -242,15 +243,15 @@ export default function ProjectPage() {
           <Tabs items={PROJECT_TABS} active={active} onChange={goTab} />
 
           <div className="g2">
-            {/* ═══ العمود الرئيسي ═══ */}
+            {/* === Main column === */}
             <div className="col">
               {active === 'data' && (
                 <DataTab
                   project={project}
                   entityName={entity.name}
                   entityId={String(entity.id)}
-                  /* أحدث **إجراء** لا أحدث حدث: المتابعات في نفس
-                     التايم لاين، والصف مكتوب فوقه «آخر إجراء». */
+                  /* The latest action, not the latest event: updates share the same timeline, with
+                     the row labeled "latest action" above it. */
                   last={log.find((e) => !e.followUp)}
                   onOpenLog={() => goTab('log')}
                   deps={{
@@ -273,23 +274,22 @@ export default function ProjectPage() {
                   startBlocked={agreementBlock}
                 />
               )}
-              {/* ⚠️ **الخطة تاب مستقلّ عن الاتفاقية، والاتنين
-                  بيتعملوا بالتوازي** · الوثيقة بتقول كده صراحة،
-                  والتاب هنا بيجاوب «إيه خطة المشروع ده» بينما
-                  الصندوق بيجاوب «إيه اللي واقف عندي». */}
+              {/* Note: the plan tab is independent of the agreement, and both proceed in parallel -
+                  the spec states this explicitly, and the tab answers "what's this project's plan"
+                  while the inbox answers "what's on my desk". */}
               {active === 'plan' && (
                 <PlanTab
                   plan={planOfProject(project.id)}
                   granted={project.amountGranted || project.amountRequested}
                   onStart={() => navigate(ROUTES.planNew(project.id))}
-                  /* نفس مانع الاتفاقية: مفيش خطة قبل اكتمال الاعتماد،
-                     لأن الخطة بتتقاس على منحة معتمدة القيمة */
+                  /* Same blocker as the agreement: no plan before approval is complete, since a
+                     plan is measured against an approved grant amount. */
                   startBlocked={agreementBlock}
                 />
               )}
-              {/* ⚠️ **الإغلاق تاب مستقلّ برضو** · قاعدة 16 بتقول إن
-                  محطاته ما بتأثّرش على حالة المشروع، فهو سجلّ بحاله ·
-                  والتاب بيجاوب «فين إغلاق المشروع ده». */}
+              {/* Note: closing is also its own independent tab - rule 16 states its stages don't
+                  affect the project's status, so it's its own record - the tab answers "where's
+                  this project's closing". */}
               {active === 'closing' && (
                 <CloseTab
                   row={closeOfProject(project.id)}
@@ -319,13 +319,13 @@ export default function ProjectPage() {
               )}
             </div>
 
-            {/* ═══ العمود الجانبي · كارت واحد لازق ═══
-                كان تلات كروت: التحليلات ومشاريع الجهة وآخر إجراء.
-                مشاريع الجهة اتنقلت لتبويب «المشاريع السابقة» اللي هي
-                محتواه أصلًا، وآخر إجراء اتنقل تحت التعريف. فبقى كارت
-                واحد · وده اللي بيخلّي اللزق يشتغل من غير المشكلة اللي
-                رفضها العميل: عمود بكذا كارت لازق بياخد تمريرًا جوّه
-                تمرير، وكارت واحد بياخد ارتفاعه ويقف. */}
+            {/* === Side column - one sticky card ===
+                There used to be three cards: analytics, the entity's projects, and the latest
+                action. The entity's projects moved to the "previous projects" tab, which is where
+                that content belongs, and the latest action moved under the identification block.
+                That leaves one card - and that's what makes the sticky behavior work without the
+                problem the client rejected: a column with several sticky cards creates
+                scroll-inside-scroll, while one card just takes its height and stays put. */}
             <div className="col aiside" ref={aside}>
               <AnalysisCard
                 readings={analysis}

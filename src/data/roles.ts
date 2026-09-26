@@ -1,18 +1,20 @@
 /**
- * الأدوار.
+ * Roles.
  *
- * السيستم واحد، لكن السؤال اللي في دماغ كل دور مختلف تمامًا:
+ * One system, but each role has a completely different question in mind:
  *
- *   مشرف المنح     ← «إيه اللي عليّ أنا النهارده؟»
- *                    شغله على مشروع واحد في المرة، ومالوش سقف مالي.
- *   مدير المنح     ← «فريقي ماشي إزاي، وإيه اللي واقف عندي؟»
- *                    بيوزّع الحمل ويعتمد فوق سقف المشرف.
- *   المدير التنفيذي ← «المحفظة رايحة فين؟»
- *                    ما بيفتحش مشروعًا مشروعًا، بيقيس التزامًا وأثرًا.
+ * Grants officer: "what's on me today?"
+ * Works one project at a time, with no financial threshold.
  *
- * فالقراءات والشرائح والصلاحيات بتشتق من هنا. الأوديت لقى 24 مستخدمًا
- * و18 ملف صلاحيات في النظام العامل؛ التلاتة دول هم الأدوار اللي
- * الشاشات اتصمّمت لها.
+ * Grants manager: "how's my team doing, and what's waiting on me?"
+ * Distributes load and approves above the officer's threshold.
+ *
+ * Executive: "where is the portfolio heading?"
+ * Doesn't open projects one by one, measures commitment and impact.
+ *
+ * Readings, tiers, and permissions all derive from this. The review found several dozen users and
+ * over a dozen permission profiles in the live system; these three are the roles the screens were
+ * designed for.
  */
 import { person } from './people'
 import type { CurrentUser, DecisionAction } from '@/types/domain'
@@ -23,13 +25,15 @@ export interface Role {
   key: RoleKey
   name: string
   title: string
-  /** حرفان: أول الاسم وأول اللقب · التلاتة بيبدأوا بعين،
-   *  فحرف واحد ما بيفرّقش بينهم */
+  /**
+   * Two characters: first letter of the first name and first letter of the surname · all three
+   * start with the same letter, so a single character wouldn't distinguish them
+   */
   initial: string
   photo?: string
-  /** null = توصية فقط، بلا سقف مالي */
+  /** null = recommendation only, no financial threshold */
   financialAuthority: number | null
-  /** نبرة صندوقه: شخصية (شغلي) · إشرافية (فريقي) · محفظة (المؤسسة) */
+  /** Its queue's tone: personal (my work) · supervisory (my team) · portfolio (the organization) */
   lens: 'own' | 'team' | 'portfolio'
   actions: DecisionAction[]
 }
@@ -84,7 +88,7 @@ export const ROLES: Role[] = [
 
 export const roleByKey = (key: string): Role => ROLES.find((r) => r.key === key) ?? ROLES[0]
 
-/** الدور بيتحوّل للشكل اللي الواجهة بتستهلكه */
+/** Converts the role into the shape the UI consumes */
 export const asUser = (role: Role): CurrentUser => ({
   name: role.name,
   role: role.title,
@@ -94,9 +98,9 @@ export const asUser = (role: Role): CurrentUser => ({
   actions: role.actions,
 })
 
-/* ── الدور الحالي ──
-   في النموذج ده بيتبدّل من قائمة الحساب عشان الفرق بين الأدوار
-   يتجرّب فعلًا. لما يبقى فيه باك اند، بييجي من التوكن ويختفي المبدّل. */
+/* Current role.
+   In this mock it's switched from the account menu so the difference between roles can actually be
+   tested. Once there's a backend, it comes from the token and the switcher disappears. */
 
 const KEY = 'ab-role'
 
@@ -113,6 +117,6 @@ export function writeRole(key: RoleKey): void {
   try {
     localStorage.setItem(KEY, key)
   } catch {
-    /* التخزين ممكن يكون مقفول */
+    /* Storage may be blocked */
   }
 }

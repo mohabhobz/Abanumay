@@ -1,40 +1,37 @@
 import { Link } from 'react-router-dom'
 import { DateText, Icon, icons, Money, Mono, Num, Person, Tag, Riyal} from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { isolate, nf, pct } from '@/lib/format'
+import { isolate, nf, NOUN, nounAfter, pct } from '@/lib/format'
 import {
   AGR_TONE, agrHeat, agrPaymentsBalance, agrReserveGap, agrStageLabel,
 } from '@/data/mock/agreements'
 import type { AgreementRow } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   اتفاقية واحدة، كقرار.
+/* A single agreement, as a decision.
 
-   الكارت بيحمل **اللي بيمنع الانتقال**، زي كارت الصرف بالظبط · لأن
-   السؤال اللي المشرف بيفتح الصندوق عشانه هو «إيه اللي واقف وليه»
-   لا «فيه كام اتفاقية».
+   The card carries what's blocking the transition, exactly like the disbursement card — because the
+   question an officer opens this queue to answer is "what's stuck and why", not "how many
+   agreements are there".
 
-   والحاجتين اللي بتوقفوا الاتفاقية مكتوبين في الوثيقة بالحرف:
-     قاعدة 8  · مجموع الدفعات = قيمة المنحة، والنسب = 100%
-     خطوة 11 · قيمة الاتفاقية = المبلغ المحجوز في الميزانية
-   والتالتة قاعدة 9: نقص في البيانات أو المرفقات بيمنع الاعتماد.
+   The two things that hold up an agreement are stated explicitly in the spec: the sum of payments
+   must equal the grant amount with percentages totaling 100%, and the agreement value must equal
+   the amount reserved in the budget. A third rule blocks approval when data or attachments are
+   incomplete.
 
-   ⚠️ **هيكل واحد لكل الكروت · والغايب بيقول إنه غايب** (نفس
-   القاعدة اللي كارت الخطة اتصلّح عليها). الكارت ده كان بيبني
-   نفسه من الحالة: صفّ الوسوم تلات فروع بيقولوا حاجات مختلفة،
-   وسطر «النسخة الورقية» بيظهر للورقية وحدها، والملاحظة ومخرج
-   الذكاء لو موجودين · فكل كارت في الصندوق طلع بطول مختلف
-   ومعلوماته في مكان مختلف، وزرار «افتح الاتفاقية» وقف في ارتفاع
-   غير جيرانه.
+   One structure for every card, and a missing item states that it's missing (the same fix applied
+   to the plan card). This card used to build itself from whatever state it had: the tag row
+   branched three ways saying different things, a "paper copy" line appeared only for paper
+   agreements, and the note and AI output appeared only if present — so every card in the queue
+   ended up a different length with information in a different place, and the "open agreement"
+   button sat at a different height than its neighbors.
 
-   دلوقتي: **المرحلة دايمًا مكتوبة**، والعمر جنبها، والأربع
-   إجابات كلها موجودة · واللي ما بينطبقش بيقول «ما بينطبقش».
+   Now: the stage is always shown, its age next to it, and all four answers are always present —
+   whichever doesn't apply says "not applicable".
 
-   ⚠️ **والإصدار معروض لما يبقى أكتر من واحد.** قاعدة 24 بتسمح
-   بإصدارات متعددة وواحد ساري، وقاعدة 17 بتقول إن أي تعديل بعد
-   التوقيع = إصدار جديد ودورة اعتماد كاملة. فالإصدار التاني مش
-   تفصيلة، هو **دورة اتلفّت مرتين** — وهو نفسه مصدر المؤشر الرابع.
-   ═══════════════════════════════════════════════════════════ */
+   The version number is shown once there's more than one. Multiple versions are allowed with one
+   active, and any edit after signing means a new version and a full approval cycle. So a second
+   version isn't a detail, it's **a cycle repeated twice** — and it's the same source that feeds the
+   fourth indicator. */
 
 const HEAT_SAY = { ok: '', late: 'متأخرة', stuck: 'متعثرة' } as const
 
@@ -61,32 +58,33 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
         <div className="payq-amt">
           <b><Money sm>{a.amount}</Money></b>
           <span className="payq-due sub">
-            <Num>{a.payments.length}</Num> دفعات
+            <Num>{a.payments.length}</Num> {nounAfter(a.payments.length, NOUN.payment)}
           </span>
         </div>
       </header>
 
-      {/* ⚠️ **المرحلة أول وسم في كل كارت** · كانت بتظهر بتلات
-          صور مختلفة (سخونة · عمر · تاريخ تفعيل) حسب الحالة، فمفيش
-          كارتين بيقولوا نفس النوع من المعلومة في نفس المكان. */}
+      {/* The stage is always the first tag on every card · it used to show up in three different
+          forms (urgency, age, activation date) depending on status, so no two cards stated the same
+          kind of information in the same place. */}
       <div className="payq-tags">
+        {/* One colored tag per card = the stage. Everything else is information with a neutral tag. */}
         <Tag tone={AGR_TONE[a.stage]}>{agrStageLabel(a.stage)}</Tag>
         {a.stage === 'active' && a.activeAt
-          ? <Tag tone="ok">فُعّلت <DateText>{a.activeAt}</DateText></Tag>
-          : <span className="sub">في هذه المرحلة منذ <Num>{days}</Num> يومًا</span>}
+          ? <Tag tone="mute">فُعّلت <DateText>{a.activeAt}</DateText></Tag>
+          : <span className="sub">في هذه المرحلة منذ <Num>{days}</Num> {nounAfter(days, NOUN.day)}</span>}
         {heat !== 'ok' && (
-          <Tag tone={heat === 'stuck' ? 'no' : 'warn'}>{HEAT_SAY[heat]}</Tag>
+          <Tag tone="mute">{HEAT_SAY[heat]}</Tag>
         )}
-        {a.version > 1 && <Tag tone="teal">الإصدار <Num>{a.version}</Num></Tag>}
+        {a.version > 1 && <Tag tone="mute">الإصدار <Num>{a.version}</Num></Tag>}
       </div>
 
-      {/* النموذج · قاعدة 4: الإلكترونية بتتبني على نموذج معتمد */}
+      {/* The template · an electronic agreement is built from an approved template */}
       <div className="payq-cond">
         <span className="lb">النموذج</span>
         <span>{a.template}</span>
       </div>
 
-      {/* اللي بيمنع الإرسال للاعتماد · كل واحد بمصدره في الوثيقة */}
+      {/* What blocks sending for approval · each with its own source in the spec */}
       <ul className="payq-ck">
         <li className={balance.balanced ? 'ok' : 'no'}>
           <Icon name={balance.balanced ? icons.check : icons.alert} size="sm" />
@@ -115,10 +113,9 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           </span>
           <span className="payq-r">قاعدة <Num>9</Num></span>
         </li>
-        {/* قاعدة 16 · الورقية لازم تُرفق موقّعة قبل التفعيل.
-            ⚠️ والسطر موجود في الكارتين · الإلكترونية بتقول «ما
-            بينطبقش» بدل ما السطر يتشال ويخلّي الكارت أقصر من
-            جاره بسطر. */}
+        {/* A signed paper copy must be attached before activation.
+            This line appears on both cards: the electronic one says "not applicable" instead of
+            removing the line and leaving its card one line shorter than its neighbor. */}
         <li className={a.kind !== 'ورقية' || a.stage === 'active' ? 'ok' : 'no'}>
           <Icon
             name={a.kind !== 'ورقية' || a.stage === 'active' ? icons.check : icons.alert}
@@ -133,7 +130,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
         </li>
       </ul>
 
-      {/* ملاحظة الإعادة · قاعدة 10 بتلزم توضيح السبب */}
+      {/* Return note · stating the reason is required */}
       {a.note && (
         <div className="payq-note">
           <Icon name={icons.chat} size="sm" />
@@ -141,7 +138,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
         </div>
       )}
 
-      {/* مخرج الذكاء الاصطناعي · 9.5 · والوسم من قاعدة 21 */}
+      {/* AI-generated output, tagged as an assumption */}
       {a.ai && (
         <div className="payq-ai">
           <Icon name={icons.spark} size="sm" />
@@ -150,8 +147,8 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
         </div>
       )}
 
-      {/* الرصيف سطر واحد · المالك بياخد الباقي وبيتقصّ والزرار
-          ثابت، فالزرار بيقف في نفس الارتفاع في كل كارت */}
+      {/* The footer is one line: the owner takes the remaining space and gets truncated, and the
+          button stays fixed, so the button sits at the same height on every card */}
       <footer className="payq-f">
         <span className="payq-when"><Person name={a.owner} /></span>
         <Link className="btn btn-2 btn-sm" to={ROUTES.agreement(a.id)}>
@@ -163,6 +160,6 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
   )
 }
 
-/** نسبة اكتمال جدول الدفعات · للعرض السريع في الصندوق */
+/** Payment schedule completion rate · for a quick glance in the queue */
 export const balancePct = (a: AgreementRow): string =>
   pct(Math.round((agrPaymentsBalance(a).sum / a.amount) * 100))

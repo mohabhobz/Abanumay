@@ -1,6 +1,6 @@
 import type { CurrentUser } from '@/types/domain'
 
-/** الصورة الشخصية، والحرف احتياطي لو الصورة ما حمّلتش */
+/** The profile photo, with a letter as a fallback if the image doesn't load. */
 export function Avatar({ user }: { user: CurrentUser }) {
   if (!user.photo) return <span className="av">{user.initial}</span>
   return (

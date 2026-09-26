@@ -1,13 +1,14 @@
 /**
- * طبقة الوصول للبيانات · نقطة التماس الوحيدة مع مصدر الداتا.
+ * Data access layer · the single point of contact with the data source.
  *
- * دلوقتي بتقرأ من `data/mock/*`، وكل دالة بترجّع Promise وبتاخد
- * نفس شكل الباراميترات اللي الـAPI هياخدها. يوم ما الباك اند يجهز،
- * التغيير كله جوّه الملف ده: `return api.get('/projects/' + id)`
- * بدل `return resolve(mock.project)` · ولا كومبوننت واحد بيتغيّر.
+ * Right now it reads from the mock data files, and every function returns a Promise and takes the
+ * same parameter shape the real API will expect. Once the backend is ready, the whole change
+ * happens inside this file: `return api.get('/projects/' + id)` instead of `return
+ * resolve(mock.project)` — not a single component needs to change.
  *
- * الفلترة والترتيب والتقسيم بتتعمل هنا كمان بنفس أسماء الحقول اللي
- * هتتبعت للسيرفر كـquery string، عشان الشاشة ما تتغيّرش وقت الربط.
+ * Filtering, sorting, and pagination happen here too, using the same field names that will
+ * eventually be sent to the server as a query string, so the screen doesn't change when the real
+ * connection is wired in.
  */
 import type {
   Project, Entity, AuthorityMatrix, CurrentUser, Insight, FollowUpType,
@@ -25,7 +26,7 @@ import { projectRows, projectById, projectsOfEntity } from './mock/projects'
 import { entityRows, entityById } from './mock/entities'
 import { projectCode } from '@/lib/format'
 
-/** تأخير بسيط عشان حالات التحميل في الواجهة تتجرّب فعلًا */
+/** A small delay so loading states in the UI can actually be tested */
 const LATENCY_MS = 0
 
 function resolve<T>(value: T): Promise<T> {
@@ -34,24 +35,23 @@ function resolve<T>(value: T): Promise<T> {
     : Promise.resolve(value)
 }
 
-/* ═══════════════ الاستعلامات ═══════════════ */
+/* Queries */
 
-/** ترتيب قائمة المشاريع · المفتاح واتجاهه */
+/** Project list sort order · key and direction */
 export type ProjectSort =
-  | 'waiting'      // الأطول انتظارًا في القسم · الافتراضي
+  | 'waiting'      // Longest waiting in its department · the default
   | 'newest'
   | 'amount'
   | 'weight'
   | 'name'
 
-/** فلاتر قائمة المشاريع · نفس أسماء فلاتر النظام الأربعتاشر */
+/** Project list filters · same field names as the system's own filters */
 /**
- * فلتر يقبل قيمة واحدة أو مجموعة قيم.
+ * A filter accepting a single value or a set of values.
  *
- * المجموعة معناها «أي واحدة منها» لا «كلها»: المستخدم اللي بيختار
- * الرياض ومكة عايز يشوف الاتنين، مش المشروع اللي في الاتنين · وده
- * مستحيل أصلًا في الحقول دي. المصفوفة الفاضية = بلا فلتر، عشان
- * الشاشة ما تضطرش تحوّلها لـ`undefined` قبل ما تبعتها.
+ * A set means "any of these", not "all of these": a user selecting Riyadh and Makkah wants to see
+ * both, not a project that belongs to both — which isn't even possible for these fields. An empty
+ * array means no filter, so the screen never has to convert it to `undefined` before sending it.
  */
 export type Filter = string | string[] | undefined
 
@@ -63,17 +63,17 @@ export interface ProjectQuery {
   tag?: Filter
   region?: Filter
   city?: Filter
-  /** الحالة المجمّعة */
+  /** Grouped status */
   status?: Filter
-  /** القسم الإجرائي الفعلي */
+  /** The actual process department */
   stage?: Filter
   supportStatus?: Filter
   grantMethod?: Filter
   funding?: Filter
   owner?: Filter
-  /** true = بلا مالك فقط */
+  /** true = unowned only */
   unowned?: boolean
-  /** true = المتجاوز حدّ القسم فقط */
+  /** true = only those past the department's time limit */
   overdue?: boolean
   shared?: boolean
   impact?: boolean
@@ -92,9 +92,9 @@ export interface EntityQuery {
   region?: Filter
   city?: Filter
   governance?: Filter
-  /** true = ملف المستندات ناقص */
+  /** true = incomplete document file */
   docsIncomplete?: boolean
-  /** true = لها مشاريع تحت التشغيل */
+  /** true = has projects in execution */
   hasRunning?: boolean
   search?: string
   sort?: 'granted' | 'projects' | 'newest' | 'name'
@@ -109,12 +109,12 @@ export interface Page<T> {
   pageSize: number
 }
 
-/* ═══════════════ أدوات داخلية ═══════════════ */
+/* Internal helpers */
 
 const eq = (filter: Filter, value: string): boolean =>
   !filter || (Array.isArray(filter) ? filter.length === 0 || filter.includes(value) : filter === value)
 
-/** للحقول اللي الصف فيها مجموعة (الأوسمة): تقاطع مش تطابق */
+/** For fields where a row holds a set (tags): intersection, not exact match */
 const eqAny = (filter: Filter, values: readonly string[]): boolean =>
   !filter
     ? true
@@ -129,7 +129,10 @@ const paginate = <T>(rows: T[], page = 1, pageSize = 20): Page<T> => ({
   pageSize,
 })
 
-/** نسبة المكوث للحدّ · أساس ترتيب «الأطول انتظارًا» وتلوين الصف */
+/**
+ * Ratio of time-in-department to its limit · the basis for "longest waiting" sort order and row
+ * coloring
+ */
 export const stagePressure = (row: ProjectRow): number =>
   row.stageLimit === 0 ? 0 : row.hoursInStage / row.stageLimit
 
@@ -144,8 +147,8 @@ const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
   if (!eq(q.stage, r.stage)) return false
   if (!eq(q.grantMethod, r.grantMethod)) return false
   if (!eq(q.funding, r.funding)) return false
-  /* `?? ''` مش تجميل: المشروع بلا مالك أو بلا قرار دعم لازم يقع
-     برّه الفلتر لما المستخدم يختار مالكًا أو حالة دعم بعينها. */
+  /* `?? ''` isn't decoration: a project with no owner or no support decision must fall outside the
+     filter when the user selects a specific owner or support status. */
   if (!eq(q.supportStatus, r.supportStatus ?? '')) return false
   if (!eq(q.owner, r.owner ?? '')) return false
   if (!eqAny(q.tag, r.tags)) return false
@@ -156,8 +159,8 @@ const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
   if (q.from && r.submittedAt < q.from) return false
   if (q.to && r.submittedAt > q.to) return false
   if (q.search) {
-    /* الكود المعروض جزء من نطاق البحث: المستخدم بينسخه من الجدول
-       أو من إيميل ويلزقه هنا، ولو ما اتقبلش هيفتكر إن المشروع اتشال. */
+    /* The displayed code is part of the search scope: a user copies it from the table or an email
+       and pastes it here, and if it doesn't match they'll think the project was removed. */
     const needle = q.search.trim()
     const hay = `${r.id} ${projectCode(r.id, r.year)} ${r.name} ${r.entityName} ${r.goal} ${r.city}`
     if (!hay.toLowerCase().includes(needle.toLowerCase())) return false
@@ -177,7 +180,7 @@ const sortProjects = (rows: ProjectRow[], sort: ProjectSort = 'waiting'): Projec
     case 'name':
       return out.sort((a, b) => a.name.localeCompare(b.name, 'ar'))
     default:
-      // الأطول انتظارًا أولًا؛ اللي خلص (بلا حدّ) في الآخر
+      // Longest waiting first; those already done (no limit) go last
       return out.sort((a, b) => stagePressure(b) - stagePressure(a))
   }
 }
@@ -215,19 +218,19 @@ const sortEntities = (rows: EntityRow[], sort: EntityQuery['sort'] = 'granted'):
   }
 }
 
-/** ملف الجهة كامل = 8 مستندات */
+/** A complete entity file = 8 documents */
 export const ENTITY_DOCS_TOTAL = 8
 
-/* ═══════════════ الواجهة ═══════════════ */
+/* Interface */
 
 export const repository = {
-  // ── المشاريع ──
+  // Projects
   listProjects(query: ProjectQuery = {}): Promise<Page<ProjectRow>> {
     const filtered = projectRows.filter((r) => matchProject(r, query))
     return resolve(paginate(sortProjects(filtered, query.sort), query.page, query.pageSize))
   },
 
-  /** عدّاد سريع لكل مجموعة حالة · للشرائح فوق القائمة */
+  /** Quick count per status group · for the tiers above the list */
   countByStatus(query: ProjectQuery = {}): Promise<Record<string, number>> {
     const base = { ...query, status: undefined }
     const rows = projectRows.filter((r) => matchProject(r, base))
@@ -240,12 +243,12 @@ export const repository = {
     return resolve(projectById(id) ?? null)
   },
 
-  /** المشروع الكامل · لسه فيه فيكستشر واحد مفصّل */
+  /** The full project · still only one detailed fixture */
   getProject(id: string): Promise<Project | null> {
     return resolve(id === mockProject.id ? mockProject : null)
   },
 
-  // ── الجهات ──
+  // Entities
   listEntities(query: EntityQuery = {}): Promise<Page<EntityRow>> {
     const filtered = entityRows.filter((e) => matchEntity(e, query))
     return resolve(paginate(sortEntities(filtered, query.sort), query.page, query.pageSize))
@@ -255,17 +258,17 @@ export const repository = {
     return resolve(entityById(id) ?? null)
   },
 
-  /** ملف الجهة المفصّل · فيكستشر واحد لحد ما يتوسّع */
+  /** Detailed entity file · one fixture until it's expanded */
   getEntity(_id?: string): Promise<Entity> {
     return resolve(mockEntity)
   },
 
-  /** الربط بين الجهة ومشاريعها في الاتجاهين */
+  /** Two-way link between an entity and its projects */
   listEntityProjects(entityId: string): Promise<ProjectRow[]> {
     return resolve(sortProjects(projectsOfEntity(entityId), 'newest'))
   },
 
-  // ── سياق القرار ──
+  // Decision context
   getAuthority(): Promise<AuthorityMatrix> {
     return resolve(mockAuthority)
   },
@@ -278,16 +281,16 @@ export const repository = {
     return resolve(mockFollowUpTypes)
   },
 
-  // ── المستخدم ──
+  // User
   getCurrentUser(): Promise<CurrentUser> {
     return resolve(mockUser)
   },
 }
 
 /**
- * قراءات متزامنة للـfixtures.
- * الشاشات دلوقتي بتستعمل دي عشان مفيش باك اند ولا حالات تحميل حقيقية؛
- * لما الربط يحصل، الشاشة بتتحوّل لـ`repository.*` وبتضيف حالة تحميل.
+ * Synchronous readings for the fixtures.
+ * Screens currently use these since there's no backend or real loading states; once the connection
+ * is wired in, the screen switches to `repository.*` and adds a loading state.
  */
 export const fixtures = {
   project: mockProject,
@@ -300,7 +303,7 @@ export const fixtures = {
   entities: entityRows,
 }
 
-/** نسخ متزامنة من نفس المنطق · الشاشات بتستعملها لحد ما يبقى فيه سيرفر */
+/** Synchronous copies of the same logic · used by screens until there's a real server */
 export const query = {
   projects(q: ProjectQuery = {}): Page<ProjectRow> {
     const filtered = projectRows.filter((r) => matchProject(r, q))

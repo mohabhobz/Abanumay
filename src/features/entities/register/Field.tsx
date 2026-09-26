@@ -2,11 +2,11 @@ import { FieldSelect } from '@/components/ui'
 import { citiesOf, type RegField } from '@/data/mock/registration'
 
 /**
- * حقل واحد.
+ * A single field.
  *
- * القيم المقفولة `select` والباقي `input` · وأسماء البنوك تحديدًا
- * مقفولة بقاعدة 27 عشان الاسم ما يتكتبش بعشر صيغ فيبقى الفرز
- * مستحيل. والتلميحات المكتوبة هنا منقولة من النظام العامل حرفيًا.
+ * Closed values use `select`, everything else `input` - bank names specifically are closed per rule
+ * 27, so a name doesn't get written ten different ways and become impossible to sort. The tooltips
+ * written here are carried over from the live system verbatim.
  */
 export function Field({
   f, value, parent, onChange,
@@ -25,14 +25,14 @@ export function Field({
         {f.label}
         {f.req && <b className="regf-r" aria-label="إلزامي">*</b>}
       </span>
-      {/* ⚠️ `.fld` مش كلاس شكلي · هو **التحكّم الموجود** للحقول في
-          السيستم، ومسجَّل في `ctlaudit` فحلقة تركيزه بتتفحص مع
-          البحث والفلاتر. حقل مكتوب للشاشة دي كان هيبقى الركن
-          السادس لنفس الشيء، وبحلقة تركيز مختلفة. */}
+      {/* Note: `.fld` isn't a cosmetic class - it's the system's actual control for fields,
+          registered in `ctlaudit` so its focus ring gets checked alongside search and filters. A
+          field written specifically for this screen would have been a sixth corner case of the same
+          thing, with a different focus ring. */}
       {f.kind === 'select' ? (
-        /* ⚠️ `FieldSelect` بيرسم `.fld` بنفسه · فمفيش `<span
-           className="fld">` حواليه، وإلا بقى حقل جوّه حقل: حافتان
-           وخلفيتان فوق بعض وارتفاع مضاعف. */
+        /* Note: `FieldSelect` draws `.fld` itself, so it isn't wrapped in `<span className="fld">`
+           too, or it becomes a field inside a field: two borders and two backgrounds stacked, at
+           double the height. */
         <FieldSelect
           value={value}
           options={options}
@@ -43,14 +43,13 @@ export function Field({
         />
       ) : (
         <span className="fld">
-          {/* ⚠️ **`type="password"` مش تزويق، هو سلوك.** الحقل ده
-             بياخد كلمة مرور، والمتصفح لازم يعرف ده عشان يخبّي
-             الحروف ويقترح كلمة قوية وما يحفظهاش في الأوتوفيل
-             العادي · و`text` كان هيعرض اللي المستخدم بيكتبه على
-             شاشة ممكن تكون متشيَّرة في اجتماع. */}
-          {/* ⚠️ **`id` مش زينة** · زرار «تعديل» في مودال التحقّق
-              بيرجّع للحقل ده ويفوكسه (من شاشات العميل · ١٩ سبتمبر)،
-              وده مستحيل من غير عنوان يوصل له. */}
+          {/* Note: `type="password"` isn't decoration, it's behavior. This field takes a password,
+              and the browser needs to know that to mask the characters, suggest a strong one, and
+              avoid saving it in ordinary autofill - `text` would have shown exactly what the user
+              types on a screen that might be shared in a meeting. */}
+          {/* Note: `id` isn't decorative - the "edit" button in the verification dialog returns to
+              this field and focuses it (per the client's own screens), which is impossible without
+              an address to reach it. */}
           <input
             id={`rf-${f.key}`}
             type={

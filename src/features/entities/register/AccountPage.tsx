@@ -5,34 +5,31 @@ import { AuthShell, AuthField } from '@/features/auth/AuthShell'
 import { ROUTES } from '@/app/routes'
 import { setRegAccount } from '@/data/mock/registration'
 
-/* ═══════════════════════════════════════════════════════════
-   إنشاء حساب الجهة · شاشة بذاتها
+/* Creating an entity account - its own screen.
 
-   ⚠️ **الحساب كان أول محطة في الستيبر، وده كان غلطًا في تصنيف
-   الخطوة لا في مكانها.** الجهة بتفتح التسجيل فتلاقي أول ما
-   تشوفه وسم **«٣ ناقص»** على «حساب الجهة» · يعني الشاشة بتقول
-   لها إنها ناقصة حاجة قبل ما تعمل أي حاجة، وبتحطّ إيميل وكلمة
-   مرور جنب «تاريخ انتهاء تكليف المجلس» و«رقم الآيبان» كإنهم من
-   نفس النوع. وهما مش من نفس النوع:
+   Note: the account used to be the first stage in the stepper, and that was a classification error,
+   not a placement one. An entity opens registration and the first thing it sees is a "3 missing"
+   tag on "entity account" - the screen tells it something's missing before it's done anything,
+   putting email and password next to "board term expiry date" and "IBAN" as if they were the same
+   kind of thing. They aren't:
 
-     · بيانات الطلب · **إقرار** بتتراجع وبتتقارن بالتصريح
-     · الحساب · **الباب** اللي الطلب بيتحفظ عليه وبترجع له
+   - application data: an assertion that gets reviewed and checked against documentation
+   - the account: the door the application is saved behind and returned to
 
-   فالحساب طلع لشاشته، وشكلها **شكل الدخول** لأن ده اللي هي فعلًا:
-   بريد وكلمة مرور على فيديو الباب، لا حقول رفيعة في فورم طويل.
-   والمحطة بتفضل في الستيبر **معلَّمة «تمّت»** عشان الجهة تشوف إنها
-   عدّتها · شيلها كان هيخلّيها تفتكر إن الرحلة خمس خطوات وهي ستة.
+   So the account got its own screen, shaped like the login screen, because that's what it actually
+   is: email and password over the door's video, not thin fields in a long form. The stage still
+   stays marked "done" in the stepper so the entity can see it's been completed - removing it would
+   make the journey look like five steps when it's six.
 
-   ⚠️ **والشاشة دي إنشاء لا دخول.** الجهة اللي عندها حساب بالفعل
-   بتروح لبوّابة طلبها لا هنا · والسطر تحت الزرار بيقول كده
-   ويودّيها، بدل ما تعمل حسابًا تانيًا وتضيّع طلبها الأول.
+   Note: this screen creates, it doesn't log in. An entity that already has an account goes to its
+   application portal instead - the line under the button says so and takes it there, rather than
+   creating a second account and losing its first application.
 
-   ⚠️ **ومفيش «تذكّرني» ولا «نسيت كلمة المرور».** الاتنين دول
-   لشاشة الدخول · وهنا مفيش حساب أصلًا عشان يتنسي أو يتفكر.
-   الغلاف واحد والمحتوى بيقول شغله هو.
-   ═══════════════════════════════════════════════════════════ */
+   Note: no "remember me" and no "forgot password". Both belong to the login screen - there's no
+   account here yet to remember or forget. The wrapper is shared, and the content states its own
+   job. */
 
-/** أقلّ طول لكلمة المرور · مكتوب مرة واحدة عشان الشرط والرسالة يتفقوا */
+/** Minimum password length - defined once so the requirement and the message stay in sync. */
 const MIN_PASS = 8
 
 export default function RegisterAccountPage() {
@@ -44,7 +41,7 @@ export default function RegisterAccountPage() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
-  /** يعرض الخطأ كتوست ويخفيه لوحده · نفس سلوك شاشة الدخول */
+  /** Shows the error as a toast and hides it on its own - same behavior as the login screen. */
   const fail = (message: string) => {
     setErr(message)
     setTimeout(() => setErr(''), 4000)
@@ -52,9 +49,8 @@ export default function RegisterAccountPage() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    /* ⚠️ **الشروط بتتقال بالترتيب اللي المستخدم بيقع فيه** · رسالة
-       واحدة في المرة، وبتسمّي الحقل · «تأكد من البيانات» بتخلّيه
-       يدوّر بعينه على اللي هو غلط فيه. */
+    /* Note: conditions are stated in the order the user actually hits them - one message at a time,
+       naming the field. "Check your details" would make them hunt visually for what's wrong. */
     if (!email.trim()) { fail('أدخل البريد الإلكتروني للجهة'); return }
     if (!email.includes('@')) { fail('أدخل بريدًا إلكترونيًا صحيحًا، مثل name@org.sa'); return }
     if (pass.length < MIN_PASS) { fail(`أدخل كلمة مرور من ${MIN_PASS} أحرف على الأقل`); return }
@@ -64,9 +60,9 @@ export default function RegisterAccountPage() {
     setBusy(true)
     setTimeout(() => {
       setRegAccount(email)
-      /* ⚠️ `replace` عن قصد · «رجوع» المتصفح بعد إنشاء الحساب
-         يرجّع لشاشة إنشاء حساب اتعمل خلاص · فالشاشة دي بتتشال من
-         التاريخ زي شاشة الدخول بالظبط. */
+      /* Note: `replace` is deliberate - a browser "back" after creating the account would return to
+         an account-creation screen that's already been used, so this screen drops out of history
+         exactly like the login screen. */
       navigate(`${ROUTES.entityRegister}?step=form`, { replace: true })
     }, 700)
   }
@@ -85,11 +81,11 @@ export default function RegisterAccountPage() {
 
   return (
     <AuthShell title="إنشاء حساب الجهة" sub="الخطوة الأولى في تسجيل جهة جديدة" err={err}>
-      {/* ⚠️ **السطر ده بيقول ليه الحساب قبل النموذج.** الجهة بتسأل
-          «أنا بعمل حساب ليه وأنا لسه ما قدّمتش» · والإجابة إن
-          النموذج نفسه طويل وبيتقطع: ملف الترخيص وتاريخ تكليف
-          المجلس والآيبان مش حاجات حافظها، فهي بتبدأ وتقوم تجيب
-          ورقة وترجع. والحساب هو اللي بيخلّي «ترجع» دي ممكنة. */}
+      {/* Note: this line explains why the account comes before the form. The entity asks "why am I
+          creating an account before I've even applied" - the answer is that the form itself is long
+          and gets interrupted: the license file, board term date, and IBAN aren't things people
+          have on hand, so they start, go get a document, and come back. The account is what makes
+          that "come back" possible. */}
       <p className="lnote sub lwhy">
         يُحفظ الطلب على هذا الحساب · يمكن تركه في أي خطوة والعودة إليه، ومتابعة
         حالته بعد الإرسال.
@@ -131,9 +127,8 @@ export default function RegisterAccountPage() {
           onChange={setPass2}
           autoComplete="new-password"
           enterKeyHint="go"
-          /* ⚠️ **التطابق بيتقال وإنت بتكتب لا بعد ما تضغط** ·
-              الشرط اللي بيتقال بعد الضغط بيخلّي المستخدم يرجع
-              يمسح حقلين بدل ما يصلّح حرفًا. */
+          /* Note: match is stated while typing, not after clicking - a condition stated after a
+             click makes the user go back and clear two fields instead of fixing one character. */
           hint={pass2 && pass !== pass2
             ? <span className="bad">لا تطابق كلمة المرور</span>
             : undefined}
@@ -144,7 +139,7 @@ export default function RegisterAccountPage() {
         </button>
       </form>
 
-      {/* مسارات تانية · شكلها جوست عشان ما تنافسش الزرار الأساسي */}
+      {/* Other paths - styled as a ghost so they don't compete with the primary button. */}
       <div className="lalt">
         <button
           className="btn btn-2 btn-full"

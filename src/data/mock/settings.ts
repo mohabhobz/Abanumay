@@ -2,37 +2,35 @@ import { CITIES_BY_REGION, REGIONS } from './taxonomy'
 import { entityRows } from './entities'
 import { budgetDocs, fiscalYears, fundSources } from './budgetTree'
 import { projectRows } from './projects'
+import { NOUN, countOf } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   إعدادات الموديولات · النقط د-1 إلى د-4
+/* Module settings.
 
-   ⚠️ **«إعدادات» بتلمّ تلات حاجات مختلفة، وخلطهم بيبوّظ الشاشة:**
+   "Settings" lumps together three different things, and mixing them breaks the screen:
 
-     ماستر داتا     المدن · المناطق · التصنيفات · السنوات المالية
-                    قيمة بتتعرَّف مرة وبيتبني عليها كل ريكورد بعدها
-     قواعد عمل      سقف بيغيّر مين يعتمد · حد أدنى للدفعة
-                    رقم بيغيّر **سلوك** إجراء لا محتوى قايمة
-     تفضيلات        الثيم · الكثافة · اللغة
+   Master data: cities, regions, classifications, fiscal years — a value defined once that every
+   later record builds on
+   Business rules: a threshold that changes who approves, a minimum payment amount — a number that
+   changes an action's **behavior**, not a list's content
+   Preferences: theme, density, language
 
-   التالت ده في `/account/preferences` ومالوش علاقة بالموديولات ·
-   ومهم يفضل مفصول عشان محدش يدوّر على «المدن» في تفضيلاته.
+   The third lives in account preferences and has nothing to do with modules — it's important to
+   keep it separate so no one goes looking for "cities" in their preferences.
 
-   ⚠️ **والقاعدة العملية:** أي قائمة منسدلة في أي فورم = ماستر داتا
-   لها مكان هنا. لو القايمة مكتوبة في الكود، يبقى في حتة ناقصة في
-   الإعدادات · والملف ده هو اللي بيكشفها.
+   The practical rule: any dropdown in any form is master data that belongs here. If a list is
+   hardcoded, that's a gap in settings — and this file is what surfaces it.
 
-   ⚠️ **ومفيش حذف في أي مجموعة.** القيمة اللي متعلّق بيها ريكورد
-   ما تتحذفش، والعمود الأخير بيقول **عدد المتعلقات** لا بيعرض زرار
-   سلة. السبب ظاهر قبل المحاولة، مش رسالة خطأ بعدها (قاعدة ج-19).
-   ═══════════════════════════════════════════════════════════ */
+   No delete in any group. A value that a record depends on can't be deleted, and the last column
+   shows the **count of dependents** rather than a trash button. The reason is visible before the
+   attempt, not as an error message afterward. */
 
-/** مين بيفتح المجموعة دي فعلًا · وده اللي بيحدد مكانها لا نوعها */
+/** Who actually opens this group · this decides its placement, not its type */
 export type SettingOwner = 'مسؤول النظام' | 'إدارة المنح' | 'الإدارة المالية'
 
 export interface SettingGroup {
   key: string
   label: string
-  /** سطر واحد بيقول القيمة دي بتظهر فين في السيستم */
+  /** One line stating where this value shows up in the system */
   where: string
   count: number
   owner: SettingOwner
@@ -42,18 +40,18 @@ export interface SettingGroup {
 export interface SettingModule {
   key: string
   label: string
-  /** مسار صفحة الإعدادات · مش مدخل في الريل (الجزء ب-4 في البريف) */
+  /** Settings page path · not yet wired into the router */
   to: string
   groups: SettingGroup[]
 }
 
-/* ═══ تصنيفات الجهة ═══
-   الأربعة دول مصدرهم النظام العامل · حقل «تصنيف الجهة» في `/reg/add`،
-   وهو اللي بيحدد إلزامية تلات مستندات (قاعدتا 8 و9 في إجراء التسجيل) */
-/* ⚠️ **القايمة دي من شاشات العميل (١٩ سبتمبر)** · كانت أربعة
-   («جهة حكومية» و«تجارية») وبقت خمسة بأسمائهم: وقف · المجالس
-   الأهلية · شركة غير ربحية · و«حكومي» مش في بوّابة التسجيل خالص
-   (وبيفضل في `ENTITY_TYPES` بتاعة `taxonomy` للجهات القائمة). */
+/* Entity classifications
+   These four come from the live system's "entity classification" field in the registration form,
+   which determines whether three documents are required. */
+/* This list comes from the client's live screens — it used to be four ("government entity" and
+   "commercial") and became five by name: endowment, civil councils, non-profit company, and
+   "government" no longer appears in the registration portal at all (it stays in the `ENTITY_TYPES`
+   taxonomy for existing entities). */
 export const ENTITY_TYPES = [
   'جمعية أهلية',
   'مؤسسة أهلية',
@@ -62,8 +60,8 @@ export const ENTITY_TYPES = [
   'المجالس الأهلية',
 ] as const
 
-/* ═══ جهات الإشراف الفني ═══
-   الجهة المرخِّصة · بتتغيّر بتغيّر التنظيم، فهي ماستر داتا لا ثابت */
+/* Technical supervising authorities
+   The licensing body · changes as regulation changes, so it's master data, not a constant. */
 export const LICENSORS = [
   'المركز الوطني لتنمية القطاع غير الربحي',
   'الهيئة العامة للأوقاف',
@@ -73,30 +71,27 @@ export const LICENSORS = [
   'وزارة الشؤون الإسلامية',
 ] as const
 
-/* ═══ الفئات المستهدفة ═══
-   ⚠️ **سؤال مفتوح لعمر:** القايمة دي في النظام العامل ثابتة · مش
-   واضح إذا المؤسسة بتضيف فيها ولا هي مقفولة من الوزارة (س-2 في
-   البريف). حطّيناها هنا على أساس إنها بتتضاف. */
+/* Target categories
+   Open question: this list is fixed in the live system — unclear whether the organization can add
+   to it or whether it's locked by the ministry. Included here on the assumption that it can be
+   extended. */
 export const TARGET_GROUPS = [
   'الأيتام', 'الأرامل', 'ذوو الإعاقة', 'كبار السن', 'الأسر المحتاجة',
   'طلاب العلم', 'الشباب', 'المرأة', 'الأطفال', 'اللاجئون',
 ] as const
 
-/* ═══════════════════════════════════════════════════════════
-   مصفوفة الاعتماد · قاعدة عمل لا ماستر داتا
+/* Approval matrix · a business rule, not master data.
 
-   ⚠️ **الأرقام دي افتراضات.** إجراء الصرف بيقول إن المدد والسقوف
-   «من الإعدادات» من غير ما يدّي قيمة واحدة · زي «القيمة المستهدفة»
-   الفاضية في المؤشرات. فالشاشة بتعرضها **موسومة افتراضًا** لحد ما
-   المؤسسة تدّينا الأرقام (س-1 في البريف).
+   These numbers are assumptions. The disbursement flow states that durations and thresholds come
+   from settings without giving a value — like the empty "target value" in the indicators. So the
+   screen shows them flagged as assumptions until the organization provides real figures.
 
-   والمصفوفة بتتقري من تحت لفوق: أول صف سقفه أكبر من أو يساوي
-   المبلغ هو صاحب القرار.
-   ═══════════════════════════════════════════════════════════ */
+   The matrix reads bottom-up: the first row whose threshold is greater than or equal to the amount
+   is the decision-maker. */
 export interface ApprovalRow {
   key: string
   role: string
-  /** لغاية كام · و`null` يعني مفيش سقف فوقه */
+  /** Up to how much · `null` means no cap above it */
   upTo: number | null
   assumed: boolean
 }
@@ -108,16 +103,16 @@ export const APPROVAL_MATRIX: ApprovalRow[] = [
   { key: 'board', role: 'مجلس الإدارة', upTo: null, assumed: true },
 ]
 
-/** مين بيعتمد مبلغ كذا · نفس القراءة اللي الشاشة بتشرحها */
+/** Who approves a given amount · the same reading the screen explains */
 export const approverFor = (amount: number): ApprovalRow =>
   APPROVAL_MATRIX.find((r) => r.upTo === null || amount <= r.upTo) ??
   APPROVAL_MATRIX[APPROVAL_MATRIX.length - 1]
 
-/* ═══ حدود مالية تانية · كلها قواعد عمل ═══ */
+/* Other financial limits · all business rules */
 export interface LimitRow {
   key: string
   label: string
-  /** الوحدة في الاسم لا في الرقم · الرقم بيفضل رقمًا */
+  /** The unit is in the name, not the number · the number stays a number */
   unit: 'ريال' | 'يوم' | '%'
   value: number
   where: string
@@ -143,12 +138,10 @@ export const MONEY_LIMITS: LimitRow[] = [
   },
 ]
 
-/* ═══════════════════════════════════════════════════════════
-   جرد الإعدادات · اللي صفحة `/settings` بتقرا منه
+/* Settings inventory · what the `/settings` page reads from.
 
-   ⚠️ العدّ هنا **محسوب من الداتا نفسها** لا مكتوب برقم · فلو
-   مجموعة كبرت، الجرد بيكبر معاها من غير ما حد يفتكر يعدّله.
-   ═══════════════════════════════════════════════════════════ */
+   Counts here are calculated from the data itself, not hardcoded — so as a group grows, the
+   inventory grows with it with no one needing to remember to update it. */
 const cityCount = Object.values(CITIES_BY_REGION).reduce((a, c) => a + c.length, 0)
 
 export const SETTING_MODULES: SettingModule[] = [
@@ -220,7 +213,7 @@ export const SETTING_MODULES: SettingModule[] = [
   },
 ]
 
-/* ═══ المتعلقات · اللي بيمنع الحذف ═══ */
+/* Dependents · what blocks deletion */
 export const regionUsed = (r: string) =>
   entityRows.filter((e) => e.region === r).length
 
@@ -233,45 +226,42 @@ export const licensorUsed = (l: string) =>
 export const cityUsed = (c: string) =>
   entityRows.filter((e) => e.city === c).length
 
-/* ═══════════════════════════════════════════════════════════
-   سلسلة المتعلقات · ج-19
+/* Dependency chain.
 
-   ⚠️ **القاعدة واحدة والتطبيق كان في مكان واحد بس.** إعدادات
-   الميزانية كانت بتعرض «كام ميزانية على السنة دي»، والميزانية
-   نفسها والمشروع ما كانش عليهم حاجة · يعني نص القاعدة مكتوب.
+   One rule, previously applied in only one place. Budget settings showed "how many budgets this
+   year" while the budget and project themselves showed nothing — half the rule written down.
 
-   والسلسلة: سنة ← ميزانية ← مشروع ← اتفاقية ودفعات.
-   وكل حلقة بتعرض **عدد اللي بعدها** مكان زرار الحذف · السبب ظاهر
-   قبل المحاولة، مش رسالة خطأ بعدها.
+   The chain: year → budget → project → agreement and payments.
+   Each link shows the **count of what depends on it** in place of a delete button — the reason is
+   visible before the attempt, not as an error message afterward.
 
-   ⚠️ **والعدّ بيتحسب من الداتا لا مكتوب برقم** · فلو ارتبط ريكورد
-   جديد، الرقم بيكبر لوحده.
-   ═══════════════════════════════════════════════════════════ */
+   The count is calculated from the data, not hardcoded — so a newly linked record grows the number
+   on its own. */
 export interface Deps {
-  /** العدد الكلي · صفر يعني الحذف مسموح */
+  /** Total count · zero means deletion is allowed */
   count: number
-  /** الجملة اللي بتتقال · فاضية لو مفيش متعلقات */
+  /** The sentence shown · empty if there are no dependents */
   say: string
 }
 
 /**
- * كام مشروع مرتبط بميزانية · المشروع بيتربط بسنتها.
+ * How many projects are linked to a budget · a project links to its year.
  *
- * ⚠️ المطابقة **ببداية النصّ** لا بالتساوي: سنة الميزانية `2026`
- * وسنة المشروع `2026-f` (المؤسسة) أو `2026-w` (الوقف) · فالتساوي
- * كان هيرجّع صفرًا دايمًا، والقاعدة تبان شغّالة وهي عمياء.
+ * Matched by the string's **prefix**, not equality: a budget year is `2026` while a project year is
+ * `2026-f` or `2026-w` — an exact match would always return zero, and the rule would look like it's
+ * working while it's actually blind.
  */
 export const budgetDeps = (yearName: string): Deps => {
   const n = projectRows.filter((p) => p.year.startsWith(yearName)).length
   return { count: n, say: n ? `مشاريع مرتبطة بها: ${n}` : '' }
 }
 
-/** المشروع عليه اتفاقيات ودفعات · آخر حلقة في السلسلة */
+/** The project has agreements and payments · the last link in the chain */
 export const projectDeps = (agreements: number, payments: number): Deps => {
   const n = agreements + payments
   const parts: string[] = []
   if (agreements) parts.push(`${agreements} اتفاقية`)
-  if (payments) parts.push(`${payments} دفعة`)
+  if (payments) parts.push(`${countOf(payments, NOUN.payment)}`)
   return { count: n, say: parts.join(' و') }
 }
 
@@ -279,11 +269,11 @@ export const yearUsed = (id: string) =>
   budgetDocs.filter((d) => d.yearId === id).length
 
 /**
- * كام مشروع بيقع تحت سقف الدور ده · قراءة المصفوفة على داتا حقيقية.
+ * How many projects fall under this tier's cap · reading the matrix against real data.
  *
- * ⚠️ العمود ده مش زينة: هو اللي بيكشف سقفًا غلط. لو «مجلس الإدارة»
- * طلع تحته نص المشاريع، يبقى السقف اللي تحته واطي · والرقم بيقول
- * كده من غير ما حد يحسب.
+ * This column isn't decoration: it's what surfaces a wrong threshold. If one tier ends up covering
+ * half of all projects, the tier below it is set too low — and the number says so without anyone
+ * having to calculate it.
  */
 export const projectsUnder = (row: ApprovalRow): number =>
   projectRows.filter((p) => approverFor(p.amountGranted).key === row.key).length

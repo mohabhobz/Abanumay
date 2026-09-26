@@ -5,26 +5,25 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { SETTING_MODULES } from '@/data/mock/settings'
 
-/* ═══════════════════════════════════════════════════════════
-   جرد الإعدادات · د-1
+/* Settings inventory.
 
-   ⚠️ **الصفحة دي مش مكان الإعدادات، هي فهرسها.** كل مجموعة
-   بتتظبّط في صفحة موديولها، والصفحة دي بتجاوب سؤالًا واحدًا:
-   «إيه اللي محتاج يتظبّط في السيستم ده».
+   This page isn't where settings live, it's their index. Each group is
+   configured on its own module's page, and this page answers one
+   question: "what needs configuring in this system."
 
-   والسبب إن في مدخلين لنفس الشاشة، وكل واحد لسؤال مختلف:
+   The reason there are two entry points to the same screen, each for a
+   different question:
 
-     زرار في ترويسة الموديول   اللي شغّال دلوقتي، وقايمة ناقصة
-                               وقفته: «فين أضيف المدينة دي»
-     الصفحة دي                 مسؤول النظام الجاي يظبّط من الأول
+   - A button in the module header — used when something currently
+   working hits a missing list: "where do I add this city?"
+   - This page — used by a system admin setting things up from scratch.
 
-   ومحدش منهم بيعمل نسخة تانية من الشاشة · نفس المسار بيتفتح
-   من الاتنين.
+   Neither creates a second version of the screen — the same path opens
+   from both.
 
-   ⚠️ **ومفيش مدخل ليها في الريل.** الريل سبع عناصر ومقصود إنه
-   سبعة، واللي بيستعمل الشاشة دي واحد من كل عشرين مستخدم ·
-   فمدخلها من قايمة الحساب مع التفضيلات.
-   ═══════════════════════════════════════════════════════════ */
+   There's also no entry point for it in the nav rail. The rail has seven
+   items by design, and this screen is used by roughly one in twenty
+   users, so its entry point is in the account menu alongside preferences. */
 
 export default function SettingsIndexPage() {
   const groups = SETTING_MODULES.flatMap((m) => m.groups)
@@ -38,9 +37,9 @@ export default function SettingsIndexPage() {
           <header>
             <div>
               <h1 className="ptitle">إعدادات النظام</h1>
-              {/* ⚠️ الرقم ما يجيش بعد `·` على طول · النقطة محايدة
-                  اتجاهيًا، فبتلزق بالرقم اللاتيني وتبان كإنها صفر
-                  («· 7» بتتقرا «70»). فالكلمة بتفصل بينهم. */}
+              {/* The number doesn't come directly after the `·` separator — the dot is
+                  direction-neutral, so it sticks to the Latin numeral and reads as if
+                  it were a zero ("· 7" reads as "70"). A word separates them instead. */}
               <p className="sub mt-1">
                 القيم والقواعد التي تُبنى عليها جميع الوحدات ·
                 وتضم <Num>{master}</Num> مجموعة بيانات أساسية
@@ -74,8 +73,8 @@ export default function SettingsIndexPage() {
                     <span className="cfgg-f">
                       <span className="sub">{g.owner}</span>
                       <span className="pc-sp" />
-                      {/* «قيمة» مش تزويق · رقم عريان في ركن الكارت
-                          بيخلّي القارئ يسأل «أربعة إيه» */}
+                      {/* "Value" isn't decoration — a bare number in the corner of a card makes
+                          the reader ask "four of what?" */}
                       <span className="sub"><b className="num"><Num>{g.count}</Num></b> قيمة</span>
                     </span>
                   </li>
@@ -84,12 +83,13 @@ export default function SettingsIndexPage() {
             </Glass>
           ))}
 
-          {/* التفرقتان دول في الآخر عن قصد · الصفحة بتفتح على اللي
-              المستخدم جاي يعمله، والقواعد بتفسّر بعد ما يشوف */}
+          {/* These two distinctions are deliberately placed last — the page opens
+              onto what the user came here to do, and the rules explain themselves
+              after they see it. */}
           <div className="g2">
-            {/* ⚠️ التفضيلات الشخصية **مش** هنا · الثيم والكثافة في
-                حساب المستخدم، والخلط بينهم هو اللي بيخلّي حد يدوّر
-                على «المدن» في تفضيلاته */}
+            {/* Personal preferences aren't here — theme and density live under the
+                user's account, and mixing the two is what makes someone go looking
+                for "cities" in their preferences. */}
             <Glass>
               <Head title="ما لا تجده هنا" meta={<Tag tone="mute">توضيح</Tag>} />
               <p className="sub">
@@ -100,8 +100,8 @@ export default function SettingsIndexPage() {
               </p>
             </Glass>
 
-            {/* ⚠️ القاعدة اللي بتكشف النواقص · مكتوبة عشان اللي جاي
-                بعدنا يعرف إزاي يعرف إن في حاجة ناقصة */}
+            {/* The rule that surfaces gaps — written down so whoever comes after us
+                knows how to tell something is missing. */}
             <Glass>
               <Head title="كيف يُكتشف الإعداد الناقص" meta={<Tag tone="mute">قاعدة</Tag>} />
               <p className="sub">

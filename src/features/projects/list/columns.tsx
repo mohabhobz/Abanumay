@@ -7,24 +7,24 @@ import { stagePressure } from '@/data/repository'
 import type { ProjectRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
-/* ═══════════════════════════════════════════════════════════
-   تعريف أعمدة جدول المشاريع · مصدر واحد لأربع حاجات.
+/* Project table column definitions — a single source for four consumers.
 
-   الجدول والإجماليات والتصدير والتجميع كلهم بيقرأوا من هنا. لو كل
-   واحد فيهم عرّف أعمدته لوحده، أول عمود يتزوّد هيظهر في واحد ويغيب
-   عن التلاتة، والتصدير هيطلع مختلفًا عن اللي على الشاشة · وده أسوأ
-   من غياب التصدير أصلًا.
+   The table, totals, export, and grouping all read from here. If each defined
+   its own columns, a newly added column would show up in one and be missing
+   from the other three, and the export would end up different from what's on
+   screen — worse than not exporting at all.
 
-   ولكل عمود `text` جنب `cell`: الخلية فيها روابط وشارات، والملف
-   المصدَّر محتاج نصًّا صافيًا. الاتنين جنب بعض عشان ما يفرقوش.
-   ═══════════════════════════════════════════════════════════ */
+   Every column also has `text` alongside `cell`: the cell holds links and
+   badges, while the exported file needs plain text. The two live side by side
+   so they can't drift apart. */
 
 export type Col = TCol<ProjectRow>
 
-/* العروض الافتراضية بتتجمع لـ١٢٤٦ · يعني الأعمدة الافتراضية كلها بتدخل
-   في عرض الكارت على شاشة ١٤٤٠ (١٢٥٢). كانت ١٣٣٨ فالجدول كان أعرض من
-   كارته بـ٨٦px، و«الحالة» · آخر عمود وأهمّه · مستخبية تحت زرار الأعمدة
-   الملزوق (٢٣ سبتمبر). اللي صغر: الأرقام والوزن والمدة والمالك. */
+/* Default columns add up to 1246px, so all default columns fit within the card
+   view's 1440px screen (1252px). It used to be 1338px, making the table wider
+   than its card by 86px, with "Status" — the last and most important column —
+   hidden behind the sticky columns button. What got trimmed: the numbers,
+   weight, duration, and owner columns. */
 export const COLS: Col[] = [
   {
     key: 'code',
@@ -62,8 +62,8 @@ export const COLS: Col[] = [
     label: 'المدة',
     def: true,
     n: true,
-    /* النقطة جنب الرقم هي كل الفرق: من غيرها المستخدم لازم يحسب
-       المكوث مقابل الحدّ في دماغه لكل صف. */
+    /* The dot next to the number makes all the difference: without it, the user
+       would have to mentally compute time-in-stage against the threshold for every row. */
     cell: (r) => (
       <>
         {r.stageLimit > 0 ? days(r.hoursInStage) : 'بلا حدّ'}
@@ -71,8 +71,8 @@ export const COLS: Col[] = [
       </>
     ),
     text: (r) => (r.stageLimit > 0 ? String(Math.round(r.hoursInStage / 24)) : 'بلا حدّ'),
-    /* «بلا حدّ» في الخلية مدّة موجودة بلا سقف · فهي بتتحسب،
-       والوسط بيقول وحدته */
+    /* "No limit" in the cell means a duration exists with no cap — it's still
+       computed, and the unit still states what it's measuring. */
     value: (r) => Math.round(r.hoursInStage / 24),
     agg: 'avg',
     aggSay: 'يومًا في المتوسط',
@@ -124,18 +124,17 @@ export const COLS: Col[] = [
     value: (r) => r.beneficiaries,
     agg: 'sum',
   },
-  /* ⚠️ العرض طلع من ٨٨ لـ١٤٨ لمّا الوش دخل الخانة. ٨٨ كان مقاس
-     **نصّ وحده** وكان بيقصّ «أحمد العبداللطيف» أصلًا؛ ومع الوش
-     (٢٨ + فجوة ٨) بقى بيقصّ عند الكلمة الأولى — «عزام …» —
-     والوش بيعوّض الهوية بس الاسم بيبقى بلا فايدة. */
+  /* The column grew from 88 to 148 when the avatar was added inside the cell. 88px
+     was sized for text alone and already truncated a name like "Ahmed
+     Abdellatif"; with the avatar (28 + an 8px gap) it now truncates at the first
+     word — "Azzam …" — the avatar preserves identity, but the name becomes useless. */
   { key: 'owner', w: 128, label: 'المالك', def: true, cell: (r) => <Person name={r.owner} />, text: (r) => r.owner ?? '' },
   {
     key: 'status',
-    /* ⚠️ **١١٢ لا ٩٦ · والفرق اتكشف لمّا الفحص اتوحّد.**
-       «في التشغيل» وسمها ٧٥ بكسل، والعمود كان ٩٦ ناقص حشو الخلية
-       (٢×١٢) = ٧٢ · فالوسم كان بيتقصّ عند عرض 1440. وعدّى شهورًا
-       لأن فاحص القصّ كان بيقيس من شاشة 1600 وفاحص التباين من
-       1440 · **أداتان بعرضين مختلفين، ومحدش واخد باله**. */
+    /* 112, not 96 — the difference surfaced once the check was unified. "In
+       Progress" is a 75px label, and the column was 96px minus 24px of cell
+       padding (2×12) = 72px, so the label was being truncated at a 1440px
+       viewport width. */
     w: 112,
     label: 'الحالة',
     def: true,
@@ -148,7 +147,7 @@ export const COLS: Col[] = [
   { key: 'year', w: 112, label: 'السنة والمصدر', cell: (r) => <span className="sub num">{r.year}</span>, text: (r) => r.year },
 ]
 
-/* ═══════════════════ التجميع ═══════════════════ */
+/* Grouping */
 
 export const GROUPS: GroupBy<ProjectRow>[] = [
   { key: 'region', label: 'المنطقة', of: (r) => r.region },

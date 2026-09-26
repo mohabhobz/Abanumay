@@ -1,17 +1,16 @@
 import { Link } from 'react-router-dom'
-import { Icon, icons, Money, Mono, Tag } from '@/components/ui'
+import { EntityMark, Icon, icons, Money, Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { initial } from '@/lib/format'
 import { ENTITY_DOCS_TOTAL } from '@/data/repository'
-import { activationTone, governanceTone } from '@/lib/tone'
+import { activationTone } from '@/lib/tone'
 import type { EntityRow } from '@/types/domain'
 
 /**
- * كارت جهة.
+ * Entity card.
  *
- * النظام الحالي بيعرض الجهات في ست قوائم بنفس الستة عشر عمودًا.
- * الكارت ده بيجمّع السؤالين اللي بيتسألوا فعلًا قبل أي قرار:
- * الجهة دي مفعّلة وملفها كامل؟ وسجلّها معانا عامل إيه؟
+ * The live system shows entities across six lists sharing the same sixteen columns. This card
+ * combines the two questions actually asked before any decision: is this entity active with a
+ * complete file, and how has our track record with it been?
  */
 export function EntityCard({ row }: { row: EntityRow }) {
   const docsPct = Math.round((row.docsUploaded / ENTITY_DOCS_TOTAL) * 100)
@@ -20,7 +19,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
   return (
     <article className="ecard glass">
       <div className="ec-top">
-        <span className="ec-init">{initial(row.name)}</span>
+        <EntityMark logo={row.logo} />
         <div className="ec-id">
           <Link className="ec-name" to={ROUTES.entity(row.id)}>{row.name}</Link>
           <div className="sub">
@@ -33,10 +32,10 @@ export function EntityCard({ row }: { row: EntityRow }) {
       <div className="ec-meta sub">
         <span><Icon name={icons.pinMap} size="sm" /> {row.region} · {row.city}</span>
         <span className="pc-dot" />
-        <span>الحوكمة: <Tag tone={governanceTone(row.governance)}>{row.governance}</Tag></span>
+        <span>الحوكمة: <b>{row.governance}</b></span>
       </div>
 
-      {/* ملف المستندات · الرقم ده هو اللي بيوقف الاتفاقيات */}
+      {/* Documents file - this figure is what blocks agreements. */}
       <div className="ec-docs well">
         <div className="ec-docs-t">
           <span>ملف المستندات</span>

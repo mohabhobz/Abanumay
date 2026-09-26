@@ -10,21 +10,19 @@ export interface ComposerProps {
   onStop: () => void
   busy: boolean
   inputRef?: RefObject<HTMLTextAreaElement | null>
-  /** مثبّت أسفل الشاشة بعد أول سؤال */
+  /** Pinned to the bottom of the screen after the first question. */
   docked?: boolean
   /**
-   * النصّ البديل في الخانة.
-   *
-   * ⚠️ **الكومبوننت ده مش للمساعد وحده.** ثريد المراسلة بين الجهة
-   * والمؤسسة كان بيرسم خانة كتابة بإيده (`.ask free`) · سطر واحد
-   * والزرارين على الطرف التاني، وده **مش شكل الكتابة في السيستم**
-   * ولا اتجاهه (العميل شافها). الشكل الواحد هو ده: مساحة بتكبر
-   * مع النصّ، والأزرار في صفّ تحتها.
+   * Placeholder text in the field.
+   * ⚠️ **This component isn't only for the assistant.** The correspondence thread between the
+   * entity and the foundation used to draw its own input field (`.ask free`) — one line with two
+   * buttons off to the side, which isn't the system's writing pattern or direction. The one shape
+   * is this: a box that grows with the text, with the buttons in a row underneath.
    */
   placeholder?: string
 }
 
-/** مربع الكتابة · بيكبر مع النص، وبيحسّ بالماوس قبل ما توصله */
+/** Input box — grows with the text, and responds to the mouse before you reach it. */
 export function Composer({
   value,
   onChange,

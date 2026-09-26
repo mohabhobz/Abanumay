@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Money, Num, Person, Select, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { Mono } from '@/components/ui'
-import { nf } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
 import { docTitle, yearById } from '@/data/mock/budgetTree'
 import { allBudgets } from '@/data/mock/chain'
 import { budgetDeps } from '@/data/mock/settings'
@@ -21,22 +21,21 @@ import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from './BudgetCharts'
 import { GapPeek } from './GapPeek'
 
 /**
- * الميزانية.
+ * Budget.
  *
- * النظام العامل بيخزّن شجرة التخصيص في أربع شاشات متتالية، وكل شاشة
- * بتطبع **مجموع أبنائها** في آخر صف بينما **مخصص الأب مكتوب في
- * الشاشة اللي قبلها**. فالرقمان ما بيتقابلوش، ومحدش شاف إن عشرة بنود
- * من أربعتاشر ما بتتوازنش.
+ * The live system stores the allocation hierarchy across four sequential screens, and each screen
+ * prints the sum of its own children in the last row while the parent's allocation is written on
+ * the previous screen. So the two figures never meet, and no one noticed that ten out of fourteen
+ * items didn't balance.
  *
- * فالموديول ده مبنيّ على قلب الترتيب:
- *
- *  · **فحص التوازن أول حاجة** · قبل الشجرة، لا بعدها. الرقم اللي
- *    بيغيّر قرارًا يتقال في أول سطر.
- *  · **الشجرة بمستوى واحد ومسار فتات** · التنقّل جوّه الشاشة، والأعمدة
- *    واحدة في كل المستويات (النظام بيقلّلها من ست لتلاتة في آخر مستوى).
- *  · **عمودان للعين لا لقاعدة البيانات** · «مجموع الأبناء» و«الفرق»
- *    جنب «المخصص»، فالخلل يبان في الصف نفسه.
- *  · **مبدّل بين التخصيص والاستهلاك** · نفس الشجرة، سؤالان.
+ * So this module is built by flipping the order:
+ * - balance check comes first, before the tree, not after. The number that changes a decision is
+ * stated in the first line.
+ * - a single-level tree with breadcrumb navigation - moving happens within the screen, and columns
+ * stay the same across levels (the live system reduces them from six to three at the last level).
+ * - two columns for the eye, not the database - "sum of children" and "difference" sit next to
+ * "allocation", so a mismatch shows in the same row.
+ * - a toggle between allocation and consumption - same tree, two questions.
  */
 export default function BudgetPage() {
   const [cycleId, setCycleId] = useState(CYCLES[0].id)
@@ -55,14 +54,14 @@ export default function BudgetPage() {
   const crumb = root ? chain(root, path) : []
 
   /**
-   * القفز من فحص التوازن للشجرة.
+   * Jumping from the balance check to the tree.
    *
-   * الضغطة كانت **بتشتغل** فعلًا · المسار بيتغيّر والشجرة بتفتح على
-   * البند · بس الشجرة تحت بـ٢١٤٢px، يعني شاشتين تحت اللي المستخدم
-   * شايفه. فالنتيجة عنده: «دوست وما حصلش حاجة».
+   * The click already worked - the route changed and the tree opened on the item - but the tree sat
+   * 2142px down, two screens below what the user was looking at. So from their side: nothing
+   * happened when they clicked.
    *
-   * فالقفزة بقت تنقل العين معاها: تمرير للشجرة ونبضة قصيرة على
-   * السكشن عشان تقول «أهي، وصلت هنا».
+   * The jump now moves the eye along with it: a scroll to the tree and a brief pulse on the section
+   * to say "here, you've arrived."
    */
   const tree = useRef<HTMLDivElement>(null)
   const [landed, setLanded] = useState(0)
@@ -78,8 +77,8 @@ export default function BudgetPage() {
     if (!el) return
     const soft = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
     el.classList.add('land')
-    /* التمرير بعد الرسم: عدد صفوف الشجرة بيتغيّر مع القفزة، ولو
-       مرّرنا قبل ما الصفوف تتحسب بنقيس على ارتفاع قديم. */
+    /* Scroll after render: the tree's row count changes with the jump, and scrolling before rows
+       are measured would target an old height. */
     let raf2 = 0
     const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => {
@@ -102,18 +101,16 @@ export default function BudgetPage() {
               </p>
             </div>
 
-            {/* ⚠️ **الشاشة دي كانت بتعرض ولا بتنشئ.** الأرقام اللي
-                فيها نتيجة شجرة التخصيص، والشجرة نفسها ما كانش لها
-                مدخل · فمفيش زرار إنشاء ولا إعدادات. والإعدادات قبل
-                الإنشاء في الترتيب لأن الميزانية ما تتفتحش إلا لو
-                سنتها ومصدر تمويلها متعرّفين. */}
-            {/* ⚠️ مبدّل الدورة كان **بعد** زرار الإنشاء، فبيزقّه من
-                الركن · والمبدّل مش فعل أصلًا: بيغيّر اللي بتشوفه لا
-                بيضيف حاجة. مكانه بقى الصفّ اللي تحت، مع اللي بيحكم
-                العرض.
+            {/* Note: this screen used to only display, never create. The figures on it are the
+                result of the allocation tree, and the tree itself had no entry point - so there was
+                no create button or settings. Settings come before creation in the order because a
+                budget can't open unless its year and funding source are defined. */}
+            {/* Note: the cycle switcher used to sit after the create button, crowding it in the
+                corner - and the switcher isn't really an action: it changes what you're looking at,
+                not adds something. It now sits in the row below, with whatever else controls the
+                view.
 
-                الدورة **دايمًا** مختارة، فمفيش خيار «الكل» ·
-                `allowEmpty={false}`. */}
+                A cycle is always selected, so there's no "all" option - `allowEmpty={false}`. */}
             <PageActions
               settings={ROUTES.budgetSettings}
               create={{ label: 'ميزانية جديدة', to: ROUTES.budgetNew }}
@@ -133,14 +130,14 @@ export default function BudgetPage() {
             />
           </div>
 
-          {/* ⚠️ **الميزانيات نفسها كانت غايبة عن شاشة الميزانية.**
-              اللي تحت رسوم واستهلاك — نتيجة التخصيص — والريكوردات
-              اللي اتبنى عليها التخصيص ما كانش لها مدخل. ودي بتتعرّف
-              بـ«سنة + مصدر»، فنفس السنة بمصدرين بتدّي صفّين. */}
+          {/* Note: the budgets themselves were missing from the budget screen. What was below were
+              charts and consumption - the result of the allocation - while the records the
+              allocation is built on had no entry point. These are identified by "year + source", so
+              the same year with two sources gives two rows. */}
           <Glass className="tblcard">
             <Head
               title="الميزانيات المعرَّفة"
-              meta={<span className="sub"><Num>{allBudgets.length}</Num> ميزانية</span>}
+              meta={<span className="sub"><Num>{allBudgets.length}</Num> {nounAfter(allBudgets.length, NOUN.budget)}</span>}
             />
             <ul className="cfglist">
               {allBudgets.map((d) => (
@@ -149,11 +146,9 @@ export default function BudgetPage() {
                   <span className="sub"><Mono>{d.id}</Mono></span>
                   <span className="pc-sp" />
                   <span className="num">{nf.format(d.total)}</span>
-                  {/* ⚠️ ج-19 · **عدد المتعلقات مكان زرار الحذف.**
-                      القاعدة كانت متعملة في إعدادات الميزانية بس
-                      (سنة ← ميزانية)، والحلقة اللي بعدها (ميزانية ←
-                      مشروع) ما كانش عليها حاجة · فنص القاعدة كان
-                      مكتوبًا. */}
+                  {/* Note: dependent count in place of a delete button. The rule used to be applied
+                      only in budget settings (year -> budget); the next link in the chain (budget
+                      -> project) had nothing, so half the rule was implemented. */}
                   {(() => {
                     const dep = budgetDeps(yearById(d.yearId)?.name ?? '')
                     return dep.count > 0
@@ -220,7 +215,7 @@ export default function BudgetPage() {
   )
 }
 
-/* ═══════════════════ شريط الدورة ═══════════════════ */
+/* Cycle bar */
 
 function Summary({ cycle, goals }: { cycle: ReturnType<typeof cycleById>; goals: number }) {
   const over = cycle.alloc - cycle.approved < 0
@@ -237,8 +232,8 @@ function Summary({ cycle, goals }: { cycle: ReturnType<typeof cycleById>; goals:
         <Cell k="المتبقي" v={cycle.alloc - cycle.approved} tone={over ? 'no' : 'ok'} />
       </div>
 
-      {/* شريط واحد بثلاث طبقات: المنصرف داخل المعتمد داخل المخصص.
-          الطبقات مش أشرطة منفصلة عشان ما نجمعش رقمًا مرتين. */}
+      {/* One bar with three layers: disbursed inside approved inside allocated. The layers aren't
+          separate bars, so a figure never gets counted twice. */}
       <div className="bgbar" aria-hidden="true">
         <i className="commit" style={{ width: `${Math.min(100, commitPct)}%` }} />
         <i className="spend" style={{ width: `${Math.min(100, usePct)}%` }} />
@@ -262,16 +257,18 @@ function Cell({ k, v, tone }: { k: string; v: number; tone?: 'ok' | 'no' }) {
   )
 }
 
-/* ═══════════════════ فحص التوازن ═══════════════════ */
+/* Balance check */
 
 /**
- * أول سكشن في الصفحة عن قصد.
+ * First section on the page, deliberately.
  *
- * الرقم ده ما بيظهرش في النظام العامل أصلًا، وهو أول حاجة المدير
- * المالي هيسأل عنها. حطّه تحت الشجرة معناه إنه مش هيتشاف.
+ * This figure doesn't appear in the live system at all, and it's the first thing a finance director
+ * will ask about. Placing it under the tree means it wouldn't get seen.
  */
-/** الأول بيبان، والباقي بضغطة · حائط من إحدى عشرة صفًّا بنفس الشكل
-    بيتحوّل لخلفية، وبيدفع الشجرة شاشتين تحت. */
+/**
+ * The first row shows, the rest expand on click - a wall of eleven identical rows turns into
+ * background noise and pushes the tree two screens down.
+ */
 const TOP = 5
 
 function Balance({
@@ -283,8 +280,7 @@ function Balance({
   root: PlanNode
 }) {
   const [all, setAll] = useState(false)
-  /* البند المفتوح في النافذة · الضغطة بتجاوب في مكانها بدل ما
-     تمرّر الصفحة لتحت */
+  /* The item open in the panel - the click responds in place instead of scrolling the page down. */
   const [peek, setPeek] = useState<Imbalance | null>(null)
   const shown = all ? gaps : gaps.slice(0, TOP)
   const total = gaps.reduce((s, x) => s + Math.abs(x.gap), 0)
@@ -302,7 +298,7 @@ function Balance({
     <section className="rpsec">
       <Head
         title="فحص التوازن"
-        meta={`${gaps.length} من ${parents} بندًا لا يتوازن`}
+        meta={`${gaps.length} من ${countOf(parents, NOUN.line)} لا يتوازن`}
       />
 
       <Glass className="bgchk">
@@ -324,11 +320,10 @@ function Balance({
                 <button className="bglist-i" onClick={() => setPeek(x)}>
                   <span className="bglist-lv sub">{PLAN_LEVELS[x.level]}</span>
                   <span className="bglist-t">{x.label || root.label}</span>
-                  {/* التسمية بعرض ثابت والرقم بعدها · في RTL الرقم
-                      بيمتدّ للشمال وحرفه الأخير ملزوق في التسمية،
-                      فالخانات بتقع فوق بعضها والآحاد بتتراصّ. قبل
-                      كده كان الاتنين نصًّا واحدًا بعرض متغيّر، فكل
-                      صفّ بيبدأ في مكان مختلف والمقارنة بتتعب. */}
+                  {/* Fixed-width label with the number after it - in RTL, the number extends to the
+                      left and its last digit sits right against the label, so digit columns line up
+                      and the ones place stays aligned. These used to be one variable-width string,
+                      so each row started at a different point and comparison was tiring. */}
                   <span className="bglist-v mut">
                     <span className="sub">مخصص</span>
                     <Money sm>{x.alloc}</Money>
@@ -337,9 +332,9 @@ function Balance({
                     <span className="sub">أبناؤه</span>
                     <Money sm>{x.childSum}</Money>
                   </span>
-                  {/* نفس شارات النظام لا شارة جديدة: التونات متعايرة
-                      مرة واحدة في `.tag`، وأي بديل هنا بيفتح ملفًا تانيًا
-                      للفحص في التلات ثيمات. */}
+                  {/* Same badge styles as the rest of the system, not a new one - the tones are
+                      calibrated once in `.tag`, and any alternative here opens a second file to
+                      check across the three themes. */}
                   <span className="bglist-g">
                     <Tag tone={x.gap > 0 ? 'no' : 'warn'}>
                       {x.gap > 0 ? 'زيادة' : 'نقص'} <Money sm>{Math.abs(x.gap)}</Money>
@@ -371,7 +366,7 @@ function Balance({
   )
 }
 
-/* ═══════════════════ الشجرة ═══════════════════ */
+/* Tree */
 
 function Tree({
   sectionRef, root, here, rows, crumb, path, view, onView, onGo, cycleLabel,
@@ -465,16 +460,16 @@ function Tree({
         <>
           <div className="ftool-r">
             <div className="ftool-f">
-              {/* مبدّل السؤال: «خصّصنا كام» ولا «استهلكنا كام».
-                  كان ماركب مكتوبًا بالإيد هنا · نسخة تانية من نفس
-                  الكمبوننت بارتفاع ٣٠ بدل ٣١، وما كانتش هتاخد أي
-                  تحسين يحصل في الأصل. بقى `Segments` زي كل مكان. */}
+              {/* Toggle between the two questions - "how much did we allocate" or "how much did we
+                  consume". This used to be hand-assembled here: a second copy of the same component
+                  at a height of 30 instead of 31, that wouldn't pick up any improvement made to the
+                  original. It's now `Segments`, like everywhere else. */}
               <Segments
                 items={[{ key: 'alloc', label: 'التخصيص' }, { key: 'use', label: 'الاستهلاك' }]}
                 active={view}
                 onChange={(k) => onView((k ?? 'alloc') as typeof view)}
               />
-              <span className="sub"><span className="num">{rows.length}</span> بندًا</span>
+              <span className="sub"><span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.line)}</span>
             </div>
             <div className="ftool-a"><ExportMenu sheet={sheet} note={sheet.title} /></div>
           </div>
@@ -495,12 +490,12 @@ function Tree({
 }
 
 /**
- * قاع الجدول بيقارن **مجموع الأبناء بمخصص الأب**.
+ * The table footer compares the sum of children to the parent's allocation.
  *
- * لما تقفز هنا من فحص التوازن، الجدول بيعرض أبناء البند · ومخصص
- * البند نفسه في المستوى اللي فوق، يعني برّه الشاشة. فالفرق اللي
- * جيت عشانه ما بيبانش عند وصولك. القاع دلوقتي بيحطّ الرقمين تحت
- * بعض ويحسب الفرق، فالسبب موجود في نقطة الهبوط.
+ * Jumping here from the balance check shows the item's children, while the item's own allocation
+ * sits one level up, outside the screen. So the difference you came here for isn't visible on
+ * arrival. The footer now puts both figures together and computes the difference, so the reason is
+ * right at the landing point.
  */
 function AllocTable({
   rows, path, onGo, parent,
@@ -541,16 +536,16 @@ function AllocTable({
               <td title={n.label}>
                 {kids ? <Icon name={icons.chevron} size="sm" /> : null}{' '}{n.label}
               </td>
-              <td className="n num">
+              <td className="n">
                 {n.alloc === 0 ? <Tag tone="warn">بلا مخصص</Tag> : <Money sm>{n.alloc}</Money>}
               </td>
-              <td className="n num">{sum === null ? <span className="sub"> </span> : <Money sm>{sum}</Money>}</td>
-              <td className={`n num${gap !== 0 ? ' bad' : ''}`}>
+              <td className="n">{sum === null ? <span className="sub"> </span> : <Money sm>{sum}</Money>}</td>
+              <td className={`n${gap !== 0 ? ' bad' : ''}`}>
                 {sum === null ? <span className="sub"> </span>
                   : gap === 0 ? <Tag tone="ok">متوازن</Tag>
                   : <>{gap > 0 ? '+' : '−'}<Money sm>{Math.abs(gap)}</Money></>}
               </td>
-              <td className="n num">
+              <td className="n">
                 {n.plan === 0 ? <Tag tone="warn">خارج الخطة</Tag> : `${n.plan}%`}
               </td>
               <td title={n.owner ?? ''}>{n.owner ? <Person name={n.owner} /> : <span className="sub"> </span>}</td>
@@ -561,9 +556,9 @@ function AllocTable({
       <tfoot>
         <tr>
           <td>مجموع الأبناء</td>
-          <td className="n num"><Money sm>{total}</Money></td>
-          <td className="n num mut">مخصص {parent?.label ?? 'الإجمالي'}</td>
-          <td className="n num"><Money sm>{parent?.alloc ?? 0}</Money></td>
+          <td className="n"><Money sm>{total}</Money></td>
+          <td className="n mut">مخصص {parent?.label ?? 'الإجمالي'}</td>
+          <td className="n"><Money sm>{parent?.alloc ?? 0}</Money></td>
           <td className="n" colSpan={2}>
             {parent && (gap === 0
               ? <Tag tone="ok">متوازن</Tag>
@@ -614,10 +609,10 @@ function UseTable({ rows, path, onGo }: { rows: PlanNode[]; path: string[]; onGo
               <td title={n.label}>
                 {kids ? <Icon name={icons.chevron} size="sm" /> : null}{' '}{n.label}
               </td>
-              <td className="n num"><Money sm>{n.alloc}</Money></td>
-              <td className="n num"><Money sm>{n.reserved ?? 0}</Money></td>
-              <td className="n num"><Money sm>{n.spent ?? 0}</Money></td>
-              <td className={`n num${left < 0 ? ' bad' : ''}`}><Money sm>{left}</Money></td>
+              <td className="n"><Money sm>{n.alloc}</Money></td>
+              <td className="n"><Money sm>{n.reserved ?? 0}</Money></td>
+              <td className="n"><Money sm>{n.spent ?? 0}</Money></td>
+              <td className={`n${left < 0 ? ' bad' : ''}`}><Money sm>{left}</Money></td>
               <td>
                 <span className="bgpct">
                   <span className="bgpct-t">
@@ -634,9 +629,9 @@ function UseTable({ rows, path, onGo }: { rows: PlanNode[]; path: string[]; onGo
       <tfoot>
         <tr>
           <td>الإجمالي</td>
-          <td className="n num"><Money sm>{rows.reduce((s, n) => s + n.alloc, 0)}</Money></td>
-          <td className="n num"><Money sm>{rows.reduce((s, n) => s + (n.reserved ?? 0), 0)}</Money></td>
-          <td className="n num"><Money sm>{rows.reduce((s, n) => s + (n.spent ?? 0), 0)}</Money></td>
+          <td className="n"><Money sm>{rows.reduce((s, n) => s + n.alloc, 0)}</Money></td>
+          <td className="n"><Money sm>{rows.reduce((s, n) => s + (n.reserved ?? 0), 0)}</Money></td>
+          <td className="n"><Money sm>{rows.reduce((s, n) => s + (n.spent ?? 0), 0)}</Money></td>
           <td colSpan={2} />
         </tr>
       </tfoot>

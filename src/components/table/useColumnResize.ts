@@ -3,37 +3,35 @@ import { MIN_COL_W, readWidths, writeWidths, type ColWidths } from './model'
 
 export interface Dragging {
   key: string
-  /** موضع الخط الدليل بالنسبة لحاوية الجدول */
+  /** Guide line position relative to the table container. */
   x: number
 }
 
 export interface ColumnResize {
   widths: ColWidths
   dragging: Dragging | null
-  /** بيتربط على `onPointerDown` في مقبض العمود */
+  /** Bound to `onPointerDown` on the column handle. */
   start: (key: string, e: React.PointerEvent<HTMLElement>) => void
-  /** بيرجّع العمود لعرضه الافتراضي · دبل كليك على المقبض */
+  /** Resets the column to its default width — double-click on the handle. */
   reset: (key: string) => void
 }
 
 /**
- * سحب حدود الأعمدة.
- *
- * العرض بيتقاس من الترويسة نفسها وقت بداية السحب لا من قيمة محفوظة:
- * الجدول `width:100%`، فالمتصفح بيقسّم الزيادة على الأعمدة، والعرض
- * اللي على الشاشة مش هو الرقم المكتوب في التعريف. لو السحب بدأ من
- * الرقم المكتوب، العمود بينطّ أول لمسة قبل ما يتحرّك.
- *
- * والاتجاه: في RTL حدّ العمود اللي بنسحب منه هو حافته **اليسرى**،
- * فالسحب لليسار (نقصان `clientX`) بيكبّر العمود. الحساب بياخد
- * الاتجاه من الصفحة نفسها عشان يشتغل في الاتجاهين.
+ * Dragging column boundaries.
+ * Width is measured from the header itself at drag start, not from a stored value: the table is
+ * full-width, so the browser distributes any surplus across the columns, and the width on screen
+ * isn't the number written in the definition. If the drag started from the written number, the
+ * column would jump on the first touch before it even moves.
+ * Direction: in RTL the boundary being dragged is the column's left edge, so dragging left
+ * (decreasing the pointer's x) grows the column. The calculation reads direction from the page
+ * itself so it works either way.
  */
 export function useColumnResize(table: string | undefined): ColumnResize {
   const [widths, setWidths] = useState<ColWidths>(() => (table ? readWidths(table) : {}))
   const [dragging, setDragging] = useState<Dragging | null>(null)
 
-  /* المرجع بيحمل حالة السحب الجارية: المستمعات بتتسجّل مرة واحدة،
-     وقراءة الحالة من `useState` جوّاها بتبقى قديمة. */
+  /* The ref holds the drag's live state: listeners are registered once, and reading state from a
+     hook inside them would go stale. */
   const live = useRef<{
     key: string
     startX: number
@@ -74,12 +72,12 @@ export function useColumnResize(table: string | undefined): ColumnResize {
       setDragging(null)
     }
 
-    /* `pointercancel` مش رفاهية: لو المتصفح خطف المؤشّر (تمرير
-       باللمس مثلًا) من غيره الجدول بيفضل في وضع السحب للأبد. */
+    /* `pointercancel` isn't a nicety: if the browser steals the pointer (a touch scroll, for
+       example), without it the table would stay stuck in drag mode forever. */
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', stop)
     window.addEventListener('pointercancel', stop)
-    /* منع تظليل النص أثناء السحب */
+    /* Prevents text selection while dragging. */
     document.body.classList.add('colresizing')
     return () => {
       window.removeEventListener('pointermove', move)
@@ -89,8 +87,8 @@ export function useColumnResize(table: string | undefined): ColumnResize {
     }
   }, [dragging])
 
-  /* الحفظ بعد ما السحب يخلص بس: التخزين مع كل حركة مؤشّر كتابة
-     مية مرة في الثانية بلا داعي. */
+  /* Saved only once dragging ends: writing to storage on every pointer move would fire far too
+     often for no reason. */
   const saved = useRef(widths)
   useEffect(() => {
     if (dragging || !table || saved.current === widths) return

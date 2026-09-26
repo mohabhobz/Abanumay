@@ -1,86 +1,91 @@
 /**
- * أيقونات النظام · **Phosphor** (phosphoricons.com) من ٢٣ سبتمبر.
+ * System icons · **Phosphor** (phosphoricons.com).
  *
- * ليه اتنقلنا من لوسيد: لوسيد خطّ بس، مالهاش نسخة مملوءة، فقاعدة
- * «خطّ = عادي · ملء = نشِط» ما كانتش ممكنة، والبند النشِط في الريل
- * كان بيتعرف من أرضيته وبس. وهي كمان الافتراضي في shadcn فبتتكرّر
- * في معظم اللوحات. Phosphor نفس الشبكة ونفس التغطية تقريبًا، وستّ
- * أوزان: `regular` افتراضي · `fill` للنشِط · `duotone` للحالات
- * الفاضية والنجاح بس. DDR-013.
+ * Why the switch from Lucide: Lucide is line-only with no filled variant, so the "line = normal,
+ * filled = active" rule wasn't possible, and the active item in the timeline could only be told
+ * apart by its background. It's also the default in shadcn, so it repeats across most dashboards.
+ * Phosphor covers roughly the same grid and coverage, with six weights: `regular` as default,
+ * `fill` for active, `duotone` for empty states and success only.
  *
- * ── التاريخ القديم (لوسيد) ──
+ * -- Prior history (Lucide) --
  *
- * قبل كده كانت ٥٤ أيقونة مرسومة بإيدنا كنصوص `<path>` على شبكة
- * ٢٤×٢٤. ده كان بيشتغل، بس كل أيقونة جديدة كانت قرار رسم مستقل:
- * سُمك الخط والنهايات والوزن البصري بيتحدّدوا في اللحظة، فبعد
- * خمسين أيقونة العايلة ما بقتش عايلة.
+ * Before this there were 54 icons hand-drawn as `<path>` elements on a 24x24 grid. That worked, but
+ * every new icon was an independent drawing decision: stroke width, line caps, and visual weight
+ * were decided in the moment, so after fifty icons the family stopped being a family.
  *
- * لوسيد بتحلّ ده من الجذر: مكتبة واحدة، شبكة ٢٤×٢٤، سُمك ٢،
- * نهايات دائرية · كلهم مرسومين مع بعض بنفس القواعد. وبتديّنا كمان
- * ١٥٠٠+ أيقونة جاهزة، فالشاشة الجديدة ما بتحتاجش رسمًا.
+ * Lucide fixes this at the root: one library, a 24x24 grid, stroke 2, round caps — all drawn
+ * together under the same rules. It also gives us 1500+ ready-made icons, so a new screen doesn't
+ * need a drawing.
  *
- * **الخريطة تحت بتختار حسب اللي الأيقونة بترسمه لا حسب اسمها
- * عندنا** · لأن اللي المستخدم بيشوفه هو الرسم. فـ`gear` كانت
- * بترسم مزالج (sliders) مش ترسًا، فبقت `SlidersHorizontal`.
+ * **The map below picks by what the icon actually draws, not by its name here** — because what the
+ * user sees is the drawing. `gear` used to draw sliders, not a gear, so it became
+ * `SlidersHorizontal`.
  *
- * الاستعمال زي ما هو:  <Icon name={icons.home} size={20} />
+ * Usage stays the same: <Icon name={icons.home} size={20} />
  */
 import {
+  Briefcase, Path, SealCheck, Bell, Checks,
   ArrowClockwise, ArrowDown, ArrowLeft, ArrowsIn, ArrowsOut, Buildings, CalendarDots, CaretDown,
   CaretLeft, CaretRight, CaretUp, ChartBar, ChatCircle, Check, Clock, Copy,
   CreditCard, DotsSixVertical, DotsThreeVertical, DownloadSimple, Envelope, Eye, EyeSlash, File,
-  FileText, Folder, Funnel, GridFour, House, Leaf, LinkSimple, List, ListChecks,
+  ChartLineUp, FileText, Folder, Funnel, GridFour, House, LinkSimple, List, ListChecks,
   Lock, MagnifyingGlass, MapPin, Monitor, Moon, Paperclip, PencilSimple, Plus,
   PushPin, Rows, SidebarSimple, SignOut, Signature, SlidersHorizontal, SortDescending, SquaresFour,
   Sun, ThumbsDown, ThumbsUp, Trash, UploadSimple, User, Users, Wallet,
   WarningCircle, Info, X,
   type Icon as PhIcon,
 } from '@phosphor-icons/react'
+import { AbLeafGlyph } from '@/components/soul/motifs'
 
-/** شكل الأيقونة · مكوّن من Phosphor */
+/** The icon's shape · a component from Phosphor */
 export type IconGlyph = PhIcon
 
 export const icons = {
   home: House,
   sun: Sun,
   panel: SidebarSimple,
-  leaf: Leaf,
   moon: Moon,
   device: Monitor,
   user: User,
-  /* كانت بترسم مزالج لا ترسًا · والرسم هو اللي بيتقري */
+  /* Used to draw sliders, not a gear · the drawing is what gets read */
   gear: SlidersHorizontal,
   logout: SignOut,
   lock: Lock,
-  /** البريد · حقل التسجيل والإشعارات */
+  /** Mail · registration field and notifications */
   mail: Envelope,
   eye: Eye,
   eyeOff: EyeSlash,
   doc: FileText,
-  /* المجلّد · البند اللي تحته بنود في شجرة الميزانية */
+  /* Folder · a node with children in the budget tree */
   folder: Folder,
   entity: Buildings,
   budget: Wallet,
   contract: Signature,
-  /* الخطة · قائمة أنشطة بعلامات، لا مستندًا موقَّعًا زي الاتفاقية */
+  /* Plan · a checklist of activities, not a signed document like the agreement */
   plan: ListChecks,
+  /* Timeline-specific icons · separate keys because `doc`, `plan`, and `check` are used elsewhere
+     with their generic meaning */
+  navProjects: Briefcase,
+  navPlans: Path,
+  navClosings: SealCheck,
   pay: CreditCard,
   chart: ChartBar,
   chat: ChatCircle,
   alert: WarningCircle,
-  /* ملاحظة لا تحذير · التنبيهات الاسترشادية والإفصاحات */
+  /* Note, not warning · guidance alerts and disclosures */
   info: Info,
-  /* RTL: `chevron` بيشاور «لقدّام» يعني شمال، و`chevronBack` يمين */
+  /* RTL: `chevron` points "forward," meaning left, and `chevronBack` points right */
   chevron: CaretLeft,
   chevronBack: CaretRight,
-  /* التاريخ · حقل التقويم المرسوم (لا تقويم المتصفّح) */
+  /* Date · the hand-drawn calendar field (not the browser calendar) */
   date: CalendarDots,
   search: MagnifyingGlass,
   file: File,
   clip: Paperclip,
   send: ArrowLeft,
-  /* المساعد = ورقة من شجرة الهوية · مش شرارة ✦ (٢٣ سبتمبر) */
-  spark: Leaf,
+  /* Assistant = a leaf from the identity tree, not a spark */
+  /* Assistant · `AbLeaf`, the single leaf glyph (motion 4) · used to be Phosphor's `Leaf` */
+  spark: AbLeafGlyph,
   close: X,
   expand: ArrowsOut,
   shrink: ArrowsIn,
@@ -91,27 +96,31 @@ export const icons = {
   trash: Trash,
   menu: List,
   down: ArrowDown,
-  /* التصدير ≠ سهم عارٍ لتحت: السهم لوحده بيتقري «رتّب تنازليًا».
-     `Download` فيه الصينية اللي بتقول «الملف بينزل على جهازك». */
+  /* Export is not a bare arrow pointing down: an arrow alone reads as "sort descending." `Download`
+     includes the tray, which says "the file is coming down to your device." */
   export: DownloadSimple,
-  /* الرفع · الرسم سهم لفوق فوق خطّ · عكس التنزيل بالظبط */
+  /* Upload · drawn as an arrow pointing up over a line · the exact opposite of download */
   upload: UploadSimple,
   copy: Copy,
   check: Check,
+  /** Notification bell in the timeline · plus the "mark all as read" mark */
+  bell: Bell,
+  checks: Checks,
   redo: ArrowClockwise,
   up: ThumbsUp,
   downv: ThumbsDown,
   grip: DotsSixVertical,
   chevronDown: CaretDown,
-  /* «قراءات» · تلات نجوم. الشرارة الواحدة بتقول «ذكاء اصطناعي» بس */
-  insight: Leaf,
-  /** لوحة «اليوم» · شبكة بلاطات لا نجمة المساعد */
+  /* "Insights" · three stars. A single spark only reads as "AI." */
+  /* A reading computed by a rule, not the assistant · the leaf is reserved for a single meaning */
+  insight: ChartLineUp,
+  /** "Today" panel · a grid of tiles, not the assistant's star */
   dashboard: SquaresFour,
   sort: SortDescending,
   chevronUp: CaretUp,
   grid: GridFour,
   rows: Rows,
-  /* القمع لا الشُرَط المتناقصة · دي أيقونة «محاذاة» في كل مكان تاني */
+  /* The funnel, not descending bars · that's the "align" icon everywhere else */
   filter: Funnel,
   clock: Clock,
   pinMap: MapPin,

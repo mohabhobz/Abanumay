@@ -5,28 +5,25 @@ import {
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { pct } from '@/lib/format'
+import { NOUN, nounAfter, pct } from '@/lib/format'
 import {
   IMPLEMENTER_DIFF, implementerName, itemsSpent, itemsTotal,
   portfolioById, portfolioIssues,
 } from '@/data/mock/implementer'
 
-/* ═══════════════════════════════════════════════════════════
-   المحفظة · ب-8 · سيناريو إحسان
+/* Portfolio - Ihsan scenario.
 
-   ⚠️ **المحفظة مش مشروع كبير، هي كيان أب تحته مشاريع.** عشان كده
-   ليها صفحتها ومالهاش صفّ في قايمة المشاريع · اللي في القايمة
-   أبناؤها لو اتسجّلوا كمشاريع، والمحفظة نفسها بتتقرا من هنا.
+   Note: a portfolio isn't a large project, it's a parent entity with projects underneath it. That's
+   why it has its own page and no row in the projects list - what's in the list are its children if
+   registered as projects, and the portfolio itself is read from here.
 
-   ⚠️ **وأهم حاجة في الشاشة دي هي اللي مش فيها:** مفيش اتفاقية،
-   ومفيش مسوغات من الجهة، ومفيش بوّابة. والشاشة بتقول ده **صريحًا**
-   في كارت «اللي بيتغيّر» بدل ما تسيب القارئ يلاحظ الغياب ·
-   الغياب اللي مش مكتوب بيتقرا سهوًا.
+   Note: the most important thing on this screen is what's missing from it: no agreement, no entity
+   justifications, no portal. The screen states this explicitly, in a "what's different" card,
+   rather than leaving the reader to notice the absence - an unstated absence reads as an oversight.
 
-   ⚠️ **والافتراض موسوم.** سؤال «المحفظة يعني إيه بالظبط في الشاشة؟»
-   لسه مفتوح عند مظفر · فاللي هنا افتراض «أب وتحته مشاريع»، ومكتوب
-   في الشاشة إنه افتراض لا حاجة متّفق عليها.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the assumption is tagged as one. The question "what exactly does a portfolio mean on
+   screen" is still open - what's here is the assumption "a parent with projects underneath", and
+   the screen states it as an assumption, not an agreed fact. */
 
 export default function PortfolioPage() {
   const { id } = useParams()
@@ -61,7 +58,7 @@ export default function PortfolioPage() {
   const issues = portfolioIssues(p)
   const done = p.items.filter((x) => x.status === 'مكتمل').length
 
-  /* مسار المحفظة · تلات محطات لا أربعة · والاتفاقية مش واحدة منهم */
+  /* The portfolio's path - three stages, not four, and the agreement isn't one of them. */
   const steps: StepItem[] = [
     { label: 'تسجيل المحفظة', note: 'مشرف المنح · داخليًا', state: 'done' },
     { label: 'تنفيذ مشاريعها', note: `${done} من ${p.items.length} مكتمل`, state: 'now' },
@@ -78,13 +75,13 @@ export default function PortfolioPage() {
             <div>
               <h1 className="ptitle">{p.name}</h1>
               <p className="sub mt-1">
-                {implementerName(p.entityId)} · <span className="num">{p.items.length}</span> مشاريع ·
+                {implementerName(p.entityId)} · <span className="num">{p.items.length}</span> {nounAfter(p.items.length, NOUN.project)} ·
                 سنة <span className="num">{p.year}</span>
               </p>
             </div>
             <div className="hacts">
               <Tag tone="mute">شريك منفّذ</Tag>
-              <Tag tone="warn">افتراض · بانتظار تأكيد</Tag>
+              <Tag tone="mute">افتراض · بانتظار تأكيد</Tag>
             </div>
           </header>
 
@@ -95,18 +92,18 @@ export default function PortfolioPage() {
                   title="مشاريع المحفظة"
                   meta={
                     <span className="sub">
-                      <Num>{p.items.length}</Num> مشاريع · <Num>{done}</Num> مكتمل
+                      <Num>{p.items.length}</Num> {nounAfter(p.items.length, NOUN.project)} · <Num>{done}</Num> مكتمل
                     </span>
                   }
                 />
 
-                {/* ⚠️ **جدول السيستم `.tbl` لا شبكة مخترعة.** النسخة
-                    الأولى كان لها `.pfh` بمقاس خطّ وحشو وارتفاع صفّ
-                    من عندها · فصفحة المحفظة كانت شكلًا تاني عن كل
-                    جدول في السيستم، ونفس الداتا بتتعرض بمقاسين. */}
+                {/* Note: the system's own `.tbl` table, not an invented grid. The first version had
+                    its own `.pfh` with its own font size, padding and row height - so the portfolio
+                    page looked different from every other table in the system while showing the
+                    same kind of data at a different scale. */}
                 <div className="tblwrap">
                   <table className="tbl t-pf" aria-label="مشاريع المحفظة">
-                    {/* العروض في الـCSS (`.t-pf`) · و`<col>` مرساة العمود */}
+                    {/* Widths in CSS (`.t-pf`) - `<col>` anchors the column. */}
                     <colgroup>
                       <col /><col /><col /><col /><col />
                     </colgroup>
@@ -140,8 +137,9 @@ export default function PortfolioPage() {
                       ))}
                     </tbody>
 
-                    {/* ⚠️ الإجمالي **تحقّق** · نفس انضباط شجرة الميزانية
-                        وجدول الدفعات: محفظة بتلخّص وبس بتخفي الغلط */}
+                    {/* Note: the total is a check, not a sum - same discipline as the budget tree
+                        and payment schedule: a portfolio that only summarizes ends up hiding the
+                        error. */}
                     <tfoot>
                       <tr className={sum === p.total ? '' : 'bad'}>
                         <td>الإجمالي</td>
@@ -167,8 +165,8 @@ export default function PortfolioPage() {
             </div>
 
             <div className="col">
-              {/* ⚠️ الكارت ده هو **قلب ب-8**: بيقول اللي **مش**
-                  موجود، لأن الغياب اللي مش مكتوب بيتقرا سهوًا */}
+              {/* Note: this card is the heart of the scenario - it states what's absent, since an
+                  unstated absence reads as an oversight. */}
               <Glass>
                 <Head title="ما يتغيّر مع الشريك المنفّذ" meta={<Tag tone="mute">الشروط</Tag>} />
                 <ul className="pfdiff">

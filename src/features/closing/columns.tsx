@@ -1,27 +1,24 @@
 import { Link } from 'react-router-dom'
-import { DateText, Mono, Person, Tag } from '@/components/ui'
+import { DateText, Mono, Person, Tag, Nil } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
 import {
   CLOSE_TONE, closeCycle, closeLate, closeStageLabel, reportBlockers,
 } from '@/data/mock/closing'
 import type { CloseRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
-/* ═══════════════════════════════════════════════════════════
-   أعمدة جدول الإغلاق · نفس عقد المشاريع والاتفاقيات والخطط.
+/* Closing table columns - same contract as projects, agreements, and plans.
 
-   ⚠️ **عمود «الدورة» مش تصنيفًا، هو اللي بيمنع الخلط.** القاعدة
-   17 بتقول إن التقرير والتقييم **دورتا اعتماد مستقلتان**، يعني
-   «عند مدير المنح» بتحصل مرتين في حياة الطلب الواحد وبتعني
-   حاجتين مختلفتين. لو الجدول قال المحطة بس، المدير بيقرا اسمًا
-   ما بيقولش هو بيراجع تقرير الجهة ولا تقييم مشرفه.
+   Note: the "cycle" column isn't a category, it's what prevents confusion. Rule 17 states that the
+   report and the evaluation are independent approval cycles, meaning "with the grants manager"
+   happens twice in one request's life and means two different things. If the table showed only the
+   stage, a manager would read a name that doesn't say whether they're reviewing the entity's report
+   or their own supervisor's evaluation.
 
-   ⚠️ **وعمود «الناقص» تحقّق لا معلومة** · زي «جدول الدفعات» في
-   الاتفاقيات: قاعدة 4 بتحدّد أربع بيانات وقاعدة 10 بتمنع الإرسال
-   من غيرهم · فالمانع بيبان في الصندوق بدل ما المشرف يفتح كل طلب
-   عشان يعرف إيه اللي واقف.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the "missing" column is a check, not information - like "payment schedule" in agreements:
+   rule 4 sets four required fields and rule 10 blocks submission without them, so the blocker shows
+   in the inbox instead of requiring a supervisor to open every request to find out. */
 
 export type Col = TCol<CloseRow>
 
@@ -73,16 +70,16 @@ export const COLS: Col[] = [
     w: 132,
     label: 'الناقص',
     def: true,
-    /* قاعدة 4 و10 · الحدّ الأدنى والمرفقات الإلزامية */
+    /* Rules 4 and 10 - the minimum required data and attachments. */
     cell: (c) => {
       const n = reportBlockers(c).length
       return n === 0
         ? <span className="sub">مكتمل</span>
-        : <Tag tone="no"><span className="num">{n}</span> بند</Tag>
+        : <b><span className="num">{n}</span> {nounAfter(n, NOUN.line)}</b>
     },
     text: (c) => {
       const n = reportBlockers(c).length
-      return n === 0 ? 'مكتمل' : `${n} بند`
+      return n === 0 ? 'مكتمل' : `${countOf(n, NOUN.line)}`
     },
     value: (c) => reportBlockers(c).length,
     agg: 'sum',
@@ -95,7 +92,7 @@ export const COLS: Col[] = [
     n: true,
     def: true,
     cell: (c) => (c.report.beneficiaries === null
-      ? <span className="sub">·</span>
+      ? <Nil />
       : <span className="num">{nf.format(c.report.beneficiaries)}</span>),
     text: (c) => (c.report.beneficiaries === null ? '' : nf.format(c.report.beneficiaries)),
     value: (c) => c.report.beneficiaries ?? 0,
@@ -109,7 +106,7 @@ export const COLS: Col[] = [
     def: true,
     money: true,
     cell: (c) => (c.report.budget === null
-      ? <span className="sub">·</span>
+      ? <Nil />
       : <span className="num">{nf.format(c.report.budget)}</span>),
     text: (c) => (c.report.budget === null ? '' : nf.format(c.report.budget)),
     value: (c) => c.report.budget ?? 0,
@@ -123,12 +120,12 @@ export const COLS: Col[] = [
     cell: (c) => {
       const days = Math.round(c.hoursInStage / 24)
       return closeLate(c)
-        ? <Tag tone="warn">متأخر</Tag>
-        : <span className="sub"><span className="num">{days}</span> يومًا</span>
+        ? <b>متأخر</b>
+        : <span className="sub"><span className="num">{days}</span> {nounAfter(days, NOUN.day)}</span>
     },
-    text: (c) => (closeLate(c) ? 'متأخر' : `${Math.round(c.hoursInStage / 24)} يومًا`),
-    /* نفس درس عمود المدة في الاتفاقيات: الخلية بتقول رقمًا في صفّ
-       وكلمة في صفّ · فالوسط لازم يقول وحدته */
+    text: (c) => (closeLate(c) ? 'متأخر' : `${countOf(Math.round(c.hoursInStage / 24), NOUN.day)}`),
+    /* Same lesson as the duration column in agreements: one row shows a number, another shows a
+       word - the middle needs to say its unit. */
     value: (c) => Math.round(c.hoursInStage / 24),
     agg: 'avg',
     aggSay: 'يومًا في المتوسط',
@@ -138,7 +135,7 @@ export const COLS: Col[] = [
     w: 84,
     label: 'الإصدار',
     n: true,
-    /* قاعدة 15 و19 · الإصدار التاني دليل إعادة حصلت */
+    /* Rules 15 and 19 - a second version is evidence a return happened. */
     cell: (c) => <span className="num">{c.versions.length}</span>,
     text: (c) => String(c.versions.length),
   },
@@ -146,7 +143,7 @@ export const COLS: Col[] = [
     key: 'media',
     w: 128,
     label: 'النشر الإعلامي',
-    /* قاعدة 9 · محطة الاتصال المؤسسي «متى كانت مطلوبة» */
+    /* Rule 9 - the institutional-communications stage, "when it was required". */
     cell: (c) => <span className="sub">{c.mediaRequired ? 'مطلوب' : 'لا ينطبق'}</span>,
     text: (c) => (c.mediaRequired ? 'مطلوب' : 'لا ينطبق'),
   },
@@ -169,7 +166,7 @@ export const COLS: Col[] = [
     key: 'closedAt',
     w: 112,
     label: 'تاريخ الإغلاق',
-    cell: (c) => (c.closedAt ? <DateText>{c.closedAt}</DateText> : <span className="sub">·</span>),
+    cell: (c) => (c.closedAt ? <DateText>{c.closedAt}</DateText> : <Nil />),
     text: (c) => c.closedAt ?? '',
   },
 ]

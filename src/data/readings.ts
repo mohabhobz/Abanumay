@@ -1,13 +1,13 @@
 /**
- * قراءات المساعد · محسوبة، مش مكتوبة.
+ * Assistant readings · computed, not written.
  *
- * كل دالة هنا بتاخد نفس الداتا اللي الشاشة بتعرضها وترجّع قراءات.
- * يعني القراءة ما تقدرش تتعارض مع اللي قدام المستخدم، ولا تبقى
- * قديمة لما الداتا تتغيّر · وده الفرق بين مساعد وبين نص ثابت.
+ * Each function here takes the same data the screen displays and returns readings. That means a
+ * reading can't contradict what the user is looking at, and can't go stale when the data changes —
+ * that's the difference between an assistant and static text.
  *
- * لما الباك اند يجهز، الملف ده يا إما يفضل زي ما هو (بيحسب من
- * الصفوف اللي رجعت)، يا إما يتحوّل لنداء `GET /insights/:screen`
- * بنفس شكل `Reading[]` · والواجهة ما تتغيّرش.
+ * Once the backend is ready, this file either stays as is (computing from the rows returned) or
+ * becomes a call to `GET /insights/:screen` with the same `Reading[]` shape — the UI doesn't
+ * change.
  */
 import type { Reading, ReadingAction } from '@/components/assistant/reading'
 import type { AgreementRow, CloseRow, EntityRow, Insight, PayRequest, PlanRow, ProjectRow } from '@/types/domain'
@@ -24,12 +24,12 @@ import { projectRows } from './mock/projects'
 import { budgetForYear } from './budget'
 import { closingRows, gapOf, knowledgeRows } from './closing'
 import type { Journey } from './journey'
-import { nf, units, pct as pctText } from '@/lib/format'
+import { countOf, MISSING_ITEM, nf, NOUN, pct as pctText, units } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
 
 const days = (hours: number) => Math.round(hours / 24)
 
-/** سنين كاملة من تاريخ `YYYY-MM-DD` لحد النهارده · `null` لو التاريخ غلط */
+/** Full years from a `YYYY-MM-DD` date to today · `null` if the date is invalid */
 function yearsSince(iso: string): number | null {
   const t = Date.parse(iso)
   if (Number.isNaN(t)) return null
@@ -38,7 +38,7 @@ function yearsSince(iso: string): number | null {
 const millions = (n: number) => `${(n / 1_000_000).toFixed(1)} م`
 const overPct = (p: ProjectRow) => Math.round(stagePressure(p) * 100 - 100)
 
-/** أكثر قيمة تكرارًا في قائمة، ومعاها عددها */
+/** The most frequent value in a list, along with its count */
 function topCount<T>(items: T[], key: (t: T) => string | null | undefined) {
   const tally = new Map<string, number>()
   for (const it of items) {
@@ -50,21 +50,21 @@ function topCount<T>(items: T[], key: (t: T) => string | null | undefined) {
   return best
 }
 
-/* ═══════════════════ رحلة مشروع واحد ═══════════════════ */
+/* A single project's journey */
 
 /**
- * سرد رحلة المشروع.
+ * Narrating a project's journey.
  *
- * طلب الكلاينت: «المشروع ده كان في هنا وبعد كده رجع لهنا، ودلوقتي
- * القرار الأخراني بتاعه كذا ومتوقف على كذا ومحتاج تاخد له أكشن كذا».
+ * What this answers: where a project has been, where it came back to, what its latest decision was
+ * and what it's waiting on, and what action it needs now.
  *
- * الفرق بين ده وبين سجل الإجراءات إن السجل بيقول **كل** اللي حصل
- * بالترتيب، والسرد بيقول **اللي يفرق في القرار**: فين وصل، ورجع كام
- * مرة ولمين، وواقف عند مين وبقاله قد إيه مقابل حدّه، وإيه المطلوب
- * منك دلوقتي. المستخدم اللي بيفتح مشروع عمره ما بيقرا السجل من أوله.
+ * The difference from the action history is that history states **everything** that happened in
+ * order, while this narrative states **what matters for the decision**: how far it got, how many
+ * times and to whom it was sent back, who it's currently with and for how long against its limit,
+ * and what's required right now. A user opening a project never reads the history from the start.
  *
- * كل جملة مبنية من الصف نفسه، فبتتغيّر مع حالة المشروع فعلًا ·
- * المكتمل ما بيقولش «محتاج أكشن»، والمعتذر عنه ما بيقولش «واقف».
+ * Every sentence is built from the row itself, so it changes with the project's actual status — a
+ * completed project never says "needs action", and an excused one never says "pending".
  */
 export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] {
   const out: Reading[] = []
@@ -72,7 +72,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
   const late = row.stageLimit > 0 && stagePressure(row) > 1
   const inDays = days(row.hoursInStage)
 
-  /* ١ · فين واقف دلوقتي وإيه المطلوب */
+  /* 1 · where it stands now and what's needed */
   if (row.statusGroup === 'مكتمل') {
     out.push({
       id: 'j-done',
@@ -106,8 +106,8 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       danger: late ? [pctText(over)] : [],
       bar: row.stageLimit > 0
         ? {
-            /* بالأيام لا بالساعات: «2,088 ساعة» رقم ما حدّش بيقارن
-               بيه، و«87 يومًا مقابل 38» بتتقري من نظرة. */
+            /* In days, not hours: "2,088 hours" is a number no one compares against anything, while
+               "87 days versus 38" reads at a glance */
             value: days(row.hoursInStage),
             limit: days(row.stageLimit),
             valueLabel: 'المستهلَك',
@@ -119,8 +119,8 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
     })
   }
 
-  /* الإجراءان اللي بيعالجوا التأخير: جوّه القراءة نفسها لا في كارت
-     تاني. القراءة اللي بتقول «فوق الحدّ» ومالهاش مخرج بتبقى شكوى. */
+  /* The two actions that address the delay live inside the reading itself, not in a separate card.
+     A reading that says "over the limit" with no way out is just a complaint. */
   const now = out[0]
   if (now && now.kind === 'flag') {
     now.actions = [
@@ -129,7 +129,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
     ]
   }
 
-  /* ٢ · رجع لورا كام مرة · ده اللي السجل بيخفيه وسط الصفوف */
+  /* 2 · how many times it was sent back — this is what the history log buries among its rows */
   const back = (j?.toEntity ?? 0) + (j?.toSupervisor ?? 0)
   if (back > 0) {
     const parts: string[] = []
@@ -145,7 +145,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
     })
   }
 
-  /* ٣ · مين اللي بتّ فيه · بيوضّح إذا كان لسه محتاج تصعيد */
+  /* 3 · who it's currently with · clarifies whether it still needs escalation */
   if (j?.decidedBy) {
     out.push({
       id: 'j-level',
@@ -160,7 +160,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
   return out
 }
 
-/** الأكشن المطلوب حسب القسم اللي المشروع واقف عنده */
+/** The action required, based on the department the project is currently in */
 function nextAction(row: ProjectRow): string {
   switch (row.stage) {
     case 'دراسة المشروع': return 'تسجيل التوصية'
@@ -181,14 +181,14 @@ function nextAction(row: ProjectRow): string {
   }
 }
 
-/* ═══════════════════ قائمة المشاريع ═══════════════════ */
+/* Project list */
 
 export interface ProjectsReadingInput {
-  /** كل المشاريع · أساس القراءات المطلقة */
+  /** All projects · the basis for absolute readings */
   all: ProjectRow[]
-  /** الصفوف بعد الفلتر الحالي */
+  /** Rows after the active filter */
   filtered: ProjectRow[]
-  /** هل المستخدم مفلتر أصلًا */
+  /** Whether the user has a filter applied at all */
   isFiltered: boolean
 }
 
@@ -196,8 +196,8 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
   const out: Reading[] = []
   const scope = isFiltered ? filtered : all
 
-  // 1) المتأخر · أول قراءة دايمًا، لأنه السبب الوحيد اللي بيخلي
-  //    مشروعًا يقعد شهورًا من غير ما حد ياخد باله
+  // 1) Delayed · always the first reading, since it's the one reason a project can sit for months
+  // with no one noticing
   const late = scope.filter((p) => stagePressure(p) > 1)
   if (late.length) {
     const worst = late.reduce((a, b) => (a.hoursInStage > b.hoursInStage ? a : b))
@@ -219,7 +219,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
     })
   }
 
-  // 2) بلا مالك · ربع النظام، وما حدش مسؤول عنها
+  // 2) Unowned · a quarter of the system, with no one responsible
   const orphan = scope.filter((p) => p.owner === null)
   if (orphan.length) {
     const money = orphan.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)
@@ -239,7 +239,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
     })
   }
 
-  // 3) سبب الاعتذار الأكثر تكرارًا · ده اللي بيقول فين الخلل فعلًا
+  // 3) The most common excusal reason · this is what actually points to where the problem is
   const declined = scope.filter((p) => p.declineReason)
   const topReason = topCount(declined, (p) => p.declineReason)
   if (topReason && declined.length >= 3) {
@@ -260,7 +260,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
     })
   }
 
-  // 4) قراءة الشريحة الحالية · تظهر فقط لما يكون في فلتر شغّال
+  // 4) Reading for the current filter slice · shown only when a filter is active
   if (isFiltered && filtered.length) {
     const money = filtered.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)
     const avgWeight = Math.round(filtered.reduce((s, p) => s + p.weight, 0) / filtered.length)
@@ -284,7 +284,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
   return out
 }
 
-/* ═══════════════════ قائمة الجهات ═══════════════════ */
+/* Entity list */
 
 export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered: boolean): Reading[] {
   const out: Reading[] = []
@@ -349,22 +349,23 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
   return out
 }
 
-/* ═══════════════════ صفحة الجهة ═══════════════════ */
+/* Entity page */
 
 /**
- * قراءات ملف الجهة.
+ * Entity file readings.
  *
- * السؤال اللي الصفحة بتجاوب عليه واحد: **أقدر أدّي المشروع ده للجهة
- * دي؟** فالقراءات مرتّبة على تلات طبقات بتجاوب عليه بالترتيب:
+ * The page answers one question: can this project be given to this entity? So readings are ordered
+ * in three layers that answer it in sequence:
  *
- *  1) **مانع** · حاجة بتوقف التعاقد أصلًا (تفعيل غير مقبول، ملف ناقص).
- *  2) **سلوك** · إيه اللي حصل في مشاريعها معانا (تعثّر، وقوف فوق الحدّ).
- *  3) **سجل وقدرة** · نسبة الإكمال، الاعتذارات، الحمل الحالي، وإيه
- *     الملتزم لها ولسه ما وصلش.
+ * 1) Blocker · something that stops contracting outright (inactive/rejected status, incomplete
+ * file).
+ * 2) Behavior · what's happened on its projects with us (stalling, being over its limit).
+ * 3) Track record and capacity · completion rate, excusals, current load, and what's committed to
+ * it but not yet disbursed.
  *
- * الأرقام كلها محسوبة من نفس الحقول اللي `EntityFlow` وبطاقة «أداء
- * الجهة» بيعرضوها، فمستحيل يتعارضوا معاها · القراءة بتفسّر الرقم اللي
- * قدام المستخدم، ما بتجيبش رقمًا تانيًا من مكان تاني.
+ * Every figure is calculated from the same fields shown elsewhere on the entity flow and the
+ * "entity performance" card, so they can never contradict each other — the reading explains the
+ * number in front of the user, it doesn't fetch a different one from somewhere else.
  */
 export function readEntity(
   entity: EntityRow,
@@ -374,10 +375,10 @@ export function readEntity(
   const out: Reading[] = []
   const missing = ENTITY_DOCS_TOTAL - entity.docsUploaded
 
-  /* ── ١ · موانع التعاقد ── */
+  /* 1 · contracting blockers */
 
-  /* التفعيل قبل كل حاجة: «معلق» أو «مرفوض» معناها الاتفاقية ما تتوقّعش
-     أصلًا، فما ينفعش يتقري بعد ملاحظات أخفّ منه. */
+  /* Activation status comes before anything else: "suspended" or "rejected" means an agreement
+     isn't even expected, so it shouldn't be read after lighter notes. */
   if (entity.activation !== 'مقبول') {
     const stopped = entity.activation.startsWith('معلق') || entity.activation === 'مرفوض'
     out.push({
@@ -394,15 +395,15 @@ export function readEntity(
     })
   }
 
-  /* الترخيص المنتهي مانع أقوى من الملف الناقص: الملف بيتستكمل،
-     والترخيص لازم يتجدّد من جهة تانية خالص. وهو بيعدّي بالنظرة لأن
-     المستند **مرفوع** · العدّاد بيقول ٨/٨ والصلاحية خلصت. */
+  /* An expired license is a stronger blocker than an incomplete file: a file gets completed, while
+     a license has to be renewed by a separate authority entirely. And it passes at a glance because
+     the document is **uploaded** — the counter reads 8/8 while validity has expired. */
   if (detail?.licenseExpired) {
     out.push({
       id: 'license',
       kind: 'flag',
       label: 'الترخيص منتهٍ',
-      metric: { value: detail.licenseEndsAt, unit: 'انتهى الترخيص في' },
+      metric: { value: detail.licenseEndsAt, unit: 'انتهى الترخيص في', date: true },
       text:
         'لا تُوقَّع الاتفاقية بترخيص منتهٍ، ويظهر الملف مكتملًا في العدّاد لأن المستند مرفوع فعلًا. ' +
         'ويُجدَّد الترخيص لدى الجهة المرخِّصة لا لدى المؤسسة.',
@@ -459,7 +460,7 @@ export function readEntity(
     })
   }
 
-  /* ── ٢ · سلوكها في مشاريعها معانا ── */
+  /* 2 · its behavior on projects with us */
 
   if (entity.projectsStalled > 0) {
     const n = units.project(entity.projectsStalled, true)
@@ -497,11 +498,11 @@ export function readEntity(
     })
   }
 
-  /* ── ٣ · سجلها وقدرتها ── */
+  /* 3 · its track record and capacity */
 
-  /* نسبة الإكمال هي أقرب رقم لسؤال «هل بتخلّص اللي بتبدأه؟».
-     المقام هو المعتمد لا المكتمل + الجاري، عشان المتعثّر والمعتذر
-     يفضلوا داخل الحساب · إخراجهم بيطلّع نسبة أحلى من الحقيقة. */
+  /* Completion rate is the closest number to the question "does it finish what it starts?". The
+     denominator is approved requests, not completed + in progress, so stalled and excused ones stay
+     inside the calculation — excluding them would produce a nicer number than reality. */
   if (entity.projectsApproved > 0) {
     const rate = Math.round((entity.projectsCompleted / entity.projectsApproved) * 100)
     const done = units.project(entity.projectsCompleted, true)
@@ -524,10 +525,10 @@ export function readEntity(
     })
   }
 
-  /* الاعتذارات بتتقري كنسبة لا كعدد: جهة اتعذر عن طلب من ثمانية غير
-     جهة اتعذر عن طلب من اتنين. */
-  /* تحت تلات طلبات النسبة بتكذب: جهة اتعذر عن طلبها الوحيد نسبتها
-     ١٠٠٪ وهي في الحقيقة جهة لسه ما لهاش سجل. */
+  /* Excusals read as a rate, not a count: an entity excused on one out of eight requests differs
+     from one excused on one out of two. */
+  /* Under three requests the rate becomes misleading: an entity excused on its only request shows
+     100%, when in reality it just has no track record yet. */
   const asked = entity.projectsApproved + entity.projectsDeclined
   if (entity.projectsDeclined > 0 && asked >= 3) {
     const n = units.project(entity.projectsDeclined, true)
@@ -544,8 +545,8 @@ export function readEntity(
     })
   }
 
-  /* الحمل مش تقييمًا، معلومة توقيت: جهة شغّالة على تلاتة في نفس
-     الوقت مش زي جهة فاضية، والفرق بيظهر في التنفيذ لا في الملف. */
+  /* Load isn't a judgment, it's timing information: an entity working three projects at once isn't
+     the same as an idle one, and the difference shows up in execution, not in the file. */
   if (entity.projectsRunning >= 2) {
     const n = units.project(entity.projectsRunning, true)
     out.push({
@@ -559,9 +560,9 @@ export function readEntity(
     })
   }
 
-  /* «تحت الصرف» = ملتزم لها وما وصلش. الرقم ده بيقول إن فيه دفعات
-     واقفة على تقارير أو مستندات، وهو أقرب مؤشر على انضباطها في
-     التقارير من غير ما نفتح كل مشروع. */
+  /* "Pending disbursement" = committed but not yet delivered. This number says some payments are
+     stuck on reports or documents, and it's the closest indicator of an entity's reporting
+     discipline without opening every project. */
   if (entity.inDisbursement > 0 && entity.grantedTotal > 0) {
     const share = Math.round((entity.inDisbursement / entity.grantedTotal) * 100)
     const amount = nf.format(entity.inDisbursement)
@@ -613,8 +614,8 @@ export function readEntity(
     })
   }
 
-  /* حداثة التسجيل مش عيبًا، بس بتفسّر سجلًا قصيرًا: جهة عمرها سنة
-     ما ينفعش يتحاسب سجلها زي جهة عمرها عشرة. */
+  /* Recent registration isn't a flaw, but it explains a short track record: a one-year-old entity
+     shouldn't be judged the same way as a ten-year-old one. */
   const tenure = yearsSince(entity.registeredAt)
   if (tenure !== null && tenure < 3) {
     const y = tenure === 0 ? 'أقل من سنة' : units.year(tenure, true)
@@ -642,31 +643,31 @@ export function readEntity(
   return out
 }
 
-/* ═══════════════════ اليوم · قراءة عرضية للسيستم ═══════════════════ */
+/* Home · a cross-cutting system reading */
 
 export interface HomeReadingInput {
   projects: ProjectRow[]
   entities: EntityRow[]
-  /** الدور بيحدّد **أي** قراءات تتحسب أصلًا، مش ترتيبها بس */
+  /** Role determines **which** readings get computed at all, not just their order */
   lens: 'own' | 'team' | 'portfolio'
-  /** اسم المستخدم · للعدسة الشخصية */
+  /** Username · for the personal lens */
   owner: string
-  /** سقف الاعتماد، null = توصية فقط */
+  /** Approval threshold, null = recommendation only */
   ceiling: number | null
   budget: { allocated: number; reserved: number; committed: number; spent: number }
 }
 
 /**
- * القراءات اللي بتقطع الموديولات.
+ * Cross-module readings.
  *
- * صفحة المشاريع بتقرأ المشاريع، وصفحة الجهات بتقرأ الجهات · لكن
- * أخطر الملاحظات بتقع **بين** الاتنين: مشروع معتمد لجهة ملفها ناقص،
- * أو بند شغل نص مخصصه في شهرين. الشاشة دي هي المكان الوحيد اللي
- * بيشوف السيستم كله مرة واحدة، فقراءاتها عرضية بطبيعتها.
+ * The projects page reads projects, and the entities page reads entities — but the most important
+ * observations sit **between** the two: an approved project for an entity with an incomplete file,
+ * or a line item that's half-spent with two months left. This screen is the only place that sees
+ * the whole system at once, so its readings are cross-cutting by nature.
  *
- * والقراءات **مش واحدة لكل الأدوار**: المشرف بيشوف صندوقه، ومدير
- * المنح بيشوف حمل فريقه وما ينتظر اعتماده، والمدير التنفيذي بيشوف
- * المحفظة. نفس الداتا، تلات أسئلة مختلفة.
+ * And readings aren't the same for every role: an officer sees their own queue, a manager sees
+ * their team's load and what awaits their approval, and an executive sees the portfolio. Same data,
+ * three different questions.
  */
 export function readHome(input: HomeReadingInput): Reading[] {
   const { lens } = input
@@ -675,7 +676,7 @@ export function readHome(input: HomeReadingInput): Reading[] {
   return readForSupervisor(input)
 }
 
-/* ── مشرف المنح: «إيه اللي عليّ النهارده؟» ── */
+/* Grants officer: "what's on me today?" */
 function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Reading[] {
   const out: Reading[] = []
 
@@ -704,11 +705,10 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
 
   out.push(...blockedReading(projects, entities))
 
-  /* ⚠️ **الإغلاق بيقف في صندوق المشرف بحاجتين مختلفتين** ·
-     واحدة مش شغله (الجهة بتكتب التقرير)، وواحدة شغله بالكامل
-     (التقييم بيعدّه هو بعد اعتماد التنفيذي · قاعدة 6). الأولى
-     بتتحلّ برسالة، والتانية بشغل · فاللي عليه فعلًا هو اللي
-     بيتقال. */
+  /* Closure sits in the officer's queue for two different reasons — one isn't theirs to act on (the
+     entity is writing the report), and one is entirely theirs (evaluation, which they complete
+     after executive approval). The first resolves with a message, the second with work — so what
+     they say is what's actually theirs to do. */
   const mineClose = closeRows.filter((c) => c.owner === owner)
   const evalDue = mineClose.filter((c) => c.stage === 'reportDone' || c.stage === 'evalDraft')
   if (evalDue.length) {
@@ -727,7 +727,7 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
     })
   }
 
-  // أطول ما وقف في صندوقه هو · رقم شخصي، مش متوسط السيستم
+  // The longest item has sat in their queue · a personal figure, not a system average
   const mineSorted = [...mine].sort((a, b) => stagePressure(b) - stagePressure(a))
   const worst = mineSorted[0]
   if (worst && worst.stageLimit > 0) {
@@ -749,11 +749,11 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
   return out
 }
 
-/* ── مدير المنح: «فريقي ماشي إزاي، وإيه اللي واقف عندي؟» ── */
+/* Grants manager: "how's my team doing, and what's waiting on me?" */
 function readForManager({ projects, entities, ceiling, budget }: HomeReadingInput): Reading[] {
   const out: Reading[] = []
 
-  // ما ينتظر اعتماده هو · اللي فوق سقف المشرف
+  // Pending their approval · anything over the officer's threshold
   const waiting = projects.filter(
     (p) => p.statusGroup === 'في الدراسة' && (ceiling === null || p.amountRequested > ceiling),
   )
@@ -774,7 +774,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
     })
   }
 
-  // توزيع الحمل · الاختلال ده هو اللي بيصنع التأخير أصلًا
+  // Load distribution · this imbalance is what actually creates delay
   const load = new Map<string, ProjectRow[]>()
   for (const p of projects) {
     if (p.statusGroup !== 'في الدراسة') continue
@@ -800,7 +800,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
     })
   }
 
-  // بلا مالك · قرار الإسناد قراره هو
+  // Unowned · assignment is theirs to decide
   const orphan = projects.filter((p) => p.owner === null)
   if (orphan.length) {
     const money = orphan.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)
@@ -825,13 +825,13 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
   return out
 }
 
-/* ── المدير التنفيذي: «المحفظة رايحة فين؟» ── */
+/* Executive: "where is the portfolio heading?" */
 function readForExecutive({ projects, entities, budget }: HomeReadingInput): Reading[] {
   const out: Reading[] = []
 
   out.push(budgetReading(budget))
 
-  // الأثر: المكتمل مقابل المعتذر عنه · النسبة دي هي حصيلة السنة
+  // Impact: completed vs. excused · this ratio is the year's real outcome
   const done = projects.filter((p) => p.statusGroup === 'مكتمل')
   const declined = projects.filter((p) => p.statusGroup === 'معتذر عنه')
   const beneficiaries = done.reduce((s, p) => s + p.beneficiaries, 0)
@@ -869,7 +869,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
     })
   }
 
-  // الشركاء: التركّز · كام جهة ماسكة أغلب الدعم
+  // Partners: concentration · how many entities hold most of the support
   const byEntity = new Map<string, number>()
   for (const p of projects) {
     if (p.amountGranted > 0) {
@@ -901,9 +901,9 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
   return out
 }
 
-/* ── قراءات مشتركة بين أكتر من دور ── */
+/* Readings shared across more than one role */
 
-/** التقاطع بين المشاريع وملفات الجهات · ما يظهرش في أي شاشة لوحده */
+/** The intersection between projects and entity files · doesn't appear on any single screen */
 function blockedReading(projects: ProjectRow[], entities: EntityRow[]): Reading[] {
   const short = new Set(
     entities.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL).map((e) => e.id),
@@ -952,7 +952,7 @@ function budgetReading(budget: HomeReadingInput['budget']): Reading {
   }
 }
 
-/** أي قسم إجرائي فيه أطول طابور · مكان أول تحسين في الزمن */
+/** Which department has the longest queue · the first place to improve turnaround time */
 function bottleneckReading(projects: ProjectRow[]): Reading | null {
   const live = projects.filter((p) => p.stageLimit > 0)
   const byStage = new Map<string, ProjectRow[]>()
@@ -983,11 +983,12 @@ function bottleneckReading(projects: ProjectRow[]): Reading | null {
 }
 
 /**
- * قراءات الملف · نفس شكل `Reading` عشان تترسم بنفس الراسم.
+ * Legacy-format readings, converted to the same `Reading` shape so they render with the same
+ * renderer.
  *
- * `Insight` شكل قديم من قبل ما القراءة تتوحّد. الدالة دي بتحوّله بدل
- * ما يفضل في السيستم راسمان لنفس المعنى، ولحد ما مصدر التحليلات
- * يرجّع `Reading` مباشرة.
+ * `Insight` is an older shape from before readings were unified. This function converts it so the
+ * system doesn't end up with two renderers for the same kind of content, until the analytics source
+ * returns `Reading` directly.
  */
 export function readInsights(items: Insight[], actions?: ReadingAction[]): Reading[] {
   return items.map((it, i) => ({
@@ -995,32 +996,32 @@ export function readInsights(items: Insight[], actions?: ReadingAction[]): Readi
     kind: 'note',
     text: it.text,
     bold: it.bold,
-    /* المصدر بييجي من الداتا وفيه «المصدر:» مكتوبة، والراسم بيضيفها
-       · فبتتشال هنا بدل ما تتكرر. */
+    /* The source comes from the data already prefixed with "Source:", and the renderer adds its own
+       — so it's stripped here instead of being duplicated. */
     src: it.src.replace(/^المصدر:\s*/, ''),
     actions: i === 0 ? actions : undefined,
   }))
 }
 
-/* ═══════════════════ التقارير ═══════════════════ */
+/* Reports */
 
 /**
- * قراءات صفحة التقارير.
+ * Reports page readings.
  *
- * الفرق بينها وبين كروت اللوحة: الكارت بيقول **الرقم**، والقراءة
- * بتقول **اللي يتعمل بيه**. اللوحة بتجاوب «الميزانية واقفة فين؟»،
- * والقراءة بتقول إن اللي مربوط ولسه ما خرجش أكبر من اللي خرج،
- * وإن ده بيغيّر أولوية الشهر الجاي.
+ * The difference from dashboard cards: a card states the number, a reading states what to do about
+ * it. The dashboard answers "where does the budget stand?", while a reading states that what's
+ * committed but not yet disbursed is larger than what's gone out, and that this changes next
+ * month's priority.
  *
- * وكلها محسوبة من نفس الداتا اللي الكروت بتعرضها، فمستحيل تتعارض
- * معاها · نفس قاعدة صفحتَي المشروع والجهة.
+ * All of these are calculated from the same data the cards display, so they can never contradict
+ * them — same principle as the project and entity pages.
  */
 export function readReports(yearId: string): Reading[] {
   const out: Reading[] = []
   const rows = projectRows.filter((p) => p.year === yearId)
   const bud = budgetForYear(yearId)
 
-  /* ١ · المربوط مقابل المصروف · ده أهم رقم في الصفحة */
+  /* 1 · committed vs. disbursed · the most important figure on the page */
   if (bud.allocated > 0) {
     const locked = bud.reserved + bud.committed
     const lockedPct = Math.round((locked / bud.allocated) * 100)
@@ -1045,7 +1046,7 @@ export function readReports(yearId: string): Reading[] {
     })
   }
 
-  /* ٢ · فجوة الوعد · الرقم اللي النظام عنده وما بيعرضهوش */
+  /* 2 · the promise gap · a number the system has but doesn't display */
   if (closingRows.length) {
     const g = gapOf(closingRows)
     const missed = g.total - g.metTarget
@@ -1066,7 +1067,7 @@ export function readReports(yearId: string): Reading[] {
     })
   }
 
-  /* ٣ · المعرفة · حقل إلزامي بيتملّى بنقطة */
+  /* 3 · "lessons learned" · a required field usually filled with a single bullet point */
   const empty = knowledgeRows.filter((k) => k.empty).length
   if (knowledgeRows.length) {
     const emptyPct = Math.round((empty / knowledgeRows.length) * 100)
@@ -1076,7 +1077,7 @@ export function readReports(yearId: string): Reading[] {
       label: 'المعرفة',
       metric: { value: pctText(emptyPct), unit: 'من قيود المعرفة فارغة' },
       text:
-        `${empty} قيدًا من ${knowledgeRows.length} نصّها نقطة واحدة. الحقل إلزامي، فيُملأ لتجاوزه ` +
+        `${countOf(empty, NOUN.entry)} من ${knowledgeRows.length} نصّها نقطة واحدة. الحقل إلزامي، فيُملأ لتجاوزه ` +
         `لا ليُقرأ. والعلاج ليس حقلًا آخر، بل أن يرى كاتبه أثر ما يكتب.`,
       bold: [String(empty)],
       danger: [pctText(emptyPct)],
@@ -1086,7 +1087,7 @@ export function readReports(yearId: string): Reading[] {
     })
   }
 
-  /* ٤ · تركّز المنح · سبب اعتذار مقنّن في النظام */
+  /* 4 · grant concentration · a standardized excusal reason in the system */
   const byGoal = topCount(rows.filter((p) => p.amountGranted > 0), (p) => p.goal)
   if (byGoal && byGoal[1] > 1) {
     out.push({
@@ -1104,7 +1105,7 @@ export function readReports(yearId: string): Reading[] {
     })
   }
 
-  /* ٥ · المتأخر · نفس رقم لوحة العمل، بس هنا كسبب لا كعدّاد */
+  /* 5 · delayed · the same figure as the work queue, but here as a cause rather than a counter */
   const late = rows.filter((p) => stagePressure(p) > 1)
   if (late.length) {
     const worst = late.reduce((a, b) => (a.hoursInStage > b.hoursInStage ? a : b))
@@ -1138,18 +1139,18 @@ export function readReports(yearId: string): Reading[] {
 }
 
 
-/* ═══════════════════ صندوق الصرف ═══════════════════ */
+/* Disbursement queue */
 
 /**
- * قراءات صندوق الصرف · BPD-009.
+ * Disbursement queue readings.
  *
- * السؤال اللي الصندوق بيجاوبه واحد: **إيه اللي واقف، وليه؟** فالقراءة
- * ما بتعدّش الطلبات (الشرائح فوق بتعمل كده)، بتقول السبب: مين متعثر،
- * وأنهي قاعدة بتوقف أكتر طلب، وفين الضغط.
+ * The question this queue answers is one: what's stuck, and why? So the reading doesn't just count
+ * requests (the tiers above already do that), it states the reason: who is stalling, which rule
+ * blocks the most requests, and where the pressure is.
  *
- * التصعيد (9.5 بند 3) كان بانر مستقل فوق الفلاتر، واتحوّل لقراءة
- * هنا · مش عشان الشكل، لكن لأن البانر بيقول رقمًا والقراءة بتقول
- * سببه ومعاها طريق يوصّل له، وده نفس اللي كل شاشة في السيستم بتعمله.
+ * Escalation used to be a standalone banner above the filters, and it moved into a reading here —
+ * not for looks, but because a banner states a number while a reading states its cause along with a
+ * path to resolve it, the same pattern every screen in this system follows.
  */
 export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[] {
   const out: Reading[] = []
@@ -1158,11 +1159,11 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
 
   const scope = isFiltered ? 'في النطاق الحالي' : 'في الصندوق'
 
-  /* ١ · المتعثر · تجاوز ضعف حدّ المرحلة */
+  /* 1 · stalled · past double the stage's time limit */
   const stuck = open.filter((r) => payHeat(r) === 'stuck')
   if (stuck.length) {
     const worst = stuck.reduce((a, b) => (a.hoursInState > b.hoursInState ? a : b))
-    const d = `${days(worst.hoursInState)} يومًا`
+    const d = `${countOf(days(worst.hoursInState), NOUN.day)}`
     out.push({
       id: 'p-stuck',
       kind: 'flag',
@@ -1179,7 +1180,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
     })
   }
 
-  /* ٢ · الموقوف بشرط · وأنهي قاعدة بتوقف أكتر */
+  /* 2 · conditionally held · which rule holds the most */
   const blocked = open.filter(payBlocked)
   if (blocked.length) {
     const tally = new Map<number, { label: string; n: number }>()
@@ -1200,7 +1201,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       metric: { value: String(blocked.length), unit: `طلب لا يمكن تمريره` },
       text: top
         ? `بقيمة ${millions(sum)} ⃁. أكثر الأسباب تكرارًا «${top.label}» في ` +
-          `${top.n} طلبًا · قاعدة ${top.rule} في الوثيقة.`
+          `${countOf(top.n, NOUN.request)} · قاعدة ${top.rule} في الوثيقة.`
         : `بقيمة ${millions(sum)} ⃁، وسببها الحساب البنكي غير المعتمد.`,
       bold: [`${millions(sum)} ⃁`, ...(top ? [`«${top.label}»`] : [])],
       src: 'قواعد الصرف 3 · 6 · 10 · 11',
@@ -1209,7 +1210,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
     })
   }
 
-  /* ٣ · فين الضغط · المرحلة اللي شايلة أكتر طلبات */
+  /* 3 · where the pressure is · the stage carrying the most requests */
   const byState = new Map<string, number>()
   for (const r of open) byState.set(r.state, (byState.get(r.state) ?? 0) + 1)
   let peak: [string, number] | null = null
@@ -1235,15 +1236,15 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
   return out
 }
 
-/* ═══════════════════ الاتفاقيات ═══════════════════ */
+/* Agreements */
 
 /**
- * قراءات صندوق الاتفاقيات · BPD-008.
+ * Agreements queue readings.
  *
- * السؤال هنا مش «فيه كام اتفاقية»، هو **إيه اللي واقف قبل التفعيل**.
- * لأن الاتفاقية هي اللي بتفتح الصرف كله: قاعدة 1 في إجراء الصرف
- * بتقول مفيش طلب قبل تفعيل الاتفاقية، فكل يوم وقوف هنا بيأخّر دفعة
- * هناك · وده اللي القراءة التانية بتقوله بالرقم.
+ * The question here isn't "how many agreements are there", it's what's blocking activation. Because
+ * the agreement is what unlocks all disbursement: no payment request is possible before an
+ * agreement is activated, so every day of delay here pushes a payment back — which is exactly what
+ * the second reading states, in numbers.
  */
 export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Reading[] {
   const out: Reading[] = []
@@ -1252,7 +1253,7 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
 
   const scope = isFiltered ? 'في النطاق الحالي' : 'تحت الإعداد'
 
-  /* ١ · الموقوف عن الاعتماد · وأنهي تحقّق بيوقفه */
+  /* 1 · held up on approval · which check is stopping it */
   const blocked = open.filter(agrBlocked)
   if (blocked.length) {
     const unbalanced = blocked.filter((a) => !agrPaymentsBalance(a).balanced).length
@@ -1275,7 +1276,7 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
     })
   }
 
-  /* ٢ · الأثر على الصرف · ده اللي بيفرق فعلًا */
+  /* 2 · impact on disbursement · this is what actually matters */
   const waiting = open.filter((a) => a.stage !== 'draft')
   if (waiting.length) {
     const sum = waiting.reduce((s, a) => s + a.amount, 0)
@@ -1286,15 +1287,15 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
       label: 'الأثر على الصرف',
       metric: { value: nf.format(sum), unit: '⃁ موقوفة في دورة الاعتماد' },
       text:
-        `على ${pays} دفعة مجدولة · ` +
+        `على ${countOf(pays, NOUN.payment)} مجدولة · ` +
         `القاعدة 1 في إجراء الصرف تمنع أي طلب قبل تفعيل الاتفاقية، ` +
         `فكل يوم توقف هنا يؤخّر دفعة هناك.`,
-      bold: [`${pays} دفعة`],
+      bold: [`${countOf(pays, NOUN.payment)}`],
       src: 'BPD-009 قاعدة 1 · جداول الدفعات في الاتفاقيات',
     })
   }
 
-  /* ٣ · الإعادة · كل إعادة دورة اعتماد كاملة (قاعدة 12) */
+  /* 3 · returns · every return restarts the full approval cycle */
   const again = rows.filter((a) => a.version > 1)
   if (again.length) {
     out.push({
@@ -1312,20 +1313,18 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
   return out
 }
 
-/* ═══════════════════════════════════════════════════════════
-   طلبات التسجيل · BPD-002
+/* Registration requests.
 
-   ⚠️ **القراءة الأولى هنا مش عن الطلبات، هي عن سببها.** أغلب
-   الطلبات في النظام العامل بتقف في «بانتظار الاستكمال» لا في
-   «مرفوض» · يعني الوقوف نواقص ملف لا عدم أهلية. والفرق ده هو
-   اللي بيحدّد الإجراء: ملف ناقص بيتحلّ برسالة، وعدم أهلية لأ.
-   ═══════════════════════════════════════════════════════════ */
+   The first reading here isn't about the requests, it's about their cause. Most requests in the
+   live system sit in "pending completion" rather than "rejected" — meaning the hold-up is missing
+   documents, not ineligibility. That distinction is what determines the action: a missing document
+   resolves with a message; ineligibility doesn't. */
 export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Reading[] {
   const out: Reading[] = []
   if (rows.length === 0) return out
   const scope = isFiltered ? 'في النطاق المعروض' : 'في الصندوق'
 
-  /* ١ · النواقص · قاعدة 4، والمطلوب نفسه بيتغيّر بالتصنيف */
+  /* 1 · gaps · requirements themselves vary by classification */
   const short = rows.filter((r) => r.state !== 'rejected' && regMissingDocs(r).length > 0)
   if (short.length) {
     const docs = short.reduce((s, r) => s + regMissingDocs(r).length, 0)
@@ -1335,15 +1334,15 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
       label: 'ملفات ناقصة',
       metric: { value: String(short.length), unit: `طلب ملفه ناقص ${scope}` },
       text:
-        `وإجمالي النواقص ${docs} مستندًا إلزاميًا. القاعدة 4 تمنع الإرسال ` +
+        `وإجمالي النواقص ${countOf(docs, NOUN.requiredDoc)}. القاعدة 4 تمنع الإرسال ` +
         `قبل اكتمالها، والمطلوب نفسه يتغيّر بتصنيف الجهة · ثلاثة مستندات ` +
         `إلزامية للجهات التجارية وحدها.`,
-      bold: [`${docs} مستندًا`],
+      bold: [countOf(docs, NOUN.requiredDoc)],
       src: 'مستندات النظام العامل · نموذج /reg/add',
     })
   }
 
-  /* ٢ · الحوكمة المُقرّة بصفر · النظام نفسه بيقول «حطّ 0» */
+  /* 2 · governance self-declared as zero · the form itself prompts "enter 0" */
   const zero = rows.filter((r) => r.governanceClaim === 0)
   if (zero.length) {
     out.push({
@@ -1363,7 +1362,7 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
     })
   }
 
-  /* ٣ · الوقوف نواقص لا رفض · ده أهم توزيع في الصندوق */
+  /* 3 · held up on gaps, not rejection · this is the most important split in the queue */
   const back = rows.filter((r) => r.state === 'completion').length
   const no = rows.filter((r) => r.state === 'rejected').length
   if (back > no) {
@@ -1386,21 +1385,18 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
   return out
 }
 
-/* ═══════════════════════════════════════════════════════════
-   قراءة الخطط · BPD-012
+/* Plan readings.
 
-   ⚠️ **أول قراءة هي طابور المشرف نفسه، لا حالة الخطط.** السؤال
-   اللي بيفتح الصندوق عشانه مش «الخطط ماشية إزاي»، هو «إيه اللي
-   واقف عندي». والنشاط اللي الجهة رفعت شاهده وقالت خلص بيفضل
-   **مش محسوب** لحدّ ما المشرف يقبله (قاعدة 14) · فالطابور ده
-   بيوقّف نسبة إنجاز حقيقية، مش مجرد شغل إداري.
-   ═══════════════════════════════════════════════════════════ */
+   The first reading is the officer's own queue, not overall plan status. The question opening this
+   queue isn't "how are plans doing", it's "what's on me". An activity the entity has uploaded
+   evidence for and marked done stays uncounted until the officer accepts it — so this queue is
+   holding back a real completion percentage, not just administrative overhead. */
 export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
   const out: Reading[] = []
   if (rows.length === 0) return out
   const scope = isFiltered ? 'في النطاق الحالي' : 'في الصندوق'
 
-  /* ١ · الطابور · أنشطة قالت الجهة إنها خلصت ومستنّية قبول */
+  /* 1 · the queue · activities the entity marked done, awaiting acceptance */
   const queue = rows.flatMap((p) => waitingReview(p).map((a) => ({ p, a })))
   if (queue.length) {
     const plans = new Set(queue.map((x) => x.p.id)).size
@@ -1414,8 +1410,8 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
       label: 'بانتظار مراجعتك',
       metric: { value: String(queue.length), unit: `نشاطًا ${scope}` },
       text:
-        `في ${plans} خطة · وأكبر فرق في «${worst?.projectName ?? ''}»: ` +
-        `أعلنت الجهة ${planClaimed(worst)}٪ والمقبول ${planDone(worst)}٪، ` +
+        `في ${countOf(plans, NOUN.plan)} · وأكبر فرق في «${worst?.projectName ?? ''}»: ` +
+        `أعلنت الجهة ${pctText(planClaimed(worst))} والمقبول ${pctText(planDone(worst))}، ` +
         `أي ${gap} نقطة غير محسوبة حتى تُراجع.`,
       bold: [`${gap} نقطة`],
       src: 'قاعدة 14 · لا يُحتسب النشاط إنجازًا إلا بعد قبول المشرف',
@@ -1424,7 +1420,7 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
     })
   }
 
-  /* ٢ · المتأخّر عن جدوله · وده اللي بيغيّر قرار */
+  /* 2 · behind schedule · this is what actually changes a decision */
   const behind = rows.filter((p) => {
     const v = planSpi(p)
     return v !== null && v < 0.8
@@ -1438,19 +1434,19 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
       label: 'متأخّر عن الخطة',
       metric: { value: String(behind.length), unit: `خطة ${scope}` },
       text:
-        `و${acts} نشاطًا تجاوز موعده ولم يُقبل · أبعدها «${worst.projectName}» ` +
-        `بأداء جدول ${(planSpi(worst) ?? 0).toFixed(2)} (المنجَز ${planDone(worst)}٪ ` +
-        `والمخطَّط لليوم ${planPlanned(worst)}٪).`,
+        `و${countOf(acts, NOUN.activity)} تجاوز موعده ولم يُقبل · أبعدها «${worst.projectName}» ` +
+        `بأداء جدول ${(planSpi(worst) ?? 0).toFixed(2)} (المنجَز ${pctText(planDone(worst))} ` +
+        `والمخطَّط لليوم ${pctText(planPlanned(worst))}).`,
       danger: [`${(planSpi(worst) ?? 0).toFixed(2)}`],
-      /* ⚠️ المقارنة بالنسخة المرجعية لا بالتواريخ الحالية · قاعدة
-         21 بتخلّي أي تمديد يعدّي باعتماد، فالانحراف له مرجع ثابت */
+      /* Compared against the baseline, not current dates · any extension has to go through
+         approval, so deviation has a fixed reference point */
       src: `النسخة المرجعية V${worst.baseline} · قاعدة 21`,
       to: `${ROUTES.plans}?late=1`,
       toLabel: 'اعرضها',
     })
   }
 
-  /* ٣ · المؤهّل للإغلاق · مانع اترفع ومحدش واخد باله */
+  /* 3 · eligible for closure · a blocker was lifted and no one noticed */
   const close = rows.filter((p) => readyToClose(p) && p.stage !== 'done')
   if (close.length) {
     out.push({
@@ -1468,25 +1464,23 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
   return out
 }
 
-/* ═══════════════════════════════════════════════════════════
-   قراءة الإغلاق · BPD-011
+/* Closure readings.
 
-   ⚠️ **أول قراءة هي اللي واقف على الجهة، لا عدد الطلبات.** قاعدة
-   3 و4 بتحمّلا الجهة إكمال التقرير قبل الإرسال، والوقوف الطبيعي
-   في الموديول ده بيحصل هناك: طلب مفتوح والجهة ما بعتتش. ودي
-   قراءة بتتحلّ برسالة لا بقرار.
+   The first reading is about what's held up on the entity, not the request count. Rules require the
+   entity to complete the final report before submission, and the usual hold-up in this module
+   happens there: an open request that the entity simply hasn't submitted. That's a reading that
+   resolves with a message, not a decision.
 
-   ⚠️ **والتانية بتقول حاجة مش في أي شاشة تانية: الانحراف.** قاعدة
-   4 بتلزم المستفيدين الفعلي والميزانية الفعلية · فأول ما التقرير
-   يوصل، الفرق بين المعتمد والفعلي بيبقى **محسوبًا**. والفرق ده هو
-   اللي المؤسسة عندها في ٩٧٦ تقريرًا وما فيش شاشة بتقوله.
-   ═══════════════════════════════════════════════════════════ */
+   The second states something no other screen shows: deviation. Rules require both actual
+   beneficiaries and actual budget — so the moment a report arrives, the difference between approved
+   and actual becomes computable. This is a gap the organization has across hundreds of reports with
+   no screen stating it. */
 export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
   const out: Reading[] = []
   if (rows.length === 0) return out
   const scope = isFiltered ? 'في النطاق الحالي' : 'في الصندوق'
 
-  /* ١ · واقف على الجهة · قاعدة 3 */
+  /* 1 · held up on the entity */
   const atEntity = rows.filter((c) => c.stage === 'draft' || c.stage === 'returned')
   if (atEntity.length) {
     const docs = atEntity.reduce((s, c) => s + reportBlockers(c).length, 0)
@@ -1497,17 +1491,17 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
       label: 'بانتظار الجهة',
       metric: { value: String(atEntity.length), unit: `طلب ${scope}` },
       text:
-        `${docs} بندًا ناقصًا في المجموع · وأطولها «${worst.projectName}»، ` +
-        `متوقف منذ ${Math.round(worst.hoursInStage / 24)} يومًا · القاعدة 3 تمنع ` +
+        `${countOf(docs, MISSING_ITEM)} في المجموع · وأطولها «${worst.projectName}»، ` +
+        `متوقف منذ ${countOf(Math.round(worst.hoursInStage / 24), NOUN.day)} · القاعدة 3 تمنع ` +
         `الإرسال قبل اكتمال البيانات والمرفقات.`,
-      bold: [`${docs} بندًا`, 'القاعدة 3'],
+      bold: [countOf(docs, MISSING_ITEM), 'القاعدة 3'],
       src: 'قواعد الإغلاق 3 و4 و10',
       to: ROUTES.closings,
       toLabel: 'اعرضها',
     })
   }
 
-  /* ٢ · الانحراف · المعتمد مقابل الفعلي · قاعدة 4 */
+  /* 2 · deviation · approved vs. actual */
   const withReport = rows.filter(
     (c) => c.report.beneficiaries !== null && c.report.budget !== null,
   )
@@ -1526,7 +1520,7 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
       label: 'المعتمد مقابل الفعلي',
       metric: { value: String(under.length), unit: 'تقرير تحت المستهدف بأكثر من 10%' },
       text:
-        `من ${withReport.length} تقريرًا وصل · وأكبر فرق في «${worst.c.projectName}»: ` +
+        `من ${countOf(withReport.length, NOUN.report)} وصل · وأكبر فرق في «${worst.c.projectName}»: ` +
         `${nf.format(worst.actual)} مستفيدًا مقابل ${nf.format(worst.planned)} معتمدًا · ` +
         `والقاعدة 4 هي التي تجعل هذه المقارنة ممكنة.`,
       bold: [`${nf.format(worst.actual)} مستفيدًا`, 'القاعدة 4'],
@@ -1534,7 +1528,7 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
     })
   }
 
-  /* ٣ · التقييم اللي مستنّي دوره · قاعدة 6 */
+  /* 3 · the evaluation still waiting its turn */
   const ready = rows.filter((c) => c.stage === 'reportDone')
   if (ready.length) {
     out.push({

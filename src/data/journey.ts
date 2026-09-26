@@ -1,65 +1,66 @@
 /**
- * رحلة المشروع في الإجراء · المدد والإعادات والمستوى اللي بتّ.
+ * Project journey through the process · durations, repeat rounds, and the level where it was
+ * decided.
  *
- * ⚠️ الملف ده **مشتقّ**، مش مصدر. النظام العامل بيمسك المدد دي فعلًا
- * (جدول المشاريع فيه 13 عمود مدة، والأقسام الإجرائية 50 قسمًا)، لكن
- * الأعمدة دي ما اتسحبتش للنموذج لأن الأوديت كان قراءة فقط. فبدل ما
- * نسيب نص المؤشرات فاضي، بنشتقّ الرحلة من الصف نفسه بشكل **حتمي**:
- * نفس المشروع بيدّي نفس الأرقام في كل تحميل، والتوزيع بيطلع من
- * `hoursInStage` و`submittedAt` و`decidedAt` والمبلغ · يعني الأرقام
- * متّسقة مع اللي الشاشات التانية بتعرضه، مش عشوائية جنبه.
+ * Warning: this file is **derived**, not a source. The live system does track these durations (the
+ * projects table has 13 duration columns, and there are 50 procedural sections), but those columns
+ * weren't pulled into the mock because the audit was read-only. So rather than leave half the
+ * metrics empty, the journey is derived from the row itself in a **deterministic** way: the same
+ * project gives the same numbers on every load, and the distribution comes from `hoursInStage`,
+ * `submittedAt`, `decidedAt`, and the amount — so the numbers stay consistent with what the other
+ * screens show, rather than being random alongside it.
  *
- * لما الـAPI يسلّم أعمدة المدة الحقيقية، الملف ده بيتشال بالكامل
- * وواجهة `Journey` بتتملّى من الباك اند من غير أي تعديل في الشاشات.
+ * Once the API delivers the real duration columns, this file is removed entirely and the `Journey`
+ * interface fills from the backend with no changes to the screens.
  */
 import type { ProjectRow } from '@/types/domain'
 import { projectRows } from './mock/projects'
 
-/** المستوى اللي القرار النهائي اتاخد عنده */
+/** The level where the final decision was made */
 export type DecisionLevel =
   | 'مدير المنح'
   | 'المدير التنفيذي'
   | 'اللجنة التنفيذية'
   | 'مجلس الأمناء'
 
-/** سقوف الصلاحية · نفس الأرقام اللي في `roles.ts`، مؤقتة لحين تأكيد مظفر */
+/** Approval ceilings · same numbers as in `roles.ts`, temporary pending confirmation */
 const CEILING_MANAGER = 250_000
 const CEILING_CEO = 500_000
 const CEILING_COMMITTEE = 2_000_000
 
 export interface Journey {
-  /** مشرف المنح: من إسناد المشروع لتسجيل التوصية · بالساعات */
+  /** Grants supervisor: from project assignment to logging the recommendation · in hours */
   study: number | null
-  /** مدير المنح: من الاستلام لتسجيل القرار */
+  /** Grants manager: from receipt to logging the decision */
   manager: number | null
-  /** المدير التنفيذي */
+  /** Executive director */
   exec: number | null
-  /** اللجنة التنفيذية · من الإحالة للقرار */
+  /** Executive committee · from referral to decision */
   committee: number | null
-  /** إعداد الاتفاقية واعتمادها */
+  /** Drafting and approving the agreement */
   agreement: number | null
-  /** معالجة أول طلب صرف */
+  /** Processing the first disbursement request */
   payout: number | null
-  /** من طلب التقرير الختامي للإغلاق */
+  /** From requesting the closing report to closing out */
   closing: number | null
-  /** مرات إعادة الطلب للجهة لاستكمال البيانات */
+  /** Number of times the request was sent back to the entity for missing data */
   toEntity: number
-  /** مرات إعادة المشروع من المدير للمشرف */
+  /** Number of times the project was sent back from manager to supervisor */
   toSupervisor: number
-  /** اتحوّل بين مشرفَين */
+  /** Transferred between two supervisors */
   transferred: boolean
-  /** المستوى اللي بتّ فعلًا · null يعني لسه ما اتبتّش */
+  /** The level where it was actually decided · null means not decided yet */
   decidedBy: DecisionLevel | null
-  /** اتقرّر من أول عرض بلا إعادة */
+  /** Decided on the first review, no repeat rounds */
   firstPass: boolean
-  /** اتحجزت ميزانيته من أول مراجعة */
+  /** Its budget was held from the first review */
   reservedFirstPass: boolean
 }
 
-/* ═══ عشوائية حتمية ═══
-   دالة hash على الـid: نفس المدخل = نفس المخرج دايمًا. الغرض توزيع
-   معقول مش أرقام «جميلة» · لو كل المشاريع خدت نفس المدة المؤشر
-   بيبقى بلا معنى. */
+/* Deterministic randomness
+   A hash function on the id: same input always gives the same output. The goal is a reasonable
+   distribution, not "nice" numbers — if every project took the same duration, the metric would be
+   meaningless. */
 const hash = (s: string): number => {
   let h = 2166136261
   for (let i = 0; i < s.length; i++) {
@@ -69,11 +70,11 @@ const hash = (s: string): number => {
   return (h >>> 0) / 4294967295
 }
 
-/** رقم في مدى، مشتقّ من الـid + بذرة نصية تفرّق بين الحقول */
+/** A number within a range, derived from the id plus a text seed that varies per field */
 const pick = (id: string, salt: string, min: number, max: number): number =>
   Math.round(min + hash(`${id}:${salt}`) * (max - min))
 
-/** ترتيب الأقسام · المشروع اللي في قسم متأخّر عدّى اللي قبله */
+/** Section ordering · a project in a later section has passed the ones before it */
 const ORDER = [
   'استكمال بيانات المشروع',
   'دراسة المشروع',
@@ -92,7 +93,10 @@ const ORDER = [
   'مشروع مكتمل',
 ]
 
-/** فين وصل المشروع في السلسلة. المتعثّر والمعتذر عنه بيتعاملوا بحالتهم. */
+/**
+ * Where the project stands in the chain. Stalled and withdrawn projects are handled by their own
+ * status.
+ */
 const reach = (row: ProjectRow): number => {
   if (row.statusGroup === 'مكتمل') return ORDER.length - 1
   if (row.statusGroup === 'معتذر عنه') return 1
@@ -107,7 +111,7 @@ const daysBetween = (a?: string, b?: string): number | null => {
   return Number.isFinite(d) && d >= 0 ? Math.round(d) : null
 }
 
-/** المستوى اللي بتّ · بيتحدّد بالمبلغ المعتمد مقابل السقوف */
+/** The level where it was decided · determined by the approved amount against the ceilings */
 const levelFor = (amount: number): DecisionLevel =>
   amount <= CEILING_MANAGER
     ? 'مدير المنح'
@@ -122,9 +126,9 @@ export function journeyOf(row: ProjectRow): Journey {
   const decided = row.supportStatus !== null
   const id = row.id
 
-  /* مدة الدراسة: لو المشروع اتبتّ فيه، المدة الحقيقية من التقديم
-     للقرار موجودة · بنقسّمها بين المشرف والمدير بدل ما نخترعها.
-     ولو لسه في الدراسة، المكوث الحالي هو المدة. */
+  /* Review duration: if the project has been decided, the real duration from submission to decision
+     exists, and it's split between the supervisor and the manager rather than invented. If it's
+     still under review, the current time spent is the duration. */
   const total = daysBetween(row.submittedAt, row.decidedAt)
   const studyShare = 0.55 + hash(`${id}:split`) * 0.3
 
@@ -152,9 +156,9 @@ export function journeyOf(row: ProjectRow): Journey {
     agreement: at >= 2 ? pick(id, 'agr', 72, 900) : null,
     payout: at >= 5 ? pick(id, 'pay', 48, 700) : null,
     closing: at >= ORDER.indexOf('طلب التقرير الختامي') ? pick(id, 'cls', 240, 1_600) : null,
-    /* الإعادة الاستثناء لا القاعدة. اللي في «استكمال بيانات المشروع»
-       اتعاد فعلًا مرة على الأقل · القسم نفسه هو الدليل. والباقي
-       نسبة أقل: الأوديت شاف القسم ده صغيرًا مقارنة بالمحفظة. */
+    /* A repeat round is the exception, not the rule. Items in "project data completion" have
+       genuinely been sent back at least once — the section itself is the evidence. The rest get a
+       lower rate: the audit found this section small relative to the portfolio. */
     toEntity: row.stage === 'استكمال بيانات المشروع'
       ? (hash(`${id}:te`) < 0.25 ? 2 : 1)
       : hash(`${id}:te2`) < 0.06
@@ -170,7 +174,7 @@ export function journeyOf(row: ProjectRow): Journey {
   }
 }
 
-/** الرحلة لكل صف · محسوبة مرة واحدة */
+/** Journey per row · computed once */
 export const journeys: Map<string, Journey> = new Map(
   projectRows.map((r) => [r.id, journeyOf(r)]),
 )

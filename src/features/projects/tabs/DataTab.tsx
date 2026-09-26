@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { DateText, Glass, Head, KV, Money, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { DocList } from '@/components/docs'
-import { addDays, costPerBeneficiary, isolate, nf, pct, readDate, units } from '@/lib/format'
+import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, pct, readDate, units } from '@/lib/format'
 import type { Project } from '@/types/domain'
 import type { LogEvent } from '@/data/mock/log'
 import { projectDeps } from '@/data/mock/settings'
@@ -11,26 +11,27 @@ import type { ChainLink } from '@/data/mock/chain'
 export interface DataTabProps {
   project: Project
   entityName: string
-  /** رقم الجهة · اللازم للرابط الحقيقي لملفها (ك-1) */
+  /** Entity ID — needed for a real link to its file. */
   entityId: string
-  /** أحدث قيد في السجل · بيتعرض تحت التعريف */
+  /** Most recent log entry — shown under the summary. */
   last?: LogEvent
   onOpenLog: () => void
   /**
-   * المتعلقات · ج-19.
+   * Dependencies.
    *
-   * ⚠️ **الكارت ده مش رسالة خطأ، هو جرد.** السلسلة سنة ← ميزانية ←
-   * مشروع ← اتفاقية ودفعات بتمنع الحذف من أولها، والقاعدة كانت
-   * متعملة في أول حلقتين بس. وهنا مفيش زرار حذف أصلًا، فالكارت
-   * بيقول **إيه المعلّق على المشروع ده** · وده اللي بيخلّي السبب
-   * ظاهرًا قبل ما حد يحاول، ويوري السلسلة في نفس الوقت.
+   * This card isn't an error message, it's an inventory. The chain year →
+   * budget → project → agreement and payments blocks deletion from the top
+   * down, and that rule used to be enforced only on the first two links.
+   * There's no delete button here at all, so the card states what's still
+   * pending on this project — which surfaces the reason before anyone tries,
+   * while also showing the chain.
    */
   deps?: { agreements: number; payments: number }
-  /** حلقات السلسلة · هـ-7 · بتتحسب في الصفحة وبتتعرض هنا */
+  /** Chain links — computed on the page and displayed here. */
   chain?: ChainLink[]
 }
 
-/** بيانات المشروع · التعريف والفكرة والمراحل والنطاق والمرفقات */
+/** Project data — summary, concept, phases, scope, and attachments. */
 export function DataTab({
   project: P, entityName, entityId, last, onOpenLog, deps, chain,
 }: DataTabProps) {
@@ -45,14 +46,16 @@ export function DataTab({
         <Head title="التعريف" meta="9 حقول" />
         <KV
           rows={[
-            /* ⚠️ **ك-1 · غلطتان في سطر واحد.**
-               ١ · كان بيودّي لتاب «الجهة» جوّه المشروع · وده
-                   **مختصر** الجهة لا ملفها · مظفر طلب الملف الكامل،
-                   وتبويبات الجهة (المستندات · الحسابات · سجلها)
-                   مش موجودة في المختصر أصلًا.
-               ٢ · و`<a onClick>` بلا `href` **مش رابط**: ما بيتفتحش
-                   في تاب جديد، ولا بيتنسخ، ولا بيتوصّله بالكيبورد ·
-                   شكله رابط وسلوكه زرار. */
+            /* Two mistakes in one line.
+
+               1. It used to link to the "Entity" tab inside the project — which is a
+               summary of the entity, not its full file. The full file was needed, and
+               the entity's own tabs (documents, accounts, its log) don't exist in that
+               summary at all.
+
+               2. `<a onClick>` with no `href` isn't a link: it doesn't open in a new tab,
+               can't be copied, and can't be reached by keyboard — it looks like a link
+               but behaves like a button. */
             {
               k: 'الجهة',
               v: <Link className="tlink" to={ROUTES.entity(entityId)}>{entityName}</Link>,
@@ -62,16 +65,17 @@ export function DataTab({
             { k: 'المسار', v: P.track },
             { k: 'المجال', v: P.field },
             { k: 'الهدف', v: P.goal },
-            /* التاريخان جنب بعض: «330 يومًا» لوحدها ما بتقولش إمتى
-               بيخلص، والنهاية هي اللي بتحدّد لو المشروع هيعدّي السنة
-               المالية. والمدة في الاتفاقية بتبدأ من صرف أول دفعة. */
+            /* The two dates sit side by side: "330 days" alone doesn't say when it ends,
+               and the end date is what determines whether the project crosses the
+               fiscal year. The agreement's duration starts from the first payment
+               disbursed. */
             { k: 'تاريخ البدء', v: readDate(P.startDate) },
             {
               k: 'الانتهاء المتوقع',
               v: (
                 <>
                   {readDate(addDays(P.startDate, P.durationDays))}
-                  <span className="sub"> · بعد <span className="num">{nf.format(P.durationDays)}</span> يومًا</span>
+                  <span className="sub"> · بعد <span className="num">{nf.format(P.durationDays)}</span> {nounAfter(P.durationDays, NOUN.day)}</span>
                 </>
               ),
             },
@@ -82,9 +86,9 @@ export function DataTab({
           ]}
         />
 
-        {/* آخر إجراء تحت التعريف مباشرة · كان كارتًا في العمود الجانبي،
-            وده مكان بعيد عن السؤال اللي بيسبقه: «المشروع ده إيه، وآخر
-            حاجة حصلت فيه إيه». الاتنين بقوا في نفس الكارت. */}
+        {/* Last action sits right under the summary — it used to be a card in the
+            side column, which was far from the question it follows: "what is this
+            project, and what last happened on it." Both now live in the same card. */}
         {last && (
           <div className="lastact">
             <div className="lastact-h">
@@ -99,8 +103,8 @@ export function DataTab({
             <div className="sub mt-1">
               {last.by} · <DateText>{last.at}</DateText>
               {' · '}
-              <span style={{ color: last.hours > last.limit ? 'var(--no-ink)' : undefined }}>
-                <Num>{last.days}</Num> يومًا · <Num>{last.hours}</Num> من <Num>{last.limit}</Num> ساعة
+              <span className={last.hours > last.limit ? 'bad' : undefined}>
+                <Num>{last.days}</Num> {nounAfter(last.days, NOUN.day)} · <Num>{last.hours}</Num> من <Num>{last.limit}</Num> ساعة
               </span>
             </div>
           </div>
@@ -149,12 +153,12 @@ export function DataTab({
       </Glass>
 
       <Glass>
-        <Head title="مراحل التنفيذ" meta={`${P.phases.length} مراحل · 11 شهرًا`} />
+        <Head title="مراحل التنفيذ" meta={`${countOf(P.phases.length, NOUN.phase)} · 11 شهرًا`} />
         <Timeline
           events={P.phases.map((ph) => ({
             tone: ph.tone,
             title: <><b>{ph.name}</b>، {ph.tasks}</>,
-            by: <Mono>{ph.months}</Mono>,
+            by: isolate(ph.months),
           }))}
         />
         <div className="sub mt-4">
@@ -252,18 +256,19 @@ export function DataTab({
         </div>
       </Glass>
 
-      {/* ═══ السلسلة · هـ-7 ═══
-          ⚠️ **الكارت ده بيجمع حاجتين كانوا هيبقوا كارتين.**
-          «المتعلقات» (ج-19) بيقول إيه المعلّق على المشروع فما
-          يتحذفش، و«السلسلة» (هـ-7) بيقول الرقم بيمشي منين لفين ·
-          وهما نفس المعلومة من ناحيتين. كارتان جنب بعض بنفس
-          الأسماء كانوا هيقروا تكرارًا.
+      {/* Chain.
 
-          ⚠️ **وكل حلقة بتتفحص لا بتتعرض وبس.** مخصص الهدف لازم
-          يشيل المعتمد، وقيمة الاتفاقية لازم تساوي المعتمد (خطوة
-          11)، ومجموع الجدول لازم يساوي الاتفاقية (قاعدة 8) ·
-          والحلقة اللي بتكسر بتتقال. سلسلة بتعرض أربع أرقام من غير
-          تحقّق **بتوري اتّصالًا مش موجود**. */}
+          This card merges two things that would otherwise be two cards.
+          "Dependencies" states what's still pending on the project so it can't be
+          deleted, and "Chain" states where a number flows from and to — the same
+          information from two angles. Two adjacent cards with near-identical names
+          would have read as duplicates.
+
+          Each link is also verified, not just displayed. The target allocation
+          must cover the approved amount, the agreement value must equal the
+          approved amount, and the schedule total must equal the agreement — and a
+          broken link is called out. A chain that shows four numbers with no
+          verification would be showing a connection that doesn't actually exist. */}
       {chain && (
         <Glass>
           <Head
@@ -281,14 +286,12 @@ export function DataTab({
                 <span className="chain-b">
                   <span className="chain-h">
                     <b>{l.label}</b>
-                    {/* ⚠️ **`to` كان موجودًا في الداتا ومش مستعمل في
-                        الشاشة.** السلسلة بتقول «الاتفاقية ·
-                        AG-2026-3107» وهي **رحلة الريال**: اللي
-                        بيقراها بيسأل «طيب وريني الاتفاقية دي» ·
-                        والحلقة كانت بتسمّي الوجهة وما بتودّيش لها.
-                        حقل مكتوب في النوع ومحدش بيقراه = نيّة مش
-                        مطبَّقة، ودي نفس عيلة «قاعدة مكتوبة في
-                        كومنت ومفيش حاجة بتفحصها». */}
+                    {/* `to` existed in the data but wasn't used on screen. The chain says
+                        "Agreement · AG-2026-3107" and is meant to trace where the money goes:
+                        anyone reading it would ask "show me that agreement." The link was naming
+                        the destination without actually taking you there. A field declared in
+                        the type that nobody reads is an intent that was never implemented — the
+                        same family of bug as a rule written in a comment that nothing enforces. */}
                     {l.to
                       ? <Link className="tlink trim1" to={l.to}>· {l.name}</Link>
                       : <span className="sub trim1">· {l.name}</span>}
@@ -315,7 +318,10 @@ export function DataTab({
   )
 }
 
-/** قائمة بنود بعنوان وعدّاد · بتتكرر ثلاث مرات في نفس الكارت */
+/**
+ * A list of items with a title and counter — repeated three times in the
+ * same card.
+ */
 function BulletSection({ title, items }: { title: string; items: string[] }) {
   return (
     <>
@@ -323,8 +329,9 @@ function BulletSection({ title, items }: { title: string; items: string[] }) {
         <h3 style={{ fontSize: 'var(--fs-3)' }}>{title}</h3>
         <span className="meta">{items.length}</span>
       </div>
-      {/* `flush`: الصفوف بيفصلها خط شعري، والفجوة بينهم بتخلّي
-          المسافة فوق السطر نصّ اللي تحته فيتقري ملزوقًا في خطّه. */}
+      {/* `flush`: rows are separated by a hairline, and the gap between them makes
+          the space above a line half of the space below it, so it reads as
+          attached to its own line. */}
       <div className="col-s flush">
         {items.map((item, i) => (
           <div className="data" key={i}>

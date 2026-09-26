@@ -6,44 +6,42 @@ import { pct } from '@/lib/format'
 import type { PlanActivity, PlanPhase } from '@/types/domain'
 import { NoteTrail } from '@/components/notes'
 
-/* ═══════════════════════════════════════════════════════════
-   شجرة المراحل والأنشطة · قلب الخطة
+/* Phase and activity tree - the plan's core.
 
-   ⚠️ **المرحلة مطوية على أنشطتها والأنشطة ظاهرة.** ده عكس
-   الافتراضي في جداولنا (التجميع بيبدأ مطويًّا)، والسبب إن السؤال
-   هنا مش «فيه كام مرحلة» · هو «أنهي نشاط واقف». المرحلة اللي كل
-   أنشطتها اتقبلت بتتطوي لوحدها، لأنها خلصت فعلًا.
+   Note: a phase collapses over its activities, while activities stay expanded. This is the opposite
+   of our tables' default (grouping starts collapsed), because the question here isn't "how many
+   phases" - it's "which activity is pending". A phase whose activities are all accepted collapses
+   on its own, since it's genuinely done.
 
-   ⚠️ **والنشاط المتأخّر بيتوسم من تاريخه لا من حالته.** النشاط
-   ممكن يكون «جارٍ» وموعده عدّى من شهر · وحالته بتقول إن في شغل،
-   وتاريخه بيقول إن الشغل ده اتأخّر. الاتنين معلومة مختلفة.
+   Note: a late activity is tagged from its date, not its status. An activity can be "in progress"
+   with its due date a month past - status says work is happening, and date says that work is late.
+   They're two different pieces of information.
 
-   ⚠️ **وزرارا القبول والرفض على النشاط نفسه لا في رصيف الصفحة.**
-   الرصيف بياخد قرارًا واحدًا للمستند كله، والمراجعة هنا **نشاطًا
-   نشاطًا** · قرار في الرصيف كان هيقبل الشواهد كلها بضغطة، وده
-   بالظبط اللي القاعدة 14 موجودة تمنعه.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the accept and reject buttons sit on the activity itself, not on the page's action dock.
+   The dock takes one decision for the whole document, while review here happens activity by
+   activity - a dock-level decision would accept every piece of evidence with one click, and that's
+   exactly what rule 14 exists to prevent. */
 
 export interface PhaseTreeProps {
   phases: PlanPhase[]
-  /** الخطة معتمدة · قبل كده مفيش مراجعة أنشطة أصلًا */
+  /** The plan is approved - before that, activity review doesn't exist at all. */
   live: boolean
-  /** المستخدم الحالي مشرف المنح · هو وحده اللي بيقبل ويرفض */
+  /** The current user is the grants supervisor - only they can accept or reject. */
   canReview: boolean
-  /** الجهة بتقدر تحدّث نشاطها · بوّابة الجهة */
+  /** The entity can update its activity - the entity's own portal. */
   canClaim?: boolean
   open: Set<string>
   onToggle: (id: string) => void
   onAccept?: (actId: string) => void
   onReject?: (actId: string) => void
   onClaim?: (actId: string) => void
-  /** رفع شاهد · بوّابة الجهة وحدها */
+  /** Upload evidence - the entity's portal only. */
   onUpload?: (actId: string, kind: string) => void
-  /** تعليق على نشاط · باسم اللي فاتح الشاشة (`me`) */
+  /** Comment on an activity - under the name of whoever opened the screen (`me`). */
   onComment?: (actId: string, say: string) => void
-  /** اللي فاتح الشاشة · التعليقات بتتنسب له */
+  /** Whoever opened the screen - comments are attributed to them. */
   me?: string
-  /** النشاط اللي الصفحة بتودّي له · بيتوسم لحظة */
+  /** The activity the page links to - tagged live. */
   focus?: string
 }
 
@@ -79,12 +77,13 @@ export function PhaseTree({
 
               <span className="phase-c"><Money sm>{ph.cost}</Money></span>
 
-              {/* النسبة من المقبول وحده · قاعدة 14 */}
+              {/* Percentage of the accepted amount alone - rule 14. */}
               <Tag tone={done === 100 ? 'ok' : done > 0 ? 'teal' : 'mute'}>
                 {pct(done)}
               </Tag>
-              {queue > 0 && <Tag tone="warn"><Num>{queue}</Num> بانتظار</Tag>}
-              {late > 0 && <Tag tone="no"><Num>{late}</Num> متأخّر</Tag>}
+              {/* Percentage is the phase's status - both counters are weighted text, not badges. */}
+              {queue > 0 && <span className="sub"><b><Num>{queue}</Num></b> بانتظار</span>}
+              {late > 0 && <span className="sub"><b><Num>{late}</Num></b> متأخّر</span>}
             </button>
 
             {!shut && (
@@ -105,9 +104,10 @@ export function PhaseTree({
                     <div className="act-h">
                       <span className="act-t">{a.name}</span>
                       <Tag tone={ACTIVITY_TONE[a.state]}>{ACTIVITY_SAY[a.state]}</Tag>
-                      {/* ⚠️ التأخير وسم مستقلّ عن الحالة · «جارٍ»
-                          وموعده عدّى من شهر معلومتان مختلفتان */}
-                      {isLate(a) && <Tag tone="no">تجاوز موعده</Tag>}
+                      {/* Note: delay is a tag independent of status - "in progress" and "due a
+                          month ago" are two different pieces of information. */}
+                      {/* A neutral badge - the only colored element in the row is status. */}
+                      {isLate(a) && <Tag tone="mute">تجاوز موعده</Tag>}
                       <span className="pc-sp" />
                       <span className="sub act-w">
                         الوزن <span className="num">{a.weight}</span>
@@ -119,8 +119,8 @@ export function PhaseTree({
                       {a.doneAt && <> · قُبِل <DateText>{a.doneAt}</DateText></>}
                     </div>
 
-                    {/* الشواهد المطلوبة مقابل المرفوع · التحقّق
-                        ظاهر في السطر لا مخبّى في فتح النشاط */}
+                    {/* Required evidence against what's uploaded - the check is visible in the row,
+                        not hidden behind opening the activity. */}
                     <ul className="act-ev">
                       {a.needs.map((need) => {
                         const got = a.evidence.find((e) => e.kind === need)
@@ -131,12 +131,11 @@ export function PhaseTree({
                             {got
                               ? <span className="sub act-f">{got.fileName}</span>
                               : <span className="sub act-f">لم يُرفع</span>}
-                            {/* ⚠️ **الرفع جنب الشاهد الناقص نفسه، لا
-                                في زرار واحد فوق.** زرار «ارفع مرفقًا»
-                                عام بيخلّي الجهة ترفع ملفًا وتختار نوعه،
-                                والاختيار الغلط بيرجّع النشاط · والزرار
-                                هنا بيعرف نوعه أصلًا من السطر اللي هو
-                                فيه، فمفيش اختيار يتغلط فيه. */}
+                            {/* Note: upload sits next to the specific missing evidence item, not
+                                behind one button above. A generic "upload attachment" button lets
+                                the entity upload a file and pick its type, and picking wrong sends
+                                the activity back. The button here already knows its type from the
+                                row it's in, so there's no choice to get wrong. */}
                             {live && canClaim && !got && onUpload && (
                               <button
                                 className="btn btn-ghost btn-sm act-up"
@@ -151,11 +150,11 @@ export function PhaseTree({
                       })}
                     </ul>
 
-                    {/* ⚠️ **سجلّ لا سطر** · كل ملاحظة باسم صاحبها ووقتها،
-                        وزرار الإضافة بيفتح حقلًا باسم اللي فاتح الشاشة.
-                        والزرار بيظهر على النشاط اللي عليه ملاحظة أو
-                        اللي في المراجعة، لا على كل نشاط في الشجرة ·
-                        زرار تعليق على نشاط «لم يبدأ» مالوش كلام يتقال. */}
+                    {/* Note: a log, not a single line. Every note carries its author and time, and
+                        the add button opens a field under the name of whoever opened the screen.
+                        The button appears only on an activity with a note or one under review, not
+                        on every activity in the tree - a comment button on an activity that "hasn't
+                        started" has nothing to say. */}
                     <NoteTrail
                       notes={a.notes ?? []}
                       me={me}
@@ -165,8 +164,8 @@ export function PhaseTree({
                         : undefined}
                     />
 
-                    {/* ⚠️ القرار على النشاط · والقبول مقفول لو
-                        شاهد مطلوب ناقص، والسبب مكتوب في التلميح */}
+                    {/* Note: the decision sits on the activity - acceptance is locked if a required
+                        piece of evidence is missing, and the reason is written in the tooltip. */}
                     {live && canReview && a.state === 'claimed' && (
                       <div className="act-a">
                         {(() => {
@@ -197,7 +196,7 @@ export function PhaseTree({
                       </div>
                     )}
 
-                    {/* بوّابة الجهة · «خلصت» بتقول claimed لا accepted */}
+                    {/* The entity's portal - "done" reads as claimed, not accepted. */}
                     {live && canClaim
                       && (a.state === 'doing' || a.state === 'todo' || a.state === 'rejected') && (
                       <div className="act-a">

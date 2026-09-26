@@ -1,7 +1,8 @@
+import { PartnerArt } from '@/components/soul'
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, type StepItem,
+  BackTo, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, type StepItem, DockWhy,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AnalysisCard } from '@/components/assistant'
@@ -17,41 +18,40 @@ import {
   type PartnerKind,
 } from '@/data/mock/registration'
 import { Field } from './Field'
+import { MISSING_ITEM, nounAfter } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   تسجيل جهة من داخل النظام · قاعدة 32
+/* Registering an entity from inside the system - rule 32.
 
-   ⚠️ **دي مش نسخة تانية من فورم البوّابة.** الفرق مش شكلي، هو في
-   إن الطرفين مختلفين:
+   Note: this isn't a second copy of the portal form. The difference isn't cosmetic, it's that the
+   two sides are different:
 
-     البوّابة      جهة مالهاش حساب، بتطلب منحة، وطلبها بيتراجَع
-     من جوّه       مشرف منح بصلاحية، بيسجّل شريكًا بيديره بنفسه
+   - portal: an entity with no account, applying for a grant, and its application gets reviewed
+   - internal: an authorized grants supervisor registering a partner they manage themselves
 
-   وعشان كده تلات محطات في البوّابة **مالهاش معنى هنا**:
-     · ضوابط القبول — فلتر أهلية لطرف برّه، والمشرف مش محتاج يقرّ
-     · رمز التحقّق — بيتأكّد إن اللي بيملا صاحب الجوال، والمشرف
-       معروف بجلسته
-     · المراجعة — الجهة بتتولد **فورًا**، مفيش طلب يتراجَع
+   Which means three portal stages have no meaning here:
+   - acceptance criteria - an eligibility filter for an outside party; the supervisor doesn't need
+   approval
+   - verification code - confirms the person filling it out owns the phone; the supervisor is
+   already known by their session
+   - review - the entity is created immediately, with no application to review
 
-   واللي زاد حقل واحد بس، وهو أهم حاجة في الشاشة:
+   What was added is exactly one field, and it's the most important part of the screen:
 
-   ═══ نوع الشراكة ═══
+   Partnership type
 
-   مظفر: «الاختلاف حيكون في **التحكم في الحقول** · الجهة لما تيجي
-   تسجّل الحقل ده ما بتشوفهوش». الجاي من البوّابة بياخد **شريك
-   مستفيد** أوتوماتيك، واللي بيتسجّل هنا ممكن يكون **منفّذ** أو
-   **استراتيجي** — زي منصة إحسان، اللي ما بتدخلش المنصة أصلًا
-   والمشروع بيتدار داخليًا **بلا اتفاقية**.
+   Rule of thumb: "the difference is in field control - an entity registering itself never sees this
+   field". Whoever comes from the portal automatically gets "beneficiary partner", while whoever is
+   registered here can be "implementing" or "strategic" - like the Ihsan platform, which never
+   enters the platform at all and whose project is managed internally with no agreement.
 
-   فالنوع هنا **مش وسمًا في الجدول**، هو مفتاح بيقفل ويفتح خطوات في
-   إجراءات تانية · والشاشة بتعرض اللي بيفتحه **وقت الاختيار** لا
-   بعده، عشان المشرف يعرف إنه بياخد قرارًا لا بيملا خانة.
-   ═══════════════════════════════════════════════════════════ */
+   So type here isn't a table tag, it's a key that locks and unlocks steps in other procedures - and
+   the screen shows what it unlocks at selection time, not after, so the supervisor knows they're
+   making a decision, not just filling a field. */
 
 const KEYS = ['tab', 'up', 'kind'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/** محطة النوع قبل محطات البيانات · وهي أول قرار في الشاشة */
+/** The type stage comes before the data stages - it's the first decision on the screen. */
 const STAGES = [
   { key: 'partner', label: 'نوع الشراكة', note: '' },
   ...REG_STAGES.map((s) => ({ key: s.key, label: s.label, note: s.note })),
@@ -65,10 +65,9 @@ export default function EntityNewPage() {
   const tab = STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : STAGES[0].key
   const setTab = (x: string) => set({ tab: x === STAGES[0].key ? undefined : x })
 
-  /* ⚠️ النوع في **الرابط** لا في الستيت · وده مش تفضيلًا في الكود.
-     لما كان في `useState` كانت حالة الكارت المختار مستحيل الفحص
-     يوصلها، فكل قياس بيتعمل على الكارت الفاضي وحده · نفس العمى اللي
-     خلّى مراحل فورم البوّابة تتنقل للرابط. */
+  /* Note: type lives in the URL, not in state - and this isn't a code preference. When it was
+     `useState`, the selected card's state was unreachable to testing, so every check ran against
+     the empty card alone - the same blind spot that pushed the portal form's steps into the URL. */
   const partner = PARTNER_KINDS.some((k) => k.key === v.kind)
     ? (v.kind as PartnerKind)
     : ''
@@ -102,7 +101,7 @@ export default function EntityNewPage() {
     set({ up: writeList(readList(v.up).filter((x) => x !== k)) })
   }
 
-  /** الناقص في كل محطة · ومحطة النوع ناقصها النوع نفسه */
+  /** What's missing at each stage - and the type stage's own missing item is the type itself. */
   const shortBy = useMemo(() => {
     const out: Record<string, string[]> = {}
     out.partner = partner ? [] : ['نوع الشراكة']
@@ -122,17 +121,17 @@ export default function EntityNewPage() {
     [val.licenseNo, type],
   )
 
-  /* ⚠️ **نفس نصيحة البوّابة بالحرف.** الشاشة دي كانت بلا مساعد
-     خالص · يعني مشرف المنح اللي بيسجّل من جوّه بيملا نفس النموذج
-     من غير اللي بيوجّه الجهة برّه، والفرق ده مالوش سبب: النواقص
-     والموانع واحدة، والحاسب واحد (`stageAdvice`)، واللي كان ناقص
-     هو **توصيل** الكارت لا كتابة واحد جديد. */
+  /* Note: this follows the portal's own advice, exactly. This screen used to have no assistant at
+     all - a grants supervisor registering internally filled the same form without the guidance
+     shown to an external entity, and there was no reason for the difference: the missing items,
+     blockers, and the calculation are the same (`stageAdvice`). What was missing was wiring the
+     card in, not writing a new one. */
   const advice = useMemo(
     () => stageAdvice(tab, val, shortBy[tab] ?? [], [], []),
     [tab, val, shortBy],
   )
 
-  /* العمود الجانبي بيلزق ويتمدّد لآخر الشاشة · نفس البوّابة */
+  /* Side column sticks and stretches to the end of the screen - same as the portal. */
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
 
@@ -149,7 +148,7 @@ export default function EntityNewPage() {
   const stage = STAGES[at]
   const fields = REG_STAGES.find((s) => s.key === tab)?.fields ?? []
 
-  /* محطات الرحلة · تلاتة لا خمسة، والفرق مكتوب في العمود */
+  /* Journey stages - three, not five, with the difference stated in the column. */
   const steps: StepItem[] = [
     { label: 'تسجيل البيانات', note: 'مشرف المنح', state: done ? 'done' : 'now' },
     {
@@ -174,18 +173,17 @@ export default function EntityNewPage() {
                 دون المرور بالبوابة · وتُنشأ الجهة فورًا بلا مراجعة
               </p>
             </div>
-            <Tag tone={missing.length ? 'warn' : 'ok'}>
-              {missing.length ? <><Num>{missing.length}</Num> ناقصًا</> : 'مكتمل'}
-            </Tag>
+            {/* Note: the "22 missing" tag was removed from the page header - a third count of the
+                same missing items next to the card and the doc. The colored tag now belongs to the
+                card's status alone. The total count lives in the doc. */}
           </header>
 
           <Glass className="regsteps">
             <Steps
               flow="stepper"
               onPick={(i) => setTab(STAGES[i].key)}
-              /* ⚠️ «مفيش ناقص» مش «خلصت» · محطة الحسابات البنكية
-                 مالهاش حقول محسوبة فكانت بتطلع مكتملة والمستخدم
-                 لسه في المحطة الأولى. شوف `stepState`. */
+              /* Note: "nothing missing" isn't "done" - the bank-accounts stage has no computed
+                 fields, so it used to show complete while the user was still on the first stage. */
               items={STAGES.map((st, i) => ({
                 label: st.label,
                 state: stepState(i, at, shortBy[st.key]?.length ?? 0),
@@ -200,7 +198,8 @@ export default function EntityNewPage() {
                   title={stage.label}
                   meta={
                     shortBy[tab].length
-                      ? <Tag tone="warn"><Num>{shortBy[tab].length}</Num> ناقص</Tag>
+                      /* "6 of 22" - this stage's share of the same doc count. */
+                      ? <Tag tone="warn"><Num>{shortBy[tab].length}</Num> من {missing.length} {nounAfter(missing.length, MISSING_ITEM)}</Tag>
                       : <Tag tone="ok">مكتمل</Tag>
                   }
                 />
@@ -208,9 +207,9 @@ export default function EntityNewPage() {
 
                 {tab === 'partner' && (
                   <>
-                    {/* ⚠️ القرار ده بيتاخد مرة وبيحكم إجراءات بعده ·
-                        فاللي بيفتحه معروض **وقت الاختيار** لا بعده،
-                        ومكتوب لا مرمّز في وسم */}
+                    {/* Note: this decision is made once and governs later procedures - so what it
+                        unlocks is shown at selection time, not after, and stated in text rather
+                        than coded into a tag alone. */}
                     <ul className="pkinds">
                       {PARTNER_KINDS.map((k) => (
                         <li key={k.key}>
@@ -221,10 +220,10 @@ export default function EntityNewPage() {
                               checked={partner === k.key}
                               onChange={() => setPartner(k.key)}
                             />
-                            {/* ⚠️ الـ`input` مخفي، فلازم حاجة **مرسومة** تقول
-                                «دي المختارة». قبل كده كانت الحلقة وحدها،
-                                وهي رمادية محايدة زي حلقة أي كارت · فالعلامة
-                                دي هي اللي بتحمل الاختيار، والحلقة بتسانده */}
+                            {/* Note: the `input` is hidden, so something drawn has to say "this is
+                                the selected one". Previously the ring alone did that, and it's the
+                                same neutral gray ring as any card - so this marker is what carries
+                                the selection, and the ring only supports it. */}
                             <span className="pkind-h">
                               <span className="pkind-r" aria-hidden="true">
                                 {partner === k.key && (
@@ -233,11 +232,13 @@ export default function EntityNewPage() {
                               </span>
                               <b>{k.label}</b>
                               <span className="sub trim1">· {k.example}</span>
-                              <span className="pc-sp" />
+                              {/* The tag sits next to the title, not at the edge - the edge is now
+                                  for the illustration. */}
                               {k.from === 'portal' && (
                                 <Tag tone="mute">الافتراضي للقادم من البوابة</Tag>
                               )}
                             </span>
+                            <PartnerArt kind={k.key} />
                             <ul className="pkind-o">
                               {k.opens.map((o) => (
                                 <li key={o}>
@@ -276,8 +277,12 @@ export default function EntityNewPage() {
                             <div className="regdoc-h">
                               <span className="regdocs-l">{d.label}</span>
                               <span className="pc-sp" />
+                              {/* Note: type is a fixed tag and status is a separate one -
+                                  "required" used to turn green once uploaded, so the same document
+                                  read "required" in amber on one screen and green on another. */}
+                              {on && <Tag tone="ok">مرفوع</Tag>}
                               {need
-                                ? <Tag tone={on ? 'ok' : 'warn'}>
+                                ? <Tag tone="warn">
                                     {d.reqFor ? `إلزامي للتصنيف ${d.reqFor[0]}` : 'إلزامي'}
                                   </Tag>
                                 : <Tag tone="mute">اختياري</Tag>}
@@ -337,7 +342,7 @@ export default function EntityNewPage() {
                   </div>
                 )}
 
-                {/* قاعدتا 8 و9 · نفس التحقّق في المدخلين */}
+                {/* Rules 8 and 9 - the same validation on both entry points. */}
                 {tab === 'id' && clash && (
                   <p className="bad cnote">
                     رقم الترخيص <Mono>{val.licenseNo}</Mono> مسجَّل لـ «{clash.name}»
@@ -378,10 +383,10 @@ export default function EntityNewPage() {
             </div>
 
             <div className="col aiside" ref={aside}>
-              {/* ⚠️ **نفس كارت مساعد البوّابة بالحرف** · `AnalysisCard`
-                  و`regReadings`، لا كارت مكتوب للشاشة دي. اللي بيعرض
-                  «مساعد أبانمي» بشكلين حسب المستخدم واقف فين بيخلّي
-                  المساعد يبان حاجتين لا حاجة واحدة. */}
+              {/* Note: the exact same assistant card as the portal - `AnalysisCard` and
+                  `regReadings`, not a card written for this screen. Rendering "the Abanumay
+                  assistant" differently depending on where the user is makes it look like two
+                  assistants instead of one. */}
               <AnalysisCard
                 title="مراجعة مساعد أبانمي"
                 cta="راجع الطلب"
@@ -403,19 +408,19 @@ export default function EntityNewPage() {
               <Glass>
                 <Head title="مسار التسجيل" meta={<span className="sub">ثلاث محطات</span>} />
                 <Steps items={steps} flow="ladder" />
-                {/* ⚠️ الفرق عن البوّابة مكتوب لا مستنتَج من عدد
-                    المحطات · خمسة هناك وتلاتة هنا، والسبب هو إن
-                    الطرفين مختلفين لا إن الشاشة مختصرة */}
+                {/* Note: the difference from the portal is stated, not inferred from the stage
+                    count - five there, three here, and the reason is that the two sides are
+                    different, not that this screen is a shortened version. */}
                 <p className="sub cnote">
                   لا ضوابط قبول ولا رمز تحقّق ولا مراجعة · فهذه للطرف القادم من خارج
                   النظام، أما المشرف فمعروف بجلسته، والجهة تُنشأ فورًا.
                 </p>
               </Glass>
 
-              {/* ⚠️ الكارت ده كان بيتعرض حتى وإحنا واقفين على محطة
-                  النوع · فبيعيد نفس التلات سطور اللي في الكارت
-                  المختار جنبه بالحرف. بيظهر لما الاختيار يبقى برّه
-                  الشاشة بس · تذكير لا تكرار */}
+              {/* Note: this card used to render even while sitting on the type stage - repeating
+                  the exact three lines already shown on the selected card next to it. It now
+                  appears only once selection sits outside the current screen - a reminder, not a
+                  repeat. */}
               {partner && tab !== 'partner' && (
                 <Glass>
                   <Head
@@ -439,10 +444,9 @@ export default function EntityNewPage() {
                 </Glass>
               )}
 
-              {/* ⚠️ كارت «ما ينقص قبل التسجيل» اتشال · المساعد فوق
-                  بيقول نفس الحاجة مرتّبة بالأولوية ومعاها السبب
-                  والزرار اللي بيودّي للمحطة · فالكارت كان بيكرّره
-                  كقايمة صمّاء. */}
+              {/* Note: the "what's missing before registration" card was removed - the assistant
+                  above says the same thing, ordered by priority, with its reason and a button
+                  leading to the stage - so the card was repeating it as an inert list. */}
             </div>
           </div>
         </div>
@@ -462,6 +466,7 @@ export default function EntityNewPage() {
                           {partnerKind(partner).label}
                         </>
                       )}
+                      <DockWhy n={missing.length} />
                     </>}
               </span>
             </div>

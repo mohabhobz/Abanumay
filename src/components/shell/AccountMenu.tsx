@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useMenu } from '@/hooks/useMenu'
-import { useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Icon, icons, type IconName } from '@/components/ui'
-import { ROUTES } from '@/app/routes'
+import { ROUTES, type NavItem } from '@/app/routes'
 import { Avatar } from './Avatar'
 import type { CurrentUser } from '@/types/domain'
 import { applyTheme, readTheme, writeTheme, type ThemeChoice } from '@/lib/theme'
@@ -13,22 +13,31 @@ const THEME_ITEMS: { key: ThemeChoice; label: string; icon: IconName }[] = [
 ]
 
 /**
- * قائمة الحساب · بتفتح من الصورة تحت الريل على جهة المحتوى.
- * المظهر وإعدادات الحساب والخروج هنا، عشان ما ياخدوش مكان في التنقّل.
+ * Account menu — opens from the avatar under the rail, on the content side.
+ * Appearance, account settings, and sign out live here, so they don't take up space in navigation.
+ * On mobile the avatar is the last slot of the bottom bar, and the menu also lists `modules`: the
+ * navigation items that don't fit in the bar. That section is hidden on desktop, where the rail
+ * already shows every module.
  */
 export function AccountMenu({
   user,
   onSignOut,
-  /** تفتح لتحت بدل الجنب · للشريط العلوي في الموبايل */
+  /** Opens downward instead of sideways — for a top bar. */
   drop,
+  /** Modules listed at the top of the menu on mobile. */
+  modules = [],
 }: {
   user: CurrentUser
   onSignOut?: () => void
   drop?: boolean
+  modules?: NavItem[]
 }) {
   const { open, setOpen, box: wrap } = useMenu<HTMLDivElement>()
   const [theme, setTheme] = useState<ThemeChoice>(readTheme)
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  /* The profile slot reads as active while one of its modules is open. */
+  const here = modules.some((m) => pathname === m.to || pathname.startsWith(`${m.to}/`))
 
   useEffect(() => {
     applyTheme(theme)
@@ -43,19 +52,20 @@ export function AccountMenu({
   return (
     <div className="acctwrap" ref={wrap}>
       <button
-        className={`acctbtn${open ? ' on' : ''}`}
+        className={`acctbtn${open ? ' on' : ''}${here ? ' here' : ''}`}
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
         title={`${user.name}، ${user.role}`}
       >
         <Avatar user={user} />
-        {/* الاسم والدور بيبانوا لمّا الشريط يتفرد · الحساب يفضل
-            زي أي مدخل تاني فيه، مش دايرة صامتة وسط أسماء */}
+        {/* The name and role show once the bar is wide enough — the account stays like any other
+            entry in it, not a silent circle among names. */}
         <span className="rail-l acct-who">
           <span className="acct-who-n">{user.name}</span>
           <span className="acct-who-r">{user.role}</span>
         </span>
+        <span className="acct-mob-l">حسابي</span>
       </button>
 
       {open && (
@@ -67,6 +77,27 @@ export function AccountMenu({
               <div className="sub acct-role">{user.role}</div>
             </div>
           </div>
+
+          {modules.length > 0 && (
+            <nav className="acct-sec acct-mods" aria-label="باقي الأقسام">
+              {modules.map((m) => (
+                <NavLink
+                  key={m.key}
+                  to={m.to}
+                  role="menuitem"
+                  className={({ isActive }) => (isActive ? 'on' : '')}
+                  onClick={() => setOpen(false)}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon name={icons[m.icon as IconName]} active={isActive} />
+                      <span>{m.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </nav>
+          )}
 
           <div className="acct-sec">
             <div className="acct-lbl">المظهر</div>
@@ -86,11 +117,10 @@ export function AccountMenu({
             </div>
           </div>
 
-          {/* مبدّل الدور اتشال من القايمة بطلب العميل.
-              ⚠️ الدور لسّه بيغيّر القراءات والشرائح والسقوف في
-              الصفحات (`useRole`)، بس مفيش واجهة تبدّله دلوقتي ·
-              فالنموذج بيفضل على الدور المخزَّن. مكانه الطبيعي شاشة
-              «إعدادات الحساب» لما تتبني. */}
+          {/* The role switcher was removed from the menu at the client's request.
+              ⚠️ Role still drives the readings, chips, and limits shown on pages, but there's
+              currently no UI to change it, so this mock falls back to the stored role. Its natural
+              home is the "account settings" screen, once built. */}
           <div className="acct-sec">
             <button role="menuitem" onClick={() => go(ROUTES.account)}>
               <Icon name={icons.user} size="sm" />
@@ -102,11 +132,10 @@ export function AccountMenu({
             </button>
           </div>
 
-          {/* ⚠️ **إعدادات النظام مفصولة عن التفضيلات عن قصد.**
-              التفضيلات بتغيّر شكل الشاشة **لصاحبها**، وإعدادات
-              النظام بتغيّر سلوك السيستم **لكل المستخدمين** · وخلطهم
-              في قسم واحد هو اللي بيخلّي حد يدوّر على «المدن» في
-              تفضيلاته (د-1). */}
+          {/* ⚠️ **System settings are kept separate from preferences, deliberately.** Preferences
+              change the screen's look **for their owner**; system settings change the system's
+              behavior **for every user** — mixing them into one section is what makes someone go
+              looking for "cities" under their own preferences. */}
           <div className="acct-sec">
             <button role="menuitem" onClick={() => go(ROUTES.settings)}>
               <Icon name={icons.gear} size="sm" />

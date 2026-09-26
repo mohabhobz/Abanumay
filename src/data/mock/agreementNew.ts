@@ -2,39 +2,36 @@ import { agreements } from './agreements'
 import { projectRows } from './projects'
 import type { AgreementKind, AgreementPayment, ProjectRow } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   إنشاء الاتفاقية · BPD-008 · هـ-4 و هـ-5
+/* Creating an agreement
 
-   ⚠️ **الاتفاقية ما بتتعملش من الصندوق، بتتعمل لمشروع.** عشان كده
-   مدخلها تاب «الاتفاقية» في صفحة المشروع لا زرار في ترويسة
-   الصندوق · والصندوق بيجاوب «إيه اللي واقف عندي» (وده مكتوب في
-   `AgreementsPage` عشان محدش يضيف زرارًا «للاتّساق»).
+   Warning: **an agreement isn't created from the inbox — it's created for a project.** So its entry
+   point is the "agreement" tab on the project page, not a button in the inbox header — the inbox
+   answers "what's waiting on me" (this is documented in `AgreementsPage` so no one adds a button
+   there "for consistency").
 
-   ═══ القواعد اللي بتشكّل الشاشة ═══
+   === Rules that shape the screen ===
 
-   **قاعدة 1 · مفيش اتفاقية قبل اكتمال اعتماد المشروع** واستمرار حجز
-   المخصص · فقايمة المشاريع مش كل المشاريع، هي **المؤهَّلة**.
-   ⚠️ وغير المؤهَّل **بيفضل معروضًا ومعاه سببه** لا بيختفي · نفس
-   درس ج-15: الاختفاء بيخلّي المستخدم يدوّر على مشروع مش لاقيه.
+   **Rule 1 · no agreement before the project's approval is fully complete** and its allocation is
+   still held — so the project list isn't every project, it's the **eligible** ones.
+   Warning: an ineligible project **stays shown, with its reason**, rather than disappearing — the
+   same lesson as elsewhere: disappearing makes the user go looking for a project they can't find.
 
-   **قاعدة 2 · مشروع واحد بالظبط** · حقل واحد لا قائمة متعددة.
+   **Rule 2 · exactly one project** — a single field, not a multi-select list.
 
-   **قاعدة 3 · النوع بيتحدّد عند الإنشاء وما يتغيّرش** إلا بإصدار
-   جديد · فالشاشة بتقول ده وقت الاختيار لا بعده.
+   **Rule 3 · the type is set at creation and doesn't change** except via a new version — so the
+   screen treats this as a decision made once, not something to revisit.
 
-   **خطوة 11 · قيمة الاتفاقية = المبلغ المحجوز في الميزانية** ·
-   والفرق بينهم بيمنع الإرسال.
+   **Step 11 · the agreement value = the amount held in the budget** — a mismatch blocks submission.
 
-   **قاعدة 7 · جدول الدفعات جزء من الاتفاقية قبل إرسالها** لا ملحق
-   بيها · فالمحرّر جوّه الشاشة لا في صفحة تانية.
+   **Rule 7 · the disbursement schedule is part of the agreement before it's sent**, not an
+   attachment to it — so it's edited inside this screen, not on a separate page.
 
-   **قاعدة 8 · مجموع الدفعات = المنحة، والنسب = 100%** · وده
-   **تحقّق لا تلخيص**: صفّ الإجمالي بيقول «مطابق» أو «الفرق كذا».
-   ═══════════════════════════════════════════════════════════ */
+   **Rule 8 · disbursements must sum to the grant, with percentages totaling 100%** — and this is
+   **a validation, not a summary**: the total row says "matches" or "off by X." */
 
-/* ═══ النماذج المعتمدة · قاعدة 4 ═══
-   عشرة في النظام العامل، والاسم نفسه بيقول قاعدة الاختيار:
-   مصدر التمويل × حجم المنحة × الظهور الإعلامي. */
+/* Approved templates · rule 4
+   Ten in the live system, and the name itself states the selection rule: funding source x grant
+   size x publicity exposure. */
 export const TEMPLATES = [
   'اتفاقية منحة عامة',
   'اتفاقية منحة كبرى (فوق مليون)',
@@ -57,22 +54,22 @@ export const KINDS: { key: AgreementKind; label: string; note: string }[] = [
   },
 ]
 
-/* ═══ المشاريع المؤهَّلة · قاعدة 1 ═══ */
+/* Eligible projects · rule 1 */
 export interface ProjectOption {
   id: string
   name: string
   entityName: string
   amount: number
-  /** السبب اللي بيمنع · فاضي يعني مؤهَّل */
+  /** The reason it's blocked · empty means eligible */
   blocked: string
 }
 
 /**
- * المشروع اللي ليه اتفاقية ما ياخدش تانية · قاعدة 2.
+ * A project that already has an agreement doesn't get another · rule 2.
  *
- * ⚠️ الملغاة ما بتتعدّش · قاعدة 26 بتقول إن الإلغاء ما بيحوّلش
- * المشروع لـ«تحت التنفيذ»، يعني المشروع بيرجع قابلًا لاتفاقية
- * جديدة · وإلا مشروع اتلغت اتفاقيته بيفضل مقفولًا للأبد.
+ * Warning: a cancelled one doesn't count — rule 26 says cancellation doesn't move the project back
+ * to "in progress," meaning the project becomes eligible for a new agreement again — otherwise a
+ * project whose agreement was cancelled would stay closed forever.
  */
 const hasAgreement = (id: string) =>
   agreements.some((a) => a.projectId === id && a.stage !== 'cancelled')
@@ -94,14 +91,12 @@ export const projectOptions = (): ProjectOption[] =>
 export const projectById = (id: string): ProjectRow | undefined =>
   projectRows.find((p) => p.id === id)
 
-/* ═══════════════════════════════════════════════════════════
-   جدول الدفعات · محرّر · هـ-5
+/* Disbursement schedule · editor
 
-   ⚠️ **المبلغ والنسبة وشان واحد لا اتنين.** لو المستخدم كتب
-   الاتنين بإيده، هيقع في تناقض: دفعة مكتوب عليها 40% ومبلغها
-   ربع المنحة · والشاشة ساعتها بتعرض غلطًا وبتسيبه يعدّي.
-   فالنسبة **محسوبة** من المبلغ دايمًا، ومعروضة للقراية بس.
-   ═══════════════════════════════════════════════════════════ */
+   Warning: **amount and percentage are one thing, not two.** If the user typed both by hand, they'd
+   end up contradicting each other — a disbursement marked 40% with an amount equal to a quarter of
+   the grant — and the screen would show that as wrong and still let it through. So the percentage
+   is **always computed** from the amount, and shown as read-only. */
 
 export interface DraftPay {
   no: number
@@ -110,7 +105,7 @@ export interface DraftPay {
   requirement: string
 }
 
-/** جدول مبدئي · دفعتان بالنص · نقطة بداية بتتعدّل لا قيمة نهائية */
+/** A starting schedule · two even disbursements · a starting point to edit, not a final value */
 export const seedSchedule = (amount: number, from: string): DraftPay[] => {
   const half = Math.round(amount / 2)
   const later = (d: string, days: number) => {
@@ -127,7 +122,7 @@ export const seedSchedule = (amount: number, from: string): DraftPay[] => {
 export const scheduleTotal = (rows: DraftPay[]): number =>
   rows.reduce((a, r) => a + (r.amount || 0), 0)
 
-/** نسبة الدفعة من المنحة · محسوبة لا مكتوبة */
+/** The disbursement's share of the grant · computed, not typed */
 export const shareOf = (amount: number, total: number): number =>
   total > 0 ? Math.round((amount / total) * 1000) / 10 : 0
 
@@ -140,7 +135,7 @@ export const toPayments = (rows: DraftPay[], amount: number): AgreementPayment[]
     requirement: r.requirement || undefined,
   }))
 
-/* ═══ التحقّق · القواعد اللي بتتقال قبل الإرسال ═══ */
+/* Validation · the rules stated before submission */
 export interface AgIssue { key: string; say: string; rule: string }
 
 export const agreementIssues = (v: {
@@ -160,7 +155,7 @@ export const agreementIssues = (v: {
     out.push({ key: 'project', say: `«${opt.name}» ${opt.blocked}.`, rule: 'قاعدة 1' })
   }
 
-  /* خطوة 11 · القيمة لازم تساوي المحجوز · والفرق بيمنع الإرسال */
+  /* Step 11 · the value must equal the held amount · a mismatch blocks submission */
   if (v.projectId && v.amount !== v.reserved) {
     out.push({
       key: 'reserved',
@@ -169,7 +164,7 @@ export const agreementIssues = (v: {
     })
   }
 
-  /* قاعدة 8 · المجموع = المنحة · تحقّق لا تلخيص */
+  /* Rule 8 · the total must equal the grant · a validation, not a summary */
   const total = scheduleTotal(v.rows)
   if (v.rows.length > 0 && v.amount > 0 && total !== v.amount) {
     const gap = v.amount - total
@@ -186,8 +181,9 @@ export const agreementIssues = (v: {
     out.push({ key: 'empty', say: 'لا يوجد أي دفعة. أضف دفعة واحدة على الأقل، فالجدول جزء من الاتفاقية لا ملحق بها.', rule: 'قاعدة 7' })
   }
 
-  /* الدفعة بلا شرط استحقاق · المخرج الرابع بيقول «مرتبط بشروط
-     الاستحقاق والإنجاز»، فدفعة بلا شرط بتخلّي الصرف بلا سبب */
+  /* A disbursement with no eligibility condition · output 4 says disbursements are "tied to
+     eligibility and progress conditions," so a disbursement with no condition would release funds
+     for no reason */
   const noReq = v.rows.filter((r) => !r.requirement.trim()).map((r) => r.no)
   if (noReq.length) {
     out.push({
@@ -197,8 +193,8 @@ export const agreementIssues = (v: {
     })
   }
 
-  /* التواريخ لازم تكون متصاعدة · دفعة تانية قبل الأولى بتقلب
-     الجدول من خطة لقايمة */
+  /* Dates must be ascending · a later disbursement dated before an earlier one turns the schedule
+     from a plan into a plain list */
   for (let i = 1; i < v.rows.length; i++) {
     const a = v.rows[i - 1], b = v.rows[i]
     if (a.dueAt && b.dueAt && b.dueAt < a.dueAt) {

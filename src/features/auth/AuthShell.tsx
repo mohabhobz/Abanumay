@@ -3,32 +3,29 @@ import type { ReactNode } from 'react'
 import Logo from '@/assets/LogoColor'
 import { Icon, icons } from '@/components/ui'
 
-/* ═══════════════════════════════════════════════════════════
-   غلاف شاشات الباب · **مكتوب مرة واحدة**
+/* Shared wrapper for the auth screens - written once.
 
-   ⚠️ **الشاشة دي كانت شاشة واحدة، وبقت اتنين** · الدخول، وإنشاء
-   حساب الجهة. والاتنين نفس المنظر بالظبط: الفيديو خلفية، وكارت
-   زجاج في الفتحة اللي في نص الكادر، والعلامة والعنوان فوقه،
-   وسطر الحقوق تحته.
+   Note: this used to be one screen and is now two - login, and creating an entity account. Both
+   share the exact same look: video background, a glass card in the frame's center opening, logo and
+   title above it, copyright line below.
 
-   ونسخ الغلاف للشاشة التانية كان هيخلّي **حاجتين بيقولوا نفس
-   المعنى بشكلين بعد شهر** · نفس الدرس اللي الثريد اتصلّح عليه.
-   فاللي بيتغيّر بين الشاشتين هو **المحتوى** بس، والغلاف واحد.
+   Copying the wrapper into the second screen would have meant two things saying the same thing in
+   two different shapes within a month. So only the content differs between the two screens; the
+   wrapper is shared.
 
-   ⚠️ **والحقل هنا مش حقل السيستم (`.fld`).** شاشات الباب ليها
-   حقلها الخاص (`.lfield`) بعلامة داخلية وحالة تركيز أوضح · وده
-   مقصود: الشاشة دي برّه النظام، بتتفتح على فيديو لا على أرضية
-   زجاج، والحقل الرفيع بتاع الجداول بيضيع عليها. فالاستثناء
-   مكتوب هنا مرة واحدة بدل ما كل شاشة تخترعه.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the field here isn't the system field (`.fld`). Auth screens use their own field
+   (`.lfield`) with an inline label and a clearer focus state, deliberately: this screen sits
+   outside the main product, opening over video rather than a glass surface, and the table's thin
+   field gets lost on it. So the exception is written here once instead of every screen reinventing
+   it. */
 
 export interface AuthShellProps {
-  /** العنوان تحت العلامة */
+  /** Title under the logo. */
   title: string
-  /** سطر تحت العنوان */
+  /** Line under the title. */
   sub: string
   children: ReactNode
-  /** رسالة تنبيه بتطفو فوق الكارت وبتختفي لوحدها */
+  /** Alert message that floats over the card and disappears on its own. */
   err?: string
 }
 
@@ -41,7 +38,7 @@ export function AuthShell({ title, sub, children, err }: AuthShellProps) {
 
       <main className="login-mid">
         <div className="lcard glass">
-          {/* توست: بيطفو فوق الفورم وما يزقّش أي حاجة، وبيختفي لوحده */}
+          {/* Toast: floats over the form without pushing anything, and disappears on its own. */}
           {err && (
             <div className="ltoast" role="alert">
               <Icon name={icons.alert} size="sm" />
@@ -64,10 +61,10 @@ export function AuthShell({ title, sub, children, err }: AuthShellProps) {
   )
 }
 
-/* حقل بعلامة داخلية وحالة تركيز واضحة · الحدود بتغمق مش بتتلوّن */
+/* Field with an inline label and a clear focus state - borders darken rather than change color. */
 export interface AuthFieldProps {
   id: string
-  /** لازم للاسم عشان مديري كلمات السر والأوتوفيل يتعرّفوا على الحقل */
+  /** Needed for name so password managers and autofill recognize the field. */
   name: string
   label: string
   icon: IconGlyph
@@ -75,11 +72,11 @@ export interface AuthFieldProps {
   onChange: (value: string) => void
   type?: string
   trailing?: ReactNode
-  /** توكن الأوتوفيل القياسي: username · current-password … */
+  /** Standard autofill token: username, current-password, etc. */
   autoComplete?: string
-  /** شكل زرار الإدخال في كيبورد الموبايل */
+  /** Mobile keyboard's enter-key style. */
   enterKeyHint?: 'go' | 'next' | 'done' | 'send' | 'search' | 'enter'
-  /** سطر تحت الحقل · شرط أو توضيح */
+  /** Line under the field - a condition or clarification. */
   hint?: ReactNode
 }
 

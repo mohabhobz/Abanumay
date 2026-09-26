@@ -5,7 +5,7 @@ import {
   Toggle, ViewToggle,
   Riyal,
 } from '@/components/ui'
-import { nf, pct } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter, pct } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useStickyGroup } from '@/hooks/useStickyGroup'
@@ -30,32 +30,24 @@ import { COLS, GROUPS } from './columns'
 const KEYS = ['q', 'stage', 'heat', 'owner', 'kind', 'hold', 'view', 'group', 'adv'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/* ═══════════════════════════════════════════════════════════
-   صندوق الاتفاقيات · BPD-008
+/* Agreements inbox.
 
-   ⚠️ **الاتفاقية إجراء مستقل، مش تاب في المشروع.** القاعدة 23
-   بتقولها صريحة، والـ25 بتشرح أثرها: انتقال الاتفاقية بين مراحلها
-   ما بيغيّرش حالة المشروع · المشروع بيفضل «إعداد الاتفاقية» لحدّ
-   الاعتماد النهائي. يعني اتفاقية عند المدير التنفيذي ومشروعها لسّه
-   مكتوب عليه «إعداد الاتفاقية»، والاتنين صح ولا واحد فيهم بيكدب.
+   Note: an agreement is its own workflow, not a project tab. Rule 23 states this directly, and rule
+   25 explains its effect: moving an agreement through its stages does not change the project's
+   status - the project stays at "agreement setup" until final approval. So an agreement can be with
+   the executive director while its project still shows "agreement setup", and both are true.
 
-   وده اللي بيخلّي الموديول ده صندوقًا: المشرف اللي عنده تسع
-   اتفاقيات في أربع مراحل مختلفة ما يقدرش يتابعهم من صفحات المشاريع
-   واحدة واحدة.
+   That's what makes this module an inbox: a supervisor with nine agreements across four different
+   stages can't track them by going through project pages one by one.
 
-   ═══ الشكل: نفس عقد القوائم ═══
+   Layout follows the same list contract: title -> quick read -> the four document indicators ->
+   stage chips -> toolbar -> table or cards. Every element comes from the library; nothing is built
+   specifically for this screen.
 
-   عنوان → قراءة سريعة → مؤشرات الوثيقة الأربعة → شرائح المراحل →
-   شريط الأدوات → جدول أو كروت. كل عنصر من المكتبة، ولا تركيب
-   مكتوب للشاشة دي.
-
-   ═══ الفرق عن النظام العامل · نوتة ═══
-
-   النظام العامل فيه سبعة أقسام للاتفاقية، وفيها **اعتماد الإتفاقية
-   (القسم المالي)** — محطة اعتماد مش موجودة في مخطط الوثيقة خالص،
-   واللي بيعدّي من مدير المنح للمدير التنفيذي مباشرة. مسجَّل نوتة
-   مع باقي الفروق.
-   ═══════════════════════════════════════════════════════════ */
+   Note on a difference from the current live system: the live system has seven agreement sections,
+   including an "agreement approval (finance section)" stage that doesn't appear in the flow at all,
+   and which goes directly from grants manager to executive director. Logged here along with other
+   differences. */
 
 const HEATS = [
   { value: 'late', label: 'متأخرة عن مدة المرحلة' },
@@ -64,7 +56,7 @@ const HEATS = [
 
 const KINDS = ['إلكترونية', 'ورقية']
 
-/* اللي فوق مش بيتحسب في عدّاد الفلاتر المتقدمة */
+/* The above isn't counted in the advanced-filters count. */
 const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'stage', 'heat', 'hold']
 
 export default function AgreementsPage() {
@@ -99,7 +91,7 @@ export default function AgreementsPage() {
     })
   }, [v])
 
-  /* الأطول وقوفًا فوق · الصندوق بيترتّب بالخطر لا بالتاريخ */
+  /* Longest-waiting sits at top - the inbox sorts by risk, not by date. */
   const sorted = useMemo(
     () => [...rows].sort((a, b) => b.hoursInStage - a.hoursInStage),
     [rows],
@@ -108,7 +100,7 @@ export default function AgreementsPage() {
   const filtered = activeCount(['view', 'group', 'adv']) > 0
   const readings = useMemo(() => readAgreements(rows, filtered), [rows, filtered])
 
-  /** عدّاد كل مرحلة جوّه النطاق الحالي */
+  /** Count for each stage within the current scope. */
   const counts = useMemo(() => {
     const needle = v.q?.trim()
     const owners = readList(v.owner)
@@ -127,7 +119,7 @@ export default function AgreementsPage() {
     return { m, total: base.length }
   }, [v.heat, v.owner, v.kind, v.hold, v.q])
 
-  /* ي-13 · التجميع بيفضل مع الجلسة بدل ما يضيع مع كل خروج */
+  /* Grouping persists with the session instead of resetting on every logout. */
   useStickyGroup('agreements', v.group, (x) => set({ group: x }))
 
   const group = groupChain(v.group, GROUPS)
@@ -144,13 +136,12 @@ export default function AgreementsPage() {
   }, [sorted, v.stage])
 
   const sheet: Sheet = useMemo(() => {
-    /* ⚠️ **الورقة مبنيّة في `sheetOf` لا هنا.** خمس شاشات كانت
-       بتكتب نفس التلات سطور بإيدها · وأول ما التجميع بقى سلسلة،
-       الخمسة كانوا هيحتاجوا نفس التعديل خمس مرات، واللي يتنسي
-       بيطلع ملفًا مختلفًا عن شاشته. */
+    /* Note: the sheet is built in `sheetOf`, not here. Five screens used to write the same three
+       lines by hand; once grouping became a pipeline, all five would have needed the same change
+       five times, and a missed one would end up out of sync with its own screen. */
     const shown = orderCols(COLS, cols).filter((c) => !group.some((g) => g.key === c.key))
     const pickRows = selected.size ? sorted.filter((a) => selected.has(a.id)) : sorted
-    const parts = sheetOf(pickRows, shown, group, (n: number) => `${n} اتفاقية`)
+    const parts = sheetOf(pickRows, shown, group, (n: number) => countOf(n, NOUN.agreement))
     const stamp = new Date().toISOString().slice(0, 10)
     return { file: `abanumay-agreements-${stamp}`, title: 'الاتفاقيات', ...parts }
   }, [cols, sorted, selected, group])
@@ -194,7 +185,7 @@ export default function AgreementsPage() {
             <div>
               <h1 className="ptitle">الاتفاقيات</h1>
               <p className="sub mt-1">
-                <span className="num">{rows.length}</span> اتفاقية من{' '}
+                <span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.agreement)} من{' '}
                 <span className="num">{agreements.length}</span> في هذا النموذج ·{' '}
                 <span className="num">{k.open}</span> تحت الإعداد و
                 <span className="num">{k.active}</span> سارية ·{' '}
@@ -202,14 +193,12 @@ export default function AgreementsPage() {
               </p>
             </div>
 
-            {/* ⚠️ **مفيش `PageActions` هنا عن قصد، لا سهوًا.**
-                العقد بيقول إن الإنشاء مكانه الترويسة · وهو ما بيقولش
-                إن كل شاشة لازم يكون فيها إنشاء. الاتفاقية ما بتتعملش
-                من الصندوق: هي بتتولد **لمشروع**، فمدخلها تاب
-                «الاتفاقية» في صفحة المشروع. الصندوق بيجاوب «إيه اللي
-                واقف عندي» لا «اعمل اتفاقية جديدة».
-                والسطر ده مكتوب عشان اللي جاي ما يضيفش زرارًا
-                «للاتّساق» ويكسر القاعدة الحقيقية. */}
+            {/* Note: no `PageActions` here, deliberately. The contract says creation belongs in the
+                header - it doesn't say every screen needs a create action. Agreements aren't
+                created from the inbox: they're generated per project, so their entry point is the
+                agreement tab on the project page. The inbox answers "what's pending", not "create a
+                new agreement". This line exists so a future change doesn't add a button "for
+                consistency" and break the actual rule. */}
           </header>
 
           <QuickRead
@@ -219,9 +208,9 @@ export default function AgreementsPage() {
             empty="لا توجد اتفاقية موقوفة عن الاعتماد في النطاق الحالي · وسّع الفلتر لعرض المزيد."
           />
 
-          {/* ⚠️ الأربعة دي هي مؤشرات الوثيقة الأربعة (9.7)، لا أربعة
-              أرقام مختارة · وعمود «القيمة المستهدفة» فاضي فيها كلها،
-              فالرقم بيتعرض قيمةً لا حالةً. */}
+          {/* Note: these four are the document's four indicators, not four arbitrary numbers - the
+              "target value" column is empty for all of them, so the number shown is a value, not a
+              status. */}
           <div className="stats4">
             <Stat
               label="متوسط مدة إعداد الاتفاقية"
@@ -232,7 +221,7 @@ export default function AgreementsPage() {
             <Stat
               label="المنجزة ضمن المدة المستهدفة"
               value={<Num>{pct(k.inTarget)}</Num>}
-              note={`مؤشر 2 · المدة المؤقتة ${AGR_TARGET_DAYS} يومًا`}
+              note={`مؤشر 2 · المدة المؤقتة ${countOf(AGR_TARGET_DAYS, NOUN.day)}`}
               bar={{ w: `${k.inTarget}%`, c: 'var(--teal)' }}
             />
             <Stat
@@ -304,9 +293,9 @@ export default function AgreementsPage() {
               </div>
 
               <div className="ftool-a">
-                {/* ⚠️ **التجميع تحكّم عرض لا فلتر** · مكانه ركن العرض،
-                   وكان آخر صفّ الفلاتر فبينزل لوحده في سطر تاني
-                   أول ما الشريط يلفّ (شوف `PlansPage`). */}
+                {/* Note: grouping is a display control, not a filter - it belongs in the view
+                    corner. As the last filter row it used to drop to its own line once the bar
+                    wrapped (see `PlansPage`). */}
                 {view === 'table' && (
                 <GroupPicker
                   icon={icons.rows}
@@ -317,7 +306,7 @@ export default function AgreementsPage() {
                 )}
                 <ExportMenu
                   sheet={sheet}
-                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} اتفاقية`}
+                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${countOf(selected.size || sorted.length, NOUN.agreement)}`}
                   count={selected.size}
                 />
                 {!mobile && (
@@ -400,7 +389,7 @@ export default function AgreementsPage() {
                   onSelectAll={selectAll}
                   onOpen={(a) => navigate(ROUTES.agreement(a.id))}
                   group={grouped ? group : undefined}
-                  count={(n) => `${n} اتفاقية`}
+                  count={(n) => countOf(n, NOUN.agreement)}
                 />
               </Glass>
               {grouped && (
@@ -422,7 +411,7 @@ export default function AgreementsPage() {
                     <h2>{meta?.label ?? 'ملغاة'}</h2>
                     <span className="sub">
                       {meta?.who ? `عند ${meta.who}` : 'سارية'} ·{' '}
-                      <span className="num">{g.rows.length}</span> اتفاقية ·{' '}
+                      <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.agreement)} ·{' '}
                       خطوات <span className="num">{meta?.steps}</span> في الوثيقة
                     </span>
                   </div>
@@ -436,9 +425,9 @@ export default function AgreementsPage() {
             })
           )}
 
-          {/* ⚠️ القاعدة 25 مكتوبة في الشاشة لا في التعليق بس · هي
-              أكتر حاجة بتلخبط لما تشوف اتفاقية «بانتظار المدير
-              التنفيذي» ومشروعها مكتوب عليه «إعداد الاتفاقية». */}
+          {/* Rule 25 is stated on screen, not only in a comment - it's the most confusing case: an
+              agreement "awaiting executive director" while its project still shows "agreement
+              setup". */}
           <p className="sub tcen">
             مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «إعداد الاتفاقية» حتى
             اعتمادها النهائي، وفق القاعدة <span className="num">25</span> في الوثيقة.

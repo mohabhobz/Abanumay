@@ -6,7 +6,7 @@ import {
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { nf } from '@/lib/format'
+import { nf, ver, countOf, NOUN } from '@/lib/format'
 import {
   EVIDENCE_KINDS, askChange, canEditShape, evenWeights, newActivity, newPhase,
   planById, planIssues, planStageLabel, savePhases, sendPlan,
@@ -14,26 +14,24 @@ import {
 import { projectById } from '@/data/mock/projects'
 import type { PlanPhase } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   محرّر الخطة · BPD-012
+/* Plan editor.
 
-   ⚠️ **الشاشة دي ليها حالتان مختلفتان تمامًا، مش حالة بصلاحيات.**
+   Note: this screen has two entirely different states, not one state with permission checks:
 
-     قبل الاعتماد · الهيكل مفتوح · بتضيف وتمسح وتعدّل
-     بعد الاعتماد · الهيكل **مقفول** · المخرج الوحيد طلب تعديل رسمي
+     Before approval - structure is open   - add, delete, edit
+     After approval  - structure is locked - the only exit is a formal amendment request
 
-   وده قرار الوثيقة (قاعدة 21) لا اختيار تصميم: من غيره الجهة اللي
-   اتأخرت بتمدّد تواريخها بهدوء فتبقى منضبطة على الورق دايمًا،
-   والانحراف يفقد مرجعه.
+   This is the spec's decision (rule 21), not a design choice: without it, an entity running late
+   could quietly extend its dates and always look on schedule on paper, and any drift would lose its
+   reference point.
 
-   ⚠️ **والقفل بيبان كشاشة مختلفة لا كحقول معطَّلة.** عشرين حقلًا
-   رماديًّا بيخلّي المستخدم يجرّب واحدًا واحدًا لحدّ ما يفهم · وشاشة
-   بتقول «الهيكل مقفول، ودي طريقة تغييره» بتوصّل نفس المعنى في سطر.
+   Note: the lock appears as a different screen, not disabled fields. Twenty grayed-out fields leave
+   the user testing them one by one until they understand why - a screen stating "the structure is
+   locked, here's how to change it" conveys the same thing in one line.
 
-   ⚠️ **ومجموع الأوزان قاعدة معروضة لا تصحيح تلقائي (ج-15).** مظفر
-   بالنص: «خلّي الأوبشنز موجودة عنده يختار، يجيب له رسالة خطأ» ·
-   فالتوزيع بالتساوي زرار، والمجموع الغلط بيتقال بصوت عالٍ.
-   ═══════════════════════════════════════════════════════════ */
+   Note: weights summing correctly is a displayed rule, not an automatic fix. The stated
+   requirement: keep the options available for the user to choose, and give an error message if they
+   don't sum correctly - so equal distribution is a button, and an incorrect total is stated loudly. */
 
 export default function PlanEditPage() {
   const { id = '' } = useParams()
@@ -68,7 +66,7 @@ export default function PlanEditPage() {
   const patch = (phId: string, next: Partial<PlanPhase>) =>
     setPhases((xs) => xs.map((x) => (x.id === phId ? { ...x, ...next } : x)))
 
-  /* ═══ الهيكل مقفول · طلب تعديل رسمي ═══ */
+  /* === Structure locked - formal amendment request === */
   if (!canEditShape(p)) {
     return (
       <AppLayout assistantContext={assistFor.page(`تعديل خطة ${p.projectName}`)}>
@@ -80,7 +78,7 @@ export default function PlanEditPage() {
               <div>
                 <h1 className="ptitle">تعديل خطة {p.projectName}</h1>
                 <p className="sub mt-1">
-                  الخطة معتمدة · النسخة المرجعية V<span className="num">{p.baseline}</span>{' '}
+                  الخطة معتمدة · النسخة المرجعية <Num>{ver(p.baseline)}</Num>{' '}
                   من <DateText>{p.baselineAt ?? ''}</DateText>
                 </p>
               </div>
@@ -92,8 +90,8 @@ export default function PlanEditPage() {
                 title="الهيكل مغلق بعد الاعتماد"
                 meta={<Tag tone="mute">قاعدة <Num>21</Num></Tag>}
               />
-              {/* ⚠️ السبب مكتوب لا مفترَض · القفل من غير سبب بيتقري
-                  عطلًا، والمستخدم بيدوّر على طريقة يلفّ حواليها */}
+              {/* Note: the reason is stated, not assumed - a lock with no reason reads as a bug,
+                  sending the user looking for a way around it. */}
               <p className="sub cnote">
                 ثُبّتت المراحل والأنشطة والتواريخ والتكلفة في النسخة المرجعية
                 عند اعتماد مدير المنح للخطة، ويُقاس عليها كل انحراف. ولو عُدّلت
@@ -101,8 +99,8 @@ export default function PlanEditPage() {
                 ستتغيّر مع التأخير.
               </p>
               <p className="sub cnote">
-                {/* ⚠️ النجمتان ما بيبقوش عريضًا في JSX · ده مش
-                    ماركداون، والنصّ بيطلع بنجومه. `<b>` هي الصح. */}
+                {/* Note: asterisks don't render bold in JSX - this isn't Markdown, the text renders
+                    with its literal asterisks. `<b>` is the correct approach. */}
                 المتاح الآن هو <b>تحديث التنفيذ</b>: حالة النشاط ورفع
                 الشواهد، ومكانه{' '}
                 <Link to={ROUTES.plan(p.id)} className="lnk">صفحة الخطة</Link>.
@@ -124,7 +122,7 @@ export default function PlanEditPage() {
                   </span>
                   <span className="sub regf-h">
                     يُرسل الطلب إلى مدير المنح، واعتماده يرفع رقم النسخة
-                    المرجعية إلى V<span className="num">{p.baseline + 1}</span>
+                    المرجعية إلى <Num>{ver(p.baseline + 1)}</Num>
                   </span>
                 </label>
               </div>
@@ -155,7 +153,7 @@ export default function PlanEditPage() {
     )
   }
 
-  /* ═══ الهيكل مفتوح · المحرّر ═══ */
+  /* === Structure open - the editor === */
   return (
     <AppLayout assistantContext={assistFor.page(`تحرير خطة ${p.projectName}`)}>
       <div className="viewstack">
@@ -170,16 +168,14 @@ export default function PlanEditPage() {
                 قيمة المنحة <Money sm>{grant}</Money>
               </p>
             </div>
-            <Tag tone={issues.length ? 'warn' : 'ok'}>
-              {issues.length
-                ? <><Num>{issues.length}</Num> ملاحظة</>
-                : 'جاهزة للإرسال'}
-            </Tag>
+            {/* The count badge in the page header was removed - a single count now lives in the
+                dock. */}
           </header>
 
           {phases.length === 0 ? (
             <Glass>
               <Empty
+                art={{ done: 0, total: 3 }}
                 title="الخطة بلا مراحل."
                 note="المرحلة هي وحدة القياس، ومن دونها لا يُحتسب إنجاز ولا تُقارن نسبة."
                 actions={
@@ -273,7 +269,7 @@ export default function PlanEditPage() {
                     </label>
                   </div>
 
-                  {/* ═══ أنشطة المرحلة ═══ */}
+                  {/* === Phase activities === */}
                   <ul className="acts pledit-a">
                     {ph.activities.map((a, j) => (
                       <li className="act" key={a.id}>
@@ -337,10 +333,10 @@ export default function PlanEditPage() {
                             </span>
                           </label>
 
-                          {/* ⚠️ **الشواهد المطلوبة مش تزويق · هي اللي
-                              بتخلّي المراجعة ممكنة.** نشاط بلا شاهد
-                              مطلوب معناه إن المشرف هيقبله على كلام،
-                              وده اللي قاعدة 14 موجودة تمنعه. */}
+                          {/* Note: required evidence isn't decoration - it's what makes review
+                              possible. An activity with no required evidence means the supervisor
+                              would be accepting it on word alone, and that's exactly what rule 14
+                              exists to prevent. */}
                           <label className="regf regf-w">
                             <span className="lb">
                               الشواهد المطلوبة<b className="regf-r" aria-label="إلزامي">*</b>
@@ -348,7 +344,7 @@ export default function PlanEditPage() {
                             <MultiSelect
                               wide
                               values={a.needs}
-                              all={`اختر من ${EVIDENCE_KINDS.length} نوعًا`}
+                              all={`اختر من ${countOf(EVIDENCE_KINDS.length, NOUN.kind)}`}
                               options={EVIDENCE_KINDS as unknown as string[]}
                               onChange={(next) => patch(ph.id, {
                                 activities: ph.activities.map((x) =>
@@ -410,8 +406,8 @@ export default function PlanEditPage() {
                 </span>
               </div>
 
-              {/* ⚠️ الملاحظات بالاسم لا بالعدد · «فيه 4 ملاحظات»
-                  بتخلّي المستخدم يدوّر بعينه (نفس درس المساعد) */}
+              {/* Note: notes are shown by name, not count - "4 notes" makes the user search for
+                  them by eye (same lesson as the assistant). */}
               {issues.length > 0 && (
                 <ul className="regmiss">
                   {issues.slice(0, 8).map((x) => (

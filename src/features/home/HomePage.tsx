@@ -1,7 +1,10 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Money, Mono, Empty, Riyal} from '@/components/ui'
-import { BarList, Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS, CHART_INKS } from '@/components/charts'
+import {
+  Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS, CHART_INKS,
+  StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, type Hue,
+} from '@/components/charts'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { fixtures, query, stagePressure, ENTITY_DOCS_TOTAL } from '@/data/repository'
@@ -12,23 +15,28 @@ import {
   entityHealth, grantedByTrack, median, ownerLoad, topEntities,
 } from '@/data/analytics'
 import { assistFor } from '@/data/mock/assistant'
-import { df, nf, pct, projectCode } from '@/lib/format'
-import { days } from '@/lib/tone'
+import { countOf, df, nf, NOUN, nounAfter, pct, projectCode } from '@/lib/format'
+import { days, TONE } from '@/lib/tone'
+import { IdentityBanner } from '@/components/soul'
 
-/* ═══════════════════════════════════════════════════════════
-   اليوم · لوحة قراءة، لا لوحة أرقام
+/* Today - a reading dashboard, not a numbers dashboard.
 
-   كل رسم هنا بيجاوب سؤالًا اتسأل في الأوديت:
-     المال رايح فين؟        ← الميزانية وتوزيعها على المسارات
-     الشغل واقف فين؟        ← الأقسام الإجرائية ومدد المكوث
-     الحمل موزّع إزاي؟      ← المشرفون ووسيط أيامهم
-     ليه بنعتذر؟            ← مبررات الاعتذار
-     شركاؤنا جاهزين؟        ← ملفات الجهات وتركّز الدعم
+   Every chart here answers a question raised during the audit:
+     Where is the money going?     - the budget and its distribution across tracks
+     Where is work stalled?        - process stages and dwell times
+     How is load distributed?      - supervisors and their median days
+     Why do we get delays?         - delay justifications
+     Are our partners ready?       - entity files and support concentration
 
-   وقاعدة لونية واحدة في الصفحة كلها: **اللون يوصف الحالة مش الكمية.**
-   الأرقام بلون النص العادي؛ اللون بيقع على الشريط أو الوسم الصغير،
-   والأحمر مخصوص للتجاوز الفعلي وبمساحة صغيرة.
-   ═══════════════════════════════════════════════════════════ */
+   One color rule across the whole page: color describes status, not quantity. Numbers use normal
+   text color; color sits on the bar or small badge, and red is reserved for actual breaches, in a
+   small area. */
+
+/* Request totals - color is category, and only the two genuinely status-based states use status
+   color. */
+const GROUP_HUE: Record<string, Hue> = {
+  'في الدراسة': 'c2', 'في التشغيل': 'c1', 'معتذر عنه': 'c6', 'متعثر': 'cl', 'مكتمل': 'c4',
+}
 
 const GREET = () => (new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير')
 
@@ -59,12 +67,8 @@ export default function HomePage() {
     [user.name, role.lens],
   )
 
-  const attention = useMemo(
-    () => query.projects({ overdue: true, sort: 'waiting', pageSize: 4 }).rows,
-    [],
-  )
 
-  /* ── السلاسل ── */
+  /* -- Series -- */
   const groups = byStatusGroup(projects)
   const stages = byStage(projects)
   const tracks = grantedByTrack(projects)
@@ -75,8 +79,21 @@ export default function HomePage() {
   const partners = topEntities(projects)
   const health = entityHealth(entities)
 
-  /* اللون وحبره بيتاخدوا مع بعض من نفس الفهرس · النسبة بتتكتب
-     على القوس، فلازم يكون فيه حبر مقيس فوق كل لون */
+  /* Track line - per department: how many projects, how many over the limit, and its median days
+     plus the limit, for the tooltip. Same rows, so the number matches the one in the projects box. */
+  const stageFlow = stages.map((b) => {
+    const here = projects.filter((p) => p.stage === b.key && p.stageLimit > 0)
+    const limit = here[0] ? days(here[0].stageLimit) : 0
+    return {
+      ...b,
+      over: here.filter((p) => stagePressure(p) > 1).length,
+      tip: `وسيط ${countOf(median(here.map((p) => days(p.hoursInStage))), NOUN.day)} · الحدّ ${countOf(limit, NOUN.day)}`,
+    }
+  })
+  const ownerAvg = Math.round((owners.reduce((s, o) => s + o.value, 0) / Math.max(owners.length, 1)) * 10) / 10
+
+  /* Color and its ink are taken together from the same index - the percentage is written on the
+     arc, so there must be a measured ink value for every color. */
   const trackSlices = tracks.map((t, i) => ({
     ...t,
     color: CHART_COLORS[i % CHART_COLORS.length],
@@ -95,7 +112,7 @@ export default function HomePage() {
     .filter((p) => p.statusGroup === 'مكتمل')
     .reduce((s, p) => s + p.beneficiaries, 0)
 
-  /* ── المؤشرات، حسب الدور ── */
+  /* -- Indicators, by role -- */
   const kpis =
     role.lens === 'own'
       ? [
@@ -128,25 +145,26 @@ export default function HomePage() {
     >
       <div className="viewstack">
         <div className="screen col">
-          {/* ═══ الطيّة الأولى ═══
-              كل ده بيتقفل في شاشة واحدة بلا تمرير: الترويسة والمؤشرات
-              والخريطة والمال والزمن. الارتفاع هو القيد هنا لا العرض،
-              فالشبكة بتاخد الباقي والخريطة بتتقلّص جوّاه بنسبتها. */}
+          {/* === First fold ===
+              Everything here closes in one screen with no scrolling: header, indicators, map, money
+              and time. Height is the constraint here, not width, so the grid takes the remainder
+              and the map shrinks inside it proportionally. */}
           <section className="fold">
-          <header className="hhead">
-            <div className="hhead-t">
-              <h1 className="htitle">{GREET()}، {user.name.split(' ')[0]}</h1>
-              <p className="hdate">{df.format(new Date())} · {user.role}</p>
-            </div>
-            {/* رابط لا فعل · بيوَدّي لشاشة التقارير، فما بياخدش
-                لون العلامة ويزاحم أفعال الصفحة */}
-            <Link className="btn btn-ghost btn-sm" to={ROUTES.reports}>
-              <Icon name={icons.chart} size="sm" />
-              التقارير الكاملة
-            </Link>
-          </header>
+          {/* Note: the identity field (motion 1) - greeting and date only. The numbers below sit on
+              their own surface unchanged, and the page behind it wasn't touched. */}
+          <IdentityBanner
+            title={<>{GREET()}، {user.name.split(' ')[0]}</>}
+            sub={<>{df.format(new Date())} · {user.role}</>}
+            action={
+              /* A link, not a button - leads to the reports screen. */
+              <Link className="btn btn-ghost btn-sm" to={ROUTES.reports}>
+                <Icon name={icons.chart} size="sm" />
+                التقارير الكاملة
+              </Link>
+            }
+          />
 
-          {/* ═══ المؤشرات ═══ */}
+          {/* === Indicators === */}
           <div className="kpis">
             {kpis.map((t) => (
               <Link key={t.k} to={t.to} className="kpi glass">
@@ -160,9 +178,9 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* ═══ الصف الأول: اللي لازم يتشاف من غير تمرير ═══
-              الخريطة والمال والزمن. الباقي تحت، لأنه بيتقري بعد ما
-              السؤال الأول يتجاوب، مش قبله. */}
+          {/* === First row: what must be visible with no scroll ===
+              Map, money, and time. The rest sits below, since it's read after the first question is
+              answered, not before. */}
           <div className="dtop">
             <Glass className="d-map">
               <Head
@@ -192,17 +210,16 @@ export default function HomePage() {
               <Legend items={budgetParts} />
             </Glass>
 
-            {/* ═══ حلقة · بالنسب على الأقواس ═══
-                الاعتراض على الحلقة إن القارئ ما بيقدرش يقدّر ٥١٪ من
-                زاوية، فبيقراها من اللِّيجند — يعني الرسم زخرفة والرقم
-                جنبه هو اللي بيشتغل.
+            {/* === Ring, percentages on the arcs ===
+                The objection to a ring is that a reader can't estimate 51% from an angle, so they
+                read it off the legend instead - meaning the chart is decoration and the number
+                beside it does the work.
 
-                فالنسبة اتحطّت **على القوس نفسه**: الرقم عند الشكل
-                اللي بيمثّله، واللِّيجند تحت بقى تسميات وألوان بس في
-                صفّ واحد.
+                So the percentage is placed on the arc itself: the number sits at the shape it
+                represents, and the legend below becomes just labels and colors in a single row.
 
-                ⚠️ ونصّ فوق لون = **٤٫٥:١** (WCAG 1.4.3) — عشان كده
-                كل شريحة بتاخد `ink` مقيسًا مع لونها. */}
+                Note: text on a color needs 4.5:1 (WCAG 1.4.3) - so every slice gets an `ink` value
+                measured against its own color. */}
             <Glass className="d-track">
               <Head title="الملتزم به حسب المسار" />
               <Donut
@@ -216,10 +233,10 @@ export default function HomePage() {
             <Glass className="d-age">
               <Head
                 title="مدة المكوث في القسم"
-                meta={<span className="sub">وسيط {median(liveDays)} يومًا · بالأيام</span>}
+                meta={<span className="sub">وسيط {median(liveDays)} {nounAfter(median(liveDays), NOUN.day)} · بالأيام</span>}
               />
-              {/* الوحدة في الترويسة لا عايمة تحت: على كارت ضيّق كانت
-                  بتركب على تسمية آخر عمود */}
+              {/* The unit sits in the header, not floating below - on a narrow card it used to
+                  overlap the last column's label. */}
               <Columns
                 cols={ageing.map((b) => ({
                   ...b,
@@ -235,105 +252,94 @@ export default function HomePage() {
           </div>
           </section>
 
-          {/* ═══ التشغيل ═══ */}
-          <div className="dgrid g11">
-            <Glass>
-              <Head
-                title="أين تقف المشاريع"
-                meta={<span className="sub">{stages.reduce((s, x) => s + x.value, 0)} جاريًا</span>}
-              />
-              <BarList
-                labelWidth="8.5rem"
-                rows={stages.map((b) => ({ ...b, color: 'var(--ch-3)' }))}
-                format={(v) => String(v)}
-              />
-            </Glass>
+          {/* === Below the fold ===
+              Each card has its own shape (StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars)
+              instead of six identical bar lists. The grid fills completely: double rows have
+              matching-height cards with the chart taking the remainder, and cards with wide content
+              span the page width - so there's no empty slot at any size. */}
+          <Glass className="hx-card">
+            <Head
+              title="أين تقف المشاريع"
+              meta={<span className="sub">{stages.reduce((s, x) => s + x.value, 0)} جاريًا · {stageFlow.reduce((s, x) => s + x.over, 0)} فوق الحدّ</span>}
+            />
+            <StageFlow stages={stageFlow} />
+            <p className="hx-key">
+              <i className="hx-sw c2" aria-hidden="true" />مشروع ضمن حدّ القسم
+              <i className="hx-sw cw" aria-hidden="true" />مشروع تجاوز الحدّ
+            </p>
+          </Glass>
 
-            <Glass>
+          <div className="dgrid g11 hx-row">
+            <Glass className="hx-card">
               <Head title="الحمل على المشرفين" meta={<span className="sub">تحت الدراسة</span>} />
-              <BarList
-                labelWidth="7rem"
+              <Lollipop
                 rows={owners.map((o) => ({
                   key: o.key,
                   label: o.label,
                   value: o.value,
-                  color: o.key === 'بلا مالك' ? 'var(--ch-idle)' : 'var(--ch-2)',
-                  note: `${o.medianDays} يوم`,
+                  hue: o.key === 'بلا مالك' ? 'c6' : 'c1',
+                  note: `وسيط ${countOf(o.medianDays, NOUN.day)}`,
+                  tip: `${o.value} تحت الدراسة · ${o.overdue} فوق الحدّ · وسيط ${countOf(o.medianDays, NOUN.day)}`,
                 }))}
-                format={(v) => String(v)}
+                refValue={ownerAvg}
+                refLabel={`متوسط الحمل ${nf.format(ownerAvg)} لكل مشرف`}
+              />
+            </Glass>
+
+            <Glass className="hx-card">
+              <Head title="جاهزية الجهات" meta={<Link className="lnk" to={ROUTES.entities}>الجهات</Link>} />
+              <Meters
+                total={entities.length}
+                unit="جهة"
+                rows={[
+                  { key: 'ready', label: 'مفعّلة وملفها كامل', value: health.ready, hue: 'c2', tip: 'تقدر توقّع اتفاقية اليوم' },
+                  { key: 'incomplete', label: 'ملفها ناقص', value: health.incomplete, hue: 'cw', tip: 'تتوقف عندها الاتفاقيات' },
+                  { key: 'held', label: 'معلّقة', value: health.held, hue: 'c6', tip: 'التفعيل معلّق بقرار' },
+                  { key: 'stalled', label: 'لها مشروع متعثر', value: health.stalled, hue: 'cl', tip: 'مشروع واحد على الأقل تجاوز ضعف حدّه' },
+                ]}
               />
               <p className="chnote">
-                الرقم الصغير هو وسيط أيام المكوث عند كل مشرف. المبلغ المخصص في الرسم
-                أعلاه من النظام العامل، والباقي محسوب من العيّنة التجريبية.
+                من {entities.length} {nounAfter(entities.length, NOUN.entity)} في هذا النموذج · 3,272 في النظام العامل.
               </p>
             </Glass>
           </div>
 
-          {/* ═══ الحصيلة والشركاء ═══ */}
-          <div className="dgrid g111">
-            <Glass>
-              <Head title="حصيلة الطلبات" meta={<span className="sub">{projects.length} طلبًا</span>} />
-              <BarList
-                labelWidth="6rem"
-                rows={groups.map((g, i) => ({
-                  ...g,
-                  color: CHART_COLORS[i % CHART_COLORS.length],
-                  note: pct(Math.round((g.value / projects.length) * 100)),
-                }))}
-                format={(v) => String(v)}
+          <div className="dgrid g11 hx-row">
+            <Glass className="hx-card">
+              <Head title="حصيلة الطلبات" meta={<span className="sub">{projects.length} {nounAfter(projects.length, NOUN.request)}</span>} />
+              <Waffle
+                parts={groups.map((g) => ({ ...g, hue: GROUP_HUE[g.key] ?? 'c6' }))}
               />
             </Glass>
 
-            <Glass>
+            <Glass className="hx-card">
               <Head
                 title="مبررات الاعتذار"
                 meta={<Link className="lnk" to={`${ROUTES.projects}?status=معتذر عنه`}>الكل</Link>}
               />
               {reasons.length ? (
-                <BarList
-                  labelWidth="10rem"
-                  rows={reasons.map((r) => ({ ...r, color: 'var(--ch-6)' }))}
-                  format={(v) => String(v)}
-                />
+                <Pareto rows={reasons} />
               ) : (
                 <Empty title="لا توجد اعتذارات في العيّنة." />
               )}
             </Glass>
-
-            <Glass>
-              <Head title="جاهزية الجهات" meta={<Link className="lnk" to={ROUTES.entities}>الجهات</Link>} />
-              <BarList
-                labelWidth="8.5rem"
-                format={(v) => String(v)}
-                rows={[
-                  { key: 'ready', label: 'مفعّلة وملفها كامل', value: health.ready, color: 'var(--ch-2)' },
-                  { key: 'incomplete', label: 'ملفها ناقص', value: health.incomplete, color: 'var(--ch-warn)' },
-                  { key: 'held', label: 'معلّقة', value: health.held, color: 'var(--ch-6)' },
-                  { key: 'stalled', label: 'لها مشروع متعثر', value: health.stalled, color: 'var(--ch-late)' },
-                ]}
-              />
-              <p className="chnote">
-                من {entities.length} جهة في هذا النموذج · 3,272 في النظام العامل.
-              </p>
-            </Glass>
           </div>
 
-          {/* ═══ أعلى الشركاء ═══ */}
-          <Glass>
+          <Glass className="hx-card">
             <Head
               title="أعلى الجهات دعمًا"
               meta={<Link className="lnk" to={`${ROUTES.entities}?sort=granted`}>الكل</Link>}
             />
-            <BarList
-              labelWidth="12rem"
-              rows={partners.map((p) => ({ ...p, color: 'var(--ch-2)' }))}
-            />
+            <RankBars rows={partners} total={grantedTotal} />
+            <p className="chnote">
+              أعلى جهتين معًا {pct(Math.round(((partners[0]?.value ?? 0) + (partners[1]?.value ?? 0)) / Math.max(grantedTotal, 1) * 100))} من الملتزم به كله · والنسبة جنب كل جهة نصيبها منه.
+            </p>
           </Glass>
 
-          {/* ═══ الصفوف ═══
-              ⚠️ **كارت «قراءة سريعة للنظام» اتشال من الصفحة دي**
-              (العميل، ٢٢ سبتمبر) · المساعد لسه موجود في «اسأل
-              أبانمي» وفي باقي الشاشات، والصفوف بقت على عرض الصفحة. */}
+          {/* === Rows ===
+              Note: the "quick system read" card was removed from this page - the assistant is still
+              available via "Ask Abanumay" and on other screens, and the rows now span the page
+              width. */}
           <div className="dgrid">
             <div className="col">
               <Glass>
@@ -366,8 +372,8 @@ export default function HomePage() {
                         </div>
                         <div className="qrow-n">{p.name}</div>
                         <div className="sub qrow-f">
-                          {p.entityName} · <span className="num">{days(p.hoursInStage)}</span> يومًا في القسم
-                          {stagePressure(p) > 1 && <span className="tag no">متأخر</span>}
+                          {p.entityName} · <span className="num">{days(p.hoursInStage)}</span> {nounAfter(days(p.hoursInStage), NOUN.day)} في القسم
+                          {stagePressure(p) > 1 && <span className={`tag ${TONE.late}`}>متأخر</span>}
                         </div>
                       </Link>
                     ))}
@@ -375,32 +381,6 @@ export default function HomePage() {
                 )}
               </Glass>
 
-              <Glass>
-                <Head
-                  title="ما يحتاج إلى انتباه"
-                  meta={<Link className="lnk" to={`${ROUTES.projects}?overdue=1&sort=waiting`}>الكل</Link>}
-                />
-                {attention.length === 0 ? (
-                  <Empty title="لا يوجد إجراء تجاوز حدّه الزمني." note="كل الأقسام ضمن حدودها." />
-                ) : (
-                  <div className="qrows">
-                    {attention.map((p) => (
-                      <Link key={p.id} to={ROUTES.project(p.id)} className="qrow well">
-                        <div className="qrow-h">
-                          <Mono>{projectCode(p.id, p.year)}</Mono>
-                          <span className="sub">{p.stage}</span>
-                          <span className="pc-sp" />
-                          <span className="tag no">
-                            <span className="num">{days(p.hoursInStage - p.stageLimit)}</span> يومًا فوق الحدّ
-                          </span>
-                        </div>
-                        <div className="qrow-n">{p.name}</div>
-                        <div className="sub qrow-f">{p.entityName} · {p.owner ?? 'بلا مالك'}</div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </Glass>
             </div>
           </div>
         </div>

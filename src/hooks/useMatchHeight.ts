@@ -1,23 +1,26 @@
 import { useEffect, type RefObject } from 'react'
 
 /**
- * يخلّي عنصرًا بارتفاع عنصر تاني في الصفحة، حتى لو مش في نفس الحاوية.
+ * Makes one element match another element's height on the page, even
+ * when they're not in the same container.
  *
- * **ليه مش CSS:** الاتنين لازم يبقوا في نفس الفليكس عشان `stretch`
- * تشتغل. زرار «اسأل أبانمي» عايم في القشرة، وشريط القرار جوّه
- * الصفحة · حاويتان مختلفتان، وكل واحدة بتتبني في مكان تاني من الشجرة.
- * حطّ رقم ثابت للاتنين بيشتغل لحد ما الشريط يلفّ سطرًا تاني على شاشة
- * أضيق، وساعتها بيبقى ١٠٨ والزرار ٦٣.
+ * Why not CSS: both elements would need to be in the same flex context
+ * for `stretch` to work. The "Ask Abanumay" button floats in the app
+ * shell, while the decision bar sits inside the page — two different
+ * containers, each built in a different part of the tree. A fixed
+ * number for both works until the bar wraps to a second line on a
+ * narrower screen, at which point it becomes 108 while the button stays 63.
  *
- * فالزرار بيقيس الشريط ويتبعه: `ResizeObserver` للتغيّر في المقاس،
- * و`MutationObserver` لظهوره واختفائه (تنقّل بين الصفحات، أو شريط
- * الإجراء المجمّع اللي بيطلع مع التحديد). ولو مفيش شريط، القيمة
- * بتترفع والعنصر بيرجع لارتفاعه الطبيعي.
+ * So the button measures the bar and follows it: a `ResizeObserver` for
+ * size changes, and a `MutationObserver` for it appearing and
+ * disappearing (navigating between pages, or the bulk action bar that
+ * appears with a selection). If there's no bar, the value is cleared
+ * and the element returns to its natural height.
  */
 export function useMatchHeight(
   ref: RefObject<HTMLElement | null>,
   selector: string,
-  /** المتغيّر اللي بيتكتب عليه الارتفاع */
+  /** The variable the height gets written to. */
   varName = '--match-h',
 ): void {
   useEffect(() => {
@@ -44,8 +47,8 @@ export function useMatchHeight(
       ro.observe(target)
     }
 
-    /* `contentRect` بيرجّع المحتوى بلا الحشو، والحشو هنا هو نص
-       الارتفاع · فبنزوّده بنفسنا. */
+    /* `contentRect` returns the content without padding, and the padding
+       here is half the height — so it's added back manually. */
     const borders = (t: HTMLElement) => {
       const cs = getComputedStyle(t)
       return (

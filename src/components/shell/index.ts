@@ -1,4 +1,4 @@
-/** قشرة التطبيق: الخلفية والتنقّل وشريط القرار ولوح المساعد */
+/** App shell: background, navigation, decision bar, and assistant panel. */
 export { Background } from './Background'
 export { Avatar } from './Avatar'
 export { MobileTop } from './MobileTop'

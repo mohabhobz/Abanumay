@@ -1,33 +1,32 @@
 import type {
   Agreement, Attachment, Correspondence, FollowUp, FollowUpType, Minute, Payment, ProjectRow,
 } from '@/types/domain'
-import { nf } from '@/lib/format'
+import { countOf, nf, NOUN } from '@/lib/format'
 import { OWNERS } from './taxonomy'
 
 /**
- * تفاصيل المشروع المشتقّة · الاتفاقية والدفعات والمتابعات والمراسلات.
+ * Derived project detail · agreement, disbursements, follow-ups, and correspondence.
  *
- * **ليه مولَّدة لا مكتوبة:** الفيكستشر المفصّل كان مشروعًا واحدًا،
- * فأي مشروع تاني الكلاينت يفتحه كان بيلاقي التابات دي فاضية ·
- * مش لأن التصميم ناقص، لكن لأن الداتا مش موجودة. الملف ده بيبني
- * التفاصيل من الصف نفسه، فكل مشروع في النموذج بيبقى قابلًا للتجربة.
+ * **Why generated, not hand-typed:** the detailed fixture was for one project only, so any other
+ * project a client opened would find these tabs empty — not because the design is incomplete, but
+ * because the data didn't exist. This file builds the detail from the row itself, so every project
+ * in the mock becomes something you can actually try.
  *
- * **وليه مطابقة للنظام العامل:** كل حقل هنا اتقرا من مشاريع حقيقية
- * (`12940` · `20191` · `12935` · `14982` · `14552`) · أسماء الحقول
- * وقيم الحالات ودورة الاعتماد وأسماء القوالب العشرة، كلها من هناك.
- * راجع `Abanumay_Project_Tabs_Data.md`.
+ * **And why it matches the live system:** every field here was read from real projects (12940 ·
+ * 20191 · 12935 · 14982 · 14552) — field names, status values, the approval cycle, and the ten
+ * template names all come from there. See `Abanumay_Project_Tabs_Data.md`.
  *
- * **القاعدة الحاكمة:** التفاصيل بتتبع **مرحلة المشروع**. المشروع في
- * الدراسة مالوش اتفاقية ولا دفعات · زي النظام بالظبط. اللي بيوصل
- * للاتفاقية له اتفاقية بلا دفعات مصروفة. واللي في التشغيل له دفعات
- * بعضها مدفوع. والمكتمل له الدورة كلها. المعتذر عنه مالوش غير قرار.
+ * **The governing rule:** the detail follows **the project's stage**. A project under review has no
+ * agreement and no disbursements, exactly like the live system. One that's reached the agreement
+ * stage has an agreement with no disbursements spent yet. One in progress has disbursements, some
+ * paid. A completed one has the full cycle. A withdrawn one has nothing but a decision.
  *
- * ⚠️ نموذج. لما الباك اند يجهز، الملف ده بيتشال وبتتحطّ مكانه
- * `GET /projects/:id/detail` بنفس الشكل.
+ * Warning: a mock. Once the backend is ready, this file is removed and replaced with `GET
+ * /projects/:id/detail` in the same shape.
  */
 
-/* بذرة ثابتة من رقم المشروع: نفس المشروع بيدّي نفس التفاصيل في كل
-   تحميل، وإلا الكلاينت هيفتح نفس الشاشة مرتين ويلاقي رقمين. */
+/* A seed fixed from the project number: the same project gives the same detail on every load,
+   otherwise a client opening the same screen twice would see two different numbers. */
 const seeded = (id: string) => {
   let h = 0
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
@@ -37,7 +36,7 @@ const seeded = (id: string) => {
   }
 }
 
-/** ترتيب المراحل · بيحدّد المشروع وصل فين */
+/** Stage ordering · decides how far the project has gotten */
 const ORDER = [
   'استكمال بيانات المشروع',
   'دراسة المشروع',
@@ -64,12 +63,12 @@ const reached = (row: ProjectRow, stage: string) => {
   return at >= 0 && want >= 0 && at >= want
 }
 
-/* ═══════════════ الاتفاقية ═══════════════ */
+/* Agreement */
 
 /**
- * القوالب العشرة كما هي في النظام (`config_contract`).
- * الاسم مش وصفًا: هو **مصفوفة ثلاثية** · مصدر التمويل × حجم المنحة ×
- * الظهور الإعلامي. فالقالب بيتحدد حسابيًا لا بقائمة منسدلة.
+ * The ten templates as they are in the system (`config_contract`). The name isn't descriptive —
+ * it's a **three-way matrix**: funding source x grant size x publicity exposure. So the template is
+ * determined computationally, not from a dropdown.
  */
 export const CONTRACT_TEMPLATES = [
   '(زكاة) أقل من 100 ألف بدون ظهور إعلامي',
@@ -83,7 +82,7 @@ export const CONTRACT_TEMPLATES = [
   'نموذج تجاري ظهور إعلامي',
 ] as const
 
-/** القالب محسوب من المبلغ والتمويل والظهور الإعلامي · زي النظام */
+/** The template is computed from the amount, the funding, and publicity exposure · like the system */
 export const pickTemplate = (row: ProjectRow, media: boolean): string => {
   const big = (row.amountGranted || row.amountRequested) >= 100_000
   const zakat = row.funding === 'waqf'
@@ -96,7 +95,7 @@ export const pickTemplate = (row: ProjectRow, media: boolean): string => {
   return big ? `مشروع خيري أكبر من 100 ألف ${seen}` : `أقل من 100 ألف ${seen}`
 }
 
-/** خطوات اعتماد الاتفاقية · أربع محطات، آخرها الجهة */
+/** Agreement approval steps · four stages, the last one being the entity */
 export interface AgreementStep {
   role: string
   state: 'done' | 'now' | 'pending'
@@ -106,10 +105,10 @@ export interface AgreementStep {
 
 export interface AgreementDetail extends Agreement {
   template: string
-  /** نص الاتفاقية المولَّد */
+  /** Generated agreement text */
   body: AgreementClause[]
   steps: AgreementStep[]
-  /** حلقة الإرجاع لو حصلت */
+  /** The send-back link, if it happened */
   returned?: { by: string; at: string; note: string }
 }
 
@@ -118,21 +117,21 @@ export interface AgreementClause {
   items: string[]
 }
 
-/* ═══════════════ الدفعات ═══════════════ */
+/* Disbursements */
 
 export interface PaymentDetail extends Payment {
-  /** شرط الصرف المكتوب في إذن الصرف · من ملاحظات المشرف */
+  /** Disbursement condition written on the payment order · from the supervisor's notes */
   condition?: string
-  /** التحويل تم عبر */
+  /** Transfer made via */
   via?: string
-  /** الجهة رفعت سند القبض */
+  /** The entity uploaded the receipt voucher */
   receipt?: boolean
 }
 
-/* ═══════════════ الحصيلة ═══════════════ */
+/* Outcome */
 
 export interface ProjectDetail {
-  /** ليه ثريد المراسلة اتفتح · القناة دي ما بتتفتحش من فراغ */
+  /** Why the correspondence thread was opened · this channel doesn't open for no reason */
   threadWhy: string
   agreement: AgreementDetail | null
   payments: PaymentDetail[]
@@ -140,12 +139,12 @@ export interface ProjectDetail {
   messages: ThreadMessage[]
   minutes: Minute[]
   correspondence: Correspondence[]
-  /** المرفقات المولَّدة من الإجراءات · مش من نموذج التقديم */
+  /** Attachments generated from actions · not from the submission form */
   actionFiles: Attachment[]
 }
 
 export interface ThreadMessage {
-  /** اسم الموظف، أو «الجهة» */
+  /** Employee name, or "the entity" */
   by: string
   from: 'staff' | 'entity'
   at: string
@@ -155,15 +154,14 @@ export interface ThreadMessage {
 const d = (base: Date, add: number) => {
   const x = new Date(base)
   x.setDate(x.getDate() + add)
-  return `${x.getDate()}/${x.getMonth() + 1}/${x.getFullYear()}`
+  /* Warning: **ISO, not `d/m/yyyy`.** The raw format used to show up as-is in a card — "next
+     disbursement 14/8/2025" next to "16 April 2025" in the table below it. The date is now stored
+     as ISO and shown only through `<DateText>`. */
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
 }
 
-/* `d/m/yyyy` ما تترتّبش كنص: «5/4/2025» بتيجي قبل «13/4/2025» أبجديًا
-   وبعدها زمنيًا. الترتيب لازم يبقى على تاريخ حقيقي. */
-const ts = (date: string) => {
-  const [dd, mm, yy] = date.split('/').map(Number)
-  return new Date(yy, mm - 1, dd).getTime()
-}
+/* Sorted by a real date, not by the text */
+const ts = (date: string) => new Date(date).getTime()
 
 const FOLLOW_TYPES: FollowUpType[] = [
   'التواصل مع الشريك', 'تحديث الاتفاقية', 'تحديث تقرير المشروع', 'منتج معرفي',
@@ -178,7 +176,7 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
   const grant = row.amountGranted || row.amountRequested
   const media = row.impact || grant >= 500_000
 
-  /* ── الاتفاقية ── */
+  /* -- Agreement -- */
   const hasAgreement = reached(row, 'اعتماد الإتفاقية')
   const signed = reached(row, 'المشرف إذن الصرف')
   const paper = row.stage === 'الإتفاقيات الورقية'
@@ -186,8 +184,8 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
 
   const agreement: AgreementDetail | null = hasAgreement
     ? {
-        /* السنة في الداتا `2025-f` (سنة + مصدر تمويل) · الرقم
-           المعروض ياخد السنة بس، زي كود المشروع. */
+        /* The year in the data is `2025-f` (year + funding source) · the displayed number takes
+           just the year, like the project code. */
         no: `AG-${row.year.slice(0, 4)}-${row.id}`,
         kind: paper ? 'ورقية' : 'إلكترونية',
         status: signed ? 'موقّعة ونافذة' : 'بانتظار اعتماد الجهة',
@@ -211,8 +209,9 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
       }
     : null
 
-  /* ── الدفعات ──
-     عدد الدفعات من المبلغ زي النظام: الصغير دفعة، والكبير تلاتة. */
+  /* -- Disbursements --
+     Disbursement count is derived from the amount, like the system: small amounts get one, large
+     ones get three. */
   const count = grant >= 500_000 ? 3 : grant >= 150_000 ? 2 : 1
   const split = count === 3 ? [0.5, 0.4, 0.1] : count === 2 ? [0.6, 0.4] : [1]
   const paidUpTo = !signed
@@ -240,9 +239,10 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
       }))
     : []
 
-  /* ── المتابعات ──
-     في النظام المتابعة بتوثّق **شرط الدفعة** غالبًا، وبتيجي قبل إذن
-     الصرف بأيام. فالمولَّد هنا بيربطها بالدفعات لا بيرميها عشوائيًا. */
+  /* -- Follow-ups --
+     In the system a follow-up usually documents **a disbursement condition**, coming a few days
+     before the payment order. So the generator here ties it to the disbursements rather than
+     throwing it in at random. */
   const followUps: FollowUp[] = []
   if (hasAgreement) {
     followUps.push({
@@ -291,17 +291,17 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
   }
   followUps.sort((a, b) => ts(b.at) - ts(a.at))
 
-  /* ── المراسلة ──
-     في النظام دي قناة بتتفتح لما إجراء يتعطّل، مش تواصل عام ·
-     ٣٨ مشروعًا مفحوصًا فيهم ثريد واحد، وكله عن سند واحد اتعطّل. */
+  /* -- Correspondence --
+     In the system this channel opens when a step stalls, not for general contact — out of 38
+     projects checked, only one thread exists, and it's entirely about one voucher that stalled. */
   const STUCK: Record<string, string> = {
     'رفع سند القبض والقيد': 'رفع سند قبض المبلغ لاستكمال إجراءات سير المشروع',
     'استكمال بيانات المشروع': 'استكمال بيانات المشروع وإرفاق الموازنة التفصيلية',
     'رفع التقرير الختامي': 'رفع التقرير الختامي لاستكمال إجراءات إغلاق المشروع',
     'رفع تقرير مرحلي': 'رفع تقرير الإنجاز المرحلي',
   }
-  /* الإجراء الواقف على الجهة دلوقتي، وإلا سند من دفعة مصروفة ·
-     كل ثريد قرأناه في النظام كان عن مرفق من الجهة اتعطّل. */
+  /* The action currently pending with the entity, or a voucher from a spent disbursement · every
+     thread read in the system was about an attachment from the entity that stalled. */
   const ask = STUCK[row.stage] ?? (paidUpTo > 0 ? 'رفع سند قبض الدفعة لاستكمال إجراءات الصرف' : null)
   const why = STUCK[row.stage]
     ? `الإجراء متوقف لدى الجهة في مرحلة «${row.stage}».`
@@ -330,19 +330,19 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
       ]
     : []
 
-  /* ── المحاضر ──
-     في الأرشيف ١٤٩ محضرًا، اتنين بس مربوطين بمشروع. فالندرة مقصودة. */
+  /* -- Minutes --
+     The archive has 149 minutes, only two tied to a project. So the rarity is intentional. */
   const minutes: Minute[] = row.impact && hasAgreement
     ? [{ no: String(20 + Math.floor(rnd() * 40)), date: d(start, 20), file: `عرض ${row.field} على اللجنة` }]
     : []
 
-  /* ── الصادر والوارد ──
-     صفر من ٢٧ قيدًا مربوط بمشروع في النظام العامل. بنسيبها فاضية
-     عمدًا: عرض كيان ميّت كأنه شغّال بيضلّل الكلاينت. */
+  /* -- Correspondence log --
+     Zero out of 27 entries tied to a project in the live system. Left empty on purpose: showing a
+     dead entity as if it were active would mislead the client. */
   const correspondence: Correspondence[] = []
 
-  /* ── مرفقات الإجراءات ──
-     المرفق في النظام عنوانه **اسم الإجراء** اللي ولّده. */
+  /* -- Action attachments --
+     An attachment's title in the system is **the name of the action** that generated it. */
   const actionFiles: Attachment[] = []
   payments.forEach((p) => {
     if (p.status !== 'مدفوع') return
@@ -355,11 +355,11 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
   return { threadWhy: why, agreement, payments, followUps, messages, minutes, correspondence, actionFiles }
 }
 
-/* ═══════════════ نص الاتفاقية ═══════════════ */
+/* Agreement text */
 
 /**
- * النص المولَّد · مبني من نفس القالب اللي في النظام حرفيًّا، بمتغيّراته
- * معبّاة من الصف. البنود مش زينة: دي اللي الجهة بتوقّع عليها.
+ * Generated text · built from the same template used in the system, verbatim, with its variables
+ * filled from the row. The clauses aren't decoration — they're what the entity signs.
  */
 function contractBody(
   row: ProjectRow, entityName: string, grant: number, media: boolean,
@@ -407,22 +407,22 @@ function contractBody(
     title: 'تعريف',
     items: [
       'المقصود بمصطلح «المؤسسة» في هذه الورقة هي مؤسسة سليمان أبانمي الأهلية.',
-      `ومدة تنفيذ المشروع ${nf.format(row.durationDays)} يومًا من تاريخ صرف الدفعة الأولى.`,
+      `ومدة تنفيذ المشروع ${countOf(row.durationDays, NOUN.day)} من تاريخ صرف الدفعة الأولى.`,
     ],
   })
 
   return out
 }
 
-/* ═══════════════ مثال للعرض ═══════════════ */
+/* A display example */
 
 /**
- * أول مشروع في النموذج فيه الحاجة دي فعلًا.
+ * The first project in the mock actually has this.
  *
- * التابات بتفضى حسب المرحلة · وده صح، النظام كده. لكن الكلاينت وهو
- * بيجرّب ممكن يفتح مشروعًا في الدراسة ويلاقي ثلاث تابات فاضية
- * ويفتكر التصميم ناقص. فالحالة الفارغة بتوديه لمشروع وصل للمرحلة
- * دي، بدل ما تسيبه يدوّر.
+ * Tabs go empty depending on the stage, and that's correct, that's how the system behaves. But a
+ * client trying it out might open a project under review and find three empty tabs and assume the
+ * design is incomplete. So the empty state points them to a project that has reached that stage,
+ * instead of leaving them to go looking.
  */
 export function exampleWith(
   rows: ProjectRow[],

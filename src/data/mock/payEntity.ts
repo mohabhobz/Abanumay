@@ -1,34 +1,24 @@
 import { BANKS } from './registration'
 import type { PayRequest, PayState } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   الصرف · النقط ح-2 إلى ح-7 من الميتنج الأسبق
+/* Disbursement · covers who issues the payment request, what the entity sees, whether a receipt is
+   mandatory, and the bank account. */
 
-   خمس إجابات من مظفر، وكلها بتلمس نفس الشاشة:
-   ح-2 · مين بيصدر طلب الدفعة
-   ح-3 · الجهة بتشوف إيه
-   ح-4 · سند القبض إلزامي ولا لأ
-   ح-5..7 · الحساب البنكي
-   ═══════════════════════════════════════════════════════════ */
+/* The action's direction is reversed.
 
-/* ═══════════════════════════════════════════════════════════
-   ح-2 · اتجاه الإجراء بيتقلب
+   This isn't an added screen, it's a reversed flow. Currently the grant officer creates the request
+   and sends it to the entity to attach justification and return it. In the revised flow the entity
+   initiates: it says "we're done, send this payment" along with its justification from the start.
 
-   ⚠️ **دي مش شاشة زيادة، دي قلب اتجاه.** في الكرنت مشرف المنح
-   بيعمل الطلب وبيبعته **للجهة** عشان تحطّ المسوغات وترجّعه. في
-   الوثيقة **الجهة** هي اللي بتبدأ: بتقول «إحنا خلصنا، ادّونا فلوس
-   الدفعة دي» ومعاها مسوغاتها من الأول.
-
-   والفرق العملي مش في عدد الخطوات، هو في **مين مستنّي مين**:
-   في الكرنت المشرف بيفتكر يعمل الطلب، وفي الوثيقة الطابور بييجي له.
-   ═══════════════════════════════════════════════════════════ */
+   The practical difference isn't the number of steps, it's who is waiting on whom: currently the
+   officer has to remember to create the request; in the revised flow the queue comes to them. */
 export type PayOrigin = 'entity' | 'supervisor'
 
 export interface OriginDef {
   key: PayOrigin
   label: string
   who: string
-  /** الخطوات بالترتيب · بتتقرا كجملة */
+  /** Steps in order · read as a sentence */
   flow: string[]
   note: string
 }
@@ -53,37 +43,32 @@ export const ORIGINS: OriginDef[] = [
 export const originOf = (k: PayOrigin): OriginDef =>
   ORIGINS.find((x) => x.key === k) ?? ORIGINS[0]
 
-/* ═══════════════════════════════════════════════════════════
-   ح-3 · اللي الجهة بتشوفه
+/* What the entity sees.
 
-   مظفر: «تقرير الدفعات بيعرض حالتين بس · مدفوع وغير مدفوع» ·
-   والدورة الحقيقية سبع مراحل داخلية.
+   The payment report shows only two states: paid and unpaid — while the real cycle has seven
+   internal stages.
 
-   ⚠️ **والحلّ مش إن الجهة تشوف السبعة.** حالات زي «بانتظار مدير
-   المنح» و«بانتظار المالية» بتقول للجهة **مين واقف عندنا إحنا**،
-   وهي مش بتاعتها ولا بتقدر تعمل فيها حاجة · فبتتحوّل لقلق لا
-   لمعلومة.
+   The fix isn't showing the entity all seven. States like "pending grants manager" or "pending
+   finance" tell the entity who's holding things up on our side, which isn't theirs and they can't
+   act on — so it becomes worry, not information.
 
-   الخمسة دول هما اللي **الجهة تقدر تتصرّف** بناءً عليهم:
-   إما تكمّل، إما تستنّى، إما خلاص.
-   ═══════════════════════════════════════════════════════════ */
+   The five shown here are the ones the entity can act on: continue, wait, or done. */
 export type EntityPayState = 'draft' | 'inflight' | 'complete' | 'paid' | 'rejected'
 
 export interface EntityStateDef {
   key: EntityPayState
   label: string
   /**
-   * الجهة تعمل إيه دلوقتي · فاضي يعني مفيش فعل مطلوب.
+   * What the entity should do now · empty means no action is required.
    *
-   * ⚠️ و«مفيش فعل» **مش معناها استنّى دايمًا**: المدفوع والمرفوض
-   * خلصوا · فحالة نهائية مكتوب جنبها «تستنّى» بتقول للجهة إن
-   * في حاجة جاية، وهي مفيش.
+   * "No action" doesn't always mean "wait": paid and rejected are both final — labeling a final
+   * state as "wait" tells the entity something more is coming, when nothing is.
    */
   act: string
-  /** لسه ماشي · بس دي اللي بيتقال جنبها «تستنّى» */
+  /** Still in progress · but this is the one labeled "wait" */
   waiting?: boolean
   tone: 'mute' | 'ret' | 'warn' | 'ok' | 'no' | 'teal'
-  /** الحالات الداخلية اللي بتتلمّ تحته */
+  /** The internal states grouped under this */
   inner: string
 }
 
@@ -105,12 +90,11 @@ export const ENTITY_STATES: EntityStateDef[] = [
 ]
 
 /**
- * الحالة الداخلية ← اللي الجهة بتشوفه.
+ * Internal status → what the entity sees.
  *
- * ⚠️ **تلات حالات داخلية بتتلمّ في واحدة.** «مراجعة المشرف»
- * و«بانتظار مدير المنح» و«بانتظار المالية» كلهم عند الجهة
- * **«تحت إجراء الدفع»** · لأن الجهة ما بتقدرش تعمل حاجة في
- * التلاتة، والفرق بينهم شغلنا الداخلي لا شغلها.
+ * Three internal states collapse into one. "Officer review", "pending grants manager", and "pending
+ * finance" all show to the entity as "payment in progress" — the entity can't act on any of the
+ * three, and the distinction between them is internal, not theirs.
  */
 export const entityStateOf = (s: PayState): EntityStateDef => {
   const k: EntityPayState =
@@ -121,19 +105,17 @@ export const entityStateOf = (s: PayState): EntityStateDef => {
   return ENTITY_STATES.find((x) => x.key === k) ?? ENTITY_STATES[1]
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ح-4 · سند القبض
+/* Receipt.
 
-   مظفر: «الدفعة طلعت من المحاسب وعنده ما يثبت إنه حوّلها · لكن
-   هل الطرف التاني استلمها ولا لأ، **نخليه موجود بس مش الكور**».
+   The payment leaves the accountant's hands with proof it was transferred — but whether the other
+   side actually received it is a separate question, present but not central.
 
-   ⚠️ **فالمستندان مش نوعًا واحدًا:**
-     إثبات التحويل   مننا · إلزامي · بيقفل خطوة 17
-     سند القبض       من الجهة · اختياري · بيقفل الحلقة عندها
+   So the two documents aren't the same kind:
+   Transfer proof — from us · mandatory · closes our step
+   Receipt · from the entity · optional · closes the loop on their end
 
-   وخلطهم في «مستندات الدفعة» كان بيخلّي الاتنين يبانوا بنفس
-   الوزن، والاتنين بيتسندوا لنفس الشخص · وهما لأ.
-   ═══════════════════════════════════════════════════════════ */
+   Mixing them together as "payment documents" made both look equally weighted and as if the same
+   person was responsible for both — they aren't. */
 export interface PayProof {
   key: 'transfer' | 'receipt'
   label: string
@@ -159,30 +141,25 @@ export const PAY_PROOFS: PayProof[] = [
   },
 ]
 
-/* ═══════════════════════════════════════════════════════════
-   ح-5 و ح-6 و ح-7 · الحساب البنكي
+/* The bank account.
 
-   مظفر بالترتيب:
-   · الجهة ممكن يكون عندها **أكتر من حساب**، وبتضيف حسابات وقت
-     التسجيل وبعده.
-   · **المشروع بيتسجّل على حساب واحد من البداية** حسب تصنيف
-     الحساب · «الجمعية عندها حساب لكل وجه خير: تحفيظ، تفطير
-     صائم، أضاحي، حج».
-   · الدفعة **ما تتقسّمش** على أكتر من حساب.
-   · وتغيير الحساب وقت الدفع **صلاحية مشرف/مدير المنح** ·
-     **مش موظف المالية**، لأنه «المفروض ييجي له كل شيء جاهز
-     للتنفيذ، وما عندهش تواصل مباشر مع الجهات».
-   ═══════════════════════════════════════════════════════════ */
+   · An entity can have more than one account, and can add accounts at registration and afterward.
+   · A project is tied to a single account from the start, based on the account's designated cause
+   (an organization may have one account per cause: memorization, iftar, sacrifices, hajj).
+   · A payment is never split across more than one account.
+   · Changing the account at payment time is a grants officer/manager permission, not finance
+   staff's — finance is expected to receive everything ready to execute, with no direct contact with
+   entities. */
 export interface EntityBank {
   id: string
   bank: string
-  /** وجه الخير اللي الحساب مخصَّص له · ودي سبب تعدّد الحسابات */
+  /** The cause the account is designated for — the reason accounts can be multiple */
   purpose: string
   iban: string
   active: boolean
 }
 
-/** حسابات الجهة · مولَّدة من رقمها عشان تفضل ثابتة لكل جهة */
+/** Entity accounts · generated from its number so they stay stable per entity */
 export const banksOf = (entityId: string): EntityBank[] => {
   const seed = Number(entityId) || 1
   const purposes = ['الحساب العام', 'تحفيظ القرآن', 'تفطير الصائمين', 'الأضاحي', 'كفالة الأيتام']
@@ -191,14 +168,14 @@ export const banksOf = (entityId: string): EntityBank[] => {
     id: `${entityId}-${i + 1}`,
     bank: BANKS[(seed + i) % BANKS.length],
     purpose: purposes[i % purposes.length],
-    /* ⚠️ آيبان مموّه بالكامل · ده نموذج، ومفيش داعي لرقم يشبه
-       الحقيقي في ملف بيتقرا في ريبو مفتوح */
+    /* A fully obfuscated IBAN · this is a mock, no need for a number resembling a real one in a
+       file readable in an open repo */
     iban: `SA•• •••• •••• ${String(1000 + ((seed * (i + 7)) % 9000))}`,
     active: i !== n - 1 || n === 2,
   }))
 }
 
-/** صاحب صلاحية تغيير حساب الدفع · ح-6 */
+/** Who has permission to change the payment account */
 export const BANK_CHANGE_ROLES = ['مشرف المنح', 'مدير المنح']
 export const BANK_CHANGE_DENIED = 'موظف المالية'
 

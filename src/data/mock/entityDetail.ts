@@ -2,45 +2,39 @@ import type { EntityRow } from '@/types/domain'
 import { BANKS, ENTITY_DOCS } from './taxonomy'
 
 /**
- * ملف الجهة المشتقّ · التعريف والاتصال والأشخاص والمستندات
- * والحسابات البنكية وسجل الجهة.
+ * Derived entity file · identification, contact, people, documents, bank accounts, and entity
+ * history.
  *
- * **ليه مولَّد لا مكتوب:** نفس سبب `detail.ts` في المشاريع. صفحة
- * الجهة كانت بتعرض تسعة حقول من أصل **٣٥** موجودين في النظام
- * العامل، فالكلاينت يفتح أي جهة ويلاقي الملف نص فاضي · مش لأن
- * التصميم ناقص لكن لأن الداتا مش موجودة. الملف ده بيبني الباقي من
- * الصف نفسه، فكل جهة في النموذج تبقى قابلة للتجربة.
+ * Generated rather than hand-written: the entity page shows only 9 of the 35 fields tracked by the
+ * live system, so opening any entity would reveal mostly empty content — not from incomplete design
+ * but missing data. This file derives the rest from the row itself, so every entity stays
+ * explorable.
  *
- * **مطابقة للنظام العامل** · الحقول والمجموعات دي مقروءة من موديول
- * الجهات في ١٧ سبتمبر ٢٠٢٦ (راجع `Abanumay_System_Live_Audit.md`
- * قسم ٦):
+ * Field counts mirror the live system: identification 9, contact 4, people 5, documents 8, system
+ * 6. Bank accounts have 8 columns, 6 banks, and 7 standardized rejection reasons (no free-text
+ * rejection). Entity actions are "Accept & Activate" / "Reject & Suspend", each requiring a
+ * mandatory admin note.
  *
- *  - التعريف ٩ · الاتصال ٤ · الأشخاص ٥ · المستندات ٨ · النظام ٦
- *  - الحسابات البنكية بأعمدتها الثمانية، وستة بنوك، و**سبعة أسباب
- *    رفض مقنّنة** · النظام ما بيسيبش سبب الرفض نصًّا حرًّا.
- *  - الإجراء على الجهة: «قبول و تفعيل» / «رفض وإيقاف» ومعاه
- *    **ملاحظة إدارية إلزامية**.
+ * Governing rule: details follow entity status. A new entity has no active bank account or decision
+ * history; a suspended entity's history ends with a suspension entry and reason; an accepted legacy
+ * entity has the full cycle.
  *
- * **القاعدة الحاكمة** (زي المشاريع): التفاصيل بتتبع **حالة الجهة**.
- * الجهة الجديدة مالهاش حساب بنكي مفعّل ولا سجل قرارات؛ الموقوفة
- * سجلها بينتهي بقيد إيقاف وسببه؛ والمقبولة القديمة لها الدورة كلها.
+ * All names and numbers here are fictional; only the structure is real.
  *
- * ⚠️ كل اسم ورقم هنا **وهمي** · المستودع عام. اللي حقيقي هو البنية.
- *
- * لما الباك اند يجهز: `GET /entities/:id/detail` بنفس الشكل،
- * والملف ده يتشال.
+ * Once the backend is ready, GET /entities/:id/detail will return the same shape and this file can
+ * be removed.
  */
 
-/* ═══════════════════ الأنواع ═══════════════════ */
+/* Types */
 
 export interface EntityDoc {
   name: string
   uploaded: boolean
-  /** تاريخ الرفع · للمرفوع بس */
+  /** Upload date · only for uploaded documents */
   at?: string
-  /** تاريخ الانتهاء للمستندات اللي ليها صلاحية */
+  /** Expiry date for documents that have one */
   expires?: string
-  /** انتهت صلاحيته وهو مرفوع · أسوأ من الناقص لأنه بيعدّي بالنظرة */
+  /** Expired while still marked as uploaded · worse than missing since it passes at a glance */
   expired?: boolean
 }
 
@@ -51,7 +45,7 @@ export interface BankAccount {
   accountName: string
   iban: string
   status: 'مفعل' | 'غير مفعل' | 'بانتظار التفعيل'
-  /** سبب الرفض · واحد من السبعة المقنّنة، للمرفوض بس */
+  /** Rejection reason · one of the seven standardized reasons, only for rejected documents */
   reason?: string
   certificate: string
   attachment?: string
@@ -66,13 +60,13 @@ export interface EntityEvent {
   by: string
   at: string
   time: string
-  /** الملاحظة الإدارية · إلزامية على القبول والرفض في النظام */
+  /** Admin note · mandatory on both accept and reject actions */
   note?: string
   fields?: { k: string; v: string }[]
 }
 
 export interface EntityDetail {
-  /* التعريف */
+  /* Identification */
   foundedAt: string
   licenseEndsAt: string
   licenseExpired: boolean
@@ -80,30 +74,33 @@ export interface EntityDetail {
   boardExpired: boolean
   exceptionGeneral: boolean
   exceptionWaqf: boolean
-  /* الاتصال */
+  /* Contact */
   phone: string
   website: string
-  /* الأشخاص */
+  /* People */
   directorName: string
   directorMobile: string
   clerkName: string
   clerkMobile: string
   clerkEmail: string
-  /* النظام */
+  /* System */
   updatedAt: string
   userNo: string
   username: string
   accountType: string
   adminNote: string
-  /* الملفات */
+  /* Files */
   docs: EntityDoc[]
   banks: BankAccount[]
   log: EntityEvent[]
 }
 
-/* ═══════════════════ البذرة ═══════════════════ */
+/* Seed */
 
-/** نفس الجهة تدّي نفس الملف في كل تحميل · وإلا الأرقام بتتغيّر تحت إيد الكلاينت */
+/**
+ * The same entity produces the same file on every load, otherwise the numbers would shift while the
+ * client is looking at them
+ */
 const seeded = (id: string) => {
   let h = 7
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
@@ -115,14 +112,13 @@ const seeded = (id: string) => {
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-const dmy = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 const shift = (isoDate: string, days: number) => {
   const d = new Date(isoDate)
   d.setDate(d.getDate() + days)
   return d
 }
 
-/* أسماء وهمية · تركيب سعودي مألوف بلا ما يقصد شخصًا بعينه */
+/* Fictional names · a familiar Saudi naming pattern, not referring to any real person */
 const FIRST = ['عبدالله', 'محمد', 'سلطان', 'خالد', 'فهد', 'ناصر', 'سعود', 'بندر', 'ماجد', 'تركي']
 const LAST = ['القحطاني', 'العتيبي', 'الدوسري', 'الشمري', 'الحربي', 'المطيري', 'الزهراني', 'الغامدي']
 
@@ -138,9 +134,9 @@ const NOTES_STOP = [
 ]
 
 /**
- * أسباب رفض الحساب البنكي · **سبعة مقنّنة** في النظام العامل.
- * محطوطة هنا كقائمة مقفولة عمدًا: ده نمط بنعمّمه، والرفض بسبب
- * مختار بيتحلّل وبيتقارن، والرفض بنصّ حرّ بيفضل حبيسًا في الصف.
+ * Bank account rejection reasons · the seven standardized values used by the live system.
+ * Kept as a deliberately closed list: a reason picked from a fixed set can be analyzed and
+ * compared, while free-text rejection stays locked inside the row.
  */
 export const BANK_REJECT_REASONS = [
   'إلغاء الحساب بناءً على طلب الجمعية',
@@ -154,7 +150,7 @@ export const BANK_REJECT_REASONS = [
 
 export const ACCOUNT_TYPES = ['جهة مستفيدة', 'جهة مستفيدة، وقفية', 'جهة حكومية'] as const
 
-/* ═══════════════════ المولّد ═══════════════════ */
+/* Generator */
 
 export function entityDetail(e: EntityRow): EntityDetail {
   const rnd = seeded(e.id)
@@ -164,22 +160,21 @@ export function entityDetail(e: EntityRow): EntityDetail {
   const stopped = e.activation.startsWith('معلق') || e.activation === 'مرفوض'
   const fresh = e.activation === 'معلق (جديد)'
 
-  /* التأسيس قبل التسجيل عندنا بسنتين لسبع · الجهة بتسجّل عندنا بعد
-     ما تشتغل، مش يوم ما تتأسس. */
+  /* Founding date is one to seven years before registration with us — an entity registers after
+     it's already operating, not on the day it's founded. */
   const founded = shift(e.registeredAt, -int(2, 7) * 365 - int(0, 300))
-  /* ⚠️ نهاية الترخيص **ما بتتولّدش**. كانت
-     `shift(e.registeredAt, int(1,6) * 365 + int(0,200))`، والصيغة
-     دي بتربط الترخيص بيوم ما الجهة سجّلت **عندنا** · وده مش هو.
-     الترخيص بيتجدّد كل خمس سنين عند جهة الترخيص، وعمره مالوش علاقة
-     بتاريخ تسجيلها في المؤسسة.
+  /* License expiry is NOT generated. It used to be `shift(e.registeredAt, int(1,6) * 365 +
+     int(0,200))`, which tied the license to the entity's registration date with us — but that's not
+     what it represents. The license renews every five years with the licensing authority, and its
+     age has nothing to do with the entity's registration date.
 
-     والنتيجة كانت تناقضًا مكتوبًا على الشاشة: جهة مسجّلة ٢٠١٦،
-     حوكمتها «ممتازة»، حالتها «مقبول»، وآخد منها ١١ مشروعًا · وجنبها
-     «نهاية الترخيص: ٢٠١٩» يعني عشر سنين بلا تجديد واحد. الرقم
-     المولَّد ما بيعرفش يقرا الحالة اللي جنبه.
+     The result was a visible contradiction on screen: an entity registered in 2016, with
+     "excellent" governance, "accepted" status, and 11 projects — next to "License expiry: 2019",
+     i.e. ten years without a single renewal. The generated number had no awareness of the status
+     shown beside it.
 
-     بقى حقلًا في `EntityRow` بيتقرا ويتراجع زي أي بيان تاني، والحالة
-     المنتهية موجودة في تلات جهات مقصودة عشان تتشاف. */
+     It is now a field on `EntityRow` that is read and rendered like any other data point, and the
+     expired state appears on three entities deliberately, so it can be seen. */
   const licenseEnds = new Date(e.licenseEndsAt)
   const licenseExpired = licenseEnds.getTime() < Date.now()
   const boardEnds = shift(e.registeredAt, int(2, 8) * 365)
@@ -188,22 +183,22 @@ export function entityDetail(e: EntityRow): EntityDetail {
   const director = `${pick(FIRST)} ${pick(LAST)}`
   const clerk = `${pick(FIRST)} ${pick(LAST)}`
 
-  /* ── المستندات ──
-     العدد المرفوع بييجي من الصف نفسه (`docsUploaded`) عشان الرقم
-     اللي في الجدول والشريط ما يخالفش القايمة اللي جوّه. */
+  /* Documents
+     The uploaded count comes from the row itself (`docsUploaded`) so the number in the table and
+     the progress bar never contradicts the list inside. */
   const docs: EntityDoc[] = ENTITY_DOCS.map((name, i) => {
     const uploaded = i < e.docsUploaded
     if (!uploaded) return { name, uploaded: false }
     const at = iso(shift(e.registeredAt, int(0, 400)))
-    /* التلاتة الأولى بس ليها صلاحية · الترخيص والسجل والزكاة */
+    /* Only the first three have an expiry date · license, registration, and zakat certificate */
     if (i > 2) return { name, uploaded: true, at }
     const exp = shift(at, int(200, 900))
     return { name, uploaded: true, at, expires: iso(exp), expired: exp.getTime() < Date.now() }
   })
 
-  /* ── الحسابات البنكية ──
-     الجهة الجديدة مالهاش حساب مفعّل: التفعيل إجراء بيحصل بعد
-     القبول، فحسابها بيفضل «بانتظار التفعيل». */
+  /* Bank accounts
+     A new entity has no active account: activation happens after acceptance, so its account stays
+     "pending activation". */
   const bankCount = fresh ? 1 : int(1, 3)
   const banks: BankAccount[] = Array.from({ length: bankCount }, (_, i) => {
     const bank = BANKS[(Number(e.id) + i) % BANKS.length]
@@ -217,7 +212,7 @@ export function entityDetail(e: EntityRow): EntityDetail {
       bank,
       shortName: e.name.split(' ').slice(0, 2).join(' '),
       accountName: e.name,
-      /* آيبان وهمي بشكل صحيح (SA + ٢٢ رقم) بس بأرقام غير حقيقية */
+      /* A validly formatted fake IBAN (SA + 22 digits) using non-real numbers */
       iban: `SA${pad(int(10, 99))}XXXX${String(int(1000, 9999))}XXXXXXXXXXXX`,
       status,
       reason: status === 'غير مفعل' ? pick(BANK_REJECT_REASONS) : undefined,
@@ -226,10 +221,10 @@ export function entityDetail(e: EntityRow): EntityDetail {
     }
   })
 
-  /* ── سجل الجهة ──
-     نفس منطق سجل المشروع: القيد له نوع وحمولة، مش سطر نصّ. */
+  /* Entity history
+     Same logic as project history: an entry has a type and payload, not a text line. */
   const log: EntityEvent[] = []
-  const at = (d: Date) => ({ at: dmy(d), time: `${pad(int(8, 15))}:${pad(int(0, 59))}` })
+  const at = (d: Date) => ({ at: iso(d), time: `${pad(int(8, 15))}:${pad(int(0, 59))}` })
   const staff = () => `${pick(FIRST)} ${pick(LAST)}`
 
   const dReg = new Date(e.registeredAt)
@@ -318,14 +313,15 @@ export function entityDetail(e: EntityRow): EntityDetail {
     })
   }
 
-  /* الأحدث فوق · بترتيب **التاريخ الفعلي** لا ترتيب البناء.
-     القيود بتتبني بمنطق الحالة لا بالزمن (الإيقاف بيتبني آخر حاجة
-     وتاريخه ممكن يبقى أقدم من تحديث البيانات)، و`d/m/yyyy` نصًّا
-     بيترتّب أبجديًا فـ«5/5» بتيجي قبل «15/5». فالمقارنة بالوقت. */
+  /* Most recent first · ordered by actual date, not build order.
+     Entries are built by status logic, not chronologically (the suspension entry is built last and
+     its date can be earlier than the latest data update), and `d/m/yyyy` as a string sorts
+     alphabetically, so "5/5" comes before "15/5". Hence comparing by time value. */
   const ts = (e: EntityEvent) => {
-    const [dd, mm, yy] = e.at.split('/').map(Number)
     const [h, mi] = e.time.split(':').map(Number)
-    return new Date(yy, mm - 1, dd, h, mi).getTime()
+    const d = new Date(e.at)
+    d.setHours(h, mi)
+    return d.getTime()
   }
   log.sort((a, b) => ts(b) - ts(a))
 
@@ -346,7 +342,7 @@ export function entityDetail(e: EntityRow): EntityDetail {
     clerkName: clerk,
     clerkMobile: '9665XXXXXXXX',
     clerkEmail: `clerk-${e.id}@example.org`,
-    updatedAt: last ? last.at : dmy(new Date(e.registeredAt)),
+    updatedAt: last ? last.at : iso(new Date(e.registeredAt)),
     userNo: `U-${e.id}`,
     username: `dept${e.id}`,
     accountType: e.type === 'وقف' ? ACCOUNT_TYPES[1] : ACCOUNT_TYPES[0],

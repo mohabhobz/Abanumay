@@ -4,8 +4,10 @@ import {
   Empty, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
-import { pct, REQUEST_NOUN, nounAfter } from '@/lib/format'
+import { countOf, NOUN, nounAfter, pct, REQUEST_NOUN } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
+import { Crumbs } from '@/components/shell'
+import { ENTITY_CREATE_LABEL } from '../labels'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useStickyGroup } from '@/hooks/useStickyGroup'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -28,26 +30,22 @@ import { COLS, GROUPS } from './columns'
 const KEYS = ['q', 'state', 'type', 'region', 'short', 'view', 'group', 'adv'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/* ═══════════════════════════════════════════════════════════
-   صندوق طلبات التسجيل · BPD-002
+/* Registration request inbox.
 
-   ⚠️ **الصندوق ده مش «الجهات الجديدة».** القاعدة 2 بتقول إن
-   الحساب ما بيتعملش قبل الاعتماد · فاللي في الصندوق **طلبات** من
-   أطراف برّه المؤسسة، والجهة بتتولد في آخر السلسلة لا أولها.
-   والفرق ده هو سبب وجود شاشة منفصلة أصلًا: صفحة الجهات بتعرض
-   سجلًا، ودي بتعرض **دور مراجعة**.
+   Note: this inbox isn't "new entities". Rule 2 states no account is created before approval, so
+   what's in the inbox are requests from parties outside the institution, and the entity is
+   generated at the end of the chain, not the start. That difference is the whole reason this screen
+   exists separately: the entities page shows a record, this one shows a review role.
 
-   ═══ ستة صناديق في النظام العامل، شرائح هنا ═══
+   === Six inboxes in the live system, tabs here ===
 
-   النظام موزّع الطلبات على `dept_accept_all` و`_new` و`_edit`
-   و`_reject` و`_stopped` و`_notaccept` · ستة مداخل في القايمة
-   الجانبية لنفس الجدول بفلتر مختلف. والوثيقة عندها **حالة واحدة
-   بخمس قيم** (قاعدة 26)، فالشرائح هي الصناديق.
+   The system distributes requests across `dept_accept_all`, `_new`, `_edit`, `_reject`, `_stopped`
+   and `_notaccept` - six sidebar entries for the same table with a different filter. The spec has a
+   single status with five values (rule 26), so the tabs are the inboxes.
 
-   ⚠️ **و`dept_accept_edit` مش من دول.** الأغلب إنه طلبات تحديث
-   بيانات جهة قائمة · يعني الإجراء الفرعي التاني (19 خطوة) لا
-   التسجيل. مسجَّل سؤالًا في البريف (نوتة ن-5) ومش مبني هنا.
-   ═══════════════════════════════════════════════════════════ */
+   Note: `dept_accept_edit` isn't one of these. It's most likely update requests for an existing
+   entity's data - i.e. the other sub-process (19 steps), not registration. Logged as an open
+   question, and not built here. */
 
 const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'state', 'short']
 
@@ -79,7 +77,7 @@ export default function RequestsPage() {
     })
   }, [v])
 
-  /* الأقدم إرسالًا فوق · الصندوق دور مراجعة، والدور بالتاريخ */
+  /* Oldest submission first - the inbox is a review role, and a review role goes by date. */
   const sorted = useMemo(
     () => [...rows].sort((a, b) => a.submittedAt.localeCompare(b.submittedAt)),
     [rows],
@@ -88,7 +86,7 @@ export default function RequestsPage() {
   const filtered = activeCount(['view', 'group', 'adv']) > 0
   const readings = useMemo(() => readRegRequests(rows, filtered), [rows, filtered])
 
-  /** عدّاد كل حالة جوّه النطاق الحالي · بلا فلتر الحالة نفسه */
+  /** Count per status within the current scope - excluding the status filter itself. */
   const counts = useMemo(() => {
     const needle = v.q?.trim()
     const types = readList(v.type)
@@ -105,20 +103,19 @@ export default function RequestsPage() {
     return { m, total: base.length }
   }, [v.type, v.region, v.short, v.q])
 
-  /* ي-13 · التجميع بيفضل مع الجلسة بدل ما يضيع مع كل خروج */
+  /* Grouping persists with the session instead of resetting on every sign-out. */
   useStickyGroup('reg-requests', v.group, (x) => set({ group: x }))
 
   const group = groupChain(v.group, GROUPS)
   const grouped = group.length > 0
 
   const sheet: Sheet = useMemo(() => {
-    /* ⚠️ **الورقة مبنيّة في `sheetOf` لا هنا.** خمس شاشات كانت
-       بتكتب نفس التلات سطور بإيدها · وأول ما التجميع بقى سلسلة،
-       الخمسة كانوا هيحتاجوا نفس التعديل خمس مرات، واللي يتنسي
-       بيطلع ملفًا مختلفًا عن شاشته. */
+    /* Note: the sheet is built in `sheetOf`, not here. Five screens used to write the same three
+       lines by hand, and once the totals became a chain, all five would have needed the same edit
+       five times - and whichever gets missed ends up mismatched with its own screen. */
     const shown = orderCols(COLS, cols).filter((c) => !group.some((g) => g.key === c.key))
     const pickRows = selected.size ? sorted.filter((r) => selected.has(r.id)) : sorted
-    const parts = sheetOf(pickRows, shown, group, (n: number) => `${n} طلب`)
+    const parts = sheetOf(pickRows, shown, group, (n: number) => `${countOf(n, NOUN.request)}`)
     const stamp = new Date().toISOString().slice(0, 10)
     return { file: `abanumay-registration-${stamp}`, title: 'طلبات تسجيل الجهات', ...parts }
   }, [cols, sorted, selected, group])
@@ -156,6 +153,10 @@ export default function RequestsPage() {
     <AppLayout assistantContext={assistFor.page('طلبات تسجيل الجهات')}>
       <div className="viewstack">
         <div className="screen col">
+          {/* Note: this page is a child of "Entities" (opened from the "Registration requests"
+              button there) - it used to have no breadcrumb, so users had no way back except the
+              rail. Same `Crumbs` as the entity and review pages. */}
+          <Crumbs items={[{ label: 'الجهات', to: ROUTES.entities }, { label: 'طلبات التسجيل' }]} />
           <header>
             <div>
               <h1 className="ptitle">طلبات تسجيل الجهات</h1>
@@ -166,9 +167,14 @@ export default function RequestsPage() {
                 إلا بعد الاعتماد (قاعدة <span className="num">2</span>)
               </p>
             </div>
-            <Link className="btn btn-p" to={ROUTES.entityRegister}>
+            {/* Note: same action, name, and destination as on "Entities". Here it was "Register a
+                new entity" leading to the general entity form, and there "New entity registration"
+                leading to direct registration - two buttons for the same intent, with different
+                names and destinations. Whoever's here is staff, so the destination is direct
+                registration (rule 32), and the name is an imperative, per the writing guide. */}
+            <Link className="btn btn-p" to={ROUTES.entityNew}>
               <Icon name={icons.plus} size="sm" />
-              سجّل جهة جديدة
+              {ENTITY_CREATE_LABEL}
             </Link>
           </header>
 
@@ -179,9 +185,9 @@ export default function RequestsPage() {
             empty="ملفات الطلبات في النطاق الحالي مكتملة، ولا يوجد طلب متوقف. وسّع الفلتر لعرض المزيد."
           />
 
-          {/* ⚠️ الأربعة دي من مؤشرات الإجراء الستة · والاتنين
-              الباقيين (عدد الطلبات ونسبة المرفوضة) مكتوبين في
-              العنوان وفي السطر الأخير، فما اتكرروش كبطاقات. */}
+          {/* Note: these four come from the process's six indicators - the remaining two (request
+              count and rejection rate) appear in the title and closing line, so they aren't
+              repeated as cards. */}
           <div className="stats4">
             <Stat
               label="نسبة الطلبات المعتمدة"
@@ -230,12 +236,11 @@ export default function RequestsPage() {
                   onChange={(x) => set({ q: x || undefined })}
                   placeholder="ابحث برقم الطلب أو اسم الجهة أو رقم الترخيص…"
                 />
-                {/* ⚠️ **بلا `label` · القاعدة مكتوبة عند `.fsel-b`:**
-                    القائمة اللي جوّه شريط الأدوات بتلبس شكل الشريحة
-                    عشان الصفّ كله يبقى بلغة واحدة، **من غير عنوان
-                    فوقها**. الشاشة دي كانت الوحيدة اللي بتبعت عنوانًا،
-                    فالحقل ده كان بيطول عن جيرانه والعنوان بيتعلّق فوق
-                    الصفّ · والاسم مكتوب أصلًا في `all` («كل التصنيفات»). */}
+                {/* Note: no `label` - the rule is documented at `.fsel-b`: a dropdown inside the
+                    toolbar takes the tab's visual shape so the whole row reads as one language,
+                    with no heading above it. This screen was the only one sending a heading, so
+                    this field ran longer than its neighbors with a heading floating above the row -
+                    and the name is already in `all` ("All categories"). */}
                 <MultiSelect
                   values={readList(v.type)}
                   all={`كل التصنيفات (${ENTITY_TYPES.length})`}
@@ -261,9 +266,9 @@ export default function RequestsPage() {
               </div>
 
               <div className="ftool-a">
-                {/* ⚠️ **التجميع تحكّم عرض لا فلتر** · مكانه ركن العرض،
-                   وكان آخر صفّ الفلاتر فبينزل لوحده في سطر تاني
-                   أول ما الشريط يلفّ (شوف `PlansPage`). */}
+                {/* Note: grouping is a display control, not a filter - it belongs in the display
+                    corner; it used to be the filter row's last item, so it dropped to its own line
+                    as soon as the bar wrapped (see `PlansPage`). */}
                 {view === 'table' && (
                 <GroupPicker
                   icon={icons.rows}
@@ -274,7 +279,7 @@ export default function RequestsPage() {
                 )}
                 <ExportMenu
                   sheet={sheet}
-                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} طلب`}
+                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${countOf(selected.size || sorted.length, NOUN.request)}`}
                   count={selected.size}
                 />
                 {!mobile && (
@@ -350,7 +355,7 @@ export default function RequestsPage() {
                   onSelectAll={selectAll}
                   onOpen={(r) => navigate(ROUTES.entityRequest(r.id))}
                   group={grouped ? group : undefined}
-                  count={(n) => `${n} طلب`}
+                  count={(n) => `${countOf(n, NOUN.request)}`}
                 />
               </Glass>
               {grouped && (
@@ -364,13 +369,11 @@ export default function RequestsPage() {
               )}
             </>
           ) : (
-            /* ⚠️ **شبكة واحدة · الشرائح فوق هي الفلتر.**
-               الكروت كانت متقسّمة بترويسة لكل حالة · والشرائح فوق
-               بتفلتر بنفس الحالات وبتعدّها، فالتقسيم كان بيرسم نفس
-               التصنيف تاني على الداتا نفسها: المستخدم بيدوس «قيد
-               المراجعة» فبيلاقي قسمًا واحدًا عنوانه «قيد المراجعة».
-               وفي «كل الطلبات» كان بيحوّل قايمة لخمس قوايم مالهاش
-               ترتيب مشترك. (مهاب · ١٨ سبتمبر) */
+            /* Note: a single grid - the tabs above are the filter. Cards used to be split with a
+               header per status, and the tabs above filter and count by the same statuses - so the
+               split was drawing the same grouping twice over the same data: the user clicks "Under
+               review" and finds a single section titled "Under review". And on "All requests" it
+               turned one list into five lists with no shared order. */
             <div className="paygrid">
               {sorted.map((r) => (
                 <RegCard key={r.id} r={r} />
@@ -378,12 +381,12 @@ export default function RequestsPage() {
             </div>
           )}
 
-          {/* ⚠️ القاعدتان 28 و29 مكتوبتان في الشاشة لأنهما بيفسّروا
-              **غياب** زرار · والغياب ما بيشرحش نفسه. */}
+          {/* Rules 28 and 29 are documented on the screen because they explain the absence of a
+              button - and an absence doesn't explain itself. */}
           <p className="sub tcen">
             لا يُحذف طلب ولا جهة · المرفوض يُؤرشف بسببه والقائم يُعطَّل
             (القاعدتان <span className="num">28</span> و<span className="num">29</span>) ·{' '}
-            <span className="num">{k.total}</span> طلبًا مرسَلًا في هذا النموذج،
+            <span className="num">{k.total}</span> {nounAfter(k.total, NOUN.sentRequest)} في هذا النموذج،
             منها <span className="num">{pct(k.rejectedPct)}</span> مرفوضة.
           </p>
         </div>

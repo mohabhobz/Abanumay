@@ -1,82 +1,77 @@
 import type { ReactNode } from 'react'
 
-/* ═══════════════════════════════════════════════════════════
-   نموذج الجدول · عام لأي كيان.
+/* Table model — generic for any entity.
 
-   الكلاينت طلب إن **كل الجداول** في السيستم تمشي بنفس الطريقة:
-   نفس اختيار عدد الصفوف، نفس التجميع، نفس منتقي الأعمدة، نفس
-   التصدير. نسخ الجدول لكل موديول معناه إن أي تحسين لازم يتعمل
-   خمس مرات، وإن الفروق بينهم هتزيد مع الوقت بدل ما تقل.
+   The requirement: **every table** in the system behaves the same way — same row-count picker, same
+   grouping, same column picker, same export. Copying the table per module means any improvement has
+   to be made several times, and the differences between them only grow over time.
 
-   فالتعريف هنا عام على `T`، وكل موديول بيكتب أعمدته بس.
-   ═══════════════════════════════════════════════════════════ */
+   So the definition here is generic, and each module supplies only its own columns. */
 
-/** طريقة تلخيص العمود في صف الإجماليات */
+/** How the column is summarized in the totals row. */
 export type Agg = 'sum' | 'avg'
 
 export interface Col<T> {
   key: string
   label: string
-  /** عمود رقمي · بيتحاذي لليسار وبياخد أرقامًا جدولية */
+  /** A numeric column — right-aligned (in this direction) and uses tabular figures. */
   n?: boolean
-  /** ما يتشالش من المنتقي: بدونه الصف بيفقد هويته */
+  /** Can't be removed from the picker: without it the row loses its identity. */
   fixed?: boolean
-  /** ظاهر افتراضيًا */
+  /** Visible by default. */
   def?: boolean
   cell: (r: T) => ReactNode
-  /** نص صافٍ للتصدير والصورة */
+  /** Plain text for export and image output. */
   text: (r: T) => string
   /**
-   * الرقم اللي بيتجمّع · غياب الخاصية معناه خانة فاضية في الإجماليات.
-   *
-   * ⚠️ **و`null` معناها «الصفّ ده مالوش قيمة» لا «قيمته صفر».**
-   * عمود «مدة المراجعة» فيه صفوف «لم تُغلق» وعمود «درجة الحوكمة»
-   * فيه «لم تُقيَّم» · وكانوا بيرجّعوا `0`، فالمتوسّط بيقسم على
-   * صفوف مالهاش قيمة أصلًا ويطلع أقلّ من الحقيقة. «٦ أيام» في
-   * كارت المؤشّر و«٣ وسطي» في نفس الشاشة، والاتنين بيقولوا نفس
-   * الحاجة. الصفر رقم، وغياب الرقم مش صفر.
+   * The number that gets aggregated — omitting this property means an empty cell in the totals.
+   * ⚠️ **And `null` means "this row has no value," not "its value is zero."** A "review duration"
+   * column has rows that were never closed, and a "governance score" column has rows not yet rated
+   * — they used to return `0`, so the average would divide by rows that never had a value at all
+   * and come out lower than the truth. An indicator card and the table on the same screen would
+   * then state two different numbers for the same thing. Zero is a number; the absence of a number
+   * isn't zero.
    */
   value?: (r: T) => number | null
   agg?: Agg
   /**
-   * كلمة صغيرة جنب رقم الإجمالي · **إلزامية لمّا الإجمالي بيلخّص
-   * كميّة غير اللي الخلية بتعرضها**.
-   *
-   * ⚠️ **العميل شاف رقمًا معلّقًا في الهوا.** عمود «ملف المستندات»
-   * خلاياه بتقول «١ من ٢» و«٢ من ٢»، وتحتيه في صفّ الإجماليات
-   * رقم أسود عريان: **5**. الرقم صح (خمس مستندات ناقصة في الصندوق
-   * كله) لكن الخلايا فوقه بتعدّ **المكتمل** والإجمالي بيعدّ
-   * **الناقص** · فالقارئ ما يقدرش يوصل الرقم بأي حاجة شايفها.
-   *
-   * القاعدة: **الإجمالي لازم يقول إجمالي إيه لمّا الخلية مش رقمًا
-   * صافيًا.** العمود اللي خليته رقم وإجماليه مجموعه ما يحتاجش
-   * كلمة · واللي خليته نسبة أو وسم يحتاج.
-   *
-   * (`avg` بياخد «وسطي» تلقائيًّا لو ما اتقالش غيرها.)
+   * A small word next to the total figure — **required whenever the total summarizes a different
+   * quantity than the cell itself shows**.
+   * ⚠️ **A number was found floating with no context.** A documents column's cells say "1 of 2" and
+   * "2 of 2," and underneath it, in the totals row, sat a bare number: 5. The number is correct
+   * (five missing documents in total) but the cells above it count **complete** items while the
+   * total counts **missing** ones — so a reader can't connect the number to anything they're
+   * looking at.
+   * The rule: **the total must state what it's totaling whenever the cell isn't a plain number.** A
+   * column whose cell is a plain number and whose total is a sum needs no word; one whose cell is a
+   * percentage or a tag does.
+   * (`avg` defaults to "average" when nothing else is given.)
    */
   aggSay?: string
-  /** الإجمالي بالريال */
+  /**
+   * A percentage total — rendered so the sign sits inside the number's own directional run (it used
+   * to be a separate word with an Arabic sign next to the percentage in the cells).
+   */
+  aggPct?: boolean
+  /** The total in SAR. */
   money?: boolean
   /**
-   * العرض الافتراضي بالبكسل.
-   *
-   * الجدول `table-layout:fixed` عشان القصّ يشتغل: في التخطيط
-   * التلقائي العمود بيتمدّد لأطول محتوى فيه، فمفيش «أضيق من
-   * المحتوى» أصلًا ولا حاجة تتقصّ. والثمن إن الأعمدة بتتقسم
-   * بالتساوي لو ما حدّش قال عرضها · فالكود بياخد نفس عرض اسم
-   * المشروع. فكل عمود بيقول عرضه هنا، والمتصفح بيقسّم الزيادة أو
-   * النقصان عليهم بالتناسب.
+   * Default width in pixels.
+   * The table uses fixed layout so truncation works: with automatic layout, a column stretches to
+   * its longest content, so there's never a case of "narrower than the content" or anything to clip
+   * at all — at the cost of columns splitting evenly if no width is given, which used to make every
+   * column take the same width as the longest name. So every column states its width here, and the
+   * browser distributes any surplus or shortfall across them proportionally.
    */
   w?: number
 }
 
 /**
- * إجمالي العمود على مجموعة صفوف · `null` يعني العمود ما يتلخّصش.
- *
- * ⚠️ الصفوف اللي قيمتها `null` **بتتشال من الحسبة كلها**: المجموع
- * ما بيتغيّرش بيها، والمتوسّط بيقسم على اللي له قيمة وحده. وشيلها
- * من المقام هو الفرق بين «وسطي المدة» و«وسطي المدة لو كل اللي
- * ما اتقفلش بصفر».
+ * The column's total over a set of rows — `null` means the column isn't summarized.
+ * ⚠️ Rows whose value is `null` are **removed from the whole calculation**: they don't move the
+ * sum, and the average divides only by the rows that have a value. Excluding them from the
+ * denominator is the difference between "average duration" and "average duration if every unclosed
+ * one counted as zero."
  */
 export const aggregate = <T,>(col: Col<T>, rows: T[]): number | null => {
   if (!col.value || !col.agg || rows.length === 0) return null
@@ -94,18 +89,17 @@ export const aggregate = <T,>(col: Col<T>, rows: T[]): number | null => {
 export const defaultCols = <T,>(cols: Col<T>[]): string[] =>
   cols.filter((c) => c.fixed || c.def).map((c) => c.key)
 
-/** الأعمدة بالترتيب المعرَّف في الموديول لا بترتيب الاختيار */
+/** Columns in the order defined by the module, not the order they were picked. */
 export const orderCols = <T,>(cols: Col<T>[], keys: string[]): Col<T>[] =>
   cols.filter((c) => keys.includes(c.key))
 
-/* ═══════════════════ تفضيل الأعمدة ═══════════════════ */
+/* === Column preference === */
 
 /**
- * الأعمدة المختارة تفضيل شخصي لا فلتر.
- *
- * فمكانها التخزين المحلي مش الـURL: الرابط اللي بيتبعت لمدير المنح
- * المفروض ينقل **السؤال** (الفلتر والتجميع)، مش شكل جدول المرسِل.
- * والمفتاح فيه اسم الجدول عشان المشاريع والجهات ما يدوسوش على بعض.
+ * Selected columns are a personal preference, not a filter.
+ * So they live in local storage, not the URL: a link sent to a colleague should carry **the
+ * question** (filter and grouping), not the sender's own table layout. The key includes the table
+ * name so different tables don't collide.
  */
 export const readCols = <T,>(table: string, cols: Col<T>[]): string[] => {
   const fallback = defaultCols(cols)
@@ -115,7 +109,7 @@ export const readCols = <T,>(table: string, cols: Col<T>[]): string[] => {
     const keys = JSON.parse(raw) as unknown
     if (!Array.isArray(keys)) return fallback
     const valid = keys.filter((k): k is string => typeof k === 'string' && cols.some((c) => c.key === k))
-    /* الثوابت بترجع حتى لو التخزين قديم وما فيهوش */
+    /* Defaults are returned even if the stored value is outdated and missing them. */
     const fixed = cols.filter((c) => c.fixed).map((c) => c.key)
     return valid.length ? [...new Set([...fixed, ...valid])] : fallback
   } catch {
@@ -127,19 +121,22 @@ export const writeCols = (table: string, keys: string[]): void => {
   try {
     localStorage.setItem(`ab-cols-${table}`, JSON.stringify(keys))
   } catch {
-    /* التخزين ممكن يكون مقفول · الاختيار يفضل للجلسة دي */
+    /* Storage may be blocked — the selection then only lasts for this session. */
   }
 }
 
-/* ═══════════════════ عرض الأعمدة ═══════════════════ */
+/* === Column width === */
 
-/** عرض بالبكسل لكل عمود المستخدم سحبه · الباقي على عرضه الافتراضي */
+/** Width in pixels for each column the user dragged — the rest keeps its default width. */
 export type ColWidths = Record<string, number>
 
-/** أضيق عرض مسموح: تحته العمود بيبقى شريطًا ما بيبيّنش حاجة */
+/** Narrowest allowed width — below it, the column becomes a bar showing nothing useful. */
 export const MIN_COL_W = 56
 
-/** العروض تفضيل شخصي زي اختيار الأعمدة، فبتتخزّن جنبه بنفس المنطق */
+/**
+ * Widths are a personal preference like column selection, so they're stored alongside it under the
+ * same logic.
+ */
 export const readWidths = (table: string): ColWidths => {
   try {
     const raw = localStorage.getItem(`ab-colw-${table}`)
@@ -160,11 +157,11 @@ export const writeWidths = (table: string, w: ColWidths): void => {
   try {
     localStorage.setItem(`ab-colw-${table}`, JSON.stringify(w))
   } catch {
-    /* التخزين مقفول · العروض تفضل للجلسة دي */
+    /* Storage is blocked — widths then only last for this session. */
   }
 }
 
-/* ═══════════════════ التجميع ═══════════════════ */
+/* === Grouping === */
 
 export interface GroupBy<T> {
   key: string
@@ -178,10 +175,9 @@ export interface Group<T> {
 }
 
 /**
- * تقسيم الصفوف لمجموعات، مرتّبة بالأكبر أولًا.
- *
- * الترتيب بالحجم لا بالأبجدية: اللي بيجمّع حسب المنطقة بيسأل «فين
- * تركّز المنح؟»، والإجابة هي أول مجموعة.
+ * Splitting rows into groups, sorted largest first.
+ * Order is by size, not alphabetical: someone grouping by region is asking "where is support
+ * concentrated?", and the answer is the first group.
  */
 export const splitGroups = <T,>(rows: T[], by: GroupBy<T>): Group<T>[] => {
   const map = new Map<string, T[]>()
@@ -196,34 +192,28 @@ export const splitGroups = <T,>(rows: T[], by: GroupBy<T>): Group<T>[] => {
     .sort((a, b) => b.rows.length - a.rows.length)
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ي-1 و ي-2 · التجميع المتداخل
-
-   مظفر في أودو: «سيلز بيرسون ← عميل ← طريقة الدفع» · تلات أبعاد
-   متداخلة لا واحد.
-
-   ⚠️ **والترتيب مش تفصيلة، هو السؤال نفسه (ي-2).**
-     منطقة ← جهة  بيقول: «في الرياض، مين بياخد؟»
-     جهة ← منطقة  بيقول: «جمعية البناء العلمي، بتشتغل فين؟»
-   نفس البُعدين ونفس الصفوف، وسؤالان مختلفان تمامًا. فالاختيار
-   **بترتيب الضغط** لا بترتيب القايمة، والواجهة بتعرض الرقم جنب كل
-   بُعد عشان الترتيب يتقرا لا يتخمّن.
-
-   ⚠️ **وثلاثة سقف مقصود.** كل مستوى بيضرب عدد السطور، والرابع
-   بيدّي مجموعات فيها صفّ واحد · يعني شجرة بحجم الجدول وما بتلخّصش
-   حاجة.
-   ═══════════════════════════════════════════════════════════ */
+/* Nested grouping.
+   An example from a colleague: "salesperson then customer then payment method" — three nested
+   dimensions, not one.
+   ⚠️ **And order isn't incidental, it's the question itself.**
+     Region then entity asks: "in Riyadh, who's receiving the most?"
+     Entity then region asks: "this entity, where does it operate?"
+   Same two dimensions, same rows, two entirely different questions. So selection is **by click
+   order**, not list order, and the UI shows a number next to each dimension so the order is read,
+   not guessed.
+   ⚠️ **And a cap of three is deliberate.** Each level multiplies the row count, and a fourth would
+   produce groups of a single row each — a tree the size of the table that summarizes nothing. */
 export const MAX_GROUP_DEPTH = 3
 
 export interface GroupNode<T> {
-  /** قيمة البُعد في المستوى ده */
+  /** The dimension's value at this level. */
   key: string
-  /** مفتاح فريد عبر المستويات · حالة الفتح متخزّنة عليه */
+  /** A key unique across levels — open/closed state is keyed on it. */
   path: string
   level: number
   by: GroupBy<T>
   rows: T[]
-  /** فاضية عند آخر مستوى · وساعتها الجدول هو اللي بينفتح */
+  /** Empty at the last level — the table itself is what opens there. */
   kids: GroupNode<T>[]
 }
 
@@ -248,21 +238,20 @@ export const groupTree = <T,>(
   })
 }
 
-/** كل المسارات في الشجرة · «افتح الكل» بيحتاج المستويات كلها */
+/** All paths in the tree — "expand all" needs every level. */
 export const allPaths = <T,>(nodes: GroupNode<T>[]): string[] =>
   nodes.flatMap((n) => [n.path, ...allPaths(n.kids)])
 
-/** عدد المجموعات في أول مستوى · ده اللي بيتقال للمستخدم */
+/** Number of groups at the first level — this is what's stated to the user. */
 export const countLeaves = <T,>(nodes: GroupNode<T>[]): number =>
   nodes.reduce((s, n) => s + (n.kids.length ? countLeaves(n.kids) : 1), 0)
 
 /**
- * قراية سلسلة التجميع من الرابط.
- *
- * ⚠️ **التنظيف هنا مش تزويق.** الرابط بيتبعت ويتحفظ ويتكتب بالإيد،
- * فممكن ييجي فيه مفتاح ما بقاش موجود، أو نفس المفتاح مرتين (اللي
- * بيدّي شجرة كل عقدة فيها ابن واحد بنفس اسمها)، أو عشر مستويات.
- * التلاتة بيرسموا شاشة غلط من غير ما يرموا خطأ.
+ * Reading the grouping chain from the link.
+ * ⚠️ **The cleanup here isn't polish.** The link is sent, saved, and hand-edited, so it can arrive
+ * with a key that no longer exists, the same key twice (which would produce a tree where every node
+ * has one child sharing its own name), or ten levels deep. All three would draw a broken screen
+ * with no thrown error.
  */
 export const groupChain = <T,>(value: string | undefined, all: GroupBy<T>[]): GroupBy<T>[] => {
   const seen = new Set<string>()
@@ -278,21 +267,15 @@ export const groupChain = <T,>(value: string | undefined, all: GroupBy<T>[]): Gr
   return out
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ي-5 · الإكسبورت بنفس شكل الفيو
-
-   مظفر: «الإكسبورت لازم يطلع زي ما أنا شايفه، بالتجميع والمجاميع».
-
-   ⚠️ **والمقصود مش أعمدة التجميع في أول الصفّ.** المقصود إن الملف
-   يكون **نفس الورقة**: صفوف المجموعة، وتحتها سطر مجاميعها، وبعدها
-   المجموعة اللي بعدها · وفي الآخر الإجمالي الكلي. لو الملف طلع
-   صفوفًا سايبة وإجمالي واحد تحت، المستخدم اللي صدّر عشان يبعت
-   «تقرير في ثانية» بيقعد يعمل الجمع تاني في إكسل.
-
-   ⚠️ **وبتتكتب مرة واحدة هنا.** خمس شاشات كانت بتبني الورقة
-   بإيدها بنفس التلات سطور، ونسخة منهم اتنسيت وراء التجميع الجديد
-   هي **خمس ملفات مختلفة عن خمس شاشات**.
-   ═══════════════════════════════════════════════════════════ */
+/* Export matching the on-screen view.
+   The requirement: the export must come out the way it's seen, with grouping and totals.
+   ⚠️ **And this doesn't mean grouping columns at the start of the row.** It means the file is **the
+   same sheet**: group rows, their totals row underneath, then the next group, and the grand total
+   at the end. If the file came out as loose rows with a single total underneath, a user exporting
+   for a quick report would end up redoing the addition in Excel.
+   ⚠️ **And it's written once, here.** Several screens used to build the sheet by hand with the same
+   three lines, and one copy of them left behind when grouping changed would mean several different
+   files from several screens. */
 export interface SheetParts {
   headers: string[]
   rows: string[][]
@@ -300,11 +283,9 @@ export interface SheetParts {
 }
 
 /**
- * سطر مجاميع.
- *
- * ⚠️ العمود الأول بياخد **علامة** لا رقمًا: «إجمالي الرياض» أو
- * «٦ مشاريع». سطر مجاميع بلا علامة في ملف إكسل بيتقرا صفَّ بيانات،
- * والمستخدم بيجمعه مع الصفوف اللي فوقه.
+ * Totals row.
+ * ⚠️ The first column gets **a label**, not a number: "Riyadh total" or "6 projects." A totals row
+ * with no label reads as a data row in an Excel file, and the user adds it to the rows above.
  */
 const totalsRow = <T,>(cols: Col<T>[], rows: T[], lead: string[], mark: string): string[] => [
   ...lead,
@@ -315,7 +296,7 @@ const totalsRow = <T,>(cols: Col<T>[], rows: T[], lead: string[], mark: string):
   }),
 ]
 
-/** ملء الخانات الفاضية عشان كل صفّ في الملف يبقى بنفس عدد الأعمدة */
+/** Filling empty cells so every row in the file has the same column count. */
 const pad = (xs: string[], n: number): string[] =>
   xs.length >= n ? xs.slice(0, n) : [...xs, ...Array<string>(n - xs.length).fill('')]
 
@@ -340,7 +321,7 @@ export const sheetOf = <T,>(
       else {
         for (const r of n.rows) out.push([...pad(path, bys.length), ...cols.map((c) => c.text(r))])
       }
-      /* سطر مجاميع المجموعة · بعد صفوفها زي ما هو تحتها في الشاشة */
+      /* A group's totals row — after its own rows, exactly as shown on screen. */
       out.push(totalsRow(cols, n.rows, pad(path, bys.length), `إجمالي ${n.key} · ${count(n.rows.length)}`))
     }
   }

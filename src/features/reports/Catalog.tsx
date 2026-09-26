@@ -2,18 +2,21 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Empty, Glass, Icon, icons, Num, SearchBox, Segments, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { isolate, nf } from '@/lib/format'
+import { isolate, nf, NOUN, nounAfter } from '@/lib/format'
 import { LIVE_SPECS, catalogTotals, type LiveSpec } from '@/data/liveReports'
 
 /**
- * كتالوج التقارير · **كل شاشة في النظام العامل، بكل اللي فيها**.
+ * Report catalog — every screen in the current system, with everything
+ * it contains.
  *
- * الطلب كان: «مينفعش نشتغل على حاجة والمعلومات فيها ناقصة». فده
- * المكان اللي بيثبت إن مفيش حاجة ناقصة: الـ١٣ شاشة كلهم هنا، وكل
- * واحدة بتتفتح على أعمدتها الحقيقية وفلاترها ورسومها وصفوف بشكلها.
+ * The requirement was that nothing should be worked on while its
+ * information is still incomplete. This is where that's proven: all 13
+ * screens are here, and each opens onto its real columns, filters,
+ * charts, and row shapes.
  *
- * والترتيب مقصود: الشاشة الشغّالة الأول، وبعدها اللي فورم بلا نتيجة،
- * وآخر حاجة الفاضية. عشان اللي بيتفرّج يشوف الحيّ قبل الميت.
+ * The order is deliberate: working screens first, then ones that are a
+ * form with no result, and the empty ones last — so whoever is reviewing
+ * sees what's alive before what's dead.
  */
 
 type Filter = 'all' | 'live' | 'form' | 'empty'
@@ -44,14 +47,15 @@ export function Catalog() {
 
   return (
     <>
-      {/* الرقم اللي بيلخّص الموديول كله · بيتحسب من الكتالوج لا مكتوبًا */}
+      {/* The number summarizing the whole module — computed from the catalog,
+          not hardcoded. */}
       <Glass className="catsum">
         <div className="catsum-g">
           <Stat n={catalogTotals.screens} k="شاشة تقرير" />
-          <Stat n={catalogTotals.cols} k="عمودًا موصوفًا" />
-          <Stat n={catalogTotals.filters} k="فلترًا" />
-          <Stat n={catalogTotals.charts} k="رسمًا" />
-          <Stat n={catalogTotals.rows} k="صفًّا في الشاشات" big />
+          <Stat n={catalogTotals.cols} k={nounAfter(catalogTotals.cols, NOUN.describedColumn)} />
+          <Stat n={catalogTotals.filters} k={nounAfter(catalogTotals.filters, NOUN.filter)} />
+          <Stat n={catalogTotals.charts} k={nounAfter(catalogTotals.charts, NOUN.chart)} />
+          <Stat n={catalogTotals.rows} k={`${nounAfter(catalogTotals.rows, NOUN.row)} في الشاشات`} big />
         </div>
         <p className="mut rpsec-n mt-3">
           كل شاشة تقرير في النظام العامل موصوفة هنا بالكامل: أعمدتها بأسمائها،
@@ -113,14 +117,14 @@ function Card({ s }: { s: LiveSpec }) {
       <p className="catc-q">{s.question}</p>
       <p className="catc-w mut">{s.what}</p>
 
-      {/* العدّادات هي اللي بتقول «الشاشة دي فيها إيه» في نظرة */}
+      {/* The counters are what tell you "what's in this screen" at a glance. */}
       <span className="catc-n">
-        <b><Num>{s.cols.length}</Num> عمودًا</b>
-        {s.filters.length > 0 && <b><Num>{s.filters.length}</Num> فلترًا</b>}
-        {s.charts.length > 0 && <b><Num>{s.charts.length}</Num> رسمًا</b>}
-        {s.drill && <b><Num>{s.drill.length}</Num> مستويات</b>}
+        <b><Num>{s.cols.length}</Num> {nounAfter(s.cols.length, NOUN.column)}</b>
+        {s.filters.length > 0 && <b><Num>{s.filters.length}</Num> {nounAfter(s.filters.length, NOUN.filter)}</b>}
+        {s.charts.length > 0 && <b><Num>{s.charts.length}</Num> {nounAfter(s.charts.length, NOUN.chart)}</b>}
+        {s.drill && <b><Num>{s.drill.length}</Num> {nounAfter(s.drill.length, NOUN.level)}</b>}
         {s.rowsLive !== null && (
-          <span className="sub"><Num>{s.rowsLive}</Num> صفًّا في النظام</span>
+          <span className="sub"><Num>{s.rowsLive}</Num> {nounAfter(s.rowsLive, NOUN.row)} في النظام</span>
         )}
       </span>
 

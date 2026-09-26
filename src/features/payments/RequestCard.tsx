@@ -3,7 +3,7 @@ import { DateText, Icon, Money, Mono, Num, Person, Tag, icons } from '@/componen
 import { ROUTES } from '@/app/routes'
 import { payHeat, payStateWho } from '@/data/mock/disbursements'
 import type { PayRequest } from '@/types/domain'
-import { isolate } from '@/lib/format'
+import { isolate, NOUN, nounAfter } from '@/lib/format'
 
 /* ═══════════════════════════════════════════════════════════
    One disbursement request, as a decision
@@ -23,7 +23,10 @@ import { isolate } from '@/lib/format'
 
 export interface RequestCardProps {
   r: PayRequest
-  /** المرحلة ظاهرة في الترويسة، فالكارت ما بيكرّرهاش وهو مجمَّع بيها */
+  /**
+   * The stage is shown in the header, so the card doesn't repeat it since it's already grouped by
+   * it.
+   */
   showState?: boolean
 }
 
@@ -34,9 +37,9 @@ export function RequestCard({ r, showState }: RequestCardProps) {
   const days = Math.round(r.hoursInState / 24)
   const multi = r.sources.length > 1
 
-  /* الكارت بياخد `.glass` زي `.pcard` و`.ecard` — سطح واحد معرّف
-     في مكان واحد. وكلاس `hold` اتشال: الحالة بتتقال بالوسم وصفوف
-     الفحص وسطر الملاحظة، والشريط الجانبي اللي كان بيرسمها راح. */
+  /* The card takes `.glass` like `.pcard` and `.ecard` - one surface defined in one place. The
+     `hold` class was removed: status is conveyed by the badge, the check rows, and the note line -
+     the side bar that used to draw it is gone. */
   return (
     <article className="payq glass">
       <header className="payq-h">
@@ -53,8 +56,8 @@ export function RequestCard({ r, showState }: RequestCardProps) {
 
         <div className="payq-amt">
           <b><Money sm>{r.asked}</Money></b>
-          {/* rule 5: قيمة الطلب ما تتجاوزش الدفعة المعتمدة · لو ساوتها
-              مفيش حاجة تتقال، ولو زادت دي مخالفة لازم تبان */}
+          {/* Rule 5: the request amount can't exceed the approved payment - if they're equal
+              there's nothing to say, and if it's over, that violation must be visible. */}
           {r.asked !== r.due && (
             <span className="payq-due bad">
               الدفعة المعتمدة <Money sm>{r.due}</Money>
@@ -67,21 +70,22 @@ export function RequestCard({ r, showState }: RequestCardProps) {
       <div className="payq-tags">
         {showState && <Tag tone="mute">{payStateWho(r.state)}</Tag>}
         {heat !== 'ok' && (
-          <Tag tone={heat === 'stuck' ? 'no' : 'warn'}>
-            {HEAT_SAY[heat]} · <Num>{days}</Num> يومًا
+          /* The only colored status in the card - and stalled is amber, not red. */
+          <Tag tone="warn">
+            {HEAT_SAY[heat]} · <Num>{days}</Num> {nounAfter(days, NOUN.day)}
           </Tag>
         )}
         {heat === 'ok' && r.state !== 'paid' && (
-          <span className="sub">في المرحلة <Num>{days}</Num> يومًا</span>
+          <span className="sub">في المرحلة <Num>{days}</Num> {nounAfter(days, NOUN.day)}</span>
         )}
         {r.state === 'paid' && r.paidAt && (
           <Tag tone="ok">صُرفت في <DateText>{r.paidAt}</DateText></Tag>
         )}
-        {multi && <Tag tone="teal">تمويل من مصدرين</Tag>}
+        {multi && <Tag tone="mute">تمويل من مصدرين</Tag>}
       </div>
 
-      {/* شرط الصرف · rule 6 · وهو السبب اللي الدفعة اتصرفت عليه،
-          ومدفون في النظام العامل جوّه ملاحظات إذن الصرف */}
+      {/* Disbursement condition - rule 6 - the reason the payment was disbursed against, buried in
+          the live system inside the disbursement authorization notes. */}
       {r.condition && (
         <div className="payq-cond">
           <span className="lb">شرط الدفعة</span>
@@ -89,8 +93,8 @@ export function RequestCard({ r, showState }: RequestCardProps) {
         </div>
       )}
 
-      {/* الشروط اللي بتمنع الانتقال · كل واحدة بقاعدتها، فالمشرف
-          يعرف إيه اللي واقف ومين قالها لا «الطلب مرفوض» */}
+      {/* The conditions blocking progress - each with its rule cited, so the supervisor knows
+          what's pending and on whose authority, not just "request rejected". */}
       <ul className="payq-ck">
         {r.checks.map((c) => (
           <li key={c.rule} className={c.ok ? 'ok' : 'no'}>
@@ -106,7 +110,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
         </li>
       </ul>
 
-      {/* ملاحظة الإعادة · rules 7 و8 بيلزموا توضيح الملاحظات */}
+      {/* Return note - rules 7 and 8 require the notes to be explicit. */}
       {r.note && (
         <div className="payq-note">
           <Icon name={icons.chat} size="sm" />
@@ -114,8 +118,8 @@ export function RequestCard({ r, showState }: RequestCardProps) {
         </div>
       )}
 
-      {/* مخرج الذكاء الاصطناعي · خطوة 6، والوسم من rule 20:
-          «استرشادية ولا تغني عن اعتماد أصحاب الصلاحية» */}
+      {/* AI-assist output - step 6, tagged per rule 20: "advisory only, does not replace approval
+          by those with authority". */}
       {r.ai && (
         <div className="payq-ai">
           <Icon name={icons.spark} size="sm" />
@@ -127,8 +131,8 @@ export function RequestCard({ r, showState }: RequestCardProps) {
       <footer className="payq-f">
         <Person name={r.owner} />
         <span className="pc-sp" />
-        {/* الطلب لا المشروع · الكارت بيلخّص القرار وصفحة الطلب
-            بتاخده · فالزرار بيكمّل الطريق بدل ما يخرج منه */}
+        {/* The request, not the project - the card summarizes the decision and the request page
+            carries it through, so the button continues the path instead of leaving it. */}
         <Link className="btn btn-2 btn-sm" to={ROUTES.payment(r.id)}>
           افتح الطلب
           <Icon name={icons.chevron} size="sm" />

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Icon, icons } from '@/components/ui'
 import { Background } from '@/components/shell'
 import type { AssistantContext } from '@/components/assistant'
-import { fixtures } from '@/data/repository'
+import { roles, type AssistantRole } from '@/data/mock/assistant'
 import { AssistantScreen } from './AssistantScreen'
 
 const FALLBACK_CONTEXT: AssistantContext = {
@@ -22,45 +22,43 @@ const FALLBACK_CONTEXT: AssistantContext = {
 export interface AssistantOverlayProps {
   open: boolean
   onClose: () => void
-  /** ترحيب الصفحة وكروتها · **ده وحده اللي بيتغيّر من صفحة لصفحة** */
+  /** Page welcome and its cards - the only part that changes from page to page. */
   ctx?: AssistantContext
 }
 
 /**
- * مساعد أبانمي فوق الصفحة اللي أنت فيها.
+ * The Abanumay assistant, layered over whichever page you're on.
  *
- * ═══ نفس الشاشة، مش شاشة تانية ═══
+ * Same screen, not a different one.
  *
- * اللي كان هنا لوحًا جانبيًّا بترويسة خاصة وبلا قايمة محادثات ·
- * يعني المستخدم اللي بيدوس «اسأل أبانمي» من صفحة المشروع كان
- * بيدخل مساعدًا **تانيًا**: محادثاته المحفوظة مش معاه، والشكل مش
- * اللي شافه أول ما دخل النظام. دلوقتي بيفتح `AssistantScreen`
- * نفسها اللي على `/assistant` · نفس القايمة ونفس الترويسة ونفس
- * الترحيب ونفس الكروت.
+ * This used to be a side panel with its own header and no chat list, so a user who clicked "Ask
+ * Abanumay" from a project page landed in a different assistant: no saved conversations, and a
+ * layout unlike the one first seen on login. Now it opens the same `AssistantScreen` that lives at
+ * `/assistant` - same list, same header, same welcome, same cards.
  *
- * **واللي بيتغيّر الكونتنت وحده:** سطر المدى («كيف أقدر أساعدك في
- * «اسم المشروع»؟») والكروت الأربعة. الترحيب الشخصي بييجي من
- * المستخدم لأنه ثابت في كل الصفحات، والتشكيل ما بيتغيّرش خالص.
+ * The only thing that changes is the content: the scope line ("How can I help with <project
+ * name>?") and the four cards. The personal welcome is constant across pages, and the layout never
+ * changes at all.
  *
- * ═══ بيفتح كامل، والزرار بيصغّره ═══
+ * It opens full, and the button shrinks it.
  *
- * الفتحة بتبدأ على المساحة الكاملة (السؤال محتاج مكان)، والزرار
- * بيصغّره للوح جانبي لمّا المستخدم يحبّ يشوف الصفحة وهو بيسأل ·
- * يعني الزرار **مبدّل مقاس** لا انتقال، والحالتان في نفس المحادثة
- * ونفس المكوّن. والصغير بيخفي القايمة بس · مش شكلًا تالتًا.
+ * Opening starts at full size (a question needs room), and the button shrinks it to a side panel
+ * when the user wants to see the page while asking. So the button resizes rather than navigates,
+ * and both states are the same conversation in the same component. Shrinking only hides the list -
+ * it isn't a third layout.
  *
- * وكل فتحة جديدة بتبدأ كاملة، واللي قبلها بيتصفّر خالص
- * (`key={runs}`): اللي صغّره المرة اللي فاتت كان بيصغّره لسبب في
- * وقته، والسؤال اللي سأله كان عن صفحة تانية.
+ * Every new opening starts full, and the previous size resets completely (`key={runs}`): shrinking
+ * last time had a reason specific to that moment, and the question asked then was about a different
+ * page.
  */
 export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: AssistantOverlayProps) {
-  /* ⚠️ **بيفتح نافذة في النص · تجربة ٢٢ سبتمبر.** كان بيفتح كامل
-     والزرار بيصغّره للدرج الجانبي · والعميل عايز يجرّب النافذة
-     الوسطية. فالافتراضي بقى النافذة، والزرار بيفردها للشاشة كلها.
-     والدرج الجانبي اتشال كحالة (شوف `.apanel:not(.wide)`). */
+  /* Note: opens as a centered dialog now. It used to open full and the button shrank it to a side
+     drawer; testing showed a preference for the centered dialog. So the dialog is now the default,
+     and the button expands it to the full screen. The side drawer was removed as a state (see
+     `.apanel:not(.wide)`). */
   const [wide, setWide] = useState(false)
-  /* عدّاد الفتحات · بيتغيّر مع كل فتحة فالشاشة بتتبني من جديد
-     بحالتها الابتدائية، من غير ما المكوّن يعرف إنه في لوح */
+  /* Open counter - changes on every opening so the screen rebuilds from its initial state, without
+     the component needing to know it's inside a panel. */
   const [runs, setRuns] = useState(0)
   useEffect(() => {
     if (!open) return
@@ -68,12 +66,18 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
     setRuns((n) => n + 1)
   }, [open])
 
-  const first = fixtures.currentUser.name.split(' ')[0]
+  /* Note: the first opening matches the `/assistant` welcome exactly. The welcome here used to have
+     its own scope line and cards in a shrunken layout (no card background, colored cards), so users
+     effectively saw two different assistants. Now it's the same component with the same copy and
+     the same four cards; the only difference is the dialog's width (in CSS). Page context still
+     reaches screen readers through the dialog's name. */
+  const role = roles[0] as AssistantRole
 
   return (
     <>
-      {/* التعتيم للنافذة الوسطية وحدها · الكامل مش طبقة فوق صفحة، هو
-          الشاشة نفسها والريل جنبه شغّال، فتعتيمه بيقول غير الحقيقة */}
+      {/* Backdrop dimming applies to the centered dialog only - the full-screen mode isn't a layer
+          over a page, it's the screen itself with the reel still running behind it, so dimming it
+          would misstate what's there. */}
       <div
         className={`ascrim${open && !wide ? ' on' : ''}`}
         onClick={onClose}
@@ -91,9 +95,9 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
           <AssistantScreen
             key={runs}
             label="مساعد أبانمي"
-            greet={`أهلًا ${first}`}
-            sub={ctx.scope}
-            cards={ctx.cards}
+            greet={role.greet}
+            sub="كيف أساعدك اليوم؟"
+            cards={role.cards}
             onClose={onClose}
             focusOnMount
             headExtra={(

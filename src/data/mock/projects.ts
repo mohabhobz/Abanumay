@@ -1,10 +1,10 @@
 /**
- * مشاريع تجريبية · 30 صفًّا بشكل جدول المشاريع في النظام.
+ * Sample projects · 30 rows shaped like the projects table in the system.
  *
- * ⚠️ الأسماء وهمية، لكن **التوزيع حقيقي**: أغلب المشاريع معتذر عنها،
- * وعدد قليل جدًّا في الدراسة فعلًا، وربعها تقريبًا بلا مالك، ومدد
- * المكوث في القسم متفاوتة لدرجة إن فيه صفوف متجاوزة الحد بكتير ·
- * ده اللي الأوديت طلعه من 4,929 مشروعًا، ولازم يبان في الواجهة.
+ * Names are fictional, but the distribution is real: most projects are excused, a very small number
+ * are actually in review, roughly a quarter have no owner, and time spent in a department varies
+ * enough that some rows are far past the threshold — this is what the audit found across thousands
+ * of projects, and it needs to be visible in the UI.
  */
 import type { ProjectRow } from '@/types/domain'
 import { stageMeta } from './taxonomy'
@@ -50,8 +50,8 @@ const mk = (s: Seed): ProjectRow => {
 }
 
 export const projectRows: ProjectRow[] = [
-  // ── في الدراسة: العدد الحقيقي صغير جدًّا، وده بالظبط اللي يخلي
-  //    الشاشة تقدر تشتغل بالكارت مش بالصف ──
+  // In review: the real count is very small, which is exactly why this screen can work as cards
+  // instead of a table
   mk({
     id: '20940',
     name: 'برنامج البناء العلمي للطلاب الموهوبين',
@@ -173,7 +173,7 @@ export const projectRows: ProjectRow[] = [
     beneficiaries: 450,
   }),
 
-  // ── في التشغيل: المشاريع المعتمدة اللي ماشية في مراحل الاتفاقية والصرف ──
+  // In execution: approved projects moving through the agreement and disbursement stages
   mk({
     id: '20802',
     name: 'المنح الدراسية الجامعية، الدفعة الخامسة',
@@ -401,7 +401,7 @@ export const projectRows: ProjectRow[] = [
     beneficiaries: 780,
   }),
 
-  // ── مكتمل ──
+  // Completed
   mk({
     id: '20611',
     name: 'تأسيس جمعية أهلية بالخرج',
@@ -505,7 +505,7 @@ export const projectRows: ProjectRow[] = [
     beneficiaries: 24_000,
   }),
 
-  // ── متعثر: قليل عددًا، عالي الأثر · لازم يبان فورًا ──
+  // Stalled: few in number, high impact — must be visible immediately
   mk({
     id: '20705',
     name: 'مشروع الأسر المنتجة بصبيا',
@@ -554,7 +554,7 @@ export const projectRows: ProjectRow[] = [
     beneficiaries: 210,
   }),
 
-  // ── معتذر عنه: 75% من النظام. الأهم هنا هو **سبب** الاعتذار ──
+  // Excused: 75% of the system. What matters most here is the excusal **reason**
   mk({
     id: '20512',
     name: 'مشروع تعليمي متكرر لنفس الجهة',
@@ -751,31 +751,29 @@ export const projectRows: ProjectRow[] = [
 ]
 
 /**
- * إسناد جماعي · الوحيدة اللي بتغيّر الداتا في النموذج ده.
- * موجودة عشان تجربة «1,253 مشروعًا بلا مالك» تتجرّب فعلًا لا تتخيّل؛
- * لما الباك اند يجهز بتتحوّل لـ`PATCH /projects/bulk { ids, owner }`.
+ * Bulk assignment · the only action that mutates data in this mock.
+ * Exists so the "1,253 unowned projects" scenario can actually be tested, not just imagined; once
+ * the backend is ready this becomes `PATCH /projects/bulk { ids, owner }`.
  */
 export const assignOwner = (ids: readonly string[], owner: string): void => {
   for (const p of projectRows) if (ids.includes(p.id)) p.owner = owner
 }
 
-/* ═══════════════════════════════════════════════════════════
-   القرارات المجمّعة.
+/* Bulk decisions.
 
-   القرار على مشروع واحد بيحصل في صفحته ومعاه كل السياق. القرار
-   المجمّع لازمته مختلفة: المشرف قدّامه عشرين مشروعًا كلهم نفس
-   الحالة (معتذر عنها لنفس السبب مثلًا)، وفتح عشرين صفحة عشان
-   يسجّل نفس القرار مش مراجعة · هو نسخ ولصق بإيد.
+   A decision on a single project happens on its page, with its full context. A bulk decision serves
+   a different purpose: an officer facing twenty projects all in the same state (excused for the
+   same reason, say) shouldn't have to open twenty pages to record the same decision — that's manual
+   copy-paste.
 
-   وعشان كده القرارات المتاحة هنا **أقل** من اللي في صفحة المشروع:
-   اللي محتاج هدفًا لكل مشروع (تحويل لمشرف بعينه، إعادة لمستوى)
-   مش موجود، لأن اختياره الجماعي بيبقى تخمينًا. والإسناد لمالك له
-   حقله المستقل جنبه.
-   ═══════════════════════════════════════════════════════════ */
+   So the decisions available here are fewer than on the project page: anything needing a
+   per-project target (transferring to a specific officer, returning to a level) isn't offered,
+   because choosing it in bulk would just be guessing. Assigning an owner has its own separate field
+   next to this. */
 
 export type BulkDecision = 'approve' | 'complete' | 'decline' | 'escalate'
 
-/** لقطة قبل القرار، عشان «تراجع» تكون رجوعًا حقيقيًا لا قرارًا مضادًا */
+/** A snapshot before the decision, so "undo" is a real reversal, not a second, opposing decision */
 interface Snapshot {
   id: string
   stage: ProjectRow['stage']
@@ -799,12 +797,12 @@ const moveTo = (p: ProjectRow, stage: string) => {
   p.stage = stage
   p.statusGroup = meta?.group ?? p.statusGroup
   p.stageLimit = meta?.limit ?? 0
-  /* المكوث بيتصفّر مع القسم الجديد، وإلا المشروع بيبان متأخرًا
-     في قسم لسه داخله دلوقتي. */
+  /* Time-in-department resets with the new department, otherwise the project would look overdue in
+     a department it just entered */
   p.hoursInStage = 0
 }
 
-/** بينفّذ القرار ويرجّع دالة تراجع */
+/** Executes the decision and returns an undo function */
 export const applyDecision = (ids: readonly string[], d: BulkDecision): (() => void) => {
   const targets = projectRows.filter((p) => ids.includes(p.id))
   const before = targets.map(snap)
@@ -821,8 +819,8 @@ export const applyDecision = (ids: readonly string[], d: BulkDecision): (() => v
       p.amountGranted = 0
       moveTo(p, 'مشروع معتذر عنه')
     } else {
-      /* الرفع للمستوى الأعلى ما بيغيّرش نتيجة المشروع، بيغيّر
-         مكانه في الدراسة بس. */
+      /* Escalating to a higher level doesn't change the project's outcome, only its position within
+         review */
       moveTo(p, 'دراسة المشروع')
     }
   }

@@ -4,7 +4,7 @@ import {
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
-import { pct, REQUEST_NOUN, nounAfter } from '@/lib/format'
+import { countOf, NOUN, nounAfter, pct, REQUEST_NOUN } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useStickyGroup } from '@/hooks/useStickyGroup'
@@ -29,30 +29,24 @@ import { COLS, GROUPS } from './columns'
 const KEYS = ['q', 'stage', 'cycle', 'owner', 'late', 'short', 'view', 'group', 'adv'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/* ═══════════════════════════════════════════════════════════
-   صندوق الإغلاق · BPD-011
+/* Closing inbox.
 
-   ⚠️ **الإغلاق إجراء مستقل، مش تاب في المشروع** · والقاعدة 16
-   بتقولها أوضح من أي قاعدة في السيستم: انتقال التقرير الختامي بين
-   مراحل المراجعة **ما بيأثّرش على حالة المشروع**، وإنها بتفضل
-   «تحت التنفيذ» لحدّ ما التلاتة يكتملوا (قاعدة 8 و18). يعني تقرير
-   عند المدير التنفيذي ومشروعه مكتوب عليه «تحت التنفيذ»، والاتنين
-   صح.
+   Note: closing is its own procedure, not a project tab - and rule 16 states this more clearly than
+   any other rule in the system: moving the final report between review stages does not affect the
+   project's status, which stays "in progress" until all three are complete (rules 8 and 18). So a
+   report can be with the executive director while its project still shows "in progress", and both
+   are true.
 
-   ⚠️ **والشرائح هنا دورتان لا سلّم واحد** · قاعدة 17: التقرير
-   والتقييم دورتا اعتماد مستقلتان بسجلّين منفصلين. فالشرائح بتفصل
-   الاتنين، والكارت بيقول إحنا في أي دورة قبل أي حاجة تانية.
+   Note: the chips here are two cycles, not one ladder - rule 17: the report and the evaluation are
+   independent approval cycles with separate records. So the chips separate the two, and the card
+   states which cycle we're in before anything else.
 
-   ═══ الشكل: نفس عقد القوائم ═══
+   Layout follows the same list contract: title -> quick read -> the four document indicators ->
+   stage chips -> toolbar -> table or cards. Every element comes from the library.
 
-   عنوان → قراءة سريعة → مؤشرات الوثيقة الأربعة → شرائح المحطات →
-   شريط الأدوات → جدول أو كروت. كل عنصر من المكتبة.
-
-   ⚠️ **ومفيش `PageActions`** · نفس سبب الاتفاقيات بالحرف: طلب
-   التقرير الختامي بيتولد **لمشروع** بعد ما قاعدة 1 و2 يتحققوا،
-   فمدخله تاب «الإغلاق» في صفحة المشروع. الصندوق بيجاوب «إيه اللي
-   واقف عندي».
-   ═══════════════════════════════════════════════════════════ */
+   Note: no `PageActions` - the same reason as agreements, exactly: a closing request is generated
+   per project once rules 1 and 2 are met, so its entry point is the closing tab on the project
+   page. The inbox answers "what's pending". */
 
 const CYCLES = [
   { value: 'report', label: 'التقرير الختامي' },
@@ -61,7 +55,7 @@ const CYCLES = [
 
 const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'stage', 'late', 'short']
 
-/** الدورة اللي المحطة دي فيها · مكتوبة في `CLOSE_STAGES` */
+/** The cycle this stage belongs to - defined in `CLOSE_STAGES`. */
 const cycleOf = (s: CloseStage): string =>
   CLOSE_STAGES.find((x) => x.key === s)?.cycle ?? 'report'
 
@@ -96,7 +90,7 @@ export default function ClosingPage() {
 
   const rows = useMemo(() => closeRows.filter((c) => match(c)), [v])
 
-  /* الأطول وقوفًا فوق · الصندوق بيترتّب بالخطر لا بالتاريخ */
+  /* Longest-waiting sits at top - the inbox sorts by risk, not by date. */
   const sorted = useMemo(
     () => [...rows].sort((a, b) => b.hoursInStage - a.hoursInStage),
     [rows],
@@ -128,7 +122,7 @@ export default function ClosingPage() {
   const sheet: Sheet = useMemo(() => {
     const shown = orderCols(COLS, cols).filter((c) => !group.some((g) => g.key === c.key))
     const pickRows = selected.size ? sorted.filter((c) => selected.has(c.id)) : sorted
-    const parts = sheetOf(pickRows, shown, group, (n: number) => `${n} طلب إغلاق`)
+    const parts = sheetOf(pickRows, shown, group, (n: number) => `${countOf(n, NOUN.request)} إغلاق`)
     const stamp = new Date().toISOString().slice(0, 10)
     return { file: `abanumay-closings-${stamp}`, title: 'إغلاق المشاريع', ...parts }
   }, [cols, sorted, selected, group])
@@ -188,7 +182,7 @@ export default function ClosingPage() {
             empty="لا يوجد طلب إغلاق متوقف في النطاق الحالي · وسّع الفلتر لعرض المزيد."
           />
 
-          {/* مؤشرات الوثيقة الأربعة · 11.7 · لا أربعة أرقام مختارة */}
+          {/* The document's four indicators, per 11.7 - not four arbitrary numbers. */}
           <div className="stats4">
             <Stat
               label="متوسط مدة إغلاق المشروع"
@@ -199,7 +193,7 @@ export default function ClosingPage() {
             <Stat
               label="المغلقة ضمن المدة المستهدفة"
               value={<Num>{pct(k.inTimePct)}</Num>}
-              note={`مؤشر 2 · المدة المؤقتة ${CLOSE_TARGET_DAYS} يومًا`}
+              note={`مؤشر 2 · المدة المؤقتة ${countOf(CLOSE_TARGET_DAYS, NOUN.day)}`}
               bar={{ w: `${k.inTimePct}%`, c: 'var(--teal)' }}
             />
             <Stat
@@ -245,7 +239,7 @@ export default function ClosingPage() {
                   options={OWNERS as unknown as string[]}
                   onChange={(x) => set({ owner: writeList(x) })}
                 />
-                {/* ⚠️ الدورة فلتر أساسي لا متقدّم · قاعدة 17 */}
+                {/* Note: cycle is a primary filter, not advanced - rule 17. */}
                 <Select
                   icon={icons.rows}
                   value={v.cycle}
@@ -282,7 +276,7 @@ export default function ClosingPage() {
                 )}
                 <ExportMenu
                   sheet={sheet}
-                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} طلب`}
+                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${countOf(selected.size || sorted.length, NOUN.request)}`}
                   count={selected.size}
                 />
                 {!mobile && (
@@ -369,7 +363,7 @@ export default function ClosingPage() {
                   onSelectAll={selectAll}
                   onOpen={(c) => navigate(ROUTES.closing(c.id))}
                   group={grouped ? group : undefined}
-                  count={(n) => `${n} طلب`}
+                  count={(n) => `${countOf(n, NOUN.request)}`}
                 />
               </Glass>
               {grouped && (
@@ -391,7 +385,7 @@ export default function ClosingPage() {
                     <h2>{meta?.label ?? g.key}</h2>
                     <span className="sub">
                       {meta?.who ? `عند ${meta.who}` : 'مكتمل'} ·{' '}
-                      <span className="num">{g.rows.length}</span> طلب · {meta?.note}
+                      <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.request)} · {meta?.note}
                     </span>
                   </div>
                   <div className="paygrid">
@@ -404,9 +398,8 @@ export default function ClosingPage() {
             })
           )}
 
-          {/* ⚠️ قاعدة 16 مكتوبة في الشاشة لا في التعليق بس · هي أكتر
-              حاجة بتلخبط لما تشوف تقريرًا «عند المدير التنفيذي»
-              ومشروعه مكتوب عليه «تحت التنفيذ». */}
+          {/* Rule 16 is stated on screen, not only in a comment - it's the most confusing case: a
+              report "with the executive director" while its project still shows "in progress". */}
           <p className="sub tcen">
             محطة الإغلاق لا تغيّر حالة المشروع · يبقى «تحت التنفيذ» حتى يكتمل
             اعتماد التقرير والتقييم والمتطلبات المالية والإدارية معًا · القاعدة{' '}

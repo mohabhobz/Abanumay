@@ -1,3 +1,4 @@
+import { unitAfter } from '@/lib/format'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon, icons, Select } from '@/components/ui'
@@ -8,16 +9,19 @@ import { readReports } from '@/data/readings'
 import { boardCards, PERIODS, type ReportCard } from '@/data/reportDefs'
 
 /**
- * لوحة التقارير.
+ * Reports dashboard.
  *
- * كل كارت **سؤال وإجابته**، مش اسم تقرير. النظام العامل بيبدأ من
- * الاسم («تقرير المعرفة») ويطلب منك تملا فورم عشان تشوف رقم؛ هنا
- * الترتيب معكوس: السؤال («بنتعلّم من اللي عملناه؟») والرقم جاهز
- * للفترة المختارة، والجملة بتقول الرقم معناه إيه، والمصدر مكتوب،
- * والضغط بيوصّلك للصفوف نفسها.
+ * Each card is a question and its answer, not a report's name. The
+ * current system starts from a name ("Knowledge Report") and makes you
+ * fill a form before seeing a number; here the order is reversed: the
+ * question ("are we learning from what we've done?") comes with the
+ * number already ready for the selected period, a sentence explains what
+ * the number means, the source is stated, and clicking takes you to the
+ * underlying rows.
  *
- * والفترة فوق واحدة للكل: **سنة × مصدر تمويل** · نفس تقسيم النظام
- * (2026 المؤسسة · 2023 الوقف)، لأن الميزانيتين مستقلتين فعلًا.
+ * The period control at the top is shared by everyone: year × funding
+ * source, matching the system's own split (2026 for the foundation, 2023
+ * for the endowment), because the two budgets are genuinely independent.
  */
 export function Board({
   period,
@@ -29,11 +33,11 @@ export function Board({
   const cards = boardCards(period)
   const readings = readReports(period)
 
-  /* نفس عمود التحليلات اللازق اللي في المشروع والجهة · الصفحة دي
-     أكتر واحدة محتاجاه: اللوحة بتقول الأرقام، والعمود بيقول اللي
-     يتعمل بيها.
-     الفرق هنا إن الكروت أقصر من الشاشة، فمن غير `capSelector` الكارت
-     بيمتدّ تحت آخر كارت. السقف بيخلّي العمودين يخلصوا في نفس السطر. */
+  /* Same sticky insights column as on the project and entity pages — this
+     page needs it most: the dashboard states the numbers, and the column
+     states what to do with them. The difference here is that the cards are
+     shorter than the screen, so without `capSelector` the column would
+     extend below the last card. The cap makes both columns end on the same line. */
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, {
     varName: '--ai-fill',
@@ -79,12 +83,14 @@ export function Board({
 }
 
 /**
- * الكارت: شبكة صفوف ثابتة عشان الكروت تتسطّر مع بعضها.
+ * Card: a fixed row grid so cards line up with each other.
  *
- * قبل كده كان عمودًا مرنًا، فالجملة اللي سطرين والجملة اللي تلاتة
- * كانوا بيزحزحوا الأعمدة والمصدر تحتيهم · فالصف يبان مكسور. دلوقتي
- * الجملة مقصوصة عند تلات سطور، والأعمدة بتاخد المساحة الباقية،
- * والمصدر ملزوق في القاع. النتيجة: كل كارت في الصف بنفس الخطوط.
+ * It used to be a flexible column, so a two-line sentence and a
+ * three-line sentence would shift the figures and source below them out
+ * of alignment, making the row look broken. Now the sentence is clamped
+ * to three lines, the figures take the remaining space, and the source is
+ * pinned to the bottom. The result: every card in a row lines up on the
+ * same baselines.
  */
 function Card({ c }: { c: ReportCard }) {
   const max = c.bars?.length ? Math.max(...c.bars.map((b) => b.v)) || 1 : 1
@@ -101,7 +107,7 @@ function Card({ c }: { c: ReportCard }) {
 
       <span className="rbc-v">
         <b className="num">{c.value}</b>
-        <small>{c.unit}</small>
+        <small>{unitAfter(c.value, c.unit)}</small>
       </span>
 
       <p className="rbc-r">{highlight(c.reading, c.bold ?? [], c.danger ?? [])}</p>

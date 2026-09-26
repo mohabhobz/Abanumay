@@ -1,9 +1,8 @@
 /**
- * خريطة المسارات · المصدر الوحيد لأي URL في التطبيق.
- *
- * ممنوع كتابة مسار كنص في أي كومبوننت. أي شاشة جديدة بتتضاف هنا الأول،
- * وكل موديول له مسار قائمة ومسار تفصيل بنفس النمط، فالربط بالباك اند
- * بيبقى تطابق مباشر: `/projects/:id` ← `GET /api/projects/:id`.
+ * Route map — the single source for every URL in the app.
+ * Never hardcode a path as a string in a component. Any new screen is added here first, and every
+ * module follows the same list-route / detail-route pattern, so mapping to the backend is a direct
+ * match: `/projects/:id` maps to `GET /api/projects/:id`.
  */
 
 export const ROUTES = {
@@ -11,136 +10,126 @@ export const ROUTES = {
   home: '/',
 
   projects: '/projects',
-  /** قواعد عمل المشاريع والصرف · مصفوفة الاعتماد والحدود · د-2 */
+  /** Project and disbursement business rules — approval matrix and limits. */
   projectSettings: '/projects/settings',
-  /** إنشاء مشروع · BPD-003 · نموذج مرحلي بنسبة اكتمال (قاعدة 31) */
+  /** Create project — a staged form with a completion percentage. */
   projectNew: '/projects/new',
   /**
-   * محفظة شريك منفّذ · ب-8.
-   *
-   * ⚠️ **المحفظة مش مشروع، فمالهاش صفّ في `/projects`.** هي كيان
-   * أب تحته مشاريع، ومسارها منفصل عشان ما تختلطش بالـ٤٩٢٩.
+   * Implementing partner portfolio.
+   * ⚠️ **A portfolio isn't a project, so it has no row in `/projects`.** It's a parent entity with
+   * projects under it, and its route is kept separate so it doesn't collide with project ids.
    */
   portfolio: (id: string) => `/projects/portfolio/${id}`,
   project: (id: string) => `/projects/${id}`,
   projectTab: (id: string, tab: string) => `/projects/${id}/${tab}`,
 
   /**
-   * جرد الإعدادات · د-1
-   *
-   * ⚠️ **مش مدخل في الريل عن قصد.** الريل سبع عناصر ومقصود إنه
-   * سبعة، واللي بيفتح الشاشة دي مسؤول نظام بيظبّط مرة في السنة ·
-   * فمدخلها من قايمة الحساب، ومن ترويسة كل موديول لصفحته وحده.
+   * Settings inventory.
+   * ⚠️ **Intentionally not on the rail.** The rail holds a fixed set of items by design, and
+   * whoever opens this screen is a system admin adjusting it once a year — so it's entered from the
+   * account menu, and from each module's own header linking to its own page.
    */
   settings: '/settings',
 
   entities: '/entities',
   entity: (id: string, tab?: string) => `/entities/${id}${tab && tab !== 'data' ? `/${tab}` : ''}`,
-  /** تسجيل جهة جديدة · BPD-002 · واللي بيتعمل **طلب** لا جهة (قاعدة 2) */
+  /** Register a new entity — this creates a **request**, not an entity. */
   entityRegister: '/entities/register',
   /**
-   * إنشاء حساب الجهة · **شاشة بذاتها بشكل الدخول**.
-   *
-   * ⚠️ **الحساب مش خطوة في النموذج، هو الباب اللي بيوصّل له.**
-   * كان محطة أولى جوّه الستيبر، فالجهة بتفتح التسجيل وتلاقي وسم
-   * «٣ ناقص» على حاجة لسه ما دخلتش عشانها · والحساب ده هو اللي
-   * الطلب بيتحفظ عليه وبترجع له، يعني طبيعته أقرب للدخول منه
-   * لبيانات الطلب.
-   *
-   * فالترتيب بقى: ضوابط ← **حساب** ← نموذج · والمحطة بتفضل في
-   * الستيبر معلَّمة «تمّت» لأن الجهة عدّتها فعلًا.
+   * Create entity account — **a screen in its own right, styled like login**.
+   * ⚠️ **The account isn't a step in the form, it's the door that leads to it.** It used to be a
+   * step inside the stepper, so the entity would open registration and see a "missing" badge over
+   * something it hadn't reached yet — and this account is what the request is saved against and
+   * returned to, so it behaves more like login than like request data.
+   * So the order becomes: terms, then **account**, then form. The step stays marked "done" in the
+   * stepper because the entity has, in fact, passed it.
    */
   entityRegisterAccount: '/entities/register/account',
-  /** تسجيل جهة من داخل النظام · قاعدة 32 · وبتتولد فورًا بلا مراجعة */
+  /** Register an entity from inside the system — created immediately, with no review. */
   entityNew: '/entities/new',
-  /** ماستر داتا الجهات · المناطق والمدن والتصنيفات · د-3 */
+  /** Entity master data — regions, cities, and classifications. */
   entitySettings: '/entities/settings',
   /**
-   * بوّابة الجهة · ن-2.
-   *
-   * ⚠️ **شاشة الجهة على طلبها هي، لا شاشة داخلية.** بتتفتح بحساب
-   * اتعمل وقت التسجيل، وبتعرض طلبًا واحدًا وحالته وبس · وحساب
-   * الجهة الكامل لسه بيتولد بعد الاعتماد (قاعدة 2).
+   * Entity gate.
+   * ⚠️ **This is the entity's own screen for its request, not an internal screen.** It opens with
+   * an account created at registration and shows a single request and its status — the entity's
+   * full account is only created after approval.
    */
   entityPortal: '/entities/portal',
-  /** صندوق طلبات التسجيل · خمس حالات · قاعدة 26 */
+  /** Registration request queue — five states. */
   entityRequests: '/entities/requests',
   entityRequest: (id: string) => `/entities/requests/${id}`,
 
   budget: '/budget',
   budgetYear: (year: string | number) => `/budget/${year}`,
-  /** إعدادات الميزانية · السنوات المالية ومصادر التمويل (ماستر داتا) */
+  /** Budget settings — fiscal years and funding sources (master data). */
   budgetSettings: '/budget/settings',
-  /** إنشاء ميزانية · ترويسة + شجرة بنود */
+  /** Create budget — header plus line-item tree. */
   budgetNew: '/budget/new',
-  /** ميزانية قائمة */
+  /** Budget list. */
   budgetDoc: (id: string) => `/budget/doc/${id}`,
 
   agreements: '/agreements',
   agreement: (id: string) => `/agreements/${id}`,
   /**
-   * إعداد اتفاقية · BPD-008 · هـ-4
-   *
-   * ⚠️ المشروع في الرابط لأن الاتفاقية بتتعمل **لمشروع** لا من
-   * الصندوق · فالمدخل الطبيعي تاب «الاتفاقية» في صفحة المشروع.
+   * Set up an agreement.
+   * ⚠️ The project is in the URL because the agreement is created **for a project**, not from the
+   * queue — so the natural entry point is the "Agreement" tab on the project page.
    */
   agreementNew: (projectId?: string) =>
     `/agreements/new${projectId ? `?project=${projectId}` : ''}`,
 
-  /* ═══ خطة تنفيذ المشروع · BPD-012 ═══
-     ⚠️ **موديول لا تاب، لنفس سبب الاتفاقيات بالظبط.** الخطة إجراء
-     مستقل بدورة اعتماد خاصة بيه (مشرف ← مدير)، وانتقالها بين
-     مراحلها ما بيغيّرش حالة المشروع · وده تطبيق ح-10 (فصل
-     الإجراءات). والمشرف اللي عنده سبع خطط فيها أنشطة مستنّية
-     مراجعة ما يقدرش يتابعهم من صفحات المشاريع واحدة واحدة.
-     والتاب في صفحة المشروع بيفضل مكانه: هو بيجاوب «إيه خطة المشروع
-     ده»، والصندوق بيجاوب «إيه اللي واقف عندي». */
+  /* Project implementation plan.
+     ⚠️ **A module, not a tab, for the same reason as agreements.** The plan is an independent
+     process with its own approval cycle (supervisor to manager), and moving it between stages
+     doesn't change the project's status. A supervisor with several plans awaiting review across
+     projects can't track them one project page at a time.
+     The tab on the project page still has its place: it answers "what's this project's plan", while
+     the queue answers "what's on my plate." */
   plans: '/plans',
   plan: (id: string) => `/plans/${id}`,
-  /** محرّر الخطة · قبل الاعتماد الهيكل مفتوح، وبعده بطلب تعديل */
+  /** Plan editor — structure is open before approval, requires a change request after. */
   planEdit: (id: string) => `/plans/${id}/edit`,
-  /** إنشاء خطة لمشروع · المشروع في الرابط زي الاتفاقية */
+  /** Create a plan for a project — the project is in the URL, like the agreement. */
   planNew: (projectId?: string) =>
     `/plans/new${projectId ? `?project=${projectId}` : ''}`,
-  /** إعدادات الخطط · أنواع الشواهد وحدود المراحل (د-1) */
+  /** Plan settings — evidence types and stage limits. */
   planSettings: '/plans/settings',
 
-  /* ═══ إغلاق المشروع · BPD-011 ═══
-     ⚠️ **موديول لا تاب، لنفس سبب الاتفاقية والخطة** · وأقوى:
-     قاعدة 16 بتقول بالنصّ إن انتقال التقرير الختامي بين مراحل
-     المراجعة **ما بيأثّرش على حالة المشروع**، وإنها بتفضل «تحت
-     التنفيذ» لحدّ ما التقرير والتقييم والمتطلبات يكتملوا مع بعض
-     (قاعدة 8 و18). يعني الإغلاق **سجلّ مستقل بحالته هو** ·
-     والتاب في صفحة المشروع بيفضل مكانه بيجاوب «فين إغلاق المشروع
-     ده»، والصندوق بيجاوب «إيه اللي واقف عندي». */
+  /* Project closure.
+     ⚠️ **A module, not a tab, for the same reason as agreement and plan** — and more strongly:
+     moving the closing report between review stages **doesn't affect the project's status**, which
+     stays "in progress" until the report, evaluation, and requirements are all complete together.
+     So closure is **its own record with its own status**, and the tab on the project page still
+     answers "where's this project's closure", while the queue answers "what's on my plate." */
   closings: '/closings',
   closing: (id: string) => `/closings/${id}`,
-  /** محرّر التقرير الختامي · الجهة بتكتبه (قاعدة 4) */
+  /** Final report editor — written by the entity. */
   closingReport: (id: string) => `/closings/${id}/report`,
-  /** محرّر تقييم المشروع · المشرف بيكتبه بعد اعتماد التقرير (قاعدة 6) */
+  /** Project evaluation editor — written by the supervisor after the report is approved. */
   closingEval: (id: string) => `/closings/${id}/evaluation`,
-  /** إعدادات الإغلاق · المستندات الداعمة وحدود المحطات */
+  /** Closure settings — supporting documents and stage limits. */
   closingSettings: '/closings/settings',
 
   payments: '/payments',
   payment: (id: string) => `/payments/${id}`,
-  /** إنشاء طلب صرف · خطوات 1 و2 · والمشروع اختياري في الرابط */
+  /** Create a disbursement request — steps 1 and 2; the project is optional in the URL. */
   paymentNew: (projectId?: string) =>
     `/payments/new${projectId ? `?project=${projectId}` : ''}`,
-  /** إعادة إرسال طلب معاد · خطوة 11 */
+  /** Resubmit a returned request. */
   paymentEdit: (id: string) => `/payments/${id}/edit`,
-  /** أمر الصرف · خطوة 16 · المخرج الأول */
+  /** Disbursement order — the first output. */
   paymentOrder: (id: string) => `/payments/${id}/order`,
-  /** تقرير المتأخر والمتعثر · آلية التصعيد 9.5 بند 3 */
+  /** Overdue and stalled report — escalation mechanism. */
   paymentsLate: '/payments/late',
 
   reports: '/reports',
   reportTab: (tab?: string) => `/reports${tab && tab !== 'board' ? `/${tab}` : ''}`,
-  /** تقرير كامل على جدولنا */
+  /** Full report on our own schedule. */
   reportView: (key: string) => `/reports/view/${key}`,
-  /** ورقة مؤشرات إجراء · جوّه حالة القياس */
+  /** Process indicator sheet — inside the measurement view. */
   report: (key: string) => `/reports/process/${key}`,
-  /** شاشة من كتالوج النظام العامل */
+  /** A screen from the legacy system's catalog. */
   liveReport: (key: string) => `/reports/screen/${key}`,
 
   assistant: '/assistant',
@@ -151,15 +140,14 @@ export const ROUTES = {
 } as const
 
 /**
- * الشاشة اللي المستخدم بيقع عليها بعد الدخول.
- *
- * المساعد لا «اليوم»: المستخدم بيفتح النظام وفي دماغه سؤال، مش
- * رغبة في تصفّح لوحة. المساعد بيستقبل السؤال، ولوحة اليوم بتفضل
- * مدخل من الريل لمّا يكون عايز يقرا الصورة كاملة.
+ * The screen a user lands on after login.
+ * The assistant, not "Today": a user opens the system with a question in mind, not a wish to browse
+ * a dashboard. The assistant takes the question, and the daily dashboard stays reachable from the
+ * rail for when they want the full picture.
  */
 export const AFTER_LOGIN: string = ROUTES.assistant
 
-/** تبويبات صفحة المشروع · الـslug في الـURL والاسم المعروض */
+/** Project page tabs — the slug in the URL, the display name shown. */
 export const PROJECT_TABS = [
   { slug: 'data', label: 'بيانات المشروع' },
   { slug: 'entity', label: 'الجهة' },
@@ -167,8 +155,8 @@ export const PROJECT_TABS = [
   { slug: 'agreement', label: 'الاتفاقية' },
   { slug: 'plan', label: 'الخطة' },
   { slug: 'payments', label: 'الدفعات' },
-  /* الإغلاق بعد الدفعات · قاعدة 2 بتمنع فتحه قبل تسويتها، فترتيبه
-     في التابات بيتبع ترتيبه في الشغل */
+  /* Closure after payments — opening it before payments are settled is blocked, so its order in the
+     tabs follows the workflow order. */
   { slug: 'closing', label: 'الإغلاق' },
   { slug: 'follow-ups', label: 'المتابعات' },
   { slug: 'log', label: 'سجل المشروع' },
@@ -178,11 +166,11 @@ export const PROJECT_TABS = [
 export type ProjectTabSlug = (typeof PROJECT_TABS)[number]['slug']
 
 /**
- * تبويبات صفحة الجهة · نفس منطق تبويبات المشروع.
- *
- * ملف الجهة في النظام العامل **٣٥ حقلًا** موزّعة على خمس مجموعات،
- * ومعاها الحسابات البنكية وسجل القرارات. عرضها في عمود واحد بيخلّي
- * الصفحة تمرير طويل، والقارئ بيدوّر على الحقل بدل ما يقراه. */
+ * Entity page tabs — same logic as the project tabs.
+ * The legacy system's entity record has **35 fields** across five groups, plus bank accounts and a
+ * decision log. Showing them in a single column makes for a long scroll, and the reader ends up
+ * searching for a field instead of reading it.
+ */
 export const ENTITY_TABS = [
   { slug: 'data', label: 'بيانات الجهة' },
   { slug: 'docs', label: 'المستندات' },
@@ -196,12 +184,11 @@ export type EntityTabSlug = (typeof ENTITY_TABS)[number]['slug']
 export const DEFAULT_ENTITY_TAB: EntityTabSlug = 'data'
 
 /**
- * تبويبات التقارير.
- *
- * النظام العامل فيه ١٤ شاشة تقرير، كل واحدة فورم فلترة لازم تملاه
- * قبل ما تشوف رقم. التقسيم هنا بيقلب الترتيب: **اللوحة** بتفتح على
- * الإجابات جاهزة، و**المُشكَّل** للسؤال اللي مش في اللوحة، و**حالة
- * القياس** آخر حاجة لأنها بتتكلم عننا لا عن المنح.
+ * Report tabs.
+ * The legacy system has 14 report screens, each a filter form to fill in before seeing a number.
+ * This breakdown flips the order: **Dashboard** opens with answers ready, **Custom** is for the
+ * question not on the dashboard, and **Measurement status** comes last because it's about us, not
+ * about the grants.
  */
 export const REPORT_TABS = [
   { slug: 'board', label: 'اللوحة' },
@@ -223,9 +210,10 @@ export const tabSlug = (label: string): ProjectTabSlug =>
   PROJECT_TABS.find((t) => t.label === label)?.slug ?? DEFAULT_PROJECT_TAB
 
 /**
- * عناصر التنقّل · مبنية على موديولات النظام الفعلية.
- * `mob` يعني يظهر في شريط الموبايل السفلي (مساحته 5 عناصر).
- * `perm` هو مفتاح الصلاحية اللي هيتفلتر بيه لما الباك اند يرجّع صلاحيات المستخدم.
+ * Navigation items — built from the system's actual modules.
+ * `mob` means it shows in the bottom mobile bar (four modules plus the profile, whose menu lists the
+ * remaining modules).
+ * `perm` is the permission key used to filter it once the backend returns the user's permissions.
  */
 export interface NavItem {
   key: string
@@ -238,44 +226,39 @@ export interface NavItem {
 }
 
 /**
- * سبعة عناصر.
- *
- * النظام العامل فيه 46 شاشة وقائمة جانبية بعشرات المداخل. الاختصار
- * هنا مش تبسيط شكلي: المراسلات والمتابعات مش موديولات مستقلة في ذهن
- * المستخدم · هي حاجات بتحصل **جوّه مشروع**، فمكانها تبويب في صفحة
- * المشروع لا مدخل في الريل. اللي في الريل هو اللي المستخدم بيبدأ
- * منه يومه فعلًا.
- *
- * ⚠️ **والاتفاقيات كانت في القايمة دي، واتشالت منها لما الوثيقة
- * وصلت.** التعليق ده كان بيقول إنها «بتحصل جوّه مشروع»، وده كان
- * صحيحًا وإحنا شايفين تابًا في صفحة المشروع بس. لكن BPD-008 قاعدة
- * 23 بتقول إن **الاتفاقية إجراء مستقل بسجلّه واعتماداته
- * وإصداراته**، وقاعدة 25 بتقول إن انتقالها بين مراحلها ما بيغيّرش
- * حالة المشروع · يعني اتفاقية عند المدير التنفيذي ومشروعها مكتوب
- * عليه «إعداد الاتفاقية».
- *
- * والأثر العملي إن المشرف اللي عنده تسع اتفاقيات في أربع مراحل ما
- * يقدرش يتابعهم من صفحات المشاريع واحدة واحدة · فالموديول اتبنى،
- * والمدخل رجع. وسيبنا التاب في صفحة المشروع مكانه: هو بيجاوب «إيه
- * اتفاقية المشروع ده»، والصندوق بيجاوب «إيه اللي واقف عندي».
+ * Seven items.
+ * The legacy system has 46 screens and a sidebar with dozens of entries. This isn't a cosmetic
+ * simplification: correspondence and follow-ups aren't independent modules in the user's mind —
+ * they happen **inside a project**, so they belong as a tab on the project page, not an entry on
+ * the rail. What's on the rail is what the user actually starts their day from.
+ * ⚠️ **Agreements used to be in this list, and were removed once the spec arrived.** The comment
+ * here used to say they "happen inside a project", which was true, and only a tab on the project
+ * page was shown. But the spec says an **agreement is an independent process with its own record,
+ * approvals, and versions**, and that moving it between stages doesn't change the project's status
+ * — so an agreement can sit with an executive while its project still shows "agreement in
+ * progress".
+ * In practice, a supervisor with several agreements across stages couldn't track them from the
+ * project pages one at a time — so the module was built, and the rail entry came back. The tab on
+ * the project page stays where it was: it answers "what's this project's agreement", while the
+ * queue answers "what's on my plate."
  */
 export const NAV: NavItem[] = [
-  /* ⚠️ **أيقونة لوحة لا نجمة · ٢٢ سبتمبر.** كانت `insight` (النجمة)،
-     وهي نفسها علامة المساعد في كل مكان في السيستم · فـ«اليوم» كان
-     بيتقري «مساعد تاني». واليوم لوحة أرقام وقراءات، فأيقونتها لوحة. */
+  /* ⚠️ **Dashboard icon, not a star.** It used to be the star icon, which is the assistant's icon
+     everywhere else in the system, so "Today" read as "another assistant." Today is numbers and
+     readings, so its icon is a dashboard. */
   { key: 'home', label: 'اليوم', to: ROUTES.home, icon: 'dashboard', group: 'work', mob: true },
-  { key: 'projects', label: 'المشاريع', to: ROUTES.projects, icon: 'doc', group: 'work', mob: true, perm: 'projects.read' },
+  { key: 'projects', label: 'المشاريع', to: ROUTES.projects, icon: 'navProjects', group: 'work', mob: true, perm: 'projects.read' },
   { key: 'entities', label: 'الجهات', to: ROUTES.entities, icon: 'entity', group: 'work', mob: true, perm: 'entities.read' },
   { key: 'budget', label: 'الميزانية', to: ROUTES.budget, icon: 'budget', group: 'money', perm: 'budget.read' },
-  /* الاتفاقية قبل الصرف في السلسلة · قاعدة 1 في إجراء الصرف بتمنع
-     أي طلب قبل تفعيلها، فترتيبها في الريل بيتبع ترتيب الشغل */
+  /* Agreement before disbursement in the sequence — the disbursement process blocks any request
+     before it's active, so the rail order follows the workflow order. */
   { key: 'agreements', label: 'الاتفاقيات', to: ROUTES.agreements, icon: 'contract', group: 'money', perm: 'agreements.read' },
-  /* الخطة بعد الاتفاقية: الاتنين بيتعملوا بالتوازي بعد الاعتماد،
-     والاتفاقية هي اللي بتفتح الصرف (قاعدة 1) فهي الأسبق في الشغل */
-  { key: 'plans', label: 'الخطط', to: ROUTES.plans, icon: 'plan', group: 'money', perm: 'agreements.read' },
+  /* Plan after agreement: both happen in parallel after approval, and the agreement is what unlocks
+     disbursement, so it comes first in the workflow. */
+  { key: 'plans', label: 'الخطط', to: ROUTES.plans, icon: 'navPlans', group: 'money', perm: 'agreements.read' },
   { key: 'payments', label: 'الصرف', to: ROUTES.payments, icon: 'pay', group: 'money', mob: true, perm: 'payments.read' },
-  /* الإغلاق آخر السلسلة · وقاعدة 2 بتمنع فتحه قبل ما الدفعات
-     تتسوّى، فمكانه بعد الصرف في الريل زي ما هو بعده في الشغل */
-  { key: 'closings', label: 'الإغلاق', to: ROUTES.closings, icon: 'check', group: 'money', perm: 'agreements.read' },
-  { key: 'reports', label: 'التقارير', to: ROUTES.reports, icon: 'chart', group: 'knowledge', mob: true, perm: 'reports.read' },
+  /* Closure last in the sequence — opening it before payments are settled is blocked, so it sits
+     after disbursement in the rail, as it does in the workflow. */
+  { key: 'closings', label: 'الإغلاق', to: ROUTES.closings, icon: 'navClosings', group: 'money', perm: 'agreements.read' },
+  { key: 'reports', label: 'التقارير', to: ROUTES.reports, icon: 'chart', group: 'knowledge', perm: 'reports.read' },
 ]

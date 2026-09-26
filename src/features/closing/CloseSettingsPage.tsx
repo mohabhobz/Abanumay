@@ -1,32 +1,30 @@
 import { useNavigate } from 'react-router-dom'
-import { BackTo, Glass, Head, Num, Tabs, Tag } from '@/components/ui'
+import { BackTo, Glass, Head, Num, Tabs, Tag, Nil } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { CLOSE_DOCS, CLOSE_LIMIT, CLOSE_STAGES, closeRows } from '@/data/mock/closing'
 import type { CloseStage } from '@/types/domain'
+import { NOUN, nounAfter } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   إعدادات الإغلاق · نفس شكل إعدادات الخطط بالحرف
+/* Closing settings - same layout as plan settings, exactly.
 
-   ⚠️ **الموديول تحته الموديول وإعداداته وتقاريره** · طلب مظفر.
+   Note: this module sits under the module, its settings, and its reports.
 
-   وفيه نوعان مختلفان هنا، وخلطهم بيخفي الفرق:
+   Two different kinds live here, and mixing them hides the difference:
+   - supporting documents - master data - and marking one required actually blocks submission (rules
+   3 and 4), so the column states required or supporting.
+   - stage limits - a business rule - the number changes behavior: a request past its limit shows up
+   under "overdue".
 
-     **المستندات الداعمة** · ماستر داتا · والإلزامي منها بيمنع
-       الإرسال فعلًا (قاعدة 3 و4)، فالعمود بيقول إلزامي ولا داعم.
-     **حدود المحطات** · قاعدة عمل · الرقم بيغيّر **سلوك**: طلب
-       عدّى حدّه بيطلع في «المتأخّر».
+   Note: all these numbers are assumptions, and the screen says so. The spec measures "average
+   project closing duration" (indicator 1) and sets no limit for any individual stage - this is an
+   open question for the institution.
 
-   ⚠️ **وكل الأرقام دي افتراضات، والشاشة بتقولها.** الوثيقة بتقيس
-   «متوسط مدة إغلاق المشروع» (مؤشر 1) وما بتحطّش حدًّا لأي محطة ·
-   والسؤال س-18 مفتوح عند المؤسسة.
-
-   ⚠️ **وعمود «مرفوع في» مش زينة.** مستند مالوش استعمال في أي
-   طلب معناه إما إنه اتضاف وما حدّش طلبه، أو إن الجهات كلها
-   بتتخطّاه · والرقم بيقول كده من غير ما حد يعدّ.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the "uploaded in" column isn't decorative. A document with no use in any request means
+   either it was added and never requested, or every entity skips it - and the number says so
+   without anyone counting. */
 
 const KEYS = ['tab'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -41,11 +39,11 @@ export default function CloseSettingsPage() {
   const { values: v, set } = useQueryParams<Params>(KEYS)
   const tab = TABS.some((t) => t.slug === v.tab) ? (v.tab as string) : TABS[0].slug
 
-  /** كام طلب رافع المستند ده فعلًا */
+  /** How many requests actually uploaded this document. */
   const usage = (key: string) =>
     closeRows.filter((c) => c.report.docs.includes(key)).length
 
-  /** كام طلب واقف في المحطة دي دلوقتي */
+  /** How many requests currently sit at this stage. */
   const atStage = (k: CloseStage) => closeRows.filter((c) => c.stage === k).length
 
   return (
@@ -62,7 +60,7 @@ export default function CloseSettingsPage() {
                 تحدّد متى يُعدّ الطلب متأخرًا
               </p>
             </div>
-            <Tag tone="warn">قيم افتراضية</Tag>
+            <Tag tone="mute">قيم افتراضية</Tag>
           </header>
 
           <Tabs
@@ -75,7 +73,7 @@ export default function CloseSettingsPage() {
             <Glass className="tblcard">
               <Head
                 title="المستندات الداعمة"
-                meta={<span className="sub"><Num>{CLOSE_DOCS.length}</Num> مستندًا</span>}
+                meta={<span className="sub"><Num>{CLOSE_DOCS.length}</Num> {nounAfter(CLOSE_DOCS.length, NOUN.doc)}</span>}
               />
               <p className="sub cnote">
                 تُلزم القاعدة <span className="num">3</span> بإرفاق المستندات الداعمة
@@ -105,7 +103,7 @@ export default function CloseSettingsPage() {
                         </td>
                         <td className="n">
                           {n > 0
-                            ? <><span className="num">{n}</span> طلب</>
+                            ? <><span className="num">{n}</span> {nounAfter(n, NOUN.request)}</>
                             : <span className="sub">لم يُرفع</span>}
                         </td>
                       </tr>
@@ -120,8 +118,8 @@ export default function CloseSettingsPage() {
                 title="حدود المحطات"
                 meta={<Tag tone="warn">لم تحدّد الوثيقة مدة</Tag>}
               />
-              {/* ⚠️ الجملة دي هي اللي بتفرّق بين «رقم اتّفقنا عليه»
-                  و«رقم حطّيناه عشان الشاشة تشتغل» */}
+              {/* Note: this sentence is what separates "a number we agreed on" from "a number we
+                  put in so the screen would work." */}
               <p className="sub cnote">
                 تقيس BPD-011 متوسط مدة الإغلاق (مؤشر <span className="num">1</span>)
                 ولا تضع حدًّا لأي محطة · هذه الأرقام مؤقتة ليكون لوصف «متأخّر»
@@ -142,14 +140,14 @@ export default function CloseSettingsPage() {
                   {CLOSE_STAGES.map((s) => (
                     <tr key={s.key}>
                       <td>{s.label}</td>
-                      {/* ⚠️ الدورة عمود هنا لأن نفس اسم المحطة بيتكرّر
-                          في الاتنين · قاعدة 17 */}
+                      {/* Note: cycle is a column here because the same stage name repeats across
+                          both cycles - rule 17. */}
                       <td>
                         <span className="sub">
                           {s.cycle === 'report' ? 'التقرير الختامي' : 'تقييم المشروع'}
                         </span>
                       </td>
-                      <td>{s.who || <span className="sub">·</span>}</td>
+                      <td>{s.who || <Nil />}</td>
                       <td className="n">
                         {CLOSE_LIMIT[s.key] > 0
                           ? <span className="num">{Math.round(CLOSE_LIMIT[s.key] / 24)}</span>

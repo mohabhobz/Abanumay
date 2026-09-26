@@ -1,20 +1,18 @@
 import { useState, type ReactNode } from 'react'
-import { nf } from '@/lib/format'
+import { nf, NOUN, nounAfter } from '@/lib/format'
 import { Money } from './primitives'
 import { Person } from './Person'
 import type { AuthorityMatrix, AuthorityRole } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   قوس الاعتماد
+/* Approval arc
 
-   مسار الاعتماد مش ثابت، هو دالة في المبلغ: القوس بيمتلي لحدّ الدور
-   اللي سقفه يستوعب المبلغ، واللي بعده يبهت · فالمستخدم يشوف مين
-   صاحب القرار قبل ما يقرأ رقم.
-   ═══════════════════════════════════════════════════════════ */
+   The approval path isn't fixed — it's a function of the amount: the arc fills up to the tier whose
+   ceiling covers the amount, and everything past it fades, so the user sees who the approver is
+   before reading any number. */
 
 const TAU = Math.PI / 180
 
-/** قطاع حلقي بين نصف قطرين وزاويتين */
+/** Ring sector between two radii and two angles */
 function arcPath(cx: number, cy: number, R: number, r: number, a0: number, a1: number): string {
   const p = (rad: number, a: number): [number, number] => [
     cx + rad * Math.cos(a * TAU),
@@ -28,7 +26,7 @@ function arcPath(cx: number, cy: number, R: number, r: number, a0: number, a1: n
   return `M${x1} ${y1} A${R} ${R} 0 ${large} 0 ${x2} ${y2} L${x3} ${y3} A${r} ${r} 0 ${large} 1 ${x4} ${y4} Z`
 }
 
-/** على الموبايل الاسم بيتقسم سطرين عشان يدخل في عرض القطاع */
+/** On mobile the name wraps to two lines so it fits the sector's width */
 function splitRole(text: string): string[] {
   const words = text.split(' ')
   if (words.length < 2) return [text]
@@ -36,20 +34,20 @@ function splitRole(text: string): string[] {
   return [words.slice(0, half).join(' '), words.slice(half).join(' ')]
 }
 
-/** حالة الدور الواقف عنده المشروع · بتيجي من سجل الإجراءات، مش مكتوبة هنا */
+/** Status of the tier the project is currently at · comes from the action log, not hardcoded here */
 export interface CurrentStandingInfo {
   by: string
   days: number
   hours: number
   limit: number
-  /** أول إجراء مسجَّل، للدور اللي خلص */
+  /** First logged action, for the tier that's done */
   firstActionAt?: string
 }
 
 export interface GateArcProps {
   amount: number
   authority: AuthorityMatrix
-  /** يقسّم أسماء الأدوار سطرين · التفاصيل تحت القوس في الحالتين */
+  /** Wraps role names to two lines · details sit below the arc either way */
   compact?: boolean
   standing?: CurrentStandingInfo
 }
@@ -72,7 +70,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
   const roles = authority.roles
   const [hover, setHover] = useState<number | null>(null)
 
-  // صاحب القرار: أول دور له سقف يستوعب المبلغ
+  // Approver: the first tier with a ceiling that covers the amount
   let decider = roles.findIndex((r) => r.ceiling !== null && r.ceiling >= amount)
   if (decider === -1) decider = roles.length - 1
 
@@ -80,10 +78,10 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
   const decided = roles[decider] as AuthorityRole
   const uplifted = decided.uplift ? Math.round(amount * (1 + decided.uplift / 100)) : null
 
-  /** القراءة اللي تظهر في جوف القوس · لكل حالة سؤال مختلف */
+  /** The reading shown inside the arc · a different question for each state */
   const detail = (role: AuthorityRole, i: number): Detail => {
     if (i > decider) {
-      // مش مطلوبة: الأهم هو الرقم اللي بيفعّلها
+      // Not required — what matters is the number that activates it
       let gate: number | null = null
       for (let j = i - 1; j >= 0; j--) {
         const c = roles[j]?.ceiling
@@ -109,7 +107,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
         t: role.role,
         lines: standing
           ? [
-              <><Person name={standing.by} quiet={false} /> · مفتوح منذ <b>{standing.days}</b> يومًا</>,
+              <><Person name={standing.by} quiet={false} /> · مفتوح منذ <b>{standing.days}</b> {nounAfter(standing.days, NOUN.day)}</>,
               <>
                 <b>{nf.format(standing.hours)}</b> ساعة مقابل حدّ <b>{nf.format(standing.limit)}</b>
                 {over !== null && over > 100 && <>، <span className="bad"><span className="num">{over}%</span> فوق الحدّ</span></>}
@@ -147,7 +145,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
     }
   }
 
-  /** القطاع الواقفين عنده يترسم آخر واحد عشان ظله ما يتغطّاش */
+  /** The sector the project is currently at is drawn last so its shadow isn't covered */
   const paintOrder = (() => {
     const order = roles.map((_, i) => i)
     const now = roles.findIndex((r) => r.state === 'now')
@@ -200,10 +198,9 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
 
   return (
     <div className="garc">
-      {/* الرسم والجوف في صندوق واحد · النِّسَب في `.fanhole` لازم
-          تتحسب من **صندوق الرسم** لا من الكارت كله، وإلا سطر
-          التفصيل تحت بيطوّل الأب فالنسبة تدّي رقمًا أكبر والصندوق
-          يفيض تاني. */}
+      {/* The chart and the hollow center share one box · the ratios in `.fanhole` must be computed
+          from the **drawing box**, not the whole card, otherwise the detail line below stretches
+          the parent, the ratio yields a larger number, and the box overflows again. */}
       <div className="garc-p">
       <svg
         viewBox="0 0 760 440"
@@ -212,8 +209,8 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
         onMouseLeave={() => setHover(null)}
       >
         <defs>
-          {/* التدرّج بإحداثيات المستخدم عشان يفضل مربوط بالقوس نفسه،
-              والمستطيل أوسع من الـviewBox عشان ما يقصّش ظل القطاع النشط */}
+          {/* The gradient uses user-space coordinates so it stays anchored to the arc itself, and
+              the rectangle is wider than the viewBox so it doesn't clip the active sector's shadow */}
           <linearGradient id="fanFade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="440">
             <stop offset="0.06" stopColor="#fff" stopOpacity="0.42" />
             <stop offset="0.38" stopColor="#fff" stopOpacity="0.82" />
@@ -234,7 +231,8 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
             const a1 = -i * span - GAP / 2
             const mid = (a0 + a1) / 2
             const sk = skin(role, i)
-            // الخطوة الواقفين عندها أكبر من الباقي، فبتقرا قبل أي حاجة
+            // The step the project is currently at is larger than the rest, so it reads first,
+            // before anything else
             const isNow = sk.cls === 'now'
             const rOut = isNow ? R_OUT + 20 : R_OUT
             const rIn = isNow ? R_IN - 12 : R_IN
@@ -243,7 +241,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
             const ty = CY - rText * Math.sin(mid * TAU)
 
             return (
-              <g key={role.role} className="fanslot" style={{ '--d': `${i * 90}ms` } as React.CSSProperties}>
+              <g key={role.role} className="fanslot" style={{ '--d': `calc(var(--mo-stagger) * ${i * 1.5})` } as React.CSSProperties}>
                 <g
                   className={`fan ${sk.cls}${i === decider ? ' dec' : ''}${hover === i ? ' hov' : ''}`}
                   onMouseEnter={() => setHover(i)}
@@ -287,21 +285,19 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
         </g>
       </svg>
 
-      {/* ══ جوف نصف الدائرة ══
-          الجوف **مساحته ثابتة ومعروفة**: نصف قرص نصف قطره ١٨٠
-          (`R_IN` ناقص التوسعة اللي بتاخدها الخطوة الواقفة). واللي
-          كان جوّاه **متغيّر الطول**: مفتاح وعنوان وتلات أو أربع
-          أسطر تفصيل حسب القطاع تحت الماوس.
+      {/* Half-circle hollow center
+          The hollow center has a **fixed, known area**: a half-disc of radius 180 (`R_IN` minus the
+          expansion the active step takes). What used to sit inside it had a **variable length**: a
+          key, a title, and three or four lines of detail depending on which sector is hovered.
 
-          محتوى متغيّر في مساحة ثابتة = فيضان. القياس: أبعد ركن في
-          صندوق النصّ كان على بُعد **٢٨٠** من مركز القوس والحدّ
-          **١٨٠** · يعني ١٠٠ بكسل داخلة جوّه القطاعات، وده اللي
-          كان بيخلّي «سقفه ١,٠٠٠,٠٠٠» مدفونًا تحت «تقديم الجهة».
+          Variable content in a fixed area means overflow. The measurement: the farthest corner of
+          the text box sat at a distance of **280** from the arc's center, and the boundary is
+          **180** — 100 pixels intruding into the sectors, which is what buried "ceiling 1,000,000"
+          under "entity submission."
 
-          الصح: الجوف بياخد **الثابت وحده** (المفتاح والاسم)،
-          والتفصيل المتغيّر بينزل تحت القوس · زي ما كان بيحصل في
-          الوضع المضغوط بالظبط. الوضعان بقوا سلوكًا واحدًا، فالخطأ
-          ما بيرجعش من الباب التاني. */}
+          The fix: the hollow center takes only the **fixed part** (key and name), and the variable
+          detail goes below the arc, exactly like the compact layout already does. Both layouts are
+          now one behavior, so the bug can't come back through the other one. */}
       <div className="fanhole" key={hover === null ? 'base' : hover}>
         <div className="fhk">{active ? active.k : 'صاحب القرار في هذا المبلغ'}</div>
         <div className="fht">{active ? active.t : decided.role}</div>

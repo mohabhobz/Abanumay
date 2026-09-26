@@ -1,4 +1,4 @@
-/** خلفية التطبيق · ميش جراديانت واحد متصل + حبيبات خفيفة */
+/** App background — a single continuous mesh gradient plus light grain. */
 export function Background() {
   return (
     <div className="bg" aria-hidden="true">

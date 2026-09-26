@@ -3,7 +3,7 @@ import { Icon, icons } from '@/components/ui'
 import { useMenuOf } from '@/hooks/useMenu'
 import type { SavedChat } from '@/data/mock/assistant'
 
-/** المجموعات بترتيبها في القائمة · «مثبّتة» بتسبق أي تاريخ */
+/** Groups in list order - "pinned" comes before any date. */
 const GROUPS = ['مثبّتة', 'اليوم', 'أمس', 'آخر 7 أيام'] as const
 
 export interface ChatListProps {
@@ -12,27 +12,26 @@ export interface ChatListProps {
   openId: string | null
   onOpen: (id: string) => void
   onNew: () => void
-  /** مفتوحة فوق المحتوى على الموبايل */
+  /** Opens over the content on mobile. */
   open: boolean
-  /** مطويّة على الديسكتوب · والزرار بيرجّعها */
+  /** Collapsed on desktop - the button restores it. */
   shut: boolean
   onShut: () => void
 }
 
 /**
- * قائمة المحادثات المحفوظة.
+ * List of saved conversations.
  *
- * العميل قال بالنص: «أنا امبارح دورت على كذا، عايز أثبته معايا» ·
- * فالتثبيت والبحث ردّ على طلب صريح، مش زينة. والسحب بيرتّب، والإفلات
- * في مجموعة تانية بينقل المحادثة ليها، فسحبها لـ«مثبّتة» بيثبّتها.
+ * Pinning and search were requested directly, not added as decoration. Dragging reorders, and
+ * dropping into another group moves the conversation there, so dragging into "pinned" pins it.
  */
 export function ChatList({
   chats, onChange, openId, onOpen, onNew, open, shut, onShut,
 }: ChatListProps) {
   const [query, setQuery] = useState('')
-  /* ⚠️ القايمة دي كانت `useState` عريانة من غير قفل بالضغط برّه ·
-     نفس السلوك اللي مكتوب مرة واحدة في `useMenu` للست قوايم التانية،
-     والسابعة دي فاتته لأن حالتها معرّف لا بوليان (نوتة أ-4) */
+  /* Note: this list used to be a bare `useState` with no click-outside handling - the same behavior
+     written once in `useMenu` for six other lists, and this seventh one was missed because its
+     state is an id, not a boolean. */
   const menu = useMenuOf<HTMLDivElement>()
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
@@ -75,10 +74,9 @@ export function ChatList({
     <aside className={`chatlist chrome${open ? ' on' : ''}${shut ? ' shut' : ''}`}>
       <div className="cl-head">
         <span className="cl-title">المحادثات</span>
-        {/* ⚠️ زرار الطيّ **جوّه الشريط** لا في ترويسة المحادثة ·
-            اللي بيطوي حاجة بيدوس عليها هي، واللي بيرجّعها بيدوس
-            على مكانها. فالزرار ده بيطوي، وزرار تاني في ترويسة
-            المحادثة بيرجّع (أ-3) */}
+        {/* Note: the collapse button lives inside the sidebar, not in the conversation header -
+            whoever collapses something clicks on it, and whoever restores it clicks where it was.
+            So this button collapses, and a different button in the conversation header restores it. */}
         <button
           className="cl-new"
           onClick={onShut}

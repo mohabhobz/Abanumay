@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  BackTo, Empty, Glass, Head, Icon, icons, Mono, Money, Num, Person, Tag,
+  StepLink, BackTo, DateText, Empty, Glass, Head, Icon, icons, Mono, Money, Num, Person, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
+import { NOUN, nf, nounAfter, countOf } from '@/lib/format'
 import { ExportMenu } from '@/components/export'
 import { type Sheet } from '@/lib/export'
 import { LIVE_SPECS, specByKey, type LiveCol, type LiveSpec } from '@/data/liveReports'
@@ -15,18 +15,21 @@ import { CYCLES } from '@/data/budgetPlan'
 import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from '@/features/budget/BudgetCharts'
 
 /**
- * شاشة تقرير واحد من الكتالوج.
+ * One catalog report screen.
  *
- * الصفحة دي **بتوصف الشاشة الحقيقية وبتشغّلها في نفس الوقت**:
+ * This page both describes the real screen and runs it at the same time:
  *
- *  · فوق: السؤال اللي بتجاوب عليه، ومسارها في النظام، وعدد صفوفها هناك.
- *  · بعده: الفلاتر زي ما هي · بعدد خياراتها الحقيقي مكتوبًا على كل واحد،
- *    لأن «٩٧ خيارًا في قائمة واحدة» هي المشكلة نفسها ولازم تتشاف.
- *  · وبعده: الجدول بأعمدته الحقيقية وصفوف بشكلها.
- *  · والميزانية استثناء: شجرة بأربع مستويات بدل جدول واحد.
+ * - At the top: the question it answers, its path in the system, and its
+ * real row count there.
+ * - Below that: the filters as they actually are, each labeled with its
+ * real option count, because "97 options in one dropdown" is itself the
+ * problem and needs to be visible.
+ * - Then: the table with its real columns and row shapes.
+ * - Budget is the exception: a four-level tree instead of a single table.
  *
- * وأي ملاحظة لقيناها في الشاشة الحقيقية مكتوبة في مكانها، مش مخبّاية
- * في مستند جنب · العميل بيفتح الشاشة فيلاقي اللي إحنا شفناه.
+ * Any issue found on the real screen is written where it belongs, not
+ * hidden in a separate document — the client opens the screen and finds
+ * what we found.
  */
 export default function LiveReport() {
   const { key = '' } = useParams<{ key: string }>()
@@ -60,9 +63,9 @@ export default function LiveReport() {
               <p className="sub mt-1">
                 <code className="mono">control/{spec.path}</code>
                 {spec.rowsLive !== null && (
-                  <> · <span className="num">{nf.format(spec.rowsLive)}</span> صفًّا في النظام الحالي</>
+                  <> · <span className="num">{nf.format(spec.rowsLive)}</span> {nounAfter(spec.rowsLive, NOUN.row)} في النظام الحالي</>
                 )}
-                {spec.flaw && <> · <Tag tone="no">{spec.flaw}</Tag></>}
+                {spec.flaw && <> · <Tag tone="mute">{spec.flaw}</Tag></>}
               </p>
             </div>
           </header>
@@ -92,14 +95,15 @@ export default function LiveReport() {
   )
 }
 
-/* ═══════════════════ الفلاتر ═══════════════════ */
+/* Filters */
 
 /**
- * الفلاتر معروضة **بعدد خياراتها**.
+ * Filters are labeled with their option count.
  *
- * ده مش تزويقًا: «الهدف · ٩٧ خيارًا» في قائمة منسدلة واحدة بلا بحث
- * هي أكبر مشكلة في شاشات النظام، والرقم لازم يبان جنب الفلتر عشان
- * العميل يشوف السبب لا الشكوى.
+ * This isn't decoration: "Goal — 97 options" in a single dropdown with no
+ * search is the biggest problem across the system's screens, and the
+ * number needs to sit next to the filter so the client sees the cause,
+ * not just a complaint.
  */
 function Filters({ spec }: { spec: LiveSpec }) {
   const heavy = spec.filters.filter((f) => (f.count ?? 0) >= 20).length
@@ -107,7 +111,7 @@ function Filters({ spec }: { spec: LiveSpec }) {
     <section className="rpsec">
       <Head
         title="فلاتر الشاشة في النظام"
-        meta={`${spec.filters.length} فلترًا${heavy ? ` · ${heavy} منها قائمة طويلة` : ''}`}
+        meta={`${countOf(spec.filters.length, NOUN.filter)}${heavy ? ` · ${heavy} منها قائمة طويلة` : ''}`}
       />
       <div className="lrf">
         {spec.filters.map((f) => (
@@ -118,7 +122,7 @@ function Filters({ spec }: { spec: LiveSpec }) {
             />
             <b>{f.label}</b>
             {f.count !== undefined && (
-              <span className="sub"><span className="num">{f.count}</span> خيارًا</span>
+              <span className="sub"><span className="num">{f.count}</span> {nounAfter(f.count, NOUN.option)}</span>
             )}
             {f.kind === 'date' && <span className="sub">تاريخ</span>}
             {f.kind === 'text' && <span className="sub">بحث نصّي</span>}
@@ -135,12 +139,12 @@ function Filters({ spec }: { spec: LiveSpec }) {
   )
 }
 
-/* ═══════════════════ الرسوم ═══════════════════ */
+/* Charts */
 
 function Charts({ spec }: { spec: LiveSpec }) {
   return (
     <section className="rpsec">
-      <Head title="رسوم الشاشة" meta={`${spec.charts.length} رسمًا في النظام`} />
+      <Head title="رسوم الشاشة" meta={`${countOf(spec.charts.length, NOUN.chart)} في النظام`} />
       {spec.charts.map((c) => (
         <RealChart key={c.title} title={c.title} />
       ))}
@@ -149,12 +153,13 @@ function Charts({ spec }: { spec: LiveSpec }) {
 }
 
 /**
- * الرسوم مرسومة بالداتا الحقيقية، لا مخططات فاضية.
+ * Charts are drawn from real data, not placeholder outlines.
  *
- * أول نسخة كانت بترسم أعمدة عشوائية «بتقول شكل الرسم لا قيمه» · وده
- * كان قرارًا غلط: شاشة بتقول «فيه رسم هنا» من غير ما ترسمه ما بتفرقش
- * عن سطر مكتوب. الرسوم التلاتة في `reports1_1` والأربعة في `reports1_5`
- * كلها بتتغذّى من نفس شجرة التخصيص، فكلها اترسمت.
+ * An earlier version drew random bars that only showed the chart's
+ * shape, not its values — that was the wrong call: a screen claiming
+ * "there's a chart here" without actually rendering it is no different
+ * from a line of text. The three charts in `reports1_1` and the four in
+ * `reports1_5` all feed from the same allocation tree, so all of them are rendered.
  */
 function RealChart({ title }: { title: string }) {
   const c2026 = CYCLES[0]
@@ -167,14 +172,14 @@ function RealChart({ title }: { title: string }) {
   return null
 }
 
-/* ═══════════════════ الجدول ═══════════════════ */
+/* Table */
 
 function cellOf(v: string | number | undefined, c: LiveCol) {
   if (v === undefined || v === '') return <span className="sub"> </span>
   if (c.kind === 'money' && typeof v === 'number') return <Money>{v}</Money>
   if (c.kind === 'num' && typeof v === 'number') return <Num>{v}</Num>
   if (c.kind === 'id') return <Mono>{String(v)}</Mono>
-  if (c.kind === 'date') return <Mono>{String(v)}</Mono>
+  if (c.kind === 'date') return <DateText>{String(v)}</DateText>
   if (c.kind === 'pct') return <span className="num">{String(v)}</span>
   if (c.kind === 'file') return <span className="lrfile"><Icon name={icons.clip} size="sm" />{String(v)}</span>
   if (c.kind === 'link') return <span className="lnk">{String(v)}</span>
@@ -209,7 +214,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
     <section className="rpsec">
       <Head
         title="الجدول بأعمدته"
-        meta={`${spec.cols.length} عمودًا · عيّنة ${rows.length} صفًّا`}
+        meta={`${countOf(spec.cols.length, NOUN.column)} · عيّنة ${countOf(rows.length, NOUN.row)}`}
       />
 
       {only.length > 0 && (
@@ -226,7 +231,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
             القيم تجريبية · الأعمدة منقولة من <code className="mono">control/{spec.path}</code>
           </span>
         </div>
-        <div className="ftool-a"><ExportMenu sheet={sheet} note={`${spec.title} · عيّنة ${rows.length} صفًّا`} /></div>
+        <div className="ftool-a"><ExportMenu sheet={sheet} note={`${spec.title} · عيّنة ${countOf(rows.length, NOUN.row)}`} /></div>
       </div>
 
       <Glass className="tblcard">
@@ -240,9 +245,9 @@ function Rows({ spec }: { spec: LiveSpec }) {
                 <tr>
                   {spec.cols.map((c) => (
                     <th key={c.key} className={c.kind === 'num' || c.kind === 'money' || c.kind === 'pct' ? 'n' : undefined}>
-                      {/* نفس غلاف `DataTable`: من غيره عنوان العمود
-                          الطويل بيتقصّ بلا نقط · «مدة التنفيذ الفعلي»
-                          كانت بتتقطع في نص الكلمة. */}
+                      {/* Same `DataTable` wrapper: without it, a long column header truncates
+                          with no ellipsis — "Actual Implementation Duration" used to cut off
+                          mid-word. */}
                       <span className="th-t">{c.label}</span>
                       {c.only && <span className="lronly" title="عمود لا مثيل له في شاشة أخرى">•</span>}
                     </th>
@@ -266,7 +271,7 @@ function Row({ r, cols }: { r: LiveRow; cols: LiveCol[] }) {
       {cols.map((c) => (
         <td
           key={c.key}
-          className={c.kind === 'num' || c.kind === 'money' || c.kind === 'pct' ? 'n num' : undefined}
+          className={c.kind === 'num' || c.kind === 'money' || c.kind === 'pct' ? 'n' : undefined}
           title={String(r[c.key] ?? '')}
         >
           {cellOf(r[c.key], c)}
@@ -276,17 +281,18 @@ function Row({ r, cols }: { r: LiveRow; cols: LiveCol[] }) {
   )
 }
 
-/* ═══════════════════ شجرة الميزانية ═══════════════════ */
+/* Budget tree */
 
 /**
- * الميزانية شجرة لا جدول.
+ * Budget is a tree, not a table.
  *
- * النظام العامل بيعمل الشجرة دي بأربع صفحات متتالية: تضغط «عرض»
- * فتروح لصفحة تانية، وترجع بزرار المتصفح. وأول ما تنزل للمستوى
- * الرابع الأعمدة بتقلّ من ست لتلاتة من غير سبب.
+ * The current system builds this tree across four consecutive pages:
+ * clicking "View" navigates to another page, and you go back with the
+ * browser button. Once you drill to the fourth level, the columns drop
+ * from six to three for no reason.
  *
- * هنا مستوى واحد بمسار فتات فوقه: التنقّل جوّه نفس الشاشة، والأعمدة
- * واحدة في كل المستويات.
+ * Here it's one level with a breadcrumb trail above it: navigation stays
+ * within the same screen, and the columns are identical at every level.
  */
 function BudgetTree() {
   const [path, setPath] = useState<BudgetNode[]>([])
@@ -322,38 +328,47 @@ function BudgetTree() {
         meta={`المستوى ${path.length + 1} من 4 · ${LEVELS[Math.min(path.length, 3)]}`}
       />
 
-      {/* مسار الفتات: التنقّل جوّه الشاشة لا بصفحات متتالية */}
-      <div className="lrbc">
-        <button className={`lrbc-i${path.length === 0 ? ' on' : ''}`} onClick={() => setPath([])}>
-          كل الدورات
-        </button>
-        {path.map((n, i) => (
-          <span key={n.id} className="lrbc-s">
-            <Icon name={icons.chevron} size="sm" />
-            <button
-              className={`lrbc-i${i === path.length - 1 ? ' on' : ''}`}
-              onClick={() => setPath(path.slice(0, i + 1))}
-            >
-              {n.label}
-            </button>
-          </span>
-        ))}
+      {/* Breadcrumb trail: navigation stays within the screen instead of moving
+          through consecutive pages.
+
+          The breadcrumb, count, and export all belong in one toolbar row. The
+          breadcrumb used to sit outside `.ftool-r`, so the bar broke across
+          three lines: the chip alone on the right, the count below it, and
+          export alone on the left on a third line. It now matches the
+          `/reports/view/*` layout: (breadcrumb + count) on the right, (export)
+          on the left, one row. */}
+      <div className="ftool-r">
+        <div className="ftool-f">
+            <div className="lrbc">
+              <button className={`lrbc-i${path.length === 0 ? ' on' : ''}`} onClick={() => setPath([])}>
+                كل الدورات
+              </button>
+              {path.map((n, i) => (
+                <span key={n.id} className="lrbc-s">
+                  <Icon name={icons.chevron} size="sm" />
+                  <button
+                    className={`lrbc-i${i === path.length - 1 ? ' on' : ''}`}
+                    onClick={() => setPath(path.slice(0, i + 1))}
+                  >
+                    {n.label}
+                  </button>
+                </span>
+              ))}
+            </div>
+          {!leaf && (
+            <span className="sub">
+              <span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.line)} ·{' '}
+              الإجماليات محسوبة من الدورات الخمس الحقيقية
+            </span>
+          )}
+        </div>
+        {!leaf && <div className="ftool-a"><ExportMenu sheet={sheet} note={sheet.title} /></div>}
       </div>
 
       {leaf ? (
         <Glass><Empty title="آخر مستوى في الشجرة." note="لا تقسيم تحت الهدف، فعُد إلى مستوى أعلى من المسار في الأعلى." /></Glass>
       ) : (
         <>
-          <div className="ftool-r">
-            <div className="ftool-f">
-              <span className="sub">
-                <span className="num">{rows.length}</span> بندًا ·{' '}
-                الإجماليات محسوبة من الدورات الخمس الحقيقية
-              </span>
-            </div>
-            <div className="ftool-a"><ExportMenu sheet={sheet} note={sheet.title} /></div>
-          </div>
-
           <Glass className="tblcard">
             <div className="tblwrap">
               <div className="tblock">
@@ -388,12 +403,12 @@ function BudgetTree() {
                             {n.children?.length ? <Icon name={icons.chevron} size="sm" /> : null}
                             {' '}{n.label}
                           </td>
-                          <td className="n num"><Money sm>{n.budget}</Money></td>
-                          <td className="n num"><Money sm>{n.approved}</Money></td>
-                          <td className="n num"><Money sm>{n.reserved}</Money></td>
-                          <td className="n num"><Money sm>{n.spent}</Money></td>
-                          <td className={`n num${over ? ' bad' : ''}`}><Money sm>{n.left}</Money></td>
-                          <td className="n num">
+                          <td className="n"><Money sm>{n.budget}</Money></td>
+                          <td className="n"><Money sm>{n.approved}</Money></td>
+                          <td className="n"><Money sm>{n.reserved}</Money></td>
+                          <td className="n"><Money sm>{n.spent}</Money></td>
+                          <td className={`n${over ? ' bad' : ''}`}><Money sm>{n.left}</Money></td>
+                          <td className="n">
                             {over ? <Tag tone="no">فوق الحد المالي</Tag>
                               : tight ? <Tag tone="warn">{n.leftPct}%</Tag>
                               : `${n.leftPct}%`}
@@ -420,7 +435,7 @@ function BudgetTree() {
   )
 }
 
-/* ═══════════════════ التالي والسابق ═══════════════════ */
+/* Next and previous */
 
 function Nav({ spec }: { spec: LiveSpec }) {
   const i = LIVE_SPECS.findIndex((s) => s.key === spec.key)
@@ -428,19 +443,13 @@ function Nav({ spec }: { spec: LiveSpec }) {
   const next = LIVE_SPECS[i + 1]
   return (
     <nav className="lrnav">
-      {prev ? (
-        <Link to={ROUTES.liveReport(prev.key)} className="btn btn-2 btn-sm">
-          <Icon name={icons.chevronBack} size="sm" />
-          {prev.title}
-        </Link>
-      ) : <span />}
+      {prev
+        ? <StepLink to={ROUTES.liveReport(prev.key)} dir="prev" className="btn btn-2 btn-sm">{prev.title}</StepLink>
+        : <span />}
       <Link to={ROUTES.reportTab('catalog')} className="btn btn-2 btn-sm">كل الشاشات</Link>
-      {next ? (
-        <Link to={ROUTES.liveReport(next.key)} className="btn btn-2 btn-sm">
-          {next.title}
-          <Icon name={icons.chevron} size="sm" />
-        </Link>
-      ) : <span />}
+      {next
+        ? <StepLink to={ROUTES.liveReport(next.key)} dir="next" className="btn btn-2 btn-sm">{next.title}</StepLink>
+        : <span />}
     </nav>
   )
 }

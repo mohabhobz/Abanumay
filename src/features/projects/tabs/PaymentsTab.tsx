@@ -3,29 +3,32 @@ import { DateText, Empty, Glass, Head, Money, Num, Riyal, Stat, Steps, Tag } fro
 import { ROUTES } from '@/app/routes'
 import { sequence } from '@/lib/steps'
 import { DocFile } from '@/components/docs'
-import { isolate, pct } from '@/lib/format'
+import { NOUN, countOf, isolate, pct } from '@/lib/format'
 import type { PaymentDetail } from '@/data/mock/detail'
 
 export interface PaymentsTabProps {
   payments: PaymentDetail[]
   granted: number
-  /** رقم المشروع · بيوصّل التاب بصندوق الصرف */
+  /** Project ID — connects the tab to the disbursement panel. */
   projectId?: string
   example?: { id: string; name: string }
   onOpenExample?: (id: string) => void
 }
 
 /**
- * الدفعات.
+ * Payments.
  *
- * الجدول في النظام خمسة أعمدة ساكتة (الدفعة · المبلغ · التاريخ ·
- * الحالة · إذن الصرف)، والقصة الحقيقية مبعترة في السجل: **كل دفعة
- * دورة من أربعة إجراءات** · إذن الصرف من المشرف، وسند الصرف من
- * المالية، وسند القبض من الجهة، وقبوله من المالية. والشرط اللي
- * الدفعة اتصرفت عليه مكتوب في ملاحظات إذن الصرف لا في الجدول.
+ * The system's table has five quiet columns (payment · amount · date ·
+ * status · disbursement authorization), and the real story is scattered
+ * across the log: each payment is a cycle of four actions — disbursement
+ * authorization from the reviewer, a disbursement voucher from finance, a
+ * receipt voucher from the entity, and its acceptance by finance. The
+ * condition a payment was released on is written in the disbursement
+ * authorization's notes, not in the table.
  *
- * الشاشة دي بتجمّعهم: الصف بيقول المبلغ والحالة، وتحته الدورة
- * والشرط. فالسؤال «فين الدفعة التانية؟» بيتجاوب من غير ما تفتح السجل.
+ * This screen brings them together: the row states amount and status, and
+ * below it the cycle and condition. So "where's the second payment?" gets
+ * answered without opening the log.
  */
 export function PaymentsTab({ payments, granted, projectId, example, onOpenExample }: PaymentsTabProps) {
   if (payments.length === 0) {
@@ -33,6 +36,7 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
       <Glass>
         <Head title="جدول الدفعات" meta="يُفتح بعد اعتماد الاتفاقية" />
         <Empty
+          art={{ done: 2 }}
           title="لا توجد دفعات بعد، فالمشروع لم يصل إلى مرحلة الصرف."
           note="عند الوصول إليها يُصدر المشرف إذن الصرف، ثم تُصدر الإدارة المالية سند الصرف وتحوّل المبلغ، ثم ترفع الجهة سند القبض والقيد، وتعتمده الإدارة المالية."
           actions={
@@ -59,7 +63,7 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
           value={<Num>{granted}</Num>}
           unit={<Riyal />}
           bar={{ w: '100%', c: 'var(--teal)' }}
-          note={`على ${payments.length === 1 ? 'دفعة واحدة' : `${payments.length} دفعات`}`}
+          note={`على ${payments.length === 1 ? 'دفعة واحدة' : `${countOf(payments.length, NOUN.payment)}`}`}
         />
         <Stat
           label="المصروف"
@@ -72,11 +76,13 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
           label="المتبقي"
           value={<Num>{rest}</Num>}
           unit={<Riyal />}
-          note={rest > 0 ? `${payments.length - paid.length} دفعة لم تُصرف` : 'صُرفت كاملة'}
+          note={rest > 0 ? `${countOf(payments.length - paid.length, NOUN.payment)} لم تُصرف` : 'صُرفت كاملة'}
         />
         <Stat
           label="الدفعة القادمة"
-          value={payments.find((p) => p.status !== 'مدفوع')?.date ?? 'لا توجد'}
+          value={payments.find((p) => p.status !== 'مدفوع')
+            ? <DateText>{payments.find((p) => p.status !== 'مدفوع')!.date}</DateText>
+            : 'لا توجد'}
           note={payments.find((p) => p.status !== 'مدفوع') ? 'حسب جدول الاتفاقية' : 'لا توجد'}
         />
       </div>
@@ -110,13 +116,14 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
                 <Tag tone={p.status === 'مدفوع' ? 'ok' : 'warn'}>{p.status}</Tag>
               </div>
 
-              {/* الشرط أهم من الرقم: هو اللي بيقول ليه الدفعة اتصرفت
-                  ولا لسه. في النظام مدفون في ملاحظات إذن الصرف. */}
+              {/* The condition matters more than the amount: it's what says why a payment
+                  was or wasn't released. In the system it's buried in the disbursement
+                  authorization's notes. */}
               {p.condition && (
                 <div className="pay-cond">
                   <span className="lb">شرط الصرف</span>
-                  {/* الشرط جملة عربية جوّاها «إنجاز 50%» · بلا عزل
-                      علامة الـ`%` بتقفز لناحية الرقم الغلط */}
+                  {/* The condition is an Arabic sentence containing "50% completion" —
+                      without isolating it, the `%` sign jumps to the wrong side of the number. */}
                   <span>{isolate(p.condition)}</span>
                 </div>
               )}
@@ -127,12 +134,11 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
                 </div>
               )}
 
-              {/* المحطات متسلسلة، فحالة «الدور عليها الآن» بتتشتقّ
-                  من الترتيب لا بتتكتب لكل محطة · تحت في `sequence`.
-                  قبل كده كانت المحطة إما خضرا إما رمادية، يعني
-                  «اتنين خلصوا واتنين لأ» من غير ما حد يعرف **مين
-                  واقف** · وده السؤال الوحيد اللي المشرف بيفتح
-                  الشاشة عشانه. */}
+              {/* Steps are sequential, so "currently in progress" status is derived from
+                  order rather than written per step — see `sequence` below. Steps used to
+                  be either green or gray, meaning "two done, two not" with no way to know
+                  which one is stuck — and that's the one question a reviewer opens this
+                  screen to answer. */}
               <Steps
                 flow="row"
                 items={sequence([
@@ -145,8 +151,8 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
 
               {p.voucher && (
                 <div className="pay-docs">
-                  {/* الاسم قصير والرقم في السطر التحتاني: «إذن الصرف
-                      SV-2025-20611-1.pdf» بيتقصّ في أي عمود. */}
+                  {/* The name stays short with the number on the line below: "Disbursement
+                      Authorization SV-2025-20611-1.pdf" would truncate in any column. */}
                   <DocFile name="إذن الصرف.pdf" meta={p.voucher} />
                   <DocFile name="سند القبض.pdf" meta="من الجهة" />
                   <DocFile name="سند القيد.pdf" meta="من الجهة" />
@@ -156,14 +162,13 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
           ))}
         </div>
 
-        {/* ⚠️ الدورة المرسومة فوق هي **دورة النظام العامل** بأربع
-            محطات (إذن الصرف · سند الصرف · سند القبض · اعتماده)،
-            ووثيقة BPD-009 بتوصف أربع مراحل بتنتهي عند التحويل بلا
-            سند قبض. الفرق ده مسجَّل نوتة ن-1 و ن-3 في
-            `DISBURSEMENT_MODULE_BRIEF.md` وبانتظار ردّ المؤسسة ·
-            فالتاب بيفضل على المرسوم في النظام لحدّ الردّ، لأن اللي
-            في النظام دليل واللي في الوثيقة مواصفة، وإحنا ما نشيلش
-            الدليل قبل ما نتأكد. */}
+        {/* The cycle drawn above matches the current system's four steps
+            (disbursement authorization · disbursement voucher · receipt voucher ·
+            its acceptance), while the spec describes four stages ending at transfer
+            with no receipt voucher. That discrepancy is recorded and awaiting the
+            client's response, so the tab follows what the system actually does until
+            then — what's in the system is evidence, what's in the spec is a
+            proposal, and evidence isn't removed before it's confirmed. */}
         <div className="sub mt-4">
           «إذن الصرف» مستند مستقل قابل للطباعة، يتضمن بيانات الجهة وحسابها البنكي والمبلغ كتابةً، وعلى أساسه تحوّل الإدارة المالية المبلغ.
         </div>

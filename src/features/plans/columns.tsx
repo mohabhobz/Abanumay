@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { DateText, Mono, Num, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { pct } from '@/lib/format'
+import { NOUN, nounAfter, pct, ver } from '@/lib/format'
 import {
   PLAN_TONE, planClaimed, planDone, planPlanned, planSpi, planStageLabel,
   lateActivities, waitingReview,
@@ -9,19 +9,17 @@ import {
 import type { PlanRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
-/* ═══════════════════════════════════════════════════════════
-   أعمدة صندوق الخطط · نفس عقد المشاريع والاتفاقيات والصرف.
+/* Plans inbox columns - same contract as projects, agreements, and disbursement.
 
-   ⚠️ **تلات أعمدة هنا مش معلومات، هما سؤال المشرف اليومي:**
+   Note: three columns here aren't information, they're the supervisor's daily question:
 
-   · «المنجَز» بيقول اللي **اتراجع واتقبل** · لا اللي الجهة قالته
-   · «مستنّي مراجعة» بيقول **طابور شغله هو** · وده العمود اللي
-     بيخلّي الصندوق أداة لا عرضًا
-   · «الجدول» بيقارن المنجَز بالمخطَّط لليوم (SPI)
+   - "Completed" states what's been reviewed and accepted, not what the entity claimed.
+   - "Awaiting review" states their own work queue - the column that makes the inbox a tool, not
+   just a display.
+   - "Schedule" compares completed against planned-as-of-today (SPI).
 
-   من غير الفصل بين الأول والتاني، نسبة الإنجاز بتبقى إقرارًا
-   ذاتيًا من الجهة · والمؤسسة بتقفل مشروعًا على كلام.
-   ═══════════════════════════════════════════════════════════ */
+   Without separating the first from the second, the completion percentage becomes the entity's own
+   self-declaration, and the institution closes a project on word alone. */
 
 export type Col = TCol<PlanRow>
 
@@ -64,9 +62,9 @@ export const COLS: Col[] = [
     label: 'المنجَز المقبول',
     def: true,
     n: true,
-    /* ⚠️ **الرقمان جنب بعض عن قصد.** المقبول هو اللي بيتحسب،
-       والمُعلَن هو اللي الجهة قالته · والفرق بينهم بالظبط هو
-       الشغل المستنّي مراجعة. عرض واحد منهم وحده بيخبّي السؤال. */
+    /* Note: the two numbers sit side by side on purpose. Accepted is what counts, declared is what
+       the entity said - and the gap between them is exactly the work awaiting review. Showing only
+       one hides the question. */
     cell: (p) => {
       const d = planDone(p)
       const c = planClaimed(p)
@@ -80,7 +78,8 @@ export const COLS: Col[] = [
     text: (p) => `${planDone(p)}%`,
     value: (p) => planDone(p),
     agg: 'avg',
-    aggSay: '٪ في المتوسط',
+    aggPct: true,
+    aggSay: 'في المتوسط',
   },
   {
     key: 'planned',
@@ -91,7 +90,8 @@ export const COLS: Col[] = [
     text: (p) => `${planPlanned(p)}%`,
     value: (p) => planPlanned(p),
     agg: 'avg',
-    aggSay: '٪ في المتوسط',
+    aggPct: true,
+    aggSay: 'في المتوسط',
   },
   {
     key: 'spi',
@@ -99,7 +99,7 @@ export const COLS: Col[] = [
     label: 'أداء الجدول',
     def: true,
     n: true,
-    /* SPI = المنجَز ÷ المخطَّط · واحد صحيح يعني ماشي بالظبط */
+    /* SPI = completed / planned - exactly 1 means on schedule. */
     cell: (p) => {
       const v = planSpi(p)
       if (v === null) return <span className="sub">لم يبدأ</span>
@@ -110,7 +110,8 @@ export const COLS: Col[] = [
       )
     },
     text: (p) => { const v = planSpi(p); return v === null ? 'لم يبدأ' : v.toFixed(2) },
-    /* ⚠️ `null` لا `0` · «ما بدأش» مش أداءً صفرًا، هي غياب قياس */
+    /* Note: `null`, not `0` - "not started" isn't zero performance, it's the absence of a
+       measurement. */
     value: (p) => planSpi(p),
     agg: 'avg',
     aggSay: 'متوسط المقيس',
@@ -121,11 +122,11 @@ export const COLS: Col[] = [
     label: 'بانتظار المراجعة',
     def: true,
     n: true,
-    /* طابور شغل المشرف · الصفر خافت عشان اللي فوقه يبان */
+    /* The supervisor's work queue - zero is dimmed so nonzero values stand out. */
     cell: (p) => {
       const n = waitingReview(p).length
       return n > 0
-        ? <Tag tone="warn"><Num>{n}</Num> نشاطًا</Tag>
+        ? <b><Num>{n}</Num> {nounAfter(n, NOUN.activity)}</b>
         : <span className="sub">0</span>
     },
     text: (p) => String(waitingReview(p).length),
@@ -151,10 +152,10 @@ export const COLS: Col[] = [
     key: 'baseline',
     w: 122,
     label: 'النسخة المرجعية',
-    /* ⚠️ الصفر معناه «ما اتعتمدتش» لا «النسخة صفر» · والكلمة
-       بتقول كده، لأن رقم صفر في عمود نسخ بيتقري خطأ بيانات */
+    /* Note: zero means "not approved", not "version zero" - and the word states this, since a zero
+       in a version column reads as a data error. */
     cell: (p) => (p.baseline > 0
-      ? <span>V<span className="num">{p.baseline}</span></span>
+      ? <span><Num>{ver(p.baseline)}</Num></span>
       : <span className="sub">لم تُعتمد</span>),
     text: (p) => (p.baseline > 0 ? `V${p.baseline}` : 'لم تُعتمد'),
   },
@@ -179,9 +180,9 @@ export const COLS: Col[] = [
     key: 'drafter',
     w: 140,
     label: 'كاتب المسودة',
-    /* ⚠️ الوثيقة بتقول الجهة هي اللي بتكتب · والمشرف بيقدر يكتب
-       بالنيابة لمّا الجهة ما تقدرش. العمود بيوثّق **مين فعلًا**،
-       لأن «الجهة كتبتها» و«اتكتبت عنها» مش نفس الحاجة في مراجعة. */
+    /* Note: the spec states the entity is the one who writes it - the supervisor can draft on their
+       behalf when the entity can't. The column documents who actually did it, because "the entity
+       wrote it" and "it was written on their behalf" aren't the same thing in review. */
     cell: (p) => (p.drafter === 'entity'
       ? <span className="sub">الجهة</span>
       : <Tag tone="mute">المشرف بالنيابة</Tag>),

@@ -1,34 +1,30 @@
 import { Link } from 'react-router-dom'
-import { DateText, Mono, Person, Tag } from '@/components/ui'
+import { DateText, Mono, Person, Tag, Nil } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
 import { PAY_LIMIT, payHeat, payStateLabel } from '@/data/mock/disbursements'
 import type { PayRequest } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
-/* ═══════════════════════════════════════════════════════════
-   أعمدة جدول الصرف.
+/* Disbursement table columns.
 
-   نفس عقد المشاريع والجهات: تعريف واحد بيغذّي الجدول والإجماليات
-   والتصدير والتجميع · فالعمود اللي بيتضاف هنا بيوصل للإكسل وللصورة
-   من غير أي شغل زيادة.
+   Same contract as projects and entities: one definition feeds the table, totals, export, and
+   grouping - so a column added here reaches Excel and the chart with no extra work.
 
-   الكارت والجدول بيجاوبوا سؤالين مختلفين، وده سبب وجود الاتنين:
-   الكارت بيقول «ليه ده واقف» بالشروط الأربعة قدامك، والجدول بيقول
-   «إيه شكل الطابور كله» · تقارن مبالغ وتواريخ ومشرفين في عمود واحد،
-   وتصدّره. عشان كده عمود الشروط هنا رقم (٣ من ٤) لا قائمة: الجدول
-   بيقول إن فيه واقف، والكارت بيقول أنهي واحد.
-   ═══════════════════════════════════════════════════════════ */
+   The card and table answer two different questions, which is why both exist: the card states why
+   this item is on your desk, with all four conditions in view; the table states the shape of the
+   whole queue - comparing amounts, dates and supervisors in one column, and exporting them. That's
+   why the conditions column here is a number (3 of 4) rather than a list: the table says something
+   is pending, the card says which one. */
 
+import { HEAT_TONE } from '@/lib/tone'
 export type Col = TCol<PayRequest>
 
-const HEAT_TONE = { ok: 'ok', late: 'warn', stuck: 'no' } as const
 const HEAT_SAY = { ok: 'في المدة', late: 'متأخر', stuck: 'متعثر' } as const
 
 /**
- * تاريخ بدء التأخير · اليوم اللي الطلب عدّى فيه حدّ مرحلته.
- * بيتحسب للورا: النهارده ناقص (المكوث ناقص الحدّ) · فاضي لو الطلب
- * لسّه جوّه مدته.
+ * Delay start date - the day the request crossed its stage's threshold. Computed backward: today
+ * minus (dwell time minus the threshold) - empty if the request is still within its window.
  */
 const lateSince = (r: PayRequest): string | null => {
   const lim = PAY_LIMIT[r.state]
@@ -121,26 +117,27 @@ export const COLS: Col[] = [
     cell: (r) => {
       const h = payHeat(r)
       return h === 'ok'
-        ? <span className="sub"><span className="num">{Math.round(r.hoursInState / 24)}</span> يومًا</span>
+        ? <span className="sub"><span className="num">{Math.round(r.hoursInState / 24)}</span> {nounAfter(Math.round(r.hoursInState / 24), NOUN.day)}</span>
         : <Tag tone={HEAT_TONE[h]}>{HEAT_SAY[h]}</Tag>
     },
-    text: (r) => (payHeat(r) === 'ok' ? `${Math.round(r.hoursInState / 24)} يومًا` : HEAT_SAY[payHeat(r)]),
-    /* نفس حكاية الاتفاقيات · الخلية أيام أو كلمة، فالوسط بيقول وحدته */
+    text: (r) => (payHeat(r) === 'ok' ? `${countOf(Math.round(r.hoursInState / 24), NOUN.day)}` : HEAT_SAY[payHeat(r)]),
+    /* Same treatment as agreements - the cell is a day count or a word, so the unit is stated in
+       the middle. */
     value: (r) => Math.round(r.hoursInState / 24),
     agg: 'avg',
     aggSay: 'يومًا في المتوسط',
   },
   {
-    /* آلية التصعيد (9.5 بند 3) بتطلب «تقرير شامل بالمتأخرة والمتعثرة:
-       المرحلة الحالية · **تاريخ بدء التأخير** · عدد الأيام · المسؤول».
-       التلاتة التانيين أعمدة موجودة، والرابع كان ناقص — فالتقرير مش
-       شاشة تانية، هو الجدول ده مفلتَرًا على المتأخر. */
+    /* The escalation mechanism (9.5, clause 3) calls for "a comprehensive report of late and
+       stalled requests: current stage, delay start date, day count, responsible party". The other
+       three columns already existed and the fourth was missing - so the report isn't a separate
+       screen, it's this table filtered to late items. */
     key: 'lateSince',
     w: 118,
     label: 'بدء التأخير',
     cell: (r) => {
       const since = lateSince(r)
-      return since ? <DateText>{since}</DateText> : <span className="sub">·</span>
+      return since ? <DateText>{since}</DateText> : <Nil />
     },
     text: (r) => lateSince(r) ?? '',
   },
@@ -164,8 +161,8 @@ export const COLS: Col[] = [
     w: 132,
     label: 'المشرف',
     def: true,
-    /* `Person` هو نفسه اللي في الكارت وفي فلتر المشرف · الشخص
-       بنفس الشكل في التلات أماكن، بكمبوننت واحد لا تلاتة */
+    /* `Person` is the same one used in the card and the supervisor filter - the person renders the
+       same way in all three places, from a single component, not three. */
     cell: (r) => <Person name={r.owner} />,
     text: (r) => r.owner,
   },
@@ -191,7 +188,7 @@ export const COLS: Col[] = [
     key: 'paidAt',
     w: 118,
     label: 'تاريخ التحويل',
-    cell: (r) => (r.paidAt ? <DateText>{r.paidAt}</DateText> : <span className="sub">·</span>),
+    cell: (r) => (r.paidAt ? <DateText>{r.paidAt}</DateText> : <Nil />),
     text: (r) => r.paidAt ?? '',
   },
 ]

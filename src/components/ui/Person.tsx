@@ -1,38 +1,35 @@
-import { isPerson, person } from '@/data/people'
+import { isNobody, isPerson, person } from '@/data/people'
 
-/* ═══════════════════════════════════════════════════════════
-   الشخص · الوش والاسم مع بعض.
+/* Person · face and name together.
 
-   الاسم لوحده بيتقرا، والوش بيتعرف. في قايمة فيها خمس مشرفين
-   كلهم بيبدأوا بعين، الفرق بينهم بيتاخد من **شكل** لا من قراءة
-   السطر لآخره — وده الفرق بين اختيار بنظرة واختيار بمقارنة.
+   The name alone can be read, and the face can be recognized. In a list of five reviewers who all
+   start with the same letter, telling them apart comes from **shape**, not from reading the line to
+   the end — that's the difference between picking by glance and picking by comparison.
 
-   ⚠️ **كمبوننت واحد لكل مكان فيه شخص.** لو كل شاشة رسمت وشّها
-   بإيدها، هيبقى عندنا مقاسات وأركان مختلفة لنفس الحاجة — وده
-   بالظبط النمط اللي السيستم كله اتوحّد عشان يخرج منه.
+   Warning: **one component for every place a person appears.** If every screen drew its own avatar,
+   sizes and corners would differ for the same thing — exactly the pattern the whole system was
+   unified to get away from.
 
-   ⚠️ **والحروف الأوّلية محايدة عن قصد · بلا لون لكل شخص.**
-   المغري إن كل وش ياخد لونًا مشتقًّا من اسمه، والتمن إن ده
-   **عيلة ألوان جديدة بلا مفتاح**: ألوان الجراف محجوزة للفئات،
-   وألوان الحالة محجوزة للحالة، وثالثة بتدخل بينهم بتخلّي
-   الأخضر في الشاشة يعني تلات حاجات. الوش الحقيقي هو اللي
-   بيفرّق، والحرف نايب مؤقّت لحدّ ما الصورة تنزل.
-   ═══════════════════════════════════════════════════════════ */
+   Warning: **initials are deliberately neutral — no per-person color.** The temptation is for each
+   face to get a color derived from its name, but the cost is a **new color family with no key**:
+   chart colors are reserved for categories, status colors are reserved for status, and a third set
+   stepping in between would make green on screen mean three different things. The real photo is
+   what actually distinguishes people; the initial is just a placeholder until the photo loads. */
 
 export interface PersonProps {
-  /** الاسم زي ما هو في الداتا · السجلّ بيحوّله لوش */
+  /** Name as stored in the data · the record turns it into a face */
   name: string | null | undefined
-  /** اللي يتكتب لو مفيش شخص (بلا مالك · غير مُسنَد) */
+  /** Text shown when there is no person (no owner · unassigned) */
   empty?: string
-  /** ٢٨px الافتراضي · `lg` = ٣٤ لشريط القرار وقايمة الحساب */
+  /** 28px by default · `lg` = 34 for the decision bar and the account menu */
   size?: 'sm' | 'md' | 'lg'
-  /** الوش وحده بلا اسم · للخلايا الضيّقة */
+  /** Face only, no name · for narrow cells */
   bare?: boolean
-  /** يخفّت الاسم زي `.sub` · الافتراضي في الكروت والخلايا */
+  /** Dims the name like `.sub` · the default in cards and cells */
   quiet?: boolean
 }
 
-/** الوش وحده · بيستعمل نفس صندوق `.av`/`.pht` بتاع الحساب */
+/** Face only · reuses the same `.av`/`.pht` box as the account menu */
 export function Face({ name, size = 'sm' }: { name: string; size?: PersonProps['size'] }) {
   const p = person(name)
   const box = size === 'lg' ? '34' : size === 'md' ? '30' : '28'
@@ -42,9 +39,13 @@ export function Face({ name, size = 'sm' }: { name: string; size?: PersonProps['
 }
 
 export function Person({ name, empty = 'بلا مالك', size = 'sm', bare, quiet = true }: PersonProps) {
-  /* ⚠️ «بلا مالك» **مش شخص**، فما بياخدش وشًّا. الأفاتار بحروف
-     أوّلية على قيمة زي دي بيتقرا كأنه بني آدم اسمه «بلا مالك». */
-  if (!isPerson(name)) return <span className="sub">{empty}</span>
+  /* Warning: "unassigned" is **not a person**, so it gets no face. An initials avatar on a value
+     like this reads as a person literally named "unassigned." */
+  if (!isPerson(name)) {
+    /* Warning: **a role is shown by its name.** "Grants supervisor" is not "unassigned": a role has
+       no face, but it does have a name. `empty` is only for values that are genuinely empty. */
+    return <span className={quiet ? 'sub' : undefined}>{isNobody(name) ? empty : name!.trim()}</span>
+  }
   const p = person(name)
   if (bare) return <Face name={p.name} size={size} />
   return (

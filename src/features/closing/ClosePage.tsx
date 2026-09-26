@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { TONE } from '@/lib/tone'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, KV, Mono, Num, Steps, Tag,
+  BackTo, DateText, Empty, Glass, Head, Icon, KV, Mono, Num, Tag,
   icons, type StepItem,
 } from '@/components/ui'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
@@ -12,9 +13,9 @@ import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, nf, MISSING_ITEM, nounAfter } from '@/lib/format'
+import { isolate, MISSING_ITEM, nf, nounAfter, pct, unitAfter, withUnit } from '@/lib/format'
 import {
-  CLOSE_DOCS, CLOSE_STAGES, CLOSE_TONE, approveEval, approveReport, canStartEval,
+  CLOSE_DOCS, CLOSE_STAGES, approveEval, approveReport, canStartEval,
   closeById, closeCycle, closeRequirements, closeStageLabel, closeStageWho, evalApproved,
   evalBlockers, needsComms, reportBlockers, reportGap, returnReport,
   sendEval, sendReport, startEval,
@@ -22,32 +23,30 @@ import {
 import { projectById } from '@/data/mock/projects'
 import { closeReadings } from './readings'
 import { CloseActionDock, closeActionsFor } from './CloseActionDock'
+import { ApprovalBar, SealedTitle } from '@/components/soul'
 
-/* ═══════════════════════════════════════════════════════════
-   صفحة الإغلاق · BPD-011
+/* Closing page.
 
-   ⚠️ **الصفحة بتجاوب سؤالًا واحدًا: الفعلي قد إيه بعيد عن
-   المعتمد.** مش «إيه بيانات التقرير» · دي في الجدول. القاعدة 4
-   بتلزم المستفيدين الفعلي والميزانية ومدة التنفيذ والمخرجات ·
-   والأربعة دول **معناهم في فرقهم عن المعتمد** لا في قيمتهم.
-   «٧٨٠ مستفيدًا» مش معلومة · «٧٨٠ مقابل ١٠٠٠ معتمدًا» معلومة.
+   Note: the page answers one question: how far is actual from approved. Not "what does the report
+   contain" - that's in the table. Rule 4 requires reporting actual beneficiaries, budget, execution
+   time, and outputs, and all four only mean something in their difference from what was approved,
+   not in their raw value. "780 beneficiaries" isn't information; "780 against an approved 1,000"
+   is.
 
-   ⚠️ **ودورتان لا سلّم واحد** · قاعدة 17. فالستيبر بيتقسم: محطات
-   التقرير، وبعدها محطات التقييم · والقاعدة 6 هي الخطّ اللي بينهم
-   (التقييم ما يبدأش قبل اعتماد المدير التنفيذي).
+   Note: two cycles, not one ladder - rule 17. So the stepper splits: report stages, then evaluation
+   stages, with rule 6 as the line between them (evaluation doesn't start before executive
+   approval).
 
-   ⚠️ **نفس الشاشة بعينَين لا شاشتان** · نفس مبدأ صفحة الخطة
-   بالحرف: الجهة والمؤسسة بيبصّوا على نفس التقرير ونفس المرفقات ·
-   اللي بيفرق هو **الأفعال**. الجهة بترفع وبتبعت، والمؤسسة بتراجع
-   وبتعتمد.
+   Note: one screen, two viewpoints, not two screens - same principle as the plan page: the entity
+   and the institution look at the same report and the same attachments; what differs is the actions
+   available. The entity uploads and submits; the institution reviews and approves.
 
-   ⚠️ **وبعد `closed` الصفحة للقراءة** · قاعدة 21: أي تعديل بعد
-   الإغلاق النهائي بيحتاج إجراء جديد · فمفيش رصيف ومفيش رفع.
-   ═══════════════════════════════════════════════════════════ */
+   Note: after `closed` the page is read-only - rule 21: any change after final closure needs a new
+   procedure, so there's no footer and no upload. */
 
-/** محطات دورة التقرير · للستيبر */
+/** Report-cycle stages - for the stepper. */
 const REPORT_PATH = ['draft', 'supervisor', 'comms', 'manager', 'executive'] as const
-/** محطات دورة التقييم · سجلّ منفصل (قاعدة 17) */
+/** Evaluation-cycle stages - a separate record (rule 17). */
 const EVAL_PATH = ['evalDraft', 'evalManager', 'evalExecutive', 'closed'] as const
 
 export default function ClosePage() {
@@ -59,6 +58,8 @@ export default function ClosePage() {
   const c = closeById(id)
   const [note, setNote] = useState('')
   const [taken, setTaken] = useState<string | null>(null)
+  /* Approval moment - which stage was just approved, and whether this decision is the closing seal. */
+  const [fresh, setFresh] = useState<{ step: number; sealed: boolean } | null>(null)
   const [tick, setTick] = useState(0)
 
   const aside = useRef<HTMLDivElement>(null)
@@ -98,17 +99,17 @@ export default function ClosePage() {
   const gaps = reportGap(c)
   const actions = asEntity ? [] : closeActionsFor(role.key, c.stage)
 
-  /* ⚠️ **المانع محسوب هنا مرة واحدة وبيتبعت للرصيف** · الرصيف كان
-     بيحسبه بنفسه في الخطة، وهنا المانع بيختلف بالدورة · فالحساب
-     في الشاشة اللي عارفة إحنا في أنهي دورة. */
+  /* Note: what's blocking is computed once here and passed to the footer - the footer used to
+     compute it on its own on the plan page, and here what's blocking differs by cycle, so the
+     computation belongs in the screen that knows which cycle we're in. */
   const stop = cycle === 'report'
     ? (missing.length > 0 ? `ينقص: ${missing[0]} (قاعدة 4)` : '')
     : (evalShort.length > 0 ? `${evalShort[0]} (قاعدة 10)` : '')
   const finalStop = c.stage === 'evalExecutive' && !req.ok ? `${req.say} · قاعدة 18` : stop
 
-  /* ⚠️ **الستيبر محطاته من الوثيقة لا من حالات الشاشة** · و`comms`
-     بتتخطّى لمّا النشر مش مطلوب · **وبتتقال إنها اتخطّت** لا
-     بتختفي (قاعدة الغياب بتاعتنا + قاعدة 9 «متى كانت مطلوبة»). */
+  /* Note: the stepper's stages come from the spec, not from screen state - and `comms` is skipped
+     when coverage isn't required, and it's stated as skipped rather than hidden (our absence rule,
+     plus rule 9: "when it was required"). */
   const path: readonly string[] = cycle === 'report' ? REPORT_PATH : EVAL_PATH
   const here: string = c.stage === 'returned' ? (c.returnedTo ?? 'draft') : c.stage
   const at = path.indexOf(here)
@@ -124,7 +125,7 @@ export default function ClosePage() {
     }
   })
 
-  /* المرفقات · **قائمة واحدة من `DocList`** لا جدول مكتوب بالإيد */
+  /* Attachments - one `DocList`, not a hand-built table. */
   const docRows: DocRow[] = CLOSE_DOCS.map((d) => ({
     name: `${d.label}.pdf`,
     meta: d.req ? 'مستند إلزامي · قاعدة 4' : 'مستند داعم · قاعدة 5',
@@ -147,6 +148,8 @@ export default function ClosePage() {
     else if (label.startsWith('إعادة')) {
       returnReport(c, user.name, note, cycle === 'report' ? 'draft' : 'evalDraft')
     } else approveReport(c, user.name)
+    /* A return isn't approval - no step fills in, no seal. */
+    setFresh(label.startsWith('إعادة') ? null : { step: at, sealed: evalApproved(c) })
     setTaken(label)
     setTick((x) => x + 1)
   }
@@ -159,7 +162,9 @@ export default function ClosePage() {
 
           <header>
             <div>
-              <h1 className="ptitle">إغلاق {c.projectName}</h1>
+              {/* The seal sits next to the title once closing is complete - the tag stays in its
+                  place. */}
+              <SealedTitle sealed={closed} fresh={fresh?.sealed}>إغلاق {c.projectName}</SealedTitle>
               <p className="sub mt-1">
                 <Mono>{c.id}</Mono> ·{' '}
                 <Link to={ROUTES.entity(c.entityId)} className="tlink">{c.entityName}</Link> ·{' '}
@@ -169,14 +174,14 @@ export default function ClosePage() {
                 )}
               </p>
             </div>
-            <Tag tone={CLOSE_TONE[c.stage]}>{closeStageLabel(c.stage)}</Tag>
+            <Tag tone="mute">{closeStageLabel(c.stage)}</Tag>
           </header>
 
-          {/* ⚠️ **الجهة لازم تعرف إن المؤسسة بتقارن لا بتستلم.**
-              ده أهم سوء فهم ممكن هنا: الجهة بترفع أرقامها الفعلية
-              وتفتكر إن الإجراء إداري · والمراجعة فعلًا بتقارنها
-              بالمعتمد في الاتفاقية والخطة (مخرج 2). الجملة مكتوبة
-              فوق لا مستنتَجة من وسم صغير. */}
+          {/* Note: the entity needs to know the institution is comparing, not just receiving. This
+              is the most likely misunderstanding here: the entity uploads its actual figures and
+              assumes this is administrative, while the review actually compares them against the
+              agreement and plan's approved figures (output 2). The sentence is stated up front, not
+              left to be inferred from a small tag. */}
           {asEntity && (
             <Glass>
               <Head
@@ -203,9 +208,10 @@ export default function ClosePage() {
                 </span>
               }
             />
-            <Steps flow="stepper" items={steps} />
-            {/* ⚠️ القاعدة 6 هي الخطّ بين الدورتين · مكتوبة تحت
-                الستيبر لأنها بتشرح ليه الدورة التانية ما بدأتش */}
+            {/* Approval bar - the stage just approved fills in once. */}
+            <ApprovalBar items={steps} fresh={taken ? fresh?.step : undefined} />
+            {/* Note: rule 6 is the line between the two cycles - stated under the stepper because
+                it explains why the second cycle hasn't started. */}
             <p className="sub cnote">
               {cycle === 'report'
                 ? <>لا يبدأ تقييم المشروع قبل اعتماد المدير التنفيذي للتقرير ·
@@ -217,12 +223,12 @@ export default function ClosePage() {
 
           <div className="g2">
             <div className="col">
-              {/* ═══ الفعلي مقابل المعتمد · قلب الشاشة ═══ */}
+              {/* Actual vs. approved - the core of the screen */}
               <Glass>
                 <Head
                   title="الفعلي مقابل المعتمد"
                   meta={missing.length > 0
-                    ? <Tag tone="no"><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
+                    ? <Tag tone={TONE.missing}><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
                     : <Tag tone="ok">الحدّ الأدنى مكتمل</Tag>}
                 />
 
@@ -238,7 +244,7 @@ export default function ClosePage() {
                         return (
                           <span className={Math.abs(diff) >= 10 ? 'bad' : undefined}>
                             <span className="num">{nf.format(g.actual)}</span>
-                            <span className="sub"> {g.unit} · </span>
+                            <span className="sub"> {unitAfter(g.actual, g.unit)} · </span>
                             <span className="num">{diff > 0 ? '+' : ''}{diff}%</span>
                           </span>
                         )
@@ -283,7 +289,7 @@ export default function ClosePage() {
                 )}
               </Glass>
 
-              {/* ═══ المستندات الداعمة · قاعدة 5 ═══ */}
+              {/* Supporting documents - rule 5 */}
               <Glass>
                 <Head
                   title="المستندات الداعمة"
@@ -298,10 +304,9 @@ export default function ClosePage() {
                 />
                 <DocList rows={docRows} label="المستندات الداعمة للتقرير الختامي وحالتها" />
 
-                {/* ⚠️ **الرابط السحابي نوع تاني من المرفق لا بديل
-                    عنه** · قاعدة 5 بتسمّي «روابط التخزين السحابي
-                    المعتمدة (مثل Google Drive)» بالنصّ، والسبب عملي:
-                    الفيديوهات والمواد الإعلامية أكبر من أي حدّ رفع. */}
+                {/* Note: a cloud link is a different attachment type, not a substitute for one -
+                    rule 5 names "approved cloud storage links (e.g. Google Drive)" explicitly, for
+                    a practical reason: videos and media files exceed any upload limit. */}
                 {c.report.links.length > 0 ? (
                   <ul className="plchg">
                     {c.report.links.map((l) => (
@@ -324,7 +329,7 @@ export default function ClosePage() {
                 )}
               </Glass>
 
-              {/* ═══ التقييم · الدورة التانية ═══ */}
+              {/* Evaluation - second cycle */}
               <Glass>
                 <Head
                   title="تقييم المشروع"
@@ -339,12 +344,14 @@ export default function ClosePage() {
                   <>
                     <KV
                       rows={c.evaluation.indicators.map((i) => ({
-                        k: `${i.name} · المستهدف ${nf.format(i.target)} ${i.unit}`,
+                        k: `${i.name} · المستهدف ${withUnit(i.target, i.unit)}`,
                         v: i.actual === null
                           ? <span className="sub">بلا قيمة متحقّقة</span>
                           : <span className={i.actual < i.target ? 'bad' : undefined}>
-                            <span className="num">{nf.format(i.actual)}</span>
-                            <span className="sub"> {i.unit}</span>
+                            {/* "%" stays inside the number's own block - it used to be a word in
+                                `.sub` and would flip direction. */}
+                            <span className="num">{i.unit === '%' ? pct(i.actual) : nf.format(i.actual)}</span>
+                            {i.unit !== '%' && <span className="sub"> {unitAfter(i.actual, i.unit)}</span>}
                           </span>,
                       })).concat([
                         {
@@ -378,9 +385,9 @@ export default function ClosePage() {
                     )}
                   </>
                 ) : (
-                  /* ⚠️ **الغياب بيتقال** · نفس قاعدة الكروت: «ما
-                     بدأش» مع سببه، لا سكشن مختفي يخلّي الصفحة أقصر
-                     وسؤال «فين التقييم» بلا إجابة. */
+                  /* Note: absence is stated - same rule as the cards: "not started" with its
+                     reason, rather than a hidden section that shortens the page and leaves "where's
+                     the evaluation" unanswered. */
                   <p className="sub cnote">
                     {canStartEval(c)
                       ? <>اعتُمد التقرير، فيمكن بدء التقييم الآن · يُعدّه مشرف
@@ -393,7 +400,7 @@ export default function ClosePage() {
                 )}
               </Glass>
 
-              {/* ═══ الإصدارات وسجلّ التدقيق · قاعدة 11 و15 و19 ═══ */}
+              {/* Versions and audit log - rules 11, 15, and 19 */}
               <Glass>
                 <Head
                   title="الإصدارات وسجلّ الإجراء"
@@ -425,7 +432,7 @@ export default function ClosePage() {
                 </p>
               </Glass>
 
-              {/* ═══ المراسلة · نفس الكمبوننت الواحد ═══ */}
+              {/* Correspondence - the same shared component */}
               <Glass>
                 <Head title="التواصل مع الجهة" />
                 <Thread
@@ -452,7 +459,7 @@ export default function ClosePage() {
             </div>
           </div>
 
-          {/* ⚠️ القاعدة 16 مكتوبة في الشاشة لا في التعليق بس */}
+          {/* Rule 16 is stated on screen, not only in a comment. */}
           <p className="sub tcen">
             محطة الإغلاق لا تغيّر حالة المشروع ·{' '}
             <Link to={ROUTES.project(c.projectId)} className="lnk">{c.projectName}</Link>{' '}
@@ -468,8 +475,8 @@ export default function ClosePage() {
           </p>
         </div>
 
-        {/* ⚠️ **الجهة أفعالها في الشاشة لا في الرصيف** · نفس صفحة
-            الخطة: الجهة بترفع وبتبعت، والرصيف للقرار الإداري. */}
+        {/* Note: the entity's actions live on the screen, not in the footer - same as the plan
+            page: the entity uploads and submits, the footer is for the administrative decision. */}
         {asEntity ? (
           !closed && (
             <div className="decdock">
@@ -479,7 +486,7 @@ export default function ClosePage() {
                   <span className="decsent">
                     {missing.length === 0
                       ? <>التقرير مكتمل · يمكن إرساله إلى مشرف المنح للمراجعة</>
-                      : <><b><Num>{missing.length}</Num> بنود</b> ناقصة قبل الإرسال
+                      : <><b><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</b> قبل الإرسال
                         <span className="decsep" />
                         {missing[0]}</>}
                   </span>
@@ -512,16 +519,16 @@ export default function ClosePage() {
   )
 }
 
-/** مجموع المرفقات المرفوعة · للعرض السريع */
+/** Total attachments uploaded - for quick viewing. */
 export const docsDone = (uploaded: string[]): string =>
   `${uploaded.length} من ${CLOSE_DOCS.length}`
 
-/** اسم المحطة وصاحبها في سطر · للاستعمال في التاب والبوّابة */
+/** Stage name and owner in one line - for use in the tab and portal. */
 export const closeWhere = (stage: string): string => {
   const who = closeStageWho(stage as never)
   return who ? `${closeStageLabel(stage as never)} · عند ${who}` : closeStageLabel(stage as never)
 }
 
-/** قيمة المنحة · لمقارنة سريعة بره الشاشة */
+/** Grant value - for quick comparison outside the screen. */
 export const grantOf = (projectId: string): number =>
   projectById(projectId)?.amountGranted ?? 0

@@ -7,15 +7,13 @@ export interface FilterDef {
 }
 
 /**
- * لوحة تخصيص الفلاتر.
- *
- * الترتيب بالسحب **ومعاه سهمان**. السحب لوحده بيقفل الميزة على اللي
- * معاه ماوس؛ السهام بتخلّيها تشتغل بالكيبورد وباللمس. الاتنين
- * بيعدّلوا نفس القائمة، فمفيش سلوكان.
- *
- * والفلتر المخفي وقيمته مفعّلة مش مشكلة: صف الشرائح تحت اللوحة
- * بيعرض **كل** قيمة شغّالة، مخفي فلترها أو لا، وبتتشال منه بضغطة.
- * فالقيمة مستحيل تفلتر من ورا المستخدم.
+ * Filter customization panel.
+ * Reordering is by drag **plus two arrows**. Drag alone locks the feature to whoever has a mouse;
+ * the arrows make it work by keyboard and touch. Both edit the same list, so there's no second
+ * behavior.
+ * A hidden filter with an active value isn't a problem: the chip row below the panel shows
+ * **every** active value, hidden or not, and it can be removed with one click — so a value can
+ * never filter silently behind the user's back.
  */
 export function FilterCustomizer({
   all, visible, onChange, onClose,

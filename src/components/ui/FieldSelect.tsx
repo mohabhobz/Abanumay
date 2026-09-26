@@ -5,39 +5,35 @@ import { MenuOpt, MenuPanel, useMenuSearch } from './menu'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
-/* ═══════════════════════════════════════════════════════════
-   قائمة الاختيار **جوّه الفورم**.
+/* Select **inside a form**.
 
-   ⚠️ **القاعدة كانت متكتوبة في مكان وناقصة في التاني.** `Select`
-   اللي في شريط الأدوات اتشالت منها `<select>` الأصلية من زمان،
-   والتعليق اللي فوقها بيشرح ليه: قايمتها بيرسمها **نظام
-   التشغيل** · خطّها وخلفيتها وسلوكها برّه السيستم، وفي الثيم
-   الغامق بتفتح صندوقًا رماديًّا بخطّ لاتيني وسط واجهة زجاج
-   عربية. لكن **الفورمات ما اتغيّرتش** · فضل فيها ١١ `<select>`
-   أصلية في تسجيل الجهة والمشروع الجديد والاتفاقية والميزانية.
+   Warning: the rule was written in one place and missing in another. The toolbar `Select` dropped
+   the native `<select>` a while back, and the comment above it explains why: its list is rendered
+   by the operating system — its font, background, and behavior sit outside the system, and in dark
+   theme it opens a gray box in Latin script inside an Arabic glass UI. But the form fields never
+   changed — 11 native `<select>` elements are still used in entity registration, new project,
+   agreement, and budget.
 
-   يعني نفس السيستم بيفتح للمستخدم قايمتين مختلفتين حسب هو واقف
-   فين · ودي بالظبط اللي العميل شافها في تسجيل الجهة.
+   So the same system opens two different lists for the user depending on where they are — exactly
+   what showed up in entity registration.
 
-   **قاعدة مكتوبة في مكان واحد ما بتحرسش المكان التاني** · فاللوحة
-   هنا هي **نفس** `.fmenu one` و`.fopt`، واللي بيتغيّر هو الزرار
-   بس: في الشريط بيلبس `.fsel-b` (شكل الشريحة)، وهنا بيلبس `.fld`
-   (شكل الحقل) عشان يقف جنب الحقول اللي حواليه بنفس الارتفاع
-   ونفس الحافة ونفس حلقة التركيز.
-   ═══════════════════════════════════════════════════════════ */
+   A rule written in one place doesn't guard the other. So the panel here is the **same** `.fmenu`
+   and `.fopt` as the toolbar version — only the trigger differs: in the toolbar it wears `.fsel-b`
+   (chip look), and here it wears `.fld` (field look) so it lines up with the fields around it —
+   same height, same border, same focus ring. */
 
 export interface FieldSelectProps {
   value: string
   options: readonly SelectOption[]
   onChange: (v: string) => void
-  /** النص اللي يبان لما مفيش اختيار · بيتلوّن `--t3` زي `::placeholder` */
+  /** Text shown when nothing is selected · colored `--t3` like `::placeholder` */
   placeholder?: string
   disabled?: boolean
-  /** اسم الحقل للقارئ الشاشي · الليبل فوق بيبقى منفصل عن الزرار */
+  /** Field name for screen readers · the label above it is visually separate from the trigger */
   label?: string
-  /** فوق العدد ده بيظهر صندوق بحث جوّه اللوحة · المدن ٤٠+ */
+  /** Above this count, a search box appears inside the panel · 40+ cities */
   searchAt?: number
-  /** يخلّي اللوحة تتعلّق بالنهاية · للحقل الأخير في السطر */
+  /** Anchors the panel to the end · for the last field in a row */
   end?: boolean
 }
 

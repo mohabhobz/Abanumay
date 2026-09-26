@@ -1,12 +1,11 @@
 /**
- * المفردات المرجعية · منقولة حرفيًا من النظام العامل.
- * المصدر: فلاتر `reports1_3` و`struct_section` (راجع الأوديت).
+ * Reference vocabulary · carried over verbatim from the live system.
  *
- * دي مش قيم مخترعة: أي اسم مسار أو مجال أو هدف أو وسم هنا موجود
- * فعلًا في النظام، فالفلاتر اللي بنبنيها بتطابق اللي العميل بيشوفه.
+ * These aren't invented values: any track, area, goal, or tag name here actually exists in the
+ * system, so the filters built on them match what the client sees.
  */
 
-/** السنوات = كيانان مموّلان منفصلان، لكل واحد ميزانيته وإجراءاته */
+/** Years = two separately funded entities, each with its own budget and processes */
 export const YEARS = [
   { id: '2026-f', label: '2026 · المؤسسة', budget: 73_700_000 },
   { id: '2025-f', label: '2025 · المؤسسة', budget: 55_800_000 },
@@ -23,7 +22,7 @@ export const TRACKS = [
   'مسار التنوع',
 ] as const
 
-/** المجال تابع للمسار · الفلتر متسلسل زي النظام */
+/** Area depends on track · a cascading filter matching the system */
 export const FIELDS_BY_TRACK: Record<string, string[]> = {
   'المنح النوعي': ['التعليم', 'التطوير', 'القرآن', 'العلم الشرعي', 'القيم', 'الصحة'],
   'المنح الانتشاري': [
@@ -71,7 +70,7 @@ export const CITIES_BY_REGION: Record<string, string[]> = {
   'عموم المملكة': ['عموم المملكة'],
 }
 
-/** وسوم المشاريع الثمانتاشر */
+/** The eighteen project tags */
 export const TAGS = [
   'الأجهزة الكهربائية', 'الدعوة الإلكترونية', 'الدعوة العامة', 'السلال الغذائية',
   'الطفولة المبكرة', 'القيم في التعليم', 'المجمعة', 'بناء وترميم منازل',
@@ -80,7 +79,7 @@ export const TAGS = [
   'كفالات الأيتام والأرامل', 'مبادرة الحج', 'محو الأمية',
 ] as const
 
-/** الحالات المجمّعة اللي النظام بيفلتر بيها */
+/** Grouped statuses the system filters by */
 export const STATUS_GROUPS = [
   'في الدراسة', 'في التشغيل', 'معتذر عنه', 'متعثر', 'مكتمل',
 ] as const
@@ -89,7 +88,7 @@ export const GRANT_METHODS = ['بحث واستجابة', 'ابتكار وإنض�
 export const TRANSFER_METHODS = ['حساب الجهة مباشر', 'عبر منصة إحسان'] as const
 export const SUPPORT_STATUS = ['معتمد', 'مرفوض'] as const
 
-/** مبررات الاعتذار المقنّنة · الرفض اختيار سبب، مش نص حر */
+/** Standardized excusal justifications · rejection is picking a reason, not free text */
 export const DECLINE_REASONS = [
   'الاكتفاء بالمشاريع المدعومة في الهدف',
   'الاكتفاء بدعم المشاريع الأخرى لنفس الجهة',
@@ -102,23 +101,20 @@ export const DECLINE_REASONS = [
   'أخرى',
 ] as const
 
-/* ═══ تصنيف الجهة · **قايمتان لا واحدة** ═══
+/* Entity classification · two lists, not one.
 
-   ⚠️ **وده مش تكرارًا، ده الفرق بين اللي في السيستم واللي البوّابة
-   بتعرضه.** شاشات العميل (١٩ سبتمبر) فيها خمس تصنيفات للتسجيل:
-   جمعية أهلية · مؤسسة أهلية · شركة غير ربحية · وقف · المجالس
-   الأهلية · **ومفيش «حكومي»**.
+   This isn't duplication, it's the difference between what's in the system and what the portal
+   shows. The client's live screens list five registration classifications: civil association, civil
+   foundation, non-profit company, endowment, civil councils — and no "government".
 
-   بس «حكومي» موجود في النظام العامل فعلًا: الجهة `834` (مركز
-   الدراسات الاجتماعية) مسجَّلة كده · فشيله من القايمة كلها معناه
-   صفّ بتصنيف مش في قايمته، وكل فلتر وتقرير بيبقى ناقص واحدًا بلا
-   سبب ظاهر.
+   But "government" does exist in the live system: at least one existing entity is registered that
+   way — so removing it from the list entirely would leave a row with a classification that isn't on
+   any list, and every filter and report would come up one short with no visible reason.
 
-   فـ`REG_TYPES` هي اللي البوّابة بتعرضها (قايمة العميل بالحرف)،
-   و`ENTITY_TYPES` هي كل اللي ممكن تلاقيه في السيستم · وأي فلتر
-   على جهات قائمة بيستعمل التانية. */
+   So `REG_TYPES` is what the portal shows (the client's list verbatim), and `ENTITY_TYPES` is
+   everything the system can actually contain — any filter over existing entities uses the latter. */
 
-/** التصنيفات اللي بوّابة التسجيل بتعرضها · قايمة العميل بالحرف */
+/** Classifications the registration portal shows · the client's list verbatim */
 export const REG_TYPES = [
   'جمعية أهلية',
   'مؤسسة أهلية',
@@ -127,7 +123,7 @@ export const REG_TYPES = [
   'المجالس الأهلية',
 ] as const
 
-/** كل تصنيف ممكن تلاقيه في السيستم · للفلترة والتقارير */
+/** Every classification the system can contain · for filtering and reports */
 export const ENTITY_TYPES = [...REG_TYPES, 'حكومي'] as const
 
 export const LICENSORS = [
@@ -141,10 +137,13 @@ export const LICENSORS = [
 
 export const ACTIVATIONS = ['مقبول', 'معلق (جديد)', 'معلق (موقوف)', 'محدث', 'مرفوض'] as const
 
-/** درجة الحوكمة · «لم تُقيَّم» هي الأكثر ورودًا في النظام */
+/** Governance score · "not assessed" is the most common value in the system */
 export const GOVERNANCE = ['ممتازة', 'جيدة', 'مقبولة', 'ضعيفة', 'لم تُقيَّم'] as const
 
-/** ملف الجهة المطلوب · 8 مستندات، ونقصها هو أشهر سبب لتعليق الجهة */
+/**
+ * Required entity file · 8 documents, and their absence is the most common reason an entity gets
+ * suspended
+ */
 export const ENTITY_DOCS = [
   'الترخيص ساري المفعول',
   'السجل التجاري أو قرار التأسيس',
@@ -162,16 +161,16 @@ export const BANKS = [
 ] as const
 
 /**
- * الأقسام الإجرائية اللي بتظهر كحالة للمشروع، ومعاها المجموعة
- * اللي بتتفلتر بيها والحدّ الزمني بالساعات.
+ * Process departments that appear as project status, along with the group used to filter them and
+ * the time limit in hours.
  *
- * ⚠️ الحدود **مؤقتة** · النظام بيقيس المدة فعلًا لكن ما لقيناش
- * فيه حدًّا معرَّفًا لكل قسم. سؤال قائم لمظفر.
+ * The limits are provisional — the system does measure duration, but no defined limit per
+ * department was found. An open question.
  */
 export interface StageMeta {
   stage: string
   group: (typeof STATUS_GROUPS)[number]
-  /** الحدّ بالساعات · مؤقت */
+  /** Limit in hours · provisional */
   limit: number
 }
 
@@ -197,7 +196,7 @@ export const STAGES: StageMeta[] = [
 export const stageMeta = (stage: string): StageMeta | undefined =>
   STAGES.find((s) => s.stage === stage)
 
-/** مشرفو المنح · التوزيع الحقيقي بينهم غير متوازن بشدة */
+/** Grants officers · the real distribution across them is heavily unbalanced */
 export const OWNERS = [
   'عمر قاسم',
   'سعود البريكان',

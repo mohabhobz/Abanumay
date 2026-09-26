@@ -1,5 +1,5 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { BackTo, Glass, Head, Icon, icons } from '@/components/ui'
+import { BackTo, Glass, Head, Icon, icons, StepLink } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
@@ -8,22 +8,22 @@ import { PROCESSES, measuredIn, processByKey } from '@/data/kpi'
 import { KpiValue } from './KpiValue'
 import { basisText } from './basis'
 
-/* ═══════════════════════════════════════════════════════════
-   ورقة مؤشرات إجراء واحد.
+/* Single-process metrics sheet.
 
-   ثلاث قواعد بتحكم الشاشة دي:
+   Three rules govern this screen:
 
-   1. **آلية القياس تحت كل رقم، دايمًا.** الوثيقة كاتبة لكل مؤشر
-      صيغته، والرقم من غير صيغته بيتقري غلط · «نسبة المشاريع
-      المرفوضة» من إيه؟ من المعروض ولا من الكل؟ الفرق بيغيّر القرار.
+   1. The measurement formula sits under every number, always. The spec
+   writes out each metric's formula, and a number without its formula can
+   be read wrong — "rejection rate" out of what? Out of what's shown, or
+   the total? That difference changes the decision.
 
-   2. **المؤشر اللي مالوش قيمة بيتكتب برضو.** إخفاؤه بيخلي الفجوة
-      تعدّي؛ كتابته ومعاها سبب غيابه بتحوّلها لمطلب على الباك اند.
+   2. A metric with no value is still shown. Hiding it lets the gap pass
+   unnoticed; showing it with the reason it's missing turns it into a
+   concrete backend requirement.
 
-   3. **كل رقم بيوصّل لصفوفه.** ده الرد على نقد الأوديت: التقرير
-      اللي بينتهي عند الرقم مالوش لازمة، اللي بيفتح على الصفوف
-      بيخلي القرار يتاخد من جوّه.
-   ═══════════════════════════════════════════════════════════ */
+   3. Every number links to its underlying rows. This is the answer to
+   the review's criticism: a report that ends at a number is of no use —
+   one that opens onto the rows lets the decision be made from inside them. */
 
 export default function ProcessReport() {
   const { key = '' } = useParams()
@@ -36,8 +36,9 @@ export default function ProcessReport() {
   const next = PROCESSES[i + 1]
   const done = measuredIn(p)
 
-  /* لو كل المؤشرات واقفة على نفس السبب، السبب بيتكتب مرة فوق بدل
-     ما يتكرر تحت كل سطر. التكرار بيحوّل المعلومة لضوضاء. */
+  /* If every metric is blocked by the same reason, that reason is stated
+     once at the top instead of repeating under every line. Repetition
+     turns information into noise. */
   const gaps = new Set(p.kpis.map((k) => k.gap ?? ''))
   const sharedGap = gaps.size === 1 && p.kpis[0].gap ? p.kpis[0].gap : null
 
@@ -58,18 +59,9 @@ export default function ProcessReport() {
             </div>
 
             <nav className="rpnav" aria-label="التنقّل بين الإجراءات">
-              {prev && (
-                <Link to={ROUTES.report(prev.key)} className="btn btn-2">
-                  <Icon name={icons.chevron} size="sm" />
-                  {prev.title}
-                </Link>
-              )}
-              {next && (
-                <Link to={ROUTES.report(next.key)} className="btn btn-2">
-                  {next.title}
-                  <Icon name={icons.chevron} size="sm" style={{ rotate: '180deg' }} />
-                </Link>
-              )}
+              {/* The arrow comes from `StepLink` — it used to be hand-drawn backwards. */}
+              {prev && <StepLink to={ROUTES.report(prev.key)} dir="prev">{prev.title}</StepLink>}
+              {next && <StepLink to={ROUTES.report(next.key)} dir="next">{next.title}</StepLink>}
             </nav>
           </header>
 
@@ -91,9 +83,9 @@ export default function ProcessReport() {
                   <div className="ind-b">
                     <div className="ind-t">
                       {isolate(k.name)}
-                      {/* «مشتقّ» علامة قراءة لا حالة: `Tag` بنبرة خافتة
-                          بتنزل تحت حدّ التباين، وبتتنافس بصريًّا مع
-                          شارات الحالة في باقي السيستم. */}
+                      {/* "Derived" is a reading cue, not a status: a muted `Tag` would fall
+                          below the contrast threshold and visually compete with the status
+                          badges used elsewhere in the system. */}
                       {k.derived && <span className="ind-d">مشتقّ</span>}
                     </div>
                     <div className="ind-h sub">{isolate(k.how)}</div>
@@ -129,7 +121,7 @@ export default function ProcessReport() {
 
           <p className="sub rpfoot">
             «مشتقّ» يعني أن الرقم محسوب من بيانات الصف لا من عمود مستقل. يسجّل النظام
-            العامل مدد المستويات فعلًا (<span className="num">13</span> عمود مدة في جدول
+            العامل مدد المستويات فعلًا (<span className="num">13</span> عمودًا للمدة في جدول
             المشاريع)، وحين تتيحها الـ<span className="num">API</span>{' '}
             ستحلّ هذه الأعمدة محل الاشتقاق.
           </p>

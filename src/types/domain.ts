@@ -1,20 +1,20 @@
 /**
- * نموذج البيانات · مشتق من النظام العامل `sys.abanumay.sa`
- * (راجع `Abanumay_System_Live_Audit.md` في مجلد المشروع).
+ * Data model — derived from the live production system.
  *
- * أي حقل هنا له مقابل حقيقي في النظام. لما الباك اند يسلّم الـAPI
- * المفروض يطابق الشكل ده، وأي اختلاف هيبان وقت البيلد مش وقت التشغيل.
+ * Every field here has a real counterpart in that system. When the
+ * backend delivers its API, it should match this shape, and any
+ * mismatch will surface at build time rather than at runtime.
  */
 
-/** درجة اللون المستخدمة في الشارات والمؤشرات */
+/** Color tone used in badges and indicators. */
 export type Tone = 'ok' | 'warn' | 'no' | 'ret' | 'brand' | 'teal' | 'lime' | 'mute'
 
-/** مصدر التمويل · النظام بيفصل بينهم بأقسام إجرائية مستقلة */
+/** Funding source — the system separates them into independent workflow tracks. */
 export type FundingSource = 'foundation' | 'waqf'
 
 /**
- * القسم الإجرائي · النظام فيه 50 قسمًا.
- * دي أكثرهم ورودًا في جدول المشاريع (18 قيمة على 4,929 مشروعًا).
+ * Workflow stage — the system has 50 stages. These are the most
+ * frequent ones in the projects table (18 values across 4,929 projects).
  */
 export type ProcedureStage =
   | 'دراسة المشروع'
@@ -36,7 +36,7 @@ export type ProcedureStage =
   | 'مشروع معتذر عنه'
   | 'مشروع ملغي'
 
-/** الحالة المجمّعة · النظام بيفلتر بيها، 5 قيم فقط */
+/** Grouped status — the system filters by this, only 5 values. */
 export type ProjectStatusGroup =
   | 'في الدراسة'
   | 'في التشغيل'
@@ -44,13 +44,13 @@ export type ProjectStatusGroup =
   | 'متعثر'
   | 'مكتمل'
 
-/** أسلوب المنح كما في فلتر النظام */
+/** Grant method, as in the system's filter. */
 export type GrantMethod = 'بحث واستجابة' | 'ابتكار وإنضاج'
 
-/** طريقة تحويل المبلغ للجهة */
+/** Method for transferring the amount to the entity. */
 export type TransferMethod = 'حساب الجهة مباشر' | 'عبر منصة إحسان'
 
-/** مبررات الاعتذار المقنّنة في النظام (9) */
+/** Standardized decline reasons in the system (9). */
 export type DeclineReason =
   | 'الاكتفاء بالمشاريع المدعومة في الهدف'
   | 'الاكتفاء بدعم المشاريع الأخرى لنفس الجهة'
@@ -62,7 +62,7 @@ export type DeclineReason =
   | 'خطأ في تعبئة البيانات'
   | 'أخرى'
 
-/** أنواع المتابعة الثمانية */
+/** The eight follow-up types. */
 export type FollowUpType =
   | 'التواصل مع الشريك'
   | 'تحديث الاتفاقية'
@@ -73,7 +73,7 @@ export type FollowUpType =
   | 'مخاطبات'
   | 'أخرى'
 
-// ═══════════════════════ الجهة ═══════════════════════
+// Entity
 
 export type EntityActivation = 'مقبول' | 'معلق (جديد)' | 'معلق (موقوف)' | 'محدث' | 'مرفوض'
 
@@ -102,7 +102,7 @@ export interface Entity {
   city: string
   licenseNo: string
   licenseEnd: string
-  /** التاريخ الهجري كما يعرضه النظام جنب الميلادي */
+  /** Hijri date as displayed by the system alongside the Gregorian date. */
   licenseEndH: string
   boardEnd: string
   founded: string
@@ -119,7 +119,7 @@ export interface Entity {
   userNo: string
   userName: string
   accountType: string
-  /** «لم تُقيَّم» لو ملف الجهة ناقص */
+  /** "Not rated" if the entity's file is incomplete. */
   governance: string
   activation?: EntityActivation
   docs: EntityDocument[]
@@ -127,7 +127,7 @@ export interface Entity {
   projects: EntityProjectRef[]
 }
 
-// ═══════════════════════ المشروع ═══════════════════════
+// Project
 
 export interface KeyValue<V = string> {
   k: string
@@ -169,9 +169,9 @@ export interface Gate {
 }
 
 /**
- * قيد في سجل الإجراءات.
- * `hours` مقابل `limit` هو أساس تنبيه «تجاوز مدة الإجراء» ·
- * والنظام بيسجّل المدة لكل مستوى فعلًا (13 عمود مدة في جدول المشاريع).
+ * An entry in the actions log. `hours` against `limit` is the basis
+ * for the "action duration exceeded" alert — the system genuinely
+ * tracks duration per level (13 duration columns in the projects table).
  */
 export interface LogEntry {
   action: string
@@ -225,7 +225,7 @@ export interface Agreement {
 export interface Project {
   id: string
   name: string
-  /** المسار ← المجال ← الهدف · شجرة الميزانية */
+  /** Track → domain → goal — the budget tree. */
   track: string
   field: string
   goal: string
@@ -240,9 +240,9 @@ export interface Project {
   amountTotal: number
   amountGranted: number
   amountSpent?: number
-  /** وزن المشروع 0–100 كما في النظام */
+  /** Project weight, 0–100, as in the system. */
   weight: number
-  /** التقييم % */
+  /** Rating %. */
   score: number
 
   startDate: string
@@ -251,7 +251,10 @@ export interface Project {
   region: string
   city: string
   beneficiaries: number
-  /** العدد بعد مراجعة المشرف · النظام بيفصله عن تقدير الجهة */
+  /**
+   * The count after the reviewer's check — the system keeps this
+   * separate from the entity's own estimate.
+   */
   beneficiariesVerified: number
   audiences: string[]
 
@@ -284,110 +287,114 @@ export interface Project {
   owner?: string
 }
 
-// ═══════════════════════ الاتفاقيات · BPD-008 ═══════════════════════
+// Agreements
 
 /**
- * مرحلة الاتفاقية · من مخطط المسارات (9.6) وخطوات الإجراء.
+ * Agreement stage — from the process flowchart and its action steps.
  *
- * ⚠️ **دي مرحلة الاتفاقية لا حالة المشروع.** القاعدة 25 صريحة:
- * «لا يؤثر انتقال الاتفاقية بين مراحل المراجعة والاعتماد أو التوقيع
- * على حالة المشروع، حيث تبقى حالة المشروع (إعداد الاتفاقية) حتى
- * اعتماد الاتفاقية النهائية». يعني اتفاقية عند المدير التنفيذي
- * والمشروع لسّه مكتوب عليه «إعداد الاتفاقية» — والاتنين صح.
+ * This is the agreement's stage, not the project's status. The spec is
+ * explicit: an agreement moving between review, approval, or signature
+ * stages doesn't affect the project's status, which stays "drafting
+ * agreement" until the final agreement is approved. So an agreement can
+ * be sitting with the executive director while the project still shows
+ * "drafting agreement" — both are correct at once.
  */
 export type AgreementStage =
-  /** مسودة عند مشرف المنح · خطوات 3–11 */
+  /** Draft with the grants reviewer — steps 3–11. */
   | 'draft'
-  /** بانتظار مدير المنح · خطوات 12–13 */
+  /** Awaiting the grants manager — steps 12–13. */
   | 'manager'
-  /** بانتظار المدير التنفيذي · خطوات 16–17 */
+  /** Awaiting the executive director — steps 16–17. */
   | 'executive'
-  /** بانتظار توقيع الجهة · خطوات 20–21 */
+  /** Awaiting the entity's signature — steps 20–21. */
   | 'entity'
-  /** مُعادة للتعديل · خطوات 14 · 18 · 22 */
+  /** Returned for revision — steps 14, 18, 22. */
   | 'returned'
-  /** سارية · خطوات 24–28 */
+  /** In effect — steps 24–28. */
   | 'active'
-  /** ملغاة أو مرفوضة نهائيًا · قاعدة 26 */
+  /** Cancelled or finally rejected — Rule 26. */
   | 'cancelled'
 
 export type AgreementKind = 'إلكترونية' | 'ورقية'
 
-/** دفعة في جدول الاتفاقية · قاعدة 7 */
+/** A payment in the agreement's schedule — Rule 7. */
 export interface AgreementPayment {
   no: number
-  /** القيمة بالريال · قاعدة 8 بتتحقق إن المجموع = قيمة المنحة */
+  /** Value in riyals — Rule 8 verifies the total equals the grant value. */
   amount: number
-  /** النسبة من المنحة · قاعدة 8 بتتحقق إن المجموع = 100% */
+  /** Percentage of the grant — Rule 8 verifies the total equals 100%. */
   share: number
   dueAt: string
-  /** متطلبات الصرف · بتتربط بالتقارير أو المخرجات */
+  /** Disbursement requirements — linked to reports or deliverables. */
   requirement?: string
 }
 
-/** حدث في سجل تدقيق الاتفاقية · قاعدة 22 */
+/** An event in the agreement's audit log — Rule 22. */
 export interface AgreementEvent {
   at: string
   who: string
   role: string
   what: string
   note?: string
-  /** خطوة الإجراء في BPD-008 */
+  /** The action step in the process flowchart. */
   step: number
-  /** الإشعار اللي اتبعت مع الانتقال · قاعدة 20 */
+  /** The notification sent with the transition — Rule 20. */
   notified?: string
-  /** الإصدار اللي الحدث حصل عليه · قاعدة 24 */
+  /** The version the event occurred on — Rule 24. */
   version: number
 }
 
 export interface AgreementRow {
   id: string
-  /** قاعدة 2 · مشروع واحد بالظبط، لا أكتر */
+  /** Rule 2 — exactly one project, never more. */
   projectId: string
   projectName: string
   entityId: string
   entityName: string
-  /** قاعدة 3 · بيتحدد عند الإنشاء وما يتغيّرش إلا بإصدار جديد */
+  /** Rule 3 — set at creation and doesn't change except through a new version. */
   kind: AgreementKind
-  /** القالب المعتمد · قاعدة 4 · واحد من نماذج النظام */
+  /** The approved template — Rule 4 — one of the system's templates. */
   template: string
   stage: AgreementStage
-  /** قاعدة 24 · إصدارات متعددة، وواحد ساري */
+  /** Rule 24 — multiple versions, one in effect. */
   version: number
-  /** قيمة المنحة · خطوة 11 بتطابقها بالمحجوز في الميزانية */
+  /** Grant value — step 11 matches it against the budget's reserved amount. */
   amount: number
-  /** المحجوز فعلًا في الميزانية · الفرق بيمنع الإرسال */
+  /** The amount actually reserved in the budget — a mismatch blocks submission. */
   reserved: number
-  /** جدول الدفعات · قاعدة 7، وجزء من الاتفاقية لا ملحق بيها */
+  /**
+   * Payment schedule — Rule 7, and part of the agreement itself, not an
+   * attachment to it.
+   */
   payments: AgreementPayment[]
-  /** ممثل الجهة المخوّل بالتوقيع · مدخل في الوثيقة */
+  /** The entity's authorized signatory — an entry in the document. */
   signer: { name: string; title: string }
-  /** مشرف المنح المسؤول */
+  /** The responsible grants reviewer. */
   owner: string
-  /** تاريخ إحالة المشروع لمرحلة إعداد الاتفاقية · خطوة 1 */
+  /** Date the project was referred to the drafting-agreement stage — step 1. */
   openedAt: string
-  /** تاريخ التفعيل · خطوة 26، لو اتفعّلت */
+  /** Activation date — step 26, if activated. */
   activeAt?: string
-  /** ساعات المكوث في المرحلة الحالية */
+  /** Hours spent in the current stage. */
   hoursInStage: number
-  /** ملاحظة آخر إعادة · قاعدة 10 بتلزم توضيح السبب */
+  /** Note from the last return — Rule 10 requires stating the reason. */
   note?: string
-  /** مخرج الذكاء الاصطناعي · 9.5 · قاعدة 21 بتخلّيه استرشاديًا */
+  /** AI output — section 9.5 — Rule 21 makes it advisory only. */
   ai?: string
-  /** سجل التدقيق · قاعدة 22 */
+  /** Audit log — Rule 22. */
   log: AgreementEvent[]
-  /** المرفقات والملاحق · قاعدة 18 */
+  /** Attachments and appendices — Rule 18. */
   docs: PayDoc[]
 }
 
-// ═══════════════════════ الصلاحيات ═══════════════════════
+// Permissions
 
 export type AuthorityKind = 'submit' | 'recommend' | 'approve' | 'final'
 export type AuthorityState = 'done' | 'now' | 'pending'
 
 export interface AuthorityRole {
   role: string
-  /** null = بلا سقف (تقديم أو قرار نهائي) */
+  /** null = no cap (submission or final decision). */
   ceiling: number | null
   uplift?: number
   kind?: AuthorityKind
@@ -396,16 +403,17 @@ export interface AuthorityRole {
 }
 
 export interface AuthorityMatrix {
-  /** الأرقام مؤقتة لحين تأكيدها من العميل */
+  /** Figures are provisional pending confirmation. */
   provisional: boolean
   roles: AuthorityRole[]
 }
 
-// ═══════════════════════ المستخدم ═══════════════════════
+// User
 
-/* ترتيب الأفعال: أساسي واحد · ثانوي للباقي · هدّام له لونه.
-   `btn-3` (الأزرق) اتشال من هنا عن قصد · الأزرق في النظام يوصف
-   حالة لا يعمل نداء، ووجوده في النوع كان بيسمح بالمخالفة. */
+/* Action ordering: one primary, secondary for the rest, destructive
+   gets its own color. `btn-3` (blue) was deliberately removed from
+   here — blue in the system describes a status, not a call to action,
+   and having it in this type allowed that rule to be violated. */
 export type DecisionKind = 'btn-p' | 'btn-2' | 'btn-d'
 
 export interface DecisionAction {
@@ -418,12 +426,12 @@ export interface CurrentUser {
   role: string
   initial: string
   photo?: string
-  /** null = صلاحية توصية فقط، بلا سقف مالي */
+  /** null = recommendation-only authority, no financial cap. */
   financialAuthority: number | null
   actions: DecisionAction[]
 }
 
-// ═══════════════════════ قراءات المساعد ═══════════════════════
+// Assistant insights
 
 export interface Insight {
   text: string
@@ -431,11 +439,11 @@ export interface Insight {
   src: string
 }
 
-// ═══════════════════ صفوف القوائم ═══════════════════
+// List rows
 
 /**
- * صف في قائمة المشاريع · العمود الفقري من 12 حقلًا.
- * جدول النظام فيه 62 عمودًا؛ الباقي يعيش في صفحة المشروع.
+ * A row in the projects list — the backbone of 12 fields. The
+ * system's table has 62 columns; the rest live on the project page.
  */
 export interface ProjectRow {
   id: string
@@ -447,19 +455,19 @@ export interface ProjectRow {
   goal: string
   region: string
   city: string
-  /** القسم الإجرائي الفعلي، مش المجموعة */
+  /** The actual workflow stage, not the group. */
   stage: string
   statusGroup: ProjectStatusGroup
-  /** ساعات المكوث في القسم الحالي */
+  /** Hours spent in the current stage. */
   hoursInStage: number
-  /** حدّ القسم بالساعات · مؤقت لحين تأكيده */
+  /** Stage threshold in hours — provisional pending confirmation. */
   stageLimit: number
   amountRequested: number
   amountGranted: number
   amountSpent: number
   weight: number
   score: number
-  /** null = مشروع بلا مالك، وده ربع النظام */
+  /** null = an unassigned project, which is a quarter of the system. */
   owner: string | null
   year: string
   funding: FundingSource
@@ -479,26 +487,35 @@ export interface ProjectRow {
   fieldVisit: boolean
 }
 
-/** صف في قائمة الجهات · التعريف + الأداء التراكمي */
+/** A row in the entities list — identity plus cumulative performance. */
 export interface EntityRow {
   id: string
   name: string
+  /**
+   * The entity's logo, if uploaded — otherwise the entity's generated
+   * icon (`EntityMark`) is shown.
+   */
+  logo?: string
   licenseNo: string
   type: string
   licensor: string
   region: string
   city: string
   registeredAt: string
-  /** نهاية الترخيص · **قيمة في الداتا لا رقم مولَّد**.
-      كانت بتتحسب `registeredAt + int(1,6) سنة`، فجهة مسجّلة ٢٠١٦
-      وحوكمتها ممتازة وبتاخد منح لحدّ دلوقتي كان ترخيصها بينتهي
-      ٢٠١٩ · يعني عشر سنين بلا تجديد واحد، وده بيناقض حالتها
-      المكتوبة جنبه. التاريخ ده بيتقرا وبيتراجع، وما بيتخلقش. */
+  /**
+   * License expiry — a value read from the data, not a generated number.
+   *
+   * It used to be computed as `registeredAt + int(1,6) years`, so an
+   * entity registered in 2016 with excellent governance still receiving
+   * grants today would show its license expiring in 2019 — ten years with
+   * no renewal, contradicting the status written right next to it. This
+   * date is read and displayed, never generated.
+   */
   licenseEndsAt: string
   activation: EntityActivation
-  /** «لم تُقيَّم» لو ملف الجهة ناقص */
+  /** "Not rated" if the entity's file is incomplete. */
   governance: string
-  /** عدد المستندات المرفوعة من 8 */
+  /** Number of documents uploaded, out of 8. */
   docsUploaded: number
   projectsApproved: number
   projectsRunning: number
@@ -541,60 +558,60 @@ export interface PayCheck {
 }
 
 export interface PayRequest {
-  /** رقم الطلب · not the payment number */
+  /** Request number — not the payment number. */
   id: string
   projectId: string
   projectName: string
   entityId: string
   entityName: string
-  /** الدفعة كام من كام · from the agreement's payment schedule */
+  /** Which payment, out of how many — from the agreement's payment schedule. */
   no: number
   of: number
-  /** قيمة الدفعة المعتمدة في الجدول */
+  /** Payment value approved in the schedule. */
   due: number
-  /** قيمة الطلب · rule 5 caps it at `due` */
+  /** Request value — rule 5 caps it at `due`. */
   asked: number
-  /** تاريخ الاستحقاق وفق الجدول */
+  /** Due date, per the schedule. */
   dueAt: string
   state: PayState
-  /** ساعات المكوث في المرحلة الحالية · feeds the escalation in 9.5 */
+  /** Hours spent in the current stage — feeds the escalation in section 9.5. */
   hoursInState: number
-  /** شرط الصرف · rule 6 · empty when the payment carries no condition */
+  /** Disbursement condition — rule 6 — empty when the payment carries no condition. */
   condition?: string
-  /** الشروط اللي النظام بيتحقق منها قبل الانتقال */
+  /** Conditions the system verifies before allowing the transition. */
   checks: PayCheck[]
-  /** البنك المعتمد · المخرج الثاني في الوثيقة: «الحساب البنكي المعتمد» */
+  /** The approved bank — the spec's second deliverable: "the approved bank account." */
   bank: { name: string; active: boolean }
-  /** مصادر التمويل · rule 12 distributes the payment across them */
+  /** Funding sources — rule 12 distributes the payment across them. */
   sources: { name: string; share: number }[]
-  /** مخرج الذكاء الاصطناعي · step 6 · rule 20 makes it advisory only */
+  /** AI output — step 6 — rule 20 makes it advisory only. */
   ai?: string
-  /** ملاحظة آخر إعادة · rules 7 و8 */
+  /** Note from the last return — rules 7 and 8. */
   note?: string
-  /** مشرف المنح المسؤول */
+  /** The responsible grants reviewer. */
   owner: string
-  /** تاريخ إنشاء الطلب · step 2 */
+  /** Date the request was created — step 2. */
   at: string
-  /** تاريخ التحويل · step 17, only when paid */
+  /** Transfer date — step 17, only when paid. */
   paidAt?: string
 
-  /* ── ما يلزم صفحة الطلب الواحد ── */
+  /* What the single-request page needs. */
 
-  /** الاتفاقية وسريانها · rule 10 checks it before finance */
+  /** The agreement and whether it's in effect — rule 10 checks it before finance. */
   agreement: { id: string; active: boolean; endsAt: string }
-  /** قيمة المنحة كاملة · rule 14 caps the total at it */
+  /** The grant's full value — rule 14 caps the total at it. */
   granted: number
-  /** المصروف من المنحة قبل هذه الدفعة · rule 14 */
+  /** Amount spent from the grant before this payment — rule 14. */
   spent: number
-  /** المحجوز على هذه الدفعة · rule 11 then rule 13 turns it into spent */
+  /** Amount reserved for this payment — rule 11, then rule 13 turns it into spent. */
   reserved: number
-  /** المرفقات · rule 21 keeps them on the request itself */
+  /** Attachments — rule 21 keeps them on the request itself. */
   docs: PayDoc[]
-  /** سجل التدقيق · rule 16 · every transition, with its step number */
+  /** Audit log — rule 16 — every transition, with its step number. */
   log: PayEvent[]
 }
 
-/** مستند مرفق بالطلب · rule 21 */
+/** A document attached to the request — rule 21. */
 export interface PayDoc {
   name: string
   kind: string
@@ -602,7 +619,7 @@ export interface PayDoc {
   size: string
 }
 
-/** حدث في سجل التدقيق · rule 16 · `step` is the step in BPD-009 */
+/** An event in the audit log — rule 16 — `step` is its step in the process spec. */
 export interface PayEvent {
   at: string
   who: string
@@ -610,73 +627,82 @@ export interface PayEvent {
   what: string
   note?: string
   step: number
-  /** الإشعار المرسل مع الانتقال · rule 17 */
+  /** The notification sent with the transition — rule 17. */
   notified?: string
 }
 
-/* ═══════════════════════════════════════════════════════════
-   خطة تنفيذ المشروع · BPD-012 · صفحات 86–92 في الوثيقة v2
+/* Project implementation plan.
 
-   ⚠️ **ده أخطر ناقص في التدقيق (أ-1).** السند في BPD-009 §9.3
-   خطوة 1 بالنص: «اعداد خطة المشروع من قبل الجهة المستفيدة
-   واعتمادها من قبل مشرف المنح ومدير المنح وذلك في حالة المشاريع
-   التي تتطلب خطة عمل». وفي النظام العامل «الخطة التنفيذية» **مرفق**
-   لا موديول · مفيش دورة اعتماد ولا متابعة إنجاز.
+   This is the most serious gap the review found. The spec says, step 1,
+   verbatim: "the plan is prepared by the beneficiary entity and
+   approved by the grants reviewer and grants manager, for projects that
+   require a work plan." In the current system, the "implementation
+   plan" is an attachment, not a module — there's no approval cycle and
+   no progress tracking.
 
-   ⚠️ **والخطة إجراء مستقل، زي الاتفاقية بالظبط.** ده تطبيق ح-10
-   (فصل الإجراءات): «المشكلة إن السيستم بيتعامل مع المشروع كأنه
-   حاجة واحدة · المشروع هو الخطة هو الاتفاقية هو الدفع». فالخطة
-   بتتعمل **بالتوازي** مع الاتفاقية، وحالتها ما بتغيّرش حالة
-   المشروع · زي قاعدة 25 في الاتفاقيات.
-   ═══════════════════════════════════════════════════════════ */
+   The plan is also its own independent process, exactly like the
+   agreement. This follows the separation-of-actions principle: "the
+   problem is that the system treats the project as a single thing — the
+   project is the plan is the agreement is the payment." So the plan
+   runs in parallel with the agreement, and its status doesn't change
+   the project's status — the same rule as the agreement's Rule 25. */
 
 export type PlanStage =
-  /** الجهة بتكتب · مسودة ما اتبعتتش */
+  /** The entity is writing it — a draft not yet submitted. */
   | 'draft'
-  /** عند مشرف المنح للمراجعة */
+  /** With the grants reviewer for review. */
   | 'supervisor'
-  /** عند مدير المنح للاعتماد */
+  /** With the grants manager for approval. */
   | 'manager'
-  /** مُعادة للجهة بملاحظات */
+  /** Returned to the entity with comments. */
   | 'returned'
-  /** معتمدة · اتثبّت `Baseline V1` والتنفيذ بدأ */
+  /** Approved — `Baseline V1` is locked in and implementation has started. */
   | 'active'
-  /** كل الأنشطة اتقبلت · المشروع مؤهَّل للإغلاق */
+  /** All activities accepted — the project is eligible for closing. */
   | 'done'
 
-/** حالة النشاط الواحد · قاعدة 14 بتفصل «الجهة قالت» عن «المشرف قبل» */
+/**
+ * Status of a single activity — Rule 14 separates "the entity says"
+ * from "the reviewer accepted."
+ */
 export type ActivityState =
-  /** ما بدأش */
+  /** Not started. */
   | 'todo'
-  /** الجهة بتنفّذ */
+  /** The entity is implementing it. */
   | 'doing'
-  /** الجهة رفعت الشاهد وقالت خلص · **لسه ما اتحسبش إنجازًا** */
+  /** The entity uploaded evidence and marked it done — not yet counted as completed. */
   | 'claimed'
-  /** المشرف راجع وقبل · دي وحدها اللي بتتحسب */
+  /** The reviewer checked and accepted it — only this counts. */
   | 'accepted'
-  /** المشرف رفض الشاهد ورجّعه */
+  /** The reviewer rejected the evidence and sent it back. */
   | 'rejected'
 
-/** شاهد مرفوع على نشاط */
+/** Evidence uploaded against an activity. */
 export interface PlanEvidence {
   id: string
-  /** نوع الشاهد المطلوب · من إعدادات الموديول */
+  /** Required evidence type — from the module's settings. */
   kind: string
   fileName: string
   uploadedAt: string
-  /** مين رفعه · الجهة عادةً */
+  /** Who uploaded it — usually the entity. */
   by: string
 }
 
-/** ملاحظة على نشاط · باسم كاتبها ووقتها */
+/** A note on an activity — with its author's name and timestamp. */
 export interface ActivityNote {
   by: string
-  /** `YYYY-MM-DDTHH:mm` · الوقت جزء من المعلومة لا زينة */
+  /** `YYYY-MM-DDTHH:mm` — the time is part of the information, not decoration. */
   at: string
   say: string
-  /** سبب رفض (قاعدة 14) ولا سبب مضاف عليه · الأول بس بيتوسم */
+  /**
+   * A rejection reason (Rule 14) or a reason added afterward — only the
+   * first is tagged.
+   */
   kind: 'reject' | 'comment'
-  /** الطرف · بيحدّد لون الفقاعة زي ثريد المراسلة بالظبط */
+  /**
+   * The party — determines the bubble color, exactly like the
+   * correspondence thread.
+   */
   from?: 'staff' | 'entity'
 }
 
@@ -684,26 +710,31 @@ export interface PlanActivity {
   id: string
   name: string
   state: ActivityState
-  /** التواريخ المخطَّطة · بتتقفل مع `Baseline V1` */
+  /** Planned dates — locked in along with `Baseline V1`. */
   from: string
   to: string
-  /** التاريخ الفعلي للقبول · فاضي لو لسه */
+  /** Actual acceptance date — empty if not yet accepted. */
   doneAt?: string
-  /** أنواع الشواهد اللي لازم ترفع قبل ما النشاط يتقال عليه خلص */
+  /** Evidence types that must be uploaded before an activity can be marked done. */
   needs: string[]
   evidence: PlanEvidence[]
   /**
-   * الملاحظات على النشاط · **سجلّ لا سطر**.
+   * Notes on an activity — a log, not a single line.
    *
-   * ⚠️ كانت `note?: string` · سطر واحد بلا اسم ولا وقت، والرفض
-   * التاني بيمسح الأول. والعميل طلب إن الملاحظة **تتنسب لصاحبها
-   * بوقتها**، وإن حد تاني يقدر يضيف عليها · يعني دي محادثة قصيرة
-   * على النشاط، والرفض أول سطر فيها لا كلها. قاعدة 14 بتلزم توضيح
-   * سبب الرفض، والسجلّ هو اللي بيخلّي التوضيح ده يفضل بعد ما النشاط
-   * يتصلّح.
+   * This used to be `note?: string`: a single line with no author or
+   * timestamp, where a second rejection would overwrite the first. The
+   * requirement was for a note to be attributed to its author with a
+   * timestamp, and for someone else to be able to add to it — meaning
+   * this is a short conversation on the activity, and a rejection is only
+   * its first line, not the whole thing. Rule 14 requires stating the
+   * reason for a rejection, and the log is what keeps that explanation
+   * around after the activity is fixed.
    */
   notes?: ActivityNote[]
-  /** وزن النشاط في نسبة الإنجاز · مجموع أوزان أنشطة المرحلة = 100 */
+  /**
+   * Activity's weight in the completion percentage — the weights of a
+   * phase's activities sum to 100.
+   */
   weight: number
 }
 
@@ -712,39 +743,42 @@ export interface PlanPhase {
   name: string
   from: string
   to: string
-  /** تكلفة المرحلة · مجموع المراحل = قيمة المنحة */
+  /** Phase cost — the sum of all phases equals the grant value. */
   cost: number
   activities: PlanActivity[]
 }
 
-/** طلب تعديل جوهري على خطة معتمدة · قاعدة 21 */
+/** A request for a substantive change to an approved plan — Rule 21. */
 export interface PlanChange {
   id: string
   at: string
   by: string
-  /** اللي اتطلب تغييره بالنص */
+  /** What was requested to change, in text. */
   say: string
   state: 'waiting' | 'approved' | 'rejected'
-  /** قرار مدير المنح وسببه */
+  /** The grants manager's decision and its reason. */
   note?: string
 }
 
 export interface PlanRow {
   id: string
-  /** خطة واحدة لمشروع واحد */
+  /** One plan per project. */
   projectId: string
   projectName: string
   entityId: string
   entityName: string
   stage: PlanStage
-  /** رقم النسخة المرجعية · 1 أول اعتماد، وبيزيد مع كل تعديل معتمد */
+  /**
+   * Baseline version number — 1 on first approval, incrementing with
+   * each approved change.
+   */
   baseline: number
-  /** تاريخ تثبيت النسخة المرجعية · فاضي قبل الاعتماد */
+  /** Date the baseline was locked in — empty before approval. */
   baselineAt?: string
   phases: PlanPhase[]
-  /** مشرف المنح المسؤول */
+  /** The responsible grants reviewer. */
   owner: string
-  /** مين كتب المسودة · الجهة أو المشرف بالنيابة عنها */
+  /** Who wrote the draft — the entity, or the reviewer on its behalf. */
   drafter: 'entity' | 'supervisor'
   openedAt: string
   hoursInStage: number
@@ -752,105 +786,114 @@ export interface PlanRow {
   note?: string
 }
 
-/* ═══════════════════════════════════════════════════════════
-   إغلاق المشروع · BPD-011
+/* Project closing.
 
-   ⚠️ **دورتان مستقلّتان لا واحدة.** القاعدة 17 بالنصّ: «يخضع
-   التقرير الختامي وتقييم المشروع **لدورتي اعتماد مستقلتين**، مع
-   الاحتفاظ بسجل منفصل لجميع الملاحظات وقرارات الاعتماد الخاصة
-   بكل منهما». فالنوع بيشيل الاتنين بسجلّيهم، ومحطة واحدة
-   (`stage`) بتقول إحنا فين في الاتنين مع بعض.
+   Two independent cycles, not one. The spec states verbatim: "the final
+   report and the project evaluation each go through independent
+   approval cycles, with a separate record kept of all comments and
+   approval decisions for each." So this type carries both with their
+   own logs, and a single `stage` states where we stand across both at once.
 
-   ⚠️ **والتقرير بتعدّه الجهة · والتقييم بيعدّه المشرف.** ودي
-   مش تفصيلة أدوار: التقرير إقرار من المنفِّذ، والتقييم حكم من
-   المموِّل · فمصدرهم مختلف ووزنهم في القراءة مختلف.
-   ═══════════════════════════════════════════════════════════ */
+   The report is written by the entity, the evaluation by the reviewer.
+   This isn't a minor detail of roles: the report is an account from the
+   implementer, and the evaluation is a judgment from the funder — their
+   source differs, and so does how much weight each carries when read. */
 
 export type CloseStage =
-  /** مشرف المنح عمل الطلب وبعته للجهة · الجهة بتكتب */
+  /**
+   * The grants reviewer created the request and sent it to the entity —
+   * the entity is writing it.
+   */
   | 'draft'
-  /** الجهة بعتت · عند مشرف المنح */
+  /** The entity submitted it — with the grants reviewer. */
   | 'supervisor'
-  /** عند الاتصال المؤسسي · قاعدة 9 · لو النشر الإعلامي مطلوب */
+  /** With institutional communications — Rule 9 — if media publication is required. */
   | 'comms'
-  /** عند مدير المنح */
+  /** With the grants manager. */
   | 'manager'
-  /** عند المدير التنفيذي · اعتماده بيقفل دورة التقرير */
+  /** With the executive director — their approval closes the report cycle. */
   | 'executive'
-  /** التقرير اتعتمد · والتقييم لسه ما بدأش (قاعدة 6) */
+  /** The report was approved — the evaluation hasn't started yet (Rule 6). */
   | 'reportDone'
-  /** مشرف المنح بيكتب التقييم */
+  /** The grants reviewer is writing the evaluation. */
   | 'evalDraft'
-  /** التقييم عند مدير المنح */
+  /** The evaluation is with the grants manager. */
   | 'evalManager'
-  /** التقييم عند المدير التنفيذي */
+  /** The evaluation is with the executive director. */
   | 'evalExecutive'
-  /** الاتنين اتعتمدوا والمتطلبات اكتملت · المشروع «مكتمل» */
+  /**
+   * Both were approved and the requirements are complete — the project
+   * is "complete."
+   */
   | 'closed'
-  /** مُعاد بملاحظات · `returnedTo` بيقول لمين */
+  /** Returned with comments — `returnedTo` states to whom. */
   | 'returned'
 
-/** الدورة اللي المحطة دي فيها · السجلّان منفصلان (قاعدة 17) */
+/** Which cycle this stage belongs to — the two logs are separate (Rule 17). */
 export type CloseCycle = 'report' | 'eval'
 
 /**
- * التقرير الختامي · الجهة بتكتبه.
+ * Final report — written by the entity.
  *
- * ⚠️ **الحدّ الأدنى مكتوب في القاعدة 4 بالحرف**: «عدد المستفيدين
- * الفعلي، والميزانية الفعلية، ومدة التنفيذ، وأبرز المخرجات
- * والنتائج المحققة». الأربعة دول إلزاميين، وبيتقارنوا بالمعتمد ·
- * والمقارنة دي هي شغل الشاشة كلها.
+ * The minimum required content is stated verbatim in Rule 4: "actual
+ * number of beneficiaries, actual budget, implementation duration, and
+ * key deliverables and results achieved." These four are mandatory and
+ * are compared against what was approved — that comparison is the
+ * whole point of this screen.
  */
 export interface FinalReport {
-  /** عدد المستفيدين الفعلي · بيتقارن بالمخطَّط */
+  /** Actual number of beneficiaries — compared against the planned figure. */
   beneficiaries: number | null
-  /** الميزانية الفعلية · بتتقارن بالمنحة */
+  /** Actual budget — compared against the grant. */
   budget: number | null
-  /** مدة التنفيذ الفعلية بالأيام */
+  /** Actual implementation duration, in days. */
   days: number | null
-  /** أبرز المخرجات والنتائج */
+  /** Key deliverables and results. */
   outcomes: string
-  /** التحديات والانحرافات · بيقولها المنفِّذ بنفسه */
+  /** Challenges and deviations — stated by the implementer themselves. */
   risks: string
-  /** المستندات المرفوعة · مفاتيح من `CLOSE_DOCS` */
+  /** Uploaded documents — keys from `CLOSE_DOCS`. */
   docs: string[]
   /**
-   * روابط التخزين السحابي.
+   * Cloud storage links.
    *
-   * ⚠️ **قاعدة 5 بتقول «روابط التخزين السحابي المعتمدة (مثل
-   * Google Drive)» بالنصّ** · والسبب عملي: الفيديوهات والمواد
-   * الإعلامية أكبر من أي حدّ رفع معقول. فالرابط **مش بديل**
-   * للمرفق، هو نوع تاني منه.
+   * Rule 5 states verbatim "approved cloud storage links (such as Google
+   * Drive)." The reason is practical: videos and media files exceed any
+   * reasonable upload limit. A link isn't a substitute for an attachment
+   * — it's another type of one.
    */
   links: { label: string; url: string }[]
 }
 
 /**
- * تقييم المشروع · مشرف المنح بيكتبه بعد اعتماد التقرير.
- *
- * ⚠️ **ما يبدأش قبل اعتماد المدير التنفيذي** · قاعدة 6.
+ * Project evaluation — written by the grants reviewer after the report
+ * is approved. It doesn't start before the executive director's
+ * approval (Rule 6).
  */
 export interface ProjectEval {
-  /** مؤشرات الأداء · المستهدف مقابل المتحقّق */
+  /** Performance indicators — target versus achieved. */
   indicators: { name: string; target: number; actual: number | null; unit: string }[]
-  /** الأثر المرصود */
+  /** Observed impact. */
   impact: string
-  /** الدروس المستفادة · ودي مدخل لمشاريع بعده */
+  /** Lessons learned — feeds into later projects. */
   lessons: string
-  /** تقدير عام من ٥ · استرشادي */
+  /** Overall rating out of 5 — advisory. */
   score: number | null
 }
 
-/** إصدار · قاعدة 15 و19: كل إعادة بتخلّي إصدارًا جديدًا والقديم بيفضل */
+/**
+ * A version — Rules 15 and 19: every return creates a new version, and
+ * the previous one is kept.
+ */
 export interface CloseVersion {
   no: number
   at: string
   by: string
-  /** سبب الإصدار الجديد · «إعادة من مدير المنح» مثلًا */
+  /** Reason for the new version — "returned by the grants manager," for example. */
   say: string
 }
 
-/** سجلّ التدقيق · قاعدة 11 · كل مراجعة واعتماد وتعديل */
+/** Audit log — Rule 11 — every review, approval, and edit. */
 export interface CloseAudit {
   at: string
   by: string
@@ -864,23 +907,23 @@ export interface CloseRow {
   entityId: string
   entityName: string
   stage: CloseStage
-  /** لمين اترجع · بيتقرا مع `returned` وحدها */
+  /** Who it was returned to — read together with `returned` alone. */
   returnedTo?: CloseStage
   report: FinalReport
-  /** فاضي لحدّ ما التقرير يتعتمد (قاعدة 6) */
+  /** Empty until the report is approved (Rule 6). */
   evaluation: ProjectEval | null
-  /** إصدارات التقرير · الأول رقمه 1 */
+  /** Report versions — the first is numbered 1. */
   versions: CloseVersion[]
-  /** إصدارات التقييم · سجلّ منفصل (قاعدة 17) */
+  /** Evaluation versions — a separate log (Rule 17). */
   evalVersions: CloseVersion[]
   audit: CloseAudit[]
-  /** النشر الإعلامي مطلوب في الاتفاقية؟ · قاعدة 9 */
+  /** Is media publication required in the agreement? — Rule 9. */
   mediaRequired: boolean
   owner: string
   openedAt: string
-  /** تاريخ الإغلاق النهائي · بيتحطّ مع `closed` */
+  /** Final closing date — set together with `closed`. */
   closedAt?: string
   hoursInStage: number
-  /** آخر ملاحظة إعادة */
+  /** Most recent return note. */
   note?: string
 }

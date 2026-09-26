@@ -1,35 +1,31 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { BackTo, Empty, Glass, Head, Num, Tag, Riyal} from '@/components/ui'
+import { BackTo, Empty, Glass, Head, MoneyField, Num, Tag, Riyal } from '@/components/ui'
 import { DocList, UploadButton, type DocRow } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { nf, MISSING_ITEM, nounAfter } from '@/lib/format'
+import { nf, MISSING_ITEM, nounAfter, NOUN } from '@/lib/format'
 import {
   CLOSE_DOCS, closeById, evalApproved, reportBlockers, reportGap,
 } from '@/data/mock/closing'
 
-/* ═══════════════════════════════════════════════════════════
-   محرّر التقرير الختامي · الجهة بتكتبه
+/* Final report editor - written by the entity.
 
-   ⚠️ **الأربعة الإلزامية مسمّيين في القاعدة 4 بالحرف**: «عدد
-   المستفيدين الفعلي، والميزانية الفعلية، ومدة التنفيذ، وأبرز
-   المخرجات والنتائج المحققة» · فهم مش اختيارات، والنجمة عليهم
-   بتقول كده.
+   Note: the four required fields are named in rule 4 verbatim: "actual number of beneficiaries,
+   actual budget, execution duration, and key outputs and results achieved" - they aren't optional,
+   and the asterisk on them says so.
 
-   ⚠️ **وكل حقل جنبه المعتمد.** ده الفرق الوحيد بين المحرّر ده
-   وأي فورم في السيستم: الجهة وهي بتكتب «٧٨٠» شايفة إن المعتمد
-   «١٠٠٠» · فبتكتب التفسير في «التحديات» من نفسها بدل ما المراجع
-   يرجّعها عشان يسأل. الرقم اللي مالوش مرجع بيتكتب بلا وعي.
+   Note: every field shows the approved figure next to it. This is the one real difference between
+   this editor and any other form in the system: while writing "780", the entity can see the
+   approved figure was "1,000" - so it writes the explanation into "challenges" on its own instead
+   of the reviewer sending it back to ask. A number with no reference gets written carelessly.
 
-   ⚠️ **وبعد الإغلاق النهائي الصفحة بتتقفل** · قاعدة 21: أي تعديل
-   بعد الإغلاق بيحتاج إجراء جديد · فمفيش حقول، فيه عرض.
+   Note: after final closure the page locks - rule 21: any change after closing needs a new
+   procedure, so there are no fields, only a display.
 
-   ⚠️ **ومفيش جدول مرفقات مكتوب هنا** · `DocList` هو الشكل الواحد،
-   و`tools/onedoc.mjs` بيمنع غيره. الدرس اتكرّر مرة بعد ما
-   الفاحص اتكتب (`.ptl-short`)، فمكتوب هنا صراحةً.
-   ═══════════════════════════════════════════════════════════ */
+   Note: no hand-built attachments table here - `DocList` is the one shape, enforced elsewhere. This
+   lesson repeated after the checker was written, so it's stated explicitly here. */
 
 export default function ReportEditPage() {
   const { id = '' } = useParams()
@@ -42,7 +38,7 @@ export default function ReportEditPage() {
   const [outcomes, setOutcomes] = useState(c?.report.outcomes ?? '')
   const [risks, setRisks] = useState(c?.report.risks ?? '')
   const [link, setLink] = useState('')
-  /* بيرسم الصفّ «مرفوع» بعد الرفع · الداتا في `c.report.docs` */
+  /* Renders the "uploaded" row after upload - data in `c.report.docs`. */
   const [, setTick] = useState(0)
 
   if (!c) {
@@ -105,11 +101,13 @@ export default function ReportEditPage() {
                     أدنى · وبجانب كل منها القيمة المعتمدة ليظهر الفرق أثناء الكتابة</>}
               </p>
             </div>
+            {/* Status as text, not a colored tag - the page header isn't a card's status field.
+                Counted the same way as "not blocking". */}
             {closed
-              ? <Tag tone="ok">مغلق · للقراءة</Tag>
-              : missing.length > 0
-                ? <Tag tone="no"><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
-                : <Tag tone="ok">الحدّ الأدنى مكتمل</Tag>}
+              ? <Tag tone="mute">مغلق · للقراءة</Tag>
+              : <span className="sub">{missing.length > 0
+                ? <>قبل الإرسال: <Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</>
+                : 'جاهز للإرسال'}</span>}
           </header>
 
           <Glass>
@@ -134,7 +132,7 @@ export default function ReportEditPage() {
                   />
                 </span>
                 <span className="sub regf-h">
-                  المعتمد في المشروع <span className="num">{nf.format(planBen)}</span> مستفيد
+                  المعتمد في المشروع <span className="num">{nf.format(planBen)}</span> {nounAfter(planBen, NOUN.beneficiary)}
                 </span>
               </label>
 
@@ -142,16 +140,7 @@ export default function ReportEditPage() {
                 <span className="lb">
                   الميزانية الفعلية<b className="regf-r" aria-label="إلزامي">*</b>
                 </span>
-                <span className="fld">
-                  <input
-                    inputMode="numeric"
-                    value={budget}
-                    disabled={closed}
-                    onChange={(e) => setBudget(e.target.value.replace(/\D/g, ''))}
-                    aria-label="الميزانية الفعلية"
-                    placeholder="0"
-                  />
-                </span>
+                <MoneyField value={budget} disabled={closed} onChange={setBudget} label="الميزانية الفعلية" />
                 <span className="sub regf-h">
                   قيمة المنحة <span className="num">{nf.format(planBudget)}</span> <Riyal />
                 </span>
@@ -199,10 +188,10 @@ export default function ReportEditPage() {
               </span>
             </label>
 
-            {/* ⚠️ **التحديات مش إلزامية، وهي أهم حقل في الصفحة.**
-                القاعدة 4 ما بتطلبهاش · لكن الفرق بين المعتمد والفعلي
-                لو ما اتفسّرش بيرجع سؤالًا من المراجع، والدورة بتلفّ
-                مرة زيادة. فالسطر تحت الحقل بيقول ده صراحةً. */}
+            {/* Note: "challenges" isn't required, and it's the most important field on the page.
+                Rule 4 doesn't require it, but an unexplained gap between approved and actual comes
+                back as a reviewer's question, and the cycle runs one extra lap. The line under the
+                field says this outright. */}
             <label className="regf">
               <span className="lb">التحديات والانحرافات</span>
               <span className="fld">
@@ -233,12 +222,13 @@ export default function ReportEditPage() {
             />
             <DocList rows={docRows} label="المستندات الداعمة للتقرير الختامي وحالتها" />
 
-            {/* ⚠️ الرابط السحابي **نوع تاني من المرفق لا بديل عنه** ·
-                قاعدة 5 بتسمّي Google Drive بالنصّ، والسبب عملي */}
+            {/* A cloud link is a different attachment type, not a substitute for one - rule 5 names
+                Google Drive explicitly, for a practical reason. */}
             <label className="regf">
               <span className="lb">رابط تخزين سحابي</span>
               <span className="fld">
                 <input
+                  type="url"
                   value={link}
                   disabled={closed}
                   onChange={(e) => setLink(e.target.value)}
@@ -262,10 +252,13 @@ export default function ReportEditPage() {
             </div>
           )}
 
-          <p className="sub tcen">
-            الحفظ لا يُرسل التقرير · الإرسال للمراجعة من صفحة الطلب، وتمنعه القاعدة{' '}
-            <span className="num">3</span> قبل اكتمال البيانات والمستندات.
-          </p>
+          {/* The save note is shown only when a save button is present. */}
+          {!closed && (
+            <p className="sub tcen">
+              الحفظ لا يُرسل التقرير · الإرسال للمراجعة من صفحة الطلب، وتمنعه القاعدة{' '}
+              <span className="num">3</span> قبل اكتمال البيانات والمستندات.
+            </p>
+          )}
         </div>
       </div>
     </AppLayout>

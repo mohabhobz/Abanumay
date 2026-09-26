@@ -2,20 +2,17 @@ import { FieldSelect, Icon, Tag, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { BANKS, BANK_DOC_LABEL, emptyBank, type RegBank } from '@/data/mock/registration'
 
-/* ═══════════════════════════════════════════════════════════
-   الحسابات البنكية · ن-1
+/* Bank accounts.
 
-   ⚠️ **قايمة لا نموذج.** النسخة القديمة كانت تلات حقول: «اسم
-   البنك» و«اسم صاحب الحساب» و«الآيبان» · يعني الفورم بيفترض
-   حسابًا واحدًا. والجمعية عندها حساب لكل وجه خير («تحفيظ · تفطير
-   صائم · أضاحي» زي ما مظفر قال في ح-5)، فاللي عنده أربعة كان
-   بيحطّ واحدًا ويبعت الباقي في إيميل · والمراجع بينقلهم بإيده.
+   Note: a list, not a form. The old version had three fields - bank name, account holder name, IBAN
+   - assuming a single account. An association has one account per cause ("Qur'an memorization,
+   iftar, sacrifices"), so one with four accounts would enter one and email the rest, and a reviewer
+   would copy them in by hand.
 
-   ⚠️ **ووثيقة الحساب جنب حسابها لا في كومة المستندات.** لو
-   الوثايق كلها تحت في «المستندات»، المراجع بيبصّ على آيبان
-   وبيدوّر على ورقته بين خمس ورقات مالهمش ترتيب · وهنا كل وثيقة
-   ملزوقة بالصفّ اللي بتثبته.
-   ═══════════════════════════════════════════════════════════ */
+   Note: an account's supporting document sits next to its own account, not in a pile of documents.
+   If all documents sat under one "documents" section, a reviewer looking at an IBAN would hunt for
+   its matching paper among five unordered ones - here each document is attached to the row it
+   verifies. */
 
 export function BankRows({
   banks, onChange,
@@ -28,9 +25,8 @@ export function BankRows({
 
   const add = () => onChange([...banks, emptyBank(banks.length + 1)])
 
-  /* ⚠️ آخر حساب ما يتشالش: الطلب لازم فيه حساب واحد على الأقل،
-     والزرار اللي بيشيل آخر واحد بيسيب المستخدم في حالة ما ينفعش
-     يبعت منها ومفيش حاجة بتقول ليه. */
+  /* The last account can't be removed: a request needs at least one account, and a button that
+     removes the only one leaves the user unable to submit with no explanation why. */
   const drop = (id: string) => {
     if (banks.length <= 1) return
     onChange(banks.filter((b) => b.id !== id))
@@ -62,8 +58,7 @@ export function BankRows({
           <div className="bkrow-f">
             <label className="regf">
               <span className="lb">اسم البنك<b className="regf-r" aria-label="إلزامي">*</b></span>
-              {/* قائمة مقفولة · قاعدة 27: الاسم المكتوب بعشر صيغ
-                  بيخلّي الفرز مستحيل */}
+              {/* A closed list - a bank name written ten different ways makes sorting impossible. */}
               <FieldSelect
                 value={b.bankName}
                 options={BANKS}
@@ -84,10 +79,10 @@ export function BankRows({
               <span className="sub regf-h">باسم الجهة · لا باسم شخص</span>
             </label>
 
-            {/* ⚠️ **الاسم المختصر · إلزامي من شاشات العميل** ·
-                وتلميحه بيقول تفسيرنا له صراحةً (الاسم في الكشوف)
-                لأن العميل ما شرحهوش، وسؤال ق-د لسه مفتوح · فالجهة
-                ما تخمّنش والمراجع يعرف إن ده تفسيرنا. */}
+            {/* Note: the short name is required per the client's own screens - and its tooltip
+                states our interpretation of it explicitly (the name as it appears on statements),
+                since the client never explained it and the question is still open, so the entity
+                isn't left guessing and a reviewer knows this is our interpretation. */}
             <label className="regf">
               <span className="lb">الاسم المختصر<b className="regf-r" aria-label="إلزامي">*</b></span>
               <span className="fld">

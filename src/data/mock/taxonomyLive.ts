@@ -1,21 +1,19 @@
 /**
- * المفردات الكاملة كما هي في النظام العامل · **مصدرها قوائم الفلاتر**
- * في `control/reports1_3` و`control/reports1_14`، قراءة مباشرة.
+ * The full vocabulary as it exists in the live system · sourced directly from its filter lists.
  *
- * ليه ملف تاني جنب `taxonomy.ts`؟
+ * Why a separate file alongside `taxonomy.ts`?
  *
- * `taxonomy.ts` فيه القوائم **المتسلسلة** اللي الفلاتر بتشتغل بيها
- * (المسار ← المجال ← الهدف)، وهي مختصرة عن قصد عشان الشاشة تفضل
- * قابلة للاستعمال في نموذج بـ٣٠ مشروعًا. الملف ده فيه القوائم
- * **كاملة زي ما هي**، وهو المرجع اللي كتالوج التقارير بيقيس عليه:
- * لما نقول «١٣ مسارًا» أو «٩٠ هدفًا» يبقى الرقم من هنا لا من تقدير.
+ * `taxonomy.ts` holds the **cascading** lists the filters actually use (track → area → goal),
+ * deliberately trimmed down so the screen stays usable with a mock of 30 projects. This file holds
+ * the lists **exactly as they are**, and it's the reference the reports catalog measures against:
+ * when we say "13 tracks" or "90 goals", the number comes from here, not an estimate.
  *
- * الفرق بين الاتنين هو نفسه أهم رسالة للعميل: النظام العامل عنده
- * ٥١ مجالًا و٩٠ هدفًا في قايمة منسدلة واحدة، ومفيش شاشة بتقول أي
- * واحد منهم اتصرف عليه فعلًا.
+ * The gap between the two files is itself the key message for the client: the live system has 51
+ * areas and 90 goals in a single dropdown, and no screen states which of them actually received
+ * spending.
  */
 
-/** المسارات · ١٣ بعد إزالة التكرار في القائمة (بعضها مكرر مرتين) */
+/** Tracks · 13 after removing duplicates in the list (some appeared twice) */
 export const LIVE_TRACKS = [
   'المنح النوعي',
   'المنح الانتشاري',
@@ -33,9 +31,9 @@ export const LIVE_TRACKS = [
 ] as const
 
 /**
- * المجالات · ٥١ قيمة.
- * لاحظ اللاحقة `(مرحل)`: النظام بيسيب المجال القديم موجودًا بعد
- * الترحيل بدل ما يدمجه، فالقايمة فيها نفس المجال مرتين بحالتين.
+ * Areas · 51 values.
+ * Note the `(migrated)` suffix: the system leaves the old area in place after migration instead of
+ * merging it, so the list contains the same area twice under two states.
  */
 export const LIVE_FIELDS = [
   'التعليم', 'التطوير', 'القرآن', 'العلم الشرعي', 'القيم', 'الصحة',
@@ -59,10 +57,10 @@ export const LIVE_FIELDS = [
 ] as const
 
 /**
- * الأهداف · ٩٠ قيمة فريدة في القائمة (٩٨ خيارًا فيهم مكرر).
- * فيه ٤ خيارات اسمها «المبادرة» حرفيًا، وده مش خطأ نسخ: القايمة
- * فعلًا فيها أربع مدخلات بنفس الاسم في مجالات مختلفة، فاللي بيفلتر
- * بيها ما يعرفش أي واحدة اختار.
+ * Goals · 90 unique values in the list (98 options including duplicates).
+ * Four options are named "Initiative" verbatim, and this isn't a copy error: the list genuinely has
+ * four entries with the same name under different areas, so whoever filters by it can't tell which
+ * one they picked.
  */
 export const LIVE_GOALS = [
   'المنح الدراسية الجامعية', 'دروس التقوية الإلكترونية', 'روضات التبيان',
@@ -115,7 +113,7 @@ export const LIVE_GOALS = [
   'تحقيق المصارف المقيدة وفق صك الوقفية والمشاريع الخاصة (مثل: الصدقة اليومية - رعاية الأنشطة في جوامع الشيخ)',
 ] as const
 
-/** الوسوم · ١٩ وسمًا */
+/** Tags · 19 tags */
 export const LIVE_TAGS = [
   'الأجهزة الكهربائية', 'الدعوة الإلكترونية', 'الدعوة العامة', 'السلال الغذائية',
   'الطفولة المبكرة', 'القيم في التعليم', 'المجمعة', 'بناء وترميم منازل',
@@ -125,16 +123,16 @@ export const LIVE_TAGS = [
 ] as const
 
 /**
- * الأقسام الإجرائية · **٥١ قسمًا**، وهي خطوات الفلو الفعلية.
+ * Process departments · 51 departments, the actual steps of the flow.
  *
- * ⚠️ لا تخلطها بالـ«١١ إجراءً» في وثيقة الإجراءات: الوثيقة بتوصف
- * ١١ إجراءً، والنظام مقسّمهم ٥١ قسمًا يمرّ عليهم الطلب. وتقرير
- * «أداء الأقسام» بيفلتر على القايمة دي، فأي مقارنة أقسام في
- * النموذج لازم تمشي عليها.
+ * Don't confuse this with the "11 procedures" in the process documentation: the documentation
+ * describes 11 procedures, and the system splits them into 51 departments a request passes through.
+ * The "department performance" report filters on this list, so any department comparison in the
+ * mock has to follow it.
  *
- * وآخر قسم `ارجاع لقسم سابق` مش خطوة · ده **حدث الإعادة**، ومحسوب
- * كقسم في نفس القايمة. ده اللي بيخلّي «كم مرة اترجع الطلب» صعب
- * القياس في النظام العامل.
+ * And the last department, "return to a previous department", isn't a step — it's the **return
+ * event**, counted as a department in the same list. This is what makes "how many times was a
+ * request sent back" hard to measure in the live system.
  */
 export const LIVE_DEPTS = [
   'مقدم الطلب', 'الوقف | دراسة طلب', 'دراسة المشروع',
@@ -160,13 +158,13 @@ export const LIVE_DEPTS = [
   'تحديث بيانات المشروع', 'اعتماد مشروع مرفوض', 'ارجاع لقسم سابق',
 ] as const
 
-/** المدن · ١٥٣ مدينة في فلتر المدينة */
+/** Cities · 153 cities in the city filter */
 export const LIVE_CITIES_COUNT = 153
 
 /**
- * سجل الشركاء · الأرقام الست اللي فوق `reports1_2`.
- * ⚠️ إجمالي الجهات **٣٬٢٧٨** لا ٢٩٨؛ الرقم اللي في الشريط الجانبي
- * (٢٩٨) هو المعلّق على المستخدم الحالي لا كل السجل.
+ * Partner registry · the six figures above the table.
+ * Total entities is 3,278, not 298; the number in the sidebar (298) is what's pending on the
+ * current user, not the whole registry.
  */
 export const PARTNER_TOTALS = [
   { key: 'all', label: 'كل الجهات', n: 3278 },

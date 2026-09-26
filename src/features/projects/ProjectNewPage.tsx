@@ -1,40 +1,36 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  DateField, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem,
+  DateField, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, Blockers, DockWhy, blockerCount,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { nf, pct as sayPct } from '@/lib/format'
+import { nf, NOUN, nounAfter, pct as sayPct } from '@/lib/format'
 import {
   ENTITY_PROJECT_CAP, P_STAGES, completion, entityOptions, optionsFor,
   projectIssues, shortIn, type PFieldDef, type PValues,
 } from '@/data/mock/projectNew'
 
-/* ═══════════════════════════════════════════════════════════
-   إنشاء مشروع · BPD-003 قاعدة 31
+/* Create a project - rule 31.
 
-   ⚠️ **أكبر موديول في السيستم كان مالوش مدخل إنشاء.** ٤٩٢٩ مشروعًا
-   في النظام العامل، وشاشة المشاريع عندنا كان في ركنها «الإعدادات»
-   وحدها · يعني الشاشة بتقول «دي للقراية».
+   Note: the system's largest module had no creation entry point. 4,929 projects in the live system,
+   and our projects screen had only "settings" in its corner - meaning the screen said "read only".
 
-   والقواعد التلاتة اللي بتشكّلها مكتوبة في `projectNew.ts`:
-   المرحلية ونسبة الاكتمال (31) · تاريخ التنفيذ المستقل (13) ·
-   حدّ مشاريع الجهة (12).
+   The three rules shaping it are documented in `projectNew.ts`: staged completion percentage (31),
+   independent execution date (13), a cap on an entity's projects (12).
 
-   ⚠️ **ونسبة الاكتمال معروضة في الدوك لا في الترويسة.** الدوك هو
-   المكان اللي المستخدم بيبصّ فيه وهو بيقرّر «أبعت ولا لأ» · والرقم
-   في الترويسة بيتقري مرة في الأول وبيتنسي.
-   ═══════════════════════════════════════════════════════════ */
+   Note: completion percentage is shown on the dock, not the header. The dock is where the user
+   looks while deciding "send or not" - a number in the header is read once at the start and
+   forgotten. */
 
 const KEYS = ['tab'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const EMPTY: PValues = {}
 
-/** حقل واحد · نفس `.fld` اللي في كل فورم تاني في السيستم */
+/** One field - same `.fld` used in every other form in the system. */
 function PField({
   f, value, parent, entitySlot, onChange,
 }: {
@@ -54,9 +50,8 @@ function PField({
       </span>
 
       {entitySlot ? (
-        /* ⚠️ الجهة اللي وصلت الحدّ **بتفضل في القايمة** ومعاها
-           السبب · اختفاؤها بيخلّي المستخدم يدوّر على جهة مش لاقيها
-           ويفتكر إنها مش مسجَّلة (نفس درس ج-15) */
+        /* Note: an entity that hit its cap stays in the list, with the reason shown - hiding it
+           would make the user search for an entity they can't find and assume it isn't registered. */
         <FieldSelect
           value={value}
           onChange={onChange}
@@ -77,8 +72,8 @@ function PField({
           placeholder={f.dependsOn && !parent ? 'اختر الحقل السابق أولًا' : 'اختر'}
         />
       ) : f.kind === 'multi' ? (
-        /* ⚠️ الفئات المستهدفة **شرائح لا قائمة منسدلة** · الاختيار
-           متعدّد، والمنسدلة المتعددة بتخبّي اللي اتختار */
+        /* Note: target categories are tags, not a dropdown - selection is multiple, and a
+           multi-select dropdown hides what's already chosen. */
         <span className="pmulti">
           {opts.map((o) => {
             const on = value.split('،').filter(Boolean).includes(o)
@@ -119,9 +114,8 @@ function PField({
           {f.unit === 'ريال' ? <Riyal /> : <span className="sub">{f.unit}</span>}
         </span>
       ) : f.kind === 'date' ? (
-        <span className="fld">
-          <DateField value={value} onChange={onChange} label={f.label} />
-        </span>
+        /* Note: `DateField` wraps `.fld` itself - no extra wrapper needed. */
+        <DateField value={value} onChange={onChange} label={f.label} />
       ) : (
         <span className="fld">
           <input value={value} onChange={(e) => onChange(e.target.value)} aria-label={f.label} />
@@ -146,8 +140,8 @@ export default function ProjectNewPage() {
   const setField = (k: string, x: string) =>
     setVal((s) => {
       const next = { ...s, [k]: x }
-      /* التابع بيتصفّر لما أبوه يتغيّر · وإلا بيفضل هدف تحت مجال
-         مش تابع له */
+      /* The child resets when its parent changes - otherwise a target could be left under a scope
+         it no longer belongs to. */
       if (k === 'track') { next.field = ''; next.goal = '' }
       if (k === 'field') next.goal = ''
       if (k === 'region') next.city = ''
@@ -162,6 +156,12 @@ export default function ProjectNewPage() {
   )
   const missing = Object.values(shortBy).flat()
   const canSend = missing.length === 0 && issues.length === 0
+  /* One shared count for the card and the dock. */
+  const blocks = [
+    ...P_STAGES.filter((s) => shortBy[s.key].length)
+      .map((s) => ({ head: s.label, text: shortBy[s.key].join(' · '), n: shortBy[s.key].length })),
+    ...issues.map((i) => ({ head: i.rule, text: i.say })),
+  ]
 
   const at = P_STAGES.findIndex((x) => x.key === tab)
   const stage = P_STAGES[at]
@@ -196,14 +196,13 @@ export default function ProjectNewPage() {
                 والمبلغ المعتمد يُحدَّد في الدراسة لا هنا
               </p>
             </div>
-            {/* ⚠️ **`pct` من المكتبة لا علامة مكتوبة بالإيد.**
-                `<Num>{n}</Num>٪` بيطلع «0 ٪ مكتمل» بفراغ: العلامة
-                عربية والرقم لاتيني، فالـbidi بيفصلهم. و`pct` بيلفّ
-                الاتنين في عازل اتجاهي (`U+2066…U+2069`) فبيفضلوا
-                ملزوقين · وهي موجودة في `lib/format` من الأول. */}
-            <Tag tone={pct === 100 ? 'ok' : 'warn'}>
-              <span className="num">{sayPct(pct)}</span> مكتمل
-            </Tag>
+            {/* Note: `pct` comes from the shared library, not a hand-written mark.
+                `<Num>{n}</Num>` followed by a bare percent sign renders "0 % complete" with a gap: the percent sign is
+                Arabic-context and the number is Latin, so bidi reordering separates them. `pct`
+                wraps both inside a directional isolate (`U+2066...U+2069`) so they stay adjacent -
+                and it already existed in `lib/format`. */}
+            {/* The count badge in the page header was removed - a single count now lives in the
+                dock. */}
           </header>
 
           <Glass className="regsteps">
@@ -243,7 +242,7 @@ export default function ProjectNewPage() {
                   ))}
                 </div>
 
-                {/* القاعدة بتتقال في محطتها · لا في رسالة بعد الإرسال */}
+                {/* The rule is stated at its own stage, not in a message after submission. */}
                 {issues
                   .filter((i) => stage.fields.some((f) => f.key.startsWith(i.key)) ||
                     (tab === 'who' && (i.key === 'cap' || i.key === 'inactive')) ||
@@ -291,8 +290,8 @@ export default function ProjectNewPage() {
               <Glass>
                 <Head title="مسار الطلب" meta={<span className="sub">ثلاث محطات</span>} />
                 <Steps items={steps} flow="ladder" />
-                {/* قاعدة 24 · توصية المشرف مش قرارًا · والسطر ده بيمنع
-                    توقّعًا غلط من أول شاشة */}
+                {/* Rule 24 - a supervisor's recommendation isn't a decision - this line prevents a
+                    wrong expectation from the first screen. */}
                 <p className="sub cnote">
                   توصية المشرف بالموافقة <b>لا يترتّب عليها</b> اعتماد ولا صرف ·
                   القرار النهائي حسب مصفوفة السقوف.
@@ -310,7 +309,7 @@ export default function ProjectNewPage() {
                     }
                   />
                   <p className="sub">
-                    «{ent.name}» لديها <b className="num">{ent.open}</b> مشاريع مفتوحة ·
+                    «{ent.name}» لديها <b className="num">{ent.open}</b> {nounAfter(ent.open, NOUN.openProject)} ·
                     والحدّ <b className="num">{ENTITY_PROJECT_CAP}</b> في الفترة.
                   </p>
                   <p className="sub cnote">
@@ -330,22 +329,10 @@ export default function ProjectNewPage() {
                 </Glass>
               )}
 
-              {missing.length > 0 && (
-                <Glass>
-                  <Head
-                    title="ما ينقص قبل الإرسال"
-                    meta={<Tag tone="warn"><Num>{missing.length}</Num> حقلًا</Tag>}
-                  />
-                  <ul className="regmiss">
-                    {P_STAGES.filter((s) => shortBy[s.key].length).map((s) => (
-                      <li key={s.key}>
-                        <b>{s.label}</b>
-                        <span className="sub"> · {shortBy[s.key].join(' · ')}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Glass>
-              )}
+              <Blockers
+                items={blocks}
+                ready="كل الحقول الإلزامية مكتملة · الطلب جاهز للإرسال."
+              />
             </div>
           </div>
         </div>
@@ -357,16 +344,13 @@ export default function ProjectNewPage() {
                 {sent
                   ? <>أُرسل الطلب · <b>{val.name}</b> في مرحلة الدراسة الآن</>
                   : <>
-                      {/* ⚠️ النسبة في الدوك · هنا اللي المستخدم بيقرّر
-                          فيه «أبعت ولا لأ»، والرقم في الترويسة بيتقري
-                          مرة وبيتنسي */}
+                      {/* Note: the percentage sits on the dock - that's where the user decides
+                          whether to submit, while a number in the header is read once and
+                          forgotten. */}
                       الاكتمال <b className="num">{sayPct(pct)}</b>
-                      <span className="decsep" />
-                      {missing.length
-                        ? <><Num>{missing.length}</Num> حقلًا إلزاميًا ناقصًا</>
-                        : issues.length
-                          ? <><Num>{issues.length}</Num> ملاحظة على الطلب</>
-                          : 'جاهز للإرسال'}
+                      {blocks.length
+                        ? <DockWhy n={blockerCount(blocks)} />
+                        : <><span className="decsep" />جاهز للإرسال</>}
                       {saved && <><span className="decsep" />حُفظت المسودة</>}
                     </>}
               </span>
@@ -374,7 +358,7 @@ export default function ProjectNewPage() {
             <div className="rowf gp-2">
               {!sent ? (
                 <>
-                  {/* قاعدة 31 · حفظ مسودة جزء من النموذج المرحلي */}
+                  {/* Rule 31 - saving a draft is part of the staged form. */}
                   <button
                     className="btn btn-2"
                     disabled={!val.entityId}

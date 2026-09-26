@@ -5,35 +5,32 @@ import {
   CITIES_BY_REGION, FIELDS_BY_TRACK, GOALS_BY_FIELD, REGIONS, TRACKS,
 } from './taxonomy'
 import { TARGET_GROUPS } from './settings'
+import { NOUN, countOf } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   إنشاء مشروع · BPD-003 · ٢١ خطوة · ٣٣ قاعدة
+/* Create project · the most important action in the system, and a screen that was entirely missing.
 
-   ⚠️ **الشاشة دي كانت غايبة، وهي أهم إجراء في السيستم.** المشاريع
-   ٤٩٢٩ في النظام العامل، وما كانش فيها طريقة تضيف واحدًا.
+   There are thousands of projects in the live system, and no way to add one.
 
-   ═══ التلات قواعد اللي بتشكّل الشاشة ═══
+   The three rules that shape this screen
 
-   **قاعدة 31 · النموذج مرحلي.** أقسام مترابطة + **نسبة اكتمال**
-   + تنقّل بين المراحل + حفظ مسودة. يعني المطلوب مش فورم طويل
-   بسكرول، هو محطات بنسبة بتقول للمستخدم إنه فين.
+   The form is staged. Linked sections, a completion percentage, navigation between stages, and
+   draft saving — meaning what's needed isn't a long scrolling form, but stations with a percentage
+   that tells the user where they are.
 
-   **قاعدة 13 · تاريخ بداية التنفيذ الفعلي كيان مستقل** عن تاريخ
-   تقديم الطلب · فحقلان لا حقل، والفرق بينهم بيظهر في التقارير
-   بعدين.
+   Actual execution start date is a separate field from the request submission date — two fields,
+   not one, and the difference between them shows up in reports later.
 
-   **قاعدة 12 · حدّ أقصى لعدد المشاريع اللي الجهة تقدّمها في
-   الفترة** · فاختيار الجهة مش مجرد قايمة، هو تحقّق: الجهة اللي
-   وصلت الحدّ بتتقال قبل ما المستخدم يكمّل.
+   There's a cap on how many projects an entity can submit in a period — so choosing an entity isn't
+   just a list, it's a check: an entity that has hit the cap is flagged before the user finishes the
+   form.
 
-   ⚠️ **والقاعدة معروضة لا مفروضة** · نفس درس ج-15: الجهة اللي
-   وصلت الحدّ بتفضل في القايمة ومعاها السبب، لا بتختفي منها.
-   الاختفاء بيخلّي المستخدم يدوّر على جهة مش لاقيها.
+   The cap is shown, not enforced silently: an entity that has hit the cap stays in the list along
+   with the reason, rather than disappearing from it. Disappearing would leave the user hunting for
+   an entity they can't find.
 
-   ⚠️ **ومفيش «نسبة اكتمال» على حقول اختيارية.** النسبة بتتحسب على
-   الإلزامي وحده · وإلا بتوصل ٧٠٪ وكل الإلزامي ناقص، وبتبقى رقمًا
-   بيطمّن غلط.
-   ═══════════════════════════════════════════════════════════ */
+   And there's no "completion percentage" for optional fields. The percentage is calculated on
+   required fields only — otherwise it could reach 70% while every required field is still missing,
+   giving a false sense of progress. */
 
 export type FieldKind = 'text' | 'long' | 'num' | 'date' | 'select' | 'multi'
 
@@ -43,7 +40,7 @@ export interface PFieldDef {
   kind: FieldKind
   req?: boolean
   hint?: string
-  /** خيارات ثابتة · أو بتتحسب من `dependsOn` */
+  /** Fixed options · or computed from `dependsOn` */
   options?: readonly string[]
   dependsOn?: string
   unit?: string
@@ -57,19 +54,19 @@ export interface PStageDef {
 }
 
 /**
- * حدّ مشاريع الجهة في الفترة · قاعدة 12.
+ * Cap on an entity's projects per period.
  *
- * ⚠️ الرقم **افتراض** · الوثيقة بتقول إن الحدّ من الإعدادات من غير
- * ما تدّي قيمة، زي سقوف الاعتماد بالظبط. فالشاشة بتوسمه افتراضًا.
+ * The number is an assumption — the spec says the cap comes from settings without giving a value,
+ * same as the approval thresholds. The screen flags it as an assumption.
  */
 export const ENTITY_PROJECT_CAP = 5
 
 /**
- * كام مشروع **مفتوح** للجهة دي · وده اللي بيقيس الحدّ.
+ * How many **open** projects this entity has · this is what the cap measures.
  *
- * ⚠️ «مفتوح» = لسّه بياخد وقت من الفريق: في الدراسة أو في التشغيل
- * أو متعثر. المكتمل والمعتذر عنه **خلصوا** فما بيتعدّوش · الحدّ
- * على الشغل الجاري لا على تاريخ الجهة كله.
+ * "Open" means still taking the team's time: in review, in execution, or stalled. Completed and
+ * excused projects are done and don't count — the cap is about ongoing work, not the entity's whole
+ * history.
  */
 const OPEN_GROUPS: ProjectStatusGroup[] = ['في الدراسة', 'في التشغيل', 'متعثر']
 
@@ -80,9 +77,9 @@ export interface EntityOption {
   id: string
   name: string
   open: number
-  /** وصل الحدّ · بيفضل في القايمة ومعاه السبب */
+  /** Cap reached · stays in the list along with the reason */
   capped: boolean
-  /** الجهة غير مفعَّلة ما تقدّمش · قاعدة في تسجيل الجهات */
+  /** An inactive entity can't submit · a rule from entity registration */
   inactive: boolean
 }
 
@@ -98,10 +95,10 @@ export const entityOptions = (): EntityOption[] =>
     }
   })
 
-/* ═══ محطات النموذج · قاعدة 31 ═══
-   خمسة، وكل واحدة بتجاوب سؤالًا واحدًا: مين · إيه · فين · بكام ·
-   إمتى. الترتيب ده مش شكلي: الجهة بتحدد الحدّ، والمسار بيحدد
-   المجال، والمجال بيحدد الهدف · فاللي بعده متوقّف على اللي قبله. */
+/* Form stations.
+   Five, each answering one question: who, what, where, how much, when. This order isn't cosmetic:
+   the entity determines the track, the track determines the area, the area determines the goal —
+   each step depends on the one before it. */
 export const P_STAGES: PStageDef[] = [
   {
     key: 'who',
@@ -162,7 +159,7 @@ export const P_STAGES: PStageDef[] = [
   },
 ]
 
-/** خيارات الحقل التابع · نفس تسلسل الفلاتر في باقي الشاشات */
+/** Options for a dependent field · same cascading filter pattern used elsewhere */
 export const optionsFor = (f: PFieldDef, parent: string): readonly string[] => {
   if (f.options) return f.options
   if (f.dependsOn === 'track') return FIELDS_BY_TRACK[parent] ?? []
@@ -173,15 +170,16 @@ export const optionsFor = (f: PFieldDef, parent: string): readonly string[] => {
 
 export type PValues = Record<string, string>
 
-/** الإلزامي الناقص في محطة · الاختياري ما بيتعدّش */
+/** Missing required fields in a station · optional ones don't count */
 export const shortIn = (st: PStageDef, val: PValues): string[] =>
   st.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label)
 
 /**
- * نسبة الاكتمال · قاعدة 31.
+ * Completion percentage.
  *
- * ⚠️ **على الإلزامي وحده.** لو حسبناها على كل الحقول، المستخدم
- * بيملا الاختياري ويشوف ٧٠٪ وكل الإلزامي ناقص · رقم بيطمّن غلط.
+ * Based on required fields only. Computing it over all fields would let a user fill in optional
+ * fields and see 70% while every required field is still missing — a number that gives false
+ * reassurance.
  */
 export const completion = (val: PValues): number => {
   const req = P_STAGES.flatMap((s) => s.fields.filter((f) => f.req))
@@ -189,7 +187,7 @@ export const completion = (val: PValues): number => {
   return req.length === 0 ? 0 : Math.round((done / req.length) * 100)
 }
 
-/* ═══ التحقّق · القواعد اللي بتتقال قبل الإرسال ═══ */
+/* Validation · rules checked before submission */
 export interface PIssue { key: string; say: string; rule: string }
 
 export const projectIssues = (val: PValues): PIssue[] => {
@@ -199,7 +197,7 @@ export const projectIssues = (val: PValues): PIssue[] => {
   if (ent?.capped) {
     out.push({
       key: 'cap',
-      say: `لدى «${ent.name}» ${ent.open} مشاريع مفتوحة، والحدّ ${ENTITY_PROJECT_CAP} مشاريع في الفترة. اختر جهة أخرى أو انتظر إغلاق أحد مشاريعها.`,
+      say: `لدى «${ent.name}» ${countOf(ent.open, NOUN.project)} مفتوحة، والحدّ ${countOf(ENTITY_PROJECT_CAP, NOUN.project)} في الفترة. اختر جهة أخرى أو انتظر إغلاق أحد مشاريعها.`,
       rule: 'قاعدة 12',
     })
   }
@@ -211,8 +209,8 @@ export const projectIssues = (val: PValues): PIssue[] => {
     })
   }
 
-  /* ⚠️ المقارنة على النصّ مباشرةً · التواريخ هنا `yyyy-mm-dd`
-     فالترتيب المعجمي هو الترتيب الزمني، ومفيش داعي لـ`Date` */
+  /* Comparing as strings directly · dates here are `yyyy-mm-dd`, so lexical order matches
+     chronological order and there's no need for a `Date` object */
   if (val.startAt && val.endAt && val.endAt < val.startAt) {
     out.push({ key: 'dates', say: 'تاريخ نهاية التنفيذ يسبق تاريخ بدايته. عدّل أحد التاريخين.', rule: 'قاعدة 13' })
   }

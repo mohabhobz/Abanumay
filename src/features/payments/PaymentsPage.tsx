@@ -5,7 +5,7 @@ import {
   Toggle, ViewToggle,
   Riyal,
 } from '@/components/ui'
-import { nf, pct, REQUEST_NOUN, nounAfter } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter, pct, REQUEST_NOUN } from '@/lib/format'
 import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
@@ -31,49 +31,45 @@ import { COLS, GROUPS } from './columns'
 const KEYS = ['q', 'state', 'heat', 'owner', 'entity', 'bank', 'hold', 'view', 'group', 'adv'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/* ═══════════════════════════════════════════════════════════
-   صندوق الصرف · BPD-009
+/* Disbursement inbox.
 
-   الشاشة دي مش «قائمة دفعات». دي **صندوق قرارات**: 72 طلبًا في
-   أربع مراحل، وكل مرحلة ليها صاحب. والسؤال اللي بتجاوبه واحد:
-   **إيه اللي واقف عندي، وليه؟**
+   This screen isn't a "payments list" - it's a decision inbox: 72 requests across four stages, each
+   with an owner. It answers one question: what's on my desk, and why?
 
-   ═══ الشكل: نفس عقد القوائم، بلا استثناء ═══
+   === Layout: the same list contract, no exceptions ===
 
-   ترويسة بعمودين (العنوان يمين والقراءة قصاده) → المؤشرات →
-   الشرائح → شريط الأدوات → النتيجة. ونفس المبدّل اللي في المشاريع
-   والجهات: **جدول وكروت**، لأن الشاشة بتجاوب سؤالين مش واحد.
-   الكارت بيقول «ليه ده واقف» بالشروط الأربعة قدامك، والجدول بيقول
-   «شكل الطابور كله» · تقارن مبالغ وتواريخ ومشرفين وتصدّرهم.
+   Two-column header (title right, reading text opposite) -> indicators -> tabs -> toolbar ->
+   results. Same switcher as projects and entities: table and cards, because the screen answers two
+   questions, not one. The card states why this item is on your desk, with all four conditions in
+   view; the table shows the shape of the whole queue - comparing amounts, dates, and supervisors,
+   and exporting them.
 
-   وكل عنصر هنا من مكتبة السيستم لا مكتوب للشاشة دي: `Segments`
-   للشرائح، `Glass.ftoolbar` للأدوات، `MultiSelect` للفلاتر،
-   `DataTable` للجدول، `Empty` للفراغ، `Face` للمشرف. الشاشة اللي
-   بتخترع تركيبها بتبان غريبة حتى لو ألوانها مضبوطة.
+   Every element here comes from the system library, not written for this screen alone: `Segments`
+   for the tabs, `Glass.ftoolbar` for the toolbar, `MultiSelect` for filters, `DataTable` for the
+   table, `Empty` for the empty state, `Face` for the supervisor. A screen that invents its own
+   composition looks foreign even with matching colors.
 
-   ═══ اللي اتعمل بالوثيقة، واللي اتسجّل ملاحظة ═══
+   === What the spec covers, and what's logged as a question ===
 
-   بنينا على `BPD-009`: أربع مراحل تنتهي عند التحويل (خطوة 17–18)،
-   وخمس حالات للطلب مصدرها خطوات الوثيقة نفسها. النظام العامل فيه
-   **سبعة أقسام** ومستندان بعد التحويل (سند القبض والقيد) وتفريع
-   آلي بشرطين · الفروق دي كلها مسجَّلة نوتس مرقّمة في
-   `DISBURSEMENT_MODULE_BRIEF.md` (الجزء ب) ومعاها الأثر التصميمي
-   لكل احتمال في ردّ العميل.
+   Built on the spec: four stages ending at the transfer (steps 17-18), and five request statuses
+   sourced from the spec's own steps. The live system has seven departments plus two post-transfer
+   documents (receipt voucher and ledger entry) and automatic branching on two conditions - these
+   differences are all logged as numbered notes elsewhere, along with the design impact of each
+   possible answer.
 
-   وحاجة واحدة خرجت عن حرف الوثيقة بقرار: **حالة الحساب البنكي**
-   معروضة جنب كل طلب. الوثيقة ما ذكرتهاش في قواعد الصرف، بس مخرجها
-   التاني بيقول «صرف الدفعة إلى **الحساب البنكي المعتمد**»، والنظام
-   العامل سبب الإعادة الوحيد المسمّى فيه هو «إعادة إذن الصرف بملاحظة
-   البيانات البنكية». فده منع خطأ مكتوب، لا اجتهاد.
-   ═══════════════════════════════════════════════════════════ */
+   One thing departs from the spec's letter by decision: bank account status is shown next to every
+   request. The spec doesn't mention it among the disbursement rules, but its second output states
+   "disburse the payment to the approved bank account", and the live system's only named return
+   reason is "return the disbursement authorization with a note on banking details." So this
+   prevents a documented error, not a guess. */
 
 const HEATS = [
   { value: 'late', label: 'متأخر عن مدة المرحلة' },
   { value: 'stuck', label: 'متعثر · تجاوز الضعف' },
 ]
 
-/* اللي فوق مش بيتحسب في عدّاد «الفلاتر المتقدمة» · العدّاد بيقول
-   اللي **مخفي** بس، وإلا بيعدّ حاجة المستخدم شايفها قدامه */
+/* What's above doesn't count toward the "advanced filters" badge - the badge counts only what's
+   hidden, otherwise it would count something the user already sees in front of them. */
 const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'state', 'heat', 'hold']
 
 export default function PaymentsPage() {
@@ -85,10 +81,10 @@ export default function PaymentsPage() {
 
   useEffect(() => writeCols('payments', cols), [cols])
 
-  /* الجدول على الموبايل بيضغط كل عمود لحد ما كل خلية تلفّ عمودًا من
-     الكلمات · الكارت هو صف الموبايل. وهنا الكارت هو الديفولت كمان
-     على الديسكتوب، عكس المشاريع: الطابور ٧٢ طلبًا لا ٤٩٢٩، والقرار
-     محتاج سببه قدامه. الجدول للمقارنة والتصدير. */
+  /* The table on mobile compresses each column until every cell wraps its words into a column - the
+     card is the mobile row. Here the card is also the desktop default, unlike projects: the queue
+     is 72 requests, not 4,929, and a decision needs its reason in view. The table is for comparison
+     and export. */
   const mobile = useIsMobile()
   const view = mobile ? 'cards' : v.view === 'table' ? 'table' : 'cards'
   const advOpen = v.adv === '1'
@@ -114,8 +110,8 @@ export default function PaymentsPage() {
     })
   }, [v])
 
-  /* الأكثر تعثّرًا فوق · الصندوق بيترتّب بالخطر لا بالتاريخ، لأن
-     السؤال «إيه اللي واقف» لا «إيه اللي جديد» */
+  /* Most at-risk first - the inbox sorts by risk, not date, because the question is "what's stuck",
+     not "what's new". */
   const sorted = useMemo(
     () => [...rows].sort((a, b) => b.hoursInState - a.hoursInState),
     [rows],
@@ -124,7 +120,7 @@ export default function PaymentsPage() {
   const filtered = activeCount(['view', 'group', 'adv']) > 0
   const readings = useMemo(() => readPayments(rows, filtered), [rows, filtered])
 
-  /** عدّاد كل مرحلة جوّه النطاق الحالي، مش على الكل */
+  /** Count per stage within the current scope, not the whole set. */
   const counts = useMemo(() => {
     const needle = v.q?.trim()
     const owners = readList(v.owner)
@@ -145,20 +141,20 @@ export default function PaymentsPage() {
     return { m, total: base.length }
   }, [v.heat, v.owner, v.entity, v.bank, v.hold, v.q])
 
-  /** الجهات اللي ليها طلبات فعلًا · فلتر ما بيعرضش خيارًا بلا نتيجة */
+  /** Entities that actually have requests - a filter shouldn't show an option with no results. */
   const entityOptions = useMemo(
     () => [...new Set(payRequests.map((r) => r.entityName))].sort((a, b) => a.localeCompare(b, 'ar')),
     [],
   )
 
-  /* ي-13 · التجميع بيفضل مع الجلسة بدل ما يضيع مع كل خروج */
+  /* Grouping persists with the session instead of resetting on every sign-out. */
   useStickyGroup('payments', v.group, (x) => set({ group: x }))
 
   const group = groupChain(v.group, GROUPS)
   const grouped = group.length > 0
 
-  /* التجميع في الكروت بالمرحلة دايمًا · الصندوق بيتقري بالمرحلة،
-     والشريحة بتضيّق النطاق مش بتلغي التجميع */
+  /* Grouping in the cards is always by stage - the inbox reads by stage, and a tab narrows scope
+     rather than canceling the grouping. */
   const cardGroups = useMemo(() => {
     const pick = readList(v.state)
     const list = pick.length ? PAY_STATES.filter((s) => pick.includes(s.key)) : PAY_STATES
@@ -168,13 +164,12 @@ export default function PaymentsPage() {
   }, [sorted, v.state])
 
   const sheet: Sheet = useMemo(() => {
-    /* ⚠️ **الورقة مبنيّة في `sheetOf` لا هنا.** خمس شاشات كانت
-       بتكتب نفس التلات سطور بإيدها · وأول ما التجميع بقى سلسلة،
-       الخمسة كانوا هيحتاجوا نفس التعديل خمس مرات، واللي يتنسي
-       بيطلع ملفًا مختلفًا عن شاشته. */
+    /* Note: the sheet is built in `sheetOf`, not here. Five screens used to write the same three
+       lines by hand, and once the totals became a chain, all five would have needed the same edit
+       five times - and whichever gets missed ends up mismatched with its own screen. */
     const shown = orderCols(COLS, cols).filter((c) => !group.some((g) => g.key === c.key))
     const pick = selected.size ? sorted.filter((r) => selected.has(r.id)) : sorted
-    const parts = sheetOf(pick, shown, group, (n: number) => `${n} طلب`)
+    const parts = sheetOf(pick, shown, group, (n: number) => `${countOf(n, NOUN.request)}`)
     const stamp = new Date().toISOString().slice(0, 10)
     return { file: `abanumay-payments-${stamp}`, title: 'الصرف', ...parts }
   }, [cols, sorted, selected, group])
@@ -214,12 +209,11 @@ export default function PaymentsPage() {
     <AppLayout assistantContext={assistFor.page('الصرف')}>
       <div className="viewstack">
         <div className="screen col">
-          {/* ⚠️ **ترويسة قائمة، مش ترويسة تفاصيل.** كانت
-              `phead phead-g2` والقراءة جوّاها في العمود التاني — ودي
-              ترويسة **صفحة الجهة والمشروع**، يعني صفحة تفاصيل.
-              والنتيجة إن القراءة بتتزنق في نص العرض فسطرها بيتقصّ
-              بنقط، بينما نفس القراءة في المشاريع والجهات بتاخد
-              السطر كامل وتتقري لآخرها. */}
+          {/* Note: this is a list header, not a details header. It used to be `phead phead-g2` with
+              the reading text in the second column - that's the entity and project detail-page
+              header. The result: the reading text got squeezed to half width and truncated with an
+              ellipsis, while the same reading text on projects and entities takes the full line and
+              reads to the end. */}
           <header>
             <div>
               <h1 className="ptitle">الصرف</h1>
@@ -232,8 +226,8 @@ export default function PaymentsPage() {
               </p>
             </div>
 
-            {/* خطوة 2 · إنشاء الطلب · والمتأخر شاشة 6، التقرير اللي
-                آلية التصعيد (9.5) بتطلبه · مش فلتر على الصندوق */}
+            {/* Step 2 - request creation. Late items are screen 6, the report the escalation
+                mechanism (9.5) calls for - not a filter on this inbox. */}
             <PageActions
               secondary={
                 k.late + k.stuck > 0
@@ -244,11 +238,11 @@ export default function PaymentsPage() {
             />
           </header>
 
-          {/* ═══ القراءة السريعة ═══
-              صفّ مستقل بعد العنوان مباشرة وقبل الأدوات · نفس مكانها
-              بالحرف في `/projects` و`/entities`. هي **قراءة للصفحة**،
-              فبتيجي قبل الأدوات لا بينها وبين النتيجة، وبتاخد السطر
-              كامل لأن جملتها بتتقري لآخرها. */}
+          {/* === Quick read ===
+              Its own row right after the title and before the toolbar - the same position exactly
+              as on `/projects` and `/entities`. It's a page-level reading, so it comes before the
+              toolbar rather than between it and the results, and it takes the full line since its
+              sentence reads to the end. */}
           <QuickRead
             variant="bar"
             title="قراءة سريعة للصندوق"
@@ -256,16 +250,15 @@ export default function PaymentsPage() {
             empty="لا يوجد طلب صرف موقوف أو متأخر في النطاق الحالي. وسّع الفلتر لعرض المزيد."
           />
 
-          {/* ⚠️ **البطاقات الأربعة دي هي مؤشرات الوثيقة الأربعة**
-              (9.8)، لا أربعة أرقام مختارة. كانت اتنين منهم مؤشرات
-              واتنين حجم الصندوق (طلبات مفتوحة وقيمتها) · يعني
-              مؤشران من الإجراء ناقصان ومكانهما محجوز بأرقام
-              بتتقري من سطر العنوان أصلًا. الحجم رجع لسطر العنوان،
-              والأربعة بقوا هم الأربعة.
+          {/* Note: these four cards are the spec's own four indicators (9.8), not four cards chosen
+              freely. Two of them used to be indicators and two were inbox size (open requests and
+              their value) - meaning two of the process's own indicators were missing, with their
+              spot taken by numbers already readable from the title line. Size moved back to the
+              title line, and the four are now the actual four.
 
-              وعمود «القيمة المستهدفة» **فاضي في الوثيقة في
-              الأربعة** · فالرقم بيتعرض قيمةً لا حالةً، وما بيتلوّنش
-              نجاحًا ولا فشلًا لحدّ ما المؤسسة تدّينا الأهداف. */}
+              The "target value" column is empty in the spec for all four - so the number displays
+              as a value, not a status, and isn't colored success or failure until the institution
+              provides targets. */}
           <div className="stats4">
             <Stat
               label="متوسط مدة معالجة الطلب"
@@ -276,7 +269,7 @@ export default function PaymentsPage() {
             <Stat
               label="المنجزة ضمن المدة المستهدفة"
               value={<Num>{pct(k.inTarget)}</Num>}
-              note={`مؤشر 2 · المدة المؤقتة ${PAY_TARGET_DAYS} يومًا`}
+              note={`مؤشر 2 · المدة المؤقتة ${countOf(PAY_TARGET_DAYS, NOUN.day)}`}
               bar={{ w: `${k.inTarget}%`, c: 'var(--teal)' }}
             />
             <Stat
@@ -293,8 +286,7 @@ export default function PaymentsPage() {
             />
           </div>
 
-          {/* شرائح المراحل · نفس صفّ اللقطات في باقي القوائم، وكل
-              شريحة بعدّادها جوّه النطاق الحالي */}
+          {/* Stage tabs - same tab row as other inboxes, each tab counted within the current scope. */}
           <Segments
             active={readList(v.state).length === 1 ? readList(v.state)[0] : ''}
             onChange={(x) => set({ state: writeList(x ? [x] : []) })}
@@ -316,9 +308,8 @@ export default function PaymentsPage() {
                   onChange={(x) => set({ q: x || undefined })}
                   placeholder="ابحث برقم الطلب أو المشروع أو الجهة…"
                 />
-                {/* `people` هي اللي بتنزّل الوش في القائمة · نفس الوش
-                    اللي في الكارت وفي عمود الجدول، فالشخص واحد في
-                    التلات أماكن */}
+                {/* `people` is what renders the avatar in the list - the same avatar used in the
+                    card and the table column, so it's one person across all three places. */}
                 <MultiSelect
                   icon={icons.users}
                   values={readList(v.owner)}
@@ -339,10 +330,9 @@ export default function PaymentsPage() {
                   on={v.hold === '1'}
                   onChange={(on) => set({ hold: on ? '1' : undefined })}
                 />
-                {/* الباقي مطوي ومعاه عدّاد · نفس قاعدة المشاريع
-                    والجهات: اللي بيتفلتر بيه كل يوم فوق، والباقي
-                    خلف الزرار. الصفّ اللي بيلفّ سطرين معناه إن
-                    فلترًا نزل تحت وباظ ترتيبه. */}
+                {/* The rest collapses behind a counter - same rule as projects and entities:
+                    whatever gets filtered daily stays visible, the rest sits behind a button. A row
+                    wrapping to two lines means a filter dropped below and broke its own order. */}
                 <button
                   className={`fchip${advOpen ? ' on' : ''}`}
                   onClick={() => set({ adv: advOpen ? undefined : '1' })}
@@ -357,19 +347,18 @@ export default function PaymentsPage() {
                 
               </div>
 
-              {/* الأدوات اللي مش فلاتر · مجموعة ثابتة في آخر الصفّ،
-                  فالفلاتر بتلفّ جوّه مجموعتها والمبدّل ما بينطّش */}
-              {/* ⚠️ **«طلب صرف» و«المتأخر» كانوا هنا وطلعوا للترويسة.**
-                  الشريط ده كله بيشتغل **على النتيجة المعروضة**: بحث
-                  وفلتر وتجميع وتصدير ومبدّل عرض. الإنشاء مش واحد من
-                  دول · هو بيضيف للصندوق ومالوش علاقة باللي متفلتر
-                  قدامك، والمتأخر صندوق تاني لا عرض تاني لنفس الصندوق.
-                  وطالما هما في الترويسة في الجهات والميزانية، يبقى
-                  مكانهم هناك هنا كمان (عقد `PageActions`). */}
+              {/* Non-filter tools - a fixed group at the end of the row, so filters wrap within
+                  their own group and the switcher doesn't jump around. */}
+              {/* Note: "new disbursement request" and "late" used to be here and moved to the
+                  header. This whole toolbar operates on the displayed result: search, filter,
+                  group, export, and view switch. Creation isn't one of those - it adds to the inbox
+                  and has nothing to do with what's currently filtered, and "late" is a separate
+                  inbox, not another view of the same one. Since both sit in the header on entities
+                  and budget, they belong there here too (the `PageActions` contract). */}
               <div className="ftool-a">
-                {/* ⚠️ **التجميع تحكّم عرض لا فلتر** · مكانه ركن العرض،
-                   وكان آخر صفّ الفلاتر فبينزل لوحده في سطر تاني
-                   أول ما الشريط يلفّ (شوف `PlansPage`). */}
+                {/* Note: grouping is a display control, not a filter - it belongs in the display
+                    corner; it used to be the filter row's last item, so it dropped to its own line
+                    as soon as the bar wrapped (see `PlansPage`). */}
                 {view === 'table' && (
                 <GroupPicker
                   icon={icons.rows}
@@ -380,7 +369,7 @@ export default function PaymentsPage() {
                 )}
                 <ExportMenu
                   sheet={sheet}
-                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${selected.size || sorted.length} طلب`}
+                  note={`${selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر الحالي'} · ${countOf(selected.size || sorted.length, NOUN.request)}`}
                   count={selected.size}
                 />
                 {!mobile && (
@@ -472,7 +461,7 @@ export default function PaymentsPage() {
                   onSelectAll={selectAll}
                   onOpen={(r) => navigate(ROUTES.payment(r.id))}
                   group={grouped ? group : undefined}
-                  count={(n) => `${n} طلب`}
+                  count={(n) => `${countOf(n, NOUN.request)}`}
                 />
               </Glass>
               {grouped && (
@@ -494,7 +483,7 @@ export default function PaymentsPage() {
                     <h2>{meta?.label ?? 'مغلقة'}</h2>
                     <span className="sub">
                       {meta?.who ? `عند ${meta.who}` : 'مكتملة'} ·{' '}
-                      <span className="num">{g.rows.length}</span> طلب ·{' '}
+                      <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.request)} ·{' '}
                       خطوات <span className="num">{meta?.steps}</span> في الوثيقة
                     </span>
                   </div>

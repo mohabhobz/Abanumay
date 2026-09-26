@@ -2,20 +2,20 @@ import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
 import { DocFile, DocList } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
-import {  } from '@/lib/format'
-import { activationTone, days, governanceTone, groupTone } from '@/lib/tone'
+import { NOUN, nounAfter } from '@/lib/format'
+import { activationTone, days, groupTone, TONE } from '@/lib/tone'
 import { ENTITY_DOCS_TOTAL, stagePressure } from '@/data/repository'
 import type { EntityDetail, EntityEvent } from '@/data/mock/entityDetail'
 import type { EntityRow, ProjectRow } from '@/types/domain'
 
-/* ═══════════════════ بيانات الجهة ═══════════════════ */
+/* === Entity data === */
 
 /**
- * الحقول الـ٣٥ اللي في النظام، مرتّبة بمجموعاتها الخمس.
+ * The system's 35 fields, arranged into their five groups.
  *
- * الترتيب مش عشوائي: التعريف الأول لأنه اللي بيثبت الجهة، وبعده
- * **الصلاحيات** (الترخيص وتكليف المجلس) لأنها اللي بتوقف التعاقد،
- * وبعدين الاتصال والأشخاص والنظام. اللي بيوقف قرارًا بيتقري الأول.
+ * The order isn't arbitrary: identification comes first since it establishes the entity, followed
+ * by permissions (license and board assignment) since they gate the agreement, then contact/people
+ * and system. Whatever blocks a decision is read first.
  */
 export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
   return (
@@ -36,8 +36,8 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         />
       </Glass>
 
-      {/* الصلاحيات: التاريخان دول بيوقفوا الاتفاقية لو انتهوا، فمكانهم
-          فوق مش وسط بيانات الاتصال. */}
+      {/* Permissions: these two dates block the agreement if they expire, so they sit at the top,
+          not among the contact details. */}
       <Glass>
         <Head
           title="سريان الصلاحيات"
@@ -50,11 +50,10 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <KV
           rows={[
             {
-              /* التاريخ والوسم كانوا ملزوقين: `<>` بيرصّ العنصرين
-                 من غير مسافة، فالسطر كان بيتقري «٢٥ مارس ٢٠١٩منتهٍ».
-                 والمسافة المكتوبة مش حلّ · الجاب بيتصرّح في الصفّ.
-                 والوسم بقى مكوّن `Tag` زي كل الوسوم، مش
-                 `<span class="tag no">` مكتوبة بالإيد. */
+              /* The date and badge used to run together: `<>` stacks the two elements with no gap,
+                 so the line read "March 25 2019Expired". Adding a space wasn't the fix - the gap
+                 should be declared in the layout. The badge is now a `Tag` component like every
+                 other badge, not a hand-written `<span class=\"tag no\">`. */
               k: 'نهاية الترخيص',
               v: (
                 <span className="kvpair">
@@ -97,10 +96,10 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <Head title="الأشخاص" meta="المدير التنفيذي ومدخل البيانات" />
         <KV
           rows={[
-            /* كارت اسمه «الأشخاص» · الوش هنا مش زخرفة، هو محتوى
-               الكارت. والاتنين دول مش في سجلّ الموظّفين (أسماء
-               الجهات بتتولّد) فبيرجعوا لحروفهم الأوّلية — وده
-               الشكل الصحيح لشخص مالوش ملفّ في النظام. */
+            /* A card titled "People" - the avatar here isn't decoration, it is the card's content.
+               These two aren't in the staff directory (entity names are generated), so they fall
+               back to their initials - the correct shape for a person with no profile in the
+               system. */
             { k: 'المدير التنفيذي', v: <Person name={d.directorName} quiet={false} /> },
             { k: 'جوال المدير', v: <Mono>{d.directorMobile}</Mono> },
             { k: 'مدخل البيانات', v: <Person name={d.clerkName} quiet={false} /> },
@@ -115,15 +114,15 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <KV
           rows={[
             { k: 'حالة التفعيل', v: <Tag tone={activationTone(e.activation)}>{e.activation}</Tag> },
-            { k: 'درجة الحوكمة', v: <Tag tone={governanceTone(e.governance)}>{e.governance}</Tag> },
+            { k: 'درجة الحوكمة', v: <b>{e.governance}</b> },
             { k: 'نوع الحساب', v: d.accountType },
             { k: 'اسم المستخدم', v: <Mono>{d.username}</Mono> },
             { k: 'رقم المستخدم', v: <Mono>{d.userNo}</Mono> },
             { k: 'آخر تعديل', v: <DateText>{d.updatedAt}</DateText> },
           ]}
         />
-        {/* الملاحظة الإدارية إلزامية في النظام على كل قبول أو رفض،
-            فمكانها هنا لا في السجل وحده. */}
+        {/* The admin note is required across the system on every approval or rejection, so it
+            belongs here too, not only in the record. */}
         <div className="lastact">
           <span className="sub">آخر ملاحظة إدارية</span>
           <p>{d.adminNote}</p>
@@ -133,14 +132,14 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
   )
 }
 
-/* ═══════════════════ المستندات ═══════════════════ */
+/* === Documents === */
 
 /**
- * ثمانية مستندات، وكل واحد بحالته وتاريخه.
+ * Eight documents, each with its own status and date.
  *
- * الفرق عن العرض القديم (علامة صح/خطأ): المستند المرفوع اللي
- * **انتهت صلاحيته** كان بيعدّي كأنه مكتمل. وده أخطر من الناقص ·
- * الناقص بيبان، والمنتهي بيعدّي.
+ * The difference from the old view (a checkmark/cross): an uploaded document that has expired used
+ * to pass as complete. That's worse than a missing one - a missing document is visible, an expired
+ * one slips through.
  */
 export function EntityDocsTab({ d }: { d: EntityDetail }) {
   const up = d.docs.filter((x) => x.uploaded).length
@@ -166,7 +165,7 @@ export function EntityDocsTab({ d }: { d: EntityDetail }) {
           expired: x.expired,
           extra: [
             x.at ? <DateText>{x.at}</DateText> : null,
-            x.expires ? <Mono>{x.expires}</Mono> : null,
+            x.expires ? <DateText>{x.expires}</DateText> : null,
           ],
         }))}
       />
@@ -174,18 +173,18 @@ export function EntityDocsTab({ d }: { d: EntityDetail }) {
   )
 }
 
-/* ═══════════════════ الحسابات البنكية ═══════════════════ */
+/* === Bank accounts === */
 
 /**
- * الحساب البنكي بوابة الصرف: بلا حساب مفعّل مفيش دفعة تخرج.
+ * The bank account is the gate for disbursement: with no activated account, no payment goes out.
  *
- * وأهم حاجة اتنقلت من النظام هنا إن **سبب الرفض مختار لا مكتوب** ·
- * سبعة أسباب مقنّنة. ده اللي بيخلّي «ليه الحسابات بتترفض؟» سؤالًا
- * له إجابة رقمية بدل ما يبقى قراءة في خانة ملاحظات.
+ * The most important thing carried over from the live system is that the rejection reason is
+ * selected, not typed freely - seven coded reasons. That's what turns "why do accounts get
+ * rejected" into a question with a numeric answer instead of free-text notes.
  */
 export function EntityBanksTab({ d }: { d: EntityDetail }) {
   if (d.banks.length === 0) {
-    return <Glass><Empty title="لا توجد حسابات بنكية مسجّلة." note="الصرف موقوف حتى تسجّل الجهة حسابًا بنكيًا ويُفعَّل." /></Glass>
+    return <Glass><Empty art={{ done: 0, total: 2 }} title="لا توجد حسابات بنكية مسجّلة." note="الصرف موقوف حتى تسجّل الجهة حسابًا بنكيًا ويُفعَّل." /></Glass>
   }
 
   return (
@@ -225,9 +224,12 @@ export function EntityBanksTab({ d }: { d: EntityDetail }) {
   )
 }
 
-/* ═══════════════════ سجل الجهة ═══════════════════ */
+/* === Entity log === */
 
-/** لون النقطة = طبيعة القيد: قبول أخضر، إيقاف أحمر، تعديل مرتجع */
+/**
+ * Dot color reflects the nature of the entry: approval green, suspension red, return-for-edit its
+ * own tone.
+ */
 const DOT: Record<EntityEvent['kind'], string> = {
   reg: 't-mute',
   accept: 't-ok',
@@ -238,7 +240,7 @@ const DOT: Record<EntityEvent['kind'], string> = {
   doc: 't-mute',
 }
 
-/** الفاعل: الجهة طرف تاني، والقرار الإداري من عندنا */
+/** Actor: the entity is the other party; the administrative decision is ours. */
 const WHO: Record<EntityEvent['kind'], string> = {
   reg: 'k-entity',
   accept: '',
@@ -250,17 +252,17 @@ const WHO: Record<EntityEvent['kind'], string> = {
 }
 
 /**
- * سجل قرارات الجهة · نفس شكل سجل المشروع: القيد له نوع وحمولة،
- * مش سطر نصّ. وبيستعمل نفس الكلاسات عشان الاتنين يتقروا بنفس
- * الطريقة · اللي اتعلّمه المستخدم في المشروع بيشتغل هنا.
+ * Entity decision log - same shape as the project log: an entry has a type and payload, not a text
+ * line. It uses the same classes so both read the same way - what the user learned on the project
+ * log applies here.
  *
- * والملاحظة الإدارية بتتعرض كاملة لأنها **إلزامية** في النظام على
- * كل قبول أو رفض: هي التبرير الرسمي للقرار لا تعليق جانبي.
+ * The admin note is shown in full because it's required across the system on every approval or
+ * rejection: it's the official justification for the decision, not a side comment.
  */
 export function EntityLogTab({ d }: { d: EntityDetail }) {
   return (
     <Glass>
-      <Head title="سجل الجهة" meta={<><span className="num">{d.log.length}</span> قيدًا</>} />
+      <Head title="سجل الجهة" meta={<><span className="num">{d.log.length}</span> {nounAfter(d.log.length, NOUN.entry)}</>} />
       <ul className="lg">
         {d.log.map((ev) => (
           <li className="lgi" key={ev.id}>
@@ -269,7 +271,7 @@ export function EntityLogTab({ d }: { d: EntityDetail }) {
             <div className="lghead">
               <span className="lgact">{ev.action}</span>
               <span className="pc-sp" />
-              <span className="lgtime sub num">{ev.at} · {ev.time}</span>
+              <span className="lgtime sub"><DateText>{ev.at}</DateText> · <Num>{ev.time}</Num></span>
             </div>
 
             <div className="lgby">
@@ -295,16 +297,16 @@ export function EntityLogTab({ d }: { d: EntityDetail }) {
   )
 }
 
-/* ═══════════════════ مشاريعها ═══════════════════ */
+/* === Its projects === */
 
 export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
   if (rows.length === 0) {
-    return <Glass><Empty title="لا توجد مشاريع لهذه الجهة." note="الجهة مسجّلة، لكنها لم تتقدّم بأي مشروع في هذا النموذج." /></Glass>
+    return <Glass><Empty art={{ done: 0 }} title="لا توجد مشاريع لهذه الجهة." note="الجهة مسجّلة، لكنها لم تتقدّم بأي مشروع في هذا النموذج." /></Glass>
   }
 
   return (
     <Glass>
-      <Head title="مشاريع الجهة" meta={<><span className="num">{rows.length}</span> مشروعًا</>} />
+      <Head title="مشاريع الجهة" meta={<><span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.project)}</>} />
       <div className="eprj">
         {rows.map((p) => {
           const over = stagePressure(p) > 1
@@ -324,7 +326,7 @@ export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
                     {' · '}
                     <span className="num">{days(p.hoursInStage)}</span>
                     {' يومًا في القسم'}
-                    {over && <span className="tag no">متأخر</span>}
+                    {over && <span className={`tag ${TONE.late}`}>متأخر</span>}
                   </>
                 )}
                 {p.declineReason && <> · {p.declineReason}</>}
@@ -337,7 +339,10 @@ export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
   )
 }
 
-/** أداء الجهة · السجل التراكمي، بيتعرض تحت أي تاب لأنه سياق دايم */
+/**
+ * Entity performance - the cumulative record, shown under every tab because it's persistent
+ * context.
+ */
 export function EntityRecord({ e }: { e: EntityRow }) {
   return (
     <Glass>
@@ -363,7 +368,7 @@ export function EntityRecord({ e }: { e: EntityRow }) {
   )
 }
 
-/** روابط سريعة */
+/** Quick links */
 export function EntityGoTo({ e }: { e: EntityRow }) {
   return (
     <Glass>

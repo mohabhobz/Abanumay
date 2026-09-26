@@ -9,8 +9,8 @@ import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { DocFile } from '@/components/docs'
 import { assistFor } from '@/data/mock/assistant'
-import { PAY_LIMIT, PAY_STATES, payHeat, payRequestById, payStateWho } from '@/data/mock/disbursements'
-import { isolate, pct, readDate } from '@/lib/format'
+import { PAY_LIMIT, PAY_STATES, payRequestById, payStateWho } from '@/data/mock/disbursements'
+import { isolate, NOUN, nounAfter, pct, readDate } from '@/lib/format'
 import {
   BANK_CHANGE_DENIED, BANK_CHANGE_ROLES, ENTITY_STATES, ORIGINS, PAY_PROOFS,
   bankIssues, banksOf, entityStateOf, originOf, type PayOrigin,
@@ -18,42 +18,39 @@ import {
 import type { PayRequest } from '@/types/domain'
 import { ActionDock, actionsFor } from './ActionDock'
 
-/* ═══════════════════════════════════════════════════════════
-   طلب صرف واحد · شاشات 3 و4 و5 في وثيقة BPD-009
+/* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
 
-   ⚠️ **دي شاشة واحدة لتلات شاشات في الوثيقة.** الوثيقة بتوصف
-   «مراجعة الطلب» (مشرف · خطوات 5–7) و«موافقة مدير المنح» (خطوة 13)
-   و«أمر الصرف والتحويل» (المالية · خطوات 15–18) كتلات منفصلة، لأنها
-   بتتكلم عن **الإجراء** لا عن الشاشة.
+   Note: this is one screen for three screens in the spec. The spec describes "request review"
+   (supervisor, steps 5-7), "grants manager approval" (step 13), and "disbursement order and
+   transfer" (finance, steps 15-18) as separate sections, because it's describing the process, not
+   the screen.
 
-   لكن التلاتة بيعرضوا **نفس الطلب بنفس المرفقات ونفس الشروط ونفس
-   السجل** · اللي بيختلف هو **المخارج** بس. تلات ملفات هيبقوا تلات
-   نسخ من نفس العرض، وأول ما حقل يتضاف هيتضاف تلات مرات — أو اتنين
-   وينسى التالت، وده اللي بيبان عند العميل. فالعرض واحد،
-   و`actionsFor(role, state)` هي اللي بتقرّر المخارج.
+   But all three show the same request, with the same attachments, conditions, and log - the only
+   difference is the exits. Three files would have become three copies of the same view, and adding
+   a field would mean adding it three times - or twice, forgetting the third, which is exactly what
+   happened before. So the view is one, and `actionsFor(role, state)` decides the exits.
 
-   ═══ إيه اللي الشاشة ملزومة تعرضه بالوثيقة ═══
+   === What the spec requires the screen to show ===
 
-   قاعدة 10 · الاتفاقية وسريانها معروضة    → بطاقة «الاتفاقية»
-   قاعدة 11 · المحجوز معروض لحظة التنفيذ  → بطاقة «أثر الصرف»
-   قاعدة 12 · توزيع مصادر التمويل          → جدول المصادر
-   قاعدة 13 · محجوز ← مصروف والأثر على الميزانية → نفس البطاقة
-   قاعدة 14 · سقف صارم على قيمة المنحة     → شريط المنحة
-   قاعدة 16 · سجل تدقيق لكل العمليات       → السجل الزمني بخطواته
-   قاعدة 17 · إشعار لكل انتقال             → سطر الإشعار جوّه السجل
-   قاعدة 18 · ممنوع التعديل بعد الاعتماد   → المخارج بتختفي بعد الصرف
-   قاعدة 20 · مخرج الـAI استرشادي          → وسم «استرشادي»
-   قاعدة 21 · المستندات مربوطة بالطلب      → بطاقة المرفقات
+   Rule 10 - agreement and its validity shown        -> the "agreement" card
+   Rule 11 - the reserved amount shown at execution   -> the "disbursement impact" card
+   Rule 12 - funding source breakdown                 -> the sources table
+   Rule 13 - reserved -> spent and budget impact       -> same card
+   Rule 14 - a hard cap on the grant amount            -> the grant bar
+   Rule 16 - an audit log for every operation          -> the timeline with its steps
+   Rule 17 - a notification for every transition       -> the notice line inside the log
+   Rule 18 - no edits after approval                   -> exits disappear after disbursement
+   Rule 20 - the AI output is advisory                 -> the "advisory" tag
+   Rule 21 - documents tied to the request             -> the attachments card
 
-   ═══ اللي **مش** هنا بقرار ═══
+   === What is deliberately NOT here ===
 
-   «طلب الصرف» (خطوات 1 و2 · شاشة الجهة) مش هنا: دي شاشة **الجهة
-   المستفيدة** لا المؤسسة، وبورتال الجهة مش في نطاق النموذج ده.
-   الخطوات دي بتبان في السجل كأحداث حصلت، وقاعدة 19 (متابعة الجهة
-   لحالة الطلب) مسجَّلة نوتة في `DISBURSEMENT_MODULE_BRIEF.md`.
-   ═══════════════════════════════════════════════════════════ */
+   "Disbursement request" (steps 1 and 2 - the entity's screen) isn't here: that's the beneficiary
+   entity's screen, not the institution's, and the entity portal is out of scope for this app. Those
+   steps appear in the log as events that happened, and rule 19 (the entity tracking its request
+   status) is logged as an open question elsewhere. */
 
-/** الخطوات الأربعة اللي المستخدم بيشوفها · مصدرها جدول الخطوات */
+/** The four steps the user sees - sourced from the steps table. */
 const LADDER: { key: string; label: string; note: string; steps: number[] }[] = [
   { key: 'entity', label: 'إنشاء الطلب', note: 'الجهة المستفيدة', steps: [1, 2, 3, 4] },
   { key: 'supervisor', label: 'مراجعة المشرف', note: 'مشرف المنح', steps: [5, 6, 7] },
@@ -61,7 +58,7 @@ const LADDER: { key: string; label: string; note: string; steps: number[] }[] = 
   { key: 'finance', label: 'أمر الصرف والتحويل', note: 'الإدارة المالية', steps: [15, 16, 17, 18, 19] },
 ]
 
-/** أي محطة الطلب واقف عندها دلوقتي */
+/** Which stage the request is currently at. */
 const NOW_AT: Record<string, string> = {
   supervisor: 'supervisor',
   returned: 'entity',
@@ -95,12 +92,11 @@ export default function RequestPage() {
 
   const ladder = useMemo(() => (r ? ladderFor(r) : []), [r])
 
-  /* ⚠️ **الهوكس دي فوق الـ`return` المبكر لأنها لازم كده.**
-     أول نسخة حطّتها تحت، جنب الحسابات التانية · وقاعدة الهوكس
-     بتقول إن الترتيب لازم يبقى واحدًا في كل رندر، والطلب اللي مش
-     لاقي بيخرج بدري فبتتخطّى. بوّابة الكوميت مسكتها (`rules-of-hooks`)
-     قبل ما توصل للجهاز · وده بالظبط شغل البوّابة.
-     والـ`r?.` ضروري: الهوك بيشتغل حتى والطلب مش موجود. */
+  /* Note: these hooks sit above the early `return` because they must. The first version placed them
+     below, next to other computations - the rules-of-hooks require a consistent order on every
+     render, and a request that isn't found exits early, so the hooks got skipped. The commit gate
+     caught it (`rules-of-hooks`) before it reached the device - that's exactly the gate's job. The
+     `r?.` is necessary: the hook runs even when the request doesn't exist. */
   const entBanks = useMemo(() => banksOf(r?.entityId ?? ''), [r?.entityId])
   const payBank = useMemo(
     () => entBanks.find((b) => b.bank === r?.bank.name) ?? entBanks[0],
@@ -131,7 +127,6 @@ export default function RequestPage() {
     )
   }
 
-  const heat = payHeat(r)
   const days = Math.round(r.hoursInState / 24)
   const limitDays = Math.round(PAY_LIMIT[r.state] / 24)
   const meta = PAY_STATES.find((s) => s.key === r.state)
@@ -139,14 +134,14 @@ export default function RequestPage() {
   const bankOk = r.bank.active
   const actions = actionsFor(role.key, r.state)
 
-  /* قاعدة 14 · السقف الصارم · المصروف + الدفعة دي مقابل المنحة */
+  /* Rule 14 - the hard cap - spent plus this payment, against the grant. */
   const after = r.spent + r.asked
   const left = r.granted - after
 
-  /* ح-3 · الحالة بعين الجهة · مش هوك فمكانها هنا عادي */
+  /* H-3 - status from the entity's point of view - not a hook, so it belongs here normally. */
   const ent = entityStateOf(r.state)
 
-  /* ح-2 · اتجاه الطلب · في النموذج ده الكرنت، والمستهدف معروض جنبه */
+  /* H-2 - request direction - in this app it's the current one, with the target shown beside it. */
   const origin: PayOrigin = 'supervisor'
 
   return (
@@ -155,8 +150,8 @@ export default function RequestPage() {
         <div className="screen col hasg2">
           <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
 
-          {/* الترويسة بعمودين · نفس تركيب صفحة المشروع والجهة:
-              الاسم والمبلغ يمين، والسُّلّم قصاده */}
+          {/* Two-column header - same layout as the project and entity pages: name and amount on
+              the right, the ladder opposite. */}
           <header className="phead phead-g2">
             <div className="pmain">
               <h1 className="ptitle">{r.projectName}</h1>
@@ -169,7 +164,7 @@ export default function RequestPage() {
                 <div className="lb">قيمة الطلب</div>
                 <div className="v"><Money sm>{r.asked}</Money></div>
                 <div className="sub">
-                  {/* قاعدة 5 · قيمة الطلب ما تتجاوزش الدفعة المعتمدة */}
+                  {/* Rule 5 - request amount can't exceed the approved payment. */}
                   {r.asked === r.due
                     ? <>مطابقة للدفعة المعتمدة · تستحق في <DateText>{r.dueAt}</DateText></>
                     : <span className="bad">
@@ -184,7 +179,7 @@ export default function RequestPage() {
             </div>
           </header>
 
-          {/* قاعدة 15 · المقفول بيقول إنه مقفول، وسجله باقٍ تحته */}
+          {/* Rule 15 - a closed request states that it's closed, with its log remaining beneath it. */}
           {r.state === 'closed' && (
             <Glass>
               <Head title="الطلب مغلق" meta={<Tag tone="no">رفض نهائي</Tag>} />
@@ -195,15 +190,17 @@ export default function RequestPage() {
             </Glass>
           )}
 
-          {/* شريط الحالة · مين واقف وبقاله قد إيه مقابل حدّه */}
+          {/* Status bar - who it's with, how long, against their threshold. */}
           <div className="prow">
-            <Tag tone={heat === 'stuck' ? 'no' : heat === 'late' ? 'warn' : 'mute'}>
+            {/* Status bar outside the card - the badge is neutral and delay is stated in the text
+                beside it. */}
+            <Tag tone="mute">
               {meta?.label ?? 'مغلق'}
             </Tag>
             {r.state !== 'paid' && (
               <span className="sub">
-                عند {payStateWho(r.state)} من <Num>{days}</Num> يومًا
-                {limitDays > 0 && <> · حدّ المرحلة <Num>{limitDays}</Num> يومًا</>}
+                عند {payStateWho(r.state)} من <Num>{days}</Num> {nounAfter(days, NOUN.day)}
+                {limitDays > 0 && <> · حدّ المرحلة <Num>{limitDays}</Num> {nounAfter(limitDays, NOUN.day)}</>}
               </span>
             )}
             {r.state === 'paid' && r.paidAt && (
@@ -211,12 +208,12 @@ export default function RequestPage() {
             )}
             <span className="pc-sp" />
             <Person name={r.owner} />
-            {/* المخرج الأول · الورقة اللي المالية بتحوّل بناءً عليها */}
+            {/* The first output - the document finance transfers against. */}
             <Link className="btn btn-2 btn-sm" to={ROUTES.paymentOrder(r.id)}>
               <Icon name={icons.doc} size="sm" />
               أمر الصرف
             </Link>
-            {/* خطوة 11 · الجهة بتستكمل وتعيد الإرسال */}
+            {/* Step 11 - the entity completes and resubmits. */}
             {r.state === 'returned' && (
               <Link className="btn btn-p btn-sm" to={ROUTES.paymentEdit(r.id)}>
                 أكمل الطلب وأعد إرساله
@@ -225,14 +222,14 @@ export default function RequestPage() {
           </div>
 
           <div className="g2">
-            {/* ═══ العمود الرئيسي · اللي بيتاخد عليه القرار ═══ */}
+            {/* === Main column - what the decision is made on === */}
             <div className="col">
-              {/* ═══ ح-2 · مين بيصدر الطلب ═══
-                  ⚠️ **دي مش شاشة زيادة، دي قلب اتجاه.** الفرق مش في
-                  عدد الخطوات، هو في **مين مستنّي مين**: في الكرنت
-                  المشرف بيفتكر يعمل الطلب، وفي الوثيقة الطابور بييجي
-                  له. والكارت بيحطّ الاتنين جنب بعض لأن الفرق ده هو
-                  اللي محتاج قرار من المؤسسة. */}
+              {/* === H-2 - who initiates the request ===
+                  Note: this isn't an extra screen, it's a reversed direction. The difference isn't
+                  step count, it's who's waiting on whom: in the current app the supervisor has to
+                  remember to create the request; in the spec, the queue comes to them. The card
+                  places both side by side because that difference is what needs a decision from the
+                  institution. */}
               <Glass>
                 <Head
                   title="من يُصدر طلب الدفعة"
@@ -264,7 +261,7 @@ export default function RequestPage() {
                 </p>
               </Glass>
 
-              {/* الشروط اللي بتمنع الانتقال · كل واحدة بقاعدتها */}
+              {/* The conditions blocking progress - each with its rule cited. */}
               <Glass>
                 <Head
                   title="شروط الصرف"
@@ -296,7 +293,7 @@ export default function RequestPage() {
                     <span className="payq-r">الحساب المعتمد</span>
                   </li>
                 </ul>
-                {/* قاعدة 9 · ممنوع التنفيذ قبل اكتمال الاعتمادات */}
+                {/* Rule 9 - execution is forbidden before every approval is complete. */}
                 {(blocked.length > 0 || !bankOk) && (
                   <p className="sub cnote">
                     لا ينتقل الطلب قبل استيفاء هذه الشروط · تمنع القاعدة 9 التنفيذ
@@ -305,7 +302,7 @@ export default function RequestPage() {
                 )}
               </Glass>
 
-              {/* مخرج الذكاء الاصطناعي · خطوة 6 · وسمه من القاعدة 20 */}
+              {/* AI-assist output - step 6, tagged per rule 20. */}
               {r.ai && (
                 <Glass>
                   <Head
@@ -324,7 +321,7 @@ export default function RequestPage() {
                 </Glass>
               )}
 
-              {/* ملاحظة آخر إعادة · قواعد 7 و8 بيلزموا توضيحها */}
+              {/* Last return note - rules 7 and 8 require it to be explicit. */}
               {r.note && (
                 <Glass>
                   <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">للاستكمال</Tag>} />
@@ -335,18 +332,17 @@ export default function RequestPage() {
                 </Glass>
               )}
 
-              {/* المرفقات · قاعدة 21: مربوطة بالطلب لا في مكان تاني.
+              {/* Attachments - rule 21: tied to the request, not stored elsewhere.
 
-                  ⚠️ و`DocFile` هي الشكل الواحد لأي ملف في السيستم ·
-                  كانت هنا قائمة مكتوبة بالإيد (أيقونة ورقة واحدة +
-                  اسم + حجم)، يعني **شكل رابع** لنفس الحاجة اللي
-                  اتوحّدت في المشروع والجهة والمتابعة. والثامبنيل مش
-                  زينة: بيقول نوع المحتوى قبل الفتح، فالمراجع يعرف
-                  إن «كشف المستفيدين» جدول من الصف نفسه. */}
+                  Note: `DocFile` is the single shape for any file in the system - this used to be a
+                  hand-written list (a single paper icon plus name and size), meaning a fourth shape
+                  for something already unified on the project, entity, and tracking pages. The
+                  thumbnail isn't decorative: it states the content type before opening, so the
+                  reviewer knows a "beneficiary list" is a spreadsheet straight from the row. */}
               <Glass>
                 <Head
                   title="المرفقات"
-                  meta={<span className="sub"><Num>{r.docs.length}</Num> مستندًا</span>}
+                  meta={<span className="sub"><Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}</span>}
                 />
                 <div className="docgrid">
                   {r.docs.map((d) => (
@@ -355,7 +351,7 @@ export default function RequestPage() {
                 </div>
               </Glass>
 
-              {/* سجل التدقيق · قاعدة 16 · وكل انتقال بإشعاره (قاعدة 17) */}
+              {/* Audit log - rule 16 - with a notification on every transition (rule 17). */}
               <Glass>
                 <Head
                   title="سجل التدقيق"
@@ -387,9 +383,9 @@ export default function RequestPage() {
               </Glass>
             </div>
 
-            {/* ═══ العمود الجانبي · اللي بيسند القرار ═══ */}
+            {/* === Side column - what supports the decision === */}
             <div className="col">
-              {/* قاعدة 10 · الاتفاقية وسريانها معروضة في الطلب */}
+              {/* Rule 10 - the agreement and its validity shown on the request. */}
               <Glass>
                 <Head
                   title="الاتفاقية"
@@ -403,8 +399,8 @@ export default function RequestPage() {
                   rows={[
                     { k: 'رقم الاتفاقية', v: <Mono>{r.agreement.id}</Mono> },
                     { k: 'تنتهي في', v: <DateText>{r.agreement.endsAt}</DateText> },
-                    /* ك-2 · العلاقة اللي ليها صفحة بتبقى رابطًا، لا
-                       نصًّا المستخدم بينسخه ويدوّر بيه */
+                    /* K-2 - a related record that has its own page becomes a link, not text the
+                       user copies and searches with. */
                     {
                       k: 'المشروع',
                       v: <Link className="tlink" to={ROUTES.project(r.projectId)}><Mono>{r.projectId}</Mono></Link>,
@@ -417,7 +413,7 @@ export default function RequestPage() {
                 />
               </Glass>
 
-              {/* قواعد 11 و13 و14 · المحجوز، والأثر، والسقف */}
+              {/* Rules 11, 13 and 14 - the reserved amount, its impact, and the cap. */}
               <Glass>
                 <Head title="أثر الصرف" meta={<span className="sub">قواعد 11 · 13 · 14</span>} />
                 <KV
@@ -443,12 +439,11 @@ export default function RequestPage() {
                 </p>
               </Glass>
 
-              {/* ⚠️ قاعدة 17 · «إشعارات تلقائية في كل مراحل الطلب».
-                  الإشعارات موجودة جوّه السجل كسطر تحت كل انتقال،
-                  بس السجل بيتقري بالترتيب الزمني والسؤال «مين
-                  اتبلّغ؟» بيتقري بالمستقبِل · نفس الداتا مقروءة
-                  بمحورين، فبطاقة مستقلة بتجاوب السؤال التاني بلا
-                  تكرار في التخزين. */}
+              {/* Note: rule 17 - "automatic notifications at every request stage". Notifications
+                  live inside the log as a line under each transition, but the log reads in
+                  chronological order while the question "who was notified" reads by recipient - the
+                  same data read along two different axes, so a separate card answers the second
+                  question without duplicating storage. */}
               <Glass>
                 <Head
                   title="الإشعارات"
@@ -469,12 +464,11 @@ export default function RequestPage() {
                 </ul>
               </Glass>
 
-              {/* ═══ ح-3 · اللي الجهة بتشوفه ═══
-                  ⚠️ **الجهة ما بتشوفش السبعة.** «بانتظار مدير المنح»
-                  و«بانتظار المالية» بيقولوا للجهة مين واقف **عندنا
-                  إحنا**، وهي مش بتاعتها ولا بتقدر تعمل فيها حاجة ·
-                  فبيتحوّلوا لقلق لا لمعلومة. الخمسة دول هما اللي
-                  الجهة تقدر تتصرّف بناءً عليهم. */}
+              {/* === H-3 - what the entity sees ===
+                  Note: the entity doesn't see all seven statuses. "Awaiting grants manager" and
+                  "awaiting finance" tell the entity who's holding it up on our side, which isn't
+                  theirs and they can't act on it - so it reads as worry, not information. The five
+                  shown here are the ones the entity can actually act on. */}
               <Glass>
                 <Head
                   title="كما تراه الجهة"
@@ -503,7 +497,7 @@ export default function RequestPage() {
                 </p>
               </Glass>
 
-              {/* ═══ ح-5 و ح-6 و ح-7 · الحساب البنكي ═══ */}
+              {/* === H-5, H-6, H-7 - bank account === */}
               <Glass>
                 <Head
                   title="حساب الدفع"
@@ -513,8 +507,9 @@ export default function RequestPage() {
                       : <Tag tone="ok">جاهز</Tag>
                   }
                 />
-                {/* ⚠️ الجهة عندها حساب لكل وجه خير (تحفيظ · تفطير ·
-                    أضاحي) · فالقايمة مش زينة، هي سبب وجود القاعدة */}
+                {/* Note: the entity has one account per beneficiary purpose (Quran memorization,
+                    iftar, sacrifices) - so the list isn't decorative, it's the reason the rule
+                    exists. */}
                 <ul className="paybank">
                   {entBanks.map((b) => (
                     <li key={b.id} className={b.id === payBank?.id ? 'on' : ''}>
@@ -544,7 +539,7 @@ export default function RequestPage() {
                 </p>
               </Glass>
 
-              {/* ═══ ح-4 · المستندان مش نوعًا واحدًا ═══ */}
+              {/* === H-4 - the two documents aren't the same type === */}
               <Glass>
                 <Head title="إثبات الصرف" meta={<span className="sub">مستندان بوزنين مختلفين</span>} />
                 <ul className="payproof">
@@ -568,7 +563,7 @@ export default function RequestPage() {
                 </p>
               </Glass>
 
-              {/* قاعدة 12 · الصرف وفق التوزيع المعتمد للمصادر */}
+              {/* Rule 12 - disbursement follows the approved source breakdown. */}
               <Glass>
                 <Head
                   title="مصادر التمويل"
@@ -599,7 +594,7 @@ export default function RequestPage() {
           </div>
         </div>
 
-        {/* مخارج الدور · هي اللي بتفرّق بين شاشات 3 و4 و5 */}
+        {/* Role exits - what distinguishes screens 3, 4 and 5. */}
         {actions.length > 0 && (
           <ActionDock
             user={user}

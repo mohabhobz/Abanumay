@@ -6,26 +6,24 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { CITIES_BY_REGION, REGIONS } from '@/data/mock/taxonomy'
+import { NOUN, countOf, nounAfter, unitAfter } from '@/lib/format'
 import {
   ENTITY_TYPES, LICENSORS, TARGET_GROUPS,
   cityUsed, licensorUsed, regionUsed, typeUsed,
 } from '@/data/mock/settings'
 
-/* ═══════════════════════════════════════════════════════════
-   إعدادات الجهات · د-3
+/* Entity settings.
 
-   مظفر: «أي قائمة منسدلة = ماستر داتا». والقوايم اللي في فورم
-   تسجيل الجهة أربعة: المنطقة، والمدينة التابعة ليها، وتصنيف
-   الجهة، وجهة الإشراف الفني · ومعاهم الفئات المستهدفة اللي
-   بتتستعمل في المشروع.
+   Rule of thumb: any dropdown is master data. The dropdowns in the entity-registration form are
+   four: region, the cities under it, entity classification, and the technical-oversight authority -
+   plus the target categories used in a project.
 
-   ⚠️ **وتصنيف الجهة مش قايمة عادية.** هو اللي بيحدد إلزامية تلات
-   مستندات (قاعدتا 8 و9 في إجراء التسجيل) · فتعديله بيغيّر شرط
-   قبول في فورم تاني. عشان كده الصف بيقول ده صريحًا.
+   Note: entity classification isn't an ordinary list. It determines whether three documents are
+   required (rules 8 and 9 in the registration procedure), so editing it changes an acceptance
+   condition in a different form. That's why the row states this explicitly.
 
-   ⚠️ **ومفيش حذف.** العمود الأخير بيقول عدد الجهات المتعلقة ·
-   السبب ظاهر قبل المحاولة لا رسالة خطأ بعدها (ج-19).
-   ═══════════════════════════════════════════════════════════ */
+   Note: nothing can be deleted. The last column shows the count of related entities - the reason is
+   visible before the attempt, not an error message after it. */
 
 const KEYS = ['tab', 'region'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -48,24 +46,22 @@ export default function EntitySettingsPage() {
   const [draft, setDraft] = useState('')
   const clear = () => setDraft('')
 
-  /* المجموعة المعروضة دلوقتي · الإضافة بتتصرف على نفس الشكل في
-     الأربعة، فالفورم واحد والفرق في اللي بيتقرا منه */
+  /* The group shown now - adding behaves the same way for all four, so the form is one, and only
+     the source read from differs. */
   const addLabel =
     tab === 'places' ? `مدينة في ${region}`
       : tab === 'types' ? 'تصنيف جهة'
         : tab === 'licensors' ? 'جهة إشراف فني'
           : 'فئة مستهدفة'
 
-  /* وحدة العدّ في الترويسة · «6 قيمة» مالهاش معنى لمّا الصفحة
-     عارفة إنها مدن */
+  /* Count unit in the header - "6 value" means nothing when the page already knows they're cities. */
   const unit =
     tab === 'places' ? 'مدينة' : tab === 'types' ? 'تصنيف'
       : tab === 'licensors' ? 'جهة' : 'فئة'
 
-  /* ⚠️ `used: null` معناه **مفيش رقم**، لا صفر · والفرق مهم: الصف
-     اللي مالوش متعلقات محسوبة ما بيعرضش وسمًا خالص. أول نسخة كانت
-     بتطبع «تُستعمَل في الفورم» على كل صف، ووسم متكرّر على كل الصفوف
-     بيشغل مساحة وما بيقولش حاجة. */
+  /* Note: `used: null` means no figure, not zero - and the difference matters: a row with no
+     computed dependents shows no tag at all. The first version printed "used in the form" on every
+     row, and a repeated tag on every row takes up space and says nothing. */
   const rows: { k: string; used: number | null; note?: string }[] =
     tab === 'places'
       ? cities.map((c) => ({ k: c, used: cityUsed(c) }))
@@ -105,16 +101,16 @@ export default function EntitySettingsPage() {
             <Glass>
               <Head
                 title="المناطق"
-                meta={<span className="sub"><Num>{REGIONS.length}</Num> منطقة</span>}
+                meta={<span className="sub"><Num>{REGIONS.length}</Num> {nounAfter(REGIONS.length, NOUN.region)}</span>}
               />
-              {/* ⚠️ المنطقة هنا **مختارة لا مفلترة** · المدن تابعة
-                  ليها، فلازم واحدة تكون شغّالة دايمًا ومفيش «الكل» */}
+              {/* Note: region here is a selection, not a filter - cities belong to it, so one has
+                  to always be active and there's no "all". */}
               <ul className="cfgchips">
                 {REGIONS.map((r) => (
                   <li key={r}>
                     <button
                       className={`cfgchip${r === region ? ' on' : ''}`}
-                      title={`${regionUsed(r)} جهة في ${r}`}
+                      title={`${countOf(regionUsed(r), NOUN.entity)} في ${r}`}
                       onClick={() => set({ region: r === REGIONS[0] ? undefined : r })}
                     >
                       {r}
@@ -133,7 +129,7 @@ export default function EntitySettingsPage() {
           <Glass className="tblcard">
             <Head
               title={tab === 'places' ? `مدن ${region}` : TABS.find((t) => t.slug === tab)!.label}
-              meta={<span className="sub"><Num>{rows.length}</Num> {unit}</span>}
+              meta={<span className="sub"><Num>{rows.length}</Num> {unitAfter(rows.length, unit)}</span>}
             />
 
             <div className="cfgrow">
@@ -171,7 +167,7 @@ export default function EntitySettingsPage() {
                   <span className="pc-sp" />
                   {r.used !== null && (
                     r.used > 0
-                      ? <Tag tone="mute"><Num>{r.used}</Num> جهة مرتبطة</Tag>
+                      ? <Tag tone="mute"><Num>{r.used}</Num> {nounAfter(r.used, NOUN.entity)} مرتبطة</Tag>
                       : <Tag tone="ok">بلا جهات مرتبطة</Tag>
                   )}
                 </li>
@@ -181,7 +177,11 @@ export default function EntitySettingsPage() {
             <p className="sub cnote">
               {tab === 'types'
                 ? 'التصنيف ليس وسمًا · فهو يحدّد المستندات الإلزامية في نموذج التسجيل، وتغييره يغيّر شرط قبول.'
-                : 'لا تُحذف قيمة مرتبطة بسجلات · والرقم بجانبها يوضّح السبب قبل المحاولة.'}
+                /* "With the count next to it" only when a real count exists - categories have no
+                   counter. */
+                : rows.some((r) => r.used !== null)
+                  ? 'لا تُحذف قيمة مرتبطة بسجلات · والرقم بجانبها يوضّح السبب قبل المحاولة.'
+                  : 'لا تُحذف قيمة مرتبطة بسجلات.'}
             </p>
           </Glass>
         </div>

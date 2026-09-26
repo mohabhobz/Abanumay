@@ -11,13 +11,11 @@ export interface DocPreviewProps {
 }
 
 /**
- * معاينة المستند في مكانه · المراجع يقرأ الملف من غير ما يحمّله.
- *
- * بورتال على الـbody: أي أب فيه `backdrop-filter` بيبقى الحاوية
- * للـ`position:fixed`، فالمودال كان بيقع جنب الكارت مش في نص الشاشة.
- *
- * والصفحة اللي جوّه المعاينة هي **نفس رسم الثامبنيل مكبَّرًا**، عشان
- * اللي المستخدم ضغط عليه هو اللي فتح · مفيش قفزة بين الشكلين.
+ * In-place document preview — a reviewer reads the file without downloading it.
+ * A portal on `body`: any ancestor with `backdrop-filter` becomes the containing block for
+ * `position:fixed`, so the modal used to land next to the card instead of centered on screen.
+ * The page inside the preview is **the same thumbnail drawing, scaled up**, so what the user
+ * clicked is what opens — no jump between the two shapes.
  */
 export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
   useEffect(() => {

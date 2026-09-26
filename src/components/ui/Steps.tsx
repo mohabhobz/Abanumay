@@ -3,85 +3,87 @@ import { Icon } from './Icon'
 import { icons } from './icons'
 
 /**
- * سُلّم المحطات · **مكوّن واحد** لكل تدفّق فيه محطات لها حالة.
+ * Step ladder · **one component** for any flow with stages that have a status.
  *
- * قبل كده كان في خمس رسمات مختلفة لنفس الفكرة، وأقطار نِقَطها
- * ١٠ · ١٠ · ١٦ · ١٥ · ٥. اتنين منهم كانوا **ميّتين** (مفيش شاشة
- * بترسمهم)، وواحد مش سُلّم أصلًا، واتنين شغّالين وبيختلفوا في
- * النقطة والخط والحالات. المستخدم بيشوف الاتنين الشغّالين في
- * نفس المشروع · مرة في تاب الاتفاقية ومرة في تاب الدفعات · فنفس
- * المعنى («المحطة دي خلصت») بيتقال بشكلين.
+ * There used to be five different renderings of the same idea, with dot diameters of 10 · 10 · 16 ·
+ * 15 · 5. Two were **dead** (no screen rendered them), one wasn't a ladder at all, and two were
+ * live and differed in dot, line, and states. Users see both live ones on the same project — once
+ * in the agreement tab, once in the disbursements tab — so the same meaning ("this stage is done")
+ * gets said two different ways.
  *
- * الحل **مش** إن الخمسة يبقوا شكل واحد. التدفّقين الشغّالين
- * بيختلفوا في التخطيط اختلافًا حقيقيًّا:
+ * The fix is **not** to make all five one shape. The two live flows genuinely differ in layout:
  *
- *   · `ladder` · سُلّم رأسي متصل. الترتيب معلومة: مشرف ← مدير ←
- *     مالية ← تنفيذي ← الجهة. الخط بيقول «الواحدة بعد التانية».
- *   · `row`   · صفّ بيلفّ. أربع محطات جنب بعض من غير خط، لأنها
- *     بتتقري كقائمة تحقّق مش كسلسلة زمنية، والخط في شبكة بتلفّ
- *     بيكدب على الترتيب.
- *   · `stepper` · صفّ أفقي **بيتضغط**. ده التدفّق الوحيد اللي
- *     المستخدم بيتنقّل بيه بنفسه، وهو اللي بيلبس مكان التبويبات
- *     في النماذج المتعدّدة المراحل.
+ *   · `ladder` — a connected vertical ladder. Order carries meaning: supervisor -> manager ->
+ *   finance -> executive -> entity. The line says "one after another."
+ *   · `row` — a wrapping row. Four stages side by side with no line, because they read as a
+ *   checklist, not a timeline, and a line in a wrapping grid would misrepresent the order.
+ *   · `stepper` — a horizontal row that **compresses**. This is the only flow the user navigates
+ *   themselves, and it takes the place of tabs in multi-stage forms.
  *
- * ### والرقم بيتبدّل بعلامة صح
- * في `stepper` النقطة بتشيل **رقم الخطوة**، وأول ما الخطوة تكتمل
- * الرقم بيروح وتيجي مكانه علامة صح · ده الفرق اللي بيخلّي الشريط
- * «ستيبر» لا «تابس»: التابس بيقول «فين إنت»، والستيبر بيقول «فين
- * إنت **وكام خلص**». والرقم مش زينة · هو ترتيب الخطوة في الإجراء،
- * فمكانه النقطة نفسها لا جنب الاسم.
+ * ### The number turns into a checkmark
+ * In `stepper`, the dot holds the **step number**, and once the step completes, the number is
+ * replaced by a checkmark — that's what makes the bar a "stepper" rather than "tabs": tabs say
+ * "where are you," a stepper says "where are you **and how many are done**." The number isn't
+ * decoration — it's the step's order in the process, so it belongs in the dot itself, not next to
+ * the name.
  *
- * اللي بيتوحّد هو **العلامة**: نقطة واحدة بقطر واحد، وحالة واحدة
- * بلغة واحدة، ونفس الألوان. التخطيط بيتغيّر، والعلامة لأ.
+ * What's unified is the **marker**: one dot, one diameter, one set of states in one language, and
+ * the same colors. The layout changes; the marker doesn't.
  *
- * ### الحالات تلاتة لا اتنين
- * الدفعات كانت `on` أو لأ. يعني أربع محطات، اتنين خُضر واتنين
- * رماديين، والمستخدم **مش عارف مين اللي عليه الدور**. الحالة
- * `now` بترجّع المعلومة دي · وهي كل الغرض من الشاشة: مش «فين
- * وصلنا» بس، ده «مين واقف».
+ * ### Three states, not two
+ * Disbursements used to be `on` or not — four stages, two green and two gray, with the user
+ * **unable to tell whose turn it is**. The `now` state returns exactly that — and that's the whole
+ * point of the screen: not just "how far along," but "who's holding it."
  *
- * لون `now` كهرماني لا أخضر ولا أساسي: السُلّم موجود عشان يقول
- * **مين ماسك الطلب**، والكهرماني هو اللون اللي بيقول «محتاج
- * تحرّك». ودي الحالة الوحيدة اللي المستخدم بياخد عليها إجراء.
+ * The `now` color is amber, not green or the primary color: the ladder exists to say **who's
+ * holding the request**, and amber is the color that says "this needs action." It's also the only
+ * state the user actually acts on.
  */
 
 /**
- * حالة المحطة.
+ * Stage status.
  *
- * ⚠️ **و`skip` حالة رابعة عن قصد** · محطة ما بتنطبقش على الحالة
- * دي (مراجعة الاتصال المؤسسي في إغلاق مشروع بلا التزام نشر ·
- * قاعدة 9 «متى كانت مطلوبة») **بتتقال إنها اتخطّت لا بتختفي** ·
- * نفس قاعدة الغياب اللي الكروت اتصلّحت عليها. وشيلها من الشريط
- * بيخلّي مسارين مختلفين بنفس عدد المحطات ومحدش يعرف إيه اللي فرق.
+ * Warning: **`skip` is a fourth state on purpose** — a stage that doesn't apply to this case (e.g.
+ * reviewing institutional outreach when closing a project with no publicity commitment) is shown as
+ * **skipped, not hidden** — the same rule that fixed the cards' handling of absence. Removing it
+ * from the bar would make two different paths show the same number of stages with no way to tell
+ * what differs.
  */
-export type StepState = 'done' | 'now' | 'todo' | 'skip'
+/* Warning: `no` means the stage **ended with a negative outcome** (rejected). Without it, a
+   rejected request's stepper would still say "decision" is in progress (a numbered, empty dot) even
+   though the decision has already been made. The outcome is an explicit state, not just a color. */
+export type StepState = 'done' | 'now' | 'todo' | 'skip' | 'no'
 
 export interface StepItem {
-  /** اسم المحطة · دور أو إجراء */
+  /** Stage name · a role or an action */
   label: string
-  /** سطر تحت الاسم: ملاحظة أو صاحب الإجراء */
+  /** Line under the name: a note or who took the action */
   note?: ReactNode
-  /** وقت الإنجاز · بيظهر في `ladder` بس */
+  /** Completion time · shown only in `ladder` */
   at?: ReactNode
   state: StepState
 }
 
-/** الحالة مقروءة لقارئ الشاشة · اللون والعلامة لوحدهم مش معلومة */
+/** Status is read out for screen readers · color and marker alone aren't information */
 const SAY: Record<StepState, string> = {
   done: 'تمّت',
   now: 'المحطة الحالية',
   todo: 'لم تبدأ',
   skip: 'لا تنطبق على هذه الحالة',
+  no: 'انتهت بالرفض',
 }
 
 export interface StepsProps {
   items: StepItem[]
-  /** `ladder` سُلّم رأسي متصل · `row` صفّ بيلفّ بلا خط · `stepper` صفّ بيتضغط */
+  /**
+   * `ladder` connected vertical ladder · `row` wrapping row with no line · `stepper` compressing
+   * horizontal row
+   */
   flow?: 'ladder' | 'row' | 'stepper'
   /**
-   * الضغط على خطوة · بيشغّل `stepper` وحده.
-   * وجوده هو اللي بيحوّل العناصر لأزرار · من غيره الشريط بيتعرض
-   * للقراءة، فالعنصر اللي مالوش فعل ما بياخدش شكل الزرار.
+   * Clicking a step · only active in `stepper`.
+   * Its presence is what turns items into buttons — without it the bar is display-only, so an item
+   * with no action doesn't take on button styling.
    */
   onPick?: (index: number) => void
 }
@@ -95,14 +97,15 @@ export function Steps({ items, flow = 'ladder', onPick }: StepsProps) {
       {items.map((s, i) => {
         const dot = (
           <span className="stp-dot" aria-hidden="true">
-            {/* ⚠️ الرقم بيتبدّل بعلامة صح · مش بيقعدوا مع بعض.
-                الاتنين في نفس النقطة معناهم «الخطوة 3 وخلصت»،
-                والرقم بعد الاكتمال ما بيضيفش معلومة · اللي بيهمّ
-                ساعتها إنها خلصت. */}
+            {/* Warning: the number turns into a checkmark rather than sitting alongside it. Having
+                both in the same dot would mean "step 3, and it's done" twice — the number after
+                completion adds no information; what matters at that point is that it's done. */}
             {s.state === 'done'
               ? <Icon name={icons.check} size="sm" />
-              /* المتخطّاة نقطتها فاضية · الرقم فيها بيوعد بخطوة
-                 هتحصل، وهي مش هتحصل */
+              : s.state === 'no'
+                ? <Icon name={icons.close} size="sm" />
+              /* A skipped stage has an empty dot · a number in it would promise a step that's going
+                 to happen, and it won't. */
               : s.state === 'skip'
                 ? null
               : stepper ? <b className="stp-num">{i + 1}</b> : null}
@@ -117,19 +120,18 @@ export function Steps({ items, flow = 'ladder', onPick }: StepsProps) {
             {flow === 'ladder' && <span className="stp-at">{s.at ?? ''}</span>}
           </>
         )
-        /* في الستيبر النقطة فوق والاسم تحتها · فالمحتوى عمود
-           متمركز، والسكّة الأفقية بتعدّي من ورا النقط.
+        /* In the stepper, the dot sits above and the name below it, so the content is a centered
+           column, and the horizontal track passes behind the dots.
 
-           ⚠️ **والعمود ده كان متعلّقًا على الزرار · فالشريط اللي
-           مالوش ضغط كان بيتفكّك.** التخطيط كله كان مكتوبًا على
-           `.stp-b`، وهي ما بتترسمش إلا لما `onPick` يتبعت · فصفحة
-           الخطة (شريط للقراءة) طلعت نقطة جنب اسم في صفّ، والسكّة
-           المحسوبة لعمود متمركز عدّت من مكان غلط. العميل شافها
-           وقال «ليه مش مستخدم الستيبر بتاعنا» · وهو **كان** مستخدمه،
-           بس المكوّن نفسه كان بيشتغل في حالة واحدة من اتنين.
+           Warning: **this column used to be anchored to the button, so a bar with no click handler
+           fell apart.** The whole layout was written on `.stp-b`, which only renders when `onPick`
+           is passed — so the plan page (a display-only bar) ended up with a dot next to a name in a
+           row, and the track, computed for a centered column, ran through the wrong place. The
+           client noticed and asked why it wasn't using our stepper — it **was**, but the component
+           itself only worked in one of its two states.
 
-           فالصندوق `.stp-c` بيتلبس دايمًا، و`.stp-b` بقت زيادة
-           للسلوك (مؤشّر وهوفر) لا للتخطيط. */
+           So the `.stp-c` box is now always applied, and `.stp-b` is now an addition for behavior
+           (cursor and hover), not for layout. */
         const box = `stp-c${can ? ' stp-b' : ''}`
         return (
           <li key={i} className={`stp-i ${s.state}`}>

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { AskDock, Background, MobileTop, Rail } from '@/components/shell'
 import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -10,25 +10,54 @@ import type { AssistantContext } from '@/components/assistant'
 
 export interface AppLayoutProps {
   children: ReactNode
-  /** كونتنت المساعد للصفحة الحالية · سطر المدى والكروت */
+  /** Assistant content for the current page — the range line and cards. */
   assistantContext?: AssistantContext
 }
 
 /**
- * قشرة كل الصفحات الداخلية: الخلفية والتنقّل ولوح المساعد.
- *
- * لوح المساعد هنا مش في كل صفحة على حدة، عشان يفضل مفتوح وأنت
- * بتتنقّل، ويتفتح من أي مكان بـ⌘K.
- *
- * ما بيفتحش لوحده في أي صفحة: المستخدم بيقع على شاشة المساعد
- * الكاملة بعد الدخول، فالترحيب بيحصل هناك مرة واحدة · ولوح
- * جانبي بيفتح لوحده فوق كده يبقى إزعاج لا ترحيب.
+ * Shell for all internal pages: background, navigation, and the assistant panel.
+ * The assistant panel lives here rather than on each page individually, so it stays open while
+ * navigating and can be opened from anywhere with the keyboard shortcut.
+ * It never opens on its own on any page: the user lands on the full assistant screen after login,
+ * so the welcome happens there once — a side panel opening by itself afterward would be an
+ * interruption, not a welcome.
  */
+/* The route opened first in the session — the last one learned (so the double effect in StrictMode
+   doesn't clear the flag just set). */
+let freshPath = ''
+
+/**
+ * Once per session. `:root[data-fresh]` is set only on the first visit to a route in a session, and
+ * all the CSS motion depends on it; a second visit to the page appears static from the first frame.
+ * Storage uses `sessionStorage` wrapped in try: if blocked, the motion plays every time, which is
+ * preferable to it never playing.
+ */
+function useFreshVisit(path: string) {
+  useLayoutEffect(() => {
+    const K = 'ab-seen'
+    let seen: string[] = []
+    try { seen = JSON.parse(sessionStorage.getItem(K) ?? '[]') } catch { seen = [] }
+    const fresh = path === freshPath || !seen.includes(path)
+    const el = document.documentElement
+    if (fresh) {
+      el.setAttribute('data-fresh', '')
+      freshPath = path
+      if (!seen.includes(path)) {
+        try { sessionStorage.setItem(K, JSON.stringify([...seen, path])) } catch { /* No storage. */ }
+      }
+    } else {
+      el.removeAttribute('data-fresh')
+    }
+  }, [path])
+}
+
 export function AppLayout({ children, assistantContext }: AppLayoutProps) {
   const mobile = useIsMobile()
   const navigate = useNavigate()
   const [assistantOpen, setAssistantOpen] = useState(false)
   const { user } = useRole()
+  const { pathname } = useLocation()
+  useFreshVisit(pathname)
 
   const toggleAssistant = useCallback(() => setAssistantOpen((v) => !v), [])
 
@@ -48,7 +77,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
     <>
       <Background />
       <div className="app">
-        {mobile && <MobileTop user={user} onSignOut={() => { signOut(); navigate(ROUTES.login, { replace: true }) }} />}
+        {mobile && <MobileTop user={user} />}
 
         <div className="shell">
           <Rail
@@ -65,8 +94,8 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
             ctx={assistantContext}
           />
 
-          {/* ثابت في كل شاشة، ومكانه جنب شريط القرار لا في شريط
-              التنقّل · السؤال بيتسأل عند القرار. */}
+          {/* Fixed on every screen, placed next to the decision bar rather than the navigation bar
+              — the question is asked at the point of decision. */}
           <AskDock open={assistantOpen} onToggle={toggleAssistant} compact={mobile} />
         </div>
       </div>

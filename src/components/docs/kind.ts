@@ -1,10 +1,8 @@
 /**
- * نوع المستند · بيتحدّد من الامتداد، وإلا من اسمه.
- *
- * ليه مهم: الثامبنيل بيرسم شكل المحتوى لا أيقونة عامة. صفحة سطور
- * لملف نصّي، وشبكة خانات للجدول، وكتلة صورة للصورة. المراجع بيعرف
- * إن ده جدول قبل ما يفتحه، وده الفرق اللي أيقونة الورقة الواحدة
- * ما بتديهوش.
+ * Document type — determined from the extension, or from its name otherwise.
+ * Why it matters: the thumbnail draws the shape of the content, not a generic icon — a lined page
+ * for a text file, a grid of cells for a table, an image block for a picture. A reviewer knows it's
+ * a table before opening it, which is the difference a single paper icon can't give.
  */
 export type DocKind = 'pdf' | 'doc' | 'sheet' | 'image' | 'archive'
 
@@ -19,7 +17,7 @@ const EXT: Record<string, DocKind> = {
 export const docKind = (name: string): DocKind => {
   const ext = name.split('.').pop()?.toLowerCase() ?? ''
   if (EXT[ext]) return EXT[ext]
-  /* بلا امتداد: الاسم بيقول. «الموازنة» جدول، و«صور» صورة. */
+  /* No extension: the name tells you. "Budget" is a table, "Photos" is an image. */
   if (/موازن|ميزاني|جدول|كشف/.test(name)) return 'sheet'
   if (/صور|صورة|فيديو|لقطات/.test(name)) return 'image'
   return 'pdf'
@@ -34,8 +32,8 @@ export const KIND_LABEL: Record<DocKind, string> = {
 }
 
 /**
- * الموازنة في المشروع النموذجي **صورة ممسوحة**، وده مش تفصيلة:
- * بنودها ما تتقارنش آليًا بالمبلغ المطلوب، وطلب الاستكمال الحالي
- * سببه هي. فالتحذير ده بيتقال في المعاينة وفي الثامبنيل.
+ * In the sample project, the budget is a **scanned image**, and that's not incidental: its line
+ * items can't be compared to the requested amount automatically, and it's the reason for the
+ * current completion request. This warning is stated in both the preview and the thumbnail.
  */
 export const isScan = (name: string): boolean => /الموازنة/.test(name)

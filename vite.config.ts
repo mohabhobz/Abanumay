@@ -4,13 +4,11 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [react()],
-  // لازم '/' مش './' — الروابط النسبية بتتكسر على أي مسار متداخل
-  // زي /projects/20940 لأن الأصول بتتحل نسبة للمسار مش للجذر
+  // Must be '/' not './' — relative paths break on any nested route like
+  // /projects/20940 because assets resolve relative to the path, not the root.
   base: '/',
-  // مجلّد المخرجات جوّه مجلّد المستخدم، والصدفة هنا ما بتقدرش تمسح
-  // ملفات · `emptyOutDir` بيحاول يفضّيه فالبِناء كان بيقع بـEPERM.
-  // بالكتابة فوق القديم البِناء بيعدّي، والأصول باسم مجزّأ فالقديم
-  // ما بيتقريش. `npm run clean` بيشيله لما يلزم.
+  // Keep previous hashed assets instead of clearing dist/ (useful on hosts that
+  // disallow deletes). Run `npm run clean` for a fresh output folder.
   build: { emptyOutDir: false },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

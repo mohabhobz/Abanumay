@@ -7,6 +7,7 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
+import { NOUN, nounAfter } from '@/lib/format'
 import {
   budgetDocs, fiscalYears, fundSources, type FiscalYear, type FundSource,
 } from '@/data/mock/budgetTree'
@@ -19,24 +20,20 @@ const TABS = [
   { slug: 'sources', label: 'مصادر التمويل' },
 ] as const
 
-/* ═══════════════════════════════════════════════════════════
-   إعدادات الميزانية · الماستر داتا اللي الميزانية بتتبني عليها
+/* Budget settings - the master data the budget is built on.
 
-   ⚠️ **دي مش «إعدادات» بمعنى تفضيلات.** دي **ماستر داتا**: قيم
-   بتتعرَّف مرة وبيتبني عليها كل ريكورد بعدها. والفرق بينها وبين
-   الترانزكشن داتا إن دي بتتقري في كل مكان في السيستم والتانية
-   بتتكتب مرة.
+   Note: this isn't "settings" in the sense of preferences. It's master data: values defined once
+   that every later record is built on. The difference from transaction data is that this gets read
+   everywhere in the system, while transaction data is written once.
 
-   ⚠️ **والسنة المالية كيان مستقل عن الميزانية، لا خانة فيها.**
-   لو السنة اتكتبت جوّه الميزانية، كل حركة مالية تانية في السيستم
-   هتحتاج تكتبها من تاني وتوفّق بينهم بالإيد · والتوفيق ده بالظبط
-   هو اللي بيبوّظ التقارير لما تيجي تسأل «اتصرف كام في 2026».
+   Note: the fiscal year is its own entity, not a field inside the budget. If the year were written
+   inside the budget, every other financial transaction in the system would need to write it again
+   and reconcile the two by hand - and that reconciliation is exactly what breaks reports when
+   someone asks how much was spent in 2026.
 
-   ⚠️ **ومفيش حذف.** السنة اللي عليها ميزانية، والميزانية اللي
-   عليها مشاريع، والمشروع اللي عليه اتفاقيات ودفعات — السلسلة دي
-   بتمنع الحذف من أولها. فالعمود الأخير بيقول **المتعلقات** لا
-   بيعرض زرار سلة.
-   ═══════════════════════════════════════════════════════════ */
+   Note: nothing can be deleted. A year with a budget, a budget with projects, a project with
+   agreements and payments - this chain blocks deletion from the start. So the last column shows
+   dependents, not a trash-can button. */
 
 export default function BudgetSettingsPage() {
   const navigate = useNavigate()
@@ -52,7 +49,7 @@ export default function BudgetSettingsPage() {
   const [sCode, setSCode] = useState('')
   const [sName, setSName] = useState('')
 
-  /** كام ميزانية مبنية على السنة دي · وده اللي بيمنع حذفها */
+  /** How many budgets are built on this year - what blocks deleting it. */
   const usedYear = (id: string) => budgetDocs.filter((d) => d.yearId === id).length
   const usedSource = (code: string) => budgetDocs.filter((d) => d.sourceCode === code).length
 
@@ -113,15 +110,13 @@ export default function BudgetSettingsPage() {
                   </label>
                   <label className="regf">
                     <span className="lb">من تاريخ</span>
-                    <span className="fld">
-                      <DateField value={yFrom} onChange={setYFrom} label="من تاريخ" />
-                    </span>
+                    {/* Note: `DateField` wraps `.fld` itself - the wrapper used to be a field
+                        inside a field: a 52px box around a 36px box. */}
+                    <DateField value={yFrom} onChange={setYFrom} label="من تاريخ" />
                   </label>
                   <label className="regf">
                     <span className="lb">إلى تاريخ</span>
-                    <span className="fld">
-                      <DateField value={yTo} onChange={setYTo} label="إلى تاريخ" min={yFrom || undefined} />
-                    </span>
+                    <DateField value={yTo} onChange={setYTo} label="إلى تاريخ" min={yFrom || undefined} />
                   </label>
                   <button
                     className="btn btn-p cfgadd"
@@ -143,7 +138,7 @@ export default function BudgetSettingsPage() {
               <Glass className="tblcard">
                 <Head
                   title="السنوات المعرَّفة"
-                  meta={<span className="sub"><Num>{years.length}</Num> سنة</span>}
+                  meta={<span className="sub"><Num>{years.length}</Num> {nounAfter(years.length, NOUN.year)}</span>}
                 />
                 <ul className="cfglist">
                   {years.map((y) => {
@@ -156,7 +151,7 @@ export default function BudgetSettingsPage() {
                         </span>
                         <span className="pc-sp" />
                         {used > 0
-                          ? <Tag tone="mute"><Num>{used}</Num> ميزانية عليها</Tag>
+                          ? <Tag tone="mute"><Num>{used}</Num> {nounAfter(used, NOUN.budget)} عليها</Tag>
                           : <Tag tone="ok">بلا متعلقات</Tag>}
                       </li>
                     )
@@ -208,8 +203,8 @@ export default function BudgetSettingsPage() {
                     أضف المصدر
                   </button>
                 </div>
-                {/* ⚠️ الرمز هو اللي بيربط الحركة المالية بمصدرها لما
-                    الانتجريشن ييجي · الاسم بيتغيّر، الرمز لأ. */}
+                {/* Note: the code is what ties the transaction to its source once integration
+                    arrives - the name can change, the code can't. */}
                 <p className="sub cnote">
                   يبقى الرمز ثابتًا طوال عمر المصدر · يمكن تعديل الاسم،
                   أما الرمز فهو ما تُربط به الحركات المالية.
@@ -219,7 +214,7 @@ export default function BudgetSettingsPage() {
               <Glass className="tblcard">
                 <Head
                   title="المصادر المعرَّفة"
-                  meta={<span className="sub"><Num>{sources.length}</Num> مصدر</span>}
+                  meta={<span className="sub"><Num>{sources.length}</Num> {nounAfter(sources.length, NOUN.source)}</span>}
                 />
                 <ul className="cfglist">
                   {sources.map((s) => {
@@ -230,7 +225,7 @@ export default function BudgetSettingsPage() {
                         <span>{s.name}</span>
                         <span className="pc-sp" />
                         {used > 0
-                          ? <Tag tone="mute"><Num>{used}</Num> ميزانية عليها</Tag>
+                          ? <Tag tone="mute"><Num>{used}</Num> {nounAfter(used, NOUN.budget)} عليها</Tag>
                           : <Tag tone="ok">بلا متعلقات</Tag>}
                       </li>
                     )

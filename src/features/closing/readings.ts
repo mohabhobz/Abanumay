@@ -3,31 +3,29 @@ import {
   CLOSE_DOCS, canStartEval, closeCycle, closeLate, closeRequirements, closeStageWho,
   evalBlockers, needsComms, reportApproved, reportBlockers, reportGap,
 } from '@/data/mock/closing'
-import { nf, MISSING_ITEM, nounAfter } from '@/lib/format'
+import { nf, MISSING_ITEM, nounAfter, unitAfter } from '@/lib/format'
 import type { CloseRow } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   قراءة طلب إغلاق واحد · مخرجات الذكاء الأربعة (11.5)
+/* Reading a single closing request - the four AI outputs (11.5).
 
-   الوثيقة بتحدّد أربعة مخرجات للمساعد في الإجراء ده:
-     ١ · تحليل التقرير واستخلاص النتائج والتحديات
-     ٢ · **مقارنة الفعلي بالمعتمد** وإبراز الانحرافات
-     ٣ · تحليل مؤشرات الأثر وتقييم استرشادي للنجاح
-     ٤ · مراجعة المرفقات والتنبيه للناقص
+   The spec defines four outputs for the assistant in this procedure:
+   1. Analyze the report and extract results and challenges
+   2. Compare actual to approved and surface deviations
+   3. Analyze impact indicators and give an advisory success assessment
+   4. Review attachments and flag what's missing
 
-   ⚠️ **والقاعدة 13 بتقول إنها استرشادية** · نفس قاعدة 21 في
-   الاتفاقيات: المساعد بيحلّل وبيقارن وبيطلع الانحراف · **وما
-   بيعتمدش**. فمفيش قراءة هنا بتقول «اعتمد» ولا «ارفض».
+   Note: rule 13 states these are advisory - same as rule 21 in agreements: the assistant analyzes,
+   compares, and surfaces deviation, and does not approve. So no reading here says "approve" or
+   "reject".
 
-   ⚠️ **والترتيب: اللي بيمنع، بعده الانحراف، بعده اللي بيطمّن** ·
-   الكارت المقفول بيعرض `readings[0]` لمحةً.
-   ═══════════════════════════════════════════════════════════ */
+   Note: order is blocking issues first, then deviation, then reassurance - the collapsed card shows
+   `readings[0]` as a preview. */
 
 export function closeReadings(c: CloseRow): Reading[] {
   const out: Reading[] = []
   const cycle = closeCycle(c)
 
-  /* ١ · مخرج 4 · الناقص · وده اللي بيمنع الإرسال (قاعدة 3 و10) */
+  /* 1 - output 4 - what's missing - and what blocks submission (rules 3 and 10). */
   const missing = reportBlockers(c)
   if (missing.length > 0) {
     const docs = missing.filter((m) => CLOSE_DOCS.some((d) => d.label === m))
@@ -45,7 +43,7 @@ export function closeReadings(c: CloseRow): Reading[] {
     })
   }
 
-  /* ٢ · مخرج 2 · المقارنة بالمعتمد · قلب المراجعة */
+  /* 2 - output 2 - comparison to approved - the core of the review. */
   const gaps = reportGap(c).filter((g) => g.actual !== null && g.planned > 0)
   for (const g of gaps) {
     const actual = g.actual ?? 0
@@ -55,14 +53,14 @@ export function closeReadings(c: CloseRow): Reading[] {
       id: `cl-gap-${g.key}`,
       kind: off ? 'flag' : 'note',
       label: off ? `انحراف في ${g.label}` : `${g.label} مطابقة`,
-      /* الإشارة جوّه نفس العزل · برّه كانت بتتقري «146%+» */
+      /* The sign stays inside the same isolated span - outside it, it used to read as "146%+". */
       metric: { value: `\u2066${diff > 0 ? '+' : ''}${diff}%\u2069`, unit: 'عن المعتمد' },
       text:
-        `الفعلي ${nf.format(actual)} ${g.unit} والمعتمد ${nf.format(g.planned)} · ` +
+        `الفعلي ${nf.format(actual)} ${unitAfter(actual, g.unit)} والمعتمد ${nf.format(g.planned)} · ` +
         (off
           ? 'الفرق جوهري ويحتاج إلى تفسير في التقرير قبل الاعتماد.'
           : 'الفرق داخل المدى المعقول.'),
-      bold: [`${nf.format(actual)} ${g.unit}`],
+      bold: [`${nf.format(actual)} ${unitAfter(actual, g.unit)}`],
       src: 'قاعدة 4 · بيانات المشروع المعتمدة والاتفاقية',
       bar: {
         value: actual,
@@ -74,7 +72,7 @@ export function closeReadings(c: CloseRow): Reading[] {
     })
   }
 
-  /* ٣ · مخرج 3 · مؤشرات التقييم · الدورة التانية وحدها */
+  /* 3 - output 3 - evaluation indicators - second cycle only. */
   if (cycle === 'eval' && c.evaluation) {
     const hit = c.evaluation.indicators.filter(
       (i) => i.actual !== null && i.actual >= i.target,
@@ -105,7 +103,7 @@ export function closeReadings(c: CloseRow): Reading[] {
     }
   }
 
-  /* ٤ · محطة الاتصال المؤسسي · قاعدة 9 · والغياب بيتقال */
+  /* 4 - the institutional-communications stage - rule 9 - and absence is stated. */
   out.push({
     id: 'cl-comms',
     kind: 'note',
@@ -119,7 +117,7 @@ export function closeReadings(c: CloseRow): Reading[] {
     src: 'قاعدة 9 · التزامات النشر في الاتفاقية',
   })
 
-  /* ٥ · اللي واقف دلوقتي · وعند مين */
+  /* 5 - what's pending now, and with whom. */
   if (canStartEval(c)) {
     out.push({
       id: 'cl-next',
@@ -144,7 +142,7 @@ export function closeReadings(c: CloseRow): Reading[] {
     })
   }
 
-  /* ٦ · المتطلبات المالية · قاعدة 8 و18 */
+  /* 6 - financial requirements - rules 8 and 18. */
   const req = closeRequirements(c)
   if (!req.ok || reportApproved(c)) {
     out.push({

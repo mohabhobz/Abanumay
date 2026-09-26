@@ -1,25 +1,23 @@
 import { Link } from 'react-router-dom'
-import { DateText, Mono, Person, Tag } from '@/components/ui'
+import { DateText, Mono, Person, Tag, Nil } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
 import {
   agrHeat, agrPaymentsBalance, agrReserveGap, agrStageLabel,
 } from '@/data/mock/agreements'
 import type { AgreementRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
-/* ═══════════════════════════════════════════════════════════
-   أعمدة جدول الاتفاقيات · نفس عقد المشاريع والجهات والصرف.
+/* Agreements table columns - same contract as projects, entities, and disbursements.
 
-   عمودان هنا مش معلومات، هما **تحقّقان**: «جدول الدفعات» بيقول
-   متوازن ولا لأ (قاعدة 8)، و«المخصص» بيقول فيه فرق عن المحجوز ولا
-   لأ (خطوة 11). الاتنين دول اللي بيمنعوا الإرسال للاعتماد، فالجدول
-   بيوَرّيهم في عمود بدل ما المشرف يفتح كل اتفاقية عشان يعرف.
-   ═══════════════════════════════════════════════════════════ */
+   Two columns here aren't information, they're checks: "payment schedule" reports whether it
+   balances (rule 8), and "allocated" reports whether it differs from the reserved amount (step 11).
+   These two are what block submission for approval, so the table surfaces them in a column instead
+   of requiring the supervisor to open every agreement to find out. */
 
+import { HEAT_TONE } from '@/lib/tone'
 export type Col = TCol<AgreementRow>
 
-const HEAT_TONE = { ok: 'ok', late: 'warn', stuck: 'no' } as const
 const HEAT_SAY = { ok: 'في المدة', late: 'متأخرة', stuck: 'متعثرة' } as const
 
 export const COLS: Col[] = [
@@ -72,26 +70,26 @@ export const COLS: Col[] = [
     w: 108,
     label: 'جدول الدفعات',
     def: true,
-    /* قاعدة 8 · المجموع = قيمة المنحة، والنسب = 100% */
+    /* Rule 8 - the total equals the grant value, and percentages equal 100%. */
     cell: (a) => {
       const b = agrPaymentsBalance(a)
       return b.balanced
-        ? <span className="sub"><span className="num">{a.payments.length}</span> دفعات</span>
-        : <Tag tone="no">غير متوازن</Tag>
+        ? <span className="sub"><span className="num">{a.payments.length}</span> {nounAfter(a.payments.length, NOUN.payment)}</span>
+        : <b>غير متوازن</b>
     },
-    text: (a) => (agrPaymentsBalance(a).balanced ? `${a.payments.length} دفعات` : 'غير متوازن'),
+    text: (a) => (agrPaymentsBalance(a).balanced ? `${countOf(a.payments.length, NOUN.payment)}` : 'غير متوازن'),
   },
   {
     key: 'reserve',
     w: 112,
     label: 'المخصص',
     def: true,
-    /* خطوة 11 · فرق بين قيمة الاتفاقية والمحجوز بيمنع الإرسال */
+    /* Step 11 - a mismatch between agreement value and the reserved amount blocks submission. */
     cell: (a) => {
       const gap = agrReserveGap(a)
       return gap === 0
         ? <span className="sub">مطابق</span>
-        : <Tag tone="no">فرق <span className="num">{nf.format(Math.abs(gap))}</span></Tag>
+        : <b>فرق <span className="num">{nf.format(Math.abs(gap))}</span></b>
     },
     text: (a) => (agrReserveGap(a) === 0 ? 'مطابق' : `فرق ${nf.format(Math.abs(agrReserveGap(a)))}`),
   },
@@ -111,12 +109,12 @@ export const COLS: Col[] = [
     cell: (a) => {
       const h = agrHeat(a)
       return h === 'ok'
-        ? <span className="sub"><span className="num">{Math.round(a.hoursInStage / 24)}</span> يومًا</span>
+        ? <span className="sub"><span className="num">{Math.round(a.hoursInStage / 24)}</span> {nounAfter(Math.round(a.hoursInStage / 24), NOUN.day)}</span>
         : <Tag tone={HEAT_TONE[h]}>{HEAT_SAY[h]}</Tag>
     },
-    text: (a) => (agrHeat(a) === 'ok' ? `${Math.round(a.hoursInStage / 24)} يومًا` : HEAT_SAY[agrHeat(a)]),
-    /* الخلية بتقول أيامًا في صفّ وكلمة («متأخر») في صفّ · فالوسط
-       لازم يقول وحدته، وإلا بقى رقمًا معلّقًا تحت عمود فيه كلام */
+    text: (a) => (agrHeat(a) === 'ok' ? `${countOf(Math.round(a.hoursInStage / 24), NOUN.day)}` : HEAT_SAY[agrHeat(a)]),
+    /* One row shows days, another shows a word ("overdue") - the middle needs to say its unit, or
+       it becomes a number floating under a column full of text. */
     value: (a) => Math.round(a.hoursInStage / 24),
     agg: 'avg',
     aggSay: 'يومًا في المتوسط',
@@ -126,8 +124,8 @@ export const COLS: Col[] = [
     w: 82,
     label: 'الإصدار',
     n: true,
-    /* قاعدة 24 · إصدارات متعددة وواحد ساري · الإصدار التاني دليل
-       إعادة حصلت، وهو مصدر المؤشر الرابع */
+    /* Rule 24 - multiple versions, one active. A second version is evidence a return happened, and
+       it's the source of the fourth indicator. */
     cell: (a) => <span className="num">{a.version}</span>,
     text: (a) => String(a.version),
   },
@@ -166,7 +164,7 @@ export const COLS: Col[] = [
     key: 'activeAt',
     w: 112,
     label: 'تاريخ التفعيل',
-    cell: (a) => (a.activeAt ? <DateText>{a.activeAt}</DateText> : <span className="sub">·</span>),
+    cell: (a) => (a.activeAt ? <DateText>{a.activeAt}</DateText> : <Nil />),
     text: (a) => a.activeAt ?? '',
   },
 ]

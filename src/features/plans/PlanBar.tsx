@@ -1,43 +1,39 @@
 import { pct } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   شريط الخطة · **مكتوب مرة واحدة**
+/* Plan progress bar - written once.
 
-   الشريط ده بيتعرض في كارت الصندوق وفي ترويسة صفحة الخطة، وكان
-   متكتوبًا في الاتنين · ولما الحاجة تتكتب مرتين بتفرق. نفس درس
-   `useMenu` و`sheetOf` و`ReadingBlock` في السيستم ده.
+   This bar appears in the inbox card and the plan page header, and used to be written in both
+   places - and when something is written twice, they drift. Same lesson as `useMenu`, `sheetOf`,
+   and `ReadingBlock` elsewhere in this system.
 
-   ⚠️ **تلات أرقام على مسار واحد، وده كل الفكرة:**
+   Note: three numbers on one track, and that's the whole idea:
 
-     المُعلَن   · اللي الجهة قالت إنه خلص
-     المقبول   · اللي المشرف راجعه وقبله · وده اللي بيتحسب
-     المخطَّط  · اللي كان المفروض يكون خلص النهاردة
+     Declared - what the entity says is done
+     Accepted - what the supervisor reviewed and accepted - and this is what counts
+     Planned  - what should be done as of today
 
-   «٦٠٪ منجَز» لوحدها ما بتقولش حاجة: ٦٠ في مشروع لسه في نصّه
-   ممتازة، و٦٠ في مشروع باقي له شهر متأخّرة. العلامة بتحطّ
-   المخطَّط على نفس المسار فالفرق بيتشاف من غير حساب.
+   "60% complete" alone says nothing: 60 in a project still at its midpoint is excellent, and 60 in
+   a project with a month left is late. The marker places "planned" on the same track, so the gap is
+   visible without doing the math.
 
-   ⚠️ **والطبقتان مطلقتان لأن `.bar` فليكس** · في المجرى العادي
-   كانوا هيتراصّوا جنب بعض فالشريط يقرا «مُعلَن + مقبول» مجموعًا،
-   وهما مش مجموع: المُعلَن **بيشمل** المقبول، والزيادة بينهم هي
-   الشغل المستنّي مراجعة (قاعدة 14).
-   ═══════════════════════════════════════════════════════════ */
+   Note: the two layers are absolutely positioned because `.bar` is flex - in normal flow they'd sit
+   side by side, making the bar read as "declared + accepted" summed, when they aren't a sum:
+   declared includes accepted, and the gap between them is work still awaiting review (rule 14). */
 
 export interface PlanBarProps {
-  /** المقبول · مراجَع من المشرف */
+  /** Accepted - reviewed by the supervisor. */
   done: number
-  /** المُعلَن · الجهة قالت إنه خلص */
+  /** Declared - the entity says it's done. */
   claim: number
-  /** المخطَّط لليوم · من النسخة المرجعية */
+  /** Planned as of today - from the baseline. */
   want: number
   /**
-   * الخطة لسه ما اتعتمدتش · مفيش نسخة مرجعية يتقاس عليها.
+   * The plan isn't approved yet - there's no baseline to measure against.
    *
-   * ⚠️ **والشريط بيتقال إنه فاضي، ما بيتشالش.** الكارت كان بيرسم
-   * الشريط للخطة الشغّالة ويحطّ فقرة نصّ مكانه للمسودة · يعني
-   * صندوق الخطط فيه كروت بشريط وكروت من غيره، والعين ما بتعرفش
-   * تقارن اتنين (العميل شافها مرتين). المسار بيفضل مرسومًا
-   * والحكاية بتتقال تحته.
+   * Note: the bar states that it's empty rather than being removed. The card used to render the bar
+   * for an active plan and swap in a text paragraph for a draft - meaning the inbox had cards with
+   * a bar and cards without one, and the eye can't compare the two. The track stays drawn, and the
+   * state is stated underneath it.
    */
   pending?: boolean
 }
@@ -60,8 +56,8 @@ export function PlanBar({ done, claim, want, pending }: PlanBarProps) {
       <div className="bar over plbar">
         <i className="plbar-c" style={{ width: `${Math.min(100, claim)}%` }} />
         <i className="plbar-d" style={{ width: `${Math.min(100, done)}%` }} />
-        {/* العلامة بتتحطّ بس لو المخطَّط جوّه المسار · فوق المية
-            معناها إن المدة كلها عدّت، والعلامة على الحافة بتكدب */}
+        {/* The marker only appears when planned is within the track - past 100% means the whole
+            duration has elapsed, and a marker on the edge would misstate that. */}
         {want > 0 && want <= 100 && (
           <u style={{ insetInlineStart: `${want}%` }} title="المخطَّط لليوم" />
         )}

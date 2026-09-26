@@ -4,32 +4,29 @@ import type {
 import { projectRows } from './projects'
 import { entityById } from './entities'
 
-/* ═══════════════════════════════════════════════════════════
-   الاتفاقيات · BPD-008 · 28 خطوة و26 قاعدة
+/* Agreements · 28 steps and 26 rules
 
-   ⚠️ **الاتفاقية إجراء مستقل عن المشروع.** القاعدة 23 صريحة، والـ25
-   بتشرح أثرها: انتقال الاتفاقية بين مراحلها **ما بيغيّرش حالة
-   المشروع** · المشروع بيفضل «إعداد الاتفاقية» لحدّ الاعتماد النهائي.
-   يعني اتفاقية عند المدير التنفيذي ومشروعها مكتوب عليه «إعداد
-   الاتفاقية»، والاتنين صح. عشان كده الموديول ده له صندوقه وسجلّه
-   وإصداراته، مش تابًا في صفحة المشروع.
+   Warning: **an agreement is a process independent of the project.** Rule 23 states this
+   explicitly, and rule 25 explains its effect: the agreement moving between its stages **doesn't
+   change the project's status** — the project stays at "drafting agreement" until final approval.
+   So an agreement can be with the executive director while its project still shows "drafting
+   agreement," and both are correct. That's why this module has its own inbox, log, and versions,
+   rather than being a tab on the project page.
 
-   ═══ اللي اتبنى بالوثيقة ═══
+   === What was built from the document ===
 
-   أربع محطات اعتماد من المخطط (9.6): مشرف المنح ← مدير المنح ←
-   المدير التنفيذي ← الجهة المستفيدة. وكل محطة ليها إعادة، والإعادة
-   بتروح لمكان محدّد في الوثيقة لا لواحدة قبلها: إعادة المدير
-   التنفيذي بتروح **لمدير المنح** (خطوة 18)، وإعادة الجهة بتروح
-   **لمشرف المنح** (خطوة 22). تلات مسارات رجوع مختلفة، مش واحد.
+   Four approval stages from the diagram (9.6): grants supervisor -> grants manager -> executive
+   director -> beneficiary entity. Every stage has a send-back, and a send-back goes to a specific
+   place in the document, not to the one before it: the executive director's send-back goes to **the
+   grants manager** (step 18), and the entity's send-back goes to **the grants supervisor** (step
+   22). Three different return paths, not one.
 
-   ═══ الفرق عن النظام العامل · مسجَّل نوتة ═══
+   === Difference from the live system · logged as a note ===
 
-   النظام العامل فيه **سبعة أقسام** للاتفاقية، وفيها
-   «اعتماد الإتفاقية (القسم المالي)» — محطة اعتماد **مش موجودة في
-   مخطط الوثيقة خالص**. الوثيقة بتعدّي من مدير المنح للمدير التنفيذي
-   مباشرة. ده أهم سؤال في الموديول ده، ومسجَّل في
-   `AGREEMENTS_MODULE_BRIEF.md`.
-   ═══════════════════════════════════════════════════════════ */
+   The live system has **seven sections** for the agreement, including "agreement approval (finance
+   department)" — an approval stage **that doesn't appear in the document's diagram at all**. The
+   document goes straight from the grants manager to the executive director. This is the most
+   important open question in this module, logged in `AGREEMENTS_MODULE_BRIEF.md`. */
 
 export const AGREEMENT_STAGES: {
   key: AgreementStage; label: string; who: string; steps: string
@@ -49,11 +46,11 @@ export const agrStageWho = (s: AgreementStage): string =>
   AGREEMENT_STAGES.find((x) => x.key === s)?.who ?? ''
 
 /**
- * نبرة وسم المرحلة · **مكتوبة مرة واحدة**.
+ * Stage badge tone · **written once**.
  *
- * ⚠️ كانت كل شاشة بتختار نبرتها بنفسها (الصندوق والكارت والجدول)
- * · فنفس المرحلة بتاخد لونًا هنا ولونًا هناك. والنبرة معلومة:
- * «مُعادة» تحذير، و«سارية» تمام، والباقي انتظار محايد.
+ * Warning: every screen used to pick its own tone (the inbox, the card, the table), so the same
+ * stage got one color here and another there. The tone carries meaning: "sent back" is a warning,
+ * "active" is good, and everything else is neutral waiting.
  */
 export const AGR_TONE: Record<AgreementStage, 'mute' | 'warn' | 'ret' | 'ok' | 'no' | 'teal'> = {
   draft: 'mute',
@@ -62,14 +59,14 @@ export const AGR_TONE: Record<AgreementStage, 'mute' | 'warn' | 'ret' | 'ok' | '
   entity: 'teal',
   returned: 'warn',
   active: 'ok',
-  /* الملغاة موجودة في النوع · وسمها 'لا' زي أي حاجة اتقفلت */
+  /* Cancelled exists in the type · its badge is 'none,' like anything closed out */
   cancelled: 'no',
 }
 
 /**
- * حدّ المرحلة بالساعات · مؤقت زي كل مدة في السيستم.
- * الوثيقة ما دّتش مدة لكل محطة؛ المؤشر الأول بيقيس «متوسط مدة إعداد
- * الاتفاقية» والمستهدف **فاضي**، زي مؤشرات الصرف بالظبط.
+ * Stage limit in hours · provisional like every duration in the system.
+ * The document gives no duration per stage; the first indicator measures "average agreement
+ * drafting time" and the target is **empty**, exactly like the disbursement indicators.
  */
 export const AGR_LIMIT: Record<AgreementStage, number> = {
   draft: 168,
@@ -92,8 +89,8 @@ export const agrHeat = (a: AgreementRow): AgrHeat => {
 }
 
 /**
- * قاعدة 8 · مجموع الدفعات لازم يساوي قيمة المنحة، أو مجموع النسب
- * يساوي 100% · والنظام بيمنع الإرسال للاعتماد قبل كده.
+ * Rule 8 · disbursements must sum to the grant value, or their percentages must total 100% — the
+ * system blocks submission for approval before that.
  */
 export const agrPaymentsBalance = (a: AgreementRow): {
   sum: number; share: number; balanced: boolean
@@ -104,19 +101,18 @@ export const agrPaymentsBalance = (a: AgreementRow): {
 }
 
 /**
- * خطوة 11 · قيمة الاتفاقية لازم تطابق المبلغ المحجوز في الميزانية،
- * والنظام بيمنع الإرسال عند وجود فرق.
+ * Step 11 · the agreement value must match the amount held in the budget, and the system blocks
+ * submission if there's a mismatch.
  */
 export const agrReserveGap = (a: AgreementRow): number => a.amount - a.reserved
 
-/** الاتفاقية مقفولة عن الإرسال · قاعدة 8 أو خطوة 11 أو قاعدة 9 */
+/** Agreement blocked from submission · rule 8, step 11, or rule 9 */
 export const agrBlocked = (a: AgreementRow): boolean =>
   !agrPaymentsBalance(a).balanced || agrReserveGap(a) !== 0 || a.docs.length === 0
 
-/* ═══════════════ النماذج · 13 في النظام العامل ═══════════════
-   `config_contract` في النظام فيه تلاتاشر نموذجًا بمحرر HTML.
-   الأسماء دي مشتقّة من مسارات المنح ومجالاتها لحدّ ما نفتح النماذج
-   نفسها · مسجَّل نوتة. */
+/* Templates · 13 in the live system
+   `config_contract` in the system has thirteen templates with an HTML editor. These names are
+   derived from grant tracks and areas until the templates themselves are opened · logged as a note. */
 
 export const AGREEMENT_TEMPLATES = [
   'اتفاقية منحة تشغيلية · نموذج عام',
@@ -161,7 +157,7 @@ const RETURN_NOTES = [
 const SIGNER_TITLES = ['الرئيس التنفيذي', 'المدير التنفيذي', 'رئيس مجلس الإدارة', 'المدير العام']
 const SIGNERS = ['خالد الزهراني', 'منى العتيبي', 'سعد القحطاني', 'نورة الحربي', 'ماجد الشهري']
 
-/* مولّد ثابت · نفس الداتا في كل تشغيلة */
+/* A fixed generator · same data on every run */
 let seed = 4409
 const rnd = () => {
   seed = (seed * 1103515245 + 12345) & 0x7fffffff
@@ -176,11 +172,11 @@ const dayAfter = (iso: string, n: number): string => {
   return d.toISOString().slice(0, 10)
 }
 
-/* ⚠️ **النسب من مخطط الوثيقة، والعدد من المشاريع الموجودة.**
-   قاعدة 2: كل اتفاقية بمشروع واحد، وقاعدة 24: اتفاقية سارية واحدة
-   للمشروع · فعدد الاتفاقيات مسقوف بعدد المشاريع اللي عدّت الاعتماد،
-   لا برقم مختار. نفس الدرس اللي اتعلّمناه في الصرف لما 72 اتحشرت في
-   سعة أقلّ منها. */
+/* Warning: **the ratios come from the document's diagram, and the count comes from the projects
+   that exist.** Rule 2: every agreement has one project, and rule 24: one active agreement per
+   project — so the number of agreements is capped by the number of projects that passed approval,
+   not by a chosen figure. The same lesson learned in disbursements when 72 got crammed into a
+   smaller capacity. */
 const MIX: { stage: AgreementStage; share: number }[] = [
   { stage: 'draft', share: 0.17 },
   { stage: 'manager', share: 0.13 },
@@ -190,12 +186,12 @@ const MIX: { stage: AgreementStage; share: number }[] = [
   { stage: 'active', share: 0.38 },
 ]
 
-/** قاعدة 1 · مفيش اتفاقية قبل اكتمال اعتماد المشروع */
+/** Rule 1 · no agreement before the project's approval is fully complete */
 const eligible = projectRows.filter(
   (p) => p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل' || p.stage.includes('الإتفاقي'),
 )
 
-/** الخطوات اللي كل مرحلة بتعدّي عليها · من جدول الخطوات نفسه */
+/** The steps each stage passes through · from the steps table itself */
 const PASSED: Record<AgreementStage, number[]> = {
   draft: [1, 2, 3, 4, 5, 6, 7],
   manager: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -241,7 +237,10 @@ const DOC_KINDS = [
   { name: 'النسخة الموقّعة.pdf', kind: 'موقّعة' },
 ]
 
-/** جدول دفعات متوازن · قاعدة 8 بتلزم المجموع بقيمة المنحة والنسب بـ100 */
+/**
+ * A balanced disbursement schedule · rule 8 requires the total to equal the grant and percentages
+ * to total 100
+ */
 function scheduleFor(amount: number, openedAt: string): AgreementPayment[] {
   const n = pick([2, 2, 3, 3, 4])
   const even = Math.round(amount / n / 1000) * 1000
@@ -250,8 +249,8 @@ function scheduleFor(amount: number, openedAt: string): AgreementPayment[] {
     const last = i === n - 1
     return {
       no: i + 1,
-      /* الأخيرة بتاخد الباقي · فالمجموع يساوي المنحة بالظبط لا
-         يقاربها، والنِّسب تجمع 100 لا 99 */
+      /* The last one takes the remainder · so the total equals the grant exactly rather than
+         approximately, and percentages sum to 100, not 99 */
       amount: last ? amount - even * (n - 1) : even,
       share: last ? 100 - evenShare * (n - 1) : evenShare,
       dueAt: dayAfter(openedAt, 30 + i * 60),
@@ -276,15 +275,15 @@ export const agreements: AgreementRow[] = (() => {
       const e = entityById(p.entityId)
       const amount = p.amountGranted || p.amountRequested
       const openedAt = `2026-0${int(1, 6)}-${String(int(1, 28)).padStart(2, '0')}`
-      /* قاعدة 3 · النوع بيتحدد عند الإنشاء · الورقية أقلّ في النظام
-         العامل (٢ مقابل ١١ في جرد الأقسام) */
+      /* Rule 3 · the type is set at creation · paper agreements are less common in the live system
+         (2 vs 11 in the section inventory) */
       const kind: AgreementKind = rnd() > 0.82 ? 'ورقية' : 'إلكترونية'
       const lim = AGR_LIMIT[stage] || 168
       const h = rnd() > 0.74 ? int(lim + 1, lim * 3) : int(4, lim)
-      /* قاعدة 24 · إصدارات متعددة · اللي اترجّع مرة بيبقى إصداره 2 */
+      /* Rule 24 · multiple versions · one sent back becomes version 2 */
       const version = stage === 'returned' ? 2 : rnd() > 0.82 ? 2 : 1
-      /* خطوة 11 · فرق بين قيمة الاتفاقية والمحجوز بيمنع الإرسال ·
-         بيحصل في المسودات بس، لأن اللي عدّاها اتحقّق منها */
+      /* Step 11 · a mismatch between the agreement value and the held amount blocks submission ·
+         happens only in drafts, since ones past that stage were already validated */
       const gap = stage === 'draft' && rnd() > 0.78 ? int(5, 40) * 1000 : 0
 
       out.push({
@@ -313,8 +312,8 @@ export const agreements: AgreementRow[] = (() => {
   }
 
   for (const a of out) {
-    /* المرفقات · النسخة الموقّعة بتبان في السارية بس، والورقية
-       قاعدة 16 بتلزمها بإرفاق النسخة الموقّعة قبل التفعيل */
+    /* Attachments · the signed copy shows up only on active ones, and rule 16 requires the paper
+       agreement to have the signed copy attached before activation */
     const base = DOC_KINDS.slice(0, a.stage === 'draft' ? 2 : 4)
     a.docs = (a.stage === 'active' ? [...base, DOC_KINDS[4]!] : base).map((d, i) => ({
       name: d.name,
@@ -323,8 +322,8 @@ export const agreements: AgreementRow[] = (() => {
       size: `${int(180, 5200)} ك.ب`,
     }))
 
-    /* السجل · الخطوات البشرية بتاخد أيام والنظامية بتحصل في نفس
-       اللحظة · نفس قاعدة الخط الزمني في الصرف */
+    /* Log · human steps take days and system steps happen instantly · the same rule as the
+       disbursement timeline */
     const HUMAN = new Set([3, 4, 5, 8, 9, 13, 17, 21])
     const offsets: number[] = []
     let cursor = 0
@@ -341,8 +340,8 @@ export const agreements: AgreementRow[] = (() => {
         : say.role === 'مدير المنح' ? 'عبدالله الدوسري'
         : say.role === 'المدير التنفيذي' ? 'فهد العمري'
         : say.role
-      /* خطوة 4 بتقول «حدّد طبيعة الاتفاقية» · النصّ بيقول النوع
-         اللي اتحدّد فعلًا لا الجملة العامة */
+      /* Step 4 says "specify the agreement's nature" · the text shows the type actually chosen, not
+         the generic phrasing */
       const what =
         step === 4 ? `حدّد طبيعة الاتفاقية · ${a.kind}`
         : step === 5 ? `اختار النموذج · ${a.template}`
@@ -372,11 +371,11 @@ export const agreementById = (id: string): AgreementRow | undefined =>
 export const agreementForProject = (projectId: string): AgreementRow | undefined =>
   agreements.find((a) => a.projectId === projectId)
 
-/* ═══════════════ مؤشرات الأداء · 9.7 ═══════════════
-   الأربعة من الوثيقة، و**عمود القيمة المستهدفة فاضي فيها كلها** ·
-   فالرقم بيتعرض قيمةً لا حالةً، زي مؤشرات الصرف بالظبط. */
+/* Performance indicators · 9.7
+   The four from the document, and **the target-value column is empty in all of them** — so the
+   number is shown as a value, not a status, exactly like the disbursement indicators. */
 
-/** المدة المستهدفة لإعداد الاتفاقية · مؤقتة لحدّ ما المؤسسة تحدّدها */
+/** Target duration for drafting the agreement · provisional until the Foundation sets it */
 export const AGR_TARGET_DAYS = 21
 
 const daysBetween = (a: string, b: string): number =>
@@ -385,33 +384,33 @@ const daysBetween = (a: string, b: string): number =>
 export const agrKpi = () => {
   const open = agreements.filter((a) => a.stage !== 'active' && a.stage !== 'cancelled')
   const done = agreements.filter((a) => a.stage === 'active')
-  /* مؤشر 1 · من إحالة المشروع لمرحلة الاتفاقية حتى الاعتماد */
+  /* Indicator 1 · from the project's referral to the agreement stage until approval */
   const prep = done
     .map((a) => (a.activeAt ? daysBetween(a.openedAt, a.activeAt) : null))
     .filter((x): x is number => x !== null && x >= 0)
-  /* مؤشر 3 · من إرسال الاتفاقية للاعتماد (خطوة 12) حتى اكتمالها */
+  /* Indicator 3 · from sending the agreement for approval (step 12) until it's complete */
   const cycle = done
     .map((a) => {
       const sent = a.log.find((e) => e.step === 12)
       return sent && a.activeAt ? daysBetween(sent.at, a.activeAt) : null
     })
     .filter((x): x is number => x !== null && x >= 0)
-  /* مؤشر 4 · المعادة للتعديل · الإصدار التاني دليل إعادة حصلت */
+  /* Indicator 4 · sent back for revision · a second version is evidence a send-back happened */
   const returned = agreements.filter((a) => a.stage === 'returned' || a.version > 1).length
 
   return {
     open: open.length,
     active: done.length,
     openSum: open.reduce((s, a) => s + a.amount, 0),
-    /** مؤشر 1 · متوسط مدة إعداد الاتفاقية (أيام) */
+    /** Indicator 1 · average agreement drafting time (days) */
     prepDays: prep.length ? Math.round(prep.reduce((s, d) => s + d, 0) / prep.length) : 0,
-    /** مؤشر 2 · نسبة المنجزة ضمن المدة المستهدفة */
+    /** Indicator 2 · share completed within the target duration */
     inTarget: prep.length
       ? Math.round((prep.filter((d) => d <= AGR_TARGET_DAYS).length / prep.length) * 100)
       : 0,
-    /** مؤشر 3 · متوسط مدة دورة الاعتماد */
+    /** Indicator 3 · average approval cycle time */
     cycleDays: cycle.length ? Math.round(cycle.reduce((s, d) => s + d, 0) / cycle.length) : 0,
-    /** مؤشر 4 · نسبة المعادة للتعديل */
+    /** Indicator 4 · share sent back for revision */
     returnedPct: agreements.length
       ? Math.round((returned / agreements.length) * 100)
       : 0,

@@ -7,7 +7,7 @@ export interface EntityTabProps {
   bank: BankAccount
 }
 
-/** ملف الجهة ومستنداتها وحسابها البنكي */
+/** The entity's file, documents, and bank account. */
 export function EntityTab({ entity: E, bank }: EntityTabProps) {
   const uploaded = E.docs.filter((d) => d.uploaded).length
 
@@ -49,8 +49,9 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
           rows={E.docs.map((d) => ({
             name: d.name,
             uploaded: d.uploaded,
-            /* المرفوع يتقرا من مكانه (الملف نفسه زرار)، والناقص
-               يتطلب من الجهة · مفيش صفّ بلا إجراء */
+            /* An uploaded item is read from where it is (the file itself is the
+               button), and a missing one requests it from the entity — no row without
+               an action. */
             action: d.uploaded ? undefined : (
               <button className="lnk">اطلبه من الجهة</button>
             ),

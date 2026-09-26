@@ -2,40 +2,43 @@ import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 /**
- * حالة الفلاتر في الـURL مش في الذاكرة.
+ * Filter state lives in the URL, not in memory.
  *
- * السبب عملي: المشرف بيقعد على نفس الفلتر طول اليوم، ولازم يقدر
- * يحفظه في المفضلة أو يبعته لمدير المنح كما هو. كمان زرار الرجوع
- * بيرجّع الفلتر السابق بدل ما يخرج من الشاشة.
+ * The reason is practical: a reviewer stays on the same filter all day
+ * and needs to be able to bookmark it or send it to the grants manager
+ * as-is. The back button also returns to the previous filter instead of
+ * leaving the screen entirely.
  */
 export interface QueryParamsApi<T extends Record<string, string | undefined>> {
   values: T
-  /** بيصفّر الصفحة تلقائيًا مع أي تغيير فلتر */
+  /** Automatically resets the page on any filter change. */
   set: (patch: Partial<Record<keyof T, string | undefined>>) => void
-  /** بيستبدل كل الفلاتر دفعة واحدة · للّقطات المحفوظة */
+  /** Replaces all filters at once — for saved views. */
   replace: (next: Partial<Record<keyof T, string | undefined>>) => void
   clear: () => void
-  /** عدد الفلاتر المفعّلة، بدون البحث والترتيب والصفحة */
+  /** Count of active filters, excluding search, sort, and page. */
   activeCount: (ignore?: (keyof T)[]) => number
   /**
-   * الشاشة الحالية كنص استعلام، بلا رقم الصفحة.
+   * The current screen as a query string, excluding the page number.
    *
-   * رقم الصفحة وحده مستثنى: «الفيو» عند المستخدم هو السؤال وشكل
-   * إجابته · الفلاتر والترتيب والتجميع وعدد الصفوف ونوع العرض ·
-   * مش وقفته في التصفّح.
+   * Only the page number is excluded: to the user, a "view" is the
+   * question and the shape of its answer — filters, sort, grouping, page
+   * size, and display type — not where they happen to be in pagination.
    */
   snapshot: () => string
-  /** يستبدل الشاشة كلها بلقطة محفوظة */
+  /** Replaces the entire screen with a saved view. */
   applyQuery: (q: string) => void
 }
 
 /**
- * فلتر متعدد القيم في مفتاح واحد: `region=الرياض,مكة المكرمة`.
+ * Multi-value filter in a single key: `region=Riyadh,Makkah`.
  *
- * الفاصلة مش مصادفة: هي أقصر شكل يفضل مقروء في شريط العنوان، والـURL
- * لسه ينفع يتبعت لمدير المنح زي ما هو. وقيم النظام (مسارات ومجالات
- * ومناطق ومدن وأوسمة) مفيهاش فاصلة، فمفيش لبس. لو جه يوم وفيه قيمة
- * بفاصلة، المكان الوحيد اللي هيتغيّر هو الدالتين دول.
+ * The comma isn't arbitrary: it's the shortest form that stays readable
+ * in the address bar, and the URL can still be sent to the grants
+ * manager as-is. None of the system's values (tracks, domains, regions,
+ * cities, tags) contain a comma, so there's no ambiguity. If a
+ * comma-containing value ever comes along, these two functions are the
+ * only place that would need to change.
  */
 export const readList = (v: string | undefined): string[] =>
   v ? v.split(',').map((s) => s.trim()).filter(Boolean) : []
@@ -91,8 +94,9 @@ export function useQueryParams<T extends Record<string, string | undefined>>(
   const snapshot = useCallback(() => {
     const sp = new URLSearchParams(params)
     sp.delete('page')
-    /* الترتيب الأبجدي عشان مقارنة اللقطة باللي محفوظ تبقى نصّية
-       بسيطة، ما تفرقش لو المستخدم غيّر فلترين بترتيب مختلف. */
+    /* Alphabetical order so comparing a view against a saved one is a
+       simple string comparison, unaffected if the user changed two filters
+       in a different order. */
     const sorted = new URLSearchParams([...sp.entries()].sort((a, b) => a[0].localeCompare(b[0])))
     return sorted.toString()
   }, [params])

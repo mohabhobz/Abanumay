@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 
 /**
- * يبرز كلمات بعينها داخل نص القراءة.
- * الكلمات بتيجي مع الداتا مش متحسوبة من النص، عشان التمييز يكون
- * قرار تحريري مش تخمين.
+ * Highlights specific words inside reading text.
+ * The words come with the data rather than being computed from the text, so highlighting is an
+ * editorial decision, not a guess.
  */
 export function highlight(text: string, words: string[] = [], danger: string[] = []): ReactNode {
   if (!words.length) return text

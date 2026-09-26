@@ -1,32 +1,30 @@
 import { Link } from 'react-router-dom'
-import { Icon, icons, Money, Mono, Num, Person, Tag } from '@/components/ui'
+import { DateText, Icon, icons, Money, Mono, Num, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { isolate, nf, MISSING_ITEM, nounAfter } from '@/lib/format'
+import { isolate, MISSING_ITEM, nf, NOUN, nounAfter } from '@/lib/format'
 import {
   CLOSE_TONE, closeCycle, closeLate, closeRequirements, closeStageLabel,
   evalApproved, needsComms, reportApproved, reportBlockers,
 } from '@/data/mock/closing'
 import type { CloseRow } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   طلب إغلاق واحد، كقرار.
+/* One closing request, as a decision.
 
-   ⚠️ **نفس هيكل كارت الخطة والاتفاقية بالحرف** · أربع إجابات
-   ثابتة، والغايب بيقول إنه غايب. الدرس اتكرّر مرتين قبل كده:
-   الكارت اللي بيبني نفسه من الحالة بيطلع بطول مختلف في كل صفّ
-   وزرّاره بيقف في ارتفاع غير جيرانه · فالأربعة دايمًا موجودين.
+   Note: same card structure as the plan and agreement cards, exactly - four fixed answers, and an
+   absent one states that it's absent. This lesson has repeated twice already: a card that builds
+   its own length from state ends up a different height per row, with its button landing at a
+   different level than its neighbors - so all four are always present.
 
-   الأربعة هنا:
-     ١ · التقرير كامل؟          · قاعدة 4 و10
-     ٢ · النشر الإعلامي؟        · قاعدة 9 · واللي مش مطلوب فيه
-                                  بيقول «ما بينطبقش» لا بيختفي
-     ٣ · التقرير معتمد؟         · قاعدة 6 · وده اللي بيفتح التقييم
-     ٤ · المتطلبات المالية؟     · قاعدة 8 و18
+   The four here:
+   1. Report complete? - rules 4 and 10
+   2. Media coverage? - rule 9, and where it isn't required it says "not applicable" rather than
+   disappearing
+   3. Report approved? - rule 6, and this is what opens the evaluation
+   4. Financial requirements? - rules 8 and 18
 
-   ⚠️ **والدورة مكتوبة فوق** · قاعدة 17: دورتان مستقلّتان، يعني
-   «عند مدير المنح» بتحصل مرتين وبتعني حاجتين · فالكارت بيقول
-   إحنا في أي دورة قبل ما يقول في أي محطة.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the cycle is stated above - rule 17: two independent cycles, meaning "with the grants
+   manager" happens twice and means two different things - so the card states which cycle we're in
+   before it states which stage. */
 
 const CYCLE_SAY = { report: 'التقرير الختامي', eval: 'تقييم المشروع' } as const
 
@@ -50,9 +48,9 @@ export function CloseCard({ c }: { c: CloseRow }) {
           </div>
         </div>
 
-        {/* ⚠️ **الميزانية الفعلية في مكان المبلغ** · كل كارت في
-            السيستم بيحطّ رقمه الأساسي هنا، ورقم الإغلاق الأساسي
-            هو اللي اتصرف فعلًا مقابل اللي اتخطّط. */}
+        {/* Note: actual spending sits where the amount normally sits - every card in the system
+            puts its headline figure there, and the headline figure at closing is what was actually
+            spent against what was planned. */}
         <div className="payq-amt">
           <b>{c.report.budget === null
             ? <span className="sub">بلا ميزانية فعلية</span>
@@ -60,21 +58,22 @@ export function CloseCard({ c }: { c: CloseRow }) {
           <span className="payq-due sub">
             {c.report.beneficiaries === null
               ? 'بلا عدد مستفيدين'
-              : <><Num>{c.report.beneficiaries}</Num> مستفيد</>}
+              : <><Num>{c.report.beneficiaries}</Num> {nounAfter(c.report.beneficiaries, NOUN.beneficiary)}</>}
           </span>
         </div>
       </header>
 
       <div className="payq-tags">
+        {/* One colored tag per card = the stage. Everything else is information with a neutral tag. */}
         <Tag tone={CLOSE_TONE[c.stage]}>{closeStageLabel(c.stage)}</Tag>
         {evalApproved(c) && c.closedAt
-          ? <Tag tone="ok">أُغلق <Mono>{c.closedAt}</Mono></Tag>
-          : <span className="sub">في هذه المحطة منذ <Num>{days}</Num> يومًا</span>}
-        {closeLate(c) && <Tag tone="warn">تجاوز مهلة المحطة</Tag>}
-        {c.versions.length > 1 && <Tag tone="teal">الإصدار <Num>{c.versions.length}</Num></Tag>}
+          ? <Tag tone="mute">أُغلق <DateText>{c.closedAt}</DateText></Tag>
+          : <span className="sub">في هذه المحطة منذ <Num>{days}</Num> {nounAfter(days, NOUN.day)}</span>}
+        {closeLate(c) && <Tag tone="mute">تجاوز مهلة المحطة</Tag>}
+        {c.versions.length > 1 && <Tag tone="mute">الإصدار <Num>{c.versions.length}</Num></Tag>}
       </div>
 
-      {/* المشروع في السلسلة · قاعدة 16: حالته ما بتتحرّكش أثناء الدورة */}
+      {/* The project in the chain - rule 16: its status doesn't move during the cycle. */}
       <div className="payq-cond">
         <span className="lb">حالة المشروع</span>
         <span>{evalApproved(c) ? 'مشروع مكتمل' : 'تحت التنفيذ · قاعدة 16'}</span>
@@ -90,8 +89,8 @@ export function CloseCard({ c }: { c: CloseRow }) {
           </span>
           <span className="payq-r">قاعدة <Num>4</Num></span>
         </li>
-        {/* ⚠️ قاعدة 9 · «متى كانت مطلوبة» · واللي مش مطلوب فيه
-            بيتقال لا بيتشال، وإلا الكارت بقى أقصر من جاره بسطر */}
+        {/* Rule 9 - "when it was required" - and where it wasn't required, that's stated, not
+            removed, or the card ends up a line shorter than its neighbor. */}
         <li className={!needsComms(c) || done ? 'ok' : 'ret'}>
           <Icon name={!needsComms(c) || done ? icons.check : icons.clock} size="sm" />
           <span>
@@ -117,7 +116,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
         </li>
       </ul>
 
-      {/* ملاحظة الإعادة · قاعدة 19 بتلزم توضيح سبب الإصدار الجديد */}
+      {/* Return note - rule 19 requires stating the reason for a new version. */}
       {c.note && (
         <div className="payq-note">
           <Icon name={icons.chat} size="sm" />
@@ -136,6 +135,6 @@ export function CloseCard({ c }: { c: CloseRow }) {
   )
 }
 
-/** الفرق بين المخطَّط والفعلي في الميزانية · للعرض السريع */
+/** Difference between planned and actual budget - for quick viewing. */
 export const budgetSay = (c: CloseRow): string =>
-  c.report.budget === null ? '·' : nf.format(c.report.budget)
+  c.report.budget === null ? 'بلا ميزانية فعلية' : nf.format(c.report.budget)

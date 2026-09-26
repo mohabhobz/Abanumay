@@ -1,16 +1,19 @@
 /**
- * المظهر · مظهران مسمّيان، مفيش «تبع النظام».
+ * Theme — two named modes, no "follow system."
  *
- * ⚠️ **كان فيه تالت (الأخضر · هوية المؤسسة) واتشال بقرار العميل.**
- * لمّا كان موجودًا، «تبع النظام» ما كانش له معنى: الجهاز بيقول
- * فاتح ولا غامق، ومش بيعرف يقول «أخضر». دلوقتي المظهران عكس بعض
- * فعلًا، فـ«تبع النظام» بقى ممكن · لكنه **مش مطلوبًا** لحد ما حد
- * يطلبه، والاختيار يفضل صريحًا زي ما هو.
+ * A third mode used to exist (green, the brand's identity) and was
+ * removed. While it existed, "follow system" made no sense: the device
+ * only reports light or dark, it has no way to say "green." Now that
+ * the two modes are true opposites, "follow system" would be possible
+ * — but it isn't added until someone actually asks for it, and the
+ * choice stays explicit as it is.
  *
- * المنطق هنا لا في قائمة الحساب، لأن الاختيار لازم يتطبّق قبل ما
- * ريآكت يشتغل أصلًا: سكربت صغير في `index.html` بيقرا نفس المفتاح
- * وبيكتب `data-theme` قبل أول رسمة، فمفيش ومضة فاتحة. ولأن شاشة
- * الدخول مالهاش قائمة حساب، ومن غير ده كانت هتفضل فاتحة دايمًا.
+ * The logic lives here rather than in the account menu, because the
+ * choice needs to apply before React even runs: a small script in
+ * `index.html` reads the same key and sets `data-theme` before the
+ * first paint, so there's no light-mode flash. And because the sign-in
+ * screen has no account menu, without this it would always stay stuck
+ * in light mode.
  */
 export type ThemeChoice = 'light' | 'dark'
 
@@ -38,6 +41,6 @@ export const writeTheme = (theme: ThemeChoice): void => {
   try {
     localStorage.setItem(THEME_KEY, theme)
   } catch {
-    /* التخزين ممكن يكون مقفول · الاختيار يفضل شغال للجلسة دي */
+    /* Storage may be unavailable — the choice still works for this session. */
   }
 }

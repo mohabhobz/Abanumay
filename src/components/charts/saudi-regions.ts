@@ -1,22 +1,19 @@
 /**
- * مناطق المملكة الثلاثة عشر · حدود إدارية حقيقية.
- *
- * المصدر: بيانات Natural Earth (ملكية عامة)، مستخرَجة من مجموعة
- * خرائط Highcharts ثم مبسّطة بخوارزمية Douglas–Peucker إلى 886 نقطة
- * ومسقَطة على viewBox ثابت. المشروع ما بيعتمدش على أي مكتبة خرائط ·
- * المسارات دي متولّدة مرة واحدة ومحفوظة هنا.
- *
- * `c` مركز المنطقة (مركز أكبر مضلّع فيها)، للتسمية والتلميح.
+ * The Kingdom's thirteen regions — real administrative boundaries.
+ * Source: Natural Earth data (public domain), extracted from a map dataset, then simplified with
+ * the Douglas-Peucker algorithm to 886 points and projected onto a fixed viewBox. The project
+ * doesn't depend on any mapping library — these paths are generated once and stored here.
+ * `c` is the region's center (the centroid of its largest polygon), for labeling and the tooltip.
  */
 
 export interface SaudiRegion {
-  /** مفتاح ISO المختصر */
+  /** Short ISO key. */
   key: string
-  /** الاسم كما يستعمله النظام · مطابق لقائمة المناطق في `taxonomy.ts` */
+  /** Name as the system uses it — matches the region list in `taxonomy.ts`. */
   name: string
-  /** مسار SVG */
+  /** SVG path. */
   d: string
-  /** مركز المنطقة [x, y] */
+  /** Region center [x, y]. */
   c: [number, number]
 }
 

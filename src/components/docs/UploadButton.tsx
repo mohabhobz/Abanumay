@@ -1,29 +1,25 @@
 import { Icon, icons } from '@/components/ui'
 
-/* ═══════════════════════════════════════════════════════════
-   زرار رفع · **مكتوب مرة واحدة**
+/* Upload button — **written once**.
 
-   ⚠️ **كان «ارفع» زرارًا بلا فعل في تلات شاشات** (بوّابة الجهة ·
-   صفحة الإغلاق · محرّر التقرير الختامي). شكله رفع وبيتضغط وما
-   بيحصلش حاجة · وفي البوّابة تحديدًا هو **الفعل الأساسي**: الجهة
-   اللي رجع طلبها بنواقص ما عندهاش حاجة تانية تعملها غيره.
+   ⚠️ **"Upload" used to be a button with no action on several screens** (the entity gate, the
+   closure page, the final-report editor). It looked like an upload and did nothing when pressed —
+   and on the gate specifically it's **the primary action**: an entity whose request came back with
+   missing items has nothing else to do but this.
 
-   ⚠️ **و`<label>` حوالين `<input type="file">` لا `<button>`.** ده
-   الشكل الوحيد اللي بيفتح منتقي الملفات من غير سكريبت، وبيشتغل
-   بالكيبورد، وبيقول لقارئ الشاشة إنه رفع ملف. وشكله هو نفس
-   `.btn` بتاع السيستم، فمفيش زرار جديد.
+   ⚠️ **And it's a `<label>` wrapping `<input type="file">`, not a `<button>`.** This is the only
+   shape that opens the file picker with no script, works from the keyboard, and tells a screen
+   reader it's a file upload. It's styled as the system's own button, so no new element exists.
 
-   و`onPick` بياخد الملف الحقيقي · في النموذج الشاشة بتعلّم الصفّ
-   «مرفوع» باسمه، وفي السيستم الحقيقي ده نفس المكان اللي بيبدأ منه
-   الرفع للباك اند.
-   ═══════════════════════════════════════════════════════════ */
+   `onPick` receives the actual file — in this mock, the screen marks the row "uploaded" by its
+   name; in the real system, this is the same point where the upload to the backend starts. */
 
 export interface UploadButtonProps {
-  /** الملف اللي المستخدم اختاره */
+  /** The file the user selected. */
   onPick: (file: File) => void
-  /** اسم المستند لقارئ الشاشة · «ارفع شهادة الزكاة» */
+  /** Document name for screen readers — "upload zakat certificate." */
   label: string
-  /** الصيغ المسموحة */
+  /** Allowed formats. */
   accept?: string
 }
 
@@ -39,8 +35,8 @@ export function UploadButton({
         onChange={(e) => {
           const f = e.target.files?.[0]
           if (f) onPick(f)
-          /* ⚠️ بيتفضّى بعد الاختيار · من غيره اختيار نفس الملف تاني
-             (بعد «إزالة» مثلًا) ما بيطلقش `onChange` خالص */
+          /* ⚠️ Cleared after selection — otherwise picking the same file again (after "remove," for
+             example) never fires `onChange` at all. */
           e.target.value = ''
         }}
       />

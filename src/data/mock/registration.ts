@@ -1,28 +1,26 @@
 /**
- * تسجيل جهة جديدة · BPD-002
+ * New entity registration.
  *
- * ⚠️ **أهم قاعدة في الإجراء كله هي القاعدة 2: مفيش حساب قبل
- * الاعتماد.** اللي بيتعمل في البداية **طلب** لا جهة · والجهة
- * بتتولد بعد الاعتماد وساعتها بس بيتبعت اسم المستخدم. فالنوع
- * اللي هنا اسمه `RegRequest` لا `EntityRow`، وحقوله كلها نصوص
- * **زي ما الجهة كتبتها** لا قيم معتمدة · لأن المراجع بيراجع
- * إقرارًا لا سجلًا.
+ * The single most important rule in this whole flow: no account before approval. What gets created
+ * initially is a **request**, not an entity — the entity is generated after approval, and only then
+ * is a username sent. So the type here is named `RegRequest`, not `EntityRow`, and its fields are
+ * all text exactly as the entity wrote it, not approved values — because a reviewer is reviewing a
+ * submission, not a record.
  *
- * والفرق ده بيظهر في تلات حاجات في الواجهة:
- *   · الشاشة اسمها «طلب تسجيل» لا «جهة جديدة»
- *   · درجة الحوكمة موسومة «إقرار الجهة» (نوتة ن-2)
- *   · مفيش زرار حذف في أي مكان · قاعدة 28: أرشفة أو تعطيل بس
+ * That distinction shows up in three places in the UI:
+ * · The screen is named "registration request", not "new entity"
+ * · The governance score is labeled "entity's self-declaration"
+ * · There is no delete button anywhere — only archive or deactivate
  *
- * المصادر: الوثيقة ص 19–26 · ونموذج `/reg/add` في النظام العامل
- * اللي اتقرا حرفيًا. الفروق مسجَّلة في
- * `ENTITIES_REGISTRATION_BRIEF.md`.
+ * Source: the spec, and the live system's own `/reg/add` form, read literally. Differences are
+ * recorded separately.
  */
 import { REG_TYPES, LICENSORS, REGIONS, CITIES_BY_REGION } from './taxonomy'
+import { TONE } from '@/lib/tone'
+import type { Tone } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   حالات الطلب · قاعدة 26 · خمسة
-   والحالة بتتقري «مين واقف» لا «مقبول/مرفوض» · زي شرائح الصرف
-   ═══════════════════════════════════════════════════════════ */
+/* Request states · five.
+   Status reads as "who's holding it" rather than "approved/rejected", same as disbursement stages. */
 
 export type RegState = 'draft' | 'review' | 'completion' | 'approved' | 'rejected'
 
@@ -40,45 +38,42 @@ export const REG_STATE_SAY: Record<RegState, string> =
 export const REG_STATE_WHO: Record<RegState, string> =
   Object.fromEntries(REG_STATES.map((s) => [s.key, s.who])) as Record<RegState, string>
 
-export const REG_TONE: Record<RegState, 'mute' | 'warn' | 'ret' | 'ok' | 'no'> = {
-  draft: 'mute',
-  review: 'warn',
-  completion: 'ret',
-  approved: 'ok',
-  rejected: 'no',
+export const REG_TONE: Record<RegState, Tone> = {
+  draft: TONE.draft,
+  review: TONE.review,
+  completion: TONE.returned,
+  approved: TONE.done,
+  rejected: TONE.rejected,
 }
 
-/* ═══════════════════════════════════════════════════════════
-   نوع الشراكة · قاعدة 32 والفرق الحقيقي بين المدخلين
+/* Partnership type · the real difference between the two entry points.
 
-   ⚠️ **الفرق بين «الجهة بتسجّل نفسها» و«إحنا بنسجّلها» مش شكل
-   الفورم، هو حقل واحد.** مظفر: «الاختلاف حيكون في **التحكم في
-   الحقول** · الجهة لما تيجي تسجّل الحقل ده ما بتشوفهوش، وبيتحطّ
-   أوتوماتيك في الداتابيز».
+   The difference between "the entity registers itself" and "we register it" isn't the form layout,
+   it's one field. Field control differs: an entity registering itself never sees this field — it's
+   set automatically in the database.
 
-   والجاي من البوّابة بياخد **شريك مستفيد** باي-ديفولت — وده منطقي:
-   هو بيطلب منحة. واللي بيتسجّل من جوّه ممكن يكون **منفّذ** أو
-   **استراتيجي**، زي منصة إحسان والمحافظ.
+   An entity coming from the portal defaults to beneficiary partner, which makes sense: it's
+   requesting a grant. One registered internally can be an implementer or a strategic partner, like
+   a government platform managing its own portfolio.
 
-   ═══ والنوع مش تصنيفًا، هو مفتاح كونديشنز ═══
+   The type isn't just a label, it's a key for conditions
 
-   منصة إحسان **ما بتدخلش منصتنا خالص**: مشرف المنح بيضيفها كجهة،
-   وبينشئ المشروع، وبيديره داخليًا بالكامل، وبيعمل الدفعات —
-   **ومفيش اتفاقية**. يعني النوع بيقفل ويفتح خطوات في إجراءات
-   تانية، مش بيلوّن وسمًا في الجدول.
+   A platform like this may never access our platform at all: the grants officer adds it as an
+   entity, creates the project, manages it entirely internally, and handles payments — with no
+   agreement. So the type opens and closes steps in other actions; it doesn't just color a badge in
+   a table.
 
-   عشان كده كل نوع هنا جاي معاه **اللي بيفتحه**، والشاشة بتعرضه
-   وقت الاختيار لا بعده.
-   ═══════════════════════════════════════════════════════════ */
+   That's why each type here carries what it unlocks, and the screen shows it at selection time, not
+   after. */
 
 export type PartnerKind = 'beneficiary' | 'implementer' | 'strategic'
 
 export interface PartnerKindDef {
   key: PartnerKind
   label: string
-  /** إيه اللي بيتغيّر في السيستم لما النوع ده يتختار */
+  /** What changes in the system when this type is selected */
   opens: string[]
-  /** بيتسجّل منين · البوّابة العامة ولا من جوّه */
+  /** Where it's registered from · the public portal or internally */
   from: 'portal' | 'internal' | 'both'
   example: string
 }
@@ -123,16 +118,14 @@ export const PARTNER_KINDS: PartnerKindDef[] = [
 export const partnerKind = (k: PartnerKind): PartnerKindDef =>
   PARTNER_KINDS.find((x) => x.key === k) ?? PARTNER_KINDS[0]
 
-/** ⚠️ الجاي من البوّابة **ما بيشوفش** الحقل ده · بياخده أوتوماتيك */
+/** An entity coming from the portal never sees this field · it's set automatically */
 export const PORTAL_KIND: PartnerKind = 'beneficiary'
 
-/* ═══════════════════════════════════════════════════════════
-   ضوابط القبول · بوّابة `/reg` في النظام العامل
+/* Acceptance criteria · from the live system's `/reg` portal.
 
-   ⚠️ **مش في الوثيقة** (نوتة ن-1). موجودة هنا لأنها فلتر أهلية:
-   الجهة اللي برّه المملكة أو من غير حساب بنكي بتعرف قبل ما تقضّي
-   عشرين دقيقة في فورم مصيره الرفض.
-   ═══════════════════════════════════════════════════════════ */
+   Not in the spec. Included here because it's an eligibility filter: an entity outside the country
+   or with no bank account finds out before spending twenty minutes on a form destined for
+   rejection. */
 
 export const REG_TERMS = [
   'أن تكون الجهة داخل المملكة العربية السعودية',
@@ -142,14 +135,11 @@ export const REG_TERMS = [
   'أن تكون سليمة قانونيًا وإداريًا وماليًا',
 ] as const
 
-/* ═══════════════════════════════════════════════════════════
-   الحقول · قاعدة 25: الفورم بيتقسّم لمراحل منطقية
+/* Fields · the form splits into logical stages.
 
-   والتقسيم ده **موجود في النظام العامل فعلًا** · صفحة `/reg/add`
-   فيها علامة "Vertical Tabs". اللي اتغيّر هنا إن التبويب الخامس
-   (الحساب البنكي) اتضاف من **قاعدة 11** لا من النظام، لأن النظام
-   بيأجّل البنك لإجراء تاني. الفرق مسجَّل في النوتة ن-4.
-   ═══════════════════════════════════════════════════════════ */
+   This grouping already exists in the live system — the `/reg/add` page has a "Vertical Tabs"
+   marker. What changed here is that the fifth tab (bank account) was added by a separate rule
+   rather than by the live system, since the live system defers banking to a different action. */
 
 export type FieldKind = 'text' | 'tel' | 'email' | 'date' | 'select' | 'number' | 'iban' | 'password'
 
@@ -158,34 +148,32 @@ export interface RegField {
   label: string
   kind: FieldKind
   req?: boolean
-  /** تلميح من النظام العامل حرفيًا · لو موجود */
+  /** A hint taken verbatim from the live system, where one exists */
   hint?: string
-  /** قائمة مقفولة · قاعدة 27 بتفرض ده على أسماء البنوك تحديدًا */
+  /** A closed list · required specifically for bank names */
   options?: readonly string[]
-  /** الخيارات تابعة لقيمة حقل تاني · زي المدينة والمنطقة */
+  /** Options depend on another field's value · like city and region */
   dependsOn?: string
   /**
-   * يبدأ صفًّا جديدًا في الشبكة.
+   * Starts a new row in the grid.
    *
-   * ⚠️ **الحقول اللي بتتقري سوا لازم تبان سوا.** المنطقة والمدينة
-   * ورقم الترخيص تلاتتهم بيوصفوا **مكان الجهة وتصريحها**، والشبكة
-   * كانت بتلفّهم على سطرين (المنطقة آخر السطر الأول، والمدينة
-   * والترخيص في اللي بعده) · فالمستخدم بيقرا المنطقة مع «جهة
-   * الإشراف» وهي مالهاش علاقة بيها. العميل شافها.
+   * Fields that are read together must appear together. Region, city, and license number all
+   * describe the entity's location and permit, but the grid used to wrap them across two lines
+   * (region at the end of one line, city and license number on the next) — so a user would read
+   * region alongside "supervising authority", which has nothing to do with it.
    *
-   * والعلامة على الحقل لا عدد أعمدة على الخطوة، لأن الشبكة
-   * بتتجاوب: عدد الأعمدة بيتغيّر مع العرض، والمطلوب إن **البداية**
-   * تكون هنا مهما كان العدد.
+   * The marker is on the field, not a column count on the step, because the grid is responsive: the
+   * number of columns changes with viewport width, and the start point needs to stay right here
+   * regardless of that count.
    */
   nl?: boolean
   /**
-   * الحقل بياخد الصفّ كله.
+   * The field takes the full row.
    *
-   * ⚠️ **«جهة الإشراف الفني» اسمها أطول من عمود.** «المركز الوطني
-   * لتنمية القطاع غير الربحي» كان بيتقصّ بتلات نقط في حقل من
-   * أربعة أعمدة · والمستخدم ما بيعرفش اختار مين. وبما إنه بياخد
-   * الصفّ كله، الصفّ اللي بعده بيبدأ نضيف · فالمنطقة والمدينة
-   * ورقم الترخيص بيقعوا سوا من غير فراغ ميّت قبلهم.
+   * "Technical supervising authority" has a name longer than a column. The full name was getting
+   * truncated with an ellipsis in a four-column field, and users couldn't tell which option they'd
+   * picked. Since it takes the full row, the row after it starts clean — region, city, and license
+   * number sit together with no dead space before them.
    */
   wide?: boolean
 }
@@ -196,27 +184,26 @@ export interface RegStage {
   note: string
   fields: RegField[]
   /**
-   * المحطة دي **ليها شاشتها الخاصة برّه الفورم**.
+   * This station has its own screen outside the form.
    *
-   * ⚠️ **ودي مش تفصيلة تنقّل، دي فرق في طبيعة الخطوة.** حساب
-   * الجهة مش بيانات في طلب · هو **الحساب اللي الطلب بيتحفظ عليه**
-   * وبيرجع له صاحبه. وحطّه خطوة جوّه الفورم كان بيقول إنه زيّ
-   * «التواريخ» و«المستندات»، فالجهة بتلاقي وسم «٣ ناقص» على حاجة
-   * لسه ما دخلتش عشانها أصلًا.
+   * This isn't a navigation detail, it's a difference in the step's nature. The entity's account
+   * isn't data inside a request — it's the account the request is saved under and that its owner
+   * returns to. Placing it as a step inside the form implied it was like "dates" or "documents", so
+   * the entity would see a "3 missing" badge on something it hadn't even entered yet.
    *
-   * فالمحطة بتفضل **في الستيبر** (عشان الجهة تشوف إنها عدّتها)
-   * وبتطلع **من الفورم**: الفورم بيبدأ من اللي بعدها، وحالتها
-   * دايمًا «تمّت» لأن الوصول للفورم نفسه ما بيحصلش من غيرها.
+   * So the station stays in the stepper (so the entity sees it as passed) and is removed from the
+   * form: the form starts from the step after it, and its own status is always "done", since
+   * reaching the form at all requires going through it.
    */
   own?: true
 }
 
 /**
- * حساب الجهة · **مخزَّن بره الفورم لأن شاشته بره الفورم**.
+ * Entity account · stored outside the form because its screen is outside the form.
  *
- * ⚠️ نموذج · في السيستم الحقيقي ده حساب فعلي بيتعمل على الباك
- * اند وبيرجّع توكن. هنا القيمة بتتحفظ في الذاكرة عشان صفحة
- * المراجعة تقدر تعرض البريد اللي الطلب اتحفظ عليه.
+ * This is a mock; in the real system this is an actual account created on the backend that returns
+ * a token. Here the value is held in memory so the review page can show the email the request was
+ * saved under.
  */
 export const regAccount: { email: string } = { email: '' }
 
@@ -224,22 +211,21 @@ export const setRegAccount = (email: string): void => {
   regAccount.email = email.trim()
 }
 
-/** جهة الإشراف الفني · 21 في النظام، والقايمة الكاملة لسه (نوتة ن-6) */
+/** Technical supervising authority · 21 in the system; the full list is still pending */
 const SUPERVISORS = [...LICENSORS, 'لا يوجد'] as const
 
 export const REG_STAGES: RegStage[] = [
   {
-    /* ═══ ن-2 · حساب الجهة · أول محطة ═══
-       ⚠️ **قبل الفورم لا بعده، والسبب إن الطلب بيتقطع.** ملف
-       الترخيص وتاريخ انتهاء تكليف المجلس والآيبان مش حاجات
-       المستخدم حافظها · فهو بيبدأ، بيقوم يجيب ورقة، بيرجع.
-       والحساب هو اللي بيخلّي «بيرجع» دي ممكنة: من غيره كل مرة
-       بيقفل فيها الصفحة بتضيّع اللي كتبه.
+    /* Entity account · the first station.
 
-       ⚠️ **وده مش نقض للقاعدة 2.** الحساب ده على **طلبه هو**:
-       بيشوف طلبًا واحدًا وحالته وبس · وحساب الجهة الكامل لسه
-       بيتولد بعد الاعتماد زي ما القاعدة بتقول. الفرق مشروح في
-       `regPortal.ts` وفي شاشة البوّابة نفسها. */
+       Before the form, not after, because requests get interrupted. The license file, board mandate
+       expiry date, and IBAN aren't things a user has memorized — they start, go find a document,
+       and come back. The account is what makes coming back possible: without it, closing the page
+       loses everything typed so far.
+
+       This isn't a contradiction of the no-account-before-approval rule: this account is scoped to
+       the entity's own request — it sees one request and its status, nothing more. The full entity
+       account is still only generated after approval, as the rule states. */
     key: 'account',
     own: true,
     label: 'حساب الجهة',
@@ -257,11 +243,10 @@ export const REG_STAGES: RegStage[] = [
     fields: [
       { key: 'name', label: 'اسم الجهة', kind: 'text', req: true, hint: 'مطابق للتصريح' },
       { key: 'type', label: 'تصنيف الجهة', kind: 'select', req: true, options: REG_TYPES },
-      /* ⚠️ **إلزامي · من شاشات العميل (١٩ سبتمبر)** · كان اختياريًّا
-         عندنا. وعكسها **المدينة** اختيارية عندهم وإلزامية عندنا،
-         وسيبناها إلزامية عن قصد: التوزيع الجغرافي عليه تقارير
-         ومؤشرات، والمدينة الفاضية بتخلّي صفوفًا بلا مدينة في كل
-         تقرير منطقة (مكتوب قرارًا في البريف لا سهوًا). */
+      /* Required, per the client's live screens — it used to be optional on our side. The opposite
+         is true of city: optional for them, required for us, kept required on purpose: geographic
+         distribution feeds reports and indicators, and an empty city would leave rows with no city
+         in every regional report (a deliberate decision, not an oversight). */
       { key: 'licensor', label: 'جهة الإشراف الفني', kind: 'select', req: true, options: SUPERVISORS, wide: true },
       { key: 'region', label: 'المنطقة', kind: 'select', req: true, options: REGIONS, nl: true },
       { key: 'city', label: 'المحافظة / المدينة', kind: 'select', req: true, dependsOn: 'region' },
@@ -295,12 +280,11 @@ export const REG_STAGES: RegStage[] = [
     ],
   },
   {
-    /* ═══ ن-1 · حسابات لا حساب ═══
-       ⚠️ **المحطة دي مالهاش `fields` لأنها قايمة لا نموذج.**
-       الجهة ممكن يكون عندها حساب لكل وجه خير (ح-5)، والفورم
-       اللي بيسأل «اسم البنك» مرة واحدة بيفترض حسابًا واحدًا ·
-       فالحقول اتحوّلت لصفوف في `banks`، وكل صفّ معاه **وثيقة
-       الحساب البنكي** إلزامية. */
+    /* Accounts, not an account.
+
+       This station has no `fields` because it's a list, not a form. An entity may have one account
+       per cause, and a form that asks for "bank name" once assumes a single account — so the fields
+       became rows in `banks`, each row carrying its own mandatory bank account document. */
     key: 'bank',
     label: 'الحسابات البنكية',
     note: 'قاعدة 11 · حساب واحد أو أكثر، ولكل حساب وثيقته · ويُعتمد الحساب البنكي منفصلًا عند المراجعة',
@@ -315,18 +299,18 @@ export const REG_STAGES: RegStage[] = [
 ]
 
 /**
- * خطوات الفورم · **اللي ليها شاشتها برّه مش منها**.
+ * Form steps · excludes the one with its own screen outside it.
  *
- * ⚠️ الستيبر بيتبني على `REG_STAGES` كلها (عشان الجهة تشوف
- * المحطة اللي عدّتها)، والفورم بيتبني على دي · والاتنين من نفس
- * المصدر فما ينفعش يختلفوا.
+ * The stepper is built from the full set of registration stages (so the entity sees the station it
+ * has passed), and the form is built from this subset — both come from the same source so they
+ * can't drift apart.
  */
 export const FORM_STAGES: RegStage[] = REG_STAGES.filter((s) => !s.own)
 
-/** أول خطوة بتتعبّى فعلًا · اللي الفورم بيبدأ منها */
+/** The first step that's actually filled in · where the form starts */
 export const FIRST_FORM_STAGE = FORM_STAGES[0].key
 
-/** أسماء البنوك موحّدة · قاعدة 27 بتمنع حقل نصّ هنا */
+/** Bank names are standardized · a closed list rules out a free-text field here */
 export const BANKS = [
   'مصرف الراجحي',
   'البنك الأهلي السعودي',
@@ -340,12 +324,12 @@ export const BANKS = [
   'بنك الخليج الدولي',
 ] as const
 
-/* الحقل اتعرّف فوق بقائمة فاضية عشان `BANKS` معرَّفة تحته ·
-   والربط هنا بيمنع نسختين من نفس القايمة */
+/* The field is defined above with an empty list on purpose, since `BANKS` is defined below it —
+   this linking prevents two copies of the same list */
 const bankField = REG_STAGES.find((s) => s.key === 'bank')?.fields[0]
 if (bankField) bankField.options = BANKS
 
-/** أسباب رفض الحساب البنكي · سبعة مكوَّدة في النظام العامل */
+/** Bank account rejection reasons · seven, coded in the live system */
 export const BANK_REJECTS = [
   'الآيبان غير مطابق لاسم الجهة',
   'صورة الآيبان غير واضحة',
@@ -356,38 +340,35 @@ export const BANK_REJECTS = [
   'خطاب البنك منتهي الصلاحية',
 ] as const
 
-/* ═══════════════════════════════════════════════════════════
-   المستندات · والإلزام مشروط بالنوع
+/* Documents · requirement is conditional on entity type.
 
-   ⚠️ دي أهم تفصيلة اتاخدت من النظام ومش في الوثيقة: الوثيقة
-   بتقول «كل المستندات الإلزامية» بلا تفريع، والنظام بيخلّي تلاتة
-   منهم **إلزاميين للشركات غير الربحية وحدها**. فالقائمة بتتحدّث لحظة
-   تغيير التصنيف لا عند الإرسال.
-   ═══════════════════════════════════════════════════════════ */
+   The most important detail taken from the live system rather than the spec: the spec says "all
+   required documents" with no branching, while the system makes three of them required for
+   non-profit companies only. So the list updates the moment the classification changes, not at
+   submission. */
 
 export interface RegDoc {
   key: string
   label: string
-  /** إلزامي دايمًا */
+  /** Always required */
   req?: boolean
-  /** إلزامي للتصنيفات دي وحدها */
+  /** Required for these classifications only */
   reqFor?: readonly string[]
-  /** الحدّ الأقصى بالميجابايت */
+  /** Maximum size in megabytes */
   maxMb: number
 }
 
 /**
- * الحدّ الأقصى لأي مرفق في التسجيل · **٥ ميجا**.
+ * Maximum attachment size for registration · 5 MB.
  *
- * ⚠️ **الرقم ده من شاشات العميل (١٩ سبتمبر) لا من النظام العامل.**
- * اللي كان عندنا مقروءًا من النظام العامل هو `64` لسبعة مستندات
- * و**`800`** لقرار المجلس · والتاني رقم غريب أصلًا (٨٠٠ ميجا
- * لقرار تكليف؟). وشاشة الرفع عند العميل بتقول «الحد الأقصى ٥
- * ميجابايت» لكل المستندات بلا استثناء.
+ * This figure comes from the client's live screens, not the live system. What the live system
+ * exposed was 64 MB for seven documents and 800 MB for the board decision — and the latter is an
+ * odd number to begin with (800 MB for a mandate decision?). The client's upload screen states a 5
+ * MB maximum for every document without exception.
  *
- * ⚠️ **ومكتوب مرة واحدة عن قصد** · كان مكرّرًا تمان مرات، فتغييره
- * كان بيحتاج تمان تعديلات واللي يتنسي بيسيب مستندًا بحدّ مختلف
- * عن جيرانه بلا سبب.
+ * Written in one place on purpose — it used to be duplicated eight times, so changing it meant
+ * eight edits, and a missed one left a document with a different limit than its neighbors for no
+ * reason.
  */
 export const DOC_MAX_MB = 5
 
@@ -407,63 +388,57 @@ export const docRequired = (d: RegDoc, type: string): boolean =>
   Boolean(d.req) || Boolean(d.reqFor?.includes(type))
 
 /**
- * صيغة الرقم المرجعي · `REQ-YYYY-NNNNNN`.
+ * Reference number format · `REQ-YYYY-NNNNNN`.
  *
- * ⚠️ **الصيغة من شاشات العميل (١٩ سبتمبر)** · كانت `RG-1039`
- * عندنا، وعندهم `REQ-2026-947124`: بادئة أوضح، والسنة جوّه الرقم،
- * وستة أرقام مسلسلة. والسنة جوّه الرقم مش زينة · هي اللي بتخلّي
- * الطلب يتعرف من رقمه في مكالمة بلا فتح شاشة.
+ * This format comes from the client's live screens — ours used to be `RG-1039`, theirs is
+ * `REQ-2026-947124`: a clearer prefix, the year embedded in the number, and six sequential digits.
+ * The embedded year isn't decoration — it's what lets a request be identified from its number alone
+ * in a phone call, without opening a screen.
  *
- * ⚠️ **والرقم ده الجهة بتقراه وبتنقله**، فمعاه زرار نسخ في كل مكان
- * بيتعرض فيه للجهة (`CopyId`) · أربعة عشر حرفًا بتتنقل بالعين
- * ومعاها غلط.
+ * The entity reads and repeats this number, so it gets a copy button everywhere it's shown to the
+ * entity (`CopyId`) — fourteen characters are easy to mistype by eye.
  */
 export const REQ_ID_SHAPE = 'REQ-YYYY-NNNNNN'
 
-/* ═══════════════════════════════════════════════════════════
-   طلبات تجريبية
+/* Sample requests.
 
-   ⚠️ الأسماء والتراخيص **وهمية**. اللي حقيقي هو التوزيع: أغلب
-   الطلبات بتقف في «بانتظار الاستكمال» لا في «مرفوض» · لأن سبب
-   الوقوف في النظام العامل نواقص ملف لا عدم أهلية.
-   ═══════════════════════════════════════════════════════════ */
+   Names and licenses are fictional. What's real is the distribution: most requests sit in "pending
+   completion" rather than "rejected", since in the live system the usual cause is missing
+   documents, not ineligibility. */
 
-/* ═══════════════════════════════════════════════════════════
-   الحساب البنكي · ن-1
+/* Bank account.
 
-   ⚠️ **صفّ لا مجموعة حقول.** الجهة عندها حساب لكل وجه خير
-   («تحفيظ · تفطير صائم · أضاحي») زي ما مظفر قال في ح-5، والفورم
-   اللي فيه `bankName` واحد كان بيفترض حسابًا واحدًا · فاللي عنده
-   أربعة كان بيحطّ واحدًا ويبعت الباقي في إيميل.
+   A row, not a group of fields. An entity has one account per cause ("memorization", "iftar",
+   "sacrifices"), and a form with a single `bankName` field assumed one account — so an entity with
+   four accounts would enter one and send the rest by email.
 
-   ⚠️ **ووثيقة الحساب إلزامية لكل حساب.** الحساب من غير وثيقته
-   ما ينفعش يتحقّق منه، والصرف بيقف عنده · فالإلزام هنا بيمنع
-   طلبًا ناقصًا يوصل للمراجع أصلًا بدل ما يرجع بملاحظة.
-   ═══════════════════════════════════════════════════════════ */
+   The account document is required for every account. An account without its document can't be
+   verified, and disbursement stops there — so requiring it here keeps an incomplete request from
+   ever reaching a reviewer, instead of having it bounce back with a note. */
 export interface RegBank {
   id: string
   bankName: string
-  /** باسم الجهة لا باسم شخص · قاعدة 27 */
+  /** In the entity's name, not a person's · a bank-name standardization rule */
   bankHolder: string
   /**
-   * الاسم المختصر للحساب.
+   * Short account label.
    *
-   * ⚠️ **حقل إلزامي في شاشات العميل (١٩ سبتمبر) ما كانش عندنا** ·
-   * ومعناه مش مقطوع فيه: أقرب تفسير إنه الاسم اللي الحساب بيتعرف
-   * بيه في الكشوف بدل الاسم الرسمي الطويل، وده بيتفق مع ن-1 (حساب
-   * لكل وجه خير: «تحفيظ» · «تفطير صائم» · «أضاحي»).
-   * **وسؤال ق-د مفتوح عند العميل**، والتلميح في الشاشة بيقول
-   * التفسير ده صراحةً عشان الجهة ما تخمّنش.
+   * A required field on the client's live screens that we didn't have. Its exact meaning isn't
+   * settled: the closest interpretation is that it's the name the account is identified by in
+   * statements, instead of the long official name, which fits with the one-account-per-cause
+   * pattern ("memorization", "iftar", "sacrifices"). This is still an open question with the
+   * client, and the on-screen hint states this interpretation explicitly so the entity isn't left
+   * guessing.
    */
   shortName: string
   iban: string
-  /** وثيقة الحساب البنكي · اسم الملف المرفوع · إلزامية */
+  /** Bank account document · uploaded file name · required */
   doc?: string
 }
 
 export const BANK_DOC_LABEL = 'وثيقة الحساب البنكي'
 
-/** حساب فاضي جديد · الترقيم للمفتاح لا للعرض */
+/** A new empty account · numbering is for the key, not for display */
 export const emptyBank = (n: number): RegBank => ({
   id: `b${n}`, bankName: '', bankHolder: '', shortName: '', iban: '',
 })
@@ -471,10 +446,10 @@ export const emptyBank = (n: number): RegBank => ({
 export interface BankIssue { key: string; say: string }
 
 /**
- * نواقص الحسابات · دي اللي بتمنع الإرسال لا رأي المساعد.
+ * Account gaps · these block submission, not the assistant's opinion.
  *
- * ⚠️ **والآيبان المكرَّر غلط برضو.** حسابان بنفس الآيبان معناهم
- * صفّ اتنسخ وما اتعدّلش · والمراجع بيشوفهم حسابين.
+ * A duplicate IBAN counts as a gap too: two accounts with the same IBAN mean a copied row that was
+ * never edited, and a reviewer would see them as two accounts.
  */
 export const bankIssues = (banks: RegBank[]): BankIssue[] => {
   const out: BankIssue[] = []
@@ -487,8 +462,8 @@ export const bankIssues = (banks: RegBank[]): BankIssue[] => {
     const at = `الحساب ${i + 1}`
     if (!b.bankName) out.push({ key: `${b.id}-name`, say: `${at}: اختر البنك.` })
     if (!b.bankHolder.trim()) out.push({ key: `${b.id}-holder`, say: `${at}: أدخل اسم صاحب الحساب.` })
-    /* ت-6 · إلزامي عند العميل · وبيدخل في نواقص الإرسال زي غيره
-       لأن الحقل اللي اسمه إلزامي وما بيمنعش الإرسال مش إلزامي */
+    /* Required on the client's side · counted among submission gaps like any other, since a field
+       labeled required that doesn't actually block submission isn't really required */
     if (!b.shortName.trim()) out.push({ key: `${b.id}-short`, say: `${at}: أدخل الاسم المختصر للحساب.` })
     const iban = b.iban.replace(/\s/g, '')
     if (!iban) out.push({ key: `${b.id}-iban`, say: `${at}: أدخل رقم الآيبان.` })
@@ -522,24 +497,27 @@ export interface RegRequest {
   clerkName: string
   clerkMobile: string
   clerkEmail: string
-  /** إقرار الجهة لا تقييمنا · نوتة ن-2 */
+  /** The entity's self-declaration, not our assessment */
   governanceClaim: number
-  /** نوع الشراكة · الجاي من البوّابة بياخد «مستفيد» ومش بيشوف الحقل */
+  /**
+   * Partnership type · an entity coming from the portal defaults to "beneficiary" and never sees
+   * this field
+   */
   partner: PartnerKind
-  /** حسابات الجهة · واحد على الأقل · ن-1 */
+  /** Entity accounts · at least one */
   banks: RegBank[]
-  /** بريد حساب البوّابة · ن-2 · وبيه بتفتح على طلبها */
+  /** Portal account email · used to log in and see its request */
   acctEmail: string
-  /** مفاتيح المستندات المرفوعة */
+  /** Keys of the uploaded documents */
   docs: string[]
   state: RegState
   submittedAt: string
   decidedAt?: string
-  /** ملاحظة إدارية · إلزامية مع الإعادة والرفض · قاعدة 31 */
+  /** Admin note · required on both return and rejection */
   note?: string
-  /** الجهة اللي اتولدت بعد الاعتماد · قاعدة 2 */
+  /** The entity generated after approval */
   entityId?: string
-  /** أيام المراجعة · بيغذّي المؤشر 4 */
+  /** Days under review · feeds an indicator */
   reviewDays?: number
 }
 
@@ -575,8 +553,7 @@ const req = (
   clerkEmail: `clerk-${id}@example.org`,
   governanceClaim,
   partner: PORTAL_KIND,
-  /* ⚠️ آيبان مموّه · ده نموذج في ريبو مفتوح، ومفيش داعي لرقم
-     يشبه الحقيقي */
+  /* An obfuscated IBAN · this is a mock in an open repo, no need for a number resembling a real one */
   banks: [
     { id: 'b1', bankName: 'مصرف الراجحي', bankHolder: name, shortName: 'الحساب العام', iban: 'SA00 0000 0000 0000 0000 0000', doc: 'وثيقة-الحساب.pdf' },
   ],
@@ -621,11 +598,11 @@ export const regRows: RegRequest[] = [
 export const regRequestById = (id: string): RegRequest | undefined =>
   regRows.find((r) => r.id === id)
 
-/** المستندات الناقصة في الطلب ده · بالتصنيف اللي فيه */
+/** Missing documents for this request · based on its classification */
 export const regMissingDocs = (r: RegRequest): RegDoc[] =>
   REG_DOCS.filter((d) => docRequired(d, r.type) && !r.docs.includes(d.key))
 
-/** قاعدة 8 · رقم الترخيص ما يتكررش · إلا لو التصنيف مختلف (قاعدة 9) */
+/** License number can't repeat · unless the classification differs */
 export const licenseClash = (
   licenseNo: string,
   type: string,
@@ -635,17 +612,14 @@ export const licenseClash = (
   return hit ? { name: hit.name, type: hit.type } : null
 }
 
-/** المدن التابعة للمنطقة · نفس السلسلة اللي في فلاتر الجهات */
+/** Cities under a region · same cascading pattern used in entity filters */
 export const citiesOf = (region: string): readonly string[] =>
   CITIES_BY_REGION[region] ?? []
 
-/* ═══════════════════════════════════════════════════════════
-   المؤشرات الستة · بند 6 في الإجراء
+/* The six indicators.
 
-   المعروض هنا **محسوب من الطلبات** لا مكتوب · فأي تغيير في
-   الفكسشر بيتحرّك معاه الرقم، ومحصلش إن مؤشر يقول حاجة والجدول
-   تحته يقول غيرها.
-   ═══════════════════════════════════════════════════════════ */
+   What's shown here is calculated from the requests, not hardcoded — so any change to the fixture
+   moves the number with it, and an indicator never contradicts the table beneath it. */
 
 export function regKpi() {
   const sent = regRows.filter((r) => r.state !== 'draft')
@@ -657,17 +631,17 @@ export function regKpi() {
   const share = (n: number) => (sent.length ? Math.round((n / sent.length) * 100) : 0)
 
   return {
-    /** 1 · عدد طلبات التسجيل */
+    /** 1 · Number of registration requests */
     total: sent.length,
-    /** 2 · نسبة المعتمدة */
+    /** 2 · Approval rate */
     approvedPct: share(approved.length),
-    /** 3 · نسبة المرفوضة */
+    /** 3 · Rejection rate */
     rejectedPct: share(rejected.length),
-    /** 4 · متوسط مدة المراجعة */
+    /** 4 · Average review duration */
     avgDays: done.length ? Math.round(days / done.length) : 0,
-    /** 5 · نسبة المعادة للاستكمال */
+    /** 5 · Rate returned for completion */
     backPct: share(back.length),
-    /** 6 · نسبة اكتمال ملفات الجهات · محسوبة من المرفوع مقابل المطلوب */
+    /** 6 · Entity file completion rate · calculated from uploaded vs. required documents */
     filePct: sent.length
       ? Math.round(
           (sent.reduce((s, r) => {

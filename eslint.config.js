@@ -20,7 +20,7 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      // الباراميترات اللي بتبدأ بـ_ مقصود إنها متجاهَلة (توقيع الـAPI المستقبلي)
+      // Parameters starting with `_` are deliberately unused (future API signature).
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },

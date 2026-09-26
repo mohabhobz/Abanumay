@@ -2,8 +2,9 @@ import { nf } from '@/lib/format'
 import type { AuthorityMatrix } from '@/types/domain'
 
 /**
- * سُلّم السقوف · نفس منطق قوس الاعتماد، بس كقائمة رأسية.
- * بيحسب أول دور سقفه يستوعب المبلغ، ويبيّن إن اللي فوقه غير مطلوب وليه.
+ * Ceiling ladder · same logic as the approval arc, but as a vertical list.
+ * Computes the first tier whose ceiling covers the amount, and shows why the ones above aren't
+ * needed.
  */
 export function CeilingLadder({
   amount,
@@ -16,9 +17,9 @@ export function CeilingLadder({
 }) {
   const roles = authority.roles
 
-  // أول دور له سقف ويستوعب المبلغ هو صاحب القرار
+  // The first tier with a ceiling that covers the amount is the approver
   let decider = roles.findIndex((r, i) => i > 0 && r.ceiling !== null && r.ceiling >= amount)
-  if (decider === -1) decider = roles.length - 1 // تعدّى كل السقوف، يروح للمجلس
+  if (decider === -1) decider = roles.length - 1 // Exceeds every ceiling — goes to the board
 
   return (
     <div className="lad">
@@ -54,7 +55,7 @@ export function CeilingLadder({
               </div>
             </div>
             <div className="lcap">
-              {/* الخط المونو للأرقام بس · على العربي بيبوّظ المسافات */}
+              {/* Monospace digits only — with Arabic text it breaks the spacing */}
               <div className={`lnum${r.ceiling ? ' mono' : ''}`}>
                 {r.ceiling ? nf.format(r.ceiling) : r.kind === 'recommend' ? 'توصية' : 'بلا حد مالي'}
               </div>

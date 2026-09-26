@@ -1,59 +1,64 @@
-/** تنسيقات الأرقام والتواريخ · مكان واحد عشان كل الشاشات تعرض بنفس الشكل */
+/**
+ * Number and date formatting — one place so every screen displays them
+ * the same way.
+ */
 
 /**
- * كل الأرقام في السيستم بالخانات اللاتينية (0–9)، حتى داخل النص
- * العربي. السبب مش ذوق: المستخدم بينسخ الأرقام دي في إيميلات
- * وجداول ومراسلات، والأرقام الهندية بتتكسر في النقل وبتصعّب
- * المقارنة البصرية بين صفّين. القرار موحّد فمفيش استثناء.
+ * Every number in the system uses Latin digits (0–9), even inside
+ * Arabic text. This isn't a stylistic choice: users copy these numbers
+ * into emails, spreadsheets, and correspondence, and Arabic-Indic
+ * digits break on transfer and make visually comparing two rows harder.
+ * The rule is uniform, with no exceptions.
  */
 export const nf = new Intl.NumberFormat('en-US')
 
-/** التاريخ بالعربي، بخانات لاتينية */
+/** Date in Arabic, with Latin digits. */
 export const df = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
 })
 
 /**
- * تاريخ قصير: «12 أبريل 2026».
- *
- * `df` بتحطّ اليوم من الأسبوع كمان، وده مفيد في السجل («الأحد») لكن
- * في صفّ تعريف بيبقى ضوضاء · التاريخ هنا حقيقة تعريفية لا حدث.
+ * Short date: "April 12, 2026." `df` also includes the weekday, which
+ * is useful in the log ("Sunday") but becomes noise in a data row — the
+ * date here is a fact, not an event.
  */
 export const dfShort = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
   day: 'numeric', month: 'long', year: 'numeric',
 })
 
-/** الساعة بالعربي وبخانات لاتينية: «11:40 ص» */
+/** Time in Arabic with Latin digits: "11:40 AM." */
 export const tf = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
   hour: 'numeric', minute: '2-digit',
 })
 
 /**
- * تاريخ ووقت: «22 سبتمبر 2026 · 11:40 ص».
+ * Date and time: "September 22, 2026 · 11:40 AM."
  *
- * ⚠️ **للتعليقات والملاحظات لا للتواريخ التعريفية.** التعليق حدث،
- * واتنين اتكتبوا في نفس اليوم ما بيتفرقوش من غير الساعة · والتاريخ
- * التعريفي (تأسيس · ترخيص) ساعته مالهاش معنى، فبيفضل `readDate`.
+ * For comments and notes, not data dates. A comment is an event, and
+ * two written the same day can't be told apart without the time — while
+ * a data date (founding, licensing) has no meaningful time, so it
+ * stays with `readDate`.
  */
 export const readDateTime = (iso: string): string => {
   const dt = new Date(iso)
   if (Number.isNaN(dt.getTime())) return iso
-  /* ⚠️ **الساعة وحدة واحدة في العزل** · `isolate` بيعزل كل مجموعة
-     أرقام لوحدها، فـ«10:20» بتتقسم «10» و«20» والنقطتين بينهم بياخدوا
-     اتجاه السطر العربي · فبتتقري «20:10». هنا الساعة كلها جوّه عزل
-     واحد، والتاريخ بيتعزل بالطريقة العادية. */
+  /* The time is one unit inside isolation: `isolate` isolates each group
+     of digits on its own, so "10:20" would split into "10" and "20" with
+     the colon between them taking the Arabic line's direction, reading as
+     "20:10." Here, the whole time sits inside a single isolation, while
+     the date is isolated normally. */
   const clock = tf.format(dt).replace(/\d{1,2}:\d{2}/, (m) => `\u2066${m}\u2069`)
   return `${isolate(dfShort.format(dt))} · ${clock}`
 }
 
-/** دلوقتي بصيغة `YYYY-MM-DDTHH:mm` المحلية · لختم التعليقات */
+/** Current time in local `YYYY-MM-DDTHH:mm` format — for timestamping comments. */
 export const nowStamp = (): string => {
   const d = new Date()
   const z = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`
 }
 
-/** يقبل `2026-04-12` أو `12/4/2026` ويرجّع تاريخًا مقروءًا */
+/** Accepts `2026-04-12` or `12/4/2026` and returns a readable date. */
 export const readDate = (value: string): string => {
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(value)
   const dt = iso
@@ -65,7 +70,7 @@ export const readDate = (value: string): string => {
   return Number.isNaN(dt.getTime()) ? value : dfShort.format(dt)
 }
 
-/** تاريخ + عدد أيام = التاريخ الناتج */
+/** Date plus a number of days = the resulting date. */
 export const addDays = (value: string, days: number): string => {
   const dt = new Date(value)
   if (Number.isNaN(dt.getTime())) return value
@@ -79,15 +84,24 @@ export const percent = (part: number, whole: number): number =>
   whole === 0 ? 0 : Math.round((part / whole) * 100)
 
 /**
- * نسبة جاهزة للكتابة جوّه جملة عربية.
+ * A percentage ready to embed inside an Arabic sentence.
  *
- * الرقم لاتيني، بس ده مش كفاية: خوارزمية الاتجاه بتحطّ علامة `%`
- * حسب اتجاه الجملة اللي حواليها، فـ«94%» جوّه نص عربي بتترسم
- * «%94». المحارف دي (LRI … PDI) بتقفل الرقم وعلامته في جزيرة
- * اتجاهها ثابت. في الـJSX العزل بيتعمل بـ`.num` في الـCSS؛ الدالة
- * دي للنصوص اللي بتتبني كسلسلة قبل ما توصل للـDOM.
+ * The number is Latin, but that alone isn't enough: the bidi algorithm
+ * places the `%` sign according to the direction of the surrounding
+ * sentence, so "94%" inside Arabic text renders as "%94." These
+ * characters (LRI … PDI) lock the number and its sign inside an island
+ * with a fixed direction. In JSX this isolation is handled by `.num` in
+ * CSS; this function is for text built as a plain string before it
+ * reaches the DOM.
  */
 export const pct = (n: number): string => `\u2066${n}%\u2069`
+/**
+ * Version number "V2" — the Latin prefix stays attached to its number
+ * inside a single island (same idea as `pct`). It used to be
+ * `V<span class="num">2</span>`, with the V outside the island landing
+ * to the right of the number in the Arabic sentence: "2V."
+ */
+export const ver = (n: number): string => `\u2066V${n}\u2069`
 
 /**
  * \u064a\u0639\u0632\u0644 \u0643\u0644 \u0631\u0642\u0645 \u062f\u0627\u062e\u0644 \u0646\u0635 \u0639\u0631\u0628\u064a \u062c\u0627\u0647\u0632.
@@ -102,36 +116,39 @@ export const isolate = (text: string): string =>
   text.replace(/\d[\d,.]*(?:\s?%)?/g, (m) => `\u2066${m}\u2069`)
 
 /**
- * كود المشروع المعروض: `prj-2026-00013`.
+ * Displayed project code: `prj-2026-00013`.
  *
- * النظام العامل بيعرض رقمًا متسلسلًا عاريًا (`20940`) ما بيقولش سنة
- * ولا نوع، ولمّا يتنسخ في إيميل بيبقى رقمًا بلا هوية. الكود ده بيحمل
- * النوع والسنة والتسلسل، وبيتسطر بنفس العرض دايمًا فالعين بتقارن
- * صفّين فوق بعض.
+ * The current system displays a bare sequential number (`20940`) that
+ * says nothing about the year or type, and once copied into an email
+ * becomes a number with no identity. This code carries the type, year,
+ * and sequence, and is always laid out at the same width so the eye can
+ * compare two rows stacked on top of each other.
  *
- * **المعرّف في الـURL وفي الـAPI بيفضل الرقم الخام.** الكود عرض لا
- * مفتاح: تغييره بيكسر كل رابط محفوظ، وبيخلي الربط بالباك اند يحتاج
- * ترجمة في الاتجاهين بلا فايدة.
+ * The identifier in the URL and API stays the raw number. The code is a
+ * display format, not a key: changing it would break every saved link,
+ * and require translating in both directions with the backend for no benefit.
  */
 export const projectCode = (id: string, year?: string): string =>
   `prj-${(year ?? '').slice(0, 4) || '____'}-${id.padStart(5, '0')}`
 
-/** يقبل الكود كامل أو أي جزء منه في البحث */
+/** Accepts the full code or any part of it in search. */
 export const matchesCode = (needle: string, id: string, year?: string): boolean =>
   projectCode(id, year).includes(needle.trim().toLowerCase())
 
-/** تكلفة المستفيد · مقياس المقارنة بين المشاريع */
+/** Cost per beneficiary — the metric used to compare projects. */
 export const costPerBeneficiary = (amount: number, beneficiaries: number): number =>
   beneficiaries === 0 ? 0 : Math.round(amount / beneficiaries)
 
-/** قصّ نص طويل مع الحفاظ على الكلمة الأخيرة كاملة */
+/** Truncates long text while keeping the last word intact. */
 export const trim = (text: string, max = 90): string =>
   text.length <= max ? text : `${text.slice(0, text.lastIndexOf(' ', max))}…`
 
 /**
- * الحرف الأول لشعار الجهة النصي.
- * بيشيل الكلمة العامة («جمعية/مؤسسة/مركز») و«ال» التعريف، وإلا كل
- * الجهات هتاخد نفس الحرف وتبقى الشعارات بلا فايدة.
+ * First letter for an entity's text logo.
+ *
+ * Strips the generic word ("Association/Foundation/Center") and the
+ * definite article "Al-" — otherwise every entity would get the same
+ * letter and the logos would be useless.
  */
 export const initial = (name: string): string =>
   name
@@ -140,19 +157,21 @@ export const initial = (name: string): string =>
     .charAt(0)
 
 /**
- * صيغة الجمع العربية.
- * العربية فيها خمس صيغ، والواجهة اللي بتقول «1 مشاريع» بتبان مترجمة
- * آليًا. الدالة دي بتاخد الصيغ وترجّع الصح، ومعاها النص المبرَز
- * عشان التمييز يطابق النص حرفيًا.
+ * Arabic plural form.
+ *
+ * Arabic has five plural forms, and an interface that says "1 projects"
+ * reads like a machine translation. This function takes the forms and
+ * returns the correct one, along with the highlighted text so the
+ * emphasis matches the text exactly.
  */
 export interface PluralForms {
-  /** واحد */
+  /** One */
   one: string
-  /** اثنان */
+  /** Two */
   two: string
   /** 3–10 */
   few: (n: number) => string
-  /** 11 فأكثر */
+  /** 11 or more */
   many: (n: number) => string
 }
 
@@ -164,25 +183,111 @@ export const plural = (n: number, f: PluralForms): string => {
 }
 
 /**
- * الاسم بعد رقم معروض لوحده (`<Num>` قبله) · «1 بند ناقص» · «3 بنود
- * ناقصة» · «11 بندًا ناقصًا». الرقم بيفضل ظاهر عشان العين بتلقطه
- * من بعيد، والاسم بيتصرّف معاه (٢٣ سبتمبر · «1 بنود ناقصة» و«3 بند
- * ناقص» كانوا في شاشات الإغلاق والاتفاقيات).
+ * Noun following a number displayed on its own (`<Num>` before it) —
+ * "1 missing item" · "3 missing items" · "11 missing items." The number
+ * stays visible so the eye catches it from a distance, and the noun
+ * inflects with it ("1 missing items" and "3 missing item" used to
+ * appear on the closing and agreements screens).
  */
 export const nounAfter = (n: number, f: { one: string; few: string; many: string }): string => {
   const mod = n % 100
-  if (n <= 2) return f.one
+  /* "one hundred days" · "101 days" — after hundreds, the noun takes the
+     genitive singular, not the accusative. */
+  if (n <= 2 || mod <= 2) return f.one
   return mod >= 3 && mod <= 10 ? f.few : f.many
 }
 export const MISSING_ITEM = { one: 'بند ناقص', few: 'بنود ناقصة', many: 'بندًا ناقصًا' }
 export const REQUEST_NOUN = { one: 'طلب', few: 'طلبات', many: 'طلبًا' }
+/* Nouns following a number displayed on its own used to be hand-written
+   in one fixed form regardless of the count ("3 entity" · "4 year" ·
+   "10 day" · "5 item"), and that mismatch was found across 62 places.
+   Each noun now has a single form here, and screens call
+   `nounAfter(n, NOUN.x)`. */
+export const NOUN = {
+  day: { one: 'يوم', few: 'أيام', many: 'يومًا' },
+  entity: { one: 'جهة', few: 'جهات', many: 'جهة' },
+  year: { one: 'سنة', few: 'سنوات', many: 'سنة' },
+  category: { one: 'فئة', few: 'فئات', many: 'فئة' },
+  source: { one: 'مصدر', few: 'مصادر', many: 'مصدرًا' },
+  budget: { one: 'ميزانية', few: 'ميزانيات', many: 'ميزانية' },
+  request: REQUEST_NOUN,
+  line: { one: 'بند', few: 'بنود', many: 'بندًا' },
+  doc: { one: 'مستند', few: 'مستندات', many: 'مستندًا' },
+  entry: { one: 'قيد', few: 'قيود', many: 'قيدًا' },
+  plan: { one: 'خطة', few: 'خطط', many: 'خطة' },
+  agreement: { one: 'اتفاقية', few: 'اتفاقيات', many: 'اتفاقية' },
+  charity: { one: 'جمعية', few: 'جمعيات', many: 'جمعية' },
+  city: { one: 'مدينة', few: 'مدن', many: 'مدينة' },
+  region: { one: 'منطقة', few: 'مناطق', many: 'منطقة' },
+  payment: { one: 'دفعة', few: 'دفعات', many: 'دفعة' },
+  phase: { one: 'مرحلة', few: 'مراحل', many: 'مرحلة' },
+  activity: { one: 'نشاط', few: 'أنشطة', many: 'نشاطًا' },
+  project: { one: 'مشروع', few: 'مشاريع', many: 'مشروعًا' },
+  type: { one: 'تصنيف', few: 'تصنيفات', many: 'تصنيفًا' },
+  report: { one: 'تقرير', few: 'تقارير', many: 'تقريرًا' },
+  level: { one: 'مستوى', few: 'مستويات', many: 'مستوى' },
+  option: { one: 'خيار', few: 'خيارات', many: 'خيارًا' },
+  row: { one: 'صف', few: 'صفوف', many: 'صفًّا' },
+  note: { one: 'ملاحظة', few: 'ملاحظات', many: 'ملاحظة' },
+  /* The blind spots that the expanded dictionary caught. */
+  column: { one: 'عمود', few: 'أعمدة', many: 'عمودًا' },
+  filter: { one: 'فلتر', few: 'فلاتر', many: 'فلترًا' },
+  chart: { one: 'رسم', few: 'رسوم', many: 'رسمًا' },
+  kind: { one: 'نوع', few: 'أنواع', many: 'نوعًا' },
+  procedure: { one: 'إجراء', few: 'إجراءات', many: 'إجراءً' },
+  beneficiary: { one: 'مستفيد', few: 'مستفيدين', many: 'مستفيدًا' },
+  section: { one: 'قسم', few: 'أقسام', many: 'قسمًا' },
+  indicator: { one: 'مؤشر', few: 'مؤشرات', many: 'مؤشرًا' },
+  describedColumn: { one: 'عمود موصوف', few: 'أعمدة موصوفة', many: 'عمودًا موصوفًا' },
+  /* Noun plus adjective — the adjective inflects with the count just like
+     the noun ("open projects" · "an open project"), so both are handled
+     in a single form. */
+  openProject: { one: 'مشروع مفتوح', few: 'مشاريع مفتوحة', many: 'مشروعًا مفتوحًا' },
+  requiredDoc: { one: 'مستند إلزامي', few: 'مستندات إلزامية', many: 'مستندًا إلزاميًا' },
+  sentRequest: { one: 'طلب مرسَل', few: 'طلبات مرسَلة', many: 'طلبًا مرسَلًا' },
+  finalReport: { one: 'تقرير ختامي', few: 'تقارير ختامية', many: 'تقريرًا ختاميًا' },
+  pendingPayment: { one: 'دفعة معلّقة', few: 'دفعات معلّقة', many: 'دفعة معلّقة' },
+  lateActivity: { one: 'نشاط متأخّر', few: 'أنشطة متأخّرة', many: 'نشاطًا متأخّرًا' },
+  missingDoc: { one: 'مستند ناقص', few: 'مستندات ناقصة', many: 'مستندًا ناقصًا' },
+} as const
+/**
+ * A unit written as text alongside a value (`{ value, unit: 'day' }`) —
+ * the generic component (reading text, card, map, report builder)
+ * doesn't know the noun, so the unit used to be written in one fixed
+ * form regardless of the count. This function recognizes the first
+ * word from the dictionary above and returns it inflected for the
+ * count, leaving the rest unchanged. A unit not in the dictionary is
+ * returned as-is.
+ */
+export const unitAfter = (n: number | string, unit: string): string => {
+  const v = typeof n === 'number' ? n : Number(String(n).replace(/[,\u2066-\u2069]/g, ''))
+  if (!Number.isFinite(v) || !unit) return unit
+  const whole = [...Object.values(NOUN), MISSING_ITEM].find((x) => x.one === unit || x.few === unit || x.many === unit)
+  if (whole) return nounAfter(v, whole)
+  const [w, ...rest] = unit.split(' ')
+  const f = Object.values(NOUN).find((x) => !x.one.includes(' ') && (x.one === w || x.few === w || x.many === w))
+  return f ? [nounAfter(v, f), ...rest].join(' ') : unit
+}
+/**
+ * Value with its unit as text — a "%" sign stays inside its number's
+ * island (`pct`), not a following word.
+ */
+export const withUnit = (n: number, unit: string): string =>
+  unit === '%' ? pct(n) : `${nf.format(n)} ${unitAfter(n, unit)}`
+/**
+ * "3 entities" · "11 entities" — the number is isolated and the noun
+ * inflected — for plain text (not JSX).
+ */
+export const countOf = (n: number, f: { one: string; few: string; many: string }): string =>
+  `${nf.format(n)} ${nounAfter(n, f)}`
 
 /**
- * الوحدات المتكرّرة في القراءات.
+ * Recurring units used in reading text.
  *
- * `gen` = الصيغة بعد حرف جر («من يومين» مش «من يومان»). العربية
- * بتغيّر المثنى حسب موقعه، والجملة اللي بتقول «من 2 يوم» أو
- * «فيه مشروعان» بتفضح إن النص متولّد آليًا.
+ * `gen` = the form after a preposition ("min yawmayn," not "min
+ * yawman"). Arabic changes the dual form depending on its grammatical
+ * position, and a sentence like "from 2 day" or a mismatched dual gives
+ * away that the text was auto-generated.
  */
 const two = (nom: string, gen: string, isGen: boolean) => (isGen ? gen : nom)
 
@@ -227,9 +332,9 @@ export const units = {
     one: 'قراءة واحدة', two: two('قراءتان', 'قراءتين', gen),
     few: (x) => `${x} قراءات`, many: (x) => `${x} قراءة`,
   }),
-  /* الخطة · BPD-012 · «1 مراحل» و«0 نشاطًا» كانوا بيتكتبوا حرفيًّا
-     في كارت الخطة، والصفر بالذات بيقرا غلط: «0 نشاطًا» يعني الخطة
-     فاضية، والجملة الصح «بلا أنشطة» */
+  /* Plan — "1 phases" and "0 activity" used to be written literally on
+     the plan card, and zero especially reads wrong: "0 activity" would
+     mean the plan is empty, when the correct phrasing is "no activities." */
   phase: (n: number, gen = false) => plural(n, {
     one: 'مرحلة واحدة', two: two('مرحلتان', 'مرحلتين', gen),
     few: (x) => `${x} مراحل`, many: (x) => `${x} مرحلة`,
@@ -238,17 +343,21 @@ export const units = {
     one: 'نشاط واحد', two: two('نشاطان', 'نشاطين', gen),
     few: (x) => `${x} أنشطة`, many: (x) => `${x} نشاطًا`,
   }),
-  riyal: (n: number) => `${nf.format(n)} ⃁`,
+  /* A non-breaking space — the symbol used to fall alone as an orphan on
+     the next line. */
+  riyal: (n: number) => `${nf.format(n)}\u00A0⃁`,
 }
 
-/* ═══════════════ المبلغ بالحروف ═══════════════
-   ⚠️ ده مش زينة. أمر الصرف ورقة بتروح للبنك، والرقم اللي فيه خانة
-   زيادة أو ناقصة بيتقرا غلط ومفيش حاجة تكشفه · الحروف هي اللي
-   بتمسك الرقم، وعشان كده كل سند صرف في الدنيا مكتوب مرتين.
+/* Amount spelled out in words.
 
-   المدى المدعوم لحدّ الملايين · أكبر منحة في النظام العامل أقلّ من
-   عشرة ملايين، فما فيش داعي للمليارات ولا للكسور (الدفعات كلها
-   أرقام صحيحة بالريال). */
+   This isn't decoration. A disbursement order is a document that goes
+   to the bank, and a digit that's off by one place reads wrong with
+   nothing to catch it — the words are what anchors the number, which is
+   why every disbursement voucher anywhere is written twice.
+
+   Supported range goes up to the millions: the largest grant in the
+   current system is under ten million, so there's no need for billions
+   or fractions (all payments are whole riyal amounts). */
 
 const ONES = [
   '', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة',
@@ -261,7 +370,7 @@ const HUNDREDS = [
   'ستمئة', 'سبعمئة', 'ثمانمئة', 'تسعمئة',
 ]
 
-/** أقلّ من ألف بالحروف */
+/** Numbers under a thousand, spelled out. */
 function under1000(n: number): string {
   const parts: string[] = []
   const h = Math.floor(n / 100)
@@ -272,13 +381,13 @@ function under1000(n: number): string {
   } else {
     const u = rest % 10
     const t = Math.floor(rest / 10)
-    /* العربية بتقول «واحد وعشرون» · الآحاد قبل العشرات */
+    /* Arabic says "one and twenty" — the ones place comes before the tens. */
     parts.push(u ? `${ONES[u]} و${TENS[t]}` : TENS[t]!)
   }
   return parts.join(' و')
 }
 
-/** صيغة الوحدة حسب العدد · مثنّى وجمع قلّة وجمع كثرة */
+/** Unit form by count — dual, plural of paucity, and plural of abundance. */
 function unitOf(n: number, one: string, two: string, few: string, many: string): string {
   if (n === 1) return one
   if (n === 2) return two
@@ -287,8 +396,9 @@ function unitOf(n: number, one: string, two: string, few: string, many: string):
 }
 
 /**
- * المبلغ بالحروف العربية · «فقط مئتا ألف ريال لا غير» بيتكوّن حواليها.
- * بيرجّع الرقم بلا كلمة «فقط» ولا «لا غير» · اللي بيستعملها بيحطّهم.
+ * Amount in Arabic words — "only two hundred thousand riyals and no
+ * more" gets built around it. Returns the number without "only" or
+ * "and no more" — whoever uses it adds those.
  */
 export function riyals(n: number): string {
   if (!Number.isFinite(n) || n <= 0) return 'صفر ريال'
@@ -300,7 +410,9 @@ export function riyals(n: number): string {
 
   const parts: string[] = []
   if (mil) parts.push(unitOf(mil, 'مليون', 'مليونان', 'ملايين', 'مليونًا'))
-  /* «ألفا» لا «ألفان» في الإضافة · مئتا ألف، لا مئتان ألف */
+  /* Uses the dual construct form ("alfā"), not the standalone dual
+     ("alfān"), in a genitive construct — "mi'ata alf" (two hundred
+     thousand), not "mi'atān alf." */
   if (th) parts.push(unitOf(th, 'ألف', 'ألفان', 'آلاف', 'ألفًا'))
   if (rest) parts.push(under1000(rest))
 

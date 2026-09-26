@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { respond } from '@/data/mock/assistant'
 import type { AiMessageModel, ChatMessage } from './types'
 
-/** إيقاع العرض · بطيء بما يكفي إن المستخدم يقرا خطوات التفكير */
+/** Display pace — slow enough that the user can read the reasoning steps. */
 const THINK_STEP_MS = 620
 const TYPE_CHARS = 3
 const TYPE_MS = 14
@@ -19,10 +19,9 @@ export interface AssistantController {
 }
 
 /**
- * محرّك المساعد المشترك بين الشاشة الكاملة واللوح الجانبي.
- *
- * آلة حالة من ثلاث مراحل: `think` بيعرض المصادر اللي بتتفتح خطوة خطوة،
- * بعدين `type` بيكتب حرف حرف، بعدين `done` بيظهر الأدلة والمصادر والإجراءات.
+ * Assistant engine shared by the full screen and the side panel.
+ * A three-phase state machine: `think` shows the sources opening step by step, then `type` writes
+ * character by character, then `done` reveals the evidence, sources, and actions.
  */
 export function useAssistant(): AssistantController {
   const [msgs, setMsgs] = useState<ChatMessage[]>([])
@@ -38,7 +37,7 @@ export function useAssistant(): AssistantController {
     ])
   }, [])
 
-  /* خطوات التفكير واحدة ورا التانية، بعدين الكتابة حرف حرف */
+  /* Reasoning steps play one after another, then the writing goes character by character. */
   useEffect(() => {
     const index = msgs.findIndex(isPending)
     if (index === -1) return
@@ -69,7 +68,7 @@ export function useAssistant(): AssistantController {
     return () => clearTimeout(t)
   }, [msgs])
 
-  /** يقفز لآخر الإجابة بدل ما يستنى الكتابة */
+  /** Jumps to the end of the answer instead of waiting for the typing. */
   const stop = useCallback(() => {
     setMsgs((all) =>
       all.map((m) =>

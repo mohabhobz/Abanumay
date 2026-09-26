@@ -4,47 +4,46 @@ import { Icon } from '@/components/ui/Icon'
 import { icons } from '@/components/ui/icons'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
-import { units } from '@/lib/format'
 import { ReadingBlock, ReadingPeek } from './ReadingBlock'
 import type { Reading } from './reading'
+import { AbLeaf } from '@/components/soul'
 
-/** المساعد بيفكّر لحظة قبل ما يبدأ يكتب · عشان القراءة تبان مُنتَجة مش محفوظة */
+/**
+ * The assistant thinks for a moment before it starts writing, so the reply reads as produced, not
+ * retrieved from cache.
+ */
 const THINK_MS = 900
 
 export interface QuickReadProps {
   readings: Reading[]
   /**
-   * `panel` = كارت كامل في عمود السياق (اليوم وصفحة الجهة).
-   * `bar`   = سطر واحد فوق النتائج بينفتح (شاشات القوائم).
+   * `panel` = a full card in the context column (Today and the entity page).
+   * `bar`   = a single line above the results that expands (list screens).
    */
   variant?: 'panel' | 'bar'
   title?: string
-  /** يفتح لوح المساعد الكامل */
+  /** Opens the full assistant panel. */
   onAsk?: () => void
   /**
-   * الجملة اللي بتتقال لمّا مفيش ملاحظات في النطاق الحالي.
-   *
-   * ⚠️ **المساعد ما بيختفيش · هو بيقول إنه مفيش حاجة.** الكومبوننت
-   * كان بيرجّع `null` لمّا القراءات تفضى، والقراءات محسوبة من
-   * **الصفوف بعد الفلتر** · يعني أول ما المستخدم يضيّق النطاق
-   * لصفوف مفيهاش مشاكل، الشريط بيتشال من الشاشة والتخطيط بينطّ.
-   *
-   * والأسوأ من النطّ إن الاختفاء بيتقري **عطلًا**: المستخدم اللي
-   * شاف المساعد وهو بيفلتر بيفتكر إنه كسر حاجة، لا إنه وصل لنطاق
-   * نضيف. وسطر «مفيش ملاحظات» إجابة، والغياب مش إجابة.
+   * The message shown when there are no notes in the current scope.
+   * ⚠️ **The assistant doesn't disappear — it says there's nothing.** The component used to return
+   * `null` when readings were empty, and readings are computed from **the filtered rows** — so as
+   * soon as the user narrows scope to rows with no issues, the bar would vanish and the layout
+   * would jump.
+   * Worse than the jump: the disappearance reads as **a bug** — a user who watched the assistant
+   * while filtering assumes something broke, not that they reached a clean scope. A "no notes" line
+   * is an answer; absence isn't.
    */
   empty?: string
 }
 
 /**
- * القراءة السريعة · صوت المساعد في أي شاشة.
- *
- * بتلبس نفس زجاج السيستم زي أي كارت تاني: المساعد جزء من الواجهة
- * مش طبقة فوقها، والتمييز بييجي من **الشرارة والكتابة الحيّة**
- * مش من سطح بلون تاني.
- *
- * وكل قراءة بتبدأ برقمها كبيرًا: القراءة اللي رقمها جوّه فقرة
- * بتتقري، واللي رقمها قدامها بتتشاف.
+ * Quick read — the assistant's voice on any screen.
+ * It wears the same glass as any other card in the system: the assistant is part of the interface,
+ * not a layer on top of it, and the distinction comes from **the spark and the live writing**, not
+ * a different-colored surface.
+ * Every reading opens with its number large: a reading whose number sits inside a sentence gets
+ * read; one whose number leads gets seen.
  */
 export function QuickRead({
   readings,
@@ -64,8 +63,8 @@ export function QuickRead({
     return () => clearTimeout(id)
   }, [onScreen, thought])
 
-  /* ⚠️ القراءة الهادية **مبنيّة هنا لا في كل شاشة** · خمس شاشات
-     كانت هتكتب نفس السطر، واللي يتنسي فيهم بيرجع يختفي. */
+  /* ⚠️ The empty-state reading is **built here, not per screen** — several screens would otherwise
+     write the same line, and any one that's forgotten goes back to just disappearing. */
   const calm: Reading[] = [{
     id: 'qr-calm',
     kind: 'note',
@@ -75,28 +74,20 @@ export function QuickRead({
 
   const shown = open ? list : list.slice(0, 1)
   const { block, chars, done } = useTypedBlocks(shown.map((r) => r.text), thought)
-  const flags = list.filter((r) => r.kind === 'flag').length
 
   const head = (
     <>
-      <span className={`badge badge-30${done ? '' : ' pulse'}`}>
-        <span className="aispark" />
+      <span className={`badge badge-30${done ? ' breath' : ''}`}>
+        <AbLeaf className="aispark live" />
       </span>
       <span className="qr-title">{title}</span>
-      {flags > 0 && (
-        <span className="qr-count no">
-          <span className="num">{flags}</span> تحتاج إلى انتباه
-        </span>
-      )}
-      {/* العدّاد من القايمة المعروضة · وفي الحالة الهادية بيقول
-          «قراءة واحدة» لأن دي فعلًا اللي معروضة */}
-      <span className="qr-count">
-        {units.reading(list.length)}
-      </span>
+      {/* ⚠️ **No tags in the header.** "2 need attention" and "3 readings" used to be colored tags
+          above every reading on every page — the assistant is a voice that explains, not an alert
+          panel. The readings themselves are below. */}
     </>
   )
 
-  /* ── العرض المختصر: سطر واحد فوق النتائج ── */
+  /* -- Compact view: a single line above the results -- */
   if (variant === 'bar') {
     return (
       <Glass className={`qread strip${open ? ' open' : ''}`} ref={box}>
@@ -119,17 +110,17 @@ export function QuickRead({
     )
   }
 
-  /* ── العرض الكامل: كارت في عمود السياق ──
-     بيتقفل ويتفتح زي المختصر. قبل كده كان بيفتح على طوله وياخد
-     ارتفاع الشاشة كله في العمود الجانبي، فالمستخدم يوصل للمحتوى
-     اللي تحته بعد تمرير طويل قبل ما يقرر إنه عايز يقراه أصلًا.
-     ولمّا يتقفل الترويسة بتفضل بعدّادها، فاللي محتاج انتباه بيبان
-     من غير ما الكارت يتفتح. */
+  /* -- Full view: a card in the context column --
+     Opens and closes like the compact one. It used to open expanded and take the full screen height
+     in the side column, so the user hit a long scroll before deciding whether they wanted to read
+     it at all.
+     When closed, the header keeps its counter, so what needs attention is visible without opening
+     the card. */
   return (
     <Glass className={`qread panel aicard${open ? ' open' : ''}`} ref={box}>
-      {/* الترويسة صفّ لا زرار: جوّاها زرار «اسأل»، وزرار جوّه زرار
-          ترميز غلط والمتصفح بيفكّه بطرق مختلفة. الطيّ زرارّه لوحده،
-          نفس `.aifold` في تحليلات المشروع. */}
+      {/* The header is a row, not a button: it contains an "Ask" button, and a button inside a
+          button is invalid markup that browsers parse inconsistently. The collapse has its own
+          button, same as `.aifold` in the analysis card. */}
       <div className="qr-head static">
         {head}
         <span className="qr-sp" />

@@ -1,89 +1,36 @@
 import type { ReactNode } from 'react'
-import { nf, pct } from '@/lib/format'
+import { isolate, nf, pct } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   مجموعة الرسوم
+/* Chart set.
 
-   كلها SVG مكتوب بالإيد · مفيش مكتبة رسوم في المشروع، لأن
-   مكتبات الرسوم بتيجي بنظام ألوان وخطوط وحواف خاص بيها، وده
-   بيتخانق مع نظام التصميم بدل ما يخدمه. الأشكال هنا بسيطة
-   والحسابات صغيرة، فالمكسب من المكتبة ما يستاهلش الكلفة.
+   All hand-written SVG — no charting library in the project, because charting libraries bring their
+   own colors, fonts, and edges, which clashes with the design system instead of serving it. These
+   shapes are simple and the math is small, so a library wouldn't be worth its cost.
 
-   القاعدة اللونية: **اللون يوصف الحالة، مش الكمية.** الأرقام
-   بتتكتب بلون النص العادي؛ اللون بيقع على الشريط أو النقطة.
-   ═══════════════════════════════════════════════════════════ */
+   Color rule: **color describes state, not quantity.** Numbers are written in the normal text
+   color; color belongs to the bar or dot. */
 
 export { SaudiMap, type MapPoint } from './SaudiMap'
+export { StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, type Hue, type StageDatum, type LolliDatum, type Part, type MeterDatum } from './forms'
 
 export const CHART_COLORS = [
   'var(--ch-1)', 'var(--ch-2)', 'var(--ch-3)',
   'var(--ch-4)', 'var(--ch-5)', 'var(--ch-6)',
 ] as const
 
-/** حبر النصّ فوق كل لون · مقيس على ٤٫٥:١ · شوف `:root` في الـCSS */
+/** Text ink over each color — measured at 4.5:1; see `:root` in the CSS. */
 export const CHART_INKS = [
   'var(--on-ch-1)', 'var(--on-ch-2)', 'var(--on-ch-3)',
   'var(--on-ch-4)', 'var(--on-ch-5)', 'var(--on-ch-6)',
 ] as const
 
-/* ── قائمة أشرطة أفقية ──
-   الأنسب لما التسميات نص عربي متفاوت الطول: العين بتقرا التسمية
-   على السطر بدل ما تلف الشاشة تسعين درجة. */
-export interface BarRow {
-  key: string
-  label: string
-  value: number
-  /** لون الشريط · افتراضيًا تدرّج واحد */
-  color?: string
-  /** نص صغير على يسار القيمة */
-  note?: string
-  href?: string
-}
+/* -- Horizontal bar list, removed --
+   `BarList` was used only on "Today," and six cards drawn with it made the page one long table.
+   Replaced with per-question shapes, so it has no consumers left; its two inline styles were
+   removed with it. */
 
-export function BarList({
-  rows,
-  format = (v: number) => nf.format(v),
-  labelWidth = '9rem',
-  onPick,
-}: {
-  rows: BarRow[]
-  format?: (v: number) => string
-  labelWidth?: string
-  onPick?: (key: string) => void
-}) {
-  const max = Math.max(...rows.map((r) => r.value), 1)
-
-  return (
-    <div className="chbars" style={{ '--lw': labelWidth } as React.CSSProperties}>
-      {rows.map((r) => (
-        <div
-          key={r.key}
-          className={`chbar${onPick ? ' pick' : ''}`}
-          onClick={onPick ? () => onPick(r.key) : undefined}
-          role={onPick ? 'button' : undefined}
-          tabIndex={onPick ? 0 : undefined}
-          onKeyDown={onPick ? (e) => e.key === 'Enter' && onPick(r.key) : undefined}
-        >
-          <span className="chbar-l" title={r.label}>{r.label}</span>
-          <span className="chbar-t">
-            <i
-              style={{
-                width: `${(r.value / max) * 100}%`,
-                background: r.color ?? 'var(--ch-2)',
-              }}
-            />
-          </span>
-          <span className="chbar-v"><b className="num">{format(r.value)}</b></span>
-          {r.note && <span className="chbar-n">{r.note}</span>}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/* ── أعمدة رأسية ──
-   للمدى المتصل (مدة المكوث) · الترتيب على المحور له معنى هنا،
-   عكس التصنيفات الاسمية. */
+/* -- Vertical bars --
+   For a continuous range (duration) — axis order carries meaning here, unlike nominal categories. */
 export interface Column {
   key: string
   label: string
@@ -98,8 +45,8 @@ export function Columns({ cols, unit }: { cols: Column[]; unit?: string }) {
     <div className="chcols">
       {cols.map((c) => (
         <div className="chcol" key={c.key}>
-          {/* الرقم جوّه العمود وقاعد على راسه · كان في سطر لوحده فوق
-              كل الأعمدة، بعيدًا عن الشكل اللي بيوصفه */}
+          {/* The number sits inside the bar, right on top of it — it used to be on its own line
+              above all the bars, far from the shape it describes. */}
           <span className="chcol-t">
             <i
               style={{
@@ -118,23 +65,22 @@ export function Columns({ cols, unit }: { cols: Column[]; unit?: string }) {
   )
 }
 
-/* ── الشريحة ──
-   نوع مشترك بين الحلقة والشريط المركّب ووسيلة الإيضاح. */
+/* -- The slice --
+   A type shared between the ring, the stacked bar, and the legend. */
 export interface Slice {
   key: string
   label: string
   value: number
   color: string
-  /** حبر النصّ فوق اللون ده · لو اتكتب رقم فوق اللون */
+  /** Text ink over this color — if a number is written on top of the color. */
   ink?: string
 }
 
-/* ── حلقة ──
-   رجعت بقرار العميل (١٣ سبتمبر) بدل العمود المكدّس. في ٢٣ سبتمبر
-   بقت أرفع (شريط ١٢) والنسبة اتنقلت من على القوس لجنب اسمها في
-   اللِّيجند: القارئ بيقرا «المنح النوعي ٥١٪» سطرًا واحدًا، والحلقة
-   بتدّي النِّسَب شكلها. ⚠️ ده عكس قرار «الرقم على القوس» · مكتوب في
-   تقرير الأوديت كبند محتاج موافقة العميل. */
+/* -- Ring --
+   Restored in place of the stacked column, per the client's decision. It later became thinner and
+   the percentage moved off the arc to sit next to its name in the legend: the reader reads "in-kind
+   grants 51%" as one line, and the ring gives the shares their shape. ⚠️ This reverses an earlier
+   "number on the arc" decision, which needs the client's sign-off. */
 export function Donut({
   slices,
   total,
@@ -149,7 +95,7 @@ export function Donut({
   size?: number
 }) {
   const sum = total ?? slices.reduce((s, x) => s + x.value, 0)
-  /* نصف القطر ٥٢ والشريط ١٢ ⇒ الحافة الخارجية ٥٨ جوّه الـviewBox ١٢٨ */
+  /* Radius 52 and stroke 12, so the outer edge sits at 58 inside a 128 viewBox. */
   const r = 52
   const w = 12
   const c = 2 * Math.PI * r
@@ -190,15 +136,17 @@ export function Donut({
       </svg>
 
       <div className="chdonut-c">
-        <b className="num">{centerValue}</b>
+        {/* A value can come with its own unit (e.g. "10.7M") — `.num` used to apply to both, so the
+            Arabic unit got wrapped inside an LTR island. Isolation now applies to the digits alone. */}
+        <b>{typeof centerValue === 'string' ? isolate(centerValue) : centerValue}</b>
         <span>{centerLabel}</span>
       </div>
     </div>
   )
 }
 
-/* ── شريط مركّب ──
-   لتركيبة مبلغ واحد: طبقات على مسطرة واحدة أوضح من عدة دواير. */
+/* -- Stacked bar --
+   For breaking down a single amount: layers on one ruler read clearer than several rings. */
 export function StackBar({ parts, total }: { parts: Slice[]; total: number }) {
   return (
     <div className="chstack">
@@ -215,13 +163,13 @@ export function StackBar({ parts, total }: { parts: Slice[]; total: number }) {
   )
 }
 
-/** وسيلة إيضاح · نقطة ولون واسم وقيمة */
+/** Legend — dot, color, name, and value. */
 export function Legend({
   items,
   format = (v: number) => nf.format(v),
-  /** صفّ أفقي بلا قيم · لمّا القيمة مكتوبة على الرسم نفسه */
+  /** Horizontal row with no values — for when the value is written on the chart itself. */
   inline,
-  /** مجموع النِّسَب · لمّا يتبعت، الصفّ الأفقي بيكتب النسبة جنب الاسم */
+  /** Sum of the shares — when passed, the horizontal row writes the percentage next to the name. */
   pctOf,
 }: {
   items: Slice[]

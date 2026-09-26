@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react'
 
-/** ماركداون خفيف: **بولد** وأسطر وبوليت · كفاية للنص اللي بيوصل من المساعد */
+/**
+ * Lightweight markdown: **bold**, line breaks, and bullets — enough for text coming from the
+ * assistant.
+ */
 export function md(text: string): ReactNode[] {
   return String(text)
     .split('\n')

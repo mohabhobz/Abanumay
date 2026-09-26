@@ -1,26 +1,25 @@
 import { useEffect, useRef } from 'react'
 
-/* ═══════════════════════════════════════════════════════════
-   ي-13 · التجميع بيضيع لما تطلع وترجع
+/* Grouping used to reset when navigating away and back — the original
+   intent was for it to persist with the session.
 
-   مظفر قبلها على أساس إنه بروتوتايب، والأصل إنه يفضل ثابت مع
-   السيشن.
+   Why `sessionStorage`, not `localStorage`? Grouping is a question, not
+   a display preference. Someone grouping by region today is asking
+   about today's regions — if the screen stayed grouped a week later,
+   they'd open projects and find a collapsed table they never asked for
+   and don't remember why. The session is the right boundary: it
+   persists as long as they're working on the same question, and the
+   question is forgotten when they close it.
 
-   ⚠️ **ليه `sessionStorage` لا `localStorage`؟** التجميع **سؤال**
-   لا تفضيل شكل. اللي بيجمّع حسب المنطقة النهارده بيسأل عن المناطق
-   النهارده · ولو الشاشة فضلت مجمّعة بعد أسبوع، هو بيفتح المشاريع
-   ويلاقي جدولًا مقفولًا ما طلبهوش ومش فاكر ليه. الجلسة هي الحدّ
-   الصح: طول ما هو شغّال على نفس السؤال، والسؤال بيتنسى لما يقفل.
+   "Clear grouping" needs to be saved just like grouping itself. If
+   clearing left storage untouched, navigating away and back would
+   restore the grouping the user had just cleared by hand — so clearing
+   is stored as an explicit empty value, and the difference between
+   "empty" and "not stored" is the difference between "I cleared it" and
+   "I never opened the screen."
 
-   ⚠️ **و«إلغاء التجميع» لازم يتحفظ زي التجميع.** لو الإلغاء ساب
-   التخزين زي ما هو، أول ما المستخدم يطلع ويرجع الشاشة بترجّع
-   التجميع اللي هو لسّه ملغيه بإيده · فالإلغاء بيتخزّن كقيمة
-   فاضية، والفرق بين «فاضي» و«مش متخزّن» هو الفرق بين «ألغيته»
-   و«ما فتحتش الشاشة أصلًا».
-
-   ⚠️ **والاستعادة مرة واحدة عند الدخول.** الاستعادة في كل رندر
-   كانت هتحارب المستخدم: يلغي، والهوك يرجّع.
-   ═══════════════════════════════════════════════════════════ */
+   Restoring also happens once, on entry. Restoring on every render
+   would fight the user: they clear it, and the hook restores it. */
 const keyOf = (table: string) => `ab-group-${table}`
 
 export function useStickyGroup(
@@ -33,15 +32,15 @@ export function useStickyGroup(
   useEffect(() => {
     if (done.current) return
     done.current = true
-    /* الرابط بيغلب المخزَّن: اللي جاي على رابط فيه تجميع عايز
-       التجميع ده هو، واللي ماشي بيه لزميله بيبعت سؤاله لا سؤال
-       زميله المحفوظ. */
+    /* The URL wins over storage: someone arriving via a link with grouping
+       in it wants exactly that grouping, and someone sending that link to a
+       colleague is sending their own question, not the colleague's saved one. */
     if (value !== undefined) return
     try {
       const saved = sessionStorage.getItem(keyOf(table))
       if (saved) apply(saved)
     } catch {
-      /* التخزين مقفول · الشاشة بتفتح بلا تجميع وخلاص */
+      /* Storage is unavailable — the screen simply opens with no grouping. */
     }
   }, [table, value, apply])
 
@@ -50,7 +49,7 @@ export function useStickyGroup(
     try {
       sessionStorage.setItem(keyOf(table), value ?? '')
     } catch {
-      /* التخزين مقفول · التجميع يفضل للصفحة دي */
+      /* Storage is unavailable — grouping stays for this page only. */
     }
   }, [table, value])
 }

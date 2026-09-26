@@ -1,15 +1,12 @@
 import type { Sheet } from '@/lib/export'
 
 /**
- * نسخة الطباعة.
- *
- * مخفية على الشاشة وبتظهر وقت الطباعة بس. سبب وجودها إنها بتطبع
- * **نفس اللي بيتصدّر** لا اللي على الشاشة: لو المستخدم علّم عشرة
- * صفوف، الـPDF بيطلع بالعشرة دول بأعمدتهم وإجمالياتهم · من غير
- * الشريط الجانبي ولا الفلاتر ولا أزرار التحديد.
- *
- * والطباعة هي طريق الـPDF هنا عن قصد: مكتبات الـPDF بتحتاج خطًا
- * عربيًا مضمَّنًا ومحرّك تشكيل، والمتصفح عنده الاتنين جاهزين.
+ * Print version.
+ * Hidden on screen, shown only when printing. It exists to print **exactly what gets exported**,
+ * not what's on screen: if the user checked ten rows, the PDF comes out with those ten, their
+ * columns, and their totals, without the side rail, filters, or selection buttons.
+ * Printing is the deliberate path to the PDF here: PDF libraries need an embedded Arabic font and a
+ * shaping engine, and the browser already has both ready.
  */
 export function PrintSheet({ sheet, note }: { sheet: Sheet; note?: string }) {
   return (

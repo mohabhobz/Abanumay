@@ -2,18 +2,16 @@ import { Link } from 'react-router-dom'
 import { Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
-import { activationTone, governanceTone } from '@/lib/tone'
+import { activationTone } from '@/lib/tone'
 import { ENTITY_DOCS_TOTAL } from '@/data/repository'
 import type { EntityRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
-/* ═══════════════════════════════════════════════════════════
-   أعمدة جدول الجهات.
+/* Entities table columns.
 
-   نفس عقد المشاريع: تعريف واحد بيغذّي الجدول والإجماليات
-   والتصدير والتجميع. تقرير الشركاء في النظام العامل فيه 16 عمودًا،
-   وكلهم هنا · تسعة ظاهرين افتراضيًا والباقي من منتقي الأعمدة.
-   ═══════════════════════════════════════════════════════════ */
+   Same contract as projects: one definition feeds the table, totals, export, and grouping. The live
+   system's partner report has 16 columns, and all of them are here - nine shown by default and the
+   rest available from the column picker. */
 
 export type Col = TCol<EntityRow>
 
@@ -51,7 +49,9 @@ export const COLS: Col[] = [
     w: 106,
     label: 'الحوكمة',
     def: true,
-    cell: (e) => <Tag tone={governanceTone(e.governance)}>{e.governance}</Tag>,
+    /* Governance is a rating, not a status - text - and the only colored tag in the row is
+       activation status. */
+    cell: (e) => <span>{e.governance}</span>,
     text: (e) => e.governance,
   },
   {
@@ -60,16 +60,16 @@ export const COLS: Col[] = [
     label: 'المستندات',
     def: true,
     n: true,
-    /* الناقص بيتلوّن: ملف الجهة الناقص هو اللي بيوقف الاتفاقية،
-       فلازم يبان من مسح الجدول لا من فتح الصف. */
+    /* The "missing" figure is colored: an incomplete entity file is what blocks an agreement, so it
+       needs to be visible by scanning the table, not by opening the row. */
     cell: (e) => (
       <span className={e.docsUploaded < ENTITY_DOCS_TOTAL ? 'over' : undefined}>
         {e.docsUploaded}/{ENTITY_DOCS_TOTAL}
       </span>
     ),
     text: (e) => `${e.docsUploaded}/${ENTITY_DOCS_TOTAL}`,
-    /* الخلية نسبة والإجمالي وسط · «وسطي» لوحدها بتضيّع المقام،
-       فالكلمة بتقوله */
+    /* The cell holds both a percentage and a total, centered - "average" alone would lose the
+       denominator, so the word states it. */
     value: (e) => e.docsUploaded,
     agg: 'avg',
     aggSay: `متوسط المرفوع من ${ENTITY_DOCS_TOTAL}`,

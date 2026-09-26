@@ -1,57 +1,58 @@
 /**
- * خطة الميزانية · **شجرة التخصيص الحقيقية لدورة 2026 · المؤسسة**.
+ * Budget plan · **the real allocation tree for the 2026 cycle · the Foundation**.
  *
- * المصدر: `control/struct_section` (شاشة «المجالات والأهداف»، وهي
- * محرّر التخصيص) و`control/reports1_1` (شاشة القراءة). قراءة مباشرة،
- * كل الطلبات `GET`، ولم يُرسل فورم ولم يُضغط زر حفظ.
+ * Source: `control/struct_section` (the "Areas and Goals" screen, the allocation editor) and
+ * `control/reports1_1` (the reporting screen). A direct read — every request is `GET`, no form was
+ * submitted and no save button was clicked.
  *
- * ⚠️ **الأرقام هنا حقيقية** · المخصص وخطة الإنجاز والمحجوز والمنصرف
- * لكل بند من الـ48 هدفًا. اللي مولَّد هو **أسماء الملّاك** فقط، من
- * قائمة النموذج، لأن الريبو عام.
+ * Warning: **the numbers here are real** — allocated, execution plan, held, and spent for each of
+ * the 48 goals. What's generated is **owner names** only, drawn from a sample list, because the
+ * repo is public.
  *
- * ═══ ليه الموديول ده موجود ═══
+ * === Why this module exists ===
  *
- * النظام العامل بيخزّن الشجرة دي في أربع شاشات متتالية: تفتح السنة،
- * تضغط «عرض» فتروح لصفحة المسار، وهكذا. وكل صفحة بتطبع **مجموع
- * أبنائها** في آخر صف · لكن **مخصص الأب مكتوب في الصفحة اللي قبلها**.
- * فالرقمان ما بيتشافوش مع بعض أبدًا.
+ * The live system stores this tree across four consecutive screens: open the year, click "view" to
+ * go to the track page, and so on. Each page prints the **sum of its children** in the last row —
+ * but **the parent's allocation is written on the previous page**. So the two numbers are never
+ * seen side by side.
  *
- * ولما جمعناهم طلع إن **عشرة بنود من أربعتاشر مجموع أبنائها لا يساوي
- * مخصصها**، أكبرها فرق 736,000 ريال. مش خطأ قراءة · ده اللي في
- * النظام. فالموديول ده أول حاجة بيعملها إنه يحطّ الرقمين جنب بعض.
+ * Adding them up shows that **ten line items out of fourteen have children summing to something
+ * other than their allocation** — the largest gap is 736,000 riyals. Not a reading error — that's
+ * what's actually in the system. So the first thing this module does is put the two numbers next to
+ * each other.
  */
 
 /**
- * عقدة في شجرة التخصيص · **بكل حقول `struct_section`**، لا المبلغ وحده.
- * الحقول اللي في المحرّر: الاسم · المبلغ المخصص (`money`) · خطة الإنجاز
- * (`num`) · الترتيب (`weight`) · مخفي (`hidden`) · الصلاحية (`spPerm`)
- * · المستخدم (`spPerm_uid`). وكلها هنا عشان الجرد يفضل كاملًا.
+ * A node in the allocation tree · **carries every `struct_section` field**, not just the amount.
+ * The fields in the editor: name, allocated amount (`money`), execution plan (`num`), display order
+ * (`weight`), hidden (`hidden`), permission (`spPerm`), user (`spPerm_uid`) — all kept here so the
+ * inventory stays complete.
  */
 export interface PlanNode {
   id: string
   label: string
-  /** المبلغ المخصص لهذا البند · `money` */
+  /** Amount allocated to this item · `money` */
   alloc: number
-  /** خطة الإنجاز % · `num`. بتدخل في «نسبة الإنجاز من الخطة الإستراتيجية» */
+  /** Execution plan % · `num`. Feeds into "progress against the strategic plan" */
   plan: number
-  /** الترتيب في العرض · `weight`. النظام بيرتّب بيه لا بالاسم */
+  /** Display order · `weight`. The system sorts by this, not by name */
   order: number
-  /** مخفي عن قوائم الاختيار · `hidden`. كلهم مطفيّون في الدورة المفعَّلة */
+  /** Hidden from selection lists · `hidden`. All are off in the active cycle */
   hidden?: boolean
-  /** الصلاحية · `spPerm`. القائمة فيها خيار واحد بس: «عام» */
+  /** Permission · `spPerm`. The list has only one option: "public" */
   perm?: 'عام'
-  /** مالك البند · `spPerm_uid` (الاسم مولَّد، والتوزيع حقيقي) */
+  /** Item owner · `spPerm_uid` (name is generated; the distribution is real) */
   owner?: string
-  /** المعتمد · من `reports1_1`، مش موجود في المحرّر */
+  /** Approved · from `reports1_1`, not present in the editor */
   approved?: number
-  /** المحجوز · طلبات تحت الدراسة على هذا البند */
+  /** Held · requests under review against this item */
   reserved?: number
-  /** المنصرف فعلًا */
+  /** Actually spent */
   spent?: number
   children?: PlanNode[]
 }
 
-/* ── الأهداف: [الاسم, المخصص, المحجوز, المنصرف] ── */
+/* Goals: [name, allocated, held, spent] */
 type G = [string, number, number, number]
 
 const g = (rows: G[], owner: string): PlanNode[] =>
@@ -62,9 +63,9 @@ const g = (rows: G[], owner: string): PlanNode[] =>
   }))
 
 /**
- * الملّاك · من قائمة النموذج لا من النظام.
- * التوزيع الحقيقي أربعة ملّاك على اتناشر مجالًا، فالشكل محفوظ
- * والأسماء مستبدَلة.
+ * Owners · from a sample list, not the live system.
+ * The real distribution is four owners across twelve areas, so the shape is kept and the names are
+ * substituted.
  */
 const O1 = 'عمر قاسم'
 const O2 = 'سعود البريكان'
@@ -133,7 +134,8 @@ const QUALITY: PlanNode[] = [
     children: g([
       ['علاج مرضى الكلى', 1_000_000, 100_000, 900_000],
       ['تأسيس المراكز الصحية', 3_800_000, 3_800_000, 0],
-      /* هدف مفعَّل بمخصص صفر · موجود في القايمة ومحدش يقدر يصرف عليه */
+      /* A goal that's active with zero allocation · it's in the list and no one can spend against
+         it */
       ['توفير الأجهزة الطبية', 0, 0, 0],
       ['علاج مرضى السرطان', 1_000_000, 100_000, 900_000],
       ['المحفظة الصحية المتنوعة', 3_120_000, 0, 3_000_000],
@@ -155,7 +157,7 @@ const SPREAD: PlanNode[] = [
     ], O3),
   },
   {
-    /* خطة الإنجاز صفر · البند مستثنى من حساب الإنجاز الإستراتيجي */
+    /* Execution plan is zero · this item is excluded from the strategic-progress calculation */
     id: 'f-daw', label: 'الدعوة', alloc: 6_624_000, plan: 0, owner: O1,
     order: 1, hidden: false, perm: 'عام', approved: 5_867_333,
     reserved: 2_467_000, spent: 3_400_333,
@@ -176,7 +178,7 @@ const SPREAD: PlanNode[] = [
     ], O1),
   },
   {
-    /* خطة الإنجاز صفر · زي «الدعوة» */
+    /* Execution plan is zero · same as "outreach" */
     id: 'f-haj', label: 'الحج ورمضان', alloc: 3_216_000, plan: 0, owner: O4,
     order: 3, hidden: false, perm: 'عام', approved: 2_982_014,
     reserved: 0, spent: 2_982_014,
@@ -203,7 +205,7 @@ const SPREAD: PlanNode[] = [
   },
 ]
 
-/** شجرة دورة 2026 · المؤسسة · مسارَان، اتناشر مجالًا، تمانية وأربعون هدفًا */
+/** 2026 cycle tree · the Foundation · two tracks, twelve areas, forty-eight goals */
 export const plan2026: PlanNode = {
   id: '2026-f',
   label: '2026 · المؤسسة',
@@ -228,12 +230,12 @@ export const plan2026: PlanNode = {
 }
 
 /**
- * الدورات الخمس.
+ * The five cycles.
  *
- * كل دورة = **سنة × مصدر تمويل**، وميزانيتها مستقلة تمامًا. المؤسسة
- * والوقف ما بيتجمّعوش، وده تأكيد من فلتر السنة نفسه في النظام.
- * شجرة التخصيص الكاملة متاحة لـ2026 (الدورة المفعَّلة)؛ الباقي
- * إجمالياته من `reports1_1`.
+ * Each cycle is **year x funding source**, with a fully independent budget. The Foundation and the
+ * endowment don't get combined, and that's confirmed by the year filter itself in the system. The
+ * full allocation tree is available for 2026 (the active cycle); the rest are totals from
+ * `reports1_1`.
  */
 export interface Cycle {
   id: string
@@ -242,11 +244,11 @@ export interface Cycle {
   approved: number
   reserved: number
   spent: number
-  /** الشجرة كاملة · للدورة المفعَّلة فقط */
+  /** Full tree · for the active cycle only */
   tree?: PlanNode
-  /** `active` · الدورة المفعَّلة **للمؤسسة** */
+  /** `active` · the active cycle **for the Foundation** */
   active: boolean
-  /** `active2` · الدورة المفعَّلة **للوقف**. علمان مستقلّان في نفس الصف */
+  /** `active2` · the active cycle **for the endowment**. Two independent flags in the same row */
   activeWaqf: boolean
 }
 
@@ -255,26 +257,26 @@ export const CYCLES: Cycle[] = [
   { id: '2025-f', label: '2025 · المؤسسة', alloc: 55_800_000, approved: 58_639_800, reserved: 896_000, spent: 57_743_800, active: false, activeWaqf: false },
   { id: '2024-f', label: '2024 · المؤسسة', alloc: 47_200_000, approved: 47_475_359, reserved: 60_000, spent: 47_415_359, active: false, activeWaqf: false },
   { id: '2023-f', label: '2023 · المؤسسة', alloc: 2_849_573, approved: 847_479, reserved: 0, spent: 847_479, active: false, activeWaqf: false },
-  /* 🔴 دورة الوقف المفعَّلة هي 2023 · `active2` متعلَّم على الصف ده وحده.
-     يعني الوقف واقف على دورة عمرها تلات سنين، مليون ريال ما اتصرف
-     منها ولا ريال. المؤسسة على 2026 والوقف على 2023 في نفس الجدول. */
+  /* The endowment's active cycle is 2023 · `active2` is flagged on this row alone. So the endowment
+     is stuck on a three-year-old cycle, with a million riyals of it never spent. The Foundation is
+     on 2026 and the endowment is on 2023 in the same table. */
   { id: '2023-w', label: '2023 · الوقف', alloc: 1_000_000, approved: 0, reserved: 0, spent: 0, active: false, activeWaqf: true },
 ]
 
 export const cycleById = (id: string): Cycle =>
   CYCLES.find((c) => c.id === id) ?? CYCLES[0]
 
-/* ═══════════════════ فحص التوازن ═══════════════════ */
+/* Balance check */
 
 export interface Imbalance {
-  /** مسار العقدة من الجذر · للتنقّل */
+  /** Node's path from the root · for navigation */
   path: string[]
   label: string
-  /** مستوى العقدة: 0 سنة · 1 مسار · 2 مجال */
+  /** Node level: 0 year · 1 track · 2 area */
   level: number
   alloc: number
   childSum: number
-  /** موجب = الأبناء أكتر من الأب */
+  /** Positive = children exceed the parent */
   gap: number
 }
 
@@ -282,11 +284,10 @@ export const childSum = (n: PlanNode): number =>
   (n.children ?? []).reduce((s, c) => s + c.alloc, 0)
 
 /**
- * كل بند مجموع أبنائه لا يساوي مخصصه.
+ * Every item whose children's sum doesn't equal its allocation.
  *
- * ده **الفحص اللي مش موجود في النظام العامل**: هناك الرقمان في
- * صفحتين مختلفتين، فالفرق ما بيتشافش. هنا بيتحسب على الشجرة كلها
- * مرة واحدة.
+ * This is **the check missing from the live system**: there, the two numbers sit on different
+ * pages, so the gap never gets seen. Here it's computed across the whole tree at once.
  */
 export function imbalances(root: PlanNode): Imbalance[] {
   const out: Imbalance[] = []
@@ -303,7 +304,7 @@ export function imbalances(root: PlanNode): Imbalance[] {
   return out.sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
 }
 
-/** عدد البنود اللي ليها أبناء · مقام نسبة التوازن */
+/** Count of items that have children · the denominator for the balance ratio */
 export function parentCount(root: PlanNode): number {
   let n = 0
   const walk = (x: PlanNode) => {
@@ -313,7 +314,7 @@ export function parentCount(root: PlanNode): number {
   return n
 }
 
-/** كل الأهداف مسطَّحة · لأسئلة زي «مين البنود المخنوقة» */
+/** All goals flattened · for questions like "which items are underfunded" */
 export function leaves(root: PlanNode): PlanNode[] {
   const out: PlanNode[] = []
   const walk = (n: PlanNode) => {
@@ -324,7 +325,7 @@ export function leaves(root: PlanNode): PlanNode[] {
   return out
 }
 
-/** يلاقي عقدة بمسار معرّفاتها */
+/** Finds a node by its path of ids */
 export function nodeAt(root: PlanNode, path: string[]): PlanNode | undefined {
   let cur: PlanNode | undefined = root
   for (const id of path) {
@@ -334,7 +335,7 @@ export function nodeAt(root: PlanNode, path: string[]): PlanNode | undefined {
   return cur
 }
 
-/** سلسلة العُقد من الجذر لآخر المسار · لمسار الفتات */
+/** Chain of nodes from the root to the end of the track · for the breadcrumb */
 export function chain(root: PlanNode, path: string[]): PlanNode[] {
   const out: PlanNode[] = []
   let cur: PlanNode | undefined = root
@@ -346,5 +347,5 @@ export function chain(root: PlanNode, path: string[]): PlanNode[] {
   return out
 }
 
-/** أسماء المستويات بالترتيب */
+/** Level names, in order */
 export const PLAN_LEVELS = ['الدورة', 'المسار', 'المجال', 'الهدف'] as const

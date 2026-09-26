@@ -1,15 +1,12 @@
 import type { SVGProps } from 'react'
 
 /**
- * الشعار بألوانه.
- *
- * الألوان التلاتة متغيّرات لا قيم مكتوبة: في الفاتح أخضر الهوية
- * وتيل ولايم، وفي المظاهر الداكنة الشعار كله أبيض.
- *
- * الجذوع لونها الأصلي نفس عمق الأرضية الداكنة تقريبًا، فكانت
- * بتختفي وتسيب ورقًا طايرًا بلا فرع. والورق الملوّن جنب جذوع
- * بيضا كان بيبقى شعارين في واحد · على أرضية غامقة الشكل المصمت
- * أهدى وأوضح.
+ * Logo, full color.
+ * The three colors are variables, not hardcoded values: identity green, teal, and lime in light
+ * mode, and the whole logo turns white in dark themes.
+ * The trunks were nearly the same color as the dark background, so they'd vanish and leave floating
+ * leaves with no branch. And colored leaves next to white trunks looked like two logos in one — on
+ * a dark background, a solid shape reads clearer.
  */
 export default function LogoColor(props: SVGProps<SVGSVGElement>) {
   return (

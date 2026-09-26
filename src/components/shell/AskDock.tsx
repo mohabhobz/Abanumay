@@ -1,48 +1,43 @@
 import { useEffect, useRef } from 'react'
 import { useProximity } from '@/hooks/useProximity'
 import { useMatchHeight } from '@/hooks/useMatchHeight'
+import { AbLeaf } from '@/components/soul'
 
 /**
- * «اسأل أبانمي» · الزرار العايم الثابت في السيستم كله.
- *
- * كان بندًا في آخر شريط التنقّل: مكان صحّ للتنقّل، غلط للسؤال. حاجتان
- * كانوا بيضيّعوه هناك · إنه **يتقري كصفحة** جنب الرئيسية والمشاريع
- * والتقارير وهو مش صفحة، وإنه **بعيد عن مكان القرار**: المستخدم
- * بيبصّ على شريط القرار أسفل الشاشة ويسأل في اللحظة دي بالظبط، مش
- * بيرجّع عينه لأعلى اليمين.
- *
- * فبقى عايمًا في نفس الرصيف اللي فيه شريط القرار، على الشمال، وثابتًا
- * في كل شاشة. ولمّا يبقى فيه شريط قرار، الشريط بياخد العرض ناقص
- * مساحة الزرار · الاتنين في صفّ واحد، مفيش واحد فوق التاني.
- *
- * وهو نفس الزرار: بيفتح نفس اللوح، وبيستجيب لـ⌘K. الاختصار **مش
- * مكتوب عليه**: الزرار جنب شريط القرار، والمكان ده للقرار لا للتعليم،
- * والاختصار موجود في تلميح الزرار لمن يدوّر عليه.
- *
- * وبيحسّ بالماوس زي `.decbar` بالظبط · نفس المدى ونفس الارتفاع ونفس
- * الضوء اللي بيتبع المؤشر · فالاتنين بيتحرّكوا كقطعة واحدة لا كزرار
- * جنب شريط.
+ * "Ask Abanumay" — the floating button fixed across the system.
+ * It used to be an item at the end of the nav bar: a fine spot for navigation, a wrong one for a
+ * question. Two things got lost there: it **read as a page** next to Home, Projects, and Reports
+ * when it isn't one, and it sat **far from the point of decision** — a user looks at the decision
+ * bar at the bottom of the screen and asks their question right there, not by glancing back up to
+ * the top corner.
+ * So it floats in the same dock as the decision bar, on the side, fixed on every screen. When a
+ * decision bar is present, that bar takes the full width minus the button's space — the two sit in
+ * one row, neither stacked over the other.
+ * It's the same button either way: opens the same panel, responds to the keyboard shortcut. The
+ * shortcut **isn't printed on it** — this spot is for the decision, not for teaching a shortcut;
+ * it's in the button's tooltip for anyone looking for it.
+ * And it responds to the mouse exactly like the decision bar — same range, same height, same light
+ * that follows the cursor — so the two move as one piece, not as a button beside a bar.
  */
 export interface AskDockProps {
   open: boolean
   onToggle: () => void
-  /** بيصغّر الزرار على الشاشات الضيقة ويخلّيه أيقونة */
+  /** Shrinks the button on narrow screens and turns it into an icon-only button. */
   compact?: boolean
 }
 
 export function AskDock({ open, onToggle, compact }: AskDockProps) {
   const fab = useRef<HTMLButtonElement>(null)
   useProximity(fab)
-  /* بياخد ارتفاع شريط القرار بالظبط. الرقم الثابت كان بيشتغل لحد ما
-     الشريط يلفّ سطرًا تاني تحت 1440px فيبقى 108 والزرار 63. */
+  /* Matches the decision bar's height exactly. A fixed number worked until the bar wrapped to a
+     second line at a narrower width, changing its height while the button stayed the same. */
   useMatchHeight(fab, '.decdock .chrome', '--ask-h')
 
-  /* العرض من المحتوى، والرصيف بيتعلّم منه.
-     كان عرضًا ثابتًا (11.4rem) فالنص كان بيسيب فراغًا جنبه على
-     الشاشات اللي الخط فيها أضيق. دلوقتي الزرار بياخد عرض محتواه،
-     وبيكتبه على `:root` عشان شريط القرار يحجز نفس المساحة بالظبط ·
-     العلاقة معكوسة (الزرار بيقول، والرصيف بيسمع) لأن اللي بيحدّد
-     العرض هنا هو النص لا التخطيط. */
+  /* Width comes from the content, and the dock reads it from there. It used to be a fixed width,
+     leaving empty space next to the text on screens with a narrower font. Now the button takes its
+     content's width and writes it to `:root` so the decision bar reserves exactly that much space —
+     the relationship runs backward (the button states it, the dock listens) because the text, not
+     the layout, decides the width here. */
   useEffect(() => {
     const el = fab.current
     if (!el) return
@@ -67,10 +62,10 @@ export function AskDock({ open, onToggle, compact }: AskDockProps) {
       aria-label="اسأل أبانمي"
       title="اسأل أبانمي · ⌘K"
     >
-      {/* الشرارة عارية · كانت جوّه `.badge`، والصندوق ده حاوية
-          مرسومة بخلفيتها وحدّها وركنها · يعني صندوق جوّه صندوق،
-          والزرار نفسه هو الحاوية. */}
-      <span className="aispark" />
+      {/* The spark stands bare — it used to sit inside a badge element, and this box is already a
+          container drawn with its own background, border, and radius, meaning a box inside a box;
+          the button itself is the container. */}
+      <AbLeaf />
       {!compact && <span className="askfab-t">اسأل أبانمي</span>}
     </button>
   )

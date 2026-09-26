@@ -1,24 +1,23 @@
 /**
- * كتالوج التقارير · **الـ١٣ شاشة كما هي في النظام العامل، بأعمدتها
- * وفلاترها ورسومها كاملة**.
+ * Report catalog · **the 13 screens exactly as they are in the live system, with their columns,
+ * filters, and charts in full**.
  *
- * ليه الملف ده موجود؟ الطلب كان صريح: النموذج فرونت إند بيحاكي
- * النظام كله، ومينفعش يكون فيه شاشة الناس بتشتغل عليها وناقصة هنا.
- * قبل كده كان عندنا الـ١٣ **أسماء بس** في جدول تعريفي؛ دلوقتي كل
- * شاشة ليها تعريف كامل: السؤال اللي بتجاوب عليه، أعمدتها بالاسم
- * والنوع، فلاترها بعدد خياراتها الحقيقي، رسومها، مستويات التعمّق
- * لو فيه، وعدد صفوفها في النظام. والصفوف نفسها **دومي** · بتتولّد
- * من نفس المفردات الحقيقية عشان الشكل يبان زي ما هيبقى.
+ * Why this file exists: the request was explicit — the mock is a front end that mirrors the whole
+ * system, and it can't be missing a screen people actually work on. Before this, all 13 were
+ * **names only**, in a lookup table; now every screen has a full definition: the question it
+ * answers, its columns by name and type, its filters with their real option counts, its charts, its
+ * drill-down levels if any, and its row count in the system. The rows themselves are **dummy** —
+ * generated from the same real vocabulary so the shape looks like what it will actually be.
  *
- * المصدر: قراءة مباشرة بحساب `admintm` على `sys.abanumay.sa/control/…`،
- * كل الطلبات `GET` ولم يُرسل أي فورم ولم يُضغط أي زر حفظ أو اعتماد.
+ * Source: a direct read using the `admintm` account on `sys.abanumay.sa/control/...`, every request
+ * `GET`, no form submitted and no save or approval button clicked.
  *
- * ⚠️ أي رقم `rowsLive` هنا حقيقي (عدد الصفوف في النظام). أي **قيمة
- * جوّه صف** في النموذج مولَّدة.
+ * Warning: any `rowsLive` number here is real (the actual row count in the system). Any **value
+ * inside a row** in the mock is generated.
  */
 import type { IconName } from '@/components/ui'
 
-/** نوع العمود · بيحدّد شكل الخلية والمولِّد */
+/** Column type · decides the cell's shape and generator */
 export type ColKind =
   | 'id' | 'text' | 'long' | 'num' | 'money' | 'pct' | 'date' | 'file' | 'link' | 'person'
 
@@ -26,58 +25,59 @@ export interface LiveCol {
   key: string
   label: string
   kind: ColKind
-  /** عرض العمود في الجدول */
+  /** Column width in the table */
   w?: number
-  /** عمود ما فيش زيه في أي شاشة تانية · بيتعلّم في الكتالوج */
+  /** A column with no equivalent on any other screen · flagged in the catalog */
   only?: boolean
 }
 
 export interface LiveFilterDef {
   label: string
   kind: 'select' | 'date' | 'text'
-  /** عدد الخيارات في القائمة المنسدلة في النظام العامل */
+  /** Number of options in the live system's dropdown */
   count?: number
 }
 
 export interface LiveChartDef {
   title: string
-  /** `gauge` شريط نسبة واحد · `bars` أعمدة · `stack` أعمدة مركّبة */
+  /** `gauge` a single ratio bar · `bars` columns · `stack` stacked columns */
   kind: 'gauge' | 'bars' | 'stack'
-  /** السلاسل لو مركّب */
+  /** The series, if stacked */
   series?: string[]
 }
 
 export interface LiveSpec {
   key: string
-  /** مسار الشاشة تحت `sys.abanumay.sa/control/` */
+  /** The screen's path under `sys.abanumay.sa/control/` */
   path: string
   title: string
   icon: IconName
-  /** السؤال اللي المستخدم بيفتح الشاشة عشانه */
+  /** The question the user opens this screen to answer */
   question: string
-  /** إيه اللي في الشاشة بالظبط · سطر واحد */
+  /** Exactly what's on the screen · one line */
   what: string
-  /** عدد الصفوف في النظام العامل، أو `null` لو الشاشة فورم بلا نتيجة */
+  /** Row count in the live system, or `null` if the screen is a form with no results */
   rowsLive: number | null
   cols: LiveCol[]
   filters: LiveFilterDef[]
   charts: LiveChartDef[]
-  /** مستويات التعمّق لو الشاشة شجرة */
+  /** Drill-down levels, if the screen is a tree */
   drill?: string[]
-  /** ملاحظة الأوديت */
+  /** Audit note */
   flaw?: string
-  /** اللي لقيناه ومش معروض في النظام */
+  /** What was found and isn't shown in the system */
   finding?: string
-  /** الحزمة اللي بتقع فيها عندنا */
+  /** The bucket it falls into for us */
   pack: string
 }
 
-/* ── أعمدة متكرّرة ── */
+/* Repeated columns */
 const C = {
   proj: { key: 'proj', label: 'المشروع', kind: 'text', w: 240 } as LiveCol,
   projNo: { key: 'projNo', label: 'رقم المشروع', kind: 'id', w: 90 } as LiveCol,
   entity: { key: 'entity', label: 'الجهة', kind: 'text', w: 200 } as LiveCol,
-  year: { key: 'year', label: 'السنة', kind: 'text', w: 120 } as LiveCol,
+  /* 150, not 120 · "2026 · the Foundation" used to get cut off after the first word */
+  year: { key: 'year', label: 'السنة', kind: 'text', w: 150 } as LiveCol,
   track: { key: 'track', label: 'المسار', kind: 'text', w: 120 } as LiveCol,
   field: { key: 'field', label: 'المجال', kind: 'text', w: 120 } as LiveCol,
   goal: { key: 'goal', label: 'الهدف', kind: 'text', w: 200 } as LiveCol,
@@ -88,7 +88,7 @@ const C = {
   att: { key: 'att', label: 'المرفق', kind: 'file', w: 100 } as LiveCol,
 }
 
-/** الفلاتر المشتركة في شاشات المشاريع · نفس السبعة بالحرف */
+/** Filters shared across project screens · the same seven, verbatim */
 const PROJECT_FILTERS: LiveFilterDef[] = [
   { label: 'السنة', kind: 'select', count: 5 },
   { label: 'المسار', kind: 'select', count: 15 },
@@ -424,7 +424,7 @@ export const LIVE_SPECS: LiveSpec[] = [
     ],
     charts: [],
     finding:
-      'من بين الأقسام الـ51 قسم «ارجاع لقسم سابق» كأنه قسم مستقل، فتختفي مرات الإرجاع داخل عدّاد قسم، ولا يمكن قياسها لكل خطوة.',
+      'من بين الأقسام الـ51 يظهر «ارجاع لقسم سابق» كأنه قسم مستقل، فتختفي مرات الإرجاع داخل عدّاد قسم، ولا يمكن قياسها لكل خطوة.',
     pack: 'processes',
   },
 ]
@@ -435,7 +435,7 @@ export const specByKey = (key: string): LiveSpec | undefined =>
 export const specByPath = (path: string): LiveSpec | undefined =>
   LIVE_SPECS.find((s) => s.path === path)
 
-/** إجماليات الكتالوج · بتتحسب لا تتكتب */
+/** Catalog totals · computed, not hand-typed */
 export const catalogTotals = {
   screens: LIVE_SPECS.length,
   cols: LIVE_SPECS.reduce((n, s) => n + s.cols.length, 0),

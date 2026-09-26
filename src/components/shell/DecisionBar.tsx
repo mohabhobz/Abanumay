@@ -7,15 +7,15 @@ import type { CurrentUser } from '@/types/domain'
 export interface DecisionBarProps {
   user: CurrentUser
   project: { name: string; amount: number }
-  /** يختصر الجملة على الشاشات الضيقة */
+  /** Shortens the sentence on narrow screens. */
   compact?: boolean
-  /** الصفحة وصلت آخرها، فتدرّج البلور فوق الشريط بيروح */
+  /** The page has reached its end, so the blur gradient above the bar fades out. */
   atEnd?: boolean
 }
 
 /**
- * شريط القرار · ثابت أسفل الشاشة، فيه المبلغ ومخارج الدور.
- * بيحسّ بالماوس قبل ما توصله فيرتفع، والضوء بيتبع مكان المؤشر.
+ * Decision bar — fixed at the bottom of the screen, holding the amount and the role's actions.
+ * Responds to the mouse before you reach it by rising, and the light follows the cursor's position.
  */
 export function DecisionBar({ user, project, compact, atEnd }: DecisionBarProps) {
   const bar = useRef<HTMLDivElement>(null)

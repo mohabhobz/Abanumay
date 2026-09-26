@@ -7,47 +7,45 @@ import {
 } from '@/data/mock/closing'
 import type { CloseRow, CloseStage, CurrentUser, DecisionKind } from '@/types/domain'
 import type { RoleKey } from '@/data/roles'
+import { noteFirst } from '@/lib/dock'
 
-/* ═══════════════════════════════════════════════════════════
-   مخارج الإغلاق · **دورتان لا دورة**
+/* Closing actions - two cycles, not one.
 
-   ⚠️ **ودي أهم حاجة في الملف ده.** القاعدة 17 بتقول إن التقرير
-   الختامي وتقييم المشروع «يخضعان لدورتي اعتماد مستقلتين» · يعني
-   «اعتماد مدير المنح» بيحصل **مرتين** في حياة الطلب الواحد
-   وبيعني حاجتين مختلفتين: مرة على تقرير الجهة، ومرة على تقييم
-   المشرف. فاسم الزرار بيقول **على إيه** لا «اعتمد» وخلاص.
+   Note: this is the most important part of this file. Rule 17 states that the final report and the
+   project evaluation "go through two independent approval cycles" - meaning "grants manager
+   approval" happens twice in the life of one request and means two different things: once on the
+   entity's report, and once on the supervisor's evaluation. So the button label states what it
+   approves, rather than just saying "approve".
 
-   ⚠️ **والإعادة بترجع لكاتب الملف لا للمحطة اللي قبلها** · نفس
-   درس الخطة والاتفاقية: التقرير بتكتبه **الجهة**، فإعادته
-   بترجّعه لها · والتقييم بيكتبه **مشرف المنح**، فإعادته بترجّعه
-   له. الوجهة مكتوبة في اسم الزرار.
+   Note: a return goes back to whoever wrote the document, not to the previous stage - the same
+   lesson as the plan and the agreement: the entity writes the report, so returning it goes back to
+   the entity; the grants supervisor writes the evaluation, so returning it goes back to the
+   supervisor. The destination is stated in the button label.
 
-   ⚠️ **ومحطة `reportDone` مفيهاش اعتماد، فيها بداية.** التقرير
-   اتعتمد والتقييم ما بدأش (قاعدة 6) · فعرض أزرار اعتماد هنا
-   بيقول إن فيه قرار مستنّي وهو مفيش. اللي مستنّي هو **إعداد**.
+   Note: the `reportDone` stage has no approval action, it has a start action. The report is
+   approved and the evaluation hasn't started (rule 6), so showing approval buttons here would imply
+   a pending decision that doesn't exist. What's pending is drafting.
 
-   ⚠️ **وبعد `closed` مفيش مخارج خالص** · قاعدة 21: أي تعديل بعد
-   الإغلاق النهائي بيحتاج **إجراء جديد**، فالرصيف بيختفي لا
-   بيعرض زرارًا مقفولًا.
-   ═══════════════════════════════════════════════════════════ */
+   Note: after `closed` there are no actions at all - rule 21: any change after final closure needs
+   a new procedure, so the footer disappears instead of showing a disabled button. */
 
 export interface CloseAction {
   label: string
   kind: DecisionKind
-  /** الإعادة ملزومة بملاحظة · نفس قاعدة الاتفاقيات 10 */
+  /** A return requires a note - same as agreement rule 10. */
   needsNote?: boolean
-  /** بيتقفل لو الملف ناقص · الإرسال والاعتماد */
+  /** Disabled when the file is incomplete - both submit and approve. */
   gated?: boolean
   why: string
 }
 
 export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[] {
-  /* ═══ دورة التقرير · الجهة بتكتب ═══ */
+  /* Report cycle - written by the entity */
 
   if (stage === 'draft' || stage === 'returned') {
-    /* ⚠️ الجهة هي اللي بتبعت · وأفعالها في الشاشة لا في الرصيف
-       (نفس صفحة الخطة بعين الجهة)، فالمؤسسة مالهاش مخرج هنا
-       غير المتابعة. */
+    /* Note: the entity is the one submitting, and its actions live on the screen, not in the footer
+       (same as the plan page from the entity's view), so the institution has no action here besides
+       following up. */
     return []
   }
   if (stage === 'supervisor' && role === 'supervisor') {
@@ -66,11 +64,11 @@ export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[]
       },
     ]
   }
-  /* ⚠️ **إدارة الاتصال المؤسسي مش دور في النموذج** · النموذج فيه
-     تلات أدوار (مشرف · مدير منح · تنفيذي)، فمشرف المنح صاحب الطلب
-     هو اللي بيسجّل نتيجة مراجعة الاتصال · نفس ما بيحصل في محطة
-     الجهة في الاتفاقيات بالحرف. **وسؤال س-21 مفتوح**: هل الاتصال
-     المؤسسي مستخدم بحساب في النظام ولا بيبلّغ المشرف؟ */
+  /* Note: institutional-communications management isn't a role in the model - the model has three
+     roles (supervisor, grants manager, executive), so the grants supervisor who owns the request is
+     the one who logs the communications-review outcome, exactly as happens at the entity stage in
+     agreements. Open question: is institutional communications a user with a system account, or
+     does it notify the supervisor? */
   if (stage === 'comms' && role === 'supervisor') {
     return [
       {
@@ -119,7 +117,7 @@ export function closeActionsFor(role: RoleKey, stage: CloseStage): CloseAction[]
     ]
   }
 
-  /* ═══ دورة التقييم · مشرف المنح بيكتب ═══ */
+  /* Evaluation cycle - written by the grants supervisor */
 
   if (stage === 'reportDone' && role === 'supervisor') {
     return [{
@@ -175,7 +173,7 @@ export interface CloseActionDockProps {
   user: CurrentUser
   row: CloseRow
   actions: CloseAction[]
-  /** اللي مانع الزرار المسوَّر · محسوب في الشاشة */
+  /** What's blocking the tooltip-wrapped button - computed on screen. */
   stop: string
   note: string
   onNote: (v: string) => void
@@ -212,9 +210,9 @@ export function CloseActionDock({
     )
   }
 
-  /* ⚠️ **الطلب اللي واقف على طرف تاني رصيفه بيقول مين** لا بيختفي
-     ولا بيعرض زرارًا مقفولًا · المشرف اللي فتح الطلب عايز يعرف
-     الكرة عند مين، ودي إجابة بذاتها. */
+  /* Note: a request sitting with someone else states who, rather than disappearing or showing a
+     disabled button - the supervisor who opened the request wants to know whose court the ball is
+     in, and that's an answer in itself. */
   if (actions.length === 0) {
     if (row.stage === 'closed') return null
     return (
@@ -255,6 +253,9 @@ export function CloseActionDock({
           </span>
         </div>
 
+        {/* Field and buttons form one group that wraps together - the field doesn't split away from
+            "return" if the note runs to two lines. */}
+        <div className="payact-g">
         {needNote && (
           <label className="payact-n">
             <span className="vis-h">ملاحظات الإعادة</span>
@@ -267,9 +268,9 @@ export function CloseActionDock({
         )}
 
         <div className="rowf gp-2">
-          {actions.map((x) => {
-            /* ⚠️ السبب مكتوب لا مخفي في اللون · والمخالفة الأولى
-               بالاسم، لأن «فيه ناقص» بتخلّي المستخدم يدوّر بعينه */
+          {noteFirst(actions).map((x) => {
+            /* The reason is written out, not left to color alone - the first issue is named, since
+               "something's missing" makes users hunt for it visually. */
             const why =
               (x.needsNote && !note.trim())
                 ? 'اكتب سبب الإعادة أولًا'
@@ -278,6 +279,7 @@ export function CloseActionDock({
               <button
                 key={x.label}
                 className={`btn ${x.kind}`}
+                data-needs-note={x.needsNote ? '' : undefined}
                 disabled={Boolean(why)}
                 title={why || x.why}
                 onClick={() => onTake(x.label)}
@@ -286,6 +288,7 @@ export function CloseActionDock({
               </button>
             )
           })}
+        </div>
         </div>
       </div>
     </div>

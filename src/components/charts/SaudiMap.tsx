@@ -1,26 +1,24 @@
+import { unitAfter } from '@/lib/format'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SAUDI_REGIONS, SAUDI_VIEW } from './saudi-regions'
 
-/* ═══════════════════════════════════════════════════════════
-   خريطة المملكة · كثافة لونية على الحدود الإدارية الحقيقية
+/* Map of the Kingdom — color density on real administrative boundaries.
 
-   قائمة الأشرطة كانت بتقول «الرياض 6، القصيم 4» · رقم ورا رقم،
-   والعين لازم تركّب الجغرافيا في دماغها. الخريطة بتقولها في نظرة:
-   الدعم متكوّم في الوسط، والشمال شبه فاضي. ده استنتاج ما بيطلعش
-   من جدول مهما رتّبته.
+   A list of bars used to say "Riyadh 6, Qassim 4" — number after number, and the eye had to
+   reconstruct the geography in its head. The map says it at a glance: support is clustered in the
+   center, the north is nearly empty — a conclusion no table gives you no matter how you sort it.
 
-   والكثافة أصدق من النقاط هنا: النقطة بتقول «فيه حاجة في المكان
-   ده»، والتعبئة بتقول «المنطقة دي نصيبها كذا» · والمنطقة هي وحدة
-   القرار في النظام لا النقطة.
+   Density reads truer than dots here: a dot says "something is at this spot," a fill says "this
+   region's share is X" — and the region is the unit of decision in the system, not the point.
 
-   والسُّلَّم **خمس درجات مقطوعة مش تدرّج مستمر**: العين ما بتفرّقش
-   بين درجتين متجاورتين في تدرّج مستمر، لكنها بتفرّق بين خمس درجات
-   واضحة.
-   ═══════════════════════════════════════════════════════════ */
+   The scale is **five discrete steps, not a continuous gradient**: the eye can't tell two adjacent
+   steps apart in a continuous gradient, but it can tell five distinct steps apart. */
 
-/** درجات التعبئة · من «لا شيء» إلى «الأعلى».
-    القيم في الـCSS عشان الوضع الداكن يقلبها من مكان واحد. */
+/**
+ * Fill steps — from "none" to "highest". Values live in the CSS so dark mode can flip them from one
+ * place.
+ */
 const STEPS = [
   'var(--map-0)',
   'var(--map-1)',
@@ -40,7 +38,7 @@ export interface MapPoint {
 export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint[]; unit?: string }) {
   const [hot, setHot] = useState<string | null>(null)
 
-  /** القيمة لكل منطقة بالاسم · الخريطة بتتكلم بأسماء النظام */
+  /** Value per region by name — the map speaks in the system's own region names. */
   const byName = useMemo(() => {
     const m = new Map<string, MapPoint>()
     for (const p of points) m.set(p.key, p)
@@ -51,7 +49,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
   const step = (v: number) => (v <= 0 ? 0 : Math.min(4, 1 + Math.floor((v / max) * 3.999)))
 
   const onMap = (k: string) => SAUDI_REGIONS.some((r) => r.name === k)
-  /** مناطق مالهاش موقع على الخريطة · «عموم المملكة» مثلًا */
+  /** Regions with no position on the map — e.g. "nationwide". */
   const offMap = points.filter((p) => !onMap(p.key))
   const active = hot ? SAUDI_REGIONS.find((r) => r.name === hot) : undefined
   const activeVal = hot ? byName.get(hot) : undefined
@@ -59,9 +57,9 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
 
   return (
     <div className="map">
-      {/* الخانة بتاخد الارتفاع المتاح، والرسم جوّاها بيفضل بنسبته
-          مضبوطة · والتلميح متموضع بالنسبة المئوية من الـviewBox،
-          فأي اختلاف في النسبة كان هيزحلقه عن مكانه */}
+      {/* The box takes the available height, and the drawing inside keeps its proportions fixed —
+          the tooltip is positioned as a percentage of the viewBox, so any mismatch in that ratio
+          would throw it off its spot. */}
       <div className="map-slot">
       <div className="map-c">
         <svg
@@ -98,8 +96,8 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
             )
           })}
 
-          {/* الرقم على المنطقة المؤشَّر عليها فقط · ثلاتاشر رقم على
-              الخريطة في نفس الوقت بيخنقوها */}
+          {/* The number shows only on the hovered region — that many numbers on the map at once
+              would clutter it. */}
           {active && activeVal && (
             <text
               className="map-num"
@@ -113,7 +111,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
           )}
         </svg>
 
-        {/* التلميح كعنصر HTML · النص العربي بيتلف أحسن بره الـSVG */}
+        {/* The tooltip is an HTML element — Arabic text wraps better outside the SVG. */}
         {active && activeVal && (
           <div
             className="map-tip"
@@ -124,7 +122,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
           >
             <b>{activeVal.label}</b>
             <span>
-              <span className="num">{activeVal.value}</span> {unit}
+              <span className="num">{activeVal.value}</span> {unitAfter(activeVal.value, unit)}
             </span>
             {activeVal.note && <span className="map-tip-n">{activeVal.note}</span>}
           </div>
@@ -133,7 +131,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
       </div>
 
       <div className="map-foot">
-        {/* السُّلَّم: من غيره الكثافة تبقى زخرفة */}
+        {/* The scale — without it, the density is just decoration. */}
         <div className="map-scale" aria-hidden="true">
           <span className="num">0</span>
           {STEPS.map((c, i) => (

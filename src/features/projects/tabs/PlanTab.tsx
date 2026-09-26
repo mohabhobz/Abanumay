@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tag, icons } from '@/components/ui'
+import { TONE } from '@/lib/tone'
 import { ROUTES } from '@/app/routes'
-import { pct } from '@/lib/format'
+import { NOUN, nounAfter, pct, ver } from '@/lib/format'
 import {
   PLAN_TONE, lateActivities, planClaimed, planDone, planPlanned, planSpi,
   planStageLabel, readyToClose, spiSay, waitingReview,
@@ -9,24 +10,23 @@ import {
 import { PlanBar } from '@/features/plans/PlanBar'
 import type { PlanRow } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   تاب الخطة في صفحة المشروع · BPD-012
+/* Plan tab on the project page.
 
-   ⚠️ **التاب بيجاوب «إيه خطة المشروع ده» · الصندوق بيجاوب «إيه
-   اللي واقف عندي».** الاتنين موجودين لأن السؤالين مختلفين، لا
-   لأن الشاشة اتكرّرت · نفس منطق تاب الاتفاقية بالحرف.
+   The tab answers "what's this project's plan," while the panel answers
+   "what's currently pending on it" — both exist because the questions
+   differ, not because the screen was duplicated; the same split as the
+   agreement tab.
 
-   ⚠️ **و«لا يتطلب خطة» حالة مكتوبة لا تاب فاضي.** قرار مدير المنح
-   قبل الاعتماد بيحدّد إن المشروع يتطلب خطة عمل ولا لأ (الوثيقة:
-   «في حالة المشاريع التي تتطلب خطة عمل») · فالمشروع اللي مالوش
-   خطة **مش ناقص حاجة**، هو اتقرّر إنه ما يحتاجش. وتاب فاضي من غير
-   الجملة دي بيتقري «فيه حاجة ناقصة».
-   ═══════════════════════════════════════════════════════════ */
+   "Doesn't require a plan" is an explicit state, not an empty tab. The
+   grants manager's pre-approval decision determines whether a project
+   requires a work plan at all. A project with no plan isn't missing
+   something — it was decided that it doesn't need one. An empty tab without
+   this statement reads as "something's missing." */
 
 export interface PlanTabProps {
   plan?: PlanRow
   granted: number
-  /** يبدأ خطة · فاضي لو المشروع ما وصلش المرحلة */
+  /** Starts a plan — empty if the project hasn't reached that stage. */
   onStart?: () => void
   startBlocked?: string
 }
@@ -37,6 +37,7 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
       <Glass>
         <Head title="خطة تنفيذ المشروع" meta="قرار مدير المنح قبل الاعتماد" />
         <Empty
+          art={{ done: 0 }}
           title="هذا المشروع لم تُفتح له خطة تنفيذ."
           note="تُفتح خطة التنفيذ للمشاريع التي يقرّر مدير المنح أنها تتطلب خطة عمل · وهي إجراء مستقل يسير بالتوازي مع الاتفاقية: تكتب الجهة المراحل والأنشطة والشواهد، ويعتمدها مشرف المنح ثم مدير المنح، فتُثبَّت نسخة مرجعية يُقاس عليها الإنجاز."
           actions={onStart && (
@@ -79,15 +80,15 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
           {
             k: 'النسخة المرجعية',
             v: p.baseline > 0
-              ? <>V<span className="num">{p.baseline}</span>{' '}
+              ? <><Num>{ver(p.baseline)}</Num>{' '}
                 <span className="sub">من <DateText>{p.baselineAt ?? ''}</DateText></span></>
               : <span className="sub">لم تُعتمد بعد</span>,
           },
           {
             k: 'المراحل والأنشطة',
             v: <>
-              <Num>{p.phases.length}</Num> مراحل ·{' '}
-              <Num>{p.phases.reduce((s, ph) => s + ph.activities.length, 0)}</Num> نشاطًا
+              <Num>{p.phases.length}</Num> {nounAfter(p.phases.length, NOUN.phase)} ·{' '}
+              <Num>{p.phases.reduce((s, ph) => s + ph.activities.length, 0)}</Num> {nounAfter(p.phases.reduce((s, ph) => s + ph.activities.length, 0), NOUN.activity)}
             </>,
           },
           {
@@ -113,22 +114,21 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
               k: 'بانتظار مراجعة المشرف',
               v: queue === 0
                 ? <span className="sub">لا شيء</span>
-                : <Tag tone="warn"><Num>{queue}</Num> نشاطًا</Tag>,
+                : <Tag tone="warn"><Num>{queue}</Num> {nounAfter(queue, NOUN.activity)}</Tag>,
             },
             {
               k: 'تجاوز موعده ولم يُقبل',
               v: late === 0
                 ? <span className="sub">لا شيء</span>
-                : <Tag tone="no"><Num>{late}</Num> نشاطًا</Tag>,
+                : <Tag tone={TONE.late}><Num>{late}</Num> {nounAfter(late, NOUN.activity)}</Tag>,
             },
           ] : []),
         ]}
       />
 
-      {/* ⚠️ **الجملة دي هي أثر الخطة على المشروع** · ومن غيرها
-          التاب بيبقى عرضًا لأرقام مالهاش نتيجة. الخطة المكتملة
-          بترفع **مانعًا** للإغلاق، وما بتعملش الإغلاق (فصل
-          الإجراءات · ح-10). */}
+      {/* This line is the plan's effect on the project — without it, the tab would
+          just display numbers with no consequence. A completed plan lifts a
+          blocker on closing; it doesn't perform the closing itself. */}
       {readyToClose(p) ? (
         <p className="ok cnote">
           قُبلت كل أنشطة الخطة · المشروع مؤهَّل للإغلاق، والإغلاق إجراء مستقل

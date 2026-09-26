@@ -1,18 +1,16 @@
 /**
- * داتا تجريبية بشكل النظام الحقيقي.
+ * Sample data shaped like the live system.
  *
- * ⚠️ الهويات الشخصية والمالية **منزوعة عمدًا**: الآيبان والجوالات
- * والبُرد وأسماء الأفراد وأرقام الترخيص قيم وهمية سليمة الشكل،
- * لأن الريبو عام. اللي اتساب حقيقي هو ما ينفع يكون عامًّا:
- * وصف المشروع والمبالغ والمسار والمجال والهدف والمدد.
+ * Personal and financial identifiers are deliberately stripped: IBANs, phone numbers, mailing
+ * addresses, individual names, and license numbers are fictional but validly formatted, since this
+ * repo is public. What's kept real is whatever is safe to be public: project descriptions, amounts,
+ * track, area, goal, and durations.
  *
- * لو محتاج الأرقام الحقيقية للعرض على العميل، حطّها في
- * `project.local.ts` · الامتداد ده متجاهَل في git.
+ * If real figures are needed for a client-facing demo, put them in `project.local.ts` — that
+ * extension is git-ignored.
  *
- * المصدر: sys.abanumay.sa/control/reports1_3/view/20940
- *
- * الملف ده هو الـfixture الوحيد للمشروع. لما ييجي الباك اند،
- * `data/repository.ts` هو اللي بيتغيّر · الملف ده بيتشال وخلاص.
+ * This file is the project's only fixture. Once the backend is ready, `data/repository.ts` is what
+ * changes — this file just gets removed.
  */
 import type {
   Project, Entity, AuthorityMatrix, CurrentUser, Insight, FollowUpType,
@@ -79,7 +77,8 @@ export const project: Project = {
     'غياب المؤشرات وأدوات القياس في البرامج العلمية.',
   ],
 
-  // في النظام الحالي دي نص حر داخل حقل واحد. هنا كيان له بنود
+  // In the current system this is free text inside one field. Here it's a structured entity with
+  // line items.
   phases: [
     { name: 'التهيئة', tasks: 'التفاهم مع مدير المشروع البحثي، ثم التعاقد معه.', months: 'الشهر 1 – 2', tone: 'teal' },
     { name: 'الإعداد', tasks: 'جمع الدراسات العلمية، ثم إعداد خريطة موضوعات التربية العلمية.', months: 'الشهر 3 – 4', tone: 'teal' },
@@ -110,7 +109,7 @@ export const project: Project = {
     { name: 'مرفقات أخرى تعزز قيمة المشروع', uploaded: false, required: false },
   ],
 
-  // البوابات الخمس · الحالة الحقيقية
+  // The five gates · real-world status
   gates: [
     { role: 'مشرف المنح', state: 'now', note: 'الحالية · بانتظار الجهة' },
     { role: 'مدير المنح', state: '', note: 'لاحقة' },
@@ -119,7 +118,7 @@ export const project: Project = {
     { role: 'مجلس الأمناء', state: '', note: 'غير مطلوبة' },
   ],
 
-  // سجل الإجراءات · بحقول قياس المدة زي ما هي في النظام
+  // Action history · with duration-tracking fields as they exist in the system
   log: [
     {
       action: 'طلب استكمال',
@@ -206,7 +205,7 @@ export const entity: Entity = {
   ],
 }
 
-// أنواع المتابعة الثمانية، مستخرجة من النظام الحالي
+// The eight follow-up types, extracted from the current system
 export const followUpTypes: FollowUpType[] = [
   'التواصل مع الشريك',
   'تحديث الاتفاقية',
@@ -218,7 +217,7 @@ export const followUpTypes: FollowUpType[] = [
   'أخرى',
 ]
 
-// قراءات محسوبة من الداتا نفسها، مش مخترعة
+// Derived readings computed from the data itself, not invented
 export const insights: Insight[] = [
   {
     text: 'الجهة حديثة نسبيًا: مسجّلة منذ 8 أشهر، ولها 3 مشاريع في المسار نفسه، أحدها معتذر عنه بوزن 96.',
@@ -243,12 +242,12 @@ export const insights: Insight[] = [
 ]
 
 
-// ═══ مصفوفة الصلاحيات المالية ═══
-// ⚠ الأرقام مؤقتة لحين رد مظفر (السؤال 2 في قائمة الأسئلة).
-// الكومبوننت بيشتغل عليها، فتبديلها هنا بيغيّر الشاشة من غير أي تعديل تاني.
+// Financial authority matrix
+// These figures are provisional pending confirmation. This component reads from them, so swapping
+// the values here changes the screen with no other edit needed.
 export const authority: AuthorityMatrix = {
   provisional: true,
-  // state: done = خلصت · now = واقفين عندها · pending = لسه
+  // state: done = finished · now = currently here · pending = not yet
   roles: [
     { role: 'تقديم الجهة', ceiling: null, kind: 'submit', state: 'done' },
     { role: 'مشرف المنح', ceiling: null, kind: 'recommend', state: 'now' },
@@ -264,7 +263,7 @@ export const currentUser: CurrentUser = {
   role: 'مشرف المنح',
   initial: person('عمر قاسم').initial,
   photo: person('عمر قاسم').photo,
-  // من قواعد المكالمة: مشرف المنح مالوش صلاحية مالية، توصية بس
+  // Per the process: the grants officer has no financial authority, only a recommendation
   financialAuthority: null,
   actions: [
     { label: 'توصية بالموافقة', kind: 'btn-p' },

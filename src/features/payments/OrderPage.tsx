@@ -7,36 +7,34 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { payRequestById } from '@/data/mock/disbursements'
-import { nf, riyals } from '@/lib/format'
+import { nf, NOUN, nounAfter, pct, riyals } from '@/lib/format'
 import { printArea } from '@/lib/export'
 
-/* ═══════════════════════════════════════════════════════════
-   أمر الصرف · خطوة 16 · والمخرج الأول في الوثيقة
+/* Disbursement order - step 16, and the spec's first output.
 
-   المخرج الأول نصًّا: «**أمر صرف مالي معتمد وجاهز للتنفيذ**» ·
-   يعني ورقة، لا حالة في قاعدة بيانات. والنظام العامل بيطبع «إذن
-   الصرف» فعلًا وبيحوّل بناءً عليه، والمالية بتمسكه في إيدها.
+   The spec's exact wording: "an approved disbursement order ready for execution" - meaning a
+   document, not a database status. The live system does print a "disbursement authorization" and
+   transfers against it, held by finance in hand.
 
-   وخطوة 16 بتقول النظام «ينشئ أمر الصرف **ويربطه بالمشروع
-   والاتفاقية والدفعة ومصادر التمويل**» · الأربعة دول هم جسم الورقة،
-   مش ترويستها. فكل واحد فيهم سطر مرقّم هنا، وتوزيع المصادر جدول
-   بقيمة كل مصدر بالريال لا بالنسبة وحدها — لأن اللي بيحوّل بيحوّل
-   مبلغًا.
+   Step 16 says the system "creates the disbursement order and links it to the project, agreement,
+   payment, and funding sources" - those four are the body of the document, not its header. Each
+   gets its own numbered line here, and the funding-source breakdown is a table with each source's
+   value in currency, not percentage alone - because whoever executes the transfer transfers an
+   amount.
 
-   ⚠️ **والمبلغ مكتوب بالحروف كمان.** ده مش زينة: الورقة دي بتروح
-   للبنك، والرقم اللي فيه خانة زيادة أو ناقصة بيتقرا غلط وما فيش
-   حاجة تكشفه. الحروف هي اللي بتمسك الرقم.
+   Note: the amount is also spelled out in words. Not decoration - this document goes to the bank,
+   and a digit that's off by one place reads wrong with nothing to catch it. Words are what anchors
+   the number.
 
-   ⚠️ **والورقة ما بتتولدش قبل الاعتماد.** قاعدة 9: ممنوع التنفيذ
-   قبل اكتمال الاعتمادات · فالطلب اللي لسّه عند المشرف أو المدير
-   الشاشة بتقول له إن الأمر ما اتولدش لسّه وتقول واقف عند مين، بدل
-   ما تطبع ورقة مالهاش سند.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the document isn't generated before approval. Rule 9: execution is forbidden before every
+   approval is complete - so a request still sitting with the supervisor or manager gets a screen
+   stating the order hasn't been generated yet, naming whose desk it's on, instead of printing a
+   document with no basis. */
 
-/* ⚠️ أرقام الأقسام **لاتينية** زي كل رقم في السيستم · كانت
-   عربية-هندية (١ ٢ ٣) وعدّت على كل الفحوص، لأن المسار اللي
-   بيفحصها في `routes.mjs` كان معرّفه ميّتًا فالأداة كانت بتقيس
-   شاشة «الطلب غير موجود». الخرق ما بانش إلا لما المسار اتصلّح. */
+/* Note: section numbers are Latin digits like every other number in the system - they used to be
+   Arabic-Indic (1 2 3) and passed every check, because the route that checks them had a dead
+   reference, so the tool was measuring the "request not found" screen. The gap only surfaced once
+   the route was fixed. */
 
 export default function OrderPage() {
   const { id = '' } = useParams()
@@ -58,8 +56,8 @@ export default function OrderPage() {
     )
   }
 
-  /* الأمر بيتولد عند خطوة 16، يعني بعد اعتماد المالية · قبل كده
-     الطلب لسّه ماشي في الاعتمادات */
+  /* The order is generated at step 16, i.e. after finance approval - before that, the request is
+     still moving through approvals. */
   const ready = r.state === 'finance' || r.state === 'paid'
   const orderNo = `PO-${r.id.replace('SR-', '')}`
 
@@ -67,9 +65,9 @@ export default function OrderPage() {
     <AppLayout assistantContext={assistFor.page('أمر الصرف', r.projectName)}>
       <div className="viewstack">
         <div className="screen col">
-          {/* ⚠️ تلات مستويات حقيقية: أمر الصرف **جوّه** الطلب،
-              والطلب جوّه الصندوق · والزرار القديم كان بيرجّع للطلب
-              وبس، فالمستخدم اللي عايز الصندوق كان بيدوس مرتين */}
+          {/* Note: three real levels: the disbursement order is inside the request, and the request
+              is inside the inbox - the old button only returned to the request, so a user wanting
+              the inbox had to click twice. */}
           <Crumbs
             items={[
               { label: 'الصرف', to: ROUTES.payments },
@@ -120,7 +118,7 @@ export default function OrderPage() {
                 }
               />
 
-              {/* ١ · المشروع */}
+              {/* 1 - Project */}
               <section className="order-s">
                 <h3><span className="num">1</span> · المشروع</h3>
                 <dl className="kv">
@@ -131,7 +129,7 @@ export default function OrderPage() {
                 </dl>
               </section>
 
-              {/* ٢ · الاتفاقية */}
+              {/* 2 - Agreement */}
               <section className="order-s">
                 <h3><span className="num">2</span> · الاتفاقية</h3>
                 <dl className="kv">
@@ -142,7 +140,7 @@ export default function OrderPage() {
                 </dl>
               </section>
 
-              {/* ٣ · الدفعة */}
+              {/* 3 - Payment */}
               <section className="order-s">
                 <h3><span className="num">3</span> · الدفعة</h3>
                 <dl className="kv">
@@ -154,8 +152,8 @@ export default function OrderPage() {
                   {r.condition && <><dt>شرط الصرف</dt><dd>{r.condition}</dd></>}
                 </dl>
 
-                {/* ⚠️ المبلغ بالحروف · الورقة بتروح للبنك، والرقم
-                    اللي فيه خانة غلط ما فيش حاجة تكشفه غير ده */}
+                {/* Note: amount in words - this document goes to the bank, and nothing else catches
+                    a digit that's off by one place. */}
                 <div className="order-amt">
                   <div className="lb">المبلغ المطلوب صرفه</div>
                   <div className="v">
@@ -165,27 +163,27 @@ export default function OrderPage() {
                 </div>
               </section>
 
-              {/* ٤ · مصادر التمويل · قاعدة 12 */}
+              {/* 4 - Funding sources - rule 12 */}
               <section className="order-s">
                 <h3><span className="num">4</span> · مصادر التمويل</h3>
                 <table className="order-t">
                   <thead>
-                    <tr><th>المصدر</th><th>النسبة</th><th>المبلغ</th></tr>
+                    <tr><th>المصدر</th><th className="n">النسبة</th><th className="n">المبلغ</th></tr>
                   </thead>
                   <tbody>
                     {r.sources.map((s) => (
                       <tr key={s.name}>
                         <td>{s.name}</td>
-                        <td className="num">{s.share}%</td>
-                        <td className="num">{nf.format(Math.round((r.asked * s.share) / 100))}</td>
+                        <td className="n"><Num>{pct(s.share)}</Num></td>
+                        <td className="n"><Num>{Math.round((r.asked * s.share) / 100)}</Num></td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr>
                       <td>الإجمالي</td>
-                      <td className="num">100%</td>
-                      <td className="num">{nf.format(r.asked)}</td>
+                      <td className="n"><Num>{pct(100)}</Num></td>
+                      <td className="n"><Num>{r.asked}</Num></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -196,7 +194,7 @@ export default function OrderPage() {
                 )}
               </section>
 
-              {/* الحساب البنكي · المخرج التاني في الوثيقة */}
+              {/* Bank account - the spec's second output. */}
               <section className="order-s">
                 <h3><span className="num">5</span> · الحساب البنكي المعتمد</h3>
                 <dl className="kv">
@@ -207,7 +205,7 @@ export default function OrderPage() {
                 </dl>
               </section>
 
-              {/* التواقيع · الورقة بتتمسك بإيد، فالاعتمادات مكانها فيها */}
+              {/* Signatures - the document is held physically, so approvals belong on it. */}
               <section className="order-sign">
                 {['مشرف المنح', 'مدير المنح', 'الإدارة المالية'].map((role) => {
                   const ev = r.log.find((e) => e.role === role)
@@ -225,7 +223,7 @@ export default function OrderPage() {
 
               <p className="sub cnote">
                 أرشفة المستندات والتقارير والمرفقات مربوطة بالطلب <Mono>{r.id}</Mono> ·
-                المخرج الرابع في الإجراء والقاعدة 21 · <Num>{r.docs.length}</Num> مستندًا.
+                المخرج الرابع في الإجراء والقاعدة 21 · <Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}.
               </p>
             </Glass>
           )}

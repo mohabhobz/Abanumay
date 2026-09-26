@@ -4,42 +4,33 @@ import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
 import { pct } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   رحلة الريال في الجهة · **عمود ملوّن وأربع بطاقات متداخلة**
+/* The riyal's flow through an entity - a colored column with four overlapping cards.
 
-   المرجع اللي العميل باعته: عمود رأسي بلونين في النصّ، وأربع
-   بطاقات بيضا متداخلة معاه من أركانه · اتنين كبار واتنين صغار،
-   وخطوط رفيعة بنقط بتخرج للحوافّ.
+   The client's reference: a two-tone vertical column at the center, with four white cards
+   overlapping it from its corners - two large, two small, with thin dotted lines running out to the
+   edges.
 
-   ═══ اللي اتاخد، واللي اتغيّر ═══
+   What was kept, and what changed:
+   - the composition was kept in full: the two-tone column, the four overlapping cards, large next
+   to small, and the lines with dots.
+   - direction was flipped. The reference is in English, with the large cards on the left. Here
+   reading starts from the right, so the two large cards sit on the right - the whole layout uses
+   logical properties so it flips on its own.
+   - colors come from the system. The reference is blue and orange; the column here uses the chart
+   palette (`--ch-1` and `--ch-2`), the same colors used to draw every chart in the system.
+   - size carries meaning. In the reference, large and small are decorative. Here the large cards
+   are the two figures that actually matter most (total granted and actually disbursed), and the
+   small ones are the smaller share and the time slice.
 
-   · **التركيب اتاخد كامل**: العمود بلونين، الأربع بطاقات متداخلة
-     معاه، الكبير جنب الصغير، والخطوط والنقط.
+   The relationship isn't four independent steps:
+   01 total granted = 02 actually disbursed + 03 pending disbursement
+   04 granted this cycle = a time slice of 01
 
-   · **الاتجاه اتقلب.** المرجع إنجليزي فالكبار على الشمال. هنا
-     القراءة بتبدأ من اليمين، فالبطاقتان الكبيرتان على اليمين ·
-     والتخطيط كله بخصائص منطقية فبيتقلب لوحده.
-
-   · **الألوان من السيستم.** المرجع أزرق وبرتقالي · العمود هنا
-     بلونَي الرسوم البيانية (`--ch-1` و`--ch-2`)، وهمّ اللي
-     بيرسموا كل جراف في السيستم.
-
-   · **الحجم بيقول حاجة.** في المرجع الكبير والصغير زينة. هنا
-     الكبيرتان هما الرقمان الكبيران فعلًا (الإجمالي واللي وصل)،
-     والصغيرتان الجزء الصغير والمقطع الزمني.
-
-   ═══ والعلاقة مش أربع خطوات ═══
-
-       ٠١ إجمالي الممنوح  =  ٠٢ وصل فعلًا  +  ٠٣ تحت الصرف
-       ٠٤ ممنوح هذه الدورة =  مقطع زمني من ٠١
-
-   فالنسبة مكتوبة في كل بطاقة، والأولى مكتوب عليها إنها **الكلّ**
-   لا واحدة من أربعة.
-   ═══════════════════════════════════════════════════════════ */
+   So each card states its share, and the first one states that it is the whole, not one of four. */
 
 export function EntityFlow({ entity }: { entity: EntityRow }) {
-  /* المصروف = الملتزم به ناقص اللي لسه في الطريق. القيمتان في ملف
-     الجهة، والفرق بينهما هو الوحيد المحسوب هنا. */
+  /* Disbursed = committed minus what's still in transit. Both figures live in the entity's file,
+     and the difference between them is the only thing computed here. */
   const total = entity.grantedTotal
   const pending = entity.inDisbursement
   const paid = Math.max(0, total - pending)
@@ -47,8 +38,8 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
 
   const share = (v: number) => (total ? Math.round((v / total) * 100) : 0)
 
-  /* الحالة الفاضية كارت له أرضية معروفة · النصّ العريان على الميش
-     كان بيقع تحت حدّ التباين */
+  /* The empty state has a known background - plain text on the mesh used to fall below the contrast
+     threshold. */
   if (total <= 0) {
     return (
       <Glass className="ejr ejr-none">
@@ -86,8 +77,8 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
       <div className="ejr-stage">
         {cards.map((c) => (
           <Link key={c.k} to={c.to} className={`ejr-c ejr-c${c.k}${c.big ? ' big' : ''}`}>
-            {/* دايرة زجاجية فوق · الأيقونة بلون الخانة، وهي اللي
-                بترجّع اللون للكارت الأبيض */}
+            {/* A glass circle on top - the icon takes the field's color, which is what returns
+                color to the white card. */}
             <span className="ejr-ic" aria-hidden="true">
               <Icon name={icons[c.icon]} size="lg" />
             </span>
@@ -97,8 +88,8 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
             <span className="ejr-s">
               {c.pct === null
                 ? c.note
-                : <>{/* ⚠️ علامة `%` **جوّه** العزل · كانت برّاه فبتنطّ
-                       لأول الجملة العربية (قاعدة ٥ في العقد) */}
+                : <>{/* Note: the "%" sign sits inside the isolated span - it used to sit outside it
+                        and jump to the start of the Arabic sentence. */}
                   <span className="num">{pct(c.pct)}</span> من الإجمالي{c.note ? ` · ${c.note}` : ''}</>}
             </span>
           </Link>

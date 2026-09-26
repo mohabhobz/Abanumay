@@ -3,29 +3,25 @@ import { Icon, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 
 export interface BulkBarProps {
-  /** عدد الصفوف المحدَّدة · بيتكتب كبيرًا قبل الجملة */
+  /** Count of selected rows — written large before the sentence. */
   count: number
-  /** الجملة: «مشروعًا محدَّدًا · المبلغ 1,240,000 ﷼» */
+  /** The sentence: "N projects selected, amount SAR 1,240,000." */
   sentence: ReactNode
-  /** الأزرار · إجراءات الدور وأي تحكّم إضافي */
+  /** Buttons — role actions plus any extra control. */
   children?: ReactNode
   onClear: () => void
 }
 
 /**
- * شريط الإجراء المجمّع.
- *
- * **نفس شريط القرار حرفيًّا**: نفس الرصيف العايم أسفل الشاشة، نفس
- * التدرّج اللي بيذوّب المحتوى تحته، نفس الحساسية للماوس. السبب إن
- * المستخدم اتعوّد على الشكل ده في صفحة المشروع، ولمّا يعلّم صفوفًا
- * في الجدول ويلاقي نفس الشريط طالعًا يبقى عارف إن دي لحظة قرار
- * من غير ما يقرا.
- *
- * وبيطلع من تحت لفوق لأنه مش كان موجود: الحركة بتقول «ده جديد بسبب
- * اللي عملته»، والكارت اللي بيظهر فجأة في نص الصفحة بيتقري كخطأ.
- *
- * الشريط عايم فوق المحتوى، فالصفحة اللي تحته لازم تزوّد مساحة ·
- * كلاس `hasdock` على `.viewstack` بيعمل ده.
+ * Bulk action bar.
+ * **Identical to the decision bar**: the same floating dock at the bottom of the screen, the same
+ * gradient that fades the content beneath it, the same responsiveness to the mouse. The reason:
+ * users are already used to this shape on the project page, and when they check rows in a table and
+ * see the same bar appear, they know it's a decision moment without reading anything.
+ * It slides up from below because it wasn't there before: the motion says "this appeared because of
+ * what you just did," and a card that suddenly appears mid-page reads as an error.
+ * The bar floats over the content, so the page beneath it needs extra space — a dedicated class on
+ * the view container provides that.
  */
 export function BulkBar({ count, sentence, children, onClear }: BulkBarProps) {
   const bar = useRef<HTMLDivElement>(null)

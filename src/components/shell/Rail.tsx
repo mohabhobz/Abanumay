@@ -5,56 +5,50 @@ import LogoLockup from '@/assets/LogoLockup'
 import { Icon, icons, type IconName } from '@/components/ui'
 import { NAV, ROUTES } from '@/app/routes'
 import { AccountMenu } from './AccountMenu'
+import { NotificationBell } from './Notifications'
 import type { CurrentUser } from '@/types/domain'
 
 export interface RailProps {
   user: CurrentUser
   onSignOut?: () => void
   /**
-   * مفاتيح الصلاحيات اللي المستخدم يملكها.
-   * لو مش متبعتة بيتعرض كل شيء · لما الباك اند يرجّع الصلاحيات،
-   * الريل بيتفلتر لوحده من غير أي تعديل هنا.
+   * The permission keys the user holds.
+   * If none are passed, everything is shown — once the backend returns permissions, the rail
+   * filters itself with no change needed here.
    */
   permissions?: string[]
   /**
-   * يتقفل غصبًا · والمستخدم ما بيفقدش عرضه.
-   *
-   * المساعد بياخد الشاشة كلها، والشريط المفرود جنبه بيزاحمه على
-   * مساحة القراءة وبيفضل مفتوحًا على كلام مش بتاعه. فبيتقفل لوحده
-   * لمّا المساعد يفتح، **ويرجع لعرضه الأصلي** لمّا يتقفل ·
-   * والعرض ده ما بيتكتبش في التخزين وهو مقفول غصبًا، فتفضيل
-   * المستخدم ما بيتمسحش.
+   * Forced closed — the user doesn't lose their own setting.
+   * The assistant takes the full screen, and the rail expanded beside it would compete for reading
+   * space and stay open on content that isn't its own. So it closes itself when the assistant
+   * opens, and **returns to its own width** when it closes — and that width isn't written to
+   * storage while it's forced closed, so the user's own preference isn't erased.
    */
   shut?: boolean
 }
 
-/* ═══════════════════════════════════════════════════════════
-   عرض الشريط · بالسحب لا بزرار
-
-   الزرار بيقول «في حالتين» ويخفي إن العرض متغيّر أصلًا. الخط على
-   الحافة بيقول الحقيقة: امسك واسحب لأي عرض يريحك. والضغطة من غير
-   سحب بتقلب بين الحالتين، فاللي عايز زرار لقى زرار.
-
-   الأرقام: 80 مطويّ (أيقونة مريحة بلا تسمية)، و208 مفرود، والحدّ
-   الأقصى 272 عشان الشريط ما ياخدش من المحتوى أكتر مما يستحق.
-   ═══════════════════════════════════════════════════════════ */
-/* ٦٠ = بند ٤٤ + حشو ٨×٢ · الحدّ الهندسي بلا سلاك (كان ٨٠) */
+/* Rail width — by drag, not a button.
+   A button implies two states and hides that the width can actually vary. The edge handle tells the
+   truth: grab and drag to whatever width suits you. A click with no drag toggles between the two
+   states, so anyone looking for a button finds one.
+   The numbers: 80 collapsed (a comfortable icon with no label), 208 expanded, and a max of 272 so
+   the rail doesn't take more from the content than it earns. */
+/* 60 = a 44px item plus 8px padding on each side — the geometric floor with no clutter (used to be
+   80). */
 const SHUT = 60
 const OPEN = 208
 const MAX = 272
-/** أقل عرض تبان فيه التسمية · تحته الشريط بيرجع أيقونات */
+/** Minimum width where the label shows — below it the rail falls back to icons only. */
 const LABEL_AT = 132
 /**
- * أقل عرض يظهر فيه **القفل الكامل** (العلامة ومعاها الاسم).
- *
- * مش نفس عتبة التسميات. بعد ما العلامة بقت ٣٢ (كانت ٤٤) ارتفاع
- * القفل بقى ٤٠٫٣ وعرضه ≈٧٥ (كان ١٠٣ عند ٥٥)، فالحدّ الهندسي نزل
- * لـ`124 = 75 + حشو الشريط (16) + هامشين (2×16)`.
- *
- * **بس الحدّ الهندسي مش هو الرقم.** فيه شرط تاني: الاسم ما ينفعش
- * يظهر **قبل** تسميات التنقّل، وإلا الشريط بيبقى فيه هوية كاملة
- * وأيقونات بلا أسماء — ترتيب مقلوب. فالرقم لازم يفضل فوق
- * `LABEL_AT` (132). ١٤٨ بيحقّق الاتنين بهامش.
+ * Minimum width where the **full lockup** shows (the mark plus the name).
+ * Not the same threshold as the labels. After the mark became 32px (was 44), the lockup's height
+ * became 40.3 and its width roughly 75 (was 103 at 55), so the geometric floor dropped to `75 +
+ * rail padding (16) + two margins (2x16)`.
+ * **But the geometric floor isn't the number used.** There's a second condition: the name shouldn't
+ * appear **before** the nav labels do, otherwise the rail would show a full identity mark with
+ * icons that have no names — a reversed order. So the number must stay above the label threshold,
+ * with margin to spare.
  */
 const LOCK_AT = 148
 
@@ -75,13 +69,13 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
   const allowed = NAV.filter((n) => !n.perm || !permissions || permissions.includes(n.perm))
 
   const [w, setW] = useState(readWidth)
-  /* العرض المحفوظ قبل القفل الغصب · `null` يعني مش مقفول غصبًا */
+  /* The width saved before a forced collapse — `null` means it isn't forced closed. */
   const held = useRef<number | null>(null)
   const [dragging, setDragging] = useState(false)
-  /* مرجع للحالة وقت بداية السحب · الستيت جوّه المستمع بيبقى قديمًا */
+  /* A ref for the state at drag start — the state inside the listener would go stale. */
   const drag = useRef<{ x: number; w: number; moved: boolean } | null>(null)
   const open = w >= LABEL_AT
-  /** القفل الكامل له عتبته: الاسم محتاج عرضًا أكبر من التسمية */
+  /** The full lockup has its own threshold: the name needs more width than a label does. */
   const wide = w >= LOCK_AT
 
   useEffect(() => {
@@ -98,16 +92,16 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
   }, [shut])
 
   useEffect(() => {
-    /* وهو مقفول غصبًا، القيمة دي مش اختيار المستخدم · ما تتحفظش */
+    /* While forced closed, this value isn't the user's choice — it isn't saved. */
     if (held.current !== null) return
     try {
       localStorage.setItem(RAIL_KEY, String(w))
     } catch {
-      /* التخزين ممكن يكون مقفول · العرض يفضل للجلسة دي */
+      /* Storage may be blocked — the width then only lasts for this session. */
     }
   }, [w])
 
-  /* RTL: الشريط على اليمين، فالسحب لليسار بيكبّره */
+  /* RTL: the rail sits on the right, so dragging left widens it. */
   const onMove = useCallback((e: PointerEvent) => {
     const d = drag.current
     if (!d) return
@@ -121,7 +115,7 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
     drag.current = null
     setDragging(false)
     window.removeEventListener('pointermove', onMove)
-    /* ضغطة بلا سحب = قلب الحالة. اللي بيدوّر على زرار لقى زرار. */
+    /* A click with no drag toggles the state — anyone looking for a button finds one. */
     if (d && !d.moved) setW((v) => (v >= LABEL_AT ? SHUT : OPEN))
   }, [onMove])
 
@@ -135,11 +129,10 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
     }
   }, [dragging, onMove, onUp])
 
-  /* ══ تلميح البند · «skip delay» (٢٣ سبتمبر) ══
-     أول تلميح بيستنّى ٥٠٠ms (في الـCSS) عشان المرور العابر على الريل
-     ما يفتحش سلسلة تلميحات. أول ما يظهر، الريل بياخد `data-tipwarm`
-     فاللي بعده بيظهر فورًا، ولـ٣٠٠ms بعد ما الماوس يطلع · نفس سلوك
-     Radix Tooltip.Provider وLinear. */
+  /* Item tooltip — a "skip delay" pattern. The first tooltip waits before showing, so passing
+     quickly across the rail doesn't open a chain of tooltips. Once one appears, the rail enters a
+     "warm" state so the next one shows immediately, and for a short window after the mouse leaves —
+     the same behavior common tooltip libraries use. */
   const warmT = useRef<number | undefined>(undefined)
   const coolT = useRef<number | undefined>(undefined)
   const [warm, setWarm] = useState(false)
@@ -173,24 +166,20 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
       onPointerOver={tipOver}
       onPointerLeave={tipLeave}
     >
-      {/* **رسمان، لا رسم بيتشال منه حاجة**: العلامة وحدها، والقفل
-          الكامل (علامة + اسم مخطوط + السطر اللاتيني) · الاتنين ملفّا
-          المؤسسة زي ما باعتتهم.
+      {/* **Two drawings, not one drawing with something removed**: the mark alone, and the full
+          lockup (mark plus wordmark and Latin line) — both kept exactly as supplied.
 
-          الاتنين فوق بعض في نفس الصندوق: القفل عرضه بيروح لصفر
-          و`overflow:hidden` بيقصّه من ناحية الاسم، والعلامة بتظهر
-          مكانها · فالعين بتقرا **الاسم بيتداخل جوّه العلامة** لا
-          صورة بتتبدّل بصورة. والشجرة في الرسمين بنفس المقاس
-          بالظبط، فما بتتحرّكش.
+          They're layered on top of each other in the same box: the lockup's width collapses to zero
+          and `overflow:hidden` clips it from the name's side, while the mark shows in its place —
+          so the eye reads it as **the name folding into the mark**, not one image swapping for
+          another. The icon tree is the exact same size in both drawings, so it never shifts.
 
-          والقفل ما بيظهرش إلا لمّا الشريط يوسع كفاية له (`LOCK_AT`)
-          · تحت كده الاسم بيتقصّ أو يبقى غير مقروء، والعلامة وحدها
-          أصدق. */}
+          And the lockup only appears once the rail widens enough for it (`LOCK_AT`) — below that
+          the name would get clipped or become unreadable, and the mark alone is truer. */}
       <div className="raillock">
-        {/* ⚠️ **العلامة بتودّي لـ«اسأل أبانمي» · ٢٢ سبتمبر.** دي
-            العادة على الويب: اللوجو بيرجّع للبداية · وبداية السيستم ده
-            المساعد لا «اليوم» (`AFTER_LOGIN`). فالضغط عليه بيفتح
-            المساعد العام من أي شاشة، زي ما بيفتح بعد الدخول. */}
+        {/* ⚠️ **The mark leads to "Ask Abanumay."** This is the web convention: a logo goes back to
+            the start — and the start of this system is the assistant, not "Today". So clicking it
+            opens the general assistant from any screen, the same as after login. */}
         <NavLink
           to={ROUTES.assistant}
           className="raillock-b"
@@ -201,11 +190,11 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
           <span className="lock-mark" aria-hidden={wide}><Logo /></span>
         </NavLink>
 
-        {/* زرار الطيّ · بيبان بس والقايمة مفتوحة.
-            المقبض على الحافة لسّه شغّال وهو اللي بيفرد بالسحب، بس
-            المقبض ما بيبانش غير عند الاقتراب منه · فاللي فتح
-            القايمة بالضغط ما بيلاقيش حاجة واضحة تقفلها. الزرار هنا
-            في الصفّ قصاد الهوية، وده مكانه المتوقَّع. */}
+        {/* Collapse button — shows only while the rail is expanded.
+            The edge handle still works and is what expands it by dragging, but the handle itself is
+            only visible on hover — so anyone who opened the rail by clicking finds no clear way to
+            close it. The button sits here, in the row facing the identity mark, which is where it's
+            expected. */}
         <button
           type="button"
           className="railshut"
@@ -223,21 +212,23 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
             key={item.key}
             to={item.to}
             end={item.to === '/'}
-            /* التجميع كان بيتعلّم بهامش على أول بند في كل مجموعة
-               (`.newgroup`). يعني إيقاعان في قايمة من ستّة بنود،
-               وفاصل قبل بند واحد في الآخر بيتقري «ده منفصل» لا
-               «هنا مجموعة». اتشال، والمسافة بقت واحدة. */
+            /* Grouping used to be marked with a margin on each group's first item. That's two
+               competing rhythms in a list of a few items, and a gap before just one item at the end
+               reads as "this is separate" rather than "here's a group." Removed — the spacing is
+               now uniform. */
             className={({ isActive }) =>
               `railitem${isActive ? ' on' : ''}${item.mob ? '' : ' nomob'}`
             }
           >
             {({ isActive }) => (
               <>
-                {/* النشِط أيقونته مملوءة · خطّ = عادي، ملء = هنا (DDR-013) */}
+                {/* The active item has a filled icon — outline is the default state, fill marks
+                    "here." */}
                 <Icon name={icons[item.icon as IconName]} active={isActive} />
                 <span className="rail-l">{item.label}</span>
-                {/* التلميح عنصر مستقل لا `title`: تلميح المتصفح بيتأخّر
-                    ثانية كاملة، والشريط المطويّ محتاج الاسم فورًا */}
+                {/* The tooltip is its own element, not the native `title` attribute: the browser's
+                    own tooltip delays a full second, and the collapsed rail needs the name
+                    immediately. */}
                 <span className="rail-tip">{item.label}</span>
               </>
             )}
@@ -245,13 +236,16 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
         )
       })}
 
-      {/* «اسأل أبانمي» اتنقل لرصيف القرار أسفل الشاشة · مش بند تنقّل،
-          وقربه من مكان القرار هو اللي بيخلّيه يتستخدم. */}
+      {/* "Ask Abanumay" moved to the decision dock at the bottom of the screen — it's not a nav
+          item, and being close to the point of decision is what gets it used. */}
       <div className="railfoot">
-        <AccountMenu user={user} onSignOut={onSignOut} />
+        {/* The bell sits above the account on desktop; on mobile it moves to the top header, and the
+            account becomes the last slot of the bottom bar, listing the modules that don't fit. */}
+        <NotificationBell user={user} />
+        <AccountMenu user={user} onSignOut={onSignOut} modules={allowed.filter((n) => !n.mob)} />
       </div>
 
-      {/* مقبض العرض · خط على الحافة يظهر عند الاقتراب */}
+      {/* Width handle — a line on the edge that appears on hover. */}
       <div
         className="railgrip"
         onPointerDown={grab}

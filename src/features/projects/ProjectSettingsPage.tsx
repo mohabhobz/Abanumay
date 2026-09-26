@@ -5,28 +5,23 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { pct as sayPct } from '@/lib/format'
+import { NOUN, nounAfter, pct as sayPct, unitAfter } from '@/lib/format'
 import {
   APPROVAL_MATRIX, MONEY_LIMITS, approverFor, projectsUnder,
 } from '@/data/mock/settings'
 
-/* ═══════════════════════════════════════════════════════════
-   إعدادات المشاريع والصرف · د-2
+/* These are business rules, not master data. The difference: the number here changes the
+   behavior of an action, not the content of a list — changing a reviewer's cap moves
+   projects from one table to another immediately.
 
-   ⚠️ **دي قواعد عمل لا ماستر داتا.** الفرق إن الرقم هنا بيغيّر
-   **سلوك** إجراء لا محتوى قايمة: تغيير سقف مشرف المنح بيحوّل
-   مشاريع من طاولة لطاولة تانية فورًا.
+   All these numbers are defaults. The disbursement action says periods and caps come
+   "from settings" without giving a single concrete value, like the empty "target value"
+   in the metrics. So the screen marks them as defaults rather than showing them as
+   agreed, and anyone reading knows they still need confirming.
 
-   ⚠️ **وكل الأرقام دي افتراضات.** إجراء الصرف بيقول إن المدد
-   والسقوف «من الإعدادات» من غير ما يدّي قيمة واحدة · زي «القيمة
-   المستهدفة» الفاضية في المؤشرات. فالشاشة بتوسمها **افتراضًا**
-   بدل ما تعرضها كأنها متّفق عليها · واللي بيقراها بيعرف إنها
-   محتاجة تتأكد (س-1 في بريف بنية الموديول).
-
-   ⚠️ **وعمود «مشاريع تحته» مش زينة.** هو اللي بيكشف سقفًا غلط:
-   لو مجلس الإدارة طلع تحته نص المشاريع، يبقى السقف اللي تحته
-   واطي · والرقم بيقول كده من غير ما حد يحسب.
-   ═══════════════════════════════════════════════════════════ */
+   The "projects under it" column isn't decorative. It's what reveals a wrong cap: if
+   half the projects end up under one reviewer, the cap they're under is too low —
+   and the number says so without anyone having to calculate it. */
 
 const KEYS = ['tab'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -36,7 +31,10 @@ const TABS = [
   { slug: 'limits', label: 'الحدود المالية والزمنية' },
 ] as const
 
-/** مبلغ بيتجرَّب على المصفوفة · بيخلّي القاعدة تتقري بدل ما تتشرح */
+/**
+ * Amount is tested against the matrix, so the rule reads for itself instead of needing an
+ * explanation.
+ */
 const TRY = 750_000
 
 export default function ProjectSettingsPage() {
@@ -62,16 +60,16 @@ export default function ProjectSettingsPage() {
                 وكلها تغيّر سلوك الإجراء لا محتوى قائمة
               </p>
             </div>
-            <Tag tone="warn">قيم افتراضية</Tag>
+            <Tag tone="mute">قيم افتراضية</Tag>
           </header>
 
           <Tabs items={TABS} active={tab} onChange={(x) => set({ tab: x === TABS[0].slug ? undefined : x })} />
 
           {tab === 'approval' ? (
             <>
-              {/* ⚠️ القاعدة بتتقري بالتجربة لا بالشرح · المشرف
-                  بيكتب مبلغًا وبيشوف مين هيعتمده، بدل ما يقرا
-                  أربع صفوف ويحسبها في دماغه */}
+              {/* The rule is understood by trying it, not by explanation: the reviewer enters an
+                  amount and sees who will approve it, instead of reading four rows and computing
+                  it mentally. */}
               <Glass>
                 <Head
                   title="جرّب المبلغ"
@@ -115,7 +113,7 @@ export default function ProjectSettingsPage() {
                         </span>
                         <span className="pc-sp" />
                         {on && <Tag tone="mute">يعتمد المبلغ المجرَّب</Tag>}
-                        <Tag tone="mute"><Num>{projectsUnder(r)}</Num> مشروعًا تحته</Tag>
+                        <Tag tone="mute"><Num>{projectsUnder(r)}</Num> {nounAfter(projectsUnder(r), NOUN.project)} تحته</Tag>
                       </li>
                     )
                   })}
@@ -132,8 +130,8 @@ export default function ProjectSettingsPage() {
                 title="الحدود"
                 meta={<span className="sub"><Num>{MONEY_LIMITS.length}</Num> حدود</span>}
               />
-              {/* ⚠️ الوحدة في الاسم لا في الرقم · الرقم بيفضل رقمًا
-                  عشان يتفرز ويتحسب، والوحدة بتتقال جنبه */}
+              {/* The unit belongs in the label, not the number: the value stays numeric so it can
+                  be sorted and computed, and the unit is shown alongside it. */}
               <ul className="cfglist">
                 {MONEY_LIMITS.map((l) => (
                   <li key={l.key}>
@@ -141,12 +139,17 @@ export default function ProjectSettingsPage() {
                     <span className="sub trim1">{l.where}</span>
                     <span className="pc-sp" />
                     {l.assumed && <Tag tone="warn">افتراضي</Tag>}
-                    <span className="num">
+                    {/* The wrapper used to be `span.num` (ltr) around all of "15 day", which
+                        wrapped the
+                        word to the left of the number. The LTR island now covers only the number,
+                        and
+                        the unit is pluralized on its own ("15 days"). */}
+                    <span>
                       {l.unit === 'ريال'
                         ? <Money>{l.value}</Money>
                         : l.unit === '%'
                           ? <span className="num">{sayPct(l.value)}</span>
-                          : <><Num>{l.value}</Num> {l.unit}</>}
+                          : <><Num>{l.value}</Num> {unitAfter(l.value, l.unit)}</>}
                     </span>
                   </li>
                 ))}

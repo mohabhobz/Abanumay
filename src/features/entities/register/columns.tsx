@@ -7,17 +7,15 @@ import {
 } from '@/data/mock/registration'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
-/* ═══════════════════════════════════════════════════════════
-   أعمدة صندوق طلبات التسجيل · نفس عقد باقي الجداول.
+/* Registration request inbox columns - same contract as the other tables.
 
-   عمود «الملف» هنا **تحقّق لا معلومة**: بيقول المرفوع من المطلوب،
-   والمطلوب نفسه بيتغيّر بتصنيف الجهة (تلات مستندات إلزامية للجهات
-   التجارية وحدها). فـ«3 من 5» في صفّ و«3 من 2» مستحيلة في صفّ
-   تاني — الرقم التاني مش ثابت.
+   The "file" column here is a check, not information: it states uploaded against required, and
+   required itself changes by entity category (three documents are mandatory for commercial entities
+   only). So "3 of 5" in one row and "3 of 2" in another are both valid - the second number isn't
+   fixed.
 
-   وعمود «درجة الحوكمة» موسوم **إقرار** لا تقييم · الجهة هي اللي
-   كتبته في `/reg/add` (نوتة ن-2 في البريف).
-   ═══════════════════════════════════════════════════════════ */
+   The "governance score" column is tagged declaration, not assessment - the entity wrote it
+   themselves in `/reg/add`. */
 
 export type Col = TCol<RegRequest>
 
@@ -90,9 +88,9 @@ export const COLS: Col[] = [
       )
     },
     text: (r) => `${needCount(r) - regMissingDocs(r).length}/${needCount(r)}`,
-    /* ⚠️ **الخلية بتعدّ المكتمل والإجمالي بيعدّ الناقص** · فلازم
-       يقول كده. من غير الكلمة كان بيطلع رقم أسود عريان (5) تحت
-       عمود خلاياه «١ من ٢»، والقارئ ما يقدرش يوصله بحاجة. */
+    /* Note: the cell counts what's complete, and the total counts what's missing - so it has to say
+       so. Without the word, it rendered as a bare black number (5) under a column whose other cells
+       read "1 of 2", with nothing for the reader to connect it to. */
     value: (r) => regMissingDocs(r).length,
     agg: 'sum',
     aggSay: 'مستندًا ناقصًا',
@@ -107,7 +105,7 @@ export const COLS: Col[] = [
         ? <span className="num">{r.governanceClaim}</span>
         : <span className="sub">لم تُقيَّم</span>,
     text: (r) => (r.governanceClaim > 0 ? String(r.governanceClaim) : 'لم تُقيَّم'),
-    /* «لم تُقيَّم» تتشال من الحسبة · صفر بيقول «درجتها صفر» */
+    /* "Not yet assessed" is excluded from the calculation - a zero would say "scored zero". */
     value: (r) => (r.governanceClaim > 0 ? r.governanceClaim : null),
     agg: 'avg',
     aggSay: 'متوسط المُقيَّم',
@@ -151,8 +149,8 @@ export const COLS: Col[] = [
         ? <span className="num">{r.reviewDays}</span>
         : <span className="sub">لم تُغلق</span>,
     text: (r) => (r.reviewDays ? String(r.reviewDays) : 'لم تُغلق'),
-    /* ⚠️ `null` لا `0` · «لم تُغلق» مش مدّة صفر، هي غياب مدّة.
-       كانت `?? 0` فالمتوسّط بيقسم على طلبات لسه مفتوحة. */
+    /* Note: `null`, not `0` - "not yet closed" isn't a zero duration, it's the absence of one. It
+       used to be `?? 0`, so the average was dividing by requests that were still open. */
     value: (r) => r.reviewDays ?? null,
     agg: 'avg',
     aggSay: 'يومًا في المتوسط للمغلَق',
@@ -168,8 +166,8 @@ export const COLS: Col[] = [
     key: 'entityId',
     w: 128,
     label: 'الجهة المُنشأة',
-    /* قاعدة 2 · الجهة مالهاش وجود قبل الاعتماد، فالخانة فاضية عن
-       قصد في كل حالة غير «معتمد» */
+    /* Rule 2 - the entity doesn't exist before approval, so this cell is deliberately empty in
+       every status except "approved". */
     cell: (r) =>
       r.entityId
         ? <Link to={ROUTES.entity(r.entityId)} className="tlink"><Mono>{r.entityId}</Mono></Link>

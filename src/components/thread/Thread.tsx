@@ -3,60 +3,54 @@ import { DateText, Icon, icons } from '@/components/ui'
 import { Composer } from '@/components/assistant'
 import type { ThreadMessage } from '@/data/mock/detail'
 
-/* ═══════════════════════════════════════════════════════════
-   المراسلة · **مكتوبة مرة واحدة**.
-
-   ⚠️ الثريد كان مرسومًا جوّه تاب المراسلات في صفحة المشروع، ولمّا
-   بوّابة الجهة احتاجت نفس الشيء كان أسهل حاجة إني أنسخه · وده
-   اللي بيخلّي حاجتين بيقولوا نفس المعنى بشكلين بعد شهر.
-
-   والقناة دي في النظام العامل **شبه ميتة**: صفر رسائل في ٣٨
-   مشروعًا فحصناه، والثريد الوحيد اللي لقيناه كان كله عن سند قبض
-   اتعطّل. يعني هي مش قناة تواصل عام · بتتفتح **لما إجراء يقف على
-   طرف**. فالكومبوننت بيقول ده صراحةً لمّا يفضى بدل ما يوري صندوق
-   شات فاضي.
-
-   ⚠️ **والجهة بتشوف نفسها على اليمين.** `me` بيقول مين الفاتح،
-   فرسايله بتتعلّم `mine` · من غيره الجهة بتقرا رسايلها كإنها
-   جاية من المؤسسة.
-   ═══════════════════════════════════════════════════════════ */
+/* Correspondence — **written once**.
+   ⚠️ The thread used to be drawn inside the correspondence tab on the project page, and when the
+   entity gate needed the same thing, the easiest path was to copy it — which is how two places end
+   up saying the same thing in two different shapes a month later.
+   This channel is **nearly dormant** in the legacy system: zero messages across the projects
+   checked, and the one thread found was entirely about a failed receipt voucher. So it isn't a
+   general communication channel — it opens **when a process gets stuck on one side**. The component
+   states this outright when empty instead of showing a blank chat box.
+   ⚠️ **And the entity sees itself on its own side.** A flag states who has the screen open, so
+   their own messages get marked as such — without it the entity would read its own messages as
+   coming from the foundation. */
 
 export interface ThreadProps {
   messages: ThreadMessage[]
-  /** اسم الجهة · بيتكتب فوق رسايلها */
+  /** The entity's name — written above its messages. */
   entityName: string
-  /** مين اللي فاتح الشاشة · بيحدّد ناحية الرسالة */
+  /** Who has the screen open — determines which side a message lands on. */
   me: 'staff' | 'entity'
-  /** سبب فتح القناة · بيتقال فوق الثريد */
+  /** Why the channel was opened — stated above the thread. */
   why?: string
-  /** النصّ البديل في خانة الكتابة */
+  /** Placeholder text in the input field. */
   placeholder: string
-  /** نصّ الفراغ · بيتغيّر حسب الشاشة */
+  /** Empty-state text — changes depending on the screen. */
   emptyTitle: string
   emptyNote: string
 }
 
 /**
- * القناة وهي فاضية.
- *
- * ⚠️ **نفس بوستر مساعد أبانمي المقفول** (`.aishut-c`): شارة في
- * النص، وعنوان، وسطر بيقول إمتى القناة بتتفتح. الفراغ في السيستم
- * ده **حالة مصمَّمة** لا سطر رمادي · والقناة دي فاضية في أغلب
- * الوقت فعلًا (صفر رسائل في ٣٨ مشروعًا)، يعني ده **المنظر
- * الأساسي** لها لا الاستثناء.
- *
- * ⚠️ **وبلا زرار.** بوستر المساعد زرّاره بيشغّل التحليل فعلًا ·
- * وهنا مفيش حاجة يعملها غير إنه يوجّه لخانة الكتابة اللي تحته
- * على طول. **زرار بيعمل حاجة الخانة بتعملها بنفسها = زرار ما
- * بيعملش حاجة**، والعميل شافه.
+ * The channel while empty.
+ * ⚠️ **The same closed-state pattern as the assistant**: a badge, a title, and a line stating when
+ * the channel opens. Empty, in this system, is **a designed state**, not a gray line — and this
+ * channel is in fact empty most of the time (zero messages across the sample checked), so this is
+ * its **default view**, not the exception.
+ * ⚠️ **And no button.** The assistant's closed-state button actually runs an analysis; here there's
+ * nothing to do but point at the input field right below it. **A button that does what the field
+ * already does on its own is a button that does nothing**, which is why it was removed.
  */
+/* ⚠️ **Empty is a system message at the start of the conversation, not a banner in the middle.** It
+   used to be centered with a large icon and the input field floating below it, mid-page, so the
+   card read as a blank page rather than a conversation. Now it sits where the first message would,
+   at the start of the line. */
 function Blank({ title, note }: { title: string; note: string }) {
   return (
-    <div className="thread-blank">
-      <div className="aishut-c">
-        <span className="badge badge-44"><Icon name={icons.chat} size="md" /></span>
-        <h2 className="aishut-t">{title}</h2>
-        <p className="aishut-p">{note}</p>
+    <div className="chat-empty">
+      <Icon name={icons.chat} size="md" />
+      <div>
+        <b>{title}</b>
+        <p className="sub">{note}</p>
       </div>
     </div>
   )
@@ -68,7 +62,8 @@ export function Thread({
   const [draft, setDraft] = useState('')
 
   return (
-    <>
+    <div className="chat">
+      <div className="chat-log">
       {messages.length > 0 ? (
         <>
           {why && (
@@ -80,10 +75,10 @@ export function Thread({
           <div className="thread">
             {messages.map((m, i) => (
               <div className={`msg ${m.from}${m.from === me ? ' mine' : ''}`} key={`${m.at}-${i}`}>
-                {/* ⚠️ **الوقت تحت الاسم لا في آخر الصفّ.** كان
-                    متعلّقًا على الطرف التاني من الفقاعة بـ`pc-sp`،
-                    فالعين بتقرا اسمًا هنا وتاريخًا هناك ومحتاجة
-                    ترجع · وهو تابع للاسم أصلًا. */}
+                {/* ⚠️ **Time sits under the name, not at the end of the row.** It used to be
+                    anchored to the opposite side of the bubble with a gap between them, so the eye
+                    read a name here and a date there and had to travel back — when the time
+                    actually belongs to the name. */}
                 <div className="msg-h">
                   <span className="msg-by">{m.from === 'entity' ? entityName : m.by}</span>
                   <span className="msg-role">{m.from === 'entity' ? 'الجهة' : 'المؤسسة'}</span>
@@ -97,13 +92,13 @@ export function Thread({
       ) : (
         <Blank title={emptyTitle} note={emptyNote} />
       )}
+      </div>
 
-      {/* ⚠️ **خانة الكتابة هي `Composer` بتاعة السيستم** · كانت
-          مرسومة هنا بإيدي (`.ask free`): سطر واحد والزرارين على
-          الطرف التاني بفراغ نص الكارت بينهم · وده مش شكل الكتابة
-          في السيستم ولا اتجاهه. الشكل الواحد: مساحة بتكبر مع
-          النصّ والأزرار في صفّ تحتها · وزرار الإرسال بيفضل مقفولًا
-          لحدّ ما تكتب، فما بيوعدش بحاجة ما بتحصلش. */}
+      {/* ⚠️ **The input field is the system's own composer** — it used to be drawn here by hand:
+          one line with the two buttons on the opposite side, with a gap the width of the card
+          between them, which isn't the system's writing pattern or direction. The one shape: a box
+          that grows with the text, buttons in a row underneath, and the send button stays disabled
+          until there's text, so it never promises something that doesn't happen. */}
       <Composer
         value={draft}
         onChange={setDraft}
@@ -112,6 +107,6 @@ export function Thread({
         busy={false}
         placeholder={placeholder}
       />
-    </>
+    </div>
   )
 }

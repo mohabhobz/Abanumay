@@ -4,25 +4,23 @@ import { BackTo, Empty, FieldSelect, Glass, Head, Num, Tag } from '@/components/
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { nf, MISSING_ITEM, nounAfter } from '@/lib/format'
+import { nf, MISSING_ITEM, nounAfter, pct, unitAfter } from '@/lib/format'
 import { canStartEval, closeById, evalApproved, evalBlockers } from '@/data/mock/closing'
 
-/* ═══════════════════════════════════════════════════════════
-   محرّر تقييم المشروع · **مشرف المنح بيكتبه لا الجهة**
+/* Project evaluation editor - written by the grants supervisor, not the entity.
 
-   ⚠️ **ودي مش تفصيلة أدوار.** التقرير الختامي إقرار من المنفِّذ،
-   والتقييم **حكم من المموِّل** · فاللي بيقرا الاتنين لازم يعرف
-   مين قال إيه. ولذلك الصفحة دي بعين المؤسسة وحدها.
+   Note: this isn't a matter of roles alone. The final report is an assertion from the implementer,
+   and the evaluation is a judgment from the funder - so whoever reads both needs to know who said
+   what. That's why this page is institution-only.
 
-   ⚠️ **وما بتتفتحش قبل اعتماد المدير التنفيذي** · قاعدة 6 ·
-   والشاشة بتقول السبب لا بتقول «غير متاح».
+   Note: it doesn't open before executive-director approval - rule 6 - and the screen states the
+   reason rather than saying "unavailable".
 
-   ⚠️ **والمؤشرات مستهدفها جنبها** · نفس مبدأ محرّر التقرير:
-   الرقم اللي مالوش مرجع بيتكتب بلا وعي.
+   Note: indicators show their target next to them - same principle as the report editor: a number
+   with no reference gets written carelessly.
 
-   ⚠️ **والتقدير استرشادي** · قاعدة 13 · فالحقل مكتوب جنبه إنه
-   دعم للقرار لا قرار.
-   ═══════════════════════════════════════════════════════════ */
+   Note: the score is advisory - rule 13 - so the field states next to it that it supports a
+   decision, not that it is one. */
 
 const SCORES = [
   { value: '1', label: '1 · لم يحقق أهدافه' },
@@ -67,8 +65,8 @@ export default function EvalEditPage() {
     )
   }
 
-  /* ⚠️ **الغياب بيتقال مع سببه** · «غير متاح» بيخلّي المشرف يدوّر
-     على صلاحية ناقصة، والسبب الحقيقي قاعدة في الوثيقة. */
+  /* Note: absence is stated with its reason - "unavailable" makes the supervisor go looking for a
+     missing permission, when the real reason is a rule in the spec. */
   if (!c.evaluation) {
     return (
       <AppLayout assistantContext={assistFor.page(`تقييم ${c.projectName}`)}>
@@ -115,11 +113,13 @@ export default function EvalEditPage() {
                     مستقلّة بسجلّ منفصل (القاعدة <span className="num">17</span>)</>}
               </p>
             </div>
+            {/* Status as text, not a colored tag - the page header isn't a card's status field.
+                Counted the same way as "not blocking". */}
             {closed
-              ? <Tag tone="ok">معتمَد</Tag>
-              : missing.length > 0
-                ? <Tag tone="no"><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
-                : <Tag tone="ok">جاهز للإرسال</Tag>}
+              ? <Tag tone="mute">معتمَد</Tag>
+              : <span className="sub">{missing.length > 0
+                ? <>قبل الإرسال: <Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</>
+                : 'جاهز للإرسال'}</span>}
           </header>
 
           <Glass>
@@ -127,9 +127,9 @@ export default function EvalEditPage() {
               title="مؤشرات الأداء"
               meta={<span className="sub"><Num>{ev.indicators.length}</Num> مؤشرات</span>}
             />
-            {/* ⚠️ **س-17 مفتوح**: المؤشرات دي قايمة ثابتة للمؤسسة ولا
-                لكل مشروع مؤشراته من خطته؟ الوثيقة ما بتقولش · واللي
-                هنا مأخوذ من مستهدفات المشروع لحدّ ما العميل يحسمها. */}
+            {/* Note: open question - are these indicators a fixed list for the institution, or does
+                each project have its own from its plan? The spec doesn't say. What's here is drawn
+                from the project's targets until the client decides. */}
             <p className="sub cnote">
               المستهدف بجانب كل مؤشر · والمتحقّق الذي يُكتب هنا هو ما تُبنى عليه
               المقارنة. وهذه المؤشرات مأخوذة من مستهدفات المشروع إلى أن تحدّد
@@ -157,7 +157,7 @@ export default function EvalEditPage() {
                     />
                   </span>
                   <span className="sub regf-h">
-                    المستهدف <span className="num">{nf.format(i.target)}</span> {i.unit}
+                    المستهدف <span className="num">{i.unit === '%' ? pct(i.target) : nf.format(i.target)}</span>{i.unit !== '%' && <> {unitAfter(i.target, i.unit)}</>}
                   </span>
                 </label>
               ))}
@@ -186,9 +186,9 @@ export default function EvalEditPage() {
               </span>
             </label>
 
-            {/* ⚠️ **الدروس المستفادة مدخل لمشاريع بعده لا خانة
-                ختامية.** دي أكتر حاجة بتتكتب صوريًّا في التقارير ·
-                والسطر تحتها بيقول فين بتروح. */}
+            {/* Note: lessons learned feed into later projects, not a closing checkbox. This is the
+                field most often filled in as a formality in reports, and the line beneath it states
+                where it actually goes. */}
             <label className="regf">
               <span className="lb">
                 الدروس المستفادة<b className="regf-r" aria-label="إلزامي">*</b>

@@ -9,27 +9,24 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { openPlan, planOfProject } from '@/data/mock/plans'
 import { projectById, projectRows } from '@/data/mock/projects'
+import { NOUN, nounAfter } from '@/lib/format'
 
-/* ═══════════════════════════════════════════════════════════
-   فتح خطة لمشروع · BPD-012
+/* Open a plan for a project.
 
-   ⚠️ **الشاشة دي مش «إنشاء خطة»، هي «فتح خطة».** الفرق مش تسمية:
-   اللي بيحصل هنا إن المؤسسة بتقرّر إن المشروع ده **يتطلب خطة
-   عمل** (الوثيقة: «في حالة المشاريع التي تتطلب خطة عمل»)، وبتفتح
-   الملف وتحيله لكاتب المسودة. المراحل والأنشطة بتتكتب في المحرّر
-   بعد كده، لا هنا · فلو حطّينا الحقول هنا بقت الشاشة نموذجًا طويلًا
-   بيخلط قرارًا بتعبئة.
+   Note: this screen isn't "create a plan", it's "open a plan". The difference isn't naming: what
+   happens here is the institution deciding this project requires a work plan (per the spec: "in the
+   case of projects requiring a work plan"), and opening the file, assigning it to a drafter. Phases
+   and activities get written in the editor afterward, not here - putting those fields here would
+   turn the screen into a long form mixing a decision with data entry.
 
-   ⚠️ **وكاتب المسودة قرار موثَّق لا إعداد.** الوثيقة بتقول إن
-   **الجهة** هي اللي بتعمل المسودة · والمشرف بيقدر يكتب بالنيابة
-   لمّا الجهة ما تقدرش، والفرق بيفضل مكتوبًا في عمود «كاتب المسودة»
-   وفي كارت الخطة. «الجهة كتبتها» و«اتكتبت عنها» مش نفس الحاجة في
-   مراجعة.
+   Note: the drafter is a documented decision, not a setting. The spec states the entity is the one
+   who prepares the plan - the supervisor can draft on their behalf when the entity can't, and that
+   difference stays recorded in the "drafted by" column and on the plan card. "The entity wrote it"
+   and "it was written on their behalf" aren't the same thing in review.
 
-   ⚠️ **ومفيش مشروع مرّتين.** الخطة واحدة للمشروع · فالمشروع اللي
-   ليه خطة بيختفي من القايمة، واللي جاي من تاب المشروع بخطة موجودة
-   بيتودّي لها بدل ما يفتح تانية.
-   ═══════════════════════════════════════════════════════════ */
+   Note: no project appears twice. A project has one plan, so a project that already has one
+   disappears from the list, and arriving from that project's tab with an existing plan links to it
+   instead of opening a new one. */
 
 const KEYS = ['project', 'by'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -39,8 +36,8 @@ export default function PlanNewPage() {
   const { values: v, set } = useQueryParams<Params>(KEYS)
   const [done, setDone] = useState<string | null>(null)
 
-  /* ⚠️ المشاريع اللي **اتعتمدت ولها منحة** بس · الخطة بتتقاس على
-     منحة معتمدة القيمة، ومشروع لسه في الدراسة مالوش رقم يتقسم */
+  /* Note: only projects that are approved and have a grant. A plan is measured against an approved
+     grant amount, and a project still under review has no number to divide. */
   const options = useMemo(
     () => projectRows
       .filter((p) => p.amountGranted > 0 && !planOfProject(p.id))
@@ -52,7 +49,7 @@ export default function PlanNewPage() {
   const has = v.project ? planOfProject(v.project) : undefined
   const by = v.by === 'supervisor' ? 'supervisor' : 'entity'
 
-  /* المشروع اللي ليه خطة بالفعل · بنودّي لها لا بنفتح تانية */
+  /* A project that already has a plan - links to it instead of opening another. */
   if (has) {
     return (
       <AppLayout assistantContext={assistFor.page('فتح خطة')}>
@@ -95,7 +92,7 @@ export default function PlanNewPage() {
           <Glass>
             <Head
               title="المشروع"
-              meta={<span className="sub"><Num>{options.length}</Num> مشروعًا بلا خطة</span>}
+              meta={<span className="sub"><Num>{options.length}</Num> {nounAfter(options.length, NOUN.project)} بلا خطة</span>}
             />
 
             {options.length === 0 ? (
@@ -105,10 +102,10 @@ export default function PlanNewPage() {
               />
             ) : (
               <>
-                {/* ⚠️ **مفيش `regf-w` هنا** · القاعدة مكتوبة فوق `.regfields`
-                    في الـCSS: طول الحقل بيوحي بطول المدخل، وحقل بعرض
-                    الشاشة لاختيار من اتنين بيغلط. والعميل مسك نفس الغلط
-                    في فلتر «المنطقة» يوم ١٧ سبتمبر · فالحقلين هنا عمودين */}
+                {/* Note: no `regf-w` here - documented above `.regfields` in the CSS: field width
+                    should suggest input length, and a field spanning the full screen for a choice
+                    between two options reads as a mistake. The client caught the same issue in the
+                    region filter - so both fields here are single columns. */}
                 <div className="regfields">
                   <label className="regf">
                     <span className="lb">
@@ -126,9 +123,9 @@ export default function PlanNewPage() {
                     </span>
                   </label>
 
-                  {/* ⚠️ الاختيار ده **بيتسجّل** ومش بيتغيّر بعد كده ·
-                      عمود «كاتب المسودة» في الصندوق بيعرضه، والمراجع
-                      بيقرا اللي كتبته الجهة بعين غير اللي اتكتب عنها */}
+                  {/* Note: this choice is recorded and can't change afterward - the "drafted by"
+                      column in the inbox shows it, and the reviewer reads what the entity wrote
+                      with a different eye than what was written on their behalf. */}
                   <label className="regf">
                     <span className="lb">كاتب المسودة</span>
                     <FieldSelect
@@ -147,9 +144,10 @@ export default function PlanNewPage() {
                   </label>
                 </div>
 
-                {/* ⚠️ الكتلة دي **بعنوانها** لا سايبة تحت الحقل · من غيره
-                    بتتقري امتدادًا لشرح الحقل اللي فوقها لا معلومة عن
-                    المشروع المختار (وده اللي كان بيحصل فعلًا) */}
+                {/* Note: this block has its own heading rather than sitting loose under the field -
+                    without it, it reads as a continuation of the field's hint text above rather
+                    than information about the selected project (which is what was actually
+                    happening). */}
                 {pr && (
                   <Head title="المشروع المختار" />
                 )}
@@ -163,8 +161,8 @@ export default function PlanNewPage() {
                   />
                 )}
 
-                {/* ⚠️ الجملة دي بتقول **اللي هيحصل بعد الضغطة** · الزرار
-                    اللي مش قايل وجهته بيخلّي المستخدم يتردّد */}
+                {/* Note: this sentence states what happens after the click - a button that doesn't
+                    say where it leads makes the user hesitate. */}
                 <p className="sub cnote">
                   يُنشئ الفتح خطة <b>مسودة</b> فارغة وينقلك إلى المحرّر، ويمكن للجهة
                   كتابتها من بوابة المنح. ولا يبدأ القياس ولا حساب الانحراف قبل أن

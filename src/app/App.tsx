@@ -47,10 +47,8 @@ import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
 
 /**
- * خريطة الشاشات.
- *
- * كل موديول له مسار حتى لو لسه ما اتبناش، عشان التنقّل يشتغل كامل
- * والفجوة تبان: الشاشة الفاضية بتقول إيه اللي هيقع فيها وبأي أرقام.
+ * Screen route map. Every module has a route even if not built yet, so navigation stays fully wired
+ * and gaps are visible — an empty screen states what belongs there.
  */
 export default function App() {
   return (
@@ -58,26 +56,24 @@ export default function App() {
       <Routes>
         <Route path={ROUTES.login} element={<LoginPage />} />
 
-        {/* ⚠️ **التسجيل برّه البوّابة عن قصد · قاعدة 2.**
-            صاحب الطلب جهة مالهاش حساب، فحطّ الشاشة ورا `RequireAuth`
-            معناه إنها ما تُفتحش إلا من واحد مسجَّل · يعني ما تُفتحش
-            من اللي هي مبنية له أصلًا. وده هو اللي كان بيخلّي زرار
-            «تسجيل جهة جديدة» في شاشة الدخول ما يعملش حاجة. */}
-        {/* ⚠️ **`account` قبل المسار الأب مش لازم هنا** (المسار
-            الأب حرفي لا `:param`)، بس الترتيب مكتوب زي إخواته عشان
-            اللي بعدنا ما يقلبهوش لمّا يزوّد `/entities/register/:id`. */}
+        {/* Registration lives outside the auth gate on purpose: the requester has no account, so
+            placing this screen behind `RequireAuth` would mean only a signed-in user could open it
+            — the opposite of who it's for. That's what caused the "Register new entity" button on
+            the login screen to do nothing. */}
+        {/* `account` before the parent path isn't strictly necessary here (the parent path is
+            literal, not `:param`), but the order matches its siblings so a later
+            `/entities/register/:id` addition doesn't invert it. */}
         <Route path={ROUTES.entityRegisterAccount} element={<RegisterAccountPage />} />
         <Route path={ROUTES.entityRegister} element={<RegisterPage />} />
 
-        {/* ⚠️ **البوّابة برّه الحراسة الداخلية لنفس سبب التسجيل.**
-            اللي بيفتحها جهة **مالهاش حساب في النظام** لسه · عندها
-            حساب على طلبها وبس. حطّها ورا `RequireAuth` معناه إنها
-            ما تُفتحش إلا من موظف مؤسسة، يعني ما تُفتحش من اللي هي
-            مبنية له. */}
+        {/* The gate sits outside internal auth for the same reason as registration: whoever opens
+            this screen doesn't have a system account yet, only one tied to their request. Putting
+            it behind `RequireAuth` would mean only staff could open it, not the person it's built
+            for. */}
         <Route path={ROUTES.entityPortal} element={<PortalPage />} />
 
-        {/* بوّابة واحدة على كل الشاشات الداخلية بدل تكرارها على كل
-            مسار: أي شاشة جديدة بتتحمي تلقائيًا لمجرد إنها جوّه. */}
+        {/* One gate wraps all internal screens instead of repeating it per route: any new screen is
+            protected automatically just by being inside. */}
         <Route
           element={
             <RequireAuth>
@@ -87,13 +83,13 @@ export default function App() {
         >
         <Route path={ROUTES.home} element={<HomePage />} />
 
-        {/* جرد الإعدادات · د-1 · مدخله من قايمة الحساب لا من الريل */}
+        {/* Settings inventory — entered from the account menu, not the rail. */}
         <Route path={ROUTES.settings} element={<SettingsIndexPage />} />
 
         <Route path={ROUTES.projects} element={<ProjectsListPage />} />
 
-        {/* ⚠️ `settings` **قبل** `:id` · نفس فخّ «/budget/settings»
-            و«/payments/new» · الراوتر بيطابق بالترتيب */}
+        {/* `settings` must come **before** `:id` — same trap as `/budget/settings` and
+            `/payments/new`: the router matches in order. */}
         <Route path={ROUTES.projectSettings} element={<ProjectSettingsPage />} />
         <Route path={ROUTES.projectNew} element={<ProjectNewPage />} />
         <Route path="/projects/portfolio/:id" element={<PortfolioPage />} />
@@ -101,13 +97,11 @@ export default function App() {
         <Route path={`${ROUTES.projects}/:id/:tab`} element={<ProjectPage />} />
 
         <Route path={ROUTES.entities} element={<EntitiesListPage />} />
-        {/* تسجيل جهة جديدة · BPD-002.
-            ⚠️ `register` و`requests` **قبل** `:id` · الراوتر بيطابق
-            بالترتيب، ولولا كده «/entities/register» هيتقرا كرقم جهة
-            اسمه register ويطلع «غير موجود» · نفس الفخّ اللي وقعنا
-            فيه في «/payments/new». */}
-        {/* قاعدة 32 · التسجيل المباشر داخلي فبيفضل ورا البوّابة،
-            بعكس `/entities/register` اللي للجهة اللي مالهاش حساب */}
+        {/* Register a new entity. ⚠️ `register` and `requests` must come **before** `:id` — the
+            router matches in order, otherwise `/entities/register` would be read as an entity id
+            named "register" and return "not found", the same trap as `/payments/new`. */}
+        {/* Direct registration is internal, so it stays behind the gate, unlike
+            `/entities/register`, which is for an entity with no account. */}
         <Route path={ROUTES.entityNew} element={<EntityNewPage />} />
         <Route path={ROUTES.entitySettings} element={<EntitySettingsPage />} />
         <Route path={ROUTES.entityRequests} element={<RequestsPage />} />
@@ -117,49 +111,48 @@ export default function App() {
 
         <Route path={ROUTES.budget} element={<BudgetPage />} />
 
-        {/* ⚠️ التلاتة دول **قبل** `:year` · الراوتر بيطابق بالترتيب،
-            ولولا كده «/budget/settings» هيتقرا كسنة اسمها settings
-            ويتحوّل للميزانية · نفس فخّ «/payments/new». */}
+        {/* ⚠️ These three must come **before** `:year` — the router matches in order, otherwise
+            `/budget/settings` would be read as a year named "settings" and redirect to the budget,
+            the same trap as `/payments/new`. */}
         <Route path={ROUTES.budgetSettings} element={<BudgetSettingsPage />} />
         <Route path={ROUTES.budgetNew} element={<BudgetDocPage />} />
         <Route path={`${ROUTES.budget}/doc/:id`} element={<BudgetDocPage />} />
 
         <Route path={`${ROUTES.budget}/:year`} element={<Navigate to={ROUTES.budget} replace />} />
 
-        {/* الاتفاقيات · BPD-008 · إجراء مستقل عن المشروع (قاعدة 23)،
-            وانتقاله بين مراحله ما بيغيّرش حالة المشروع (قاعدة 25) */}
+        {/* Agreements — a process independent of the project; moving it through its stages doesn't
+            change the project's status. */}
         <Route path={ROUTES.agreements} element={<AgreementsPage />} />
-        {/* ⚠️ `new` قبل `:id` · نفس فخّ «/payments/new» و«/budget/settings» */}
+        {/* ⚠️ `new` before `:id` — same trap as `/payments/new` and `/budget/settings`. */}
         <Route path="/agreements/new" element={<AgreementNewPage />} />
         <Route path={`${ROUTES.agreements}/:id`} element={<AgreementPage />} />
 
-        {/* الخطط · BPD-012 · إجراء مستقل بدورة اعتماد خاصة (ح-10)،
-            فله صندوقه زي الاتفاقيات لا تابًا في المشروع وحده */}
+        {/* Plans — an independent process with its own approval cycle, so it gets its own module,
+            like agreements, rather than being just a tab on the project. */}
         <Route path={ROUTES.plans} element={<PlansPage />} />
-        {/* الإعدادات قبل `:id` · وإلا الراوتر قرا `settings` رقم خطة
-            (نفس درس `/entities/register`) */}
+        {/* Settings before `:id`, otherwise the router reads "settings" as a plan number (same
+            lesson as `/entities/register`). */}
         <Route path={ROUTES.planSettings} element={<PlanSettingsPage />} />
-        {/* ⚠️ قبل `:id` برضو · وإلا الراوتر قرا `new` رقم خطة
-            ورجّع «لا توجد خطة بهذا الرقم» (وده اللي حصل فعلًا:
-            الزرار كان موجود والشاشة لأ · شوف `tools/routemount.mjs`) */}
+        {/* ⚠️ Also before `:id` — otherwise the router reads "new" as a plan number and returns "no
+            plan with this number" (which actually happened: the button existed, the screen didn't). */}
         <Route path="/plans/new" element={<PlanNewPage />} />
         <Route path={`${ROUTES.plans}/:id/edit`} element={<PlanEditPage />} />
         <Route path={`${ROUTES.plans}/:id`} element={<PlanPage />} />
 
-        {/* الإغلاق · BPD-011 · إجراء مستقل بدورتي اعتماد (قاعدة 17)،
-            وانتقاله بين محطاته ما بيغيّرش حالة المشروع (قاعدة 16) */}
+        {/* Closure — an independent process with two approval cycles; moving it between stages
+            doesn't change the project's status. */}
         <Route path={ROUTES.closings} element={<ClosingPage />} />
-        {/* ⚠️ الإعدادات قبل `:id` · نفس فخّ «/plans/settings» */}
+        {/* ⚠️ Settings before `:id` — same trap as `/plans/settings`. */}
         <Route path={ROUTES.closingSettings} element={<CloseSettingsPage />} />
         <Route path={`${ROUTES.closings}/:id/report`} element={<ReportEditPage />} />
         <Route path={`${ROUTES.closings}/:id/evaluation`} element={<EvalEditPage />} />
         <Route path={`${ROUTES.closings}/:id`} element={<ClosePage />} />
 
-        {/* الصرف · BPD-009 · مبني على الوثيقة، والفروق عن النظام
-            العامل مسجَّلة نوتس في `DISBURSEMENT_MODULE_BRIEF.md` */}
+        {/* Disbursement — built from the spec document, with differences from the legacy system
+            tracked separately. */}
         <Route path={ROUTES.payments} element={<PaymentsPage />} />
-        {/* ⚠️ `new` قبل `:id` · الراوتر بيطابق بالترتيب، ولولا كده
-            «/payments/new» هيتقرا كرقم طلب اسمه new ويطلع «غير موجود» */}
+        {/* ⚠️ `new` before `:id` — the router matches in order, otherwise `/payments/new` would be
+            read as a request id named "new" and return "not found". */}
         <Route path={`${ROUTES.payments}/new`} element={<RequestForm />} />
         <Route path={ROUTES.paymentsLate} element={<LatePage />} />
         <Route path={`${ROUTES.payments}/:id`} element={<RequestPage />} />
@@ -167,8 +160,8 @@ export default function App() {
         <Route path={`${ROUTES.payments}/:id/order`} element={<OrderPage />} />
 
         <Route path={ROUTES.reports} element={<ReportsPage />} />
-        {/* المفتاح هو slug الإجراء (`bpd-004`). أي مفتاح مش معروف
-            بيرجّع للفهرس من جوّه الشاشة نفسها بدل مسار حارس هنا. */}
+        {/* The key is the process slug (e.g. `bpd-004`). Any unrecognized key falls back to the
+            index from inside the screen itself rather than a guard route here. */}
         <Route path={`${ROUTES.reports}/view/:key`} element={<ReportView />} />
         <Route path={`${ROUTES.reports}/process/:key`} element={<ProcessReport />} />
         <Route path={`${ROUTES.reports}/screen/:key`} element={<LiveReport />} />
@@ -198,12 +191,12 @@ export default function App() {
 
         </Route>
 
-        {/* أي مسار غير معروف يرجع للشاشة الافتراضية بدل شاشة بيضا */}
+        {/* Any unrecognized route falls back to the default screen instead of a blank page. */}
         <Route path="*" element={<Navigate to={AFTER_LOGIN} replace />} />
       </Routes>
     </BrowserRouter>
   )
 }
 
-/** التبويب الافتراضي معروض هنا عشان ما يضيعش لو اتغيّر */
+/** The default tab is shown here explicitly so it isn't lost if it changes. */
 export { DEFAULT_PROJECT_TAB }

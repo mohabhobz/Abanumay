@@ -4,51 +4,51 @@ import type {
 import { projectRows } from './projects'
 import { planOfProject, planDone } from './plans'
 import { payRequests } from './disbursements'
+import { NOUN, countOf } from '@/lib/format'
+import { TONE } from '@/lib/tone'
+import type { Tone } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   إغلاق المشروع · BPD-011 · آخر إجراء في دورة حياة المنحة
+/* Closing a project · the last procedure in the grant lifecycle
 
-   الوثيقة ص 62–67 · 18 خطوة رئيسية · **21** قاعدة عمل · أربعة
-   مخرجات للذكاء الاصطناعي · أربعة مؤشرات أداء · مخططان.
+   Document pages 62-67 · 18 main steps · **21** business rules · four AI outputs · four performance
+   indicators · two diagrams.
 
-   ═══ الفكرة اللي الموديول مبني عليها ═══
+   === The idea this module is built on ===
 
-   ⚠️ **دورتان مستقلّتان لا دورة واحدة.** القاعدة 17 بالنصّ:
-   «يخضع التقرير الختامي وتقييم المشروع **لدورتي اعتماد
-   مستقلتين**، مع الاحتفاظ بسجل منفصل لجميع الملاحظات وقرارات
-   الاعتماد الخاصة بكل منهما».
+   Warning: **two independent cycles, not one.** Rule 17, verbatim: "the closing report and the
+   project evaluation are each subject to **two independent approval cycles**, with a separate log
+   kept for every note and approval decision on each."
 
-     التقرير  · الجهة بتكتبه   · 4 محطات (مشرف · اتصال · مدير · تنفيذي)
-     التقييم  · المشرف بيكتبه  · 3 محطات (مدير · تنفيذي)
+     Report     written by the entity      4 stages (supervisor · outreach · manager · executive)
+     Evaluation written by the supervisor  3 stages (manager · executive)
 
-   ومصدرهم مختلف عن قصد: التقرير **إقرار من المنفِّذ**، والتقييم
-   **حكم من المموِّل** · فاللي بيقرا لازم يعرف مين قال إيه.
+   And their sources differ on purpose: the report is **an acknowledgment from the implementer**,
+   and the evaluation is **a judgment from the funder** — so whoever reads it needs to know who said
+   what.
 
-   ⚠️ **والتاني ما يبدأش قبل ما الأول يخلص** · قاعدة 6: «لا يجوز
-   البدء في إجراءات تقييم المشروع إلا بعد اعتماد التقرير الختامي
-   **من المدير التنفيذي**». مش بعد اعتماد المشرف ولا المدير ·
-   بعد التنفيذي.
+   Warning: **and the second doesn't start before the first is done** — rule 6: "project evaluation
+   procedures may not begin until the closing report is approved **by the executive director**." Not
+   after the supervisor's approval, not the manager's — after the executive's.
 
-   ⚠️ **وحالة المشروع ما بتتحرّكش أثناء الدورة كلها.** قاعدة 16:
-   «لا يؤثر انتقال التقرير الختامي بين مراحل المراجعة والاعتماد
-   على حالة المشروع، حيث **تبقى حالة المشروع «تحت التنفيذ»**».
-   وقاعدة 8 و18 بيقولوا إن «مكتمل» بتحتاج **تلاتة** مع بعض:
-   التقرير معتمد **و** التقييم معتمد **و** المتطلبات المالية
-   والإدارية مكتملة.
+   Warning: **and the project's status doesn't move during the whole cycle.** Rule 16: "the closing
+   report moving between review and approval stages doesn't affect the project's status, which
+   **stays 'in progress'**." And rules 8 and 18 say "complete" needs **three things** together: the
+   report approved, **and** the evaluation approved, **and** the financial and administrative
+   requirements complete.
 
-   ده تطبيق ح-10 (فصل الإجراءات) للمرة التالتة في السيستم بعد
-   الاتفاقية والخطة · والإغلاق **سجلّ مستقل** بحالته هو.
+   This is the same separation-of-procedures principle applied for the third time in the system,
+   after the agreement and the plan, and closing is **its own independent record** with its own
+   status.
 
-   ⚠️ **وإصدارات لا نسخة.** قاعدة 15: تقرير معتمد **واحد**
-   للمشروع، وأكتر من إصدار أثناء المراجعة · وقاعدة 19: كل إعادة
-   بتخلّي إصدارًا جديدًا والقديم بيفضل. من غير كده الجهة اللي
-   رجعت لها ملاحظة بتعدّل مكانها والمراجع ما يعرفش اتغيّر إيه.
+   Warning: **and versions, not one copy.** Rule 15: only **one** approved report per project, with
+   more than one version during review; and rule 19: every send-back creates a new version and the
+   old one stays. Without this, an entity acting on a note would edit in place and the reviewer
+   wouldn't know what changed.
 
-   ⚠️ **وبعد الإغلاق النهائي مفيش تعديل** · قاعدة 21: أي تعديل
-   لاحق بيحتاج **إجراء جديد**.
-   ═══════════════════════════════════════════════════════════ */
+   Warning: **and after final closing there's no editing** — rule 21: any later change needs **a new
+   procedure**. */
 
-/** اليوم في النموذج · نفس تاريخ الخطط عشان الحسابات تتفق */
+/** Today, in the mock · same date as the plans so the calculations line up */
 export const TODAY = '2026-09-18'
 
 export const CLOSE_STAGES: {
@@ -77,33 +77,32 @@ export const closeStageNote = (s: CloseStage): string =>
   CLOSE_STAGES.find((x) => x.key === s)?.note ?? ''
 
 /**
- * نبرة الوسم · **مكتوبة مرة واحدة** زي `AGR_TONE` و`PLAN_TONE`.
+ * Badge tone · **written once**, like `AGR_TONE` and `PLAN_TONE`.
  *
- * ⚠️ كل شاشة كانت بتختار نبرتها بنفسها في الاتفاقيات، فنفس
- * المرحلة أخدت لونًا هنا ولونًا هناك · الدرس اتسجّل هناك والنبرة
- * بقت في الداتا.
+ * Warning: every screen in agreements used to pick its own tone, so the same stage got one color
+ * here and another there — the lesson was logged there, and the tone is now part of the data.
  */
-export const CLOSE_TONE: Record<CloseStage, 'mute' | 'warn' | 'ret' | 'ok' | 'no' | 'teal'> = {
-  draft: 'mute',
-  supervisor: 'teal',
-  comms: 'teal',
-  manager: 'teal',
-  executive: 'teal',
-  reportDone: 'teal',
-  evalDraft: 'teal',
-  evalManager: 'teal',
-  evalExecutive: 'teal',
-  closed: 'ok',
-  returned: 'warn',
+export const CLOSE_TONE: Record<CloseStage, Tone> = {
+  draft: TONE.draft,
+  supervisor: TONE.review,
+  comms: TONE.review,
+  manager: TONE.review,
+  executive: TONE.review,
+  reportDone: TONE.review,
+  evalDraft: TONE.review,
+  evalManager: TONE.review,
+  evalExecutive: TONE.review,
+  closed: TONE.done,
+  returned: TONE.returned,
 }
 
 /**
- * حدّ المحطة بالساعات · مؤقت زي كل مدة في السيستم.
+ * Stage limit in hours · provisional like every duration in the system.
  *
- * ⚠️ **الأرقام دي مش من الوثيقة** · الوثيقة بتقيس «متوسط مدة
- * إغلاق المشروع» (مؤشر 1) وما بتحطّش حدًّا لكل محطة. الأرقام هنا
- * مشتقّة من حدود المراحل الموجودة في `taxonomy` عشان شرائح
- * التأخير تشتغل · **والسؤال س-18 مفتوح عند العميل**.
+ * Warning: **these numbers aren't from the document** — the document measures "average project
+ * closing time" (indicator 1) and sets no limit per stage. The numbers here are derived from the
+ * stage limits already in `taxonomy` so the delay chips work — **and this is still an open question
+ * with the client**.
  */
 export const CLOSE_LIMIT: Record<CloseStage, number> = {
   draft: 720,
@@ -119,7 +118,7 @@ export const CLOSE_LIMIT: Record<CloseStage, number> = {
   returned: 720,
 }
 
-/** المستندات الداعمة للتقرير الختامي · قاعدة 5 */
+/** Supporting documents for the closing report · rule 5 */
 export const CLOSE_DOCS: { key: string; label: string; req?: boolean }[] = [
   { key: 'final', label: 'التقرير الختامي التفصيلي', req: true },
   { key: 'photos', label: 'صور التنفيذ', req: true },
@@ -129,48 +128,46 @@ export const CLOSE_DOCS: { key: string; label: string; req?: boolean }[] = [
   { key: 'beneficiaries', label: 'كشف المستفيدين' },
 ]
 
-/* ═══════════════════════════════════════════════════════════
-   الموانع · اللي النظام بيرفض الإرسال بسببه
-   ═══════════════════════════════════════════════════════════ */
+/* Blockers · what makes the system refuse submission */
 
 /**
- * هل نقدر نفتح إغلاقًا للمشروع ده أصلًا؟
+ * Can we even open a closing for this project?
  *
- * ⚠️ **قاعدتان مع بعض لا واحدة:**
- *   قاعدة 1 · المدة خلصت، أو الأنشطة اكتملت، أو فيه قرار إنهاء.
- *   قاعدة 2 · **كل الدفعات اتصرفت أو الالتزامات اتسوّت.**
+ * Warning: **two rules together, not one:**
+ *   Rule 1 · the duration is over, or the activities are complete, or there's a termination
+ *   decision.
+ *   Rule 2 · **every disbursement has been spent or obligations settled.**
  *
- * والتانية هي اللي بتتنسى: مشروع لسه عليه دفعة ما اتصرفتش
- * ما ينفعش يبدأ إغلاقه · وإلا بنقفل مشروعًا وإحنا مدينين له.
+ * The second is the one that gets forgotten: a project with an unspent disbursement can't start
+ * closing — otherwise a project gets closed while still owed money.
  */
 export const canOpenClose = (projectId: string): { ok: boolean; why: string } => {
   const pr = projectRows.find((p) => p.id === projectId)
   if (!pr) return { ok: false, why: 'المشروع غير موجود' }
 
-  /* قاعدة 1 · الخطة مكتملة = الأنشطة اكتملت */
+  /* Rule 1 · plan complete = activities complete */
   const plan = planOfProject(projectId)
   const activitiesDone = plan ? planDone(plan) >= 100 : false
   if (plan && !activitiesDone) {
     return { ok: false, why: 'لم تكتمل خطة التنفيذ بعد · قاعدة 1' }
   }
 
-  /* قاعدة 2 · مفيش دفعة مستحقّة ما اتصرفتش */
+  /* Rule 2 · no outstanding disbursement left unspent */
   const open = payRequests.filter(
     (r) => r.projectId === projectId && r.state !== 'paid' && r.state !== 'closed',
   )
   if (open.length > 0) {
-    return { ok: false, why: `${open.length} دفعة لم تُسوَّ بعد · قاعدة 2` }
+    return { ok: false, why: `${countOf(open.length, NOUN.payment)} لم تُسوَّ بعد · قاعدة 2` }
   }
 
   return { ok: true, why: 'المشروع مؤهَّل للإغلاق' }
 }
 
 /**
- * اللي مانع إرسال التقرير للمراجعة · قاعدة 3 و4 و10.
+ * What blocks sending the report for review · rules 3, 4, and 10.
  *
- * ⚠️ **قاعدة 4 بتحدّد الحدّ الأدنى بالحرف**: «عدد المستفيدين
- * الفعلي، والميزانية الفعلية، ومدة التنفيذ، وأبرز المخرجات
- * والنتائج المحققة». الأربعة دول مش اختيارات.
+ * Warning: **rule 4 states the minimum verbatim**: "actual beneficiary count, actual budget,
+ * execution duration, and the key outputs and results achieved." These four aren't optional.
  */
 export const reportBlockers = (c: CloseRow): string[] => {
   const out: string[] = []
@@ -185,7 +182,7 @@ export const reportBlockers = (c: CloseRow): string[] => {
   return out
 }
 
-/** اللي مانع إرسال التقييم · قاعدة 10 على الدورة التانية */
+/** What blocks sending the evaluation · rule 10 on the second cycle */
 export const evalBlockers = (c: CloseRow): string[] => {
   const out: string[] = []
   const e = c.evaluation
@@ -198,58 +195,58 @@ export const evalBlockers = (c: CloseRow): string[] => {
 }
 
 /**
- * التقييم يقدر يبدأ؟ · قاعدة 6.
+ * Can the evaluation start? · rule 6.
  *
- * ⚠️ **بعد اعتماد المدير التنفيذي تحديدًا** · مش بعد المشرف ولا
- * المدير. والمحطة `reportDone` هي اللي بتقول إن الشرط ده اتحقّق.
+ * Warning: **specifically after the executive director's approval** — not after the supervisor's or
+ * the manager's. The `reportDone` stage is what confirms this condition is met.
  */
 export const canStartEval = (c: CloseRow): boolean => c.stage === 'reportDone'
 
 /**
- * محطة الاتصال المؤسسي مطلوبة؟ · قاعدة 9.
+ * Is the outreach stage required? · rule 9.
  *
- * ⚠️ **«متى كانت مطلوبة»** · يعني لو الاتفاقية فيها التزام نشر
- * إعلامي. واللي مش مطلوبة فيه المحطة **بتتقال إنها اتخطّت** لا
- * بتختفي · الغياب مش إجابة (نفس قاعدة الكروت والمساعد).
+ * Warning: **"when it was required"** — meaning when the agreement includes a publicity commitment.
+ * A case where it isn't required still **states that the stage was skipped**, rather than hiding it
+ * — absence isn't an answer (the same rule as the cards and the assistant).
  */
 export const needsComms = (c: CloseRow): boolean => c.mediaRequired
 
-/** الدورة اللي إحنا فيها دلوقتي */
+/** The cycle we're currently in */
 export const closeCycle = (c: CloseRow): CloseCycle =>
   CLOSE_STAGES.find((x) => x.key === c.stage)?.cycle ?? 'report'
 
-/** التقرير اتعتمد؟ · أي محطة بعد التنفيذي */
+/** Has the report been approved? · any stage past the executive */
 export const reportApproved = (c: CloseRow): boolean =>
   ['reportDone', 'evalDraft', 'evalManager', 'evalExecutive', 'closed'].includes(c.stage)
 
-/** التقييم اتعتمد؟ */
+/** Has the evaluation been approved? */
 export const evalApproved = (c: CloseRow): boolean => c.stage === 'closed'
 
 /**
- * المتطلبات المالية والإدارية اكتملت؟ · قاعدة 8 و18.
+ * Are the financial and administrative requirements complete? · rules 8 and 18.
  *
- * ⚠️ **السؤال س-15 مفتوح** · الوثيقة بتقول «استكمال جميع
- * المتطلبات المالية والإدارية» وما بتعدّدهاش. اللي محسوب هنا
- * هو اللي السيستم يعرفه فعلًا: مفيش دفعة معلّقة. وأي متطلب
- * تاني هيتزوّد لمّا العميل يحدّده.
+ * Warning: **this is still an open question** — the document says "completing all financial and
+ * administrative requirements" without listing them. What's computed here is what the system
+ * actually knows: no pending disbursement. Any other requirement gets added once the client defines
+ * it.
  */
 export const closeRequirements = (c: CloseRow): { ok: boolean; say: string } => {
   const open = payRequests.filter(
     (r) => r.projectId === c.projectId && r.state !== 'paid' && r.state !== 'closed',
   )
-  if (open.length > 0) return { ok: false, say: `${open.length} دفعة معلّقة` }
+  if (open.length > 0) return { ok: false, say: countOf(open.length, NOUN.pendingPayment) }
   return { ok: true, say: 'لا يوجد التزام مالي معلّق' }
 }
 
-/** متأخّر عن حدّ محطته؟ */
+/** Past its stage's limit? */
 export const closeLate = (c: CloseRow): boolean =>
   CLOSE_LIMIT[c.stage] > 0 && c.hoursInStage > CLOSE_LIMIT[c.stage]
 
 /**
- * الفرق بين المعتمد والفعلي · وده **قلب المراجعة**.
+ * The gap between planned and actual · this is **the heart of the review**.
  *
- * ⚠️ الرقم لوحده ما بيقولش حاجة · «٨٠٠ مستفيد» مش معلومة، و«٨٠٠
- * مقابل ١٠٠٠ مخطَّط» معلومة. فالدالة بترجّع الاتنين والفرق.
+ * Warning: the number alone says nothing — "800 beneficiaries" isn't information, "800 against a
+ * planned 1,000" is. So the function returns both plus the difference.
  */
 export const reportGap = (c: CloseRow): {
   key: string; label: string; planned: number; actual: number | null; unit: string
@@ -273,9 +270,7 @@ export const reportGap = (c: CloseRow): {
   ]
 }
 
-/* ═══════════════════════════════════════════════════════════
-   البذور · ست حالات مختلفة فعلًا لا نسخ
-   ═══════════════════════════════════════════════════════════ */
+/* Seeds · six genuinely different cases, not copies */
 
 const mkReport = (over: Partial<FinalReport> = {}): FinalReport => ({
   beneficiaries: null,
@@ -333,7 +328,7 @@ const row = (
 }
 
 export const closeRows: CloseRow[] = [
-  /* ١ · عند الجهة · لسه ما بعتتش وناقصها الحدّ الأدنى */
+  /* 1 · with the entity · not yet submitted, missing the minimum */
   row('CL-2041', '20852', 'draft', {
     report: mkReport({
       beneficiaries: 780,
@@ -344,7 +339,7 @@ export const closeRows: CloseRow[] = [
     mediaRequired: true,
   }),
 
-  /* ٢ · عند مشرف المنح · مكتمل ومستنّي مراجعة */
+  /* 2 · with the grants supervisor · complete and awaiting review */
   row('CL-2042', '20838', 'supervisor', {
     report: mkReport({
       beneficiaries: 1120,
@@ -363,7 +358,7 @@ export const closeRows: CloseRow[] = [
     ],
   }),
 
-  /* ٣ · عند الاتصال المؤسسي · قاعدة 9 */
+  /* 3 · with outreach · rule 9 */
   row('CL-2043', '20824', 'comms', {
     report: mkReport({
       beneficiaries: 640,
@@ -382,10 +377,10 @@ export const closeRows: CloseRow[] = [
     ],
   }),
 
-  /* ٤ · مُعاد بملاحظات · إصدار تاني · قاعدة 19 */
+  /* 4 · sent back with notes · a second version · rule 19 */
   row('CL-2044', '20866', 'returned', {
     returnedTo: 'draft',
-    note: 'الفواتير المرفوعة تغطي 60٪ فقط من الميزانية الفعلية المذكورة. أرفق مستندات تغطي الفرق.',
+    note: 'الفواتير المرفوعة تغطي \u206660%\u2069 فقط من الميزانية الفعلية المذكورة. أرفق مستندات تغطي الفرق.',
     report: mkReport({
       beneficiaries: 410,
       budget: 338_000,
@@ -407,7 +402,7 @@ export const closeRows: CloseRow[] = [
     ],
   }),
 
-  /* ٥ · التقرير اتعتمد والتقييم في الاعتماد · قاعدة 6 و17 */
+  /* 5 · report approved, and the evaluation in approval · rules 6 and 17 */
   row('CL-2045', '20802', 'evalManager', {
     report: mkReport({
       beneficiaries: 2300,
@@ -443,7 +438,7 @@ export const closeRows: CloseRow[] = [
     ],
   }),
 
-  /* ٦ · مغلق · مكتمل */
+  /* 6 · closed · complete */
   row('CL-2046', '20611', 'closed', {
     report: mkReport({
       beneficiaries: 150,
@@ -487,15 +482,13 @@ export const closeById = (id: string): CloseRow | undefined =>
 export const closeOfProject = (projectId: string): CloseRow | undefined =>
   closeRows.find((c) => c.projectId === projectId)
 
-/* ═══════════════════════════════════════════════════════════
-   الأفعال · كل واحد بيكتب في سجلّ التدقيق (قاعدة 11)
-   ═══════════════════════════════════════════════════════════ */
+/* Actions · each one logs to the audit trail (rule 11) */
 
 const log = (c: CloseRow, by: string, what: string) => {
   c.audit.push({ at: TODAY, by, what })
 }
 
-/** مشرف المنح بيفتح طلب التقرير الختامي · خطوة 1 */
+/** Grants supervisor opens the closing-report request · step 1 */
 export const openClose = (projectId: string): string => {
   const has = closeOfProject(projectId)
   if (has) return has.id
@@ -510,7 +503,7 @@ export const openClose = (projectId: string): string => {
   return id
 }
 
-/** الجهة بتبعت التقرير · خطوة 5 · والنظام بيمنع لو ناقص (خطوة 6) */
+/** The entity submits the report · step 5 · the system blocks it if incomplete (step 6) */
 export const sendReport = (c: CloseRow): void => {
   if (reportBlockers(c).length > 0) return
   c.stage = 'supervisor'
@@ -519,9 +512,9 @@ export const sendReport = (c: CloseRow): void => {
 }
 
 /**
- * إعادة بملاحظات · قاعدة 19.
+ * Sent back with notes · rule 19.
  *
- * ⚠️ **الإعادة بتخلّي إصدارًا جديدًا** · والقديم بيفضل في السجلّ.
+ * Warning: **a send-back creates a new version** · the old one stays in the log.
  */
 export const returnReport = (c: CloseRow, by: string, say: string, to: CloseStage): void => {
   c.stage = 'returned'
@@ -532,10 +525,10 @@ export const returnReport = (c: CloseRow, by: string, say: string, to: CloseStag
   log(c, by, `إعادة بملاحظات · إصدار ${c.versions.length}`)
 }
 
-/** اعتماد محطة في دورة التقرير · بيودّي للمحطة اللي بعدها */
+/** Approving a stage in the report cycle · moves to the next stage */
 export const approveReport = (c: CloseRow, by: string): void => {
   const next: Partial<Record<CloseStage, CloseStage>> = {
-    /* ⚠️ الاتصال المؤسسي بيتخطّى لو النشر مش مطلوب · قاعدة 9 */
+    /* Warning: outreach is skipped if publicity isn't required · rule 9 */
     supervisor: needsComms(c) ? 'comms' : 'manager',
     comms: 'manager',
     manager: 'executive',
@@ -548,7 +541,7 @@ export const approveReport = (c: CloseRow, by: string): void => {
   log(c, by, to === 'reportDone' ? 'اعتماد التقرير الختامي · إقفال الدورة الأولى' : `اعتماد · إحالة إلى ${closeStageLabel(to)}`)
 }
 
-/** مشرف المنح بيبدأ التقييم · قاعدة 6 */
+/** Grants supervisor starts the evaluation · rule 6 */
 export const startEval = (c: CloseRow, by: string): void => {
   if (!canStartEval(c)) return
   c.stage = 'evalDraft'
@@ -573,7 +566,7 @@ export const approveEval = (c: CloseRow, by: string): void => {
     return
   }
   if (c.stage !== 'evalExecutive') return
-  /* ⚠️ **الإغلاق النهائي محتاج التلاتة** · قاعدة 8 و18 */
+  /* Warning: **final closing needs all three** · rules 8 and 18 */
   if (!closeRequirements(c).ok) return
   c.stage = 'closed'
   c.closedAt = TODAY
@@ -581,11 +574,9 @@ export const approveEval = (c: CloseRow, by: string): void => {
   log(c, by, 'اعتماد التقييم · الإغلاق النهائي')
 }
 
-/* ═══════════════════════════════════════════════════════════
-   مؤشرات الأداء · 11.7 · أربعة
-   ═══════════════════════════════════════════════════════════ */
+/* Performance indicators · 11.7 · four */
 
-/** المدة المستهدفة للإغلاق · مجموع حدود المحطات بالأيام */
+/** Target duration for closing · sum of the stage limits in days */
 export const CLOSE_TARGET_DAYS = Math.round(
   Object.values(CLOSE_LIMIT).reduce((s, h) => s + h, 0) / 24,
 )
@@ -594,7 +585,7 @@ export const closeKpi = () => {
   const closed = closeRows.filter((c) => c.stage === 'closed')
   const open = closeRows.filter((c) => c.stage !== 'closed')
 
-  /* مؤشر 1 · متوسط مدة الإغلاق · من فتح الطلب لحدّ الإغلاق */
+  /* Indicator 1 · average closing duration · from opening the request to closing */
   const days = closed.map((c) => {
     const from = new Date(c.openedAt).getTime()
     const to = new Date(c.closedAt ?? TODAY).getTime()
@@ -602,13 +593,13 @@ export const closeKpi = () => {
   })
   const avg = days.length > 0 ? Math.round(days.reduce((s, d) => s + d, 0) / days.length) : 0
 
-  /* مؤشر 2 · نسبة اللي اتقفل ضمن المدة المستهدفة */
+  /* Indicator 2 · share closed within the target duration */
   const inTime = days.filter((d) => d <= CLOSE_TARGET_DAYS).length
   const inTimePct = closed.length > 0 ? Math.round((inTime / closed.length) * 100) : 0
 
-  /* مؤشر 3 · متوسط مدة إعداد التقرير · من فتح الطلب لحدّ ما الجهة
-     بعتته · وسطر «إرسال التقرير الختامي» في سجلّ التدقيق هو
-     المصدر الوحيد للتاريخ ده (قاعدة 11 هي اللي بتخلّيه موجودًا) */
+  /* Indicator 3 · average report drafting time · from opening the request until the entity submits
+     it · the "closing report submitted" line in the audit log is the only source for this date
+     (rule 11 is what keeps it there) */
   const sent = closeRows
     .map((c) => {
       const at = c.audit.find((x) => x.what.startsWith('إرسال التقرير'))?.at
@@ -622,7 +613,7 @@ export const closeKpi = () => {
     ? Math.round(sent.reduce((s, d) => s + d, 0) / sent.length)
     : 0
 
-  /* مؤشر 4 · نسبة اللي اتقفل بعد استكمال المتطلبات */
+  /* Indicator 4 · share closed after completing the requirements */
   const full = closed.filter((c) => closeRequirements(c).ok).length
   const fullPct = closed.length > 0 ? Math.round((full / closed.length) * 100) : 0
 

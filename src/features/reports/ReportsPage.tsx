@@ -6,7 +6,7 @@ import { assistFor } from '@/data/mock/assistant'
 import {
   DEFAULT_REPORT_TAB, REPORT_TABS, ROUTES, type ReportTabSlug,
 } from '@/app/routes'
-import { isolate, nf } from '@/lib/format'
+import { isolate, nf, countOf, NOUN, nounAfter } from '@/lib/format'
 import { PROCESSES, coverage, headlineOf, measuredIn } from '@/data/kpi'
 import { LIVE_REPORTS, PACKS, packByKey } from '@/data/reports'
 import { KpiValue } from './KpiValue'
@@ -16,24 +16,23 @@ import { Builder } from './Builder'
 import { Catalog } from './Catalog'
 import { PERIODS } from '@/data/reportDefs'
 
-/* ═══════════════════════════════════════════════════════════
-   التقارير.
+/* Reports.
 
-   النظام العامل فيه ١٤ شاشة تقرير، كل واحدة **فورم فلترة** لازم
-   تملاه قبل ما تشوف رقم · وتلاتة منها بتطلع فاضية بعد ما تملاه.
-   النتيجة اللي الأوديت كتبها: «داتا الأداء موجودة ولا تظهر عند
-   القرار».
+   The current system has 14 report screens, each a filter form that must
+   be filled before any number appears — and three of them come back
+   empty after filling. The finding recorded from review: "performance
+   data exists but doesn't surface at decision time."
 
-   فالتقسيم هنا بيقلب الترتيب:
+   So the structure here reverses that order:
 
-    · **اللوحة** · الإجابات جاهزة. كل كارت سؤال ورقمه للفترة
-      المختارة وجملة بتفسّره ومصدره وطريق للصفوف. الفلترة بعد
-      الشوفان لا قبله.
-    · **تقرير مُشكَّل** · للسؤال اللي مش في اللوحة: بُعد × مقياس،
-      أربعين توليفة بشاشة واحدة بدل شاشة لكل سؤال.
-    · **حالة القياس** · كام مؤشر من الوثيقة النظام يقدر يقيسه.
-      ده بيتكلم **عننا** لا عن المنح، فمكانه آخر تاب لا أول شاشة.
-   ═══════════════════════════════════════════════════════════ */
+   - Dashboard — answers are ready. Every card is a question with its
+   number for the selected period, a sentence explaining it, its source,
+   and a path to the rows. Filtering comes after seeing, not before.
+   - Report builder — for the question not on the dashboard: dimension ×
+   metric, dozens of combinations in one screen instead of one screen per question.
+   - Measurement status — how many of the spec's metrics the system can
+   actually measure. This is a statement about us, not about the grants,
+   so it belongs as the last tab, not the first screen. */
 
 export default function ReportsPage() {
   const { tab } = useParams<{ tab?: string }>()
@@ -69,8 +68,8 @@ export default function ReportsPage() {
           {active === 'catalog' && <Catalog />}
           {active === 'coverage' && (
             <>
-          {/* ═══ حالة القياس ═══
-              مش زينة: ده الرقم اللي المشروع كله بيتقاس بيه. */}
+          {/* Measurement status isn't decoration — it's the number the whole
+              project gets measured by. */}
           <Glass className="rpcov">
             <Head
               title="ما الذي يمكن قياسه اليوم"
@@ -110,11 +109,11 @@ export default function ReportsPage() {
             </p>
           </Glass>
 
-          {/* ═══ الإجراءات الـ11 ═══ */}
+          {/* The 11 actions */}
           <section className="rpsec">
             <Head
               title="مؤشرات الإجراءات"
-              meta={`${nf.format(coverage.total)} مؤشرًا · ${PROCESSES.length} إجراءات`}
+              meta={`${nf.format(coverage.total)} ${nounAfter(coverage.total, NOUN.indicator)} · ${countOf(PROCESSES.length, NOUN.procedure)}`}
             />
 
             <div className="rppg">
@@ -137,8 +136,10 @@ export default function ReportsPage() {
                           <KpiValue kpi={head} />
                           <small className="sub">
                             {isolate(head.name)}
-                            {/* المقام على البطاقة لا جوّه الورقة بس: «100%»
-                                من مشروعين رقم مضلّل لو ما بانش من كام. */}
+                            {/* The denominator shows on the card, not just inside the sheet: "100%"
+                                of
+                                two projects is a misleading number if it doesn't show out of how
+                                many. */}
                             {head.of && (
                               <>
                                 {' · من '}
@@ -169,11 +170,13 @@ export default function ReportsPage() {
             </div>
           </section>
 
-          {/* ═══ حزم التقارير ═══
-              السكشن ده **خطة بناء لا شاشة بيانات**، وده ما كانش مكتوبًا:
-              العنوان كان «حزم التقارير» والميتا «من الفيججام · S11»،
-              وده اسم ملف عند الفريق لا معلومة عند العميل. اللي بيبصّ
-              كان بيسأل «السكشن ده بيعمل إيه؟» · فبقى مكتوبًا. */}
+          {/* Report bundles.
+
+              This section is a build plan, not a data screen, and that wasn't
+              stated anywhere — the heading just said "Report bundles" with no
+              explanation, which is a label for the team, not information for the
+              client. Anyone looking at it would ask "what does this section
+              actually do?" — so now it's stated. */}
           <section className="rpsec">
             <Head
               title="حزم التقارير المخطَّطة"
@@ -212,8 +215,9 @@ export default function ReportsPage() {
             </div>
           </section>
 
-          {/* ═══ مقابل النظام العامل ═══
-              العميل بيسأل «طيب تقاريري راحت فين؟» · الجدول ده الرد. */}
+          {/* Versus the current system.
+
+              The client asks "so where did my reports go?" — this table is the answer. */}
           <Glass>
             <Head
               title="تقارير النظام العامل ومكانها هنا"

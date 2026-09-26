@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { HEAT_TONE } from '@/lib/tone'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
   Steps, Tag, type StepItem,
@@ -9,7 +10,7 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, nf, readDate } from '@/lib/format'
+import { isolate, nf, NOUN, nounAfter, readDate } from '@/lib/format'
 import {
   AGR_LIMIT, AGREEMENT_STAGES, agrHeat, agrPaymentsBalance, agrReserveGap, agrStageWho,
   agreementById,
@@ -18,38 +19,34 @@ import type { AgreementRow } from '@/types/domain'
 import { AgrActionDock, agrActionsFor } from './AgrActionDock'
 import { ScheduleEditor, asDraft } from './ScheduleEditor'
 
-/* ═══════════════════════════════════════════════════════════
-   اتفاقية واحدة · محطات الاعتماد الأربعة في مخطط الوثيقة (9.6)
+/* A single agreement - the four approval stages in the document's flow.
 
-   ⚠️ **شاشة واحدة لأربع محطات.** المخطط بيرسم أربعة مسارات — مشرف
-   المنح، مدير المنح، المدير التنفيذي، الجهة المستفيدة — والأربعة
-   بيشوفوا **نفس الاتفاقية بنفس البنود ونفس الجدول ونفس السجل**.
-   اللي بيختلف هو المخارج، ودي في `agrActionsFor` وحدها.
+   Note: one screen serves four stages. The flow defines four paths - grants supervisor, grants
+   manager, executive director, beneficiary entity - and all four see the same agreement, same
+   terms, same schedule, same log. What differs is the available actions, defined solely in
+   `agrActionsFor`.
 
-   ⚠️ **والإعادة مالهاش مسار واحد.** ودي أهم تفصيلة في الإجراء ده:
-     خطوة 14 · إعادة مدير المنح      → مشرف المنح
-     خطوة 18 · إعادة المدير التنفيذي → **مدير المنح** لا المشرف
-     خطوة 22 · إعادة الجهة           → **مشرف المنح** لا المدير
-   تلات وجهات مختلفة. «رجّع للخطوة اللي قبلها» كان هيبقى غلط في
-   اتنين منهم.
+   Note: "return" does not have a single path. This is the most important detail here:
+     Step 14 - grants manager return      -> grants supervisor
+     Step 18 - executive director return  -> grants manager, not the supervisor
+     Step 22 - entity return              -> grants supervisor, not the director
+   Three different destinations. "Go back one step" would be wrong for two of them.
 
-   ═══ اللي الوثيقة بتلزم الشاشة بيه ═══
+   What this screen must guarantee:
+   Rule 5 - retrieved data can only be changed on the original project
+   Rule 7 - the payment schedule is part of the agreement, not an attachment
+   Rule 8 - payments must sum to the grant amount, and percentages to 100%
+   Step 11 - agreement value equals the amount reserved in the budget
+   Rule 11 - once logged, an entry can't be deleted or edited
+   Rule 13 - sending to the entity is blocked until institutional approvals are complete
+   Rule 16 - the signed paper copy must be attached before activation
+   Rule 17 - no edits after signing; an edit becomes a new version
+   Rule 20 - a notification on every transition
+   Rule 21 - AI output is advisory only
+   Rule 24 - multiple versions, one active
+   Rule 25 - the agreement's stage does not change the project's status */
 
-   قاعدة 5  · البيانات المسترجعة ما تتعدّلش إلا في المشروع الأصلي
-   قاعدة 7  · جدول الدفعات جزء من الاتفاقية لا ملحق
-   قاعدة 8  · مجموع الدفعات = المنحة · والنسب = 100%
-   خطوة 11 · قيمة الاتفاقية = المبلغ المحجوز في الميزانية
-   قاعدة 11 · السجل ما يتحذفش ولا يتعدّل بعد تسجيله
-   قاعدة 13 · ممنوع الإرسال للجهة قبل اكتمال اعتمادات المؤسسة
-   قاعدة 16 · الورقية لازم تُرفق موقّعة قبل التفعيل
-   قاعدة 17 · ممنوع التعديل بعد التوقيع · التعديل = إصدار جديد
-   قاعدة 20 · إشعار لكل انتقال
-   قاعدة 21 · مخرج الـAI استرشادي
-   قاعدة 24 · إصدارات متعددة وواحد ساري
-   قاعدة 25 · مرحلة الاتفاقية لا تغيّر حالة المشروع
-   ═══════════════════════════════════════════════════════════ */
-
-/** المحطات الأربعة اللي المستخدم بيشوفها · من مخطط 9.6 */
+/** The four stages users see, per the flow. */
 const LADDER: { key: string; label: string; note: string; steps: number[] }[] = [
   { key: 'draft', label: 'إعداد الاتفاقية', note: 'مشرف المنح', steps: [3, 4, 5, 6, 7, 8, 9, 10, 11] },
   { key: 'manager', label: 'مراجعة مدير المنح', note: 'مدير المنح', steps: [12, 13] },
@@ -57,7 +54,7 @@ const LADDER: { key: string; label: string; note: string; steps: number[] }[] = 
   { key: 'entity', label: 'توقيع الجهة', note: 'الجهة المستفيدة', steps: [20, 21] },
 ]
 
-/** أي محطة الاتفاقية واقفة عندها · المعادة بترجع لصاحب الإعادة */
+/** Which stage the agreement is at; a returned agreement goes back to whoever sent it back. */
 const NOW_AT: Record<string, string> = {
   draft: 'draft',
   returned: 'draft',
@@ -141,9 +138,9 @@ export default function AgreementPage() {
                 <div className="lb">قيمة المنحة</div>
                 <div className="v"><Money sm>{a.amount}</Money></div>
                 <div className="sub">
-                  {/* خطوة 11 · الفرق عن المحجوز بيمنع الإرسال للاعتماد */}
+                  {/* Step 11 - a mismatch with the reserved amount blocks submission for approval. */}
                   {gap === 0
-                    ? <>مطابقة للمخصص المحجوز في الميزانية · على <Num>{a.payments.length}</Num> دفعات</>
+                    ? <>مطابقة للمخصص المحجوز في الميزانية · على <Num>{a.payments.length}</Num> {nounAfter(a.payments.length, NOUN.payment)}</>
                     : <span className="bad">
                         المحجوز <Mono>{nf.format(a.reserved)}</Mono> · فرق{' '}
                         <Mono>{nf.format(Math.abs(gap))}</Mono> يمنع الإرسال للاعتماد
@@ -158,13 +155,13 @@ export default function AgreementPage() {
           </header>
 
           <div className="prow">
-            <Tag tone={heat === 'stuck' ? 'no' : heat === 'late' ? 'warn' : 'mute'}>
+            <Tag tone={heat === 'ok' ? 'mute' : HEAT_TONE[heat]}>
               {meta?.label ?? 'ملغاة'}
             </Tag>
             {a.stage !== 'active' && (
               <span className="sub">
-                عند {agrStageWho(a.stage)} منذ <Num>{days}</Num> يومًا
-                {limitDays > 0 && <> · حدّ المرحلة <Num>{limitDays}</Num> يومًا</>}
+                عند {agrStageWho(a.stage)} منذ <Num>{days}</Num> {nounAfter(days, NOUN.day)}
+                {limitDays > 0 && <> · حدّ المرحلة <Num>{limitDays}</Num> {nounAfter(limitDays, NOUN.day)}</>}
               </span>
             )}
             {a.stage === 'active' && a.activeAt && (
@@ -178,9 +175,9 @@ export default function AgreementPage() {
             </Link>
           </div>
 
-          {/* ⚠️ قاعدة 25 · مكتوبة في الشاشة لأنها أكتر حاجة بتلخبط:
-              اتفاقية «بانتظار المدير التنفيذي» ومشروعها مكتوب عليه
-              «إعداد الاتفاقية» · والاتنين صح. */}
+          {/* Note: rule 25 is stated on screen because it's the most confusing part: an agreement
+              can be "awaiting executive director" while its project still shows "agreement setup" -
+              and both are correct. */}
           {a.stage !== 'active' && (
             <p className="sub cnote tcen">
               مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «إعداد الاتفاقية» حتى
@@ -190,7 +187,7 @@ export default function AgreementPage() {
 
           <div className="g2">
             <div className="col">
-              {/* جدول الدفعات · قاعدة 7: جزء من الاتفاقية لا ملحق ليها */}
+              {/* Payment schedule - rule 7: part of the agreement, not an attachment to it. */}
               <Glass className="tblcard">
                 <Head
                   title="جدول صرف الدفعات"
@@ -200,14 +197,14 @@ export default function AgreementPage() {
                       : <Tag tone="no">غير متوازن · قاعدة 8</Tag>
                   }
                 />
-                {/* ⚠️ **نفس المكوّن اللي في بانِي المسودة، بـ`readOnly`.**
-                    قبل كده كان هنا جدول تالت (`.agrpay`) بتحقّقه
-                    الخاص · فنفس جدول الدفعات كان ليه تلات أشكال في
-                    تلات شاشات، وتصليح في واحد ما بيوصلش للتانيين. */}
+                {/* Note: same component as the draft builder, in `readOnly`. Previously there was a
+                    third table (`.agrpay`) with its own validation, so the same payment schedule
+                    had three different shapes across three screens, and a fix in one never reached
+                    the others. */}
                 <ScheduleEditor rows={asDraft(a.payments)} amount={a.amount} readOnly />
               </Glass>
 
-              {/* مخرج الذكاء الاصطناعي · 9.5 · والوسم من قاعدة 21 */}
+              {/* AI output, tagged per rule 21. */}
               {a.ai && (
                 <Glass>
                   <Head title="تحليل الذكاء الاصطناعي" meta={<Tag tone="mute">استرشادي</Tag>} />
@@ -223,7 +220,7 @@ export default function AgreementPage() {
                 </Glass>
               )}
 
-              {/* ملاحظة الإعادة · قاعدة 10 بتلزم توضيح السبب */}
+              {/* Return note - rule 10 requires stating a reason. */}
               {a.note && (
                 <Glass>
                   <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">بانتظار الاستكمال</Tag>} />
@@ -234,11 +231,11 @@ export default function AgreementPage() {
                 </Glass>
               )}
 
-              {/* المرفقات والملاحق · قاعدة 18 بتربطها بالمشروع والميزانية */}
+              {/* Attachments and annexes - rule 18 ties them to the project and budget. */}
               <Glass>
                 <Head
                   title="الاتفاقية وملاحقها"
-                  meta={<span className="sub"><Num>{a.docs.length}</Num> مستندًا</span>}
+                  meta={<span className="sub"><Num>{a.docs.length}</Num> {nounAfter(a.docs.length, NOUN.doc)}</span>}
                 />
                 <div className="docgrid">
                   {a.docs.map((d) => (
@@ -247,7 +244,7 @@ export default function AgreementPage() {
                 </div>
               </Glass>
 
-              {/* سجل التدقيق · قاعدة 22 · وقاعدة 11: ما يتحذفش ولا يتعدّل */}
+              {/* Audit log - rule 22, and rule 11: entries can't be deleted or edited. */}
               <Glass>
                 <Head
                   title="سجل التدقيق"
@@ -264,8 +261,8 @@ export default function AgreementPage() {
                           {e.role !== e.who && <> · {e.role}</>}
                           <span className="pc-dot" />
                           <DateText>{e.at}</DateText>
-                          {/* قاعدة 24 · الإصدار جزء من السجل لأن
-                              الاعتمادات السابقة بتتحفظ مع الإعادة */}
+                          {/* Rule 24 - the version is part of the log because prior approvals are
+                              preserved through a return. */}
                           {e.version > 1 && (
                             <>
                               <span className="pc-dot" />
@@ -288,7 +285,7 @@ export default function AgreementPage() {
             </div>
 
             <div className="col">
-              {/* النموذج والنوع · قاعدتا 3 و4 */}
+              {/* Template and type - rules 3 and 4. */}
               <Glass>
                 <Head
                   title="النموذج والنوع"
@@ -308,12 +305,12 @@ export default function AgreementPage() {
                 </p>
               </Glass>
 
-              {/* المشروع والجهة · قاعدة 5: مسترجعة ولا تُعدّل هنا */}
+              {/* Project and entity - rule 5: retrieved, not editable here. */}
               <Glass>
                 <Head title="البيانات المسترجعة" meta={<span className="sub">قاعدة 5</span>} />
                 <KV
                   rows={[
-                    /* ك-2 · العلاقة اللي ليها صفحة بتبقى رابطًا */
+                    /* Any relationship that has its own page becomes a link. */
                     {
                       k: 'المشروع',
                       v: <Link className="tlink" to={ROUTES.project(a.projectId)}><Mono>{a.projectId}</Mono></Link>,
@@ -333,7 +330,7 @@ export default function AgreementPage() {
                 </p>
               </Glass>
 
-              {/* قاعدة 13 و16 · اللي بيمنع الإرسال للجهة والتفعيل */}
+              {/* Rules 13 and 16 - what blocks sending to the entity and activation. */}
               <Glass>
                 <Head title="شروط التفعيل" meta={<span className="sub">قواعد 13 · 16 · 19</span>} />
                 <ul className="payq-ck">

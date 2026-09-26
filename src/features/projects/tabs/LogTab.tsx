@@ -8,7 +8,7 @@ export interface LogTabProps {
   entityName: string
 }
 
-/** فلاتر السجل · الأسئلة اللي بتتسأل عليه فعلًا */
+/** Log filters — the questions actually asked of it. */
 const VIEWS = [
   { key: 'all', label: 'كل الأحداث' },
   { key: 'decision', label: 'القرارات' },
@@ -20,7 +20,10 @@ const VIEWS = [
 const MONEY = /إذن صرف|صرف الدفعة|سند القبض|سند القيد/
 const DECISION = /اعتماد|دعم|رفض|معتذر|توصية|إرجاع|رفع المشروع|قبول/
 
-/** عدد الحقول اللي فيها قيمة فعلًا · «ملاحظات» فاضية مش حقلًا */
+/**
+ * Count of fields that actually have a value — an empty "notes" field
+ * doesn't count.
+ */
 const fieldCount = (e: LogEvent) => e.fields.filter((f) => f.v).length
 
 const ACTOR: Record<ActorKind, string> = {
@@ -31,19 +34,20 @@ const ACTOR: Record<ActorKind, string> = {
 }
 
 /**
- * سجل المشروع.
+ * Project log.
  *
- * القيد **مصنَّف**: كل نوع إجراء له حقوله. «دراسة المشروع» فيه أربعة
- * عشر حقلًا ومعاها توصية الباحث كاملة، و«توصية» فيه حقل واحد فاضي.
- * فالصف بيعرض الترويسة، والتفصيل بينفتح بضغطة · عشان سجلّ من ستة
- * وعشرين قيدًا يفضل قابلًا للمسح بالعين.
+ * Each entry is typed: every action type has its own fields. "Project
+ * study" has fourteen fields including the researcher's full
+ * recommendation, while "recommendation" has a single, empty field. So the
+ * row shows a header, and detail opens on click — so a log of twenty-six
+ * entries stays scannable at a glance.
  *
- * والفاعل أربعة أنواع (موظف · الجهة · كيان جماعي · النظام) وبيتفرّقوا
- * بصريًا: القيد اللي عاملته الجهة مش زي اللي عمله موظف، وده اللي
- * بيخلّي «مين واقف على مين» يتقري من غير قراءة.
- *
- * والمتابعات جوّه نفس التايم لاين، لأن النظام بيحطّها كده · والمتابعة
- * اللي بتقول «متطلب الدفعة الثانية» هي سبب إذن الصرف اللي بعدها.
+ * There are four actor types (staff · entity · collective body · system),
+ * and they're visually distinguished: an entry made by the entity doesn't
+ * look like one made by staff, which makes "who's waiting on whom" readable
+ * without reading. Follow-ups sit in the same timeline because the system
+ * places them there — a follow-up that says "second payment requirement" is
+ * the reason for the disbursement authorization that comes after it.
  */
 export function LogTab({ events, entityName }: LogTabProps) {
   const [view, setView] = useState<string>('all')

@@ -4,42 +4,40 @@ import { useProximity } from '@/hooks/useProximity'
 import { payBlocked } from '@/data/mock/disbursements'
 import type { CurrentUser, DecisionKind, PayRequest, PayState } from '@/types/domain'
 import type { RoleKey } from '@/data/roles'
+import { noteFirst } from '@/lib/dock'
 
-/* ═══════════════════════════════════════════════════════════
-   مخارج الطلب · اللي بيفرّق بين شاشات 3 و4 و5 في الوثيقة
+/* Request exits - what distinguishes screens 3, 4 and 5 in the spec.
 
-   الوثيقة بتوصف تلات شاشات مراجعة، والتلاتة بيعرضوا نفس الطلب
-   بنفس المرفقات ونفس الشروط ونفس السجل · اللي بيختلف هو **المخارج**
-   بس. فالفرق اتحطّ هنا في دالة واحدة، والعرض فضل واحد.
+   The spec describes three review screens, and all three show the same request with the same
+   attachments, conditions, and log - the only difference is the exits. So that difference lives
+   here in a single function, and the view stayed one.
 
-   والمخارج مش قائمة أزرار حرّة، هي **نصّ الوثيقة**:
+   The exits aren't a free button list - they're the spec's own wording:
 
-     مشرف المنح · خطوة 7   → توصية بالموافقة (قاعدة 7) · إعادة للجهة
-     مدير المنح · خطوة 13  → موافقة · إعادة للمشرف (قاعدة 8)
-     المالية   · خطوة 15   → اعتماد أمر الصرف · إعادة بملاحظة
-     المالية   · خطوة 17   → تنفيذ التحويل (بعد الاعتماد · قاعدة 9)
+     Grants supervisor - step 7   -> recommend approval (rule 7) - return to entity
+     Grants manager - step 13     -> approve - return to supervisor (rule 8)
+     Finance - step 15            -> approve the disbursement order - return with note
+     Finance - step 17            -> execute the transfer (after approval - rule 9)
 
-   ⚠️ **والإعادة ملزومة بملاحظة.** قاعدتا 7 و8 بتقولا «مع توضيح
-   الملاحظات» · مش مجاملة في الصياغة. الإعادة بلا سبب بترجع للجهة
-   طلبًا ما تعرفش تعمل فيه إيه، فبتعيد إرساله زي ما هو وتلفّ الدورة
-   تاني. فالزرار مقفول لحد ما الملاحظة تتكتب.
+   Note: returning always requires a note. Rules 7 and 8 both say "with notes clarifying the reason"
+   - not a courtesy phrasing. A return with no reason sends the entity a request they don't know how
+   to act on, so it comes back unchanged and loops again. So the button stays locked until the note
+   is written.
 
-   ⚠️ **وبعد الصرف مفيش مخارج خالص** · قاعدة 18: «ممنوع تعديل الطلب
-   بعد اعتماده · التعديل = طلب جديد». الدوك بيختفي لا بيتعطّل، لأن
-   زرارًا معطَّلًا بيقول «تقدر تعمل ده بس مش دلوقتي» والصح إنه مش
-   مخرجًا أصلًا.
-   ═══════════════════════════════════════════════════════════ */
+   Note: after disbursement there are no exits at all - rule 18: "the request may not be modified
+   once approved - a change is a new request." The dock disappears rather than disabling, because a
+   disabled button says "you can do this, just not now", when the truth is it isn't an exit at all. */
 
 export interface PayAction {
   label: string
   kind: DecisionKind
-  /** الفعل ده إعادة · قاعدتا 7 و8 بيلزموه بملاحظة */
+  /** This action is a return - rules 7 and 8 require it to carry a note. */
   needsNote?: boolean
-  /** خطوة الوثيقة اللي الفعل ده بينفّذها */
+  /** The spec step this action carries out. */
   step: number
 }
 
-/** مخارج الدور في المرحلة دي · فاضية = الطلب مش عندك */
+/** This role's exits at this stage - empty means the request isn't theirs. */
 export function actionsFor(role: RoleKey, state: PayState): PayAction[] {
   if (state === 'supervisor' && role === 'supervisor') {
     return [
@@ -51,14 +49,14 @@ export function actionsFor(role: RoleKey, state: PayState): PayAction[] {
     return [
       { label: 'موافقة وإحالة للمالية', kind: 'btn-p', step: 13 },
       { label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true, step: 13 },
-      /* قاعدة 15 · الرفض النهائي بيقفل الطلب **مع الاحتفاظ بسجل
-         إجراءاته** · الإغلاق مش حذف، والسجل بيفضل مقروءًا. وهو
-         مخرج مدير المنح وحده: المشرف بيوصي، والإغلاق قرار. */
+      /* Rule 15 - final rejection closes the request while keeping its action log - closing isn't
+         deleting, and the log stays readable. This exit belongs to the grants manager alone: the
+         supervisor recommends, closing is a decision. */
       { label: 'رفض نهائي وإغلاق', kind: 'btn-d', needsNote: true, step: 15 },
     ]
   }
-  /* المالية مش دور في المبدّل · المدير التنفيذي بيشوف مخارجها
-     للمعاينة، والدور الحقيقي بيتحدّد من التوكن لما الباك اند يجهز */
+  /* Finance isn't a role in the switcher - the executive director sees its exits for preview, and
+     the real role is determined by the token once the backend is ready. */
   if (state === 'finance' && role === 'ceo') {
     return [
       { label: 'اعتماد أمر الصرف', kind: 'btn-p', step: 15 },
@@ -75,7 +73,7 @@ export interface ActionDockProps {
   actions: PayAction[]
   note: string
   onNote: (v: string) => void
-  /** آخر فعل اتاخد · النموذج بيقول اللي حصل بدل ما يغيّر الداتا */
+  /** The last action taken - the UI states what happened rather than mutating the data. */
   taken: string | null
   onTake: (v: string) => void
 }
@@ -121,22 +119,25 @@ export function ActionDock({
           </span>
         </div>
 
-        {/* الملاحظة مش اختيارية للإعادة · قاعدتا 7 و8 */}
+        {/* The note isn't optional for a return - rules 7 and 8. */}
+        {/* The field and buttons form one group that wraps together, so the field doesn't separate
+            from "Return" when the dock grows to two lines. */}
+        <div className="payact-g">
         {needNote && (
           <label className="payact-n">
             <span className="vis-h">ملاحظات الإعادة</span>
             <input
               value={note}
               onChange={(e) => onNote(e.target.value)}
-              placeholder="اكتب سبب الإعادة وما يلزم استكماله (إلزامي)"
+              placeholder="سبب الإعادة وما يلزم استكماله · إلزامي"
             />
           </label>
         )}
 
         <div className="rowf gp-2">
-          {actions.map((a) => {
-            /* قاعدة 9 · التنفيذ مقفول لحد ما كل الشروط تستوفى،
-               والسبب مكتوب في `title` لا مخفي في اللون */
+          {noteFirst(actions).map((a) => {
+            /* Rule 9 - execution stays locked until every condition is met, and the reason is
+               written in `title`, not hidden in color alone. */
             const stop =
               (a.needsNote && !note.trim())
                 ? 'اكتب الملاحظات أولًا · القاعدتان 7 و8'
@@ -147,6 +148,7 @@ export function ActionDock({
               <button
                 key={a.label}
                 className={`btn ${a.kind}`}
+                data-needs-note={a.needsNote ? '' : undefined}
                 disabled={Boolean(stop)}
                 title={stop || `خطوة ${a.step} في الوثيقة`}
                 onClick={() => onTake(a.label)}
@@ -155,6 +157,7 @@ export function ActionDock({
               </button>
             )
           })}
+        </div>
         </div>
       </div>
     </div>

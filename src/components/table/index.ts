@@ -1,4 +1,4 @@
-/** نقطة الدخول لجدول البيانات العام */
+/** Entry point for the generic data table. */
 export { DataTable, type DataTableProps } from './DataTable'
 export {
   aggregate, defaultCols, orderCols, readCols, writeCols, splitGroups,

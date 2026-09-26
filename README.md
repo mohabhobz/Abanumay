@@ -1,78 +1,91 @@
-# نظام منح أبانمي — بروتوتايب الواجهة
+# Abanumay Grants System — UI Prototype
 
-React + Vite. شاشة المشروع مبنية بالكامل على الديزاين سيستم (جلاس فاتح · RTL · صفر بوردر)، وبداتا حقيقية مسحوبة من النظام الحالي.
+Front-end prototype of the grants management system for the Sulaiman Abanumay Charitable Foundation.
+Arabic, fully right-to-left, with light and dark themes. All data is mock data shaped like the
+live system; there is no backend connection yet.
 
-## التشغيل
+**Stack:** React 18 · TypeScript 5.6 · Vite 5 · React Router 7 · Phosphor Icons
+
+## Getting started
 
 ```bash
 npm install
-npm run dev
+npm run dev        # dev server on http://localhost:5173
 ```
 
-يفتح على `http://localhost:5173`.
+| Script | What it does |
+|---|---|
+| `npm run dev` | Start the dev server |
+| `npm run build` | Type-check, then build the production bundle into `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run typecheck` | TypeScript check only |
+| `npm run lint` | ESLint over `src/` |
+| `npm run clean` | Remove `dist/` |
 
-## الرفع وإرسال لينك للعميل
+## Deployment
 
-```bash
-npm run build      # يطلّع مجلد dist
-```
+`dist/` is a static single-page app. Any static host works (Vercel, Netlify, S3, Nginx) as long as
+every route falls back to `index.html`. `base` in `vite.config.ts` is intentionally `'/'`; a relative
+base breaks nested routes such as `/projects/20940`.
 
-مجلد `dist` ملفات ساكنة تشتغل من أي مكان. أسرع طريقتين:
-
-**Vercel** — `npx vercel` من داخل المجلد، ويطلّع لينك خلال دقيقة. أو اربط الريبو من vercel.com.
-
-**Netlify Drop** — افتح [app.netlify.com/drop](https://app.netlify.com/drop) واسحب مجلد `dist` عليه. لينك فوري بلا حساب.
-
-`base: './'` مضبوطة في `vite.config.js`، فالبناء يشتغل حتى لو اترفع في مجلد فرعي (GitHub Pages مثلًا).
-
-## بنية المشروع
+## Project structure
 
 ```
 src/
-├── index.css              الديزاين سيستم كامل، كل التوكنز في :root
-├── data/project.js        ← الداتا كلها هنا. غيّر الملف ده بس عشان تعرض مشروع تاني
-├── assets/Logo.jsx        شعار المؤسسة، fill=currentColor
-├── components/
-│   ├── ui.jsx             Glass · Tag · KV · Steps · Tabs · Timeline · Stat · Empty · Icon
-│   └── Shell.jsx          Rail · TopBar · DecisionBar · Background
-└── screens/
-    └── ProjectScreen.jsx  الشاشة، وكل تاب كومبوننت مستقل
+├─ app/                 App shell and routing
+│  ├─ App.tsx           Route map
+│  ├─ routes.ts         Single source of truth for every URL and the navigation (NAV)
+│  └─ layout/           Layout: background, navigation rail, assistant panel
+├─ components/          Shared building blocks, not tied to any module
+│  ├─ ui/               Design-system primitives (Tag, KV, Steps, Icon, fields…)
+│  ├─ shell/            Rail, breadcrumbs, decision bar, notifications, account menu
+│  ├─ charts/           Chart components (donut, bars, stage flow, waffle, pareto…)
+│  ├─ table/            Data table (sorting, column resize, views)
+│  ├─ assistant/        "Ask Abanumay" assistant engine (thinking → typing → evidence)
+│  └─ soul/             Brand motifs and illustrated surfaces
+├─ features/            One folder per module (home, projects, entities, budget, plans,
+│                       agreements, payments, closing, reports, assistant, settings, auth)
+├─ data/
+│  ├─ repository.ts     The only seam with the data source
+│  └─ mock/             Fixtures
+├─ types/domain.ts      Domain model
+├─ hooks/               Shared hooks
+├─ lib/                 Formatting (numbers, money, dates), theme, helpers
+└─ styles/index.css     The full design system: tokens in :root, surfaces, motion
 ```
 
-## التعديل السريع
+**Dependency direction:** `features` import from `components`, `data`, `hooks` and `lib`.
+`components` never import from `features`.
 
-**الألوان والمقاسات** — أول ٣٠ سطر في `src/index.css` تحت `:root`.
-قوة حافة الزجاج: `--edge-hair` · التمويه: `--g-card-blur` · الاستدارة: `--r1` … `--r4`.
+## Key files
 
-**المحتوى** — `src/data/project.js`. الأسماء والمبالغ والتواريخ والقراءات كلها هناك، ولا يوجد نص مكتوب داخل الشاشة نفسها إلا العناوين.
+- **`app/routes.ts`** — never hard-code a URL in a component; use `ROUTES.*`
+  (e.g. `ROUTES.project('20940')`). Each `NAV` item carries a permission key so the rail can be
+  filtered by the user's role once the backend returns permissions.
+- **`types/domain.ts`** — every field maps to a field in the live system; controlled vocabularies are
+  typed, so a backend shape mismatch shows up at build time.
+- **`data/repository.ts`** — every function returns a `Promise` with the same parameters the API will
+  take. Connecting the backend means replacing the mock bodies here with HTTP calls and adding
+  loading/error states in the screens; no component calls `fetch` directly.
 
-**تاب جديد** — ضيف اسمه في مصفوفة `TABS` أعلى `ProjectScreen.jsx`، واكتب كومبوننت له، وضيف سطر شرط في العمود الرئيسي.
+## Design system
 
-## الخطوط
+- All values come from tokens in `:root` (`--sp-*` spacing, `--fs-*` type, `--r-*` radius,
+  `--mo-*` motion, `--ch-*` chart colors). Spacing, type and radius scales are each derived from a
+  single base token, so a system-wide change is one line.
+- Every interactive control in a row shares one height (`--h-md`, 44px).
+- Motion respects `prefers-reduced-motion`.
+- People are rendered with `<Person>` from `src/data/people.ts`; photos are picked up automatically
+  from `src/assets/people/<slug>.jpg`.
 
-الحالي: `Cairo` من Google Fonts (مربوط في `index.html`).
-النهائي حسب الهوية: **Brando Arabic** ومعه **DIN Next LT Arabic**. لما تتوفر الملفات، حطها في `public/fonts` وعرّفها بـ `@font-face` — ستاك الخطوط في `:root` بيناديها بالاسم قبل Cairo فهتشتغل تلقائيًا.
+### RTL notes
 
-## ملاحظة على المحتوى
+- `inset-inline-start` is the right edge, `inset-inline-end` the left.
+- Numbers and percentages inside Arabic text are isolated (`<Num>`, `pct()`, `isolate()` in
+  `lib/format.ts`); dates always go through `<DateText>`.
+- Numeric table columns are marked `n: true` so header and cells align together.
 
-المشروع المعروض (`20940`) حالته «استكمال بيانات المشروع»، فالاتفاقية والدفعات والمحاضر والمراسلات **فاضية فعليًا في النظام** — الحالات الفارغة المعروضة هي الواقع لا نقص في التصميم. أول ما نجيب مشروع وصل «تحت التنفيذ»، البيانات دي تتملي من نفس ملف `data/project.js`.
+## Data and privacy
 
-
-## ملاحظة على الداتا
-
-`src/data/project.js` فيه بيانات حقيقية مسحوبة من نظام العميل (آيبان · جوالات · إيميلات · أسماء أفراد)،
-فهو **مستثنى من Git** ومش موجود في الريبو.
-
-في مكانه `src/data/project.example.js` — نفس البنية بالظبط، بمعرّفات شخصية وهمية.
-سكربت `prebuild` بينسخه تلقائيًا لو `project.js` مش موجود، فالمشروع يبني ويشتغل في أي مكان
-(Vercel وغيره) من غير أي خطوة يدوية.
-
-لو عايز تشتغل بالداتا الحقيقية على جهازك، سيب `project.js` مكانه — Git مش هيشوفه.
-
----
-
-## المصادر
-
-- شاشة المشروع في النظام الحالي: `sys.abanumay.sa/control/reports1_3/view/20940`
-- قواعد الصلاحيات والبوابات: مكالمة ٤ سبتمبر ٢٠٢٦ مع عمر ومظفر
-- الهوية البصرية: «الهوية المحدثة للمؤسسة» — الأخضر الداكن `#144547` · الليموني `#94D603` · الفيروزي `#00A59B`
+Personal and financial identifiers in the mock data are fictitious but well-formed. Real data for a
+demo can go in `src/data/mock/*.local.ts`, which is git-ignored.

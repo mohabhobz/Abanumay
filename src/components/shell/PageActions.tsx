@@ -2,62 +2,60 @@ import { Link } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
 import type { ReactNode } from 'react'
 
-/* ═══════════════════════════════════════════════════════════
-   أفعال الترويسة · **مكان واحد وترتيب واحد في كل الشاشات**
+/* Header actions — **one place, one order, across every screen**.
 
-   ⚠️ كان في الشاشات الخمسة تلات أماكن وتلات ترتيبات لنفس الفعل:
+   ⚠️ Across five screens there were three different spots and three different orders for the same
+   action:
 
-     الجهات      الترويسة · إعدادات ← طلبات التسجيل ← إنشاء
-     الميزانية   الترويسة · إعدادات ← إنشاء ← **مبدّل الدورة بعده**
-     الصرف       **شريط الأدوات** · إنشاء ← المتأخر ← تصدير ← مبدّل
-     الاتفاقيات  مفيش
-     المشاريع    الترويسة · إعدادات وحدها
+     Entities      header - settings, registration requests, create
+     Budget        header - settings, create, **cycle switcher after it**
+     Disbursement  toolbar - create, overdue, export, switcher
+     Agreements    none
+     Projects      header - settings alone
 
-   يعني «أضف» بتتنطّط بين ترويسة وشريط أدوات حسب الشاشة، وحتى في
-   الترويسة نفسها ترتيبها بيتغيّر. والمستخدم اللي بيشتغل على أربع
-   شاشات في اليوم بيدوّر على الزرار في كل مرة.
+   So "add" jumped between the header and the toolbar depending on the screen, and even within the
+   header its order shifted. A user working across four screens a day has to hunt for the button
+   every time.
 
-   ═══ العقد ═══
+   === The rule ===
 
-   **الإنشاء في الترويسة، آخر عنصر، ملزوق بالركن.**
+   **Create sits in the header, last, pinned to the corner.**
 
-   ليه الترويسة لا شريط الأدوات: شريط الأدوات كله بيشتغل **على
-   النتيجة المعروضة** · بحث وفلتر وتجميع وتصدير ومبدّل عرض. الإنشاء
-   مش واحد من دول · هو بيضيف للصندوق، ومالوش علاقة باللي متفلتر
-   قدامك. حطّه هناك بيخلط نوعين من الأفعال في مجموعة واحدة.
+   Why the header, not the toolbar: the toolbar works entirely **on the displayed result** — search,
+   filter, grouping, export, view switcher. Create isn't one of those: it adds to the collection,
+   unrelated to what's currently filtered in front of you. Putting it there mixes two different
+   kinds of action into one group.
 
-   وليه **آخر** عنصر: المجموعة ملزوقة لنهاية الصفّ، فآخر عنصر فيها
-   حافته عند حافة الصفحة **مهما كان عدد اللي جنبه**. أي مكان تاني
-   بيتحرّك لما شاشة يبقى فيها زرار ثانوي وشاشة لأ · والركن هو
-   المكان الوحيد الثابت فعلًا.
+   And why **last**: the group is pinned to the end of the row, so its last item's edge sits at the
+   page edge **regardless of how many items sit beside it**. Any other position moves depending on
+   whether a given screen has a secondary button — the corner is the one truly fixed spot.
 
-   والترتيب من ناحية العنوان للركن:
-     1 · إعدادات (هادي) · أبعد حاجة عن الشغل اليومي
-     2 · أفعال ثانوية بعدّاد · بتوديك لصندوق تاني
-     3 · الإنشاء · في الركن
+   Order from the title toward the corner:
+     1 - Settings (quiet), furthest from daily work
+     2 - Secondary actions with a counter, leads to another collection
+     3 - Create, in the corner
 
-   ⚠️ **ومبدّلات السياق مش أفعال.** دورة الميزانية بتغيّر اللي
-   بتشوفه لا بتضيف حاجة، فمكانها مع الفلاتر · وكانت محطوطة بعد زرار
-   الإنشاء، فبتزقّه من الركن وتكسر القاعدة على الشاشة الوحيدة اللي
-   فيها مبدّل.
-   ═══════════════════════════════════════════════════════════ */
+   ⚠️ **And context switchers aren't actions.** The budget cycle switcher changes what you're
+   looking at, not what you're adding, so it belongs with the filters — it used to sit right after
+   the create button, pushing it off the corner and breaking the rule on the one screen that has a
+   switcher. */
 
 export interface PageActionLink {
   label: string
   to: string
   icon?: string
-  /** رقم جنب الاسم · طابور مستنّي، لا زينة */
+  /** A number next to the name — a waiting queue, not decoration. */
   count?: number
 }
 
 export interface PageActionsProps {
-  /** الهادي · إعدادات الموديول */
+  /** The quiet one — module settings. */
   settings?: string
-  /** الثانوي · صندوق تاني له عدّاد */
+  /** The secondary one — leads to another collection, with a counter. */
   secondary?: PageActionLink[]
-  /** الإنشاء · الفعل الوحيد اللي بيضيف للموديول */
+  /** Create — the only action that adds to the module. */
   create?: PageActionLink
-  /** حاجة الشاشة دي وحدها محتاجاها · بتتحط قبل الإنشاء */
+  /** Something only this screen needs — placed before create. */
   extra?: ReactNode
 }
 

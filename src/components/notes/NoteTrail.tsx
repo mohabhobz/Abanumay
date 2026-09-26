@@ -1,38 +1,33 @@
 import { useState } from 'react'
-import { Icon, Person, Tag, icons } from '@/components/ui'
+import { Icon, Person, icons } from '@/components/ui'
 import { isolate, readDateTime } from '@/lib/format'
 import type { ActivityNote } from '@/types/domain'
 
-/* ═══════════════════════════════════════════════════════════
-   سجلّ الملاحظات · **مكتوب مرة واحدة**
+/* Note trail — **written once**.
 
-   ⚠️ **الملاحظة كانت سطرًا بلا صاحب.** «التقرير بلا كشف مستفيدين»
-   جوّه صندوق ملوّن، ومحدش عارف مين كتبها ولا إمتى · والرفض التاني
-   كان بيمسح الأول. والعميل طلب حاجتين (٢٢ سبتمبر): الملاحظة
-   **تتنسب لصاحبها بوقتها وتاريخها**، و**حد تاني يقدر يضيف عليها**.
-   يعني دي محادثة قصيرة على البند، لا لافتة.
+   ⚠️ **A note used to be a line with no owner.** "Report missing beneficiary list" sat in a colored
+   box with no record of who wrote it or when, and a second rejection would overwrite the first. The
+   requirement: a note **is attributed to its author, with a timestamp**, and **someone else can add
+   to it** — it's a short conversation on the item, not a banner.
 
-   ⚠️ **ومفيش شكل جديد.** كل ملاحظة **فقاعة ثريد المراسلة نفسها**
-   (`.thread` و`.msg` · ٢٢ سبتمبر، العميل طلب «كارت شبه الشات»):
-   الاسم والوسم في السطر الأول والوقت تحتهم، واللي فاتح الشاشة
-   رسايله على الناحية التانية (`mine`)، والجهة بنبرتها (`entity`).
-   كانت قايمة `.plchg` مسطّحة، فالسبب والردّ عليه كانوا بيتقروا
-   كإنهم سطرين في سجلّ لا كلام بين طرفين.
+   ⚠️ **And no new shape was invented.** Every note is **the same bubble as the correspondence
+   thread**: name and tag on the first line, time underneath, the current viewer's own messages on
+   the opposite side, and the entity in its own tone. It used to be a flat list, so a reason and its
+   reply read like two lines in a log rather than a conversation between two parties.
 
-   ⚠️ **والتعليق باسم اللي فاتح الشاشة، لا اسمًا بيتكتب.** الملاحظة
-   اللي صاحبها بيتكتب بإيد حد تاني ما بتتنسبش لحد · فالاسم بييجي
-   من الجلسة (`me`)، وتغيير الدور في النموذج بيغيّر صاحب التعليق.
-   ═══════════════════════════════════════════════════════════ */
+   ⚠️ **And the comment is attributed to whoever has the screen open, not a typed-in name.** A note
+   authored by someone else, typed by a different person, can't be attributed to anyone, so the name
+   comes from the session, and switching role in this mock changes who the comment is attributed to. */
 
-/* الوسم على قرار الرفض وحده · الأسباب المضافة بعده مفهومة من مكانها
-   في الثريد، ووسم على كل فقاعة بيكرّر نفس الكلمة لحدّ ما تفقد معناها */
+/* The tag sits on the rejection decision alone — reasons added after it are understood from their
+   place in the thread, and a tag on every bubble repeats the same word until it loses meaning. */
 const REJECT = 'سبب الرفض'
 
 export interface NoteTrailProps {
   notes: ActivityNote[]
-  /** اللي فاتح الشاشة · التعليق الجديد بيتنسب له */
+  /** Whoever has the screen open — a new comment is attributed to them. */
   me: string
-  /** إضافة تعليق · من غيره السجلّ للقراءة بس */
+  /** Adding a comment — without it, the trail is read-only. */
   onAdd?: (say: string) => void
 }
 
@@ -62,7 +57,9 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
               <div className="msg-h">
                 <Person name={n.by} quiet={false} />
                 {n.kind === 'reject'
-                  ? <Tag tone="warn">{REJECT}</Tag>
+                  /* The conversation has no colored tags — "reason for rejection" already carries
+                     weight as a phrase. */
+                  ? <b className="msg-role">{REJECT}</b>
                   : <span className="msg-role">{n.from === 'entity' ? 'الجهة' : 'المؤسسة'}</span>}
                 <span className="msg-at sub">{readDateTime(n.at)}</span>
               </div>
@@ -100,11 +97,10 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
           </div>
         </div>
       ) : (
-        /* ⚠️ **«إضافة سبب» لا «أضف تعليقًا» · ٢٢ سبتمبر.** الكلام
-           هنا عن سبب الرفض: المشرف بيضيف سببًا تانيًا، والجهة بتردّ
-           عليه · و«تعليق» كانت بتخلّيه يتقري دردشة جانبية مالهاش
-           وزن. والاسم بيتقال أول ما الحقل يتفتح («السبب · باسم عمر
-           قاسم»)، عشان محدش يفتكر إنه هيكتب اسمه بنفسه. */
+        /* ⚠️ **"Add a reason," not "add a comment."** This is specifically about the rejection
+           reason: the supervisor adds another reason, and the entity replies to it — "comment" made
+           it read like a side chat with no weight. The name is stated as soon as the field opens
+           ("Reason, as [name]"), so no one thinks they need to type their own name. */
         <button className="btn btn-ghost btn-sm notes-open" onClick={() => setOpen(true)}>
           <Icon name={icons.plus} size="sm" />
           إضافة سبب

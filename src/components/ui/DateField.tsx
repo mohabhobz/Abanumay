@@ -1,35 +1,33 @@
 import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useMenu } from '@/hooks/useMenu'
+import { useFloat } from '@/hooks/useFloat'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
-/* ═══════════════════════════════════════════════════════════
-   حقل التاريخ · تقويم السيستم لا تقويم المتصفّح.
+/* Date field · the system's own calendar, not the browser's.
 
-   ⚠️ **`<input type="date">` بيفتح تقويمًا بيرسمه المتصفّح** ·
-   نفس مشكلة `<select>` الأصلية بالظبط، ومسجَّلة في نفس المكان:
-   خطّ لاتيني، وأسماء أيام إنجليزية، وأول اليوم الأحد أو الاثنين
-   حسب لغة النظام لا حسب البلد، وشكل تالت خالص في الويندوز ·
-   وسط واجهة زجاج عربية. والأسوأ إن الخانة الفاضية بتكتب
-   `dd/mm/yyyy` بالإنجليزي في حقل عربي · والعميل شافها (١٨ سبتمبر).
+   Warning: `<input type="date">` opens a calendar rendered by the browser — the same problem as the
+   native `<select>`, and for the same reason: Latin script, English day names, and the week
+   starting Sunday or Monday depending on the system language rather than the country, plus a
+   different look on Windows, inside an Arabic glass UI. Worse, the empty field shows `dd/mm/yyyy`
+   in English inside an Arabic field.
 
-   فالتقويم هنا مرسوم: نفس لوحة `.fmenu`، ونفس الحبر، والأسبوع
-   بيبدأ **الأحد** لأن ده أول أيام العمل في السعودية، والجمعة
-   والسبت بيتعلّموا عطلة.
+   So the calendar here is drawn by hand: same `.fmenu` panel, same styling, and the week starts on
+   Sunday since that's the first working day in Saudi Arabia, with Friday and Saturday treated as
+   the weekend.
 
-   ⚠️ **والأرقام لاتينية وبس** · قاعدة السيستم كلها: `--fd` وخانة
-   `.num`. تقويم بأرقام هندية جنب مبلغ بأرقام لاتينية بيخلّي
-   الشاشة بلغتين.
+   Warning: digits are Latin only, per the system-wide rule (`--fd` and the `.num` class) — a
+   calendar with Arabic-Indic digits next to an amount in Latin digits would split the screen
+   between two number systems.
 
-   ⚠️ **والقيمة بتفضل `YYYY-MM-DD`** زي `type="date"` بالظبط ·
-   الشاشات اللي بتستعمله ما تعرفش إن التحكّم اتغيّر، والمقارنات
-   والفرز في `plans.ts` و`registration.ts` بتشتغل زي ما هي.
-   ═══════════════════════════════════════════════════════════ */
+   Warning: the value still stays `YYYY-MM-DD`, exactly like `type="date"`, so screens consuming it
+   don't need to know the control changed, and the comparisons and sorting in `plans.ts` and
+   `registration.ts` keep working as-is. */
 
-/* ⚠️ **حرف واحد لا تلاتة.** «إثن» و«ثلا» و«خمي» مش اختصارات
-   عربية، دي قصّ لكلمة في نصّها · والاختصار المتعارف عليه في
-   التقاويم العربية حرف واحد. والترتيب من الأحد لأنه أول أيام
-   العمل في السعودية. */
+/* Warning: one letter, not three. "Ithn", "thala", "khami" aren't standard Arabic abbreviations —
+   they're words cut off midway. The convention in Arabic calendars is a single-letter abbreviation.
+   The order starts on Sunday since that's the first working day in Saudi Arabia. */
 const DAYS = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س']
 const DAY_SAY = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
 const MONTHS = [
@@ -40,7 +38,7 @@ const MONTHS = [
 const pad = (n: number) => String(n).padStart(2, '0')
 const iso = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`
 
-/** «2026-09-18» → «18 سبتمبر 2026» · والفاضي بيرجع فاضي */
+/** "2026-09-18" → "18 September 2026" · empty input returns empty */
 const say = (v: string): string => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v)
   if (!m) return ''
@@ -52,19 +50,20 @@ export interface DateFieldProps {
   onChange: (v: string) => void
   label?: string
   disabled?: boolean
-  /** أقدم تاريخ مسموح · `YYYY-MM-DD` */
+  /** Earliest allowed date · `YYYY-MM-DD` */
   min?: string
-  /** أحدث تاريخ مسموح */
+  /** Latest allowed date */
   max?: string
-  /** يتعلّق بنهاية الحقل · للعمود الأخير في السطر */
+  /** Anchors to the end of the field · for the last column in a row */
   end?: boolean
 }
 
 export function DateField({ value, onChange, label, disabled, min, max, end }: DateFieldProps) {
-  const { open, setOpen, box } = useMenu<HTMLSpanElement>()
+  const { open, setOpen, box, pop } = useMenu<HTMLSpanElement>()
+  /* Warning: the panel lives in `body`, not inside the field · see `useFloat` */
+  useFloat(open, box, pop, end)
 
-  /* الشهر المعروض · بيفتح على الشهر بتاع القيمة، وعلى اليوم
-     لو الحقل فاضي */
+  /* Month shown · opens on the value's month, or on today if the field is empty */
   const now = new Date()
   const [at, setAt] = useState(() => {
     const m = /^(\d{4})-(\d{2})/.exec(value)
@@ -76,7 +75,7 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
 
   const grid = useMemo(() => {
     const first = new Date(at.y, at.m, 1)
-    /* `getDay()` بيرجع ٠ للأحد · وهو أول العمود عندنا فمفيش إزاحة */
+    /* `getDay()` returns 0 for Sunday, which is the first column here, so no offset is needed */
     const lead = first.getDay()
     const days = new Date(at.y, at.m + 1, 0).getDate()
     const cells: (number | null)[] = Array(lead).fill(null)
@@ -110,20 +109,20 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
         aria-label={label}
         onClick={() => setOpen((x) => !x)}
       >
-        {/* ⚠️ النصّ البديل عربي · `dd/mm/yyyy` اللاتيني بتاع
-            المتصفّح كان بيبان في حقل عربي جنب حقول نصّها عربي */}
+        {/* Warning: fallback text is Arabic · the browser's Latin `dd/mm/yyyy` used to show up in
+            an Arabic field next to fields with Arabic text */}
         <span className={`fldsel-t${value ? '' : ' ph'}`}>
           {value ? say(value) : 'اختر التاريخ'}
         </span>
         <Icon name={icons.date} size="sm" />
       </button>
 
-      {open && (
-        <div className="fmenu cal" role="dialog" aria-label={label ?? 'التقويم'}>
+      {open && createPortal(
+        <div className="fmenu cal float" role="dialog" aria-label={label ?? 'التقويم'} ref={pop}>
           <div className="cal-h">
-            {/* ⚠️ السهم بيمشي مع اتجاه القراءة: «السابق» على اليمين
-                في العربي · السهم اللي بيروح لورا في تقويم المتصفّح
-                كان بيمشي بالعكس لأنه متسمّر على اللاتيني */}
+            {/* Warning: the arrow follows reading direction — "previous" is on the right in Arabic
+                · the browser calendar's back arrow used to point the wrong way because it was
+                hardcoded for Latin */}
             <button type="button" className="cal-n" aria-label="الشهر السابق" onClick={() => step(-1)}>
               <Icon name={icons.chevronBack} size="sm" />
             </button>
@@ -169,7 +168,8 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </span>
   )
