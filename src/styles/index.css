@@ -8218,21 +8218,32 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
     height:var(--mbar-h);padding:var(--sp-2);align-items:stretch;border-radius:var(--rp);
     background:var(--lg-bg);-webkit-backdrop-filter:var(--mat-3);backdrop-filter:var(--mat-3);
     box-shadow:inset 0 0 0 1px var(--lg-rim),inset 0 1px 0 var(--lg-hi),0 0 0 1px var(--lg-edge),var(--el-3)}
-  .rail .railitem{padding:var(--sp-1) var(--sp-2);gap:var(--sp-1);border-radius:var(--rp);color:var(--t2)}
+  /* Every slot is the same box: full bar height, a 24px glyph on top and a one-line label under
+     it, centered as a group. The desktop rail rules (44px square items) carry higher
+     specificity, so they are reset explicitly here. */
+  .rail .railitem,.rail:not(.open) .railitem,.rail.open .railitem,.rail .acctbtn{
+    flex:1 1 0;min-width:0;width:auto;height:auto;margin:0;padding:var(--sp-1) var(--sp-1);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-1);
+    border-radius:var(--rp);color:var(--t2);font-size:var(--fs-1);font-weight:500;line-height:var(--lh-xs);text-align:center}
+  .rail .railitem svg,.rail:not(.open) .railitem svg{width:var(--ic-lg);height:var(--ic-lg)}
+  .rail .railitem .rail-l,.rail .acct-mob-l{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Keep the reset above from re-showing what the bar leaves out: desktop-only modules and the
+     rail bell (the bell lives in the header on mobile). */
+  .rail .railitem.nomob,.rail:not(.open) .railitem.nomob,.rail.open .railitem.nomob,
+  .rail .railfoot>.nbell.railitem,.rail:not(.open) .railfoot>.nbell.railitem{display:none}
   .rail .railitem:hover{background:none;color:var(--t1)}
   .rail .railitem.on,.rail .railitem.on:hover{color:var(--t1);font-weight:600;filter:none;
     background:var(--lg-lens);box-shadow:inset 0 0 0 1px var(--lg-rim),var(--el-1)}
   .rail .railitem.on svg{color:var(--teal)}
   .railfoot{flex:1;align-items:stretch}
   .railfoot>.nbell{display:none}
-  .railfoot>.acctwrap{display:flex;flex:1;position:static}
-  .rail .acctbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:var(--sp-1);padding:var(--sp-1) var(--sp-2);border-radius:var(--rp);color:var(--t2);
-    font-size:var(--fs-1);line-height:var(--lh-xs);transition:background var(--mo-2) var(--ease-std)}
-  .rail .acctbtn .av,.rail .acctbtn .pht{width:var(--ic-lg);height:var(--ic-lg);font-size:var(--fs-1)}
+  .railfoot{flex:1 1 0;min-width:0;display:flex}
+  .railfoot>.acctwrap{display:flex;flex:1 1 0;min-width:0;position:static;width:auto}
+  .rail .acctbtn{transition:background var(--mo-2) var(--ease-std)}
+  .rail .acctbtn .av,.rail .acctbtn .pht{width:var(--ic-lg);height:var(--ic-lg);font-size:var(--fs-1);outline-offset:0}
   .rail .acctbtn.on,.rail .acctbtn.here{color:var(--t1);font-weight:600;
     background:var(--lg-lens);box-shadow:inset 0 0 0 1px var(--lg-rim),var(--el-1)}
-  .rail .acctbtn.on .pht,.rail .acctbtn.on .av{outline-color:transparent}
+  .rail .acctbtn .pht,.rail .acctbtn .av,.rail .acctbtn:hover .pht,.rail .acctbtn:hover .av{outline-color:transparent}
   .rail .acctbtn .acct-who{display:none}
   .rail .acct-mob-l{display:block}
   /* The menu rises from the bar as a sheet the bar's width: the rail is its containing block.
@@ -8257,7 +8268,7 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
   :root{--mtop-h:calc(var(--h-md) + var(--sp-3) * 2)}
   .apanel,.apanel.wide,.apanel:not(.wide),.apanel:not(.wide):has(.chat-body.mid),.apanel:not(.wide):has(.thread){
     top:var(--mtop-h);bottom:0;left:auto;inset-inline:0;width:auto;height:auto;max-height:none;
-    border-radius:var(--r3) var(--r3) 0 0;padding-bottom:env(safe-area-inset-bottom,0px);
+    border-radius:var(--r3) var(--r3) 0 0;padding-bottom:env(safe-area-inset-bottom);
     box-shadow:inset 0 1px 0 var(--edge-d),var(--el-4)}
   .apanel:not(.wide){transform:translateY(var(--mo-travel))}
   .apanel.on:not(.wide),.apanel.on:not(.wide):has(.thread){transform:none;animation:none}
@@ -8265,7 +8276,44 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
   body:has(.apanel.on) .rail{opacity:0;pointer-events:none}
   .screen{padding-bottom:calc(var(--mbar) + var(--sp-12) * 2)}
   .ndrawer{inset-block:var(--sp-4);inset-inline-start:var(--sp-4);width:auto}
+  /* No sideways drift. The page scrolls vertically only; anything wider than the screen scrolls
+     inside its own strip (tabs, tables) instead of dragging the whole page left and right. The
+     overflow sources below are fixed at their root; the clip is the safety net. */
+  .screen{overflow-x:hidden;overscroll-behavior-x:none}
+  /* The two-column grid becomes a flex column here, but it keeps `align-items:start` from
+     desktop, so each column shrank-wrapped to its widest content (up to 490px on a 390px
+     screen) instead of taking the screen width. */
+  .g2,.two{align-items:stretch}
+  .screen .col,.screen .glass,.stats4>*,.g2>.col{min-width:0}
+  .stats4,.plist,.elist{grid-template-columns:minmax(0,1fr)}
+  .kv{grid-template-columns:minmax(0,1fr)}
+  .kv dt,.kv dd{min-width:0;overflow-wrap:anywhere;white-space:normal}
+  .hacts{max-width:100%}
+  .cfglist li{flex-wrap:wrap;row-gap:var(--sp-2)}
+  .cfglist li>*{min-width:0}
+  /* Budget check rows: the two number columns can't sit beside the title on a phone, so the row
+     wraps and the numbers drop under it, still aligned. */
+  .bglist-i{flex-wrap:wrap;row-gap:var(--sp-2)}
+  .bglist-t{flex-basis:100%}
+  .bglist-v{min-width:0}
+  /* Phase dates wrap under the phase name instead of running off the card. */
+  .phase-d{white-space:normal}
+}
+@media (min-width:421px) and (max-width:860px){
+  .stats4{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:860px) and (prefers-reduced-transparency:reduce){
   .rail,.rail .acct{background:var(--pop);-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+
+/* ═══ No focus zoom on touch devices ═══
+   iOS Safari zooms the page into any text field whose font size is under 16px the moment it
+   gets focus, and doesn't zoom back out. The fix is the font size itself, not blocking zoom in
+   the viewport meta (that would also block pinch-zoom, an accessibility failure). On touch
+   screens every text field renders at 16px or larger. `!important` is deliberate: dozens of
+   component rules set smaller sizes on their own fields, and this floor must win over all of
+   them, including fields added later. */
+@media (hover:none) and (pointer:coarse){
+  input:not([type="checkbox"],[type="radio"],[type="range"],[type="color"],[type="file"]),
+  textarea,select,[contenteditable]:not([contenteditable="false"]){font-size:max(var(--fs-4), 1em)!important}
 }

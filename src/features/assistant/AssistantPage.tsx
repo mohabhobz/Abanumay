@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { Background, MobileTop, Rail } from '@/components/shell'
 import { roles, type AssistantRole } from '@/data/mock/assistant'
@@ -24,6 +24,10 @@ import { AssistantScreen } from './AssistantScreen'
  */
 export default function AssistantPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  /* Close goes back when there is in-app history, and to Today when the assistant was the first
+     screen (right after login, or a shared link), so the X never leaves the app. */
+  const close = () => (location.key !== 'default' ? navigate(-1) : navigate(ROUTES.home))
   const mobile = useIsMobile()
   /* Note: collapsed state lives in the URL - a collapsed sidebar is still a state, and without this
      key the inventory would render the sidebar open every time. */
@@ -39,8 +43,9 @@ export default function AssistantPage() {
         {mobile && <MobileTop user={fixtures.currentUser} />}
 
         <div className="shell">
-          {/* The whole assistant screen is for the conversation - the sidebar stays closed here. */}
-          <Rail user={fixtures.currentUser} onSignOut={out} shut />
+          {/* The whole assistant screen is for the conversation - the sidebar stays closed here, and on
+              mobile the bottom bar is left out entirely; the X in the chat header closes the page. */}
+          {!mobile && <Rail user={fixtures.currentUser} onSignOut={out} shut />}
 
           <AssistantScreen
             greet={role.greet}
@@ -48,7 +53,7 @@ export default function AssistantPage() {
                is open-ended. */
             sub="كيف أساعدك اليوم؟"
             cards={role.cards}
-            onClose={() => navigate(-1)}
+            onClose={close}
             /* Note: closed until requested. It used to open automatically as soon as the screen
                loaded, so a user arriving with a question found a third of the screen taken up by an
                old chat list before they could even type. The assistant is also the first screen
