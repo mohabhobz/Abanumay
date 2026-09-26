@@ -8251,7 +8251,18 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
   .acct-mods>a.on svg{color:var(--teal)}
   .acct-mods svg{width:var(--ic-md);height:var(--ic-md)}
   .decdock{bottom:calc(var(--ask-mob) + 56px)}
-  .apanel{bottom:var(--mbar)}
+  /* "Ask Abanumay" on mobile is a full-width sheet from under the header to the screen bottom,
+     covering the nav bar like a system sheet. The desktop window rules (centered, 92vw, 86vh)
+     all carry higher specificity, so every state is reset here. */
+  :root{--mtop-h:calc(var(--h-md) + var(--sp-3) * 2)}
+  .apanel,.apanel.wide,.apanel:not(.wide),.apanel:not(.wide):has(.chat-body.mid),.apanel:not(.wide):has(.thread){
+    top:var(--mtop-h);bottom:0;left:auto;inset-inline:0;width:auto;height:auto;max-height:none;
+    border-radius:var(--r3) var(--r3) 0 0;padding-bottom:env(safe-area-inset-bottom,0px);
+    box-shadow:inset 0 1px 0 var(--edge-d),var(--el-4)}
+  .apanel:not(.wide){transform:translateY(var(--mo-travel))}
+  .apanel.on:not(.wide),.apanel.on:not(.wide):has(.thread){transform:none;animation:none}
+  /* The sheet covers the nav bar; hide the bar so its icons don't ghost through the glass. */
+  body:has(.apanel.on) .rail{opacity:0;pointer-events:none}
   .screen{padding-bottom:calc(var(--mbar) + var(--sp-12) * 2)}
   .ndrawer{inset-block:var(--sp-4);inset-inline-start:var(--sp-4);width:auto}
 }
