@@ -1,0 +1,12 @@
+/** App shell: background, navigation, decision bar, and assistant panel. */
+export { Background } from './Background'
+export { Avatar } from './Avatar'
+export { MobileTop } from './MobileTop'
+export { Rail, type RailProps } from './Rail'
+export { AccountMenu } from './AccountMenu'
+export type { ThemeChoice } from '@/lib/theme'
+export { DecisionBar, type DecisionBarProps } from './DecisionBar'
+export { BulkBar, type BulkBarProps } from './BulkBar'
+export { AskDock, type AskDockProps } from './AskDock'
+export { PageActions, type PageActionsProps, type PageActionLink } from './PageActions'
+export { Crumbs, type Crumb, type CrumbsProps } from './Crumbs'

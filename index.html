@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نظام منح أبانمي</title>
+    <meta name="description" content="بروتوتايب واجهة نظام إدارة المنح — مؤسسة سليمان أبانمي الأهلية" />
+
+    <!-- Tab icon: the logo on a tile in the foundation's color. The tree's
+         detail gets muddled at 16px, and the tile gives it a solid silhouette
+         that reads on both light and dark tab bars. The `.ico` comes before
+         the `.svg`: older browsers take the first format they recognize,
+         while modern ones prefer the svg. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#144547" />
+
+    <!-- Theme applied before the first paint: without this, the page renders
+         light and then flips to dark once React runs — a flash in the user's
+         face. Same key and values as in `src/lib/theme.ts`. -->
+    <script>
+      try {
+        var t = localStorage.getItem('ab-theme')
+        document.documentElement.setAttribute(
+          'data-theme',
+          t === 'dark' ? t : 'light'
+        )
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light')
+      }
+    </script>
+
+    <!-- The brand typeface "Brando Arabic" is commercially licensed and
+         hasn't arrived yet, so the temporary substitute is Cairo. Once the
+         Brando files arrive, the `@font-face` in index.css gets activated and
+         this line is removed — no other font name exists anywhere in the
+         system, so the screen renders identically on every device. IBM Plex
+         Mono was removed: it was a fourth, off-brand font used for code. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

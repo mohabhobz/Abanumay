@@ -1,0 +1,273 @@
+/**
+ * Sample data shaped like the live system.
+ *
+ * Personal and financial identifiers are deliberately stripped: IBANs, phone numbers, mailing
+ * addresses, individual names, and license numbers are fictional but validly formatted, since this
+ * repo is public. What's kept real is whatever is safe to be public: project descriptions, amounts,
+ * track, area, goal, and durations.
+ *
+ * If real figures are needed for a client-facing demo, put them in `project.local.ts` — that
+ * extension is git-ignored.
+ *
+ * This file is the project's only fixture. Once the backend is ready, `data/repository.ts` is what
+ * changes — this file just gets removed.
+ */
+import type {
+  Project, Entity, AuthorityMatrix, CurrentUser, Insight, FollowUpType,
+} from '@/types/domain'
+import { person } from '@/data/people'
+
+export const project: Project = {
+  id: '20940',
+  name: 'المكملات المعرفية لطالب العلم',
+  track: 'المنح النوعي',
+  field: 'العلم الشرعي',
+  goal: 'المحفظة الشرعية المتنوعة',
+  tags: [],
+
+  status: { label: 'استكمال بيانات المشروع', tone: 'warn' },
+  stage: 'دراسة المشروع',
+
+  amountRequested: 65000,
+  amountTotal: 65000,
+  amountGranted: 0,
+  weight: 0,
+  score: 0,
+
+  startDate: '2026-04-12',
+  durationDays: 330,
+
+  region: 'الرياض',
+  city: 'الرياض',
+  beneficiaries: 1000,
+  beneficiariesVerified: 0,
+  audiences: [
+    'الشباب',
+    'المنظمات الخيرية',
+    'العاملون في القطاع الخيري',
+    'الجهات القرآنية',
+    'المراكز البحثية',
+    'طلاب العلم',
+  ],
+
+  compliance: [
+    { k: 'دعم من جهات مانحة أخرى', v: 'لا' },
+    { k: 'الجهة مسجّلة في إحسان', v: 'لا' },
+    { k: 'المشروع مسجّل في إحسان', v: 'لا' },
+  ],
+
+  idea:
+    'ترى جمعية النوابغ أن تَجسُر بين اللبنات العلمية واللبنات القيمية، من خلال إصدار منتجات معرفية لطلاب العلم لزيادة كفاءتهم في مجال القيم والدعوة، وحتى يكونوا مؤثرين في المنظومة الإعلامية فيما يتعلق بالهوية والقيم، ويمتلكوا القدرة على التعامل مع قضايا الإلحاد والتطرف. وسمّت المشروع «التربية العلمية لطالب العلم» أو المكملات المعرفية.',
+  mainGoal:
+    'تحصين اللبنات العلمية الشرعية بالحصانة الإيمانية والفكرية من خلال قضايا التربية العلمية والمكملات المعرفية التي تنقص طالب العلم، لزيادة فاعليتهم في المجتمع.',
+  goals: [
+    'حصر قضايا التربية العلمية والمكملات المعرفية التي تشكّل الحصانة الإيمانية والفكرية.',
+    'وضع مؤشرات تفصيلية لقضايا التربية العلمية من متخصصين علميين وتربويين.',
+    'إصدار كتاب معرفي يتناول قضايا التربية العلمية.',
+  ],
+  outputs: [
+    'ربط المعايير والمؤشرات بالوحي وبكلام المفسرين.',
+    'معايير ومؤشرات ومهام أدائية تصلح للبرامج العلمية القائمة.',
+    'خريطة إجمالية لقضايا التربية العلمية لتشكيل الحصانة والفاعلية.',
+  ],
+  rationale: [
+    'خلل منهجي في قضايا التربية العلمية يجعل طلبة العلم غير فاعلين، لعدم استحضار واقع المجتمع.',
+    'فقدان بعض طلبة العلم البوصلة في غايات العلم، وحصرهم العلم في وسائل مثل تدريس المتون فقط.',
+    'انحصار التربية العلمية في أبواب غير متسعة، وغياب رؤية شاملة لضبطها.',
+    'غياب المؤشرات وأدوات القياس في البرامج العلمية.',
+  ],
+
+  // In the current system this is free text inside one field. Here it's a structured entity with line items.
+  phases: [
+    { name: 'التهيئة', tasks: 'التفاهم مع مدير المشروع البحثي، ثم التعاقد معه.', months: 'الشهر 1 – 2', tone: 'teal' },
+    { name: 'الإعداد', tasks: 'جمع الدراسات العلمية، ثم إعداد خريطة موضوعات التربية العلمية.', months: 'الشهر 3 – 4', tone: 'teal' },
+    { name: 'التنفيذ، الجزء الأول', tasks: 'بناء مفردات ومؤشرات التربية العلمية.', months: 'الشهر 5', tone: 'lime' },
+    { name: 'التنفيذ، الجزء الثاني', tasks: 'ربط المؤشرات بالمحاور وبكلام المفسرين، والتعاقد مع باحثين، وتصميم المحتوى.', months: 'الشهر 6 – 10', tone: 'lime' },
+    { name: 'الإغلاق', tasks: 'إعداد التقرير الختامي.', months: 'الشهر 11', tone: 'mute' },
+  ],
+
+  manager: {
+    name: 'مدير المشروع',
+    phone: '9665XXXXXXXX',
+    email: 'project@example.org',
+  },
+
+  bank: {
+    name: 'مصرف الإنماء',
+    account: 'جمعية النوابغ التعليمية',
+    iban: 'SA0000000000000000000000',
+    status: 'مفعل',
+  },
+
+  attachments: [
+    { name: 'ملف الموازنة', uploaded: true, required: true },
+    { name: 'دراسة المشروع', uploaded: true, required: true },
+    { name: 'ملف خطاب الدعم', uploaded: true, required: true },
+    { name: 'الخطة التنفيذية', uploaded: true, required: true },
+    { name: 'تقرير عن المشروع إن سبق تنفيذه', uploaded: false, required: false },
+    { name: 'مرفقات أخرى تعزز قيمة المشروع', uploaded: false, required: false },
+  ],
+
+  // The five gates · real-world status
+  gates: [
+    { role: 'مشرف المنح', state: 'now', note: 'الحالية · بانتظار الجهة' },
+    { role: 'مدير المنح', state: '', note: 'لاحقة' },
+    { role: 'المدير التنفيذي', state: '', note: 'لاحقة' },
+    { role: 'اللجنة التنفيذية', state: '', note: 'ضمن الحد المالي، غير مطلوبة' },
+    { role: 'مجلس الأمناء', state: '', note: 'غير مطلوبة' },
+  ],
+
+  // Action history · with duration-tracking fields as they exist in the system
+  log: [
+    {
+      action: 'طلب استكمال',
+      body: 'تحديث البيانات وإرفاق الموازنات التفصيلية، ثم إعادة إرسال المشروع.',
+      dept: 'دراسة المشروع',
+      by: 'عمر قاسم',
+      at: '2026-08-06 13:11',
+      days: 87,
+      hours: 2092,
+      limit: 900,
+      tone: 'warn',
+    },
+    {
+      action: 'تحويل المشروع إلى باحث آخر',
+      body: 'أُعيد التصنيف إلى المنح النوعي ← العلم الشرعي ← المحفظة الشرعية المتنوعة.',
+      dept: 'دراسة المشروع',
+      by: 'عمر قاسم',
+      at: '2026-05-11 09:09',
+      days: 30,
+      hours: 732,
+      limit: 900,
+      extra: 'سنة 2026، تمويل المؤسسة',
+      tone: 'teal',
+    },
+  ],
+
+  followUps: [],
+  messages: [],
+  payments: [],
+  minutes: [],
+  correspondence: [],
+  agreement: null,
+}
+
+export const entity: Entity = {
+  name: 'جمعية النوابغ التعليمية',
+  initial: 'ن',
+  type: 'جمعية أهلية',
+  licensor: 'المركز الوطني لتنمية القطاع غير الربحي',
+  supervisor: 'وزارة التعليم',
+  region: 'الرياض',
+  city: 'الرياض',
+  licenseNo: '10000000',
+  licenseEnd: '2028-11-13',
+  licenseEndH: '26/6/1450هـ',
+  boardEnd: '2028-11-13',
+  founded: '2024-11-13',
+  foundedH: '11/5/1446هـ',
+  phone: '0',
+  mobile: '9665XXXXXXXX',
+  email: 'entity@example.org',
+  website: '',
+  ceo: 'المدير التنفيذي للجهة',
+  ceoMobile: '9665XXXXXXXX',
+  dataEntry: 'مدخل بيانات الجهة',
+  registeredAt: '2025-01-12',
+  lastEdit: '2025-01-12',
+  userNo: '0000',
+  userName: 'demo-user',
+  accountType: 'حساب رئيسي',
+  governance: 'لم تُقيَّم',
+  docs: [
+    { name: 'ملف الترخيص', uploaded: true },
+    { name: 'قرار تكليف أعضاء مجلس الإدارة', uploaded: true },
+    { name: 'ترخيص مزاولة النشاط', uploaded: false },
+    { name: 'شهادة هيئة الزكاة والدخل', uploaded: false },
+    { name: 'شهادة ضريبة القيمة المضافة', uploaded: false },
+    { name: 'تقرير الحوكمة', uploaded: false },
+    { name: 'التقرير السنوي', uploaded: false },
+    { name: 'تقرير المراجع القانوني', uploaded: false },
+  ],
+  stats: [
+    { k: 'عدد المشاريع', v: 3 },
+    { k: 'المعتذر منها', v: 1 },
+    { k: 'المبالغ المعتمدة', v: 0 },
+    { k: 'المبالغ المصروفة', v: 0 },
+    { k: 'المشاريع المغلقة', v: 0 },
+    { k: 'دعم السنة الحالية', v: 0 },
+  ],
+  projects: [
+    { id: '22444', name: 'البرنامج العلمي في جمعية الرياحين', region: 'الرياض', status: 'دراسة المشروع', tone: 'teal', weight: 0 },
+    { id: '22442', name: 'صناعة معايير التربية العلمية وتفعيلها', region: 'الرياض', status: 'معتذر عنه', tone: 'no', weight: 96 },
+    { id: '20940', name: 'المكملات المعرفية لطالب العلم', region: 'الرياض', status: 'الحالي', tone: 'brand', weight: 0 },
+  ],
+}
+
+// The eight follow-up types, extracted from the current system
+export const followUpTypes: FollowUpType[] = [
+  'التواصل مع الشريك',
+  'تحديث الاتفاقية',
+  'تحديث تقرير المشروع',
+  'منتج معرفي',
+  'رفع صورة أو فيديو',
+  'زيارة ميدانية',
+  'مخاطبات',
+  'أخرى',
+]
+
+// Derived readings computed from the data itself, not invented
+export const insights: Insight[] = [
+  {
+    text: 'الجهة حديثة نسبيًا: مسجّلة منذ 8 أشهر، ولها 3 مشاريع في المسار نفسه، أحدها معتذر عنه بوزن 96.',
+    bold: ['مسجّلة منذ 8 أشهر', '3 مشاريع', '96'],
+    src: 'المصدر: سجل مشاريع الجهة',
+  },
+  {
+    text: 'تكلفة المستفيد 65 ⃁، وهي منخفضة لمشروع بحثي. يلزم مراجعة تقدير 1,000 مستفيد، فمخرجات المشروع كتاب ومؤشرات لا برنامج تدريبي.',
+    bold: ['65', '1,000 مستفيد'],
+    src: 'المصدر: مقارنة تكلفة الوحدة · مخرجات المشروع',
+  },
+  {
+    text: 'مدة التنفيذ 330 يومًا تتجاوز نهاية السنة المالية، فتُنشئ التزامًا يمتد إلى ميزانية 2027.',
+    bold: ['330', '2027'],
+    src: 'المصدر: تاريخ البدء والمدة مقارنةً بالسنة المالية',
+  },
+  {
+    text: 'درجة الحوكمة غير مقيَّمة، ولا يوجد في ملف الجهة تقرير مراجع قانوني ولا تقرير سنوي.',
+    bold: ['درجة الحوكمة غير مقيَّمة'],
+    src: 'المصدر: ملف الجهة، 5 مستندات ناقصة',
+  },
+]
+
+
+// Financial authority matrix
+// These figures are provisional pending confirmation. This component reads from them, so swapping
+// the values here changes the screen with no other edit needed.
+export const authority: AuthorityMatrix = {
+  provisional: true,
+  // state: done = finished · now = currently here · pending = not yet
+  roles: [
+    { role: 'تقديم الجهة', ceiling: null, kind: 'submit', state: 'done' },
+    { role: 'مشرف المنح', ceiling: null, kind: 'recommend', state: 'now' },
+    { role: 'مدير المنح', ceiling: 250000, uplift: 10, state: 'pending' },
+    { role: 'المدير التنفيذي', ceiling: 500000, uplift: 5, state: 'pending' },
+    { role: 'اللجنة التنفيذية', ceiling: 1000000, note: 'للمشروع الواحد', state: 'pending' },
+    { role: 'مجلس الأمناء', ceiling: null, kind: 'final', state: 'pending' },
+  ],
+}
+
+export const currentUser: CurrentUser = {
+  name: 'عمر قاسم',
+  role: 'مشرف المنح',
+  initial: person('عمر قاسم').initial,
+  photo: person('عمر قاسم').photo,
+  // Per the process: the grants officer has no financial authority, only a recommendation
+  financialAuthority: null,
+  actions: [
+    { label: 'توصية بالموافقة', kind: 'btn-p' },
+    { label: 'طلب استكمال', kind: 'btn-2' },
+    { label: 'تحويل لمشرف آخر', kind: 'btn-2' },
+    { label: 'توصية بالرفض', kind: 'btn-d' },
+  ],
+}
