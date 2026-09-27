@@ -5298,7 +5298,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .fsel-sz>span[aria-hidden]{visibility:hidden;height:0;pointer-events:none}
 .ftool-f>.fsel .fmulti-s{font-size:var(--fs-2)}
 .fmenu{position:absolute;top:calc(100% + .35rem);inset-inline-start:0;z-index:60;
-  min-width:100%;max-width:min(300px,80vw);width:max-content;
+  min-width:max(100%, var(--menu-min));max-width:min(300px,80vw);width:max-content;
   display:flex;flex-direction:column;padding:var(--sp-2);border-radius:var(--r1);
   /* ⚠️ **The panel is opaque, not glass** (client request, Sept 18).
      It used to be `--g-pop` at 0.92 alpha plus blur, and the remaining 8% showed what was
@@ -5336,7 +5336,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    letter instead of finding it at one fixed edge. `order` moves the slot without changing
    DOM order, so a screen reader announces the state before the name, as intended. The same
    rule covers both single- and multi-select. */
-.fopt-x{order:9;flex:none;display:grid;place-items:center;width:16px;height:16px;border-radius:var(--r0);
+.fopt-x{order:9;flex:none;display:grid;place-items:center;width:var(--ic-sm);height:var(--ic-sm);border-radius:var(--r0);
   color:var(--on-solid);background:var(--fl-5);
   box-shadow:inset 0 0 0 1px var(--edge-i)}
 .fopt.on .fopt-x{background:var(--solid);box-shadow:none}
@@ -5417,7 +5417,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    it isn't clipped by a table or card. `left` is physical on purpose: the value
    comes from `getBoundingClientRect`, which is physical too. It sits above the dock
    and decision bar since it covers everything while open. */
-.fmenu.float{--float-gap:var(--sp-2);position:fixed;inset:auto;min-width:var(--fw,0);top:var(--fy,0);left:var(--fx,0);z-index:90}
+.fmenu.float{--float-gap:var(--sp-2);position:fixed;inset:auto;min-width:max(var(--fw,0px), var(--menu-min));top:var(--fy,0);left:var(--fx,0);z-index:90}
 .cal-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
 .cal-t{font-weight:600;font-size:var(--fs-2)}
 .cal-n{display:grid;place-items:center;width:28px;height:28px;border-radius:var(--r1);
@@ -5475,8 +5475,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 /* The button takes the group's name and count — a wide press target, not a 20px icon */
 .tcap-b{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
   height:var(--h-md);padding:0;background:none;border:0;color:inherit;cursor:pointer;text-align:start}
-.tcap-b>svg{flex:none;color:var(--t3);transition:transform var(--mo-2) var(--ease-std)}
-.tcap.shut .tcap-b>svg{transform:rotate(90deg)}
+.tcap-b>svg{flex:none;color:var(--t3)}
 .tcap-b:hover>svg{color:var(--t1)}
 .tcap-k{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
@@ -5531,8 +5530,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .fgrp-p>svg{color:var(--t3)}
 /* The number sits where the checkmark would go — the exact same slot, so names
    stay aligned whether a dimension is selected or not */
-.fgrp .fopt-x{font-family:var(--fd);font-weight:700;font-size:var(--fs-1);
-  display:grid;place-items:center;color:var(--ok)}
+.fgrp .fopt-x{font-family:var(--fd);font-weight:700;font-size:var(--fs-1);line-height:var(--lh-flat);
+  font-variant-numeric:tabular-nums;display:grid;place-items:center;color:var(--on-solid)}
 /* Totals row: slightly darker tone than the rows, pinned to the bottom of the table */
 /* ⚠️ **The color lives in a variable because it's written in two places, and one
    of them got forgotten.** The column-picker cell (`.tcolx`) is stuck to the edge
@@ -5742,7 +5741,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    while table checkboxes are selection blue — two checkboxes in two shapes within
    one system, and eleven of them stacked read as a wall of black squares rather
    than a list of choices. */
-.fcust-c{flex:none;display:grid;place-items:center;width:15px;height:15px;border-radius:var(--r0);
+.fcust-c{flex:none;display:grid;place-items:center;width:var(--ic-sm);height:var(--ic-sm);border-radius:var(--r0);
   color:var(--on-ret);background:var(--fl-5);
   transition:background var(--mo-2) var(--ease-std),box-shadow var(--mo-2) var(--ease-std);
   box-shadow:inset 0 0 0 1.5px var(--edge-2)}
@@ -8320,3 +8319,14 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
   input:not([type="checkbox"],[type="radio"],[type="range"],[type="color"],[type="file"]),
   textarea,select,[contenteditable]:not([contenteditable="false"]){font-size:max(var(--fs-4), 1em)!important}
 }
+
+/* ═══ Selection mark and menu width ═══
+   One checkmark for every selection box: 10px centered in the 16px box, a 2px round stroke in
+   the ink that sits on the solid fill. */
+.ckmark{width:calc(var(--sp-4) - var(--sp-1));height:calc(var(--sp-4) - var(--sp-1));flex:none;fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.fmenu.one .ckmark{width:var(--sp-4);height:var(--sp-4)}
+/* A menu is never narrower than a readable result card, whatever the width of the control
+   that opened it: a narrow trigger (a short sort or group label) used to produce a panel as
+   narrow as itself, and longer options wrapped or crowded their marks. */
+:root{--menu-min:calc(var(--sp-12) * 3)}

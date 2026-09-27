@@ -108,6 +108,20 @@ export interface MenuOptProps {
   children: ReactNode
 }
 
+/**
+ * The checkmark drawn inside every selection box (menu options, the filter customizer, choice
+ * cards). A dedicated path instead of the line icon: the icon filled its 16px box edge to edge,
+ * inherited the hover pop/rotate that icons get inside buttons, and drew a hairline stroke on a
+ * solid fill. This one sits centered with room around it, at a stroke that reads on the fill.
+ */
+export function CheckMark() {
+  return (
+    <svg className="ckmark" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+      <path d="M2.6 6.3 5 8.6l4.4-5" />
+    </svg>
+  )
+}
+
 export function MenuOpt({
   on, onPick, lead, mark, fix, off, title, markClass, textClass, children,
 }: MenuOptProps) {
@@ -124,7 +138,7 @@ export function MenuOpt({
       {/* Warning: the slot is rendered even when empty · its space is reserved so names don't shift
           when the selection changes */}
       <span className={`fopt-x${markClass ? ` ${markClass}` : ''}`} aria-hidden="true">
-        {mark ?? (on && <Icon name={icons.check} size="sm" />)}
+        {mark ?? (on && <CheckMark />)}
       </span>
       {lead}
       <span className={`fopt-t${textClass ? ` ${textClass}` : ''}`}>{children}</span>

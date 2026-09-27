@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { CheckMark, Icon, icons } from '@/components/ui'
 
 export interface FilterDef {
   key: string
@@ -81,7 +81,7 @@ export function FilterCustomizer({
               aria-label={`إخفاء ${f.label}`}
               onClick={() => onChange(visible.filter((k) => k !== f.key))}
             >
-              <Icon name={icons.check} size="sm" />
+              <CheckMark />
             </button>
 
             <span className="fcust-n">{f.label}</span>

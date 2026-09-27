@@ -549,7 +549,7 @@ export default function BudgetDocPage() {
                                   aria-expanded={!shut.has(x.id)}
                                 >
                                   <Icon
-                                    name={shut.has(x.id) ? icons.chevron : icons.chevronDown}
+                                    name={shut.has(x.id) ? icons.chevronDown : icons.chevronUp}
                                     size="sm"
                                   />
                                 </button>

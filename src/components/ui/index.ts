@@ -21,4 +21,4 @@ export { MoneyField } from './MoneyField'
 /* Warning: date field · a hand-drawn calendar, not `type="date"` */
 export { DateField, type DateFieldProps } from './DateField'
 /* Warning: the one panel · every list in the system renders from it */
-export { MenuPanel, MenuOpt, type MenuPanelProps, type MenuOptProps } from './menu'
+export { MenuPanel, MenuOpt, CheckMark, type MenuPanelProps, type MenuOptProps } from './menu'

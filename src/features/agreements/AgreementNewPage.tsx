@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { MISSING_ITEM, NOUN, nounAfter } from '@/lib/format'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Blockers, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
+  CheckMark, BackTo, Blockers, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -238,7 +238,7 @@ export default function AgreementNewPage() {
                         />
                         <span className="pkind-h">
                           <span className="pkind-r" aria-hidden="true">
-                            {kind === k.key && <Icon name={icons.check} size="sm" />}
+                            {kind === k.key && <CheckMark />}
                           </span>
                           <b>{k.label}</b>
                           <span className="sub trim1">· {k.note}</span>

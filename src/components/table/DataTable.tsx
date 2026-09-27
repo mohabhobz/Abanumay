@@ -313,7 +313,9 @@ function Cap<T>({
         onClick={onToggle}
         title={shut ? `افتح ${node.key}` : `اطوِ ${node.key}`}
       >
-        <Icon name={icons.chevronDown} size="sm" />
+        {/* Collapse/expand is vertical: down while closed, up while open. A sideways chevron means
+            "opens another page", which this row doesn't do. */}
+        <Icon name={shut ? icons.chevronDown : icons.chevronUp} size="sm" />
         <span className="tcap-k">
           <span className="sub">{node.by.label}:</span> {node.key}
         </span>
