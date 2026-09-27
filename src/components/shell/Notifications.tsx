@@ -1,8 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as RKeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { DateText, Icon, icons } from '@/components/ui'
-import { buildNotes, isRead, markRead, NOTE_GROUPS, useReadSet } from '@/data/notifications'
+import Logo from '@/assets/LogoColor'
+import { DateText, EntityMark, Face, Icon, icons } from '@/components/ui'
+import { buildNotes, isRead, markRead, NOTE_GROUPS, useReadSet, type NoteFrom } from '@/data/notifications'
+
+/** The card's leading mark: sender photo, entity/project logo, or the Abanumay mark for the system. */
+function NoteMark({ from }: { from: NoteFrom }) {
+  if (from.type === 'person') return <span className="nmark"><Face name={from.name} size="lg" /></span>
+  if (from.type === 'system') return <span className="nmark nmark-sys" aria-hidden="true"><Logo /></span>
+  if (from.type === 'project' && !from.logo) {
+    return <span className="nmark ec-init ec-mark" aria-hidden="true"><Icon name={icons.navProjects} /></span>
+  }
+  return <span className="nmark"><EntityMark logo={from.logo} /></span>
+}
 
 /**
  * Notification bell and drawer.
@@ -12,8 +23,9 @@ import { buildNotes, isRead, markRead, NOTE_GROUPS, useReadSet } from '@/data/no
  * behind it; it opens from the left edge (inline-end in RTL) on every screen size, away from the
  * rail, so the navigation stays readable beside it. Escape and the scrim close it; focus is
  * trapped inside and returns to the bell.
- * **Quiet by rule:** no colored text or tags — unread is marked by a dot (shape) and weight (bolder
- * text), read is dimmer ink. Status sits in the group heading.
+ * **Each notification is a card.** Unread and read differ by the card's background (a light brand
+ * tint vs. the neutral surface) and by weight, never by colored text or a dot. The card leads with
+ * who it's from and puts the date under the description.
  */
 export function NotificationBell({ user, place = 'rail' }: { user: { name: string }; place?: 'rail' | 'top' }) {
   const [open, setOpen] = useState(false)
@@ -112,13 +124,15 @@ export function NotificationBell({ user, place = 'rail' }: { user: { name: strin
                           <li key={n.id}>
                             <Link
                               to={n.to}
-                              className={`nrow${fresh ? ' unread' : ''}`}
+                              className={`ncard${fresh ? ' unread' : ''}`}
                               onClick={() => { markRead([n.id]); setOpen(false) }}
                             >
-                              <i className="ndot" aria-hidden="true" />
-                              <span className="nrow-t">{n.title}</span>
-                              <span className="nrow-c">{n.context}</span>
-                              <span className="nrow-d"><DateText>{n.at}</DateText></span>
+                              <NoteMark from={n.from} />
+                              <span className="ncard-b">
+                                <span className="nrow-t">{n.title}</span>
+                                <span className="nrow-c">{n.context}</span>
+                                <span className="nrow-d"><DateText>{n.at}</DateText></span>
+                              </span>
                               {fresh && <span className="nsr">غير مقروء</span>}
                             </Link>
                           </li>

@@ -829,6 +829,8 @@
      top highlight, and a lighter lens under the active item. */
   --lg-bg:rgba(255,255,255,.64); --lg-rim:rgba(255,255,255,.70); --lg-hi:rgba(255,255,255,.95);
   --lg-lens:rgba(255,255,255,.80); --lg-edge:rgba(20,69,71,.10);
+  /* Notification cards: unread sits on a light brand tint, read on the neutral surface. */
+  --note-unread:rgba(0,165,155,.10); --note-read:rgba(20,69,71,.035);
   /* Ink on a light-translucent surface: in dark mode that surface turns
      dark, and the dark ink was disappearing into it, causing the tag and
      icon to fade out. */
@@ -4475,6 +4477,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   --bar-bg:linear-gradient(180deg,rgba(11,13,13,.94),rgba(11,13,13,.99));
   --lg-bg:rgba(34,39,39,.62); --lg-rim:rgba(255,255,255,.12); --lg-hi:rgba(255,255,255,.22);
   --lg-lens:rgba(255,255,255,.13); --lg-edge:rgba(0,0,0,.45);
+  --note-unread:rgba(47,199,182,.13); --note-read:rgba(255,255,255,.04);
   --ink-soft:var(--t1);
   --logo-ink:#FFFFFF; --logo-teal:#FFFFFF; --logo-lime:#FFFFFF;
   --solid:#2FC7B6; --on-solid:#06100F; --solidC:47,199,182;
@@ -8178,18 +8181,27 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .ngroup-h{display:flex;align-items:center;gap:var(--sp-2);margin:var(--sp-4) var(--sp-3) var(--sp-2);
   font-family:var(--fd);font-size:var(--fs-1);font-weight:600;line-height:var(--lh-ui);color:var(--t3)}
 .ngroup-h .num{font-weight:400}
-.nlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-1)}
-.nrow{display:grid;grid-template-columns:var(--sp-3) minmax(0,1fr) auto;grid-template-areas:"dot t d" ". c c";
-  column-gap:var(--sp-3);row-gap:var(--sp-1);padding:var(--sp-3);border-radius:var(--r1);text-decoration:none;color:var(--t2);
-  transition:background var(--mo-2) var(--ease-std)}
-.nrow:hover,.nrow:focus-visible{background:var(--ctl-quiet-h)}
-.ndot{grid-area:dot;align-self:center;width:var(--sp-3);height:var(--sp-3);border-radius:var(--r-dot);
-  box-shadow:inset 0 0 0 1px var(--edge-1)}
-.nrow.unread .ndot{background:var(--solid);box-shadow:none}
-.nrow-t{grid-area:t;min-width:0;font-size:var(--fs-2);font-weight:500;line-height:var(--lh-text);color:var(--t2)}
-.nrow.unread .nrow-t{font-weight:700;color:var(--t1)}
-.nrow-c{grid-area:c;min-width:0;font-size:var(--fs-1);line-height:var(--lh-text);color:var(--t3)}
-.nrow-d{grid-area:d;font-size:var(--fs-1);line-height:var(--lh-text);color:var(--t3);white-space:nowrap}
+.nlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+/* Each notification is a card: who it's from, then title, description and date stacked.
+   Read state is the card's background (tint vs. neutral) plus weight, never a dot or colored
+   text. */
+.ncard{display:flex;align-items:flex-start;gap:var(--sp-4);padding:var(--sp-4);border-radius:var(--r1);
+  text-decoration:none;color:var(--t2);background:var(--note-read);
+  transition:background var(--mo-2) var(--ease-std),box-shadow var(--mo-2) var(--ease-std)}
+.ncard.unread{background:var(--note-unread)}
+.ncard:hover,.ncard:focus-visible{box-shadow:inset 0 0 0 1px var(--ctl-line-h)}
+.ncard-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+.nrow-t{min-width:0;font-size:var(--fs-2);font-weight:500;line-height:var(--lh-text);color:var(--t2)}
+.ncard.unread .nrow-t{font-weight:700;color:var(--t1)}
+.nrow-c{min-width:0;font-size:var(--fs-1);line-height:var(--lh-text);color:var(--t3)}
+.ncard.unread .nrow-c{color:var(--t2)}
+.nrow-d{font-size:var(--fs-1);line-height:var(--lh-text);color:var(--t3);white-space:nowrap}
+/* The leading mark: one 40px box for a face, an entity/project logo, or the Abanumay mark. */
+.nmark{flex:none;display:grid;place-items:center;width:var(--sp-9);height:var(--sp-9)}
+.nmark .pht,.nmark .av,.nmark.ec-init,.nmark .ec-init{--init-box:var(--sp-9);width:var(--sp-9);height:var(--sp-9)}
+.nmark.ec-init{flex:none}
+.nmark-sys{border-radius:var(--ric);background:var(--pop);box-shadow:inset 0 0 0 1px var(--edge-2);padding:var(--sp-2)}
+.nmark-sys svg{width:100%;height:100%}
 /* The drawer opens from the left edge (inline-end in RTL) on every screen size, away from the
    rail, so the navigation stays visible beside it. */
 .ndrawer{inset-inline-start:auto;inset-inline-end:var(--sp-4);animation-name:mo-sheet-l}
