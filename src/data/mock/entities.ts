@@ -4,8 +4,18 @@
  * Names, licenses, and contact details are fictional. What's real is the structure and
  * distribution: unassessed governance ratios, missing documents, and the five activation states,
  * matching real-world patterns.
+ *
+ * Logos are original placeholder marks made for these fictional entities (no real organization's
+ * logo is used, since the records carry states like "suspended" or "weak governance"). They are
+ * picked up from `src/assets/logos/entity-<id>.svg`: a new logo is a dropped file, no import.
  */
 import type { EntityRow } from '@/types/domain'
+
+const LOGOS: Record<string, string> = Object.fromEntries(
+  Object.entries(
+    import.meta.glob('../../assets/logos/entity-*.svg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>,
+  ).map(([path, url]) => [path.replace(/^.*entity-|\.svg$/g, ''), url]),
+)
 
 const row = (
   id: string,
@@ -24,6 +34,7 @@ const row = (
 ): EntityRow => ({
   id,
   name,
+  logo: LOGOS[id],
   licenseNo: `10000${id}`,
   type,
   licensor,
