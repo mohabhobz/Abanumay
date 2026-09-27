@@ -4579,103 +4579,65 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    page, so both pages read with the same structure. */
 .pflow{width:100%;min-width:0;display:flex}
 
-/* SAR journey on the entity: a colored column and four overlapping cards.
-   Reference: a two-tone vertical column with four white cards overlapping it from its
-   corners - two large, two small, connected by thin dotted lines.
-   The layout is proportional, not fixed pixels: the stage has a width-to-height ratio, and
-   every card is positioned as a percentage of it, so the composition stays the same at any
-   width, and the cards never drift off the column as the cell narrows.
-   Everything uses logical properties (`inset-inline-*`), so the English reference mirrors
-   itself automatically: the large cards sit on the right, where reading starts. */
+/* The riyal's flow through an entity, drawn as the Abanumay leaf (`EntityFlow`).
+   No card: the leaf and its ledger sit on the page background. The leaf fills to the disbursed
+   share (brand greens), the lime band above it is still in disbursement, and the cycle is a
+   separate ledger line because it is a time slice of the total, not a third part. */
 .ejr{min-width:0;display:flex}
 .ejr-none{flex-direction:column;gap:var(--sp-2)}
 .ejr-none p{margin:0;font-size:var(--fs-2);line-height:var(--lh-long);color:var(--t2)}
 .ejr-none .ejr-ht{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
-
-/* Stacked panels: one over the next.
-   Sheet over sheet: each panel sits under the previous one by `--ejr-lap` and casts a
-   shadow onto it, so the eye reads a depth order with no number written anywhere.
-   The panel is a card like any other card in the system: same surface (`--g-card`), same
-   edge (`--edge-1`), same radius (`--r2`) - no dedicated surface or corner for this shape.
-   `box-shadow` has no logical equivalent; the shadow offset here is physical (negative =
-   left), tuned for RTL. If a left-to-right direction opens up someday, this is the line to
-   flip. */
-.ejr-stage{--ejr-lap:var(--sp-8);
-  position:relative;width:100%;display:flex;align-items:stretch}
-
-.ejr-c{position:relative;flex:1 1 0;min-width:0;color:inherit;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  text-align:center;min-height:clamp(232px,21vw,300px);
-  /* Top padding is larger than bottom; the content centers within the padded box, so it
-     gets pushed down by half the difference without touching the bottom. */
-  padding:var(--sp-10) var(--sp-4) var(--sp-6);
-  /* Glass tinted to its cell's shade, using the same project chart colors (`--ch-*`)
-     over the card surface, so the card stays a card while carrying a color identity. */
-  background:linear-gradient(180deg,rgba(var(--gc),.15),rgba(var(--gc),.055)),var(--g-card);
-  -webkit-backdrop-filter:var(--mat-1);
-  backdrop-filter:var(--mat-1);
+.leafflow{align-items:center;justify-content:flex-end;gap:var(--sp-8);min-height:calc(var(--sp-12) * 3.75)}
+.lf-art{--lf-size:calc(var(--sp-12) * 3.4);order:2;position:relative;flex:none;display:block;
+  width:var(--lf-size);height:var(--lf-size);color:inherit;text-decoration:none;border-radius:var(--r3)}
+.lf-art:focus-visible{outline:2px solid var(--teal);outline-offset:var(--sp-2)}
+.lf-art svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:17% 85%}
+.lf-track{fill:rgba(var(--edgeC),.07)}
+.lf-g0{stop-color:var(--ch-1)}
+.lf-g1{stop-color:var(--ch-2)}
+.lf-pend{fill:var(--lime)}
+.lf-wave{fill:var(--on-solid);opacity:.35}
+.lf-edge{fill:none;stroke:var(--edge-2);stroke-width:.25}
+.lf-rib{fill:none;stroke:var(--on-solid);stroke-opacity:.5;stroke-width:.4;stroke-linecap:round}
+.lf-paid,.lf-pend{transition:opacity var(--mo-3) var(--ease-std)}
+/* The percentage sits on the filled body of the leaf, in the ink measured for that fill. */
+.lf-pct{position:absolute;left:47%;top:58%;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;
+  gap:var(--sp-1);color:var(--on-solid);pointer-events:none;text-align:center}
+.lf-pct b{font-family:var(--fd);font-weight:800;font-size:var(--fd-5);line-height:var(--lh-flat)}
+.lf-pct span{font-size:var(--fs-1);font-weight:600;line-height:var(--lh-ui);opacity:.85}
+.lf-ledger{order:1;flex:1 1 0;min-width:0;max-width:calc(var(--sp-12) * 4);display:flex;flex-direction:column;gap:var(--sp-2)}
+.lf-lbl{font-size:var(--fs-2);color:var(--t2)}
+.lf-total{font-family:var(--fd);font-weight:700;font-size:var(--fd-4);line-height:var(--lh-head);color:var(--t1);margin-bottom:var(--sp-3)}
+.lf-row{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--h-md);padding-inline:var(--sp-3);margin-inline:calc(-1 * var(--sp-3));
+  border-radius:var(--r1);color:var(--t2);text-decoration:none;font-size:var(--fs-2);white-space:nowrap;
   transition:background var(--mo-2) var(--ease-std)}
-/* Overlap: each panel is pulled under the previous one and padded on its covered
-   side, so its text stays within the visible portion. */
-.ejr-c + .ejr-c{margin-inline-start:calc(-1 * var(--ejr-lap));
-  padding-inline-start:calc(var(--sp-4) + var(--ejr-lap))}
-/* The curve only applies to the group's outer edges; the inner edges between one card
-   and the next stay straight, so all four read as one stacked panel rather than four
-   separate cards. */
-.ejr-c{border-radius:0}
-.ejr-c:first-child{border-start-start-radius:var(--r2);border-end-start-radius:var(--r2)}
-.ejr-c:last-child{border-start-end-radius:var(--r2);border-end-end-radius:var(--r2)}
-.ejr-c:nth-child(1){z-index:4}
-.ejr-c:nth-child(2){z-index:3}
-.ejr-c:nth-child(3){z-index:2}
-.ejr-c:nth-child(4){z-index:1}
-/* An edge wraps the card, with the shadow on its leading edge - the shadow is what
-   says "this is above that." */
-.ejr-c{box-shadow:inset 0 0 0 1px var(--edge-1)}
-.ejr-c:not(:last-child){box-shadow:inset 0 0 0 1px var(--edge-1),
-  -20px 0 30px -14px rgba(var(--edgeC),.5),
-  -3px 0 6px -3px rgba(var(--edgeC),.3)}
-.ejr-c:hover{color:inherit;
-  background:linear-gradient(180deg,rgba(var(--gc),.23),rgba(var(--gc),.09)),var(--g-card)}
+.lf-row:hover,.lf-row:focus-visible{background:var(--ctl-quiet-h);color:var(--t2)}
+.lf-row b{margin-inline-start:auto;font-weight:700;color:var(--t1)}
+.lf-p{min-width:calc(var(--sp-9) - var(--sp-2));text-align:end;color:var(--t2)}
+.lf-dot{flex:none;width:var(--ic-sm);height:var(--ic-sm)}
+.lf-r-paid .lf-dot{fill:var(--ch-2)}
+.lf-r-pend .lf-dot{fill:var(--lime)}
+.lf-r-cyc .lf-dot{fill:none;stroke:var(--t2);stroke-width:1.6}
+.lf-hr{height:1px;background:var(--edge-1);margin-block:var(--sp-1)}
+/* A ledger row lights its part of the leaf: the other part steps back. */
+.leafflow:has(.lf-r-paid:hover) .lf-pend,.leafflow:has(.lf-r-pend:hover) .lf-paid{opacity:.3}
 
-/* Each panel's color comes from the measured squares, not the raw `--ch-*` (lime gives
-   1.77:1 with white), and it flips with the theme: a dark green that reads on a light
-   panel becomes 3.5:1 on a dark panel. */
-/* `--gc`, the glass tint, comes exactly from the project chart. `--dc`, the text
-   color, comes from the measured squares, not the raw `--ch-*`, since lime gives 1.77:1 if
-   written with it. The two are deliberately different: one is a background, the other is
-   ink. */
-.ejr-c01{--gc:var(--ch-1C);--dc:var(--sq-1C)}
-.ejr-c02{--gc:var(--ch-2C);--dc:var(--sq-2C)}
-.ejr-c03{--gc:var(--ch-3C);--dc:var(--sq-3C)}
-.ejr-c04{--gc:var(--ch-4C);--dc:var(--sq-4C)}
-
-/* Glass circle: a full circle by explicit request, and a deliberate exception to the
-   radius scale (the circle is reserved for avatars and dots); the icon inside it uses the
-   cell's color, so the color returns to the white card. */
-/* Used to be `50%`: a 44-58px icon box written as a circle, which surfaced as a
-   29px radius in the audit. Range 45-80 -> `--r1`. */
-.ejr-ic{width:clamp(44px,4.4vw,58px);aspect-ratio:1;border-radius:var(--r1);flex:none;
-  display:grid;place-items:center;margin-bottom:var(--sp-6);color:rgb(var(--dc));
-  background:var(--fl-4);
-  -webkit-backdrop-filter:var(--mat-1);backdrop-filter:var(--mat-1);
-  box-shadow:inset 0 0 0 1px var(--edge-1), var(--el-2)}
-.ejr-slot{font-size:var(--fs-1);color:var(--t2);line-height:var(--lh-text)}
-.ejr-t{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1);
-  line-height:var(--lh-ui);margin-top:var(--sp-1)}
-.ejr-v{font-family:var(--fd);font-weight:700;font-size:var(--fs-4);line-height:var(--lh-head);
-  /* Number uses text ink, not the cell's color (client decision); color lives on the
-     icon above it. */
-  letter-spacing:-.02em;color:var(--t1);display:flex;align-items:baseline;
-  justify-content:center;gap:var(--sp-2);margin-top:var(--sp-3);white-space:nowrap}
-.ejr-s{font-size:var(--fs-1);color:var(--t2-g);line-height:var(--lh-text);margin-top:var(--sp-2)}
-
-@media (max-width:560px){
-  .ejr-stage{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
-  .ejr-c{min-height:150px;padding-top:var(--sp-6);border-radius:var(--r2)}
-  .ejr-c + .ejr-c{margin-inline-start:0;padding-inline-start:var(--sp-4)}
-  .ejr-c:not(:last-child){box-shadow:inset 0 0 0 1px var(--edge-1)}
+/* Motion: the leaf fills from its base when the page opens; hover sways it and runs the water
+   line once. Durations come from the motion scale. */
+.lf-fill{transform-box:view-box;transform-origin:50% 20.5px;animation:mo-col calc(var(--mo-5) * 2.5) var(--ease-out) both}
+.lf-art:hover svg{animation:lf-sway calc(var(--mo-5) * 2) var(--ease-std)}
+.lf-art:hover .lf-wave{animation:lf-wave calc(var(--mo-5) * 2) var(--ease-std)}
+@keyframes lf-sway{30%{rotate:-4deg}65%{rotate:2deg}}
+@keyframes lf-wave{from{translate:0 0}to{translate:calc(var(--sp-2) + var(--sp-1)) 0}}
+@media (prefers-reduced-motion:reduce){
+  .lf-fill,.lf-art:hover svg,.lf-art:hover .lf-wave{animation:none}
 }
+@media (max-width:760px){
+  .leafflow{flex-direction:column;align-items:stretch;gap:var(--sp-6)}
+  .lf-art{--lf-size:calc(var(--sp-12) * 2.6);order:0;align-self:center}
+  .lf-ledger{max-width:none}
+}
+
 
 /* ═══════════════════════════════════════════════════════════
    Disbursement inbox · BPD-009
