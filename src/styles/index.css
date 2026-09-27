@@ -3348,8 +3348,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   transition:box-shadow var(--mo-2) var(--ease-std),background var(--mo-2) var(--ease-std)}
 /* The sign-in field used to have a 55% fill and an `--edge-2` ring, close to the family
    but not matching it. It now matches exactly, and the focus ring uses the same key. */
-.lbox:focus-within{background:var(--ctl-bg-a);color:var(--t2);
-  box-shadow:inset 0 0 0 1px var(--ctl-line-f),0 0 0 3px var(--ctl-quiet-h)}
+.lbox:focus-within{color:var(--t2);box-shadow:inset 0 0 0 1px var(--ctl-line-f)}
 .lbox svg{flex:none;width:var(--ic-md);height:var(--ic-md)}
 /* The "show" button inside the password field is a 28 box, following the same rule as
    `.fsel-b:has(.fsel-face)`: padding goes down rather than height going up: 8 + 28 + 8 =
@@ -3530,8 +3529,10 @@ header>.tag.mute,header>div>.tag.mute{box-shadow:inset 0 0 0 1px var(--edge-1)}
    chip in a toolbar isn't lifted off anything - the shadow was giving the chip an elevation
    it had no reason for, and setting it apart from its neighbors on a third property beyond
    background and ring. */
-.fchip.on{color:var(--t1);background:var(--ctl-bg-a);
-  box-shadow:inset 0 0 0 1px var(--ctl-line-h)}
+/* A control that holds a value keeps the family surface and ring; only its ink changes (primary
+   text, heavier weight). A lighter surface for "has a value" read as a different component
+   sitting in the same row. */
+.fchip.on{color:var(--t1);font-weight:600}
 /* The badge on an active chip turns solid, following the same rule as `.tab.on b`: the
    badge is always one shade darker or lighter than whatever carries it. */
 .fchip.on b{color:var(--on-solid);background:var(--solid)}
@@ -3553,7 +3554,7 @@ header>.tag.mute,header>div>.tag.mute{box-shadow:inset 0 0 0 1px var(--edge-1)}
    overridden by the client's decision: search was a pill and the field was square-cornered
    sitting side by side in the same bar, so the semantic distinction read as inconsistency
    rather than meaning. The bar is now one family. */
-.fsel-b{position:relative;display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-3);
+.fsel-b{position:relative;display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-3);color:var(--t2);
   padding-block:var(--pb-md);line-height:var(--lh-md);
   padding-inline:var(--pi-md);
   border-radius:var(--r1);
@@ -3561,8 +3562,9 @@ header>.tag.mute,header>div>.tag.mute{box-shadow:inset 0 0 0 1px var(--edge-1)}
   box-shadow:inset 0 0 0 1px var(--ctl-line);
   transition:box-shadow var(--mo-2) var(--ease-std)}
 .fsel-b svg{flex:none;color:var(--t3)}
-.fsel.on .fsel-b{color:var(--t1);background:var(--ctl-bg-a);
-  box-shadow:inset 0 0 0 1px var(--ctl-line-h)}
+.fsel.on .fsel-b{color:var(--t1);font-weight:600}
+/* In a form (a labelled field) the chosen value is content, not a toolbar setting: primary ink. */
+.fsel:has(>.fsel-l) .fsel-b{color:var(--t1)}
 .fsel.off{opacity:.55}
 .fsel.off .fsel-b{cursor:not-allowed}
 /* The dropdown inside the toolbar takes the chip's shape so the whole row shares one
@@ -5415,7 +5417,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    it isn't clipped by a table or card. `left` is physical on purpose: the value
    comes from `getBoundingClientRect`, which is physical too. It sits above the dock
    and decision bar since it covers everything while open. */
-.fmenu.float{--float-gap:var(--sp-2);position:fixed;inset:auto;min-width:0;top:var(--fy,0);left:var(--fx,0);z-index:90}
+.fmenu.float{--float-gap:var(--sp-2);position:fixed;inset:auto;min-width:var(--fw,0);top:var(--fy,0);left:var(--fx,0);z-index:90}
 .cal-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
 .cal-t{font-weight:600;font-size:var(--fs-2)}
 .cal-n{display:grid;place-items:center;width:28px;height:28px;border-radius:var(--r1);
@@ -5589,6 +5591,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .tgbar .tcolb{width:var(--h-md);height:var(--h-md);border-radius:var(--r1)}
 /* Opens toward the left: the last column is stuck to the container's left edge */
 .tcolm{inset-inline-start:auto;inset-inline-end:0;min-width:220px}
+.fmenu.float.tcolm{min-width:220px}
 .fopt.fix{opacity:.6;cursor:default}
 .fopt.fix:hover{background:none}
 /* Export menu */

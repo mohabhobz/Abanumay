@@ -1,4 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
+import { useFloat } from '@/hooks/useFloat'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
@@ -38,14 +40,33 @@ export interface MenuPanelProps {
   foot?: ReactNode
   /** Extra class on the panel · e.g. `psize-m` */
   extra?: string
+  /**
+   * Renders the panel in `body`, fixed to the anchor, instead of inside it. Use it for any menu
+   * that can sit inside a scrolling or clipped container (a table, a card with `overflow`), where
+   * an in-place panel gets cut off. `pop` is the same ref `useMenu` returns, so clicks inside the
+   * portaled panel still count as inside the menu.
+   */
+  float?: { anchor: RefObject<HTMLElement | null>; pop: RefObject<HTMLDivElement | null> }
   children: ReactNode
 }
 
-export function MenuPanel({
-  one, up, end, search, needle = '', onNeedle, empty, emptyText = 'لا نتائج', foot, extra, children,
+export function MenuPanel(props: MenuPanelProps) {
+  return props.float ? <FloatPanel {...props} float={props.float} /> : <PanelBody {...props} />
+}
+
+function FloatPanel(props: MenuPanelProps & { float: NonNullable<MenuPanelProps['float']> }) {
+  useFloat(true, props.float.anchor, props.float.pop, props.end)
+  return createPortal(<PanelBody {...props} />, document.body)
+}
+
+function PanelBody({
+  one, up, end, search, needle = '', onNeedle, empty, emptyText = 'لا نتائج', foot, extra, float, children,
 }: MenuPanelProps) {
   return (
-    <div className={`fmenu${one ? ' one' : ''}${up ? ' up' : ''}${end ? ' flip' : ''}${extra ? ` ${extra}` : ''}`}>
+    <div
+      ref={float?.pop}
+      className={`fmenu${one ? ' one' : ''}${up ? ' up' : ''}${end && !float ? ' flip' : ''}${float ? ' float' : ''}${extra ? ` ${extra}` : ''}`}
+    >
       {search && onNeedle && (
         <label className="fmenu-q">
           <Icon name={icons.search} size="sm" />

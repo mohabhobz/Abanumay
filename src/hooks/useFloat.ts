@@ -28,6 +28,8 @@ export function useFloat(
       const a = anchor.current; const p = pop.current
       if (!a || !p) return
       const r = a.getBoundingClientRect()
+      /* The anchor's width, so a field's panel is at least as wide as the field. */
+      p.style.setProperty('--fw', `${Math.round(r.width)}px`)
       const w = p.offsetWidth; const h = p.offsetHeight
       const gap = parseFloat(getComputedStyle(p).getPropertyValue('--float-gap')) || 0
       const rtl = getComputedStyle(a).direction === 'rtl'

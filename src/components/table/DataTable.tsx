@@ -550,7 +550,7 @@ function Block<T>({
 function ColumnPicker<T>({
   all, cols, onCols,
 }: { all: Col<T>[]; cols: string[]; onCols: (k: string[]) => void }) {
-  const { open, setOpen, box } = useMenu<HTMLDivElement>()
+  const { open, setOpen, box, pop } = useMenu<HTMLDivElement>()
 
   const toggle = (key: string) =>
     onCols(cols.includes(key) ? cols.filter((k) => k !== key) : [...cols, key])
@@ -569,8 +569,12 @@ function ColumnPicker<T>({
       </button>
 
       {open && (
+        /* Floated into `body`: the picker sits in the table header, and the table scrolls and clips,
+           so an in-place panel was cut off by the table's own edges. */
         <MenuPanel
           extra="tcolm"
+          end
+          float={{ anchor: box, pop }}
           foot={
             <button type="button" className="fclear" onClick={() => onCols(defaultCols(all))}>
               أعد الأعمدة الافتراضية

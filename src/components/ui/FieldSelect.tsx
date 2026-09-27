@@ -40,7 +40,7 @@ export interface FieldSelectProps {
 export function FieldSelect({
   value, options, onChange, placeholder = 'اختر', disabled, label, searchAt = 9, end,
 }: FieldSelectProps) {
-  const { open, setOpen, box } = useMenu<HTMLSpanElement>()
+  const { open, setOpen, box, pop } = useMenu<HTMLSpanElement>()
   const { needle, setNeedle, search } = useMenuSearch(open, searchAt, options.length)
   const id = useId()
 
@@ -70,6 +70,8 @@ export function FieldSelect({
       {open && (
         <MenuPanel
           one
+          end={end}
+          float={{ anchor: box, pop }}
           search={search}
           needle={needle}
           onNeedle={setNeedle}
