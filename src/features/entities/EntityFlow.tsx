@@ -90,7 +90,9 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
   return (
     <div className="ejr leafflow">
       <Link to={ROUTES.payments} className="lf-art" aria-label={`وصل فعلًا ${pct(paidPct)} من إجمالي الممنوح`}>
-        <svg viewBox="0 0 24 24" aria-hidden="true">
+        {/* The viewBox is cropped to the leaf's own bounds (it spans roughly 4-20.6 x 3.5-20.5 of the
+            24-unit glyph), so the leaf fills its box instead of sitting inside a margin. */}
+        <svg viewBox="3.4 3 17.6 18" aria-hidden="true">
           <defs>
             <clipPath id={`lfc-${uid}`}><path d={ABLEAF_PATH} /></clipPath>
             <linearGradient id={`lfg-${uid}`} x1="0" y1="1" x2="0" y2="0">

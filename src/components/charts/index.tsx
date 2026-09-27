@@ -11,7 +11,7 @@ import { isolate, nf, pct } from '@/lib/format'
    color; color belongs to the bar or dot. */
 
 export { SaudiMap, type MapPoint } from './SaudiMap'
-export { StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, type Hue, type StageDatum, type LolliDatum, type Part, type MeterDatum } from './forms'
+export { StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, MoneyRing, type Hue, type StageDatum, type LolliDatum, type Part, type MeterDatum, type RingPart } from './forms'
 
 export const CHART_COLORS = [
   'var(--ch-1)', 'var(--ch-2)', 'var(--ch-3)',

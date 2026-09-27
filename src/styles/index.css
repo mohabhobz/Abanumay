@@ -4587,11 +4587,14 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .ejr-none{flex-direction:column;gap:var(--sp-2)}
 .ejr-none p{margin:0;font-size:var(--fs-2);line-height:var(--lh-long);color:var(--t2)}
 .ejr-none .ejr-ht{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1)}
-.leafflow{align-items:center;justify-content:flex-end;gap:var(--sp-8);min-height:calc(var(--sp-12) * 3.75)}
-.lf-art{--lf-size:calc(var(--sp-12) * 3.4);order:2;position:relative;flex:none;display:block;
+.leafflow{--lf-ledger:calc(var(--sp-12) * 3);container-type:inline-size;align-items:center;justify-content:flex-end;
+  gap:var(--sp-7);min-height:calc(var(--sp-12) * 3.75)}
+/* The leaf takes all the width the ledger doesn't need, up to 300px: the ledger's rows never wrap,
+   so on a narrower column the leaf gives way instead of the figures overflowing. */
+.lf-art{--lf-size:min(calc(var(--sp-12) * 3.75), calc(100cqi - var(--lf-ledger) - var(--sp-7)));order:2;position:relative;flex:none;display:block;
   width:var(--lf-size);height:var(--lf-size);color:inherit;text-decoration:none;border-radius:var(--r3)}
 .lf-art:focus-visible{outline:2px solid var(--teal);outline-offset:var(--sp-2)}
-.lf-art svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:17% 85%}
+.lf-art svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:3% 97%}
 .lf-track{fill:rgba(var(--edgeC),.07)}
 .lf-g0{stop-color:var(--ch-1)}
 .lf-g1{stop-color:var(--ch-2)}
@@ -4601,11 +4604,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .lf-rib{fill:none;stroke:var(--on-solid);stroke-opacity:.5;stroke-width:.4;stroke-linecap:round}
 .lf-paid,.lf-pend{transition:opacity var(--mo-3) var(--ease-std)}
 /* The percentage sits on the filled body of the leaf, in the ink measured for that fill. */
-.lf-pct{position:absolute;left:47%;top:58%;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;
+.lf-pct{position:absolute;left:50%;top:60%;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;
   gap:var(--sp-1);color:var(--on-solid);pointer-events:none;text-align:center}
-.lf-pct b{font-family:var(--fd);font-weight:800;font-size:var(--fd-5);line-height:var(--lh-flat)}
-.lf-pct span{font-size:var(--fs-1);font-weight:600;line-height:var(--lh-ui);opacity:.85}
-.lf-ledger{order:1;flex:1 1 0;min-width:0;max-width:calc(var(--sp-12) * 4);display:flex;flex-direction:column;gap:var(--sp-2)}
+/* The number scales with the leaf so it always sits inside its body. */
+.lf-pct b{font-family:var(--fd);font-weight:800;font-size:clamp(var(--fs-8), calc(var(--lf-size) / 5), var(--fd-6));line-height:var(--lh-flat)}
+.lf-pct span{font-size:var(--fs-3);font-weight:600;line-height:var(--lh-ui);opacity:.85}
+.lf-ledger{order:1;flex:1 1 0;min-width:var(--lf-ledger);max-width:calc(var(--sp-12) * 4);display:flex;flex-direction:column;gap:var(--sp-2)}
 .lf-lbl{font-size:var(--fs-2);color:var(--t2)}
 .lf-total{font-family:var(--fd);font-weight:700;font-size:var(--fd-4);line-height:var(--lh-head);color:var(--t1);margin-bottom:var(--sp-3)}
 .lf-row{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--h-md);padding-inline:var(--sp-3);margin-inline:calc(-1 * var(--sp-3));
@@ -8304,3 +8308,50 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
    that opened it: a narrow trigger (a short sort or group label) used to produce a panel as
    narrow as itself, and longer options wrapped or crowded their marks. */
 :root{--menu-min:calc(var(--sp-12) * 3)}
+
+/* ═══ Money ring (home · the riyal's journey across entities) ═══
+   Thick ring = the split of the whole (share written on its lead arc), thin outer ring = this cycle
+   as a slice of the same whole, and the ledger carries the full figures. Hovering an arc or a row
+   keeps that part and dims the others. */
+.mring{display:flex;align-items:center;gap:var(--sp-8);flex:1 1 auto;padding-block:var(--sp-4)}
+.mring-fig{position:relative;flex:none;width:calc(var(--sp-12) * 2.75);aspect-ratio:1}
+.mring-fig svg{width:100%;height:100%;display:block;overflow:visible}
+.mring-track{fill:none;stroke:rgba(var(--edgeC),.08);stroke-width:24}
+.mring-track.thin{stroke-width:6}
+.mring-a{fill:none;stroke:var(--hue);stroke-width:24;stroke-linecap:round;stroke-dasharray:100 100;
+  transition:opacity var(--mo-2) var(--ease-std);cursor:default}
+.mring-a.thin{stroke-width:6}
+.mring-a.dim,.mring-pct.dim{opacity:.28}
+.mring-a.c1,.mring-sw.c1{--hue:var(--ch-1)}
+.mring-a.c2,.mring-sw.c2{--hue:var(--ch-2)}
+.mring-a.c4,.mring-sw.c4{--hue:var(--ch-4)}
+.mring-pct{font-family:var(--fd);font-weight:700;font-size:var(--fs-3);fill:var(--on-ch-1);
+  transition:opacity var(--mo-2) var(--ease-std);pointer-events:none}
+.mring-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:var(--sp-1);pointer-events:none;text-align:center}
+.mring-c span{font-size:var(--fs-1);color:var(--t2)}
+.mring-c b{font-family:var(--fd);font-weight:700;font-size:var(--fs-6);line-height:var(--lh-head);color:var(--t1)}
+.mring-l{list-style:none;margin:0;padding:0;flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+.mring-r{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--h-md);padding-inline:var(--sp-3);
+  margin-inline:calc(-1 * var(--sp-3));border-radius:var(--r1);font-size:var(--fs-2);color:var(--t2);white-space:nowrap;
+  transition:background var(--mo-2) var(--ease-std),opacity var(--mo-2) var(--ease-std)}
+.mring-r.on{background:var(--ctl-quiet-h)}
+.mring-r.dim{opacity:.5}
+.mring-r b{margin-inline-start:auto;font-weight:700;color:var(--t1)}
+.mring-p{min-width:calc(var(--sp-9) - var(--sp-2));text-align:end}
+.mring-sw{flex:none;width:var(--sp-4);height:var(--sp-4);border-radius:var(--r-hair);background:var(--hue)}
+.mring-sw.ring{background:none;box-shadow:inset 0 0 0 3px var(--hue)}
+.mring-r.tot{margin-top:var(--sp-2);padding-top:var(--sp-3);border-radius:0;box-shadow:inset 0 1px 0 var(--edge-1)}
+.mring-r.tot b{font-size:var(--fs-4)}
+/* Entrance: each arc draws from its start, once per session like the other home charts. */
+:root[data-fresh] .mring-a{animation:mr-draw calc(var(--mo-5) * 2) var(--ease-data) both}
+:root[data-fresh] .mring-a.thin{animation-delay:var(--mo-4)}
+:root[data-fresh] .mring-pct,:root[data-fresh] .mring-c{animation:mo-fade var(--mo-4) var(--ease-out) var(--mo-5) both}
+@keyframes mr-draw{from{stroke-dashoffset:100}}
+@media (prefers-reduced-motion:reduce){
+  :root[data-fresh] .mring-a,:root[data-fresh] .mring-pct,:root[data-fresh] .mring-c{animation:none}
+}
+@media (max-width:620px){
+  .mring{flex-direction:column;align-items:stretch;gap:var(--sp-6)}
+  .mring-fig{align-self:center}
+}

@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Money } from '@/components/ui'
 import { nf, pct } from '@/lib/format'
 
@@ -214,5 +214,89 @@ export function RankBars({ rows, total, hue = 'c1' }: { rows: { key: string; lab
         )
       })}
     </ol>
+  )
+}
+
+/* -- 7: Money ring --
+   One whole and its two parts: what was granted, split into what already reached the entities and
+   what is still in disbursement. The thick ring carries the split (its share written on the arc),
+   the thin outer ring is a time slice of the same whole (this cycle), and the ledger beside it
+   carries the full figures. Hovering a ledger row keeps its arc and dims the rest, and the reverse. */
+export interface RingPart { key: string; label: string; value: number; hue: Hue }
+
+const RING_R = 78
+const OUTER_R = 98
+const ringPath = (r: number, from: number, to: number) => {
+  const p = (a: number) => [110 + r * Math.sin(a * 2 * Math.PI), 110 - r * Math.cos(a * 2 * Math.PI)]
+  const [x0, y0] = p(from)
+  const [x1, y1] = p(to)
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${to - from > 0.5 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`
+}
+
+export function MoneyRing({ total, parts, slice, centerLabel }: {
+  total: number
+  /** The two parts of the whole, in drawing order (the first is the larger, labelled on its arc). */
+  parts: RingPart[]
+  /** A time slice of the whole, drawn as the thin outer ring. */
+  slice: RingPart
+  centerLabel: string
+}) {
+  const share = (v: number) => (total ? v / total : 0)
+  /* A small gap between the two arcs so each reads as its own piece (round caps overlap otherwise). */
+  const GAP = 0.012
+  let at = 0
+  const arcs = parts.map((p) => {
+    const from = at
+    at += share(p.value)
+    return { ...p, d: ringPath(RING_R, from + GAP / 2, Math.max(from + GAP, at - GAP / 2)), mid: (from + at) / 2 }
+  })
+  const lead = arcs[0]
+  const lx = 110 + RING_R * Math.sin(lead.mid * 2 * Math.PI)
+  const ly = 110 - RING_R * Math.cos(lead.mid * 2 * Math.PI)
+  const millions = (total / 1_000_000).toFixed(1)
+  const [on, setOn] = useState<string | null>(null)
+  const dim = (k: string) => (on && on !== k ? ' dim' : '')
+  const hover = (k: string | null) => ({ onPointerEnter: () => setOn(k), onPointerLeave: () => setOn(null) })
+
+  return (
+    <div className="hx mring">
+      <div className="mring-fig">
+        <svg viewBox="0 0 220 220" role="img" aria-label={`${centerLabel} ${nf.format(total)}`}>
+          <circle className="mring-track" cx="110" cy="110" r={RING_R} />
+          <circle className="mring-track thin" cx="110" cy="110" r={OUTER_R} />
+          {arcs.map((a) => (
+            <path key={a.key} className={`mring-a ${a.hue}${dim(a.key)}`} d={a.d} pathLength={100} {...hover(a.key)} />
+          ))}
+          <path
+            className={`mring-a thin ${slice.hue}${dim(slice.key)}`}
+            d={ringPath(OUTER_R, 0, Math.max(0.01, share(slice.value)))}
+            pathLength={100}
+            {...hover(slice.key)}
+          />
+          <text className={`mring-pct${dim(lead.key)}`} x={lx} y={ly} dy=".35em" textAnchor="middle">
+            {pct(Math.round(share(lead.value) * 100))}
+          </text>
+        </svg>
+        <div className="mring-c" aria-hidden="true">
+          <span>{centerLabel}</span>
+          <b>{millions} مليون</b>
+        </div>
+      </div>
+
+      <ul className="mring-l">
+        {[...parts, slice].map((p) => (
+          <li key={p.key} className={`mring-r${on === p.key ? ' on' : ''}${dim(p.key)}`} {...hover(p.key)}>
+            <i className={`mring-sw ${p.hue}${p === slice ? ' ring' : ''}`} aria-hidden="true" />
+            <span className="mring-k">{p.label}</span>
+            <b><Money sm>{p.value}</Money></b>
+            <span className="mring-p num">{pct(Math.round(share(p.value) * 100))}</span>
+          </li>
+        ))}
+        <li className="mring-r tot">
+          <span className="mring-k">{centerLabel}</span>
+          <b><Money sm>{total}</Money></b>
+        </li>
+      </ul>
+    </div>
   )
 }

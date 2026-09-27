@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Money, Mono, Empty, Riyal} from '@/components/ui'
 import {
   Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS, CHART_INKS,
-  StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, type Hue,
+  StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, MoneyRing, type Hue,
 } from '@/components/charts'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -100,6 +100,13 @@ export default function HomePage() {
     ink: CHART_INKS[i % CHART_INKS.length],
   }))
   const grantedTotal = tracks.reduce((s, t) => s + t.value, 0)
+
+  /* The riyal's journey across all entities, from their files: everything granted since each
+     registered, split into what reached them and what is still in disbursement, with this cycle as
+     a time slice of the same whole. Same figures as each entity page's leaf, summed. */
+  const flowTotal = entities.reduce((a, e) => a + e.grantedTotal, 0)
+  const flowPending = entities.reduce((a, e) => a + e.inDisbursement, 0)
+  const flowCycle = entities.reduce((a, e) => a + e.grantedThisYear, 0)
 
   const budgetParts = [
     { key: 'spent', label: 'المصروف', value: budget.spent, color: 'var(--ch-1)' },
@@ -325,16 +332,38 @@ export default function HomePage() {
             </Glass>
           </div>
 
-          <Glass className="hx-card">
-            <Head
-              title="أعلى الجهات دعمًا"
-              meta={<Link className="lnk" to={`${ROUTES.entities}?sort=granted`}>الكل</Link>}
-            />
-            <RankBars rows={partners} total={grantedTotal} />
-            <p className="chnote">
-              أعلى جهتين معًا {pct(Math.round(((partners[0]?.value ?? 0) + (partners[1]?.value ?? 0)) / Math.max(grantedTotal, 1) * 100))} من الملتزم به كله · والنسبة جنب كل جهة نصيبها منه.
-            </p>
-          </Glass>
+          {/* Money pair: where the granted riyal stands (ring) beside who received the most (ranking). */}
+          <div className="dgrid g11 hx-row">
+            <Glass className="hx-card">
+              <Head
+                title="رحلة الريال عبر الجهات"
+                meta={<Link className="lnk" to={ROUTES.payments}>الصرف</Link>}
+              />
+              <MoneyRing
+                total={flowTotal}
+                centerLabel="إجمالي الممنوح"
+                parts={[
+                  { key: 'paid', label: 'وصل فعلًا', value: Math.max(0, flowTotal - flowPending), hue: 'c1' },
+                  { key: 'pending', label: 'تحت الصرف', value: flowPending, hue: 'c4' },
+                ]}
+                slice={{ key: 'cycle', label: 'دورة 2026', value: flowCycle, hue: 'c2' }}
+              />
+              <p className="chnote">
+                من ملفات {entities.length} {nounAfter(entities.length, NOUN.entity)} منذ تسجيلها · والدورة جزء من الإجمالي لا قسم ثالث منه.
+              </p>
+            </Glass>
+
+            <Glass className="hx-card">
+              <Head
+                title="أعلى الجهات دعمًا"
+                meta={<Link className="lnk" to={`${ROUTES.entities}?sort=granted`}>الكل</Link>}
+              />
+              <RankBars rows={partners} total={grantedTotal} />
+              <p className="chnote">
+                أعلى جهتين معًا {pct(Math.round(((partners[0]?.value ?? 0) + (partners[1]?.value ?? 0)) / Math.max(grantedTotal, 1) * 100))} من الملتزم به كله · والنسبة جنب كل جهة نصيبها منه.
+              </p>
+            </Glass>
+          </div>
 
           {/* === Rows ===
               Note: the "quick system read" card was removed from this page - the assistant is still
