@@ -64,7 +64,12 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
   const total = entity.grantedTotal
   const pending = entity.inDisbursement
   const paid = Math.max(0, total - pending)
-  const byEntity = `${ROUTES.projects}?q=${encodeURIComponent(entity.name)}`
+  /* Every link lands on the section that explains it: the payments inbox scoped to this entity
+     only (all its requests, every stage), scrolled to the matching section; the year's approved
+     amounts land on this entity's own projects. */
+  const payOf = (section: string) =>
+    `${ROUTES.payments}?entity=${encodeURIComponent(entity.id)}#${section}`
+  const byEntity = `${ROUTES.entity(entity.id, 'projects')}#ent-projects`
 
   const share = (v: number) => (total ? Math.round((v / total) * 100) : 0)
   const paidPct = share(paid)
@@ -89,7 +94,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
 
   return (
     <div className="ejr leafflow">
-      <Link to={ROUTES.payments} className="lf-art" aria-label={`وصل فعلًا ${pct(paidPct)} من إجمالي الممنوح`}>
+      <Link to={payOf('pay-kpi')} className="lf-art" aria-label={`وصل فعلًا ${pct(paidPct)} من إجمالي الممنوح`}>
         {/* The viewBox is cropped to the leaf's own bounds (it spans roughly 4-20.6 x 3.5-20.5 of the
             24-unit glyph), so the leaf fills its box instead of sitting inside a margin. */}
         <svg viewBox="3.4 3 17.6 18" aria-hidden="true">
@@ -123,13 +128,13 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
       <div className="lf-ledger">
         <span className="lf-lbl">إجمالي الممنوح منذ التسجيل</span>
         <b className="lf-total"><Money>{total}</Money></b>
-        <Link to={ROUTES.payments} className="lf-row lf-r-paid">
+        <Link to={payOf('pay-paid')} className="lf-row lf-r-paid">
           <svg className="lf-dot" viewBox="0 0 24 24" aria-hidden="true"><path d={ABLEAF_PATH} /></svg>
           <span className="lf-k">وصل فعلًا</span>
           <b><Money sm>{paid}</Money></b>
           <span className="lf-p num">{pct(paidPct)}</span>
         </Link>
-        <Link to={ROUTES.payments} className="lf-row lf-r-pend">
+        <Link to={payOf('pay-open')} className="lf-row lf-r-pend">
           <svg className="lf-dot" viewBox="0 0 24 24" aria-hidden="true"><path d={ABLEAF_PATH} /></svg>
           <span className="lf-k">تحت الصرف</span>
           <b><Money sm>{pending}</Money></b>
@@ -138,7 +143,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
         <span className="lf-hr" aria-hidden="true" />
         <Link to={byEntity} className="lf-row lf-r-cyc">
           <svg className="lf-dot" viewBox="0 0 24 24" aria-hidden="true"><path d={ABLEAF_PATH} /></svg>
-          <span className="lf-k">دورة 2026</span>
+          <span className="lf-k">المبالغ المعتمدة 2026</span>
           <b><Money sm>{entity.grantedThisYear}</Money></b>
           <span className="lf-p num">{pct(share(entity.grantedThisYear))}</span>
         </Link>

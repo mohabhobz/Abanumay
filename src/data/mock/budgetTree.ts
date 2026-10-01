@@ -169,8 +169,48 @@ export interface BudgetNode {
    * the discrepancy shows up in the report, not from addition.
    */
   available: number
+  /** Held on the leaf · requests linked to this line and still under decision */
+  held?: number
+  /** Paid out from the leaf · disbursed transfers */
+  paid?: number
   /** An inactive item stays in the tree with no amounts · like the "Ramadan iftar track" */
   active: boolean
+}
+
+/** The four figures shown per line · allocated, held, paid, available */
+export interface LineMoney {
+  allocated: number
+  held: number
+  paid: number
+  /** allocated − held − paid */
+  available: number
+}
+
+/**
+ * Money on a line, at any level.
+ *
+ * Holding and paying happen on the leaf only, so a parent's held and paid are the sums of its
+ * active children, and available is always derived (allocated − held − paid) rather than read from
+ * the stored field. A leaf without explicit held/paid (the generated 2026 tree) reads its whole
+ * consumed part (allocated − stored available) as paid.
+ */
+export function moneyOf(nodes: BudgetNode[], id: string): LineMoney {
+  const n = nodes.find((x) => x.id === id)
+  if (!n || !n.active) return { allocated: n?.allocated ?? 0, held: 0, paid: 0, available: 0 }
+  const kids = nodes.filter((x) => x.parentId === id && x.active)
+  let held = 0
+  let paid = 0
+  if (kids.length) {
+    for (const k of kids) {
+      const m = moneyOf(nodes, k.id)
+      held += m.held
+      paid += m.paid
+    }
+  } else {
+    held = n.held ?? 0
+    paid = n.paid ?? Math.max(0, n.allocated - n.available - held)
+  }
+  return { allocated: n.allocated, held, paid, available: n.allocated - held - paid }
 }
 
 export type BudgetState = 'draft' | 'submitted'
@@ -448,6 +488,11 @@ const n = (
   showLabel: alias === undefined,
 })
 
+/** A leaf with its held and paid figures · available = allocated − held − paid */
+const leaf = (
+  id: string, label: string, parentId: string, allocated: number, held: number, paid: number,
+): BudgetNode => ({ ...n(id, label, 'sub', parentId, allocated, allocated - held - paid), held, paid })
+
 export const budgetDocs: BudgetDoc[] = [
   {
     id: 'BG-2025-SA',
@@ -457,28 +502,32 @@ export const budgetDocs: BudgetDoc[] = [
     to: '2025-12-31',
     total: 30_000_000,
     state: 'submitted',
+    /* Held and paid are set on the leaves so that held + paid = allocated − the document's
+       available. Two figures in the document broke that identity and are corrected here: the root
+       showed 30M available with 2.1M consumed beneath it (now 27.9M), and "awareness campaigns" showed
+       more available than allocated (2.3M of 2.2M, now 2.2M, which carries into its area and track). */
     nodes: [
-      n('b0', 'ميزانية المنح - 2025', 'base', null, 30_000_000, 30_000_000),
+      n('b0', 'ميزانية المنح - 2025', 'base', null, 30_000_000, 27_900_000),
 
       n('t1', 'مسار التعليم', 'main', 'b0', 12_000_000, 11_200_000),
       n('f11', 'مجال التعليم العام', 'main', 't1', 6_000_000, 5_400_000),
-      n('g111', 'هدف تطوير المدارس', 'sub', 'f11', 3_500_000, 3_100_000),
-      n('g112', 'هدف دعم الطلاب', 'sub', 'f11', 2_500_000, 2_300_000),
+      leaf('g111', 'هدف تطوير المدارس', 'f11', 3_500_000, 150_000, 250_000),
+      leaf('g112', 'هدف دعم الطلاب', 'f11', 2_500_000, 80_000, 120_000),
       n('f12', 'مجال التعليم العالي', 'main', 't1', 6_000_000, 5_800_000),
-      n('g121', 'هدف المنح الدراسية', 'sub', 'f12', 4_000_000, 3_900_000),
-      n('g122', 'هدف البحث العلمي', 'sub', 'f12', 2_000_000, 1_900_000),
+      leaf('g121', 'هدف المنح الدراسية', 'f12', 4_000_000, 100_000, 0),
+      leaf('g122', 'هدف البحث العلمي', 'f12', 2_000_000, 40_000, 60_000),
 
-      n('t2', 'مسار الصحة', 'main', 'b0', 10_000_000, 9_100_000),
+      n('t2', 'مسار الصحة', 'main', 'b0', 10_000_000, 9_000_000),
       n('f21', 'مجال الرعاية الصحية', 'main', 't2', 6_000_000, 5_000_000),
-      n('g211', 'هدف دعم المستشفيات', 'sub', 'f21', 3_500_000, 2_900_000),
-      n('g212', 'هدف الأجهزة الطبية', 'sub', 'f21', 2_500_000, 2_100_000),
-      n('f22', 'مجال التوعية الصحية', 'main', 't2', 4_000_000, 4_100_000),
-      n('g221', 'هدف حملات التوعية', 'sub', 'f22', 2_200_000, 2_300_000),
-      n('g222', 'هدف البرامج الوقائية', 'sub', 'f22', 1_800_000, 1_800_000),
+      leaf('g211', 'هدف دعم المستشفيات', 'f21', 3_500_000, 200_000, 400_000),
+      leaf('g212', 'هدف الأجهزة الطبية', 'f21', 2_500_000, 150_000, 250_000),
+      n('f22', 'مجال التوعية الصحية', 'main', 't2', 4_000_000, 4_000_000),
+      leaf('g221', 'هدف حملات التوعية', 'f22', 2_200_000, 0, 0),
+      leaf('g222', 'هدف البرامج الوقائية', 'f22', 1_800_000, 0, 0),
 
       n('t3', 'مسار التنمية المجتمعية', 'main', 'b0', 8_000_000, 7_700_000),
-      n('f31', 'مجال تمكين الأفراد', 'main', 't3', 4_000_000, 3_800_000),
-      n('f32', 'مجال دعم المجتمع', 'main', 't3', 4_000_000, 3_900_000),
+      { ...n('f31', 'مجال تمكين الأفراد', 'main', 't3', 4_000_000, 3_800_000), held: 50_000, paid: 150_000 },
+      { ...n('f32', 'مجال دعم المجتمع', 'main', 't3', 4_000_000, 3_900_000), held: 100_000, paid: 0 },
 
       /* Warning: inactive and with no amounts · exists in the tree and doesn't enter the totals */
       n('t4', 'مسار تفطير الصائمين', 'main', 'b0', 0, 0, false),

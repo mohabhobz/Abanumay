@@ -21,6 +21,8 @@ export function useFloat(
   anchor: RefObject<HTMLElement | null>,
   pop: RefObject<HTMLElement | null>,
   end = false,
+  /** Prefers opening above the anchor · for triggers that sit at the bottom of the screen */
+  up = false,
 ) {
   useLayoutEffect(() => {
     if (!open) return
@@ -37,7 +39,8 @@ export function useFloat(
       const endAligned = rtl ? r.left : r.right - w
       const x = Math.max(gap, Math.min(innerWidth - w - gap, end ? endAligned : startAligned))
       const below = r.bottom + gap
-      const y = below + h <= innerHeight - gap ? below : Math.max(gap, r.top - gap - h)
+      const above = r.top - gap - h
+      const y = up && above >= gap ? above : below + h <= innerHeight - gap ? below : Math.max(gap, above)
       p.style.setProperty('--fx', `${Math.round(x)}px`)
       p.style.setProperty('--fy', `${Math.round(y)}px`)
     }

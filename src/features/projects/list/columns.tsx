@@ -20,6 +20,16 @@ import type { Col as TCol, GroupBy } from '@/components/table'
 
 export type Col = TCol<ProjectRow>
 
+/** Portfolio rows open their portfolio page; every other row opens the project page. */
+export const isPortfolio = (r: ProjectRow): boolean => r.type === 'محفظة'
+
+export const rowHref = (r: ProjectRow): string =>
+  isPortfolio(r) ? ROUTES.portfolio(r.portfolioId ?? r.id) : ROUTES.project(r.id)
+
+/** Display code · a portfolio keeps its own code, a project gets `prj-YYYY-NNNNN`. */
+export const rowCode = (r: ProjectRow): string =>
+  isPortfolio(r) ? (r.portfolioId ?? r.id).toLowerCase() : projectCode(r.id, r.year)
+
 /* Default columns add up to 1246px, so all default columns fit within the card
    view's 1440px screen (1252px). It used to be 1338px, making the table wider
    than its card by 86px, with "Status" — the last and most important column —
@@ -31,15 +41,15 @@ export const COLS: Col[] = [
     w: 132,
     label: 'الكود',
     fixed: true,
-    cell: (r) => <Mono>{projectCode(r.id, r.year)}</Mono>,
-    text: (r) => projectCode(r.id, r.year),
+    cell: (r) => <Mono>{rowCode(r)}</Mono>,
+    text: (r) => rowCode(r),
   },
   {
     key: 'name',
     w: 154,
     label: 'المشروع',
     fixed: true,
-    cell: (r) => <Link to={ROUTES.project(r.id)} className="tlink">{r.name}</Link>,
+    cell: (r) => <Link to={rowHref(r)} className="tlink">{r.name}</Link>,
     text: (r) => r.name,
   },
   {
@@ -47,8 +57,19 @@ export const COLS: Col[] = [
     w: 118,
     label: 'الجهة',
     def: true,
-    cell: (r) => <Link to={ROUTES.entity(r.entityId)} className="tlink sub">{r.entityName}</Link>,
+    /* An implementing partner has no entity file, so its name stays plain text. */
+    cell: (r) =>
+      isPortfolio(r)
+        ? <span className="sub">{r.entityName}</span>
+        : <Link to={ROUTES.entity(r.entityId)} className="tlink sub">{r.entityName}</Link>,
     text: (r) => r.entityName,
+  },
+  {
+    key: 'type',
+    w: 108,
+    label: 'نوع المشروع',
+    cell: (r) => <span className="sub">{r.type ?? 'مشروع عادي'}</span>,
+    text: (r) => r.type ?? 'مشروع عادي',
   },
   { key: 'region', w: 84, label: 'المنطقة', def: true, cell: (r) => <span className="sub">{r.region}</span>, text: (r) => r.region },
   { key: 'city', w: 88, label: 'المدينة', cell: (r) => <span className="sub">{r.city}</span>, text: (r) => r.city },
@@ -150,6 +171,7 @@ export const COLS: Col[] = [
 /* Grouping */
 
 export const GROUPS: GroupBy<ProjectRow>[] = [
+  { key: 'type', label: 'نوع المشروع', of: (r) => r.type ?? 'مشروع عادي' },
   { key: 'region', label: 'المنطقة', of: (r) => r.region },
   { key: 'city', label: 'المدينة', of: (r) => r.city },
   { key: 'track', label: 'المسار', of: (r) => r.track },

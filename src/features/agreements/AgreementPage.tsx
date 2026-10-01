@@ -3,12 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { HEAT_TONE } from '@/lib/tone'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
-  Steps, Tag, type StepItem,
+  StepArc, Tag, type GateStep,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { isolate, nf, NOUN, nounAfter, readDate } from '@/lib/format'
 import {
@@ -47,11 +48,11 @@ import { ScheduleEditor, asDraft } from './ScheduleEditor'
    Rule 25 - the agreement's stage does not change the project's status */
 
 /** The four stages users see, per the flow. */
-const LADDER: { key: string; label: string; note: string; steps: number[] }[] = [
-  { key: 'draft', label: 'إعداد الاتفاقية', note: 'مشرف المنح', steps: [3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  { key: 'manager', label: 'مراجعة مدير المنح', note: 'مدير المنح', steps: [12, 13] },
-  { key: 'executive', label: 'اعتماد المدير التنفيذي', note: 'المدير التنفيذي', steps: [16, 17] },
-  { key: 'entity', label: 'توقيع الجهة', note: 'الجهة المستفيدة', steps: [20, 21] },
+const LADDER: { key: string; label: string; note: string; cap: string; steps: number[] }[] = [
+  { key: 'draft', label: 'إعداد الاتفاقية', note: 'مشرف المنح', cap: 'الإعداد', steps: [3, 4, 5, 6, 7, 8, 9, 10, 11] },
+  { key: 'manager', label: 'مراجعة مدير المنح', note: 'مدير المنح', cap: 'المراجعة', steps: [12, 13] },
+  { key: 'executive', label: 'اعتماد المدير التنفيذي', note: 'المدير التنفيذي', cap: 'الاعتماد', steps: [16, 17] },
+  { key: 'entity', label: 'توقيع الجهة', note: 'الجهة المستفيدة', cap: 'التوقيع', steps: [20, 21] },
 ]
 
 /** Which stage the agreement is at; a returned agreement goes back to whoever sent it back. */
@@ -65,16 +66,53 @@ const NOW_AT: Record<string, string> = {
   cancelled: '',
 }
 
-function ladderFor(a: AgreementRow): StepItem[] {
+/** The agreement's own stages as fan steps - same chart as the project header. */
+function ladderFor(a: AgreementRow): GateStep[] {
   const now = NOW_AT[a.stage]
   const done = new Set(a.log.map((e) => e.step))
-  return LADDER.map((s): StepItem => {
+  const days = Math.round(a.hoursInStage / 24)
+  const limit = AGR_LIMIT[a.stage]
+  return LADDER.map((s): GateStep => {
     const last = a.log.find((e) => e.step === s.steps[s.steps.length - 1])
+    const range = `${s.steps[0]}–${s.steps[s.steps.length - 1]}`
+    if (s.key === now) {
+      return {
+        label: s.note,
+        title: s.label,
+        cap: s.cap,
+        state: 'now',
+        lines: [
+          <><Person name={a.owner} quiet={false} /> · مفتوح منذ <b>{days}</b> {nounAfter(days, NOUN.day)}</>,
+          limit > 0
+            ? <><b>{nf.format(a.hoursInStage)}</b> ساعة مقابل حدّ <b>{nf.format(limit)}</b></>
+            : null,
+        ],
+        src: 'المصدر: سجل التدقيق',
+      }
+    }
+    if (s.steps.every((n) => done.has(n))) {
+      return {
+        label: s.note,
+        title: s.label,
+        cap: s.cap,
+        state: 'done',
+        lines: [
+          last ? <>{last.who} · <DateText>{last.at}</DateText></> : null,
+          last ? isolate(last.what) : null,
+        ],
+        src: 'المصدر: سجل التدقيق',
+      }
+    }
     return {
-      label: s.label,
-      note: s.note,
-      at: last ? <DateText>{last.at}</DateText> : undefined,
-      state: s.key === now ? 'now' : s.steps.every((n) => done.has(n)) ? 'done' : 'todo',
+      label: s.note,
+      title: s.label,
+      cap: s.cap,
+      state: 'pending',
+      lines: [
+        'تبدأ بعد اكتمال المرحلة السابقة',
+        <>الخطوات <span className="num">{isolate(range)}</span> في الوثيقة</>,
+      ],
+      src: 'المصدر: مسار الاتفاقية',
     }
   })
 }
@@ -83,6 +121,7 @@ export default function AgreementPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { role, user } = useRole()
+  const mobile = useIsMobile()
   const a = agreementById(id)
   const [note, setNote] = useState('')
   const [taken, setTaken] = useState<string | null>(null)
@@ -120,13 +159,33 @@ export default function AgreementPage() {
   const gap = agrReserveGap(a)
   const actions = agrActionsFor(role.key, a.stage)
 
+  /* The hollow center names who holds the decision now; a finished or cancelled agreement has none. */
+  const nowAt = ladder.findIndex((s) => s.state === 'now')
+  const holder: { k: string; t: string; rest: React.ReactNode[] } =
+    a.stage === 'active'
+      ? {
+          k: 'اكتمل مسار الاعتماد',
+          t: 'الاتفاقية سارية',
+          rest: [a.activeAt ? <>فُعّلت في <DateText>{a.activeAt}</DateText></> : null],
+        }
+      : a.stage === 'cancelled'
+        ? { k: 'توقّف مسار الاعتماد', t: 'الاتفاقية ملغاة', rest: [] }
+        : {
+            k: 'صاحب القرار الآن',
+            t: agrStageWho(a.stage),
+            rest: [
+              <>المرحلة <b className="num">{nowAt + 1}</b> من <b className="num">{LADDER.length}</b> · {meta?.label}</>,
+              a.stage === 'returned' ? 'أُعيدت للتعديل، وتعود إلى مشرف المنح' : null,
+            ],
+          }
+
   return (
     <AppLayout assistantContext={assistFor.page(`اتفاقية ${a.id}`, a.projectName)}>
       <div className={`viewstack${actions.length > 0 ? ' hasdock' : ''}`}>
         <div className="screen col hasg2">
           <BackTo label="الاتفاقيات" onClick={() => navigate(ROUTES.agreements)} />
 
-          <header className="phead phead-g2">
+          <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">{a.projectName}</h1>
               <p className="sub mt-1">
@@ -149,8 +208,16 @@ export default function AgreementPage() {
               </div>
             </div>
 
-            <div className="col">
-              <Steps items={ladder} flow="ladder" />
+            {/* Same fan as the project header, driven by the agreement's own stages. */}
+            <div className="pgates">
+              <StepArc
+                steps={ladder}
+                compact={mobile}
+                aria={`مسار اعتماد الاتفاقية، ${holder.t}`}
+                holderKey={holder.k}
+                holder={holder.t}
+                rest={holder.rest}
+              />
             </div>
           </header>
 

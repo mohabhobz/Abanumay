@@ -67,6 +67,10 @@ export interface Portfolio {
   year: string
   openedAt: string
   items: PortfolioItem[]
+  /** Coverage shown in the projects list row. */
+  region?: string
+  /** Grant officer managing the portfolio. */
+  owner?: string
 }
 
 export const portfolios: Portfolio[] = [
@@ -82,6 +86,34 @@ export const portfolios: Portfolio[] = [
       { id: 'PF-2', name: 'السلال الغذائية في رمضان', region: 'عموم المملكة', amount: 1_800_000, spent: 1_240_000, status: 'تحت التنفيذ' },
       { id: 'PF-3', name: 'تهيئة السكن للأسر المحتاجة', region: 'مكة المكرمة', amount: 1_400_000, spent: 300_000, status: 'تحت التنفيذ' },
       { id: 'PF-4', name: 'كسوة الشتاء', region: 'تبوك', amount: 800_000, spent: 0, status: 'لم يبدأ' },
+    ],
+  },
+  {
+    id: 'PF-2026-002',
+    name: 'محفظة إحسان · التعليم والتدريب',
+    entityId: '860',
+    total: 3_200_000,
+    year: '2026',
+    openedAt: '2026-04-02',
+    owner: 'سعود البريكان',
+    items: [
+      { id: 'PF-5', name: 'منح دراسية للطلاب المتفوقين', region: 'الرياض', amount: 1_500_000, spent: 900_000, status: 'تحت التنفيذ' },
+      { id: 'PF-6', name: 'تدريب المعلمين على المناهج الرقمية', region: 'القصيم', amount: 1_100_000, spent: 1_100_000, status: 'مكتمل' },
+      { id: 'PF-7', name: 'تجهيز معامل الحاسب', region: 'حائل', amount: 600_000, spent: 0, status: 'لم يبدأ' },
+    ],
+  },
+  {
+    id: 'PF-2026-003',
+    name: 'المحافظ الخيرية · الصحة المجتمعية',
+    entityId: '861',
+    total: 2_400_000,
+    year: '2026',
+    openedAt: '2026-05-18',
+    region: 'المنطقة الشرقية',
+    owner: 'حصة النملة',
+    items: [
+      { id: 'PF-8', name: 'عيادات متنقلة للقرى', region: 'المنطقة الشرقية', amount: 1_300_000, spent: 450_000, status: 'تحت التنفيذ' },
+      { id: 'PF-9', name: 'برنامج الكشف المبكر', region: 'المنطقة الشرقية', amount: 1_100_000, spent: 0, status: 'لم يبدأ' },
     ],
   },
 ]

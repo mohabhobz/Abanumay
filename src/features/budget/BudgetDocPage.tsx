@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   Blockers, DateField, BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, Money, Mono, Nil, Num, Riyal, Tag, DockWhy,
 } from '@/components/ui'
@@ -9,7 +9,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { nf, NOUN, nounAfter } from '@/lib/format'
 import {
   KIND_NOTE, KIND_SAY, KIND_UNDER, childrenOf, docTitle, fiscalYears,
-  flatten, fundSources, hasChildren, kindFits, kindUnder, levelOf, outlineOf, pathOf,
+  flatten, fundSources, hasChildren, kindFits, kindUnder, levelOf, moneyOf, outlineOf, pathOf,
   publicName, rootOf, sumChildren, treeIssues, yearById, yearSourceTaken,
   type BudgetDoc, type BudgetNode, type LineKind,
 } from '@/data/mock/budgetTree'
@@ -62,6 +62,10 @@ export default function BudgetDocPage() {
   const { id } = useParams()
   const navigate = useNavigate()
 
+  /* `?line=` comes from "view the budget document" in the project decision step · the row with
+     that id is marked, and the hash scrolls to it. */
+  const [query] = useSearchParams()
+  const focus = query.get('line') ?? ''
   const existing = id ? budgetDocOf(id) : undefined
   const missing = Boolean(id) && !existing
 
@@ -522,6 +526,8 @@ export default function BudgetDocPage() {
                         <span>البند</span>
                         <span>مستوى البند</span>
                         <span className="tnum">المبلغ المخصص</span>
+                        <span className="tnum">المبلغ المحتجز</span>
+                        <span className="tnum">المبلغ المدفوع</span>
                         <span className="tnum">المبلغ المتاح</span>
                         <span>الحالة</span>
                         <span />
@@ -532,9 +538,12 @@ export default function BudgetDocPage() {
                         const lvl = levelOf(nodes, x.id)
                         const bad = issues.some((i) => i.nodeId === x.id)
                         const out = outlineOf(nodes, x.id)
+                        const m = moneyOf(nodes, x.id)
                         return (
                           <div
                             key={x.id}
+                            id={`line-${x.id}`}
+                            aria-current={x.id === focus ? 'true' : undefined}
                             className={`btree-r${bad ? ' no' : ''}${x.active ? '' : ' off'}`}
                           >
                             {/* Indentation via a class, not an inline variable - depth beyond six
@@ -586,7 +595,7 @@ export default function BudgetDocPage() {
                               </Tag>
                             </span>
 
-                            <span className="tnum">
+                            <span className="tnum" data-k="المخصص">
                               {/* The root's figure comes from the header, and any item with
                                   children must equal their sum - so editing here applies to both
                                   leaf items and parents, with the check written out. */}
@@ -604,8 +613,16 @@ export default function BudgetDocPage() {
                               )}
                             </span>
 
-                            <span className="tnum">
-                              {x.active ? <Num>{x.available}</Num> : <Nil />}
+                            {/* Held and paid live on the leaf; a parent shows its children's sums,
+                                and available is always allocated − held − paid. */}
+                            <span className="tnum" data-k="المحتجز">
+                              {x.active ? <Num>{m.held}</Num> : <Nil />}
+                            </span>
+                            <span className="tnum" data-k="المدفوع">
+                              {x.active ? <Num>{m.paid}</Num> : <Nil />}
+                            </span>
+                            <span className="tnum" data-k="المتاح">
+                              {x.active ? <Num>{m.available}</Num> : <Nil />}
                             </span>
 
                             <span>
@@ -656,6 +673,25 @@ export default function BudgetDocPage() {
                           </div>
                         )
                       })}
+
+                      {root && (() => {
+                        /* Totals row · the sums of the root's direct children, so a gap against
+                           the root row above reads in the same column. */
+                        const top = childrenOf(nodes, root.id).filter((k) => k.active).map((k) => moneyOf(nodes, k.id))
+                        const t = (f: keyof typeof top[number]) => top.reduce((a, k) => a + k[f], 0)
+                        return (
+                          <div className="btree-r btree-f">
+                            <span className="btree-n" title="مجموع بنود المستوى الأول"><b>الإجمالي</b></span>
+                            <span />
+                            <span className="tnum" data-k="المخصص"><b><Num>{t('allocated')}</Num></b></span>
+                            <span className="tnum" data-k="المحتجز"><b><Num>{t('held')}</Num></b></span>
+                            <span className="tnum" data-k="المدفوع"><b><Num>{t('paid')}</Num></b></span>
+                            <span className="tnum" data-k="المتاح"><b><Num>{t('available')}</Num></b></span>
+                            <span />
+                            <span />
+                          </div>
+                        )
+                      })()}
                     </div>
 
                     {root && (

@@ -1,0 +1,14 @@
+/* gates · review round Sept 30 */
+/* Closing header: the stage tag sits under the subtitle, before the amount. */
+.gt-tag{margin-top:var(--sp-3)}
+
+/* Phone: the closing/payment action dock stacks its rows. The group's desktop flex-basis (32rem)
+   turned into a 512px height once the bar became a column, and its buttons refused to wrap, so the
+   dock covered the page and ran off its side. Here the note field takes the full width and the
+   buttons share rows. */
+@media (max-width:860px){
+  .decdock .payact-g{flex:none;flex-direction:column;align-items:stretch;width:100%}
+  .decdock .payact-g>.payact-n{flex:none}
+  .decdock .payact-g>.rowf{flex-wrap:wrap}
+  .decdock .payact-g>.rowf>.btn{flex:1 1 auto}
+}

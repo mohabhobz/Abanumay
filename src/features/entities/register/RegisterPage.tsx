@@ -181,10 +181,8 @@ export default function RegisterPage() {
     [tab, val, shortBy, files],
   )
 
-  /* Note: password confirmation also blocks submission, and isn't part of `shortBy`. Both fields
-     are filled, so the counter reads "complete" - but the request can't be sent while the two
-     passwords differ. The blocker is read from the hint itself. */
-  const canSend = missing.length === 0 && !clash && advice.blocking.length === 0
+  /* Note: submission is no longer gated (client request, Sept 30). Missing items, the license
+     clash and `advice.blocking` stay visible as information in the dock and the assistant card. */
 
   /* Note: the stepper needs progress via the button too, not just by clicking it. Clicking a
      distant step is a jump, while normal filling goes step by step, with the hand staying near the
@@ -331,14 +329,15 @@ export default function RegisterPage() {
               <Icon name={icons.chevron} size="sm" />
             </button>
           ) : (
+            /* Client request (Sept 30): submit is never blocked. Gaps are still reported as
+               info in the title and the dock counter; the reviewer handles them. */
             <button
               className="btn btn-p"
-              disabled={!canSend}
               title={
                 clash
-                  ? 'رقم الترخيص مكرّر · قاعدة 8'
+                  ? 'رقم الترخيص مكرّر · سيُراجَع مع الطلب'
                   : missing.length
-                    ? `ينقص ${missing.length} من الحقول الإلزامية · قاعدة 4`
+                    ? `ينقص ${missing.length} من الحقول · يمكنك الإرسال الآن`
                     : 'أرسل الطلب للمراجعة'
               }
               onClick={() => setPhase('otp')}

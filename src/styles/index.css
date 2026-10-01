@@ -1,3 +1,11 @@
+/* Feature stylesheets for the Sept 30 review round; each uses the tokens from :root below. */
+@import './parts/projects.css';
+@import './parts/entities.css';
+@import './parts/budget.css';
+@import './parts/gates.css';
+@import './parts/register.css';
+@import './parts/reports.css';
+
 /* Official Saudi Riyal symbol
    U+20C1, officially issued and added to Unicode 17.
    Not yet supported in most fonts, so we load the symbol's own font (OFL 1.1, 1.2KB). */
@@ -8355,3 +8363,10 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
   .mring{flex-direction:column;align-items:stretch;gap:var(--sp-6)}
   .mring-fig{align-self:center}
 }
+
+/* Arrival highlight: the section a link pointed at (`useHashScroll`) gets a short ring, so the user
+   sees why they landed here. */
+.arrive{animation:arrive calc(var(--mo-5) * 4) var(--ease-std)}
+@keyframes arrive{0%,60%{box-shadow:0 0 0 2px var(--teal)}}
+@media (prefers-reduced-motion:reduce){.arrive{animation:none;box-shadow:0 0 0 2px var(--teal)}}
+.screen [id]{scroll-margin-top:var(--sp-6)}

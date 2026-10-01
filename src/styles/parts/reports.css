@@ -1,0 +1,5 @@
+/* reports · review round Sept 30 */
+
+/* Report toolbars reuse `.ftoolbar`. A row that holds only helper text (no control)
+   keeps the control height, so the text centers against the export button. */
+.rptb .ftool-f{min-height:var(--h-md)}

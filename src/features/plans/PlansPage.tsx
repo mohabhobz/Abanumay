@@ -225,7 +225,8 @@ export default function PlansPage() {
             ]}
           />
 
-          <Glass className="ftoolbar">
+          {/* `#list` is where the quick read's links land (filter + scroll). */}
+          <Glass className="ftoolbar" id="list">
             <div className="ftool-r">
               <div className="ftool-f">
                 <SearchBox

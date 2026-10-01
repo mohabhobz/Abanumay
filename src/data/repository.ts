@@ -22,9 +22,9 @@ import {
   insights as mockInsights,
   followUpTypes as mockFollowUpTypes,
 } from './mock/project'
-import { projectRows, projectById, projectsOfEntity } from './mock/projects'
+import { projectRows, projectById, projectsOfEntity, portfolioRows } from './mock/projects'
 import { entityRows, entityById } from './mock/entities'
-import { projectCode } from '@/lib/format'
+import { entityCode, projectCode } from '@/lib/format'
 
 /** A small delay so loading states in the UI can actually be tested */
 const LATENCY_MS = 0
@@ -77,6 +77,10 @@ export interface ProjectQuery {
   overdue?: boolean
   shared?: boolean
   impact?: boolean
+  /** Project type · regular, external, or portfolio */
+  type?: Filter
+  /** true = include portfolio rows (the projects list only) */
+  portfolios?: boolean
   from?: string
   to?: string
   search?: string
@@ -156,6 +160,7 @@ const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
   if (q.overdue && stagePressure(r) <= 1) return false
   if (q.shared && !r.shared) return false
   if (q.impact && !r.impact) return false
+  if (!eq(q.type, r.type ?? 'مشروع عادي')) return false
   if (q.from && r.submittedAt < q.from) return false
   if (q.to && r.submittedAt > q.to) return false
   if (q.search) {
@@ -195,8 +200,10 @@ const matchEntity = (e: EntityRow, q: EntityQuery): boolean => {
   if (q.docsIncomplete && e.docsUploaded >= ENTITY_DOCS_TOTAL) return false
   if (q.hasRunning && e.projectsRunning === 0) return false
   if (q.search) {
-    const hay = `${e.id} ${e.name} ${e.licenseNo} ${e.city}`
-    if (!hay.includes(q.search.trim())) return false
+    const hay = `${e.id} ${entityCode(e.id, e.registeredAt)} ${e.name} ${e.licenseNo} ${e.city}`
+    const needle = q.search.trim()
+    /* The code is upper-case Latin; match it whatever case was typed. */
+    if (!hay.includes(needle) && !hay.includes(needle.toUpperCase())) return false
   }
   return true
 }
@@ -303,14 +310,18 @@ export const fixtures = {
   entities: entityRows,
 }
 
+/** Rows a query runs over · portfolio rows join only when the caller asks for them */
+const poolOf = (q: ProjectQuery): ProjectRow[] =>
+  q.portfolios ? [...projectRows, ...portfolioRows] : projectRows
+
 /** Synchronous copies of the same logic · used by screens until there's a real server */
 export const query = {
   projects(q: ProjectQuery = {}): Page<ProjectRow> {
-    const filtered = projectRows.filter((r) => matchProject(r, q))
+    const filtered = poolOf(q).filter((r) => matchProject(r, q))
     return paginate(sortProjects(filtered, q.sort), q.page, q.pageSize)
   },
   projectStatusCounts(q: ProjectQuery = {}): Record<string, number> {
-    const rows = projectRows.filter((r) => matchProject(r, { ...q, status: undefined }))
+    const rows = poolOf(q).filter((r) => matchProject(r, { ...q, status: undefined }))
     const out: Record<string, number> = {}
     for (const r of rows) out[r.statusGroup] = (out[r.statusGroup] ?? 0) + 1
     return out

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { DateText, Empty, Glass, Head, Mono, Num, Tag } from '@/components/ui'
-import { countOf, isolate, nf, NOUN } from '@/lib/format'
+import { countOf, isolate, nf, NOUN, projectCode } from '@/lib/format'
+import { projectById } from '@/data/mock/projects'
 import type { Entity, FollowUp, FollowUpType } from '@/types/domain'
 import type { ThreadMessage } from '@/data/mock/detail'
 import { Thread } from '@/components/thread'
@@ -13,10 +14,13 @@ export { PlanTab, type PlanTabProps } from './PlanTab'
 export { CloseTab, type CloseTabProps } from './CloseTab'
 export { PaymentsTab, type PaymentsTabProps } from './PaymentsTab'
 export { LogTab, type LogTabProps } from './LogTab'
+export { ActivitiesTab, type ActivitiesTabProps } from './ActivitiesTab'
 
 /* Previous projects */
 
-export function HistoryTab({ entity: E, currentId }: { entity: Entity; currentId: string }) {
+export function HistoryTab({
+  entity: E, currentId, year,
+}: { entity: Entity; currentId: string; year: string }) {
   return (
     <>
       <Glass>
@@ -44,7 +48,7 @@ export function HistoryTab({ entity: E, currentId }: { entity: Entity; currentId
             <tbody>
               {E.projects.map((p) => (
                 <tr key={p.id} className={p.id === currentId ? 'lv0' : ''}>
-                  <td><Mono>{p.id}</Mono></td>
+                  <td><Mono>{projectCode(p.id, projectById(p.id)?.year ?? year)}</Mono></td>
                   <td>{p.name}</td>
                   <td>{p.region}</td>
                   <td><Tag tone={p.tone}>{p.status}</Tag></td>

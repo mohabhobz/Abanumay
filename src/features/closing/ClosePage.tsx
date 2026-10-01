@@ -2,8 +2,8 @@ import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, KV, Mono, Num, Tag,
-  icons, type StepItem,
+  BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tag,
+  icons, type GateStep,
 } from '@/components/ui'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
 import { DocList, UploadButton, type DocRow } from '@/components/docs'
@@ -12,18 +12,19 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { useFillHeight } from '@/hooks/useFillHeight'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, MISSING_ITEM, nf, nounAfter, pct, unitAfter, withUnit } from '@/lib/format'
+import { isolate, MISSING_ITEM, nf, NOUN, nounAfter, pct, unitAfter, withUnit } from '@/lib/format'
 import {
-  CLOSE_DOCS, CLOSE_STAGES, approveEval, approveReport, canStartEval,
-  closeById, closeCycle, closeRequirements, closeStageLabel, closeStageWho, evalApproved,
+  CLOSE_DOCS, CLOSE_LIMIT, CLOSE_STAGES, approveEval, approveReport, canStartEval,
+  closeById, closeCycle, closeRequirements, closeStageLabel, closeStageWho, evalApproved, reportApproved,
   evalBlockers, needsComms, reportBlockers, reportGap, returnReport,
   sendEval, sendReport, startEval,
 } from '@/data/mock/closing'
 import { projectById } from '@/data/mock/projects'
 import { closeReadings } from './readings'
 import { CloseActionDock, closeActionsFor } from './CloseActionDock'
-import { ApprovalBar, SealedTitle } from '@/components/soul'
+import { SealedTitle } from '@/components/soul'
 
 /* Closing page.
 
@@ -49,11 +50,25 @@ const REPORT_PATH = ['draft', 'supervisor', 'comms', 'manager', 'executive'] as 
 /** Evaluation-cycle stages - a separate record (rule 17). */
 const EVAL_PATH = ['evalDraft', 'evalManager', 'evalExecutive', 'closed'] as const
 
+/** Short line under each holder inside the fan sector. */
+const CAP: Record<string, string> = {
+  draft: 'التقرير الختامي',
+  supervisor: 'المراجعة',
+  comms: 'النشر الإعلامي',
+  manager: 'الاعتماد',
+  executive: 'الاعتماد النهائي',
+  evalDraft: 'إعداد التقييم',
+  evalManager: 'اعتماد التقييم',
+  evalExecutive: 'اعتماد التقييم',
+  closed: 'مكتمل',
+}
+
 export default function ClosePage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const { role, user } = useRole()
+  const mobile = useIsMobile()
   const asEntity = params.get('as') === 'entity'
   const c = closeById(id)
   const [note, setNote] = useState('')
@@ -111,19 +126,61 @@ export default function ClosePage() {
      when coverage isn't required, and it's stated as skipped rather than hidden (our absence rule,
      plus rule 9: "when it was required"). */
   const path: readonly string[] = cycle === 'report' ? REPORT_PATH : EVAL_PATH
-  const here: string = c.stage === 'returned' ? (c.returnedTo ?? 'draft') : c.stage
-  const at = path.indexOf(here)
+  /* A returned report sits with whoever it went back to; an approved report waits on the
+     supervisor to open the evaluation. */
+  const here: string =
+    c.stage === 'returned' ? (c.returnedTo ?? 'draft')
+      : c.stage === 'reportDone' ? 'evalDraft'
+        : c.stage
+  const at = closed ? path.length : path.indexOf(here)
+  const openDays = Math.round(c.hoursInStage / 24)
+  const limit = CLOSE_LIMIT[c.stage]
 
-  const steps: StepItem[] = path.map((k, i) => {
+  /* Same fan as the project header, driven by the closing cycle's own steps. */
+  const steps: GateStep[] = path.map((k, i): GateStep => {
     const meta = CLOSE_STAGES.find((s) => s.key === k)
-    const skipped = k === 'comms' && !needsComms(c)
+    const label = k === 'closed' ? 'الإغلاق' : k === 'comms' ? 'الاتصال المؤسسي' : meta?.who ?? k
+    const base = { label, title: meta?.label ?? k, cap: CAP[k] ?? '' }
+    if (k === 'comms' && !needsComms(c)) {
+      return {
+        ...base,
+        cap: 'لا ينطبق',
+        state: 'skip',
+        lines: ['لا تشترط الاتفاقية نشرًا إعلاميًا', <>تُتخطّى المرحلة وفق القاعدة <span className="num">9</span></>],
+        src: 'المصدر: شروط الاتفاقية',
+      }
+    }
+    if (i === at) {
+      return {
+        ...base,
+        state: 'now',
+        lines: [
+          <><b>{meta?.who}</b> · مفتوح منذ <b>{openDays}</b> {nounAfter(openDays, NOUN.day)}</>,
+          limit > 0
+            ? <><b>{nf.format(c.hoursInStage)}</b> ساعة مقابل حدّ <b>{nf.format(limit)}</b></>
+            : meta?.note,
+        ],
+        src: 'المصدر: سجل الإغلاق',
+      }
+    }
     return {
-      label: skipped ? 'الاتصال المؤسسي · لا ينطبق' : meta?.label ?? k,
-      state: skipped
-        ? 'skip'
-        : i === at ? 'now' : i < at ? 'done' : 'todo',
+      ...base,
+      state: i < at ? 'done' : 'pending',
+      lines: [meta?.note, i < at ? null : 'تبدأ بعد اكتمال المرحلة السابقة'],
+      src: i < at ? 'المصدر: سجل الإغلاق' : 'المصدر: مسار الإغلاق',
     }
   })
+
+  const holder = closed
+    ? { k: 'اكتمل الإغلاق', t: 'المشروع مغلق' }
+    : { k: 'صاحب القرار الآن', t: steps[at]?.label ?? closeStageWho(c.stage) }
+  const holderRest = [
+    <>دورة <b className="num">{cycle === 'report' ? 1 : 2}</b> من <b className="num">2</b> ·{' '}
+      {cycle === 'report' ? 'مسار التقرير الختامي' : 'مسار تقييم المشروع'}</>,
+    cycle === 'report'
+      ? <>لا يبدأ التقييم قبل اعتماد المدير التنفيذي · القاعدة <span className="num">6</span></>
+      : <>التقييم سجلّ منفصل يُعدّه مشرف المنح · القاعدة <span className="num">17</span></>,
+  ]
 
   /* Attachments - one `DocList`, not a hand-built table. */
   const docRows: DocRow[] = CLOSE_DOCS.map((d) => ({
@@ -160,8 +217,9 @@ export default function ClosePage() {
         <div className="screen col hasg2">
           <BackTo label="الإغلاق" onClick={() => navigate(ROUTES.closings)} />
 
-          <header>
-            <div>
+          {/* Header laid out like the project page: title and amount, the fan at the end. */}
+          <header className="phead">
+            <div className="pmain">
               {/* The seal sits next to the title once closing is complete - the tag stays in its
                   place. */}
               <SealedTitle sealed={closed} fresh={fresh?.sealed}>إغلاق {c.projectName}</SealedTitle>
@@ -173,8 +231,34 @@ export default function ClosePage() {
                   <> · الإصدار <span className="num">{c.versions.length}</span></>
                 )}
               </p>
+              <div className="gt-tag">
+                <Tag tone="mute">{closeStageLabel(c.stage)}</Tag>
+              </div>
+
+              {pr && (
+                <div className="pamt">
+                  <div className="lb">قيمة المنحة</div>
+                  <div className="v"><Money sm>{pr.amountGranted || pr.amountRequested}</Money></div>
+                  <div className="sub">
+                    التقرير الختامي {reportApproved(c) ? 'معتمد' : 'قيد الاعتماد'}
+                    {c.report.budget !== null && (
+                      <> · الميزانية الفعلية <Num>{c.report.budget}</Num></>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-            <Tag tone="mute">{closeStageLabel(c.stage)}</Tag>
+
+            <div className="pgates">
+              <StepArc
+                steps={steps}
+                compact={mobile}
+                aria={`مسار الإغلاق، ${holder.t}`}
+                holderKey={holder.k}
+                holder={holder.t}
+                rest={holderRest}
+              />
+            </div>
           </header>
 
           {/* Note: the entity needs to know the institution is comparing, not just receiving. This
@@ -198,28 +282,6 @@ export default function ClosePage() {
             </Glass>
           )}
 
-          <Glass className="regsteps">
-            <Head
-              title={cycle === 'report' ? 'مسار التقرير الختامي' : 'مسار تقييم المشروع'}
-              meta={
-                <span className="sub">
-                  دورة <Num>{cycle === 'report' ? 1 : 2}</Num> من <Num>2</Num> ·
-                  سجلّان منفصلان · قاعدة <Num>17</Num>
-                </span>
-              }
-            />
-            {/* Approval bar - the stage just approved fills in once. */}
-            <ApprovalBar items={steps} fresh={taken ? fresh?.step : undefined} />
-            {/* Note: rule 6 is the line between the two cycles - stated under the stepper because
-                it explains why the second cycle hasn't started. */}
-            <p className="sub cnote">
-              {cycle === 'report'
-                ? <>لا يبدأ تقييم المشروع قبل اعتماد المدير التنفيذي للتقرير ·
-                  القاعدة <span className="num">6</span>.</>
-                : <>اعتُمد التقرير الختامي، ولدورة التقييم سجلّ منفصل · يُعدّه
-                  مشرف المنح لا الجهة.</>}
-            </p>
-          </Glass>
 
           <div className="g2">
             <div className="col">

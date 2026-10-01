@@ -485,7 +485,14 @@ export interface ProjectRow {
   hasFinalReport: boolean
   hasKnowledgeProduct: boolean
   fieldVisit: boolean
+  /** Project type · regular (default), external, or a portfolio row. */
+  type?: ProjectType
+  /** Portfolio rows only · the portfolio this row opens. */
+  portfolioId?: string
 }
+
+/** Project type as shown in the list filter and the identity card. */
+export type ProjectType = 'مشروع عادي' | 'مشروع خارجي' | 'محفظة'
 
 /** A row in the entities list — identity plus cumulative performance. */
 export interface EntityRow {

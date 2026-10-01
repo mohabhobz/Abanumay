@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
 import { DocFile, DocList } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
-import { NOUN, nounAfter } from '@/lib/format'
+import { entityCode, NOUN, nounAfter } from '@/lib/format'
 import { activationTone, days, groupTone, TONE } from '@/lib/tone'
 import { ENTITY_DOCS_TOTAL, stagePressure } from '@/data/repository'
 import type { EntityDetail, EntityEvent } from '@/data/mock/entityDetail'
@@ -25,6 +25,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <KV
           rows={[
             { k: 'اسم الجهة', v: e.name },
+            { k: 'كود الجهة', v: <Mono>{entityCode(e.id, e.registeredAt)}</Mono> },
             { k: 'تصنيف الجهة', v: e.type },
             { k: 'الجهة المرخِّصة', v: e.licensor },
             { k: 'رقم الترخيص', v: <Mono>{e.licenseNo}</Mono> },
@@ -301,11 +302,11 @@ export function EntityLogTab({ d }: { d: EntityDetail }) {
 
 export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
   if (rows.length === 0) {
-    return <Glass><Empty art={{ done: 0 }} title="لا توجد مشاريع لهذه الجهة." note="الجهة مسجّلة، لكنها لم تتقدّم بأي مشروع في هذا النموذج." /></Glass>
+    return <Glass id="ent-projects"><Empty art={{ done: 0 }} title="لا توجد مشاريع لهذه الجهة." note="الجهة مسجّلة، لكنها لم تتقدّم بأي مشروع في هذا النموذج." /></Glass>
   }
 
   return (
-    <Glass>
+    <Glass id="ent-projects">
       <Head title="مشاريع الجهة" meta={<><span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.project)}</>} />
       <div className="eprj">
         {rows.map((p) => {

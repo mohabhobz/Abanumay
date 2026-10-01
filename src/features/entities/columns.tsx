@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
+import { entityCode, nf } from '@/lib/format'
 import { activationTone } from '@/lib/tone'
 import { ENTITY_DOCS_TOTAL } from '@/data/repository'
 import type { EntityRow } from '@/types/domain'
@@ -16,6 +16,16 @@ import type { Col as TCol, GroupBy } from '@/components/table'
 export type Col = TCol<EntityRow>
 
 export const COLS: Col[] = [
+  {
+    /* The partner code (PAR-<registration year>-<serial>) - the entity's identity in lists, the
+       entity page header, and search. */
+    key: 'code',
+    w: 150,
+    label: 'كود الجهة',
+    fixed: true,
+    cell: (e) => <Mono>{entityCode(e.id, e.registeredAt)}</Mono>,
+    text: (e) => entityCode(e.id, e.registeredAt),
+  },
   {
     key: 'license',
     w: 130,
@@ -32,7 +42,7 @@ export const COLS: Col[] = [
     cell: (e) => <Link to={ROUTES.entity(e.id)} className="tlink">{e.name}</Link>,
     text: (e) => e.name,
   },
-  { key: 'type', w: 118, label: 'النوع', def: true, cell: (e) => <span className="sub">{e.type}</span>, text: (e) => e.type },
+  { key: 'type', w: 124, label: 'تصنيف الجهة', def: true, cell: (e) => <span className="sub">{e.type}</span>, text: (e) => e.type },
   { key: 'licensor', w: 160, label: 'الجهة المرخِّصة', cell: (e) => <span className="sub">{e.licensor}</span>, text: (e) => e.licensor },
   { key: 'region', w: 98, label: 'المنطقة', def: true, cell: (e) => <span className="sub">{e.region}</span>, text: (e) => e.region },
   { key: 'city', w: 98, label: 'المدينة', cell: (e) => <span className="sub">{e.city}</span>, text: (e) => e.city },
@@ -130,7 +140,7 @@ export const COLS: Col[] = [
 export const GROUPS: GroupBy<EntityRow>[] = [
   { key: 'region', label: 'المنطقة', of: (e) => e.region },
   { key: 'city', label: 'المدينة', of: (e) => e.city },
-  { key: 'type', label: 'النوع', of: (e) => e.type },
+  { key: 'type', label: 'تصنيف الجهة', of: (e) => e.type },
   { key: 'licensor', label: 'الجهة المرخِّصة', of: (e) => e.licensor },
   { key: 'activation', label: 'التفعيل', of: (e) => e.activation },
   { key: 'governance', label: 'الحوكمة', of: (e) => e.governance },

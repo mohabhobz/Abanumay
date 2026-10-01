@@ -14,6 +14,7 @@ import { AnalysisCard } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { EntityFlow } from './EntityFlow'
 import { readEntity } from '@/data/readings'
+import { entityCode } from '@/lib/format'
 import {
   EntityBanksTab, EntityDataTab, EntityDocsTab, EntityGoTo, EntityLogTab,
   EntityProjectsTab, EntityRecord,
@@ -87,10 +88,14 @@ export default function EntityPage() {
                 <EntityMark logo={entity.logo} size="lg" />
                 <div style={{ minWidth: 0 }}>
                   <h1 className="ptitle">{entity.name}</h1>
+                  {/* Code and classification lead: they are the entity's identity in the list too,
+                      under the same names, so the two screens read as one record. */}
                   <div className="ehead-m sub">
-                    <Mono>{entity.licenseNo}</Mono>
+                    <Mono>{entityCode(entity.id, entity.registeredAt)}</Mono>
                     <span className="pc-dot" />
-                    {entity.type}
+                    <span>تصنيف الجهة: <b className="ehead-v">{entity.type}</b></span>
+                    <span className="pc-dot" />
+                    <span>الترخيص <Mono>{entity.licenseNo}</Mono></span>
                     <span className="pc-dot" />
                     <Icon name={icons.pinMap} size="sm" /> {entity.region} · {entity.city}
                   </div>

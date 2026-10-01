@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  StepLink, BackTo, DateText, Empty, Glass, Head, Icon, icons, Mono, Money, Num, Person, Tag,
+  StepLink, BackTo, DateText, Empty, Glass, Head, Icon, icons, Mono, Money, MultiSelect, Num, Person,
+  SearchBox, Select, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
@@ -9,7 +10,7 @@ import { ROUTES } from '@/app/routes'
 import { NOUN, nf, nounAfter, countOf } from '@/lib/format'
 import { ExportMenu } from '@/components/export'
 import { type Sheet } from '@/lib/export'
-import { LIVE_SPECS, specByKey, type LiveCol, type LiveSpec } from '@/data/liveReports'
+import { LIVE_SPECS, specByKey, type LiveCol, type LiveFilterDef, type LiveSpec } from '@/data/liveReports'
 import { budgetTree, liveRows, type BudgetNode, type LiveRow } from '@/data/mock/liveRows'
 import { CYCLES } from '@/data/budgetPlan'
 import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from '@/features/budget/BudgetCharts'
@@ -82,8 +83,6 @@ export default function LiveReport() {
             </Glass>
           )}
 
-          {spec.filters.length > 0 && <Filters spec={spec} />}
-
           {spec.charts.length > 0 && <Charts spec={spec} />}
 
           {spec.key === 'budget' ? <BudgetTree /> : <Rows spec={spec} />}
@@ -92,50 +91,6 @@ export default function LiveReport() {
         </div>
       </div>
     </AppLayout>
-  )
-}
-
-/* Filters */
-
-/**
- * Filters are labeled with their option count.
- *
- * This isn't decoration: "Goal — 97 options" in a single dropdown with no
- * search is the biggest problem across the system's screens, and the
- * number needs to sit next to the filter so the client sees the cause,
- * not just a complaint.
- */
-function Filters({ spec }: { spec: LiveSpec }) {
-  const heavy = spec.filters.filter((f) => (f.count ?? 0) >= 20).length
-  return (
-    <section className="rpsec">
-      <Head
-        title="فلاتر الشاشة في النظام"
-        meta={`${countOf(spec.filters.length, NOUN.filter)}${heavy ? ` · ${heavy} منها قائمة طويلة` : ''}`}
-      />
-      <div className="lrf">
-        {spec.filters.map((f) => (
-          <span key={f.label} className={`lrf-i${(f.count ?? 0) >= 50 ? ' long' : ''}`}>
-            <Icon
-              name={f.kind === 'date' ? icons.clock : f.kind === 'text' ? icons.search : icons.filter}
-              size="sm"
-            />
-            <b>{f.label}</b>
-            {f.count !== undefined && (
-              <span className="sub"><span className="num">{f.count}</span> {nounAfter(f.count, NOUN.option)}</span>
-            )}
-            {f.kind === 'date' && <span className="sub">تاريخ</span>}
-            {f.kind === 'text' && <span className="sub">بحث نصّي</span>}
-          </span>
-        ))}
-      </div>
-      {heavy > 0 && (
-        <p className="mut rpsec-n">
-          القوائم الطويلة معلّمة: في النظام الحالي هي <b>منسدلة بلا بحث</b>، فمن
-          يبحث عن هدف بعينه يتصفّح 97 سطرًا يدويًا. وهنا الفلتر نفسه مزوّد ببحث داخلي.
-        </p>
-      )}
-    </section>
   )
 }
 
@@ -187,8 +142,66 @@ function cellOf(v: string | number | undefined, c: LiveCol) {
   return String(v)
 }
 
+/* Filters · the screen's real filters, run on the sample rows.
+
+   They used to be drawn as a static list of bespoke chips above the table — a fourth filter
+   look in the system. Now they are the system toolbar itself (`Glass.ftoolbar`): search,
+   `MultiSelect`, «فلاتر متقدمة», and the active-filter chips with «مسح الكل», exactly as on the
+   projects list. A filter works when the sample table has its column; one without a column
+   stays listed (so the inventory is complete) but disabled. */
+
+/** Filter label → column label, where the live system names them differently */
+const FILTER_COL: Record<string, string> = { 'حالة المشاريع': 'حالة المشروع' }
+
+type LiveFilter = LiveFilterDef & { col?: LiveCol }
+
+function filtersOf(spec: LiveSpec): { selects: LiveFilter[]; rest: LiveFilter[]; texts: LiveFilterDef[] } {
+  const colFor = (label: string) => spec.cols.find((c) => c.label === (FILTER_COL[label] ?? label))
+  const all = spec.filters.filter((f) => f.kind !== 'text').map((f) => ({
+    ...f, col: f.kind === 'select' ? colFor(f.label) : undefined,
+  }))
+  const live = all.filter((f) => f.col)
+  return {
+    selects: live.slice(0, 2),
+    rest: [...live.slice(2), ...all.filter((f) => !f.col)],
+    texts: spec.filters.filter((f) => f.kind === 'text'),
+  }
+}
+
+const SEARCH_KINDS = new Set(['id', 'text', 'long', 'person', 'link'])
+
 function Rows({ spec }: { spec: LiveSpec }) {
   const rows = useMemo(() => liveRows(spec, 24), [spec])
+  const { selects, rest, texts } = useMemo(() => filtersOf(spec), [spec])
+  const [q, setQ] = useState('')
+  const [picked, setPicked] = useState<Record<string, string[]>>({})
+  const [advOpen, setAdvOpen] = useState(false)
+
+  const valuesOf = (f: LiveFilter) => picked[f.label] ?? []
+  const pick = (f: LiveFilter, v: string[]) => setPicked((p) => ({ ...p, [f.label]: v }))
+  const clear = () => { setQ(''); setPicked({}) }
+
+  /* Options come from the sample rows, each with its row count — same as the list screens */
+  const optionsOf = (f: LiveFilter) => {
+    if (!f.col) return []
+    const n = new Map<string, number>()
+    for (const r of rows) {
+      const v = String(r[f.col.key] ?? '')
+      if (v) n.set(v, (n.get(v) ?? 0) + 1)
+    }
+    return [...n.entries()].sort((a, b) => b[1] - a[1]).map(([v, c]) => ({ value: v, label: `${v} (${c})` }))
+  }
+
+  const live = useMemo(() => [...selects, ...rest].filter((f) => f.col), [selects, rest])
+  const shown = useMemo(() => {
+    const t = q.trim()
+    return rows.filter((r) =>
+      live.every((f) => {
+        const vs = picked[f.label] ?? []
+        return vs.length === 0 || vs.includes(String(r[f.col!.key] ?? ''))
+      }) &&
+      (!t || spec.cols.some((c) => SEARCH_KINDS.has(c.kind) && String(r[c.key] ?? '').includes(t))))
+  }, [rows, live, picked, q, spec.cols])
 
   if (spec.cols.length === 0) {
     return (
@@ -205,36 +218,136 @@ function Rows({ spec }: { spec: LiveSpec }) {
     file: `abanumay-${spec.path}`,
     title: spec.title,
     headers: spec.cols.map((c) => c.label),
-    rows: rows.map((r) => spec.cols.map((c) => String(r[c.key] ?? ''))),
+    rows: shown.map((r) => spec.cols.map((c) => String(r[c.key] ?? ''))),
   }
 
   const only = spec.cols.filter((c) => c.only)
+  const heavy = spec.filters.filter((f) => (f.count ?? 0) >= 20).length
+  const advCount = rest.filter((f) => valuesOf(f).length > 0).length
+  const chips = live.flatMap((f) => valuesOf(f).map((v) => ({ f, v })))
+  const hasFilters = spec.filters.length > 0
 
   return (
     <section className="rpsec">
       <Head
         title="الجدول بأعمدته"
-        meta={`${countOf(spec.cols.length, NOUN.column)} · عيّنة ${countOf(rows.length, NOUN.row)}`}
+        meta={`${countOf(spec.cols.length, NOUN.column)}${hasFilters ? ` · ${countOf(spec.filters.length, NOUN.filter)}` : ''} · عيّنة ${countOf(rows.length, NOUN.row)}`}
       />
 
-      {only.length > 0 && (
-        <p className="mut rpsec-n">
-          الأعمدة المعلّمة <b>لا مثيل لها في أي شاشة أخرى</b>:{' '}
-          {only.map((c) => c.label).join(' · ')}. أي أن هذا الرقم موجود في مكان
-          واحد فقط في النظام كله.
-        </p>
-      )}
+      <p className="mut rpsec-n">
+        القيم تجريبية · الأعمدة والفلاتر منقولة من <code className="mono">control/{spec.path}</code>.
+        {heavy > 0 && (
+          <>
+            {' '}في النظام الحالي <Num>{heavy}</Num> من فلاترها <b>منسدلة طويلة بلا بحث</b>،
+            وهنا كل قائمة طويلة مزوّدة ببحث داخلي.
+          </>
+        )}
+        {only.length > 0 && (
+          <>
+            {' '}الأعمدة المعلّمة <b>لا مثيل لها في أي شاشة أخرى</b>: {only.map((c) => c.label).join(' · ')}.
+          </>
+        )}
+      </p>
 
-      <div className="ftool-r">
-        <div className="ftool-f">
-          <span className="sub">
-            القيم تجريبية · الأعمدة منقولة من <code className="mono">control/{spec.path}</code>
-          </span>
+      <Glass className="ftoolbar rptb">
+        <div className="ftool-r">
+          <div className="ftool-f">
+            {texts.length > 0 && (
+              <SearchBox
+                value={q}
+                onChange={setQ}
+                placeholder={`ابحث ب${texts.map((f) => f.label).join(' أو ')}…`}
+              />
+            )}
+            {selects.map((f) => (
+              <MultiSelect
+                key={f.label}
+                values={valuesOf(f)}
+                all={f.label}
+                options={optionsOf(f)}
+                people={f.col?.kind === 'person'}
+                onChange={(v) => pick(f, v)}
+              />
+            ))}
+            {rest.length > 0 && (
+              <button
+                className={`fchip${advOpen ? ' on' : ''}`}
+                onClick={() => setAdvOpen((x) => !x)}
+                aria-expanded={advOpen}
+              >
+                <Icon name={icons.filter} size="sm" />
+                فلاتر متقدمة
+                {advCount > 0 && <b className="num">{advCount}</b>}
+              </button>
+            )}
+            {!hasFilters && (
+              <span className="sub">
+                <span className="num">{nf.format(shown.length)}</span> {nounAfter(shown.length, NOUN.row)} · لا فلاتر لهذه الشاشة في النظام
+              </span>
+            )}
+          </div>
+          <div className="ftool-a">
+            <ExportMenu sheet={sheet} note={`${spec.title} · ${countOf(shown.length, NOUN.row)}`} />
+          </div>
         </div>
-        <div className="ftool-a"><ExportMenu sheet={sheet} note={`${spec.title} · عيّنة ${countOf(rows.length, NOUN.row)}`} /></div>
-      </div>
+
+        {advOpen && rest.length > 0 && (
+          <div className="fgrid">
+            {rest.map((f) => (
+              <div key={f.label} className="fgrid-i">
+                {f.col ? (
+                  <MultiSelect
+                    label={f.label}
+                    values={valuesOf(f)}
+                    all="الكل"
+                    options={optionsOf(f)}
+                    people={f.col.kind === 'person'}
+                    onChange={(v) => pick(f, v)}
+                  />
+                ) : (
+                  /* No column for it in the sample table · listed, not usable */
+                  <Select
+                    label={f.label}
+                    icon={f.kind === 'date' ? icons.clock : undefined}
+                    disabled
+                    options={[]}
+                    all="لا عمود له في العيّنة"
+                    onChange={() => undefined}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {(chips.length > 0 || q.trim()) && (
+          <div className="factive">
+            {q.trim() && (
+              <button className="fpill" onClick={() => setQ('')}>
+                <span className="sub">بحث:</span> {q.trim()}
+                <Icon name={icons.close} size="sm" />
+              </button>
+            )}
+            {chips.map(({ f, v }) => (
+              <button
+                key={`${f.label}:${v}`}
+                className="fpill"
+                onClick={() => pick(f, valuesOf(f).filter((x) => x !== v))}
+              >
+                <span className="sub">{f.label}:</span>{' '}
+                {f.col?.kind === 'person' ? <Person name={v} quiet={false} /> : v}
+                <Icon name={icons.close} size="sm" />
+              </button>
+            ))}
+            <button className="fclear" onClick={clear}>مسح الكل</button>
+          </div>
+        )}
+      </Glass>
 
       <Glass className="tblcard">
+        {shown.length === 0 ? (
+          <Empty title="لا توجد صفوف بهذه الفلاتر." note="خفّف الفلاتر أو امسحها." />
+        ) : (
         <div className="tblwrap">
           <div className="tblock">
             <table className="tbl">
@@ -255,11 +368,12 @@ function Rows({ spec }: { spec: LiveSpec }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => <Row key={i} r={r} cols={spec.cols} />)}
+                {shown.map((r, i) => <Row key={i} r={r} cols={spec.cols} />)}
               </tbody>
             </table>
           </div>
         </div>
+        )}
       </Glass>
     </section>
   )
@@ -337,33 +451,35 @@ function BudgetTree() {
           export alone on the left on a third line. It now matches the
           `/reports/view/*` layout: (breadcrumb + count) on the right, (export)
           on the left, one row. */}
-      <div className="ftool-r">
-        <div className="ftool-f">
-            <div className="lrbc">
-              <button className={`lrbc-i${path.length === 0 ? ' on' : ''}`} onClick={() => setPath([])}>
-                كل الدورات
-              </button>
-              {path.map((n, i) => (
-                <span key={n.id} className="lrbc-s">
-                  <Icon name={icons.chevron} size="sm" />
-                  <button
-                    className={`lrbc-i${i === path.length - 1 ? ' on' : ''}`}
-                    onClick={() => setPath(path.slice(0, i + 1))}
-                  >
-                    {n.label}
-                  </button>
-                </span>
-              ))}
-            </div>
-          {!leaf && (
-            <span className="sub">
-              <span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.line)} ·{' '}
-              الإجماليات محسوبة من الدورات الخمس الحقيقية
-            </span>
-          )}
+      <Glass className="ftoolbar rptb">
+        <div className="ftool-r">
+          <div className="ftool-f">
+              <div className="lrbc">
+                <button className={`lrbc-i${path.length === 0 ? ' on' : ''}`} onClick={() => setPath([])}>
+                  كل الدورات
+                </button>
+                {path.map((n, i) => (
+                  <span key={n.id} className="lrbc-s">
+                    <Icon name={icons.chevron} size="sm" />
+                    <button
+                      className={`lrbc-i${i === path.length - 1 ? ' on' : ''}`}
+                      onClick={() => setPath(path.slice(0, i + 1))}
+                    >
+                      {n.label}
+                    </button>
+                  </span>
+                ))}
+              </div>
+            {!leaf && (
+              <span className="sub">
+                <span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.line)} ·{' '}
+                الإجماليات محسوبة من الدورات الخمس الحقيقية
+              </span>
+            )}
+          </div>
+          {!leaf && <div className="ftool-a"><ExportMenu sheet={sheet} note={sheet.title} /></div>}
         </div>
-        {!leaf && <div className="ftool-a"><ExportMenu sheet={sheet} note={sheet.title} /></div>}
-      </div>
+      </Glass>
 
       {leaf ? (
         <Glass><Empty title="آخر مستوى في الشجرة." note="لا تقسيم تحت الهدف، فعُد إلى مستوى أعلى من المسار في الأعلى." /></Glass>

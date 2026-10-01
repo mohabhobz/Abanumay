@@ -3,6 +3,7 @@ import { EntityMark, Icon, icons, Money, Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { ENTITY_DOCS_TOTAL } from '@/data/repository'
 import { activationTone } from '@/lib/tone'
+import { entityCode } from '@/lib/format'
 import type { EntityRow } from '@/types/domain'
 
 /**
@@ -23,7 +24,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
         <div className="ec-id">
           <Link className="ec-name" to={ROUTES.entity(row.id)}>{row.name}</Link>
           <div className="sub">
-            <Mono>{row.licenseNo}</Mono> · {row.type}
+            <Mono>{entityCode(row.id, row.registeredAt)}</Mono> · {row.type}
           </div>
         </div>
         <Tag tone={activationTone(row.activation)}>{row.activation}</Tag>

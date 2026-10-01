@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
@@ -20,6 +20,7 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { readPayments } from '@/data/readings'
 import { OWNERS } from '@/data/mock/taxonomy'
+import { entityById } from '@/data/mock/entities'
 import {
   BANK_STATES, PAY_STATES, PAY_TARGET_DAYS, payBlocked, payHeat, payKpi, payRequests,
 } from '@/data/mock/disbursements'
@@ -72,6 +73,17 @@ const HEATS = [
    hidden, otherwise it would count something the user already sees in front of them. */
 const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'state', 'heat', 'hold']
 
+/* The `entity` param carries entity ids (`?entity=755`), so a link from the entity page scopes the
+   inbox to that entity's requests only. Names are still accepted for links made before ids. */
+const inEntities = (r: PayRequest, picked: string[]) =>
+  !picked.length || picked.includes(r.entityId) || picked.includes(r.entityName)
+
+const entityLabel = (idOrName: string) => entityById(idOrName)?.name ?? idOrName
+
+/* Sections a link can land on (`/payments?entity=755#pay-open`): `pay-kpi` the indicators,
+   `list` the toolbar with its active filters, and the two stage anchors below. */
+const STAGE_ANCHORS = ['pay-open', 'pay-paid']
+
 export default function PaymentsPage() {
   const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
   const navigate = useNavigate()
@@ -99,7 +111,7 @@ export default function PaymentsPage() {
       if (states.length && !states.includes(r.state)) return false
       if (v.heat && payHeat(r) !== v.heat) return false
       if (owners.length && !owners.includes(r.owner)) return false
-      if (entities.length && !entities.includes(r.entityName)) return false
+      if (!inEntities(r, entities)) return false
       if (banks.length && !banks.includes(r.bank.active ? 'معتمد' : 'معطَّل')) return false
       if (v.hold === '1' && !payBlocked(r)) return false
       if (needle) {
@@ -120,6 +132,17 @@ export default function PaymentsPage() {
   const filtered = activeCount(['view', 'group', 'adv']) > 0
   const readings = useMemo(() => readPayments(rows, filtered), [rows, filtered])
 
+  /* The indicators and the title line follow the current scope: scoped to one entity, they
+     describe that entity's requests only. The "late" shortcut keeps the whole inbox (`k`), since
+     it opens a separate report. */
+  const ks = useMemo(() => payKpi(rows), [rows])
+  const pickedEntities = readList(v.entity)
+  const scopeEntity = pickedEntities.length === 1 ? entityLabel(pickedEntities[0]) : undefined
+
+  /* A hash target with no section of its own (say, an entity with no paid request yet) lands on
+     the results instead, so the arrival is never silent. */
+  const hashId = decodeURIComponent(useLocation().hash.replace(/^#/, ''))
+
   /** Count per stage within the current scope, not the whole set. */
   const counts = useMemo(() => {
     const needle = v.q?.trim()
@@ -129,7 +152,7 @@ export default function PaymentsPage() {
     const base = payRequests.filter((r) => {
       if (v.heat && payHeat(r) !== v.heat) return false
       if (owners.length && !owners.includes(r.owner)) return false
-      if (entities.length && !entities.includes(r.entityName)) return false
+      if (!inEntities(r, entities)) return false
       if (banks.length && !banks.includes(r.bank.active ? 'معتمد' : 'معطَّل')) return false
       if (v.hold === '1' && !payBlocked(r)) return false
       if (needle && !`${r.id} ${r.projectName} ${r.entityName} ${r.projectId}`.includes(needle))
@@ -142,10 +165,13 @@ export default function PaymentsPage() {
   }, [v.heat, v.owner, v.entity, v.bank, v.hold, v.q])
 
   /** Entities that actually have requests - a filter shouldn't show an option with no results. */
-  const entityOptions = useMemo(
-    () => [...new Set(payRequests.map((r) => r.entityName))].sort((a, b) => a.localeCompare(b, 'ar')),
-    [],
-  )
+  const entityOptions = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const r of payRequests) seen.set(r.entityId, r.entityName)
+    return [...seen]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'ar'))
+  }, [])
 
   /* Grouping persists with the session instead of resetting on every sign-out. */
   useStickyGroup('payments', v.group, (x) => set({ group: x }))
@@ -162,6 +188,14 @@ export default function PaymentsPage() {
       .map((s) => ({ key: s.key, rows: sorted.filter((r) => r.state === s.key) }))
       .filter((g) => g.rows.length > 0)
   }, [sorted, v.state])
+
+  /* A link aimed at a stage this scope has none of lands on a short note that says so. */
+  const cardMissing = (() => {
+    if (hashId !== 'pay-paid' && hashId !== 'pay-open') return undefined
+    const has = cardGroups.some((g) =>
+      hashId === 'pay-paid' ? g.key === 'paid' : g.key !== 'paid' && g.key !== 'closed')
+    return has ? undefined : hashId
+  })()
 
   const sheet: Sheet = useMemo(() => {
     /* Note: the sheet is built in `sheetOf`, not here. Five screens used to write the same three
@@ -201,7 +235,10 @@ export default function PaymentsPage() {
       key,
       label,
       value,
-      text: key === 'state' ? PAY_STATES.find((s) => s.key === value)?.label ?? value : value,
+      text:
+        key === 'state' ? PAY_STATES.find((s) => s.key === value)?.label ?? value
+        : key === 'entity' ? entityLabel(value)
+        : value,
     })),
   )
 
@@ -218,11 +255,12 @@ export default function PaymentsPage() {
             <div>
               <h1 className="ptitle">الصرف</h1>
               <p className="sub mt-1">
+                {scopeEntity && <>طلبات «<b>{scopeEntity}</b>» · </>}
                 <span className="num">{rows.length}</span> {nounAfter(rows.length, REQUEST_NOUN)} من{' '}
                 <span className="num">{payRequests.length}</span> في هذا النموذج ·{' '}
-                <span className="num">{k.open}</span> مفتوح بقيمة{' '}
-                <span className="num">{nf.format(k.openSum)}</span> <Riyal /> ·{' '}
-                <span className="num">{k.blocked}</span> منها موقوف بشرط
+                <span className="num">{ks.open}</span> مفتوح بقيمة{' '}
+                <span className="num">{nf.format(ks.openSum)}</span> <Riyal /> ·{' '}
+                <span className="num">{ks.blocked}</span> منها موقوف بشرط
               </p>
             </div>
 
@@ -259,30 +297,30 @@ export default function PaymentsPage() {
               The "target value" column is empty in the spec for all four - so the number displays
               as a value, not a status, and isn't colored success or failure until the institution
               provides targets. */}
-          <div className="stats4">
+          <div className="stats4" id="pay-kpi">
             <Stat
               label="متوسط مدة معالجة الطلب"
-              value={<Num>{k.avgDays}</Num>}
+              value={<Num>{ks.avgDays}</Num>}
               unit="يومًا"
               note="مؤشر 1 · المستهدف بانتظار المؤسسة"
             />
             <Stat
               label="المنجزة ضمن المدة المستهدفة"
-              value={<Num>{pct(k.inTarget)}</Num>}
+              value={<Num>{pct(ks.inTarget)}</Num>}
               note={`مؤشر 2 · المدة المؤقتة ${countOf(PAY_TARGET_DAYS, NOUN.day)}`}
-              bar={{ w: `${k.inTarget}%`, c: 'var(--teal)' }}
+              bar={{ w: `${ks.inTarget}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة تنفيذ الصرف المالي"
-              value={<Num>{k.financeDays}</Num>}
+              value={<Num>{ks.financeDays}</Num>}
               unit="يومًا"
               note="مؤشر 3 · من اعتماد مدير المنح حتى التحويل"
             />
             <Stat
               label="الالتزام بجدول الدفعات"
-              value={<Num>{pct(k.onSchedule)}</Num>}
+              value={<Num>{pct(ks.onSchedule)}</Num>}
               note="مؤشر 4 · المستهدف بانتظار المؤسسة"
-              bar={{ w: `${k.onSchedule}%`, c: 'var(--lime)' }}
+              bar={{ w: `${ks.onSchedule}%`, c: 'var(--lime)' }}
             />
           </div>
 
@@ -300,7 +338,8 @@ export default function PaymentsPage() {
             ]}
           />
 
-          <Glass className="ftoolbar">
+          {/* `#list` is where the quick read's links land (filter + scroll). */}
+          <Glass className="ftoolbar" id="list">
             <div className="ftool-r">
               <div className="ftool-f">
                 <SearchBox
@@ -439,7 +478,7 @@ export default function PaymentsPage() {
           </Glass>
 
           {sorted.length === 0 ? (
-            <Glass>
+            <Glass id={STAGE_ANCHORS.includes(hashId) ? hashId : undefined}>
               <Empty
                 title="لا توجد طلبات بهذه الفلاتر."
                 note="وسّع النطاق، أو اختر مرحلة أخرى من الشرائح أعلاه."
@@ -448,7 +487,7 @@ export default function PaymentsPage() {
             </Glass>
           ) : view === 'table' ? (
             <>
-              <Glass className="tblcard">
+              <Glass className="tblcard" id={STAGE_ANCHORS.includes(hashId) ? hashId : undefined}>
                 <DataTable
                   rows={sorted}
                   all={COLS}
@@ -475,10 +514,15 @@ export default function PaymentsPage() {
               )}
             </>
           ) : (
-            cardGroups.map((g) => {
+            <>
+            {cardGroups.map((g) => {
               const meta = PAY_STATES.find((s) => s.key === g.key)
+              /* The first open stage carries `pay-open`, the paid group `pay-paid`. */
+              const firstOpen = cardGroups.find((x) => x.key !== 'paid' && x.key !== 'closed')
+              const anchor =
+                g.key === 'paid' ? 'pay-paid' : g === firstOpen ? 'pay-open' : undefined
               return (
-                <section className="paygrp" key={g.key}>
+                <section className="paygrp" key={g.key} id={anchor}>
                   <div className="paygrp-h">
                     <h2>{meta?.label ?? 'مغلقة'}</h2>
                     <span className="sub">
@@ -494,7 +538,24 @@ export default function PaymentsPage() {
                   </div>
                 </section>
               )
-            })
+            })}
+            {cardMissing && (
+              <Glass id={cardMissing}>
+                <Empty
+                  title={
+                    cardMissing === 'pay-paid'
+                      ? 'لا يوجد طلب مصروف في النطاق الحالي.'
+                      : 'لا يوجد طلب مفتوح في النطاق الحالي.'
+                  }
+                  note={
+                    scopeEntity
+                      ? 'الصندوق يعرض طلبات هذه الدورة فقط · المبالغ المصروفة سابقًا محسوبة في ملف الجهة.'
+                      : 'اختر مرحلة أخرى من الشرائح أعلاه.'
+                  }
+                />
+              </Glass>
+            )}
+            </>
           )}
         </div>
       </div>

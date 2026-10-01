@@ -432,9 +432,11 @@ export const PAY_TARGET_DAYS = Math.round(
 const daysBetween = (a: string, b: string): number =>
   Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
 
-export const payKpi = () => {
-  const open = payRequests.filter((r) => r.state !== 'paid' && r.state !== 'closed')
-  const paid = payRequests.filter((r) => r.state === 'paid')
+/** The four indicators over a scope · the whole inbox by default, or a filtered slice of it
+    (e.g. one entity's requests). */
+export const payKpi = (list: PayRequest[] = payRequests) => {
+  const open = list.filter((r) => r.state !== 'paid' && r.state !== 'closed')
+  const paid = list.filter((r) => r.state === 'paid')
   const onTime = paid.filter((r) => (r.paidAt ?? '') <= r.dueAt).length
   /* Indicator 2 · completed **within the target duration** · from creation to transfer, not against
      the due date (that's indicator 4) · two different indicators that are easy to mix up because
@@ -456,9 +458,9 @@ export const payKpi = () => {
     /** Value of open requests */
     openSum: open.reduce((s, r) => s + r.asked, 0),
     /** Indicator 1 · average disbursement-request processing time (days) */
-    avgDays: Math.round(
-      payRequests.reduce((s, r) => s + r.hoursInState, 0) / payRequests.length / 24,
-    ),
+    avgDays: list.length
+      ? Math.round(list.reduce((s, r) => s + r.hoursInState, 0) / list.length / 24)
+      : 0,
     /** Indicator 2 · share of requests completed within the target duration */
     inTarget: paid.length ? Math.round((inTarget / paid.length) * 100) : 0,
     /**

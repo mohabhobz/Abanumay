@@ -6,9 +6,10 @@
  * enough that some rows are far past the threshold — this is what the audit found across thousands
  * of projects, and it needs to be visible in the UI.
  */
-import type { ProjectRow } from '@/types/domain'
+import type { ProjectRow, ProjectType } from '@/types/domain'
 import { stageMeta } from './taxonomy'
 import { entityById } from './entities'
+import { implementerName, portfolios } from './implementer'
 
 type Seed = Pick<
   ProjectRow,
@@ -45,6 +46,7 @@ const mk = (s: Seed): ProjectRow => {
     hasFinalReport: false,
     hasKnowledgeProduct: false,
     fieldVisit: false,
+    type: 'مشروع عادي',
     ...s,
   }
 }
@@ -154,6 +156,7 @@ export const projectRows: ProjectRow[] = [
   }),
   mk({
     id: '20982',
+    type: 'مشروع خارجي',
     name: 'كسوة الشتاء لأسر الأيتام بحائل',
     entityId: '803',
     track: 'المنح الانتشاري',
@@ -248,6 +251,7 @@ export const projectRows: ProjectRow[] = [
   }),
   mk({
     id: '20831',
+    type: 'مشروع خارجي',
     name: 'قرة الأعين، تجهيز مصليات النساء بجدة',
     entityId: '748',
     track: 'المنح الانتشاري',
@@ -454,6 +458,7 @@ export const projectRows: ProjectRow[] = [
   }),
   mk({
     id: '20637',
+    type: 'مشروع خارجي',
     name: 'تهيئة سكن لعشر أسر متعففة بأبها',
     entityId: '769',
     track: 'المنح الانتشاري',
@@ -620,6 +625,7 @@ export const projectRows: ProjectRow[] = [
   }),
   mk({
     id: '20541',
+    type: 'مشروع خارجي',
     name: 'سلال غذائية إضافية بجازان',
     entityId: '774',
     track: 'المنح الانتشاري',
@@ -838,3 +844,38 @@ export const projectById = (id: string): ProjectRow | undefined =>
 
 export const projectsOfEntity = (entityId: string): ProjectRow[] =>
   projectRows.filter((p) => p.entityId === entityId)
+
+/** Project types · list filter order. */
+export const PROJECT_TYPES: readonly ProjectType[] = ['مشروع عادي', 'مشروع خارجي', 'محفظة']
+
+/**
+ * Portfolio rows · shown in the projects list only (opt-in via `ProjectQuery.portfolios`), so
+ * budgets, KPIs and reports keep counting projects alone. Each row opens its portfolio page.
+ */
+export const portfolioRows: ProjectRow[] = portfolios.map((p) => {
+  const spent = p.items.reduce((a, x) => a + x.spent, 0)
+  return mk({
+    id: p.id,
+    name: p.name,
+    entityId: p.entityId,
+    track: 'الشريك المنفّذ',
+    field: 'محفظة',
+    goal: `${p.items.length} مشاريع تحت المحفظة`,
+    region: p.region ?? 'عموم المملكة',
+    city: p.region ?? 'عموم المملكة',
+    stage: 'تنفيذ المحفظة',
+    statusGroup: 'في التشغيل',
+    stageLimit: 0,
+    entityName: implementerName(p.entityId),
+    amountRequested: p.total,
+    amountGranted: p.total,
+    amountSpent: spent,
+    owner: p.owner ?? 'عمر قاسم',
+    year: `${p.year}-f`,
+    submittedAt: p.openedAt,
+    grantMethod: 'بحث واستجابة',
+    weight: 0,
+    type: 'محفظة',
+    portfolioId: p.id,
+  })
+})

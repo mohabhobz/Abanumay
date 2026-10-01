@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Empty, Glass, Icon, icons, Num, SearchBox, Segments, Tag } from '@/components/ui'
+import { Empty, Glass, Icon, icons, MultiSelect, Num, SearchBox, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, NOUN, nounAfter } from '@/lib/format'
 import { LIVE_SPECS, catalogTotals, type LiveSpec } from '@/data/liveReports'
@@ -19,12 +19,12 @@ import { LIVE_SPECS, catalogTotals, type LiveSpec } from '@/data/liveReports'
  * sees what's alive before what's dead.
  */
 
-type Filter = 'all' | 'live' | 'form' | 'empty'
+type State = 'live' | 'form' | 'empty'
 
-const stateOf = (s: LiveSpec): Exclude<Filter, 'all'> =>
+const stateOf = (s: LiveSpec): State =>
   s.flaw ? 'empty' : s.rowsLive === null ? 'form' : 'live'
 
-const STATE_TAG: Record<Exclude<Filter, 'all'>, { label: string; tone: 'ok' | 'warn' | 'no' }> = {
+const STATE_TAG: Record<State, { label: string; tone: 'ok' | 'warn' | 'no' }> = {
   live: { label: 'جدول جاهز', tone: 'ok' },
   form: { label: 'نموذج قبل النتيجة', tone: 'warn' },
   empty: { label: 'فارغة في النظام', tone: 'no' },
@@ -34,16 +34,20 @@ const ORDER: Record<string, number> = { live: 0, form: 1, empty: 2 }
 
 export function Catalog() {
   const [q, setQ] = useState('')
-  const [state, setState] = useState<Filter>('all')
+  const [states, setStates] = useState<string[]>([])
 
   const list = useMemo(() => {
     const t = q.trim()
     return LIVE_SPECS
-      .filter((s) => state === 'all' || stateOf(s) === state)
+      .filter((s) => states.length === 0 || states.includes(stateOf(s)))
       .filter((s) => !t || s.title.includes(t) || s.path.includes(t) ||
         s.question.includes(t) || s.cols.some((c) => c.label.includes(t)))
       .sort((a, b) => ORDER[stateOf(a)] - ORDER[stateOf(b)] || (b.rowsLive ?? 0) - (a.rowsLive ?? 0))
-  }, [q, state])
+  }, [q, states])
+
+  const countIn = (st: State) => LIVE_SPECS.filter((s) => stateOf(s) === st).length
+  const STATES: State[] = ['live', 'form', 'empty']
+  const active = states.length > 0 || q.trim() !== ''
 
   return (
     <>
@@ -65,20 +69,39 @@ export function Catalog() {
         </p>
       </Glass>
 
-      <div className="ftool-r">
-        <div className="ftool-f">
-          <SearchBox value={q} onChange={setQ} placeholder="ابحث باسم التقرير أو عمود فيه…" />
-          <Segments
-            active={state === 'all' ? undefined : state}
-            onChange={(v) => setState((v as Filter) ?? 'all')}
-            items={[
-              { key: 'live', label: 'جداول جاهزة', count: LIVE_SPECS.filter((s) => stateOf(s) === 'live').length },
-              { key: 'form', label: 'نموذج قبل النتيجة', count: LIVE_SPECS.filter((s) => stateOf(s) === 'form').length },
-              { key: 'empty', label: 'فارغة', count: catalogTotals.broken },
-            ]}
-          />
+      {/* The system filter bar, same as the projects list: search, a status
+          `MultiSelect` with counts, and the active-filter chips with «مسح الكل». */}
+      <Glass className="ftoolbar rptb">
+        <div className="ftool-r">
+          <div className="ftool-f">
+            <SearchBox value={q} onChange={setQ} placeholder="ابحث باسم التقرير أو عمود فيه…" />
+            <MultiSelect
+              values={states}
+              all={`كل الشاشات (${LIVE_SPECS.length})`}
+              options={STATES.map((st) => ({ value: st, label: `${STATE_TAG[st].label} (${countIn(st)})` }))}
+              onChange={setStates}
+            />
+          </div>
         </div>
-      </div>
+
+        {active && (
+          <div className="factive">
+            {q.trim() && (
+              <button className="fpill" onClick={() => setQ('')}>
+                <span className="sub">بحث:</span> {q.trim()}
+                <Icon name={icons.close} size="sm" />
+              </button>
+            )}
+            {states.map((st) => (
+              <button key={st} className="fpill" onClick={() => setStates(states.filter((x) => x !== st))}>
+                <span className="sub">الحالة:</span> {STATE_TAG[st as State].label}
+                <Icon name={icons.close} size="sm" />
+              </button>
+            ))}
+            <button className="fclear" onClick={() => { setQ(''); setStates([]) }}>مسح الكل</button>
+          </div>
+        )}
+      </Glass>
 
       {list.length === 0 ? (
         <Glass><Empty title="لا توجد شاشة بهذا الوصف." note="ابحث باسم آخر أو امسح البحث." /></Glass>

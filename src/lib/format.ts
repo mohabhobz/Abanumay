@@ -131,8 +131,17 @@ export const isolate = (text: string): string =>
 export const projectCode = (id: string, year?: string): string =>
   `prj-${(year ?? '').slice(0, 4) || '____'}-${id.padStart(5, '0')}`
 
+/**
+ * Displayed entity (partner) code: `PAR-2019-00712`.
+ *
+ * Year = the entity's registration year, serial = the entity id zero-padded to five digits. Like
+ * the project code it is a display format only; URLs and the API keep the raw id.
+ */
+export const entityCode = (id: string, registeredAt?: string): string =>
+  `PAR-${(registeredAt ?? '').slice(0, 4) || '____'}-${id.padStart(5, '0')}`
+
 /** Accepts the full code or any part of it in search. */
-export const matchesCode = (needle: string, id: string, year?: string): boolean =>
+export const matchesCode =(needle: string, id: string, year?: string): boolean =>
   projectCode(id, year).includes(needle.trim().toLowerCase())
 
 /** Cost per beneficiary — the metric used to compare projects. */

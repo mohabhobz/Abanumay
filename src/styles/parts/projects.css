@@ -1,0 +1,52 @@
+/* projects · review round Sept 30 */
+
+/* ── Project log · category colors ──
+   One chart color per category, drawn as a shape only (timeline dot, tab swatch). Text beside
+   it stays neutral, and the category name is always written next to the swatch (WCAG 1.4.1). */
+.c-decision{--c:var(--ch-1)}
+.c-money{--c:var(--ch-4)}
+.c-entity{--c:var(--ch-5)}
+.c-followUp{--c:var(--ch-2)}
+.c-activity{--c:var(--ch-3)}
+.c-procedure{--c:var(--ch-6)}
+
+.lgsw{display:inline-block;flex:none;width:var(--sp-4);height:var(--sp-4);
+  border-radius:var(--r-dot);background:var(--c)}
+
+/* The timeline dot takes the category color, and the tab swatch is the same mark. Three of the
+   six chart colors are greens, so shape carries the difference too: a follow-up is a ring (as it
+   always was in this timeline), a manual activity is a square, everything else a dot. */
+.lgdot.lgc{--dot:var(--c)}
+.lgsw.c-followUp,.lgi.fu .lgdot.lgc{background:var(--g-card);
+  box-shadow:inset 0 0 0 3px var(--c)}
+.lgi.fu .lgdot.lgc{box-shadow:inset 0 0 0 3px var(--c),0 0 0 3px var(--fl-6)}
+.lgsw.c-activity,.lgdot.lgc.c-activity{border-radius:var(--r-hair)}
+
+.lgtabs{margin-top:var(--sp-4)}
+.lgtools{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3);margin-top:var(--sp-4)}
+
+.lgcat{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-1)}
+.lgsrc{font-size:var(--fs-1)}
+
+/* A linked event flashes on arrival; keep the anchor clear of the sticky header. */
+.lgi[id]{scroll-margin-top:var(--sp-10)}
+
+/* ── Activities tab ── */
+.acts-up{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3)}
+.acts-foot{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3);margin-top:var(--sp-6)}
+.acts-foot .prs{vertical-align:middle}
+.acts{list-style:none;margin:var(--sp-3) 0 0;padding:0}
+.acts-i{padding:var(--sp-4) 0;box-shadow:inset 0 1px 0 var(--edge-d)}
+.acts-i:first-child{box-shadow:none}
+.acts-files{display:flex;flex-wrap:wrap;gap:var(--sp-3);margin-top:var(--sp-3)}
+
+/* ── Projects list toolbar · phone width ──
+   The type filter adds a fourth control to the filter group; at 390px the fixed tool group used
+   to squeeze the filters into a column of truncated labels. On a phone the filters take the full
+   row, two per line, and the search box its own line. */
+@media (max-width:620px){
+  .plbar .ftool-r{flex-wrap:wrap}
+  .plbar .ftool-f{flex:1 1 100%}
+  .plbar .ftool-f>*{flex:1 1 calc(50% - var(--sp-3));min-width:0}
+  .plbar .ftool-f>.srch{flex-basis:100%}
+}

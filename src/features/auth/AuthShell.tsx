@@ -1,5 +1,5 @@
 import type { IconGlyph } from '@/components/ui/icons'
-import type { ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import Logo from '@/assets/LogoColor'
 import { Icon, icons } from '@/components/ui'
 
@@ -29,12 +29,46 @@ export interface AuthShellProps {
   err?: string
 }
 
+/* Background video.
+   The source clip is 12s; the asset is a palindrome (forward then reversed, ~24s) so the loop point
+   has no jump, and it plays at 0.6x (~40s per cycle) so the repeat is not noticeable.
+   Reduced motion: no video, the poster frame is shown still. */
+const VIDEO_RATE = 0.6
+const REDUCED = '(prefers-reduced-motion: reduce)'
+
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(() =>
+    typeof window !== 'undefined' && !!window.matchMedia?.(REDUCED).matches)
+  useEffect(() => {
+    const mq = window.matchMedia?.(REDUCED)
+    if (!mq) return
+    const on = () => setReduced(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return reduced
+}
+
+function LoginVideo() {
+  const ref = useRef<HTMLVideoElement>(null)
+  const reduced = useReducedMotion()
+  // playbackRate resets on load, so it is applied on every loadedmetadata as well.
+  const slow = () => { if (ref.current) ref.current.playbackRate = VIDEO_RATE }
+  useEffect(slow, [reduced])
+
+  if (reduced) return <img className="login-vid login-still" src="./login-poster.jpg" alt="" />
+  return (
+    <video ref={ref} className="login-vid" autoPlay muted loop playsInline
+      poster="./login-poster.jpg" onLoadedMetadata={slow} onPlay={slow}>
+      <source src="./login-bg.mp4" type="video/mp4" />
+    </video>
+  )
+}
+
 export function AuthShell({ title, sub, children, err }: AuthShellProps) {
   return (
     <div className="login">
-      <video className="login-vid" autoPlay muted loop playsInline poster="./login-poster.jpg">
-        <source src="./login-bg.mp4" type="video/mp4" />
-      </video>
+      <LoginVideo />
 
       <main className="login-mid">
         <div className="lcard glass">

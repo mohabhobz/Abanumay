@@ -96,26 +96,29 @@ export default function ReportView() {
             <p>{highlight(card.reading, card.bold ?? [], card.danger ?? [])}</p>
           </Glass>
 
-          <div className="ftool-r">
-            <div className="ftool-f">
-              <Select
-                icon={icons.chart}
-                value={period}
-                allowEmpty={false}
-                options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
-                onChange={(v) => setPeriod(v ?? PERIODS[0].id)}
-              />
-              <span className="sub">
-                <span className="num">{nf.format(table.rows.length)}</span> {nounAfter(table.rows.length, NOUN.row)}
-              </span>
+          {/* The period filter sits in the system toolbar, same as the lists. */}
+          <Glass className="ftoolbar rptb">
+            <div className="ftool-r">
+              <div className="ftool-f">
+                <Select
+                  icon={icons.chart}
+                  value={period}
+                  allowEmpty={false}
+                  options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
+                  onChange={(v) => setPeriod(v ?? PERIODS[0].id)}
+                />
+                <span className="sub">
+                  <span className="num">{nf.format(table.rows.length)}</span> {nounAfter(table.rows.length, NOUN.row)}
+                </span>
+              </div>
+              <div className="ftool-a">
+                <ExportMenu
+                  sheet={sheet}
+                  note={`${card.question} · ${PERIODS.find((p) => p.id === period)?.label ?? ''} · ${countOf(table.rows.length, NOUN.row)}`}
+                />
+              </div>
             </div>
-            <div className="ftool-a">
-              <ExportMenu
-                sheet={sheet}
-                note={`${card.question} · ${PERIODS.find((p) => p.id === period)?.label ?? ''} · ${countOf(table.rows.length, NOUN.row)}`}
-              />
-            </div>
-          </div>
+          </Glass>
 
           <Glass className="tblcard">
             {table.rows.length === 0 ? (

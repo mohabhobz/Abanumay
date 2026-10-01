@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, Num, Pager, PAGE_SIZES, Person, SearchBox,
-  Segments, Select, Tag, Toggle, ViewToggle,
+  Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, Pager, PAGE_SIZES, Person, SearchBox,
+  Segments, Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
@@ -13,23 +13,24 @@ import {
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { fixtures, query, type ProjectQuery, type ProjectSort } from '@/data/repository'
-import { applyDecision, assignOwner, type BulkDecision } from '@/data/mock/projects'
+import {
+  applyDecision, assignOwner, portfolioRows, PROJECT_TYPES, type BulkDecision,
+} from '@/data/mock/projects'
 import { useRole } from '@/hooks/useRole'
 import { ROUTES } from '@/app/routes'
 import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
-import { COLS, GROUPS } from './columns'
+import { COLS, GROUPS, rowHref } from './columns'
 import {
   DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols,
 } from '@/components/table'
-import { nf, NOUN, nounAfter, plural, units } from '@/lib/format'
+import { NOUN, nounAfter, plural, units } from '@/lib/format'
 import {
   CITIES_BY_REGION, FIELDS_BY_TRACK, GOALS_BY_FIELD, GRANT_METHODS, OWNERS,
   REGIONS, STAGES, STATUS_GROUPS, SUPPORT_STATUS, TAGS, TRACKS, YEARS,
 } from '@/data/mock/taxonomy'
 import { QuickRead } from '@/components/assistant'
 import { BulkBar, PageActions } from '@/components/shell'
-import { implementerName, portfolios } from '@/data/mock/implementer'
 import { readProjects } from '@/data/readings'
 import { ProjectCard } from './ProjectCard'
 
@@ -38,7 +39,7 @@ import { ProjectCard } from './ProjectCard'
    the same name is sent to the server as a query string once wired up. */
 const KEYS = [
   'q', 'status', 'stage', 'year', 'track', 'field', 'goal', 'region', 'city',
-  'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact',
+  'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact', 'type',
   'sort', 'page', 'size', 'view', 'adv', 'group',
 ] as const
 
@@ -50,7 +51,7 @@ const PAGE_SIZE = PAGE_SIZES[0]
    don't count toward the "advanced filters" badge — that counter reflects only
    what's hidden. */
 const NOT_FILTERS: (keyof Params)[] = [
-  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'status', 'unowned', 'overdue',
+  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'status', 'unowned', 'overdue', 'type',
 ]
 
 /** Saved views — the questions a reviewer asks every day. */
@@ -152,6 +153,9 @@ export default function ProjectsListPage() {
       overdue: v.overdue === '1',
       shared: v.shared === '1',
       impact: v.impact === '1',
+      type: readList(v.type),
+      /* Portfolio rows live in this list only: each one opens its portfolio page. */
+      portfolios: true,
       sort: (v.sort as ProjectSort) ?? 'waiting',
       page,
       pageSize: size,
@@ -171,7 +175,16 @@ export default function ProjectsListPage() {
 
   const result = query.projects(grouped ? { ...q, page: 1, pageSize: 9999 } : q)
   const counts = query.projectStatusCounts(q)
-  const total = fixtures.projects.length
+  /* Type counts follow every other filter, so each option says what picking it returns. */
+  const typeCounts = useMemo(() => {
+    const out: Record<string, number> = {}
+    for (const r of query.projects({ ...q, type: undefined, page: 1, pageSize: 9999 }).rows) {
+      const t = r.type ?? 'مشروع عادي'
+      out[t] = (out[t] ?? 0) + 1
+    }
+    return out
+  }, [q])
+  const total = fixtures.projects.length + portfolioRows.length
 
   /* Each view's counter is absolute, because a view switches scope rather than
      filtering within one: "Unassigned 8" must stay 8 even while standing on a
@@ -186,6 +199,7 @@ export default function ProjectsListPage() {
             status: x.patch.status,
             unowned: x.patch.unowned === '1',
             overdue: x.patch.overdue === '1',
+            portfolios: true,
             pageSize: 1,
           }).total,
         ]),
@@ -310,7 +324,7 @@ export default function ProjectsListPage() {
   const readings = useMemo(
     () =>
       readProjects({
-        all: fixtures.projects,
+        all: [...fixtures.projects, ...portfolioRows],
         filtered: query.projects({ ...q, page: 1, pageSize: 9999 }).rows,
         isFiltered: activeCount(['sort', 'page', 'view', 'adv']) > 0 || Boolean(v.q),
       }),
@@ -383,7 +397,7 @@ export default function ProjectsListPage() {
     [
       ['status', 'الحالة'], ['stage', 'القسم'], ['year', 'السنة'], ['track', 'المسار'], ['field', 'المجال'],
       ['goal', 'الهدف'], ['region', 'المنطقة'], ['city', 'المدينة'], ['tag', 'الوسم'],
-      ['method', 'الأسلوب'], ['support', 'الدعم'], ['owner', 'المالك'],
+      ['method', 'الأسلوب'], ['support', 'الدعم'], ['owner', 'المالك'], ['type', 'النوع'],
     ] as [keyof Params, string][]
   )
     /* One chip per value, not per filter: someone with three regions selected wants
@@ -430,40 +444,6 @@ export default function ProjectsListPage() {
               of the page, and a summary belongs before the tools, not wedged between them
               and the results. In the middle, it used to interrupt the path between a
               filter and what it returned — no one reads a summary line mid-filter. */}
-          {/* Implementing-partner portfolios — deliberately not rows in the table. A
-              portfolio is a parent entity holding projects, not a project itself: putting
-              it in the list would throw off the count and expose it to filters that don't
-              apply to it. It's shown here instead as a bar signaling "another kind of work
-              exists" without polluting the list. */}
-          {portfolios.length > 0 && (
-            <Glass className="pfbar">
-              <div className="pfbar-h">
-                <Tag tone="mute">شريك منفّذ</Tag>
-                <b>محافظ</b>
-                <span className="sub">
-                  خارج قائمة المشاريع · كيان أب تندرج تحته مشاريع، ولا اتفاقية له
-                </span>
-                <span className="pc-sp" />
-                <span className="sub"><Num>{portfolios.length}</Num> محفظة</span>
-              </div>
-              <ul className="cfglist">
-                {portfolios.map((p) => (
-                  <li key={p.id}>
-                    <b>{p.name}</b>
-                    <span className="sub">{implementerName(p.entityId)}</span>
-                    <span className="pc-sp" />
-                    <span className="num">{nf.format(p.total)}</span>
-                    <Tag tone="mute"><Num>{p.items.length}</Num> {nounAfter(p.items.length, NOUN.project)}</Tag>
-                    <Link className="btn btn-2 btn-sm" to={ROUTES.portfolio(p.id)}>
-                      افتح المحفظة
-                      <Icon name={icons.chevron} size="sm" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </Glass>
-          )}
-
           <QuickRead
             variant="bar"
             title="قراءة سريعة للقائمة"
@@ -486,7 +466,8 @@ export default function ProjectsListPage() {
           />
 
           {/* Toolbar. */}
-          <Glass className="ftoolbar">
+          {/* `#list` is where the quick read's links land (filter + scroll). */}
+          <Glass className="ftoolbar plbar" id="list">
             <div className="ftool-r">
               <div className="ftool-f">
               <SearchBox
@@ -502,6 +483,16 @@ export default function ProjectsListPage() {
                   label: `${g} (${counts[g]})`,
                 }))}
                 onChange={(x) => set({ status: writeList(x) })}
+              />
+              {/* Project type · regular, external, or portfolio. */}
+              <MultiSelect
+                values={readList(v.type)}
+                all="كل الأنواع"
+                options={PROJECT_TYPES.map((t) => ({
+                  value: t,
+                  label: `${t} (${typeCounts[t] ?? 0})`,
+                }))}
+                onChange={(x) => set({ type: writeList(x) })}
               />
               <Select
                 icon={icons.sort}
@@ -653,7 +644,7 @@ export default function ProjectsListPage() {
                 selected={selected}
                 onSelect={toggleOne}
                 onSelectAll={selectAll}
-                onOpen={(r) => navigate(ROUTES.project(r.id))}
+                onOpen={(r) => navigate(rowHref(r))}
                 group={grouped ? group : undefined}
                 count={units.project}
               />

@@ -1,0 +1,18 @@
+/* register · review round Sept 30 */
+
+/* Login: under reduced motion the still poster replaces the video; the global rule hides
+   `.login-vid`, so the still is shown back explicitly. */
+@media (prefers-reduced-motion:reduce){ .login-vid.login-still{display:block} }
+
+/* Bank step alignment (client, Sept 30).
+   `.bkrow-f` is a grid, but the global stacked-field rule
+   `:not(.regfields)>.regf+.regf` gave every cell after the first a top margin,
+   so the bank-name cell sat higher than its neighbours. Grid cells need no
+   margin: the grid gap spaces them. Cells align to the row top, so labels share
+   one line, controls share one line, and a helper line only grows its own cell.
+   Column minimum matches `.regfields` so the four fields form a 2x2 grid instead
+   of 3 + an orphan IBAN. */
+/* Selectors carry one extra class: this file is imported before the base rules. */
+.bkrow .bkrow-f{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:start}
+.bkrow-f>.regf.regf+.regf{margin-block-start:0}
+.regcard .regfields,.glass .regfields{align-items:start}

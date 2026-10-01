@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import type { MouseEvent } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon'
 import { icons } from '@/components/ui/icons'
 import { nf, pct, unitAfter } from '@/lib/format'
@@ -23,6 +24,7 @@ export interface ReadingBlockProps {
  * two different forms on the same page.
  */
 export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlockProps) {
+  const here = useLocation()
   if (hidden) return null
   const body = typing ? r.text.slice(0, chars) : highlight(r.text, r.bold, r.danger)
 
@@ -85,7 +87,11 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
           {(r.to || r.actions) && (
             <div className="qr-acts">
               {r.to && (
-                <Link className="btn btn-2 btn-sm" to={r.to}>
+                <Link
+                  className="btn btn-2 btn-sm"
+                  to={readingHref(r.to, here)}
+                  onClick={(e) => rescrollIfSame(e, readingHref(r.to!, here), here)}
+                >
                   {r.toLabel ?? 'اعرضها'}
                   <Icon name={icons.chevron} size="sm" />
                 </Link>
@@ -101,6 +107,49 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
       )}
     </div>
   )
+}
+
+type Here = { pathname: string; search: string; hash: string }
+
+/**
+ * Where a reading's link actually goes.
+ * A link to the page the user is already on keeps the filters they set and only adds (or replaces)
+ * the reading's own: the reading was computed from that filtered slice, so dropping the rest of the
+ * scope would open a list that no longer matches its number. Pagination resets, since the slice
+ * changes. A link to another page is left as written.
+ */
+function readingHref(to: string, here: Here): string {
+  const url = new URL(to, 'http://x')
+  if (url.pathname !== here.pathname) return to
+  const merged = new URLSearchParams(here.search)
+  merged.delete('page')
+  url.searchParams.forEach((val, key) => merged.set(key, val))
+  const qs = merged.toString()
+  return `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`
+}
+
+const sameQuery = (a: string, b: string) => {
+  const norm = (s: string) => [...new URLSearchParams(s)].map(([k, v]) => `${k}=${v}`).sort().join('&')
+  return norm(a) === norm(b)
+}
+
+/**
+ * Clicking a reading whose filter is already applied changes nothing in the URL, so the shared
+ * hash-scroll hook never fires. Scroll and flash the target here instead, so the click still lands.
+ */
+function rescrollIfSame(e: MouseEvent, href: string, here: Here) {
+  const url = new URL(href, 'http://x')
+  if (url.pathname !== here.pathname || !url.hash) return
+  if (!sameQuery(url.search, here.search) || url.hash !== here.hash) return
+  const el = document.getElementById(decodeURIComponent(url.hash.slice(1)))
+  if (!el) return
+  e.preventDefault()
+  const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches
+  el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
+  el.classList.remove('arrive')
+  void el.offsetWidth
+  el.classList.add('arrive')
+  window.setTimeout(() => el.classList.remove('arrive'), 2400)
 }
 
 /** One-line glimpse of the most important reading, shown while the card is closed. */

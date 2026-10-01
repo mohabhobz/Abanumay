@@ -13,9 +13,9 @@ import {
 
 /* Portfolio - Ihsan scenario.
 
-   Note: a portfolio isn't a large project, it's a parent entity with projects underneath it. That's
-   why it has its own page and no row in the projects list - what's in the list are its children if
-   registered as projects, and the portfolio itself is read from here.
+   Note: a portfolio isn't a large project, it's a parent entity with projects underneath it. It
+   appears in the projects list as a row of type "portfolio" (filterable by type), and that row
+   opens this page instead of a project page.
 
    Note: the most important thing on this screen is what's missing from it: no agreement, no entity
    justifications, no portal. The screen states this explicitly, in a "what's different" card,
@@ -179,7 +179,7 @@ export default function PortfolioPage() {
                   ))}
                 </ul>
                 <p className="sub cnote">
-                  إحسان <b>لا تدخل المنصة أصلًا</b> · فيسقط كل ما يفترض وجودها:
+                  {implementerName(p.entityId)} <b>لا تدخل المنصة أصلًا</b> · فيسقط كل ما يفترض وجودها:
                   البوّابة والتوقيع والاتفاقية ومسوغات الجهة.
                 </p>
               </Glass>

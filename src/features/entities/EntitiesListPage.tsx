@@ -228,7 +228,7 @@ export default function EntitiesListPage() {
   })
 
   const FILTER_DEFS: FilterDef[] = [
-    { key: 'type', label: 'نوع الجهة' },
+    { key: 'type', label: 'تصنيف الجهة' },
     { key: 'licensor', label: 'الجهة المرخِّصة' },
     { key: 'region', label: 'المنطقة' },
     { key: 'city', label: 'المدينة' },
@@ -236,7 +236,7 @@ export default function EntitiesListPage() {
   ]
 
   const FILTERS: Record<string, ReactNode> = {
-    type: <MultiSelect label="نوع الجهة" values={readList(v.type)} options={ENTITY_TYPES} onChange={(x) => set({ type: writeList(x) })} />,
+    type: <MultiSelect label="تصنيف الجهة" values={readList(v.type)} options={ENTITY_TYPES} onChange={(x) => set({ type: writeList(x) })} />,
     licensor: <MultiSelect label="الجهة المرخِّصة" values={readList(v.licensor)} options={LICENSORS} onChange={(x) => set({ licensor: writeList(x) })} />,
     region: (
       <MultiSelect
@@ -254,7 +254,7 @@ export default function EntitiesListPage() {
 
   const chips = (
     [
-      ['activation', 'التفعيل'], ['type', 'النوع'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
+      ['activation', 'التفعيل'], ['type', 'تصنيف الجهة'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
       ['city', 'المدينة'], ['governance', 'الحوكمة'],
     ] as [keyof Params, string][]
   )
@@ -324,13 +324,14 @@ export default function EntitiesListPage() {
             items={VIEWS.map((x) => ({ key: x.key, label: x.label, count: viewCounts[x.key] }))}
           />
 
-          <Glass className="ftoolbar">
+          {/* `#list` is where the quick read's links land (filter + scroll). */}
+          <Glass className="ftoolbar" id="list">
             <div className="ftool-r">
               <div className="ftool-f">
               <SearchBox
                 value={v.q ?? ''}
                 onChange={(x) => set({ q: x })}
-                placeholder="ابحث باسم الجهة أو رقم الترخيص…"
+                placeholder="ابحث بالاسم أو الكود أو الترخيص…"
               />
               <MultiSelect
                 values={readList(v.activation)}

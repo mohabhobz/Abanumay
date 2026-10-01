@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Glass, Head, Money, Num, Select } from '@/components/ui'
+import { Glass, Head, icons, Money, Num, Select } from '@/components/ui'
 import { nf, NOUN, nounAfter, pct, unitAfter } from '@/lib/format'
 import { projectRows } from '@/data/mock/projects'
 import { PERIODS } from '@/data/reportDefs'
@@ -100,35 +100,41 @@ export function Builder() {
       {/* The sentence above updates with the selection: the user reads their
           question stated back before seeing its answer, confirming they asked
           what they meant to. */}
-      <Glass className="rbld">
-        <span className="rbld-q">
-          <span className="sub">اعرض</span>
-          {/* `allowEmpty={false}`, not `all` — the metric is always selected, so an
-              "all" option used to show the first metric's name above the list while
-              it also appeared below as a choice — "Number of Projects" twice in one list. */}
-          <Select
-            value={meaKey}
-            allowEmpty={false}
-            options={MEASURES.map((m) => ({ value: m.key, label: m.label }))}
-            onChange={(v) => setMea(v ?? 'count')}
-          />
-          <span className="sub">حسب</span>
-          <Select
-            value={dimKey}
-            allowEmpty={false}
-            options={DIMS.map((d) => ({ value: d.key, label: d.label }))}
-            onChange={(v) => setDim(v ?? 'region')}
-          />
-          <span className="sub">في</span>
-          <Select
-            value={period}
-            allowEmpty={false}
-            options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
-            onChange={(v) => setPeriod(v ?? PERIODS[0].id)}
-          />
-          <span className="pc-sp" />
-          <ExportMenu sheet={sheet} note={note} />
-        </span>
+      {/* The system toolbar (`Glass.ftoolbar`), with the question read as a sentence
+          inside it: "show [metric] by [dimension] in [period]". The selects are the
+          shared `Select`, so height, surface and panel match every other filter bar;
+          export sits in the fixed tools group at the end of the row, as on the lists. */}
+      <Glass className="ftoolbar rptb">
+        <div className="ftool-r">
+          <div className="ftool-f">
+            <span className="sub">اعرض</span>
+            {/* `allowEmpty={false}`: the metric is always selected, so there is no "all" option. */}
+            <Select
+              value={meaKey}
+              allowEmpty={false}
+              options={MEASURES.map((m) => ({ value: m.key, label: m.label }))}
+              onChange={(v) => setMea(v ?? 'count')}
+            />
+            <span className="sub">حسب</span>
+            <Select
+              value={dimKey}
+              allowEmpty={false}
+              options={DIMS.map((d) => ({ value: d.key, label: d.label }))}
+              onChange={(v) => setDim(v ?? 'region')}
+            />
+            <span className="sub">في</span>
+            <Select
+              icon={icons.chart}
+              value={period}
+              allowEmpty={false}
+              options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
+              onChange={(v) => setPeriod(v ?? PERIODS[0].id)}
+            />
+          </div>
+          <div className="ftool-a">
+            <ExportMenu sheet={sheet} note={note} />
+          </div>
+        </div>
       </Glass>
 
       <Glass>

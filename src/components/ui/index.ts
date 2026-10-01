@@ -7,7 +7,10 @@ export {
 } from './primitives'
 export { Person, Face, type PersonProps } from './Person'
 export { EntityMark } from './EntityMark'
-export { GateArc, type GateArcProps, type CurrentStandingInfo } from './GateArc'
+export {
+  GateArc, StepArc, type GateArcProps, type CurrentStandingInfo, type GateStep, type GateStepState,
+  type StepArcProps,
+} from './GateArc'
 export { CeilingLadder } from './CeilingLadder'
 export { Steps, type StepItem, type StepState, type StepsProps } from './Steps'
 /* Warning: "blocks submission" · one single version (used to be three) */

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { AskDock, Background, MobileTop, Rail } from '@/components/shell'
 import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
 import { useIsMobile } from '@/hooks/useMediaQuery'
+import { useHashScroll } from '@/hooks/useHashScroll'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { signOut } from '@/data/session'
@@ -58,6 +59,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
   const { user } = useRole()
   const { pathname } = useLocation()
   useFreshVisit(pathname)
+  useHashScroll()
 
   const toggleAssistant = useCallback(() => setAssistantOpen((v) => !v), [])
 

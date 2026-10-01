@@ -55,7 +55,7 @@ export function MenuPanel(props: MenuPanelProps) {
 }
 
 function FloatPanel(props: MenuPanelProps & { float: NonNullable<MenuPanelProps['float']> }) {
-  useFloat(true, props.float.anchor, props.float.pop, props.end)
+  useFloat(true, props.float.anchor, props.float.pop, props.end, props.up)
   return createPortal(<PanelBody {...props} />, document.body)
 }
 

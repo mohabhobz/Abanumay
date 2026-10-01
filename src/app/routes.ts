@@ -159,6 +159,8 @@ export const PROJECT_TABS = [
      tabs follows the workflow order. */
   { slug: 'closing', label: 'الإغلاق' },
   { slug: 'follow-ups', label: 'المتابعات' },
+  /* Manual activities sit right before the log: they are added here and read there. */
+  { slug: 'activities', label: 'الفعاليات والأنشطة' },
   { slug: 'log', label: 'سجل المشروع' },
   { slug: 'correspondence', label: 'المراسلات' },
 ] as const

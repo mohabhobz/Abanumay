@@ -1,7 +1,7 @@
 import { unitAfter } from '@/lib/format'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Icon, icons, Select } from '@/components/ui'
+import { Glass, Icon, icons, Select } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { AnalysisCard, highlight } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
@@ -48,16 +48,22 @@ export function Board({
 
   return (
     <>
-      <div className="rbtop">
-        <Select
-          icon={icons.chart}
-          value={period}
-          allowEmpty={false}
-          options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
-          onChange={(v) => onPeriod(v ?? PERIODS[0].id)}
-        />
-        <span className="sub">كل رقم أدناه محسوب لهذه الفترة، ومصدره مكتوب بجانبه</span>
-      </div>
+      {/* Same toolbar as every list in the system (`Glass.ftoolbar`): the period is a
+          filter, so it gets the filter bar's surface, height and active state. */}
+      <Glass className="ftoolbar rptb">
+        <div className="ftool-r">
+          <div className="ftool-f">
+            <Select
+              icon={icons.chart}
+              value={period}
+              allowEmpty={false}
+              options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
+              onChange={(v) => onPeriod(v ?? PERIODS[0].id)}
+            />
+            <span className="sub">كل رقم أدناه محسوب لهذه الفترة، ومصدره مكتوب بجانبه</span>
+          </div>
+        </div>
+      </Glass>
 
       <div className="g2">
         <div className="col">

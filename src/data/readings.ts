@@ -29,6 +29,10 @@ import { ROUTES } from '@/app/routes'
 
 const days = (hours: number) => Math.round(hours / 24)
 
+/* Every list page marks its toolbar + results with this id, so a reading's link filters the list
+   and lands on it (see `useHashScroll`). */
+const LIST = '#list'
+
 /** Full years from a `YYYY-MM-DD` date to today · `null` if the date is invalid */
 function yearsSince(iso: string): number | null {
   const t = Date.parse(iso)
@@ -214,7 +218,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
       bold: [d, over],
       danger: [over],
       src: 'حدّ القسم الإجرائي · قيم مؤقتة لحين اعتمادها',
-      to: `${ROUTES.projects}?overdue=1&sort=waiting`,
+      to: `${ROUTES.projects}?overdue=1&sort=waiting${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -234,7 +238,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
         `فتتأخر دون أن يلاحظ أحد.`,
       bold: [m],
       src: 'عمود المالك في جدول المشاريع',
-      to: `${ROUTES.projects}?unowned=1`,
+      to: `${ROUTES.projects}?unowned=1${LIST}`,
       toLabel: 'أسندها جماعيًا',
     })
   }
@@ -255,7 +259,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
       text: `سببها «${reason}»، ${c} من ${n} معتذر عنها في هذه الشريحة.`,
       bold: [`«${reason}»`, c],
       src: 'مبررات الاعتذار المقنّنة (9 مبررات)',
-      to: `${ROUTES.projects}?status=معتذر عنه`,
+      to: `${ROUTES.projects}?status=معتذر عنه${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -304,7 +308,7 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
         `اكتمال الملف، فستتوقف هذه المشاريع.`,
       bold: [r],
       src: 'ملف الجهة = 8 مستندات',
-      to: `${ROUTES.entities}?docs=1`,
+      to: `${ROUTES.entities}?docs=1${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -323,6 +327,8 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
         `الاعتذار؟`,
       bold: [d],
       src: 'حالة التفعيل في سجل الشركاء',
+      to: `${ROUTES.entities}?activation=${[...new Set(held.map((e) => e.activation))].join(',')}${LIST}`,
+      toLabel: 'اعرضها',
     })
   }
 
@@ -698,7 +704,7 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
         ...(mineLate.length ? [units.project(mineLate.length, true)] : [])],
       danger: mineLate.length ? [units.project(mineLate.length, true)] : [],
       src: 'المشاريع المسندة إليك',
-      to: `${ROUTES.projects}?owner=${encodeURIComponent(owner)}&status=في الدراسة`,
+      to: `${ROUTES.projects}?owner=${encodeURIComponent(owner)}&status=في الدراسة${LIST}`,
       toLabel: 'افتح صندوقك',
     })
   }
@@ -769,7 +775,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
         `هذا المبلغ فقرارك أنت.`,
       bold: [`${nf.format(money)} ⃁`],
       src: 'حدود الاعتماد · قيم مؤقتة لحين اعتمادها',
-      to: `${ROUTES.projects}?status=في الدراسة&sort=amount`,
+      to: `${ROUTES.projects}?status=في الدراسة&sort=amount${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -795,7 +801,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
         `يظهر هذا الفرق في مدد الانتظار قبل أن يظهر في أي تقرير.`,
       bold: [units.project(lightest[1].length, true), lightest[0]],
       src: 'المشاريع تحت الدراسة لكل مشرف',
-      to: `${ROUTES.projects}?owner=${encodeURIComponent(heaviest[0])}&status=في الدراسة`,
+      to: `${ROUTES.projects}?owner=${encodeURIComponent(heaviest[0])}&status=في الدراسة${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -814,7 +820,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
         `مسؤول، فتتأخر دون أن يلاحظ أحد.`,
       bold: [`${nf.format(money)} ⃁`],
       src: 'عمود المالك في جدول المشاريع',
-      to: `${ROUTES.projects}?unowned=1`,
+      to: `${ROUTES.projects}?unowned=1${LIST}`,
       toLabel: 'أسندها جماعيًا',
     })
   }
@@ -846,7 +852,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
         `${nf.format(Math.round(done.reduce((s, p) => s + p.amountGranted, 0) / Math.max(1, beneficiaries)))} ⃁ للمستفيد.`,
       bold: [units.project(done.length, true)],
       src: 'المشاريع المكتملة وتقاريرها الختامية',
-      to: `${ROUTES.projects}?status=مكتمل`,
+      to: `${ROUTES.projects}?status=مكتمل${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -864,7 +870,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
         `الشروط غير واضحة للجهات قبل التقديم.`,
       bold: [units.project(declined.length, true)],
       src: 'مبررات الاعتذار المقنّنة',
-      to: `${ROUTES.projects}?status=معتذر عنه`,
+      to: `${ROUTES.projects}?status=معتذر عنه${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -891,7 +897,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
         `التركّز يرفع الأثر ويرفع المخاطرة في الوقت نفسه.`,
       bold: [`«${ranked[0][0]}»`, `${nf.format(ranked[0][1])} ⃁`],
       src: 'الممنوح لكل جهة',
-      to: `${ROUTES.entities}?sort=granted`,
+      to: `${ROUTES.entities}?sort=granted${LIST}`,
       toLabel: 'الجهات',
     })
   }
@@ -923,7 +929,7 @@ function blockedReading(projects: ProjectRow[], entities: EntityRow[]): Reading[
       `يتوقف على مستندات الجهة، لا على المشروع.`,
     bold: [`${nf.format(money)} ⃁`],
     src: 'تقاطع جدول المشاريع مع ملفات الجهات',
-    to: `${ROUTES.entities}?docs=1`,
+    to: `${ROUTES.entities}?docs=1${LIST}`,
     toLabel: 'اعرض الجهات',
   }]
 }
@@ -977,7 +983,7 @@ function bottleneckReading(projects: ProjectRow[]): Reading | null {
       `هنا يظهر أثر أي تحسين في الزمن أولًا.`,
     bold: [`«${stage}»`, units.project(rows.length, true)],
     src: 'مدة المكوث في القسم لكل مشروع',
-    to: `${ROUTES.projects}?stage=${encodeURIComponent(stage)}&sort=waiting`,
+    to: `${ROUTES.projects}?stage=${encodeURIComponent(stage)}&sort=waiting${LIST}`,
     toLabel: 'اعرضها',
   }
 }
@@ -1175,8 +1181,8 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       bold: [`«${worst.projectName}»`, d],
       danger: [d],
       src: 'مدة المرحلة · آلية التصعيد 9.5',
-      to: ROUTES.paymentsLate,
-      toLabel: 'افتح التقرير',
+      to: `${ROUTES.payments}?heat=stuck${LIST}`,
+      toLabel: 'اعرض المتعثر',
     })
   }
 
@@ -1205,7 +1211,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
         : `بقيمة ${millions(sum)} ⃁، وسببها الحساب البنكي غير المعتمد.`,
       bold: [`${millions(sum)} ⃁`, ...(top ? [`«${top.label}»`] : [])],
       src: 'قواعد الصرف 3 · 6 · 10 · 11',
-      to: `${ROUTES.payments}?hold=1`,
+      to: `${ROUTES.payments}?hold=1${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -1228,7 +1234,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
         `(الخطوات ${meta?.steps} في الوثيقة).`,
       bold: [pctText(share)],
       src: 'توزيع الطلبات على المراحل',
-      to: `${ROUTES.payments}?state=${peak[0]}`,
+      to: `${ROUTES.payments}?state=${peak[0]}${LIST}`,
       toLabel: 'افتح المرحلة',
     })
   }
@@ -1271,7 +1277,7 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
         `الإرسال للاعتماد قبل استيفائه.`,
       bold: [`«${worst.why}»`, worst.rule],
       src: 'قواعد الاتفاقيات 8 و9 · الخطوة 11',
-      to: `${ROUTES.agreements}?hold=1`,
+      to: `${ROUTES.agreements}?hold=1${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -1377,7 +1383,7 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
         `في الحالتين.`,
       bold: [`${no} مرفوضًا`],
       src: 'حالات الطلب · قاعدة 26',
-      to: `${ROUTES.entityRequests}?state=completion`,
+      to: `${ROUTES.entityRequests}?state=completion${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -1415,7 +1421,7 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
         `أي ${gap} نقطة غير محسوبة حتى تُراجع.`,
       bold: [`${gap} نقطة`],
       src: 'قاعدة 14 · لا يُحتسب النشاط إنجازًا إلا بعد قبول المشرف',
-      to: `${ROUTES.plans}?wait=1`,
+      to: `${ROUTES.plans}?wait=1${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -1441,7 +1447,7 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
       /* Compared against the baseline, not current dates · any extension has to go through
          approval, so deviation has a fixed reference point */
       src: `النسخة المرجعية V${worst.baseline} · قاعدة 21`,
-      to: `${ROUTES.plans}?late=1`,
+      to: `${ROUTES.plans}?late=1${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -1496,7 +1502,7 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
         `الإرسال قبل اكتمال البيانات والمرفقات.`,
       bold: [countOf(docs, MISSING_ITEM), 'القاعدة 3'],
       src: 'قواعد الإغلاق 3 و4 و10',
-      to: ROUTES.closings,
+      to: `${ROUTES.closings}?stage=draft,returned${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -1541,7 +1547,7 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
         `وقد اعتُمد، فالخطوة التالية الآن عند مشرف المنح.`,
       bold: ['القاعدة 6'],
       src: 'قاعدة 6 · دورتان مستقلّتان (قاعدة 17)',
-      to: ROUTES.closings,
+      to: `${ROUTES.closings}?stage=reportDone${LIST}`,
       toLabel: 'اعرضها',
     })
   }

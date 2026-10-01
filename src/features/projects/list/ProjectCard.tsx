@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import { Icon, icons, Money, Mono, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { NOUN, nounAfter, projectCode } from '@/lib/format'
+import { NOUN, nounAfter } from '@/lib/format'
 import { stagePressure } from '@/data/repository'
 import { days, groupTone, pressureColor, TONE } from '@/lib/tone'
 import type { ProjectRow } from '@/types/domain'
+import { isPortfolio, rowCode, rowHref } from './columns'
 
 export interface ProjectCardProps {
   row: ProjectRow
@@ -34,18 +35,25 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
             aria-label={`تحديد مشروع ${row.id}`}
           />
         </label>
-        <Mono>{projectCode(row.id, row.year)}</Mono>
+        <Mono>{rowCode(row)}</Mono>
         <span className="pc-sp" />
         <Tag tone={groupTone(row.statusGroup)}>{row.statusGroup}</Tag>
       </div>
 
-      <Link className="pc-title" to={ROUTES.project(row.id)}>{row.name}</Link>
+      <Link className="pc-title" to={rowHref(row)}>{row.name}</Link>
 
       <div className="pc-meta sub">
-        <Link className="pc-ent" to={ROUTES.entity(row.entityId)}>
-          <Icon name={icons.entity} size="sm" />
-          {row.entityName}
-        </Link>
+        {isPortfolio(row) ? (
+          <span className="pc-ent">
+            <Icon name={icons.entity} size="sm" />
+            {row.entityName}
+          </span>
+        ) : (
+          <Link className="pc-ent" to={ROUTES.entity(row.entityId)}>
+            <Icon name={icons.entity} size="sm" />
+            {row.entityName}
+          </Link>
+        )}
         <span className="pc-dot" />
         <span className="pc-loc">
           <Icon name={icons.pinMap} size="sm" />
@@ -53,7 +61,9 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
         </span>
       </div>
 
-      <div className="pc-goal mut trim1" title={row.goal}>{row.track} · {row.goal}</div>
+      <div className="pc-goal mut trim1" title={row.goal}>
+        {row.type && row.type !== 'مشروع عادي' ? `${row.type} · ` : ''}{row.track} · {row.goal}
+      </div>
 
       {/* Actual workflow stage plus time spent in it. */}
       <div className="pc-stage well">

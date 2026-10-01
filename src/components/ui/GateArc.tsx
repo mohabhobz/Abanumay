@@ -68,13 +68,11 @@ const GAP = 4
 
 export function GateArc({ amount, authority, compact = false, standing }: GateArcProps) {
   const roles = authority.roles
-  const [hover, setHover] = useState<number | null>(null)
 
   // Approver: the first tier with a ceiling that covers the amount
   let decider = roles.findIndex((r) => r.ceiling !== null && r.ceiling >= amount)
   if (decider === -1) decider = roles.length - 1
 
-  const span = 180 / roles.length
   const decided = roles[decider] as AuthorityRole
   const uplifted = decided.uplift ? Math.round(amount * (1 + decided.uplift / 100)) : null
 
@@ -145,10 +143,159 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
     }
   }
 
-  /** The sector the project is currently at is drawn last so its shadow isn't covered */
+  const skin = (role: AuthorityRole, i: number): SlotCls => {
+    if (i > decider) return 'skip'
+    if (role.state === 'now') return 'now'
+    if (role.state === 'done') return 'done'
+    return 'wait'
+  }
+
+  const slots: Slot[] = roles.map((role, i) => {
+    const cap = (c: boolean) =>
+      role.ceiling
+        ? nf.format(role.ceiling)
+        : role.kind === 'submit'
+          ? 'تمّ'
+          : role.kind === 'recommend'
+            ? c ? 'توصية' : 'توصية فقط'
+            : 'بلا حد مالي'
+    return {
+      key: role.role,
+      label: role.role,
+      cap: cap(false),
+      capCompact: cap(true),
+      cls: skin(role, i),
+      raised: role.state === 'now',
+      dec: i === decider,
+      detail: detail(role, i),
+    }
+  })
+
+  const fallback: (ReactNode | null)[] = [
+    uplifted && decided.ceiling ? (
+      <>
+        حده المالي <b className="num">{nf.format(decided.ceiling)}</b> · يمكنه الرفع حتى{' '}
+        <Money>{uplifted}</Money>
+      </>
+    ) : null,
+    authority.provisional ? (
+      <span className="fhp">الحدود المالية مؤقتة، بانتظار تأكيد العميل</span>
+    ) : null,
+  ]
+
+  return (
+    <Fan
+      slots={slots}
+      compact={compact}
+      aria={`مسار الاعتماد، صاحب القرار ${decided.role}`}
+      restK="صاحب القرار في هذا المبلغ"
+      restT={decided.role}
+      rest={fallback}
+    />
+  )
+}
+
+/* Step arc
+
+   The same fan, driven by a process's own steps instead of the authority matrix. Used by the
+   agreement and closing pages so all three detail pages share one header chart. */
+
+export type GateStepState = 'done' | 'now' | 'pending' | 'skip'
+
+export interface GateStep {
+  /** Name inside the sector - who holds the step, like the project's roles */
+  label: string
+  /** Heading of the hover reading · defaults to `label` */
+  title?: string
+  /** Short line under the name inside the sector */
+  cap: string
+  state: GateStepState
+  /** Reading shown under the arc when the step is hovered */
+  lines?: ReactNode[]
+  src?: string
+}
+
+export interface StepArcProps {
+  steps: GateStep[]
+  /** Key and name shown in the hollow center at rest */
+  holderKey: string
+  holder: string
+  /** Up to two lines under the arc at rest */
+  rest?: (ReactNode | null)[]
+  compact?: boolean
+  /** Accessible name of the whole chart */
+  aria: string
+}
+
+const STEP_KEY: Record<GateStepState, string> = {
+  done: 'تمّت',
+  now: 'صاحب القرار الآن',
+  pending: 'ضمن المسار',
+  skip: 'لا تنطبق على هذا الطلب',
+}
+
+const STEP_CLS: Record<GateStepState, SlotCls> = {
+  done: 'done',
+  now: 'now',
+  pending: 'wait',
+  skip: 'skip',
+}
+
+export function StepArc({ steps, holderKey, holder, rest = [], compact = false, aria }: StepArcProps) {
+  const slots: Slot[] = steps.map((s) => ({
+    key: s.label,
+    label: s.label,
+    cap: s.cap,
+    capCompact: s.cap,
+    cls: STEP_CLS[s.state],
+    raised: s.state === 'now',
+    // The hollow center already names the holder; the dark 'now' sector keeps its light ink.
+    dec: false,
+    detail: { k: STEP_KEY[s.state], t: s.title ?? s.label, lines: s.lines ?? [], src: s.src ?? '' },
+  }))
+  return <Fan slots={slots} compact={compact} aria={aria} restK={holderKey} restT={holder} rest={rest} />
+}
+
+/* Shared renderer */
+
+type SlotCls = 'skip' | 'now' | 'done' | 'wait'
+
+interface Slot {
+  key: string
+  label: string
+  cap: string
+  capCompact: string
+  cls: SlotCls
+  /** Drawn last so its shadow isn't covered */
+  raised: boolean
+  dec: boolean
+  detail: Detail
+}
+
+const SKIN: Record<SlotCls, { fill: string; op: number }> = {
+  skip: { fill: '#144547', op: 0.06 },
+  now: { fill: '#144547', op: 0.92 },
+  done: { fill: '#1E8F5B', op: 0.34 },
+  wait: { fill: '#00A59B', op: 0.16 },
+}
+
+interface FanProps {
+  slots: Slot[]
+  compact: boolean
+  aria: string
+  restK: string
+  restT: string
+  rest: (ReactNode | null)[]
+}
+
+function Fan({ slots, compact, aria, restK, restT, rest }: FanProps) {
+  const [hover, setHover] = useState<number | null>(null)
+  const span = 180 / slots.length
+
+  /** The sector the process is currently at is drawn last so its shadow isn't covered */
   const paintOrder = (() => {
-    const order = roles.map((_, i) => i)
-    const now = roles.findIndex((r) => r.state === 'now')
+    const order = slots.map((_, i) => i)
+    const now = slots.findIndex((s) => s.raised)
     if (now > -1) {
       order.splice(order.indexOf(now), 1)
       order.push(now)
@@ -156,14 +303,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
     return order
   })()
 
-  const skin = (role: AuthorityRole, i: number) => {
-    if (i > decider) return { fill: '#144547', op: 0.06, cls: 'skip' }
-    if (role.state === 'now') return { fill: '#144547', op: 0.92, cls: 'now' }
-    if (role.state === 'done') return { fill: '#1E8F5B', op: 0.34, cls: 'done' }
-    return { fill: '#00A59B', op: 0.16, cls: 'wait' }
-  }
-
-  const active = hover === null ? null : detail(roles[hover] as AuthorityRole, hover)
+  const active = hover === null ? null : (slots[hover] as Slot).detail
 
   /* ═══════════════════════════════════════════════════════════
      Three fixed rows, always · so hover cannot move the page
@@ -181,20 +321,8 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
      ═══════════════════════════════════════════════════════════ */
   const NB = '\u00A0'
 
-  const fallback: (ReactNode | null)[] = [
-    uplifted && decided.ceiling ? (
-      <>
-        حده المالي <b className="num">{nf.format(decided.ceiling)}</b> · يمكنه الرفع حتى{' '}
-        <Money>{uplifted}</Money>
-      </>
-    ) : null,
-    authority.provisional ? (
-      <span className="fhp">الحدود المالية مؤقتة، بانتظار تأكيد العميل</span>
-    ) : null,
-  ]
-
-  const rows = active ? active.lines.filter(Boolean) : fallback.filter(Boolean)
-  const src = active ? active.src : null
+  const rows = active ? active.lines.filter(Boolean) : rest.filter(Boolean)
+  const src = active && active.src ? active.src : null
 
   return (
     <div className="garc">
@@ -205,7 +333,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
       <svg
         viewBox="0 0 760 440"
         role="img"
-        aria-label={`مسار الاعتماد، صاحب القرار ${decided.role}`}
+        aria-label={aria}
         onMouseLeave={() => setHover(null)}
       >
         <defs>
@@ -226,11 +354,11 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
 
         <g>
           {paintOrder.map((i) => {
-            const role = roles[i] as AuthorityRole
+            const slot = slots[i] as Slot
             const a0 = -(i + 1) * span + GAP / 2
             const a1 = -i * span - GAP / 2
             const mid = (a0 + a1) / 2
-            const sk = skin(role, i)
+            const sk = { ...SKIN[slot.cls], cls: slot.cls }
             // The step the project is currently at is larger than the rest, so it reads first,
             // before anything else
             const isNow = sk.cls === 'now'
@@ -241,16 +369,16 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
             const ty = CY - rText * Math.sin(mid * TAU)
 
             return (
-              <g key={role.role} className="fanslot" style={{ '--d': `calc(var(--mo-stagger) * ${i * 1.5})` } as React.CSSProperties}>
+              <g key={slot.key} className="fanslot" style={{ '--d': `calc(var(--mo-stagger) * ${i * 1.5})` } as React.CSSProperties}>
                 <g
-                  className={`fan ${sk.cls}${i === decider ? ' dec' : ''}${hover === i ? ' hov' : ''}`}
+                  className={`fan ${sk.cls}${slot.dec ? ' dec' : ''}${hover === i ? ' hov' : ''}`}
                   onMouseEnter={() => setHover(i)}
                   onFocus={() => setHover(i)}
                   onPointerDown={() => setHover(i)}
                   onClick={() => setHover(i)}
                   tabIndex={0}
                   role="button"
-                  aria-label={role.role}
+                  aria-label={slot.label}
                 >
                   <g opacity={sk.op} mask="url(#fanMask)">
                     <path
@@ -263,19 +391,13 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
                     />
                   </g>
                   <text x={tx} y={ty + (compact ? -14 : 0)} textAnchor="middle">
-                    {(compact ? splitRole(role.role) : [role.role]).map((line, k) => (
+                    {(compact ? splitRole(slot.label) : [slot.label]).map((line, k) => (
                       <tspan key={k} x={tx} dy={k === 0 ? 0 : compact ? 26 : 0} className="fanrole">
                         {line}
                       </tspan>
                     ))}
                     <tspan x={tx} dy={compact ? 25 : 20} className="fancap">
-                      {role.ceiling
-                        ? nf.format(role.ceiling)
-                        : role.kind === 'submit'
-                          ? 'تمّ'
-                          : role.kind === 'recommend'
-                            ? compact ? 'توصية' : 'توصية فقط'
-                            : 'بلا حد مالي'}
+                      {compact ? slot.capCompact : slot.cap}
                     </tspan>
                   </text>
                 </g>
@@ -299,8 +421,8 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
           detail goes below the arc, exactly like the compact layout already does. Both layouts are
           now one behavior, so the bug can't come back through the other one. */}
       <div className="fanhole" key={hover === null ? 'base' : hover}>
-        <div className="fhk">{active ? active.k : 'صاحب القرار في هذا المبلغ'}</div>
-        <div className="fht">{active ? active.t : decided.role}</div>
+        <div className="fhk">{active ? active.k : restK}</div>
+        <div className="fht">{active ? active.t : restT}</div>
       </div>
       </div>
 

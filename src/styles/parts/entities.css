@@ -1,0 +1,10 @@
+/* entities · review round Sept 30 */
+
+/* Entity header: the classification value reads as the field's value, by weight only. */
+.ehead-v{font-weight:600;color:var(--t1)}
+
+/* Leaf ledger: «المبالغ المعتمدة 2026» is the longest label; the ledger widens one step so every
+   row keeps its amount and share in the same columns instead of the last row overflowing. */
+.ejr.leafflow{--lf-ledger:calc(var(--sp-12) * 3.75)}
+.leafflow .lf-ledger{max-width:calc(var(--sp-12) * 5)}
+.leafflow .lf-k{white-space:nowrap}

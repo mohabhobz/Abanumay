@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { DateText, Empty, Glass, Head, Icon, Mono, Segments, icons } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Icon, Mono, Select, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import type { ActorKind, LogEvent } from '@/data/mock/log'
 
@@ -8,17 +8,35 @@ export interface LogTabProps {
   entityName: string
 }
 
-/** Log filters — the questions actually asked of it. */
-const VIEWS = [
-  { key: 'all', label: 'كل الأحداث' },
+/**
+ * Log categories · every event belongs to exactly one, so the tab counts always add up to the
+ * total. Each category owns a chart color, drawn as the timeline dot and as a swatch in its tab,
+ * so the mapping reads without a legend. Order of the checks below decides ties.
+ */
+type Cat = 'decision' | 'money' | 'entity' | 'followUp' | 'activity' | 'procedure'
+
+const CATS: { key: Cat; label: string }[] = [
   { key: 'decision', label: 'القرارات' },
   { key: 'money', label: 'المال' },
   { key: 'entity', label: 'من الجهة' },
-  { key: 'late', label: 'تجاوز الحدّ' },
-] as const
+  { key: 'followUp', label: 'المتابعات' },
+  { key: 'activity', label: 'الفعاليات والأنشطة' },
+  { key: 'procedure', label: 'إجراءات أخرى' },
+]
 
 const MONEY = /إذن صرف|صرف الدفعة|سند القبض|سند القيد/
 const DECISION = /اعتماد|دعم|رفض|معتذر|توصية|إرجاع|رفع المشروع|قبول/
+
+const catOf = (e: LogEvent): Cat => {
+  if (e.manual) return 'activity'
+  if (e.followUp) return 'followUp'
+  if (e.actor === 'entity') return 'entity'
+  if (MONEY.test(e.action)) return 'money'
+  if (DECISION.test(e.action)) return 'decision'
+  return 'procedure'
+}
+
+type Order = 'newest' | 'oldest'
 
 /**
  * Count of fields that actually have a value — an empty "notes" field
@@ -50,27 +68,35 @@ const ACTOR: Record<ActorKind, string> = {
  * the reason for the disbursement authorization that comes after it.
  */
 export function LogTab({ events, entityName }: LogTabProps) {
-  const [view, setView] = useState<string>('all')
+  const [view, setView] = useState<Cat | 'all'>('all')
+  const [order, setOrder] = useState<Order>('newest')
+  const [lateOnly, setLateOnly] = useState(false)
   const [open, setOpen] = useState<Set<string>>(new Set())
 
-  const shown = useMemo(() => {
-    if (view === 'all') return events
-    if (view === 'decision') return events.filter((e) => !e.followUp && DECISION.test(e.action))
-    if (view === 'money') return events.filter((e) => MONEY.test(e.action))
-    if (view === 'entity') return events.filter((e) => e.actor === 'entity')
-    return events.filter((e) => e.hours > e.limit)
-  }, [events, view])
-
-  const counts = useMemo(
-    () => ({
-      all: events.length,
-      decision: events.filter((e) => !e.followUp && DECISION.test(e.action)).length,
-      money: events.filter((e) => MONEY.test(e.action)).length,
-      entity: events.filter((e) => e.actor === 'entity').length,
-      late: events.filter((e) => e.hours > e.limit).length,
-    }),
-    [events],
+  /* Events arrive newest first; the oldest-first order is the same list reversed, so events
+     sharing a day keep their workflow order in both directions. */
+  const tagged = useMemo(() => events.map((e) => ({ e, c: catOf(e) })), [events])
+  const lateCount = useMemo(() => events.filter((e) => e.limit > 0 && e.hours > e.limit).length, [events])
+  const scoped = useMemo(
+    () => (lateOnly ? tagged.filter(({ e }) => e.limit > 0 && e.hours > e.limit) : tagged),
+    [tagged, lateOnly],
   )
+
+  const counts = useMemo(() => {
+    const out = Object.fromEntries(CATS.map((c) => [c.key, 0])) as Record<Cat, number>
+    for (const x of scoped) out[x.c] += 1
+    return out
+  }, [scoped])
+
+  const shown = useMemo(() => {
+    const rows = view === 'all' ? scoped : scoped.filter((x) => x.c === view)
+    return order === 'newest' ? rows : [...rows].reverse()
+  }, [scoped, view, order])
+
+  const tabs: { key: Cat | 'all'; label: string; count: number }[] = [
+    { key: 'all', label: 'كل الأحداث', count: scoped.length },
+    ...CATS.map((c) => ({ key: c.key, label: c.label, count: counts[c.key] })),
+  ]
 
   const toggle = (id: string) =>
     setOpen((s) => {
@@ -84,18 +110,50 @@ export function LogTab({ events, entityName }: LogTabProps) {
     <Glass>
       <Head
         title="سجل المشروع"
-        meta={`${events.length} حدثًا · الأحدث أولًا`}
+        meta={`${events.length} حدثًا · ${order === 'newest' ? 'الأحدث أولًا' : 'الأقدم أولًا'}`}
       />
 
-      <Segments
-        active={view}
-        onChange={(k) => setView(k ?? 'all')}
-        items={VIEWS.map((v) => ({
-          key: v.key,
-          label: v.label,
-          count: counts[v.key as keyof typeof counts],
-        }))}
-      />
+      {/* Category tabs · the same markup as `Tabs`, plus the category swatch, which `Tabs` has no
+          slot for. The swatch is the shape that carries the color; the label stays neutral text. */}
+      <div className="tabs lgtabs" role="tablist" aria-label="تصنيف الأحداث">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={t.key === view}
+            className={`tab ${t.key === view ? 'on' : ''}`}
+            onClick={() => setView(t.key)}
+          >
+            {t.key !== 'all' && <span className={`lgsw c-${t.key}`} aria-hidden="true" />}
+            <span>{t.label}</span>
+            <b className="num">{t.count}</b>
+          </button>
+        ))}
+      </div>
+
+      <div className="lgtools">
+        <Select
+          icon={icons.sort}
+          value={order === 'oldest' ? 'oldest' : undefined}
+          all="الأحدث أولًا"
+          options={[{ value: 'oldest', label: 'الأقدم أولًا' }]}
+          onChange={(x) => setOrder(x === 'oldest' ? 'oldest' : 'newest')}
+        />
+        <button
+          type="button"
+          className={`fchip${lateOnly ? ' on' : ''}`}
+          aria-pressed={lateOnly}
+          onClick={() => setLateOnly((x) => !x)}
+        >
+          <Icon name={icons.clock} size="sm" />
+          تجاوز الحدّ فقط
+          <b className="num">{lateCount}</b>
+        </button>
+        <span className="pc-sp" />
+        <span className="sub">
+          الإضافة اليدوية من تبويب «الفعاليات والأنشطة»
+        </span>
+      </div>
 
       {shown.length === 0 ? (
         <div style={{ marginTop: 'var(--sp-5)' }}>
@@ -103,14 +161,14 @@ export function LogTab({ events, entityName }: LogTabProps) {
         </div>
       ) : (
         <ol className="lg">
-          {shown.map((e) => {
-            const late = e.hours > e.limit
+          {shown.map(({ e, c }) => {
+            const late = e.limit > 0 && e.hours > e.limit
             const isOpen = open.has(e.id)
             const has = e.fields.some((f) => f.v) || Boolean(e.files?.length)
 
             return (
-              <li className={`lgi a-${e.actor}${e.followUp ? ' fu' : ''}`} key={e.id}>
-                <span className={`lgdot t-${e.tone}`} aria-hidden="true" />
+              <li className={`lgi a-${e.actor}${e.followUp ? ' fu' : ''}`} key={e.id} id={`ev-${e.id}`}>
+                <span className={`lgdot lgc c-${c}`} aria-hidden="true" />
 
                 <div className="lgmain">
                   <div className="lghead">
@@ -120,6 +178,10 @@ export function LogTab({ events, entityName }: LogTabProps) {
                       <b className="lgact">{e.action}</b>
                     )}
                     <span className="lgdept">{e.followUp ? 'متابعة' : e.dept}</span>
+                    <span className="lgcat sub">
+                      <span className={`lgsw c-${c}`} aria-hidden="true" />
+                      {CATS.find((x) => x.key === c)?.label}
+                    </span>
                     <span className="pc-sp" />
                     <DateText>{e.at}</DateText>
                     <span className="lgtime sub">{e.time}</span>
@@ -131,8 +193,9 @@ export function LogTab({ events, entityName }: LogTabProps) {
                     <span className={`lgwho k-${e.actor}`}>
                       {e.actor === 'entity' ? entityName : e.by}
                     </span>
-                    <span className="lgkind sub">{ACTOR[e.actor]}</span>
-                    {!e.followUp && (
+                    <span className="lgkind sub">{e.manual ? 'إدخال يدوي' : ACTOR[e.actor]}</span>
+                    {e.source && <span className="lgsrc sub">المصدر: {e.source}</span>}
+                    {!e.followUp && !e.manual && (
                       <span className={`lgdur${late ? ' late' : ''}`}>
                         <Mono>{e.days}</Mono> يومًا ·{' '}
                         <Mono>{e.hours}</Mono> من <Mono>{e.limit}</Mono> ساعة

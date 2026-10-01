@@ -3,13 +3,17 @@ import { DateText, Glass, Head, KV, Money, Mono, Num, Riyal, Stat, Tag, Timeline
 import { ROUTES } from '@/app/routes'
 import { DocList } from '@/components/docs'
 import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, pct, readDate, units } from '@/lib/format'
-import type { Project } from '@/types/domain'
+import type { Project, ProjectType } from '@/types/domain'
 import type { LogEvent } from '@/data/mock/log'
 import { projectDeps } from '@/data/mock/settings'
 import type { ChainLink } from '@/data/mock/chain'
 
 export interface DataTabProps {
   project: Project
+  /** Display code · the same `prj-YYYY-NNNNN` the projects list shows */
+  code: string
+  /** Regular, external, or portfolio */
+  type: ProjectType
   entityName: string
   /** Entity ID — needed for a real link to its file. */
   entityId: string
@@ -33,7 +37,7 @@ export interface DataTabProps {
 
 /** Project data — summary, concept, phases, scope, and attachments. */
 export function DataTab({
-  project: P, entityName, entityId, last, onOpenLog, deps, chain,
+  project: P, code, type, entityName, entityId, last, onOpenLog, deps, chain,
 }: DataTabProps) {
   const dep = deps ? projectDeps(deps.agreements, deps.payments) : undefined
   const gaps = chain?.filter((l) => l.state === 'gap').length ?? 0
@@ -43,7 +47,7 @@ export function DataTab({
   return (
     <>
       <Glass>
-        <Head title="التعريف" meta="9 حقول" />
+        <Head title="التعريف" meta="10 حقول" />
         <KV
           rows={[
             /* Two mistakes in one line.
@@ -60,7 +64,8 @@ export function DataTab({
               k: 'الجهة',
               v: <Link className="tlink" to={ROUTES.entity(entityId)}>{entityName}</Link>,
             },
-            { k: 'رقم المشروع', v: <Mono>{P.id}</Mono> },
+            { k: 'رقم المشروع', v: <Mono>{code}</Mono> },
+            { k: 'نوع المشروع', v: type },
             { k: 'الحالة', v: <Tag tone={P.status.tone}>{P.status.label}</Tag> },
             { k: 'المسار', v: P.track },
             { k: 'المجال', v: P.field },

@@ -5,7 +5,7 @@ import { DecisionBar, Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useFillHeight } from '@/hooks/useFillHeight'
-import { addDays } from '@/lib/format'
+import { addDays, projectCode } from '@/lib/format'
 import { fixtures } from '@/data/repository'
 import { useRole } from '@/hooks/useRole'
 import { projectById } from '@/data/mock/projects'
@@ -16,9 +16,10 @@ import {
   DEFAULT_PROJECT_TAB, PROJECT_TABS, ROUTES, type ProjectTabSlug,
 } from '@/app/routes'
 import {
-  AgreementTab, CloseTab, CorrespondenceTab, DataTab, EntityTab, FollowUpsTab,
+  ActivitiesTab, AgreementTab, CloseTab, CorrespondenceTab, DataTab, EntityTab, FollowUpsTab,
   HistoryTab, LogTab, PaymentsTab, PlanTab,
 } from './tabs'
+import { useActivities, withActivities } from './activities'
 import { closeOfProject, openClose } from '@/data/mock/closing'
 import { AnalysisCard } from '@/components/assistant'
 import { readInsights, readJourney } from '@/data/readings'
@@ -28,6 +29,7 @@ import { projectOptions } from '@/data/mock/agreementNew'
 import { projectChain } from '@/data/mock/chain'
 import { planOfProject } from '@/data/mock/plans'
 import { journeys } from '@/data/journey'
+import { BudgetLinkAction } from '@/features/budget/BudgetLink'
 
 /** Number of days the current process has been open - from the action log. */
 const OPEN_DAYS = 87
@@ -93,7 +95,13 @@ export default function ProjectPage() {
       }
     : fixtures.entity
   const authority = fixtures.authority
-  const { user } = useRole()
+  const { user, role } = useRole()
+
+  /* The display code is the one the list shows (`prj-YYYY-NNNNN`), so a number copied from the
+     list matches the project page everywhere. The raw id stays the URL key. */
+  const code = projectCode(project.id, row?.year ?? '2026')
+  const type = row?.type ?? 'مشروع عادي'
+  const activities = useActivities(project.id)
 
   const active: ProjectTabSlug =
     PROJECT_TABS.find((t) => t.slug === tab)?.slug ?? DEFAULT_PROJECT_TAB
@@ -177,6 +185,9 @@ export default function ProjectPage() {
     [row, entity.name, detail],
   )
 
+  /* Manual activities join the same timeline, so the log stays the one place to read history. */
+  const fullLog = useMemo(() => withActivities(log, activities.list), [log, activities.list])
+
   const analysis = useMemo(
     () => [...(row ? readJourney(row, journeys.get(row.id)) : []), ...readInsights(fixtures.insights)],
     [row],
@@ -185,7 +196,7 @@ export default function ProjectPage() {
   return (
     <AppLayout
       assistantContext={assistFor.project({
-        id: project.id,
+        id: code,
         name: project.name,
         entity: entity.name,
       })}
@@ -248,6 +259,8 @@ export default function ProjectPage() {
               {active === 'data' && (
                 <DataTab
                   project={project}
+                  code={code}
+                  type={type}
                   entityName={entity.name}
                   entityId={String(entity.id)}
                   /* The latest action, not the latest event: updates share the same timeline, with
@@ -262,7 +275,9 @@ export default function ProjectPage() {
                 />
               )}
               {active === 'entity' && <EntityTab entity={entity} bank={project.bank} />}
-              {active === 'history' && <HistoryTab entity={entity} currentId={project.id} />}
+              {active === 'history' && (
+                <HistoryTab entity={entity} currentId={project.id} year={row?.year ?? '2026'} />
+              )}
               {active === 'agreement' && (
                 <AgreementTab
                   agreement={detail.agreement}
@@ -309,7 +324,15 @@ export default function ProjectPage() {
               {active === 'follow-ups' && (
                 <FollowUpsTab followUps={detail.followUps} types={fixtures.followUpTypes} />
               )}
-              {active === 'log' && <LogTab events={log} entityName={entity.name} />}
+              {active === 'activities' && (
+                <ActivitiesTab
+                  projectId={project.id}
+                  me={user.name}
+                  list={activities.list}
+                  onAdd={activities.add}
+                />
+              )}
+              {active === 'log' && <LogTab events={fullLog} entityName={entity.name} />}
               {active === 'correspondence' && (
                 <CorrespondenceTab
                   messages={detail.messages}
@@ -340,6 +363,15 @@ export default function ProjectPage() {
           project={{ name: project.name, amount: project.amountRequested }}
           compact={mobile}
           atEnd={atEnd}
+          /* The grants manager links the project to a budget line as part of the decision. */
+          lead={role.key === 'grants-manager' ? (
+            <BudgetLinkAction
+              project={{
+                id: project.id, name: project.name, year: row?.year ?? '2026-f',
+                goal: row?.goal, amount: project.amountRequested,
+              }}
+            />
+          ) : undefined}
         />
       </div>
     </AppLayout>
