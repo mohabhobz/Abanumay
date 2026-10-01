@@ -151,7 +151,8 @@ export default function HomePage() {
       )}
     >
       <div className="viewstack">
-        <div className="screen col">
+        {/* `pt` · the page transition on trial here before it reaches the other screens. */}
+        <div className="screen col pt">
           {/* === First fold ===
               Everything here closes in one screen with no scrolling: header, indicators, map, money
               and time. Height is the constraint here, not width, so the grid takes the remainder

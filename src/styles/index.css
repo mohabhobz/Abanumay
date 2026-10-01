@@ -8374,3 +8374,55 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 @keyframes arrive{0%,60%{box-shadow:0 0 0 2px var(--teal)}}
 @media (prefers-reduced-motion:reduce){.arrive{animation:none;box-shadow:0 0 0 2px var(--teal)}}
 .screen [id]{scroll-margin-top:var(--sp-6)}
+
+/* ═══════════════════════════════════════════════════════════
+   Page transition · trial on the home page only (`.screen.pt`)
+
+   Measured from the reference the client sent (30fps): the frame (rail + top bar) never moves;
+   the content area stays empty for about 100ms, then the page assembles in waves about 33ms
+   apart, most important first. Each block appears in its final place — no slide — going from
+   transparent and blurred to sharp in ~150ms. Values a block holds (the KPI numbers) arrive one
+   wave after their card, so the shape lands before the figure.
+
+   It plays on every visit while on trial (not once per session like Motion 6), so it can be
+   judged. `:root` raises specificity above Motion 6's `:root[data-fresh]` rules.
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --pt-gap:calc(var(--mo-base) * 1.5);     /* 120: the empty beat before the first wave */
+  --pt-w:calc(var(--mo-base) * .7);        /* 56: waves overlap more, so the page flows in */
+  --pt-d:calc(var(--mo-base) * 7);         /* 560: one block, long and soft */
+  --pt-blur:var(--sp-4);                   /* 12px → 0 */
+  --pt-scale:.985;                         /* a settle, barely felt */
+  --pt-ease:cubic-bezier(.33,1,.68,1);     /* ease-out cubic: no snap at the start, a long tail */
+}
+/* Third pass (client: "smoother and calmer"): longer and softer blocks that overlap more, a
+   lighter blur and scale, and a gentler curve than the signature entrance. `backwards`, not
+   `both`: once a block has landed it hands its transform back, so hover lift keeps working. */
+@keyframes pt-in{from{opacity:0;filter:blur(var(--pt-blur));transform:scale(var(--pt-scale))}to{opacity:1;filter:none;transform:none}}
+@keyframes pt-ink{from{opacity:.25}to{opacity:1}}
+
+:root .viewstack>.screen.pt>*{animation:none}
+:root .screen.pt :is(.fold>.idban,.kpis>.kpi,.dtop>*,.dgrid>:not(.col),.dgrid>.col>*),
+:root .screen.pt>.hx-card{
+  animation:pt-in var(--pt-d) var(--pt-ease) backwards;
+  animation-delay:calc(var(--pt-gap) + var(--pt-w) * var(--pt-n, 5.4))}
+/* Waves · 0 = greeting and indicators (the page's answer), then money and map, then time,
+   then everything below the fold together. */
+:root .screen.pt .fold>.idban{--pt-n:0}
+:root .screen.pt .kpis>.kpi{--pt-n:.6}
+:root .screen.pt .kpis>.kpi:nth-child(2){--pt-n:1}
+:root .screen.pt .kpis>.kpi:nth-child(3){--pt-n:1.4}
+:root .screen.pt .kpis>.kpi:nth-child(4){--pt-n:1.8}
+:root .screen.pt .dtop>:is(.d-map,.d-budget){--pt-n:2.6}
+:root .screen.pt .dtop>:is(.d-track,.d-age){--pt-n:3.6}
+:root .screen.pt>.hx-card{--pt-n:4.6}
+/* The figure follows its card by one wave. */
+:root .screen.pt .kpi-v{animation:pt-ink var(--pt-d) var(--pt-ease) backwards;
+  animation-delay:calc(var(--pt-gap) + var(--pt-w) * 2.4)}
+
+@media (prefers-reduced-motion:reduce){
+  :root .screen.pt :is(.fold>.idban,.kpis>.kpi,.dtop>*,.dgrid>:not(.col),.dgrid>.col>*),
+:root .screen.pt>.hx-card{
+    animation-name:mo-fade;animation-delay:0ms}
+  :root .screen.pt .kpi-v{animation:none}
+}
