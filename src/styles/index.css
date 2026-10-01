@@ -7935,13 +7935,7 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
   transform-origin:100% 50%;animation:mo-bar var(--mo-5) var(--ease-data) var(--mo-stagger) both}
 :root[data-fresh] .chcol-t i{transform-origin:50% 100%;animation:mo-col var(--mo-5) var(--ease-data) var(--mo-stagger) both}
 
-/* ── Motion 6: entry rhythm — the frame stays still, the content enters ──
-   Title → number → shape → the rest. Total ≤ 600 (5 × 60 + 240) */
-:root[data-fresh] .viewstack>.screen>*{animation:mo-enter var(--mo-3) var(--ease-out) both}
-:root[data-fresh] .viewstack>.screen>:nth-child(2){animation-delay:var(--mo-stagger)}
-:root[data-fresh] .viewstack>.screen>:nth-child(3){animation-delay:calc(var(--mo-stagger) * 2)}
-:root[data-fresh] .viewstack>.screen>:nth-child(4){animation-delay:calc(var(--mo-stagger) * 3)}
-:root[data-fresh] .viewstack>.screen>:nth-child(n+5){animation-delay:calc(var(--mo-stagger) * 5)}
+/* ── Motion 6: entry rhythm ── moved to «Page transition · the system default» at the end of this file. */
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -8376,16 +8370,24 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .screen [id]{scroll-margin-top:var(--sp-6)}
 
 /* ═══════════════════════════════════════════════════════════
-   Page transition · trial on the home page only (`.screen.pt`)
+   Page transition · the system default (Motion 6, second edition)
 
-   Measured from the reference the client sent (30fps): the frame (rail + top bar) never moves;
-   the content area stays empty for about 100ms, then the page assembles in waves about 33ms
-   apart, most important first. Each block appears in its final place — no slide — going from
-   transparent and blurred to sharp in ~150ms. Values a block holds (the KPI numbers) arrive one
-   wave after their card, so the shape lands before the figure.
+   From the reference the client sent, measured at 30fps and then tuned with him on the home page
+   (three passes: "not clear enough", then "smoother and calmer"):
+   · the frame never moves: rail, top bar and breadcrumb (`.waypoint`) stay put;
+   · the content area holds an empty beat (`--pt-gap`), then the page assembles in waves, most
+     important first, which on every screen is also the DOM order (header → its chart → body);
+   · each block appears in its final place, no slide: transparent and blurred to sharp, with a
+     barely-felt settle in scale, on a long soft curve;
+   · values follow their card (home KPIs) and table rows cascade in after their table.
+   It plays on every visit to a screen, not once per session.
 
-   It plays on every visit while on trial (not once per session like Motion 6), so it can be
-   judged. `:root` raises specificity above Motion 6's `:root[data-fresh]` rules.
+   Blocks are found by role, not by a class list per screen: a direct child of `.screen` is a
+   block unless it is a layout wrapper; then its children are the blocks, and inside a wrapper's
+   `.col` the column's children are. The wave of a block is its position (`--pt-i` from the
+   screen, `--pt-j` inside a wrapper, `--pt-k` inside a column), so a new screen gets the motion
+   without touching this file. `backwards`, not `both`: a landed block hands its transform back,
+   so hover lift keeps working.
    ═══════════════════════════════════════════════════════════ */
 :root{
   --pt-gap:calc(var(--mo-base) * 1.5);     /* 120: the empty beat before the first wave */
@@ -8400,14 +8402,49 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
    `both`: once a block has landed it hands its transform back, so hover lift keeps working. */
 @keyframes pt-in{from{opacity:0;filter:blur(var(--pt-blur));transform:scale(var(--pt-scale))}to{opacity:1;filter:none;transform:none}}
 @keyframes pt-ink{from{opacity:.25}to{opacity:1}}
+@keyframes pt-row{from{opacity:0}}
 
-:root .viewstack>.screen.pt>*{animation:none}
+/* Motion 6's first edition is replaced, everywhere. */
+:root .viewstack>.screen>*{animation:none}
+
+/* Positions */
+:root .viewstack>.screen>:nth-child(1){--pt-i:0}
+:root .viewstack>.screen>:nth-child(2){--pt-i:1}
+:root .viewstack>.screen>:nth-child(3){--pt-i:2}
+:root .viewstack>.screen>:nth-child(4){--pt-i:3}
+:root .viewstack>.screen>:nth-child(5){--pt-i:4}
+:root .viewstack>.screen>:nth-child(6){--pt-i:5}
+:root .viewstack>.screen>:nth-child(7){--pt-i:6}
+:root .viewstack>.screen>:nth-child(8){--pt-i:7}
+:root .viewstack>.screen>:nth-child(n+9){--pt-i:8}
+:root .viewstack>.screen>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>:nth-child(1){--pt-j:0}
+:root .viewstack>.screen>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>:nth-child(2){--pt-j:1}
+:root .viewstack>.screen>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>:nth-child(3){--pt-j:2}
+:root .viewstack>.screen>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>:nth-child(4){--pt-j:3}
+:root .viewstack>.screen>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>:nth-child(5){--pt-j:4}
+:root .viewstack>.screen>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>:nth-child(6){--pt-j:5}
+:root .viewstack>.screen .col>:nth-child(1){--pt-k:0}
+:root .viewstack>.screen .col>:nth-child(2){--pt-k:1}
+:root .viewstack>.screen .col>:nth-child(3){--pt-k:2}
+:root .viewstack>.screen .col>:nth-child(4){--pt-k:3}
+:root .viewstack>.screen .col>:nth-child(5){--pt-k:4}
+
+/* The breadcrumb is frame, not content: when it leads the screen, counting starts after it. */
+:root .viewstack>.screen:has(>.waypoint:first-child){--pt-off:1}
+
+/* Blocks */
+:root .viewstack>.screen:not(.pt)>:not(.waypoint,.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec),
+:root .viewstack>.screen:not(.pt)>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>:not(.col),
+:root .viewstack>.screen:not(.pt)>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>.col>*{
+  --pt-n:calc(var(--pt-i, 0) - var(--pt-off, 0) + var(--pt-j, 0) * .5 + var(--pt-k, 0) * .5);
+  animation:pt-in var(--pt-d) var(--pt-ease) backwards;
+  animation-delay:calc(var(--pt-gap) + var(--pt-w) * var(--pt-n))}
+
+/* Home · its own order (the greeting and indicators are its answer), set in the first pass. */
 :root .screen.pt :is(.fold>.idban,.kpis>.kpi,.dtop>*,.dgrid>:not(.col),.dgrid>.col>*),
 :root .screen.pt>.hx-card{
   animation:pt-in var(--pt-d) var(--pt-ease) backwards;
   animation-delay:calc(var(--pt-gap) + var(--pt-w) * var(--pt-n, 5.4))}
-/* Waves · 0 = greeting and indicators (the page's answer), then money and map, then time,
-   then everything below the fold together. */
 :root .screen.pt .fold>.idban{--pt-n:0}
 :root .screen.pt .kpis>.kpi{--pt-n:.6}
 :root .screen.pt .kpis>.kpi:nth-child(2){--pt-n:1}
@@ -8420,9 +8457,37 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 :root .screen.pt .kpi-v{animation:pt-ink var(--pt-d) var(--pt-ease) backwards;
   animation-delay:calc(var(--pt-gap) + var(--pt-w) * 2.4)}
 
+/* Table rows cascade in after their table lands, top to bottom, opacity only (a blur on every
+   row would be the most expensive frame on the page). The first twelve rows carry it; the rest
+   arrive with the twelfth. Rows inherit their table's wave. */
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(1){--pt-r:0}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(2){--pt-r:1}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(3){--pt-r:2}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(4){--pt-r:3}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(5){--pt-r:4}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(6){--pt-r:5}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(7){--pt-r:6}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(8){--pt-r:7}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(9){--pt-r:8}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(10){--pt-r:9}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(11){--pt-r:10}
+:root .viewstack>.screen .tblcard tbody>tr:nth-child(12){--pt-r:11}
+:root .viewstack>.screen .tblcard tbody>tr{
+  animation:pt-row calc(var(--pt-d) * .6) var(--pt-ease) backwards;
+  animation-delay:calc(var(--pt-gap) + var(--pt-w) * var(--pt-n, 0) + var(--pt-d) * .3 + var(--mo-base) * .3 * var(--pt-r, 12))}
+
+/* Dialogs · the scrim tints in, the dialog settles from a little larger and blurred to sharp. */
+@keyframes pt-scrim{from{opacity:0}}
+@keyframes pt-dialog{from{opacity:0;filter:blur(var(--pt-blur));transform:scale(calc(2 - var(--pt-scale)))}}
+.bmask{animation:pt-scrim var(--mo-3) var(--pt-ease) backwards}
+.bmask>.modal{animation:pt-dialog var(--mo-4) var(--pt-ease) var(--mo-base) backwards}
+
 @media (prefers-reduced-motion:reduce){
+  :root .viewstack>.screen:not(.pt)>:not(.waypoint,.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec),
+  :root .viewstack>.screen:not(.pt)>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>:not(.col),
+  :root .viewstack>.screen:not(.pt)>:is(.g2,.dgrid,.stats4,.paygrid,.prow,.regtop,.hscope,.paygrp,.rpsec)>.col>*,
   :root .screen.pt :is(.fold>.idban,.kpis>.kpi,.dtop>*,.dgrid>:not(.col),.dgrid>.col>*),
-:root .screen.pt>.hx-card{
-    animation-name:mo-fade;animation-delay:0ms}
-  :root .screen.pt .kpi-v{animation:none}
+  :root .screen.pt>.hx-card,
+  .bmask>.modal{animation-name:mo-fade;animation-delay:0ms}
+  :root .screen.pt .kpi-v,:root .viewstack>.screen .tblcard tbody>tr{animation:none}
 }
