@@ -39,7 +39,7 @@ export const COLS: Col[] = [
   {
     key: 'code',
     w: 132,
-    label: 'الكود',
+    label: 'كود المشروع',
     fixed: true,
     cell: (r) => <Mono>{rowCode(r)}</Mono>,
     text: (r) => rowCode(r),

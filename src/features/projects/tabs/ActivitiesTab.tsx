@@ -198,7 +198,7 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
         <div className="acts-hd">
           <Head
             title="الفعاليات"
-            meta={list.length ? <><Num>{list.length}</Num> مسجّلة</> : 'لا توجد'}
+            meta={list.length ? <><Num>{list.length}</Num> مسجّلة</> : undefined}
           />
           {addBtn}
         </div>

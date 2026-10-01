@@ -64,7 +64,7 @@ export function DataTab({
               k: 'الجهة',
               v: <Link className="tlink" to={ROUTES.entity(entityId)}>{entityName}</Link>,
             },
-            { k: 'رقم المشروع', v: <Mono>{code}</Mono> },
+            { k: 'كود المشروع', v: <Mono>{code}</Mono> },
             { k: 'نوع المشروع', v: type },
             { k: 'الحالة', v: <Tag tone={P.status.tone}>{P.status.label}</Tag> },
             { k: 'المسار', v: P.track },

@@ -20,6 +20,7 @@ import {
   HistoryTab, LogTab, PaymentsTab, PlanTab,
 } from './tabs'
 import { useActivities, withActivities } from './activities'
+import { useFollowUps } from './followups'
 import { closeOfProject, openClose } from '@/data/mock/closing'
 import { AnalysisCard } from '@/components/assistant'
 import { readInsights, readJourney } from '@/data/readings'
@@ -154,9 +155,15 @@ export default function ProjectPage() {
      phrasings. One place for the assistant on the screen. */
   /* Project details are derived from the row so every project in the demo is explorable, not just
      the single one baked into the fixture. */
-  const detail = useMemo(
+  const baseDetail = useMemo(
     () => projectDetail(row ?? fixtures.projects[0], entity.name),
     [row, entity.name],
+  )
+  /* Follow-ups added from the tab join the project's own, so the tab and the log read one list. */
+  const followUps = useFollowUps(project.id)
+  const detail = useMemo(
+    () => ({ ...baseDetail, followUps: [...followUps.list, ...baseDetail.followUps] }),
+    [baseDetail, followUps.list],
   )
 
   /* Note: eligibility for an agreement is computed here, not in the tab. The rule (rule 1) states
@@ -322,7 +329,13 @@ export default function ProjectPage() {
                 />
               )}
               {active === 'follow-ups' && (
-                <FollowUpsTab followUps={detail.followUps} types={fixtures.followUpTypes} />
+                <FollowUpsTab
+                  projectId={project.id}
+                  followUps={detail.followUps}
+                  types={fixtures.followUpTypes}
+                  me={user.name}
+                  onAdd={followUps.add}
+                />
               )}
               {active === 'activities' && (
                 <ActivitiesTab

@@ -1,11 +1,10 @@
 import type { CSSProperties } from 'react'
-import { DateText, Empty, Glass, Head, Mono, Num, Tag } from '@/components/ui'
-import { countOf, isolate, nf, NOUN, projectCode } from '@/lib/format'
+import { Glass, Head, Mono, Num, Tag } from '@/components/ui'
+import { countOf, nf, NOUN, projectCode } from '@/lib/format'
 import { projectById } from '@/data/mock/projects'
-import type { Entity, FollowUp, FollowUpType } from '@/types/domain'
+import type { Entity } from '@/types/domain'
 import type { ThreadMessage } from '@/data/mock/detail'
 import { Thread } from '@/components/thread'
-import { DocFile } from '@/components/docs'
 
 export { DataTab } from './DataTab'
 export { EntityTab } from './EntityTab'
@@ -15,6 +14,7 @@ export { CloseTab, type CloseTabProps } from './CloseTab'
 export { PaymentsTab, type PaymentsTabProps } from './PaymentsTab'
 export { LogTab, type LogTabProps } from './LogTab'
 export { ActivitiesTab, type ActivitiesTabProps } from './ActivitiesTab'
+export { FollowUpsTab, type FollowUpsTabProps } from './FollowUpsTab'
 
 /* Previous projects */
 
@@ -82,62 +82,6 @@ export function HistoryTab({
  * because the system places it in the same timeline. This tab is a
  * focused view of it.
  */
-export function FollowUpsTab({
-  followUps,
-  types,
-}: {
-  followUps: FollowUp[]
-  types: FollowUpType[]
-}) {
-  return (
-    <Glass>
-      <Head
-        title="المتابعات"
-        meta={followUps.length ? `${followUps.length} متابعة` : 'لا توجد'}
-      />
-
-      {followUps.length === 0 ? (
-        <Empty
-          title="لا توجد متابعات مسجّلة على هذا المشروع."
-          note="المتابعة توثّق تواصلًا أو زيارة أو منتجًا معرفيًا أو شرط صرف، وتظهر في سجل المشروع بترتيبها الزمني."
-        />
-      ) : (
-        <div className="col-s flush">
-          {followUps.map((f, i) => (
-            <div className="data" key={i} style={{ padding: 'var(--sp-5) 0' }}>
-              <div className="rowf" style={{ gap: 'var(--sp-3)', marginBottom: 'var(--sp-3)' }}>
-                <span className="itag">{f.type}</span>
-                <span className="pc-sp" />
-                <span className="sub">{f.by}</span>
-                <DateText>{f.at}</DateText>
-              </div>
-              <div className="prose">{isolate(f.body)}</div>
-              {f.attachment && (
-                <div style={{ marginTop: 'var(--sp-3)' }}>
-                  <DocFile name={f.attachment} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="hd" style={{ marginTop: 'var(--sp-6)', marginBottom: 'var(--sp-3)' }}>
-        <h3 style={{ fontSize: 'var(--fs-3)' }}>إضافة متابعة</h3>
-        <span className="meta">النوع والوصف إلزاميان</span>
-      </div>
-      <div className="chips">
-        {types.map((t) => (
-          <button className="chip" key={t}>{t}</button>
-        ))}
-      </div>
-      <div className="sub mt-3">
-        حجم المرفق أقل من 32 ميجابايت · pdf doc docx txt jpg jpeg gif png xls xlsx
-      </div>
-    </Glass>
-  )
-}
-
 /* Correspondence */
 
 /**
@@ -167,7 +111,7 @@ export function CorrespondenceTab({
     <Glass>
       <Head
         title="المراسلة مع الجهة"
-        meta={messages.length ? `${messages.length} رسائل` : 'لا توجد'}
+        meta={messages.length ? `${messages.length} رسائل` : undefined}
       />
 
       <Thread

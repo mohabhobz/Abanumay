@@ -7,7 +7,8 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { payRequestById } from '@/data/mock/disbursements'
-import { nf, NOUN, nounAfter, pct, riyals } from '@/lib/format'
+import { nf, NOUN, nounAfter, pct, projectCode, riyals } from '@/lib/format'
+import { projectById } from '@/data/mock/projects'
 import { printArea } from '@/lib/export'
 
 /* Disbursement order - step 16, and the spec's first output.
@@ -123,7 +124,7 @@ export default function OrderPage() {
                 <h3><span className="num">1</span> · المشروع</h3>
                 <dl className="kv">
                   <dt>اسم المشروع</dt><dd>{r.projectName}</dd>
-                  <dt>رقم المشروع</dt><dd><Mono>{r.projectId}</Mono></dd>
+                  <dt>كود المشروع</dt><dd><Mono>{projectCode(r.projectId, projectById(r.projectId)?.year ?? '2026')}</Mono></dd>
                   <dt>الجهة المستفيدة</dt>
                   <dd><Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link></dd>
                 </dl>

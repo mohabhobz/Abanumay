@@ -60,3 +60,10 @@
   .plbar .ftool-f>*{flex:1 1 calc(50% - var(--sp-3));min-width:0}
   .plbar .ftool-f>.srch{flex-basis:100%}
 }
+
+/* ── Follow-ups tab ── */
+.fu-i{padding:var(--sp-5) 0}
+.fu-h{margin-bottom:var(--sp-3)}
+.fu-add{margin-top:var(--sp-6);margin-bottom:var(--sp-3)}
+.fu-add h3{font-size:var(--fs-3)}
+.fu-form{display:flex;flex-direction:column;gap:var(--sp-4);margin-top:var(--sp-5)}
