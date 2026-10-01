@@ -23,6 +23,14 @@
 .lgsw.c-activity,.lgdot.lgc.c-activity{border-radius:var(--r-hair)}
 
 .lgtabs{margin-top:var(--sp-4)}
+/* Seven tabs fit one row in the log card: a smaller swatch, a tighter gap inside each tab and
+   between tabs. The selectors carry the extra class because this file loads before the base. */
+.tabs.lgtabs{gap:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.tabs.lgtabs::-webkit-scrollbar{display:none}
+.tabs.lgtabs .tab{flex:none}
+.tabs.lgtabs .tab{gap:var(--sp-2);padding-inline:var(--sp-2);font-size:var(--fs-2)}
+.tabs.lgtabs .lgsw{width:var(--sp-3);height:var(--sp-3)}
+.lgsw.c-followUp{box-shadow:inset 0 0 0 2px var(--c)}
 .lgtools{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3);margin-top:var(--sp-4)}
 
 .lgcat{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-1)}
@@ -32,6 +40,8 @@
 .lgi[id]{scroll-margin-top:var(--sp-10)}
 
 /* ── Activities tab ── */
+.acts-hd{display:flex;align-items:flex-start;gap:var(--sp-4)}
+.acts-hd>.hd{flex:1;min-width:0}
 .acts-up{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3)}
 .acts-foot{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3);margin-top:var(--sp-6)}
 .acts-foot .prs{vertical-align:middle}

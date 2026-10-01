@@ -12,7 +12,7 @@ import {
 } from '@/components/filters'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
-import { fixtures, query, type ProjectQuery, type ProjectSort } from '@/data/repository'
+import { fixtures, query, type ProjectBucket, type ProjectQuery, type ProjectSort } from '@/data/repository'
 import {
   applyDecision, assignOwner, portfolioRows, PROJECT_TYPES, type BulkDecision,
 } from '@/data/mock/projects'
@@ -40,7 +40,7 @@ import { ProjectCard } from './ProjectCard'
 const KEYS = [
   'q', 'status', 'stage', 'year', 'track', 'field', 'goal', 'region', 'city',
   'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact', 'type',
-  'sort', 'page', 'size', 'view', 'adv', 'group',
+  'sort', 'page', 'size', 'view', 'adv', 'group', 'tab',
 ] as const
 
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -51,15 +51,17 @@ const PAGE_SIZE = PAGE_SIZES[0]
    don't count toward the "advanced filters" badge — that counter reflects only
    what's hidden. */
 const NOT_FILTERS: (keyof Params)[] = [
-  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'status', 'unowned', 'overdue', 'type',
+  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'status', 'unowned', 'overdue', 'type', 'tab',
 ]
 
-/** Saved views — the questions a reviewer asks every day. */
+/* Saved views, the questions a reviewer asks every day. The tabs partition the list: each project
+   sits in exactly one, so «كل المشاريع» is the sum of the others (see `projectBucket`). */
 const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
   { key: 'all', label: 'كل المشاريع', patch: {} },
-  { key: 'mine', label: 'ما ينتظر قراري', patch: { owner: 'عمر قاسم', status: 'في الدراسة' } },
-  { key: 'overdue', label: 'متأخر عن الحد', patch: { overdue: '1' } },
-  { key: 'unowned', label: 'بلا مالك', patch: { unowned: '1' } },
+  { key: 'mine', label: 'ما ينتظر قراري', patch: { tab: 'mine' } },
+  { key: 'overdue', label: 'متأخر عن الحد', patch: { tab: 'overdue' } },
+  { key: 'unowned', label: 'بلا مالك', patch: { tab: 'unowned' } },
+  { key: 'other', label: 'أخرى', patch: { tab: 'other' } },
 ]
 
 /* Role actions valid to run as a bulk batch. Anything not listed here needs a
@@ -154,6 +156,7 @@ export default function ProjectsListPage() {
       shared: v.shared === '1',
       impact: v.impact === '1',
       type: readList(v.type),
+      bucket: v.tab as ProjectBucket | undefined,
       /* Portfolio rows live in this list only: each one opens its portfolio page. */
       portfolios: true,
       sort: (v.sort as ProjectSort) ?? 'waiting',
@@ -195,10 +198,7 @@ export default function ProjectsListPage() {
         VIEWS.map((x) => [
           x.key,
           query.projects({
-            owner: x.patch.owner,
-            status: x.patch.status,
-            unowned: x.patch.unowned === '1',
-            overdue: x.patch.overdue === '1',
+            bucket: x.patch.tab as ProjectBucket | undefined,
             portfolios: true,
             pageSize: 1,
           }).total,

@@ -21,7 +21,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 const EMPTY = { title: '', at: '', type: '' as ActivityType | '', description: '', source: '' }
 
 /**
- * Activities and events.
+ * Activities («الفعاليات»).
  *
  * The only entry point for manual events: field visits, meetings, workshops, calls. Each one is
  * written into the project log with its source, so the log answers "where did this come from"
@@ -32,6 +32,9 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
   const [files, setFiles] = useState<string[]>([])
   const [tried, setTried] = useState(false)
   const [added, setAdded] = useState<string | null>(null)
+  /* The form opens from «إضافة فعالية» instead of sitting open on the page: the tab reads as the
+     list of what happened, and adding is one deliberate step from it. */
+  const [adding, setAdding] = useState(false)
 
   const missing = [
     !f.title.trim() && 'اسم الفعالية',
@@ -53,15 +56,34 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
       by: me,
     })
     setAdded(f.title.trim())
+    close()
+  }
+
+  const close = () => {
     setF({ ...EMPTY, at: today() })
     setFiles([])
     setTried(false)
+    setAdding(false)
   }
+
+  const addBtn = (
+    <button
+      type="button"
+      className="btn btn-p"
+      aria-expanded={adding}
+      onClick={() => { setAdded(null); setAdding(true) }}
+      disabled={adding}
+    >
+      <Icon name={icons.plus} size="sm" />
+      إضافة فعالية
+    </button>
+  )
 
   return (
     <>
+      {adding && (
       <Glass>
-        <Head title="إضافة فعالية أو نشاط" meta="تظهر في سجل المشروع بمصدرها" />
+        <Head title="فعالية جديدة" meta="تظهر في سجل المشروع بمصدرها" />
 
         <div className="regfields">
           <label className="regf regf-w">
@@ -161,10 +183,24 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
           {tried && missing.length > 0 && (
             <span className="sub">ناقص: {missing.join('، ')}</span>
           )}
+          <button type="button" className="btn btn-2" onClick={close}>
+            إلغاء
+          </button>
           <button type="button" className="btn btn-p" onClick={submit}>
             <Icon name={icons.plus} size="sm" />
             أضف إلى سجل المشروع
           </button>
+        </div>
+      </Glass>
+      )}
+
+      <Glass>
+        <div className="acts-hd">
+          <Head
+            title="الفعاليات"
+            meta={list.length ? <><Num>{list.length}</Num> مسجّلة</> : 'لا توجد'}
+          />
+          {addBtn}
         </div>
 
         {added && (
@@ -173,13 +209,6 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
             <Link className="lnk" to={ROUTES.projectTab(projectId, 'log')}>افتح السجل</Link>
           </p>
         )}
-      </Glass>
-
-      <Glass>
-        <Head
-          title="الفعاليات والأنشطة المسجّلة"
-          meta={list.length ? <><Num>{list.length}</Num> مسجّلة</> : 'لا توجد'}
-        />
 
         {list.length === 0 ? (
           <Empty

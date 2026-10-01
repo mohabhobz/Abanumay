@@ -1,11 +1,11 @@
-import type { MouseEvent } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon'
 import { icons } from '@/components/ui/icons'
 import { nf, pct, unitAfter } from '@/lib/format'
 import { DateText } from '@/components/ui/primitives'
 import { highlight } from './highlight'
-import type { Reading } from './reading'
+import type { Reading, ReadingAction } from './reading'
 
 export interface ReadingBlockProps {
   reading: Reading
@@ -96,11 +96,7 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
                   <Icon name={icons.chevron} size="sm" />
                 </Link>
               )}
-              {r.actions?.map((a) => (
-                <button key={a.label} className={`btn ${a.kind ?? 'btn-2'} btn-sm`} onClick={a.onClick}>
-                  {a.label}
-                </button>
-              ))}
+              {r.actions && <ReadingActs actions={r.actions} />}
             </div>
           )}
         </div>
@@ -182,6 +178,64 @@ export function MetricText({ m, lead }: { m: NonNullable<Reading['metric']>; lea
     <>
       <b className={lead ? 'qr-lead num' : 'num'}>{m.value}</b>{' '}
       <span className={lead ? 'qr-unit' : undefined}>{unitAfter(m.value, m.unit)}</span>
+    </>
+  )
+}
+
+/**
+ * The reading's own actions. Each one does something visible: a reminder is sent and the reading
+ * says so; a "record" action opens a short note first and confirms once saved. A button that does
+ * nothing on click reads as broken, which is what the client saw on «ذكّر الجهة».
+ */
+function ReadingActs({ actions }: { actions: ReadingAction[] }) {
+  const [done, setDone] = useState<Record<string, true>>({})
+  const [writing, setWriting] = useState<ReadingAction | null>(null)
+  const [text, setText] = useState('')
+
+  const finish = (a: ReadingAction) => {
+    a.onClick?.()
+    setDone((d) => ({ ...d, [a.label]: true }))
+    setWriting(null)
+    setText('')
+  }
+
+  return (
+    <>
+      {actions.map((a) =>
+        done[a.label] ? (
+          <span key={a.label} className="qr-done sub">
+            <Icon name={icons.check} size="sm" className="ok-ink" />
+            {a.done ?? 'تم'}
+          </span>
+        ) : (
+          <button
+            key={a.label}
+            type="button"
+            className={`btn ${a.kind ?? 'btn-2'} btn-sm`}
+            aria-expanded={a.note ? writing === a : undefined}
+            onClick={() => (a.note ? setWriting(writing === a ? null : a) : finish(a))}
+          >
+            {a.label}
+          </button>
+        ),
+      )}
+      {writing && (
+        <div className="qr-note">
+          <span className="fld">
+            <input
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && text.trim()) finish(writing) }}
+              placeholder={writing.note}
+              aria-label={writing.note}
+            />
+          </span>
+          <button type="button" className="btn btn-p btn-sm" disabled={!text.trim()} onClick={() => finish(writing)}>
+            حفظ
+          </button>
+        </div>
+      )}
     </>
   )
 }

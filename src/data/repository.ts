@@ -81,6 +81,8 @@ export interface ProjectQuery {
   type?: Filter
   /** true = include portfolio rows (the projects list only) */
   portfolios?: boolean
+  /** One of the list's exclusive tabs · see `projectBucket` */
+  bucket?: ProjectBucket
   from?: string
   to?: string
   search?: string
@@ -140,7 +142,25 @@ const paginate = <T>(rows: T[], page = 1, pageSize = 20): Page<T> => ({
 export const stagePressure = (row: ProjectRow): number =>
   row.stageLimit === 0 ? 0 : row.hoursInStage / row.stageLimit
 
+/**
+ * The projects list tabs split the list into parts that add up to its total: every row lands in
+ * exactly one tab. A project can be both waiting on the reviewer and past its limit, so the tabs
+ * take the first that applies, in the order a reviewer acts on them: their own decision first,
+ * then lateness, then ownership. Anything none of them names is «أخرى».
+ */
+export type ProjectBucket = 'mine' | 'overdue' | 'unowned' | 'other'
+export const REVIEWER = 'عمر قاسم'
+export const projectBucket = (r: ProjectRow): ProjectBucket =>
+  r.owner === REVIEWER && r.statusGroup === 'في الدراسة'
+    ? 'mine'
+    : stagePressure(r) > 1
+      ? 'overdue'
+      : r.owner === null
+        ? 'unowned'
+        : 'other'
+
 const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
+  if (q.bucket && projectBucket(r) !== q.bucket) return false
   if (!eq(q.year, r.year)) return false
   if (!eq(q.track, r.track)) return false
   if (!eq(q.field, r.field)) return false

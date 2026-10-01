@@ -20,8 +20,8 @@ const CATS: { key: Cat; label: string }[] = [
   { key: 'money', label: 'المال' },
   { key: 'entity', label: 'من الجهة' },
   { key: 'followUp', label: 'المتابعات' },
-  { key: 'activity', label: 'الفعاليات والأنشطة' },
-  { key: 'procedure', label: 'إجراءات أخرى' },
+  { key: 'activity', label: 'فعاليات' },
+  { key: 'procedure', label: 'أخرى' },
 ]
 
 const MONEY = /إذن صرف|صرف الدفعة|سند القبض|سند القيد/
@@ -70,17 +70,12 @@ const ACTOR: Record<ActorKind, string> = {
 export function LogTab({ events, entityName }: LogTabProps) {
   const [view, setView] = useState<Cat | 'all'>('all')
   const [order, setOrder] = useState<Order>('newest')
-  const [lateOnly, setLateOnly] = useState(false)
   const [open, setOpen] = useState<Set<string>>(new Set())
 
   /* Events arrive newest first; the oldest-first order is the same list reversed, so events
      sharing a day keep their workflow order in both directions. */
   const tagged = useMemo(() => events.map((e) => ({ e, c: catOf(e) })), [events])
-  const lateCount = useMemo(() => events.filter((e) => e.limit > 0 && e.hours > e.limit).length, [events])
-  const scoped = useMemo(
-    () => (lateOnly ? tagged.filter(({ e }) => e.limit > 0 && e.hours > e.limit) : tagged),
-    [tagged, lateOnly],
-  )
+  const scoped = tagged
 
   const counts = useMemo(() => {
     const out = Object.fromEntries(CATS.map((c) => [c.key, 0])) as Record<Cat, number>
@@ -108,9 +103,18 @@ export function LogTab({ events, entityName }: LogTabProps) {
 
   return (
     <Glass>
+      {/* One order control, where the header used to restate the order as text. */}
       <Head
         title="سجل المشروع"
-        meta={`${events.length} حدثًا · ${order === 'newest' ? 'الأحدث أولًا' : 'الأقدم أولًا'}`}
+        meta={
+          <Select
+            icon={icons.sort}
+            value={order === 'oldest' ? 'oldest' : undefined}
+            all="الأحدث أولًا"
+            options={[{ value: 'oldest', label: 'الأقدم أولًا' }]}
+            onChange={(x) => setOrder(x === 'oldest' ? 'oldest' : 'newest')}
+          />
+        }
       />
 
       {/* Category tabs · the same markup as `Tabs`, plus the category swatch, which `Tabs` has no
@@ -131,29 +135,6 @@ export function LogTab({ events, entityName }: LogTabProps) {
         ))}
       </div>
 
-      <div className="lgtools">
-        <Select
-          icon={icons.sort}
-          value={order === 'oldest' ? 'oldest' : undefined}
-          all="الأحدث أولًا"
-          options={[{ value: 'oldest', label: 'الأقدم أولًا' }]}
-          onChange={(x) => setOrder(x === 'oldest' ? 'oldest' : 'newest')}
-        />
-        <button
-          type="button"
-          className={`fchip${lateOnly ? ' on' : ''}`}
-          aria-pressed={lateOnly}
-          onClick={() => setLateOnly((x) => !x)}
-        >
-          <Icon name={icons.clock} size="sm" />
-          تجاوز الحدّ فقط
-          <b className="num">{lateCount}</b>
-        </button>
-        <span className="pc-sp" />
-        <span className="sub">
-          الإضافة اليدوية من تبويب «الفعاليات والأنشطة»
-        </span>
-      </div>
 
       {shown.length === 0 ? (
         <div style={{ marginTop: 'var(--sp-5)' }}>

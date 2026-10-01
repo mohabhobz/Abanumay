@@ -26,9 +26,9 @@ export const isPortfolio = (r: ProjectRow): boolean => r.type === 'محفظة'
 export const rowHref = (r: ProjectRow): string =>
   isPortfolio(r) ? ROUTES.portfolio(r.portfolioId ?? r.id) : ROUTES.project(r.id)
 
-/** Display code · a portfolio keeps its own code, a project gets `prj-YYYY-NNNNN`. */
+/** Display code · a portfolio keeps its own code, a project gets `PRJ-YYYY-NNNNN`. */
 export const rowCode = (r: ProjectRow): string =>
-  isPortfolio(r) ? (r.portfolioId ?? r.id).toLowerCase() : projectCode(r.id, r.year)
+  isPortfolio(r) ? (r.portfolioId ?? r.id).toUpperCase() : projectCode(r.id, r.year)
 
 /* Default columns add up to 1246px, so all default columns fit within the card
    view's 1440px screen (1252px). It used to be 1338px, making the table wider

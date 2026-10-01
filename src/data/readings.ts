@@ -128,8 +128,8 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
   const now = out[0]
   if (now && now.kind === 'flag') {
     now.actions = [
-      { label: 'ذكّر الجهة', kind: 'btn-2' },
-      { label: 'سجّل سبب التأخر', kind: 'btn-2' },
+      { label: 'ذكّر الجهة', kind: 'btn-2', done: 'أُرسل التذكير إلى الجهة عبر البوابة' },
+      { label: 'سجّل سبب التأخر', kind: 'btn-2', note: 'سبب التأخر', done: 'سُجّل سبب التأخر في سجل المشروع' },
     ]
   }
 
@@ -239,7 +239,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
       bold: [m],
       src: 'عمود المالك في جدول المشاريع',
       to: `${ROUTES.projects}?unowned=1${LIST}`,
-      toLabel: 'أسندها جماعيًا',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -348,7 +348,7 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
       danger: [w],
       src: 'تقارير الشركاء',
       to: ROUTES.entity(worst.id),
-      toLabel: 'افتح ملفها',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -415,7 +415,7 @@ export function readEntity(
         'ويُجدَّد الترخيص لدى الجهة المرخِّصة لا لدى المؤسسة.',
       danger: [detail.licenseEndsAt],
       src: 'ملف الجهة · تاريخ نهاية الترخيص',
-      actions: [{ label: 'ذكّر الجهة', kind: 'btn-2' }],
+      actions: [{ label: 'ذكّر الجهة', kind: 'btn-2', done: 'أُرسل التذكير إلى الجهة عبر البوابة' }],
     })
   }
 
@@ -462,7 +462,7 @@ export function readEntity(
         valueLabel: 'المرفوع',
         limitLabel: 'المطلوب',
       },
-      actions: [{ label: 'ذكّر الجهة', kind: 'btn-2' }, { label: 'سجّل ملاحظة', kind: 'btn-2' }],
+      actions: [{ label: 'ذكّر الجهة', kind: 'btn-2', done: 'أُرسل التذكير إلى الجهة عبر البوابة' }, { label: 'سجّل ملاحظة', kind: 'btn-2', note: 'الملاحظة', done: 'سُجّلت الملاحظة في ملف الجهة' }],
     })
   }
 
@@ -500,7 +500,7 @@ export function readEntity(
       danger: [d],
       src: 'سجل الإجراءات',
       to: ROUTES.project(worst.id),
-      toLabel: 'افتح المشروع',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -705,7 +705,7 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
       danger: mineLate.length ? [units.project(mineLate.length, true)] : [],
       src: 'المشاريع المسندة إليك',
       to: `${ROUTES.projects}?owner=${encodeURIComponent(owner)}&status=في الدراسة${LIST}`,
-      toLabel: 'افتح صندوقك',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -729,7 +729,7 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
       bold: ['القاعدة 6'],
       src: 'قواعد الإغلاق 6 و17',
       to: ROUTES.closings,
-      toLabel: 'افتح الإغلاق',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -748,7 +748,7 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
       bold: [`«${worst.name}»`],
       src: 'مدة المكوث في القسم',
       to: ROUTES.project(worst.id),
-      toLabel: 'افتحه',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -821,7 +821,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
       bold: [`${nf.format(money)} ⃁`],
       src: 'عمود المالك في جدول المشاريع',
       to: `${ROUTES.projects}?unowned=1${LIST}`,
-      toLabel: 'أسندها جماعيًا',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -898,7 +898,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
       bold: [`«${ranked[0][0]}»`, `${nf.format(ranked[0][1])} ⃁`],
       src: 'الممنوح لكل جهة',
       to: `${ROUTES.entities}?sort=granted${LIST}`,
-      toLabel: 'الجهات',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -930,7 +930,7 @@ function blockedReading(projects: ProjectRow[], entities: EntityRow[]): Reading[
     bold: [`${nf.format(money)} ⃁`],
     src: 'تقاطع جدول المشاريع مع ملفات الجهات',
     to: `${ROUTES.entities}?docs=1${LIST}`,
-    toLabel: 'اعرض الجهات',
+    toLabel: 'اعرضها',
   }]
 }
 
@@ -954,7 +954,7 @@ function budgetReading(budget: HomeReadingInput['budget']): Reading {
     },
     src: 'المخصص من النظام العامل · الباقي محسوب من العيّنة التجريبية',
     to: ROUTES.budget,
-    toLabel: 'الميزانية',
+    toLabel: 'اعرضها',
   }
 }
 
@@ -1069,7 +1069,7 @@ export function readReports(yearId: string): Reading[] {
       danger: [String(missed)],
       src: 'التقارير الختامية · reports1_12',
       to: ROUTES.reportView('actual'),
-      toLabel: 'افتح المقارنة',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -1089,7 +1089,7 @@ export function readReports(yearId: string): Reading[] {
       danger: [pctText(emptyPct)],
       src: 'تقرير المعرفة · reports1_13',
       to: ROUTES.reportView('knowledge'),
-      toLabel: 'افتح القيود',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -1107,7 +1107,7 @@ export function readReports(yearId: string): Reading[] {
       bold: [byGoal[0]],
       src: 'مخصص الصرف · reports1_5',
       to: ROUTES.reportView('spend'),
-      toLabel: 'افتح التوزيع',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -1127,7 +1127,7 @@ export function readReports(yearId: string): Reading[] {
       danger: [String(late.length)],
       src: 'أداء الأقسام · reports1_15',
       to: ROUTES.reportView('stages'),
-      toLabel: 'افتح القائمة',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -1182,7 +1182,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       danger: [d],
       src: 'مدة المرحلة · آلية التصعيد 9.5',
       to: `${ROUTES.payments}?heat=stuck${LIST}`,
-      toLabel: 'اعرض المتعثر',
+      toLabel: 'اعرضها',
     })
   }
 
@@ -1235,7 +1235,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       bold: [pctText(share)],
       src: 'توزيع الطلبات على المراحل',
       to: `${ROUTES.payments}?state=${peak[0]}${LIST}`,
-      toLabel: 'افتح المرحلة',
+      toLabel: 'اعرضها',
     })
   }
 

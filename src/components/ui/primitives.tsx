@@ -130,7 +130,7 @@ export function CopyId({ children }: { children: string }) {
  * rendering the raw value next to it.
  *
  * 2 · **And `.mono` used to flip it.** That class carries `direction:ltr` (correct for code like
- * `prj-2026-00013`), so an Arabic date inside it visually flips. Meaning both of the "correct"
+ * `PRJ-2026-00013`), so an Arabic date inside it visually flips. Meaning both of the "correct"
  * places had a second bug in them.
  *
  * The component fixes both: it formats with `readDate` and isolates the date with `.date`
@@ -255,7 +255,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
  * Back button · **replaces the breadcrumb**.
  *
  * There used to be a `.crumb` above every screen: "Projects -> 2026 cycle -> project
- * prj-2026-20852." That gives three pieces of information the user already knows (they clicked to
+ * PRJ-2026-20852." That gives three pieces of information the user already knows (they clicked to
  * get there), takes up a line above every page, and repeats the page title right below it exactly.
  *
  * What the user actually needs from that line is one thing: **go back**. So it's now a single

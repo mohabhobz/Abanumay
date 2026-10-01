@@ -17,6 +17,10 @@ export interface ReadingAction {
   label: string
   kind?: 'btn-2'
   onClick?: () => void
+  /** Opens a short note field under the reading before it is recorded · its placeholder */
+  note?: string
+  /** What the reading says once the action is done · «أُرسل التذكير إلى الجهة» */
+  done?: string
 }
 
 export interface Reading {

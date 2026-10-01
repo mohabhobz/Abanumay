@@ -97,7 +97,7 @@ export default function ProjectPage() {
   const authority = fixtures.authority
   const { user, role } = useRole()
 
-  /* The display code is the one the list shows (`prj-YYYY-NNNNN`), so a number copied from the
+  /* The display code is the one the list shows (`PRJ-YYYY-NNNNN`), so a number copied from the
      list matches the project page everywhere. The raw id stays the URL key. */
   const code = projectCode(project.id, row?.year ?? '2026')
   const type = row?.type ?? 'مشروع عادي'

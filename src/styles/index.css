@@ -2429,6 +2429,10 @@ to{opacity:1;transform:none}
    against the source line above it · a control needs to be told
    apart from the sentence that explains it. */
 .qr-acts{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3);margin-top:var(--sp-4)}
+/* A done action is stated in place of its button; a note opens on its own line under the row. */
+.qr-done{display:inline-flex;align-items:center;gap:var(--sp-2);min-height:var(--h-md)}
+.qr-note{display:flex;align-items:center;gap:var(--sp-3);flex:1 1 100%}
+.qr-note>.fld{flex:1;min-width:0}
 @media (max-width:1180px){.fht{font-size:var(--fs-5)}
 .fhl{font-size:var(--fs-1)}
 }

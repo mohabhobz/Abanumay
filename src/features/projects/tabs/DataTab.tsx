@@ -10,7 +10,7 @@ import type { ChainLink } from '@/data/mock/chain'
 
 export interface DataTabProps {
   project: Project
-  /** Display code · the same `prj-YYYY-NNNNN` the projects list shows */
+  /** Display code · the same `PRJ-YYYY-NNNNN` the projects list shows */
   code: string
   /** Regular, external, or portfolio */
   type: ProjectType

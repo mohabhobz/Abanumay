@@ -116,7 +116,8 @@ export const isolate = (text: string): string =>
   text.replace(/\d[\d,.]*(?:\s?%)?/g, (m) => `\u2066${m}\u2069`)
 
 /**
- * Displayed project code: `prj-2026-00013`.
+ * Displayed project code: `PRJ-2026-00013`. Upper case like every other code in the system
+ * (PAR-, PF-, AG-, CL-, SR-), so codes read as one family.
  *
  * The current system displays a bare sequential number (`20940`) that
  * says nothing about the year or type, and once copied into an email
@@ -129,7 +130,7 @@ export const isolate = (text: string): string =>
  * and require translating in both directions with the backend for no benefit.
  */
 export const projectCode = (id: string, year?: string): string =>
-  `prj-${(year ?? '').slice(0, 4) || '____'}-${id.padStart(5, '0')}`
+  `PRJ-${(year ?? '').slice(0, 4) || '____'}-${id.padStart(5, '0')}`
 
 /**
  * Displayed entity (partner) code: `PAR-2019-00712`.
@@ -142,7 +143,7 @@ export const entityCode = (id: string, registeredAt?: string): string =>
 
 /** Accepts the full code or any part of it in search. */
 export const matchesCode =(needle: string, id: string, year?: string): boolean =>
-  projectCode(id, year).includes(needle.trim().toLowerCase())
+  projectCode(id, year).includes(needle.trim().toUpperCase())
 
 /** Cost per beneficiary — the metric used to compare projects. */
 export const costPerBeneficiary = (amount: number, beneficiaries: number): number =>
