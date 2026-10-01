@@ -8391,8 +8391,8 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
    ═══════════════════════════════════════════════════════════ */
 :root{
   --pt-gap:calc(var(--mo-base) * 1.5);     /* 120: the empty beat before the first wave */
-  --pt-w:calc(var(--mo-base) * .7);        /* 56: waves overlap more, so the page flows in */
-  --pt-d:calc(var(--mo-base) * 7);         /* 560: one block, long and soft */
+  --pt-w:calc(var(--mo-base) * .9);        /* 72: between waves */
+  --pt-d:calc(var(--mo-base) * 5);         /* 400: one block (client: the 560 pass felt slow) */
   --pt-blur:var(--sp-4);                   /* 12px → 0 */
   --pt-scale:.985;                         /* a settle, barely felt */
   --pt-ease:cubic-bezier(.33,1,.68,1);     /* ease-out cubic: no snap at the start, a long tail */
