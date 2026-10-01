@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { LogEvent } from '@/data/mock/log'
+import type { FollowUp } from '@/types/domain'
 
 /**
  * Manual project activities · field visits, meetings, workshops, calls.
@@ -23,6 +24,9 @@ export const ACTIVITY_SOURCES = [
   'ملاحظة المشرف المباشرة',
   'أخرى',
 ] as const
+
+/** Follow-up types that are really activities · they live in the activities tab and log category. */
+export const ACTIVITY_FOLLOW_TYPES: readonly string[] = ['زيارة ميدانية', 'التواصل مع الشريك']
 
 export interface Activity {
   id: string
@@ -120,3 +124,30 @@ export const activityEvent = (a: Activity): LogEvent => ({
 /** Log plus manual activities, newest first · a stable sort keeps same-day order. */
 export const withActivities = (log: LogEvent[], list: Activity[]): LogEvent[] =>
   [...log, ...list.map(activityEvent)].sort((x, y) => y.at.localeCompare(x.at))
+
+/**
+ * Field visits and partner calls that the current system stored as follow-ups. They are read as
+ * activities (tab and log category), so a field visit never shows under «المتابعات».
+ */
+export const activitiesFromFollowUps = (
+  projectId: string,
+  list: FollowUp[],
+): Activity[] =>
+  list
+    .filter((f) => ACTIVITY_FOLLOW_TYPES.includes(f.type))
+    .map((f, i) => {
+      const visit = f.type === 'زيارة ميدانية'
+      return {
+        id: `la-${projectId}-${i}`,
+        projectId,
+        /* The note itself is the title, and the type is the chip beside it, as for any event. */
+        title: f.body,
+        at: f.at,
+        type: visit ? 'زيارة ميدانية' : 'اتصال',
+        description: '',
+        source: visit ? 'تقرير زيارة ميدانية' : 'اتصال هاتفي',
+        files: f.attachment ? [f.attachment] : [],
+        by: f.by,
+        time: '13:26',
+      }
+    })

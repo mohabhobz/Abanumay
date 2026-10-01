@@ -5,6 +5,7 @@ import { DocFile, UploadButton } from '@/components/docs'
 import { isolate } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
 import type { FollowUp, FollowUpType } from '@/types/domain'
+import { ACTIVITY_FOLLOW_TYPES } from '../activities'
 
 export interface FollowUpsTabProps {
   projectId: string
@@ -18,7 +19,7 @@ export interface FollowUpsTabProps {
 /* Field visits and calls with the partner are activities: they are recorded once, from the
    activities tab, with their date, source and attachments. Offering them here too gave the same
    event two entry points and two shapes in the log. */
-const IN_ACTIVITIES: FollowUpType[] = ['زيارة ميدانية', 'التواصل مع الشريك']
+const IN_ACTIVITIES = ACTIVITY_FOLLOW_TYPES
 
 const today = () => new Date().toISOString().slice(0, 10)
 

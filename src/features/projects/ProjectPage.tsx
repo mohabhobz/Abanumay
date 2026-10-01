@@ -19,7 +19,7 @@ import {
   ActivitiesTab, AgreementTab, CloseTab, CorrespondenceTab, DataTab, EntityTab, FollowUpsTab,
   HistoryTab, LogTab, PaymentsTab, PlanTab,
 } from './tabs'
-import { useActivities, withActivities } from './activities'
+import { ACTIVITY_FOLLOW_TYPES, activitiesFromFollowUps, useActivities, withActivities } from './activities'
 import { useFollowUps } from './followups'
 import { closeOfProject, openClose } from '@/data/mock/closing'
 import { AnalysisCard } from '@/components/assistant'
@@ -162,8 +162,23 @@ export default function ProjectPage() {
   /* Follow-ups added from the tab join the project's own, so the tab and the log read one list. */
   const followUps = useFollowUps(project.id)
   const detail = useMemo(
-    () => ({ ...baseDetail, followUps: [...followUps.list, ...baseDetail.followUps] }),
+    () => ({
+      ...baseDetail,
+      followUps: [
+        ...followUps.list,
+        ...baseDetail.followUps.filter((f) => !ACTIVITY_FOLLOW_TYPES.includes(f.type)),
+      ],
+    }),
     [baseDetail, followUps.list],
+  )
+  /* Field visits recorded as follow-ups in the current system are activities here: they show in
+     the activities tab and the log's activity category, never under «المتابعات». */
+  const activityList = useMemo(
+    () =>
+      [...activities.list, ...activitiesFromFollowUps(project.id, baseDetail.followUps)].sort(
+        (a, b) => b.at.localeCompare(a.at) || b.time.localeCompare(a.time),
+      ),
+    [activities.list, project.id, baseDetail.followUps],
   )
 
   /* Note: eligibility for an agreement is computed here, not in the tab. The rule (rule 1) states
@@ -193,7 +208,7 @@ export default function ProjectPage() {
   )
 
   /* Manual activities join the same timeline, so the log stays the one place to read history. */
-  const fullLog = useMemo(() => withActivities(log, activities.list), [log, activities.list])
+  const fullLog = useMemo(() => withActivities(log, activityList), [log, activityList])
 
   const analysis = useMemo(
     () => [...(row ? readJourney(row, journeys.get(row.id)) : []), ...readInsights(fixtures.insights)],
@@ -341,7 +356,7 @@ export default function ProjectPage() {
                 <ActivitiesTab
                   projectId={project.id}
                   me={user.name}
-                  list={activities.list}
+                  list={activityList}
                   onAdd={activities.add}
                 />
               )}
