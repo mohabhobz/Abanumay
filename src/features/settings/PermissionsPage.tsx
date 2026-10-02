@@ -114,31 +114,31 @@ function UsersTab({ st, setSt, sel, onSel }: {
 
   return (
     <>
-      <div className="pm-bar">
-        <SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المستخدم" />
-        <Select
-          icon={icons.users}
-          value={role}
-          all="كل الأدوار"
-          options={st.roles.map((r) => ({ value: r.key, label: r.label }))}
-          onChange={setRole}
-        />
-        <Select
-          icon={icons.filter}
-          value={status}
-          all="كل الحالات"
-          options={[
-            { value: 'on', label: 'مفعّل' },
-            { value: 'off', label: 'موقوف' },
-            { value: 'custom', label: 'مخصّص عن دوره' },
-          ]}
-          onChange={setStatus}
-        />
-      </div>
-
       <div className="pm-split">
         <Glass className="pm-side">
           <Head title="المستخدمون" meta={<><Num>{rows.length}</Num> من <Num>{st.users.length}</Num></>} />
+          <div className="pm-bar">
+            <SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المستخدم" />
+            <Select
+              icon={icons.users}
+              value={role}
+              all="كل الأدوار"
+              options={st.roles.map((r) => ({ value: r.key, label: r.label }))}
+              onChange={setRole}
+            />
+            <Select
+              icon={icons.filter}
+              value={status}
+              all="كل الحالات"
+              options={[
+                { value: 'on', label: 'مفعّل' },
+                { value: 'off', label: 'موقوف' },
+                { value: 'custom', label: 'مخصّص عن دوره' },
+              ]}
+              onChange={setStatus}
+            />
+          </div>
+
           {rows.length === 0 ? (
             <Empty title="لا يطابق البحث أحدًا." />
           ) : (

@@ -1,11 +1,13 @@
 /* Permissions and roles · the system admin's screen (src/features/settings/PermissionsPage.tsx) */
 
-.pm-bar{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center}
-.pm-bar>.srch{flex:1 1 16rem}
+.pm-bar{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center;margin-top:var(--sp-4)}
+/* Inside the list card · search takes the row, the two filters share the next one */
+.pm-bar>.srch{flex:1 1 100%}
+.pm-bar>.fsel{flex:1 1 0;min-width:0}
 
-/* List beside the editor · the list stays in view while the matrix scrolls */
+/* List beside the editor · both cards start on the same line (no sticky: it offset the list
+   against the page's scroll padding) */
 .pm-split{display:grid;grid-template-columns:minmax(15rem,20rem) minmax(0,1fr);gap:var(--gap);align-items:start}
-.pm-side{position:sticky;top:var(--sp-6)}
 .pm-list{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-1)}
 .pm-item{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-1) var(--sp-3);width:100%;min-height:var(--h-md);
   padding:var(--sp-3) var(--sp-4);border-radius:var(--r1);background:none;color:var(--t1);text-align:start;cursor:pointer;
@@ -48,14 +50,12 @@
 
 @media (max-width:960px){
   .pm-split{grid-template-columns:1fr}
-  .pm-side{position:static}
   /* The list becomes a horizontal strip of people, so the editor stays one screen down, not ten */
   .pm-list{flex-direction:row;overflow-x:auto;padding-bottom:var(--sp-2)}
   .pm-list>li{flex:none}
   .pm-item{width:auto}
   .pm-item-m{display:none}
   .pmx{min-width:640px}
-  .pm-bar>.fsel{flex:1 1 10rem}
 }
 
 /* Read-only marks · the holder's own view in account settings */
