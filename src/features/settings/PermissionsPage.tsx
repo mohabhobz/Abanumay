@@ -4,6 +4,7 @@ import {
   DateText, Empty, FieldSelect, Glass, Head, Icon, icons, Num, Person, SearchBox, Select, Switch, Tabs, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
+import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { ROUTES } from '@/app/routes'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { assistFor } from '@/data/mock/assistant'
@@ -53,10 +54,12 @@ export default function PermissionsPage() {
     { slug: 'log', label: 'سجل التغييرات', count: st.log.length },
   ]
   const tab = TABS.some((t) => t.slug === v.tab) ? (v.tab as string) : TABS[0].slug
+  const dock = useDockSlot()
 
   return (
     <AppLayout assistantContext={assistFor.page('الصلاحيات والأدوار')}>
-      <div className="viewstack">
+      <DockSlotProvider value={dock.value}>
+      <div className={`viewstack${dock.on ? ' hasdock' : ''}`}>
         <div className="screen col">
           <header>
             <div>
@@ -89,6 +92,9 @@ export default function PermissionsPage() {
           {tab === 'log' && <LogTab log={st.log} />}
         </div>
       </div>
+      {/* The unsaved-changes dock renders here, where the projects bulk bar sits */}
+      <div className="dockslot" ref={dock.setEl} />
+      </DockSlotProvider>
     </AppLayout>
   )
 }
@@ -247,14 +253,12 @@ function UserEditor({ user, roles, onSave }: {
         </span>
         <span className="pc-sp" />
         {changes.length > 0 && (
-          <>
-            <span className="sub"><Num>{changes.length}</Num> تغيير غير محفوظ</span>
-            <button type="button" className="btn btn-2" onClick={() => setD(user)}>تراجع</button>
-            <button type="button" className="btn btn-p" onClick={() => onSave(d, changes)}>
-              <Icon name={icons.check} size="sm" />
-              احفظ
-            </button>
-          </>
+          <SaveBar
+            count={changes.length}
+            sentence={<>{changes.length === 1 ? 'تغيير غير محفوظ' : 'تغييرات غير محفوظة'} على {d.name}<span className="decsep" /><span className="sub">{changes[changes.length - 1]}</span></>}
+            onSave={() => onSave(d, changes)}
+            onDiscard={() => setD(user)}
+          />
         )}
       </div>
 
@@ -411,14 +415,12 @@ function RoleEditor({ role, members, onSave }: {
         </div>
         <span className="pc-sp" />
         {changes.length > 0 && (
-          <>
-            <span className="sub"><Num>{changes.length}</Num> تغيير غير محفوظ</span>
-            <button type="button" className="btn btn-2" onClick={() => setGrants(role.grants)}>تراجع</button>
-            <button type="button" className="btn btn-p" onClick={() => onSave(draft, changes)}>
-              <Icon name={icons.check} size="sm" />
-              احفظ
-            </button>
-          </>
+          <SaveBar
+            count={changes.length}
+            sentence={<>{changes.length === 1 ? 'تغيير غير محفوظ' : 'تغييرات غير محفوظة'} على دور {role.label}<span className="decsep" /><span className="sub">يطبَّق على <Num>{members.length}</Num> مستخدم</span></>}
+            onSave={() => onSave(draft, changes)}
+            onDiscard={() => setGrants(role.grants)}
+          />
         )}
       </div>
 

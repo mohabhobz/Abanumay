@@ -5,6 +5,7 @@ import {
 } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
+import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { ROUTES } from '@/app/routes'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useRole } from '@/hooks/useRole'
@@ -49,10 +50,12 @@ export default function AccountPage() {
   const { values: v, set } = useQueryParams<Params>(KEYS)
   const tab = TABS.some((t) => t.slug === v.tab) ? (v.tab as string) : TABS[0].slug
   const { user } = useRole()
+  const dock = useDockSlot()
 
   return (
     <AppLayout assistantContext={assistFor.page('إعدادات الحساب')}>
-      <div className="viewstack">
+      <DockSlotProvider value={dock.value}>
+      <div className={`viewstack${dock.on ? ' hasdock' : ''}`}>
         <div className="screen col">
           <header>
             <div>
@@ -72,6 +75,8 @@ export default function AccountPage() {
           {tab === 'access' && <AccessTab name={user.name} />}
         </div>
       </div>
+      <div className="dockslot" ref={dock.setEl} />
+      </DockSlotProvider>
     </AppLayout>
   )
 }
@@ -105,7 +110,8 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
   useEffect(() => () => { if (sig) URL.revokeObjectURL(sig) }, [sig])
 
   const mobileOk = MOBILE.test(d.mobile)
-  const dirty = JSON.stringify(d) !== JSON.stringify(saved) || photo !== photoSaved
+  const changed = (['mobile', 'ext', 'signature'] as const).filter((k) => d[k] !== saved[k]).length + (photo !== photoSaved ? 1 : 0)
+  const dirty = changed > 0
   const save = () => {
     if (!mobileOk) return
     setSaved(d)
@@ -119,16 +125,17 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
         <Glass>
           <Head
             title="بياناتك"
-            meta={dirty ? (
-              <span className="acc-act">
-                <button type="button" className="btn btn-2" onClick={() => { setD(saved); setPhoto(photoSaved) }}>تراجع</button>
-                <button type="button" className="btn btn-p" onClick={save} disabled={!mobileOk}>
-                  <Icon name={icons.check} size="sm" />
-                  احفظ
-                </button>
-              </span>
-            ) : done ? <span className="sub">حُفظت</span> : undefined}
+            meta={done && !dirty ? <span className="sub">حُفظت</span> : undefined}
           />
+          {dirty && (
+            <SaveBar
+              count={changed}
+              sentence={<>{changed === 1 ? 'تغيير غير محفوظ' : 'تغييرات غير محفوظة'} في بياناتك{!mobileOk && <><span className="decsep" /><span className="sub">رقم الجوال غير مكتمل</span></>}</>}
+              onSave={save}
+              onDiscard={() => { setD(saved); setPhoto(photoSaved) }}
+              disabled={!mobileOk}
+            />
+          )}
 
           <div className="acc-photo">
             {photo

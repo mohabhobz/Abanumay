@@ -10,6 +10,8 @@ export interface BulkBarProps {
   /** Buttons — role actions plus any extra control. */
   children?: ReactNode
   onClear: () => void
+  /** What ✕ does · «إلغاء التحديد» for a selection, «تراجع» for a draft */
+  clearLabel?: string
 }
 
 /**
@@ -23,7 +25,7 @@ export interface BulkBarProps {
  * The bar floats over the content, so the page beneath it needs extra space — a dedicated class on
  * the view container provides that.
  */
-export function BulkBar({ count, sentence, children, onClear }: BulkBarProps) {
+export function BulkBar({ count, sentence, children, onClear, clearLabel = 'إلغاء التحديد' }: BulkBarProps) {
   const bar = useRef<HTMLDivElement>(null)
   useProximity(bar)
 
@@ -41,8 +43,8 @@ export function BulkBar({ count, sentence, children, onClear }: BulkBarProps) {
             type="button"
             className="bulkx"
             onClick={onClear}
-            aria-label="إلغاء التحديد"
-            title="إلغاء التحديد"
+            aria-label={clearLabel}
+            title={clearLabel}
           >
             <Icon name={icons.close} size="sm" />
           </button>
