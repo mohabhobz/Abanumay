@@ -1,3 +1,4 @@
+import { reducedMotion } from '@/lib/prefs'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Money, Num, Person, Select, Tag } from '@/components/ui'
@@ -75,7 +76,7 @@ export default function BudgetPage() {
     if (!landed) return
     const el = tree.current
     if (!el) return
-    const soft = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const soft = !reducedMotion()
     el.classList.add('land')
     /* Scroll after render: the tree's row count changes with the jump, and scrolling before rows
        are measured would target an old height. */

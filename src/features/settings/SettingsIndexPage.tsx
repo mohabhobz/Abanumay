@@ -50,18 +50,17 @@ export default function SettingsIndexPage() {
 
           {SETTING_MODULES.map((m) => (
             <Glass key={m.key}>
+              {/* Each card opens its own group (the module page on that tab). The header keeps a
+                  quiet link to the whole module, instead of a settings button per module that
+                  opened the same combined page from every card. */}
               <Head
                 title={m.label}
-                meta={
-                  <Link className="btn btn-2 btn-sm" to={m.to}>
-                    <Icon name={icons.gear} size="sm" />
-                    افتح الإعدادات
-                  </Link>
-                }
+                meta={<Link className="lnk" to={m.to}>كل إعدادات {m.label}</Link>}
               />
               <ul className="cfggrid">
                 {m.groups.map((g) => (
                   <li key={g.key}>
+                    <Link className="cfgg-a" to={g.tab ? `${m.to}?tab=${g.tab}` : m.to}>
                     <span className="cfgg-h">
                       <b>{g.label}</b>
                       <span className="pc-sp" />
@@ -76,7 +75,9 @@ export default function SettingsIndexPage() {
                       {/* "Value" isn't decoration — a bare number in the corner of a card makes
                           the reader ask "four of what?" */}
                       <span className="sub"><b className="num"><Num>{g.count}</Num></b> قيمة</span>
+                      <Icon name={icons.chevron} size="sm" className="cfgg-go" />
                     </span>
+                    </Link>
                   </li>
                 ))}
               </ul>

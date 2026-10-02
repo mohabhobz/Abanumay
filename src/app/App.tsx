@@ -38,6 +38,7 @@ import RequestForm from '@/features/payments/RequestForm'
 import OrderPage from '@/features/payments/OrderPage'
 import LatePage from '@/features/payments/LatePage'
 import SettingsIndexPage from '@/features/settings/SettingsIndexPage'
+import PreferencesPage from '@/features/account/PreferencesPage'
 import EntitySettingsPage from '@/features/entities/EntitySettingsPage'
 import ProjectSettingsPage from '@/features/projects/ProjectSettingsPage'
 import ProjectNewPage from '@/features/projects/ProjectNewPage'
@@ -181,12 +182,7 @@ export default function App() {
         />
         <Route
           path={ROUTES.preferences}
-          element={
-            <ModulePlaceholder
-              title="التفضيلات والإشعارات"
-              scope="قنوات الإشعار وتكرارها، واللغة والمظهر، وما يظهر في الرئيسية."
-            />
-          }
+          element={<PreferencesPage />}
         />
 
         </Route>

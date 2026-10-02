@@ -1,3 +1,4 @@
+import { reducedMotion } from '@/lib/prefs'
 import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Glass, Money } from '@/components/ui'
@@ -27,7 +28,7 @@ const LEAF_TOP = 3.5
 const LEAF_SPAN = LEAF_BOTTOM - LEAF_TOP
 
 const reduced = () =>
-  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  reducedMotion()
 
 /**
  * Counts from 0 to `to` over the same duration as the leaf fill. It starts when the fill's CSS

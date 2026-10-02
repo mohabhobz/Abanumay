@@ -1,3 +1,4 @@
+import { reducedMotion } from '@/lib/prefs'
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
@@ -24,7 +25,7 @@ export function useHashScroll() {
            when the page keeps growing under it (entrance animations, charts sizing themselves),
            so it stopped at the top; a direct jump always lands. */
         const smooth =
-          !matchMedia('(prefers-reduced-motion: reduce)').matches &&
+          !reducedMotion() &&
           !matchMedia('(max-width: 860px)').matches
         el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
         /* Once the layout has settled, correct the position if it drifted off the target. */

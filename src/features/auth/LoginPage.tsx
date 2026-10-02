@@ -1,3 +1,4 @@
+import { readDisplay } from '@/lib/prefs'
 import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
@@ -63,7 +64,7 @@ export default function LoginPage() {
     setBusy(true)
     setTimeout(() => {
       signIn(user.trim())
-      navigate(from ?? AFTER_LOGIN, { replace: true })
+      navigate(from ?? (readDisplay().landing || AFTER_LOGIN), { replace: true })
     }, 700)
   }
 

@@ -1,0 +1,66 @@
+/* Preferences and notifications · personal settings (src/features/account/PreferencesPage.tsx) */
+
+/* ── Switch row ── the whole row is the target (44px), the track sits at the end */
+.swrow{display:flex;align-items:center;gap:var(--sp-4);width:100%;min-height:var(--h-md);
+  padding:var(--sp-3) 0;text-align:start;color:var(--t1);cursor:pointer;background:none}
+.swrow:disabled{cursor:not-allowed}
+.swrow-t{display:flex;flex-direction:column;gap:var(--sp-1);flex:1;min-width:0}
+.swrow-l{font-size:var(--fs-3);font-weight:500}
+.swrow-n{font-size:var(--fs-1)}
+.swt{position:relative;flex:none;width:var(--sp-9);height:var(--sp-7);border-radius:var(--rp);
+  background:var(--ctl-bg);box-shadow:inset 0 0 0 1px var(--ctl-line);
+  transition:background-color var(--mo-2) var(--ease-std),box-shadow var(--mo-2) var(--ease-std)}
+.swt>i{position:absolute;top:var(--sp-2);inset-inline-start:var(--sp-2);width:var(--sp-5);height:var(--sp-5);
+  border-radius:var(--r-dot);background:var(--t3);
+  transition:inset-inline-start var(--mo-2) var(--ease-out),background-color var(--mo-2) var(--ease-std)}
+.swrow.on .swt{background:var(--solid);box-shadow:none}
+.swrow.on .swt>i{inset-inline-start:calc(100% - var(--sp-5) - var(--sp-2));background:var(--on-solid)}
+.swrow:disabled .swt{opacity:.55}
+.swrow:hover:not(:disabled) .swt{box-shadow:inset 0 0 0 1px var(--ctl-line-h)}
+.pf-sw{display:flex;flex-direction:column}
+.pf-sw>.swrow+.swrow{box-shadow:inset 0 1px 0 var(--edge-1)}
+
+/* ── Notification matrix ── */
+.nfm th,.nfm td{vertical-align:middle}
+.nfm .nfm-c{width:7.5rem;text-align:center}
+.nfm .nfm-f{width:11rem}
+.nfm input[type=checkbox]{width:18px;height:18px;accent-color:var(--solid);cursor:pointer}
+.nfm input[type=checkbox]:disabled{cursor:not-allowed}
+.nfm-lock{color:var(--t3);margin-inline-start:var(--sp-2);vertical-align:middle}
+.nfm-g th{padding-top:var(--sp-5)}
+.nfm-g th b{font-family:var(--fd);font-weight:600;color:var(--t1);margin-inline-end:var(--sp-3)}
+.nfm-g th .sub{font-weight:400}
+.nfm-e{display:inline-flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
+
+/* ── Rows and blocks ── */
+.pf-row{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3);margin-top:var(--sp-3)}
+.pf-row>.lb{color:var(--t2);font-size:var(--fs-2)}
+.pf-deleg{display:flex;gap:var(--sp-3);align-items:flex-start;padding:var(--pad-in);border-radius:var(--r1);
+  box-shadow:inset 0 0 0 1px var(--edge-i);line-height:var(--lh-text)}
+.pf-deleg-n{display:block;margin-top:var(--sp-2)}
+.pf-rules{margin:0;padding-inline-start:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-3);
+  line-height:var(--lh-text);color:var(--t2)}
+.pf-sess{list-style:none;margin:0;padding:0}
+.pf-sess li{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-4) 0}
+.pf-sess li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+
+/* ── Text size picker · each option shows its own size ── */
+.pf-sizes button{flex-direction:column;gap:var(--sp-1);padding-block:var(--sp-3)}
+.pf-a{font-family:var(--fd);font-weight:600;line-height:var(--lh-flat);color:var(--t1)}
+.pf-a100{font-size:var(--fs-4)}
+.pf-a112{font-size:var(--fs-5)}
+.pf-a125{font-size:var(--fs-6)}
+.pf-a150{font-size:var(--fs-7)}
+.pf-prev{align-self:start;position:sticky;top:var(--sp-6)}
+.pf-kpi{max-width:none}
+
+@media (max-width:860px){
+  .pf-prev{position:static}
+  /* The matrix keeps its columns and scrolls sideways inside its card, instead of squeezing the
+     event names into a word per line. */
+  .nfm{min-width:600px}
+  .nfm .nfm-c{width:5.5rem}
+}
+/* Event names wrap instead of being cut (the table's default is one line with an ellipsis). */
+.tbl.nfm td:first-child,.tbl.nfm th[scope=rowgroup]{white-space:normal;overflow:visible;text-overflow:clip}
+.tbl.nfm td:first-child{min-width:12rem}

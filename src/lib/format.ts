@@ -22,6 +22,11 @@ export const df = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
  * is useful in the log ("Sunday") but becomes noise in a data row — the
  * date here is a fact, not an event.
  */
+/** Umm al-Qura Hijri, same shape as `dfShort` · used when the user picks the Hijri calendar. */
+export const dfHijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn', {
+  day: 'numeric', month: 'long', year: 'numeric',
+})
+
 export const dfShort = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', {
   day: 'numeric', month: 'long', year: 'numeric',
 })
@@ -59,7 +64,7 @@ export const nowStamp = (): string => {
 }
 
 /** Accepts `2026-04-12` or `12/4/2026` and returns a readable date. */
-export const readDate = (value: string): string => {
+export const readDate = (value: string, calendar?: string | null): string => {
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(value)
   const dt = iso
     ? new Date(value)
@@ -67,7 +72,12 @@ export const readDate = (value: string): string => {
         const [dd, mm, yy] = value.split('/').map(Number)
         return new Date(yy, mm - 1, dd)
       })()
-  return Number.isNaN(dt.getTime()) ? value : dfShort.format(dt)
+  if (Number.isNaN(dt.getTime())) return value
+  /* Calendar preference (src/lib/prefs.ts): Gregorian by default, Umm al-Qura Hijri, or both. */
+  const cal = calendar !== undefined ? calendar : typeof document !== 'undefined' ? document.documentElement.getAttribute('data-cal') : null
+  if (cal === 'hijri') return dfHijri.format(dt)
+  if (cal === 'both') return `${dfShort.format(dt)} · ${dfHijri.format(dt)}`
+  return dfShort.format(dt)
 }
 
 /** Date plus a number of days = the resulting date. */

@@ -5,6 +5,7 @@
 @import './parts/gates.css';
 @import './parts/register.css';
 @import './parts/reports.css';
+@import './parts/prefs.css';
 
 /* Official Saudi Riyal symbol
    U+20C1, officially issued and added to Unicode 17.
@@ -107,8 +108,11 @@
      transparent, so its effective background shifts with the card's position
      on the page, and the same text can pass on one screen and fail on
      another. Same lesson as `--mute-ink`. `#476764` gives 4.70 on the worst
-     measured background, keeping a real difference from `--t2`. */
-  --t1:#0C2527; --t2:#3E6664; --t3:#476764;
+     measured background, keeping a real difference from `--t2`.
+     October: users reported secondary text as washed out on their screens. Both steps went
+     darker: `--t2` #3E6664 → #2E5250 (6.64 on the most saturated background, was 4.92) and
+     `--t3` #476764 → #3A5856 (5.98, was 4.78), and `--t3` stays a step lighter than `--t2`. */
+  --t1:#0C2527; --t2:#2E5250; --t3:#3A5856;
   /* Status colors from the client palette: success #3DC13C (Success 700),
      danger #DC3545, warning #FFC107, danger identical in both themes. Tag
      text uses a saturated shade of the same color (`--*-tag`, not a washed-out
@@ -4048,7 +4052,7 @@ to{opacity:1;transform:none}
   padding:var(--sp-5) var(--sp-6);color:inherit;transition:box-shadow var(--mo-3) var(--ease-std)}
 .kpi:hover{color:inherit;box-shadow:inset 0 0 0 1px var(--edge-i)}
 .kpi-h{grid-area:h;align-self:end;display:flex;align-items:center;gap:var(--sp-3);min-width:0}
-.kpi-k{font-size:var(--fs-3);color:var(--t2);font-family:var(--fd);font-weight:500;
+.kpi-k{font-size:var(--fs-3);color:var(--t1);font-family:var(--fd);font-weight:500;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi-go{color:var(--t3);opacity:0;transform:translateX(3px);
   transition:opacity var(--mo-2) var(--ease-std),transform var(--mo-2) var(--ease-std)}
@@ -4058,6 +4062,7 @@ to{opacity:1;transform:none}
 .kpi-v{grid-area:v;min-width:2ch;text-align:end;font-family:var(--fd);font-weight:700;
   line-height:var(--lh-flat);letter-spacing:-.02em;direction:rtl;font-size:var(--fd-5);color:var(--t1)}
 .kpi-n{grid-area:n;align-self:start;font-size:var(--fs-2);color:var(--t2)}
+/* The card's name is primary ink and its note secondary: two steps, so the eye reads the label first. */
 /* Dashboard grid. */
 .dgrid{display:grid;gap:var(--gap);align-items:start}
 .g21{grid-template-columns:1.7fr 1fr}
@@ -7414,9 +7419,17 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    lesson repeated twice in one day: **inside a glass card, any second raised
    background eats into the contrast margin of everything inside it** — so
    separation is stated with a ring instead. */
-.cfggrid li{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0;
-  padding:var(--pad-in);border-radius:var(--r1);
-  box-shadow:inset 0 0 0 1px var(--edge-1)}
+.cfggrid li{display:flex;min-width:0}
+/* Each card is a link to its own group (October: the cards used to be inert and every module had a
+   single button opening the combined page). Hover takes the quiet control fill, and the sideways
+   chevron says "opens a page". */
+.cfgg-a{display:flex;flex-direction:column;gap:var(--sp-2);flex:1;min-width:0;
+  padding:var(--pad-in);border-radius:var(--r1);color:inherit;text-decoration:none;
+  box-shadow:inset 0 0 0 1px var(--edge-1);
+  transition:background-color var(--mo-2) var(--ease-std),box-shadow var(--mo-2) var(--ease-std)}
+.cfgg-a:hover{background:var(--ctl-quiet-h);box-shadow:inset 0 0 0 1px var(--ctl-line-h)}
+.cfgg-a:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.cfgg-go{color:var(--t3);flex:none}
 .cfgg-h{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
 .cfgg-h>b{font-family:var(--fd);font-weight:600;color:var(--t1);min-width:0}
 .cfgg-w{font-size:var(--fs-1);line-height:var(--lh-1)}
@@ -8491,3 +8504,64 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
   .bmask>.modal{animation-name:mo-fade;animation-delay:0ms}
   :root .screen.pt .kpi-v,:root .viewstack>.screen .tblcard tbody>tr{animation:none}
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Accessibility preferences · set per user in «التفضيلات ← سهولة الوصول»
+
+   Each choice is an attribute on <html> (src/lib/prefs.ts), so the whole system follows it, inputs
+   and menus included, with no component involved. References: WCAG 2.2 1.4.4 (resize text),
+   1.4.11 (non-text contrast), 1.4.12 (text spacing), 2.3.3 (animation from interactions),
+   2.4.7 / 2.4.13 (focus visible / appearance), and the DGA web-accessibility guideline for
+   government platforms in the Kingdom, which follows WCAG.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Text size · every type token is rem-based, so the root size scales all of it. The control line
+   is pixels (part of the 44px control height), so it grows with the text and the vertical padding
+   gives the difference back: controls stay 44px and nothing clips. */
+:root[data-text="112"]{font-size:112.5%;--lh-md:22px;--pb-md:11px;--lh-xs:18px}
+:root[data-text="125"]{font-size:125%;--lh-md:24px;--pb-md:10px;--lh-xs:20px}
+:root[data-text="150"]{font-size:150%;--lh-md:28px;--pb-md:8px;--lh-xs:22px;--h-md:44px}
+
+/* Bold text · the body steps up a weight, and a hairline stroke thickens every glyph whatever
+   weight it was set in (the way the OS "bold text" setting reads), so headings and labels written
+   with their own weight follow too. */
+:root[data-bold] body{font-weight:500;-webkit-text-stroke:.25px currentColor}
+:root[data-bold] :is(b,strong,h1,h2,h3,th,.btn,.tab.on,.kpi-v){font-weight:700}
+
+/* High contrast · secondary and tertiary text move next to the primary ink, borders on cards and
+   controls reach 3:1 (the values measured for `--ctl-edge` in CLAUDE.md §4), and glass reads more
+   solid so text never sits on a faint surface. */
+:root{
+  --hc-t2:#163536; --hc-t3:#1E3E3D; --hc-t2-g:#0F2D2E; --hc-t3-g:#163536;
+  --hcd-t2:#E3E9E8; --hcd-t3:#D4DCDA; --hcd-t2-g:#E9EEED; --hcd-t3-g:#DCE3E1;
+}
+:root[data-contrast]{
+  --t2:var(--hc-t2); --t3:var(--hc-t3); --t2-g:var(--hc-t2-g); --t3-g:var(--hc-t3-g);
+  --edge-hair:.42; --ctl-edge:.58;
+}
+:root[data-theme="dark"][data-contrast]{
+  --t2:var(--hcd-t2); --t3:var(--hcd-t3); --t2-g:var(--hcd-t2-g); --t3-g:var(--hcd-t3-g);
+  --edge-hair:.34; --ctl-edge:.40; --wM:.14;
+}
+:root[data-contrast] .sub,:root[data-contrast] .meta{opacity:1}
+
+/* Reduce motion · chosen here, it holds even when the device doesn't ask for it. */
+:root[data-motion="reduce"]{--mo-k:0}
+:root[data-motion="reduce"] *,:root[data-motion="reduce"] *::before,:root[data-motion="reduce"] *::after{
+  animation-duration:1ms !important;animation-delay:0ms !important;animation-iteration-count:1 !important;
+  transition-duration:1ms !important;transition-delay:0ms !important;scroll-behavior:auto !important}
+
+/* Underlined links · links stop depending on color alone (WCAG 1.4.1). */
+:root[data-links] :is(.lnk,.tlink,.prose a,p a,.cnote a){text-decoration:underline;text-underline-offset:.22em;text-decoration-thickness:1px}
+
+/* Strong focus · a thick ring on every focusable element, fields included (they normally show no
+   ring, see «Fields: no ring»). */
+:root[data-focus] :where(button,a,[role="tab"],[role="option"],summary,[tabindex]):focus-visible{
+  outline:3px solid var(--teal) !important;outline-offset:2px}
+:root[data-focus] :is(.fld,.fldsel-b,.srch):focus-within{outline:3px solid var(--teal);outline-offset:2px}
+
+/* Text spacing (WCAG 1.4.12) · wider words and lines, more room between paragraphs. Arabic gets no
+   letter spacing: it pulls joined letters apart. */
+:root[data-spacing] body{word-spacing:.16em}
+:root[data-spacing] :is(p,.prose,.sub,li,.qr-tx,.lgbody){line-height:var(--lh-long)}
+:root[data-spacing] p+p{margin-top:var(--sp-5)}

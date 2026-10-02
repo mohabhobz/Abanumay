@@ -1,3 +1,4 @@
+import { reducedMotion } from '@/lib/prefs'
 import { useEffect, useState } from 'react'
 
 const TICK_MS = 16
@@ -29,7 +30,7 @@ export interface TypedBlocksState {
  */
 export function useTypedBlocks(texts: string[], active: boolean): TypedBlocksState {
   const reduced =
-    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion:reduce)').matches
+    reducedMotion()
 
   const [block, setBlock] = useState(reduced ? texts.length : 0)
   const [chars, setChars] = useState(0)

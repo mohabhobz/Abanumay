@@ -1,3 +1,4 @@
+import { reducedMotion } from '@/lib/prefs'
 import { useState, type MouseEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon'
@@ -140,7 +141,7 @@ function rescrollIfSame(e: MouseEvent, href: string, here: Here) {
   const el = document.getElementById(decodeURIComponent(url.hash.slice(1)))
   if (!el) return
   e.preventDefault()
-  const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches
+  const smooth = !reducedMotion()
   el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
   el.classList.remove('arrive')
   void el.offsetWidth

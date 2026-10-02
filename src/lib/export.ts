@@ -291,7 +291,7 @@ export function exportPng(sheet: Sheet): void {
   c.textBaseline = 'middle'
 
   const ink = readVar('--t1', '#0C2527')
-  const soft = readVar('--t2', '#3E6664')
+  const soft = readVar('--t2', '#2E5250')
   const line = 'rgba(20,69,71,.12)'
 
   c.fillStyle = readVar('--mesh-bg', '#EDF3F0')

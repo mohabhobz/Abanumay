@@ -3,6 +3,8 @@ import { entityRows } from './entities'
 import { budgetDocs, fiscalYears, fundSources } from './budgetTree'
 import { projectRows } from './projects'
 import { NOUN, countOf } from '@/lib/format'
+import { EVIDENCE_KINDS, PLAN_STAGES } from './plans'
+import { CLOSE_DOCS, CLOSE_STAGES } from './closing'
 
 /* Module settings.
 
@@ -35,6 +37,8 @@ export interface SettingGroup {
   count: number
   owner: SettingOwner
   kind: 'master' | 'rule'
+  /** The tab on the module's settings page that holds this group · opened straight from its card */
+  tab?: string
 }
 
 export interface SettingModule {
@@ -151,12 +155,12 @@ export const SETTING_MODULES: SettingModule[] = [
     to: '/budget/settings',
     groups: [
       {
-        key: 'years', label: 'السنوات المالية', kind: 'master', owner: 'الإدارة المالية',
+        key: 'years', tab: 'years', label: 'السنوات المالية', kind: 'master', owner: 'الإدارة المالية',
         where: 'ترويسة كل ميزانية · ولا تُفتح ميزانية بدونها',
         count: fiscalYears.length,
       },
       {
-        key: 'sources', label: 'مصادر التمويل', kind: 'master', owner: 'الإدارة المالية',
+        key: 'sources', tab: 'sources', label: 'مصادر التمويل', kind: 'master', owner: 'الإدارة المالية',
         where: 'ترويسة الميزانية · وتُعرَّف الميزانية بالسنة والمصدر معًا',
         count: fundSources.length,
       },
@@ -168,27 +172,27 @@ export const SETTING_MODULES: SettingModule[] = [
     to: '/entities/settings',
     groups: [
       {
-        key: 'regions', label: 'المناطق', kind: 'master', owner: 'مسؤول النظام',
+        key: 'regions', tab: 'places', label: 'المناطق', kind: 'master', owner: 'مسؤول النظام',
         where: 'نموذج تسجيل الجهة · وتصفية المنطقة في كل قائمة',
         count: REGIONS.length,
       },
       {
-        key: 'cities', label: 'المدن', kind: 'master', owner: 'مسؤول النظام',
+        key: 'cities', tab: 'places', label: 'المدن', kind: 'master', owner: 'مسؤول النظام',
         where: 'نموذج تسجيل الجهة · والمدينة تتبع المنطقة',
         count: cityCount,
       },
       {
-        key: 'types', label: 'تصنيفات الجهة', kind: 'master', owner: 'إدارة المنح',
+        key: 'types', tab: 'types', label: 'تصنيفات الجهة', kind: 'master', owner: 'إدارة المنح',
         where: 'نموذج التسجيل · والتصنيف يحدد المستندات الإلزامية',
         count: ENTITY_TYPES.length,
       },
       {
-        key: 'licensors', label: 'جهات الإشراف الفني', kind: 'master', owner: 'مسؤول النظام',
+        key: 'licensors', tab: 'licensors', label: 'جهات الإشراف الفني', kind: 'master', owner: 'مسؤول النظام',
         where: 'نموذج التسجيل · وملف الجهة',
         count: LICENSORS.length,
       },
       {
-        key: 'targets', label: 'الفئات المستهدفة', kind: 'master', owner: 'إدارة المنح',
+        key: 'targets', tab: 'targets', label: 'الفئات المستهدفة', kind: 'master', owner: 'إدارة المنح',
         where: 'نموذج المشروع · وتقارير الأثر',
         count: TARGET_GROUPS.length,
       },
@@ -200,14 +204,50 @@ export const SETTING_MODULES: SettingModule[] = [
     to: '/projects/settings',
     groups: [
       {
-        key: 'approval', label: 'مصفوفة الاعتماد', kind: 'rule', owner: 'إدارة المنح',
+        key: 'approval', tab: 'approval', label: 'مصفوفة الاعتماد', kind: 'rule', owner: 'إدارة المنح',
         where: 'اعتماد المشروع · واعتماد طلب الصرف',
         count: APPROVAL_MATRIX.length,
       },
       {
-        key: 'limits', label: 'الحدود المالية والزمنية', kind: 'rule', owner: 'الإدارة المالية',
+        key: 'limits', tab: 'limits', label: 'الحدود المالية والزمنية', kind: 'rule', owner: 'الإدارة المالية',
         where: 'إنشاء طلب الصرف · جدول الدفعات · التصعيد',
         count: MONEY_LIMITS.length,
+      },
+    ],
+  },
+  /* Plans and closing had their own settings pages but no line here, so the inventory missed
+     them. */
+  {
+    key: 'plans',
+    label: 'الخطط',
+    to: '/plans/settings',
+    groups: [
+      {
+        key: 'evidence', tab: 'evidence', label: 'أنواع الشواهد', kind: 'master', owner: 'إدارة المنح',
+        where: 'خطة المشروع · وكل نشاط يُرفع له شاهد من هذه الأنواع',
+        count: EVIDENCE_KINDS.length,
+      },
+      {
+        key: 'plan-limits', tab: 'limits', label: 'حدود المراحل', kind: 'rule', owner: 'إدارة المنح',
+        where: 'مراجعة الخطة · والتأخر يُحسب منها',
+        count: PLAN_STAGES.length,
+      },
+    ],
+  },
+  {
+    key: 'closing',
+    label: 'الإغلاق',
+    to: '/closings/settings',
+    groups: [
+      {
+        key: 'close-docs', tab: 'docs', label: 'المستندات الداعمة', kind: 'master', owner: 'إدارة المنح',
+        where: 'التقرير الختامي · وما يُطلب من الجهة عند الإغلاق',
+        count: CLOSE_DOCS.length,
+      },
+      {
+        key: 'close-limits', tab: 'limits', label: 'حدود المحطات', kind: 'rule', owner: 'إدارة المنح',
+        where: 'دورة التقرير الختامي ودورة التقييم',
+        count: CLOSE_STAGES.length,
       },
     ],
   },

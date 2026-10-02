@@ -29,6 +29,20 @@
       } catch (e) {
         document.documentElement.setAttribute('data-theme', 'light')
       }
+      /* Accessibility preferences, same pre-paint rule: a large-text user never sees the
+         small page first. Mirrors `applyA11y` in src/lib/prefs.ts. */
+      try {
+        var a = JSON.parse(localStorage.getItem('ab-a11y') || '{}'), r = document.documentElement
+        if (a.text && a.text !== '100') r.setAttribute('data-text', a.text)
+        if (a.bold) r.setAttribute('data-bold', '')
+        if (a.contrast) r.setAttribute('data-contrast', '')
+        if (a.motion === 'reduce') r.setAttribute('data-motion', 'reduce')
+        if (a.links) r.setAttribute('data-links', '')
+        if (a.focus) r.setAttribute('data-focus', '')
+        if (a.spacing) r.setAttribute('data-spacing', '')
+        var d = JSON.parse(localStorage.getItem('ab-display') || '{}')
+        if (d.cal === 'hijri' || d.cal === 'both') r.setAttribute('data-cal', d.cal)
+      } catch (e) { /* defaults */ }
     </script>
 
     <!-- The brand typeface "Brando Arabic" is commercially licensed and

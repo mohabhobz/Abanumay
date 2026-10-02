@@ -20,6 +20,7 @@ export {
   type SelectProps, type MultiSelectProps, type SegItem, type SelectOption,
 } from './filters'
 export { FieldSelect, type FieldSelectProps } from './FieldSelect'
+export { Switch } from './Switch'
 export { MoneyField } from './MoneyField'
 /* Warning: date field · a hand-drawn calendar, not `type="date"` */
 export { DateField, type DateFieldProps } from './DateField'
