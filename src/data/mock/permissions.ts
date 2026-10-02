@@ -184,6 +184,17 @@ export const PERM_LOG: PermLogRow[] = [
   { id: 'l1', at: '2026-09-14', by: 'نورة القحطاني', target: 'دور مشرف المنح', change: 'إضافة «تصدير» في الخطط' },
 ]
 
+/* ── Stored state · the admin's edits, read back by «صلاحياتي» in account settings ── */
+
+export interface PermState {
+  roles: PermRole[]
+  users: PermUser[]
+  log: PermLogRow[]
+}
+
+export const PERM_KEY = 'ab-perm'
+export const PERM_INITIAL: PermState = { roles: PERM_ROLES, users: PERM_USERS, log: PERM_LOG }
+
 /* ── Derivations ── */
 
 /** Effective grant of one cell · the override wins, otherwise the role */

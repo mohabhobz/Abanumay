@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import {
   DateField, DateText, Glass, Head, Icon, icons, Num, Person, Select, Switch, Tabs, Tag,
 } from '@/components/ui'
@@ -10,7 +10,7 @@ import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
 import { OWNERS } from '@/data/mock/taxonomy'
 import {
-  DELEGATION_DEFAULT, FREQ_OPTIONS, HOURS, NOTIFY_GROUPS, SESSIONS, notifyDefaults,
+  DELEGATION_DEFAULT, FREQ_OPTIONS, HOURS, NOTIFY_GROUPS, notifyDefaults,
   type Channel, type Delegation, type Freq, type NotifyPrefs,
 } from '@/data/mock/notifyPrefs'
 import {
@@ -22,14 +22,13 @@ import { isolate, readDate } from '@/lib/format'
 const KEYS = ['tab'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/* Five tabs, in the order a user comes looking: what reaches me, who covers for me, how the
-   screen looks, how readable it is, and the account's safety. */
+/* Four tabs, in the order a user comes looking: what reaches me, who covers for me, how the
+   screen looks, and how readable it is. */
 const TABS = [
   { slug: 'notify', label: 'الإشعارات' },
   { slug: 'delegate', label: 'التفويض والإجازة' },
   { slug: 'display', label: 'العرض' },
   { slug: 'a11y', label: 'سهولة الوصول' },
-  { slug: 'security', label: 'الأمان' },
 ] as const
 
 const CHANNELS: { key: Channel; label: string }[] = [
@@ -47,13 +46,16 @@ const today = () => new Date().toISOString().slice(0, 10)
  * system for other users (that lives in «إعدادات النظام»). The structure follows the research the
  * client asked for: a per-event, per-channel matrix with locked essentials, frequency and a daily
  * summary, quiet hours on the Saudi working week, delegation while away (approvals must not wait
- * on someone on leave), display and calendar, accessibility for low vision, and account security.
+ * on someone on leave), display and calendar, accessibility for low vision, and nothing about the account itself:
+ * sign-in and security live in «إعدادات الحساب».
  * Awareness messages sit apart and start off: the personal-data law asks for explicit consent.
  */
 export default function PreferencesPage() {
   const { values: v, set } = useQueryParams<Params>(KEYS)
   const tab = TABS.some((t) => t.slug === v.tab) ? (v.tab as string) : TABS[0].slug
   const { role, user } = useRole()
+  /* Security moved to account settings · an old link still lands there */
+  if (v.tab === 'security') return <Navigate to={`${ROUTES.account}?tab=security`} replace />
 
   return (
     <AppLayout assistantContext={assistFor.page('التفضيلات والإشعارات')}>
@@ -76,7 +78,6 @@ export default function PreferencesPage() {
           {tab === 'delegate' && <DelegateTab me={user.name} />}
           {tab === 'display' && <DisplayTab />}
           {tab === 'a11y' && <A11yTab />}
-          {tab === 'security' && <SecurityTab />}
         </div>
       </div>
     </AppLayout>
@@ -482,65 +483,6 @@ function A11yTab() {
           <button type="button" className="btn btn-p">توصية بالموافقة</button>
           <button type="button" className="btn btn-2">طلب استكمال</button>
         </div>
-      </Glass>
-    </div>
-  )
-}
-
-/* ═══ Security ═══ */
-
-function SecurityTab() {
-  const [s, setS] = useStored('ab-security', { twoStep: true, method: 'app', alerts: true, signedOut: false })
-  const sessions = s.signedOut ? SESSIONS.filter((x) => x.current) : SESSIONS
-
-  return (
-    <div className="g2">
-      <Glass>
-        <Head title="الدخول" />
-        <div className="pf-sw">
-          <Switch label="التحقق بخطوتين" note="رمز إضافي عند الدخول من جهاز جديد" on={s.twoStep}
-            onChange={(twoStep) => setS((x) => ({ ...x, twoStep }))} />
-          {s.twoStep && (
-            <div className="seg" role="radiogroup" aria-label="طريقة التحقق">
-              {([['app', 'تطبيق المصادقة'], ['sms', 'رسالة نصية']] as const).map(([k, l]) => (
-                <button key={k} type="button" role="radio" aria-checked={s.method === k}
-                  className={s.method === k ? 'on' : ''} onClick={() => setS((x) => ({ ...x, method: k }))}>
-                  {l}
-                </button>
-              ))}
-            </div>
-          )}
-          <Switch label="تنبيه عند الدخول من جهاز جديد" on={s.alerts} disabled
-            lockNote="إلزامي · حماية للحساب" onChange={() => undefined} />
-        </div>
-        <p className="sub cnote">
-          كلمة المرور والبيانات الشخصية في{' '}
-          <Link className="tlink" to={ROUTES.account}>إعدادات الحساب</Link>.
-        </p>
-      </Glass>
-
-      <Glass>
-        <Head
-          title="الجلسات النشطة"
-          meta={sessions.length > 1 ? (
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => setS((x) => ({ ...x, signedOut: true }))}>
-              أنهِ الجلسات الأخرى
-            </button>
-          ) : <Tag tone="ok">هذا الجهاز فقط</Tag>}
-        />
-        <ul className="pf-sess">
-          {sessions.map((x) => (
-            <li key={x.id}>
-              <Icon name={icons.lock} size="sm" />
-              <span>
-                <b>{x.device}</b>
-                <span className="sub"> · {x.place} · {x.at}</span>
-              </span>
-              <span className="pc-sp" />
-              {x.current && <Tag tone="ok">هذا الجهاز</Tag>}
-            </li>
-          ))}
-        </ul>
       </Glass>
     </div>
   )

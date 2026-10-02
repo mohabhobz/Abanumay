@@ -57,3 +57,7 @@
   .pmx{min-width:640px}
   .pm-bar>.fsel{flex:1 1 10rem}
 }
+
+/* Read-only marks · the holder's own view in account settings */
+.pm-yes{display:inline-grid;place-items:center;color:var(--t1)}
+.pm-no{display:inline-block;vertical-align:middle;width:var(--sp-3);height:var(--sp-3);border-radius:var(--r-dot);box-shadow:inset 0 0 0 1px var(--t3)}

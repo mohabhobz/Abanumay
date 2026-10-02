@@ -9,21 +9,16 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import { assistFor } from '@/data/mock/assistant'
 import { useStored } from '@/lib/prefs'
 import {
-  ACTIONS, PERM_LOG, PERM_MODULES, PERM_ROLES, PERM_USERS, SCOPES, conflicts, effective, moduleByKey,
+  ACTIONS, PERM_INITIAL, PERM_KEY, PERM_MODULES, PERM_USERS, SCOPES, conflicts, moduleByKey,
   moduleCount, overrideCount, roleLabel,
-  type ActionKey, type Grants, type Overrides, type PermLogRow, type PermRole, type PermUser, type Scope,
+  type ActionKey, type Grants, type Overrides, type PermLogRow, type PermRole, type PermState,
+  type PermUser, type Scope,
 } from '@/data/mock/permissions'
+import { PermMatrix, SodNote } from './PermMatrix'
 
 const KEYS = ['tab', 'u', 'r'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-interface PermState {
-  roles: PermRole[]
-  users: PermUser[]
-  log: PermLogRow[]
-}
-
-const INITIAL: PermState = { roles: PERM_ROLES, users: PERM_USERS, log: PERM_LOG }
 
 /** The admin acting on this screen · the first holder of the admin role */
 const ME = PERM_USERS.find((u) => u.role === 'admin')?.name ?? ''
@@ -49,7 +44,7 @@ const ACT_LABEL = Object.fromEntries(ACTIONS.map((a) => [a.key, a.label])) as Re
  */
 export default function PermissionsPage() {
   const { values: v, set } = useQueryParams<Params>(KEYS)
-  const [st, setSt] = useStored<PermState>('ab-perm', INITIAL)
+  const [st, setSt] = useStored<PermState>(PERM_KEY, PERM_INITIAL)
 
   const ov = st.users.reduce((n, u) => n + overrideCount(u.overrides), 0)
   const TABS = [
@@ -456,120 +451,6 @@ function RoleEditor({ role, members, onSave }: {
 
       {sod.length > 0 && <SodNote pairs={sod} />}
     </Glass>
-  )
-}
-
-/* ═══ The matrix · shared by a user and a role ═══ */
-
-function PermMatrix({ mode, role, overrides, onToggle, onScope, locked }: {
-  mode: 'user' | 'role'
-  role: PermRole | undefined
-  overrides: Overrides
-  onToggle: (mod: string, act: ActionKey, on: boolean) => void
-  onScope?: (mod: string, s: Scope) => void
-  locked: (mod: string) => boolean
-}) {
-  return (
-    <>
-      <div className="tblwrap">
-        <table className="tbl nfm pmx">
-          <thead>
-            <tr>
-              <th>الوحدة</th>
-              {ACTIONS.map((a) => <th key={a.key} className="nfm-c" title={a.note}>{a.label}</th>)}
-              <th className="nfm-f">النطاق</th>
-            </tr>
-          </thead>
-          <tbody>
-            {PERM_MODULES.map((m) => {
-              const grant = role?.grants[m.key]
-              const lock = locked(m.key)
-              const open = effective(role, overrides, m.key, 'view')
-              return (
-                <tr key={m.key} className={open ? '' : 'pm-closed'}>
-                  <td>
-                    <span className="pm-mod">
-                      <b>{m.label}</b>
-                      {m.admin && <Tag tone="mute">للجميع</Tag>}
-                    </span>
-                    <span className="sub pm-mod-n">{m.note}</span>
-                  </td>
-                  {ACTIONS.map((a) => {
-                    if (!m.actions.includes(a.key)) {
-                      return <td key={a.key} className="nfm-c"><span className="pm-na" aria-label="لا ينطبق">—</span></td>
-                    }
-                    const on = effective(role, overrides, m.key, a.key)
-                    const ov = mode === 'user' && overrides[m.key]?.[a.key] !== undefined
-                    return (
-                      <td key={a.key} className={`nfm-c${ov ? ' pm-ov' : ''}`}>
-                        <span className="nfm-box">
-                          <input
-                            type="checkbox"
-                            checked={on}
-                            disabled={lock}
-                            onChange={(ev) => onToggle(m.key, a.key, ev.target.checked)}
-                            aria-label={`${m.label} · ${a.label}`}
-                            title={
-                              lock ? 'مقفل · حتى لا يُغلق باب الصلاحيات على من يديرها'
-                                : ov ? `مختلف عن الدور · الدور ${role?.grants[m.key]?.acts.includes(a.key) ? 'يمنحه' : 'لا يمنحه'}`
-                                  : undefined
-                            }
-                          />
-                          {lock && <Icon name={icons.lock} size="sm" className="nfm-lock" />}
-                          {ov && <i className="pm-dot" aria-hidden="true" />}
-                        </span>
-                      </td>
-                    )
-                  })}
-                  <td className="nfm-f">
-                    {!m.scoped ? (
-                      <span className="sub">—</span>
-                    ) : mode === 'role' && onScope ? (
-                      <Select
-                        value={grant?.scope ?? 'own'}
-                        allowEmpty={false}
-                        options={SCOPES}
-                        disabled={!grant?.acts.includes('view')}
-                        onChange={(x) => onScope(m.key, (x as Scope) ?? 'own')}
-                      />
-                    ) : (
-                      <span className="sub">
-                        {open ? SCOPES.find((s) => s.value === (grant?.scope ?? 'own'))?.label : '—'}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-      <p className="sub pm-legend">
-        {mode === 'user' && <span><i className="pm-dot" aria-hidden="true" /> مختلف عن الدور</span>}
-        <span><span className="pm-na">—</span> لا ينطبق على الوحدة</span>
-        <span>أي صلاحية تفتح «عرض» معها، وإغلاق «عرض» يغلق الصف</span>
-        {mode === 'user' && <span>النطاق من الدور</span>}
-      </p>
-    </>
-  )
-}
-
-function SodNote({ pairs }: { pairs: ReturnType<typeof conflicts> }) {
-  return (
-    <div className="pm-sod" role="note">
-      <Icon name={icons.alert} size="sm" />
-      <div>
-        <b>فصل المهام</b>
-        <ul>
-          {pairs.map((p) => (
-            <li key={p.mod}>
-              {moduleByKey(p.mod)?.label}: «{ACT_LABEL[p.a]}» و«{ACT_LABEL[p.b]}» معًا · من يرفع الطلب يعتمده بنفسه
-            </li>
-          ))}
-        </ul>
-        <span className="sub">تنبيه لا منع: الفريق الصغير قد يحتاجه، فليكن قرارًا مقصودًا.</span>
-      </div>
-    </div>
   )
 }
 

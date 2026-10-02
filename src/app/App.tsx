@@ -38,13 +38,13 @@ import RequestForm from '@/features/payments/RequestForm'
 import OrderPage from '@/features/payments/OrderPage'
 import LatePage from '@/features/payments/LatePage'
 import SettingsIndexPage from '@/features/settings/SettingsIndexPage'
+import AccountPage from '@/features/account/AccountPage'
 import PermissionsPage from '@/features/settings/PermissionsPage'
 import PreferencesPage from '@/features/account/PreferencesPage'
 import EntitySettingsPage from '@/features/entities/EntitySettingsPage'
 import ProjectSettingsPage from '@/features/projects/ProjectSettingsPage'
 import ProjectNewPage from '@/features/projects/ProjectNewPage'
 import PortfolioPage from '@/features/projects/PortfolioPage'
-import { ModulePlaceholder } from '@/features/shared/ModulePlaceholder'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
 
@@ -173,15 +173,7 @@ export default function App() {
         <Route path={ROUTES.assistant} element={<AssistantPage />} />
         <Route path={`${ROUTES.assistant}/:id`} element={<AssistantPage />} />
 
-        <Route
-          path={ROUTES.account}
-          element={
-            <ModulePlaceholder
-              title="إعدادات الحساب"
-              scope="البيانات الشخصية وكلمة المرور والتحقق بخطوتين والصلاحيات الممنوحة."
-            />
-          }
-        />
+        <Route path={ROUTES.account} element={<AccountPage />} />
         <Route
           path={ROUTES.preferences}
           element={<PreferencesPage />}

@@ -1,0 +1,25 @@
+/* Account settings · profile, sign-in and own access (src/features/account/AccountPage.tsx) */
+
+.acc-act{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3)}
+.acc-foot{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3);margin-top:var(--sp-5)}
+
+/* Photo · a 64px square, so the corner follows the 41–80 step */
+.acc-photo{display:flex;align-items:center;gap:var(--sp-5)}
+.acc-ph{flex:none;width:var(--sp-11);height:var(--sp-11);border-radius:var(--r1);object-fit:cover}
+.acc-ini{display:grid;place-items:center;background:var(--fl-3);color:var(--t1);
+  font-family:var(--fd);font-weight:600;font-size:var(--fs-6)}
+
+/* Signature preview · a framed strip, so a transparent png reads against something */
+.acc-sig{display:flex;align-items:center;gap:var(--sp-4);min-height:var(--sp-12);padding:var(--pad-in);
+  border-radius:var(--r1);box-shadow:inset 0 0 0 1px var(--edge-i)}
+.acc-sig img{max-height:var(--sp-10);max-width:60%;object-fit:contain}
+
+/* Password rules · checked as you type */
+.acc-rules{list-style:none;margin:var(--sp-4) 0 0;padding:0;display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-5);
+  font-size:var(--fs-2);color:var(--t2)}
+.acc-rules li{display:inline-flex;align-items:center;gap:var(--sp-2)}
+.acc-rules li.on{color:var(--t1)}
+.acc-rules li .ic2{color:var(--t3)}
+.acc-rules li.on .ic2{color:var(--t1)}
+
+.acc-ext{margin:var(--sp-4) 0 0;padding-inline-start:var(--sp-6);color:var(--t2);line-height:var(--lh-text)}
