@@ -148,10 +148,14 @@ export const stagePressure = (row: ProjectRow): number =>
  * take the first that applies, in the order a reviewer acts on them: their own decision first,
  * then lateness, then ownership. Anything none of them names is «أخرى».
  */
-export type ProjectBucket = 'mine' | 'overdue' | 'unowned' | 'other'
+export type ProjectBucket = 'portfolios' | 'mine' | 'overdue' | 'unowned' | 'other'
 export const REVIEWER = 'عمر قاسم'
+/* A portfolio is its own tab, checked first: it is a different kind of row (it opens the
+   portfolio page), so it never sits under a reviewer's queue or lateness. */
 export const projectBucket = (r: ProjectRow): ProjectBucket =>
-  r.owner === REVIEWER && r.statusGroup === 'في الدراسة'
+  r.portfolioId || r.type === 'محفظة'
+    ? 'portfolios'
+    : r.owner === REVIEWER && r.statusGroup === 'في الدراسة'
     ? 'mine'
     : stagePressure(r) > 1
       ? 'overdue'

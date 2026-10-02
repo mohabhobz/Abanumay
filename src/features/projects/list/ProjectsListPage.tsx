@@ -61,6 +61,8 @@ const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
   { key: 'mine', label: 'ما ينتظر قراري', patch: { tab: 'mine' } },
   { key: 'overdue', label: 'متأخر عن الحد', patch: { tab: 'overdue' } },
   { key: 'unowned', label: 'بلا مالك', patch: { tab: 'unowned' } },
+  /* Quick way to the portfolios; the «محفظة» option in the type filter stays as well. */
+  { key: 'portfolios', label: 'المحافظ', patch: { tab: 'portfolios' } },
   { key: 'other', label: 'أخرى', patch: { tab: 'other' } },
 ]
 
