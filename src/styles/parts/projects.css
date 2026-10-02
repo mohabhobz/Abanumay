@@ -67,3 +67,7 @@
 .fu-add{margin-top:var(--sp-6);margin-bottom:var(--sp-3)}
 .fu-add h3{font-size:var(--fs-3)}
 .fu-form{display:flex;flex-direction:column;gap:var(--sp-4);margin-top:var(--sp-5)}
+
+/* ── New project · target categories with «أخرى» ── */
+.pmulti-w{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0}
+.pmulti-o{display:flex;flex-direction:column;gap:var(--sp-2);max-width:calc(var(--menu-min) * 1.5)}

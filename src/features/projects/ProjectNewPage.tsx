@@ -30,6 +30,9 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const EMPTY: PValues = {}
 
+/** The free category in a multi-pick list · followed by the name the user types. */
+const OTHER = 'أخرى'
+
 /** One field - same `.fld` used in every other form in the system. */
 function PField({
   f, value, parent, entitySlot, onChange,
@@ -74,24 +77,72 @@ function PField({
       ) : f.kind === 'multi' ? (
         /* Note: target categories are tags, not a dropdown - selection is multiple, and a
            multi-select dropdown hides what's already chosen. */
-        <span className="pmulti">
-          {opts.map((o) => {
-            const on = value.split('،').filter(Boolean).includes(o)
+        <span className="pmulti-w">
+          <span className="pmulti">
+            {opts.map((o) => {
+              const on = value.split('،').filter(Boolean).includes(o)
+              return (
+                <button
+                  key={o}
+                  type="button"
+                  className={`cfgchip${on ? ' on' : ''}`}
+                  aria-pressed={on}
+                  onClick={() => {
+                    const cur = value.split('،').filter(Boolean)
+                    const next = on ? cur.filter((x) => x !== o) : [...cur, o]
+                    onChange(next.join('،'))
+                  }}
+                >
+                  {o}
+                </button>
+              )
+            })}
+            {/* «أخرى» opens a field for a category the list doesn't have. It is stored as
+                «أخرى: <name>» beside the others, so the review step and the record read it as is. */}
+            {(() => {
+              const cur = value.split('،').filter(Boolean)
+              const on = cur.some((x) => x.startsWith(OTHER))
+              return (
+                <button
+                  type="button"
+                  className={`cfgchip${on ? ' on' : ''}`}
+                  aria-pressed={on}
+                  aria-expanded={on}
+                  onClick={() => {
+                    const next = on ? cur.filter((x) => !x.startsWith(OTHER)) : [...cur, OTHER]
+                    onChange(next.join('،'))
+                  }}
+                >
+                  {OTHER}
+                </button>
+              )
+            })()}
+          </span>
+          {(() => {
+            const cur = value.split('،').filter(Boolean)
+            const other = cur.find((x) => x.startsWith(OTHER))
+            if (other === undefined) return null
+            const name = other.replace(OTHER, '').replace(/^:\s*/, '')
             return (
-              <button
-                key={o}
-                type="button"
-                className={`cfgchip${on ? ' on' : ''}`}
-                onClick={() => {
-                  const cur = value.split('،').filter(Boolean)
-                  const next = on ? cur.filter((x) => x !== o) : [...cur, o]
-                  onChange(next.join('،'))
-                }}
-              >
-                {o}
-              </button>
+              <span className="pmulti-o">
+                <span className="fld">
+                  <input
+                    autoFocus
+                    value={name}
+                    placeholder="اكتب اسم الفئة"
+                    aria-label="اسم الفئة الأخرى"
+                    onChange={(e) => {
+                      /* The list separator can't appear inside a name. */
+                      const typed = e.target.value.replace(/،/g, ' ')
+                      const item = typed.trim() ? `${OTHER}: ${typed}` : OTHER
+                      onChange(cur.map((x) => (x.startsWith(OTHER) ? item : x)).join('،'))
+                    }}
+                  />
+                </span>
+                {!name.trim() && <span className="sub regf-h">اكتب اسم الفئة غير الموجودة في القائمة</span>}
+              </span>
             )
-          })}
+          })()}
         </span>
       ) : f.kind === 'long' ? (
         <span className="fld fld-a">
