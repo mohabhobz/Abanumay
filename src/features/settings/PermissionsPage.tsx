@@ -1,0 +1,610 @@
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import {
+  DateText, Empty, FieldSelect, Glass, Head, Icon, icons, Num, Person, SearchBox, Select, Switch, Tabs, Tag,
+} from '@/components/ui'
+import { AppLayout } from '@/app/layout/AppLayout'
+import { ROUTES } from '@/app/routes'
+import { useQueryParams } from '@/hooks/useQueryParams'
+import { assistFor } from '@/data/mock/assistant'
+import { useStored } from '@/lib/prefs'
+import {
+  ACTIONS, PERM_LOG, PERM_MODULES, PERM_ROLES, PERM_USERS, SCOPES, conflicts, effective, moduleByKey,
+  moduleCount, overrideCount, roleLabel,
+  type ActionKey, type Grants, type Overrides, type PermLogRow, type PermRole, type PermUser, type Scope,
+} from '@/data/mock/permissions'
+
+const KEYS = ['tab', 'u', 'r'] as const
+type Params = Record<(typeof KEYS)[number], string | undefined>
+
+interface PermState {
+  roles: PermRole[]
+  users: PermUser[]
+  log: PermLogRow[]
+}
+
+const INITIAL: PermState = { roles: PERM_ROLES, users: PERM_USERS, log: PERM_LOG }
+
+/** The admin acting on this screen · the first holder of the admin role */
+const ME = PERM_USERS.find((u) => u.role === 'admin')?.name ?? ''
+
+const today = () => new Date().toISOString().slice(0, 10)
+const logRow = (target: string, change: string): PermLogRow => ({
+  id: `l${Date.now()}${Math.random().toString(36).slice(2, 6)}`, at: today(), by: ME, target, change,
+})
+
+const ACT_LABEL = Object.fromEntries(ACTIONS.map((a) => [a.key, a.label])) as Record<ActionKey, string>
+
+/**
+ * Permissions and roles · the system admin's screen.
+ *
+ * It opens from the account menu, not the rail: one in twenty users will ever see it. Three tabs in
+ * the order an admin comes looking: a person ("why can't Saud see payments?"), a role ("what does a
+ * supervisor get?"), and the trail ("who changed this, and when?").
+ *
+ * Every module in the system is a row, and the same five verbs are the columns, so a person and a
+ * role read on the same grid. Changes are a **draft until saved**: a permission is not a display
+ * preference, and a half-finished edit must not reach a live account. Each save writes a line in
+ * the log with the admin's name.
+ */
+export default function PermissionsPage() {
+  const { values: v, set } = useQueryParams<Params>(KEYS)
+  const [st, setSt] = useStored<PermState>('ab-perm', INITIAL)
+
+  const ov = st.users.reduce((n, u) => n + overrideCount(u.overrides), 0)
+  const TABS = [
+    { slug: 'users', label: 'المستخدمون', count: st.users.length },
+    { slug: 'roles', label: 'الأدوار', count: st.roles.length },
+    { slug: 'log', label: 'سجل التغييرات', count: st.log.length },
+  ]
+  const tab = TABS.some((t) => t.slug === v.tab) ? (v.tab as string) : TABS[0].slug
+
+  return (
+    <AppLayout assistantContext={assistFor.page('الصلاحيات والأدوار')}>
+      <div className="viewstack">
+        <div className="screen col">
+          <header>
+            <div>
+              <h1 className="ptitle">الصلاحيات والأدوار</h1>
+              <p className="sub mt-1">
+                من يرى ماذا ويفعل ماذا في <Num>{PERM_MODULES.length}</Num> وحدة ·
+                الدور يحمل الأساس، والتخصيص لمستخدم بعينه يبقى ظاهرًا
+                ({ov > 0 ? <><Num>{ov}</Num> تخصيص حاليًا</> : 'لا تخصيصات'}) ·{' '}
+                <Link className="tlink" to={ROUTES.settings}>إعدادات النظام</Link>
+              </p>
+            </div>
+            <Tag tone="mute">
+              <Icon name={icons.shield} size="sm" />
+              مدير النظام
+            </Tag>
+          </header>
+
+          <Tabs
+            items={TABS}
+            active={tab}
+            onChange={(x) => set({ tab: x === TABS[0].slug ? undefined : x, u: undefined, r: undefined })}
+          />
+
+          {tab === 'users' && (
+            <UsersTab st={st} setSt={setSt} sel={v.u} onSel={(u) => set({ u })} />
+          )}
+          {tab === 'roles' && (
+            <RolesTab st={st} setSt={setSt} sel={v.r} onSel={(r) => set({ r })} />
+          )}
+          {tab === 'log' && <LogTab log={st.log} />}
+        </div>
+      </div>
+    </AppLayout>
+  )
+}
+
+type SetSt = (next: PermState | ((x: PermState) => PermState)) => void
+
+/* ═══ Users ═══ */
+
+function UsersTab({ st, setSt, sel, onSel }: {
+  st: PermState; setSt: SetSt; sel?: string; onSel: (id: string | undefined) => void
+}) {
+  const [q, setQ] = useState('')
+  const [role, setRole] = useState<string | undefined>()
+  const [status, setStatus] = useState<string | undefined>()
+
+  const rows = st.users.filter((u) =>
+    (!q.trim() || u.name.includes(q.trim())) &&
+    (!role || u.role === role) &&
+    (!status || (status === 'off' ? !u.active : status === 'custom' ? overrideCount(u.overrides) > 0 : u.active)),
+  )
+  const user = st.users.find((u) => u.id === sel) ?? rows[0]
+  const roleOf = (k: string) => st.roles.find((r) => r.key === k)
+
+  return (
+    <>
+      <div className="pm-bar">
+        <SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المستخدم" />
+        <Select
+          icon={icons.users}
+          value={role}
+          all="كل الأدوار"
+          options={st.roles.map((r) => ({ value: r.key, label: r.label }))}
+          onChange={setRole}
+        />
+        <Select
+          icon={icons.filter}
+          value={status}
+          all="كل الحالات"
+          options={[
+            { value: 'on', label: 'مفعّل' },
+            { value: 'off', label: 'موقوف' },
+            { value: 'custom', label: 'مخصّص عن دوره' },
+          ]}
+          onChange={setStatus}
+        />
+      </div>
+
+      <div className="pm-split">
+        <Glass className="pm-side">
+          <Head title="المستخدمون" meta={<><Num>{rows.length}</Num> من <Num>{st.users.length}</Num></>} />
+          {rows.length === 0 ? (
+            <Empty title="لا يطابق البحث أحدًا." />
+          ) : (
+            <ul className="pm-list" role="listbox" aria-label="المستخدمون">
+              {rows.map((u) => {
+                const r = roleOf(u.role)
+                const n = overrideCount(u.overrides)
+                const c = conflicts(r, u.overrides).length
+                return (
+                  <li key={u.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={u.id === user?.id}
+                      className={`pm-item${u.id === user?.id ? ' on' : ''}${u.active ? '' : ' off'}`}
+                      onClick={() => onSel(u.id)}
+                    >
+                      <Person name={u.name} quiet={false} />
+                      <span className="pm-item-m sub">
+                        {r?.label ?? u.role}
+                        {!u.active && <> · موقوف</>}
+                        {n > 0 && <> · <Num>{n}</Num> تخصيص</>}
+                      </span>
+                      {c > 0 && <Icon name={icons.alert} size="sm" className="pm-warn" />}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </Glass>
+
+        {user && (
+          <UserEditor
+            key={user.id + JSON.stringify(user)}
+            user={user}
+            roles={st.roles}
+            onSave={(next, lines) =>
+              setSt((x) => ({
+                ...x,
+                users: x.users.map((u) => (u.id === next.id ? next : u)),
+                log: [...lines.map((l) => logRow(next.name, l)), ...x.log],
+              }))
+            }
+          />
+        )}
+      </div>
+    </>
+  )
+}
+
+function UserEditor({ user, roles, onSave }: {
+  user: PermUser; roles: PermRole[]; onSave: (u: PermUser, log: string[]) => void
+}) {
+  const [d, setD] = useState<PermUser>(user)
+  const role = roles.find((r) => r.key === d.role)
+  const self = user.name === ME
+  const n = overrideCount(d.overrides)
+  const sod = conflicts(role, d.overrides)
+
+  const changes = useMemo(() => {
+    const out: string[] = []
+    if (d.role !== user.role) out.push(`تغيير الدور من «${roleLabel(user.role)}» إلى «${roleLabel(d.role)}»`)
+    if (d.active !== user.active) out.push(d.active ? 'تفعيل الحساب' : 'إيقاف الحساب')
+    const a = JSON.stringify(user.overrides)
+    const b = JSON.stringify(d.overrides)
+    if (a !== b) {
+      for (const m of PERM_MODULES) {
+        for (const act of m.actions) {
+          const was = user.overrides[m.key]?.[act]
+          const now = d.overrides[m.key]?.[act]
+          if (was === now) continue
+          if (now === undefined) out.push(`إرجاع «${ACT_LABEL[act]}» في ${m.label} إلى الدور`)
+          else out.push(`${now ? 'منح' : 'سحب'} «${ACT_LABEL[act]}» في ${m.label} خارج الدور`)
+        }
+      }
+    }
+    return out
+  }, [d, user])
+
+  /* A cell set back to what the role gives is no longer an override, so the count stays honest.
+     The same row rule as the role: any verb opens the module, closing «عرض» closes the row. */
+  const toggle = (mod: string, act: ActionKey, on: boolean) =>
+    setD((x) => {
+      const next: Overrides = { ...x.overrides }
+      const put = (a: ActionKey, val: boolean) => {
+        const base = Boolean(role?.grants[mod]?.acts.includes(a))
+        const m = { ...(next[mod] ?? {}) }
+        if (val === base) delete m[a]
+        else m[a] = val
+        if (Object.keys(m).length) next[mod] = m
+        else delete next[mod]
+      }
+      put(act, on)
+      if (act === 'view' && !on) moduleByKey(mod)?.actions.forEach((a) => put(a, false))
+      if (on && act !== 'view') put('view', true)
+      return { ...x, overrides: next }
+    })
+
+  return (
+    <Glass className="pm-main">
+      <div className="pm-who">
+        <Person name={d.name} size="lg" quiet={false} />
+        <span className="sub">
+          يفتح <Num>{moduleCount(role, d.overrides)}</Num> من <Num>{PERM_MODULES.length}</Num> وحدة · آخر دخول: {d.seen}
+        </span>
+        <span className="pc-sp" />
+        {changes.length > 0 && (
+          <>
+            <span className="sub"><Num>{changes.length}</Num> تغيير غير محفوظ</span>
+            <button type="button" className="btn btn-2" onClick={() => setD(user)}>تراجع</button>
+            <button type="button" className="btn btn-p" onClick={() => onSave(d, changes)}>
+              <Icon name={icons.check} size="sm" />
+              احفظ
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="regfields">
+        <div className="regf">
+          <span className="lb">الدور</span>
+          <FieldSelect
+            value={d.role}
+            options={roles.map((r) => ({ value: r.key, label: r.label }))}
+            onChange={(x) => setD((y) => ({ ...y, role: x }))}
+            label="دور المستخدم"
+            disabled={self}
+          />
+          {self && <span className="sub">لا تغيّر دورك بنفسك · يغيّره مدير نظام آخر</span>}
+        </div>
+        <div className="regf">
+          <span className="lb">الحساب</span>
+          <Switch
+            label={d.active ? 'مفعّل' : 'موقوف'}
+            note={d.active ? 'يدخل ويعمل بصلاحياته' : 'لا يدخل · وتبقى سجلاته وأعماله باسمه'}
+            on={d.active}
+            onChange={(x) => setD((y) => ({ ...y, active: x }))}
+            disabled={self}
+            lockNote={self ? 'لا توقف حسابك بنفسك' : undefined}
+          />
+        </div>
+      </div>
+
+      <PermMatrix
+        mode="user"
+        role={role}
+        overrides={d.overrides}
+        onToggle={toggle}
+        locked={(mod) => self && mod === 'permissions'}
+      />
+
+      <div className="pm-foot">
+        <span className="sub">
+          {n > 0 ? <><Num>{n}</Num> خانة مختلفة عن دور «{role?.label}»</> : <>مطابق لدور «{role?.label}» تمامًا</>}
+        </span>
+        <span className="pc-sp" />
+        {n > 0 && (
+          <button type="button" className="btn btn-2 btn-sm" onClick={() => setD((x) => ({ ...x, overrides: {} }))}>
+            <Icon name={icons.redo} size="sm" />
+            ارجع لصلاحيات الدور
+          </button>
+        )}
+      </div>
+
+      {sod.length > 0 && <SodNote pairs={sod} />}
+    </Glass>
+  )
+}
+
+/* ═══ Roles ═══ */
+
+function RolesTab({ st, setSt, sel, onSel }: {
+  st: PermState; setSt: SetSt; sel?: string; onSel: (k: string | undefined) => void
+}) {
+  const role = st.roles.find((r) => r.key === sel) ?? st.roles[0]
+  const members = (k: string) => st.users.filter((u) => u.role === k)
+
+  return (
+    <div className="pm-split">
+      <Glass className="pm-side">
+        <Head title="الأدوار" meta={<span className="sub">الأساس لكل من يحمله</span>} />
+        <ul className="pm-list" role="listbox" aria-label="الأدوار">
+          {st.roles.map((r) => {
+            const m = members(r.key).length
+            return (
+              <li key={r.key}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={r.key === role.key}
+                  className={`pm-item${r.key === role.key ? ' on' : ''}`}
+                  onClick={() => onSel(r.key)}
+                >
+                  <span className="pm-item-t">{r.label}</span>
+                  <span className="pm-item-m sub">
+                    {m > 0 ? <><Num>{m}</Num> مستخدم</> : 'بلا مستخدمين'}
+                    {r.external && <> · من البوابة</>}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </Glass>
+
+      <RoleEditor
+        key={role.key + JSON.stringify(role.grants)}
+        role={role}
+        members={members(role.key)}
+        onSave={(next, lines) =>
+          setSt((x) => ({
+            ...x,
+            roles: x.roles.map((r) => (r.key === next.key ? next : r)),
+            log: [...lines.map((l) => logRow(`دور ${next.label}`, l)), ...x.log],
+          }))
+        }
+      />
+    </div>
+  )
+}
+
+function RoleEditor({ role, members, onSave }: {
+  role: PermRole; members: PermUser[]; onSave: (r: PermRole, log: string[]) => void
+}) {
+  const [grants, setGrants] = useState<Grants>(role.grants)
+  const draft: PermRole = { ...role, grants }
+
+  const changes = useMemo(() => {
+    const out: string[] = []
+    for (const m of PERM_MODULES) {
+      const a = role.grants[m.key]
+      const b = grants[m.key]
+      for (const act of m.actions) {
+        const was = Boolean(a?.acts.includes(act))
+        const now = Boolean(b?.acts.includes(act))
+        if (was !== now) out.push(`${now ? 'إضافة' : 'إزالة'} «${ACT_LABEL[act]}» في ${m.label}`)
+      }
+      if (m.scoped && a?.scope !== b?.scope && b?.scope && b.acts.includes('view')) {
+        out.push(`نطاق ${m.label}: ${SCOPES.find((s) => s.value === b.scope)?.label}`)
+      }
+    }
+    return out
+  }, [grants, role])
+
+  const toggle = (mod: string, act: ActionKey, on: boolean) =>
+    setGrants((x) => {
+      const cur = x[mod] ?? { acts: [] }
+      let acts = on ? [...new Set([...cur.acts, act])] : cur.acts.filter((a) => a !== act)
+      /* Every other verb needs the module open: turning view off clears the row, and any verb turns
+         it on, so a role can never "approve" in a module it can't see. */
+      if (act === 'view' && !on) acts = []
+      if (on && act !== 'view' && !acts.includes('view')) acts = ['view', ...acts]
+      const scope = moduleByKey(mod)?.scoped ? cur.scope ?? 'own' : undefined
+      return { ...x, [mod]: { acts, scope } }
+    })
+
+  const setScope = (mod: string, scope: Scope) =>
+    setGrants((x) => ({ ...x, [mod]: { acts: x[mod]?.acts ?? [], scope } }))
+
+  const sod = conflicts(draft, {})
+  const custom = members.filter((u) => overrideCount(u.overrides) > 0).length
+
+  return (
+    <Glass className="pm-main">
+      <div className="pm-who">
+        <div>
+          <h3 className="pm-rt">{role.label}</h3>
+          <span className="sub">{role.note}</span>
+        </div>
+        <span className="pc-sp" />
+        {changes.length > 0 && (
+          <>
+            <span className="sub"><Num>{changes.length}</Num> تغيير غير محفوظ</span>
+            <button type="button" className="btn btn-2" onClick={() => setGrants(role.grants)}>تراجع</button>
+            <button type="button" className="btn btn-p" onClick={() => onSave(draft, changes)}>
+              <Icon name={icons.check} size="sm" />
+              احفظ
+            </button>
+          </>
+        )}
+      </div>
+
+      <p className="sub cnote">
+        {members.length > 0 ? (
+          <>
+            يطبَّق الحفظ على <Num>{members.length}</Num> مستخدم فورًا
+            {custom > 0 && <> · وتبقى تخصيصات <Num>{custom}</Num> منهم كما هي</>}
+          </>
+        ) : (
+          'لا يحمل هذا الدور أحد حاليًا'
+        )}
+        {role.external && ' · دور خارجي يعمل من بوابة الجهات، وما يُمنح له يُقرأ في حدود سجلاته وحدها'}
+      </p>
+
+      {members.length > 0 && (
+        <div className="pm-faces">
+          {members.map((u) => <Person key={u.id} name={u.name} />)}
+        </div>
+      )}
+
+      <PermMatrix
+        mode="role"
+        role={draft}
+        overrides={{}}
+        onToggle={toggle}
+        onScope={setScope}
+        locked={(mod) => role.key === 'admin' && mod === 'permissions'}
+      />
+
+      {sod.length > 0 && <SodNote pairs={sod} />}
+    </Glass>
+  )
+}
+
+/* ═══ The matrix · shared by a user and a role ═══ */
+
+function PermMatrix({ mode, role, overrides, onToggle, onScope, locked }: {
+  mode: 'user' | 'role'
+  role: PermRole | undefined
+  overrides: Overrides
+  onToggle: (mod: string, act: ActionKey, on: boolean) => void
+  onScope?: (mod: string, s: Scope) => void
+  locked: (mod: string) => boolean
+}) {
+  return (
+    <>
+      <div className="tblwrap">
+        <table className="tbl nfm pmx">
+          <thead>
+            <tr>
+              <th>الوحدة</th>
+              {ACTIONS.map((a) => <th key={a.key} className="nfm-c" title={a.note}>{a.label}</th>)}
+              <th className="nfm-f">النطاق</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PERM_MODULES.map((m) => {
+              const grant = role?.grants[m.key]
+              const lock = locked(m.key)
+              const open = effective(role, overrides, m.key, 'view')
+              return (
+                <tr key={m.key} className={open ? '' : 'pm-closed'}>
+                  <td>
+                    <span className="pm-mod">
+                      <b>{m.label}</b>
+                      {m.admin && <Tag tone="mute">للجميع</Tag>}
+                    </span>
+                    <span className="sub pm-mod-n">{m.note}</span>
+                  </td>
+                  {ACTIONS.map((a) => {
+                    if (!m.actions.includes(a.key)) {
+                      return <td key={a.key} className="nfm-c"><span className="pm-na" aria-label="لا ينطبق">—</span></td>
+                    }
+                    const on = effective(role, overrides, m.key, a.key)
+                    const ov = mode === 'user' && overrides[m.key]?.[a.key] !== undefined
+                    return (
+                      <td key={a.key} className={`nfm-c${ov ? ' pm-ov' : ''}`}>
+                        <span className="nfm-box">
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            disabled={lock}
+                            onChange={(ev) => onToggle(m.key, a.key, ev.target.checked)}
+                            aria-label={`${m.label} · ${a.label}`}
+                            title={
+                              lock ? 'مقفل · حتى لا يُغلق باب الصلاحيات على من يديرها'
+                                : ov ? `مختلف عن الدور · الدور ${role?.grants[m.key]?.acts.includes(a.key) ? 'يمنحه' : 'لا يمنحه'}`
+                                  : undefined
+                            }
+                          />
+                          {lock && <Icon name={icons.lock} size="sm" className="nfm-lock" />}
+                          {ov && <i className="pm-dot" aria-hidden="true" />}
+                        </span>
+                      </td>
+                    )
+                  })}
+                  <td className="nfm-f">
+                    {!m.scoped ? (
+                      <span className="sub">—</span>
+                    ) : mode === 'role' && onScope ? (
+                      <Select
+                        value={grant?.scope ?? 'own'}
+                        allowEmpty={false}
+                        options={SCOPES}
+                        disabled={!grant?.acts.includes('view')}
+                        onChange={(x) => onScope(m.key, (x as Scope) ?? 'own')}
+                      />
+                    ) : (
+                      <span className="sub">
+                        {open ? SCOPES.find((s) => s.value === (grant?.scope ?? 'own'))?.label : '—'}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="sub pm-legend">
+        {mode === 'user' && <span><i className="pm-dot" aria-hidden="true" /> مختلف عن الدور</span>}
+        <span><span className="pm-na">—</span> لا ينطبق على الوحدة</span>
+        <span>أي صلاحية تفتح «عرض» معها، وإغلاق «عرض» يغلق الصف</span>
+        {mode === 'user' && <span>النطاق من الدور</span>}
+      </p>
+    </>
+  )
+}
+
+function SodNote({ pairs }: { pairs: ReturnType<typeof conflicts> }) {
+  return (
+    <div className="pm-sod" role="note">
+      <Icon name={icons.alert} size="sm" />
+      <div>
+        <b>فصل المهام</b>
+        <ul>
+          {pairs.map((p) => (
+            <li key={p.mod}>
+              {moduleByKey(p.mod)?.label}: «{ACT_LABEL[p.a]}» و«{ACT_LABEL[p.b]}» معًا · من يرفع الطلب يعتمده بنفسه
+            </li>
+          ))}
+        </ul>
+        <span className="sub">تنبيه لا منع: الفريق الصغير قد يحتاجه، فليكن قرارًا مقصودًا.</span>
+      </div>
+    </div>
+  )
+}
+
+/* ═══ Log ═══ */
+
+function LogTab({ log }: { log: PermLogRow[] }) {
+  return (
+    <Glass className="tblcard">
+      <Head title="سجل التغييرات" meta={<span className="sub">لا يُحذف ولا يُعدَّل</span>} />
+      {log.length === 0 ? (
+        <Empty title="لم يُسجَّل تغيير بعد." />
+      ) : (
+        <div className="tblwrap">
+          <table className="tbl pm-log">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>بواسطة</th>
+                <th>على</th>
+                <th>التغيير</th>
+              </tr>
+            </thead>
+            <tbody>
+              {log.map((l) => (
+                <tr key={l.id}>
+                  <td><DateText>{l.at}</DateText></td>
+                  <td><Person name={l.by} /></td>
+                  <td>{l.target.startsWith('دور ') ? l.target : <Person name={l.target} />}</td>
+                  <td className="pm-log-c">{l.change}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Glass>
+  )
+}

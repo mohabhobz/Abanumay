@@ -30,6 +30,8 @@ export const ROUTES = {
    * account menu, and from each module's own header linking to its own page.
    */
   settings: '/settings',
+  /** Roles and users × every module · the system admin's screen, opened from the account menu. */
+  permissions: '/settings/permissions',
 
   entities: '/entities',
   entity: (id: string, tab?: string) => `/entities/${id}${tab && tab !== 'data' ? `/${tab}` : ''}`,

@@ -1,0 +1,59 @@
+/* Permissions and roles · the system admin's screen (src/features/settings/PermissionsPage.tsx) */
+
+.pm-bar{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center}
+.pm-bar>.srch{flex:1 1 16rem}
+
+/* List beside the editor · the list stays in view while the matrix scrolls */
+.pm-split{display:grid;grid-template-columns:minmax(15rem,20rem) minmax(0,1fr);gap:var(--gap);align-items:start}
+.pm-side{position:sticky;top:var(--sp-6)}
+.pm-list{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+.pm-item{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-1) var(--sp-3);width:100%;min-height:var(--h-md);
+  padding:var(--sp-3) var(--sp-4);border-radius:var(--r1);background:none;color:var(--t1);text-align:start;cursor:pointer;
+  transition:background-color var(--mo-2) var(--ease-std)}
+.pm-item:hover{background:var(--ctl-quiet-h)}
+.pm-item.on{background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--ctl-line)}
+.pm-item.off .prs{opacity:.6}
+.pm-item-t{font-weight:500;flex:1 1 100%}
+.pm-item-m{flex:1 1 100%;font-size:var(--fs-1);padding-inline-start:var(--sp-9)}
+.pm-item:not(:has(.prs)) .pm-item-m{padding-inline-start:0}
+.pm-warn{position:absolute;inset-inline-end:var(--sp-4);color:var(--t2)}
+.pm-item{position:relative}
+
+.pm-main{min-width:0;display:flex;flex-direction:column;gap:var(--sp-5)}
+.pm-who{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3)}
+.pm-rt{margin:0;font-family:var(--fd);font-size:var(--fs-5);font-weight:600;color:var(--t1)}
+.pm-faces{display:flex;flex-wrap:wrap;gap:var(--sp-3) var(--sp-5)}
+.pm-foot{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3)}
+
+/* Matrix · reuses the notification matrix columns, so every checkbox sits on one line. Five verbs
+   take narrower columns than three channels, so the module name keeps its line. */
+.tbl.pmx .nfm-c{width:4.5rem}
+.tbl.pmx .nfm-f{width:9rem}
+.tbl.pmx td:first-child{min-width:14rem}
+.tbl.pmx .pm-mod{display:inline-flex;align-items:center;gap:var(--sp-3)}
+.tbl.pmx .pm-mod b{font-weight:600;color:var(--t1)}
+.tbl.pmx td .pm-mod-n{display:block;font-size:var(--fs-1);margin-top:var(--sp-1)}
+.tbl.pmx tr.pm-closed .pm-mod b{color:var(--t2);font-weight:500}
+.pm-na{color:var(--t3)}
+.pm-dot{display:inline-block;width:var(--sp-3);height:var(--sp-3);border-radius:var(--r-dot);background:var(--solid)}
+.nfm-box>.pm-dot{position:absolute;top:50%;inset-inline-start:calc(100% + var(--sp-2));translate:0 -50%}
+.pm-legend{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-6);margin:0}
+.pm-legend>span{display:inline-flex;align-items:center;gap:var(--sp-2)}
+
+.pm-sod{display:flex;gap:var(--sp-3);align-items:flex-start;padding:var(--pad-in);border-radius:var(--r1);
+  box-shadow:inset 0 0 0 1px var(--edge-i);line-height:var(--lh-text);color:var(--t1)}
+.pm-sod ul{margin:var(--sp-2) 0;padding-inline-start:var(--sp-6);color:var(--t2)}
+
+.tbl.pm-log td.pm-log-c{white-space:normal;min-width:16rem}
+
+@media (max-width:960px){
+  .pm-split{grid-template-columns:1fr}
+  .pm-side{position:static}
+  /* The list becomes a horizontal strip of people, so the editor stays one screen down, not ten */
+  .pm-list{flex-direction:row;overflow-x:auto;padding-bottom:var(--sp-2)}
+  .pm-list>li{flex:none}
+  .pm-item{width:auto}
+  .pm-item-m{display:none}
+  .pmx{min-width:640px}
+  .pm-bar>.fsel{flex:1 1 10rem}
+}

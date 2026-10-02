@@ -38,6 +38,7 @@ import RequestForm from '@/features/payments/RequestForm'
 import OrderPage from '@/features/payments/OrderPage'
 import LatePage from '@/features/payments/LatePage'
 import SettingsIndexPage from '@/features/settings/SettingsIndexPage'
+import PermissionsPage from '@/features/settings/PermissionsPage'
 import PreferencesPage from '@/features/account/PreferencesPage'
 import EntitySettingsPage from '@/features/entities/EntitySettingsPage'
 import ProjectSettingsPage from '@/features/projects/ProjectSettingsPage'
@@ -86,6 +87,7 @@ export default function App() {
 
         {/* Settings inventory — entered from the account menu, not the rail. */}
         <Route path={ROUTES.settings} element={<SettingsIndexPage />} />
+        <Route path={ROUTES.permissions} element={<PermissionsPage />} />
 
         <Route path={ROUTES.projects} element={<ProjectsListPage />} />
 

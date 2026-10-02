@@ -24,9 +24,10 @@
 .nfm th,.nfm td{vertical-align:middle}
 .nfm .nfm-c{width:7.5rem;text-align:center}
 .nfm .nfm-f{width:11rem}
-.nfm input[type=checkbox]{width:18px;height:18px;accent-color:var(--solid);cursor:pointer}
+.nfm-box{position:relative;display:inline-grid;place-items:center;vertical-align:middle}
+.nfm input[type=checkbox]{display:block;margin:0;width:18px;height:18px;accent-color:var(--solid);cursor:pointer}
 .nfm input[type=checkbox]:disabled{cursor:not-allowed}
-.nfm-lock{color:var(--t3);margin-inline-start:var(--sp-2);vertical-align:middle}
+.nfm-lock{position:absolute;top:50%;inset-inline-end:calc(100% + var(--sp-2));translate:0 -50%;color:var(--t3)}
 .nfm-g th{padding-top:var(--sp-5)}
 .nfm-g th b{font-family:var(--fd);font-weight:600;color:var(--t1);margin-inline-end:var(--sp-3)}
 .nfm-g th .sub{font-weight:400}

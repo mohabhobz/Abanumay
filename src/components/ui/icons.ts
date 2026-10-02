@@ -31,7 +31,7 @@ import {
   ChartLineUp, FileText, Folder, Funnel, GridFour, House, LinkSimple, List, ListChecks,
   Lock, MagnifyingGlass, MapPin, Monitor, Moon, Paperclip, PencilSimple, Plus,
   PushPin, Rows, SidebarSimple, SignOut, Signature, SlidersHorizontal, SortDescending, SquaresFour,
-  Sun, ThumbsDown, ThumbsUp, Trash, UploadSimple, User, Users, Wallet,
+  ShieldCheck, Sun, ThumbsDown, ThumbsUp, Trash, UploadSimple, User, Users, Wallet,
   WarningCircle, Info, X,
   type Icon as PhIcon,
 } from '@phosphor-icons/react'
@@ -125,6 +125,7 @@ export const icons = {
   clock: Clock,
   pinMap: MapPin,
   users: Users,
+  shield: ShieldCheck,
   link: LinkSimple,
 } as const satisfies Record<string, IconGlyph>
 

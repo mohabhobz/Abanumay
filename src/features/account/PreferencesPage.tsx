@@ -154,6 +154,9 @@ function NotifyTab({ roleKey, roleName }: { roleKey: string; roleName: string })
                         const on = locked ? true : noSms ? false : row[c.key]
                         return (
                           <td key={c.key} className="nfm-c">
+                            {/* The box is the cell's anchor; the lock hangs beside it without
+                                moving it, so every column lines up on its checkbox. */}
+                            <span className="nfm-box">
                             <input
                               type="checkbox"
                               checked={on}
@@ -166,6 +169,7 @@ function NotifyTab({ roleKey, roleName }: { roleKey: string; roleName: string })
                               }
                             />
                             {locked && <Icon name={icons.lock} size="sm" className="nfm-lock" />}
+                            </span>
                           </td>
                         )
                       })}

@@ -54,6 +54,11 @@ const ROSTER: ReadonlyArray<Omit<Person, 'photo' | 'initial'> & { initial?: stri
   { name: 'محمد المطيري', slug: 'mohammed-almutairi', title: 'الإدارة المالية' },
   { name: 'سلطان العتيبي', slug: 'sultan-alotaibi', title: 'الإدارة المالية' },
 
+  /* System, communications and external accounts · appear in the permissions screen */
+  { name: 'نورة القحطاني', slug: 'noura-alqahtani', title: 'مديرة النظام' },
+  { name: 'خالد السبيعي', slug: 'khalid-alsubaie', title: 'الاتصال المؤسسي' },
+  { name: 'د. سامي الفايز', slug: 'sami-alfayez', title: 'مستشار خارجي' },
+
   /* AI assistant personas */
   { name: 'ريم الشمري', slug: 'reem-alshammari', title: 'محللة بيانات' },
   { name: 'د. فهد العمري', slug: 'fahd-alomari', title: 'مستشار' },

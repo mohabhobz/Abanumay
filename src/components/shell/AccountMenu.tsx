@@ -141,6 +141,12 @@ export function AccountMenu({
               <Icon name={icons.gear} size="sm" />
               إعدادات النظام
             </button>
+            {/* The system admin's entry · in production it shows only to holders of
+                «الصلاحيات · تعديل»; the mock shows it so the screen can be reviewed. */}
+            <button role="menuitem" onClick={() => go(ROUTES.permissions)}>
+              <Icon name={icons.shield} size="sm" />
+              الصلاحيات والأدوار
+            </button>
           </div>
 
           <div className="acct-sec">
