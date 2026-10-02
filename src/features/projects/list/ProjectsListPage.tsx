@@ -707,6 +707,8 @@ export default function ProjectsListPage() {
               value={bulkOwner}
               all="اختر المالك…"
               people
+              up
+              allowEmpty={false}
               options={OWNERS}
               onChange={setBulkOwner}
             />

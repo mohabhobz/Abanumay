@@ -1,5 +1,5 @@
 import type { IconGlyph } from '@/components/ui/icons'
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { MenuOpt, MenuPanel, useMenuSearch } from './menu'
 import { Tabs } from './primitives'
@@ -84,6 +84,11 @@ export interface SelectProps {
    * is an owner that decides.
    */
   people?: boolean
+  /**
+   * The field sits at the bottom of the screen (a decision or bulk dock): the panel floats above
+   * the field instead of opening into the viewport's edge, where it was cut off.
+   */
+  up?: boolean
 }
 
 /**
@@ -103,9 +108,10 @@ export interface SelectProps {
  */
 export function Select({
   label, value, options, onChange, all = 'الكل', disabled, wide, icon,
-  allowEmpty = true, searchAt = 9, people,
+  allowEmpty = true, searchAt = 9, people, up,
 }: SelectProps) {
-  const { open, setOpen, box } = useMenu<HTMLDivElement>()
+  const { open, setOpen, box, pop } = useMenu<HTMLDivElement>()
+  const btn = useRef<HTMLButtonElement>(null)
   const { needle, setNeedle, search } = useMenuSearch(open, searchAt, options.length)
   const id = useId()
 
@@ -138,6 +144,7 @@ export function Select({
 
       <button
         type="button"
+        ref={btn}
         className="fsel-b"
         disabled={disabled}
         aria-haspopup="listbox"
@@ -168,6 +175,9 @@ export function Select({
       {open && (
         <MenuPanel
           one
+          up={up}
+          end={up}
+          float={up ? { anchor: btn, pop } : undefined}
           search={search}
           needle={needle}
           onNeedle={setNeedle}
