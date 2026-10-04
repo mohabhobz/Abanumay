@@ -1,7 +1,8 @@
+import { CFG, hydrate } from '@/lib/config'
 import type {
   AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, AgreementStage,
 } from '@/types/domain'
-import { projectRows } from './projects'
+import { SCENARIO, projectRows } from './projects'
 import { entityById } from './entities'
 
 /* Agreements · 28 steps and 26 rules
@@ -68,7 +69,7 @@ export const AGR_TONE: Record<AgreementStage, 'mute' | 'warn' | 'ret' | 'ok' | '
  * The document gives no duration per stage; the first indicator measures "average agreement
  * drafting time" and the target is **empty**, exactly like the disbursement indicators.
  */
-export const AGR_LIMIT: Record<AgreementStage, number> = {
+export const AGR_LIMIT: Record<AgreementStage, number> = hydrate(CFG.agrLimits, {
   draft: 168,
   manager: 96,
   executive: 96,
@@ -76,7 +77,7 @@ export const AGR_LIMIT: Record<AgreementStage, number> = {
   returned: 120,
   active: 0,
   cancelled: 0,
-}
+})
 
 export type AgrHeat = 'ok' | 'late' | 'stuck'
 
@@ -186,9 +187,15 @@ const MIX: { stage: AgreementStage; share: number }[] = [
   { stage: 'active', share: 0.38 },
 ]
 
+/** Scenario projects (meeting 1 Oct, A-6) top up any stage left with fewer than three agreements ·
+    kept out of the share-based mix below so the sample's own records keep their ids */
+const SCENARIO_IDS = new Set([...SCENARIO.agreements, ...SCENARIO.closing])
+const MIN_PER_STAGE = 3
+
 /** Rule 1 · no agreement before the project's approval is fully complete */
 const eligible = projectRows.filter(
-  (p) => p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل' || p.stage.includes('الإتفاقي'),
+  (p) => !SCENARIO_IDS.has(p.id) &&
+    (p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل' || p.stage.includes('الإتفاقي')),
 )
 
 /** The steps each stage passes through · from the steps table itself */
@@ -267,10 +274,7 @@ export const agreements: AgreementRow[] = (() => {
   if (PLAN[PLAN.length - 1]) PLAN[PLAN.length - 1]!.n += spare
 
   let n = 0
-  for (const { stage, n: count } of PLAN) {
-    for (let i = 0; i < count; i++) {
-      const p = eligible[n]
-      if (!p) break
+  const make = (p: (typeof projectRows)[number], stage: AgreementStage) => {
       n++
       const e = entityById(p.entityId)
       const amount = p.amountGranted || p.amountRequested
@@ -308,6 +312,18 @@ export const agreements: AgreementRow[] = (() => {
         log: [],
         docs: [],
       })
+  }
+  for (const { stage, n: count } of PLAN) {
+    for (let i = 0; i < count; i++) {
+      const p = eligible[n]
+      if (!p) break
+      make(p, stage)
+    }
+  }
+  const pool = SCENARIO.agreements.map((id) => projectRows.find((p) => p.id === id)).filter((p) => !!p)
+  for (const { stage } of MIX) {
+    while (out.filter((a) => a.stage === stage).length < MIN_PER_STAGE && pool.length) {
+      make(pool.shift()!, stage)
     }
   }
 

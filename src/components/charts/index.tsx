@@ -10,7 +10,8 @@ import { isolate, nf, pct } from '@/lib/format'
    Color rule: **color describes state, not quantity.** Numbers are written in the normal text
    color; color belongs to the bar or dot. */
 
-export { SaudiMap, type MapPoint } from './SaudiMap'
+export { SaudiMap, type MapPoint, type MapRow } from './SaudiMap'
+export { Spark, type SparkPoint, type SparkSla } from './Spark'
 export { StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, MoneyRing, type Hue, type StageDatum, type LolliDatum, type Part, type MeterDatum, type RingPart } from './forms'
 
 export const CHART_COLORS = [

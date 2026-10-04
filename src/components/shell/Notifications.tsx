@@ -1,3 +1,4 @@
+import { useFlow } from '@/data/intake/flow'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as RKeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -29,7 +30,10 @@ function NoteMark({ from }: { from: NoteFrom }) {
  */
 export function NotificationBell({ user, place = 'rail' }: { user: { name: string }; place?: 'rail' | 'top' }) {
   const [open, setOpen] = useState(false)
-  const notes = useMemo(() => buildNotes(user), [user])
+  /* Intake actions add notes while the app is open · re-read when one runs */
+  const flowV = useFlow()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const notes = useMemo(() => buildNotes(user), [user, flowV])
   const read = useReadSet()
   const unread = notes.filter((n) => !isRead(n, read)).length
   const bell = useRef<HTMLButtonElement>(null)

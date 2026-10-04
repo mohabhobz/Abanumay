@@ -1,10 +1,11 @@
+import { CFG, hydrate } from '@/lib/config'
 import type {
   ActivityState, PlanActivity, PlanChange, PlanPhase, PlanRow, PlanStage,
 } from '@/types/domain'
 import { nowStamp } from '@/lib/format'
 import { TONE } from '@/lib/tone'
 import type { Tone } from '@/types/domain'
-import { projectRows } from './projects'
+import { SCENARIO, projectRows } from './projects'
 
 /* Project execution plan · addresses a significant gap identified during review.
 
@@ -66,14 +67,14 @@ export const PLAN_TONE: Record<PlanStage, Tone> = {
  * The spec gave no duration per milestone — these numbers are assumptions recorded during planning,
  * same as the agreement and disbursement durations.
  */
-export const PLAN_LIMIT: Record<PlanStage, number> = {
+export const PLAN_LIMIT: Record<PlanStage, number> = hydrate(CFG.planLimits, {
   draft: 336,
   supervisor: 120,
   manager: 96,
   returned: 168,
   active: 0,
   done: 0,
-}
+})
 
 export const ACTIVITY_SAY: Record<ActivityState, string> = {
   todo: 'لم يبدأ',
@@ -484,6 +485,76 @@ export const planRows: PlanRow[] = [
     ]),
   ], 'سارة القحطاني', '2025-08-10', 12, { baselineAt: '2025-08-24' }),
 ]
+
+/* ═══ Scenario plans (meeting 1 Oct, A-6) ═══
+   Tops every stage up to three plans. Each one is built for its own project: three phases sized
+   from that project's grant, and activity states that follow from the plan's stage — nothing is
+   started before approval, a running plan is part-accepted, a done plan is fully accepted. */
+
+const SC_STAGES: PlanStage[] = ['draft', 'supervisor', 'manager', 'returned', 'active', 'done']
+const SC_RETURNS = [
+  'المرحلة الثانية بلا شاهد محدد لنشاط «التنفيذ الميداني» · أضف نوع الشاهد المطلوب.',
+  'تكلفة المرحلة الأولى تتجاوز 40% من المنحة · راجع التوزيع مع جدول الدفعات.',
+]
+
+const scDate = (start: string, d: number): string => {
+  const t = new Date(`${start}T00:00:00Z`)
+  t.setUTCDate(t.getUTCDate() + d)
+  return t.toISOString().slice(0, 10)
+}
+
+;(() => {
+  const pool = SCENARIO.plans.filter((id) => !planRows.some((p) => p.projectId === id))
+  let i = 0
+  for (const stage of SC_STAGES) {
+    while (planRows.filter((p) => p.stage === stage).length < 3 && pool.length) {
+      const pid = pool.shift()!
+      const pr = projectRows.find((x) => x.id === pid)
+      if (!pr) continue
+      const k = i++
+      const granted = pr.amountGranted || pr.amountRequested
+      const approved = stage === 'active' || stage === 'done'
+      /* A plan not yet approved starts after "today", or every activity in it reads overdue */
+      const start = approved ? scDate(stage === 'done' ? '2025-11-01' : '2026-04-01', (k * 9) % 40) : scDate('2026-10-05', (k * 9) % 40)
+      /* Accepted share of each phase · by stage, so the progress bar has something to say */
+      const st = (ph: number, a: number): ActivityState =>
+        !approved ? 'todo'
+          : stage === 'done' ? 'accepted'
+            : ph === 0 ? 'accepted'
+              : ph === 1 ? (a === 0 ? 'accepted' : k % 2 ? 'claimed' : 'doing')
+                : 'todo'
+      const evs = (id: string, kind: string, s: ActivityState, at: string) =>
+        s === 'accepted' || s === 'claimed' ? [ev(id, kind, `${id}.pdf`, at)] : []
+      const shares = [0.25, 0.55, 0.2]
+      const names = [
+        ['التهيئة والتعاقد', ['تشكيل فريق التنفيذ', 'تجهيز المتطلبات والتوريد']],
+        ['التنفيذ', ['التنفيذ الميداني', 'المتابعة والقياس']],
+        ['الإغلاق والتسليم', ['تسليم المخرجات', 'إعداد التقرير الختامي']],
+      ] as const
+      const phases = names.map(([pname, acts], ph) => {
+        const from = scDate(start, ph * 60)
+        const to = scDate(start, ph * 60 + 55)
+        const even = (x: number) => Math.round((granted * x) / 1000) * 1000
+        /* The last phase takes the remainder · the phases must sum to the grant exactly */
+        const cost = ph < 2 ? even(shares[ph]!) : granted - even(shares[0]!) - even(shares[1]!)
+        return phase(`ph${ph + 1}`, pname, from, to, cost,
+          acts.map((aname, a) => {
+            const s = st(ph, a)
+            const at = scDate(from, 20 + a * 15)
+            return act(`a${ph * 2 + a + 1}`, aname, s, scDate(from, a * 20), scDate(from, a * 20 + 30), 50,
+              [a === 0 ? 'محضر استلام' : 'صور تنفيذ'], evs(`e${ph * 2 + a + 1}`, a === 0 ? 'محضر استلام' : 'صور تنفيذ', s, at),
+              s === 'accepted' ? { doneAt: scDate(at, 2) } : {})
+          }))
+      })
+      planRows.push(plan(`PL-${1100 + k}`, pid, stage, approved ? 1 : 0, phases, pr.owner ?? 'عمر قاسم', start,
+        stage === 'done' ? 0 : 24 + ((k * 61) % 400), {
+          ...(approved ? { baselineAt: scDate(start, -10) } : {}),
+          ...(stage === 'returned' ? { note: SC_RETURNS[k % SC_RETURNS.length] } : {}),
+          drafter: k % 4 === 3 ? 'supervisor' : 'entity',
+        }))
+    }
+  }
+})()
 
 export const planById = (id: string): PlanRow | undefined =>
   planRows.find((p) => p.id === id)

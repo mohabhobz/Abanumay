@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { DateText, Empty, Glass, Head, Icon, Mono, Select, icons } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Icon, Mono, SearchBox, Select, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import type { ActorKind, LogEvent } from '@/data/mock/log'
 
@@ -71,11 +71,19 @@ export function LogTab({ events, entityName }: LogTabProps) {
   const [view, setView] = useState<Cat | 'all'>('all')
   const [order, setOrder] = useState<Order>('newest')
   const [open, setOpen] = useState<Set<string>>(new Set())
+  /* 3.4.32 · search inside the events: the action, who did it, the department and every field */
+  const [q, setQ] = useState('')
 
   /* Events arrive newest first; the oldest-first order is the same list reversed, so events
      sharing a day keep their workflow order in both directions. */
   const tagged = useMemo(() => events.map((e) => ({ e, c: catOf(e) })), [events])
-  const scoped = tagged
+  const scoped = useMemo(() => {
+    const n = q.trim()
+    if (!n) return tagged
+    return tagged.filter(({ e }) =>
+      [e.action, e.by, e.dept, e.followUp ?? '', e.source ?? '', ...e.fields.map((f) => `${f.k} ${f.v}`), ...(e.files ?? [])]
+        .some((t) => t.includes(n)))
+  }, [tagged, q])
 
   const counts = useMemo(() => {
     const out = Object.fromEntries(CATS.map((c) => [c.key, 0])) as Record<Cat, number>
@@ -117,6 +125,10 @@ export function LogTab({ events, entityName }: LogTabProps) {
         }
       />
 
+      <div className="lgsearch">
+        <SearchBox value={q} onChange={setQ} placeholder="ابحث في الأحداث: إجراء، منفّذ، قسم، أو قيمة حقل…" />
+      </div>
+
       {/* Category tabs · the same markup as `Tabs`, plus the category swatch, which `Tabs` has no
           slot for. The swatch is the shape that carries the color; the label stays neutral text. */}
       <div className="tabs lgtabs" role="tablist" aria-label="تصنيف الأحداث">
@@ -138,7 +150,7 @@ export function LogTab({ events, entityName }: LogTabProps) {
 
       {shown.length === 0 ? (
         <div style={{ marginTop: 'var(--sp-5)' }}>
-          <Empty title="لا توجد أحداث بهذا التصنيف." />
+          <Empty title={q.trim() ? `لا أحداث تطابق «${q.trim()}».` : 'لا توجد أحداث بهذا التصنيف.'} />
         </div>
       ) : (
         <ol className="lg">

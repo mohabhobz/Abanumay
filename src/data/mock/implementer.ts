@@ -19,16 +19,19 @@ import type { PartnerKind } from './registration'
 
 /** Implementing partners · populated internally by the system, per a fixed platform rule */
 export const IMPLEMENTERS: { id: string; name: string; note: string }[] = [
-  { id: '860', name: 'منصة إحسان', note: 'منصة حكومية تدعم الجهات الخيرية · لا تدخل النظام' },
+  { id: '860', name: 'منصة إحسان', note: 'منصة حكومية تدعم الجهات الخيرية · شريك استراتيجي يدير محفظته' },
   { id: '861', name: 'المحافظ الخيرية', note: 'الترتيب نفسه · إدارة داخلية كاملة' },
 ]
 
 export const isImplementer = (entityId: string): boolean =>
   IMPLEMENTERS.some((x) => x.id === entityId)
 
+/** Portfolio managers with their own login (meeting 1 Oct · the strategic-partner persona) */
+const STRATEGIC = new Set(['860'])
+
 /** Entity partnership type · arriving via the portal it's a beneficiary; these are implementers */
 export const partnerOf = (entityId: string): PartnerKind =>
-  isImplementer(entityId) ? 'implementer' : 'beneficiary'
+  STRATEGIC.has(entityId) ? 'strategic' : isImplementer(entityId) ? 'implementer' : 'beneficiary'
 
 export const implementerName = (entityId: string): string =>
   IMPLEMENTERS.find((x) => x.id === entityId)?.name ??

@@ -1,4 +1,4 @@
-import { unitAfter } from '@/lib/format'
+import { nf, unitAfter } from '@/lib/format'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SAUDI_REGIONS, SAUDI_VIEW } from './saudi-regions'
@@ -33,9 +33,24 @@ export interface MapPoint {
   value: number
   note?: string
   href?: string
+  /** Money behind the region · written beside it on the map when `amounts` is on */
+  amount?: number
 }
 
-export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint[]; unit?: string }) {
+/** A row of the list under the map · regions by default, or cities when passed */
+export interface MapRow { key: string; label: string; value: number; amount?: number; href?: string }
+
+/** Compact millions for a label on the map · "2.4م" */
+const mil = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} م` : `${Math.round(n / 1000)} ألف`)
+
+export function SaudiMap({ points, unit = 'مشروعًا', amounts = false, list }: {
+  points: MapPoint[]
+  unit?: string
+  /** Meeting 1 Oct, E-5 · the amount beside each region, not only on hover */
+  amounts?: boolean
+  /** Rows under the map · when longer than five it becomes a swipe row instead of wrapping */
+  list?: MapRow[]
+}) {
   const [hot, setHot] = useState<string | null>(null)
 
   /** Value per region by name — the map speaks in the system's own region names. */
@@ -54,6 +69,10 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
   const active = hot ? SAUDI_REGIONS.find((r) => r.name === hot) : undefined
   const activeVal = hot ? byName.get(hot) : undefined
   const ranked = [...points].filter((p) => onMap(p.key)).sort((a, b) => b.value - a.value)
+  const topAmt = new Set(
+    [...points].filter((p) => onMap(p.key) && (p.amount ?? 0) > 0)
+      .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0)).slice(0, 4).map((p) => p.key),
+  )
 
   return (
     <div className="map">
@@ -96,9 +115,24 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
             )
           })}
 
+          {/* Amounts beside the regions (E-5) · only where there is money, so the map stays
+              quiet where nothing is. The hovered count then moves to the tooltip alone. */}
+          {amounts && SAUDI_REGIONS.map((r) => {
+            const a = byName.get(r.name)?.amount ?? 0
+            /* The four largest only: small neighbouring regions (Madinah, Qassim, Hail) can't
+               hold a label each without overlapping · the rest read on hover and in the list */
+            if (a <= 0 || !topAmt.has(r.name)) return null
+            return (
+              <text key={`amt-${r.key}`} className={`map-amt${hot === r.name ? ' on' : ''}`} x={r.c[0]} y={r.c[1]}
+                textAnchor="middle" dominantBaseline="central">
+                {mil(a)}
+              </text>
+            )
+          })}
+
           {/* The number shows only on the hovered region — that many numbers on the map at once
               would clutter it. */}
-          {active && activeVal && (
+          {!amounts && active && activeVal && (
             <text
               className="map-num"
               x={active.c[0]}
@@ -124,6 +158,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
             <span>
               <span className="num">{activeVal.value}</span> {unitAfter(activeVal.value, unit)}
             </span>
+            {activeVal.amount ? <span><span className="num">{nf.format(activeVal.amount)}</span> ريال</span> : null}
             {activeVal.note && <span className="map-tip-n">{activeVal.note}</span>}
           </div>
         )}
@@ -140,6 +175,23 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
           <span className="num">{max}</span>
         </div>
 
+        {list ? (
+          /* E-5 · a long list swipes sideways instead of wrapping into a block under the map */
+          <div className={`map-rank${list.length > 5 ? ' map-swipe' : ''}`}>
+            {list.map((p) => {
+              const body = (
+                <>
+                  <span className="map-rank-l">{p.label}</span>
+                  <b className="num">{p.value}</b>
+                  {p.amount ? <span className="sub num">{mil(p.amount)}</span> : null}
+                </>
+              )
+              return p.href
+                ? <Link key={p.key} to={p.href} className="map-chip">{body}</Link>
+                : <span key={p.key} className="map-chip">{body}</span>
+            })}
+          </div>
+        ) : (
         <div className="map-rank">
           {ranked.slice(0, 5).map((p) =>
             p.href ? (
@@ -167,6 +219,7 @@ export function SaudiMap({ points, unit = 'مشروعًا' }: { points: MapPoint
             </span>
           ))}
         </div>
+        )}
       </div>
     </div>
   )

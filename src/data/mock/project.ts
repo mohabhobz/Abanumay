@@ -268,7 +268,7 @@ export const currentUser: CurrentUser = {
   actions: [
     { label: 'توصية بالموافقة', kind: 'btn-p' },
     { label: 'طلب استكمال', kind: 'btn-2' },
-    { label: 'تحويل لمشرف آخر', kind: 'btn-2' },
+    { label: 'تحويل لمجال أو مشرف آخر', kind: 'btn-2' },
     { label: 'توصية بالرفض', kind: 'btn-d' },
   ],
 }

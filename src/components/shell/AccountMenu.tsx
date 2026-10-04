@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Icon, icons, type IconName } from '@/components/ui'
+import { Face, Icon, icons, type IconName } from '@/components/ui'
+import { ROLES } from '@/data/roles'
+import { useRole } from '@/hooks/useRole'
 import { ROUTES, type NavItem } from '@/app/routes'
 import { Avatar } from './Avatar'
 import type { CurrentUser } from '@/types/domain'
@@ -33,6 +35,8 @@ export function AccountMenu({
   modules?: NavItem[]
 }) {
   const { open, setOpen, box: wrap } = useMenu<HTMLDivElement>()
+  const [who, setWho] = useState(false)
+  const { role, setRole } = useRole()
   const [theme, setTheme] = useState<ThemeChoice>(readTheme)
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -70,13 +74,52 @@ export function AccountMenu({
 
       {open && (
         <div className={`acct${drop ? ' drop' : ''}`} role="menu">
+          {/* The profile card doubles as the switcher: its arrow lists the three roles the
+              prototype is built for, and picking one swaps the whole system to that person, home
+              page first. In production the role comes from the sign-in and this list goes. */}
           <div className="acct-id">
             <Avatar user={user} />
             <div style={{ minWidth: 0 }}>
               <div className="acct-name">{user.name}</div>
               <div className="sub acct-role">{user.role}</div>
             </div>
+            <button
+              type="button"
+              className="iact acct-sw"
+              aria-expanded={who}
+              aria-controls="acct-who"
+              aria-label="تبديل المستخدم"
+              title="تبديل المستخدم"
+              onClick={() => setWho((x) => !x)}
+            >
+              <Icon name={who ? icons.chevronUp : icons.chevronDown} size="sm" />
+            </button>
           </div>
+
+          {who && (
+            <div className="acct-sec acct-who-list" id="acct-who" role="group" aria-label="المستخدمون">
+              {ROLES.map((r) => (
+                <button
+                  key={r.key}
+                  role="menuitemradio"
+                  aria-checked={r.key === role.key}
+                  className={r.key === role.key ? 'on' : ''}
+                  onClick={() => {
+                    setRole(r.key)
+                    setWho(false)
+                    go(ROUTES.home)
+                  }}
+                >
+                  <Face name={r.name} />
+                  <span className="acct-who-t">
+                    <span>{r.name}</span>
+                    <span className="sub">{r.title}</span>
+                  </span>
+                  {r.key === role.key && <Icon name={icons.check} size="sm" />}
+                </button>
+              ))}
+            </div>
+          )}
 
           {modules.length > 0 && (
             <nav className="acct-sec acct-mods" aria-label="باقي الأقسام">
@@ -117,10 +160,6 @@ export function AccountMenu({
             </div>
           </div>
 
-          {/* The role switcher was removed from the menu at the client's request.
-              ⚠️ Role still drives the readings, chips, and limits shown on pages, but there's
-              currently no UI to change it, so this mock falls back to the stored role. Its natural
-              home is the "account settings" screen, once built. */}
           <div className="acct-sec">
             <button role="menuitem" onClick={() => go(ROUTES.account)}>
               <Icon name={icons.user} size="sm" />

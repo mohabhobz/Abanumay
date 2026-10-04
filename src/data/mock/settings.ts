@@ -1,3 +1,5 @@
+import { APPROVAL_MATRIX, approverFor, type ApprovalRow } from '../approval'
+import { CFG, hydrateRows } from '@/lib/config'
 import { CITIES_BY_REGION, REGIONS } from './taxonomy'
 import { entityRows } from './entities'
 import { budgetDocs, fiscalYears, fundSources } from './budgetTree'
@@ -5,6 +7,8 @@ import { projectRows } from './projects'
 import { NOUN, countOf } from '@/lib/format'
 import { EVIDENCE_KINDS, PLAN_STAGES } from './plans'
 import { CLOSE_DOCS, CLOSE_STAGES } from './closing'
+import { AGREEMENT_STAGES } from './agreements'
+import { PAY_STATES } from './disbursements'
 
 /* Module settings.
 
@@ -84,46 +88,20 @@ export const TARGET_GROUPS = [
   'طلاب العلم', 'الشباب', 'المرأة', 'الأطفال', 'اللاجئون',
 ] as const
 
-/* Approval matrix · a business rule, not master data.
-
-   These numbers are assumptions. The disbursement flow states that durations and thresholds come
-   from settings without giving a value — like the empty "target value" in the indicators. So the
-   screen shows them flagged as assumptions until the organization provides real figures.
-
-   The matrix reads bottom-up: the first row whose threshold is greater than or equal to the amount
-   is the decision-maker. */
-export interface ApprovalRow {
-  key: string
-  role: string
-  /** Up to how much · `null` means no cap above it */
-  upTo: number | null
-  assumed: boolean
-}
-
-export const APPROVAL_MATRIX: ApprovalRow[] = [
-  { key: 'supervisor', role: 'مشرف المنح', upTo: 100_000, assumed: true },
-  { key: 'manager', role: 'مدير المنح', upTo: 500_000, assumed: true },
-  { key: 'exec', role: 'المدير التنفيذي', upTo: 2_000_000, assumed: true },
-  { key: 'board', role: 'مجلس الإدارة', upTo: null, assumed: true },
-]
-
-/** Who approves a given amount · the same reading the screen explains */
-export const approverFor = (amount: number): ApprovalRow =>
-  APPROVAL_MATRIX.find((r) => r.upTo === null || amount <= r.upTo) ??
-  APPROVAL_MATRIX[APPROVAL_MATRIX.length - 1]
+export { APPROVAL_MATRIX, approverFor, type ApprovalRow } from '../approval'
 
 /* Other financial limits · all business rules */
 export interface LimitRow {
   key: string
   label: string
   /** The unit is in the name, not the number · the number stays a number */
-  unit: 'ريال' | 'يوم' | '%'
+  unit: 'ريال' | 'يوم' | '%' | 'مشروع'
   value: number
   where: string
   assumed: boolean
 }
 
-export const MONEY_LIMITS: LimitRow[] = [
+export const MONEY_LIMITS: LimitRow[] = hydrateRows(CFG.limits, [
   {
     key: 'minPay', label: 'الحد الأدنى للدفعة الواحدة', unit: 'ريال', value: 5_000,
     where: 'إنشاء طلب صرف · خطوة 2', assumed: true,
@@ -140,7 +118,15 @@ export const MONEY_LIMITS: LimitRow[] = [
     key: 'agrDays', label: 'مهلة توقيع الاتفاقية', unit: 'يوم', value: 30,
     where: 'إجراء الاتفاقيات · قاعدة 23', assumed: true,
   },
-]
+  {
+    key: 'projectsPerEntity', label: 'أقصى عدد مشاريع للجهة في الدورة', unit: 'مشروع', value: 3,
+    where: 'تقديم مشروع جديد من البوابة · يمنع ما فوقه', assumed: true,
+  },
+  {
+    key: 'officerLoad', label: 'أقصى مشاريع قيد الدراسة للمشرف', unit: 'مشروع', value: 15,
+    where: 'الإسناد الجماعي في قائمة المشاريع · ينبّه عند تجاوزه', assumed: true,
+  },
+], 'value')
 
 /* Settings inventory · what the `/settings` page reads from.
 
@@ -212,6 +198,11 @@ export const SETTING_MODULES: SettingModule[] = [
         key: 'limits', tab: 'limits', label: 'الحدود المالية والزمنية', kind: 'rule', owner: 'الإدارة المالية',
         where: 'إنشاء طلب الصرف · جدول الدفعات · التصعيد',
         count: MONEY_LIMITS.length,
+      },
+      {
+        key: 'stages', tab: 'stages', label: 'مدد مراحل الاتفاقية والصرف', kind: 'rule', owner: 'إدارة المنح',
+        where: 'ألوان «متأخر» · والتصعيد · وقوائم «اليوم»',
+        count: AGREEMENT_STAGES.length + PAY_STATES.length,
       },
     ],
   },

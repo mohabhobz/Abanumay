@@ -17,6 +17,7 @@ import {
 } from '@/data/mock/payEntity'
 import type { PayRequest } from '@/types/domain'
 import { ActionDock, actionsFor } from './ActionDock'
+import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
 
@@ -385,6 +386,7 @@ export default function RequestPage() {
 
             {/* === Side column - what supports the decision === */}
             <div className="col">
+              <EditableCard module="payment" state={r.state} label={meta?.label} />
               {/* Rule 10 - the agreement and its validity shown on the request. */}
               <Glass>
                 <Head

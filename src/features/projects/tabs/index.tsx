@@ -7,6 +7,7 @@ import type { ThreadMessage } from '@/data/mock/detail'
 import { Thread } from '@/components/thread'
 
 export { DataTab } from './DataTab'
+export { StudyTab, StudyAside } from './StudyTab'
 export { EntityTab } from './EntityTab'
 export { AgreementTab, type AgreementTabProps } from './AgreementTab'
 export { PlanTab, type PlanTabProps } from './PlanTab'

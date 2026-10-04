@@ -25,6 +25,7 @@ import { projectById } from '@/data/mock/projects'
 import { closeReadings } from './readings'
 import { CloseActionDock, closeActionsFor } from './CloseActionDock'
 import { SealedTitle } from '@/components/soul'
+import { EditableCard } from '@/features/shared/EditableCard'
 
 /* Closing page.
 
@@ -518,6 +519,7 @@ export default function ClosePage() {
                   new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
                 )}
               />
+              <EditableCard module="closing" state={c.stage} label={closeStageLabel(c.stage)} />
             </div>
           </div>
 

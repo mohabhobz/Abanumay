@@ -22,9 +22,22 @@ import { pct } from '@/lib/format'
    hovering the leaf sways it and runs the water line once; hovering a ledger row highlights its
    part of the leaf. All of it is skipped under reduced motion. */
 
-/* The leaf's vertical span inside its 24-unit viewBox (from the path's lowest to highest point). */
-const LEAF_BOTTOM = 20.5
-const LEAF_TOP = 3.5
+/* The entity leaf · meeting 1 Oct, item F-2.
+
+   Its own drawing, not the assistant glyph (`ABLEAF_PATH` stays the brand mark): the client asked
+   for more curvature, a midrib that is thinner and grows out of the stem naturally, and a touch
+   more weight on the outline. So:
+     LEAF   both edges bow further out, and the tip turns slightly, like a leaf rather than a lens
+     STEM   a short curved stalk under the base · the leaf now hangs from something
+     RIB    a filled sliver, wide at the stem and closing to nothing before the tip, following the
+            leaf's own curve · a stroke of one width read as a ruled line across it
+   The fill level is measured against LEAF's own vertical span, so partial shares (62%, 68%) put
+   the water line where the eye expects it on this shape. */
+const LEAF = 'M4.6 20.2C3.3 12.6 12.4 4 20.4 3.2C17.6 8.2 16.6 17.6 4.6 20.2Z'
+const STEM = 'M4.6 20.2C4.1 21 3.3 21.5 2.4 21.7'
+const RIB = 'M4.25 20C7.7 14.3 13.2 7.8 19 4.4C13.6 8.3 8.4 14.8 4.95 20.45Z'
+const LEAF_BOTTOM = 20.2
+const LEAF_TOP = 3.2
 const LEAF_SPAN = LEAF_BOTTOM - LEAF_TOP
 
 const reduced = () =>
@@ -96,11 +109,11 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
   return (
     <div className="ejr leafflow">
       <Link to={payOf('pay-kpi')} className="lf-art" aria-label={`وصل فعلًا ${pct(paidPct)} من إجمالي الممنوح`}>
-        {/* The viewBox is cropped to the leaf's own bounds (it spans roughly 4-20.6 x 3.5-20.5 of the
-            24-unit glyph), so the leaf fills its box instead of sitting inside a margin. */}
-        <svg viewBox="3.4 3 17.6 18" aria-hidden="true">
+        {/* The viewBox is cropped to the leaf and its stem (roughly 2.4-20.7 x 3.2-21.7 of the
+            24-unit grid), so the leaf fills its box instead of sitting inside a margin. */}
+        <svg viewBox="2 2.8 19.2 19.4" aria-hidden="true">
           <defs>
-            <clipPath id={`lfc-${uid}`}><path d={ABLEAF_PATH} /></clipPath>
+            <clipPath id={`lfc-${uid}`}><path d={LEAF} /></clipPath>
             <linearGradient id={`lfg-${uid}`} x1="0" y1="1" x2="0" y2="0">
               <stop offset="0" className="lf-g0" />
               <stop offset="1" className="lf-g1" />
@@ -117,8 +130,9 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
               />
             </g>
           </g>
-          <path className="lf-edge" d={ABLEAF_PATH} />
-          <path className="lf-rib" d="M5 19.6C9 14 13.5 9 19.2 4.4" />
+          <path className="lf-stem" d={STEM} />
+          <path className="lf-edge" d={LEAF} />
+          <path className="lf-rib" d={RIB} />
         </svg>
         <span className="lf-pct">
           <b className="num">{pct(count.value)}</b>

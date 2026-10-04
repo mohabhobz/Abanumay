@@ -23,3 +23,11 @@
 .acc-rules li.on .ic2{color:var(--t1)}
 
 .acc-ext{margin:var(--sp-4) 0 0;padding-inline-start:var(--sp-6);color:var(--t2);line-height:var(--lh-text)}
+
+/* ── Profile switcher in the account menu (AccountMenu.tsx) ──
+   Three classes deep: the menu lives inside the rail, whose button rules are loaded after parts. */
+.acct .acct-id>.acct-sw{margin-inline-start:auto;flex:none;flex-direction:row}
+.acct .acct-who-list>button{color:var(--t1)}
+.acct .acct-who-list>button.on{background:var(--fl-2)}
+.acct .acct-who-list .acct-who-t{display:flex;flex-direction:column;flex:1;min-width:0;line-height:var(--lh-ui)}
+.acct .acct-who-list .acct-who-t .sub{font-size:var(--fs-1)}

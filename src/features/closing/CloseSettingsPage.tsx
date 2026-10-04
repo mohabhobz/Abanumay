@@ -1,6 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { BackTo, Glass, Head, Num, Tabs, Tag, Nil } from '@/components/ui'
+import { BackTo, Glass, Head, Num, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
+import { DockSlotProvider, useDockSlot } from '@/components/shell'
+import { StageLimits } from '@/features/settings/CfgEdit'
+import { CFG } from '@/lib/config'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -44,11 +47,13 @@ export default function CloseSettingsPage() {
     closeRows.filter((c) => c.report.docs.includes(key)).length
 
   /** How many requests currently sit at this stage. */
+  const dock = useDockSlot()
   const atStage = (k: CloseStage) => closeRows.filter((c) => c.stage === k).length
 
   return (
     <AppLayout assistantContext={assistFor.page('إعدادات الإغلاق')}>
-      <div className="viewstack">
+      <DockSlotProvider value={dock.value}>
+      <div className={`viewstack${dock.on ? ' hasdock' : ''}`}>
         <div className="screen col">
           <BackTo label="الإغلاق" onClick={() => navigate(ROUTES.closings)} />
 
@@ -125,43 +130,16 @@ export default function CloseSettingsPage() {
                 ولا تضع حدًّا لأي محطة · هذه الأرقام مؤقتة ليكون لوصف «متأخّر»
                 معنى في النموذج، وتحتاج إلى تأكيد المؤسسة (السؤال س-18).
               </p>
-              <table className="tbl">
-                <colgroup><col /><col /><col /><col /><col /></colgroup>
-                <thead>
-                  <tr>
-                    <th><span className="th-t">المحطة</span></th>
-                    <th><span className="th-t">الدورة</span></th>
-                    <th><span className="th-t">المسؤول</span></th>
-                    <th className="n"><span className="th-t">الحدّ بالأيام</span></th>
-                    <th className="n"><span className="th-t">الطلبات فيها الآن</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CLOSE_STAGES.map((s) => (
-                    <tr key={s.key}>
-                      <td>{s.label}</td>
-                      {/* Note: cycle is a column here because the same stage name repeats across
-                          both cycles - rule 17. */}
-                      <td>
-                        <span className="sub">
-                          {s.cycle === 'report' ? 'التقرير الختامي' : 'تقييم المشروع'}
-                        </span>
-                      </td>
-                      <td>{s.who || <Nil />}</td>
-                      <td className="n">
-                        {CLOSE_LIMIT[s.key] > 0
-                          ? <span className="num">{Math.round(CLOSE_LIMIT[s.key] / 24)}</span>
-                          : <span className="sub">بلا حدّ</span>}
-                      </td>
-                      <td className="n">
-                        {atStage(s.key) > 0
-                          ? <span className="num">{atStage(s.key)}</span>
-                          : <span className="sub">0</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <StageLimits
+                stages={CLOSE_STAGES.map((x) => ({
+                  key: x.key, label: x.label, who: x.who,
+                  extra: <span className="sub">{x.cycle === 'report' ? 'التقرير الختامي' : 'تقييم المشروع'}</span>,
+                }))}
+                extraHead="الدورة"
+                limits={CLOSE_LIMIT}
+                cfgKey={CFG.closeLimits}
+                countAt={(k) => atStage(k as CloseStage)}
+              />
               <p className="sub cnote">
                 تُتخطّى محطة الاتصال المؤسسي إذا خلت الاتفاقية من التزام نشر
                 إعلامي (القاعدة <span className="num">9</span>) · فيُحسب حدّها على
@@ -171,6 +149,8 @@ export default function CloseSettingsPage() {
           )}
         </div>
       </div>
+      <div className="dockslot" ref={dock.setEl} />
+      </DockSlotProvider>
     </AppLayout>
   )
 }

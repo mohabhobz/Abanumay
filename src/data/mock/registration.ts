@@ -94,23 +94,27 @@ export const PARTNER_KINDS: PartnerKindDef[] = [
     key: 'implementer',
     label: 'شريك منفّذ',
     from: 'internal',
-    example: 'منصة إحسان · المحافظ',
+    example: 'جهة تنفّذ مشروعًا بتكليف مباشر',
     opens: [
-      'لا تدخل النظام · يدير مشرف المنح مشاريعها داخليًا',
+      'لا تدخل النظام · يدير مشرف المنح مشروعها داخليًا',
       'يُنشأ المشروع داخليًا لا من بوابة الجهة',
       'لا توجد اتفاقية · تُصرف الدفعات مباشرةً',
-      'قد يكون مشروعًا واحدًا أو محفظة',
     ],
   },
+  /* Meeting 1 Oct (items A-3, B-2): the strategic partner is the third legal persona — an entity
+     such as Ihsan that manages a portfolio. It never registers from the portal; the grants
+     supervisor adds it here. Unlike the implementer it has its own login, under the role
+     «الشريك الاستراتيجي»: it sees and feeds its own portfolios and decides nothing. */
   {
     key: 'strategic',
-    label: 'شريك استراتيجي',
+    label: 'شريك استراتيجي · مدير محفظة',
     from: 'internal',
-    example: 'شراكات طويلة المدى بترتيبات خاصة',
+    example: 'منصة إحسان · تدير محفظة مشاريع',
     opens: [
-      'تُسجَّل داخليًا · قاعدة 32',
-      'تُدار مشاريعها داخليًا',
-      'شروط الصرف وفق ترتيب الشراكة لا الدورة العامة',
+      'لا تتقدّم من البوابة · يضيفها مشرف المنح من الداخل',
+      'تدير محفظة مشاريع فرعية بمبلغ إجمالي واحد',
+      'لمنسّقها حساب بدور «الشريك الاستراتيجي» · يرى محافظه وحدها',
+      'الصرف وفق ترتيب الشراكة · بلا اتفاقية لكل مشروع',
     ],
   },
 ]
@@ -305,6 +309,22 @@ export const REG_STAGES: RegStage[] = [
  * has passed), and the form is built from this subset — both come from the same source so they
  * can't drift apart.
  */
+/* The partner's own access · shown only when registering a strategic partner (meeting 1 Oct, B-2).
+   No password here: the supervisor never sets a credential for someone else. The coordinator gets an
+   invitation by email and sets their own password on first sign-in. */
+export const PARTNER_ACCESS_STAGE: RegStage = {
+  key: 'access',
+  label: 'حساب الشريك',
+  note: 'منسّق الشريك يدخل النظام بدور «الشريك الاستراتيجي» · تصله دعوة بالبريد ويضع كلمة مروره بنفسه',
+  fields: [
+    { key: 'portfolioName', label: 'اسم المحفظة', kind: 'text', req: true, hint: 'تظهر للشريك ولإدارة المنح', wide: true },
+    { key: 'portfolioAmount', label: 'المبلغ الإجمالي للمحفظة (ريال)', kind: 'number', req: true },
+    { key: 'coordName', label: 'اسم المنسّق', kind: 'text', req: true, nl: true },
+    { key: 'coordEmail', label: 'بريد المنسّق', kind: 'email', req: true, hint: 'تصل إليه دعوة الدخول' },
+    { key: 'coordMobile', label: 'جوال المنسّق', kind: 'tel', req: true },
+  ],
+}
+
 export const FORM_STAGES: RegStage[] = REG_STAGES.filter((s) => !s.own)
 
 /** The first step that's actually filled in · where the form starts */
@@ -593,6 +613,24 @@ export const regRows: RegRequest[] = [
     decidedAt: '2026-07-29', entityId: '774', reviewDays: 8,
   }),
   req('REQ-2026-947133', 'جمعية إعمار المساجد بحائل', 'جمعية أهلية', AWQAF, 'حائل', 'حائل', '1004265', 'draft', '2026-09-12', ['license'], 0),
+
+  /* Scenario data (meeting 1 Oct, A-6): at least three requests in every state, so each state of
+     the procedure can be opened and shown in a workshop — not only the ones the sample happened
+     to land on. */
+  req('REQ-2026-947142', 'جمعية سواعد للتطوع بتبوك', 'جمعية أهلية', HRSD, 'تبوك', 'تبوك', '1004420', 'draft', '2026-09-14', [], 0),
+  req('REQ-2026-947143', 'مؤسسة ريادة الوقفية', 'وقف', AWQAF, 'مكة المكرمة', 'جدة', '1004425', 'draft', '2026-09-15', ['license', 'board'], 40),
+  req('REQ-2026-947144', 'جمعية بصيرة لرعاية المكفوفين', 'جمعية أهلية', HRSD, 'المنطقة الشرقية', 'الأحساء', '1004431', 'review', '2026-09-10', ALL_DOCS.slice(0, 6), 66),
+  req('REQ-2026-947145', 'جمعية أمان لرعاية الأيتام بنجران', 'جمعية أهلية', HRSD, 'نجران', 'نجران', '1004436', 'completion', '2026-09-02', ['license', 'board'], 48, {
+    note: 'القوائم المالية المرفوعة لسنة 2023 · يلزم رفع آخر قوائم مدقّقة.',
+  }),
+  req('REQ-2026-947146', 'مكتب الخبراء للتدريب', 'شركة ربحية', TRADE, 'الرياض', 'الرياض', '1004440', 'rejected', '2026-08-20', ['license', 'activity'], 0, {
+    decidedAt: '2026-08-26', reviewDays: 6,
+    note: 'الجهة شركة ربحية · ونطاق المنح للجهات غير الربحية وحدها (ضوابط القبول، البند 2).',
+  }),
+  req('REQ-2026-947147', 'جمعية همم بالباحة', 'جمعية أهلية', HRSD, 'الباحة', 'الباحة', '1004444', 'rejected', '2026-08-14', ['license'], 0, {
+    decidedAt: '2026-08-21', reviewDays: 7,
+    note: 'رفض بعد إعادتين للاستكمال لم تُستكمل خلالهما المستندات الإلزامية في المهلة.',
+  }),
 ]
 
 export const regRequestById = (id: string): RegRequest | undefined =>

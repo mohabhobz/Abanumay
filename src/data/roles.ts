@@ -17,6 +17,7 @@
  * designed for.
  */
 import { person } from './people'
+import { capOf } from './approval'
 import type { CurrentUser, DecisionAction } from '@/types/domain'
 
 export type RoleKey = 'supervisor' | 'grants-manager' | 'ceo'
@@ -50,7 +51,7 @@ export const ROLES: Role[] = [
     actions: [
       { label: 'توصية بالموافقة', kind: 'btn-p' },
       { label: 'طلب استكمال', kind: 'btn-2' },
-      { label: 'تحويل لمشرف آخر', kind: 'btn-2' },
+      { label: 'تحويل لمجال أو مشرف آخر', kind: 'btn-2' },
       { label: 'توصية بالرفض', kind: 'btn-d' },
     ],
   },
@@ -89,12 +90,22 @@ export const ROLES: Role[] = [
 export const roleByKey = (key: string): Role => ROLES.find((r) => r.key === key) ?? ROLES[0]
 
 /** Converts the role into the shape the UI consumes */
+/* The financial authority comes from the approval matrix in settings (one source), not from the
+   numbers written on the roles above, which stay as the defaults only. */
+const AUTHORITY: Partial<Record<RoleKey, 'manager' | 'exec'>> = { 'grants-manager': 'manager', ceo: 'exec' }
+const authorityOf = (role: Role): number | null => {
+  const k = AUTHORITY[role.key]
+  if (!k) return role.financialAuthority
+  const cap = capOf(k)
+  return Number.isFinite(cap) ? cap : null
+}
+
 export const asUser = (role: Role): CurrentUser => ({
   name: role.name,
   role: role.title,
   initial: role.initial,
   photo: role.photo,
-  financialAuthority: role.financialAuthority,
+  financialAuthority: authorityOf(role),
   actions: role.actions,
 })
 

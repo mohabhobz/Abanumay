@@ -446,6 +446,15 @@ export interface Insight {
  * system's table has 62 columns; the rest live on the project page.
  */
 export interface ProjectRow {
+  /** Under study · the seat it sits at now (meeting 1 Oct, B-5) · `supervisor` when absent */
+  holder?: 'supervisor' | 'manager' | 'exec' | 'committee' | 'board'
+  /** Archived request · out of the active lists, kept on record (3.4.27) */
+  archived?: boolean
+  /** Created on the system · date and time, set automatically (3.4.4) */
+  createdAt?: string
+  /** Execution window · start chosen by the requester, end computed in working days (3.4.13 · 3.4.30) */
+  startAt?: string
+  endAt?: string
   id: string
   name: string
   entityId: string

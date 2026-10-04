@@ -16,6 +16,10 @@ import {
 } from '@/data/mock/registration'
 import { portalViewOf, regThread } from '@/data/mock/regPortal'
 import { planStageLabel, plansOfEntity, waitingReview } from '@/data/mock/plans'
+import { projectsOfEntity } from '@/data/mock/projects'
+import { flowOf, missingDocs, resubmit, uploadDoc, useFlow, REQUEST_DOCS } from '@/data/intake/flow'
+import { CYCLE, inPeriod } from '@/data/intake/cycle'
+import { entityById } from '@/data/mock/entities'
 
 /* Entity portal - "a screen that only shows its own application."
 
@@ -51,8 +55,13 @@ const DEFAULT_REQ = 'REQ-2026-947139'
 
 export default function PortalPage() {
   const navigate = useNavigate()
-  const { values } = useQueryParams(['req'])
+  const { values } = useQueryParams(['req', 'entity'])
   const r = regRequestById(values.req ?? DEFAULT_REQ) ?? regRequestById(DEFAULT_REQ)!
+  useFlow()
+  /* Once approved the portal is the entity's own · its projects and a new request (0.2.1 · 3.2.5).
+     `?entity=` shows another approved entity's portal, for the demo. */
+  const entityId = values.entity && entityById(values.entity) ? values.entity : r.state === 'approved' ? r.entityId : undefined
+  const mine = entityId ? projectsOfEntity(entityId).filter((p) => p.statusGroup === 'في الدراسة' || p.stage === 'استكمال بيانات المشروع') : []
 
   const view = portalViewOf(r.state)
   /* The entity's plans - read from the `entityId` created after approval. */
@@ -308,6 +317,61 @@ export default function PortalPage() {
                   ))}
                 </ul>
               </Glass>
+
+              {/* The entity's requests · procedure 3. A request returned for completion is the one
+                  thing the entity acts on here: upload what's asked and send it back (3.4.16). */}
+              {entityId && (
+                <Glass>
+                  <Head
+                    title="طلبات مشاريعك"
+                    meta={inPeriod()
+                      ? <Link className="btn btn-p btn-sm" to={`${ROUTES.projectNew}?as=entity&entity=${entityId}`}>
+                          <Icon name={icons.plus} size="sm" />
+                          قدّم طلب مشروع
+                        </Link>
+                      : <Tag tone="mute">البوابة مغلقة</Tag>}
+                  />
+                  <p className="sub cnote">
+                    {CYCLE.name} · التقديم مفتوح حتى <DateText>{CYCLE.to}</DateText>
+                  </p>
+                  {mine.length === 0 && <p className="sub cnote">لا طلبات قيد الدراسة لديك الآن.</p>}
+                  <ul className="ptl-miss ptl-plans">
+                    {mine.map((p) => {
+                      const f = flowOf(p.id)
+                      const back = p.stage === 'استكمال بيانات المشروع'
+                      const short = missingDocs(p.id)
+                      return (
+                        <li key={p.id} className="ptl-rq">
+                          <Icon name={icons.navProjects} size="sm" />
+                          <span className="ptl-rq-b">
+                            <b>{p.name}</b>
+                            <span className="sub">
+                              {back ? `مُعاد للاستكمال · ${f.completionNote ?? 'راجع ملاحظة المشرف'}` : 'قيد الدراسة لدى المؤسسة'}
+                            </span>
+                            {back && short.length > 0 && (
+                              <span className="ptl-rq-up">
+                                {REQUEST_DOCS.filter((d) => short.includes(d.label)).map((d) => (
+                                  <span key={d.key} className="ptl-rq-doc">
+                                    <span className="sub">{d.label}</span>
+                                    <UploadButton label={`ارفع ${d.label}`} onPick={(file) => uploadDoc(p.id, d.key, file.name, p.entityName)} />
+                                  </span>
+                                ))}
+                              </span>
+                            )}
+                          </span>
+                          <span className="pc-sp" />
+                          {back
+                            ? <button className="btn btn-p btn-sm" disabled={short.length > 0} title={short.length ? 'ارفع المرفقات الناقصة أولًا' : undefined} onClick={() => resubmit(p.id, p.entityName)}>
+                                <Icon name={icons.send} size="sm" />
+                                أعد الإرسال
+                              </button>
+                            : <Tag tone="mute">قيد الدراسة</Tag>}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </Glass>
+              )}
 
               {/* Entity plans - rule 12.
                   Note: this only appears after approval. Before that, the entity has no projects at

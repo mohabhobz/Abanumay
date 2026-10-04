@@ -192,8 +192,16 @@ export function entityDetail(e: EntityRow): EntityDetail {
     const at = iso(shift(e.registeredAt, int(0, 400)))
     /* Only the first three have an expiry date · license, registration, and zakat certificate */
     if (i > 2) return { name, uploaded: true, at }
-    const exp = shift(at, int(200, 900))
-    return { name, uploaded: true, at, expires: iso(exp), expired: exp.getTime() < Date.now() }
+    /* A renewable document is renewed: its current copy was uploaded within the last year and runs
+       ahead of today. It used to run from the first upload (registration + 200–900 days), so every
+       entity registered before 2024 showed all three expired — and no active entity could apply
+       for a project (3.4.8). Expired copies now belong to the entities whose license itself has
+       lapsed, plus the one copy marked for renewal on an entity with a «محدث» status. */
+    const today = iso(new Date())
+    const renewedAt = shift(today, -int(20, 330))
+    const lapsed = licenseExpired || (e.activation === 'محدث' && i === 2)
+    const exp = lapsed ? shift(licenseExpired ? e.licenseEndsAt : today, -int(5, 60)) : shift(iso(renewedAt), 365 + int(30, 400))
+    return { name, uploaded: true, at: iso(renewedAt), expires: iso(exp), expired: exp.getTime() < Date.now() }
   })
 
   /* Bank accounts

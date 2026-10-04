@@ -50,6 +50,7 @@ export const PERM_MODULES: PermModule[] = [
   { key: 'projects', label: 'المشاريع', note: 'الطلبات والدراسة والقرار', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
   { key: 'entities', label: 'الجهات', note: 'التسجيل والملفات والتراخيص', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
   { key: 'budget', label: 'الميزانية', note: 'البنود والسنوات ومصادر التمويل', actions: ['view', 'create', 'edit', 'approve', 'export'] },
+  { key: 'portfolios', label: 'المحافظ', note: 'المحافظ ومشاريعها الفرعية', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
   { key: 'agreements', label: 'الاتفاقيات', note: 'الصياغة والتوقيع والدفعات', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
   { key: 'plans', label: 'الخطط', note: 'الخطط التنفيذية والشواهد', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
   { key: 'payments', label: 'الصرف', note: 'طلبات الصرف وأوامره', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
@@ -72,8 +73,23 @@ export interface PermRole {
   note: string
   /** Works from the entity portal, not the internal system */
   external?: boolean
+  /** The persona it belongs to · meeting 1 Oct: the system is designed persona by persona */
+  persona: Persona
   grants: Grants
 }
+
+/**
+ * The four personas («الصفات الاعتبارية») agreed in the 1 Oct meeting. Screens and permissions are
+ * designed persona by persona: who applies, who works inside, who runs portfolios for the
+ * foundation, who administers.
+ */
+export type Persona = 'staff' | 'entity' | 'partner' | 'admin'
+export const PERSONAS: { key: Persona; label: string; note: string }[] = [
+  { key: 'staff', label: 'موظفو أبانمي', note: 'كل من يعمل داخل المؤسسة أيًا كان تسلسله' },
+  { key: 'entity', label: 'الجهات المتقدّمة', note: 'تسجّل وتتقدّم من البوابة' },
+  { key: 'partner', label: 'الشركاء الاستراتيجيون', note: 'يديرون محافظ لصالح المؤسسة' },
+  { key: 'admin', label: 'إدارة النظام', note: 'الإعدادات والصلاحيات' },
+]
 
 /* Compact writing for the defaults: letters per module, scope after a colon.
    v view · c create · e edit · a approve · x export */
@@ -88,53 +104,61 @@ const g = (spec: Record<string, string>): Grants =>
 
 export const PERM_ROLES: PermRole[] = [
   {
-    key: 'supervisor', label: 'مشرف المنح', note: 'يدرس مشاريعه ويوصي فيها',
+    key: 'supervisor', label: 'مشرف المنح', note: 'يدرس مشاريعه ويوصي فيها', persona: 'staff',
     grants: g({
-      today: 'v', projects: 'vcex:own', entities: 'vce:own', budget: 'v', agreements: 'vce:own',
+      today: 'v', projects: 'vcex:own', portfolios: 'vcex:own', entities: 'vce:own', budget: 'v', agreements: 'vce:own',
       plans: 'vcex:own', payments: 'vc:own', closings: 'vce:own', reports: 'vx', assistant: 'v',
     }),
   },
   {
-    key: 'grants-manager', label: 'مدير المنح', note: 'يوزّع العمل ويعتمد حتى حدّه المالي',
+    key: 'grants-manager', label: 'مدير المنح', note: 'يوزّع العمل ويعتمد حتى حدّه المالي', persona: 'staff',
     grants: g({
-      today: 'v', projects: 'vceax:team', entities: 'vceax:all', budget: 'vx', agreements: 'veax:team',
+      today: 'v', projects: 'vceax:team', portfolios: 'veax:team', entities: 'vceax:all', budget: 'vx', agreements: 'veax:team',
       plans: 'vceax:team', payments: 'vax:team', closings: 'vceax:team', reports: 'vx', assistant: 'v',
       settings: 'v',
     }),
   },
   {
-    key: 'ceo', label: 'المدير التنفيذي', note: 'يعتمد ما فوق حدّ مدير المنح',
+    key: 'ceo', label: 'المدير التنفيذي', note: 'يعتمد ما فوق حدّ مدير المنح', persona: 'staff',
     grants: g({
-      today: 'v', projects: 'vax:all', entities: 'vx:all', budget: 'vax', agreements: 'vax:all',
+      today: 'v', projects: 'vax:all', portfolios: 'vax:all', entities: 'vx:all', budget: 'vax', agreements: 'vax:all',
       plans: 'vx:all', payments: 'vax:all', closings: 'vax:all', reports: 'vx', assistant: 'v',
       settings: 'v',
     }),
   },
   {
-    key: 'board', label: 'اللجنة التنفيذية ومجلس الأمناء', note: 'قرار جماعي على ما يُرفع إليها',
+    key: 'board', label: 'اللجنة التنفيذية ومجلس الأمناء', note: 'قرار جماعي على ما يُرفع إليها', persona: 'staff',
     grants: g({ today: 'v', projects: 'va:all', budget: 'va', reports: 'v' }),
   },
   {
-    key: 'finance', label: 'الإدارة المالية', note: 'تنفّذ الصرف وتطابقه مع الميزانية',
+    key: 'finance', label: 'الإدارة المالية', note: 'تنفّذ الصرف وتطابقه مع الميزانية', persona: 'staff',
     grants: g({
-      today: 'v', projects: 'v:all', budget: 'vcex', agreements: 'v:all', payments: 'veax:all',
+      today: 'v', projects: 'v:all', portfolios: 'v:all', budget: 'vcex', agreements: 'v:all', payments: 'veax:all',
       reports: 'vx', assistant: 'v',
     }),
   },
   {
-    key: 'comms', label: 'الاتصال المؤسسي', note: 'يقرأ الأثر وينشر قصص النجاح',
+    key: 'comms', label: 'الاتصال المؤسسي', note: 'يقرأ الأثر وينشر قصص النجاح', persona: 'staff',
     grants: g({ today: 'v', projects: 'v:all', entities: 'v:all', closings: 'vx:all', reports: 'vx' }),
   },
   {
-    key: 'consultant', label: 'المستشار الخارجي', note: 'يدرس ما يُسند إليه فقط', external: true,
+    key: 'consultant', label: 'المستشار الخارجي', note: 'يدرس ما يُسند إليه فقط', external: true, persona: 'staff',
     grants: g({ projects: 've:own', entities: 'v:own', plans: 'v:own' }),
   },
   {
-    key: 'entity', label: 'الجهة المستفيدة', note: 'تقدّم وتتابع طلباتها من البوابة', external: true,
+    /* Meeting 1 Oct · the third persona: a strategic partner (e.g. منصة إحسان) that runs portfolios
+       for Abanumay. Unlike a beneficiary it doesn't apply: the grants officer adds it from inside.
+       When it is given access, it sees and feeds its own portfolios only — adds sub-projects,
+       uploads evidence and reports — and decides nothing. */
+    key: 'partner', label: 'الشريك الاستراتيجي', note: 'يدير محافظ لصالح المؤسسة · يُضاف من الداخل', external: true, persona: 'partner',
+    grants: g({ portfolios: 'vce:own', projects: 've:own', plans: 'vce:own', payments: 'v:own', closings: 'vce:own', reports: 'v' }),
+  },
+  {
+    key: 'entity', label: 'الجهة المستفيدة', note: 'تقدّم وتتابع طلباتها من البوابة', external: true, persona: 'entity',
     grants: g({ projects: 'vce:own', agreements: 'v:own', plans: 'vce:own', payments: 'vc:own', closings: 'vce:own' }),
   },
   {
-    key: 'admin', label: 'مدير النظام', note: 'يدير المستخدمين والأدوار والإعدادات',
+    key: 'admin', label: 'مدير النظام', note: 'يدير المستخدمين والأدوار والإعدادات', persona: 'admin',
     grants: g({ today: 'v', reports: 'vx', settings: 've', permissions: 've' }),
   },
 ]
@@ -168,6 +192,7 @@ export const PERM_USERS: PermUser[] = [
   { id: 'u11', name: 'سلطان العتيبي', role: 'finance', active: true, seen: 'أمس', overrides: {} },
   { id: 'u12', name: 'خالد السبيعي', role: 'comms', active: true, seen: 'قبل 4 أيام', overrides: {} },
   { id: 'u13', name: 'د. سامي الفايز', role: 'consultant', active: true, seen: 'قبل يومين', overrides: {} },
+  { id: 'u14', name: 'نواف الشهري', role: 'partner', active: true, seen: 'قبل 3 أيام', overrides: {} },
 ]
 
 export interface PermLogRow {
@@ -192,7 +217,8 @@ export interface PermState {
   log: PermLogRow[]
 }
 
-export const PERM_KEY = 'ab-perm'
+/* Bumped when roles or modules change shape, so a stored copy from an older build doesn't hide them */
+export const PERM_KEY = 'ab-perm-v2'
 export const PERM_INITIAL: PermState = { roles: PERM_ROLES, users: PERM_USERS, log: PERM_LOG }
 
 /* ── Derivations ── */

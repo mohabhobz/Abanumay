@@ -10,7 +10,7 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import { assistFor } from '@/data/mock/assistant'
 import { useStored } from '@/lib/prefs'
 import {
-  ACTIONS, PERM_INITIAL, PERM_KEY, PERM_MODULES, PERM_USERS, SCOPES, conflicts, moduleByKey,
+  ACTIONS, PERM_INITIAL, PERM_KEY, PERM_MODULES, PERM_USERS, PERSONAS, SCOPES, conflicts, moduleByKey,
   moduleCount, overrideCount, roleLabel,
   type ActionKey, type Grants, type Overrides, type PermLogRow, type PermRole, type PermState,
   type PermUser, type Scope,
@@ -325,28 +325,41 @@ function RolesTab({ st, setSt, sel, onSel }: {
     <div className="pm-split">
       <Glass className="pm-side">
         <Head title="الأدوار" meta={<span className="sub">الأساس لكل من يحمله</span>} />
-        <ul className="pm-list" role="listbox" aria-label="الأدوار">
-          {st.roles.map((r) => {
-            const m = members(r.key).length
-            return (
-              <li key={r.key}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={r.key === role.key}
-                  className={`pm-item${r.key === role.key ? ' on' : ''}`}
-                  onClick={() => onSel(r.key)}
-                >
-                  <span className="pm-item-t">{r.label}</span>
-                  <span className="pm-item-m sub">
-                    {m > 0 ? <><Num>{m}</Num> مستخدم</> : 'بلا مستخدمين'}
-                    {r.external && <> · من البوابة</>}
-                  </span>
-                </button>
-              </li>
-            )
-          })}
-        </ul>
+        {/* Grouped by persona · the four «صفات اعتبارية» the system is designed around */}
+        {PERSONAS.map((p) => {
+          const list = st.roles.filter((r) => (r.persona ?? 'staff') === p.key)
+          if (!list.length) return null
+          return (
+            <div className="pm-group" key={p.key}>
+              <div className="pm-group-h">
+                <b>{p.label}</b>
+                <span className="sub">{p.note}</span>
+              </div>
+              <ul className="pm-list" role="listbox" aria-label={p.label}>
+                {list.map((r) => {
+                  const m = members(r.key).length
+                  return (
+                    <li key={r.key}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={r.key === role.key}
+                        className={`pm-item${r.key === role.key ? ' on' : ''}`}
+                        onClick={() => onSel(r.key)}
+                      >
+                        <span className="pm-item-t">{r.label}</span>
+                        <span className="pm-item-m sub">
+                          {m > 0 ? <><Num>{m}</Num> مستخدم</> : 'بلا مستخدمين'}
+                          {r.external && <> · من خارج المؤسسة</>}
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )
+        })}
       </Glass>
 
       <RoleEditor
@@ -433,7 +446,7 @@ function RoleEditor({ role, members, onSave }: {
         ) : (
           'لا يحمل هذا الدور أحد حاليًا'
         )}
-        {role.external && ' · دور خارجي يعمل من بوابة الجهات، وما يُمنح له يُقرأ في حدود سجلاته وحدها'}
+        {role.external && ' · دور من خارج المؤسسة، وما يُمنح له يُقرأ في حدود سجلاته وحدها'}
       </p>
 
       {members.length > 0 && (

@@ -1,0 +1,5 @@
+/* ═══ Happy path (meeting 1 Oct · A-7) ═══
+   Its own part file so the branch carries the module whole: page, flow and styles. */
+.jr-who{margin-top:var(--sp-3)}
+.jr-log{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
+.jr-log li{display:flex;flex-direction:column;gap:var(--sp-1);font-size:var(--fs-2);line-height:var(--lh-text);color:var(--t1)}

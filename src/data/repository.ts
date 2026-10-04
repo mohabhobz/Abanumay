@@ -56,6 +56,8 @@ export type ProjectSort =
 export type Filter = string | string[] | undefined
 
 export interface ProjectQuery {
+  /** Include archived requests · they leave the active lists but stay on record (3.4.27) */
+  archived?: boolean
   year?: Filter
   track?: Filter
   field?: Filter
@@ -164,6 +166,7 @@ export const projectBucket = (r: ProjectRow): ProjectBucket =>
         : 'other'
 
 const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
+  if (r.archived && !q.archived) return false
   if (q.bucket && projectBucket(r) !== q.bucket) return false
   if (!eq(q.year, r.year)) return false
   if (!eq(q.track, r.track)) return false

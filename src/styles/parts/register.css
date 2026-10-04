@@ -16,3 +16,10 @@
 .bkrow .bkrow-f{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:start}
 .bkrow-f>.regf.regf+.regf{margin-block-start:0}
 .regcard .regfields,.glass .regfields{align-items:start}
+
+/* Entity portal · its project requests (procedure 3) */
+.ptl-plans>li.ptl-rq{align-items:flex-start}
+.ptl-plans>li.ptl-rq>svg{color:var(--t3)}
+.ptl-rq-b{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.ptl-rq-up{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-4);margin-top:var(--sp-2)}
+.ptl-rq-doc{display:inline-flex;align-items:center;gap:var(--sp-2)}

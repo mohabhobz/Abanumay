@@ -71,3 +71,33 @@
 /* ── New project · target categories with «أخرى» ── */
 .pmulti-w{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0}
 .pmulti-o{display:flex;flex-direction:column;gap:var(--sp-2);max-width:calc(var(--menu-min) * 1.5)}
+
+/* ═══ Intake settings (procedure 3) ═══ */
+.itk-sup{flex-wrap:wrap}
+.itk-sup>.prs{flex:none}
+.itk-track td{background:var(--fl-1);font-family:var(--fd);color:var(--t2)}
+.itk-dom td{vertical-align:middle}
+.itk-dom .swrow{min-block-size:var(--h-md);padding-block:0}
+.lgsearch{margin-top:var(--sp-4)}
+
+/* ═══ The supervisor's study (procedure 3) ═══ */
+.stdy-g{margin-top:var(--sp-5)}
+.stdy-h{display:flex;align-items:center;gap:var(--sp-2);margin:0 0 var(--sp-3);
+  font-family:var(--fd);font-size:var(--fs-3);font-weight:600;line-height:var(--lh-head);color:var(--t1)}
+.stdy-list{list-style:none;margin:0 0 var(--sp-4);padding:0;display:flex;flex-direction:column}
+.stdy-list li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;padding-block:var(--sp-2)}
+.stdy-list li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.stdy-l{min-width:0;font-size:var(--fs-2);color:var(--t1)}
+.stdy-scale{display:inline-flex;flex:none;gap:var(--sp-2)}
+.stdy-scale .cfgchip{min-inline-size:var(--h-md);justify-content:center}
+.stdy-scale .cfgchip:disabled{cursor:default}
+.stdy-sim{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
+.stdy-sim li{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0;font-size:var(--fs-2)}
+.rqv,.rqobj{margin:var(--sp-3) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2);font-size:var(--fs-2);line-height:var(--lh-text)}
+.rqv{list-style:none}
+.rqv li{display:flex;align-items:baseline;gap:var(--sp-3);min-width:0}
+.rqv li>b{color:var(--t2);font-weight:600}
+.rqobj{padding-inline-start:var(--sp-6)}
+@media (max-width:720px){
+  .stdy-list li{flex-wrap:wrap}
+}

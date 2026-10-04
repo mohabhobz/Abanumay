@@ -20,7 +20,9 @@ import { agrHeat, agreements, agrStageLabel } from './mock/agreements'
 import { closeLate, closeRows, closeStageLabel } from './mock/closing'
 import { regRows } from './mock/registration'
 import { entityById } from './mock/entities'
+import { projectById } from './mock/projects'
 import { countOf, NOUN, projectCode } from '@/lib/format'
+import { FLOW_NOTES } from './intake/flow'
 
 export type NoteKind = 'decide' | 'msg' | 'late' | 'info'
 
@@ -63,8 +65,17 @@ const days = (h: number) => Math.max(1, Math.round(h / 24))
 const projectFrom = (entityId?: string): NoteFrom =>
   ({ type: 'project', logo: entityId ? entityById(entityId)?.logo : undefined })
 
-export function buildNotes(user: { name: string }): Note[] {
+export function buildNotes(user: { name: string; role?: string }): Note[] {
   const out: Note[] = []
+
+  /* Procedure 3 · what the intake actions sent this person or this role (assignment, a forwarded
+     recommendation, a return, a consultant's opinion) · newest first */
+  for (const n of FLOW_NOTES.filter((x) => x.to === user.name || x.to === user.role)) {
+    out.push({
+      id: n.id, kind: 'decide', title: n.title, context: n.context,
+      at: n.at, to: ROUTES.project(n.projectId), from: projectFrom(projectById(n.projectId)?.entityId),
+    })
+  }
 
   /* Needs your decision */
   for (const p of query.projects({ owner: user.name, status: 'في الدراسة', sort: 'waiting', pageSize: 3 }).rows) {

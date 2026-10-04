@@ -14,9 +14,10 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { fixtures, query, type ProjectBucket, type ProjectQuery, type ProjectSort } from '@/data/repository'
 import {
-  applyDecision, assignOwner, portfolioRows, PROJECT_TYPES, type BulkDecision,
+  applyDecision, portfolioRows, PROJECT_TYPES, type BulkDecision,
 } from '@/data/mock/projects'
 import { useRole } from '@/hooks/useRole'
+import { assignSupervisor, flowOf, recommendMany } from '@/data/intake/flow'
 import { ROUTES } from '@/app/routes'
 import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
@@ -69,11 +70,16 @@ const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
 /* Role actions valid to run as a bulk batch. Anything not listed here needs a
    per-project target (assigning a specific reviewer, reverting to a level), and
    running it in bulk would just be guessing. */
-const BULK_OF: Record<string, BulkDecision> = {
+/* The supervisor's two recommendations forward to the grants manager through the intake flow
+   (`recommendMany`), never approve · see BULK_RECOMMEND */
+const BULK_RECOMMEND: Record<string, 'approve' | 'reject'> = {
   'توصية بالموافقة': 'approve',
+  'توصية بالرفض': 'reject',
+}
+
+const BULK_OF: Record<string, BulkDecision> = {
   'اعتماد': 'approve',
   'طلب استكمال': 'complete',
-  'توصية بالرفض': 'decline',
   'اعتذار': 'decline',
   'رفع للجنة التنفيذية': 'escalate',
   'رفع لمجلس الأمناء': 'escalate',
@@ -105,7 +111,7 @@ export default function ProjectsListPage() {
   const { values: v, set, replace, clear, activeCount, snapshot, applyQuery } =
     useQueryParams<Params>(KEYS)
   const navigate = useNavigate()
-  const { role } = useRole()
+  const { role, user } = useRole()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwner, setBulkOwner] = useState<string | undefined>()
   const [, bump] = useState(0)
@@ -118,7 +124,7 @@ export default function ProjectsListPage() {
   useEffect(() => writeFilterOrder('projects', fOrder), [fOrder])
   /* Last bulk decision plus its undo. The bar stays visible until the user dismisses
      it, so undo isn't racing a timer. */
-  const [lastBulk, setLastBulk] = useState<{ text: string; undo: () => void } | null>(null)
+  const [lastBulk, setLastBulk] = useState<{ text: string; undo?: () => void } | null>(null)
 
   useEffect(() => writeCols('projects', cols), [cols])
 
@@ -311,11 +317,29 @@ export default function ProjectsListPage() {
     bump((n) => n + 1)
   }
 
-  const bulkActions = role.actions.filter((a) => BULK_OF[a.label])
+  const bulkActions = role.actions.filter((a) => BULK_OF[a.label] || BULK_RECOMMEND[a.label])
+
+  /* Bulk recommendation · each project forwards only if its study passes the guard and records
+     the same recommendation (3.4.22); the rest stay with a reason, and the bar says how many */
+  const runRecommend = (label: string) => {
+    if (selected.size === 0) return
+    const want = BULK_RECOMMEND[label]!
+    const ids = [...selected]
+    const mismatch = ids.filter((id) => { const s = flowOf(id).study; return s && s.recommendation && s.recommendation !== want })
+    const { done, held } = recommendMany(ids.filter((id) => !mismatch.includes(id)), user.name)
+    const kept = held.length + mismatch.length
+    setLastBulk({
+      text: `${label}: أُحيل ${units.project(done.length)} لمدير المنح${kept ? ` · بقي ${units.project(kept)} (${held[0]?.why ?? 'التوصية المسجّلة مختلفة'})` : ''}`,
+      undo: undefined,
+    })
+    setSelected(new Set())
+    bump((n) => n + 1)
+  }
 
   const applyBulk = () => {
     if (!bulkOwner || selected.size === 0) return
-    assignOwner([...selected], bulkOwner)
+    /* Each assignment is a recorded event with a notice to the supervisor (3.4.3 · manual rule) */
+    for (const id of selected) assignSupervisor(id, bulkOwner, user.name)
     setSelected(new Set())
     setBulkOwner(undefined)
     bump((n) => n + 1)
@@ -608,13 +632,16 @@ export default function ProjectsListPage() {
               <Icon name={icons.check} size="sm" />
               <span>{lastBulk.text}</span>
               <span className="pc-sp" />
-              <button
-                className="btn btn-2 btn-sm"
-                onClick={() => { lastBulk.undo(); setLastBulk(null); bump((n) => n + 1) }}
-              >
-                <Icon name={icons.redo} size="sm" />
-                تراجع
-              </button>
+              {/* A forward is a recorded decision on each project's timeline · no silent undo */}
+              {lastBulk.undo && (
+                <button
+                  className="btn btn-2 btn-sm"
+                  onClick={() => { lastBulk.undo?.(); setLastBulk(null); bump((n) => n + 1) }}
+                >
+                  <Icon name={icons.redo} size="sm" />
+                  تراجع
+                </button>
+              )}
               <button className="btn btn-2 btn-sm" onClick={() => setLastBulk(null)}>إغلاق</button>
             </Glass>
           )}
@@ -699,7 +726,7 @@ export default function ProjectsListPage() {
               <button
                 key={a.label}
                 className={`btn btn-sm ${a.kind}`}
-                onClick={() => runBulk(BULK_OF[a.label], a.label)}
+                onClick={() => (BULK_RECOMMEND[a.label] ? runRecommend(a.label) : runBulk(BULK_OF[a.label]!, a.label))}
               >
                 {a.label}
               </button>

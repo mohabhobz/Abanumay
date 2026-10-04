@@ -2,10 +2,13 @@ import { Navigate, Outlet, Route, BrowserRouter, Routes } from 'react-router-dom
 import LoginPage from '@/features/auth/LoginPage'
 import ProjectPage from '@/features/projects/ProjectPage'
 import HomePage from '@/features/home/HomePage'
+import HomeOverview from '@/features/home/HomeOverview'
+import JourneyPage from '@/features/journey/JourneyPage'
 import ProjectsListPage from '@/features/projects/list/ProjectsListPage'
 import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
 import PortalPage from '@/features/entities/register/PortalPage'
+import AdvicePage from '@/features/advice/AdvicePage'
 import RegisterPage from '@/features/entities/register/RegisterPage'
 import RegisterAccountPage from '@/features/entities/register/AccountPage'
 import RequestsPage from '@/features/entities/register/RequestsPage'
@@ -73,6 +76,8 @@ export default function App() {
             it behind `RequireAuth` would mean only staff could open it, not the person it's built
             for. */}
         <Route path={ROUTES.entityPortal} element={<PortalPage />} />
+        {/* The consultant's temporary screen · outside staff auth for the same reason (3.2.20) */}
+        <Route path="/advice/:id" element={<AdvicePage />} />
 
         {/* One gate wraps all internal screens instead of repeating it per route: any new screen is
             protected automatically just by being inside. */}
@@ -84,6 +89,8 @@ export default function App() {
           }
         >
         <Route path={ROUTES.home} element={<HomePage />} />
+        <Route path="/overview" element={<Navigate to={ROUTES.overview} replace />} />
+        <Route path={ROUTES.journey} element={<JourneyPage />} />
 
         {/* Settings inventory — entered from the account menu, not the rail. */}
         <Route path={ROUTES.settings} element={<SettingsIndexPage />} />
@@ -168,6 +175,7 @@ export default function App() {
         <Route path={`${ROUTES.reports}/view/:key`} element={<ReportView />} />
         <Route path={`${ROUTES.reports}/process/:key`} element={<ProcessReport />} />
         <Route path={`${ROUTES.reports}/screen/:key`} element={<LiveReport />} />
+        <Route path={ROUTES.overview} element={<HomeOverview embedded />} />
         <Route path={`${ROUTES.reports}/:tab`} element={<ReportsPage />} />
 
         <Route path={ROUTES.assistant} element={<AssistantPage />} />

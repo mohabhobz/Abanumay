@@ -1,5 +1,6 @@
+import { CFG, hydrate } from '@/lib/config'
 import type { PayCheck, PayEvent, PayRequest, PayState } from '@/types/domain'
-import { projectRows } from './projects'
+import { SCENARIO, projectRows } from './projects'
 import { entityById } from './entities'
 
 /* Disbursement requests · built on the procedures document, not on the live system
@@ -43,14 +44,14 @@ export const payStateWho = (s: PayState): string =>
  * count per stage comes **from settings**. These numbers are provisional until the Foundation gives
  * us the durations, like the empty "target value" in the indicators.
  */
-export const PAY_LIMIT: Record<PayState, number> = {
+export const PAY_LIMIT: Record<PayState, number> = hydrate(CFG.payLimits, {
   supervisor: 120,
   returned: 240,
   manager: 96,
   finance: 72,
   paid: 0,
   closed: 0,
-}
+})
 
 /** Escalation · delayed once past the limit, stalled once past double it */
 export type PayHeat = 'ok' | 'late' | 'stuck'
@@ -197,8 +198,13 @@ const dayAfter = (iso: string, n: number): string => {
 }
 
 /** Projects that have passed the agreement stage · rule 1: disbursement only after activation */
+/* Scenario projects (meeting 1 Oct, A-6) stay out of the share-based mix · they only top up a
+   state left with fewer than three requests, so the sample's own requests keep their ids */
+const SCENARIO_IDS = new Set([...SCENARIO.agreements, ...SCENARIO.closing])
+const MIN_PER_STATE = 3
+
 const eligible = projectRows.filter(
-  (p) => p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل',
+  (p) => !SCENARIO_IDS.has(p.id) && (p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل'),
 )
 
 /* Warning: **the disbursement count is a property of the agreement, not of the request.**
@@ -342,6 +348,30 @@ export const payRequests: PayRequest[] = (() => {
            "disbursement-schedule compliance" dropped to 16% — a number that reads as a disaster and
            is really a side effect of the generator, not information. */
         paidAt: undefined,
+      })
+      n++
+    }
+  }
+  /* Top-up · a state short of three takes a copy of one of its own requests, moved onto a
+     scenario project with that project's own amounts */
+  const pool = SCENARIO.payments.map((id) => projectRows.find((p) => p.id === id)).filter((p) => !!p)
+  for (const { state } of MIX) {
+    const tpl = out.find((r) => r.state === state)
+    while (tpl && out.filter((r) => r.state === state).length < MIN_PER_STATE && pool.length) {
+      const p = pool.shift()!
+      const granted = p.amountGranted || p.amountRequested
+      const due = Math.round(granted / tpl.of / 1000) * 1000
+      out.push({
+        ...structuredClone(tpl),
+        id: `SR-2026-${String(11_400 + n).padStart(5, '0')}`,
+        projectId: p.id,
+        projectName: p.name,
+        entityId: p.entityId,
+        entityName: entityById(p.entityId)?.name ?? p.entityName,
+        owner: p.owner ?? tpl.owner,
+        granted, due, asked: due, reserved: due,
+        spent: due * (tpl.no - 1),
+        agreement: { ...tpl.agreement, id: `AG-${p.id}` },
       })
       n++
     }

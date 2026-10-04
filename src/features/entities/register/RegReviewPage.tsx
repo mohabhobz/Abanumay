@@ -12,9 +12,10 @@ import { assistFor } from '@/data/mock/assistant'
 import { isolate, nounAfter } from '@/lib/format'
 import { entityRows } from '@/data/mock/entities'
 import {
-  BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_STATE_SAY, REG_STATE_WHO,
+  BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_STATES, REG_STATE_SAY, REG_STATE_WHO,
   docRequired, licenseClash, partnerKind, regMissingDocs, regRequestById,
 } from '@/data/mock/registration'
+import { EditableCard } from '@/features/shared/EditableCard'
 
 /* Registration request review - system admin's screen.
 
@@ -281,6 +282,7 @@ export default function RegReviewPage() {
                 <Head title="مسار الطلب" meta={<span className="sub">قاعدة 30 · سجل التدقيق</span>} />
                 <Steps items={steps} flow="ladder" />
               </Glass>
+              <EditableCard module="registration" state={r.state} label={REG_STATES.find((x) => x.key === r.state)?.label} />
 
               {/* Bank account - a separate decision even though it's entered together. */}
               <Glass>

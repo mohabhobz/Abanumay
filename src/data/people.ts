@@ -58,6 +58,7 @@ const ROSTER: ReadonlyArray<Omit<Person, 'photo' | 'initial'> & { initial?: stri
   { name: 'نورة القحطاني', slug: 'noura-alqahtani', title: 'مديرة النظام' },
   { name: 'خالد السبيعي', slug: 'khalid-alsubaie', title: 'الاتصال المؤسسي' },
   { name: 'د. سامي الفايز', slug: 'sami-alfayez', title: 'مستشار خارجي' },
+  { name: 'نواف الشهري', slug: 'nawaf-alshehri', title: 'منسّق المحافظ · منصة إحسان' },
 
   /* AI assistant personas */
   { name: 'ريم الشمري', slug: 'reem-alshammari', title: 'محللة بيانات' },

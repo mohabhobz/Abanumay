@@ -1,7 +1,8 @@
+import { CFG, hydrate } from '@/lib/config'
 import type {
   CloseAudit, CloseCycle, CloseRow, CloseStage, CloseVersion, FinalReport, ProjectEval,
 } from '@/types/domain'
-import { projectRows } from './projects'
+import { SCENARIO, projectRows } from './projects'
 import { planOfProject, planDone } from './plans'
 import { payRequests } from './disbursements'
 import { NOUN, countOf } from '@/lib/format'
@@ -104,7 +105,7 @@ export const CLOSE_TONE: Record<CloseStage, Tone> = {
  * stage limits already in `taxonomy` so the delay chips work — **and this is still an open question
  * with the client**.
  */
-export const CLOSE_LIMIT: Record<CloseStage, number> = {
+export const CLOSE_LIMIT: Record<CloseStage, number> = hydrate(CFG.closeLimits, {
   draft: 720,
   supervisor: 480,
   comms: 360,
@@ -116,7 +117,7 @@ export const CLOSE_LIMIT: Record<CloseStage, number> = {
   evalExecutive: 480,
   closed: 0,
   returned: 720,
-}
+})
 
 /** Supporting documents for the closing report · rule 5 */
 export const CLOSE_DOCS: { key: string; label: string; req?: boolean }[] = [
@@ -475,6 +476,116 @@ export const closeRows: CloseRow[] = [
     ],
   }),
 ]
+
+/* ═══ Scenario records (meeting 1 Oct, A-6) ═══
+   The six seeds above are hand-written cases; these top every stage up to three so each state of
+   both cycles can be opened in a workshop. Built from the stage's own position in the journey:
+   the audit trail, the report's completeness and the evaluation all follow from how far along
+   the record is, not from a copy of another record. */
+
+const SC_ORDER: CloseStage[] = [
+  'draft', 'supervisor', 'returned', 'comms', 'manager', 'executive',
+  'reportDone', 'evalDraft', 'evalManager', 'evalExecutive', 'closed',
+]
+
+/** How many journey steps each stage has passed · indexes into SC_STEPS */
+const SC_PASSED: Record<CloseStage, number> = {
+  draft: 1, supervisor: 2, returned: 3, comms: 3, manager: 4, executive: 5,
+  reportDone: 6, evalDraft: 6, evalManager: 7, evalExecutive: 8, closed: 9,
+}
+
+const SC_STEPS: { by: 'owner' | 'entity' | string; what: string }[] = [
+  { by: 'owner', what: 'إنشاء طلب التقرير الختامي' },
+  { by: 'entity', what: 'إرسال التقرير الختامي' },
+  { by: 'owner', what: 'اعتماد مشرف المنح · إحالة إلى الاتصال المؤسسي' },
+  { by: 'الاتصال المؤسسي', what: 'اعتماد النشر الإعلامي' },
+  { by: 'مدير المنح', what: 'اعتماد التقرير' },
+  { by: 'المدير التنفيذي', what: 'اعتماد التقرير الختامي · إقفال الدورة الأولى' },
+  { by: 'owner', what: 'إرسال التقييم إلى مدير المنح' },
+  { by: 'مدير المنح', what: 'اعتماد التقييم' },
+  { by: 'المدير التنفيذي', what: 'اعتماد التقييم · الإغلاق النهائي' },
+]
+
+const SC_OUTCOMES = [
+  'نُفّذت الأنشطة المخطّطة كاملة وسُلّمت المخرجات للجهة المشغّلة.',
+  'اكتمل التنفيذ في موعده مع زيادة طفيفة في عدد المستفيدين عن المستهدف.',
+  'نُفّذ البرنامج على مرحلتين بعد تأجيل المرحلة الثانية شهرًا لظروف الموسم.',
+  'أُنجزت المخرجات الرئيسة وبقي نشاط تكميلي واحد نُقل إلى خطة الجهة التشغيلية.',
+]
+const SC_RISKS = [
+  'تأخّر التوريد في المرحلة الأولى.',
+  'ارتفاع أسعار المواد عن تقدير الميزانية.',
+  'لا يوجد.',
+  'صعوبة الوصول إلى بعض المستفيدين في القرى البعيدة.',
+]
+const SC_RETURNS = [
+  'صور التنفيذ لا تغطي جميع المواقع المذكورة في التقرير · أرفق صورًا لكل موقع.',
+  'عدد المستفيدين في التقرير يختلف عن كشف المستفيدين المرفق · وحّد الرقمين.',
+]
+
+const scDay = (start: string, d: number): string => {
+  const t = new Date(`${start}T00:00:00Z`)
+  t.setUTCDate(t.getUTCDate() + d)
+  return t.toISOString().slice(0, 10)
+}
+
+;(() => {
+  const pool = SCENARIO.closing.slice()
+  let seq = 0
+  for (const stage of SC_ORDER) {
+    while (closeRows.filter((c) => c.stage === stage).length < 3 && pool.length) {
+      const pid = pool.shift()!
+      const pr = projectRows.find((p) => p.id === pid)
+      if (!pr) continue
+      const i = seq++
+      const owner = pr.owner ?? 'عمر قاسم'
+      const start = scDay('2026-06-01', (i * 3) % 45)
+      const passed = SC_PASSED[stage]
+      const audit = SC_STEPS.slice(0, passed).map((st, k) =>
+        a(scDay(start, k * 7 + 2), st.by === 'owner' ? owner : st.by === 'entity' ? pr.entityName : st.by, st.what))
+      if (stage === 'returned') audit.push(a(scDay(start, passed * 7 + 2), 'مدير المنح', 'إعادة بملاحظات · إصدار 2'))
+      const sent = passed >= 2
+      const ben = Math.round(pr.beneficiaries * (0.92 + (i % 4) * 0.04))
+      const budget = Math.round((pr.amountGranted * (0.94 + (i % 3) * 0.03)) / 100) * 100
+      const report = mkReport(sent
+        ? {
+            beneficiaries: ben, budget, days: pr.durationDays - 10 + (i % 5) * 6,
+            outcomes: SC_OUTCOMES[i % SC_OUTCOMES.length], risks: SC_RISKS[i % SC_RISKS.length],
+            docs: ['final', 'photos', 'invoices', 'media', ...(i % 2 ? ['beneficiaries'] : [])],
+          }
+        : { beneficiaries: i % 2 ? ben : null, outcomes: i % 2 ? SC_OUTCOMES[0] : '', docs: i % 2 ? ['final'] : [] })
+      const evalOn = ['evalDraft', 'evalManager', 'evalExecutive', 'closed'].includes(stage)
+      const full = stage !== 'evalDraft'
+      const evaluation = evalOn
+        ? mkEval({
+            indicators: [
+              { name: 'عدد المستفيدين', target: pr.beneficiaries, actual: ben, unit: 'مستفيد' },
+              { name: 'نسبة رضا المستفيدين', target: 85, actual: full ? 82 + (i % 4) * 4 : null, unit: '%' },
+              { name: 'نسبة إنجاز الأنشطة', target: 100, actual: full ? 90 + (i % 3) * 5 : null, unit: '%' },
+            ],
+            impact: full ? 'تحقّق الأثر المستهدف في الفئة المخدومة وأبدت الجهة استعدادها للاستمرار ذاتيًّا.' : '',
+            lessons: full ? 'التخطيط المرحلي للصرف قلّل التأخير وسهّل المتابعة.' : '',
+            score: full ? 3 + (i % 3) : null,
+          })
+        : null
+      closeRows.push(row(`CL-${2100 + i}`, pid, stage, {
+        report,
+        evaluation,
+        hoursInStage: stage === 'closed' ? 0 : 60 + ((i * 97) % 700),
+        mediaRequired: i % 3 !== 2,
+        openedAt: start,
+        versions: [
+          v(1, start, owner, 'طلب التقرير الختامي'),
+          ...(stage === 'returned' ? [v(2, scDay(start, passed * 7 + 2), owner, 'إعادة من مدير المنح بملاحظات')] : []),
+        ],
+        evalVersions: evalOn ? [v(1, scDay(start, 44), owner, 'إعداد التقييم')] : [],
+        audit,
+        ...(stage === 'returned' ? { returnedTo: 'draft' as CloseStage, note: SC_RETURNS[i % SC_RETURNS.length] } : {}),
+        ...(stage === 'closed' ? { closedAt: scDay(start, 63) } : {}),
+      }))
+    }
+  }
+})()
 
 export const closeById = (id: string): CloseRow | undefined =>
   closeRows.find((c) => c.id === id)

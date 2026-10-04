@@ -33,11 +33,13 @@ export interface DataTabProps {
   deps?: { agreements: number; payments: number }
   /** Chain links — computed on the page and displayed here. */
   chain?: ChainLink[]
+  /** The request's own documents card replaces the flat list (procedure 3 · 3.4.32) */
+  hideAttachments?: boolean
 }
 
 /** Project data — summary, concept, phases, scope, and attachments. */
 export function DataTab({
-  project: P, code, type, entityName, entityId, last, onOpenLog, deps, chain,
+  project: P, code, type, entityName, entityId, last, onOpenLog, deps, chain, hideAttachments,
 }: DataTabProps) {
   const dep = deps ? projectDeps(deps.agreements, deps.payments) : undefined
   const gaps = chain?.filter((l) => l.state === 'gap').length ?? 0
@@ -230,7 +232,7 @@ export function DataTab({
         </div>
       </Glass>
 
-      <Glass>
+      {!hideAttachments && <Glass>
         <Head title="المرفقات" meta={`${uploaded} من ${P.attachments.length} مرفوعة`} />
         <DocList
           label="مرفقات المشروع وحالتها"
@@ -241,7 +243,7 @@ export function DataTab({
         <div className="sub mt-3">
           الموازنة التفصيلية هي المطلوبة في طلب الاستكمال الحالي، لأن الملف المرفوع صورة لا تُقرأ آليًا.
         </div>
-      </Glass>
+      </Glass>}
 
       <Glass>
         <Head title="جهة الاتصال والحساب البنكي" meta="من نموذج التقديم" />

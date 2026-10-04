@@ -14,8 +14,8 @@ import { assistFor } from '@/data/mock/assistant'
 import { entityRows } from '@/data/mock/entities'
 import { regReadings, stageAdvice, stepState } from '@/data/mock/regPortal'
 import {
-  PARTNER_KINDS, REG_DOCS, REG_STAGES, docRequired, licenseClash, partnerKind,
-  type PartnerKind,
+  FORM_STAGES, PARTNER_ACCESS_STAGE, PARTNER_KINDS, REG_DOCS, docRequired, licenseClash,
+  partnerKind, type PartnerKind, type RegStage,
 } from '@/data/mock/registration'
 import { Field } from './Field'
 import { MISSING_ITEM, nounAfter } from '@/lib/format'
@@ -51,19 +51,25 @@ import { MISSING_ITEM, nounAfter } from '@/lib/format'
 const KEYS = ['tab', 'up', 'kind'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/** The type stage comes before the data stages - it's the first decision on the screen. */
-const STAGES = [
-  { key: 'partner', label: 'نوع الشراكة', note: '' },
-  ...REG_STAGES.map((s) => ({ key: s.key, label: s.label, note: s.note })),
-]
+/** The type stage comes before the data stages - it's the first decision on the screen.
+
+    The portal's «حساب الجهة» stage isn't here: it holds a password, and the supervisor never sets
+    a credential for an entity. A strategic partner gets its own access stage instead, right after
+    the contacts, since its coordinator is one of those contacts. */
+const stagesFor = (partner: PartnerKind | ''): RegStage[] => {
+  const out: RegStage[] = []
+  for (const st of FORM_STAGES) {
+    out.push(st)
+    if (st.key === 'contact' && partner === 'strategic') out.push(PARTNER_ACCESS_STAGE)
+  }
+  return out
+}
 
 const EMPTY: Record<string, string> = {}
 
 export default function EntityNewPage() {
   const navigate = useNavigate()
   const { values: v, set } = useQueryParams<Params>(KEYS)
-  const tab = STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : STAGES[0].key
-  const setTab = (x: string) => set({ tab: x === STAGES[0].key ? undefined : x })
 
   /* Note: type lives in the URL, not in state - and this isn't a code preference. When it was
      `useState`, the selected card's state was unreachable to testing, so every check ran against
@@ -72,6 +78,14 @@ export default function EntityNewPage() {
     ? (v.kind as PartnerKind)
     : ''
   const setPartner = (k: PartnerKind) => set({ kind: k })
+
+  const formStages = useMemo(() => stagesFor(partner), [partner])
+  const STAGES = useMemo(
+    () => [{ key: 'partner', label: 'نوع الشراكة', note: '' }, ...formStages.map((s) => ({ key: s.key, label: s.label, note: s.note }))],
+    [formStages],
+  )
+  const tab = STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : STAGES[0].key
+  const setTab = (x: string) => set({ tab: x === STAGES[0].key ? undefined : x })
 
   const [val, setVal] = useState<Record<string, string>>(EMPTY)
   const docs = useMemo(() => new Set(readList(v.up)), [v.up])
@@ -105,14 +119,14 @@ export default function EntityNewPage() {
   const shortBy = useMemo(() => {
     const out: Record<string, string[]> = {}
     out.partner = partner ? [] : ['نوع الشراكة']
-    for (const s of REG_STAGES) {
+    for (const s of formStages) {
       out[s.key] =
         s.key === 'docs'
           ? REG_DOCS.filter((d) => docRequired(d, type) && !docs.has(d.key)).map((d) => d.label)
           : s.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label)
     }
     return out
-  }, [val, docs, type, partner])
+  }, [val, docs, type, partner, formStages])
 
   const missing = Object.values(shortBy).flat()
 
@@ -146,7 +160,8 @@ export default function EntityNewPage() {
   }
 
   const stage = STAGES[at]
-  const fields = REG_STAGES.find((s) => s.key === tab)?.fields ?? []
+  const fields = formStages.find((s) => s.key === tab)?.fields ?? []
+  const strategic = partner === 'strategic'
 
   /* Journey stages - three, not five, with the difference stated in the column. */
   const steps: StepItem[] = [
@@ -156,7 +171,14 @@ export default function EntityNewPage() {
       note: 'فورًا · بلا مراجعة (قاعدة 32)',
       state: done ? 'done' : 'todo',
     },
-    { label: 'إنشاء مشاريعها', note: 'من داخل النظام لا من بوابتها', state: 'todo' },
+    ...(strategic
+      ? [{ label: 'دعوة المنسّق', note: 'بريد بدور «الشريك الاستراتيجي»', state: done ? 'done' : 'todo' } as StepItem]
+      : []),
+    {
+      label: strategic ? 'تغذية المحفظة' : 'إنشاء مشاريعها',
+      note: strategic ? 'يضيف الشريك مشاريعها الفرعية · ويعتمدها المشرف' : 'من داخل النظام لا من بوابتها',
+      state: 'todo',
+    },
   ]
 
   return (
@@ -169,8 +191,8 @@ export default function EntityNewPage() {
             <div>
               <h1 className="ptitle">تسجيل جهة مباشرةً</h1>
               <p className="sub mt-1">
-                قاعدة <span className="num">32</span> · يسجّل مسؤول النظام جهة شريكة
-                دون المرور بالبوابة · وتُنشأ الجهة فورًا بلا مراجعة
+                قاعدة <span className="num">32</span> · يسجّل مشرف المنح جهة شريكة
+                دون المرور بالبوابة · منفّذة أو استراتيجية تدير محفظة · وتُنشأ فورًا بلا مراجعة
               </p>
             </div>
             {/* Note: the "22 missing" tag was removed from the page header - a third count of the
@@ -406,7 +428,7 @@ export default function EntityNewPage() {
               />
 
               <Glass>
-                <Head title="مسار التسجيل" meta={<span className="sub">ثلاث محطات</span>} />
+                <Head title="مسار التسجيل" meta={<span className="sub">{strategic ? 'أربع محطات' : 'ثلاث محطات'}</span>} />
                 <Steps items={steps} flow="ladder" />
                 {/* Note: the difference from the portal is stated, not inferred from the stage
                     count - five there, three here, and the reason is that the two sides are
@@ -435,10 +457,15 @@ export default function EntityNewPage() {
                       </li>
                     ))}
                   </ul>
-                  {partner !== 'beneficiary' && (
+                  {partner === 'implementer' && (
                     <p className="sub cnote">
-                      مثل منصة إحسان · تمنحها المؤسسة دعمًا وهي تتولى صرفه، ولا
-                      تدخل المنصة · فيُدار المشروع والدفعات من داخل النظام.
+                      لا تدخل المنصة · فيُدار المشروع والدفعات من داخل النظام بيد مشرف المنح.
+                    </p>
+                  )}
+                  {strategic && (
+                    <p className="sub cnote">
+                      مثل منصة إحسان · تمنحها المؤسسة مبلغًا لمحفظة وهي توزّعه على مشاريعها الفرعية،
+                      ومنسّقها يدخل النظام ليغذّي المحفظة دون أن يعتمد أو يرفض.
                     </p>
                   )}
                 </Glass>
@@ -457,7 +484,10 @@ export default function EntityNewPage() {
               <span className="decsent">
                 {done
                   ? <>سُجّلت الجهة · <b>{val.name}</b> أصبحت جهة نشطة، ونوعها{' '}
-                      {partner && partnerKind(partner).label}</>
+                      {partner && partnerKind(partner).label}
+                      {strategic && val.coordEmail && (
+                        <><span className="decsep" />أُرسلت دعوة الدخول إلى <span className="num">{val.coordEmail}</span></>
+                      )}</>
                   : <>
                       تُنشأ الجهة <b>فورًا</b> · لا يوجد طلب للمراجعة
                       {partner && (
@@ -487,9 +517,16 @@ export default function EntityNewPage() {
                   سجّل الجهة
                 </button>
               ) : (
-                <button className="btn btn-2" onClick={() => navigate(ROUTES.entities)}>
-                  العودة إلى الجهات
-                </button>
+                <>
+                  {strategic && (
+                    <button className="btn btn-2" onClick={() => navigate(`${ROUTES.permissions}?tab=roles&r=partner`)}>
+                      صلاحيات الشريك
+                    </button>
+                  )}
+                  <button className="btn btn-2" onClick={() => navigate(ROUTES.entities)}>
+                    العودة إلى الجهات
+                  </button>
+                </>
               )}
             </div>
           </div>

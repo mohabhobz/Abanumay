@@ -1,0 +1,142 @@
+/* Today · per-role queues (src/features/home/HomePage.tsx) */
+
+/* ── One screen ── banner, strip and the work row fit the view on desktop; the work row takes what
+   is left and every card shrinks into it. Below 1100px wide or 720px tall it stacks and scrolls. */
+.ibx-fold{flex:none;display:flex;flex-direction:column;gap:var(--gap)}
+.ibx-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr);gap:var(--gap);align-items:stretch}
+.ibx-side{display:flex;flex-direction:column;gap:var(--gap);min-height:0}
+/* Two classes: `.glass` (base, loaded after parts) sets `display:flow-root` */
+.ibx-main .glass{display:flex;flex-direction:column;min-height:0}
+.ibx-age .chcols{flex:1;height:auto;min-height:var(--sp-12);margin-top:var(--sp-3)}
+
+@media (min-width:1100px) and (min-height:720px){
+  /* The screen keeps `--dock-h` at its foot for the floating «اسأل أبانمي» button; the fold
+     fits above it, so nothing sits under the button and the page has nothing to scroll */
+  /* A floor, not a fixed height: when the view is too short for the side column's three cards,
+     the page scrolls instead of clipping them (clipped cards read as broken) */
+  .ibx-fold{min-height:calc(100dvh - var(--padt) - var(--dock-h))}
+  /* On a short view the list scrolls inside its card rather than pushing the page */
+  .ibx-listcard .ibx-list{min-height:0;overflow:auto}
+  .ibx-list a{min-height:var(--sp-10)}
+  .ibx-money .chstack{margin-top:var(--sp-4)}
+  /* The row takes what is left, but never less than the side column's content · the list and the
+     map have no floor of their own (min-height 0), so they stretch to whatever the row becomes */
+  .ibx-main{flex:1 0 auto}
+  .ibx-main>.glass{min-height:0;overflow:hidden}
+  .ibx-side>*{flex:1 0 auto}
+  /* The map keeps its ratio inside whatever height is left */
+  .ibx-map .map{flex:1;min-height:0;margin-top:var(--sp-2)}
+  .ibx-map .map-slot{flex:1;min-height:0}
+  .ibx-map .map-c{width:auto;height:100%;max-width:100%}
+}
+
+/* ── The queue list ── one line per queue, the whole row is the link */
+.ibx-list{list-style:none;margin:var(--sp-2) 0 0;padding:0;display:flex;flex-direction:column;flex:1;
+  justify-content:space-between}
+.ibx-list>li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.ibx-list a{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--h-md);padding:var(--sp-2) var(--sp-3);
+  margin-inline:calc(var(--sp-3) * -1);border-radius:var(--r1);color:var(--t1);
+  transition:background-color var(--mo-2) var(--ease-std)}
+.ibx-list a:hover{background:var(--ctl-quiet-h)}
+.ibx-list a>.ic2:first-child{flex:none;color:var(--t2)}
+.ibx-l{display:flex;align-items:baseline;gap:var(--sp-2);flex:1;min-width:0;white-space:nowrap}
+.ibx-lt{font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.ibx-ln{font-size:var(--fs-1);overflow:hidden;text-overflow:ellipsis}
+.ibx-n{display:inline-grid;place-items:center;min-width:var(--sp-7);height:var(--sp-7);padding-inline:var(--sp-2);
+  border-radius:var(--rp);background:var(--fl-3);font-size:var(--fs-2);font-weight:600;color:var(--t1)}
+.ibx-go{flex:none;color:var(--t3)}
+.ibx-list a.none .ibx-lt{color:var(--t2);font-weight:400}
+.ibx-list a.none .ibx-n{background:none;box-shadow:inset 0 0 0 1px var(--edge-1);color:var(--t2)}
+
+@media (max-width:1099px){
+  .ibx-main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .ibx-side{grid-column:1 / -1;flex-direction:row}
+  .ibx-side>*{flex:1}
+}
+@media (max-width:720px){
+  .ibx-main{grid-template-columns:1fr}
+  .ibx-side{flex-direction:column}
+}
+
+/* ── Sparkline in the top strip (components/charts/Spark.tsx) ──
+   Text on the start side (label, number, note), the line fills the end side and arrives at
+   today's dot in the far corner. The number stays ink; the line and its wash carry the SLA colour. */
+.kpis .kpi.has-spk{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);
+  grid-template-areas:"h s" "v s" "n s";column-gap:var(--sp-4);align-items:start}
+.kpis .kpi.has-spk .kpi-v{text-align:start;margin-block:var(--sp-2);white-space:nowrap}
+.kpis .kpi.has-spk .kpi-h,.kpis .kpi.has-spk .kpi-n{align-self:auto}
+.kpis .kpi.has-spk .kpi-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .spk{grid-area:s;align-self:stretch;position:relative;display:block;min-height:var(--sp-11)}
+.spk svg{position:absolute;inset:0;display:block;width:100%;height:100%;overflow:visible}
+.spk-l{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.spk-dot{stroke-width:9;stroke-linecap:round}
+.spk-halo{stroke-width:18;stroke-linecap:round;opacity:.18}
+.spk.s-ok .spk-dot,.spk.s-ok .spk-halo{stroke:var(--ch-3)}
+.spk.s-near .spk-dot,.spk.s-near .spk-halo{stroke:var(--ch-warn)}
+.spk.s-late .spk-dot,.spk.s-late .spk-halo{stroke:var(--ch-late)}
+
+/* Narrow tiles: the line goes under the text instead of beside it */
+@media (max-width:720px){
+  .kpis .kpi.has-spk{grid-template-columns:minmax(0,1fr);grid-template-areas:"h" "v" "n" "s"}
+  .kpi .spk{min-height:var(--sp-9);margin-top:var(--sp-3)}
+}
+
+/* ── Map amounts and the swipe list (meeting 1 Oct · E-5) ──
+   The amount sits on its region in the map's own ink, with a halo of the region's fill so it reads
+   over any step of the scale. The list under the map scrolls sideways once it outgrows one line. */
+.map-amt{fill:var(--map-ink);font-family:var(--fd);font-weight:600;font-size:var(--fs-8);
+  paint-order:stroke;stroke:var(--map-halo);stroke-width:5px;stroke-linejoin:round;pointer-events:none}
+.map-amt.on{font-weight:700}
+.map-rank.map-swipe{flex-wrap:nowrap;align-self:stretch;width:100%;justify-content:flex-start;overflow-x:auto;max-width:100%;
+  scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:var(--sp-1);
+  -webkit-mask-image:linear-gradient(to left,var(--t1) 85%,transparent);mask-image:linear-gradient(to left,var(--t1) 85%,transparent)}
+.map-rank.map-swipe::-webkit-scrollbar{display:none}
+.map-rank.map-swipe>.map-chip{flex:none;scroll-snap-align:start}
+.map-chip .sub{font-size:var(--fs-1)}
+/* `.map` centres its children, so the foot shrinks to its content · with a swipe row it must take
+   the card's width or the row overflows both edges instead of scrolling */
+.map .map-foot:has(.map-swipe){align-self:stretch;min-width:0}
+
+/* ── Budget and top entities (E-6 · E-8) ── */
+.ibx-bud .chstack{margin-top:var(--sp-3)}
+.ibx-budl{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-4);
+  font-size:var(--fs-1);color:var(--t2)}
+.ibx-budl li{display:inline-flex;align-items:center;gap:var(--sp-2);white-space:nowrap}
+.ibx-budl i{width:var(--sp-3);height:var(--sp-3);border-radius:var(--r-hair)}
+.ibx-budl b{color:var(--t1);font-weight:600}
+.ibx-ents{list-style:none;margin:var(--sp-2) 0 0;padding:0;display:flex;flex-direction:column}
+.ibx-ents li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.ibx-ents li a{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--sp-9);color:var(--t1);
+  font-size:var(--fs-2);line-height:var(--lh-ui)}
+.ibx-ents li a:hover .ibx-tn{text-decoration:underline;text-underline-offset:4px}
+.ibx-tn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ibx-tm{flex:none;font-size:var(--fs-1);color:var(--t2)}
+@media (min-width:1100px) and (min-height:720px){
+  .ibx-side>.ibx-bud,.ibx-side>.ibx-entcard{flex:none}
+}
+
+/* The combined dashboard inside Reports (E-9) · title and tabs in place of the greeting banner */
+.ovhead{flex:none;display:flex;flex-direction:column;gap:var(--sp-4)}
+
+/* ═══ Mobile · critical actions only (meeting 1 Oct · F-5) ═══
+   Research (NN/g, mobile approval inboxes): the phone is for the quick, interrupt-driven decision,
+   not for analysis. So on a phone the home page leads with the queues, the drawn analysis folds
+   away behind one control, and a decision opens as a bottom sheet in the thumb's reach. */
+/* Base first: the phone rule below turns it on */
+.ibx-more{display:none;justify-content:center}
+@media (max-width:720px){
+  /* The queue's name needs the row more than its age line does */
+  .ibx-ln{display:none}
+  .bmask.decsheet{place-items:end stretch;padding:0}
+  .bmask.decsheet .modal{width:100%;border-end-start-radius:0;border-end-end-radius:0;
+    padding-bottom:calc(var(--sp-6) + env(safe-area-inset-bottom))}
+  .bmask.decsheet .mf{flex-direction:column-reverse;align-items:stretch}
+  .bmask.decsheet .modal .mf>.btn{width:100%}
+  /* The decisions come first on a phone · the four numbers follow the list */
+  .ibx-fold>.ibx-main{order:1}
+  .ibx-fold>.kpis{order:2}
+  .ibx-main:not(.more) .ibx-map,.ibx-main:not(.more) .ibx-side{display:none}
+  .ibx-more{display:flex}
+}
+.decwhy{margin-top:var(--sp-2)}
+.decwhy li>span:first-of-type{white-space:normal}

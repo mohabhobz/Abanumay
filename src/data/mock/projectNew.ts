@@ -4,8 +4,10 @@ import { projectRows } from './projects'
 import {
   CITIES_BY_REGION, FIELDS_BY_TRACK, GOALS_BY_FIELD, REGIONS, TRACKS,
 } from './taxonomy'
-import { TARGET_GROUPS } from './settings'
+import { MONEY_LIMITS, TARGET_GROUPS } from './settings'
+import { entityDetail } from './entityDetail'
 import { NOUN, countOf } from '@/lib/format'
+import { CYCLE, TODAY, addWorkingDays, inPeriod, openFields } from '@/data/intake/cycle'
 
 /* Create project · the most important action in the system, and a screen that was entirely missing.
 
@@ -54,20 +56,22 @@ export interface PStageDef {
 }
 
 /**
- * Cap on an entity's projects per period.
+ * Cap on an entity's requests in the intake cycle (3.4.12).
  *
- * The number is an assumption — the spec says the cap comes from settings without giving a value,
- * same as the approval thresholds. The screen flags it as an assumption.
+ * Read from settings («الحدود المالية والزمنية» · projectsPerEntity), counted on the requests the
+ * entity **submitted inside the current cycle's period** — not on its open projects: the rule
+ * limits how many it may send in a period, not how many it runs.
  */
-export const ENTITY_PROJECT_CAP = 5
+export const entityCap = (): number =>
+  MONEY_LIMITS.find((l) => l.key === 'projectsPerEntity')?.value ?? 3
 
-/**
- * How many **open** projects this entity has · this is what the cap measures.
- *
- * "Open" means still taking the team's time: in review, in execution, or stalled. Completed and
- * excused projects are done and don't count — the cap is about ongoing work, not the entity's whole
- * history.
- */
+/** @deprecated kept for older imports · the cap now lives in settings */
+export const ENTITY_PROJECT_CAP = 3
+
+export const requestsInPeriod = (entityId: string): number =>
+  projectRows.filter((p) => p.entityId === entityId && p.submittedAt >= CYCLE.from && p.submittedAt <= CYCLE.to).length
+
+/** Open projects · shown beside the cap as context, no longer what it counts */
 const OPEN_GROUPS: ProjectStatusGroup[] = ['في الدراسة', 'في التشغيل', 'متعثر']
 
 export const openProjectsOf = (entityId: string): number =>
@@ -85,12 +89,12 @@ export interface EntityOption {
 
 export const entityOptions = (): EntityOption[] =>
   entityRows.map((e) => {
-    const open = openProjectsOf(e.id)
+    const sent = requestsInPeriod(e.id)
     return {
       id: e.id,
       name: e.name,
-      open,
-      capped: open >= ENTITY_PROJECT_CAP,
+      open: sent,
+      capped: sent >= entityCap(),
       inactive: e.activation !== 'مقبول',
     }
   })
@@ -118,6 +122,8 @@ export const P_STAGES: PStageDef[] = [
       { key: 'field', label: 'المجال', kind: 'select', req: true, dependsOn: 'track' },
       { key: 'goal', label: 'الهدف', kind: 'select', req: true, dependsOn: 'field' },
       { key: 'summary', label: 'وصف المشروع', kind: 'long', req: true, hint: 'المشكلة والحل في فقرة واحدة' },
+      /* 3.1.input-2 · the project's own objectives, beyond the goal picked from the taxonomy */
+      { key: 'objectives', label: 'الأهداف التفصيلية', kind: 'long', req: true, hint: 'هدف في كل سطر · ثلاثة أهداف على الأقل يُقاس كلٌّ منها' },
     ],
   },
   {
@@ -149,7 +155,8 @@ export const P_STAGES: PStageDef[] = [
     note: 'قاعدة 13 · تاريخ التنفيذ الفعلي مستقل عن تاريخ التقديم',
     fields: [
       { key: 'startAt', label: 'بداية التنفيذ الفعلي', kind: 'date', req: true, hint: 'يختلف عن تاريخ تقديم الطلب' },
-      { key: 'endAt', label: 'نهاية التنفيذ', kind: 'date', req: true },
+      /* 3.4.30 · the duration is in working days and the end date is computed, not typed */
+      { key: 'workDays', label: 'مدة التنفيذ', kind: 'num', req: true, unit: 'يوم عمل', hint: 'تُستبعد العطلة الأسبوعية والإجازات الرسمية' },
       {
         key: 'multiYear', label: 'يمتد لأكثر من سنة مالية', kind: 'select',
         options: ['لا', 'نعم'],
@@ -159,10 +166,21 @@ export const P_STAGES: PStageDef[] = [
   },
 ]
 
+/** Documents stage key · its content is the upload list, not fields */
+export const DOCS_STAGE = 'docs'
+
+/** End of execution · start plus the working days, computed (3.4.13 · 3.4.30) */
+export const endOf = (val: PValues): string =>
+  val.startAt && Number(val.workDays) > 0 ? addWorkingDays(val.startAt, Number(val.workDays)) : ''
+
+/* Only the domains open in the cycle (3.4.6) · a track with none open isn't offered */
+const openTracks = () => TRACKS.filter((t) => (FIELDS_BY_TRACK[t] ?? []).some((f) => openFields().includes(f)))
+
 /** Options for a dependent field · same cascading filter pattern used elsewhere */
 export const optionsFor = (f: PFieldDef, parent: string): readonly string[] => {
+  if (f.key === 'track') return openTracks()
   if (f.options) return f.options
-  if (f.dependsOn === 'track') return FIELDS_BY_TRACK[parent] ?? []
+  if (f.dependsOn === 'track') return (FIELDS_BY_TRACK[parent] ?? []).filter((x) => openFields().includes(x))
   if (f.dependsOn === 'field') return GOALS_BY_FIELD[parent] ?? []
   if (f.dependsOn === 'region') return CITIES_BY_REGION[parent] ?? []
   return []
@@ -197,8 +215,8 @@ export const projectIssues = (val: PValues): PIssue[] => {
   if (ent?.capped) {
     out.push({
       key: 'cap',
-      say: `لدى «${ent.name}» ${countOf(ent.open, NOUN.project)} مفتوحة، والحدّ ${countOf(ENTITY_PROJECT_CAP, NOUN.project)} في الفترة. اختر جهة أخرى أو انتظر إغلاق أحد مشاريعها.`,
-      rule: 'قاعدة 12',
+      say: `قدّمت «${ent.name}» ${countOf(ent.open, NOUN.project)} في هذه الدورة، والحدّ ${countOf(entityCap(), NOUN.project)}. لا يُقبل منها طلب آخر حتى الدورة القادمة.`,
+      rule: 'قاعدة 3.4.12',
     })
   }
   if (ent?.inactive) {
@@ -209,10 +227,30 @@ export const projectIssues = (val: PValues): PIssue[] => {
     })
   }
 
-  /* Comparing as strings directly · dates here are `yyyy-mm-dd`, so lexical order matches
-     chronological order and there's no need for a `Date` object */
-  if (val.startAt && val.endAt && val.endAt < val.startAt) {
-    out.push({ key: 'dates', say: 'تاريخ نهاية التنفيذ يسبق تاريخ بدايته. عدّل أحد التاريخين.', rule: 'قاعدة 13' })
+  /* 3.4.8 · 3.4.9 · the entity's own file must be valid when it applies: no expired mandatory
+     document and at least one active bank account to receive the grant */
+  const er = entityRows.find((e) => e.id === val.entityId)
+  if (er && !ent?.inactive) {
+    const det = entityDetail(er)
+    const expired = det.docs.filter((d) => d.expired)
+    if (expired.length) {
+      out.push({ key: 'docs-exp', say: `في ملف «${er.name}» ${countOf(expired.length, NOUN.doc)} منتهية الصلاحية (${expired.map((d) => d.name).join('، ')}). تُحدَّث من ملف الجهة قبل التقديم.`, rule: 'قاعدة 3.4.8' })
+    }
+    if (!det.banks.some((b) => b.status === 'مفعل')) {
+      out.push({ key: 'bank', say: `لا يوجد لـ«${er.name}» حساب بنكي مفعّل · يلزم حساب معتمد لاستلام المنحة.`, rule: 'قاعدة 3.4.9' })
+    }
+  }
+
+  /* The portal accepts requests only inside the cycle's period (3.2.3) */
+  if (!inPeriod()) {
+    out.push({ key: 'period', say: `فترة التقديم من ${CYCLE.from} إلى ${CYCLE.to} · لا يُقبل طلب جديد خارجها.`, rule: 'قاعدة 3.2.3' })
+  }
+  if (val.field && !openFields().includes(val.field)) {
+    out.push({ key: 'field', say: `مجال «${val.field}» غير مفتوح في هذه الدورة.`, rule: 'قاعدة 3.4.6' })
+  }
+
+  if (val.startAt && val.startAt < TODAY) {
+    out.push({ key: 'dates', say: 'بداية التنفيذ قبل تاريخ اليوم · اختر تاريخًا قادمًا.', rule: 'قاعدة 3.4.13' })
   }
 
   const asked = Number(val.amountRequested) || 0

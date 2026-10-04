@@ -121,10 +121,12 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
       return {
         k: 'تمّت',
         t: role.role,
-        lines: [
-          'قدّمت الجهة المشروع، وانتقل إلى الدراسة',
-          standing?.firstActionAt ? <>أول إجراء مسجَّل <b>{standing.firstActionAt}</b></> : null,
-        ],
+        lines: role.kind === 'submit'
+          ? [
+              'قدّمت الجهة المشروع، وانتقل إلى الدراسة',
+              standing?.firstActionAt ? <>أول إجراء مسجَّل <b>{standing.firstActionAt}</b></> : null,
+            ]
+          : [role.kind === 'recommend' ? 'أوصى وأحال المشروع للمستوى التالي' : 'رفع المشروع لأنّ مبلغه فوق حدّه المالي'],
         src: 'المصدر: سجل المشروع',
       }
     }

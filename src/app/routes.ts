@@ -8,6 +8,13 @@
 export const ROUTES = {
   login: '/login',
   home: '/',
+  /** The combined dashboard that was the home page until 3 Oct 2026 · now its own category in
+      Reports (meeting 1 Oct, E-9); the old `/overview` address redirects here. */
+  overview: '/reports/overview',
+  /** The happy path · one record of each procedure, end to end (meeting 1 Oct, A-7) · own branch */
+  journey: '/journey',
+  /** The consultant's screen on one referred project (3.2.20) */
+  advice: (projectId: string) => `/advice/${projectId}`,
 
   projects: '/projects',
   /** Project and disbursement business rules — approval matrix and limits. */
@@ -152,6 +159,8 @@ export const AFTER_LOGIN: string = ROUTES.assistant
 /** Project page tabs — the slug in the URL, the display name shown. */
 export const PROJECT_TABS = [
   { slug: 'data', label: 'بيانات المشروع' },
+  /* Procedure 3 · the supervisor's study, its criteria, budget and the consultant */
+  { slug: 'study', label: 'الدراسة' },
   { slug: 'entity', label: 'الجهة' },
   { slug: 'history', label: 'المشاريع السابقة' },
   { slug: 'agreement', label: 'الاتفاقية' },
@@ -196,6 +205,8 @@ export const DEFAULT_ENTITY_TAB: EntityTabSlug = 'data'
  */
 export const REPORT_TABS = [
   { slug: 'board', label: 'اللوحة' },
+  /* E-9 · the combined dashboard, moved off «اليوم» into Reports as its own category */
+  { slug: 'overview', label: 'اللوحة المجمّعة' },
   { slug: 'build', label: 'تقرير مُشكَّل' },
   { slug: 'catalog', label: 'كل التقارير' },
   { slug: 'coverage', label: 'حالة القياس' },

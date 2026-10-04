@@ -2,8 +2,8 @@ import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Steps, Tag,
-  icons, type StepItem,
+  BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tag,
+  icons, type GateStep,
 } from '@/components/ui'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -11,11 +11,12 @@ import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, NOUN, nounAfter, ver } from '@/lib/format'
+import { isolate, nf, NOUN, nounAfter, pct, ver } from '@/lib/format'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import {
-  PLAN_STAGES, acceptActivity, approvePlan, decideChange, lateActivities,
+  PLAN_LIMIT, PLAN_STAGES, acceptActivity, approvePlan, decideChange, lateActivities,
   addEvidence, claimActivity, commentActivity, planById, planClaimed, planDone, planIssues, planPlanned,
-  planSpi, planStageLabel, readyToClose, rejectActivity, returnPlan, sendPlan, spiSay,
+  planSpi, planStageLabel, planStageWho, readyToClose, rejectActivity, returnPlan, sendPlan, spiSay,
   toManager, waitingReview,
 } from '@/data/mock/plans'
 import { projectById } from '@/data/mock/projects'
@@ -23,6 +24,23 @@ import { planReadings } from './readings'
 import { PhaseTree } from './PhaseTree'
 import { PlanBar } from './PlanBar'
 import { PlanActionDock, planActionsFor } from './PlanActionDock'
+import { EditableCard } from '@/features/shared/EditableCard'
+
+/* Names inside the fan's sectors · who holds each step, like the project's roles */
+const STEP_LABEL: Record<string, string> = {
+  draft: 'الجهة المستفيدة',
+  supervisor: 'مشرف المنح',
+  manager: 'مدير المنح',
+  active: 'التنفيذ',
+  done: 'الاكتمال',
+}
+const STEP_CAP: Record<string, string> = {
+  draft: 'إعداد الخطة',
+  supervisor: 'المراجعة',
+  manager: 'الاعتماد',
+  active: 'الأنشطة والشواهد',
+  done: 'مؤهَّلة للإغلاق',
+}
 
 /* Plan page.
 
@@ -43,6 +61,7 @@ export default function PlanPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const { role, user } = useRole()
+  const mobile = useIsMobile()
   /* Note: the same screen through two lenses, not two screens. The entity and the supervisor look
      at the same phases, activities and evidence - what differs is the actions: the entity marks
      things done and uploads, the supervisor accepts or rejects. Two separate screens would have
@@ -118,21 +137,59 @@ export default function PlanPage() {
   const actions = asEntity ? [] : planActionsFor(role.key, p.stage)
   const cost = p.phases.reduce((s, ph) => s + ph.cost, 0)
 
-  /* Note: the journey's stages come from the spec, not from screen states - and "completed" is its
-     own stage since it's what lifts the block on closing. */
-  const steps: StepItem[] = PLAN_STAGES
-    .filter((s) => s.key !== 'returned')
-    /* Note: deliberately no `note` on the stepper. The stepper is a row that compresses, and a note
-       line under each step would turn five stages into two crowded lines - the explanation lives on
-       the screen itself. The note is for the vertical ladder instead. */
-    .map((s) => ({
-      label: s.label,
-      state: s.key === p.stage
-        ? 'now'
-        : PLAN_STAGES.findIndex((x) => x.key === s.key)
-          < PLAN_STAGES.findIndex((x) => x.key === p.stage)
-          ? 'done' : 'todo',
-    }))
+  /* The same fan as the project, agreement and closing headers, driven by the plan's own path.
+     «مُعادة للجهة» isn't a step on the path: a returned plan sits back with the entity, at the
+     draft step, and says so in the hover reading and under the arc. */
+  const path = PLAN_STAGES.filter((s) => s.key !== 'returned')
+  const returned = p.stage === 'returned'
+  const finished = p.stage === 'done'
+  const at = finished ? path.length : path.findIndex((s) => s.key === (returned ? 'draft' : p.stage))
+  const openDays = Math.round(p.hoursInStage / 24)
+  const limit = PLAN_LIMIT[p.stage]
+
+  const steps: GateStep[] = path.map((s, i): GateStep => {
+    const base = { label: STEP_LABEL[s.key] ?? s.who, title: s.label, cap: STEP_CAP[s.key] ?? '' }
+    if (i === at) {
+      return {
+        ...base,
+        state: 'now',
+        lines: [
+          returned
+            ? <>أُعيدت للجهة بملاحظات مكتوبة · منذ <b>{openDays}</b> {nounAfter(openDays, NOUN.day)}</>
+            : <><b>{s.who}</b> · منذ <b>{openDays}</b> {nounAfter(openDays, NOUN.day)}</>,
+          limit > 0
+            ? <><b>{nf.format(p.hoursInStage)}</b> ساعة مقابل حدّ <b>{nf.format(limit)}</b></>
+            : s.key === 'active'
+              ? <>الإنجاز المقبول <b>{pct(done)}</b> مقابل المخطَّط <b>{pct(want)}</b></>
+              : s.note,
+        ],
+        src: 'المصدر: سجل الخطة',
+      }
+    }
+    return {
+      ...base,
+      state: i < at ? 'done' : 'pending',
+      lines: [s.note, i < at ? null : 'تبدأ بعد اكتمال المرحلة السابقة'],
+      src: i < at ? 'المصدر: سجل الخطة' : 'المصدر: مسار الخطة',
+    }
+  })
+
+  /* During execution nobody is deciding: the entity is doing the work, so the center says that. */
+  const holder = finished
+    ? { k: 'اكتملت الخطة', t: 'مؤهَّلة للإغلاق' }
+    : p.stage === 'active'
+      ? { k: 'يعمل عليها الآن', t: planStageWho('active') }
+      : { k: 'صاحب القرار الآن', t: steps[at]?.label ?? planStageWho(p.stage) }
+  const holderRest = [
+    live
+      ? <>الإنجاز المقبول <b className="num">{pct(done)}</b> · المخطَّط <b className="num">{pct(want)}</b></>
+      : returned
+        ? <>أُعيدت للجهة · تعود للمراجعة بعد التعديل</>
+        : <>الاعتماد يثبّت النسخة المرجعية · وبعده يُقاس الانحراف</>,
+    p.baseline > 0
+      ? <>النسخة المرجعية <b className="num">{ver(p.baseline)}</b></>
+      : null,
+  ]
 
   const take = (label: string) => {
     if (label.includes('إرسال لمراجعة')) sendPlan(p.id)
@@ -149,8 +206,10 @@ export default function PlanPage() {
         <div className="screen col hasg2">
           <BackTo label="الخطط" onClick={() => navigate(ROUTES.plans)} />
 
-          <header>
-            <div>
+          {/* Header laid out like the project and closing pages: title and grant, the fan at the
+              end. It replaces the flat stepper card that sat under the header. */}
+          <header className="phead">
+            <div className="pmain">
               <h1 className="ptitle">خطة {p.projectName}</h1>
               <p className="sub mt-1">
                 <Mono>{p.id}</Mono> ·{' '}
@@ -160,8 +219,31 @@ export default function PlanPage() {
                     {p.baselineAt && <>من <DateText>{p.baselineAt}</DateText></>}</>
                   : 'لم تُعتمد بعد · الهيكل مفتوح للتعديل'}
               </p>
+              <div className="gt-tag">
+                <Tag tone="mute">{planStageLabel(p.stage)}</Tag>
+              </div>
+
+              {pr && (
+                <div className="pamt">
+                  <div className="lb">قيمة المنحة</div>
+                  <div className="v"><Money sm>{grant || pr.amountRequested}</Money></div>
+                  <div className="sub">
+                    تكلفة المراحل <Num>{cost}</Num> · <Num>{p.phases.length}</Num> {nounAfter(p.phases.length, NOUN.phase)}
+                  </div>
+                </div>
+              )}
             </div>
-            <Tag tone="mute">{planStageLabel(p.stage)}</Tag>
+
+            <div className="pgates">
+              <StepArc
+                steps={steps}
+                compact={mobile}
+                aria={`مسار الخطة، ${holder.t}`}
+                holderKey={holder.k}
+                holder={holder.t}
+                rest={holderRest}
+              />
+            </div>
           </header>
 
           {/* Note: the entity needs to know that "done" isn't "counted". This is the biggest
@@ -183,10 +265,6 @@ export default function PlanPage() {
               </p>
             </Glass>
           )}
-
-          <Glass className="regsteps">
-            <Steps flow="stepper" items={steps} />
-          </Glass>
 
           <div className="g2">
             <div className="col">
@@ -388,6 +466,7 @@ export default function PlanPage() {
                   new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
                 )}
               />
+              <EditableCard module="plan" state={p.stage} label={planStageLabel(p.stage)} />
             </div>
           </div>
 

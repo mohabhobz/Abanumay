@@ -7,7 +7,9 @@
 @import './parts/reports.css';
 @import './parts/prefs.css';
 @import './parts/perm.css';
+@import './parts/journey.css';
 @import './parts/account.css';
+@import './parts/inbox.css';
 
 /* Official Saudi Riyal symbol
    U+20C1, officially issued and added to Unicode 17.
@@ -4613,14 +4615,16 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .lf-art{--lf-size:min(calc(var(--sp-12) * 3.75), calc(100cqi - var(--lf-ledger) - var(--sp-7)));order:2;position:relative;flex:none;display:block;
   width:var(--lf-size);height:var(--lf-size);color:inherit;text-decoration:none;border-radius:var(--r3)}
 .lf-art:focus-visible{outline:2px solid var(--teal);outline-offset:var(--sp-2)}
-.lf-art svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:3% 97%}
+.lf-art svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:2% 98%}
 .lf-track{fill:rgba(var(--edgeC),.07)}
 .lf-g0{stop-color:var(--ch-1)}
 .lf-g1{stop-color:var(--ch-2)}
 .lf-pend{fill:var(--lime)}
 .lf-wave{fill:var(--on-solid);opacity:.35}
-.lf-edge{fill:none;stroke:var(--edge-2);stroke-width:.25}
-.lf-rib{fill:none;stroke:var(--on-solid);stroke-opacity:.5;stroke-width:.4;stroke-linecap:round}
+/* F-2 · a touch more weight on the outline, a stalk to hang from, and a rib that tapers */
+.lf-edge{fill:none;stroke:var(--edge-2);stroke-width:.42;stroke-linejoin:round}
+.lf-stem{fill:none;stroke:var(--ch-1);stroke-width:.6;stroke-linecap:round}
+.lf-rib{fill:var(--on-solid);fill-opacity:.42;stroke:none}
 .lf-paid,.lf-pend{transition:opacity var(--mo-3) var(--ease-std)}
 /* The percentage sits on the filled body of the leaf, in the ink measured for that fill. */
 .lf-pct{position:absolute;left:50%;top:60%;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;
@@ -4647,7 +4651,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 
 /* Motion: the leaf fills from its base when the page opens; hover sways it and runs the water
    line once. Durations come from the motion scale. */
-.lf-fill{transform-box:view-box;transform-origin:50% 20.5px;animation:mo-col calc(var(--mo-5) * 2.5) var(--ease-out) both}
+.lf-fill{transform-box:view-box;transform-origin:50% 20.2px;animation:mo-col calc(var(--mo-5) * 2.5) var(--ease-out) both}
 .lf-art:hover svg{animation:lf-sway calc(var(--mo-5) * 2) var(--ease-std)}
 .lf-art:hover .lf-wave{animation:lf-wave calc(var(--mo-5) * 2) var(--ease-std)}
 @keyframes lf-sway{30%{rotate:-4deg}65%{rotate:2deg}}
@@ -8406,8 +8410,8 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
    ═══════════════════════════════════════════════════════════ */
 :root{
   --pt-gap:calc(var(--mo-base) * 1.5);     /* 120: the empty beat before the first wave */
-  --pt-w:calc(var(--mo-base) * .9);        /* 72: between waves */
-  --pt-d:calc(var(--mo-base) * 5);         /* 400: one block (client: the 560 pass felt slow) */
+  --pt-w:calc(var(--mo-base) * .7);        /* 56: between waves (meeting 1 Oct, F-1: a touch shorter) */
+  --pt-d:calc(var(--mo-base) * 4);         /* 320: one block (was 400; 560 before that felt slow) */
   --pt-blur:var(--sp-4);                   /* 12px → 0 */
   --pt-scale:.985;                         /* a settle, barely felt */
   --pt-ease:cubic-bezier(.33,1,.68,1);     /* ease-out cubic: no snap at the start, a long tail */

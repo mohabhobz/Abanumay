@@ -19,6 +19,7 @@ import {
 import type { AgreementRow } from '@/types/domain'
 import { AgrActionDock, agrActionsFor } from './AgrActionDock'
 import { ScheduleEditor, asDraft } from './ScheduleEditor'
+import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single agreement - the four approval stages in the document's flow.
 
@@ -352,6 +353,7 @@ export default function AgreementPage() {
             </div>
 
             <div className="col">
+              <EditableCard module="agreement" state={a.stage} label={meta?.label} />
               {/* Template and type - rules 3 and 4. */}
               <Glass>
                 <Head

@@ -1,6 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  BackTo, Empty, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem,
+  BackTo, Empty, Glass, Head, Icon, KV, Money, Num, Person, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -24,6 +24,9 @@ import {
    Note: the assumption is tagged as one. The question "what exactly does a portfolio mean on
    screen" is still open - what's here is the assumption "a parent with projects underneath", and
    the screen states it as an assumption, not an agreed fact. */
+
+/** Partners whose coordinator has an account (role «الشريك الاستراتيجي») */
+const PARTNER_ACCOUNT: Record<string, string> = { '860': 'نواف الشهري' }
 
 export default function PortfolioPage() {
   const { id } = useParams()
@@ -179,8 +182,9 @@ export default function PortfolioPage() {
                   ))}
                 </ul>
                 <p className="sub cnote">
-                  {implementerName(p.entityId)} <b>لا تدخل المنصة أصلًا</b> · فيسقط كل ما يفترض وجودها:
-                  البوّابة والتوقيع والاتفاقية ومسوغات الجهة.
+                  {implementerName(p.entityId)} <b>لا تتقدّم من البوّابة</b> · يضيفها مشرف المنح من الداخل،
+                  فيسقط كل ما يفترض تقدّمها: التسجيل والتوقيع والاتفاقية ومسوغات الجهة. وإن مُنح منسّقها
+                  حسابًا، فهو بدور «الشريك الاستراتيجي»: يرى محافظه وحدها ويغذّيها ولا يقرّر.
                 </p>
               </Glass>
 
@@ -204,7 +208,15 @@ export default function PortfolioPage() {
                         </Link>
                       ),
                     },
-                    { k: 'نوع الشراكة', v: <Tag tone="mute">شريك منفّذ</Tag> },
+                    { k: 'نوع الشراكة', v: <Tag tone="mute">شريك استراتيجي</Tag> },
+                    {
+                      /* Meeting 1 Oct · the partner is a persona of its own: optional access, its
+                         own portfolios only (see «الصلاحيات والأدوار»). */
+                      k: 'حساب الشريك',
+                      v: PARTNER_ACCOUNT[p.entityId]
+                        ? <span className="pfacct"><Person name={PARTNER_ACCOUNT[p.entityId]} /> <Link className="tlink" to={`${ROUTES.permissions}?tab=roles&r=partner`}>دخول محدود · محافظه فقط</Link></span>
+                        : <span className="sub">بلا دخول · يديرها مشرف المنح</span>,
+                    },
                     { k: 'مبلغ المحفظة', v: <Money>{p.total}</Money> },
                     { k: 'المصروف', v: <Money>{spent}</Money> },
                     { k: 'المتبقّي', v: <Money>{p.total - spent}</Money> },

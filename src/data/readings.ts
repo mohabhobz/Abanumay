@@ -124,12 +124,14 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
   }
 
   /* The two actions that address the delay live inside the reading itself, not in a separate card.
-     A reading that says "over the limit" with no way out is just a complaint. */
+     A reading that says "over the limit" with no way out is just a complaint.
+     Meeting 1 Oct (C-11): the assistant prepares, the person acts — the reminder is a draft the
+     supervisor sends himself, and the reason is the one he writes, not one the assistant records. */
   const now = out[0]
   if (now && now.kind === 'flag') {
     now.actions = [
-      { label: 'ذكّر الجهة', kind: 'btn-2', done: 'أُرسل التذكير إلى الجهة عبر البوابة' },
-      { label: 'سجّل سبب التأخر', kind: 'btn-2', note: 'سبب التأخر', done: 'سُجّل سبب التأخر في سجل المشروع' },
+      { label: 'جهّز مسودة تذكير', kind: 'btn-2', done: 'جُهّزت مسودة التذكير في المراسلات · راجعها وأرسلها بنفسك' },
+      { label: 'أضف سبب التأخر', kind: 'btn-2', note: 'سبب التأخر', done: 'أُضيف السبب الذي كتبته إلى سجل المشروع' },
     ]
   }
 
@@ -415,7 +417,7 @@ export function readEntity(
         'ويُجدَّد الترخيص لدى الجهة المرخِّصة لا لدى المؤسسة.',
       danger: [detail.licenseEndsAt],
       src: 'ملف الجهة · تاريخ نهاية الترخيص',
-      actions: [{ label: 'ذكّر الجهة', kind: 'btn-2', done: 'أُرسل التذكير إلى الجهة عبر البوابة' }],
+      actions: [{ label: 'جهّز مسودة تذكير', kind: 'btn-2', done: 'جُهّزت مسودة التذكير في المراسلات · راجعها وأرسلها بنفسك' }],
     })
   }
 
@@ -462,7 +464,7 @@ export function readEntity(
         valueLabel: 'المرفوع',
         limitLabel: 'المطلوب',
       },
-      actions: [{ label: 'ذكّر الجهة', kind: 'btn-2', done: 'أُرسل التذكير إلى الجهة عبر البوابة' }, { label: 'سجّل ملاحظة', kind: 'btn-2', note: 'الملاحظة', done: 'سُجّلت الملاحظة في ملف الجهة' }],
+      actions: [{ label: 'جهّز مسودة تذكير', kind: 'btn-2', done: 'جُهّزت مسودة التذكير في المراسلات · راجعها وأرسلها بنفسك' }, { label: 'أضف ملاحظتك', kind: 'btn-2', note: 'الملاحظة', done: 'أُضيفت ملاحظتك إلى ملف الجهة' }],
     })
   }
 

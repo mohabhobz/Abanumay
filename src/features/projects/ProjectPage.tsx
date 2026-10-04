@@ -31,6 +31,16 @@ import { projectChain } from '@/data/mock/chain'
 import { planOfProject } from '@/data/mock/plans'
 import { journeys } from '@/data/journey'
 import { BudgetLinkAction } from '@/features/budget/BudgetLink'
+import { EditableCard } from '@/features/shared/EditableCard'
+import { HOLDER_LABEL, authorityFor, holderOf, seatOptions } from '@/data/holders'
+import {
+  flowEvents, flowOf, recommend, requestCompletion, returnToSupervisor, saveStudy, useFlow,
+} from '@/data/intake/flow'
+import { RecommendationCard, RequestCloseCard, RequestDocsCard, RequestMetaCard } from './tabs/RequestCards'
+import { StudyAside, StudyTab } from './tabs'
+import { TransferModal } from './TransferModal'
+import { useQueryParams } from '@/hooks/useQueryParams'
+import type { DecisionAction } from '@/types/domain'
 
 /** Number of days the current process has been open - from the action log. */
 const OPEN_DAYS = 87
@@ -95,8 +105,46 @@ export default function ProjectPage() {
         governance: entityRow.governance,
       }
     : fixtures.entity
-  const authority = fixtures.authority
-  const { user, role } = useRole()
+  const { user: me, role } = useRole()
+  useFlow()
+  const { values: qv } = useQueryParams(['as'])
+  /* `?as=entity` · the entity's view of its own request: its documents only, no internal ones */
+  const asEntity = qv.as === 'entity'
+  const flow = row ? flowOf(row.id) : undefined
+  const closed = Boolean(flow?.closed)
+  const waiting = row?.stage === 'استكمال بيانات المشروع'
+  /* B-5 · the seat the project sits at decides the fan and the bar's buttons — not the signed-in
+     role alone. Out of study, the fan shows the full path as passed. */
+  const holder = row && !closed ? holderOf(row) : null
+  const authority = row ? authorityFor(row.amountRequested, holder) : fixtures.authority
+  const seat = holder ? seatOptions(holder, project.amountRequested, role.key) : null
+  /* A project waiting on the entity, or closed, has no decision for anyone (3.4.16 · 3.4.27) */
+  const frozen = waiting || closed
+  const user = frozen ? { ...me, actions: [] } : seat ? { ...me, actions: seat.actions } : me
+  const studyEditable = role.key === 'supervisor' && holder === 'supervisor' && !frozen
+  const [transfer, setTransfer] = useState(false)
+
+  /* What each seat's button does (procedure 3) · the supervisor's recommendation forwards, never
+     approves; a return goes back to the supervisor with its note */
+  const decide = (a: DecisionAction, note: string): string[] | void => {
+    if (!row) return
+    if (a.label === 'توصية بالموافقة' || a.label === 'توصية بالرفض') {
+      const want = a.label === 'توصية بالموافقة' ? 'approve' : 'reject'
+      const s = flowOf(row.id).study
+      if (s && s.recommendation !== want) saveStudy(row.id, { ...s, recommendation: want, by: me.name })
+      return recommend(row.id, me.name)
+    }
+    if (a.label === 'طلب استكمال') { requestCompletion(row.id, note, me.name); return }
+    if (a.label === 'إعادة للمشرف') { returnToSupervisor(row.id, note, me.name); return }
+  }
+  const intercept = (a: DecisionAction) => {
+    if (a.label.startsWith('تحويل')) { setTransfer(true); return true }
+    return false
+  }
+  const editState = holder
+    ? holder === 'supervisor' ? 'دراسة المشروع' : holder
+    : row?.stage === 'استكمال بيانات المشروع' ? row.stage
+      : row?.statusGroup === 'في التشغيل' ? 'running' : 'done'
 
   /* The display code is the one the list shows (`PRJ-YYYY-NNNNN`), so a number copied from the
      list matches the project page everywhere. The raw id stays the URL key. */
@@ -104,10 +152,13 @@ export default function ProjectPage() {
   const type = row?.type ?? 'مشروع عادي'
   const activities = useActivities(project.id)
 
+  /* The entity's view never shows the supervisor's study (3.4.32) · its tab is dropped, and the
+     view is kept across tab changes */
+  const tabs = asEntity ? PROJECT_TABS.filter((t) => t.slug !== 'study') : PROJECT_TABS
   const active: ProjectTabSlug =
-    PROJECT_TABS.find((t) => t.slug === tab)?.slug ?? DEFAULT_PROJECT_TAB
+    tabs.find((t) => t.slug === tab)?.slug ?? DEFAULT_PROJECT_TAB
 
-  const goTab = (slug: string) => navigate(ROUTES.projectTab(project.id, slug))
+  const goTab = (slug: string) => navigate(`${ROUTES.projectTab(project.id, slug)}${asEntity ? `?as=entity` : ''}`)
 
   /* Process duration overrun is computed from the row itself when present, so the reading matches
      the department the project is actually in, not the fixture's department. */
@@ -208,7 +259,11 @@ export default function ProjectPage() {
   )
 
   /* Manual activities join the same timeline, so the log stays the one place to read history. */
-  const fullLog = useMemo(() => withActivities(log, activityList), [log, activityList])
+  const fullLog = useMemo(
+    () => [...(row ? flowEvents(row.id) : []), ...withActivities(log, activityList)],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [log, activityList, row, flow?.events.length],
+  )
 
   const analysis = useMemo(
     () => [...(row ? readJourney(row, journeys.get(row.id)) : []), ...readInsights(fixtures.insights)],
@@ -273,13 +328,18 @@ export default function ProjectPage() {
             </div>
           </header>
 
-          <Tabs items={PROJECT_TABS} active={active} onChange={goTab} />
+          <Tabs items={tabs} active={active} onChange={goTab} />
 
           <div className="g2">
             {/* === Main column === */}
             <div className="col">
+              {active === 'data' && row && !asEntity && <RecommendationCard row={row} />}
+              {active === 'study' && row && (
+                <StudyTab key={`${row.id}-${flow?.study?.version ?? 0}-${row.field}`} row={row} me={me.name} editable={studyEditable} />
+              )}
               {active === 'data' && (
                 <DataTab
+                  hideAttachments={Boolean(row)}
                   project={project}
                   code={code}
                   type={type}
@@ -295,6 +355,13 @@ export default function ProjectPage() {
                   }}
                   chain={row ? projectChain(row) : undefined}
                 />
+              )}
+              {active === 'data' && row && (
+                <>
+                  <RequestMetaCard row={row} />
+                  <RequestDocsCard row={row} me={me.name} asEntity={asEntity} canUpload={!closed && (asEntity ? waiting : true)} />
+                  {!asEntity && (row.statusGroup === 'في الدراسة' || closed) ? <RequestCloseCard row={row} me={me.name} /> : null}
+                </>
               )}
               {active === 'entity' && <EntityTab entity={entity} bank={project.bank} />}
               {active === 'history' && (
@@ -378,10 +445,15 @@ export default function ProjectPage() {
                 problem the client rejected: a column with several sticky cards creates
                 scroll-inside-scroll, while one card just takes its height and stays put. */}
             <div className="col aiside" ref={aside}>
+              {active === 'study' && row ? (
+                <StudyAside row={row} me={me.name} editable={studyEditable} />
+              ) : (
               <AnalysisCard
                 readings={analysis}
                 onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
               />
+              )}
+              <EditableCard module="project" state={editState} label={holder ? HOLDER_LABEL[holder] : row?.stage} />
             </div>
           </div>
         </div>
@@ -392,7 +464,16 @@ export default function ProjectPage() {
           compact={mobile}
           atEnd={atEnd}
           /* The grants manager links the project to a budget line as part of the decision. */
-          lead={role.key === 'grants-manager' ? (
+          hold={waiting ? 'بانتظار استكمال الجهة · الدراسة متوقفة حتى تعيد إرسال الطلب' : closed ? (flow?.closed?.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف') : seat && !seat.mine ? seat.say : undefined}
+          onDecide={decide}
+          intercept={intercept}
+          context={holder === 'supervisor' && seat?.mine && flow?.study ? (
+            <p className="sub cnote">
+              التوصية المسجّلة: <b>{flow.study.recommendation === 'approve' ? 'الموافقة' : flow.study.recommendation === 'reject' ? 'الاعتذار' : 'لم تُحدَّد'}</b>
+              {' · '}تُحال لمدير المنح ولا يترتب عليها اعتماد
+            </p>
+          ) : undefined}
+          lead={role.key === 'grants-manager' && (!seat || seat.mine) ? (
             <BudgetLinkAction
               project={{
                 id: project.id, name: project.name, year: row?.year ?? '2026-f',
@@ -402,6 +483,7 @@ export default function ProjectPage() {
           ) : undefined}
         />
       </div>
+      {transfer && row && <TransferModal row={row} me={me.name} onClose={() => setTransfer(false)} />}
     </AppLayout>
   )
 }
