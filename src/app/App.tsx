@@ -27,6 +27,9 @@ import LiveReport from '@/features/reports/LiveReport'
 import BudgetPage from '@/features/budget/BudgetPage'
 import BudgetSettingsPage from '@/features/budget/BudgetSettingsPage'
 import BudgetDocPage from '@/features/budget/BudgetDocPage'
+import BudgetOpsPage from '@/features/budget/BudgetOpsPage'
+import BudgetOpPage from '@/features/budget/BudgetOpPage'
+import BudgetReportPage from '@/features/budget/BudgetReportPage'
 import AgreementsPage from '@/features/agreements/AgreementsPage'
 import AgreementPage from '@/features/agreements/AgreementPage'
 import AgreementNewPage from '@/features/agreements/AgreementNewPage'
@@ -137,6 +140,10 @@ export default function App() {
         <Route path={ROUTES.budgetSettings} element={<BudgetSettingsPage />} />
         <Route path={ROUTES.budgetNew} element={<BudgetDocPage />} />
         <Route path={`${ROUTES.budget}/doc/:id`} element={<BudgetDocPage />} />
+        <Route path={ROUTES.budgetOps} element={<BudgetOpsPage />} />
+        <Route path={ROUTES.budgetOpNew} element={<BudgetOpPage />} />
+        <Route path={`${ROUTES.budgetOps}/:id`} element={<BudgetOpPage />} />
+        <Route path={ROUTES.budgetReport} element={<BudgetReportPage />} />
 
         <Route path={`${ROUTES.budget}/:year`} element={<Navigate to={ROUTES.budget} replace />} />
 

@@ -27,7 +27,10 @@ import { agreements, AGR_LIMIT } from '@/data/mock/agreements'
 import { payRequests, PAY_LIMIT } from '@/data/mock/disbursements'
 import { planRows, PLAN_LIMIT, waitingReview } from '@/data/mock/plans'
 import { closeRows, CLOSE_LIMIT } from '@/data/mock/closing'
-import { budgetDocs, docTitle } from '@/data/mock/budgetTree'
+import { BUDGET_STATE_SAY, docTitle, type BudgetState } from '@/data/mock/budgetTree'
+import { allBudgets } from '@/data/mock/chain'
+import { TODAY } from '@/data/intake/cycle'
+import { BUDGET_REQS, REQ_KIND_SAY, REQ_STATE_SAY, eventsOf, mayAct, stepOf } from '@/data/budget/store'
 import { portfolios } from '@/data/mock/implementer'
 import { projectCode } from '@/lib/format'
 import { rowCode, rowHref, isPortfolio } from '@/features/projects/list/columns'
@@ -211,17 +214,36 @@ const transfers = (who: 'manager' | 'executive'): InboxQueue => ({
   })).sort(byWait),
 })
 
-const budgets = (): InboxQueue => ({
-  key: 'budgets',
-  label: 'الميزانيات',
-  note: 'وثائق ميزانية رُفعت للاعتماد',
-  icon: 'budget',
-  all: ROUTES.budget,
-  items: budgetDocs.filter((b) => b.state === 'submitted').map((b) => ({
-    id: b.id, code: b.id, title: docTitle(b), sub: `${b.from} — ${b.to}`, amount: b.total,
-    days: 0, late: false, limit: 0, to: ROUTES.budgetDoc(b.id),
-  })),
-})
+/* Budgets and budget operation requests at this role's step (1.2.8–1.2.11 · 1.3.6–1.3.9) */
+const budgets = (role: RoleKey): InboxQueue => {
+  /* A draft isn't waiting on anyone · a returned one waits on whoever prepares */
+  const mine = (st: string) => {
+    const step = stepOf(st as BudgetState)
+    if (!step) return false
+    return step === 'prepare' ? st === 'returned' && mayAct('prepare', role) : mayAct(step, role)
+  }
+  const docs = allBudgets.filter((b) => mine(b.state))
+  const reqs = BUDGET_REQS.filter((r) => mine(r.state))
+  const ago = (at?: string) => (at ? Math.max(0, Math.round((Date.parse(`${TODAY}T12:00:00Z`) - Date.parse(at)) / 86_400_000)) : 0)
+  return {
+    key: 'budgets',
+    label: 'الميزانية',
+    note: 'ميزانيات وطلبات عمليات عند خطوتك',
+    icon: 'budget',
+    all: ROUTES.budgetOps,
+    items: [
+      ...docs.map((b) => ({
+        id: b.id, code: b.id, title: docTitle(b), sub: BUDGET_STATE_SAY[b.state], amount: b.total,
+        days: ago(eventsOf(b.id)[0]?.at), late: false, limit: 0, to: ROUTES.budgetDoc(b.id),
+      })),
+      ...reqs.map((r) => ({
+        id: r.id, code: r.id, title: `${REQ_KIND_SAY[r.kind]} · ${docTitle(allBudgets.find((d) => d.id === r.docId)!)}`,
+        sub: REQ_STATE_SAY[r.state], amount: r.amount,
+        days: ago(r.events[0]?.at), late: false, limit: 0, to: ROUTES.budgetOp(r.id),
+      })),
+    ],
+  }
+}
 
 /* ── Per role, in the client's order ── */
 
@@ -239,6 +261,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       activities(),
       closingsAt('reports', ['supervisor']),
       closingsAt('evals', ['reportDone', 'evalDraft']),
+      budgets(role),
     ]
   }
 
@@ -256,6 +279,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       closingsAt('reports', ['manager']),
       closingsAt('evals', ['evalManager']),
       transfers('manager'),
+      budgets(role),
     ]
   }
 
@@ -272,7 +296,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     agreementsAt(['executive']),
     closingsAt('reports', ['executive']),
     closingsAt('evals', ['evalExecutive']),
-    budgets(),
+    budgets(role),
     transfers('executive'),
   ]
 }

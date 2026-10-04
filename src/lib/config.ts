@@ -76,4 +76,6 @@ export const CFG = {
   prospects: 'ab-cfg-prospects',
   /** Entity registration and update rules · BPD-002 */
   entityRules: 'ab-cfg-entity-rules',
+  /** Budget approval roles, transfer policy and spending limits · BPD-001 */
+  budgetRules: 'ab-cfg-budget-rules',
 } as const

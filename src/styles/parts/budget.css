@@ -1,10 +1,12 @@
 /* budget · review round Sept 30 */
 
-/* Budget tree · held, paid and available sit after allocated (client request 11).
-   Eight columns: item · level · four amounts · status · actions. Scoped under `.btree` so it wins
+/* Budget tree · held, committed, paid and available sit after allocated (client request 11 · 1.4.5).
+   Nine columns: item · level · five amounts · status · actions. Scoped under `.btree` so it wins
    over the six-column base rule without touching index.css. */
 .btree .btree-h,.btree .btree-r{
-  grid-template-columns:minmax(0,1fr) 7.5rem 7.5rem 7.5rem 7.5rem 7.5rem 6rem 6.5rem}
+  grid-template-columns:minmax(14rem,1fr) 6rem 6.5rem 6.5rem 6.5rem 6.5rem 6.5rem 6rem 6rem}
+/* The domain's supervisor beside its name · a face, the name in the tooltip of the list */
+.btree-ow{flex:none;display:inline-flex}
 
 /* Totals row · closes the table, one hair line above it, no hover (it isn't a row you act on). */
 .btree .btree-f{box-shadow:inset 0 1px 0 var(--edge-1)}
@@ -17,10 +19,10 @@
   .btree .btree-r{grid-template-columns:repeat(2,minmax(0,1fr))}
   .btree .btree-r>span:nth-child(1){grid-column:1/-1}
   .btree .btree-r>span:nth-child(2){grid-column:1;justify-self:start;order:1}
-  .btree .btree-r>span:nth-child(7){grid-column:2;justify-self:end;order:1}
+  .btree .btree-r>span:nth-child(8){grid-column:2;justify-self:end;order:1}
   .btree .btree-r>.tnum{order:2}
-  .btree .btree-r>span:nth-child(8){grid-column:1/-1;order:3}
-  .btree .btree-f>span:nth-child(2),.btree .btree-f>span:nth-child(7),.btree .btree-f>span:nth-child(8){display:none}
+  .btree .btree-r>span:nth-child(9){grid-column:1/-1;order:3}
+  .btree .btree-f>span:nth-child(2),.btree .btree-f>span:nth-child(8),.btree .btree-f>span:nth-child(9){display:none}
   .btree .btree-r>.tnum{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);min-width:0}
   .btree .btree-r>.tnum::before{content:attr(data-k);flex:none;font-size:var(--fs-1);color:var(--t3)}
   .btree .btree-r>.tnum>.btree-a{flex:1;min-width:0}
@@ -29,3 +31,41 @@
 /* Budget link · in the grants manager's decision step on a project */
 .bglink{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0}
 .bglink-go{align-self:flex-start}
+
+/* Funding sources in the header · one row per source: the source, its amount, remove (1.4.4) */
+.bgsrc{list-style:none;margin:var(--sp-3) 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
+.bgsrc li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,12rem) auto;align-items:center;gap:var(--sp-3)}
+.bgsrc li>.fldsel{min-width:0}
+@media (max-width:640px){.bgsrc li{grid-template-columns:minmax(0,1fr) auto}.bgsrc li>.fld{grid-column:1}}
+
+/* A line's split across sources · in the line modal (1.2.5) */
+.bgsplit{display:flex;flex-direction:column;gap:var(--sp-3)}
+
+/* Renaming a source in place */
+.bgs-ren{flex:1;min-width:0;max-width:24rem}
+
+/* A budget's history · what happened, the note, who and when (1.2.13) */
+.bghist{list-style:none;margin:var(--sp-2) 0 0;padding:0;display:flex;flex-direction:column}
+.bghist li{display:flex;flex-direction:column;gap:var(--sp-1);padding-block:var(--sp-3)}
+.bghist li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.bghist-t{display:flex;flex-direction:column;gap:var(--sp-1);line-height:var(--lh-text)}
+.bghist-t b{font-weight:600;color:var(--t1)}
+.bghist-m{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+
+/* Project financial plan · one block per fiscal year, its shares under it (1.4.46 · 1.4.50) */
+.bgplan{list-style:none;margin:var(--sp-3) 0;padding:0;display:flex;flex-direction:column}
+.bgplan>li{display:flex;flex-direction:column;gap:var(--sp-3);padding-block:var(--sp-4)}
+.bgplan-h{display:grid;grid-template-columns:minmax(0,10rem) minmax(0,12rem) auto auto;align-items:center;gap:var(--sp-3);justify-content:start}
+.bgplan-s{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
+.bgplan-s li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,12rem) auto;align-items:center;gap:var(--sp-3)}
+.bgplan-s li:last-child:has(>.btn:only-child){display:flex}
+.bgplan-i{margin:var(--sp-3) 0 0;padding-inline-start:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-1);line-height:var(--lh-text)}
+@media (max-width:640px){
+  .bgplan-h{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .bgplan-s li{grid-template-columns:minmax(0,1fr) auto}
+  .bgplan-s li>.fld{grid-column:1}
+}
+
+/* Consolidated report · a budget's share under its row, set in from the start */
+.bgrep-sub td{color:var(--t2)}
+.bgrep-sub td:first-child{padding-inline-start:var(--sp-8)}

@@ -5,9 +5,10 @@ import { Glass, Head, Icon, icons, Money, Num, Person, Select, Tag } from '@/com
 import { ROUTES } from '@/app/routes'
 import { Mono } from '@/components/ui'
 import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
-import { docTitle, yearById } from '@/data/mock/budgetTree'
+import { BUDGET_STATE_SAY, budgetTone, docTitle, yearById } from '@/data/mock/budgetTree'
 import { allBudgets } from '@/data/mock/chain'
-import { budgetDeps } from '@/data/mock/settings'
+import { BUDGET_REQS, lineDeps, shareSay, useBudget } from '@/data/budget/store'
+import { docSources } from '@/data/mock/budgetTree'
 import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
@@ -39,6 +40,7 @@ import { GapPeek } from './GapPeek'
  * - a toggle between allocation and consumption - same tree, two questions.
  */
 export default function BudgetPage() {
+  useBudget()
   const [cycleId, setCycleId] = useState(CYCLES[0].id)
   const [path, setPath] = useState<string[]>([])
   const [view, setView] = useState<'alloc' | 'use'>('alloc')
@@ -138,33 +140,44 @@ export default function BudgetPage() {
           <Glass className="tblcard">
             <Head
               title="الميزانيات المعرَّفة"
-              meta={<span className="sub"><Num>{allBudgets.length}</Num> {nounAfter(allBudgets.length, NOUN.budget)}</span>}
+              meta={
+                <span className="rowf gp-2">
+                  <span className="sub"><Num>{allBudgets.length}</Num> {nounAfter(allBudgets.length, NOUN.budget)}</span>
+                  <Link className="btn btn-2 btn-sm" to={ROUTES.budgetOps}>
+                    <Icon name={icons.redo} size="sm" />
+                    طلبات العمليات
+                    {BUDGET_REQS.some((r) => ['submitted', 'finance', 'exec'].includes(r.state)) && (
+                      <Tag tone="warn"><Num>{BUDGET_REQS.filter((r) => ['submitted', 'finance', 'exec'].includes(r.state)).length}</Num></Tag>
+                    )}
+                  </Link>
+                  <Link className="btn btn-2 btn-sm" to={ROUTES.budgetReport}>
+                    <Icon name={icons.chart} size="sm" />
+                    التقرير المجمّع
+                  </Link>
+                </span>
+              }
             />
             <ul className="cfglist">
-              {allBudgets.map((d) => (
-                <li key={d.id}>
-                  <b>{docTitle(d)}</b>
-                  <span className="sub"><Mono>{d.id}</Mono></span>
-                  <span className="pc-sp" />
-                  <span className="num">{nf.format(d.total)}</span>
-                  {/* Note: dependent count in place of a delete button. The rule used to be applied
-                      only in budget settings (year -> budget); the next link in the chain (budget
-                      -> project) had nothing, so half the rule was implemented. */}
-                  {(() => {
-                    const dep = budgetDeps(yearById(d.yearId)?.name ?? '')
-                    return dep.count > 0
-                      ? <Tag tone="mute">{dep.say}</Tag>
-                      : <Tag tone="ok">بلا متعلقات</Tag>
-                  })()}
-                  <Tag tone={d.state === 'draft' ? 'mute' : 'ok'}>
-                    {d.state === 'draft' ? 'مسودة' : 'مرسَلة'}
-                  </Tag>
-                  <Link className="btn btn-2 btn-sm" to={ROUTES.budgetDoc(d.id)}>
-                    افتح الشجرة
-                    <Icon name={icons.chevron} size="sm" />
-                  </Link>
-                </li>
-              ))}
+              {allBudgets.map((d) => {
+                /* Note: dependent count in place of a delete button · the budget's own projects,
+                   read from its root line (links, plans and the projects it was built from) */
+                const root = d.nodes.find((n) => n.parentId === null)
+                const dep = root ? lineDeps(d, root.id).projects.length : 0
+                return (
+                  <li key={d.id}>
+                    <b>{docTitle(d)}</b>
+                    <span className="sub"><Mono>{d.id}</Mono> · {yearById(d.yearId)?.name} · {shareSay(docSources(d))}</span>
+                    <span className="pc-sp" />
+                    <span className="num">{nf.format(d.total)}</span>
+                    {dep > 0 ? <Tag tone="mute">مشاريع مرتبطة بها: <Num>{dep}</Num></Tag> : <Tag tone="ok">بلا متعلقات</Tag>}
+                    <Tag tone={budgetTone(d.state)}>{BUDGET_STATE_SAY[d.state]}</Tag>
+                    <Link className="btn btn-2 btn-sm" to={ROUTES.budgetDoc(d.id)}>
+                      افتح الشجرة
+                      <Icon name={icons.chevron} size="sm" />
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
           </Glass>
 

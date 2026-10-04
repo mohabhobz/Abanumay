@@ -19,8 +19,10 @@ export interface DomainBudget { label: string; money: LineMoney; goal?: { label:
 
 export const domainBudget = (p: Pick<ProjectRow, 'track' | 'field' | 'goal' | 'year'>): DomainBudget | null => {
   const year = p.year.slice(0, 4)
-  const doc = allBudgets.find((d) => d.state === 'submitted' && d.id.includes(year)) ??
-    allBudgets.find((d) => d.state === 'submitted')
+  /* The approved budget of the project's year · a budget still on its approval path isn't money yet */
+  const doc = allBudgets.find((d) => d.state === 'approved' && d.id.includes(year) && d.nodes.some((n) => n.label === p.field)) ??
+    allBudgets.find((d) => d.state === 'approved' && d.id.includes(year)) ??
+    allBudgets.find((d) => d.state === 'approved')
   if (!doc) return null
   const parentOf = (id: string | null) => doc.nodes.find((n) => n.id === id)
   const field = doc.nodes.find((n) => n.label === p.field && parentOf(n.parentId)?.label === p.track) ??

@@ -147,8 +147,23 @@ export const SETTING_MODULES: SettingModule[] = [
       },
       {
         key: 'sources', tab: 'sources', label: 'مصادر التمويل', kind: 'master', owner: 'الإدارة المالية',
-        where: 'ترويسة الميزانية · وتُعرَّف الميزانية بالسنة والمصدر معًا',
+        where: 'ترويسة الميزانية · ميزانية بمصدر أو أكثر، ويُوزَّع كل بند على مصادرها',
         count: fundSources.length,
+      },
+      {
+        key: 'directions', tab: 'directions', label: 'التوجهات الاستراتيجية', kind: 'master', owner: 'إدارة المنح',
+        where: 'ترويسة الميزانية وبنودها · والتقرير المجمّع حسب التوجه',
+        count: 4,
+      },
+      {
+        key: 'limits', tab: 'limits', label: 'حدود الاعتماد والصرف', kind: 'rule', owner: 'الإدارة المالية',
+        where: 'ربط المشروع بالميزانية · اعتماد أوامر الصرف',
+        count: 4,
+      },
+      {
+        key: 'rules', tab: 'rules', label: 'قواعد الاعتماد والمناقلة', kind: 'rule', owner: 'إدارة المنح',
+        where: 'مسار اعتماد الميزانية وطلبات العمليات · فتح المجالات الممولة',
+        count: 5,
       },
     ],
   },

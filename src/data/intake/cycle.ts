@@ -103,9 +103,23 @@ export const saveCycle = (next: CycleSetup): void => {
 
 export const domainOf = (field: string): DomainSetup | undefined => CYCLE.domains[field]
 
+/* Funding gate (1.1.output-5 · 1.4.37) · the budget decides which domains and goals carry money this
+   year. The budget store registers it at load, so this file never imports the budget (which imports
+   the projects, which import the cycle). Until it registers, every domain passes. */
+export interface FundingGate {
+  /** Why a domain has no funding · empty when an approved budget funds it */
+  field: (field: string) => string
+  /** A goal is offered under its domain */
+  goal: (field: string, goal: string) => boolean
+}
+let gate: FundingGate = { field: () => '', goal: () => true }
+export const setFundingGate = (g: FundingGate): void => { gate = g }
+export const fundingBlock = (field: string): string => gate.field(field)
+export const goalFunded = (field: string, goal: string): boolean => gate.goal(field, goal)
+
 /** Why a domain can't open · empty when it can */
 export const openBlock = (field: string): string =>
-  (CYCLE.domains[field]?.supervisors.length ?? 0) === 0 ? 'لا يُفتح مجال قبل ربطه بمشرف منح واحد على الأقل' : ''
+  (CYCLE.domains[field]?.supervisors.length ?? 0) === 0 ? 'لا يُفتح مجال قبل ربطه بمشرف منح واحد على الأقل' : fundingBlock(field)
 
 /** Today in the prototype · the same reference date the inbox and plans use */
 export const TODAY = '2026-10-03'
@@ -115,7 +129,7 @@ export const inPeriod = (date = TODAY): boolean => date >= CYCLE.from && date <=
 /** Domains a requester may pick right now (3.4.6) · open, with a supervisor, inside the period */
 export const openFields = (date = TODAY): string[] =>
   inPeriod(date)
-    ? ALL_FIELDS.filter((f) => CYCLE.domains[f]?.open && (CYCLE.domains[f]?.supervisors.length ?? 0) > 0)
+    ? ALL_FIELDS.filter((f) => CYCLE.domains[f]?.open && (CYCLE.domains[f]?.supervisors.length ?? 0) > 0 && !fundingBlock(f))
     : []
 
 /* ── Working-day calendar (3.4.13 · 3.4.30) ──

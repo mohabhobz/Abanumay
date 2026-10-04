@@ -7,7 +7,7 @@ import {
 import { MONEY_LIMITS, TARGET_GROUPS } from './settings'
 import { entityDetail } from './entityDetail'
 import { NOUN, countOf } from '@/lib/format'
-import { CYCLE, TODAY, addWorkingDays, inPeriod, openFields } from '@/data/intake/cycle'
+import { CYCLE, TODAY, addWorkingDays, goalFunded, inPeriod, openFields } from '@/data/intake/cycle'
 
 /* Create project · the most important action in the system, and a screen that was entirely missing.
 
@@ -181,7 +181,8 @@ export const optionsFor = (f: PFieldDef, parent: string): readonly string[] => {
   if (f.key === 'track') return openTracks()
   if (f.options) return f.options
   if (f.dependsOn === 'track') return (FIELDS_BY_TRACK[parent] ?? []).filter((x) => openFields().includes(x))
-  if (f.dependsOn === 'field') return GOALS_BY_FIELD[parent] ?? []
+  /* 1.4.37 · only the goals an approved budget funds under the domain */
+  if (f.dependsOn === 'field') return (GOALS_BY_FIELD[parent] ?? []).filter((g) => goalFunded(parent, g))
   if (f.dependsOn === 'region') return CITIES_BY_REGION[parent] ?? []
   return []
 }

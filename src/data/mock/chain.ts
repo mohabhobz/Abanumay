@@ -2,6 +2,7 @@ import { agreements } from './agreements'
 import { projectRows } from './projects'
 import { budgetDocs, type BudgetDoc, type BudgetNode } from './budgetTree'
 import type { ProjectRow } from '@/types/domain'
+import { FIELDS_BY_TRACK, GOALS_BY_FIELD, TRACKS } from './taxonomy'
 import { NOUN, countOf } from '@/lib/format'
 
 /* Chain · budget -> project -> agreement -> disbursements
@@ -51,6 +52,18 @@ function buildNodes(): BudgetNode[] {
     if (!goals.has(p.goal)) goals.set(p.goal, [])
     goals.get(p.goal)!.push(p)
   }
+  /* Every domain the foundation funds this year has a line, with or without a project yet · a domain
+     with none opens for its first submissions on a round 250,000 per goal (1.1.output-5). Appended
+     after the project-built lines, so their ids stay put. */
+  for (const track of TRACKS) {
+    for (const field of FIELDS_BY_TRACK[track] ?? []) {
+      if (!byTrack.has(track)) byTrack.set(track, new Map())
+      const fields = byTrack.get(track)!
+      if (!fields.has(field)) fields.set(field, new Map())
+      const goals = fields.get(field)!
+      for (const g of GOALS_BY_FIELD[field] ?? []) if (!goals.has(g)) goals.set(g, [])
+    }
+  }
 
   let rootAlloc = 0
   let rootAvail = 0
@@ -78,18 +91,23 @@ function buildNodes(): BudgetNode[] {
         const spent = ps.reduce((a, x) => a + x.amountSpent, 0)
         /* Allocation is rounded up to the nearest 100,000 · a budget is set in round figures, not a
            penny-precise sum of projects */
-        const alloc = cap(Math.max(granted, 100_000))
+        const alloc = ps.length ? cap(Math.max(granted, 100_000)) : 250_000
         put(gid, goal, 'sub', fid, alloc, alloc - spent)
         fAlloc += alloc
         fAvail += alloc - spent
       }
 
+      /* A domain the taxonomy gives no goals carries its allocation itself · a leaf like the
+         document's «تمكين الأفراد» */
+      if (goals.size === 0) { fAlloc = 250_000; fAvail = 250_000 }
       put(fid, field, 'main', tid, fAlloc, fAvail)
       tAlloc += fAlloc
       tAvail += fAvail
     }
 
     put(tid, track, 'main', 'b0', tAlloc, tAvail)
+    /* Each track serves one of the budget's directions · the report reads allocation by direction */
+    out[out.length - 1].directionId = ['dir-edu', 'dir-health', 'dir-community'][(ti - 1) % 3]
     trackNodes.push({ id: tid, alloc: tAlloc, avail: tAvail })
     rootAlloc += tAlloc
     rootAvail += tAvail
@@ -101,12 +119,15 @@ function buildNodes(): BudgetNode[] {
 
 export const budget2026: BudgetDoc = {
   id: 'BG-2026-SA',
+  name: 'ميزانية المنح 2026',
+  description: 'مبنية على بنود النظام العامل ومشاريعه · المسار ثم المجال ثم الهدف',
+  directionIds: ['dir-edu', 'dir-health', 'dir-community'],
   yearId: 'fy-2026',
   sourceCode: 'SA',
   from: '2026-01-01',
   to: '2026-12-31',
   total: 0,
-  state: 'submitted',
+  state: 'approved',
   nodes: [],
 }
 

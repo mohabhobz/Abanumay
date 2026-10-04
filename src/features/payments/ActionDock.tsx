@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { Icon, icons, Money, Person } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { payBlocked } from '@/data/mock/disbursements'
+import { payYearIssue } from '@/data/budget/store'
 import type { CurrentUser, DecisionKind, PayRequest, PayState } from '@/types/domain'
 import type { RoleKey } from '@/data/roles'
 import { noteFirst } from '@/lib/dock'
@@ -85,6 +86,8 @@ export function ActionDock({
   useProximity(bar)
 
   const held = payBlocked(request)
+  /* 1.4.52 · a multi-year project pays each year inside what that year holds */
+  const yearStop = payYearIssue(request.projectId, request.dueAt, request.asked)
   const needNote = actions.some((a) => a.needsNote)
 
   if (taken) {
@@ -143,7 +146,9 @@ export function ActionDock({
                 ? 'اكتب الملاحظات أولًا · القاعدتان 7 و8'
                 : (!a.needsNote && held)
                   ? 'يوجد شرط غير مستوفى · قاعدة 9'
-                  : ''
+                  : (!a.needsNote && yearStop)
+                    ? `${yearStop} · 1.4.52`
+                    : ''
             return (
               <button
                 key={a.label}

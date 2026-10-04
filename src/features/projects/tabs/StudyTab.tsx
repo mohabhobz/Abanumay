@@ -12,6 +12,7 @@ import { consultantByKey, consultantsFor } from '@/data/intake/consultants'
 import {
   flowOf, forwardBlockers, referConsultant, referralOpen, saveStudy, type Recommendation, type Study,
 } from '@/data/intake/flow'
+import { FundingPlanCard } from '@/features/budget/FundingPlan'
 
 /* «الدراسة» · the supervisor's study of a project (3.2.11–3.2.16, 3.2.19, 3.4.25).
 
@@ -160,6 +161,9 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
           </div>
         )}
       </Glass>
+
+      {/* 3.2.14 · 3.2.15 · the supervisor decides the project's financial term in the study */}
+      <FundingPlanCard row={row} amount={d.recommendation === 'approve' ? d.amount : row.amountRequested} editable={editable} me={me} />
 
       {f.pastStudies.length > 0 && (
         <Glass>

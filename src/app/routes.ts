@@ -86,6 +86,12 @@ export const ROUTES = {
   budgetNew: '/budget/new',
   /** Budget list. */
   budgetDoc: (id: string) => `/budget/doc/${id}`,
+  /** Budget operation requests · transfer, increase, decrease (1.3) */
+  budgetOps: '/budget/ops',
+  budgetOpNew: '/budget/ops/new',
+  budgetOp: (id: string) => `/budget/ops/${id}`,
+  /** Consolidated report across budgets (1.4.6) */
+  budgetReport: '/budget/report',
 
   agreements: '/agreements',
   agreement: (id: string) => `/agreements/${id}`,

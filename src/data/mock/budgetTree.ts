@@ -45,6 +45,8 @@ export interface FiscalYear {
 }
 
 export const fiscalYears: FiscalYear[] = [
+  /* Defined ahead · a year can carry a budget, and commitments, before it starts (1.4.48) */
+  { id: 'fy-2027', name: '2027', from: '2027-01-01', to: '2027-12-31' },
   { id: 'fy-2026', name: '2026', from: '2026-01-01', to: '2026-12-31' },
   { id: 'fy-2025', name: '2025', from: '2025-01-01', to: '2025-12-31' },
   { id: 'fy-2024', name: '2024', from: '2024-01-01', to: '2024-12-31' },
@@ -63,6 +65,18 @@ export interface FundSource {
   code: string
   name: string
 }
+
+/** A share of a whole carried by one funding source (1.2.5 · 1.4.4) */
+export interface SourceShare {
+  code: string
+  amount: number
+}
+
+/** Two periods overlap · one fiscal year per period (1.4.1) */
+export const yearOverlap = (
+  years: FiscalYear[], from: string, to: string, exceptId?: string,
+): FiscalYear | undefined =>
+  years.find((y) => y.id !== exceptId && from <= y.to && to >= y.from)
 
 export const fundSources: FundSource[] = [
   { code: 'SA', name: 'وقف سليمان أبانمي' },
@@ -173,16 +187,29 @@ export interface BudgetNode {
   held?: number
   /** Paid out from the leaf · disbursed transfers */
   paid?: number
-  /** An inactive item stays in the tree with no amounts · like the "Ramadan iftar track" */
+  /** An inactive item stays in the tree · its figures and past holds stay, new projects can't use it
+      (1.4.37 · 1.4.38) */
   active: boolean
+  /** Turned off because this ancestor was · reactivating the ancestor brings it back (1.4.39) */
+  offBy?: string
+  /** The line's split across the budget's funding sources · sums to `allocated` (1.2.5) */
+  sources?: SourceShare[]
+  /** The grants supervisors responsible for this domain · feed intake distribution (1.1.input-7) */
+  owners?: string[]
+  /** The strategic direction this line serves (1.1.input-1) */
+  directionId?: string
+  /** Future-year shares of multi-year projects recorded on this line · not holds (1.4.48) */
+  committed?: number
 }
 
-/** The four figures shown per line · allocated, held, paid, available */
+/** The figures shown per line · allocated, held, committed, paid, available (1.4.5) */
 export interface LineMoney {
   allocated: number
   held: number
+  /** Future commitments recorded against the line · multi-year shares not yet held */
+  committed: number
   paid: number
-  /** allocated − held − paid */
+  /** allocated − held − committed − paid */
   available: number
 }
 
@@ -196,35 +223,118 @@ export interface LineMoney {
  */
 export function moneyOf(nodes: BudgetNode[], id: string): LineMoney {
   const n = nodes.find((x) => x.id === id)
-  if (!n || !n.active) return { allocated: n?.allocated ?? 0, held: 0, paid: 0, available: 0 }
-  const kids = nodes.filter((x) => x.parentId === id && x.active)
+  if (!n) return { allocated: 0, held: 0, committed: 0, paid: 0, available: 0 }
+  /* An inactive line keeps what was already held and paid on it (1.4.38) · it only stops taking new
+     projects, so its history still sums into its parents */
+  const kids = nodes.filter((x) => x.parentId === id)
   let held = 0
   let paid = 0
+  let committed = 0
   if (kids.length) {
     for (const k of kids) {
       const m = moneyOf(nodes, k.id)
       held += m.held
       paid += m.paid
+      committed += m.committed
     }
   } else {
     held = n.held ?? 0
+    committed = n.committed ?? 0
     paid = n.paid ?? Math.max(0, n.allocated - n.available - held)
   }
-  return { allocated: n.allocated, held, paid, available: n.allocated - held - paid }
+  return { allocated: n.allocated, held, committed, paid, available: n.allocated - held - committed - paid }
 }
 
-export type BudgetState = 'draft' | 'submitted'
+/** Pin a leaf's derived paid figure before its allocation or holds move · `paid` is derived from
+    `available` on generated leaves, and changing either would rewrite history */
+export function freezeLine(n: BudgetNode): void {
+  if (n.paid === undefined) n.paid = Math.max(0, n.allocated - n.available - (n.held ?? 0))
+  if (n.held === undefined) n.held = 0
+}
+
+/** Keep the stored available figure in step after a change */
+export const restate = (n: BudgetNode): void => {
+  n.available = n.allocated - (n.held ?? 0) - (n.paid ?? 0)
+}
+
+/** A line new projects may use · active, and every line above it active (1.4.26 · 1.4.39) */
+export function lineUsable(nodes: BudgetNode[], id: string): boolean {
+  let cur = nodes.find((x) => x.id === id)
+  while (cur) {
+    if (!cur.active) return false
+    const up: string | null = cur.parentId
+    cur = up ? nodes.find((x) => x.id === up) : undefined
+  }
+  return true
+}
+
+/** Turn a line on or off · off carries down to every active line beneath it and remembers why, on
+    brings back only the lines this one turned off (1.4.39). Returns the ids that changed. */
+export function cascadeActive(nodes: BudgetNode[], id: string, on: boolean): string[] {
+  const self = nodes.find((x) => x.id === id)
+  if (!self) return []
+  const changed: string[] = []
+  const below = (pid: string): BudgetNode[] => nodes.filter((x) => x.parentId === pid).flatMap((k) => [k, ...below(k.id)])
+  if (!on) {
+    if (self.active) { self.active = false; self.offBy = undefined; changed.push(id) }
+    for (const k of below(id)) {
+      if (k.active) { k.active = false; k.offBy = id; changed.push(k.id) }
+    }
+  } else {
+    if (!self.active) { self.active = true; self.offBy = undefined; changed.push(id) }
+    for (const k of below(id)) {
+      if (!k.active && k.offBy === id) { k.active = true; k.offBy = undefined; changed.push(k.id) }
+    }
+  }
+  return changed
+}
+
+/* The budget's path to use (1.2.8–1.2.12 · 1.7.1) · prepared, then the grants manager, finance and
+   the executive director in turn; each one approves forward or returns one step back. Only an
+   approved budget is active: projects link to it and hold against it (1.4.25). `submitted` is the
+   grants manager's step · the name stays because older screens read it. */
+export type BudgetState = 'draft' | 'returned' | 'submitted' | 'finance' | 'exec' | 'approved'
+
+export const BUDGET_STATE_SAY: Record<BudgetState, string> = {
+  draft: 'مسودة',
+  returned: 'معادة للمُعِدّ',
+  submitted: 'لدى مدير المنح',
+  finance: 'لدى الإدارة المالية',
+  exec: 'لدى المدير التنفيذي',
+  approved: 'معتمدة · مفعّلة',
+}
+
+export const budgetTone = (s: BudgetState): 'ok' | 'warn' | 'ret' | 'mute' =>
+  s === 'approved' ? 'ok' : s === 'returned' ? 'ret' : s === 'draft' ? 'mute' : 'warn'
+
+/** Structure can change only before it's sent, or after a return */
+export const budgetEditable = (s: BudgetState): boolean => s === 'draft' || s === 'returned'
 
 export interface BudgetDoc {
   id: string
+  /** Its own name and description (1.4.4) · the title falls back to year and source */
+  name?: string
+  description?: string
   yearId: string
+  /** The first source · kept for older readers; `sources` holds the whole split */
   sourceCode: string
+  /** One or more funding sources with the amount each carries · sums to `total` (1.4.4) */
+  sources?: SourceShare[]
+  /** The strategic directions the budget is built on (1.1.input-1) */
+  directionIds?: string[]
   from: string
   to: string
   total: number
   state: BudgetState
   nodes: BudgetNode[]
 }
+
+/** The budget's sources · a budget saved before the split had one, carrying the whole total */
+export const docSources = (d: Pick<BudgetDoc, 'sources' | 'sourceCode' | 'total'>): SourceShare[] =>
+  d.sources?.length ? d.sources : d.sourceCode ? [{ code: d.sourceCode, amount: d.total }] : []
+
+/** Linking and holding read approved budgets only (1.2.12 · 1.4.25) */
+export const isLiveBudget = (d: BudgetDoc): boolean => d.state === 'approved'
 
 /* Tree readings */
 
@@ -247,9 +357,11 @@ export const publicName = (n: BudgetNode): string =>
 export const rootOf = (nodes: BudgetNode[]): BudgetNode | undefined =>
   nodes.find((n) => n.parentId === null)
 
-/** Sum of children's allocation · what's supposed to equal the parent's allocation */
+/** Sum of children's allocation · what's supposed to equal the parent's allocation.
+    An inactive child still counts: turning a line off stops new use, it doesn't move its money
+    (1.4.38) · freeing it is a reduction or a transfer. */
 export const sumChildren = (nodes: BudgetNode[], id: string): number =>
-  childrenOf(nodes, id).filter((n) => n.active).reduce((s, n) => s + n.allocated, 0)
+  childrenOf(nodes, id).reduce((s, n) => s + n.allocated, 0)
 
 /** Level number · root is zero, matching the document's "item level" column */
 export function levelOf(nodes: BudgetNode[], id: string): number {
@@ -416,7 +528,7 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
   }
 
   /* 5 · children's sum = the parent's allocation */
-  for (const n of live) {
+  for (const n of nodes) {
     if (!hasChildren(nodes, n.id)) continue
     const s = sumChildren(nodes, n.id)
     if (s !== n.allocated) {
@@ -445,6 +557,24 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
     }
   }
 
+  /* 8 · every active line carries an amount (1.4.21) · an inactive line may sit at zero, like the
+     document's «Ramadan iftar track» */
+  for (const n of live) {
+    if (n.parentId === null) continue
+    if (!(n.allocated > 0)) {
+      out.push({
+        nodeId: n.id,
+        text: `«${n.label}» بلا مبلغ مخصص · المبلغ إلزامي لكل بند نشط`,
+        why: 'إلزامية المبلغ لكل بند',
+      })
+    }
+  }
+
+  /* 9 · funding sources (1.2.5 · 1.2.7) · the budget's sources sum to its total, a line's split sums
+     to its allocation, and below any line with a split no source is spent past what that line holds
+     from it */
+  out.push(...sourceIssues(doc))
+
   /* 7 · the tree must reach a leaf, or there's nothing to spend against */
   const leaves = leavesOf(live)
   if (root && (leaves.length === 0 || (leaves.length === 1 && leaves[0]?.id === root.id))) {
@@ -457,14 +587,122 @@ export function treeIssues(doc: BudgetDoc): TreeIssue[] {
   return out
 }
 
-/** (year + source) can't repeat · the only budget rule shown in the header */
-export const yearSourceTaken = (
+/** Independent budgets in one year are allowed (1.4.3) · what can't repeat is the name, so two
+    budgets of the same year still read apart in every list and report */
+export const nameTaken = (
   docs: BudgetDoc[],
   yearId: string,
-  sourceCode: string,
+  name: string,
   exceptId?: string,
 ): BudgetDoc | undefined =>
-  docs.find((d) => d.id !== exceptId && d.yearId === yearId && d.sourceCode === sourceCode)
+  name.trim()
+    ? docs.find((d) => d.id !== exceptId && d.yearId === yearId && docTitle(d) === name.trim())
+    : undefined
+
+/* ── Funding sources on lines (1.2.5 · 1.2.7) ──
+
+   A line may split its allocation across the budget's sources. A line without a split takes it from
+   below (the sum of its children's) or from above (the one source of the nearest split over it),
+   and a budget with a single source needs no split at all. */
+
+const addShares = (a: SourceShare[], b: SourceShare[]): SourceShare[] => {
+  const m = new Map(a.map((x) => [x.code, x.amount]))
+  for (const x of b) m.set(x.code, (m.get(x.code) ?? 0) + x.amount)
+  return [...m].map(([code, amount]) => ({ code, amount }))
+}
+
+/** The split a line carries · `null` when it can't be told */
+export function splitOf(doc: BudgetDoc, id: string): SourceShare[] | null {
+  const n = doc.nodes.find((x) => x.id === id)
+  if (!n) return null
+  if (n.parentId === null) return docSources(doc)
+  if (n.sources?.length) return n.sources
+  const kids = childrenOf(doc.nodes, id)
+  if (kids.length) {
+    let acc: SourceShare[] = []
+    for (const k of kids) {
+      const s = splitOf(doc, k.id)
+      if (!s) return null
+      acc = addShares(acc, s)
+    }
+    return acc
+  }
+  const all = docSources(doc)
+  if (all.length === 1) return [{ code: all[0].code, amount: n.allocated }]
+  /* The nearest split above with a single source decides */
+  let up = n.parentId ? doc.nodes.find((x) => x.id === n.parentId) : undefined
+  while (up && up.parentId !== null) {
+    if (up.sources?.length) return up.sources.length === 1 ? [{ code: up.sources[0].code, amount: n.allocated }] : null
+    const pid: string | null = up.parentId
+    up = pid ? doc.nodes.find((x) => x.id === pid) : undefined
+  }
+  return null
+}
+
+function sourceIssues(doc: BudgetDoc): TreeIssue[] {
+  const out: TreeIssue[] = []
+  const all = docSources(doc)
+  const name = (c: string) => sourceByCode(c)?.name ?? c
+  const sum = all.reduce((a, x) => a + x.amount, 0)
+  if (all.length > 1 && sum !== doc.total) {
+    out.push({
+      text: `مجموع مبالغ مصادر التمويل ${nf.format(sum)} ومبلغ الميزانية ${nf.format(doc.total)}`,
+      why: 'مجموع المصادر = مبلغ الميزانية',
+    })
+  }
+  const codes = new Set(all.map((x) => x.code))
+  for (const n of doc.nodes) {
+    if (!n.sources?.length) continue
+    const s = n.sources.reduce((a, x) => a + x.amount, 0)
+    if (s !== n.allocated) {
+      out.push({
+        nodeId: n.id,
+        text: `توزيع «${n.label}» على المصادر ${nf.format(s)} ومخصصه ${nf.format(n.allocated)}`,
+        why: 'توزيع البند على المصادر = مخصصه',
+      })
+    }
+    for (const x of n.sources) {
+      if (!codes.has(x.code)) {
+        out.push({ nodeId: n.id, text: `«${n.label}» موزَّع على «${name(x.code)}» وهو ليس من مصادر الميزانية`, why: 'مصادر البند من مصادر الميزانية' })
+      }
+    }
+  }
+  /* Below a split, no source goes past what the line holds from it */
+  for (const p of doc.nodes) {
+    const own = p.parentId === null ? all : p.sources
+    if (!own?.length) continue
+    const kids = childrenOf(doc.nodes, p.id)
+    if (!kids.length) continue
+    let acc: SourceShare[] = []
+    let known = true
+    for (const k of kids) {
+      const s = splitOf(doc, k.id)
+      if (!s) { known = false; continue }
+      acc = addShares(acc, s)
+    }
+    if (!known) continue
+    for (const x of acc) {
+      const cap = own.find((o) => o.code === x.code)?.amount ?? 0
+      if (x.amount > cap) {
+        out.push({
+          nodeId: p.id,
+          text: `بنود «${p.label}» من «${name(x.code)}» ${nf.format(x.amount)} ومخصصه من المصدر ${nf.format(cap)}`,
+          why: 'لا يتجاوز البند مخصص مصدر التمويل',
+        })
+      }
+    }
+  }
+  /* With several sources, every line where money is spent must say where it comes from */
+  if (all.length > 1) {
+    for (const n of leavesOf(doc.nodes.filter((x) => x.active))) {
+      if (n.parentId === null || !(n.allocated > 0)) continue
+      if (!splitOf(doc, n.id)) {
+        out.push({ nodeId: n.id, text: `«${n.label}» لم يُوزَّع على مصادر التمويل · للميزانية أكثر من مصدر`, why: 'لكل بند مصدر تمويله' })
+      }
+    }
+  }
+  return out
+}
 
 /* A sample budget · **copied verbatim from the document's table**
 
@@ -496,12 +734,15 @@ const leaf = (
 export const budgetDocs: BudgetDoc[] = [
   {
     id: 'BG-2025-SA',
+    name: 'ميزانية المنح 2025',
+    description: 'المثال التوضيحي في الوثيقة (1.7.2) · ثلاثة مسارات ومسار رابع موقوف بلا مبالغ',
     yearId: 'fy-2025',
     sourceCode: 'SA',
+    directionIds: ['dir-edu', 'dir-health', 'dir-community'],
     from: '2025-01-01',
     to: '2025-12-31',
     total: 30_000_000,
-    state: 'submitted',
+    state: 'approved',
     /* Held and paid are set on the leaves so that held + paid = allocated − the document's
        available. Two figures in the document broke that identity and are corrected here: the root
        showed 30M available with 2.1M consumed beneath it (now 27.9M), and "awareness campaigns" showed
@@ -509,7 +750,7 @@ export const budgetDocs: BudgetDoc[] = [
     nodes: [
       n('b0', 'ميزانية المنح - 2025', 'base', null, 30_000_000, 27_900_000),
 
-      n('t1', 'مسار التعليم', 'main', 'b0', 12_000_000, 11_200_000),
+      { ...n('t1', 'مسار التعليم', 'main', 'b0', 12_000_000, 11_200_000), directionId: 'dir-edu' },
       n('f11', 'مجال التعليم العام', 'main', 't1', 6_000_000, 5_400_000),
       leaf('g111', 'هدف تطوير المدارس', 'f11', 3_500_000, 150_000, 250_000),
       leaf('g112', 'هدف دعم الطلاب', 'f11', 2_500_000, 80_000, 120_000),
@@ -517,7 +758,7 @@ export const budgetDocs: BudgetDoc[] = [
       leaf('g121', 'هدف المنح الدراسية', 'f12', 4_000_000, 100_000, 0),
       leaf('g122', 'هدف البحث العلمي', 'f12', 2_000_000, 40_000, 60_000),
 
-      n('t2', 'مسار الصحة', 'main', 'b0', 10_000_000, 9_000_000),
+      { ...n('t2', 'مسار الصحة', 'main', 'b0', 10_000_000, 9_000_000), directionId: 'dir-health' },
       n('f21', 'مجال الرعاية الصحية', 'main', 't2', 6_000_000, 5_000_000),
       leaf('g211', 'هدف دعم المستشفيات', 'f21', 3_500_000, 200_000, 400_000),
       leaf('g212', 'هدف الأجهزة الطبية', 'f21', 2_500_000, 150_000, 250_000),
@@ -525,7 +766,7 @@ export const budgetDocs: BudgetDoc[] = [
       leaf('g221', 'هدف حملات التوعية', 'f22', 2_200_000, 0, 0),
       leaf('g222', 'هدف البرامج الوقائية', 'f22', 1_800_000, 0, 0),
 
-      n('t3', 'مسار التنمية المجتمعية', 'main', 'b0', 8_000_000, 7_700_000),
+      { ...n('t3', 'مسار التنمية المجتمعية', 'main', 'b0', 8_000_000, 7_700_000), directionId: 'dir-community' },
       { ...n('f31', 'مجال تمكين الأفراد', 'main', 't3', 4_000_000, 3_800_000), held: 50_000, paid: 150_000 },
       { ...n('f32', 'مجال دعم المجتمع', 'main', 't3', 4_000_000, 3_900_000), held: 100_000, paid: 0 },
 
@@ -533,8 +774,57 @@ export const budgetDocs: BudgetDoc[] = [
       n('t4', 'مسار تفطير الصائمين', 'main', 'b0', 0, 0, false),
     ],
   },
+  /* A second, independent budget in 2026 from the same source (1.4.3), funded by two sources and
+     split on its lines (1.2.5) · waiting on the grants manager, so the approval path has a case */
+  {
+    id: 'BG-2026-SA-2',
+    name: 'ميزانية المبادرات الطارئة 2026',
+    description: 'استجابة للاحتياجات الطارئة خارج الخطة السنوية · تُدار مستقلة عن ميزانية المنح',
+    yearId: 'fy-2026',
+    sourceCode: 'SA',
+    sources: [{ code: 'SA', amount: 2_000_000 }, { code: 'MM', amount: 1_000_000 }],
+    directionIds: ['dir-community'],
+    from: '2026-07-01',
+    to: '2026-12-31',
+    total: 3_000_000,
+    state: 'submitted',
+    nodes: [
+      n('e0', 'ميزانية المبادرات الطارئة 2026', 'base', null, 3_000_000, 3_000_000),
+      { ...n('e1', 'مسار الإغاثة', 'main', 'e0', 1_800_000, 1_800_000), sources: [{ code: 'SA', amount: 1_200_000 }, { code: 'MM', amount: 600_000 }] },
+      { ...n('e11', 'مجال الإيواء العاجل', 'main', 'e1', 1_800_000, 1_800_000), owners: ['عمر قاسم'] },
+      { ...leaf('e111', 'هدف السكن المؤقت', 'e11', 1_000_000, 0, 0), sources: [{ code: 'SA', amount: 700_000 }, { code: 'MM', amount: 300_000 }] },
+      { ...leaf('e112', 'هدف الاحتياجات الأساسية', 'e11', 800_000, 0, 0), sources: [{ code: 'SA', amount: 500_000 }, { code: 'MM', amount: 300_000 }] },
+      { ...n('e2', 'مسار الدعم الصحي العاجل', 'main', 'e0', 1_200_000, 1_200_000), sources: [{ code: 'SA', amount: 800_000 }, { code: 'MM', amount: 400_000 }] },
+      { ...n('e21', 'مجال الأدوية والمستلزمات', 'main', 'e2', 1_200_000, 1_200_000), owners: ['حصة النملة'] },
+      { ...leaf('e211', 'هدف توفير الأدوية', 'e21', 1_200_000, 0, 0), sources: [{ code: 'SA', amount: 800_000 }, { code: 'MM', amount: 400_000 }] },
+    ],
+  },
+  /* Next year's budget, approved ahead · future commitments of multi-year projects land on its
+     lines before the year starts, and the annual hold takes them on 1 January (1.4.48 · 1.4.49) */
+  {
+    id: 'BG-2027-SA',
+    name: 'ميزانية المنح 2027',
+    yearId: 'fy-2027',
+    sourceCode: 'SA',
+    directionIds: ['dir-edu', 'dir-health'],
+    from: '2027-01-01',
+    to: '2027-12-31',
+    total: 12_000_000,
+    state: 'approved',
+    nodes: [
+      n('y0', 'ميزانية المنح 2027', 'base', null, 12_000_000, 12_000_000),
+      { ...n('y1', 'مسار التعليم', 'main', 'y0', 7_000_000, 7_000_000), directionId: 'dir-edu' },
+      n('y11', 'مجال التعليم العام', 'main', 'y1', 7_000_000, 7_000_000),
+      leaf('y111', 'هدف تطوير المدارس', 'y11', 4_000_000, 0, 0),
+      leaf('y112', 'هدف دعم الطلاب', 'y11', 3_000_000, 0, 0),
+      { ...n('y2', 'مسار الصحة', 'main', 'y0', 5_000_000, 5_000_000), directionId: 'dir-health' },
+      n('y21', 'مجال الرعاية الصحية', 'main', 'y2', 5_000_000, 5_000_000),
+      leaf('y211', 'هدف دعم المستشفيات', 'y21', 5_000_000, 0, 0),
+    ],
+  },
   {
     id: 'BG-2026-MM',
+    name: 'ميزانية وقف موضي المسفر 2026',
     yearId: 'fy-2026',
     sourceCode: 'MM',
     from: '2026-01-01',
@@ -558,6 +848,9 @@ export const yearById = (id: string): FiscalYear | undefined =>
 export const sourceByCode = (code: string): FundSource | undefined =>
   fundSources.find((s) => s.code === code)
 
-/** The displayed budget name · built from the year and source, not typed */
-export const docTitle = (d: BudgetDoc): string =>
-  `ميزانية ${yearById(d.yearId)?.name ?? ''} · ${sourceByCode(d.sourceCode)?.name ?? d.sourceCode}`
+/** The displayed budget name · its own name when given (1.4.4), otherwise year and source */
+export const docTitle = (d: BudgetDoc): string => {
+  if (d.name?.trim()) return d.name.trim()
+  const src = docSources(d).map((x) => sourceByCode(x.code)?.name ?? x.code)
+  return `ميزانية ${yearById(d.yearId)?.name ?? ''} · ${src.length ? src.join(' و') : d.sourceCode}`
+}

@@ -4,15 +4,20 @@ import { Link } from 'react-router-dom'
 import { FieldSelect, Icon, icons, KV, Money } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf } from '@/lib/format'
-import { allBudgets } from '@/data/mock/chain'
 import {
-  docTitle, hasChildren, moneyOf, yearById, type BudgetDoc, type BudgetNode,
+  docTitle, fiscalYears, moneyOf, yearById, type BudgetDoc, type BudgetNode,
 } from '@/data/mock/budgetTree'
+import { approverFor } from '@/data/approval'
+import { readRole, roleByKey } from '@/data/roles'
+import { linkOf, linkProject, planOf, unlinkProject, usableLines, useBudget } from '@/data/budget/store'
 
 /* Link a project to a budget line · the grants manager's step on a project (client request 11).
 
-   Holding happens on a leaf only, so the picker lists active leaves of the budgets for the
-   project's year, each with its available amount. The link back to the budget document opens the
+   Holding happens on a leaf only, so the picker lists usable leaves (active, under active lines) of
+   the approved budgets for the project's year, each with its available amount (1.2.12 · 1.4.25 ·
+   1.4.26). A budget still on its approval path offers nothing. Confirming holds the amount on the
+   line through the budget store, so the line, its ledger and every report move with it; a
+   multi-year project holds through its funding plan instead, a year at a time. The link back to the budget document opens the
    tree on that exact row (`?line=` + `#line-<id>`), so the manager can check the line in context
    before confirming. */
 
@@ -47,23 +52,23 @@ const trail = (nodes: BudgetNode[], n: BudgetNode): string => {
 
 function linesFor(year: string): LineOpt[] {
   const name = year.slice(0, 4)
-  const sent = allBudgets.filter((d) => d.state === 'submitted')
-  const ofYear = sent.filter((d) => yearById(d.yearId)?.name === name)
-  const docs = ofYear.length ? ofYear : sent
-  return docs.flatMap((doc) =>
-    doc.nodes
-      .filter((n) => n.active && n.parentId !== null && !hasChildren(doc.nodes, n.id))
-      .map((node) => ({ doc, node, key: `${doc.id}/${node.id}` })),
-  )
+  const fy = fiscalYears.find((y) => y.name === name)
+  const ofYear = fy ? usableLines(fy.id) : []
+  const lines = ofYear.length ? ofYear : usableLines()
+  return lines.map(({ doc, node, key }) => ({ doc, node, key }))
 }
 
 export function BudgetLinkAction({ project }: { project: BudgetLinkProject }) {
-  const lines = useMemo(() => linesFor(project.year), [project.year])
+  const ver = useBudget()
+  const lines = useMemo(() => { void ver; return linesFor(project.year) }, [project.year, ver])
   const guess = lines.find((l) => l.node.label === project.goal)?.key ?? ''
+  const held = linkOf(project.id)
+  const linked = held ? `${held.docId}/${held.nodeId}` : ''
+  const plan = planOf(project.id)
+  const me = roleByKey(readRole()).name
 
   const [open, setOpen] = useState(false)
   const [pick, setPick] = useState(guess)
-  const [linked, setLinked] = useState<string>('')
 
   useEffect(() => {
     if (!open) return
@@ -74,8 +79,11 @@ export function BudgetLinkAction({ project }: { project: BudgetLinkProject }) {
 
   const cur = lines.find((l) => l.key === pick)
   const m = cur ? moneyOf(cur.doc.nodes, cur.node.id) : undefined
-  const after = m ? m.available - project.amount : 0
-  const done = lines.find((l) => l.key === linked)
+  /* Re-linking to the same line frees the current hold first, so it counts as available */
+  const mine = held && cur && linked === cur.key ? held.amount : 0
+  const after = m ? m.available + mine - project.amount : 0
+  const done = held ? { node: { label: held.nodeId } } : undefined
+  const tier = approverFor(project.amount)
 
   const docHref = (l: LineOpt) =>
     `${ROUTES.budgetDoc(l.doc.id)}?line=${l.node.id}#line-${l.node.id}`
@@ -87,7 +95,7 @@ export function BudgetLinkAction({ project }: { project: BudgetLinkProject }) {
       <button
         className="btn btn-2"
         onClick={() => { setPick(linked || guess); setOpen(true) }}
-        title={done ? `مرتبط بـ ${done.node.label}` : 'اربط المشروع ببند في الميزانية'}
+        title={done ? 'مرتبط ببند في الميزانية' : 'اربط المشروع ببند في الميزانية'}
       >
         {done && <Icon name={icons.check} size="sm" />}
         {done ? 'مرتبط بالميزانية' : 'ربط بالميزانية'}
@@ -110,6 +118,15 @@ export function BudgetLinkAction({ project }: { project: BudgetLinkProject }) {
             </div>
 
             <div className="mb col bglink">
+              {plan?.kind === 'multi' && (
+                <p className="sub cnote">
+                  المشروع متعدد السنوات · يُحجز من خطته المالية سنةً بسنة، وحصص السنوات القادمة التزامات مستقبلية لا حجوزات.
+                  {' '}<Link className="lnk" to={ROUTES.projectTab(project.id, 'study')}>افتح الخطة المالية</Link>
+                </p>
+              )}
+              {lines.length === 0 && (
+                <p className="bad cnote">لا ميزانية معتمدة للسنة فيها بند نشط · الربط والحجز على الميزانيات المعتمدة المفعّلة وحدها.</p>
+              )}
               <label className="regf">
                 <span className="lb">بند الميزانية<b className="regf-r" aria-label="إلزامي">*</b></span>
                 <FieldSelect
@@ -140,9 +157,11 @@ export function BudgetLinkAction({ project }: { project: BudgetLinkProject }) {
                       { k: 'البند', v: trail(cur.doc.nodes, cur.node) },
                       { k: 'المبلغ المخصص', v: <Money sm>{m.allocated}</Money> },
                       { k: 'المبلغ المحتجز', v: <Money sm>{m.held}</Money> },
+                      { k: 'الملتزم به', v: <Money sm>{m.committed}</Money> },
                       { k: 'المبلغ المدفوع', v: <Money sm>{m.paid}</Money> },
                       { k: 'المبلغ المتاح', v: <b><Money sm>{m.available}</Money></b> },
                       { k: 'مبلغ المشروع', v: <Money sm>{project.amount}</Money> },
+                      { k: 'يعتمده', v: tier.role },
                       {
                         k: 'المتاح بعد الربط',
                         v: after < 0
@@ -163,12 +182,19 @@ export function BudgetLinkAction({ project }: { project: BudgetLinkProject }) {
             <div className="mf">
               <button
                 className="btn btn-p"
-                disabled={!cur || after < 0}
+                disabled={!cur || after < 0 || plan?.kind === 'multi'}
                 title={!cur ? 'اختر البند أولًا' : after < 0 ? 'مبلغ المشروع يتجاوز المتاح في البند' : 'اربط المشروع بالبند'}
-                onClick={() => { setLinked(pick); setOpen(false) }}
+                onClick={() => {
+                  if (!cur) return
+                  linkProject({ projectId: project.id, projectName: project.name, docId: cur.doc.id, nodeId: cur.node.id, amount: project.amount, by: me })
+                  setOpen(false)
+                }}
               >
-                اربط بالبند
+                {held ? 'غيّر البند' : 'اربط واحجز'}
               </button>
+              {held && (
+                <button className="btn btn-2" onClick={() => { unlinkProject(project.id, me); setOpen(false) }}>فكّ الربط</button>
+              )}
               <button className="btn btn-2" onClick={() => setOpen(false)}>إلغاء</button>
             </div>
           </div>

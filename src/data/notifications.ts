@@ -23,6 +23,7 @@ import { entityById } from './mock/entities'
 import { projectById } from './mock/projects'
 import { countOf, NOUN, projectCode } from '@/lib/format'
 import { FLOW_NOTES } from './intake/flow'
+import { BUDGET_NOTES } from './budget/store'
 
 export type NoteKind = 'decide' | 'msg' | 'late' | 'info'
 
@@ -75,6 +76,12 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
       id: n.id, kind: 'decide', title: n.title, context: n.context,
       at: n.at, to: ROUTES.project(n.projectId), from: projectFrom(projectById(n.projectId)?.entityId),
     })
+  }
+
+  /* BPD-001 · budgets and operation requests sent to this role, and an annual hold that couldn't
+     run (1.4.51 · «مع إشعار الأطراف المعنية») */
+  for (const n of BUDGET_NOTES.filter((x) => x.to === user.name || x.to === user.role)) {
+    out.push({ id: n.id, kind: 'decide', title: n.title, context: n.context, at: n.at, to: n.href, from: { type: 'system' } })
   }
 
   /* Needs your decision */
