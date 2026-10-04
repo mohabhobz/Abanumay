@@ -216,6 +216,9 @@ export const STAGES: StageMeta[] = [
   { stage: 'مشروع متعثر', group: 'متعثر', limit: 0 },
   { stage: 'مشروع معتذر عنه', group: 'معتذر عنه', limit: 0 },
   { stage: 'مشروع ملغي', group: 'معتذر عنه', limit: 0 },
+  /* 6.2.8 · 7.2.10 · a rejection by the committee or the board is its own status, not «معتذر عنه» */
+  { stage: 'مرفوض - اللجنة التنفيذية', group: 'معتذر عنه', limit: 0 },
+  { stage: 'مرفوض - مجلس الأمناء', group: 'معتذر عنه', limit: 0 },
 ]
 
 export const stageMeta = (stage: string): StageMeta | undefined =>

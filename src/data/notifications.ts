@@ -24,6 +24,7 @@ import { projectById } from './mock/projects'
 import { countOf, NOUN, projectCode } from '@/lib/format'
 import { FLOW_NOTES } from './intake/flow'
 import { BUDGET_NOTES } from './budget/store'
+import { APPROVAL_NOTES } from './approvals/store'
 
 export type NoteKind = 'decide' | 'msg' | 'late' | 'info'
 
@@ -80,6 +81,10 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
 
   /* BPD-001 · budgets and operation requests sent to this role, and an annual hold that couldn't
      run (1.4.51 · «مع إشعار الأطراف المعنية») */
+  /* BPD-004–007 · decisions, referrals and returns on the approval path (4.2.14 · 5.2.14 · 6.4.12 · 7.4.12) */
+  for (const n of APPROVAL_NOTES.filter((x) => x.to === user.name || x.to === user.role)) {
+    out.push({ id: n.id, kind: 'decide', title: n.title, context: n.context, at: n.at, to: n.href, from: projectFrom() })
+  }
   for (const n of BUDGET_NOTES.filter((x) => x.to === user.name || x.to === user.role)) {
     out.push({ id: n.id, kind: 'decide', title: n.title, context: n.context, at: n.at, to: n.href, from: { type: 'system' } })
   }

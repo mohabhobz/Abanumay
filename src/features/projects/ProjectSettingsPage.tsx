@@ -13,6 +13,7 @@ import { PAY_LIMIT, PAY_STATES, payRequests } from '@/data/mock/disbursements'
 import { CFG, isConfigured, persist } from '@/lib/config'
 import { CfgNum, StageLimits } from '@/features/settings/CfgEdit'
 import { ConsultantsTab, CriteriaTab, CycleTab, ProspectsTab } from './IntakeSettings'
+import { ApprovalRulesTab } from '@/features/approvals/ApprovalRulesTab'
 
 /* These are business rules, not master data. The difference: the number here changes the
    behavior of an action, not the content of a list — changing a cap moves projects from one
@@ -32,6 +33,8 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const TABS = [
   { slug: 'approval', label: 'مصفوفة الاعتماد' },
+  /* Procedures 4–7 · what the matrix doesn't hold */
+  { slug: 'path', label: 'مسار الاعتماد' },
   { slug: 'limits', label: 'الحدود المالية والزمنية' },
   { slug: 'stages', label: 'مدد المراحل' },
   /* Procedure 3 · what is set before requests arrive */
@@ -71,6 +74,7 @@ export default function ProjectSettingsPage() {
           <Tabs items={TABS} active={tab} onChange={(x) => set({ tab: x === TABS[0].slug ? undefined : x })} />
 
           {tab === 'approval' && <ApprovalTab />}
+          {tab === 'path' && <ApprovalRulesTab />}
           {tab === 'limits' && <LimitsTab />}
           {tab === 'stages' && <StagesTab />}
           {tab === 'cycle' && <CycleTab />}

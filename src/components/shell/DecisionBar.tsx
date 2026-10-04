@@ -18,7 +18,7 @@ export interface DecisionBarProps {
   /** The project sits at another seat · the bar says where instead of offering buttons (B-5) */
   hold?: string
   /** Runs the confirmed decision · returns the reasons it can't run yet, which the sheet shows */
-  onDecide?: (a: DecisionAction, note: string) => string[] | void
+  onDecide?: (a: DecisionAction, note: string, choice: string) => string[] | void
   /** An action with its own form (a transfer picks a domain and a supervisor) · true = handled */
   intercept?: (a: DecisionAction) => boolean
   /** Shown in the sheet under the project line · the context of this seat's decision */
@@ -53,14 +53,16 @@ export function DecisionBar({ user, project, compact, atEnd, lead, hold, onDecid
   const [pick, setPick] = useState<DecisionAction | null>(null)
   const [note, setNote] = useState('')
   const [done, setDone] = useState<string | null>(null)
-  const needsNote = (a: DecisionAction) => a.kind === 'btn-d' || /إعادة|اعتذار|رفض|استكمال/.test(a.label)
+  const needsNote = (a: DecisionAction) => a.needsNote || a.kind === 'btn-d' || /إعادة|اعتذار|رفض|استكمال/.test(a.label)
   const [why, setWhy] = useState<string[]>([])
+  const [choice, setChoice] = useState('')
   const open = (a: DecisionAction) => {
+    if (a.blocked) return
     if (intercept?.(a)) return
-    setPick(a); setNote(''); setWhy([])
+    setPick(a); setNote(''); setWhy([]); setChoice('')
   }
   const confirm = (a: DecisionAction) => {
-    const blocked = onDecide?.(a, note.trim())
+    const blocked = onDecide?.(a, note.trim(), choice)
     if (blocked && blocked.length) { setWhy(blocked); return }
     setDone(a.label)
     setPick(null)
@@ -101,7 +103,7 @@ export function DecisionBar({ user, project, compact, atEnd, lead, hold, onDecid
         <div className="rowf gp-2">
           {!done && lead}
           {!done && shown.map((a) => (
-            <button key={a.label} className={`btn ${a.kind}`} onClick={() => open(a)}>
+            <button key={a.label} className={`btn ${a.kind}`} disabled={Boolean(a.blocked)} title={a.blocked || undefined} onClick={() => open(a)}>
               {a.label}
             </button>
           ))}
@@ -122,7 +124,7 @@ export function DecisionBar({ user, project, compact, atEnd, lead, hold, onDecid
                 <MenuPanel one up end float={{ anchor: moreBtn, pop: more.pop }}>
                   {rest.map((a) => (
                     <MenuOpt key={a.label} on={false} onPick={() => { more.setOpen(false); open(a) }}>
-                      {a.label}
+                      {a.label}{a.blocked ? ` · ${a.blocked}` : ''}
                     </MenuOpt>
                   ))}
                 </MenuPanel>
@@ -162,18 +164,30 @@ export function DecisionBar({ user, project, compact, atEnd, lead, hold, onDecid
                   ))}
                 </ul>
               )}
+              {pick.choose && (
+                <div className="regf">
+                  <span className="lb">{pick.choose.label}<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <div className="cfgchips" role="radiogroup" aria-label={pick.choose.label}>
+                    {pick.choose.options.map((o) => (
+                      <button key={o.value} type="button" role="radio" aria-checked={choice === o.value} className={`cfgchip${choice === o.value ? ' on' : ''}`} onClick={() => setChoice(o.value)}>
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {needsNote(pick) && (
                 <label className="regf">
                   <span className="lb">
-                    السبب<b className="regf-r" aria-label="إلزامي">*</b>
+                    {/موافقة|اعتماد|إحالة|إرسال/.test(pick.label) ? 'المبررات' : 'السبب'}<b className="regf-r" aria-label="إلزامي">*</b>
                   </span>
                   <span className="fld">
                     <input
                       autoFocus
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
-                      aria-label="السبب"
-                      placeholder={/استكمال/.test(pick.label) ? 'ما المطلوب من الجهة · يصلها كما هو' : 'يصل مع القرار إلى صاحب الخطوة السابقة'}
+                      aria-label={/موافقة|اعتماد|إحالة|إرسال/.test(pick.label) ? 'المبررات' : 'السبب'}
+                      placeholder={/استكمال/.test(pick.label) ? 'ما المطلوب من الجهة · يصلها كما هو' : /موافقة|اعتماد|إحالة|إرسال/.test(pick.label) ? 'تُوثَّق مع القرار في ملف المشروع' : 'يصل مع القرار إلى صاحب الخطوة السابقة'}
                     />
                   </span>
                 </label>
@@ -182,7 +196,7 @@ export function DecisionBar({ user, project, compact, atEnd, lead, hold, onDecid
             <div className="mf">
               <button
                 className={`btn ${pick.kind === 'btn-d' ? 'btn-d' : 'btn-p'}`}
-                disabled={needsNote(pick) && !note.trim()}
+                disabled={(needsNote(pick) && !note.trim()) || (Boolean(pick.choose) && !choice)}
                 onClick={() => confirm(pick)}
               >
                 تأكيد: {pick.label}

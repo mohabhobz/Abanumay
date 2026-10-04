@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { GateArc, Money, Num, Tabs } from '@/components/ui'
 import { DecisionBar, Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -31,13 +31,16 @@ import { projectChain } from '@/data/mock/chain'
 import { planOfProject } from '@/data/mock/plans'
 import { journeys } from '@/data/journey'
 import { BudgetLinkAction } from '@/features/budget/BudgetLink'
+import { useBudget } from '@/data/budget/store'
 import { EditableCard } from '@/features/shared/EditableCard'
-import { HOLDER_LABEL, authorityFor, holderOf, seatOptions } from '@/data/holders'
+import { HOLDER_LABEL, authorityFor, holderOf } from '@/data/holders'
+import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, useApprovals } from '@/data/approvals/store'
 import {
-  flowEvents, flowOf, recommend, requestCompletion, returnToSupervisor, saveStudy, useFlow,
+  flowEvents, flowOf, recommend, requestCompletion, saveStudy, useFlow,
 } from '@/data/intake/flow'
 import { RecommendationCard, RequestCloseCard, RequestDocsCard, RequestMetaCard } from './tabs/RequestCards'
 import { StudyAside, StudyTab } from './tabs'
+import { ApprovalTab, OfficialNotes } from './tabs/ApprovalTab'
 import { TransferModal } from './TransferModal'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import type { DecisionAction } from '@/types/domain'
@@ -87,7 +90,8 @@ export default function ProjectPage() {
         /* The requested start date from the application form. The fixture used to return the same
            day for every project, so every screen read the same date. */
         startDate: addDays(row.submittedAt, 30),
-        status: { label: row.stage, tone: groupTone(row.statusGroup) },
+        /* 5.2.10 · returned by the executive director, the project reads its own state */
+        status: { label: appFlowOf(row.id).awaitingReview && row.holder === 'manager' ? 'بانتظار استكمال المراجعة' : row.stage, tone: groupTone(row.statusGroup) },
       }
     : fixtures.project
 
@@ -117,7 +121,10 @@ export default function ProjectPage() {
      role alone. Out of study, the fan shows the full path as passed. */
   const holder = row && !closed ? holderOf(row) : null
   const authority = row ? authorityFor(row.amountRequested, holder) : fixtures.authority
-  const seat = holder ? seatOptions(holder, project.amountRequested, role.key) : null
+  useApprovals()
+  /* A budget link changes what the seat may do (4.2.12) */
+  useBudget()
+  const seat = holder && row ? seatOptions(row, holder, role.key, me.name) : null
   /* A project waiting on the entity, or closed, has no decision for anyone (3.4.16 · 3.4.27) */
   const frozen = waiting || closed
   const user = frozen ? { ...me, actions: [] } : seat ? { ...me, actions: seat.actions } : me
@@ -126,16 +133,17 @@ export default function ProjectPage() {
 
   /* What each seat's button does (procedure 3) · the supervisor's recommendation forwards, never
      approves; a return goes back to the supervisor with its note */
-  const decide = (a: DecisionAction, note: string): string[] | void => {
+  const decide = (a: DecisionAction, note: string, choice: string): string[] | void => {
     if (!row) return
-    if (a.label === 'توصية بالموافقة' || a.label === 'توصية بالرفض') {
-      const want = a.label === 'توصية بالموافقة' ? 'approve' : 'reject'
+    /* Above the supervisor, every seat's decision runs through the approval path (BPD-004–007) */
+    if (holder && holder !== 'supervisor') return decideApproval(row, holder, a.label, note, choice, me.name)
+    if (a.label === 'توصية بالموافقة' || a.label === 'توصية بالرفض' || a.label === 'أعد الإرسال لمدير المنح') {
+      const want = a.label === 'توصية بالرفض' ? 'reject' : a.label === 'توصية بالموافقة' ? 'approve' : flowOf(row.id).study?.recommendation || 'approve'
       const s = flowOf(row.id).study
       if (s && s.recommendation !== want) saveStudy(row.id, { ...s, recommendation: want, by: me.name })
       return recommend(row.id, me.name)
     }
     if (a.label === 'طلب استكمال') { requestCompletion(row.id, note, me.name); return }
-    if (a.label === 'إعادة للمشرف') { returnToSupervisor(row.id, note, me.name); return }
   }
   const intercept = (a: DecisionAction) => {
     if (a.label.startsWith('تحويل')) { setTransfer(true); return true }
@@ -154,7 +162,7 @@ export default function ProjectPage() {
 
   /* The entity's view never shows the supervisor's study (3.4.32) · its tab is dropped, and the
      view is kept across tab changes */
-  const tabs = asEntity ? PROJECT_TABS.filter((t) => t.slug !== 'study') : PROJECT_TABS
+  const tabs = asEntity ? PROJECT_TABS.filter((t) => t.slug !== 'study' && t.slug !== 'approval') : PROJECT_TABS
   const active: ProjectTabSlug =
     tabs.find((t) => t.slug === tab)?.slug ?? DEFAULT_PROJECT_TAB
 
@@ -260,7 +268,7 @@ export default function ProjectPage() {
 
   /* Manual activities join the same timeline, so the log stays the one place to read history. */
   const fullLog = useMemo(
-    () => [...(row ? flowEvents(row.id) : []), ...withActivities(log, activityList)],
+    () => [...(row ? [...approvalEvents(row.id), ...flowEvents(row.id)].sort((a, b) => b.at.localeCompare(a.at) || b.time.localeCompare(a.time)) : []), ...withActivities(log, activityList)],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [log, activityList, row, flow?.events.length],
   )
@@ -334,6 +342,10 @@ export default function ProjectPage() {
             {/* === Main column === */}
             <div className="col">
               {active === 'data' && row && !asEntity && <RecommendationCard row={row} />}
+              {active === 'approval' && row && <ApprovalTab row={row} />}
+              {active === 'data' && row && asEntity && appFlowOf(row.id).official.length > 0 && (
+                <OfficialNotes notes={appFlowOf(row.id).official} />
+              )}
               {active === 'study' && row && (
                 <StudyTab key={`${row.id}-${flow?.study?.version ?? 0}-${row.field}`} row={row} me={me.name} editable={studyEditable} />
               )}
@@ -464,7 +476,7 @@ export default function ProjectPage() {
           compact={mobile}
           atEnd={atEnd}
           /* The grants manager links the project to a budget line as part of the decision. */
-          hold={waiting ? 'بانتظار استكمال الجهة · الدراسة متوقفة حتى تعيد إرسال الطلب' : closed ? (flow?.closed?.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف') : seat && !seat.mine ? seat.say : undefined}
+          hold={waiting ? 'بانتظار استكمال الجهة · الدراسة متوقفة حتى تعيد إرسال الطلب' : closed ? (flow?.closed?.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف') : seat && (!seat.mine || seat.actions.length === 0) ? seat.say : undefined}
           onDecide={decide}
           intercept={intercept}
           context={holder === 'supervisor' && seat?.mine && flow?.study ? (
@@ -473,7 +485,9 @@ export default function ProjectPage() {
               {' · '}تُحال لمدير المنح ولا يترتب عليها اعتماد
             </p>
           ) : undefined}
-          lead={role.key === 'grants-manager' && (!seat || seat.mine) ? (
+          lead={(holder === 'committee' || holder === 'board') && seat?.mine ? (
+            <Link className="btn btn-p" to={holder === 'committee' ? ROUTES.committee : ROUTES.board}>افتح الجلسة</Link>
+          ) : ((role.key === 'grants-manager' && holder === 'manager') || (role.key === 'ceo' && holder === 'exec')) && seat?.mine ? (
             <BudgetLinkAction
               project={{
                 id: project.id, name: project.name, year: row?.year ?? '2026-f',

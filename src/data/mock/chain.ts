@@ -91,7 +91,9 @@ function buildNodes(): BudgetNode[] {
         const spent = ps.reduce((a, x) => a + x.amountSpent, 0)
         /* Allocation is rounded up to the nearest 100,000 · a budget is set in round figures, not a
            penny-precise sum of projects */
-        const alloc = ps.length ? cap(Math.max(granted, 100_000)) : 250_000
+        /* The pipeline under study is part of what the line was budgeted for · its holds fit */
+        const pipeline = ps.filter((x) => x.statusGroup === 'في الدراسة').reduce((a, x) => a + x.amountRequested, 0)
+        const alloc = ps.length ? cap(Math.max(granted + pipeline, 100_000)) : 250_000
         put(gid, goal, 'sub', fid, alloc, alloc - spent)
         fAlloc += alloc
         fAvail += alloc - spent

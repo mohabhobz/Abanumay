@@ -78,4 +78,6 @@ export const CFG = {
   entityRules: 'ab-cfg-entity-rules',
   /** Budget approval roles, transfer policy and spending limits · BPD-001 */
   budgetRules: 'ab-cfg-budget-rules',
+  /** Approval path · manager's final authority, rejection cap, per-entity limits, sessions · BPD-004–007 */
+  approvalRules: 'ab-cfg-approval-rules',
 } as const

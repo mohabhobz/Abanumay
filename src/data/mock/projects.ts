@@ -862,6 +862,8 @@ const STUDY: [string, string, string, string, string, string, number, NonNullabl
   ['21041', 'ترميم مسجدين في جدة التاريخية', '748', 'المنح النوعي', 'المساجد', 'عمارة المساجد', 880_000, 'exec', 'حصة النملة', 2_400],
   ['21042', 'برنامج تمكين الجمعيات الناشئة 2027', '781', 'المنح النوعي', 'التطوير', 'الدعم التشغيلي للجمعيات المتميزة', 760_000, 'committee', 'سعود البريكان', 20],
   ['21043', 'وقف تعليمي لطلاب المنح الجامعية', '694', 'المنح النوعي', 'التعليم', 'المنح الدراسية الجامعية', 940_000, 'committee', 'عمر قاسم', 60],
+  /* Within the executive director's cap, entity active · the case he approves himself */
+  ['21046', 'تأهيل معلمات التقوية الإلكترونية بالقصيم', '712', 'المنح النوعي', 'التعليم', 'دروس التقوية الإلكترونية', 380_000, 'exec', 'عمر قاسم', 150],
 ]
 projectRows.push(...STUDY.map(([id, name, entityId, track, field, goal, amount, holder, owner, beneficiaries], i) => {
   const [region, city] = ENTITY_PLACE[entityId] ?? ['الرياض', 'الرياض']

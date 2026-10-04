@@ -421,6 +421,12 @@ export type DecisionKind = 'btn-p' | 'btn-2' | 'btn-d'
 export interface DecisionAction {
   label: string
   kind: DecisionKind
+  /** The decision carries a written note · its reason or its justification (4.2.9 · 5.4.17) */
+  needsNote?: boolean
+  /** A choice the decision needs before it runs · «يتطلب خطة» or the stage a return goes to */
+  choose?: { label: string; options: { value: string; label: string }[] }
+  /** Why the action can't run now · shown on the button, which stays visible but locked */
+  blocked?: string
 }
 
 export interface CurrentUser {
@@ -449,7 +455,7 @@ export interface Insight {
  */
 export interface ProjectRow {
   /** Under study · the seat it sits at now (meeting 1 Oct, B-5) · `supervisor` when absent */
-  holder?: 'supervisor' | 'manager' | 'exec' | 'committee' | 'board'
+  holder?: 'supervisor' | 'manager' | 'exec' | 'committee' | 'board' | 'confirm'
   /** Archived request · out of the active lists, kept on record (3.4.27) */
   archived?: boolean
   /** Created on the system · date and time, set automatically (3.4.4) */

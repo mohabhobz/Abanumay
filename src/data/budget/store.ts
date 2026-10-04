@@ -211,7 +211,7 @@ export const budgetsOfYear = (yearId: string): BudgetDoc[] => allBudgets.filter(
 
 /** Finance isn't a role in the switcher · its step is signed by the finance department's user, as
     in disbursements, while the role settings name previews it */
-export const FINANCE_ACTOR = 'ريم الشمري'
+export const FINANCE_ACTOR = 'محمد المطيري'
 
 export type Step = 'prepare' | 'manager' | 'finance' | 'exec' | 'status'
 const STEP_ROLES = (s: Step): RoleKey[] =>
@@ -821,7 +821,7 @@ function seed() {
     if (d.state === 'approved') {
       const at = `${d.from}T09:00:00.000Z`
       log(d.id, { at, by: 'عبدالرحمن الهليّل', text: 'اعتمدها المدير التنفيذي وفُعّلت في النظام', tone: 'ok' })
-      log(d.id, { at, by: 'ريم الشمري', text: 'وافقت الإدارة المالية وأحالتها إلى المدير التنفيذي', tone: 'ok' })
+      log(d.id, { at, by: FINANCE_ACTOR, text: 'وافقت الإدارة المالية وأحالتها إلى المدير التنفيذي', tone: 'ok' })
       log(d.id, { at, by: 'عبدالله الدوسري', text: 'وافق مدير المنح وأحالها إلى الإدارة المالية', tone: 'ok' })
       log(d.id, { at, by: 'عمر قاسم', text: 'أُرسلت إلى مدير المنح للمراجعة' })
       opening(d, at, 'عبدالرحمن الهليّل')
@@ -906,6 +906,11 @@ export const setLineStatus = (docId: string, nodeId: string, active: boolean, re
 export const setLineOwners = (docId: string, nodeId: string, owners: string[], by: string) =>
   run({ op: 'lineOwner', docId, nodeId, owners, by, at: now() })
 export const linkProject = (link: Omit<LineLink, 'at'>) => run({ op: 'link', link, at: now() })
+/** A link the fixture already carries (a project seeded on the approval path) · applied, not recorded,
+    and never over a link the user made */
+export const seedLink = (link: Omit<LineLink, 'at'>) => {
+  if (!LINKS.has(link.projectId)) apply({ op: 'link', link, at: `${TODAY}T08:00:00.000Z` })
+}
 export const unlinkProject = (projectId: string, by: string) => run({ op: 'unlink', projectId, by, at: now() })
 export const saveRequest = (req: Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt' | 'result'>, send: boolean) =>
   run({ op: 'reqSave', req, send, at: now() })

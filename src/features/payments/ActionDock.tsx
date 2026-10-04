@@ -3,6 +3,7 @@ import { Icon, icons, Money, Person } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { payBlocked } from '@/data/mock/disbursements'
 import { payYearIssue } from '@/data/budget/store'
+import { unmetBefore } from '@/data/approvals/store'
 import type { CurrentUser, DecisionKind, PayRequest, PayState } from '@/types/domain'
 import type { RoleKey } from '@/data/roles'
 import { noteFirst } from '@/lib/dock'
@@ -88,6 +89,8 @@ export function ActionDock({
   const held = payBlocked(request)
   /* 1.4.52 · a multi-year project pays each year inside what that year holds */
   const yearStop = payYearIssue(request.projectId, request.dueAt, request.asked)
+    /* 5.4.16 · a condition set at approval before the first payment */
+    || (request.no === 1 ? unmetBefore(request.projectId, 'firstPay').map((c) => `شرط قبل الدفعة الأولى لم يُستوفَ: ${c.text}`)[0] ?? '' : '')
   const needNote = actions.some((a) => a.needsNote)
 
   if (taken) {

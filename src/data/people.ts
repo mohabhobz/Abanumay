@@ -131,5 +131,9 @@ export const person = (name: string): Person =>
   BY_NAME.get(name.trim()) ?? { name: name.trim(), initial: initials(name) }
 
 /** Faces still without a photo · printed by an internal script */
+/** Staff names for a people picker · the roster without the assistant's personas and duplicates */
+export const staffNames = (): string[] =>
+  [...new Set(ROSTER.filter((r) => !['ريم الشمري', 'د. فهد العمري', 'عبدالرحمن الهليل'].includes(r.name)).map((r) => r.name))]
+
 export const missingPhotos = (): string[] =>
   [...new Set(ROSTER.filter((r) => r.slug && !PHOTOS[r.slug]).map((r) => r.slug!))]

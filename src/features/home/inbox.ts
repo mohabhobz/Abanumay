@@ -20,7 +20,6 @@
  * bands come from the approval matrix in «إعدادات المشاريع والصرف» (src/data/approval.ts).
  */
 import { ROUTES } from '@/app/routes'
-import { capOf } from '@/data/approval'
 import { holderOf } from '@/data/holders'
 import { fixtures, stagePressure } from '@/data/repository'
 import { agreements, AGR_LIMIT } from '@/data/mock/agreements'
@@ -77,8 +76,6 @@ const byWait = (a: InboxItem, b: InboxItem) => Number(b.late) - Number(a.late) |
 
 /* Approval bands by amount · read from the approval matrix in settings, so changing a cap there
    moves projects between the executive's, the committee's and the board's queues here. */
-const CEO_UPTO = () => capOf('exec')
-const BOARD_FROM = () => capOf('committee')
 
 const studying = () => fixtures.projects.filter((p) => p.statusGroup === 'في الدراسة')
 
@@ -254,6 +251,9 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     return [
       projectsQueue('study', 'مشاريع للدراسة', 'مسندة إليك وتنتظر توصيتك',
         single.filter((p) => p.owner === me && holderOf(p) === 'supervisor'), `${ROUTES.projects}?tab=mine`),
+      /* 5.2.15 · 6.2.11 · 7.2.8 · the path is complete · the supervisor confirms before «معتمد» */
+      projectsQueue('confirm', 'تأكيد الاعتماد', 'اكتمل مسار الاعتماد · تحقّق من الشروط وأكّد',
+        single.filter((p) => p.owner === me && holderOf(p) === 'confirm'), `${ROUTES.projects}?tab=mine`),
       portfolioItems('تنتظر توصيتك قبل أن تبدأ'),
       agreementsAt(['draft', 'returned']),
       paymentsAt('supervisor'),
@@ -270,8 +270,8 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       /* B-5 · what sits at his seat now · he approves within his cap and sends the rest up */
       projectsQueue('approve', 'مشاريع للاعتماد', 'عندك الآن · تعتمد ما في حدّك وترفع ما فوقه',
         single.filter((p) => holderOf(p) === 'manager'), `${ROUTES.projects}?status=في الدراسة&sort=amount`),
-      projectsQueue('committee-sec', 'قرارات اللجنة للتسجيل', 'عند اللجنة التنفيذية · تسجّلها أمينًا للجنة',
-        single.filter((p) => holderOf(p) === 'committee'), `${ROUTES.projects}?status=في الدراسة&sort=amount`),
+      projectsQueue('committee-sec', 'قرارات اللجنة للتسجيل', 'عند اللجنة التنفيذية · تسجّلها أمينًا للجنة في جلستها',
+        single.filter((p) => holderOf(p) === 'committee'), ROUTES.committee),
       portfolioItems('تنتظر اعتمادك قبل أن تبدأ'),
       agreementsAt(['manager']),
       paymentsAt('manager'),
@@ -284,15 +284,14 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
   }
 
   return [
-    projectsQueue('ceo', 'مشاريع الرئيس التنفيذي', 'فوق حدّ مدير المنح وضمن حدّك',
-      single.filter((p) => holderOf(p) === 'exec' && p.amountRequested <= CEO_UPTO()),
+    /* 5.2.1 · what the grants manager forwarded with his recommendation */
+    projectsQueue('ceo', 'محالة من مدير المنح', 'بتوصيته · تعتمد ما في حدّك وتحيل ما فوقه للجنة',
+      single.filter((p) => holderOf(p) === 'exec'),
       `${ROUTES.projects}?status=في الدراسة&sort=amount`),
-    projectsQueue('committee', 'مشاريع اللجنة التنفيذية', 'ترفعها إلى اللجنة التنفيذية',
-      single.filter((p) => ['exec', 'committee'].includes(holderOf(p) ?? '') && p.amountRequested > CEO_UPTO() && p.amountRequested <= BOARD_FROM()),
-      `${ROUTES.projects}?status=في الدراسة&sort=amount`),
-    projectsQueue('board', 'مشاريع مجلس الأمناء', 'ترفعها إلى مجلس الأمناء',
-      single.filter((p) => ['exec', 'committee', 'board'].includes(holderOf(p) ?? '') && p.amountRequested > BOARD_FROM()),
-      `${ROUTES.projects}?status=في الدراسة&sort=amount`),
+    projectsQueue('committee', 'عند اللجنة التنفيذية', 'تُعرض في جلستها القادمة',
+      single.filter((p) => holderOf(p) === 'committee'), ROUTES.committee),
+    projectsQueue('board', 'عند مجلس الأمناء', 'يسجّل قراره المدير التنفيذي في جلسته',
+      single.filter((p) => holderOf(p) === 'board'), ROUTES.board),
     agreementsAt(['executive']),
     closingsAt('reports', ['executive']),
     closingsAt('evals', ['evalExecutive']),

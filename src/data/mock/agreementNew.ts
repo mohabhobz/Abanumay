@@ -74,6 +74,11 @@ export interface ProjectOption {
 const hasAgreement = (id: string) =>
   agreements.some((a) => a.projectId === id && a.stage !== 'cancelled')
 
+/* 5.4.16 · special conditions set at approval stop the agreement until met · the approval store
+   registers the check at load, so this file stays free of it */
+let conditionGate: (projectId: string) => string = () => ''
+export const setConditionGate = (f: (projectId: string) => string): void => { conditionGate = f }
+
 export const projectOptions = (): ProjectOption[] =>
   projectRows.map((p) => ({
     id: p.id,
@@ -85,7 +90,7 @@ export const projectOptions = (): ProjectOption[] =>
         : p.amountGranted <= 0 ? 'لم يُحجز له مخصص'
           : p.statusGroup === 'في الدراسة' ? 'ما زال في الدراسة، ولم يكتمل اعتماده'
             : p.statusGroup === 'معتذر عنه' ? 'معتذر عنه'
-              : '',
+              : conditionGate(p.id),
   }))
 
 export const projectById = (id: string): ProjectRow | undefined =>

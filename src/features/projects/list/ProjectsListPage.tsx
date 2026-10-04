@@ -18,6 +18,7 @@ import {
 } from '@/data/mock/projects'
 import { useRole } from '@/hooks/useRole'
 import { assignSupervisor, flowOf, recommendMany } from '@/data/intake/flow'
+import { decideMany } from '@/data/approvals/store'
 import { ROUTES } from '@/app/routes'
 import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
@@ -78,12 +79,13 @@ const BULK_RECOMMEND: Record<string, 'approve' | 'reject'> = {
 }
 
 const BULK_OF: Record<string, BulkDecision> = {
-  'اعتماد': 'approve',
   'طلب استكمال': 'complete',
-  'اعتذار': 'decline',
-  'رفع للجنة التنفيذية': 'escalate',
-  'رفع لمجلس الأمناء': 'escalate',
 }
+
+/* Decisions above the supervisor run through the approval path, one project at a time with its own
+   guards (cap, entity limits, hold, mandatory notes) · a recorded decision, never undone from here
+   (5.4.21). A recommendation to approve needs its plan choice, so it stays on the project page. */
+const BULK_APPROVAL = ['توصية بالرفض', 'رفض نهائي', 'إعادة للمشرف', 'اعتماد', 'إحالة للجنة التنفيذية', 'إعادة لمدير المنح', 'اعتذار']
 
 /** Default filter order — matches the `FILTER_DEFS` order inside the component. */
 const FILTER_KEYS = [
@@ -317,7 +319,20 @@ export default function ProjectsListPage() {
     bump((n) => n + 1)
   }
 
-  const bulkActions = role.actions.filter((a) => BULK_OF[a.label] || BULK_RECOMMEND[a.label])
+  const bulkActions = role.actions.filter((a) => BULK_OF[a.label] || BULK_RECOMMEND[a.label] || BULK_APPROVAL.includes(a.label))
+  const [bulkNote, setBulkNote] = useState('')
+
+  const runApproval = (label: string) => {
+    if (selected.size === 0 || !bulkNote.trim()) return
+    const { done, held } = decideMany([...selected], label, bulkNote.trim(), role.key, user.name)
+    setLastBulk({
+      text: `${label}: نُفِّذ على ${units.project(done.length)}${held.length ? ` · بقي ${units.project(held.length)} (${held[0]!.why})` : ''}`,
+      undo: undefined,
+    })
+    setSelected(new Set())
+    setBulkNote('')
+    bump((n) => n + 1)
+  }
 
   /* Bulk recommendation · each project forwards only if its study passes the guard and records
      the same recommendation (3.4.22); the rest stay with a reason, and the bar says how many */
@@ -722,11 +737,18 @@ export default function ProjectsListPage() {
           >
             {/* A decision on the whole batch. The actions are the same role actions as on
                 the project page, minus anything that needs a per-project target. */}
+            {bulkActions.some((a) => BULK_APPROVAL.includes(a.label)) && (
+              <span className="fld bulk-note">
+                <input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="مبررات القرار · تُسجَّل على كل مشروع" aria-label="مبررات القرار الجماعي" />
+              </span>
+            )}
             {bulkActions.map((a) => (
               <button
                 key={a.label}
                 className={`btn btn-sm ${a.kind}`}
-                onClick={() => (BULK_RECOMMEND[a.label] ? runRecommend(a.label) : runBulk(BULK_OF[a.label]!, a.label))}
+                disabled={BULK_APPROVAL.includes(a.label) && !bulkNote.trim()}
+                title={BULK_APPROVAL.includes(a.label) && !bulkNote.trim() ? 'اكتب مبررات القرار أولًا' : undefined}
+                onClick={() => (BULK_RECOMMEND[a.label] ? runRecommend(a.label) : BULK_APPROVAL.includes(a.label) ? runApproval(a.label) : runBulk(BULK_OF[a.label]!, a.label))}
               >
                 {a.label}
               </button>

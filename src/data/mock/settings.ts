@@ -210,6 +210,11 @@ export const SETTING_MODULES: SettingModule[] = [
         count: APPROVAL_MATRIX.length,
       },
       {
+        key: 'path', tab: 'path', label: 'مسار الاعتماد', kind: 'rule', owner: 'إدارة المنح',
+        where: 'قرار مدير المنح والمدير التنفيذي · جلسات اللجنة والمجلس · حدود الجهة',
+        count: 8,
+      },
+      {
         key: 'limits', tab: 'limits', label: 'الحدود المالية والزمنية', kind: 'rule', owner: 'الإدارة المالية',
         where: 'إنشاء طلب الصرف · جدول الدفعات · التصعيد',
         count: MONEY_LIMITS.length,

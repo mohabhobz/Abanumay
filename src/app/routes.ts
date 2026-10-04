@@ -93,6 +93,11 @@ export const ROUTES = {
   /** Consolidated report across budgets (1.4.6) */
   budgetReport: '/budget/report',
 
+  /** Executive committee and board · referred projects, sessions, votes, minutes (BPD-006 · BPD-007) */
+  committee: '/approvals/committee',
+  board: '/approvals/board',
+  approvalSession: (id: string) => `/approvals/sessions/${id}`,
+
   agreements: '/agreements',
   agreement: (id: string) => `/agreements/${id}`,
   /**
@@ -176,6 +181,8 @@ export const PROJECT_TABS = [
   { slug: 'data', label: 'بيانات المشروع' },
   /* Procedure 3 · the supervisor's study, its criteria, budget and the consultant */
   { slug: 'study', label: 'الدراسة' },
+  /* Procedures 4–7 · the decision file on the approval path */
+  { slug: 'approval', label: 'الاعتماد' },
   { slug: 'entity', label: 'الجهة' },
   { slug: 'history', label: 'المشاريع السابقة' },
   { slug: 'agreement', label: 'الاتفاقية' },

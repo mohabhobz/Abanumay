@@ -64,10 +64,10 @@ export const ROLES: Role[] = [
     financialAuthority: 250_000,
     lens: 'team',
     actions: [
-      { label: 'اعتماد', kind: 'btn-p' },
-      { label: 'رفع للجنة التنفيذية', kind: 'btn-2' },
+      { label: 'توصية بالموافقة', kind: 'btn-p' },
+      { label: 'توصية بالرفض', kind: 'btn-2' },
       { label: 'إعادة للمشرف', kind: 'btn-2' },
-      { label: 'اعتذار', kind: 'btn-d' },
+      { label: 'رفض نهائي', kind: 'btn-d' },
     ],
   },
   {
@@ -80,7 +80,7 @@ export const ROLES: Role[] = [
     lens: 'portfolio',
     actions: [
       { label: 'اعتماد', kind: 'btn-p' },
-      { label: 'رفع لمجلس الأمناء', kind: 'btn-2' },
+      { label: 'إحالة للجنة التنفيذية', kind: 'btn-2' },
       { label: 'إعادة لمدير المنح', kind: 'btn-2' },
       { label: 'اعتذار', kind: 'btn-d' },
     ],

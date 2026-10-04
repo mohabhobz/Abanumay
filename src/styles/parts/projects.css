@@ -101,3 +101,31 @@
 @media (max-width:720px){
   .stdy-list li{flex-wrap:wrap}
 }
+
+/* Approval path (BPD-004–007) · the decision file, sessions and votes */
+.apv-row{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
+.apv-row>.fld{flex:1;min-width:12rem}
+.apv-rec{display:flex;flex-direction:column;gap:var(--sp-2);padding-block:var(--sp-3)}
+.apv-rec+.apv-rec{box-shadow:inset 0 1px 0 var(--edge-1)}
+.apv-rec-h{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.apv-rec-h b{font-weight:600;color:var(--t1)}
+.apv-scores{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.apv-scores li{display:flex;align-items:baseline;gap:var(--sp-3);flex-wrap:wrap}
+.apv-sig{list-style:none;margin:var(--sp-2) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.apv-sig li{display:flex;align-items:flex-start;gap:var(--sp-2);line-height:var(--lh-text)}
+.apv-sig li>svg{flex:none;margin-top:var(--sp-1)}
+.apv-sig li.ok>svg{color:var(--ok)}
+.apv-sig li.no>svg{color:var(--warn)}
+.apv-list{list-style:none;margin:var(--sp-2) 0;padding:0;display:flex;flex-direction:column}
+.apv-list>li{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;padding-block:var(--sp-3);min-width:0}
+.apv-list>li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.apv-t{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0;line-height:var(--lh-text)}
+.apv-t b{font-weight:600;color:var(--t1)}
+.apv-members{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:var(--sp-3) var(--sp-6)}
+.apv-votes{list-style:none;margin:var(--sp-2) 0;padding:0;display:flex;flex-direction:column}
+.apv-votes>li{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;padding-block:var(--sp-2)}
+.apv-votes>li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.apv-dec{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-3)}
+.apv-dec>.btn{align-self:flex-start}
+/* The bulk decision's shared justification · sits in the bulk bar beside the buttons */
+.bulk-note{min-width:14rem;flex:1}
