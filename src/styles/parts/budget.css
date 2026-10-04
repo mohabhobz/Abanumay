@@ -69,3 +69,10 @@
 /* Consolidated report · a budget's share under its row, set in from the start */
 .bgrep-sub td{color:var(--t2)}
 .bgrep-sub td:first-child{padding-inline-start:var(--sp-8)}
+
+/* Project funding card · the shares table scrolls on a narrow screen, the history sits under it */
+.fnd-scroll{overflow-x:auto;min-width:0}
+.fnd-h{margin:var(--sp-5) 0 0;font-size:var(--fs-3);font-weight:600;color:var(--t1);display:flex;align-items:baseline;gap:var(--sp-2)}
+.btree-hs{display:block;font-size:var(--fs-1);line-height:var(--lh-ui)}
+.fnd-c1{width:38%}
+.fnd-scroll .tbl{min-width:44rem}

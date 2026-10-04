@@ -17,6 +17,7 @@ import {
 } from '@/data/mock/payEntity'
 import type { PayRequest } from '@/types/domain'
 import { ActionDock, actionsFor } from './ActionDock'
+import { isPaidRef, recordPaid, undoPaid } from '@/data/budget/store'
 import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
@@ -605,7 +606,12 @@ export default function RequestPage() {
             note={note}
             onNote={setNote}
             taken={taken}
-            onTake={setTaken}
+            onTake={(v) => {
+              /* 1.4.30 · the transfer turns the held amount paid on each funding share · undone with the action */
+              if (v === 'تنفيذ التحويل') recordPaid(r.projectId, r.asked, r.id, user.name)
+              else if (!v && taken === 'تنفيذ التحويل' && isPaidRef(r.id)) undoPaid(r.id, user.name)
+              setTaken(v)
+            }}
           />
         )}
       </div>

@@ -599,6 +599,11 @@ const log = (c: CloseRow, by: string, what: string) => {
   c.audit.push({ at: TODAY, by, what })
 }
 
+/** Registered by the budget store · the unused balance goes back to the project's lines on final
+    closing (1.4.32) · a registry, so this mock doesn't import the store */
+let closeHook: ((projectId: string, by: string) => void) | null = null
+export const setCloseHook = (f: (projectId: string, by: string) => void) => { closeHook = f }
+
 /** Grants supervisor opens the closing-report request · step 1 */
 export const openClose = (projectId: string): string => {
   const has = closeOfProject(projectId)
@@ -683,6 +688,7 @@ export const approveEval = (c: CloseRow, by: string): void => {
   c.closedAt = TODAY
   c.hoursInStage = 0
   log(c, by, 'اعتماد التقييم · الإغلاق النهائي')
+  closeHook?.(c.projectId, by)
 }
 
 /* Performance indicators · 11.7 · four */

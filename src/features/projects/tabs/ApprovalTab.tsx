@@ -11,7 +11,8 @@ import { CRITERIA, studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { fitOf, similarProjects } from '@/data/intake/insight'
 import { docSources, moneyOf } from '@/data/mock/budgetTree'
-import { FINANCE_ACTOR, shareSay } from '@/data/budget/store'
+import { FINANCE_ACTOR, HOLD_STAGE_SAY, shareSay } from '@/data/budget/store'
+import { FundingCard } from '@/features/funding/FundingCard'
 import { readRole, roleByKey } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import {
@@ -86,7 +87,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         <KV rows={[
           { k: 'صاحب القرار حسب المبلغ', v: <>{decider.role}{decider.upTo !== null && <span className="sub"> · حتى <Num>{decider.upTo}</Num></span>}</> },
           { k: 'حد المدير التنفيذي بالتجاوز المسموح', v: <><Num>{levelCap('exec')}</Num> <span className="sub">({pct(APPROVAL_RULES.execOverPct)})</span></> },
-          { k: 'الحجز', v: <>{HOLD_SAY[f.hold]}{hold?.node && <span className="sub"> · {hold.node.label} · <Money sm>{hold.link.amount}</Money></span>}</> },
+          { k: 'الحجز', v: <>{hold ? HOLD_STAGE_SAY[hold.link.stage] : HOLD_SAY[f.hold]}{hold?.node && <span className="sub"> · {hold.link.shares.length > 1 ? `${nf.format(hold.link.shares.length)} بنود` : hold.node.label} · <Money sm>{hold.link.amount}</Money></span>}</> },
           ...(f.needsPlan !== undefined ? [{ k: 'الخطة', v: f.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة' }] : [{ k: 'الخطة', v: <span className="sub">{planSuggested(row) ? 'مقترح: يتطلب خطة (وفق القاعدة)' : 'مقترح: لا يتطلب خطة'}</span> }]),
           ...(f.decided ? [{ k: 'القرار النهائي', v: <>{HOLDER_LABEL[f.decided.level]} · <Person name={f.decided.by} /> · <DateText>{f.decided.at}</DateText></> }] : []),
           ...(f.awaitingReview ? [{ k: 'بانتظار استكمال المراجعة', v: <span className="bad">{f.awaitingReview.note}</span> }] : []),
@@ -99,6 +100,8 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         )}
         <p className="sub cnote">لا يُحذف القرار بعد صدوره · يُعاد فتحه بإجراء رسمي موثّق في السجل (5.4.21).</p>
       </Glass>
+
+      <FundingCard row={row} />
 
       <Glass>
         <Head title="ملف المراجعة" meta={<span className="sub">التوصيات السابقة كما صدرت</span>} />

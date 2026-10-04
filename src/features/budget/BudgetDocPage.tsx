@@ -18,7 +18,7 @@ import { APPROVAL_MATRIX } from '@/data/approval'
 import { readRole, roleByKey } from '@/data/roles'
 import {
   DIRECTIONS, FINANCE_ACTOR, decideBudget, deleteBlock, directionById, docOf, eventsOf, headIssues, mayAct, nextDocId,
-  ownersOf, saveBudget, shareSay, sourceName, stepOf, submitBudget, useBudget, whoActs,
+  holdSplit, ownersOf, saveBudget, shareSay, sourceName, stepOf, submitBudget, useBudget, whoActs,
 } from '@/data/budget/store'
 import { BUDGET_RULES, LEVEL_SAY, type Level } from '@/data/budget/rules'
 import { NodeModal } from './doc/NodeModal'
@@ -415,6 +415,7 @@ export default function BudgetDocPage() {
                     const bad = issues.some((i) => i.nodeId === x.id)
                     const out = outlineOf(nodes, x.id)
                     const m = moneyOf(nodes, x.id)
+                    const sp = holdSplit(doc, x.id)
                     const block = x.parentId === null ? '' : deleteBlock(doc, x.id)
                     const owners = ownersOf(x)
                     const dir = x.directionId ? directionById(x.directionId) : undefined
@@ -452,7 +453,11 @@ export default function BudgetDocPage() {
                         {/* Held, committed and paid live on the leaf; a parent shows its children's
                             sums, and available is allocated − held − committed − paid. An inactive line
                             keeps them (1.4.38) · it only stops taking new projects. */}
-                        <span className="tnum" data-k="المحتجز"><Num>{m.held}</Num></span>
+                        {/* 1.4.41 · the held figure split by stage · initial while the project climbs the path */}
+                        <span className="tnum" data-k="المحتجز" title={sp.initial ? `مبدئي ${nf.format(sp.initial)} · نهائي ${nf.format(sp.final)}` : undefined}>
+                          <Num>{m.held}</Num>
+                          {sp.initial > 0 && <span className="sub btree-hs">مبدئي <Num>{sp.initial}</Num></span>}
+                        </span>
                         <span className="tnum" data-k="الملتزم به">{m.committed ? <Num>{m.committed}</Num> : <Nil />}</span>
                         <span className="tnum" data-k="المدفوع"><Num>{m.paid}</Num></span>
                         <span className="tnum" data-k="المتاح">{x.active ? <Num>{m.available}</Num> : <Nil />}</span>

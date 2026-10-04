@@ -11,7 +11,7 @@ import type { RoleKey } from '@/data/roles'
 import { TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
 import { flowOf, referConsultant } from '@/data/intake/flow'
 import { expiredMandatory } from '@/data/entities/store'
-import { linkOf, unlinkProject, usableLines, seedLink, directionById, docOf } from '@/data/budget/store'
+import { linkOf, unlinkProject, usableLines, directionById, docOf, fundingIssues, finalizeHold } from '@/data/budget/store'
 import { nf } from '@/lib/format'
 import { setConditionGate } from '@/data/mock/agreementNew'
 import { ROUTES } from '@/app/routes'
@@ -225,8 +225,10 @@ export function upBlockers(p: ProjectRow, level: Holder, approving: boolean): st
   const eb = entityBlock(p)
   if (eb) out.push(eb)
   if (openNotes(f).length) out.push(`${nf.format(openNotes(f).length)} ملاحظة إلزامية لم تُعالج · لا إحالة لمستوى أعلى قبلها (5.4.14)`)
+  /* The funding is checked on every approval, and again before the project goes up to the
+     committee or the board (4.4.11 · 5.4.5 · 6.2.10 · 7.2.2) */
+  if (approving || level === 'exec' || level === 'committee') out.push(...fundingIssues(p.id, p.amountRequested))
   if (approving) {
-    if (!linkOf(p.id)) out.push('لا حجز على الميزانية · اربط المشروع ببند الميزانية أولًا (4.2.12)')
     if (level !== 'manager' && APPROVAL_RULES.requireStrategy) {
       const s = strategyOf(p)
       if (!s.ok) out.push(`لا يتوافق مع توجهات المؤسسة: ${s.say}`)
@@ -609,10 +611,8 @@ function seed() {
     if (p.holder !== 'manager') {
       f.recs.unshift({ level: 'manager', verdict: 'recommend-approve', note: 'الدراسة مكتملة، والتكلفة في حدود متوسط المجال، والجهة نشطة وسجلها جيد', by: 'عبدالله الدوسري', at: at(6), needsPlan: planSuggested(p) })
       f.needsPlan = planSuggested(p)
-      /* The manager's recommendation held the amount · seeded on the closest funded goal */
-      const line = usableLines('fy-2026').find((l) => l.node.label === p.goal && l.free >= p.amountRequested)
-        ?? usableLines('fy-2026').filter((l) => l.free >= p.amountRequested).sort((a, b) => b.free - a.free)[0]
-      if (line) seedLink({ projectId: p.id, projectName: p.name, docId: line.doc.id, nodeId: line.node.id, amount: p.amountRequested, by: 'عبدالله الدوسري' })
+      /* The manager's recommendation held the amount · the budget store seeds that hold, before
+         its saved operations replay (`seedStudyHolds`) */
       f.hold = 'initial'
     }
     if (p.holder === 'committee' || p.holder === 'board') {
@@ -657,6 +657,12 @@ hydrate()
 const id6 = () => Math.random().toString(36).slice(2, 8)
 
 /** Run a decision from the bar · returns the reasons it can't run, which the bar shows */
+/** The last authority approved · the budget hold turns final with it (1.4.28 · 5.4.9) */
+const settleHold = (id: string, me: string) => {
+  const l = linkOf(id)
+  if (l && FLOWS.get(id)?.hold === 'final' && l.stage !== 'final' && l.stage !== 'closed') finalizeHold(id, me)
+}
+
 export function decide(p: ProjectRow, level: Holder, label: string, note: string, choice: string, me: string): string[] {
   if (p.stage !== 'دراسة المشروع' || (p.holder ?? 'supervisor') !== level) return ['المشروع ليس عند هذه المحطة']
   const at = now()
@@ -665,16 +671,16 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
   const block = (approving: boolean) => upBlockers(p, level, approving)
   switch (label) {
     case 'إحالة لصاحب صلاحية بديل': run({ op: 'conflict', id: p.id, level, reason: note, by: me, at }); return []
-    case 'اعتماد نهائي': { const b = block(true); if (b.length) return b; if (!choice) return ['حدّد إن كان المشروع يتطلب خطة']; go('final-approve', { needsPlan: choice === 'yes' }); return [] }
+    case 'اعتماد نهائي': { const b = block(true); if (b.length) return b; if (!choice) return ['حدّد إن كان المشروع يتطلب خطة']; go('final-approve', { needsPlan: choice === 'yes' }); settleHold(p.id, me); return [] }
     case 'توصية بالموافقة': { const b = block(true); if (b.length) return b; if (!choice) return ['حدّد إن كان المشروع يتطلب خطة (4.2.3)']; go('recommend-approve', { needsPlan: choice === 'yes' }); return [] }
     case 'توصية بالرفض': { const b = block(false); if (b.length) return b; go('recommend-reject'); return [] }
     case 'رفض نهائي': {
       if (p.amountRequested > APPROVAL_RULES.managerRejectUpTo) return ['المبلغ فوق حد الرفض النهائي لمدير المنح · يُرفع بتوصية للمدير التنفيذي (4.2.15)']
-      if (linkOf(p.id)) unlinkProject(p.id, me)
+      if (linkOf(p.id)) unlinkProject(p.id, me, 'رفض نهائي من مدير المنح')
       go('final-reject'); return []
     }
     case 'إعادة للمشرف': {
-      if (linkOf(p.id)) unlinkProject(p.id, me)
+      if (linkOf(p.id)) unlinkProject(p.id, me, 'إعادة المشروع للمشرف (4.4.17)')
       const target = choice === 'consultant' ? 'consultant' : 'supervisor'
       go('return', { target })
       if (target === 'consultant') { const r = flowOf(p.id).referral; if (r) referConsultant(p.id, r.consultant, me) }
@@ -685,11 +691,11 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
       if (p.amountRequested > levelCap('exec')) return [`المبلغ فوق حد المدير التنفيذي (${nf.format(levelCap('exec'))}) · الإحالة للجنة (5.4.11)`]
       const lim = entityLimitBlock(p, 'exec'); if (lim) return [lim, 'تُحال للجنة التنفيذية']
       const b = block(true); if (b.length) return b
-      go('approve'); return []
+      go('approve'); settleHold(p.id, me); return []
     }
     case 'إحالة للجنة التنفيذية': { const b = block(false); if (b.length) return b; go('refer'); return [] }
     case 'إعادة لمدير المنح': go('return', { target: 'manager' }); return []
-    case 'اعتذار': if (linkOf(p.id)) unlinkProject(p.id, me); go('reject'); return []
+    case 'اعتذار': if (linkOf(p.id)) unlinkProject(p.id, me, 'اعتذار المدير التنفيذي'); go('reject'); return []
     case 'تأكيد الاعتماد': {
       const f = appFlowOf(p.id)
       if (openNotes(f).length) return ['ملاحظات إلزامية لم تُعالج']
@@ -717,8 +723,11 @@ export const castVote = (sessionId: string, projectId: string, member: string, v
 export const attachMinutes = (sessionId: string, projectId: string, file: string, by: string) => run({ op: 'minutes', sessionId, projectId, file, by, at: now() })
 export const decideInSession = (sessionId: string, projectId: string, outcome: Outcome, note: string, by: string, target?: Holder, payPlan?: SessionItem['payPlan']) => {
   const p = row(projectId)
-  if (p && (outcome === 'reject' || (outcome === 'return' && target === 'supervisor')) && linkOf(projectId)) unlinkProject(projectId, by)
+  if (p && (outcome === 'reject' || (outcome === 'return' && target === 'supervisor')) && linkOf(projectId)) {
+    unlinkProject(projectId, by, outcome === 'reject' ? 'رفض في الجلسة' : 'إعادة للدراسة أو لتعديل جوهري · يُعاد التحقق عند العودة (6.4.9)')
+  }
   run({ op: 'sessionDecide', sessionId, projectId, outcome, target, note, payPlan, by, at: now() })
+  settleHold(projectId, by)
 }
 export const closeSession = (sessionId: string, by: string) => run({ op: 'sessionClose', sessionId, by, at: now() })
 

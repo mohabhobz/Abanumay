@@ -29,6 +29,12 @@ export interface BudgetRules {
   requireFunding: boolean
   /** The spending limit of each level · the largest disbursement it may approve (1.1.input-6) */
   spendCaps: Record<Level, number | null>
+  /** 5.4.19 · when a project's link holds money on its lines · at the grants manager's
+      recommendation (an initial hold that turns final on approval), or only at the final approval
+      (the link is checked and planned until then) */
+  holdAt: 'recommend' | 'approval'
+  /** 1.4.56 · who may change a project's budget link after its approval */
+  relinkBy: RoleKey[]
 }
 
 const DEFAULT: BudgetRules = {
@@ -41,6 +47,8 @@ const DEFAULT: BudgetRules = {
   attachAbove: 500_000,
   requireFunding: true,
   spendCaps: { manager: 100_000, exec: 500_000, committee: 2_000_000, board: null },
+  holdAt: 'recommend',
+  relinkBy: ['grants-manager', 'ceo'],
 }
 
 export const BUDGET_RULES: BudgetRules = readJson(CFG.budgetRules, DEFAULT)

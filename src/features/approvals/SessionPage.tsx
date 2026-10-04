@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
+import { HOLD_STAGE_SAY, useBudget } from '@/data/budget/store'
+import { BudgetLinkAction } from '@/features/budget/BudgetLink'
 import { assistFor } from '@/data/mock/assistant'
 import { isolate, nf, pct } from '@/lib/format'
 import { projectRows } from '@/data/mock/projects'
@@ -33,6 +35,7 @@ export default function SessionPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   useApprovals()
+  useBudget()
   const s = id ? sessionById(id) : undefined
   const role = readRole()
   const me = roleByKey(role).name
@@ -136,7 +139,18 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
       />
       <KV rows={[
         { k: 'المبلغ', v: <><Money sm>{p.amountRequested}</Money>{above && <span className="bad"> · فوق حد {HOLDER_LABEL[s.body]}</span>}</> },
-        { k: 'الحجز', v: hold?.node ? <>{f.hold === 'final' ? 'نهائي' : 'مبدئي'} · {hold.node.label}</> : <span className="bad">لا حجز · يُمنع العرض (6.2.10)</span> },
+        {
+          k: 'الارتباط المالي',
+          v: (
+            <span className="rowf gp-2">
+              {hold?.node
+                ? <span>{HOLD_STAGE_SAY[hold.link.stage]} · {hold.link.shares.length > 1 ? `${nf.format(hold.link.shares.length)} بنود` : hold.node.label}</span>
+                : <span className="bad">لا حجز · يُمنع العرض (6.2.10)</span>}
+              {/* 6.4.2 · 7.4.2 · the body reviews the link and may change it before it decides */}
+              {may && !it.outcome && <BudgetLinkAction project={{ id: p.id, name: p.name, year: p.year, goal: p.goal, amount: p.amountRequested }} label={hold ? 'راجع الارتباط' : 'ربط بالميزانية'} />}
+            </span>
+          ),
+        },
         ...(last ? [{ k: 'آخر توصية', v: <>{HOLDER_LABEL[last.level]} · {VERDICT_SAY[last.verdict]} · {last.note}</> }] : []),
         { k: 'التوافق', v: <span className={strat.ok ? '' : 'bad'}>{strat.say}</span> },
       ]} />

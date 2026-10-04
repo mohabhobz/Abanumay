@@ -187,12 +187,76 @@ const PLANS = new Map<string, FundingPlan>()
 export const planOf = (projectId: string): FundingPlan | undefined => PLANS.get(projectId)
 export const allPlans = (): FundingPlan[] => [...PLANS.values()]
 
-/* ── Project links · a single-year project held on one line ── */
+/* ── Project funding links (BPD-004 – BPD-007 · 1.4.7 – 1.4.15 · 1.4.27 – 1.4.32 · 1.4.56 – 1.4.58) ──
 
-export interface LineLink { projectId: string; projectName: string; docId: string; nodeId: string; amount: number; by: string; at: string }
+   A single-year project is funded by one or more shares, each a leaf on an approved budget with its
+   own amount; the shares add up to the project's funding (1.4.7 – 1.4.9). Each share is held, paid
+   and released on its own line, so every budget reports its part alone (1.4.12 · 1.4.29 · 1.4.30).
+
+   The hold is «initial» while the project climbs the approval path and «final» once the last
+   authority approves (1.4.27 · 1.4.28 · 5.4.10). When the financial policy holds at approval only
+   (5.4.19), the link is «planned»: checked against the balance, not yet held. «closed» is a project
+   whose unused balance went back to its lines (1.4.32). */
+
+export interface LinkShare { docId: string; nodeId: string; amount: number; paid: number }
+export type HoldStage = 'planned' | 'initial' | 'final' | 'closed'
+export const HOLD_STAGE_SAY: Record<HoldStage, string> = {
+  planned: 'ربط بلا حجز', initial: 'حجز مبدئي', final: 'حجز نهائي', closed: 'أُقفل وأُعيد الوفر',
+}
+export interface LineLink {
+  projectId: string
+  projectName: string
+  shares: LinkShare[]
+  /** The project's funding · the sum of the shares */
+  amount: number
+  stage: HoldStage
+  by: string
+  at: string
+  /** The first share · for readers that show one line */
+  docId: string
+  nodeId: string
+}
+/** What a link request carries · one share, or several */
+export interface LinkInput {
+  projectId: string
+  projectName: string
+  by: string
+  shares?: { docId: string; nodeId: string; amount: number }[]
+  docId?: string
+  nodeId?: string
+  amount?: number
+}
+export type LinkChangeKind = 'link' | 'split' | 'final' | 'relink' | 'release' | 'paid' | 'unpaid' | 'savings'
+export const LINK_CHANGE_SAY: Record<LinkChangeKind, string> = {
+  link: 'ربط وحجز', split: 'إعادة توزيع', final: 'تثبيت الحجز', relink: 'تعديل الارتباط بعد الاعتماد',
+  release: 'تحرير الحجز', paid: 'صرف', unpaid: 'تراجع عن صرف', savings: 'إعادة الوفر',
+}
+/** One row of a project's link history (1.4.58) · kept after the link itself is released */
+export interface LinkChange {
+  at: string
+  by: string
+  kind: LinkChangeKind
+  text: string
+  reason?: string
+  from?: LinkShare[]
+  to?: LinkShare[]
+  /** Paid money moved from the old lines to the new ones on a relink */
+  moved?: number
+  amount?: number
+}
+
 const LINKS = new Map<string, LineLink>()
+const LINK_LOG = new Map<string, LinkChange[]>()
 export const linkOf = (projectId: string): LineLink | undefined => LINKS.get(projectId)
 export const allLinks = (): LineLink[] => [...LINKS.values()]
+export const linkHistory = (projectId: string): LinkChange[] => LINK_LOG.get(projectId) ?? []
+const logLink = (projectId: string, c: LinkChange) => {
+  const l = LINK_LOG.get(projectId) ?? []
+  l.unshift(c)
+  LINK_LOG.set(projectId, l)
+}
+const sharesOf = (i: LinkInput): { docId: string; nodeId: string; amount: number }[] =>
+  i.shares?.length ? i.shares : i.docId && i.nodeId ? [{ docId: i.docId, nodeId: i.nodeId, amount: i.amount ?? 0 }] : []
 
 /* ── Notifications the budget raises · read by the drawer ── */
 
@@ -269,7 +333,7 @@ export function lineDeps(d: BudgetDoc, nodeId: string): LineDeps {
   const sub = [nodeId, ...d.nodes.filter((x) => isUnder(d.id, x.id, nodeId)).map((x) => x.id)]
   const m = moneyOf(d.nodes, nodeId)
   const projects = new Set<string>()
-  for (const l of LINKS.values()) if (l.docId === d.id && sub.includes(l.nodeId)) projects.add(l.projectName)
+  for (const l of LINKS.values()) if (l.shares.some((x) => x.docId === d.id && sub.includes(x.nodeId))) projects.add(l.projectName)
   for (const p of PLANS.values()) for (const y of p.years) for (const s of y.shares) if (s.docId === d.id && sub.includes(s.nodeId)) projects.add(p.projectName)
   for (const p of projectsOnLine(d, nodeId)) projects.add(p)
   return {
@@ -354,8 +418,12 @@ type Op = { at: string } & (
   | { op: 'docDecide'; id: string; outcome: 'approve' | 'return'; note: string; by: string }
   | { op: 'lineStatus'; docId: string; nodeId: string; active: boolean; reason: string; by: string }
   | { op: 'lineOwner'; docId: string; nodeId: string; owners: string[]; by: string }
-  | { op: 'link'; link: Omit<LineLink, 'at'> }
-  | { op: 'unlink'; projectId: string; by: string }
+  | { op: 'link'; link: LinkInput; stage?: HoldStage; reason?: string }
+  | { op: 'unlink'; projectId: string; by: string; reason?: string }
+  | { op: 'holdFinal'; projectId: string; by: string }
+  | { op: 'linkPaid'; projectId: string; amount: number; ref: string; by: string }
+  | { op: 'linkUnpaid'; ref: string; by: string }
+  | { op: 'linkClose'; projectId: string; by: string; note: string }
   | { op: 'reqSave'; req: Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt' | 'result'>; send: boolean }
   | { op: 'reqDecide'; id: string; outcome: 'approve' | 'return' | 'reject'; note: string; by: string }
   | { op: 'planSave'; plan: Omit<FundingPlan, 'at' | 'version'> }
@@ -500,6 +568,20 @@ const commit = (d: BudgetDoc, nodeId: string, amount: number, at: string, by: st
   n.committed = Math.max(0, before + amount)
   move({ at, docId: d.id, nodeId, kind: amount >= 0 ? 'commit' : 'uncommit', amount: Math.abs(amount), before, after: n.committed, by, ref })
 }
+
+/** Money leaving a line for a project · hold already released by the caller */
+const payOn = (d: BudgetDoc, nodeId: string, amount: number, at: string, by: string, ref: string, note?: string) => {
+  const n = nodeOf(d, nodeId)
+  if (!n) return
+  freezeLine(n)
+  const before = n.paid ?? 0
+  n.paid = Math.max(0, before + amount)
+  restate(n)
+  move({ at, docId: d.id, nodeId, kind: 'paid', amount: Math.abs(amount), before, after: n.paid, by, ref, note })
+}
+
+/** Which shares each recorded payment touched · so its undo puts the money back where it came from */
+const PAID_REFS = new Map<string, { projectId: string; parts: { i: number; x: number }[] }>()
 
 /** Paid on a project within a fiscal year · from the disbursement requests (1.4.52) */
 export const paidInYear = (projectId: string, yearName: string): number =>
@@ -713,23 +795,140 @@ const apply = (o: Op) => {
       return
     }
     case 'link': {
-      const d = docOf(o.link.docId)
-      if (!d || !isLiveBudget(d) || !lineUsable(d.nodes, o.link.nodeId)) return
-      const prev = LINKS.get(o.link.projectId)
-      if (prev) {
-        const pd = docOf(prev.docId)
-        if (pd) hold(pd, prev.nodeId, -prev.amount, o.at, o.link.by, 'release', prev.projectId, 'تغيير بند الربط')
+      const shares = sharesOf(o.link)
+      if (!shares.length || linkIssues(o.link).length) return
+      const id = o.link.projectId
+      const prev = LINKS.get(id)
+      const stage: HoldStage = prev?.stage === 'final' ? 'final' : o.stage ?? 'initial'
+      const paidBefore = prev ? prev.shares.reduce((a, x) => a + x.paid, 0) : 0
+      /* The old shares leave whole · their hold is released and what was paid on them moves with
+         the project to the new lines (1.4.56 · 1.4.57) */
+      if (prev && prev.stage !== 'planned') {
+        for (const x of prev.shares) {
+          const pd = docOf(x.docId)
+          if (!pd) continue
+          hold(pd, x.nodeId, -(x.amount - x.paid), o.at, o.link.by, 'release', id, prev.stage === 'final' ? 'تعديل الارتباط بعد الاعتماد' : 'إعادة توزيع الربط')
+          if (x.paid) payOn(pd, x.nodeId, -x.paid, o.at, o.link.by, id, 'نُقل المصروف إلى الارتباط الجديد')
+        }
       }
-      hold(d, o.link.nodeId, o.link.amount, o.at, o.link.by, 'hold', o.link.projectId, o.link.projectName)
-      LINKS.set(o.link.projectId, { ...o.link, at: o.at })
+      let left = paidBefore
+      const next: LinkShare[] = shares.map((x) => {
+        const paid = Math.min(x.amount, left)
+        left -= paid
+        return { docId: x.docId, nodeId: x.nodeId, amount: x.amount, paid }
+      })
+      if (stage !== 'planned') {
+        for (const x of next) {
+          const d = docOf(x.docId)!
+          hold(d, x.nodeId, x.amount, o.at, o.link.by, 'hold', id, o.link.projectName)
+          if (x.paid) {
+            hold(d, x.nodeId, -x.paid, o.at, o.link.by, 'release', id, 'مصروف منقول من الارتباط السابق')
+            payOn(d, x.nodeId, x.paid, o.at, o.link.by, id, 'مصروف منقول من الارتباط السابق')
+          }
+        }
+      }
+      const amount = next.reduce((a, x) => a + x.amount, 0)
+      LINKS.set(id, { projectId: id, projectName: o.link.projectName, shares: next, amount, stage, by: o.link.by, at: o.at, docId: next[0].docId, nodeId: next[0].nodeId })
+      const kind: LinkChangeKind = !prev ? 'link' : prev.stage === 'final' ? 'relink' : 'split'
+      logLink(id, {
+        at: o.at, by: o.link.by, kind, reason: o.reason, from: prev?.shares.map((x) => ({ ...x })), to: next.map((x) => ({ ...x })),
+        moved: kind === 'relink' && paidBefore ? paidBefore : undefined, amount,
+        text: kind === 'link'
+          ? `${stage === 'planned' ? 'رُبط' : 'رُبط وحُجز مبدئيًّا'} على ${next.length > 1 ? `${nf.format(next.length)} بنود` : 'بند واحد'} بمبلغ ${nf.format(amount)}`
+          : kind === 'relink'
+            ? `عُدّل الارتباط بعد الاعتماد · أُلغي الحجز السابق وحُجز ${nf.format(amount)} على الارتباط الجديد${paidBefore ? ` ونُقل المصروف ${nf.format(paidBefore)}` : ''}`
+            : `أُعيد توزيع الارتباط على ${nf.format(next.length)} ${next.length > 1 ? 'بنود' : 'بند'} بمبلغ ${nf.format(amount)}`,
+      })
       return
     }
     case 'unlink': {
       const prev = LINKS.get(o.projectId)
       if (!prev) return
-      const pd = docOf(prev.docId)
-      if (pd) hold(pd, prev.nodeId, -prev.amount, o.at, o.by, 'release', prev.projectId, 'إلغاء الربط')
+      let back = 0
+      if (prev.stage !== 'planned' && prev.stage !== 'closed') {
+        for (const x of prev.shares) {
+          const pd = docOf(x.docId)
+          if (!pd) continue
+          hold(pd, x.nodeId, -(x.amount - x.paid), o.at, o.by, 'release', prev.projectId, o.reason ?? 'إلغاء الربط')
+          back += x.amount - x.paid
+        }
+      }
       LINKS.delete(o.projectId)
+      logLink(o.projectId, {
+        at: o.at, by: o.by, kind: 'release', reason: o.reason, from: prev.shares.map((x) => ({ ...x })), amount: back,
+        text: back ? `حُرّر الحجز وأُعيد ${nf.format(back)} إلى ${prev.shares.length > 1 ? 'بنوده بنفس التوزيع' : 'بنده'}` : 'أُلغي الربط',
+      })
+      return
+    }
+    case 'holdFinal': {
+      const l = LINKS.get(o.projectId)
+      if (!l || l.stage === 'final' || l.stage === 'closed') return
+      if (l.stage === 'planned') {
+        if (l.shares.some((x) => { const d = docOf(x.docId); return !d || freeOf(d, x.nodeId) < x.amount })) return
+        for (const x of l.shares) hold(docOf(x.docId)!, x.nodeId, x.amount, o.at, o.by, 'hold', l.projectId, `${l.projectName} · حجز عند الاعتماد`)
+      }
+      l.stage = 'final'
+      logLink(l.projectId, { at: o.at, by: o.by, kind: 'final', amount: l.amount, text: `ثُبّت الحجز نهائيًّا بمبلغ ${nf.format(l.amount)} عند الاعتماد` })
+      return
+    }
+    case 'linkPaid': {
+      const l = LINKS.get(o.projectId)
+      if (!l || l.stage === 'planned' || l.stage === 'closed' || PAID_REFS.has(o.ref)) return
+      const open = l.shares.map((x) => x.amount - x.paid)
+      const total = open.reduce((a, x) => a + x, 0)
+      const amt = Math.min(o.amount, total)
+      if (amt <= 0) return
+      /* 1.4.30 · each payment splits over the budgets by what each still holds */
+      let left = amt
+      const parts: { i: number; x: number }[] = []
+      l.shares.forEach((sh, i) => {
+        const last = i === l.shares.length - 1
+        const x = Math.min(open[i], last ? left : Math.round(amt * open[i] / total))
+        if (x <= 0) return
+        left -= x
+        const d = docOf(sh.docId)
+        if (d) { hold(d, sh.nodeId, -x, o.at, o.by, 'release', o.ref, 'من المحجوز إلى المصروف'); payOn(d, sh.nodeId, x, o.at, o.by, o.ref, l.projectName) }
+        sh.paid += x
+        parts.push({ i, x })
+      })
+      PAID_REFS.set(o.ref, { projectId: l.projectId, parts })
+      logLink(l.projectId, { at: o.at, by: o.by, kind: 'paid', amount: amt, text: `صُرفت ${nf.format(amt)} (${o.ref})${parts.length > 1 ? ` موزّعة على ${nf.format(parts.length)} بنود` : ''}` })
+      return
+    }
+    case 'linkUnpaid': {
+      const r = PAID_REFS.get(o.ref)
+      const l = r ? LINKS.get(r.projectId) : undefined
+      if (!r || !l) return
+      for (const { i, x } of r.parts) {
+        const sh = l.shares[i]
+        const d = sh ? docOf(sh.docId) : undefined
+        if (!sh || !d) continue
+        payOn(d, sh.nodeId, -x, o.at, o.by, o.ref, 'تراجع عن الصرف')
+        hold(d, sh.nodeId, x, o.at, o.by, 'hold', o.ref, 'تراجع عن الصرف')
+        sh.paid -= x
+      }
+      PAID_REFS.delete(o.ref)
+      logLink(l.projectId, { at: o.at, by: o.by, kind: 'unpaid', text: `أُلغي تسجيل الصرف (${o.ref}) وعاد المبلغ محجوزًا` })
+      return
+    }
+    case 'linkClose': {
+      const l = LINKS.get(o.projectId)
+      if (!l || l.stage === 'closed') return
+      let back = 0
+      if (l.stage !== 'planned') {
+        for (const x of l.shares) {
+          const rest = x.amount - x.paid
+          const d = docOf(x.docId)
+          if (!d || rest <= 0) continue
+          hold(d, x.nodeId, -rest, o.at, o.by, 'release', l.projectId, 'وفر عند إغلاق المشروع')
+          back += rest
+        }
+      }
+      l.stage = 'closed'
+      logLink(l.projectId, {
+        at: o.at, by: o.by, kind: 'savings', amount: back, reason: o.note || undefined,
+        text: back ? `أُغلق المشروع وأُعيد الوفر ${nf.format(back)} إلى ${l.shares.length > 1 ? 'ميزانياته بنفس التوزيع' : 'بنده'}` : 'أُغلق المشروع · لا وفر',
+      })
       return
     }
     case 'reqSave': {
@@ -883,8 +1082,20 @@ function seed() {
   }
 }
 
+/** The holds of projects already past the grants manager in the fixture · on the closest funded
+    goal · seeded here, not by the approvals store, so the saved link operations replay on them */
+function seedStudyHolds() {
+  for (const p of projectRows.filter((x) => x.stage === 'دراسة المشروع' && x.holder && x.holder !== 'supervisor' && x.holder !== 'manager')) {
+    const lines = usableLines('fy-2026')
+    const line = lines.find((l) => l.node.label === p.goal && l.free >= p.amountRequested)
+      ?? lines.filter((l) => l.free >= p.amountRequested).sort((a, b) => b.free - a.free)[0]
+    if (line) seedLink({ projectId: p.id, projectName: p.name, docId: line.doc.id, nodeId: line.node.id, amount: p.amountRequested, by: 'عبدالله الدوسري' })
+  }
+}
+
 function hydrate() {
   seed()
+  seedStudyHolds()
   try { ops = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Op[] } catch { ops = [] }
   for (const o of ops) apply(o)
   runAnnualHolds()
@@ -905,13 +1116,30 @@ export const setLineStatus = (docId: string, nodeId: string, active: boolean, re
   run({ op: 'lineStatus', docId, nodeId, active, reason, by, at: now() })
 export const setLineOwners = (docId: string, nodeId: string, owners: string[], by: string) =>
   run({ op: 'lineOwner', docId, nodeId, owners, by, at: now() })
-export const linkProject = (link: Omit<LineLink, 'at'>) => run({ op: 'link', link, at: now() })
-/** A link the fixture already carries (a project seeded on the approval path) · applied, not recorded,
-    and never over a link the user made */
-export const seedLink = (link: Omit<LineLink, 'at'>) => {
-  if (!LINKS.has(link.projectId)) apply({ op: 'link', link, at: `${TODAY}T08:00:00.000Z` })
+/** Link a project to one or more budget lines · holds now, or plans the hold when the policy
+    holds at approval (5.4.19) · a link already final is a post-approval change, with its reason */
+export const linkProject = (link: LinkInput, reason?: string): string[] => {
+  const issues = linkIssues(link)
+  if (issues.length) return issues
+  const prev = LINKS.get(link.projectId)
+  if (prev?.stage === 'final' && !reason?.trim()) return ['سبب تعديل الارتباط بعد الاعتماد إلزامي (1.4.58)']
+  if (prev?.stage === 'closed') return ['المشروع مغلق · لا يُعدَّل ارتباطه']
+  run({ op: 'link', link, stage: BUDGET_RULES.holdAt === 'approval' ? 'planned' : 'initial', reason: reason?.trim() || undefined, at: now() })
+  return []
 }
-export const unlinkProject = (projectId: string, by: string) => run({ op: 'unlink', projectId, by, at: now() })
+/** The fixture's holds · applied before the saved operations replay, and not saved themselves */
+export function seedLink(link: LinkInput): void {
+  if (!LINKS.has(link.projectId)) apply({ op: 'link', link, stage: 'initial', at: `${TODAY}T08:00:00.000Z` })
+}
+export const unlinkProject = (projectId: string, by: string, reason?: string) => run({ op: 'unlink', projectId, by, reason, at: now() })
+/** The last authority approved · the hold turns final (1.4.28 · 5.4.9 · 6.4.4 · 7.4.4) */
+export const finalizeHold = (projectId: string, by: string) => run({ op: 'holdFinal', projectId, by, at: now() })
+/** A transfer went out · the held amount turns paid on each share (1.4.30) */
+export const recordPaid = (projectId: string, amount: number, ref: string, by: string) => run({ op: 'linkPaid', projectId, amount, ref, by, at: now() })
+export const undoPaid = (ref: string, by: string) => run({ op: 'linkUnpaid', ref, by, at: now() })
+export const isPaidRef = (ref: string): boolean => PAID_REFS.has(ref)
+/** The project closed · what wasn't spent goes back to its lines (1.4.32) */
+export const releaseSavings = (projectId: string, by: string, note = '') => run({ op: 'linkClose', projectId, by, note, at: now() })
 export const saveRequest = (req: Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt' | 'result'>, send: boolean) =>
   run({ op: 'reqSave', req, send, at: now() })
 export const decideRequest = (id: string, outcome: 'approve' | 'return' | 'reject', note: string, by: string) =>
@@ -938,3 +1166,107 @@ export function usableLines(yearId?: string): LineOption[] {
 
 export const sourceName = (code: string): string => sourceByCode(code)?.name ?? code
 export const shareSay = (s: SourceShare[]): string => s.map((x) => `${sourceName(x.code)} ${nf.format(x.amount)}`).join(' · ')
+
+/* ── Funding checks (1.4.9 – 1.4.11 · 1.4.23 · 5.4.5 · 5.4.6 · 6.2.10 · 7.2.2) ── */
+
+/** What the shares already on a line count for · they leave whole when the link changes */
+function mineOn(projectId: string, docId: string, ids: Set<string>): number {
+  const l = LINKS.get(projectId)
+  if (!l || l.stage === 'planned' || l.stage === 'closed') return 0
+  return l.shares.filter((x) => x.docId === docId && ids.has(x.nodeId)).reduce((a, x) => a + x.amount, 0)
+}
+
+/** Checks a link before it's set · empty when it may go · `need` is the funding the shares must
+    add up to, when known */
+export function linkIssues(i: LinkInput, need?: number): string[] {
+  const out: string[] = []
+  const shares = sharesOf(i)
+  if (!shares.length) return ['اختر بند ميزانية واحدًا على الأقل']
+  const seen = new Set<string>()
+  for (const x of shares) {
+    const d = docOf(x.docId)
+    const n = d ? nodeOf(d, x.nodeId) : undefined
+    if (!d || !n) { out.push('بند غير معروف'); continue }
+    const name = `«${n.label}»`
+    if (seen.has(`${x.docId}/${x.nodeId}`)) out.push(`${name} مكرّر · اجمع مبلغه في سطر واحد`)
+    seen.add(`${x.docId}/${x.nodeId}`)
+    if (!isLiveBudget(d)) out.push(`${docTitle(d)} غير معتمدة ومفعّلة · الربط على الميزانيات المعتمدة وحدها`)
+    if (hasChildren(d.nodes, n.id)) out.push(`${name} بند رئيسي · الحجز على البنود الفرعية وحدها`)
+    if (!lineUsable(d.nodes, n.id)) out.push(`${name} غير نشط · لا يُموَّل منه مشروع جديد`)
+    if (!(x.amount > 0)) out.push(`حدّد مبلغ ${name}`)
+  }
+  if (out.length) return out
+  /* Every level of the tree, not the leaf alone (5.4.6) · what the project already holds there
+     comes back first */
+  const asked = new Map<string, number>()
+  for (const x of shares) {
+    const d = docOf(x.docId)!
+    for (const a of upChain(d, x.nodeId)) asked.set(`${d.id}/${a.id}`, (asked.get(`${d.id}/${a.id}`) ?? 0) + x.amount)
+  }
+  for (const [key, amt] of asked) {
+    const [docId, nodeId] = key.split('/')
+    const d = docOf(docId)!
+    const n = nodeOf(d, nodeId)!
+    const sub = new Set([nodeId, ...d.nodes.filter((x) => isUnder(d.id, x.id, nodeId)).map((x) => x.id)])
+    const free = moneyOf(d.nodes, nodeId).available + mineOn(i.projectId, docId, sub)
+    if (amt > free) {
+      const leaf = !hasChildren(d.nodes, nodeId)
+      out.push(`${leaf ? '' : 'المستوى الأعلى '}«${n.label}» ${leaf ? 'لا يكفي' : 'يتجاوز مخصصه'} · المتاح ${nf.format(Math.max(0, free))} والمطلوب ${nf.format(amt)} · العجز ${nf.format(amt - Math.max(0, free))}`)
+    }
+  }
+  const total = shares.reduce((a, x) => a + x.amount, 0)
+  if (need !== undefined && total !== need) out.push(`مجموع التوزيع ${nf.format(total)} لا يساوي تمويل المشروع ${nf.format(need)}`)
+  return out
+}
+
+/** The standing check on a project's funding · before a decision, a session, or a payment
+    (4.4.11 · 4.4.13 · 5.4.5 · 5.4.8 · 6.2.10 · 6.4.3 · 7.2.2 · 7.4.3) */
+export function fundingIssues(projectId: string, need: number): string[] {
+  const l = LINKS.get(projectId)
+  if (!l) return ['لا ارتباط مالي · اربط المشروع ببند الميزانية أولًا (4.2.12)']
+  const out: string[] = []
+  if (l.amount !== need) out.push(`قيمة المشروع ${nf.format(need)} والارتباط ${nf.format(l.amount)} · أعد توزيع الارتباط (1.4.13)`)
+  for (const x of l.shares) {
+    const d = docOf(x.docId)
+    const n = d ? nodeOf(d, x.nodeId) : undefined
+    if (!d || !n) { out.push('بند الارتباط لم يعد موجودًا'); continue }
+    if (!isLiveBudget(d)) out.push(`${docTitle(d)} لم تعد مفعّلة`)
+    for (const a of upChain(d, n.id)) {
+      if (moneyOf(d.nodes, a.id).available < 0) { out.push(`«${a.label}» تجاوز مخصصه · راجع المصادر قبل الاعتماد`); break }
+    }
+    if (l.stage === 'planned' && freeOf(d, n.id) < x.amount) out.push(`«${n.label}» لم يعد يكفي للحجز عند الاعتماد`)
+  }
+  return out
+}
+
+/** A line's hold split by stage · initial and final, from the project links under it (1.4.41) ·
+    holds the fixture carries without a link count as final */
+export function holdSplit(d: BudgetDoc, nodeId: string): { initial: number; final: number; committed: number } {
+  const sub = new Set([nodeId, ...d.nodes.filter((x) => isUnder(d.id, x.id, nodeId)).map((x) => x.id)])
+  let initial = 0
+  for (const l of LINKS.values()) {
+    if (l.stage !== 'initial') continue
+    for (const x of l.shares) if (x.docId === d.id && sub.has(x.nodeId)) initial += x.amount - x.paid
+  }
+  const m = moneyOf(d.nodes, nodeId)
+  return { initial, final: Math.max(0, m.held - initial), committed: m.committed }
+}
+
+/** One project's funding report · each share with its held, paid and remaining (1.4.42) */
+export function fundingReport(projectId: string) {
+  const l = LINKS.get(projectId)
+  if (!l) return undefined
+  const rows = l.shares.map((x) => {
+    const d = docOf(x.docId)
+    const n = d ? nodeOf(d, x.nodeId) : undefined
+    const live = l.stage === 'initial' || l.stage === 'final'
+    return {
+      share: x, doc: d, node: n, path: d && n ? pathOf(d.nodes, n.id) : x.nodeId,
+      held: live ? x.amount - x.paid : 0, paid: x.paid,
+      remaining: l.stage === 'closed' ? 0 : x.amount - x.paid,
+      released: l.stage === 'closed' ? x.amount - x.paid : 0,
+    }
+  })
+  const sum = (k: 'held' | 'paid' | 'remaining' | 'released') => rows.reduce((a, r) => a + r[k], 0)
+  return { link: l, rows, totals: { amount: l.amount, held: sum('held'), paid: sum('paid'), remaining: sum('remaining'), released: sum('released') } }
+}

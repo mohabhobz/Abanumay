@@ -408,6 +408,28 @@ function RulesTab() {
       </Glass>
 
       <Glass>
+        <Head title="الحجز والارتباط المالي" meta={<span className="sub"><bdi>5.4.19 · 1.4.27 · 1.4.28 · 1.4.56</bdi></span>} />
+        <ul className="cfglist">
+          <li className="itk-sup">
+            <span className="cfgl"><b>مرحلة الحجز على الميزانية</b><span className="sub">وفق السياسة المالية · ويثبت الحجز نهائيًّا عند الاعتماد في الحالتين</span></span>
+            <span className="pc-sp" />
+            <div className="cfgchips" role="radiogroup" aria-label="مرحلة الحجز">
+              {(['recommend', 'approval'] as const).map((v) => (
+                <button key={v} type="button" role="radio" aria-checked={d.holdAt === v} className={`cfgchip${d.holdAt === v ? ' on' : ''}`} onClick={() => put('holdAt', v)}>
+                  {v === 'recommend' ? 'مبدئي عند توصية مدير المنح' : 'عند الاعتماد النهائي'}
+                </button>
+              ))}
+            </div>
+          </li>
+          <li className="itk-sup">
+            <span className="cfgl"><b>تعديل الارتباط بعد الاعتماد</b><span className="sub">يُلغى الحجز السابق ويُحجز الجديد على كامل القيمة بسبب موثّق</span></span>
+            <span className="pc-sp" />
+            <MultiSelect all="لا أحد" values={d.relinkBy} options={ROLE_OPTS} onChange={(x) => put('relinkBy', x as RoleKey[])} />
+          </li>
+        </ul>
+      </Glass>
+
+      <Glass>
         <Head title="استقبال المشاريع" meta={<span className="sub"><bdi>1.1.output-5 · 1.4.37</bdi></span>} />
         <Switch
           label="لا يُفتح التقديم إلا على المجالات الممولة في ميزانية معتمدة"

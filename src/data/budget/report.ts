@@ -68,10 +68,14 @@ export function consolidate(by: GroupBy, docs: BudgetDoc[] = allBudgets): Report
         put(r.id, r.name, gen, { ...zero(), allocated: r.amountGranted, paid: r.amountSpent, available: r.amountGranted - r.amountSpent })
       }
     }
+    /* Each share reports on its own budget (1.4.12 · 1.4.42) */
     for (const l of allLinks()) {
-      const d = docs.find((x) => x.id === l.docId)
-      if (!d) continue
-      put(l.projectId, l.projectName, d, { ...zero(), allocated: l.amount, held: l.amount })
+      for (const x of l.shares) {
+        const d = docs.find((y) => y.id === x.docId)
+        if (!d) continue
+        const live = l.stage === 'initial' || l.stage === 'final'
+        put(l.projectId, l.projectName, d, { ...zero(), allocated: x.amount, held: live ? x.amount - x.paid : 0, paid: x.paid })
+      }
     }
     for (const p of allPlans()) {
       for (const y of p.years) {
