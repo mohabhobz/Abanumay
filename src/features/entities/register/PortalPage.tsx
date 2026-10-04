@@ -20,6 +20,12 @@ import { projectsOfEntity } from '@/data/mock/projects'
 import { flowOf, missingDocs, resubmit, uploadDoc, useFlow, REQUEST_DOCS } from '@/data/intake/flow'
 import { CYCLE, inPeriod } from '@/data/intake/cycle'
 import { entityById } from '@/data/mock/entities'
+import { regRows, REG_STAGES } from '@/data/mock/registration'
+import { resubmitRegistration, useEntityFlow, valuesOf, fieldLabel } from '@/data/entities/store'
+import { formatIssue } from '@/data/entities/validate'
+import { entityCode } from '@/lib/format'
+import { Field } from './Field'
+import { PortalAccount } from './PortalAccount'
 
 /* Entity portal - "a screen that only shows its own application."
 
@@ -56,17 +62,25 @@ const DEFAULT_REQ = 'REQ-2026-947139'
 export default function PortalPage() {
   const navigate = useNavigate()
   const { values } = useQueryParams(['req', 'entity'])
-  const r = regRequestById(values.req ?? DEFAULT_REQ) ?? regRequestById(DEFAULT_REQ)!
   useFlow()
-  /* Once approved the portal is the entity's own · its projects and a new request (0.2.1 · 3.2.5).
-     `?entity=` shows another approved entity's portal, for the demo. */
-  const entityId = values.entity && entityById(values.entity) ? values.entity : r.state === 'approved' ? r.entityId : undefined
+  useEntityFlow()
+  /* Once approved the portal is the entity's own · its projects, its file and a new request
+     (0.2.1 · 3.2.5 · 2.3.upd-1). `?entity=` opens an entity's portal; an entity registered before
+     the portal existed has no registration request, so its portal starts at its account. */
+  const ent = values.entity ? entityById(values.entity) : undefined
+  const r = (values.req ? regRequestById(values.req) : undefined)
+    ?? (ent ? regRows.find((x) => x.entityId === ent.id) : undefined)
+    ?? (ent ? undefined : regRequestById(DEFAULT_REQ))
+  const legacy = !r && Boolean(ent)
+  const reqOf = r ?? regRequestById(DEFAULT_REQ)!
+  const entityId = ent ? ent.id : reqOf.state === 'approved' ? reqOf.entityId : undefined
+  const account = entityId ? entityById(entityId) : undefined
   const mine = entityId ? projectsOfEntity(entityId).filter((p) => p.statusGroup === 'في الدراسة' || p.stage === 'استكمال بيانات المشروع') : []
 
-  const view = portalViewOf(r.state)
+  const view = portalViewOf(reqOf.state)
   /* The entity's plans - read from the `entityId` created after approval. */
-  const plans = r.entityId ? plansOfEntity(r.entityId) : []
-  const missing = regMissingDocs(r)
+  const plans = entityId ? plansOfEntity(entityId) : []
+  const missing = regMissingDocs(reqOf)
 
   /* Note: upload here needs to actually do something, and so does submit after it. "Upload" and
      "resubmit" used to be buttons with no action - and this is the one thing the entity came to the
@@ -75,6 +89,18 @@ export default function PortalPage() {
   const [up, setUp] = useState<Record<string, string>>({})
   const [resent, setResent] = useState(false)
   const short = missing.filter((d) => !up[d.key])
+  /* 2.2.14 · the fields the reviewer flagged open for editing, and only those */
+  const flagged = reqOf.state === 'completion' ? reqOf.returnFields ?? [] : []
+  const [edit, setEdit] = useState<Record<string, string>>(() => valuesOf(reqOf))
+  const editErr = Object.fromEntries(flagged.map((k) => {
+    const f = REG_STAGES.flatMap((x) => x.fields).find((y) => y.key === k)
+    return [k, f ? formatIssue(k, f.kind, edit[k] ?? '') || (f.req && !edit[k]?.trim() ? 'حقل إلزامي.' : '') : '']
+  }).filter(([, e]) => e))
+  const resend = () => {
+    const changed = Object.fromEntries(flagged.map((k) => [k, edit[k] ?? '']))
+    resubmitRegistration(reqOf.id, changed, Object.keys(up), reqOf.clerkName || reqOf.name)
+    setResent(true)
+  }
 
   /* Note: the path shown is the application's own stages, not our internal ones. The entity never
      sees "with the system admin" or "with the grants manager" - those describe who's holding it on
@@ -90,9 +116,9 @@ export default function PortalPage() {
     /* After "resubmit" the application really is back with the institution, so the stage moves. */
     const at = resent
       ? 1
-      : r.state === 'draft' || r.state === 'completion'
+      : reqOf.state === 'draft' || reqOf.state === 'completion'
         ? 0
-        : r.state === 'review' ? 1 : 2
+        : reqOf.state === 'review' ? 1 : 2
     return order.indexOf(k) < at ? 'done' : order.indexOf(k) === at ? 'now' : 'todo'
   }
 
@@ -102,14 +128,14 @@ export default function PortalPage() {
   /* Note: the decision made is a result, not an ongoing stage - approved (check) or rejected (x).
      `at = 2` used to keep "decision" as the current stage even after rejection. */
   const outcome: StepItem['state'] | null =
-    resent ? null : r.state === 'approved' ? 'done' : r.state === 'rejected' ? 'no' : null
+    resent ? null : reqOf.state === 'approved' ? 'done' : reqOf.state === 'rejected' ? 'no' : null
   const steps: StepItem[] = [
     { label: 'تجهيز الطلب', state: done('draft') },
     { label: 'مراجعة المؤسسة', state: done('review') },
-    { label: r.state === 'rejected' && !resent ? 'القرار · مرفوض' : 'القرار', state: outcome ?? done('decided') },
+    { label: reqOf.state === 'rejected' && !resent ? 'القرار · مرفوض' : 'القرار', state: outcome ?? done('decided') },
   ]
 
-  const thread = regThread(r.state, r.name)
+  const thread = regThread(reqOf.state, reqOf.name)
 
   /* Note: no reel and no internal assistant - exactly like the registration screen. Whoever opens
      this is an entity with no system account, and a reel featuring "projects" and "budget" promises
@@ -141,11 +167,13 @@ export default function PortalPage() {
 
           <header className="phead">
             <div className="pmain">
-              <h1 className="ptitle">{r.name}</h1>
-              <p className="sub mt-1">
-                طلب تسجيل <CopyId>{r.id}</CopyId> · أُرسل في{' '}
-                <DateText>{r.submittedAt}</DateText>
-              </p>
+              <h1 className="ptitle">{legacy && account ? account.name : reqOf.name}</h1>
+              {legacy && account
+                ? <p className="sub mt-1">حساب الجهة <CopyId>{entityCode(account.id, account.registeredAt)}</CopyId> · مسجّلة منذ <DateText>{account.registeredAt}</DateText></p>
+                : <p className="sub mt-1">
+                    طلب تسجيل <CopyId>{reqOf.id}</CopyId> · أُرسل في{' '}
+                    <DateText>{reqOf.submittedAt}</DateText>
+                  </p>}
             </div>
           </header>
 
@@ -153,15 +181,19 @@ export default function PortalPage() {
               live inside the application card here, while every other screen (portal registration,
               internal registration, and the plan page) treats it as its own `regsteps` card above
               the content - the same element in two different places. */}
-          <Glass className="regsteps">
-            <Steps items={steps} flow="stepper" />
-          </Glass>
+          {!legacy && (
+            <Glass className="regsteps">
+              <Steps items={steps} flow="stepper" />
+            </Glass>
+          )}
 
           <div className="g2">
             {/* Right - application card
                 Everything the entity needs in one card: what the institution said, what's missing,
                 and a submit button, in that order. */}
             <div className="col">
+              {account && <PortalAccount e={account} />}
+              {!legacy && <>
               <Glass className="ptl-req">
                 <Head
                   title="طلبك"
@@ -169,18 +201,18 @@ export default function PortalPage() {
                      while the stepper above it says "review". */
                   meta={resent
                     ? <Tag tone={REG_TONE.review}>{REG_STATE_SAY.review}</Tag>
-                    : <Tag tone={REG_TONE[r.state]}>{REG_STATE_SAY[r.state]}</Tag>}
+                    : <Tag tone={REG_TONE[reqOf.state]}>{REG_STATE_SAY[reqOf.state]}</Tag>}
                 />
 
                 {!resent && <p className="sub cnote">{view.say}</p>}
 
                 {/* Review outcome - what the institution said, verbatim */}
-                {r.note && (
-                  <div className={`ptl-res${r.state === 'rejected' ? ' no' : ''}`}>
+                {reqOf.note && (
+                  <div className={`ptl-res${reqOf.state === 'rejected' ? ' no' : ''}`}>
                     <Icon name={icons.alert} size="sm" />
                     <div>
-                      <b>{r.state === 'rejected' ? 'سبب الرفض' : 'ما طلبته المؤسسة'}</b>
-                      <p>{r.note}</p>
+                      <b>{reqOf.state === 'rejected' ? 'سبب الرفض' : 'ما طلبته المؤسسة'}</b>
+                      <p>{reqOf.note}</p>
                     </div>
                   </div>
                 )}
@@ -198,6 +230,23 @@ export default function PortalPage() {
                 {/* Note: the row stays after upload and flips to "uploaded" - if it disappeared,
                     the entity wouldn't know whether it uploaded or lost the file, and the card
                     would shrink under their hand while they upload the next one. */}
+                {/* 2.2.14 · what the reviewer flagged opens for editing here, nothing else */}
+                {view.editable && !resent && flagged.length > 0 && (
+                  <>
+                    <Head title="الحقول المطلوب تعديلها" meta={<span className="sub"><Num>{flagged.length}</Num> حقول</span>} />
+                    <div className="regfields">
+                      {flagged.map((k) => {
+                        const f = REG_STAGES.flatMap((x) => x.fields).find((y) => y.key === k)
+                        if (!f) return <p key={k} className="sub cnote">{fieldLabel(k)}</p>
+                        return (
+                          <Field key={k} f={f} value={edit[k] ?? ''} parent={f.dependsOn ? edit[f.dependsOn] ?? '' : ''}
+                            onChange={(x) => setEdit((s) => ({ ...s, [k]: x }))} error={editErr[k]} />
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
+
                 {view.editable && !resent && missing.length > 0 && (
                   <>
                     <Head
@@ -239,23 +288,23 @@ export default function PortalPage() {
                     application for review. */}
                 <footer className="payq-f">
                   <span className="sub payq-when">
-                    أُرسل <DateText>{r.submittedAt}</DateText>
-                    {' · '}<Mono>{r.id}</Mono>
+                    أُرسل <DateText>{reqOf.submittedAt}</DateText>
+                    {' · '}<Mono>{reqOf.id}</Mono>
                   </span>
                   {view.act && !resent && (
                     <button
                       className="btn btn-p"
-                      disabled={view.editable && short.length > 0}
+                      disabled={view.editable && (short.length > 0 || Object.keys(editErr).length > 0)}
                       title={view.editable && short.length > 0
                         ? 'ارفع المستندات الناقصة أولًا'
-                        : undefined}
+                        : view.editable && Object.keys(editErr).length > 0 ? 'صحّح الحقول المطلوبة أولًا' : undefined}
                       onClick={() => {
-                        if (r.state === 'approved') navigate(ROUTES.entity(r.entityId ?? '755'))
-                        else setResent(true)
+                        if (reqOf.state === 'approved') navigate(`${ROUTES.entityPortal}?entity=${reqOf.entityId ?? ''}`)
+                        else resend()
                       }}
                     >
-                      <Icon name={r.state === 'approved' ? icons.entity : icons.send} size="sm" />
-                      {r.state === 'approved' ? view.act : 'أعد إرسال الطلب'}
+                      <Icon name={reqOf.state === 'approved' ? icons.entity : icons.send} size="sm" />
+                      {reqOf.state === 'approved' ? view.act : 'أعد إرسال الطلب'}
                     </button>
                   )}
                 </footer>
@@ -265,15 +314,15 @@ export default function PortalPage() {
                 <Head title="بيانات الطلب" meta={<span className="sub">كما أرسلتها الجهة</span>} />
                 <KV
                   rows={[
-                    { k: 'التصنيف', v: r.type },
-                    { k: 'جهة الإشراف الفني', v: r.licensor },
-                    { k: 'المنطقة', v: `${r.region} · ${r.city}` },
-                    { k: 'رقم الترخيص', v: <Mono>{r.licenseNo}</Mono> },
+                    { k: 'التصنيف', v: reqOf.type },
+                    { k: 'جهة الإشراف الفني', v: reqOf.licensor },
+                    { k: 'المنطقة', v: `${reqOf.region} · ${reqOf.city}` },
+                    { k: 'رقم الترخيص', v: <Mono>{reqOf.licenseNo}</Mono> },
                     {
                       k: 'بريد الحساب',
-                      v: <a className="tlink" href={`mailto:${r.acctEmail}`}><Mono>{r.acctEmail}</Mono></a>,
+                      v: <a className="tlink" href={`mailto:${reqOf.acctEmail}`}><Mono>{reqOf.acctEmail}</Mono></a>,
                     },
-                    { k: 'المستندات المرفوعة', v: <><Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}</> },
+                    { k: 'المستندات المرفوعة', v: <><Num>{reqOf.docs.length}</Num> {nounAfter(reqOf.docs.length, NOUN.doc)}</> },
                   ]}
                 />
                 {!view.editable && (
@@ -287,7 +336,7 @@ export default function PortalPage() {
               <Glass>
                 <Head
                   title="الحسابات البنكية"
-                  meta={<span className="sub"><Num>{r.banks.length}</Num> حساب</span>}
+                  meta={<span className="sub"><Num>{reqOf.banks.length}</Num> حساب</span>}
                 />
                 {/* Note: the bank certificate is a `DocList` row like any attachment. `DocFile`
                     used to stand alone inside the account column - and `.dfile-b`'s padding is
@@ -295,7 +344,7 @@ export default function PortalPage() {
                     table that padding adds to the space above and below it, leaving the row loose
                     and unlike its counterpart on the project page (which the client has seen). */}
                 <ul className="rgbanks">
-                  {r.banks.map((b, i) => (
+                  {reqOf.banks.map((b, i) => (
                     <li key={b.id}>
                       <span className="rgbank-n num">{i + 1}</span>
                       <div className="rgbank-b">
@@ -317,6 +366,7 @@ export default function PortalPage() {
                   ))}
                 </ul>
               </Glass>
+              </>}
 
               {/* The entity's requests · procedure 3. A request returned for completion is the one
                   thing the entity acts on here: upload what's asked and send it back (3.4.16). */}
@@ -324,7 +374,9 @@ export default function PortalPage() {
                 <Glass>
                   <Head
                     title="طلبات مشاريعك"
-                    meta={inPeriod()
+                    meta={account && !account.canApply
+                      ? <Tag tone="mute">التقديم موقوف</Tag>
+                      : inPeriod()
                       ? <Link className="btn btn-p btn-sm" to={`${ROUTES.projectNew}?as=entity&entity=${entityId}`}>
                           <Icon name={icons.plus} size="sm" />
                           قدّم طلب مشروع
@@ -378,7 +430,7 @@ export default function PortalPage() {
                   all, so it has no plans - and an empty card labeled "your plans" on a screen still
                   awaiting a decision implies something is missing, when really it just hasn't
                   started. */}
-              {r.state === 'approved' && plans.length > 0 && (
+              {entityId && plans.length > 0 && (
                 <Glass>
                   <Head
                     title="خطط مشاريعك"
@@ -427,7 +479,7 @@ export default function PortalPage() {
                 />
                 <Thread
                   messages={thread}
-                  entityName={r.name}
+                  entityName={reqOf.name}
                   me="entity"
                   placeholder="اكتب رسالة إلى المؤسسة…"
                   emptyTitle="قناة التواصل مفتوحة عند الحاجة"
@@ -444,8 +496,7 @@ export default function PortalPage() {
           <p className="sub tcen cnote">
             ليس طلبك؟{' '}
             <Link className="lnk" to={ROUTES.entityRegister}>ابدأ طلب تسجيل جديد</Link>
-            {' · '}
-            {readDate(r.submittedAt)}
+            {!legacy && <>{' · '}{readDate(reqOf.submittedAt)}</>}
           </p>
         </div>
       </div>

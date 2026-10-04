@@ -95,7 +95,7 @@ export const entityOptions = (): EntityOption[] =>
       name: e.name,
       open: sent,
       capped: sent >= entityCap(),
-      inactive: e.activation !== 'مقبول',
+      inactive: e.activation !== 'نشط',
     }
   })
 

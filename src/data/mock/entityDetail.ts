@@ -1,5 +1,6 @@
 import type { EntityRow } from '@/types/domain'
-import { BANKS, ENTITY_DOCS } from './taxonomy'
+import { BANKS, BANK_REJECT_REASONS, ENTITY_DOCS } from './taxonomy'
+import { overlayOf } from '@/data/entities/store'
 
 /**
  * Derived entity file · identification, contact, people, documents, bank accounts, and entity
@@ -138,15 +139,7 @@ const NOTES_STOP = [
  * Kept as a deliberately closed list: a reason picked from a fixed set can be analyzed and
  * compared, while free-text rejection stays locked inside the row.
  */
-export const BANK_REJECT_REASONS = [
-  'إلغاء الحساب بناءً على طلب الجمعية',
-  'الحساب لا يعود للجمعية',
-  'الحساب مفعل مسبقًا',
-  'عدم تطابق اسم الحساب مع الشهادة',
-  'عدم تطابق الآيبان مع الشهادة',
-  'عدم وجود الآيبان في المرفق',
-  'عدم وضوح المرفق',
-] as const
+export { BANK_REJECT_REASONS }
 
 export const ACCOUNT_TYPES = ['جهة مستفيدة', 'جهة مستفيدة، وقفية', 'جهة حكومية'] as const
 
@@ -177,7 +170,11 @@ export function entityDetail(e: EntityRow): EntityDetail {
      expired state appears on three entities deliberately, so it can be seen. */
   const licenseEnds = new Date(e.licenseEndsAt)
   const licenseExpired = licenseEnds.getTime() < Date.now()
-  const boardEnds = shift(e.registeredAt, int(2, 8) * 365)
+  /* The board mandate is renewed like any mandate: it ran from registration, so every entity
+     registered before 2023 read «expired» and no active entity could stand (2.4.20). It now runs
+     ahead of today, and lapses only with the license, on the entities kept expired on purpose. */
+  const boardYears = int(2, 8)
+  const boardEnds = licenseExpired ? shift(e.registeredAt, boardYears * 365) : shift(iso(new Date()), 200 + boardYears * 90)
   const boardExpired = boardEnds.getTime() < Date.now()
 
   const director = `${pick(FIRST)} ${pick(LAST)}`
@@ -259,7 +256,7 @@ export function entityDetail(e: EntityRow): EntityDetail {
       by: staff(),
       ...at(dAccept),
       note: pick(NOTES_ACCEPT),
-      fields: [{ k: 'حالة التفعيل', v: 'مقبول' }],
+      fields: [{ k: 'حالة التفعيل', v: 'نشط' }],
     })
 
     const activated = banks.filter((b) => b.status === 'مفعل')
@@ -335,7 +332,7 @@ export function entityDetail(e: EntityRow): EntityDetail {
 
   const last = log[0]
 
-  return {
+  return withOverlay(e, {
     foundedAt: iso(founded),
     licenseEndsAt: iso(licenseEnds),
     licenseExpired,
@@ -358,5 +355,36 @@ export function entityDetail(e: EntityRow): EntityDetail {
     docs,
     banks,
     log,
-  }
+  })
+}
+
+/**
+ * What the entity's own actions changed · an approved update, a renewed document, a bank decision,
+ * a status with its reason (data/entities/store). An entity created from a request carries its
+ * request's people, accounts and documents instead of generated ones.
+ */
+function withOverlay(e: EntityRow, d: EntityDetail): EntityDetail {
+  const o = overlayOf(e.id)
+  const f = o.fields
+  const today = iso(new Date())
+  const out: EntityDetail = { ...d }
+  const str = (k: keyof EntityDetail) => { if (f[k as string]) (out as unknown as Record<string, unknown>)[k] = f[k as string] }
+  ;(['foundedAt', 'phone', 'website', 'directorName', 'directorMobile', 'clerkName', 'clerkMobile', 'clerkEmail',
+    'username', 'userNo', 'accountType', 'adminNote', 'updatedAt'] as (keyof EntityDetail)[]).forEach(str)
+  if (f.boardMandateEndsAt) out.boardMandateEndsAt = f.boardMandateEndsAt
+  out.boardExpired = out.boardMandateEndsAt < today
+  out.licenseEndsAt = e.licenseEndsAt
+  out.licenseExpired = e.licenseEndsAt < today
+  out.docs = (o.docs ?? d.docs).map((x) => {
+    const r = o.renewed[x.name]
+    return r ? { name: x.name, uploaded: true, at: r.at, expires: r.expires, expired: Boolean(r.expires && r.expires < today) } : x
+  })
+  out.banks = [...(o.banks ?? d.banks), ...o.addedBanks].map((b) => {
+    const s = o.bankStatus[b.id]
+    return s ? { ...b, status: s.status, reason: s.reason } : b
+  })
+  out.log = [...o.events, ...(o.banks ? [] : d.log)]
+  if (o.events[0]) out.updatedAt = o.events[0].at
+  if (o.statusReason) out.adminNote = o.statusReason
+  return out
 }

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BackTo, CopyId, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, DockWhy,
@@ -22,6 +22,14 @@ import { regReadings, stageAdvice, stepState } from '@/data/mock/regPortal'
 import { Field } from './Field'
 import { BankRows } from './BankRows'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
+import { OtpPanel } from '@/features/entities/OtpPanel'
+import {
+  draftOf, nextRegId, saveRegDraft, submitRegistration, useEntityFlow, valuesOf,
+} from '@/data/entities/store'
+import {
+  duplicates, expiredDocs, fileRefusal, formatIssue, legibilityWarning, DOC_EXPIRY,
+} from '@/data/entities/validate'
+import { ENTITY_RULES } from '@/data/entities/rules'
 import { HeroSuccess } from '@/components/soul'
 
 /* New entity registration request - entity screen.
@@ -68,9 +76,10 @@ const PHASES: Phase[] = ['terms', 'form', 'otp', 'sent']
  * Note: written once on purpose - duplicating the number across four places is how a button that
  * enables at five ends up with a field that accepts six.
  */
-export const OTP_LEN = 5
+import { OTP_LEN } from '@/data/entities/auth'
+export { OTP_LEN }
 
-const KEYS = ['step', 'tab', 'up'] as const
+const KEYS = ['step', 'tab', 'up', 'req'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const EMPTY: Record<string, string> = {}
@@ -97,7 +106,12 @@ export default function RegisterPage() {
      stage of the journey. */
   const tab = FORM_STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : FIRST_FORM_STAGE
   const setTab = (x: string) => set({ tab: x === FIRST_FORM_STAGE ? undefined : x })
-  const [val, setVal] = useState<Record<string, string>>(EMPTY)
+  useEntityFlow()
+  /* A draft saved under this account comes back where it was left (2.2.5 · 2.4.12) */
+  const [draft0] = useState(() => (regAccount.email ? draftOf(regAccount.email) : undefined))
+  const resumable = draft0?.state === 'draft' ? draft0 : undefined
+  const [reqId, setReqId] = useState(() => resumable?.id ?? '')
+  const [val, setVal] = useState<Record<string, string>>(() => (resumable ? valuesOf(resumable) : EMPTY))
 
   /* Note: the uploaded file is in the URL, and the selected file is in state. The key in `?up=`
      exists so the "after upload" state remains a screen with a URL - shareable, restorable on
@@ -105,11 +119,16 @@ export default function RegisterPage() {
      lives in state, since it isn't put in a URL and doesn't survive a refresh - so the screen shows
      its name when present, and a placeholder document name when the key came from the URL. */
   const docs = useMemo(() => new Set(readList(v.up)), [v.up])
-  const [files, setFiles] = useState<Record<string, { name: string; size: number }>>({})
+  const [files, setFiles] = useState<Record<string, { name: string; size: number; warn?: string }>>(() => resumable?.files ?? {})
+  const [refused, setRefused] = useState<Record<string, string>>({})
+  /* The draft's documents land in the URL once, like any other uploaded set */
+  useEffect(() => {
+    if (resumable && !v.up && resumable.docs.length) set({ up: writeList(resumable.docs) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   /* Note 1: accounts - one empty by default so the screen doesn't start in an empty state; the user
      must click a button to leave it. */
-  const [banks, setBanks] = useState<RegBank[]>([emptyBank(1)])
-  const [otp, setOtp] = useState('')
+  const [banks, setBanks] = useState<RegBank[]>(() => (resumable?.banks.length ? resumable.banks : [emptyBank(1)]))
   const [draft, setDraft] = useState(false)
 
   const type = val.type ?? ''
@@ -125,7 +144,14 @@ export default function RegisterPage() {
 
   /** Upload a document - takes the actual file if the user picked one. */
   const upload = (k: string, f?: File) => {
-    if (f) setFiles((s) => ({ ...s, [k]: { name: f.name, size: f.size } }))
+    /* 2.4.5 · a wrong type or an oversized file is refused at the door; a small scan is accepted
+       with a warning the reviewer sees too */
+    if (f) {
+      const no = fileRefusal(f, REG_DOCS.find((d) => d.key === k)?.maxMb ?? 5)
+      if (no) { setRefused((x) => ({ ...x, [k]: no })); return }
+      setRefused((x) => { const n = { ...x }; delete n[k]; return n })
+      setFiles((s) => ({ ...s, [k]: { name: f.name, size: f.size, warn: legibilityWarning(f) || undefined } }))
+    }
     set({ up: writeList([...new Set([...readList(v.up), k])]) })
   }
 
@@ -142,6 +168,20 @@ export default function RegisterPage() {
     set({ up: writeList(readList(v.up).filter((x) => x !== k)) })
   }
 
+  /** Format problems per field (2.2.4 · 2.4.7) · a value that's there but wrong */
+  const errs = useMemo(() => {
+    const out: Record<string, string> = {}
+    for (const st of FORM_STAGES) for (const f of st.fields) {
+      const e = formatIssue(f.key, f.kind, val[f.key] ?? '')
+      if (e) out[f.key] = e
+    }
+    return out
+  }, [val])
+  /** Same name, email, mobile or IBAN as an entity or a live request (2.4.10) */
+  const dups = useMemo(() => duplicates(val, banks, { exceptReq: reqId || undefined }), [val, banks, reqId])
+  /** Documents already out of date on the day they'd be sent (2.4.5) */
+  const stale = useMemo(() => expiredDocs(val, docs), [val, docs])
+
   /** Missing items per tab - rule 4, with documents counted by category. */
   const shortBy = useMemo(() => {
     const out: Record<string, string[]> = {}
@@ -151,13 +191,20 @@ export default function RegisterPage() {
          empty - the same failure as a rule with no check. */
       out[s.key] =
         s.key === 'docs'
-          ? REG_DOCS.filter((d) => docRequired(d, type) && !docs.has(d.key)).map((d) => d.label)
+          ? [
+              ...REG_DOCS.filter((d) => docRequired(d, type) && !docs.has(d.key)).map((d) => d.label),
+              ...stale.map((k) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k} منتهٍ · ${DOC_EXPIRY[k].label} مضى`),
+            ]
           : s.key === 'bank'
-            ? bankIssues(banks).map((b) => b.say)
-            : s.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label)
+            ? [...bankIssues(banks).map((b) => b.say), ...dups.filter((d) => d.field === 'iban').map((d) => `${d.label} مسجَّل لـ«${d.who}»`)]
+            : [
+                ...s.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label),
+                ...s.fields.filter((f) => errs[f.key]).map((f) => `${f.label}: ${errs[f.key]}`),
+                ...dups.filter((d) => s.fields.some((f) => f.key === d.field)).map((d) => `${d.label} مسجَّل لـ«${d.who}»`),
+              ]
     }
     return out
-  }, [val, docs, type, banks])
+  }, [val, docs, type, banks, errs, dups, stale])
 
   const missing = Object.values(shortBy).flat()
 
@@ -181,8 +228,21 @@ export default function RegisterPage() {
     [tab, val, shortBy, files],
   )
 
-  /* Note: submission is no longer gated (client request, Sept 30). Missing items, the license
-     clash and `advice.blocking` stay visible as information in the dock and the assistant card. */
+  /* Submission gate · a setting (2.2.7 · 2.4.4 · 2.4.13). Off by the client's decision of 30 Sept:
+     gaps stay visible as information and the reviewer handles them. On, the button refuses with
+     the reason, which is what the document asks for. */
+  const blocked = ENTITY_RULES.blockIncomplete && (missing.length > 0 || Boolean(clash))
+  const idOf = () => {
+    if (reqId) return reqId
+    const id = nextRegId()
+    setReqId(id)
+    return id
+  }
+  const fileList = () => Object.fromEntries([...docs].map((k) => [k, files[k] ?? { name: `${REG_DOCS.find((d) => d.key === k)?.label ?? k}.pdf`, size: 0 }]))
+  const saveDraft = () => {
+    saveRegDraft(idOf(), regAccount.email || 'portal', val, banks, [...docs], fileList())
+    setDraft(true)
+  }
 
   /* Note: the stepper needs progress via the button too, not just by clicking it. Clicking a
      distant step is a jump, while normal filling goes step by step, with the hand staying near the
@@ -266,7 +326,7 @@ export default function RegisterPage() {
             </>
       )}
       {phase === 'otp' && <>أدخل الرمز المرسَل إلى الجوال · <Num>{OTP_LEN}</Num> أرقام</>}
-      {phase === 'sent' && <>رقم الطلب في هذا النموذج <b>REQ-2026-947142</b></>}
+      {phase === 'sent' && <>رقم طلبك <b>{v.req ?? reqId}</b></>}
 
     </span>
   )
@@ -288,16 +348,10 @@ export default function RegisterPage() {
 
       {phase === 'form' && (
         <>
-          {/* Note: "save as draft" is for someone signed in only. Rule 12 allows a request to be
-              saved as a draft and completed later, but a draft must be saved against an account so
-              its owner can return to it. A new entity has no account - that's rule 2 itself. So the
-              button would have promised the entity something with nowhere to return to, and the
-              live `/reg/add` form has no save option at all.
-
-              This gap is noted: if the institution wants entities to save and return, that needs
-              pre-approval identification (an email link or code) - an open question. */}
-          {inside && (
-            <button className="btn btn-2" onClick={() => setDraft(true)}>
+          {/* Rule 12 · a draft is saved against the account created before the form, so its owner
+              comes back to it from the account screen (2.2.5 · 2.4.12) */}
+          {(inside || regAccount.email) && (
+            <button className="btn btn-2" onClick={saveDraft} title="يُحفظ على حساب الجهة ويُستكمل في أي وقت · قاعدة 12">
               احفظ مسودة
             </button>
           )}
@@ -333,14 +387,17 @@ export default function RegisterPage() {
                info in the title and the dock counter; the reviewer handles them. */
             <button
               className="btn btn-p"
+              disabled={blocked}
               title={
-                clash
-                  ? 'رقم الترخيص مكرّر · سيُراجَع مع الطلب'
-                  : missing.length
-                    ? `ينقص ${missing.length} من الحقول · يمكنك الإرسال الآن`
-                    : 'أرسل الطلب للمراجعة'
+                blocked
+                  ? `لا يُرسل قبل الاكتمال · ${clash ? 'رقم الترخيص مكرّر' : `ينقص ${missing.length}`}`
+                  : clash
+                    ? 'رقم الترخيص مكرّر · سيُراجَع مع الطلب'
+                    : missing.length
+                      ? `ينقص ${missing.length} من الحقول · يمكنك الإرسال الآن`
+                      : 'أرسل الطلب للمراجعة'
               }
-              onClick={() => setPhase('otp')}
+              onClick={() => { idOf(); setPhase('otp') }}
             >
               أرسل الطلب
             </button>
@@ -348,16 +405,7 @@ export default function RegisterPage() {
         </>
       )}
 
-      {phase === 'otp' && (
-        <button
-          className="btn btn-p"
-          disabled={otp.length !== OTP_LEN}
-          title={otp.length === OTP_LEN ? 'أكّد الرمز' : `الرمز ${OTP_LEN} أرقام`}
-          onClick={() => setPhase('sent')}
-        >
-          أكّد الرمز
-        </button>
-      )}
+      {/* The code is checked inside its own panel · no second button here */}
 
       {/* The final exit changes by context: the request inbox is an internal screen the entity has
           no access to - they return to the login page to await their credentials. */}
@@ -594,8 +642,8 @@ export default function RegisterPage() {
                                         name={picked?.name ?? `${d.label}.pdf`}
                                         meta={
                                           picked
-                                            ? `${(picked.size / 1024 / 1024).toFixed(2)} م.ب · بانتظار الإرسال`
-                                            : 'عيّنة · بانتظار الإرسال'
+                                            ? `${(picked.size / 1024 / 1024).toFixed(2)} م.ب · ${picked.warn ?? (stale.includes(d.key) ? 'منتهٍ' : 'بانتظار الإرسال')}`
+                                            : stale.includes(d.key) ? 'منتهٍ · حدّث التاريخ أو ارفع النسخة السارية' : 'عيّنة · بانتظار الإرسال'
                                         }
                                         block
                                         download={false}
@@ -609,6 +657,8 @@ export default function RegisterPage() {
                                       </button>
                                     </div>
                                   ) : (
+                                    <>
+                                    {refused[d.key] && <p className="bad cnote">{refused[d.key]}</p>}
                                     <label className="regdrop">
                                       <input
                                         type="file"
@@ -625,6 +675,12 @@ export default function RegisterPage() {
                                         <span className="num">{d.maxMb}</span> م.ب
                                       </span>
                                     </label>
+                                    </>
+                                  )}
+                                  {on && (picked?.warn || stale.includes(d.key)) && (
+                                    <p className="bad cnote">{stale.includes(d.key)
+                                      ? <>الوثيقة منتهية · {DOC_EXPIRY[d.key].label} قبل اليوم</>
+                                      : picked?.warn}</p>
                                   )}
                                 </li>
                               )
@@ -642,6 +698,7 @@ export default function RegisterPage() {
                               value={val[f.key] ?? ''}
                               parent={f.dependsOn ? val[f.dependsOn] ?? '' : ''}
                               onChange={(x) => setField(f.key, x)}
+                              error={errs[f.key]}
                             />
                           ))}
                         </div>
@@ -649,6 +706,10 @@ export default function RegisterPage() {
 
                       {/* Rules 8 and 9 - validated in the field, not after submission, and the
                           message states which entity it conflicts with. */}
+                      {/* 2.4.10 · the other main data must not repeat either */}
+                      {dups.filter((d) => d.field !== 'iban' && s.fields.some((f) => f.key === d.field)).map((d) => (
+                        <p key={d.field} className="bad cnote">{d.label} مسجَّل لـ«{d.who}» · تحقّق منه قبل الإرسال.</p>
+                      ))}
                       {s.key === 'id' && clash && (
                         <p className="bad cnote">
                           رقم الترخيص <Mono>{val.licenseNo}</Mono> مسجَّل لـ
@@ -687,28 +748,19 @@ export default function RegisterPage() {
                       it returns to the contact stage and focuses that same field - the same lesson
                       the client held onto: a button that does nothing is worse than no button at
                       all. */}
-                  <p className="sub cnote">
-                    أُرسل رمز لمرة واحدة إلى{' '}
-                    <Mono>{val.clerkMobile || '9665XXXXXXXX'}</Mono>
-                    {' · '}
-                    <button className="lnk" onClick={editMobile}>تعديل</button>
-                    {' · '}
-                    وهو نفس الرقم الذي ستصل إليه بيانات الدخول بعد الاعتماد.
-                  </p>
-                  <label className="payamt">
-                    <span className="lb">رمز التحقّق</span>
-                    <input
-                      inputMode="numeric"
-                      value={otp}
-                      maxLength={OTP_LEN}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                      aria-label="رمز التحقّق"
-                    />
-                  </label>
-                  <p className="sub cnote">
-                    في هذا النموذج أي <span className="num">{OTP_LEN}</span> أرقام
-                    تُقبل · والتحقّق الفعلي يجري على الخادم.
-                  </p>
+                  {/* 2.2.9 · the code goes to the data clerk's mobile and email, lives a few minutes,
+                      dies after the allowed wrong tries, and a new one waits its turn · the request
+                      is created the moment it checks out */}
+                  <OtpPanel
+                    purpose="register"
+                    to={[val.clerkMobile || '', val.clerkEmail || '']}
+                    onEdit={editMobile}
+                    onVerified={() => {
+                      const id = idOf()
+                      submitRegistration(id, regAccount.email || val.email || '', val, banks, [...docs], fileList())
+                      set({ step: 'sent', req: id })
+                    }}
+                  />
                   {foot}
                 </Glass>
               )}
@@ -721,7 +773,7 @@ export default function RegisterPage() {
                       The entity needs this number when contacting the institution, and a
                       fourteen-character string is easy for the eye to mistype. */}
                   <p className="sub cnote">
-                    رقمك المرجعي <CopyId>REQ-2026-947142</CopyId> · احتفظ به، فبه
+                    رقمك المرجعي <CopyId>{v.req ?? reqId}</CopyId> · احتفظ به، فبه
                     تُتابَع حالة الطلب.
                   </p>
                   <ul className="payq-ck regsent">

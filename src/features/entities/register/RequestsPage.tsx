@@ -13,7 +13,7 @@ import { useStickyGroup } from '@/hooks/useStickyGroup'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { QuickRead } from '@/components/assistant'
 import {
-  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols,
+  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols, readSort, writeSort, nextSort, sortRows,
 } from '@/components/table'
 import { ExportMenu } from '@/components/export'
 import { ROUTES } from '@/app/routes'
@@ -26,8 +26,9 @@ import {
 import type { Sheet } from '@/lib/export'
 import { RegCard } from './RegCard'
 import { COLS, GROUPS } from './columns'
+import { useEntityFlow } from '@/data/entities/store'
 
-const KEYS = ['q', 'state', 'type', 'region', 'short', 'view', 'group', 'adv'] as const
+const KEYS = ['q', 'state', 'type', 'region', 'short', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Registration request inbox.
@@ -52,6 +53,7 @@ const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'state', 'sh
 export default function RequestsPage() {
   const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
   const navigate = useNavigate()
+  const ver = useEntityFlow()
   const k = regKpi()
   const [cols, setCols] = useState<string[]>(() => readCols('reg-requests', COLS))
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -63,6 +65,7 @@ export default function RequestsPage() {
   const advOpen = v.adv === '1'
 
   const rows = useMemo(() => {
+    void ver /* the rows are mutable · a flow action re-reads them */
     const needle = v.q?.trim()
     const states = readList(v.state)
     const types = readList(v.type)
@@ -75,12 +78,14 @@ export default function RequestsPage() {
       if (needle && !`${r.id} ${r.name} ${r.licenseNo} ${r.clerkName}`.includes(needle)) return false
       return true
     })
-  }, [v])
+  }, [v, ver])
 
-  /* Oldest submission first - the inbox is a review role, and a review role goes by date. */
+  /* Oldest submission first - the inbox is a review role, and a review role goes by date · a click
+     on a column header re-orders by that column instead (2.4.23) */
+  const ord = readSort(v.ord)
   const sorted = useMemo(
-    () => [...rows].sort((a, b) => a.submittedAt.localeCompare(b.submittedAt)),
-    [rows],
+    () => sortRows([...rows].sort((a, b) => a.submittedAt.localeCompare(b.submittedAt)), COLS, ord),
+    [rows, ord],
   )
 
   const filtered = activeCount(['view', 'group', 'adv']) > 0
@@ -88,6 +93,7 @@ export default function RequestsPage() {
 
   /** Count per status within the current scope - excluding the status filter itself. */
   const counts = useMemo(() => {
+    void ver
     const needle = v.q?.trim()
     const types = readList(v.type)
     const regions = readList(v.region)
@@ -101,7 +107,7 @@ export default function RequestsPage() {
     const m = new Map<RegState, number>()
     for (const r of base) m.set(r.state, (m.get(r.state) ?? 0) + 1)
     return { m, total: base.length }
-  }, [v.type, v.region, v.short, v.q])
+  }, [v.type, v.region, v.short, v.q, ver])
 
   /* Grouping persists with the session instead of resetting on every sign-out. */
   useStickyGroup('reg-requests', v.group, (x) => set({ group: x }))
@@ -346,6 +352,8 @@ export default function RequestsPage() {
               <Glass className="tblcard">
                 <DataTable
                   rows={sorted}
+                  sort={ord}
+                  onSort={(k) => set({ ord: writeSort(nextSort(ord, k)) })}
                   all={COLS}
                   table="reg-requests"
                   cols={cols}

@@ -8,3 +8,35 @@
 .ejr.leafflow{--lf-ledger:calc(var(--sp-12) * 3.75)}
 .leafflow .lf-ledger{max-width:calc(var(--sp-12) * 5)}
 .leafflow .lf-k{white-space:nowrap}
+
+/* ── Sortable column header (2.4.23) · the header is the control; its arrow says the order ── */
+.tbl .th-sort{display:inline-flex;align-items:center;gap:var(--sp-1);max-width:100%;padding:0;border:0;background:none;
+  font:inherit;color:inherit;text-align:inherit;cursor:pointer;line-height:var(--lh-text)}
+.tbl .th-sort:hover{color:var(--t1)}
+.tbl .th-sort.on{color:var(--t1);font-weight:600}
+.tbl .th-sort:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:var(--r-hair)}
+
+/* ── An entity's requests (2.4.1) · one row each, the whole row opens the request ── */
+.eprq{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:flex;flex-direction:column}
+.eprq li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.eprq-r{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--h-md);padding-block:var(--sp-3);color:var(--t1)}
+.eprq-r:hover{color:var(--t1)}
+.eprq-r>svg{flex:none;color:var(--t3)}
+.eprq-b{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+
+/* ── Update review · before and after side by side (2.3.upd-10) ── */
+.updiff{margin-top:var(--sp-3)}
+.updiff td{vertical-align:top;padding-block:var(--sp-3);line-height:var(--lh-text)}
+.updiff-old{color:var(--t3);text-decoration:line-through;text-decoration-color:var(--edge-2)}
+.updiff-new{color:var(--t1);font-weight:600}
+
+/* ── One-time code panel (2.2.9 · 2.3.pw · 2.3.upd-17) ── */
+.otp{display:flex;flex-direction:column;gap:var(--sp-3)}
+.otp-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--sp-3)}
+.otp-in{flex:0 1 auto}
+.otp-in input{letter-spacing:.3em;font-variant-numeric:tabular-nums;text-align:center}
+.otp-meta{margin:0}
+.otp-demo{margin:0;color:var(--t3)}
+
+/* Settings row label · a name and the line that says what it governs */
+.cfgl{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0;font-size:var(--fs-2)}

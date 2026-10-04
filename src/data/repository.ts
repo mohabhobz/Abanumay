@@ -10,6 +10,7 @@
  * eventually be sent to the server as a query string, so the screen doesn't change when the real
  * connection is wired in.
  */
+import { openUpdateOf } from '@/data/entities/store'
 import type {
   Project, Entity, AuthorityMatrix, CurrentUser, Insight, FollowUpType,
   ProjectRow, EntityRow,
@@ -104,6 +105,13 @@ export interface EntityQuery {
   docsIncomplete?: boolean
   /** true = has projects in execution */
   hasRunning?: boolean
+  /** Registration date range · ISO dates, inclusive (2.4.22) */
+  registeredFrom?: string
+  registeredTo?: string
+  /** Has an update request still open (2.4.1 · 2.4.22) */
+  openRequest?: boolean
+  /** Archived only · the archive search (2.4.29); every other list hides them (2.4.28) */
+  archived?: boolean
   search?: string
   sort?: 'granted' | 'projects' | 'newest' | 'name'
   page?: number
@@ -218,6 +226,10 @@ const sortProjects = (rows: ProjectRow[], sort: ProjectSort = 'waiting'): Projec
 }
 
 const matchEntity = (e: EntityRow, q: EntityQuery): boolean => {
+  if (Boolean(e.archived) !== Boolean(q.archived)) return false
+  if (q.registeredFrom && e.registeredAt < q.registeredFrom) return false
+  if (q.registeredTo && e.registeredAt > q.registeredTo) return false
+  if (q.openRequest && !openUpdateOf(e.id)) return false
   if (!eq(q.activation, e.activation)) return false
   if (!eq(q.type, e.type)) return false
   if (!eq(q.licensor, e.licensor)) return false

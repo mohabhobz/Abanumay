@@ -13,6 +13,8 @@ import {
 import { AnalysisCard } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { EntityFlow } from './EntityFlow'
+import { EntityRequestsTab, EntityStatusCard } from './EntityActions'
+import { useEntityFlow } from '@/data/entities/store'
 import { readEntity } from '@/data/readings'
 import { entityCode } from '@/lib/format'
 import {
@@ -34,6 +36,7 @@ import {
  * long scroll, and a supervisor ends up hunting for a field rather than reading it.
  */
 export default function EntityPage() {
+  useEntityFlow()
   const { id, tab } = useParams<{ id: string; tab?: string }>()
   const navigate = useNavigate()
   const entity = id ? entityById(id) : undefined
@@ -104,7 +107,7 @@ export default function EntityPage() {
               <div className="ehead-m mt-4">
                 {/* The page header isn't a card's status field - tags here are neutral, and colored
                     detail lives in the tab cards. */}
-                <Tag tone="mute">{entity.activation}</Tag>
+                <Tag tone="mute">{entity.archived ? 'مؤرشفة' : entity.activation}</Tag>
                 <Tag tone="mute">الحوكمة: {entity.governance}</Tag>
                 {/* An expired license blocks contracting, so it belongs in the header, not inside a
                     tab - the decision is made from the top. */}
@@ -122,10 +125,12 @@ export default function EntityPage() {
 
           <div className="g2">
             <div className="col">
+              {active === 'data' && <EntityStatusCard e={entity} />}
               {active === 'data' && <EntityDataTab e={entity} d={detail} />}
-              {active === 'docs' && <EntityDocsTab d={detail} />}
-              {active === 'banks' && <EntityBanksTab d={detail} />}
+              {active === 'docs' && <EntityDocsTab d={detail} entityId={entity.id} />}
+              {active === 'banks' && <EntityBanksTab d={detail} entityId={entity.id} />}
               {active === 'projects' && <EntityProjectsTab rows={projects} />}
+              {active === 'requests' && <EntityRequestsTab e={entity} />}
               {active === 'log' && <EntityLogTab d={detail} />}
 
               {/* The running log and links sit below every tab: persistent context, not tab content

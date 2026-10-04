@@ -1,6 +1,7 @@
 import { FieldSelect, Icon, Tag, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { BANKS, BANK_DOC_LABEL, emptyBank, type RegBank } from '@/data/mock/registration'
+import { ibanValid } from '@/lib/iban'
 
 /* Bank accounts.
 
@@ -15,20 +16,23 @@ import { BANKS, BANK_DOC_LABEL, emptyBank, type RegBank } from '@/data/mock/regi
    verifies. */
 
 export function BankRows({
-  banks, onChange,
+  banks, onChange, min = 1, idPrefix = 'b',
 }: {
   banks: RegBank[]
   onChange: (next: RegBank[]) => void
+  /** Rows that can't be removed · registration needs one account, an update request none */
+  min?: number
+  idPrefix?: string
 }) {
   const patch = (id: string, p: Partial<RegBank>) =>
     onChange(banks.map((b) => (b.id === id ? { ...b, ...p } : b)))
 
-  const add = () => onChange([...banks, emptyBank(banks.length + 1)])
+  const add = () => onChange([...banks, { ...emptyBank(banks.length + 1), id: `${idPrefix}${Date.now()}` }])
 
   /* The last account can't be removed: a request needs at least one account, and a button that
      removes the only one leaves the user unable to submit with no explanation why. */
   const drop = (id: string) => {
-    if (banks.length <= 1) return
+    if (banks.length <= min) return
     onChange(banks.filter((b) => b.id !== id))
   }
 
@@ -46,8 +50,8 @@ export function BankRows({
             <button
               type="button"
               className="btn btn-ghost btn-sm"
-              disabled={banks.length <= 1}
-              title={banks.length <= 1 ? 'يلزم حساب واحد على الأقل' : `احذف الحساب ${i + 1}`}
+              disabled={banks.length <= min}
+              title={banks.length <= min ? 'يلزم حساب واحد على الأقل' : `احذف الحساب ${i + 1}`}
               aria-label={`احذف الحساب ${i + 1}`}
               onClick={() => drop(b.id)}
             >
@@ -100,11 +104,16 @@ export function BankRows({
               <span className="fld">
                 <input
                   value={b.iban}
-                  onChange={(e) => patch(b.id, { iban: e.target.value })}
+                  dir="ltr"
+                  /* Upper case, letters and digits only · what was pasted with dashes still reads */
+                  onChange={(e) => patch(b.id, { iban: e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '') })}
                   aria-label={`آيبان الحساب ${i + 1}`}
                 />
               </span>
-              <span className="sub regf-h">SA يليه 22 رقمًا</span>
+              {/* 2.4.6 · checked as it is typed: shape first, then the check digits */}
+              {b.iban.replace(/\s/g, '').length >= 24 && !ibanValid(b.iban)
+                ? <span className="bad regf-h">الآيبان غير صحيح · تحقّق من الأرقام</span>
+                : <span className="sub regf-h">SA يليه 22 رقمًا</span>}
             </label>
           </div>
 
@@ -135,9 +144,9 @@ export function BankRows({
         </div>
       ))}
 
-      <button className="btn btn-2 btn-sm bkrows-a" onClick={add}>
+      <button type="button" className="btn btn-2 btn-sm bkrows-a" onClick={add}>
         <Icon name={icons.plus} size="sm" />
-        أضف حسابًا بنكيًا آخر
+        {banks.length ? 'أضف حسابًا بنكيًا آخر' : 'أضف حسابًا بنكيًا'}
       </button>
     </div>
   )

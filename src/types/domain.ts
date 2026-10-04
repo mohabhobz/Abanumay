@@ -75,7 +75,9 @@ export type FollowUpType =
 
 // Entity
 
-export type EntityActivation = 'مقبول' | 'معلق (جديد)' | 'معلق (موقوف)' | 'محدث' | 'مرفوض'
+/** Entity activation · «نشط» can apply · «غير نشط» lost it to an expired mandatory document (2.4.20) ·
+    «معلق (موقوف)» suspended by decision · «ملغى الاعتماد» revoked · «محدث» an update awaits approval (2.3.upd-16) */
+export type EntityActivation = 'نشط' | 'غير نشط' | 'معلق (جديد)' | 'معلق (موقوف)' | 'محدث' | 'ملغى الاعتماد' | 'مرفوض'
 
 export interface EntityDocument {
   name: string
@@ -543,6 +545,10 @@ export interface EntityRow {
   inDisbursement: number
   mobile: string
   email: string
+  /** Archived instead of deleted (2.4.28) · out of every list, found only by the archive search (2.4.29) */
+  archived?: boolean
+  /** May submit project requests · granted on approval (2.2.17 · 2.4.18), lost with activation */
+  canApply?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════

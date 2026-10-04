@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { FieldSelect } from '@/components/ui'
 import { citiesOf, type RegField } from '@/data/mock/registration'
 
@@ -8,13 +9,22 @@ import { citiesOf, type RegField } from '@/data/mock/registration'
  * 27, so a name doesn't get written ten different ways and become impossible to sort. The tooltips
  * written here are carried over from the live system verbatim.
  */
+/** What a numeric field keeps from a keystroke or a paste (2.4.7) · no letters, no spaces */
+const keep = (kind: string, x: string): string =>
+  kind === 'tel' ? x.replace(/[^\d+]/g, '') : kind === 'digits' ? x.replace(/\D/g, '') : x
+
 export function Field({
-  f, value, parent, onChange,
+  f, value, parent, onChange, error, tag, disabled,
 }: {
   f: RegField
   value: string
   parent: string
   onChange: (x: string) => void
+  /** The field's format problem · shown in place of the hint (2.2.4) */
+  error?: string
+  /** A badge beside the label · «يتطلب اعتمادًا» on an update request */
+  tag?: ReactNode
+  disabled?: boolean
 }) {
   const options = f.dependsOn ? citiesOf(parent) : f.options ?? []
   const locked = Boolean(f.dependsOn) && !parent
@@ -24,6 +34,7 @@ export function Field({
       <span className="lb">
         {f.label}
         {f.req && <b className="regf-r" aria-label="إلزامي">*</b>}
+        {tag}
       </span>
       {/* Note: `.fld` isn't a cosmetic class - it's the system's actual control for fields,
           registered in `ctlaudit` so its focus ring gets checked alongside search and filters. A
@@ -36,7 +47,7 @@ export function Field({
         <FieldSelect
           value={value}
           options={options}
-          disabled={locked}
+          disabled={locked || disabled}
           onChange={onChange}
           label={f.label}
           placeholder={locked ? 'اختر المنطقة أولًا' : 'اختر'}
@@ -59,14 +70,19 @@ export function Field({
                     : f.kind === 'email' ? 'email' : 'text'
             }
             autoComplete={f.kind === 'password' ? 'new-password' : undefined}
-            inputMode={f.kind === 'tel' || f.kind === 'number' ? 'numeric' : undefined}
+            inputMode={f.kind === 'tel' || f.kind === 'number' || f.kind === 'digits' ? 'numeric' : f.kind === 'url' ? 'url' : undefined}
+            dir={f.kind === 'tel' || f.kind === 'digits' || f.kind === 'url' || f.kind === 'email' ? 'ltr' : undefined}
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            onChange={(e) => onChange(keep(f.kind, e.target.value))}
             aria-label={f.label}
+            aria-invalid={error ? true : undefined}
           />
         </span>
       )}
-      {f.hint && <span className="sub regf-h">{f.hint}</span>}
+      {error
+        ? <span className="bad regf-h">{error}</span>
+        : f.hint && <span className="sub regf-h">{f.hint}</span>}
     </label>
   )
 }

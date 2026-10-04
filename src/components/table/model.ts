@@ -86,6 +86,35 @@ export const aggregate = <T,>(col: Col<T>, rows: T[]): number | null => {
   return col.agg === 'avg' ? Math.round(total / vals.length) : total
 }
 
+/* ── Sorting by a column header (2.4.23) ──
+   The order lives in the URL as `key.asc` / `key.desc`, so a sorted table is a link. A column
+   sorts by its number when it has one, otherwise by its text in Arabic collation. */
+export type SortDir = 'asc' | 'desc'
+export interface ColSort { key: string; dir: SortDir }
+
+export const readSort = (v: string | undefined): ColSort | null => {
+  const [key, dir] = (v ?? '').split('.')
+  return key && (dir === 'asc' || dir === 'desc') ? { key, dir } : null
+}
+export const writeSort = (s: ColSort | null): string | undefined => (s ? `${s.key}.${s.dir}` : undefined)
+
+/** The next state of a header click · ascending, descending, then back to the screen's own order */
+export const nextSort = (cur: ColSort | null, key: string): ColSort | null =>
+  cur?.key !== key ? { key, dir: 'asc' } : cur.dir === 'asc' ? { key, dir: 'desc' } : null
+
+export const sortRows = <T,>(rows: T[], cols: Col<T>[], s: ColSort | null): T[] => {
+  const c = s && cols.find((x) => x.key === s.key)
+  if (!s || !c) return rows
+  const k = s.dir === 'asc' ? 1 : -1
+  return [...rows].sort((a, b) => {
+    const va = c.value?.(a)
+    const vb = c.value?.(b)
+    if (c.value && va != null && vb != null) return (va - vb) * k
+    if (c.value && (va == null) !== (vb == null)) return va == null ? 1 : -1
+    return c.text(a).localeCompare(c.text(b), 'ar') * k
+  })
+}
+
 export const defaultCols = <T,>(cols: Col<T>[]): string[] =>
   cols.filter((c) => c.fixed || c.def).map((c) => c.key)
 

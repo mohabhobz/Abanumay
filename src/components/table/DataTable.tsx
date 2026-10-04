@@ -3,6 +3,7 @@ import { useMenu } from '@/hooks/useMenu'
 import { Icon, icons, MenuOpt, MenuPanel } from '@/components/ui'
 import { nf, pct, unitAfter } from '@/lib/format'
 import {
+  type ColSort,
   aggregate, allPaths, countLeaves, defaultCols, groupTree, orderCols,
   type Col, type GroupBy, type GroupNode,
 } from './model'
@@ -37,6 +38,9 @@ export interface DataTableProps<T> {
   count: (n: number) => string
   /** Table name — column widths the user dragged are stored against it. */
   table?: string
+  /** Header sorting · the page sorts its rows (`sortRows`) and keeps the order in its URL */
+  sort?: ColSort | null
+  onSort?: (key: string) => void
 }
 
 /**
@@ -58,7 +62,7 @@ export interface DataTableProps<T> {
 const NONE: ReadonlySet<string> = new Set()
 
 export function DataTable<T>({
-  rows, all, cols, onCols, id, selected, onSelect, onSelectAll, onOpen, group, count, table,
+  rows, all, cols, onCols, id, selected, onSelect, onSelectAll, onOpen, group, count, table, sort, onSort,
 }: DataTableProps<T>) {
   const resize = useColumnResize(table)
   const bys = group ?? []
@@ -147,6 +151,8 @@ export function DataTable<T>({
           ))
         : (
           <Block
+            sort={sort}
+            onSort={onSort}
             rows={rows}
             cols={shown}
             id={id}
@@ -351,8 +357,10 @@ function Cap<T>({
 
 function Block<T>({
   caption, rows, cols, id, selected, onSelect, onSelectAll, onOpen, picker, count, resize,
-  shut,
+  shut, sort, onSort,
 }: {
+  sort?: ColSort | null
+  onSort?: (key: string) => void
   /** Group row — drawn in a shared component because it's shared with intermediate nodes. */
   caption?: ReactNode
   /** The group is collapsed — summary row only. */
@@ -439,8 +447,19 @@ function Block<T>({
               </th>
             )}
             {cols.map((c, i) => (
-              <th key={c.key} className={c.n ? 'n' : undefined} title={c.label}>
-                <span className="th-t">{c.label}</span>
+              <th
+                key={c.key}
+                className={c.n ? 'n' : undefined}
+                title={c.label}
+                aria-sort={sort?.key === c.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
+              >
+                {onSort ? (
+                  <button type="button" className={`th-t th-sort${sort?.key === c.key ? ' on' : ''}`} onClick={() => onSort(c.key)}
+                    title={`رتّب حسب ${c.label}`}>
+                    {c.label}
+                    {sort?.key === c.key && <Icon name={sort.dir === 'asc' ? icons.chevronUp : icons.chevronDown} size="sm" />}
+                  </button>
+                ) : <span className="th-t">{c.label}</span>}
                 {/* The handle sits on the column's inner edge — meaning the boundary between it and
                     the next one. The last column has no handle: there's no boundary after it to
                     drag, and the column picker sits next to it. */}

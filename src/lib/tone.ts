@@ -53,7 +53,8 @@ export const groupTone = (group: string): Tone => {
 /** Entity activation status — the first thing read before any decision. */
 export const activationTone = (activation: string): Tone => {
   switch (activation) {
-    case 'مقبول': return 'ok'
+    case 'نشط': return 'ok'
+    case 'ملغى الاعتماد': return 'no'
     case 'محدث': return 'ret'
     case 'مرفوض': return 'no'
     default: return 'warn'

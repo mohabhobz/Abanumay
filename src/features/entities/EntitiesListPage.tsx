@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, PAGE_SIZES, Pager, SearchBox, Segments,
+  DateField, Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, PAGE_SIZES, Pager, SearchBox, Segments,
   Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -25,15 +25,16 @@ import { readEntities } from '@/data/readings'
 import { regKpi } from '@/data/mock/registration'
 import { EntityCard } from './EntityCard'
 import { COLS, GROUPS } from './columns'
+import { UPD_ROWS } from '@/data/entities/store'
 import {
-  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols,
+  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols, readSort, writeSort, nextSort, sortRows,
 } from '@/components/table'
 import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
 
 const KEYS = [
   'q', 'activation', 'type', 'licensor', 'region', 'city', 'governance',
-  'docs', 'running', 'sort', 'page', 'size', 'view', 'adv', 'group',
+  'docs', 'running', 'sort', 'page', 'size', 'view', 'adv', 'group', 'ord', 'from', 'to', 'open',
 ] as const
 
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -41,10 +42,10 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 const PAGE_SIZE = PAGE_SIZES[0]
 
 /** Default filter order - matches `FILTER_DEFS`'s order inside the component. */
-const FILTER_KEYS = ['type', 'licensor', 'region', 'city', 'governance']
+const FILTER_KEYS = ['type', 'licensor', 'region', 'city', 'governance', 'registered']
 
 const NOT_FILTERS: (keyof Params)[] = [
-  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'activation', 'docs', 'running',
+  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'activation', 'docs', 'running', 'ord', 'open',
 ]
 
 /** Saved views - the questions that actually block work. */
@@ -52,6 +53,8 @@ const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
   { key: 'all', label: 'كل الجهات', patch: {} },
   { key: 'new', label: 'بانتظار التفعيل', patch: { activation: 'معلق (جديد)' } },
   { key: 'held', label: 'موقوفة', patch: { activation: 'معلق (موقوف)' } },
+  /* 2.4.20 · lost activity to an expired mandatory document */
+  { key: 'lapsed', label: 'غير نشطة', patch: { activation: 'غير نشط' } },
   { key: 'docs', label: 'ملفها ناقص', patch: { docs: '1' } },
 ]
 
@@ -105,6 +108,9 @@ export default function EntitiesListPage() {
       governance: readList(v.governance),
       docsIncomplete: v.docs === '1',
       hasRunning: v.running === '1',
+      registeredFrom: v.from,
+      registeredTo: v.to,
+      openRequest: v.open === '1',
       sort: (v.sort as EntityQuery['sort']) ?? 'granted',
       page,
       pageSize: size,
@@ -233,6 +239,7 @@ export default function EntitiesListPage() {
     { key: 'region', label: 'المنطقة' },
     { key: 'city', label: 'المدينة' },
     { key: 'governance', label: 'درجة الحوكمة' },
+    { key: 'registered', label: 'تاريخ التسجيل' },
   ]
 
   const FILTERS: Record<string, ReactNode> = {
@@ -250,6 +257,13 @@ export default function EntitiesListPage() {
     ),
     city: <MultiSelect label="المدينة" values={readList(v.city)} options={cityOptions} onChange={(x) => set({ city: writeList(x) })} disabled={regions.length === 0} all={regions.length ? 'الكل' : 'اختر المنطقة أولًا'} />,
     governance: <MultiSelect label="درجة الحوكمة" values={readList(v.governance)} options={GOVERNANCE} onChange={(x) => set({ governance: writeList(x) })} />,
+    /* 2.4.22 · registered between two dates */
+    registered: (
+      <div className="rowf gp-2">
+        <DateField label="سُجّلت من" value={v.from ?? ''} max={v.to} onChange={(x) => set({ from: x || undefined, page: undefined })} />
+        <DateField label="إلى" value={v.to ?? ''} min={v.from} onChange={(x) => set({ to: x || undefined, page: undefined })} end />
+      </div>
+    ),
   }
 
   const chips = (
@@ -260,9 +274,12 @@ export default function EntitiesListPage() {
   )
     .flatMap(([k, label]) => readList(v[k]).map((value) => ({ k, label, value })))
 
-  const flags = (
-    [['docs', 'ملف ناقص'], ['running', 'لها مشاريع تحت التشغيل']] as [keyof Params, string][]
-  ).filter(([k]) => v[k] === '1')
+  const flags = [
+    ...([['docs', 'ملف ناقص'], ['running', 'لها مشاريع تحت التشغيل'], ['open', 'لها طلب تحديث مفتوح']] as [keyof Params, string][])
+      .filter(([k]) => v[k] === '1'),
+    ...(v.from ? [['from', `سُجّلت من ${v.from}`] as [keyof Params, string]] : []),
+    ...(v.to ? [['to', `سُجّلت حتى ${v.to}`] as [keyof Params, string]] : []),
+  ]
 
   return (
     <AppLayout assistantContext={assistFor.entities()}>
@@ -290,10 +307,12 @@ export default function EntitiesListPage() {
                 match it. */}
             <PageActions
               settings={ROUTES.entitySettings}
-              secondary={[{
-                label: 'طلبات التسجيل', to: ROUTES.entityRequests,
-                icon: 'doc', count: reg.open,
-              }]}
+              secondary={[
+                { label: 'طلبات التسجيل', to: ROUTES.entityRequests, icon: 'doc', count: reg.open },
+                /* 2.3.upd · the other request an entity sends, after it exists */
+                { label: 'طلبات التحديث', to: ROUTES.entityUpdates, icon: 'edit', count: UPD_ROWS.filter((u) => u.state === 'review').length },
+                { label: 'الأرشيف', to: ROUTES.entityArchive, icon: 'folder' },
+              ]}
               /* Note: this button leads to direct registration, not the entity portal - whoever's
                  using this is a grants supervisor inside the system registering a partner they
                  manage themselves (rule 32). The entity portal's entry point is the login screen,
@@ -350,6 +369,7 @@ export default function EntitiesListPage() {
                 onChange={(x) => set({ sort: x })}
               />
               <Toggle label="لها مشاريع تحت التشغيل" on={v.running === '1'} onChange={(on) => set({ running: on ? '1' : undefined })} />
+              <Toggle label="لها طلب تحديث مفتوح" on={v.open === '1'} onChange={(on) => set({ open: on ? '1' : undefined, page: undefined })} />
               <button
                 className={`fchip${advOpen ? ' on' : ''}`}
                 onClick={() => set({ adv: advOpen ? undefined : '1' })}
@@ -453,7 +473,9 @@ export default function EntitiesListPage() {
           ) : (
             <Glass className="tblcard">
               <DataTable
-                rows={result.rows}
+                rows={sortRows(result.rows, COLS, readSort(v.ord))}
+                sort={readSort(v.ord)}
+                onSort={(k) => set({ ord: writeSort(nextSort(readSort(v.ord), k)) })}
                 all={COLS}
                 table="entities"
                 cols={cols}

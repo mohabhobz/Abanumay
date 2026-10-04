@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BackTo, Glass, Head, Icon, icons, Num, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
+import { DockSlotProvider, useDockSlot } from '@/components/shell'
+import { EntityRulesTab } from './EntityRulesTab'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -33,6 +35,8 @@ const TABS = [
   { slug: 'types', label: 'تصنيفات الجهة' },
   { slug: 'licensors', label: 'جهات الإشراف الفني' },
   { slug: 'targets', label: 'الفئات المستهدفة' },
+  /* BPD-002 · the switches and numbers behind registration, codes, passwords and updates */
+  { slug: 'rules', label: 'قواعد التسجيل والتحديث' },
 ] as const
 
 export default function EntitySettingsPage() {
@@ -43,6 +47,7 @@ export default function EntitySettingsPage() {
   const region = REGIONS.includes(v.region as never) ? (v.region as string) : REGIONS[0]
   const cities = CITIES_BY_REGION[region] ?? []
 
+  const dock = useDockSlot()
   const [draft, setDraft] = useState('')
   const clear = () => setDraft('')
 
@@ -77,7 +82,8 @@ export default function EntitySettingsPage() {
 
   return (
     <AppLayout assistantContext={assistFor.page('إعدادات الجهات')}>
-      <div className="viewstack">
+      <DockSlotProvider value={dock.value}>
+      <div className={`viewstack${dock.on ? ' hasdock' : ''}`}>
         <div className="screen col">
           <BackTo label="الجهات" onClick={() => navigate(ROUTES.entities)} />
 
@@ -126,7 +132,9 @@ export default function EntitySettingsPage() {
             </Glass>
           )}
 
-          <Glass className="tblcard">
+          {tab === 'rules' && <EntityRulesTab />}
+
+          {tab !== 'rules' && <Glass className="tblcard">
             <Head
               title={tab === 'places' ? `مدن ${region}` : TABS.find((t) => t.slug === tab)!.label}
               meta={<span className="sub"><Num>{rows.length}</Num> {unitAfter(rows.length, unit)}</span>}
@@ -183,9 +191,11 @@ export default function EntitySettingsPage() {
                   ? 'لا تُحذف قيمة مرتبطة بسجلات · والرقم بجانبها يوضّح السبب قبل المحاولة.'
                   : 'لا تُحذف قيمة مرتبطة بسجلات.'}
             </p>
-          </Glass>
+          </Glass>}
         </div>
       </div>
+      <div className="dockslot" ref={dock.setEl} />
+      </DockSlotProvider>
     </AppLayout>
   )
 }

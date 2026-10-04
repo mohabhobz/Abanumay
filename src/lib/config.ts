@@ -74,4 +74,6 @@ export const CFG = {
   criteria: 'ab-cfg-criteria',
   consultants: 'ab-cfg-consultants',
   prospects: 'ab-cfg-prospects',
+  /** Entity registration and update rules · BPD-002 */
+  entityRules: 'ab-cfg-entity-rules',
 } as const

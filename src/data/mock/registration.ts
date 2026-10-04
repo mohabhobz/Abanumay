@@ -15,8 +15,9 @@
  * Source: the spec, and the live system's own `/reg/add` form, read literally. Differences are
  * recorded separately.
  */
-import { REG_TYPES, LICENSORS, REGIONS, CITIES_BY_REGION } from './taxonomy'
+import { REG_TYPES, LICENSORS, REGIONS, CITIES_BY_REGION, BANKS as BANK_NAMES, BANK_REJECT_REASONS } from './taxonomy'
 import { TONE } from '@/lib/tone'
+import { ibanValid } from '@/lib/iban'
 import type { Tone } from '@/types/domain'
 
 /* Request states · five.
@@ -145,7 +146,7 @@ export const REG_TERMS = [
    marker. What changed here is that the fifth tab (bank account) was added by a separate rule
    rather than by the live system, since the live system defers banking to a different action. */
 
-export type FieldKind = 'text' | 'tel' | 'email' | 'date' | 'select' | 'number' | 'iban' | 'password'
+export type FieldKind = 'text' | 'tel' | 'email' | 'date' | 'select' | 'number' | 'iban' | 'password' | 'digits' | 'url'
 
 export interface RegField {
   key: string
@@ -254,7 +255,7 @@ export const REG_STAGES: RegStage[] = [
       { key: 'licensor', label: 'جهة الإشراف الفني', kind: 'select', req: true, options: SUPERVISORS, wide: true },
       { key: 'region', label: 'المنطقة', kind: 'select', req: true, options: REGIONS, nl: true },
       { key: 'city', label: 'المحافظة / المدينة', kind: 'select', req: true, dependsOn: 'region' },
-      { key: 'licenseNo', label: 'رقم الترخيص', kind: 'text', req: true },
+      { key: 'licenseNo', label: 'رقم الترخيص', kind: 'digits', req: true },
     ],
   },
   {
@@ -275,7 +276,7 @@ export const REG_STAGES: RegStage[] = [
       { key: 'phone', label: 'الهاتف', kind: 'tel' },
       { key: 'mobile', label: 'جوال الجهة', kind: 'tel', req: true },
       { key: 'email', label: 'البريد الإلكتروني للجهة', kind: 'email', req: true },
-      { key: 'website', label: 'الموقع الإلكتروني', kind: 'text' },
+      { key: 'website', label: 'الموقع الإلكتروني', kind: 'url' },
       { key: 'directorName', label: 'اسم المدير التنفيذي', kind: 'text', req: true },
       { key: 'directorMobile', label: 'جوال المدير التنفيذي', kind: 'tel', req: true },
       { key: 'clerkName', label: 'اسم مدخل البيانات', kind: 'text', req: true },
@@ -331,34 +332,15 @@ export const FORM_STAGES: RegStage[] = REG_STAGES.filter((s) => !s.own)
 export const FIRST_FORM_STAGE = FORM_STAGES[0].key
 
 /** Bank names are standardized · a closed list rules out a free-text field here */
-export const BANKS = [
-  'مصرف الراجحي',
-  'البنك الأهلي السعودي',
-  'بنك الرياض',
-  'البنك السعودي الفرنسي',
-  'بنك البلاد',
-  'البنك السعودي للاستثمار',
-  'بنك الجزيرة',
-  'البنك العربي الوطني',
-  'مصرف الإنماء',
-  'بنك الخليج الدولي',
-] as const
+export const BANKS = BANK_NAMES
 
 /* The field is defined above with an empty list on purpose, since `BANKS` is defined below it —
    this linking prevents two copies of the same list */
 const bankField = REG_STAGES.find((s) => s.key === 'bank')?.fields[0]
 if (bankField) bankField.options = BANKS
 
-/** Bank account rejection reasons · seven, coded in the live system */
-export const BANK_REJECTS = [
-  'الآيبان غير مطابق لاسم الجهة',
-  'صورة الآيبان غير واضحة',
-  'الحساب مقفل أو موقوف',
-  'الحساب باسم شخص لا باسم الجهة',
-  'البنك غير معتمد',
-  'الآيبان غير صحيح',
-  'خطاب البنك منتهي الصلاحية',
-] as const
+/** Bank account rejection reasons · the same seven coded values as the entity file (2.4.27) */
+export const BANK_REJECTS = BANK_REJECT_REASONS
 
 /* Documents · requirement is conditional on entity type.
 
@@ -489,6 +471,9 @@ export const bankIssues = (banks: RegBank[]): BankIssue[] => {
     if (!iban) out.push({ key: `${b.id}-iban`, say: `${at}: أدخل رقم الآيبان.` })
     else if (!/^SA\d{22}$/i.test(iban)) {
       out.push({ key: `${b.id}-ibanbad`, say: `${at}: أدخل رقم آيبان يبدأ بـSA ويليه 22 رقمًا.` })
+    } else if (!ibanValid(iban)) {
+      /* 2.4.6 · the shape is right but the check digits aren't · a digit was mistyped */
+      out.push({ key: `${b.id}-ibansum`, say: `${at}: رقم الآيبان غير صحيح · خانتا التحقّق لا تطابقان بقية الرقم.` })
     } else {
       const before = seen.get(iban.toUpperCase())
       if (before !== undefined) {
@@ -539,6 +524,31 @@ export interface RegRequest {
   entityId?: string
   /** Days under review · feeds an indicator */
   reviewDays?: number
+  /* ── Recorded by the request's own actions (data/entities/store) ── */
+  phone?: string
+  website?: string
+  directorMobile?: string
+  /** Every action on the request, oldest first · returns are never overwritten (2.4.3 · 2.4.15) */
+  events?: RegEvent[]
+  /** Fields the reviewer flagged on a return · the only ones the entity may edit (2.2.14) */
+  returnFields?: string[]
+  /** Each resubmission is a new version */
+  version?: number
+  /** Bank decision per account · '' accepted, otherwise one of the coded reasons (2.2.15) */
+  bankDecisions?: Record<string, string>
+  /** Picked files · name and size, with a legibility warning when one was raised (2.4.5) */
+  files?: Record<string, { name: string; size: number; warn?: string }>
+  decidedBy?: string
+}
+
+export interface RegEvent {
+  kind: 'draft' | 'submit' | 'otp' | 'return' | 'resubmit' | 'approve' | 'reject' | 'bank'
+  action: string
+  by: string
+  /** ISO date and time */
+  at: string
+  note?: string
+  fields?: { k: string; v: string }[]
 }
 
 const req = (

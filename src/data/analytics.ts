@@ -138,7 +138,7 @@ export interface EntityHealth {
 
 export const entityHealth = (entities: EntityRow[]): EntityHealth => ({
   ready: entities.filter(
-    (e) => e.docsUploaded >= ENTITY_DOCS_TOTAL && e.activation === 'مقبول',
+    (e) => e.docsUploaded >= ENTITY_DOCS_TOTAL && e.activation === 'نشط',
   ).length,
   incomplete: entities.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL).length,
   held: entities.filter((e) => e.activation.startsWith('معلق')).length,

@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from '@/features/auth/AuthShell'
 import { ROUTES } from '@/app/routes'
-import { setRegAccount } from '@/data/mock/registration'
+import { regRows, setRegAccount } from '@/data/mock/registration'
+import { createAccount, passwordOk } from '@/data/entities/auth'
+import { draftOf } from '@/data/entities/store'
+import { passwordIssues } from '@/data/entities/validate'
 
 /* Creating an entity account - its own screen.
 
@@ -25,9 +28,9 @@ import { setRegAccount } from '@/data/mock/registration'
    application portal instead - the line under the button says so and takes it there, rather than
    creating a second account and losing its first application.
 
-   Note: no "remember me" and no "forgot password". Both belong to the login screen - there's no
-   account here yet to remember or forget. The wrapper is shared, and the content states its own
-   job. */
+   The same card also brings an entity back (2.2.5 · 2.4.12): with the account's email and password
+   a saved draft opens where it was left, and a sent request opens its portal. A forgotten password
+   goes to the self-service reset. */
 
 /** Minimum password length - defined once so the requirement and the message stay in sync. */
 const MIN_PASS = 8
@@ -40,6 +43,8 @@ export default function RegisterAccountPage() {
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  /* Two jobs on one card: create the account, or come back to it (2.2.5 · 2.4.12) */
+  const [back, setBack] = useState(false)
 
   /** Shows the error as a toast and hides it on its own - same behavior as the login screen. */
   const fail = (message: string) => {
@@ -53,13 +58,25 @@ export default function RegisterAccountPage() {
        naming the field. "Check your details" would make them hunt visually for what's wrong. */
     if (!email.trim()) { fail('أدخل البريد الإلكتروني للجهة'); return }
     if (!email.includes('@')) { fail('أدخل بريدًا إلكترونيًا صحيحًا، مثل name@org.sa'); return }
-    if (pass.length < MIN_PASS) { fail(`أدخل كلمة مرور من ${MIN_PASS} أحرف على الأقل`); return }
+    if (back) {
+      /* Coming back · the saved draft opens where it was left; a sent request opens its portal */
+      if (passwordOk(email, pass) === false) { fail('كلمة المرور غير صحيحة'); return }
+      setRegAccount(email)
+      const d = draftOf(email.trim())
+      const sent = regRows.find((r) => r.acctEmail === email.trim() && r.state !== 'draft')
+      navigate(d?.state === 'draft' ? `${ROUTES.entityRegister}?step=form`
+        : sent ? `${ROUTES.entityPortal}?req=${sent.id}` : `${ROUTES.entityRegister}?step=form`, { replace: true })
+      return
+    }
+    const weak = passwordIssues(pass, email)
+    if (pass.length < MIN_PASS || weak.length) { fail(`كلمة المرور: ${weak.join('، ') || `${MIN_PASS} أحرف على الأقل`}`); return }
     if (pass !== pass2) { fail('كلمتا المرور غير متطابقتين. أعد إدخال التأكيد.'); return }
 
     setErr('')
     setBusy(true)
     setTimeout(() => {
       setRegAccount(email)
+      createAccount(email, pass)
       /* Note: `replace` is deliberate - a browser "back" after creating the account would return to
          an account-creation screen that's already been used, so this screen drops out of history
          exactly like the login screen. */
@@ -80,7 +97,7 @@ export default function RegisterAccountPage() {
   )
 
   return (
-    <AuthShell title="إنشاء حساب الجهة" sub="الخطوة الأولى في تسجيل جهة جديدة" err={err}>
+    <AuthShell title={back ? 'العودة إلى طلبك' : 'إنشاء حساب الجهة'} sub={back ? 'بالحساب الذي أنشأته عند التسجيل' : 'الخطوة الأولى في تسجيل جهة جديدة'} err={err}>
       {/* Note: this line explains why the account comes before the form. The entity asks "why am I
           creating an account before I've even applied" - the answer is that the form itself is long
           and gets interrupted: the license file, board term date, and IBAN aren't things people
@@ -106,18 +123,18 @@ export default function RegisterAccountPage() {
         />
         <AuthField
           id="ra-pass"
-          name="new-password"
+          name={back ? 'password' : 'new-password'}
           label="كلمة المرور"
           icon={icons.lock}
           type={show ? 'text' : 'password'}
           value={pass}
           onChange={setPass}
-          autoComplete="new-password"
-          enterKeyHint="next"
+          autoComplete={back ? 'current-password' : 'new-password'}
+          enterKeyHint={back ? 'go' : 'next'}
           trailing={eye}
-          hint={<><span className="num">{MIN_PASS}</span> أحرف على الأقل</>}
+          hint={back ? undefined : <><span className="num">{MIN_PASS}</span> أحرف على الأقل، فيها حرف ورقم</>}
         />
-        <AuthField
+        {!back && <AuthField
           id="ra-pass2"
           name="confirm-password"
           label="تأكيد كلمة المرور"
@@ -132,10 +149,10 @@ export default function RegisterAccountPage() {
           hint={pass2 && pass !== pass2
             ? <span className="bad">لا تطابق كلمة المرور</span>
             : undefined}
-        />
+        />}
 
         <button className="btn btn-p btn-full" type="submit" disabled={busy}>
-          {busy ? 'جارٍ إنشاء الحساب…' : 'أنشئ الحساب وتابع التسجيل'}
+          {back ? 'افتح طلبي' : busy ? 'جارٍ إنشاء الحساب…' : 'أنشئ الحساب وتابع التسجيل'}
         </button>
       </form>
 
@@ -144,12 +161,14 @@ export default function RegisterAccountPage() {
         <button
           className="btn btn-2 btn-full"
           type="button"
-          onClick={() => navigate(ROUTES.entityPortal)}
+          onClick={() => { setBack((x) => !x); setErr('') }}
         >
-          لديك حساب بالفعل؟ افتح بوابة طلبك
+          {back ? 'ليس لديك حساب؟ أنشئ حسابًا' : 'لديك حساب بالفعل؟ عُد إلى طلبك'}
         </button>
         <p className="lnote sub">
-          تتابع الجهة التي قدّمت طلبًا حالته من بوابتها بالحساب نفسه.
+          {back
+            ? <>نسيت كلمة المرور؟ <button type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>استعدها</button></>
+            : 'تُفتح المسودة حيث تركتها، ويُفتح الطلب المرسل في بوابته.'}
         </p>
       </div>
     </AuthShell>

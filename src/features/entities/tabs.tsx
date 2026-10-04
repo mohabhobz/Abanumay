@@ -7,6 +7,7 @@ import { activationTone, days, groupTone, TONE } from '@/lib/tone'
 import { ENTITY_DOCS_TOTAL, stagePressure } from '@/data/repository'
 import type { EntityDetail, EntityEvent } from '@/data/mock/entityDetail'
 import type { EntityRow, ProjectRow } from '@/types/domain'
+import { BankActions } from './EntityActions'
 
 /* === Entity data === */
 
@@ -142,7 +143,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
  * to pass as complete. That's worse than a missing one - a missing document is visible, an expired
  * one slips through.
  */
-export function EntityDocsTab({ d }: { d: EntityDetail }) {
+export function EntityDocsTab({ d, entityId }: { d: EntityDetail; entityId: string }) {
   const up = d.docs.filter((x) => x.uploaded).length
   const expired = d.docs.filter((x) => x.expired).length
 
@@ -157,6 +158,18 @@ export function EntityDocsTab({ d }: { d: EntityDetail }) {
           </>
         }
       />
+      {/* 2.4.20 · an expired mandatory document takes the entity out of activity until an update
+          request carries the renewed copy · the entity is told from its portal */}
+      {expired > 0 && (
+        <div className="ptl-res no mb-3">
+          <Icon name={icons.alert} size="sm" />
+          <div>
+            <b><Num>{expired}</Num> {expired === 1 ? 'وثيقة منتهية' : 'وثائق منتهية'}</b>
+            <p>تتحول الجهة إلى «غير نشطة» عند انتهاء الترخيص أو قرار تكليف المجلس، ولا يُقبل منها طلب مشروع حتى تُعتمد النسخة السارية بطلب تحديث من بوابتها.{' '}
+              <Link className="lnk" to={`${ROUTES.entityUpdate}?entity=${entityId}`}>نموذج التحديث كما تراه الجهة</Link></p>
+          </div>
+        </div>
+      )}
       <DocList
         label="مستندات الجهة وصلاحيتها"
         heads={['تاريخ الرفع', 'نهاية الصلاحية']}
@@ -183,7 +196,7 @@ export function EntityDocsTab({ d }: { d: EntityDetail }) {
  * selected, not typed freely - seven coded reasons. That's what turns "why do accounts get
  * rejected" into a question with a numeric answer instead of free-text notes.
  */
-export function EntityBanksTab({ d }: { d: EntityDetail }) {
+export function EntityBanksTab({ d, entityId }: { d: EntityDetail; entityId: string }) {
   if (d.banks.length === 0) {
     return <Glass><Empty art={{ done: 0, total: 2 }} title="لا توجد حسابات بنكية مسجّلة." note="الصرف موقوف حتى تسجّل الجهة حسابًا بنكيًا ويُفعَّل." /></Glass>
   }
@@ -219,6 +232,7 @@ export function EntityBanksTab({ d }: { d: EntityDetail }) {
             <DocFile name={b.certificate} meta="الشهادة البنكية" />
             {b.attachment && <DocFile name={b.attachment} meta="المرفق" />}
           </div>
+          <BankActions entityId={entityId} b={b} />
         </Glass>
       ))}
     </div>

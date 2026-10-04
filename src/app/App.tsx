@@ -14,6 +14,11 @@ import RegisterAccountPage from '@/features/entities/register/AccountPage'
 import RequestsPage from '@/features/entities/register/RequestsPage'
 import RegReviewPage from '@/features/entities/register/RegReviewPage'
 import EntityNewPage from '@/features/entities/register/EntityNewPage'
+import ForgotPage from '@/features/auth/ForgotPage'
+import UpdateRequestPage from '@/features/entities/updates/UpdateRequestPage'
+import UpdatesPage from '@/features/entities/updates/UpdatesPage'
+import UpdateReviewPage from '@/features/entities/updates/UpdateReviewPage'
+import ArchivePage from '@/features/entities/ArchivePage'
 import AssistantPage from '@/features/assistant/AssistantPage'
 import ReportsPage from '@/features/reports/ReportsPage'
 import ProcessReport from '@/features/reports/ProcessReport'
@@ -60,6 +65,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path={ROUTES.login} element={<LoginPage />} />
+        <Route path={ROUTES.forgot} element={<ForgotPage />} />
 
         {/* Registration lives outside the auth gate on purpose: the requester has no account, so
             placing this screen behind `RequireAuth` would mean only a signed-in user could open it
@@ -76,6 +82,7 @@ export default function App() {
             it behind `RequireAuth` would mean only staff could open it, not the person it's built
             for. */}
         <Route path={ROUTES.entityPortal} element={<PortalPage />} />
+        <Route path={ROUTES.entityUpdate} element={<UpdateRequestPage />} />
         {/* The consultant's temporary screen · outside staff auth for the same reason (3.2.20) */}
         <Route path="/advice/:id" element={<AdvicePage />} />
 
@@ -116,6 +123,9 @@ export default function App() {
         <Route path={ROUTES.entitySettings} element={<EntitySettingsPage />} />
         <Route path={ROUTES.entityRequests} element={<RequestsPage />} />
         <Route path={`${ROUTES.entityRequests}/:id`} element={<RegReviewPage />} />
+        <Route path={ROUTES.entityUpdates} element={<UpdatesPage />} />
+        <Route path={`${ROUTES.entityUpdates}/:id`} element={<UpdateReviewPage />} />
+        <Route path={ROUTES.entityArchive} element={<ArchivePage />} />
         <Route path={`${ROUTES.entities}/:id`} element={<EntityPage />} />
         <Route path={`${ROUTES.entities}/:id/:tab`} element={<EntityPage />} />
 

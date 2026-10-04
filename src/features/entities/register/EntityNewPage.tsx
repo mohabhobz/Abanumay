@@ -1,4 +1,6 @@
 import { PartnerArt } from '@/components/soul'
+import { registerInternal } from '@/data/entities/store'
+import { readRole, roleByKey } from '@/data/roles'
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -91,6 +93,7 @@ export default function EntityNewPage() {
   const docs = useMemo(() => new Set(readList(v.up)), [v.up])
   const [files, setFiles] = useState<Record<string, { name: string; size: number }>>({})
   const [done, setDone] = useState(false)
+  const [newId, setNewId] = useState('')
 
   const type = val.type ?? ''
 
@@ -512,7 +515,7 @@ export default function EntityNewPage() {
                         ? `ينقص ${missing.length} من الحقول الإلزامية`
                         : 'سجّل الجهة'
                   }
-                  onClick={() => setDone(true)}
+                  onClick={() => { setNewId(registerInternal(val, [...docs], partner ? partnerKind(partner).label : 'جهة مستفيدة', roleByKey(readRole()).name)); setDone(true) }}
                 >
                   سجّل الجهة
                 </button>
@@ -521,6 +524,11 @@ export default function EntityNewPage() {
                   {strategic && (
                     <button className="btn btn-2" onClick={() => navigate(`${ROUTES.permissions}?tab=roles&r=partner`)}>
                       صلاحيات الشريك
+                    </button>
+                  )}
+                  {newId && (
+                    <button className="btn btn-p" onClick={() => navigate(ROUTES.entity(newId))}>
+                      افتح ملف الجهة
                     </button>
                   )}
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.entities)}>

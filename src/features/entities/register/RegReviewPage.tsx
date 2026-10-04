@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tag,
   type StepItem,
@@ -16,6 +16,11 @@ import {
   docRequired, licenseClash, partnerKind, regMissingDocs, regRequestById,
 } from '@/data/mock/registration'
 import { EditableCard } from '@/features/shared/EditableCard'
+import { canDecide, decideRegistration, fieldLabel, regHistory, returnRegistration, useEntityFlow } from '@/data/entities/store'
+import { duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
+import { readRole, roleByKey } from '@/data/roles'
+import { REG_STAGES } from '@/data/mock/registration'
+import { ENTITY_RULES } from '@/data/entities/rules'
 
 /* Registration request review - system admin's screen.
 
@@ -52,19 +57,36 @@ const OUT_SAY: Record<Outcome, string> = {
 export default function RegReviewPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  useEntityFlow()
   const r = id ? regRequestById(id) : undefined
   const [note, setNote] = useState('')
   const [taken, setTaken] = useState<Outcome | null>(null)
-  const [bankNo, setBankNo] = useState<string>('')
+  /* One decision per account (2.2.15) · '' accepted, otherwise one of the coded reasons */
+  const [bankNo, setBankNo] = useState<Record<string, string>>({})
+  /* The fields a return flags · the entity may edit these and only these (2.2.14) */
+  const [flag, setFlag] = useState<string[]>([])
+  const role = readRole()
+  const me = roleByKey(role).name
+  const mayApprove = canDecide('approve', role)
+  const mayReturn = canDecide('return', role)
+  const deciders = ENTITY_RULES.approveBy.map((k) => roleByKey(k).title).join(' أو ')
 
   /* A wrong request ID is not the same as an empty request - same lesson learned on the
      disbursement screen: a screen that renders fine on `undefined` still looks "healthy", so every
      check tool returns green while measuring the wrong screen. */
   const missingDocs = useMemo(() => (r ? regMissingDocs(r) : []), [r])
   const clash = useMemo(
-    () => (r ? licenseClash(r.licenseNo, r.type, entityRows) : null),
+    () => (r ? licenseClash(r.licenseNo, r.type, entityRows.filter((e) => e.id !== r.entityId)) : null),
     [r],
   )
+  /* What the request carries that a person must look at (2.4.5 · 2.4.6 · 2.4.10) */
+  const dups = useMemo(() => (r && r.state !== 'approved' ? duplicates(r, r.banks, { exceptReq: r.id }) : []), [r])
+  const stale = useMemo(() => (r ? expiredDocs({ licenseEndsAt: r.licenseEndsAt, boardEndsAt: r.boardEndsAt }, r.docs) : []), [r])
+  const badFormat = useMemo(() => (r
+    ? REG_STAGES.flatMap((st) => st.fields).map((f) => ({ f, e: formatIssue(f.key, f.kind, String((r as unknown as Record<string, unknown>)[f.key] ?? '')) }))
+      .filter((x) => x.e && !/X/.test(String((r as unknown as Record<string, unknown>)[x.f.key] ?? '')))
+    : []), [r])
+  const warnFiles = r?.files ? Object.entries(r.files).filter(([, f]) => f.warn) : []
 
   if (!r) {
     return (
@@ -97,7 +119,7 @@ export default function RegReviewPage() {
 
   const decided = r.state === 'approved' || r.state === 'rejected'
   const open = r.state === 'review'
-  const blocked = missingDocs.length > 0 || Boolean(clash)
+  const blocked = missingDocs.length > 0 || Boolean(clash) || stale.length > 0
 
   const steps: StepItem[] = [
     { label: 'تعبئة الجهة وإرسالها', at: <DateText>{r.submittedAt}</DateText>, state: 'done' },
@@ -172,6 +194,31 @@ export default function RegReviewPage() {
                     </span>
                     <span className="payq-r">قاعدة <Num>4</Num></span>
                   </li>
+                  <li className={stale.length ? 'no' : 'ok'}>
+                    <Icon name={stale.length ? icons.alert : icons.check} size="sm" />
+                    <span>{stale.length
+                      ? <>وثيقة منتهية عند التقديم: {stale.map((k) => REG_DOCS.find((d) => d.key === k)?.label).join(' · ')}</>
+                      : 'الترخيص وقرار تكليف المجلس ساريان'}</span>
+                    <span className="payq-r">قاعدة <Num>5</Num></span>
+                  </li>
+                  <li className={dups.length ? 'no' : 'ok'}>
+                    <Icon name={dups.length ? icons.alert : icons.check} size="sm" />
+                    <span>{dups.length
+                      ? <>بيانات مكرّرة: {dups.map((d) => `${d.label} مع «${d.who}»`).join(' · ')}</>
+                      : 'الاسم والبريد والجوال والآيبان غير مكرّرة'}</span>
+                    <span className="payq-r">قاعدة <Num>10</Num></span>
+                  </li>
+                  {(badFormat.length > 0 || warnFiles.length > 0) && (
+                    <li className="no">
+                      <Icon name={icons.alert} size="sm" />
+                      <span>
+                        {badFormat.map((x) => `${x.f.label}: ${x.e}`).join(' · ')}
+                        {badFormat.length > 0 && warnFiles.length > 0 && ' · '}
+                        {warnFiles.map(([k, f]) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k}: ${f.warn}`).join(' · ')}
+                      </span>
+                      <span className="payq-r">قاعدة <Num>6</Num></span>
+                    </li>
+                  )}
                   <li className={r.governanceClaim > 0 ? 'ok' : 'no'}>
                     <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size="sm" />
                     <span>
@@ -282,6 +329,32 @@ export default function RegReviewPage() {
                 <Head title="مسار الطلب" meta={<span className="sub">قاعدة 30 · سجل التدقيق</span>} />
                 <Steps items={steps} flow="ladder" />
               </Glass>
+
+              {/* 2.4.3 · 2.4.15 · every action kept · a second return never overwrites the first */}
+              <Glass>
+                <Head title="سجل الطلب" meta={<span className="sub"><Num>{regHistory(r).length}</Num> إجراء · الإصدار <Num>{r.version ?? 1}</Num></span>} />
+                <ul className="lg">
+                  {[...regHistory(r)].reverse().map((ev, i) => (
+                    <li className="lgi" key={`${ev.at}-${i}`}>
+                      <span className={`lgdot ${ev.kind === 'approve' ? 't-ok' : ev.kind === 'reject' ? 't-no' : ev.kind === 'return' ? 't-ret' : 't-mute'}`} />
+                      <div className="lghead">
+                        <span className="lgact">{ev.action}</span>
+                        <span className="pc-sp" />
+                        <span className="lgtime sub"><DateText>{ev.at.slice(0, 10)}</DateText> · <Num>{ev.at.slice(11, 16) || '09:00'}</Num></span>
+                      </div>
+                      <div className="lgby"><span className="lgwho">{ev.by}</span></div>
+                      {ev.fields && (
+                        <div className="lgfields">
+                          {ev.fields.map((f) => (
+                            <div className="lgf" key={f.k}><span className="lgf-k">{f.k}</span><span className="lgf-v">{f.v}</span></div>
+                          ))}
+                        </div>
+                      )}
+                      {ev.note && <p className="lgnote">{isolate(ev.note)}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </Glass>
               <EditableCard module="registration" state={r.state} label={REG_STATES.find((x) => x.key === r.state)?.label} />
 
               {/* Bank account - a separate decision even though it's entered together. */}
@@ -310,28 +383,52 @@ export default function RegReviewPage() {
                         {b.doc
                           ? <DocFile name={b.doc} meta={BANK_DOC_LABEL} />
                           : <span className="bad">{BANK_DOC_LABEL} ناقصة</span>}
+                        {open && mayApprove && (
+                          <label className="regf mt-2">
+                            <span className="lb">قرار الحساب</span>
+                            <FieldSelect
+                              value={bankNo[b.id] ?? ''}
+                              options={[{ value: '', label: 'الحساب مقبول' }, ...BANK_REJECTS.map((x) => ({ value: x, label: `مرفوض · ${x}` }))]}
+                              onChange={(x) => setBankNo((m) => ({ ...m, [b.id]: x }))}
+                              label={`قرار الحساب ${i + 1}`}
+                            />
+                          </label>
+                        )}
+                        {r.bankDecisions && b.id in r.bankDecisions && (
+                          <Tag tone={r.bankDecisions[b.id] ? 'no' : 'ok'}>{r.bankDecisions[b.id] ? `مرفوض · ${r.bankDecisions[b.id]}` : 'مقبول'}</Tag>
+                        )}
                       </div>
                     </li>
                   ))}
                 </ul>
-                {open && (
-                  <label className="regf mt-3">
-                    <span className="lb">سبب رفض الحساب · إن وُجد</span>
-                    <FieldSelect
-                      value={bankNo}
-                      options={BANK_REJECTS}
-                      onChange={setBankNo}
-                      label="سبب رفض الحساب البنكي"
-                      placeholder="الحساب مقبول"
-                    />
-                  </label>
-                )}
                 <p className="sub cnote">
                   هذه الأسباب السبعة مُرمَّزة في النظام العامل · ويُتّخذ قرار الحساب
                   مستقلًا حتى لو أُدخل في الطلب نفسه (قاعدة{' '}
                   <span className="num">11</span>).
                 </p>
               </Glass>
+
+              {/* 2.2.14 · a return names the fields the entity may change · only those open on its portal */}
+              {open && mayReturn && (
+                <Glass>
+                  <Head title="عند الإعادة للاستكمال" meta={<span className="sub"><Num>{flag.length}</Num> حقول محدّدة</span>} />
+                  <p className="sub cnote">اختر الحقول التي على الجهة تعديلها · تُفتح لها وحدها في بوابتها مع ملاحظتك، والمستندات الناقصة تُرفع هناك دائمًا.</p>
+                  <ul className="cfgchips">
+                    {REG_STAGES.flatMap((st) => st.fields).map((f) => (
+                      <li key={f.key}>
+                        <button
+                          type="button"
+                          className={`cfgchip${flag.includes(f.key) ? ' on' : ''}`}
+                          aria-pressed={flag.includes(f.key)}
+                          onClick={() => setFlag((x) => (x.includes(f.key) ? x.filter((y) => y !== f.key) : [...x, f.key]))}
+                        >
+                          {f.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+              )}
 
               {r.note && (
                 <Glass>
@@ -351,8 +448,8 @@ export default function RegReviewPage() {
                 <p className="sub cnote">
                   لا يوجد زر حذف · القاعدة <span className="num">28</span> تمنع الحذف
                   نهائيًا، والمرفوض يُؤرشف والقائم يُعطَّل. والمؤرشف يظهر لمسؤول
-                  النظام وحده ببحث مخصّص (القاعدة <span className="num">29</span>)،
-                  وهي شاشة لم تُبنَ بعد.
+                  النظام وحده في <Link className="lnk" to={ROUTES.entityArchive}>أرشيف الجهات</Link>{' '}
+                  (القاعدة <span className="num">29</span>).
                 </p>
               </Glass>
             </div>
@@ -368,12 +465,16 @@ export default function RegReviewPage() {
                   <Icon name={icons.check} size="md" className="ok-ink" />
                   <span className="decsent">
                     سُجّل القرار: <b>{OUT_SAY[taken]}</b>
-                    {bankNo && <><span className="decsep" />الحساب البنكي مرفوض · {bankNo}</>}
+                    {Object.values(bankNo).some(Boolean) && <><span className="decsep" />حسابات مرفوضة: <Num>{Object.values(bankNo).filter(Boolean).length}</Num></>}
                   </span>
                 </div>
-                <button className="btn btn-2" onClick={() => { setTaken(null); setNote('') }}>
-                  تراجع
-                </button>
+                {taken === 'approve' && r.entityId && (
+                  <Link className="btn btn-p" to={ROUTES.entity(r.entityId)}>
+                    <Icon name={icons.entity} size="sm" />
+                    افتح ملف الجهة
+                  </Link>
+                )}
+                <button className="btn btn-2" onClick={() => navigate(ROUTES.entityRequests)}>صندوق الطلبات</button>
               </>
             ) : !open ? (
               <div className="rowf gp-3 payact-w">
@@ -382,13 +483,18 @@ export default function RegReviewPage() {
                     ? <>الطلب <b>مسودة عند الجهة</b> · لم يصل إلى المراجعة بعد (قاعدة <Num>12</Num>)</>
                     : r.state === 'completion'
                       ? <>الطلب <b>عند الجهة للاستكمال</b> · تُتاح القرارات عند إعادة إرساله</>
-                      : <>الطلب <b>{REG_STATE_SAY[r.state]}</b> · اتُّخذ القرار ولا إجراء بعده</>}
+                      : <>الطلب <b>{REG_STATE_SAY[r.state]}</b> · اتُّخذ القرار ولا إجراء بعده{r.entityId && <> · <Link className="lnk" to={ROUTES.entity(r.entityId)}>ملف الجهة</Link></>}</>}
                 </span>
+              </div>
+            ) : !mayReturn && !mayApprove ? (
+              /* 2.1.desc-2 · 2.4.16 · the decision belongs to a role, not to whoever opened the screen */
+              <div className="rowf gp-3 payact-w">
+                <span className="decsent">قرار الطلب لـ<b>{deciders}</b> · تعرض هذه الشاشة الطلب لك للاطلاع</span>
               </div>
             ) : (
               <>
                 <div className="rowf gp-3 payact-w">
-                  <Person name="مسؤول النظام" size="lg" quiet={false} />
+                  <Person name={me} size="lg" quiet={false} />
                   <span className="decsent">
                     قرارك في طلب <b>{r.name}</b>
                     <span className="decsep" />
@@ -398,8 +504,6 @@ export default function RegReviewPage() {
 
                 {/* Admin note - required on return-for-revision and rejection - the live system
                     enforces it, and rule 31 requires it. */}
-                {/* The field and buttons form a single group that wraps together, so the field
-                    doesn't separate from "Return" if the note grows to two lines. */}
                 <div className="payact-g">
                 <label className="payact-n">
                   <span className="vis-h">الملاحظة الإدارية</span>
@@ -411,38 +515,44 @@ export default function RegReviewPage() {
                 </label>
 
                 <div className="rowf gp-2">
-                  <button
-                    className="btn btn-2"
-                    data-needs-note=""
-                    disabled={!note.trim()}
-                    title={note.trim() ? 'يُعاد إلى الجهة مع الملاحظة' : 'اكتب الملاحظة الإدارية أولًا'}
-                    onClick={() => setTaken('return')}
-                  >
-                    إعادة للاستكمال
-                  </button>
-                  <button
-                    className="btn btn-d"
-                    data-needs-note=""
-                    disabled={!note.trim()}
-                    title={note.trim() ? 'يُؤرشف بسببه · قاعدة 28' : 'اكتب سبب الرفض أولًا'}
-                    onClick={() => setTaken('reject')}
-                  >
-                    رفض وإيقاف
-                  </button>
-                  {/* Primary action stays at line end - the field sits flush against "Return" and
-                      "Reject". */}
-                  <button
-                    className="btn btn-p"
-                    disabled={blocked}
-                    title={
-                      blocked
-                        ? 'نواقص تمنع الاعتماد · القاعدتان 4 و8'
-                        : 'تُنشأ الجهة ويُرسل اسم المستخدم · قاعدة 2'
-                    }
-                    onClick={() => setTaken('approve')}
-                  >
-                    اعتماد وتفعيل
-                  </button>
+                  {mayReturn && (
+                    <button
+                      className="btn btn-2"
+                      data-needs-note=""
+                      disabled={!note.trim()}
+                      title={note.trim() ? `يُعاد إلى الجهة مع الملاحظة${flag.length ? ` · ويُفتح لها ${flag.map(fieldLabel).join('، ')}` : ''}` : 'اكتب الملاحظة الإدارية أولًا'}
+                      onClick={() => { returnRegistration(r.id, note.trim(), flag, me); setTaken('return') }}
+                    >
+                      إعادة للاستكمال
+                    </button>
+                  )}
+                  {mayApprove && (
+                    <button
+                      className="btn btn-d"
+                      data-needs-note=""
+                      disabled={!note.trim()}
+                      title={note.trim() ? 'يُؤرشف بسببه · قاعدة 28' : 'اكتب سبب الرفض أولًا'}
+                      onClick={() => { decideRegistration(r.id, 'reject', note.trim(), bankNo, me); setTaken('reject') }}
+                    >
+                      رفض وإيقاف
+                    </button>
+                  )}
+                  {mayApprove && (
+                    <button
+                      className="btn btn-p"
+                      disabled={blocked || r.banks.every((b) => bankNo[b.id])}
+                      title={
+                        blocked
+                          ? 'نواقص تمنع الاعتماد · القواعد 4 و5 و8'
+                          : r.banks.every((b) => bankNo[b.id])
+                            ? 'لا حساب بنكيًا مقبولًا · يلزم حساب واحد على الأقل'
+                            : 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم · قاعدة 2'
+                      }
+                      onClick={() => { decideRegistration(r.id, 'approve', note.trim(), bankNo, me); setTaken('approve') }}
+                    >
+                      اعتماد وتفعيل
+                    </button>
+                  )}
                 </div>
                 </div>
               </>

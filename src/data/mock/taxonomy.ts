@@ -135,7 +135,7 @@ export const LICENSORS = [
   'أخرى',
 ] as const
 
-export const ACTIVATIONS = ['مقبول', 'معلق (جديد)', 'معلق (موقوف)', 'محدث', 'مرفوض'] as const
+export const ACTIVATIONS = ['نشط', 'غير نشط', 'معلق (جديد)', 'معلق (موقوف)', 'محدث', 'ملغى الاعتماد', 'مرفوض'] as const
 
 /** Governance score · "not assessed" is the most common value in the system */
 export const GOVERNANCE = ['ممتازة', 'جيدة', 'مقبولة', 'ضعيفة', 'لم تُقيَّم'] as const
@@ -155,9 +155,34 @@ export const ENTITY_DOCS = [
   'خطاب تفويض الحساب البنكي',
 ] as const
 
+/** Bank names · one closed list for registration, the entity file and update requests (2.4.27), so a
+    bank is never written two ways and the same account reads the same everywhere */
 export const BANKS = [
-  'مصرف الراجحي', 'مصرف الإنماء', 'بنك البلاد',
-  'البنك الأهلي السعودي', 'بنك الرياض', 'بنك الجزيرة',
+  'مصرف الراجحي',
+  'البنك الأهلي السعودي',
+  'بنك الرياض',
+  'البنك السعودي الفرنسي',
+  'بنك البلاد',
+  'البنك السعودي للاستثمار',
+  'بنك الجزيرة',
+  'البنك العربي الوطني',
+  'مصرف الإنماء',
+  'بنك الخليج الدولي',
+] as const
+
+/**
+ * Bank account rejection reasons · the seven coded values of the live system, one list for the
+ * registration review and the entity file (2.4.27). A reason picked from a closed set can be counted;
+ * free text stays locked in its row.
+ */
+export const BANK_REJECT_REASONS = [
+  'إلغاء الحساب بناءً على طلب الجمعية',
+  'الحساب لا يعود للجمعية',
+  'الحساب مفعل مسبقًا',
+  'عدم تطابق اسم الحساب مع الشهادة',
+  'عدم تطابق الآيبان مع الشهادة',
+  'عدم وجود الآيبان في المرفق',
+  'عدم وضوح المرفق',
 ] as const
 
 /**

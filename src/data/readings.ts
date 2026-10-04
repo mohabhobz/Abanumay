@@ -387,7 +387,7 @@ export function readEntity(
 
   /* Activation status comes before anything else: "suspended" or "rejected" means an agreement
      isn't even expected, so it shouldn't be read after lighter notes. */
-  if (entity.activation !== 'مقبول') {
+  if (entity.activation !== 'نشط') {
     const stopped = entity.activation.startsWith('معلق') || entity.activation === 'مرفوض'
     out.push({
       id: 'activation',

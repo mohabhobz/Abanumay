@@ -5,6 +5,8 @@ import { Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from './AuthShell'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
 import { signIn } from '@/data/session'
+import { findAccount, passwordOk } from '@/data/entities/auth'
+import { regRows } from '@/data/mock/registration'
 
 /* Login screen.
 
@@ -38,8 +40,9 @@ export default function LoginPage() {
   const loc = useLocation()
   /* The URL redirected from - if a project link was opened while logged out, it returns there after
      login instead of starting from scratch. */
-  const from = (loc.state as { from?: string } | null)?.from
-  const [user, setUser] = useState('')
+  const st = loc.state as { from?: string; user?: string; reset?: boolean } | null
+  const from = st?.from
+  const [user, setUser] = useState(st?.user ?? '')
   const [pass, setPass] = useState('')
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -60,9 +63,24 @@ export default function LoginPage() {
       fail('أدخل اسم المستخدم وكلمة المرور')
       return
     }
+    /* A portal account whose password was set (registration or reset) must match it (2.3.pw-11) */
+    if (passwordOk(user, pass) === false) {
+      fail('كلمة المرور غير صحيحة · استعدها من «نسيت كلمة المرور»')
+      return
+    }
     setErr('')
     setBusy(true)
     setTimeout(() => {
+      /* An entity signs in to its own portal, not to the staff system */
+      const acct = findAccount(user)
+      if (acct) {
+        signIn(user.trim(), 'entity')
+        const req = acct.kind === 'reg' ? regRows.find((r) => r.acctEmail === acct.email) : undefined
+        navigate(acct.kind === 'entity'
+          ? `${ROUTES.entityPortal}?entity=${acct.id.slice(2)}`
+          : req ? `${ROUTES.entityPortal}?req=${req.id}` : ROUTES.entityRegister, { replace: true })
+        return
+      }
       signIn(user.trim())
       navigate(from ?? (readDisplay().landing || AFTER_LOGIN), { replace: true })
     }, 700)
@@ -70,6 +88,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell title="منح أبانمي" sub="مؤسسة سليمان أبانمي الأهلية" err={err}>
+          {st?.reset && <p className="lnote sub lwhy">حُفظت كلمة المرور الجديدة · ادخل بها.</p>}
           {/* method/action are present so password managers recognize the form and offer to save -
               submission itself is blocked with preventDefault. */}
           <form
@@ -117,16 +136,9 @@ export default function LoginPage() {
                 <input type="checkbox" name="remember" />
                 <span>تذكّرني</span>
               </label>
-              {/* Note: this used to be an `<a>` with no `href` - a fake link. It looked like a link
-                  but behaved like nothing: it didn't open in a tab, keyboard couldn't reach it, and
-                  it didn't say it was disabled. What happens here is an action (sending a reset
-                  link), not a navigation, so it's a button - and since there's no reset page yet,
-                  the button says so explicitly instead of staying silent. */}
-              <button
-                type="button"
-                className="llink"
-                title="تُستعاد كلمة المرور عن طريق مدير النظام في هذا النموذج"
-              >
+              {/* Opens the self-service reset (2.3.pw) · the entity resets its own password with a
+                  one-time code; it no longer goes through the system administrator. */}
+              <button type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>
                 نسيت كلمة المرور؟
               </button>
             </div>

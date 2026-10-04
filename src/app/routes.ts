@@ -7,6 +7,8 @@
 
 export const ROUTES = {
   login: '/login',
+  /** Password reset · public, self-service (2.3.pw) */
+  forgot: '/forgot',
   home: '/',
   /** The combined dashboard that was the home page until 3 Oct 2026 · now its own category in
       Reports (meeting 1 Oct, E-9); the old `/overview` address redirects here. */
@@ -65,6 +67,13 @@ export const ROUTES = {
    * full account is only created after approval.
    */
   entityPortal: '/entities/portal',
+  /** The entity's update request for its own file · public, opened from its portal (2.3.upd) */
+  entityUpdate: '/entities/portal/update',
+  /** Update requests inbox and review · internal */
+  entityUpdates: '/entities/updates',
+  entityUpdateReview: (id: string) => `/entities/updates/${id}`,
+  /** Archived entities · the system administrator's own search (2.4.29) */
+  entityArchive: '/entities/archive',
   /** Registration request queue — five states. */
   entityRequests: '/entities/requests',
   entityRequest: (id: string) => `/entities/requests/${id}`,
@@ -189,6 +198,8 @@ export const ENTITY_TABS = [
   { slug: 'docs', label: 'المستندات' },
   { slug: 'banks', label: 'الحسابات البنكية' },
   { slug: 'projects', label: 'مشاريعها' },
+  /* 2.4.1 · its registration and update requests, each with its own history */
+  { slug: 'requests', label: 'طلباتها' },
   { slug: 'log', label: 'سجل الجهة' },
 ] as const
 

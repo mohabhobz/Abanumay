@@ -191,7 +191,7 @@ export const PROCESSES: ProcessKpis[] = [
       { no: 2, name: 'نسبة طلبات التسجيل المعتمدة من أول مراجعة', how: 'عدد الطلبات المعتمدة دون إعادة للاستكمال ÷ إجمالي الطلبات × 100%.', unit: 'pct', value: null, gap: 'لا يوجد سجل لإعادة طلب الجهة، ولا تُحفظ إلا الحالة الحالية.', better: 'up', target: null },
       { no: 3, name: 'متوسط عدد مرات إعادة الطلب للاستكمال', how: 'إجمالي مرات إعادة الطلبات ÷ إجمالي الطلبات.', unit: 'avg', value: null, gap: 'للسبب نفسه: لا يوجد سجل حالات لطلب التسجيل.', better: 'down', target: null },
       { no: 4, name: 'نسبة الطلبات المرفوضة بسبب عدم صحة البيانات أو الوثائق', how: 'عدد الطلبات المرفوضة لهذا السبب ÷ إجمالي الطلبات × 100%.', unit: 'pct', value: null, gap: 'أسباب الرفض مقنّنة للمشاريع (9 مبررات) وليست للجهات.', better: 'down', target: null },
-      { no: 5, name: 'عدد الجهات الجديدة المعتمدة', how: 'إجمالي الجهات التي تم اعتمادها خلال الفترة.', unit: 'count', value: ents.filter((e) => e.activation === 'مقبول').length, better: 'up', target: null, to: `${ROUTES.entities}?activation=مقبول` },
+      { no: 5, name: 'عدد الجهات الجديدة المعتمدة', how: 'إجمالي الجهات التي تم اعتمادها خلال الفترة.', unit: 'count', value: ents.filter((e) => e.activation === 'نشط').length, better: 'up', target: null, to: `${ROUTES.entities}?activation=نشط` },
       { no: 6, name: 'عدد الجهات الجديدة المرفوضة', how: 'إجمالي الجهات التي تم رفضها خلال الفترة.', unit: 'count', value: ents.filter((e) => e.activation === 'مرفوض').length, better: 'down', target: null, to: `${ROUTES.entities}?activation=مرفوض` },
     ],
   },
