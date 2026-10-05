@@ -148,8 +148,9 @@ export default function CloseSettingsPage() {
             </Glass>
           )}
         </div>
+        {/* The unsaved-changes dock · inside the view stack, so it spans the content column like the decision bar, not the rail */}
+        <div className="dockslot" ref={dock.setEl} />
       </div>
-      <div className="dockslot" ref={dock.setEl} />
       </DockSlotProvider>
     </AppLayout>
   )

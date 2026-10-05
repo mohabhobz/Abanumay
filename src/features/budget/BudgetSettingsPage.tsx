@@ -4,7 +4,7 @@ import {
   DateField, BackTo, DateText, Glass, Head, Icon, icons, Mono, MultiSelect, Num, Switch, Tabs, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
-import { SaveBar } from '@/components/shell'
+import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -54,10 +54,12 @@ export default function BudgetSettingsPage() {
   const { values: v, set } = useQueryParams<Params>(KEYS)
   const tab = TABS.some((t) => t.slug === v.tab) ? (v.tab as string) : TABS[0].slug
   useBudget()
+  const dock = useDockSlot()
 
   return (
     <AppLayout assistantContext={assistFor.page('إعدادات الميزانية')}>
-      <div className="viewstack">
+      <DockSlotProvider value={dock.value}>
+      <div className={`viewstack${dock.on ? ' hasdock' : ''}`}>
         <div className="screen col">
           <BackTo label="الميزانية" onClick={() => navigate(ROUTES.budget)} />
 
@@ -79,7 +81,10 @@ export default function BudgetSettingsPage() {
           {tab === 'limits' && <LimitsTab />}
           {tab === 'rules' && <RulesTab />}
         </div>
+        {/* The unsaved-changes dock · inside the view stack, so it spans the content column like the decision bar, not the rail */}
+        <div className="dockslot" ref={dock.setEl} />
       </div>
+      </DockSlotProvider>
     </AppLayout>
   )
 }

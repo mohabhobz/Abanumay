@@ -91,9 +91,9 @@ export default function PermissionsPage() {
           )}
           {tab === 'log' && <LogTab log={st.log} />}
         </div>
+        {/* The unsaved-changes dock · inside the view stack, so it spans the content column like the decision bar, not the rail */}
+        <div className="dockslot" ref={dock.setEl} />
       </div>
-      {/* The unsaved-changes dock renders here, where the projects bulk bar sits */}
-      <div className="dockslot" ref={dock.setEl} />
       </DockSlotProvider>
     </AppLayout>
   )

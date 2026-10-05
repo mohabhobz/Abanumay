@@ -40,3 +40,12 @@
 
 /* Settings row label · a name and the line that says what it governs */
 .cfgl{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0;font-size:var(--fs-2)}
+
+/* A setting and its value read as one unit · the label takes a fixed column and the control sits
+   right beside it, instead of a spacer flinging the field to the far edge of a wide card, where a
+   number reads as unlabelled (client comment, 5 Oct). Fields line up in one column down the card. */
+.cfglist li:has(>.cfgl){justify-content:flex-start}
+.cfglist li>.cfgl{flex:0 1 min(30rem,100%)}
+.cfglist li>.cfgl+.pc-sp{display:none}
+.glass>.swrow{justify-content:flex-start}
+.glass>.swrow>.swrow-t{flex:0 1 min(30rem,100%)}
