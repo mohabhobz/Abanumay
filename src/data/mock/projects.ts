@@ -893,6 +893,24 @@ projectRows.push(
   }),
 )
 
+/* Approved, hold final, no agreement yet · the supervisor's next agreement (8.2.1 – 8.2.3) ·
+   kept out of the agreements fixture */
+export const AWAITING_AGREEMENT = new Set(['21047', '21048'])
+projectRows.push(
+  mk({
+    id: '21047', name: 'برنامج القراءة الصيفي لطلاب المرحلة الابتدائية', entityId: '694', track: 'المنح النوعي', field: 'التعليم',
+    goal: 'دروس التقوية الإلكترونية', region: 'الرياض', city: 'الرياض', stage: 'اعتماد الإتفاقية',
+    amountRequested: 260_000, amountGranted: 260_000, supportStatus: 'معتمد', decidedAt: '2026-09-28', hoursInStage: 96, owner: 'عمر قاسم',
+    submittedAt: '2026-07-14', beneficiaries: 600, durationDays: 240, startAt: '2026-11-01', endAt: '2027-06-30',
+  }),
+  mk({
+    id: '21048', name: 'ترميم مصلى النساء بجامع الحي', entityId: '815', track: 'المنح الانتشاري', field: 'المساجد',
+    goal: 'عمارة المساجد', region: 'القصيم', city: 'عنيزة', stage: 'اعتماد الإتفاقية',
+    amountRequested: 140_000, amountGranted: 140_000, supportStatus: 'معتمد', decidedAt: '2026-09-25', hoursInStage: 140, owner: 'عمر قاسم',
+    submittedAt: '2026-07-02', beneficiaries: 350, durationDays: 120, startAt: '2026-11-15', endAt: '2027-03-15',
+  }),
+)
+
 /** Which scenario projects each procedure draws its extra records from */
 export const SCENARIO = {
   agreements: SCENARIO_SEEDS.slice(0, 9).map((s) => s[0]),

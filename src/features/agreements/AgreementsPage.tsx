@@ -22,6 +22,7 @@ import { OWNERS } from '@/data/mock/taxonomy'
 import {
   AGREEMENT_STAGES, AGR_TARGET_DAYS, agrBlocked, agrHeat, agrKpi, agreements,
 } from '@/data/mock/agreements'
+import { useAgreements } from '@/data/agreements/store'
 import type { AgreementRow, AgreementStage } from '@/types/domain'
 import type { Sheet } from '@/lib/export'
 import { AgreementCard } from './AgreementCard'
@@ -62,6 +63,7 @@ const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'stage', 'he
 export default function AgreementsPage() {
   const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
   const navigate = useNavigate()
+  const ver = useAgreements()
   const k = agrKpi()
   const [cols, setCols] = useState<string[]>(() => readCols('agreements', COLS))
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -73,6 +75,7 @@ export default function AgreementsPage() {
   const advOpen = v.adv === '1'
 
   const rows = useMemo(() => {
+    void ver
     const needle = v.q?.trim()
     const stages = readList(v.stage)
     const owners = readList(v.owner)
@@ -89,7 +92,7 @@ export default function AgreementsPage() {
       }
       return true
     })
-  }, [v])
+  }, [v, ver])
 
   /* Longest-waiting sits at top - the inbox sorts by risk, not by date. */
   const sorted = useMemo(
@@ -102,6 +105,7 @@ export default function AgreementsPage() {
 
   /** Count for each stage within the current scope. */
   const counts = useMemo(() => {
+    void ver
     const needle = v.q?.trim()
     const owners = readList(v.owner)
     const kinds = readList(v.kind)
@@ -117,7 +121,7 @@ export default function AgreementsPage() {
     const m = new Map<AgreementStage, number>()
     for (const a of base) m.set(a.stage, (m.get(a.stage) ?? 0) + 1)
     return { m, total: base.length }
-  }, [v.heat, v.owner, v.kind, v.hold, v.q])
+  }, [v.heat, v.owner, v.kind, v.hold, v.q, ver])
 
   /* Grouping persists with the session instead of resetting on every logout. */
   useStickyGroup('agreements', v.group, (x) => set({ group: x }))

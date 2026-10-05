@@ -1,19 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { MISSING_ITEM, NOUN, nounAfter } from '@/lib/format'
 import { useNavigate } from 'react-router-dom'
 import {
-  CheckMark, BackTo, Blockers, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
+  CheckMark, BackTo, Blockers, DateText, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import {
-  KINDS, TEMPLATES, agreementIssues, projectById, projectOptions,
-  scheduleTotal, seedSchedule, type DraftPay,
+  KINDS, TEMPLATES, projectById, projectOptions,
+  scheduleTotal, seedSchedule, toPayments, type DraftPay,
 } from '@/data/mock/agreementNew'
-import type { AgreementKind } from '@/types/domain'
+import type { AgreementKind, PayDoc } from '@/types/domain'
+import { readRole, roleByKey } from '@/data/roles'
+import { appFlowOf } from '@/data/approvals/store'
+import { useBudget } from '@/data/budget/store'
+import {
+  agrIssues, agrReview, agreementText, createAgreement, nextAgreementId, reservedOf, templateClauses, windowOf, type Clause,
+} from '@/data/agreements/store'
 import { ScheduleEditor } from './ScheduleEditor'
+import { AgreementTextCard, AnnexesCard, ClausesCard, ReviewCard } from './parts'
 
 /* Agreement setup screen.
 
@@ -35,8 +42,21 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 const STAGES = [
   { key: 'project', label: 'المشروع', note: 'المشروع المعتمد الذي تُعدّ له الاتفاقية · مشروع واحد فقط' },
   { key: 'form', label: 'النموذج والتوقيع', note: 'النوع والنموذج وممثل الجهة · تُثبَّت عند الإنشاء' },
-  { key: 'sched', label: 'جدول الدفعات', note: 'جزء من الاتفاقية لا ملحق بها · ويلزم أن يطابق مجموعه قيمة المنحة' },
+  { key: 'sched', label: 'جدول الدفعات', note: 'جزء من الاتفاقية لا ملحق بها · ويلزم أن يطابق مجموعه قيمة المنحة وأن تقع تواريخه في مدة التنفيذ' },
+  { key: 'terms', label: 'البنود والملاحق', note: 'البنود والشروط والالتزامات وآلية المتابعة · وشروط قرار الاعتماد مدرجة تلقائيًّا' },
+  { key: 'text', label: 'النص والمراجعة', note: 'نص الاتفاقية ببيانات المشروع · ومراجعة المساعد الاسترشادية' },
 ]
+
+/** The template's clauses plus the approval's special conditions · the starting terms */
+const startClauses = (projectId: string): Clause[] => {
+  const p = projectById(projectId)
+  if (!p) return []
+  const st = Math.random().toString(36).slice(2, 7)
+  return [
+    ...templateClauses(p, st),
+    ...appFlowOf(projectId).conditions.map((c, i) => ({ id: `cl-${st}-c${i}`, kind: 'condition' as const, source: 'approval' as const, title: c.when === 'agreement' ? 'شرط قبل توقيع الاتفاقية' : 'شرط قبل الدفعة الأولى', body: c.text })),
+  ]
+}
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -50,44 +70,63 @@ export default function AgreementNewPage() {
      the normal entry point. */
   const projectId = v.project ?? ''
   const project = projectById(projectId)
+  const opt = projectOptions().find((o) => o.id === projectId)
+  useBudget()
   const amount = project?.amountGranted ?? 0
-  /* Reserved amount in the budget - step 11 matches the value against it.
-     Note: in this version they are equal because the reservation is made at the approved amount;
-     once the backend arrives, this becomes a genuinely independent field. */
-  const reserved = amount
+  /* Step 11 · the agreement value against the amount actually held · the funding link's final hold */
+  const reserved = project ? reservedOf({ projectId, reserved: amount }) : 0
+  const me = roleByKey(readRole()).name
+  const navigateTo = useNavigate()
 
   const [template, setTemplate] = useState('')
   const [kind, setKind] = useState<AgreementKind | ''>('')
   const [signerName, setSignerName] = useState('')
   const [signerTitle, setSignerTitle] = useState('')
-  /* Note: seeding must also work for a project coming from the URL. The first version only seeded
-     the table in `pickProject`, but the normal entry point for this screen is `?project=` from the
-     agreement tab on the project page, so `onChange` never fires - users would land on the table
-     stage and find it empty. */
   const [rows, setRows] = useState<DraftPay[]>(
-    () => (project ? seedSchedule(project.amountGranted, today()) : []),
+    () => (project ? seedSchedule(project.amountGranted, windowOf(project.id).from ?? today()) : []),
   )
-  const [saved, setSaved] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [clauses, setClauses] = useState<Clause[]>(() => startClauses(projectId))
+  const [docs, setDocs] = useState<PayDoc[]>([])
+  const [paperCopy, setPaperCopy] = useState('')
+  const [said, setSaid] = useState<string[]>([])
 
-  /** Once a project is selected, the table is seeded - an editable starting point. */
+  /** Once a project is selected, the table and the terms are seeded - an editable starting point. */
   const pickProject = (id: string) => {
     set({ project: id || undefined })
     const p = projectById(id)
-    setRows(p ? seedSchedule(p.amountGranted, today()) : [])
+    setRows(p ? seedSchedule(p.amountGranted, windowOf(id).from ?? today()) : [])
+    setClauses(startClauses(id))
   }
 
-  const issues = useMemo(
-    () => (projectId
-      ? agreementIssues({ projectId, template, kind, signerName, signerTitle, rows, amount, reserved })
-      : []),
-    [projectId, template, kind, signerName, signerTitle, rows, amount, reserved],
-  )
+  const draft = {
+    projectId, kind, template: kind === 'ورقية' ? 'نسخة ورقية · خارج النماذج' : template,
+    signer: { name: signerName, title: signerTitle }, amount, reserved,
+    payments: rows, clauses, docs, paperCopy,
+  }
+  /* Computed on each render · a handful of checks over a small draft */
+  const issues = projectId ? [
+    ...(opt?.blocked ? [{ key: 'project', say: `«${opt.name}» ${opt.blocked}.`, rule: '8.2.1' }] : []),
+    ...agrIssues(draft),
+  ] : []
+  const hints = projectId ? agrReview(draft) : []
+  const text = projectId ? agreementText(draft) : []
+
+  const make = (send: boolean) => {
+    const id = nextAgreementId()
+    const out = createAgreement({
+      row: { id, projectId, kind: kind as AgreementKind, template: draft.template, payments: toPayments(rows, amount), signer: draft.signer, docs: paperCopy ? [{ name: paperCopy, kind: 'ورقية', at: today(), size: '—' }, ...docs] : docs },
+      clauses, paperCopy: paperCopy || undefined, send, replaces: opt?.additional,
+    }, me)
+    if (out.length) { setSaid(out); return }
+    navigateTo(ROUTES.agreement(id))
+  }
 
   const shortBy: Record<string, string[]> = {
     project: projectId ? [] : ['المشروع'],
+    terms: [],
+    text: [],
     form: [
-      ...(template ? [] : ['النموذج']),
+      ...(kind === 'ورقية' ? (paperCopy ? [] : ['نسخة الاتفاقية الورقية']) : template ? [] : ['النموذج']),
       ...(kind ? [] : ['نوع الاتفاقية']),
       ...(signerName.trim() ? [] : ['اسم الموقّع']),
       ...(signerTitle.trim() ? [] : ['صفة الموقّع']),
@@ -108,8 +147,10 @@ export default function AgreementNewPage() {
      right below it, "payment total short by 1,024,000" - a contradiction on the same screen. */
   const stageIssue: Record<string, string[]> = {
     project: ['project', 'reserved'],
-    form: ['template', 'kind', 'signer'],
-    sched: ['sum', 'empty', 'req', 'order'],
+    form: ['template', 'kind', 'signer', 'paper'],
+    sched: ['sum', 'empty', 'req', 'order', 'late', 'early'],
+    terms: ['cl-obligation', 'cl-followup', 'cond', 'annex'],
+    text: [],
   }
   const issuesIn = (key: string) => issues.filter((i) => stageIssue[key].includes(i.key))
   const shortOf = (key: string) => shortBy[key].length + issuesIn(key).length
@@ -125,10 +166,11 @@ export default function AgreementNewPage() {
 
   /* The four stages - this screen is the first only. */
   const steps: StepItem[] = [
-    { label: 'إعداد', note: 'مشرف المنح · المحطة الحالية', state: sent ? 'done' : 'now' },
-    { label: 'مراجعة', note: 'مدير المنح', state: sent ? 'now' : 'todo' },
+    { label: 'إعداد', note: 'مشرف المنح · المحطة الحالية', state: 'now' },
+    { label: 'مراجعة', note: 'مدير المنح', state: 'todo' },
     { label: 'اعتماد نهائي', note: 'المدير التنفيذي', state: 'todo' },
     { label: 'توقيع', note: 'الجهة المستفيدة', state: 'todo' },
+    { label: 'اعتماد وسريان', note: 'ممثل المؤسسة', state: 'todo' },
   ]
 
   return (
@@ -144,7 +186,7 @@ export default function AgreementNewPage() {
             <div>
               <h1 className="ptitle">إعداد اتفاقية</h1>
               <p className="sub mt-1">
-                المحطة الأولى من <span className="num">4</span> · ينتج عنها <b>مسودة</b>،
+                المحطة الأولى من <span className="num">5</span> · ينتج عنها <b>مسودة</b>،
                 ولا تُرسل إلى الجهة إلا بعد اعتماد المؤسسة
               </p>
             </div>
@@ -188,9 +230,9 @@ export default function AgreementNewPage() {
                       onChange={pickProject}
                       label="المشروع"
                       placeholder="اختر المشروع"
-                      options={projectOptions().map((p) => ({
+                      options={projectOptions().filter((p) => p.blocked !== 'ليس في مرحلة إعداد الاتفاقية' || p.id === projectId).map((p) => ({
                         value: p.id,
-                        label: `${p.name}${p.blocked ? ` · ${p.blocked}` : ''}`,
+                        label: `${p.name}${p.blocked ? ` · ${p.blocked}` : p.additional ? ` · اتفاقية إضافية لـ ${p.additional}` : ''}`,
                       }))}
                     />
                     <span className="sub regf-h">
@@ -199,6 +241,11 @@ export default function AgreementNewPage() {
                   </label>
                 </div>
 
+                {opt?.additional && (
+                  <p className="sub cnote">
+                    للمشروع اتفاقية سارية <b>{opt.additional}</b> · هذه اتفاقية إضافية تحلّ محلها عند سريانها، فتبقى اتفاقية سارية واحدة (8.4.25).
+                  </p>
+                )}
                 {project && (
                   <KV
                     rows={[
@@ -253,6 +300,22 @@ export default function AgreementNewPage() {
                 </p>
 
                 <div className="regfields">
+                  {kind === 'ورقية' ? (
+                    /* 8.2.30 · a paper agreement isn't built on a template · its copy is uploaded */
+                    <div className="regf regf-w">
+                      <span className="lb">
+                        نسخة الاتفاقية الورقية<b className="regf-r" aria-label="إلزامي">*</b>
+                      </span>
+                      <span className="apv-row">
+                        <label className="btn btn-2 btn-sm">
+                          <Icon name={icons.upload} size="sm" />{paperCopy ? 'استبدل النسخة' : 'ارفع النسخة'}
+                          <input className="vis-h" type="file" accept=".pdf,.doc,.docx" aria-label="نسخة الاتفاقية الورقية" onChange={(e) => { const x = e.target.files?.[0]; if (x) setPaperCopy(x.name); e.target.value = '' }} />
+                        </label>
+                        {paperCopy ? <Tag tone="ok">{paperCopy}</Tag> : <span className="sub">لا نسخة بعد</span>}
+                      </span>
+                      <span className="sub regf-h">تُعدّ خارج النماذج وتُرفع هنا · ثم تُرفع النسخة الموقّعة عند وصولها (8.4.16)</span>
+                    </div>
+                  ) : (
                   <label className="regf regf-w">
                     <span className="lb">
                       النموذج المعتمد<b className="regf-r" aria-label="إلزامي">*</b>
@@ -269,6 +332,7 @@ export default function AgreementNewPage() {
                       <span className="num">4</span>
                     </span>
                   </label>
+                  )}
 
                   <label className="regf">
                     <span className="lb">
@@ -303,9 +367,15 @@ export default function AgreementNewPage() {
 
             {tab === 'sched' && (
               project
-                ? <ScheduleEditor rows={rows} amount={amount} onChange={setRows} />
+                ? <>
+                    <ScheduleEditor rows={rows} amount={amount} onChange={setRows} />
+                    {windowOf(projectId).from && <p className="sub cnote">مدة التنفيذ في الخطة من <DateText>{windowOf(projectId).from!}</DateText> إلى <DateText>{windowOf(projectId).to ?? ''}</DateText> · تقع الدفعات داخلها.</p>}
+                  </>
                 : <p className="sub cnote">اختر المشروع أولًا · يُطابَق الجدول مع قيمة المنحة.</p>
             )}
+
+            {tab === 'terms' && !project && <p className="sub cnote">اختر المشروع أولًا · تُدرج بنود النموذج وشروط قرار الاعتماد تلقائيًّا.</p>}
+            {tab === 'text' && !project && <p className="sub cnote">اختر المشروع أولًا · يُعرض النص ببيانات المشروع.</p>}
 
             {/* Rules are stated at their own stage, not in a message after submission. */}
             {issuesIn(tab).map((i) => (
@@ -345,10 +415,23 @@ export default function AgreementNewPage() {
             </div>
           </Glass>
 
+          {tab === 'terms' && project && (
+            <>
+              <ClausesCard clauses={clauses} onChange={setClauses} />
+              <AnnexesCard docs={docs} onChange={setDocs} title="الملاحق" />
+            </>
+          )}
+          {tab === 'text' && project && (
+            <div className="g2">
+              <div className="col"><AgreementTextCard parts={text} note="البيانات مسترجعة من المشروع والجهة والميزانية والخطة · وتُعدَّل في مصدرها لا هنا (قاعدة 5)." /></div>
+              <div className="col"><ReviewCard hints={hints} onAdd={(c) => setClauses((xs) => [...xs, c])} onTemplate={kind === 'إلكترونية' ? setTemplate : undefined} /></div>
+            </div>
+          )}
+
           <div className="g2">
             <div className="col">
               <Glass>
-                <Head title="محطات الاتفاقية" meta={<span className="sub">أربع محطات</span>} />
+                <Head title="محطات الاتفاقية" meta={<span className="sub">خمس محطات</span>} />
                 <Steps items={steps} flow="ladder" />
                 {/* Rule 25 - this line prevents a wrong assumption from the first screen. */}
                 <p className="sub cnote">
@@ -371,58 +454,46 @@ export default function AgreementNewPage() {
           <div className="chrome decbar payact">
             <div className="rowf gp-3 payact-w">
               <span className="decsent">
-                {sent
-                  ? <>أُرسلت · <b>بانتظار مدير المنح</b></>
-                  : <>
-                      {project
-                        ? <>قيمة المنحة <b><Money>{amount}</Money></b></>
-                        : 'اختر المشروع أولًا'}
-                      {rows.length > 0 && (
-                        <>
-                          <span className="decsep" />
-                          <Num>{rows.length}</Num> {nounAfter(rows.length, NOUN.payment)} بمجموع{' '}
-                          <Money>{scheduleTotal(rows)}</Money>
-                        </>
-                      )}
-                      {saved && <><span className="decsep" />حُفظت المسودة</>}
-                      <DockWhy n={blockerCount(blocks)} />
-                    </>}
+                {project
+                  ? <>قيمة المنحة <b><Money>{amount}</Money></b></>
+                  : 'اختر المشروع أولًا'}
+                {rows.length > 0 && (
+                  <>
+                    <span className="decsep" />
+                    <Num>{rows.length}</Num> {nounAfter(rows.length, NOUN.payment)} بمجموع{' '}
+                    <Money>{scheduleTotal(rows)}</Money>
+                  </>
+                )}
+                {said.length > 0 && <><span className="decsep" /><span className="bad">{said[0]}</span></>}
+                <DockWhy n={blockerCount(blocks)} />
               </span>
             </div>
             <div className="rowf gp-2">
-              {!sent ? (
-                <>
-                  <button
-                    className="btn btn-2"
-                    disabled={!projectId}
-                    title={projectId ? 'احفظ الاتفاقية مسودةً' : 'اختر المشروع أولًا'}
-                    onClick={() => setSaved(true)}
-                  >
-                    احفظ المسودة
-                  </button>
-                  {/* Note: "send to entity" is not available here - rule 13 blocks it before
-                      institutional approvals are complete; the only action from this stage is
-                      referral to the grants manager. */}
-                  <button
-                    className="btn btn-p"
-                    disabled={!canSend}
-                    title={
-                      missing.length
-                        ? `بنود ناقصة: ${missing.length}`
-                        : issues.length
-                          ? issues[0].say
-                          : 'أرسل الاتفاقية إلى مدير المنح'
-                    }
-                    onClick={() => setSent(true)}
-                  >
-                    أرسل إلى مدير المنح
-                  </button>
-                </>
-              ) : (
-                <button className="btn btn-2" onClick={() => navigate(ROUTES.agreements)}>
-                  افتح الصندوق
-                </button>
-              )}
+              <button
+                className="btn btn-2"
+                disabled={!projectId || !kind || Boolean(opt?.blocked)}
+                title={!projectId ? 'اختر المشروع أولًا' : !kind ? 'حدّد نوع الاتفاقية' : opt?.blocked || 'احفظ الاتفاقية مسودةً وأكمِلها لاحقًا'}
+                onClick={() => make(false)}
+              >
+                احفظ المسودة
+              </button>
+              {/* Note: "send to entity" is not available here - rule 13 blocks it before
+                  institutional approvals are complete; the only action from this stage is
+                  referral to the grants manager. */}
+              <button
+                className="btn btn-p"
+                disabled={!canSend}
+                title={
+                  missing.length
+                    ? `بنود ناقصة: ${missing.length}`
+                    : issues.length
+                      ? issues[0].say
+                      : 'أرسل الاتفاقية إلى مدير المنح'
+                }
+                onClick={() => make(true)}
+              >
+                أرسل إلى مدير المنح
+              </button>
             </div>
           </div>
         </div>

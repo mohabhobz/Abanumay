@@ -2,7 +2,7 @@ import { CFG, hydrate } from '@/lib/config'
 import type {
   AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, AgreementStage,
 } from '@/types/domain'
-import { SCENARIO, projectRows } from './projects'
+import { AWAITING_AGREEMENT, SCENARIO, projectRows } from './projects'
 import { entityById } from './entities'
 
 /* Agreements · 28 steps and 26 rules
@@ -36,7 +36,7 @@ export const AGREEMENT_STAGES: {
   { key: 'manager', label: 'بانتظار مدير المنح', who: 'مدير المنح', steps: '12–13' },
   { key: 'executive', label: 'بانتظار المدير التنفيذي', who: 'المدير التنفيذي', steps: '16–17' },
   { key: 'entity', label: 'بانتظار توقيع الجهة', who: 'الجهة المستفيدة', steps: '20–21' },
-  { key: 'returned', label: 'مُعادة للتعديل', who: 'مشرف المنح', steps: '14 · 18 · 22' },
+  { key: 'returned', label: 'بانتظار التعديل', who: 'مشرف المنح أو مدير المنح', steps: '14 · 18 · 22' },
   { key: 'active', label: 'سارية', who: '', steps: '24–28' },
 ]
 
@@ -109,7 +109,11 @@ export const agrReserveGap = (a: AgreementRow): number => a.amount - a.reserved
 
 /** Agreement blocked from submission · rule 8, step 11, or rule 9 */
 export const agrBlocked = (a: AgreementRow): boolean =>
-  !agrPaymentsBalance(a).balanced || agrReserveGap(a) !== 0 || a.docs.length === 0
+  blockedGate ? blockedGate(a) : !agrPaymentsBalance(a).balanced || agrReserveGap(a) !== 0 || a.docs.length === 0
+/* The agreements store registers its full completeness check (8.2.13) · a registry, so this mock
+   doesn't import the store */
+let blockedGate: ((a: AgreementRow) => boolean) | null = null
+export const setBlockedGate = (f: (a: AgreementRow) => boolean): void => { blockedGate = f }
 
 /* Templates · 13 in the live system
    `config_contract` in the system has thirteen templates with an HTML editor. These names are
@@ -194,7 +198,7 @@ const MIN_PER_STAGE = 3
 
 /** Rule 1 · no agreement before the project's approval is fully complete */
 const eligible = projectRows.filter(
-  (p) => !SCENARIO_IDS.has(p.id) &&
+  (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) &&
     (p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل' || p.stage.includes('الإتفاقي')),
 )
 

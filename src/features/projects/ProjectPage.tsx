@@ -27,8 +27,12 @@ import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { projectLog } from '@/data/mock/log'
 import { projectOptions } from '@/data/mock/agreementNew'
+import { agreementsOfProject, useAgreements } from '@/data/agreements/store'
+import { ProjectAgreements } from '@/features/agreements/parts'
 import { projectChain } from '@/data/mock/chain'
 import { planOfProject } from '@/data/mock/plans'
+import { planDecisionOf, usePlans } from '@/data/plans/store'
+import { PlanDecisionCard } from '@/features/plans/PlanDecisionCard'
 import { journeys } from '@/data/journey'
 import { BudgetLinkAction } from '@/features/budget/BudgetLink'
 import { useBudget } from '@/data/budget/store'
@@ -122,6 +126,7 @@ export default function ProjectPage() {
   const holder = row && !closed ? holderOf(row) : null
   const authority = row ? authorityFor(row.amountRequested, holder) : fixtures.authority
   useApprovals()
+  useAgreements()
   /* A budget link changes what the seat may do (4.2.12) */
   useBudget()
   const seat = holder && row ? seatOptions(row, holder, role.key, me.name) : null
@@ -244,6 +249,12 @@ export default function ProjectPage() {
      no agreement before approval is complete and the allocation hold still stands - the reason is
      passed to the button so it appears in the `title` instead of a disabled button with no
      explanation. */
+  usePlans()
+  const planApproved = Boolean(row && row.amountGranted > 0 && !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(row.stage) && row.statusGroup !== 'معتذر عنه')
+  const planDecision = row ? planDecisionOf(row.id) : undefined
+  const planBlock = !planApproved ? 'يُفتح بعد الاعتماد النهائي للمشروع'
+    : planDecision && !planDecision.needs ? 'قرار مدير المنح: لا يتطلب خطة · يُعدَّل القرار أولًا'
+      : planOfProject(project.id) && planOfProject(project.id)!.stage !== 'cancelled' ? 'للمشروع خطة' : ''
   const agreementBlock = useMemo(
     () => (row ? projectOptions().find((p) => p.id === row.id)?.blocked ?? '' : ''),
     [row],
@@ -342,6 +353,8 @@ export default function ProjectPage() {
             {/* === Main column === */}
             <div className="col">
               {active === 'data' && row && !asEntity && <RecommendationCard row={row} />}
+              {/* 12.2.2 · the plan decision is part of the project's data */}
+              {active === 'data' && row && !asEntity && planApproved && <PlanDecisionCard projectId={row.id} approved={planApproved} />}
               {active === 'approval' && row && <ApprovalTab row={row} />}
               {active === 'data' && row && asEntity && appFlowOf(row.id).official.length > 0 && (
                 <OfficialNotes notes={appFlowOf(row.id).official} />
@@ -379,9 +392,16 @@ export default function ProjectPage() {
               {active === 'history' && (
                 <HistoryTab entity={entity} currentId={project.id} year={row?.year ?? '2026'} />
               )}
-              {active === 'agreement' && (
+              {active === 'agreement' && agreementsOfProject(project.id).length > 0 && (
+                <ProjectAgreements
+                  list={agreementsOfProject(project.id)}
+                  onAdditional={asEntity ? undefined : () => navigate(ROUTES.agreementNew(project.id))}
+                  additionalBlock={agreementBlock || (projectOptions().find((x) => x.id === project.id)?.additional ? '' : 'تُضاف اتفاقية إضافية لمشروع له اتفاقية سارية')}
+                />
+              )}
+              {active === 'agreement' && agreementsOfProject(project.id).length === 0 && (
                 <AgreementTab
-                  agreement={detail.agreement}
+                  agreement={null}
                   payments={detail.payments}
                   entityName={entity.name}
                   example={examples.agreement}
@@ -393,14 +413,15 @@ export default function ProjectPage() {
               {/* Note: the plan tab is independent of the agreement, and both proceed in parallel -
                   the spec states this explicitly, and the tab answers "what's this project's plan"
                   while the inbox answers "what's on my desk". */}
+              {active === 'plan' && row && !asEntity && <PlanDecisionCard projectId={row.id} approved={planApproved} />}
               {active === 'plan' && (
                 <PlanTab
                   plan={planOfProject(project.id)}
                   granted={project.amountGranted || project.amountRequested}
-                  onStart={() => navigate(ROUTES.planNew(project.id))}
-                  /* Same blocker as the agreement: no plan before approval is complete, since a
-                     plan is measured against an approved grant amount. */
-                  startBlocked={agreementBlock}
+                  onStart={asEntity ? undefined : () => navigate(ROUTES.planNew(project.id))}
+                  /* The plan runs beside the agreement, not after it (12.2.3) · it opens on an
+                     approved project the manager decided needs one */
+                  startBlocked={planBlock}
                 />
               )}
               {/* Note: closing is also its own independent tab - rule 16 states its stages don't

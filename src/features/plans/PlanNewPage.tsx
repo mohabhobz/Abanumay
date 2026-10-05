@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  BackTo, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Num, Tag, icons,
+  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Num, Tag, icons,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { openPlan, planOfProject } from '@/data/mock/plans'
+import { planOfProject } from '@/data/mock/plans'
+import { openPlanFor, planDecisionOf, planRuleSays, projectWindow, usePlans } from '@/data/plans/store'
+import { readRole, roleByKey } from '@/data/roles'
 import { projectById, projectRows } from '@/data/mock/projects'
-import { NOUN, nounAfter } from '@/lib/format'
+import { NOUN, nf, nounAfter } from '@/lib/format'
 
 /* Open a plan for a project.
 
@@ -38,19 +40,30 @@ export default function PlanNewPage() {
 
   /* Note: only projects that are approved and have a grant. A plan is measured against an approved
      grant amount, and a project still under review has no number to divide. */
+  const ver = usePlans()
+  const [reason, setReason] = useState('')
+  const me = roleByKey(readRole()).name
+  /* 12.4.3 · approved projects only · a project the manager decided needs no plan isn't offered
+     until the decision is changed on the project (12.4.31) */
   const options = useMemo(
-    () => projectRows
-      .filter((p) => p.amountGranted > 0 && !planOfProject(p.id))
-      .map((p) => ({ value: p.id, label: `${p.name} · ${p.entityName}` })),
-    [done],
+    () => { void ver; return projectRows
+      .filter((p) => p.amountGranted > 0 && !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(p.stage) && p.statusGroup !== 'معتذر عنه')
+      .filter((p) => !planOfProject(p.id) || planOfProject(p.id)!.stage === 'cancelled')
+      .filter((p) => planDecisionOf(p.id)?.needs !== false)
+      .map((p) => ({ value: p.id, label: `${p.name} · ${p.entityName}` })) },
+    [done, ver],
   )
 
   const pr = v.project ? projectById(v.project) : undefined
   const has = v.project ? planOfProject(v.project) : undefined
+  const dec = pr ? planDecisionOf(pr.id) : undefined
+  const win = pr ? projectWindow(pr.id) : undefined
+  /* Opening without a recorded «يتطلب خطة» is a change of the decision · its reason is required (12.4.33) */
+  const needReason = Boolean(pr) && !dec?.needs
   const by = v.by === 'supervisor' ? 'supervisor' : 'entity'
 
   /* A project that already has a plan - links to it instead of opening another. */
-  if (has) {
+  if (has && has.stage !== 'cancelled') {
     return (
       <AppLayout assistantContext={assistFor.page('فتح خطة')}>
         <div className="viewstack">
@@ -156,7 +169,9 @@ export default function PlanNewPage() {
                     rows={[
                       { k: 'الجهة المستفيدة', v: pr.entityName },
                       { k: 'قيمة المنحة', v: <Money>{pr.amountGranted}</Money> },
+                      { k: 'مدة التنفيذ', v: <>{win?.days ? `${nf.format(win.days)} يومًا` : '—'}{win?.from && <span className="sub"> · <DateText>{win.from}</DateText> ← <DateText>{win.to ?? ''}</DateText></span>}</> },
                       { k: 'حالة المشروع', v: <span className="sub">{pr.stage}</span> },
+                      { k: 'قرار الخطة', v: dec ? <>{dec.needs ? 'يتطلب خطة' : 'لا يتطلب خطة'} <span className="sub">· {dec.by}</span></> : <span className="sub">لم يُوثَّق · القاعدة تقترح {planRuleSays(pr.id) ? 'يتطلب خطة' : 'لا يتطلب خطة'}</span> },
                     ]}
                   />
                 )}
@@ -168,6 +183,14 @@ export default function PlanNewPage() {
                   كتابتها من بوابة المنح. ولا يبدأ القياس ولا حساب الانحراف قبل أن
                   يعتمدها مدير المنح ويثبّت النسخة المرجعية.
                 </p>
+
+                {needReason && (
+                  <label className="regf regf-w">
+                    <span className="lb">سبب فتح الخطة<b className="regf-r" aria-label="إلزامي">*</b></span>
+                    <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: تعدّد مراحل التنفيذ وتوزّعها على فصلين دراسيين" aria-label="سبب فتح الخطة" /></span>
+                    <span className="sub regf-h">لا يوجد قرار موثّق بأن المشروع يتطلب خطة · يُسجَّل الفتح قرارًا باسمك وسببه (12.4.33)</span>
+                  </label>
+                )}
 
                 <div className="regfoot">
                   <span className="decsent sub">
@@ -181,11 +204,11 @@ export default function PlanNewPage() {
                     </button>
                     <button
                       className="btn btn-p"
-                      disabled={!pr}
-                      title={pr ? 'يفتح مسودة وينقلك إلى المحرّر' : 'اختر المشروع أولًا'}
+                      disabled={!pr || (needReason && !reason.trim())}
+                      title={!pr ? 'اختر المشروع أولًا' : needReason && !reason.trim() ? 'اكتب سبب فتح الخطة' : 'يفتح مسودة وينقلك إلى المحرّر'}
                       onClick={() => {
                         if (!pr) return
-                        const id = openPlan(pr.id, by)
+                        const id = openPlanFor(pr.id, by, needReason ? reason : '', me)
                         setDone(id)
                         navigate(ROUTES.planEdit(id))
                       }}

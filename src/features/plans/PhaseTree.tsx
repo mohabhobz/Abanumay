@@ -5,6 +5,7 @@ import {
 import { pct } from '@/lib/format'
 import type { PlanActivity, PlanPhase } from '@/types/domain'
 import { NoteTrail } from '@/components/notes'
+import { isStuck } from '@/data/plans/store'
 
 /* Phase and activity tree - the plan's core.
 
@@ -35,8 +36,12 @@ export interface PhaseTreeProps {
   onAccept?: (actId: string) => void
   onReject?: (actId: string) => void
   onClaim?: (actId: string) => void
-  /** Upload evidence - the entity's portal only. */
-  onUpload?: (actId: string, kind: string) => void
+  /** Upload evidence - the entity's portal only · `replace` is the evidence it replaces. */
+  onUpload?: (actId: string, kind: string, fileName: string, replace?: string) => void
+  /** Remove an uploaded evidence before the activity is submitted (12.2.20) */
+  onDrop?: (actId: string, evId: string) => void
+  /** Start an activity · «جارٍ» (12.2.13) */
+  onStart?: (actId: string) => void
   /** Comment on an activity - under the name of whoever opened the screen (`me`). */
   onComment?: (actId: string, say: string) => void
   /** Whoever opened the screen - comments are attributed to them. */
@@ -49,7 +54,7 @@ const isLate = (a: PlanActivity) => a.state !== 'accepted' && a.to < TODAY
 
 export function PhaseTree({
   phases, live, canReview, canClaim, open, onToggle, onAccept, onReject, onClaim,
-  onUpload, focus, onComment, me = '',
+  onUpload, onDrop, onStart, focus, onComment, me = '',
 }: PhaseTreeProps) {
   return (
     <div className="phtree">
@@ -58,6 +63,7 @@ export function PhaseTree({
         const shut = !open.has(ph.id)
         const queue = ph.activities.filter((a) => a.state === 'claimed').length
         const late = ph.activities.filter(isLate).length
+        const stuck = ph.activities.filter((a) => isStuck(a)).length
 
         return (
           <section className="phase" key={ph.id}>
@@ -84,6 +90,7 @@ export function PhaseTree({
               {/* Percentage is the phase's status - both counters are weighted text, not badges. */}
               {queue > 0 && <span className="sub"><b><Num>{queue}</Num></b> بانتظار</span>}
               {late > 0 && <span className="sub"><b><Num>{late}</Num></b> متأخّر</span>}
+              {stuck > 0 && <span className="sub"><b><Num>{stuck}</Num></b> متعثّر</span>}
             </button>
 
             {!shut && (
@@ -107,7 +114,7 @@ export function PhaseTree({
                       {/* Note: delay is a tag independent of status - "in progress" and "due a
                           month ago" are two different pieces of information. */}
                       {/* A neutral badge - the only colored element in the row is status. */}
-                      {isLate(a) && <Tag tone="mute">تجاوز موعده</Tag>}
+                      {isStuck(a) ? <Tag tone="no">متعثّر</Tag> : isLate(a) && <Tag tone="mute">تجاوز موعده</Tag>}
                       <span className="pc-sp" />
                       <span className="sub act-w">
                         الوزن <span className="num">{a.weight}</span>
@@ -136,13 +143,21 @@ export function PhaseTree({
                                 the entity upload a file and pick its type, and picking wrong sends
                                 the activity back. The button here already knows its type from the
                                 row it's in, so there's no choice to get wrong. */}
-                            {live && canClaim && !got && onUpload && (
-                              <button
-                                className="btn btn-ghost btn-sm act-up"
-                                onClick={() => onUpload(a.id, need)}
-                              >
+                            {/* 12.2.20 · before submission the entity replaces or removes what it uploaded */}
+                            {live && canClaim && onUpload && a.state !== 'accepted' && a.state !== 'claimed' && (
+                              <label className="btn btn-ghost btn-sm act-up">
                                 <Icon name={icons.upload} size="sm" />
-                                ارفع الشاهد
+                                {got ? 'استبدل' : 'ارفع الشاهد'}
+                                <input className="vis-h" type="file" aria-label={`${got ? 'استبدل' : 'ارفع'} ${need} · ${a.name}`} onChange={(e) => {
+                                  const f = e.target.files?.[0]
+                                  if (f) onUpload(a.id, need, f.name, got?.id)
+                                  e.target.value = ''
+                                }} />
+                              </label>
+                            )}
+                            {live && canClaim && got && onDrop && a.state !== 'accepted' && a.state !== 'claimed' && (
+                              <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${got.fileName}`} onClick={() => onDrop(a.id, got.id)}>
+                                <Icon name={icons.close} size="sm" />
                               </button>
                             )}
                           </li>
@@ -200,6 +215,9 @@ export function PhaseTree({
                     {live && canClaim
                       && (a.state === 'doing' || a.state === 'todo' || a.state === 'rejected') && (
                       <div className="act-a">
+                        {a.state === 'todo' && onStart && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => onStart(a.id)}>ابدأ النشاط</button>
+                        )}
                         <button
                           className="btn btn-2 btn-sm"
                           disabled={a.needs.some((n) => !a.evidence.some((e) => e.kind === n))}

@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Icon, Num, Person, icons } from '@/components/ui'
+import { Num, Person } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { planIssues, waitingReview } from '@/data/mock/plans'
 import type { CurrentUser, DecisionKind, PlanRow, PlanStage } from '@/types/domain'
@@ -29,6 +29,7 @@ import { noteFirst } from '@/lib/dock'
    reference point called the baseline. */
 
 export interface PlanAction {
+  key: 'send' | 'toManager' | 'returnEntity' | 'approve' | 'managerReturn'
   label: string
   kind: DecisionKind
   /** A return requires a note - same rule as agreements (rule 10). */
@@ -38,45 +39,33 @@ export interface PlanAction {
   why: string
 }
 
-export function planActionsFor(role: RoleKey, stage: PlanStage): PlanAction[] {
+export function planActionsFor(role: RoleKey, stage: PlanStage, asEntity = false): PlanAction[] {
+  /* 12.2.7 · 12.2.9 · the entity sends its draft, and its edited plan after a return */
+  if (asEntity) {
+    return stage === 'draft' || stage === 'returned'
+      ? [{ key: 'send', label: 'أرسل الخطة لمشرف المنح', kind: 'btn-p', gated: true, why: 'تُرسل بعد اكتمال المراحل والأنشطة والشواهد المطلوبة' }]
+      : []
+  }
   if ((stage === 'draft' || stage === 'returned') && role === 'supervisor') {
     return [{
+      key: 'send',
       label: 'إرسال لمراجعة مشرف المنح',
       kind: 'btn-p',
       gated: true,
-      why: 'الخطة تُرسل بعد اكتمال المراحل والأنشطة والشواهد المطلوبة',
+      why: 'الخطة تُرسل بعد اكتمال المراحل والأنشطة والشواهد المطلوبة · بالنيابة عن الجهة',
     }]
   }
   if (stage === 'supervisor' && role === 'supervisor') {
     return [
-      {
-        label: 'اعتماد وإحالة لمدير المنح',
-        kind: 'btn-p',
-        gated: true,
-        why: 'BPD-009 §9.3 · الاعتماد من مشرف المنح ثم مدير المنح',
-      },
-      {
-        label: 'إعادة للجهة بملاحظات',
-        kind: 'btn-2',
-        needsNote: true,
-        why: 'الجهة هي كاتبة الخطة، فتُعاد إليها لا إلى محطة وسيطة',
-      },
+      { key: 'toManager', label: 'اعتماد وإحالة لمدير المنح', kind: 'btn-p', gated: true, why: 'الاعتماد من مشرف المنح ثم مدير المنح (12.2.10)' },
+      { key: 'returnEntity', label: 'إعادة للجهة بملاحظات', kind: 'btn-2', needsNote: true, why: 'الجهة كاتبة الخطة، فتُعاد إليها لتعدّلها (12.2.8)' },
     ]
   }
   if (stage === 'manager' && role === 'grants-manager') {
     return [
-      {
-        label: 'اعتماد وتثبيت النسخة المرجعية',
-        kind: 'btn-p',
-        gated: true,
-        why: 'الاعتماد يثبّت الهيكل، وأي تعديل بعده يلزمه طلب رسمي (قاعدة 21)',
-      },
-      {
-        label: 'إعادة للجهة بملاحظات',
-        kind: 'btn-2',
-        needsNote: true,
-        why: 'تُعاد الخطة إلى الجهة التي كتبتها',
-      },
+      { key: 'approve', label: 'اعتماد وتثبيت النسخة المرجعية', kind: 'btn-p', gated: true, why: 'الاعتماد يثبّت الهيكل، وأي تعديل بعده يلزمه طلب رسمي' },
+      /* 12.2.11 · the manager's return goes to the supervisor, who reviews it with the entity */
+      { key: 'managerReturn', label: 'إعادة لمشرف المنح بملاحظات', kind: 'btn-2', needsNote: true, why: 'يراجعها المشرف مع الجهة ثم يعيد إحالتها' },
     ]
   }
   return []
@@ -89,14 +78,13 @@ export interface PlanActionDockProps {
   actions: PlanAction[]
   note: string
   onNote: (v: string) => void
-  taken: string | null
-  onTake: (v: string) => void
+  onTake: (a: PlanAction) => void
   /** The dock links to the first activity awaiting review - for an approved plan. */
   onReview: () => void
 }
 
 export function PlanActionDock({
-  user, plan, grant, actions, note, onNote, taken, onTake, onReview,
+  user, plan, grant, actions, note, onNote, onTake, onReview,
 }: PlanActionDockProps) {
   const bar = useRef<HTMLDivElement>(null)
   useProximity(bar)
@@ -104,26 +92,6 @@ export function PlanActionDock({
   const issues = planIssues(plan, grant)
   const needNote = actions.some((a) => a.needsNote)
   const queue = waitingReview(plan).length
-
-  if (taken) {
-    return (
-      <div className="decdock">
-        <div className="chrome decbar" ref={bar}>
-          <div className="rowf gp-3">
-            <Icon name={icons.check} size="md" className="ok-ink" />
-            <span className="decsent">
-              سُجّل: <b>{taken}</b>
-              <span className="decsep" />
-              أُرسل الإشعار إلى الجهة المستفيدة
-            </span>
-          </div>
-          <button className="btn btn-2" onClick={() => { onTake(''); onNote('') }}>
-            تراجع
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   /* Note: an approved plan's dock is a queue, not an approval. Showing approval buttons on an
      already-approved plan tells the user a decision is pending when there isn't one - the real
@@ -190,7 +158,7 @@ export function PlanActionDock({
                 data-needs-note={x.needsNote ? '' : undefined}
                 disabled={Boolean(stop)}
                 title={stop || x.why}
-                onClick={() => onTake(x.label)}
+                onClick={() => onTake(x)}
               >
                 {x.label}
               </button>

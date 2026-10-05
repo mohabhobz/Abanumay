@@ -45,6 +45,7 @@ export const PLAN_STAGES: {
   { key: 'returned', label: 'مُعادة للجهة', who: 'الجهة المستفيدة', note: 'بملاحظات مكتوبة' },
   { key: 'active', label: 'قيد التنفيذ', who: 'الجهة المستفيدة', note: 'أنشطة وشواهد ومراجعة' },
   { key: 'done', label: 'مكتملة', who: '', note: 'المشروع مؤهَّل للإغلاق' },
+  { key: 'cancelled', label: 'ملغاة', who: '', note: 'تحوّل المشروع إلى «لا يتطلب خطة»' },
 ]
 
 export const planStageLabel = (s: PlanStage): string =>
@@ -60,6 +61,7 @@ export const PLAN_TONE: Record<PlanStage, Tone> = {
   returned: TONE.returned,
   active: TONE.active,
   done: TONE.done,
+  cancelled: TONE.rejected,
 }
 
 /**
@@ -74,6 +76,7 @@ export const PLAN_LIMIT: Record<PlanStage, number> = hydrate(CFG.planLimits, {
   returned: 168,
   active: 0,
   done: 0,
+  cancelled: 0,
 })
 
 export const ACTIVITY_SAY: Record<ActivityState, string> = {

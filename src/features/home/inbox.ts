@@ -23,6 +23,7 @@ import { ROUTES } from '@/app/routes'
 import { holderOf } from '@/data/holders'
 import { fixtures, stagePressure } from '@/data/repository'
 import { agreements, AGR_LIMIT } from '@/data/mock/agreements'
+import { agrHolder } from '@/data/agreements/store'
 import { payRequests, PAY_LIMIT } from '@/data/mock/disbursements'
 import { planRows, PLAN_LIMIT, waitingReview } from '@/data/mock/plans'
 import { closeRows, CLOSE_LIMIT } from '@/data/mock/closing'
@@ -99,14 +100,16 @@ const projectsQueue = (
 
 /* ── Module queues, parameterised by the stage that sits with the role ── */
 
-const agreementsAt = (stages: string[], owner?: string): InboxQueue => ({
+const agreementsAt = (stages: string[], owner?: string, holderKey?: RoleKey): InboxQueue => ({
   key: 'agreements',
   label: 'الاتفاقيات',
   note: stages.includes('draft') ? 'صياغة ومراجعة قبل الرفع' : 'بانتظار اعتمادك',
   icon: 'contract',
   all: `${ROUTES.agreements}?stage=${stages.join(',')}`,
   items: agreements
-    .filter((a) => stages.includes(a.stage) && (!owner || a.owner === owner))
+    /* By who holds it, not the stage alone · an executive's return sits with the grants manager,
+       and a signed agreement with the foundation's representative (8.2.19 · 8.4.15) */
+    .filter((a) => (holderKey ? agrHolder(a) === holderKey || (holderKey === 'supervisor' && a.kind === 'ورقية' && agrHolder(a) === 'entity') : stages.includes(a.stage)) && (!owner || a.owner === owner))
     .map((a) => ({
       id: a.id, code: a.id.toUpperCase(), title: a.projectName, sub: a.entityName, amount: a.amount,
       days: d(a.hoursInStage), late: late(a.hoursInStage, AGR_LIMIT[a.stage]), limit: d(AGR_LIMIT[a.stage]), region: regionOf(a.projectId), city: cityOf(a.projectId), to: ROUTES.agreement(a.id),
@@ -255,7 +258,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       projectsQueue('confirm', 'تأكيد الاعتماد', 'اكتمل مسار الاعتماد · تحقّق من الشروط وأكّد',
         single.filter((p) => p.owner === me && holderOf(p) === 'confirm'), `${ROUTES.projects}?tab=mine`),
       portfolioItems('تنتظر توصيتك قبل أن تبدأ'),
-      agreementsAt(['draft', 'returned']),
+      agreementsAt(['draft', 'returned'], undefined, 'supervisor'),
       paymentsAt('supervisor'),
       plansAt('supervisor'),
       activities(),
@@ -273,7 +276,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       projectsQueue('committee-sec', 'قرارات اللجنة للتسجيل', 'عند اللجنة التنفيذية · تسجّلها أمينًا للجنة في جلستها',
         single.filter((p) => holderOf(p) === 'committee'), ROUTES.committee),
       portfolioItems('تنتظر اعتمادك قبل أن تبدأ'),
-      agreementsAt(['manager']),
+      agreementsAt(['manager', 'returned'], undefined, 'grants-manager'),
       paymentsAt('manager'),
       plansAt('manager'),
       closingsAt('reports', ['manager']),
@@ -292,7 +295,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       single.filter((p) => holderOf(p) === 'committee'), ROUTES.committee),
     projectsQueue('board', 'عند مجلس الأمناء', 'يسجّل قراره المدير التنفيذي في جلسته',
       single.filter((p) => holderOf(p) === 'board'), ROUTES.board),
-    agreementsAt(['executive']),
+    agreementsAt(['executive', 'entity'], undefined, 'ceo'),
     closingsAt('reports', ['executive']),
     closingsAt('evals', ['evalExecutive']),
     budgets(role),

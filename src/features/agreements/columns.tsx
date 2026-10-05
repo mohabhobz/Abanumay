@@ -3,8 +3,9 @@ import { DateText, Mono, Person, Tag, Nil } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
 import {
-  agrHeat, agrPaymentsBalance, agrReserveGap, agrStageLabel,
+  agrHeat, agrPaymentsBalance,
 } from '@/data/mock/agreements'
+import { agrStageSay, reservedOf } from '@/data/agreements/store'
 import type { AgreementRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
@@ -86,20 +87,20 @@ export const COLS: Col[] = [
     def: true,
     /* Step 11 - a mismatch between agreement value and the reserved amount blocks submission. */
     cell: (a) => {
-      const gap = agrReserveGap(a)
+      const gap = (a.amount - reservedOf(a))
       return gap === 0
         ? <span className="sub">مطابق</span>
         : <b>فرق <span className="num">{nf.format(Math.abs(gap))}</span></b>
     },
-    text: (a) => (agrReserveGap(a) === 0 ? 'مطابق' : `فرق ${nf.format(Math.abs(agrReserveGap(a)))}`),
+    text: (a) => ((a.amount - reservedOf(a)) === 0 ? 'مطابق' : `فرق ${nf.format(Math.abs((a.amount - reservedOf(a))))}`),
   },
   {
     key: 'stage',
     w: 160,
     label: 'المرحلة',
     def: true,
-    cell: (a) => <span className="sub">{agrStageLabel(a.stage)}</span>,
-    text: (a) => agrStageLabel(a.stage),
+    cell: (a) => <span className="sub">{agrStageSay(a)}</span>,
+    text: (a) => agrStageSay(a),
   },
   {
     key: 'heat',
@@ -170,7 +171,7 @@ export const COLS: Col[] = [
 ]
 
 export const GROUPS: GroupBy<AgreementRow>[] = [
-  { key: 'stage', label: 'المرحلة', of: (a) => agrStageLabel(a.stage) },
+  { key: 'stage', label: 'المرحلة', of: (a) => agrStageSay(a) },
   { key: 'kind', label: 'النوع', of: (a) => a.kind },
   { key: 'owner', label: 'المشرف', of: (a) => a.owner },
   { key: 'entity', label: 'الجهة', of: (a) => a.entityName },

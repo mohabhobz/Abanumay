@@ -1,0 +1,15 @@
+/* Agreements (BPD-008) · clauses, annexes, the assistant's hints and archived versions */
+.agx-cl{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:flex;flex-direction:column}
+.agx-cl>li{display:flex;flex-direction:column;gap:var(--sp-2);padding-block:var(--sp-3)}
+.agx-cl>li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.agx-cl-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
+.agx-cl-h b{font-weight:600;color:var(--t1)}
+.agx-cl-t{flex:1;min-width:12rem}
+.agx-cl textarea,.agx-add textarea{width:100%;resize:vertical;font:inherit;line-height:var(--lh-text)}
+.agx-add{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-4);padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-1)}
+.agx-add>.btn{align-self:flex-start}
+.agx-doc{display:flex;align-items:center;gap:var(--sp-2);min-width:0}
+.agx-doc>.dfile{flex:1;min-width:0}
+.agx-hint{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
+.agx-ver{flex-basis:100%;display:flex;flex-direction:column;gap:var(--sp-1);padding-inline-start:var(--sp-5)}
+.agx-ent{display:flex;flex-direction:column;gap:var(--sp-3)}

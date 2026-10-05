@@ -139,6 +139,10 @@ const notify = (to: string[], projectId: string, title: string, context: string,
   for (const t of to) APPROVAL_NOTES.unshift({ id: `apn-${APPROVAL_NOTES.length + 1}`, to: t, title, context, at: TODAY, href })
 }
 
+/* Registered by the plans store · a registry, so the approvals store doesn't import it */
+let confirmHook: ((projectId: string, by: string) => void) | null = null
+export const setConfirmHook = (f: (projectId: string, by: string) => void): void => { confirmHook = f }
+
 const moveTo = (p: ProjectRow, stage: string) => {
   const meta = stageMeta(stage)
   p.stage = stage
@@ -447,6 +451,10 @@ const apply = (o: Op) => {
           moveTo(p, 'اعتماد الإتفاقية')
           fields.push({ k: 'الحالة', v: 'معتمد · إلى إعداد الاتفاقية', strong: true })
           notify([p.entityName, 'مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, 'إلى إعداد الاتفاقية', ROUTES.project(p.id))
+          /* 12.2.3 · a project that needs a plan gets its plan record opened with the agreement */
+          confirmHook?.(p.id, o.by)
+          /* 8.2.2 · the supervisor learns the project is ready for its agreement */
+          notify([p.owner ?? 'مشرف المنح', 'مشرف المنح'], p.id, `مشروع جاهز لإعداد الاتفاقية · ${p.name}`, 'اكتمل الاعتماد وثبت الحجز', ROUTES.agreementNew(p.id))
           break
         case 'amend':
           /* 5.4.21 · a decision isn't deleted · it's reopened by a documented act at the deciding level */

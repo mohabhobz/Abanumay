@@ -3,8 +3,9 @@ import { DateText, Icon, icons, Money, Mono, Num, Person, Tag, Riyal} from '@/co
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, NOUN, nounAfter, pct } from '@/lib/format'
 import {
-  AGR_TONE, agrHeat, agrPaymentsBalance, agrReserveGap, agrStageLabel,
+  AGR_TONE, agrHeat, agrPaymentsBalance,
 } from '@/data/mock/agreements'
+import { agrStageSay, reservedOf } from '@/data/agreements/store'
 import type { AgreementRow } from '@/types/domain'
 
 /* A single agreement, as a decision.
@@ -39,7 +40,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
   const heat = agrHeat(a)
   const days = Math.round(a.hoursInStage / 24)
   const balance = agrPaymentsBalance(a)
-  const gap = agrReserveGap(a)
+  const gap = (a.amount - reservedOf(a))
 
   return (
     <article className="agrq glass">
@@ -68,7 +69,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           kind of information in the same place. */}
       <div className="payq-tags">
         {/* One colored tag per card = the stage. Everything else is information with a neutral tag. */}
-        <Tag tone={AGR_TONE[a.stage]}>{agrStageLabel(a.stage)}</Tag>
+        <Tag tone={AGR_TONE[a.stage]}>{agrStageSay(a)}</Tag>
         {a.stage === 'active' && a.activeAt
           ? <Tag tone="mute">فُعّلت <DateText>{a.activeAt}</DateText></Tag>
           : <span className="sub">في هذه المرحلة منذ <Num>{days}</Num> {nounAfter(days, NOUN.day)}</span>}

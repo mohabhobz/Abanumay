@@ -14,11 +14,17 @@ import { assistFor } from '@/data/mock/assistant'
 import { isolate, nf, NOUN, nounAfter, pct, ver } from '@/lib/format'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import {
-  PLAN_LIMIT, PLAN_STAGES, acceptActivity, approvePlan, decideChange, lateActivities,
-  addEvidence, claimActivity, commentActivity, planById, planClaimed, planDone, planIssues, planPlanned,
-  planSpi, planStageLabel, planStageWho, readyToClose, rejectActivity, returnPlan, sendPlan, spiSay,
-  toManager, waitingReview,
+  PLAN_LIMIT, PLAN_STAGES, lateActivities,
+  planById, planClaimed, planDone, planIssues, planPlanned,
+  planSpi, planStageLabel, planStageWho, readyToClose, spiSay,
+  waitingReview,
 } from '@/data/mock/plans'
+import {
+  acceptActivityBy, claimActivityBy, commentOn, decideChangeBy, dropEvidence, mayDraft, projectWindow,
+  rejectActivityBy, reviewPlan, sendPlanFor, startActivity, stuckActivities, uploadEvidence, usePlans,
+} from '@/data/plans/store'
+import { PlanDecisionCard } from './PlanDecisionCard'
+import type { PlanAction } from './PlanActionDock'
 import { projectById } from '@/data/mock/projects'
 import { planReadings } from './readings'
 import { PhaseTree } from './PhaseTree'
@@ -68,8 +74,10 @@ export default function PlanPage() {
      drifted apart at the first edit, which is what happened before on the registration flow. */
   const asEntity = params.get('as') === 'entity'
   const p = planById(id)
+  usePlans()
   const [note, setNote] = useState('')
-  const [taken, setTaken] = useState<string | null>(null)
+  const [said, setSaid] = useState('')
+  const [chNote, setChNote] = useState<Record<string, string>>({})
   const [focus, setFocus] = useState<string | undefined>()
   const [tick, setTick] = useState(0)
   const [open, setOpen] = useState<Set<string>>(new Set())
@@ -134,7 +142,11 @@ export default function PlanPage() {
   const late = lateActivities(p)
   const issues = planIssues(p, grant)
   const live = p.stage === 'active' || p.stage === 'done'
-  const actions = asEntity ? [] : planActionsFor(role.key, p.stage)
+  const actions = planActionsFor(role.key, p.stage, asEntity)
+  const stuck = stuckActivities(p)
+  const win = projectWindow(p.projectId)
+  const who = asEntity ? p.entityName : user.name
+  const canDraft = mayDraft(p, asEntity) || (!asEntity && role.key === 'supervisor' && (p.stage === 'draft' || p.stage === 'returned'))
   const cost = p.phases.reduce((s, ph) => s + ph.cost, 0)
 
   /* The same fan as the project, agreement and closing headers, driven by the plan's own path.
@@ -191,13 +203,12 @@ export default function PlanPage() {
       : null,
   ]
 
-  const take = (label: string) => {
-    if (label.includes('إرسال لمراجعة')) sendPlan(p.id)
-    else if (label.includes('إحالة لمدير')) toManager(p.id)
-    else if (label.includes('تثبيت النسخة')) approvePlan(p.id)
-    else if (label.includes('إعادة للجهة')) returnPlan(p.id, note)
-    setTaken(label)
-    setTick((x) => x + 1)
+  const take = (x: PlanAction) => {
+    if (x.key === 'send') sendPlanFor(p.id, asEntity ? 'entity' : 'supervisor', who)
+    else if (x.key === 'approve' || x.key === 'toManager' || x.key === 'returnEntity' || x.key === 'managerReturn') reviewPlan(p.id, x.key, note.trim(), who)
+    setNote('')
+    setSaid(`سُجّل: ${x.label}`)
+    setTick((t) => t + 1)
   }
 
   return (
@@ -229,6 +240,7 @@ export default function PlanPage() {
                   <div className="v"><Money sm>{grant || pr.amountRequested}</Money></div>
                   <div className="sub">
                     تكلفة المراحل <Num>{cost}</Num> · <Num>{p.phases.length}</Num> {nounAfter(p.phases.length, NOUN.phase)}
+                    {win.days > 0 && <> · مدة المشروع <Num>{win.days}</Num> يومًا</>}
                   </div>
                 </div>
               )}
@@ -245,12 +257,35 @@ export default function PlanPage() {
               />
             </div>
           </header>
+          {said && <p className="sub cnote tcen" aria-live="polite">{said}</p>}
 
           {/* Note: the entity needs to know that "done" isn't "counted". This is the biggest
               possible misunderstanding on this screen: the entity uploads evidence, marks it done,
               and assumes the percentage went up - but rule 14 says it doesn't rise until the
               supervisor accepts it. The sentence is stated up top, not left to be inferred from a
               small badge next to the activity. */}
+          {p.stage === 'cancelled' && (
+            <Glass>
+              <Head title="الخطة ملغاة" meta={<Tag tone="no">ملغاة</Tag>} />
+              <p className="sub cnote">{p.note ?? 'تحوّل المشروع إلى «لا يتطلب خطة» · توقفت إجراءات الخطة (12.4.32).'}</p>
+            </Glass>
+          )}
+
+          {!canDraft && p.note && (p.stage === 'supervisor' || p.stage === 'returned') && (
+            <Glass>
+              <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">{planStageLabel(p.stage)}</Tag>} />
+              <p className="sub cnote">{isolate(p.note)}</p>
+            </Glass>
+          )}
+
+          {canDraft && (
+            <Glass>
+              <Head title={p.stage === 'returned' ? 'الخطة مُعادة للتعديل' : 'مسودة الخطة'} meta={<Link className="btn btn-p btn-sm" to={`${ROUTES.planEdit(p.id)}${asEntity ? '?as=entity' : ''}`}>{p.stage === 'returned' ? 'عدّل الخطة' : 'حرّر الخطة'}</Link>} />
+              {p.note && <p className="sub cnote">{isolate(p.note)}</p>}
+              <p className="sub cnote">{asEntity ? 'تكتب الجهة المراحل والأنشطة والشواهد ثم ترسلها لمشرف المنح.' : 'يكتبها المشرف بالنيابة عن الجهة عند الحاجة.'}</p>
+            </Glass>
+          )}
+
           {asEntity && (
             <Glass>
               <Head
@@ -299,6 +334,12 @@ export default function PlanPage() {
                           v: queue.length === 0
                             ? <span className="sub">لا شيء</span>
                             : <Tag tone="warn"><Num>{queue.length}</Num> {nounAfter(queue.length, NOUN.activity)}</Tag>,
+                        },
+                        {
+                          k: 'متعثّر',
+                          v: stuck.length === 0
+                            ? <span className="sub">لا شيء</span>
+                            : <Tag tone="no"><Num>{stuck.length}</Num> {nounAfter(stuck.length, NOUN.activity)}</Tag>,
                         },
                         {
                           k: 'تجاوز موعده ولم يُقبل',
@@ -352,14 +393,12 @@ export default function PlanPage() {
                     live={live}
                     canReview={!asEntity && role.key === 'supervisor'}
                     canClaim={asEntity}
-                    onClaim={(actId) => { claimActivity(p.id, actId); setTick((x) => x + 1) }}
-                    /* Note: the file name is generated in the demo. In the real system this is an
-                       actual file picker, and its validation is the same as the registration
-                       attachment check (`docAdvice`). */
-                    onUpload={(actId, kind) => {
-                      addEvidence(p.id, actId, kind, `${kind.replace(/ /g, '-')}.pdf`)
-                      setTick((x) => x + 1)
-                    }}
+                    onClaim={(actId) => { claimActivityBy(p.id, actId, who); setTick((x) => x + 1) }}
+                    /* A real file picker · the evidence row knows its kind, and a replaced file
+                       stays in the activity's log (12.2.20 · 12.4.19) */
+                    onUpload={(actId, kind, fileName, replace) => { uploadEvidence(p.id, actId, kind, fileName, who, replace); setTick((x) => x + 1) }}
+                    onDrop={(actId, evId) => { dropEvidence(p.id, actId, evId, who); setTick((x) => x + 1) }}
+                    onStart={(actId) => { startActivity(p.id, actId, who); setTick((x) => x + 1) }}
                     open={shown}
                     focus={focus}
                     onToggle={(phId) => setOpen(() => {
@@ -368,17 +407,13 @@ export default function PlanPage() {
                       else next.add(phId)
                       return next
                     })}
-                    onAccept={(actId) => { acceptActivity(p.id, actId); setTick((x) => x + 1) }}
+                    onAccept={(actId) => { acceptActivityBy(p.id, actId, user.name); setTick((x) => x + 1) }}
                     onReject={(actId) => setReject({ id: actId, note: '' })}
                     /* The entity comments under its own name, the institution under the signed-in
                        user's. */
                     me={asEntity ? p.entityName : user.name}
                     onComment={(actId, say) => {
-                      commentActivity(
-                        p.id, actId, say,
-                        asEntity ? p.entityName : user.name,
-                        asEntity ? 'entity' : 'staff',
-                      )
+                      commentOn(p.id, actId, say, who, asEntity ? 'entity' : 'staff')
                       setTick((x) => x + 1)
                     }}
                   />
@@ -403,7 +438,9 @@ export default function PlanPage() {
                 <Glass>
                   <Head
                     title="طلبات التعديل الجوهري"
-                    meta={<Tag tone="mute">قاعدة <Num>21</Num></Tag>}
+                    meta={p.stage === 'active' && (asEntity || role.key === 'supervisor')
+                      ? <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}${asEntity ? '?as=entity' : ''}`}>اطلب تعديلًا</Link>
+                      : <Tag tone="mute">قاعدة <Num>21</Num></Tag>}
                   />
                   {p.changes.length === 0 ? (
                     <p className="sub cnote">
@@ -417,7 +454,7 @@ export default function PlanPage() {
                         <li key={c.id}>
                           <div className="plchg-h">
                             <Tag tone={c.state === 'approved' ? 'ok' : c.state === 'rejected' ? 'no' : 'warn'}>
-                              {c.state === 'approved' ? 'معتمَد' : c.state === 'rejected' ? 'مرفوض' : 'بانتظار مدير المنح'}
+                              {c.state === 'approved' ? 'معتمَد' : c.state === 'rejected' ? 'مرفوض' : c.state === 'returned' ? 'أُعيد للاستكمال' : 'بانتظار مدير المنح'}
                             </Tag>
                             <span className="sub">
                               <DateText>{c.at}</DateText> · {c.by}
@@ -425,26 +462,22 @@ export default function PlanPage() {
                           </div>
                           <p className="plchg-t">{isolate(c.say)}</p>
                           {c.note && <p className="sub">{isolate(c.note)}</p>}
-                          {c.state === 'waiting' && role.key === 'grants-manager' && (
+                          {c.decidedAt && <p className="sub">قرار {c.decidedBy} · <DateText>{c.decidedAt}</DateText></p>}
+                          {c.proposed && <p className="sub">بهيكل مقترح · <Num>{c.proposed.length}</Num> {nounAfter(c.proposed.length, NOUN.phase)}{c.before && <> · حُفظ الهيكل السابق (<Num>{c.before.length}</Num> {nounAfter(c.before.length, NOUN.phase)})</>}</p>}
+                          {c.state === 'returned' && (
                             <div className="act-a">
-                              <button
-                                className="btn btn-p btn-sm"
-                                onClick={() => {
-                                  decideChange(p.id, c.id, true, 'اعتُمد التعديل · ارتفع رقم النسخة المرجعية.')
-                                  setTick((x) => x + 1)
-                                }}
-                              >
-                                اعتمد التعديل
-                              </button>
-                              <button
-                                className="btn btn-2 btn-sm"
-                                onClick={() => {
-                                  decideChange(p.id, c.id, false, 'رُفض التعديل · تُنفَّذ الخطة كما اعتُمدت.')
-                                  setTick((x) => x + 1)
-                                }}
-                              >
-                                ارفض التعديل
-                              </button>
+                              <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}?change=${c.id}${asEntity ? '&as=entity' : ''}`}>استكمل الطلب وأعد إرساله</Link>
+                            </div>
+                          )}
+                          {c.state === 'waiting' && role.key === 'grants-manager' && !asEntity && (
+                            <div className="act-a">
+                              <span className="fld"><input value={chNote[c.id] ?? ''} onChange={(e) => setChNote({ ...chNote, [c.id]: e.target.value })} placeholder="ملاحظة القرار · إلزامية" aria-label="ملاحظة قرار التعديل" /></span>
+                              {(['approve', 'return', 'reject'] as const).map((o) => (
+                                <button key={o} className={`btn ${o === 'approve' ? 'btn-p' : 'btn-2'} btn-sm`} disabled={!(chNote[c.id] ?? '').trim()}
+                                  onClick={() => { decideChangeBy(p.id, c.id, o, chNote[c.id] ?? '', user.name); setTick((x) => x + 1) }}>
+                                  {o === 'approve' ? 'اعتمد التعديل' : o === 'return' ? 'أعده للاستكمال' : 'ارفض التعديل'}
+                                </button>
+                              ))}
                             </div>
                           )}
                         </li>
@@ -467,6 +500,7 @@ export default function PlanPage() {
                 )}
               />
               <EditableCard module="plan" state={p.stage} label={planStageLabel(p.stage)} />
+              {!asEntity && <PlanDecisionCard projectId={p.projectId} approved />}
             </div>
           </div>
 
@@ -531,7 +565,7 @@ export default function PlanPage() {
                   className="btn btn-p"
                   disabled={!reject.note.trim()}
                   onClick={() => {
-                    rejectActivity(p.id, reject.id, reject.note.trim(), user.name)
+                    rejectActivityBy(p.id, reject.id, reject.note.trim(), user.name)
                     setReject(null)
                     setTick((x) => x + 1)
                   }}
@@ -546,15 +580,14 @@ export default function PlanPage() {
 
         {/* Note: the decision dock belongs to the institution alone - the entity has no approval
             decision; its actions live on the activity itself, in the tree. */}
-        {!asEntity && (
+        {(!asEntity || actions.length > 0) && (
         <PlanActionDock
-          user={user}
+          user={asEntity ? { ...user, name: p.entityName } : user}
           plan={p}
           grant={grant}
           actions={actions}
           note={note}
           onNote={setNote}
-          taken={taken}
           onTake={take}
           onReview={() => {
             const a = queue[0]

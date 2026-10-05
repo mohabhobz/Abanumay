@@ -62,6 +62,8 @@ export interface ProjectOption {
   amount: number
   /** The reason it's blocked · empty means eligible */
   blocked: string
+  /** The agreement in force an additional one would replace (8.4.25) */
+  additional?: string
 }
 
 /**
@@ -72,7 +74,16 @@ export interface ProjectOption {
  * project whose agreement was cancelled would stay closed forever.
  */
 const hasAgreement = (id: string) =>
-  agreements.some((a) => a.projectId === id && a.stage !== 'cancelled')
+  agreements.some((a) => a.projectId === id && a.stage !== 'cancelled' && a.stage !== 'active')
+/** 8.4.25 · a project with an agreement in force may take an additional one · it replaces the one
+    in force when it activates, so one stays in force */
+export const activeAgreementOf = (id: string) => agreements.find((a) => a.projectId === id && a.stage === 'active')
+
+const AGREEMENT_STAGE = new Set(['اعتماد الإتفاقية', 'الإتفاقيات الورقية'])
+
+/* 8.2.1 · the hold must be final · registered by the agreements store, which reads the budget */
+let fundingGate: (projectId: string) => string = () => ''
+export const setFundingGate = (f: (projectId: string) => string): void => { fundingGate = f }
 
 /* 5.4.16 · special conditions set at approval stop the agreement until met · the approval store
    registers the check at load, so this file stays free of it */
@@ -85,12 +96,16 @@ export const projectOptions = (): ProjectOption[] =>
     name: p.name,
     entityName: p.entityName,
     amount: p.amountGranted,
+    additional: activeAgreementOf(p.id)?.id,
     blocked:
-      hasAgreement(p.id) ? 'له اتفاقية قائمة'
+      hasAgreement(p.id) ? 'له اتفاقية في دورة الاعتماد'
         : p.amountGranted <= 0 ? 'لم يُحجز له مخصص'
           : p.statusGroup === 'في الدراسة' ? 'ما زال في الدراسة، ولم يكتمل اعتماده'
             : p.statusGroup === 'معتذر عنه' ? 'معتذر عنه'
-              : conditionGate(p.id),
+              /* 8.2.1 · the project reaches its agreement at «اعتماد الإتفاقية» · past it, only an
+                 additional agreement to the one in force (8.4.25) */
+              : !AGREEMENT_STAGE.has(p.stage) && !activeAgreementOf(p.id) ? 'ليس في مرحلة إعداد الاتفاقية'
+                : fundingGate(p.id) || conditionGate(p.id),
   }))
 
 export const projectById = (id: string): ProjectRow | undefined =>
