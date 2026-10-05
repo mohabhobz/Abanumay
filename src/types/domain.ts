@@ -637,6 +637,38 @@ export interface PayRequest {
   docs: PayDoc[]
   /** Audit log — rule 16 — every transition, with its step number. */
   log: PayEvent[]
+
+  /* What the live flow adds · set by the payments store. */
+
+  /** Who opened it — the entity (the document's direction) or a supervisor's permit (9.1.input-4). */
+  origin?: 'entity' | 'supervisor'
+  /** A supervisor's permit still waiting for the entity's justification (9.1.input-4). */
+  permit?: boolean
+  /** The entity's authorized representative, from the agreement in force (9.1.input-3). */
+  rep?: { name: string; title: string }
+  /** Special approvals or exceptions recorded before disbursing (9.1.input-6). */
+  exceptions?: PayException[]
+  /** Finance approved the disbursement order — step 15 · the transfer waits for it (rule 9). */
+  order?: { at: string; by: string }
+  /** The executed transfer — step 17 · its proof is mandatory. */
+  transfer?: { at: string; by: string; bank: string; iban: string; proof: string }
+  /** Who the last return went back to · a manager's return reaches the supervisor, finance's the manager. */
+  returnedBy?: 'supervisor' | 'manager' | 'finance'
+  /** Decision date on a final rejection — rule 15. */
+  closedAt?: string
+}
+
+/** A special approval or exception on a request — 9.1.input-6 · a waiver lifts rule 3 or 6 only. */
+export interface PayException {
+  id: string
+  kind: 'approval' | 'waiver'
+  /** The check a waiver lifts · rules 10, 11 and 14 are financial controls and never waived. */
+  rule?: 3 | 6
+  text: string
+  by: string
+  role: string
+  at: string
+  file?: string
 }
 
 /** A document attached to the request — rule 21. */
@@ -688,6 +720,8 @@ export type PlanStage =
   | 'active'
   /** All activities accepted — the project is eligible for closing. */
   | 'done'
+  /** The project was switched to «لا يتطلب خطة» · its procedures stop (12.4.32). */
+  | 'cancelled'
 
 /**
  * Status of a single activity — Rule 14 separates "the entity says"
@@ -726,7 +760,7 @@ export interface ActivityNote {
    * A rejection reason (Rule 14) or a reason added afterward — only the
    * first is tagged.
    */
-  kind: 'reject' | 'comment'
+  kind: 'reject' | 'comment' | 'edit'
   /**
    * The party — determines the bubble color, exactly like the
    * correspondence thread.
@@ -783,9 +817,16 @@ export interface PlanChange {
   by: string
   /** What was requested to change, in text. */
   say: string
-  state: 'waiting' | 'approved' | 'rejected'
+  state: 'waiting' | 'approved' | 'rejected' | 'returned'
   /** The grants manager's decision and its reason. */
   note?: string
+  /** When and by whom the decision was taken (12.4.22) */
+  decidedAt?: string
+  decidedBy?: string
+  /** The structure the request proposes · applied on approval (12.2.22) */
+  proposed?: PlanPhase[]
+  /** The structure before the change · kept when it's applied (12.4.23) */
+  before?: PlanPhase[]
 }
 
 export interface PlanRow {

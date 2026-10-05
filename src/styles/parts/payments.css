@@ -1,0 +1,9 @@
+/* Disbursement request · the requirements as files, and the representative's acknowledgment
+   (9.2.2 · 9.1.input-3). Each requirement is a row: its state mark, its label with the picked file
+   under it, and the upload control at the row's end. */
+.payneed{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.payneed-t{display:flex;flex-direction:column;flex:1;min-width:0;font-size:var(--fs-2);line-height:var(--lh-ui)}
+.payneed>.upbtn{flex:none}
+.paycheckl-ack{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-3);
+  font-size:var(--fs-2);line-height:var(--lh-ui);cursor:pointer}
+.paycheckl-ack input{flex:none;accent-color:var(--solid);width:var(--sp-5);height:var(--sp-5)}

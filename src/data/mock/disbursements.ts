@@ -1,7 +1,8 @@
 import { CFG, hydrate } from '@/lib/config'
 import type { PayCheck, PayEvent, PayRequest, PayState } from '@/types/domain'
-import { SCENARIO, projectRows } from './projects'
+import { AWAITING_AGREEMENT, SCENARIO, projectRows } from './projects'
 import { entityById } from './entities'
+import { agreements } from './agreements'
 
 /* Disbursement requests · built on the procedures document, not on the live system
 
@@ -201,10 +202,17 @@ const dayAfter = (iso: string, n: number): string => {
 /* Scenario projects (meeting 1 Oct, A-6) stay out of the share-based mix · they only top up a
    state left with fewer than three requests, so the sample's own requests keep their ids */
 const SCENARIO_IDS = new Set([...SCENARIO.agreements, ...SCENARIO.closing])
-const MIN_PER_STATE = 3
+const MIN_PER_STATE = 4
 
+/* 9.1.input-1 · 9.4.1 · a request sits only on a project in execution whose agreement is in force ·
+   a project still at its agreement stage, or whose agreement row isn't active, never carries one */
+const agreementActive = (id: string): boolean => {
+  const rows = agreements.filter((a) => a.projectId === id)
+  return !rows.length || rows.some((a) => a.stage === 'active')
+}
 const eligible = projectRows.filter(
-  (p) => !SCENARIO_IDS.has(p.id) && (p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل'),
+  (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) && p.statusGroup === 'في التشغيل' &&
+    !p.stage.includes('الإتفاقي') && agreementActive(p.id),
 )
 
 /* Warning: **the disbursement count is a property of the agreement, not of the request.**
@@ -356,13 +364,21 @@ export const payRequests: PayRequest[] = (() => {
      scenario project with that project's own amounts */
   const pool = SCENARIO.payments.map((id) => projectRows.find((p) => p.id === id)).filter((p) => !!p)
   for (const { state } of MIX) {
-    const tpl = out.find((r) => r.state === state)
+    /* A state the mix left empty borrows any request as its shape · its own state, checks and note */
+    const own = out.find((r) => r.state === state)
+    const tpl = own ?? out[0]
     while (tpl && out.filter((r) => r.state === state).length < MIN_PER_STATE && pool.length) {
       const p = pool.shift()!
       const granted = p.amountGranted || p.amountRequested
       const due = Math.round(granted / tpl.of / 1000) * 1000
+      const cond = Boolean(tpl.condition)
       out.push({
         ...structuredClone(tpl),
+        state,
+        hoursInState: state === 'paid' ? 0 : tpl.hoursInState,
+        checks: own ? structuredClone(tpl.checks) : checksFor(state, cond),
+        note: state === 'returned' ? (tpl.note ?? pick(RETURN_NOTES)) : undefined,
+        ai: state === 'paid' ? undefined : (tpl.ai ?? pick(AI_NOTES)),
         id: `SR-2026-${String(11_400 + n).padStart(5, '0')}`,
         projectId: p.id,
         projectName: p.name,
@@ -551,42 +567,6 @@ export interface PaySlot {
 /** "Today" in the mock · fixed so the schedule doesn't change on every run */
 export const TODAY = '2026-09-14'
 
-/**
- * A project's disbursement schedule · built from its existing requests plus the remaining
- * disbursements. A disbursement with a request takes its status; one without is computed from its
- * due date and condition.
- */
-export function paySchedule(projectId: string): PaySlot[] {
-  const mine = payRequests.filter((r) => r.projectId === projectId)
-  const first = mine[0]
-  if (!first) return []
-
-  const of = first.of
-  const even = Math.round(first.granted / of / 1000) * 1000
-  const out: PaySlot[] = []
-
-  for (let no = 1; no <= of; no++) {
-    const req = mine.find((r) => r.no === no)
-    const amount = no === of ? first.granted - even * (of - 1) : even
-    /* Due dates are two months apart between disbursements · the agreement's schedule */
-    const base = new Date(first.dueAt)
-    base.setMonth(base.getMonth() + (no - first.no) * 2)
-    const dueAt = req?.dueAt ?? base.toISOString().slice(0, 10)
-    const condition = req?.condition
-    const conditionMet = req ? (req.checks.find((c) => c.rule === 6)?.ok ?? true) : true
-
-    const state: PaySlotState =
-      req?.state === 'paid' ? 'paid'
-      : req ? 'pending'
-      : dueAt > TODAY ? 'early'
-      : condition && !conditionMet ? 'held'
-      : 'open'
-
-    out.push({ no, of, amount, dueAt, condition, conditionMet, state, requestId: req?.id })
-  }
-  return out
-}
-
 export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; rule?: number }> = {
   open: { label: 'مستحقة', why: 'جاهزة لإنشاء طلب صرف' },
   early: { label: 'لم تستحق', why: 'يُقدَّم الطلب للدفعات المستحقة وفق الجدول المعتمد فقط', rule: 2 },
@@ -595,30 +575,11 @@ export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; ru
   held: { label: 'موقوفة بشرط', why: 'لا يُرسل طلب الدفعة المرتبطة بتقارير قبل استيفائها', rule: 6 },
 }
 
-/**
- * Projects that can request disbursement · rule 1.
- * A project whose agreement isn't active stays shown, with the reason, because hiding it would make
- * the entity go looking for something that isn't there instead of knowing why.
- */
-export function payProjects(): {
-  id: string; name: string; entity: string; can: boolean; why?: string; open: number
-}[] {
-  const seen = new Map<string, PayRequest>()
-  for (const r of payRequests) if (!seen.has(r.projectId)) seen.set(r.projectId, r)
-  const out = [...seen.values()].map((r) => ({
-    id: r.projectId,
-    name: r.projectName,
-    entity: r.entityName,
-    can: r.agreement.active,
-    why: r.agreement.active ? undefined : 'الاتفاقية غير سارية · القاعدة 1',
-    /* How many disbursements are due and ready to request · this is what sorts the list */
-    open: paySchedule(r.projectId).filter((x) => x.state === 'open').length,
-  }))
-  /* The one with a due disbursement goes on top · the list starts with what's **actionable**, not
-     the first project in the data — the entity opening this screen is here to request disbursement,
-     not to browse its projects. */
-  return out.sort((a, b) => Number(b.can) - Number(a.can) || b.open - a.open)
-}
+/* 8.2.31 · an agreement activated in the system opens disbursement · registered by the agreements
+   store, so this mock doesn't import it */
+let agreementGate: (projectId: string) => boolean = () => false
+export const setAgreementGate = (f: (projectId: string) => boolean): void => { agreementGate = f }
+export const agreementInForce = (projectId: string): boolean => agreementGate(projectId)
 
 export const payByState = (s: PayState): PayRequest[] =>
   payRequests.filter((r) => r.state === s)

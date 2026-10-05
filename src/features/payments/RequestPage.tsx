@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
   Steps, Tag, type StepItem,
@@ -16,8 +16,9 @@ import {
   bankIssues, banksOf, entityStateOf, originOf, type PayOrigin,
 } from '@/data/mock/payEntity'
 import type { PayRequest } from '@/types/domain'
-import { ActionDock, actionsFor } from './ActionDock'
-import { isPaidRef, recordPaid, undoPaid } from '@/data/budget/store'
+import { ActionDock } from './ActionDock'
+import { PayExceptions } from './PayExceptions'
+import { actOnPay, grantLeft, mayResubmit, payActions, usePayments, type PayAction } from '@/data/payments/store'
 import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
@@ -47,10 +48,9 @@ import { EditableCard } from '@/features/shared/EditableCard'
 
    === What is deliberately NOT here ===
 
-   "Disbursement request" (steps 1 and 2 - the entity's screen) isn't here: that's the beneficiary
-   entity's screen, not the institution's, and the entity portal is out of scope for this app. Those
-   steps appear in the log as events that happened, and rule 19 (the entity tracking its request
-   status) is logged as an open question elsewhere. */
+   "Disbursement request" (steps 1 and 2) is the request form. The entity opens this same page from
+   its portal (`?as=entity`) to follow its request (9.4.19): its own five states, the notes to
+   complete, the attachments and the log - without the institution's internal cards or exits. */
 
 /** The four steps the user sees - sourced from the steps table. */
 const LADDER: { key: string; label: string; note: string; steps: number[] }[] = [
@@ -88,11 +88,16 @@ export default function RequestPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { role, user } = useRole()
+  const [params] = useSearchParams()
+  const asEntity = params.get('as') === 'entity'
+  const ver = usePayments()
   const r = payRequestById(id)
   const [note, setNote] = useState('')
-  const [taken, setTaken] = useState<string | null>(null)
+  const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
 
-  const ladder = useMemo(() => (r ? ladderFor(r) : []), [r])
+  /* `ver` re-reads the ladder after every move · the request object itself is mutated in place */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const ladder = useMemo(() => (r ? ladderFor(r) : []), [r, ver])
 
   /* Note: these hooks sit above the early `return` because they must. The first version placed them
      below, next to other computations - the rules-of-hooks require a consistent order on every
@@ -134,23 +139,39 @@ export default function RequestPage() {
   const meta = PAY_STATES.find((s) => s.key === r.state)
   const blocked = r.checks.filter((c) => !c.ok)
   const bankOk = r.bank.active
-  const actions = actionsFor(role.key, r.state)
+  const actions = payActions(r, role.key, asEntity)
+  const onAct = (a: PayAction, file?: string) => {
+    const out = actOnPay(r.id, a.act, note, user.name, role.key, file)
+    if (out.length) { setSaid({ bad: out }); return }
+    setSaid({ ok: a.label })
+    setNote('')
+  }
 
   /* Rule 14 - the hard cap - spent plus this payment, against the grant. */
   const after = r.spent + r.asked
-  const left = r.granted - after
+  const left = r.state === 'paid' ? r.granted - after : grantLeft(r.projectId, r.id) - r.asked
 
   /* H-3 - status from the entity's point of view - not a hook, so it belongs here normally. */
   const ent = entityStateOf(r.state)
 
-  /* H-2 - request direction - in this app it's the current one, with the target shown beside it. */
-  const origin: PayOrigin = 'supervisor'
+  /* H-2 - request direction - the entity's by default, or a supervisor's permit (9.1.input-4). */
+  const origin: PayOrigin = r.origin ?? 'entity'
 
   return (
     <AppLayout assistantContext={assistFor.page(`طلب ${r.id}`, r.projectName)}>
       <div className={`viewstack${actions.length > 0 ? ' hasdock' : ''}`}>
         <div className="screen col hasg2">
-          <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
+          <BackTo
+            label={asEntity ? 'البوابة' : 'الصرف'}
+            onClick={() => navigate(asEntity ? `${ROUTES.entityPortal}?entity=${r.entityId}` : ROUTES.payments)}
+          />
+
+          {said.ok && (
+            <p className="ok-ink cnote" role="status">
+              سُجّل الإجراء: <b>{said.ok}</b> · أُرسل الإشعار (القاعدة 17)
+            </p>
+          )}
+          {said.bad?.map((b) => <p key={b} className="bad cnote" role="alert">{b}</p>)}
 
           {/* Two-column header - same layout as the project and entity pages: name and amount on
               the right, the ladder opposite. */}
@@ -189,6 +210,7 @@ export default function RequestPage() {
                 تنص القاعدة 15 على أن يُغلق النظام الطلب عند الرفض النهائي
                 <b> مع الاحتفاظ بسجل إجراءاته</b> · السجل كامل أدناه، والتعديل مغلق.
               </p>
+              {r.note && <div className="payq-note"><Icon name={icons.chat} size="sm" /><span>{isolate(r.note)}</span></div>}
             </Glass>
           )}
 
@@ -196,10 +218,10 @@ export default function RequestPage() {
           <div className="prow">
             {/* Status bar outside the card - the badge is neutral and delay is stated in the text
                 beside it. */}
-            <Tag tone="mute">
-              {meta?.label ?? 'مغلق'}
+            <Tag tone={asEntity ? ent.tone : 'mute'}>
+              {asEntity ? ent.label : r.permit ? 'إذن صرف بانتظار مسوّغات الجهة' : meta?.label ?? 'مغلق'}
             </Tag>
-            {r.state !== 'paid' && (
+            {r.state !== 'paid' && r.state !== 'closed' && !asEntity && (
               <span className="sub">
                 عند {payStateWho(r.state)} من <Num>{days}</Num> {nounAfter(days, NOUN.day)}
                 {limitDays > 0 && <> · حدّ المرحلة <Num>{limitDays}</Num> {nounAfter(limitDays, NOUN.day)}</>}
@@ -208,19 +230,23 @@ export default function RequestPage() {
             {r.state === 'paid' && r.paidAt && (
               <span className="sub">صُرفت في <DateText>{r.paidAt}</DateText></span>
             )}
+            {asEntity && ent.act && <span className="sub">{ent.act}</span>}
             <span className="pc-sp" />
             <Person name={r.owner} />
             {/* The first output - the document finance transfers against. */}
-            <Link className="btn btn-2 btn-sm" to={ROUTES.paymentOrder(r.id)}>
-              <Icon name={icons.doc} size="sm" />
-              أمر الصرف
-            </Link>
-            {/* Step 11 - the entity completes and resubmits. */}
-            {r.state === 'returned' && (
-              <Link className="btn btn-p btn-sm" to={ROUTES.paymentEdit(r.id)}>
-                أكمل الطلب وأعد إرساله
+            {!asEntity && (
+              <Link className="btn btn-2 btn-sm" to={ROUTES.paymentOrder(r.id)}>
+                <Icon name={icons.doc} size="sm" />
+                أمر الصرف
               </Link>
             )}
+            {/* Step 11 - the entity completes and resubmits · rule 18: only while returned to it. */}
+            {asEntity && mayResubmit(r) && (
+              <Link className="btn btn-p btn-sm" to={`${ROUTES.paymentEdit(r.id)}?as=entity`}>
+                {r.permit ? 'أرفق المسوّغات وأرسل الطلب' : 'أكمل الطلب وأعد إرساله'}
+              </Link>
+            )}
+            {!asEntity && r.state === 'returned' && <span className="sub">عند الجهة لاستكماله</span>}
           </div>
 
           <div className="g2">
@@ -232,14 +258,14 @@ export default function RequestPage() {
                   remember to create the request; in the spec, the queue comes to them. The card
                   places both side by side because that difference is what needs a decision from the
                   institution. */}
-              <Glass>
+              {!asEntity && <Glass>
                 <Head
                   title="من يُصدر طلب الدفعة"
                   meta={<Tag tone="warn">يختلف عن النظام الحالي</Tag>}
                 />
                 <div className="payorig">
                   {ORIGINS.map((o) => (
-                    <div key={o.key} className={`payorig-c${o.key === 'entity' ? ' on' : ''}`}>
+                    <div key={o.key} className={`payorig-c${o.key === origin ? ' on' : ''}`}>
                       <span className="payorig-h">
                         <b>{o.label}</b>
                         {o.key === 'entity' && <Tag tone="ok">المستهدف</Tag>}
@@ -261,7 +287,7 @@ export default function RequestPage() {
                   والانتقال إلى الاتجاه المستهدف يفتح بوابة المنح للجهة، فتصل
                   المسوّغات من البداية لا في منتصف الطريق.
                 </p>
-              </Glass>
+              </Glass>}
 
               {/* The conditions blocking progress - each with its rule cited. */}
               <Glass>
@@ -304,8 +330,11 @@ export default function RequestPage() {
                 )}
               </Glass>
 
+              {/* 9.1.input-6 - special approvals and exceptions recorded before disbursing. */}
+              {!asEntity && <PayExceptions request={r} />}
+
               {/* AI-assist output - step 6, tagged per rule 20. */}
-              {r.ai && (
+              {r.ai && !asEntity && (
                 <Glass>
                   <Head
                     title="تحليل الذكاء الاصطناعي"
@@ -324,9 +353,12 @@ export default function RequestPage() {
               )}
 
               {/* Last return note - rules 7 and 8 require it to be explicit. */}
-              {r.note && (
+              {r.note && r.state !== 'closed' && (
                 <Glass>
-                  <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">للاستكمال</Tag>} />
+                  <Head
+                    title={r.permit ? 'ملاحظة إذن الصرف' : 'ملاحظات الإعادة'}
+                    meta={<Tag tone="warn">{r.returnedBy === 'manager' ? 'من مدير المنح' : r.returnedBy === 'finance' ? 'من الإدارة المالية' : 'للاستكمال'}</Tag>}
+                  />
                   <div className="payq-note">
                     <Icon name={icons.chat} size="sm" />
                     <span>{isolate(r.note)}</span>
@@ -387,7 +419,23 @@ export default function RequestPage() {
 
             {/* === Side column - what supports the decision === */}
             <div className="col">
-              <EditableCard module="payment" state={r.state} label={meta?.label} />
+              {!asEntity && <EditableCard module="payment" state={r.state} label={meta?.label} />}
+
+              {/* 9.2.17 · 9.1.output-2 - the executed transfer, with its proof. */}
+              {r.transfer && (
+                <Glass>
+                  <Head title="التحويل المنفَّذ" meta={<Tag tone="ok">تم الصرف</Tag>} />
+                  <KV
+                    rows={[
+                      { k: 'تاريخ التحويل', v: <DateText>{r.transfer.at}</DateText> },
+                      { k: 'البنك', v: r.transfer.bank },
+                      { k: 'الحساب', v: <span className="num">{r.transfer.iban}</span> },
+                      { k: 'نفّذه', v: <Person name={r.transfer.by} /> },
+                      { k: 'إثبات التحويل', v: <span className="trim1">{r.transfer.proof}</span> },
+                    ]}
+                  />
+                </Glass>
+              )}
               {/* Rule 10 - the agreement and its validity shown on the request. */}
               <Glass>
                 <Head
@@ -410,8 +458,10 @@ export default function RequestPage() {
                     },
                     {
                       k: 'الجهة',
-                      v: <Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link>,
+                      v: asEntity ? r.entityName : <Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link>,
                     },
+                    /* 9.1.input-3 - the representative authorized to sign, from the agreement in force */
+                    ...(r.rep ? [{ k: 'ممثل الجهة المخوّل', v: <>{r.rep.name} <span className="sub">· {r.rep.title}</span></> }] : []),
                   ]}
                 />
               </Glass>
@@ -436,9 +486,9 @@ export default function RequestPage() {
                 <div className="paybar">
                   <span style={{ width: `${Math.min(100, Math.round((after / r.granted) * 100))}%` }} />
                 </div>
-                <p className="sub cnote">
+                <p className={left < 0 ? 'bad cnote' : 'sub cnote'}>
                   {pct(Math.round((after / r.granted) * 100))} من المنحة بعد تنفيذ هذه الدفعة ·
-                  تمنع القاعدة 14 أي صرف يتجاوز قيمة المنحة.
+                  {left < 0 ? ' تتجاوز الدفعة قيمة المنحة فيتوقّف الاعتماد والتنفيذ (القاعدة 14).' : ' تمنع القاعدة 14 أي صرف يتجاوز قيمة المنحة.'}
                 </p>
               </Glass>
 
@@ -501,7 +551,7 @@ export default function RequestPage() {
               </Glass>
 
               {/* === H-5, H-6, H-7 - bank account === */}
-              <Glass>
+              {!asEntity && <Glass>
                 <Head
                   title="حساب الدفع"
                   meta={
@@ -540,7 +590,7 @@ export default function RequestPage() {
                   <b>{BANK_CHANGE_DENIED}</b>، إذ يصله كل شيء جاهزًا
                   للتنفيذ، ولا يتواصل مباشرة مع الجهات.
                 </p>
-              </Glass>
+              </Glass>}
 
               {/* === H-4 - the two documents aren't the same type === */}
               <Glass>
@@ -567,7 +617,7 @@ export default function RequestPage() {
               </Glass>
 
               {/* Rule 12 - disbursement follows the approved source breakdown. */}
-              <Glass>
+              {!asEntity && <Glass>
                 <Head
                   title="مصادر التمويل"
                   meta={
@@ -592,7 +642,7 @@ export default function RequestPage() {
                     تُلزم القاعدة 12 بالصرف وفق هذا التوزيع، ويُنشأ أمر الصرف على أساسه.
                   </p>
                 )}
-              </Glass>
+              </Glass>}
             </div>
           </div>
         </div>
@@ -605,13 +655,7 @@ export default function RequestPage() {
             actions={actions}
             note={note}
             onNote={setNote}
-            taken={taken}
-            onTake={(v) => {
-              /* 1.4.30 · the transfer turns the held amount paid on each funding share · undone with the action */
-              if (v === 'تنفيذ التحويل') recordPaid(r.projectId, r.asked, r.id, user.name)
-              else if (!v && taken === 'تنفيذ التحويل' && isPaidRef(r.id)) undoPaid(r.id, user.name)
-              setTaken(v)
-            }}
+            onAct={onAct}
           />
         )}
       </div>

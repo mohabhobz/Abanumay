@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { usePayments } from '@/data/payments/store'
+import { useRole } from '@/hooks/useRole'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
@@ -87,6 +89,8 @@ const STAGE_ANCHORS = ['pay-open', 'pay-paid']
 export default function PaymentsPage() {
   const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
   const navigate = useNavigate()
+  const ver = usePayments()
+  const { role } = useRole()
   const k = payKpi()
   const [cols, setCols] = useState<string[]>(() => readCols('payments', COLS))
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -120,7 +124,8 @@ export default function PaymentsPage() {
       }
       return true
     })
-  }, [v])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [v, ver])
 
   /* Most at-risk first - the inbox sorts by risk, not date, because the question is "what's stuck",
      not "what's new". */
@@ -272,7 +277,7 @@ export default function PaymentsPage() {
                   ? [{ label: 'المتأخر', to: ROUTES.paymentsLate, icon: 'alert', count: k.late + k.stuck }]
                   : []
               }
-              create={{ label: 'طلب صرف جديد', to: ROUTES.paymentNew() }}
+              create={{ label: role.key === 'supervisor' ? 'إذن صرف جديد' : 'طلب صرف جديد', to: ROUTES.paymentNew() }}
             />
           </header>
 

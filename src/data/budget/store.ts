@@ -8,6 +8,7 @@ import {
 } from '@/data/mock/budgetTree'
 import { projectRows } from '@/data/mock/projects'
 import { payRequests } from '@/data/mock/disbursements'
+import { agreements } from '@/data/mock/agreements'
 import { ALL_FIELDS, CYCLE, TODAY, setFundingGate } from '@/data/intake/cycle'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { nf, pct } from '@/lib/format'
@@ -1090,6 +1091,28 @@ function seedStudyHolds() {
     const line = lines.find((l) => l.node.label === p.goal && l.free >= p.amountRequested)
       ?? lines.filter((l) => l.free >= p.amountRequested).sort((a, b) => b.free - a.free)[0]
     if (line) seedLink({ projectId: p.id, projectName: p.name, docId: line.doc.id, nodeId: line.node.id, amount: p.amountRequested, by: 'عبدالله الدوسري' })
+  }
+  /* Approved and waiting for their agreement · the hold is final (8.2.1) */
+  for (const p of projectRows.filter((x) => x.stage === 'اعتماد الإتفاقية' && x.decidedAt && !agreements.some((a) => a.projectId === x.id))) {
+    const lines = usableLines('fy-2026')
+    const line = lines.find((l) => l.node.label === p.goal && l.free >= p.amountGranted) ?? lines.filter((l) => l.free >= p.amountGranted).sort((a, b) => b.free - a.free)[0]
+    if (!line) continue
+    seedLink({ projectId: p.id, projectName: p.name, docId: line.doc.id, nodeId: line.node.id, amount: p.amountGranted, by: 'عبدالله الدوسري' })
+    const l = LINKS.get(p.id)
+    if (l) l.stage = 'final'
+  }
+  /* In execution with a request past the grants manager · its hold is final, so the transfer turns
+     it paid (9.2.18 · 1.4.30) */
+  for (const id of new Set(payRequests.filter((r) => r.state === 'manager' || r.state === 'finance').map((r) => r.projectId))) {
+    const p = projectRows.find((x) => x.id === id)
+    if (!p || LINKS.has(id)) continue
+    const amt = p.amountGranted || p.amountRequested
+    const lines = usableLines('fy-2026')
+    const line = lines.find((l) => l.node.label === p.goal && l.free >= amt) ?? lines.filter((l) => l.free >= amt).sort((a, b) => b.free - a.free)[0]
+    if (!line) continue
+    seedLink({ projectId: p.id, projectName: p.name, docId: line.doc.id, nodeId: line.node.id, amount: amt, by: 'عبدالله الدوسري' })
+    const l = LINKS.get(p.id)
+    if (l) l.stage = 'final'
   }
 }
 

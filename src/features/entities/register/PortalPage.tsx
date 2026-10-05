@@ -8,6 +8,10 @@ import { Thread } from '@/components/thread'
 import { Background } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
 import { ROUTES } from '@/app/routes'
+import { agreements } from '@/data/mock/agreements'
+import { agrFlowOf, agrHolder, agrStageSay, useAgreements } from '@/data/agreements/store'
+import { payableProjects, requestsOfEntity, usePayments } from '@/data/payments/store'
+import { entityStateOf } from '@/data/mock/payEntity'
 import { signOut } from '@/data/session'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { NOUN, nounAfter, readDate } from '@/lib/format'
@@ -80,6 +84,17 @@ export default function PortalPage() {
   const view = portalViewOf(reqOf.state)
   /* The entity's plans - read from the `entityId` created after approval. */
   const plans = entityId ? plansOfEntity(entityId) : []
+  useAgreements()
+  const agrs = entityId
+    ? agreements.filter((x) => x.entityId === entityId && x.stage !== 'draft' && x.stage !== 'manager' && x.stage !== 'executive' && !(x.stage === 'returned' && agrFlowOf(x.id).returnedTo === 'manager'))
+      .sort((x, y) => Number(agrHolder(y) === 'entity') - Number(agrHolder(x) === 'entity'))
+    : []
+  usePayments()
+  /* The entity's requests · the ones waiting on it first (returned, or a permit for its justification) */
+  const pays = entityId
+    ? requestsOfEntity(entityId).slice().sort((x, y) => Number(y.state === 'returned') - Number(x.state === 'returned'))
+    : []
+  const due = entityId ? payableProjects(entityId).filter((p) => p.can && p.open > 0) : []
   const missing = regMissingDocs(reqOf)
 
   /* Note: upload here needs to actually do something, and so does submit after it. "Upload" and
@@ -418,6 +433,56 @@ export default function PortalPage() {
                                 أعد الإرسال
                               </button>
                             : <Tag tone="mute">قيد الدراسة</Tag>}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </Glass>
+              )}
+
+              {/* The entity's agreements (8.2.23 · 8.2.24) · the one waiting for its signature first */}
+              {entityId && agrs.length > 0 && (
+                <Glass>
+                  <Head title="اتفاقياتك" meta={<span className="sub"><Num>{agrs.length}</Num> اتفاقية</span>} />
+                  <ul className="ptl-miss ptl-plans">
+                    {agrs.map((ag) => (
+                      <li key={ag.id}>
+                        <Icon name={icons.doc} size="sm" />
+                        <Link className="lnk" to={`${ROUTES.agreement(ag.id)}?as=entity`}>{ag.projectName}</Link>
+                        <span className="pc-sp" />
+                        <span className="sub">{agrStageSay(ag)}</span>
+                        {agrHolder(ag) === 'entity' && <Tag tone="warn">بانتظار توقيعك</Tag>}
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+              )}
+
+              {/* Disbursement (9.2.2 · 9.4.19) · what's due to request, then each request in the
+                  entity's own five states, with what it should do now */}
+              {entityId && (pays.length > 0 || due.length > 0) && (
+                <Glass>
+                  <Head title="طلبات الصرف" meta={<span className="sub"><Num>{pays.length}</Num> {nounAfter(pays.length, NOUN.request)}</span>} />
+                  <ul className="ptl-miss ptl-plans">
+                    {due.map((d) => (
+                      <li key={`due-${d.id}`}>
+                        <Icon name={icons.pay} size="sm" />
+                        <span className="trim1">{d.name}</span>
+                        <span className="pc-sp" />
+                        <Tag tone="teal"><Num>{d.open}</Num> مستحقة</Tag>
+                        <Link className="btn btn-p btn-sm" to={`${ROUTES.paymentNew(d.id)}&as=entity`}>اطلب الصرف</Link>
+                      </li>
+                    ))}
+                    {pays.map((r) => {
+                      const st = entityStateOf(r.state)
+                      const label = r.permit ? 'إذن صرف بانتظار مسوّغاتك' : st.label
+                      return (
+                        <li key={r.id}>
+                          <Icon name={icons.doc} size="sm" />
+                          <Link className="lnk" to={`${ROUTES.payment(r.id)}?as=entity`}>{r.projectName} · الدفعة <Num>{r.no}</Num></Link>
+                          <span className="pc-sp" />
+                          {st.act && <span className="sub">{st.act}</span>}
+                          <Tag tone={st.tone}>{label}</Tag>
                         </li>
                       )
                     })}

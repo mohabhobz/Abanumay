@@ -2,6 +2,7 @@
 @import './parts/projects.css';
 @import './parts/entities.css';
 @import './parts/budget.css';
+@import './parts/agreements.css';
 @import './parts/gates.css';
 @import './parts/register.css';
 @import './parts/reports.css';
@@ -10,6 +11,7 @@
 @import './parts/journey.css';
 @import './parts/account.css';
 @import './parts/inbox.css';
+@import './parts/payments.css';
 
 /* Official Saudi Riyal symbol
    U+20C1, officially issued and added to Unicode 17.
