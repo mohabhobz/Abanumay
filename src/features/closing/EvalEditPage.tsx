@@ -6,6 +6,8 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { nf, MISSING_ITEM, nounAfter, pct, unitAfter } from '@/lib/format'
 import { canStartEval, closeById, evalApproved, evalBlockers } from '@/data/mock/closing'
+import { saveEvaluation, useClosing } from '@/data/closing/store'
+import { useRole } from '@/hooks/useRole'
 
 /* Project evaluation editor - written by the grants supervisor, not the entity.
 
@@ -33,6 +35,8 @@ const SCORES = [
 export default function EvalEditPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const { user } = useRole()
+  useClosing()
   const c = closeById(id)
 
   const [impact, setImpact] = useState(c?.evaluation?.impact ?? '')
@@ -93,7 +97,8 @@ export default function EvalEditPage() {
     )
   }
 
-  const closed = evalApproved(c)
+  /* Written while it's with the supervisor · in approval or after closing it reads */
+  const closed = evalApproved(c) || c.stage !== 'evalDraft'
   const missing = evalBlockers(c)
   const ev = c.evaluation
 
@@ -107,8 +112,10 @@ export default function EvalEditPage() {
             <div>
               <h1 className="ptitle">تقييم المشروع · {c.projectName}</h1>
               <p className="sub mt-1">
-                {closed
+                {evalApproved(c)
                   ? 'اكتمل الإغلاق · الصفحة للقراءة فقط (قاعدة 21)'
+                  : closed
+                    ? 'التقييم في الاعتماد · يُعدَّل حين يُعاد إلى مشرف المنح'
                   : <>يُعدّه مشرف المنح بعد اعتماد التقرير الختامي · ودورة اعتماده
                     مستقلّة بسجلّ منفصل (القاعدة <span className="num">17</span>)</>}
               </p>
@@ -116,7 +123,7 @@ export default function EvalEditPage() {
             {/* Status as text, not a colored tag - the page header isn't a card's status field.
                 Counted the same way as "not blocking". */}
             {closed
-              ? <Tag tone="mute">معتمَد</Tag>
+              ? <Tag tone="mute">{evalApproved(c) ? 'معتمَد' : 'للقراءة'}</Tag>
               : <span className="sub">{missing.length > 0
                 ? <>قبل الإرسال: <Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</>
                 : 'جاهز للإرسال'}</span>}
@@ -229,9 +236,19 @@ export default function EvalEditPage() {
 
           {!closed && (
             <div className="act-a">
-              <Link className="btn btn-p" to={ROUTES.closing(c.id)}>
+              <button
+                type="button"
+                className="btn btn-p"
+                onClick={() => {
+                  saveEvaluation(c.id, {
+                    indicators: ev.indicators.map((i, n) => ({ ...i, actual: vals[n] ? Number(vals[n]) : null })),
+                    impact, lessons, score: score ? Number(score) : null,
+                  }, user.name)
+                  navigate(ROUTES.closing(c.id))
+                }}
+              >
                 احفظ وارجع إلى الطلب
-              </Link>
+              </button>
               <Link className="btn btn-2" to={ROUTES.closing(c.id)}>إلغاء</Link>
             </div>
           )}

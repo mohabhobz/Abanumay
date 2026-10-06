@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { BackTo, Glass, Head, Num, Tabs, Tag } from '@/components/ui'
+import { useState } from 'react'
+import { BackTo, Glass, Head, Num, Select, Tabs, Tag } from '@/components/ui'
+import { useRole } from '@/hooks/useRole'
+import { CLOSE_RULES, RELEASE_SAY, saveCloseRules, useClosing, type CloseRules } from '@/data/closing/store'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, useDockSlot } from '@/components/shell'
 import { StageLimits } from '@/features/settings/CfgEdit'
@@ -147,11 +150,41 @@ export default function CloseSettingsPage() {
               </p>
             </Glass>
           )}
+
+          {/* 10.9.3 · 10.9.8 · how recovered money goes back to the domain allocation */}
+          <ReleasePolicy />
         </div>
         {/* The unsaved-changes dock · inside the view stack, so it spans the content column like the decision bar, not the rail */}
         <div className="dockslot" ref={dock.setEl} />
       </div>
       </DockSlotProvider>
     </AppLayout>
+  )
+}
+
+function ReleasePolicy() {
+  useClosing()
+  const { user } = useRole()
+  const [mode, setMode] = useState<CloseRules['releaseMode']>(CLOSE_RULES.releaseMode)
+  const [saved, setSaved] = useState(false)
+  return (
+    <Glass>
+      <Head title="تحرير المبالغ إلى مخصص المجال" meta={<Tag tone="mute">سياسة المؤسسة</Tag>} />
+      <div className="apv-row">
+        <Select
+          value={mode}
+          allowEmpty={false}
+          all="طريقة التحرير"
+          options={(Object.keys(RELEASE_SAY) as CloseRules['releaseMode'][]).map((k) => ({ value: k, label: RELEASE_SAY[k] }))}
+          onChange={(v) => { setMode((v as CloseRules['releaseMode']) ?? 'once'); setSaved(false) }}
+        />
+        <button type="button" className="btn btn-2 btn-sm" disabled={mode === CLOSE_RULES.releaseMode} onClick={() => { saveCloseRules({ releaseMode: mode }, user.name); setSaved(true) }}>احفظ السياسة</button>
+      </div>
+      {saved && <p className="ok-ink cnote">حُفظت السياسة</p>}
+      <p className="sub cnote">
+        يعود المحجوز غير المصروف عند الإيقاف أو الإغلاق إلى بنده مباشرة · أما المبالغ المستردة من
+        الجهة فتعود دفعة واحدة عند اكتمال استردادها، أو تدريجيًّا مع كل مبلغ يُستلم (<bdi>10.9.8</bdi>).
+      </p>
+    </Glass>
   )
 }

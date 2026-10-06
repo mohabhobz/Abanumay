@@ -405,31 +405,8 @@ export default function EntityNewPage() {
                   </div>
                 </div>
               </Glass>
-            </div>
 
-            <div className="col aiside" ref={aside}>
-              {/* Note: the exact same assistant card as the portal - `AnalysisCard` and
-                  `regReadings`, not a card written for this screen. Rendering "the Abanumay
-                  assistant" differently depending on where the user is makes it look like two
-                  assistants instead of one. */}
-              <AnalysisCard
-                title="مراجعة مساعد أبانمي"
-                cta="راجع الطلب"
-                empty="لا يوجد مانع في هذه المحطة · انتقل إلى المحطة التالية."
-                ask
-                onAsk={() => window.dispatchEvent(
-                  new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
-                )}
-                readings={regReadings(
-                  tab,
-                  STAGES.map((st) => ({
-                    key: st.key, label: st.label, short: shortBy[st.key] ?? [],
-                  })),
-                  advice,
-                  setTab,
-                )}
-              />
-
+              {/* The path and what the partner kind opens · in the main column, the end column is the assistant's alone */}
               <Glass>
                 <Head title="مسار التسجيل" meta={<span className="sub">{strategic ? 'أربع محطات' : 'ثلاث محطات'}</span>} />
                 <Steps items={steps} flow="ladder" />
@@ -473,6 +450,31 @@ export default function EntityNewPage() {
                   )}
                 </Glass>
               )}
+
+            </div>
+
+            <div className="col aiside" ref={aside}>
+              {/* Note: the exact same assistant card as the portal - `AnalysisCard` and
+                  `regReadings`, not a card written for this screen. Rendering "the Abanumay
+                  assistant" differently depending on where the user is makes it look like two
+                  assistants instead of one. */}
+              <AnalysisCard
+                title="مراجعة مساعد أبانمي"
+                cta="راجع الطلب"
+                empty="لا يوجد مانع في هذه المحطة · انتقل إلى المحطة التالية."
+                ask
+                onAsk={() => window.dispatchEvent(
+                  new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
+                )}
+                readings={regReadings(
+                  tab,
+                  STAGES.map((st) => ({
+                    key: st.key, label: st.label, short: shortBy[st.key] ?? [],
+                  })),
+                  advice,
+                  setTab,
+                )}
+              />
 
               {/* Note: the "what's missing before registration" card was removed - the assistant
                   above says the same thing, ordered by priority, with its reason and a button

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   CheckMark, BackTo, Blockers, DateText, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
 } from '@/components/ui'
+import { AssistantAside } from '@/features/shared/AssistantAside'
+import { blockerReadings } from '@/features/shared/blockerReadings'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
@@ -422,10 +424,10 @@ export default function AgreementNewPage() {
             </>
           )}
           {tab === 'text' && project && (
-            <div className="g2">
-              <div className="col"><AgreementTextCard parts={text} note="البيانات مسترجعة من المشروع والجهة والميزانية والخطة · وتُعدَّل في مصدرها لا هنا (قاعدة 5)." /></div>
-              <div className="col"><ReviewCard hints={hints} onAdd={(c) => setClauses((xs) => [...xs, c])} onTemplate={kind === 'إلكترونية' ? setTemplate : undefined} /></div>
-            </div>
+            <>
+              <AgreementTextCard parts={text} note="البيانات مسترجعة من المشروع والجهة والميزانية والخطة · وتُعدَّل في مصدرها لا هنا (قاعدة 5)." />
+              <ReviewCard hints={hints} onAdd={(c) => setClauses((xs) => [...xs, c])} onTemplate={kind === 'إلكترونية' ? setTemplate : undefined} />
+            </>
           )}
 
           <div className="g2">
@@ -439,14 +441,19 @@ export default function AgreementNewPage() {
                   قاعدة <span className="num">25</span>.
                 </p>
               </Glass>
-            </div>
-
-            <div className="col">
               <Blockers
                 items={blocks}
                 ready="كل الخطوات مكتملة · الاتفاقية جاهزة للإرسال إلى مدير المنح."
               />
             </div>
+
+            {/* The end column is the assistant's alone · it reads what blocks sending */}
+            <AssistantAside
+              title="مراجعة الاتفاقية"
+              cta="راجع الاتفاقية"
+              empty="كل الخطوات مكتملة · الاتفاقية جاهزة للإرسال إلى مدير المنح."
+              readings={blockerReadings(blocks, 'يمنع الإرسال')}
+            />
           </div>
         </div>
 

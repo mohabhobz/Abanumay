@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, Blockers, DockWhy, blockerCount,
 } from '@/components/ui'
+import { AssistantAside } from '@/features/shared/AssistantAside'
+import { blockerReadings } from '@/features/shared/blockerReadings'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
@@ -424,9 +426,8 @@ export default function ProjectNewPage() {
                   </div>
                 </div>
               </Glass>
-            </div>
 
-            <div className="col">
+              {/* The path, the entity and the checks · in the main column, the end column is the assistant's alone */}
               <Glass>
                 <Head title="مسار الطلب" meta={<span className="sub">ثلاث محطات</span>} />
                 <Steps items={steps} flow="ladder" />
@@ -474,6 +475,17 @@ export default function ProjectNewPage() {
                 ready="كل الحقول الإلزامية مكتملة · الطلب جاهز للإرسال."
               />
             </div>
+
+            <AssistantAside
+              title="مراجعة الطلب"
+              cta="راجع الطلب"
+              empty="كل الحقول الإلزامية مكتملة · الطلب جاهز للإرسال."
+              readings={[
+                ...blockerReadings(blocks, 'يمنع الإرسال'),
+                ...(ent?.capped ? [{ id: 'pn-cap', kind: 'flag' as const, label: 'حدّ الطلبات', text: `بلغت «${ent.name}» حدّ الطلبات في هذه الدورة.`, src: 'قاعدة 3.4.12' }] : []),
+                ...(asked > 0 && reach > 0 ? [{ id: 'pn-cost', kind: 'note' as const, label: 'تكلفة المستفيد', metric: { value: nf.format(Math.round(asked / reach)), unit: 'ريال للمستفيد' }, text: `${nf.format(asked)} على ${nf.format(reach)} مستفيد.`, src: 'محسوبة من الطلب' }] : []),
+              ]}
+            />
           </div>
         </div>
 

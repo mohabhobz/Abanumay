@@ -4,6 +4,7 @@ import {
   Blockers, DateField, BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, MultiSelect, Nil, Num,
   Face, Person, Riyal, Tag, DockWhy,
 } from '@/components/ui'
+import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -332,9 +333,8 @@ export default function BudgetDocPage() {
                   </p>
                 )}
               </Glass>
-            </div>
 
-            <div className="col">
+              {/* Rules, approvals and limits · in the main column, the end column is the assistant's alone */}
               {/* Rules - shown, not enforced · only while the budget can still change */}
               {editable && <Blockers
                 items={[
@@ -371,6 +371,16 @@ export default function BudgetDocPage() {
                 </Glass>
               )}
             </div>
+
+            <AssistantAside
+              title="مراجعة الميزانية"
+              cta="راجع الميزانية"
+              empty="كل أب يساوي مجموع أبنائه، وكل بند في مكانه ومصدره."
+              readings={editable ? [
+                ...head.map((t, i) => ({ id: `bd-h${i}`, kind: 'flag' as const, label: 'بيانات الميزانية', text: t, src: 'القسم الأول' })),
+                ...issues.map((x, i) => ({ id: `bd-i${i}`, kind: 'flag' as const, label: 'البنود', text: x.text, src: x.why })),
+              ] : []}
+            />
           </div>
 
           {/* Note: the tree sits outside the grid, deliberately. A table with depth indentation
@@ -532,10 +542,10 @@ export default function BudgetDocPage() {
           </Glass>
 
           {existing && existing.state === 'approved' && (
-            <div className="g2">
-              <div className="col"><LedgerCard doc={existing} line={focus || undefined} /></div>
-              <div className="col"><DocRequests doc={existing} /></div>
-            </div>
+            <>
+              <LedgerCard doc={existing} line={focus || undefined} />
+              <DocRequests doc={existing} />
+            </>
           )}
         </div>
 

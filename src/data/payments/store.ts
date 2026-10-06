@@ -108,7 +108,22 @@ export function scheduleOf(projectId: string): PaySlot[] {
   } else if (ag) {
     base = ag.payments.map((p) => ({ no: p.no, amount: p.amount, dueAt: p.dueAt, requirement: p.requirement }))
   }
+  /* 10.9.5 · 10.9.6 · an approved value change cuts the unpaid payments from the last, or adds one */
+  const adj = ADJUST.get(projectId)
+  if (adj?.cut) {
+    let cut = adj.cut
+    for (let i = base.length - 1; i >= 0 && cut > 0; i--) {
+      const b = base[i]!
+      if (all.some((r) => r.no === b.no && r.state === 'paid')) continue
+      const x = Math.min(cut, b.amount)
+      b.amount -= x
+      cut -= x
+    }
+    base = base.filter((b) => b.amount > 0 || all.some((r) => r.no === b.no))
+  }
+  for (const e of adj?.extra ?? []) base.push({ no: base.length + 1, amount: e.amount, dueAt: e.dueAt })
   const of = base.length
+  const stopped = STOPPED.has(projectId)
   return base.map((b): PaySlot => {
     const reqs = all.filter((r) => r.no === b.no)
     const open = reqs.find(isOpen)
@@ -119,12 +134,28 @@ export function scheduleOf(projectId: string): PaySlot[] {
       || (own ? (own.checks.find((c) => c.rule === 6)?.ok ?? true) : false)
     const state: PaySlotState =
       paid ? 'paid'
+      : stopped ? 'stopped'
+      : SETTLED.has(condKey(projectId, b.no)) ? 'settled'
       : open ? 'pending'
       : b.dueAt > TODAY ? 'early'
       : b.requirement && !conditionMet ? 'held'
       : 'open'
     return { no: b.no, of, amount: b.amount, dueAt: b.dueAt, condition: b.requirement, conditionMet, state, requestId: req?.id }
   })
+}
+
+/* ── Closing and distress (BPD-010) · what they do to the schedule ── */
+
+const STOPPED = new Map<string, { by: string; at: string; note: string }>()
+const SETTLED = new Map<string, { by: string; at: string; note: string }>()
+const ADJUST = new Map<string, { cut: number; extra: { amount: number; dueAt: string }[] }>()
+export const isStopped = (projectId: string) => STOPPED.has(projectId)
+export const settledOf = (projectId: string, no: number) => SETTLED.get(condKey(projectId, no))
+
+/** 10.4.2 · what still owes a payment · due ones block opening closure, any of them blocks final closing */
+export function unsettledSlots(projectId: string): { due: PaySlot[]; future: PaySlot[] } {
+  const slots = scheduleOf(projectId).filter((s) => s.state !== 'paid' && s.state !== 'settled' && s.state !== 'stopped')
+  return { due: slots.filter((s) => s.dueAt <= TODAY || s.state === 'pending'), future: slots.filter((s) => s.dueAt > TODAY && s.state !== 'pending') }
 }
 
 export interface PayProject { id: string; name: string; entity: string; entityId: string; can: boolean; why?: string; open: number }
@@ -142,8 +173,9 @@ export function payableProjects(entityId?: string): PayProject[] {
     const slots = scheduleOf(id)
     if (!slots.length) continue
     out.push({
-      id, name: p.name, entity: p.entityName, entityId: p.entityId, can: running && agr,
-      why: !agr ? 'الاتفاقية غير سارية · لا صرف قبل تفعيل الاتفاقية (القاعدة 1)'
+      id, name: p.name, entity: p.entityName, entityId: p.entityId, can: running && agr && !STOPPED.has(id),
+      why: STOPPED.has(id) ? 'أُوقف المشروع بقرار معتمد · لا صرف بعده (10.9.1)'
+        : !agr ? 'الاتفاقية غير سارية · لا صرف قبل تفعيل الاتفاقية (القاعدة 1)'
         : !running ? 'المشروع ليس «تحت التنفيذ» · لا يُفتح طلب صرف لمشروع مكتمل أو موقوف (9.4.1)'
         : undefined,
       open: slots.filter((s) => s.state === 'open').length,
@@ -248,6 +280,9 @@ type Op = { at: string; by: string } & (
   | { op: 'act'; id: string; act: PayAct; note: string; file?: string }
   | { op: 'cond'; projectId: string; no: number; note: string }
   | { op: 'exception'; id: string; ex: PayException }
+  | { op: 'stop'; projectId: string; note: string }
+  | { op: 'settle'; projectId: string; no: number; note: string }
+  | { op: 'adjust'; projectId: string; cut?: number; extra?: { amount: number; dueAt: string } }
 )
 
 const KEY = 'ab-pay-ops'
@@ -420,6 +455,27 @@ function apply(o: Op) {
       }
       return
     }
+    /* 10.9.1 · 10.9.4 · a stop closes the open requests (their log stays) and holds every future payment */
+    case 'stop': {
+      STOPPED.set(o.projectId, { by: o.by, at: day(o.at), note: o.note })
+      for (const r of payRequests.filter((x) => x.projectId === o.projectId && isOpen(x))) {
+        r.note = `أُوقف المشروع بقرار معتمد · ${o.note}`
+        r.closedAt = day(o.at)
+        move(r, 'closed')
+        log(r, 13, o.by, 'الرئيس التنفيذي', 'أُغلق الطلب بقرار إيقاف المشروع', o.at, o.note, 'الجهة المستفيدة · أُوقف المشروع')
+      }
+      return
+    }
+    case 'settle':
+      SETTLED.set(condKey(o.projectId, o.no), { by: o.by, at: day(o.at), note: o.note })
+      return
+    case 'adjust': {
+      const a = ADJUST.get(o.projectId) ?? { cut: 0, extra: [] }
+      if (o.cut) a.cut += o.cut
+      if (o.extra) a.extra.push(o.extra)
+      ADJUST.set(o.projectId, a)
+      return
+    }
     case 'exception': {
       const r = payRequestById(o.id)
       if (!r || !isOpen(r) || r.order) return
@@ -492,6 +548,8 @@ export function createRequest(v: { projectId: string; no: number; asked: number;
   if (slot.state === 'paid') errors.push('الدفعة مصروفة')
   if (slot.state === 'early') errors.push('الدفعة لم تستحق بعد · قاعدة 2')
   if (slot.state === 'held') errors.push('شرط الدفعة غير مستوفى · قاعدة 6')
+  if (slot.state === 'stopped') errors.push('أُوقف المشروع بقرار · لا صرف بعده')
+  if (slot.state === 'settled') errors.push('سُوّيت الدفعة · لا تُصرف')
   if (v.asked <= 0) errors.push('أدخل قيمة الطلب')
   if (v.asked > slot.amount) errors.push('القيمة أعلى من الدفعة المعتمدة · قاعدة 5')
   if (v.asked > grantLeft(v.projectId)) errors.push('القيمة تتجاوز المتبقي من المنحة · قاعدة 14')
@@ -551,6 +609,21 @@ export function recordException(id: string, v: { kind: PayException['kind']; rul
   run({ op: 'exception', id, ex, by, at: now() })
   return []
 }
+
+/** 10.9.1 · applied by the distress case once the CEO approves the stop */
+export const stopProjectPayments = (projectId: string, note: string, by: string) => run({ op: 'stop', projectId, note, by, at: now() })
+/** 10.4.2 · the supervisor settles an obligation instead of paying it, with its reason */
+export function settleSlot(projectId: string, no: number, note: string, by: string): string[] {
+  if (!note.trim()) return ['اذكر سبب التسوية']
+  const s = scheduleOf(projectId).find((x) => x.no === no)
+  if (!s) return ['الدفعة غير موجودة']
+  if (s.state === 'paid' || s.state === 'pending') return ['للدفعة طلب أو صرف · لا تُسوّى']
+  run({ op: 'settle', projectId, no, note, by, at: now() })
+  return []
+}
+/** 10.9.5 · 10.9.6 · an approved value change reaches the schedule */
+export const adjustSchedule = (projectId: string, v: { cut?: number; extra?: { amount: number; dueAt: string } }, by: string) =>
+  run({ op: 'adjust', projectId, ...v, by, at: now() })
 
 export const resetPayments = () => { try { localStorage.removeItem(KEY) } catch { /* ignore */ } location.reload() }
 

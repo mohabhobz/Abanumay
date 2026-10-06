@@ -23,6 +23,7 @@ import type { AgreementKind, AgreementRow, PayDoc } from '@/types/domain'
 import { AgrActionDock } from './AgrActionDock'
 import { ScheduleEditor, asDraft } from './ScheduleEditor'
 import { AgreementTextCard, AnnexesCard, ClausesCard, IssuesCard, ReviewCard, SignaturesCard, VersionsCard } from './parts'
+import { AssistantAside } from '@/features/shared/AssistantAside'
 import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single agreement · every station of the flow on one screen (BPD-008).
@@ -318,9 +319,8 @@ function AgreementView({ a }: { a: AgreementRow }) {
                   </ol>
                 </Glass>
               )}
-            </div>
 
-            <div className="col">
+              {/* What supports the decision · in the main column, the end column is the assistant's alone */}
               {!asEntity && <EditableCard module="agreement" state={a.stage} label={agrStageSay(a)} />}
               {!asEntity && a.stage !== 'active' && a.stage !== 'cancelled' && (
                 <IssuesCard issues={issues} ready="الاتفاقية مكتملة · البيانات والبنود والملاحق والجدول والقيمة مطابقة." />
@@ -367,6 +367,17 @@ function AgreementView({ a }: { a: AgreementRow }) {
                 </VersionsCard>
               )}
             </div>
+
+            <AssistantAside
+              title="مراجعة الاتفاقية"
+              cta="راجع الاتفاقية"
+              empty="لا ملاحظات · الاتفاقية مطابقة لبيانات المشروع والجدول."
+              ask={!asEntity}
+              readings={asEntity || a.stage === 'active' || a.stage === 'cancelled' ? [] : [
+                ...issues.map((x, i) => ({ id: `ag-i${i}`, kind: 'flag' as const, label: 'يمنع الإرسال', text: x.say, src: x.rule })),
+                ...hints.map((h) => ({ id: `ag-h${h.id}`, kind: h.tone === 'warn' ? 'flag' as const : 'note' as const, label: 'مراجعة البنود', text: h.text, src: 'مراجعة استرشادية · قاعدة 21' })),
+              ]}
+            />
           </div>
         </div>
 

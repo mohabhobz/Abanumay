@@ -15,6 +15,7 @@ import {
   BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_STATES, REG_STATE_SAY, REG_STATE_WHO,
   docRequired, licenseClash, partnerKind, regMissingDocs, regRequestById,
 } from '@/data/mock/registration'
+import { AssistantAside } from '@/features/shared/AssistantAside'
 import { EditableCard } from '@/features/shared/EditableCard'
 import { canDecide, decideRegistration, fieldLabel, regHistory, returnRegistration, useEntityFlow } from '@/data/entities/store'
 import { duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
@@ -322,9 +323,8 @@ export default function RegReviewPage() {
                     }))}
                 />
               </Glass>
-            </div>
 
-            <div className="col">
+              {/* The path and the log · in the main column, the end column is the assistant's alone */}
               <Glass>
                 <Head title="مسار الطلب" meta={<span className="sub">قاعدة 30 · سجل التدقيق</span>} />
                 <Steps items={steps} flow="ladder" />
@@ -453,6 +453,17 @@ export default function RegReviewPage() {
                 </p>
               </Glass>
             </div>
+
+            <AssistantAside
+              title="مراجعة طلب التسجيل"
+              cta="راجع الطلب"
+              empty="لا مانع من الاعتماد · الترخيص غير مكرَّر والمستندات مكتملة وسارية."
+              readings={[
+                ...(clash ? [{ id: 'rg-clash', kind: 'flag' as const, label: 'ترخيص مكرَّر', text: `رقم الترخيص مسجَّل لـ «${clash.name}» بنفس التصنيف.`, src: 'قاعدة 8' }] : []),
+                ...(missingDocs.length ? [{ id: 'rg-docs', kind: 'flag' as const, label: 'مستندات ناقصة', metric: { value: String(missingDocs.length), unit: 'مستند' }, text: missingDocs.map((d) => d.label).join(' · '), src: 'قاعدة 4' }] : []),
+                ...(stale.length ? [{ id: 'rg-stale', kind: 'flag' as const, label: 'وثيقة منتهية', text: stale.map((k) => REG_DOCS.find((d) => d.key === k)?.label ?? k).join(' · '), src: 'عند التقديم' }] : []),
+              ]}
+            />
           </div>
         </div>
 

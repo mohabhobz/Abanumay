@@ -551,6 +551,10 @@ export type PaySlotState =
   | 'paid'
   /** Due but its condition isn't met · rule 6 */
   | 'held'
+  /** The project was stopped by an approved decision · 10.9.1 · 10.9.4 */
+  | 'stopped'
+  /** Won't be paid · the obligation was settled before closing · 10.4.2 */
+  | 'settled'
 
 export interface PaySlot {
   no: number
@@ -573,6 +577,8 @@ export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; ru
   pending: { label: 'لها طلب مفتوح', why: 'لا يُفتح لكل دفعة أكثر من طلب صرف واحد', rule: 4 },
   paid: { label: 'مصروفة', why: 'اكتمل تحويلها' },
   held: { label: 'موقوفة بشرط', why: 'لا يُرسل طلب الدفعة المرتبطة بتقارير قبل استيفائها', rule: 6 },
+  stopped: { label: 'موقوفة بقرار', why: 'أُوقف المشروع بقرار معتمد من الرئيس التنفيذي · لا صرف بعده (10.9.1)' },
+  settled: { label: 'مسوّاة', why: 'سُوّي الالتزام فلا تُصرف الدفعة · يُحرَّر محجوزها عند الإغلاق (10.4.2)' },
 }
 
 /* 8.2.31 · an agreement activated in the system opens disbursement · registered by the agreements

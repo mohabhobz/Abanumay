@@ -4,6 +4,8 @@ import {
   type GateStep, type StepItem,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
+import { AssistantAside } from '@/features/shared/AssistantAside'
+import type { Reading } from '@/components/assistant'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import {
@@ -80,6 +82,15 @@ export default function JourneyPage() {
     return out.reverse()
   }, [done])
 
+  /* The assistant's reading of the journey · where it stands, who's next, what the record holds */
+  const journeyReadings: Reading[] = finished
+    ? [{ id: 'jr-done', kind: 'note', label: 'اكتمل المسار', metric: { value: String(TOTAL_STEPS), unit: 'خطوة' }, text: 'مرّ المشروع بكل الإجراءات من أول مرة: اعتماد واتفاقية وخطة وصرف وإغلاق.', src: 'سجل المسار' }]
+    : [
+        { id: 'jr-now', kind: 'flag', label: 'يتصرّف الآن', text: `${step?.person ?? FLOW[here.proc]!.steps[here.step]!.person} · ${FLOW[here.proc]!.steps[here.step]!.act} في «${FLOW[here.proc]!.label}».`, src: FLOW[here.proc]!.id },
+        { id: 'jr-left', kind: 'note', label: 'المتبقي', metric: { value: String(TOTAL_STEPS - done), unit: 'خطوة' }, text: `أُنجزت ${done} من ${TOTAL_STEPS} خطوة · والإجراء الحالي ${doneHere} من ${proc.steps.length}.`, src: 'سجل المسار' },
+        ...(log[0] ? [{ id: 'jr-last', kind: 'note' as const, label: 'آخر إجراء', text: `${log[0].text} · ${log[0].who}`, src: log[0].proc }] : []),
+      ]
+
   return (
     <AppLayout assistantContext={assistFor.page('المسار السعيد')}>
       <div className="viewstack hasdock">
@@ -140,9 +151,8 @@ export default function JourneyPage() {
                 <Head title="خطوات الإجراء" meta={<span className="sub"><Num>{doneHere}</Num> من <Num>{proc.steps.length}</Num></span>} />
                 <Steps items={ladder} flow="ladder" />
               </Glass>
-            </div>
 
-            <div className="col aiside">
+              {/* Who acts now and the log · in the main column, the end column is the assistant's alone */}
               {step && (
                 <Glass>
                   <Head title="يتصرّف الآن" meta={<Tag tone="mute">{step.who}</Tag>} />
@@ -177,6 +187,13 @@ export default function JourneyPage() {
                 )}
               </Glass>
             </div>
+
+            <AssistantAside
+              title="قراءة المسار"
+              cta="اقرأ المسار"
+              empty="لا ملاحظات · المسار يمضي من أول مرة."
+              readings={journeyReadings}
+            />
           </div>
         </div>
 

@@ -111,6 +111,9 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
       <Link to={payOf('pay-kpi')} className="lf-art" aria-label={`وصل فعلًا ${pct(paidPct)} من إجمالي الممنوح`}>
         {/* The viewBox is cropped to the leaf and its stem (roughly 2.4-20.7 x 3.2-21.7 of the
             24-unit grid), so the leaf fills its box instead of sitting inside a margin. */}
+        {/* The leaf and its figure move as one body · the sway rotates both from the stalk, so the
+            number never slides off the leaf */}
+        <span className="lf-body">
         <svg viewBox="2 2.8 19.2 19.4" aria-hidden="true">
           <defs>
             <clipPath id={`lfc-${uid}`}><path d={LEAF} /></clipPath>
@@ -137,6 +140,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
         <span className="lf-pct">
           <b className="num">{pct(count.value)}</b>
           <span>وصل فعلًا</span>
+        </span>
         </span>
       </Link>
 

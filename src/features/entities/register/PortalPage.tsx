@@ -12,6 +12,8 @@ import { agreements } from '@/data/mock/agreements'
 import { agrFlowOf, agrHolder, agrStageSay, useAgreements } from '@/data/agreements/store'
 import { payableProjects, requestsOfEntity, usePayments } from '@/data/payments/store'
 import { entityStateOf } from '@/data/mock/payEntity'
+import { closeRows, closeStageLabel } from '@/data/mock/closing'
+import { CASES, CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, useClosing } from '@/data/closing/store'
 import { signOut } from '@/data/session'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { NOUN, nounAfter, readDate } from '@/lib/format'
@@ -29,6 +31,8 @@ import { resubmitRegistration, useEntityFlow, valuesOf, fieldLabel } from '@/dat
 import { formatIssue } from '@/data/entities/validate'
 import { entityCode } from '@/lib/format'
 import { Field } from './Field'
+import { AssistantAside } from '@/features/shared/AssistantAside'
+import type { Reading } from '@/components/assistant'
 import { PortalAccount } from './PortalAccount'
 
 /* Entity portal - "a screen that only shows its own application."
@@ -95,6 +99,20 @@ export default function PortalPage() {
     ? requestsOfEntity(entityId).slice().sort((x, y) => Number(y.state === 'returned') - Number(x.state === 'returned'))
     : []
   const due = entityId ? payableProjects(entityId).filter((p) => p.can && p.open > 0) : []
+  useClosing()
+  /* 10.2.2 · the closings waiting on the entity first · and its distress cases (10.9) */
+  const closes = entityId
+    ? closeRows.filter((c) => c.entityId === entityId).sort((x, y) => Number(y.stage === 'draft' || y.stage === 'returned') - Number(x.stage === 'draft' || x.stage === 'returned'))
+    : []
+  const cases = entityId ? CASES.filter((c) => c.entityId === entityId) : []
+  /* The entity's assistant · what waits on it across its procedures, the most pressing first */
+  const portalReadings: Reading[] = [
+    ...agrs.filter((ag) => agrHolder(ag) === 'entity').map((ag) => ({ id: `pt-ag-${ag.id}`, kind: 'flag' as const, label: 'اتفاقية بانتظار توقيعك', text: ag.projectName, src: 'إجراء الاتفاقيات' })),
+    ...pays.filter((r) => r.state === 'returned').map((r) => ({ id: `pt-pay-${r.id}`, kind: 'flag' as const, label: r.permit ? 'إذن صرف بانتظار مسوّغاتك' : 'طلب صرف مُعاد للاستكمال', text: `${r.projectName} · الدفعة ${r.no}${r.note ? ` · ${r.note}` : ''}`, src: 'إجراء الصرف' })),
+    ...closes.filter((c) => c.stage === 'draft' || c.stage === 'returned').map((c) => ({ id: `pt-cl-${c.id}`, kind: 'flag' as const, label: 'تقرير ختامي مطلوب', text: `${c.projectName}${c.note ? ` · ${c.note}` : ''}`, src: 'إجراء الإغلاق' })),
+    ...cases.filter((c) => c.stage === 'settle' || (c.recovery && c.recovery.state === 'open')).map((c) => ({ id: `pt-cs-${c.id}`, kind: 'flag' as const, label: c.stage === 'settle' ? 'تسوية المصروف' : 'مبلغ مطلوب إعادته', text: c.projectName, src: 'حالات التعثر' })),
+    ...due.map((d) => ({ id: `pt-due-${d.id}`, kind: 'note' as const, label: 'دفعة مستحقة', metric: { value: String(d.open), unit: d.open === 1 ? 'دفعة' : 'دفعات' }, text: `${d.name} · يمكنك طلب صرفها الآن.`, src: 'جدول الدفعات المعتمد' })),
+  ]
   const missing = regMissingDocs(reqOf)
 
   /* Note: upload here needs to actually do something, and so does submit after it. "Upload" and
@@ -159,7 +177,7 @@ export default function PortalPage() {
      surroundings it registered from. */
   const body = (
       <div className="viewstack">
-        <div className="screen col">
+        <div className="screen col hasg2">
           <div className="regtop">
             <Logo className="mark mark-38" />
             <div>
@@ -490,6 +508,31 @@ export default function PortalPage() {
                 </Glass>
               )}
 
+              {entityId && (closes.length > 0 || cases.length > 0) && (
+                <Glass>
+                  <Head title="إغلاق مشاريعك" meta={<span className="sub"><Num>{closes.length + cases.length}</Num> إجراء</span>} />
+                  <ul className="ptl-miss ptl-plans">
+                    {closes.map((c) => (
+                      <li key={c.id}>
+                        <Icon name={icons.doc} size="sm" />
+                        <Link className="lnk" to={`${ROUTES.closing(c.id)}?as=entity`}>{c.projectName}</Link>
+                        <span className="pc-sp" />
+                        {(c.stage === 'draft' || c.stage === 'returned') && <span className="sub">اكتب التقرير الختامي وأرسله</span>}
+                        <Tag tone={c.stage === 'draft' || c.stage === 'returned' ? 'warn' : 'mute'}>{closeStageLabel(c.stage)}</Tag>
+                      </li>
+                    ))}
+                    {cases.map((c) => (
+                      <li key={c.id}>
+                        <Icon name={icons.alert} size="sm" />
+                        <Link className="lnk" to={`${ROUTES.distress(c.id)}?as=entity`}>{CASE_KIND_SAY[c.kind]} · {c.projectName}</Link>
+                        <span className="pc-sp" />
+                        <Tag tone={CASE_STAGE_TONE[c.stage]}>{CASE_STAGE_SAY[c.stage]}</Tag>
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+              )}
+
               {/* Entity plans - rule 12.
                   Note: this only appears after approval. Before that, the entity has no projects at
                   all, so it has no plans - and an empty card labeled "your plans" on a screen still
@@ -526,13 +569,11 @@ export default function PortalPage() {
                   </ul>
                 </Glass>
               )}
-            </div>
 
-            {/* Left - correspondence
+            {/* Correspondence · in the main column, the end column is the assistant's alone
                 Note: the exact same `Thread` as the project page - whatever's stuck with the entity
                 gets resolved with a word, not a form, and the channel is the natural place for a
                 question. */}
-            <div className="col">
               <Glass className="ptl-talk">
                 <Head
                   title="التواصل مع المؤسسة"
@@ -556,6 +597,14 @@ export default function PortalPage() {
                   client's request - it explained rule 2 to someone here to finish two documents,
                   and the header above already says "entity portal - your application". */}
             </div>
+
+            <AssistantAside
+              title="ما ينتظرك"
+              cta="اعرض ما ينتظرك"
+              empty="لا شيء ينتظرك الآن · ستصلك الإشعارات حين يحتاج إجراء إلى ردّك."
+              ask={false}
+              readings={portalReadings}
+            />
           </div>
 
           <p className="sub tcen cnote">

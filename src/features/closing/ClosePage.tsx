@@ -16,14 +16,17 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { isolate, MISSING_ITEM, nf, NOUN, nounAfter, pct, unitAfter, withUnit } from '@/lib/format'
 import {
-  CLOSE_DOCS, CLOSE_LIMIT, CLOSE_STAGES, approveEval, approveReport, canStartEval,
+  CLOSE_DOCS, CLOSE_LIMIT, CLOSE_STAGES, canStartEval,
   closeById, closeCycle, closeRequirements, closeStageLabel, closeStageWho, evalApproved, reportApproved,
-  evalBlockers, needsComms, reportBlockers, reportGap, returnReport,
-  sendEval, sendReport, startEval,
+  needsComms, reportBlockers, reportGap,
 } from '@/data/mock/closing'
+import {
+  actOnClosing, attachDoc, closeActions, sendClosingReport, useClosing, type CloseAct,
+} from '@/data/closing/store'
+import { FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RequirementsCard, VersionsCard } from './parts'
 import { projectById } from '@/data/mock/projects'
 import { closeReadings } from './readings'
-import { CloseActionDock, closeActionsFor } from './CloseActionDock'
+import { CloseActionDock } from './CloseActionDock'
 import { SealedTitle } from '@/components/soul'
 import { EditableCard } from '@/features/shared/EditableCard'
 
@@ -71,12 +74,13 @@ export default function ClosePage() {
   const { role, user } = useRole()
   const mobile = useIsMobile()
   const asEntity = params.get('as') === 'entity'
+  const ver = useClosing()
   const c = closeById(id)
   const [note, setNote] = useState('')
-  const [taken, setTaken] = useState<string | null>(null)
+  const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   /* Approval moment - which stage was just approved, and whether this decision is the closing seal. */
   const [fresh, setFresh] = useState<{ step: number; sealed: boolean } | null>(null)
-  const [tick, setTick] = useState(0)
+  const tick = ver
 
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
@@ -109,19 +113,11 @@ export default function ClosePage() {
   const pr = projectById(c.projectId)
   const cycle = closeCycle(c)
   const missing = reportBlockers(c)
-  const evalShort = evalBlockers(c)
   const req = closeRequirements(c)
   const closed = evalApproved(c)
   const gaps = reportGap(c)
-  const actions = asEntity ? [] : closeActionsFor(role.key, c.stage)
-
-  /* Note: what's blocking is computed once here and passed to the footer - the footer used to
-     compute it on its own on the plan page, and here what's blocking differs by cycle, so the
-     computation belongs in the screen that knows which cycle we're in. */
-  const stop = cycle === 'report'
-    ? (missing.length > 0 ? `ينقص: ${missing[0]} (قاعدة 4)` : '')
-    : (evalShort.length > 0 ? `${evalShort[0]} (قاعدة 10)` : '')
-  const finalStop = c.stage === 'evalExecutive' && !req.ok ? `${req.say} · قاعدة 18` : stop
+  /* The exits and what stops them come from the closing store · the dock names the first stop */
+  const actions = asEntity ? [] : closeActions(c, role.key)
 
   /* Note: the stepper's stages come from the spec, not from screen state - and `comms` is skipped
      when coverage isn't required, and it's stated as skipped rather than hidden (our absence rule,
@@ -193,30 +189,31 @@ export default function ClosePage() {
       ? (
         <UploadButton
           label={`ارفع ${d.label}`}
-          onPick={() => { c.report.docs.push(d.key); setTick((x) => x + 1) }}
+          onPick={() => attachDoc(c.id, d.key, c.entityName)}
         />
       )
       : undefined,
   }))
 
-  const take = (label: string) => {
-    if (label.includes('ابدأ تقييم')) startEval(c, user.name)
-    else if (label.includes('إرسال التقييم')) sendEval(c, user.name)
-    else if (label.includes('اعتماد التقييم')) approveEval(c, user.name)
-    else if (label.startsWith('إعادة')) {
-      returnReport(c, user.name, note, cycle === 'report' ? 'draft' : 'evalDraft')
-    } else approveReport(c, user.name)
+  const take = (a: CloseAct, file?: string) => {
+    const out = actOnClosing(c.id, a, note, user.name, role.key, file)
+    if (out.length) { setSaid({ bad: out }); return }
     /* A return isn't approval - no step fills in, no seal. */
-    setFresh(label.startsWith('إعادة') ? null : { step: at, sealed: evalApproved(c) })
-    setTaken(label)
-    setTick((x) => x + 1)
+    setFresh(a.act === 'return' ? null : { step: at, sealed: evalApproved(c) })
+    setSaid({ ok: a.label })
+    setNote('')
   }
 
   return (
     <AppLayout assistantContext={assistFor.page(`إغلاق ${c.projectName}`)}>
       <div className="viewstack hasdock">
         <div className="screen col hasg2">
-          <BackTo label="الإغلاق" onClick={() => navigate(ROUTES.closings)} />
+          <BackTo
+            label={asEntity ? 'البوابة' : 'الإغلاق'}
+            onClick={() => navigate(asEntity ? `${ROUTES.entityPortal}?entity=${c.entityId}` : ROUTES.closings)}
+          />
+          {said.ok && <p className="ok-ink cnote" role="status">سُجّل: <b>{said.ok}</b> · أُرسل الإشعار إلى أطراف الإجراء</p>}
+          {said.bad?.map((b) => <p key={b} className="bad cnote" role="alert">{b}</p>)}
 
           {/* Header laid out like the project page: title and amount, the fan at the end. */}
           <header className="phead">
@@ -267,6 +264,13 @@ export default function ClosePage() {
               assumes this is administrative, while the review actually compares them against the
               agreement and plan's approved figures (output 2). The sentence is stated up front, not
               left to be inferred from a small tag. */}
+          {c.note && c.stage !== 'closed' && (
+            <Glass>
+              <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">{c.stage === 'returned' ? 'على الجهة' : 'للمراجعة'}</Tag>} />
+              <div className="payq-note"><Icon name={icons.chat} size="sm" /><span>{isolate(c.note)}</span></div>
+            </Glass>
+          )}
+
           {asEntity && (
             <Glass>
               <Head
@@ -463,37 +467,17 @@ export default function ClosePage() {
                 )}
               </Glass>
 
-              {/* Versions and audit log - rules 11, 15, and 19 */}
-              <Glass>
-                <Head
-                  title="الإصدارات وسجلّ الإجراء"
-                  meta={
-                    <span className="sub">
-                      <Num>{c.versions.length}</Num> إصدار للتقرير ·{' '}
-                      <Num>{c.evalVersions.length}</Num> للتقييم · سجلّان منفصلان
-                    </span>
-                  }
-                />
-                <ul className="plchg">
-                  {c.audit.map((a, i) => (
-                    <li key={`${a.at}-${i}`}>
-                      <div className="plchg-h">
-                        <Tag tone="mute">
-                          <DateText>{a.at}</DateText>
-                        </Tag>
-                        <span className="sub">{a.by}</span>
-                      </div>
-                      <p className="plchg-t">{isolate(a.what)}</p>
-                    </li>
-                  ))}
-                </ul>
-                <p className="sub cnote">
-                  تُبقي القاعدة <span className="num">15</span> تقريرًا معتمدًا
-                  واحدًا للمشروع وتحتفظ بكل الإصدارات السابقة · وتمنع القاعدة{' '}
-                  <span className="num">21</span> أي تعديل بعد الإغلاق النهائي،
-                  فأي تغيير بعده يحتاج إجراءً جديدًا.
-                </p>
-              </Glass>
+              {/* 10.4.8 · 10.4.18 · the requirements, named · the financial report and its savings */}
+              <RequirementsCard c={c} asEntity={asEntity} />
+              <FinanceCard c={c} asEntity={asEntity} />
+              {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'close', id: c.id }} asEntity={asEntity} />}
+              <FeedbackCard c={c} asEntity={asEntity} />
+
+              {/* Versions with their content and the two separate logs - rules 11, 15, 17 and 19 */}
+              <VersionsCard c={c} />
+              <LogsCard c={c} />
+
+              {!asEntity && <EditableCard module="closing" state={c.stage} label={closeStageLabel(c.stage)} />}
 
               {/* Correspondence - the same shared component */}
               <Glass>
@@ -519,7 +503,6 @@ export default function ClosePage() {
                   new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
                 )}
               />
-              <EditableCard module="closing" state={c.stage} label={closeStageLabel(c.stage)} />
             </div>
           </div>
 
@@ -559,7 +542,7 @@ export default function ClosePage() {
                   className="btn btn-p"
                   disabled={missing.length > 0 || (c.stage !== 'draft' && c.stage !== 'returned')}
                   title={missing.length > 0 ? `ينقص: ${missing[0]} (قاعدة 3)` : 'أرسل التقرير إلى مشرف المنح للمراجعة'}
-                  onClick={() => { sendReport(c); setTick((x) => x + 1) }}
+                  onClick={() => { const out = sendClosingReport(c.id, c.entityName); setSaid(out.length ? { bad: out } : { ok: 'أُرسل التقرير إلى مشرف المنح' }) }}
                 >
                   أرسل التقرير للمراجعة
                 </button>
@@ -571,11 +554,9 @@ export default function ClosePage() {
             user={user}
             row={c}
             actions={actions}
-            stop={finalStop}
             note={note}
             onNote={setNote}
-            taken={taken}
-            onTake={take}
+            onAct={take}
           />
         )}
       </div>

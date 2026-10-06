@@ -21,7 +21,9 @@ import {
 } from './tabs'
 import { ACTIVITY_FOLLOW_TYPES, activitiesFromFollowUps, useActivities, withActivities } from './activities'
 import { useFollowUps } from './followups'
-import { closeOfProject, openClose } from '@/data/mock/closing'
+import { closeOfProject } from '@/data/mock/closing'
+import { openClosing } from '@/data/closing/store'
+import { DistressCard } from '@/features/closing/DistressCard'
 import { AnalysisCard } from '@/components/assistant'
 import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
@@ -428,11 +430,14 @@ export default function ProjectPage() {
                   affect the project's status, so it's its own record - the tab answers "where's
                   this project's closing". */}
               {active === 'closing' && (
-                <CloseTab
-                  row={closeOfProject(project.id)}
-                  projectId={project.id}
-                  onOpen={() => navigate(ROUTES.closing(openClose(project.id)))}
-                />
+                <>
+                  <CloseTab
+                    row={closeOfProject(project.id)}
+                    projectId={project.id}
+                    onOpen={role.key === 'supervisor' ? () => { const out = openClosing(project.id, user.name); if (out.id) navigate(ROUTES.closing(out.id)) } : undefined}
+                  />
+                  <DistressCard projectId={project.id} />
+                </>
               )}
               {active === 'payments' && (
                 <PaymentsTab
@@ -468,6 +473,8 @@ export default function ProjectPage() {
                   why={detail.threadWhy}
                 />
               )}
+              {/* What can change at this stage · in the main column, the end column is the assistant's alone */}
+              <EditableCard module="project" state={editState} label={holder ? HOLDER_LABEL[holder] : row?.stage} />
             </div>
 
             {/* === Side column - one sticky card ===
@@ -486,7 +493,6 @@ export default function ProjectPage() {
                 onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
               />
               )}
-              <EditableCard module="project" state={editState} label={holder ? HOLDER_LABEL[holder] : row?.stage} />
             </div>
           </div>
         </div>

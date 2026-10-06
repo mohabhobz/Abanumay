@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tag } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
+import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -144,9 +145,8 @@ export default function UpdateReviewPage() {
                   />
                 </Glass>
               )}
-            </div>
 
-            <div className="col">
+              {/* The entity now and the log · in the main column, the end column is the assistant's alone */}
               {e && (
                 <Glass>
                   <Head title="الجهة الآن" meta={<Tag tone={activationTone(e.activation)}>{e.activation}</Tag>} />
@@ -186,6 +186,17 @@ export default function UpdateReviewPage() {
                 </ul>
               </Glass>
             </div>
+
+            <AssistantAside
+              title="مراجعة طلب التحديث"
+              cta="راجع الطلب"
+              empty="لا ملاحظات · التعديلات لا تتعارض مع بيانات جهات أخرى."
+              readings={[
+                ...(waiting.length ? [{ id: 'up-wait', kind: 'note' as const, label: 'يتطلب اعتمادًا', metric: { value: String(waiting.length), unit: 'تعديل' }, text: waiting.map((c) => c.label).join(' · '), src: 'إجراء تحديث البيانات' }] : []),
+                ...(dups.length ? [{ id: 'up-dup', kind: 'flag' as const, label: 'تكرار مع جهة أخرى', text: dups.map((d) => `${d.label} مسجَّل لـ«${d.who}»`).join(' · '), src: 'قاعدة 10' }] : []),
+                ...u.banks.filter((b) => !ibanValid(b.iban)).map((b) => ({ id: `up-iban-${b.id}`, kind: 'flag' as const, label: 'آيبان غير صحيح', text: `${b.bankName} · ${b.iban}`, src: 'التحقق من الآيبان' })),
+              ]}
+            />
           </div>
         </div>
 

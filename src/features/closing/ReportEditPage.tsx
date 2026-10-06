@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { BackTo, Empty, Glass, Head, MoneyField, Num, Tag, Riyal } from '@/components/ui'
 import { DocList, UploadButton, type DocRow } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -9,6 +9,7 @@ import { nf, MISSING_ITEM, nounAfter, NOUN } from '@/lib/format'
 import {
   CLOSE_DOCS, closeById, evalApproved, reportBlockers, reportGap,
 } from '@/data/mock/closing'
+import { addLink, attachDoc, saveReport, useClosing } from '@/data/closing/store'
 
 /* Final report editor - written by the entity.
 
@@ -30,6 +31,9 @@ import {
 export default function ReportEditPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const asEntity = params.get('as') === 'entity'
+  useClosing()
   const c = closeById(id)
 
   const [ben, setBen] = useState(c?.report.beneficiaries?.toString() ?? '')
@@ -38,8 +42,11 @@ export default function ReportEditPage() {
   const [outcomes, setOutcomes] = useState(c?.report.outcomes ?? '')
   const [risks, setRisks] = useState(c?.report.risks ?? '')
   const [link, setLink] = useState('')
-  /* Renders the "uploaded" row after upload - data in `c.report.docs`. */
-  const [, setTick] = useState(0)
+  const [linkLabel, setLinkLabel] = useState('')
+  const [bad, setBad] = useState<string[]>([])
+  /* 10.1.input-3 · the financial report · spend per line and the settlements */
+  const [spent, setSpent] = useState<string[]>(c?.finance?.lines.map((l) => l.spent?.toString() ?? '') ?? [])
+  const [settlements, setSettlements] = useState(c?.finance?.settlements ?? '')
 
   if (!c) {
     return (
@@ -64,7 +71,18 @@ export default function ReportEditPage() {
     )
   }
 
-  const closed = evalApproved(c)
+  /* The entity writes while the report is with it · in review or after closing it reads (rule 21) */
+  const closed = evalApproved(c) || (c.stage !== 'draft' && c.stage !== 'returned')
+  const back = `${ROUTES.closing(c.id)}${asEntity ? '?as=entity' : ''}`
+  const num = (v: string) => (v === '' ? null : Number(v))
+  const onSave = () => {
+    const lines = (c.finance?.lines ?? []).map((l, i) => ({ ...l, spent: num(spent[i] ?? '') }))
+    saveReport(c.id, {
+      beneficiaries: num(ben), budget: num(budget), days: num(days), outcomes, risks,
+      finance: { lines, settlements },
+    }, asEntity ? c.entityName : c.owner)
+    navigate(back)
+  }
   const gaps = reportGap(c)
   const planBen = gaps.find((g) => g.key === 'ben')?.planned ?? 0
   const planBudget = gaps.find((g) => g.key === 'budget')?.planned ?? 0
@@ -79,7 +97,7 @@ export default function ReportEditPage() {
       ? (
         <UploadButton
           label={`ارفع ${d.label}`}
-          onPick={() => { c.report.docs.push(d.key); setTick((x) => x + 1) }}
+          onPick={() => attachDoc(c.id, d.key, c.entityName)}
         />
       )
       : undefined,
@@ -89,14 +107,16 @@ export default function ReportEditPage() {
     <AppLayout assistantContext={assistFor.page(`تقرير ${c.projectName} الختامي`)}>
       <div className="viewstack">
         <div className="screen col">
-          <BackTo label="صفحة الإغلاق" onClick={() => navigate(ROUTES.closing(c.id))} />
+          <BackTo label="صفحة الإغلاق" onClick={() => navigate(back)} />
 
           <header>
             <div>
               <h1 className="ptitle">التقرير الختامي · {c.projectName}</h1>
               <p className="sub mt-1">
-                {closed
+                {evalApproved(c)
                   ? 'اكتمل الإغلاق · الصفحة للقراءة فقط، وأي تعديل بعده يحتاج إلى إجراء جديد (قاعدة 21)'
+                  : closed
+                    ? 'التقرير في المراجعة · يُعدَّل حين يُعاد للجهة، وكل إعادة إصدار جديد (قاعدة 19)'
                   : <>تحدّد القاعدة <span className="num">4</span> أربع بيانات حدًّا
                     أدنى · وبجانب كل منها القيمة المعتمدة ليظهر الفرق أثناء الكتابة</>}
               </p>
@@ -104,7 +124,7 @@ export default function ReportEditPage() {
             {/* Status as text, not a colored tag - the page header isn't a card's status field.
                 Counted the same way as "not blocking". */}
             {closed
-              ? <Tag tone="mute">مغلق · للقراءة</Tag>
+              ? <Tag tone="mute">{evalApproved(c) ? 'مغلق · للقراءة' : 'في المراجعة'}</Tag>
               : <span className="sub">{missing.length > 0
                 ? <>قبل الإرسال: <Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</>
                 : 'جاهز للإرسال'}</span>}
@@ -241,14 +261,47 @@ export default function ReportEditPage() {
                 والفيديوهات روابطَ تخزين معتمدة · فهي عادةً أكبر من أي حدّ رفع
               </span>
             </label>
+            {!closed && (
+              <div className="apv-row mt-2">
+                <span className="fld"><input value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} placeholder="وصف الرابط" aria-label="وصف الرابط" /></span>
+                <button type="button" className="btn btn-2 btn-sm" disabled={!link.trim()} onClick={() => { const out = addLink(c.id, linkLabel, link, c.entityName); setBad(out); if (!out.length) { setLink(''); setLinkLabel('') } }}>أضف الرابط</button>
+              </div>
+            )}
+            {c.report.links.length > 0 && (
+              <ul className="apv-list">
+                {c.report.links.map((l) => <li key={l.url}><span className="apv-t"><b>{l.label}</b><span className="sub">{l.url}</span></span></li>)}
+              </ul>
+            )}
+            {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
+          </Glass>
+
+          {/* 10.1.input-3 · the final financial report · each line's spend against what was approved */}
+          <Glass>
+            <Head title="التقرير المالي الختامي" meta={<Tag tone="mute">المدخل 3</Tag>} />
+            <div className="regfields">
+              {(c.finance?.lines ?? []).map((l, i) => (
+                <label className="regf" key={l.label}>
+                  <span className="lb">{l.label}<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <MoneyField value={spent[i] ?? ''} disabled={closed} onChange={(v) => setSpent((x) => { const n = [...x]; n[i] = v; return n })} label={`المصروف في ${l.label}`} />
+                  <span className="sub regf-h">المعتمد <span className="num">{nf.format(l.approved)}</span> <Riyal /></span>
+                </label>
+              ))}
+            </div>
+            <label className="regf">
+              <span className="lb">التسويات المالية</span>
+              <span className="fld">
+                <textarea rows={2} value={settlements} disabled={closed} onChange={(e) => setSettlements(e.target.value)} aria-label="التسويات المالية" placeholder="مبالغ معلّقة لدى المورّدين أو مردودات أو فروق أسعار" />
+              </span>
+              <span className="sub regf-h">ما بقي من التزامات أو مردودات · ويطابقه المشرف بالفواتير قبل الاعتماد</span>
+            </label>
           </Glass>
 
           {!closed && (
             <div className="act-a">
-              <Link className="btn btn-p" to={ROUTES.closing(c.id)}>
+              <button type="button" className="btn btn-p" onClick={onSave}>
                 احفظ وارجع إلى الطلب
-              </Link>
-              <Link className="btn btn-2" to={ROUTES.closing(c.id)}>إلغاء</Link>
+              </button>
+              <Link className="btn btn-2" to={back}>إلغاء</Link>
             </div>
           )}
 

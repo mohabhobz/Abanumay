@@ -139,6 +139,10 @@ export const ROUTES = {
   closingEval: (id: string) => `/closings/${id}/evaluation`,
   /** Closure settings — supporting documents and stage limits. */
   closingSettings: '/closings/settings',
+  /** Distress cases · a stop or a change of value (10.9) · `new` before `:id` */
+  distresses: '/closings/cases',
+  distress: (id: string) => `/closings/cases/${id}`,
+  distressNew: (projectId: string, kind: string) => `/closings/cases/new?project=${projectId}&kind=${kind}`,
 
   payments: '/payments',
   payment: (id: string) => `/payments/${id}`,

@@ -16,6 +16,7 @@ import {
   payableProjects, repOf, resubmitRequest, scheduleOf, usePayments,
 } from '@/data/payments/store'
 import { inForceOf } from '@/data/agreements/store'
+import { AssistantAside } from '@/features/shared/AssistantAside'
 import type { PayDoc } from '@/types/domain'
 
 const KEYS = ['project', 'pay', 'as'] as const
@@ -67,6 +68,8 @@ const SLOT_TONE: Record<string, 'ok' | 'warn' | 'no' | 'mute' | 'teal'> = {
   pending: 'warn',
   paid: 'ok',
   held: 'no',
+  stopped: 'no',
+  settled: 'mute',
 }
 
 export default function RequestForm() {
@@ -378,9 +381,8 @@ export default function RequestForm() {
                         )}
                       </Glass>
                     )}
-                  </div>
 
-                  <div className="col">
+                    {/* The amount and the summary · in the main column, the end column is the assistant's alone */}
                     <Glass>
                       <Head title="قيمة الطلب" meta={<span className="sub">قاعدة 5</span>} />
                       <label className="payamt">
@@ -413,6 +415,20 @@ export default function RequestForm() {
                       </ul>
                     </Glass>
                   </div>
+
+                  <AssistantAside
+                    title="مراجعة الطلب"
+                    cta="راجع الطلب"
+                    empty="الطلب مكتمل · جاهز للإرسال."
+                    ask={!asEntity}
+                    readings={[
+                      ...(held ? [{ id: 'rf-held', kind: 'flag' as const, label: 'شرط الدفعة', text: `${picked.condition ?? ''} · لم يؤكّد المشرف استيفاءه بعد.`, src: 'قاعدة 6' }] : []),
+                      ...missing.map((n) => ({ id: `rf-${n.kind}`, kind: 'flag' as const, label: 'ينقص قبل الإرسال', text: n.label, src: 'قاعدة 3' })),
+                      ...(over ? [{ id: 'rf-over', kind: 'flag' as const, label: 'قيمة الطلب', text: `أعلى من الدفعة المعتمدة ${nf.format(picked.amount)}.`, src: 'قاعدة 5' }] : []),
+                      ...(overGrant ? [{ id: 'rf-grant', kind: 'flag' as const, label: 'سقف المنحة', text: `يتجاوز المتبقي من المنحة ${nf.format(Math.max(0, left))}.`, src: 'قاعدة 14' }] : []),
+                      ...(needAck ? [{ id: 'rf-ack', kind: 'flag' as const, label: 'إقرار الممثل', text: 'أقرّ بصحة البيانات بصفتك ممثل الجهة المخوّل.', src: '9.1.input-3' }] : []),
+                    ]}
+                  />
                 </div>
               )}
             </>

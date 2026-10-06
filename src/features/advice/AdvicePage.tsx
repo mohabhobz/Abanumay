@@ -80,7 +80,7 @@ export default function AdvicePage() {
                     </div>
                   </header>
 
-                  <div className="g2">
+                  <div className="col">
                     <div className="col">
                       <Glass>
                         <Head title="الطلب" />
@@ -107,9 +107,8 @@ export default function AdvicePage() {
                           })}
                         />
                       </Glass>
-                    </div>
 
-                    <div className="col">
+                      {/* One column · an outside consultant has no assistant, and the end column is the assistant's alone */}
                       {f!.study && (
                         <Glass>
                           <Head title="توصية مشرف المنح" meta={<Tag tone="mute"><Num>{studyScore(f!.study.scores)}</Num> من <Num>{100}</Num></Tag>} />

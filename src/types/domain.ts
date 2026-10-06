@@ -995,4 +995,118 @@ export interface CloseRow {
   hoursInStage: number
   /** Most recent return note. */
   note?: string
+
+  /* What the live flow adds · set by the closing store. */
+
+  /** Why closing opened (10.4.1) · the duration ended, the activities completed, or a stop decision. */
+  basis?: 'ended' | 'complete' | 'stopped'
+  /** The evaluation's own log — rule 17 keeps the two cycles' notes and decisions apart. */
+  evalAudit?: CloseAudit[]
+  /** Each version's content, so a previous one can be read and compared (10.4.15 · 10.4.19). */
+  snapshots?: CloseSnapshot[]
+  /** The final financial report and its settlements (10.1.input-3). */
+  finance?: CloseFinance
+  /** The entity's evaluation of the foundation (10.3.2). */
+  feedback?: EntityFeedback
+  /** Money the entity owes back — savings on closing (10.9.7). */
+  recovery?: Recovery
+}
+
+/** A version's content · the report or the evaluation as it stood when it was sent back. */
+export interface CloseSnapshot {
+  cycle: 'report' | 'eval'
+  no: number
+  at: string
+  by: string
+  say: string
+  report?: FinalReport
+  evaluation?: ProjectEval
+}
+
+/** The final financial report · per budget line, with the settlements and the invoices verified. */
+export interface CloseFinance {
+  lines: { label: string; approved: number; spent: number | null }[]
+  settlements: string
+  /** Invoices the supervisor verified against the spend (10.9.7) · null until checked. */
+  verified: number | null
+  verifiedBy?: string
+  verifiedAt?: string
+}
+
+/** The entity's evaluation of the foundation · 10.3.2. */
+export interface EntityFeedback {
+  scores: Record<string, number>
+  comment: string
+  by: string
+  at: string
+}
+
+/** One receipt of money returned by the entity (10.9.8). */
+export interface RecoveryReceipt {
+  id: string
+  at: string
+  amount: number
+  ref: string
+  file: string
+  by: string
+}
+
+/** A claim to return money · full, the unused balance or the difference (10.9.2 – 10.9.9). */
+export interface Recovery {
+  id: string
+  source: 'savings' | 'stop' | 'reduce'
+  due: number
+  reason: string
+  openedAt: string
+  openedBy: string
+  receipts: RecoveryReceipt[]
+  /** open · receipts arriving | done · fully returned | failed · not recoverable, escalated | decided · the CEO's final decision closed it */
+  state: 'open' | 'done' | 'failed' | 'decided'
+  /** Proof of the claims sent to the entity (10.9.9). */
+  claims: { at: string; by: string; text: string; file?: string }[]
+  /** Legal escalation steps (10.9.9). */
+  escalations: { at: string; by: string; step: string; text: string }[]
+  decision?: { at: string; by: string; text: string; kind: 'writeoff' | 'installments' | 'pursue' }
+  /** Already released to the domain allocation. */
+  released: number
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Distress cases · BPD-010 §10.9
+
+   Not a closing variant: a decision on a running project that
+   changes what it's owed or whether it continues. Each case is its
+   own record with its own approvals (supervisor → grants manager →
+   CEO), and the project only changes when the CEO approves.
+   ═══════════════════════════════════════════════════════════ */
+
+export type CaseKind = 'stop' | 'reduce' | 'increase'
+export type CaseStage = 'draft' | 'settle' | 'manager' | 'ceo' | 'approved' | 'returned' | 'rejected' | 'closed'
+
+export interface CaseRow {
+  id: string
+  projectId: string
+  projectName: string
+  entityId: string
+  entityName: string
+  kind: CaseKind
+  stage: CaseStage
+  reason: string
+  openedBy: string
+  openedAt: string
+  /** The grant and what was paid when the case opened. */
+  granted: number
+  paid: number
+  /** Value changes · the new value and its annex (10.9.5 · 10.9.6). */
+  newAmount?: number
+  annex?: string
+  /** A raise · an additional payment, or the schedule adjusted (10.9.6). */
+  extra?: { amount: number; dueAt: string }
+  /** A stop after money went out · the entity's report and invoices, and the spend approved (10.9.3 · 10.9.4). */
+  settlement?: { report?: string; invoices?: string; actual: number | null; approvedBy?: string; approvedAt?: string }
+  recovery?: Recovery
+  note?: string
+  returnedTo?: CaseStage
+  decidedAt?: string
+  log: CloseAudit[]
 }

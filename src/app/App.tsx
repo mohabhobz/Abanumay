@@ -40,6 +40,9 @@ import ClosePage from '@/features/closing/ClosePage'
 import ReportEditPage from '@/features/closing/ReportEditPage'
 import EvalEditPage from '@/features/closing/EvalEditPage'
 import CloseSettingsPage from '@/features/closing/CloseSettingsPage'
+import CasesPage from '@/features/closing/cases/CasesPage'
+import CaseNewPage from '@/features/closing/cases/CaseNewPage'
+import CasePage from '@/features/closing/cases/CasePage'
 import PlansPage from '@/features/plans/PlansPage'
 import PlanPage from '@/features/plans/PlanPage'
 import PlanEditPage from '@/features/plans/PlanEditPage'
@@ -176,6 +179,10 @@ export default function App() {
         <Route path={ROUTES.closings} element={<ClosingPage />} />
         {/* ⚠️ Settings before `:id` — same trap as `/plans/settings`. */}
         <Route path={ROUTES.closingSettings} element={<CloseSettingsPage />} />
+        {/* ⚠️ the cases before `:id` · `cases` would read as a closing id otherwise */}
+        <Route path={ROUTES.distresses} element={<CasesPage />} />
+        <Route path={`${ROUTES.distresses}/new`} element={<CaseNewPage />} />
+        <Route path={`${ROUTES.distresses}/:id`} element={<CasePage />} />
         <Route path={`${ROUTES.closings}/:id/report`} element={<ReportEditPage />} />
         <Route path={`${ROUTES.closings}/:id/evaluation`} element={<EvalEditPage />} />
         <Route path={`${ROUTES.closings}/:id`} element={<ClosePage />} />

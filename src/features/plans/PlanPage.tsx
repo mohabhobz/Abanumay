@@ -486,6 +486,9 @@ export default function PlanPage() {
                   )}
                 </Glass>
               )}
+              {/* The plan decision and what can change · in the main column, the end column is the assistant's alone */}
+              {!asEntity && <PlanDecisionCard projectId={p.projectId} approved />}
+              <EditableCard module="plan" state={p.stage} label={planStageLabel(p.stage)} />
             </div>
 
             {/* Side column - one sticky card, like the project page. */}
@@ -499,8 +502,6 @@ export default function PlanPage() {
                   new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
                 )}
               />
-              <EditableCard module="plan" state={p.stage} label={planStageLabel(p.stage)} />
-              {!asEntity && <PlanDecisionCard projectId={p.projectId} approved />}
             </div>
           </div>
 

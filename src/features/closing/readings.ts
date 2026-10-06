@@ -4,6 +4,8 @@ import {
   evalBlockers, needsComms, reportApproved, reportBlockers, reportGap,
 } from '@/data/mock/closing'
 import { nf, MISSING_ITEM, nounAfter, unitAfter } from '@/lib/format'
+import { projectRows } from '@/data/mock/projects'
+import { planDone, planOfProject } from '@/data/mock/plans'
 import type { CloseRow } from '@/types/domain'
 
 /* Reading a single closing request - the four AI outputs (11.5).
@@ -40,6 +42,51 @@ export function closeReadings(c: CloseRow): Reading[] {
         `اكتمال البيانات والمستندات الداعمة.`,
       bold: ['القاعدة 3'],
       src: 'قاعدة 4 · الحدّ الأدنى للتقرير الختامي',
+    })
+  }
+
+  /* 0 - output 1 - the executive summary · what was done, against the plan, the duration and the
+     money, and what the report itself says went wrong (10.2.10 · 10.4.13) */
+  const pr = projectRows.find((p) => p.id === c.projectId)
+  const plan = planOfProject(c.projectId)
+  if (c.report.outcomes || c.report.beneficiaries !== null) {
+    const parts: string[] = []
+    if (c.report.beneficiaries !== null) parts.push(`خدم ${nf.format(c.report.beneficiaries)} من ${nf.format(pr?.beneficiaries ?? 0)} مستفيدًا مستهدفًا`)
+    if (c.report.budget !== null) parts.push(`وصرف ${nf.format(c.report.budget)} من ${nf.format(pr?.amountGranted ?? 0)}`)
+    if (c.report.days !== null) parts.push(`في ${nf.format(c.report.days)} يومًا من ${nf.format(pr?.durationDays ?? 0)} معتمدة`)
+    if (plan) parts.push(`وبلغت الخطة ${nf.format(Math.round(planDone(plan)))} بالمئة`)
+    const firstOutcome = c.report.outcomes.split(/[.،·]/)[0]?.trim()
+    out.push({
+      id: 'cl-summary',
+      kind: 'note',
+      label: 'الملخص التنفيذي',
+      text: `${parts.join(' ')}.${firstOutcome ? ` أبرز النتائج: ${firstOutcome}.` : ''}${c.report.risks && c.report.risks !== 'لا يوجد.' ? ` المخاطر المذكورة: ${c.report.risks}` : ''}`,
+      src: 'مخرج 1 في 11.5 · من نصّ التقرير والخطة الأصلية ومدة المشروع · استرشادي (قاعدة 13)',
+    })
+  }
+
+  /* The duration against the approved one · a delay is read before it's asked about */
+  if (c.report.days !== null && pr?.durationDays) {
+    const diff = Math.round(((c.report.days - pr.durationDays) / pr.durationDays) * 100)
+    out.push({
+      id: 'cl-gap-days',
+      kind: Math.abs(diff) >= 15 ? 'flag' : 'note',
+      label: Math.abs(diff) >= 15 ? 'انحراف في مدة التنفيذ' : 'المدة مطابقة',
+      metric: { value: `\u2066${diff > 0 ? '+' : ''}${diff}%\u2069`, unit: 'عن المعتمد' },
+      text: `نُفّذ في ${nf.format(c.report.days)} يومًا والمعتمد ${nf.format(pr.durationDays)}${Math.abs(diff) >= 15 && !c.report.risks ? ' · ولا تفسير له في التحديات.' : '.'}`,
+      src: 'مقارنة بمدة المشروع المعتمدة',
+    })
+  }
+
+  /* The plan's activities · a report claiming completion on a plan that isn't */
+  if (plan && planDone(plan) < 100) {
+    out.push({
+      id: 'cl-plan',
+      kind: 'flag',
+      label: 'الخطة لم تكتمل',
+      metric: { value: String(Math.round(planDone(plan))), unit: 'بالمئة من الخطة' },
+      text: 'التقرير يُقرأ مقابل أنشطة الخطة الأصلية · وما لم يكتمل منها يحتاج تفسيرًا في التقرير.',
+      src: 'خطة التنفيذ المعتمدة',
     })
   }
 

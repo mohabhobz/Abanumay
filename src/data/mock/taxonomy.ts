@@ -214,6 +214,8 @@ export const STAGES: StageMeta[] = [
   { stage: 'تقييم المشروع', group: 'في التشغيل', limit: 480 },
   { stage: 'مشروع مكتمل', group: 'مكتمل', limit: 0 },
   { stage: 'مشروع متعثر', group: 'متعثر', limit: 0 },
+  /* 10.9.1 · a stop approved by the CEO · its own status, under «متعثر» */
+  { stage: 'مشروع موقوف', group: 'متعثر', limit: 0 },
   { stage: 'مشروع معتذر عنه', group: 'معتذر عنه', limit: 0 },
   { stage: 'مشروع ملغي', group: 'معتذر عنه', limit: 0 },
   /* 6.2.8 · 7.2.10 · a rejection by the committee or the board is its own status, not «معتذر عنه» */

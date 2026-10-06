@@ -18,6 +18,8 @@ import {
 import type { PayRequest } from '@/types/domain'
 import { ActionDock } from './ActionDock'
 import { PayExceptions } from './PayExceptions'
+import { AssistantAside } from '@/features/shared/AssistantAside'
+import { readPayRequest } from '@/data/recordReadings'
 import { actOnPay, grantLeft, mayResubmit, payActions, usePayments, type PayAction } from '@/data/payments/store'
 import { EditableCard } from '@/features/shared/EditableCard'
 
@@ -140,6 +142,7 @@ export default function RequestPage() {
   const blocked = r.checks.filter((c) => !c.ok)
   const bankOk = r.bank.active
   const actions = payActions(r, role.key, asEntity)
+  const readings = readPayRequest(r)
   const onAct = (a: PayAction, file?: string) => {
     const out = actOnPay(r.id, a.act, note, user.name, role.key, file)
     if (out.length) { setSaid({ bad: out }); return }
@@ -333,24 +336,7 @@ export default function RequestPage() {
               {/* 9.1.input-6 - special approvals and exceptions recorded before disbursing. */}
               {!asEntity && <PayExceptions request={r} />}
 
-              {/* AI-assist output - step 6, tagged per rule 20. */}
-              {r.ai && !asEntity && (
-                <Glass>
-                  <Head
-                    title="تحليل الذكاء الاصطناعي"
-                    meta={<Tag tone="mute">استرشادي</Tag>}
-                  />
-                  <div className="payq-ai">
-                    <Icon name={icons.spark} size="sm" />
-                    <span>{r.ai}</span>
-                  </div>
-                  <p className="sub cnote">
-                    يقارن التحليل التقارير والمرفقات ببنود الاتفاقية وجدول الدفعات
-                    (البند 9.6) · وتنص القاعدة 20 على أنه لا يغني عن اعتماد صاحب
-                    الصلاحية.
-                  </p>
-                </Glass>
-              )}
+              {/* AI-assist output - step 6 · read by the assistant in the end column (rule 20 · advisory) */}
 
               {/* Last return note - rules 7 and 8 require it to be explicit. */}
               {r.note && r.state !== 'closed' && (
@@ -385,40 +371,7 @@ export default function RequestPage() {
                 </div>
               </Glass>
 
-              {/* Audit log - rule 16 - with a notification on every transition (rule 17). */}
-              <Glass>
-                <Head
-                  title="سجل التدقيق"
-                  meta={<span className="sub">كل انتقال بخطوته في الوثيقة</span>}
-                />
-                <ol className="paylog">
-                  {[...r.log].reverse().map((e, i) => (
-                    <li key={`${e.step}-${i}`}>
-                      <span className="paylog-s num">{e.step}</span>
-                      <div className="paylog-b">
-                        <div className="paylog-t">{e.what}</div>
-                        <div className="sub">
-                          {e.who}
-                          {e.role !== e.who && <> · {e.role}</>}
-                          <span className="pc-dot" />
-                          <DateText>{e.at}</DateText>
-                        </div>
-                        {e.note && <div className="paylog-n">{isolate(e.note)}</div>}
-                        {e.notified && (
-                          <div className="paylog-i sub">
-                            <Icon name={icons.send} size="sm" />
-                            إشعار · {e.notified}
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </Glass>
-            </div>
-
-            {/* === Side column - what supports the decision === */}
-            <div className="col">
+              {/* What supports the decision · in the main column, the end column is the assistant's alone */}
               {!asEntity && <EditableCard module="payment" state={r.state} label={meta?.label} />}
 
               {/* 9.2.17 · 9.1.output-2 - the executed transfer, with its proof. */}
@@ -643,7 +596,40 @@ export default function RequestPage() {
                   </p>
                 )}
               </Glass>}
+
+              {/* Audit log - rule 16 - with a notification on every transition (rule 17). */}
+              <Glass>
+                <Head
+                  title="سجل التدقيق"
+                  meta={<span className="sub">كل انتقال بخطوته في الوثيقة</span>}
+                />
+                <ol className="paylog">
+                  {[...r.log].reverse().map((e, i) => (
+                    <li key={`${e.step}-${i}`}>
+                      <span className="paylog-s num">{e.step}</span>
+                      <div className="paylog-b">
+                        <div className="paylog-t">{e.what}</div>
+                        <div className="sub">
+                          {e.who}
+                          {e.role !== e.who && <> · {e.role}</>}
+                          <span className="pc-dot" />
+                          <DateText>{e.at}</DateText>
+                        </div>
+                        {e.note && <div className="paylog-n">{isolate(e.note)}</div>}
+                        {e.notified && (
+                          <div className="paylog-i sub">
+                            <Icon name={icons.send} size="sm" />
+                            إشعار · {e.notified}
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </Glass>
             </div>
+
+            <AssistantAside title="قراءة طلب الصرف" cta="اقرأ الطلب" empty="لا ملاحظات على هذا الطلب الآن." readings={readings} />
           </div>
         </div>
 

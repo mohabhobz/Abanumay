@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
@@ -173,6 +173,8 @@ export default function ClosingPage() {
                 <span className="num">{k.late}</span> متأخر عن حدّ محطته
               </p>
             </div>
+            {/* 10.9 · stops and value changes live in their own list */}
+            <Link className="btn btn-2 btn-sm" to={ROUTES.distresses}>حالات التعثر</Link>
           </header>
 
           <QuickRead

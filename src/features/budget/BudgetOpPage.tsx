@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   BackTo, Blockers, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Person, Riyal, Tag, icons,
 } from '@/components/ui'
+import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -119,7 +120,7 @@ export default function BudgetOpPage() {
   return (
     <AppLayout assistantContext={assistFor.page(title)}>
       <div className="viewstack hasdock">
-        <div className="screen col">
+        <div className="screen col hasg2">
           <BackTo label="طلبات العمليات" onClick={() => navigate(ROUTES.budgetOps)} />
           <header>
             <div>
@@ -257,9 +258,8 @@ export default function BudgetOpPage() {
                   </div>
                 </Glass>
               ) : null}
-            </div>
 
-            <div className="col">
+              {/* Blockers, impact and the approval path · in the main column, the end column is the assistant's alone */}
               {(editable || myStep === 'exec') && (
                 <Blockers
                   title={editable ? 'ما يمنع الإرسال' : 'ما يمنع التنفيذ'}
@@ -283,6 +283,13 @@ export default function BudgetOpPage() {
                 </Glass>
               )}
             </div>
+
+            <AssistantAside
+              title="قراءة طلب الميزانية"
+              cta="اقرأ الطلب"
+              empty="لا ملاحظات · الأرصدة والسياسة تسمح بهذا الطلب."
+              readings={issues.map((t, i) => ({ id: `bo-${i}`, kind: 'flag' as const, label: editable ? 'يمنع الإرسال' : 'يمنع التنفيذ', text: t, src: 'تحقّق النظام من الأرصدة والسياسة' }))}
+            />
           </div>
         </div>
 

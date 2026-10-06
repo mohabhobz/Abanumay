@@ -227,10 +227,11 @@ export interface LinkInput {
   nodeId?: string
   amount?: number
 }
-export type LinkChangeKind = 'link' | 'split' | 'final' | 'relink' | 'release' | 'paid' | 'unpaid' | 'savings'
+export type LinkChangeKind = 'link' | 'split' | 'final' | 'relink' | 'release' | 'paid' | 'unpaid' | 'savings' | 'recover' | 'resize'
 export const LINK_CHANGE_SAY: Record<LinkChangeKind, string> = {
   link: 'ربط وحجز', split: 'إعادة توزيع', final: 'تثبيت الحجز', relink: 'تعديل الارتباط بعد الاعتماد',
   release: 'تحرير الحجز', paid: 'صرف', unpaid: 'تراجع عن صرف', savings: 'إعادة الوفر',
+  recover: 'تحرير مبلغ مسترد', resize: 'تعديل قيمة المشروع',
 }
 /** One row of a project's link history (1.4.58) · kept after the link itself is released */
 export interface LinkChange {
@@ -425,6 +426,8 @@ type Op = { at: string } & (
   | { op: 'linkPaid'; projectId: string; amount: number; ref: string; by: string }
   | { op: 'linkUnpaid'; ref: string; by: string }
   | { op: 'linkClose'; projectId: string; by: string; note: string }
+  | { op: 'linkRecover'; projectId: string; amount: number; ref: string; by: string }
+  | { op: 'linkResize'; projectId: string; amount: number; ref: string; by: string; reason: string }
   | { op: 'reqSave'; req: Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt' | 'result'>; send: boolean }
   | { op: 'reqDecide'; id: string; outcome: 'approve' | 'return' | 'reject'; note: string; by: string }
   | { op: 'planSave'; plan: Omit<FundingPlan, 'at' | 'version'> }
@@ -932,6 +935,59 @@ const apply = (o: Op) => {
       })
       return
     }
+    /* 10.9.3 · 10.9.8 · money the entity returned goes back to the project's line (its domain
+       allocation) · paid falls on each share by what it carried, once per receipt */
+    case 'linkRecover': {
+      const l = LINKS.get(o.projectId)
+      if (!l || PAID_REFS.has(o.ref)) return
+      const paid = l.shares.reduce((a, x) => a + x.paid, 0)
+      const amt = Math.min(o.amount, paid)
+      if (amt <= 0) return
+      let left = amt
+      l.shares.forEach((sh, i) => {
+        const last = i === l.shares.length - 1
+        const x = Math.min(sh.paid, last ? left : Math.round(amt * sh.paid / paid))
+        if (x <= 0) return
+        left -= x
+        const d = docOf(sh.docId)
+        if (d) payOn(d, sh.nodeId, -x, o.at, o.by, o.ref, 'مبلغ مسترد من الجهة · يعود إلى مخصص المجال')
+        sh.paid -= x
+        sh.amount -= x
+      })
+      l.amount = l.shares.reduce((a, x) => a + x.amount, 0)
+      PAID_REFS.set(o.ref, { projectId: l.projectId, parts: [] })
+      logLink(l.projectId, { at: o.at, by: o.by, kind: 'recover', amount: amt, text: `أُعيد مبلغ مسترد ${nf.format(amt)} إلى مخصص المجال` })
+      return
+    }
+    /* 10.9.5 · 10.9.6 · the project's value changed by an approved annex · the hold follows it:
+       a cut releases what isn't paid, a raise holds more on the first share's line */
+    case 'linkResize': {
+      const l = LINKS.get(o.projectId)
+      if (!l || l.stage === 'closed') return
+      const diff = o.amount - l.amount
+      if (!diff) return
+      if (diff < 0) {
+        let cut = -diff
+        for (let i = l.shares.length - 1; i >= 0 && cut > 0; i--) {
+          const sh = l.shares[i]!
+          const x = Math.min(cut, sh.amount - sh.paid)
+          if (x <= 0) continue
+          const d = docOf(sh.docId)
+          if (d && l.stage !== 'planned') hold(d, sh.nodeId, -x, o.at, o.by, 'release', o.ref, 'تخفيض قيمة المشروع')
+          sh.amount -= x
+          cut -= x
+        }
+      } else {
+        const sh = l.shares[0]
+        const d = sh ? docOf(sh.docId) : undefined
+        if (!sh || !d) return
+        if (l.stage !== 'planned') hold(d, sh.nodeId, diff, o.at, o.by, 'hold', o.ref, 'زيادة قيمة المشروع')
+        sh.amount += diff
+      }
+      l.amount = l.shares.reduce((a, x) => a + x.amount, 0)
+      logLink(l.projectId, { at: o.at, by: o.by, kind: 'resize', amount: Math.abs(diff), reason: o.reason, text: `${diff < 0 ? 'خُفّضت' : 'زيدت'} قيمة الارتباط إلى ${nf.format(l.amount)} بملحق معتمد` })
+      return
+    }
     case 'reqSave': {
       let r = reqById(o.req.id)
       if (r && r.state !== 'draft' && r.state !== 'returned') return
@@ -1163,6 +1219,23 @@ export const undoPaid = (ref: string, by: string) => run({ op: 'linkUnpaid', ref
 export const isPaidRef = (ref: string): boolean => PAID_REFS.has(ref)
 /** The project closed · what wasn't spent goes back to its lines (1.4.32) */
 export const releaseSavings = (projectId: string, by: string, note = '') => run({ op: 'linkClose', projectId, by, note, at: now() })
+/** An amount the entity returned · back to the domain allocation (10.9.3 · 10.9.8) */
+export const releaseRecovered = (projectId: string, amount: number, ref: string, by: string) => run({ op: 'linkRecover', projectId, amount, ref, by, at: now() })
+/** The project's value changed · the hold follows (10.9.5 · 10.9.6) */
+export const resizeLink = (projectId: string, amount: number, ref: string, by: string, reason: string) => run({ op: 'linkResize', projectId, amount, ref, by, reason, at: now() })
+/** What a raise needs on the first share's line · free before holding more (10.9.6) */
+export function resizeIssue(projectId: string, amount: number): string {
+  const l = LINKS.get(projectId)
+  if (!l) return ''
+  const diff = amount - l.amount
+  if (diff <= 0) return ''
+  const sh = l.shares[0]
+  const d = sh ? docOf(sh.docId) : undefined
+  const n = d && sh ? nodeOf(d, sh.nodeId) : undefined
+  if (!d || !n) return 'بند الارتباط لم يعد موجودًا'
+  const free = moneyOf(d.nodes, n.id).available
+  return free < diff ? `لا يكفي المتاح في البند (${nf.format(Math.max(0, free))}) لزيادة الحجز ${nf.format(diff)}` : ''
+}
 export const saveRequest = (req: Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt' | 'result'>, send: boolean) =>
   run({ op: 'reqSave', req, send, at: now() })
 export const decideRequest = (id: string, outcome: 'approve' | 'return' | 'reject', note: string, by: string) =>

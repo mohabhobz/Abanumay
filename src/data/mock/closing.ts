@@ -142,7 +142,15 @@ export const CLOSE_DOCS: { key: string; label: string; req?: boolean }[] = [
  * The second is the one that gets forgotten: a project with an unspent disbursement can't start
  * closing — otherwise a project gets closed while still owed money.
  */
+/* The closing store registers the live gates (eligibility and the financial and administrative
+   requirements) · a registry, so this mock doesn't import the stores */
+let openGate: ((projectId: string) => { ok: boolean; why: string }) | null = null
+export const setOpenGate = (f: (projectId: string) => { ok: boolean; why: string }) => { openGate = f }
+let reqGate: ((c: CloseRow) => { ok: boolean; say: string }) | null = null
+export const setReqGate = (f: (c: CloseRow) => { ok: boolean; say: string }) => { reqGate = f }
+
 export const canOpenClose = (projectId: string): { ok: boolean; why: string } => {
+  if (openGate) return openGate(projectId)
   const pr = projectRows.find((p) => p.id === projectId)
   if (!pr) return { ok: false, why: 'المشروع غير موجود' }
 
@@ -232,6 +240,7 @@ export const evalApproved = (c: CloseRow): boolean => c.stage === 'closed'
  * it.
  */
 export const closeRequirements = (c: CloseRow): { ok: boolean; say: string } => {
+  if (reqGate) return reqGate(c)
   const open = payRequests.filter(
     (r) => r.projectId === c.projectId && r.state !== 'paid' && r.state !== 'closed',
   )

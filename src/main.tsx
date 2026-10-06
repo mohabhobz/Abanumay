@@ -7,6 +7,7 @@ import '@/data/agreements/store'
 import '@/data/plans/store'
 import '@/data/approvals/store'
 import '@/data/payments/store'
+import '@/data/closing/store'
 import App from '@/app/App'
 import '@/styles/index.css'
 

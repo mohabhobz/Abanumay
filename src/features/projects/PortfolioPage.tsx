@@ -2,10 +2,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   BackTo, Empty, Glass, Head, Icon, KV, Money, Num, Person, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
+import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { NOUN, nounAfter, pct } from '@/lib/format'
+import { NOUN, nounAfter, pct, nf } from '@/lib/format'
 import {
   IMPLEMENTER_DIFF, implementerName, itemsSpent, itemsTotal,
   portfolioById, portfolioIssues,
@@ -71,7 +72,7 @@ export default function PortfolioPage() {
   return (
     <AppLayout assistantContext={assistFor.page(p.name)}>
       <div className="viewstack">
-        <div className="screen col">
+        <div className="screen col hasg2">
           <BackTo label="المشاريع" onClick={() => navigate(ROUTES.projects)} />
 
           <header>
@@ -165,9 +166,8 @@ export default function PortfolioPage() {
                   </p>
                 ))}
               </Glass>
-            </div>
 
-            <div className="col">
+              {/* The partner's terms, path and data · in the main column, the end column is the assistant's alone */}
               {/* Note: this card is the heart of the scenario - it states what's absent, since an
                   unstated absence reads as an oversight. */}
               <Glass>
@@ -225,6 +225,16 @@ export default function PortfolioPage() {
                 />
               </Glass>
             </div>
+
+            <AssistantAside
+              title="قراءة المحفظة"
+              cta="اقرأ المحفظة"
+              empty="المحفظة مطابقة · مجموع مشاريعها يساوي مخصصها."
+              readings={[
+                ...issues.map((x) => ({ id: `pf-${x.key}`, kind: 'flag' as const, label: 'تطابق المحفظة', text: x.say, src: x.rule })),
+                { id: 'pf-spent', kind: 'note' as const, label: 'المصروف', metric: { value: String(Math.round((spent / Math.max(1, sum)) * 100)), unit: 'بالمئة' }, text: `صُرف ${nf.format(spent)} من ${nf.format(sum)} على ${p.items.length} مشاريع · ${done} مكتمل.`, src: 'مشاريع المحفظة' },
+              ]}
+            />
           </div>
         </div>
       </div>

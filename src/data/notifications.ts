@@ -28,6 +28,7 @@ import { APPROVAL_NOTES } from './approvals/store'
 import { AGR_NOTES } from './agreements/store'
 import { PLAN_NOTES } from './plans/store'
 import { PAY_NOTES } from './payments/store'
+import { CLOSE_NOTES } from './closing/store'
 
 export type NoteKind = 'decide' | 'msg' | 'late' | 'info'
 
@@ -90,6 +91,10 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
   }
   /* BPD-012 · plan sends, returns, approvals, activity claims and amendment decisions */
   for (const n of PLAN_NOTES.filter((x) => x.to === user.name || x.to === user.role)) {
+    out.push({ id: n.id, kind: 'decide', title: n.title, context: n.context, at: n.at, to: n.href, from: projectFrom() })
+  }
+  /* BPD-010 · closing and distress transitions · the next desk or the entity */
+  for (const n of CLOSE_NOTES.filter((x) => x.to === user.name || x.to === user.role)) {
     out.push({ id: n.id, kind: 'decide', title: n.title, context: n.context, at: n.at, to: n.href, from: projectFrom() })
   }
   /* BPD-009 · disbursement transitions · each one notifies the next desk or the entity (rule 17) */
