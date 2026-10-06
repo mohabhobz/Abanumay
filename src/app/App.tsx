@@ -4,6 +4,7 @@ import ProjectPage from '@/features/projects/ProjectPage'
 import HomePage from '@/features/home/HomePage'
 import HomeOverview from '@/features/home/HomeOverview'
 import JourneyPage from '@/features/journey/JourneyPage'
+import GlassBoard from '@/features/board/GlassBoard'
 import ProjectsListPage from '@/features/projects/list/ProjectsListPage'
 import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
@@ -106,6 +107,7 @@ export default function App() {
         <Route path={ROUTES.home} element={<HomePage />} />
         <Route path="/overview" element={<Navigate to={ROUTES.overview} replace />} />
         <Route path={ROUTES.journey} element={<JourneyPage />} />
+        <Route path={ROUTES.glassBoard} element={<GlassBoard />} />
 
         {/* Settings inventory — entered from the account menu, not the rail. */}
         <Route path={ROUTES.settings} element={<SettingsIndexPage />} />

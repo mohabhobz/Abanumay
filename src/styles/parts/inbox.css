@@ -5,6 +5,10 @@
 .ibx-fold{flex:none;display:flex;flex-direction:column;gap:var(--gap)}
 .ibx-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr);gap:var(--gap);align-items:stretch}
 .ibx-side{display:flex;flex-direction:column;gap:var(--gap);min-height:0}
+/* The four numbers stand as a column at the start of the work row (client, 6 Oct) */
+.ibx-main>.kpis{display:flex;flex-direction:column;gap:var(--gap);min-height:0}
+/* `.ibx-main .glass` turns cards into flex columns · the tile keeps its own grid (text beside the line) */
+.ibx-main>.kpis>.kpi{display:grid;flex:1 0 auto;align-content:center}
 /* Two classes: `.glass` (base, loaded after parts) sets `display:flow-root` */
 .ibx-main .glass{display:flex;flex-direction:column;min-height:0}
 .ibx-age .chcols{flex:1;height:auto;min-height:var(--sp-12);margin-top:var(--sp-3)}
@@ -17,7 +21,6 @@
   .ibx-fold{min-height:calc(100dvh - var(--padt) - var(--dock-h))}
   /* On a short view the list scrolls inside its card rather than pushing the page */
   .ibx-listcard .ibx-list{min-height:0;overflow:auto}
-  .ibx-list a{min-height:var(--sp-10)}
   .ibx-money .chstack{margin-top:var(--sp-4)}
   /* The row takes what is left, but never less than the side column's content · the list and the
      map have no floor of their own (min-height 0), so they stretch to whatever the row becomes */
@@ -25,19 +28,20 @@
   .ibx-main>.glass{min-height:0;overflow:hidden}
   .ibx-side>*{flex:1 0 auto}
   /* The map keeps its ratio inside whatever height is left */
-  .ibx-map .map{flex:1;min-height:0;margin-top:var(--sp-2)}
-  .ibx-map .map-slot{flex:1;min-height:0}
-  .ibx-map .map-c{width:auto;height:100%;max-width:100%}
 }
 
 /* ── The queue list ── one line per queue, the whole row is the link */
-.ibx-list{list-style:none;margin:var(--sp-2) 0 0;padding:0;display:flex;flex-direction:column;flex:1;
-  justify-content:space-between}
+.ibx-list{list-style:none;margin:var(--sp-2) 0 0;padding:0;flex:1;display:grid;
+  grid-auto-rows:minmax(var(--h-md),1fr);align-content:stretch}
+.ibx-list>li{display:flex;min-width:0}
 .ibx-list>li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
-.ibx-list a{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--h-md);padding:var(--sp-2) var(--sp-3);
-  margin-inline:calc(var(--sp-3) * -1);border-radius:var(--r1);color:var(--t1);
-  transition:background-color var(--mo-2) var(--ease-std)}
-.ibx-list a:hover{background:var(--ctl-quiet-h)}
+/* Hover colours the row's own ink (name and icons) instead of laying a box over it · the leading
+   icon takes the system's hover motion by itself (svg.ic2), the chevron nudges toward the target */
+.ibx-list a{flex:1;min-width:0;display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-2) 0;color:var(--t1);
+  transition:color var(--mo-2) var(--ease-std)}
+.ibx-list a .ibx-lt,.ibx-list a .ibx-go{transition:color var(--mo-2) var(--ease-std),translate var(--mo-3) var(--ease-out)}
+.ibx-list a:hover .ibx-lt,.ibx-list a:hover .ibx-go,.ibx-list a:focus-visible .ibx-lt{color:var(--ic-hover)}
+.ibx-list a:hover .ibx-go{translate:calc(var(--sp-2) * -1) 0}
 .ibx-list a>.ic2:first-child{flex:none;color:var(--t2)}
 .ibx-l{display:flex;align-items:baseline;gap:var(--sp-2);flex:1;min-width:0;white-space:nowrap}
 .ibx-lt{font-weight:500;overflow:hidden;text-overflow:ellipsis}
@@ -50,7 +54,7 @@
 
 @media (max-width:1099px){
   .ibx-main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-  .ibx-side{grid-column:1 / -1;flex-direction:row}
+  .ibx-side{grid-column:1 / -1;flex-direction:row;order:1}
   .ibx-side>*{flex:1}
 }
 @media (max-width:720px){
@@ -133,10 +137,12 @@
   .bmask.decsheet .mf{flex-direction:column-reverse;align-items:stretch}
   .bmask.decsheet .modal .mf>.btn{width:100%}
   /* The decisions come first on a phone · the four numbers follow the list */
-  .ibx-fold>.ibx-main{order:1}
-  .ibx-fold>.kpis{order:2}
-  .ibx-main:not(.more) .ibx-map,.ibx-main:not(.more) .ibx-side{display:none}
+  .ibx-main>.ibx-listcard{order:-2}
+  .ibx-main>.ibx-more{order:-1}
+  .ibx-main>.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ibx-main:not(.more) .ibx-side{display:none}
   .ibx-more{display:flex}
 }
 .decwhy{margin-top:var(--sp-2)}
 .decwhy li>span:first-of-type{white-space:normal}
+@media (prefers-reduced-motion:reduce){.ibx-list a:hover .ibx-go{translate:none}}

@@ -15,6 +15,8 @@ export const ROUTES = {
   overview: '/reports/overview',
   /** The happy path · one record of each procedure, end to end (meeting 1 Oct, A-7) · own branch */
   journey: '/journey',
+  /** The glass infographic board · a trial for every role (client, 6 Oct) · reached from Reports */
+  glassBoard: '/insights',
   /** The consultant's screen on one referred project (3.2.20) */
   advice: (projectId: string) => `/advice/${projectId}`,
 

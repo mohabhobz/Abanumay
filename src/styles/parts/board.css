@@ -1,0 +1,169 @@
+/* The glass board · trial (client, 6 Oct) · prefix `gb-`.
+   Panels are the system's `.glass`; what's added here is layout, the chart marks, and the glow.
+   Hues come from the chart tokens through one switch per series (`.h1`…`.h5` set `--gb-h`),
+   so a mark never names a color itself. */
+
+.gb{--gb-h:var(--ch-2);--gb-s0:0;container:gb / inline-size}
+.gb .h1{--gb-h:var(--ch-1)}
+.gb .h2{--gb-h:var(--ch-2)}
+.gb .h3{--gb-h:var(--ch-3)}
+.gb .h4{--gb-h:var(--ch-4)}
+.gb .h5{--gb-h:var(--ch-5)}
+
+.gb-main{gap:var(--sp-5)}
+/* On Home the board sits above the fold in a column screen · it keeps its own height */
+.screen>.gb,.screen>.idban{flex:none}
+.gb-row{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);gap:var(--sp-5);align-items:stretch}
+.gb-sub{font-size:var(--fs-3);font-weight:600;margin:0 0 var(--sp-3)}
+.gb .glass{overflow:hidden}
+/* A soft light in the panel's top corner · the sheet's glass, drawn from the brand teal */
+.gb .glass::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(120% 80% at 100% 0, rgba(var(--ch-2C), .10), transparent 60%)}
+
+/* gradient stops · classes because presentation attributes don't take tokens */
+.gb-st-a{stop-color:var(--ch-2)}
+.gb-st-b{stop-color:var(--ch-5)}
+.gb-st-c{stop-color:var(--lime)}
+.gb-st-glow{stop-color:var(--teal);stop-opacity:.42}
+.gb-st-none{stop-color:var(--teal);stop-opacity:0}
+.gb-st-h0{stop-color:var(--gb-h);stop-opacity:.55}
+.gb-st-h1{stop-color:var(--gb-h)}
+.gb-st-w0{stop-color:var(--gb-h);stop-opacity:.42}
+.gb-st-w1{stop-color:var(--gb-h);stop-opacity:0}
+.gb-defs{position:absolute;width:0;height:0;overflow:hidden}
+
+/* ── map ── */
+/* Three columns: details, map, ranking · the map fades out at its four edges so it sits in the
+   panel's glass instead of ending on a hard box (client, 6 Oct) */
+.gb-geo-b{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr);gap:var(--sp-7);align-items:center}
+.gb-geo-b>section{align-self:stretch;display:flex;flex-direction:column}
+.gb-map-s{display:block;width:100%;height:auto;max-height:calc(var(--sp-12) * 5);overflow:visible;
+  -webkit-mask-image:linear-gradient(to left, transparent, var(--t1) 14%, var(--t1) 86%, transparent),
+    linear-gradient(to bottom, transparent, var(--t1) 12%, var(--t1) 88%, transparent);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to left, transparent, var(--t1) 14%, var(--t1) 86%, transparent),
+    linear-gradient(to bottom, transparent, var(--t1) 12%, var(--t1) 88%, transparent);
+  mask-composite:intersect}
+.gb-reg{stroke:var(--map-line);stroke-width:1.4;stroke-linejoin:round;cursor:pointer;
+  transition:fill-opacity var(--mo-2) var(--ease-std), stroke-width var(--mo-2) var(--ease-std)}
+.gb-reg.hot{stroke-width:2.4}
+.gb-reg.on{stroke:var(--lime);stroke-width:3}
+.gb-arc{fill:none;stroke:var(--teal);stroke-width:2.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0;
+  opacity:.8;pointer-events:none;animation:gb-draw var(--mo-loop) var(--ease-data) both}
+.gb-pt{cursor:pointer}
+.gb-pt>circle:first-child{pointer-events:none}
+.gb-pt-c{fill:var(--teal);opacity:.9}
+.gb-pt-k{fill:var(--map-halo)}
+.gb-pt.on .gb-pt-c{fill:var(--lime)}
+.gb-tip rect{fill:var(--g-pop);stroke:var(--edge-1);stroke-width:1}
+.gb-tip text{fill:var(--t1);text-anchor:middle;font-size:var(--fs-8);font-weight:700}
+.gb-tip .gb-tip-v{fill:var(--t2);font-size:var(--fs-6);font-weight:500}
+
+.gb-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-5)}
+.gb-kpis>.gb-kpi{display:flex;flex-direction:column;gap:var(--sp-2)}
+.gb-kpi-k{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-2);color:var(--t2)}
+.gb-kpi-v{font-family:var(--fd);font-size:var(--fd-3);font-weight:700;line-height:var(--lh-head);color:var(--t1)}
+.gb-line{display:block;width:100%;height:var(--sp-3);overflow:visible}
+.gb-line rect{rx:var(--sp-2)}
+.gb-line-t{fill:var(--ch-idle)}
+.gb-line-f,.gb-bar-f{transform-box:fill-box;transform-origin:right center;animation:gb-grow var(--mo-5) var(--ease-data) both}
+
+/* ── rings ── */
+.gb-rings{display:flex;flex-direction:column}
+.gb-rings-g{flex:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-6) var(--sp-5);align-content:space-evenly}
+.gb-ring{display:flex;align-items:center;gap:var(--sp-4)}
+.gb-ring-f{position:relative;flex:none;width:calc(var(--sp-12) * 1.5);aspect-ratio:1}
+.gb-ring-f>svg{display:block;width:100%;height:100%;overflow:visible}
+.gb-ring-t{fill:none;stroke:var(--ch-idle);stroke-width:9}
+.gb-ring-a{fill:none;stroke-width:9;stroke-linecap:round;animation:gb-in var(--mo-5) var(--ease-out) both}
+.gb-knob circle{fill:var(--g-pop);stroke:var(--gb-h);stroke-width:2}
+.gb-knob text{fill:var(--t1);text-anchor:middle;font-size:var(--fs-1);font-weight:700;font-variant-numeric:tabular-nums}
+.gb-ring-i{position:absolute;inset:0;display:grid;place-items:center;color:var(--t2);pointer-events:none}
+.gb-ring-i svg{width:var(--sp-7);height:var(--sp-7)}
+.gb-ring-l{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.gb-ring-l b{font-size:var(--fs-3);font-weight:600}
+
+/* ── bars ── */
+.gb-bars-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+.gb-bar{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"n v" "s s";align-items:center;gap:var(--sp-1) var(--sp-3);padding:var(--sp-2) var(--sp-3);border-radius:var(--r1);cursor:pointer;
+  transition:opacity var(--mo-2) var(--ease-std)}
+.gb-bars-l:has(.gb-bar.on) .gb-bar:not(.on){opacity:.42}
+.gb-bars-l:has(.gb-bar.on) .gb-bar:not(.on):hover{opacity:1}
+.gb-bar:focus-visible{outline:var(--sp-1) solid var(--teal);outline-offset:var(--sp-1)}
+.gb-bar.on .gb-bar-f{filter:drop-shadow(0 0 var(--sp-2) rgba(var(--ch-2C), .55))}
+.gb-bar-n{grid-area:n;font-size:var(--fs-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gb-bar.on .gb-bar-n{font-weight:700}
+.gb-bar-s{grid-area:s;display:block;width:100%;height:var(--sp-3);overflow:visible}
+.gb-bar-s rect{rx:var(--sp-2)}
+.gb-bar-t{fill:var(--ch-idle)}
+.gb-bar-v{grid-area:v;font-size:var(--fs-2);color:var(--t1)}
+/* ── spotlight ── */
+.gb-spot{gap:var(--sp-6);justify-content:flex-start}
+.gb-spot-h{position:relative;display:flex;align-items:center;min-height:var(--h-md)}
+.gb-spot-h h4{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* over the row's end, so it never takes width from the name nor height from the column */
+.gb-spot-x{position:absolute;inset-inline-end:0;top:50%;translate:0 -50%}
+.gb-spot-x.off{visibility:hidden}
+.gb-spot-h h4{margin:0;font-family:var(--fd);font-size:var(--fs-7);font-weight:700;line-height:var(--lh-head)}
+.gb-spot-m{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-2)}
+.gb-spot-m .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gb-spot-m .gb-line{width:100%}
+.gb-spot-k{font-size:var(--fs-2);color:var(--t2)}
+.gb-spot-v{font-family:var(--fd);font-size:var(--fd-3);font-weight:700;line-height:var(--lh-head)}
+.gb-line-sh{fill:var(--lime)}
+/* three small tiles · label over number, both on the start edge */
+.gb-stats{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-3)}
+.gb-stats>div{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-1);padding:var(--sp-3) var(--sp-4);
+  border-radius:var(--r1);background:rgba(var(--ch-2C), .07);box-shadow:inset 0 0 0 1px var(--edge-1)}
+.gb-stats dt{font-size:var(--fs-1);color:var(--t2)}
+.gb-stats dd{margin:0;font-family:var(--fd);font-size:var(--fs-5);font-weight:700}
+.gb-spot-t .gb-sub{margin-bottom:var(--sp-4)}
+.gb-tl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:relative}
+.gb-tl::before{content:"";position:absolute;inset-inline:10%;top:calc(var(--lh-md) + var(--sp-3) + var(--sp-3));height:var(--sp-1);
+  background:linear-gradient(to left, var(--ch-2), var(--ch-5));opacity:.5}
+.gb-tl li{position:relative;display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);text-align:center}
+.gb-tl-v{font-size:var(--fs-3);font-weight:700;line-height:var(--lh-md)}
+.gb-tl-d{display:block;width:var(--sp-5);height:var(--sp-5);border-radius:var(--r-dot);margin-block:var(--sp-2);
+  background:var(--g-pop);box-shadow:inset 0 0 0 var(--sp-1) var(--ch-6)}
+.gb-tl .s1 .gb-tl-d{background:var(--ch-2);box-shadow:0 0 0 var(--sp-2) rgba(var(--ch-2C), .18)}
+.gb-tl .s2 .gb-tl-d{background:var(--lime);box-shadow:0 0 0 var(--sp-3) rgba(var(--ch-4C), .22)}
+.gb-tl .s0 .gb-tl-v{color:var(--t3)}
+.gb-tl-k{font-size:var(--fs-1);color:var(--t2)}
+
+/* ── waves ── */
+.gb-leg{margin:0 0 var(--sp-4);display:flex;flex-wrap:wrap;gap:var(--sp-3) var(--sp-7)}
+.gb-leg>div{display:flex;align-items:baseline;gap:var(--sp-3)}
+.gb-leg dt{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-2);color:var(--t2)}
+.gb-leg dd{margin:0;font-family:var(--fd);font-size:var(--fs-6);font-weight:700;color:var(--t1)}
+.gb-sw{display:block;width:var(--sp-5);height:var(--sp-2);border-radius:var(--rp);background:var(--gb-h)}
+.gb-waves-b{width:100%}
+.gb-waves-s{display:block;width:100%;height:auto;overflow:visible;cursor:crosshair}
+.gb-grid line{stroke:var(--edge-1);stroke-width:1;stroke-dasharray:3 5}
+.gb-grid text,.gb-mo{fill:var(--t3);font-size:var(--fs-1);font-variant-numeric:tabular-nums}
+.gb-grid text{text-anchor:end}
+.gb-mo{text-anchor:middle}
+.gb-wave-a{animation:gb-in var(--mo-5) var(--ease-out) both}
+.gb-wave-l{fill:none;stroke:var(--gb-h);stroke-width:2;stroke-linejoin:round}
+.gb-cross{stroke:var(--t3);stroke-width:1;stroke-dasharray:2 4;pointer-events:none}
+.gb-mk{fill:var(--gb-h);stroke:var(--g-pop);stroke-width:2;pointer-events:none}
+
+@keyframes gb-in{from{opacity:0}}
+@keyframes gb-grow{from{transform:scaleX(var(--gb-s0))}}
+@keyframes gb-draw{from{stroke-dashoffset:1}}
+@media (prefers-reduced-motion:reduce){
+  .gb{--gb-s0:1}
+  .gb-arc{animation:none}
+}
+
+/* By the board's own width, so the same body fits beside the assistant and full width on Home */
+@container gb (max-width:1000px){
+  .gb-row{grid-template-columns:minmax(0,1fr)}
+  .gb-kpi-v{font-size:var(--fs-6)}
+  .gb-geo-b{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .gb-geo-b>.gb-map-s{grid-column:1 / -1;order:-1}
+}
+@container gb (max-width:620px){
+  .gb-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .gb-geo-b,.gb-rings-g{grid-template-columns:minmax(0,1fr)}
+}

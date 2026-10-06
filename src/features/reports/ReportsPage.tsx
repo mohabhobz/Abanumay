@@ -55,6 +55,7 @@ export default function ReportsPage() {
                 مجمّعة هنا في لوحة واحدة وأداة لتشكيل التقارير
               </p>
             </div>
+            <Link className="btn btn-2" to={ROUTES.glassBoard}><Icon name={icons.insight} />لوحة المؤشرات · تجريبية</Link>
           </header>
 
           <Tabs

@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Money } from '@/components/ui'
+import { BoardBody } from '@/features/board/BoardBody'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
-import { df, NOUN, nounAfter, pct } from '@/lib/format'
+import { NOUN, nounAfter, pct } from '@/lib/format'
 import { TONE } from '@/lib/tone'
-import { IdentityBanner } from '@/components/soul'
-import { Columns, SaudiMap, Spark, StackBar, type MapPoint, type MapRow } from '@/components/charts'
+import { Columns, Spark, StackBar } from '@/components/charts'
 import {
   amountTrend, backlogTrend, complianceTrend, inboxFor, oldestTrend, TREND_DAYS,
   type InboxItem, type InboxQueue, type TrendPoint,
@@ -29,8 +29,6 @@ import { budgetOf, myProjects, topEntities } from './mine'
 
    Switching the profile from the account menu swaps the whole page, which is how the three views
    are reviewed in the prototype. */
-
-const GREET = () => (new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير')
 
 export default function HomePage() {
   const { role, user } = useRole()
@@ -97,39 +95,25 @@ export default function HomePage() {
           {/* One screen, no scroll on desktop: the fold takes the view's height, the strip takes
               its own, and the work row gets the rest · each card shrinks its chart into the space
               instead of the page growing. On narrow screens it falls back to a normal stack. */}
+          {/* The foundation board, the same for every role (client, 6 Oct) · then the work */}
+          <BoardBody />
+
           <section className="ibx-fold">
-            <IdentityBanner
-              title={<>{GREET()}، {user.name.split(' ')[0]}</>}
-              sub={<>{df.format(new Date())} · {user.role}</>}
-              action={
-                <Link className="btn btn-ghost btn-sm" to={ROUTES.overview}>
-                  <Icon name={icons.chart} size="sm" />
-                  اللوحة المجمّعة
-                </Link>
-              }
-            />
-
-            <div className="kpis">
-              {tiles.map((t) => (
-                <Link key={t.k} to={t.to} className="kpi glass has-spk">
-                  <TileBody {...t} />
-                </Link>
-              ))}
-            </div>
-
             <div className={`ibx-main${more ? ' more' : ''}`}>
-              <QueueList queues={queues} />
+              <div className="kpis">
+                {tiles.map((t) => (
+                  <Link key={t.k} to={t.to} className="kpi glass has-spk">
+                    <TileBody {...t} />
+                  </Link>
+                ))}
+              </div>
+
               <div className="ibx-more">
                 <button type="button" className="btn btn-2" aria-expanded={more} onClick={() => setMore((x) => !x)}>
                   <Icon name={icons.chart} size="sm" />
-                  {more ? 'أخفِ الخريطة والأرقام' : 'اعرض الخريطة والميزانية والأعمار'}
+                  {more ? 'أخفِ الأعمار والميزانية' : 'اعرض الأعمار والميزانية والجهات'}
                 </button>
               </div>
-
-              <Glass className="ibx-map">
-                <Head title="أين تقع طلباتك" meta={<span className="sub">حسب منطقة المشروع</span>} />
-                <SaudiMap points={mapPoints(all, queues)} unit="طلبًا" amounts list={cityRows(all)} />
-              </Glass>
 
               <div className="ibx-side">
                 <Glass className="ibx-age">
@@ -167,6 +151,8 @@ export default function HomePage() {
                   </ul>
                 </Glass>
               </div>
+
+              <QueueList queues={queues} />
             </div>
           </section>
         </div>
@@ -180,40 +166,10 @@ interface Tile { k: string; v: string; note: string; to: string; trend: TrendPoi
 const lateOf = (q: InboxQueue) => q.items.filter((i) => i.late).length
 const moneyOf = (q: InboxQueue) => q.items.reduce((a, i) => a + (i.amount ?? 0), 0)
 
-/** One point per region · the note says which queues the region's requests sit in */
-function mapPoints(items: InboxItem[], queues: InboxQueue[]): MapPoint[] {
-  const by = new Map<string, InboxItem[]>()
-  for (const i of items) if (i.region) by.set(i.region, [...(by.get(i.region) ?? []), i])
-  return [...by].map(([region, list]) => ({
-    key: region,
-    label: region,
-    value: list.length,
-    amount: list.reduce((a, i) => a + (i.amount ?? 0), 0),
-    note: queues
-      .map((q) => [q.label, list.filter((i) => q.items.includes(i)).length] as const)
-      .filter(([, n]) => n > 0)
-      .map(([l, n]) => `${l} ${n}`)
-      .join(' · '),
-  }))
-}
-
 /** The years the ranking covers · it accumulates across years instead of resetting each one */
 const yearSpan = (rows: { years: string[] }[]): string => {
   const ys = [...new Set(rows.flatMap((r) => r.years))].sort()
   return ys.length > 1 ? `${ys[0]}–${ys[ys.length - 1]}` : ys[0] ?? 'كل السنوات'
-}
-
-/** E-5 · cities under the map, most requests first · swipes sideways when there are many */
-function cityRows(items: InboxItem[]): MapRow[] {
-  const by = new Map<string, MapRow>()
-  for (const i of items) {
-    if (!i.city) continue
-    const r = by.get(i.city) ?? { key: i.city, label: i.city, value: 0, amount: 0 }
-    r.value += 1
-    r.amount = (r.amount ?? 0) + (i.amount ?? 0)
-    by.set(i.city, r)
-  }
-  return [...by.values()].sort((a, b) => b.value - a.value || (b.amount ?? 0) - (a.amount ?? 0))
 }
 
 /* Buckets on the decision boundaries the system already uses: a week is fine, two raise a question,
