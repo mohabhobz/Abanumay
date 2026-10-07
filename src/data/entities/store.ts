@@ -9,6 +9,7 @@ import { ENTITY_DOCS } from '@/data/mock/taxonomy'
 import type { RoleKey } from '@/data/roles'
 import { ENTITY_RULES, fileField, needsApproval } from './rules'
 import { todayIso } from './validate'
+import { ROUTES } from '@/app/routes'
 
 /* Beneficiary entities and their registration (BPD-002) · the actions.
 
@@ -84,6 +85,14 @@ export interface UpdateRequest {
 }
 
 export const UPD_ROWS: UpdateRequest[] = []
+
+/* Cross · notifications · what the entity is told at each step of its registration and update
+   requests (2.2.11 · 2.2.16 · 2.3.upd-20). Read by the notification hub, which sends each one on the
+   channels the settings give the entity (in-app on the portal, email, SMS). */
+export interface EntityNote { id: string; to: string; title: string; context: string; at: string; href: string; topic: 'registration' | 'update' | 'status' }
+export const ENTITY_NOTES: EntityNote[] = []
+const enote = (to: string, topic: EntityNote['topic'], title: string, context: string, at: string, href: string) =>
+  ENTITY_NOTES.unshift({ id: `en-${ENTITY_NOTES.length + 1}`, to, topic, title, context, at: at.slice(0, 10), href })
 
 /* ── Operations ── */
 
@@ -285,6 +294,7 @@ const apply = (x: Op) => {
       r.events = [...(r.events ?? []),
         { kind: 'otp', action: 'تأكيد الإرسال برمز التحقق', by: x.values.clerkName || x.email, at, note: `جوال ${x.values.clerkMobile || ''}` },
         { kind: 'submit', action: 'إرسال الطلب للمراجعة', by: x.values.clerkName || x.email, at }]
+      enote(r.name, 'registration', 'استلمنا طلب تسجيلك', `الطلب ${r.id} قيد المراجعة · نبلغك بالنتيجة`, at, ROUTES.entityPortal)
       break
     }
     case 'regReturn': {
@@ -293,6 +303,7 @@ const apply = (x: Op) => {
       r.state = 'completion'; r.note = x.note; r.returnFields = x.fields
       r.events = [...(r.events ?? []), { kind: 'return', action: 'إعادة للاستكمال', by: x.by, at, note: x.note,
         fields: x.fields.length ? [{ k: 'الحقول المطلوب تعديلها', v: x.fields.map(fieldLabel).join('، ') }] : undefined }]
+      enote(r.name, 'registration', 'أُعيد طلب تسجيلك للاستكمال', x.note, at, ROUTES.entityPortal)
       break
     }
     case 'regResubmit': {
@@ -320,9 +331,11 @@ const apply = (x: Op) => {
         const id = createEntity(r, x.banks, x.by, at)
         r.events = [...(r.events ?? []), { kind: 'approve', action: 'اعتماد وتفعيل', by: x.by, at, note: x.note || undefined,
           fields: [{ k: 'الجهة', v: id }, ...bankFields] }]
+        enote(r.name, 'registration', 'اعتُمد تسجيل جهتك', `أصبح حسابك نشطًا · رقم الجهة ${id}${x.note ? ` · ${x.note}` : ''}`, at, ROUTES.entityPortal)
       } else {
         r.state = 'rejected'
         r.events = [...(r.events ?? []), { kind: 'reject', action: 'رفض وإيقاف · أُرشف الطلب', by: x.by, at, note: x.note, fields: bankFields }]
+        enote(r.name, 'registration', 'قرار طلب التسجيل · مرفوض', x.note, at, ROUTES.entityPortal)
       }
       break
     }
@@ -349,6 +362,7 @@ const apply = (x: Op) => {
         action: x.to === 'نشط' ? 'إعادة تفعيل الجهة' : x.to === 'ملغى الاعتماد' ? 'إلغاء اعتماد الجهة' : 'تعليق اعتماد الجهة',
         by: x.by, at, note: x.reason, fields: [{ k: 'حالة التفعيل', v: `${from} ← ${x.to}` }],
       })
+      enote(e.name, 'status', x.to === 'نشط' ? 'أُعيد تفعيل جهتك' : x.to === 'ملغى الاعتماد' ? 'أُلغي اعتماد جهتك' : 'عُلّق اعتماد جهتك', x.reason, at, ROUTES.entityPortal)
       break
     }
     case 'archive': {
@@ -403,6 +417,7 @@ const apply = (x: Op) => {
         u.state = 'approved'; u.decidedAt = at
         u.events.push({ kind: 'approve', action: 'طُبّق مباشرة · لا يتطلب اعتمادًا', by: 'النظام', at })
       }
+      enote(e.name, 'update', waits ? 'استلمنا طلب تحديث بياناتك' : 'حُدّثت بيانات جهتك', waits ? `الطلب ${u.id} بانتظار الاعتماد · يُعلَّق النشاط حتى البتّ` : 'طُبّقت بيانات الاتصال مباشرة', at, ROUTES.entityPortal)
       break
     }
     case 'updDecide': {
@@ -413,6 +428,7 @@ const apply = (x: Op) => {
       if (x.outcome === 'return') {
         u.state = 'completion'
         u.events.push({ kind: 'return', action: 'إعادة طلب التحديث للاستكمال', by: x.by, at, note: x.note })
+        enote(e.name, 'update', 'أُعيد طلب تحديث بياناتك للاستكمال', x.note, at, ROUTES.entityPortal)
         break
       }
       const o = overlayOf(e.id)
@@ -430,6 +446,7 @@ const apply = (x: Op) => {
         if (brd) o.fields.boardMandateEndsAt = brd.expires!
         u.state = 'approved'; u.decidedAt = at
         u.events.push({ kind: 'approve', action: 'اعتماد طلب التحديث وتطبيقه', by: x.by, at, note: x.note || undefined })
+        enote(e.name, 'update', 'اعتُمد طلب تحديث بياناتك', x.note || 'طُبّقت البيانات وعاد نشاط الجهة', at, ROUTES.entityPortal)
         entityEvent(e.id, { kind: 'edit', action: 'اعتماد تحديث بيانات الجهة', by: x.by, at, note: x.note || undefined,
           fields: [
             ...pending.map((c) => ({ k: c.label, v: `${c.from || '—'} ← ${c.to || '—'}` })),
@@ -440,6 +457,7 @@ const apply = (x: Op) => {
         u.state = 'rejected'; u.decidedAt = at
         u.events.push({ kind: 'reject', action: 'رفض طلب التحديث', by: x.by, at, note: x.note })
         entityEvent(e.id, { kind: 'reject', action: 'رفض طلب تحديث البيانات', by: x.by, at, note: x.note, fields: [{ k: 'الطلب', v: u.id }] })
+        enote(e.name, 'update', 'رُفض طلب تحديث بياناتك', x.note, at, ROUTES.entityPortal)
       }
       /* The pause ends with the decision · back to the status before it, then the expiry rule */
       if (e.activation === 'محدث') {

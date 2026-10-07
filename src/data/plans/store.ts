@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { ESC_RULES } from '@/data/shared/escRules'
 import {
   TODAY, planById, planOfProject, planRows, readyToClose,
 } from '@/data/mock/plans'
@@ -71,8 +72,9 @@ const days = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)
 
 /** «متعثر» · past its end by more than a month without acceptance, or returned twice (12.4.25) */
 export const STUCK_DAYS = 30
+const stuckDays = () => ESC_RULES.stuck.plan ?? STUCK_DAYS
 export const isStuck = (a: PlanActivity, today = TODAY): boolean =>
-  a.state !== 'accepted' && ((a.to && days(a.to, today) > STUCK_DAYS) || (a.notes ?? []).filter((n) => n.kind === 'reject').length >= 2)
+  a.state !== 'accepted' && ((a.to && days(a.to, today) > stuckDays()) || (a.notes ?? []).filter((n) => n.kind === 'reject').length >= 2)
 export const stuckActivities = (p: PlanRow): PlanActivity[] => p.phases.flatMap((ph) => ph.activities).filter((a) => isStuck(a))
 
 /** The plan's execution window against the project's approved duration (12.2.4) */
@@ -299,8 +301,39 @@ function apply(o: Op) {
   }
 }
 
+/* ── History · cross «سجل التدقيق» · every operation on a plan, who and when, in order (12.4.30) ── */
+
+export interface PlanLog { planId: string; at: string; by: string; what: string; note?: string }
+export const PLAN_LOG: PlanLog[] = []
+const REVIEW_SAY = { toManager: 'رفع الخطة لمدير المنح', returnEntity: 'إعادة الخطة للجهة', approve: 'اعتماد الخطة وتثبيت النسخة المرجعية', managerReturn: 'إعادة مدير المنح الخطة للمشرف' } as const
+function describe(o: Op): { what: string; note?: string } {
+  const act = (id: string) => { const p = planById((o as { planId: string }).planId); return p ? actOf(p, id)?.name ?? id : id }
+  switch (o.op) {
+    case 'decide': return { what: o.needs ? 'قرار «يتطلب خطة»' : 'قرار «لا يتطلب خطة»', note: o.reason }
+    case 'open': return { what: o.drafter === 'entity' ? 'فتح الخطة لتكتبها الجهة' : 'فتح الخطة ليكتبها المشرف', note: o.reason }
+    case 'save': return { what: 'حفظ مراحل الخطة وأنشطتها', note: `${o.phases.length} مراحل · ${o.phases.reduce((n, ph) => n + ph.activities.length, 0)} نشاط` }
+    case 'send': return { what: o.actor === 'entity' ? 'إرسال الجهة الخطة للمراجعة' : 'إرسال المشرف الخطة بالنيابة' }
+    case 'review': return { what: REVIEW_SAY[o.act], note: o.note || undefined }
+    case 'start': return { what: `بدء نشاط · ${act(o.actId)}` }
+    case 'evidence': return { what: `رفع شاهد «${o.kind}» · ${act(o.actId)}`, note: o.fileName }
+    case 'evidenceDrop': return { what: `حذف شاهد · ${act(o.actId)}` }
+    case 'claim': return { what: `تقديم نشاط للقبول · ${act(o.actId)}` }
+    case 'accept': return { what: `قبول نشاط · ${act(o.actId)}` }
+    case 'reject': return { what: `إعادة نشاط · ${act(o.actId)}`, note: o.note }
+    case 'comment': return { what: `تعليق على نشاط · ${act(o.actId)}`, note: o.say }
+    case 'change': return { what: 'طلب تعديل جوهري', note: o.say }
+    case 'changeDecide': return { what: o.outcome === 'approve' ? 'اعتماد طلب التعديل' : o.outcome === 'reject' ? 'رفض طلب التعديل' : 'إعادة طلب التعديل', note: o.note }
+  }
+}
+function logOp(o: Op) {
+  const planId = o.op === 'decide' || o.op === 'open' ? planOfProject(o.projectId)?.id : o.planId
+  if (!planId) return
+  PLAN_LOG.unshift({ planId, at: o.at, by: o.by, ...describe(o) })
+}
+export const planLogOf = (planId: string): PlanLog[] => PLAN_LOG.filter((x) => x.planId === planId)
+
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ } }
-const run = (o: Op) => { ops.push(o); apply(o); save(); emit() }
+const run = (o: Op) => { ops.push(o); apply(o); logOp(o); save(); emit() }
 
 /* ── Seed · projects approved with «يتطلب خطة» and no plan yet get their record ── */
 
@@ -314,7 +347,7 @@ function seed() {
 function hydrate() {
   seed()
   try { ops = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Op[] } catch { ops = [] }
-  for (const o of ops) apply(o)
+  for (const o of ops) { apply(o); logOp(o) }
 }
 hydrate()
 

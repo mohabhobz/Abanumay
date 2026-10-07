@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { registrationAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tag,
@@ -462,6 +463,9 @@ export default function RegReviewPage() {
                 ...(clash ? [{ id: 'rg-clash', kind: 'flag' as const, label: 'ترخيص مكرَّر', text: `رقم الترخيص مسجَّل لـ «${clash.name}» بنفس التصنيف.`, src: 'قاعدة 8' }] : []),
                 ...(missingDocs.length ? [{ id: 'rg-docs', kind: 'flag' as const, label: 'مستندات ناقصة', metric: { value: String(missingDocs.length), unit: 'مستند' }, text: missingDocs.map((d) => d.label).join(' · '), src: 'قاعدة 4' }] : []),
                 ...(stale.length ? [{ id: 'rg-stale', kind: 'flag' as const, label: 'وثيقة منتهية', text: stale.map((k) => REG_DOCS.find((d) => d.key === k)?.label ?? k).join(' · '), src: 'عند التقديم' }] : []),
+                /* Cross · spelling and illogical data, the documents read against the form, patterns
+                   across entities and an advisory acceptance score */
+                ...registrationAi(r, missingDocs.length),
               ]}
             />
           </div>

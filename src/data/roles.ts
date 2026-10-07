@@ -20,7 +20,7 @@ import { person } from './people'
 import { capOf } from './approval'
 import type { CurrentUser, DecisionAction } from '@/types/domain'
 
-export type RoleKey = 'supervisor' | 'grants-manager' | 'ceo'
+export type RoleKey = 'supervisor' | 'grants-manager' | 'ceo' | 'admin'
 
 export interface Role {
   key: RoleKey
@@ -85,7 +85,22 @@ export const ROLES: Role[] = [
       { label: 'اعتذار', kind: 'btn-d' },
     ],
   },
+  {
+    /* Cross · the escalation mechanism, the notification channels and the audit log are the system
+       admin's to configure directly (9.5 clause 4) · the seat that edits them in the prototype */
+    key: 'admin',
+    name: 'نورة القحطاني',
+    title: 'مدير النظام',
+    initial: person('نورة القحطاني').initial,
+    photo: person('نورة القحطاني').photo,
+    financialAuthority: null,
+    lens: 'portfolio',
+    actions: [],
+  },
 ]
+
+/** The roles a business rule can name · the system admin configures, she doesn't decide */
+export const STAFF_ROLES: Role[] = ROLES.filter((r) => r.key !== 'admin')
 
 export const roleByKey = (key: string): Role => ROLES.find((r) => r.key === key) ?? ROLES[0]
 

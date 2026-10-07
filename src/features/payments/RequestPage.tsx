@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { readFiles } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
@@ -142,7 +143,8 @@ export default function RequestPage() {
   const blocked = r.checks.filter((c) => !c.ok)
   const bankOk = r.bank.active
   const actions = payActions(r, role.key, asEntity)
-  const readings = readPayRequest(r)
+  /* Cross · the attachments read against the request's amount */
+  const readings = [...readPayRequest(r), ...(asEntity ? [] : [readFiles('ai-pay-docs', 'قراءة مرفقات الطلب', r.docs.map((d) => d.name), { amount: r.asked })])]
   const onAct = (a: PayAction, file?: string) => {
     const out = actOnPay(r.id, a.act, note, user.name, role.key, file)
     if (out.length) { setSaid({ bad: out }); return }

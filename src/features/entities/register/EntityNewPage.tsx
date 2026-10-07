@@ -8,6 +8,8 @@ import {
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AnalysisCard } from '@/components/assistant'
+import { requestPartner } from '@/data/partners/store'
+import { entityById } from '@/data/mock/entities'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
@@ -517,7 +519,14 @@ export default function EntityNewPage() {
                         ? `ينقص ${missing.length} من الحقول الإلزامية`
                         : 'سجّل الجهة'
                   }
-                  onClick={() => { setNewId(registerInternal(val, [...docs], partner ? partnerKind(partner).label : 'جهة مستفيدة', roleByKey(readRole()).name)); setDone(true) }}
+                  onClick={() => {
+                    const by = roleByKey(readRole()).name
+                    const id = registerInternal(val, [...docs], partner ? partnerKind(partner).label : 'جهة مستفيدة', by)
+                    /* 11.2.1 · 13.2.1 · the partnership type is kept on the partner record and waits for the grants manager */
+                    if (strategic && id) requestPartner(id, entityById(id)?.name ?? '', ['portfolio'], false, by)
+                    setNewId(id)
+                    setDone(true)
+                  }}
                 >
                   سجّل الجهة
                 </button>

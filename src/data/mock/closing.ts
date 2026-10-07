@@ -1,4 +1,5 @@
 import { CFG, hydrate } from '@/lib/config'
+import { heatOf, type Heat } from '@/data/shared/escRules'
 import type {
   CloseAudit, CloseCycle, CloseRow, CloseStage, CloseVersion, FinalReport, ProjectEval,
 } from '@/types/domain'
@@ -251,6 +252,9 @@ export const closeRequirements = (c: CloseRow): { ok: boolean; say: string } => 
 /** Past its stage's limit? */
 export const closeLate = (c: CloseRow): boolean =>
   CLOSE_LIMIT[c.stage] > 0 && c.hoursInStage > CLOSE_LIMIT[c.stage]
+
+/** Late or stalled · the stall margin comes from the shared escalation settings (cross · 9.5) */
+export const closeHeat = (c: CloseRow): Heat => heatOf(c.hoursInStage, CLOSE_LIMIT[c.stage] ?? 0, 'closing')
 
 /**
  * The gap between planned and actual · this is **the heart of the review**.

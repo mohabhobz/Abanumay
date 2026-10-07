@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { forecastPlan } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
 import {
@@ -22,6 +23,7 @@ import {
 import {
   acceptActivityBy, claimActivityBy, commentOn, decideChangeBy, dropEvidence, mayDraft, projectWindow,
   rejectActivityBy, reviewPlan, sendPlanFor, startActivity, stuckActivities, uploadEvidence, usePlans,
+  planLogOf,
 } from '@/data/plans/store'
 import { PlanDecisionCard } from './PlanDecisionCard'
 import type { PlanAction } from './PlanActionDock'
@@ -101,10 +103,14 @@ export default function PlanPage() {
   const shown = open.size ? open : first
 
   const readings = useMemo(
-    () => (p ? planReadings(p, (actId) => {
-      setFocus(actId)
-      document.getElementById(`act-${actId}`)?.scrollIntoView({ block: 'center' })
-    }) : []),
+    () => {
+      if (!p) return []
+      const f = forecastPlan(p)
+      return [...planReadings(p, (actId) => {
+        setFocus(actId)
+        document.getElementById(`act-${actId}`)?.scrollIntoView({ block: 'center' })
+      }), ...(f ? [f] : [])]
+    },
     [p, tick],
   )
 
@@ -488,6 +494,20 @@ export default function PlanPage() {
               )}
               {/* The plan decision and what can change · in the main column, the end column is the assistant's alone */}
               {!asEntity && <PlanDecisionCard projectId={p.projectId} approved />}
+              {/* Cross · the plan's history · every operation in order, who and when (12.4.30) */}
+              {!asEntity && planLogOf(p.id).length > 0 && (
+                <Glass>
+                  <Head title="سجل الخطة" meta={<span className="sub"><Num>{planLogOf(p.id).length}</Num> عملية · لا يُعدَّل</span>} />
+                  <ul className="xs-notes">
+                    {planLogOf(p.id).slice(0, 12).map((e, i) => (
+                      <li key={`${e.at}-${i}`}>
+                        <b>{e.what}</b>
+                        <span className="sub">{e.by} · <DateText>{e.at.slice(0, 10)}</DateText>{e.note ? ` · ${e.note}` : ''}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+              )}
               <EditableCard module="plan" state={p.stage} label={planStageLabel(p.stage)} />
             </div>
 

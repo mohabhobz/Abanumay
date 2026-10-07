@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { sessionReport } from '@/data/shared/ai'
+import { AnalysisCard } from '@/components/assistant'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -71,6 +73,8 @@ export default function SessionPage() {
             <ul className="apv-members">{s.members.map((m) => <li key={m}><Person name={m} /></li>)}</ul>
           </Glass>
 
+          {/* Cross · the meeting's aggregate report and the projects' relative priority (7.4 · 6.4) */}
+          {s.items.length > 0 && <AnalysisCard title="تقرير الجلسة" cta="اقرأ الجلسة" readings={sessionReport(s)} ask={false} onAsk={() => undefined} />}
           {s.items.length === 0 && <Glass><Empty title="جدول الأعمال فارغ." note="أضف المشاريع المحالة من القائمة أدناه." /></Glass>}
           {s.items.map((it) => <Item key={it.projectId} s={s} it={it} may={may} me={me} />)}
 

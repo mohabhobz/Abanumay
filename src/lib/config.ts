@@ -80,4 +80,12 @@ export const CFG = {
   budgetRules: 'ab-cfg-budget-rules',
   /** Approval path · manager's final authority, rejection cap, per-entity limits, sessions · BPD-004–007 */
   approvalRules: 'ab-cfg-approval-rules',
+  /** Shared escalation · stall margin per procedure, alert levels and recipients (cross · 9.5) */
+  escalation: 'ab-cfg-escalation',
+  /** Stage limits of the procedures that had none · budget, registration, approval seats, partners */
+  escLimits: 'ab-cfg-esc-limits',
+  /** The project stages' limits (study and completion) · were fixed in code */
+  stageLimits: 'ab-cfg-stage-limits',
+  /** Notification channels per audience and topic · in-app, email, SMS */
+  notify: 'ab-cfg-notify',
 } as const

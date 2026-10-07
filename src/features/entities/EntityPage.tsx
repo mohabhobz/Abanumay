@@ -1,7 +1,9 @@
 import { useMemo, useRef } from 'react'
+import { expiryAhead } from '@/data/shared/ai'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { EntityMark, Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
 import { Crumbs } from '@/components/shell'
+import { PartnerCard } from '@/features/partners/parts'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { query } from '@/data/repository'
@@ -59,7 +61,8 @@ export default function EntityPage() {
   const goTab = (slug: string) => navigate(ROUTES.entity(entity.id, slug))
 
   const detail = entityDetail(entity)
-  const readings = readEntity(entity, projects, detail)
+  const ahead = expiryAhead(detail, entity)
+  const readings = [...(ahead ? [ahead] : []), ...readEntity(entity, projects, detail)]
 
   return (
     <AppLayout assistantContext={assistFor.entity(entity)}>
@@ -126,6 +129,7 @@ export default function EntityPage() {
           <div className="g2">
             <div className="col">
               {active === 'data' && <EntityStatusCard e={entity} />}
+              {active === 'data' && <PartnerCard entityId={entity.id} />}
               {active === 'data' && <EntityDataTab e={entity} d={detail} />}
               {active === 'docs' && <EntityDocsTab d={detail} entityId={entity.id} />}
               {active === 'banks' && <EntityBanksTab d={detail} entityId={entity.id} />}

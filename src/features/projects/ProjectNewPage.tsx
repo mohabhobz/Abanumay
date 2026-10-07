@@ -17,6 +17,7 @@ import {
 import { REQUEST_DOCS, pickSupervisor, submitRequest } from '@/data/intake/flow'
 import { CYCLE, inPeriod, openFields } from '@/data/intake/cycle'
 import { entityById } from '@/data/mock/entities'
+import { isStrategic, routeProject, typeAllowed } from '@/data/partners/store'
 import { useRole } from '@/hooks/useRole'
 
 /* Create a project - rule 31.
@@ -223,7 +224,15 @@ export default function ProjectNewPage() {
   const reqDocs = ENTITY_DOCS.filter((d) => d.required).length
   /* Completion counts the required documents beside the required fields */
   const pct = Math.round((completion(val) * 0.85) + (((reqDocs - docShort.length) / reqDocs) * 15))
-  const issues = useMemo(() => projectIssues(val), [val])
+  const issues = useMemo(() => {
+    /* 11.2.2 · 13.4.1 · the type has to be one the partner may have · a portfolio is a partner's alone */
+    const t = val.ptype === 'محفظة' ? 'portfolio' : 'independent'
+    const own = [
+      ...(val.ptype === 'محفظة' && val.entityId && !isStrategic(val.entityId) ? [{ key: 'ptype', say: 'المحفظة لشريك استراتيجي معتمد وحده', rule: '13.4.1' }] : []),
+      ...(val.entityId && isStrategic(val.entityId) && !typeAllowed(val.entityId, t) ? [{ key: 'ptype', say: `«${val.ptype || 'مستقل'}» غير مسموح لهذا الشريك`, rule: '11.2.2' }] : []),
+    ]
+    return [...projectIssues(val), ...own]
+  }, [val])
   const shortBy = useMemo(
     () => Object.fromEntries(STAGES.map((s) => [s.key, s.key === DOCS_STAGE ? docShort : shortIn(s, val)])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -251,7 +260,10 @@ export default function ProjectNewPage() {
   }
 
   const send = () => {
+    /* 13.2.2 · a portfolio isn't a project · it's created on its own page with the partner fixed */
+    if (val.ptype === 'محفظة') { navigate(`${ROUTES.portfolioNew}?entity=${val.entityId}${asEntity ? '&as=partner' : ''}`); return }
     const id = submitRequest({ ...val, endAt }, Object.keys(docs), asEntity ? entityById(val.entityId)?.name ?? user.name : user.name, asEntity)
+    if (val.platform === 'منصة إحسان' || isStrategic(val.entityId)) routeProject(id, val.platform === 'منصة إحسان', 'independent', user.name)
     setSentId(id)
   }
 

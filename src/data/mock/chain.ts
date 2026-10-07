@@ -115,6 +115,17 @@ function buildNodes(): BudgetNode[] {
     rootAvail += tAvail
   }
 
+  /* Strategic partners (11.1.input-2 · 13.2.7) · the approved allocation the Ehsan projects and
+     the partners' portfolios are held on · a portfolio is held here once, as a whole */
+  put('tPg1', 'مخصص دعم المشاريع عبر منصة إحسان', 'sub', 'tPf1', 15_000_000, 15_000_000)
+  put('tPf1', 'مجال منصة إحسان', 'main', 'tP', 15_000_000, 15_000_000)
+  put('tPg2', 'مخصص محافظ الشركاء', 'sub', 'tPf2', 4_000_000, 4_000_000)
+  put('tPf2', 'مجال محافظ الشركاء الآخرين', 'main', 'tP', 4_000_000, 4_000_000)
+  put('tP', 'مسار الشراكات الاستراتيجية', 'main', 'b0', 19_000_000, 19_000_000)
+  out[out.length - 1].directionId = 'dir-community'
+  rootAlloc += 19_000_000
+  rootAvail += 19_000_000
+
   put('b0', 'ميزانية المنح · 2026', 'base', null, rootAlloc, rootAvail)
   return out
 }

@@ -1,6 +1,7 @@
 import { CFG, hydrate } from '@/lib/config'
+import { heatOf } from '@/data/shared/escRules'
 import type { PayCheck, PayEvent, PayRequest, PayState } from '@/types/domain'
-import { AWAITING_AGREEMENT, SCENARIO, projectRows } from './projects'
+import { AWAITING_AGREEMENT, SCENARIO, VIA_EHSAN, projectRows } from './projects'
 import { entityById } from './entities'
 import { agreements } from './agreements'
 
@@ -58,11 +59,8 @@ export const PAY_LIMIT: Record<PayState, number> = hydrate(CFG.payLimits, {
 export type PayHeat = 'ok' | 'late' | 'stuck'
 
 export const payHeat = (r: PayRequest): PayHeat => {
-  const lim = PAY_LIMIT[r.state]
-  if (!lim) return 'ok'
-  if (r.hoursInState > lim * 2) return 'stuck'
-  if (r.hoursInState > lim) return 'late'
-  return 'ok'
+  /* The stall margin is the shared escalation setting (cross · 9.5) · twice the limit by default */
+  return heatOf(r.hoursInState, PAY_LIMIT[r.state] ?? 0, 'payment')
 }
 
 /** A request is held if even one condition isn't met · rules 3, 6, 10, and 11 */
@@ -211,7 +209,7 @@ const agreementActive = (id: string): boolean => {
   return !rows.length || rows.some((a) => a.stage === 'active')
 }
 const eligible = projectRows.filter(
-  (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) && p.statusGroup === 'في التشغيل' &&
+  (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) && !VIA_EHSAN.has(p.id) && p.statusGroup === 'في التشغيل' &&
     !p.stage.includes('الإتفاقي') && agreementActive(p.id),
 )
 

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { GateArc, Money, Num, Tabs } from '@/components/ui'
 import { DecisionBar, Crumbs } from '@/components/shell'
+import { EhsanCard, EhsanNoAgreement, RoutingCard } from '@/features/partners/parts'
+import { viaEhsan } from '@/data/partners/store'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useFillHeight } from '@/hooks/useFillHeight'
@@ -25,6 +27,7 @@ import { closeOfProject } from '@/data/mock/closing'
 import { openClosing } from '@/data/closing/store'
 import { DistressCard } from '@/features/closing/DistressCard'
 import { AnalysisCard } from '@/components/assistant'
+import { ehsanAi, projectAi } from '@/data/shared/ai'
 import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { projectLog } from '@/data/mock/log'
@@ -287,8 +290,15 @@ export default function ProjectPage() {
   )
 
   const analysis = useMemo(
-    () => [...(row ? readJourney(row, journeys.get(row.id)) : []), ...readInsights(fixtures.insights)],
-    [row],
+    () => [
+      ...(row ? readJourney(row, journeys.get(row.id)) : []),
+      /* Cross · the readings of the reviewer's seat and of a project through Ehsan */
+      ...(row && row.statusGroup === 'في الدراسة' && !asEntity ? projectAi(row) : []),
+      ...(row && row.platform === 'منصة إحسان' && !asEntity ? ehsanAi(row) : []),
+      ...readInsights(fixtures.insights),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [row, asEntity, flow?.events.length],
   )
 
   return (
@@ -355,6 +365,9 @@ export default function ProjectPage() {
             {/* === Main column === */}
             <div className="col">
               {active === 'data' && row && !asEntity && <RecommendationCard row={row} />}
+              {/* BPD-011 · the routing decision under study, and an Ehsan project's own management after it */}
+              {active === 'data' && row && !asEntity && (row.statusGroup === 'في الدراسة' || row.platform) && <RoutingCard row={row} />}
+              {active === 'data' && row && !asEntity && row.platform && row.statusGroup !== 'في الدراسة' && <EhsanCard row={row} />}
               {/* 12.2.2 · the plan decision is part of the project's data */}
               {active === 'data' && row && !asEntity && planApproved && <PlanDecisionCard projectId={row.id} approved={planApproved} />}
               {active === 'approval' && row && <ApprovalTab row={row} />}
@@ -394,14 +407,15 @@ export default function ProjectPage() {
               {active === 'history' && (
                 <HistoryTab entity={entity} currentId={project.id} year={row?.year ?? '2026'} />
               )}
-              {active === 'agreement' && agreementsOfProject(project.id).length > 0 && (
+              {active === 'agreement' && viaEhsan(project.id) && <EhsanNoAgreement />}
+              {active === 'agreement' && !viaEhsan(project.id) && agreementsOfProject(project.id).length > 0 && (
                 <ProjectAgreements
                   list={agreementsOfProject(project.id)}
                   onAdditional={asEntity ? undefined : () => navigate(ROUTES.agreementNew(project.id))}
                   additionalBlock={agreementBlock || (projectOptions().find((x) => x.id === project.id)?.additional ? '' : 'تُضاف اتفاقية إضافية لمشروع له اتفاقية سارية')}
                 />
               )}
-              {active === 'agreement' && agreementsOfProject(project.id).length === 0 && (
+              {active === 'agreement' && !viaEhsan(project.id) && agreementsOfProject(project.id).length === 0 && (
                 <AgreementTab
                   agreement={null}
                   payments={detail.payments}

@@ -31,6 +31,11 @@ export const ROUTES = {
    * projects under it, and its route is kept separate so it doesn't collide with project ids.
    */
   portfolio: (id: string) => `/projects/portfolio/${id}`,
+  /** A new portfolio · internal, or the partner's request from its portal (`?as=partner&entity=`) (13.2.2 · 13.2.3) */
+  portfolioNew: '/projects/portfolio/new',
+  /** Strategic partners · the partners, their portfolios, the Ehsan projects and the finance desk (BPD-011 · BPD-013) */
+  partners: '/partners',
+  partnersTab: (tab: string) => `/partners?tab=${tab}`,
   project: (id: string) => `/projects/${id}`,
   projectTab: (id: string, tab: string) => `/projects/${id}/${tab}`,
 
@@ -43,6 +48,14 @@ export const ROUTES = {
   settings: '/settings',
   /** Roles and users × every module · the system admin's screen, opened from the account menu. */
   permissions: '/settings/permissions',
+  /** Cross · the escalation mechanism · stage days, stall margins, alert levels (the system admin's) */
+  escalationSettings: '/settings/escalation',
+  /** Cross · notification channels per audience and topic, and the outbox of what was sent */
+  notifyHub: '/settings/notifications',
+  /** Cross · the late and stalled report of every procedure */
+  escalation: '/escalation',
+  /** Cross · the audit log of every module · append-only, filterable */
+  audit: '/audit',
 
   entities: '/entities',
   entity: (id: string, tab?: string) => `/entities/${id}${tab && tab !== 'data' ? `/${tab}` : ''}`,

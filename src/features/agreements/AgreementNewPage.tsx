@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { readTemplate } from '@/data/shared/ai'
 import { MISSING_ITEM, NOUN, nounAfter } from '@/lib/format'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -452,7 +453,7 @@ export default function AgreementNewPage() {
               title="مراجعة الاتفاقية"
               cta="راجع الاتفاقية"
               empty="كل الخطوات مكتملة · الاتفاقية جاهزة للإرسال إلى مدير المنح."
-              readings={blockerReadings(blocks, 'يمنع الإرسال')}
+              readings={[...(project ? [readTemplate(project, template || undefined)] : []), ...blockerReadings(blocks, 'يمنع الإرسال')]}
             />
           </div>
         </div>

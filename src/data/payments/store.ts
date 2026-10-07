@@ -48,6 +48,12 @@ const projectOf = (id: string) => projectRows.find((p) => p.id === id)
 const isOpen = (r: PayRequest) => r.state !== 'paid' && r.state !== 'closed'
 
 /** 9.4.1 · the agreement in force · the agreements store decides when the project has rows there */
+/** Projects whose money another channel executes · the partners store registers Ehsan's (11.2.17) ·
+    a registry, not an import, so the two stores stay one-way */
+let ehsanGate: (projectId: string) => string = () => ''
+export const setEhsanGate = (f: (projectId: string) => string) => { ehsanGate = f }
+export const routedElsewhere = (projectId: string): string => ehsanGate(projectId)
+
 export function agreementOk(projectId: string): boolean {
   if (agreementsOfProject(projectId).length) return Boolean(inForceOf(projectId))
   const own = payRequests.find((r) => r.projectId === projectId)
@@ -167,7 +173,7 @@ export function payableProjects(entityId?: string): PayProject[] {
   const out: PayProject[] = []
   for (const id of ids) {
     const p = projectOf(id)
-    if (!p || (entityId && p.entityId !== entityId)) continue
+    if (!p || (entityId && p.entityId !== entityId) || ehsanGate(id)) continue
     const running = p.statusGroup === 'في التشغيل' && !p.stage.includes('الإتفاقي')
     const agr = agreementOk(id)
     const slots = scheduleOf(id)

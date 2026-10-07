@@ -12,7 +12,7 @@ import { NOUN, nf, nounAfter } from '@/lib/format'
 import { fiscalYears, fundSources, docSources, yearOverlap } from '@/data/mock/budgetTree'
 import { allBudgets } from '@/data/mock/chain'
 import { APPROVAL_MATRIX } from '@/data/approval'
-import { ROLES, readRole, roleByKey, type RoleKey } from '@/data/roles'
+import { STAFF_ROLES, readRole, roleByKey, type RoleKey } from '@/data/roles'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import {
   DIRECTIONS, addSource, addYear, renameSource, resetBudget, saveDirection, useBudget,
@@ -368,7 +368,7 @@ function LimitsTab() {
   )
 }
 
-const ROLE_OPTS = ROLES.map((r) => ({ value: r.key, label: r.title }))
+const ROLE_OPTS = STAFF_ROLES.map((r) => ({ value: r.key, label: r.title }))
 
 function RulesTab() {
   const [saved, setSaved] = useState<BudgetRules>(() => structuredClone(BUDGET_RULES))

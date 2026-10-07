@@ -7,7 +7,7 @@ import {
   DEFAULT_REPORT_TAB, REPORT_TABS, ROUTES, type ReportTabSlug,
 } from '@/app/routes'
 import { isolate, nf, countOf, NOUN, nounAfter } from '@/lib/format'
-import { PROCESSES, coverage, headlineOf, measuredIn } from '@/data/kpi'
+import { kpiProcesses, kpiCoverage, headlineOf, measuredIn } from '@/data/kpi'
 import { LIVE_REPORTS, PACKS, packByKey } from '@/data/reports'
 import { KpiValue } from './KpiValue'
 import { basisText } from './basis'
@@ -41,6 +41,8 @@ export default function ReportsPage() {
 
   const active: ReportTabSlug =
     REPORT_TABS.find((t) => t.slug === tab)?.slug ?? DEFAULT_REPORT_TAB
+  const PROCESSES = kpiProcesses()
+  const coverage = kpiCoverage(PROCESSES)
   const measuredPct = Math.round((coverage.measured / coverage.total) * 100)
 
   return (
@@ -55,7 +57,11 @@ export default function ReportsPage() {
                 مجمّعة هنا في لوحة واحدة وأداة لتشكيل التقارير
               </p>
             </div>
-            <Link className="btn btn-2" to={ROUTES.glassBoard}><Icon name={icons.insight} />لوحة المؤشرات · تجريبية</Link>
+            <div className="rowf gp-2">
+              {/* 11.4.26 · 13.2.27 · the Ehsan projects and the sub-projects, marked by their kind */}
+              <Link className="btn btn-2" to={ROUTES.partnersTab('report')}><Icon name={icons.link} />تقرير الشركاء</Link>
+              <Link className="btn btn-2" to={ROUTES.glassBoard}><Icon name={icons.insight} />لوحة المؤشرات · تجريبية</Link>
+            </div>
           </header>
 
           <Tabs

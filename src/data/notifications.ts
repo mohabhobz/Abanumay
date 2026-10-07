@@ -14,21 +14,20 @@
  */
 import { useSyncExternalStore } from 'react'
 import { ROUTES } from '@/app/routes'
-import { query, stagePressure } from './repository'
-import { payHeat, payRequests, payStateLabel } from './mock/disbursements'
-import { agrHeat, agreements, agrStageLabel } from './mock/agreements'
-import { closeLate, closeRows, closeStageLabel } from './mock/closing'
+import { query } from './repository'
 import { regRows } from './mock/registration'
 import { entityById } from './mock/entities'
 import { projectById } from './mock/projects'
 import { countOf, NOUN, projectCode } from '@/lib/format'
 import { FLOW_NOTES } from './intake/flow'
+import { escAlertsFor } from './shared/escalation'
 import { BUDGET_NOTES } from './budget/store'
 import { APPROVAL_NOTES } from './approvals/store'
 import { AGR_NOTES } from './agreements/store'
 import { PLAN_NOTES } from './plans/store'
 import { PAY_NOTES } from './payments/store'
 import { CLOSE_NOTES } from './closing/store'
+import { PARTNER_NOTES } from './partners/store'
 
 export type NoteKind = 'decide' | 'msg' | 'late' | 'info'
 
@@ -66,7 +65,6 @@ export const NOTE_GROUPS: { kind: NoteKind; label: string }[] = [
 
 const HOUR = 3_600_000
 const dayOf = (msAgo: number): string => new Date(Date.now() - msAgo).toISOString().slice(0, 10)
-const days = (h: number) => Math.max(1, Math.round(h / 24))
 
 const projectFrom = (entityId?: string): NoteFrom =>
   ({ type: 'project', logo: entityId ? entityById(entityId)?.logo : undefined })
@@ -105,6 +103,10 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
   for (const n of AGR_NOTES.filter((x) => x.to === user.name || x.to === user.role)) {
     out.push({ id: n.id, kind: 'decide', title: n.title, context: n.context, at: n.at, to: n.href, from: projectFrom() })
   }
+  /* BPD-011 · BPD-013 · partner approvals, portfolio decisions, sub-project requests and the finance desk */
+  for (const n of PARTNER_NOTES.filter((x) => x.to === user.name || x.to === user.role)) {
+    out.push({ id: n.id, kind: 'decide', title: n.title, context: n.context, at: n.at, to: n.href, from: projectFrom() })
+  }
   for (const n of BUDGET_NOTES.filter((x) => x.to === user.name || x.to === user.role)) {
     out.push({ id: n.id, kind: 'decide', title: n.title, context: n.context, at: n.at, to: n.href, from: { type: 'system' } })
   }
@@ -139,34 +141,15 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
     })
   })
 
-  /* Past its limit */
-  for (const p of query.projects({ overdue: true, sort: 'waiting', pageSize: 4 }).rows) {
-    const over = p.hoursInStage - p.stageLimit
+  /* Past its limit · cross «التصعيد» · the shared mechanism's alerts addressed to this person or
+     desk: once on the day a stage passed its days, then one a day while it stays stalled (9.5) */
+  for (const al of escAlertsFor(user.name, user.role ?? '')) {
+    const it = al.item
     out.push({
-      id: `late-${p.id}`, kind: 'late', title: p.name,
-      context: `${p.stage} · ${countOf(days(over), NOUN.day)} فوق الحدّ · ${p.owner ?? 'بلا مالك'}`,
-      at: dayOf(over * HOUR), to: ROUTES.project(p.id), from: projectFrom(p.entityId),
-    })
-  }
-  for (const r of payRequests.filter((x) => payHeat(x) !== 'ok').slice(0, 3)) {
-    out.push({
-      id: `pay-${r.id}`, kind: 'late', title: `الدفعة ${r.no} من ${r.of} · ${r.projectName}`,
-      context: `${payStateLabel(r.state)} · ${payHeat(r) === 'stuck' ? 'متعثّرة' : 'متأخّرة'} منذ ${countOf(days(r.hoursInState), NOUN.day)}`,
-      at: dayOf(r.hoursInState * HOUR), to: ROUTES.payment(r.id), from: projectFrom(r.entityId),
-    })
-  }
-  for (const a of agreements.filter((x) => agrHeat(x) !== 'ok').slice(0, 2)) {
-    out.push({
-      id: `agr-${a.id}`, kind: 'late', title: `اتفاقية · ${a.projectName}`,
-      context: `${agrStageLabel(a.stage)} · ${a.entityName}`,
-      at: dayOf(a.hoursInStage * HOUR), to: ROUTES.agreement(a.id), from: projectFrom(a.entityId),
-    })
-  }
-  for (const c of closeRows.filter(closeLate).slice(0, 2)) {
-    out.push({
-      id: `cls-${c.id}`, kind: 'late', title: `إغلاق · ${c.projectName}`,
-      context: `${closeStageLabel(c.stage)} · ${c.entityName}`,
-      at: dayOf(c.hoursInStage * HOUR), to: ROUTES.closing(c.id), from: projectFrom(c.entityId),
+      id: al.level === 'late' ? `late-${it.id}` : `stall-${it.id}`, kind: 'late',
+      title: al.level === 'late' ? `تجاوز مدته · ${it.title}` : `متعثر · ${it.title}`,
+      context: `${it.stage} · ${countOf(it.over, NOUN.day)} فوق المدة${al.level === 'stalled' ? ` · تنبيه يومي ${al.day}` : ''} · ${it.owner}`,
+      at: al.at, to: it.href, from: { type: 'system' },
     })
   }
 
@@ -176,14 +159,6 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
       id: `ok-${r.id}`, kind: 'info', title: `اعتُمد تسجيل ${r.name}`,
       context: `${r.type} · ${r.city}${r.reviewDays ? ` · خلال ${countOf(r.reviewDays, NOUN.day)}` : ''}`,
       at: r.decidedAt!, to: ROUTES.entityRequest(r.id), from: { type: 'entity' },
-    })
-  }
-  const stalled = query.projects({ overdue: true }).rows.filter((p) => stagePressure(p) > 2).length
-  if (stalled) {
-    out.push({
-      id: 'info-stalled', kind: 'info', title: 'ملخّص التعثّر الأسبوعي',
-      context: `${stalled} ${stalled === 1 ? 'مشروع تجاوز' : 'مشاريع تجاوزت'} ضعف حدّ القسم`,
-      at: dayOf(24 * HOUR), to: `${ROUTES.projects}?overdue=1&sort=waiting`, from: { type: 'system' },
     })
   }
   return out

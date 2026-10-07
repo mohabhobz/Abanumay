@@ -5,7 +5,7 @@ import { SaveBar } from '@/components/shell'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import { ROUTES } from '@/app/routes'
 import { capOf } from '@/data/approval'
-import { ROLES, type RoleKey } from '@/data/roles'
+import { STAFF_ROLES, type RoleKey } from '@/data/roles'
 import { staffNames } from '@/data/people'
 import { entityRows } from '@/data/mock/entities'
 import { APPROVAL_RULES, saveApprovalRules, type ApprovalRules, type EntityLimit } from '@/data/approvals/rules'
@@ -15,7 +15,7 @@ import { resetApprovals } from '@/data/approvals/store'
    (4.3.1 · 4.3.2 · 5.3.1 · 6.3.2 · 6.4.19 – 6.4.21). The caps themselves stay in the approval matrix,
    one source for the whole system; this tab holds what the matrix doesn't. */
 
-const ROLE_OPTS = ROLES.map((r) => ({ value: r.key, label: r.title }))
+const ROLE_OPTS = STAFF_ROLES.map((r) => ({ value: r.key, label: r.title }))
 const STAFF = () => staffNames().map((n) => ({ value: n, label: n }))
 
 export function ApprovalRulesTab() {

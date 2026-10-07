@@ -158,3 +158,13 @@ export const clearOtp = (): void => {
   current = null
   try { sessionStorage.removeItem(OTP_KEY) } catch { /* ignore */ }
 }
+
+/** Cross · notifications · every password set or changed, with the account it belongs to (2.3.pw-8) */
+export const passwordEvents = (): { account: PortalAccount; at: string; created: boolean }[] => {
+  const all = readPass()
+  const list = accounts()
+  return Object.entries(all).flatMap(([id, v]) => {
+    const account = list.find((a) => a.id === id)
+    return account ? [{ account, at: v.at, created: id.startsWith('n-') }] : []
+  })
+}

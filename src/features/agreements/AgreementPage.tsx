@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { readClauses } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { HEAT_TONE } from '@/lib/tone'
 import {
@@ -376,6 +377,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
               readings={asEntity || a.stage === 'active' || a.stage === 'cancelled' ? [] : [
                 ...issues.map((x, i) => ({ id: `ag-i${i}`, kind: 'flag' as const, label: 'يمنع الإرسال', text: x.say, src: x.rule })),
                 ...hints.map((h) => ({ id: `ag-h${h.id}`, kind: h.tone === 'warn' ? 'flag' as const : 'note' as const, label: 'مراجعة البنود', text: h.text, src: 'مراجعة استرشادية · قاعدة 21' })),
+                readClauses(a),
               ]}
             />
           </div>

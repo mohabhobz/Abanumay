@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Glass, Head, MultiSelect, Num, Switch, Tag } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { CfgNum } from '@/features/settings/CfgEdit'
-import { ROLES, type RoleKey } from '@/data/roles'
+import { STAFF_ROLES, type RoleKey } from '@/data/roles'
 import { ENTITY_RULES, FILE_FIELDS, saveEntityRules, type EntityRules } from '@/data/entities/rules'
 import { resetEntities } from '@/data/entities/store'
 
@@ -11,7 +11,7 @@ import { resetEntities } from '@/data/entities/store'
    The first card holds a decision the foundation still owes: the document refuses an incomplete
    registration, the client asked to let it through. Both are built; this switch chooses. */
 
-const ROLE_OPTS = ROLES.map((r) => ({ value: r.key, label: r.title }))
+const ROLE_OPTS = STAFF_ROLES.map((r) => ({ value: r.key, label: r.title }))
 
 export function EntityRulesTab() {
   const [saved, setSaved] = useState<EntityRules>(() => structuredClone(ENTITY_RULES))

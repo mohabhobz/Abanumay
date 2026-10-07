@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { HEAT_TONE } from '@/lib/tone'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, Num, Person, Segments, Tag,
@@ -14,6 +14,7 @@ import {
   PAY_LIMIT, PAY_STATES, payHeat, payKpi, payRequests, payStateLabel, payStateWho,
 } from '@/data/mock/disbursements'
 import type { PayRequest, PayState } from '@/types/domain'
+import { stuckSay } from '@/data/shared/escRules'
 
 const KEYS = ['heat'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -61,11 +62,8 @@ export default function LatePage() {
   const navigate = useNavigate()
   const { values: v, set } = useQueryParams<Params>(KEYS)
   const k = payKpi()
-  const [limits, setLimits] = useState<Record<string, number>>(() =>
-    Object.fromEntries(PAY_STATES.filter((s) => PAY_LIMIT[s.key]).map((s) => [
-      s.key, Math.round(PAY_LIMIT[s.key] / 24),
-    ])),
-  )
+  /* The days come from the shared escalation settings now (cross · 9.5) · read, not a local draft */
+  const limits: Record<string, number> = Object.fromEntries(PAY_STATES.filter((s) => PAY_LIMIT[s.key]).map((s) => [s.key, Math.round(PAY_LIMIT[s.key] / 24)]))
 
   const rows = useMemo(
     () =>
@@ -136,26 +134,19 @@ export default function LatePage() {
           <Glass>
             <Head
               title="مدد المراحل"
-              meta={<Tag tone="warn">مؤقتة · بانتظار المؤسسة</Tag>}
+              meta={<Link className="lnk" to={ROUTES.escalation}>المتأخر في جميع الإجراءات</Link>}
             />
             <div className="paylim">
               {PAY_STATES.filter((s) => PAY_LIMIT[s.key]).map((s) => (
-                <label className="paylim-i" key={s.key}>
+                <span className="paylim-i" key={s.key}>
                   <span className="lb">{s.label}</span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={limits[s.key]}
-                    onChange={(e) =>
-                      setLimits((x) => ({ ...x, [s.key]: Number(e.target.value) || 1 }))
-                    }
-                  />
-                  <span className="sub">يومًا · متعثر بعد <span className="num">{limits[s.key]! * 2}</span></span>
-                </label>
+                  <span className="num">{limits[s.key]}</span>
+                  <span className="sub">يومًا · متعثر {stuckSay('payment')}</span>
+                </span>
               ))}
             </div>
             <p className="sub cnote">
-              يجعل البند 4 إعداد الآلية صلاحية لمدير النظام مباشرة بلا مسار موافقات ·
+              تُضبط المدد وقاعدة التعثر من <Link className="lnk" to={ROUTES.escalationSettings}>آلية التصعيد</Link> صلاحيةً لمدير النظام مباشرة بلا مسار موافقات ·
               ويُطلق التجاوز تنبيهًا <b>مرة واحدة</b>، والتعثّر تنبيهًا <b>يوميًا</b> حتى
               اتخاذ الإجراء أو الانتقال.
             </p>

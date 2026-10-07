@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { readAllocation } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   Blockers, DateField, BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, MultiSelect, Nil, Num,
@@ -379,6 +380,7 @@ export default function BudgetDocPage() {
               readings={editable ? [
                 ...head.map((t, i) => ({ id: `bd-h${i}`, kind: 'flag' as const, label: 'بيانات الميزانية', text: t, src: 'القسم الأول' })),
                 ...issues.map((x, i) => ({ id: `bd-i${i}`, kind: 'flag' as const, label: 'البنود', text: x.text, src: x.why })),
+                ...(doc.total > 0 ? [readAllocation(doc.total)] : []),
               ] : []}
             />
           </div>

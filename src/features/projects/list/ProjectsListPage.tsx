@@ -477,6 +477,7 @@ export default function ProjectsListPage() {
                 changing it shows who's affected. */}
             <PageActions
               settings={ROUTES.projectSettings}
+              secondary={[{ label: 'الشركاء والمحافظ', to: ROUTES.partners, icon: 'link' }]}
               create={{ label: 'مشروع جديد', to: ROUTES.projectNew }}
             />
           </header>

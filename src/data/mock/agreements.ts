@@ -1,8 +1,9 @@
 import { CFG, hydrate } from '@/lib/config'
+import { heatOf } from '@/data/shared/escRules'
 import type {
   AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, AgreementStage,
 } from '@/types/domain'
-import { AWAITING_AGREEMENT, SCENARIO, projectRows } from './projects'
+import { AWAITING_AGREEMENT, SCENARIO, VIA_EHSAN, projectRows } from './projects'
 import { entityById } from './entities'
 
 /* Agreements · 28 steps and 26 rules
@@ -82,11 +83,7 @@ export const AGR_LIMIT: Record<AgreementStage, number> = hydrate(CFG.agrLimits, 
 export type AgrHeat = 'ok' | 'late' | 'stuck'
 
 export const agrHeat = (a: AgreementRow): AgrHeat => {
-  const lim = AGR_LIMIT[a.stage]
-  if (!lim) return 'ok'
-  if (a.hoursInStage > lim * 2) return 'stuck'
-  if (a.hoursInStage > lim) return 'late'
-  return 'ok'
+  return heatOf(a.hoursInStage, AGR_LIMIT[a.stage] ?? 0, 'agreement')
 }
 
 /**
@@ -198,7 +195,7 @@ const MIN_PER_STAGE = 3
 
 /** Rule 1 · no agreement before the project's approval is fully complete */
 const eligible = projectRows.filter(
-  (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) &&
+  (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) && !VIA_EHSAN.has(p.id) &&
     (p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل' || p.stage.includes('الإتفاقي')),
 )
 

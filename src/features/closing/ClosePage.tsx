@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { closingAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
 import {
@@ -85,7 +86,7 @@ export default function ClosePage() {
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
 
-  const readings = useMemo(() => (c ? closeReadings(c) : []), [c, tick])
+  const readings = useMemo(() => (c ? [...closeReadings(c), ...closingAi(c)] : []), [c, tick])
 
   if (!c) {
     return (

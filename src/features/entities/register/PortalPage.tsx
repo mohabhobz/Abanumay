@@ -32,8 +32,10 @@ import { formatIssue } from '@/data/entities/validate'
 import { entityCode } from '@/lib/format'
 import { Field } from './Field'
 import { AssistantAside } from '@/features/shared/AssistantAside'
+import { PF_STAGE_SAY, PF_STAGE_TONE, isStrategic, pfOfEntity, typeAllowed, usePartners } from '@/data/partners/store'
 import type { Reading } from '@/components/assistant'
 import { PortalAccount } from './PortalAccount'
+import { PortalNotices } from './PortalNotices'
 
 /* Entity portal - "a screen that only shows its own application."
 
@@ -71,6 +73,7 @@ export default function PortalPage() {
   const navigate = useNavigate()
   const { values } = useQueryParams(['req', 'entity'])
   useFlow()
+  usePartners()
   useEntityFlow()
   /* Once approved the portal is the entity's own · its projects, its file and a new request
      (0.2.1 · 3.2.5 · 2.3.upd-1). `?entity=` opens an entity's portal; an entity registered before
@@ -400,6 +403,27 @@ export default function PortalPage() {
                 </ul>
               </Glass>
               </>}
+
+              {/* Cross · notifications · what the foundation told this entity, and on which channels */}
+              <PortalNotices name={legacy && account ? account.name : reqOf.name} />
+
+              {/* BPD-013 · a strategic partner's own portfolios · it requests, adds its sub-projects,
+                  updates execution and files the final report · it decides nothing (13.2.3 · 13.2.20) */}
+              {entityId && isStrategic(entityId) && (
+                <Glass>
+                  <Head title="محافظك" meta={typeAllowed(entityId, 'portfolio') ? <Link className="btn btn-p btn-sm" to={`${ROUTES.portfolioNew}?as=partner&entity=${entityId}`}>طلب محفظة</Link> : undefined} />
+                  <ul className="ptn-slots">
+                    {pfOfEntity(entityId).map((pf) => (
+                      <li key={pf.id}>
+                        <Link className="tlink" to={`${ROUTES.portfolio(pf.id)}?as=partner`}>{pf.name}</Link>
+                        <Tag tone={PF_STAGE_TONE[pf.stage]}>{PF_STAGE_SAY[pf.stage]}</Tag>
+                        <span className="sub">{pf.items.filter((x) => x.state === 'approved').length} مشروع معتمد · {pf.items.filter((x) => x.state === 'draft').length} مسودة</span>
+                      </li>
+                    ))}
+                    {!pfOfEntity(entityId).length && <li className="sub">لا محافظ بعد.</li>}
+                  </ul>
+                </Glass>
+              )}
 
               {/* The entity's requests · procedure 3. A request returned for completion is the one
                   thing the entity acts on here: upload what's asked and send it back (3.4.16). */}

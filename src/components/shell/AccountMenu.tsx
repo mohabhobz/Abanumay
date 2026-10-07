@@ -186,6 +186,19 @@ export function AccountMenu({
               <Icon name={icons.shield} size="sm" />
               الصلاحيات والأدوار
             </button>
+            {/* Cross · the shared services · the late report, the outbox and the audit log */}
+            <button role="menuitem" onClick={() => go(ROUTES.escalation)}>
+              <Icon name={icons.clock} size="sm" />
+              المتأخر والمتعثر
+            </button>
+            <button role="menuitem" onClick={() => go(ROUTES.notifyHub)}>
+              <Icon name={icons.bell} size="sm" />
+              سجل الإشعارات
+            </button>
+            <button role="menuitem" onClick={() => go(ROUTES.audit)}>
+              <Icon name={icons.checks} size="sm" />
+              سجل التدقيق
+            </button>
           </div>
 
           <div className="acct-sec">

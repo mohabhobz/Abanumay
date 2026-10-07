@@ -4,6 +4,7 @@
  * These aren't invented values: any track, area, goal, or tag name here actually exists in the
  * system, so the filters built on them match what the client sees.
  */
+import { CFG, readJson } from '@/lib/config'
 
 /** Years = two separately funded entities, each with its own budget and processes */
 export const YEARS = [
@@ -222,6 +223,16 @@ export const STAGES: StageMeta[] = [
   { stage: 'مرفوض - اللجنة التنفيذية', group: 'معتذر عنه', limit: 0 },
   { stage: 'مرفوض - مجلس الأمناء', group: 'معتذر عنه', limit: 0 },
 ]
+
+/* Meeting 1 Oct, item 9 · the study and completion limits come from the escalation settings now.
+   Saved hours lay over the defaults before any project row is built, so every row reads them. */
+{
+  const saved = readJson<Record<string, number>>(CFG.stageLimits, {})
+  for (const s of STAGES) {
+    const n = saved[s.stage]
+    if (s.limit > 0 && typeof n === 'number' && Number.isFinite(n) && n > 0) s.limit = n
+  }
+}
 
 export const stageMeta = (stage: string): StageMeta | undefined =>
   STAGES.find((s) => s.stage === stage)

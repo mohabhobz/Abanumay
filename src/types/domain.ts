@@ -506,6 +506,10 @@ export interface ProjectRow {
   type?: ProjectType
   /** Portfolio rows only · the portfolio this row opens. */
   portfolioId?: string
+  /** Support routed through a partner platform (11.2.4 · 11.4.3) · the project carries the tag */
+  platform?: 'منصة إحسان'
+  /** With a strategic partner · a project of its own or a portfolio (11.2.5 · 13.2.4) */
+  partnerType?: 'مستقل' | 'محفظة'
 }
 
 /** Project type as shown in the list filter and the identity card. */

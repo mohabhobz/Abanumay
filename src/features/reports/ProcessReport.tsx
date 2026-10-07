@@ -3,8 +3,8 @@ import { BackTo, Glass, Head, Icon, icons, StepLink } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
-import { isolate, nf } from '@/lib/format'
-import { PROCESSES, measuredIn, processByKey } from '@/data/kpi'
+import { isolate, nf, pct } from '@/lib/format'
+import { kpiProcesses, measuredIn, processByKey } from '@/data/kpi'
 import { KpiValue } from './KpiValue'
 import { basisText } from './basis'
 
@@ -27,13 +27,14 @@ import { basisText } from './basis'
 
 export default function ProcessReport() {
   const { key = '' } = useParams()
-  const p = processByKey(key)
+  const all = kpiProcesses()
+  const p = processByKey(key, all)
 
   if (!p) return <Navigate to={ROUTES.reports} replace />
 
-  const i = PROCESSES.indexOf(p)
-  const prev = PROCESSES[i - 1]
-  const next = PROCESSES[i + 1]
+  const i = all.indexOf(p)
+  const prev = all[i - 1]
+  const next = all[i + 1]
   const done = measuredIn(p)
 
   /* If every metric is blocked by the same reason, that reason is stated
@@ -98,6 +99,9 @@ export default function ProcessReport() {
                           <span className="num">{nf.format(k.of.part)}</span> من{' '}
                           {isolate(basisText(k.of.whole, k.of.basis))}
                         </span>
+                      )}
+                      {k.split && k.split.length > 1 && (
+                        <span className="sub">لكل مصدر: {k.split.map((x) => `${x.label} ${pct(x.value)}`).join(' · ')}</span>
                       )}
                       <span className="sub">
                         المستهدف: {k.target === null ? 'لم يُحدَّد في الوثيقة' : <span className="num">{k.target}</span>}

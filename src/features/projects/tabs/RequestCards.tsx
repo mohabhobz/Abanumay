@@ -74,6 +74,11 @@ export function RequestMetaCard({ row }: { row: ProjectRow }) {
               <span>{v.say}</span>
               <span className="pc-sp" />
               <span className="sub"><DateText>{v.at}</DateText></span>
+              {v.snap && (
+                <span className="sub rqv-snap">
+                  المبلغ <Money sm>{v.snap.amount}</Money> · المدة <Num>{v.snap.days}</Num> يوم عمل · المستفيدون <Num>{v.snap.reach}</Num> · المرفقات <Num>{v.snap.docs}</Num>
+                </span>
+              )}
             </li>
           ))}
         </ol>

@@ -78,12 +78,17 @@ export interface Referral {
   opinionAt?: string
 }
 
+export interface VersionSnap { amount: number; days: number; reach: number; objectives: number; docs: number; startAt?: string }
+const snapOf = (p: ProjectRow, f: { objectives: string[]; docs: { kind: string }[] }): VersionSnap => ({
+  amount: p.amountRequested, days: p.durationDays ?? 0, reach: p.beneficiaries ?? 0, objectives: f.objectives.length, docs: f.docs.length, startAt: p.startAt,
+})
 export interface FlowNote { id: string; to: string; title: string; context: string; at: string; projectId: string }
 
 export interface ProjectFlow {
   createdAt?: string
   sentAt?: string
-  versions: { no: number; at: string; by: string; say: string }[]
+  /** Every version sent · with what it carried, so an earlier one reads in full after a resubmission (3.4.31) */
+  versions: { no: number; at: string; by: string; say: string; snap?: VersionSnap }[]
   objectives: string[]
   docs: DocFile[]
   study?: Study
@@ -310,7 +315,7 @@ function apply(o: Op) {
       f.sentAt = f.createdAt
       f.objectives = (v.objectives ?? '').split('\n').map((x) => x.trim()).filter(Boolean)
       f.docs = o.docs.map((k) => ({ kind: k, name: `${REQUEST_DOCS.find((d) => d.key === k)?.label ?? k}.pdf`, by: o.asEntity ? e?.name ?? o.by : o.by, at: TODAY }))
-      f.versions = [{ no: 1, at: TODAY, by: o.by, say: o.asEntity ? 'أرسلته الجهة من البوابة' : 'أدخله مشرف المنح نيابةً عن الجهة' }]
+      f.versions = [{ no: 1, at: TODAY, by: o.by, say: o.asEntity ? 'أرسلته الجهة من البوابة' : 'أدخله مشرف المنح نيابةً عن الجهة', snap: snapOf(projectRows[0], f) }]
       event(o.id, {
         action: 'تقديم طلب المشروع', by: o.asEntity ? e?.name ?? o.by : o.by, actor: o.asEntity ? 'entity' : 'staff', dept: 'تقديم الطلب',
         fields: [
@@ -382,7 +387,7 @@ function apply(o: Op) {
       const f = flowOf(o.id)
       moveTo(p!, 'دراسة المشروع')
       p!.holder = 'supervisor'
-      f.versions.push({ no: f.versions.length + 1, at: TODAY, by: o.by, say: `أعادت الجهة الإرسال بعد الاستكمال${f.completionNote ? ` · ${f.completionNote}` : ''}` })
+      f.versions.push({ no: f.versions.length + 1, at: TODAY, by: o.by, say: `أعادت الجهة الإرسال بعد الاستكمال${f.completionNote ? ` · ${f.completionNote}` : ''}`, snap: snapOf(p!, f) })
       f.completionNote = undefined
       event(o.id, { action: 'إعادة إرسال الطلب بعد الاستكمال', by: o.by, actor: 'entity', dept: 'استكمال بيانات المشروع' })
       if (p!.owner) note(o.id, p!.owner, `أعادت الجهة الإرسال · ${p!.name}`, 'استؤنفت الدراسة')

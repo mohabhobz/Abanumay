@@ -9,6 +9,7 @@ import {
 import { projectRows } from '@/data/mock/projects'
 import { payRequests } from '@/data/mock/disbursements'
 import { agreements } from '@/data/mock/agreements'
+import { EHSAN_SEED, portfolios, seededPays } from '@/data/mock/implementer'
 import { ALL_FIELDS, CYCLE, TODAY, setFundingGate } from '@/data/intake/cycle'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { nf, pct } from '@/lib/format'
@@ -1172,9 +1173,33 @@ function seedStudyHolds() {
   }
 }
 
+/** The strategic partners' fixture (BPD-011 · BPD-013) · each approved portfolio held whole and
+    final on its partner line, and what Ehsan already paid on it marked paid by reference · seeded
+    here so the partners store's saved payments replay on them */
+function seedPartnerHolds() {
+  const d = docOf('BG-2026-SA')
+  if (!d) return
+  const at = '2026-02-10T08:00:00.000Z'
+  const by = 'عبدالله الدوسري'
+  const finalPaid = (projectId: string, name: string, line: string, amount: number, paid: { amount: number; ref: string }[]) => {
+    if (!nodeOf(d, line) || LINKS.has(projectId)) return
+    seedLink({ projectId, projectName: name, docId: d.id, nodeId: line, amount, by })
+    const l = LINKS.get(projectId)
+    if (!l) return
+    l.stage = 'final'
+    for (const p of paid) if (!PAID_REFS.has(p.ref)) apply({ op: 'linkPaid', projectId, amount: p.amount, ref: p.ref, by, at })
+  }
+  for (const pf of portfolios.filter((x) => x.stage === 'approved' && x.line)) finalPaid(pf.id, pf.name, pf.line!, pf.total, seededPays(pf))
+  for (const e of EHSAN_SEED) {
+    const p = projectRows.find((x) => x.id === e.projectId)
+    if (p) finalPaid(p.id, p.name, e.line, p.amountGranted, e.paid)
+  }
+}
+
 function hydrate() {
   seed()
   seedStudyHolds()
+  seedPartnerHolds()
   try { ops = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Op[] } catch { ops = [] }
   for (const o of ops) apply(o)
   runAnnualHolds()

@@ -9,6 +9,8 @@ import { EVIDENCE_KINDS, PLAN_STAGES } from './plans'
 import { CLOSE_DOCS, CLOSE_STAGES } from './closing'
 import { AGREEMENT_STAGES } from './agreements'
 import { PAY_STATES } from './disbursements'
+import { ESC_PROCS } from '@/data/shared/escRules'
+import { TOPIC_SAY } from '@/data/shared/topics'
 
 /* Module settings.
 
@@ -43,6 +45,8 @@ export interface SettingGroup {
   kind: 'master' | 'rule'
   /** The tab on the module's settings page that holds this group · opened straight from its card */
   tab?: string
+  /** A group on a page of its own · the shared services each have one */
+  to?: string
 }
 
 export interface SettingModule {
@@ -135,6 +139,23 @@ export const MONEY_LIMITS: LimitRow[] = hydrateRows(CFG.limits, [
 const cityCount = Object.values(CITIES_BY_REGION).reduce((a, c) => a + c.length, 0)
 
 export const SETTING_MODULES: SettingModule[] = [
+  {
+    key: 'cross',
+    label: 'الخدمات المشتركة',
+    to: '/settings/escalation',
+    groups: [
+      {
+        key: 'escalation', to: '/settings/escalation', label: 'آلية التصعيد', kind: 'rule', owner: 'مسؤول النظام',
+        where: 'مدد المراحل ومتأخر ومتعثر في جميع الإجراءات · مستويات التنبيه ومستلموها',
+        count: ESC_PROCS.length,
+      },
+      {
+        key: 'notify', to: '/settings/notifications?tab=channels', label: 'قنوات الإشعار', kind: 'rule', owner: 'مسؤول النظام',
+        where: 'داخل النظام والبريد والرسائل النصية · لكل جمهور وموضوع',
+        count: Object.keys(TOPIC_SAY).length,
+      },
+    ],
+  },
   {
     key: 'budget',
     label: 'الميزانية',

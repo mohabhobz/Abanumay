@@ -1,0 +1,34 @@
+/* Strategic partners · Ehsan projects and portfolios (BPD-011 · BPD-013) · prefix `ptn-`.
+   Cards are the system's `.glass` and tables its `.tbl`; this file only lays out what's new:
+   the inline forms, the slot lists and the indicators strip. */
+
+.ptn-form{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-3)}
+.ptn-form .regfields{align-items:end}
+.ptn-wide{grid-column:1 / -1}
+.ptn-sub{font-size:var(--fs-3);font-weight:600;margin:var(--sp-4) 0 var(--sp-2)}
+
+/* A schedule or a list of records · one line each, the money on the end */
+.ptn-slots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.ptn-slots>li{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-4);min-height:var(--h-md);padding-block:var(--sp-2)}
+.ptn-slots>li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.ptn-slots>li>:first-child{flex:1;min-width:0}
+
+.ptn-chips{display:flex;flex-direction:column;gap:var(--sp-2)}
+
+/* Indicators · four figures with their labels */
+.ptn-ind{margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-4)}
+.ptn-ind>div{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-1);padding:var(--sp-3) var(--sp-4);
+  border-radius:var(--r1);box-shadow:inset 0 0 0 1px var(--edge-1)}
+.ptn-ind dt{font-size:var(--fs-1);color:var(--t2)}
+.ptn-ind dd{margin:0;font-family:var(--fd);font-size:var(--fs-5);font-weight:700}
+
+/* Execution per sub-project · a line each, the editor opens under it */
+.ptn-exec{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.ptn-exec>li{padding-block:var(--sp-3)}
+.ptn-exec>li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
+.ptn-exec-h{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-4)}
+.ptn-exec-h>b{flex:1;min-width:0;font-weight:600}
+
+@media (max-width:900px){
+  .ptn-ind{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

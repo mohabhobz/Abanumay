@@ -60,7 +60,7 @@ export default function SettingsIndexPage() {
               <ul className="cfggrid">
                 {m.groups.map((g) => (
                   <li key={g.key}>
-                    <Link className="cfgg-a" to={g.tab ? `${m.to}?tab=${g.tab}` : m.to}>
+                    <Link className="cfgg-a" to={g.to ?? (g.tab ? `${m.to}?tab=${g.tab}` : m.to)}>
                     <span className="cfgg-h">
                       <b>{g.label}</b>
                       <span className="pc-sp" />

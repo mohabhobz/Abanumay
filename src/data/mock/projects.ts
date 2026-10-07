@@ -911,6 +911,27 @@ projectRows.push(
   }),
 )
 
+/* Supported through Ehsan (BPD-011) · the strategic partner's projects of their own, not a
+   portfolio: one running (plan and schedule, no agreement · 11.2.16 · 11.2.17), one under study,
+   where the routing decision is still the supervisor's (11.2.4 · 11.2.5) · kept out of the
+   agreements and disbursements fixtures, which assume an entity on the portal */
+export const VIA_EHSAN = new Set(['21060', '21061'])
+projectRows.push(
+  mk({
+    id: '21060', name: 'ترميم منازل الأسر المتعففة في جيزان', entityId: '860', track: 'المنح الانتشاري', field: 'الإغاثة',
+    goal: 'تهيئة السكن للمحتاجين', region: 'جيزان', city: 'جيزان', stage: 'رفع تقرير مرحلي',
+    amountRequested: 1_200_000, amountGranted: 1_200_000, amountSpent: 400_000, supportStatus: 'معتمد', decidedAt: '2026-05-10', hoursInStage: 120,
+    owner: 'عمر قاسم', submittedAt: '2026-03-18', beneficiaries: 90, durationDays: 300, startAt: '2026-06-01', endAt: '2027-03-31',
+    platform: 'منصة إحسان', partnerType: 'مستقل',
+  }),
+  mk({
+    id: '21061', name: 'سقيا المساجد في القرى النائية عبر منصة إحسان', entityId: '860', track: 'المنح الانتشاري', field: 'المساجد',
+    goal: 'عمارة المساجد', region: 'عسير', city: 'أبها', stage: 'دراسة المشروع',
+    amountRequested: 750_000, hoursInStage: 60, owner: 'عمر قاسم', submittedAt: '2026-09-14', beneficiaries: 5_000,
+    platform: 'منصة إحسان', partnerType: 'مستقل',
+  }),
+)
+
 /** Which scenario projects each procedure draws its extra records from */
 export const SCENARIO = {
   agreements: SCENARIO_SEEDS.slice(0, 9).map((s) => s[0]),

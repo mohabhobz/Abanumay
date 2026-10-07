@@ -548,6 +548,9 @@ const apply = (o: Op) => {
         ],
         files: it.minutes ? [it.minutes] : undefined,
       })
+      /* Cross · notifications · the session's decision reaches the parties (6.4.12 · 7.4.12) */
+      notify([...new Set([p.owner ?? 'مشرف المنح', 'مدير المنح', 'المدير التنفيذي'])], p.id, `قرار ${HOLDER_LABEL[s.body]} · ${p.name}`, `${OUTCOME_SAY[o.outcome]}${o.note ? ` · ${o.note}` : ''}`)
+      if (o.outcome === 'approve') notify([p.entityName], p.id, `اعتمد ${HOLDER_LABEL[s.body]} مشروعك · ${p.name}`, 'يتبعه تأكيد الاعتماد وإعداد الاتفاقية', ROUTES.project(p.id))
       return
     }
     case 'sessionClose': {

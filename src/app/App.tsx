@@ -5,6 +5,8 @@ import HomePage from '@/features/home/HomePage'
 import HomeOverview from '@/features/home/HomeOverview'
 import JourneyPage from '@/features/journey/JourneyPage'
 import GlassBoard from '@/features/board/GlassBoard'
+import PartnersPage from '@/features/partners/PartnersPage'
+import PortfolioNewPage from '@/features/partners/PortfolioNewPage'
 import ProjectsListPage from '@/features/projects/list/ProjectsListPage'
 import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
@@ -57,6 +59,10 @@ import LatePage from '@/features/payments/LatePage'
 import SettingsIndexPage from '@/features/settings/SettingsIndexPage'
 import AccountPage from '@/features/account/AccountPage'
 import PermissionsPage from '@/features/settings/PermissionsPage'
+import EscalationPage from '@/features/cross/EscalationPage'
+import EscalationSettingsPage from '@/features/cross/EscalationSettingsPage'
+import NotifyHubPage from '@/features/cross/NotifyHubPage'
+import AuditPage from '@/features/cross/AuditPage'
 import PreferencesPage from '@/features/account/PreferencesPage'
 import EntitySettingsPage from '@/features/entities/EntitySettingsPage'
 import ProjectSettingsPage from '@/features/projects/ProjectSettingsPage'
@@ -112,6 +118,10 @@ export default function App() {
         {/* Settings inventory — entered from the account menu, not the rail. */}
         <Route path={ROUTES.settings} element={<SettingsIndexPage />} />
         <Route path={ROUTES.permissions} element={<PermissionsPage />} />
+        <Route path={ROUTES.escalationSettings} element={<EscalationSettingsPage />} />
+        <Route path={ROUTES.notifyHub} element={<NotifyHubPage />} />
+        <Route path={ROUTES.escalation} element={<EscalationPage />} />
+        <Route path={ROUTES.audit} element={<AuditPage />} />
 
         <Route path={ROUTES.projects} element={<ProjectsListPage />} />
 
@@ -119,7 +129,9 @@ export default function App() {
             `/payments/new`: the router matches in order. */}
         <Route path={ROUTES.projectSettings} element={<ProjectSettingsPage />} />
         <Route path={ROUTES.projectNew} element={<ProjectNewPage />} />
+        <Route path={ROUTES.portfolioNew} element={<PortfolioNewPage />} />
         <Route path="/projects/portfolio/:id" element={<PortfolioPage />} />
+        <Route path={ROUTES.partners} element={<PartnersPage />} />
         <Route path={`${ROUTES.projects}/:id`} element={<ProjectPage />} />
         <Route path={`${ROUTES.projects}/:id/:tab`} element={<ProjectPage />} />
 

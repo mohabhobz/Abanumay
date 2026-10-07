@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { regTrends } from '@/data/shared/ai'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
@@ -89,7 +90,7 @@ export default function RequestsPage() {
   )
 
   const filtered = activeCount(['view', 'group', 'adv']) > 0
-  const readings = useMemo(() => readRegRequests(rows, filtered), [rows, filtered])
+  const readings = useMemo(() => [...readRegRequests(rows, filtered), ...regTrends()], [rows, filtered])
 
   /** Count per status within the current scope - excluding the status filter itself. */
   const counts = useMemo(() => {
