@@ -16,7 +16,7 @@
  * over a dozen permission profiles in the live system; these three are the roles the screens were
  * designed for.
  */
-import { person } from './people'
+import { person, staffNames } from './people'
 import { capOf } from './approval'
 import type { CurrentUser, DecisionAction } from '@/types/domain'
 
@@ -187,11 +187,18 @@ export function writeRole(key: RoleKey): void {
    person's first name in Latin letters, their full slug or their Arabic name, and it opens their own
    seat. In production the directory answers this. */
 export function staffLogin(username: string): RoleKey | null {
-  const u = username.trim().toLowerCase()
+  /* An email signs in by its local part · omar@abanumay.org = omar */
+  const u = username.trim().toLowerCase().split('@')[0]
   if (!u) return null
-  for (const r of ROLES) {
-    const slug = person(r.name).slug ?? ''
-    if ([slug, slug.split('-')[0], r.name.toLowerCase(), r.key].includes(u)) return r.key
+  const hit = (name: string) => {
+    const slug = person(name).slug ?? ''
+    return [slug, slug.split('-')[0], name.toLowerCase()].includes(u)
   }
+  for (const r of ROLES) if (hit(r.name) || r.key === u) return r.key
+  /* The other grants officers sit on the supervisor seat */
+  if (staffNames().some((n) => /^مشرفة? المنح$/.test(person(n).title ?? '') && hit(n))) return 'supervisor'
   return null
 }
+
+/** The demo sign-ins, as the login error lists them */
+export const STAFF_LOGINS = 'omar · abdullah · abdulrahman · mohammed · khalid · turki · noura'

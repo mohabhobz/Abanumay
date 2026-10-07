@@ -5,7 +5,7 @@ import { Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from './AuthShell'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
 import { signIn } from '@/data/session'
-import { staffLogin, writeRole } from '@/data/roles'
+import { STAFF_LOGINS, staffLogin, writeRole } from '@/data/roles'
 import { findAccount, passwordOk } from '@/data/entities/auth'
 import { regRows } from '@/data/mock/registration'
 
@@ -85,7 +85,7 @@ export default function LoginPage() {
       const seat = staffLogin(user)
       if (!seat) {
         setBusy(false)
-        fail('اسم المستخدم غير معروف · تأكد منه أو تواصل مع مدير النظام')
+        fail(`اسم المستخدم غير معروف · جرّب: ${STAFF_LOGINS}`)
         return
       }
       writeRole(seat)
