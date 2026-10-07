@@ -51,7 +51,9 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
         <Glass>
           <Head title="أعاده مدير المنح" meta={<Tag tone="warn">للتحديث</Tag>} />
           <p className="sub cnote">{f.returnNote}</p>
-          <p className="sub cnote">حدّث الدراسة واحفظها، ثم أعد الإحالة من شريط القرار · يُسجَّل إصدار جديد ويبقى السابق في السجل.</p>
+          <p className="sub cnote">{f.returnStudied
+            ? 'حُدّثت الدراسة وسُجّل إصدارها الجديد · أعد الإرسال لمدير المنح من شريط القرار.'
+            : 'حدّث الدراسة واحفظها، ثم أعد الإحالة من شريط القرار · يُسجَّل إصدار جديد ويبقى السابق في السجل.'}</p>
         </Glass>
       )}
 

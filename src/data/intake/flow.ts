@@ -7,6 +7,7 @@ import { stageMeta, FIELDS_BY_TRACK } from '@/data/mock/taxonomy'
 import { entityById } from '@/data/mock/entities'
 import { CYCLE, TODAY, addWorkingDays, type Distribution } from './cycle'
 import { CRITERIA, studyScore } from './criteria'
+import { nextSeq, type Stamped } from '@/data/opclock'
 import { CONSULTANTS, consultantByKey } from './consultants'
 
 /* Receiving projects and the supervisor's study · the actions (procedure 3).
@@ -97,13 +98,15 @@ export interface ProjectFlow {
   referral?: Referral
   completionNote?: string
   returnNote?: string
+  /** The study was updated after the return · the version counts once per return */
+  returnStudied?: boolean
   closed?: { kind: 'cancel' | 'archive'; reason: string; by: string; at: string }
   events: LogEvent[]
 }
 
 /* ── Store ── */
 
-type Op =
+type Op = Stamped & (
   | { op: 'submit'; id: string; values: Record<string, string>; by: string; asEntity: boolean; docs: string[] }
   | { op: 'doc'; id: string; kind: string; name: string; by: string }
   | { op: 'study'; id: string; study: Omit<Study, 'at' | 'version' | 'field'> }
@@ -116,6 +119,7 @@ type Op =
   | { op: 'opinion'; id: string; opinion: string; verdict: NonNullable<Referral['verdict']>; by: string }
   | { op: 'close'; id: string; kind: 'cancel' | 'archive'; reason: string; by: string }
   | { op: 'assign'; id: string; owner: string; by: string }
+)
 
 const KEY = 'ab-intake-ops'
 const FLOWS = new Map<string, ProjectFlow>()
@@ -311,8 +315,9 @@ function apply(o: Op) {
         createdAt: `${TODAY}T${NOW_TIME()}`, startAt: v.startAt, endAt: v.startAt && days ? addWorkingDays(v.startAt, days) : v.endAt,
       })
       const f = flowOf(o.id)
-      f.createdAt = `${TODAY} ${NOW_TIME()}`
-      f.sentAt = f.createdAt
+      /* Re-audit 7 Oct · a request saved as a draft first keeps the draft's date as its creation */
+      f.sentAt = `${TODAY} ${NOW_TIME()}`
+      f.createdAt = v.draftAt ? `${v.draftAt.slice(0, 10)} ${v.draftAt.slice(11, 16)}` : f.sentAt
       f.objectives = (v.objectives ?? '').split('\n').map((x) => x.trim()).filter(Boolean)
       f.docs = o.docs.map((k) => ({ kind: k, name: `${REQUEST_DOCS.find((d) => d.key === k)?.label ?? k}.pdf`, by: o.asEntity ? e?.name ?? o.by : o.by, at: TODAY }))
       f.versions = [{ no: 1, at: TODAY, by: o.by, say: o.asEntity ? 'أرسلته الجهة من البوابة' : 'أدخله مشرف المنح نيابةً عن الجهة', snap: snapOf(projectRows[0], f) }]
@@ -345,8 +350,10 @@ function apply(o: Op) {
     case 'study': {
       const f = flowOf(o.id)
       const prev = f.study
-      f.study = { ...o.study, at: TODAY, version: prev ? prev.version + (f.returnNote ? 1 : 0) : 1, field: p!.field }
-      if (f.returnNote) f.returnNote = undefined
+      /* Re-audit 7 Oct · the return note stays until the supervisor sends the project back, so the
+         «أعد الإرسال لمدير المنح» action survives saving the updated study */
+      f.study = { ...o.study, at: TODAY, version: prev ? prev.version + (f.returnNote && !f.returnStudied ? 1 : 0) : 1, field: p!.field }
+      if (f.returnNote) f.returnStudied = true
       event(o.id, {
         action: prev ? 'تحديث دراسة المشروع' : 'تسجيل دراسة المشروع', by: o.study.by,
         fields: [
@@ -360,6 +367,8 @@ function apply(o: Op) {
     case 'recommend': {
       const f = flowOf(o.id)
       const s = f.study
+      f.returnNote = undefined
+      f.returnStudied = undefined
       p!.holder = 'manager'
       p!.hoursInStage = 0
       event(o.id, {
@@ -418,6 +427,7 @@ function apply(o: Op) {
     case 'return': {
       const f = flowOf(o.id)
       f.returnNote = o.note
+      f.returnStudied = undefined
       p!.holder = 'supervisor'
       p!.hoursInStage = 0
       event(o.id, { action: 'إعادة المشروع لمشرف المنح', by: o.by, tone: 'warn', fields: [{ k: 'الملاحظات', v: o.note, strong: true }] })
@@ -462,20 +472,32 @@ const save = () => {
 
 /** Run one operation · recorded, applied, broadcast */
 const run = (o: Op) => {
+  o.seq = nextSeq()
   ops.push(o)
   apply(o)
   save()
   emit()
 }
 
-/* Replay at load */
+/* Replay at load · together with the approval path's log, in clock order (see opclock.ts). The
+   approvals store replays both when it loads; if it never loads, this log replays on its own. */
 try {
   const raw = localStorage.getItem(KEY)
   ops = raw ? (JSON.parse(raw) as Op[]) : []
 } catch {
   ops = []
 }
-for (const o of ops) apply(o)
+let replayed = false
+/** The intake log for a joint replay · hands it over once */
+export function intakeLog(): { ops: Op[]; apply: (o: Op) => void } | null {
+  if (replayed) return null
+  replayed = true
+  return { ops, apply }
+}
+queueMicrotask(() => {
+  const l = intakeLog()
+  if (l) { for (const o of l.ops) apply(o); emit() }
+})
 
 /* ── Public actions ── */
 
@@ -522,7 +544,7 @@ export const completeMany = (ids: readonly string[], note: string, by: string): 
   for (const id of ids) {
     const why = !note.trim() ? 'المطلوب من الجهة إلزامي' : atSupervisorSeat(id, by)
     if (why) { held.push({ id, why }); continue }
-    const o: Op = { op: 'complete', id, note: note.trim(), by }
+    const o: Op = { op: 'complete', id, note: note.trim(), by, seq: nextSeq() }
     ops.push(o); apply(o); done.push(id)
   }
   save()
@@ -539,7 +561,7 @@ export const recommendMany = (ids: readonly string[], by: string): { done: strin
     const seat = atSupervisorSeat(id, by)
     const b = seat ? [seat] : forwardBlockers(id)
     if (b.length) held.push({ id, why: b[0]! })
-    else { ops.push({ op: 'recommend', id, by }); apply({ op: 'recommend', id, by }); done.push(id) }
+    else { const o: Op = { op: 'recommend', id, by, seq: nextSeq() }; ops.push(o); apply(o); done.push(id) }
   }
   save()
   emit()

@@ -15,6 +15,7 @@ import {
   projectIssues, shortIn, type PFieldDef, type PStageDef, type PValues,
 } from '@/data/mock/projectNew'
 import { REQUEST_DOCS, pickSupervisor, submitRequest } from '@/data/intake/flow'
+import { draftKey, draftOf, dropDraft, saveDraft } from '@/data/intake/drafts'
 import { CYCLE, inPeriod, openFields } from '@/data/intake/cycle'
 import { entityById } from '@/data/mock/entities'
 import { isStrategic, routeProject, typeAllowed } from '@/data/partners/store'
@@ -203,9 +204,14 @@ export default function ProjectNewPage() {
   const tab = STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : STAGES[0].key
   const setTab = (x: string) => set({ tab: x === STAGES[0].key ? undefined : x })
 
-  const [val, setVal] = useState<PValues>(() => (asEntity ? { entityId: v.entity as string } : EMPTY))
-  const [docs, setDocs] = useState<Record<string, string>>({})
+  /* Re-audit 7 Oct · a saved draft reopens here, for the same author */
+  const dkey = draftKey(asEntity, v.entity as string | undefined, user.name)
+  const [draft, setDraft] = useState(() => draftOf(dkey))
+  const [val, setVal] = useState<PValues>(() => draft?.val ?? (asEntity ? { entityId: v.entity as string } : EMPTY))
+  const [docs, setDocs] = useState<Record<string, string>>(() => draft?.docs ?? {})
   const [saved, setSaved] = useState(false)
+  const keepDraft = () => { setDraft(saveDraft(dkey, val, docs)); setSaved(true) }
+  const freshStart = () => { dropDraft(dkey); setDraft(undefined); setVal(asEntity ? { entityId: v.entity as string } : EMPTY); setDocs({}); setSaved(false) }
   const [sentId, setSentId] = useState<string | null>(null)
   const sent = sentId !== null
 
@@ -262,8 +268,9 @@ export default function ProjectNewPage() {
   const send = () => {
     /* 13.2.2 · a portfolio isn't a project · it's created on its own page with the partner fixed */
     if (val.ptype === 'محفظة') { navigate(`${ROUTES.portfolioNew}?entity=${val.entityId}${asEntity ? '&as=partner' : ''}`); return }
-    const id = submitRequest({ ...val, endAt }, Object.keys(docs), asEntity ? entityById(val.entityId)?.name ?? user.name : user.name, asEntity)
+    const id = submitRequest({ ...val, endAt, ...(draft ? { draftAt: draft.createdAt } : {}) }, Object.keys(docs), asEntity ? entityById(val.entityId)?.name ?? user.name : user.name, asEntity)
     if (val.platform === 'منصة إحسان' || isStrategic(val.entityId)) routeProject(id, val.platform === 'منصة إحسان', 'independent', user.name)
+    dropDraft(dkey)
     setSentId(id)
   }
 
@@ -515,7 +522,8 @@ export default function ProjectNewPage() {
                       {blocks.length
                         ? <DockWhy n={blockerCount(blocks)} />
                         : <><span className="decsep" />جاهز للإرسال</>}
-                      {saved && <><span className="decsep" />حُفظت المسودة</>}
+                      {draft && <><span className="decsep" />{saved ? 'حُفظت المسودة' : 'مسودة محفوظة'} <DateText>{draft.savedAt.slice(0, 10)}</DateText>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={freshStart}>ابدأ من جديد</button></>}
                     </>}
               </span>
             </div>
@@ -527,7 +535,7 @@ export default function ProjectNewPage() {
                     className="btn btn-2"
                     disabled={!val.entityId}
                     title={val.entityId ? 'احفظ الطلب مسودةً' : 'اختر الجهة أولًا'}
-                    onClick={() => setSaved(true)}
+                    onClick={keepDraft}
                   >
                     احفظ المسودة
                   </button>

@@ -9,7 +9,8 @@ import { capOf, type ApprovalRow } from '@/data/approval'
 import { ACTS_FOR, HOLDER_LABEL, nextOf, type Holder } from '@/data/holders'
 import type { RoleKey } from '@/data/roles'
 import { TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
-import { flowOf, referConsultant } from '@/data/intake/flow'
+import { flowOf, intakeLog, referConsultant } from '@/data/intake/flow'
+import { nextSeq, replayTogether, type Stamped } from '@/data/opclock'
 import { expiredMandatory } from '@/data/entities/store'
 import { linkOf, unlinkProject, usableLines, directionById, docOf, fundingIssues, finalizeHold } from '@/data/budget/store'
 import { nf } from '@/lib/format'
@@ -327,7 +328,7 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
 
 /* ── Operations ── */
 
-type Op = { at: string } & (
+type Op = { at: string } & Stamped & (
   | { op: 'decide'; id: string; level: Holder; verdict: Verdict; note: string; by: string; needsPlan?: boolean; target?: Rec['target'] }
   | { op: 'cond'; id: string; cond: Condition }
   | { op: 'condMet'; id: string; condId: string; by: string }
@@ -428,6 +429,7 @@ const apply = (o: Op) => {
             f.awaitingReview = undefined
             /* The study tab reads the note from the intake record, where the supervisor works */
             flowOf(o.id).returnNote = o.note
+            flowOf(o.id).returnStudied = undefined
             if (p.owner) notify([p.owner], p.id, `أُعيد إليك · ${p.name}`, o.note, ROUTES.projectTab(p.id, 'study'))
             fields.push({ k: 'إلى', v: to === 'consultant' ? 'المستشار ومشرف المنح' : 'مشرف المنح' }, { k: 'الحجز', v: 'أُلغي · يُعاد التحقق عند العودة' })
           } else {
@@ -613,7 +615,7 @@ export function sessionItemBlockers(s: Session, it: SessionItem, outcome: Outcom
 const save = () => {
   try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ }
 }
-const run = (o: Op) => { ops.push(o); apply(o); save(); emit() }
+const run = (o: Op) => { o.seq = nextSeq(); ops.push(o); apply(o); save(); emit() }
 
 /* ── Seed · the projects already on the path carry the recommendations that put them there ── */
 
@@ -663,7 +665,10 @@ setConditionGate((projectId) => {
 function hydrate() {
   seed()
   try { ops = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Op[] } catch { ops = [] }
-  for (const o of ops) apply(o)
+  /* Re-audit 7 Oct · with the study's log, in the order things happened · replayed one after the
+     other, a return to the supervisor landed after his resubmission and a reload undid it */
+  const intake = intakeLog()
+  replayTogether([...(intake ? [intake] : []), { ops, apply }])
 }
 hydrate()
 

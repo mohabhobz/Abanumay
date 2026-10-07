@@ -460,7 +460,9 @@ function apply(o: Op) {
     }
     case 'route': {
       const p = projectOf(o.projectId)
-      if (!p || p.statusGroup !== 'في الدراسة') return
+      /* Re-audit 7 Oct · the stage is checked when the decision is taken, not on replay: at load the
+         project has already moved on (approved, in execution), and the routing used to drop away */
+      if (!p || (liveRun && p.statusGroup !== 'في الدراسة')) return
       p.platform = o.platform ? 'منصة إحسان' : undefined
       p.partnerType = isStrategic(p.entityId) ? (o.type === 'portfolio' ? 'محفظة' : 'مستقل') : undefined
       ;(EH_OPS.get(p.id) ?? EH_OPS.set(p.id, []).get(p.id)!).push({ at: day(o.at), by: o.by, kind: 'قرار التوجيه', note: o.platform ? 'يُوجَّه الدعم عبر منصة إحسان' : 'يُدعم مباشرة دون منصة الشريك' })
