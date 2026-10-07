@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { Background, MobileTop, Rail } from '@/components/shell'
 import { roles, type AssistantRole } from '@/data/mock/assistant'
@@ -24,10 +24,16 @@ import { AssistantScreen } from './AssistantScreen'
  */
 export default function AssistantPage() {
   const navigate = useNavigate()
-  const location = useLocation()
   /* Close goes back when there is in-app history, and to Today when the assistant was the first
      screen (right after login, or a shared link), so the X never leaves the app. */
-  const close = () => (location.key !== 'default' ? navigate(-1) : navigate(ROUTES.home))
+  /* `location.key` isn't enough: after login the page is reached with a replace, so it has a key
+     but nothing behind it in the app, and back went nowhere · the router's own history index says
+     whether there is an in-app page to go back to */
+  const close = () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
+    if (idx > 0) navigate(-1)
+    else navigate(ROUTES.home, { replace: true })
+  }
   const mobile = useIsMobile()
   /* Note: collapsed state lives in the URL - a collapsed sidebar is still a state, and without this
      key the inventory would render the sidebar open every time. */
