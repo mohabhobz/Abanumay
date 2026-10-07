@@ -87,7 +87,7 @@ export default function PortfolioPage() {
 
   const steps: StepItem[] = [
     { label: 'الطلب', note: pf.origin === 'partner' ? 'من بوابة الشريك' : 'مشرف المنح', state: pf.stage === 'draft' || pf.stage === 'returned' ? 'now' : 'done' },
-    { label: 'الدراسة والاعتماد', note: 'المشرف · المدير · الرئيس', state: ['supervisor', 'manager', 'ceo'].includes(pf.stage) ? 'now' : ['draft', 'returned', 'rejected'].includes(pf.stage) ? 'todo' : 'done' },
+    { label: 'الدراسة والاعتماد', note: 'حسب مصفوفة الاعتماد', state: ['supervisor', 'manager', 'ceo', 'committee', 'board'].includes(pf.stage) ? 'now' : ['draft', 'returned', 'rejected'].includes(pf.stage) ? 'todo' : 'done' },
     { label: 'الخطة والاتفاقية', note: 'قبل أي مشروع فرعي', state: pf.stage !== 'approved' && pf.stage !== 'closing' && pf.stage !== 'closed' ? 'todo' : gate.ok || pf.stage !== 'approved' ? 'done' : 'now' },
     { label: 'المشاريع الفرعية', note: `${m.approvedCount} معتمد`, state: gate.ok ? 'now' : pf.stage === 'closing' || pf.stage === 'closed' ? 'done' : 'todo' },
     { label: 'الإغلاق', note: 'بعد آخر مشروع', state: pf.stage === 'closed' ? 'done' : pf.stage === 'closing' ? 'now' : 'todo' },
@@ -468,7 +468,7 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const approved = pf.items.filter((x) => x.state === 'approved')
   const target = approved.find((x) => x.id === sub) ?? approved[0]
-  const fin = !asPartner && role.key === 'ceo'
+  const fin = !asPartner && role.key === 'finance'
   const sup = !asPartner && role.key === 'supervisor'
   const open = pf.stage === 'approved'
   if (pf.channel === 'ehsan') {

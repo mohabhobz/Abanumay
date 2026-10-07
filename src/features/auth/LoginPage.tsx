@@ -5,6 +5,7 @@ import { Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from './AuthShell'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
 import { signIn } from '@/data/session'
+import { staffLogin, writeRole } from '@/data/roles'
 import { findAccount, passwordOk } from '@/data/entities/auth'
 import { regRows } from '@/data/mock/registration'
 
@@ -74,13 +75,20 @@ export default function LoginPage() {
       /* An entity signs in to its own portal, not to the staff system */
       const acct = findAccount(user)
       if (acct) {
-        signIn(user.trim(), 'entity')
+        signIn(user.trim(), 'entity', acct.kind === 'entity' ? { entityId: acct.id.slice(2) } : { reqId: regRows.find((r) => r.acctEmail === acct.email)?.id })
         const req = acct.kind === 'reg' ? regRows.find((r) => r.acctEmail === acct.email) : undefined
         navigate(acct.kind === 'entity'
           ? `${ROUTES.entityPortal}?entity=${acct.id.slice(2)}`
           : req ? `${ROUTES.entityPortal}?req=${req.id}` : ROUTES.entityRegister, { replace: true })
         return
       }
+      const seat = staffLogin(user)
+      if (!seat) {
+        setBusy(false)
+        fail('اسم المستخدم غير معروف · تأكد منه أو تواصل مع مدير النظام')
+        return
+      }
+      writeRole(seat)
       signIn(user.trim())
       navigate(from ?? (readDisplay().landing || AFTER_LOGIN), { replace: true })
     }, 700)

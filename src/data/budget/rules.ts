@@ -40,7 +40,7 @@ export interface BudgetRules {
 const DEFAULT: BudgetRules = {
   prepareBy: ['supervisor', 'grants-manager'],
   managerBy: ['grants-manager'],
-  financeBy: ['ceo'],
+  financeBy: ['finance'],
   execBy: ['ceo'],
   statusBy: ['grants-manager', 'ceo'],
   maxTransferPct: 50,
@@ -52,6 +52,9 @@ const DEFAULT: BudgetRules = {
 }
 
 export const BUDGET_RULES: BudgetRules = readJson(CFG.budgetRules, DEFAULT)
+/* Re-audit 7 Oct · finance has its own seat now · a file saved while the executive stood in for it
+   moves to the finance role */
+if (BUDGET_RULES.financeBy.length === 1 && BUDGET_RULES.financeBy[0] === 'ceo') BUDGET_RULES.financeBy = ['finance']
 
 export const saveBudgetRules = (next: BudgetRules): void => {
   Object.assign(BUDGET_RULES, structuredClone(next))

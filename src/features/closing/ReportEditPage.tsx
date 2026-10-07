@@ -72,7 +72,8 @@ export default function ReportEditPage() {
   }
 
   /* The entity writes while the report is with it · in review or after closing it reads (rule 21) */
-  const closed = evalApproved(c) || (c.stage !== 'draft' && c.stage !== 'returned')
+  /* Re-audit 7 Oct · the report is the entity's to write, from its own account · staff read it (10.2.4) */
+  const closed = evalApproved(c) || (c.stage !== 'draft' && c.stage !== 'returned') || !asEntity
   const back = `${ROUTES.closing(c.id)}${asEntity ? '?as=entity' : ''}`
   const num = (v: string) => (v === '' ? null : Number(v))
   const onSave = () => {
@@ -115,6 +116,8 @@ export default function ReportEditPage() {
               <p className="sub mt-1">
                 {evalApproved(c)
                   ? 'اكتمل الإغلاق · الصفحة للقراءة فقط، وأي تعديل بعده يحتاج إلى إجراء جديد (قاعدة 21)'
+                  : !asEntity && (c.stage === 'draft' || c.stage === 'returned')
+                    ? 'تكتب الجهة التقرير من بوابتها · الصفحة للقراءة'
                   : closed
                     ? 'التقرير في المراجعة · يُعدَّل حين يُعاد للجهة، وكل إعادة إصدار جديد (قاعدة 19)'
                   : <>تحدّد القاعدة <span className="num">4</span> أربع بيانات حدًّا
@@ -124,7 +127,7 @@ export default function ReportEditPage() {
             {/* Status as text, not a colored tag - the page header isn't a card's status field.
                 Counted the same way as "not blocking". */}
             {closed
-              ? <Tag tone="mute">{evalApproved(c) ? 'مغلق · للقراءة' : 'في المراجعة'}</Tag>
+              ? <Tag tone="mute">{evalApproved(c) ? 'مغلق · للقراءة' : !asEntity && (c.stage === 'draft' || c.stage === 'returned') ? 'عند الجهة' : 'في المراجعة'}</Tag>
               : <span className="sub">{missing.length > 0
                 ? <>قبل الإرسال: <Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</>
                 : 'جاهز للإرسال'}</span>}

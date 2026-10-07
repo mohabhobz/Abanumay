@@ -146,7 +146,7 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
   const [bad, setBad] = useState<string[]>([])
   const got = rec.receipts.reduce((s, x) => s + x.amount, 0)
   const left = recoveryLeft(rec)
-  const staff = !asEntity && (role.key === 'supervisor' || role.key === 'ceo')
+  const staff = !asEntity && (role.key === 'supervisor' || role.key === 'ceo' || role.key === 'finance')
   const receiving = rec.state === 'open' || rec.state === 'failed' || (rec.state === 'decided' && rec.decision?.kind === 'installments')
   const done = (out: string[], reset: () => void) => { setBad(out); if (!out.length) reset() }
 

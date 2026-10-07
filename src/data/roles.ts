@@ -20,7 +20,7 @@ import { person } from './people'
 import { capOf } from './approval'
 import type { CurrentUser, DecisionAction } from '@/types/domain'
 
-export type RoleKey = 'supervisor' | 'grants-manager' | 'ceo' | 'admin'
+export type RoleKey = 'supervisor' | 'grants-manager' | 'ceo' | 'finance' | 'comms' | 'member' | 'admin'
 
 export interface Role {
   key: RoleKey
@@ -86,6 +86,42 @@ export const ROLES: Role[] = [
     ],
   },
   {
+    /* Re-audit 7 Oct · finance had no seat: the executive director acted for it and the log wrote a
+       fixed name. The finance officer now reviews budgets and operation requests, issues payment
+       orders and transfers, confirms Ehsan payments and pays portfolio requests (1.2.10 · 9.2.15) */
+    key: 'finance',
+    name: 'محمد المطيري',
+    title: 'الإدارة المالية',
+    initial: person('محمد المطيري').initial,
+    photo: person('محمد المطيري').photo,
+    financialAuthority: null,
+    lens: 'portfolio',
+    actions: [],
+  },
+  {
+    /* Corporate communications · reviews the final report's media requirements (10.2.12) */
+    key: 'comms',
+    name: 'خالد السبيعي',
+    title: 'الاتصال المؤسسي',
+    initial: person('خالد السبيعي').initial,
+    photo: person('خالد السبيعي').photo,
+    financialAuthority: null,
+    lens: 'portfolio',
+    actions: [],
+  },
+  {
+    /* A member of the executive committee and the board · reads the session's files before the
+       meeting and casts his own vote (6.2.3 · 7.2.3) */
+    key: 'member',
+    name: 'تركي الخنيزان',
+    title: 'عضو اللجنة والمجلس',
+    initial: person('تركي الخنيزان').initial,
+    photo: person('تركي الخنيزان').photo,
+    financialAuthority: null,
+    lens: 'portfolio',
+    actions: [],
+  },
+  {
     /* Cross · the escalation mechanism, the notification channels and the audit log are the system
        admin's to configure directly (9.5 clause 4) · the seat that edits them in the prototype */
     key: 'admin',
@@ -100,7 +136,7 @@ export const ROLES: Role[] = [
 ]
 
 /** The roles a business rule can name · the system admin configures, she doesn't decide */
-export const STAFF_ROLES: Role[] = ROLES.filter((r) => r.key !== 'admin')
+export const STAFF_ROLES: Role[] = ROLES.filter((r) => r.key !== 'admin' && r.key !== 'member')
 
 export const roleByKey = (key: string): Role => ROLES.find((r) => r.key === key) ?? ROLES[0]
 
@@ -145,4 +181,17 @@ export function writeRole(key: RoleKey): void {
   } catch {
     /* Storage may be blocked */
   }
+}
+
+/* Staff sign-in · re-audit 7 Oct: any unknown username used to enter as staff. A username is the
+   person's first name in Latin letters, their full slug or their Arabic name, and it opens their own
+   seat. In production the directory answers this. */
+export function staffLogin(username: string): RoleKey | null {
+  const u = username.trim().toLowerCase()
+  if (!u) return null
+  for (const r of ROLES) {
+    const slug = person(r.name).slug ?? ''
+    if ([slug, slug.split('-')[0], r.name.toLowerCase(), r.key].includes(u)) return r.key
+  }
+  return null
 }

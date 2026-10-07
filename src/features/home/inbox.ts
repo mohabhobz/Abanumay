@@ -35,6 +35,9 @@ import { portfolios } from '@/data/mock/implementer'
 import { projectCode } from '@/lib/format'
 import { rowCode, rowHref, isPortfolio } from '@/features/projects/list/columns'
 import type { RoleKey } from '@/data/roles'
+import { EHSAN_PAYS, PORTFOLIOS } from '@/data/partners/store'
+import { SESSIONS } from '@/data/approvals/store'
+import { escItems } from '@/data/shared/escalation'
 import type { ProjectRow } from '@/types/domain'
 
 export interface InboxItem {
@@ -117,10 +120,10 @@ const agreementsAt = (stages: string[], owner?: string, holderKey?: RoleKey): In
     .sort(byWait),
 })
 
-const paymentsAt = (state: 'supervisor' | 'manager', owner?: string): InboxQueue => ({
+const paymentsAt = (state: 'supervisor' | 'manager' | 'finance', owner?: string): InboxQueue => ({
   key: 'payments',
   label: 'الدفعات',
-  note: state === 'supervisor' ? 'طلبات صرف وصلت إلى مرحلتك' : 'بانتظار اعتمادك قبل المالية',
+  note: state === 'supervisor' ? 'طلبات صرف وصلت إلى مرحلتك' : state === 'finance' ? 'أوامر صرف وتحويلات بانتظارك' : 'بانتظار اعتمادك قبل المالية',
   icon: 'pay',
   all: `${ROUTES.payments}?state=${state}`,
   items: payRequests
@@ -164,10 +167,10 @@ const activities = (owner?: string): InboxQueue => ({
     .sort(byWait),
 })
 
-const closingsAt = (key: 'reports' | 'evals', stages: string[], owner?: string): InboxQueue => ({
+const closingsAt = (key: 'reports' | 'evals', stages: string[], owner?: string, note?: string): InboxQueue => ({
   key,
   label: key === 'reports' ? 'التقارير الختامية' : 'التقييمات',
-  note: key === 'reports' ? 'مقارنة المعتمد بالتنفيذ الفعلي' : 'دورة اعتماد مستقلّة عن التقرير',
+  note: note ?? (key === 'reports' ? 'مقارنة المعتمد بالتنفيذ الفعلي' : 'دورة اعتماد مستقلّة عن التقرير'),
   icon: key === 'reports' ? 'navClosings' : 'insight',
   all: `${ROUTES.closings}?stage=${stages.join(',')}`,
   items: closeRows
@@ -284,6 +287,53 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       transfers('manager'),
       budgets(role),
     ]
+  }
+
+  /* Re-audit 7 Oct · the seats that had none */
+  if (role === 'finance') {
+    const t = Date.parse(`${TODAY}T12:00:00Z`)
+    return [
+      paymentsAt('finance'),
+      budgets(role),
+      {
+        key: 'ehsan', label: 'دفعات منصة إحسان', note: 'راجع مستنداتها وأكّد حالتها', icon: 'pay', all: ROUTES.partnersTab('finance'),
+        items: EHSAN_PAYS.filter((x) => x.state === 'review').map((x) => ({
+          id: x.id, code: x.ref, title: `دفعة ${x.ref}`, sub: 'نفّذتها منصة إحسان', amount: x.amount,
+          days: Math.max(0, Math.round((t - Date.parse(x.at)) / 864e5)), late: false, limit: 3, to: ROUTES.partnersTab('finance'),
+        })),
+      },
+      {
+        key: 'pfreq', label: 'طلبات صرف المحافظ', note: 'على مستوى المحفظة وفق جدولها', icon: 'grid', all: ROUTES.partnersTab('finance'),
+        items: PORTFOLIOS.flatMap((pf) => pf.requests.filter((r) => r.state === 'finance').map((r) => ({
+          id: `${pf.id}-${r.id}`, code: pf.id, title: `الدفعة ${r.no} · ${pf.name}`, sub: 'طلب صرف محفظة', amount: r.amount,
+          days: Math.max(0, Math.round((t - Date.parse(r.at)) / 864e5)), late: false, limit: 3, to: ROUTES.partnersTab('finance'),
+        }))),
+      },
+    ]
+  }
+  if (role === 'comms') {
+    return [closingsAt('reports', ['comms'], undefined, 'متطلبات النشر الإعلامي في التقرير الختامي')]
+  }
+  if (role === 'member') {
+    /* The projects on the agenda of a planned session he sits on · read before the meeting (6.2.3 · 7.2.3) */
+    const onAgenda = SESSIONS.filter((x) => x.state === 'planned' && x.members.includes(me))
+    return onAgenda.map((x) => ({
+      key: `session-${x.id}`, label: x.title, note: `${x.body === 'committee' ? 'اللجنة التنفيذية' : 'مجلس الأمناء'} · صوّت على كل مشروع بنفسك`, icon: 'checks' as const,
+      all: `/approvals/sessions/${x.id}`,
+      items: x.items.flatMap((it) => {
+        const p = fixtures.projects.find((y) => y.id === it.projectId)
+        return p ? [{ ...fromProject(p), to: `/approvals/sessions/${x.id}`, sub: it.votes[me] ? `صوّتَّ · ${p.entityName}` : `لم تصوّت بعد · ${p.entityName}` }] : []
+      }),
+    }))
+  }
+  if (role === 'admin') {
+    return [{
+      key: 'stalled', label: 'المتعثر في كل الإجراءات', note: 'من آلية التصعيد · راجع المدد والمستلمين', icon: 'insight',
+      all: `${ROUTES.escalation}?heat=stuck`,
+      items: escItems().filter((x) => x.heat === 'stuck').slice(0, 40).map((x) => ({
+        id: x.id, code: x.stage, title: x.title, sub: x.sub, days: x.over, late: true, limit: 0, to: x.href,
+      })),
+    }]
   }
 
   return [

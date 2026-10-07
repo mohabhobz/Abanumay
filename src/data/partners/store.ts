@@ -10,6 +10,8 @@ import { openPlanFor } from '@/data/plans/store'
 import { planOfProject, planDone } from '@/data/mock/plans'
 import { setEhsanGate } from '@/data/payments/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
+import { approverFor } from '@/data/approval'
+import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 
@@ -209,11 +211,11 @@ export const pfById = (id: string) => PORTFOLIOS.find((p) => p.id === id)
 export const pfOfEntity = (entityId: string) => PORTFOLIOS.filter((p) => p.entityId === entityId)
 
 export const PF_STAGE_SAY: Record<PortfolioStage, string> = {
-  draft: 'مسودة', supervisor: 'دراسة · مشرف المنح', manager: 'بانتظار مدير المنح', ceo: 'بانتظار الرئيس التنفيذي',
+  draft: 'مسودة', supervisor: 'دراسة · مشرف المنح', manager: 'بانتظار مدير المنح', ceo: 'بانتظار الرئيس التنفيذي', committee: 'عند اللجنة التنفيذية', board: 'عند مجلس الأمناء',
   returned: 'معادة للاستكمال', approved: 'معتمدة · تحت التنفيذ', rejected: 'مرفوضة', closing: 'بانتظار الإغلاق', closed: 'مغلقة',
 }
 export const PF_STAGE_TONE: Record<PortfolioStage, 'mute' | 'warn' | 'teal' | 'ok' | 'no' | 'ret'> = {
-  draft: 'mute', supervisor: 'warn', manager: 'warn', ceo: 'warn', returned: 'ret', approved: 'teal', rejected: 'no', closing: 'warn', closed: 'ok',
+  draft: 'mute', supervisor: 'warn', manager: 'warn', ceo: 'warn', committee: 'warn', board: 'warn', returned: 'ret', approved: 'teal', rejected: 'no', closing: 'warn', closed: 'ok',
 }
 export const SUB_STATE_SAY: Record<SubProject['state'], string> = { draft: 'مسودة', pending: 'قيد الاعتماد', approved: 'معتمد', rejected: 'مرفوض' }
 export const SUB_STATE_TONE: Record<SubProject['state'], 'mute' | 'warn' | 'ok' | 'no'> = { draft: 'mute', pending: 'warn', approved: 'ok', rejected: 'no' }
@@ -301,6 +303,9 @@ export function pfCloseChecks(pf: PortfolioRec): { key: string; label: string; o
 
 /* ── Who acts · the usual path and financial authority (13.2.6) ── */
 
+/** The level whose cap covers the portfolio's value · its decision is final */
+export const pfDecider = (pf: PortfolioRec) => approverFor(pf.total).key
+
 export type PfAct = 'submit' | 'recommend' | 'approve' | 'return' | 'reject'
 export interface PfAction { act: PfAct; label: string; kind: 'btn-p' | 'btn-2' | 'btn-d'; needsNote?: boolean }
 export function pfActions(pf: PortfolioRec, role: RoleKey, asPartner = false): PfAction[] {
@@ -311,14 +316,28 @@ export function pfActions(pf: PortfolioRec, role: RoleKey, asPartner = false): P
     { act: 'return', label: 'إعادة للاستكمال', kind: 'btn-2', needsNote: true },
     { act: 'reject', label: 'اعتذار عن الدعم', kind: 'btn-d', needsNote: true },
   ]
+  /* Re-audit 7 Oct · the portfolio climbs the approval matrix by its value like any project: the
+     first level whose cap covers it decides, and the levels above the executive director record
+     their decision as the committee's or the board's secretary (13.2.6 · 5.4.25) */
+  const decider = pfDecider(pf)
   if (pf.stage === 'manager' && role === 'grants-manager') return [
-    { act: 'approve', label: 'موافقة ورفع للرئيس التنفيذي', kind: 'btn-p' },
+    { act: 'approve', label: decider === 'manager' ? 'اعتماد نهائي' : 'موافقة ورفع للرئيس التنفيذي', kind: 'btn-p' },
     { act: 'return', label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true },
   ]
   if (pf.stage === 'ceo' && role === 'ceo') return [
-    { act: 'approve', label: 'اعتماد نهائي', kind: 'btn-p' },
+    { act: 'approve', label: decider === 'exec' ? 'اعتماد نهائي' : 'موافقة وإحالة للجنة التنفيذية', kind: 'btn-p' },
     { act: 'return', label: 'إعادة لمدير المنح', kind: 'btn-2', needsNote: true },
     { act: 'reject', label: 'رفض', kind: 'btn-d', needsNote: true },
+  ]
+  if (pf.stage === 'committee' && APPROVAL_RULES.committeeBy.includes(role)) return [
+    { act: 'approve', label: decider === 'committee' ? 'تسجيل قرار اللجنة · اعتماد' : 'تسجيل قرار اللجنة · إحالة للمجلس', kind: 'btn-p', needsNote: true },
+    { act: 'return', label: 'إعادة للرئيس التنفيذي', kind: 'btn-2', needsNote: true },
+    { act: 'reject', label: 'تسجيل قرار اللجنة · رفض', kind: 'btn-d', needsNote: true },
+  ]
+  if (pf.stage === 'board' && APPROVAL_RULES.boardBy.includes(role)) return [
+    { act: 'approve', label: 'تسجيل قرار المجلس · اعتماد', kind: 'btn-p', needsNote: true },
+    { act: 'return', label: 'إعادة للجنة التنفيذية', kind: 'btn-2', needsNote: true },
+    { act: 'reject', label: 'تسجيل قرار المجلس · رفض', kind: 'btn-d', needsNote: true },
   ]
   return []
 }
@@ -481,23 +500,33 @@ function apply(o: Op) {
         plog(pf, o.by, `أوصى بالاعتماد وحجز ${nf.format(pf.total)} مبدئيًّا`, o.at)
         notify([MGR()], `اعتماد محفظة · ${pf.name}`, `${nf.format(pf.total)} ريال`, ROUTES.portfolio(pf.id))
       } else if (o.act === 'approve') {
-        if (pf.stage === 'manager') { pf.stage = 'ceo'; plog(pf, o.by, 'وافق مدير المنح ورفعها للرئيس التنفيذي', o.at); notify([CEO()], `اعتماد نهائي · ${pf.name}`, `${nf.format(pf.total)} ريال`, ROUTES.portfolio(pf.id)) }
-        else if (pf.stage === 'ceo') {
+        const LEVEL: Partial<Record<PortfolioStage, Exclude<ReturnType<typeof pfDecider>, never>>> = { manager: 'manager', ceo: 'exec', committee: 'committee', board: 'board' }
+        const SAY: Partial<Record<PortfolioStage, string>> = { manager: 'مدير المنح', ceo: 'الرئيس التنفيذي', committee: 'اللجنة التنفيذية', board: 'مجلس الأمناء' }
+        const NEXT: Partial<Record<PortfolioStage, PortfolioStage>> = { manager: 'ceo', ceo: 'committee', committee: 'board' }
+        const lvl = LEVEL[pf.stage]
+        if (!lvl) return
+        if (lvl === pfDecider(pf) || !NEXT[pf.stage]) {
+          const who = SAY[pf.stage]
           pf.stage = 'approved'
           if (liveRun && linkOf(pf.id)) finalizeHold(pf.id, o.by)
-          plog(pf, o.by, 'اعتمدها الرئيس التنفيذي نهائيًّا · ثُبّت الحجز وفُعّلت إدارتها', o.at)
+          plog(pf, o.by, `اعتمدها ${who} نهائيًّا${o.note ? ` · ${o.note}` : ''} · ثُبّت الحجز وفُعّلت إدارتها`, o.at)
           notify([pf.owner, partnerName(pf.entityId)], `اعتُمدت المحفظة · ${pf.name}`, 'الخطوة التالية: الخطة والاتفاقية', ROUTES.portfolio(pf.id))
+        } else {
+          const to = NEXT[pf.stage]!
+          plog(pf, o.by, `وافق ${SAY[pf.stage]} ورفعها إلى ${SAY[to]}${o.note ? ` · ${o.note}` : ''}`, o.at)
+          pf.stage = to
+          notify([to === 'ceo' ? CEO() : to === 'committee' ? 'مدير المنح' : 'المدير التنفيذي'], `اعتماد محفظة · ${pf.name}`, `${nf.format(pf.total)} ريال · عند ${SAY[to]}`, ROUTES.portfolio(pf.id))
         }
       } else if (o.act === 'return') {
-        const back: Partial<Record<PortfolioStage, PortfolioStage>> = { supervisor: 'returned', manager: 'supervisor', ceo: 'manager' }
+        const back: Partial<Record<PortfolioStage, PortfolioStage>> = { supervisor: 'returned', manager: 'supervisor', ceo: 'manager', committee: 'ceo', board: 'committee' }
         const to = back[pf.stage]
         if (!to || !o.note.trim()) return
         pf.note = o.note
         pf.stage = to
         plog(pf, o.by, `أعاد ${to === 'returned' ? 'المحفظة للاستكمال' : 'المحفظة'} · ${o.note}`, o.at)
-        notify([to === 'returned' ? (pf.origin === 'partner' ? partnerName(pf.entityId) : pf.owner) : to === 'supervisor' ? pf.owner : MGR()], `أُعيدت المحفظة · ${pf.name}`, o.note, ROUTES.portfolio(pf.id))
+        notify([to === 'returned' ? (pf.origin === 'partner' ? partnerName(pf.entityId) : pf.owner) : to === 'supervisor' ? pf.owner : to === 'ceo' ? CEO() : MGR()], `أُعيدت المحفظة · ${pf.name}`, o.note, ROUTES.portfolio(pf.id))
       } else if (o.act === 'reject') {
-        if (pf.stage !== 'supervisor' && pf.stage !== 'ceo') return
+        if (!['supervisor', 'ceo', 'committee', 'board'].includes(pf.stage)) return
         pf.stage = 'rejected'
         pf.note = o.note
         if (liveRun && linkOf(pf.id)) unlinkProject(pf.id, o.by, 'رُفضت المحفظة')

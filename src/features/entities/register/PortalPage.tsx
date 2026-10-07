@@ -14,7 +14,7 @@ import { payableProjects, requestsOfEntity, usePayments } from '@/data/payments/
 import { entityStateOf } from '@/data/mock/payEntity'
 import { closeRows, closeStageLabel } from '@/data/mock/closing'
 import { CASES, CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, useClosing } from '@/data/closing/store'
-import { signOut } from '@/data/session'
+import { isPortalPreview, signOut } from '@/data/session'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { NOUN, nounAfter, readDate } from '@/lib/format'
 import {
@@ -36,6 +36,7 @@ import { PF_STAGE_SAY, PF_STAGE_TONE, isStrategic, pfOfEntity, typeAllowed, useP
 import type { Reading } from '@/components/assistant'
 import { PortalAccount } from './PortalAccount'
 import { PortalNotices } from './PortalNotices'
+import { ReadOnly } from '@/components/shell/ReadOnly'
 
 /* Entity portal - "a screen that only shows its own application."
 
@@ -72,6 +73,7 @@ const DEFAULT_REQ = 'REQ-2026-947139'
 export default function PortalPage() {
   const navigate = useNavigate()
   const { values } = useQueryParams(['req', 'entity'])
+  const preview = isPortalPreview()
   useFlow()
   usePartners()
   useEntityFlow()
@@ -223,6 +225,9 @@ export default function PortalPage() {
             </Glass>
           )}
 
+          {/* Re-audit 7 Oct · staff read the portal as the entity sees it, and act on nothing */}
+          {preview && <p className="sub cnote"><Tag tone="mute">معاينة للقراءة فقط</Tag> تقرأ بوابة الجهة كما تراها · الإجراءات للجهة من حسابها</p>}
+          <ReadOnly on={preview}>
           <div className="g2">
             {/* Right - application card
                 Everything the entity needs in one card: what the institution said, what's missing,
@@ -630,6 +635,7 @@ export default function PortalPage() {
               readings={portalReadings}
             />
           </div>
+          </ReadOnly>
 
           <p className="sub tcen cnote">
             ليس طلبك؟{' '}

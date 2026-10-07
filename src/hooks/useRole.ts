@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { asUser, readRole, roleByKey, writeRole, type Role, type RoleKey } from '@/data/roles'
 import type { CurrentUser } from '@/types/domain'
+import { isEntitySession, sessionScope } from '@/data/session'
+import { entityById } from '@/data/mock/entities'
+import { regRows } from '@/data/mock/registration'
 
 const EVENT = 'ab:role'
 
@@ -32,5 +35,12 @@ export function useRole(): {
   }, [])
 
   const role = roleByKey(key)
+  /* Re-audit 7 Oct · an entity session signs as the entity, never as the last staff seat used in this
+     browser · a partner's portfolio actions are logged under the partner's name */
+  if (isEntitySession()) {
+    const scope = sessionScope()
+    const name = (scope.entityId && entityById(scope.entityId)?.name) || regRows.find((r) => r.id === scope.reqId)?.name || 'الجهة'
+    return { role, user: { ...asUser(role), name, role: 'الجهة المستفيدة', financialAuthority: null, actions: [] }, setRole }
+  }
   return { role, user: asUser(role), setRole }
 }

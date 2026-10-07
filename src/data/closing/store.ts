@@ -409,7 +409,7 @@ function apply(o: Op) {
       }
       const to = next[c.stage]
       if (!to) return
-      if (c.stage === 'comms') log(c, o.by, `تسجيل اعتماد الاتصال المؤسسي للنشر الإعلامي${o.file ? ` · ${o.file}` : ''}`, o.at)
+      if (c.stage === 'comms') log(c, o.by, `اعتماد الاتصال المؤسسي لمتطلبات النشر الإعلامي${o.file ? ` · ${o.file}` : ''}`, o.at)
       c.note = undefined
       move(c, to)
       log(c, o.by, to === 'reportDone' ? 'اعتماد التقرير الختامي · إقفال الدورة الأولى' : `اعتماد · إحالة إلى ${closeStageLabel(to)}`, o.at)
@@ -417,7 +417,8 @@ function apply(o: Op) {
         setProjectStage(c.projectId, 'تقييم المشروع')
         notify([c.owner], 'اعتُمد التقرير الختامي · ابدأ التقييم', c.projectName, ROUTES.closing(c.id))
         notify([c.entityName], 'اعتُمد تقريرك الختامي · قيّم تجربتك مع المؤسسة', c.projectName, `${ROUTES.closing(c.id)}?as=entity`)
-      } else if (to === 'manager') notify([MGR()], 'تقرير ختامي بانتظار اعتمادك', c.projectName, ROUTES.closing(c.id))
+      } else if (to === 'comms') notify([roleByKey('comms').title], 'تقرير ختامي بانتظار مراجعة النشر', c.projectName, ROUTES.closing(c.id))
+      else if (to === 'manager') notify([MGR()], 'تقرير ختامي بانتظار اعتمادك', c.projectName, ROUTES.closing(c.id))
       else if (to === 'executive') notify([CEO()], 'تقرير ختامي بانتظار اعتمادك', c.projectName, ROUTES.closing(c.id))
       return
     }
@@ -777,10 +778,10 @@ export function closeActions(c: CloseRow, role: RoleKey): CloseAct[] {
     { kind: 'report', act: 'approve', label: 'اعتماد التقرير وإحالته', btn: 'btn-p', gated: true, why: 'خطوة 7 · مراجعة مشرف المنح ثم الاتصال المؤسسي أو مدير المنح' },
     { kind: 'report', act: 'return', label: back, btn: 'btn-2', needsNote: true, why: 'قاعدة 19 · تعود الإعادة إلى الجهة وتُنشئ إصدارًا جديدًا' },
   ]
-  /* Outreach has no account in the three-role model · the supervisor records its outcome with its letter */
-  if (c.stage === 'comms' && role === 'supervisor') return [
-    { kind: 'report', act: 'approve', label: 'تسجيل اعتماد الاتصال المؤسسي', btn: 'btn-p', needsFile: 'خطاب الاتصال المؤسسي', why: 'قاعدة 9 · مراجعة النشر الإعلامي متى كانت مطلوبة' },
-    { kind: 'report', act: 'return', label: 'إعادة الاتصال المؤسسي للمشرف', btn: 'btn-2', needsNote: true, why: '10.2.13 · تعود ملاحظات النشر إلى مشرف المنح' },
+  /* Re-audit 7 Oct · corporate communications reviews in its own seat (10.2.12 · 10.2.13) */
+  if (c.stage === 'comms' && role === 'comms') return [
+    { kind: 'report', act: 'approve', label: 'اعتماد متطلبات النشر', btn: 'btn-p', why: 'قاعدة 9 · مراجعة النشر الإعلامي متى كانت مطلوبة' },
+    { kind: 'report', act: 'return', label: 'إعادة للمشرف بملاحظات النشر', btn: 'btn-2', needsNote: true, why: '10.2.13 · تعود ملاحظات النشر إلى مشرف المنح' },
   ]
   if (c.stage === 'manager' && role === 'grants-manager') return [
     { kind: 'report', act: 'approve', label: 'اعتماد التقرير وإحالته للتنفيذي', btn: 'btn-p', gated: true, why: 'خطوة 11 · اعتماد مدير المنح ثم المدير التنفيذي' },

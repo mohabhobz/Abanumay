@@ -257,8 +257,8 @@ export function payActions(r: PayRequest, role: RoleKey, asEntity = false): PayA
     /* Rule 15 · closing isn't deleting · the log stays readable */
     { act: 'reject', label: 'رفض نهائي وإغلاق', kind: 'btn-d', needsNote: true, step: 13 },
   ]
-  /* Finance isn't a role in the switcher · the executive director previews its exits */
-  if (r.state === 'finance' && role === 'ceo') return r.order
+  /* Re-audit 7 Oct · the finance officer's own seat (9.2.15 · 9.2.17) */
+  if (r.state === 'finance' && role === 'finance') return r.order
     ? [{ act: 'transfer', label: 'تنفيذ التحويل', kind: 'btn-p', needsFile: 'إثبات التحويل', step: 17 }]
     : [
         { act: 'order', label: 'اعتماد أمر الصرف', kind: 'btn-p', step: 15 },
@@ -403,7 +403,7 @@ function apply(o: Op) {
           r.note = undefined
           log(r, 13, o.by, 'مدير المنح', 'راجع الطلب واعتمده', o.at, note)
           log(r, 14, 'النظام', 'النظام', 'تحقّق من سريان الاتفاقية وتوفّر المبلغ المحجوز، ثم أرسل الطلب إلى الإدارة المالية', o.at, undefined, 'الإدارة المالية · طلب بانتظار أمر الصرف')
-          notify([FIN, roleByKey('ceo').title], r, 'طلب صرف بانتظار أمر الصرف')
+          notify([FIN, roleByKey('finance').name], r, 'طلب صرف بانتظار أمر الصرف')
           return
         case 'returnSup':
           if (r.state !== 'manager' || !note) return

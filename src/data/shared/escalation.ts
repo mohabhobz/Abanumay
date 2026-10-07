@@ -81,6 +81,8 @@ export function escStages(proc: EscProc): EscStage[] {
       own('portfolio.supervisor', 'دراسة مشرف المنح', 'مشرف المنح'),
       own('portfolio.manager', 'لدى مدير المنح', 'مدير المنح'),
       own('portfolio.ceo', 'لدى الرئيس التنفيذي', 'المدير التنفيذي'),
+      own('portfolio.committee', 'عند اللجنة التنفيذية', 'اللجنة التنفيذية'),
+      own('portfolio.board', 'عند مجلس الأمناء', 'مجلس الأمناء'),
       own('portfolio.returned', 'معادة للشريك', 'الشريك'),
       own('portfolio.subs', 'مشاريع فرعية بانتظار الاعتماد', 'مدير المنح'),
       own('portfolio.finance', 'طلب صرف لدى المالية', 'الإدارة المالية'),
@@ -274,7 +276,7 @@ function collect(proc: EscProc): EscItem[] {
       for (const pf of PORTFOLIOS) {
         const partner = PROFILES.find((p) => p.entityId === pf.entityId)?.name ?? ''
         const since = lastAt(pf.log) ?? pf.openedAt
-        if (['supervisor', 'manager', 'ceo', 'returned'].includes(pf.stage)) {
+        if (['supervisor', 'manager', 'ceo', 'committee', 'board', 'returned'].includes(pf.stage)) {
           const k = `portfolio.${pf.stage}`
           out.push(make({
             id: `esc-pf-${pf.id}`, proc, stageKey: k, stage: PF_STAGE_SAY[pf.stage], title: pf.name, sub: partner, href: ROUTES.portfolio(pf.id),

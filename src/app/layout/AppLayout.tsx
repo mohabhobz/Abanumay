@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Icon, icons } from '@/components/ui'
+import { portalOf } from '@/app/entityAccess'
 import { AskDock, Background, MobileTop, Rail } from '@/components/shell'
 import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useHashScroll } from '@/hooks/useHashScroll'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
-import { signOut } from '@/data/session'
+import { isEntitySession, sessionScope, signOut } from '@/data/session'
 import type { AssistantContext } from '@/components/assistant'
 
 export interface AppLayoutProps {
@@ -57,6 +59,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
   const navigate = useNavigate()
   const [assistantOpen, setAssistantOpen] = useState(false)
   const { user } = useRole()
+  const entity = isEntitySession()
   const { pathname } = useLocation()
   useFreshVisit(pathname)
   useHashScroll()
@@ -79,14 +82,29 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
     <>
       <Background />
       <div className="app">
-        {mobile && <MobileTop user={user} />}
+        {mobile && !entity && <MobileTop user={user} />}
 
         <div className="shell">
+          {/* Re-audit 7 Oct · an entity session reads its own records in the staff layout, without
+              the staff navigation · its way out is its portal */}
+          {entity ? (
+            <nav className="xs-etop glass" aria-label="بوابة الجهة">
+              <Link className="btn btn-2 btn-sm" to={portalOf(sessionScope())}>
+                <Icon name={icons.chevronBack} size="sm" />
+                بوابة {user.name}
+              </Link>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}>
+                <Icon name={icons.logout} size="sm" />
+                تسجيل الخروج
+              </button>
+            </nav>
+          ) : (
           <Rail
             user={user}
             onSignOut={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
             shut={assistantOpen}
           />
+          )}
 
           {children}
 
@@ -98,7 +116,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
 
           {/* Fixed on every screen, placed next to the decision bar rather than the navigation bar
               — the question is asked at the point of decision. */}
-          <AskDock open={assistantOpen} onToggle={toggleAssistant} compact={mobile} />
+          {!entity && <AskDock open={assistantOpen} onToggle={toggleAssistant} compact={mobile} />}
         </div>
       </div>
     </>

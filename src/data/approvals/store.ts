@@ -251,7 +251,9 @@ const recorderOf = (h: Holder): RoleKey[] =>
 export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: string): SeatOptions {
   const f = appFlowOf(p.id)
   const amount = p.amountRequested
-  const mine = recorderOf(holder).includes(viewer)
+  /* Re-audit 7 Oct · the supervisor's seat (study and confirmation) belongs to the project's own
+     supervisor, not to anyone holding the role · a project with no owner waits for assignment */
+  const mine = recorderOf(holder).includes(viewer) && (holder !== 'supervisor' && holder !== 'confirm' ? true : p.owner === me)
   const by = holder === 'committee' ? ' · تُسجَّل قراراتها في جلستها' : holder === 'board' ? ' · تُسجَّل قراراته في جلسته' : ''
   const say = f.awaitingReview && holder === 'manager'
     ? `بانتظار استكمال المراجعة عند مدير المنح · ${f.awaitingReview.note}`
@@ -519,7 +521,9 @@ const apply = (o: Op) => {
     }
     case 'vote': {
       const it = itemOf(o.sessionId, o.projectId)
-      if (it && !it.outcome && sessionById(o.sessionId)?.state === 'planned') it.votes[o.member] = o.vote
+      const pr = row(o.projectId)
+      /* 6.4.21 · a member who declared a conflict with the entity doesn't vote on its project */
+      if (it && !it.outcome && sessionById(o.sessionId)?.state === 'planned' && !(pr && conflictOf(pr, o.member))) it.votes[o.member] = o.vote
       return
     }
     case 'minutes': {
@@ -730,7 +734,17 @@ export const makeOfficial = (id: string, text: string, by: string) => run({ op: 
 export const declareConflict = (p: ProjectRow, level: Holder, reason: string, me: string) => run({ op: 'conflict', id: p.id, level, reason, by: me, at: now() })
 export const saveSession = (s: Session) => run({ op: 'session', session: s, at: now() })
 export const setAgenda = (sessionId: string, projectId: string, add: boolean) => run({ op: 'agenda', sessionId, projectId, add, at: now() })
-export const castVote = (sessionId: string, projectId: string, member: string, vote: Vote) => run({ op: 'vote', sessionId, projectId, member, vote, at: now() })
+/** Re-audit 7 Oct · each member casts his own vote from his own account · the secretary records the
+    minutes and the decision, not the members' votes (6.4.6 · 7.4.6) */
+export function castVote(sessionId: string, projectId: string, member: string, vote: Vote, by: string): string[] {
+  if (member !== by) return ['يصوّت العضو بنفسه من حسابه']
+  const s = sessionById(sessionId)
+  const p = row(projectId)
+  if (!s?.members.includes(member)) return ['ليس عضوًا في هذه الجلسة']
+  if (p && conflictOf(p, member)) return ['أُعلن تعارض مصالح مع الجهة · لا يصوّت على مشروعها']
+  run({ op: 'vote', sessionId, projectId, member, vote, at: now() })
+  return []
+}
 export const attachMinutes = (sessionId: string, projectId: string, file: string, by: string) => run({ op: 'minutes', sessionId, projectId, file, by, at: now() })
 export const decideInSession = (sessionId: string, projectId: string, outcome: Outcome, note: string, by: string, target?: Holder, payPlan?: SessionItem['payPlan']) => {
   const p = row(projectId)

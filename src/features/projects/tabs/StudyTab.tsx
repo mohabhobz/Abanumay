@@ -10,8 +10,7 @@ import { CRITERIA, studyScore, type Criterion } from '@/data/intake/criteria'
 import { domainBudget, fitOf, similarProjects } from '@/data/intake/insight'
 import { consultantByKey, consultantsFor } from '@/data/intake/consultants'
 import {
-  flowOf, forwardBlockers, referConsultant, referralOpen, saveStudy, type Recommendation, type Study,
-} from '@/data/intake/flow'
+  adviceCode, flowOf, forwardBlockers, referConsultant, referralOpen, saveStudy, type Recommendation, type Study } from '@/data/intake/flow'
 import { FundingPlanCard } from '@/features/budget/FundingPlan'
 
 /* «الدراسة» · the supervisor's study of a project (3.2.11–3.2.16, 3.2.19, 3.4.25).
@@ -253,7 +252,7 @@ export function StudyAside({ row, me, editable }: { row: ProjectRow; me: string;
             </p>
             {ref.opinion && <p className="cnote">{ref.opinion}</p>}
             <p className="sub cnote">
-              <Link className="tlink" to={ROUTES.advice(row.id)}>شاشة المستشار</Link> · الرأي استشاري غير ملزم.
+              <Link className="tlink" to={ROUTES.advice(row.id)}>شاشة المستشار</Link> · رمز الوصول المرسل له <b className="num">{adviceCode(row.id, ref)}</b> · الرأي استشاري غير ملزم.
             </p>
           </>
         ) : editable ? (

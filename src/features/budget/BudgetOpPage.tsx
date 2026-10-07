@@ -13,7 +13,7 @@ import {
 } from '@/data/mock/budgetTree'
 import { readRole, roleByKey } from '@/data/roles'
 import {
-  FINANCE_ACTOR, REQ_KIND_SAY, REQ_STATE_SAY, decideRequest, docOf, freeOf, liveBudgets, mayAct, nextReqId,
+  REQ_KIND_SAY, REQ_STATE_SAY, decideRequest, docOf, freeOf, liveBudgets, mayAct, nextReqId,
   reqById, reqIssues, reqTone, saveRequest, sourceName, stepOf, useBudget, whoActs,
   type BudgetRequest, type ReqKind,
 } from '@/data/budget/store'
@@ -333,7 +333,7 @@ export default function BudgetOpPage() {
           required={decide !== 'ok'}
           hint={decide === 'ok' && myStep === 'exec' ? 'الاعتماد النهائي ينفّذ العملية آليًا ويحدّث أرصدة البنود المتأثرة.' : undefined}
           onClose={() => setDecide(null)}
-          onDone={(note) => decideRequest(existing.id, decide === 'ok' ? 'approve' : decide === 'back' ? 'return' : 'reject', note, myStep === 'finance' ? FINANCE_ACTOR : me)}
+          onDone={(note) => decideRequest(existing.id, decide === 'ok' ? 'approve' : decide === 'back' ? 'return' : 'reject', note, me)}
         />
       )}
     </AppLayout>

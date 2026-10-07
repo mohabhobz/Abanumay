@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { isSignedIn } from '@/data/session'
+import { isSignedIn, sessionRole, sessionScope } from '@/data/session'
+import { entityMayOpen, portalOf, staffViewOf } from './entityAccess'
 import { ROUTES } from './routes'
 
 /**
@@ -10,7 +11,17 @@ import { ROUTES } from './routes'
  */
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const loc = useLocation()
-  if (isSignedIn()) return <>{children}</>
+  if (isSignedIn()) {
+    /* Re-audit 7 Oct · an entity opens its own records' entity view and nothing else; staff never
+       act as an entity · they land on the staff view of the same record */
+    if (sessionRole() === 'entity') {
+      const scope = sessionScope()
+      return entityMayOpen(loc.pathname, loc.search, scope) ? <>{children}</> : <Navigate to={portalOf(scope)} replace />
+    }
+    const staffView = staffViewOf(loc.pathname, loc.search)
+    if (staffView) return <Navigate to={staffView} replace />
+    return <>{children}</>
+  }
   /* The root isn't an intended destination — it just means "the site was opened." If we passed it
      as `from`, the user would land on "Today" instead of the default screen. */
   const target = loc.pathname + loc.search

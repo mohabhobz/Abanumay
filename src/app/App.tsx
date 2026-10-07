@@ -70,6 +70,7 @@ import ProjectNewPage from '@/features/projects/ProjectNewPage'
 import PortfolioPage from '@/features/projects/PortfolioPage'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
+import { PortalGate } from './PortalGate'
 
 /**
  * Screen route map. Every module has a route even if not built yet, so navigation stays fully wired
@@ -96,8 +97,8 @@ export default function App() {
             this screen doesn't have a system account yet, only one tied to their request. Putting
             it behind `RequireAuth` would mean only staff could open it, not the person it's built
             for. */}
-        <Route path={ROUTES.entityPortal} element={<PortalPage />} />
-        <Route path={ROUTES.entityUpdate} element={<UpdateRequestPage />} />
+        <Route path={ROUTES.entityPortal} element={<PortalGate><PortalPage /></PortalGate>} />
+        <Route path={ROUTES.entityUpdate} element={<PortalGate><UpdateRequestPage /></PortalGate>} />
         {/* The consultant's temporary screen · outside staff auth for the same reason (3.2.20) */}
         <Route path="/advice/:id" element={<AdvicePage />} />
 

@@ -77,7 +77,7 @@ export interface PortfolioItem {
   results?: string
 }
 
-export type PortfolioStage = 'draft' | 'supervisor' | 'manager' | 'ceo' | 'returned' | 'approved' | 'rejected' | 'closing' | 'closed'
+export type PortfolioStage = 'draft' | 'supervisor' | 'manager' | 'ceo' | 'committee' | 'board' | 'returned' | 'approved' | 'rejected' | 'closing' | 'closed'
 export interface Portfolio {
   id: string
   name: string

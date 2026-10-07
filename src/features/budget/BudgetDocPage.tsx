@@ -19,7 +19,7 @@ import {
 import { APPROVAL_MATRIX } from '@/data/approval'
 import { readRole, roleByKey } from '@/data/roles'
 import {
-  DIRECTIONS, FINANCE_ACTOR, decideBudget, deleteBlock, directionById, docOf, eventsOf, headIssues, mayAct, nextDocId,
+  DIRECTIONS, decideBudget, deleteBlock, directionById, docOf, eventsOf, headIssues, mayAct, nextDocId,
   holdSplit, ownersOf, saveBudget, shareSay, sourceName, stepOf, submitBudget, useBudget, whoActs,
 } from '@/data/budget/store'
 import { BUDGET_RULES, LEVEL_SAY, type Level } from '@/data/budget/rules'
@@ -618,9 +618,9 @@ export default function BudgetDocPage() {
           cta={STEP_SAY[myStep][decide]}
           tone={decide === 'ok' ? 'btn-p' : 'btn-2'}
           required={decide === 'back'}
-          hint={decide === 'back' ? 'الإعادة بملاحظة توضّح المطلوب · تظهر للمُعِدّ في رأس الميزانية.' : myStep === 'finance' ? 'مراجعة الإدارة المالية · يعاينها المدير التنفيذي في النموذج.' : undefined}
+          hint={decide === 'back' ? 'الإعادة بملاحظة توضّح المطلوب · تظهر للمُعِدّ في رأس الميزانية.' : undefined}
           onClose={() => setDecide(null)}
-          onDone={(note) => { decideBudget(existing.id, decide === 'ok' ? 'approve' : 'return', note, myStep === 'finance' ? FINANCE_ACTOR : me); setFlash(decide === 'ok' ? 'سُجّلت الموافقة' : 'أُعيدت') }}
+          onDone={(note) => { decideBudget(existing.id, decide === 'ok' ? 'approve' : 'return', note, me); setFlash(decide === 'ok' ? 'سُجّلت الموافقة' : 'أُعيدت') }}
         />
       )}
     </AppLayout>

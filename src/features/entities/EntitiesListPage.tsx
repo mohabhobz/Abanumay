@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { readRole } from '@/data/roles'
 import { useNavigate } from 'react-router-dom'
 import {
   DateField, Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, PAGE_SIZES, Pager, SearchBox, Segments,
@@ -311,7 +312,8 @@ export default function EntitiesListPage() {
                 { label: 'طلبات التسجيل', to: ROUTES.entityRequests, icon: 'doc', count: reg.open },
                 /* 2.3.upd · the other request an entity sends, after it exists */
                 { label: 'طلبات التحديث', to: ROUTES.entityUpdates, icon: 'edit', count: UPD_ROWS.filter((u) => u.state === 'review').length },
-                { label: 'الأرشيف', to: ROUTES.entityArchive, icon: 'folder' },
+                /* Re-audit 7 Oct · the archive is the system admin's alone (rule 29) */
+                ...(readRole() === 'admin' ? [{ label: 'الأرشيف', to: ROUTES.entityArchive, icon: 'folder' as const }] : []),
               ]}
               /* Note: this button leads to direct registration, not the entity portal - whoever's
                  using this is a grants supervisor inside the system registering a partner they

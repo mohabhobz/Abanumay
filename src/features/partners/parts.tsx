@@ -208,7 +208,7 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
   const plan = planOfProject(row.id)
   const sched = ehScheduleOf(row.id)
   const sup = role.key === 'supervisor'
-  const fin = role.key === 'ceo'
+  const fin = role.key === 'finance'
   const closed = Boolean(ehCloseOf(row.id)?.closedAt)
   const r = (out: string[], ok: string) => setSaid(out.length ? { bad: out } : { ok })
 

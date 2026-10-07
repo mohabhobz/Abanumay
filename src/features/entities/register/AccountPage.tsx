@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { signIn } from '@/data/session'
 import { useNavigate } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from '@/features/auth/AuthShell'
@@ -64,6 +65,8 @@ export default function RegisterAccountPage() {
       setRegAccount(email)
       const d = draftOf(email.trim())
       const sent = regRows.find((r) => r.acctEmail === email.trim() && r.state !== 'draft')
+      /* The registrant's session · it opens its own request's portal and nothing else */
+      if (sent) signIn(email.trim(), 'entity', sent.state === 'approved' && sent.entityId ? { entityId: sent.entityId, reqId: sent.id } : { reqId: sent.id })
       navigate(d?.state === 'draft' ? `${ROUTES.entityRegister}?step=form`
         : sent ? `${ROUTES.entityPortal}?req=${sent.id}` : `${ROUTES.entityRegister}?step=form`, { replace: true })
       return

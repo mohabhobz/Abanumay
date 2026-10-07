@@ -10,7 +10,7 @@ import { projectById } from '@/data/mock/projects'
 import { consultantByKey } from '@/data/intake/consultants'
 import { TODAY } from '@/data/intake/cycle'
 import { studyScore } from '@/data/intake/criteria'
-import { REQUEST_DOCS, flowOf, giveOpinion, referralOpen, useFlow, type Referral } from '@/data/intake/flow'
+import { REQUEST_DOCS, adviceUnlocked, flowOf, giveOpinion, referralOpen, unlockAdvice, useFlow, type Referral } from '@/data/intake/flow'
 
 /* The consultant's screen · one referred project, for a limited time (3.2.20 · 3.4.19).
 
@@ -33,6 +33,9 @@ export default function AdvicePage() {
   const c = r ? consultantByKey(r.consultant) : undefined
   const [verdict, setVerdict] = useState<Referral['verdict']>()
   const [text, setText] = useState('')
+  const [unlocked, setUnlocked] = useState(() => (p ? adviceUnlocked(p.id) : false))
+  const [code, setCode] = useState('')
+  const [codeErr, setCodeErr] = useState(false)
 
   const open = referralOpen(r)
   const expired = !!r && !r.opinion && r.expiresAt < TODAY
@@ -57,7 +60,17 @@ export default function AdvicePage() {
                 </button>
               </div>
 
-              {!p || !r ? (
+              {p && r && !unlocked ? (
+                <Glass>
+                  <Head title="رمز الوصول" />
+                  <p className="sub cnote">أدخل الرمز المرسل إليك مع رابط الإحالة · الشاشة لمستشار هذه الإحالة وحده.</p>
+                  <form className="apv-row mt-2" onSubmit={(e) => { e.preventDefault(); if (unlockAdvice(p.id, code)) setUnlocked(true); else setCodeErr(true) }}>
+                    <span className="fld"><input className="num" inputMode="numeric" dir="ltr" value={code} onChange={(e) => { setCode(e.target.value); setCodeErr(false) }} aria-label="رمز الوصول" /></span>
+                    <button type="submit" className="btn btn-p btn-sm">ادخل</button>
+                  </form>
+                  {codeErr && <p className="sub cnote bad">الرمز غير صحيح</p>}
+                </Glass>
+              ) : !p || !r ? (
                 <Glass>
                   <Head title="لا توجد إحالة" />
                   <p className="sub cnote">لا يوجد مشروع محال إليك بهذا الرابط · تصلك الإحالة من مشرف المنح ومعها رابطها.</p>

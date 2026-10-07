@@ -17,6 +17,7 @@ import { fitOf } from '@/data/intake/insight'
 import { readRole, roleByKey } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import {
+  conflictOf,
   OUTCOME_SAY, VERDICT_SAY, VOTE_SAY, appFlowOf, attachMinutes, awaitingSession, carried, castVote, closeSession,
   decideInSession, holdLine, levelCap, mayRecord, sessionById, sessionItemBlockers, setAgenda, strategyOf,
   useApprovals, voteTally, type Outcome, type Session, type SessionItem, type Vote,
@@ -162,20 +163,32 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
 
       <h3 className="stdy-h mt-3">التصويت · موافقة <span className="num">{t.approve}</span> · رفض <span className="num">{t.reject}</span> · إعادة <span className="num">{t.return}</span> · امتناع <span className="num">{t.abstain}</span></h3>
       <ul className="apv-votes">
-        {s.members.map((m) => (
+        {s.members.map((m) => {
+          const conflicted = Boolean(conflictOf(p, m))
+          const own = m === me && s.state === 'planned' && !it.outcome && !conflicted
+          return (
           <li key={m}>
             <Person name={m} />
+            {conflicted && <Tag tone="warn">تعارض مصالح · لا يصوّت</Tag>}
+            {m === me && !conflicted && <Tag tone="mute">صوتك</Tag>}
             <span className="pc-sp" />
-            <div className="cfgchips" role="radiogroup" aria-label={`صوت ${m}`}>
-              {VOTES.map((v) => (
-                <button key={v} type="button" role="radio" aria-checked={it.votes[m] === v} disabled={!may || Boolean(it.outcome)} className={`cfgchip${it.votes[m] === v ? ' on' : ''}`} onClick={() => castVote(s.id, p.id, m, v)}>
-                  {VOTE_SAY[v]}
-                </button>
-              ))}
-            </div>
+            {own ? (
+              <div className="cfgchips" role="radiogroup" aria-label={`صوت ${m}`}>
+                {VOTES.map((v) => (
+                  <button key={v} type="button" role="radio" aria-checked={it.votes[m] === v} className={`cfgchip${it.votes[m] === v ? ' on' : ''}`} onClick={() => castVote(s.id, p.id, m, v, me)}>
+                    {VOTE_SAY[v]}
+                  </button>
+                ))}
+              </div>
+            ) : !conflicted && (
+              /* Another member's vote reads · it is cast from that member's own account */
+              it.votes[m] ? <Tag tone={it.votes[m] === 'approve' ? 'ok' : it.votes[m] === 'reject' ? 'no' : 'mute'}>{VOTE_SAY[it.votes[m] as keyof typeof VOTE_SAY]}</Tag> : <span className="sub">لم يصوّت بعد</span>
+            )}
           </li>
-        ))}
+          )
+        })}
       </ul>
+      <p className="sub cnote">يصوّت كل عضو بنفسه من حسابه · يسجّل الأمين المحضر والقرار فقط</p>
       <p className="sub cnote">{c ? <>النتيجة بالتصويت: <b>{VOTE_SAY[c]}</b></> : t.cast < APPROVAL_RULES.quorum ? `لم يكتمل النصاب (${t.cast} من ${APPROVAL_RULES.quorum})` : 'لا أغلبية بعد'} · نسبة المشاركة <span className="num">{pct(Math.round((t.cast / Math.max(1, s.members.length)) * 100))}</span></p>
 
       <div className="apv-row">

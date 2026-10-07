@@ -8,7 +8,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { query } from '@/data/repository'
 import { entityCode } from '@/lib/format'
 import { readRole, roleByKey } from '@/data/roles'
-import { archiveEntity, canDecide, overlayOf, useEntityFlow } from '@/data/entities/store'
+import { archiveEntity, overlayOf, useEntityFlow } from '@/data/entities/store'
 import { useQueryParams } from '@/hooks/useQueryParams'
 
 /* Archived entities · the system administrator's own search (2.4.28 · 2.4.29).
@@ -21,7 +21,9 @@ export default function ArchivePage() {
   useEntityFlow()
   const { values: v, set } = useQueryParams(['q'])
   const role = readRole()
-  const may = canDecide('status', role)
+  /* Re-audit 7 Oct · searching the archive and restoring from it is the system admin's (rule 29) */
+  const admin = role === 'admin'
+  const may = admin
   const me = roleByKey(role).name
   const rows = query.entities({ archived: true, search: v.q, page: 1, pageSize: 9999, sort: 'name' }).rows
   const [why, setWhy] = useState<Record<string, string>>({})
@@ -37,6 +39,9 @@ export default function ArchivePage() {
               <p className="sub mt-1">لا تُحذف جهة أبدًا (القاعدة 28) · المؤرشفة تخرج من القوائم والفلاتر، وتُبحث هنا وحدها (القاعدة 29)</p>
             </div>
           </header>
+          {!admin ? (
+            <Glass><Empty title="الأرشيف لمدير النظام وحده" note="الجهات المؤرشفة تخرج من القوائم والفلاتر · ويبحث فيها ويستعيدها مدير النظام (القاعدة 29)." /></Glass>
+          ) : <>
 
           <Glass className="ftoolbar">
             <div className="ftool-r"><div className="ftool-f">
@@ -81,6 +86,7 @@ export default function ArchivePage() {
               </Glass>
             )
           })}
+          </>}
         </div>
       </div>
     </AppLayout>

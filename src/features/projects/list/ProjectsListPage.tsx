@@ -14,10 +14,10 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { fixtures, query, type ProjectBucket, type ProjectQuery, type ProjectSort } from '@/data/repository'
 import {
-  applyDecision, portfolioRows, PROJECT_TYPES, type BulkDecision,
+  portfolioRows, PROJECT_TYPES, type BulkDecision,
 } from '@/data/mock/projects'
 import { useRole } from '@/hooks/useRole'
-import { assignSupervisor, flowOf, recommendMany } from '@/data/intake/flow'
+import { assignSupervisor, completeMany, flowOf, recommendMany } from '@/data/intake/flow'
 import { decideMany } from '@/data/approvals/store'
 import { ROUTES } from '@/app/routes'
 import { type Sheet } from '@/lib/export'
@@ -310,17 +310,25 @@ export default function ProjectsListPage() {
     many: () => 'مشروعًا محدَّدًا',
   })
 
+  /* Re-audit 7 Oct · «طلب استكمال» runs through the intake flow · a recorded event, a notice to the
+     entity, and only on the supervisor's own projects · no undo, like every recorded decision */
   const runBulk = (decision: BulkDecision, label: string) => {
-    if (selected.size === 0) return
-    const ids = [...selected]
-    const undo = applyDecision(ids, decision)
-    setLastBulk({ text: `${label}، ${units.project(ids.length)}`, undo })
+    if (selected.size === 0 || decision !== 'complete') return
+    const { done, held } = completeMany([...selected], bulkNote, user.name)
+    setLastBulk({
+      text: `${label}: أُعيد ${units.project(done.length)} للجهة${held.length ? ` · بقي ${units.project(held.length)} (${held[0]!.why})` : ''}`,
+      undo: undefined,
+    })
     setSelected(new Set())
+    setBulkNote('')
     bump((n) => n + 1)
   }
 
   const bulkActions = role.actions.filter((a) => BULK_OF[a.label] || BULK_RECOMMEND[a.label] || BULK_APPROVAL.includes(a.label))
   const [bulkNote, setBulkNote] = useState('')
+  /* A recorded decision carries its note · the supervisor's recommendation carries the study's */
+  const needsNote = (a: { label: string }) =>
+    !(role.key === 'supervisor' && BULK_RECOMMEND[a.label]) && (BULK_APPROVAL.includes(a.label) || Boolean(BULK_OF[a.label]))
 
   const runApproval = (label: string) => {
     if (selected.size === 0 || !bulkNote.trim()) return
@@ -738,7 +746,7 @@ export default function ProjectsListPage() {
           >
             {/* A decision on the whole batch. The actions are the same role actions as on
                 the project page, minus anything that needs a per-project target. */}
-            {bulkActions.some((a) => BULK_APPROVAL.includes(a.label)) && (
+            {bulkActions.some(needsNote) && (
               <span className="fld bulk-note">
                 <input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="مبررات القرار · تُسجَّل على كل مشروع" aria-label="مبررات القرار الجماعي" />
               </span>
@@ -747,9 +755,9 @@ export default function ProjectsListPage() {
               <button
                 key={a.label}
                 className={`btn btn-sm ${a.kind}`}
-                disabled={BULK_APPROVAL.includes(a.label) && !bulkNote.trim()}
-                title={BULK_APPROVAL.includes(a.label) && !bulkNote.trim() ? 'اكتب مبررات القرار أولًا' : undefined}
-                onClick={() => (BULK_RECOMMEND[a.label] ? runRecommend(a.label) : BULK_APPROVAL.includes(a.label) ? runApproval(a.label) : runBulk(BULK_OF[a.label]!, a.label))}
+                disabled={needsNote(a) && !bulkNote.trim()}
+                title={needsNote(a) && !bulkNote.trim() ? 'اكتب مبررات القرار أولًا' : undefined}
+                onClick={() => (role.key === 'supervisor' && BULK_RECOMMEND[a.label] ? runRecommend(a.label) : BULK_APPROVAL.includes(a.label) ? runApproval(a.label) : runBulk(BULK_OF[a.label]!, a.label))}
               >
                 {a.label}
               </button>

@@ -89,6 +89,8 @@ export const ESC_LIMITS: Record<string, number> = hydrate(CFG.escLimits, {
   'portfolio.supervisor': 168,
   'portfolio.manager': 96,
   'portfolio.ceo': 96,
+  'portfolio.committee': 336,
+  'portfolio.board': 504,
   'portfolio.returned': 240,
   'portfolio.subs': 120,
   'portfolio.finance': 72,

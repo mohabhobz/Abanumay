@@ -123,8 +123,8 @@ export default function PartnersPage() {
           {tab === 'finance' && (
             <>
               <Glass>
-                <Head title="دفعات نفّذتها منصة إحسان" meta={<span className="sub">مراجعة المستندات وتأكيد الحالة · يعاينها المدير التنفيذي عن المالية</span>} />
-                <PayList list={fq.pays} finance={role.key === 'ceo'} />
+                <Head title="دفعات نفّذتها منصة إحسان" meta={<span className="sub">مراجعة المستندات وتأكيد الحالة · الإدارة المالية</span>} />
+                <PayList list={fq.pays} finance={role.key === 'finance'} />
               </Glass>
               {/* Cross · each operation's documents read against its amount, number and date */}
               {fq.pays.some((x) => x.state === 'review') && (
@@ -145,7 +145,7 @@ export default function PartnersPage() {
                         <Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link>
                         <span>الدفعة <span className="num">{r.no}</span></span>
                         <Money sm>{r.amount}</Money>
-                        {role.key === 'ceo' && (
+                        {role.key === 'finance' && (
                           <span className="rowf gp-2">
                             <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم أمر التحويل" placeholder="رقم أمر التحويل" /></span>
                             <button type="button" className="btn btn-p btn-sm" onClick={() => actOnPfReq(pf.id, r.id, 'pay', '', user.name, ref)}>صرف</button>

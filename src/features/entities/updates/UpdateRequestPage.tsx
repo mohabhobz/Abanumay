@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { isPortalPreview } from '@/data/session'
+import { ReadOnly } from '@/components/shell/ReadOnly'
 import { Link, useNavigate } from 'react-router-dom'
 import { DateField, DateText, Glass, Head, Icon, KV, Mono, Num, Tag, icons } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
@@ -50,6 +52,7 @@ type Phase = 'form' | 'otp' | 'sent'
 const show = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? <DateText>{v}</DateText> : isolate(v || '—'))
 
 export default function UpdateRequestPage() {
+  const preview = isPortalPreview()
   useEntityFlow()
   const navigate = useNavigate()
   const { values: q } = useQueryParams(['entity', 'id'])
@@ -138,6 +141,8 @@ export default function UpdateRequestPage() {
                   </p>
                 </div>
               </header>
+              {preview && <p className="sub cnote"><Tag tone="mute">معاينة للقراءة فقط</Tag> طلب التحديث ترسله الجهة من حسابها</p>}
+              <ReadOnly on={preview}>
 
               {existing?.state === 'completion' && existing.note && (
                 <div className="ptl-res">
@@ -275,6 +280,7 @@ export default function UpdateRequestPage() {
                 </>
               )}
 
+              </ReadOnly>
               <p className="sub tcen cnote">آخر تحديث للملف <DateText>{d.updatedAt}</DateText></p>
             </div>
           </div>

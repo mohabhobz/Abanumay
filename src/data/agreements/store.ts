@@ -116,7 +116,7 @@ export function agrHolder(a: AgreementRow): AgrHolder {
   }
 }
 export const HOLDER_SAY: Record<Exclude<AgrHolder, null>, string> = {
-  supervisor: 'مشرف المنح', 'grants-manager': 'مدير المنح', ceo: 'المدير التنفيذي', admin: 'مدير النظام', entity: 'الجهة المستفيدة',
+  supervisor: 'مشرف المنح', 'grants-manager': 'مدير المنح', ceo: 'المدير التنفيذي', finance: 'الإدارة المالية', comms: 'الاتصال المؤسسي', member: 'عضو اللجنة والمجلس', admin: 'مدير النظام', entity: 'الجهة المستفيدة',
 }
 /** The stage's name as the holder reads it · a return names where it went */
 export function agrStageSay(a: AgreementRow): string {

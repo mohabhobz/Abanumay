@@ -506,12 +506,38 @@ export const giveOpinion = (id: string, opinion: string, verdict: NonNullable<Re
 export const closeRequest = (id: string, kind: 'cancel' | 'archive', reason: string, by: string) =>
   run({ op: 'close', id, kind, reason, by })
 
+/** Is this project at the supervisor's own seat · the reason when not */
+function atSupervisorSeat(id: string, by: string): string {
+  const p = row(id)
+  if (!p || p.stage !== 'دراسة المشروع' || (p.holder && p.holder !== 'supervisor')) return 'ليس عند مشرف المنح'
+  if (p.owner !== by) return 'مسند لمشرف آخر'
+  return ''
+}
+
+/** Bulk «طلب استكمال» · each project at the supervisor's own seat goes back to its entity with the
+    note, a recorded event and a notice · it used to move the stage only, with no record (3.4.15) */
+export const completeMany = (ids: readonly string[], note: string, by: string): { done: string[]; held: { id: string; why: string }[] } => {
+  const done: string[] = []
+  const held: { id: string; why: string }[] = []
+  for (const id of ids) {
+    const why = !note.trim() ? 'المطلوب من الجهة إلزامي' : atSupervisorSeat(id, by)
+    if (why) { held.push({ id, why }); continue }
+    const o: Op = { op: 'complete', id, note: note.trim(), by }
+    ops.push(o); apply(o); done.push(id)
+  }
+  save()
+  emit()
+  return { done, held }
+}
+
 /** Bulk «توصية» from the list · forwards each project that passes the guard, reports the rest */
 export const recommendMany = (ids: readonly string[], by: string): { done: string[]; held: { id: string; why: string }[] } => {
   const done: string[] = []
   const held: { id: string; why: string }[] = []
   for (const id of ids) {
-    const b = forwardBlockers(id)
+    /* Re-audit 7 Oct · only a project at its supervisor's seat, and only his own */
+    const seat = atSupervisorSeat(id, by)
+    const b = seat ? [seat] : forwardBlockers(id)
     if (b.length) held.push({ id, why: b[0]! })
     else { ops.push({ op: 'recommend', id, by }); apply({ op: 'recommend', id, by }); done.push(id) }
   }
@@ -522,6 +548,25 @@ export const recommendMany = (ids: readonly string[], by: string): { done: strin
 
 /** Is the consultant's access still open on this project */
 export const referralOpen = (r?: Referral): boolean => !!r && !r.opinion && r.expiresAt >= TODAY
+
+/* Re-audit 7 Oct · the consultant's screen was open to anyone who knew the project number. The
+   referral now carries an access code (sent with the link in production); the screen asks for it
+   and keeps the consultant in for this tab. */
+export function adviceCode(projectId: string, r: Referral): string {
+  let h = 2166136261
+  for (const ch of `${projectId}|${r.consultant}|${r.at}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0
+  return String(100000 + (h % 900000))
+}
+const ADVICE_KEY = (id: string) => `ab-advice-${id}`
+export const adviceUnlocked = (id: string): boolean => {
+  try { return sessionStorage.getItem(ADVICE_KEY(id)) === '1' } catch { return false }
+}
+export function unlockAdvice(id: string, code: string): boolean {
+  const r = flowOf(id).referral
+  if (!r || code.trim() !== adviceCode(id, r)) return false
+  try { sessionStorage.setItem(ADVICE_KEY(id), '1') } catch { /* storage blocked · the code is asked again */ }
+  return true
+}
 
 /** For the timeline · events this module recorded on the project, newest first */
 export const flowEvents = (id: string): LogEvent[] => flowOf(id).events

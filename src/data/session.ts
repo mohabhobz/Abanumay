@@ -24,10 +24,16 @@ const ROLE = 'ab-role'
  */
 export type Role = 'staff' | 'entity'
 
-export const signIn = (username: string, role: Role = 'staff'): void => {
+/** What an entity session may open · its own entity, or its own registration request */
+export interface Scope { entityId?: string; reqId?: string }
+const SCOPE = 'ab-scope'
+
+export const signIn = (username: string, role: Role = 'staff', scope?: Scope): void => {
   try {
     sessionStorage.setItem(KEY, username || '1')
     sessionStorage.setItem(ROLE, role)
+    if (scope) sessionStorage.setItem(SCOPE, JSON.stringify(scope))
+    else sessionStorage.removeItem(SCOPE)
   } catch {
     /* Private mode or blocked storage · the session stays in memory until refresh */
   }
@@ -37,6 +43,7 @@ export const signOut = (): void => {
   try {
     sessionStorage.removeItem(KEY)
     sessionStorage.removeItem(ROLE)
+    sessionStorage.removeItem(SCOPE)
   } catch {
     /* Nothing to do */
   }
@@ -58,3 +65,18 @@ export const sessionRole = (): Role => {
     return 'staff'
   }
 }
+
+/** The entity session's own records · empty for staff */
+export const sessionScope = (): Scope => {
+  try {
+    return JSON.parse(sessionStorage.getItem(SCOPE) ?? '{}') as Scope
+  } catch {
+    return {}
+  }
+}
+
+/** Signed in as an entity (or a registrant) · its screens are the portal and its own records */
+export const isEntitySession = (): boolean => isSignedIn() && sessionRole() === 'entity'
+
+/** A staff member reading an entity's portal · every control inside is disabled, links still open */
+export const isPortalPreview = (): boolean => isSignedIn() && sessionRole() !== 'entity'

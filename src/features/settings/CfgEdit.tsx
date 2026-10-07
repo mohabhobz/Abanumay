@@ -1,7 +1,10 @@
 import { useState, type ReactNode } from 'react'
 import { Nil, Tag } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
+import { Link } from 'react-router-dom'
 import { CFG, isConfigured, persist } from '@/lib/config'
+import { useRole } from '@/hooks/useRole'
+import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 
 /* Editable settings values · meeting 1 Oct, change item 9: limits and durations change from
@@ -60,6 +63,9 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
   unitLabel?: string
   extraHead?: string
 }) {
+  /* Re-audit 7 Oct · the stage days are the escalation mechanism's · the system admin edits them, on
+     this page or on «آلية التصعيد»; everyone else reads them (9.5 clause 4) */
+  const admin = useRole().role.key === 'admin'
   const days = (h: number) => Math.round(h / 24)
   const base = () => Object.fromEntries(stages.map((s) => [s.key, days(limits[s.key] ?? 0)]))
   const [saved, setSaved] = useState<Record<string, number>>(base)
@@ -79,6 +85,7 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
         {configured
           ? <>عُدّلت هذه المدد من الإعدادات · وتُقرأ في ألوان «متأخر» وقوائم «اليوم» فورًا</>
           : <><Tag tone="warn">افتراضي</Tag> مدد مؤقتة حتى تؤكدها المؤسسة · وتعديلها يغيّر من يُعدّ متأخرًا فورًا</>}
+        {!admin && <> · <Tag tone="mute">يحرّرها مدير النظام</Tag> من <Link className="lnk" to={ROUTES.escalationSettings}>آلية التصعيد</Link></>}
       </p>
       <table className="tbl cfgtbl">
         <thead>
@@ -100,14 +107,14 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
                 {extraHead && <td>{s.extra}</td>}
                 <td>{s.who || <Nil />}</td>
                 <td className="n">
-                  {open ? (
+                  {open && admin ? (
                     <CfgNum
                       value={d[s.key]}
                       min={1}
                       onChange={(x) => setD((y) => ({ ...y, [s.key]: x }))}
                       label={`حدّ ${s.label} بالأيام`}
                     />
-                  ) : (
+                  ) : open ? <span className="num">{d[s.key]}</span> : (
                     <span className="sub">بلا حدّ</span>
                   )}
                 </td>
@@ -117,7 +124,7 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
           })}
         </tbody>
       </table>
-      {changed.length > 0 && (
+      {admin && changed.length > 0 && (
         <SaveBar
           count={changed.length}
           sentence={<>{changed.length === 1 ? 'مدة معدّلة' : 'مدد معدّلة'}<span className="decsep" /><span className="sub">{changed.map((s) => s.label).join('، ')}</span></>}

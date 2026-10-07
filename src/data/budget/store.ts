@@ -276,8 +276,7 @@ export const docOf = (id: string): BudgetDoc | undefined => allBudgets.find((d) 
 export const liveBudgets = (): BudgetDoc[] => allBudgets.filter(isLiveBudget)
 export const budgetsOfYear = (yearId: string): BudgetDoc[] => allBudgets.filter((d) => d.yearId === yearId)
 
-/** Finance isn't a role in the switcher · its step is signed by the finance department's user, as
-    in disbursements, while the role settings name previews it */
+/** The finance officer of the seeded history · new steps are signed by whoever acts in the role */
 export const FINANCE_ACTOR = 'محمد المطيري'
 
 export type Step = 'prepare' | 'manager' | 'finance' | 'exec' | 'status'

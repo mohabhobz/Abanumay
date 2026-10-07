@@ -11,7 +11,7 @@ import { CRITERIA, studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { fitOf, similarProjects } from '@/data/intake/insight'
 import { docSources, moneyOf } from '@/data/mock/budgetTree'
-import { FINANCE_ACTOR, HOLD_STAGE_SAY, shareSay } from '@/data/budget/store'
+import { HOLD_STAGE_SAY, shareSay } from '@/data/budget/store'
 import { FundingCard } from '@/features/funding/FundingCard'
 import { readRole, roleByKey } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
@@ -259,7 +259,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
               {o.answer ? <Tag tone="ok">ورد الرأي</Tag> : (
                 <span className="apv-row">
                   <span className="fld"><input value={ans[o.id] ?? ''} onChange={(e) => setAns((x) => ({ ...x, [o.id]: e.target.value }))} placeholder={`رأي ${DEPT_SAY[o.dept]}`} aria-label="الرأي" /></span>
-                  <button className="btn btn-2 btn-sm" disabled={!(ans[o.id] ?? '').trim()} onClick={() => answerOpinion(row.id, o.id, (ans[o.id] ?? '').trim(), o.dept === 'finance' ? FINANCE_ACTOR : me)}>سجّل الرأي</button>
+                  <button className="btn btn-2 btn-sm" disabled={!(ans[o.id] ?? '').trim()} onClick={() => answerOpinion(row.id, o.id, (ans[o.id] ?? '').trim(), me)}>سجّل الرأي</button>
                 </span>
               )}
             </li>

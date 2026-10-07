@@ -138,7 +138,7 @@ export default function ProjectPage() {
   /* A project waiting on the entity, or closed, has no decision for anyone (3.4.16 · 3.4.27) */
   const frozen = waiting || closed
   const user = frozen ? { ...me, actions: [] } : seat ? { ...me, actions: seat.actions } : me
-  const studyEditable = role.key === 'supervisor' && holder === 'supervisor' && !frozen
+  const studyEditable = role.key === 'supervisor' && holder === 'supervisor' && !frozen && row?.owner === me.name
   const [transfer, setTransfer] = useState(false)
 
   /* What each seat's button does (procedure 3) · the supervisor's recommendation forwards, never
