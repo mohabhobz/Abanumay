@@ -147,7 +147,6 @@ function GeoPanel({ regions, sel, onSel, spot }: {
   const [hot, setHot] = useState<string | null>(null)
   const by = new Map(regions.map((r) => [r.name, r]))
   const max = Math.max(...regions.map((r) => r.projects), 1)
-  const hub = SAUDI_REGIONS.find((r) => r.name === 'الرياض')
   const tip = hot ? SAUDI_REGIONS.find((r) => r.name === hot) : undefined
   const tipD = hot ? by.get(hot) : undefined
   const rows = regions.filter((r) => r.granted > 0).slice(0, 8)
@@ -161,7 +160,7 @@ function GeoPanel({ regions, sel, onSel, spot }: {
 
   return (
     <Glass className="gb-geo">
-      <Head title="المنح على خريطة المملكة" meta={<span className="sub">حجم النقطة بعدد المشاريع · اختر منطقة من الخريطة أو القائمة</span>} />
+      <Head title="المنح على خريطة المملكة" meta={<span className="sub">لون المنطقة بعدد المشاريع · اختر منطقة من الخريطة أو القائمة</span>} />
       <div className="gb-geo-b">
         {/* the chosen region · start side */}
         <section className="gb-spot" aria-live="polite">
@@ -212,14 +211,6 @@ function GeoPanel({ regions, sel, onSel, spot }: {
               <stop offset="0" className="gb-st-a" />
               <stop offset="1" className="gb-st-b" />
             </linearGradient>
-            <radialGradient id={`${uid}-dot`}>
-              <stop offset="0" className="gb-st-glow" />
-              <stop offset="1" className="gb-st-none" />
-            </radialGradient>
-            <filter id={`${uid}-glow`} x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="5" result="b" />
-              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
           </defs>
 
           {SAUDI_REGIONS.map((r) => {
@@ -234,35 +225,14 @@ function GeoPanel({ regions, sel, onSel, spot }: {
                 onMouseEnter={() => setHot(r.name)}
                 onMouseLeave={() => setHot(null)}
                 onClick={() => onSel(r.name)}
-              >
-                <title>{`${r.name} · ${nf.format(n)} مشروعًا`}</title>
-              </path>
-            )
-          })}
-
-          {hub && SAUDI_REGIONS.filter((r) => r.name !== hub.name && (by.get(r.name)?.projects ?? 0) > 0).map((r) => {
-            const [x1, y1] = hub.c
-            const [x2, y2] = r.c
-            const mx = (x1 + x2) / 2
-            const my = (y1 + y2) / 2 - Math.hypot(x2 - x1, y2 - y1) * 0.32
-            return <path key={`a-${r.key}`} className="gb-arc" d={`M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`} pathLength={1} filter={`url(#${uid}-glow)`} />
-          })}
-
-          {SAUDI_REGIONS.map((r) => {
-            const n = by.get(r.name)?.projects ?? 0
-            if (!n) return null
-            const rad = 7 + 16 * Math.sqrt(n / max)
-            return (
-              <g key={`d-${r.key}`} className={`gb-pt${r.name === sel ? ' on' : ''}`} transform={`translate(${r.c[0]} ${r.c[1]})`} onClick={() => onSel(r.name)}>
-                <circle r={rad * 2.4} fill={`url(#${uid}-dot)`} />
-                <circle className="gb-pt-c" r={rad} filter={`url(#${uid}-glow)`} />
-                <circle className="gb-pt-k" r={rad * 0.42} />
-              </g>
+              />
             )
           })}
 
           {tip && tipD && (
-            <g className="gb-tip" transform={`translate(${tip.c[0]} ${tip.c[1] - 44})`} aria-hidden="true">
+            /* Kept inside the map's faded edges, and never under the pointer · it used to catch the
+               pointer itself, so the region lost its hover the moment the tip appeared */
+            <g className="gb-tip" transform={`translate(${Math.min(Math.max(tip.c[0], 150 + SAUDI_VIEW.w * 0.15), SAUDI_VIEW.w * 0.85 - 150)} ${Math.min(Math.max(tip.c[1] - 44, 62 + SAUDI_VIEW.h * 0.13), SAUDI_VIEW.h * 0.87 - 12)})`} aria-hidden="true">
               <rect x={-150} y={-62} width={300} height={74} rx={14} />
               <text y={-30}>{tip.name}</text>
               <text className="gb-tip-v" y={0}>{`${nf.format(tipD.projects)} مشروعًا · ${mil(tipD.granted)} ريال`}</text>

@@ -24,8 +24,6 @@
 .gb-st-a{stop-color:var(--ch-2)}
 .gb-st-b{stop-color:var(--ch-5)}
 .gb-st-c{stop-color:var(--lime)}
-.gb-st-glow{stop-color:var(--teal);stop-opacity:.42}
-.gb-st-none{stop-color:var(--teal);stop-opacity:0}
 .gb-st-h0{stop-color:var(--gb-h);stop-opacity:.55}
 .gb-st-h1{stop-color:var(--gb-h)}
 .gb-st-w0{stop-color:var(--gb-h);stop-opacity:.42}
@@ -48,13 +46,7 @@
   transition:fill-opacity var(--mo-2) var(--ease-std), stroke-width var(--mo-2) var(--ease-std)}
 .gb-reg.hot{stroke-width:2.4}
 .gb-reg.on{stroke:var(--lime);stroke-width:3}
-.gb-arc{fill:none;stroke:var(--teal);stroke-width:2.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0;
-  opacity:.8;pointer-events:none;animation:gb-draw var(--mo-loop) var(--ease-data) both}
-.gb-pt{cursor:pointer}
-.gb-pt>circle:first-child{pointer-events:none}
-.gb-pt-c{fill:var(--teal);opacity:.9}
-.gb-pt-k{fill:var(--map-halo)}
-.gb-pt.on .gb-pt-c{fill:var(--lime)}
+.gb-tip{pointer-events:none}
 .gb-tip rect{fill:var(--g-pop);stroke:var(--edge-1);stroke-width:1}
 .gb-tip text{fill:var(--t1);text-anchor:middle;font-size:var(--fs-8);font-weight:700}
 .gb-tip .gb-tip-v{fill:var(--t2);font-size:var(--fs-6);font-weight:500}
@@ -150,10 +142,8 @@
 
 @keyframes gb-in{from{opacity:0}}
 @keyframes gb-grow{from{transform:scaleX(var(--gb-s0))}}
-@keyframes gb-draw{from{stroke-dashoffset:1}}
 @media (prefers-reduced-motion:reduce){
   .gb{--gb-s0:1}
-  .gb-arc{animation:none}
 }
 
 /* By the board's own width, so the same body fits beside the assistant and full width on Home */
