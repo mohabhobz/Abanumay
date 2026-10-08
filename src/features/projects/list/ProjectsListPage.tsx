@@ -87,6 +87,14 @@ const BULK_OF: Record<string, BulkDecision> = {
    (5.4.21). A recommendation to approve needs its plan choice, so it stays on the project page. */
 const BULK_APPROVAL = ['توصية بالرفض', 'رفض نهائي', 'إعادة للمشرف', 'اعتماد', 'إحالة للجنة التنفيذية', 'إعادة لمدير المنح', 'اعتذار']
 
+/* «ما ينتظر قراري» reads as the role's own queue on Today (client, 8 Oct) · the same words, so the
+   tab and the Today row name one list. A role with no projects queue keeps the generic label */
+const MINE_LABEL: Partial<Record<string, string>> = {
+  supervisor: 'مشاريع للدراسة',
+  'grants-manager': 'مشاريع للاعتماد',
+  ceo: 'محالة من مدير المنح',
+}
+
 /** Default filter order — matches the `FILTER_DEFS` order inside the component. */
 const FILTER_KEYS = [
   'year', 'stage', 'track', 'field', 'goal', 'region', 'city', 'tag', 'method', 'support', 'owner',
@@ -511,7 +519,7 @@ export default function ProjectsListPage() {
             }}
             items={VIEWS.map((x) => ({
               key: x.key,
-              label: x.label,
+              label: x.key === 'mine' ? MINE_LABEL[role.key] ?? x.label : x.label,
               count: viewCounts[x.key],
             }))}
           />

@@ -24,76 +24,68 @@ const bars = (rows: ImpactRow[], n = TOP) =>
 export function ImpactPanel({ full = false }: { full?: boolean }) {
   useClosing()
   const m = impact()
+  /* Client, 8 Oct · separate cards, not one card holding cards · the heading sits on the page */
+  const card = (title: string, rows: ReturnType<typeof bars>, hue: 'c2' | 'c3' | 'c4' | 'c5') => (
+    <Glass className="impc-c">
+      <Head title={title} meta={<span className="sub">بعدد المستفيدين</span>} />
+      <CountBars rows={rows} total={m.estimated} unit="مستفيد" hue={hue} note="من المستفيدين كلهم" />
+    </Glass>
+  )
   return (
-    <Glass className={`impc${full ? ' impc-full' : ''}`}>
-      <Head
-        title="الأثر"
-        meta={full
+    <section className={`impc${full ? ' impc-full' : ''}`} aria-label="الأثر">
+      <div className="impc-top">
+        <h2 className="impc-t">الأثر</h2>
+        {full
           ? <span className="sub">لمن وصلت المنح وأين · {countOf(m.projects, NOUN.project)} مموَّلًا</span>
           : <Link className="lnk" to={ROUTES.reportTab('impact')}>التقرير الكامل<Icon name={icons.chevron} size="sm" /></Link>}
-      />
+      </div>
 
       <div className="impc-ks">
-        <div className="impc-k">
+        <Glass className="impc-k">
           <span className="impc-kl">المستفيدون · تقدير الجهات</span>
           <b className="impc-kv num">{nf.format(m.estimated)}</b>
           <span className="impc-kn sub">في {countOf(m.projects, NOUN.project)} مموَّلًا</span>
-        </div>
-        <div className="impc-k">
+        </Glass>
+        <Glass className="impc-k">
           <span className="impc-kl">المُتحقّق · من التقارير الختامية</span>
           <b className="impc-kv num">{m.reportedProjects ? nf.format(m.reached) : '—'}</b>
           <span className="impc-kn sub">
             {m.reportedProjects ? <>مقابل تقدير <Num>{m.reportedEstimate}</Num> في {countOf(m.reportedProjects, NOUN.project)}</> : 'لم يُرسل تقرير ختامي بعد'}
           </span>
-        </div>
-        <div className="impc-k">
+        </Glass>
+        <Glass className="impc-k">
           <span className="impc-kl">نسبة التحقّق</span>
           <b className="impc-kv num">{m.rate === null ? '—' : pct(m.rate)}</b>
           <span className="impc-kn sub">المُتحقّق ÷ تقدير المشاريع نفسها</span>
-        </div>
-        <div className="impc-k">
+        </Glass>
+        <Glass className="impc-k">
           <span className="impc-kl">تكلفة المستفيد</span>
           <b className="impc-kv">{m.costPer === null ? '—' : <Money>{m.costPer}</Money>}</b>
           <span className="impc-kn sub">الممنوح ÷ المستفيدين المقدَّرين</span>
-        </div>
+        </Glass>
       </div>
 
       {full && (
-        <div className="impc-map">
+        <Glass className="impc-c impc-map">
+          <Head title="الخريطة بالمناطق" meta={<span className="sub">المستفيدون والممنوح لكل منطقة</span>} />
           <SaudiMap
             unit="مستفيدًا"
             amounts
             points={m.regions.map((r) => ({ key: r.key, label: r.label, value: r.beneficiaries, amount: r.amount, href: `${ROUTES.projects}?region=${encodeURIComponent(r.key)}` }))}
           />
-        </div>
+        </Glass>
       )}
 
       <div className="impc-g">
-        <section>
-          <h4 className="impc-h">أين · المناطق</h4>
-          <CountBars rows={bars(m.regions, full ? 13 : TOP)} total={m.estimated} unit="مستفيد" note="من المستفيدين كلهم" />
-        </section>
-        <section>
-          <h4 className="impc-h">في ماذا · المسارات</h4>
-          <CountBars rows={bars(m.tracks)} total={m.estimated} unit="مستفيد" hue="c3" note="من المستفيدين كلهم" />
-        </section>
-        {full && (
-          <>
-            <section>
-              <h4 className="impc-h">المجالات</h4>
-              <CountBars rows={bars(m.fields, 8)} total={m.estimated} unit="مستفيد" hue="c4" note="من المستفيدين كلهم" />
-            </section>
-            <section>
-              <h4 className="impc-h">الأهداف</h4>
-              <CountBars rows={bars(m.goals, 8)} total={m.estimated} unit="مستفيد" hue="c5" note="من المستفيدين كلهم" />
-            </section>
-          </>
-        )}
+        {card('أين · المناطق', bars(m.regions, full ? 13 : TOP), 'c2')}
+        {card('في ماذا · المسارات', bars(m.tracks), 'c3')}
+        {full && card('المجالات', bars(m.fields, 8), 'c4')}
+        {full && card('الأهداف', bars(m.goals, 8), 'c5')}
       </div>
 
       {full && (
-        <section className="impc-pairs">
-          <h4 className="impc-h">التقدير مقابل المُتحقّق · لكل مشروع أرسل تقريره الختامي</h4>
+        <Glass className="impc-c tblcard">
+          <Head title="التقدير مقابل المُتحقّق" meta={<span className="sub">لكل مشروع أرسل تقريره الختامي</span>} />
           {m.pairs.length ? (
             <div className="tblwrap">
               <table className="tbl">
@@ -120,8 +112,8 @@ export function ImpactPanel({ full = false }: { full?: boolean }) {
               </table>
             </div>
           ) : <p className="sub">لم يُرسل تقرير ختامي بعد · تظهر المقارنة مع أول تقرير يذكر عدد المستفيدين الفعلي.</p>}
-        </section>
+        </Glass>
       )}
-    </Glass>
+    </section>
   )
 }
