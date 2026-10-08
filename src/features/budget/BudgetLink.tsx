@@ -9,6 +9,7 @@ import {
   docTitle, fiscalYears, moneyOf, yearById, type BudgetDoc, type BudgetNode,
 } from '@/data/mock/budgetTree'
 import { approverFor } from '@/data/approval'
+import { projectRows } from '@/data/mock/projects'
 import { readRole, roleByKey } from '@/data/roles'
 import {
   HOLD_STAGE_SAY, linkIssues, linkOf, linkProject, planOf, sourceName, unlinkProject, usableLines, useBudget,
@@ -68,7 +69,10 @@ function linesFor(year: string): LineOpt[] {
 export function BudgetLinkAction({ project, label }: { project: BudgetLinkProject; label?: string }) {
   const ver = useBudget()
   const lines = useMemo(() => { void ver; return linesFor(project.year) }, [project.year, ver])
-  const guess = lines.find((l) => l.node.label === project.goal)?.key ?? ''
+  /* Re-audit 7 Oct · a project through Ehsan is funded from the Ehsan allocation, not its domain line */
+  const viaEhsanPlatform = projectRows.find((x) => x.id === project.id)?.platform === 'منصة إحسان'
+  const guess = (viaEhsanPlatform ? lines.find((l) => /منصة إحسان/.test(l.node.label))?.key : undefined)
+    ?? lines.find((l) => l.node.label === project.goal)?.key ?? ''
   const held = linkOf(project.id)
   const plan = planOf(project.id)
   const me = roleByKey(readRole()).name

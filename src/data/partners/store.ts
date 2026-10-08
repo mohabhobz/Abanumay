@@ -139,6 +139,8 @@ export function ehGate(projectId: string): { plan: boolean; schedule: boolean; p
   const plan = planOfProject(projectId)
   const sched = ehScheduleOf(projectId).length > 0
   if (!plan) return { plan: true, schedule: false, pay: false, why: 'أعدّ خطة المشروع أولًا (11.2.16)' }
+  /* Re-audit 7 Oct · the schedule and its payments follow an approved plan, not a draft */
+  if (plan.stage !== 'active' && plan.stage !== 'done') return { plan: true, schedule: false, pay: false, why: 'تُعتمد خطة المشروع أولًا ثم جدول دفعاته (11.2.16)' }
   if (!sched) return { plan: true, schedule: true, pay: false, why: 'أدخل جدول الدفعات (11.2.16)' }
   return { plan: true, schedule: true, pay: true, why: '' }
 }
@@ -168,6 +170,9 @@ export interface SubProject {
   beneficiaries: number
   outputs: string
   files: string[]
+  /** Re-audit 7 Oct · inherited from the portfolio at creation (13.2.11) */
+  track?: string
+  field?: string
   state: 'draft' | 'pending' | 'approved' | 'rejected'
   reason?: string
   reqId?: string
@@ -467,6 +472,9 @@ function apply(o: Op) {
       if (!p || (liveRun && p.statusGroup !== 'في الدراسة')) return
       p.platform = o.platform ? 'منصة إحسان' : undefined
       p.partnerType = isStrategic(p.entityId) ? (o.type === 'portfolio' ? 'محفظة' : 'مستقل') : undefined
+      /* Replayed after the approval path · an independent project through Ehsan approved earlier
+         belongs in execution, not at the agreement (11.2.17) */
+      if (!liveRun && p.platform && p.partnerType === 'مستقل' && p.stage === 'اعتماد الإتفاقية') setStage(p.id, 'المشرف إذن الصرف')
       ;(EH_OPS.get(p.id) ?? EH_OPS.set(p.id, []).get(p.id)!).push({ at: day(o.at), by: o.by, kind: 'قرار التوجيه', note: o.platform ? 'يُوجَّه الدعم عبر منصة إحسان' : 'يُدعم مباشرة دون منصة الشريك' })
       return
     }
@@ -589,7 +597,7 @@ function apply(o: Op) {
     case 'subAdd': {
       const pf = pfById(o.pfId)
       if (!pf || !subsGate(pf).ok || pf.items.some((x) => x.id === o.sub.id)) return
-      pf.items.push({ ...o.sub, state: 'draft', addedBy: o.by, addedAt: day(o.at) })
+      pf.items.push({ ...o.sub, track: pf.track, field: pf.field, state: 'draft', addedBy: o.by, addedAt: day(o.at) })
       return
     }
     case 'subDrop': {

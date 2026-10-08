@@ -37,7 +37,9 @@ export default function PartnersPage() {
   const { role, user } = useRole()
   const tab = TABS.find((t) => t.slug === params.get('tab'))?.slug ?? 'partners'
   const fq = financeQueue()
-  const [ref, setRef] = useState('')
+  /* Re-audit 7 Oct · one transfer number per request, and the refusal said beside it */
+  const [refs, setRefs] = useState<Record<string, string>>({})
+  const [refErr, setRefErr] = useState<Record<string, string>>({})
   const alloc = usableLines('fy-2026').filter((l) => l.node.id === 'tPg1' || l.node.id === 'tPg2')
   const items = TABS.map((t) => ({ ...t, count: t.slug === 'finance' ? fq.pays.length + fq.requests.length : t.slug === 'portfolios' ? PORTFOLIOS.length : undefined }))
 
@@ -147,8 +149,9 @@ export default function PartnersPage() {
                         <Money sm>{r.amount}</Money>
                         {role.key === 'finance' && (
                           <span className="rowf gp-2">
-                            <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم أمر التحويل" placeholder="رقم أمر التحويل" /></span>
-                            <button type="button" className="btn btn-p btn-sm" onClick={() => actOnPfReq(pf.id, r.id, 'pay', '', user.name, ref)}>صرف</button>
+                            <span className="fld"><input value={refs[r.id] ?? ''} onChange={(e) => setRefs((m) => ({ ...m, [r.id]: e.target.value }))} aria-label={`رقم أمر التحويل · الدفعة ${r.no}`} placeholder="رقم أمر التحويل" /></span>
+                            <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfReq(pf.id, r.id, 'pay', '', user.name, refs[r.id] ?? ''); setRefErr((m) => ({ ...m, [r.id]: out.length ? `ينقص: ${out.join(' · ')}` : '' })) }}>صرف</button>
+                            {refErr[r.id] && <span className="bad">{refErr[r.id]}</span>}
                           </span>
                         )}
                       </li>

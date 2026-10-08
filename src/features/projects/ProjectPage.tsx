@@ -396,7 +396,8 @@ export default function ProjectPage() {
                   hideAttachments={Boolean(row)}
                   project={project}
                   code={code}
-                  type={type}
+                  /* Re-audit 7 Oct · the routing card and the data tab read the same type */
+                  type={row?.partnerType === 'مستقل' ? `مشروع مستقل${row.platform ? ` · ${row.platform}` : ''}` : type}
                   entityName={entity.name}
                   entityId={String(entity.id)}
                   /* The latest action, not the latest event: updates share the same timeline, with

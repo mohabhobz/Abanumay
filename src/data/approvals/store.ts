@@ -455,6 +455,16 @@ const apply = (o: Op) => {
           if (p.amountGranted === 0) p.amountGranted = p.amountRequested
           p.decidedAt = TODAY
           p.holder = undefined
+          /* Re-audit 7 Oct · 11.2.17 · an independent project through Ehsan has no agreement · it goes
+             straight to execution with its plan and payment schedule */
+          if (p.platform === 'منصة إحسان' && p.partnerType === 'مستقل') {
+            moveTo(p, 'المشرف إذن الصرف')
+            fields.push({ k: 'الحالة', v: 'معتمد · إلى التنفيذ عبر منصة إحسان · بلا اتفاقية', strong: true })
+            notify([p.entityName, 'مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, 'إلى التنفيذ عبر منصة إحسان', ROUTES.project(p.id))
+            confirmHook?.(p.id, o.by)
+            notify([p.owner ?? 'مشرف المنح', 'مشرف المنح'], p.id, `أعدّ خطة المشروع وجدول دفعاته · ${p.name}`, 'معفى من الاتفاقية · يُنفَّذ عبر منصة إحسان', ROUTES.project(p.id))
+            break
+          }
           moveTo(p, 'اعتماد الإتفاقية')
           fields.push({ k: 'الحالة', v: 'معتمد · إلى إعداد الاتفاقية', strong: true })
           notify([p.entityName, 'مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, 'إلى إعداد الاتفاقية', ROUTES.project(p.id))

@@ -5,6 +5,7 @@ import { UploadButton } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { nf } from '@/lib/format'
+import { entityById } from '@/data/mock/entities'
 import { planOfProject } from '@/data/mock/plans'
 import type { ProjectRow } from '@/types/domain'
 import {
@@ -164,7 +165,8 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
   const strategic = isStrategic(row.entityId)
   const study = row.statusGroup === 'في الدراسة'
   const type: PType = row.partnerType === 'محفظة' ? 'portfolio' : 'independent'
-  const mine = role.key === 'supervisor' && study
+  /* Re-audit 7 Oct · 11.1.input-1 · the executive decides the routing · the supervisor proposes it in the study */
+  const mine = (role.key === 'supervisor' || role.key === 'ceo') && study
   const set = (platform: boolean, t: PType) => {
     if (t === 'portfolio') { navigate(`${ROUTES.portfolioNew}?entity=${row.entityId}&from=${row.id}`); return }
     const out = routeProject(row.id, platform, t, user.name)
@@ -184,7 +186,7 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
           {strategic && typeAllowed(row.entityId, 'portfolio') && <button type="button" className="btn btn-2 btn-sm" onClick={() => set(Boolean(row.platform), 'portfolio')}>تحويل إلى محفظة</button>}
         </div>
       ) : (
-        <p className="sub cnote">{study ? 'يحدّده مشرف المنح أثناء الدراسة' : 'حُدّد قبل الاعتماد · لا يتغيّر بعده'}</p>
+        <p className="sub cnote">{study ? 'يقترحه مشرف المنح في الدراسة ويقرّه المدير التنفيذي' : 'حُدّد قبل الاعتماد · لا يتغيّر بعده'}</p>
       )}
       <Said said={said} />
     </Glass>
@@ -299,7 +301,8 @@ export function PartnerCard({ entityId }: { entityId: string }) {
   const pfs = pfOfEntity(entityId)
   return (
     <Glass>
-      <Head title="الشراكة الاستراتيجية" meta={<Tag tone={p.state === 'approved' ? 'ok' : p.state === 'review' ? 'warn' : 'no'}>{p.state === 'approved' ? 'شريك استراتيجي معتمد' : p.state === 'review' ? 'بانتظار اعتماد مدير المنح' : 'مرفوض'}</Tag>} />
+      {/* Re-audit 7 Oct · the card names its entity · the hub listed identical «الشراكة الاستراتيجية» cards */}
+      <Head title={<>الشراكة الاستراتيجية · <Link className="tlink" to={ROUTES.entity(entityId)}>{p.name || entityById(entityId)?.name || entityId}</Link></>} meta={<Tag tone={p.state === 'approved' ? 'ok' : p.state === 'review' ? 'warn' : 'no'}>{p.state === 'approved' ? 'شريك استراتيجي معتمد' : p.state === 'review' ? 'بانتظار اعتماد مدير المنح' : 'مرفوض'}</Tag>} />
       <KV rows={[
         { k: 'نوع الشراكة', v: 'شريك استراتيجي' },
         { k: 'منصة تنفيذ الدفعات', v: p.platform ? 'منصة إحسان · تنفّذ الدفعات بنفسها' : 'تُطلب الدفعات على مستوى المحفظة' },

@@ -408,7 +408,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                 return (
                   <tr key={x.id} id={x.id}>
                     <td>{selectable(x) && <input type="checkbox" aria-label={`تحديد ${x.name}`} checked={sel.includes(x.id)} onChange={() => toggle(x.id)} />}</td>
-                    <td><b>{x.name}</b><div className="sub">{x.region} · {nf.format(x.beneficiaries)} مستفيد · {x.outputs} · {x.files.join('، ')}</div></td>
+                    <td><b>{x.name}</b><div className="sub">{x.field ?? pf.field} · {x.region} · {nf.format(x.beneficiaries)} مستفيد · {x.outputs} · {x.files.join('، ')}</div></td>
                     <td className="n"><Money sm>{x.amount}</Money></td>
                     <td>
                       <Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}</Tag>
@@ -512,7 +512,9 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
         })}
         {!pf.schedule.length && <li className="sub">يُحدَّد الجدول مع الاتفاقية.</li>}
       </ul>
-      {sup && open && next && (
+      {/* Re-audit 7 Oct · 13.2.23 · the partner asks for its portfolio's payment from its own account · the
+          supervisor may still file it on its behalf */}
+      {(sup || asPartner) && open && next && (
         <div className="apv-row mt-3">
           {pfReqIssue(pf, next.no, next.amount) ? <span className="sub">{pfReqIssue(pf, next.no, next.amount)}</span> : null}
           <button type="button" className="btn btn-p btn-sm" disabled={Boolean(pfReqIssue(pf, next.no, next.amount)) || pf.agreement.state !== 'signed'} title={pf.agreement.state !== 'signed' ? 'بعد توقيع الاتفاقية' : ''} onClick={() => { const out = requestPfPay(pf.id, next.no, next.amount, user.name); setSaid(out.length ? { bad: out } : { ok: `طلب الدفعة ${next.no}` }) }}>اطلب الدفعة {next.no}</button>

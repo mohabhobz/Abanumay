@@ -13,7 +13,7 @@ export interface DataTabProps {
   /** Display code · the same `PRJ-YYYY-NNNNN` the projects list shows */
   code: string
   /** Regular, external, or portfolio */
-  type: ProjectType
+  type: ProjectType | string
   entityName: string
   /** Entity ID — needed for a real link to its file. */
   entityId: string

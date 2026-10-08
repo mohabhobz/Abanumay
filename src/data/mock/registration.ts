@@ -115,7 +115,7 @@ export const PARTNER_KINDS: PartnerKindDef[] = [
       'لا تتقدّم من البوابة · يضيفها مشرف المنح من الداخل',
       'تدير محفظة مشاريع فرعية بمبلغ إجمالي واحد',
       'لمنسّقها حساب بدور «الشريك الاستراتيجي» · يرى محافظه وحدها',
-      'الصرف وفق ترتيب الشراكة · بلا اتفاقية لكل مشروع',
+      'اتفاقية واحدة للمحفظة · بلا اتفاقية لكل مشروع فرعي',
     ],
   },
 ]
@@ -318,8 +318,8 @@ export const PARTNER_ACCESS_STAGE: RegStage = {
   label: 'حساب الشريك',
   note: 'منسّق الشريك يدخل النظام بدور «الشريك الاستراتيجي» · تصله دعوة بالبريد ويضع كلمة مروره بنفسه',
   fields: [
-    { key: 'portfolioName', label: 'اسم المحفظة', kind: 'text', req: true, hint: 'تظهر للشريك ولإدارة المنح', wide: true },
-    { key: 'portfolioAmount', label: 'المبلغ الإجمالي للمحفظة (ريال)', kind: 'number', req: true },
+    /* Re-audit 7 Oct · the portfolio's name and value were asked here and kept nowhere · a portfolio
+       is its own request now (13.2.2), opened by the partner or the supervisor after approval */
     { key: 'coordName', label: 'اسم المنسّق', kind: 'text', req: true, nl: true },
     { key: 'coordEmail', label: 'بريد المنسّق', kind: 'email', req: true, hint: 'تصل إليه دعوة الدخول' },
     { key: 'coordMobile', label: 'جوال المنسّق', kind: 'tel', req: true },
