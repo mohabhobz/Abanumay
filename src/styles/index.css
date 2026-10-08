@@ -6499,11 +6499,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    in every card.
    ═══════════════════════════════════════════════════════════ */
 
-.catsum{display:flex;flex-direction:column}
-.catsum-g{display:grid;gap:var(--sp-5);grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
-.catsum-s{display:flex;flex-direction:column;gap:var(--sp-1);padding-inline-start:var(--sp-4);
-  box-shadow:inset 1px 0 0 var(--edge-d)}
-.catsum-s:first-child{padding-inline-start:0;box-shadow:none}
+.catsum{display:flex;flex-direction:column;gap:var(--gap)}
+/* Client, 8 Oct · five cards, not one card with ruled columns · the number sits above its label at
+   the same edge (it used to drift to the far side, `.num` sets LTR) */
+.catsum-g{display:grid;gap:var(--gap);grid-template-columns:repeat(auto-fit,minmax(calc(var(--sp-12) * 2.5),1fr))}
+.catsum .catsum-s{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-2)}
 .catsum-s b{font-family:var(--fd);font-weight:700;font-size:var(--fs-7);line-height:var(--lh-head);color:var(--t1)}
 .catsum-s.big b{color:var(--t1)}
 .catsum-s .sub{line-height:var(--lh-text)}

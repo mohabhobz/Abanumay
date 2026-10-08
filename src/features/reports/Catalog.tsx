@@ -53,7 +53,7 @@ export function Catalog() {
     <>
       {/* The number summarizing the whole module — computed from the catalog,
           not hardcoded. */}
-      <Glass className="catsum">
+      <section className="catsum" aria-label="ملخّص شاشات التقارير">
         <div className="catsum-g">
           <Stat n={catalogTotals.screens} k="شاشة تقرير" />
           <Stat n={catalogTotals.cols} k={nounAfter(catalogTotals.cols, NOUN.describedColumn)} />
@@ -61,13 +61,13 @@ export function Catalog() {
           <Stat n={catalogTotals.charts} k={nounAfter(catalogTotals.charts, NOUN.chart)} />
           <Stat n={catalogTotals.rows} k={`${nounAfter(catalogTotals.rows, NOUN.row)} في الشاشات`} big />
         </div>
-        <p className="mut rpsec-n mt-3">
+        <p className="mut rpsec-n prose">
           كل شاشة تقرير في النظام العامل موصوفة هنا بالكامل: أعمدتها بأسمائها،
           وفلاترها بعدد خياراتها، ورسومها، ومستويات التعمّق إن وُجدت. اضغط أي
           شاشة لعرض جدولها بأعمدته الحقيقية، <b>القيم في الصفوف تجريبية</b>،
           والأعمدة والفلاتر منقولة كما هي.
         </p>
-      </Glass>
+      </section>
 
       {/* The system filter bar, same as the projects list: search, a status
           `MultiSelect` with counts, and the active-filter chips with «مسح الكل». */}
@@ -116,10 +116,10 @@ export function Catalog() {
 
 function Stat({ n, k, big }: { n: number; k: string; big?: boolean }) {
   return (
-    <div className={`catsum-s${big ? ' big' : ''}`}>
+    <Glass className={`catsum-s${big ? ' big' : ''}`}>
       <b className="num">{nf.format(n)}</b>
       <span className="sub">{k}</span>
-    </div>
+    </Glass>
   )
 }
 
