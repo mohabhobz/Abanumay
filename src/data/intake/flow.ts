@@ -8,6 +8,7 @@ import { entityById } from '@/data/mock/entities'
 import { CYCLE, TODAY, addWorkingDays, type Distribution } from './cycle'
 import { CRITERIA, studyScore } from './criteria'
 import { nextSeq, type Stamped } from '@/data/opclock'
+import { dayOf, stampNow, timeOf } from '@/data/clock'
 import { CONSULTANTS, consultantByKey } from './consultants'
 
 /* Receiving projects and the supervisor's study · the actions (procedure 3).
@@ -158,9 +159,11 @@ export const flowOf = (id: string): ProjectFlow => {
 
 const row = (id: string) => projectRows.find((p) => p.id === id)
 
+/* The running op's stamp · the dates an action writes are its own, the same on every replay */
+let OP_AT: string | undefined
+const opDay = () => dayOf(OP_AT ?? stampNow())
 const NOW_TIME = () => {
-  const d = new Date()
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return timeOf(OP_AT)
 }
 
 let evSeq = 0
@@ -173,7 +176,7 @@ const event = (id: string, e: { action: string; by: string; actor?: LogEvent['ac
     dept: e.dept ?? p?.stage ?? 'دراسة المشروع',
     by: e.by,
     actor,
-    at: TODAY,
+    at: opDay(),
     time: NOW_TIME(),
     days: 0,
     hours: 0,
@@ -186,7 +189,7 @@ const event = (id: string, e: { action: string; by: string; actor?: LogEvent['ac
 }
 
 const note = (projectId: string, to: string, title: string, context: string) => {
-  FLOW_NOTES.unshift({ id: `fn-${projectId}-${FLOW_NOTES.length}`, to, title, context, at: TODAY, projectId })
+  FLOW_NOTES.unshift({ id: `fn-${projectId}-${FLOW_NOTES.length}`, to, title, context, at: opDay(), projectId })
 }
 
 const moveTo = (p: ProjectRow, stage: string) => {
@@ -292,7 +295,8 @@ const nextId = () => String(21_900 + projectRows.filter((p) => Number(p.id) >= 2
 
 const trackOf = (field: string) => Object.entries(FIELDS_BY_TRACK).find(([, fs]) => fs.includes(field))?.[0] ?? ''
 
-function apply(o: Op) {
+function apply(o: Op) { OP_AT = o.at; try { applyOp(o) } finally { OP_AT = undefined } }
+function applyOp(o: Op) {
   const p = o.op === 'submit' ? undefined : row(o.id)
   if (o.op !== 'submit' && !p) return
 
@@ -309,20 +313,20 @@ function apply(o: Op) {
         stage: 'دراسة المشروع', statusGroup: 'في الدراسة', stageLimit: stageMeta('دراسة المشروع')?.limit ?? 900,
         hoursInStage: 0, amountRequested: amount, amountGranted: 0, amountSpent: 0, weight: 50, score: 0,
         owner, year: '2026-f', funding: 'foundation', tags: [], grantMethod: 'بحث واستجابة', shared: false,
-        impact: false, supportStatus: null, submittedAt: TODAY, durationDays: days,
+        impact: false, supportStatus: null, submittedAt: opDay(), durationDays: days,
         beneficiaries: Number(v.reach) || 0, hasInterimReport: false, hasFinalReport: false,
         hasKnowledgeProduct: false, fieldVisit: false, type: 'مشروع عادي', holder: 'supervisor',
         source: o.asEntity ? 'portal' : 'staff',
-        createdAt: `${TODAY}T${NOW_TIME()}`, startAt: v.startAt, endAt: v.startAt && days ? addWorkingDays(v.startAt, days) : v.endAt,
+        createdAt: `${opDay()}T${NOW_TIME()}`, startAt: v.startAt, endAt: v.startAt && days ? addWorkingDays(v.startAt, days) : v.endAt,
       })
       const f = flowOf(o.id)
       /* Re-audit 7 Oct · a request saved as a draft first keeps the draft's date as its creation */
-      f.sentAt = `${TODAY} ${NOW_TIME()}`
+      f.sentAt = `${opDay()} ${NOW_TIME()}`
       f.createdAt = v.draftAt ? `${v.draftAt.slice(0, 10)} ${v.draftAt.slice(11, 16)}` : f.sentAt
       f.objectives = (v.objectives ?? '').split('\n').map((x) => x.trim()).filter(Boolean)
-      f.docs = o.docs.map((k) => ({ kind: k, name: `${REQUEST_DOCS.find((d) => d.key === k)?.label ?? k}.pdf`, by: o.asEntity ? e?.name ?? o.by : o.by, at: TODAY }))
+      f.docs = o.docs.map((k) => ({ kind: k, name: `${REQUEST_DOCS.find((d) => d.key === k)?.label ?? k}.pdf`, by: o.asEntity ? e?.name ?? o.by : o.by, at: opDay() }))
       /* Re-audit 7 Oct · the version keeps the request's full content, not only its figures */
-      f.versions = [{ no: 1, at: TODAY, by: o.by, say: o.asEntity ? 'أرسلته الجهة من البوابة' : 'أدخله مشرف المنح نيابةً عن الجهة', snap: snapOf(projectRows[0], f), values: { ...v } }]
+      f.versions = [{ no: 1, at: opDay(), by: o.by, say: o.asEntity ? 'أرسلته الجهة من البوابة' : 'أدخله مشرف المنح نيابةً عن الجهة', snap: snapOf(projectRows[0], f), values: { ...v } }]
       event(o.id, {
         action: 'تقديم طلب المشروع', by: o.asEntity ? e?.name ?? o.by : o.by, actor: o.asEntity ? 'entity' : 'staff', dept: 'تقديم الطلب',
         fields: [
@@ -344,7 +348,7 @@ function apply(o: Op) {
     case 'doc': {
       const f = flowOf(o.id)
       f.docs = f.docs.filter((d) => d.kind !== o.kind)
-      f.docs.push({ kind: o.kind, name: o.name, by: o.by, at: TODAY })
+      f.docs.push({ kind: o.kind, name: o.name, by: o.by, at: opDay() })
       const k = REQUEST_DOCS.find((d) => d.key === o.kind)
       event(o.id, { action: 'رفع مرفق', by: o.by, actor: k?.audience === 'entity' && o.by === p!.entityName ? 'entity' : 'staff', fields: [{ k: 'المرفق', v: k?.label ?? o.kind }, { k: 'الاطلاع', v: k?.audience === 'internal' ? 'داخلي · لا تراه الجهة' : 'الجهة والفريق' }], files: [o.name] })
       break
@@ -354,7 +358,7 @@ function apply(o: Op) {
       const prev = f.study
       /* Re-audit 7 Oct · the return note stays until the supervisor sends the project back, so the
          «أعد الإرسال لمدير المنح» action survives saving the updated study */
-      f.study = { ...o.study, at: TODAY, version: prev ? prev.version + (f.returnNote && !f.returnStudied ? 1 : 0) : 1, field: p!.field }
+      f.study = { ...o.study, at: opDay(), version: prev ? prev.version + (f.returnNote && !f.returnStudied ? 1 : 0) : 1, field: p!.field }
       if (f.returnNote) f.returnStudied = true
       event(o.id, {
         action: prev ? 'تحديث دراسة المشروع' : 'تسجيل دراسة المشروع', by: o.study.by,
@@ -398,7 +402,7 @@ function apply(o: Op) {
       const f = flowOf(o.id)
       moveTo(p!, 'دراسة المشروع')
       p!.holder = 'supervisor'
-      f.versions.push({ no: f.versions.length + 1, at: TODAY, by: o.by, say: `أعادت الجهة الإرسال بعد الاستكمال${f.completionNote ? ` · ${f.completionNote}` : ''}`, snap: snapOf(p!, f) })
+      f.versions.push({ no: f.versions.length + 1, at: opDay(), by: o.by, say: `أعادت الجهة الإرسال بعد الاستكمال${f.completionNote ? ` · ${f.completionNote}` : ''}`, snap: snapOf(p!, f) })
       f.completionNote = undefined
       event(o.id, { action: 'إعادة إرسال الطلب بعد الاستكمال', by: o.by, actor: 'entity', dept: 'استكمال بيانات المشروع' })
       if (p!.owner) note(o.id, p!.owner, `أعادت الجهة الإرسال · ${p!.name}`, 'استؤنفت الدراسة')
@@ -439,9 +443,9 @@ function apply(o: Op) {
     case 'refer': {
       const c = consultantByKey(o.consultant)
       const f = flowOf(o.id)
-      const exp = new Date(`${TODAY}T00:00:00Z`)
+      const exp = new Date(`${opDay()}T00:00:00Z`)
       exp.setUTCDate(exp.getUTCDate() + (c?.accessDays ?? 7))
-      f.referral = { consultant: o.consultant, by: o.by, at: TODAY, expiresAt: exp.toISOString().slice(0, 10) }
+      f.referral = { consultant: o.consultant, by: o.by, at: opDay(), expiresAt: exp.toISOString().slice(0, 10) }
       event(o.id, { action: 'إحالة إلى مستشار', by: o.by, fields: [{ k: 'المستشار', v: c?.name ?? o.consultant, strong: true }, { k: 'وصول حتى', v: f.referral.expiresAt }, { k: 'الرأي', v: 'استشاري غير ملزم' }] })
       if (c) note(o.id, c.name, `طلب رأي · ${p!.name}`, `من ${o.by} · حتى ${f.referral.expiresAt}`)
       break
@@ -451,14 +455,14 @@ function apply(o: Op) {
       if (!f.referral) return
       f.referral.opinion = o.opinion
       f.referral.verdict = o.verdict
-      f.referral.opinionAt = TODAY
+      f.referral.opinionAt = opDay()
       event(o.id, { action: 'رأي المستشار', by: o.by, fields: [{ k: 'الرأي', v: o.verdict, strong: true }, { k: 'الملاحظات', v: o.opinion }, { k: 'الإلزام', v: 'غير ملزم' }] })
       if (p!.owner) note(o.id, p!.owner, `وصل رأي المستشار · ${p!.name}`, o.verdict)
       break
     }
     case 'close': {
       const f = flowOf(o.id)
-      f.closed = { kind: o.kind, reason: o.reason, by: o.by, at: TODAY }
+      f.closed = { kind: o.kind, reason: o.reason, by: o.by, at: opDay() }
       if (o.kind === 'cancel') moveTo(p!, 'مشروع ملغي')
       else p!.archived = true
       p!.holder = undefined
@@ -475,6 +479,7 @@ const save = () => {
 /** Run one operation · recorded, applied, broadcast */
 const run = (o: Op) => {
   o.seq = nextSeq()
+  o.at ??= stampNow()
   ops.push(o)
   apply(o)
   save()
@@ -546,7 +551,7 @@ export const completeMany = (ids: readonly string[], note: string, by: string): 
   for (const id of ids) {
     const why = !note.trim() ? 'المطلوب من الجهة إلزامي' : atSupervisorSeat(id, by)
     if (why) { held.push({ id, why }); continue }
-    const o: Op = { op: 'complete', id, note: note.trim(), by, seq: nextSeq() }
+    const o: Op = { op: 'complete', id, note: note.trim(), by, seq: nextSeq(), at: stampNow() }
     ops.push(o); apply(o); done.push(id)
   }
   save()
@@ -563,7 +568,7 @@ export const recommendMany = (ids: readonly string[], by: string): { done: strin
     const seat = atSupervisorSeat(id, by)
     const b = seat ? [seat] : forwardBlockers(id)
     if (b.length) held.push({ id, why: b[0]! })
-    else { const o: Op = { op: 'recommend', id, by, seq: nextSeq() }; ops.push(o); apply(o); done.push(id) }
+    else { const o: Op = { op: 'recommend', id, by, seq: nextSeq(), at: stampNow() }; ops.push(o); apply(o); done.push(id) }
   }
   save()
   emit()

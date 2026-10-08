@@ -20,7 +20,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { readAgreements } from '@/data/readings'
 import { OWNERS } from '@/data/mock/taxonomy'
 import {
-  AGREEMENT_STAGES, AGR_TARGET_DAYS, agrBlocked, agrHeat, agrKpi, agreements,
+  AGREEMENT_STAGES, agrBlocked, agrHeat, agrKpi, agreements,
 } from '@/data/mock/agreements'
 import { useAgreements } from '@/data/agreements/store'
 import type { AgreementRow, AgreementStage } from '@/types/domain'
@@ -218,27 +218,27 @@ export default function AgreementsPage() {
           <div className="stats4">
             <Stat
               label="متوسط مدة إعداد الاتفاقية"
-              value={<Num>{k.prepDays}</Num>}
-              unit="يومًا"
-              note="مؤشر 1 · المستهدف بانتظار المؤسسة"
+              value={k.prepDays === null ? '—' : <Num>{k.prepDays}</Num>}
+              unit={k.prepDays === null ? undefined : 'يومًا'}
+              note="مؤشر 1 · من فتح الاتفاقية حتى سريانها"
             />
             <Stat
               label="المنجزة ضمن المدة المستهدفة"
-              value={<Num>{pct(k.inTarget)}</Num>}
-              note={`مؤشر 2 · المدة المؤقتة ${countOf(AGR_TARGET_DAYS, NOUN.day)}`}
-              bar={{ w: `${k.inTarget}%`, c: 'var(--teal)' }}
+              value={k.inTarget === null ? '—' : <Num>{pct(k.inTarget)}</Num>}
+              note={`مؤشر 2 · ${countOf(k.target, NOUN.day)} · مجموع مدد المراحل`}
+              bar={k.inTarget === null ? undefined : { w: `${k.inTarget}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة دورة الاعتماد"
-              value={<Num>{k.cycleDays}</Num>}
-              unit="يومًا"
+              value={k.cycleDays === null ? '—' : <Num>{k.cycleDays}</Num>}
+              unit={k.cycleDays === null ? undefined : 'يومًا'}
               note="مؤشر 3 · من الإرسال حتى اكتمال الاعتمادات"
             />
             <Stat
               label="المعادة للتعديل"
-              value={<Num>{pct(k.returnedPct)}</Num>}
+              value={k.returnedPct === null ? '—' : <Num>{pct(k.returnedPct)}</Num>}
               note="مؤشر 4 · كل إعادة دورة اعتماد كاملة"
-              bar={{ w: `${k.returnedPct}%`, c: 'var(--warn)' }}
+              bar={k.returnedPct === null ? undefined : { w: `${k.returnedPct}%`, c: 'var(--warn)' }}
             />
           </div>
 

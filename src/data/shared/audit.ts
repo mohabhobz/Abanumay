@@ -18,6 +18,7 @@ import { PORTFOLIOS, allEhOps } from '@/data/partners/store'
 import { accountEvents } from '@/data/entities/auth'
 import { ESC_RULES } from './escRules'
 import { NOTIFY_RULES } from './notify'
+import { SETTINGS_LOG } from './settingsLog'
 import { nf } from '@/lib/format'
 
 /* The audit log · cross «سجل التدقيق والسجل التاريخي».
@@ -150,8 +151,14 @@ export function auditRows(): AuditRow[] {
       id: `acct-${i}`, module: 'entities', ref: e.account, href: ROUTES.entityRequests, action: e.created ? 'إنشاء حساب في بوابة الجهات' : 'تعيين كلمة مرور جديدة للحساب', by: e.account, at: e.at.replace('T', ' ').slice(0, 16), fields: [],
     })),
     ...perm.log.map((e): AuditRow => ({ id: `pm-${e.id}`, module: 'settings', ref: e.target, href: `${ROUTES.permissions}?tab=log`, action: e.change, by: e.by, at: e.at, fields: [] })),
-    ...(ESC_RULES.savedAt ? [{ id: 'esc-saved', module: 'settings' as const, ref: 'آلية التصعيد', href: ROUTES.escalationSettings, action: 'تعديل آلية التصعيد', by: ESC_RULES.savedBy ?? '', at: ESC_RULES.savedAt, fields: [] }] : []),
-    ...(NOTIFY_RULES.savedAt ? [{ id: 'ntf-saved', module: 'settings' as const, ref: 'قنوات الإشعار', href: `${ROUTES.notifyHub}?tab=channels`, action: 'تعديل قنوات الإشعار', by: NOTIFY_RULES.savedBy ?? '', at: NOTIFY_RULES.savedAt, fields: [] }] : []),
+    /* Re-audit 7 Oct · every save of the rules, with each value before and after · it used to be one
+       line per page, overwritten by the next save. A save from before the history keeps its line */
+    ...SETTINGS_LOG.map((e): AuditRow => ({
+      id: e.id, module: 'settings', ref: e.ref, href: e.href, action: `تعديل ${e.ref}`, by: e.by, at: e.at.replace('T', ' ').slice(0, 16),
+      fields: e.changes.map((c) => ({ k: c.k, v: `${c.from} ← ${c.to}` })),
+    })),
+    ...(ESC_RULES.savedAt && !SETTINGS_LOG.some((e) => e.ref === 'آلية التصعيد') ? [{ id: 'esc-saved', module: 'settings' as const, ref: 'آلية التصعيد', href: ROUTES.escalationSettings, action: 'تعديل آلية التصعيد', by: ESC_RULES.savedBy ?? '', at: ESC_RULES.savedAt, fields: [] }] : []),
+    ...(NOTIFY_RULES.savedAt && !SETTINGS_LOG.some((e) => e.ref === 'قنوات الإشعار') ? [{ id: 'ntf-saved', module: 'settings' as const, ref: 'قنوات الإشعار', href: `${ROUTES.notifyHub}?tab=channels`, action: 'تعديل قنوات الإشعار', by: NOTIFY_RULES.savedBy ?? '', at: NOTIFY_RULES.savedAt, fields: [] }] : []),
   ].sort((a, b) => b.at.localeCompare(a.at))
 }
 

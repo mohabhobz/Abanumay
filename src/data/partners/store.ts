@@ -43,7 +43,7 @@ export const PTYPE_SAY: Record<PType, string> = { independent: 'مشروع مس�
 export interface PartnerNote { id: string; to: string; title: string; context: string; at: string; href: string }
 export const PARTNER_NOTES: PartnerNote[] = []
 
-const TODAY = '2026-10-06'
+import { actDay, asOf } from '@/data/clock'
 const SUP = 'عمر قاسم'
 const MGR = () => roleByKey('grants-manager').name
 const CEO = () => roleByKey('ceo').name
@@ -406,7 +406,7 @@ export function usePartners(): number {
 }
 
 const notify = (to: string[], title: string, context: string, href: string) => {
-  for (const t of to) PARTNER_NOTES.unshift({ id: `ptn-${PARTNER_NOTES.length + 1}`, to: t, title, context, at: TODAY, href })
+  for (const t of to) PARTNER_NOTES.unshift({ id: `ptn-${PARTNER_NOTES.length + 1}`, to: t, title, context, at: actDay(), href })
 }
 const plog = (pf: PortfolioRec, by: string, what: string, at: string) => { pf.log.push({ at: day(at), by, what }) }
 const partnerName = (entityId: string) => entityById(entityId)?.name ?? profileOf(entityId)?.name ?? ''
@@ -443,7 +443,8 @@ function settleOnBudget(p: EhsanPay, by: string) {
   if (linkOf(holder) && !isPaidRef(p.ref)) recordPaid(holder, p.amount, p.ref, by)
 }
 
-function apply(o: Op) {
+function apply(o: Op) { asOf(o.at, () => applyOp(o)) }
+function applyOp(o: Op) {
   switch (o.op) {
     case 'partnerReq': {
       if (profileOf(o.entityId)) return

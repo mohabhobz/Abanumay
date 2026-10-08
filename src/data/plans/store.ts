@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { actDay, asOf } from '@/data/clock'
 import type { LogEvent } from '@/data/mock/log'
 import { ESC_RULES } from '@/data/shared/escRules'
 import {
@@ -61,7 +62,7 @@ const isApproved = (p: { stage: string; supportStatus?: string | null; amountGra
 export interface PlanNote { id: string; to: string; title: string; context: string; at: string; href: string }
 export const PLAN_NOTES: PlanNote[] = []
 const notify = (to: string[], p: PlanRow, title: string, context: string, href = ROUTES.plan(p.id)) => {
-  for (const t of to) PLAN_NOTES.unshift({ id: `pln-${PLAN_NOTES.length + 1}`, to: t, title, context, at: TODAY, href })
+  for (const t of to) PLAN_NOTES.unshift({ id: `pln-${PLAN_NOTES.length + 1}`, to: t, title, context, at: actDay(), href })
 }
 const SUP = () => roleByKey('supervisor').title
 const MGR = () => roleByKey('grants-manager').title
@@ -129,7 +130,7 @@ function openFor(projectId: string, planId: string, drafter: 'entity' | 'supervi
   if (!pr) return undefined
   const p: PlanRow = {
     id: planId, projectId, projectName: pr.name, entityId: pr.entityId, entityName: pr.entityName,
-    stage: 'draft', baseline: 0, phases: [], owner: pr.owner ?? 'عمر قاسم', drafter, openedAt: TODAY, hoursInStage: 0, changes: [],
+    stage: 'draft', baseline: 0, phases: [], owner: pr.owner ?? 'عمر قاسم', drafter, openedAt: actDay(), hoursInStage: 0, changes: [],
   }
   /* A cancelled plan stays on record · the new one is the project's plan from now (12.4.5) */
   planRows.unshift(p)
@@ -151,7 +152,8 @@ function applyStructure(p: PlanRow, next: PlanPhase[]) {
   }))
 }
 
-function apply(o: Op) {
+function apply(o: Op) { asOf(o.at, () => applyOp(o)) }
+function applyOp(o: Op) {
   switch (o.op) {
     case 'decide': {
       const list = DECISIONS.get(o.projectId) ?? []
@@ -207,7 +209,7 @@ function apply(o: Op) {
         notify([p.owner, SUP()], p, `أعاد مدير المنح الخطة · ${p.projectName}`, o.note)
       } else if (o.act === 'approve' && p.stage === 'manager') {
         p.baseline = p.baseline === 0 ? 1 : p.baseline
-        p.baselineAt = TODAY
+        p.baselineAt = actDay()
         touch(p, 'active')
         notify([p.entityName, p.owner], p, `اعتُمدت الخطة · ${p.projectName}`, 'ثُبّتت النسخة المرجعية وبدأ التنفيذ')
       }
@@ -224,7 +226,7 @@ function apply(o: Op) {
       const p = planById(o.planId); const a = p && actOf(p, o.actId)
       if (!p || !a || a.state === 'accepted' || a.state === 'claimed') return
       const old = o.replace ? a.evidence.find((e) => e.id === o.replace) : undefined
-      a.evidence = [...a.evidence.filter((e) => e.id !== o.replace), { id: o.evId, kind: o.kind, fileName: o.fileName, uploadedAt: TODAY, by: o.by }]
+      a.evidence = [...a.evidence.filter((e) => e.id !== o.replace), { id: o.evId, kind: o.kind, fileName: o.fileName, uploadedAt: actDay(), by: o.by }]
       logOn(a, o.by, old ? `استبدل «${o.kind}»: ${old.fileName} ← ${o.fileName}` : `رفع «${o.kind}»: ${o.fileName}`, 'entity')
       if (a.state === 'todo') a.state = 'doing'
       return
@@ -251,7 +253,7 @@ function apply(o: Op) {
       const p = planById(o.planId); const a = p && actOf(p, o.actId)
       if (!p || !a || a.state !== 'claimed') return
       a.state = 'accepted'
-      a.doneAt = TODAY
+      a.doneAt = actDay()
       if (readyToClose(p)) {
         p.stage = 'done'
         notify([p.entityName, p.owner, MGR()], p, `اكتملت خطة ${p.projectName}`, 'المشروع مؤهَّل لإجراءات الإغلاق')
@@ -278,9 +280,9 @@ function apply(o: Op) {
       const was = p.changes.find((c) => c.id === o.changeId)
       if (was) {
         if (was.state !== 'returned') return
-        Object.assign(was, { say: o.say, proposed: o.proposed ? structuredClone(o.proposed) : undefined, state: 'waiting', at: TODAY, by: o.by })
+        Object.assign(was, { say: o.say, proposed: o.proposed ? structuredClone(o.proposed) : undefined, state: 'waiting', at: actDay(), by: o.by })
       } else {
-        p.changes = [...p.changes, { id: o.changeId, at: TODAY, by: o.by, say: o.say, state: 'waiting', proposed: o.proposed ? structuredClone(o.proposed) : undefined }]
+        p.changes = [...p.changes, { id: o.changeId, at: actDay(), by: o.by, say: o.say, state: 'waiting', proposed: o.proposed ? structuredClone(o.proposed) : undefined }]
       }
       notify([MGR()], p, `طلب تعديل جوهري على خطة · ${p.projectName}`, o.say)
       return
@@ -290,14 +292,14 @@ function apply(o: Op) {
       const c = p?.changes.find((x) => x.id === o.changeId)
       if (!p || !c || c.state !== 'waiting') return
       c.note = o.note
-      c.decidedAt = TODAY
+      c.decidedAt = actDay()
       c.decidedBy = o.by
       if (o.outcome === 'approve') {
         c.state = 'approved'
         c.before = structuredClone(p.phases)
         if (c.proposed) applyStructure(p, c.proposed)
         p.baseline += 1
-        p.baselineAt = TODAY
+        p.baselineAt = actDay()
       } else c.state = o.outcome === 'reject' ? 'rejected' : 'returned'
       notify([p.entityName, p.owner], p, `قرار طلب التعديل · ${p.projectName}`, `${c.state === 'approved' ? 'اعتُمد' : c.state === 'rejected' ? 'رُفض' : 'أُعيد للاستكمال'} · ${o.note}`)
       return

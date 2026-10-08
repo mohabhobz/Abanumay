@@ -63,8 +63,9 @@ export const PACKS: ReportPack[] = [
     answers: 'لمن وصلت المنح وأين: المستفيدون والمناطق والمجالات، وتكلفة المستفيد.',
     icon: 'pinMap',
     readers: ['المدير التنفيذي', 'اللجنة والمجلس'],
-    state: 'next',
+    state: 'ready',
     contains: ['المستفيدون: تقدير الجهة مقابل المُتحقّق', 'الخريطة بالمناطق', 'المسار والمجال والهدف'],
+    to: ROUTES.reportTab('impact'),
   },
   {
     key: 'partners',

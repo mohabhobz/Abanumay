@@ -134,6 +134,7 @@ export default function CloseSettingsPage() {
                 معنى في النموذج، وتحتاج إلى تأكيد المؤسسة (السؤال س-18).
               </p>
               <StageLimits
+                title="مدد مراحل الإغلاق"
                 stages={CLOSE_STAGES.map((x) => ({
                   key: x.key, label: x.label, who: x.who,
                   extra: <span className="sub">{x.cycle === 'report' ? 'التقرير الختامي' : 'تقييم المشروع'}</span>,

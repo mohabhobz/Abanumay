@@ -1,3 +1,4 @@
+import { SEED_AT, actDay, asOf } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
 import {
   CLOSE_DOCS, TODAY, closeById, closeOfProject, closeRows, closeStageLabel, evalBlockers, needsComms,
@@ -65,7 +66,7 @@ export const FEEDBACK_ITEMS: { key: string; label: string }[] = [
 export interface CloseNote { id: string; to: string; title: string; context: string; at: string; href: string }
 export const CLOSE_NOTES: CloseNote[] = []
 const notify = (to: string[], title: string, context: string, href: string) => {
-  for (const t of to) CLOSE_NOTES.unshift({ id: `cln-${CLOSE_NOTES.length + 1}`, to: t, title, context, at: TODAY, href })
+  for (const t of to) CLOSE_NOTES.unshift({ id: `cln-${CLOSE_NOTES.length + 1}`, to: t, title, context, at: actDay(), href })
 }
 const MGR = () => roleByKey('grants-manager').title
 const CEO = () => roleByKey('ceo').title
@@ -329,7 +330,8 @@ const release = (projectId: string, amount: number, ref: string, by: string) => 
   if (live && amount > 0 && hasFunding(projectId)) releaseRecovered(projectId, amount, ref, by)
 }
 
-function apply(o: Op) {
+function apply(o: Op) { asOf(o.at, () => applyOp(o)) }
+function applyOp(o: Op) {
   switch (o.op) {
     case 'open': {
       if (closeOfProject(o.projectId) || closeById(o.id)) return
@@ -720,7 +722,7 @@ function applyCase(c: CaseRow, by: string, at: string) {
       reason = 'فرق التخفيض عمّا صُرف'
     } else if (live) {
       resizeLink(c.projectId, to, c.id, by, c.reason)
-      adjustSchedule(c.projectId, { extra: c.extra ?? { amount: to - c.granted, dueAt: addDays(TODAY, 30) } }, by)
+      adjustSchedule(c.projectId, { extra: c.extra ?? { amount: to - c.granted, dueAt: addDays(actDay(), 30) } }, by)
     }
     clog(c, 'النظام', `حُدّثت قيمة المشروع إلى ${nf.format(to)}${c.kind === 'increase' ? ' وأُضيفت دفعة إضافية وزيد الحجز' : ' وخُفّض الحجز والجدول'}`, at)
   }
@@ -756,7 +758,7 @@ function seed() {
   }
   /* One of each distress station the fixture doesn't have on its own */
   const pick = (id: string) => projectOf(id)
-  const at = `${TODAY}T08:00:00.000Z`
+  const at = SEED_AT
   const sup = 'عمر قاسم'
   if (pick('20817')) {
     apply({ op: 'caseCreate', row: { id: 'TS-3001', projectId: '20817', kind: 'stop', reason: 'توقّفت الجهة عن التنفيذ بعد المرحلة الأولى لخلاف مع المقاول' }, by: sup, at })

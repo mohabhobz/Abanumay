@@ -250,6 +250,8 @@ export const REPORT_TABS = [
   { slug: 'board', label: 'اللوحة' },
   /* E-9 · the combined dashboard, moved off «اليوم» into Reports as its own category */
   { slug: 'overview', label: 'اللوحة المجمّعة' },
+  /* Client, 8 Oct · who the grants reached and where · its panel also sits on every report screen and Today */
+  { slug: 'impact', label: 'الأثر' },
   { slug: 'build', label: 'تقرير مُشكَّل' },
   { slug: 'catalog', label: 'كل التقارير' },
   { slug: 'coverage', label: 'حالة القياس' },

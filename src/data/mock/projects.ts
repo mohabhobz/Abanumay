@@ -821,6 +821,15 @@ const SCENARIO_SEEDS: ScenarioSeed[] = [
   ['21034', 'حاضنة المشاريع الأسرية بجدة', '748', 'المنح النوعي', 'التطوير', 'الدعم التشغيلي للجمعيات المتميزة', 'مشروع مكتمل', 480_000, 60, 'حصة النملة'],
   ['21035', 'برنامج الطفولة المبكرة ببريدة', '712', 'المنح النوعي', 'التعليم', 'روضات التبيان', 'مشروع مكتمل', 310_000, 260, 'عمر قاسم'],
   ['21036', 'كفالة طلاب العلم الوافدين', '798', 'المنح النوعي', 'الدعوة', 'العلم الشرعي', 'مشروع مكتمل', 150_000, 70, 'عزام الخريف'],
+
+  /* Agreements · re-audit 7 Oct · five more waiting on an agreement step, so every station of the
+     cycle has three agreements on projects that actually sit at it (the mix used to borrow running
+     projects for that, and a draft agreement stood beside a project already paying out) */
+  ['21062', 'تأهيل معلمات رياض الأطفال بالقصيم', '712', 'المنح النوعي', 'التعليم', 'روضات التبيان', 'اعتماد الإتفاقية', 280_000, 90, 'عمر قاسم'],
+  ['21063', 'حقيبة الطالب المحتاج بالمدينة', '733', 'المنح الانتشاري', 'الإغاثة', 'كفالة الأيتام والأرامل', 'اعتماد الإتفاقية', 150_000, 600, 'عزام الخريف'],
+  ['21064', 'صيانة مكيفات مساجد الأحساء', '755', 'المنح النوعي', 'المساجد', 'عمارة المساجد', 'اعتماد الإتفاقية الكترونيًا', 230_000, 1_400, 'حصة النملة'],
+  ['21065', 'الدورات الشرعية المكثفة بتبوك', '798', 'المنح النوعي', 'الدعوة', 'العلم الشرعي', 'اعتماد الإتفاقية', 120_000, 150, 'عزام الخريف'],
+  ['21066', 'تمكين الأسر المنتجة بحائل', '803', 'مسار تعميق الأثر', 'التطوير', 'تهيئة السكن للمحتاجين', 'الإتفاقيات الورقية', 360_000, 40, 'أحمد العبداللطيف'],
 ]
 
 const scenarioRow = (
@@ -934,8 +943,8 @@ projectRows.push(
 
 /** Which scenario projects each procedure draws its extra records from */
 export const SCENARIO = {
-  agreements: SCENARIO_SEEDS.slice(0, 9).map((s) => s[0]),
-  closing: SCENARIO_SEEDS.slice(9).map((s) => s[0]),
+  agreements: [...SCENARIO_SEEDS.slice(0, 9), ...SCENARIO_SEEDS.slice(36)].map((s) => s[0]),
+  closing: SCENARIO_SEEDS.slice(9, 36).map((s) => s[0]),
   /** Plans hang on running projects · the report-cycle ones are running */
   plans: SCENARIO_SEEDS.slice(9, 24).map((s) => s[0]),
   payments: SCENARIO_SEEDS.slice(11, 24).map((s) => s[0]),

@@ -6,8 +6,10 @@ import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { NOUN, nounAfter, pct as sayPct, unitAfter } from '@/lib/format'
+import { NOUN, nf, nounAfter, pct as sayPct, unitAfter } from '@/lib/format'
 import { APPROVAL_MATRIX, MONEY_LIMITS, approverFor, projectsUnder } from '@/data/mock/settings'
+import { logSettings } from '@/data/shared/settingsLog'
+import { useRole } from '@/hooks/useRole'
 import { AGREEMENT_STAGES, AGR_LIMIT, agreements } from '@/data/mock/agreements'
 import { PAY_LIMIT, PAY_STATES, payRequests } from '@/data/mock/disbursements'
 import { CFG, isConfigured, persist } from '@/lib/config'
@@ -97,6 +99,7 @@ function ApprovalTab() {
   const amount = Number(probe.replace(/[^\d]/g, '')) || 0
   const base = () => Object.fromEntries(APPROVAL_MATRIX.map((r) => [r.key, r.upTo]))
   const [saved, setSaved] = useState<Record<string, number | null>>(base)
+  const { user } = useRole()
   const [d, setD] = useState<Record<string, number | null>>(saved)
   const [, tick] = useState(0)
 
@@ -107,6 +110,9 @@ function ApprovalTab() {
 
   const save = () => {
     if (broken) return
+    /* Re-audit 7 Oct · the caps join the settings history, before and after */
+    const cap = (v: number | null | undefined) => (v === null || v === undefined ? 'بلا سقف' : nf.format(v))
+    logSettings('مصفوفة صلاحيات الاعتماد', `${ROUTES.projectSettings}?tab=approval`, user.name, changed.map((r) => ({ k: r.role, from: cap(saved[r.key]), to: cap(d[r.key]) })))
     for (const r of APPROVAL_MATRIX) {
       r.upTo = d[r.key]
       if (changed.includes(r)) r.assumed = false
@@ -199,8 +205,10 @@ function LimitsTab() {
   const [saved, setSaved] = useState<Record<string, number>>(base)
   const [d, setD] = useState<Record<string, number>>(saved)
   const changed = MONEY_LIMITS.filter((l) => d[l.key] !== saved[l.key])
+  const { user } = useRole()
 
   const save = () => {
+    logSettings('الحدود المالية والزمنية', `${ROUTES.projectSettings}?tab=limits`, user.name, changed.map((l) => ({ k: l.label, from: nf.format(saved[l.key]), to: nf.format(d[l.key]) })))
     for (const l of MONEY_LIMITS) {
       if (changed.includes(l)) l.assumed = false
       l.value = d[l.key]
@@ -260,6 +268,7 @@ function StagesTab() {
           stages={AGREEMENT_STAGES.map((s) => ({ key: s.key, label: s.label, who: s.who }))}
           limits={AGR_LIMIT}
           cfgKey={CFG.agrLimits}
+          title="مدد مراحل الاتفاقيات"
           countAt={(k) => agreements.filter((a) => a.stage === k).length}
           unitLabel="الاتفاقيات فيها الآن"
         />
@@ -273,6 +282,7 @@ function StagesTab() {
           stages={PAY_STATES.map((s) => ({ key: s.key, label: s.label, who: s.who }))}
           limits={PAY_LIMIT}
           cfgKey={CFG.payLimits}
+          title="مدد مراحل الصرف"
           countAt={(k) => payRequests.filter((r) => r.state === k).length}
           unitLabel="الطلبات فيها الآن"
         />

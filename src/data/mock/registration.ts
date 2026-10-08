@@ -342,6 +342,17 @@ if (bankField) bankField.options = BANKS
 /** Bank account rejection reasons · the same seven coded values as the entity file (2.4.27) */
 export const BANK_REJECTS = BANK_REJECT_REASONS
 
+/** Registration rejection reasons · coded, so the indicator «rejected for incorrect data or
+    documents» counts a reason picked by the reviewer, not a guess from the wording of the note
+    (BPD-002 · 2.8.4 · re-audit 7 Oct) */
+export const REG_REJECT_REASONS = [
+  { key: 'data', label: 'عدم صحة البيانات أو الوثائق' },
+  { key: 'terms', label: 'عدم استيفاء ضوابط القبول' },
+  { key: 'dup', label: 'جهة مسجّلة سابقًا' },
+  { key: 'other', label: 'سبب آخر' },
+] as const
+export type RegRejectReason = (typeof REG_REJECT_REASONS)[number]['key']
+
 /* Documents · requirement is conditional on entity type.
 
    The most important detail taken from the live system rather than the spec: the spec says "all
@@ -520,6 +531,8 @@ export interface RegRequest {
   decidedAt?: string
   /** Admin note · required on both return and rejection */
   note?: string
+  /** The coded rejection reason · the reviewer picks it with the note */
+  rejectReason?: RegRejectReason
   /** The entity generated after approval */
   entityId?: string
   /** Days under review · feeds an indicator */
@@ -616,7 +629,7 @@ export const regRows: RegRequest[] = [
     decidedAt: '2026-08-15', entityId: '846', reviewDays: 4,
   }),
   req('REQ-2026-947135', 'مركز الأثر للدراسات', 'حكومي', 'أخرى', 'الرياض', 'الرياض', '1004310', 'rejected', '2026-08-04', ['license'], 0, {
-    decidedAt: '2026-08-10', reviewDays: 6,
+    decidedAt: '2026-08-10', reviewDays: 6, rejectReason: 'data',
     note: 'الترخيص المرفوع صادر لجهة أخرى · ورقم الترخيص مسجَّل لجهة قائمة بالتصنيف نفسه (قاعدة 8).',
   }),
   req('REQ-2026-947134', 'جمعية عطاء بجازان', 'جمعية أهلية', HRSD, 'جيزان', 'صبيا', '1004288', 'approved', '2026-07-21', ALL_DOCS.slice(0, 7), 63, {
@@ -634,11 +647,11 @@ export const regRows: RegRequest[] = [
     note: 'القوائم المالية المرفوعة لسنة 2023 · يلزم رفع آخر قوائم مدقّقة.',
   }),
   req('REQ-2026-947146', 'مكتب الخبراء للتدريب', 'شركة ربحية', TRADE, 'الرياض', 'الرياض', '1004440', 'rejected', '2026-08-20', ['license', 'activity'], 0, {
-    decidedAt: '2026-08-26', reviewDays: 6,
+    decidedAt: '2026-08-26', reviewDays: 6, rejectReason: 'terms',
     note: 'الجهة شركة ربحية · ونطاق المنح للجهات غير الربحية وحدها (ضوابط القبول، البند 2).',
   }),
   req('REQ-2026-947147', 'جمعية همم بالباحة', 'جمعية أهلية', HRSD, 'الباحة', 'الباحة', '1004444', 'rejected', '2026-08-14', ['license'], 0, {
-    decidedAt: '2026-08-21', reviewDays: 7,
+    decidedAt: '2026-08-21', reviewDays: 7, rejectReason: 'data',
     note: 'رفض بعد إعادتين للاستكمال لم تُستكمل خلالهما المستندات الإلزامية في المهلة.',
   }),
 ]

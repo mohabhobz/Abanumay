@@ -3,7 +3,7 @@ import { heatOf } from '@/data/shared/escRules'
 import type { PayCheck, PayEvent, PayRequest, PayState } from '@/types/domain'
 import { AWAITING_AGREEMENT, SCENARIO, VIA_EHSAN, projectRows } from './projects'
 import { entityById } from './entities'
-import { agreements } from './agreements'
+import { WALK_PROJECT, agreements } from './agreements'
 
 /* Disbursement requests · built on the procedures document, not on the live system
 
@@ -139,6 +139,11 @@ const checksFor = (state: PayState, cond: boolean): PayCheck[] => {
   base.push({ label: 'الاتفاقية سارية', ok: rnd() > 0.05, rule: 10 })
   base.push({ label: 'المبلغ المحجوز متوفّر', ok: rnd() > 0.08, rule: 11 })
   if (state === 'paid') return base.map((c) => ({ ...c, ok: true }))
+  /* Re-audit 7 Oct · past the supervisor, the payment's condition was met · the
+     supervisor recommends only then (9.4.6) · a request at the manager held on its condition was a
+     seed no one could approve. The attachments (rule 3) may still lack an original the manager waives,
+     and rules 10 and 11 are checked before finance */
+  if (state !== 'supervisor' && state !== 'returned') return base.map((c) => (c.rule === 6 ? { ...c, ok: true } : c))
   return base
 }
 
@@ -361,9 +366,35 @@ export const payRequests: PayRequest[] = (() => {
       n++
     }
   }
+  /* Re-audit 7 Oct · three projects paid in full · 20831 ended, so «open the closing» has a project to
+     start on (10.4.2), 20817 stopped after its payments, so the stop case has spending to settle
+     (10.9.1), and 20845's value is cut below what it was paid, so the difference is claimed (10.9.5).
+     All three used to play the part only because their agreements were wrongly still in
+     approval, so they carried no payments at all. Their agreements are in force now, and paid */
+  const paidTpl = out.find((r) => r.state === 'paid')
+  for (const READY of ['20831', '20817', '20845']) {
+    const mine = out.filter((r) => r.projectId === READY)
+    if (!paidTpl || !mine.length) continue
+    const first = mine[0]!
+    for (const r of mine) out.splice(out.indexOf(r), 1)
+    for (let no = 1; no <= first.of; no++) {
+      const dueAt = dayAfter('2026-02-01', (no - 1) * 50)
+      out.push({
+        ...structuredClone(paidTpl),
+        ...structuredClone({ projectId: first.projectId, projectName: first.projectName, entityId: first.entityId, entityName: first.entityName, owner: first.owner, granted: first.granted, agreement: { ...first.agreement, active: true }, bank: first.bank, sources: first.sources }),
+        id: `SR-2026-${String(11_400 + n).padStart(5, '0')}`,
+        no, of: first.of, due: first.due, asked: first.due, reserved: first.due, spent: first.due * (no - 1),
+        dueAt, at: dayAfter(dueAt, -14), state: 'paid', hoursInState: 0, condition: undefined, note: undefined, ai: undefined,
+        checks: checksFor('paid', false),
+      })
+      n++
+    }
+  }
+
   /* Top-up · a state short of three takes a copy of one of its own requests, moved onto a
      scenario project with that project's own amounts */
-  const pool = SCENARIO.payments.map((id) => projectRows.find((p) => p.id === id)).filter((p) => !!p)
+  /* The walk-through project keeps its payments for the entity to request · it runs on its agreement */
+  const pool = SCENARIO.payments.filter((id) => id !== WALK_PROJECT).map((id) => projectRows.find((p) => p.id === id)).filter((p) => !!p)
   for (const { state } of MIX) {
     /* A state the mix left empty borrows any request as its shape · its own state, checks and note */
     const own = out.find((r) => r.state === state)
@@ -393,6 +424,12 @@ export const payRequests: PayRequest[] = (() => {
       n++
     }
   }
+  /* The waiver scenario (9.1.input-6) · one request at the manager still lacks an original document,
+     so the manager records an exception before approving */
+  const waive = out.find((r) => r.state === 'manager')
+  const att = waive?.checks.find((c) => c.rule === 3)
+  if (att) att.ok = false
+
   /* Attachments and the audit log · built after the request is complete, so the log reads from the
      request's own status rather than separate values */
   for (const r of out) {
@@ -571,8 +608,9 @@ export interface PaySlot {
   requestId?: string
 }
 
-/** "Today" in the mock · fixed so the schedule doesn't change on every run */
-export const TODAY = '2026-09-14'
+/** The demo's reference day · one for the whole prototype (`@/data/clock`) */
+import { TODAY } from '@/data/clock'
+export { TODAY }
 
 export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; rule?: number }> = {
   open: { label: 'مستحقة', why: 'جاهزة لإنشاء طلب صرف' },

@@ -1,4 +1,4 @@
-import { units } from '@/lib/format'
+import { NOUN, countOf, units } from '@/lib/format'
 import type { Basis } from '@/data/kpi'
 
 /**
@@ -25,4 +25,10 @@ export const basisText = (n: number, basis: Basis): string =>
         ? units.line(n, true)
         : basis === 'source'
           ? units.source(n, true)
-          : units.project(n, true)
+          : basis === 'agreement'
+            ? countOf(n, NOUN.agreement)
+            : basis === 'activity'
+              ? countOf(n, NOUN.activity)
+              : basis === 'beneficiary'
+                ? countOf(n, NOUN.beneficiary)
+                : units.project(n, true)

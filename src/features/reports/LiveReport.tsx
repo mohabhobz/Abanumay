@@ -14,6 +14,7 @@ import { LIVE_SPECS, specByKey, type LiveCol, type LiveFilterDef, type LiveSpec 
 import { budgetTree, liveRows, type BudgetNode, type LiveRow } from '@/data/mock/liveRows'
 import { CYCLES } from '@/data/budgetPlan'
 import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from '@/features/budget/BudgetCharts'
+import { ImpactPanel } from './ImpactPanel'
 
 /**
  * One catalog report screen.
@@ -70,6 +71,8 @@ export default function LiveReport() {
               </p>
             </div>
           </header>
+          {/* Client, 8 Oct · the impact on every report screen */}
+          <ImpactPanel />
 
           <Glass className="lrq">
             <p className="lrq-q">{spec.question ? spec.question : spec.what}</p>

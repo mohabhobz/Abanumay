@@ -21,7 +21,11 @@ export function nextSeq(): number {
   return seq
 }
 
-export interface Stamped { seq?: number }
+export interface Stamped {
+  seq?: number
+  /** When the action was taken · the date every record it writes carries, the same on every replay */
+  at?: string
+}
 
 /**
  * Replay several logs as one, in clock order. An operation saved before the clock existed has no

@@ -318,7 +318,9 @@ export const readyToClose = (p: PlanRow): boolean =>
 /* Data */
 
 /** "Today" in the mock · the same reference date every module measures against */
-export const TODAY = '2026-09-18'
+/** The demo's reference day · one for the whole prototype (`@/data/clock`) */
+import { TODAY, actDay } from '@/data/clock'
+export { TODAY }
 
 const ev = (id: string, kind: string, fileName: string, at: string): {
   id: string; kind: string; fileName: string; uploadedAt: string; by: string
@@ -647,7 +649,7 @@ export const approvePlan = (id: string): void => {
   const p = planById(id)
   if (!p) return
   p.baseline = p.baseline === 0 ? 1 : p.baseline
-  p.baselineAt = TODAY
+  p.baselineAt = actDay()
   touch(p, 'active')
 }
 
@@ -664,7 +666,7 @@ export const acceptActivity = (planId: string, actId: string): void => {
   const a = p?.phases.flatMap((ph) => ph.activities).find((x) => x.id === actId)
   if (!a || !p) return
   a.state = 'accepted'
-  a.doneAt = TODAY
+  a.doneAt = actDay()
   if (readyToClose(p)) p.stage = 'done'
 }
 
@@ -697,7 +699,7 @@ export const addEvidence = (
   const a = planById(planId)?.phases.flatMap((ph) => ph.activities).find((x) => x.id === actId)
   if (!a) return
   a.evidence = [...a.evidence, {
-    id: `ev-${Date.now()}`, kind, fileName, uploadedAt: TODAY, by: 'الجهة المستفيدة',
+    id: `ev-${Date.now()}`, kind, fileName, uploadedAt: actDay(), by: 'الجهة المستفيدة',
   }]
 }
 
@@ -706,7 +708,7 @@ export const askChange = (planId: string, say: string): void => {
   const p = planById(planId)
   if (!p) return
   p.changes = [...p.changes, {
-    id: `ch-${Date.now()}`, at: TODAY, by: 'الجهة المستفيدة', say, state: 'waiting',
+    id: `ch-${Date.now()}`, at: actDay(), by: 'الجهة المستفيدة', say, state: 'waiting',
   }]
 }
 
@@ -720,7 +722,7 @@ export const decideChange = (
   c.note = note
   /* Approval bumps the version number — this is what makes "behind the plan" a statement with a
      known reference point, rather than a comparison against a plan that quietly changed */
-  if (ok) { p.baseline += 1; p.baselineAt = TODAY }
+  if (ok) { p.baseline += 1; p.baselineAt = actDay() }
 }
 
 export type { PlanChange }
@@ -860,7 +862,7 @@ export const openPlan = (projectId: string, drafter: 'entity' | 'supervisor'): s
     phases: [],
     owner: pr?.owner ?? 'سارة القحطاني',
     drafter,
-    openedAt: TODAY,
+    openedAt: actDay(),
     hoursInStage: 0,
     changes: [],
   })

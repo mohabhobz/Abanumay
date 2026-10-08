@@ -1,5 +1,6 @@
 import { ROUTES } from '@/app/routes'
 import { CFG, persist, readJson } from '@/lib/config'
+import { logSettings } from './settingsLog'
 import { entityRows } from '@/data/mock/entities'
 import { regRows } from '@/data/mock/registration'
 import { person } from '@/data/people'
@@ -54,6 +55,11 @@ NOTIFY_RULES.channels = {
   staff: { ...DEFAULT.channels.staff, ...NOTIFY_RULES.channels?.staff },
 }
 export const saveNotifyRules = (next: NotifyRules, by: string): void => {
+  /* Re-audit 7 Oct · each changed topic is kept with its channels before and after */
+  const say = (c: EscChannel[] | undefined) => (c?.length ? c.map((x) => CHANNEL_SAY[x]).join('، ') : 'لا قناة')
+  logSettings('قنوات الإشعار', '/settings/notifications?tab=channels', by, (Object.keys(AUDIENCE_SAY) as Audience[]).flatMap((a) =>
+    ALL.filter((t) => JSON.stringify(NOTIFY_RULES.channels[a]?.[t]) !== JSON.stringify(next.channels[a]?.[t]))
+      .map((t) => ({ k: `${AUDIENCE_SAY[a]} · ${TOPIC_SAY[t]}`, from: say(NOTIFY_RULES.channels[a]?.[t]), to: say(next.channels[a]?.[t]) }))))
   Object.assign(NOTIFY_RULES, next, { savedBy: by, savedAt: new Date().toISOString().slice(0, 10) })
   persist(CFG.notify, NOTIFY_RULES)
 }

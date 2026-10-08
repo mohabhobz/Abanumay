@@ -3,7 +3,7 @@ import type { EntityRow, EntityActivation } from '@/types/domain'
 import type { BankAccount, EntityDoc, EntityEvent } from '@/data/mock/entityDetail'
 import { entityRows } from '@/data/mock/entities'
 import {
-  BANK_DOC_LABEL, REG_DOCS, regRows, type RegBank, type RegEvent, type RegRequest, type RegState,
+  BANK_DOC_LABEL, REG_DOCS, REG_REJECT_REASONS, regRows, type RegBank, type RegEvent, type RegRejectReason, type RegRequest, type RegState,
 } from '@/data/mock/registration'
 import { ENTITY_DOCS } from '@/data/mock/taxonomy'
 import type { RoleKey } from '@/data/roles'
@@ -103,7 +103,7 @@ type Op = { at: string } & (
   | { op: 'regSubmit'; id: string; email: string; values: Record<string, string>; banks: RegBank[]; docs: string[]; files: RegRequest['files'] }
   | { op: 'regReturn'; id: string; note: string; fields: string[]; by: string }
   | { op: 'regResubmit'; id: string; values: Record<string, string>; docs: string[]; by: string }
-  | { op: 'regDecide'; id: string; outcome: 'approve' | 'reject'; note: string; banks: Record<string, string>; by: string }
+  | { op: 'regDecide'; id: string; outcome: 'approve' | 'reject'; note: string; banks: Record<string, string>; reason?: RegRejectReason; by: string }
   | { op: 'internal'; values: Record<string, string>; docs: string[]; partner: string; by: string; banks?: RegBank[] }
   | { op: 'status'; entityId: string; to: EntityActivation; reason: string; by: string }
   | { op: 'archive'; entityId: string; on: boolean; reason: string; by: string }
@@ -338,7 +338,9 @@ const apply = (x: Op) => {
         enote(r.name, 'registration', 'اعتُمد تسجيل جهتك', `أصبح حسابك نشطًا · رقم الجهة ${id}${x.note ? ` · ${x.note}` : ''}`, at, ROUTES.entityPortal)
       } else {
         r.state = 'rejected'
-        r.events = [...(r.events ?? []), { kind: 'reject', action: 'رفض وإيقاف · أُرشف الطلب', by: x.by, at, note: x.note, fields: bankFields }]
+        r.rejectReason = x.reason ?? 'other'
+        const why = REG_REJECT_REASONS.find((y) => y.key === r.rejectReason)?.label ?? ''
+        r.events = [...(r.events ?? []), { kind: 'reject', action: 'رفض وإيقاف · أُرشف الطلب', by: x.by, at, note: x.note, fields: [{ k: 'سبب الرفض', v: why }, ...bankFields] }]
         enote(r.name, 'registration', 'قرار طلب التسجيل · مرفوض', x.note, at, ROUTES.entityPortal)
       }
       break
@@ -573,8 +575,8 @@ export const returnRegistration = (id: string, note: string, fields: string[], b
 export const resubmitRegistration = (id: string, values: Record<string, string>, docs: string[], by: string) =>
   run({ op: 'regResubmit', id, values, docs, by, at: now() })
 
-export const decideRegistration = (id: string, outcome: 'approve' | 'reject', note: string, banks: Record<string, string>, by: string): string | undefined => {
-  run({ op: 'regDecide', id, outcome, note, banks, by, at: now() })
+export const decideRegistration = (id: string, outcome: 'approve' | 'reject', note: string, banks: Record<string, string>, by: string, reason?: RegRejectReason): string | undefined => {
+  run({ op: 'regDecide', id, outcome, note, banks, reason, by, at: now() })
   return regRows.find((r) => r.id === id)?.entityId
 }
 

@@ -4,9 +4,10 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, pct } from '@/lib/format'
-import { kpiProcesses, measuredIn, processByKey } from '@/data/kpi'
+import { kpiProcesses, measuredIn, processByKey, type ProcessKpis } from '@/data/kpi'
 import { KpiValue } from './KpiValue'
 import { basisText } from './basis'
+import { ImpactPanel } from './ImpactPanel'
 
 /* Single-process metrics sheet.
 
@@ -24,6 +25,14 @@ import { basisText } from './basis'
    3. Every number links to its underlying rows. This is the answer to
    the review's criticism: a report that ends at a number is of no use —
    one that opens onto the rows lets the decision be made from inside them. */
+
+/* Re-audit 7 Oct · where the text comes from is said per procedure · «copied verbatim» used to sit
+   over the Ehsan, portfolio and plans indicators too, which were written by us */
+const SOURCE_SAY: Record<ProcessKpis['source'], string> = {
+  doc: 'النصوص منقولة حرفيًا من وثيقة الإجراءات v2.0 · القسم x.8',
+  paraphrase: 'الصيغ من وثيقة الإجراءات v2.0 (القسم x.8) بصياغتنا · والمعلَّم «ليس في الوثيقة» إضافة منّا',
+  ours: 'الوثيقة لا تحدّد مؤشرات لهذا الإجراء · هذه مشتقّة من قواعده',
+}
 
 export default function ProcessReport() {
   const { key = '' } = useParams()
@@ -65,11 +74,13 @@ export default function ProcessReport() {
               {next && <StepLink to={ROUTES.report(next.key)} dir="next">{next.title}</StepLink>}
             </nav>
           </header>
+          {/* Client, 8 Oct · the impact on every report screen */}
+          <ImpactPanel />
 
           <Glass>
             <Head
               title="مؤشرات الأداء"
-              meta="النصوص منقولة حرفيًا من وثيقة الإجراءات · القسم x.7"
+              meta={SOURCE_SAY[p.source]}
             />
 
             {sharedGap && (
@@ -88,6 +99,7 @@ export default function ProcessReport() {
                           below the contrast threshold and visually compete with the status
                           badges used elsewhere in the system. */}
                       {k.derived && <span className="ind-d">مشتقّ</span>}
+                      {k.ours && <span className="ind-d">ليس في الوثيقة</span>}
                     </div>
                     <div className="ind-h sub">{isolate(k.how)}</div>
 

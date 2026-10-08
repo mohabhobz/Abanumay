@@ -191,13 +191,19 @@ const MIX: { stage: AgreementStage; share: number }[] = [
 /** Scenario projects (meeting 1 Oct, A-6) top up any stage left with fewer than three agreements ·
     kept out of the share-based mix below so the sample's own records keep their ids */
 const SCENARIO_IDS = new Set([...SCENARIO.agreements, ...SCENARIO.closing])
+/** The project the entity's portal walk-through requests its payments on */
+export const WALK_PROJECT = '21020'
 const MIN_PER_STAGE = 3
 
 /** Rule 1 · no agreement before the project's approval is fully complete */
+const atAgreement = (p: (typeof projectRows)[number]) => p.stage.includes('الإتفاقي')
+/* Re-audit 7 Oct · the agreements still in their approval cycle go to the projects that sit at an
+   agreement stage, and the in-force ones to the projects past it · the mix used to hand a draft to a
+   project already paying out (AG-2026-3102..3106) */
 const eligible = projectRows.filter(
   (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) && !VIA_EHSAN.has(p.id) &&
-    (p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل' || p.stage.includes('الإتفاقي')),
-)
+    (p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل' || atAgreement(p)),
+).sort((a, b) => Number(atAgreement(b)) - Number(atAgreement(a)))
 
 /** The steps each stage passes through · from the steps table itself */
 const PASSED: Record<AgreementStage, number[]> = {
@@ -275,14 +281,18 @@ export const agreements: AgreementRow[] = (() => {
   if (PLAN[PLAN.length - 1]) PLAN[PLAN.length - 1]!.n += spare
 
   let n = 0
-  const make = (p: (typeof projectRows)[number], stage: AgreementStage) => {
+  const make = (p: (typeof projectRows)[number], drawnStage: AgreementStage) => {
+      /* Re-audit 7 Oct · a project past its agreement stage has an agreement in force, whatever the mix drew */
+      const stage: AgreementStage = drawnStage !== 'active' && !atAgreement(p) ? 'active' : drawnStage
       n++
       const e = entityById(p.entityId)
       const amount = p.amountGranted || p.amountRequested
       const openedAt = `2026-0${int(1, 6)}-${String(int(1, 28)).padStart(2, '0')}`
       /* Rule 3 · the type is set at creation · paper agreements are less common in the live system
          (2 vs 11 in the section inventory) */
-      const kind: AgreementKind = rnd() > 0.82 ? 'ورقية' : 'إلكترونية'
+      const drawn: AgreementKind = rnd() > 0.82 ? 'ورقية' : 'إلكترونية'
+      /* Re-audit 7 Oct · a project at a paper or an electronic agreement stage says which kind it has */
+      const kind: AgreementKind = p.stage === 'الإتفاقيات الورقية' ? 'ورقية' : p.stage === 'اعتماد الإتفاقية الكترونيًا' ? 'إلكترونية' : drawn
       const lim = AGR_LIMIT[stage] || 168
       const h = rnd() > 0.74 ? int(lim + 1, lim * 3) : int(4, lim)
       /* Rule 24 · multiple versions · one sent back becomes version 2 */
@@ -326,6 +336,14 @@ export const agreements: AgreementRow[] = (() => {
     while (out.filter((a) => a.stage === stage).length < MIN_PER_STAGE && pool.length) {
       make(pool.shift()!, stage)
     }
+  }
+  /* Re-audit 7 Oct · the portal walk-through's project (meeting 1 Oct, A-6) is running, so it runs under
+     an agreement in force · its first payment has no condition, so the entity can request it */
+  const walk = projectRows.find((p) => p.id === WALK_PROJECT)
+  if (walk && !out.some((a) => a.projectId === walk.id)) {
+    make(walk, 'active')
+    const first = out[out.length - 1]!.payments[0]
+    if (first) first.requirement = undefined
   }
 
   for (const a of out) {
@@ -392,8 +410,14 @@ export const agreementForProject = (projectId: string): AgreementRow | undefined
    The four from the document, and **the target-value column is empty in all of them** — so the
    number is shown as a value, not a status, exactly like the disbursement indicators. */
 
-/** Target duration for drafting the agreement · provisional until the Foundation sets it */
-export const AGR_TARGET_DAYS = 21
+/** Target duration for drafting the agreement · the sum of the stage limits a new agreement runs
+    through (draft · manager · executive · entity), so editing a limit moves it · re-audit 7 Oct */
+export const agrTargetDays = (): number =>
+  Math.round((['draft', 'manager', 'executive', 'entity'] as const).reduce((n, k) => n + (AGR_LIMIT[k] ?? 0), 0) / 24)
+
+/** Sent back for revision at least once · its stage, a second version, or a return in its log */
+export const agrWasReturned = (a: AgreementRow): boolean =>
+  a.stage === 'returned' || a.version > 1 || a.log.some((e) => /^أعاد/.test(e.what))
 
 const daysBetween = (a: string, b: string): number =>
   Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
@@ -413,24 +437,23 @@ export const agrKpi = () => {
     })
     .filter((x): x is number => x !== null && x >= 0)
   /* Indicator 4 · sent back for revision · a second version is evidence a send-back happened */
-  const returned = agreements.filter((a) => a.stage === 'returned' || a.version > 1).length
+  const returned = agreements.filter((a) => a.stage !== 'cancelled' && agrWasReturned(a)).length
+  const all = agreements.filter((a) => a.stage !== 'cancelled').length
+  const target = agrTargetDays()
 
   return {
     open: open.length,
     active: done.length,
     openSum: open.reduce((s, a) => s + a.amount, 0),
     /** Indicator 1 · average agreement drafting time (days) */
-    prepDays: prep.length ? Math.round(prep.reduce((s, d) => s + d, 0) / prep.length) : 0,
-    /** Indicator 2 · share completed within the target duration */
-    inTarget: prep.length
-      ? Math.round((prep.filter((d) => d <= AGR_TARGET_DAYS).length / prep.length) * 100)
-      : 0,
+    prepDays: prep.length ? Math.round(prep.reduce((s, d) => s + d, 0) / prep.length) : null,
+    /** Indicator 2 · share completed within the target duration · over every agreement, as the document divides */
+    inTarget: all ? Math.round((prep.filter((d) => d <= target).length / all) * 100) : null,
+    target,
     /** Indicator 3 · average approval cycle time */
-    cycleDays: cycle.length ? Math.round(cycle.reduce((s, d) => s + d, 0) / cycle.length) : 0,
+    cycleDays: cycle.length ? Math.round(cycle.reduce((s, d) => s + d, 0) / cycle.length) : null,
     /** Indicator 4 · share sent back for revision */
-    returnedPct: agreements.length
-      ? Math.round((returned / agreements.length) * 100)
-      : 0,
+    returnedPct: all ? Math.round((returned / all) * 100) : null,
     late: open.filter((a) => agrHeat(a) === 'late').length,
     stuck: open.filter((a) => agrHeat(a) === 'stuck').length,
     blocked: open.filter(agrBlocked).length,

@@ -12,7 +12,7 @@ import { isolate, nf, pct } from '@/lib/format'
 
 export { SaudiMap, type MapPoint, type MapRow } from './SaudiMap'
 export { Spark, type SparkPoint, type SparkSla } from './Spark'
-export { StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, MoneyRing, type Hue, type StageDatum, type LolliDatum, type Part, type MeterDatum, type RingPart } from './forms'
+export { StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, CountBars, MoneyRing, type Hue, type StageDatum, type LolliDatum, type Part, type MeterDatum, type RingPart } from './forms'
 
 export const CHART_COLORS = [
   'var(--ch-1)', 'var(--ch-2)', 'var(--ch-3)',

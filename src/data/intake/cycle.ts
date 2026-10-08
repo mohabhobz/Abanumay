@@ -121,8 +121,9 @@ export const goalFunded = (field: string, goal: string): boolean => gate.goal(fi
 export const openBlock = (field: string): string =>
   (CYCLE.domains[field]?.supervisors.length ?? 0) === 0 ? 'لا يُفتح مجال قبل ربطه بمشرف منح واحد على الأقل' : fundingBlock(field)
 
-/** Today in the prototype · the same reference date the inbox and plans use */
-export const TODAY = '2026-10-03'
+/** The demo's reference day · one for the whole prototype (`@/data/clock`) */
+import { TODAY } from '@/data/clock'
+export { TODAY }
 
 export const inPeriod = (date = TODAY): boolean => date >= CYCLE.from && date <= CYCLE.to
 

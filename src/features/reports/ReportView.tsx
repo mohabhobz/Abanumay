@@ -15,6 +15,7 @@ import { ENTITY_DOCS_TOTAL, stagePressure } from '@/data/repository'
 import { days } from '@/lib/tone'
 import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
+import { ImpactPanel } from './ImpactPanel'
 
 /**
  * Full report.
@@ -85,6 +86,8 @@ export default function ReportView() {
               <p className="sub mt-1">{card.src}</p>
             </div>
           </header>
+          {/* Client, 8 Oct · the impact on every report screen */}
+          <ImpactPanel />
 
           {/* The same reading text as the dashboard — the bridge between the
               sentence and the rows. */}

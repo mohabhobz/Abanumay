@@ -51,7 +51,9 @@ import type { Tone } from '@/types/domain'
    procedure**. */
 
 /** Today, in the mock · same date as the plans so the calculations line up */
-export const TODAY = '2026-09-18'
+/** The demo's reference day · one for the whole prototype (`@/data/clock`) */
+import { TODAY, actDay } from '@/data/clock'
+export { TODAY }
 
 export const CLOSE_STAGES: {
   key: CloseStage; label: string; who: string; note: string; cycle: CloseCycle
@@ -615,7 +617,7 @@ export const closeOfProject = (projectId: string): CloseRow | undefined =>
 /* Actions · each one logs to the audit trail (rule 11) */
 
 const log = (c: CloseRow, by: string, what: string) => {
-  c.audit.push({ at: TODAY, by, what })
+  c.audit.push({ at: actDay(), by, what })
 }
 
 /** Registered by the budget store · the unused balance goes back to the project's lines on final
@@ -630,10 +632,10 @@ export const openClose = (projectId: string): string => {
   const pr = projectRows.find((p) => p.id === projectId)
   const id = `CL-${2050 + closeRows.length}`
   closeRows.push(row(id, projectId, 'draft', {
-    openedAt: TODAY,
+    openedAt: actDay(),
     hoursInStage: 0,
-    versions: [v(1, TODAY, pr?.owner ?? 'مشرف المنح', 'طلب التقرير الختامي')],
-    audit: [a(TODAY, pr?.owner ?? 'مشرف المنح', 'إنشاء طلب التقرير الختامي')],
+    versions: [v(1, actDay(), pr?.owner ?? 'مشرف المنح', 'طلب التقرير الختامي')],
+    audit: [a(actDay(), pr?.owner ?? 'مشرف المنح', 'إنشاء طلب التقرير الختامي')],
   }))
   return id
 }
@@ -656,7 +658,7 @@ export const returnReport = (c: CloseRow, by: string, say: string, to: CloseStag
   c.returnedTo = to
   c.note = say
   c.hoursInStage = 0
-  c.versions.push(v(c.versions.length + 1, TODAY, by, `إعادة من ${by}`))
+  c.versions.push(v(c.versions.length + 1, actDay(), by, `إعادة من ${by}`))
   log(c, by, `إعادة بملاحظات · إصدار ${c.versions.length}`)
 }
 
@@ -681,7 +683,7 @@ export const startEval = (c: CloseRow, by: string): void => {
   if (!canStartEval(c)) return
   c.stage = 'evalDraft'
   c.evaluation = mkEval()
-  c.evalVersions.push(v(1, TODAY, by, 'إعداد التقييم'))
+  c.evalVersions.push(v(1, actDay(), by, 'إعداد التقييم'))
   c.hoursInStage = 0
   log(c, by, 'بدء إعداد تقييم المشروع')
 }
@@ -704,7 +706,7 @@ export const approveEval = (c: CloseRow, by: string): void => {
   /* Warning: **final closing needs all three** · rules 8 and 18 */
   if (!closeRequirements(c).ok) return
   c.stage = 'closed'
-  c.closedAt = TODAY
+  c.closedAt = actDay()
   c.hoursInStage = 0
   log(c, by, 'اعتماد التقييم · الإغلاق النهائي')
   closeHook?.(c.projectId, by)
@@ -721,17 +723,19 @@ export const closeKpi = () => {
   const closed = closeRows.filter((c) => c.stage === 'closed')
   const open = closeRows.filter((c) => c.stage !== 'closed')
 
+  /* Re-audit 7 Oct · nothing to measure reads empty, not 0 · «0 days» with nothing closed was
+     shown as a measured number */
   /* Indicator 1 · average closing duration · from opening the request to closing */
   const days = closed.map((c) => {
     const from = new Date(c.openedAt).getTime()
     const to = new Date(c.closedAt ?? TODAY).getTime()
     return Math.round((to - from) / 86_400_000)
   })
-  const avg = days.length > 0 ? Math.round(days.reduce((s, d) => s + d, 0) / days.length) : 0
+  const avg = days.length > 0 ? Math.round(days.reduce((s, d) => s + d, 0) / days.length) : null
 
   /* Indicator 2 · share closed within the target duration */
   const inTime = days.filter((d) => d <= CLOSE_TARGET_DAYS).length
-  const inTimePct = closed.length > 0 ? Math.round((inTime / closed.length) * 100) : 0
+  const inTimePct = closed.length > 0 ? Math.round((inTime / closed.length) * 100) : null
 
   /* Indicator 3 · average report drafting time · from opening the request until the entity submits
      it · the "closing report submitted" line in the audit log is the only source for this date
@@ -747,11 +751,11 @@ export const closeKpi = () => {
     .filter((d): d is number => d !== null)
   const prepDays = sent.length > 0
     ? Math.round(sent.reduce((s, d) => s + d, 0) / sent.length)
-    : 0
+    : null
 
   /* Indicator 4 · share closed after completing the requirements */
   const full = closed.filter((c) => closeRequirements(c).ok).length
-  const fullPct = closed.length > 0 ? Math.round((full / closed.length) * 100) : 0
+  const fullPct = closed.length > 0 ? Math.round((full / closed.length) * 100) : null
 
   return {
     avg,

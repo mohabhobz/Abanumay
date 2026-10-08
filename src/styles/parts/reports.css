@@ -3,3 +3,27 @@
 /* Report toolbars reuse `.ftoolbar`. A row that holds only helper text (no control)
    keeps the control height, so the text centers against the export button. */
 .rptb .ftool-f{min-height:var(--h-md)}
+
+/* ── «الأثر» · the impact panel (client, 8 Oct) · on Today and every report screen ──
+   Four numbers in a row, then where and in what side by side · the full report adds the map,
+   the domains, the goals and the table. Widths from the panel itself, so it fits beside the
+   assistant as well as full width. */
+.impc{display:flex;flex-direction:column;align-items:stretch;container-type:inline-size}
+.impc>*{min-width:0}
+.impc-ks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-4);margin-block-start:var(--sp-4)}
+.impc-k{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-4);border-radius:var(--r1);background:var(--fl-2)}
+.impc-kl{font-size:var(--fs-2);color:var(--t2)}
+.impc-kv{font-family:var(--fd);font-size:var(--fd-3);font-weight:700;line-height:var(--lh-head);color:var(--t1)}
+.impc-kn{font-size:var(--fs-1)}
+.impc-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-7);margin-block-start:var(--sp-5)}
+.impc-h{margin:0;font-size:var(--fs-3);font-weight:600;color:var(--t1)}
+.impc-map{margin-block-start:var(--sp-5);inline-size:100%;max-inline-size:calc(var(--sp-12) * 8);margin-inline:auto}
+.impc-pairs{margin-block-start:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-3)}
+.impc .hd .lnk{display:inline-flex;align-items:center;gap:var(--sp-2)}
+@container (max-width:760px){
+  .impc-ks{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .impc-g{grid-template-columns:1fr}
+}
+@container (max-width:420px){
+  .impc-ks{grid-template-columns:1fr}
+}

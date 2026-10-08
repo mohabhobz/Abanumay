@@ -9,6 +9,7 @@ import { capOf, type ApprovalRow } from '@/data/approval'
 import { ACTS_FOR, HOLDER_LABEL, nextOf, type Holder } from '@/data/holders'
 import type { RoleKey } from '@/data/roles'
 import { TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
+import { dayOf, stampNow, timeOf } from '@/data/clock'
 import { flowOf, intakeLog, referConsultant } from '@/data/intake/flow'
 import { nextSeq, replayTogether, type Stamped } from '@/data/opclock'
 import { expiredMandatory } from '@/data/entities/store'
@@ -129,18 +130,20 @@ export const payPlanOf = (projectId: string): SessionItem['payPlan'] =>
 export const sessionsOf = (projectId: string): Session[] => SESSIONS.filter((s) => s.items.some((i) => i.projectId === projectId))
 
 const row = (id: string) => projectRows.find((p) => p.id === id)
-const time = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` }
+/* The running op's stamp · every date an action writes is its own time, replayed the same on reload */
+let OP_AT: string | undefined
+const opDay = () => dayOf(OP_AT ?? stampNow())
 let seq = 0
 const event = (id: string, e: { action: string; by: string; fields?: LogField[]; tone?: LogEvent['tone']; actor?: LogEvent['actor']; dept?: string; files?: string[]; at?: string }) => {
   const actor = e.actor ?? 'staff'
   appFlowOf(id).events.unshift({
     id: `ap-${id}-${seq++}`, action: e.action, dept: e.dept ?? 'اعتماد المشروع', by: e.by, actor,
-    at: e.at ?? TODAY, time: time(), days: 0, hours: 0, limit: 900, fields: e.fields ?? [], files: e.files,
+    at: e.at ?? opDay(), time: timeOf(OP_AT), days: 0, hours: 0, limit: 900, fields: e.fields ?? [], files: e.files,
     tone: e.tone ?? 'mute', source: SOURCE_OF[actor],
   })
 }
 const notify = (to: string[], projectId: string, title: string, context: string, href = ROUTES.projectTab(projectId, 'approval')) => {
-  for (const t of to) APPROVAL_NOTES.unshift({ id: `apn-${APPROVAL_NOTES.length + 1}`, to: t, title, context, at: TODAY, href })
+  for (const t of to) APPROVAL_NOTES.unshift({ id: `apn-${APPROVAL_NOTES.length + 1}`, to: t, title, context, at: opDay(), href })
 }
 
 /* Registered by the plans store · a registry, so the approvals store doesn't import it */
@@ -366,7 +369,7 @@ const now = () => new Date().toISOString()
 
 /** Final approval at a level · the path is complete, the hold is final, the supervisor confirms */
 const finalise = (p: ProjectRow, f: AppFlow, level: Level, by: string) => {
-  f.decided = { level, at: TODAY, by }
+  f.decided = { level, at: opDay(), by }
   f.hold = 'final'
   p.holder = 'confirm'
   p.hoursInStage = 0
@@ -380,17 +383,18 @@ const refuse = (p: ProjectRow, f: AppFlow, stage: string, note: string, by: stri
   p.holder = undefined
   moveTo(p, stage)
   f.hold = 'none'
-  f.official.unshift({ id: `of-${p.id}-${f.official.length}`, text: `اعتذار المؤسسة عن دعم المشروع · ${note}`, by, at: TODAY })
+  f.official.unshift({ id: `of-${p.id}-${f.official.length}`, text: `اعتذار المؤسسة عن دعم المشروع · ${note}`, by, at: opDay() })
   notify([p.entityName], p.id, `قرار طلبك · ${p.name}`, note, ROUTES.project(p.id))
 }
 
-const apply = (o: Op) => {
+const apply = (o: Op) => { OP_AT = o.at; try { applyOp(o) } finally { OP_AT = undefined } }
+const applyOp = (o: Op) => {
   switch (o.op) {
     case 'decide': {
       const p = row(o.id)
       if (!p) return
       const f = appFlowOf(o.id)
-      f.recs.unshift({ level: o.level, verdict: o.verdict, note: o.note, by: o.by, at: TODAY, needsPlan: o.needsPlan, target: o.target })
+      f.recs.unshift({ level: o.level, verdict: o.verdict, note: o.note, by: o.by, at: opDay(), needsPlan: o.needsPlan, target: o.target })
       const fields: LogField[] = [{ k: 'القرار', v: VERDICT_SAY[o.verdict], strong: true }]
       if (o.note) fields.push({ k: o.verdict.includes('approve') || o.verdict === 'approve' ? 'المبررات' : 'الملاحظات', v: o.note })
       if (o.needsPlan !== undefined) { f.needsPlan = o.needsPlan; fields.push({ k: 'الخطة', v: o.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة' }) }
@@ -437,7 +441,7 @@ const apply = (o: Op) => {
             fields.push({ k: 'إلى', v: to === 'consultant' ? 'المستشار ومشرف المنح' : 'مشرف المنح' }, { k: 'الحجز', v: 'أُلغي · يُعاد التحقق عند العودة' })
           } else {
             p.holder = to as Holder
-            if (to === 'manager' && o.level !== 'manager') f.awaitingReview = { note: o.note, by: o.by, at: TODAY }
+            if (to === 'manager' && o.level !== 'manager') f.awaitingReview = { note: o.note, by: o.by, at: opDay() }
             fields.push({ k: 'إلى', v: HOLDER_LABEL[to as Holder] }, { k: 'الحجز', v: 'محفوظ (4.4.16 · 6.4.8)' })
             notify([HOLDER_LABEL[to as Holder]], p.id, `أُعيد إليك · ${p.name}`, o.note)
           }
@@ -453,7 +457,7 @@ const apply = (o: Op) => {
         case 'confirm':
           p.supportStatus = 'معتمد'
           if (p.amountGranted === 0) p.amountGranted = p.amountRequested
-          p.decidedAt = TODAY
+          p.decidedAt = opDay()
           p.holder = undefined
           /* Re-audit 7 Oct · 11.2.17 · an independent project through Ehsan has no agreement · it goes
              straight to execution with its plan and payment schedule */
@@ -487,13 +491,13 @@ const apply = (o: Op) => {
     case 'cond': appFlowOf(o.id).conditions.push(o.cond); event(o.id, { action: 'إضافة شرط خاص', by: o.cond.by, fields: [{ k: 'الشرط', v: o.cond.text, strong: true }, { k: 'قبل', v: o.cond.when === 'agreement' ? 'توقيع الاتفاقية' : 'صرف الدفعة الأولى' }] }); return
     case 'condMet': {
       const c = appFlowOf(o.id).conditions.find((x) => x.id === o.condId)
-      if (c && !c.met) { c.met = { by: o.by, at: TODAY }; event(o.id, { action: 'استيفاء شرط', by: o.by, tone: 'ok', fields: [{ k: 'الشرط', v: c.text }] }) }
+      if (c && !c.met) { c.met = { by: o.by, at: opDay() }; event(o.id, { action: 'استيفاء شرط', by: o.by, tone: 'ok', fields: [{ k: 'الشرط', v: c.text }] }) }
       return
     }
     case 'note': appFlowOf(o.id).notes.push(o.note); event(o.id, { action: 'ملاحظة إلزامية', by: o.note.by, tone: 'warn', fields: [{ k: 'الملاحظة', v: o.note.text, strong: true }] }); return
     case 'noteResolve': {
       const n = appFlowOf(o.id).notes.find((x) => x.id === o.noteId)
-      if (n && !n.resolved) { n.resolved = { by: o.by, at: TODAY, reply: o.reply }; event(o.id, { action: 'معالجة ملاحظة إلزامية', by: o.by, tone: 'ok', fields: [{ k: 'الملاحظة', v: n.text }, { k: 'المعالجة', v: o.reply }] }) }
+      if (n && !n.resolved) { n.resolved = { by: o.by, at: opDay(), reply: o.reply }; event(o.id, { action: 'معالجة ملاحظة إلزامية', by: o.by, tone: 'ok', fields: [{ k: 'الملاحظة', v: n.text }, { k: 'المعالجة', v: o.reply }] }) }
       return
     }
     case 'ask': {
@@ -504,7 +508,7 @@ const apply = (o: Op) => {
     }
     case 'answer': {
       const x = appFlowOf(o.id).opinions.find((y) => y.id === o.opinionId)
-      if (x && !x.answer) { x.answer = o.answer; x.answeredBy = o.by; x.answeredAt = TODAY; event(o.id, { action: `رأي ${DEPT_SAY[x.dept]}`, by: o.by, fields: [{ k: 'الرأي', v: o.answer }, { k: 'الإلزام', v: 'استشاري' }] }) }
+      if (x && !x.answer) { x.answer = o.answer; x.answeredBy = o.by; x.answeredAt = opDay(); event(o.id, { action: `رأي ${DEPT_SAY[x.dept]}`, by: o.by, fields: [{ k: 'الرأي', v: o.answer }, { k: 'الإلزام', v: 'استشاري' }] }) }
       return
     }
     case 'official': {
@@ -557,7 +561,7 @@ const apply = (o: Op) => {
       const p = row(o.projectId)
       if (!s || !it || !p || s.state === 'closed' || it.outcome) return
       if (sessionItemBlockers(s, it, o.outcome).length) return
-      it.outcome = o.outcome; it.target = o.target; it.note = o.note; it.payPlan = o.payPlan; it.decidedAt = TODAY
+      it.outcome = o.outcome; it.target = o.target; it.note = o.note; it.payPlan = o.payPlan; it.decidedAt = opDay()
       const tally = voteTally(it)
       const verdict: Verdict = o.outcome === 'approve' ? 'approve' : o.outcome === 'refer' ? 'refer' : o.outcome === 'reject' ? 'reject' : 'return'
       apply({ op: 'decide', id: p.id, level: s.body, verdict, note: o.note, by: o.by, target: o.target, at: o.at })
@@ -578,7 +582,7 @@ const apply = (o: Op) => {
       const s = sessionById(o.sessionId)
       if (!s || s.state === 'closed') return
       s.state = 'closed'
-      s.closedAt = TODAY
+      s.closedAt = opDay()
       /* Items left without a decision go back to the queue for a later session */
       s.items = s.items.filter((x) => x.outcome)
       for (const it of s.items) event(it.projectId, { action: `إقفال جلسة ${HOLDER_LABEL[s.body]} · القرار نهائي`, by: o.by, actor: 'committee', dept: HOLDER_LABEL[s.body] })
@@ -744,13 +748,13 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
 }
 
 export const amendDecision = (p: ProjectRow, note: string, me: string) => run({ op: 'decide', id: p.id, level: appFlowOf(p.id).decided?.level ?? 'exec', verdict: 'amend', note, by: me, at: now() })
-export const addCondition = (id: string, text: string, when: Condition['when'], by: string) => run({ op: 'cond', id, cond: { id: `c-${id6()}`, text, when, by, at: TODAY }, at: now() })
+export const addCondition = (id: string, text: string, when: Condition['when'], by: string) => run({ op: 'cond', id, cond: { id: `c-${id6()}`, text, when, by, at: dayOf(stampNow()) }, at: now() })
 export const meetCondition = (id: string, condId: string, by: string) => run({ op: 'condMet', id, condId, by, at: now() })
-export const addMandNote = (id: string, text: string, level: Holder, by: string) => run({ op: 'note', id, note: { id: `n-${id6()}`, text, level, by, at: TODAY }, at: now() })
+export const addMandNote = (id: string, text: string, level: Holder, by: string) => run({ op: 'note', id, note: { id: `n-${id6()}`, text, level, by, at: dayOf(stampNow()) }, at: now() })
 export const resolveNote = (id: string, noteId: string, reply: string, by: string) => run({ op: 'noteResolve', id, noteId, reply, by, at: now() })
-export const askOpinion = (id: string, dept: Opinion['dept'], ask: string, by: string) => run({ op: 'ask', id, opinion: { id: `o-${id6()}`, dept, ask, by, at: TODAY }, at: now() })
+export const askOpinion = (id: string, dept: Opinion['dept'], ask: string, by: string) => run({ op: 'ask', id, opinion: { id: `o-${id6()}`, dept, ask, by, at: dayOf(stampNow()) }, at: now() })
 export const answerOpinion = (id: string, opinionId: string, answer: string, by: string) => run({ op: 'answer', id, opinionId, answer, by, at: now() })
-export const makeOfficial = (id: string, text: string, by: string) => run({ op: 'official', id, official: { id: `of-${id6()}`, text, by, at: TODAY }, at: now() })
+export const makeOfficial = (id: string, text: string, by: string) => run({ op: 'official', id, official: { id: `of-${id6()}`, text, by, at: dayOf(stampNow()) }, at: now() })
 export const declareConflict = (p: ProjectRow, level: Holder, reason: string, me: string) => run({ op: 'conflict', id: p.id, level, reason, by: me, at: now() })
 export const saveSession = (s: Session) => run({ op: 'session', session: s, at: now() })
 export const setAgenda = (sessionId: string, projectId: string, add: boolean) => run({ op: 'agenda', sessionId, projectId, add, at: now() })

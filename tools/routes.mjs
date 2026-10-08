@@ -1,0 +1,232 @@
+/**
+ * صفحات الجرد، **مكتوبة مرة واحدة**.
+ *
+ * القايمة دي كانت متكرّرة في تلات ملفات (`uiaudit` و`uicheck`
+ * و`contrast`). ودي بالظبط نفس المرض اللي بنطارده في الـCSS:
+ * التعريف المكرّر. لما ضفنا مشروعًا جديدًا للجرد، الملف اللي
+ * اتنسي فضل بيفحص القايمة القديمة ويطلع أخضر.
+ *
+ * ### ليه مشروعان لا واحد
+ * المشروع ٢٠٩٤٠ لسّه في أول الطريق: مفيش اتفاقية ومفيش دفعات،
+ * فتابَّي «الاتفاقية» و«الدفعات» بيرجّعوا **حالة فاضية**. الجرد
+ * فضل بيقيس شاشتين فاضيتين وهو فاكر إنه بيقيس الشاشتين، وده
+ * اللي خلّى اختلاف نقطة الاستِبر (١٦ في الاتفاقية و١٥ في الدفعات)
+ * يعدّي من تحت ٢٣ صفحة × ٣ ثيمات من غير ما يتمسك.
+ *
+ * ٢٠٨٥٢ واصل لمرحلة الصرف، فالشاشتين بترسموا فعلًا. والاتنين
+ * موجودين: الحالة الفاضية شاشة برضو ومحتاجة تتفحص.
+ */
+/* ⚠️ **المسارات دي بتغطّي ٥٨٪ من السطح بس.** القياس (`deadcss.mjs`):
+   ٣٣٥ من ٧٩٦ كلاس ما بترسمش هنا — المودالات والتحديد الجماعي
+   (`bulk*`) ومخصّص الفلاتر (`fcust*`) وطلّة الفجوة (`gpeek*`)
+   والموبايل وتفكير المساعد كلهم برّه القايمة، لأنهم بيحتاجوا
+   **تفاعل** لا زيارة. `/login` اتضاف لأنه صفحة كاملة بشجرة ستايل
+   خاصّة (`login` · `lfield` · `lprov` …) وكان بره الحراسة تمامًا.
+   الباقي محتاج خطوات تفاعل في `uicheck` — مجدول في UI_FIX_PLAN §١٫٥. */
+export const ROUTES = [
+  '/login',
+  '/', '/reports/overview', '/journey', '/insights', '/projects',
+  /* ⚠️ **الجدول المجمَّع شاشة تانية لا حالة تزويق (ي-3).** التجميع
+     بيقفل كل المجموعات، فاللي بيترسم سطور مجاميع بس: ولا ترويسة
+     جدول ولا صفّ ولا `tfoot`. من غير المسار ده الجرد بيقيس الجدول
+     المفتوح وحده، وسطر المجموعة المطويّ · وهو اللي بقى شايل
+     الإجابة · ما بيتفحصش ولا مرة في ٣ ثيمات. */
+  '/projects?group=region',
+  /* والمتداخل شاشة تالتة (ي-1): فيه عقد وسيطة بتفتح على **مجموعات**
+     لا على جدول، وإزاحة ومجاميع على مستويين · ولا واحدة فيهم
+     موجودة في التجميع المسطّح. */
+  '/projects?group=region,entity',
+  '/projects/20940', '/projects/20940/agreement', '/projects/20940/payments',
+  /* B-5 · a project at each seat · and A-6 scenario records */
+  '/projects/21039', '/projects/21041', '/projects/20974', '/closings/CL-2103', '/plans/PL-1104',
+  /* الإجراء 3 · الدراسة والطلب والإعدادات */
+  '/projects/20940/study', '/projects/21044', '/projects/21037/study', '/projects/new?tab=docs', '/projects/new?as=entity&entity=694',
+  '/projects/settings?tab=cycle', '/projects/settings?tab=criteria', '/projects/settings?tab=consultants', '/projects/settings?tab=prospects',
+  '/projects/20852', '/projects/20852/agreement', '/projects/20852/payments',
+  /* ⚠️ تاب الخطة بحالتيه: ٢٠٨٤٥ ليه خطة قيد التنفيذ، و٢٠٩٤٠
+     اتقرّر إنه ما يتطلبش · والحالة التانية **جملة مكتوبة** لا
+     شاشة فاضية، فلازم تتفحص زي أي شاشة */
+  '/projects/20845/plan', '/projects/20940/plan',
+  /* ⚠️ تاب الإغلاق بتلات حالات، والتالتة هي اللي بتنسى: ٢٠٦١١ مغلق،
+     و٢٠٨٥٢ عنده طلب عند الجهة، و٢٠٨٤٥ **مالوش طلب** · والأخير جملة
+     مكتوبة بتقول ليه (قاعدة 1 و2) لا شاشة فاضية */
+  '/projects/20611/closing', '/projects/20852/closing', '/projects/20845/closing',
+  /* ═══ وجهتان برضو، لنفس السبب ═══
+     ٦٩٤ جهة **جديدة**: ما اتمنحش لها ريال، فـ«رحلة الريال» بترجّع
+     حالة فاضية وترخيصها سارٍ. يعني الجرد كان بيلفّ على صفحة جهة
+     وهو فاكر إنه بيقيس صفحة الجهة، والانفوجرافيك بأربع صفوفه ووسم
+     «منتهٍ» جنب التاريخ **ما كانوش بيترسموا أصلًا** · وده اللي
+     خلّى الوسم الملزوق في «٢٥ مارس ٢٠١٩منتهٍ» يعدّي من تحت
+     ٢٦ صفحة × ٣ ثيمات.
+
+     ٧٥٥ جهة شغّالة: ٩٫٧ مليون ممنوح على تلات حالات، وترخيص منتهي. */
+  '/entities', '/entities/694', '/entities/694/docs', '/entities/694/banks', '/entities/694/log',
+  '/entities/755', '/entities/755/docs',
+  /* تسجيل جهة جديدة · BPD-002.
+     ⚠️ التلاتة دول لازم يبقوا مسارات **موجودة فعلًا**: لو الراوتر
+     قرا `register` كرقم جهة، الشاشة بترجع «غير موجود» وكل الأدوات
+     بترجع خضرا وهي بتقيس شاشة فاضية · وده اللي `notFound` في
+     `uicheck.mjs` بيمسكه دلوقتي. */
+  '/entities/register',
+  /* التسجيل المباشر · قاعدة 32 · وهو **شاشة تانية** لا نسخة:
+     محطة نوع الشراكة، وبلا ضوابط ولا رمز تحقّق ولا مراجعة */
+  '/entities/new', '/entities/new?tab=id', '/entities/new?tab=docs',
+  /* الكارت المختار · من غير السطر ده الفحص بيقيس الحالة الفاضية وحدها */
+  '/entities/new?kind=implementer', '/entities/new?kind=strategic&tab=access',
+  /* ⚠️ **محطات النموذج مسارات لأنها غير كده ما بتتقاسش.** لما
+     المحطة كانت ستيت جوّه الكومبوننت، `/entities/register` كان
+     بيرسم بوّابة الشروط وبس · والتبويبات والحقول والمستندات ما
+     اتفحصوش ولا مرة في ٣ ثيمات، والجرد بيرجع أخضر وهو ما شافهمش.
+     `?tab=docs` هو التبويب اللي الإلزام فيه بيتغيّر بالتصنيف،
+     و`?step=sent` هي الشاشة اللي بتقول «لسه مفيش حساب». */
+  /* ⚠️ و`up=` مش تزويق في الرابط: هي حالة **بعد الرفع**. من غيرها
+     الجرد بيشوف مناطق الرفع الفاضية وبس، والعيّنة المرفوعة
+     (`DocFile` بثامبنيله وزرار الإزالة) ما بتترسمش ولا مرة.
+     والمفتاحان دول بيخلّوا الصفحة الواحدة فيها الحالتين مع بعض. */
+  '/entities/register?step=form', '/entities/register?step=form&tab=docs&up=license,board',
+  /* ⚠️ **حساب الجهة بقى شاشة بذاتها لا محطة في الستيبر.** كانت
+     `?step=form&tab=account`، وهي دلوقتي بشكل شاشة الدخول (فيديو
+     + كارت زجاج) · يعني **غلاف تاني بالكامل** لا تبويب تاني،
+     فلازم تتزار لوحدها. */
+  '/entities/register/account',
+  '/entities/register?step=otp', '/entities/register?step=sent',
+  /* ⚠️ ودي **نفس الشاشة بغلاف تاني**: الجاي من برّه السيستم مخارجه
+     جوّه الكارت ومفيش رصيف تحت، والداخل من جوّه بالعكس. من غير
+     المسار ده الجرد بيقيس نسخة واحدة من اتنين. */
+  '/entities/register?step=form&tab=bank',
+  /* ⚠️ **بوّابة الجهة تلات شاشات لا واحدة (ن-2).** نفس التخطيط
+     وكلامه مختلف بالكامل: «بانتظار الاستكمال» فيها ملاحظة وقايمة
+     ناقص وزرار تعديل، و«معتمد» فيها مدخل لحساب الجهة الكامل،
+     و«مرفوض» فيها سبب وخلاص. من غير التلاتة الجرد بيقيس واحدة
+     ويرجع أخضر. */
+  '/entities/portal', '/entities/portal?req=REQ-2026-947141', '/entities/portal?req=REQ-2026-947135',
+  /* المعتمدة · وهي الوحيدة اللي بيبان فيها كارت «خطط مشاريعك» */
+  '/entities/portal?req=REQ-2026-947134',
+  '/entities/requests', '/entities/requests/REQ-2026-947141',
+  '/entities/requests/REQ-2026-947139', '/entities/requests/REQ-2026-947137',
+  '/budget',
+  /* الميزانية · الإعدادات وشجرة البنود.
+     ⚠️ التلاتة دول شاشات إنشاء وتحرير، ومن غيرهم الجرد بيقيس
+     شاشة العرض وحدها وهي **نتيجة** الشجرة لا الشجرة. */
+  '/budget/settings', '/budget/settings?tab=sources',
+  /* إعدادات الموديولات · د-1..د-3 · وكل تاب مسار عشان ما يفضلش
+     نص الشاشة غير مقيس (نفس درس مراحل فورم التسجيل) */
+  '/settings',
+  '/settings/permissions', '/settings/permissions?tab=roles', '/settings/permissions?tab=log',
+  /* Cross · shared services */
+  '/escalation', '/escalation?heat=stuck', '/settings/escalation', '/settings/notifications', '/settings/notifications?tab=channels', '/audit',
+  '/entities/settings', '/entities/settings?tab=types',
+  '/entities/settings?tab=licensors', '/entities/settings?tab=targets',
+  /* BPD-002 · registration rules, update requests, archive, password reset */
+  '/entities/settings?tab=rules', '/entities/updates', '/entities/updates/UPD-2026-000101',
+  '/entities/archive', '/entities/803/requests', '/entities/755/docs', '/forgot',
+  '/entities/portal/update', '/entities/portal/update?entity=803', '/entities/portal/update?entity=755', '/entities/portal?entity=815',
+  '/projects/settings', '/projects/settings?tab=limits', '/projects/settings?tab=stages',
+  /* إنشاء مشروع · BPD-003 · وكل محطة مسار عشان الحقول تترسم كلها */
+  '/projects/new', '/projects/new?tab=what', '/projects/new?tab=where',
+  '/projects/new?tab=money', '/projects/new?tab=when',
+  /* المحفظة · ب-8 · كيان أب برّه قايمة المشاريع */
+  '/projects/portfolio/PF-2026-001', '/projects/portfolio/PF-2026-002?as=partner', '/projects/portfolio/PF-2026-004',
+  '/projects/portfolio/new', '/projects/portfolio/new?as=partner&entity=860', '/partners', '/partners?tab=finance', '/partners?tab=report', '/projects/21060',
+  '/budget/doc/BG-2025-SA', '/budget/new',
+  /* ميزانية 2026 · مولَّدة من المشاريع عشان السلسلة تمشي على داتا
+     واحدة (هـ-7) · وشجرتها تلات مستويات من مفردات النظام العامل */
+  '/budget/doc/BG-2026-SA',
+  /* BPD-001 · approval path, multi-source budget, operation requests, consolidated report and
+     the settings tabs (directions, limits, rules) */
+  '/budget/doc/BG-2026-SA-2', '/budget/doc/BG-2027-SA', '/budget/doc/BG-2026-MM',
+  '/budget/ops', '/budget/ops/new', '/budget/ops/new?doc=BG-2026-SA', '/budget/ops/BOP-2026-0001', '/budget/ops/BOP-2026-0002',
+  '/budget/report', '/budget/settings?tab=directions', '/budget/settings?tab=limits', '/budget/settings?tab=rules',
+  /* BPD-004–007 · the decision file at each seat, the committee and board desks, sessions, the path's settings */
+  '/projects/21038/approval', '/projects/21040/approval', '/projects/21042/approval', '/projects/20940/approval',
+  '/approvals/committee', '/approvals/committee?tab=sessions', '/approvals/board', '/approvals/board?tab=pack',
+  '/approvals/sessions/EC-2026-10', '/approvals/sessions/EC-2026-09', '/projects/settings?tab=path',
+  '/payments', '/payments/SR-2026-11407', '/payments/new',
+  '/payments/SR-2026-11415/order', '/payments/late',
+  '/payments/SR-2026-11410/edit', '/payments/SR-2026-11406/edit?as=entity', '/payments/SR-2026-11407?as=entity',
+  '/payments/new?project=21020&as=entity', '/payments/new?project=21012&pay=2', '/payments/SR-2026-11417', '/payments/SR-2026-11417/order', '/agreements', '/agreements/AG-2026-3101',
+  /* إعداد الاتفاقية · هـ-4 ومحرّر الدفعات هـ-5 · وكل محطة مسار
+     عشان محرّر الجدول نفسه يترسم في الفحص لا يفضل ورا تاب */
+  '/agreements/new', '/agreements/new?project=20852&tab=form',
+  '/agreements/new?project=20852&tab=sched',
+  '/agreements/new?project=21047&tab=terms', '/agreements/new?project=21047&tab=text', '/agreements/new?project=21048&tab=form',
+  '/agreements/AG-2026-3101?as=entity', '/projects/21047/agreement',
+  /* الخطط · BPD-012 · والأربعة دول حالات مختلفة فعلًا لا نسخ:
+     واحدة قيد التنفيذ فيها طابور مراجعة، وواحدة متأخّرة ومعاها
+     طلب تعديل معتمد، وواحدة في دورة الاعتماد، وواحدة مُعادة */
+  '/plans', '/plans?view=table', '/plans/PL-1021', '/plans/PL-1018',
+  '/plans/PL-1025', '/plans/PL-1026',
+  /* ⚠️ **المحرّر شاشتان لا واحدة** · قبل الاعتماد الهيكل مفتوح
+     وبعده مقفول، والشاشتان مختلفتان بالكامل (قاعدة 21). من غير
+     الاتنين الجرد بيقيس واحدة ويرجع أخضر. */
+  '/plans/PL-1027/edit', '/plans/PL-1021/edit',
+  /* ⚠️ **عين الجهة شاشة تانية على نفس الخطة**: مفيش رصيف اعتماد،
+     وفيها زراير رفع الشواهد و«خلّصت النشاط» · ومن غير المسار ده
+     نص الموديول ما بيتفحصش. */
+  '/plans/PL-1021?as=entity', '/plans/PL-1026/edit?as=entity', '/plans/PL-1026?as=entity', '/projects/21018/plan',
+  '/plans/settings', '/plans/settings?tab=limits',
+  /* الإغلاق · BPD-011 · والستة دول **دورتان في ست حالات** لا نسخ:
+     واحد عند الجهة ناقص، وواحد عند المشرف مكتمل، وواحد عند الاتصال
+     المؤسسي (قاعدة 9)، وواحد مُعاد بإصدار تاني (قاعدة 19)، وواحد
+     في دورة التقييم (قاعدة 6 و17)، وواحد مغلق للقراءة (قاعدة 21).
+     ⚠️ ومن غير `CL-2044` الستيبر المتخطّى (`skip`) ما بيترسمش خالص
+     لأنه الوحيد اللي `mediaRequired: false`. */
+  '/closings', '/closings?view=table',
+  '/closings/CL-2041', '/closings/CL-2042', '/closings/CL-2043',
+  '/closings/CL-2044', '/closings/CL-2045', '/closings/CL-2046',
+  /* ⚠️ **عين الجهة شاشة تانية على نفس الطلب**: مفيش رصيف اعتماد،
+     وفيها زرار الرفع و«أرسل التقرير» · نفس درس الخطة بالحرف */
+  '/closings/CL-2041?as=entity',
+  /* المحرّران · والتقييم شاشتان: واحدة ما بدأتش (قاعدة 6) وواحدة
+     مفتوحة · من غير الاتنين الجرد بيقيس واحدة ويرجع أخضر */
+  '/closings/CL-2041/report', '/closings/CL-2046/report',
+  '/closings/CL-2045/evaluation', '/closings/CL-2041/evaluation',
+  '/closings/settings', '/closings/settings?tab=limits',
+  '/closings/cases', '/closings/cases/TS-3001', '/closings/cases/TS-3002', '/closings/cases/TS-3001?as=entity',
+  '/closings/cases/new', '/closings/cases/new?project=20831&kind=stop', '/closings/cases/new?project=20859&kind=increase', '/closings/CL-2122', '/projects/20831/closing',
+  /* ⚠️ **شاشة فتح الخطة · والزرار بتاعها كان شايل لـ«غير موجود»**
+     (١٨ سبتمبر · العميل هو اللي مسكها). `/plans/new` لازم يفضل
+     **قبل** `/plans/:id` في الراوتر، وإلا `new` بيتقرا رقم خطة.
+     والحالتان هنا مختلفتان: فاضية بينتظر اختيار مشروع، وواصلة من
+     تاب المشروع بالمشروع مختار سلفًا · شوف `tools/routemount.mjs` */
+  '/plans/new', '/plans/new?project=20845',
+  '/reports', '/reports/impact', '/reports/build', '/reports/catalog', '/reports/coverage',
+  '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
+  '/reports/process/p1', '/reports/process/bpd-012', '/assistant',
+  /* ⚠️ التلاتة دول اتضافوا لمّا `routecover.mjs` مسكهم (١٤ سبتمبر):
+     محادثة محفوظة وصفحة التفضيلات كانوا **خارج الحراسة تمامًا** —
+     كل الأدوات المقيسة كانت بترجع خضرا وهي ما زارتهمش. */
+  '/assistant/c1',
+  /* الشريط مفتوح · الافتراضي بقى مقفول (٢٢ سبتمبر)، فمن غير
+     المسار ده الجرد بيرسمه مقفولًا في كل مرة ومحدش بيشوفه (أ-3) */
+  '/assistant?list=open',
+  '/account', '/account?tab=security', '/account?tab=access', '/account/preferences',
+]
+
+/**
+ * المسارات اللي بتتفتح **من غير جلسة**.
+ *
+ * ⚠️ الجرد بيحقن جلسة قبل كل صفحة، وده صح لكل الشاشات الداخلية ·
+ * لكن `/entities/register` عنده غلافان: واحد للداخل (بريل ومساعد)
+ * وواحد عام لجهة مالهاش حساب (قاعدة 2 في BPD-002). وبالجلسة
+ * المحقونة الغلاف العام **ما بيترسمش ولا مرة**، فبيعدّي من ٣
+ * ثيمات من غير فحص · نفس مرض «الجرد بيقيس الشاشة الغلط».
+ *
+ * فالمسارات دي بتتفتح بجلسة مفضية، والباقي زي ما هو.
+ */
+/* ⚠️ والبوّابة عامّة برضو لنفس السبب: اللي بيفتحها جهة مالهاش
+   حساب في النظام · عندها حساب على طلبها وبس (ن-2). */
+export const PUBLIC_ROUTES = [
+  '/entities/register', '/entities/register/account',
+  '/entities/register?step=form&tab=bank',
+  '/entities/portal', '/entities/portal?req=REQ-2026-947141', '/entities/portal?req=REQ-2026-947135',
+  /* المعتمدة · وهي الوحيدة اللي بيبان فيها كارت «خطط مشاريعك» */
+  '/entities/portal?req=REQ-2026-947134',
+  /* الإجراء 3 · بوابة جهة معتمدة بطلباتها، وشاشة المستشار المؤقتة */
+  '/entities/portal?req=REQ-2026-947137&entity=694', '/advice/20940',
+  '/forgot', '/entities/portal/update', '/entities/portal/update?entity=803', '/entities/portal/update?entity=755', '/entities/portal?entity=815',
+]
+
+/* ⚠️ المطابقة بالمسار **كاملًا بالكويري** عن قصد: `/entities/register`
+   بيتفحص عامًا، و`?step=form` وإخواته بجلسة · فالغلافان الاتنين
+   بيترسموا في الجرد بدل واحد. */

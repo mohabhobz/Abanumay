@@ -14,9 +14,10 @@ import { assistFor } from '@/data/mock/assistant'
 import { isolate, nounAfter } from '@/lib/format'
 import { entityRows } from '@/data/mock/entities'
 import {
-  BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_STATES, REG_STATE_SAY, REG_STATE_WHO,
+  BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_REJECT_REASONS, REG_STATES, REG_STATE_SAY, REG_STATE_WHO,
   docRequired, licenseClash, partnerKind, regMissingDocs, regRequestById,
 } from '@/data/mock/registration'
+import type { RegRejectReason } from '@/data/mock/registration'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { EditableCard } from '@/features/shared/EditableCard'
 import { canDecide, decideRegistration, fieldLabel, regHistory, returnRegistration, useEntityFlow } from '@/data/entities/store'
@@ -63,6 +64,8 @@ export default function RegReviewPage() {
   useEntityFlow()
   const r = id ? regRequestById(id) : undefined
   const [note, setNote] = useState('')
+  /* Re-audit 7 Oct · the rejection reason is picked from a coded list · the indicator counts it */
+  const [why, setWhy] = useState<RegRejectReason | ''>('')
   const [taken, setTaken] = useState<Outcome | null>(null)
   /* One decision per account (2.2.15) · '' accepted, otherwise one of the coded reasons */
   const [bankNo, setBankNo] = useState<Record<string, string>>({})
@@ -541,6 +544,17 @@ export default function RegReviewPage() {
                     placeholder="الملاحظة الإدارية · إلزامية للإعادة والرفض"
                   />
                 </label>
+                {mayApprove && (
+                  <label className="regf">
+                    <span className="lb">سبب الرفض · عند الرفض</span>
+                    <FieldSelect
+                      value={why}
+                      options={[{ value: '', label: 'اختر سبب الرفض' }, ...REG_REJECT_REASONS.map((x) => ({ value: x.key, label: x.label }))]}
+                      onChange={(x) => setWhy(x as RegRejectReason | '')}
+                      label="سبب الرفض"
+                    />
+                  </label>
+                )}
 
                 <div className="rowf gp-2">
                   {mayReturn && (
@@ -558,9 +572,9 @@ export default function RegReviewPage() {
                     <button
                       className="btn btn-d"
                       data-needs-note=""
-                      disabled={!note.trim()}
-                      title={note.trim() ? 'يُؤرشف بسببه · قاعدة 28' : 'اكتب سبب الرفض أولًا'}
-                      onClick={() => { decideRegistration(r.id, 'reject', note.trim(), bankNo, me); setTaken('reject') }}
+                      disabled={!note.trim() || !why}
+                      title={!note.trim() ? 'اكتب سبب الرفض أولًا' : !why ? 'اختر سبب الرفض من القائمة' : 'يُؤرشف بسببه · قاعدة 28'}
+                      onClick={() => { if (why) { decideRegistration(r.id, 'reject', note.trim(), bankNo, me, why); setTaken('reject') } }}
                     >
                       رفض وإيقاف
                     </button>

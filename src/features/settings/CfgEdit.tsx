@@ -5,7 +5,9 @@ import { Link } from 'react-router-dom'
 import { CFG, isConfigured, persist } from '@/lib/config'
 import { useRole } from '@/hooks/useRole'
 import { ROUTES } from '@/app/routes'
-import { nf } from '@/lib/format'
+import { NOUN, countOf, nf } from '@/lib/format'
+import { logSettings } from '@/data/shared/settingsLog'
+import { useLocation } from 'react-router-dom'
 
 /* Editable settings values · meeting 1 Oct, change item 9: limits and durations change from
    settings without code.
@@ -54,7 +56,7 @@ export interface StageRow {
 
 type Limits = Record<string, number>
 
-export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'الطلبات فيها الآن', extraHead }: {
+export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'الطلبات فيها الآن', extraHead, title = 'مدد المراحل' }: {
   stages: StageRow[]
   /** Hours per stage · mutated in place on save so every reader sees the new limit */
   limits: Limits
@@ -62,10 +64,14 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
   countAt: (key: string) => number
   unitLabel?: string
   extraHead?: string
+  /** What the history calls this table · «مدد مراحل الاتفاقيات» */
+  title?: string
 }) {
   /* Re-audit 7 Oct · the stage days are the escalation mechanism's · the system admin edits them, on
      this page or on «آلية التصعيد»; everyone else reads them (9.5 clause 4) */
-  const admin = useRole().role.key === 'admin'
+  const { role, user } = useRole()
+  const admin = role.key === 'admin'
+  const here = useLocation()
   const days = (h: number) => Math.round(h / 24)
   const base = () => Object.fromEntries(stages.map((s) => [s.key, days(limits[s.key] ?? 0)]))
   const [saved, setSaved] = useState<Record<string, number>>(base)
@@ -74,6 +80,8 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
   const configured = isConfigured(cfgKey)
 
   const save = () => {
+    /* Re-audit 7 Oct · a stage's days edited here are kept in the settings history, before and after */
+    logSettings(title, `${here.pathname}${here.search}`, user.name, changed.map((s) => ({ k: s.label, from: countOf(saved[s.key], NOUN.day), to: countOf(d[s.key], NOUN.day) })))
     for (const s of stages) if ((limits[s.key] ?? 0) > 0) limits[s.key] = d[s.key] * 24
     persist(cfgKey, Object.fromEntries(stages.map((s) => [s.key, limits[s.key] ?? 0])))
     setSaved(d)

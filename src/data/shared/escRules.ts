@@ -1,4 +1,6 @@
 import { CFG, hydrate, persist, readJson } from '@/lib/config'
+import { diffOf, logSettings } from './settingsLog'
+import { NOUN, countOf } from '@/lib/format'
 
 /* Escalation rules · one mechanism for the thirteen procedures (cross · «التصعيد: متأخر ومتعثر»).
 
@@ -67,7 +69,16 @@ export const ESC_RULES: EscRules = readJson(CFG.escalation, DEFAULT)
 ESC_RULES.stuck = { ...DEFAULT.stuck, ...ESC_RULES.stuck }
 export const ESC_DEFAULT = DEFAULT
 
+const levelSay = (l: EscLevel) => `${l.to.map((x) => RECIPIENT_SAY[x]).join('، ')} · ${l.channels.map((x) => CHANNEL_SAY[x]).join('، ')}`
+
 export const saveEscRules = (next: EscRules, by: string): void => {
+  /* Re-audit 7 Oct · every save is kept with its values before and after (settingsLog) */
+  const days = (v: unknown) => (v === null || v === undefined ? 'ضعف حدّ المرحلة' : countOf(Number(v), NOUN.day))
+  logSettings('آلية التصعيد', '/settings/escalation', by, [
+    ...diffOf(ESC_RULES.stuck, next.stuck, (k) => `هامش التعثّر · ${procLabel(k as EscProc)}`, days),
+    ...(JSON.stringify(ESC_RULES.late) !== JSON.stringify(next.late) ? [{ k: 'المستوى الأول · متأخر', from: levelSay(ESC_RULES.late), to: levelSay(next.late) }] : []),
+    ...(JSON.stringify(ESC_RULES.stalled) !== JSON.stringify(next.stalled) ? [{ k: 'المستوى الثاني · متعثر', from: levelSay(ESC_RULES.stalled), to: levelSay(next.stalled) }] : []),
+  ])
   Object.assign(ESC_RULES, next, { savedBy: by, savedAt: new Date().toISOString().slice(0, 10) })
   persist(CFG.escalation, ESC_RULES)
 }

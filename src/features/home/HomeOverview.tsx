@@ -18,6 +18,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { countOf, df, nf, NOUN, nounAfter, pct, projectCode } from '@/lib/format'
 import { days, TONE } from '@/lib/tone'
 import { IdentityBanner } from '@/components/soul'
+import { ImpactPanel } from '@/features/reports/ImpactPanel'
 
 /* The combined dashboard · the home page until 3 Oct 2026, now a category of its own in Reports
    (meeting 1 Oct, E-9) at ROUTES.overview. Switching «اليوم» back to it is still a one-line change
@@ -185,6 +186,8 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
             }
           />
           )}
+          {/* Client, 8 Oct · the impact on every report screen */}
+          {embedded && <ImpactPanel />}
 
           {/* === Indicators === */}
           <div className="kpis">

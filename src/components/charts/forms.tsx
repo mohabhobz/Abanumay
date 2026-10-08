@@ -217,6 +217,40 @@ export function RankBars({ rows, total, hue = 'c1' }: { rows: { key: string; lab
   )
 }
 
+/* -- 6b: Ranking by share, counted · the same bars as `RankBars` for a count (beneficiaries,
+   projects) rather than riyals · the unit is written beside the value */
+export function CountBars({ rows, total, unit, hue = 'c2', note }: {
+  rows: { key: string; label: string; value: number; tip?: string }[]
+  total: number
+  unit: string
+  hue?: Hue
+  /** What the share is of · «من المستفيدين كلهم» */
+  note: string
+}) {
+  const max = Math.max(...rows.map((r) => r.value), 1)
+  return (
+    <ol className="hx rk">
+      {rows.map((r, i) => {
+        const share = Math.round((r.value / Math.max(total, 1)) * 100)
+        const w = (r.value / max) * 100
+        return (
+          <li key={r.key} className="hx-i rk-i">
+            <span className="rk-n num">{i + 1}</span>
+            <span className="rk-l" title={r.label}>{r.label}</span>
+            <svg className="rk-m hx-mk" aria-hidden="true">
+              <rect className="rk-t" x="0" y="0" width="100%" height="100%" rx="4" />
+              <rect className={`rk-b ${hue}`} x={`${100 - w}%`} y="0" width={`${w}%`} height="100%" rx="4" />
+            </svg>
+            <span className="rk-v"><span className="num">{nf.format(r.value)}</span> <span className="sub">{unit}</span></span>
+            <span className="rk-s num">{pct(share)}</span>
+            <Tip>{r.tip ?? `${pct(share)} ${note}`}</Tip>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 /* -- 7: Money ring --
    One whole and its two parts: what was granted, split into what already reached the entities and
    what is still in disbursement. The thick ring carries the split (its share written on the arc),

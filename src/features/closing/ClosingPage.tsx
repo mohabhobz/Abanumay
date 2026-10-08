@@ -184,31 +184,31 @@ export default function ClosingPage() {
             empty="لا يوجد طلب إغلاق متوقف في النطاق الحالي · وسّع الفلتر لعرض المزيد."
           />
 
-          {/* The document's four indicators, per 11.7 - not four arbitrary numbers. */}
+          {/* The document's four indicators, per 10.8 - not four arbitrary numbers. */}
           <div className="stats4">
             <Stat
               label="متوسط مدة إغلاق المشروع"
-              value={<Num>{k.avg}</Num>}
-              unit="يومًا"
+              value={k.avg === null ? '—' : <Num>{k.avg}</Num>}
+              unit={k.avg === null ? undefined : 'يومًا'}
               note="مؤشر 1 · من فتح الطلب حتى الإغلاق النهائي"
             />
             <Stat
               label="المغلقة ضمن المدة المستهدفة"
-              value={<Num>{pct(k.inTimePct)}</Num>}
+              value={k.inTimePct === null ? '—' : <Num>{pct(k.inTimePct)}</Num>}
               note={`مؤشر 2 · المدة المؤقتة ${countOf(CLOSE_TARGET_DAYS, NOUN.day)}`}
-              bar={{ w: `${k.inTimePct}%`, c: 'var(--teal)' }}
+              bar={k.inTimePct === null ? undefined : { w: `${k.inTimePct}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة إعداد التقرير"
-              value={<Num>{k.prepDays}</Num>}
-              unit="يومًا"
+              value={k.prepDays === null ? '—' : <Num>{k.prepDays}</Num>}
+              unit={k.prepDays === null ? undefined : 'يومًا'}
               note="مؤشر 3 · من فتح الطلب حتى إرسال الجهة"
             />
             <Stat
               label="المغلقة بعد استكمال المتطلبات"
-              value={<Num>{pct(k.fullPct)}</Num>}
+              value={k.fullPct === null ? '—' : <Num>{pct(k.fullPct)}</Num>}
               note="مؤشر 4 · قاعدة 8 و18"
-              bar={{ w: `${k.fullPct}%`, c: 'var(--ok)' }}
+              bar={k.fullPct === null ? undefined : { w: `${k.fullPct}%`, c: 'var(--ok)' }}
             />
           </div>
 

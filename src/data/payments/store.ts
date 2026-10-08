@@ -1,3 +1,4 @@
+import { actDay, asOf } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
 import {
   TODAY, payRequestById, payRequests, type PaySlot, type PaySlotState,
@@ -40,7 +41,7 @@ import type { DecisionKind, PayCheck, PayDoc, PayException, PayRequest } from '@
 export interface PayNote { id: string; to: string; title: string; context: string; at: string; href: string }
 export const PAY_NOTES: PayNote[] = []
 const notify = (to: string[], r: PayRequest, title: string, href = ROUTES.payment(r.id)) => {
-  for (const t of to) PAY_NOTES.unshift({ id: `pay-${PAY_NOTES.length + 1}`, to: t, title, context: `${r.projectName} · الدفعة ${r.no} من ${r.of}`, at: TODAY, href })
+  for (const t of to) PAY_NOTES.unshift({ id: `pay-${PAY_NOTES.length + 1}`, to: t, title, context: `${r.projectName} · الدفعة ${r.no} من ${r.of}`, at: actDay(), href })
 }
 const MGR = () => roleByKey('grants-manager').title
 const FIN = 'الإدارة المالية'
@@ -326,7 +327,8 @@ const log = (r: PayRequest, step: number, who: string, role: string, what: strin
 const move = (r: PayRequest, s: PayRequest['state']) => { r.state = s; r.hoursInState = 0 }
 const ENTITY_ROLE = 'الجهة المستفيدة'
 
-function apply(o: Op) {
+function apply(o: Op) { asOf(o.at, () => applyOp(o)) }
+function applyOp(o: Op) {
   switch (o.op) {
     case 'create': {
       if (payRequestById(o.id)) return
@@ -576,7 +578,9 @@ hydrate()
 
 /* ── Actions ── */
 
-export const nextRequestId = (): string => `SR-2026-${String(11_400 + payRequests.length).padStart(5, '0')}`
+/** The next free number · after the highest one used, so a seed with gaps never hands out an id twice */
+export const nextRequestId = (): string =>
+  `SR-2026-${String(Math.max(11_399, ...payRequests.map((r) => Number(r.id.slice(-5)) || 0)) + 1).padStart(5, '0')}`
 
 /** 9.2.2 · the entity's request · or 9.1.input-4 · the supervisor's permit */
 export function createRequest(v: { projectId: string; no: number; asked: number; docs: PayDoc[]; origin: 'entity' | 'supervisor'; note?: string }, by: string): { id?: string; errors: string[] } {

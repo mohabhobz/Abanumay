@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Money } from '@/components/ui'
 import { BoardBody } from '@/features/board/BoardBody'
+import { ImpactPanel } from '@/features/reports/ImpactPanel'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -97,6 +98,8 @@ export default function HomePage() {
               instead of the page growing. On narrow screens it falls back to a normal stack. */}
           {/* The foundation board, the same for every role (client, 6 Oct) · then the work */}
           <BoardBody />
+          {/* Client, 8 Oct · who the grants reached and where · for every role */}
+          <ImpactPanel />
 
           <section className="ibx-fold">
             <div className={`ibx-main${more ? ' more' : ''}`}>

@@ -1,3 +1,4 @@
+import { SEED_AT } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
 import { allBudgets } from '@/data/mock/chain'
 import {
@@ -1199,7 +1200,9 @@ const run = (o: Op) => {
 function seed() {
   for (const d of allBudgets) {
     if (d.state === 'approved') {
-      const at = `${d.from}T09:00:00.000Z`
+      /* Re-audit 7 Oct · a budget approved ahead of its year was dated on its first day, so the audit
+         log opened on seven events of 1 January 2027 · it was approved before the year, mid-September */
+      const at = d.from <= TODAY ? `${d.from}T09:00:00.000Z` : '2026-09-15T09:00:00.000Z'
       log(d.id, { at, by: 'عبدالرحمن الهليّل', text: 'اعتمدها المدير التنفيذي وفُعّلت في النظام', tone: 'ok' })
       log(d.id, { at, by: FINANCE_ACTOR, text: 'وافقت الإدارة المالية وأحالتها إلى المدير التنفيذي', tone: 'ok' })
       log(d.id, { at, by: 'عبدالله الدوسري', text: 'وافق مدير المنح وأحالها إلى الإدارة المالية', tone: 'ok' })
@@ -1359,7 +1362,7 @@ export const linkProject = (link: LinkInput, reason?: string): string[] => {
 }
 /** The fixture's holds · applied before the saved operations replay, and not saved themselves */
 export function seedLink(link: LinkInput): void {
-  if (!LINKS.has(link.projectId)) apply({ op: 'link', link, stage: 'initial', at: `${TODAY}T08:00:00.000Z` })
+  if (!LINKS.has(link.projectId)) apply({ op: 'link', link, stage: 'initial', at: SEED_AT })
 }
 export const unlinkProject = (projectId: string, by: string, reason?: string) => run({ op: 'unlink', projectId, by, reason, at: now() })
 /** The last authority approved · the hold turns final (1.4.28 · 5.4.9 · 6.4.4 · 7.4.4) */

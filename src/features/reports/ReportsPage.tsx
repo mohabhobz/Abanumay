@@ -14,6 +14,7 @@ import { basisText } from './basis'
 import { Board } from './Board'
 import { Builder } from './Builder'
 import { Catalog } from './Catalog'
+import { ImpactPanel } from './ImpactPanel'
 import { PERIODS } from '@/data/reportDefs'
 
 /* Reports.
@@ -70,6 +71,8 @@ export default function ReportsPage() {
             onChange={(s) => navigate(ROUTES.reportTab(s))}
           />
 
+          {/* Client, 8 Oct · the impact on every report screen · the «الأثر» tab draws it in full */}
+          {active === 'impact' ? <ImpactPanel full /> : <ImpactPanel />}
           {active === 'board' && <Board period={period} onPeriod={setPeriod} />}
           {active === 'build' && <Builder />}
           {active === 'catalog' && <Catalog />}

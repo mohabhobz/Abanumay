@@ -1,3 +1,4 @@
+import { SEED_AT, actDay, asOf } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
 import { agreements, agreementById, setBlockedGate } from '@/data/mock/agreements'
 import { projectRows } from '@/data/mock/projects'
@@ -5,7 +6,6 @@ import { planOfProject } from '@/data/mock/plans'
 import { stageMeta } from '@/data/mock/taxonomy'
 import { setAgreementGate } from '@/data/mock/disbursements'
 import { setFundingGate as setAgrFundingGate } from '@/data/mock/agreementNew'
-import { TODAY } from '@/data/intake/cycle'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { linkOf, docOf } from '@/data/budget/store'
 import { pathOf } from '@/data/mock/budgetTree'
@@ -158,7 +158,7 @@ export function agrStageSay(a: AgreementRow): string {
 export interface AgrNote { id: string; to: string; title: string; context: string; at: string; href: string }
 export const AGR_NOTES: AgrNote[] = []
 const notify = (to: string[], a: AgreementRow, title: string, context: string, href = ROUTES.agreement(a.id)) => {
-  for (const t of to) AGR_NOTES.unshift({ id: `agn-${AGR_NOTES.length + 1}`, to: t, title, context, at: TODAY, href })
+  for (const t of to) AGR_NOTES.unshift({ id: `agn-${AGR_NOTES.length + 1}`, to: t, title, context, at: actDay(), href })
 }
 
 /* ── Readers ── */
@@ -357,7 +357,8 @@ const activateProject = (projectId: string) => {
   p.hoursInStage = 0
 }
 
-function apply(o: Op) {
+function apply(o: Op) { asOf(o.at, () => applyOp(o)) }
+function applyOp(o: Op) {
   switch (o.op) {
     /* Re-audit 7 Oct · 10.9.5 · 10.9.6 · an approved value change is an annex on the agreement in
        force · its value moves with the project's, and the annex sits in its record */
@@ -609,12 +610,12 @@ function seedStations() {
   if (ret) {
     agrFlowOf(ret.id).returnedTo = 'manager'
     ret.note = 'خفّض الدفعة الأولى إلى الثلث واربطها بتوقيع الاتفاقية واستلام سند التعهّد'
-    log(ret, 18, 'عبدالرحمن الهليّل', 'المدير التنفيذي', 'أعاد الاتفاقية إلى مدير المنح مع حفظ سجل الاعتمادات', `${TODAY}T08:00:00Z`, ret.note, 'مدير المنح · اتفاقية مُعادة من المدير التنفيذي')
+    log(ret, 18, 'عبدالرحمن الهليّل', 'المدير التنفيذي', 'أعاد الاتفاقية إلى مدير المنح مع حفظ سجل الاعتمادات', SEED_AT, ret.note, 'مدير المنح · اتفاقية مُعادة من المدير التنفيذي')
   }
   const sig = agreements.find((a) => a.stage === 'entity' && a.kind === 'إلكترونية' && agreements.filter((x) => x.stage === 'entity').indexOf(a) > 0)
   if (sig) {
-    agrFlowOf(sig.id).entitySign = { at: TODAY, by: sig.signer.name, method: 'e' }
-    log(sig, 21, sig.signer.name, 'الجهة المستفيدة', `راجعت الاتفاقية ووقّعتها إلكترونيًّا · ${sig.signer.title}`, `${TODAY}T08:00:00Z`, undefined, 'المدير التنفيذي · اتفاقية موقّعة بانتظار اعتماد ممثل المؤسسة')
+    agrFlowOf(sig.id).entitySign = { at: SEED_AT.slice(0, 10), by: sig.signer.name, method: 'e' }
+    log(sig, 21, sig.signer.name, 'الجهة المستفيدة', `راجعت الاتفاقية ووقّعتها إلكترونيًّا · ${sig.signer.title}`, SEED_AT, undefined, 'المدير التنفيذي · اتفاقية موقّعة بانتظار اعتماد ممثل المؤسسة')
   }
 }
 

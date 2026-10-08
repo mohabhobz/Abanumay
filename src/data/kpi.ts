@@ -1,23 +1,30 @@
 /**
- * Procedure indicators · 66 indicators across 11 procedures.
+ * Procedure indicators · numbered as in the procedures document v2.0 (BPD-001 budget … BPD-013
+ * portfolios), from each procedure's «x.8 performance measurement» section.
  *
- * Source: the procedures document, section "x.7 performance measurement" in each procedure. Names
- * and measurement methods are **copied verbatim** from the document, not reworded, so a review
- * against the document finds the same text.
+ * Re-audit 7 Oct · the list used to open on «BPD-001 الإلمام والاستكشاف» — eleven empty indicators
+ * for a procedure v2.0 doesn't have — which pushed every number after it one step off (budget read
+ * BPD-002, payments BPD-010 …). That procedure is gone and the numbers follow the document.
+ *
+ * Where the text comes from is said per procedure (`source`), not once for all of them:
+ *
+ *   · `doc`        names and methods copied verbatim from the document
+ *   · `paraphrase` the document's formulas, in our wording (Ehsan · portfolios)
+ *   · `ours`       the document gives none · derived from the procedure's own rules (plans)
+ *
+ * and an indicator we added on top of the document's carries `ours: true`. The page used to say
+ * «copied verbatim» over all of them, which wasn't true for the last three.
  *
  * The most important design decision here:
  *
  *   an indicator that can't be measured shows up **written out and empty**, not hidden.
  *
- * The live system has 13 report screens, three of which are empty or filtered with no results.
  * Hiding the indicator would let the gap keep repeating; showing it along with why it's absent
- * turns the reports screen into a request list for the backend. The ratio is computed in `coverage`
- * below, so no hand-typed number breaks as the data grows.
+ * turns the reports screen into a request list for the backend.
  *
  * Another point that needs to be said to the client: **not a single target exists in the
- * document**. Eight indicators measure compliance against a "target duration" or a service-level
- * agreement, and no one wrote down what that duration is. So the target is `null` across all of
- * them.
+ * document**. Where an indicator measures compliance against a duration, the duration comes from the
+ * escalation settings or the stage limits, and the page says so.
  */
 import type { ProjectRow } from '@/types/domain'
 import { projectRows } from './mock/projects'
@@ -30,18 +37,21 @@ import { regRows } from './mock/registration'
 import { payRequests, PAY_TARGET_DAYS } from './mock/disbursements'
 import { planRows, lateActivities } from './mock/plans'
 import { stageMeta } from './mock/taxonomy'
-import { closeRows } from './mock/closing'
 import { allBudgets } from './mock/chain'
 import { leavesOf, moneyOf, docSources, isLiveBudget } from './mock/budgetTree'
 import { BUDGET_REQS } from './budget/store'
 import { appFlowOf, SESSIONS } from './approvals/store'
 import { flowOf } from './intake/flow'
 import { isStuck, PLAN_LOG } from './plans/store'
-import { EHSAN_PAYS, PORTFOLIOS, ehMoney, ehsanProjects, pfMoney } from './partners/store'
+import { EHSAN_PAYS, PORTFOLIOS, ehCloseOf, ehMoney, ehsanProjects, pfMoney } from './partners/store'
 import { ESC_LIMITS } from './shared/escRules'
+import { capOf } from './approval'
+import { TODAY } from './clock'
+import { agrTargetDays, agrWasReturned, agreements } from './mock/agreements'
+import { yearById } from './mock/budgetTree'
 
 /** Denominator unit · "10 of 30" needs to say what the 30 is */
-export type Basis = 'project' | 'entity' | 'line' | 'source' | 'riyal'
+export type Basis = 'project' | 'entity' | 'line' | 'source' | 'riyal' | 'agreement' | 'activity' | 'beneficiary'
 
 /** Indicator unit as given in the document's "unit of measurement" column */
 export type KpiUnit = 'pct' | 'days' | 'count' | 'avg'
@@ -70,6 +80,8 @@ export interface Kpi {
   derived?: boolean
   /** The same indicator per source, per level or per kind · when the document asks «لكل…» */
   split?: { label: string; value: number }[]
+  /** Not in the document · added by us on top of its list */
+  ours?: boolean
 }
 
 export interface ProcessKpis {
@@ -80,6 +92,8 @@ export interface ProcessKpis {
   no: number
   title: string
   owner: string
+  /** Where the names and methods come from · see the header */
+  source: 'doc' | 'paraphrase' | 'ours'
   kpis: Kpi[]
 }
 
@@ -108,12 +122,26 @@ const meanDays = (pool: ProjectRow[], f: (r: ProjectRow) => number | null | unde
   const m = mean(v)
   return m === null ? null : Math.round(m / 24)
 }
+/** Mean days over a pool · the recorded duration where the decisions are on record, the derived
+    journey where they aren't (re-audit 7 Oct · a decision taken in the app now moves the mean) */
+const meanRec = (pool: ProjectRow[], rec: (r: ProjectRow) => number | null, hours: (r: ProjectRow) => number | null | undefined): { value: number | null; derived: boolean } => {
+  let fell = false
+  const v = pool.map((r) => {
+    const d = rec(r)
+    if (d !== null) return d
+    const h = hours(r)
+    if (typeof h === 'number' && h > 0) { fell = true; return h / 24 }
+    return null
+  }).filter((x): x is number => x !== null)
+  const m = mean(v)
+  return { value: m === null ? null : Math.round(m), derived: fell }
+}
 const dayDiff = (a: string, b: string) => Math.max(0, Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000))
 const countOf = (pool: ProjectRow[], f: (r: ProjectRow) => boolean) => pool.filter(f).length
 
 const P = ROUTES.projects
 const link = (qs: string) => `${P}?${qs}`
-const YEAR = new Date().toISOString().slice(0, 4)
+const YEAR = TODAY.slice(0, 4)
 
 function build(): ProcessKpis[] {
 const rows: ProjectRow[] = projectRows
@@ -132,7 +160,8 @@ const allocated = L((x) => x.m.allocated)
 const usedLines = leaves.filter((x) => x.m.paid + x.m.held + x.m.committed > 0)
 const drained = leaves.filter((x) => x.m.available <= 0)
 const multi = leaves.filter((x) => (x.n.sources?.length ?? docSources(x.d).length) > 1)
-const transfers = BUDGET_REQS.filter((r) => r.kind === 'transfer' && r.state === 'executed')
+/* Re-audit 7 Oct · «خلال السنة المالية» · the transfers executed on this year's budgets, not every year's */
+const transfers = BUDGET_REQS.filter((r) => r.kind === 'transfer' && r.state === 'executed' && (yearById(r.yearId)?.name ?? '') === YEAR)
 /* Per source · each line's money split by its sources' shares */
 const srcMap = new Map<string, { allocated: number; paid: number; held: number }>()
 for (const x of leaves) {
@@ -155,7 +184,8 @@ const sourcesUnused = srcs.filter(([, v]) => v.paid === 0 && v.held === 0).lengt
 const regDecided = regRows.filter((r) => (r.state === 'approved' || r.state === 'rejected') && r.decidedAt && r.submittedAt)
 const returns = (r: (typeof regRows)[number]) => (r.events ?? []).filter((e) => e.kind === 'return').length
 const regYear = regRows.filter((r) => (r.decidedAt ?? '').startsWith(YEAR))
-const badData = /بيانات|وثيق|مستند|غير صحيح|غير مطابق/
+/* Re-audit 7 Oct · the document divides by every request, not the decided ones · drafts aren't requests yet */
+const regSent = regRows.filter((r) => r.state !== 'draft')
 
 /* Study and the approval seats · the recorded decisions, with the journey where none is recorded */
 
@@ -164,6 +194,26 @@ const studyLimit = (stageMeta('دراسة المشروع')?.limit ?? 900)
 const supervisors = new Set(studied.map((r) => r.owner).filter(Boolean))
 const reachedManager = rows.filter((r) => j(r)?.manager !== null && j(r)?.manager !== undefined || recsOf(r).some((x) => x.level === 'manager'))
 const reachedExec = rows.filter((r) => j(r)?.exec !== null && j(r)?.exec !== undefined || recsOf(r).some((x) => x.level === 'exec'))
+/* Re-audit 7 Oct · the durations from the decisions on record · a seat's time runs from the decision
+   that sent the project to it until its own. The journey is the fallback for the seeded rows */
+const recAt = (r: ProjectRow, level: string) => recsOf(r).find((x) => x.level === level)?.at
+const seatDays = (r: ProjectRow, level: string, from: string): number | null => {
+  const mine = recAt(r, level), prev = recsOf(r).find((x) => x.level === from && (!mine || x.at <= mine))?.at
+  return mine && prev ? dayDiff(prev, mine) : null
+}
+const studyDays = (r: ProjectRow): number | null => {
+  const st = flowOf(r.id).study?.at
+  return st && r.submittedAt ? dayDiff(r.submittedAt, st) : null
+}
+const studyRec = meanRec(studied, studyDays, (r) => j(r)?.study)
+const studyIn = (r: ProjectRow) => { const d = studyDays(r); return d !== null ? d * 24 <= studyLimit : within(j(r)?.study, studyLimit) }
+const studyHas = (r: ProjectRow) => studyDays(r) !== null || Boolean(j(r)?.study)
+const mgrRec = meanRec(reachedManager, (r) => seatDays(r, 'manager', 'supervisor'), (r) => j(r)?.manager)
+const mgrLim = ESC_LIMITS['approval.manager'] ?? 120
+const mgrIn = (r: ProjectRow) => { const d = seatDays(r, 'manager', 'supervisor'); return d !== null ? d * 24 <= mgrLim : within(j(r)?.manager, mgrLim) }
+const execRec = meanRec(reachedExec, (r) => seatDays(r, 'exec', 'manager'), (r) => j(r)?.exec)
+const execLim = ESC_LIMITS['approval.exec'] ?? 120
+const execIn = (r: ProjectRow) => { const d = seatDays(r, 'exec', 'manager'); return d !== null ? d * 24 <= execLim : within(j(r)?.exec, execLim) }
 const execReturns = (r: ProjectRow) => recsOf(r).filter((x) => x.level === 'exec' && x.verdict === 'return').length
 const within = (h: number | null | undefined, lim: number) => typeof h === 'number' && h > 0 && h <= lim
 const sessionsOf = (body: 'committee' | 'board') => SESSIONS.filter((x) => x.body === body)
@@ -174,10 +224,19 @@ const boardOnTime = boardItems.filter(({ x, i }) => {
   return sent ? dayDiff(sent, x.date) * 24 <= (ESC_LIMITS['approval.board'] ?? 504) : true
 })
 
+/* Agreements · from their own log and the stage limits (re-audit 7 Oct · the three used to be empty
+   with a note that the returns weren't recorded, long after the module started recording them) */
+
+const agrAll = agreements.filter((a) => a.stage !== 'cancelled')
+const agrPrep = agrAll.filter((a) => a.stage === 'active' && a.activeAt).map((a) => ({ a, days: dayDiff(a.openedAt, a.activeAt!) }))
+/** The target · the sum of the stage limits a new agreement runs through, in days */
+const AGR_TARGET = agrTargetDays()
+const agrCycle = agrPrep.map(({ a }) => { const sent = a.log.find((e) => e.step === 12)?.at; return sent ? dayDiff(sent, a.activeAt!) : null }).filter((x): x is number => x !== null)
+
 /* Payments · from submission to transfer, over every request */
 
 const paid = payRequests.filter((r) => r.state === 'paid' && r.paidAt)
-const today = new Date().toISOString().slice(0, 10)
+const today = TODAY
 const due = payRequests.filter((r) => r.dueAt <= today)
 
 /* Plans · by count, against what is due */
@@ -187,6 +246,8 @@ const dueActs = acts.filter(({ a }) => a.to && a.to <= today)
 const lateOrStuck = planRows.reduce((n, p) => n + lateActivities(p).length, 0) + acts.filter(({ a }) => isStuck(a) && !(a.to && a.to < today)).length
 const accepted = acts.filter(({ a }) => a.state === 'accepted')
 const firstOk = accepted.filter(({ a }) => !(a.notes ?? []).some((n) => n.kind === 'reject'))
+/* Re-audit 7 Oct · the denominator is every activity the foundation reviewed · accepted, or returned at least once */
+const reviewedActs = acts.filter(({ a }) => a.state === 'accepted' || (a.notes ?? []).some((n) => n.kind === 'reject'))
 const actDays = accepted.map(({ p, a }) => {
   const claim = PLAN_LOG.find((e) => e.planId === p.id && e.what.startsWith('تقديم نشاط') && e.what.endsWith(a.name))?.at
   const from = claim ?? a.evidence.map((e) => e.uploadedAt).sort().at(-1)
@@ -198,14 +259,23 @@ const actDays = accepted.map(({ p, a }) => {
 const eh = ehsanProjects()
 const ehMoneyAll = eh.map((p) => ehMoney(p.id))
 const ehClosed = eh.filter((p) => p.statusGroup === 'مكتمل')
-const ehLate = eh.filter((p) => p.endAt && p.endAt < today && p.statusGroup !== 'مكتمل')
-const ehCloseDays = closeRows.filter((c) => c.closedAt && eh.some((p) => p.id === c.projectId)).map((c) => {
-  const p = eh.find((x) => x.id === c.projectId)
-  return p?.endAt ? dayDiff(p.endAt, c.closedAt!) : dayDiff(c.openedAt, c.closedAt!)
-})
+/* Re-audit 7 Oct · late counts the stalled too, over the projects in execution, not over all of them */
+const ehRunning = eh.filter((p) => p.statusGroup === 'في التشغيل' || p.statusGroup === 'متعثر')
+const ehLate = ehRunning.filter((p) => p.statusGroup === 'متعثر' || (p.endAt && p.endAt < today))
+/* Re-audit 7 Oct · an Ehsan project closes in the partners' record, not in the closing module ·
+   reading `closeRows` meant this was never measured */
+const ehCloseDays = eh.map((p) => {
+  const c = ehCloseOf(p.id)
+  if (!c?.closedAt) return null
+  const from = p.endAt && p.endAt <= c.closedAt ? p.endAt : c.at
+  return dayDiff(from, c.closedAt)
+}).filter((x): x is number => x !== null)
 const pfs = PORTFOLIOS
 const subs = pfs.flatMap((pf) => pf.items)
 const subsSent = subs.filter((x) => x.state !== 'draft')
+const subsOk = subs.filter((x) => x.state === 'approved')
+/* The portfolios whose value is approved · the base of «utilization» */
+const pfLive = pfs.filter((pf) => pf.stage === 'approved' || pf.stage === 'closed')
 const pfMoneyAll = pfs.map((pf) => pfMoney(pf))
 const pfLate = pfs.filter((pf) => pf.stage === 'approved' && pf.plan.phases.length && pf.plan.phases.every((ph) => ph.to < today))
 
@@ -214,32 +284,9 @@ return [
     id: 'BPD-001',
     key: 'bpd-001',
     no: 1,
-    title: 'الإلمام والاستكشاف',
-    owner: 'إدارة المنح',
-    kpis: [
-      { no: 1, name: 'نسبة إنجاز فرص المنح ضمن المدة المحددة', how: 'عدد فرص المنح المكتملة ضمن المدة الزمنية ÷ إجمالي فرص المنح × 100%.', unit: 'pct', value: null, better: 'up', target: null },
-      { no: 2, name: 'متوسط مدة إعداد فرصة المنح', how: 'متوسط عدد الأيام من إسناد فرصة المنح حتى اعتمادها.', unit: 'days', value: null, better: 'down', target: null },
-      { no: 3, name: 'نسبة فرص المنح المعتمدة من أول مراجعة', how: 'عدد فرص المنح المعتمدة من أول مرة ÷ إجمالي فرص المنح × 100%.', unit: 'pct', value: null, better: 'up', target: null },
-      { no: 4, name: 'عدد الخبراء المشاركين في دراسة كل فرصة منح', how: 'متوسط عدد الخبراء الذين تمت الاستفادة منهم لكل فرصة منح.', unit: 'avg', value: null, better: 'up', target: null },
-      { no: 5, name: 'عدد الجهات ذات العلاقة المشاركة', how: 'متوسط عدد الجهات التي تمت مقابلتها أو الاستفادة منها لكل فرصة منح.', unit: 'avg', value: null, better: 'up', target: null },
-      { no: 6, name: 'عدد الدراسات والأبحاث الموثقة', how: 'متوسط عدد الدراسات والأبحاث المسجلة لكل فرصة منح.', unit: 'avg', value: null, better: 'up', target: null },
-      { no: 7, name: 'عدد الأنظمة واللوائح الموثقة', how: 'متوسط عدد الأنظمة واللوائح المرتبطة بكل فرصة منح.', unit: 'avg', value: null, better: 'up', target: null },
-      { no: 8, name: 'نسبة فرص المنح المرتبطة برؤية المملكة 2030', how: 'عدد فرص المنح المرتبطة بالرؤية ÷ إجمالي فرص المنح × 100%.', unit: 'pct', value: null, better: 'up', target: null },
-      { no: 9, name: 'عدد المشاريع المقترحة الناتجة عن الإلمام والاستكشاف', how: 'إجمالي المشاريع أو المبادرات التي تم تسجيلها نتيجة الإجراء.', unit: 'count', value: null, better: 'up', target: null },
-      { no: 10, name: 'عدد الجهات المقترح استقطابها', how: 'إجمالي الجهات الجديدة التي تم تسجيلها ضمن فرص المنح.', unit: 'count', value: null, better: 'up', target: null },
-      { no: 11, name: 'عدد الخبراء المضافين إلى قاعدة المعرفة', how: 'إجمالي الخبراء الذين تمت إضافتهم والاستفادة منهم خلال الفترة.', unit: 'count', value: null, better: 'up', target: null },
-    ].map((k) => ({
-      ...k,
-      gap: 'الإجراء كله خارج النظام: لا يوجد في النظام العامل كيان «فرصة منحة» ولا سجل للخبراء ولا دراسات مرتبطة.',
-    })) as Kpi[],
-  },
-
-  {
-    id: 'BPD-002',
-    key: 'bpd-002',
-    no: 2,
     title: 'إعداد ميزانية المنح',
     owner: 'إدارة المنح',
+    source: 'doc',
     kpis: [
       { no: 1, name: 'نسبة استغلال الميزانية', how: 'إجمالي المبالغ المصروفة ÷ إجمالي المبالغ المخصصة × 100%.', unit: 'pct', ...ratio(L((x) => x.m.paid), allocated, 'riyal'), better: 'up', target: null, to: ROUTES.budget },
       { no: 2, name: 'نسبة الرصيد المتبقي', how: 'إجمالي الرصيد المتبقي ÷ إجمالي المبالغ المخصصة × 100%.', unit: 'pct', ...ratio(L((x) => Math.max(0, x.m.available)), allocated, 'riyal'), better: 'flat', target: null, to: ROUTES.budget },
@@ -258,30 +305,32 @@ return [
   },
 
   {
-    id: 'BPD-003',
-    key: 'bpd-003',
-    no: 3,
+    id: 'BPD-002',
+    key: 'bpd-002',
+    no: 2,
     title: 'تسجيل واعتماد الجهات المستفيدة',
     owner: 'إدارة المنح',
+    source: 'doc',
     kpis: [
       { no: 1, name: 'متوسط مدة معالجة طلب التسجيل', how: 'متوسط الوقت من تاريخ تقديم الطلب حتى إصدار قرار الاعتماد أو الرفض.', unit: 'days', value: (() => { const m = mean(regDecided.map((r) => dayDiff(r.submittedAt, r.decidedAt!))); return m === null ? null : Math.round(m) })(), better: 'down', target: null, to: ROUTES.entityRequests },
-      { no: 2, name: 'نسبة طلبات التسجيل المعتمدة من أول مراجعة', how: 'عدد الطلبات المعتمدة دون إعادة للاستكمال ÷ إجمالي الطلبات × 100%.', unit: 'pct', ...ratio(regDecided.filter((r) => r.state === 'approved' && returns(r) === 0).length, regDecided.length, 'entity'), better: 'up', target: null, to: ROUTES.entityRequests },
-      { no: 3, name: 'متوسط عدد مرات إعادة الطلب للاستكمال', how: 'إجمالي مرات إعادة الطلبات ÷ إجمالي الطلبات.', unit: 'avg', value: regRows.length ? Math.round((regRows.reduce((n, r) => n + returns(r), 0) / regRows.length) * 10) / 10 : null, better: 'down', target: null, to: ROUTES.entityRequests },
-      { no: 4, name: 'نسبة الطلبات المرفوضة بسبب عدم صحة البيانات أو الوثائق', how: 'عدد الطلبات المرفوضة لهذا السبب ÷ إجمالي الطلبات × 100%.', unit: 'pct', ...ratio(regRows.filter((r) => r.state === 'rejected' && badData.test(r.note ?? '')).length, regRows.filter((r) => r.state !== 'draft').length, 'entity'), better: 'down', target: null, to: `${ROUTES.entityRequests}?state=rejected` },
+      { no: 2, name: 'نسبة طلبات التسجيل المعتمدة من أول مراجعة', how: 'عدد الطلبات المعتمدة دون إعادة للاستكمال ÷ إجمالي الطلبات × 100%.', unit: 'pct', ...ratio(regDecided.filter((r) => r.state === 'approved' && returns(r) === 0).length, regSent.length, 'entity'), better: 'up', target: null, to: ROUTES.entityRequests },
+      { no: 3, name: 'متوسط عدد مرات إعادة الطلب للاستكمال', how: 'إجمالي مرات إعادة الطلبات ÷ إجمالي الطلبات.', unit: 'avg', value: regSent.length ? Math.round((regSent.reduce((n, r) => n + returns(r), 0) / regSent.length) * 10) / 10 : null, better: 'down', target: null, to: ROUTES.entityRequests },
+      { no: 4, name: 'نسبة الطلبات المرفوضة بسبب عدم صحة البيانات أو الوثائق', how: 'عدد الطلبات المرفوضة لهذا السبب ÷ إجمالي الطلبات × 100%.', unit: 'pct', ...ratio(regRows.filter((r) => r.state === 'rejected' && r.rejectReason === 'data').length, regSent.length, 'entity'), better: 'down', target: null, to: `${ROUTES.entityRequests}?state=rejected` },
       { no: 5, name: 'عدد الجهات الجديدة المعتمدة', how: 'إجمالي الجهات التي تم اعتمادها خلال الفترة.', unit: 'count', value: regYear.filter((r) => r.state === 'approved').length, better: 'up', target: null, to: `${ROUTES.entityRequests}?state=approved` },
       { no: 6, name: 'عدد الجهات الجديدة المرفوضة', how: 'إجمالي الجهات التي تم رفضها خلال الفترة.', unit: 'count', value: regYear.filter((r) => r.state === 'rejected').length, better: 'down', target: null, to: `${ROUTES.entityRequests}?state=rejected` },
     ],
   },
 
   {
-    id: 'BPD-004',
-    key: 'bpd-004',
-    no: 4,
+    id: 'BPD-003',
+    key: 'bpd-003',
+    no: 3,
     title: 'استقبال ودراسة المشاريع',
     owner: 'مشرف المنح',
+    source: 'doc',
     kpis: [
-      { no: 1, name: 'متوسط مدة دراسة المشروع', how: 'متوسط عدد الأيام من تاريخ إسناد المشروع إلى مشرف المنح حتى تسجيل التوصية.', unit: 'days', value: meanDays(studied, (r) => j(r)?.study), better: 'down', target: null, derived: true, to: link('sort=waiting') },
-      { no: 2, name: 'نسبة الالتزام بالمدة المستهدفة للدراسة', how: '(عدد المشاريع التي تمت دراستها ضمن المدة المحددة ÷ إجمالي المشاريع المدروسة) × 100%.', unit: 'pct', ...ratio(countOf(studied, (r) => within(j(r)?.study, studyLimit)), countOf(studied, (r) => Boolean(j(r)?.study))), better: 'up', target: null, derived: true, to: link('overdue=1') },
+      { no: 1, name: 'متوسط مدة دراسة المشروع', how: 'متوسط عدد الأيام من تاريخ إسناد المشروع إلى مشرف المنح حتى تسجيل التوصية.', unit: 'days', value: studyRec.value, better: 'down', target: null, derived: studyRec.derived, to: link('sort=waiting') },
+      { no: 2, name: 'نسبة الالتزام بالمدة المستهدفة للدراسة', how: '(عدد المشاريع التي تمت دراستها ضمن المدة المحددة ÷ إجمالي المشاريع المدروسة) × 100%.', unit: 'pct', ...ratio(countOf(studied, studyIn), countOf(studied, studyHas)), better: 'up', target: null, derived: studyRec.derived, to: link('overdue=1') },
       { no: 3, name: 'متوسط عدد المشاريع التي تمت دراستها لكل مشرف', how: 'إجمالي المشاريع التي درسها المشرف خلال الفترة ÷ عدد المشرفين.', unit: 'avg', value: supervisors.size ? Math.round((studied.length / supervisors.size) * 10) / 10 : null, better: 'flat', target: null, to: P },
       { no: 4, name: 'نسبة المشاريع المحولة بين المشرفين', how: '(عدد المشاريع المحولة إلى مشرف آخر ÷ إجمالي المشاريع) × 100%.', unit: 'pct', ...ratio(countOf(rows, (r) => j(r)?.transferred === true || flowOf(r.id).pastStudies.length > 0), rows.length), better: 'down', target: null, derived: true },
       { no: 5, name: 'نسبة المشاريع المعادة لاستكمال البيانات', how: '(عدد المشاريع المعادة للجهة لاستكمال البيانات ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(rows, (r) => (j(r)?.toEntity ?? 0) > 0 || flowOf(r.id).versions.length > 1), rows.length), better: 'down', target: null, derived: true, to: link('stage=استكمال بيانات المشروع') },
@@ -290,18 +339,34 @@ return [
   },
 
   {
+    id: 'BPD-004',
+    key: 'bpd-004',
+    no: 4,
+    title: 'دور مدير المنح',
+    owner: 'إدارة المنح',
+    source: 'doc',
+    kpis: [
+      { no: 1, name: 'متوسط مدة مراجعة المشاريع', how: 'متوسط عدد الأيام من تاريخ استلام المشروع حتى تسجيل قرار مدير المنح.', unit: 'days', value: mgrRec.value, better: 'down', target: null, derived: mgrRec.derived },
+      { no: 2, name: 'نسبة الالتزام بالمدة المستهدفة للمراجعة', how: `(عدد المشاريع التي تمت مراجعتها ضمن المدة المستهدفة ÷ إجمالي المشاريع المستلمة) × 100%. والمدة ${countNoun(Math.round((ESC_LIMITS['approval.manager'] ?? 120) / 24), NOUN.day)} من آلية التصعيد.`, unit: 'pct', ...ratio(countOf(reachedManager, mgrIn), reachedManager.length), better: 'up', target: null, derived: mgrRec.derived, to: `${ROUTES.escalation}?proc=approval` },
+      { no: 3, name: 'نسبة المشاريع المعادة إلى مشرف المنح', how: '(عدد المشاريع المعادة لاستكمال الدراسة ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(reachedManager, (r) => recsOf(r).some((x) => x.level === 'manager' && x.verdict === 'return') || (j(r)?.toSupervisor ?? 0) > 0), reachedManager.length), better: 'down', target: null, derived: true },
+      { no: 4, name: 'نسبة المشاريع المحالة إلى المدير التنفيذي', how: '(عدد المشاريع المحالة إلى المدير التنفيذي ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(reachedManager, (r) => recsOf(r).some((x) => x.level === 'manager' && /recommend|refer/.test(x.verdict)) || (j(r)?.decidedBy !== null && j(r)?.decidedBy !== undefined && j(r)?.decidedBy !== 'مدير المنح')), reachedManager.length), better: 'flat', target: null, derived: true },
+      { no: 5, name: 'نسبة الرفض النهائي ضمن صلاحيات مدير المنح', how: '(عدد المشاريع المرفوضة ضمن سقف مدير المنح ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(rejected, (r) => recsOf(r).some((x) => x.level === 'manager' && x.verdict === 'final-reject') || (r.amountRequested <= capOf('manager') && !recsOf(r).length)), reachedManager.length), better: 'flat', target: null, to: link('support=مرفوض') },
+      { no: 6, name: 'نسبة المشاريع التي تم حجز ميزانيتها من أول مراجعة', how: '(عدد المشاريع التي تم حجز مخصصاتها المالية دون إعادة الدراسة ÷ إجمالي المشاريع الموافق عليها) × 100%.', unit: 'pct', ...ratio(countOf(approved, (r) => j(r)?.reservedFirstPass === true), approved.length), better: 'up', target: null, derived: true },
+    ],
+  },
+
+  {
     id: 'BPD-005',
     key: 'bpd-005',
     no: 5,
-    title: 'دور مدير المنح',
-    owner: 'إدارة المنح',
+    title: 'دور المدير التنفيذي',
+    owner: 'الإدارة التنفيذية',
+    source: 'doc',
     kpis: [
-      { no: 1, name: 'متوسط مدة مراجعة المشاريع', how: 'متوسط عدد الأيام من تاريخ استلام المشروع حتى تسجيل قرار مدير المنح.', unit: 'days', value: meanDays(reachedManager, (r) => j(r)?.manager), better: 'down', target: null, derived: true },
-      { no: 2, name: 'نسبة الالتزام بالمدة المستهدفة للمراجعة', how: `(عدد المشاريع التي تمت مراجعتها ضمن المدة المستهدفة ÷ إجمالي المشاريع المستلمة) × 100%. والمدة ${countNoun(Math.round((ESC_LIMITS['approval.manager'] ?? 120) / 24), NOUN.day)} من آلية التصعيد.`, unit: 'pct', ...ratio(countOf(reachedManager, (r) => within(j(r)?.manager, ESC_LIMITS['approval.manager'] ?? 120)), reachedManager.length), better: 'up', target: null, derived: true, to: `${ROUTES.escalation}?proc=approval` },
-      { no: 3, name: 'نسبة المشاريع المعادة إلى مشرف المنح', how: '(عدد المشاريع المعادة لاستكمال الدراسة ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(reachedManager, (r) => recsOf(r).some((x) => x.level === 'manager' && x.verdict === 'return') || (j(r)?.toSupervisor ?? 0) > 0), reachedManager.length), better: 'down', target: null, derived: true },
-      { no: 4, name: 'نسبة المشاريع المحالة إلى المدير التنفيذي', how: '(عدد المشاريع المحالة إلى المدير التنفيذي ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(reachedManager, (r) => recsOf(r).some((x) => x.level === 'manager' && /recommend|refer/.test(x.verdict)) || (j(r)?.decidedBy !== null && j(r)?.decidedBy !== undefined && j(r)?.decidedBy !== 'مدير المنح')), reachedManager.length), better: 'flat', target: null, derived: true },
-      { no: 5, name: 'نسبة الرفض النهائي ضمن صلاحيات مدير المنح', how: '(عدد المشاريع المرفوضة ضمن سقف مدير المنح ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(rejected, (r) => recsOf(r).some((x) => x.level === 'manager' && x.verdict === 'final-reject') || (r.amountRequested <= 250_000 && !recsOf(r).length)), reachedManager.length), better: 'flat', target: null, to: link('support=مرفوض') },
-      { no: 6, name: 'نسبة المشاريع التي تم حجز ميزانيتها من أول مراجعة', how: '(عدد المشاريع التي تم حجز مخصصاتها المالية دون إعادة الدراسة ÷ إجمالي المشاريع الموافق عليها) × 100%.', unit: 'pct', ...ratio(countOf(approved, (r) => j(r)?.reservedFirstPass === true), approved.length), better: 'up', target: null, derived: true },
+      { no: 1, name: 'متوسط مدة المراجعة التنفيذية', how: 'متوسط الزمن من استلام المشروع حتى تسجيل قرار الرئيس التنفيذي.', unit: 'days', value: execRec.value, better: 'down', target: null, derived: execRec.derived },
+      { no: 2, name: 'نسبة القرارات ضمن المدة المستهدفة', how: `عدد المشاريع التي صدر قرارها ضمن اتفاقية مستوى الخدمة ÷ إجمالي المشاريع × 100%. والمدة ${countNoun(Math.round((ESC_LIMITS['approval.exec'] ?? 120) / 24), NOUN.day)} من آلية التصعيد.`, unit: 'pct', ...ratio(countOf(reachedExec, execIn), reachedExec.length), better: 'up', target: null, derived: execRec.derived, to: `${ROUTES.escalation}?proc=approval` },
+      { no: 3, name: 'نسبة المشاريع المعادة إلى مدير المنح', how: 'عدد المشاريع المعادة لاستكمال الملاحظات ÷ إجمالي المشاريع المستلمة × 100%.', unit: 'pct', ...ratio(countOf(reachedExec, (r) => execReturns(r) > 0), reachedExec.length), better: 'down', target: null },
+      { no: 4, name: 'متوسط عدد مرات إعادة المشروع', how: 'إجمالي مرات الإعادة ÷ عدد المشاريع المعادة.', unit: 'avg', value: (() => { const back = reachedExec.filter((r) => execReturns(r) > 0); return back.length ? Math.round((back.reduce((n, r) => n + execReturns(r), 0) / back.length) * 10) / 10 : null })(), gap: reachedExec.some((r) => execReturns(r) > 0) ? undefined : 'لم يُعِد المدير التنفيذي أي مشروع بعد · يُحسب من إعاداته المسجّلة.', better: 'down', target: null },
     ],
   },
 
@@ -309,22 +374,9 @@ return [
     id: 'BPD-006',
     key: 'bpd-006',
     no: 6,
-    title: 'دور المدير التنفيذي',
-    owner: 'الإدارة التنفيذية',
-    kpis: [
-      { no: 1, name: 'متوسط مدة المراجعة التنفيذية', how: 'متوسط الزمن من استلام المشروع حتى تسجيل قرار الرئيس التنفيذي.', unit: 'days', value: meanDays(reachedExec, (r) => j(r)?.exec), better: 'down', target: null, derived: true },
-      { no: 2, name: 'نسبة القرارات ضمن المدة المستهدفة', how: `عدد المشاريع التي صدر قرارها ضمن اتفاقية مستوى الخدمة ÷ إجمالي المشاريع × 100%. والمدة ${countNoun(Math.round((ESC_LIMITS['approval.exec'] ?? 120) / 24), NOUN.day)} من آلية التصعيد.`, unit: 'pct', ...ratio(countOf(reachedExec, (r) => within(j(r)?.exec, ESC_LIMITS['approval.exec'] ?? 120)), reachedExec.length), better: 'up', target: null, derived: true, to: `${ROUTES.escalation}?proc=approval` },
-      { no: 3, name: 'نسبة المشاريع المعادة إلى مدير المنح', how: 'عدد المشاريع المعادة لاستكمال الملاحظات ÷ إجمالي المشاريع المستلمة × 100%.', unit: 'pct', ...ratio(countOf(reachedExec, (r) => execReturns(r) > 0), reachedExec.length), better: 'down', target: null },
-      { no: 4, name: 'متوسط عدد مرات إعادة المشروع', how: 'إجمالي مرات الإعادة ÷ عدد المشاريع المعادة.', unit: 'avg', value: (() => { const back = reachedExec.filter((r) => execReturns(r) > 0); return back.length ? Math.round((back.reduce((n, r) => n + execReturns(r), 0) / back.length) * 10) / 10 : null })(), gap: reachedExec.some((r) => execReturns(r) > 0) ? undefined : 'لم يُعِد المدير التنفيذي أي مشروع بعد · يُحسب من إعاداته المسجّلة.', better: 'down', target: null },
-    ],
-  },
-
-  {
-    id: 'BPD-007',
-    key: 'bpd-007',
-    no: 7,
     title: 'دور اللجنة التنفيذية',
     owner: 'اللجنة التنفيذية',
+    source: 'doc',
     kpis: [
       { no: 1, name: 'متوسط مدة دراسة المشروع في اللجنة التنفيذية', how: 'متوسط عدد الأيام من تاريخ إحالة المشروع إلى اللجنة حتى صدور القرار النهائي.', unit: 'days', value: meanDays(decided, (r) => j(r)?.committee), better: 'down', target: null, derived: true },
       { no: 2, name: 'متوسط مدة إصدار قرار اللجنة', how: 'متوسط الزمن من تاريخ انعقاد الاجتماع حتى اعتماد القرار في النظام.', unit: 'days', value: (() => { const m = decisionLag('committee'); return m === null ? null : Math.round(m) })(), gap: decisionLag('committee') === null ? 'لا جلسة للجنة صدر فيها قرار بعد · يُحسب من تاريخ الجلسة وتاريخ القرار.' : undefined, better: 'down', target: null, to: ROUTES.committee },
@@ -334,11 +386,12 @@ return [
   },
 
   {
-    id: 'BPD-008',
-    key: 'bpd-008',
-    no: 8,
+    id: 'BPD-007',
+    key: 'bpd-007',
+    no: 7,
     title: 'دور مجلس الأمناء',
     owner: 'مجلس الأمناء',
+    source: 'doc',
     kpis: [
       { no: 1, name: 'نسبة المشاريع المعروضة ضمن المدة المحددة', how: `عدد المشاريع التي عرضت ضمن المدة المستهدفة ÷ إجمالي المشاريع المحالة × 100%. والمدة ${countNoun(Math.round((ESC_LIMITS['approval.board'] ?? 504) / 24), NOUN.day)} من آلية التصعيد.`, unit: 'pct', ...ratio(boardOnTime.length, boardItems.length), gap: boardItems.length ? undefined : 'لا مشروع عُرض على المجلس في جلسة مسجّلة بعد.', better: 'up', target: null, to: ROUTES.board },
       { no: 2, name: 'متوسط مدة إصدار قرار اللجنة', how: 'متوسط الزمن من تاريخ انعقاد الاجتماع حتى اعتماد القرار في النظام.', unit: 'days', value: (() => { const m = decisionLag('board'); return m === null ? null : Math.round(m) })(), gap: decisionLag('board') === null ? 'لا جلسة للمجلس صدر فيها قرار بعد · يُحسب من تاريخ الجلسة وتاريخ القرار.' : undefined, better: 'down', target: null, to: ROUTES.board },
@@ -348,46 +401,27 @@ return [
   },
 
   {
+    id: 'BPD-008',
+    key: 'bpd-008',
+    no: 8,
+    title: 'الاتفاقيات',
+    owner: 'إدارة المنح',
+    source: 'doc',
+    kpis: [
+      { no: 1, name: 'متوسط مدة إعداد الاتفاقية', how: 'متوسط عدد الأيام من إحالة المشروع إلى مرحلة إعداد الاتفاقية حتى اعتماد الاتفاقية.', unit: 'days', value: (() => { const m = mean(agrPrep.map((x) => x.days)); return m === null ? null : Math.round(m) })(), gap: agrPrep.length ? undefined : 'لم تسرِ اتفاقية بعد · يُحسب من فتح الاتفاقية حتى سريانها.', better: 'down', target: null, to: ROUTES.agreements },
+      { no: 2, name: 'نسبة الاتفاقيات المنجزة ضمن المدة المستهدفة', how: `(عدد الاتفاقيات المعتمدة ضمن المدة المستهدفة ÷ إجمالي الاتفاقيات) × 100%. والمدة ${countNoun(AGR_TARGET, NOUN.day)} · مجموع مدد مراحل الاتفاقية في الإعدادات.`, unit: 'pct', ...ratio(agrPrep.filter((x) => x.days <= AGR_TARGET).length, agrAll.length, 'agreement'), better: 'up', target: null, to: ROUTES.agreements },
+      { no: 3, name: 'متوسط مدة دورة اعتماد الاتفاقية', how: 'متوسط الزمن من إرسال الاتفاقية للاعتماد حتى اكتمال جميع الاعتمادات · من سجل الاتفاقية.', unit: 'days', value: (() => { const m = mean(agrCycle); return m === null ? null : Math.round(m) })(), gap: agrCycle.length ? undefined : 'لا اتفاقية اكتملت اعتماداتها بعد إرسالها · يُحسب من سجلها.', better: 'down', target: null, to: ROUTES.agreements },
+      { no: 4, name: 'نسبة الاتفاقيات المعادة للتعديل', how: '(عدد الاتفاقيات المعادة للمراجعة أو التعديل ÷ إجمالي الاتفاقيات) × 100% · الإعادة من سجل الاتفاقية.', unit: 'pct', ...ratio(agrAll.filter(agrWasReturned).length, agrAll.length, 'agreement'), better: 'down', target: null, to: `${ROUTES.agreements}?stage=returned` },
+    ],
+  },
+
+  {
     id: 'BPD-009',
     key: 'bpd-009',
     no: 9,
-    title: 'الاتفاقيات',
-    owner: 'إدارة المنح',
-    kpis: [
-      { no: 1, name: 'متوسط مدة إعداد الاتفاقية', how: 'متوسط عدد الأيام من إحالة المشروع إلى مرحلة إعداد الاتفاقية حتى اعتماد الاتفاقية.', unit: 'days', value: meanDays(rows, (r) => j(r)?.agreement), better: 'down', target: null, derived: true, to: link('stage=اعتماد الإتفاقية') },
-      { no: 2, name: 'نسبة الاتفاقيات المنجزة ضمن المدة المستهدفة', how: '(عدد الاتفاقيات المعتمدة ضمن المدة المستهدفة ÷ إجمالي الاتفاقيات) × 100%.', unit: 'pct', value: null, gap: 'لا توجد في الوثيقة مدة مستهدفة لإعداد الاتفاقية.', better: 'up', target: null },
-      { no: 3, name: 'متوسط مدة دورة اعتماد الاتفاقية', how: 'متوسط الزمن من إرسال الاتفاقية للاعتماد حتى اكتمال جميع الاعتمادات.', unit: 'days', value: null, gap: 'دورة الاعتماد سبع مراحل (إلكترونية وورقية ومالية وتنفيذية)، والنموذج يسجّل المدة الكلية فقط.', better: 'down', target: null },
-      { no: 4, name: 'نسبة الاتفاقيات المعادة للتعديل', how: '(عدد الاتفاقيات المعادة للمراجعة أو التعديل ÷ إجمالي الاتفاقيات) × 100%.', unit: 'pct', value: null, gap: 'الإعادة للتعديل ليست حدثًا مسجّلًا، و«اعتماد الإتفاقية» قسم واحد بلا حالات فرعية.', better: 'down', target: null },
-    ],
-  },
-
-  /* Project plans
-     Warning: **the document gives no indicators at all for this procedure.** These four are derived
-     from its own rules, and all are `derived` with `target: null`, exactly like the agreement and
-     disbursement indicators, whose targets are also empty. Presenting them as if they came from the
-     document would have anyone building on top of them assume they did. */
-  {
-    id: 'BPD-012',
-    key: 'bpd-012',
-    no: 12,
-    title: 'خطط المشاريع',
-    owner: 'إدارة المنح',
-    kpis: [
-      { no: 1, name: 'متوسط مدة اعتماد الخطة', how: 'متوسط الأيام من فتح الخطة حتى تثبيت النسخة المرجعية.', unit: 'days', value: planKpi().approveDays, better: 'down', target: null, derived: true, to: ROUTES.plans },
-      { no: 2, name: 'نسبة اكتمال الأنشطة', how: '(الأنشطة المقبولة ÷ إجمالي الأنشطة) × 100% · بالعدد لا بالتكلفة.', unit: 'pct', ...ratio(accepted.length, acts.length), better: 'up', target: null, to: ROUTES.plans },
-      { no: 3, name: 'نسبة الأنشطة المتأخّرة والمتعثرة', how: '(الأنشطة التي تجاوزت موعدها ولم تُقبل أو تعثّرت ÷ الأنشطة المستحقة حتى اليوم) × 100%.', unit: 'pct', ...ratio(lateOrStuck, Math.max(lateOrStuck, dueActs.length)), better: 'down', target: null, to: `${ROUTES.plans}?late=1` },
-      { no: 4, name: 'الأنشطة بانتظار مراجعة المؤسسة', how: 'عدد الأنشطة التي أفادت الجهة باكتمالها ولم تُراجع بعد (قاعدة 14).', unit: 'count', value: planKpi().waiting, better: 'down', target: null, to: `${ROUTES.plans}?wait=1` },
-      { no: 5, name: 'نسبة قبول الأنشطة من أول مراجعة', how: '(الأنشطة المقبولة دون إعادة ÷ الأنشطة المقبولة) × 100%.', unit: 'pct', ...ratio(firstOk.length, accepted.length), better: 'up', target: null, to: ROUTES.plans },
-      { no: 6, name: 'متوسط مدة اعتماد النشاط', how: 'متوسط الأيام من تقديم النشاط للقبول حتى قبوله.', unit: 'days', value: (() => { const m = mean(actDays); return m === null ? null : Math.round(m) })(), better: 'down', target: null, to: ROUTES.plans },
-    ],
-  },
-
-  {
-    id: 'BPD-010',
-    key: 'bpd-010',
-    no: 10,
     title: 'صرف الدفعات',
     owner: 'الإدارة المالية',
+    source: 'doc',
     kpis: [
       { no: 1, name: 'متوسط مدة معالجة طلب الصرف', how: 'متوسط عدد الأيام من تقديم طلب الصرف حتى تنفيذ عملية الصرف.', unit: 'days', value: (() => { const m = mean(paid.map((r) => dayDiff(r.at, r.paidAt!))); return m === null ? null : Math.round(m) })(), better: 'down', target: null, to: ROUTES.payments },
       { no: 2, name: 'نسبة طلبات الصرف المنجزة ضمن المدة المستهدفة', how: `(عدد طلبات الصرف المنجزة ضمن المدة المحددة ÷ إجمالي طلبات الصرف) × 100%. والمدة ${countNoun(PAY_TARGET_DAYS, NOUN.day)}.`, unit: 'pct', ...ratio(paid.filter((r) => dayDiff(r.at, r.paidAt!) <= PAY_TARGET_DAYS).length, payRequests.length), better: 'up', target: null, to: ROUTES.payments },
@@ -397,11 +431,12 @@ return [
   },
 
   {
-    id: 'BPD-011',
-    key: 'bpd-011',
-    no: 11,
+    id: 'BPD-010',
+    key: 'bpd-010',
+    no: 10,
     title: 'إغلاق المشروع',
     owner: 'إدارة المنح',
+    source: 'doc',
     /* Warning: **indicators 2 and 3 became measurable only after this module was built.** They used
        to both be `gap`, for two different reasons: the second has no target duration in the
        document, and the third has "request and submission are two independent sections, and neither
@@ -420,32 +455,56 @@ return [
   /* Ehsan and the portfolios · the document lists the indicators in BPD-011 and BPD-013; they
      had no row here at all (cross · KPIs) */
   {
+    id: 'BPD-011',
+    key: 'bpd-011',
+    no: 11,
+    title: 'مشاريع إحسان',
+    owner: 'إدارة المنح',
+    source: 'paraphrase',
+    kpis: [
+      { no: 1, name: 'نسبة إنجاز مشاريع إحسان', how: '(مشاريع إحسان المكتملة ÷ إجمالي مشاريع إحسان) × 100%.', unit: 'pct', ...ratio(ehClosed.length, eh.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=ehsan` },
+      { no: 2, name: 'نسبة المشاريع المتأخرة أو المتعثرة', how: '(مشاريع إحسان التي تجاوزت نهاية مدتها ولم تكتمل أو تعثّرت ÷ مشاريع إحسان الجاري تنفيذها) × 100%.', unit: 'pct', ...ratio(ehLate.length, ehRunning.length), better: 'down', target: null, to: `${ROUTES.escalation}?proc=ehsan` },
+      { no: 3, name: 'نسبة تنفيذ الدفعات', how: '(قيمة الدفعات المؤكدة ÷ إجمالي قيمة مشاريع إحسان) × 100%.', unit: 'pct', ...ratio(ehMoneyAll.reduce((n, m) => n + m.confirmed, 0), ehMoneyAll.reduce((n, m) => n + m.value, 0), 'riyal'), better: 'up', target: null, to: `${ROUTES.partners}?tab=finance` },
+      { no: 4, name: 'متوسط مدة الإغلاق', how: 'متوسط الأيام من اكتمال التنفيذ حتى إغلاق مشروع إحسان · من سجل الإغلاق في إحسان.', unit: 'days', value: (() => { const m = mean(ehCloseDays); return m === null ? null : Math.round(m) })(), gap: ehCloseDays.length ? undefined : 'لم يُغلق مشروع إحسان بعد · يُحسب من نهاية التنفيذ حتى الإغلاق.', better: 'down', target: null, to: `${ROUTES.partners}?tab=ehsan` },
+      { no: 5, name: 'الدفعات بانتظار المراجعة المالية', how: 'عدد دفعات المنصة التي لم تؤكدها الإدارة المالية بعد.', unit: 'count', value: EHSAN_PAYS.filter((x) => x.state === 'review').length, better: 'down', target: null, ours: true, to: `${ROUTES.partners}?tab=finance` },
+    ],
+  },
+  /* Project plans
+     Warning: **the document gives no indicators at all for this procedure.** These four are derived
+     from its own rules, and all are `derived` with `target: null`, exactly like the agreement and
+     disbursement indicators, whose targets are also empty. Presenting them as if they came from the
+     document would have anyone building on top of them assume they did. */
+  {
+    id: 'BPD-012',
+    key: 'bpd-012',
+    no: 12,
+    title: 'خطط المشاريع',
+    owner: 'إدارة المنح',
+    source: 'ours',
+    kpis: [
+      { no: 1, name: 'متوسط مدة اعتماد الخطة', how: 'متوسط الأيام من فتح الخطة حتى تثبيت النسخة المرجعية.', unit: 'days', value: planKpi().approveDays, better: 'down', target: null, derived: true, to: ROUTES.plans },
+      { no: 2, name: 'نسبة اكتمال الأنشطة', how: '(الأنشطة المقبولة ÷ إجمالي الأنشطة) × 100% · بالعدد لا بالتكلفة.', unit: 'pct', ...ratio(accepted.length, acts.length, 'activity'), better: 'up', target: null, to: ROUTES.plans },
+      { no: 3, name: 'نسبة الأنشطة المتأخّرة والمتعثرة', how: '(الأنشطة التي تجاوزت موعدها ولم تُقبل أو تعثّرت ÷ الأنشطة المستحقة حتى اليوم) × 100%.', unit: 'pct', ...ratio(lateOrStuck, Math.max(lateOrStuck, dueActs.length), 'activity'), better: 'down', target: null, to: `${ROUTES.plans}?late=1` },
+      { no: 4, name: 'الأنشطة بانتظار مراجعة المؤسسة', how: 'عدد الأنشطة التي أفادت الجهة باكتمالها ولم تُراجع بعد (قاعدة 14).', unit: 'count', value: planKpi().waiting, better: 'down', target: null, to: `${ROUTES.plans}?wait=1` },
+      { no: 5, name: 'نسبة قبول الأنشطة من أول مراجعة', how: '(الأنشطة المقبولة دون إعادة ÷ الأنشطة التي راجعتها المؤسسة) × 100%.', unit: 'pct', ...ratio(firstOk.length, reviewedActs.length, 'activity'), better: 'up', target: null, to: ROUTES.plans },
+      { no: 6, name: 'متوسط مدة اعتماد النشاط', how: 'متوسط الأيام من تقديم النشاط للقبول حتى قبوله.', unit: 'days', value: (() => { const m = mean(actDays); return m === null ? null : Math.round(m) })(), better: 'down', target: null, to: ROUTES.plans },
+    ],
+  },
+
+  {
     id: 'BPD-013',
     key: 'bpd-013',
     no: 13,
-    title: 'مشاريع إحسان',
-    owner: 'إدارة المنح',
-    kpis: [
-      { no: 1, name: 'نسبة إنجاز مشاريع إحسان', how: '(مشاريع إحسان المكتملة ÷ إجمالي مشاريع إحسان) × 100%.', unit: 'pct', ...ratio(ehClosed.length, eh.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=ehsan` },
-      { no: 2, name: 'نسبة المشاريع المتأخرة', how: '(مشاريع إحسان التي تجاوزت نهاية مدتها ولم تكتمل ÷ إجمالي مشاريع إحسان) × 100%.', unit: 'pct', ...ratio(ehLate.length, eh.length), better: 'down', target: null, to: `${ROUTES.escalation}?proc=ehsan` },
-      { no: 3, name: 'نسبة تنفيذ الدفعات', how: '(قيمة الدفعات المؤكدة ÷ إجمالي قيمة مشاريع إحسان) × 100%.', unit: 'pct', ...ratio(ehMoneyAll.reduce((n, m) => n + m.confirmed, 0), ehMoneyAll.reduce((n, m) => n + m.value, 0), 'riyal'), better: 'up', target: null, to: `${ROUTES.partners}?tab=finance` },
-      { no: 4, name: 'الدفعات بانتظار المراجعة المالية', how: 'عدد دفعات المنصة التي لم تؤكدها الإدارة المالية بعد.', unit: 'count', value: EHSAN_PAYS.filter((x) => x.state === 'review').length, better: 'down', target: null, to: `${ROUTES.partners}?tab=finance` },
-      { no: 5, name: 'متوسط مدة الإغلاق', how: 'متوسط الأيام من اكتمال التنفيذ حتى إغلاق مشروع إحسان.', unit: 'days', value: (() => { const m = mean(ehCloseDays); return m === null ? null : Math.round(m) })(), gap: ehCloseDays.length ? undefined : 'لم يُغلق مشروع إحسان بعد · يُحسب من نهاية التنفيذ حتى الإغلاق.', better: 'down', target: null, to: ROUTES.closings },
-    ],
-  },
-  {
-    id: 'BPD-014',
-    key: 'bpd-014',
-    no: 14,
     title: 'المحافظ',
     owner: 'إدارة المنح',
+    source: 'paraphrase',
     kpis: [
-      { no: 1, name: 'عدد المحافظ', how: 'إجمالي المحافظ المسجلة.', unit: 'count', value: pfs.length, better: 'flat', target: null, to: `${ROUTES.partners}?tab=portfolios` },
-      { no: 2, name: 'نسبة المحافظ المكتملة', how: '(المحافظ المغلقة ÷ إجمالي المحافظ) × 100%.', unit: 'pct', ...ratio(pfs.filter((x) => x.stage === 'closed').length, pfs.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
-      { no: 3, name: 'نسبة اعتماد المشاريع الفرعية', how: '(المشاريع الفرعية المعتمدة ÷ المشاريع الفرعية المرسلة للاعتماد) × 100%.', unit: 'pct', ...ratio(subs.filter((x) => x.state === 'approved').length, subsSent.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
-      { no: 4, name: 'نسبة الصرف من المحافظ', how: '(المصروف المؤكد ÷ إجمالي قيمة المحافظ) × 100%.', unit: 'pct', ...ratio(pfMoneyAll.reduce((n, m) => n + m.confirmed, 0), pfMoneyAll.reduce((n, m) => n + m.total, 0), 'riyal'), better: 'up', target: null, to: `${ROUTES.partners}?tab=finance` },
-      { no: 5, name: 'عدد المستفيدين المستهدفين', how: 'مجموع المستفيدين في المشاريع الفرعية المعتمدة.', unit: 'count', value: subs.filter((x) => x.state === 'approved').reduce((n, x) => n + x.beneficiaries, 0), better: 'up', target: null },
-      { no: 6, name: 'نسبة المحافظ المتأخرة', how: '(المحافظ التي انقضت مراحل خطتها ولم تُغلق ÷ المحافظ المعتمدة) × 100%.', unit: 'pct', ...ratio(pfLate.length, pfs.filter((x) => x.stage === 'approved').length), better: 'down', target: null, to: `${ROUTES.escalation}?proc=portfolio` },
+      { no: 1, name: 'نسبة استغلال قيمة المحفظة', how: '(قيم المشاريع الفرعية المعتمدة ÷ القيمة المعتمدة للمحافظ) × 100%.', unit: 'pct', ...ratio(pfLive.reduce((n, pf) => n + pfMoney(pf).approved, 0), pfLive.reduce((n, pf) => n + pf.total, 0), 'riyal'), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
+      { no: 2, name: 'نسبة اعتماد المشاريع الفرعية', how: '(المشاريع الفرعية المعتمدة ÷ المشاريع الفرعية المرسلة للاعتماد) × 100%.', unit: 'pct', ...ratio(subsOk.length, subsSent.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
+      { no: 3, name: 'نسبة إنجاز المشاريع الفرعية', how: '(المشاريع الفرعية المكتملة ÷ المشاريع الفرعية المعتمدة) × 100%.', unit: 'pct', ...ratio(subsOk.filter((x) => x.exec?.status === 'مكتمل').length, subsOk.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
+      { no: 4, name: 'نسبة تحقيق مستهدفات المستفيدين', how: '(المستفيدون الفعليون ÷ المستفيدون المستهدفون في المشاريع الفرعية المعتمدة) × 100%.', unit: 'pct', ...ratio(subsOk.reduce((n, x) => n + (x.exec?.reached ?? 0), 0), subsOk.reduce((n, x) => n + x.beneficiaries, 0), 'beneficiary'), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
+      { no: 5, name: 'نسبة الصرف من المحافظ', how: '(المصروف المؤكد ÷ إجمالي قيمة المحافظ) × 100%.', unit: 'pct', ...ratio(pfMoneyAll.reduce((n, m) => n + m.confirmed, 0), pfMoneyAll.reduce((n, m) => n + m.total, 0), 'riyal'), better: 'up', target: null, ours: true, to: `${ROUTES.partners}?tab=finance` },
+      { no: 6, name: 'نسبة المحافظ المتأخرة', how: '(المحافظ التي انقضت مراحل خطتها ولم تُغلق ÷ المحافظ المعتمدة) × 100%.', unit: 'pct', ...ratio(pfLate.length, pfs.filter((x) => x.stage === 'approved').length), better: 'down', target: null, ours: true, to: `${ROUTES.escalation}?proc=portfolio` },
     ],
   },
 ]

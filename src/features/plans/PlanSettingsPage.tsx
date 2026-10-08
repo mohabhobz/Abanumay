@@ -147,6 +147,7 @@ export default function PlanSettingsPage() {
                 stages={PLAN_STAGES.map((x) => ({ key: x.key, label: x.label, who: x.who }))}
                 limits={PLAN_LIMIT}
                 cfgKey={CFG.planLimits}
+                title="مدد مراحل الخطط"
                 countAt={(k) => atStage(k as PlanStage)}
                 unitLabel="الخطط فيها الآن"
               />

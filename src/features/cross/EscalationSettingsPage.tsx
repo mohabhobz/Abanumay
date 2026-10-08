@@ -13,10 +13,12 @@ import { CLOSE_LIMIT } from '@/data/mock/closing'
 import { PLAN_LIMIT } from '@/data/mock/plans'
 import { STAGES } from '@/data/mock/taxonomy'
 import {
-  CHANNEL_SAY, ESC_LIMITS, ESC_PROCS, ESC_RULES, RECIPIENT_SAY, saveEscRules,
+  CHANNEL_SAY, ESC_LIMITS, ESC_PROCS, ESC_RULES, RECIPIENT_SAY, procLabel, saveEscRules,
   type EscChannel, type EscLevel, type EscProc, type EscRecipient, type EscRules,
 } from '@/data/shared/escRules'
 import { escCounts, escStages } from '@/data/shared/escalation'
+import { logSettings } from '@/data/shared/settingsLog'
+import { NOUN, countOf } from '@/lib/format'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import { useAllStores } from './useAllStores'
 
@@ -63,6 +65,10 @@ export default function EscalationSettingsPage() {
   const changes = dayChanges.length + (ruleDirty ? 1 : 0)
 
   const save = () => {
+    /* Re-audit 7 Oct · the stage days changed here join the settings history with their values */
+    logSettings('مدد المراحل · آلية التصعيد', ROUTES.escalationSettings, user.name, ESC_PROCS.flatMap((p) => escStages(p.key)
+      .filter((s) => days[s.key] !== savedDays[s.key])
+      .map((s) => ({ k: `${procLabel(p.key)} · ${s.label}`, from: countOf(savedDays[s.key], NOUN.day), to: countOf(days[s.key], NOUN.day) }))))
     for (const p of ESC_PROCS) for (const s of escStages(p.key)) if (days[s.key] !== savedDays[s.key]) s.set(days[s.key] * 24)
     persistLimits()
     saveEscRules(d, user.name)
