@@ -33,6 +33,16 @@ import { useRole } from '@/hooks/useRole'
    looks while deciding "send or not" - a number in the header is read once at the start and
    forgotten. */
 
+/** A request attachment the form refuses · the types the field offers, up to 10 MB, and not empty */
+const REQ_EXT = ['pdf', 'xlsx', 'docx', 'jpg', 'jpeg', 'png']
+const reqFileRefusal = (f: File): string => {
+  const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
+  if (!REQ_EXT.includes(ext)) return `الامتداد .${ext} غير مقبول · PDF أو Excel أو Word أو صورة.`
+  if (f.size === 0) return 'الملف فارغ · اختر النسخة الصحيحة.'
+  if (f.size > 10 * 1024 * 1024) return 'الملف أكبر من 10 م.ب.'
+  return ''
+}
+
 const KEYS = ['tab', 'as', 'entity'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
@@ -210,6 +220,7 @@ export default function ProjectNewPage() {
   const [val, setVal] = useState<PValues>(() => draft?.val ?? (asEntity ? { entityId: v.entity as string } : EMPTY))
   const [docs, setDocs] = useState<Record<string, string>>(() => draft?.docs ?? {})
   const [saved, setSaved] = useState(false)
+  const [fileErr, setFileErr] = useState<Record<string, string>>({})
   const keepDraft = () => { setDraft(saveDraft(dkey, val, docs)); setSaved(true) }
   const freshStart = () => { dropDraft(dkey); setDraft(undefined); setVal(asEntity ? { entityId: v.entity as string } : EMPTY); setDocs({}); setSaved(false) }
   const [sentId, setSentId] = useState<string | null>(null)
@@ -361,13 +372,19 @@ export default function ProjectNewPage() {
                                 accept=".pdf,.xlsx,.docx,.jpg,.png"
                                 onChange={(e) => {
                                   const f = e.target.files?.[0]
-                                  setDocs((x) => ({ ...x, [d.key]: f?.name ?? `${d.label}.pdf` }))
+                                  if (!f) return
+                                  /* Re-audit 7 Oct · the type and size are checked here, not only hinted by \`accept\` */
+                                  const why = reqFileRefusal(f)
+                                  setFileErr((x) => ({ ...x, [d.key]: why }))
+                                  if (why) { e.target.value = ''; return }
+                                  setDocs((x) => ({ ...x, [d.key]: f.name }))
                                 }}
                               />
                               <Icon name={icons.upload} size="sm" />
                               <span>اسحب الملف هنا أو اضغط لاختياره</span>
                             </label>
                           )}
+                          {fileErr[d.key] && <p className="bad cnote">{fileErr[d.key]}</p>}
                         </li>
                       )
                     })}
@@ -556,7 +573,7 @@ export default function ProjectNewPage() {
                 </>
               ) : (
                 <>
-                  <button className="btn btn-2" onClick={() => navigate(asEntity ? ROUTES.entityPortal : ROUTES.projects)}>
+                  <button className="btn btn-2" onClick={() => navigate(asEntity ? `${ROUTES.entityPortal}?entity=${val.entityId}` : ROUTES.projects)}>
                     {asEntity ? 'العودة إلى البوابة' : 'العودة إلى المشاريع'}
                   </button>
                   {!asEntity && sentId && (

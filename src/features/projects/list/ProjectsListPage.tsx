@@ -41,7 +41,7 @@ import { ProjectCard } from './ProjectCard'
    the same name is sent to the server as a query string once wired up. */
 const KEYS = [
   'q', 'status', 'stage', 'year', 'track', 'field', 'goal', 'region', 'city',
-  'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact', 'type',
+  'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact', 'portal', 'type',
   'sort', 'page', 'size', 'view', 'adv', 'group', 'tab',
 ] as const
 
@@ -165,6 +165,7 @@ export default function ProjectsListPage() {
       overdue: v.overdue === '1',
       shared: v.shared === '1',
       impact: v.impact === '1',
+      portal: v.portal === '1',
       type: readList(v.type),
       bucket: v.tab as ProjectBucket | undefined,
       /* Portfolio rows live in this list only: each one opens its portfolio page. */
@@ -458,7 +459,7 @@ export default function ProjectsListPage() {
   const flags = (
     [
       ['unowned', 'بلا مالك'], ['overdue', 'متأخر عن الحد'],
-      ['shared', 'تمويل مشترك'], ['impact', 'مشروع أثر'],
+      ['shared', 'تمويل مشترك'], ['impact', 'مشروع أثر'], ['portal', 'من بوابة الجهات'],
     ] as [keyof Params, string][]
   ).filter(([k]) => v[k] === '1')
 
@@ -609,6 +610,7 @@ export default function ProjectsListPage() {
                   <div className="fgrid-t">
                     <Toggle label="تمويل مشترك" on={v.shared === '1'} onChange={(on) => set({ shared: on ? '1' : undefined })} />
                     <Toggle label="مشروع أثر" on={v.impact === '1'} onChange={(on) => set({ impact: on ? '1' : undefined })} />
+                    <Toggle label="من بوابة الجهات" on={v.portal === '1'} onChange={(on) => set({ portal: on ? '1' : undefined })} />
                   </div>
                 </div>
                 <div className="fgrid-x">

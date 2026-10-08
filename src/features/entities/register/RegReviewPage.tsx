@@ -1,3 +1,4 @@
+import { ibanValid } from '@/lib/iban'
 import { useMemo, useState } from 'react'
 import { registrationAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -121,7 +122,10 @@ export default function RegReviewPage() {
 
   const decided = r.state === 'approved' || r.state === 'rejected'
   const open = r.state === 'review'
-  const blocked = missingDocs.length > 0 || Boolean(clash) || stale.length > 0
+  /* Re-audit 7 Oct · 2.4.6 · an accepted account with a failing IBAN blocks the approval · reject the
+     account, or return the request for its correction */
+  const badIban = r.banks.filter((b) => !bankNo[b.id] && !ibanValid(b.iban.replace(/\s/g, '')))
+  const blocked = missingDocs.length > 0 || Boolean(clash) || stale.length > 0 || badIban.length > 0
 
   const steps: StepItem[] = [
     { label: 'تعبئة الجهة وإرسالها', at: <DateText>{r.submittedAt}</DateText>, state: 'done' },
@@ -186,6 +190,15 @@ export default function RegReviewPage() {
                         : <>رقم الترخيص <Mono>{r.licenseNo}</Mono> غير مكرَّر في هذا التصنيف</>}
                     </span>
                     <span className="payq-r">قاعدة <Num>8</Num></span>
+                  </li>
+                  <li className={badIban.length ? 'no' : 'ok'}>
+                    <Icon name={badIban.length ? icons.alert : icons.check} size="sm" />
+                    <span>
+                      {badIban.length
+                        ? <>آيبان غير صحيح في <Num>{badIban.length}</Num> {badIban.length > 1 ? 'حسابات' : 'حساب'} مقبول · ارفض الحساب أو أعد الطلب لتصحيحه</>
+                        : 'كل الحسابات المقبولة آيبانها صحيح'}
+                    </span>
+                    <span className="payq-r">2.4.6</span>
                   </li>
                   <li className={missingDocs.length ? 'no' : 'ok'}>
                     <Icon name={missingDocs.length ? icons.alert : icons.check} size="sm" />
@@ -558,7 +571,7 @@ export default function RegReviewPage() {
                       disabled={blocked || r.banks.every((b) => bankNo[b.id])}
                       title={
                         blocked
-                          ? 'نواقص تمنع الاعتماد · القواعد 4 و5 و8'
+                          ? 'نواقص تمنع الاعتماد · القواعد 4 و5 و8 · وصحة الآيبان'
                           : r.banks.every((b) => bankNo[b.id])
                             ? 'لا حساب بنكيًا مقبولًا · يلزم حساب واحد على الأقل'
                             : 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم · قاعدة 2'

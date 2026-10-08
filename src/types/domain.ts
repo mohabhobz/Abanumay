@@ -482,6 +482,8 @@ export interface ProjectRow {
   amountRequested: number
   amountGranted: number
   amountSpent: number
+  /** Re-audit 7 Oct · who filed the request · the entity from its portal or a supervisor on its behalf (the fixture's are the portal's) */
+  source?: 'portal' | 'staff'
   weight: number
   score: number
   /** null = an unassigned project, which is a quarter of the system. */
@@ -577,6 +579,7 @@ export type PayState =
   | 'supervisor'   /* steps 4-7   · with the grants supervisor      */
   | 'returned'     /* steps 10-11 · back with the beneficiary       */
   | 'manager'      /* steps 12-13 · with the grants manager         */
+  | 'exec'         /* step 13     · above the manager's spending limit (1.1.input-6) */
   | 'finance'      /* steps 14-17 · with finance                    */
   | 'paid'         /* steps 18-19 · transferred                     */
   | 'closed'       /* rule 15     · finally rejected, kept on record */
@@ -927,6 +930,8 @@ export interface FinalReport {
   risks: string
   /** Uploaded documents — keys from `CLOSE_DOCS`. */
   docs: string[]
+  /** Re-audit 7 Oct · the file the entity picked for each document · it kept the kind only */
+  files?: Record<string, string>
   /**
    * Cloud storage links.
    *
@@ -1085,7 +1090,7 @@ export interface Recovery {
    ═══════════════════════════════════════════════════════════ */
 
 export type CaseKind = 'stop' | 'reduce' | 'increase'
-export type CaseStage = 'draft' | 'settle' | 'manager' | 'ceo' | 'approved' | 'returned' | 'rejected' | 'closed'
+export type CaseStage = 'draft' | 'settle' | 'manager' | 'recover' | 'ceo' | 'approved' | 'returned' | 'rejected' | 'closed'
 
 export interface CaseRow {
   id: string

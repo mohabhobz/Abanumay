@@ -59,7 +59,8 @@ import { EditableCard } from '@/features/shared/EditableCard'
 const LADDER: { key: string; label: string; note: string; steps: number[] }[] = [
   { key: 'entity', label: 'إنشاء الطلب', note: 'الجهة المستفيدة', steps: [1, 2, 3, 4] },
   { key: 'supervisor', label: 'مراجعة المشرف', note: 'مشرف المنح', steps: [5, 6, 7] },
-  { key: 'manager', label: 'موافقة مدير المنح', note: 'مدير المنح', steps: [12, 13, 14] },
+  { key: 'manager', label: 'موافقة مدير المنح', note: 'مدير المنح', steps: [12, 13] },
+  { key: 'exec', label: 'اعتماد المدير التنفيذي', note: 'فوق حد صرف المدير', steps: [13] },
   { key: 'finance', label: 'أمر الصرف والتحويل', note: 'الإدارة المالية', steps: [15, 16, 17, 18, 19] },
 ]
 
@@ -68,21 +69,26 @@ const NOW_AT: Record<string, string> = {
   supervisor: 'supervisor',
   returned: 'entity',
   manager: 'manager',
+  exec: 'exec',
   finance: 'finance',
   paid: '',
   closed: '',
 }
 
+/* Re-audit 7 Oct · a stage reads done once the request is past it · it used to need every step of
+   the stage logged, and step 6 is never logged, so «مراجعة المشرف» read «لم تبدأ» to the end */
 function ladderFor(r: PayRequest): StepItem[] {
+  const viaExec = r.state === 'exec' || r.log.some((e) => e.role === 'المدير التنفيذي' && e.step === 13)
+  const stages = LADDER.filter((s) => s.key !== 'exec' || viaExec)
   const now = NOW_AT[r.state]
-  const done = new Set(r.log.map((e) => e.step))
-  return LADDER.map((s): StepItem => {
-    const at = r.log.find((e) => e.step === s.steps[s.steps.length - 1])
+  const nowAt = r.state === 'paid' ? stages.length : stages.findIndex((s) => s.key === now)
+  return stages.map((s, i): StepItem => {
+    const at = [...r.log].reverse().find((e) => s.steps.includes(e.step) && (s.key !== 'exec' || e.role === 'المدير التنفيذي'))
     return {
       label: s.label,
       note: s.note,
       at: at ? <DateText>{at.at}</DateText> : undefined,
-      state: s.key === now ? 'now' : s.steps.every((n) => done.has(n)) ? 'done' : 'todo',
+      state: i === nowAt ? 'now' : nowAt >= 0 && i < nowAt ? 'done' : 'todo',
     }
   })
 }
@@ -367,8 +373,8 @@ export default function RequestPage() {
                   meta={<span className="sub"><Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}</span>}
                 />
                 <div className="docgrid">
-                  {r.docs.map((d) => (
-                    <DocFile key={d.name} name={d.name} meta={readDate(d.at)} />
+                  {r.docs.map((d, i) => (
+                    <DocFile key={`${i}-${d.name}`} name={d.name} meta={readDate(d.at)} />
                   ))}
                 </div>
               </Glass>

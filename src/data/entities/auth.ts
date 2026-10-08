@@ -45,6 +45,10 @@ export const accounts = (): PortalAccount[] => [
   })),
 ]
 
+/** Re-audit 7 Oct · account and password events · for the entity's audit trail */
+export const accountEvents = (): { account: string; at: string; created: boolean }[] =>
+  Object.entries(readPass()).map(([k, v]) => ({ account: k.startsWith('n-') ? k.slice(2) : k, at: v.at, created: k.startsWith('n-') }))
+
 const clean = (s: string) => s.trim().toLowerCase().replace(/\s/g, '')
 
 /** By username, email or mobile (2.3.pw-2) · masked fixture mobiles never match */

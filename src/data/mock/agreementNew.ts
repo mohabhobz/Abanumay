@@ -126,12 +126,20 @@ export interface DraftPay {
 }
 
 /** A starting schedule · two even disbursements · a starting point to edit, not a final value */
-export const seedSchedule = (amount: number, from: string): DraftPay[] => {
+export const seedSchedule = (amount: number, from: string, count?: number, note?: string): DraftPay[] => {
   const half = Math.round(amount / 2)
   const later = (d: string, days: number) => {
     const t = new Date(d || new Date().toISOString().slice(0, 10))
     t.setDate(t.getDate() + days)
     return t.toISOString().slice(0, 10)
+  }
+  /* Re-audit 7 Oct · the payment mechanism the committee or board approved seeds the schedule */
+  if (count && count > 0) {
+    const each = Math.floor(amount / count / 1000) * 1000
+    return Array.from({ length: count }, (_, i) => ({
+      no: i + 1, amount: i === count - 1 ? amount - each * (count - 1) : each, dueAt: later(from, 14 + i * 90),
+      requirement: i === 0 ? 'توقيع الاتفاقية' : i === count - 1 ? 'التقرير الختامي ومخرجات المشروع' : (note || 'التقرير المرحلي'),
+    }))
   }
   return [
     { no: 1, amount: half, dueAt: later(from, 14), requirement: 'توقيع الاتفاقية' },

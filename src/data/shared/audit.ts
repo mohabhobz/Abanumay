@@ -14,7 +14,8 @@ import { UPD_ROWS, overlayOf } from '@/data/entities/store'
 import { flowEvents } from '@/data/intake/flow'
 import { approvalEvents } from '@/data/approvals/store'
 import { PLAN_LOG } from '@/data/plans/store'
-import { PORTFOLIOS } from '@/data/partners/store'
+import { PORTFOLIOS, allEhOps } from '@/data/partners/store'
+import { accountEvents } from '@/data/entities/auth'
 import { ESC_RULES } from './escRules'
 import { NOTIFY_RULES } from './notify'
 import { nf } from '@/lib/format'
@@ -133,11 +134,21 @@ export function auditRows(): AuditRow[] {
     }))),
     ...PLAN_LOG.map((e, i): AuditRow => {
       const p = planRows.find((x) => x.id === e.planId)
-      return { id: `pl-${e.planId}-${PLAN_LOG.length - i}`, module: 'plans', ref: p ? `خطة ${p.projectName}` : e.planId, href: ROUTES.plan(e.planId), action: e.what, by: e.by, at: e.at.replace('T', ' ').slice(0, 16), note: e.note, fields: [] }
+      /* A plan decision on a project without a plan is recorded on the project */
+      const pid = e.planId.startsWith('project:') ? e.planId.slice(8) : ''
+      const pr = pid ? projectRows.find((x) => x.id === pid) : undefined
+      return { id: `pl-${e.planId}-${PLAN_LOG.length - i}`, module: 'plans', ref: p ? `خطة ${p.projectName}` : pr ? `مشروع ${pr.name}` : e.planId, href: pid ? ROUTES.project(pid) : ROUTES.plan(e.planId), action: e.what, by: e.by, at: e.at.replace('T', ' ').slice(0, 16), note: e.note, fields: [] }
     }),
     ...PORTFOLIOS.flatMap((pf) => pf.log.map((e, i): AuditRow => ({
       id: `pf-${pf.id}-${i}`, module: 'partners', ref: pf.name, href: ROUTES.portfolio(pf.id), action: e.what, by: e.by, at: e.at, fields: [],
     }))),
+    /* Re-audit 7 Oct · the Ehsan projects' operations and the portal account events join the log */
+    ...allEhOps().flatMap(({ projectId, ops }) => ops.map((e, i): AuditRow => ({
+      id: `eh-${projectId}-${i}`, module: 'partners', ref: projectRows.find((p) => p.id === projectId)?.name ?? projectId, href: ROUTES.project(projectId), action: e.kind, by: e.by, at: e.at, note: e.note, fields: [],
+    }))),
+    ...accountEvents().map((e, i): AuditRow => ({
+      id: `acct-${i}`, module: 'entities', ref: e.account, href: ROUTES.entityRequests, action: e.created ? 'إنشاء حساب في بوابة الجهات' : 'تعيين كلمة مرور جديدة للحساب', by: e.account, at: e.at.replace('T', ' ').slice(0, 16), fields: [],
+    })),
     ...perm.log.map((e): AuditRow => ({ id: `pm-${e.id}`, module: 'settings', ref: e.target, href: `${ROUTES.permissions}?tab=log`, action: e.change, by: e.by, at: e.at, fields: [] })),
     ...(ESC_RULES.savedAt ? [{ id: 'esc-saved', module: 'settings' as const, ref: 'آلية التصعيد', href: ROUTES.escalationSettings, action: 'تعديل آلية التصعيد', by: ESC_RULES.savedBy ?? '', at: ESC_RULES.savedAt, fields: [] }] : []),
     ...(NOTIFY_RULES.savedAt ? [{ id: 'ntf-saved', module: 'settings' as const, ref: 'قنوات الإشعار', href: `${ROUTES.notifyHub}?tab=channels`, action: 'تعديل قنوات الإشعار', by: NOTIFY_RULES.savedBy ?? '', at: NOTIFY_RULES.savedAt, fields: [] }] : []),

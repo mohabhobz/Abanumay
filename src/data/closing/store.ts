@@ -7,8 +7,8 @@ import { projectRows } from '@/data/mock/projects'
 import { planDone, planOfProject } from '@/data/mock/plans'
 import { stageMeta } from '@/data/mock/taxonomy'
 import { payRequests } from '@/data/mock/disbursements'
-import { inForceOf } from '@/data/agreements/store'
-import { linkOf, releaseRecovered, releaseSavings, resizeIssue, resizeLink } from '@/data/budget/store'
+import { inForceOf, annexValue } from '@/data/agreements/store'
+import { hasFunding, releaseRecovered, releaseSavings, resizeIssue, resizeLink } from '@/data/budget/store'
 import {
   adjustSchedule, isStopped, paidOf, stopProjectPayments, unsettledSlots, usePayments,
 } from '@/data/payments/store'
@@ -169,11 +169,11 @@ export const caseById = (id: string) => CASES.find((c) => c.id === id)
 export const casesOfProject = (projectId: string) => CASES.filter((c) => c.projectId === projectId)
 export const CASE_KIND_SAY: Record<CaseKind, string> = { stop: 'إيقاف المشروع', reduce: 'تخفيض القيمة', increase: 'زيادة القيمة' }
 export const CASE_STAGE_SAY: Record<CaseStage, string> = {
-  draft: 'عند مشرف المنح', settle: 'تسوية المصروف', manager: 'عند مدير المنح', ceo: 'عند الرئيس التنفيذي',
+  draft: 'عند مشرف المنح', settle: 'تسوية المصروف', manager: 'عند مدير المنح', recover: 'استرداد قبل الرفع', ceo: 'عند الرئيس التنفيذي',
   approved: 'معتمد · استرداد جارٍ', returned: 'مُعاد بملاحظات', rejected: 'مرفوض', closed: 'مقفل',
 }
 export const CASE_STAGE_TONE: Record<CaseStage, 'mute' | 'warn' | 'teal' | 'ok' | 'no' | 'ret'> = {
-  draft: 'mute', settle: 'warn', manager: 'teal', ceo: 'teal', approved: 'warn', returned: 'ret', rejected: 'no', closed: 'ok',
+  draft: 'mute', settle: 'warn', manager: 'teal', recover: 'warn', ceo: 'teal', approved: 'warn', returned: 'ret', rejected: 'no', closed: 'ok',
 }
 
 /** 10.9.1 – 10.9.4 · where a stop lands · the phase decides the settlement it needs */
@@ -196,6 +196,10 @@ export function caseActions(c: CaseRow, role: RoleKey, asEntity = false): CaseAc
     { act: 'approve', label: 'وافق وارفعه للرئيس التنفيذي', kind: 'btn-p' },
     { act: 'return', label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true },
   ]
+  /* Re-audit 7 Oct · 10.9.3 · 10.9.5 · the money comes back before the case goes up */
+  if (c.stage === 'recover' && role === 'grants-manager') return recSettled(c.recovery)
+    ? [{ act: 'approve', label: 'اكتمل الاسترداد · ارفعه للرئيس التنفيذي', kind: 'btn-p' }]
+    : []
   if (c.stage === 'ceo' && role === 'ceo') return [
     { act: 'approve', label: 'اعتماد القرار', kind: 'btn-p' },
     { act: 'return', label: 'إعادة لمدير المنح', kind: 'btn-2', needsNote: true },
@@ -216,6 +220,7 @@ export function caseStops(c: CaseRow, act: CaseAct): string[] {
     if (i) out.push(i)
   }
   if (act === 'close' && !recSettled(c.recovery)) out.push('لم يكتمل الاسترداد ولا قرار نهائي بشأنه · 10.9.8')
+  if (act === 'approve' && c.stage === 'recover' && !recSettled(c.recovery)) out.push('لم يكتمل استرداد الفرق ولا قرار نهائي بشأنه · 10.9.3 · 10.9.5')
   return out
 }
 
@@ -249,7 +254,7 @@ type RecOwner = { kind: 'close' | 'case'; id: string }
 type Op = { at: string; by: string } & (
   | { op: 'open'; id: string; projectId: string; basis: NonNullable<CloseRow['basis']> }
   | { op: 'save'; id: string; patch: ReportPatch }
-  | { op: 'doc'; id: string; key: string }
+  | { op: 'doc'; id: string; key: string; file?: string }
   | { op: 'link'; id: string; label: string; url: string }
   | { op: 'send'; id: string }
   | { op: 'act'; id: string; act: 'approve' | 'return'; note: string; file?: string }
@@ -321,7 +326,7 @@ const snapshot = (c: CloseRow, cycle: 'report' | 'eval', by: string, at: string,
 /** Released money and the plan · 'once' waits for the full amount, 'gradual' moves with each receipt */
 let live = false
 const release = (projectId: string, amount: number, ref: string, by: string) => {
-  if (live && amount > 0 && linkOf(projectId)) releaseRecovered(projectId, amount, ref, by)
+  if (live && amount > 0 && hasFunding(projectId)) releaseRecovered(projectId, amount, ref, by)
 }
 
 function apply(o: Op) {
@@ -357,7 +362,8 @@ function apply(o: Op) {
       const c = closeById(o.id)
       if (!c || c.stage === 'closed' || c.report.docs.includes(o.key)) return
       c.report.docs.push(o.key)
-      log(c, o.by, `إرفاق ${CLOSE_DOCS.find((d) => d.key === o.key)?.label ?? o.key}`, o.at)
+      if (o.file) c.report.files = { ...c.report.files, [o.key]: o.file }
+      log(c, o.by, `إرفاق ${CLOSE_DOCS.find((d) => d.key === o.key)?.label ?? o.key}${o.file ? ` · ${o.file}` : ''}`, o.at)
       return
     }
     case 'link': {
@@ -548,6 +554,12 @@ function apply(o: Op) {
       r.claims.push({ at: day(o.at), by: o.by, text: o.text, file: o.file })
       r.state = 'failed'
       ownerLog(o.owner, o.by, `إثبات مطالبة · تعذّر الاسترداد · المتبقي ${nf.format(recLeft(r))}`, o.at)
+      /* Re-audit 7 Oct · 10.9.9 · the project reads «متعثر» while the balance can't be recovered */
+      {
+        const pid = projectOfOwner(o.owner)
+        const p = pid ? projectOf(pid) : undefined
+        if (pid && p && p.statusGroup !== 'متعثر' && p.statusGroup !== 'مكتمل') { setProjectStage(pid, 'مشروع متعثر'); ownerLog(o.owner, 'النظام', 'حُوّلت حالة المشروع إلى «مشروع متعثر» لتعذّر الاسترداد', o.at) }
+      }
       return
     }
     case 'recEscalate': {
@@ -628,6 +640,25 @@ function apply(o: Op) {
           clog(c, o.by, 'رفض الرئيس التنفيذي القرار', o.at)
           return
         case 'approve':
+          /* Re-audit 7 Oct · 10.9.3 · 10.9.5 · a stop or a cut that leaves money with the entity asks
+             for it back first · the case goes to the executive once it's back or decided */
+          if (c.stage === 'manager' && dueOf(c) > 0 && !c.recovery) {
+            const due = dueOf(c)
+            const reason = c.kind === 'stop' ? 'الرصيد غير المستخدم بعد اعتماد المصروف الفعلي' : 'فرق التخفيض عمّا صُرف'
+            c.stage = 'recover'
+            c.note = undefined
+            c.recovery = { id: `RC-${c.id}`, source: c.kind === 'stop' ? 'stop' : 'reduce', due, reason, openedAt: day(o.at), openedBy: o.by, receipts: [], claims: [], escalations: [], released: 0, state: 'open' }
+            clog(c, o.by, `موافقة مدير المنح · مطالبة الجهة بإعادة ${nf.format(due)} قبل الرفع للرئيس التنفيذي`, o.at)
+            notify([c.entityName], `مطالبة بإعادة ${nf.format(due)}`, c.projectName, `${ROUTES.distress(c.id)}?as=entity`)
+            return
+          }
+          if (c.stage === 'recover') {
+            if (!recSettled(c.recovery)) return
+            c.stage = 'ceo'
+            clog(c, o.by, 'اكتمل الاسترداد أو صدر قرار بشأنه · رفع للرئيس التنفيذي', o.at)
+            notify([CEO()], `${CASE_KIND_SAY[c.kind]} بانتظار اعتمادك`, c.projectName, ROUTES.distress(c.id))
+            return
+          }
           if (c.stage === 'manager') {
             c.stage = 'ceo'
             c.note = undefined
@@ -655,6 +686,13 @@ export const DECISION_SAY: Record<NonNullable<Recovery['decision']>['kind'], str
   writeoff: 'شطب الرصيد', installments: 'جدولة السداد', pursue: 'متابعة المطالبة نظاميًّا',
 }
 
+/** What the entity owes back from a stop or a cut · known before the executive decides */
+function dueOf(c: CaseRow): number {
+  if (c.kind === 'stop') return Math.max(0, c.paid - (c.settlement?.actual ?? c.paid))
+  if (c.kind === 'reduce') return Math.max(0, c.paid - (c.newAmount ?? c.granted))
+  return 0
+}
+
 /** The CEO approved · the project changes now, not before (10.9.1 – 10.9.6) */
 function applyCase(c: CaseRow, by: string, at: string) {
   const p = projectOf(c.projectId)
@@ -671,6 +709,8 @@ function applyCase(c: CaseRow, by: string, at: string) {
   } else {
     const to = c.newAmount ?? c.granted
     p.amountGranted = to
+    /* Re-audit 7 Oct · the agreement's value follows, by its annex */
+    if (live) annexValue(c.projectId, to, c.id, by, c.reason, c.annex)
     if (c.kind === 'reduce') {
       if (live) {
         resizeLink(c.projectId, Math.max(to, c.paid), c.id, by, c.reason)
@@ -684,7 +724,8 @@ function applyCase(c: CaseRow, by: string, at: string) {
     }
     clog(c, 'النظام', `حُدّثت قيمة المشروع إلى ${nf.format(to)}${c.kind === 'increase' ? ' وأُضيفت دفعة إضافية وزيد الحجز' : ' وخُفّض الحجز والجدول'}`, at)
   }
-  if (due > 0) {
+  if (c.recovery) c.stage = 'closed'
+  else if (due > 0) {
     c.stage = 'approved'
     c.recovery = { id: `RC-${c.id}`, source: c.kind === 'stop' ? 'stop' : 'reduce', due, reason, openedAt: day(at), openedBy: by, receipts: [], claims: [], escalations: [], released: 0, state: 'open' }
     clog(c, by, `مطالبة الجهة بإعادة ${nf.format(due)} · ${reason}`, at)
@@ -754,7 +795,7 @@ export function openClosing(projectId: string, by: string): { id?: string; error
   return { id, errors: [] }
 }
 export const saveReport = (id: string, patch: ReportPatch, by: string) => run({ op: 'save', id, patch, by, at: now() })
-export const attachDoc = (id: string, key: string, by: string) => run({ op: 'doc', id, key, by, at: now() })
+export const attachDoc = (id: string, key: string, by: string, file?: string) => run({ op: 'doc', id, key, file, by, at: now() })
 export function addLink(id: string, label: string, url: string, by: string): string[] {
   if (!/^https?:\/\//.test(url.trim())) return ['الرابط غير صالح']
   run({ op: 'link', id, label: label.trim() || 'رابط تخزين سحابي', url: url.trim(), by, at: now() })

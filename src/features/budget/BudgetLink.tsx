@@ -11,7 +11,7 @@ import {
 import { approverFor } from '@/data/approval'
 import { readRole, roleByKey } from '@/data/roles'
 import {
-  HOLD_STAGE_SAY, linkIssues, linkOf, linkProject, planOf, unlinkProject, usableLines, useBudget,
+  HOLD_STAGE_SAY, linkIssues, linkOf, linkProject, planOf, sourceName, unlinkProject, usableLines, useBudget,
 } from '@/data/budget/store'
 import { BUDGET_RULES } from '@/data/budget/rules'
 
@@ -227,6 +227,11 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                       { k: 'الملتزم به', v: <Money sm>{m.committed}</Money> },
                       { k: 'المبلغ المدفوع', v: <Money sm>{m.paid}</Money> },
                       { k: 'المبلغ المتاح', v: <b><Money sm>{m.available}</Money></b> },
+                      /* Re-audit 7 Oct · 5.2.5 · the line's sources and what each still has, by its share of the line */
+                      ...(one.node.sources?.length ? [{
+                        k: 'مصادر التمويل',
+                        v: isolate(one.node.sources.map((x) => `${sourceName(x.code)} ${nf.format(x.amount)} · متاح ${nf.format(m.allocated ? Math.max(0, Math.round(m.available * x.amount / m.allocated)) : 0)}`).join(' · ')),
+                      }] : []),
                       { k: 'مبلغ المشروع', v: <Money sm>{project.amount}</Money> },
                       { k: 'يعتمده', v: tier.role },
                       {

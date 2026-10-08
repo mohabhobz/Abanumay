@@ -10,12 +10,28 @@ import '@/data/payments/store'
 import '@/data/closing/store'
 import App from '@/app/App'
 import { ownerOfPath } from '@/app/entityAccess'
+import * as budgetStore from '@/data/budget/store'
+import * as payStore from '@/data/payments/store'
+import { allBudgets } from '@/data/mock/chain'
+import { moneyOf } from '@/data/mock/budgetTree'
+import { payRequests } from '@/data/mock/disbursements'
+import * as agrStore from '@/data/agreements/store'
+import * as planStore from '@/data/plans/store'
+import * as planMock from '@/data/mock/plans'
+import * as closeStore from '@/data/closing/store'
+import { stageMeta } from '@/data/mock/taxonomy'
+import { projectRows } from '@/data/mock/projects'
 import '@/styles/index.css'
 
 /* The end-to-end tests sign in as the entity that owns a record · they ask whose record it is here.
    Reading only: the session still decides what opens. */
 try {
-  if (localStorage.getItem('ab-e2e') === '1') (window as unknown as { __abOwner: typeof ownerOfPath }).__abOwner = ownerOfPath
+  if (localStorage.getItem('ab-e2e') === '1') {
+    const w = window as unknown as Record<string, unknown>
+    w.__abOwner = ownerOfPath
+    /* Reading the stores from a test · the figures behind a screen, not a way to change them */
+    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows }
+  }
   /* The drawn audits (tools/) visit entity views too · each load takes the session its URL needs:
      the record's own entity for an entity view or a portal, staff otherwise */
   if (sessionStorage.getItem('ab-auto') === '1') {

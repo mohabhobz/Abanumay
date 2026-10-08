@@ -89,7 +89,7 @@ export interface ProjectFlow {
   createdAt?: string
   sentAt?: string
   /** Every version sent · with what it carried, so an earlier one reads in full after a resubmission (3.4.31) */
-  versions: { no: number; at: string; by: string; say: string; snap?: VersionSnap }[]
+  versions: { no: number; at: string; by: string; say: string; snap?: VersionSnap; /** The request as sent */ values?: Record<string, string> }[]
   objectives: string[]
   docs: DocFile[]
   study?: Study
@@ -312,6 +312,7 @@ function apply(o: Op) {
         impact: false, supportStatus: null, submittedAt: TODAY, durationDays: days,
         beneficiaries: Number(v.reach) || 0, hasInterimReport: false, hasFinalReport: false,
         hasKnowledgeProduct: false, fieldVisit: false, type: 'مشروع عادي', holder: 'supervisor',
+        source: o.asEntity ? 'portal' : 'staff',
         createdAt: `${TODAY}T${NOW_TIME()}`, startAt: v.startAt, endAt: v.startAt && days ? addWorkingDays(v.startAt, days) : v.endAt,
       })
       const f = flowOf(o.id)
@@ -320,7 +321,8 @@ function apply(o: Op) {
       f.createdAt = v.draftAt ? `${v.draftAt.slice(0, 10)} ${v.draftAt.slice(11, 16)}` : f.sentAt
       f.objectives = (v.objectives ?? '').split('\n').map((x) => x.trim()).filter(Boolean)
       f.docs = o.docs.map((k) => ({ kind: k, name: `${REQUEST_DOCS.find((d) => d.key === k)?.label ?? k}.pdf`, by: o.asEntity ? e?.name ?? o.by : o.by, at: TODAY }))
-      f.versions = [{ no: 1, at: TODAY, by: o.by, say: o.asEntity ? 'أرسلته الجهة من البوابة' : 'أدخله مشرف المنح نيابةً عن الجهة', snap: snapOf(projectRows[0], f) }]
+      /* Re-audit 7 Oct · the version keeps the request's full content, not only its figures */
+      f.versions = [{ no: 1, at: TODAY, by: o.by, say: o.asEntity ? 'أرسلته الجهة من البوابة' : 'أدخله مشرف المنح نيابةً عن الجهة', snap: snapOf(projectRows[0], f), values: { ...v } }]
       event(o.id, {
         action: 'تقديم طلب المشروع', by: o.asEntity ? e?.name ?? o.by : o.by, actor: o.asEntity ? 'entity' : 'staff', dept: 'تقديم الطلب',
         fields: [

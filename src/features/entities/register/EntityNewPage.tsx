@@ -22,6 +22,8 @@ import {
   partnerKind, type PartnerKind, type RegStage,
 } from '@/data/mock/registration'
 import { Field } from './Field'
+import { BankRows } from './BankRows'
+import { bankIssues, emptyBank, type RegBank } from '@/data/mock/registration'
 import { MISSING_ITEM, nounAfter } from '@/lib/format'
 
 /* Registering an entity from inside the system - rule 32.
@@ -92,6 +94,8 @@ export default function EntityNewPage() {
   const setTab = (x: string) => set({ tab: x === STAGES[0].key ? undefined : x })
 
   const [val, setVal] = useState<Record<string, string>>(EMPTY)
+  /* Re-audit 7 Oct · the bank stage was empty here · an entity registered from inside had no account */
+  const [banks, setBanks] = useState<RegBank[]>(() => [emptyBank(1)])
   const docs = useMemo(() => new Set(readList(v.up)), [v.up])
   const [files, setFiles] = useState<Record<string, { name: string; size: number }>>({})
   const [done, setDone] = useState(false)
@@ -128,10 +132,12 @@ export default function EntityNewPage() {
       out[s.key] =
         s.key === 'docs'
           ? REG_DOCS.filter((d) => docRequired(d, type) && !docs.has(d.key)).map((d) => d.label)
+          : s.key === 'bank'
+          ? bankIssues(banks).map((b) => b.say)
           : s.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label)
     }
     return out
-  }, [val, docs, type, partner, formStages])
+  }, [val, docs, type, partner, formStages, banks])
 
   const missing = Object.values(shortBy).flat()
 
@@ -355,7 +361,9 @@ export default function EntityNewPage() {
                   </>
                 )}
 
-                {tab !== 'partner' && tab !== 'docs' && (
+                {tab === 'bank' && <BankRows banks={banks} onChange={setBanks} />}
+
+                {tab !== 'partner' && tab !== 'docs' && tab !== 'bank' && (
                   <div className="regfields">
                     {fields.map((f) => (
                       <Field
@@ -521,7 +529,7 @@ export default function EntityNewPage() {
                   }
                   onClick={() => {
                     const by = roleByKey(readRole()).name
-                    const id = registerInternal(val, [...docs], partner ? partnerKind(partner).label : 'جهة مستفيدة', by)
+                    const id = registerInternal(val, [...docs], partner ? partnerKind(partner).label : 'جهة مستفيدة', by, banks)
                     /* 11.2.1 · 13.2.1 · the partnership type is kept on the partner record and waits for the grants manager */
                     if (strategic && id) requestPartner(id, entityById(id)?.name ?? '', ['portfolio'], false, by)
                     setNewId(id)

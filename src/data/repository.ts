@@ -80,6 +80,8 @@ export interface ProjectQuery {
   overdue?: boolean
   shared?: boolean
   impact?: boolean
+  /** Re-audit 7 Oct · only the requests the entities sent from the portal */
+  portal?: boolean
   /** Project type · regular, external, or portfolio */
   type?: Filter
   /** true = include portfolio rows (the projects list only) */
@@ -175,6 +177,8 @@ export const projectBucket = (r: ProjectRow): ProjectBucket =>
 
 const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
   if (r.archived && !q.archived) return false
+  /* Re-audit 7 Oct · 2.4.28 · an archived entity leaves the lists with its projects */
+  if (!q.archived && entityRows.find((e) => e.id === r.entityId)?.archived) return false
   if (q.bucket && projectBucket(r) !== q.bucket) return false
   if (!eq(q.year, r.year)) return false
   if (!eq(q.track, r.track)) return false
@@ -195,6 +199,7 @@ const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
   if (q.overdue && stagePressure(r) <= 1) return false
   if (q.shared && !r.shared) return false
   if (q.impact && !r.impact) return false
+  if (q.portal && r.source === 'staff') return false
   if (!eq(q.type, r.type ?? 'مشروع عادي')) return false
   if (q.from && r.submittedAt < q.from) return false
   if (q.to && r.submittedAt > q.to) return false

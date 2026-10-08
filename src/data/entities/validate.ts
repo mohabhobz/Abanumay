@@ -1,6 +1,7 @@
 import { entityRows } from '@/data/mock/entities'
 import { regRows, type RegBank } from '@/data/mock/registration'
 import { ENTITY_RULES } from './rules'
+import { banksOf } from '@/data/mock/payEntity'
 
 /* Format and uniqueness checks for an entity's data · registration and update requests share them
    (2.2.4 · 2.4.6 · 2.4.7 · 2.4.10 · 2.3.upd-4).
@@ -71,6 +72,9 @@ export const duplicates = (
   for (const b of banks) {
     const iban = b.iban.replace(/\s/g, '').toUpperCase()
     if (!iban || masked(iban)) continue
+    /* Re-audit 7 Oct · the accounts of existing entities too, not only other requests */
+    const e = ents.find((x) => banksOf(x.id).some((y) => !masked(y.iban) && y.iban.replace(/\s/g, '').toUpperCase() === iban))
+    if (e) { out.push({ field: 'iban', label: `الآيبان ${b.iban}`, who: e.name }); continue }
     const r = reqs.find((x) => x.banks.some((y) => y.iban.replace(/\s/g, '').toUpperCase() === iban))
     if (r) out.push({ field: 'iban', label: `الآيبان ${b.iban}`, who: `${r.name} · طلب ${r.id}` })
   }

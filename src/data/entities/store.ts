@@ -73,6 +73,8 @@ export interface UpdateRequest {
   entityId: string
   entityName: string
   state: UpdState
+  /** Re-audit 7 Oct · each new account's decision · empty = accepted, else the reason */
+  bankDecisions?: Record<string, string>
   changes: Change[]
   banks: RegBank[]
   docs: UpdDoc[]
@@ -102,12 +104,12 @@ type Op = { at: string } & (
   | { op: 'regReturn'; id: string; note: string; fields: string[]; by: string }
   | { op: 'regResubmit'; id: string; values: Record<string, string>; docs: string[]; by: string }
   | { op: 'regDecide'; id: string; outcome: 'approve' | 'reject'; note: string; banks: Record<string, string>; by: string }
-  | { op: 'internal'; values: Record<string, string>; docs: string[]; partner: string; by: string }
+  | { op: 'internal'; values: Record<string, string>; docs: string[]; partner: string; by: string; banks?: RegBank[] }
   | { op: 'status'; entityId: string; to: EntityActivation; reason: string; by: string }
   | { op: 'archive'; entityId: string; on: boolean; reason: string; by: string }
   | { op: 'bankStatus'; entityId: string; bankId: string; status: BankAccount['status']; reason?: string; by: string }
   | { op: 'updSave'; req: Omit<UpdateRequest, 'events' | 'state' | 'createdAt' | 'submittedAt'>; send: boolean }
-  | { op: 'updDecide'; id: string; outcome: 'approve' | 'reject' | 'return'; note: string; by: string }
+  | { op: 'updDecide'; id: string; outcome: 'approve' | 'reject' | 'return'; note: string; by: string; bankNo?: Record<string, string> }
 )
 
 const KEY = 'ab-entity-ops'
@@ -261,6 +263,8 @@ const syncActivation = (e: EntityRow, at: string) => {
     entityEvent(e.id, { kind: 'stop', action: 'تحويل آلي إلى «غير نشطة»', by: 'النظام', at,
       note: `انتهت صلاحية ${lapsed.join(' و')} · يلزم تقديم طلب تحديث بالنسخة السارية قبل أي تقديم جديد.`,
       fields: [{ k: 'حالة التفعيل', v: 'نشط ← غير نشط' }] })
+    /* Re-audit 7 Oct · 2.3.upd-19 · the entity is told which documents to update */
+    enote(e.name, 'status', 'تحوّلت جهتك إلى «غير نشطة»', `انتهت صلاحية ${lapsed.join(' و')} · قدّم طلب تحديث بالنسخة السارية`, at, `${ROUTES.entityUpdate}?entity=${e.id}`)
   } else if (e.activation === 'غير نشط' && !lapsed.length) {
     e.activation = 'نشط'
     entityEvent(e.id, { kind: 'accept', action: 'إعادة التفعيل بعد تحديث الوثائق', by: 'النظام', at,
@@ -341,7 +345,8 @@ const apply = (x: Op) => {
     }
     case 'internal': {
       /* 2.4.32 · registered from inside by an authorized user · active on save, no request to review */
-      const r = requestFromValues('—', x.values.email ?? '', x.values, [], x.docs, undefined, 'approved', at)
+      /* Re-audit 7 Oct · the internal form carries the bank accounts too · it created entities with none */
+      const r = requestFromValues('—', x.values.email ?? '', x.values, x.banks ?? [], x.docs, undefined, 'approved', at)
       const id = createEntity(r, {}, x.by, at)
       const o = overlayOf(id)
       o.fields.accountType = x.partner
@@ -435,7 +440,9 @@ const apply = (x: Op) => {
       if (x.outcome === 'approve') {
         const pending = u.changes.filter((c) => !c.direct)
         for (const c of pending) applyChange(e, c)
+        u.bankDecisions = Object.fromEntries(u.banks.map((b) => [b.id, x.bankNo?.[b.id] ?? '']))
         for (const b of u.banks) {
+          if (x.bankNo?.[b.id]) continue
           o.addedBanks.push({ id: `${e.id}-n${o.addedBanks.length + 1}`, bank: b.bankName, shortName: b.shortName, accountName: b.bankHolder,
             iban: b.iban, status: 'مفعل', certificate: b.doc || `${BANK_DOC_LABEL}.pdf` })
         }
@@ -450,7 +457,7 @@ const apply = (x: Op) => {
         entityEvent(e.id, { kind: 'edit', action: 'اعتماد تحديث بيانات الجهة', by: x.by, at, note: x.note || undefined,
           fields: [
             ...pending.map((c) => ({ k: c.label, v: `${c.from || '—'} ← ${c.to || '—'}` })),
-            ...u.banks.map((b) => ({ k: 'حساب بنكي جديد', v: `${b.bankName} · ${b.iban}` })),
+            ...u.banks.map((b) => ({ k: x.bankNo?.[b.id] ? 'حساب بنكي مرفوض' : 'حساب بنكي جديد', v: `${b.bankName} · ${b.iban}${x.bankNo?.[b.id] ? ` · ${x.bankNo[b.id]}` : ''}` })),
             ...u.docs.map((d) => ({ k: 'وثيقة مجدَّدة', v: `${d.label}${d.expires ? ` · حتى ${d.expires}` : ''}` })),
           ] })
       } else {
@@ -572,8 +579,8 @@ export const decideRegistration = (id: string, outcome: 'approve' | 'reject', no
 }
 
 /** Register an entity from inside the system · returns its new id (2.4.32) */
-export const registerInternal = (values: Record<string, string>, docs: string[], partner: string, by: string): string => {
-  run({ op: 'internal', values, docs, partner, by, at: now() })
+export const registerInternal = (values: Record<string, string>, docs: string[], partner: string, by: string, banks: RegBank[] = []): string => {
+  run({ op: 'internal', values, docs, partner, by, banks, at: now() })
   return lastInternal
 }
 
@@ -590,8 +597,8 @@ export const setBankStatus = (entityId: string, bankId: string, status: BankAcco
 export const saveUpdate = (req: Omit<UpdateRequest, 'events' | 'state' | 'createdAt' | 'submittedAt'>, send: boolean) =>
   run({ op: 'updSave', req: { ...req, changes: req.changes.map((c) => ({ ...c, direct: !needsApproval(c.key) })) }, send, at: now() })
 
-export const decideUpdate = (id: string, outcome: 'approve' | 'reject' | 'return', note: string, by: string) =>
-  run({ op: 'updDecide', id, outcome, note, by, at: now() })
+export const decideUpdate = (id: string, outcome: 'approve' | 'reject' | 'return', note: string, by: string, bankNo?: Record<string, string>) =>
+  run({ op: 'updDecide', id, outcome, note, by, bankNo, at: now() })
 
 export const resetEntities = () => {
   try { localStorage.removeItem(KEY) } catch { /* ignore */ }

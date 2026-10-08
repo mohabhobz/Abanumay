@@ -164,7 +164,7 @@ export const reqById = (id: string): BudgetRequest | undefined => BUDGET_REQS.fi
 
 /* ── Multi-year funding plans (1.4.46–1.4.53 · 3.2.14 · 3.2.15 · 3.4.33–3.4.35) ── */
 
-export interface YearShare { docId: string; nodeId: string; amount: number }
+export interface YearShare { docId: string; nodeId: string; amount: number; /** Paid on this share · a multi-year project pays from its plan */ paid?: number }
 export interface PlanYear {
   yearId: string
   amount: number
@@ -183,11 +183,21 @@ export interface FundingPlan {
   by: string
   at: string
   version: number
+  /** Re-audit 7 Oct · released by a return or a rejection, or closed · its money left the lines */
+  released?: 'returned' | 'closed'
 }
 
 const PLANS = new Map<string, FundingPlan>()
 export const planOf = (projectId: string): FundingPlan | undefined => PLANS.get(projectId)
 export const allPlans = (): FundingPlan[] => [...PLANS.values()]
+/** A multi-year project is funded by its plan, not by a link (1.4.44 – 1.4.53) */
+const livePlan = (projectId: string): FundingPlan | undefined => {
+  const p = PLANS.get(projectId)
+  return p && p.kind === 'multi' && !p.released ? p : undefined
+}
+/** Is the project funded · by a link, or by a multi-year plan · the callers that release, pay or
+    recover go through here so a multi-year project isn't skipped */
+export const hasFunding = (projectId: string): boolean => Boolean(LINKS.get(projectId) || livePlan(projectId))
 
 /* ── Project funding links (BPD-004 – BPD-007 · 1.4.7 – 1.4.15 · 1.4.27 – 1.4.32 · 1.4.56 – 1.4.58) ──
 
@@ -211,6 +221,8 @@ export interface LineLink {
   shares: LinkShare[]
   /** The project's funding · the sum of the shares */
   amount: number
+  /** The funding before the project closed or stopped · the released part left the link */
+  closedFrom?: number
   stage: HoldStage
   by: string
   at: string
@@ -322,10 +334,13 @@ export const nextDocId = (yearId: string): string => {
   return `BG-${y}-${String(i).padStart(2, '0')}`
 }
 
-const nextReqId = (): string => {
-  let i = BUDGET_REQS.length + 1
-  while (BUDGET_REQS.some((r) => r.id === `BOP-2026-${String(i).padStart(4, '0')}`)) i++
-  return `BOP-2026-${String(i).padStart(4, '0')}`
+/* Re-audit 7 Oct · the request carries its budget's fiscal year · it was 2026 for any year */
+const nextReqId = (docId?: string): string => {
+  const d = docId ? docOf(docId) : undefined
+  const yr = (d && yearById(d.yearId)?.name) || TODAY.slice(0, 4)
+  let i = BUDGET_REQS.filter((r) => r.id.startsWith(`BOP-${yr}-`)).length + 1
+  while (BUDGET_REQS.some((r) => r.id === `BOP-${yr}-${String(i).padStart(4, '0')}`)) i++
+  return `BOP-${yr}-${String(i).padStart(4, '0')}`
 }
 export { nextReqId }
 
@@ -585,7 +600,7 @@ const payOn = (d: BudgetDoc, nodeId: string, amount: number, at: string, by: str
 }
 
 /** Which shares each recorded payment touched · so its undo puts the money back where it came from */
-const PAID_REFS = new Map<string, { projectId: string; parts: { i: number; x: number }[] }>()
+const PAID_REFS = new Map<string, { projectId: string; parts: { i: number; x: number }[]; plan?: boolean }>()
 
 /** Paid on a project within a fiscal year · from the disbursement requests (1.4.52) */
 export const paidInYear = (projectId: string, yearName: string): number =>
@@ -634,12 +649,12 @@ export function planIssues(p: Omit<FundingPlan, 'at' | 'version' | 'by'>): strin
 }
 
 /** Undo a plan's money effects before it's replaced · holds released, commitments cancelled */
-const unplan = (p: FundingPlan, at: string, by: string) => {
+const unplan = (p: FundingPlan, at: string, by: string, note = 'تعديل التوزيع السنوي') => {
   for (const y of p.years) {
     for (const s of y.shares) {
       const d = docOf(s.docId)
       if (!d) continue
-      if (y.heldAt) hold(d, s.nodeId, -s.amount, at, by, 'release', p.projectId, 'تعديل التوزيع السنوي')
+      if (y.heldAt) { const rest = s.amount - (s.paid ?? 0); if (rest > 0) hold(d, s.nodeId, -rest, at, by, 'release', p.projectId, note) }
       else commit(d, s.nodeId, -s.amount, at, by, p.projectId)
     }
   }
@@ -649,6 +664,9 @@ const unplan = (p: FundingPlan, at: string, by: string) => {
     to hold on each budget that funds it · all or nothing, and only if each line has the balance */
 export function runAnnualHolds(today = TODAY): void {
   for (const p of PLANS.values()) {
+    /* Re-audit 7 Oct · a single-year project is held by its link at the manager's seat · holding its
+       plan too held the same money twice */
+    if (p.kind !== 'multi' || p.released) continue
     for (const y of p.years) {
       const fy = yearById(y.yearId)
       if (!fy || fy.from > today || y.heldAt) continue
@@ -661,8 +679,9 @@ export function runAnnualHolds(today = TODAY): void {
         if (!d || !n) { why.push('بند الحصة غير موجود'); continue }
         if (!isLiveBudget(d)) why.push(`«${docTitle(d)}» غير معتمدة بعد`)
         /* The share's own commitment is part of what it may take */
-        const free = moneyOf(d.nodes, n.id).available + s.amount
-        if (free < s.amount) why.push(`المتاح في «${n.label}» ${nf.format(Math.max(0, free))} وحصة السنة ${nf.format(s.amount)}`)
+        const need = s.amount - (s.paid ?? 0)
+        const free = moneyOf(d.nodes, n.id).available + need
+        if (free < need) why.push(`المتاح في «${n.label}» ${nf.format(Math.max(0, free))} وحصة السنة ${nf.format(s.amount)}`)
       }
       if (why.length) {
         if (y.refused !== why[0]) {
@@ -673,8 +692,9 @@ export function runAnnualHolds(today = TODAY): void {
       }
       for (const s of y.shares) {
         const d = docOf(s.docId)!
-        commit(d, s.nodeId, -s.amount, at, 'النظام', p.projectId)
-        hold(d, s.nodeId, s.amount, at, 'النظام', 'annual-hold', p.projectId, `حصة ${fy.name}`)
+        const rest = s.amount - (s.paid ?? 0)
+        commit(d, s.nodeId, -rest, at, 'النظام', p.projectId)
+        hold(d, s.nodeId, rest, at, 'النظام', 'annual-hold', p.projectId, `حصة ${fy.name}`)
       }
       y.heldAt = at
       y.refused = undefined
@@ -847,6 +867,16 @@ const apply = (o: Op) => {
     }
     case 'unlink': {
       const prev = LINKS.get(o.projectId)
+      const pl = prev ? undefined : livePlan(o.projectId)
+      if (pl) {
+        /* A multi-year project · its held years go back and its commitments are cancelled (4.4.17 ·
+           5.4.20) · the plan stays on record for the supervisor to re-save on the way back */
+        const back = pl.years.reduce((a, y) => a + (y.heldAt ? y.shares.reduce((b, x) => b + x.amount - (x.paid ?? 0), 0) : 0), 0)
+        unplan(pl, o.at, o.by, o.reason ?? 'إلغاء الحجز')
+        pl.released = 'returned'
+        logLink(o.projectId, { at: o.at, by: o.by, kind: 'release', reason: o.reason, amount: back, text: back ? `حُرّرت حصص الخطة المالية وأُعيد ${nf.format(back)} وأُلغيت الالتزامات المستقبلية` : 'أُلغيت التزامات الخطة المالية' })
+        return
+      }
       if (!prev) return
       let back = 0
       if (prev.stage !== 'planned' && prev.stage !== 'closed') {
@@ -877,6 +907,34 @@ const apply = (o: Op) => {
     }
     case 'linkPaid': {
       const l = LINKS.get(o.projectId)
+      const pl = l ? undefined : livePlan(o.projectId)
+      if (pl && !PAID_REFS.has(o.ref)) {
+        /* Re-audit 7 Oct · a multi-year project pays from the year's held share (1.4.52) · it used
+           to need a link it can't have, so the money stayed held */
+        const yName = o.at.slice(0, 4)
+        const y = pl.years.find((x) => yearById(x.yearId)?.name === yName && x.heldAt) ?? pl.years.find((x) => x.heldAt && x.shares.some((sh) => sh.amount > (sh.paid ?? 0)))
+        if (!y) return
+        const yi = pl.years.indexOf(y)
+        const open = y.shares.map((sh) => sh.amount - (sh.paid ?? 0))
+        const total = open.reduce((a, x) => a + x, 0)
+        const amt = Math.min(o.amount, total)
+        if (amt <= 0) return
+        let left = amt
+        const parts: { i: number; x: number }[] = []
+        y.shares.forEach((sh, i) => {
+          const last = i === y.shares.length - 1
+          const x = Math.min(open[i], last ? left : Math.round(amt * open[i] / total))
+          if (x <= 0) return
+          left -= x
+          const d = docOf(sh.docId)
+          if (d) { hold(d, sh.nodeId, -x, o.at, o.by, 'release', o.ref, 'من المحجوز إلى المصروف'); payOn(d, sh.nodeId, x, o.at, o.by, o.ref, pl.projectName) }
+          sh.paid = (sh.paid ?? 0) + x
+          parts.push({ i: yi * 1000 + i, x })
+        })
+        PAID_REFS.set(o.ref, { projectId: pl.projectId, parts, plan: true })
+        logLink(pl.projectId, { at: o.at, by: o.by, kind: 'paid', amount: amt, text: `صُرفت ${nf.format(amt)} (${o.ref}) من حصة ${yearById(y.yearId)?.name ?? ''}` })
+        return
+      }
       if (!l || l.stage === 'planned' || l.stage === 'closed' || PAID_REFS.has(o.ref)) return
       const open = l.shares.map((x) => x.amount - x.paid)
       const total = open.reduce((a, x) => a + x, 0)
@@ -901,6 +959,21 @@ const apply = (o: Op) => {
     }
     case 'linkUnpaid': {
       const r = PAID_REFS.get(o.ref)
+      if (r?.plan) {
+        const pl = PLANS.get(r.projectId)
+        if (!pl) return
+        for (const { i, x } of r.parts) {
+          const sh = pl.years[Math.floor(i / 1000)]?.shares[i % 1000]
+          const d = sh ? docOf(sh.docId) : undefined
+          if (!sh || !d) continue
+          payOn(d, sh.nodeId, -x, o.at, o.by, o.ref, 'تراجع عن الصرف')
+          if (!pl.released) hold(d, sh.nodeId, x, o.at, o.by, 'hold', o.ref, 'تراجع عن الصرف')
+          sh.paid = (sh.paid ?? 0) - x
+        }
+        PAID_REFS.delete(o.ref)
+        logLink(pl.projectId, { at: o.at, by: o.by, kind: 'unpaid', text: `أُلغي تسجيل الصرف (${o.ref}) وعاد المبلغ محجوزًا` })
+        return
+      }
       const l = r ? LINKS.get(r.projectId) : undefined
       if (!r || !l) return
       for (const { i, x } of r.parts) {
@@ -917,6 +990,17 @@ const apply = (o: Op) => {
     }
     case 'linkClose': {
       const l = LINKS.get(o.projectId)
+      const pl = l ? undefined : livePlan(o.projectId)
+      if (pl) {
+        const back = pl.years.reduce((a, y) => a + y.shares.reduce((b, x) => b + x.amount - (x.paid ?? 0), 0), 0)
+        unplan(pl, o.at, o.by, 'وفر عند إغلاق المشروع')
+        /* The plan now reads what was actually spent */
+        for (const y of pl.years) { for (const sh of y.shares) sh.amount = sh.paid ?? 0; y.amount = y.shares.reduce((a, x) => a + x.amount, 0) }
+        pl.total = pl.years.reduce((a, y) => a + y.amount, 0)
+        pl.released = 'closed'
+        logLink(pl.projectId, { at: o.at, by: o.by, kind: 'savings', amount: back, reason: o.note || undefined, text: back ? `أُغلق المشروع وأُعيد الوفر ${nf.format(back)} وأُلغيت التزامات السنوات القادمة` : 'أُغلق المشروع · لا وفر' })
+        return
+      }
       if (!l || l.stage === 'closed') return
       let back = 0
       if (l.stage !== 'planned') {
@@ -927,6 +1011,13 @@ const apply = (o: Op) => {
           hold(d, x.nodeId, -rest, o.at, o.by, 'release', l.projectId, 'وفر عند إغلاق المشروع')
           back += rest
         }
+      }
+      /* Re-audit 7 Oct · what was released no longer counts on the link · it kept the old amount, so
+         a stopped project read «held» for money already back on its line */
+      if (back) {
+        l.closedFrom = l.amount
+        for (const x of l.shares) x.amount = x.paid
+        l.amount = l.shares.reduce((a, x) => a + x.amount, 0)
       }
       l.stage = 'closed'
       logLink(l.projectId, {
@@ -939,6 +1030,29 @@ const apply = (o: Op) => {
        allocation) · paid falls on each share by what it carried, once per receipt */
     case 'linkRecover': {
       const l = LINKS.get(o.projectId)
+      const pl = l ? undefined : PLANS.get(o.projectId)
+      if (pl && pl.kind === 'multi' && !PAID_REFS.has(o.ref)) {
+        const all = pl.years.flatMap((y) => y.shares)
+        const paid = all.reduce((a, x) => a + (x.paid ?? 0), 0)
+        const amt = Math.min(o.amount, paid)
+        if (amt <= 0) return
+        let left = amt
+        all.forEach((sh, i) => {
+          const last = i === all.length - 1
+          const x = Math.min(sh.paid ?? 0, last ? left : Math.round(amt * (sh.paid ?? 0) / paid))
+          if (x <= 0) return
+          left -= x
+          const d = docOf(sh.docId)
+          if (d) payOn(d, sh.nodeId, -x, o.at, o.by, o.ref, 'مبلغ مسترد من الجهة · يعود إلى مخصص المجال')
+          sh.paid = (sh.paid ?? 0) - x
+          sh.amount -= x
+        })
+        for (const y of pl.years) y.amount = y.shares.reduce((a, x) => a + x.amount, 0)
+        pl.total = pl.years.reduce((a, y) => a + y.amount, 0)
+        PAID_REFS.set(o.ref, { projectId: pl.projectId, parts: [] })
+        logLink(pl.projectId, { at: o.at, by: o.by, kind: 'recover', amount: amt, text: `أُعيد مبلغ مسترد ${nf.format(amt)} إلى مخصص المجال` })
+        return
+      }
       if (!l || PAID_REFS.has(o.ref)) return
       const paid = l.shares.reduce((a, x) => a + x.paid, 0)
       const amt = Math.min(o.amount, paid)
@@ -1043,13 +1157,23 @@ const apply = (o: Op) => {
     case 'planSave': {
       const prev = PLANS.get(o.plan.projectId)
       if (planIssues(o.plan).length) return
-      if (prev) unplan(prev, o.at, o.plan.by)
+      if (prev && prev.kind === 'multi' && !prev.released) unplan(prev, o.at, o.plan.by)
       const plan: FundingPlan = { ...structuredClone(o.plan), at: o.at, version: (prev?.version ?? 0) + 1 }
-      for (const y of plan.years) { y.heldAt = undefined; y.refused = undefined }
       for (const y of plan.years) {
-        for (const s of y.shares) {
-          const d = docOf(s.docId)
-          if (d) commit(d, s.nodeId, s.amount, o.at, o.plan.by, plan.projectId)
+        y.heldAt = undefined; y.refused = undefined
+        /* What was paid stays paid · it follows the share on the same line */
+        for (const sh of y.shares) {
+          const was = prev?.years.find((x) => x.yearId === y.yearId)?.shares.find((x) => x.docId === sh.docId && x.nodeId === sh.nodeId)
+          sh.paid = was?.paid ?? 0
+        }
+      }
+      /* A single-year plan only classifies · its money is the link's (no double hold) */
+      if (plan.kind === 'multi') {
+        for (const y of plan.years) {
+          for (const sh of y.shares) {
+            const d = docOf(sh.docId)
+            if (d) commit(d, sh.nodeId, sh.amount - (sh.paid ?? 0), o.at, o.plan.by, plan.projectId)
+          }
         }
       }
       PLANS.set(plan.projectId, plan)
@@ -1222,6 +1346,9 @@ export const setLineOwners = (docId: string, nodeId: string, owners: string[], b
 /** Link a project to one or more budget lines · holds now, or plans the hold when the policy
     holds at approval (5.4.19) · a link already final is a post-approval change, with its reason */
 export const linkProject = (link: LinkInput, reason?: string): string[] => {
+  /* Re-audit 7 Oct · a budget whose fiscal year ended takes no new link (a share already there stays) */
+  const ended = sharesOf(link).map((x) => docOf(x.docId)).find((d) => d && yearEnded(d) && !mineOn(link.projectId, d.id, new Set(d.nodes.map((n) => n.id))))
+  if (ended) return [`${docTitle(ended)} من سنة مالية انتهت · لا يُربط عليها مشروع جديد`]
   const issues = linkIssues(link)
   if (issues.length) return issues
   const prev = LINKS.get(link.projectId)
@@ -1273,12 +1400,19 @@ export const resetBudget = () => {
 
 /* ── Lines a picker offers ── */
 
+/** The budget's fiscal year is over */
+const yearEnded = (d: BudgetDoc): boolean => {
+  const fy = yearById(d.yearId)
+  return Boolean(fy && fy.to < TODAY)
+}
+
 export interface LineOption { doc: BudgetDoc; node: BudgetNode; key: string; path: string; free: number }
 
 /** Leaves of approved budgets, usable for new projects · optionally of one fiscal year */
 export function usableLines(yearId?: string): LineOption[] {
   return liveBudgets()
-    .filter((d) => !yearId || d.yearId === yearId)
+    /* Re-audit 7 Oct · a budget whose fiscal year ended funds no new project */
+    .filter((d) => (yearId ? d.yearId === yearId : !yearEnded(d)))
     .flatMap((doc) => leavesOf(doc.nodes)
       .filter((n) => n.parentId !== null && lineUsable(doc.nodes, n.id))
       .map((node) => ({ doc, node, key: `${doc.id}/${node.id}`, path: pathOf(doc.nodes, node.id), free: freeOf(doc, node.id) })))
@@ -1343,7 +1477,12 @@ export function linkIssues(i: LinkInput, need?: number): string[] {
     (4.4.11 · 4.4.13 · 5.4.5 · 5.4.8 · 6.2.10 · 6.4.3 · 7.2.2 · 7.4.3) */
 export function fundingIssues(projectId: string, need: number): string[] {
   const l = LINKS.get(projectId)
-  if (!l) return ['لا ارتباط مالي · اربط المشروع ببند الميزانية أولًا (4.2.12)']
+  const pl = l ? undefined : livePlan(projectId)
+  if (pl) return planFundingIssues(pl, need)
+  if (!l) {
+    if (PLANS.get(projectId)?.kind === 'multi') return ['الخطة المالية متعددة السنوات أُلغي حجزها · أعد حفظها من تبويب الدراسة']
+    return ['لا ارتباط مالي · اربط المشروع ببند الميزانية أولًا (4.2.12)']
+  }
   const out: string[] = []
   if (l.amount !== need) out.push(`قيمة المشروع ${nf.format(need)} والارتباط ${nf.format(l.amount)} · أعد توزيع الارتباط (1.4.13)`)
   for (const x of l.shares) {
@@ -1355,6 +1494,28 @@ export function fundingIssues(projectId: string, need: number): string[] {
       if (moneyOf(d.nodes, a.id).available < 0) { out.push(`«${a.label}» تجاوز مخصصه · راجع المصادر قبل الاعتماد`); break }
     }
     if (l.stage === 'planned' && freeOf(d, n.id) < x.amount) out.push(`«${n.label}» لم يعد يكفي للحجز عند الاعتماد`)
+  }
+  return out
+}
+
+/** A multi-year project's standing check · its plan is its funding (1.4.44 – 1.4.53) · the years
+    that started are held, the rest committed, and no line above runs over */
+function planFundingIssues(pl: FundingPlan, need: number): string[] {
+  const out: string[] = []
+  if (pl.total !== need) out.push(`قيمة المشروع ${nf.format(need)} والخطة المالية ${nf.format(pl.total)} · عدّل التوزيع السنوي`)
+  for (const y of pl.years) {
+    const fy = yearById(y.yearId)
+    if (y.refused) out.push(`${fy?.name ?? ''} · ${y.refused}`)
+    else if (fy && fy.from <= TODAY && !y.heldAt) out.push(`حصة ${fy.name} لم تُحجز بعد`)
+    for (const x of y.shares) {
+      const d = docOf(x.docId)
+      const n = d ? nodeOf(d, x.nodeId) : undefined
+      if (!d || !n) { out.push('بند في الخطة لم يعد موجودًا'); continue }
+      if (!isLiveBudget(d)) out.push(`${docTitle(d)} لم تعد مفعّلة`)
+      for (const a of upChain(d, n.id)) {
+        if (moneyOf(d.nodes, a.id).available < 0) { out.push(`«${a.label}» تجاوز مخصصه · راجع المصادر قبل الاعتماد`); break }
+      }
+    }
   }
   return out
 }

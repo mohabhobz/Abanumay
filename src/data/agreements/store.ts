@@ -10,6 +10,7 @@ import { roleByKey, type RoleKey } from '@/data/roles'
 import { linkOf, docOf } from '@/data/budget/store'
 import { pathOf } from '@/data/mock/budgetTree'
 import { appFlowOf } from '@/data/approvals/store'
+import { flowOf } from '@/data/intake/flow'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type { AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, PayDoc, ProjectRow } from '@/types/domain'
@@ -48,7 +49,32 @@ export const REQUIRED_CLAUSES: ClauseKind[] = ['obligation', 'followup']
 export const REQUIRED_ANNEXES = ['تفويض ممثل الجهة']
 
 /** The template's clauses · the starting text of every new agreement */
-export const templateClauses = (p: { name: string; entityName: string }, stamp: string): Clause[] => [
+/** The project's outputs and its plan's phases · written into the agreement (8.1.input-4) */
+export function outputsOf(projectId: string | undefined): { outputs: string[]; phases: string[] } {
+  if (!projectId) return { outputs: [], phases: [] }
+  const objectives = flowOf(projectId).objectives ?? []
+  const p = projectRows.find((x) => x.id === projectId)
+  const outputs = objectives.length ? objectives : p ? [`${p.goal}${p.beneficiaries ? ` لـ ${nf.format(p.beneficiaries)} مستفيد` : ''}`] : []
+  const phases = planOfProject(projectId)?.phases.map((ph) => ph.name) ?? []
+  return { outputs, phases }
+}
+
+export const templateClauses = (p: { id?: string; name: string; entityName: string }, stamp: string): Clause[] => {
+  const o = outputsOf(p.id)
+  return [
+  ...base(p, stamp),
+  /* Re-audit 7 Oct · the outputs and the plan's phases are part of the text, not only the annex */
+  ...(o.outputs.length || o.phases.length ? [{
+    id: `cl-${stamp}-6`, kind: 'clause' as const, source: 'template' as const, title: 'مخرجات المشروع وخطة التنفيذ',
+    body: [
+      o.outputs.length ? `تلتزم الجهة بتحقيق المخرجات الآتية: ${o.outputs.join('، ')}.` : '',
+      o.phases.length ? `وتُنفَّذ وفق مراحل خطة التنفيذ المعتمدة (${nf.format(o.phases.length)}): ${o.phases.join('، ')}.` : '',
+    ].filter(Boolean).join(' '),
+  }] : []),
+  ]
+}
+
+const base = (p: { name: string; entityName: string }, stamp: string): Clause[] => [
   { id: `cl-${stamp}-1`, kind: 'clause', source: 'template', title: 'موضوع الاتفاقية', body: `تقديم منحة لتنفيذ مشروع «${p.name}» وفق خطة التنفيذ المعتمدة والملحقة بهذه الاتفاقية.` },
   { id: `cl-${stamp}-2`, kind: 'obligation', source: 'template', title: 'التزامات المؤسسة', body: 'صرف الدفعات وفق الجدول المعتمد بعد استيفاء شروط استحقاق كل دفعة، ومتابعة التنفيذ وتقديم الدعم الفني.' },
   { id: `cl-${stamp}-3`, kind: 'obligation', source: 'template', title: `التزامات ${p.entityName}`, body: 'تنفيذ المشروع وفق الخطة والميزانية المعتمدتين، وعدم صرف المنحة في غير ما خُصّصت له، وحفظ المستندات المالية.' },
@@ -289,6 +315,7 @@ type Op = { at: string; by: string } & (
   | { op: 'submit'; id: string }
   | { op: 'act'; id: string; act: AgrAct; note: string; file?: string }
   | { op: 'newVersion'; id: string; reason: string }
+  | { op: 'annex'; projectId: string; amount: number; ref: string; file?: string; reason: string }
 )
 export type AgrAct =
   | 'approve' | 'return' | 'resubmit' | 'toSupervisor' | 'send' | 'cancel'
@@ -319,6 +346,8 @@ const snapshot = (a: AgreementRow, f: AgrFlow, by: string, at: string, reason: s
 /* The project moves with its agreement only at the end (8.4.26 · 8.4.27) · activation puts it
    into execution, at the first stage of disbursing */
 const EXEC_STAGE = 'المشرف إذن الصرف'
+/** The project stages of the agreement step · whichever one, activation moves it to execution */
+const AGREEMENT_STAGES = ['اعتماد الإتفاقية', 'الإتفاقيات الورقية', 'اعتماد الإتفاقية الكترونيًا']
 const activateProject = (projectId: string) => {
   const p = projectRows.find((x) => x.id === projectId)
   if (!p) return
@@ -330,6 +359,17 @@ const activateProject = (projectId: string) => {
 
 function apply(o: Op) {
   switch (o.op) {
+    /* Re-audit 7 Oct · 10.9.5 · 10.9.6 · an approved value change is an annex on the agreement in
+       force · its value moves with the project's, and the annex sits in its record */
+    case 'annex': {
+      const a = agreements.find((x) => x.projectId === o.projectId && x.stage === 'active')
+      if (!a || a.amount === o.amount) return
+      const was = a.amount
+      a.amount = o.amount
+      if (o.file && !a.docs.some((d) => d.name === o.file)) a.docs.push({ name: o.file, kind: 'ملحق الاتفاقية', at: o.at.slice(0, 10), size: '—' })
+      log(a, 26, o.by, 'النظام', `ملحق ${o.ref} · عُدّلت قيمة الاتفاقية من ${nf.format(was)} إلى ${nf.format(o.amount)}`, o.at, o.reason)
+      return
+    }
     case 'create': {
       if (agreementById(o.row.id)) return
       const p = projectRows.find((x) => x.id === o.row.projectId)
@@ -488,7 +528,8 @@ function apply(o: Op) {
             }
           }
           const p = projectRows.find((x) => x.id === a.projectId)
-          if (p && p.stage === 'اعتماد الإتفاقية') {
+          /* Re-audit 7 Oct · any agreement stage moves to execution · paper and electronic ones stayed put */
+          if (p && AGREEMENT_STAGES.includes(p.stage)) {
             activateProject(a.projectId)
             log(a, 28, 'النظام', 'النظام', 'حوّل حالة المشروع إلى «تحت التنفيذ»', o.at)
           }
@@ -529,13 +570,15 @@ function apply(o: Op) {
 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ } }
 const run = (o: Op) => { ops.push(o); apply(o); save(); emit() }
+export const annexValue = (projectId: string, amount: number, ref: string, by: string, reason: string, file?: string) =>
+  run({ op: 'annex', projectId, amount, ref, file, reason, by, at: new Date().toISOString() })
 
 /* ── Seed · the fixture's agreements carry their clauses, annexes and signatures ── */
 
 function seed() {
   for (const a of agreements) {
     const f = agrFlowOf(a.id)
-    f.clauses = templateClauses({ name: a.projectName, entityName: a.entityName }, a.id)
+    f.clauses = templateClauses({ id: a.projectId, name: a.projectName, entityName: a.entityName }, a.id)
     for (const c of appFlowOf(a.projectId).conditions) f.clauses.push({ id: `cl-${a.id}-c${c.id}`, kind: 'condition', source: 'approval', title: 'شرط الاعتماد', body: c.text })
     if (!a.docs.some((d) => REQUIRED_ANNEXES.includes(d.kind) || d.kind === 'تفويض')) a.docs.push({ name: 'تفويض ممثل الجهة.pdf', kind: 'تفويض ممثل الجهة', at: a.openedAt, size: '420 ك.ب' })
     for (const d of a.docs) if (d.kind === 'تفويض') d.kind = 'تفويض ممثل الجهة'
@@ -623,7 +666,8 @@ export function submitAgreement(id: string, by: string): string[] {
 export function actOnAgreement(id: string, act: AgrAct, note: string, by: string, file?: string): string[] {
   const a = agreementById(id)
   if (!a) return ['الاتفاقية غير موجودة']
-  if ((act === 'return' || act === 'toSupervisor' || act === 'cancel' || act === 'entityReturn' || act === 'finalReturn') && !note.trim()) return ['سبب الإعادة إلزامي']
+  if (act === 'cancel' && !note.trim()) return ['سبب الإلغاء إلزامي']
+  if ((act === 'return' || act === 'toSupervisor' || act === 'entityReturn' || act === 'finalReturn') && !note.trim()) return ['سبب الإعادة إلزامي']
   if ((act === 'approve' || act === 'resubmit') && issuesOfRow(a).length) return issuesOfRow(a).map((i) => i.say)
   if (act === 'paperSign' && !file) return ['ارفع النسخة الموقّعة']
   const before = JSON.stringify([a.stage, agrFlowOf(id).entitySign, agrFlowOf(id).returnedTo])

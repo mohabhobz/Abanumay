@@ -64,6 +64,8 @@ export function FundingPlanCard({ row, amount, editable, me }: {
   const pays = payRequests.filter((r) => r.projectId === row.id)
 
   const statusOf = (y: PlanYear) => {
+    /* Re-audit 7 Oct · a single-year project is held once, by the manager's link */
+    if (p.kind === 'single') return <Tag tone="mute">يُحجز عند ربط مدير المنح</Tag>
     const s = saved?.years.find((x) => x.yearId === y.yearId)
     if (s?.heldAt) return <Tag tone="ok">محجوزة · <DateText>{s.heldAt}</DateText></Tag>
     if (s?.refused) return <Tag tone="no">تعذّر الحجز</Tag>

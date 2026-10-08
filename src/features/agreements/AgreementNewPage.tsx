@@ -17,7 +17,7 @@ import {
 } from '@/data/mock/agreementNew'
 import type { AgreementKind, PayDoc } from '@/types/domain'
 import { readRole, roleByKey } from '@/data/roles'
-import { appFlowOf } from '@/data/approvals/store'
+import { appFlowOf, payPlanOf } from '@/data/approvals/store'
 import { useBudget } from '@/data/budget/store'
 import {
   agrIssues, agrReview, agreementText, createAgreement, nextAgreementId, reservedOf, templateClauses, windowOf, type Clause,
@@ -86,7 +86,7 @@ export default function AgreementNewPage() {
   const [signerName, setSignerName] = useState('')
   const [signerTitle, setSignerTitle] = useState('')
   const [rows, setRows] = useState<DraftPay[]>(
-    () => (project ? seedSchedule(project.amountGranted, windowOf(project.id).from ?? today()) : []),
+    () => (project ? seedSchedule(project.amountGranted, windowOf(project.id).from ?? today(), payPlanOf(project.id)?.count, payPlanOf(project.id)?.note) : []),
   )
   const [clauses, setClauses] = useState<Clause[]>(() => startClauses(projectId))
   const [docs, setDocs] = useState<PayDoc[]>([])
@@ -97,7 +97,7 @@ export default function AgreementNewPage() {
   const pickProject = (id: string) => {
     set({ project: id || undefined })
     const p = projectById(id)
-    setRows(p ? seedSchedule(p.amountGranted, windowOf(id).from ?? today()) : [])
+    setRows(p ? seedSchedule(p.amountGranted, windowOf(id).from ?? today(), payPlanOf(id)?.count, payPlanOf(id)?.note) : [])
     setClauses(startClauses(id))
   }
 

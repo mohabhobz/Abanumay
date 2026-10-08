@@ -353,13 +353,13 @@ function LimitsTab() {
         {broken && <p className="bad cnote">الحدود تتصاعد مستوى بعد مستوى · لا يصرف مستوى أعلى أقل من الذي تحته.</p>}
         <p className="sub cnote">
           حدود اعتماد المشروع من مصفوفة الاعتماد (مصدر واحد للنظام كله) · <Link className="lnk" to={`${ROUTES.projectSettings}?tab=approval`}>عدّلها في إعدادات المشاريع</Link>.
-          وحد الصرف هو أكبر أمر صرف يعتمده المستوى · يُقرأ عند ربط المشروع بالميزانية وعند اعتماد الدفعات.
+          وحد الصرف هو أكبر دفعة يعتمد صرفها المستوى · ما فوق حد مدير المنح يعتمده المدير التنفيذي قبل الإدارة المالية، وما فوق حدّه يُعتمد بقرار اللجنة أو المجلس.
         </p>
       </Glass>
       {dirty && (
         <SaveBar
           count={1}
-          sentence={<>تعديل حدود الصرف<span className="decsep" /><span className="sub">تسري على الربط والدفعات فور الحفظ</span></>}
+          sentence={<>تعديل حدود الصرف<span className="decsep" /><span className="sub">تسري على طلبات الصرف فور الحفظ</span></>}
           onSave={() => { if (broken) return; saveBudgetRules({ ...BUDGET_RULES, spendCaps: d }); setSaved({ ...d }) }}
           onDiscard={() => setD({ ...saved })}
         />

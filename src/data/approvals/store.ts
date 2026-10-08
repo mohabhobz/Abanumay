@@ -12,7 +12,7 @@ import { TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
 import { flowOf, intakeLog, referConsultant } from '@/data/intake/flow'
 import { nextSeq, replayTogether, type Stamped } from '@/data/opclock'
 import { expiredMandatory } from '@/data/entities/store'
-import { linkOf, unlinkProject, usableLines, directionById, docOf, fundingIssues, finalizeHold } from '@/data/budget/store'
+import { hasFunding, linkOf, unlinkProject, usableLines, directionById, docOf, fundingIssues, finalizeHold } from '@/data/budget/store'
 import { nf } from '@/lib/format'
 import { setConditionGate } from '@/data/mock/agreementNew'
 import { ROUTES } from '@/app/routes'
@@ -123,6 +123,9 @@ export const appFlowOf = (id: string): AppFlow => {
 }
 export const approvalEvents = (id: string): LogEvent[] => FLOWS.get(id)?.events ?? []
 export const sessionById = (id: string): Session | undefined => SESSIONS.find((s) => s.id === id)
+/** The payment mechanism the last body approved with the project · for its agreement's schedule */
+export const payPlanOf = (projectId: string): SessionItem['payPlan'] =>
+  [...SESSIONS].reverse().flatMap((s) => s.items).find((i) => i.projectId === projectId && i.outcome === 'approve' && i.payPlan)?.payPlan
 export const sessionsOf = (projectId: string): Session[] => SESSIONS.filter((s) => s.items.some((i) => i.projectId === projectId))
 
 const row = (id: string) => projectRows.find((p) => p.id === id)
@@ -462,8 +465,10 @@ const apply = (o: Op) => {
           break
         case 'amend':
           /* 5.4.21 · a decision isn't deleted · it's reopened by a documented act at the deciding level */
-          if (f.decided) { p.holder = f.decided.level; f.decided = undefined; f.hold = 'initial' }
-          fields.push({ k: 'الإجراء', v: 'أُعيد فتح القرار بإجراء رسمي موثّق' })
+          /* Re-audit 7 Oct · reopening the decision doesn't touch the money · the budget link stays as
+             it was (final after an approval), so the approval card reads what the budget holds */
+          if (f.decided) { p.holder = f.decided.level; f.decided = undefined; f.hold = linkOf(p.id)?.stage === 'final' ? 'final' : f.hold }
+          fields.push({ k: 'الإجراء', v: 'أُعيد فتح القرار بإجراء رسمي موثّق' }, { k: 'الحجز', v: f.hold === 'final' ? 'يبقى نهائيًّا حتى القرار الجديد' : 'مبدئي' })
           break
       }
       event(o.id, { action: `${lvl} · ${VERDICT_SAY[o.verdict]}`, by: o.by, fields, tone, actor: o.level === 'committee' || o.level === 'board' ? 'committee' : 'staff', dept: lvl })
@@ -696,11 +701,11 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
     case 'توصية بالرفض': { const b = block(false); if (b.length) return b; go('recommend-reject'); return [] }
     case 'رفض نهائي': {
       if (p.amountRequested > APPROVAL_RULES.managerRejectUpTo) return ['المبلغ فوق حد الرفض النهائي لمدير المنح · يُرفع بتوصية للمدير التنفيذي (4.2.15)']
-      if (linkOf(p.id)) unlinkProject(p.id, me, 'رفض نهائي من مدير المنح')
+      if (hasFunding(p.id)) unlinkProject(p.id, me, 'رفض نهائي من مدير المنح')
       go('final-reject'); return []
     }
     case 'إعادة للمشرف': {
-      if (linkOf(p.id)) unlinkProject(p.id, me, 'إعادة المشروع للمشرف (4.4.17)')
+      if (hasFunding(p.id)) unlinkProject(p.id, me, 'إعادة المشروع للمشرف (4.4.17)')
       const target = choice === 'consultant' ? 'consultant' : 'supervisor'
       go('return', { target })
       if (target === 'consultant') { const r = flowOf(p.id).referral; if (r) referConsultant(p.id, r.consultant, me) }
@@ -715,7 +720,7 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
     }
     case 'إحالة للجنة التنفيذية': { const b = block(false); if (b.length) return b; go('refer'); return [] }
     case 'إعادة لمدير المنح': go('return', { target: 'manager' }); return []
-    case 'اعتذار': if (linkOf(p.id)) unlinkProject(p.id, me, 'اعتذار المدير التنفيذي'); go('reject'); return []
+    case 'اعتذار': if (hasFunding(p.id)) unlinkProject(p.id, me, 'اعتذار المدير التنفيذي'); go('reject'); return []
     case 'تأكيد الاعتماد': {
       const f = appFlowOf(p.id)
       if (openNotes(f).length) return ['ملاحظات إلزامية لم تُعالج']

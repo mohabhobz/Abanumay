@@ -168,6 +168,8 @@ export const planPlanned = (p: PlanRow, today = TODAY): number => {
     const due = ph.activities.reduce((x, a) => {
       const a0 = new Date(a.from).getTime()
       const a1 = new Date(a.to).getTime()
+      /* Re-audit 7 Oct · an activity without dates isn't due yet · it read NaN into the plan */
+      if (Number.isNaN(a0) || Number.isNaN(a1)) return x
       if (now >= a1) return x + a.weight
       if (now <= a0 || a1 === a0) return x
       return x + (a.weight * (now - a0)) / (a1 - a0)
@@ -234,6 +236,13 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
         rule: 'قاعدة 14',
       })
     }
+    /* Re-audit 7 Oct · a stage's dates are required · a plan without them read «NaN%» once approved */
+    if (!ph.from || !ph.to) {
+      out.push({ key: `dr-${ph.id}`, say: `حدّد تاريخي بداية «${ph.name || `المرحلة ${i + 1}`}» ونهايتها.`, rule: 'BPD-012' })
+    }
+    const pr = projectRows.find((x) => x.id === p.projectId)
+    if (pr?.startAt && ph.from && ph.from < pr.startAt) out.push({ key: `ps-${ph.id}`, say: `تبدأ «${ph.name}» قبل بداية تنفيذ المشروع.`, rule: 'BPD-012' })
+    if (pr?.endAt && ph.to && ph.to > pr.endAt) out.push({ key: `pe-${ph.id}`, say: `تنتهي «${ph.name}» بعد نهاية مدة المشروع.`, rule: 'BPD-012' })
     if (ph.from && ph.to && ph.from > ph.to) {
       out.push({
         key: `dt-${ph.id}`,
@@ -244,6 +253,7 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
     /* An activity must fall **within** its stage's date range — an activity ending after its stage
        would let the stage's percentage keep climbing while it's supposedly still running */
     for (const a of ph.activities) {
+      if (!a.from || !a.to) out.push({ key: `ad-${a.id}`, say: `حدّد تاريخي نشاط «${a.name || 'بلا اسم'}».`, rule: 'BPD-012' })
       if (ph.from && a.from && a.from < ph.from) {
         out.push({
           key: `ab-${a.id}`,

@@ -1,12 +1,12 @@
 import { DateText, Glass, Head, Icon, Money, Num, Person, Tag, icons } from '@/components/ui'
-import { docTitle } from '@/data/mock/budgetTree'
+import { docTitle, yearById } from '@/data/mock/budgetTree'
 import type { ProjectRow } from '@/types/domain'
 import { holderOf } from '@/data/holders'
 import { readRole } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { BUDGET_RULES } from '@/data/budget/rules'
 import {
-  HOLD_STAGE_SAY, LINK_CHANGE_SAY, docOf, fundingIssues, fundingReport, linkHistory, linkOf, useBudget,
+  HOLD_STAGE_SAY, LINK_CHANGE_SAY, docOf, fundingIssues, fundingReport, linkHistory, linkOf, planOf, useBudget,
   type HoldStage, type LinkShare,
 } from '@/data/budget/store'
 import { BudgetLinkAction } from '@/features/budget/BudgetLink'
@@ -30,6 +30,9 @@ export function FundingCard({ row }: { row: ProjectRow }) {
   useBudget()
   const role = readRole()
   const l = linkOf(row.id)
+  /* Re-audit 7 Oct · a multi-year project is funded by its plan · it has no link to show */
+  const plan = planOf(row.id)
+  const multi = !l && plan?.kind === 'multi' ? plan : undefined
   const rep = fundingReport(row.id)
   const log = linkHistory(row.id)
   const holder = holderOf(row)
@@ -59,8 +62,10 @@ export function FundingCard({ row }: { row: ProjectRow }) {
         title="الارتباط المالي"
         meta={(
           <span className="rowf gp-2">
-            {l ? <Tag tone={TONE[l.stage]}>{HOLD_STAGE_SAY[l.stage]}</Tag> : <span className="sub">غير مرتبط</span>}
-            {canEdit && (
+            {l ? <Tag tone={TONE[l.stage]}>{HOLD_STAGE_SAY[l.stage]}</Tag>
+              : multi ? <Tag tone={multi.released ? 'mute' : 'ok'}>{multi.released === 'closed' ? 'أُقفلت الخطة وأُعيد الوفر' : multi.released ? 'حُرّرت حصص الخطة' : 'ممول بالخطة متعددة السنوات'}</Tag>
+              : <span className="sub">غير مرتبط</span>}
+            {canEdit && !multi && (
               <BudgetLinkAction
                 project={{ id: row.id, name: row.name, year: row.year, goal: row.goal, amount: row.amountRequested }}
                 label={l?.stage === 'final' ? 'تعديل الارتباط' : l ? 'عدّل التوزيع' : 'ربط بالميزانية'}
@@ -70,7 +75,11 @@ export function FundingCard({ row }: { row: ProjectRow }) {
         )}
       />
 
-      {!rep ? (
+      {!rep && multi ? (
+        <p className="sub cnote">
+          متعدد السنوات · {multi.years.map((y) => `${yearById(y.yearId)?.name ?? ''} ${nf.format(y.amount)}${y.heldAt ? ' محجوزة' : ' التزام'}`).join(' · ')} · يُحجز كل سنة من خطته المالية لا من ربط منفصل (1.4.49).
+        </p>
+      ) : !rep ? (
         <p className="sub cnote">
           {BUDGET_RULES.holdAt === 'approval'
             ? 'يُربط المشروع ببند أو أكثر عند التوصية · ويُحجز المبلغ عند الاعتماد النهائي وفق السياسة المالية.'

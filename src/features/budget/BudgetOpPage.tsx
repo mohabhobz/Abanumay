@@ -90,7 +90,7 @@ export default function BudgetOpPage() {
   }
   const put = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }))
   const send = (go: boolean) => {
-    const rid = f.id || nextReqId()
+    const rid = f.id || nextReqId(f.docId)
     saveRequest({ ...f, id: rid, by: me }, go)
     if (!id) navigate(ROUTES.budgetOp(rid), { replace: true })
   }

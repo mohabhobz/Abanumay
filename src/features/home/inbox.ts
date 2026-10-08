@@ -120,7 +120,7 @@ const agreementsAt = (stages: string[], owner?: string, holderKey?: RoleKey): In
     .sort(byWait),
 })
 
-const paymentsAt = (state: 'supervisor' | 'manager' | 'finance', owner?: string): InboxQueue => ({
+const paymentsAt = (state: 'supervisor' | 'manager' | 'exec' | 'finance', owner?: string): InboxQueue => ({
   key: 'payments',
   label: 'الدفعات',
   note: state === 'supervisor' ? 'طلبات صرف وصلت إلى مرحلتك' : state === 'finance' ? 'أوامر صرف وتحويلات بانتظارك' : 'بانتظار اعتمادك قبل المالية',
@@ -346,6 +346,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     projectsQueue('board', 'عند مجلس الأمناء', 'يسجّل قراره المدير التنفيذي في جلسته',
       single.filter((p) => holderOf(p) === 'board'), ROUTES.board),
     agreementsAt(['executive', 'entity'], undefined, 'ceo'),
+    paymentsAt('exec'),
     closingsAt('reports', ['executive']),
     closingsAt('evals', ['evalExecutive']),
     budgets(role),

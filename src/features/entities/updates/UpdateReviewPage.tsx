@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tag } from '@/components/ui'
+import { DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tag } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -11,6 +11,7 @@ import { entityById } from '@/data/mock/entities'
 import { activationTone } from '@/lib/tone'
 import { isolate } from '@/lib/format'
 import { ibanValid } from '@/lib/iban'
+import { BANK_REJECTS } from '@/data/mock/registration'
 import { readRole, roleByKey } from '@/data/roles'
 import { ENTITY_RULES } from '@/data/entities/rules'
 import { duplicates } from '@/data/entities/validate'
@@ -34,6 +35,8 @@ export default function UpdateReviewPage() {
   const navigate = useNavigate()
   const u = id ? updById(id) : undefined
   const [note, setNote] = useState('')
+  /* Re-audit 7 Oct · each new account is decided on its own · approving the request accepted them all */
+  const [bankNo, setBankNo] = useState<Record<string, string>>({})
   const role = readRole()
   const me = roleByKey(role).name
   const may = canDecide('update', role)
@@ -61,7 +64,7 @@ export default function UpdateReviewPage() {
     Object.fromEntries(u.changes.map((c) => [c.key, c.to])) as Record<string, string>,
     u.banks, { exceptEntity: u.entityId },
   )
-  const badIban = u.banks.filter((b) => !ibanValid(b.iban))
+  const badIban = u.banks.filter((b) => !bankNo[b.id] && !ibanValid(b.iban))
   const blocked = dups.length > 0 || badIban.length > 0
   const open = u.state === 'review'
   const deciders = ENTITY_RULES.updateBy.map((k) => roleByKey(k).title).join(' أو ')
@@ -125,6 +128,20 @@ export default function UpdateReviewPage() {
                           <div className="rgbank-t"><b>{b.bankName}</b><span className="sub">· {b.bankHolder} · {b.shortName}</span></div>
                           <div className="sub"><Mono>{b.iban}</Mono> {!ibanValid(b.iban) && <span className="bad">· الآيبان غير صحيح</span>}</div>
                           <DocList label={`وثيقة ${b.bankName}`} rows={[{ name: b.doc || 'وثيقة الحساب البنكي.pdf', uploaded: Boolean(b.doc), required: true }]} />
+                          {open && (
+                            <label className="regf mt-2">
+                              <span className="lb">قرار الحساب</span>
+                              <FieldSelect
+                                value={bankNo[b.id] ?? ''}
+                                options={[{ value: '', label: 'الحساب مقبول' }, ...BANK_REJECTS.map((x) => ({ value: x, label: `مرفوض · ${x}` }))]}
+                                onChange={(x) => setBankNo((m) => ({ ...m, [b.id]: x }))}
+                                label={`قرار الحساب ${i + 1}`}
+                              />
+                            </label>
+                          )}
+                          {u.bankDecisions && b.id in u.bankDecisions && (
+                            <Tag tone={u.bankDecisions[b.id] ? 'no' : 'ok'}>{u.bankDecisions[b.id] ? `مرفوض · ${u.bankDecisions[b.id]}` : 'مقبول'}</Tag>
+                          )}
                         </div>
                       </li>
                     ))}
@@ -236,7 +253,7 @@ export default function UpdateReviewPage() {
                       className="btn btn-p"
                       disabled={blocked}
                       title={blocked ? 'بيانات مكرّرة أو آيبان غير صحيح · أعده للاستكمال' : 'تُطبَّق التعديلات وتُحفظ القيم السابقة في سجل الجهة'}
-                      onClick={() => decideUpdate(u.id, 'approve', note.trim(), me)}
+                      onClick={() => decideUpdate(u.id, 'approve', note.trim(), me, bankNo)}
                     >
                       اعتماد وتطبيق
                     </button>

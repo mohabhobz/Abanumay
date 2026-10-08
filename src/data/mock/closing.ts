@@ -189,6 +189,12 @@ export const reportBlockers = (c: CloseRow): string[] => {
   for (const d of CLOSE_DOCS) {
     if (d.req && !r.docs.includes(d.key)) out.push(d.label)
   }
+  /* Re-audit 7 Oct · the financial report's lines add up to the actual budget it declares */
+  const lines = c.finance?.lines ?? []
+  if (r.budget !== null && lines.some((l) => l.spent !== null && l.spent !== undefined)) {
+    const sum = lines.reduce((a, l) => a + (l.spent ?? 0), 0)
+    if (sum !== r.budget) out.push(`مجموع بنود التقرير المالي ${sum.toLocaleString('en-US')} لا يساوي الميزانية الفعلية ${r.budget.toLocaleString('en-US')}`)
+  }
   return out
 }
 

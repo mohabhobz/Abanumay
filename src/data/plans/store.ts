@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import type { LogEvent } from '@/data/mock/log'
 import { ESC_RULES } from '@/data/shared/escRules'
 import {
   TODAY, planById, planOfProject, planRows, readyToClose,
@@ -154,7 +155,10 @@ function apply(o: Op) {
   switch (o.op) {
     case 'decide': {
       const list = DECISIONS.get(o.projectId) ?? []
-      list.unshift({ needs: o.needs, by: o.by, at: TODAY, reason: o.reason, source: 'change' })
+      /* Re-audit 7 Oct · the first decision on a project that had none is the original one, not a
+         later change · and it carries the day it was taken */
+      const first = !list.length && !originalDecision(o.projectId)
+      list.unshift({ needs: o.needs, by: o.by, at: o.at.slice(0, 10), reason: o.reason, source: first ? 'approval' : 'change' })
       DECISIONS.set(o.projectId, list)
       const p = planOfProject(o.projectId)
       if (!o.needs && p && p.stage !== 'done' && p.stage !== 'cancelled') {
@@ -170,7 +174,7 @@ function apply(o: Op) {
     case 'open': {
       if (o.reason) {
         const list = DECISIONS.get(o.projectId) ?? []
-        if (!list[0]?.needs) { list.unshift({ needs: true, by: o.by, at: TODAY, reason: o.reason, source: 'change' }); DECISIONS.set(o.projectId, list) }
+        if (!list[0]?.needs) { list.unshift({ needs: true, by: o.by, at: o.at.slice(0, 10), reason: o.reason, source: 'change' }); DECISIONS.set(o.projectId, list) }
       }
       openFor(o.projectId, o.planId, o.drafter)
       return
@@ -327,10 +331,23 @@ function describe(o: Op): { what: string; note?: string } {
 }
 function logOp(o: Op) {
   const planId = o.op === 'decide' || o.op === 'open' ? planOfProject(o.projectId)?.id : o.planId
+  /* Re-audit 7 Oct · a «no plan needed» decision on a project without a plan is recorded too · on
+     the project, so the audit log and the project's log both carry it */
+  if (!planId && o.op === 'decide') {
+    PLAN_LOG.unshift({ planId: `project:${o.projectId}`, at: o.at, by: o.by, ...describe(o) })
+    return
+  }
   if (!planId) return
   PLAN_LOG.unshift({ planId, at: o.at, by: o.by, ...describe(o) })
 }
 export const planLogOf = (planId: string): PlanLog[] => PLAN_LOG.filter((x) => x.planId === planId)
+/** Re-audit 7 Oct · the plan decisions taken after the approval, on the project's own log */
+export const planDecisionEvents = (projectId: string): LogEvent[] =>
+  (DECISIONS.get(projectId) ?? []).map((d, i) => ({
+    id: `pd-${projectId}-${i}`, action: d.needs ? 'قرار: يتطلب خطة' : 'قرار: لا يتطلب خطة', dept: 'خطط المشاريع', by: d.by, actor: 'staff',
+    at: d.at, time: '', days: 0, hours: 0, limit: 0, tone: 'mute',
+    fields: [{ k: 'القرار', v: d.needs ? 'يتطلب خطة' : 'لا يتطلب خطة', strong: true }, ...(d.reason ? [{ k: 'السبب', v: d.reason }] : [])],
+  }))
 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ } }
 const run = (o: Op) => { ops.push(o); apply(o); logOp(o); save(); emit() }
@@ -376,7 +393,12 @@ export function openPlanFor(projectId: string, drafter: 'entity' | 'supervisor',
 }
 export const savePlanPhases = (planId: string, phases: PlanPhase[], by: string) => run({ op: 'save', planId, phases, by, at: now() })
 export const sendPlanFor = (planId: string, actor: 'entity' | 'supervisor', by: string) => run({ op: 'send', planId, actor, by, at: now() })
-export const reviewPlan = (planId: string, act: 'toManager' | 'returnEntity' | 'approve' | 'managerReturn', note: string, by: string) => run({ op: 'review', planId, act, note, by, at: now() })
+export function reviewPlan(planId: string, act: 'toManager' | 'returnEntity' | 'approve' | 'managerReturn', note: string, by: string): string[] {
+  /* Re-audit 7 Oct · a return carries its note in the store too, not only in the dock */
+  if ((act === 'returnEntity' || act === 'managerReturn') && !note.trim()) return ['ملاحظة الإعادة إلزامية']
+  run({ op: 'review', planId, act, note, by, at: now() })
+  return []
+}
 export const startActivity = (planId: string, actId: string, by: string) => run({ op: 'start', planId, actId, by, at: now() })
 export const uploadEvidence = (planId: string, actId: string, kind: string, fileName: string, by: string, replace?: string) =>
   run({ op: 'evidence', planId, actId, evId: `ev-${id6()}`, kind, fileName, replace, by, at: now() })

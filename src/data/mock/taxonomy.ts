@@ -205,6 +205,8 @@ export const STAGES: StageMeta[] = [
   { stage: 'استكمال بيانات المشروع', group: 'في الدراسة', limit: 720 },
   { stage: 'اعتماد الإتفاقية', group: 'في التشغيل', limit: 480 },
   { stage: 'الإتفاقيات الورقية', group: 'في التشغيل', limit: 480 },
+  /* Re-audit 7 Oct · named in the data, missing here · it read «في الدراسة» */
+  { stage: 'اعتماد الإتفاقية الكترونيًا', group: 'في التشغيل', limit: 480 },
   { stage: 'المشرف إذن الصرف', group: 'في التشغيل', limit: 240 },
   { stage: 'اصدار سند الصرف', group: 'في التشغيل', limit: 240 },
   { stage: 'رفع سند القبض والقيد', group: 'في التشغيل', limit: 360 },

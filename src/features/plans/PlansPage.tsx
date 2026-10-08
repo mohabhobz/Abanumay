@@ -23,11 +23,12 @@ import {
   PLAN_STAGES, lateActivities, planKpi, planRows, waitingReview,
 } from '@/data/mock/plans'
 import type { PlanRow, PlanStage } from '@/types/domain'
+import { stuckActivities } from '@/data/plans/store'
 import type { Sheet } from '@/lib/export'
 import { PlanCard } from './PlanCard'
 import { COLS, GROUPS } from './columns'
 
-const KEYS = ['q', 'stage', 'owner', 'wait', 'late', 'entity', 'view', 'group', 'adv'] as const
+const KEYS = ['q', 'stage', 'owner', 'wait', 'late', 'stuck', 'entity', 'view', 'group', 'adv'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Plans inbox - the most significant gap found in the audit.
@@ -46,7 +47,7 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
    the library, no composition written just for this screen. */
 
 /* What's above doesn't count toward the advanced-filters badge. */
-const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'stage', 'wait', 'late']
+const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'stage', 'wait', 'late', 'stuck']
 
 export default function PlansPage() {
   const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
@@ -76,6 +77,8 @@ export default function PlansPage() {
     if (ents.length && !ents.includes(p.entityName)) return false
     if (v.wait === '1' && waitingReview(p).length === 0) return false
     if (v.late === '1' && lateActivities(p).length === 0) return false
+    /* Re-audit 7 Oct · «متعثر» filters here too, not only inside a plan */
+    if (v.stuck === '1' && stuckActivities(p).length === 0) return false
     if (needle && !`${p.id} ${p.projectName} ${p.entityName} ${p.projectId}`.includes(needle)) {
       return false
     }
@@ -104,7 +107,7 @@ export default function PlansPage() {
     const m = new Map<PlanStage, number>()
     for (const p of base) m.set(p.stage, (m.get(p.stage) ?? 0) + 1)
     return { m, total: base.length }
-  }, [v.owner, v.entity, v.wait, v.late, v.q])
+  }, [v.owner, v.entity, v.wait, v.late, v.stuck, v.q])
 
   useStickyGroup('plans', v.group, (x) => set({ group: x }))
 
@@ -255,6 +258,11 @@ export default function PlansPage() {
                   on={v.late === '1'}
                   onChange={(on) => set({ late: on ? '1' : undefined })}
                 />
+                <Toggle
+                  label="بها نشاط متعثّر"
+                  on={v.stuck === '1'}
+                  onChange={(on) => set({ stuck: on ? '1' : undefined })}
+                />
                 <button
                   className={`fchip${advOpen ? ' on' : ''}`}
                   onClick={() => set({ adv: advOpen ? undefined : '1' })}
@@ -309,7 +317,7 @@ export default function PlansPage() {
               </div>
             )}
 
-            {(chips.length > 0 || v.wait === '1' || v.late === '1') && (
+            {(chips.length > 0 || v.wait === '1' || v.late === '1' || v.stuck === '1') && (
               <div className="factive">
                 {chips.map((c) => (
                   <button
@@ -334,6 +342,12 @@ export default function PlansPage() {
                 {v.late === '1' && (
                   <button className="fpill" onClick={() => set({ late: undefined })}>
                     بها نشاط متأخّر
+                    <Icon name={icons.close} size="sm" />
+                  </button>
+                )}
+                {v.stuck === '1' && (
+                  <button className="fpill" onClick={() => set({ stuck: undefined })}>
+                    بها نشاط متعثّر
                     <Icon name={icons.close} size="sm" />
                   </button>
                 )}

@@ -90,7 +90,7 @@ export default function ReportEditPage() {
   const missing = reportBlockers(c)
 
   const docRows: DocRow[] = CLOSE_DOCS.map((d) => ({
-    name: `${d.label}.pdf`,
+    name: c.report.files?.[d.key] ?? `${d.label}.pdf`,
     meta: d.req ? 'مستند إلزامي · قاعدة 4' : 'مستند داعم · قاعدة 5',
     uploaded: c.report.docs.includes(d.key),
     required: d.req,
@@ -98,7 +98,7 @@ export default function ReportEditPage() {
       ? (
         <UploadButton
           label={`ارفع ${d.label}`}
-          onPick={() => attachDoc(c.id, d.key, c.entityName)}
+          onPick={(f) => attachDoc(c.id, d.key, c.entityName, f.name)}
         />
       )
       : undefined,

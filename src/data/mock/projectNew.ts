@@ -149,7 +149,8 @@ export const P_STAGES: PStageDef[] = [
       { key: 'amountRequested', label: 'المبلغ المطلوب', kind: 'num', req: true, unit: 'ريال' },
       {
         key: 'selfFund', label: 'مساهمة الجهة', kind: 'num', unit: 'ريال',
-        hint: 'اختياري · يرفع أولوية المشروع في الدراسة',
+        /* Re-audit 7 Oct · it promised a priority the system doesn't compute · until the priority rule is decided */
+        hint: 'اختياري · تُسجَّل مع الطلب',
       },
     ],
   },

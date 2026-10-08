@@ -5,8 +5,11 @@ import {
 import { projectRows } from '@/data/mock/projects'
 import { agreements } from '@/data/mock/agreements'
 import { banksOf } from '@/data/mock/payEntity'
+import { entityById } from '@/data/mock/entities'
+import { entityDetail } from '@/data/mock/entityDetail'
 import { agreementsOfProject, inForceOf } from '@/data/agreements/store'
 import { docOf, linkOf, payYearIssue, recordPaid } from '@/data/budget/store'
+import { LEVEL_SAY, spendLevelFor } from '@/data/budget/rules'
 import { docTitle } from '@/data/mock/budgetTree'
 import { unmetBefore } from '@/data/approvals/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
@@ -75,14 +78,14 @@ export const holdLeft = (projectId: string): number | undefined => {
   return l ? l.shares.reduce((s, x) => s + x.amount - x.paid, 0) : undefined
 }
 
-/** The entity's representative · from the agreement in force (9.1.input-3) */
-const REP_NAMES = ['خالد الزهراني', 'منى العتيبي', 'سعد القحطاني', 'نورة الحربي', 'ماجد الشهري']
-const REP_TITLES = ['الرئيس التنفيذي', 'المدير التنفيذي', 'رئيس مجلس الإدارة', 'المدير العام']
+/** The entity's representative · from the agreement in force (9.1.input-3) · else the entity's
+    own director from its file (re-audit 7 Oct · it was a name picked from a list by project number) */
 export function repOf(projectId: string): { name: string; title: string } {
   const a = inForceOf(projectId) ?? agreementsOfProject(projectId)[0]
   if (a) return { ...a.signer }
-  const n = Number(projectId) || 0
-  return { name: REP_NAMES[n % REP_NAMES.length]!, title: REP_TITLES[n % REP_TITLES.length]! }
+  const p = projectOf(projectId)
+  const e = p ? entityById(p.entityId) : undefined
+  return e ? { name: entityDetail(e).directorName, title: 'المدير التنفيذي للجهة' } : { name: '', title: '' }
 }
 
 /* ── The schedule (9.1.input-2 · 9.4.2) ── */
@@ -130,7 +133,11 @@ export function scheduleOf(projectId: string): PaySlot[] {
   for (const e of adj?.extra ?? []) base.push({ no: base.length + 1, amount: e.amount, dueAt: e.dueAt })
   const of = base.length
   const stopped = STOPPED.has(projectId)
+  /* Re-audit 7 Oct · the payments go in order · a later one waits until the one before it is paid,
+     settled or requested · no payment is skipped */
+  let blocked = false
   return base.map((b): PaySlot => {
+    const prevBlocked = blocked
     const reqs = all.filter((r) => r.no === b.no)
     const open = reqs.find(isOpen)
     const paid = reqs.find((r) => r.state === 'paid')
@@ -143,9 +150,11 @@ export function scheduleOf(projectId: string): PaySlot[] {
       : stopped ? 'stopped'
       : SETTLED.has(condKey(projectId, b.no)) ? 'settled'
       : open ? 'pending'
+      : prevBlocked ? 'queued'
       : b.dueAt > TODAY ? 'early'
       : b.requirement && !conditionMet ? 'held'
       : 'open'
+    if (state !== 'paid' && state !== 'settled' && state !== 'pending') blocked = true
     return { no: b.no, of, amount: b.amount, dueAt: b.dueAt, condition: b.requirement, conditionMet, state, requestId: req?.id }
   })
 }
@@ -164,6 +173,8 @@ export function unsettledSlots(projectId: string): { due: PaySlot[]; future: Pay
   return { due: slots.filter((s) => s.dueAt <= TODAY || s.state === 'pending'), future: slots.filter((s) => s.dueAt > TODAY && s.state !== 'pending') }
 }
 
+/** The closing steps · no new disbursement once a project is there (9.4.1 · 10.2.1) */
+const CLOSING_STAGES = ['اعتماد التقرير الختامي', 'تقييم المشروع']
 export interface PayProject { id: string; name: string; entity: string; entityId: string; can: boolean; why?: string; open: number }
 
 /** Projects that can request · 9.4.1 · under execution with the agreement in force · reason when not */
@@ -174,7 +185,8 @@ export function payableProjects(entityId?: string): PayProject[] {
   for (const id of ids) {
     const p = projectOf(id)
     if (!p || (entityId && p.entityId !== entityId) || ehsanGate(id)) continue
-    const running = p.statusGroup === 'في التشغيل' && !p.stage.includes('الإتفاقي')
+    /* Re-audit 7 Oct · a project already at its final report or evaluation isn't paid anew */
+    const running = p.statusGroup === 'في التشغيل' && !p.stage.includes('الإتفاقي') && !CLOSING_STAGES.includes(p.stage)
     const agr = agreementOk(id)
     const slots = scheduleOf(id)
     if (!slots.length) continue
@@ -256,6 +268,12 @@ export function payActions(r: PayRequest, role: RoleKey, asEntity = false): PayA
     { act: 'returnSup', label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true, step: 13 },
     /* Rule 15 · closing isn't deleting · the log stays readable */
     { act: 'reject', label: 'رفض نهائي وإغلاق', kind: 'btn-d', needsNote: true, step: 13 },
+  ]
+  /* Re-audit 7 Oct · above the manager's spending limit the executive approves the disbursement
+     (1.1.input-6) · and above his, he records the body's decision that allowed it */
+  if (r.state === 'exec' && role === 'ceo') return [
+    { act: 'approve', label: 'اعتماد الصرف وإحالة للمالية', kind: 'btn-p', needsNote: spendLevelFor(r.asked) !== 'exec', step: 13 },
+    { act: 'returnSup', label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true, step: 13 },
   ]
   /* Re-audit 7 Oct · the finance officer's own seat (9.2.15 · 9.2.17) */
   if (r.state === 'finance' && role === 'finance') return r.order
@@ -398,7 +416,25 @@ function apply(o: Op) {
           notify([r.entityName], r, 'طلب الصرف مُعاد للاستكمال', `${ROUTES.payment(r.id)}?as=entity`)
           return
         case 'approve':
-          if (r.state !== 'manager') return
+          if (r.state !== 'manager' && r.state !== 'exec') return
+          /* Re-audit 7 Oct · the spending limits are read here (1.1.input-6) · a disbursement above the
+             manager's limit goes to the executive before finance */
+          if (r.state === 'manager' && spendLevelFor(r.asked) !== 'manager') {
+            move(r, 'exec')
+            r.note = undefined
+            log(r, 13, o.by, 'مدير المنح', `راجع الطلب ووافق عليه · المبلغ فوق حد صرفه فأُحيل إلى المدير التنفيذي`, o.at, note, 'المدير التنفيذي · طلب صرف فوق حد مدير المنح')
+            notify([roleByKey('ceo').name], r, 'طلب صرف بانتظار اعتمادك')
+            return
+          }
+          if (r.state === 'exec') {
+            const lvl = spendLevelFor(r.asked)
+            move(r, 'finance')
+            r.note = undefined
+            log(r, 13, o.by, 'المدير التنفيذي', lvl === 'exec' ? 'اعتمد الصرف في حدّه' : `اعتمد الصرف بقرار ${LEVEL_SAY[lvl]}`, o.at, note)
+            log(r, 14, 'النظام', 'النظام', 'تحقّق من سريان الاتفاقية وتوفّر المبلغ المحجوز، ثم أرسل الطلب إلى الإدارة المالية', o.at, undefined, 'الإدارة المالية · طلب بانتظار أمر الصرف')
+            notify([FIN, roleByKey('finance').name], r, 'طلب صرف بانتظار أمر الصرف')
+            return
+          }
           move(r, 'finance')
           r.note = undefined
           log(r, 13, o.by, 'مدير المنح', 'راجع الطلب واعتمده', o.at, note)
@@ -406,7 +442,7 @@ function apply(o: Op) {
           notify([FIN, roleByKey('finance').name], r, 'طلب صرف بانتظار أمر الصرف')
           return
         case 'returnSup':
-          if (r.state !== 'manager' || !note) return
+          if ((r.state !== 'manager' && r.state !== 'exec') || !note) return
           r.note = note; r.returnedBy = 'manager'
           move(r, 'supervisor')
           log(r, 13, o.by, 'مدير المنح', 'أعاد الطلب إلى مشرف المنح', o.at, note, 'مشرف المنح · طلب مُعاد من مدير المنح')
@@ -553,6 +589,7 @@ export function createRequest(v: { projectId: string; no: number; asked: number;
   if (slot.state === 'pending') errors.push('للدفعة طلب مفتوح · قاعدة 4')
   if (slot.state === 'paid') errors.push('الدفعة مصروفة')
   if (slot.state === 'early') errors.push('الدفعة لم تستحق بعد · قاعدة 2')
+  if (slot.state === 'queued') errors.push('تُطلب الدفعات بترتيبها · لم تُطلب الدفعة السابقة بعد')
   if (slot.state === 'held') errors.push('شرط الدفعة غير مستوفى · قاعدة 6')
   if (slot.state === 'stopped') errors.push('أُوقف المشروع بقرار · لا صرف بعده')
   if (slot.state === 'settled') errors.push('سُوّيت الدفعة · لا تُصرف')

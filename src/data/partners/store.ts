@@ -112,6 +112,8 @@ const EH_OPS = new Map<string, EhOp[]>()
 const EH_CLOSE = new Map<string, EhClose>()
 export const ehScheduleOf = (projectId: string) => SCHEDULES.get(projectId) ?? []
 export const ehOpsOf = (projectId: string) => EH_OPS.get(projectId) ?? []
+/** Every Ehsan project's operations · for the unified audit log */
+export const allEhOps = (): { projectId: string; ops: EhOp[] }[] => [...EH_OPS.entries()].map(([projectId, ops]) => ({ projectId, ops }))
 export const ehCloseOf = (projectId: string) => EH_CLOSE.get(projectId)
 export const viaEhsan = (projectId: string) => projectRows.find((p) => p.id === projectId)?.platform === 'منصة إحسان'
 export const ehsanProjects = () => projectRows.filter((p) => p.platform === 'منصة إحسان' && !p.archived)

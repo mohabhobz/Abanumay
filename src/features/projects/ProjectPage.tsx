@@ -36,11 +36,14 @@ import { agreementsOfProject, useAgreements } from '@/data/agreements/store'
 import { ProjectAgreements } from '@/features/agreements/parts'
 import { projectChain } from '@/data/mock/chain'
 import { planOfProject } from '@/data/mock/plans'
-import { planDecisionOf, usePlans } from '@/data/plans/store'
+import { planDecisionEvents, planDecisionOf, usePlans } from '@/data/plans/store'
 import { PlanDecisionCard } from '@/features/plans/PlanDecisionCard'
 import { journeys } from '@/data/journey'
 import { BudgetLinkAction } from '@/features/budget/BudgetLink'
 import { useBudget } from '@/data/budget/store'
+import { scheduleOf, usePayments } from '@/data/payments/store'
+import { PAY_SLOT_SAY, payRequestById } from '@/data/mock/disbursements'
+import type { PaymentDetail } from '@/data/mock/detail'
 import { EditableCard } from '@/features/shared/EditableCard'
 import { HOLDER_LABEL, authorityFor, holderOf } from '@/data/holders'
 import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, useApprovals } from '@/data/approvals/store'
@@ -228,6 +231,17 @@ export default function ProjectPage() {
     () => projectDetail(row ?? fixtures.projects[0], entity.name),
     [row, entity.name],
   )
+  /* Re-audit 7 Oct · the payments tab reads the payment store's schedule · it read a generator */
+  usePayments()
+  const livePayments: PaymentDetail[] = scheduleOf(project.id).map((x) => {
+    const r = x.requestId ? payRequestById(x.requestId) : undefined
+    const paid = x.state === 'paid'
+    return {
+      no: x.no, amount: x.amount, date: paid ? r?.paidAt ?? x.dueAt : x.dueAt,
+      status: paid ? 'مدفوع' : PAY_SLOT_SAY[x.state].label, voucher: paid ? r?.id : undefined,
+      condition: x.condition, via: paid ? r?.bank?.name ?? 'حساب الجهة' : undefined, receipt: paid,
+    }
+  })
   /* Follow-ups added from the tab join the project's own, so the tab and the log read one list. */
   const followUps = useFollowUps(project.id)
   const detail = useMemo(
@@ -284,7 +298,7 @@ export default function ProjectPage() {
 
   /* Manual activities join the same timeline, so the log stays the one place to read history. */
   const fullLog = useMemo(
-    () => [...(row ? [...approvalEvents(row.id), ...flowEvents(row.id)].sort((a, b) => b.at.localeCompare(a.at) || b.time.localeCompare(a.time)) : []), ...withActivities(log, activityList)],
+    () => [...(row ? [...approvalEvents(row.id), ...flowEvents(row.id), ...planDecisionEvents(row.id)].sort((a, b) => b.at.localeCompare(a.at) || b.time.localeCompare(a.time)) : []), ...withActivities(log, activityList)],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [log, activityList, row, flow?.events.length],
   )
@@ -455,7 +469,7 @@ export default function ProjectPage() {
               )}
               {active === 'payments' && (
                 <PaymentsTab
-                  payments={detail.payments}
+                  payments={livePayments}
                   granted={project.amountGranted || project.amountRequested}
                   projectId={project.id}
                   example={examples.payments}

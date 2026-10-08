@@ -31,6 +31,7 @@ export const PAY_STATES: { key: PayState; label: string; who: string; steps: str
   { key: 'supervisor', label: 'بانتظار مشرف المنح', who: 'مشرف المنح', steps: '4–7' },
   { key: 'returned', label: 'مُعاد للاستكمال', who: 'الجهة المستفيدة', steps: '10–11' },
   { key: 'manager', label: 'بانتظار مدير المنح', who: 'مدير المنح', steps: '12–13' },
+  { key: 'exec', label: 'بانتظار المدير التنفيذي', who: 'المدير التنفيذي', steps: '13' },
   { key: 'finance', label: 'بانتظار الإدارة المالية', who: 'الإدارة المالية', steps: '14–17' },
   { key: 'paid', label: 'تم الصرف', who: '', steps: '18–19' },
 ]
@@ -50,6 +51,7 @@ export const PAY_LIMIT: Record<PayState, number> = hydrate(CFG.payLimits, {
   supervisor: 120,
   returned: 240,
   manager: 96,
+  exec: 96,
   finance: 72,
   paid: 0,
   closed: 0,
@@ -164,6 +166,7 @@ const PASSED: Record<PayState, number[]> = {
   supervisor: [1, 2, 3, 4],
   returned: [1, 2, 3, 4, 5, 6, 7, 10],
   manager: [1, 2, 3, 4, 5, 6, 7, 12],
+  exec: [1, 2, 3, 4, 5, 6, 7, 12, 13],
   finance: [1, 2, 3, 4, 5, 6, 7, 12, 13, 14],
   paid: [1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19],
   closed: [1, 2, 3, 4, 15],
@@ -543,6 +546,8 @@ export type PaySlotState =
   | 'open'
   /** Not yet due · rule 2 */
   | 'early'
+  /** Re-audit 7 Oct · an earlier payment is still open · payments go in order */
+  | 'queued'
   /** Has an open request · rule 4 */
   | 'pending'
   /** Spent */
@@ -572,6 +577,7 @@ export const TODAY = '2026-09-14'
 export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; rule?: number }> = {
   open: { label: 'مستحقة', why: 'جاهزة لإنشاء طلب صرف' },
   early: { label: 'لم تستحق', why: 'يُقدَّم الطلب للدفعات المستحقة وفق الجدول المعتمد فقط', rule: 2 },
+  queued: { label: 'بعد الدفعة السابقة', why: 'تُطلب الدفعات بترتيبها · لا تُطلب دفعة قبل طلب سابقتها أو صرفها أو تسويتها' },
   pending: { label: 'لها طلب مفتوح', why: 'لا يُفتح لكل دفعة أكثر من طلب صرف واحد', rule: 4 },
   paid: { label: 'مصروفة', why: 'اكتمل تحويلها' },
   held: { label: 'موقوفة بشرط', why: 'لا يُرسل طلب الدفعة المرتبطة بتقارير قبل استيفائها', rule: 6 },

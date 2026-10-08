@@ -440,7 +440,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
         <div className="ptn-form mt-3">
           <div className="regfields">
             <label className="regf"><span className="lb">اسم المشروع الفرعي</span><span className="fld"><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} aria-label="اسم المشروع الفرعي" /></span></label>
-            <label className="regf"><span className="lb">المنطقة</span><FieldSelect value={d.region} onChange={(v) => setD({ ...d, region: v })} label="المنطقة" options={['عموم المملكة', ...REGIONS]} /></label>
+            <label className="regf"><span className="lb">المنطقة</span><FieldSelect value={d.region} onChange={(v) => setD({ ...d, region: v })} label="المنطقة" options={[...new Set(['عموم المملكة', ...REGIONS])]} /></label>
             <label className="regf"><span className="lb">القيمة</span><MoneyField value={d.amount} onChange={(v) => setD({ ...d, amount: v })} label="قيمة المشروع الفرعي" /></label>
             <label className="regf"><span className="lb">المستفيدون المستهدفون</span><span className="fld"><input inputMode="numeric" value={d.beneficiaries} onChange={(e) => setD({ ...d, beneficiaries: e.target.value.replace(/\D/g, '') })} aria-label="المستفيدون المستهدفون" /></span></label>
             <label className="regf ptn-wide"><span className="lb">المخرجات المستهدفة</span><span className="fld"><input value={d.outputs} onChange={(e) => setD({ ...d, outputs: e.target.value })} aria-label="المخرجات المستهدفة" /></span></label>

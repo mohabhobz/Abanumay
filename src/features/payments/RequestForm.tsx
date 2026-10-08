@@ -65,6 +65,7 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 const SLOT_TONE: Record<string, 'ok' | 'warn' | 'no' | 'mute' | 'teal'> = {
   open: 'teal',
   early: 'mute',
+  queued: 'mute',
   pending: 'warn',
   paid: 'ok',
   held: 'no',
