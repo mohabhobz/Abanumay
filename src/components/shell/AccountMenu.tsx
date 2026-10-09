@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Face, Icon, icons, type IconName } from '@/components/ui'
-import { ROLES } from '@/data/roles'
+import { STAFF_DIRECTORY, roleByKey, switchAccount } from '@/data/roles'
 import { useRole } from '@/hooks/useRole'
 import { ROUTES, type NavItem } from '@/app/routes'
 import { Avatar } from './Avatar'
@@ -98,26 +98,33 @@ export function AccountMenu({
 
           {who && (
             <div className="acct-sec acct-who-list" id="acct-who" role="group" aria-label="المستخدمون">
-              {ROLES.map((r) => (
-                <button
-                  key={r.key}
-                  role="menuitemradio"
-                  aria-checked={r.key === role.key}
-                  className={r.key === role.key ? 'on' : ''}
-                  onClick={() => {
-                    setRole(r.key)
-                    setWho(false)
-                    go(ROUTES.home)
-                  }}
-                >
-                  <Face name={r.name} />
-                  <span className="acct-who-t">
-                    <span>{r.name}</span>
-                    <span className="sub">{r.title}</span>
-                  </span>
-                  {r.key === role.key && <Icon name={icons.check} size="sm" />}
-                </button>
-              ))}
+              {/* Batch 1 · 8 Oct · the list is people, not seats: picking one signs in as that person
+                  (the demo's shortcut for signing out and in), so a vote or a study is always
+                  someone's own · two officers on the supervisor seat are two accounts */}
+              {STAFF_DIRECTORY.map((a) => {
+                const on = a.name === user.name && a.role === role.key
+                return (
+                  <button
+                    key={a.login}
+                    role="menuitemradio"
+                    aria-checked={on}
+                    className={on ? 'on' : ''}
+                    onClick={() => {
+                      switchAccount(a)
+                      setRole(a.role)
+                      setWho(false)
+                      go(ROUTES.home)
+                    }}
+                  >
+                    <Face name={a.name} />
+                    <span className="acct-who-t">
+                      <span>{a.name}</span>
+                      <span className="sub">{roleByKey(a.role).title}</span>
+                    </span>
+                    {on && <Icon name={icons.check} size="sm" />}
+                  </button>
+                )
+              })}
             </div>
           )}
 

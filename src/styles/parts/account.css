@@ -28,6 +28,9 @@
    Three classes deep: the menu lives inside the rail, whose button rules are loaded after parts. */
 .acct .acct-id>.acct-sw{margin-inline-start:auto;flex:none;flex-direction:row}
 .acct .acct-who-list>button{color:var(--t1)}
+/* Batch 1 · 8 Oct · the list is people now (13 accounts), not seven seats · it scrolls inside the
+   menu instead of pushing the menu off the screen */
+.acct .acct-who-list{max-block-size:min(calc(var(--sp-12) * 5), 50vh);overflow-y:auto;overscroll-behavior:contain}
 .acct .acct-who-list>button.on{background:var(--fl-2)}
 .acct .acct-who-list .acct-who-t{display:flex;flex-direction:column;flex:1;min-width:0;line-height:var(--lh-ui)}
 .acct .acct-who-list .acct-who-t .sub{font-size:var(--fs-1)}

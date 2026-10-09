@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DateText, Glass, Head, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole } from '@/data/roles'
 import { planOfProject, planStageLabel } from '@/data/mock/plans'
 import { changePlanDecision, originalDecision, planDecisionHistory, planDecisionOf, planRuleSays, usePlans, type PlanDecision } from '@/data/plans/store'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
@@ -27,7 +27,7 @@ export function PlanDecisionCard({ projectId, approved }: { projectId: string; a
   const hist: PlanDecision[] = [...planDecisionHistory(projectId), ...(orig && planDecisionHistory(projectId).length ? [orig] : [])]
   const [reason, setReason] = useState('')
   const [said, setSaid] = useState('')
-  const me = roleByKey(role).name
+  const me = meOf(role)
   const mayChange = role === 'grants-manager' && approved
 
   return (

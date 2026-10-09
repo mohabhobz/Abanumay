@@ -11,7 +11,7 @@ import { isolate, nf } from '@/lib/format'
 import {
   docSources, docTitle, fiscalYears, leavesOf, lineUsable, moneyOf, pathOf, yearById, type BudgetDoc,
 } from '@/data/mock/budgetTree'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole } from '@/data/roles'
 import {
   REQ_KIND_SAY, REQ_STATE_SAY, decideRequest, docOf, freeOf, liveBudgets, mayAct, nextReqId,
   reqById, reqIssues, reqTone, saveRequest, sourceName, stepOf, useBudget, whoActs,
@@ -53,7 +53,7 @@ export default function BudgetOpPage() {
   const navigate = useNavigate()
   useBudget()
   const role = readRole()
-  const me = roleByKey(role).name
+  const me = meOf(role)
 
   const existing = id ? reqById(id) : undefined
   const startDoc = docOf(q.get('doc') ?? '') ?? undefined

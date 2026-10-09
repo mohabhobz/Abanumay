@@ -53,6 +53,7 @@ export default function PortfolioPage() {
   const pf = id ? pfById(id) : undefined
   const [note, setNote] = useState('')
   const [line, setLine] = useState('')
+  const [split, setSplit] = useState<{ key: string; amount: string }[]>([])
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
 
   if (!pf) {
@@ -75,7 +76,10 @@ export default function PortfolioPage() {
   const preferred = lines.find((l) => l.node.id === (pf.channel === 'ehsan' ? 'tPg1' : 'tPg2'))
   const lineKey = line || preferred?.key || ''
   const pick = lines.find((l) => l.key === lineKey)
-  const shares = pick ? [{ docId: pick.doc.id, nodeId: pick.node.id, amount: pf.total }] : undefined
+  /* Batch 6 · 8 Oct · the hold can split across lines, in one budget or several (13.2.7) · the parts
+     add up to the portfolio's value */
+  const splitShares = split.map((x) => { const l = lines.find((y) => y.key === x.key); return l ? { docId: l.doc.id, nodeId: l.node.id, amount: Number(x.amount) || 0 } : undefined }).filter((x): x is NonNullable<typeof x> => Boolean(x))
+  const shares = split.length ? splitShares : pick ? [{ docId: pick.doc.id, nodeId: pick.node.id, amount: pf.total }] : undefined
   const link = linkOf(pf.id)
   const partner = pf.entityId
 
@@ -149,7 +153,7 @@ export default function PortfolioPage() {
                 ]} />
               </Glass>
 
-              {!asPartner && <HoldCard pf={pf} lineKey={lineKey} setLine={setLine} lines={lines} link={link} />}
+              {!asPartner && <HoldCard pf={pf} lineKey={lineKey} setLine={setLine} lines={lines} link={link} split={split} setSplit={setSplit} />}
 
               {(pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed') && (
                 <>
@@ -245,9 +249,12 @@ export default function PortfolioPage() {
 const entityName = (pf: PortfolioRec) => profileOf(pf.entityId)?.name ?? entityById(pf.entityId)?.name ?? pf.entityId
 
 /* ── The budget hold · the total, once, from one line or more (13.2.7) ── */
-function HoldCard({ pf, lineKey, setLine, lines, link }: {
+function HoldCard({ pf, lineKey, setLine, lines, link, split, setSplit }: {
   pf: PortfolioRec; lineKey: string; setLine: (k: string) => void; lines: ReturnType<typeof usableLines>; link: ReturnType<typeof linkOf>
+  split: { key: string; amount: string }[]; setSplit: (x: { key: string; amount: string }[]) => void
 }) {
+  const sum = split.reduce((s, x) => s + (Number(x.amount) || 0), 0)
+  const label = (k: string) => { const l = lines.find((y) => y.key === k); return l ? `${l.doc.name ?? l.doc.id} · ${l.node.label}` : k }
   const { role } = useRole()
   const pickable = pf.stage === 'supervisor' && role.key === 'supervisor'
   return (
@@ -255,16 +262,40 @@ function HoldCard({ pf, lineKey, setLine, lines, link }: {
       <Head title="حجز قيمة المحفظة" meta={link ? <Tag tone={link.stage === 'final' ? 'ok' : 'warn'}>{HOLD_STAGE_SAY[link.stage]}</Tag> : <Tag tone="mute">لم يُحجز</Tag>} />
       {link ? (
         <KV rows={[
-          { k: 'البند', v: link.shares.map((s) => `${s.nodeId === 'tPg1' ? 'مخصص منصة إحسان' : s.nodeId === 'tPg2' ? 'مخصص محافظ الشركاء' : s.nodeId}`).join(' · ') },
+          { k: link.shares.length > 1 ? 'البنود' : 'البند', v: link.shares.map((s) => `${s.nodeId === 'tPg1' ? 'مخصص منصة إحسان' : s.nodeId === 'tPg2' ? 'مخصص محافظ الشركاء' : label(`${s.docId}/${s.nodeId}`)}${link.shares.length > 1 ? ` · ${nf.format(s.amount)}` : ''}`).join(' · ') },
           { k: 'المحجوز', v: <Money sm>{link.amount}</Money> },
           { k: 'المصروف منه', v: <Money sm>{link.shares.reduce((s, x) => s + x.paid, 0)}</Money> },
         ]} />
+      ) : pickable && split.length ? (
+        <div className="regfields">
+          {split.map((x, i) => (
+            <div className="rowf gp-2" key={i}>
+              <label className="regf">
+                <span className="lb">البند {i + 1}</span>
+                <FieldSelect value={x.key} onChange={(k) => setSplit(split.map((y, j) => (j === i ? { ...y, key: k } : y)))} label={`بند الحجز ${i + 1}`}
+                  options={lines.filter((l) => l.key === x.key || !split.some((y) => y.key === l.key)).map((l) => ({ value: l.key, label: `${l.doc.name ?? l.doc.id} · ${l.node.label} · متاح ${nf.format(l.free)}` }))} />
+              </label>
+              <label className="regf">
+                <span className="lb">المبلغ</span>
+                <span className="fld"><input inputMode="numeric" value={x.amount} onChange={(e) => setSplit(split.map((y, j) => (j === i ? { ...y, amount: e.target.value.replace(/[^\d]/g, '') } : y)))} aria-label={`مبلغ بند الحجز ${i + 1}`} /></span>
+              </label>
+              <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف البند ${i + 1}`} onClick={() => setSplit(split.filter((_, j) => j !== i))}><Icon name={icons.close} size="sm" /></button>
+            </div>
+          ))}
+          <div className="rowf gp-2">
+            <button type="button" className="btn btn-2 btn-sm" onClick={() => setSplit([...split, { key: '', amount: '' }])}><Icon name={icons.plus} size="sm" />أضف بندًا</button>
+            <span className={sum === pf.total ? 'sub' : 'bad'}>المجموع {nf.format(sum)} من {nf.format(pf.total)}</span>
+          </div>
+        </div>
       ) : pickable ? (
+        <>
         <label className="regf">
           <span className="lb">بند الميزانية</span>
           <FieldSelect value={lineKey} onChange={setLine} label="بند الميزانية" options={lines.filter((l) => l.free >= pf.total).map((l) => ({ value: l.key, label: `${l.node.label} · متاح ${nf.format(l.free)}` }))} />
           <span className="sub regf-h">تُحجز القيمة كاملةً مرة واحدة مع التوصية · وقيم المشاريع الفرعية توزيع داخلي لا حجز جديد (13.2.19)</span>
         </label>
+        <button type="button" className="btn btn-ghost btn-sm mt-2" onClick={() => setSplit([{ key: lineKey, amount: '' }, { key: '', amount: '' }])}>وزّع الحجز على أكثر من بند أو ميزانية</button>
+        </>
       ) : (
         <p className="sub cnote">يُحجز إجمالي المحفظة مع توصية المشرف ويُثبَّت بالاعتماد النهائي.</p>
       )}
@@ -278,9 +309,13 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const [rows, setRows] = useState<PfPhase[]>(() => (pf.plan.phases.length ? pf.plan.phases : [{ id: 'ph1', name: '', from: '', to: '', cost: 0 }]))
   const [note, setNote] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
-  const editable = !asPartner && role.key === 'supervisor' && ['none', 'draft', 'returned'].includes(pf.plan.state) && pf.stage === 'approved'
-  const tone = pf.plan.state === 'approved' ? 'ok' : pf.plan.state === 'review' ? 'warn' : pf.plan.state === 'returned' ? 'ret' : 'mute'
-  const say = { none: 'لم تُعدّ', draft: 'مسودة', review: 'بانتظار مدير المنح', approved: 'معتمدة', returned: 'معادة' }[pf.plan.state]
+  /* Batch 6 · the partner drafts its plan too (12.2.4) · its draft goes to the supervisor first */
+  const mine = pf.plan.drafter === undefined || (pf.plan.drafter === 'partner') === asPartner
+  const editable = pf.stage === 'approved' && (asPartner || role.key === 'supervisor')
+    && (pf.plan.state === 'none' || ((pf.plan.state === 'draft' || pf.plan.state === 'returned') && mine))
+  const who = asPartner ? (entityById(pf.entityId)?.name ?? profileOf(pf.entityId)?.name ?? user.name) : user.name
+  const tone = pf.plan.state === 'approved' ? 'ok' : pf.plan.state === 'review' || pf.plan.state === 'supervisor' ? 'warn' : pf.plan.state === 'returned' ? 'ret' : 'mute'
+  const say = { none: 'لم تُعدّ', draft: 'مسودة', supervisor: 'بانتظار مراجعة المشرف', review: 'بانتظار مدير المنح', approved: 'معتمدة', returned: 'معادة' }[pf.plan.state]
   return (
     <Glass>
       <Head title="خطة المحفظة" meta={<Tag tone={tone}>{say}</Tag>} />
@@ -298,15 +333,22 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
           <div className="apv-row mt-2">
             <span className={`sub${sumOf(rows) !== pf.total ? ' bad' : ''}`}>المجموع <span className="num">{nf.format(sumOf(rows))}</span> من <span className="num">{nf.format(pf.total)}</span></span>
             <button type="button" className="btn btn-2 btn-sm" onClick={() => setRows((x) => [...x, { id: `ph${x.length + 1}`, name: '', from: '', to: '', cost: 0 }])}>مرحلة أخرى</button>
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => { savePfPlan(pf.id, rows, user.name); setSaid({ ok: 'مسودة الخطة' }) }}>احفظ</button>
-            <button type="button" className="btn btn-p btn-sm" onClick={() => { savePfPlan(pf.id, rows, user.name); const out = actOnPfPlan(pf.id, 'send', '', user.name); setSaid(out.length ? { bad: out } : { ok: 'إرسال الخطة لمدير المنح' }) }}>أرسل للاعتماد</button>
+            <button type="button" className="btn btn-2 btn-sm" onClick={() => { savePfPlan(pf.id, rows, who); setSaid({ ok: 'مسودة الخطة' }) }}>احفظ</button>
+            <button type="button" className="btn btn-p btn-sm" onClick={() => { savePfPlan(pf.id, rows, who); const out = actOnPfPlan(pf.id, 'send', '', who); setSaid(out.length ? { bad: out } : { ok: asPartner ? 'إرسال الخطة لمشرف المنح' : 'إرسال الخطة لمدير المنح' }) }}>{asPartner ? 'أرسل لمشرف المنح' : 'أرسل للاعتماد'}</button>
           </div>
         </div>
       ) : (
         <ul className="ptn-slots">
           {pf.plan.phases.map((p) => <li key={p.id}><span>{p.name}</span><span className="sub"><DateText>{p.from}</DateText> – <DateText>{p.to}</DateText></span><Money sm>{p.cost}</Money></li>)}
-          {!pf.plan.phases.length && <li className="sub">يعدّها مشرف المنح بعد الاعتماد النهائي.</li>}
+          {!pf.plan.phases.length && <li className="sub">يعدّها الشريك أو مشرف المنح بعد الاعتماد النهائي.</li>}
         </ul>
+      )}
+      {!asPartner && role.key === 'supervisor' && pf.plan.state === 'supervisor' && (
+        <div className="apv-row mt-3">
+          <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة المشرف على الخطة" placeholder="سبب الإعادة للشريك" /></span>
+          <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = actOnPfPlan(pf.id, 'return', note, user.name); setSaid(out.length ? { bad: out } : { ok: 'إعادة الخطة للشريك' }) }}>أعدها للشريك</button>
+          <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfPlan(pf.id, 'toManager', '', user.name); setSaid(out.length ? { bad: out } : { ok: 'إحالة الخطة لمدير المنح' }) }}>أحلها لمدير المنح</button>
+        </div>
       )}
       {!asPartner && role.key === 'grants-manager' && pf.plan.state === 'review' && (
         <div className="apv-row mt-3">
@@ -326,7 +368,7 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
   const [note, setNote] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const a = pf.agreement
-  const say = { none: 'لم تُعدّ', draft: 'مسودة · مشرف المنح', manager: 'بانتظار مدير المنح', partner: 'بانتظار توقيع الشريك', signed: 'موقّعة وسارية', returned: 'معادة' }[a.state]
+  const say = { none: 'لم تُعدّ', draft: 'مسودة · مشرف المنح', manager: 'بانتظار مدير المنح', executive: 'بانتظار المدير التنفيذي', partner: 'بانتظار توقيع الشريك', foundation: 'بانتظار توقيع ممثل المؤسسة', signed: 'موقّعة وسارية', returned: 'معادة' }[a.state]
   const r = (out: string[], ok: string) => setSaid(out.length ? { bad: out } : { ok })
   const sup = !asPartner && role.key === 'supervisor'
   return (
@@ -343,13 +385,17 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
       <div className="apv-row mt-3">
         {sup && (a.state === 'none' || a.state === 'returned') && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'draft', '', user.name), 'مسودة الاتفاقية')}>أعدّ المسودة من النموذج</button>}
         {sup && a.state === 'draft' && <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'send', '', user.name), 'إرسال الاتفاقية')}>أرسل لمدير المنح</button>}
-        {!asPartner && role.key === 'grants-manager' && a.state === 'manager' && (
+        {!asPartner && ((role.key === 'grants-manager' && a.state === 'manager') || (role.key === 'ceo' && a.state === 'executive')) && (
           <>
             <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على الاتفاقية" placeholder="سبب الإعادة" /></span>
             <button type="button" className="btn btn-2 btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'return', note, user.name), 'إعادة الاتفاقية')}>أعد</button>
-            <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'approve', '', user.name), 'اعتماد الاتفاقية')}>اعتمد وأرسل للشريك</button>
+            <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'approve', '', user.name), 'اعتماد الاتفاقية')}>{a.state === 'manager' ? 'اعتمد وأحل للمدير التنفيذي' : 'اعتمد وأرسل للشريك'}</button>
           </>
         )}
+        {!asPartner && (role.key === 'grants-manager' || role.key === 'ceo') && a.state === 'foundation' && (
+          <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'countersign', '', user.name), 'توقيع ممثل المؤسسة')}>وقّع عن المؤسسة · تسري الاتفاقية</button>
+        )}
+        {asPartner && a.state === 'foundation' && <span className="sub">وقّعتها · بانتظار توقيع ممثل المؤسسة</span>}
         {asPartner && a.state === 'partner' && <UploadButton label="الاتفاقية الموقعة" onPick={(f) => r(actOnPfAgreement(pf.id, 'sign', '', user.name, f.name), 'توقيع الاتفاقية')} />}
         {!asPartner && a.state === 'partner' && <span className="sub">يوقّعها الشريك من بوابته</span>}
       </div>

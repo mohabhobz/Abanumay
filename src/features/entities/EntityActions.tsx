@@ -7,7 +7,7 @@ import { activationTone } from '@/lib/tone'
 import type { EntityActivation, EntityRow } from '@/types/domain'
 import { BANK_REJECT_REASONS, entityDetail, type BankAccount } from '@/data/mock/entityDetail'
 import { REG_STATE_SAY } from '@/data/mock/registration'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole, roleByKey } from '@/data/roles'
 import { ENTITY_RULES } from '@/data/entities/rules'
 import {
   UPD_STATE_SAY, archiveEntity, canDecide, expiredMandatory, isRegState, openUpdateOf, overlayOf,
@@ -62,7 +62,7 @@ function ReasonModal({ title, cta, tone, onClose, onDone }: {
 export function EntityStatusCard({ e }: { e: EntityRow }) {
   const role = readRole()
   const may = canDecide('status', role)
-  const me = roleByKey(role).name
+  const me = meOf(role)
   const [act, setAct] = useState<Act | null>(null)
   const o = overlayOf(e.id)
   /* The file's own reading of its dates · the license on the row and the board mandate on the file */
@@ -144,7 +144,7 @@ export function EntityRequestsTab({ e }: { e: EntityRow }) {
 /** One account's decision · disable with a coded reason, or activate (2.4.27) */
 export function BankActions({ entityId, b }: { entityId: string; b: BankAccount }) {
   const role = readRole()
-  const me = roleByKey(role).name
+  const me = meOf(role)
   const [why, setWhy] = useState('')
   if (!canDecide('status', role)) return null
   return b.status === 'مفعل' ? (

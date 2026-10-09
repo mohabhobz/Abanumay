@@ -216,10 +216,42 @@ export default function UpdateRequestPage() {
                     </Glass>
                   ))}
 
+                  {/* Batch 3 · 8 Oct · an account on file is edited here too · the edit is a new row
+                      tied to the account it replaces, approved like a new account; once approved the
+                      old one is deactivated, not overwritten, so its past payments keep their account */}
+                  {d.banks.some((b) => b.status === 'مفعل') && (
+                    <Glass>
+                      <Head title="الحسابات الحالية" meta={<Tag tone="warn">التعديل باعتماد</Tag>} />
+                      <ul className="rgbanks">
+                        {d.banks.filter((b) => b.status === 'مفعل').map((b, i) => {
+                          const editing = banks.some((x) => x.replaces === b.id)
+                          return (
+                            <li key={b.id}>
+                              <span className="rgbank-n num">{i + 1}</span>
+                              <div className="rgbank-b">
+                                <div className="rgbank-t"><b>{b.bank}</b><span className="sub">· {b.accountName} · {b.shortName}</span></div>
+                                <div className="sub"><Mono>{b.iban}</Mono></div>
+                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-2 btn-sm"
+                                disabled={editing}
+                                aria-label={`عدّل الحساب ${b.shortName || b.bank}`}
+                                onClick={() => setBanks((s) => [...s, { id: `ed${Date.now()}`, bankName: b.bank, bankHolder: b.accountName, shortName: b.shortName, iban: '', replaces: b.id }])}
+                              >
+                                {editing ? 'تعديله في الطلب' : 'عدّل الحساب'}
+                              </button>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </Glass>
+                  )}
+
                   <Glass>
-                    <Head title="حسابات بنكية جديدة" meta={<Tag tone="warn">باعتماد</Tag>} />
-                    <p className="sub cnote">الحسابات الحالية تبقى كما هي · ويُضاف الجديد بعد اعتماده ومطابقته بوثيقته.</p>
-                    <BankRows banks={banks} onChange={setBanks} min={0} idPrefix="nb" />
+                    <Head title="حسابات بنكية جديدة أو معدَّلة" meta={<Tag tone="warn">باعتماد</Tag>} />
+                    <p className="sub cnote">الحساب المعدَّل يحلّ محلّ الحالي بعد اعتماده ومطابقته بوثيقته · ويُعطَّل الحالي ولا يُحذف.</p>
+                    <BankRows banks={banks} onChange={setBanks} min={0} idPrefix="nb" replacing={Object.fromEntries(d.banks.map((b) => [b.id, b.shortName || b.bank]))} />
                   </Glass>
 
                   <Glass>

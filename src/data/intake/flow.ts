@@ -8,7 +8,7 @@ import { entityById } from '@/data/mock/entities'
 import { CYCLE, TODAY, addWorkingDays, type Distribution } from './cycle'
 import { CRITERIA, studyScore } from './criteria'
 import { nextSeq, type Stamped } from '@/data/opclock'
-import { dayOf, stampNow, timeOf } from '@/data/clock'
+import { dayOf, liveDay, stampNow, timeOf } from '@/data/clock'
 import { CONSULTANTS, consultantByKey } from './consultants'
 
 /* Receiving projects and the supervisor's study · the actions (procedure 3).
@@ -78,6 +78,8 @@ export interface Referral {
   opinion?: string
   verdict?: 'مؤيّد' | 'مؤيّد بتحفّظ' | 'غير مؤيّد'
   opinionAt?: string
+  /** Batch 1 · the access code sent with the link · drawn at random when the referral is made */
+  code?: string
 }
 
 export interface VersionSnap { amount: number; days: number; reach: number; objectives: number; docs: number; startAt?: string }
@@ -116,10 +118,12 @@ type Op = Stamped & (
   | { op: 'resubmit'; id: string; by: string }
   | { op: 'transfer'; id: string; field: string; owner: string; reason: string; by: string }
   | { op: 'return'; id: string; note: string; by: string }
-  | { op: 'refer'; id: string; consultant: string; by: string }
+  | { op: 'refer'; id: string; consultant: string; by: string; code?: string }
   | { op: 'opinion'; id: string; opinion: string; verdict: NonNullable<Referral['verdict']>; by: string }
   | { op: 'close'; id: string; kind: 'cancel' | 'archive'; reason: string; by: string }
   | { op: 'assign'; id: string; owner: string; by: string }
+  /* Batch 6 · 8 Oct · the start moves · the end follows from the duration (3.4.input · the calculated end) */
+  | { op: 'reschedule'; id: string; startAt: string; reason: string; by: string }
 )
 
 const KEY = 'ab-intake-ops'
@@ -206,7 +210,9 @@ const moveTo = (p: ProjectRow, stage: string) => {
 const seedScores = (n: number) => Object.fromEntries(CRITERIA.list.map((c, i) => [c.key, Math.max(2, Math.min(5, n - (i % 3)))]))
 
 const SEED_REFERRAL: Record<string, Referral> = {
-  '20940': { consultant: 'c1', by: 'عمر قاسم', at: '2026-09-29', expiresAt: '2026-10-09' },
+  /* The demo's open referral · its access runs a week past the day it's opened, so the advice screen
+     stays reachable as real days pass (the expiry itself is live, batch 5) */
+  '20940': { consultant: 'c1', by: 'عمر قاسم', at: '2026-09-29', expiresAt: (() => { const d = new Date(`${liveDay()}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 7); return d.toISOString().slice(0, 10) })() },
 }
 
 const SEED_STUDY: Record<string, Study> = {
@@ -283,7 +289,7 @@ export const forwardBlockers = (id: string): string[] => {
   }
   const docs = missingDocs(id)
   if (docs.length) out.push(`مرفقات إلزامية ناقصة: ${docs.join('، ')}`)
-  if (CONSULTANTS.waitForOpinion && f.referral && !f.referral.opinion && f.referral.expiresAt >= TODAY) {
+  if (CONSULTANTS.waitForOpinion && f.referral && !f.referral.opinion && f.referral.expiresAt >= liveDay()) {
     out.push('بانتظار رأي المستشار · الإعداد يشترط وصوله قبل الإحالة')
   }
   return out
@@ -337,6 +343,21 @@ function applyOp(o: Op) {
       })
       if (owner) note(o.id, owner, `طلب جديد · ${v.name}`, `أُسند إليك تلقائيًا في مجال ${v.field}`)
       else note(o.id, 'مدير المنح', `طلب بلا مشرف · ${v.name}`, `مجال ${v.field} توزيعه يدوي · يحتاج إسنادًا`)
+      break
+    }
+    case 'reschedule': {
+      const days = p!.durationDays ?? 0
+      if (!o.startAt || !days || ['مكتمل', 'معتذر عنه'].includes(p!.statusGroup)) break
+      const was = { start: p!.startAt, end: p!.endAt }
+      p!.startAt = o.startAt
+      p!.endAt = addWorkingDays(o.startAt, days)
+      event(o.id, { action: 'تعديل بداية التنفيذ · أُعيد حساب النهاية', by: o.by, tone: 'warn', fields: [
+        { k: 'البداية', v: `${was.start ?? '—'} ← ${o.startAt}`, strong: true },
+        { k: 'النهاية المحسوبة', v: `${was.end ?? '—'} ← ${p!.endAt}` },
+        { k: 'المدة', v: `${days} يوم عمل` },
+        { k: 'السبب', v: o.reason },
+      ] })
+      note(o.id, p!.entityName, `تغيّرت مدة تنفيذ مشروعك · ${p!.name}`, `يبدأ ${o.startAt} وينتهي ${p!.endAt}`)
       break
     }
     case 'assign': {
@@ -445,7 +466,7 @@ function applyOp(o: Op) {
       const f = flowOf(o.id)
       const exp = new Date(`${opDay()}T00:00:00Z`)
       exp.setUTCDate(exp.getUTCDate() + (c?.accessDays ?? 7))
-      f.referral = { consultant: o.consultant, by: o.by, at: opDay(), expiresAt: exp.toISOString().slice(0, 10) }
+      f.referral = { consultant: o.consultant, by: o.by, at: opDay(), expiresAt: exp.toISOString().slice(0, 10), code: o.code }
       event(o.id, { action: 'إحالة إلى مستشار', by: o.by, fields: [{ k: 'المستشار', v: c?.name ?? o.consultant, strong: true }, { k: 'وصول حتى', v: f.referral.expiresAt }, { k: 'الرأي', v: 'استشاري غير ملزم' }] })
       if (c) note(o.id, c.name, `طلب رأي · ${p!.name}`, `من ${o.by} · حتى ${f.referral.expiresAt}`)
       break
@@ -514,6 +535,17 @@ export const submitRequest = (values: Record<string, string>, docs: string[], by
   return id
 }
 export const assignSupervisor = (id: string, owner: string, by: string) => run({ op: 'assign', id, owner, by })
+/** Batch 6 · move the execution's start · the calculated end follows from the duration in working days */
+export const rescheduleStart = (id: string, startAt: string, reason: string, by: string): string[] => {
+  const p = projectRows.find((x) => x.id === id)
+  if (!p) return ['المشروع غير موجود']
+  if (!p.durationDays) return ['لا مدة تنفيذ للمشروع · تُحسب النهاية من المدة']
+  if (['مكتمل', 'معتذر عنه'].includes(p.statusGroup)) return ['المشروع مغلق']
+  if (!reason.trim()) return ['اكتب سبب التعديل']
+  if (!startAt) return ['حدّد تاريخ البداية']
+  run({ op: 'reschedule', id, startAt, reason: reason.trim(), by })
+  return []
+}
 export const uploadDoc = (id: string, kind: string, name: string, by: string) => run({ op: 'doc', id, kind, name, by })
 export const saveStudy = (id: string, study: Omit<Study, 'at' | 'version' | 'field'>) => run({ op: 'study', id, study })
 
@@ -529,7 +561,13 @@ export const resubmit = (id: string, by: string) => run({ op: 'resubmit', id, by
 export const transferProject = (id: string, field: string, owner: string, reason: string, by: string) =>
   run({ op: 'transfer', id, field, owner, reason, by })
 export const returnToSupervisor = (id: string, note: string, by: string) => run({ op: 'return', id, note, by })
-export const referConsultant = (id: string, consultant: string, by: string) => run({ op: 'refer', id, consultant, by })
+/** Six random digits · the code isn't derived from anything on the page */
+const drawCode = (): string => {
+  const a = new Uint32Array(1)
+  try { crypto.getRandomValues(a) } catch { a[0] = Math.floor(Math.random() * 2 ** 32) }
+  return String(100000 + (a[0]! % 900000))
+}
+export const referConsultant = (id: string, consultant: string, by: string) => run({ op: 'refer', id, consultant, by, code: drawCode() })
 export const giveOpinion = (id: string, opinion: string, verdict: NonNullable<Referral['verdict']>, by: string) =>
   run({ op: 'opinion', id, opinion, verdict, by })
 export const closeRequest = (id: string, kind: 'cancel' | 'archive', reason: string, by: string) =>
@@ -576,25 +614,65 @@ export const recommendMany = (ids: readonly string[], by: string): { done: strin
 }
 
 /** Is the consultant's access still open on this project */
-export const referralOpen = (r?: Referral): boolean => !!r && !r.opinion && r.expiresAt >= TODAY
+export const referralOpen = (r?: Referral): boolean => !!r && !r.opinion && r.expiresAt >= liveDay()
 
 /* Re-audit 7 Oct · the consultant's screen was open to anyone who knew the project number. The
    referral now carries an access code (sent with the link in production); the screen asks for it
    and keeps the consultant in for this tab. */
 export function adviceCode(projectId: string, r: Referral): string {
-  let h = 2166136261
-  for (const ch of `${projectId}|${r.consultant}|${r.at}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0
-  return String(100000 + (h % 900000))
+  /* Batch 1 · a referral made in the app carries a random code on its op · a seeded referral draws
+     one once and keeps it in this browser · neither is computed from what the page shows (it used
+     to be a hash of the project, the consultant and the date, so it could be worked out) */
+  if (r.code) return r.code
+  const k = `ab-advice-code-${projectId}`
+  try {
+    const saved = localStorage.getItem(k)
+    if (saved) return saved
+    const c = drawCode()
+    localStorage.setItem(k, c)
+    return c
+  } catch {
+    return drawCode()
+  }
 }
 const ADVICE_KEY = (id: string) => `ab-advice-${id}`
 export const adviceUnlocked = (id: string): boolean => {
   try { return sessionStorage.getItem(ADVICE_KEY(id)) === '1' } catch { return false }
 }
-export function unlockAdvice(id: string, code: string): boolean {
+/* Batch 1 · 8 Oct · wrong codes are counted · five in a row lock the screen for fifteen minutes,
+   so the six digits can't be walked through. The count lives in this browser; on the server it
+   would be per referral */
+const TRIES_KEY = (id: string) => `ab-advice-tries-${id}`
+export const ADVICE_MAX_TRIES = 5
+export const ADVICE_LOCK_MIN = 15
+type Tries = { n: number; until?: number }
+const readTries = (id: string): Tries => {
+  try { return JSON.parse(localStorage.getItem(TRIES_KEY(id)) ?? '{"n":0}') as Tries } catch { return { n: 0 } }
+}
+const writeTries = (id: string, t: Tries) => { try { localStorage.setItem(TRIES_KEY(id), JSON.stringify(t)) } catch { /* storage blocked */ } }
+/** Minutes left on the lock · 0 when the screen is open to a try */
+export function adviceLockLeft(id: string, now = Date.now()): number {
+  const t = readTries(id)
+  return t.until && t.until > now ? Math.ceil((t.until - now) / 60_000) : 0
+}
+export type UnlockResult = { ok: true } | { ok: false; left: number; lockedFor: number }
+export function unlockAdvice(id: string, code: string, now = Date.now()): UnlockResult {
+  const lock = adviceLockLeft(id, now)
+  if (lock) return { ok: false, left: 0, lockedFor: lock }
   const r = flowOf(id).referral
-  if (!r || code.trim() !== adviceCode(id, r)) return false
+  if (!r || code.trim() !== adviceCode(id, r)) {
+    const t = readTries(id)
+    const n = (t.until && t.until <= now ? 0 : t.n) + 1
+    if (n >= ADVICE_MAX_TRIES) {
+      writeTries(id, { n: 0, until: now + ADVICE_LOCK_MIN * 60_000 })
+      return { ok: false, left: 0, lockedFor: ADVICE_LOCK_MIN }
+    }
+    writeTries(id, { n })
+    return { ok: false, left: ADVICE_MAX_TRIES - n, lockedFor: 0 }
+  }
+  writeTries(id, { n: 0 })
   try { sessionStorage.setItem(ADVICE_KEY(id), '1') } catch { /* storage blocked · the code is asked again */ }
-  return true
+  return { ok: true }
 }
 
 /** For the timeline · events this module recorded on the project, newest first */

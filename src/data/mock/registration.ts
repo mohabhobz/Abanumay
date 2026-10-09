@@ -447,6 +447,10 @@ export interface RegBank {
   iban: string
   /** Bank account document · uploaded file name · required */
   doc?: string
+  /** An update request's edit of an account already on file · that account's id. Approved, the
+      edit is added and the old account is deactivated with the reason · it is never overwritten,
+      so the payments made to it keep their account (batch 3 · 8 Oct) */
+  replaces?: string
 }
 
 export const BANK_DOC_LABEL = 'وثيقة الحساب البنكي'
@@ -608,7 +612,6 @@ const req = (
 })
 
 const ALL_DOCS = REG_DOCS.map((d) => d.key)
-const NCNP = LICENSORS[0]
 const AWQAF = LICENSORS[1]
 const HRSD = LICENSORS[4]
 const TRADE = LICENSORS[3]
@@ -622,18 +625,21 @@ export const regRows: RegRequest[] = [
   req('REQ-2026-947138', 'جمعية مسارات للتنمية الأسرية', 'جمعية أهلية', HRSD, 'عسير', 'خميس مشيط', '1004360', 'completion', '2026-08-27', ['license'], 55, {
     note: 'قرار تكليف أعضاء المجلس المرفوع منتهي الصلاحية · يلزم رفع القرار الساري.',
   }),
-  req('REQ-2026-947137', 'مؤسسة البناء الوقفية بالمدينة', 'مؤسسة أهلية', NCNP, 'المدينة المنورة', 'ينبع', '1004341', 'approved', '2026-08-18', ALL_DOCS, 84, {
-    decidedAt: '2026-08-24', entityId: '803', reviewDays: 6,
+  /* Batch 3 · 8 Oct · the three approved requests linked to an entity are that entity's own registration ·
+     they carried other names and cities, so the portals of 803, 846 and 774 showed another entity's request
+     and their notices, addressed by the request's name, never reached them */
+  req('REQ-2026-947137', 'جمعية كفالة الأيتام بحائل', 'جمعية أهلية', HRSD, 'حائل', 'حائل', '1004341', 'approved', '2023-05-08', ALL_DOCS, 84, {
+    decidedAt: '2023-05-14', entityId: '803', reviewDays: 6,
   }),
-  req('REQ-2026-947136', 'جمعية كفالة بالجوف', 'جمعية أهلية', HRSD, 'الجوف', 'سكاكا', '1004322', 'approved', '2026-08-11', ALL_DOCS.slice(0, 6), 71, {
-    decidedAt: '2026-08-15', entityId: '846', reviewDays: 4,
+  req('REQ-2026-947136', 'جمعية إفطار صائم بالباحة', 'جمعية أهلية', HRSD, 'الباحة', 'الباحة', '1004322', 'approved', '2022-09-02', ALL_DOCS.slice(0, 6), 71, {
+    decidedAt: '2022-09-06', entityId: '846', reviewDays: 4,
   }),
   req('REQ-2026-947135', 'مركز الأثر للدراسات', 'حكومي', 'أخرى', 'الرياض', 'الرياض', '1004310', 'rejected', '2026-08-04', ['license'], 0, {
     decidedAt: '2026-08-10', reviewDays: 6, rejectReason: 'data',
     note: 'الترخيص المرفوع صادر لجهة أخرى · ورقم الترخيص مسجَّل لجهة قائمة بالتصنيف نفسه (قاعدة 8).',
   }),
-  req('REQ-2026-947134', 'جمعية عطاء بجازان', 'جمعية أهلية', HRSD, 'جيزان', 'صبيا', '1004288', 'approved', '2026-07-21', ALL_DOCS.slice(0, 7), 63, {
-    decidedAt: '2026-07-29', entityId: '774', reviewDays: 8,
+  req('REQ-2026-947134', 'جمعية الأسر المنتجة بجازان', 'جمعية أهلية', HRSD, 'جيزان', 'صبيا', '1004288', 'approved', '2022-04-11', ALL_DOCS.slice(0, 7), 63, {
+    decidedAt: '2022-04-19', entityId: '774', reviewDays: 8,
   }),
   req('REQ-2026-947133', 'جمعية إعمار المساجد بحائل', 'جمعية أهلية', AWQAF, 'حائل', 'حائل', '1004265', 'draft', '2026-09-12', ['license'], 0),
 

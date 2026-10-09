@@ -225,6 +225,8 @@ export const REQUEST_NOUN = { one: 'طلب', few: 'طلبات', many: 'طلبً�
    `nounAfter(n, NOUN.x)`. */
 export const NOUN = {
   day: { one: 'يوم', few: 'أيام', many: 'يومًا' },
+  minute: { one: 'دقيقة', few: 'دقائق', many: 'دقيقة' },
+  attempt: { one: 'محاولة', few: 'محاولات', many: 'محاولة' },
   entity: { one: 'جهة', few: 'جهات', many: 'جهة' },
   year: { one: 'سنة', few: 'سنوات', many: 'سنة' },
   category: { one: 'فئة', few: 'فئات', many: 'فئة' },

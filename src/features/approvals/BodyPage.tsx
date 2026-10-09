@@ -11,13 +11,15 @@ import { nf } from '@/lib/format'
 import { projectRows } from '@/data/mock/projects'
 import { HOLDER_LABEL } from '@/data/holders'
 import { capOf } from '@/data/approval'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole, roleByKey } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import {
-  OUTCOME_SAY, SESSIONS, awaitingSession, levelCap, mayRecord, nextSessionId, saveSession, useApprovals,
+  OUTCOME_SAY, SESSIONS, appFlowOf, awaitingSession, levelCap, mayRecord, nextSessionId, saveSession, useApprovals,
   type Session,
 } from '@/data/approvals/store'
 import { liveBudgets } from '@/data/budget/store'
+import { closeRows } from '@/data/mock/closing'
+import { paidToDate, useClosing } from '@/data/closing/store'
 import { moneyOf, rootOf } from '@/data/mock/budgetTree'
 
 /* The executive committee's and the board's desk (BPD-006 · BPD-007) · what's referred to them and
@@ -28,7 +30,7 @@ import { moneyOf, rootOf } from '@/data/mock/budgetTree'
 export default function BodyPage({ body }: { body: Session['body'] }) {
   useApprovals()
   const role = readRole()
-  const me = roleByKey(role).name
+  const me = meOf(role)
   const may = mayRecord(body, role)
   const { values: v, set } = useQueryParams(['tab'])
   const TABS = [
@@ -170,12 +172,28 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
 /** The board's periodic oversight pack · what was approved, what waits, what passed which cap, and
     the budgets' use · one export ready for the meeting (7.1.importance-1) */
 function BoardPack() {
+  useClosing()
   const year = '2026'
   const approved = projectRows.filter((p) => p.supportStatus === 'معتمد' && (p.decidedAt ?? '').startsWith(year))
   const pending = projectRows.filter((p) => p.stage === 'دراسة المشروع' && p.holder && p.holder !== 'supervisor')
   const above = pending.filter((p) => p.amountRequested > levelCap('exec'))
   const decided = SESSIONS.filter((s) => s.body === 'board').flatMap((s) => s.items.filter((i) => i.outcome).map((i) => ({ s, i })))
   const budgets = liveBudgets().map((d) => { const r = rootOf(d.nodes); return { d, m: r ? moneyOf(d.nodes, r.id) : undefined } })
+  /* Batch 6 · 8 Oct · the pack follows up the board's decisions (7.4 · 7.1.importance-1) · each
+     project the board decided, where it stands now, and what was paid of it */
+  const boardIds = [...new Set([
+    ...decided.map(({ i }) => i.projectId),
+    ...projectRows.filter((p) => appFlowOf(p.id).decided?.level === 'board').map((p) => p.id),
+  ])]
+  const follow = boardIds.map((id) => projectRows.find((p) => p.id === id)).filter((p): p is NonNullable<typeof p> => Boolean(p)).map((p) => ({
+    p, paid: paidToDate(p.id), close: closeRows.find((c) => c.projectId === p.id),
+    outcome: decided.find(({ i }) => i.projectId === p.id)?.i.outcome,
+  }))
+  /* and the evaluations the closings approved · the score and what was reached against the target */
+  const evals = closeRows.filter((c) => c.stage === 'closed' && c.evaluation).map((c) => {
+    const p = projectRows.find((x) => x.id === c.projectId)
+    return { c, p, score: c.evaluation?.score ?? null, reached: c.report.beneficiaries, target: p?.beneficiaries ?? 0 }
+  })
   const sheet: Sheet = {
     file: 'abanumay-board-pack',
     title: 'حزمة مجلس الأمناء · تقرير الإشراف الدوري',
@@ -185,6 +203,8 @@ function BoardPack() {
       ['مشاريع في مسار الاعتماد', String(pending.length), String(pending.reduce((a, p) => a + p.amountRequested, 0))],
       ['منها فوق حد المدير التنفيذي', String(above.length), String(above.reduce((a, p) => a + p.amountRequested, 0))],
       ...budgets.map(({ d, m }) => [`${d.name ?? d.id} · المصروف من المخصص`, '', `${m?.paid ?? 0} / ${m?.allocated ?? 0}`]),
+      ...follow.map(({ p, paid }) => [`متابعة قرار المجلس · ${p.name}`, p.stage, `${paid} / ${p.amountGranted || p.amountRequested}`]),
+      ...evals.map(({ c, score, reached, target }) => [`تقرير تقييم · ${c.projectName}`, score === null ? '—' : String(score), `${reached ?? '—'} / ${target}`]),
     ],
   }
   return (
@@ -217,6 +237,48 @@ function BoardPack() {
             </tbody>
           </table>
         </div>
+      </Glass>
+      <Glass className="tblcard">
+        <Head title="متابعة قرارات المجلس" meta={<span className="sub">ما آلت إليه المشاريع بعد قراره</span>} />
+        {follow.length === 0 ? <p className="sub cnote">لا قرارات للمجلس على مشاريع بعد · تظهر هنا بعد أول جلسة تقرّر.</p> : (
+          <div className="tblwrap">
+            <table className="tbl">
+              <thead><tr><th>المشروع</th><th>القرار</th><th>المرحلة الآن</th><th className="n">المصروف</th><th>الإغلاق</th></tr></thead>
+              <tbody>
+                {follow.map(({ p, paid, close, outcome }) => (
+                  <tr key={p.id}>
+                    <td><Link className="lnk" to={ROUTES.project(p.id)}>{p.name}</Link></td>
+                    <td>{outcome ? OUTCOME_SAY[outcome] : p.supportStatus ?? '—'}</td>
+                    <td>{p.stage}</td>
+                    <td className="n"><Money sm>{paid}</Money></td>
+                    <td>{close ? <Link className="lnk" to={ROUTES.closing(close.id)}>{close.stage === 'closed' ? 'مغلق' : 'قيد الإغلاق'}</Link> : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Glass>
+      <Glass className="tblcard">
+        <Head title="تقارير التقييم" meta={<span className="sub"><Num>{evals.length}</Num> تقييم معتمد</span>} />
+        {evals.length === 0 ? <p className="sub cnote">لا تقييم معتمد بعد.</p> : (
+          <div className="tblwrap">
+            <table className="tbl">
+              <thead><tr><th>المشروع</th><th>الجهة</th><th className="n">التقدير العام</th><th className="n">المستفيدون المتحقّقون</th><th className="n">المستهدف</th></tr></thead>
+              <tbody>
+                {evals.map(({ c, score, reached, target }) => (
+                  <tr key={c.id}>
+                    <td><Link className="lnk" to={ROUTES.closing(c.id)}>{c.projectName}</Link></td>
+                    <td>{c.entityName}</td>
+                    <td className="n">{score === null ? '—' : <Num>{score}</Num>}</td>
+                    <td className="n">{reached === null ? '—' : <Num>{reached}</Num>}</td>
+                    <td className="n"><Num>{target}</Num></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Glass>
       <Glass>
         <Head title="ما ينتظر المجلس" />

@@ -15,6 +15,15 @@
 /** The demo's reference day · readings of the seeded data, never the date of an action */
 export const TODAY = '2026-10-08'
 
+/** The day for checks that run out with time · the intake period, a consultant's access · the real
+    day once it passes the reference day, so a period ends and an access expires as days go by.
+    Batch 5 · 8 Oct (intake#7) · they compared with the fixed `TODAY`, so with the clock moved to
+    March 2027 the cycle still read open, and a referral stamped from the real day never expired */
+export const liveDay = (): string => {
+  const real = new Date().toISOString().slice(0, 10)
+  return real > TODAY ? real : TODAY
+}
+
 /** The real time now · the stamp an action carries on its op */
 export const stampNow = (): string => new Date().toISOString()
 

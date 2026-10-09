@@ -7,7 +7,7 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { query } from '@/data/repository'
 import { entityCode } from '@/lib/format'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole } from '@/data/roles'
 import { archiveEntity, overlayOf, useEntityFlow } from '@/data/entities/store'
 import { useQueryParams } from '@/hooks/useQueryParams'
 
@@ -24,7 +24,7 @@ export default function ArchivePage() {
   /* Re-audit 7 Oct · searching the archive and restoring from it is the system admin's (rule 29) */
   const admin = role === 'admin'
   const may = admin
-  const me = roleByKey(role).name
+  const me = meOf(role)
   const rows = query.entities({ archived: true, search: v.q, page: 1, pageSize: 9999, sort: 'name' }).rows
   const [why, setWhy] = useState<Record<string, string>>({})
 

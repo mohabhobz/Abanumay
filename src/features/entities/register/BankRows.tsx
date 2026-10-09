@@ -16,8 +16,10 @@ import { ibanValid } from '@/lib/iban'
    verifies. */
 
 export function BankRows({
-  banks, onChange, min = 1, idPrefix = 'b',
+  banks, onChange, min = 1, idPrefix = 'b', replacing = {},
 }: {
+  /** An update request's edits · the label of each account on file a row replaces */
+  replacing?: Record<string, string>
   banks: RegBank[]
   onChange: (next: RegBank[]) => void
   /** Rows that can't be removed · registration needs one account, an update request none */
@@ -42,7 +44,7 @@ export function BankRows({
         <div className="bkrow" key={b.id}>
           <div className="bkrow-h">
             <span className="bkrow-n num">{i + 1}</span>
-            <b>الحساب {i === 0 ? 'الأساسي' : `رقم ${i + 1}`}</b>
+            <b>{b.replaces ? `تعديل الحساب «${replacing[b.replaces] ?? b.replaces}»` : `الحساب ${i === 0 ? 'الأساسي' : `رقم ${i + 1}`}`}</b>
             <span className="pc-sp" />
             {b.doc
               ? <Tag tone="ok">وثيقته مرفوعة</Tag>

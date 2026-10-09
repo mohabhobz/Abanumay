@@ -12,7 +12,7 @@ import { activationTone } from '@/lib/tone'
 import { isolate } from '@/lib/format'
 import { ibanValid } from '@/lib/iban'
 import { BANK_REJECTS } from '@/data/mock/registration'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole, roleByKey } from '@/data/roles'
 import { ENTITY_RULES } from '@/data/entities/rules'
 import { duplicates } from '@/data/entities/validate'
 import {
@@ -38,7 +38,7 @@ export default function UpdateReviewPage() {
   /* Re-audit 7 Oct · each new account is decided on its own · approving the request accepted them all */
   const [bankNo, setBankNo] = useState<Record<string, string>>({})
   const role = readRole()
-  const me = roleByKey(role).name
+  const me = meOf(role)
   const may = canDecide('update', role)
 
   if (!u) {
@@ -119,13 +119,13 @@ export default function UpdateReviewPage() {
 
               {u.banks.length > 0 && (
                 <Glass>
-                  <Head title="حسابات بنكية جديدة" meta={<span className="sub"><Num>{u.banks.length}</Num> حساب</span>} />
+                  <Head title="حسابات بنكية جديدة أو معدَّلة" meta={<span className="sub"><Num>{u.banks.length}</Num> حساب</span>} />
                   <ul className="rgbanks">
                     {u.banks.map((b, i) => (
                       <li key={b.id}>
                         <span className="rgbank-n num">{i + 1}</span>
                         <div className="rgbank-b">
-                          <div className="rgbank-t"><b>{b.bankName}</b><span className="sub">· {b.bankHolder} · {b.shortName}</span></div>
+                          <div className="rgbank-t"><b>{b.bankName}</b><span className="sub">· {b.bankHolder} · {b.shortName}</span>{b.replaces && <Tag tone="warn">تعديل لحساب قائم · يُعطَّل الحالي عند القبول</Tag>}</div>
                           <div className="sub"><Mono>{b.iban}</Mono> {!ibanValid(b.iban) && <span className="bad">· الآيبان غير صحيح</span>}</div>
                           <DocList label={`وثيقة ${b.bankName}`} rows={[{ name: b.doc || 'وثيقة الحساب البنكي.pdf', uploaded: Boolean(b.doc), required: true }]} />
                           {open && (

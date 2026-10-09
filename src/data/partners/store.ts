@@ -5,7 +5,7 @@ import {
   EHSAN_SEED, portfolios as PF_SEED, seedPayRef, type Portfolio as PfSeed, type PortfolioStage,
 } from '@/data/mock/implementer'
 import { stageMeta } from '@/data/mock/taxonomy'
-import { finalizeHold, linkIssues, linkOf, linkProject, recordPaid, releaseSavings, unlinkProject, isPaidRef, useBudget } from '@/data/budget/store'
+import { finalizeHold, hasFunding, linkIssues, linkOf, linkProject, recordPaid, releaseSavings, unlinkProject, isPaidRef, useBudget } from '@/data/budget/store'
 import { openPlanFor } from '@/data/plans/store'
 import { planOfProject, planDone } from '@/data/mock/plans'
 import { setEhsanGate } from '@/data/payments/store'
@@ -204,8 +204,13 @@ export interface PortfolioRec {
   openedAt: string
   note?: string
   shares?: { docId: string; nodeId: string; amount: number }[]
-  plan: { state: 'none' | 'draft' | 'review' | 'approved' | 'returned'; phases: PfPhase[]; note?: string; by?: string }
-  agreement: { state: 'none' | 'draft' | 'manager' | 'partner' | 'signed' | 'returned'; file?: string; note?: string }
+  /* Batch 6 · 8 Oct · the plan and the agreement run their procedures' full paths (BPD-012 · BPD-008)
+     · the plan: drafted by the partner or the supervisor, the partner's reviewed by the supervisor
+     («supervisor») before the manager · the agreement: the manager, then the executive director,
+     the partner's signature, then the foundation's counter-signature («foundation») before it's in
+     force. The short paths skipped the supervisor's review and the executive and foundation steps */
+  plan: { state: 'none' | 'draft' | 'supervisor' | 'review' | 'approved' | 'returned'; phases: PfPhase[]; note?: string; by?: string; drafter?: 'partner' | 'supervisor' }
+  agreement: { state: 'none' | 'draft' | 'manager' | 'executive' | 'partner' | 'foundation' | 'signed' | 'returned'; file?: string; note?: string; signedBy?: string; countersignedBy?: string }
   schedule: EhSlot[]
   requests: PfRequest[]
   approvals: PfApproval[]
@@ -359,6 +364,8 @@ export function pfStops(pf: PortfolioRec, act: PfAct, shares?: PortfolioRec['sha
     const sh = shares ?? pf.shares
     if (!sh?.length) out.push('اختر بند الميزانية لحجز قيمة المحفظة (13.2.7)')
     else if (sh.reduce((s, x) => s + x.amount, 0) !== pf.total) out.push(`مجموع الحجز يساوي قيمة المحفظة ${nf.format(pf.total)}`)
+    /* Batch 6 · a hold split across lines or budgets · each line and its levels must cover its part */
+    else out.push(...linkIssues({ projectId: pf.id, projectName: pf.name, by: '', shares: sh }, pf.total))
   }
   return out
 }
@@ -373,8 +380,8 @@ type Op = { by: string; at: string } & (
   | { op: 'pfCreate'; pf: Pick<PortfolioRec, 'id' | 'name' | 'entityId' | 'total' | 'track' | 'field' | 'goals' | 'summary' | 'files' | 'origin' | 'channel'>; send: boolean; fromProject?: string }
   | { op: 'pfAct'; id: string; act: PfAct; note: string; shares?: PortfolioRec['shares'] }
   | { op: 'pfPlan'; id: string; phases: PfPhase[] }
-  | { op: 'pfPlanAct'; id: string; act: 'send' | 'approve' | 'return'; note: string }
-  | { op: 'pfAgr'; id: string; act: 'draft' | 'send' | 'approve' | 'return' | 'sign'; note: string; file?: string }
+  | { op: 'pfPlanAct'; id: string; act: 'send' | 'toManager' | 'approve' | 'return'; note: string }
+  | { op: 'pfAgr'; id: string; act: 'draft' | 'send' | 'approve' | 'return' | 'sign' | 'countersign'; note: string; file?: string }
   | { op: 'pfSchedule'; id: string; slots: EhSlot[] }
   | { op: 'subAdd'; pfId: string; sub: Omit<SubProject, 'state' | 'addedBy' | 'addedAt'> }
   | { op: 'subDrop'; pfId: string; subId: string }
@@ -440,7 +447,7 @@ const setStage = (projectId: string, stage: string) => {
 function settleOnBudget(p: EhsanPay, by: string) {
   if (!liveRun) return
   const holder = p.target.kind === 'project' ? p.target.projectId : p.target.pfId
-  if (linkOf(holder) && !isPaidRef(p.ref)) recordPaid(holder, p.amount, p.ref, by)
+  if (hasFunding(holder) && !isPaidRef(p.ref)) recordPaid(holder, p.amount, p.ref, by)
 }
 
 function apply(o: Op) { asOf(o.at, () => applyOp(o)) }
@@ -472,7 +479,12 @@ function applyOp(o: Op) {
          project has already moved on (approved, in execution), and the routing used to drop away */
       if (!p || (liveRun && p.statusGroup !== 'في الدراسة')) return
       p.platform = o.platform ? 'منصة إحسان' : undefined
-      p.partnerType = isStrategic(p.entityId) ? (o.type === 'portfolio' ? 'محفظة' : 'مستقل') : undefined
+      /* Batch 4 · 8 Oct · a regular entity's project routed through Ehsan is an independent project
+         too · the type was set only for a strategic partner's projects, so 21038 read «مستقل» on its
+         Ehsan card and agreement tab (`viaEhsan`) and «عادي» on its data tab and approval path ·
+         a portfolio stays a strategic partner's only */
+      const strategic = isStrategic(p.entityId)
+      p.partnerType = o.platform || strategic ? (strategic && o.type === 'portfolio' ? 'محفظة' : 'مستقل') : undefined
       /* Replayed after the approval path · an independent project through Ehsan approved earlier
          belongs in execution, not at the agreement (11.2.17) */
       if (!liveRun && p.platform && p.partnerType === 'مستقل' && p.stage === 'اعتماد الإتفاقية') setStage(p.id, 'المشرف إذن الصرف')
@@ -522,7 +534,7 @@ function applyOp(o: Op) {
           const who = SAY[pf.stage]
           pf.stage = 'approved'
           if (liveRun && linkOf(pf.id)) finalizeHold(pf.id, o.by)
-          plog(pf, o.by, `اعتمدها ${who} نهائيًّا${o.note ? ` · ${o.note}` : ''} · ثُبّت الحجز وفُعّلت إدارتها`, o.at)
+          plog(pf, o.by, `${who === 'اللجنة التنفيذية' ? 'اعتمدتها' : 'اعتمدها'} ${who} نهائيًّا${o.note ? ` · ${o.note}` : ''} · ثُبّت الحجز وفُعّلت إدارتها`, o.at)
           notify([pf.owner, partnerName(pf.entityId)], `اعتُمدت المحفظة · ${pf.name}`, 'الخطوة التالية: الخطة والاتفاقية', ROUTES.portfolio(pf.id))
         } else {
           const to = NEXT[pf.stage]!
@@ -551,19 +563,36 @@ function applyOp(o: Op) {
     }
     case 'pfPlan': {
       const pf = pfById(o.id)
-      if (!pf || pf.stage !== 'approved' || pf.plan.state === 'review' || pf.plan.state === 'approved') return
+      if (!pf || pf.stage !== 'approved' || pf.plan.state === 'review' || pf.plan.state === 'supervisor' || pf.plan.state === 'approved') return
       pf.plan.phases = o.phases
       pf.plan.state = 'draft'
       pf.plan.by = o.by
+      pf.plan.drafter = o.by === partnerName(pf.entityId) ? 'partner' : 'supervisor'
       return
     }
     case 'pfPlanAct': {
       const pf = pfById(o.id)
       if (!pf) return
       if (o.act === 'send' && (pf.plan.state === 'draft' || pf.plan.state === 'returned') && pf.plan.phases.length) {
+        /* 12.2.6 · the partner's draft goes to the supervisor first · the supervisor's own to the manager */
+        if (pf.plan.drafter === 'partner') {
+          pf.plan.state = 'supervisor'
+          plog(pf, o.by, 'أرسل الشريك خطة المحفظة لمشرف المنح', o.at)
+          notify([pf.owner], `مراجعة خطة محفظة · ${pf.name}`, `${pf.plan.phases.length} مراحل من الشريك`, ROUTES.portfolio(pf.id))
+        } else {
+          pf.plan.state = 'review'
+          plog(pf, o.by, 'أُرسلت خطة المحفظة لمدير المنح', o.at)
+          notify([MGR()], `اعتماد خطة محفظة · ${pf.name}`, `${pf.plan.phases.length} مراحل`, ROUTES.portfolio(pf.id))
+        }
+      } else if (o.act === 'toManager' && pf.plan.state === 'supervisor') {
         pf.plan.state = 'review'
-        plog(pf, o.by, 'أُرسلت خطة المحفظة لمدير المنح', o.at)
+        plog(pf, o.by, 'راجع مشرف المنح خطة الشريك وأحالها لمدير المنح', o.at)
         notify([MGR()], `اعتماد خطة محفظة · ${pf.name}`, `${pf.plan.phases.length} مراحل`, ROUTES.portfolio(pf.id))
+      } else if (o.act === 'return' && pf.plan.state === 'supervisor' && o.note.trim()) {
+        pf.plan.state = 'returned'
+        pf.plan.note = o.note
+        plog(pf, o.by, `أعاد المشرف الخطة للشريك · ${o.note}`, o.at)
+        notify([partnerName(pf.entityId)], `أُعيدت خطة المحفظة · ${pf.name}`, o.note, `${ROUTES.portfolio(pf.id)}?as=partner`)
       } else if (o.act === 'approve' && pf.plan.state === 'review') {
         pf.plan.state = 'approved'
         plog(pf, o.by, 'اعتمد مدير المنح خطة المحفظة', o.at)
@@ -580,11 +609,21 @@ function applyOp(o: Op) {
       const a = pf.agreement
       if (o.act === 'draft' && (a.state === 'none' || a.state === 'returned')) a.state = 'draft'
       else if (o.act === 'send' && a.state === 'draft') { a.state = 'manager'; notify([MGR()], `اعتماد اتفاقية محفظة · ${pf.name}`, partnerName(pf.entityId), ROUTES.portfolio(pf.id)) }
-      else if (o.act === 'approve' && a.state === 'manager') { a.state = 'partner'; notify([partnerName(pf.entityId)], `اتفاقية للتوقيع · ${pf.name}`, 'وقّع الاتفاقية وارفعها', `${ROUTES.portfolio(pf.id)}?as=partner`) }
-      else if (o.act === 'return' && a.state === 'manager' && o.note.trim()) { a.state = 'returned'; a.note = o.note }
-      else if (o.act === 'sign' && a.state === 'partner' && o.file) { a.state = 'signed'; a.file = o.file; notify([pf.owner], `وُقّعت اتفاقية المحفظة · ${pf.name}`, 'يمكن تسجيل المشاريع الفرعية', ROUTES.portfolio(pf.id)) }
+      /* Batch 6 · the agreements procedure's steps (8.2.13 – 8.2.29) · manager → executive → partner →
+         the foundation's counter-signature → in force */
+      const was = a.state
+      if (o.act === 'approve' && a.state === 'manager') { a.state = 'executive'; notify([roleByKey('ceo').name], `اعتماد اتفاقية محفظة · ${pf.name}`, partnerName(pf.entityId), ROUTES.portfolio(pf.id)) }
+      else if (o.act === 'approve' && a.state === 'executive') { a.state = 'partner'; notify([partnerName(pf.entityId)], `اتفاقية للتوقيع · ${pf.name}`, 'وقّع الاتفاقية وارفعها', `${ROUTES.portfolio(pf.id)}?as=partner`) }
+      else if (o.act === 'return' && (a.state === 'manager' || a.state === 'executive') && o.note.trim()) { a.state = 'returned'; a.note = o.note; notify([pf.owner], `أُعيدت اتفاقية المحفظة · ${pf.name}`, o.note, ROUTES.portfolio(pf.id)) }
+      else if (o.act === 'sign' && a.state === 'partner' && o.file) { a.state = 'foundation'; a.file = o.file; a.signedBy = o.by; notify([MGR(), pf.owner], `وقّع الشريك اتفاقية المحفظة · ${pf.name}`, 'بانتظار توقيع ممثل المؤسسة', ROUTES.portfolio(pf.id)) }
+      else if (o.act === 'countersign' && a.state === 'foundation') { a.state = 'signed'; a.countersignedBy = o.by; notify([pf.owner, partnerName(pf.entityId)], `سرت اتفاقية المحفظة · ${pf.name}`, 'يمكن تسجيل المشاريع الفرعية', ROUTES.portfolio(pf.id)) }
       else return
-      plog(pf, o.by, { draft: 'أعدّ مسودة الاتفاقية', send: 'أرسل الاتفاقية لمدير المنح', approve: 'اعتمد مدير المنح الاتفاقية · أُرسلت للشريك', return: `أعاد الاتفاقية · ${o.note}`, sign: 'وقّع الشريك الاتفاقية ورفعها' }[o.act], o.at)
+      const SAY: Record<string, string> = {
+        draft: 'أعدّ مسودة الاتفاقية من النموذج', send: 'أرسل الاتفاقية لمدير المنح',
+        approve: was === 'manager' ? 'اعتمد مدير المنح الاتفاقية · أُحيلت للمدير التنفيذي' : 'اعتمد المدير التنفيذي الاتفاقية · أُرسلت للشريك',
+        return: `أعاد الاتفاقية · ${o.note}`, sign: 'وقّع الشريك الاتفاقية ورفعها', countersign: 'وقّع ممثل المؤسسة الاتفاقية · سرت',
+      }
+      plog(pf, o.by, SAY[o.act], o.at)
       return
     }
     case 'pfSchedule': {
@@ -695,7 +734,7 @@ function applyOp(o: Op) {
         if (!o.ref?.trim()) return
         r.state = 'paid'
         r.ref = o.ref
-        if (liveRun && linkOf(pf.id) && !isPaidRef(o.ref)) recordPaid(pf.id, r.amount, o.ref, o.by)
+        if (liveRun && hasFunding(pf.id) && !isPaidRef(o.ref)) recordPaid(pf.id, r.amount, o.ref, o.by)
         plog(pf, o.by, `صرفت المالية الدفعة ${r.no} · ${o.ref}`, o.at)
       } else {
         if (!o.note.trim()) return
@@ -727,7 +766,7 @@ function applyOp(o: Op) {
       pf.stage = 'closed'
       pf.close.closedBy = o.by
       pf.close.closedAt = day(o.at)
-      if (liveRun && linkOf(pf.id)) releaseSavings(pf.id, o.by, 'أُغلقت المحفظة')
+      if (liveRun && hasFunding(pf.id)) releaseSavings(pf.id, o.by, 'أُغلقت المحفظة')
       plog(pf, o.by, 'أُغلقت المحفظة · حُفظت بياناتها وأُعيد الوفر لبنده', o.at)
       notify([partnerName(pf.entityId)], `أُغلقت المحفظة · ${pf.name}`, 'بياناتها محفوظة للقراءة', ROUTES.portfolio(pf.id))
       listRow(pf)
@@ -759,7 +798,7 @@ function applyOp(o: Op) {
       c.closedAt = day(o.at)
       c.closedBy = o.by
       setStage(o.projectId, 'مشروع مكتمل')
-      if (liveRun && linkOf(o.projectId)) releaseSavings(o.projectId, o.by, 'أُغلق المشروع عبر إحسان')
+      if (liveRun && hasFunding(o.projectId)) releaseSavings(o.projectId, o.by, 'أُغلق المشروع عبر إحسان')
       ;(EH_OPS.get(o.projectId) ?? EH_OPS.set(o.projectId, []).get(o.projectId)!).push({ at: day(o.at), by: o.by, kind: 'الإغلاق', note: 'أُغلق المشروع وحُدّثت حالته · مكتمل' })
       return
     }
@@ -946,7 +985,7 @@ export function actOnPortfolio(id: string, act: PfAct, note: string, by: string,
   return []
 }
 export const savePfPlan = (id: string, phases: PfPhase[], by: string) => run({ op: 'pfPlan', id, phases, by, at: now() })
-export function actOnPfPlan(id: string, act: 'send' | 'approve' | 'return', note: string, by: string): string[] {
+export function actOnPfPlan(id: string, act: 'send' | 'toManager' | 'approve' | 'return', note: string, by: string): string[] {
   const pf = pfById(id)
   if (!pf) return ['المحفظة غير موجودة']
   if (act === 'send') {
@@ -1119,4 +1158,46 @@ export function partnerReport(): PartnerReportRow[] {
     }
   }
   return out
+}
+
+/* ── Partner closings on the closings desk (11.2.21 · 13.2.26) ──
+   Batch 4 · 8 Oct · a portfolio's closing and an Ehsan project's closing ran on their own pages and
+   never showed in /closings. They keep their own procedure (no final-report cycle of BPD-010), so the
+   desk lists them in their own section, each with where its closing stands and a link to it. */
+export interface PartnerClosing {
+  id: string
+  kind: 'portfolio' | 'ehsan'
+  name: string
+  partner: string
+  owner: string
+  state: 'running' | 'closing' | 'closed'
+  /** The report's day, or the closing's */
+  at?: string
+  href: string
+}
+export const PARTNER_CLOSE_SAY: Record<PartnerClosing['state'], string> = {
+  running: 'تحت التنفيذ · بانتظار التقرير الختامي',
+  closing: 'رُفع التقرير · بانتظار الإغلاق',
+  closed: 'مغلق',
+}
+export function partnerClosings(): PartnerClosing[] {
+  const out: PartnerClosing[] = []
+  for (const pf of PORTFOLIOS) {
+    if (pf.stage !== 'approved' && pf.stage !== 'closing' && pf.stage !== 'closed') continue
+    out.push({
+      id: pf.id, kind: 'portfolio', name: pf.name, partner: partnerName(pf.entityId), owner: pf.owner,
+      state: pf.stage === 'closed' ? 'closed' : pf.stage === 'closing' ? 'closing' : 'running',
+      at: pf.close.closedAt ?? pf.close.at, href: ROUTES.portfolio(pf.id),
+    })
+  }
+  for (const p of ehsanProjects()) {
+    if (p.supportStatus !== 'معتمد') continue
+    const c = ehCloseOf(p.id)
+    out.push({
+      id: p.id, kind: 'ehsan', name: p.name, partner: p.entityName, owner: p.owner ?? '',
+      state: c?.closedAt ? 'closed' : c ? 'closing' : 'running', at: c?.closedAt ?? c?.at, href: ROUTES.project(p.id),
+    })
+  }
+  const ORDER = { closing: 0, running: 1, closed: 2 } as const
+  return out.sort((a, b) => ORDER[a.state] - ORDER[b.state])
 }

@@ -11,7 +11,7 @@ import { payRequests } from '@/data/mock/disbursements'
 import { inForceOf, annexValue } from '@/data/agreements/store'
 import { hasFunding, releaseRecovered, releaseSavings, resizeIssue, resizeLink } from '@/data/budget/store'
 import {
-  adjustSchedule, isStopped, paidOf, stopProjectPayments, unsettledSlots, usePayments,
+  adjustSchedule, isStopped, paidOf, scheduleOf, stopProjectPayments, unsettledSlots, usePayments,
 } from '@/data/payments/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { ROUTES } from '@/app/routes'
@@ -93,9 +93,14 @@ export function projectEnd(projectId: string): string | undefined {
   return start && p.durationDays ? addDays(start, p.durationDays) : undefined
 }
 
-/** Paid to date · from the disbursement requests, else (a project paid before the system) the grant */
+/** Paid to date · the payments screen's own reading · from the disbursement requests whenever the
+    project has a schedule there (requests, or an agreement in force), else (a project paid before
+    the system) the grant.
+    Batch 2 · 8 Oct · it fell back to the grant whenever no request existed, so 21020 (agreement in
+    force, nothing paid) read 428,000 paid in closing and 0 in payments, and a stop asked for a
+    171,200 recovery of money never paid. */
 export const paidToDate = (projectId: string): number => {
-  if (payRequests.some((r) => r.projectId === projectId)) return paidOf(projectId)
+  if (payRequests.some((r) => r.projectId === projectId) || scheduleOf(projectId).length) return paidOf(projectId)
   const p = projectOf(projectId)
   return p && (isRunning(p) || p.statusGroup === 'مكتمل' || p.statusGroup === 'متعثر') ? (p.amountGranted || p.amountRequested) : 0
 }

@@ -8,7 +8,7 @@ import {
 import { ENTITY_DOCS } from '@/data/mock/taxonomy'
 import type { RoleKey } from '@/data/roles'
 import { ENTITY_RULES, fileField, needsApproval } from './rules'
-import { todayIso } from './validate'
+import { setEntityIbans, todayIso } from './validate'
 import { ROUTES } from '@/app/routes'
 
 /* Beneficiary entities and their registration (BPD-002) · the actions.
@@ -53,6 +53,12 @@ export const overlayOf = (id: string): EntityOverlay => {
   return o
 }
 
+/* The duplicate-IBAN check reads the accounts on each entity's own file (2.4.10) */
+setEntityIbans((id) => {
+  const o = OVERLAY.get(id)
+  return o ? [...(o.banks ?? []), ...o.addedBanks].map((b) => b.iban) : []
+})
+
 /* ── Update requests (2.3.upd) ── */
 
 export type UpdState = 'draft' | 'review' | 'completion' | 'approved' | 'rejected'
@@ -93,8 +99,10 @@ export const UPD_ROWS: UpdateRequest[] = []
    channels the settings give the entity (in-app on the portal, email, SMS). */
 export interface EntityNote { id: string; to: string; title: string; context: string; at: string; href: string; topic: 'registration' | 'update' | 'status' }
 export const ENTITY_NOTES: EntityNote[] = []
-const enote = (to: string, topic: EntityNote['topic'], title: string, context: string, at: string, href: string) =>
-  ENTITY_NOTES.unshift({ id: `en-${ENTITY_NOTES.length + 1}`, to, topic, title, context, at: at.slice(0, 10), href })
+const enote = (to: string, topic: EntityNote['topic'], title: string, context: string, at: string, href: string, id?: string) => {
+  if (id && ENTITY_NOTES.some((n) => n.id === id)) return
+  ENTITY_NOTES.unshift({ id: id ?? `en-${ENTITY_NOTES.length + 1}`, to, topic, title, context, at: at.slice(0, 10), href })
+}
 
 /* ── Operations ── */
 
@@ -255,16 +263,31 @@ export const expiredMandatory = mandatoryExpired
  * 2.4.20 · an active entity whose mandatory document lapses becomes inactive on its own, and comes
  * back when the renewed copy is approved · the only status the system changes without a person
  */
-const syncActivation = (e: EntityRow, at: string) => {
+/** The day after a mandatory document lapsed · the transition's own date */
+const lapseDay = (e: EntityRow): string | undefined => {
+  const today = todayIso()
+  const ends = [e.licenseEndsAt, OVERLAY.get(e.id)?.fields.boardMandateEndsAt].filter((d): d is string => Boolean(d) && d! < today).sort()
+  if (!ends[0]) return undefined
+  const d = new Date(`${ends[0].slice(0, 10)}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return `${d.toISOString().slice(0, 10)}T00:00`
+}
+
+const syncActivation = (e: EntityRow, now: string) => {
   if (e.archived) return
   const lapsed = mandatoryExpired(e)
+  /* Batch 3 · 8 Oct · the rule runs on every load (the rows are rebuilt from the seed), and it was
+     stamped with the load's time · so each reload wrote the transition again, dated today, with a
+     fresh notice to the entity. It now carries the day the document lapsed, and the notice its own
+     id, so every load rebuilds the same one event and the same one notice. */
+  const at = lapseDay(e) ?? now
   if (e.activation === 'نشط' && lapsed.length) {
     e.activation = 'غير نشط'
     entityEvent(e.id, { kind: 'stop', action: 'تحويل آلي إلى «غير نشطة»', by: 'النظام', at,
       note: `انتهت صلاحية ${lapsed.join(' و')} · يلزم تقديم طلب تحديث بالنسخة السارية قبل أي تقديم جديد.`,
       fields: [{ k: 'حالة التفعيل', v: 'نشط ← غير نشط' }] })
     /* Re-audit 7 Oct · 2.3.upd-19 · the entity is told which documents to update */
-    enote(e.name, 'status', 'تحوّلت جهتك إلى «غير نشطة»', `انتهت صلاحية ${lapsed.join(' و')} · قدّم طلب تحديث بالنسخة السارية`, at, `${ROUTES.entityUpdate}?entity=${e.id}`)
+    enote(e.name, 'status', 'تحوّلت جهتك إلى «غير نشطة»', `انتهت صلاحية ${lapsed.join(' و')} · قدّم طلب تحديث بالنسخة السارية`, at, `${ROUTES.entityUpdate}?entity=${e.id}`, `en-auto-${e.id}-${at.slice(0, 10)}`)
   } else if (e.activation === 'غير نشط' && !lapsed.length) {
     e.activation = 'نشط'
     entityEvent(e.id, { kind: 'accept', action: 'إعادة التفعيل بعد تحديث الوثائق', by: 'النظام', at,
@@ -445,8 +468,18 @@ const apply = (x: Op) => {
         u.bankDecisions = Object.fromEntries(u.banks.map((b) => [b.id, x.bankNo?.[b.id] ?? '']))
         for (const b of u.banks) {
           if (x.bankNo?.[b.id]) continue
-          o.addedBanks.push({ id: `${e.id}-n${o.addedBanks.length + 1}`, bank: b.bankName, shortName: b.shortName, accountName: b.bankHolder,
+          const nid = `${e.id}-n${o.addedBanks.length + 1}`
+          o.addedBanks.push({ id: nid, bank: b.bankName, shortName: b.shortName, accountName: b.bankHolder,
             iban: b.iban, status: 'مفعل', certificate: b.doc || `${BANK_DOC_LABEL}.pdf` })
+          /* Batch 3 · an edit of an account on file · the old one is deactivated, never overwritten */
+          if (b.replaces) {
+            const reason = `استُبدل بتعديل معتمد · الطلب ${u.id}`
+            o.bankStatus[b.replaces] = { status: 'غير مفعل', reason }
+            const own = o.addedBanks.find((y) => y.id === b.replaces) ?? o.banks?.find((y) => y.id === b.replaces)
+            if (own) { own.status = 'غير مفعل'; own.reason = reason }
+            entityEvent(e.id, { kind: 'bank', action: 'تعديل حساب بنكي قائم', by: x.by, at, note: reason,
+              fields: [{ k: 'الحساب السابق', v: b.replaces }, { k: 'الحساب الجديد', v: `${b.bankName} · ${b.iban}` }] })
+          }
         }
         for (const d of u.docs) o.renewed[d.label] = { at: day(at), expires: d.expires, file: d.file }
         const lic = u.docs.find((d) => d.key === 'license' && d.expires)

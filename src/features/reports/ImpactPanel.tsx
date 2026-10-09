@@ -44,7 +44,7 @@ export function ImpactPanel({ full = false }: { full?: boolean }) {
         <Glass className="impc-k">
           <span className="impc-kl">المستفيدون · تقدير الجهات</span>
           <b className="impc-kv num">{nf.format(m.estimated)}</b>
-          <span className="impc-kn sub">في {countOf(m.projects, NOUN.project)} مموَّلًا</span>
+          <span className="impc-kn sub">في {countOf(m.projects, NOUN.project)} مموَّلًا{m.subProjects ? <> · منها <Num>{m.subProjects}</Num> فرعي في المحافظ</> : null}</span>
         </Glass>
         <Glass className="impc-k">
           <span className="impc-kl">المُتحقّق · من التقارير الختامية</span>
@@ -101,7 +101,7 @@ export function ImpactPanel({ full = false }: { full?: boolean }) {
                 <tbody>
                   {m.pairs.map((x) => (
                     <tr key={x.id}>
-                      <td><Link className="lnk" to={ROUTES.project(x.id)}>{x.name}</Link></td>
+                      <td><Link className="lnk" to={x.href}>{x.name}</Link></td>
                       <td>{x.region}</td>
                       <td className="n"><span className="num">{nf.format(x.estimated)}</span></td>
                       <td className="n"><span className="num">{nf.format(x.reached)}</span></td>

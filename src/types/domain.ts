@@ -800,6 +800,9 @@ export interface PlanActivity {
    * around after the activity is fixed.
    */
   notes?: ActivityNote[]
+  /** Batch 6 · what the entity reports it did · editable by the entity until the activity is
+      accepted, then fixed with it (12.2.13 · 12.4.16) */
+  actual?: { text: string; reached: number | null; doneOn: string; by: string; at: string }
   /**
    * Activity's weight in the completion percentage — the weights of a
    * phase's activities sum to 100.

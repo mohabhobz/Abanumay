@@ -193,6 +193,11 @@ export const reportBlockers = (c: CloseRow): string[] => {
   }
   /* Re-audit 7 Oct · the financial report's lines add up to the actual budget it declares */
   const lines = c.finance?.lines ?? []
+  /* Batch 2 · 8 Oct · an empty financial table passed · the check below only ran when a line had a
+     figure, so a report with no lines, or no spending on any line, was sent */
+  if (c.finance && (lines.length === 0 || lines.every((l) => l.spent === null || l.spent === undefined))) {
+    out.push('بنود التقرير المالي · المصروف لكل بند')
+  }
   if (r.budget !== null && lines.some((l) => l.spent !== null && l.spent !== undefined)) {
     const sum = lines.reduce((a, l) => a + (l.spent ?? 0), 0)
     if (sum !== r.budget) out.push(`مجموع بنود التقرير المالي ${sum.toLocaleString('en-US')} لا يساوي الميزانية الفعلية ${r.budget.toLocaleString('en-US')}`)

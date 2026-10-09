@@ -611,6 +611,23 @@ const addShares = (a: SourceShare[], b: SourceShare[]): SourceShare[] => {
   return [...m].map(([code, amount]) => ({ code, amount }))
 }
 
+/** A funding source's balance in a budget · its amount less what the lines hold, commit and paid,
+    each line's money attributed to the sources by the line's own split (1.2.5 · 1.4.4).
+    Batch 5 · funding#1 · the link checks this beside the line's own balance. The attribution is by
+    the split until the ledger records the source of each hold and payment (backend) */
+export function sourceBalance(doc: BudgetDoc, code: string): number {
+  const total = docSources(doc).find((x) => x.code === code)?.amount ?? 0
+  let used = 0
+  for (const leaf of doc.nodes.filter((x) => !doc.nodes.some((y) => y.parentId === x.id))) {
+    const split = splitOf(doc, leaf.id)
+    const share = split?.find((x) => x.code === code)?.amount ?? 0
+    if (!share || !leaf.allocated) continue
+    const m = moneyOf(doc.nodes, leaf.id)
+    used += (m.held + m.committed + m.paid) * share / leaf.allocated
+  }
+  return Math.round(total - used)
+}
+
 /** The split a line carries · `null` when it can't be told */
 export function splitOf(doc: BudgetDoc, id: string): SourceShare[] | null {
   const n = doc.nodes.find((x) => x.id === id)
@@ -797,6 +814,30 @@ export const budgetDocs: BudgetDoc[] = [
       { ...n('e2', 'مسار الدعم الصحي العاجل', 'main', 'e0', 1_200_000, 1_200_000), sources: [{ code: 'SA', amount: 800_000 }, { code: 'MM', amount: 400_000 }] },
       { ...n('e21', 'مجال الأدوية والمستلزمات', 'main', 'e2', 1_200_000, 1_200_000), owners: ['حصة النملة'] },
       { ...leaf('e211', 'هدف توفير الأدوية', 'e21', 1_200_000, 0, 0), sources: [{ code: 'SA', amount: 800_000 }, { code: 'MM', amount: 400_000 }] },
+    ],
+  },
+  /* Batch 5 · 8 Oct (funding#1) · an approved budget funded by two sources with its lines split
+     between them, so the link screen has a live line whose sources it reads · the other two-source
+     budget waits on the grants manager and takes no link. The second source is mostly spent on the
+     paid line, so its balance is the tighter one */
+  {
+    id: 'BG-2026-SP',
+    name: 'ميزانية الشراكات المجتمعية 2026',
+    description: 'مشاريع مشتركة يموّلها الوقفان معًا · لكل بند حصّته من كل مصدر',
+    yearId: 'fy-2026',
+    sourceCode: 'SA',
+    sources: [{ code: 'SA', amount: 400_000 }, { code: 'MM', amount: 200_000 }],
+    directionIds: ['dir-community'],
+    from: '2026-01-01',
+    to: '2026-12-31',
+    total: 600_000,
+    state: 'approved',
+    nodes: [
+      n('w0', 'ميزانية الشراكات المجتمعية 2026', 'base', null, 600_000, 420_000),
+      { ...n('w1', 'مسار الشراكات', 'main', 'w0', 600_000, 420_000), sources: [{ code: 'SA', amount: 400_000 }, { code: 'MM', amount: 200_000 }] },
+      { ...n('w11', 'مجال المبادرات المشتركة', 'main', 'w1', 600_000, 420_000), owners: ['عمر قاسم', 'عزام الخريف'] },
+      { ...leaf('w111', 'هدف المبادرات الأسرية المشتركة', 'w11', 400_000, 0, 0), sources: [{ code: 'SA', amount: 300_000 }, { code: 'MM', amount: 100_000 }] },
+      { ...leaf('w112', 'هدف المبادرات الشبابية المشتركة', 'w11', 200_000, 0, 180_000), sources: [{ code: 'SA', amount: 100_000 }, { code: 'MM', amount: 100_000 }] },
     ],
   },
   /* Next year's budget, approved ahead · future commitments of multi-year projects land on its

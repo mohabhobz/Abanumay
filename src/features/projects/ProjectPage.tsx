@@ -24,7 +24,7 @@ import {
 import { ACTIVITY_FOLLOW_TYPES, activitiesFromFollowUps, useActivities, withActivities } from './activities'
 import { useFollowUps } from './followups'
 import { closeOfProject } from '@/data/mock/closing'
-import { openClosing } from '@/data/closing/store'
+import { openClosing, paidToDate } from '@/data/closing/store'
 import { DistressCard } from '@/features/closing/DistressCard'
 import { AnalysisCard } from '@/components/assistant'
 import { ehsanAi, projectAi } from '@/data/shared/ai'
@@ -236,10 +236,13 @@ export default function ProjectPage() {
   const livePayments: PaymentDetail[] = scheduleOf(project.id).map((x) => {
     const r = x.requestId ? payRequestById(x.requestId) : undefined
     const paid = x.state === 'paid'
+    /* Batch 2 · the order is issued once the manager passes the request to finance · it read «تمّت»
+       on every payment, paid or not */
     return {
       no: x.no, amount: x.amount, date: paid ? r?.paidAt ?? x.dueAt : x.dueAt,
       status: paid ? 'مدفوع' : PAY_SLOT_SAY[x.state].label, voucher: paid ? r?.id : undefined,
-      condition: x.condition, via: paid ? r?.bank?.name ?? 'حساب الجهة' : undefined, receipt: paid,
+      condition: x.condition, via: paid ? r?.bank?.name ?? (r ? 'حساب الجهة' : undefined) : undefined, receipt: paid && Boolean(r),
+      authorized: paid || r?.state === 'finance', before: paid && !r,
     }
   })
   /* Follow-ups added from the tab join the project's own, so the tab and the log read one list. */
@@ -406,14 +409,14 @@ export default function ProjectPage() {
                   onOpenLog={() => goTab('log')}
                   deps={{
                     agreements: detail.agreement ? 1 : 0,
-                    payments: detail.payments.length,
+                    payments: livePayments.length,
                   }}
                   chain={row ? projectChain(row) : undefined}
                 />
               )}
               {active === 'data' && row && (
                 <>
-                  <RequestMetaCard row={row} />
+                  <RequestMetaCard row={row} me={me.name} canReschedule={!asEntity && !closed && ((role.key === 'supervisor' && row.owner === me.name) || role.key === 'grants-manager')} />
                   <RequestDocsCard row={row} me={me.name} asEntity={asEntity} canUpload={!closed && (asEntity ? waiting : true)} />
                   {!asEntity && (row.statusGroup === 'في الدراسة' || closed) ? <RequestCloseCard row={row} me={me.name} /> : null}
                 </>
@@ -433,7 +436,7 @@ export default function ProjectPage() {
               {active === 'agreement' && !viaEhsan(project.id) && agreementsOfProject(project.id).length === 0 && (
                 <AgreementTab
                   agreement={null}
-                  payments={detail.payments}
+                  payments={livePayments}
                   entityName={entity.name}
                   example={examples.agreement}
                   onOpenExample={(x) => navigate(ROUTES.projectTab(x, 'agreement'))}
@@ -473,6 +476,7 @@ export default function ProjectPage() {
                   payments={livePayments}
                   granted={project.amountGranted || project.amountRequested}
                   projectId={project.id}
+                  paidBefore={livePayments.length ? 0 : paidToDate(project.id)}
                   example={examples.payments}
                   onOpenExample={(x) => navigate(ROUTES.projectTab(x, 'payments'))}
                 />

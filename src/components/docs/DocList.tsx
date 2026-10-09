@@ -87,8 +87,9 @@ export function DocList({ rows, label, heads }: DocListProps) {
           </thead>
         )}
         <tbody>
-          {rows.map((r) => (
-            <tr key={r.name} className={r.uploaded ? '' : 'off'}>
+          {/* Batch 2 · two documents can share a name (two «سند قبض») · the key carries the row */}
+          {rows.map((r, i) => (
+            <tr key={`${r.name}-${i}`} className={r.uploaded ? '' : 'off'}>
               <td>
                 {/* ⚠️ **A missing document uses the same geometry as an uploaded one.** It used to
                     be a bare name with no thumbnail slot, starting well off from an uploaded row's

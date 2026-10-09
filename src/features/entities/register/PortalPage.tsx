@@ -5,7 +5,7 @@ import {
 } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
 import { Thread } from '@/components/thread'
-import { Background } from '@/components/shell'
+import { Background, NotificationBell } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
 import { ROUTES } from '@/app/routes'
 import { agreements } from '@/data/mock/agreements'
@@ -190,6 +190,8 @@ export default function PortalPage() {
               <span className="sub">بوّابة الجهة · طلبك أنت</span>
             </div>
             <span className="pc-sp" />
+            {/* Batch 3 · the entity's bell · its own notices, on its own session only */}
+            {!preview && <NotificationBell user={{ name: account ? account.name : reqOf.name }} entity={account ? account.name : reqOf.name} place="top" />}
             {/* Note: this used to be a button with no `onClick` - it looked like logout, could be
                 clicked, and nothing happened; the client caught it. It now clears the session and
                 returns to the login screen with `replace`, so a browser "back" doesn't reopen the
@@ -410,7 +412,7 @@ export default function PortalPage() {
               </>}
 
               {/* Cross · notifications · what the foundation told this entity, and on which channels */}
-              <PortalNotices name={legacy && account ? account.name : reqOf.name} />
+              <PortalNotices name={account ? account.name : reqOf.name} />
 
               {/* BPD-013 · a strategic partner's own portfolios · it requests, adds its sub-projects,
                   updates execution and files the final report · it decides nothing (13.2.3 · 13.2.20) */}

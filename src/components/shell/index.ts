@@ -2,6 +2,7 @@
 export { Background } from './Background'
 export { Avatar } from './Avatar'
 export { MobileTop } from './MobileTop'
+export { NotificationBell } from './Notifications'
 export { Rail, type RailProps } from './Rail'
 export { AccountMenu } from './AccountMenu'
 export type { ThemeChoice } from '@/lib/theme'

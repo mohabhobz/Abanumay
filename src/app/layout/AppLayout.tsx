@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } fro
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
 import { portalOf } from '@/app/entityAccess'
-import { AskDock, Background, MobileTop, Rail } from '@/components/shell'
+import { AskDock, Background, MobileTop, NotificationBell, Rail } from '@/components/shell'
 import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useHashScroll } from '@/hooks/useHashScroll'
@@ -93,6 +93,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
                 <Icon name={icons.chevronBack} size="sm" />
                 بوابة {user.name}
               </Link>
+              <NotificationBell user={user} entity={user.name} place="top" />
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}>
                 <Icon name={icons.logout} size="sm" />
                 تسجيل الخروج

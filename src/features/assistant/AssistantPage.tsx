@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { Background, MobileTop, Rail } from '@/components/shell'
 import { roles, type AssistantRole } from '@/data/mock/assistant'
-import { fixtures } from '@/data/repository'
+import { useRole } from '@/hooks/useRole'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { ROUTES } from '@/app/routes'
 import { signOut } from '@/data/session'
@@ -35,6 +35,8 @@ export default function AssistantPage() {
     else navigate(ROUTES.home, { replace: true })
   }
   const mobile = useIsMobile()
+  /* Batch 1 · the signed-in person · it used to be the fixed sample user */
+  const { user } = useRole()
   /* Note: collapsed state lives in the URL - a collapsed sidebar is still a state, and without this
      key the inventory would render the sidebar open every time. */
   const { values: v, set } = useQueryParams<{ list: string | undefined }>(['list'])
@@ -46,12 +48,12 @@ export default function AssistantPage() {
     <>
       <Background />
       <div className="app">
-        {mobile && <MobileTop user={fixtures.currentUser} />}
+        {mobile && <MobileTop user={user} />}
 
         <div className="shell">
           {/* The whole assistant screen is for the conversation - the sidebar stays closed here, and on
               mobile the bottom bar is left out entirely; the X in the chat header closes the page. */}
-          {!mobile && <Rail user={fixtures.currentUser} onSignOut={out} shut />}
+          {!mobile && <Rail user={user} onSignOut={out} shut />}
 
           <AssistantScreen
             greet={role.greet}

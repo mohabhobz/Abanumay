@@ -6,7 +6,7 @@ import { CfgNum } from '@/features/settings/CfgEdit'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf } from '@/lib/format'
 import {
-  docTitle, fiscalYears, moneyOf, yearById, type BudgetDoc, type BudgetNode,
+  docSources, docTitle, fiscalYears, moneyOf, sourceBalance, splitOf, yearById, type BudgetDoc, type BudgetNode,
 } from '@/data/mock/budgetTree'
 import { approverFor } from '@/data/approval'
 import { projectRows } from '@/data/mock/projects'
@@ -231,10 +231,11 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                       { k: 'الملتزم به', v: <Money sm>{m.committed}</Money> },
                       { k: 'المبلغ المدفوع', v: <Money sm>{m.paid}</Money> },
                       { k: 'المبلغ المتاح', v: <b><Money sm>{m.available}</Money></b> },
-                      /* Re-audit 7 Oct · 5.2.5 · the line's sources and what each still has, by its share of the line */
-                      ...(one.node.sources?.length ? [{
+                      /* Re-audit 7 Oct · 5.2.5 · the line's sources and what each still has on the line ·
+                         batch 5 · and each source's own balance in the budget, which the link checks too */
+                      ...(docSources(one.doc).length > 1 && splitOf(one.doc, one.node.id)?.length ? [{
                         k: 'مصادر التمويل',
-                        v: isolate(one.node.sources.map((x) => `${sourceName(x.code)} ${nf.format(x.amount)} · متاح ${nf.format(m.allocated ? Math.max(0, Math.round(m.available * x.amount / m.allocated)) : 0)}`).join(' · ')),
+                        v: isolate(splitOf(one.doc, one.node.id)!.map((x) => `${sourceName(x.code)} ${nf.format(x.amount)} · متاح في البند ${nf.format(m.allocated ? Math.max(0, Math.round(m.available * x.amount / m.allocated)) : 0)} · رصيد المصدر في الميزانية ${nf.format(Math.max(0, sourceBalance(one.doc, x.code)))}`).join(' · ')),
                       }] : []),
                       { k: 'مبلغ المشروع', v: <Money sm>{project.amount}</Money> },
                       { k: 'يعتمده', v: tier.role },

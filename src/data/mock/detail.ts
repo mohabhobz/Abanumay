@@ -126,6 +126,10 @@ export interface PaymentDetail extends Payment {
   via?: string
   /** The entity uploaded the receipt voucher */
   receipt?: boolean
+  /** The disbursement order was issued · the manager passed the request to finance */
+  authorized?: boolean
+  /** Paid in the old system, before this one · no order or voucher on record here */
+  before?: boolean
 }
 
 /* Outcome */

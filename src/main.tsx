@@ -24,6 +24,16 @@ import { projectRows } from '@/data/mock/projects'
 import { agreements as agrRows } from '@/data/mock/agreements'
 import * as kpi from '@/data/kpi'
 import * as closeMock from '@/data/mock/closing'
+import { spendLevelFor } from '@/data/budget/rules'
+import * as budgetRules from '@/data/budget/rules'
+import * as entStore from '@/data/entities/store'
+import * as entVal from '@/data/entities/validate'
+import { entityDetail } from '@/data/mock/entityDetail'
+import { entityRows } from '@/data/mock/entities'
+import { ibanValid } from '@/lib/iban'
+import * as partnersStore from '@/data/partners/store'
+import * as apprStore from '@/data/approvals/store'
+import * as flowStore from '@/data/intake/flow'
 import '@/styles/index.css'
 
 /* The end-to-end tests sign in as the entity that owns a record · they ask whose record it is here.
@@ -33,7 +43,7 @@ try {
     const w = window as unknown as Record<string, unknown>
     w.__abOwner = ownerOfPath
     /* Reading the stores from a test · the figures behind a screen, not a way to change them */
-    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, agrRows, kpi, closeMock }
+    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore }
   }
   /* The drawn audits (tools/) visit entity views too · each load takes the session its URL needs:
      the record's own entity for an entity view or a portal, staff otherwise */

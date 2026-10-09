@@ -104,6 +104,7 @@ type Op = { at: string; by: string } & (
   | { op: 'accept'; planId: string; actId: string }
   | { op: 'reject'; planId: string; actId: string; note: string }
   | { op: 'comment'; planId: string; actId: string; say: string; from: 'staff' | 'entity' }
+  | { op: 'actData'; planId: string; actId: string; text: string; reached: number | null; doneOn: string }
   | { op: 'change'; planId: string; changeId: string; say: string; proposed?: PlanPhase[] }
   | { op: 'changeDecide'; planId: string; changeId: string; outcome: 'approve' | 'reject' | 'return'; note: string }
 )
@@ -268,6 +269,14 @@ function applyOp(o: Op) {
       notify([p.entityName], p, `أُعيد نشاط بملاحظة · ${a.name}`, o.note, `${ROUTES.plan(p.id)}?as=entity`)
       return
     }
+    case 'actData': {
+      /* Batch 6 · the entity edits its activity's own data until it's accepted · not while the
+         supervisor reviews it, and never after (12.4.16) */
+      const p = planById(o.planId); const a = p && actOf(p, o.actId)
+      if (!p || !a || p.stage !== 'active' || a.state === 'accepted' || a.state === 'claimed') return
+      a.actual = { text: o.text, reached: o.reached, doneOn: o.doneOn, by: o.by, at: actDay() }
+      return
+    }
     case 'comment': {
       const p = planById(o.planId); const a = p && actOf(p, o.actId)
       if (!a) return
@@ -327,6 +336,7 @@ function describe(o: Op): { what: string; note?: string } {
     case 'accept': return { what: `قبول نشاط · ${act(o.actId)}` }
     case 'reject': return { what: `إعادة نشاط · ${act(o.actId)}`, note: o.note }
     case 'comment': return { what: `تعليق على نشاط · ${act(o.actId)}`, note: o.say }
+    case 'actData': return { what: `تحديث بيانات تنفيذ نشاط · ${act(o.actId)}`, note: o.text }
     case 'change': return { what: 'طلب تعديل جوهري', note: o.say }
     case 'changeDecide': return { what: o.outcome === 'approve' ? 'اعتماد طلب التعديل' : o.outcome === 'reject' ? 'رفض طلب التعديل' : 'إعادة طلب التعديل', note: o.note }
   }
@@ -409,6 +419,16 @@ export const claimActivityBy = (planId: string, actId: string, by: string) => ru
 export const acceptActivityBy = (planId: string, actId: string, by: string) => run({ op: 'accept', planId, actId, by, at: now() })
 export const rejectActivityBy = (planId: string, actId: string, note: string, by: string) => run({ op: 'reject', planId, actId, note, by, at: now() })
 export const commentOn = (planId: string, actId: string, say: string, by: string, from: 'staff' | 'entity') => run({ op: 'comment', planId, actId, say, from, by, at: now() })
+/** Batch 6 · the entity's own data on an activity before acceptance · what was done, who was reached, when */
+export function saveActivityData(planId: string, actId: string, d: { text: string; reached: number | null; doneOn: string }, by: string): string[] {
+  const p = planById(planId); const a = p && actOf(p, actId)
+  if (!p || !a) return ['النشاط غير موجود']
+  if (a.state === 'accepted') return ['قُبل النشاط · لا تُعدَّل بياناته بعد القبول']
+  if (a.state === 'claimed') return ['النشاط عند المشرف للمراجعة · تُعدَّل بياناته إن أعاده']
+  if (!d.text.trim()) return ['اكتب ما نُفّذ في النشاط']
+  run({ op: 'actData', planId, actId, text: d.text.trim(), reached: d.reached, doneOn: d.doneOn, by, at: now() })
+  return []
+}
 export function requestChange(planId: string, say: string, proposed: PlanPhase[] | undefined, by: string, changeId?: string): string[] {
   if (!say.trim()) return ['اكتب التعديل المطلوب وسببه']
   const p = planById(planId)

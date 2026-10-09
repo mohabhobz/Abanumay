@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
-  Toggle, ViewToggle,
+  DateText, Empty, Glass, Head, Icon, icons, MultiSelect, GroupPicker, Num, Person, SearchBox, Segments, Select, Stat,
+  Tag, Toggle, ViewToggle,
 } from '@/components/ui'
+import { PARTNER_CLOSE_SAY, partnerClosings, usePartners } from '@/data/partners/store'
 import { countOf, NOUN, nounAfter, pct, REQUEST_NOUN } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
@@ -158,6 +159,8 @@ export default function ClosingPage() {
     })),
   )
 
+  usePartners()
+  const partners = partnerClosings()
   return (
     <AppLayout assistantContext={assistFor.page('إغلاق المشاريع')}>
       <div className="viewstack">
@@ -399,6 +402,43 @@ export default function ClosingPage() {
                 </section>
               )
             })
+          )}
+
+          {/* Batch 4 · 8 Oct · the partners' closings (an Ehsan project 11.2.21 · a portfolio 13.2.26) ·
+              their own procedure, so their own section, each linked to the page that closes it */}
+          {partners.length > 0 && (
+            <Glass className="tblcard">
+              <Head
+                title="إغلاقات الشركاء"
+                meta={<span className="sub">مشاريع منصة إحسان والمحافظ · تُغلق من صفحتها · <Num>{partners.filter((x) => x.state === 'closing').length}</Num> بانتظار الإغلاق</span>}
+              />
+              <div className="tblwrap">
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th><span className="th-t">المشروع أو المحفظة</span></th>
+                      <th><span className="th-t">النوع</span></th>
+                      <th><span className="th-t">الشريك</span></th>
+                      <th><span className="th-t">المشرف</span></th>
+                      <th><span className="th-t">الإغلاق</span></th>
+                      <th><span className="th-t">التاريخ</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partners.map((x) => (
+                      <tr key={`${x.kind}-${x.id}`}>
+                        <td><Link className="lnk" to={x.href}>{x.name}</Link></td>
+                        <td>{x.kind === 'portfolio' ? 'محفظة' : 'مشروع عبر إحسان'}</td>
+                        <td>{x.partner}</td>
+                        <td>{x.owner ? <Person name={x.owner} /> : '—'}</td>
+                        <td><Tag tone={x.state === 'closed' ? 'ok' : x.state === 'closing' ? 'warn' : 'mute'}>{PARTNER_CLOSE_SAY[x.state]}</Tag></td>
+                        <td>{x.at ? <DateText>{x.at}</DateText> : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Glass>
           )}
 
           {/* Rule 16 is stated on screen, not only in a comment - it's the most confusing case: a

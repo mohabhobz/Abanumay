@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { asUser, readRole, roleByKey, writeRole, type Role, type RoleKey } from '@/data/roles'
+import { asUser, meOf, readRole, roleByKey, writeRole, type Role, type RoleKey } from '@/data/roles'
 import type { CurrentUser } from '@/types/domain'
 import { isEntitySession, sessionScope } from '@/data/session'
 import { entityById } from '@/data/mock/entities'
@@ -22,9 +22,11 @@ export function useRole(): {
   setRole: (key: RoleKey) => void
 } {
   const [key, setKey] = useState<RoleKey>(readRole)
+  /* Batch 1 · switching between two people on the same seat keeps the key · the tick re-renders */
+  const [, setTick] = useState(0)
 
   useEffect(() => {
-    const onChange = (e: Event) => setKey((e as CustomEvent<RoleKey>).detail)
+    const onChange = (e: Event) => { setKey((e as CustomEvent<RoleKey>).detail); setTick((n) => n + 1) }
     window.addEventListener(EVENT, onChange)
     return () => window.removeEventListener(EVENT, onChange)
   }, [])
@@ -42,5 +44,6 @@ export function useRole(): {
     const name = (scope.entityId && entityById(scope.entityId)?.name) || regRows.find((r) => r.id === scope.reqId)?.name || 'الجهة'
     return { role, user: { ...asUser(role), name, role: 'الجهة المستفيدة', financialAuthority: null, actions: [] }, setRole }
   }
-  return { role, user: asUser(role), setRole }
+  /* Batch 1 · 8 Oct · the person signed in, not the seat's default name */
+  return { role, user: asUser(role, meOf(role.key)), setRole }
 }

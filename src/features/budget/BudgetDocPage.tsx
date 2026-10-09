@@ -17,7 +17,7 @@ import {
   type BudgetDoc, type BudgetNode, type SourceShare,
 } from '@/data/mock/budgetTree'
 import { APPROVAL_MATRIX } from '@/data/approval'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole } from '@/data/roles'
 import {
   DIRECTIONS, decideBudget, deleteBlock, directionById, docOf, eventsOf, headIssues, mayAct, nextDocId,
   holdSplit, ownersOf, saveBudget, shareSay, sourceName, stepOf, submitBudget, useBudget, whoActs,
@@ -82,7 +82,7 @@ export default function BudgetDocPage() {
   const navigate = useNavigate()
   const ver = useBudget()
   const role = readRole()
-  const me = roleByKey(role).name
+  const me = meOf(role)
 
   /* `?line=` comes from "view the budget document" in the project decision step · the row with
      that id is marked, and the hash scrolls to it. */

@@ -122,13 +122,13 @@ export const openBlock = (field: string): string =>
   (CYCLE.domains[field]?.supervisors.length ?? 0) === 0 ? 'لا يُفتح مجال قبل ربطه بمشرف منح واحد على الأقل' : fundingBlock(field)
 
 /** The demo's reference day · one for the whole prototype (`@/data/clock`) */
-import { TODAY } from '@/data/clock'
+import { TODAY, liveDay } from '@/data/clock'
 export { TODAY }
 
-export const inPeriod = (date = TODAY): boolean => date >= CYCLE.from && date <= CYCLE.to
+export const inPeriod = (date = liveDay()): boolean => date >= CYCLE.from && date <= CYCLE.to
 
 /** Domains a requester may pick right now (3.4.6) · open, with a supervisor, inside the period */
-export const openFields = (date = TODAY): string[] =>
+export const openFields = (date = liveDay()): string[] =>
   inPeriod(date)
     ? ALL_FIELDS.filter((f) => CYCLE.domains[f]?.open && (CYCLE.domains[f]?.supervisors.length ?? 0) > 0 && !fundingBlock(f))
     : []

@@ -377,13 +377,17 @@ export const payRequests: PayRequest[] = (() => {
     if (!paidTpl || !mine.length) continue
     const first = mine[0]!
     for (const r of mine) out.splice(out.indexOf(r), 1)
+    /* Batch 2 · the amounts follow the schedule · even ones, and the last takes the remainder ·
+       three even ones fell 1,000 short of the grant, so payments read it unpaid and closing paid */
+    const even = Math.round(first.granted / first.of / 1000) * 1000
     for (let no = 1; no <= first.of; no++) {
       const dueAt = dayAfter('2026-02-01', (no - 1) * 50)
+      const amt = no === first.of ? first.granted - even * (first.of - 1) : even
       out.push({
         ...structuredClone(paidTpl),
         ...structuredClone({ projectId: first.projectId, projectName: first.projectName, entityId: first.entityId, entityName: first.entityName, owner: first.owner, granted: first.granted, agreement: { ...first.agreement, active: true }, bank: first.bank, sources: first.sources }),
         id: `SR-2026-${String(11_400 + n).padStart(5, '0')}`,
-        no, of: first.of, due: first.due, asked: first.due, reserved: first.due, spent: first.due * (no - 1),
+        no, of: first.of, due: amt, asked: amt, reserved: amt, spent: even * (no - 1),
         dueAt, at: dayAfter(dueAt, -14), state: 'paid', hoursInState: 0, condition: undefined, note: undefined, ai: undefined,
         checks: checksFor('paid', false),
       })

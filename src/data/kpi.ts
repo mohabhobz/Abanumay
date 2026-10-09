@@ -9,8 +9,8 @@
  * Where the text comes from is said per procedure (`source`), not once for all of them:
  *
  *   · `doc`        names and methods copied verbatim from the document
- *   · `paraphrase` the document's formulas, in our wording (Ehsan · portfolios)
- *   · `ours`       the document gives none · derived from the procedure's own rules (plans)
+ *   · `paraphrase` the document's formulas, in our wording (Ehsan · portfolios · plans)
+ *   · `ours`       the document gives none · derived from the procedure's own rules (none today)
  *
  * and an indicator we added on top of the document's carries `ours: true`. The page used to say
  * «copied verbatim» over all of them, which wasn't true for the last three.
@@ -116,12 +116,6 @@ const ratio = (part: number, whole: number, basis: Basis = 'project') => ({
 })
 
 const mean = (v: number[]): number | null => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : null)
-/** Mean duration in days for a journey field */
-const meanDays = (pool: ProjectRow[], f: (r: ProjectRow) => number | null | undefined): number | null => {
-  const v = pool.map((r) => f(r)).filter((h): h is number => typeof h === 'number' && h > 0)
-  const m = mean(v)
-  return m === null ? null : Math.round(m / 24)
-}
 /** Mean days over a pool · the recorded duration where the decisions are on record, the derived
     journey where they aren't (re-audit 7 Oct · a decision taken in the app now moves the mean) */
 const meanRec = (pool: ProjectRow[], rec: (r: ProjectRow) => number | null, hours: (r: ProjectRow) => number | null | undefined): { value: number | null; derived: boolean } => {
@@ -218,6 +212,57 @@ const execReturns = (r: ProjectRow) => recsOf(r).filter((x) => x.level === 'exec
 const within = (h: number | null | undefined, lim: number) => typeof h === 'number' && h > 0 && h <= lim
 const sessionsOf = (body: 'committee' | 'board') => SESSIONS.filter((x) => x.body === body)
 const decisionLag = (body: 'committee' | 'board') => mean(sessionsOf(body).flatMap((x) => x.items.filter((i) => i.decidedAt).map((i) => dayDiff(x.date, i.decidedAt!))))
+/* Batch 5 · 8 Oct · the committee's study time and «from the first presentation» read the sessions on
+   record · a project's first session is the earliest one listing it, and it passed first time when
+   that session decided it (approve, refer up or reject · not a return). The journey stays the
+   fallback for the seeded rows no session lists, and the indicator says «derived» when it used it. */
+const bodyItems = (body: 'committee' | 'board') => {
+  const m = new Map<string, { date: string; decidedAt?: string; outcome?: string; first: boolean }>()
+  for (const x of [...sessionsOf(body)].sort((a, b) => a.date.localeCompare(b.date))) {
+    for (const i of x.items) {
+      const was = m.get(i.projectId)
+      if (!was) m.set(i.projectId, { date: x.date, decidedAt: i.decidedAt, outcome: i.outcome, first: true })
+      else if (!was.decidedAt || was.outcome === 'return') m.set(i.projectId, { date: x.date, decidedAt: i.decidedAt, outcome: i.outcome, first: false })
+    }
+  }
+  return m
+}
+const committeeItems = bodyItems('committee')
+const boardDecided = bodyItems('board')
+const referAt = (r: ProjectRow) => recsOf(r).find((x) => x.verdict === 'refer' && x.level === 'exec')?.at
+const committeeDays = (r: ProjectRow): number | null => {
+  const it = committeeItems.get(r.id), from = referAt(r)
+  return it?.decidedAt && it.outcome !== 'return' && from ? dayDiff(from, it.decidedAt) : null
+}
+const committeePool = [...new Set([...decided.filter((r) => j(r)?.committee !== null && j(r)?.committee !== undefined), ...rows.filter((r) => committeeItems.get(r.id)?.decidedAt)])]
+const committeeRec = meanRec(committeePool, committeeDays, (r) => j(r)?.committee)
+/** Passed at its first presentation · the sessions, else the journey · and whether the journey was used */
+const firstPassOf = (items: Map<string, { decidedAt?: string; outcome?: string; first: boolean }>, pool: ProjectRow[]) => {
+  let fell = false
+  const ok = pool.filter((r) => {
+    const it = items.get(r.id)
+    if (it?.decidedAt) return it.first && it.outcome !== 'return'
+    fell = true
+    return j(r)?.firstPass === true
+  }).length
+  return { ok, derived: fell }
+}
+const committeeShown = committeePool
+const committeeFirst = firstPassOf(committeeItems, committeeShown)
+const boardShown = [...new Set([...decided.filter((r) => j(r)?.decidedBy === 'مجلس الأمناء'), ...rows.filter((r) => boardDecided.get(r.id)?.decidedAt)])]
+const boardFirst = firstPassOf(boardDecided, boardShown)
+/** BPD-004 #6 · held from the first review · a project on record held with no return on its path */
+const heldFirstOf = () => {
+  let fell = false
+  const ok = approved.filter((r) => {
+    const recs = recsOf(r)
+    if (recs.length) return !recs.some((x) => x.verdict === 'return')
+    fell = true
+    return j(r)?.reservedFirstPass === true
+  }).length
+  return { ok, derived: fell }
+}
+const heldFirst = heldFirstOf()
 const boardItems = sessionsOf('board').flatMap((x) => x.items.map((i) => ({ x, i })))
 const boardOnTime = boardItems.filter(({ x, i }) => {
   const sent = recsOf(rows.find((r) => r.id === i.projectId) ?? rows[0]).find((r) => r.verdict === 'refer')?.at
@@ -351,7 +396,7 @@ return [
       { no: 3, name: 'نسبة المشاريع المعادة إلى مشرف المنح', how: '(عدد المشاريع المعادة لاستكمال الدراسة ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(reachedManager, (r) => recsOf(r).some((x) => x.level === 'manager' && x.verdict === 'return') || (j(r)?.toSupervisor ?? 0) > 0), reachedManager.length), better: 'down', target: null, derived: true },
       { no: 4, name: 'نسبة المشاريع المحالة إلى المدير التنفيذي', how: '(عدد المشاريع المحالة إلى المدير التنفيذي ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(reachedManager, (r) => recsOf(r).some((x) => x.level === 'manager' && /recommend|refer/.test(x.verdict)) || (j(r)?.decidedBy !== null && j(r)?.decidedBy !== undefined && j(r)?.decidedBy !== 'مدير المنح')), reachedManager.length), better: 'flat', target: null, derived: true },
       { no: 5, name: 'نسبة الرفض النهائي ضمن صلاحيات مدير المنح', how: '(عدد المشاريع المرفوضة ضمن سقف مدير المنح ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(rejected, (r) => recsOf(r).some((x) => x.level === 'manager' && x.verdict === 'final-reject') || (r.amountRequested <= capOf('manager') && !recsOf(r).length)), reachedManager.length), better: 'flat', target: null, to: link('support=مرفوض') },
-      { no: 6, name: 'نسبة المشاريع التي تم حجز ميزانيتها من أول مراجعة', how: '(عدد المشاريع التي تم حجز مخصصاتها المالية دون إعادة الدراسة ÷ إجمالي المشاريع الموافق عليها) × 100%.', unit: 'pct', ...ratio(countOf(approved, (r) => j(r)?.reservedFirstPass === true), approved.length), better: 'up', target: null, derived: true },
+      { no: 6, name: 'نسبة المشاريع التي تم حجز ميزانيتها من أول مراجعة', how: '(عدد المشاريع التي تم حجز مخصصاتها المالية دون إعادة الدراسة ÷ إجمالي المشاريع الموافق عليها) × 100%.', unit: 'pct', ...ratio(heldFirst.ok, approved.length), better: 'up', target: null, derived: heldFirst.derived },
     ],
   },
 
@@ -378,9 +423,9 @@ return [
     owner: 'اللجنة التنفيذية',
     source: 'doc',
     kpis: [
-      { no: 1, name: 'متوسط مدة دراسة المشروع في اللجنة التنفيذية', how: 'متوسط عدد الأيام من تاريخ إحالة المشروع إلى اللجنة حتى صدور القرار النهائي.', unit: 'days', value: meanDays(decided, (r) => j(r)?.committee), better: 'down', target: null, derived: true },
+      { no: 1, name: 'متوسط مدة دراسة المشروع في اللجنة التنفيذية', how: 'متوسط عدد الأيام من تاريخ إحالة المشروع إلى اللجنة حتى صدور القرار النهائي · من الإحالة المسجّلة وقرار الجلسة.', unit: 'days', value: committeeRec.value, better: 'down', target: null, derived: committeeRec.derived, to: ROUTES.committee },
       { no: 2, name: 'متوسط مدة إصدار قرار اللجنة', how: 'متوسط الزمن من تاريخ انعقاد الاجتماع حتى اعتماد القرار في النظام.', unit: 'days', value: (() => { const m = decisionLag('committee'); return m === null ? null : Math.round(m) })(), gap: decisionLag('committee') === null ? 'لا جلسة للجنة صدر فيها قرار بعد · يُحسب من تاريخ الجلسة وتاريخ القرار.' : undefined, better: 'down', target: null, to: ROUTES.committee },
-      { no: 3, name: 'نسبة المشاريع المعتمدة من أول عرض', how: '(عدد المشاريع التي تمت التوصية بالموافقة عليها من أول عرض ÷ إجمالي المشاريع المعروضة) × 100%.', unit: 'pct', ...(() => { const pool = decided.filter((r) => j(r)?.committee !== null); return ratio(countOf(pool, (r) => j(r)?.firstPass === true), pool.length) })(), better: 'up', target: null, derived: true },
+      { no: 3, name: 'نسبة المشاريع المعتمدة من أول عرض', how: '(عدد المشاريع التي تمت التوصية بالموافقة عليها من أول عرض ÷ إجمالي المشاريع المعروضة) × 100%.', unit: 'pct', ...ratio(committeeFirst.ok, committeeShown.length), better: 'up', target: null, derived: committeeFirst.derived, to: ROUTES.committee },
       { no: 4, name: 'نسبة المشاريع المرفوضة', how: '(عدد المشاريع التي أوصت اللجنة برفضها ÷ إجمالي المشاريع المعروضة) × 100%.', unit: 'pct', ...(() => { const pool = decided.filter((r) => j(r)?.committee !== null); return ratio(countOf(pool, (r) => r.supportStatus === 'مرفوض'), pool.length) })(), better: 'down', target: null },
     ],
   },
@@ -395,7 +440,7 @@ return [
     kpis: [
       { no: 1, name: 'نسبة المشاريع المعروضة ضمن المدة المحددة', how: `عدد المشاريع التي عرضت ضمن المدة المستهدفة ÷ إجمالي المشاريع المحالة × 100%. والمدة ${countNoun(Math.round((ESC_LIMITS['approval.board'] ?? 504) / 24), NOUN.day)} من آلية التصعيد.`, unit: 'pct', ...ratio(boardOnTime.length, boardItems.length), gap: boardItems.length ? undefined : 'لا مشروع عُرض على المجلس في جلسة مسجّلة بعد.', better: 'up', target: null, to: ROUTES.board },
       { no: 2, name: 'متوسط مدة إصدار قرار اللجنة', how: 'متوسط الزمن من تاريخ انعقاد الاجتماع حتى اعتماد القرار في النظام.', unit: 'days', value: (() => { const m = decisionLag('board'); return m === null ? null : Math.round(m) })(), gap: decisionLag('board') === null ? 'لا جلسة للمجلس صدر فيها قرار بعد · يُحسب من تاريخ الجلسة وتاريخ القرار.' : undefined, better: 'down', target: null, to: ROUTES.board },
-      { no: 3, name: 'نسبة المشاريع التي صدر قرار بشأنها من أول عرض', how: 'عدد المشاريع التي تم البت فيها من أول اجتماع ÷ إجمالي المشاريع المعروضة × 100%.', unit: 'pct', ...(() => { const pool = decided.filter((r) => j(r)?.decidedBy === 'مجلس الأمناء'); return ratio(countOf(pool, (r) => j(r)?.firstPass === true), pool.length) })(), better: 'up', target: null, derived: true },
+      { no: 3, name: 'نسبة المشاريع التي صدر قرار بشأنها من أول عرض', how: 'عدد المشاريع التي تم البت فيها من أول اجتماع ÷ إجمالي المشاريع المعروضة × 100%.', unit: 'pct', ...ratio(boardFirst.ok, boardShown.length), better: 'up', target: null, derived: boardFirst.derived, to: ROUTES.board },
       { no: 4, name: 'نسبة المشاريع المرفوضة', how: 'عدد المشاريع المرفوضة ÷ إجمالي المشاريع المعروضة × 100%.', unit: 'pct', ...(() => { const pool = decided.filter((r) => j(r)?.decidedBy === 'مجلس الأمناء'); return ratio(countOf(pool, (r) => r.supportStatus === 'مرفوض'), pool.length) })(), better: 'down', target: null },
     ],
   },
@@ -469,25 +514,24 @@ return [
       { no: 5, name: 'الدفعات بانتظار المراجعة المالية', how: 'عدد دفعات المنصة التي لم تؤكدها الإدارة المالية بعد.', unit: 'count', value: EHSAN_PAYS.filter((x) => x.state === 'review').length, better: 'down', target: null, ours: true, to: `${ROUTES.partners}?tab=finance` },
     ],
   },
-  /* Project plans
-     Warning: **the document gives no indicators at all for this procedure.** These four are derived
-     from its own rules, and all are `derived` with `target: null`, exactly like the agreement and
-     disbursement indicators, whose targets are also empty. Presenting them as if they came from the
-     document would have anyone building on top of them assume they did. */
+  /* Project plans · section 12.8 (batch 5 · 8 Oct)
+     The page said the document gives no indicators for this procedure, and the source was `ours`.
+     That was wrong: 12.8 lists four. They come first, in the document's order and in our wording
+     (`paraphrase`), and the two we derived from its rules follow, marked «ليس في الوثيقة». */
   {
     id: 'BPD-012',
     key: 'bpd-012',
     no: 12,
     title: 'خطط المشاريع',
     owner: 'إدارة المنح',
-    source: 'ours',
+    source: 'paraphrase',
     kpis: [
-      { no: 1, name: 'متوسط مدة اعتماد الخطة', how: 'متوسط الأيام من فتح الخطة حتى تثبيت النسخة المرجعية.', unit: 'days', value: planKpi().approveDays, better: 'down', target: null, derived: true, to: ROUTES.plans },
-      { no: 2, name: 'نسبة اكتمال الأنشطة', how: '(الأنشطة المقبولة ÷ إجمالي الأنشطة) × 100% · بالعدد لا بالتكلفة.', unit: 'pct', ...ratio(accepted.length, acts.length, 'activity'), better: 'up', target: null, to: ROUTES.plans },
-      { no: 3, name: 'نسبة الأنشطة المتأخّرة والمتعثرة', how: '(الأنشطة التي تجاوزت موعدها ولم تُقبل أو تعثّرت ÷ الأنشطة المستحقة حتى اليوم) × 100%.', unit: 'pct', ...ratio(lateOrStuck, Math.max(lateOrStuck, dueActs.length), 'activity'), better: 'down', target: null, to: `${ROUTES.plans}?late=1` },
-      { no: 4, name: 'الأنشطة بانتظار مراجعة المؤسسة', how: 'عدد الأنشطة التي أفادت الجهة باكتمالها ولم تُراجع بعد (قاعدة 14).', unit: 'count', value: planKpi().waiting, better: 'down', target: null, to: `${ROUTES.plans}?wait=1` },
-      { no: 5, name: 'نسبة قبول الأنشطة من أول مراجعة', how: '(الأنشطة المقبولة دون إعادة ÷ الأنشطة التي راجعتها المؤسسة) × 100%.', unit: 'pct', ...ratio(firstOk.length, reviewedActs.length, 'activity'), better: 'up', target: null, to: ROUTES.plans },
-      { no: 6, name: 'متوسط مدة اعتماد النشاط', how: 'متوسط الأيام من تقديم النشاط للقبول حتى قبوله.', unit: 'days', value: (() => { const m = mean(actDays); return m === null ? null : Math.round(m) })(), better: 'down', target: null, to: ROUTES.plans },
+      { no: 1, name: 'نسبة اكتمال أنشطة الخطة', how: '(الأنشطة المقبولة ÷ إجمالي أنشطة الخطط) × 100% · بالعدد لا بالتكلفة.', unit: 'pct', ...ratio(accepted.length, acts.length, 'activity'), better: 'up', target: null, to: ROUTES.plans },
+      { no: 2, name: 'نسبة الأنشطة المتأخرة', how: '(الأنشطة التي تجاوزت موعدها ولم تُقبل أو تعثّرت ÷ الأنشطة المستحقة حتى اليوم) × 100%.', unit: 'pct', ...ratio(lateOrStuck, Math.max(lateOrStuck, dueActs.length), 'activity'), better: 'down', target: null, to: `${ROUTES.plans}?late=1` },
+      { no: 3, name: 'نسبة القبول من أول مراجعة', how: '(الأنشطة المقبولة دون إعادة ÷ الأنشطة التي راجعتها المؤسسة) × 100%.', unit: 'pct', ...ratio(firstOk.length, reviewedActs.length, 'activity'), better: 'up', target: null, to: ROUTES.plans },
+      { no: 4, name: 'متوسط مدة اعتماد النشاط', how: 'متوسط الأيام من تقديم النشاط للقبول حتى قبوله.', unit: 'days', value: (() => { const m = mean(actDays); return m === null ? null : Math.round(m) })(), better: 'down', target: null, to: ROUTES.plans },
+      { no: 5, name: 'متوسط مدة اعتماد الخطة', how: 'متوسط الأيام من فتح الخطة حتى تثبيت النسخة المرجعية.', unit: 'days', value: planKpi().approveDays, better: 'down', target: null, derived: true, ours: true, to: ROUTES.plans },
+      { no: 6, name: 'الأنشطة بانتظار مراجعة المؤسسة', how: 'عدد الأنشطة التي أفادت الجهة باكتمالها ولم تُراجع بعد (قاعدة 14).', unit: 'count', value: planKpi().waiting, better: 'down', target: null, ours: true, to: `${ROUTES.plans}?wait=1` },
     ],
   },
 

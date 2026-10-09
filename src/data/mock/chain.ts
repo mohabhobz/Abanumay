@@ -151,7 +151,10 @@ export const budget2026: BudgetDoc = {
 }
 
 /** Every budget · the document's example plus the one built on the live system */
-export const allBudgets: BudgetDoc[] = [...budgetDocs, budget2026]
+/* Batch 5 · the two-source partnership budget sorts after the main 2026 budget, so the link screen
+   still opens on the main budget's lines and the new budget's come after them */
+const LATE = new Set(['BG-2026-SP'])
+export const allBudgets: BudgetDoc[] = [...budgetDocs.filter((d) => !LATE.has(d.id)), budget2026, ...budgetDocs.filter((d) => LATE.has(d.id))]
 
 /**
  * Warning: **this resolver has to live here, not in `budgetTree`.**

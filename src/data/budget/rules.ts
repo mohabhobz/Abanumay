@@ -35,6 +35,8 @@ export interface BudgetRules {
   holdAt: 'recommend' | 'approval'
   /** 1.4.56 · who may change a project's budget link after its approval */
   relinkBy: RoleKey[]
+  /** The file's migration version · a one-time move runs once */
+  migrated?: number
 }
 
 const DEFAULT: BudgetRules = {
@@ -49,12 +51,21 @@ const DEFAULT: BudgetRules = {
   spendCaps: { manager: 100_000, exec: 500_000, committee: 2_000_000, board: null },
   holdAt: 'recommend',
   relinkBy: ['grants-manager', 'ceo'],
+  migrated: 2,
 }
 
 export const BUDGET_RULES: BudgetRules = readJson(CFG.budgetRules, DEFAULT)
 /* Re-audit 7 Oct · finance has its own seat now · a file saved while the executive stood in for it
    moves to the finance role */
-if (BUDGET_RULES.financeBy.length === 1 && BUDGET_RULES.financeBy[0] === 'ceo') BUDGET_RULES.financeBy = ['finance']
+/* Batch 5 · 8 Oct · once, not on every load · it rewrote a choice made after the move, so an admin
+   who set the executive alone on this step lost it at the next reload with no word. The file now
+   carries the version it was migrated to, and a later choice of ['ceo'] stands */
+if ((BUDGET_RULES.migrated ?? 0) < 2) {
+  const moved = BUDGET_RULES.financeBy.length === 1 && BUDGET_RULES.financeBy[0] === 'ceo'
+  if (moved) BUDGET_RULES.financeBy = ['finance']
+  BUDGET_RULES.migrated = 2
+  if (moved) persist(CFG.budgetRules, BUDGET_RULES)
+}
 
 export const saveBudgetRules = (next: BudgetRules): void => {
   Object.assign(BUDGET_RULES, structuredClone(next))

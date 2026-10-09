@@ -1,7 +1,6 @@
 import { entityRows } from '@/data/mock/entities'
 import { regRows, type RegBank } from '@/data/mock/registration'
 import { ENTITY_RULES } from './rules'
-import { banksOf } from '@/data/mock/payEntity'
 
 /* Format and uniqueness checks for an entity's data · registration and update requests share them
    (2.2.4 · 2.4.6 · 2.4.7 · 2.4.10 · 2.3.upd-4).
@@ -39,6 +38,13 @@ export const formatIssue = (key: string, kind: string, value: string): string =>
   return ''
 }
 
+/** The accounts on an entity's own file · registered by the entities store, which owns them (the
+    accounts from its registration request and those added by an approved update).
+    Batch 3 · 8 Oct · the check read `banksOf()`, the payments mock's masked generator, so it never
+    matched a real account. A registry, not an import, since the store imports this file. */
+let entityIbans: (entityId: string) => string[] = () => []
+export const setEntityIbans = (f: (entityId: string) => string[]) => { entityIbans = f }
+
 /** A value fixtures hide on purpose (9665XXXXXXXX, SA00 0000…) never counts as a duplicate */
 const masked = (s: string) => /X/.test(s) || /^SA0+$/i.test(s.replace(/\s/g, ''))
 const norm = (s: string) => s.replace(/[\sـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').toLowerCase()
@@ -73,7 +79,7 @@ export const duplicates = (
     const iban = b.iban.replace(/\s/g, '').toUpperCase()
     if (!iban || masked(iban)) continue
     /* Re-audit 7 Oct · the accounts of existing entities too, not only other requests */
-    const e = ents.find((x) => banksOf(x.id).some((y) => !masked(y.iban) && y.iban.replace(/\s/g, '').toUpperCase() === iban))
+    const e = ents.find((x) => entityIbans(x.id).some((y) => !masked(y) && y.replace(/\s/g, '').toUpperCase() === iban))
     if (e) { out.push({ field: 'iban', label: `الآيبان ${b.iban}`, who: e.name }); continue }
     const r = reqs.find((x) => x.banks.some((y) => y.iban.replace(/\s/g, '').toUpperCase() === iban))
     if (r) out.push({ field: 'iban', label: `الآيبان ${b.iban}`, who: `${r.name} · طلب ${r.id}` })

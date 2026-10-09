@@ -11,6 +11,8 @@ export interface PaymentsTabProps {
   granted: number
   /** Project ID — connects the tab to the disbursement panel. */
   projectId?: string
+  /** Paid in the old system · the grant, for a project with no schedule here */
+  paidBefore?: number
   example?: { id: string; name: string }
   onOpenExample?: (id: string) => void
 }
@@ -30,7 +32,20 @@ export interface PaymentsTabProps {
  * below it the cycle and condition. So "where's the second payment?" gets
  * answered without opening the log.
  */
-export function PaymentsTab({ payments, granted, projectId, example, onOpenExample }: PaymentsTabProps) {
+export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, example, onOpenExample }: PaymentsTabProps) {
+  /* Batch 2 · a project paid in the old system has no schedule here · closing reads its grant as
+     paid, so the tab says so instead of «لم يصل إلى مرحلة الصرف» */
+  if (payments.length === 0 && paidBefore > 0) {
+    return (
+      <Glass>
+        <Head title="جدول الدفعات" meta="صُرف قبل النظام" />
+        <Empty
+          title={<>صُرفت المنحة في النظام السابق · <Money>{paidBefore}</Money></>}
+          note="لا جدول دفعات ولا طلبات صرف لهذا المشروع في النظام · المصروف يُقرأ من قيمة المنحة، وهو ما يعتمده الإغلاق والتقارير."
+        />
+      </Glass>
+    )
+  }
   if (payments.length === 0) {
     return (
       <Glass>
@@ -139,15 +154,22 @@ export function PaymentsTab({ payments, granted, projectId, example, onOpenExamp
                   be either green or gray, meaning "two done, two not" with no way to know
                   which one is stuck — and that's the one question a reviewer opens this
                   screen to answer. */}
-              <Steps
+              {p.before ? (
+                <div className="pay-cond">
+                  <span className="lb">الصرف</span>
+                  <span>صُرفت في النظام السابق · لا إذن ولا سند لها هنا</span>
+                </div>
+              ) : <Steps
                 flow="row"
                 items={sequence([
-                  { label: 'إذن الصرف', note: 'مشرف المنح', done: true },
+                  /* Batch 2 · the order exists once the request reached finance · it read done on
+                     every payment, the ones not yet requested too */
+                  { label: 'إذن الصرف', note: 'مشرف المنح', done: Boolean(p.authorized) },
                   { label: 'سند الصرف والتحويل', note: 'الإدارة المالية', done: p.status === 'مدفوع' },
                   { label: 'سند القبض والقيد', note: 'الجهة', done: Boolean(p.receipt) },
                   { label: 'اعتماد السند', note: 'الإدارة المالية', done: Boolean(p.receipt) },
                 ])}
-              />
+              />}
 
               {p.voucher && (
                 <div className="pay-docs">

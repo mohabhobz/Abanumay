@@ -16,7 +16,7 @@
  * over a dozen permission profiles in the live system; these three are the roles the screens were
  * designed for.
  */
-import { person, staffNames } from './people'
+import { person } from './people'
 import { capOf } from './approval'
 import type { CurrentUser, DecisionAction } from '@/types/domain'
 
@@ -151,11 +151,11 @@ const authorityOf = (role: Role): number | null => {
   return Number.isFinite(cap) ? cap : null
 }
 
-export const asUser = (role: Role): CurrentUser => ({
-  name: role.name,
+export const asUser = (role: Role, name: string = role.name): CurrentUser => ({
+  name,
   role: role.title,
-  initial: role.initial,
-  photo: role.photo,
+  initial: name === role.name ? role.initial : person(name).initial,
+  photo: name === role.name ? role.photo : person(name).photo,
   financialAuthority: authorityOf(role),
   actions: role.actions,
 })
@@ -183,22 +183,71 @@ export function writeRole(key: RoleKey): void {
   }
 }
 
+/* ── Staff directory · one account per person (batch 1 · 8 Oct) ──
+
+   The seat (role) decides what a screen offers; the person decides whose work it is and whose name
+   the record carries. Every other grants officer used to sign in as «عمر قاسم» (the supervisor
+   seat's default name), so azzam studied omar's projects under omar's name and couldn't reach his
+   own. Each person now signs in as themselves. In production the directory answers this. */
+
+export interface StaffAccount { login: string; name: string; role: RoleKey }
+
+export const STAFF_DIRECTORY: StaffAccount[] = [
+  { login: 'omar', name: 'عمر قاسم', role: 'supervisor' },
+  { login: 'azzam', name: 'عزام الخريف', role: 'supervisor' },
+  { login: 'saud', name: 'سعود البريكان', role: 'supervisor' },
+  { login: 'ahmed', name: 'أحمد العبداللطيف', role: 'supervisor' },
+  { login: 'hessa', name: 'حصة النملة', role: 'supervisor' },
+  { login: 'abdullah', name: 'عبدالله الدوسري', role: 'grants-manager' },
+  { login: 'abdulrahman', name: 'عبدالرحمن الهليّل', role: 'ceo' },
+  { login: 'mohammed', name: 'محمد المطيري', role: 'finance' },
+  { login: 'khalid', name: 'خالد السبيعي', role: 'comms' },
+  /* The committee and the board members who aren't staff seats · each votes from their own account */
+  { login: 'turki', name: 'تركي الخنيزان', role: 'member' },
+  { login: 'sultan', name: 'سلطان العتيبي', role: 'member' },
+  { login: 'nawaf', name: 'نواف الشهري', role: 'member' },
+  { login: 'noura', name: 'نورة القحطاني', role: 'admin' },
+]
+
 /* Staff sign-in · re-audit 7 Oct: any unknown username used to enter as staff. A username is the
    person's first name in Latin letters, their full slug or their Arabic name, and it opens their own
-   seat. In production the directory answers this. */
-export function staffLogin(username: string): RoleKey | null {
+   account. */
+export function staffLogin(username: string): StaffAccount | null {
   /* An email signs in by its local part · omar@abanumay.org = omar */
   const u = username.trim().toLowerCase().split('@')[0]
   if (!u) return null
-  const hit = (name: string) => {
-    const slug = person(name).slug ?? ''
-    return [slug, slug.split('-')[0], name.toLowerCase()].includes(u)
+  for (const a of STAFF_DIRECTORY) {
+    const slug = person(a.name).slug ?? ''
+    if ([a.login, slug, a.name.toLowerCase()].includes(u)) return a
   }
-  for (const r of ROLES) if (hit(r.name) || r.key === u) return r.key
-  /* The other grants officers sit on the supervisor seat */
-  if (staffNames().some((n) => /^مشرفة? المنح$/.test(person(n).title ?? '') && hit(n))) return 'supervisor'
-  return null
+  /* A seat key still opens that seat's default person · «supervisor» = omar */
+  const seat = ROLES.find((r) => r.key === u)
+  return seat ? STAFF_DIRECTORY.find((a) => a.role === seat.key) ?? null : null
 }
 
 /** The demo sign-ins, as the login error lists them */
-export const STAFF_LOGINS = 'omar · abdullah · abdulrahman · mohammed · khalid · turki · noura'
+export const STAFF_LOGINS = STAFF_DIRECTORY.map((a) => a.login).join(' · ')
+
+/* Who is signed in · the session keeps the login. The person counts on the seat they sit on; a
+   seat picked some other way (an old saved role, a test) reads its default person. */
+const SESSION = 'ab-session'
+export function signedAccount(): StaffAccount | undefined {
+  try {
+    const u = sessionStorage.getItem(SESSION)
+    return u ? staffLogin(u) ?? undefined : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** The name the signed-in person carries on a seat · their own when it's their seat */
+export function meOf(role: RoleKey): string {
+  const a = signedAccount()
+  return a && a.role === role ? a.name : roleByKey(role).name
+}
+
+/** Switch to another account · the demo's shortcut for signing out and in again */
+export function switchAccount(a: StaffAccount): void {
+  try { sessionStorage.setItem(SESSION, a.login) } catch { /* storage blocked */ }
+  writeRole(a.role)
+}

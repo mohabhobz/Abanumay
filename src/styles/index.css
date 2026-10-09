@@ -7602,6 +7602,7 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .rgbank-t{display:flex;align-items:baseline;gap:var(--sp-2);flex-wrap:wrap;min-width:0;
   font-size:var(--fs-3);color:var(--t1)}
 .rgbank-t b{font-family:var(--fd);font-weight:600}
+.rgbanks>li>.btn{flex:none;align-self:center}
 
 /* ═══ Bank accounts in the form ═══
    ⚠️ **Each account is a bordered card**, so the eye knows this IBAN belongs

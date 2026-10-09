@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { DateText, Glass, Head, Icon, icons, KV, Money, Num, Person, Tag } from '@/components/ui'
+import { DateField, DateText, Glass, Head, Icon, icons, KV, Money, Num, Person, Tag } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
 import type { ProjectRow } from '@/types/domain'
 import { studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
-import { REQUEST_DOCS, closeRequest, flowOf, uploadDoc } from '@/data/intake/flow'
+import { REQUEST_DOCS, closeRequest, flowOf, rescheduleStart, uploadDoc } from '@/data/intake/flow'
 
 /* The request's own cards on «بيانات المشروع» · procedure 3.
 
@@ -52,8 +52,14 @@ export function RecommendationCard({ row }: { row: ProjectRow }) {
   )
 }
 
-export function RequestMetaCard({ row }: { row: ProjectRow }) {
+export function RequestMetaCard({ row, me, canReschedule = false }: { row: ProjectRow; me?: string; canReschedule?: boolean }) {
   const f = flowOf(row.id)
+  /* Batch 6 · 8 Oct · the start can move, and the calculated end follows the duration · it was
+     computed once at submission and no screen changed it after */
+  const [edit, setEdit] = useState(false)
+  const [start, setStart] = useState(row.startAt ?? '')
+  const [why, setWhy] = useState('')
+  const [err, setErr] = useState<string[]>([])
   const created = f.createdAt ?? row.createdAt?.replace('T', ' ') ?? `${row.submittedAt} 09:00`
   return (
     <Glass>
@@ -64,8 +70,37 @@ export function RequestMetaCard({ row }: { row: ProjectRow }) {
           { k: 'أُرسل', v: <DateText>{f.sentAt?.slice(0, 10) ?? row.submittedAt}</DateText> },
           { k: 'بداية التنفيذ', v: row.startAt ? <DateText>{row.startAt}</DateText> : '—' },
           { k: 'نهاية التنفيذ المحسوبة', v: row.endAt ? <DateText>{row.endAt}</DateText> : '—' },
+          ...(row.durationDays ? [{ k: 'المدة', v: <><Num>{row.durationDays}</Num> يوم عمل</> }] : []),
         ]}
       />
+      {canReschedule && row.durationDays ? (
+        edit ? (
+          <div className="regfields mt-3">
+            <label className="regf">
+              <span className="lb">بداية التنفيذ الجديدة</span>
+              <DateField value={start} onChange={setStart} label="بداية التنفيذ الجديدة" />
+            </label>
+            <label className="regf">
+              <span className="lb">السبب</span>
+              <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب تعديل البداية" /></span>
+              <span className="sub regf-h">تُعاد النهاية من المدة · <Num>{row.durationDays}</Num> يوم عمل</span>
+            </label>
+            {err.length > 0 && <p className="bad">{err.join(' · ')}</p>}
+            <div className="rowf gp-2">
+              <button type="button" className="btn btn-p btn-sm" onClick={() => {
+                const e = rescheduleStart(row.id, start, why, me ?? '')
+                setErr(e)
+                if (!e.length) { setEdit(false); setWhy('') }
+              }}>احفظ وأعد حساب النهاية</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setEdit(false); setErr([]) }}>إلغاء</button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" className="btn btn-2 btn-sm mt-2" onClick={() => { setStart(row.startAt ?? ''); setEdit(true) }}>
+            <Icon name={icons.edit} size="sm" />عدّل بداية التنفيذ
+          </button>
+        )
+      ) : null}
       {f.versions.length > 0 && (
         <ol className="rqv">
           {f.versions.map((v) => (

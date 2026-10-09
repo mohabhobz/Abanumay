@@ -11,14 +11,17 @@ import { CRITERIA, studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { fitOf, similarProjects } from '@/data/intake/insight'
 import { docSources, moneyOf } from '@/data/mock/budgetTree'
-import { HOLD_STAGE_SAY, shareSay } from '@/data/budget/store'
+import { HOLD_STAGE_SAY, planOf, shareSay } from '@/data/budget/store'
+import { yearById } from '@/data/mock/budgetTree'
+import { closeRows } from '@/data/mock/closing'
+import { projectRows } from '@/data/mock/projects'
 import { FundingCard } from '@/features/funding/FundingCard'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import {
   DEPT_SAY, OUTCOME_SAY, VERDICT_SAY, VOTE_SAY, addCondition, addMandNote, amendDecision, answerOpinion,
   appFlowOf, askOpinion, conflictOf, declareConflict, entityBlock, entityLimitBlock, entityTally, holdLine,
-  levelCap, makeOfficial, meetCondition, planSuggested, resolveNote, sessionsOf, strategyOf, useApprovals,
+  levelCap, makeOfficial, meetCondition, payPlanOf, planSuggested, resolveNote, sessionsOf, strategyOf, useApprovals,
   voteTally, type Opinion,
 } from '@/data/approvals/store'
 
@@ -53,11 +56,29 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
   const study = flowOf(row.id).study
   const ref = flowOf(row.id).referral
   const role = readRole()
-  const me = roleByKey(role).name
+  const me = meOf(role)
   const holder = holderOf(row)
   const decider = approverFor(row.amountRequested)
   const hold = holdLine(row.id)
   const s = strategyOf(row)
+  /* Batch 6 · the executive panel's targets and plan */
+  const objectives = flowOf(row.id).objectives
+  const fplan = planOf(row.id)?.kind === 'multi' ? planOf(row.id) : undefined
+  const payPlan = payPlanOf(row.id)
+  const needsPlan = f.needsPlan
+  const past = (() => {
+    const mine = closeRows.filter((c) => c.stage === 'closed' && projectRows.find((p) => p.id === c.projectId)?.entityId === row.entityId)
+    const scores = mine.map((c) => c.evaluation?.score).filter((x): x is number => typeof x === 'number')
+    const reach = mine.map((c) => {
+      const est = projectRows.find((p) => p.id === c.projectId)?.beneficiaries ?? 0
+      return est && typeof c.report.beneficiaries === 'number' ? c.report.beneficiaries / est : null
+    }).filter((x): x is number => x !== null)
+    return {
+      n: mine.length,
+      score: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
+      reach: reach.length ? Math.round((reach.reduce((a, b) => a + b, 0) / reach.length) * 100) : null,
+    }
+  })()
   const eb = entityBlock(row)
   const tally = entityTally(row.entityId, row.id)
   const fit = fitOf(row)
@@ -165,6 +186,22 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           { k: 'التوافق مع التوجهات', v: <span className={s.ok ? '' : 'bad'}>{s.say}</span> },
           { k: 'حالة الجهة ووثائقها', v: eb ? <span className="bad">{eb}</span> : 'نشطة ووثائقها سارية' },
           { k: 'اعتمادات الجهة في الفترة', v: <><Num>{tally.count}</Num> مشروع · <Money sm>{tally.total}</Money>{entityLimitBlock(row, 'exec') && <span className="bad"> · {entityLimitBlock(row, 'exec')}</span>}</> },
+        ]} />
+        {/* Batch 6 · 8 Oct · the panel carries the project's expected results and its plan (5.2.2 ·
+            5.2.4) · the targets the request states, the entity's record on its closed projects, the
+            funding plan across the years and the payment plan a body approved */}
+        <h3 className="stdy-h mt-3">المؤشرات المستهدفة</h3>
+        <KV rows={[
+          { k: 'المستفيدون المستهدفون', v: <Num>{row.beneficiaries}</Num> },
+          { k: 'نهاية التنفيذ المحسوبة', v: row.endAt ? <DateText>{row.endAt}</DateText> : '—' },
+          { k: 'الأهداف التفصيلية', v: objectives.length ? <><Num>{objectives.length}</Num> · {objectives.slice(0, 2).join('، ')}{objectives.length > 2 ? '…' : ''}</> : '—' },
+          { k: 'سجلّ الجهة في المشاريع المغلقة', v: past.n ? <><Num>{past.n}</Num> مشروع · متوسط التقييم {past.score === null ? '—' : <Num>{past.score}</Num>} · تحقق المستفيدين {past.reach === null ? '—' : <span className="num">{pct(past.reach)}</span>}</> : 'لا مشاريع مغلقة للجهة بعد' },
+        ]} />
+        <h3 className="stdy-h mt-3">الخطة</h3>
+        <KV rows={[
+          { k: 'الخطة المالية', v: fplan ? fplan.years.map((y) => `${yearById(y.yearId)?.name ?? y.yearId}: ${nf.format(y.amount)}`).join(' · ') : 'سنة واحدة · من بند الحجز' },
+          { k: 'آلية الدفعات', v: payPlan ? <>{<Num>{payPlan.count}</Num>} دفعات · {payPlan.note}</> : 'تُحدَّد في الاتفاقية' },
+          { k: 'خطة التنفيذ', v: needsPlan === undefined ? 'يُقرَّر مع الاعتماد' : needsPlan ? 'يتطلب خطة تنفيذ · تُفتح بعد الاعتماد' : 'لا يتطلب خطة' },
         ]} />
       </Glass>
 

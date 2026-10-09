@@ -5,12 +5,13 @@ import { DocList } from '@/components/docs'
 import { Background } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
 import { ROUTES } from '@/app/routes'
+import { NOUN, countOf } from '@/lib/format'
 import { signOut } from '@/data/session'
 import { projectById } from '@/data/mock/projects'
 import { consultantByKey } from '@/data/intake/consultants'
-import { TODAY } from '@/data/intake/cycle'
+import { liveDay } from '@/data/clock'
 import { studyScore } from '@/data/intake/criteria'
-import { REQUEST_DOCS, adviceUnlocked, flowOf, giveOpinion, referralOpen, unlockAdvice, useFlow, type Referral } from '@/data/intake/flow'
+import { ADVICE_MAX_TRIES, REQUEST_DOCS, adviceUnlocked, flowOf, giveOpinion, referralOpen, unlockAdvice, useFlow, type Referral } from '@/data/intake/flow'
 
 /* The consultant's screen · one referred project, for a limited time (3.2.20 · 3.4.19).
 
@@ -21,7 +22,7 @@ import { REQUEST_DOCS, adviceUnlocked, flowOf, giveOpinion, referralOpen, unlock
 
 const VERDICTS: NonNullable<Referral['verdict']>[] = ['مؤيّد', 'مؤيّد بتحفّظ', 'غير مؤيّد']
 
-const daysLeft = (to: string) => Math.max(0, Math.round((new Date(`${to}T00:00:00Z`).getTime() - new Date(`${TODAY}T00:00:00Z`).getTime()) / 86_400_000))
+const daysLeft = (to: string) => Math.max(0, Math.round((new Date(`${to}T00:00:00Z`).getTime() - new Date(`${liveDay()}T00:00:00Z`).getTime()) / 86_400_000))
 
 export default function AdvicePage() {
   const { id } = useParams<{ id: string }>()
@@ -35,10 +36,10 @@ export default function AdvicePage() {
   const [text, setText] = useState('')
   const [unlocked, setUnlocked] = useState(() => (p ? adviceUnlocked(p.id) : false))
   const [code, setCode] = useState('')
-  const [codeErr, setCodeErr] = useState(false)
+  const [codeErr, setCodeErr] = useState('')
 
   const open = referralOpen(r)
-  const expired = !!r && !r.opinion && r.expiresAt < TODAY
+  const expired = !!r && !r.opinion && r.expiresAt < liveDay()
 
   return (
     <>
@@ -64,11 +65,11 @@ export default function AdvicePage() {
                 <Glass>
                   <Head title="رمز الوصول" />
                   <p className="sub cnote">أدخل الرمز المرسل إليك مع رابط الإحالة · الشاشة لمستشار هذه الإحالة وحده.</p>
-                  <form className="apv-row mt-2" onSubmit={(e) => { e.preventDefault(); if (unlockAdvice(p.id, code)) setUnlocked(true); else setCodeErr(true) }}>
-                    <span className="fld"><input className="num" inputMode="numeric" dir="ltr" value={code} onChange={(e) => { setCode(e.target.value); setCodeErr(false) }} aria-label="رمز الوصول" /></span>
+                  <form className="apv-row mt-2" onSubmit={(e) => { e.preventDefault(); const r = unlockAdvice(p.id, code); if (r.ok) setUnlocked(true); else setCodeErr(r.lockedFor ? `أُوقفت المحاولات ${countOf(r.lockedFor, NOUN.minute)} بعد ${ADVICE_MAX_TRIES} محاولات خاطئة` : `الرمز غير صحيح · بقيت ${countOf(r.left, NOUN.attempt)}`) }}>
+                    <span className="fld"><input className="num" inputMode="numeric" dir="ltr" value={code} onChange={(e) => { setCode(e.target.value); setCodeErr('') }} aria-label="رمز الوصول" /></span>
                     <button type="submit" className="btn btn-p btn-sm">ادخل</button>
                   </form>
-                  {codeErr && <p className="sub cnote bad">الرمز غير صحيح</p>}
+                  {codeErr && <p className="sub cnote bad" role="alert">{codeErr}</p>}
                 </Glass>
               ) : !p || !r ? (
                 <Glass>

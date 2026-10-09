@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
 import { DateText, EntityMark, Face, Icon, icons } from '@/components/ui'
-import { buildNotes, isRead, markRead, NOTE_GROUPS, useReadSet, type NoteFrom } from '@/data/notifications'
+import { buildNotes, entityNotes, isRead, markRead, NOTE_GROUPS, useReadSet, type NoteFrom } from '@/data/notifications'
 
 /** The card's leading mark: sender photo, entity/project logo, or the Abanumay mark for the system. */
 function NoteMark({ from }: { from: NoteFrom }) {
@@ -28,12 +28,14 @@ function NoteMark({ from }: { from: NoteFrom }) {
  * tint vs. the neutral surface) and by weight, never by colored text or a dot. The card leads with
  * who it's from and puts the date under the description.
  */
-export function NotificationBell({ user, place = 'rail' }: { user: { name: string }; place?: 'rail' | 'top' }) {
+export function NotificationBell({ user, place = 'rail', entity }: { user: { name: string }; place?: 'rail' | 'top'; entity?: string }) {
   const [open, setOpen] = useState(false)
   /* Intake actions add notes while the app is open · re-read when one runs */
   const flowV = useFlow()
+  /* Batch 3 · an entity session has its own bell · what the foundation sent the entity (payments,
+     closing, agreements, its registration), the same list as «إشعاراتك» on its portal */
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const notes = useMemo(() => buildNotes(user), [user, flowV])
+  const notes = useMemo(() => (entity ? entityNotes(entity) : buildNotes(user)), [user, entity, flowV])
   const read = useReadSet()
   const unread = notes.filter((n) => !isRead(n, read)).length
   const bell = useRef<HTMLButtonElement>(null)

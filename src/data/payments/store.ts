@@ -64,9 +64,17 @@ export function agreementOk(projectId: string): boolean {
   return own ? own.agreement.active : false
 }
 
-/** What's left of the grant before a request · paid requests only (rule 14) */
+/** Paid before the system · a completed project whose agreement is on record and that never had
+    a request here · its payments were made in the old system (batch 2 · 8 Oct · the schedule read
+    them as unpaid and «held» while closing read them as paid) */
+export const paidBefore = (projectId: string): boolean =>
+  projectOf(projectId)?.statusGroup === 'مكتمل' && !payRequests.some((r) => r.projectId === projectId)
+
+/** What's left of the grant before a request · paid requests only (rule 14) · plus a schedule paid
+    before the system */
 export const paidOf = (projectId: string, except?: string): number =>
-  payRequests.filter((r) => r.projectId === projectId && r.state === 'paid' && r.id !== except).reduce((s, r) => s + r.asked, 0)
+  paidBefore(projectId) && inForceOf(projectId) ? grantOf(projectId)
+    : payRequests.filter((r) => r.projectId === projectId && r.state === 'paid' && r.id !== except).reduce((s, r) => s + r.asked, 0)
 export const grantOf = (projectId: string): number => {
   const p = projectOf(projectId)
   return p ? (p.amountGranted || p.amountRequested) : 0
@@ -134,6 +142,7 @@ export function scheduleOf(projectId: string): PaySlot[] {
   for (const e of adj?.extra ?? []) base.push({ no: base.length + 1, amount: e.amount, dueAt: e.dueAt })
   const of = base.length
   const stopped = STOPPED.has(projectId)
+  const before = paidBefore(projectId)
   /* Re-audit 7 Oct · the payments go in order · a later one waits until the one before it is paid,
      settled or requested · no payment is skipped */
   let blocked = false
@@ -147,7 +156,7 @@ export function scheduleOf(projectId: string): PaySlot[] {
     const conditionMet = !b.requirement || Boolean(condConfirmed(projectId, b.no))
       || (own ? (own.checks.find((c) => c.rule === 6)?.ok ?? true) : false)
     const state: PaySlotState =
-      paid ? 'paid'
+      paid || before ? 'paid'
       : stopped ? 'stopped'
       : SETTLED.has(condKey(projectId, b.no)) ? 'settled'
       : open ? 'pending'
@@ -265,7 +274,9 @@ export function payActions(r: PayRequest, role: RoleKey, asEntity = false): PayA
     { act: 'returnEntity', label: 'إعادة للجهة', kind: 'btn-2', needsNote: true, step: 7 },
   ]
   if (r.state === 'manager' && role === 'grants-manager') return [
-    { act: 'approve', label: 'موافقة وإحالة للمالية', kind: 'btn-p', step: 13 },
+    /* Batch 2 · the label says where the approval sends it · above the manager's limit it goes to
+       the executive, not finance (1.1.input-6) */
+    { act: 'approve', label: spendLevelFor(r.asked) === 'manager' ? 'موافقة وإحالة للمالية' : `موافقة وإحالة إلى ${LEVEL_SAY.exec}`, kind: 'btn-p', step: 13 },
     { act: 'returnSup', label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true, step: 13 },
     /* Rule 15 · closing isn't deleting · the log stays readable */
     { act: 'reject', label: 'رفض نهائي وإغلاق', kind: 'btn-d', needsNote: true, step: 13 },

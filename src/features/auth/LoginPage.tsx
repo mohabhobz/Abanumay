@@ -82,14 +82,14 @@ export default function LoginPage() {
           : req ? `${ROUTES.entityPortal}?req=${req.id}` : ROUTES.entityRegister, { replace: true })
         return
       }
-      const seat = staffLogin(user)
-      if (!seat) {
+      const staff = staffLogin(user)
+      if (!staff) {
         setBusy(false)
         fail(`اسم المستخدم غير معروف · جرّب: ${STAFF_LOGINS}`)
         return
       }
-      writeRole(seat)
-      signIn(user.trim())
+      writeRole(staff.role)
+      signIn(staff.login)
       navigate(from ?? (readDisplay().landing || AFTER_LOGIN), { replace: true })
     }, 700)
   }

@@ -14,7 +14,7 @@ import { HOLDER_LABEL, type Holder } from '@/data/holders'
 import { flowOf } from '@/data/intake/flow'
 import { studyScore } from '@/data/intake/criteria'
 import { fitOf } from '@/data/intake/insight'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import {
   conflictOf,
@@ -41,7 +41,7 @@ export default function SessionPage() {
   useBudget()
   const s = id ? sessionById(id) : undefined
   const role = readRole()
-  const me = roleByKey(role).name
+  const me = meOf(role)
   if (!s) {
     return (
       <AppLayout assistantContext={assistFor.page('جلسة')}>

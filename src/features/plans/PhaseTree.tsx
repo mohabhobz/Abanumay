@@ -1,4 +1,5 @@
-import { DateText, Icon, Money, Num, Tag, icons } from '@/components/ui'
+import { useState } from 'react'
+import { DateField, DateText, Icon, Money, Num, Tag, icons } from '@/components/ui'
 import {
   ACTIVITY_SAY, ACTIVITY_TONE, TODAY, phaseDone,
 } from '@/data/mock/plans'
@@ -46,6 +47,8 @@ export interface PhaseTreeProps {
   onComment?: (actId: string, say: string) => void
   /** Whoever opened the screen - comments are attributed to them. */
   me?: string
+  /** Batch 6 · the entity saves its activity's own data before acceptance · returns what blocks it */
+  onData?: (actId: string, d: { text: string; reached: number | null; doneOn: string }) => string[]
   /** The activity the page links to - tagged live. */
   focus?: string
 }
@@ -54,7 +57,7 @@ const isLate = (a: PlanActivity) => a.state !== 'accepted' && a.to < TODAY
 
 export function PhaseTree({
   phases, live, canReview, canClaim, open, onToggle, onAccept, onReject, onClaim,
-  onUpload, onDrop, onStart, focus, onComment, me = '',
+  onUpload, onDrop, onStart, focus, onComment, me = '', onData,
 }: PhaseTreeProps) {
   return (
     <div className="phtree">
@@ -165,6 +168,10 @@ export function PhaseTree({
                       })}
                     </ul>
 
+                    {/* Batch 6 · the activity's own data · the entity writes and edits it until the
+                        activity is accepted, and everyone reads it */}
+                    <ActData a={a} edit={Boolean(live && canClaim && onData && a.state !== 'accepted' && a.state !== 'claimed')} onSave={(d) => onData?.(a.id, d) ?? []} />
+
                     {/* Note: a log, not a single line. Every note carries its author and time, and
                         the add button opens a field under the name of whoever opened the screen.
                         The button appears only on an activity with a note or one under review, not
@@ -237,6 +244,59 @@ export function PhaseTree({
           </section>
         )
       })}
+    </div>
+  )
+}
+
+/** An activity's implementation data · read-only once accepted or under review */
+function ActData({ a, edit, onSave }: { a: PlanActivity; edit: boolean; onSave: (d: { text: string; reached: number | null; doneOn: string }) => string[] }) {
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState(a.actual?.text ?? '')
+  const [reached, setReached] = useState(a.actual?.reached === null || a.actual?.reached === undefined ? '' : String(a.actual.reached))
+  const [doneOn, setDoneOn] = useState(a.actual?.doneOn ?? '')
+  const [err, setErr] = useState<string[]>([])
+  if (!a.actual && !edit) return null
+  if (open) {
+    return (
+      <div className="regfields mt-2">
+        <label className="regf">
+          <span className="lb">ما نُفّذ</span>
+          <span className="fld"><input value={text} onChange={(e) => setText(e.target.value)} aria-label={`ما نُفّذ · ${a.name}`} /></span>
+        </label>
+        <label className="regf">
+          <span className="lb">المستفيدون الفعليون</span>
+          <span className="fld"><input inputMode="numeric" value={reached} onChange={(e) => setReached(e.target.value.replace(/[^\d]/g, ''))} aria-label={`المستفيدون الفعليون · ${a.name}`} /></span>
+        </label>
+        <label className="regf">
+          <span className="lb">تاريخ التنفيذ الفعلي</span>
+          <DateField value={doneOn} onChange={setDoneOn} label={`تاريخ التنفيذ الفعلي · ${a.name}`} />
+        </label>
+        {err.length > 0 && <p className="bad">{err.join(' · ')}</p>}
+        <div className="rowf gp-2">
+          <button type="button" className="btn btn-p btn-sm" onClick={() => {
+            const e = onSave({ text, reached: reached ? Number(reached) : null, doneOn })
+            setErr(e)
+            if (!e.length) setOpen(false)
+          }}>احفظ بيانات النشاط</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOpen(false); setErr([]) }}>إلغاء</button>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="act-m sub">
+      {a.actual ? (
+        <>
+          بيانات التنفيذ: {a.actual.text}
+          {a.actual.reached !== null && <> · <Num>{a.actual.reached}</Num> مستفيد</>}
+          {a.actual.doneOn && <> · <DateText>{a.actual.doneOn}</DateText></>}
+        </>
+      ) : 'لم تُسجَّل بيانات التنفيذ بعد'}
+      {edit && (
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>
+          <Icon name={icons.edit} size="sm" />{a.actual ? 'عدّل بيانات النشاط' : 'سجّل بيانات النشاط'}
+        </button>
+      )}
     </div>
   )
 }

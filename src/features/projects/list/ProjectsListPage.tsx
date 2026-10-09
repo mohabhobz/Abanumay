@@ -333,7 +333,12 @@ export default function ProjectsListPage() {
     bump((n) => n + 1)
   }
 
-  const bulkActions = role.actions.filter((a) => BULK_OF[a.label] || BULK_RECOMMEND[a.label] || BULK_APPROVAL.includes(a.label))
+  /* Batch 4 · 8 Oct · above the supervisor, a recommendation to approve carries its plan choice, so it
+     stays on the project page · it showed in the bar for the manager and did nothing when clicked
+     (it fell to `runBulk`, which runs «طلب استكمال» only) */
+  const bulkActions = role.actions.filter((a) =>
+    (BULK_OF[a.label] || BULK_RECOMMEND[a.label] || BULK_APPROVAL.includes(a.label))
+    && !(role.key !== 'supervisor' && BULK_RECOMMEND[a.label] === 'approve'))
   const [bulkNote, setBulkNote] = useState('')
   /* A recorded decision carries its note · the supervisor's recommendation carries the study's */
   const needsNote = (a: { label: string }) =>

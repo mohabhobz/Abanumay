@@ -4,7 +4,7 @@ import { allBudgets } from '@/data/mock/chain'
 import {
   budgetDocs, budgetEditable, cascadeActive, childrenOf, docSources, docTitle, fiscalYears, freezeLine,
   fundSources, hasChildren, isLiveBudget, leavesOf, lineUsable, moneyOf, nameTaken, pathOf, restate,
-  sourceByCode, treeIssues, yearById, yearOverlap,
+  sourceBalance, sourceByCode, splitOf, treeIssues, yearById, yearOverlap,
   type BudgetDoc, type BudgetNode, type BudgetState, type FiscalYear, type FundSource, type SourceShare,
 } from '@/data/mock/budgetTree'
 import { projectRows } from '@/data/mock/projects'
@@ -1249,7 +1249,9 @@ function seed() {
     const p = projectRows.find((r) => r.year.startsWith('2026') && r.track && d.nodes.some((n) => n.label === r.goal && n.kind === 'sub'))
     const leaf = p ? d.nodes.find((n) => n.label === p.goal && n.kind === 'sub') : undefined
     if (p && leaf) {
-      const total = Math.max(300_000, Math.floor(p.amountRequested / 10_000) * 10_000)
+      /* Batch 5 · 8 Oct · the plan carries the project's own value · it was rounded down to ten
+         thousand, so 20940 (485,000) got a 480,000 plan and stopped the manager at «عدّل التوزيع السنوي» */
+      const total = Math.max(300_000, p.amountRequested)
       const now26 = Math.min(Math.floor(total / 3 / 10_000) * 10_000, Math.max(0, Math.floor(freeOf(d, leaf.id) / 10_000) * 10_000))
       const share26 = now26 > 0 ? now26 : 10_000
       const plan: FundingPlan = {
@@ -1451,6 +1453,21 @@ export function linkIssues(i: LinkInput, need?: number): string[] {
     if (hasChildren(d.nodes, n.id)) out.push(`${name} بند رئيسي · الحجز على البنود الفرعية وحدها`)
     if (!lineUsable(d.nodes, n.id)) out.push(`${name} غير نشط · لا يُموَّل منه مشروع جديد`)
     if (!(x.amount > 0)) out.push(`حدّد مبلغ ${name}`)
+  }
+  if (out.length) return out
+  /* Batch 5 · funding#1 · a line split across sources draws on each by its share · each source's own
+     balance in the budget must cover its part, beside the line's (1.2.5 · 5.2.5) */
+  for (const x of shares) {
+    const d = docOf(x.docId)!
+    const n = nodeOf(d, x.nodeId)!
+    if (docSources(d).length < 2 || !n.allocated) continue
+    const split = splitOf(d, n.id)
+    for (const s of split ?? []) {
+      const part = Math.round(x.amount * s.amount / n.allocated)
+      const mine = Math.round(mineOn(i.projectId, d.id, new Set([n.id])) * s.amount / n.allocated)
+      const bal = sourceBalance(d, s.code) + mine
+      if (part > bal) out.push(`مصدر «${sourceByCode(s.code)?.name ?? s.code}» في ${docTitle(d)} لا يكفي · حصّته من «${n.label}» ${nf.format(part)} ورصيده ${nf.format(Math.max(0, bal))}`)
+    }
   }
   if (out.length) return out
   /* Every level of the tree, not the leaf alone (5.4.6) · what the project already holds there

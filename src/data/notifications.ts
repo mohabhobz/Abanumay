@@ -28,6 +28,7 @@ import { PLAN_NOTES } from './plans/store'
 import { PAY_NOTES } from './payments/store'
 import { CLOSE_NOTES } from './closing/store'
 import { PARTNER_NOTES } from './partners/store'
+import { entityNotices } from './shared/notify'
 
 export type NoteKind = 'decide' | 'msg' | 'late' | 'info'
 
@@ -162,6 +163,15 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
     })
   }
   return out
+}
+
+/** An entity session's bell · its own notices (the portal's «إشعاراتك»), in the drawer's shape ·
+    the cycle opening and account events are for its awareness, the rest wait on it */
+export function entityNotes(name: string): Note[] {
+  return entityNotices(name).map((n) => ({
+    id: n.id, kind: n.topic === 'cycle' || n.topic === 'account' ? 'info' : 'decide',
+    title: n.title, context: n.context, at: n.at, to: n.href, from: { type: 'system' },
+  }))
 }
 
 /* Read state · a small store with subscribers */

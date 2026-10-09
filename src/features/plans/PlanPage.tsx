@@ -21,7 +21,7 @@ import {
   waitingReview,
 } from '@/data/mock/plans'
 import {
-  acceptActivityBy, claimActivityBy, commentOn, decideChangeBy, dropEvidence, mayDraft, projectWindow,
+  acceptActivityBy, claimActivityBy, commentOn, saveActivityData, decideChangeBy, dropEvidence, mayDraft, projectWindow,
   rejectActivityBy, reviewPlan, sendPlanFor, startActivity, stuckActivities, uploadEvidence, usePlans,
   planLogOf,
 } from '@/data/plans/store'
@@ -405,6 +405,7 @@ export default function PlanPage() {
                     onUpload={(actId, kind, fileName, replace) => { uploadEvidence(p.id, actId, kind, fileName, who, replace); setTick((x) => x + 1) }}
                     onDrop={(actId, evId) => { dropEvidence(p.id, actId, evId, who); setTick((x) => x + 1) }}
                     onStart={(actId) => { startActivity(p.id, actId, who); setTick((x) => x + 1) }}
+                    onData={(actId, d) => { const e = saveActivityData(p.id, actId, d, who); setTick((x) => x + 1); return e }}
                     open={shown}
                     focus={focus}
                     onToggle={(phId) => setOpen(() => {

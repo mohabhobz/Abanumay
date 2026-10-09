@@ -22,7 +22,7 @@ import { AssistantAside } from '@/features/shared/AssistantAside'
 import { EditableCard } from '@/features/shared/EditableCard'
 import { canDecide, decideRegistration, fieldLabel, regHistory, returnRegistration, useEntityFlow } from '@/data/entities/store'
 import { duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
-import { readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole, roleByKey } from '@/data/roles'
 import { REG_STAGES } from '@/data/mock/registration'
 import { ENTITY_RULES } from '@/data/entities/rules'
 
@@ -72,7 +72,7 @@ export default function RegReviewPage() {
   /* The fields a return flags · the entity may edit these and only these (2.2.14) */
   const [flag, setFlag] = useState<string[]>([])
   const role = readRole()
-  const me = roleByKey(role).name
+  const me = meOf(role)
   const mayApprove = canDecide('approve', role)
   const mayReturn = canDecide('return', role)
   const deciders = ENTITY_RULES.approveBy.map((k) => roleByKey(k).title).join(' أو ')
