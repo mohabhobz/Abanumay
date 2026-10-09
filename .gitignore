@@ -16,3 +16,6 @@ src/data/mock/*.local.ts
 
 *.tar.gz
 vite.config.ts.timestamp-*
+
+# End-to-end test scripts · local runs only, not part of the app
+_e2e*.mjs
