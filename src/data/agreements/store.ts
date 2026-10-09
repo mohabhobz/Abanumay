@@ -84,7 +84,11 @@ const base = (p: { name: string; entityName: string }, stamp: string): Clause[] 
 
 /* ── The agreement's flow ── */
 
-export interface Signature { at: string; by: string; method: 'e' | 'paper'; file?: string }
+/** Batch 8 · an electronic signature carries the proof: the code confirmed on the signer's phone,
+    and the SHA-256 of the exact text and schedule signed · in production the signing provider's
+    certificate replaces `via: 'otp'` */
+export interface ESig { hash: string; via: 'otp' | 'provider'; to: string }
+export interface Signature { at: string; by: string; method: 'e' | 'paper'; file?: string; sig?: ESig }
 export interface AgrVersion {
   version: number
   at: string
@@ -302,7 +306,43 @@ export function agrReview(v: Parameters<typeof agrIssues>[0]): AgrHint[] {
   if (!v.clauses.some((c) => c.title === sug.title)) out.push({ id: 'field', tone: 'ok', text: `بند مقترح لمجال ${field || 'المشروع'}: «${sug.title}».`, add: sug })
   const tpl = v.amount > 1_000_000 ? 'اتفاقية منحة كبرى (فوق مليون)' : (p?.durationDays ?? 0) > 260 ? 'اتفاقية منحة متعددة السنوات' : ''
   if (v.kind === 'إلكترونية' && tpl && v.template !== tpl) out.push({ id: 'tpl', tone: 'ok', text: `النموذج المقترح لحجم المنحة ومدتها: «${tpl}».`, template: tpl })
+  out.push(...clauseTextHints(v, p?.entityName ?? '', w))
   if (!out.some((x) => x.tone === 'warn')) out.push({ id: 'okall', tone: 'ok', text: 'البنود متوافقة مع خطة التنفيذ ولا تعارض في الجدول.' })
+  return out
+}
+
+/* Batch 8 · reading the clauses' own text (agreements · مراجعة البنود) · rules, not a model: what a
+   reviewer checks by eye · a template clause removed, a figure or a date in the text that the
+   agreement contradicts, a count of payments the schedule doesn't have, a vague obligation, an empty
+   clause · each a hint the supervisor fixes or dismisses; nothing is changed for him */
+const VAGUE = ['قدر الإمكان', 'حسب الإمكان', 'قدر المستطاع', 'عند الحاجة', 'إن أمكن', 'ما أمكن', 'بشكل مناسب', 'في الوقت المناسب']
+const COUNT_WORDS: Record<string, number> = { 'واحدة': 1, 'دفعتين': 2, 'دفعتان': 2, 'ثلاث': 3, 'ثلاثة': 3, 'أربع': 4, 'أربعة': 4, 'خمس': 5, 'خمسة': 5, 'ست': 6, 'ستة': 6 }
+export function clauseTextHints(v: Parameters<typeof agrIssues>[0], entityName: string, w: { from?: string; to?: string }): AgrHint[] {
+  const out: AgrHint[] = []
+  const need: [string, ClauseKind, string][] = [
+    ['موضوع الاتفاقية', 'clause', 'تقديم منحة لتنفيذ المشروع وفق خطة التنفيذ المعتمدة والملحقة بهذه الاتفاقية.'],
+    ['التزامات المؤسسة', 'obligation', 'صرف الدفعات وفق الجدول المعتمد بعد استيفاء شروط استحقاق كل دفعة، ومتابعة التنفيذ وتقديم الدعم الفني.'],
+    ['التعديل والإنهاء', 'clause', 'لا يُعدَّل أي بند بعد التوقيع إلا بإصدار جديد يمرّ بدورة الاعتماد كاملة، وللمؤسسة إنهاء الاتفاقية عند الإخلال الجوهري.'],
+  ]
+  for (const [t, kind, body] of need) if (!v.clauses.some((c) => c.title.includes(t.split(' ')[0]!) && c.title.includes(t.split(' ').at(-1)!))) out.push({ id: `need-${t}`, tone: 'warn', text: `بند النموذج «${t}» غير موجود في النص.`, add: { kind, source: 'ai', title: t, body } })
+  if (entityName && !v.clauses.some((c) => c.kind === 'obligation' && (c.title.includes(entityName) || c.title.includes('الجهة')))) out.push({ id: 'ent-ob', tone: 'warn', text: `لا بند لالتزامات ${entityName}.` })
+  const amounts = new Set([v.amount, ...v.payments.map((x) => x.amount)])
+  for (const c of v.clauses) {
+    const body = c.body.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    if (body.trim().length < 20) out.push({ id: `short-${c.id}`, tone: 'warn', text: `البند «${c.title}» فارغ أو قصير جدًا ولا يُلزم بشيء.` })
+    for (const m of body.matchAll(/(\d{1,3}(?:[,٬]\d{3})+|\d{4,})\s*(?:ريال|ر\.س)/g)) {
+      const n = Number(m[1]!.replace(/[,٬]/g, ''))
+      if (!amounts.has(n)) out.push({ id: `amt-${c.id}-${n}`, tone: 'warn', text: `البند «${c.title}» يذكر مبلغ ${nf.format(n)} ريال لا يطابق قيمة المنحة ولا أي دفعة.` })
+    }
+    for (const m of body.matchAll(/\d{4}-\d{2}-\d{2}/g)) {
+      if ((w.from && m[0] < w.from) || (w.to && m[0] > w.to)) out.push({ id: `date-${c.id}-${m[0]}`, tone: 'warn', text: `البند «${c.title}» يذكر تاريخ ${m[0]} خارج مدة التنفيذ.` })
+    }
+    const cm = body.match(/على\s+(\d+|[\u0600-\u06FF]+)\s+دفع/)
+    const said = cm ? Number(cm[1]) || COUNT_WORDS[cm[1]!] : /دفعة واحدة/.test(body) ? 1 : 0
+    if (said && v.payments.length && said !== v.payments.length) out.push({ id: `cnt-${c.id}`, tone: 'warn', text: `البند «${c.title}» يذكر ${said} دفعات والجدول فيه ${v.payments.length}.` })
+    const vague = VAGUE.filter((x) => body.includes(x))
+    if (vague.length && (c.kind === 'obligation' || c.kind === 'condition')) out.push({ id: `vague-${c.id}`, tone: 'warn', text: `صياغة غير ملزمة في «${c.title}»: ${vague.join('، ')} · يُقترح تحديد ما يُطلب ومتى.` })
+  }
   return out
 }
 
@@ -313,7 +353,7 @@ type Op = { at: string; by: string } & (
   | { op: 'create'; row: Pick<AgreementRow, 'id' | 'projectId' | 'kind' | 'template' | 'payments' | 'signer' | 'docs'>; clauses: Clause[]; paperCopy?: string; send: boolean; replaces?: string }
   | { op: 'save'; id: string; patch: Patch }
   | { op: 'submit'; id: string }
-  | { op: 'act'; id: string; act: AgrAct; note: string; file?: string }
+  | { op: 'act'; id: string; act: AgrAct; note: string; file?: string; sig?: ESig }
   | { op: 'newVersion'; id: string; reason: string }
   | { op: 'annex'; projectId: string; amount: number; ref: string; file?: string; reason: string }
 )
@@ -486,7 +526,7 @@ function applyOp(o: Op) {
           return
         case 'entitySign':
           if (a.stage !== 'entity' || f.entitySign || a.kind !== 'إلكترونية') return
-          f.entitySign = { at: day(o.at), by: o.by, method: 'e' }
+          f.entitySign = { at: day(o.at), by: o.by, method: 'e', sig: o.sig }
           a.hoursInStage = 0
           log(a, 21, o.by, 'الجهة المستفيدة', `راجعت الاتفاقية ووقّعتها إلكترونيًّا · ${a.signer.title}`, o.at, undefined, 'المدير التنفيذي · اتفاقية موقّعة بانتظار اعتماد ممثل المؤسسة')
           notify([CEO()], a, `وقّعت الجهة الاتفاقية · ${a.projectName}`, 'اعتمد النسخة النهائية')
@@ -664,15 +704,16 @@ export function submitAgreement(id: string, by: string): string[] {
   run({ op: 'submit', id, by, at: now() })
   return []
 }
-export function actOnAgreement(id: string, act: AgrAct, note: string, by: string, file?: string): string[] {
+export function actOnAgreement(id: string, act: AgrAct, note: string, by: string, file?: string, sig?: ESig): string[] {
   const a = agreementById(id)
   if (!a) return ['الاتفاقية غير موجودة']
   if (act === 'cancel' && !note.trim()) return ['سبب الإلغاء إلزامي']
   if ((act === 'return' || act === 'toSupervisor' || act === 'entityReturn' || act === 'finalReturn') && !note.trim()) return ['سبب الإعادة إلزامي']
   if ((act === 'approve' || act === 'resubmit') && issuesOfRow(a).length) return issuesOfRow(a).map((i) => i.say)
   if (act === 'paperSign' && !file) return ['ارفع النسخة الموقّعة']
+  if (act === 'entitySign' && !sig) return ['أكّد التوقيع برمز التحقق المرسل إلى جوال الموقّع']
   const before = JSON.stringify([a.stage, agrFlowOf(id).entitySign, agrFlowOf(id).returnedTo])
-  run({ op: 'act', id, act, note: note.trim(), file, by, at: now() })
+  run({ op: 'act', id, act, note: note.trim(), file, sig, by, at: now() })
   return JSON.stringify([a.stage, agrFlowOf(id).entitySign, agrFlowOf(id).returnedTo]) === before ? ['الإجراء غير متاح في هذه المرحلة'] : []
 }
 export function openNewVersion(id: string, reason: string, by: string): string[] {
@@ -735,3 +776,12 @@ export const agreementsOfProject = (projectId: string): AgreementRow[] => agreem
 export const inForceOf = (projectId: string): AgreementRow | undefined =>
   agreements.find((a) => a.projectId === projectId && agrFlowOf(a.id).inForce !== undefined && a.stage !== 'cancelled')
     ?? agreements.find((a) => a.projectId === projectId && a.stage === 'active')
+
+/** Batch 8 · the fingerprint of what is signed · the clauses, the schedule, the amount and the signer
+    · the same text gives the same hash, so a later change to the agreement can't pass as signed */
+export async function signHash(a: AgreementRow): Promise<string> {
+  const f = agrFlowOf(a.id)
+  const text = JSON.stringify({ id: a.id, amount: a.amount, signer: a.signer, payments: a.payments, clauses: f.clauses.map((c) => [c.kind, c.title, c.body]) })
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}

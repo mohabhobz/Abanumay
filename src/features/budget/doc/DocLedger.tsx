@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, Mono, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { pathOf, type BudgetDoc } from '@/data/mock/budgetTree'
+import { docSources, pathOf, sourceBalance, sourceByCode, splitOf, type BudgetDoc } from '@/data/mock/budgetTree'
 import {
   BUDGET_REQS, MOVE_SAY, REQ_KIND_SAY, REQ_STATE_SAY, movesOf, reqTone, type MoveKind,
 } from '@/data/budget/store'
@@ -96,6 +96,62 @@ export function DocRequests({ doc }: { doc: BudgetDoc }) {
           ))}
         </ul>
       )}
+    </Glass>
+  )
+}
+
+/* Batch 8 · the ledger by funding source · each movement attributed to the line's sources by their
+   shares, so a budget funded by two endowments shows what each one gave, held and paid. Until the
+   server records the source of each hold and payment, the split is by the line's shares · the card
+   says so, and the server's ledger takes its place with the same columns. */
+export function SourceLedgerCard({ doc }: { doc: BudgetDoc }) {
+  const sources = docSources(doc)
+  if (sources.length < 2) return null
+  const rows = movesOf(doc.id)
+  const shareOf = (nodeId: string): Record<string, number> => {
+    const split = splitOf(doc, nodeId)
+    const total = split?.reduce((s, x) => s + x.amount, 0) ?? 0
+    return Object.fromEntries(sources.map((s) => [s.code, split && total ? (split.find((x) => x.code === s.code)?.amount ?? 0) / total : 1 / sources.length]))
+  }
+  const sum: Record<string, Record<'open' | 'held' | 'paid' | 'moved', number>> = Object.fromEntries(sources.map((s) => [s.code, { open: 0, held: 0, paid: 0, moved: 0 }]))
+  for (const m of rows) {
+    const sh = shareOf(m.nodeId)
+    for (const s of sources) {
+      const x = Math.round(m.amount * (sh[s.code] ?? 0))
+      const t = sum[s.code]!
+      if (m.kind === 'open') t.open += x
+      else if (m.kind === 'hold' || m.kind === 'annual-hold') t.held += x
+      else if (m.kind === 'release') t.held -= x
+      else if (m.kind === 'paid') { t.paid += x; t.held -= x }
+      else if (m.kind === 'transfer-in' || m.kind === 'increase') t.moved += x
+      else if (m.kind === 'transfer-out' || m.kind === 'decrease') t.moved -= x
+    }
+  }
+  return (
+    <Glass className="tblcard">
+      <Head title="الحركات حسب مصدر التمويل" meta={<Tag tone="mute">موزّعة بحصص البنود</Tag>} />
+      <div className="tblwrap">
+        <table className="tbl">
+          <thead><tr><th>المصدر</th><th className="n">حصته في الميزانية</th><th className="n">التخصيص الافتتاحي</th><th className="n">مناقلات وتعديلات</th><th className="n">المحجوز الآن</th><th className="n">المصروف</th><th className="n">المتاح</th></tr></thead>
+          <tbody>
+            {sources.map((s) => {
+              const t = sum[s.code]!
+              return (
+                <tr key={s.code}>
+                  <td>{sourceByCode(s.code)?.name ?? s.code}</td>
+                  <td className="n"><Money sm>{s.amount}</Money></td>
+                  <td className="n"><Money sm>{t.open}</Money></td>
+                  <td className="n"><Money sm>{t.moved}</Money></td>
+                  <td className="n"><Money sm>{Math.max(0, t.held)}</Money></td>
+                  <td className="n"><Money sm>{t.paid}</Money></td>
+                  <td className="n"><b><Money sm>{sourceBalance(doc, s.code)}</Money></b></td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="sub cnote">كل حركة تُنسب للمصادر بنسبة حصصها في بندها · عند ربط الخادم يُسجَّل مصدر كل حجز وصرف بعينه ويحل محل هذا التوزيع بالأعمدة نفسها.</p>
     </Glass>
   )
 }

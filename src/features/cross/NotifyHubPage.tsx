@@ -9,6 +9,7 @@ import { mask } from '@/data/entities/auth'
 import { CHANNEL_SAY, type EscChannel } from '@/data/shared/escRules'
 import {
   AUDIENCE_SAY, NOTIFY_RULES, TOPIC_SAY, outbox, saveNotifyRules, type Audience, type NotifyRules, type Topic,
+  PLACEHOLDERS, TEMPLATES, fillTemplate, saveTemplates, smsSegments, type Message, type Templates,
 } from '@/data/shared/notify'
 import { Who } from './parts'
 import { useAllStores } from './useAllStores'
@@ -23,7 +24,12 @@ import { useAllStores } from './useAllStores'
 const TABS = [
   { slug: 'outbox', label: 'سجل الإرسال' },
   { slug: 'channels', label: 'القنوات' },
+  { slug: 'templates', label: 'القوالب والبوابة' },
 ] as const
+const STATE_SAY: Record<Message['state'], { say: string; tone: 'ok' | 'no' | 'warn' | 'teal' }> = {
+  sent: { say: 'أُرسلت', tone: 'ok' }, failed: { say: 'لا عنوان', tone: 'no' },
+  logged: { say: 'سُجّلت · البوابة غير مربوطة', tone: 'warn' }, queued: { say: 'في طابور البوابة', tone: 'teal' },
+}
 const CHNL = (Object.keys(CHANNEL_SAY) as EscChannel[]).map((k) => ({ value: k, label: CHANNEL_SAY[k] }))
 const TOPICS = Object.keys(TOPIC_SAY) as Topic[]
 const AUDS = Object.keys(AUDIENCE_SAY) as Audience[]
@@ -40,6 +46,11 @@ export default function NotifyHubPage() {
   const [saved, setSaved] = useState<NotifyRules['channels']>(() => structuredClone(NOTIFY_RULES.channels))
   const [d, setD] = useState<NotifyRules['channels']>(saved)
   const dirty = JSON.stringify(d) !== JSON.stringify(saved)
+  const [tSaved, setTSaved] = useState<Templates>(() => structuredClone(TEMPLATES))
+  const [tp, setTp] = useState<Templates>(() => structuredClone(TEMPLATES))
+  const tDirty = JSON.stringify(tp) !== JSON.stringify(tSaved)
+  const [tTopic, setTTopic] = useState<Topic>('payment')
+  const [ping, setPing] = useState('')
 
   const [q, setQ] = useState('')
   const [aud, setAud] = useState<string | undefined>()
@@ -101,11 +112,11 @@ export default function NotifyHubPage() {
                         {shown.map((m) => (
                           <tr key={m.id}>
                             <td><DateText>{m.notice.at}</DateText></td>
-                            <td><Link className="tlink" to={m.notice.href}>{m.notice.title}</Link><div className="sub trim1">{TOPIC_SAY[m.notice.topic]} · {m.notice.context}</div></td>
+                            <td><Link className="tlink" to={m.notice.href}>{m.notice.title}</Link><div className="sub trim1" title={m.text}>{TOPIC_SAY[m.notice.topic]} · {m.channel === 'app' ? m.notice.context : m.text}</div></td>
                             <td><span className="rowf gp-2"><Who name={m.notice.to} /><span className="sub">{AUDIENCE_SAY[m.audience]}</span></span></td>
                             <td><Tag tone={m.channel === 'app' ? 'mute' : 'teal'}>{CHANNEL_SAY[m.channel]}</Tag></td>
                             <td className="sub"><bdi>{m.channel === 'app' ? 'صندوق الإشعارات' : mask(m.address)}</bdi></td>
-                            <td><Tag tone={m.state === 'sent' ? 'ok' : 'no'}>{m.state === 'sent' ? 'أُرسلت' : 'لا عنوان'}</Tag></td>
+                            <td><Tag tone={STATE_SAY[m.state].tone}>{STATE_SAY[m.state].say}</Tag></td>
                           </tr>
                         ))}
                       </tbody>
@@ -152,6 +163,53 @@ export default function NotifyHubPage() {
               </div>
             </Glass>
           )}
+
+          {tab === 'templates' && (() => {
+            const t = tp.list[tTopic]
+            const sample = all.find((m) => m.notice.topic === tTopic)?.notice ?? { to: 'جمعية مثال', title: TOPIC_SAY[tTopic], context: 'تفاصيل الإشعار', href: '/' }
+            const put = (k: 'subject' | 'body' | 'sms', v: string) => setTp((x) => ({ ...x, list: { ...x.list, [tTopic]: { ...x.list[tTopic], [k]: v } } }))
+            return (
+              <>
+                <Glass>
+                  <Head title="بوابة الإرسال" meta={<Tag tone={tp.gateway.mode === 'api' && tp.gateway.endpoint ? 'teal' : 'warn'}>{tp.gateway.mode === 'api' && tp.gateway.endpoint ? 'مربوطة بخدمة الخادم' : 'غير مربوطة · تُسجَّل الرسائل بنصها'}</Tag>} />
+                  <p className="sub">البريد والرسائل النصية تمرّ ببوابة واحدة · قبل التعاقد مع مزوّد تُسجَّل كل رسالة بنصها النهائي هنا، وعند ربط خدمة الخادم تُسلَّم لها لترسلها وتعيد حالة التسليم.</p>
+                  <div className="apv-row mt-2">
+                    <Select label="الوضع" value={tp.gateway.mode} options={[{ value: 'log', label: 'تسجيل فقط' }, { value: 'api', label: 'خدمة الخادم' }]} onChange={(v) => admin && setTp((x) => ({ ...x, gateway: { ...x.gateway, mode: (v ?? 'log') as 'log' | 'api' } }))} />
+                    <span className="fld"><input value={tp.gateway.endpoint} disabled={!admin} onChange={(e) => setTp((x) => ({ ...x, gateway: { ...x.gateway, endpoint: e.target.value } }))} aria-label="عنوان خدمة الإرسال" placeholder="https://api…/notify" dir="ltr" /></span>
+                    <span className="fld"><input value={tp.gateway.sender} disabled={!admin} onChange={(e) => setTp((x) => ({ ...x, gateway: { ...x.gateway, sender: e.target.value } }))} aria-label="اسم المرسل" placeholder="اسم المرسل" dir="ltr" /></span>
+                    <button type="button" className="btn btn-2 btn-sm" disabled={!tp.gateway.endpoint} onClick={() => {
+                      setPing('جارٍ الاختبار…')
+                      fetch(tp.gateway.endpoint, { method: 'HEAD' }).then((r) => setPing(r.ok ? 'الخدمة تستجيب' : `ردّت الخدمة بالرمز ${r.status}`)).catch(() => setPing('تعذّر الوصول إلى الخدمة'))
+                    }}>اختبر الاتصال</button>
+                    {ping && <span className="sub">{ping}</span>}
+                  </div>
+                </Glass>
+                <Glass>
+                  <Head title="قالب الموضوع" meta={<Select label="الموضوع" value={tTopic} options={TOPICS.map((x) => ({ value: x, label: TOPIC_SAY[x] }))} onChange={(v) => v && setTTopic(v as Topic)} />} />
+                  <p className="sub cnote">المتغيّرات: {PLACEHOLDERS.map((x) => <bdi key={x} className="num"> {x}</bdi>)} · تُملأ من الإشعار عند الإرسال</p>
+                  <div className="regfields">
+                    <label className="regf"><span className="lb">عنوان البريد</span><span className="fld"><input value={t.subject} disabled={!admin} onChange={(e) => put('subject', e.target.value)} aria-label="عنوان البريد" /></span></label>
+                    <label className="regf"><span className="lb">نص البريد</span><span className="fld"><textarea rows={6} value={t.body} disabled={!admin} onChange={(e) => put('body', e.target.value)} aria-label="نص البريد" /></span></label>
+                    <label className="regf"><span className="lb">الرسالة النصية · <Num>{fillTemplate(t.sms, sample).length}</Num> حرفًا · <Num>{smsSegments(fillTemplate(t.sms, sample))}</Num> رسالة</span><span className="fld"><textarea rows={2} value={t.sms} disabled={!admin} onChange={(e) => put('sms', e.target.value)} aria-label="الرسالة النصية" /></span></label>
+                  </div>
+                </Glass>
+                <Glass>
+                  <Head title="معاينة" meta={<span className="sub">على آخر إشعار من هذا الموضوع · {sample.to}</span>} />
+                  <p><b>{fillTemplate(t.subject, sample)}</b></p>
+                  <p className="sub prose pre">{fillTemplate(t.body, sample)}</p>
+                  <p className="sub cnote">الرسالة النصية: {fillTemplate(t.sms, sample)}</p>
+                </Glass>
+                {admin && tDirty && (
+                  <SaveBar
+                    count={1}
+                    sentence={<>قوالب الإشعارات والبوابة<span className="decsep" /><span className="sub">تُطبَّق على الرسائل التالية فور الحفظ</span></>}
+                    onSave={() => { saveTemplates(tp, user.name); setTSaved(structuredClone(tp)) }}
+                    onDiscard={() => setTp(structuredClone(tSaved))}
+                  />
+                )}
+              </>
+            )
+          })()}
 
           {admin && dirty && (
             <SaveBar

@@ -1,3 +1,4 @@
+import { hasLegacy } from '@/data/payments/legacy'
 import { SEED_AT, actDay, asOf } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
 import {
@@ -100,7 +101,7 @@ export function projectEnd(projectId: string): string | undefined {
     force, nothing paid) read 428,000 paid in closing and 0 in payments, and a stop asked for a
     171,200 recovery of money never paid. */
 export const paidToDate = (projectId: string): number => {
-  if (payRequests.some((r) => r.projectId === projectId) || scheduleOf(projectId).length) return paidOf(projectId)
+  if (payRequests.some((r) => r.projectId === projectId) || scheduleOf(projectId).length || hasLegacy(projectId)) return paidOf(projectId)
   const p = projectOf(projectId)
   return p && (isRunning(p) || p.statusGroup === 'مكتمل' || p.statusGroup === 'متعثر') ? (p.amountGranted || p.amountRequested) : 0
 }

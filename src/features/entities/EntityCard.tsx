@@ -1,3 +1,4 @@
+import { activationSay } from '@/data/shared/decisions'
 import { Link } from 'react-router-dom'
 import { EntityMark, Icon, icons, Money, Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
@@ -27,7 +28,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
             <Mono>{entityCode(row.id, row.registeredAt)}</Mono> · {row.type}
           </div>
         </div>
-        <Tag tone={activationTone(row.activation)}>{row.activation}</Tag>
+        <Tag tone={activationTone(row.activation)}>{activationSay(row.activation)}</Tag>
       </div>
 
       <div className="ec-meta sub">

@@ -1,3 +1,4 @@
+import { DECISIONS } from '@/data/shared/decisions'
 import { useSyncExternalStore } from 'react'
 import { projectRows, portfolioRows } from '@/data/mock/projects'
 import { entityById, entityRows } from '@/data/mock/entities'
@@ -1000,6 +1001,7 @@ export function routeProject(projectId: string, platform: boolean, type: PType, 
   if (p.statusGroup !== 'في الدراسة') return ['يُحدَّد التوجيه والنوع قبل الاعتماد فقط']
   if (isStrategic(p.entityId) && !typeAllowed(p.entityId, type)) return [`«${PTYPE_SAY[type]}» غير مسموح لهذا الشريك (11.2.2)`]
   if (platform && !isStrategic('860')) return ['منصة إحسان غير معتمدة شريكًا استراتيجيًّا']
+  if (platform && DECISIONS.ehsanEntities === 'strategic' && !isStrategic(p.entityId)) return ['التوجيه عبر إحسان للشركاء الاستراتيجيين المعتمدين فقط (قرار المؤسسة)']
   run({ op: 'route', projectId, platform, type, by, at: now() })
   return []
 }
@@ -1011,12 +1013,16 @@ export function proposeRoute(projectId: string, platform: boolean, type: PType, 
   if (p.statusGroup !== 'في الدراسة') return ['يُقترح التوجيه أثناء الدراسة فقط']
   if (isStrategic(p.entityId) && !typeAllowed(p.entityId, type)) return [`«${PTYPE_SAY[type]}» غير مسموح لهذا الشريك (11.2.2)`]
   if (platform && !isStrategic('860')) return ['منصة إحسان غير معتمدة شريكًا استراتيجيًّا']
+  if (platform && DECISIONS.ehsanEntities === 'strategic' && !isStrategic(p.entityId)) return ['التوجيه عبر إحسان للشركاء الاستراتيجيين المعتمدين فقط (قرار المؤسسة)']
   run({ op: 'routePropose', projectId, platform, type, note, by, at: now() })
   return []
 }
 export function decideRoute(projectId: string, accept: boolean, note: string, by: string): string[] {
   if (!PROPOSALS.get(projectId)) return ['لا اقتراح توجيه بانتظار القرار']
   if (!accept && !note.trim()) return ['اكتب سبب رفض الاقتراح']
+  const pr = PROPOSALS.get(projectId)!
+  const pp = projectOf(projectId)
+  if (accept && pr.platform && pp && DECISIONS.ehsanEntities === 'strategic' && !isStrategic(pp.entityId)) return ['التوجيه عبر إحسان للشركاء الاستراتيجيين المعتمدين فقط (قرار المؤسسة)']
   run({ op: 'routeDecide', projectId, accept, note, by, at: now() })
   return []
 }

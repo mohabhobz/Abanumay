@@ -1,3 +1,4 @@
+import { currentEpoch } from './authGuard'
 /**
  * Session state · a single flag in this prototype, a token in the real system.
  *
@@ -27,11 +28,14 @@ export type Role = 'staff' | 'entity'
 /** What an entity session may open · its own entity, or its own registration request */
 export interface Scope { entityId?: string; reqId?: string }
 const SCOPE = 'ab-scope'
+const EPOCH_AT = 'ab-session-epoch-at'
 
 export const signIn = (username: string, role: Role = 'staff', scope?: Scope): void => {
   try {
     sessionStorage.setItem(KEY, username || '1')
     sessionStorage.setItem(ROLE, role)
+    /* Batch 8 · the session belongs to the current epoch · «sign out everywhere» moves it */
+    sessionStorage.setItem(EPOCH_AT, currentEpoch())
     if (scope) sessionStorage.setItem(SCOPE, JSON.stringify(scope))
     else sessionStorage.removeItem(SCOPE)
   } catch {
@@ -51,7 +55,10 @@ export const signOut = (): void => {
 
 export const isSignedIn = (): boolean => {
   try {
-    return sessionStorage.getItem(KEY) !== null
+    if (sessionStorage.getItem(KEY) === null) return false
+    const at = sessionStorage.getItem(EPOCH_AT)
+    if (at !== null && at !== currentEpoch()) { signOut(); return false }
+    return true
   } catch {
     return false
   }
@@ -80,3 +87,8 @@ export const isEntitySession = (): boolean => isSignedIn() && sessionRole() === 
 
 /** A staff member reading an entity's portal · every control inside is disabled, links still open */
 export const isPortalPreview = (): boolean => isSignedIn() && sessionRole() !== 'entity'
+
+/** Batch 8 · after ending the other sessions, this tab joins the new epoch and stays signed in */
+export const keepThisSession = (): void => {
+  try { if (sessionStorage.getItem(KEY) !== null) sessionStorage.setItem(EPOCH_AT, currentEpoch()) } catch { /* ignore */ }
+}

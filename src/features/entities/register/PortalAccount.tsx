@@ -1,3 +1,4 @@
+import { activationSay } from '@/data/shared/decisions'
 import { Link } from 'react-router-dom'
 import { DateText, Glass, Head, Icon, KV, Mono, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
@@ -26,7 +27,7 @@ export function PortalAccount({ e }: { e: EntityRow }) {
     <Glass>
       <Head
         title="حساب الجهة"
-        meta={<Tag tone={activationTone(e.activation)}>{e.archived ? 'مؤرشفة' : e.activation}</Tag>}
+        meta={<Tag tone={activationTone(e.activation)}>{e.archived ? 'مؤرشفة' : activationSay(e.activation)}</Tag>}
       />
       <KV
         rows={[
@@ -59,7 +60,7 @@ export function PortalAccount({ e }: { e: EntityRow }) {
       {blocked && reason && (
         <div className="ptl-res no">
           <Icon name={icons.alert} size="sm" />
-          <div><b>{e.archived ? 'أُرشفت الجهة' : e.activation}</b><p>{reason}</p></div>
+          <div><b>{e.archived ? 'أُرشفت الجهة' : activationSay(e.activation)}</b><p>{reason}</p></div>
         </div>
       )}
 

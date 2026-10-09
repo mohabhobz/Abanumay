@@ -1,3 +1,4 @@
+import { hasLegacy, legacyOf } from '@/data/payments/legacy'
 import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Money, Num, Riyal, Stat, Steps, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
@@ -41,7 +42,7 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
         <Head title="جدول الدفعات" meta="صُرف قبل النظام" />
         <Empty
           title={<>صُرفت المنحة في النظام السابق · <Money>{paidBefore}</Money></>}
-          note="لا جدول دفعات ولا طلبات صرف لهذا المشروع في النظام · المصروف يُقرأ من قيمة المنحة، وهو ما يعتمده الإغلاق والتقارير."
+          note={projectId && hasLegacy(projectId) ? `من سندات النظام السابق المستوردة: ${legacyOf(projectId!).map((v) => `${v.voucher} (${v.amount.toLocaleString('en-US')} · ${v.paidAt})`).join('، ')}` : 'لا جدول دفعات ولا طلبات صرف لهذا المشروع في النظام · المصروف يُقرأ من قيمة المنحة، وهو ما يعتمده الإغلاق والتقارير.'}
         />
       </Glass>
     )
@@ -157,7 +158,7 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
               {p.before ? (
                 <div className="pay-cond">
                   <span className="lb">الصرف</span>
-                  <span>صُرفت في النظام السابق · لا إذن ولا سند لها هنا</span>
+                  <span>صُرفت في النظام السابق · {p.voucher ? <>سند <bdi className="num">{p.voucher}</bdi> مستورد من النظام السابق</> : 'لا إذن ولا سند لها هنا'}</span>
                 </div>
               ) : <Steps
                 flow="row"

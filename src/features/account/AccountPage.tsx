@@ -1,3 +1,5 @@
+import { signOutEverywhere } from '@/data/authGuard'
+import { keepThisSession } from '@/data/session'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -363,7 +365,7 @@ function SecurityTab() {
         <Head
           title="الجلسات النشطة"
           meta={sessions.length > 1 ? (
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => setS((x) => ({ ...x, signedOut: true }))}>
+            <button type="button" className="btn btn-2 btn-sm" onClick={() => { signOutEverywhere(); keepThisSession(); setS((x) => ({ ...x, signedOut: true })) }}>
               أنهِ الجلسات الأخرى
             </button>
           ) : <Tag tone="ok">هذا الجهاز فقط</Tag>}

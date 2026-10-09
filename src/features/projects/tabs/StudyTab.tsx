@@ -12,6 +12,7 @@ import { consultantByKey, consultantsFor } from '@/data/intake/consultants'
 import {
   adviceCode, flowOf, forwardBlockers, referConsultant, referralOpen, saveStudy, type Recommendation, type Study } from '@/data/intake/flow'
 import { FundingPlanCard } from '@/features/budget/FundingPlan'
+import { PRIORITY_SAY, PRIORITY_TONE, priorityLog, priorityOf, setPriority, usePriority, type Priority } from '@/data/intake/priority'
 
 /* «الدراسة» · the supervisor's study of a project (3.2.11–3.2.16, 3.2.19, 3.4.25).
 
@@ -200,6 +201,7 @@ export function StudyAside({ row, me, editable }: { row: ProjectRow; me: string;
 
   return (
     <>
+      <PriorityCard row={row} me={me} editable={editable} />
       <Glass>
         <Head title="ميزانية المجال" meta={<span className="sub">{budget?.label ?? row.field}</span>} />
         {budget ? (
@@ -282,5 +284,30 @@ export function StudyAside({ row, me, editable }: { row: ProjectRow; me: string;
         )}
       </Glass>
     </>
+  )
+}
+
+/** Batch 8 · the request's priority · set by hand or computed, by the foundation's decision */
+function PriorityCard({ row, me, editable }: { row: ProjectRow; me: string; editable: boolean }) {
+  usePriority()
+  const pr = priorityOf(row.id)
+  const [level, setLevel] = useState<Priority>(pr.level ?? 'medium')
+  const [why, setWhy] = useState('')
+  const [bad, setBad] = useState('')
+  const log = priorityLog(row.id)
+  return (
+    <Glass>
+      <Head title="الأولوية" meta={pr.level ? <Tag tone={PRIORITY_TONE[pr.level]}>{pr.say}</Tag> : <span className="sub">{pr.say}</span>} />
+      <p className="sub cnote">{pr.basis} · {pr.mode === 'manual' ? 'تُحدَّد يدويًا' : 'محسوبة من الدراسة'} حسب <Link className="lnk" to={ROUTES.decisions}>قرار المؤسسة</Link></p>
+      {pr.mode === 'manual' && editable && (
+        <div className="apv-row mt-2">
+          <FieldSelect label="الأولوية" value={level} options={(Object.keys(PRIORITY_SAY) as Priority[]).map((k) => ({ value: k, label: PRIORITY_SAY[k] }))} onChange={(v) => setLevel(v as Priority)} />
+          <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب الأولوية" placeholder="السبب" /></span>
+          <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = setPriority(row.id, level, why, me); setBad(out[0] ?? ''); if (!out.length) setWhy('') }}>حدّد الأولوية</button>
+          {bad && <span className="bad" role="alert">{bad}</span>}
+        </div>
+      )}
+      {log.length > 1 && <p className="sub cnote">تغيّرت <Num>{log.length}</Num> مرات · السابقة {PRIORITY_SAY[log.at(-2)!.level]}</p>}
+    </Glass>
   )
 }

@@ -5,6 +5,7 @@ import { nf, projectCode } from '@/lib/format'
 import { days, groupTone } from '@/lib/tone'
 import { stagePressure } from '@/data/repository'
 import type { ProjectRow } from '@/types/domain'
+import { PRIORITY_TONE, priorityOf } from '@/data/intake/priority'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
 /* Project table column definitions — a single source for four consumers.
@@ -132,6 +133,11 @@ export const COLS: Col[] = [
     value: (r) => r.amountSpent,
     agg: 'sum',
     money: true,
+  },
+  {
+    key: 'priority', w: 84, label: 'الأولوية',
+    cell: (r) => { const x = priorityOf(r.id); return x.level ? <Tag tone={PRIORITY_TONE[x.level]}>{x.say}</Tag> : <span className="sub">{x.say}</span> },
+    text: (r) => priorityOf(r.id).say,
   },
   { key: 'weight', w: 60, label: 'الوزن', def: true, n: true, cell: (r) => r.weight, text: (r) => String(r.weight), value: (r) => r.weight, agg: 'avg' },
   { key: 'score', w: 60, label: 'التقييم', n: true, cell: (r) => r.score, text: (r) => String(r.score), value: (r) => r.score, agg: 'avg' },

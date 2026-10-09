@@ -272,11 +272,10 @@ export default function PaymentsPage() {
             {/* Step 2 - request creation. Late items are screen 6, the report the escalation
                 mechanism (9.5) calls for - not a filter on this inbox. */}
             <PageActions
-              secondary={
-                k.late + k.stuck > 0
-                  ? [{ label: 'المتأخر', to: ROUTES.paymentsLate, icon: 'alert', count: k.late + k.stuck }]
-                  : []
-              }
+              secondary={[
+                ...(k.late + k.stuck > 0 ? [{ label: 'المتأخر', to: ROUTES.paymentsLate, icon: 'alert' as const, count: k.late + k.stuck }] : []),
+                ...(role.key === 'finance' || role.key === 'admin' ? [{ label: 'دفعات النظام السابق', to: ROUTES.paymentsLegacy, icon: 'upload' as const }] : []),
+              ]}
               create={{ label: role.key === 'supervisor' ? 'إذن صرف جديد' : 'طلب صرف جديد', to: ROUTES.paymentNew() }}
             />
           </header>

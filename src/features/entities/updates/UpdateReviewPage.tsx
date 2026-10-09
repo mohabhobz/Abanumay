@@ -1,3 +1,4 @@
+import { activationSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tag } from '@/components/ui'
@@ -166,7 +167,7 @@ export default function UpdateReviewPage() {
               {/* The entity now and the log · in the main column, the end column is the assistant's alone */}
               {e && (
                 <Glass>
-                  <Head title="الجهة الآن" meta={<Tag tone={activationTone(e.activation)}>{e.activation}</Tag>} />
+                  <Head title="الجهة الآن" meta={<Tag tone={activationTone(e.activation)}>{activationSay(e.activation)}</Tag>} />
                   <KV rows={[
                     { k: 'صلاحية التقديم', v: e.canApply ? 'مفعّلة' : 'موقوفة حتى القرار' },
                     { k: 'نهاية الترخيص', v: <DateText>{e.licenseEndsAt}</DateText> },

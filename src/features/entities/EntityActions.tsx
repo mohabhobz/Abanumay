@@ -1,3 +1,4 @@
+import { activationSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -73,7 +74,7 @@ export function EntityStatusCard({ e }: { e: EntityRow }) {
 
   return (
     <Glass>
-      <Head title="حالة الجهة" meta={<Tag tone={e.archived ? 'mute' : activationTone(e.activation)}>{e.archived ? 'مؤرشفة' : e.activation}</Tag>} />
+      <Head title="حالة الجهة" meta={<Tag tone={e.archived ? 'mute' : activationTone(e.activation)}>{e.archived ? 'مؤرشفة' : activationSay(e.activation)}</Tag>} />
       <KV rows={[
         { k: 'صلاحية التقديم', v: e.canApply ? <Tag tone="ok">مفعّلة</Tag> : <Tag tone="mute">موقوفة</Tag> },
         ...(lapsed.length ? [{ k: 'وثائق منتهية', v: <span className="bad">{lapsed.join('، ')} · غير نشطة تلقائيًا حتى التحديث</span> }] : []),

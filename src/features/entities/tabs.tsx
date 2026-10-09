@@ -1,3 +1,4 @@
+import { activationSay } from '@/data/shared/decisions'
 import { accountEvents } from '@/data/entities/auth'
 import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
@@ -116,7 +117,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <Head title="بيانات النظام" />
         <KV
           rows={[
-            { k: 'حالة التفعيل', v: <Tag tone={activationTone(e.activation)}>{e.activation}</Tag> },
+            { k: 'حالة التفعيل', v: <Tag tone={activationTone(e.activation)}>{activationSay(e.activation)}</Tag> },
             { k: 'درجة الحوكمة', v: <b>{e.governance}</b> },
             { k: 'نوع الحساب', v: d.accountType },
             { k: 'اسم المستخدم', v: <Mono>{d.username}</Mono> },

@@ -124,6 +124,8 @@ type Op = Stamped & (
   | { op: 'assign'; id: string; owner: string; by: string }
   /* Batch 6 · 8 Oct · the start moves · the end follows from the duration (3.4.input · the calculated end) */
   | { op: 'reschedule'; id: string; startAt: string; reason: string; by: string }
+  /* Batch 8 · intake#15 · the official holidays changed · each open project's end is computed again */
+  | { op: 'rederive'; id: string; ids: string[]; reason: string; by: string }
 )
 
 const KEY = 'ab-intake-ops'
@@ -303,6 +305,7 @@ const trackOf = (field: string) => Object.entries(FIELDS_BY_TRACK).find(([, fs])
 
 function apply(o: Op) { OP_AT = o.at; try { applyOp(o) } finally { OP_AT = undefined } }
 function applyOp(o: Op) {
+  if (o.op === 'rederive') { applyRederive(o.ids, o.reason, o.by); return }
   const p = o.op === 'submit' ? undefined : row(o.id)
   if (o.op !== 'submit' && !p) return
 
@@ -550,6 +553,35 @@ export const rescheduleStart = (id: string, startAt: string, reason: string, by:
   if (!startAt) return ['حدّد تاريخ البداية']
   run({ op: 'reschedule', id, startAt, reason: reason.trim(), by })
   return []
+}
+/** Batch 8 · intake#15 · open projects whose end was computed from the calendar before the change
+    (`before` · the holidays as they were) and no longer matches it · a seeded end typed by hand is left alone */
+export function endsToRederive(before: { date: string; name: string }[]): string[] {
+  const now = CYCLE.holidays
+  const open = projectRows.filter((p) => p.startAt && p.durationDays && !['مكتمل', 'معتذر عنه'].includes(p.statusGroup))
+  CYCLE.holidays = before
+  const derived = open.filter((p) => p.endAt === addWorkingDays(p.startAt!, p.durationDays!))
+  CYCLE.holidays = now
+  return derived.filter((p) => p.endAt !== addWorkingDays(p.startAt!, p.durationDays!)).map((p) => p.id)
+}
+function applyRederive(ids: string[], reason: string, by: string) {
+  for (const id of ids) {
+    const p = row(id)
+    if (!p?.startAt || !p.durationDays) continue
+    const was = p.endAt
+    p.endAt = addWorkingDays(p.startAt, p.durationDays)
+    if (was === p.endAt) continue
+    event(p.id, { action: 'أُعيد حساب نهاية التنفيذ · تغيّرت الإجازات الرسمية', by, tone: 'warn', fields: [
+      { k: 'النهاية المحسوبة', v: `${was ?? '—'} ← ${p.endAt}`, strong: true }, { k: 'السبب', v: reason },
+    ] })
+    note(p.id, p.entityName, `تغيّر تاريخ نهاية مشروعك · ${p.name}`, `ينتهي ${p.endAt} بعد تحديث الإجازات الرسمية`)
+  }
+}
+/** Called after the holidays are saved · records one operation listing the projects it moved */
+export const rederiveEnds = (before: { date: string; name: string }[], reason: string, by: string): number => {
+  const ids = endsToRederive(before)
+  if (ids.length) run({ op: 'rederive', id: '', ids, reason, by })
+  return ids.length
 }
 export const uploadDoc = (id: string, kind: string, name: string, by: string) => run({ op: 'doc', id, kind, name, by })
 export const saveStudy = (id: string, study: Omit<Study, 'at' | 'version' | 'field'>) => run({ op: 'study', id, study })

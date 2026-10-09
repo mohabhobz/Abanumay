@@ -19,9 +19,11 @@ import {
   HOLDER_SAY, actOnAgreement, agrActions, agrFlowOf, agrHolder, agrIssues, agrReview, agrStageSay, agreementText,
   issuesOfRow, mayEdit, openNewVersion, reservedOf, saveAgreement, submitAgreement, useAgreements,
   type AgrAction, type Clause,
-} from '@/data/agreements/store'
+signHash, } from '@/data/agreements/store'
 import type { AgreementKind, AgreementRow, PayDoc } from '@/types/domain'
 import { AgrActionDock } from './AgrActionDock'
+import { OtpPanel } from '@/features/entities/OtpPanel'
+import { entityById } from '@/data/mock/entities'
 import { ScheduleEditor, asDraft } from './ScheduleEditor'
 import { AgreementTextCard, AnnexesCard, ClausesCard, IssuesCard, ReviewCard, SignaturesCard, VersionsCard } from './parts'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -133,6 +135,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
   const [kind, setKind] = useState<AgreementKind>(a.kind)
   const [note, setNote] = useState('')
   const [said, setSaid] = useState('')
+  const [signing, setSigning] = useState(false)
   const [reason, setReason] = useState('')
 
   const payments = edit ? toPayments(rows, a.amount) : a.payments
@@ -155,6 +158,8 @@ function AgreementView({ a }: { a: AgreementRow }) {
 
   const onAct = (x: AgrAction, file?: string) => {
     let out: string[]
+    /* Batch 8 · the electronic signature is confirmed with a code on the signer's phone first */
+    if (x.act === 'entitySign') { setSigning(true); setSaid(''); return }
     if (x.act === 'submit') {
       if (dirty) saveDraft()
       out = submitAgreement(a.id, user.name)
@@ -214,6 +219,24 @@ function AgreementView({ a }: { a: AgreementRow }) {
               </Link>
             )}
           </div>
+
+          {asEntity && signing && holder === 'entity' && (
+            <Glass>
+              <Head title="التوقيع الإلكتروني" meta={<Tag tone="warn">تأكيد الهوية</Tag>} />
+              <p className="sub cnote">يوقّع <b>{a.signer.name}</b> · {a.signer.title} · يُرسل رمز إلى جوال الجهة المسجّل، ويُحفظ مع التوقيع بصمة النص الموقّع (SHA-256) فلا يُقبل أي تعديل لاحق على أنه موقّع.</p>
+              <OtpPanel
+                purpose="sign"
+                to={[entityById(a.entityId)?.mobile ?? '']}
+                onVerified={() => {
+                  void signHash(a).then((hash) => {
+                    const out = actOnAgreement(a.id, 'entitySign', note, a.signer.name, undefined, { hash, via: 'otp', to: entityById(a.entityId)?.mobile ?? '' })
+                    setSaid(out[0] ?? ''); setSigning(false)
+                  })
+                }}
+              />
+              <button type="button" className="btn btn-ghost btn-sm mt-2" onClick={() => setSigning(false)}>إلغاء</button>
+            </Glass>
+          )}
 
           {asEntity && (
             <Glass>

@@ -7,6 +7,7 @@ import { AFTER_LOGIN, ROUTES } from '@/app/routes'
 import { signIn } from '@/data/session'
 import { STAFF_LOGINS, staffLogin, writeRole } from '@/data/roles'
 import { findAccount, passwordOk } from '@/data/entities/auth'
+import { AUTH_RULES, lockLeft, loginFailed, loginSucceeded } from '@/data/authGuard'
 import { regRows } from '@/data/mock/registration'
 
 /* Login screen.
@@ -41,7 +42,7 @@ export default function LoginPage() {
   const loc = useLocation()
   /* The URL redirected from - if a project link was opened while logged out, it returns there after
      login instead of starting from scratch. */
-  const st = loc.state as { from?: string; user?: string; reset?: boolean } | null
+  const st = loc.state as { from?: string; user?: string; reset?: boolean; expired?: boolean } | null
   const from = st?.from
   const [user, setUser] = useState(st?.user ?? '')
   const [pass, setPass] = useState('')
@@ -64,11 +65,19 @@ export default function LoginPage() {
       fail('أدخل اسم المستخدم وكلمة المرور')
       return
     }
-    /* A portal account whose password was set (registration or reset) must match it (2.3.pw-11) */
-    if (passwordOk(user, pass) === false) {
-      fail('كلمة المرور غير صحيحة · استعدها من «نسيت كلمة المرور»')
+    /* Batch 8 · a locked account waits out its lock */
+    const locked = lockLeft(user)
+    if (locked) {
+      fail(`الحساب مقفل مؤقتًا بعد محاولات خاطئة متتالية · حاول بعد ${Math.ceil(locked / 60)} دقيقة أو استعد كلمة المرور`)
       return
     }
+    /* A portal account whose password was set (registration or reset) must match it (2.3.pw-11) */
+    if (passwordOk(user, pass) === false) {
+      const left = loginFailed(user)
+      fail(left ? `كلمة المرور غير صحيحة · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : `كلمة المرور غير صحيحة · قُفل الحساب ${AUTH_RULES.lockMinutes} دقيقة`)
+      return
+    }
+    loginSucceeded(user)
     setErr('')
     setBusy(true)
     setTimeout(() => {
@@ -97,6 +106,7 @@ export default function LoginPage() {
   return (
     <AuthShell title="منح أبانمي" sub="مؤسسة سليمان أبانمي الأهلية" err={err}>
           {st?.reset && <p className="lnote sub lwhy">حُفظت كلمة المرور الجديدة · ادخل بها.</p>}
+          {st?.expired && <p className="lnote sub lwhy">انتهت الجلسة لعدم النشاط · ادخل من جديد.</p>}
           {/* method/action are present so password managers recognize the form and offer to save -
               submission itself is blocked with preventDefault. */}
           <form

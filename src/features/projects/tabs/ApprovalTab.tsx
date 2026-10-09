@@ -1,3 +1,4 @@
+import { KIND_SAY, LEVEL_RANK, LEVEL_SAY, floorOf, kindOf } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DateText, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
@@ -109,6 +110,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         <Head title="مسار القرار" meta={<Tag tone={holder === 'confirm' ? 'ok' : holder ? 'warn' : 'mute'}>{holder ? HOLDER_LABEL[holder] : row.stage}</Tag>} />
         <KV rows={[
           { k: 'صاحب القرار حسب المبلغ', v: <>{decider.role}{decider.upTo !== null && <span className="sub"> · حتى <Num>{decider.upTo}</Num></span>}</> },
+          ...(floorOf(row) && LEVEL_RANK[floorOf(row)!] > LEVEL_RANK[decider.key] ? [{ k: 'صاحب القرار حسب النوع', v: <>{LEVEL_SAY[floorOf(row)!]} فأعلى <span className="sub">· {KIND_SAY[kindOf(row)]}</span></> }] : []),
           { k: 'حد المدير التنفيذي بالتجاوز المسموح', v: <><Num>{levelCap('exec')}</Num> <span className="sub">({pct(APPROVAL_RULES.execOverPct)})</span></> },
           { k: 'الحجز', v: <>{hold ? HOLD_STAGE_SAY[hold.link.stage] : HOLD_SAY[f.hold]}{hold?.node && <span className="sub"> · {hold.link.shares.length > 1 ? `${nf.format(hold.link.shares.length)} بنود` : hold.node.label} · <Money sm>{hold.link.amount}</Money></span>}</> },
           ...(f.needsPlan !== undefined ? [{ k: 'الخطة', v: f.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة' }] : [{ k: 'الخطة', v: <span className="sub">{planSuggested(row) ? 'مقترح: يتطلب خطة (وفق القاعدة)' : 'مقترح: لا يتطلب خطة'}</span> }]),

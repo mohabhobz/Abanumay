@@ -56,12 +56,15 @@ import RequestPage from '@/features/payments/RequestPage'
 import RequestForm from '@/features/payments/RequestForm'
 import OrderPage from '@/features/payments/OrderPage'
 import LatePage from '@/features/payments/LatePage'
+import LegacyPage from '@/features/payments/LegacyPage'
 import SettingsIndexPage from '@/features/settings/SettingsIndexPage'
 import AccountPage from '@/features/account/AccountPage'
 import PermissionsPage from '@/features/settings/PermissionsPage'
 import EscalationPage from '@/features/cross/EscalationPage'
 import EscalationSettingsPage from '@/features/cross/EscalationSettingsPage'
 import NotifyHubPage from '@/features/cross/NotifyHubPage'
+import DecisionsPage from '@/features/settings/DecisionsPage'
+import AiSettingsPage from '@/features/settings/AiSettingsPage'
 import AuditPage from '@/features/cross/AuditPage'
 import PreferencesPage from '@/features/account/PreferencesPage'
 import EntitySettingsPage from '@/features/entities/EntitySettingsPage'
@@ -121,6 +124,8 @@ export default function App() {
         <Route path={ROUTES.permissions} element={<PermissionsPage />} />
         <Route path={ROUTES.escalationSettings} element={<EscalationSettingsPage />} />
         <Route path={ROUTES.notifyHub} element={<NotifyHubPage />} />
+        <Route path={ROUTES.decisions} element={<DecisionsPage />} />
+        <Route path={ROUTES.aiSettings} element={<AiSettingsPage />} />
         <Route path={ROUTES.escalation} element={<EscalationPage />} />
         <Route path={ROUTES.audit} element={<AuditPage />} />
 
@@ -209,6 +214,7 @@ export default function App() {
             read as a request id named "new" and return "not found". */}
         <Route path={`${ROUTES.payments}/new`} element={<RequestForm />} />
         <Route path={ROUTES.paymentsLate} element={<LatePage />} />
+        <Route path={ROUTES.paymentsLegacy} element={<LegacyPage />} />
         <Route path={`${ROUTES.payments}/:id`} element={<RequestPage />} />
         <Route path={`${ROUTES.payments}/:id/edit`} element={<RequestForm />} />
         <Route path={`${ROUTES.payments}/:id/order`} element={<OrderPage />} />

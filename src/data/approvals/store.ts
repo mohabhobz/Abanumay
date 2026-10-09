@@ -1,3 +1,4 @@
+import { typeFloorBlock } from '@/data/shared/decisions'
 import { useSyncExternalStore } from 'react'
 import type { DecisionAction, ProjectRow } from '@/types/domain'
 import type { LogEvent, LogField } from '@/data/mock/log'
@@ -294,7 +295,7 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
     if (f.awaitingReview) {
       actions.push({ label: 'أعد الإرسال للمدير التنفيذي', kind: 'btn-p', needsNote: true, blocked: up('manager', false) })
     } else {
-      if (APPROVAL_RULES.managerFinal && amount <= capOf('manager')) {
+      if (APPROVAL_RULES.managerFinal && amount <= capOf('manager') && !typeFloorBlock(p, 'manager')) {
         actions.push({ label: 'اعتماد نهائي', kind: 'btn-p', needsNote: true, choose: planChoice, blocked: up('manager', true) })
       }
       actions.push({ label: 'توصية بالموافقة', kind: APPROVAL_RULES.managerFinal && amount <= capOf('manager') ? 'btn-2' : 'btn-p', needsNote: true, choose: planChoice, blocked: up('manager', true) })
@@ -309,14 +310,15 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
     return { holder, mine, say, actions }
   }
   if (holder === 'exec') {
-    const within = amount <= levelCap('exec')
+    const floor = typeFloorBlock(p, 'exec')
+    const within = amount <= levelCap('exec') && !floor
     const lim = entityLimitBlock(p, 'exec')
     const actions: DecisionAction[] = []
     if (within) actions.push({ label: 'اعتماد', kind: 'btn-p', needsNote: true, blocked: lim || up('exec', true) })
     actions.push({ label: 'إحالة للجنة التنفيذية', kind: within && !lim ? 'btn-2' : 'btn-p', needsNote: true, blocked: up('exec', false) })
     actions.push({ label: 'إعادة لمدير المنح', kind: 'btn-2', needsNote: true })
     actions.push({ label: 'اعتذار', kind: 'btn-d', needsNote: true })
-    return { holder, mine, say: within ? say : `${say} · المبلغ فوق حد المدير التنفيذي (${nf.format(levelCap('exec'))}) فالإحالة للجنة`, actions }
+    return { holder, mine, say: within ? say : floor ? `${say} · ${floor}` : `${say} · المبلغ فوق حد المدير التنفيذي (${nf.format(levelCap('exec'))}) فالإحالة للجنة`, actions }
   }
   if (holder === 'confirm') {
     const unmet = f.conditions.filter((c) => !c.met)
@@ -406,7 +408,7 @@ const applyOp = (o: Op) => {
           /* Batch 7 · approvals#19 · above the executive's cap (or past the entity's limit with him), a
              recommendation to approve can go straight to the committee when the setting says so */
           const auto = o.verdict === 'recommend-approve' && APPROVAL_RULES.autoReferAboveExec
-            && (p.amountRequested > levelCap('exec') || Boolean(entityLimitBlock(p, 'exec')))
+            && (p.amountRequested > levelCap('exec') || Boolean(entityLimitBlock(p, 'exec')) || Boolean(typeFloorBlock(p, 'exec')))
           p.holder = auto ? 'committee' : 'exec'; p.hoursInStage = 0
           if (o.verdict === 'recommend-approve') f.hold = linkOf(p.id) ? 'initial' : f.hold
           fields.push({ k: 'الإحالة', v: auto ? 'اللجنة التنفيذية · إحالة تلقائية فوق حد المدير التنفيذي (5.4.11)' : 'المدير التنفيذي' })
@@ -638,6 +640,7 @@ export function sessionItemBlockers(s: Session, it: SessionItem, outcome: Outcom
   if (outcome === 'approve') {
     if (p.amountRequested > levelCap(s.body)) out.push(`المبلغ فوق حد ${HOLDER_LABEL[s.body]} · الإحالة لمجلس الأمناء`)
     if (s.body === 'committee') { const l = entityLimitBlock(p, 'committee'); if (l) out.push(l) }
+    const fl = typeFloorBlock(p, s.body); if (fl) out.push(fl)
   }
   if (outcome === 'refer' && s.body === 'board') out.push('مجلس الأمناء أعلى جهة اعتماد')
   return out
@@ -722,7 +725,7 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
   const block = (approving: boolean) => upBlockers(p, level, approving)
   switch (label) {
     case 'إحالة لصاحب صلاحية بديل': run({ op: 'conflict', id: p.id, level, reason: note, by: me, at }); return []
-    case 'اعتماد نهائي': { const b = block(true); if (b.length) return b; if (!choice) return ['حدّد إن كان المشروع يتطلب خطة']; go('final-approve', { needsPlan: choice === 'yes' }); settleHold(p.id, me); return [] }
+    case 'اعتماد نهائي': { const fl = typeFloorBlock(p, 'manager'); if (fl) return [fl]; const b = block(true); if (b.length) return b; if (!choice) return ['حدّد إن كان المشروع يتطلب خطة']; go('final-approve', { needsPlan: choice === 'yes' }); settleHold(p.id, me); return [] }
     case 'توصية بالموافقة': { const b = block(true); if (b.length) return b; if (!choice) return ['حدّد إن كان المشروع يتطلب خطة (4.2.3)']; go('recommend-approve', { needsPlan: choice === 'yes' }); return [] }
     case 'توصية بالرفض': { const b = block(false); if (b.length) return b; go('recommend-reject'); return [] }
     case 'رفض نهائي': {
@@ -741,6 +744,7 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
     case 'اعتماد': {
       if (p.amountRequested > levelCap('exec')) return [`المبلغ فوق حد المدير التنفيذي (${nf.format(levelCap('exec'))}) · الإحالة للجنة (5.4.11)`]
       const lim = entityLimitBlock(p, 'exec'); if (lim) return [lim, 'تُحال للجنة التنفيذية']
+      const fl = typeFloorBlock(p, 'exec'); if (fl) return [fl]
       const b = block(true); if (b.length) return b
       go('approve'); settleHold(p.id, me); return []
     }

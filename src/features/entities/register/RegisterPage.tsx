@@ -1,3 +1,5 @@
+import { readDocument, readMismatches } from '@/lib/ai/provider'
+import { textIssues } from '@/lib/textCheck'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -120,6 +122,7 @@ export default function RegisterPage() {
      its name when present, and a placeholder document name when the key came from the URL. */
   const docs = useMemo(() => new Set(readList(v.up)), [v.up])
   const [files, setFiles] = useState<Record<string, { name: string; size: number; warn?: string }>>(() => resumable?.files ?? {})
+  const [reads, setReads] = useState<Record<string, { note: string; diff: string[] }>>({})
   const [refused, setRefused] = useState<Record<string, string>>({})
   /* The draft's documents land in the URL once, like any other uploaded set */
   useEffect(() => {
@@ -151,6 +154,8 @@ export default function RegisterPage() {
       if (no) { setRefused((x) => ({ ...x, [k]: no })); return }
       setRefused((x) => { const n = { ...x }; delete n[k]; return n })
       setFiles((s) => ({ ...s, [k]: { name: f.name, size: f.size, warn: legibilityWarning(f) || undefined } }))
+      /* Batch 8 · the content is read when the document-reading service is connected */
+      void readDocument(f, k).then((r) => setReads((x) => ({ ...x, [k]: { note: r.note, diff: readMismatches(r.fields, val).map((m) => `${m.label}: في الوثيقة «${m.value}» والمُدخَل «${val[m.key]}»`) } })))
     }
     set({ up: writeList([...new Set([...readList(v.up), k])]) })
   }
@@ -677,6 +682,9 @@ export default function RegisterPage() {
                                     </label>
                                     </>
                                   )}
+                                  {on && reads[d.key] && (
+                                    <p className={`cnote ${reads[d.key]!.diff.length ? 'bad' : 'sub'}`}>{reads[d.key]!.diff.length ? `لا يطابق المُدخَل · ${reads[d.key]!.diff.join(' · ')}` : reads[d.key]!.note}</p>
+                                  )}
                                   {on && (picked?.warn || stale.includes(d.key)) && (
                                     <p className="bad cnote">{stale.includes(d.key)
                                       ? <>الوثيقة منتهية · {DOC_EXPIRY[d.key].label} قبل اليوم</>
@@ -710,6 +718,13 @@ export default function RegisterPage() {
                       {dups.filter((d) => d.field !== 'iban' && s.fields.some((f) => f.key === d.field)).map((d) => (
                         <p key={d.field} className="bad cnote">{d.label} مسجَّل لـ«{d.who}» · تحقّق منه قبل الإرسال.</p>
                       ))}
+                      {/* Batch 8 · spelling and formatting of what was typed · a one-click fix when it's certain */}
+                      {s.fields.filter((f) => f.kind === 'text').flatMap((f) => textIssues(val[f.key] ?? '').map((x, i) => (
+                        <p key={`${f.key}-${i}`} className="sub cnote">
+                          <b>{f.label}</b>: {x.say}
+                          {x.fixed !== undefined && <> · <button type="button" className="lnk" onClick={() => setField(f.key, x.fixed!)}>صحّح إلى «{x.fixed}»</button></>}
+                        </p>
+                      )))}
                       {s.key === 'id' && clash && (
                         <p className="bad cnote">
                           رقم الترخيص <Mono>{val.licenseNo}</Mono> مسجَّل لـ

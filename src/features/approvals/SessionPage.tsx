@@ -1,3 +1,4 @@
+import { useAi } from '@/lib/ai/provider'
 import { useState } from 'react'
 import { expectedImpact, sessionReport } from '@/data/shared/ai'
 import { AnalysisCard } from '@/components/assistant'
@@ -119,6 +120,8 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
   const [note, setNote] = useState('')
   const [count, setCount] = useState('3')
   const [plan, setPlan] = useState('')
+  /* Batch 8 · the model's summary when the AI service is connected (settings › الذكاء الاصطناعي) */
+  const ai = useAi('summary', { projectId: it.projectId, body: s.body }, () => ({ text: '' }))
   if (!p) return null
   const f = appFlowOf(p.id)
   const study = flowOf(p.id).study
@@ -184,7 +187,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
         ...(last ? [{ k: 'آخر توصية', v: <>{HOLDER_LABEL[last.level]} · {VERDICT_SAY[last.verdict]} · {last.note}</> }] : []),
         { k: 'التوافق', v: <span className={strat.ok ? '' : 'bad'}>{strat.say}</span> },
       ]} />
-      <p className="sub cnote"><Icon name={icons.spark} size="sm" /> <b>الملخص التنفيذي</b> · {summary} التوافق {pct(fit.score)}. <Tag tone="mute">استرشادي</Tag></p>
+      <p className="sub cnote"><Icon name={icons.spark} size="sm" /> <b>الملخص التنفيذي</b> · {ai.source === 'model' ? ai.text : <>{summary} التوافق {pct(fit.score)}.</>} <Tag tone="mute">استرشادي · {ai.source === 'model' ? 'من النموذج' : 'قواعد محلية'}</Tag>{ai.note && <span className="sub"> · {ai.note}</span>}</p>
       <details className="mt-2">
         <summary className="lnk">ملف المشروع للأعضاء · الدراسة والآراء والوثائق والإجراءات</summary>
         <KV rows={[

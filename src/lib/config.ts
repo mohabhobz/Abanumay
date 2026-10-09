@@ -88,4 +88,8 @@ export const CFG = {
   stageLimits: 'ab-cfg-stage-limits',
   /** Notification channels per audience and topic · in-app, email, SMS */
   notify: 'ab-cfg-notify',
+  /** Batch 8 · the client's open decisions, each built both ways behind one setting */
+  decisions: 'ab-cfg-decisions',
+  /** Batch 8 · message templates per topic and channel */
+  templates: 'ab-cfg-templates',
 } as const

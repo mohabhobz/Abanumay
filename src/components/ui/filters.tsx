@@ -177,7 +177,9 @@ export function Select({
           one
           up={up}
           end={up}
-          float={up ? { anchor: btn, pop } : undefined}
+          /* Always portaled · inside a table's scroll box (the permissions matrix) the panel was clipped
+             and opened past the screen's edge */
+          float={{ anchor: btn, pop }}
           search={search}
           needle={needle}
           onNeedle={setNeedle}

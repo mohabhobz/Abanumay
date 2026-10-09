@@ -212,7 +212,8 @@ export function SignaturesCard({ a }: { a: AgreementRow }) {
         <li className={f.entitySign ? 'ok' : 'no'}>
           <Icon name={f.entitySign ? icons.check : icons.alert} size="sm" />
           <span>{f.entitySign
-            ? <>وقّعتها الجهة {f.entitySign.method === 'e' ? 'إلكترونيًّا' : <>ورقيًّا · {f.entitySign.file}</>} · {a.signer.name} · <DateText>{f.entitySign.at}</DateText></>
+            ? <>وقّعتها الجهة {f.entitySign.method === 'e' ? 'إلكترونيًّا' : <>ورقيًّا · {f.entitySign.file}</>} · {a.signer.name} · <DateText>{f.entitySign.at}</DateText>
+              {f.entitySign.sig && <><br /><span className="sub">برمز تحقق على الجوال · بصمة النص <bdi className="num">{f.entitySign.sig.hash.slice(0, 16)}…</bdi></span></>}</>
             : <>توقيع الجهة · {a.kind === 'إلكترونية' ? 'إلكترونيًّا من بوابة المنح' : 'نسخة ورقية موقّعة يرفعها المشرف'}</>}</span>
         </li>
         <li className={f.foundationSign ? 'ok' : 'no'}>

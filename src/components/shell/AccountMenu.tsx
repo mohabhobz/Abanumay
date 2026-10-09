@@ -1,3 +1,4 @@
+import { switcherOn } from '@/data/authGuard'
 import { useEffect, useState } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
@@ -83,7 +84,7 @@ export function AccountMenu({
               <div className="acct-name">{user.name}</div>
               <div className="sub acct-role">{user.role}</div>
             </div>
-            <button
+            {switcherOn() && <button
               type="button"
               className="iact acct-sw"
               aria-expanded={who}
@@ -93,10 +94,10 @@ export function AccountMenu({
               onClick={() => setWho((x) => !x)}
             >
               <Icon name={who ? icons.chevronUp : icons.chevronDown} size="sm" />
-            </button>
+            </button>}
           </div>
 
-          {who && (
+          {who && switcherOn() && (
             <div className="acct-sec acct-who-list" id="acct-who" role="group" aria-label="المستخدمون">
               {/* Batch 1 · 8 Oct · the list is people, not seats: picking one signs in as that person
                   (the demo's shortcut for signing out and in), so a vote or a study is always

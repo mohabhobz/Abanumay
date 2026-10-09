@@ -80,7 +80,9 @@ export const initials = (name: string): string => {
   /* The surname is usually prefixed with the definite article · the letter after it differentiates
      more */
   const last = parts[parts.length - 1].replace(/^ال/, '')
-  return first + (last.charAt(0) || '')
+  /* A zero-width non-joiner between the two letters · Arabic letters join otherwise, and «ن» «ق»
+     read as one shape «نق» instead of two initials */
+  return last.charAt(0) ? `${first}\u200C${last.charAt(0)}` : first
 }
 
 const BY_NAME = new Map<string, Person>(

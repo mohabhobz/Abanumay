@@ -11,6 +11,7 @@ import {
   usePartners, actOnPfReq,
 } from '@/data/partners/store'
 import { PartnerCard, PayList } from './parts'
+import { ReconcileTab } from './Reconcile'
 import { AnalysisCard } from '@/components/assistant'
 import { readFiles } from '@/data/shared/ai'
 import { useState } from 'react'
@@ -27,6 +28,7 @@ const TABS = [
   { slug: 'portfolios', label: 'المحافظ' },
   { slug: 'ehsan', label: 'مشاريع إحسان' },
   { slug: 'finance', label: 'المراجعة المالية' },
+  { slug: 'reconcile', label: 'مطابقة إحسان' },
   { slug: 'report', label: 'التقرير' },
 ] as const
 
@@ -96,6 +98,8 @@ export default function PartnersPage() {
               </div>
             </Glass>
           )}
+
+          {tab === 'reconcile' && <ReconcileTab me={user.name} canAct={role.key === 'finance' || role.key === 'admin'} />}
 
           {tab === 'ehsan' && (
             <Glass className="tblcard">

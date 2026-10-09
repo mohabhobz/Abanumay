@@ -1,3 +1,6 @@
+import { meOf, readRole } from '@/data/roles'
+import { DECISIONS } from '@/data/shared/decisions'
+import { rederiveEnds } from '@/data/intake/flow'
 import { useMemo, useState } from 'react'
 import {
   DateField, FieldSelect, Glass, Head, Icon, icons, MultiSelect, Num, Person, Switch, Tag,
@@ -191,7 +194,13 @@ export function CycleTab() {
         <SaveBar
           count={1}
           sentence={<>تعديلات على «{d.name}»<span className="decsep" /><span className="sub">تسري على البوابة والإسناد فور الحفظ</span></>}
-          onSave={() => { saveCycle(d); setSaved(structuredClone(CYCLE)); setD(structuredClone(CYCLE)) }}
+          onSave={() => {
+            const before = structuredClone(CYCLE.holidays)
+            saveCycle(d)
+            /* Batch 8 · intake#15 · when the foundation decided so, open projects' ends follow the new holidays */
+            if (DECISIONS.holidayRederive && JSON.stringify(before) !== JSON.stringify(CYCLE.holidays)) rederiveEnds(before, 'تحديث الإجازات الرسمية في إعدادات الاستقبال', meOf(readRole()))
+            setSaved(structuredClone(CYCLE)); setD(structuredClone(CYCLE))
+          }}
           onDiscard={() => setD(structuredClone(saved))}
           disabled={badPeriod}
         />

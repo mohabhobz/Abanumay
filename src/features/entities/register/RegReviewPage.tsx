@@ -1,3 +1,4 @@
+import { textIssues } from '@/lib/textCheck'
 import { ibanValid } from '@/lib/iban'
 import { useMemo, useState } from 'react'
 import { registrationAi } from '@/data/shared/ai'
@@ -228,6 +229,18 @@ export default function RegReviewPage() {
                       : 'الاسم والبريد والجوال والآيبان غير مكرّرة'}</span>
                     <span className="payq-r">قاعدة <Num>10</Num></span>
                   </li>
+                  {/* Batch 8 · spelling and formatting of the request's text · advisory, it doesn't block */}
+                  {(() => {
+                    const found = REG_STAGES.flatMap((st) => st.fields ?? []).filter((f) => f.kind === 'text')
+                      .flatMap((f) => textIssues(String((r as unknown as Record<string, unknown>)[f.key] ?? '')).map((x) => `${f.label}: ${x.say}${x.fixed !== undefined ? ` (المقترح «${x.fixed}»)` : ''}`))
+                    return (
+                      <li className={found.length ? 'no' : 'ok'}>
+                        <Icon name={found.length ? icons.alert : icons.check} size="sm" />
+                        <span>{found.length ? <>ملاحظات الصياغة: {found.join(' · ')}</> : 'لا أخطاء إملائية ولا تنسيقية في النصوص'}</span>
+                        <span className="payq-r">استرشادي</span>
+                      </li>
+                    )
+                  })()}
                   {(badFormat.length > 0 || warnFiles.length > 0) && (
                     <li className="no">
                       <Icon name={icons.alert} size="sm" />

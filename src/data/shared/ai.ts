@@ -1,3 +1,5 @@
+import { AI_CFG, aiSourceSay } from '@/lib/ai/provider'
+import { DECISIONS } from '@/data/shared/decisions'
 import type { Reading } from '@/components/assistant/reading'
 import type { AgreementRow, CloseRow, EntityRow, PlanRow, ProjectRow } from '@/types/domain'
 import { ROUTES } from '@/app/routes'
@@ -31,7 +33,8 @@ import { countOf, nf, NOUN, pct, units } from '@/lib/format'
    name) against the form · the production service reads the content with OCR; the comparison and
    the sentences stay the same. */
 
-const ADVISORY = 'قراءة استرشادية · ليست قرارًا'
+/* Batch 8 · each reading says what made it · local rules until the AI service is connected (settings › الذكاء الاصطناعي) */
+const advisory = () => `قراءة استرشادية · ليست قرارًا · ${aiSourceSay(AI_CFG.mode === 'api' ? 'summary' : undefined)}`
 const D = 86_400_000
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / D)
 const todayIso = () => new Date().toISOString().slice(0, 10)
@@ -70,7 +73,7 @@ export function readAlignment(p: ProjectRow): Reading {
       ? `يتوافق في ${a.parts.length - miss.length} من ${a.parts.length} معايير. يضعف التوافق: ${miss.map((x) => x.say).join('، ')}.`
       : `يتوافق مع المعايير الخمسة: التوجه الاستراتيجي والمجال والهدف وفتح الدورة وتكلفة المستفيد.`,
     danger: miss.map((x) => x.say),
-    src: `التوجهات الاستراتيجية · ميزانية الدورة · إعداد الدورة · ${ADVISORY}`,
+    src: `التوجهات الاستراتيجية · ميزانية الدورة · إعداد الدورة · ${advisory()}`,
   }
 }
 
@@ -93,7 +96,7 @@ export function readSummary(p: ProjectRow): Reading {
     id: 'ai-summary', kind: 'note', label: `ملخص تنفيذي · ${reader}`,
     text: parts.join(' '),
     bold: [money(p.amountRequested)],
-    src: `بيانات الطلب · الدراسة · توصيات المراحل السابقة · ${ADVISORY}`,
+    src: `بيانات الطلب · الدراسة · توصيات المراحل السابقة · ${advisory()}`,
   }
 }
 
@@ -115,7 +118,8 @@ export function expectedImpact(p: ProjectRow): { expected: number; rate: number;
     const c = closeRows.find((y) => y.projectId === x.id && y.stage !== 'draft')
     return c && typeof c.report.beneficiaries === 'number' && x.beneficiaries ? c.report.beneficiaries / x.beneficiaries : null
   }).filter((r): r is number => r !== null)
-  let rates = rateOf(similarTo(p, 6))
+  /* Batch 8 · the foundation's decision: closed similar projects first, or the field's rate only */
+  let rates = DECISIONS.impactBasis === 'similar' ? rateOf(similarTo(p, 6)) : []
   let from: 'similar' | 'field' | 'default' = 'similar'
   if (!rates.length) { rates = rateOf(projectRows.filter((x) => x.field === p.field && x.id !== p.id)); from = 'field' }
   if (!rates.length) from = 'default'
@@ -134,7 +138,7 @@ export function readSimilar(p: ProjectRow): Reading | null {
     text: `${sim.map((x) => `«${x.name}» لدى ${x.entityName} (${x.goal === p.goal ? 'نفس الهدف' : 'هدف مختلف'} · ${money(x.amountGranted || x.amountRequested)} · ${x.statusGroup})`).join('، ')}. `
       + `${done.length ? `اكتمل منها ${done.length}، ` : 'لم يكتمل منها شيء بعد، '}والأثر المتوقع لهذا المشروع نحو ${nf.format(expected)} مستفيد فعلي من ${nf.format(p.beneficiaries ?? 0)} مستهدف `
       + `(${ei.from === 'default' ? 'تقدير افتراضي · لم يُرسل تقرير ختامي لمشروع مشابه بعد' : `بنسبة التحقّق ${pct(Math.round(ei.rate * 100))} في ${countOf(ei.basis, NOUN.project)} ${ei.from === 'similar' ? 'مشابهًا' : 'من المجال'} أرسل تقريره الختامي`}).`,
-    src: `مشاريع المجال نفسه لدى جهات أخرى · نسب الإنجاز المسجّلة · ${ADVISORY}`,
+    src: `مشاريع المجال نفسه لدى جهات أخرى · نسب الإنجاز المسجّلة · ${advisory()}`,
     to: `${ROUTES.projects}?field=${encodeURIComponent(p.field)}`, toLabel: 'مشاريع المجال',
   }
 }
@@ -163,7 +167,7 @@ export function readBudget(p: ProjectRow): Reading {
     id: 'ai-budget', kind: flags.length ? 'flag' : 'note', label: 'تحليل ميزانية المشروع',
     text: flags.length ? `${flags.join('. ')}. راجع البنود قبل التوصية بالمبلغ.` : `التكلفة اليومية ${money(daily)} ضمن نطاق المسار، ولا بنود غير منطقية في الخطة.`,
     danger: flags,
-    src: `خطة المشروع ومراحلها · مشاريع المسار نفسه · ${ADVISORY}`,
+    src: `خطة المشروع ومراحلها · مشاريع المسار نفسه · ${advisory()}`,
   }
 }
 
@@ -192,7 +196,7 @@ export function readRationale(p: ProjectRow): Reading {
   return {
     id: 'ai-rationale', kind: 'note', label: 'مسودة مبررات القرار',
     text: draftRationale(p),
-    src: `توصيات المراحل السابقة${recs.length ? ` (${recs.length})` : ''} · التوافق · وضع الجهة والحجز · ${ADVISORY}`,
+    src: `توصيات المراحل السابقة${recs.length ? ` (${recs.length})` : ''} · التوافق · وضع الجهة والحجز · ${advisory()}`,
   }
 }
 
@@ -288,7 +292,7 @@ export function registrationAi(r: RegRequest, missingDocs: number): Reading[] {
       metric: { value: nf.format(a.score), unit: 'من 100' },
       text: `التوصية: ${a.verdict}. ${a.why.length ? `الأسباب: ${a.why.join('، ')}.` : 'البيانات مكتملة ومتسقة ولا أنماط مكررة.'}`,
       bold: [a.verdict],
-      src: `فحص البيانات والمستندات والأنماط · ${ADVISORY}`,
+      src: `فحص البيانات والمستندات والأنماط · ${advisory()}`,
     },
     {
       id: 'ai-reg-data', kind: issues.length ? 'flag' : 'note', label: 'الإملاء والبيانات غير المنطقية',
@@ -341,7 +345,7 @@ export function regTrends(): Reading[] {
     {
       id: 'ai-reg-reasons', kind: top.length ? 'flag' : 'note', label: 'أسباب الإعادة والرفض',
       text: top.length ? `${top.map(([w, n]) => `«${w}» (${n})`).join('، ')}. والاعتماد من أول مراجعة ${pct(decided.length ? Math.round((firstPass / decided.length) * 100) : 0)}.` : 'لا إعادات ولا رفض مسجّل.',
-      src: `ملاحظات الإعادة والرفض · ${ADVISORY}`,
+      src: `ملاحظات الإعادة والرفض · ${advisory()}`,
     },
   ]
 }
@@ -403,7 +407,7 @@ export function closingAi(c: CloseRow): Reading[] {
       id: 'ai-close-score', kind: s.score < 3 ? 'flag' : 'note', label: 'تقييم استرشادي للنجاح',
       metric: { value: nf.format(s.score), unit: 'من 5' },
       text: `${s.parts.join('، ')}. التقدير محسوب من المقارنة بالمعتمد، والتقييم النهائي للمشرف.`,
-      src: `التقرير الختامي · بيانات المشروع المعتمدة · الخطة · ${ADVISORY}`,
+      src: `التقرير الختامي · بيانات المشروع المعتمدة · الخطة · ${advisory()}`,
     })
   }
   const r = c.report
@@ -444,7 +448,7 @@ export function forecastPlan(p: PlanRow): Reading | null {
       ? `بمعدل الإنجاز الحالي (${pct(Math.round(done))} في ${units.day(elapsed)}) ينتهي التنفيذ نحو ${finish}${slip && slip > 0 ? `، أي بعد موعده بـ${units.day(slip)}` : ' ضمن موعده'}.`
       : `لم يُنجز نشاط بعد والمخطط حتى اليوم ${pct(Math.round(planned))} · خطر تعثر إن لم يبدأ التنفيذ.`,
     danger: risky && slip ? [units.day(slip)] : [],
-    src: `تواريخ الأنشطة ونسبة القبول · ${ADVISORY}`,
+    src: `تواريخ الأنشطة ونسبة القبول · ${advisory()}`,
   }
 }
 
@@ -480,13 +484,13 @@ export function portfolioAi(pf: PortfolioRec): Reading[] {
       text: pf.plan.phases.length
         ? `انقضت ${phasesDone} من ${pf.plan.phases.length} مراحل (${pct(Math.round(expected))} من المدة) والإنجاز ${pct(Math.round(progress))}${progress + 15 < expected ? ' · الإنجاز متأخر عن الزمن وقد تتعثر المحفظة' : ' · في المسار'}.`
         : 'لا خطة معتمدة للمحفظة يُقاس عليها التقدم.',
-      src: `خطة المحفظة · تحديثات التنفيذ · ${ADVISORY}`,
+      src: `خطة المحفظة · تحديثات التنفيذ · ${advisory()}`,
     },
     {
       id: 'ai-pf-fit', kind: dup.length || off.length ? 'flag' : 'note', label: 'التوافق مع أهداف المحفظة',
       text: `${off.length ? `${off.length} مشروع لا يذكر أهداف المحفظة: ${off.slice(0, 3).map((s) => s.name).join('، ')}. ` : 'المشاريع الفرعية تخدم أهداف المحفظة. '}${dup.length ? `تكرار محتمل: ${dup.slice(0, 3).join('، ')}.` : 'لا تكرار بين المشاريع المقترحة.'}`,
       danger: dup,
-      src: `أهداف المحفظة · أسماء المشاريع الفرعية ومخرجاتها · ${ADVISORY}`,
+      src: `أهداف المحفظة · أسماء المشاريع الفرعية ومخرجاتها · ${advisory()}`,
     },
   ]
 }
@@ -507,7 +511,7 @@ export function ehsanAi(p: ProjectRow): Reading[] {
     {
       id: 'ai-eh-forecast', kind: timePct > paidPct + 25 ? 'flag' : 'note', label: 'تنبؤ مبكر بالتأخر',
       text: timePct > paidPct + 25 ? `الصرف متأخر عن الزمن بفارق ${pct(timePct - paidPct)} · قد يتعثر التنفيذ إن لم تُسجَّل الدفعات المستحقة.` : 'الصرف يسير مع الزمن · لا مؤشر تعثر.',
-      src: `نسبة الصرف مقابل نسبة المدة · ${ADVISORY}`,
+      src: `نسبة الصرف مقابل نسبة المدة · ${advisory()}`,
     },
   ]
 }
@@ -531,7 +535,7 @@ export function readTemplate(p: ProjectRow, chosen?: string): Reading {
     id: 'ai-template', kind: chosen && chosen !== s.template ? 'flag' : 'note', label: 'النموذج الأنسب',
     text: `نقترح «${s.template}» لأن ${s.why}.${chosen && chosen !== s.template ? ` المختار «${chosen}» مختلف · تأكد من ملاءمته.` : ''} تُملأ المسودة من بيانات الطلب${plan ? ` وخطة التنفيذ (${plan.phases.length} مراحل)` : ''}.`,
     bold: [s.template],
-    src: `قاعدة اختيار النماذج: المبلغ × المدة × الظهور × الشراكة · ${ADVISORY}`,
+    src: `قاعدة اختيار النماذج: المبلغ × المدة × الظهور × الشراكة · ${advisory()}`,
   }
 }
 
@@ -560,7 +564,7 @@ export function readClauses(a: AgreementRow): Reading {
     id: 'ai-clauses', kind: issues.length ? 'flag' : 'note', label: 'مراجعة البنود وجدول الدفعات',
     text: issues.length ? `${issues.join('. ')}. اقتراح: اربط كل دفعة بمرحلة من الخطة وبشرط إنجاز.` : 'الجدول يطابق القيمة ومراحل الخطة، والدفعة الأولى ضمن الحد، ولكل دفعة شرط.',
     danger: issues,
-    src: `جدول الدفعات · خطة التنفيذ · حدود الصرف في الإعدادات · ${ADVISORY}`,
+    src: `جدول الدفعات · خطة التنفيذ · حدود الصرف في الإعدادات · ${advisory()}`,
   }
 }
 
@@ -589,7 +593,7 @@ export function readAllocation(total: number): Reading {
   return {
     id: 'ai-alloc', kind: 'note', label: 'اقتراح توزيع المخصصات',
     text: `${s.slice(0, 4).map((x) => `${x.track} ${pct(x.share)} (${money(x.amount)})`).join('، ')}. الوزن: ${pct(70)} للصرف والالتزام في السنتين و${pct(30)} للطلب قيد الدراسة.`,
-    src: `ميزانيتا 2025 و2026 · الطلبات قيد الدراسة · ${ADVISORY}`,
+    src: `ميزانيتا 2025 و2026 · الطلبات قيد الدراسة · ${advisory()}`,
   }
 }
 
@@ -613,7 +617,7 @@ export function sessionReport(s: Session): Reading[] {
     {
       id: 'ai-priority', kind: 'note', label: 'الأولوية النسبية',
       text: ranked.map((x, i) => `${i + 1}. ${x.p.name} (${x.score})`).join(' · '),
-      src: `${pct(60)} التوافق الاستراتيجي و${pct(40)} درجة الدراسة · ${ADVISORY}`,
+      src: `${pct(60)} التوافق الاستراتيجي و${pct(40)} درجة الدراسة · ${advisory()}`,
     },
   ]
 }
@@ -638,6 +642,6 @@ export function readFiles(id: string, label: string, files: string[], expect: { 
     id, kind: clash.length || !files.length ? 'flag' : 'note', label,
     text: files.length ? `قرأ النظام ${files.length} مرفقات: ${found.join('، ')}. ${clash.length ? clash.join('. ') + '.' : 'لا تعارض مع بيانات العملية.'}` : 'لا مرفقات يقرؤها النظام · الطلب بلا مستند.',
     danger: clash,
-    src: `بيانات الملفات مقابل المبلغ والمرجع والتاريخ · ${ADVISORY}`,
+    src: `بيانات الملفات مقابل المبلغ والمرجع والتاريخ · ${advisory()}`,
   }
 }

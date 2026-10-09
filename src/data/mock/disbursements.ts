@@ -610,6 +610,8 @@ export interface PaySlot {
   state: PaySlotState
   /** The request tied to the disbursement, if any */
   requestId?: string
+  /** Batch 8 · paid in the old system · the imported voucher that covers it */
+  legacy?: { voucher: string; paidAt: string; amount: number }
 }
 
 /** The demo's reference day · one for the whole prototype (`@/data/clock`) */

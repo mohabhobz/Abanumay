@@ -1,3 +1,5 @@
+import { entityById } from '@/data/mock/entities'
+import { DECISIONS } from '@/data/shared/decisions'
 /* The impact reading · «لمن وصلت المنح وأين» (client, 8 Oct).
 
    It was a bundle card on the reports page marked «next», with nothing behind it. The client asked
@@ -73,7 +75,7 @@ const group = (rows: Unit[], key: (p: Unit) => string): ImpactRow[] => {
 
 export function impact(): Impact {
   const subs = subUnits()
-  const projects: Unit[] = projectRows.filter((p) => p.supportStatus === 'معتمد' && !p.archived).map((p) => ({
+  const projects: Unit[] = projectRows.filter((p) => p.supportStatus === 'معتمد' && !p.archived && (DECISIONS.archivedInReports || !entityById(p.entityId)?.archived)).map((p) => ({
     id: p.id, name: p.name, region: p.region, track: p.track, field: p.field, goal: p.goal, beneficiaries: p.beneficiaries || 0, amountGranted: p.amountGranted || 0,
   }))
   const funded: Unit[] = [...projects, ...subs]

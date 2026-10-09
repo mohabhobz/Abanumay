@@ -52,6 +52,10 @@ export const ROUTES = {
   escalationSettings: '/settings/escalation',
   /** Cross · notification channels per audience and topic, and the outbox of what was sent */
   notifyHub: '/settings/notifications',
+  /** Batch 8 · the foundation's open decisions, each one setting */
+  decisions: '/settings/decisions',
+  /** Batch 8 · where the AI readings come from */
+  aiSettings: '/settings/ai',
   /** Cross · the late and stalled report of every procedure */
   escalation: '/escalation',
   /** Cross · the audit log of every module · append-only, filterable */
@@ -170,6 +174,8 @@ export const ROUTES = {
   paymentOrder: (id: string) => `/payments/${id}/order`,
   /** Overdue and stalled report — escalation mechanism. */
   paymentsLate: '/payments/late',
+  /** Batch 8 · the old system's vouchers, imported */
+  paymentsLegacy: '/payments/legacy',
 
   reports: '/reports',
   reportTab: (tab?: string) => `/reports${tab && tab !== 'board' ? `/${tab}` : ''}`,

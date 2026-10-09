@@ -26,7 +26,7 @@ import { BUDGET_RULES, LEVEL_SAY, type Level } from '@/data/budget/rules'
 import { NodeModal } from './doc/NodeModal'
 import { LineActModal } from './doc/LineActModal'
 import { FlowCard, NoteModal } from './doc/DocFlow'
-import { DocRequests, LedgerCard } from './doc/DocLedger'
+import { DocRequests, LedgerCard, SourceLedgerCard } from './doc/DocLedger'
 
 /* Budget - create, edit, review and run, one screen.
 
@@ -546,6 +546,7 @@ export default function BudgetDocPage() {
           {existing && existing.state === 'approved' && (
             <>
               <LedgerCard doc={existing} line={focus || undefined} />
+              <SourceLedgerCard doc={existing} />
               <DocRequests doc={existing} />
             </>
           )}

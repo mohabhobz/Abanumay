@@ -140,8 +140,53 @@ export interface Message {
   audience: Audience
   channel: EscChannel
   address: string
-  /** The gateway's answer · a missing address can't be sent */
-  state: 'sent' | 'failed'
+  /** The gateway's answer · a missing address can't be sent · batch 8: with no gateway connected an
+      email or SMS is logged with its final text and waits; with the server's gateway it is queued */
+  state: 'sent' | 'failed' | 'logged' | 'queued'
+  /** Batch 8 · the message as it goes out, from the topic's template */
+  subject?: string
+  text: string
+}
+
+/* ── Batch 8 · templates and the gateway ──
+   Each topic has an email (subject and body) and an SMS text, with placeholders filled from the
+   notice: {المستلم} {العنوان} {التفاصيل} {الرابط}. The gateway setting says where email and SMS go:
+   `log` keeps them in this outbox with their final text (the prototype, or before the provider is
+   contracted), `api` hands them to the server's endpoint, which sends and reports back. */
+
+export interface Template { subject: string; body: string; sms: string }
+export interface Gateway { mode: 'log' | 'api'; endpoint: string; sender: string }
+export interface Templates { list: Record<Topic, Template>; gateway: Gateway; savedBy?: string; savedAt?: string }
+
+const TPL_DEFAULT: Templates = {
+  list: Object.fromEntries(ALL.map((t) => [t, {
+    subject: `مؤسسة سليمان أبانمي · {العنوان}`,
+    body: `السلام عليكم {المستلم}،\n\n{العنوان}\n{التفاصيل}\n\nللاطلاع: {الرابط}\n\nمؤسسة سليمان أبانمي الأهلية`,
+    sms: `أبانمي: {العنوان} · {الرابط}`,
+  }])) as Record<Topic, Template>,
+  gateway: { mode: 'log', endpoint: '', sender: 'Abanumay' },
+}
+export const TEMPLATES: Templates = readJson(CFG.templates, TPL_DEFAULT)
+TEMPLATES.list = { ...TPL_DEFAULT.list, ...TEMPLATES.list }
+TEMPLATES.gateway = { ...TPL_DEFAULT.gateway, ...TEMPLATES.gateway }
+export const TEMPLATES_DEFAULT = TPL_DEFAULT
+
+export const PLACEHOLDERS = ['{المستلم}', '{العنوان}', '{التفاصيل}', '{الرابط}'] as const
+export function fillTemplate(t: string, n: Pick<Notice, 'to' | 'title' | 'context' | 'href'>): string {
+  return t.replaceAll('{المستلم}', n.to).replaceAll('{العنوان}', n.title).replaceAll('{التفاصيل}', n.context)
+    .replaceAll('{الرابط}', `https://grants.abanumay.org.sa${n.href}`)
+}
+/** SMS segments · Arabic is UCS-2: 70 characters in one message, 67 each when split */
+export const smsSegments = (text: string): number => (text.length <= 70 ? 1 : Math.ceil(text.length / 67))
+
+export function saveTemplates(next: Templates, by: string): void {
+  const changes = ALL.flatMap((t) => (['subject', 'body', 'sms'] as const)
+    .filter((k) => TEMPLATES.list[t][k] !== next.list[t][k])
+    .map((k) => ({ k: `${TOPIC_SAY[t]} · ${k === 'sms' ? 'الرسالة النصية' : k === 'subject' ? 'عنوان البريد' : 'نص البريد'}`, from: TEMPLATES.list[t][k].slice(0, 40), to: next.list[t][k].slice(0, 40) })))
+  if (JSON.stringify(TEMPLATES.gateway) !== JSON.stringify(next.gateway)) changes.push({ k: 'بوابة الإرسال', from: `${TEMPLATES.gateway.mode} ${TEMPLATES.gateway.endpoint}`, to: `${next.gateway.mode} ${next.gateway.endpoint}` })
+  logSettings('قوالب الإشعارات', '/settings/notifications?tab=templates', by, changes)
+  Object.assign(TEMPLATES, structuredClone(next), { savedBy: by, savedAt: new Date().toISOString().slice(0, 10) })
+  persist(CFG.templates, TEMPLATES)
 }
 
 export function outbox(): Message[] {
@@ -150,7 +195,13 @@ export function outbox(): Message[] {
     const audience = audienceOf(n.to)
     for (const channel of NOTIFY_RULES.channels[audience][n.topic] ?? ['app']) {
       const address = addressOf(n.to, channel)
-      out.push({ id: `${n.id}-${channel}`, notice: n, audience, channel, address, state: address ? 'sent' : 'failed' })
+      const tpl = TEMPLATES.list[n.topic]
+      const state: Message['state'] = !address ? 'failed' : channel === 'app' ? 'sent' : TEMPLATES.gateway.mode === 'api' && TEMPLATES.gateway.endpoint ? 'queued' : 'logged'
+      out.push({
+        id: `${n.id}-${channel}`, notice: n, audience, channel, address, state,
+        subject: channel === 'email' ? fillTemplate(tpl.subject, n) : undefined,
+        text: channel === 'email' ? fillTemplate(tpl.body, n) : channel === 'sms' ? fillTemplate(tpl.sms, n) : `${n.title} · ${n.context}`,
+      })
     }
   }
   return out

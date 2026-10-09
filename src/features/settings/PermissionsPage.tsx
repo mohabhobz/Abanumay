@@ -1,3 +1,5 @@
+import { AuthRulesCard } from './AuthRulesCard'
+import { readRole } from '@/data/roles'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -76,6 +78,7 @@ export default function PermissionsPage() {
               مدير النظام
             </Tag>
           </header>
+          <AuthRulesCard by={ME} admin={readRole() === 'admin'} />
 
           <Tabs
             items={TABS}
@@ -493,7 +496,7 @@ function LogTab({ log }: { log: PermLogRow[] }) {
                 <tr key={l.id}>
                   <td><DateText>{l.at}</DateText></td>
                   <td><Person name={l.by} /></td>
-                  <td>{l.target.startsWith('دور ') ? l.target : <Person name={l.target} />}</td>
+                  <td>{l.target.startsWith('دور ') ? <span className="prs prs-sm"><span className="av av-28 av-ic" aria-hidden="true"><Icon name={icons.users} size="sm" /></span><span className="prs-n sub">{l.target}</span></span> : <Person name={l.target} />}</td>
                   <td className="pm-log-c">{l.change}</td>
                 </tr>
               ))}

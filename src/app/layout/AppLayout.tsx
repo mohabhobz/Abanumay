@@ -1,3 +1,4 @@
+import { SessionGuard } from './SessionGuard'
 import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
@@ -81,6 +82,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
   return (
     <>
       <Background />
+      <SessionGuard />
       <div className="app">
         {mobile && !entity && <MobileTop user={user} />}
 

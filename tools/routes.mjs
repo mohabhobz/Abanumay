@@ -114,7 +114,7 @@ export const ROUTES = [
   '/settings',
   '/settings/permissions', '/settings/permissions?tab=roles', '/settings/permissions?tab=log',
   /* Cross · shared services */
-  '/escalation', '/escalation?heat=stuck', '/settings/escalation', '/settings/notifications', '/settings/notifications?tab=channels', '/audit',
+  '/escalation', '/escalation?heat=stuck', '/settings/escalation', '/settings/notifications', '/settings/notifications?tab=channels', '/settings/decisions', '/settings/ai', '/settings/notifications?tab=templates', '/audit',
   '/entities/settings', '/entities/settings?tab=types',
   '/entities/settings?tab=licensors', '/entities/settings?tab=targets',
   /* BPD-002 · registration rules, update requests, archive, password reset */
@@ -127,14 +127,14 @@ export const ROUTES = [
   '/projects/new?tab=money', '/projects/new?tab=when',
   /* المحفظة · ب-8 · كيان أب برّه قايمة المشاريع */
   '/projects/portfolio/PF-2026-001', '/projects/portfolio/PF-2026-002?as=partner', '/projects/portfolio/PF-2026-004',
-  '/projects/portfolio/new', '/projects/portfolio/new?as=partner&entity=860', '/partners', '/partners?tab=finance', '/partners?tab=report', '/projects/21060',
+  '/projects/portfolio/new', '/projects/portfolio/new?as=partner&entity=860', '/partners', '/partners?tab=finance', '/partners?tab=reconcile', '/partners?tab=report', '/projects/21060',
   '/budget/doc/BG-2025-SA', '/budget/new',
   /* ميزانية 2026 · مولَّدة من المشاريع عشان السلسلة تمشي على داتا
      واحدة (هـ-7) · وشجرتها تلات مستويات من مفردات النظام العامل */
   '/budget/doc/BG-2026-SA',
   /* BPD-001 · approval path, multi-source budget, operation requests, consolidated report and
      the settings tabs (directions, limits, rules) */
-  '/budget/doc/BG-2026-SA-2', '/budget/doc/BG-2027-SA', '/budget/doc/BG-2026-MM',
+  '/budget/doc/BG-2026-SA-2', '/budget/doc/BG-2027-SA', '/budget/doc/BG-2026-MM', '/budget/doc/BG-2026-SP',
   '/budget/ops', '/budget/ops/new', '/budget/ops/new?doc=BG-2026-SA', '/budget/ops/BOP-2026-0001', '/budget/ops/BOP-2026-0002',
   '/budget/report', '/budget/settings?tab=directions', '/budget/settings?tab=limits', '/budget/settings?tab=rules',
   /* BPD-004–007 · the decision file at each seat, the committee and board desks, sessions, the path's settings */
@@ -142,7 +142,7 @@ export const ROUTES = [
   '/approvals/committee', '/approvals/committee?tab=sessions', '/approvals/board', '/approvals/board?tab=pack',
   '/approvals/sessions/EC-2026-10', '/approvals/sessions/EC-2026-09', '/projects/settings?tab=path',
   '/payments', '/payments/SR-2026-11407', '/payments/new',
-  '/payments/SR-2026-11415/order', '/payments/late',
+  '/payments/SR-2026-11415/order', '/payments/late', '/payments/legacy',
   '/payments/SR-2026-11410/edit', '/payments/SR-2026-11406/edit?as=entity', '/payments/SR-2026-11407?as=entity',
   '/payments/new?project=21020&as=entity', '/payments/new?project=21012&pay=2', '/payments/SR-2026-11417', '/payments/SR-2026-11417/order', '/agreements', '/agreements/AG-2026-3101',
   /* إعداد الاتفاقية · هـ-4 ومحرّر الدفعات هـ-5 · وكل محطة مسار

@@ -426,6 +426,7 @@
    characters over 3 lines in a wide card. `ch` scales with font size on its
    own, so the cap stays correct if `--fs-base` changes. */
 .prose{font-size:var(--fs-3);line-height:var(--lh-long);margin:0;max-width:66ch}
+.prose.pre{white-space:pre-line}
     /* Card padding: 24 */
 
   /* Glass-material scale.
@@ -8584,3 +8585,7 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 :root[data-spacing] body{word-spacing:.16em}
 :root[data-spacing] :is(p,.prose,.sub,li,.qr-tx,.lgbody){line-height:var(--lh-long)}
 :root[data-spacing] p+p{margin-top:var(--sp-5)}
+/* Batch 8 · the idle-session warning · floats above the content, the surface that covers */
+.sessbar{position:fixed;inset-block-start:var(--sp-5);inset-inline:0;margin-inline:auto;width:max-content;max-width:calc(100% - var(--sp-8));z-index:90;display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-3) var(--sp-5);background:var(--g-pop);backdrop-filter:var(--mat-2);border-radius:var(--r2);box-shadow:var(--el-3);font-size:var(--fs-3)}
+/* A role in a column of people · the same 28px box as a face, with the role's icon instead of initials */
+.av-ic{color:var(--t2)}

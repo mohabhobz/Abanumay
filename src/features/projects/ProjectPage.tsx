@@ -1,3 +1,4 @@
+import { useLegacy } from '@/data/payments/legacy'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { GateArc, Money, Num, Tabs } from '@/components/ui'
@@ -253,14 +254,15 @@ export default function ProjectPage() {
   )
   /* Re-audit 7 Oct · the payments tab reads the payment store's schedule · it read a generator */
   usePayments()
+  useLegacy()
   const livePayments: PaymentDetail[] = scheduleOf(project.id).map((x) => {
     const r = x.requestId ? payRequestById(x.requestId) : undefined
     const paid = x.state === 'paid'
     /* Batch 2 · the order is issued once the manager passes the request to finance · it read «تمّت»
        on every payment, paid or not */
     return {
-      no: x.no, amount: x.amount, date: paid ? r?.paidAt ?? x.dueAt : x.dueAt,
-      status: paid ? 'مدفوع' : PAY_SLOT_SAY[x.state].label, voucher: paid ? r?.id : undefined,
+      no: x.no, amount: x.amount, date: paid ? r?.paidAt ?? x.legacy?.paidAt ?? x.dueAt : x.dueAt,
+      status: paid ? 'مدفوع' : PAY_SLOT_SAY[x.state].label, voucher: paid ? r?.id ?? x.legacy?.voucher : undefined,
       condition: x.condition, via: paid ? r?.bank?.name ?? (r ? 'حساب الجهة' : undefined) : undefined, receipt: paid && Boolean(r),
       authorized: paid || r?.state === 'finance', before: paid && !r,
     }

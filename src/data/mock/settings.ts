@@ -33,7 +33,7 @@ import { TOPIC_SAY } from '@/data/shared/topics'
    attempt, not as an error message afterward. */
 
 /** Who actually opens this group · this decides its placement, not its type */
-export type SettingOwner = 'مسؤول النظام' | 'إدارة المنح' | 'الإدارة المالية'
+export type SettingOwner = 'مسؤول النظام' | 'إدارة المنح' | 'الإدارة المالية' | 'الإدارة التنفيذية'
 
 export interface SettingGroup {
   key: string
@@ -148,6 +148,16 @@ export const SETTING_MODULES: SettingModule[] = [
         key: 'escalation', to: '/settings/escalation', label: 'آلية التصعيد', kind: 'rule', owner: 'مسؤول النظام',
         where: 'مدد المراحل ومتأخر ومتعثر في جميع الإجراءات · مستويات التنبيه ومستلموها',
         count: ESC_PROCS.length,
+      },
+      {
+        key: 'ai', to: '/settings/ai', label: 'الذكاء الاصطناعي', kind: 'rule', owner: 'مسؤول النظام',
+        where: 'مصدر القراءات الاسترشادية لكل مهمة · قواعد محلية أو خدمة الخادم',
+        count: 6,
+      },
+      {
+        key: 'decisions', to: '/settings/decisions', label: 'قرارات المؤسسة', kind: 'rule', owner: 'الإدارة التنفيذية',
+        where: 'أسئلة مبنية بخيارين · حالة التحديث وترتيب الدفعات والأولوية ونوع المشروع في المسار وغيرها',
+        count: 10,
       },
       {
         key: 'notify', to: '/settings/notifications?tab=channels', label: 'قنوات الإشعار', kind: 'rule', owner: 'مسؤول النظام',

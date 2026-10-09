@@ -1,3 +1,5 @@
+import { hasLegacy, legacyCover, legacyTotal } from './legacy'
+import { DECISIONS } from '@/data/shared/decisions'
 import { actDay, asOf } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
 import {
@@ -73,7 +75,9 @@ export const paidBefore = (projectId: string): boolean =>
 /** What's left of the grant before a request · paid requests only (rule 14) · plus a schedule paid
     before the system */
 export const paidOf = (projectId: string, except?: string): number =>
-  paidBefore(projectId) && inForceOf(projectId) ? grantOf(projectId)
+  /* Batch 8 · imported vouchers of the old system replace the inference for their project */
+  hasLegacy(projectId) ? legacyTotal(projectId) + payRequests.filter((r) => r.projectId === projectId && r.state === 'paid' && r.id !== except).reduce((s, r) => s + r.asked, 0)
+  : paidBefore(projectId) && inForceOf(projectId) ? grantOf(projectId)
     : payRequests.filter((r) => r.projectId === projectId && r.state === 'paid' && r.id !== except).reduce((s, r) => s + r.asked, 0)
 export const grantOf = (projectId: string): number => {
   const p = projectOf(projectId)
@@ -152,7 +156,8 @@ export function scheduleOf(projectId: string): PaySlot[] {
   for (const e of adj?.extra ?? []) base.push({ no: base.length + 1, amount: e.amount, dueAt: e.dueAt })
   const of = base.length
   const stopped = STOPPED.has(projectId)
-  const before = paidBefore(projectId)
+  const before = paidBefore(projectId) && !hasLegacy(projectId)
+  const legacy = legacyCover(projectId, base)
   /* Re-audit 7 Oct · the payments go in order · a later one waits until the one before it is paid,
      settled or requested · no payment is skipped */
   let blocked = false
@@ -166,7 +171,7 @@ export function scheduleOf(projectId: string): PaySlot[] {
     const conditionMet = !b.requirement || Boolean(condConfirmed(projectId, b.no))
       || (own ? (own.checks.find((c) => c.rule === 6)?.ok ?? true) : false)
     const state: PaySlotState =
-      paid || before ? 'paid'
+      paid || before || legacy.has(b.no) ? 'paid'
       : stopped ? 'stopped'
       : SETTLED.has(condKey(projectId, b.no)) ? 'settled'
       : open ? 'pending'
@@ -174,8 +179,10 @@ export function scheduleOf(projectId: string): PaySlot[] {
       : b.dueAt > TODAY ? 'early'
       : b.requirement && !conditionMet ? 'held'
       : 'open'
-    if (state !== 'paid' && state !== 'settled' && state !== 'pending') blocked = true
-    return { no: b.no, of, amount: b.amount, dueAt: b.dueAt, condition: b.requirement, conditionMet, state, requestId: req?.id }
+    /* Batch 8 · payments#6 · the foundation's decision: a requested payment opens the next, or
+       only a paid one does (settings › قرارات المؤسسة) */
+    if (state !== 'paid' && state !== 'settled' && (state !== 'pending' || DECISIONS.payNext === 'paid')) blocked = true
+    return { no: b.no, of, amount: b.amount, dueAt: b.dueAt, condition: b.requirement, conditionMet, state, requestId: req?.id, legacy: paid ? undefined : legacy.get(b.no) }
   })
 }
 

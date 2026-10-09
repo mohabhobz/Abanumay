@@ -103,7 +103,7 @@ export const passwordChangedAt = (acct: PortalAccount): string | undefined => re
 
 /* ── One-time codes ── */
 
-export type OtpPurpose = 'register' | 'reset' | 'update'
+export type OtpPurpose = 'register' | 'reset' | 'update' | 'sign'
 
 export interface OtpChallenge {
   purpose: OtpPurpose
