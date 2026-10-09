@@ -128,7 +128,9 @@ export default function RegReviewPage() {
   /* Re-audit 7 Oct · 2.4.6 · an accepted account with a failing IBAN blocks the approval · reject the
      account, or return the request for its correction */
   const badIban = r.banks.filter((b) => !bankNo[b.id] && !ibanValid(b.iban.replace(/\s/g, '')))
-  const blocked = missingDocs.length > 0 || Boolean(clash) || stale.length > 0 || badIban.length > 0
+  /* Batch 7 · entities#11 · a duplicate showed red under «ما يمنع الاعتماد» and approval stayed open ·
+     it blocks now, as on the update review (2.4.10) */
+  const blocked = missingDocs.length > 0 || Boolean(clash) || stale.length > 0 || badIban.length > 0 || dups.length > 0
 
   const steps: StepItem[] = [
     { label: 'تعبئة الجهة وإرسالها', at: <DateText>{r.submittedAt}</DateText>, state: 'done' },

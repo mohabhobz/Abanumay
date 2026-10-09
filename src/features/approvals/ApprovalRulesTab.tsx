@@ -59,6 +59,12 @@ export function ApprovalRulesTab() {
 
       <Glass>
         <Head title="المدير التنفيذي" meta={<span className="sub"><bdi>5.3.1 · 5.4.27-b · 5.4.28</bdi></span>} />
+        <Switch
+          label="إحالة تلقائية للجنة فوق حد المدير التنفيذي"
+          note="عند التفعيل تذهب توصية مدير المنح بالموافقة فوق حد المدير التنفيذي إلى اللجنة مباشرة · بانتظار قرار المؤسسة (5.4.11)"
+          on={Boolean(d.autoReferAboveExec)}
+          onChange={(v) => put('autoReferAboveExec', v)}
+        />
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>نسبة التجاوز المسموحة لحده</b><span className="sub">حدّه <Num>{execCap}</Num> · بالتجاوز <Num>{Math.round(execCap * (1 + d.execOverPct / 100))}</Num></span></span>

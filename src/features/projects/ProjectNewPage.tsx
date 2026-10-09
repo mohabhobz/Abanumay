@@ -18,7 +18,7 @@ import { REQUEST_DOCS, pickSupervisor, submitRequest } from '@/data/intake/flow'
 import { draftKey, draftOf, dropDraft, saveDraft } from '@/data/intake/drafts'
 import { CYCLE, inPeriod, openFields } from '@/data/intake/cycle'
 import { entityById } from '@/data/mock/entities'
-import { isStrategic, routeProject, typeAllowed } from '@/data/partners/store'
+import { isStrategic, proposeRoute, typeAllowed } from '@/data/partners/store'
 import { useRole } from '@/hooks/useRole'
 
 /* Create a project - rule 31.
@@ -280,7 +280,8 @@ export default function ProjectNewPage() {
     /* 13.2.2 · a portfolio isn't a project · it's created on its own page with the partner fixed */
     if (val.ptype === 'محفظة') { navigate(`${ROUTES.portfolioNew}?entity=${val.entityId}${asEntity ? '&as=partner' : ''}`); return }
     const id = submitRequest({ ...val, endAt, ...(draft ? { draftAt: draft.createdAt } : {}) }, Object.keys(docs), asEntity ? entityById(val.entityId)?.name ?? user.name : user.name, asEntity)
-    if (val.platform === 'منصة إحسان' || isStrategic(val.entityId)) routeProject(id, val.platform === 'منصة إحسان', 'independent', user.name)
+    /* Batch 7 · partners#4 · the form records the routing as a proposal · the executive decides it */
+    if (val.platform === 'منصة إحسان' || isStrategic(val.entityId)) proposeRoute(id, val.platform === 'منصة إحسان', 'independent', 'من نموذج الطلب', user.name)
     dropDraft(dkey)
     setSentId(id)
   }

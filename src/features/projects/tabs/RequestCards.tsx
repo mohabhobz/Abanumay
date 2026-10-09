@@ -6,6 +6,7 @@ import type { ProjectRow } from '@/types/domain'
 import { studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { REQUEST_DOCS, closeRequest, flowOf, rescheduleStart, uploadDoc } from '@/data/intake/flow'
+import { P_STAGES } from '@/data/mock/projectNew'
 
 /* The request's own cards on «بيانات المشروع» · procedure 3.
 
@@ -51,6 +52,11 @@ export function RecommendationCard({ row }: { row: ProjectRow }) {
     </Glass>
   )
 }
+
+/** The request form's field labels · a version's values read with the form's own names */
+const FIELD_LABEL: Record<string, string> = Object.fromEntries(
+  [...P_STAGES.flatMap((st) => st.fields.filter((x) => x.key !== 'entityId').map((x) => [x.key, x.label])), ['amount', 'المبلغ'], ['days', 'المدة بأيام العمل'], ['beneficiaries', 'المستفيدون'], ['startAt', 'بداية التنفيذ']],
+)
 
 export function RequestMetaCard({ row, me, canReschedule = false }: { row: ProjectRow; me?: string; canReschedule?: boolean }) {
   const f = flowOf(row.id)
@@ -113,6 +119,19 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
                 <span className="sub rqv-snap">
                   المبلغ <Money sm>{v.snap.amount}</Money> · المدة <Num>{v.snap.days}</Num> يوم عمل · المستفيدون <Num>{v.snap.reach}</Num> · المرفقات <Num>{v.snap.docs}</Num>
                 </span>
+              )}
+              {/* Batch 7 · intake#14 · the version read whole · each field as sent, the changes
+                  against the version before marked, and its attachments */}
+              {v.values && (
+                <details className="rqv-full">
+                  <summary className="lnk">اعرض الإصدار كاملًا</summary>
+                  <KV rows={Object.entries(v.values).filter(([k, x]) => x && FIELD_LABEL[k]).map(([k, x]) => {
+                    const before = f.versions.filter((y) => y.no < v.no && y.values).pop()?.values?.[k]
+                    const changed = before !== undefined && before !== x
+                    return { k: FIELD_LABEL[k]!, v: changed ? <><b>{x}</b> <Tag tone="warn">تغيّر · كان {before}</Tag></> : x }
+                  })} />
+                  {v.docs && v.docs.length > 0 && <p className="sub cnote">المرفقات: {v.docs.join(' · ')}</p>}
+                </details>
               )}
             </li>
           ))}

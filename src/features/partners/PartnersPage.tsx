@@ -147,7 +147,11 @@ export default function PartnersPage() {
                         <Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link>
                         <span>الدفعة <span className="num">{r.no}</span></span>
                         <Money sm>{r.amount}</Money>
-                        {role.key === 'finance' && (
+                        {r.why && <span className="sub">{r.why}</span>}
+                        {role.key === 'finance' && r.state === 'finance' && (
+                          <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfReq(pf.id, r.id, 'order', '', user.name); setRefErr((m) => ({ ...m, [r.id]: out.join(' · ') })) }}>اعتمد أمر الصرف</button>
+                        )}
+                        {role.key === 'finance' && r.state === 'order' && (
                           <span className="rowf gp-2">
                             <span className="fld"><input value={refs[r.id] ?? ''} onChange={(e) => setRefs((m) => ({ ...m, [r.id]: e.target.value }))} aria-label={`رقم أمر التحويل · الدفعة ${r.no}`} placeholder="رقم أمر التحويل" /></span>
                             <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfReq(pf.id, r.id, 'pay', '', user.name, refs[r.id] ?? ''); setRefErr((m) => ({ ...m, [r.id]: out.length ? `ينقص: ${out.join(' · ')}` : '' })) }}>صرف</button>

@@ -1,3 +1,4 @@
+import { accountEvents } from '@/data/entities/auth'
 import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
 import { DocFile, DocList } from '@/components/docs'
@@ -274,12 +275,19 @@ const WHO: Record<EntityEvent['kind'], string> = {
  * The admin note is shown in full because it's required across the system on every approval or
  * rejection: it's the official justification for the decision, not a side comment.
  */
-export function EntityLogTab({ d }: { d: EntityDetail }) {
+export function EntityLogTab({ d, entityId }: { d: EntityDetail; entityId?: string }) {
+  /* Batch 7 · cross#18 · the portal account's events sit in the entity's own log too, not only in
+     /audit · each reset is its own line */
+  const acct = accountEvents().filter((e) => Boolean(entityId) && e.id === `e-${entityId}`).map((e, i): EntityDetail['log'][number] => ({
+    id: `acct-${i}`, kind: 'edit', action: e.created ? 'إنشاء حساب في بوابة الجهات' : 'تعيين كلمة مرور جديدة للحساب',
+    by: 'مدخل بيانات الجهة', at: e.at.slice(0, 10), time: e.at.slice(11, 16),
+  }))
+  const log = [...acct, ...d.log].sort((a, b) => `${b.at} ${b.time}`.localeCompare(`${a.at} ${a.time}`))
   return (
     <Glass>
-      <Head title="سجل الجهة" meta={<><span className="num">{d.log.length}</span> {nounAfter(d.log.length, NOUN.entry)}</>} />
+      <Head title="سجل الجهة" meta={<><span className="num">{log.length}</span> {nounAfter(log.length, NOUN.entry)}</>} />
       <ul className="lg">
-        {d.log.map((ev) => (
+        {log.map((ev) => (
           <li className="lgi" key={ev.id}>
             <span className={`lgdot ${DOT[ev.kind]}`} />
 

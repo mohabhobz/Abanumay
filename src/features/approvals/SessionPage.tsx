@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { sessionReport } from '@/data/shared/ai'
+import { expectedImpact, sessionReport } from '@/data/shared/ai'
 import { AnalysisCard } from '@/components/assistant'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
@@ -12,12 +12,14 @@ import { isolate, nf, pct } from '@/lib/format'
 import { projectRows } from '@/data/mock/projects'
 import { HOLDER_LABEL, type Holder } from '@/data/holders'
 import { flowOf } from '@/data/intake/flow'
-import { studyScore } from '@/data/intake/criteria'
+import { CRITERIA, studyScore } from '@/data/intake/criteria'
+import { consultantByKey } from '@/data/intake/consultants'
+import { fundingIssues } from '@/data/budget/store'
 import { fitOf } from '@/data/intake/insight'
 import { meOf, readRole } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import {
-  conflictOf,
+  conflictOf, DEPT_SAY, SESSIONS, entityLimitBlock,
   OUTCOME_SAY, VERDICT_SAY, VOTE_SAY, appFlowOf, attachMinutes, awaitingSession, carried, castVote, closeSession,
   decideInSession, holdLine, levelCap, mayRecord, sessionById, sessionItemBlockers, setAgenda, strategyOf,
   useApprovals, voteTally, type Outcome, type Session, type SessionItem, type Vote,
@@ -132,9 +134,32 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
   const why = outcome ? sessionItemBlockers(s, it, outcome) : []
   const needsPay = outcome === 'approve' || (outcome === 'refer' && s.body === 'committee')
   /* The assistant's executive summary for the members (6.2.3 · 7.2.4) · deterministic from the file */
+  /* Batch 7 · approvals#59 · the summary carries the risks and the expected impact */
+  const ei = expectedImpact(p)
+  const risks = [
+    ...fit.signals.filter((x) => x.tone !== 'ok').map((x) => x.text),
+    s.body === 'committee' ? entityLimitBlock(p, 'committee') : '',
+    fundingIssues(p.id, p.amountRequested)[0],
+    ...f.conditions.filter((x) => !x.met).map((x) => `شرط لم يُستوفَ: ${x.text}`),
+  ].filter((x): x is string => Boolean(x))
   const summary = isolate(`${p.name} · ${p.entityName} · ${nf.format(p.amountRequested)} ريال لـ${nf.format(p.beneficiaries)} مستفيد في ${p.field}. ` +
     `${study ? `درجة الدراسة ${studyScore(study.scores)} من 100 وتوصية المشرف ${study.recommendation === 'approve' ? 'بالموافقة' : 'بالرفض'}. ` : ''}` +
-    `${strat.ok ? strat.say : `تنبيه: ${strat.say}`}.`)
+    `${strat.ok ? strat.say : `تنبيه: ${strat.say}`}. ` +
+    `الأثر المتوقع نحو ${nf.format(ei.expected)} مستفيد فعلي${ei.from === 'default' ? ' (تقدير افتراضي)' : ` بنسبة تحقّق ${Math.round(ei.rate * 100)} بالمئة في ${ei.basis} مشاريع`}. ` +
+    `${risks.length ? `المخاطر: ${risks.slice(0, 3).join('؛ ')}.` : 'لا مخاطر مرصودة في الملف.'}`)
+  /* Batch 7 · approvals#45 · on the board, the plan the committee passed up with the project */
+  const committeePlan = s.body === 'board'
+    ? SESSIONS.filter((x) => x.body === 'committee').flatMap((x) => x.items).filter((x) => x.projectId === p.id && x.outcome === 'refer' && x.payPlan).pop()?.payPlan
+    : undefined
+  /* the study by its groups, the consultant's opinion, the departments' opinions */
+  const groupScore = (g: string) => {
+    if (!study) return null
+    const list = CRITERIA.list.filter((x) => x.group === g)
+    const w = list.reduce((a, x) => a + x.weight, 0)
+    return w ? Math.round(list.reduce((a, x) => a + ((study.scores[x.key] ?? 0) / 5) * x.weight, 0) / w * 100) : null
+  }
+  const ref = flowOf(p.id).referral
+  const docs = flowOf(p.id).docs
 
   return (
     <Glass>
@@ -160,6 +185,21 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
         { k: 'التوافق', v: <span className={strat.ok ? '' : 'bad'}>{strat.say}</span> },
       ]} />
       <p className="sub cnote"><Icon name={icons.spark} size="sm" /> <b>الملخص التنفيذي</b> · {summary} التوافق {pct(fit.score)}. <Tag tone="mute">استرشادي</Tag></p>
+      <details className="mt-2">
+        <summary className="lnk">ملف المشروع للأعضاء · الدراسة والآراء والوثائق والإجراءات</summary>
+        <KV rows={[
+          ...(study ? [{ k: 'الدراسة بمحاورها', v: <>فني <Num>{groupScore('فني') ?? 0}</Num> · مالي <Num>{groupScore('مالي') ?? 0}</Num> · إداري <Num>{groupScore('إداري') ?? 0}</Num> · الإجمالي <Num>{studyScore(study.scores)}</Num> من <Num>{100}</Num></> }] : []),
+          ...(ref ? [{ k: 'رأي المستشار', v: ref.opinion ? `${consultantByKey(ref.consultant)?.name ?? ''} · ${ref.verdict ?? ''} · ${ref.opinion}` : 'بانتظار الرأي' }] : []),
+          ...f.opinions.map((o) => ({ k: `رأي ${DEPT_SAY[o.dept]}`, v: o.answer ?? 'بانتظار الرد' })),
+          ...(committeePlan ? [{ k: 'خطة الصرف المقرّة من اللجنة', v: <><Num>{committeePlan.count}</Num> دفعات · {committeePlan.note}</> }] : []),
+          { k: 'الوثائق', v: docs.length ? docs.map((d) => d.name).join(' · ') : '—' },
+        ]} />
+        <h4 className="ptn-sub">آخر الإجراءات</h4>
+        <ul className="apv-list">
+          {f.recs.slice(0, 5).map((r, i) => <li key={i}><span className="apv-t"><b>{HOLDER_LABEL[r.level]} · {VERDICT_SAY[r.verdict]}</b><span className="sub"><Person name={r.by} /> · <DateText>{r.at}</DateText>{r.note ? ` · ${r.note}` : ''}</span></span></li>)}
+          {!f.recs.length && <li className="sub">لا إجراءات مسجّلة على مسار الاعتماد بعد.</li>}
+        </ul>
+      </details>
 
       <h3 className="stdy-h mt-3">التصويت · موافقة <span className="num">{t.approve}</span> · رفض <span className="num">{t.reject}</span> · إعادة <span className="num">{t.return}</span> · امتناع <span className="num">{t.abstain}</span></h3>
       <ul className="apv-votes">

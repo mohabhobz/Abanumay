@@ -3,6 +3,8 @@ import { PAY_LIMIT, payHeat, payStateWho } from '@/data/mock/disbursements'
 import { grantLeft, payStops, type PayAct } from '@/data/payments/store'
 import { CASE_KIND_SAY, recoveryLeft, stopPhase } from '@/data/closing/store'
 import { nf } from '@/lib/format'
+import { planOfProject } from '@/data/mock/plans'
+import { projectRows } from '@/data/mock/projects'
 import type { CaseRow, PayRequest } from '@/types/domain'
 
 /* The assistant's readings on one record · the pages that didn't have an assistant column before
@@ -36,6 +38,23 @@ export function readPayRequest(r: PayRequest): Reading[] {
       src: 'قيمة المنحة ناقص المصروف · قاعدة 14',
       bar: { value: r.granted - left + r.asked, limit: r.granted, valueLabel: 'بعد الصرف', limitLabel: 'المنحة', unit: 'ريال' },
     })
+    /* Batch 7 · payments#13 · achievement against the plan, from the plan itself · the activities due
+       by this payment's date and those accepted, and the beneficiaries the entity reported reached ·
+       reading the reports' contents stays for the backend */
+    const plan = planOfProject(r.projectId)
+    if (plan) {
+      const acts = plan.phases.flatMap((ph) => ph.activities)
+      const due = acts.filter((a) => a.to && a.to <= r.dueAt)
+      const okDue = due.filter((a) => a.state === 'accepted').length
+      const reached = acts.reduce((n, a) => n + (a.actual?.reached ?? 0), 0)
+      const target = projectRows.find((x) => x.id === r.projectId)?.beneficiaries ?? 0
+      out.push({
+        id: 'pr-plan', kind: due.length && okDue < due.length ? 'flag' : 'note', label: 'الإنجاز مقابل الخطة',
+        metric: { value: `${okDue}/${due.length}`, unit: 'نشاطًا مستحقًا' },
+        text: `${due.length ? `قُبل ${okDue} من ${due.length} نشاطًا مستحقًا حتى موعد الدفعة` : 'لا نشاط مستحق حتى موعد الدفعة'}${reached ? ` · المستفيدون المُبلَّغ عنهم ${nf.format(reached)}${target ? ` من ${nf.format(target)}` : ''}` : ''}.`,
+        src: 'خطة المشروع · بيانات تنفيذ الأنشطة',
+      })
+    }
     const heat = payHeat(r)
     const lim = PAY_LIMIT[r.state]
     if (heat !== 'ok' && lim) {

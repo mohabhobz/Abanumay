@@ -45,9 +45,23 @@ export const accounts = (): PortalAccount[] => [
   })),
 ]
 
-/** Re-audit 7 Oct · account and password events · for the entity's audit trail */
-export const accountEvents = (): { account: string; at: string; created: boolean }[] =>
-  Object.entries(readPass()).map(([k, v]) => ({ account: k.startsWith('n-') ? k.slice(2) : k, at: v.at, created: k.startsWith('n-') }))
+/* Batch 7 · cross#18 · an append-only log of account events · the password file keeps one record per
+   account, so each reset overwrote the last and a reset of a new account read as its creation */
+const LOG_KEY = 'ab-portal-acct-log'
+type AcctEvent = { account: string; id: string; kind: 'created' | 'reset'; at: string }
+const readLog = (): AcctEvent[] => { try { return JSON.parse(localStorage.getItem(LOG_KEY) ?? '[]') as AcctEvent[] } catch { return [] } }
+const logAcct = (e: AcctEvent) => { try { localStorage.setItem(LOG_KEY, JSON.stringify([...readLog(), e])) } catch { /* storage blocked */ } }
+
+/** Account and password events · for the entity's audit trail · the log, else (a file from before
+    the log) the one record each account kept */
+export const accountEvents = (): { account: string; id: string; at: string; created: boolean }[] => {
+  const log = readLog()
+  const logged = new Set(log.map((e) => e.id))
+  return [
+    ...log.map((e) => ({ account: e.account, id: e.id, at: e.at, created: e.kind === 'created' })),
+    ...Object.entries(readPass()).filter(([k]) => !logged.has(k)).map(([k, v]) => ({ account: k.startsWith('n-') ? k.slice(2) : k, id: k, at: v.at, created: k.startsWith('n-') })),
+  ]
+}
 
 const clean = (s: string) => s.trim().toLowerCase().replace(/\s/g, '')
 
@@ -61,14 +75,19 @@ export const findAccount = (who: string): PortalAccount | undefined => {
 /** The account a registration creates · its password is the one typed on the account screen */
 export const createAccount = (email: string, pass: string): void => {
   const all = readPass()
-  all[`n-${email.trim().toLowerCase()}`] = { pass, at: new Date().toISOString() }
+  const id = `n-${email.trim().toLowerCase()}`
+  const at = new Date().toISOString()
+  all[id] = { pass, at }
   writePass(all)
+  logAcct({ account: email.trim().toLowerCase(), id, kind: 'created', at })
 }
 
 export const setPassword = (acct: PortalAccount, pass: string): void => {
   const all = readPass()
-  all[acct.id] = { pass, at: new Date().toISOString() }
+  const at = new Date().toISOString()
+  all[acct.id] = { pass, at }
   writePass(all)
+  logAcct({ account: acct.name, id: acct.id, kind: 'reset', at })
   clearOtp()
 }
 

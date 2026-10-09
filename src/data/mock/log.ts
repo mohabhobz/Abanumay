@@ -446,6 +446,10 @@ function agreementEvents(
 function paymentEvents(
   b: Builder, p: PaymentDetail, entityName: string, owner: string, finance: string,
 ) {
+  /* Batch 7 · from the payments store · an order only once issued, nothing for a payment not yet
+     requested, and no voucher for one paid in the old system */
+  if (p.authorized === false && p.status !== 'مدفوع') return
+  if (p.before) return
   b.add({
     after: 16, action: 'إذن صرف', dept: 'المشرف إذن الصرف', by: owner,
     actor: 'staff', tone: 'ret',

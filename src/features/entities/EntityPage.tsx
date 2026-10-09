@@ -135,7 +135,7 @@ export default function EntityPage() {
               {active === 'banks' && <EntityBanksTab d={detail} entityId={entity.id} />}
               {active === 'projects' && <EntityProjectsTab rows={projects} />}
               {active === 'requests' && <EntityRequestsTab e={entity} />}
-              {active === 'log' && <EntityLogTab d={detail} />}
+              {active === 'log' && <EntityLogTab d={detail} entityId={entity.id} />}
 
               {/* The running log and links sit below every tab: persistent context, not tab content
                   - a supervisor needs it while reading anything. */}

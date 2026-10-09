@@ -206,7 +206,7 @@ export const waitingReview = (p: PlanRow): PlanActivity[] =>
 /** Activities past their end date and not yet accepted */
 export const lateActivities = (p: PlanRow, today = TODAY): PlanActivity[] =>
   p.phases.flatMap((ph) =>
-    ph.activities.filter((a) => a.state !== 'accepted' && a.to < today))
+    ph.activities.filter((a) => a.state !== 'accepted' && Boolean(a.to) && a.to < today))
 
 /* Rules checked before actions */
 

@@ -110,6 +110,10 @@ export interface EhClose { report: string; evidence: string[]; by: string; at: s
 const SCHEDULES = new Map<string, EhSlot[]>()
 const EH_OPS = new Map<string, EhOp[]>()
 const EH_CLOSE = new Map<string, EhClose>()
+/** Batch 7 · a routing the supervisor proposed and the executive hasn't decided */
+export interface RouteProposal { platform: boolean; type: PType; note: string; by: string; at: string }
+const PROPOSALS = new Map<string, RouteProposal>()
+export const routeProposalOf = (projectId: string) => PROPOSALS.get(projectId)
 export const ehScheduleOf = (projectId: string) => SCHEDULES.get(projectId) ?? []
 export const ehOpsOf = (projectId: string) => EH_OPS.get(projectId) ?? []
 /** Every Ehsan project's operations · for the unified audit log */
@@ -182,9 +186,14 @@ export interface SubProject {
   decidedAt?: string
   exec?: SubExec
 }
-export interface PfPhase { id: string; name: string; from: string; to: string; cost: number }
+/* Batch 7 · partners#11 · a phase carries its activities, each with its output and the evidence it
+   needs (12.2.6 – 12.2.9) · the plan was phases alone */
+export interface PfActivity { id: string; name: string; output: string; evidence: string }
+export interface PfPhase { id: string; name: string; from: string; to: string; cost: number; activities?: PfActivity[] }
 export interface PfLog { at: string; by: string; what: string }
-export interface PfRequest { id: string; no: number; amount: number; at: string; by: string; state: 'finance' | 'paid' | 'returned'; ref?: string; note?: string }
+/* Batch 7 · partners#35 · a request carries its justification and documents, and finance takes it in
+   two steps like BPD-009 · the order first («order»), then the transfer · it was one step */
+export interface PfRequest { id: string; no: number; amount: number; at: string; by: string; state: 'finance' | 'order' | 'paid' | 'returned'; ref?: string; note?: string; why?: string; docs?: string[]; orderBy?: string }
 export interface PfApproval { id: string; subIds: string[]; at: string; by: string }
 export interface PortfolioRec {
   id: string
@@ -210,7 +219,9 @@ export interface PortfolioRec {
      the partner's signature, then the foundation's counter-signature («foundation») before it's in
      force. The short paths skipped the supervisor's review and the executive and foundation steps */
   plan: { state: 'none' | 'draft' | 'supervisor' | 'review' | 'approved' | 'returned'; phases: PfPhase[]; note?: string; by?: string; drafter?: 'partner' | 'supervisor' }
-  agreement: { state: 'none' | 'draft' | 'manager' | 'executive' | 'partner' | 'foundation' | 'signed' | 'returned'; file?: string; note?: string; signedBy?: string; countersignedBy?: string }
+  agreement: { state: 'none' | 'draft' | 'manager' | 'executive' | 'partner' | 'foundation' | 'signed' | 'returned'; file?: string; note?: string; signedBy?: string; countersignedBy?: string
+    /** Batch 7 · partners#12 · the agreement's text, drafted from the template with the portfolio's own terms, and each draft kept */
+    body?: string[]; versions?: { no: number; at: string; by: string; body: string[] }[] }
   schedule: EhSlot[]
   requests: PfRequest[]
   approvals: PfApproval[]
@@ -238,7 +249,7 @@ export function pfMoney(pf: PortfolioRec) {
   const pending = pf.items.filter((x) => x.state === 'pending').reduce((s, x) => s + x.amount, 0)
   const pays = EHSAN_PAYS.filter((p) => p.target.kind !== 'project' && p.target.pfId === pf.id)
   const reqPaid = pf.requests.filter((r) => r.state === 'paid').reduce((s, r) => s + r.amount, 0)
-  const reqOpen = pf.requests.filter((r) => r.state === 'finance').reduce((s, r) => s + r.amount, 0)
+  const reqOpen = pf.requests.filter((r) => r.state === 'finance' || r.state === 'order').reduce((s, r) => s + r.amount, 0)
   const recorded = sumOf(pays, live) + reqPaid + reqOpen
   const confirmed = sumOf(pays, (x) => x.state === 'confirmed') + reqPaid
   return {
@@ -377,6 +388,10 @@ type Op = { by: string; at: string } & (
   | { op: 'partnerDecide'; entityId: string; outcome: 'approve' | 'reject'; note: string }
   | { op: 'partnerTypes'; entityId: string; allowed: PType[] }
   | { op: 'route'; projectId: string; platform: boolean; type: PType }
+  /* Batch 7 · partners#4 · the supervisor proposes the routing in the study, the executive decides it
+     (11.1.input-1 · 11.2.4) · it was one click for either */
+  | { op: 'routePropose'; projectId: string; platform: boolean; type: PType; note: string }
+  | { op: 'routeDecide'; projectId: string; accept: boolean; note: string }
   | { op: 'pfCreate'; pf: Pick<PortfolioRec, 'id' | 'name' | 'entityId' | 'total' | 'track' | 'field' | 'goals' | 'summary' | 'files' | 'origin' | 'channel'>; send: boolean; fromProject?: string }
   | { op: 'pfAct'; id: string; act: PfAct; note: string; shares?: PortfolioRec['shares'] }
   | { op: 'pfPlan'; id: string; phases: PfPhase[] }
@@ -390,8 +405,8 @@ type Op = { by: string; at: string } & (
   | { op: 'subExec'; pfId: string; subId: string; exec: Omit<SubExec, 'at' | 'by'> }
   | { op: 'pay'; pay: Omit<EhsanPay, 'state' | 'by' | 'at'> }
   | { op: 'payAct'; id: string; act: 'confirm' | 'return'; note: string }
-  | { op: 'pfReq'; pfId: string; req: Pick<PfRequest, 'id' | 'no' | 'amount'> }
-  | { op: 'pfReqAct'; pfId: string; reqId: string; act: 'pay' | 'return'; ref?: string; note: string }
+  | { op: 'pfReq'; pfId: string; req: Pick<PfRequest, 'id' | 'no' | 'amount' | 'why' | 'docs'> }
+  | { op: 'pfReqAct'; pfId: string; reqId: string; act: 'order' | 'pay' | 'return'; ref?: string; note: string }
   | { op: 'pfReport'; id: string; report: string; evidence: string[] }
   | { op: 'pfClose'; id: string }
   | { op: 'ehSchedule'; projectId: string; slots: EhSlot[] }
@@ -489,6 +504,23 @@ function applyOp(o: Op) {
          belongs in execution, not at the agreement (11.2.17) */
       if (!liveRun && p.platform && p.partnerType === 'مستقل' && p.stage === 'اعتماد الإتفاقية') setStage(p.id, 'المشرف إذن الصرف')
       ;(EH_OPS.get(p.id) ?? EH_OPS.set(p.id, []).get(p.id)!).push({ at: day(o.at), by: o.by, kind: 'قرار التوجيه', note: o.platform ? 'يُوجَّه الدعم عبر منصة إحسان' : 'يُدعم مباشرة دون منصة الشريك' })
+      return
+    }
+    case 'routePropose': {
+      const p = projectOf(o.projectId)
+      if (!p || (liveRun && p.statusGroup !== 'في الدراسة')) return
+      PROPOSALS.set(p.id, { platform: o.platform, type: o.type, note: o.note, by: o.by, at: day(o.at) })
+      ;(EH_OPS.get(p.id) ?? EH_OPS.set(p.id, []).get(p.id)!).push({ at: day(o.at), by: o.by, kind: 'اقتراح التوجيه', note: `${o.platform ? 'عبر منصة إحسان' : 'دعم مباشر'}${o.note ? ` · ${o.note}` : ''}` })
+      if (liveRun) notify([roleByKey('ceo').name], `اقتراح توجيه بانتظار قرارك · ${p.name}`, o.platform ? 'عبر منصة إحسان' : 'دعم مباشر', ROUTES.project(p.id))
+      return
+    }
+    case 'routeDecide': {
+      const p = projectOf(o.projectId)
+      const pr = p && PROPOSALS.get(p.id)
+      if (!p || !pr) return
+      PROPOSALS.delete(p.id)
+      if (o.accept) applyOp({ op: 'route', projectId: p.id, platform: pr.platform, type: pr.type, by: o.by, at: o.at })
+      else (EH_OPS.get(p.id) ?? EH_OPS.set(p.id, []).get(p.id)!).push({ at: day(o.at), by: o.by, kind: 'رفض اقتراح التوجيه', note: o.note || 'يبقى التوجيه كما هو' })
       return
     }
     case 'pfCreate': {
@@ -607,12 +639,19 @@ function applyOp(o: Op) {
       const pf = pfById(o.id)
       if (!pf || pf.stage !== 'approved') return
       const a = pf.agreement
-      if (o.act === 'draft' && (a.state === 'none' || a.state === 'returned')) a.state = 'draft'
-      else if (o.act === 'send' && a.state === 'draft') { a.state = 'manager'; notify([MGR()], `اعتماد اتفاقية محفظة · ${pf.name}`, partnerName(pf.entityId), ROUTES.portfolio(pf.id)) }
+      let first = false
+      if (o.act === 'draft' && (a.state === 'none' || a.state === 'returned')) {
+        first = true
+        a.state = 'draft'
+        a.body = pfAgreementText(pf)
+        a.versions = [...(a.versions ?? []), { no: (a.versions?.length ?? 0) + 1, at: day(o.at), by: o.by, body: a.body }]
+      }
+      else if (o.act === 'send' && a.state === 'draft') { first = true; a.state = 'manager'; notify([MGR()], `اعتماد اتفاقية محفظة · ${pf.name}`, partnerName(pf.entityId), ROUTES.portfolio(pf.id)) }
       /* Batch 6 · the agreements procedure's steps (8.2.13 – 8.2.29) · manager → executive → partner →
          the foundation's counter-signature → in force */
       const was = a.state
-      if (o.act === 'approve' && a.state === 'manager') { a.state = 'executive'; notify([roleByKey('ceo').name], `اعتماد اتفاقية محفظة · ${pf.name}`, partnerName(pf.entityId), ROUTES.portfolio(pf.id)) }
+      if (first) { /* draft or send · applied above · logged below */ }
+      else if (o.act === 'approve' && a.state === 'manager') { a.state = 'executive'; notify([roleByKey('ceo').name], `اعتماد اتفاقية محفظة · ${pf.name}`, partnerName(pf.entityId), ROUTES.portfolio(pf.id)) }
       else if (o.act === 'approve' && a.state === 'executive') { a.state = 'partner'; notify([partnerName(pf.entityId)], `اتفاقية للتوقيع · ${pf.name}`, 'وقّع الاتفاقية وارفعها', `${ROUTES.portfolio(pf.id)}?as=partner`) }
       else if (o.act === 'return' && (a.state === 'manager' || a.state === 'executive') && o.note.trim()) { a.state = 'returned'; a.note = o.note; notify([pf.owner], `أُعيدت اتفاقية المحفظة · ${pf.name}`, o.note, ROUTES.portfolio(pf.id)) }
       else if (o.act === 'sign' && a.state === 'partner' && o.file) { a.state = 'foundation'; a.file = o.file; a.signedBy = o.by; notify([MGR(), pf.owner], `وقّع الشريك اتفاقية المحفظة · ${pf.name}`, 'بانتظار توقيع ممثل المؤسسة', ROUTES.portfolio(pf.id)) }
@@ -729,9 +768,14 @@ function applyOp(o: Op) {
     case 'pfReqAct': {
       const pf = pfById(o.pfId)
       const r = pf?.requests.find((x) => x.id === o.reqId)
-      if (!pf || !r || r.state !== 'finance') return
-      if (o.act === 'pay') {
-        if (!o.ref?.trim()) return
+      if (!pf || !r || (r.state !== 'finance' && r.state !== 'order')) return
+      if (o.act === 'order') {
+        if (r.state !== 'finance') return
+        r.state = 'order'
+        r.orderBy = o.by
+        plog(pf, o.by, `اعتمدت المالية أمر صرف الدفعة ${r.no}`, o.at)
+      } else if (o.act === 'pay') {
+        if (r.state !== 'order' || !o.ref?.trim()) return
         r.state = 'paid'
         r.ref = o.ref
         if (liveRun && hasFunding(pf.id) && !isPaidRef(o.ref)) recordPaid(pf.id, r.amount, o.ref, o.by)
@@ -790,6 +834,8 @@ function applyOp(o: Op) {
       const c = EH_CLOSE.get(o.projectId)
       if (c?.closedAt) return
       EH_CLOSE.set(o.projectId, { report: o.report, evidence: o.evidence, by: o.by, at: day(o.at) })
+      /* Batch 7 · cross#25 · the final report's filing is an operation on the log too */
+      ;(EH_OPS.get(o.projectId) ?? EH_OPS.set(o.projectId, []).get(o.projectId)!).push({ at: day(o.at), by: o.by, kind: 'التقرير الختامي', note: `رُفع التقرير الختامي · ${o.evidence.length} شواهد` })
       return
     }
     case 'ehClose': {
@@ -886,6 +932,8 @@ function fromSeed(s: PfSeed): PortfolioRec {
       }
     }),
   }
+  /* A seeded agreement past «none» carries its generated text like one drafted live */
+  if (pf.agreement.state !== 'none') { pf.agreement.body = pfAgreementText(pf); pf.agreement.versions = [{ no: 1, at, by: pf.owner, body: pf.agreement.body }] }
   pf.log.push({ at, by: pf.owner, what: pf.origin === 'partner' ? 'قدّم الشريك طلب المحفظة من البوابة' : 'أنشأ مشرف المنح المحفظة' })
   if (stage === 'approved') pf.log.push({ at, by: CEO(), what: 'اعتمدها الرئيس التنفيذي نهائيًّا · ثُبّت الحجز' })
   if (pf.items.some((x) => x.state === 'pending')) pf.approvals.push({ id: `AR-${s.id.slice(-3)}-1`, subIds: pf.items.filter((x) => x.state === 'pending').map((x) => x.id), at: '2026-09-28', by: pf.owner })
@@ -956,6 +1004,23 @@ export function routeProject(projectId: string, platform: boolean, type: PType, 
   return []
 }
 
+/** Batch 7 · the supervisor's proposal · the executive decides it with `decideRoute` */
+export function proposeRoute(projectId: string, platform: boolean, type: PType, note: string, by: string): string[] {
+  const p = projectOf(projectId)
+  if (!p) return ['المشروع غير موجود']
+  if (p.statusGroup !== 'في الدراسة') return ['يُقترح التوجيه أثناء الدراسة فقط']
+  if (isStrategic(p.entityId) && !typeAllowed(p.entityId, type)) return [`«${PTYPE_SAY[type]}» غير مسموح لهذا الشريك (11.2.2)`]
+  if (platform && !isStrategic('860')) return ['منصة إحسان غير معتمدة شريكًا استراتيجيًّا']
+  run({ op: 'routePropose', projectId, platform, type, note, by, at: now() })
+  return []
+}
+export function decideRoute(projectId: string, accept: boolean, note: string, by: string): string[] {
+  if (!PROPOSALS.get(projectId)) return ['لا اقتراح توجيه بانتظار القرار']
+  if (!accept && !note.trim()) return ['اكتب سبب رفض الاقتراح']
+  run({ op: 'routeDecide', projectId, accept, note, by, at: now() })
+  return []
+}
+
 export const nextPortfolioId = () => `PF-2026-${String(PORTFOLIOS.length + 1).padStart(3, '0')}`
 export function createPortfolio(v: Omit<Extract<Op, { op: 'pfCreate' }>['pf'], 'id'>, send: boolean, by: string, fromProject?: string): { id?: string; errors: string[] } {
   const errors: string[] = []
@@ -992,6 +1057,7 @@ export function actOnPfPlan(id: string, act: 'send' | 'toManager' | 'approve' | 
     const cost = pf.plan.phases.reduce((s, x) => s + x.cost, 0)
     if (!pf.plan.phases.length) return ['أضف مرحلة واحدة على الأقل']
     if (pf.plan.phases.some((x) => !x.name.trim() || !x.from || !x.to || x.to < x.from)) return ['أكمل اسم كل مرحلة وتاريخيها']
+    if (pf.plan.phases.some((x) => (x.activities ?? []).some((a) => !a.name.trim() || !a.output.trim()))) return ['أكمل اسم كل نشاط ومخرجه أو احذفه']
     if (cost !== pf.total) return [`مجموع تكلفة المراحل ${nf.format(cost)} يساوي قيمة المحفظة ${nf.format(pf.total)}`]
   }
   if (act === 'return' && !note.trim()) return ['اكتب سبب الإعادة']
@@ -1065,15 +1131,19 @@ export function reviewEhsanPay(id: string, act: 'confirm' | 'return', note: stri
   run({ op: 'payAct', id, act, note, by, at: now() })
   return []
 }
-export function requestPfPay(pfId: string, no: number, amount: number, by: string): string[] {
+export function requestPfPay(pfId: string, no: number, amount: number, by: string, justification = '', docs: string[] = []): string[] {
   const pf = pfById(pfId)
   if (!pf) return ['المحفظة غير موجودة']
   const why = pfReqIssue(pf, no, amount)
   if (why) return [why]
-  run({ op: 'pfReq', pfId, req: { id: `PR-${pf.id.slice(-3)}-${pf.requests.length + 1}`, no, amount }, by, at: now() })
+  if (!justification.trim()) return ['اكتب مبرّر الطلب وما أُنجز (9.2.3)']
+  if (!docs.length) return ['أرفق مستندًا واحدًا على الأقل · تقرير الإنجاز أو الفواتير']
+  run({ op: 'pfReq', pfId, req: { id: `PR-${pf.id.slice(-3)}-${pf.requests.length + 1}`, no, amount, why: justification.trim(), docs }, by, at: now() })
   return []
 }
-export function actOnPfReq(pfId: string, reqId: string, act: 'pay' | 'return', note: string, by: string, ref?: string): string[] {
+export function actOnPfReq(pfId: string, reqId: string, act: 'order' | 'pay' | 'return', note: string, by: string, ref?: string): string[] {
+  const r = pfById(pfId)?.requests.find((x) => x.id === reqId)
+  if (act === 'pay' && r?.state !== 'order') return ['يُعتمد أمر الصرف أولًا']
   if (act === 'pay' && !ref?.trim()) return ['رقم أمر التحويل']
   if (act === 'return' && !note.trim()) return ['اكتب سبب الإعادة']
   run({ op: 'pfReqAct', pfId, reqId, act, ref, note, by, at: now() })
@@ -1138,7 +1208,7 @@ export const resetPartners = () => { try { localStorage.removeItem(KEY) } catch 
 export function financeQueue() {
   return {
     pays: EHSAN_PAYS.filter((p) => p.state === 'review'),
-    requests: PORTFOLIOS.flatMap((pf) => pf.requests.filter((r) => r.state === 'finance').map((r) => ({ pf, r }))),
+    requests: PORTFOLIOS.flatMap((pf) => pf.requests.filter((r) => r.state === 'finance' || r.state === 'order').map((r) => ({ pf, r }))),
   }
 }
 
@@ -1158,6 +1228,24 @@ export function partnerReport(): PartnerReportRow[] {
     }
   }
   return out
+}
+
+/** Batch 7 · partners#12 · the portfolio agreement's clauses from its own terms (13.2.9) */
+export function pfAgreementText(pf: PortfolioRec): string[] {
+  const partner = partnerName(pf.entityId)
+  const sched = pf.schedule.length
+    ? pf.schedule.map((x) => `الدفعة ${x.no}: ${nf.format(x.amount)} ريال في ${x.dueAt}`).join('؛ ')
+    : pf.channel === 'ehsan' ? 'تُنفَّذ الدفعات عبر منصة إحسان لكل مشروع فرعي وتؤكدها الإدارة المالية' : 'وفق جدول الدفعات الملحق'
+  return [
+    `الطرف الأول: مؤسسة سليمان عبدالعزيز أبانمي الأهلية · الطرف الثاني: ${partner}.`,
+    `موضوع الاتفاقية: محفظة «${pf.name}» في مسار ${pf.track} ومجال ${pf.field}، بقيمة إجمالية ${nf.format(pf.total)} ريال لسنة ${pf.year}.`,
+    `الأهداف: ${pf.goals || '—'}.`,
+    'تحكم هذه الاتفاقية المشاريع الفرعية كلها تحت المحفظة، ولا تُبرم اتفاقية لكل مشروع فرعي · يُعتمد كل مشروع فرعي في حدود الرصيد المتاح (13.2.18).',
+    `آلية الصرف: ${sched}.`,
+    `خطة المحفظة: ${pf.plan.phases.length ? pf.plan.phases.map((ph) => `${ph.name} (${ph.from} – ${ph.to})`).join('، ') : 'تُرفق الخطة المعتمدة ملحقًا'}.`,
+    'يلتزم الطرف الثاني برفع تقارير التنفيذ لكل مشروع فرعي، وبالتقرير الختامي للمحفظة وشواهده قبل الإغلاق.',
+    'تسري الاتفاقية من تاريخ توقيع ممثل المؤسسة بعد توقيع الطرف الثاني.',
+  ]
 }
 
 /* ── Partner closings on the closings desk (11.2.21 · 13.2.26) ──

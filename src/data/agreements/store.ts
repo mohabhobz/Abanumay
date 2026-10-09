@@ -300,7 +300,7 @@ export function agrReview(v: Parameters<typeof agrIssues>[0]): AgrHint[] {
   }
   const sug = byField[field] ?? { kind: 'clause' as const, source: 'ai' as const, title: 'الظهور الإعلامي', body: 'تُشير الجهة إلى دعم المؤسسة في المواد الإعلامية للمشروع وفق دليل الهوية.' }
   if (!v.clauses.some((c) => c.title === sug.title)) out.push({ id: 'field', tone: 'ok', text: `بند مقترح لمجال ${field || 'المشروع'}: «${sug.title}».`, add: sug })
-  const tpl = v.amount > 1_000_000 ? 'اتفاقية منحة كبرى (فوق مليون)' : (p?.durationDays ?? 0) > 365 ? 'اتفاقية منحة متعددة السنوات' : ''
+  const tpl = v.amount > 1_000_000 ? 'اتفاقية منحة كبرى (فوق مليون)' : (p?.durationDays ?? 0) > 260 ? 'اتفاقية منحة متعددة السنوات' : ''
   if (v.kind === 'إلكترونية' && tpl && v.template !== tpl) out.push({ id: 'tpl', tone: 'ok', text: `النموذج المقترح لحجم المنحة ومدتها: «${tpl}».`, template: tpl })
   if (!out.some((x) => x.tone === 'warn')) out.push({ id: 'okall', tone: 'ok', text: 'البنود متوافقة مع خطة التنفيذ ولا تعارض في الجدول.' })
   return out

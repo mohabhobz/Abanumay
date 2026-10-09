@@ -34,6 +34,9 @@ import { ibanValid } from '@/lib/iban'
 import * as partnersStore from '@/data/partners/store'
 import * as apprStore from '@/data/approvals/store'
 import * as flowStore from '@/data/intake/flow'
+import * as authStore from '@/data/entities/auth'
+import * as aiShared from '@/data/shared/ai'
+import { APPROVAL_RULES as apprRules } from '@/data/approvals/rules'
 import '@/styles/index.css'
 
 /* The end-to-end tests sign in as the entity that owns a record · they ask whose record it is here.
@@ -43,7 +46,7 @@ try {
     const w = window as unknown as Record<string, unknown>
     w.__abOwner = ownerOfPath
     /* Reading the stores from a test · the figures behind a screen, not a way to change them */
-    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore }
+    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore, auth: authStore, ai: aiShared, apprRules }
   }
   /* The drawn audits (tools/) visit entity views too · each load takes the session its URL needs:
      the record's own entity for an entity view or a portal, staff otherwise */

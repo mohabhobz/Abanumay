@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { DateField, DateText, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Tag, icons } from '@/components/ui'
+import { DateField, DateText, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Tag, icons } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -10,7 +10,7 @@ import { planOfProject } from '@/data/mock/plans'
 import type { ProjectRow } from '@/types/domain'
 import {
   PTYPE_SAY, addEhOp, closeEhsanProject, ehCloseChecks, ehCloseOf, ehGate, ehMoney, ehOpsOf, ehScheduleOf, isStrategic,
-  openEhsanPlan, paysOf, pfOfEntity, profileOf, recordEhsanPay, reviewEhsanPay, routeProject, saveEhReport, saveEhSchedule,
+  openEhsanPlan, paysOf, pfOfEntity, profileOf, recordEhsanPay, reviewEhsanPay, routeProject, proposeRoute, decideRoute, routeProposalOf, saveEhReport, saveEhSchedule,
   setPartnerTypes, typeAllowed, usePartners, viaEhsan, PF_STAGE_SAY, PF_STAGE_TONE, decidePartner,
   EH_STATE_SAY, EH_STATE_TONE, type EhSlot, type EhsanPay, type PayTarget, type PType,
 } from '@/data/partners/store'
@@ -165,28 +165,48 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
   const strategic = isStrategic(row.entityId)
   const study = row.statusGroup === 'في الدراسة'
   const type: PType = row.partnerType === 'محفظة' ? 'portfolio' : 'independent'
-  /* Re-audit 7 Oct · 11.1.input-1 · the executive decides the routing · the supervisor proposes it in the study */
-  const mine = (role.key === 'supervisor' || role.key === 'ceo') && study
+  /* Batch 7 · partners#4 · 11.1.input-1 · the supervisor proposes the routing in the study, the
+     executive decides it · the executive may also decide directly */
+  const ceo = role.key === 'ceo' && study
+  const sup = role.key === 'supervisor' && study
+  const prop = routeProposalOf(row.id)
+  const [why, setWhy] = useState('')
   const set = (platform: boolean, t: PType) => {
     if (t === 'portfolio') { navigate(`${ROUTES.portfolioNew}?entity=${row.entityId}&from=${row.id}`); return }
-    const out = routeProject(row.id, platform, t, user.name)
-    setSaid(out.length ? { bad: out } : { ok: platform ? 'التوجيه عبر منصة إحسان' : 'الدعم المباشر' })
+    const out = ceo ? routeProject(row.id, platform, t, user.name) : proposeRoute(row.id, platform, t, why, user.name)
+    setSaid(out.length ? { bad: out } : { ok: ceo ? (platform ? 'التوجيه عبر منصة إحسان' : 'الدعم المباشر') : 'اقتراح التوجيه للمدير التنفيذي' })
   }
+  const decide = (accept: boolean) => {
+    const out = decideRoute(row.id, accept, why, user.name)
+    setSaid(out.length ? { bad: out } : { ok: accept ? 'إقرار التوجيه' : 'رفض الاقتراح' })
+    if (!out.length) setWhy('')
+  }
+  const mine = (sup && !prop) || ceo
   return (
     <Glass>
       <Head title="التوجيه عبر الشريك" meta={row.platform ? <Tag tone="teal">منصة إحسان</Tag> : <Tag tone="mute">دعم مباشر</Tag>} />
       <KV rows={[
         { k: 'منصة الشريك', v: row.platform ?? 'بلا منصة · الجهة تستلم مباشرة' },
         ...(strategic ? [{ k: 'نوع المشروع', v: PTYPE_SAY[type] }] : []),
+        ...(prop ? [{ k: 'اقتراح بانتظار المدير التنفيذي', v: <>{prop.platform ? 'عبر منصة إحسان' : 'دعم مباشر'} · <Person name={prop.by} />{prop.note ? ` · ${prop.note}` : ''}</> }] : []),
       ]} />
+      {ceo && prop && (
+        <div className="apv-row mt-3">
+          <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="ملاحظة على اقتراح التوجيه" placeholder="سبب الرفض" /></span>
+          <button type="button" className="btn btn-2 btn-sm" onClick={() => decide(false)}>ارفض الاقتراح</button>
+          <button type="button" className="btn btn-p btn-sm" onClick={() => decide(true)}>أقرّ التوجيه</button>
+        </div>
+      )}
       {mine ? (
         <div className="apv-row mt-3">
+          {sup && <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبرّر الاقتراح" placeholder="مبرّر الاقتراح · اختياري" /></span>}
           <button type="button" className="btn btn-2 btn-sm" disabled={Boolean(row.platform)} onClick={() => set(true, 'independent')}>توجيه عبر منصة إحسان</button>
           {row.platform && <button type="button" className="btn btn-2 btn-sm" onClick={() => set(false, 'independent')}>دعم مباشر</button>}
+          {sup && <span className="sub">يُرفع اقتراحًا · يقرّه المدير التنفيذي</span>}
           {strategic && typeAllowed(row.entityId, 'portfolio') && <button type="button" className="btn btn-2 btn-sm" onClick={() => set(Boolean(row.platform), 'portfolio')}>تحويل إلى محفظة</button>}
         </div>
       ) : (
-        <p className="sub cnote">{study ? 'يقترحه مشرف المنح في الدراسة ويقرّه المدير التنفيذي' : 'حُدّد قبل الاعتماد · لا يتغيّر بعده'}</p>
+        <p className="sub cnote">{study ? (prop ? 'الاقتراح عند المدير التنفيذي' : 'يقترحه مشرف المنح في الدراسة ويقرّه المدير التنفيذي') : 'حُدّد قبل الاعتماد · لا يتغيّر بعده'}</p>
       )}
       <Said said={said} />
     </Glass>

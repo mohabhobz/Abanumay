@@ -304,7 +304,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       },
       {
         key: 'pfreq', label: 'طلبات صرف المحافظ', note: 'على مستوى المحفظة وفق جدولها', icon: 'grid', all: ROUTES.partnersTab('finance'),
-        items: PORTFOLIOS.flatMap((pf) => pf.requests.filter((r) => r.state === 'finance').map((r) => ({
+        items: PORTFOLIOS.flatMap((pf) => pf.requests.filter((r) => r.state === 'finance' || r.state === 'order').map((r) => ({
           id: `${pf.id}-${r.id}`, code: pf.id, title: `الدفعة ${r.no} · ${pf.name}`, sub: 'طلب صرف محفظة', amount: r.amount,
           days: Math.max(0, Math.round((t - Date.parse(r.at)) / 864e5)), late: false, limit: 3, to: ROUTES.partnersTab('finance'),
         }))),

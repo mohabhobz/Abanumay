@@ -67,6 +67,23 @@ const OPEN_DAYS = 87
  * the side column is fixed context, not a tab - the quick read, the entity's projects, and the
  * latest action stay visible no matter which tab is active.
  */
+/** The request's own content and the plan's phases · empty keys fall back to the fixture */
+function ownContent(id: string): Partial<typeof fixtures.project> {
+  const f = flowOf(id)
+  const sent = f.versions.find((v) => v.values)?.values
+  const plan = planOfProject(id)
+  const out: Partial<typeof fixtures.project> = {}
+  if (sent?.summary) out.idea = sent.summary
+  if (f.objectives.length) { out.goals = f.objectives; out.outputs = f.objectives }
+  if (plan?.phases.length) {
+    out.phases = plan.phases.map((ph, i) => ({
+      name: ph.name, tasks: ph.activities.map((a) => a.name).join('، ') || '—', months: `${ph.from} – ${ph.to}`,
+      tone: i === plan.phases.length - 1 ? 'mute' : i < 2 ? 'teal' : 'lime',
+    })) as typeof fixtures.project.phases
+  }
+  return out
+}
+
 export default function ProjectPage() {
   const { id, tab } = useParams<{ id: string; tab?: string }>()
   const navigate = useNavigate()
@@ -104,6 +121,9 @@ export default function ProjectPage() {
         startDate: addDays(row.submittedAt, 30),
         /* 5.2.10 · returned by the executive director, the project reads its own state */
         status: { label: appFlowOf(row.id).awaitingReview && row.holder === 'manager' ? 'بانتظار استكمال المراجعة' : row.stage, tone: groupTone(row.statusGroup) },
+        /* Batch 7 · approvals#8 · the project's own idea, objectives and phases where it has them ·
+           the request as sent, and the approved plan · the fixture stays the fallback for a seeded row */
+        ...ownContent(row.id),
       }
     : fixtures.project
 
@@ -295,8 +315,11 @@ export default function ProjectPage() {
   /* The log is generated from the same details, so the updates, payments, and agreement shown in
      the tabs are exactly what's in the log - no second source. */
   const log = useMemo(
-    () => projectLog({ row: row ?? fixtures.projects[0], entityName: entity.name, detail }),
-    [row, entity.name, detail],
+    /* Batch 7 · payments#26 · the log reads the payments store's schedule, like the tab · it read the
+       generator's payments, so the log could disagree with the tab (21020) */
+    () => projectLog({ row: row ?? fixtures.projects[0], entityName: entity.name, detail: { ...detail, payments: livePayments } }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [row, entity.name, detail, livePayments.length, livePayments.filter((x) => x.status === 'مدفوع').length],
   )
 
   /* Manual activities join the same timeline, so the log stays the one place to read history. */

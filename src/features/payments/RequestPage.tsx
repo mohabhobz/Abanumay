@@ -82,15 +82,19 @@ function ladderFor(r: PayRequest): StepItem[] {
   const stages = LADDER.filter((s) => s.key !== 'exec' || viaExec)
   const now = NOW_AT[r.state]
   const nowAt = r.state === 'paid' ? stages.length : stages.findIndex((s) => s.key === now)
-  return stages.map((s, i): StepItem => {
+  const steps = stages.map((s, i): StepItem => {
     const at = [...r.log].reverse().find((e) => s.steps.includes(e.step) && (s.key !== 'exec' || e.role === 'المدير التنفيذي'))
     return {
       label: s.label,
       note: s.note,
       at: at ? <DateText>{at.at}</DateText> : undefined,
-      state: i === nowAt ? 'now' : nowAt >= 0 && i < nowAt ? 'done' : 'todo',
+      /* Batch 7 · payments#10 · a closed (finally rejected) request reads the stages it passed as
+         done, then its closing · it read every stage «لم تبدأ» */
+      state: r.state === 'closed' ? (at ? 'done' : 'todo') : i === nowAt ? 'now' : nowAt >= 0 && i < nowAt ? 'done' : 'todo',
     }
   })
+  if (r.state === 'closed') steps.push({ label: 'مغلق · رفض نهائي', note: 'يبقى للاطلاع (القاعدة 15)', state: 'now' })
+  return steps
 }
 
 export default function RequestPage() {

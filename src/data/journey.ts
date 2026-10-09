@@ -1,3 +1,4 @@
+import { capOf } from './approval'
 /**
  * Project journey through the process · durations, repeat rounds, and the level where it was
  * decided.
@@ -24,7 +25,8 @@ export type DecisionLevel =
   | 'مجلس الأمناء'
 
 /** Approval ceilings · same numbers as in `roles.ts`, temporary pending confirmation */
-const CEILING_MANAGER = 250_000
+/* Batch 7 · the matrix's own cap, not a copy of it */
+const CEILING_MANAGER = capOf('manager')
 const CEILING_CEO = 500_000
 const CEILING_COMMITTEE = 2_000_000
 

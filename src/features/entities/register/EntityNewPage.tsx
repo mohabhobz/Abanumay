@@ -2,6 +2,7 @@ import { PartnerArt } from '@/components/soul'
 import { registerInternal } from '@/data/entities/store'
 import { readRole, roleByKey } from '@/data/roles'
 import { useMemo, useRef, useState } from 'react'
+import { duplicates } from '@/data/entities/validate'
 import { useNavigate } from 'react-router-dom'
 import {
   BackTo, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, type StepItem, DockWhy,
@@ -160,7 +161,10 @@ export default function EntityNewPage() {
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
 
-  const canSave = missing.length === 0 && !clash && advice.blocking.length === 0
+  /* Batch 7 · entities#11 · the internal form checks duplicates too (name, email, mobile, IBAN) · it
+     never called them, so a supervisor could register an entity that already exists */
+  const dups = useMemo(() => duplicates({ name: val.name, email: val.email, mobile: val.mobile, clerkEmail: val.clerkEmail }, banks), [val.name, val.email, val.mobile, val.clerkEmail, banks])
+  const canSave = missing.length === 0 && !clash && advice.blocking.length === 0 && dups.length === 0
 
   const at = STAGES.findIndex((x) => x.key === tab)
   const first = at <= 0
@@ -383,6 +387,10 @@ export default function EntityNewPage() {
                     رقم الترخيص <Mono>{val.licenseNo}</Mono> مسجَّل لـ «{clash.name}»
                     بنفس التصنيف · القاعدة <span className="num">8</span> تمنع التكرار.
                   </p>
+                )}
+
+                {dups.length > 0 && (
+                  <p className="bad cnote">بيانات مكرّرة: {dups.map((d) => `${d.label} مع «${d.who}»`).join(' · ')} · لا تُحفظ جهة مكرّرة (2.4.10)</p>
                 )}
 
                 <div className="regfoot">

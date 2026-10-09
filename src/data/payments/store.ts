@@ -97,6 +97,16 @@ export function repOf(projectId: string): { name: string; title: string } {
   return e ? { name: entityDetail(e).directorName, title: 'المدير التنفيذي للجهة' } : { name: '', title: '' }
 }
 
+/** Batch 7 · payments#25 · the account a payment goes to · the entity's own active account on its
+    file (its registration's, or one an approved update added or edited) before the mock generator ·
+    a masked seed IBAN isn't an account */
+export function accountOf(entityId: string): ReturnType<typeof banksOf>[number] | undefined {
+  const e = entityById(entityId)
+  const real = e ? entityDetail(e).banks.find((b) => b.status === 'مفعل' && !/[X•]/.test(b.iban)) : undefined
+  if (real) return { id: real.id, bank: real.bank, purpose: real.shortName, iban: real.iban, active: true }
+  return banksOf(entityId)[0]
+}
+
 /* ── The schedule (9.1.input-2 · 9.4.2) ── */
 
 /** Conditions on payments that carry no request yet · the agreement's requirement, else the fixture's */
@@ -346,7 +356,7 @@ function applyOp(o: Op) {
       const p = projectOf(o.projectId)
       const slot = scheduleOf(o.projectId).find((s) => s.no === o.no)
       if (!p || !slot) return
-      const bank = banksOf(p.entityId)[0]
+      const bank = accountOf(p.entityId)
       const l = linkOf(p.id)
       const total = l?.shares.reduce((s, x) => s + x.amount, 0) ?? 0
       const sources = l && total
@@ -484,7 +494,8 @@ function applyOp(o: Op) {
           return
         case 'transfer': {
           if (r.state !== 'finance' || !r.order || !o.file) return
-          const b = banksOf(r.entityId).find((x) => x.bank === r.bank.name) ?? banksOf(r.entityId)[0]
+          const own = accountOf(r.entityId)
+          const b = own && own.bank === r.bank.name ? own : banksOf(r.entityId).find((x) => x.bank === r.bank.name) ?? own
           r.transfer = { at: day(o.at), by: o.by, bank: r.bank.name, iban: b?.iban ?? '', proof: o.file }
           r.paidAt = day(o.at)
           r.docs.push({ name: o.file, kind: 'إثبات التحويل', at: day(o.at), size: '—' })

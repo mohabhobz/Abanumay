@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Icon, icons } from '@/components/ui'
+import { uploadRefusal } from '@/lib/upload'
 
 /* Upload button — **written once**.
 
@@ -21,12 +23,16 @@ export interface UploadButtonProps {
   label: string
   /** Allowed formats. */
   accept?: string
+  /** Size cap in MB · 10 like the request form */
+  maxMb?: number
 }
 
 export function UploadButton({
-  onPick, label, accept = '.pdf,.jpg,.jpeg,.png',
+  onPick, label, accept = '.pdf,.jpg,.jpeg,.png', maxMb = 10,
 }: UploadButtonProps) {
+  const [err, setErr] = useState('')
   return (
+    <>
     <label className="btn btn-2 btn-sm upbtn">
       <input
         type="file"
@@ -34,7 +40,9 @@ export function UploadButton({
         aria-label={label}
         onChange={(e) => {
           const f = e.target.files?.[0]
-          if (f) onPick(f)
+          const why = f ? uploadRefusal(f, accept, maxMb) : ''
+          setErr(why)
+          if (f && !why) onPick(f)
           /* ⚠️ Cleared after selection — otherwise picking the same file again (after "remove," for
              example) never fires `onChange` at all. */
           e.target.value = ''
@@ -43,5 +51,7 @@ export function UploadButton({
       <Icon name={icons.upload} size="sm" />
       ارفع
     </label>
+    {err && <span className="bad" role="alert">{err}</span>}
+    </>
   )
 }

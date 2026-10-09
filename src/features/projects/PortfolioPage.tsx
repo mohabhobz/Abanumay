@@ -328,6 +328,15 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
               <label className="regf"><span className="lb">من</span><DateField value={r.from} onChange={(v) => setRows((x) => x.map((y, j) => (j === i ? { ...y, from: v } : y)))} label={`بداية المرحلة ${i + 1}`} /></label>
               <label className="regf"><span className="lb">إلى</span><DateField value={r.to} onChange={(v) => setRows((x) => x.map((y, j) => (j === i ? { ...y, to: v } : y)))} label={`نهاية المرحلة ${i + 1}`} /></label>
               <label className="regf"><span className="lb">التكلفة</span><MoneyField value={r.cost ? String(r.cost) : ''} onChange={(v) => setRows((x) => x.map((y, j) => (j === i ? { ...y, cost: Number(v) || 0 } : y)))} label={`تكلفة المرحلة ${i + 1}`} /></label>
+              {/* Batch 7 · partners#11 · each phase's activities, with the output and the evidence each needs */}
+              {(r.activities ?? []).map((ac, k) => (
+                <div className="rowf gp-2" key={ac.id}>
+                  <span className="fld"><input value={ac.name} onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, activities: (y.activities ?? []).map((z, m) => (m === k ? { ...z, name: e.target.value } : z)) } : y)))} aria-label={`نشاط ${k + 1} في المرحلة ${i + 1}`} placeholder="النشاط" /></span>
+                  <span className="fld"><input value={ac.output} onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, activities: (y.activities ?? []).map((z, m) => (m === k ? { ...z, output: e.target.value } : z)) } : y)))} aria-label={`مخرج النشاط ${k + 1} في المرحلة ${i + 1}`} placeholder="المخرج" /></span>
+                  <span className="fld"><input value={ac.evidence} onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, activities: (y.activities ?? []).map((z, m) => (m === k ? { ...z, evidence: e.target.value } : z)) } : y)))} aria-label={`شاهد النشاط ${k + 1} في المرحلة ${i + 1}`} placeholder="الشاهد المطلوب" /></span>
+                </div>
+              ))}
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRows((x) => x.map((y, j) => (j === i ? { ...y, activities: [...(y.activities ?? []), { id: `a${Date.now()}`, name: '', output: '', evidence: '' }] } : y)))}>أضف نشاطًا للمرحلة {i + 1}</button>
             </div>
           ))}
           <div className="apv-row mt-2">
@@ -339,7 +348,7 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
         </div>
       ) : (
         <ul className="ptn-slots">
-          {pf.plan.phases.map((p) => <li key={p.id}><span>{p.name}</span><span className="sub"><DateText>{p.from}</DateText> – <DateText>{p.to}</DateText></span><Money sm>{p.cost}</Money></li>)}
+          {pf.plan.phases.map((p) => <li key={p.id}><span>{p.name}</span><span className="sub"><DateText>{p.from}</DateText> – <DateText>{p.to}</DateText>{p.activities?.length ? ` · ${p.activities.map((a) => `${a.name}${a.output ? ` (${a.output})` : ''}`).join('، ')}` : ''}</span><Money sm>{p.cost}</Money></li>)}
           {!pf.plan.phases.length && <li className="sub">يعدّها الشريك أو مشرف المنح بعد الاعتماد النهائي.</li>}
         </ul>
       )}
@@ -375,6 +384,13 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
     <Glass>
       <Head title="اتفاقية المحفظة" meta={<Tag tone={a.state === 'signed' ? 'ok' : a.state === 'none' ? 'mute' : 'warn'}>{say}</Tag>} />
       <p className="sub cnote">اتفاقية على مستوى المحفظة ككل · تحكم المشاريع الفرعية كلها ولا تتكرر لكل مشروع.{a.file ? ` · ${a.file}` : ''}</p>
+      {/* Batch 7 · partners#12 · the agreement's own text, from the template with the portfolio's terms */}
+      {a.body && (
+        <details className="mt-2">
+          <summary className="lnk">نص الاتفاقية{a.versions && a.versions.length > 1 ? ` · الإصدار ${a.versions.length}` : ''}</summary>
+          <ol className="rqobj">{a.body.map((x, i) => <li key={i}>{x}</li>)}</ol>
+        </details>
+      )}
       {a.note && a.state === 'returned' && <p className="bad cnote">{a.note}</p>}
       {pf.channel === 'direct' && (
         <>
@@ -511,6 +527,8 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const [sub, setSub] = useState('')
   const [ref, setRef] = useState('')
   const [note, setNote] = useState('')
+  const [why, setWhy] = useState('')
+  const [docs, setDocs] = useState<string[]>([])
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const approved = pf.items.filter((x) => x.state === 'approved')
   const target = approved.find((x) => x.id === sub) ?? approved[0]
@@ -544,8 +562,16 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             <li key={s.no}>
               <span>الدفعة <span className="num">{s.no}</span> · <DateText>{s.dueAt}</DateText></span>
               <Money sm>{s.amount}</Money>
-              {rq ? <Tag tone={rq.state === 'paid' ? 'ok' : rq.state === 'finance' ? 'warn' : 'ret'}>{rq.state === 'paid' ? `صُرفت · ${rq.ref}` : rq.state === 'finance' ? 'لدى المالية' : `معادة · ${rq.note}`}</Tag> : <Tag tone="mute">لم تُطلب</Tag>}
+              {rq ? <Tag tone={rq.state === 'paid' ? 'ok' : rq.state === 'finance' || rq.state === 'order' ? 'warn' : 'ret'}>{rq.state === 'paid' ? `صُرفت · ${rq.ref}` : rq.state === 'finance' ? 'لدى المالية · أمر الصرف' : rq.state === 'order' ? 'أمر الصرف معتمد · بانتظار التحويل' : `معادة · ${rq.note}`}</Tag> : <Tag tone="mute">لم تُطلب</Tag>}
+              {rq?.why && <span className="sub">{rq.why}{rq.docs?.length ? ` · ${rq.docs.join('، ')}` : ''}</span>}
               {fin && rq?.state === 'finance' && (
+                <span className="rowf gp-2">
+                  <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfReq(pf.id, rq.id, 'order', '', user.name); setSaid(out.length ? { bad: out } : { ok: 'اعتماد أمر الصرف' }) }}>اعتمد أمر الصرف</button>
+                  <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="سبب الإعادة" placeholder="سبب الإعادة" /></span>
+                  <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = actOnPfReq(pf.id, rq.id, 'return', note, user.name); setSaid(out.length ? { bad: out } : { ok: 'إعادة الطلب' }) }}>أعد</button>
+                </span>
+              )}
+              {fin && rq?.state === 'order' && (
                 <span className="rowf gp-2">
                   <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم أمر التحويل" placeholder="رقم أمر التحويل" /></span>
                   <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfReq(pf.id, rq.id, 'pay', '', user.name, ref); setSaid(out.length ? { bad: out } : { ok: 'صرف الدفعة' }) }}>صرف</button>
@@ -563,7 +589,10 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
       {(sup || asPartner) && open && next && (
         <div className="apv-row mt-3">
           {pfReqIssue(pf, next.no, next.amount) ? <span className="sub">{pfReqIssue(pf, next.no, next.amount)}</span> : null}
-          <button type="button" className="btn btn-p btn-sm" disabled={Boolean(pfReqIssue(pf, next.no, next.amount)) || pf.agreement.state !== 'signed'} title={pf.agreement.state !== 'signed' ? 'بعد توقيع الاتفاقية' : ''} onClick={() => { const out = requestPfPay(pf.id, next.no, next.amount, user.name); setSaid(out.length ? { bad: out } : { ok: `طلب الدفعة ${next.no}` }) }}>اطلب الدفعة {next.no}</button>
+          <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبرّر طلب الدفعة" placeholder="مبرّر الطلب وما أُنجز" /></span>
+          <UploadButton label="مستند الطلب" onPick={(f) => setDocs((x) => [...x, f.name])} />
+          {docs.length > 0 && <span className="sub">{docs.join('، ')}</span>}
+          <button type="button" className="btn btn-p btn-sm" disabled={Boolean(pfReqIssue(pf, next.no, next.amount)) || pf.agreement.state !== 'signed'} title={pf.agreement.state !== 'signed' ? 'بعد توقيع الاتفاقية' : ''} onClick={() => { const out = requestPfPay(pf.id, next.no, next.amount, user.name, why, docs); setSaid(out.length ? { bad: out } : { ok: `طلب الدفعة ${next.no}` }); if (!out.length) { setWhy(''); setDocs([]) } }}>اطلب الدفعة {next.no}</button>
         </div>
       )}
       <Said said={said} />

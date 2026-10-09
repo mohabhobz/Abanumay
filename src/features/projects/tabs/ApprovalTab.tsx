@@ -7,9 +7,10 @@ import type { ProjectRow } from '@/types/domain'
 import { approverFor } from '@/data/approval'
 import { HOLDER_LABEL, holderOf, type Holder } from '@/data/holders'
 import { flowOf } from '@/data/intake/flow'
-import { CRITERIA, studyScore } from '@/data/intake/criteria'
+import { CRITERIA, GROUP_SAY, studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { fitOf, similarProjects } from '@/data/intake/insight'
+import { expectedImpact } from '@/data/shared/ai'
 import { docSources, moneyOf } from '@/data/mock/budgetTree'
 import { HOLD_STAGE_SAY, planOf, shareSay } from '@/data/budget/store'
 import { yearById } from '@/data/mock/budgetTree'
@@ -63,6 +64,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
   const s = strategyOf(row)
   /* Batch 6 · the executive panel's targets and plan */
   const objectives = flowOf(row.id).objectives
+  const ei = expectedImpact(row)
   const fplan = planOf(row.id)?.kind === 'multi' ? planOf(row.id) : undefined
   const payPlan = payPlanOf(row.id)
   const needsPlan = f.needsPlan
@@ -135,9 +137,9 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
             </div>
             <p className="sub cnote">{study.justification}</p>
             <ul className="apv-scores">
-              {(['فني', 'إداري'] as const).map((g) => (
+              {(['فني', 'مالي', 'إداري'] as const).map((g) => (
                 <li key={g}>
-                  <b>التقييم {g === 'فني' ? 'الفني' : 'الإداري'}</b>
+                  <b>التقييم {GROUP_SAY[g].eval}</b>
                   {CRITERIA.list.filter((c) => c.group === g).map((c) => (
                     <span key={c.key} className="sub">{c.label} <span className="num">{study.scores[c.key] ?? '–'}</span>/5</span>
                   ))}
@@ -193,6 +195,8 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         <h3 className="stdy-h mt-3">المؤشرات المستهدفة</h3>
         <KV rows={[
           { k: 'المستفيدون المستهدفون', v: <Num>{row.beneficiaries}</Num> },
+          /* Batch 7 · approvals#8 · the expected impact from the reach really reported (cross#28) */
+          { k: 'الأثر المتوقع', v: <><Num>{ei.expected}</Num> مستفيد · {ei.from === 'default' ? 'تقدير افتراضي' : <>بنسبة تحقّق <span className="num">{pct(Math.round(ei.rate * 100))}</span> في <Num>{ei.basis}</Num> {ei.from === 'similar' ? 'مشابهًا' : 'من المجال'}</>}</> },
           { k: 'نهاية التنفيذ المحسوبة', v: row.endAt ? <DateText>{row.endAt}</DateText> : '—' },
           { k: 'الأهداف التفصيلية', v: objectives.length ? <><Num>{objectives.length}</Num> · {objectives.slice(0, 2).join('، ')}{objectives.length > 2 ? '…' : ''}</> : '—' },
           { k: 'سجلّ الجهة في المشاريع المغلقة', v: past.n ? <><Num>{past.n}</Num> مشروع · متوسط التقييم {past.score === null ? '—' : <Num>{past.score}</Num>} · تحقق المستفيدين {past.reach === null ? '—' : <span className="num">{pct(past.reach)}</span>}</> : 'لا مشاريع مغلقة للجهة بعد' },

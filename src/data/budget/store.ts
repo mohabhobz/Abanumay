@@ -1493,6 +1493,20 @@ export function linkIssues(i: LinkInput, need?: number): string[] {
   return out
 }
 
+/** Batch 7 · funding#15 · a line split across sources must find each source still covering it · the
+    standing check reads the sources too, not the line and its levels alone (1.2.5 · 5.4.5) */
+function sourceIssues(d: BudgetDoc, nodeId: string): string[] {
+  if (docSources(d).length < 2) return []
+  const out: string[] = []
+  const codes = new Set(docSources(d).map((x) => x.code))
+  for (const s of splitOf(d, nodeId) ?? []) {
+    const name = sourceByCode(s.code)?.name ?? s.code
+    if (!codes.has(s.code)) { out.push(`مصدر «${name}» لم يعد ضمن مصادر ${docTitle(d)}`); continue }
+    if (sourceBalance(d, s.code) < 0) out.push(`مصدر «${name}» في ${docTitle(d)} تجاوز رصيده · راجع المصادر قبل الاعتماد`)
+  }
+  return out
+}
+
 /** The standing check on a project's funding · before a decision, a session, or a payment
     (4.4.11 · 4.4.13 · 5.4.5 · 5.4.8 · 6.2.10 · 6.4.3 · 7.2.2 · 7.4.3) */
 export function fundingIssues(projectId: string, need: number): string[] {
@@ -1514,8 +1528,9 @@ export function fundingIssues(projectId: string, need: number): string[] {
       if (moneyOf(d.nodes, a.id).available < 0) { out.push(`«${a.label}» تجاوز مخصصه · راجع المصادر قبل الاعتماد`); break }
     }
     if (l.stage === 'planned' && freeOf(d, n.id) < x.amount) out.push(`«${n.label}» لم يعد يكفي للحجز عند الاعتماد`)
+    out.push(...sourceIssues(d, n.id))
   }
-  return out
+  return [...new Set(out)]
 }
 
 /** A multi-year project's standing check · its plan is its funding (1.4.44 – 1.4.53) · the years
@@ -1535,9 +1550,10 @@ function planFundingIssues(pl: FundingPlan, need: number): string[] {
       for (const a of upChain(d, n.id)) {
         if (moneyOf(d.nodes, a.id).available < 0) { out.push(`«${a.label}» تجاوز مخصصه · راجع المصادر قبل الاعتماد`); break }
       }
+      out.push(...sourceIssues(d, n.id))
     }
   }
-  return out
+  return [...new Set(out)]
 }
 
 /** A line's hold split by stage · initial and final, from the project links under it (1.4.41) ·

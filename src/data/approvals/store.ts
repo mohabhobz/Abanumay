@@ -402,12 +402,18 @@ const applyOp = (o: Op) => {
       const lvl = HOLDER_LABEL[o.level]
       switch (o.verdict) {
         case 'recommend-approve':
-        case 'recommend-reject':
-          p.holder = 'exec'; p.hoursInStage = 0
+        case 'recommend-reject': {
+          /* Batch 7 · approvals#19 · above the executive's cap (or past the entity's limit with him), a
+             recommendation to approve can go straight to the committee when the setting says so */
+          const auto = o.verdict === 'recommend-approve' && APPROVAL_RULES.autoReferAboveExec
+            && (p.amountRequested > levelCap('exec') || Boolean(entityLimitBlock(p, 'exec')))
+          p.holder = auto ? 'committee' : 'exec'; p.hoursInStage = 0
           if (o.verdict === 'recommend-approve') f.hold = linkOf(p.id) ? 'initial' : f.hold
-          fields.push({ k: 'الإحالة', v: 'المدير التنفيذي' })
-          notify(['المدير التنفيذي'], p.id, `توصية مدير المنح · ${p.name}`, `${VERDICT_SAY[o.verdict]} · ${o.note}`)
+          fields.push({ k: 'الإحالة', v: auto ? 'اللجنة التنفيذية · إحالة تلقائية فوق حد المدير التنفيذي (5.4.11)' : 'المدير التنفيذي' })
+          if (auto) notify(['المدير التنفيذي', 'مدير المنح'], p.id, `أُحيل إلى اللجنة تلقائيًا · ${p.name}`, 'المبلغ فوق حد المدير التنفيذي · ينتظر جلسة اللجنة')
+          else notify(['المدير التنفيذي'], p.id, `توصية مدير المنح · ${p.name}`, `${VERDICT_SAY[o.verdict]} · ${o.note}`)
           break
+        }
         case 'final-approve':
           finalise(p, f, o.level as Level, o.by)
           break
@@ -530,13 +536,19 @@ const applyOp = (o: Op) => {
     }
     case 'session': {
       const i = SESSIONS.findIndex((s) => s.id === o.session.id)
+      const isNew = i < 0
       if (i >= 0) { if (SESSIONS[i].state === 'planned') SESSIONS[i] = o.session } else SESSIONS.push(o.session)
+      /* Batch 7 · approvals#37 · the members learn their session's file is ready */
+      if (isNew) notify(o.session.members, o.session.items[0]?.projectId ?? '', `ملف جلسة جاهز للاطلاع · ${o.session.title}`, `${o.session.date} · ${o.session.items.length} مشروع على جدول الأعمال`, ROUTES.approvalSession(o.session.id))
       return
     }
     case 'agenda': {
       const s = sessionById(o.sessionId)
       if (!s || s.state === 'closed') return
-      if (o.add && !s.items.some((x) => x.projectId === o.projectId)) s.items.push({ projectId: o.projectId, votes: {} })
+      if (o.add && !s.items.some((x) => x.projectId === o.projectId)) {
+        s.items.push({ projectId: o.projectId, votes: {} })
+        notify(s.members, o.projectId, `أُضيف مشروع إلى جدول الجلسة · ${s.title}`, row(o.projectId)?.name ?? o.projectId, ROUTES.approvalSession(s.id))
+      }
       if (!o.add) s.items = s.items.filter((x) => x.projectId !== o.projectId || x.outcome)
       return
     }
@@ -772,7 +784,8 @@ export function castVote(sessionId: string, projectId: string, member: string, v
 export const attachMinutes = (sessionId: string, projectId: string, file: string, by: string) => run({ op: 'minutes', sessionId, projectId, file, by, at: now() })
 export const decideInSession = (sessionId: string, projectId: string, outcome: Outcome, note: string, by: string, target?: Holder, payPlan?: SessionItem['payPlan']) => {
   const p = row(projectId)
-  if (p && (outcome === 'reject' || (outcome === 'return' && target === 'supervisor')) && linkOf(projectId)) {
+  /* Batch 7 · a multi-year project's held years leave too · `hasFunding` covers the plan, `linkOf` didn't */
+  if (p && (outcome === 'reject' || (outcome === 'return' && target === 'supervisor')) && hasFunding(projectId)) {
     unlinkProject(projectId, by, outcome === 'reject' ? 'رفض في الجلسة' : 'إعادة للدراسة أو لتعديل جوهري · يُعاد التحقق عند العودة (6.4.9)')
   }
   run({ op: 'sessionDecide', sessionId, projectId, outcome, target, note, payPlan, by, at: now() })

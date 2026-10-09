@@ -6,7 +6,7 @@ import {
 import { ROUTES } from '@/app/routes'
 import { isolate, pct } from '@/lib/format'
 import type { ProjectRow } from '@/types/domain'
-import { CRITERIA, studyScore, type Criterion } from '@/data/intake/criteria'
+import { CRITERIA, GROUP_SAY, studyScore, type Criterion } from '@/data/intake/criteria'
 import { domainBudget, fitOf, similarProjects } from '@/data/intake/insight'
 import { consultantByKey, consultantsFor } from '@/data/intake/consultants'
 import {
@@ -25,7 +25,7 @@ import { FundingPlanCard } from '@/features/budget/FundingPlan'
    study can be saved and revised before it goes anywhere. */
 
 const SCALE = [1, 2, 3, 4, 5] as const
-const GROUPS: Criterion['group'][] = ['فني', 'إداري']
+const GROUPS: Criterion['group'][] = ['فني', 'مالي', 'إداري']
 
 export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; editable: boolean }) {
   const f = flowOf(row.id)
@@ -69,7 +69,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
         </p>
         {GROUPS.map((g) => (
           <div key={g} className="stdy-g">
-            <h3 className="stdy-h">الدراسة {g === 'فني' ? 'الفنية' : 'الإدارية'}</h3>
+            <h3 className="stdy-h">الدراسة {GROUP_SAY[g].study}</h3>
             <ul className="stdy-list">
               {CRITERIA.list.filter((c) => c.group === g).map((c) => (
                 <li key={c.key}>
@@ -94,8 +94,8 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
                 </li>
               ))}
             </ul>
-            <label className="regf regf-w">
-              <span className="lb">ملاحظات الدراسة {g === 'فني' ? 'الفنية' : 'الإدارية'}</span>
+            {g !== 'مالي' && <label className="regf regf-w">
+              <span className="lb">ملاحظات الدراسة {GROUP_SAY[g].study}</span>
               <span className="fld fld-a">
                 <textarea
                   rows={3}
@@ -105,7 +105,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
                   aria-label={`ملاحظات الدراسة ${g}`}
                 />
               </span>
-            </label>
+            </label>}
           </div>
         ))}
       </Glass>

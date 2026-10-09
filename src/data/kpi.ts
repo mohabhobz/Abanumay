@@ -45,7 +45,7 @@ import { flowOf } from './intake/flow'
 import { isStuck, PLAN_LOG } from './plans/store'
 import { EHSAN_PAYS, PORTFOLIOS, ehCloseOf, ehMoney, ehsanProjects, pfMoney } from './partners/store'
 import { ESC_LIMITS } from './shared/escRules'
-import { capOf } from './approval'
+import { APPROVAL_RULES } from './approvals/rules'
 import { TODAY } from './clock'
 import { agrTargetDays, agrWasReturned, agreements } from './mock/agreements'
 import { yearById } from './mock/budgetTree'
@@ -191,13 +191,38 @@ const reachedExec = rows.filter((r) => j(r)?.exec !== null && j(r)?.exec !== und
 /* Re-audit 7 Oct · the durations from the decisions on record · a seat's time runs from the decision
    that sent the project to it until its own. The journey is the fallback for the seeded rows */
 const recAt = (r: ProjectRow, level: string) => recsOf(r).find((x) => x.level === level)?.at
+/* Batch 7 · cross#48 · the supervisor's in-app recommendation is an intake event, not an approvals
+   rec · the manager's time runs from it when no supervisor rec exists */
+const supSentAt = (r: ProjectRow): string | undefined => flowOf(r.id).events.filter((e) => /وإحالة لمدير المنح/.test(e.action)).map((e) => e.at).sort().pop()
 const seatDays = (r: ProjectRow, level: string, from: string): number | null => {
-  const mine = recAt(r, level), prev = recsOf(r).find((x) => x.level === from && (!mine || x.at <= mine))?.at
+  const mine = recAt(r, level)
+  const prev = recsOf(r).find((x) => x.level === from && (!mine || x.at <= mine))?.at ?? (from === 'supervisor' ? supSentAt(r) : undefined)
   return mine && prev ? dayDiff(prev, mine) : null
 }
+/* Batch 7 · cross#47 · the study runs from the recorded assignment when there is one (3.8 #1 «من
+   تاريخ إسناد المشروع»), else from the submission · transfers and completion requests are counted
+   from their recorded events, and «derived» says only when the journey filled a gap */
+const evOf = (r: ProjectRow, action: string) => flowOf(r.id).events.filter((e) => e.action === action)
+const assignedAt = (r: ProjectRow): string | undefined => evOf(r, 'إسناد المشروع لمشرف').map((e) => e.at).sort().pop()
+const transferred = (r: ProjectRow): boolean | null => {
+  if (evOf(r, 'تحويل المشروع إلى مجال آخر').length || flowOf(r.id).pastStudies.length) return true
+  return flowOf(r.id).events.length ? false : null
+}
+const completionAsked = (r: ProjectRow): boolean | null => {
+  if (flowOf(r.id).events.some((e) => /طلب استكمال/.test(e.action)) || flowOf(r.id).versions.length > 1) return true
+  return flowOf(r.id).events.length ? false : null
+}
+const fromRecord = (pick: (r: ProjectRow) => boolean | null, fallback: (r: ProjectRow) => boolean) => {
+  let fell = false
+  const n = rows.filter((r) => { const v = pick(r); if (v === null) { fell = true; return fallback(r) } return v }).length
+  return { n, derived: fell }
+}
+const moved = fromRecord(transferred, (r) => j(r)?.transferred === true)
+const completions = fromRecord(completionAsked, (r) => (j(r)?.toEntity ?? 0) > 0)
 const studyDays = (r: ProjectRow): number | null => {
   const st = flowOf(r.id).study?.at
-  return st && r.submittedAt ? dayDiff(r.submittedAt, st) : null
+  const from = assignedAt(r) ?? r.submittedAt
+  return st && from ? dayDiff(from, st) : null
 }
 const studyRec = meanRec(studied, studyDays, (r) => j(r)?.study)
 const studyIn = (r: ProjectRow) => { const d = studyDays(r); return d !== null ? d * 24 <= studyLimit : within(j(r)?.study, studyLimit) }
@@ -322,6 +347,8 @@ const subsOk = subs.filter((x) => x.state === 'approved')
 /* The portfolios whose value is approved · the base of «utilization» */
 const pfLive = pfs.filter((pf) => pf.stage === 'approved' || pf.stage === 'closed')
 const pfMoneyAll = pfs.map((pf) => pfMoney(pf))
+/* Batch 7 · partners#46 · a portfolio's closing time · from the final report to the closing */
+const pfCloseDays = pfs.filter((pf) => pf.close.at && pf.close.closedAt).map((pf) => dayDiff(pf.close.at!, pf.close.closedAt!))
 const pfLate = pfs.filter((pf) => pf.stage === 'approved' && pf.plan.phases.length && pf.plan.phases.every((ph) => ph.to < today))
 
 return [
@@ -377,9 +404,9 @@ return [
       { no: 1, name: 'متوسط مدة دراسة المشروع', how: 'متوسط عدد الأيام من تاريخ إسناد المشروع إلى مشرف المنح حتى تسجيل التوصية.', unit: 'days', value: studyRec.value, better: 'down', target: null, derived: studyRec.derived, to: link('sort=waiting') },
       { no: 2, name: 'نسبة الالتزام بالمدة المستهدفة للدراسة', how: '(عدد المشاريع التي تمت دراستها ضمن المدة المحددة ÷ إجمالي المشاريع المدروسة) × 100%.', unit: 'pct', ...ratio(countOf(studied, studyIn), countOf(studied, studyHas)), better: 'up', target: null, derived: studyRec.derived, to: link('overdue=1') },
       { no: 3, name: 'متوسط عدد المشاريع التي تمت دراستها لكل مشرف', how: 'إجمالي المشاريع التي درسها المشرف خلال الفترة ÷ عدد المشرفين.', unit: 'avg', value: supervisors.size ? Math.round((studied.length / supervisors.size) * 10) / 10 : null, better: 'flat', target: null, to: P },
-      { no: 4, name: 'نسبة المشاريع المحولة بين المشرفين', how: '(عدد المشاريع المحولة إلى مشرف آخر ÷ إجمالي المشاريع) × 100%.', unit: 'pct', ...ratio(countOf(rows, (r) => j(r)?.transferred === true || flowOf(r.id).pastStudies.length > 0), rows.length), better: 'down', target: null, derived: true },
-      { no: 5, name: 'نسبة المشاريع المعادة لاستكمال البيانات', how: '(عدد المشاريع المعادة للجهة لاستكمال البيانات ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(rows, (r) => (j(r)?.toEntity ?? 0) > 0 || flowOf(r.id).versions.length > 1), rows.length), better: 'down', target: null, derived: true, to: link('stage=استكمال بيانات المشروع') },
-      { no: 6, name: 'نسبة المشاريع المكتملة البيانات من أول إرسال', how: '(عدد المشاريع التي لم تتطلب استكمال بيانات ÷ إجمالي المشاريع) × 100%.', unit: 'pct', ...ratio(countOf(rows, (r) => (j(r)?.toEntity ?? 0) === 0 && flowOf(r.id).versions.length <= 1), rows.length), better: 'up', target: null, derived: true },
+      { no: 4, name: 'نسبة المشاريع المحولة بين المشرفين', how: '(عدد المشاريع المحولة إلى مشرف آخر ÷ إجمالي المشاريع) × 100%.', unit: 'pct', ...ratio(moved.n, rows.length), better: 'down', target: null, derived: moved.derived },
+      { no: 5, name: 'نسبة المشاريع المعادة لاستكمال البيانات', how: '(عدد المشاريع المعادة للجهة لاستكمال البيانات ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(completions.n, rows.length), better: 'down', target: null, derived: completions.derived, to: link('stage=استكمال بيانات المشروع') },
+      { no: 6, name: 'نسبة المشاريع المكتملة البيانات من أول إرسال', how: '(عدد المشاريع التي لم تتطلب استكمال بيانات ÷ إجمالي المشاريع) × 100%.', unit: 'pct', ...ratio(rows.length - completions.n, rows.length), better: 'up', target: null, derived: completions.derived },
     ],
   },
 
@@ -395,7 +422,7 @@ return [
       { no: 2, name: 'نسبة الالتزام بالمدة المستهدفة للمراجعة', how: `(عدد المشاريع التي تمت مراجعتها ضمن المدة المستهدفة ÷ إجمالي المشاريع المستلمة) × 100%. والمدة ${countNoun(Math.round((ESC_LIMITS['approval.manager'] ?? 120) / 24), NOUN.day)} من آلية التصعيد.`, unit: 'pct', ...ratio(countOf(reachedManager, mgrIn), reachedManager.length), better: 'up', target: null, derived: mgrRec.derived, to: `${ROUTES.escalation}?proc=approval` },
       { no: 3, name: 'نسبة المشاريع المعادة إلى مشرف المنح', how: '(عدد المشاريع المعادة لاستكمال الدراسة ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(reachedManager, (r) => recsOf(r).some((x) => x.level === 'manager' && x.verdict === 'return') || (j(r)?.toSupervisor ?? 0) > 0), reachedManager.length), better: 'down', target: null, derived: true },
       { no: 4, name: 'نسبة المشاريع المحالة إلى المدير التنفيذي', how: '(عدد المشاريع المحالة إلى المدير التنفيذي ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(reachedManager, (r) => recsOf(r).some((x) => x.level === 'manager' && /recommend|refer/.test(x.verdict)) || (j(r)?.decidedBy !== null && j(r)?.decidedBy !== undefined && j(r)?.decidedBy !== 'مدير المنح')), reachedManager.length), better: 'flat', target: null, derived: true },
-      { no: 5, name: 'نسبة الرفض النهائي ضمن صلاحيات مدير المنح', how: '(عدد المشاريع المرفوضة ضمن سقف مدير المنح ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(rejected, (r) => recsOf(r).some((x) => x.level === 'manager' && x.verdict === 'final-reject') || (r.amountRequested <= capOf('manager') && !recsOf(r).length)), reachedManager.length), better: 'flat', target: null, to: link('support=مرفوض') },
+      { no: 5, name: 'نسبة الرفض النهائي ضمن صلاحيات مدير المنح', how: '(عدد المشاريع المرفوضة ضمن سقف مدير المنح ÷ إجمالي المشاريع المستلمة) × 100%.', unit: 'pct', ...ratio(countOf(rejected, (r) => recsOf(r).some((x) => x.level === 'manager' && x.verdict === 'final-reject') || (r.amountRequested <= APPROVAL_RULES.managerRejectUpTo && !recsOf(r).length)), reachedManager.length), better: 'flat', target: null, derived: rejected.some((r) => !recsOf(r).length), to: link('support=مرفوض') },
       { no: 6, name: 'نسبة المشاريع التي تم حجز ميزانيتها من أول مراجعة', how: '(عدد المشاريع التي تم حجز مخصصاتها المالية دون إعادة الدراسة ÷ إجمالي المشاريع الموافق عليها) × 100%.', unit: 'pct', ...ratio(heldFirst.ok, approved.length), better: 'up', target: null, derived: heldFirst.derived },
     ],
   },
@@ -426,7 +453,7 @@ return [
       { no: 1, name: 'متوسط مدة دراسة المشروع في اللجنة التنفيذية', how: 'متوسط عدد الأيام من تاريخ إحالة المشروع إلى اللجنة حتى صدور القرار النهائي · من الإحالة المسجّلة وقرار الجلسة.', unit: 'days', value: committeeRec.value, better: 'down', target: null, derived: committeeRec.derived, to: ROUTES.committee },
       { no: 2, name: 'متوسط مدة إصدار قرار اللجنة', how: 'متوسط الزمن من تاريخ انعقاد الاجتماع حتى اعتماد القرار في النظام.', unit: 'days', value: (() => { const m = decisionLag('committee'); return m === null ? null : Math.round(m) })(), gap: decisionLag('committee') === null ? 'لا جلسة للجنة صدر فيها قرار بعد · يُحسب من تاريخ الجلسة وتاريخ القرار.' : undefined, better: 'down', target: null, to: ROUTES.committee },
       { no: 3, name: 'نسبة المشاريع المعتمدة من أول عرض', how: '(عدد المشاريع التي تمت التوصية بالموافقة عليها من أول عرض ÷ إجمالي المشاريع المعروضة) × 100%.', unit: 'pct', ...ratio(committeeFirst.ok, committeeShown.length), better: 'up', target: null, derived: committeeFirst.derived, to: ROUTES.committee },
-      { no: 4, name: 'نسبة المشاريع المرفوضة', how: '(عدد المشاريع التي أوصت اللجنة برفضها ÷ إجمالي المشاريع المعروضة) × 100%.', unit: 'pct', ...(() => { const pool = decided.filter((r) => j(r)?.committee !== null); return ratio(countOf(pool, (r) => r.supportStatus === 'مرفوض'), pool.length) })(), better: 'down', target: null },
+      { no: 4, name: 'نسبة المشاريع المرفوضة', how: '(عدد المشاريع التي أوصت اللجنة برفضها ÷ إجمالي المشاريع المعروضة) × 100%.', unit: 'pct', ...(() => { const pool = committeePool; return ratio(countOf(pool, (r) => r.supportStatus === 'مرفوض' || committeeItems.get(r.id)?.outcome === 'reject'), pool.length) })(), better: 'down', target: null },
     ],
   },
 
@@ -549,6 +576,7 @@ return [
       { no: 4, name: 'نسبة تحقيق مستهدفات المستفيدين', how: '(المستفيدون الفعليون ÷ المستفيدون المستهدفون في المشاريع الفرعية المعتمدة) × 100%.', unit: 'pct', ...ratio(subsOk.reduce((n, x) => n + (x.exec?.reached ?? 0), 0), subsOk.reduce((n, x) => n + x.beneficiaries, 0), 'beneficiary'), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
       { no: 5, name: 'نسبة الصرف من المحافظ', how: '(المصروف المؤكد ÷ إجمالي قيمة المحافظ) × 100%.', unit: 'pct', ...ratio(pfMoneyAll.reduce((n, m) => n + m.confirmed, 0), pfMoneyAll.reduce((n, m) => n + m.total, 0), 'riyal'), better: 'up', target: null, ours: true, to: `${ROUTES.partners}?tab=finance` },
       { no: 6, name: 'نسبة المحافظ المتأخرة', how: '(المحافظ التي انقضت مراحل خطتها ولم تُغلق ÷ المحافظ المعتمدة) × 100%.', unit: 'pct', ...ratio(pfLate.length, pfs.filter((x) => x.stage === 'approved').length), better: 'down', target: null, ours: true, to: `${ROUTES.escalation}?proc=portfolio` },
+      { no: 7, name: 'متوسط مدة إغلاق المحفظة', how: 'متوسط الأيام من رفع التقرير الختامي للمحفظة حتى إغلاقها.', unit: 'days', value: (() => { const m = mean(pfCloseDays); return m === null ? null : Math.round(m) })(), gap: pfCloseDays.length ? undefined : 'لم تُغلق محفظة بعد · يُحسب من التقرير الختامي حتى الإغلاق.', better: 'down', target: null, ours: true, to: `${ROUTES.closings}` },
     ],
   },
 ]

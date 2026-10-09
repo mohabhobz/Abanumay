@@ -236,7 +236,7 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                       ...(docSources(one.doc).length > 1 && splitOf(one.doc, one.node.id)?.length ? [{
                         k: 'مصادر التمويل',
                         v: isolate(splitOf(one.doc, one.node.id)!.map((x) => `${sourceName(x.code)} ${nf.format(x.amount)} · متاح في البند ${nf.format(m.allocated ? Math.max(0, Math.round(m.available * x.amount / m.allocated)) : 0)} · رصيد المصدر في الميزانية ${nf.format(Math.max(0, sourceBalance(one.doc, x.code)))}`).join(' · ')),
-                      }] : []),
+                      }] : docSources(one.doc).length === 1 ? [{ k: 'مصدر التمويل', v: sourceName(docSources(one.doc)[0]!.code) }] : []),
                       { k: 'مبلغ المشروع', v: <Money sm>{project.amount}</Money> },
                       { k: 'يعتمده', v: tier.role },
                       {

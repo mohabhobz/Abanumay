@@ -276,7 +276,7 @@ export function CriteriaTab() {
               <FieldSelect
                 value={c.group}
                 label={`مجموعة ${c.label}`}
-                options={['فني', 'إداري']}
+                options={['فني', 'مالي', 'إداري']}
                 onChange={(v) => setD((x) => x.map((y, j) => (j === i ? { ...y, group: v as Criterion['group'] } : y)))}
               />
               <span className="pc-sp" />

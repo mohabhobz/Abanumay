@@ -3,7 +3,7 @@ import { actDay, asOf } from '@/data/clock'
 import type { LogEvent } from '@/data/mock/log'
 import { ESC_RULES } from '@/data/shared/escRules'
 import {
-  TODAY, planById, planOfProject, planRows, readyToClose,
+  TODAY, planById, planIssues, planOfProject, planRows, readyToClose,
 } from '@/data/mock/plans'
 import { projectRows } from '@/data/mock/projects'
 import { appFlowOf, planSuggested, setConfirmHook } from '@/data/approvals/store'
@@ -191,6 +191,9 @@ function applyOp(o: Op) {
     case 'send': {
       const p = planById(o.planId)
       if (!p || (p.stage !== 'draft' && p.stage !== 'returned')) return
+      /* Batch 7 · plans#10 · the store holds the rule too, not the screen alone · a plan with open
+         issues (dates, totals, the project's window) isn't sent */
+      if (planIssues(p, projectRows.find((x) => x.id === p.projectId)?.amountGranted ?? 0).length) return
       touch(p, 'supervisor')
       notify([p.owner, SUP()], p, `خطة بانتظار مراجعتك · ${p.projectName}`, o.actor === 'entity' ? 'أرسلتها الجهة' : 'أرسلها المشرف بالنيابة')
       return

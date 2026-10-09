@@ -148,7 +148,7 @@ export function auditRows(): AuditRow[] {
       id: `eh-${projectId}-${i}`, module: 'partners', ref: projectRows.find((p) => p.id === projectId)?.name ?? projectId, href: ROUTES.project(projectId), action: e.kind, by: e.by, at: e.at, note: e.note, fields: [],
     }))),
     ...accountEvents().map((e, i): AuditRow => ({
-      id: `acct-${i}`, module: 'entities', ref: e.account, href: ROUTES.entityRequests, action: e.created ? 'إنشاء حساب في بوابة الجهات' : 'تعيين كلمة مرور جديدة للحساب', by: e.account, at: e.at.replace('T', ' ').slice(0, 16), fields: [],
+      id: `acct-${i}`, module: 'entities', ref: e.account, href: e.id.startsWith('e-') ? ROUTES.entity(e.id.slice(2)) : ROUTES.entityRequests, action: e.created ? 'إنشاء حساب في بوابة الجهات' : 'تعيين كلمة مرور جديدة للحساب', by: e.account, at: e.at.replace('T', ' ').slice(0, 16), fields: [],
     })),
     ...perm.log.map((e): AuditRow => ({ id: `pm-${e.id}`, module: 'settings', ref: e.target, href: `${ROUTES.permissions}?tab=log`, action: e.change, by: e.by, at: e.at, fields: [] })),
     /* Re-audit 7 Oct · every save of the rules, with each value before and after · it used to be one

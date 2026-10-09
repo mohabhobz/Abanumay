@@ -6,6 +6,7 @@ import {
   PLAN_TONE, planClaimed, planDone, planPlanned, planSpi, planStageLabel,
   lateActivities, waitingReview,
 } from '@/data/mock/plans'
+import { stuckActivities } from '@/data/plans/store'
 import type { PlanRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
@@ -147,6 +148,22 @@ export const COLS: Col[] = [
     value: (p) => lateActivities(p).length,
     agg: 'sum',
     aggSay: 'نشاطًا متأخّرًا',
+  },
+  /* Batch 7 · plans#26 · stuck activities get their own column beside the late ones · the filter
+     existed, the column didn't */
+  {
+    key: 'stuck',
+    w: 118,
+    label: 'متعثّر',
+    n: true,
+    cell: (p) => {
+      const n = stuckActivities(p).length
+      return n > 0 ? <span className="over">{n}</span> : <span className="sub">0</span>
+    },
+    text: (p) => String(stuckActivities(p).length),
+    value: (p) => stuckActivities(p).length,
+    agg: 'sum',
+    aggSay: 'نشاطًا متعثّرًا',
   },
   {
     key: 'baseline',

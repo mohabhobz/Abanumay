@@ -41,6 +41,9 @@ export interface ApprovalRules {
   boardBy: RoleKey[]
   /** 5.4.24 · declared conflicts of interest · the person can't decide on the entity's projects */
   conflicts: { person: string; entityId: string; reason: string }[]
+  /** Batch 7 · approvals#19 · 5.4.11 · a recommendation to approve above the executive's cap goes to the
+      committee on its own, without passing the executive · off until the foundation decides */
+  autoReferAboveExec?: boolean
 }
 
 const DEFAULT: ApprovalRules = {

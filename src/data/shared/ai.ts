@@ -6,7 +6,7 @@ import { entityRows } from '@/data/mock/entities'
 import { regRows, type RegRequest } from '@/data/mock/registration'
 import { CITIES_BY_REGION } from '@/data/mock/taxonomy'
 import { planDone, planPlanned, planOfProject } from '@/data/mock/plans'
-import { reportGap } from '@/data/mock/closing'
+import { closeRows, reportGap } from '@/data/mock/closing'
 import { TEMPLATES } from '@/data/mock/agreementNew'
 import { MONEY_LIMITS } from '@/data/mock/settings'
 import type { EntityDetail } from '@/data/mock/entityDetail'
@@ -107,16 +107,33 @@ export function similarTo(p: ProjectRow, n = 3): ProjectRow[] {
     .sort((a, b) => a.d - b.d).slice(0, n).map((y) => y.x)
 }
 
+/** Batch 7 · cross#28 · the expected impact from what was really reached · the final reports'
+    beneficiaries against each project's own estimate, on the similar projects first, else on the
+    field's closed projects · a stated default only when nothing has reported yet */
+export function expectedImpact(p: ProjectRow): { expected: number; rate: number; basis: number; from: 'similar' | 'field' | 'default' } {
+  const rateOf = (rows: ProjectRow[]) => rows.map((x) => {
+    const c = closeRows.find((y) => y.projectId === x.id && y.stage !== 'draft')
+    return c && typeof c.report.beneficiaries === 'number' && x.beneficiaries ? c.report.beneficiaries / x.beneficiaries : null
+  }).filter((r): r is number => r !== null)
+  let rates = rateOf(similarTo(p, 6))
+  let from: 'similar' | 'field' | 'default' = 'similar'
+  if (!rates.length) { rates = rateOf(projectRows.filter((x) => x.field === p.field && x.id !== p.id)); from = 'field' }
+  if (!rates.length) from = 'default'
+  const rate = rates.length ? Math.min(1.2, avg(rates)) : 0.8
+  return { expected: Math.round((p.beneficiaries ?? 0) * rate), rate, basis: rates.length, from }
+}
+
 export function readSimilar(p: ProjectRow): Reading | null {
   const sim = similarTo(p)
   if (!sim.length) return null
   const done = sim.filter((x) => x.statusGroup === 'مكتمل')
-  const reachRate = done.length ? avg(done.map((x) => (x.beneficiaries ? 1 : 0))) : 0
-  const expected = Math.round((p.beneficiaries ?? 0) * (done.length ? Math.max(0.6, reachRate) : 0.8))
+  const ei = expectedImpact(p)
+  const expected = ei.expected
   return {
     id: 'ai-similar', kind: 'note', label: 'مشاريع مشابهة من جهات أخرى',
     text: `${sim.map((x) => `«${x.name}» لدى ${x.entityName} (${x.goal === p.goal ? 'نفس الهدف' : 'هدف مختلف'} · ${money(x.amountGranted || x.amountRequested)} · ${x.statusGroup})`).join('، ')}. `
-      + `${done.length ? `اكتمل منها ${done.length}، ` : 'لم يكتمل منها شيء بعد، '}والأثر المتوقع لهذا المشروع نحو ${nf.format(expected)} مستفيد فعلي من ${nf.format(p.beneficiaries ?? 0)} مستهدف.`,
+      + `${done.length ? `اكتمل منها ${done.length}، ` : 'لم يكتمل منها شيء بعد، '}والأثر المتوقع لهذا المشروع نحو ${nf.format(expected)} مستفيد فعلي من ${nf.format(p.beneficiaries ?? 0)} مستهدف `
+      + `(${ei.from === 'default' ? 'تقدير افتراضي · لم يُرسل تقرير ختامي لمشروع مشابه بعد' : `بنسبة التحقّق ${pct(Math.round(ei.rate * 100))} في ${countOf(ei.basis, NOUN.project)} ${ei.from === 'similar' ? 'مشابهًا' : 'من المجال'} أرسل تقريره الختامي`}).`,
     src: `مشاريع المجال نفسه لدى جهات أخرى · نسب الإنجاز المسجّلة · ${ADVISORY}`,
     to: `${ROUTES.projects}?field=${encodeURIComponent(p.field)}`, toLabel: 'مشاريع المجال',
   }
