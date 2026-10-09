@@ -140,7 +140,7 @@ export default function BudgetOpPage() {
           <div className="g2">
             <div className="col">
               <Glass>
-                <Head title="بيانات الطلب" meta={<span className="sub"><bdi>1.3.1–1.3.3</bdi></span>} />
+                <Head title="بيانات الطلب" meta={<span className="sub"><bdi>{/* doc 1.3.1–1.3.3 */}</bdi></span>} />
                 {editable ? (
                   <div className="regfields">
                     <label className="regf">

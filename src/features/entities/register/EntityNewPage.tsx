@@ -390,7 +390,7 @@ export default function EntityNewPage() {
                 )}
 
                 {dups.length > 0 && (
-                  <p className="bad cnote">بيانات مكرّرة: {dups.map((d) => `${d.label} مع «${d.who}»`).join(' · ')} · لا تُحفظ جهة مكرّرة (2.4.10)</p>
+                  <p className="bad cnote">بيانات مكرّرة: {dups.map((d) => `${d.label} مع «${d.who}»`).join(' · ')} · لا تُحفظ جهة مكرّرة{/* doc 2.4.10 */}</p>
                 )}
 
                 <div className="regfoot">

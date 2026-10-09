@@ -99,7 +99,7 @@ export default function PlanNewPage() {
                 في المحرّر بعد الفتح
               </p>
             </div>
-            <Tag tone="mute">BPD-012</Tag>
+            {/* doc BPD-012 */}
           </header>
 
           <Glass>
@@ -188,7 +188,7 @@ export default function PlanNewPage() {
                   <label className="regf regf-w">
                     <span className="lb">سبب فتح الخطة<b className="regf-r" aria-label="إلزامي">*</b></span>
                     <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: تعدّد مراحل التنفيذ وتوزّعها على فصلين دراسيين" aria-label="سبب فتح الخطة" /></span>
-                    <span className="sub regf-h">لا يوجد قرار موثّق بأن المشروع يتطلب خطة · يُسجَّل الفتح قرارًا باسمك وسببه (12.4.33)</span>
+                    <span className="sub regf-h">لا يوجد قرار موثّق بأن المشروع يتطلب خطة · يُسجَّل الفتح قرارًا باسمك وسببه{/* doc 12.4.33 */}</span>
                   </label>
                 )}
 

@@ -36,7 +36,7 @@ export function ApprovalRulesTab() {
   return (
     <>
       <Glass>
-        <Head title="مدير المنح" meta={<span className="sub"><bdi>4.3.1 · 4.3.2 · 4.4.19 · 4.4.20</bdi></span>} />
+        <Head title="مدير المنح" meta={<span className="sub"><bdi>{/* doc 4.3.1 · 4.3.2 · 4.4.19 · 4.4.20 */}</bdi></span>} />
         <Switch
           label="صلاحية الموافقة النهائية لمدير المنح"
           note={<>عند التفعيل يعتمد نهائيًا حتى <Num>{capOf('manager')}</Num> (حدّه في <Link className="lnk" to={`${ROUTES.projectSettings}?tab=approval`}>مصفوفة الاعتماد</Link>) · وعند الإيقاف أو التجاوز يُخفى الخيار ويُحال المشروع</>}
@@ -50,7 +50,7 @@ export function ApprovalRulesTab() {
             <CfgNum value={d.managerRejectUpTo} label="حد الرفض النهائي" suffix="ريال" onChange={(n) => put('managerRejectUpTo', n)} />
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>يُقترح «يتطلب خطة» من مبلغ</b><span className="sub">أو مدة تتجاوز السنة · ويختار المدير (4.4.2)</span></span>
+            <span className="cfgl"><b>يُقترح «يتطلب خطة» من مبلغ</b><span className="sub">أو مدة تتجاوز السنة · ويختار المدير{/* doc 4.4.2 */}</span></span>
             <span className="pc-sp" />
             <CfgNum value={d.planFrom} label="مبلغ اقتراح الخطة" suffix="ريال" onChange={(n) => put('planFrom', n)} />
           </li>
@@ -58,10 +58,10 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="المدير التنفيذي" meta={<span className="sub"><bdi>5.3.1 · 5.4.27-b · 5.4.28</bdi></span>} />
+        <Head title="المدير التنفيذي" meta={<span className="sub"><bdi>{/* doc 5.3.1 · 5.4.27-b · 5.4.28 */}</bdi></span>} />
         <Switch
           label="إحالة تلقائية للجنة فوق حد المدير التنفيذي"
-          note="عند التفعيل تذهب توصية مدير المنح بالموافقة فوق حد المدير التنفيذي إلى اللجنة مباشرة · بانتظار قرار المؤسسة (5.4.11)"
+          note={/* doc 5.4.11 */ "عند التفعيل تذهب توصية مدير المنح بالموافقة فوق حد المدير التنفيذي إلى اللجنة مباشرة · بانتظار قرار المؤسسة"}
           on={Boolean(d.autoReferAboveExec)}
           onChange={(v) => put('autoReferAboveExec', v)}
         />
@@ -85,7 +85,7 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="اللجنة التنفيذية" meta={<span className="sub"><bdi>6.4.19 – 6.4.21</bdi> · حدّها في المصفوفة <Num>{capOf('committee')}</Num></span>} />
+        <Head title="اللجنة التنفيذية" meta={<span className="sub"><bdi>{/* doc 6.4.19 – 6.4.21 */}</bdi> · حدّها في المصفوفة <Num>{capOf('committee')}</Num></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>عدد المشاريع المعتمدة للجهة</b><span className="sub">صفر = بلا حد</span></span>
@@ -106,7 +106,7 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="الجلسات والتصويت" meta={<span className="sub"><bdi>6.4.6 · 7.4.6</bdi></span>} />
+        <Head title="الجلسات والتصويت" meta={<span className="sub"><bdi>{/* doc 6.4.6 · 7.4.6 */}</bdi></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>أعضاء اللجنة التنفيذية</b></span><span className="pc-sp" />
@@ -142,7 +142,7 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="الاستراتيجية" meta={<span className="sub"><bdi>5.4.4</bdi></span>} />
+        <Head title="الاستراتيجية" meta={<span className="sub"><bdi>{/* doc 5.4.4 */}</bdi></span>} />
         <Switch
           label="لا يُعتمد مشروع خارج المجالات الممولة والتوجهات النشطة"
           note="يُقرأ من ميزانية السنة المعتمدة وتوجهاتها الاستراتيجية في إعدادات الميزانية"
@@ -152,7 +152,7 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="تعارض المصالح المعلن" meta={<span className="sub"><bdi>5.4.24</bdi> · <Num>{d.conflicts.length}</Num></span>} />
+        <Head title="تعارض المصالح المعلن" meta={<span className="sub"><bdi>{/* doc 5.4.24 */}</bdi> · <Num>{d.conflicts.length}</Num></span>} />
         <ul className="cfglist">
           {d.conflicts.map((c, i) => (
             <li key={`${c.person}-${c.entityId}`}>

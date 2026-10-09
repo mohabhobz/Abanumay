@@ -67,7 +67,7 @@ export function readPayRequest(r: PayRequest): Reading[] {
     }
   }
   if (r.ai) out.push({ id: 'pr-ai', kind: 'note', label: 'تحليل التقارير', text: r.ai, src: 'خطوة 6 · استرشادي (قاعدة 20)' })
-  if (r.exceptions?.length) out.push({ id: 'pr-ex', kind: 'note', label: 'استثناءات مسجّلة', metric: { value: String(r.exceptions.length), unit: 'قيد' }, text: r.exceptions.map((x) => x.text).join(' · '), src: '9.1.input-6' })
+  if (r.exceptions?.length) out.push({ id: 'pr-ex', kind: 'note', label: 'استثناءات مسجّلة', metric: { value: String(r.exceptions.length), unit: 'قيد' }, text: r.exceptions.map((x) => x.text).join(' · '), src: /* doc 9.1.input-6 */ '' })
   return out
 }
 
@@ -76,19 +76,19 @@ export function readCase(c: CaseRow): Reading[] {
   const out: Reading[] = []
   if (c.kind === 'stop') {
     const ph = stopPhase(c.projectId)
-    out.push({ id: 'cs-phase', kind: 'note', label: 'موضع الإيقاف', text: ph.say, src: '10.9.1 – 10.9.4' })
+    out.push({ id: 'cs-phase', kind: 'note', label: 'موضع الإيقاف', text: ph.say, src: /* doc 10.9.1 – 10.9.4 */ '' })
     if (c.settlement && c.settlement.actual == null) {
       const miss = [!c.settlement.report && 'تقرير التنفيذ', !c.settlement.invoices && 'الفواتير'].filter(Boolean)
-      out.push({ id: 'cs-settle', kind: 'flag', label: 'التسوية', text: miss.length ? `بانتظار الجهة: ${miss.join(' و')}.` : 'وصل التقرير والفواتير · يعتمد المشرف المصروف الفعلي.', src: '10.9.3' })
+      out.push({ id: 'cs-settle', kind: 'flag', label: 'التسوية', text: miss.length ? `بانتظار الجهة: ${miss.join(' و')}.` : 'وصل التقرير والفواتير · يعتمد المشرف المصروف الفعلي.', src: /* doc 10.9.3 */ '' })
     }
   }
   if (c.kind !== 'stop' && c.newAmount !== undefined) {
     const diff = c.newAmount - c.granted
-    out.push({ id: 'cs-val', kind: 'note', label: CASE_KIND_SAY[c.kind], metric: { value: nf.format(Math.abs(diff)), unit: 'ريال' }, text: `من ${nf.format(c.granted)} إلى ${nf.format(c.newAmount)} · والمصروف ${nf.format(c.paid)}.`, src: c.kind === 'reduce' ? '10.9.5' : '10.9.6' })
+    out.push({ id: 'cs-val', kind: 'note', label: CASE_KIND_SAY[c.kind], metric: { value: nf.format(Math.abs(diff)), unit: 'ريال' }, text: `من ${nf.format(c.granted)} إلى ${nf.format(c.newAmount)} · والمصروف ${nf.format(c.paid)}.`, src: c.kind === 'reduce' ? /* doc 10.9.5 */ '' : /* doc 10.9.6 */ '' })
   }
   if (c.recovery) {
     const left = recoveryLeft(c.recovery)
-    out.push({ id: 'cs-rec', kind: left > 0 ? 'flag' : 'note', label: 'الاسترداد', metric: { value: nf.format(left), unit: 'ريال متبقٍّ' }, text: `من ${nf.format(c.recovery.due)} مطالَب بها · ${c.recovery.receipts.length} عملية استلام.`, src: '10.9.8', bar: { value: c.recovery.due - left, limit: c.recovery.due, valueLabel: 'المستلم', limitLabel: 'المطالَب', unit: 'ريال' } })
+    out.push({ id: 'cs-rec', kind: left > 0 ? 'flag' : 'note', label: 'الاسترداد', metric: { value: nf.format(left), unit: 'ريال متبقٍّ' }, text: `من ${nf.format(c.recovery.due)} مطالَب بها · ${c.recovery.receipts.length} عملية استلام.`, src: /* doc 10.9.8 */ '', bar: { value: c.recovery.due - left, limit: c.recovery.due, valueLabel: 'المستلم', limitLabel: 'المطالَب', unit: 'ريال' } })
   }
   return out
 }

@@ -222,7 +222,7 @@ export const projectIssues = (val: PValues): PIssue[] => {
     out.push({
       key: 'cap',
       say: `قدّمت «${ent.name}» ${countOf(ent.open, NOUN.project)} في هذه الدورة، والحدّ ${countOf(entityCap(), NOUN.project)}. لا يُقبل منها طلب آخر حتى الدورة القادمة.`,
-      rule: 'قاعدة 3.4.12',
+      rule: /* doc 3.4.12 */ '',
     })
   }
   if (ent?.inactive) {
@@ -240,23 +240,23 @@ export const projectIssues = (val: PValues): PIssue[] => {
     const det = entityDetail(er)
     const expired = det.docs.filter((d) => d.expired)
     if (expired.length) {
-      out.push({ key: 'docs-exp', say: `في ملف «${er.name}» ${countOf(expired.length, NOUN.doc)} منتهية الصلاحية (${expired.map((d) => d.name).join('، ')}). تُحدَّث من ملف الجهة قبل التقديم.`, rule: 'قاعدة 3.4.8' })
+      out.push({ key: 'docs-exp', say: `في ملف «${er.name}» ${countOf(expired.length, NOUN.doc)} منتهية الصلاحية (${expired.map((d) => d.name).join('، ')}). تُحدَّث من ملف الجهة قبل التقديم.`, rule: /* doc 3.4.8 */ '' })
     }
     if (!det.banks.some((b) => b.status === 'مفعل')) {
-      out.push({ key: 'bank', say: `لا يوجد لـ«${er.name}» حساب بنكي مفعّل · يلزم حساب معتمد لاستلام المنحة.`, rule: 'قاعدة 3.4.9' })
+      out.push({ key: 'bank', say: `لا يوجد لـ«${er.name}» حساب بنكي مفعّل · يلزم حساب معتمد لاستلام المنحة.`, rule: /* doc 3.4.9 */ '' })
     }
   }
 
   /* The portal accepts requests only inside the cycle's period (3.2.3) */
   if (!inPeriod()) {
-    out.push({ key: 'period', say: `فترة التقديم من ${CYCLE.from} إلى ${CYCLE.to} · لا يُقبل طلب جديد خارجها.`, rule: 'قاعدة 3.2.3' })
+    out.push({ key: 'period', say: `فترة التقديم من ${CYCLE.from} إلى ${CYCLE.to} · لا يُقبل طلب جديد خارجها.`, rule: /* doc 3.2.3 */ '' })
   }
   if (val.field && !openFields().includes(val.field)) {
-    out.push({ key: 'field', say: `مجال «${val.field}» غير مفتوح في هذه الدورة.`, rule: 'قاعدة 3.4.6' })
+    out.push({ key: 'field', say: `مجال «${val.field}» غير مفتوح في هذه الدورة.`, rule: /* doc 3.4.6 */ '' })
   }
 
   if (val.startAt && val.startAt < TODAY) {
-    out.push({ key: 'dates', say: 'بداية التنفيذ قبل تاريخ اليوم · اختر تاريخًا قادمًا.', rule: 'قاعدة 3.4.13' })
+    out.push({ key: 'dates', say: 'بداية التنفيذ قبل تاريخ اليوم · اختر تاريخًا قادمًا.', rule: /* doc 3.4.13 */ '' })
   }
 
   const asked = Number(val.amountRequested) || 0

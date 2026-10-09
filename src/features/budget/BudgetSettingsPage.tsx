@@ -267,7 +267,7 @@ function DirectionsTab() {
   return (
     <>
       <Glass>
-        <Head title="توجه استراتيجي جديد" meta={<span className="sub"><bdi>1.1.input-1</bdi></span>} />
+        <Head title="توجه استراتيجي جديد" meta={<span className="sub"><bdi>{/* doc 1.1.input-1 */}</bdi></span>} />
         <div className="cfgrow">
           <label className="regf">
             <span className="lb">اسم التوجه<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -322,7 +322,7 @@ function LimitsTab() {
   return (
     <>
       <Glass className="tblcard">
-        <Head title="حدود الاعتماد والصرف لكل مستوى إداري" meta={<span className="sub"><bdi>1.1.input-6</bdi></span>} />
+        <Head title="حدود الاعتماد والصرف لكل مستوى إداري" meta={<span className="sub"><bdi>{/* doc 1.1.input-6 */}</bdi></span>} />
         <div className="tblwrap">
           <table className="tbl">
             <thead>
@@ -386,7 +386,7 @@ function RulesTab() {
   return (
     <>
       <Glass>
-        <Head title="مسار الاعتماد" meta={<span className="sub"><bdi>1.2.8–1.2.11 · 1.3.6–1.3.9</bdi></span>} />
+        <Head title="مسار الاعتماد" meta={<span className="sub"><bdi>{/* doc 1.2.8–1.2.11 · 1.3.6–1.3.9 */}</bdi></span>} />
         <ul className="cfglist">
           {roles('prepareBy', 'إعداد الميزانية وطلبات العمليات', 'صاحب الصلاحية · يُنشئ ويرسل')}
           {roles('managerBy', 'مراجعة مدير المنح', 'موافقة وإحالة للإدارة المالية · أو إعادة للمُعِدّ')}
@@ -397,7 +397,7 @@ function RulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="سياسة المناقلة" meta={<span className="sub"><bdi>1.3.5</bdi></span>} />
+        <Head title="سياسة المناقلة" meta={<span className="sub"><bdi>{/* doc 1.3.5 */}</bdi></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>أقصى ما ينقله طلب واحد</b><span className="sub">من مخصص البند المنقول منه</span></span>
@@ -413,7 +413,7 @@ function RulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="الحجز والارتباط المالي" meta={<span className="sub"><bdi>5.4.19 · 1.4.27 · 1.4.28 · 1.4.56</bdi></span>} />
+        <Head title="الحجز والارتباط المالي" meta={<span className="sub"><bdi>{/* doc 5.4.19 · 1.4.27 · 1.4.28 · 1.4.56 */}</bdi></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>مرحلة الحجز على الميزانية</b><span className="sub">وفق السياسة المالية · ويثبت الحجز نهائيًّا عند الاعتماد في الحالتين</span></span>
@@ -435,7 +435,7 @@ function RulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="استقبال المشاريع" meta={<span className="sub"><bdi>1.1.output-5 · 1.4.37</bdi></span>} />
+        <Head title="استقبال المشاريع" meta={<span className="sub"><bdi>{/* doc 1.1.output-5 · 1.4.37 */}</bdi></span>} />
         <Switch
           label="لا يُفتح التقديم إلا على المجالات الممولة في ميزانية معتمدة"
           note="المجال الذي لا بند نشطًا له في ميزانية السنة المعتمدة يُغلق في دورة الاستقبال · وتظهر للجهة الأهداف النشطة وحدها"

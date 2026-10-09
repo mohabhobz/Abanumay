@@ -65,7 +65,7 @@ export function AgrActionDock({ who, agreement, actions, note, onNote, stop, sai
           <div className="rowf gp-2">
             {noteFirst(actions).map((x) => {
               const why = x.needsNote && !note.trim()
-                ? 'اكتب السبب أولًا · 8.2.15'
+                ? /* doc 8.2.15 */ 'اكتب السبب أولًا'
                 : x.kind === 'btn-p' && !x.needsFile && stop ? stop : ''
               if (x.needsFile) {
                 return (

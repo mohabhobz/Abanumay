@@ -255,14 +255,14 @@ function AgreementView({ a }: { a: AgreementRow }) {
 
           {!asEntity && a.stage !== 'active' && (
             <p className="sub cnote tcen">
-              مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «اعتماد الإتفاقية» حتى سريانها، ولا ينتقل للتنفيذ عند إلغائها (8.4.26 · 8.4.27).
-            </p>
+              مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «اعتماد الإتفاقية» حتى سريانها، ولا ينتقل للتنفيذ عند إلغائها.
+            {/* doc 8.4.26 · 8.4.27 */}</p>
           )}
 
           {edit && (
             <Glass>
               <Head title="تعديل المسودة" meta={dirty ? <Tag tone="warn">تعديلات غير محفوظة</Tag> : <Tag tone="mute">محفوظة</Tag>} />
-              <p className="sub cnote">{a.stage === 'returned' ? 'أُعيدت للتعديل · عدّل البنود أو الجدول أو الملاحق ثم أعد الإرسال إلى مدير المنح (8.2.16 · 8.2.17).' : 'المسودة عند مشرف المنح · تُستكمل هنا ثم تُرسل إلى مدير المنح.'}</p>
+              <p className="sub cnote">{a.stage === 'returned' ? /* doc 8.2.16 · 8.2.17 */ 'أُعيدت للتعديل · عدّل البنود أو الجدول أو الملاحق ثم أعد الإرسال إلى مدير المنح.' : 'المسودة عند مشرف المنح · تُستكمل هنا ثم تُرسل إلى مدير المنح.'}</p>
               <div className="regfields">
                 <label className="regf"><span className="lb">اسم الموقّع</span><span className="fld"><input value={signer.name} onChange={(e) => setSigner({ ...signer, name: e.target.value })} aria-label="اسم الموقّع" /></span></label>
                 <label className="regf"><span className="lb">صفة الموقّع</span><span className="fld"><input value={signer.title} onChange={(e) => setSigner({ ...signer, title: e.target.value })} aria-label="صفة الموقّع" /></span></label>
@@ -283,7 +283,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
                     </li>
                   ))}
                 </ul>
-              ) : <p className="sub cnote">النوع <b>{a.kind}</b> ثابت منذ إرسال هذا الإصدار للاعتماد · تغييره بإصدار جديد (8.4.3).</p>}
+              ) : <p className="sub cnote">النوع <b>{a.kind}</b> ثابت منذ إرسال هذا الإصدار للاعتماد · تغييره بإصدار جديد.{/* doc 8.4.3 */}</p>}
               <div className="apv-row mt-3">
                 <button type="button" className="btn btn-2" disabled={!dirty} onClick={saveDraft}>احفظ التعديلات</button>
                 {dirty && <button type="button" className="btn btn-ghost" onClick={() => { setRows(asDraft(a.payments)); setClauses(structuredClone(f.clauses)); setDocs(structuredClone(a.docs)); setSigner({ ...a.signer }); setTemplate(a.template); setKind(a.kind) }}>تراجع</button>}
@@ -294,7 +294,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
           {/* The schedule being edited takes the full width · its fields don't fit half a page */}
           {edit && (
             <Glass className="tblcard">
-              <Head title="جدول صرف الدفعات" meta={balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن · 8.2.12</Tag>} />
+              <Head title="جدول صرف الدفعات" meta={balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن{/* doc 8.2.12 */}</Tag>} />
               <ScheduleEditor rows={rows} amount={a.amount} onChange={setRows} />
             </Glass>
           )}
@@ -303,7 +303,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
             <div className="col">
               {!edit && (
                 <Glass className="tblcard">
-                  <Head title="جدول صرف الدفعات" meta={balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن · 8.2.12</Tag>} />
+                  <Head title="جدول صرف الدفعات" meta={balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن{/* doc 8.2.12 */}</Tag>} />
                   <ScheduleEditor rows={asDraft(a.payments)} amount={a.amount} readOnly />
                 </Glass>
               )}
@@ -355,7 +355,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
               <SignaturesCard a={a} />
 
               <Glass>
-                <Head title="النموذج والنوع" meta={<span className="sub"><bdi>8.2.4 · 8.2.5 · 8.4.3</bdi></span>} />
+                <Head title="النموذج والنوع" meta={<span className="sub"><bdi>{/* doc 8.2.4 · 8.2.5 · 8.4.3 */}</bdi></span>} />
                 <KV rows={[
                   { k: 'نوع الاتفاقية', v: a.kind },
                   { k: 'النموذج', v: a.kind === 'ورقية' ? (f.paperCopy ?? 'نسخة ورقية') : a.template },
@@ -387,7 +387,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
                       </button>
                     </div>
                   )}
-                  {a.stage === 'active' && <p className="sub cnote">لا تُعدَّل الاتفاقية بعد التوقيع · التعديل إصدار جديد يمرّ بدورة الاعتماد كاملة، ويبقى الإصدار النافذ ساريًا حتى سريانه (8.4.17).</p>}
+                  {a.stage === 'active' && <p className="sub cnote">لا تُعدَّل الاتفاقية بعد التوقيع · التعديل إصدار جديد يمرّ بدورة الاعتماد كاملة، ويبقى الإصدار النافذ ساريًا حتى سريانه.{/* doc 8.4.17 */}</p>}
                 </VersionsCard>
               )}
             </div>

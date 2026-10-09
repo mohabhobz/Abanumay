@@ -299,7 +299,7 @@ export default function RequestForm() {
                       {permit ? (
                         <p className="sub cnote">
                           يصدر الإذن دون مرفقات · ترفع الجهة التقارير والمستندات من بوابتها، ثم يعود
-                          الطلب إلى مشرف المنح (<bdi>9.1.input-4</bdi>).
+                          الطلب إلى مشرف المنح (<bdi>{/* doc 9.1.input-4 */}</bdi>).
                         </p>
                       ) : (
                         <>
@@ -427,7 +427,7 @@ export default function RequestForm() {
                       ...missing.map((n) => ({ id: `rf-${n.kind}`, kind: 'flag' as const, label: 'ينقص قبل الإرسال', text: n.label, src: 'قاعدة 3' })),
                       ...(over ? [{ id: 'rf-over', kind: 'flag' as const, label: 'قيمة الطلب', text: `أعلى من الدفعة المعتمدة ${nf.format(picked.amount)}.`, src: 'قاعدة 5' }] : []),
                       ...(overGrant ? [{ id: 'rf-grant', kind: 'flag' as const, label: 'سقف المنحة', text: `يتجاوز المتبقي من المنحة ${nf.format(Math.max(0, left))}.`, src: 'قاعدة 14' }] : []),
-                      ...(needAck ? [{ id: 'rf-ack', kind: 'flag' as const, label: 'إقرار الممثل', text: 'أقرّ بصحة البيانات بصفتك ممثل الجهة المخوّل.', src: '9.1.input-3' }] : []),
+                      ...(needAck ? [{ id: 'rf-ack', kind: 'flag' as const, label: 'إقرار الممثل', text: 'أقرّ بصحة البيانات بصفتك ممثل الجهة المخوّل.', src: /* doc 9.1.input-3 */ '' }] : []),
                     ]}
                   />
                 </div>
@@ -467,7 +467,7 @@ export default function RequestForm() {
                     : overGrant ? 'القيمة تتجاوز المتبقي من المنحة · قاعدة 14'
                     : missing.length ? `ينقص ${missing.length} من المتطلبات · قاعدة 3`
                     : needAck ? 'أقرّ بصفتك ممثل الجهة المخوّل أولًا'
-                    : permit ? '9.1.input-4' : 'خطوة 2 في الوثيقة'
+                    : permit ? /* doc 9.1.input-4 */ '' : 'خطوة 2 في الوثيقة'
                   }
                   onClick={send}
                 >

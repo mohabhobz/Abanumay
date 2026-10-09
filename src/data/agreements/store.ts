@@ -204,40 +204,40 @@ export function agrIssues(v: {
   paperCopy?: string
 }): AgrIssue[] {
   const out: AgrIssue[] = []
-  if (!v.kind) out.push({ key: 'kind', say: 'حدّد نوع الاتفاقية (ورقية أو إلكترونية).', rule: '8.2.4' })
-  if (v.kind === 'إلكترونية' && !v.template) out.push({ key: 'template', say: 'اختر النموذج المعتمد للاتفاقية الإلكترونية.', rule: '8.2.5' })
-  if (v.kind === 'ورقية' && !v.paperCopy) out.push({ key: 'paper', say: 'ارفع نسخة الاتفاقية الورقية.', rule: '8.2.30' })
-  if (!v.signer.name.trim() || !v.signer.title.trim()) out.push({ key: 'signer', say: 'أدخل اسم ممثل الجهة المخوّل بالتوقيع وصفته.', rule: '8.1.input-3' })
-  if (v.amount !== v.reserved) out.push({ key: 'reserved', say: `قيمة الاتفاقية ${nf.format(v.amount)} والمحجوز في الميزانية ${nf.format(v.reserved)} · يلزم أن يتطابقا.`, rule: '8.4.9' })
+  if (!v.kind) out.push({ key: 'kind', say: 'حدّد نوع الاتفاقية (ورقية أو إلكترونية).', rule: /* doc 8.2.4 */ '' })
+  if (v.kind === 'إلكترونية' && !v.template) out.push({ key: 'template', say: 'اختر النموذج المعتمد للاتفاقية الإلكترونية.', rule: /* doc 8.2.5 */ '' })
+  if (v.kind === 'ورقية' && !v.paperCopy) out.push({ key: 'paper', say: 'ارفع نسخة الاتفاقية الورقية.', rule: /* doc 8.2.30 */ '' })
+  if (!v.signer.name.trim() || !v.signer.title.trim()) out.push({ key: 'signer', say: 'أدخل اسم ممثل الجهة المخوّل بالتوقيع وصفته.', rule: /* doc 8.1.input-3 */ '' })
+  if (v.amount !== v.reserved) out.push({ key: 'reserved', say: `قيمة الاتفاقية ${nf.format(v.amount)} والمحجوز في الميزانية ${nf.format(v.reserved)} · يلزم أن يتطابقا.`, rule: /* doc 8.4.9 */ '' })
 
-  if (!v.payments.length) out.push({ key: 'empty', say: 'لا توجد دفعات · الجدول جزء من الاتفاقية لا ملحق بها.', rule: '8.2.11' })
+  if (!v.payments.length) out.push({ key: 'empty', say: 'لا توجد دفعات · الجدول جزء من الاتفاقية لا ملحق بها.', rule: /* doc 8.2.11 */ '' })
   const total = v.payments.reduce((s, p) => s + (p.amount || 0), 0)
   if (v.payments.length && total !== v.amount) {
     const gap = v.amount - total
-    out.push({ key: 'sum', say: gap > 0 ? `مجموع الدفعات ينقص عن قيمة المنحة ${nf.format(gap)}.` : `مجموع الدفعات يزيد على قيمة المنحة ${nf.format(-gap)}.`, rule: '8.2.12' })
+    out.push({ key: 'sum', say: gap > 0 ? `مجموع الدفعات ينقص عن قيمة المنحة ${nf.format(gap)}.` : `مجموع الدفعات يزيد على قيمة المنحة ${nf.format(-gap)}.`, rule: /* doc 8.2.12 */ '' })
   }
   const noReq = v.payments.filter((p) => !(p.requirement ?? '').trim()).map((p) => p.no)
-  if (noReq.length) out.push({ key: 'req', say: `الدفعة ${noReq.join('، ')} بلا شرط استحقاق.`, rule: '8.1.output-4' })
+  if (noReq.length) out.push({ key: 'req', say: `الدفعة ${noReq.join('، ')} بلا شرط استحقاق.`, rule: /* doc 8.1.output-4 */ '' })
   for (let i = 1; i < v.payments.length; i++) {
     const a = v.payments[i - 1], b = v.payments[i]
-    if (a.dueAt && b.dueAt && b.dueAt < a.dueAt) { out.push({ key: 'order', say: `تاريخ الدفعة ${b.no} يسبق تاريخ الدفعة ${a.no}.`, rule: '8.2.12' }); break }
+    if (a.dueAt && b.dueAt && b.dueAt < a.dueAt) { out.push({ key: 'order', say: `تاريخ الدفعة ${b.no} يسبق تاريخ الدفعة ${a.no}.`, rule: /* doc 8.2.12 */ '' }); break }
   }
   /* The dates against the implementation plan · a payment after the project ends has nothing to pay for */
   const w = windowOf(v.projectId)
   const late = v.payments.filter((p) => p.dueAt && w.to && p.dueAt > w.to).map((p) => p.no)
   const early = v.payments.filter((p) => p.dueAt && w.from && p.dueAt < w.from).map((p) => p.no)
-  if (late.length) out.push({ key: 'late', say: `الدفعة ${late.join('، ')} بعد نهاية التنفيذ في الخطة (${w.to}).`, rule: '8.2.12' })
-  if (early.length > 1) out.push({ key: 'early', say: `الدفعات ${early.join('، ')} قبل بداية التنفيذ (${w.from}) · الدفعة الأولى وحدها تسبق البداية.`, rule: '8.2.12' })
+  if (late.length) out.push({ key: 'late', say: `الدفعة ${late.join('، ')} بعد نهاية التنفيذ في الخطة (${w.to}).`, rule: /* doc 8.2.12 */ '' })
+  if (early.length > 1) out.push({ key: 'early', say: `الدفعات ${early.join('، ')} قبل بداية التنفيذ (${w.from}) · الدفعة الأولى وحدها تسبق البداية.`, rule: /* doc 8.2.12 */ '' })
 
   for (const k of REQUIRED_CLAUSES) {
-    if (!v.clauses.some((c) => c.kind === k && c.body.trim())) out.push({ key: `cl-${k}`, say: `لا يوجد «${CLAUSE_SAY[k]}» في بنود الاتفاقية.`, rule: '8.2.10' })
+    if (!v.clauses.some((c) => c.kind === k && c.body.trim())) out.push({ key: `cl-${k}`, say: `لا يوجد «${CLAUSE_SAY[k]}» في بنود الاتفاقية.`, rule: /* doc 8.2.10 */ '' })
   }
   /* The approval's special conditions before the agreement are mandatory terms (5.4.16) */
   const conds = appFlowOf(v.projectId).conditions.filter((c) => c.when === 'agreement' || c.when === 'firstPay')
   const missingCond = conds.filter((c) => !v.clauses.some((x) => x.kind === 'condition' && x.body.includes(c.text)))
-  if (missingCond.length) out.push({ key: 'cond', say: `شروط الاعتماد غير مدرجة: ${missingCond.map((c) => c.text).join('، ')}.`, rule: '8.2.13' })
+  if (missingCond.length) out.push({ key: 'cond', say: `شروط الاعتماد غير مدرجة: ${missingCond.map((c) => c.text).join('، ')}.`, rule: /* doc 8.2.13 */ '' })
   for (const n of REQUIRED_ANNEXES) {
-    if (!v.docs.some((d) => d.kind === n || d.name.includes(n.split(' ')[0]))) out.push({ key: 'annex', say: `الملحق «${n}» غير مرفوع.`, rule: '8.2.10' })
+    if (!v.docs.some((d) => d.kind === n || d.name.includes(n.split(' ')[0]))) out.push({ key: 'annex', say: `الملحق «${n}» غير مرفوع.`, rule: /* doc 8.2.10 */ '' })
   }
   return out
 }

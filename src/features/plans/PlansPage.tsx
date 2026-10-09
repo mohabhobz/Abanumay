@@ -198,7 +198,7 @@ export default function PlansPage() {
             <Stat
               label="الخطط الملتزمة بجدولها"
               value={<Num>{pct(k.onTrackPct)}</Num>}
-              note="أداء الجدول ≥ 0.95 · مشتق من BPD-012"
+              note={/* doc BPD-012 */ "أداء الجدول ≥ 0.95 · مشتق من"}
               bar={{ w: `${k.onTrackPct}%`, c: 'var(--teal)' }}
             />
             <Stat

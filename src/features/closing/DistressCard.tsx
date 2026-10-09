@@ -45,7 +45,7 @@ export function DistressCard({ projectId }: { projectId: string }) {
           <Link className="btn btn-2 btn-sm" to={ROUTES.distressNew(projectId, 'increase')}>زيادة القيمة</Link>
         </div>
       )}
-      <p className="sub cnote">يرفع المشرف القرار، ويوافق مدير المنح، ويعتمده الرئيس التنفيذي · ولا يتغيّر المشروع قبل اعتماده (<bdi>10.9</bdi>).</p>
+      <p className="sub cnote">يرفع المشرف القرار، ويوافق مدير المنح، ويعتمده الرئيس التنفيذي · ولا يتغيّر المشروع قبل اعتماده.{/* doc 10.9 */}</p>
     </Glass>
   )
 }

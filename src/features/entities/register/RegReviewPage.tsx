@@ -204,7 +204,7 @@ export default function RegReviewPage() {
                         ? <>آيبان غير صحيح في <Num>{badIban.length}</Num> {badIban.length > 1 ? 'حسابات' : 'حساب'} مقبول · ارفض الحساب أو أعد الطلب لتصحيحه</>
                         : 'كل الحسابات المقبولة آيبانها صحيح'}
                     </span>
-                    <span className="payq-r">2.4.6</span>
+                    <span className="payq-r">{/* doc 2.4.6 */}</span>
                   </li>
                   <li className={missingDocs.length ? 'no' : 'ok'}>
                     <Icon name={missingDocs.length ? icons.alert : icons.check} size="sm" />

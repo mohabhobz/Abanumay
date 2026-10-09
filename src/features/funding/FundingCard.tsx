@@ -77,8 +77,8 @@ export function FundingCard({ row }: { row: ProjectRow }) {
 
       {!rep && multi ? (
         <p className="sub cnote">
-          متعدد السنوات · {multi.years.map((y) => `${yearById(y.yearId)?.name ?? ''} ${nf.format(y.amount)}${y.heldAt ? ' محجوزة' : ' التزام'}`).join(' · ')} · يُحجز كل سنة من خطته المالية لا من ربط منفصل (1.4.49).
-        </p>
+          متعدد السنوات · {multi.years.map((y) => `${yearById(y.yearId)?.name ?? ''} ${nf.format(y.amount)}${y.heldAt ? ' محجوزة' : ' التزام'}`).join(' · ')} · يُحجز كل سنة من خطته المالية لا من ربط منفصل.
+        {/* doc 1.4.49 */}</p>
       ) : !rep ? (
         <p className="sub cnote">
           {BUDGET_RULES.holdAt === 'approval'

@@ -108,7 +108,7 @@ export default function AgreementNewPage() {
   }
   /* Computed on each render · a handful of checks over a small draft */
   const issues = projectId ? [
-    ...(opt?.blocked ? [{ key: 'project', say: `«${opt.name}» ${opt.blocked}.`, rule: '8.2.1' }] : []),
+    ...(opt?.blocked ? [{ key: 'project', say: `«${opt.name}» ${opt.blocked}.`, rule: /* doc 8.2.1 */ '' }] : []),
     ...agrIssues(draft),
   ] : []
   const hints = projectId ? agrReview(draft) : []
@@ -142,7 +142,7 @@ export default function AgreementNewPage() {
   const blocks = [
     ...STAGES.filter((s) => shortBy[s.key].length)
       .map((s) => ({ head: s.label, text: shortBy[s.key].join(' · '), n: shortBy[s.key].length })),
-    ...issues.map((i) => ({ head: i.rule, text: i.say })),
+    ...issues.map((i) => ({ head: 'قبل الإرسال', text: i.say })),
   ]
 
   /* Note: the note belongs to a stage, so the tag must identify it. The first version computed
@@ -246,8 +246,8 @@ export default function AgreementNewPage() {
 
                 {opt?.additional && (
                   <p className="sub cnote">
-                    للمشروع اتفاقية سارية <b>{opt.additional}</b> · هذه اتفاقية إضافية تحلّ محلها عند سريانها، فتبقى اتفاقية سارية واحدة (8.4.25).
-                  </p>
+                    للمشروع اتفاقية سارية <b>{opt.additional}</b> · هذه اتفاقية إضافية تحلّ محلها عند سريانها، فتبقى اتفاقية سارية واحدة.
+                  {/* doc 8.4.25 */}</p>
                 )}
                 {project && (
                   <KV
@@ -316,7 +316,7 @@ export default function AgreementNewPage() {
                         </label>
                         {paperCopy ? <Tag tone="ok">{paperCopy}</Tag> : <span className="sub">لا نسخة بعد</span>}
                       </span>
-                      <span className="sub regf-h">تُعدّ خارج النماذج وتُرفع هنا · ثم تُرفع النسخة الموقّعة عند وصولها (8.4.16)</span>
+                      <span className="sub regf-h">تُعدّ خارج النماذج وتُرفع هنا · ثم تُرفع النسخة الموقّعة عند وصولها{/* doc 8.4.16 */}</span>
                     </div>
                   ) : (
                   <label className="regf regf-w">
@@ -383,7 +383,7 @@ export default function AgreementNewPage() {
             {/* Rules are stated at their own stage, not in a message after submission. */}
             {issuesIn(tab).map((i) => (
               <p key={i.key} className="bad cnote">
-                {i.say} <span className="sub">· {i.rule}</span>
+                {i.say}
               </p>
             ))}
 

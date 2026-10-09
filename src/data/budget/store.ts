@@ -1357,7 +1357,7 @@ export const linkProject = (link: LinkInput, reason?: string): string[] => {
   const issues = linkIssues(link)
   if (issues.length) return issues
   const prev = LINKS.get(link.projectId)
-  if (prev?.stage === 'final' && !reason?.trim()) return ['سبب تعديل الارتباط بعد الاعتماد إلزامي (1.4.58)']
+  if (prev?.stage === 'final' && !reason?.trim()) return [/* doc 1.4.58 */ 'سبب تعديل الارتباط بعد الاعتماد إلزامي']
   if (prev?.stage === 'closed') return ['المشروع مغلق · لا يُعدَّل ارتباطه']
   run({ op: 'link', link, stage: BUDGET_RULES.holdAt === 'approval' ? 'planned' : 'initial', reason: reason?.trim() || undefined, at: now() })
   return []
@@ -1515,10 +1515,10 @@ export function fundingIssues(projectId: string, need: number): string[] {
   if (pl) return planFundingIssues(pl, need)
   if (!l) {
     if (PLANS.get(projectId)?.kind === 'multi') return ['الخطة المالية متعددة السنوات أُلغي حجزها · أعد حفظها من تبويب الدراسة']
-    return ['لا ارتباط مالي · اربط المشروع ببند الميزانية أولًا (4.2.12)']
+    return [/* doc 4.2.12 */ 'لا ارتباط مالي · اربط المشروع ببند الميزانية أولًا']
   }
   const out: string[] = []
-  if (l.amount !== need) out.push(`قيمة المشروع ${nf.format(need)} والارتباط ${nf.format(l.amount)} · أعد توزيع الارتباط (1.4.13)`)
+  if (l.amount !== need) out.push(/* doc 1.4.13 */ `قيمة المشروع ${nf.format(need)} والارتباط ${nf.format(l.amount)} · أعد توزيع الارتباط`)
   for (const x of l.shares) {
     const d = docOf(x.docId)
     const n = d ? nodeOf(d, x.nodeId) : undefined

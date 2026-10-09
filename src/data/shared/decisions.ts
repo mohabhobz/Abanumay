@@ -85,7 +85,7 @@ export const floorOf = (p: { partnerType?: string }): Level | null => DECISIONS.
 export function typeFloorBlock(p: { partnerType?: string }, level: Level): string {
   const f = floorOf(p)
   if (!f || LEVEL_RANK[level] >= LEVEL_RANK[f]) return ''
-  return `نوع المشروع «${KIND_SAY[kindOf(p)]}» يُعتمد من ${LEVEL_SAY[f]} فأعلى (قرار المؤسسة · 5.4.25)`
+  return /* doc 5.4.25 */ `نوع المشروع «${KIND_SAY[kindOf(p)]}» يُعتمد من ${LEVEL_SAY[f]} فأعلى (قرار المؤسسة)`
 }
 
 /** The higher of two levels */

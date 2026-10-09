@@ -140,13 +140,13 @@ export function ehMoney(projectId: string) {
 
 /** What opens on an independent project · the plan and schedule after approval (11.2.16) */
 export function ehGate(projectId: string): { plan: boolean; schedule: boolean; pay: boolean; why: string } {
-  if (!approvedProject(projectId)) return { plan: false, schedule: false, pay: false, why: 'بعد الاعتماد النهائي للمشروع (11.2.8)' }
+  if (!approvedProject(projectId)) return { plan: false, schedule: false, pay: false, why: /* doc 11.2.8 */ 'بعد الاعتماد النهائي للمشروع' }
   const plan = planOfProject(projectId)
   const sched = ehScheduleOf(projectId).length > 0
-  if (!plan) return { plan: true, schedule: false, pay: false, why: 'أعدّ خطة المشروع أولًا (11.2.16)' }
+  if (!plan) return { plan: true, schedule: false, pay: false, why: /* doc 11.2.16 */ 'أعدّ خطة المشروع أولًا' }
   /* Re-audit 7 Oct · the schedule and its payments follow an approved plan, not a draft */
-  if (plan.stage !== 'active' && plan.stage !== 'done') return { plan: true, schedule: false, pay: false, why: 'تُعتمد خطة المشروع أولًا ثم جدول دفعاته (11.2.16)' }
-  if (!sched) return { plan: true, schedule: true, pay: false, why: 'أدخل جدول الدفعات (11.2.16)' }
+  if (plan.stage !== 'active' && plan.stage !== 'done') return { plan: true, schedule: false, pay: false, why: /* doc 11.2.16 */ 'تُعتمد خطة المشروع أولًا ثم جدول دفعاته' }
+  if (!sched) return { plan: true, schedule: true, pay: false, why: /* doc 11.2.16 */ 'أدخل جدول الدفعات' }
   return { plan: true, schedule: true, pay: true, why: '' }
 }
 
@@ -269,9 +269,9 @@ export function subMoney(pf: PortfolioRec, s: SubProject) {
 
 /** Sub-projects open only after the portfolio, its plan and its agreement are approved (13.2.10 · 13.4.7) */
 export function subsGate(pf: PortfolioRec): { ok: boolean; why: string } {
-  if (pf.stage !== 'approved') return { ok: false, why: pf.stage === 'closed' ? 'المحفظة مغلقة' : pf.stage === 'closing' ? 'المحفظة في الإغلاق · لا مشاريع فرعية جديدة' : 'بعد الاعتماد النهائي للمحفظة (13.2.5)' }
-  if (pf.plan.state !== 'approved') return { ok: false, why: 'بعد اعتماد خطة المحفظة (13.2.10)' }
-  if (pf.agreement.state !== 'signed') return { ok: false, why: 'بعد توقيع اتفاقية المحفظة (13.2.10)' }
+  if (pf.stage !== 'approved') return { ok: false, why: pf.stage === 'closed' ? 'المحفظة مغلقة' : pf.stage === 'closing' ? 'المحفظة في الإغلاق · لا مشاريع فرعية جديدة' : /* doc 13.2.5 */ 'بعد الاعتماد النهائي للمحفظة' }
+  if (pf.plan.state !== 'approved') return { ok: false, why: /* doc 13.2.10 */ 'بعد اعتماد خطة المحفظة' }
+  if (pf.agreement.state !== 'signed') return { ok: false, why: /* doc 13.2.10 */ 'بعد توقيع اتفاقية المحفظة' }
   return { ok: true, why: '' }
 }
 
@@ -374,7 +374,7 @@ export function pfStops(pf: PortfolioRec, act: PfAct, shares?: PortfolioRec['sha
   }
   if (act === 'recommend') {
     const sh = shares ?? pf.shares
-    if (!sh?.length) out.push('اختر بند الميزانية لحجز قيمة المحفظة (13.2.7)')
+    if (!sh?.length) out.push(/* doc 13.2.7 */ 'اختر بند الميزانية لحجز قيمة المحفظة')
     else if (sh.reduce((s, x) => s + x.amount, 0) !== pf.total) out.push(`مجموع الحجز يساوي قيمة المحفظة ${nf.format(pf.total)}`)
     /* Batch 6 · a hold split across lines or budgets · each line and its levels must cover its part */
     else out.push(...linkIssues({ projectId: pf.id, projectName: pf.name, by: '', shares: sh }, pf.total))
@@ -859,7 +859,7 @@ export function payIssues(p: Pick<EhsanPay, 'target' | 'amount' | 'ref' | 'paidA
   if (!p.ref.trim()) out.push('رقم العملية على منصة إحسان')
   if (!p.paidAt) out.push('تاريخ التنفيذ')
   if (!p.docs.length) out.push('إشعار التحويل أو مستند المنصة')
-  if (p.ref.trim() && (EHSAN_PAYS.some((x) => x.ref.trim() === p.ref.trim() && x.state !== 'returned') || isPaidRef(p.ref.trim()))) out.push('العملية مسجّلة من قبل · لا تُسجَّل مرتين (11.4.23)')
+  if (p.ref.trim() && (EHSAN_PAYS.some((x) => x.ref.trim() === p.ref.trim() && x.state !== 'returned') || isPaidRef(p.ref.trim()))) out.push(/* doc 11.4.23 */ 'العملية مسجّلة من قبل · لا تُسجَّل مرتين')
   const t = p.target
   if (t.kind === 'project') {
     if (!viaEhsan(t.projectId)) out.push('المشروع غير موجّه عبر إحسان')
@@ -999,7 +999,7 @@ export function routeProject(projectId: string, platform: boolean, type: PType, 
   const p = projectOf(projectId)
   if (!p) return ['المشروع غير موجود']
   if (p.statusGroup !== 'في الدراسة') return ['يُحدَّد التوجيه والنوع قبل الاعتماد فقط']
-  if (isStrategic(p.entityId) && !typeAllowed(p.entityId, type)) return [`«${PTYPE_SAY[type]}» غير مسموح لهذا الشريك (11.2.2)`]
+  if (isStrategic(p.entityId) && !typeAllowed(p.entityId, type)) return [/* doc 11.2.2 */ `«${PTYPE_SAY[type]}» غير مسموح لهذا الشريك`]
   if (platform && !isStrategic('860')) return ['منصة إحسان غير معتمدة شريكًا استراتيجيًّا']
   if (platform && DECISIONS.ehsanEntities === 'strategic' && !isStrategic(p.entityId)) return ['التوجيه عبر إحسان للشركاء الاستراتيجيين المعتمدين فقط (قرار المؤسسة)']
   run({ op: 'route', projectId, platform, type, by, at: now() })
@@ -1011,7 +1011,7 @@ export function proposeRoute(projectId: string, platform: boolean, type: PType, 
   const p = projectOf(projectId)
   if (!p) return ['المشروع غير موجود']
   if (p.statusGroup !== 'في الدراسة') return ['يُقترح التوجيه أثناء الدراسة فقط']
-  if (isStrategic(p.entityId) && !typeAllowed(p.entityId, type)) return [`«${PTYPE_SAY[type]}» غير مسموح لهذا الشريك (11.2.2)`]
+  if (isStrategic(p.entityId) && !typeAllowed(p.entityId, type)) return [/* doc 11.2.2 */ `«${PTYPE_SAY[type]}» غير مسموح لهذا الشريك`]
   if (platform && !isStrategic('860')) return ['منصة إحسان غير معتمدة شريكًا استراتيجيًّا']
   if (platform && DECISIONS.ehsanEntities === 'strategic' && !isStrategic(p.entityId)) return ['التوجيه عبر إحسان للشركاء الاستراتيجيين المعتمدين فقط (قرار المؤسسة)']
   run({ op: 'routePropose', projectId, platform, type, note, by, at: now() })
@@ -1030,8 +1030,8 @@ export function decideRoute(projectId: string, accept: boolean, note: string, by
 export const nextPortfolioId = () => `PF-2026-${String(PORTFOLIOS.length + 1).padStart(3, '0')}`
 export function createPortfolio(v: Omit<Extract<Op, { op: 'pfCreate' }>['pf'], 'id'>, send: boolean, by: string, fromProject?: string): { id?: string; errors: string[] } {
   const errors: string[] = []
-  if (!isStrategic(v.entityId)) errors.push('اختر شريكًا استراتيجيًّا معتمدًا (13.4.1)')
-  else if (!typeAllowed(v.entityId, 'portfolio')) errors.push('المحفظة غير مسموحة لهذا الشريك (11.2.2)')
+  if (!isStrategic(v.entityId)) errors.push(/* doc 13.4.1 */ 'اختر شريكًا استراتيجيًّا معتمدًا')
+  else if (!typeAllowed(v.entityId, 'portfolio')) errors.push(/* doc 11.2.2 */ 'المحفظة غير مسموحة لهذا الشريك')
   if (!v.name.trim()) errors.push('اسم المحفظة')
   if (!(v.total > 0)) errors.push('قيمة المحفظة')
   if (!v.goals.trim()) errors.push('أهداف المحفظة')
@@ -1115,12 +1115,12 @@ export function sendSubs(pfId: string, subIds: string[], by: string): string[] {
 }
 export function decideSubs(pfId: string, decisions: { subId: string; outcome: 'approve' | 'reject'; reason?: string }[], by: string): string[] {
   if (!decisions.length) return ['اختر مشروعًا واحدًا على الأقل']
-  if (decisions.some((d) => d.outcome === 'reject' && !d.reason?.trim())) return ['سبب الرفض إلزامي لكل مشروع مرفوض (13.2.16)']
+  if (decisions.some((d) => d.outcome === 'reject' && !d.reason?.trim())) return [/* doc 13.2.16 */ 'سبب الرفض إلزامي لكل مشروع مرفوض']
   run({ op: 'subDecide', pfId, decisions, by, at: now() })
   return []
 }
 export function updateSubExec(pfId: string, subId: string, exec: Omit<SubExec, 'at' | 'by'>, by: string): string[] {
-  if (exec.status === 'مكتمل' && (!exec.results.trim() || !(exec.reached > 0) || !exec.evidence.length)) return ['المكتمل يحتاج النتائج والمستفيدين الفعليين والشواهد (13.2.21)']
+  if (exec.status === 'مكتمل' && (!exec.results.trim() || !(exec.reached > 0) || !exec.evidence.length)) return [/* doc 13.2.21 */ 'المكتمل يحتاج النتائج والمستفيدين الفعليين والشواهد']
   run({ op: 'subExec', pfId, subId, exec, by, at: now() })
   return []
 }
@@ -1142,7 +1142,7 @@ export function requestPfPay(pfId: string, no: number, amount: number, by: strin
   if (!pf) return ['المحفظة غير موجودة']
   const why = pfReqIssue(pf, no, amount)
   if (why) return [why]
-  if (!justification.trim()) return ['اكتب مبرّر الطلب وما أُنجز (9.2.3)']
+  if (!justification.trim()) return [/* doc 9.2.3 */ 'اكتب مبرّر الطلب وما أُنجز']
   if (!docs.length) return ['أرفق مستندًا واحدًا على الأقل · تقرير الإنجاز أو الفواتير']
   run({ op: 'pfReq', pfId, req: { id: `PR-${pf.id.slice(-3)}-${pf.requests.length + 1}`, no, amount, why: justification.trim(), docs }, by, at: now() })
   return []
@@ -1246,7 +1246,7 @@ export function pfAgreementText(pf: PortfolioRec): string[] {
     `الطرف الأول: مؤسسة سليمان عبدالعزيز أبانمي الأهلية · الطرف الثاني: ${partner}.`,
     `موضوع الاتفاقية: محفظة «${pf.name}» في مسار ${pf.track} ومجال ${pf.field}، بقيمة إجمالية ${nf.format(pf.total)} ريال لسنة ${pf.year}.`,
     `الأهداف: ${pf.goals || '—'}.`,
-    'تحكم هذه الاتفاقية المشاريع الفرعية كلها تحت المحفظة، ولا تُبرم اتفاقية لكل مشروع فرعي · يُعتمد كل مشروع فرعي في حدود الرصيد المتاح (13.2.18).',
+    /* doc 13.2.18 */ 'تحكم هذه الاتفاقية المشاريع الفرعية كلها تحت المحفظة، ولا تُبرم اتفاقية لكل مشروع فرعي · يُعتمد كل مشروع فرعي في حدود الرصيد المتاح.',
     `آلية الصرف: ${sched}.`,
     `خطة المحفظة: ${pf.plan.phases.length ? pf.plan.phases.map((ph) => `${ph.name} (${ph.from} – ${ph.to})`).join('، ') : 'تُرفق الخطة المعتمدة ملحقًا'}.`,
     'يلتزم الطرف الثاني برفع تقارير التنفيذ لكل مشروع فرعي، وبالتقرير الختامي للمحفظة وشواهده قبل الإغلاق.',

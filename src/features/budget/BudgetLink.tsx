@@ -136,7 +136,7 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
 
   const button = label ?? (after ? 'تعديل الارتباط' : held ? 'مرتبط بالميزانية' : 'ربط بالميزانية')
   const go = after ? 'عدّل الارتباط' : held ? 'احفظ التوزيع' : BUDGET_RULES.holdAt === 'approval' ? 'اربط' : 'اربط واحجز'
-  const stop = issues[0] || (after && !reason.trim() ? 'اكتب سبب التعديل أولًا (1.4.58)' : '') || (plan?.kind === 'multi' ? 'المشروع متعدد السنوات · يُحجز من خطته المالية' : '')
+  const stop = issues[0] || (after && !reason.trim() ? /* doc 1.4.58 */ 'اكتب سبب التعديل أولًا' : '') || (plan?.kind === 'multi' ? 'المشروع متعدد السنوات · يُحجز من خطته المالية' : '')
 
   return (
     <>

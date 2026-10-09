@@ -129,7 +129,7 @@ export default function CloseSettingsPage() {
               {/* Note: this sentence is what separates "a number we agreed on" from "a number we
                   put in so the screen would work." */}
               <p className="sub cnote">
-                تقيس BPD-011 متوسط مدة الإغلاق (مؤشر <span className="num">1</span>)
+                تقيس متوسط مدة الإغلاق (مؤشر {/* doc BPD-011 */}<span className="num">1</span>)
                 ولا تضع حدًّا لأي محطة · هذه الأرقام مؤقتة ليكون لوصف «متأخّر»
                 معنى في النموذج، وتحتاج إلى تأكيد المؤسسة (السؤال س-18).
               </p>
@@ -184,7 +184,7 @@ function ReleasePolicy() {
       {saved && <p className="ok-ink cnote">حُفظت السياسة</p>}
       <p className="sub cnote">
         يعود المحجوز غير المصروف عند الإيقاف أو الإغلاق إلى بنده مباشرة · أما المبالغ المستردة من
-        الجهة فتعود دفعة واحدة عند اكتمال استردادها، أو تدريجيًّا مع كل مبلغ يُستلم (<bdi>10.9.8</bdi>).
+        الجهة فتعود دفعة واحدة عند اكتمال استردادها، أو تدريجيًّا مع كل مبلغ يُستلم (<bdi>{/* doc 10.9.8 */}</bdi>).
       </p>
     </Glass>
   )

@@ -236,7 +236,7 @@ export function upBlockers(p: ProjectRow, level: Holder, approving: boolean): st
   const out: string[] = []
   const eb = entityBlock(p)
   if (eb) out.push(eb)
-  if (openNotes(f).length) out.push(`${nf.format(openNotes(f).length)} ملاحظة إلزامية لم تُعالج · لا إحالة لمستوى أعلى قبلها (5.4.14)`)
+  if (openNotes(f).length) out.push(/* doc 5.4.14 */ `${nf.format(openNotes(f).length)} ملاحظة إلزامية لم تُعالج · لا إحالة لمستوى أعلى قبلها`)
   /* The funding is checked on every approval, and again before the project goes up to the
      committee or the board (4.4.11 · 5.4.5 · 6.2.10 · 7.2.2) */
   if (approving || level === 'exec' || level === 'committee') out.push(...fundingIssues(p.id, p.amountRequested))
@@ -271,7 +271,7 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
   const conflict = holder !== 'supervisor' && holder !== 'confirm' ? conflictOf(p, me) : undefined
   if (conflict) {
     return {
-      holder, mine, say: `تعارض مصالح: ${conflict.reason} · يُحوَّل القرار لصاحب صلاحية بديل (5.4.24)`,
+      holder, mine, say: /* doc 5.4.24 */ `تعارض مصالح: ${conflict.reason} · يُحوَّل القرار لصاحب صلاحية بديل`,
       actions: [{ label: 'إحالة لصاحب صلاحية بديل', kind: 'btn-p', needsNote: true }],
     }
   }
@@ -411,7 +411,7 @@ const applyOp = (o: Op) => {
             && (p.amountRequested > levelCap('exec') || Boolean(entityLimitBlock(p, 'exec')) || Boolean(typeFloorBlock(p, 'exec')))
           p.holder = auto ? 'committee' : 'exec'; p.hoursInStage = 0
           if (o.verdict === 'recommend-approve') f.hold = linkOf(p.id) ? 'initial' : f.hold
-          fields.push({ k: 'الإحالة', v: auto ? 'اللجنة التنفيذية · إحالة تلقائية فوق حد المدير التنفيذي (5.4.11)' : 'المدير التنفيذي' })
+          fields.push({ k: 'الإحالة', v: auto ? /* doc 5.4.11 */ 'اللجنة التنفيذية · إحالة تلقائية فوق حد المدير التنفيذي' : 'المدير التنفيذي' })
           if (auto) notify(['المدير التنفيذي', 'مدير المنح'], p.id, `أُحيل إلى اللجنة تلقائيًا · ${p.name}`, 'المبلغ فوق حد المدير التنفيذي · ينتظر جلسة اللجنة')
           else notify(['المدير التنفيذي'], p.id, `توصية مدير المنح · ${p.name}`, `${VERDICT_SAY[o.verdict]} · ${o.note}`)
           break
@@ -450,7 +450,7 @@ const applyOp = (o: Op) => {
           } else {
             p.holder = to as Holder
             if (to === 'manager' && o.level !== 'manager') f.awaitingReview = { note: o.note, by: o.by, at: opDay() }
-            fields.push({ k: 'إلى', v: HOLDER_LABEL[to as Holder] }, { k: 'الحجز', v: 'محفوظ (4.4.16 · 6.4.8)' })
+            fields.push({ k: 'إلى', v: HOLDER_LABEL[to as Holder] }, { k: 'الحجز', v: /* doc 4.4.16 · 6.4.8 */ 'محفوظ' })
             notify([HOLDER_LABEL[to as Holder]], p.id, `أُعيد إليك · ${p.name}`, o.note)
           }
           p.hoursInStage = 0
@@ -726,15 +726,15 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
   switch (label) {
     case 'إحالة لصاحب صلاحية بديل': run({ op: 'conflict', id: p.id, level, reason: note, by: me, at }); return []
     case 'اعتماد نهائي': { const fl = typeFloorBlock(p, 'manager'); if (fl) return [fl]; const b = block(true); if (b.length) return b; if (!choice) return ['حدّد إن كان المشروع يتطلب خطة']; go('final-approve', { needsPlan: choice === 'yes' }); settleHold(p.id, me); return [] }
-    case 'توصية بالموافقة': { const b = block(true); if (b.length) return b; if (!choice) return ['حدّد إن كان المشروع يتطلب خطة (4.2.3)']; go('recommend-approve', { needsPlan: choice === 'yes' }); return [] }
+    case 'توصية بالموافقة': { const b = block(true); if (b.length) return b; if (!choice) return [/* doc 4.2.3 */ 'حدّد إن كان المشروع يتطلب خطة']; go('recommend-approve', { needsPlan: choice === 'yes' }); return [] }
     case 'توصية بالرفض': { const b = block(false); if (b.length) return b; go('recommend-reject'); return [] }
     case 'رفض نهائي': {
-      if (p.amountRequested > APPROVAL_RULES.managerRejectUpTo) return ['المبلغ فوق حد الرفض النهائي لمدير المنح · يُرفع بتوصية للمدير التنفيذي (4.2.15)']
+      if (p.amountRequested > APPROVAL_RULES.managerRejectUpTo) return [/* doc 4.2.15 */ 'المبلغ فوق حد الرفض النهائي لمدير المنح · يُرفع بتوصية للمدير التنفيذي']
       if (hasFunding(p.id)) unlinkProject(p.id, me, 'رفض نهائي من مدير المنح')
       go('final-reject'); return []
     }
     case 'إعادة للمشرف': {
-      if (hasFunding(p.id)) unlinkProject(p.id, me, 'إعادة المشروع للمشرف (4.4.17)')
+      if (hasFunding(p.id)) unlinkProject(p.id, me, /* doc 4.4.17 */ 'إعادة المشروع للمشرف')
       const target = choice === 'consultant' ? 'consultant' : 'supervisor'
       go('return', { target })
       if (target === 'consultant') { const r = flowOf(p.id).referral; if (r) referConsultant(p.id, r.consultant, me) }
@@ -742,7 +742,7 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
     }
     case 'أعد الإرسال للمدير التنفيذي': { const b = block(false); if (b.length) return b; go('resubmit'); return [] }
     case 'اعتماد': {
-      if (p.amountRequested > levelCap('exec')) return [`المبلغ فوق حد المدير التنفيذي (${nf.format(levelCap('exec'))}) · الإحالة للجنة (5.4.11)`]
+      if (p.amountRequested > levelCap('exec')) return [/* doc 5.4.11 */ `المبلغ فوق حد المدير التنفيذي (${nf.format(levelCap('exec'))}) · الإحالة للجنة`]
       const lim = entityLimitBlock(p, 'exec'); if (lim) return [lim, 'تُحال للجنة التنفيذية']
       const fl = typeFloorBlock(p, 'exec'); if (fl) return [fl]
       const b = block(true); if (b.length) return b
@@ -790,7 +790,7 @@ export const decideInSession = (sessionId: string, projectId: string, outcome: O
   const p = row(projectId)
   /* Batch 7 · a multi-year project's held years leave too · `hasFunding` covers the plan, `linkOf` didn't */
   if (p && (outcome === 'reject' || (outcome === 'return' && target === 'supervisor')) && hasFunding(projectId)) {
-    unlinkProject(projectId, by, outcome === 'reject' ? 'رفض في الجلسة' : 'إعادة للدراسة أو لتعديل جوهري · يُعاد التحقق عند العودة (6.4.9)')
+    unlinkProject(projectId, by, outcome === 'reject' ? 'رفض في الجلسة' : /* doc 6.4.9 */ 'إعادة للدراسة أو لتعديل جوهري · يُعاد التحقق عند العودة')
   }
   run({ op: 'sessionDecide', sessionId, projectId, outcome, target, note, payPlan, by, at: now() })
   settleHold(projectId, by)

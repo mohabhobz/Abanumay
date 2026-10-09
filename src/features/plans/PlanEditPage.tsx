@@ -449,7 +449,7 @@ export default function PlanEditPage() {
                   {issues.slice(0, 8).map((x) => (
                     <li key={x.key}>
                       <b className="bad">{x.say}</b>
-                      <span className="sub"> · {x.rule}</span>
+                      
                     </li>
                   ))}
                   {issues.length > 8 && (

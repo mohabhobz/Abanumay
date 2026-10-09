@@ -134,7 +134,7 @@ export default function ReportsPage() {
                   <Link key={p.key} to={ROUTES.report(p.key)} className="rpp glass">
                     <span className="rpp-h">
                       <span className="rpp-n num">{String(p.no).padStart(2, '0')}</span>
-                      <span className="rpp-id num">{p.id}</span>
+                      {/* doc · the procedure code p.id (BPD-0xx) · hidden until the clean-up */}
                     </span>
 
                     <span className="rpp-t">{p.title}</span>

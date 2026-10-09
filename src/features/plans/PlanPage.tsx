@@ -273,7 +273,7 @@ export default function PlanPage() {
           {p.stage === 'cancelled' && (
             <Glass>
               <Head title="الخطة ملغاة" meta={<Tag tone="no">ملغاة</Tag>} />
-              <p className="sub cnote">{p.note ?? 'تحوّل المشروع إلى «لا يتطلب خطة» · توقفت إجراءات الخطة (12.4.32).'}</p>
+              <p className="sub cnote">{p.note ?? /* doc 12.4.32 */ 'تحوّل المشروع إلى «لا يتطلب خطة» · توقفت إجراءات الخطة.'}</p>
             </Glass>
           )}
 

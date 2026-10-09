@@ -91,7 +91,7 @@ export default function DecisionsPage() {
           </header>
 
           <Choice
-            title="حالة الجهة أثناء طلب التحديث" refs="2.3.upd-16 · entities#8" disabled={!can}
+            title="حالة الجهة أثناء طلب التحديث" refs={/* doc 2.3.upd-16 · entities#8 */ ""} disabled={!can}
             q="الجهة التي أرسلت طلب تحديث يتطلب اعتمادًا تُعلَّق حتى يُبتّ فيه · بأي اسم تظهر حالتها؟"
             value={d.updateStatus} onChange={(v) => put('updateStatus', v)}
             opts={[
@@ -102,7 +102,7 @@ export default function DecisionsPage() {
           />
 
           <Choice
-            title="فتح الدفعة التالية" refs="BPD-009 · payments#6" disabled={!can}
+            title="فتح الدفعة التالية" refs={/* doc BPD-009 · payments#6 */ ""} disabled={!can}
             q="الدفعات تُطلب بالترتيب · متى تُفتح الدفعة التي تليها؟"
             value={d.payNext} onChange={(v) => put('payNext', v)}
             opts={[
@@ -113,7 +113,7 @@ export default function DecisionsPage() {
           />
 
           <Choice
-            title="الجهات الموجّهة عبر إحسان" refs="BPD-011 · 11.2.4" disabled={!can}
+            title="الجهات الموجّهة عبر إحسان" refs={/* doc BPD-011 · 11.2.4 */ ""} disabled={!can}
             q="من يُسمح بتوجيه مشروعه عبر منصة إحسان؟"
             value={d.ehsanEntities} onChange={(v) => put('ehsanEntities', v)}
             opts={[
@@ -124,7 +124,7 @@ export default function DecisionsPage() {
           />
 
           <Choice
-            title="أولوية الطلب" refs="BPD-003" disabled={!can}
+            title="أولوية الطلب" refs={/* doc BPD-003 */ ""} disabled={!can}
             q="كيف تُحدَّد أولوية الطلب أثناء الدراسة؟"
             value={d.priority} onChange={(v) => put('priority', v)}
             opts={[
@@ -135,7 +135,7 @@ export default function DecisionsPage() {
           />
 
           <Glass>
-            <Head title="نوع المشروع في مسار الاعتماد" meta={<span className="sub"><bdi>5.4.25 · approvals#18</bdi></span>} />
+            <Head title="نوع المشروع في مسار الاعتماد" meta={<span className="sub"><bdi>{/* doc 5.4.25 · approvals#18 */}</bdi></span>} />
             <p className="sub">المسار يُحسب من المبلغ · هل يرفع نوع المشروع أدنى مستوى يعتمده؟ «بالمبلغ فقط» لا يغيّر شيئًا.</p>
             <ul className="cfglist mt-2">
               {(Object.keys(KIND_SAY) as ProjectKind[]).map((k) => (
@@ -162,7 +162,7 @@ export default function DecisionsPage() {
           />
 
           <Glass>
-            <Head title="مسائل تشغيل" meta={<span className="sub"><bdi>entities#49 · intake#15 · 2.2.7 · 5.4.11</bdi></span>} />
+            <Head title="مسائل تشغيل" meta={<span className="sub"><bdi>{/* doc entities#49 · intake#15 · 2.2.7 · 5.4.11 */}</bdi></span>} />
             <Switch
               label="إظهار مشاريع الجهات المؤرشفة في التقارير ولوحة الأثر" disabled={!can}
               note="موقوف: الجهة المؤرشفة تخرج من القوائم والتقارير مع مشاريعها · مفعّل: تخرج من القوائم وتبقى أرقامها في التقارير"
@@ -175,12 +175,12 @@ export default function DecisionsPage() {
             />
             <Switch
               label="منع إرسال طلب تسجيل الجهة قبل اكتمال بياناته ومرفقاته" disabled={!can}
-              note="أُوقف بطلب العميل في 30 سبتمبر · عند التفعيل لا يُرسل الطلب حتى يجتاز التحقق (2.2.7 · 2.4.4)"
+              note={/* doc 2.2.7 · 2.4.4 */ "أُوقف بطلب العميل في 30 سبتمبر · عند التفعيل لا يُرسل الطلب حتى يجتاز التحقق"}
               on={block} onChange={setBlock}
             />
             <Switch
               label="إحالة تلقائية للجنة فوق حد المدير التنفيذي" disabled={!can}
-              note="توصية مدير المنح بالموافقة فوق حد المدير التنفيذي تذهب للجنة مباشرة (5.4.11)"
+              note={/* doc 5.4.11 */ "توصية مدير المنح بالموافقة فوق حد المدير التنفيذي تذهب للجنة مباشرة"}
               on={auto} onChange={setAuto}
             />
           </Glass>

@@ -98,11 +98,11 @@ export default function PortfolioPage() {
   ]
 
   const readings: Reading[] = [
-    ...(pf.stage === 'supervisor' && !link ? [{ id: 'pf-hold', kind: 'flag' as const, label: 'الحجز', text: 'اختر بند الميزانية قبل التوصية · تُحجز القيمة كاملةً مرة واحدة.', src: '13.2.7' }] : []),
-    ...(!gate.ok && pf.stage === 'approved' ? [{ id: 'pf-gate', kind: 'flag' as const, label: 'المشاريع الفرعية', text: gate.why, src: '13.2.10' }] : []),
-    ...(m.pending ? [{ id: 'pf-pend', kind: 'note' as const, label: 'قيد الاعتماد', metric: { value: nf.format(m.pending), unit: 'ريال' }, text: `${pf.items.filter((x) => x.state === 'pending').length} مشروع بانتظار قرار مدير المنح · قيمتها محجوزة داخل المحفظة.`, src: '13.4.16' }] : []),
-    { id: 'pf-avail', kind: m.available < 0 ? 'flag' as const : 'note' as const, label: 'الرصيد المتاح', metric: { value: nf.format(Math.max(0, m.available)), unit: 'ريال' }, text: `من ${nf.format(pf.total)} · معتمد ${nf.format(m.approved)} وقيد الاعتماد ${nf.format(m.pending)}.`, src: '13.2.18', bar: { value: m.approved + m.pending, limit: pf.total, valueLabel: 'المعتمد وقيد الاعتماد', limitLabel: 'المحفظة', unit: 'ريال' } },
-    ...(m.recorded > m.confirmed ? [{ id: 'pf-fin', kind: 'flag' as const, label: 'المراجعة المالية', metric: { value: nf.format(m.recorded - m.confirmed), unit: 'ريال' }, text: 'دفعات مسجلة لم تؤكدها المالية بعد.', src: '11.2.13' }] : []),
+    ...(pf.stage === 'supervisor' && !link ? [{ id: 'pf-hold', kind: 'flag' as const, label: 'الحجز', text: 'اختر بند الميزانية قبل التوصية · تُحجز القيمة كاملةً مرة واحدة.', src: /* doc 13.2.7 */ '' }] : []),
+    ...(!gate.ok && pf.stage === 'approved' ? [{ id: 'pf-gate', kind: 'flag' as const, label: 'المشاريع الفرعية', text: gate.why, src: /* doc 13.2.10 */ '' }] : []),
+    ...(m.pending ? [{ id: 'pf-pend', kind: 'note' as const, label: 'قيد الاعتماد', metric: { value: nf.format(m.pending), unit: 'ريال' }, text: `${pf.items.filter((x) => x.state === 'pending').length} مشروع بانتظار قرار مدير المنح · قيمتها محجوزة داخل المحفظة.`, src: /* doc 13.4.16 */ '' }] : []),
+    { id: 'pf-avail', kind: m.available < 0 ? 'flag' as const : 'note' as const, label: 'الرصيد المتاح', metric: { value: nf.format(Math.max(0, m.available)), unit: 'ريال' }, text: `من ${nf.format(pf.total)} · معتمد ${nf.format(m.approved)} وقيد الاعتماد ${nf.format(m.pending)}.`, src: /* doc 13.2.18 */ '', bar: { value: m.approved + m.pending, limit: pf.total, valueLabel: 'المعتمد وقيد الاعتماد', limitLabel: 'المحفظة', unit: 'ريال' } },
+    ...(m.recorded > m.confirmed ? [{ id: 'pf-fin', kind: 'flag' as const, label: 'المراجعة المالية', metric: { value: nf.format(m.recorded - m.confirmed), unit: 'ريال' }, text: 'دفعات مسجلة لم تؤكدها المالية بعد.', src: /* doc 11.2.13 */ '' }] : []),
     /* Cross · the periodic summary, the early delay forecast and the fit with the portfolio's goals */
     ...(asPartner ? [] : portfolioAi(pf)),
   ]
@@ -231,7 +231,7 @@ export default function PortfolioPage() {
                   {noteFirst(actions).map((a) => {
                     const stop = a.needsNote && !note.trim() ? 'اكتب الملاحظة أولًا' : pfStops(pf, a.act, a.act === 'recommend' ? shares : undefined)[0] ?? ''
                     return (
-                      <button key={a.label} type="button" className={`btn ${a.kind}`} data-needs-note={a.needsNote ? '' : undefined} disabled={Boolean(stop)} title={stop || '13.2.6'} onClick={() => act(a)}>
+                      <button key={a.label} type="button" className={`btn ${a.kind}`} data-needs-note={a.needsNote ? '' : undefined} disabled={Boolean(stop)} title={stop || /* doc 13.2.6 */ ''} onClick={() => act(a)}>
                         {a.label}
                       </button>
                     )
@@ -292,7 +292,7 @@ function HoldCard({ pf, lineKey, setLine, lines, link, split, setSplit }: {
         <label className="regf">
           <span className="lb">بند الميزانية</span>
           <FieldSelect value={lineKey} onChange={setLine} label="بند الميزانية" options={lines.filter((l) => l.free >= pf.total).map((l) => ({ value: l.key, label: `${l.node.label} · متاح ${nf.format(l.free)}` }))} />
-          <span className="sub regf-h">تُحجز القيمة كاملةً مرة واحدة مع التوصية · وقيم المشاريع الفرعية توزيع داخلي لا حجز جديد (13.2.19)</span>
+          <span className="sub regf-h">تُحجز القيمة كاملةً مرة واحدة مع التوصية · وقيم المشاريع الفرعية توزيع داخلي لا حجز جديد{/* doc 13.2.19 */}</span>
         </label>
         <button type="button" className="btn btn-ghost btn-sm mt-2" onClick={() => setSplit([{ key: lineKey, amount: '' }, { key: '', amount: '' }])}>وزّع الحجز على أكثر من بند أو ميزانية</button>
         </>
@@ -547,7 +547,7 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             <PayForm target={{ kind: 'sub', pfId: pf.id, subId: target.id }} max={target.amount - subMoney(pf, target).recorded} />
           </>
         )}
-        <p className="sub cnote">الدفعة لا تتجاوز قيمة المشروع الفرعي ولا قيمة المحفظة · وتُقيَّد كعملية نفّذتها المنصة، لا صرفًا جديدًا (11.4.23).</p>
+        <p className="sub cnote">الدفعة لا تتجاوز قيمة المشروع الفرعي ولا قيمة المحفظة · وتُقيَّد كعملية نفّذتها المنصة، لا صرفًا جديدًا.{/* doc 11.4.23 */}</p>
       </Glass>
     )
   }

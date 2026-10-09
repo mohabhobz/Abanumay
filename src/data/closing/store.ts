@@ -219,15 +219,15 @@ export function caseActions(c: CaseRow, role: RoleKey, asEntity = false): CaseAc
 export function caseStops(c: CaseRow, act: CaseAct): string[] {
   if (act === 'return' || act === 'reject') return []
   const out: string[] = []
-  if (c.kind === 'stop' && c.stage !== 'draft' && c.stage !== 'returned' && stopPhase(c.projectId).needsSettle && c.settlement?.actual == null) out.push('لم يُعتمد المصروف الفعلي بعد تقرير الجهة وفواتيرها · 10.9.3')
-  if (c.kind === 'stop' && (c.stage === 'draft' || c.stage === 'returned') && c.paid > 0 && c.settlement?.actual == null) out.push('اعتمد المصروف الفعلي بعد تقرير الجهة وفواتيرها أولًا · 10.9.3')
-  if (c.kind === 'reduce' && !c.annex) out.push('ارفع ملحق الاتفاقية · 10.9.5')
+  if (c.kind === 'stop' && c.stage !== 'draft' && c.stage !== 'returned' && stopPhase(c.projectId).needsSettle && c.settlement?.actual == null) out.push(/* doc 10.9.3 */ 'لم يُعتمد المصروف الفعلي بعد تقرير الجهة وفواتيرها')
+  if (c.kind === 'stop' && (c.stage === 'draft' || c.stage === 'returned') && c.paid > 0 && c.settlement?.actual == null) out.push(/* doc 10.9.3 */ 'اعتمد المصروف الفعلي بعد تقرير الجهة وفواتيرها أولًا')
+  if (c.kind === 'reduce' && !c.annex) out.push(/* doc 10.9.5 */ 'ارفع ملحق الاتفاقية')
   if (c.kind === 'increase' && act === 'approve' && c.stage === 'ceo') {
     const i = resizeIssue(c.projectId, c.newAmount ?? 0)
     if (i) out.push(i)
   }
-  if (act === 'close' && !recSettled(c.recovery)) out.push('لم يكتمل الاسترداد ولا قرار نهائي بشأنه · 10.9.8')
-  if (act === 'approve' && c.stage === 'recover' && !recSettled(c.recovery)) out.push('لم يكتمل استرداد الفرق ولا قرار نهائي بشأنه · 10.9.3 · 10.9.5')
+  if (act === 'close' && !recSettled(c.recovery)) out.push(/* doc 10.9.8 */ 'لم يكتمل الاسترداد ولا قرار نهائي بشأنه')
+  if (act === 'approve' && c.stage === 'recover' && !recSettled(c.recovery)) out.push(/* doc 10.9.3 · 10.9.5 */ 'لم يكتمل استرداد الفرق ولا قرار نهائي بشأنه')
   return out
 }
 
@@ -830,7 +830,7 @@ export function closeActions(c: CloseRow, role: RoleKey): CloseAct[] {
   /* Re-audit 7 Oct · corporate communications reviews in its own seat (10.2.12 · 10.2.13) */
   if (c.stage === 'comms' && role === 'comms') return [
     { kind: 'report', act: 'approve', label: 'اعتماد متطلبات النشر', btn: 'btn-p', why: 'قاعدة 9 · مراجعة النشر الإعلامي متى كانت مطلوبة' },
-    { kind: 'report', act: 'return', label: 'إعادة للمشرف بملاحظات النشر', btn: 'btn-2', needsNote: true, why: '10.2.13 · تعود ملاحظات النشر إلى مشرف المنح' },
+    { kind: 'report', act: 'return', label: 'إعادة للمشرف بملاحظات النشر', btn: 'btn-2', needsNote: true, why: /* doc 10.2.13 */ 'تعود ملاحظات النشر إلى مشرف المنح' },
   ]
   if (c.stage === 'manager' && role === 'grants-manager') return [
     { kind: 'report', act: 'approve', label: 'اعتماد التقرير وإحالته للتنفيذي', btn: 'btn-p', gated: true, why: 'خطوة 11 · اعتماد مدير المنح ثم المدير التنفيذي' },
@@ -848,11 +848,11 @@ export function closeActions(c: CloseRow, role: RoleKey): CloseAct[] {
   ]
   if (c.stage === 'evalManager' && role === 'grants-manager') return [
     { kind: 'eval', act: 'approve', label: 'اعتماد التقييم وإحالته للتنفيذي', btn: 'btn-p', why: 'قاعدة 17 · محطتان في دورة التقييم' },
-    { kind: 'eval', act: 'return', label: 'إعادة لمشرف المنح بملاحظات', btn: 'btn-2', needsNote: true, why: '10.2.19 · يُعدّ المشرف التقييم فتعود إليه' },
+    { kind: 'eval', act: 'return', label: 'إعادة لمشرف المنح بملاحظات', btn: 'btn-2', needsNote: true, why: /* doc 10.2.19 */ 'يُعدّ المشرف التقييم فتعود إليه' },
   ]
   if (c.stage === 'evalExecutive' && role === 'ceo') return [
     { kind: 'eval', act: 'approve', label: 'اعتماد التقييم والإغلاق النهائي', btn: 'btn-p', gated: true, why: 'قاعدة 8 و18 · الإغلاق يحتاج التقرير والتقييم والمتطلبات معًا' },
-    { kind: 'eval', act: 'return', label: 'إعادة لمدير المنح بملاحظات', btn: 'btn-2', needsNote: true, why: '10.2.20 · يعيد المدير التنفيذي التقييم إلى مدير المنح' },
+    { kind: 'eval', act: 'return', label: 'إعادة لمدير المنح بملاحظات', btn: 'btn-2', needsNote: true, why: /* doc 10.2.20 */ 'يعيد المدير التنفيذي التقييم إلى مدير المنح' },
   ]
   return []
 }
@@ -863,7 +863,7 @@ export function closeStops(c: CloseRow, a: CloseAct): string[] {
   if (a.kind === 'report' && a.gated) {
     const m = reportBlockers(c)
     if (m.length) return [`ينقص: ${m[0]} · قاعدة 4`]
-    if (c.stage === 'supervisor' && c.finance?.verified == null) return ['تحقّق من الفواتير أولًا · 10.9.7']
+    if (c.stage === 'supervisor' && c.finance?.verified == null) return [/* doc 10.9.7 */ 'تحقّق من الفواتير أولًا']
   }
   if (a.kind === 'evalSend') { const e = evalBlockers(c); if (e.length) return [`${e[0]} · قاعدة 10`] }
   if (a.kind === 'eval' && c.stage === 'evalExecutive') return requirementsOf(c).filter((x) => !x.ok).map((x) => `${x.say} · قاعدة 18`)
@@ -953,7 +953,7 @@ export function createCase(v: { projectId: string; kind: CaseKind; reason: strin
   const paid = paidToDate(v.projectId)
   if (v.kind === 'reduce') {
     if (!v.newAmount || v.newAmount >= g) return { errors: ['القيمة الجديدة أقل من الحالية في التخفيض'] }
-    if (!v.annex) return { errors: ['ارفع ملحق الاتفاقية · 10.9.5'] }
+    if (!v.annex) return { errors: [/* doc 10.9.5 */ 'ارفع ملحق الاتفاقية'] }
   }
   if (v.kind === 'increase') {
     if (!v.newAmount || v.newAmount <= g) return { errors: ['القيمة الجديدة أكبر من الحالية في الزيادة'] }

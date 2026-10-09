@@ -752,7 +752,7 @@ export const budgetDocs: BudgetDoc[] = [
   {
     id: 'BG-2025-SA',
     name: 'ميزانية المنح 2025',
-    description: 'المثال التوضيحي في الوثيقة (1.7.2) · ثلاثة مسارات ومسار رابع موقوف بلا مبالغ',
+    description: /* doc 1.7.2 */ 'المثال التوضيحي في الوثيقة · ثلاثة مسارات ومسار رابع موقوف بلا مبالغ',
     yearId: 'fy-2025',
     sourceCode: 'SA',
     directionIds: ['dir-edu', 'dir-health', 'dir-community'],

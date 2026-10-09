@@ -26,7 +26,7 @@ export function ClausesCard({ clauses, onChange }: { clauses: Clause[]; onChange
   const put = (i: number, p: Partial<Clause>) => onChange?.(clauses.map((c, j) => (j === i ? { ...c, ...p } : c)))
   return (
     <Glass>
-      <Head title="البنود والشروط والالتزامات" meta={<span className="sub"><Num>{clauses.length}</Num> بندًا · <bdi>8.2.10</bdi></span>} />
+      <Head title="البنود والشروط والالتزامات" meta={<span className="sub"><Num>{clauses.length}</Num> بندًا · <bdi>{/* doc 8.2.10 */}</bdi></span>} />
       <ol className="agx-cl">
         {clauses.map((c, i) => (
           <li key={c.id}>
@@ -159,7 +159,7 @@ export function IssuesCard({ issues, ready }: { issues: AgrIssue[]; ready: strin
       <Head title="فحص الاكتمال" meta={issues.length ? <Tag tone="warn"><Num>{issues.length}</Num> نقصًا</Tag> : <Tag tone="ok">مكتملة</Tag>} />
       <ul className="apv-sig">
         {issues.length === 0 && <li className="ok"><Icon name={icons.check} size="sm" /><span>{ready}</span></li>}
-        {issues.map((i) => <li key={i.key} className="no"><Icon name={icons.alert} size="sm" /><span>{isolate(i.say)} <span className="sub"><bdi>{i.rule}</bdi></span></span></li>)}
+        {issues.map((i) => <li key={i.key} className="no"><Icon name={icons.alert} size="sm" /><span>{isolate(i.say)}</span></li>)}
       </ul>
     </Glass>
   )
@@ -207,7 +207,7 @@ export function SignaturesCard({ a }: { a: AgreementRow }) {
   const f = agrFlowOf(a.id)
   return (
     <Glass>
-      <Head title="التوقيعات" meta={<span className="sub"><bdi>8.4.14 – 8.4.16</bdi></span>} />
+      <Head title="التوقيعات" meta={<span className="sub"><bdi>{/* doc 8.4.14 – 8.4.16 */}</bdi></span>} />
       <ul className="payq-ck">
         <li className={f.entitySign ? 'ok' : 'no'}>
           <Icon name={f.entitySign ? icons.check : icons.alert} size="sm" />
@@ -252,10 +252,10 @@ export function ProjectAgreements({ list, onAdditional, additionalBlock }: { lis
           <button type="button" className="btn btn-2 btn-sm" disabled={Boolean(additionalBlock)} title={additionalBlock || 'اتفاقية إضافية تحلّ محل السارية عند سريانها'} onClick={onAdditional}>
             <Icon name={icons.plus} size="sm" />اتفاقية إضافية
           </button>
-          <span className="sub">تحلّ محل السارية عند اعتمادها · فتبقى اتفاقية سارية واحدة (8.4.25)</span>
+          <span className="sub">تحلّ محل السارية عند اعتمادها · فتبقى اتفاقية سارية واحدة{/* doc 8.4.25 */}</span>
         </div>
       )}
-      <p className="sub cnote">مراحل الاتفاقية لا تغيّر حالة المشروع · يبقى في «اعتماد الإتفاقية» حتى سريانها، ولا ينتقل للتنفيذ عند إلغائها (8.4.26 · 8.4.27).</p>
+      <p className="sub cnote">مراحل الاتفاقية لا تغيّر حالة المشروع · يبقى في «اعتماد الإتفاقية» حتى سريانها، ولا ينتقل للتنفيذ عند إلغائها.{/* doc 8.4.26 · 8.4.27 */}</p>
     </Glass>
   )
 }

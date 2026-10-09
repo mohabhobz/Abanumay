@@ -625,8 +625,8 @@ export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; ru
   pending: { label: 'لها طلب مفتوح', why: 'لا يُفتح لكل دفعة أكثر من طلب صرف واحد', rule: 4 },
   paid: { label: 'مصروفة', why: 'اكتمل تحويلها' },
   held: { label: 'موقوفة بشرط', why: 'لا يُرسل طلب الدفعة المرتبطة بتقارير قبل استيفائها', rule: 6 },
-  stopped: { label: 'موقوفة بقرار', why: 'أُوقف المشروع بقرار معتمد من الرئيس التنفيذي · لا صرف بعده (10.9.1)' },
-  settled: { label: 'مسوّاة', why: 'سُوّي الالتزام فلا تُصرف الدفعة · يُحرَّر محجوزها عند الإغلاق (10.4.2)' },
+  stopped: { label: 'موقوفة بقرار', why: /* doc 10.9.1 */ 'أُوقف المشروع بقرار معتمد من الرئيس التنفيذي · لا صرف بعده' },
+  settled: { label: 'مسوّاة', why: /* doc 10.4.2 */ 'سُوّي الالتزام فلا تُصرف الدفعة · يُحرَّر محجوزها عند الإغلاق' },
 }
 
 /* 8.2.31 · an agreement activated in the system opens disbursement · registered by the agreements

@@ -62,7 +62,7 @@ export default function ProcessReport() {
             <div>
               <h1 className="ptitle">{p.title}</h1>
               <p className="sub mt-1">
-                <span className="num">{p.id}</span> · مالك الإجراء: {p.owner} ·{' '}
+                {/* doc · p.id (BPD-0xx) */}مالك الإجراء: {p.owner} ·{' '}
                 <span className="num">{done}</span> من{' '}
                 <span className="num">{p.kpis.length}</span> مؤشرات قابلة للقياس
               </p>

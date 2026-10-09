@@ -240,7 +240,7 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
         <Head title="مشروع عبر منصة إحسان" meta={<Tag tone="teal">{closed ? 'مغلق' : 'مستقل · بلا اتفاقية'}</Tag>} />
         <KV rows={[
           { k: 'الشريك', v: <Link className="tlink" to={ROUTES.entity(row.entityId)}>{row.entityName}</Link> },
-          { k: 'الاتفاقية', v: <span className="sub">لا يوجد · يُكتفى بالخطة وجدول الدفعات والمستندات (11.2.17)</span> },
+          { k: 'الاتفاقية', v: <span className="sub">لا يوجد · يُكتفى بالخطة وجدول الدفعات والمستندات{/* doc 11.2.17 */}</span> },
           { k: 'الخطة', v: plan ? <Link className="tlink" to={ROUTES.plan(plan.id)}>خطة المشروع · {plan.stage === 'active' || plan.stage === 'done' ? 'معتمدة' : 'قيد الإعداد'}</Link> : g.plan && sup ? <button type="button" className="btn btn-2 btn-sm" onClick={() => r(openEhsanPlan(row.id, user.name), 'فتح الخطة')}>أعدّ الخطة</button> : <span className="sub">{g.why}</span> },
           { k: 'قيمة المشروع', v: <Money sm>{m.value}</Money> },
           { k: 'نفّذته المنصة · مؤكد', v: <Money sm>{m.confirmed}</Money> },
@@ -255,7 +255,7 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
         {g.schedule
           ? <SlotsEditor slots={sched} total={m.value} locked={!sup || closed || m.recorded > 0} onSave={(s) => saveEhSchedule(row.id, s, user.name)} />
           : <p className="sub cnote">{g.why}</p>}
-        {sup && m.recorded > 0 && <p className="sub cnote">الجدول مقفل بعد أول دفعة · يُعدَّل بقرار تعديل القيمة (10.9).</p>}
+        {sup && m.recorded > 0 && <p className="sub cnote">الجدول مقفل بعد أول دفعة · يُعدَّل بقرار تعديل القيمة.{/* doc 10.9 */}</p>}
       </Glass>
 
       <Glass>

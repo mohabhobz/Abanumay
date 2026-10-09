@@ -41,7 +41,7 @@ export function ReconcileTab({ me, canAct }: { me: string; canAct: boolean }) {
   return (
     <>
       <Glass>
-        <Head title="مطابقة دفعات إحسان مع المنصة" meta={<span className="sub"><bdi>11.4.23 · 11.4.24</bdi></span>} />
+        <Head title="مطابقة دفعات إحسان مع المنصة" meta={<span className="sub"><bdi>{/* doc 11.4.23 · 11.4.24 */}</bdi></span>} />
         <p className="sub">صدّر عمليات الصرف من منصة إحسان (CSV أو Excel) وارفعها هنا · تُطابق كل عملية برقمها مع الدفعة المسجّلة في النظام، وتظهر الفروق لمراجعتها.</p>
         <p className="sub cnote">الأعمدة المطلوبة: «رقم العملية» و«المبلغ» · واختياري: «التاريخ» و«المشروع».</p>
         <div className="rowf gp-2 mt-2">

@@ -129,7 +129,7 @@ export default function EscalationSettingsPage() {
               <Glass key={p.key} className="tblcard">
                 <Head
                   title={p.label}
-                  meta={<span className="sub"><bdi>{p.bpd}</bdi> · الآن <Num>{c.late}</Num> متأخر و<Num>{c.stuck}</Num> متعثر</span>}
+                  meta={<span className="sub">{/* doc p.bpd */}الآن <Num>{c.late}</Num> متأخر و<Num>{c.stuck}</Num> متعثر</span>}
                 />
                 <ul className="cfglist">
                   <li className="itk-sup">

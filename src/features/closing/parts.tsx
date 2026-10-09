@@ -73,7 +73,7 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
       <Err list={bad} />
       <p className="sub cnote">
         يطابق المشرف الفواتير بالمبلغ المصروف · وما صُرف ولم تغطِّه الفواتير وفرٌ تُطالَب الجهة بإعادته،
-        ويعود مع المحجوز غير المصروف إلى مخصص المجال (<bdi>10.9.7</bdi>).
+        ويعود مع المحجوز غير المصروف إلى مخصص المجال (<bdi>{/* doc 10.9.7 */}</bdi>).
       </p>
     </Glass>
   )
@@ -105,7 +105,7 @@ export function RequirementsCard({ c, asEntity }: { c: CloseRow; asEntity: boole
       </ul>
       {maySettle && open.length > 0 && (
         <>
-          <p className="sub cnote">الدفعات التي لم تُصرف تُسوّى بقرار بدل صرفها، ويُحرَّر محجوزها عند الإغلاق (<bdi>10.4.2</bdi>):</p>
+          <p className="sub cnote">الدفعات التي لم تُصرف تُسوّى بقرار بدل صرفها، ويُحرَّر محجوزها عند الإغلاق (<bdi>{/* doc 10.4.2 */}</bdi>):</p>
           <div className="apv-row mt-2">
             <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="سبب التسوية · إلزامي" aria-label="سبب تسوية الدفعة" /></span>
             {open.map((s) => (

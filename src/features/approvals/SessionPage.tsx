@@ -178,7 +178,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
             <span className="rowf gp-2">
               {hold?.node
                 ? <span>{HOLD_STAGE_SAY[hold.link.stage]} · {hold.link.shares.length > 1 ? `${nf.format(hold.link.shares.length)} بنود` : hold.node.label}</span>
-                : <span className="bad">لا حجز · يُمنع العرض (6.2.10)</span>}
+                : <span className="bad">لا حجز · يُمنع العرض{/* doc 6.2.10 */}</span>}
               {/* 6.4.2 · 7.4.2 · the body reviews the link and may change it before it decides */}
               {may && !it.outcome && <BudgetLinkAction project={{ id: p.id, name: p.name, year: p.year, goal: p.goal, amount: p.amountRequested }} label={hold ? 'راجع الارتباط' : 'ربط بالميزانية'} />}
             </span>

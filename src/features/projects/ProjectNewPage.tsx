@@ -245,8 +245,8 @@ export default function ProjectNewPage() {
     /* 11.2.2 · 13.4.1 · the type has to be one the partner may have · a portfolio is a partner's alone */
     const t = val.ptype === 'محفظة' ? 'portfolio' : 'independent'
     const own = [
-      ...(val.ptype === 'محفظة' && val.entityId && !isStrategic(val.entityId) ? [{ key: 'ptype', say: 'المحفظة لشريك استراتيجي معتمد وحده', rule: '13.4.1' }] : []),
-      ...(val.entityId && isStrategic(val.entityId) && !typeAllowed(val.entityId, t) ? [{ key: 'ptype', say: `«${val.ptype || 'مستقل'}» غير مسموح لهذا الشريك`, rule: '11.2.2' }] : []),
+      ...(val.ptype === 'محفظة' && val.entityId && !isStrategic(val.entityId) ? [{ key: 'ptype', say: 'المحفظة لشريك استراتيجي معتمد وحده', rule: /* doc 13.4.1 */ '' }] : []),
+      ...(val.entityId && isStrategic(val.entityId) && !typeAllowed(val.entityId, t) ? [{ key: 'ptype', say: `«${val.ptype || 'مستقل'}» غير مسموح لهذا الشريك`, rule: /* doc 11.2.2 */ '' }] : []),
     ]
     return [...projectIssues(val), ...own]
   }, [val])
@@ -264,7 +264,7 @@ export default function ProjectNewPage() {
   const blocks = [
     ...STAGES.filter((s) => shortBy[s.key].length)
       .map((s) => ({ head: s.label, text: shortBy[s.key].join(' · '), n: shortBy[s.key].length })),
-    ...issues.map((i) => ({ head: i.rule, text: i.say })),
+    ...issues.map((i) => ({ head: 'قبل الإرسال', text: i.say })),
   ]
 
   const at = STAGES.findIndex((x) => x.key === tab)
@@ -429,7 +429,7 @@ export default function ProjectNewPage() {
                     (tab === 'money' && i.key === 'per'))
                   .map((i) => (
                     <p key={i.key} className="bad cnote">
-                      {i.say} <span className="sub">· {i.rule}</span>
+                      {i.say}
                     </p>
                   ))}
 
@@ -492,8 +492,8 @@ export default function ProjectNewPage() {
                   </p>
                   <p className="sub cnote">
                     الحدّ من الإعدادات («الحدود المالية والزمنية») ويُحتسب على الطلبات المقدَّمة
-                    داخل فترة الدورة (قاعدة 3.4.12).
-                  </p>
+                    داخل فترة الدورة ().
+                  {/* doc 3.4.12 */}</p>
                 </Glass>
               )}
 
@@ -519,7 +519,7 @@ export default function ProjectNewPage() {
               empty="كل الحقول الإلزامية مكتملة · الطلب جاهز للإرسال."
               readings={[
                 ...blockerReadings(blocks, 'يمنع الإرسال'),
-                ...(ent?.capped ? [{ id: 'pn-cap', kind: 'flag' as const, label: 'حدّ الطلبات', text: `بلغت «${ent.name}» حدّ الطلبات في هذه الدورة.`, src: 'قاعدة 3.4.12' }] : []),
+                ...(ent?.capped ? [{ id: 'pn-cap', kind: 'flag' as const, label: 'حدّ الطلبات', text: `بلغت «${ent.name}» حدّ الطلبات في هذه الدورة.`, src: /* doc 3.4.12 */ '' }] : []),
                 ...(asked > 0 && reach > 0 ? [{ id: 'pn-cost', kind: 'note' as const, label: 'تكلفة المستفيد', metric: { value: nf.format(Math.round(asked / reach)), unit: 'ريال للمستفيد' }, text: `${nf.format(asked)} على ${nf.format(reach)} مستفيد.`, src: 'محسوبة من الطلب' }] : []),
               ]}
             />

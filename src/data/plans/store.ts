@@ -393,7 +393,7 @@ setConfirmHook((projectId, by) => {
 const id6 = () => Math.random().toString(36).slice(2, 8)
 
 export function changePlanDecision(projectId: string, needs: boolean, reason: string, by: string): string[] {
-  if (!reason.trim()) return ['سبب تعديل القرار إلزامي (12.4.31)']
+  if (!reason.trim()) return [/* doc 12.4.31 */ 'سبب تعديل القرار إلزامي']
   const cur = planDecisionOf(projectId)
   if (cur && cur.needs === needs) return ['القرار الحالي هو نفسه']
   run({ op: 'decide', projectId, needs, reason: reason.trim(), planId: `PL-${1030 + planRows.length}`, by, at: now() })
@@ -440,7 +440,7 @@ export function requestChange(planId: string, say: string, proposed: PlanPhase[]
   return []
 }
 export function decideChangeBy(planId: string, changeId: string, outcome: 'approve' | 'reject' | 'return', note: string, by: string): string[] {
-  if (!note.trim()) return ['اكتب ملاحظة القرار (12.4.22)']
+  if (!note.trim()) return [/* doc 12.4.22 */ 'اكتب ملاحظة القرار']
   run({ op: 'changeDecide', planId, changeId, outcome, note: note.trim(), by, at: now() })
   return []
 }

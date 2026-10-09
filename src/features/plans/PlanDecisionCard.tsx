@@ -48,7 +48,7 @@ export function PlanDecisionCard({ projectId, approved }: { projectId: string; a
         <li>
           <span className="apv-t">
             <b>اقتراح القاعدة: {rule ? 'يتطلب خطة' : 'لا يتطلب خطة'}</b>
-            <span className="sub">من {nf.format(APPROVAL_RULES.planFrom)} ريال أو مدة تتجاوز السنة · والقرار لمدير المنح (4.4.2)</span>
+            <span className="sub">من {nf.format(APPROVAL_RULES.planFrom)} ريال أو مدة تتجاوز السنة · والقرار لمدير المنح{/* doc 4.4.2 */}</span>
           </span>
         </li>
         {plan && (
@@ -80,7 +80,7 @@ export function PlanDecisionCard({ projectId, approved }: { projectId: string; a
         </div>
       )}
       {said && <p className="bad cnote">{said}</p>}
-      {mayChange && d?.needs && plan && plan.stage !== 'cancelled' && <p className="sub cnote">التحويل إلى «لا يتطلب خطة» يلغي الخطة ويوقف إجراءاتها (12.4.32).</p>}
+      {mayChange && d?.needs && plan && plan.stage !== 'cancelled' && <p className="sub cnote">التحويل إلى «لا يتطلب خطة» يلغي الخطة ويوقف إجراءاتها.{/* doc 12.4.32 */}</p>}
 
       {hist.length > 1 && (
         <>

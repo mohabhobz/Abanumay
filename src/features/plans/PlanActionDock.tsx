@@ -57,8 +57,8 @@ export function planActionsFor(role: RoleKey, stage: PlanStage, asEntity = false
   }
   if (stage === 'supervisor' && role === 'supervisor') {
     return [
-      { key: 'toManager', label: 'اعتماد وإحالة لمدير المنح', kind: 'btn-p', gated: true, why: 'الاعتماد من مشرف المنح ثم مدير المنح (12.2.10)' },
-      { key: 'returnEntity', label: 'إعادة للجهة بملاحظات', kind: 'btn-2', needsNote: true, why: 'الجهة كاتبة الخطة، فتُعاد إليها لتعدّلها (12.2.8)' },
+      { key: 'toManager', label: 'اعتماد وإحالة لمدير المنح', kind: 'btn-p', gated: true, why: /* doc 12.2.10 */ 'الاعتماد من مشرف المنح ثم مدير المنح' },
+      { key: 'returnEntity', label: 'إعادة للجهة بملاحظات', kind: 'btn-2', needsNote: true, why: /* doc 12.2.8 */ 'الجهة كاتبة الخطة، فتُعاد إليها لتعدّلها' },
     ]
   }
   if (stage === 'manager' && role === 'grants-manager') {
@@ -149,7 +149,7 @@ export function PlanActionDock({
               (x.needsNote && !note.trim())
                 ? 'اكتب سبب الإعادة أولًا'
                 : (x.gated && issues.length > 0)
-                  ? `${issues[0].say} (${issues[0].rule})`
+                  ? issues[0].say
                   : ''
             return (
               <button

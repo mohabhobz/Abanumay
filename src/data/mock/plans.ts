@@ -221,13 +221,13 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
   const out: PlanIssue[] = []
 
   if (p.phases.length === 0) {
-    out.push({ key: 'phases', say: 'الخطة بلا مراحل. أضف مرحلة واحدة على الأقل.', rule: 'BPD-012' })
+    out.push({ key: 'phases', say: 'الخطة بلا مراحل. أضف مرحلة واحدة على الأقل.', rule: /* doc BPD-012 */ '' })
     return out
   }
 
   p.phases.forEach((ph, i) => {
     if (!ph.name.trim()) {
-      out.push({ key: `nm-${ph.id}`, say: `المرحلة ${i + 1} بلا اسم. اكتب اسمًا لها.`, rule: 'BPD-012' })
+      out.push({ key: `nm-${ph.id}`, say: `المرحلة ${i + 1} بلا اسم. اكتب اسمًا لها.`, rule: /* doc BPD-012 */ '' })
     }
     if (ph.activities.length === 0) {
       out.push({
@@ -238,34 +238,34 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
     }
     /* Re-audit 7 Oct · a stage's dates are required · a plan without them read «NaN%» once approved */
     if (!ph.from || !ph.to) {
-      out.push({ key: `dr-${ph.id}`, say: `حدّد تاريخي بداية «${ph.name || `المرحلة ${i + 1}`}» ونهايتها.`, rule: 'BPD-012' })
+      out.push({ key: `dr-${ph.id}`, say: `حدّد تاريخي بداية «${ph.name || `المرحلة ${i + 1}`}» ونهايتها.`, rule: /* doc BPD-012 */ '' })
     }
     const pr = projectRows.find((x) => x.id === p.projectId)
-    if (pr?.startAt && ph.from && ph.from < pr.startAt) out.push({ key: `ps-${ph.id}`, say: `تبدأ «${ph.name}» قبل بداية تنفيذ المشروع.`, rule: 'BPD-012' })
-    if (pr?.endAt && ph.to && ph.to > pr.endAt) out.push({ key: `pe-${ph.id}`, say: `تنتهي «${ph.name}» بعد نهاية مدة المشروع.`, rule: 'BPD-012' })
+    if (pr?.startAt && ph.from && ph.from < pr.startAt) out.push({ key: `ps-${ph.id}`, say: `تبدأ «${ph.name}» قبل بداية تنفيذ المشروع.`, rule: /* doc BPD-012 */ '' })
+    if (pr?.endAt && ph.to && ph.to > pr.endAt) out.push({ key: `pe-${ph.id}`, say: `تنتهي «${ph.name}» بعد نهاية مدة المشروع.`, rule: /* doc BPD-012 */ '' })
     if (ph.from && ph.to && ph.from > ph.to) {
       out.push({
         key: `dt-${ph.id}`,
         say: `تاريخ بداية «${ph.name}» بعد تاريخ نهايتها.`,
-        rule: 'BPD-012',
+        rule: /* doc BPD-012 */ '',
       })
     }
     /* An activity must fall **within** its stage's date range — an activity ending after its stage
        would let the stage's percentage keep climbing while it's supposedly still running */
     for (const a of ph.activities) {
-      if (!a.from || !a.to) out.push({ key: `ad-${a.id}`, say: `حدّد تاريخي نشاط «${a.name || 'بلا اسم'}».`, rule: 'BPD-012' })
+      if (!a.from || !a.to) out.push({ key: `ad-${a.id}`, say: `حدّد تاريخي نشاط «${a.name || 'بلا اسم'}».`, rule: /* doc BPD-012 */ '' })
       if (ph.from && a.from && a.from < ph.from) {
         out.push({
           key: `ab-${a.id}`,
           say: `يبدأ نشاط «${a.name}» قبل بداية مرحلته.`,
-          rule: 'BPD-012',
+          rule: /* doc BPD-012 */ '',
         })
       }
       if (ph.to && a.to && a.to > ph.to) {
         out.push({
           key: `aa-${a.id}`,
           say: `ينتهي نشاط «${a.name}» بعد نهاية مرحلته.`,
-          rule: 'BPD-012',
+          rule: /* doc BPD-012 */ '',
         })
       }
       if (a.needs.length === 0) {
@@ -281,7 +281,7 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
       out.push({
         key: `wt-${ph.id}`,
         say: `مجموع أوزان أنشطة «${ph.name}» ${w}، ويلزم أن يساوي 100.`,
-        rule: 'BPD-012',
+        rule: /* doc BPD-012 */ '',
       })
     }
   })
@@ -294,7 +294,7 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
     out.push({
       key: 'cost',
       say: `مجموع تكلفة المراحل ${cost.toLocaleString('en-US')} لا يساوي قيمة المنحة ${grant.toLocaleString('en-US')}.`,
-      rule: 'BPD-012',
+      rule: /* doc BPD-012 */ '',
     })
   }
 

@@ -219,9 +219,9 @@ export function payableProjects(entityId?: string): PayProject[] {
     if (!slots.length) continue
     out.push({
       id, name: p.name, entity: p.entityName, entityId: p.entityId, can: running && agr && !STOPPED.has(id),
-      why: STOPPED.has(id) ? 'أُوقف المشروع بقرار معتمد · لا صرف بعده (10.9.1)'
+      why: STOPPED.has(id) ? /* doc 10.9.1 */ 'أُوقف المشروع بقرار معتمد · لا صرف بعده'
         : !agr ? 'الاتفاقية غير سارية · لا صرف قبل تفعيل الاتفاقية (القاعدة 1)'
-        : !running ? 'المشروع ليس «تحت التنفيذ» · لا يُفتح طلب صرف لمشروع مكتمل أو موقوف (9.4.1)'
+        : !running ? /* doc 9.4.1 */ 'المشروع ليس «تحت التنفيذ» · لا يُفتح طلب صرف لمشروع مكتمل أو موقوف'
         : undefined,
       open: slots.filter((s) => s.state === 'open').length,
     })
@@ -273,7 +273,7 @@ export function payStops(r: PayRequest, act: PayAct): string[] {
   if (r.asked > r.due) out.push('قيمة الطلب أعلى من الدفعة المعتمدة · قاعدة 5')
   if (act !== 'recommend') {
     const y = payYearIssue(r.projectId, r.dueAt, r.asked)
-    if (y) out.push(`${y} · 1.4.52`)
+    if (y) out.push(/* doc 1.4.52 */ `${y}`)
     if (r.no === 1) for (const c of unmetBefore(r.projectId, 'firstPay')) out.push(`شرط قبل الدفعة الأولى لم يُستوفَ: ${c.text}`)
   }
   if (act === 'order' || act === 'transfer') if (!r.bank.active) out.push('الحساب البنكي المعتمد غير نشط · المخرج 2')

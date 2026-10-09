@@ -102,7 +102,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
               </Glass>
               {may && (
                 <Glass>
-                  <Head title="جلسة جديدة" meta={<span className="sub"><bdi>{body === 'committee' ? '6.3.1' : '7.3.1'}</bdi> · الاجتماع الدوري</span>} />
+                  <Head title="جلسة جديدة" meta={<span className="sub"><bdi>{body === 'committee' ? /* doc 6.3.1 */ '' : /* doc 7.3.1 */ ''}</bdi> · الاجتماع الدوري</span>} />
                   <div className="regfields">
                     <label className="regf regf-w">
                       <span className="lb">عنوان الجلسة<b className="regf-r" aria-label="إلزامي">*</b></span>

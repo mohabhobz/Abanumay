@@ -139,10 +139,10 @@ export default function PlanSettingsPage() {
                   we set so the screen works" - the latter must stay tagged as such until the
                   institution settles it. */}
               <p className="sub cnote">
-                لم تحدّد BPD-012 مدة لأي محطة · هذه الأرقام مؤقتة ليكون
+                لم تحدّد مدة لأي محطة · هذه الأرقام مؤقتة ليكون
                 لوصف «متأخّرة» معنى في النموذج، ويلزم تأكيدها مع
                 المؤسسة، مثل الحدود المالية للاعتماد تمامًا.
-              </p>
+              {/* doc BPD-012 */}</p>
               <StageLimits
                 stages={PLAN_STAGES.map((x) => ({ key: x.key, label: x.label, who: x.who }))}
                 limits={PLAN_LIMIT}

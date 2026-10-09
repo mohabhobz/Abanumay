@@ -20,7 +20,7 @@ export const ESC_PROCS: { key: EscProc; label: string; bpd: string }[] = [
   { key: 'budget', label: 'الميزانية والمناقلات', bpd: 'BPD-001' },
   { key: 'registration', label: 'تسجيل الجهات وتحديث بياناتها', bpd: 'BPD-002' },
   { key: 'study', label: 'دراسة المشروع', bpd: 'BPD-003' },
-  { key: 'approval', label: 'مسار الاعتماد', bpd: 'BPD-004–007' },
+  { key: 'approval', label: 'مسار الاعتماد', bpd: /* doc BPD-004 */ '–007' },
   { key: 'agreement', label: 'الاتفاقيات', bpd: 'BPD-008' },
   { key: 'payment', label: 'صرف الدفعات', bpd: 'BPD-009' },
   { key: 'closing', label: 'إغلاق المشروع', bpd: 'BPD-010' },

@@ -91,7 +91,7 @@ export default function EscalationPage() {
                     const c = counts[p.key] ?? { late: 0, stuck: 0 }
                     return (
                       <tr key={p.key} className={proc === p.key ? 'sel' : undefined} onClick={() => set({ proc: proc === p.key ? undefined : p.key })}>
-                        <td><button type="button" className="tlink" onClick={(e) => { e.stopPropagation(); set({ proc: proc === p.key ? undefined : p.key }) }}>{p.label}</button><span className="sub"> · <bdi>{p.bpd}</bdi></span></td>
+                        <td><button type="button" className="tlink" onClick={(e) => { e.stopPropagation(); set({ proc: proc === p.key ? undefined : p.key }) }}>{p.label}</button>{/* doc p.bpd */}</td>
                         <td className="n"><Num>{c.late}</Num></td>
                         <td className="n"><Num>{c.stuck}</Num></td>
                         <td className="sub">{stuckSay(p.key)}</td>

@@ -115,7 +115,7 @@ export default function CaseNewPage() {
                 )}
                 {kind === 'reduce' && (
                   <div className="apv-row mt-2">
-                    <span className="sub">ملحق تعديل الاتفاقية{annex ? ` · ${annex}` : <> · إلزامي (<bdi>10.9.5</bdi>)</>}</span>
+                    <span className="sub">ملحق تعديل الاتفاقية{annex ? ` · ${annex}` : <> · إلزامي (<bdi>{/* doc 10.9.5 */}</bdi>)</>}</span>
                     <UploadButton label="ملحق الاتفاقية" onPick={(f) => setAnnex(f.name)} />
                   </div>
                 )}
@@ -161,10 +161,10 @@ export default function CaseNewPage() {
               empty="القرار مكتمل · يُرفع إلى مدير المنح ثم الرئيس التنفيذي."
               readings={[
                 ...(!reason.trim() ? [{ id: 'cn-reason', kind: 'flag' as const, label: 'ينقص', text: 'سبب القرار', src: '10.9' }] : []),
-                ...(kind === 'stop' ? [{ id: 'cn-phase', kind: 'note' as const, label: 'موضع الإيقاف', text: phase.say, src: '10.9.1 – 10.9.4' }] : []),
-                ...(kind === 'reduce' && !annex ? [{ id: 'cn-annex', kind: 'flag' as const, label: 'ينقص', text: 'ملحق تعديل الاتفاقية', src: '10.9.5' }] : []),
-                ...(claim > 0 ? [{ id: 'cn-claim', kind: 'note' as const, label: 'استرداد', metric: { value: nf.format(claim), unit: 'ريال' }, text: 'يُطالَب بالفرق عمّا صُرف بعد الاعتماد.', src: '10.9.5' }] : []),
-                ...(issue ? [{ id: 'cn-issue', kind: 'flag' as const, label: 'الحجز', text: issue, src: '10.9.6' }] : []),
+                ...(kind === 'stop' ? [{ id: 'cn-phase', kind: 'note' as const, label: 'موضع الإيقاف', text: phase.say, src: /* doc 10.9.1 – 10.9.4 */ '' }] : []),
+                ...(kind === 'reduce' && !annex ? [{ id: 'cn-annex', kind: 'flag' as const, label: 'ينقص', text: 'ملحق تعديل الاتفاقية', src: /* doc 10.9.5 */ '' }] : []),
+                ...(claim > 0 ? [{ id: 'cn-claim', kind: 'note' as const, label: 'استرداد', metric: { value: nf.format(claim), unit: 'ريال' }, text: 'يُطالَب بالفرق عمّا صُرف بعد الاعتماد.', src: /* doc 10.9.5 */ '' }] : []),
+                ...(issue ? [{ id: 'cn-issue', kind: 'flag' as const, label: 'الحجز', text: issue, src: /* doc 10.9.6 */ '' }] : []),
               ]}
             />
           </div>

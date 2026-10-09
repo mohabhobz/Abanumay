@@ -113,7 +113,7 @@ export default function PortfolioNewPage() {
               cta="راجع الطلب"
               empty="الطلب مكتمل · يُرسل لمشرف المنح للدراسة."
               ask={!asPartner}
-              readings={missing.length ? [{ id: 'pn-miss', kind: 'flag', label: 'ينقص', text: missing.join('، '), src: '13.2.3' }] : []}
+              readings={missing.length ? [{ id: 'pn-miss', kind: 'flag', label: 'ينقص', text: missing.join('، '), src: /* doc 13.2.3 */ '' }] : []}
             />
           </div>
         </div>

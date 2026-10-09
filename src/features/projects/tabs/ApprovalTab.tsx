@@ -123,7 +123,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
             <button className="btn btn-2 btn-sm" disabled={!amend.trim()} onClick={() => { amendDecision(row, amend.trim(), me); setAmend('') }}>عدّل القرار بإجراء رسمي</button>
           </div>
         )}
-        <p className="sub cnote">لا يُحذف القرار بعد صدوره · يُعاد فتحه بإجراء رسمي موثّق في السجل (5.4.21).</p>
+        <p className="sub cnote">لا يُحذف القرار بعد صدوره · يُعاد فتحه بإجراء رسمي موثّق في السجل.{/* doc 5.4.21 */}</p>
       </Glass>
 
       <FundingCard row={row} />
@@ -232,7 +232,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="الشروط الخاصة" meta={<span className="sub"><Num>{f.conditions.length}</Num> شرط · <bdi>5.4.16</bdi></span>} />
+        <Head title="الشروط الخاصة" meta={<span className="sub"><Num>{f.conditions.length}</Num> شرط · <bdi>{/* doc 5.4.16 */}</bdi></span>} />
         {f.conditions.length === 0 && <p className="sub cnote">لا شروط على القرار.</p>}
         <ul className="apv-list">
           {f.conditions.map((c) => (
@@ -261,7 +261,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="الملاحظات الإلزامية" meta={<span className="sub"><bdi>5.4.14</bdi> · تمنع الإحالة لأعلى حتى تُعالج</span>} />
+        <Head title="الملاحظات الإلزامية" meta={<span className="sub"><bdi>{/* doc 5.4.14 */}</bdi> · تمنع الإحالة لأعلى حتى تُعالج</span>} />
         {f.notes.length === 0 && <p className="sub cnote">لا ملاحظات إلزامية.</p>}
         <ul className="apv-list">
           {f.notes.map((n) => (
@@ -289,7 +289,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="رأي إدارة مختصة" meta={<span className="sub"><bdi>5.4.15</bdi> · استشاري</span>} />
+        <Head title="رأي إدارة مختصة" meta={<span className="sub"><bdi>{/* doc 5.4.15 */}</bdi> · استشاري</span>} />
         {f.opinions.length === 0 && <p className="sub cnote">لم يُطلب رأي.</p>}
         <ul className="apv-list">
           {f.opinions.map((o) => (
@@ -322,7 +322,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="الملاحظات الرسمية للجهة" meta={<span className="sub"><bdi>5.4.22</bdi></span>} />
+        <Head title="الملاحظات الرسمية للجهة" meta={<span className="sub"><bdi>{/* doc 5.4.22 */}</bdi></span>} />
         {f.official.length === 0
           ? <p className="sub cnote">لا ملاحظات رسمية · الملاحظات الداخلية لا تظهر للجهة إلا إذا اعتُمدت هنا.</p>
           : <ul className="apv-list">{f.official.map((o) => <li key={o.id}><span className="apv-t"><b>{o.text}</b><span className="sub"><Person name={o.by} /> · <DateText>{o.at}</DateText></span></span></li>)}</ul>}
@@ -354,7 +354,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
 
       {holder && holder !== 'supervisor' && holder !== 'confirm' && !conflict && canDecide && (
         <Glass>
-          <Head title="تعارض المصالح" meta={<span className="sub"><bdi>5.4.24</bdi></span>} />
+          <Head title="تعارض المصالح" meta={<span className="sub"><bdi>{/* doc 5.4.24 */}</bdi></span>} />
           <p className="sub cnote">إن كان لك تعارض مع الجهة فأعلنه · يُحوَّل القرار لصاحب الصلاحية التالي ولا تتخذه أنت.</p>
           <div className="apv-row">
             <span className="fld"><input value={conf} onChange={(e) => setConf(e.target.value)} placeholder="سبب التعارض" aria-label="سبب التعارض" /></span>

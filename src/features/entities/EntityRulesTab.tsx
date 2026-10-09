@@ -32,7 +32,7 @@ export function EntityRulesTab() {
         <Head title="إرسال طلب التسجيل" meta={<Tag tone="warn">قرار معلّق</Tag>} />
         <Switch
           label="لا يُرسل طلب التسجيل قبل اكتمال البيانات والمستندات"
-          note={<>الوثيقة تشترطه (<bdi>2.2.7 · 2.4.4</bdi>) · والعميل طلب في 30 سبتمبر إتاحة الإرسال وترك النواقص للمراجع · مطفأ على طلب العميل</>}
+          note={<>الوثيقة تشترطه (<bdi>{/* doc 2.2.7 · 2.4.4 */}</bdi>) · والعميل طلب في 30 سبتمبر إتاحة الإرسال وترك النواقص للمراجع · مطفأ على طلب العميل</>}
           on={d.blockIncomplete}
           onChange={(v) => put('blockIncomplete', v)}
         />
@@ -47,7 +47,7 @@ export function EntityRulesTab() {
             <CfgNum value={d.otpMinutes} min={1} label="صلاحية الرمز بالدقائق" suffix="دقائق" onChange={(v) => put('otpMinutes', v)} />
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>المحاولات الخاطئة</b><span className="sub">يُلغى الرمز بعدها (<bdi>2.3.pw-13</bdi>)</span></span>
+            <span className="cfgl"><b>المحاولات الخاطئة</b><span className="sub">يُلغى الرمز بعدها (<bdi>{/* doc 2.3.pw-13 */}</bdi>)</span></span>
             <span className="pc-sp" />
             <CfgNum value={d.otpAttempts} min={1} label="عدد المحاولات" suffix="محاولات" onChange={(v) => put('otpAttempts', v)} />
           </li>
@@ -60,7 +60,7 @@ export function EntityRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="سياسة كلمات المرور" meta={<span className="sub"><bdi>2.3.pw-8</bdi></span>} />
+        <Head title="سياسة كلمات المرور" meta={<span className="sub"><bdi>{/* doc 2.3.pw-8 */}</bdi></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>الحد الأدنى للطول</b></span>
@@ -73,7 +73,7 @@ export function EntityRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="أصحاب القرار" meta={<span className="sub"><bdi>2.2.15 · 2.4.16 · 2.3.upd-9</bdi></span>} />
+        <Head title="أصحاب القرار" meta={<span className="sub"><bdi>{/* doc 2.2.15 · 2.4.16 · 2.3.upd-9 */}</bdi></span>} />
         <ul className="cfglist">
           {roles('approveBy', 'اعتماد طلب التسجيل أو رفضه', 'ومعه قرار كل حساب بنكي')}
           {roles('returnBy', 'إعادة طلب التسجيل للاستكمال', 'بملاحظة وحقول محدّدة')}
@@ -84,7 +84,7 @@ export function EntityRulesTab() {
 
       <Glass>
         <Head title="ما يحتاج إلى اعتماد عند التحديث" meta={<span className="sub"><Num>{d.approvalFields.length}</Num> من <Num>{FILE_FIELDS.length}</Num> حقلًا</span>} />
-        <p className="sub cnote">الحقول المختارة تنتظر قرار المؤسسة ويُعلَّق معها نشاط الجهة · والباقي يُطبَّق فور الإرسال (<bdi>2.3.upd-8</bdi>). الحسابات البنكية والوثائق المجدَّدة باعتماد دائمًا.</p>
+        <p className="sub cnote">الحقول المختارة تنتظر قرار المؤسسة ويُعلَّق معها نشاط الجهة · والباقي يُطبَّق فور الإرسال (<bdi>{/* doc 2.3.upd-8 */}</bdi>). الحسابات البنكية والوثائق المجدَّدة باعتماد دائمًا.</p>
         <MultiSelect
           wide
           all="لا شيء · كل التعديلات فورية"

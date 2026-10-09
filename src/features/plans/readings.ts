@@ -32,7 +32,7 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
         label: 'يمنع الإرسال',
         metric: { value: String(issues.length), unit: 'ملاحظة' },
         text: issues.slice(0, 3).map((i) => i.say).join(' '),
-        src: 'محسوبة من قواعد BPD-012 لا من رأي',
+        src: /* doc BPD-012 */ 'محسوبة من قواعد لا من رأي',
       })
     } else {
       out.push({
@@ -108,7 +108,7 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
         limitLabel: 'المخطَّط لليوم',
         unit: '%',
       },
-      src: 'مؤشر SPI مشتق من BPD-012 · لم تحدّد الوثيقة قيمة مستهدفة',
+      src: /* doc BPD-012 */ 'مؤشر SPI مشتق من لم تحدّد الوثيقة قيمة مستهدفة',
     })
   }
 
@@ -136,7 +136,7 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
       text:
         'قُبلت كل أنشطة الخطة، فارتفع مانع الإغلاق · أما الإغلاق نفسه فإجراء '
         + 'مستقل له قواعده (التقرير الختامي · الاتصال المؤسسي · التقييم).',
-      src: 'BPD-012 · الخطة مكتملة ⇒ المشروع مؤهَّل للإغلاق',
+      src: /* doc BPD-012 */ 'الخطة مكتملة ⇒ المشروع مؤهَّل للإغلاق',
     })
   }
 
