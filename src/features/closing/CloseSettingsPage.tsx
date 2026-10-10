@@ -84,8 +84,8 @@ export default function CloseSettingsPage() {
                 meta={<span className="sub"><Num>{CLOSE_DOCS.length}</Num> {nounAfter(CLOSE_DOCS.length, NOUN.doc)}</span>}
               />
               <p className="sub cnote">
-                تُلزم القاعدة <span className="num">3</span> بإرفاق المستندات الداعمة
-                قبل إرسال التقرير، وتسمح القاعدة <span className="num">5</span> بإرسال
+                تُلزم القواعد {/* doc rule 3 */} بإرفاق المستندات الداعمة
+                قبل إرسال التقرير، وتسمح القواعد {/* doc rule 5 */} بإرسال
                 المواد الإعلامية والفيديوهات <b>روابط تخزين سحابي معتمدة</b>
                 بدل رفعها · فهي عادةً أكبر من أي حدّ رفع.
               </p>
@@ -106,7 +106,7 @@ export default function CloseSettingsPage() {
                         <td>{d.label}</td>
                         <td>
                           {d.req
-                            ? <Tag tone="mute">إلزامي · قاعدة 4</Tag>
+                            ? <Tag tone="mute">إلزامي{/* doc rule 4 */}</Tag>
                             : <span className="sub">داعم</span>}
                         </td>
                         <td className="n">
@@ -129,7 +129,7 @@ export default function CloseSettingsPage() {
               {/* Note: this sentence is what separates "a number we agreed on" from "a number we
                   put in so the screen would work." */}
               <p className="sub cnote">
-                تقيس متوسط مدة الإغلاق (مؤشر {/* doc BPD-011 */}<span className="num">1</span>)
+                تقيس متوسط مدة الإغلاق {/* doc BPD-011 KPI 1 */}
                 ولا تضع حدًّا لأي محطة · هذه الأرقام مؤقتة ليكون لوصف «متأخّر»
                 معنى في النموذج، وتحتاج إلى تأكيد المؤسسة (السؤال س-18).
               </p>
@@ -146,7 +146,7 @@ export default function CloseSettingsPage() {
               />
               <p className="sub cnote">
                 تُتخطّى محطة الاتصال المؤسسي إذا خلت الاتفاقية من التزام نشر
-                إعلامي (القاعدة <span className="num">9</span>) · فيُحسب حدّها على
+                إعلامي{/* doc rule 9 */} · فيُحسب حدّها على
                 الطلبات التي تمرّ بها فقط.
               </p>
             </Glass>

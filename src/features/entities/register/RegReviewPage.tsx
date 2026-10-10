@@ -110,7 +110,7 @@ export default function RegReviewPage() {
             <Glass>
               <Empty
                 title="الطلب غير موجود."
-                note="ربما أُرشف الطلب أو أن الرابط قديم · علمًا بأن الطلبات لا تُحذف (قاعدة 28)."
+                note="ربما أُرشف الطلب أو أن الرابط قديم · علمًا بأن الطلبات لا تُحذف."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.entityRequests)}>
                     العودة إلى صندوق الطلبات
@@ -136,7 +136,7 @@ export default function RegReviewPage() {
   const steps: StepItem[] = [
     { label: 'تعبئة الجهة وإرسالها', at: <DateText>{r.submittedAt}</DateText>, state: 'done' },
     {
-      label: 'تحقّق الجوال · قاعدة 19',
+      label: /* doc rule 19 */ 'تحقّق الجوال',
       note: r.clerkMobile,
       state: r.state === 'draft' ? 'todo' : 'done',
     },
@@ -147,7 +147,7 @@ export default function RegReviewPage() {
       state: r.state === 'rejected' ? 'no' : decided ? 'done' : r.state === 'draft' ? 'todo' : 'now',
     },
     {
-      label: 'إنشاء حساب الجهة · قاعدة 2',
+      label: /* doc rule 2 */ 'إنشاء حساب الجهة',
       note: r.entityId ? `الجهة ${r.entityId}` : 'بعد الاعتماد وحده',
       /* A rejected entity never gets an account created - this stage is skipped, not pending. */
       state: r.entityId ? 'done' : r.state === 'rejected' ? 'skip' : 'todo',
@@ -195,7 +195,7 @@ export default function RegReviewPage() {
                         ? <>رقم الترخيص مسجَّل لـ «{clash.name}» بنفس التصنيف</>
                         : <>رقم الترخيص <Mono>{r.licenseNo}</Mono> غير مكرَّر في هذا التصنيف</>}
                     </span>
-                    <span className="payq-r">قاعدة <Num>8</Num></span>
+                    {/* doc rule 8 */}
                   </li>
                   <li className={badIban.length ? 'no' : 'ok'}>
                     <Icon name={badIban.length ? icons.alert : icons.check} size="sm" />
@@ -204,7 +204,7 @@ export default function RegReviewPage() {
                         ? <>آيبان غير صحيح في <Num>{badIban.length}</Num> {badIban.length > 1 ? 'حسابات' : 'حساب'} مقبول · ارفض الحساب أو أعد الطلب لتصحيحه</>
                         : 'كل الحسابات المقبولة آيبانها صحيح'}
                     </span>
-                    <span className="payq-r">{/* doc 2.4.6 */}</span>
+                    {/* doc 2.4.6 */}
                   </li>
                   <li className={missingDocs.length ? 'no' : 'ok'}>
                     <Icon name={missingDocs.length ? icons.alert : icons.check} size="sm" />
@@ -213,21 +213,21 @@ export default function RegReviewPage() {
                         ? <>ينقص <Num>{missingDocs.length}</Num>: {missingDocs.map((d) => d.label).join(' · ')}</>
                         : 'كل المستندات الإلزامية لهذا التصنيف مرفوعة'}
                     </span>
-                    <span className="payq-r">قاعدة <Num>4</Num></span>
+                    {/* doc rule 4 */}
                   </li>
                   <li className={stale.length ? 'no' : 'ok'}>
                     <Icon name={stale.length ? icons.alert : icons.check} size="sm" />
                     <span>{stale.length
                       ? <>وثيقة منتهية عند التقديم: {stale.map((k) => REG_DOCS.find((d) => d.key === k)?.label).join(' · ')}</>
                       : 'الترخيص وقرار تكليف المجلس ساريان'}</span>
-                    <span className="payq-r">قاعدة <Num>5</Num></span>
+                    {/* doc rule 5 */}
                   </li>
                   <li className={dups.length ? 'no' : 'ok'}>
                     <Icon name={dups.length ? icons.alert : icons.check} size="sm" />
                     <span>{dups.length
                       ? <>بيانات مكرّرة: {dups.map((d) => `${d.label} مع «${d.who}»`).join(' · ')}</>
                       : 'الاسم والبريد والجوال والآيبان غير مكرّرة'}</span>
-                    <span className="payq-r">قاعدة <Num>10</Num></span>
+                    {/* doc rule 10 */}
                   </li>
                   {/* Batch 8 · spelling and formatting of the request's text · advisory, it doesn't block */}
                   {(() => {
@@ -249,7 +249,7 @@ export default function RegReviewPage() {
                         {badFormat.length > 0 && warnFiles.length > 0 && ' · '}
                         {warnFiles.map(([k, f]) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k}: ${f.warn}`).join(' · ')}
                       </span>
-                      <span className="payq-r">قاعدة <Num>6</Num></span>
+                      {/* doc rule 6 */}
                     </li>
                   )}
                   <li className={r.governanceClaim > 0 ? 'ok' : 'no'}>
@@ -295,7 +295,7 @@ export default function RegReviewPage() {
                       v: (
                         <span className="kvpair">
                           <DateText>{r.boardEndsAt}</DateText>
-                          <Tag tone="mute">قاعدة 18 في إجراء التحديث</Tag>
+                          <Tag tone="mute">{/* doc rule 18 */} في إجراء التحديث</Tag>
                         </span>
                       ),
                     },
@@ -358,7 +358,7 @@ export default function RegReviewPage() {
 
               {/* The path and the log · in the main column, the end column is the assistant's alone */}
               <Glass>
-                <Head title="مسار الطلب" meta={<span className="sub">قاعدة 30 · سجل التدقيق</span>} />
+                <Head title="مسار الطلب" meta={<span className="sub">{/* doc rule 30 */} · سجل التدقيق</span>} />
                 <Steps items={steps} flow="ladder" />
               </Glass>
 
@@ -435,8 +435,7 @@ export default function RegReviewPage() {
                 </ul>
                 <p className="sub cnote">
                   هذه الأسباب السبعة مُرمَّزة في النظام العامل · ويُتّخذ قرار الحساب
-                  مستقلًا حتى لو أُدخل في الطلب نفسه (قاعدة{' '}
-                  <span className="num">11</span>).
+                  مستقلًا حتى لو أُدخل في الطلب نفسه{/* doc rule 11 */}.
                 </p>
               </Glass>
 
@@ -466,7 +465,7 @@ export default function RegReviewPage() {
                 <Glass>
                   <Head
                     title={r.state === 'rejected' ? 'سبب الرفض' : 'ملاحظة الاستكمال'}
-                    meta={<Tag tone={r.state === 'rejected' ? 'no' : 'ret'}>قاعدة 31</Tag>}
+                    /* doc rule 31 */
                   />
                   <div className="payq-note">
                     <Icon name={icons.chat} size="sm" />
@@ -478,10 +477,9 @@ export default function RegReviewPage() {
               <Glass>
                 <Head title="ما لا يوجد في هذه الشاشة" />
                 <p className="sub cnote">
-                  لا يوجد زر حذف · القاعدة <span className="num">28</span> تمنع الحذف
+                  لا يوجد زر حذف{/* doc rule 28 */} تمنع الحذف
                   نهائيًا، والمرفوض يُؤرشف والقائم يُعطَّل. والمؤرشف يظهر لمسؤول
-                  النظام وحده في <Link className="lnk" to={ROUTES.entityArchive}>أرشيف الجهات</Link>{' '}
-                  (القاعدة <span className="num">29</span>).
+                  النظام وحده في <Link className="lnk" to={ROUTES.entityArchive}>أرشيف الجهات</Link>{' '}{/* doc rule 29 */}.
                 </p>
               </Glass>
             </div>
@@ -491,8 +489,8 @@ export default function RegReviewPage() {
               cta="راجع الطلب"
               empty="لا مانع من الاعتماد · الترخيص غير مكرَّر والمستندات مكتملة وسارية."
               readings={[
-                ...(clash ? [{ id: 'rg-clash', kind: 'flag' as const, label: 'ترخيص مكرَّر', text: `رقم الترخيص مسجَّل لـ «${clash.name}» بنفس التصنيف.`, src: 'قاعدة 8' }] : []),
-                ...(missingDocs.length ? [{ id: 'rg-docs', kind: 'flag' as const, label: 'مستندات ناقصة', metric: { value: String(missingDocs.length), unit: 'مستند' }, text: missingDocs.map((d) => d.label).join(' · '), src: 'قاعدة 4' }] : []),
+                ...(clash ? [{ id: 'rg-clash', kind: 'flag' as const, label: 'ترخيص مكرَّر', text: `رقم الترخيص مسجَّل لـ «${clash.name}» بنفس التصنيف.`, src: /* doc rule 8 */ '' }] : []),
+                ...(missingDocs.length ? [{ id: 'rg-docs', kind: 'flag' as const, label: 'مستندات ناقصة', metric: { value: String(missingDocs.length), unit: 'مستند' }, text: missingDocs.map((d) => d.label).join(' · '), src: /* doc rule 4 */ '' }] : []),
                 ...(stale.length ? [{ id: 'rg-stale', kind: 'flag' as const, label: 'وثيقة منتهية', text: stale.map((k) => REG_DOCS.find((d) => d.key === k)?.label ?? k).join(' · '), src: 'عند التقديم' }] : []),
                 /* Cross · spelling and illogical data, the documents read against the form, patterns
                    across entities and an advisory acceptance score */
@@ -526,7 +524,7 @@ export default function RegReviewPage() {
               <div className="rowf gp-3 payact-w">
                 <span className="decsent">
                   {r.state === 'draft'
-                    ? <>الطلب <b>مسودة عند الجهة</b> · لم يصل إلى المراجعة بعد (قاعدة <Num>12</Num>)</>
+                    ? <>الطلب <b>مسودة عند الجهة</b> · لم يصل إلى المراجعة بعد{/* doc rule 12 */}</>
                     : r.state === 'completion'
                       ? <>الطلب <b>عند الجهة للاستكمال</b> · تُتاح القرارات عند إعادة إرساله</>
                       : <>الطلب <b>{REG_STATE_SAY[r.state]}</b> · اتُّخذ القرار ولا إجراء بعده{r.entityId && <> · <Link className="lnk" to={ROUTES.entity(r.entityId)}>ملف الجهة</Link></>}</>}
@@ -588,7 +586,7 @@ export default function RegReviewPage() {
                       className="btn btn-d"
                       data-needs-note=""
                       disabled={!note.trim() || !why}
-                      title={!note.trim() ? 'اكتب سبب الرفض أولًا' : !why ? 'اختر سبب الرفض من القائمة' : 'يُؤرشف بسببه · قاعدة 28'}
+                      title={!note.trim() ? 'اكتب سبب الرفض أولًا' : !why ? 'اختر سبب الرفض من القائمة' : /* doc rule 28 */ 'يُؤرشف بسببه'}
                       onClick={() => { if (why) { decideRegistration(r.id, 'reject', note.trim(), bankNo, me, why); setTaken('reject') } }}
                     >
                       رفض وإيقاف
@@ -600,10 +598,10 @@ export default function RegReviewPage() {
                       disabled={blocked || r.banks.every((b) => bankNo[b.id])}
                       title={
                         blocked
-                          ? 'نواقص تمنع الاعتماد · القواعد 4 و5 و8 · وصحة الآيبان'
+                          ? /* doc rule 4 · 5 · 8 */ 'نواقص تمنع الاعتماد · وصحة الآيبان'
                           : r.banks.every((b) => bankNo[b.id])
                             ? 'لا حساب بنكيًا مقبولًا · يلزم حساب واحد على الأقل'
-                            : 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم · قاعدة 2'
+                            : /* doc rule 2 */ 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم'
                       }
                       onClick={() => { decideRegistration(r.id, 'approve', note.trim(), bankNo, me); setTaken('approve') }}
                     >

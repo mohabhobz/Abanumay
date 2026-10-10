@@ -171,7 +171,7 @@ export default function RequestsPage() {
                 <span className="num">{rows.length}</span> {nounAfter(rows.length, REQUEST_NOUN)} من{' '}
                 <span className="num">{regRows.length}</span> في هذا النموذج ·{' '}
                 <span className="num">{k.open}</span> قيد المراجعة · والجهة لا تُنشأ
-                إلا بعد الاعتماد (قاعدة <span className="num">2</span>)
+                إلا بعد الاعتماد{/* doc rule 2 */}
               </p>
             </div>
             {/* Note: same action, name, and destination as on "Entities". Here it was "Register a
@@ -199,25 +199,25 @@ export default function RequestsPage() {
             <Stat
               label="نسبة الطلبات المعتمدة"
               value={<Num>{pct(k.approvedPct)}</Num>}
-              note="مؤشر 2 · من المرسَل لا من المسودات"
+              note={/* doc KPI 2 */ "من المرسَل لا من المسودات"}
               bar={{ w: `${k.approvedPct}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة المراجعة"
               value={<Num>{k.avgDays}</Num>}
               unit="أيام"
-              note="مؤشر 4 · من الإرسال حتى القرار"
+              note={/* doc KPI 4 */ "من الإرسال حتى القرار"}
             />
             <Stat
               label="المعادة للاستكمال"
               value={<Num>{pct(k.backPct)}</Num>}
-              note="مؤشر 5 · توقف لاستكمال النواقص لا رفض"
+              note={/* doc KPI 5 */ "توقف لاستكمال النواقص لا رفض"}
               bar={{ w: `${k.backPct}%`, c: 'var(--warn)' }}
             />
             <Stat
               label="اكتمال ملفات المستندات"
               value={<Num>{pct(k.filePct)}</Num>}
-              note="مؤشر 6 · المرفوع من الإلزامي لكل تصنيف"
+              note={/* doc KPI 6 */ "المرفوع من الإلزامي لكل تصنيف"}
               bar={{ w: `${k.filePct}%`, c: 'var(--ch-1)' }}
             />
           </div>

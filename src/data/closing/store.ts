@@ -116,7 +116,7 @@ export function openGate(projectId: string): { ok: boolean; why: string; basis?:
   const p = projectOf(projectId)
   if (!p) return { ok: false, why: 'المشروع غير موجود' }
   const stopped = casesOfProject(projectId).some((c) => c.kind === 'stop' && (c.stage === 'approved' || c.stage === 'closed'))
-  if (!stopped && !isRunning(p)) return { ok: false, why: 'المشروع ليس «تحت التنفيذ» · لا يُفتح الإغلاق لمشروع في الدراسة أو قبل اتفاقيته · قاعدة 1' }
+  if (!stopped && !isRunning(p)) return { ok: false, why: /* doc rule 1 */ 'المشروع ليس «تحت التنفيذ» · لا يُفتح الإغلاق لمشروع في الدراسة أو قبل اتفاقيته' }
   const plan = planOfProject(projectId)
   const end = projectEnd(projectId)
   const basis: CloseRow['basis'] | undefined =
@@ -128,15 +128,15 @@ export function openGate(projectId: string): { ok: boolean; why: string; basis?:
     return {
       ok: false,
       why: plan
-        ? `لم تكتمل خطة التنفيذ (${nf.format(Math.round(planDone(plan)))} بالمئة) ولم تنتهِ المدة${end ? ` (تنتهي ${end})` : ''} ولا قرار إنهاء معتمد · قاعدة 1`
-        : `لم تنتهِ مدة التنفيذ${end ? ` (تنتهي ${end})` : ''} ولا قرار إنهاء معتمد · قاعدة 1`,
+        ? /* doc rule 1 */ `لم تكتمل خطة التنفيذ (${nf.format(Math.round(planDone(plan)))} بالمئة) ولم تنتهِ المدة${end ? ` (تنتهي ${end})` : ''} ولا قرار إنهاء معتمد`
+        : /* doc rule 1 */ `لم تنتهِ مدة التنفيذ${end ? ` (تنتهي ${end})` : ''} ولا قرار إنهاء معتمد`,
     }
   }
   if (!stopped) {
     const open = payRequests.filter((r) => r.projectId === projectId && r.state !== 'paid' && r.state !== 'closed')
-    if (open.length) return { ok: false, why: `${open.length === 1 ? 'طلب صرف مفتوح' : `${open.length} طلبات صرف مفتوحة`} · قاعدة 2` }
+    if (open.length) return { ok: false, why: /* doc rule 2 */ `${open.length === 1 ? 'طلب صرف مفتوح' : `${open.length} طلبات صرف مفتوحة`}` }
     const due = unsettledSlots(projectId).due
-    if (due.length) return { ok: false, why: `دفعة مستحقة لم تُصرف ولم تُسوَّ (الدفعة ${due.map((s) => s.no).join(' و')}) · قاعدة 2` }
+    if (due.length) return { ok: false, why: /* doc rule 2 */ `دفعة مستحقة لم تُصرف ولم تُسوَّ (الدفعة ${due.map((s) => s.no).join(' و')})` }
   }
   return { ok: true, why: basis === 'stopped' ? 'مؤهَّل · قرار إيقاف معتمد' : basis === 'complete' ? 'مؤهَّل · اكتملت الأنشطة' : 'مؤهَّل · انتهت مدة التنفيذ', basis }
 }
@@ -813,7 +813,7 @@ export function sendClosingReport(id: string, by: string): string[] {
   const c = closeById(id)
   if (!c) return ['الطلب غير موجود']
   const m = reportBlockers(c)
-  if (m.length) return [`ينقص: ${m[0]} · قاعدة 3`]
+  if (m.length) return [/* doc rule 3 */ `ينقص: ${m[0]}`]
   run({ op: 'send', id, by, at: now() })
   return []
 }
@@ -824,34 +824,34 @@ export interface CloseAct { kind: 'report' | 'eval' | 'start' | 'evalSend'; act:
 export function closeActions(c: CloseRow, role: RoleKey): CloseAct[] {
   const back = 'إعادة للجهة بملاحظات'
   if (c.stage === 'supervisor' && role === 'supervisor') return [
-    { kind: 'report', act: 'approve', label: 'اعتماد التقرير وإحالته', btn: 'btn-p', gated: true, why: 'خطوة 7 · مراجعة مشرف المنح ثم الاتصال المؤسسي أو مدير المنح' },
-    { kind: 'report', act: 'return', label: back, btn: 'btn-2', needsNote: true, why: 'قاعدة 19 · تعود الإعادة إلى الجهة وتُنشئ إصدارًا جديدًا' },
+    { kind: 'report', act: 'approve', label: 'اعتماد التقرير وإحالته', btn: 'btn-p', gated: true, why: /* doc step 7 */ 'مراجعة مشرف المنح ثم الاتصال المؤسسي أو مدير المنح' },
+    { kind: 'report', act: 'return', label: back, btn: 'btn-2', needsNote: true, why: /* doc rule 19 */ ' · تعود الإعادة إلى الجهة وتُنشئ إصدارًا جديدًا' },
   ]
   /* Re-audit 7 Oct · corporate communications reviews in its own seat (10.2.12 · 10.2.13) */
   if (c.stage === 'comms' && role === 'comms') return [
-    { kind: 'report', act: 'approve', label: 'اعتماد متطلبات النشر', btn: 'btn-p', why: 'قاعدة 9 · مراجعة النشر الإعلامي متى كانت مطلوبة' },
+    { kind: 'report', act: 'approve', label: 'اعتماد متطلبات النشر', btn: 'btn-p', why: /* doc rule 9 */ ' · مراجعة النشر الإعلامي متى كانت مطلوبة' },
     { kind: 'report', act: 'return', label: 'إعادة للمشرف بملاحظات النشر', btn: 'btn-2', needsNote: true, why: /* doc 10.2.13 */ 'تعود ملاحظات النشر إلى مشرف المنح' },
   ]
   if (c.stage === 'manager' && role === 'grants-manager') return [
-    { kind: 'report', act: 'approve', label: 'اعتماد التقرير وإحالته للتنفيذي', btn: 'btn-p', gated: true, why: 'خطوة 11 · اعتماد مدير المنح ثم المدير التنفيذي' },
-    { kind: 'report', act: 'return', label: back, btn: 'btn-2', needsNote: true, why: 'قاعدة 19 · كل إعادة تُنشئ إصدارًا جديدًا' },
+    { kind: 'report', act: 'approve', label: 'اعتماد التقرير وإحالته للتنفيذي', btn: 'btn-p', gated: true, why: /* doc step 11 */ 'اعتماد مدير المنح ثم المدير التنفيذي' },
+    { kind: 'report', act: 'return', label: back, btn: 'btn-2', needsNote: true, why: /* doc rule 19 */ ' · كل إعادة تُنشئ إصدارًا جديدًا' },
   ]
   if (c.stage === 'executive' && role === 'ceo') return [
-    { kind: 'report', act: 'approve', label: 'اعتماد التقرير الختامي', btn: 'btn-p', gated: true, why: 'قاعدة 6 · اعتماد المدير التنفيذي يفتح التقييم' },
+    { kind: 'report', act: 'approve', label: 'اعتماد التقرير الختامي', btn: 'btn-p', gated: true, why: /* doc rule 6 */ ' · اعتماد المدير التنفيذي يفتح التقييم' },
     { kind: 'report', act: 'return', label: back, btn: 'btn-2', needsNote: true, why: 'تعود الإعادة إلى الجهة كاتبة التقرير' },
   ]
   if (c.stage === 'reportDone' && role === 'supervisor') return [
-    { kind: 'start', act: 'start', label: 'ابدأ تقييم المشروع', btn: 'btn-p', why: 'قاعدة 6 · يبدأ التقييم بعد اعتماد المدير التنفيذي' },
+    { kind: 'start', act: 'start', label: 'ابدأ تقييم المشروع', btn: 'btn-p', why: /* doc rule 6 */ ' · يبدأ التقييم بعد اعتماد المدير التنفيذي' },
   ]
   if (c.stage === 'evalDraft' && role === 'supervisor') return [
-    { kind: 'evalSend', act: 'send', label: 'إرسال التقييم لمدير المنح', btn: 'btn-p', gated: true, why: 'قاعدة 17 · دورة اعتماد مستقلّة بسجلّ منفصل' },
+    { kind: 'evalSend', act: 'send', label: 'إرسال التقييم لمدير المنح', btn: 'btn-p', gated: true, why: /* doc rule 17 */ ' · دورة اعتماد مستقلّة بسجلّ منفصل' },
   ]
   if (c.stage === 'evalManager' && role === 'grants-manager') return [
-    { kind: 'eval', act: 'approve', label: 'اعتماد التقييم وإحالته للتنفيذي', btn: 'btn-p', why: 'قاعدة 17 · محطتان في دورة التقييم' },
+    { kind: 'eval', act: 'approve', label: 'اعتماد التقييم وإحالته للتنفيذي', btn: 'btn-p', why: /* doc rule 17 */ ' · محطتان في دورة التقييم' },
     { kind: 'eval', act: 'return', label: 'إعادة لمشرف المنح بملاحظات', btn: 'btn-2', needsNote: true, why: /* doc 10.2.19 */ 'يُعدّ المشرف التقييم فتعود إليه' },
   ]
   if (c.stage === 'evalExecutive' && role === 'ceo') return [
-    { kind: 'eval', act: 'approve', label: 'اعتماد التقييم والإغلاق النهائي', btn: 'btn-p', gated: true, why: 'قاعدة 8 و18 · الإغلاق يحتاج التقرير والتقييم والمتطلبات معًا' },
+    { kind: 'eval', act: 'approve', label: 'اعتماد التقييم والإغلاق النهائي', btn: 'btn-p', gated: true, why: /* doc rule 8 · 18 */ ' · الإغلاق يحتاج التقرير والتقييم والمتطلبات معًا' },
     { kind: 'eval', act: 'return', label: 'إعادة لمدير المنح بملاحظات', btn: 'btn-2', needsNote: true, why: /* doc 10.2.20 */ 'يعيد المدير التنفيذي التقييم إلى مدير المنح' },
   ]
   return []
@@ -862,11 +862,11 @@ export function closeStops(c: CloseRow, a: CloseAct): string[] {
   if (a.act === 'return') return []
   if (a.kind === 'report' && a.gated) {
     const m = reportBlockers(c)
-    if (m.length) return [`ينقص: ${m[0]} · قاعدة 4`]
+    if (m.length) return [/* doc rule 4 */ `ينقص: ${m[0]}`]
     if (c.stage === 'supervisor' && c.finance?.verified == null) return [/* doc 10.9.7 */ 'تحقّق من الفواتير أولًا']
   }
-  if (a.kind === 'evalSend') { const e = evalBlockers(c); if (e.length) return [`${e[0]} · قاعدة 10`] }
-  if (a.kind === 'eval' && c.stage === 'evalExecutive') return requirementsOf(c).filter((x) => !x.ok).map((x) => `${x.say} · قاعدة 18`)
+  if (a.kind === 'evalSend') { const e = evalBlockers(c); if (e.length) return [/* doc rule 10 */ `${e[0]}`] }
+  if (a.kind === 'eval' && c.stage === 'evalExecutive') return requirementsOf(c).filter((x) => !x.ok).map((x) => /* doc rule 18 */ `${x.say}`)
   return []
 }
 

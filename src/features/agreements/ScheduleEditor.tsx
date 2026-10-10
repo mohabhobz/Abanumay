@@ -196,7 +196,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
             وزّع الباقي على الأخيرة
           </button>
           <span className="pc-sp" />
-          <span className="sub">يلزم أن يساوي المجموع قيمة المنحة · <b>قاعدة 8</b></span>
+          <span className="sub">يلزم أن يساوي المجموع قيمة المنحة{/* doc rule 8 */}</span>
         </div>
       )}
     </>

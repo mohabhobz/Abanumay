@@ -90,7 +90,7 @@ export default function PlanSettingsPage() {
               <p className="sub cnote">
                 يطلب النشاط نوعًا أو أكثر من هذه الأنواع، ولا تستطيع الجهة إعلان
                 اكتمال النشاط قبل رفعها · وبها تصبح مراجعة مشرف المنح
-                ممكنة أصلًا (القاعدة <span className="num">14</span>).
+                ممكنة أصلًا{/* doc rule 14 */}.
               </p>
               {/* Note: the "note" column used to be all dots - a note is only written for a type no
                   plan has requested, so the column renders only when one exists. */}

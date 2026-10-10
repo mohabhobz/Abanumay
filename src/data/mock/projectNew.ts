@@ -157,7 +157,7 @@ export const P_STAGES: PStageDef[] = [
   {
     key: 'when',
     label: 'المدة',
-    note: 'قاعدة 13 · تاريخ التنفيذ الفعلي مستقل عن تاريخ التقديم',
+    note: /* doc rule 13 */ ' · تاريخ التنفيذ الفعلي مستقل عن تاريخ التقديم',
     fields: [
       { key: 'startAt', label: 'بداية التنفيذ الفعلي', kind: 'date', req: true, hint: 'يختلف عن تاريخ تقديم الطلب' },
       /* 3.4.30 · the duration is in working days and the end date is computed, not typed */
@@ -165,7 +165,7 @@ export const P_STAGES: PStageDef[] = [
       {
         key: 'multiYear', label: 'يمتد لأكثر من سنة مالية', kind: 'select',
         options: ['لا', 'نعم'],
-        hint: 'يُتحقَّق منه في الدراسة (الخطوتان 14 و15)',
+        hint: /* doc step 14 · 15 */ 'يُتحقَّق منه في الدراسة',
       },
     ],
   },

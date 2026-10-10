@@ -579,7 +579,7 @@ export default function PortalPage() {
                       module: "uploaded the evidence" isn't "counted as complete". */}
                   <p className="sub cnote">
                     ترفع الجهة الشواهد وتُبلغ باكتمال النشاط · ويُحتسب الإنجاز بعد
-                    مراجعة مشرف المنح وقبوله (القاعدة <span className="num">14</span>).
+                    مراجعة مشرف المنح وقبوله{/* doc rule 14 */}.
                   </p>
                   <ul className="ptl-miss ptl-plans">
                     {plans.map((pl) => (

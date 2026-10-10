@@ -323,11 +323,11 @@ function AgreementView({ a }: { a: AgreementRow }) {
 
               {!asEntity && (
                 <Glass>
-                  <Head title="سجل التدقيق" meta={<span className="sub">كل انتقال مع رقم خطوته في الوثيقة</span>} />
+                  <Head title="سجل التدقيق" meta={<span className="sub">كل انتقال بتاريخه ومنفّذه</span>} />
                   <ol className="paylog">
                     {[...a.log].reverse().map((e, i) => (
                       <li key={`${e.step}-${i}`}>
-                        <span className="paylog-s num">{e.step}</span>
+                        {/* doc · step e.step */}
                         <div className="paylog-b">
                           <div className="paylog-t">{e.what}</div>
                           <div className="sub">
@@ -366,7 +366,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
 
               {!asEntity && (
                 <Glass>
-                  <Head title="البيانات المسترجعة" meta={<span className="sub">قاعدة 5</span>} />
+                  <Head title="البيانات المسترجعة" /* doc rule 5 */ />
                   <KV rows={[
                     { k: 'المشروع', v: <Link className="tlink" to={ROUTES.project(a.projectId)}><Mono>{a.projectId}</Mono></Link> },
                     { k: 'الجهة المستفيدة', v: <Link className="tlink" to={ROUTES.entity(a.entityId)}>{a.entityName}</Link> },
@@ -399,7 +399,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
               ask={!asEntity}
               readings={asEntity || a.stage === 'active' || a.stage === 'cancelled' ? [] : [
                 ...issues.map((x, i) => ({ id: `ag-i${i}`, kind: 'flag' as const, label: 'يمنع الإرسال', text: x.say, src: x.rule })),
-                ...hints.map((h) => ({ id: `ag-h${h.id}`, kind: h.tone === 'warn' ? 'flag' as const : 'note' as const, label: 'مراجعة البنود', text: h.text, src: 'مراجعة استرشادية · قاعدة 21' })),
+                ...hints.map((h) => ({ id: `ag-h${h.id}`, kind: h.tone === 'warn' ? 'flag' as const : 'note' as const, label: 'مراجعة البنود', text: h.text, src: /* doc rule 21 */ 'مراجعة استرشادية' })),
                 readClauses(a),
               ]}
             />

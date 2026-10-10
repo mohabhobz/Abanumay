@@ -50,7 +50,7 @@ export function PayExceptions({ request: r }: { request: PayRequest }) {
           {list.map((x) => (
             <li key={x.id}>
               <span className="apv-t">
-                <b>{KIND_SAY[x.kind]}{x.rule ? ` · القاعدة ${x.rule}` : ''}</b>
+                <b>{KIND_SAY[x.kind]}</b>{/* doc · x.rule */}
                 <span className="sub">{isolate(x.text)}{x.file ? ` · ${x.file}` : ''}</span>
               </span>
               <span className="pc-sp" />
@@ -76,7 +76,7 @@ export function PayExceptions({ request: r }: { request: PayRequest }) {
               <Select
                 value={rule}
                 all="الشرط المستثنى"
-                options={unmet.map((c) => ({ value: String(c.rule), label: `${c.label} · القاعدة ${c.rule}` }))}
+                options={unmet.map((c) => ({ value: String(c.rule), label: c.label /* doc · c.rule */ }))}
                 onChange={setRule}
               />
             )}
@@ -91,7 +91,7 @@ export function PayExceptions({ request: r }: { request: PayRequest }) {
           {file && <p className="sub cnote">المرفق: {file}</p>}
           {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
           <p className="sub cnote">
-            الاستثناء من شرط صلاحية مدير المنح، ويرفع القاعدة 3 أو 6 وحدهما · أما سريان الاتفاقية
+            الاستثناء من شرط صلاحية مدير المنح، ويرفع {/* doc rules 3 · 6 */}شرط اكتمال المستندات أو شرط الدفعة وحدهما · أما سريان الاتفاقية
             والمحجوز وسقف المنحة فضوابط مالية لا تُستثنى. ويُغلق التسجيل باعتماد الإدارة المالية لأمر الصرف.
           </p>
         </>

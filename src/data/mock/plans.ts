@@ -233,7 +233,7 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
       out.push({
         key: `ac-${ph.id}`,
         say: `«${ph.name || `المرحلة ${i + 1}`}» بلا أنشطة · يُقاس إنجاز المرحلة بأنشطتها.`,
-        rule: 'قاعدة 14',
+        rule: /* doc rule 14 */ '',
       })
     }
     /* Re-audit 7 Oct · a stage's dates are required · a plan without them read «NaN%» once approved */
@@ -272,7 +272,7 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
         out.push({
           key: `ev-${a.id}`,
           say: `نشاط «${a.name}» بلا شاهد مطلوب · فلا يمكن مراجعة إنجازه.`,
-          rule: 'قاعدة 14',
+          rule: /* doc rule 14 */ '',
         })
       }
     }

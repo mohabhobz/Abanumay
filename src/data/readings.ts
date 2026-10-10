@@ -726,9 +726,9 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
       label: 'تقييم مطلوب منك',
       metric: { value: String(evalDue.length), unit: 'مشروع بانتظار تقييمك' },
       text:
-        `اعتمد المدير التنفيذي التقرير الختامي، فتحقّقت القاعدة 6 · ` +
+        /* doc rule 6 */ `اعتمد المدير التنفيذي التقرير الختامي، فتحقّقت  · ` +
         `وإعداد تقييم المشروع مسؤولية مشرف المنح لا الجهة، ودورة اعتماده منفصلة.`,
-      bold: ['القاعدة 6'],
+      bold: [] /* doc rule 6 */,
       src: 'قواعد الإغلاق 6 و17',
       to: ROUTES.closings,
       toLabel: 'اعرضها',
@@ -1209,7 +1209,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       metric: { value: String(blocked.length), unit: `طلب لا يمكن تمريره` },
       text: top
         ? `بقيمة ${millions(sum)} ⃁. أكثر الأسباب تكرارًا «${top.label}» في ` +
-          `${countOf(top.n, NOUN.request)} · قاعدة ${top.rule} في الوثيقة.`
+          /* doc · top.rule */ `${countOf(top.n, NOUN.request)}.`
         : `بقيمة ${millions(sum)} ⃁، وسببها الحساب البنكي غير المعتمد.`,
       bold: [`${millions(sum)} ⃁`, ...(top ? [`«${top.label}»`] : [])],
       src: 'قواعد الصرف 3 · 6 · 10 · 11',
@@ -1232,8 +1232,7 @@ export function readPayments(rows: PayRequest[], isFiltered: boolean): Reading[]
       label: 'مكان الضغط',
       metric: { value: String(peak[1]), unit: `طلب عند ${meta?.who ?? 'المرحلة'}` },
       text:
-        `أي أن ${pctText(share)} من الطلبات المفتوحة متوقفة في مرحلة واحدة ` +
-        `(الخطوات ${meta?.steps} في الوثيقة).`,
+        /* doc · steps meta.steps */ `أي أن ${pctText(share)} من الطلبات المفتوحة متوقفة في مرحلة واحدة.`,
       bold: [pctText(share)],
       src: 'توزيع الطلبات على المراحل',
       to: `${ROUTES.payments}?state=${peak[0]}${LIST}`,
@@ -1267,18 +1266,17 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
     const unbalanced = blocked.filter((a) => !agrPaymentsBalance(a).balanced).length
     const gapped = blocked.filter((a) => agrReserveGap(a) !== 0).length
     const worst = unbalanced >= gapped
-      ? { n: unbalanced, why: 'جدول الدفعات لا يساوي قيمة المنحة', rule: 'القاعدة 8' }
-      : { n: gapped, why: 'فرق بين قيمة الاتفاقية والمخصص المحجوز', rule: 'الخطوة 11' }
+      ? { n: unbalanced, why: 'جدول الدفعات لا يساوي قيمة المنحة', rule: /* doc rule 8 */ '' }
+      : { n: gapped, why: 'فرق بين قيمة الاتفاقية والمخصص المحجوز', rule: /* doc step 11 */ '' }
     out.push({
       id: 'a-block',
       kind: 'flag',
       label: 'موقوفة عن الاعتماد',
       metric: { value: String(blocked.length), unit: `اتفاقية ${scope}` },
       text:
-        `أكثر الأسباب «${worst.why}» في ${worst.n} منها · و${worst.rule} تمنع ` +
-        `الإرسال للاعتماد قبل استيفائه.`,
-      bold: [`«${worst.why}»`, worst.rule],
-      src: 'قواعد الاتفاقيات 8 و9 · الخطوة 11',
+        `أكثر الأسباب «${worst.why}» في ${worst.n} منها · ولا يُرسل للاعتماد قبل استيفائه.`,
+      bold: [`«${worst.why}»`],
+      src: /* doc step 8 · 9 */ '',
       to: `${ROUTES.agreements}?hold=1${LIST}`,
       toLabel: 'اعرضها',
     })
@@ -1296,10 +1294,10 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
       metric: { value: nf.format(sum), unit: '⃁ موقوفة في دورة الاعتماد' },
       text:
         `على ${countOf(pays, NOUN.payment)} مجدولة · ` +
-        `القاعدة 1 في إجراء الصرف تمنع أي طلب قبل تفعيل الاتفاقية، ` +
+        /* doc rule 1 */ ` في إجراء الصرف تمنع أي طلب قبل تفعيل الاتفاقية، ` +
         `فكل يوم توقف هنا يؤخّر دفعة هناك.`,
       bold: [`${countOf(pays, NOUN.payment)}`],
-      src: /* doc BPD-009 */ ' قاعدة 1 · جداول الدفعات في الاتفاقيات',
+      src: /* doc BPD-009 */ /* doc rule 1 */ '  · جداول الدفعات في الاتفاقيات',
     })
   }
 
@@ -1312,9 +1310,9 @@ export function readAgreements(rows: AgreementRow[], isFiltered: boolean): Readi
       label: 'دورات متكرّرة',
       metric: { value: pctText(Math.round((again.length / rows.length) * 100)), unit: 'لها إصدار ثانٍ' },
       text:
-        `تنص القاعدة 12 على أن الإعادة للتعديل تعيد دورة الاعتماد كاملة ` +
-        `مع الاحتفاظ بالاعتمادات السابقة · وهذا هو المؤشر 4 في الوثيقة.`,
-      src: 'إصدارات الاتفاقيات · قاعدة 24',
+        /* doc rule 12 */ `تنص القواعد على أن الإعادة للتعديل تعيد دورة الاعتماد كاملة ` +
+        `مع الاحتفاظ بالاعتمادات السابقة.` /* doc · indicator 4 */,
+      src: /* doc rule 24 */ 'إصدارات الاتفاقيات',
     })
   }
 
@@ -1342,7 +1340,7 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
       label: 'ملفات ناقصة',
       metric: { value: String(short.length), unit: `طلب ملفه ناقص ${scope}` },
       text:
-        `وإجمالي النواقص ${countOf(docs, NOUN.requiredDoc)}. القاعدة 4 تمنع الإرسال ` +
+        /* doc rule 4 */ `وإجمالي النواقص ${countOf(docs, NOUN.requiredDoc)}.  تمنع الإرسال ` +
         `قبل اكتمالها، والمطلوب نفسه يتغيّر بتصنيف الجهة · ثلاثة مستندات ` +
         `إلزامية للجهات التجارية وحدها.`,
       bold: [countOf(docs, NOUN.requiredDoc)],
@@ -1381,10 +1379,10 @@ export function readRegRequests(rows: RegRequest[], isFiltered: boolean): Readin
       metric: { value: String(back), unit: 'بانتظار الاستكمال' },
       text:
         `مقابل ${no} مرفوضًا. أي أن ما يوقف الطلبات نواقص ملف ` +
-        `تُحل برسالة، لا عدم أهلية · والقاعدة 31 تُلزم بكتابة السبب ` +
+        /* doc rule 31 */ `تُحل برسالة، لا عدم أهلية · و تُلزم بكتابة السبب ` +
         `في الحالتين.`,
       bold: [`${no} مرفوضًا`],
-      src: 'حالات الطلب · قاعدة 26',
+      src: /* doc rule 26 */ 'حالات الطلب',
       to: `${ROUTES.entityRequests}?state=completion${LIST}`,
       toLabel: 'اعرضها',
     })
@@ -1422,7 +1420,7 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
         `أعلنت الجهة ${pctText(planClaimed(worst))} والمقبول ${pctText(planDone(worst))}، ` +
         `أي ${gap} نقطة غير محسوبة حتى تُراجع.`,
       bold: [`${gap} نقطة`],
-      src: 'قاعدة 14 · لا يُحتسب النشاط إنجازًا إلا بعد قبول المشرف',
+      src: /* doc rule 14 */ ' · لا يُحتسب النشاط إنجازًا إلا بعد قبول المشرف',
       to: `${ROUTES.plans}?wait=1${LIST}`,
       toLabel: 'اعرضها',
     })
@@ -1448,7 +1446,7 @@ export function readPlans(rows: PlanRow[], isFiltered: boolean): Reading[] {
       danger: [`${(planSpi(worst) ?? 0).toFixed(2)}`],
       /* Compared against the baseline, not current dates · any extension has to go through
          approval, so deviation has a fixed reference point */
-      src: `النسخة المرجعية V${worst.baseline} · قاعدة 21`,
+      src: /* doc rule 21 */ `النسخة المرجعية V${worst.baseline}`,
       to: `${ROUTES.plans}?late=1${LIST}`,
       toLabel: 'اعرضها',
     })
@@ -1500,9 +1498,9 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
       metric: { value: String(atEntity.length), unit: `طلب ${scope}` },
       text:
         `${countOf(docs, MISSING_ITEM)} في المجموع · وأطولها «${worst.projectName}»، ` +
-        `متوقف منذ ${countOf(Math.round(worst.hoursInStage / 24), NOUN.day)} · القاعدة 3 تمنع ` +
-        `الإرسال قبل اكتمال البيانات والمرفقات.`,
-      bold: [countOf(docs, MISSING_ITEM), 'القاعدة 3'],
+        /* doc rule 3 */ `متوقف منذ ${countOf(Math.round(worst.hoursInStage / 24), NOUN.day)} · ولا يُرسل ` +
+        `قبل اكتمال البيانات والمرفقات.`,
+      bold: [countOf(docs, MISSING_ITEM)],
       src: 'قواعد الإغلاق 3 و4 و10',
       to: `${ROUTES.closings}?stage=draft,returned${LIST}`,
       toLabel: 'اعرضها',
@@ -1530,9 +1528,9 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
       text:
         `من ${countOf(withReport.length, NOUN.report)} وصل · وأكبر فرق في «${worst.c.projectName}»: ` +
         `${nf.format(worst.actual)} مستفيدًا مقابل ${nf.format(worst.planned)} معتمدًا · ` +
-        `والقاعدة 4 هي التي تجعل هذه المقارنة ممكنة.`,
-      bold: [`${nf.format(worst.actual)} مستفيدًا`, 'القاعدة 4'],
-      src: 'قاعدة 4 في إجراء الإغلاق · بيانات المشروع المعتمدة',
+        /* doc rule 4 */ `و هي التي تجعل هذه المقارنة ممكنة.`,
+      bold: [`${nf.format(worst.actual)} مستفيدًا`] /* doc rule 4 */,
+      src: /* doc rule 4 */ ' في إجراء الإغلاق · بيانات المشروع المعتمدة',
     })
   }
 
@@ -1545,10 +1543,10 @@ export function readClosings(rows: CloseRow[], isFiltered: boolean): Reading[] {
       label: 'تقييم مستحقّ',
       metric: { value: String(ready.length), unit: 'تقرير معتمد لم يبدأ تقييمه' },
       text:
-        `القاعدة 6 تمنع بدء التقييم قبل اعتماد المدير التنفيذي · ` +
+        /* doc rule 6 */ ` تمنع بدء التقييم قبل اعتماد المدير التنفيذي · ` +
         `وقد اعتُمد، فالخطوة التالية الآن عند مشرف المنح.`,
-      bold: ['القاعدة 6'],
-      src: 'قاعدة 6 · دورتان مستقلّتان (قاعدة 17)',
+      bold: [] /* doc rule 6 */,
+      src: /* doc rule 17 */ ' · دورتان مستقلّتان',
       to: `${ROUTES.closings}?stage=reportDone${LIST}`,
       toLabel: 'اعرضها',
     })

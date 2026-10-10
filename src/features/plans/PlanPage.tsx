@@ -301,7 +301,7 @@ export default function PlanPage() {
               <p className="sub cnote">
                 ترفع الجهة الشواهد وتعلن اكتمال النشاط، فيتحوّل إلى
                 «بانتظار قبول المشرف»، ولا يُحتسب في نسبة الإنجاز قبل أن
-                يراجعه مشرف المنح ويقبله (القاعدة <span className="num">14</span>).
+                يراجعه مشرف المنح ويقبله{/* doc rule 14 */}.
                 وإن أُعيد النشاط، يظهر سبب الإعادة مكتوبًا تحته.
               </p>
             </Glass>
@@ -363,7 +363,7 @@ export default function PlanPage() {
                         الفرق بين المُعلَن والمقبول{' '}
                         <span className="num">{claim - done}</span> نقطة · وهي أنشطة
                         أعلنت الجهة اكتمالها ولم تُراجع بعد، ولا تُحتسب إنجازًا
-                        قبل القبول (القاعدة <span className="num">14</span>).
+                        قبل القبول{/* doc rule 14 */}.
                       </p>
                     )}
                   </>
@@ -447,7 +447,7 @@ export default function PlanPage() {
                     title="طلبات التعديل الجوهري"
                     meta={p.stage === 'active' && (asEntity || role.key === 'supervisor')
                       ? <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}${asEntity ? '?as=entity' : ''}`}>اطلب تعديلًا</Link>
-                      : <Tag tone="mute">قاعدة <Num>21</Num></Tag>}
+                      : null /* doc rule 21 */}
                   />
                   {p.changes.length === 0 ? (
                     <p className="sub cnote">

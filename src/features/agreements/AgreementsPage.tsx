@@ -220,24 +220,24 @@ export default function AgreementsPage() {
               label="متوسط مدة إعداد الاتفاقية"
               value={k.prepDays === null ? '—' : <Num>{k.prepDays}</Num>}
               unit={k.prepDays === null ? undefined : 'يومًا'}
-              note="مؤشر 1 · من فتح الاتفاقية حتى سريانها"
+              note={/* doc KPI 1 */ "من فتح الاتفاقية حتى سريانها"}
             />
             <Stat
               label="المنجزة ضمن المدة المستهدفة"
               value={k.inTarget === null ? '—' : <Num>{pct(k.inTarget)}</Num>}
-              note={`مؤشر 2 · ${countOf(k.target, NOUN.day)} · مجموع مدد المراحل`}
+              note={/* doc KPI 2 */ `${countOf(k.target, NOUN.day)} · مجموع مدد المراحل`}
               bar={k.inTarget === null ? undefined : { w: `${k.inTarget}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة دورة الاعتماد"
               value={k.cycleDays === null ? '—' : <Num>{k.cycleDays}</Num>}
               unit={k.cycleDays === null ? undefined : 'يومًا'}
-              note="مؤشر 3 · من الإرسال حتى اكتمال الاعتمادات"
+              note={/* doc KPI 3 */ "من الإرسال حتى اكتمال الاعتمادات"}
             />
             <Stat
               label="المعادة للتعديل"
               value={k.returnedPct === null ? '—' : <Num>{pct(k.returnedPct)}</Num>}
-              note="مؤشر 4 · كل إعادة دورة اعتماد كاملة"
+              note={/* doc KPI 4 */ "كل إعادة دورة اعتماد كاملة"}
               bar={k.returnedPct === null ? undefined : { w: `${k.returnedPct}%`, c: 'var(--warn)' }}
             />
           </div>
@@ -416,8 +416,8 @@ export default function AgreementsPage() {
                     <h2>{meta?.label ?? 'ملغاة'}</h2>
                     <span className="sub">
                       {meta?.who ? `عند ${meta.who}` : 'سارية'} ·{' '}
-                      <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.agreement)} ·{' '}
-                      خطوات <span className="num">{meta?.steps}</span> في الوثيقة
+                      <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.agreement)}
+                      {/* doc · steps meta.steps */}
                     </span>
                   </div>
                   <div className="paygrid">
@@ -435,7 +435,7 @@ export default function AgreementsPage() {
               setup". */}
           <p className="sub tcen">
             مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «إعداد الاتفاقية» حتى
-            اعتمادها النهائي، وفق القاعدة <span className="num">25</span> في الوثيقة.
+            اعتمادها النهائي{/* doc rule 25 */}.
             وإجمالي قيمة الاتفاقيات تحت الإعداد{' '}
             <span className="num">{nf.format(k.openSum)}</span> <Riyal />.
           </p>

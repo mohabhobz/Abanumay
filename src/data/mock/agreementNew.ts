@@ -45,12 +45,12 @@ export const KINDS: { key: AgreementKind; label: string; note: string }[] = [
   {
     key: 'إلكترونية',
     label: 'إلكترونية',
-    note: 'تُبنى على نموذج معتمد مسبقًا، وتوقّعها الجهة من بوابة المنح (قاعدة 4)',
+    note: /* doc rule 4 */ 'تُبنى على نموذج معتمد مسبقًا، وتوقّعها الجهة من بوابة المنح',
   },
   {
     key: 'ورقية',
     label: 'ورقية',
-    note: 'يلزم إرفاق النسخة الموقّعة قبل التفعيل، وهو شرط إضافي للتفعيل (قاعدة 16)',
+    note: /* doc rule 16 */ 'يلزم إرفاق النسخة الموقّعة قبل التفعيل، وهو شرط إضافي للتفعيل',
   },
 ]
 
@@ -180,7 +180,7 @@ export const agreementIssues = (v: {
 
   const opt = projectOptions().find((p) => p.id === v.projectId)
   if (opt?.blocked) {
-    out.push({ key: 'project', say: `«${opt.name}» ${opt.blocked}.`, rule: 'قاعدة 1' })
+    out.push({ key: 'project', say: `«${opt.name}» ${opt.blocked}.`, rule: /* doc rule 1 */ '' })
   }
 
   /* Step 11 · the value must equal the held amount · a mismatch blocks submission */
@@ -188,7 +188,7 @@ export const agreementIssues = (v: {
     out.push({
       key: 'reserved',
       say: `قيمة الاتفاقية ${v.amount.toLocaleString('en-US')} ⃁، والمبلغ المحجوز في الميزانية ${v.reserved.toLocaleString('en-US')} ⃁. يلزم أن يتطابقا.`,
-      rule: 'خطوة 11',
+      rule: /* doc step 11 */ '',
     })
   }
 
@@ -201,12 +201,12 @@ export const agreementIssues = (v: {
       say: gap > 0
         ? `مجموع الدفعات أقل من قيمة المنحة بـ${gap.toLocaleString('en-US')} ⃁.`
         : `مجموع الدفعات يزيد على قيمة المنحة بـ${Math.abs(gap).toLocaleString('en-US')} ⃁.`,
-      rule: 'قاعدة 8',
+      rule: /* doc rule 8 */ '',
     })
   }
 
   if (v.rows.length === 0) {
-    out.push({ key: 'empty', say: 'لا يوجد أي دفعة. أضف دفعة واحدة على الأقل، فالجدول جزء من الاتفاقية لا ملحق بها.', rule: 'قاعدة 7' })
+    out.push({ key: 'empty', say: 'لا يوجد أي دفعة. أضف دفعة واحدة على الأقل، فالجدول جزء من الاتفاقية لا ملحق بها.', rule: /* doc rule 7 */ '' })
   }
 
   /* A disbursement with no eligibility condition · output 4 says disbursements are "tied to
@@ -235,8 +235,8 @@ export const agreementIssues = (v: {
     }
   }
 
-  if (!v.template) out.push({ key: 'template', say: 'اختر نموذج الاتفاقية.', rule: 'قاعدة 4' })
-  if (!v.kind) out.push({ key: 'kind', say: 'حدّد نوع الاتفاقية.', rule: 'قاعدة 3' })
+  if (!v.template) out.push({ key: 'template', say: 'اختر نموذج الاتفاقية.', rule: /* doc rule 4 */ '' })
+  if (!v.kind) out.push({ key: 'kind', say: 'حدّد نوع الاتفاقية.', rule: /* doc rule 3 */ '' })
   if (!v.signerName.trim() || !v.signerTitle.trim()) {
     out.push({ key: 'signer', say: 'أدخل اسم ممثل الجهة المخوّل بالتوقيع وصفته.', rule: 'المدخل 3' })
   }

@@ -96,13 +96,13 @@ export default function PlanEditPage() {
                   من <DateText>{p.baselineAt ?? ''}</DateText>
                 </p>
               </div>
-              <Tag tone="mute">مغلقة · قاعدة <Num>21</Num></Tag>
+              <Tag tone="mute">مغلقة{/* doc rule 21 */}</Tag>
             </header>
 
             <Glass>
               <Head
                 title="الهيكل مغلق بعد الاعتماد"
-                meta={<Tag tone="mute">قاعدة <Num>21</Num></Tag>}
+                /* doc rule 21 */
               />
               {/* Note: the reason is stated, not assumed - a lock with no reason reads as a bug,
                   sending the user looking for a way around it. */}

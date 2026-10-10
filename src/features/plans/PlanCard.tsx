@@ -131,7 +131,7 @@ export function PlanCard({ p }: { p: PlanRow }) {
                information. "Not counted in the percentage" is already stated at the source column:
                "rule 14". */
             : <><Num>{queue}</Num> {nounAfter(queue, NOUN.activity)} بانتظار قبولك</>}
-          src={<>قاعدة <Num>14</Num></>}
+          src={<>{/* doc rule 14 */}</>}
         />
         <Check
           ok={late === 0}

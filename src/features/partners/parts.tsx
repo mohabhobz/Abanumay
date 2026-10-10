@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { DateField, DateText, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Tag, icons } from '@/components/ui'
-import { UploadButton } from '@/components/docs'
+import { DocReadNote, UploadButton, useDocReads } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { nf } from '@/lib/format'
@@ -53,6 +53,8 @@ export function PayForm({ target, max, onDone }: { target: PayTarget; max: numbe
   const [docs, setDocs] = useState<string[]>([])
   const [note, setNote] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
+  /* 10 Oct · the platform's notice is read for the amount and the operation number typed */
+  const { reads, read } = useDocReads()
   const send = () => {
     const out = recordEhsanPay({ target, amount: Number(amount) || 0, ref, paidAt, docs, note: note || undefined }, user.name)
     if (out.length) { setSaid({ bad: out }); return }
@@ -70,9 +72,10 @@ export function PayForm({ target, max, onDone }: { target: PayTarget; max: numbe
       </div>
       <div className="apv-row mt-2">
         <span className="sub">{docs.length ? docs.join(' · ') : 'إشعار التحويل أو مستند المنصة · إلزامي'}</span>
-        <UploadButton label="مستند الدفعة" onPick={(f) => setDocs((d) => [...d, f.name])} />
+        <UploadButton label="مستند الدفعة" onPick={(f) => { setDocs((d) => [...d, f.name]); read('pay', f, 'transfer', { amount, ref }) }} />
         <button type="button" className="btn btn-p btn-sm" onClick={send}>سجّل الدفعة</button>
       </div>
+      {docs.length > 0 && <DocReadNote r={reads.pay} />}
       <Said said={said} />
     </div>
   )

@@ -193,7 +193,7 @@ export default function PlansPage() {
               label="أنشطة بانتظار مراجعتك"
               value={<Num>{k.waiting}</Num>}
               unit="نشاطًا"
-              note="قاعدة 14 · لا تُحتسب إنجازًا قبل القبول"
+              note=" · لا تُحتسب إنجازًا قبل القبول"
             />
             <Stat
               label="الخطط الملتزمة بجدولها"
@@ -404,8 +404,7 @@ export default function PlansPage() {
               comment - exactly like rule 25 on agreements. */}
           <p className="sub tcen">
             مرحلة الخطة لا تغيّر حالة المشروع · فهما إجراءان مستقلان يسيران بالتوازي
-            مع الاتفاقية. والنشاط لا يُحتسب إنجازًا إلا بعد قبول مشرف المنح
-            (القاعدة <span className="num">14</span>) ·{' '}
+            مع الاتفاقية. والنشاط لا يُحتسب إنجازًا إلا بعد قبول مشرف المنح{/* doc rule 14 */} ·{' '}
             <span className="num">{k.closable}</span> {nounAfter(k.closable, NOUN.project)} اكتملت خطته وصار
             مؤهَّلًا للإغلاق.
           </p>

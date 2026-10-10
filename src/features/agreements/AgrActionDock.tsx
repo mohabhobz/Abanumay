@@ -69,7 +69,7 @@ export function AgrActionDock({ who, agreement, actions, note, onNote, stop, sai
                 : x.kind === 'btn-p' && !x.needsFile && stop ? stop : ''
               if (x.needsFile) {
                 return (
-                  <label key={x.label} className={`btn ${x.kind}`} title={`خطوة ${x.step} في الوثيقة`}>
+                  <label key={x.label} className={`btn ${x.kind}`} /* doc · step x.step */>
                     <Icon name={icons.upload} size="sm" />{x.label}
                     <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={x.label} onChange={(e) => { const f = e.target.files?.[0]; if (f) onAct(x, f.name); e.target.value = '' }} />
                   </label>
@@ -81,7 +81,7 @@ export function AgrActionDock({ who, agreement, actions, note, onNote, stop, sai
                   className={`btn ${x.kind}`}
                   data-needs-note={x.needsNote ? '' : undefined}
                   disabled={Boolean(why)}
-                  title={why || `خطوة ${x.step} في الوثيقة`}
+                  title={why || undefined /* doc · step x.step */}
                   onClick={() => onAct(x)}
                 >
                   {x.label}

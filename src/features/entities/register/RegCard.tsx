@@ -63,7 +63,7 @@ export function RegCard({ r }: { r: RegRequest }) {
               ? <>ملف المستندات مكتمل · <Num>{have}</Num> من <Num>{need.length}</Num></>
               : <>ينقص <Num>{missing.length}</Num> من <Num>{need.length}</Num> {nounAfter(need.length, NOUN.requiredDoc)} لهذا التصنيف</>}
           </span>
-          <span className="payq-r">قاعدة <Num>4</Num></span>
+          {/* doc rule 4 */}
         </li>
         <li className={r.governanceClaim > 0 ? 'ok' : 'no'}>
           <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size="sm" />
@@ -77,7 +77,7 @@ export function RegCard({ r }: { r: RegRequest }) {
         <li className="ok">
           <Icon name={icons.check} size="sm" />
           <span>تكليف المجلس حتى <DateText>{r.boardEndsAt}</DateText></span>
-          <span className="payq-r">قاعدة <Num>18</Num></span>
+          {/* doc rule 18 */}
         </li>
       </ul>
 

@@ -26,7 +26,7 @@ export function readPayRequest(r: PayRequest): Reading[] {
       id: 'pr-stop', kind: 'flag', label: 'يمنع الإحالة',
       metric: { value: String(stops.length), unit: stops.length === 1 ? 'مانع' : 'موانع' },
       text: `${stops.slice(0, 2).join(' · ')}${stops.length > 2 ? ' وغيرها' : ''}.`,
-      src: 'ضوابط الصرف · القواعد 3 و6 و9 و10 و11 و14',
+      src: /* doc rule 3 · 6 · 9 · 10 · 11 · 14 */ 'ضوابط الصرف',
     })
   }
   if (r.state !== 'paid' && r.state !== 'closed') {
@@ -34,8 +34,8 @@ export function readPayRequest(r: PayRequest): Reading[] {
     out.push({
       id: 'pr-left', kind: r.asked > left ? 'flag' : 'note', label: 'المتبقي من المنحة',
       metric: { value: nf.format(Math.max(0, left)), unit: 'ريال' },
-      text: r.asked > left ? `الطلب ${nf.format(r.asked)} يتجاوز المتبقي · تمنعه القاعدة 14.` : `بعد هذه الدفعة يبقى ${nf.format(left - r.asked)} من ${nf.format(r.granted)}.`,
-      src: 'قيمة المنحة ناقص المصروف · قاعدة 14',
+      text: r.asked > left ? /* doc rule 14 */ `الطلب ${nf.format(r.asked)} يتجاوز المتبقي · تمنعه .` : `بعد هذه الدفعة يبقى ${nf.format(left - r.asked)} من ${nf.format(r.granted)}.`,
+      src: /* doc rule 14 */ 'قيمة المنحة ناقص المصروف',
       bar: { value: r.granted - left + r.asked, limit: r.granted, valueLabel: 'بعد الصرف', limitLabel: 'المنحة', unit: 'ريال' },
     })
     /* Batch 7 · payments#13 · achievement against the plan, from the plan itself · the activities due
@@ -66,7 +66,7 @@ export function readPayRequest(r: PayRequest): Reading[] {
       })
     }
   }
-  if (r.ai) out.push({ id: 'pr-ai', kind: 'note', label: 'تحليل التقارير', text: r.ai, src: 'خطوة 6 · استرشادي (قاعدة 20)' })
+  if (r.ai) out.push({ id: 'pr-ai', kind: 'note', label: 'تحليل التقارير', text: r.ai, src: /* doc rule 20 */ /* doc step 6 */ 'استرشادي' })
   if (r.exceptions?.length) out.push({ id: 'pr-ex', kind: 'note', label: 'استثناءات مسجّلة', metric: { value: String(r.exceptions.length), unit: 'قيد' }, text: r.exceptions.map((x) => x.text).join(' · '), src: /* doc 9.1.input-6 */ '' })
   return out
 }

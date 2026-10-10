@@ -19,6 +19,7 @@ import { fundingIssues } from '@/data/budget/store'
 import { fitOf } from '@/data/intake/insight'
 import { meOf, readRole } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
+import { FOLLOW_SAY, FOLLOW_TONE, followUp } from '@/data/approvals/followup'
 import {
   conflictOf, DEPT_SAY, SESSIONS, entityLimitBlock,
   OUTCOME_SAY, VERDICT_SAY, VOTE_SAY, appFlowOf, attachMinutes, awaitingSession, carried, castVote, closeSession,
@@ -81,6 +82,31 @@ export default function SessionPage() {
           {s.items.length > 0 && <AnalysisCard title="تقرير الجلسة" cta="اقرأ الجلسة" readings={sessionReport(s)} ask={false} onAsk={() => undefined} />}
           {s.items.length === 0 && <Glass><Empty title="جدول الأعمال فارغ." note="أضف المشاريع المحالة من القائمة أدناه." /></Glass>}
           {s.items.map((it) => <Item key={it.projectId} s={s} it={it} may={may} me={me} />)}
+
+          {/* 10 Oct · each decision followed through to its execution (7.1.output-4) */}
+          {decided > 0 && (
+            <Glass>
+              <Head title="متابعة تنفيذ القرارات" meta={<span className="sub">تُقرأ من مسار المشروع بعد القرار</span>} />
+              <ul className="apv-list">
+                {s.items.filter((i) => i.outcome).map((i) => {
+                  const f = followUp(s, i)
+                  const p = projectRows.find((x) => x.id === i.projectId)
+                  if (!f || !p) return null
+                  return (
+                    <li key={i.projectId}>
+                      <span className="apv-t">
+                        <b>{p.name}</b>
+                        <span className="sub">{OUTCOME_SAY[i.outcome!]} · {f.say}{f.next ? <> · التالي: {f.next}</> : null}</span>
+                      </span>
+                      <span className="pc-sp" />
+                      <Tag tone={FOLLOW_TONE[f.state]}>{FOLLOW_SAY[f.state]}</Tag>
+                      {f.href && <Link className="lnk" to={f.href}>افتح</Link>}
+                    </li>
+                  )
+                })}
+              </ul>
+            </Glass>
+          )}
 
           {may && add.length > 0 && (
             <Glass>

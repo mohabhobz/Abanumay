@@ -193,24 +193,24 @@ export default function ClosingPage() {
               label="متوسط مدة إغلاق المشروع"
               value={k.avg === null ? '—' : <Num>{k.avg}</Num>}
               unit={k.avg === null ? undefined : 'يومًا'}
-              note="مؤشر 1 · من فتح الطلب حتى الإغلاق النهائي"
+              note={/* doc KPI 1 */ "من فتح الطلب حتى الإغلاق النهائي"}
             />
             <Stat
               label="المغلقة ضمن المدة المستهدفة"
               value={k.inTimePct === null ? '—' : <Num>{pct(k.inTimePct)}</Num>}
-              note={`مؤشر 2 · المدة المؤقتة ${countOf(CLOSE_TARGET_DAYS, NOUN.day)}`}
+              note={/* doc KPI 2 */ `المدة المؤقتة ${countOf(CLOSE_TARGET_DAYS, NOUN.day)}`}
               bar={k.inTimePct === null ? undefined : { w: `${k.inTimePct}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة إعداد التقرير"
               value={k.prepDays === null ? '—' : <Num>{k.prepDays}</Num>}
               unit={k.prepDays === null ? undefined : 'يومًا'}
-              note="مؤشر 3 · من فتح الطلب حتى إرسال الجهة"
+              note={/* doc KPI 3 */ "من فتح الطلب حتى إرسال الجهة"}
             />
             <Stat
               label="المغلقة بعد استكمال المتطلبات"
               value={k.fullPct === null ? '—' : <Num>{pct(k.fullPct)}</Num>}
-              note="مؤشر 4 · قاعدة 8 و18"
+              note={/* doc KPI 4 */ undefined}
               bar={k.fullPct === null ? undefined : { w: `${k.fullPct}%`, c: 'var(--ok)' }}
             />
           </div>
@@ -445,8 +445,7 @@ export default function ClosingPage() {
               report "with the executive director" while its project still shows "in progress". */}
           <p className="sub tcen">
             محطة الإغلاق لا تغيّر حالة المشروع · يبقى «تحت التنفيذ» حتى يكتمل
-            اعتماد التقرير والتقييم والمتطلبات المالية والإدارية معًا · القاعدة{' '}
-            <span className="num">16</span> و<span className="num">18</span> في الوثيقة.
+            اعتماد التقرير والتقييم والمتطلبات المالية والإدارية معًا{/* doc rule 16 · 18 */}.
           </p>
         </div>
       </div>

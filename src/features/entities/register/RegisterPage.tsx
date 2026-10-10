@@ -155,7 +155,7 @@ export default function RegisterPage() {
       setRefused((x) => { const n = { ...x }; delete n[k]; return n })
       setFiles((s) => ({ ...s, [k]: { name: f.name, size: f.size, warn: legibilityWarning(f) || undefined } }))
       /* Batch 8 · the content is read when the document-reading service is connected */
-      void readDocument(f, k).then((r) => setReads((x) => ({ ...x, [k]: { note: r.note, diff: readMismatches(r.fields, val).map((m) => `${m.label}: في الوثيقة «${m.value}» والمُدخَل «${val[m.key]}»`) } })))
+      void readDocument(f, k, val).then((r) => setReads((x) => ({ ...x, [k]: { note: r.note, diff: readMismatches(r.fields, val).map((m) => `${m.label}: في الوثيقة «${m.value}» والمُدخَل «${val[m.key]}»`) } })))
     }
     set({ up: writeList([...new Set([...readList(v.up), k])]) })
   }
@@ -319,7 +319,7 @@ export default function RegisterPage() {
       {phase === 'terms' && <>اقرأ الضوابط الخمسة وأقرّ بها قبل فتح النموذج</>}
       {phase === 'form' && (
         draft
-          ? <>حُفظ الطلب <b>مسودةً</b> · القاعدة <Num>12</Num>، ويمكن إكماله في أي وقت</>
+          ? <>حُفظ الطلب <b>مسودةً</b>{/* doc rule 12 */}، ويمكن إكماله في أي وقت</>
           : <>
               {/* Note: the count runs over the whole journey, not the form alone - the entity has
                   already passed the account stage, so starting the count at "1 of 5" here tells
@@ -356,7 +356,7 @@ export default function RegisterPage() {
           {/* Rule 12 · a draft is saved against the account created before the form, so its owner
               comes back to it from the account screen (2.2.5 · 2.4.12) */}
           {(inside || regAccount.email) && (
-            <button className="btn btn-2" onClick={saveDraft} title="يُحفظ على حساب الجهة ويُستكمل في أي وقت · قاعدة 12">
+            <button className="btn btn-2" onClick={saveDraft} title="يُحفظ على حساب الجهة ويُستكمل في أي وقت">
               احفظ مسودة
             </button>
           )}
@@ -459,7 +459,7 @@ export default function RegisterPage() {
               <h1 className="ptitle">طلب تسجيل جهة جديدة</h1>
               <p className="sub mt-1">
                 ما يُقدَّم هنا <b>طلب</b> لا حساب · وتُنشأ الجهة بعد اعتماد
-                مسؤول النظام وحده (قاعدة <span className="num">2</span>)
+                مسؤول النظام وحده{/* doc rule 2 */}
               </p>
             </div>
             {/* The count badge in the page header was removed - a single count now lives in the
@@ -585,7 +585,7 @@ export default function RegisterPage() {
                                 <Person name={val.clerkName} quiet={false} />
                                 <span className="sub">
                                   مدخل بيانات الجهة · هو من يرفع، واسمه يُسجَّل مع كل ملف
-                                  في سجل التدقيق (قاعدة <span className="num">30</span>)
+                                  في سجل التدقيق{/* doc rule 30 */}
                                 </span>
                               </>
                             ) : (
@@ -610,7 +610,7 @@ export default function RegisterPage() {
                           <p className="sub cnote">
                             يمنع منعًا باتًا رفع بيانات الشركة أو أي ملفات محظورة
                             أخرى · والملفات المرفوعة تُسجَّل باسم مدخل البيانات في سجل
-                            التدقيق (قاعدة <span className="num">30</span>).
+                            التدقيق{/* doc rule 30 */}.
                           </p>
 
                           <ul className="regdocs">
@@ -728,9 +728,7 @@ export default function RegisterPage() {
                       {s.key === 'id' && clash && (
                         <p className="bad cnote">
                           رقم الترخيص <Mono>{val.licenseNo}</Mono> مسجَّل لـ
-                          «{clash.name}» بنفس التصنيف · القاعدة{' '}
-                          <span className="num">8</span> تمنع التكرار، والقاعدة{' '}
-                          <span className="num">9</span> تستثنيه إذا اختلف التصنيف.
+                          «{clash.name}» بنفس التصنيف · لا يتكرر الترخيص إلا إذا اختلف التصنيف.{/* doc rule 8 · 9 */}
                         </p>
                       )}
 
@@ -755,7 +753,7 @@ export default function RegisterPage() {
                 <Glass>
                   <Head
                     title="تحقّق من جوال مدخل البيانات"
-                    meta={<span className="sub">قاعدة 19</span>}
+                    /* doc rule 19 */
                   />
                   {/* Note: the "Edit" button next to the number matches the client's screens. An
                       entity that typed a wrong number used to have to cancel submission, go back to
@@ -795,19 +793,19 @@ export default function RegisterPage() {
                     <li className="ok">
                       <Icon name={icons.check} size="sm" />
                       <span>وصل الطلب إلى مسؤول النظام، وحالته «قيد المراجعة»</span>
-                      <span className="payq-r">قاعدة <Num>26</Num></span>
+                      {/* doc rule 26 */}
                     </li>
                     <li className="ok">
                       <Icon name={icons.check} size="sm" />
                       <span>سُجّل الطلب في سجل التدقيق بوقته ومُدخله</span>
-                      <span className="payq-r">قاعدة <Num>30</Num></span>
+                      {/* doc rule 30 */}
                     </li>
                     <li className="no">
                       <Icon name={icons.alert} size="sm" />
                       <span>
                         <b>لم يُنشأ حساب بعد</b> · اسم المستخدم يصل بعد الاعتماد وحده
                       </span>
-                      <span className="payq-r">قاعدة <Num>2</Num></span>
+                      {/* doc rule 2 */}
                     </li>
                   </ul>
                   <p className="sub cnote">

@@ -144,7 +144,7 @@ export default function ClosePage() {
         ...base,
         cap: 'لا ينطبق',
         state: 'skip',
-        lines: ['لا تشترط الاتفاقية نشرًا إعلاميًا', <>تُتخطّى المرحلة وفق القاعدة <span className="num">9</span></>],
+        lines: ['لا تشترط الاتفاقية نشرًا إعلاميًا', <>تُتخطّى المرحلة{/* doc rule 9 */}</>],
         src: 'المصدر: شروط الاتفاقية',
       }
     }
@@ -176,14 +176,14 @@ export default function ClosePage() {
     <>دورة <b className="num">{cycle === 'report' ? 1 : 2}</b> من <b className="num">2</b> ·{' '}
       {cycle === 'report' ? 'مسار التقرير الختامي' : 'مسار تقييم المشروع'}</>,
     cycle === 'report'
-      ? <>لا يبدأ التقييم قبل اعتماد المدير التنفيذي · القاعدة <span className="num">6</span></>
-      : <>التقييم سجلّ منفصل يُعدّه مشرف المنح · القاعدة <span className="num">17</span></>,
+      ? <>لا يبدأ التقييم قبل اعتماد المدير التنفيذي{/* doc rule 6 */}</>
+      : <>التقييم سجلّ منفصل يُعدّه مشرف المنح{/* doc rule 17 */}</>,
   ]
 
   /* Attachments - one `DocList`, not a hand-built table. */
   const docRows: DocRow[] = CLOSE_DOCS.map((d) => ({
     name: c.report.files?.[d.key] ?? `${d.label}.pdf`,
-    meta: d.req ? 'مستند إلزامي · قاعدة 4' : 'مستند داعم · قاعدة 5',
+    meta: d.req ? /* doc rule 4 */ 'مستند إلزامي' : /* doc rule 5 */ 'مستند داعم',
     uploaded: c.report.docs.includes(d.key),
     required: d.req,
     action: !c.report.docs.includes(d.key) && asEntity && !closed
@@ -279,10 +279,9 @@ export default function ClosePage() {
                 meta={<Tag tone="mute">الجهة المستفيدة</Tag>}
               />
               <p className="sub cnote">
-                تُلزم القاعدة <span className="num">4</span> بأربع بيانات حدًّا أدنى:
+                تُلزم القواعد {/* doc rule 4 */} بأربع بيانات حدًّا أدنى:
                 عدد المستفيدين الفعلي، والميزانية الفعلية، ومدة التنفيذ، وأبرز المخرجات ·
-                وتقارنها المؤسسة بما اعتُمد في الاتفاقية والخطة. وتمنع القاعدة{' '}
-                <span className="num">3</span> الإرسال قبل اكتمالها مع
+                وتقارنها المؤسسة بما اعتُمد في الاتفاقية والخطة. وتمنع القواعد {/* doc rule 3 */} الإرسال قبل اكتمالها مع
                 المستندات الداعمة.
               </p>
             </Glass>
@@ -335,8 +334,7 @@ export default function ClosePage() {
                   </div>
                 ) : (
                   <p className="sub cnote">
-                    «أبرز المخرجات والنتائج» لم تُدخل بعد · وتعدّها القاعدة{' '}
-                    <span className="num">4</span> من الحدّ الأدنى.
+                    «أبرز المخرجات والنتائج» لم تُدخل بعد · وهي {/* doc rule 4 */} من الحدّ الأدنى.
                   </p>
                 )}
 
@@ -381,7 +379,7 @@ export default function ClosePage() {
                       <li key={l.url}>
                         <div className="plchg-h">
                           <Tag tone="teal">رابط سحابي</Tag>
-                          <span className="sub">قاعدة <Num>5</Num></span>
+                          {/* doc rule 5 */}
                         </div>
                         <p className="plchg-t">{isolate(l.label)}</p>
                         <p className="sub">{l.url}</p>
@@ -390,7 +388,7 @@ export default function ClosePage() {
                   </ul>
                 ) : (
                   <p className="sub cnote">
-                    لا توجد روابط سحابية · تسمح القاعدة <span className="num">5</span>
+                    لا توجد روابط سحابية · تسمح القواعد {/* doc rule 5 */}
                     بإرفاق المواد الإعلامية والفيديوهات كروابط تخزين معتمدة، وهي
                     عادةً أكبر من أي حدّ رفع.
                   </p>
@@ -427,7 +425,7 @@ export default function ClosePage() {
                           v: c.evaluation.score === null
                             ? <span className="sub">لم يُحدَّد</span>
                             : <><span className="num">{c.evaluation.score}</span>
-                              <span className="sub"> من 5 · قاعدة 13</span></>,
+                              <span className="sub"> من 5{/* doc rule 13 */}</span></>,
                         },
                       ])}
                     />
@@ -459,9 +457,8 @@ export default function ClosePage() {
                   <p className="sub cnote">
                     {canStartEval(c)
                       ? <>اعتُمد التقرير، فيمكن بدء التقييم الآن · يُعدّه مشرف
-                        المنح، ولدورته سجلّ منفصل (القاعدة{' '}
-                        <span className="num">17</span>).</>
-                      : <>تمنع القاعدة <span className="num">6</span> بدء التقييم قبل
+                        المنح، ولدورته سجلّ منفصل{/* doc rule 17 */}.</>
+                      : <>تمنع القواعد {/* doc rule 6 */} بدء التقييم قبل
                         اعتماد المدير التنفيذي للتقرير الختامي · فهو بانتظار دوره لا
                         متأخّر.</>}
                   </p>
@@ -514,11 +511,9 @@ export default function ClosePage() {
             في «{pr?.stage ?? ''}»
             {closed
               ? <> والإغلاق اكتمل في <DateText>{c.closedAt ?? ''}</DateText>.</>
-              : <> والإغلاق في «{closeStageLabel(c.stage)}»، وكلاهما صحيح · القاعدة{' '}
-                <span className="num">16</span>.</>}
+              : <> والإغلاق في «{closeStageLabel(c.stage)}»، وكلاهما صحيح{/* doc rule 16 */}.</>}
             {' '}ويتحوّل المشروع إلى «مكتمل» باعتماد التقرير والتقييم واستكمال المتطلبات
-            المالية والإدارية معًا · القاعدة <span className="num">8</span> و
-            <span className="num">18</span>.
+            المالية والإدارية معًا{/* doc rule 8 · 18 */}.
             {!req.ok && <> وحاليًا: {req.say}.</>}
           </p>
         </div>
@@ -542,7 +537,7 @@ export default function ClosePage() {
                 <button
                   className="btn btn-p"
                   disabled={missing.length > 0 || (c.stage !== 'draft' && c.stage !== 'returned')}
-                  title={missing.length > 0 ? `ينقص: ${missing[0]} (قاعدة 3)` : 'أرسل التقرير إلى مشرف المنح للمراجعة'}
+                  title={missing.length > 0 ? /* doc rule 3 */ `ينقص: ${missing[0]}` : 'أرسل التقرير إلى مشرف المنح للمراجعة'}
                   onClick={() => { const out = sendClosingReport(c.id, c.entityName); setSaid(out.length ? { bad: out } : { ok: 'أُرسل التقرير إلى مشرف المنح' }) }}
                 >
                   أرسل التقرير للمراجعة

@@ -43,7 +43,7 @@ function ReasonModal({ title, cta, tone, onClose, onDone }: {
       <div className="chrome modal" role="dialog" aria-modal="true" aria-label={title} onClick={(x) => x.stopPropagation()}>
         <div className="mh"><Icon name={icons.alert} size="md" /><b>{title}</b></div>
         <div className="mb col">
-          <p className="sub cnote">يُكتب السبب في سجل الجهة ويظهر لها في بوابتها (القاعدة 31).</p>
+          <p className="sub cnote">يُكتب السبب في سجل الجهة ويظهر لها في بوابتها{/* doc rule 31 */}.</p>
           <label className="regf">
             <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
             <span className="fld"><input autoFocus value={reason} onChange={(x) => setReason(x.target.value)} aria-label="السبب" /></span>

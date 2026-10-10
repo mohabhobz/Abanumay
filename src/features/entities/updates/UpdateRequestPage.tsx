@@ -181,7 +181,7 @@ export default function UpdateRequestPage() {
                 </Glass>
               ) : phase === 'otp' ? (
                 <Glass>
-                  <Head title="تحقّق من بيانات الاتصال الجديدة" meta={<span className="sub">قاعدة 17</span>} />
+                  <Head title="تحقّق من بيانات الاتصال الجديدة" /* doc rule 17 */ />
                   <OtpPanel purpose="update" to={otpTo} onVerified={send} onEdit={() => setPhase('form')} />
                 </Glass>
               ) : (

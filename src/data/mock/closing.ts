@@ -60,15 +60,15 @@ export const CLOSE_STAGES: {
 }[] = [
   { key: 'draft', label: 'عند الجهة', who: 'الجهة المستفيدة', note: 'تكتب التقرير الختامي وترفق شواهده', cycle: 'report' },
   { key: 'supervisor', label: 'مراجعة مشرف المنح', who: 'مشرف المنح', note: 'مقارنة المعتمد بالتنفيذ الفعلي', cycle: 'report' },
-  { key: 'comms', label: 'مراجعة الاتصال المؤسسي', who: 'إدارة الاتصال المؤسسي', note: 'التحقّق من النشر الإعلامي · قاعدة 9', cycle: 'report' },
+  { key: 'comms', label: 'مراجعة الاتصال المؤسسي', who: 'إدارة الاتصال المؤسسي', note: /* doc rule 9 */ 'التحقّق من النشر الإعلامي', cycle: 'report' },
   { key: 'manager', label: 'اعتماد مدير المنح', who: 'مدير المنح', note: 'قرار اعتماد أو إعادة بملاحظات', cycle: 'report' },
   { key: 'executive', label: 'اعتماد المدير التنفيذي', who: 'المدير التنفيذي', note: 'باعتماده تُغلق دورة التقرير', cycle: 'report' },
-  { key: 'reportDone', label: 'التقرير معتمد', who: 'مشرف المنح', note: 'يمكن بدء التقييم · قاعدة 6', cycle: 'eval' },
+  { key: 'reportDone', label: 'التقرير معتمد', who: 'مشرف المنح', note: /* doc rule 6 */ 'يمكن بدء التقييم', cycle: 'eval' },
   { key: 'evalDraft', label: 'إعداد التقييم', who: 'مشرف المنح', note: 'الأثر والمؤشرات والدروس المستفادة', cycle: 'eval' },
-  { key: 'evalManager', label: 'التقييم عند مدير المنح', who: 'مدير المنح', note: 'دورة اعتماد مستقلّة · قاعدة 17', cycle: 'eval' },
+  { key: 'evalManager', label: 'التقييم عند مدير المنح', who: 'مدير المنح', note: /* doc rule 17 */ 'دورة اعتماد مستقلّة', cycle: 'eval' },
   { key: 'evalExecutive', label: 'التقييم عند المدير التنفيذي', who: 'المدير التنفيذي', note: 'آخر اعتماد قبل الإغلاق', cycle: 'eval' },
   { key: 'closed', label: 'مغلق · مكتمل', who: '', note: 'اكتمل التقرير والتقييم والمتطلبات كلها', cycle: 'eval' },
-  { key: 'returned', label: 'مُعاد بملاحظات', who: 'حسب الإعادة', note: 'إصدار جديد بعد التعديل · قاعدة 19', cycle: 'report' },
+  { key: 'returned', label: 'مُعاد بملاحظات', who: 'حسب الإعادة', note: /* doc rule 19 */ 'إصدار جديد بعد التعديل', cycle: 'report' },
 ]
 
 export const closeStageLabel = (s: CloseStage): string =>
@@ -161,7 +161,7 @@ export const canOpenClose = (projectId: string): { ok: boolean; why: string } =>
   const plan = planOfProject(projectId)
   const activitiesDone = plan ? planDone(plan) >= 100 : false
   if (plan && !activitiesDone) {
-    return { ok: false, why: 'لم تكتمل خطة التنفيذ بعد · قاعدة 1' }
+    return { ok: false, why: /* doc rule 1 */ 'لم تكتمل خطة التنفيذ بعد' }
   }
 
   /* Rule 2 · no outstanding disbursement left unspent */
@@ -169,7 +169,7 @@ export const canOpenClose = (projectId: string): { ok: boolean; why: string } =>
     (r) => r.projectId === projectId && r.state !== 'paid' && r.state !== 'closed',
   )
   if (open.length > 0) {
-    return { ok: false, why: `${countOf(open.length, NOUN.payment)} لم تُسوَّ بعد · قاعدة 2` }
+    return { ok: false, why: /* doc rule 2 */ `${countOf(open.length, NOUN.payment)} لم تُسوَّ بعد` }
   }
 
   return { ok: true, why: 'المشروع مؤهَّل للإغلاق' }

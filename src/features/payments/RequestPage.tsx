@@ -93,7 +93,7 @@ function ladderFor(r: PayRequest): StepItem[] {
       state: r.state === 'closed' ? (at ? 'done' : 'todo') : i === nowAt ? 'now' : nowAt >= 0 && i < nowAt ? 'done' : 'todo',
     }
   })
-  if (r.state === 'closed') steps.push({ label: 'مغلق · رفض نهائي', note: 'يبقى للاطلاع (القاعدة 15)', state: 'now' })
+  if (r.state === 'closed') steps.push({ label: 'مغلق · رفض نهائي', note: /* doc rule 15 */ 'يبقى للاطلاع', state: 'now' })
   return steps
 }
 
@@ -183,7 +183,7 @@ export default function RequestPage() {
 
           {said.ok && (
             <p className="ok-ink cnote" role="status">
-              سُجّل الإجراء: <b>{said.ok}</b> · أُرسل الإشعار (القاعدة 17)
+              سُجّل الإجراء: <b>{said.ok}</b> · أُرسل الإشعار{/* doc rule 17 */}
             </p>
           )}
           {said.bad?.map((b) => <p key={b} className="bad cnote" role="alert">{b}</p>)}
@@ -206,7 +206,7 @@ export default function RequestPage() {
                   {r.asked === r.due
                     ? <>مطابقة للدفعة المعتمدة · تستحق في <DateText>{r.dueAt}</DateText></>
                     : <span className="bad">
-                        أعلى من الدفعة المعتمدة <Money sm>{r.due}</Money> · مخالفة للقاعدة 5
+                        أعلى من الدفعة المعتمدة <Money sm>{r.due}</Money> · مخالفة لل{/* doc rule 5 */}
                       </span>}
                 </div>
               </div>
@@ -222,7 +222,7 @@ export default function RequestPage() {
             <Glass>
               <Head title="الطلب مغلق" meta={<Tag tone="no">رفض نهائي</Tag>} />
               <p className="sub cnote">
-                تنص القاعدة 15 على أن يُغلق النظام الطلب عند الرفض النهائي
+                تنص القواعد {/* doc rule 15 */} على أن يُغلق النظام الطلب عند الرفض النهائي
                 <b> مع الاحتفاظ بسجل إجراءاته</b> · السجل كامل أدناه، والتعديل مغلق.
               </p>
               {r.note && <div className="payq-note"><Icon name={icons.chat} size="sm" /><span>{isolate(r.note)}</span></div>}
@@ -327,7 +327,7 @@ export default function RequestPage() {
                     <li key={c.rule} className={c.ok ? 'ok' : 'no'}>
                       <Icon name={c.ok ? icons.check : icons.alert} size="sm" />
                       <span>{c.label}</span>
-                      <span className="payq-r">قاعدة <Num>{c.rule}</Num></span>
+                      {/* doc rule c.rule */}
                     </li>
                   ))}
                   <li className={bankOk ? 'ok' : 'no'}>
@@ -339,7 +339,7 @@ export default function RequestPage() {
                 {/* Rule 9 - execution is forbidden before every approval is complete. */}
                 {(blocked.length > 0 || !bankOk) && (
                   <p className="sub cnote">
-                    لا ينتقل الطلب قبل استيفاء هذه الشروط · تمنع القاعدة 9 التنفيذ
+                    لا ينتقل الطلب قبل استيفاء هذه الشروط · تمنع القواعد {/* doc rule 9 */} التنفيذ
                     قبل اكتمال كل الاعتمادات.
                   </p>
                 )}
@@ -433,7 +433,7 @@ export default function RequestPage() {
 
               {/* Rules 11, 13 and 14 - the reserved amount, its impact, and the cap. */}
               <Glass>
-                <Head title="أثر الصرف" meta={<span className="sub">قواعد 11 · 13 · 14</span>} />
+                <Head title="أثر الصرف" meta={<span className="sub">{/* doc rule 11 */} · 13 · 14</span>} />
                 <KV
                   rows={[
                     { k: 'المحجوز على الدفعة', v: <><Num>{r.reserved}</Num> <Riyal /></> },
@@ -453,7 +453,7 @@ export default function RequestPage() {
                 </div>
                 <p className={left < 0 ? 'bad cnote' : 'sub cnote'}>
                   {pct(Math.round((after / r.granted) * 100))} من المنحة بعد تنفيذ هذه الدفعة ·
-                  {left < 0 ? ' تتجاوز الدفعة قيمة المنحة فيتوقّف الاعتماد والتنفيذ (القاعدة 14).' : ' تمنع القاعدة 14 أي صرف يتجاوز قيمة المنحة.'}
+                  {left < 0 ? /* doc rule 14 */ ' تتجاوز الدفعة قيمة المنحة فيتوقّف الاعتماد والتنفيذ.' : /* doc rule 14 */ ' تمنع القواعد أي صرف يتجاوز قيمة المنحة.'}
                 </p>
               </Glass>
 
@@ -465,7 +465,7 @@ export default function RequestPage() {
               <Glass>
                 <Head
                   title="الإشعارات"
-                  meta={<span className="sub">قاعدة 17 · لكل انتقال إشعار</span>}
+                  meta={<span className="sub">{/* doc rule 17 */} · لكل انتقال إشعار</span>}
                 />
                 <ul className="paynotif">
                   {r.log.filter((e) => e.notified).map((e, i) => (
@@ -545,7 +545,7 @@ export default function RequestPage() {
 
                 {bankBad.map((b, i) => (
                   <p key={i} className="bad cnote">
-                    {b.say} <span className="sub">· {b.rule}</span>
+                    {b.say}{/* doc · b.rule */}
                   </p>
                 ))}
 
@@ -604,7 +604,7 @@ export default function RequestPage() {
                 </ul>
                 {r.sources.length > 1 && (
                   <p className="sub cnote">
-                    تُلزم القاعدة 12 بالصرف وفق هذا التوزيع، ويُنشأ أمر الصرف على أساسه.
+                    تُلزم القواعد {/* doc rule 12 */} بالصرف وفق هذا التوزيع، ويُنشأ أمر الصرف على أساسه.
                   </p>
                 )}
               </Glass>}
@@ -613,12 +613,12 @@ export default function RequestPage() {
               <Glass>
                 <Head
                   title="سجل التدقيق"
-                  meta={<span className="sub">كل انتقال بخطوته في الوثيقة</span>}
+                  meta={<span className="sub">كل انتقال بتاريخه ومنفّذه</span>}
                 />
                 <ol className="paylog">
                   {[...r.log].reverse().map((e, i) => (
                     <li key={`${e.step}-${i}`}>
-                      <span className="paylog-s num">{e.step}</span>
+                      {/* doc · step e.step */}
                       <div className="paylog-b">
                         <div className="paylog-t">{e.what}</div>
                         <div className="sub">

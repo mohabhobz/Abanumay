@@ -106,7 +106,7 @@ export function PlanActionDock({
             <span className="decsent">
               <b><Num>{queue}</Num> {nounAfter(queue, NOUN.activity)}</b> بانتظار قبولك
               <span className="decsep" />
-              لا يُحتسب إنجازًا قبل المراجعة · القاعدة <Num>14</Num>
+              لا يُحتسب إنجازًا قبل المراجعة{/* doc rule 14 */}
             </span>
           </div>
           <button className="btn btn-p" onClick={onReview}>راجع أول نشاط</button>

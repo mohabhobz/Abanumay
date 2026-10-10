@@ -38,10 +38,10 @@ export function closeReadings(c: CloseRow): Reading[] {
       metric: { value: String(missing.length), unit: nounAfter(missing.length, MISSING_ITEM) },
       text:
         `${missing.slice(0, 3).join(' · ')}${missing.length > 3 ? ' وغيرها' : ''} · ` +
-        `${docs.length} منها مرفقات إلزامية · تمنع القاعدة 3 الإرسال قبل ` +
+        /* doc rule 3 */ `${docs.length} منها مرفقات إلزامية · تمنع القواعد الإرسال قبل ` +
         `اكتمال البيانات والمستندات الداعمة.`,
-      bold: ['القاعدة 3'],
-      src: 'قاعدة 4 · الحدّ الأدنى للتقرير الختامي',
+      bold: [] /* doc rule 3 */,
+      src: /* doc rule 4 */ ' · الحدّ الأدنى للتقرير الختامي',
     })
   }
 
@@ -61,7 +61,7 @@ export function closeReadings(c: CloseRow): Reading[] {
       kind: 'note',
       label: 'الملخص التنفيذي',
       text: `${parts.join(' ')}.${firstOutcome ? ` أبرز النتائج: ${firstOutcome}.` : ''}${c.report.risks && c.report.risks !== 'لا يوجد.' ? ` المخاطر المذكورة: ${c.report.risks}` : ''}`,
-      src: 'مخرج 1 في 11.5 · من نصّ التقرير والخطة الأصلية ومدة المشروع · استرشادي (قاعدة 13)',
+      src: /* doc rule 13 */ 'مخرج 1 في 11.5 · من نصّ التقرير والخطة الأصلية ومدة المشروع · استرشادي',
     })
   }
 
@@ -108,7 +108,7 @@ export function closeReadings(c: CloseRow): Reading[] {
           ? 'الفرق جوهري ويحتاج إلى تفسير في التقرير قبل الاعتماد.'
           : 'الفرق داخل المدى المعقول.'),
       bold: [`${nf.format(actual)} ${unitAfter(actual, g.unit)}`],
-      src: 'قاعدة 4 · بيانات المشروع المعتمدة والاتفاقية',
+      src: /* doc rule 4 */ ' · بيانات المشروع المعتمدة والاتفاقية',
       bar: {
         value: actual,
         limit: g.planned,
@@ -132,8 +132,8 @@ export function closeReadings(c: CloseRow): Reading[] {
       metric: { value: `${hit}/${all}`, unit: 'مؤشرًا بلغ مستهدفه' },
       text:
         `التقدير الاسترشادي ${c.evaluation.score ?? '·'} من 5 · ` +
-        `تنص القاعدة 13 على أن هذا التقييم الاسترشادي دعم للمراجعة لا بديل عنها.`,
-      bold: ['القاعدة 13'],
+        /* doc rule 13 */ `تنص القواعد على أن هذا التقييم الاسترشادي دعم للمراجعة لا بديل عنها.`,
+      bold: [] /* doc rule 13 */,
       src: 'مخرج 3 في 11.5 · مؤشرات التقييم',
     })
 
@@ -145,7 +145,7 @@ export function closeReadings(c: CloseRow): Reading[] {
         label: 'يمنع إرسال التقييم',
         metric: { value: String(evalShort.length), unit: nounAfter(evalShort.length, MISSING_ITEM) },
         text: evalShort.join(' · '),
-        src: 'قاعدة 10 · مطبَّقة على الدورة الثانية',
+        src: /* doc rule 10 */ ' · مطبَّقة على الدورة الثانية',
       })
     }
   }
@@ -157,11 +157,11 @@ export function closeReadings(c: CloseRow): Reading[] {
     label: 'النشر الإعلامي',
     text: needsComms(c)
       ? 'تتضمن الاتفاقية التزام نشر إعلامي، فمراجعة الاتصال المؤسسي محطة في '
-        + 'دورة التقرير · القاعدة 9.'
+        + /* doc rule 9 */ 'دورة التقرير.'
       : 'لا يوجد التزام نشر إعلامي في الاتفاقية، فتُتخطّى محطة الاتصال '
-        + 'المؤسسي · القاعدة 9 تشترطها «متى كانت مطلوبة».',
-    bold: ['القاعدة 9'],
-    src: 'قاعدة 9 · التزامات النشر في الاتفاقية',
+        + /* doc rule 9 */ 'المؤسسي تشترطها «متى كانت مطلوبة».',
+    bold: [] /* doc rule 9 */,
+    src: /* doc rule 9 */ ' · التزامات النشر في الاتفاقية',
   })
 
   /* 5 - what's pending now, and with whom. */
@@ -171,10 +171,10 @@ export function closeReadings(c: CloseRow): Reading[] {
       kind: 'note',
       label: 'التقييم مستحقّ',
       text:
-        'اعتمد المدير التنفيذي التقرير، فتحقّقت القاعدة 6 ويمكن بدء تقييم '
+        /* doc rule 6 */ 'اعتمد المدير التنفيذي التقرير، فتحقّقت  ويمكن بدء تقييم '
         + 'المشروع · ويُعدّه مشرف المنح لا الجهة.',
-      bold: ['القاعدة 6'],
-      src: 'قاعدة 6 و17 · دورتان مستقلّتان',
+      bold: [] /* doc rule 6 */,
+      src: /* doc rule 6 · 17 */ ' · دورتان مستقلّتان',
     })
   } else if (closeLate(c)) {
     out.push({
@@ -198,10 +198,10 @@ export function closeReadings(c: CloseRow): Reading[] {
       label: 'متطلبات الإغلاق',
       text: req.ok
         ? 'لا يوجد التزام مالي معلّق · فالمانع الوحيد للإغلاق النهائي هو '
-          + 'اكتمال الاعتمادين (قاعدة 18).'
-        : `${req.say} · وتمنع القاعدة 8 تحويل المشروع إلى «مكتمل» قبل تسويتها.`,
-      bold: ['قاعدة 18'],
-      src: 'قاعدة 8 و18 · وتفصيل المتطلبات سؤال مفتوح (س-15)',
+          + /* doc rule 18 */ 'اكتمال الاعتمادين.'
+        : /* doc rule 8 */ `${req.say} · وتمنع القواعد تحويل المشروع إلى «مكتمل» قبل تسويتها.`,
+      bold: [] /* doc rule 18 */,
+      src: /* doc rule 8 · 18 */ ' · وتفصيل المتطلبات سؤال مفتوح (س-15)',
     })
   }
 

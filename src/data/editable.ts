@@ -39,7 +39,7 @@ export const EDITABLE: Record<EditModule, Record<string, EditRule>> = {
     completion: {
       who: 'الجهة',
       edit: ['البنود المذكورة في ملاحظة الإعادة', 'المستندات الناقصة'],
-      locked: ['رقم الترخيص والتصنيف · قاعدة 8'],
+      locked: [/* doc rule 8 */ 'رقم الترخيص والتصنيف'],
       why: 'تُفتح للجهة البنود المطلوب استكمالها وحدها',
     },
     approved: {
@@ -111,7 +111,7 @@ export const EDITABLE: Record<EditModule, Record<string, EditRule>> = {
     draft: {
       who: 'مشرف المنح',
       edit: ['النموذج والنوع', 'جدول الدفعات وشروطها', 'المفوّض بالتوقيع', 'المرفقات'],
-      locked: ['قيمة الاتفاقية · تساوي المبلغ المحجوز (خطوة 11)'],
+      locked: [/* doc step 11 */ 'قيمة الاتفاقية · تساوي المبلغ المحجوز'],
     },
     manager: {
       who: 'مدير المنح',
@@ -132,7 +132,7 @@ export const EDITABLE: Record<EditModule, Record<string, EditRule>> = {
       who: 'مشرف المنح',
       edit: ['البنود المذكورة في الملاحظة', 'جدول الدفعات', 'المرفقات'],
       locked: ['قيمة الاتفاقية'],
-      why: 'الإعادة تُنشئ إصدارًا جديدًا ويبقى القديم في السجل · قاعدة 24',
+      why: /* doc rule 24 */ 'الإعادة تُنشئ إصدارًا جديدًا ويبقى القديم في السجل',
     },
     active: {
       who: '—',
@@ -179,7 +179,7 @@ export const EDITABLE: Record<EditModule, Record<string, EditRule>> = {
     supervisor: {
       who: 'مشرف المنح',
       edit: ['المبلغ المطلوب (حتى قيمة الدفعة)', 'التحقّق من الشروط والمسوّغات', 'قرار الرفع أو الإعادة'],
-      locked: ['رقم الدفعة · قاعدة 4', 'الحساب البنكي المعتمد'],
+      locked: [/* doc rule 4 */ 'رقم الدفعة', 'الحساب البنكي المعتمد'],
     },
     returned: {
       who: 'الجهة',
@@ -238,7 +238,7 @@ export const EDITABLE: Record<EditModule, Record<string, EditRule>> = {
       who: 'حسب الإعادة',
       edit: ['البنود المذكورة في الملاحظة'],
       locked: NONE,
-      why: 'الإعادة تُنشئ إصدارًا جديدًا · قاعدة 19',
+      why: /* doc rule 19 */ 'الإعادة تُنشئ إصدارًا جديدًا',
     },
   },
 }

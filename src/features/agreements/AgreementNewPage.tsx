@@ -239,7 +239,7 @@ export default function AgreementNewPage() {
                       }))}
                     />
                     <span className="sub regf-h">
-                      مشروع واحد فقط · قاعدة <span className="num">2</span>
+                      مشروع واحد فقط{/* doc rule 2 */}
                     </span>
                   </label>
                 </div>
@@ -299,7 +299,7 @@ export default function AgreementNewPage() {
                 </ul>
                 <p className="sub cnote">
                   يُحدَّد النوع عند الإنشاء و<b>لا يتغيّر</b> بعد ذلك إلا بإصدار
-                  جديد · قاعدة <span className="num">3</span>.
+                  جديد{/* doc rule 3 */}.
                 </p>
 
                 <div className="regfields">
@@ -331,8 +331,7 @@ export default function AgreementNewPage() {
                       placeholder="اختر النموذج"
                     />
                     <span className="sub regf-h">
-                      يُحدَّد بحسب مصدر التمويل وحجم المنحة والظهور الإعلامي · قاعدة{' '}
-                      <span className="num">4</span>
+                      يُحدَّد بحسب مصدر التمويل وحجم المنحة والظهور الإعلامي{/* doc rule 4 */}
                     </span>
                   </label>
                   )}
@@ -426,7 +425,7 @@ export default function AgreementNewPage() {
           )}
           {tab === 'text' && project && (
             <>
-              <AgreementTextCard parts={text} note="البيانات مسترجعة من المشروع والجهة والميزانية والخطة · وتُعدَّل في مصدرها لا هنا (قاعدة 5)." />
+              <AgreementTextCard parts={text} note="البيانات مسترجعة من المشروع والجهة والميزانية والخطة · وتُعدَّل في مصدرها لا هنا." />
               <ReviewCard hints={hints} onAdd={(c) => setClauses((xs) => [...xs, c])} onTemplate={kind === 'إلكترونية' ? setTemplate : undefined} />
             </>
           )}
@@ -438,8 +437,7 @@ export default function AgreementNewPage() {
                 <Steps items={steps} flow="ladder" />
                 {/* Rule 25 - this line prevents a wrong assumption from the first screen. */}
                 <p className="sub cnote">
-                  انتقال الاتفاقية بين محطاتها <b>لا يغيّر حالة المشروع</b> ·
-                  قاعدة <span className="num">25</span>.
+                  انتقال الاتفاقية بين محطاتها <b>لا يغيّر حالة المشروع</b>{/* doc rule 25 */}.
                 </p>
               </Glass>
               <Blockers

@@ -29,8 +29,8 @@ import { ImpactPanel } from './ImpactPanel'
 /* Re-audit 7 Oct · where the text comes from is said per procedure · «copied verbatim» used to sit
    over the Ehsan, portfolio and plans indicators too, which were written by us */
 const SOURCE_SAY: Record<ProcessKpis['source'], string> = {
-  doc: 'النصوص منقولة حرفيًا من وثيقة الإجراءات v2.0 · القسم x.8',
-  paraphrase: 'الصيغ من وثيقة الإجراءات v2.0 (القسم x.8) بصياغتنا · والمعلَّم «ليس في الوثيقة» إضافة منّا',
+  doc: /* doc v2.0 x.8 */ 'النصوص منقولة حرفيًا من وثيقة الإجراءات',
+  paraphrase: /* doc v2.0 x.8 */ 'الصيغ من وثيقة الإجراءات بصياغتنا · والمعلَّم «ليس في الوثيقة» إضافة منّا',
   ours: 'الوثيقة لا تحدّد مؤشرات لهذا الإجراء · هذه مشتقّة من قواعده',
 }
 

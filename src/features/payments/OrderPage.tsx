@@ -90,7 +90,7 @@ export default function OrderPage() {
             <div className="pmain">
               <h1 className="ptitle">أمر الصرف</h1>
               <p className="sub mt-1">
-                <Mono>{orderNo}</Mono> · المخرج الأول في الإجراء · خطوة 16
+                <Mono>{orderNo}</Mono>{/* doc · output 1 · step 16 */}
               </p>
             </div>
             {ready && (
@@ -107,8 +107,8 @@ export default function OrderPage() {
                 title="أمر الصرف لم يُنشأ بعد."
                 note={
                   `الطلب ما زال بانتظار ${r.state === 'supervisor' ? 'مشرف المنح' : 'مدير المنح'}. ` +
-                  'تمنع القاعدة 9 تنفيذ الصرف قبل اكتمال كل الاعتمادات، ويُنشأ الأمر ' +
-                  'في خطوة 16 بعد اعتماد الإدارة المالية.'
+                  /* doc rule 9 · step 16 */ 'لا يُنفَّذ الصرف قبل اكتمال كل الاعتمادات، ويُنشأ الأمر ' +
+                  'بعد اعتماد الإدارة المالية.'
                 }
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payment(r.id))}>
@@ -201,7 +201,7 @@ export default function OrderPage() {
                 </table>
                 {r.sources.length > 1 && (
                   <p className="sub cnote">
-                    تُلزم القاعدة 12 بالصرف وفق هذا التوزيع المعتمد عند تعدّد المصادر.
+                    تُلزم القواعد {/* doc rule 12 */} بالصرف وفق هذا التوزيع المعتمد عند تعدّد المصادر.
                   </p>
                 )}
               </section>
@@ -225,7 +225,7 @@ export default function OrderPage() {
                   <dl className="kv">
                     {r.exceptions!.map((x) => (
                       <Fragment key={x.id}>
-                        <dt>{x.kind === 'waiver' ? `استثناء · القاعدة ${x.rule}` : 'موافقة خاصة'}</dt>
+                        <dt>{x.kind === 'waiver' ? 'استثناء' : 'موافقة خاصة'}</dt>{/* doc · x.rule */}
                         <dd>{x.text} · {x.by} · <DateText>{x.at}</DateText></dd>
                       </Fragment>
                     ))}
@@ -264,8 +264,8 @@ export default function OrderPage() {
               </section>
 
               <p className="sub cnote">
-                أرشفة المستندات والتقارير والمرفقات مربوطة بالطلب <Mono>{r.id}</Mono> ·
-                المخرج الرابع في الإجراء والقاعدة 21 · <Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}.
+                أرشفة المستندات والتقارير والمرفقات مربوطة بالطلب <Mono>{r.id}</Mono> ·{/* doc rule 21 · output 4 */}
+                <Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}.
               </p>
             </Glass>
           )}

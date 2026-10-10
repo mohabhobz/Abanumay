@@ -94,7 +94,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
               ? 'جدول الدفعات متوازن'
               : <>مجموع الدفعات <Mono>{nf.format(balance.sum)}</Mono> وقيمة المنحة <Mono>{nf.format(a.amount)}</Mono></>}
           </span>
-          <span className="payq-r">قاعدة <Num>8</Num></span>
+          {/* doc rule 8 */}
         </li>
         <li className={gap === 0 ? 'ok' : 'no'}>
           <Icon name={gap === 0 ? icons.check : icons.alert} size="sm" />
@@ -103,7 +103,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
               ? 'مطابقة للمخصص المحجوز'
               : <>الفرق عن المحجوز <Mono>{nf.format(Math.abs(gap))}</Mono> <Riyal /></>}
           </span>
-          <span className="payq-r">خطوة <Num>11</Num></span>
+          {/* doc step 11 */}
         </li>
         <li className={a.docs.length > 0 ? 'ok' : 'no'}>
           <Icon name={a.docs.length > 0 ? icons.check : icons.alert} size="sm" />
@@ -112,7 +112,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
               ? <>المرفقات والملاحق · <Num>{a.docs.length}</Num></>
               : 'لا توجد مرفقات · لا يمكن الاعتماد'}
           </span>
-          <span className="payq-r">قاعدة <Num>9</Num></span>
+          {/* doc rule 9 */}
         </li>
         {/* A signed paper copy must be attached before activation.
             This line appears on both cards: the electronic one says "not applicable" instead of
@@ -127,7 +127,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
               ? 'إلكترونية · النسخة الورقية لا تنطبق'
               : 'النسخة الورقية الموقّعة'}
           </span>
-          <span className="payq-r">قاعدة <Num>16</Num></span>
+          {/* doc rule 16 */}
         </li>
       </ul>
 

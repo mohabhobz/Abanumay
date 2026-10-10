@@ -7,3 +7,5 @@ export { docKind, isScan, KIND_LABEL, type DocKind } from './kind'
    and a build check blocks drawing it outside (see DocList). */
 export { DocList, type DocRow, type DocListProps } from './DocList'
 export { UploadButton, type UploadButtonProps } from './UploadButton'
+export { DocReadNote } from './DocRead'
+export { useDocReads, type ReadOut } from './useDocReads'

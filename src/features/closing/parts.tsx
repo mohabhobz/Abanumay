@@ -375,10 +375,10 @@ export function LogsCard({ c }: { c: CloseRow }) {
   )
   return (
     <Glass>
-      <Head title="سجلّ الإجراء" meta={<span className="sub">سجلّان منفصلان · قاعدة 17 · الآن: {closeStageLabel(c.stage)}</span>} />
+      <Head title="سجلّ الإجراء" meta={<span className="sub">سجلّان منفصلان{/* doc rule 17 */} · الآن: {closeStageLabel(c.stage)}</span>} />
       {part('دورة التقرير الختامي', c.audit)}
       {part('دورة تقييم المشروع', c.evalAudit ?? [])}
-      <p className="sub cnote">تمنع القاعدة 21 أي تعديل بعد الإغلاق النهائي · وأي تغيير بعده إجراء جديد.</p>
+      <p className="sub cnote">تمنع القواعد {/* doc rule 21 */} أي تعديل بعد الإغلاق النهائي · وأي تغيير بعده إجراء جديد.</p>
     </Glass>
   )
 }

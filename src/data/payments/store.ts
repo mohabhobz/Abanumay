@@ -220,7 +220,7 @@ export function payableProjects(entityId?: string): PayProject[] {
     out.push({
       id, name: p.name, entity: p.entityName, entityId: p.entityId, can: running && agr && !STOPPED.has(id),
       why: STOPPED.has(id) ? /* doc 10.9.1 */ 'أُوقف المشروع بقرار معتمد · لا صرف بعده'
-        : !agr ? 'الاتفاقية غير سارية · لا صرف قبل تفعيل الاتفاقية (القاعدة 1)'
+        : !agr ? /* doc rule 1 */ 'الاتفاقية غير سارية · لا صرف قبل تفعيل الاتفاقية'
         : !running ? /* doc 9.4.1 */ 'المشروع ليس «تحت التنفيذ» · لا يُفتح طلب صرف لمشروع مكتمل أو موقوف'
         : undefined,
       open: slots.filter((s) => s.state === 'open').length,
@@ -269,15 +269,15 @@ export function payStops(r: PayRequest, act: PayAct): string[] {
   const rules = act === 'recommend' ? [3, 6] : [3, 6, 10, 11]
   for (const c of r.checks) if (!c.ok && rules.includes(c.rule)) out.push(`${STOP_SAY[c.rule] ?? c.label} · قاعدة ${c.rule}`)
   const left = grantLeft(r.projectId, r.id)
-  if (r.asked > left) out.push(`المبلغ يتجاوز المتبقي من المنحة (${nf.format(Math.max(0, left))}) · قاعدة 14`)
-  if (r.asked > r.due) out.push('قيمة الطلب أعلى من الدفعة المعتمدة · قاعدة 5')
+  if (r.asked > left) out.push(/* doc rule 14 */ `المبلغ يتجاوز المتبقي من المنحة (${nf.format(Math.max(0, left))})`)
+  if (r.asked > r.due) out.push(/* doc rule 5 */ 'قيمة الطلب أعلى من الدفعة المعتمدة')
   if (act !== 'recommend') {
     const y = payYearIssue(r.projectId, r.dueAt, r.asked)
     if (y) out.push(/* doc 1.4.52 */ `${y}`)
     if (r.no === 1) for (const c of unmetBefore(r.projectId, 'firstPay')) out.push(`شرط قبل الدفعة الأولى لم يُستوفَ: ${c.text}`)
   }
   if (act === 'order' || act === 'transfer') if (!r.bank.active) out.push('الحساب البنكي المعتمد غير نشط · المخرج 2')
-  if (act === 'transfer' && !r.order) out.push('لم تعتمد الإدارة المالية أمر الصرف بعد · قاعدة 9')
+  if (act === 'transfer' && !r.order) out.push(/* doc rule 9 */ 'لم تعتمد الإدارة المالية أمر الصرف بعد')
   return out
 }
 
@@ -619,17 +619,17 @@ export function createRequest(v: { projectId: string; no: number; asked: number;
   const slot = scheduleOf(v.projectId).find((s) => s.no === v.no)
   if (!slot) return { errors: ['الدفعة غير موجودة في الجدول'] }
   const errors: string[] = []
-  if (slot.state === 'pending') errors.push('للدفعة طلب مفتوح · قاعدة 4')
+  if (slot.state === 'pending') errors.push(/* doc rule 4 */ 'للدفعة طلب مفتوح')
   if (slot.state === 'paid') errors.push('الدفعة مصروفة')
-  if (slot.state === 'early') errors.push('الدفعة لم تستحق بعد · قاعدة 2')
+  if (slot.state === 'early') errors.push(/* doc rule 2 */ 'الدفعة لم تستحق بعد')
   if (slot.state === 'queued') errors.push('تُطلب الدفعات بترتيبها · لم تُطلب الدفعة السابقة بعد')
-  if (slot.state === 'held') errors.push('شرط الدفعة غير مستوفى · قاعدة 6')
+  if (slot.state === 'held') errors.push(/* doc rule 6 */ 'شرط الدفعة غير مستوفى')
   if (slot.state === 'stopped') errors.push('أُوقف المشروع بقرار · لا صرف بعده')
   if (slot.state === 'settled') errors.push('سُوّيت الدفعة · لا تُصرف')
   if (v.asked <= 0) errors.push('أدخل قيمة الطلب')
-  if (v.asked > slot.amount) errors.push('القيمة أعلى من الدفعة المعتمدة · قاعدة 5')
-  if (v.asked > grantLeft(v.projectId)) errors.push('القيمة تتجاوز المتبقي من المنحة · قاعدة 14')
-  if (v.origin === 'entity' && v.docs.length < REQUEST_NEEDS.length) errors.push('ينقص من المتطلبات · قاعدة 3')
+  if (v.asked > slot.amount) errors.push(/* doc rule 5 */ 'القيمة أعلى من الدفعة المعتمدة')
+  if (v.asked > grantLeft(v.projectId)) errors.push(/* doc rule 14 */ 'القيمة تتجاوز المتبقي من المنحة')
+  if (v.origin === 'entity' && v.docs.length < REQUEST_NEEDS.length) errors.push(/* doc rule 3 */ 'ينقص من المتطلبات')
   if (errors.length) return { errors }
   const id = nextRequestId()
   run({ op: 'create', id, ...v, by, at: now() })
@@ -640,11 +640,11 @@ export function createRequest(v: { projectId: string; no: number; asked: number;
 export function resubmitRequest(id: string, asked: number, docs: PayDoc[], by: string): string[] {
   const r = payRequestById(id)
   if (!r) return ['الطلب غير موجود']
-  if (!mayResubmit(r)) return ['لا يُعدَّل الطلب بعد اعتماده · التعديل بطلب جديد (قاعدة 18)']
-  if (asked <= 0 || asked > r.due) return ['القيمة أعلى من الدفعة المعتمدة · قاعدة 5']
-  if (asked > grantLeft(r.projectId, r.id)) return ['القيمة تتجاوز المتبقي من المنحة · قاعدة 14']
+  if (!mayResubmit(r)) return [/* doc rule 18 */ 'لا يُعدَّل الطلب بعد اعتماده · التعديل بطلب جديد']
+  if (asked <= 0 || asked > r.due) return [/* doc rule 5 */ 'القيمة أعلى من الدفعة المعتمدة']
+  if (asked > grantLeft(r.projectId, r.id)) return [/* doc rule 14 */ 'القيمة تتجاوز المتبقي من المنحة']
   const have = new Set([...r.docs.map((d) => d.kind), ...docs.map((d) => d.kind)])
-  if (REQUEST_NEEDS.some((n) => !have.has(n.kind))) return ['ينقص من المتطلبات · قاعدة 3']
+  if (REQUEST_NEEDS.some((n) => !have.has(n.kind))) return [/* doc rule 3 */ 'ينقص من المتطلبات']
   run({ op: 'resubmit', id, asked, docs, by, at: now() })
   return []
 }

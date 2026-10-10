@@ -78,14 +78,14 @@ export default function EvalEditPage() {
           <div className="screen col">
             <BackTo label="صفحة الإغلاق" onClick={() => navigate(ROUTES.closing(c.id))} />
             <Glass>
-              <Head title="لم يبدأ تقييم المشروع بعد" meta={<Tag tone="mute">قاعدة <Num>6</Num></Tag>} />
+              <Head title="لم يبدأ تقييم المشروع بعد" /* doc rule 6 */ />
               <Empty
                 title={canStartEval(c)
                   ? 'اعتُمد التقرير · يمكن بدء التقييم الآن.'
                   : 'لا يبدأ التقييم قبل اعتماد المدير التنفيذي للتقرير الختامي.'}
                 note={canStartEval(c)
-                  ? 'ابدأه من رصيف صفحة الطلب · يُعدّه مشرف المنح، ودورته سجلّ منفصل (قاعدة 17).'
-                  : 'تربط القاعدة 6 بدء التقييم باعتماد المدير التنفيذي تحديدًا، لا باعتماد المشرف ولا المدير.'}
+                  ? /* doc rule 17 */ 'ابدأه من رصيف صفحة الطلب · يُعدّه مشرف المنح، ودورته سجلّ منفصل.'
+                  : /* doc rule 6 */ 'تربط  بدء التقييم باعتماد المدير التنفيذي تحديدًا، لا باعتماد المشرف ولا المدير.'}
                 actions={
                   <Link className="btn btn-p" to={ROUTES.closing(c.id)}>افتح الطلب</Link>
                 }
@@ -113,11 +113,11 @@ export default function EvalEditPage() {
               <h1 className="ptitle">تقييم المشروع · {c.projectName}</h1>
               <p className="sub mt-1">
                 {evalApproved(c)
-                  ? 'اكتمل الإغلاق · الصفحة للقراءة فقط (قاعدة 21)'
+                  ? /* doc rule 21 */ 'اكتمل الإغلاق · الصفحة للقراءة فقط'
                   : closed
                     ? 'التقييم في الاعتماد · يُعدَّل حين يُعاد إلى مشرف المنح'
                   : <>يُعدّه مشرف المنح بعد اعتماد التقرير الختامي · ودورة اعتماده
-                    مستقلّة بسجلّ منفصل (القاعدة <span className="num">17</span>)</>}
+                    مستقلّة بسجلّ منفصل{/* doc rule 17 */}</>}
               </p>
             </div>
             {/* Status as text, not a colored tag - the page header isn't a card's status field.
@@ -228,7 +228,7 @@ export default function EvalEditPage() {
                 placeholder="اختر تقديرًا من 5"
               />
               <span className="sub regf-h">
-                استرشادي · تنص القاعدة <span className="num">13</span> على أن مخرجات
+                استرشادي · تنص القواعد {/* doc rule 13 */} على أن مخرجات
                 التحليل دعم للمراجعة لا بديل عن اعتماد أصحاب الصلاحية
               </span>
             </label>
@@ -255,7 +255,7 @@ export default function EvalEditPage() {
 
           <p className="sub tcen">
             الحفظ لا يُرسل التقييم · الإرسال إلى مدير المنح من صفحة الطلب، ودورة اعتماد
-            التقييم منفصلة عن دورة التقرير (القاعدة <span className="num">17</span>).
+            التقييم منفصلة عن دورة التقرير{/* doc rule 17 */}.
           </p>
         </div>
       </div>

@@ -108,12 +108,12 @@ export const REG_MAILS: RegMail[] = [
   {
     on: 'approved', to: 'email',
     title: 'اعتُمد الطلب',
-    body: 'بيانات الدخول إلى حساب الجهة الكامل · قاعدة 2: يُنشأ الحساب عند الاعتماد لا قبله.',
+    body: /* doc rule 2 */ 'بيانات الدخول إلى حساب الجهة الكامل: يُنشأ الحساب عند الاعتماد لا قبله.',
   },
   {
     on: 'rejected', to: 'email',
     title: 'صدر قرار في الطلب',
-    body: 'مع ذكر السبب · ويُؤرشف الطلب ولا يُحذف (قاعدة 28).',
+    body: /* doc rule 28 */ 'مع ذكر السبب · ويُؤرشف الطلب ولا يُحذف.',
   },
 ]
 
@@ -302,7 +302,7 @@ export const regReadings = (
          And only on the first line. Repeating it under every line was literally duplicated three
          times on one card — a repeated source turns into background noise the eye tunes out, so it
          gets lost exactly when it differs. */
-      src: i === 0 ? 'الحقول الإلزامية للتصنيف الحالي · القاعدة 21' : undefined,
+      src: i === 0 ? /* doc rule 21 */ 'الحقول الإلزامية للتصنيف الحالي' : undefined,
     })
   })
 
@@ -400,7 +400,7 @@ export const regThread = (state: RegState, name: string): ThreadMessage[] => {
     return [
       {
         by: 'مسؤول النظام', from: 'staff', at: '2026-09-05',
-        body: 'رقم الترخيص المسجَّل في الطلب يخص جهة أخرى بالتصنيف نفسه، والقاعدة 8 تمنع التكرار. أُرشف الطلب، ويمكن التقدّم مرة أخرى برقم ترخيص صحيح.',
+        body: /* doc rule 8 */ 'رقم الترخيص المسجَّل في الطلب يخص جهة أخرى بالتصنيف نفسه، و تمنع التكرار. أُرشف الطلب، ويمكن التقدّم مرة أخرى برقم ترخيص صحيح.',
       },
     ]
   }

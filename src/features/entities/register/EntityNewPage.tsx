@@ -183,7 +183,7 @@ export default function EntityNewPage() {
     { label: 'تسجيل البيانات', note: 'مشرف المنح', state: done ? 'done' : 'now' },
     {
       label: 'إنشاء الجهة',
-      note: 'فورًا · بلا مراجعة (قاعدة 32)',
+      note: /* doc rule 32 */ 'فورًا · بلا مراجعة',
       state: done ? 'done' : 'todo',
     },
     ...(strategic
@@ -206,7 +206,7 @@ export default function EntityNewPage() {
             <div>
               <h1 className="ptitle">تسجيل جهة مباشرةً</h1>
               <p className="sub mt-1">
-                قاعدة <span className="num">32</span> · يسجّل مشرف المنح جهة شريكة
+                {/* doc rule 32 */} · يسجّل مشرف المنح جهة شريكة
                 دون المرور بالبوابة · منفّذة أو استراتيجية تدير محفظة · وتُنشأ فورًا بلا مراجعة
               </p>
             </div>
@@ -385,7 +385,7 @@ export default function EntityNewPage() {
                 {tab === 'id' && clash && (
                   <p className="bad cnote">
                     رقم الترخيص <Mono>{val.licenseNo}</Mono> مسجَّل لـ «{clash.name}»
-                    بنفس التصنيف · القاعدة <span className="num">8</span> تمنع التكرار.
+                    بنفس التصنيف{/* doc rule 8 */} تمنع التكرار.
                   </p>
                 )}
 
@@ -530,7 +530,7 @@ export default function EntityNewPage() {
                   disabled={!canSave}
                   title={
                     clash
-                      ? 'رقم الترخيص مكرّر · قاعدة 8'
+                      ? /* doc rule 8 */ 'رقم الترخيص مكرّر'
                       : missing.length
                         ? `ينقص ${missing.length} من الحقول الإلزامية`
                         : 'سجّل الجهة'

@@ -520,8 +520,8 @@ return [
     kpis: [
       { no: 1, name: 'متوسط مدة إغلاق المشروع', how: 'متوسط عدد الأيام من إنشاء طلب التقرير الختامي حتى اعتماد الإغلاق النهائي للمشروع.', unit: 'days', value: closeKpi().avg, better: 'down', target: null, derived: true, to: ROUTES.closings },
       { no: 2, name: 'نسبة المشاريع المغلقة ضمن المدة المستهدفة', how: `(عدد المشاريع التي تم إغلاقها ضمن المدة المستهدفة ÷ إجمالي المشاريع المغلقة) × 100%. والمدة المستهدفة ${countNoun(CLOSE_TARGET_DAYS, NOUN.day)}، وهي افتراض مؤقت وليست من الوثيقة.`, unit: 'pct', value: closeKpi().inTimePct, better: 'up', target: null, derived: true, to: ROUTES.closings },
-      { no: 3, name: 'متوسط مدة إعداد التقرير الختامي', how: 'متوسط الزمن من إنشاء طلب التقرير الختامي حتى إرسال التقرير من الجهة المستفيدة · من سجلّ التدقيق (قاعدة 11).', unit: 'days', value: closeKpi().prepDays, better: 'down', target: null, derived: true, to: ROUTES.closings },
-      { no: 4, name: 'نسبة المشاريع التي تم إغلاقها بعد استكمال جميع المتطلبات', how: '(عدد المشاريع التي استوفت جميع متطلبات الإغلاق ÷ إجمالي المشاريع المغلقة) × 100%. والمتطلبات المحسوبة هي التي يعرفها النظام (قاعدة 8 · س-15 مفتوح).', unit: 'pct', value: closeKpi().fullPct, better: 'up', target: null, derived: true, to: ROUTES.closings },
+      { no: 3, name: 'متوسط مدة إعداد التقرير الختامي', how: /* doc rule 11 */ 'متوسط الزمن من إنشاء طلب التقرير الختامي حتى إرسال التقرير من الجهة المستفيدة · من سجلّ التدقيق.', unit: 'days', value: closeKpi().prepDays, better: 'down', target: null, derived: true, to: ROUTES.closings },
+      { no: 4, name: 'نسبة المشاريع التي تم إغلاقها بعد استكمال جميع المتطلبات', how: /* doc rule 8 */ '(عدد المشاريع التي استوفت جميع متطلبات الإغلاق ÷ إجمالي المشاريع المغلقة) × 100%. والمتطلبات المحسوبة هي التي يعرفها النظام ( · س-15 مفتوح).', unit: 'pct', value: closeKpi().fullPct, better: 'up', target: null, derived: true, to: ROUTES.closings },
     ],
   },
   /* Ehsan and the portfolios · the document lists the indicators in BPD-011 and BPD-013; they
@@ -558,7 +558,7 @@ return [
       { no: 3, name: 'نسبة القبول من أول مراجعة', how: '(الأنشطة المقبولة دون إعادة ÷ الأنشطة التي راجعتها المؤسسة) × 100%.', unit: 'pct', ...ratio(firstOk.length, reviewedActs.length, 'activity'), better: 'up', target: null, to: ROUTES.plans },
       { no: 4, name: 'متوسط مدة اعتماد النشاط', how: 'متوسط الأيام من تقديم النشاط للقبول حتى قبوله.', unit: 'days', value: (() => { const m = mean(actDays); return m === null ? null : Math.round(m) })(), better: 'down', target: null, to: ROUTES.plans },
       { no: 5, name: 'متوسط مدة اعتماد الخطة', how: 'متوسط الأيام من فتح الخطة حتى تثبيت النسخة المرجعية.', unit: 'days', value: planKpi().approveDays, better: 'down', target: null, derived: true, ours: true, to: ROUTES.plans },
-      { no: 6, name: 'الأنشطة بانتظار مراجعة المؤسسة', how: 'عدد الأنشطة التي أفادت الجهة باكتمالها ولم تُراجع بعد (قاعدة 14).', unit: 'count', value: planKpi().waiting, better: 'down', target: null, ours: true, to: `${ROUTES.plans}?wait=1` },
+      { no: 6, name: 'الأنشطة بانتظار مراجعة المؤسسة', how: /* doc rule 14 */ 'عدد الأنشطة التي أفادت الجهة باكتمالها ولم تُراجع بعد.', unit: 'count', value: planKpi().waiting, better: 'down', target: null, ours: true, to: `${ROUTES.plans}?wait=1` },
     ],
   },
 

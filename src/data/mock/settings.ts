@@ -108,7 +108,7 @@ export interface LimitRow {
 export const MONEY_LIMITS: LimitRow[] = hydrateRows(CFG.limits, [
   {
     key: 'minPay', label: 'الحد الأدنى للدفعة الواحدة', unit: 'ريال', value: 5_000,
-    where: 'إنشاء طلب صرف · خطوة 2', assumed: true,
+    where: /* doc step 2 */ 'إنشاء طلب صرف', assumed: true,
   },
   {
     key: 'firstPayPct', label: 'أقصى نسبة للدفعة الأولى', unit: '%', value: 40,
@@ -120,7 +120,7 @@ export const MONEY_LIMITS: LimitRow[] = hydrateRows(CFG.limits, [
   },
   {
     key: 'agrDays', label: 'مهلة توقيع الاتفاقية', unit: 'يوم', value: 30,
-    where: 'إجراء الاتفاقيات · قاعدة 23', assumed: true,
+    where: /* doc rule 23 */ 'إجراء الاتفاقيات', assumed: true,
   },
   {
     key: 'projectsPerEntity', label: 'أقصى عدد مشاريع للجهة في الدورة', unit: 'مشروع', value: 3,

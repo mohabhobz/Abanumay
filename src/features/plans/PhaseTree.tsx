@@ -201,7 +201,7 @@ export function PhaseTree({
                                 disabled={missing.length > 0}
                                 title={missing.length > 0
                                   ? `ينقص: ${missing.join(' · ')}`
-                                  : 'يُحتسب إنجازًا من لحظة القبول · قاعدة 14'}
+                                  : /* doc rule 14 */ 'يُحتسب إنجازًا من لحظة القبول'}
                                 onClick={() => onAccept?.(a.id)}
                               >
                                 اقبل النشاط

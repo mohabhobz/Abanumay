@@ -225,8 +225,8 @@ export function projectChain(p: ProjectRow): ChainLink[] {
     value: ag?.amount ?? 0,
     say: ag
       ? ag.amount === p.amountGranted
-        ? 'قيمتها تساوي المعتمد · خطوة 11'
-        : 'قيمتها مختلفة عن المعتمد · خطوة 11'
+        ? /* doc step 11 */ 'قيمتها تساوي المعتمد'
+        : /* doc step 11 */ 'قيمتها مختلفة عن المعتمد'
       : 'تُعدّ الاتفاقية بعد الاعتماد',
     state: ag ? (ag.amount === p.amountGranted ? 'ok' : 'gap') : 'none',
     to: ag ? `/agreements/${ag.id}` : undefined,
@@ -240,8 +240,8 @@ export function projectChain(p: ProjectRow): ChainLink[] {
     value: schedule,
     say: ag
       ? schedule === ag.amount
-        ? 'المجموع يساوي قيمة الاتفاقية · قاعدة 8'
-        : 'المجموع مختلف عن قيمة الاتفاقية · قاعدة 8'
+        ? /* doc rule 8 */ 'المجموع يساوي قيمة الاتفاقية'
+        : /* doc rule 8 */ 'المجموع مختلف عن قيمة الاتفاقية'
       : 'الجدول جزء من الاتفاقية',
     state: ag ? (schedule === ag.amount ? 'ok' : 'gap') : 'none',
   })

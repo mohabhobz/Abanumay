@@ -71,7 +71,7 @@ export function ActionDock({ user, request, actions, note, onNote, onAct }: Acti
               const stop = a.needsNote && !note.trim() ? 'اكتب الملاحظات أولًا · القاعدتان 7 و8' : stops[0] ?? ''
               if (a.needsFile && !stop) {
                 return (
-                  <label key={a.label} className={`btn ${a.kind}`} title={`ارفع ${a.needsFile} · خطوة ${a.step} في الوثيقة`}>
+                  <label key={a.label} className={`btn ${a.kind}`} title={`ارفع ${a.needsFile}` /* doc · step a.step */}>
                     <Icon name={icons.upload} size="sm" />{a.label}
                     <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={`${a.label} · ${a.needsFile}`} onChange={(e) => { const f = e.target.files?.[0]; if (f) onAct(a, f.name); e.target.value = '' }} />
                   </label>
@@ -83,7 +83,7 @@ export function ActionDock({ user, request, actions, note, onNote, onAct }: Acti
                   className={`btn ${a.kind}`}
                   data-needs-note={a.needsNote ? '' : undefined}
                   disabled={Boolean(stop)}
-                  title={stop || `خطوة ${a.step} في الوثيقة`}
+                  title={stop || undefined /* doc · step a.step */}
                   onClick={() => onAct(a)}
                 >
                   {a.label}

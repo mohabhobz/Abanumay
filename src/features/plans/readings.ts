@@ -61,7 +61,7 @@ export function planReadings(p: PlanRow, goTo: (actId: string) => void): Reading
         `أعلنت الجهة ${pct(planClaimed(p))} والمقبول ${pct(planDone(p))} · `
         + `${gap} نقطة لا تُحتسب حتى تُراجَع الشواهد.`,
       bold: [`${gap} نقطة`],
-      src: 'قاعدة 14 · النشاط لا يُحتسب إنجازًا قبل قبول المشرف',
+      src: /* doc rule 14 */ ' · النشاط لا يُحتسب إنجازًا قبل قبول المشرف',
       actions: [{ label: `افتح «${queue[0].name}»`, onClick: () => goTo(queue[0].id) }],
     })
   }

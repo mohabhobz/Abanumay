@@ -306,24 +306,24 @@ export default function PaymentsPage() {
               label="متوسط مدة معالجة الطلب"
               value={<Num>{ks.avgDays}</Num>}
               unit="يومًا"
-              note="مؤشر 1 · المستهدف بانتظار المؤسسة"
+              note={/* doc KPI 1 */ "المستهدف بانتظار المؤسسة"}
             />
             <Stat
               label="المنجزة ضمن المدة المستهدفة"
               value={<Num>{pct(ks.inTarget)}</Num>}
-              note={`مؤشر 2 · المدة المؤقتة ${countOf(PAY_TARGET_DAYS, NOUN.day)}`}
+              note={/* doc KPI 2 */ `المدة المؤقتة ${countOf(PAY_TARGET_DAYS, NOUN.day)}`}
               bar={{ w: `${ks.inTarget}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة تنفيذ الصرف المالي"
               value={<Num>{ks.financeDays}</Num>}
               unit="يومًا"
-              note="مؤشر 3 · من اعتماد مدير المنح حتى التحويل"
+              note={/* doc KPI 3 */ "من اعتماد مدير المنح حتى التحويل"}
             />
             <Stat
               label="الالتزام بجدول الدفعات"
               value={<Num>{pct(ks.onSchedule)}</Num>}
-              note="مؤشر 4 · المستهدف بانتظار المؤسسة"
+              note={/* doc KPI 4 */ "المستهدف بانتظار المؤسسة"}
               bar={{ w: `${ks.onSchedule}%`, c: 'var(--lime)' }}
             />
           </div>
@@ -531,8 +531,8 @@ export default function PaymentsPage() {
                     <h2>{meta?.label ?? 'مغلقة'}</h2>
                     <span className="sub">
                       {meta?.who ? `عند ${meta.who}` : 'مكتملة'} ·{' '}
-                      <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.request)} ·{' '}
-                      خطوات <span className="num">{meta?.steps}</span> في الوثيقة
+                      <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.request)}
+                      {/* doc · steps meta.steps */}
                     </span>
                   </div>
                   <div className="paygrid">

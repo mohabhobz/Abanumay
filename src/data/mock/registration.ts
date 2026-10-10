@@ -30,7 +30,7 @@ export const REG_STATES: { key: RegState; label: string; who: string }[] = [
   { key: 'review', label: 'قيد المراجعة', who: 'عند مسؤول النظام' },
   { key: 'completion', label: 'بانتظار الاستكمال', who: 'أُعيد إلى الجهة مع ملاحظات' },
   { key: 'approved', label: 'معتمد', who: 'أُنشئت الجهة وأُرسلت بيانات الدخول' },
-  { key: 'rejected', label: 'مرفوض', who: 'مؤرشف مع سبب الرفض · قاعدة 28' },
+  { key: 'rejected', label: 'مرفوض', who: /* doc rule 28 */ 'مؤرشف مع سبب الرفض' },
 ]
 
 export const REG_STATE_SAY: Record<RegState, string> =
@@ -271,7 +271,7 @@ export const REG_STAGES: RegStage[] = [
   {
     key: 'contact',
     label: 'الاتصال والأشخاص',
-    note: 'يصل اسم المستخدم إلى مدخل البيانات بعد الاعتماد · خطوة 15',
+    note: /* doc step 15 */ 'يصل اسم المستخدم إلى مدخل البيانات بعد الاعتماد',
     fields: [
       { key: 'phone', label: 'الهاتف', kind: 'tel' },
       { key: 'mobile', label: 'جوال الجهة', kind: 'tel', req: true },
@@ -292,7 +292,7 @@ export const REG_STAGES: RegStage[] = [
        became rows in `banks`, each row carrying its own mandatory bank account document. */
     key: 'bank',
     label: 'الحسابات البنكية',
-    note: 'قاعدة 11 · حساب واحد أو أكثر، ولكل حساب وثيقته · ويُعتمد الحساب البنكي منفصلًا عند المراجعة',
+    note: /* doc rule 11 */ ' · حساب واحد أو أكثر، ولكل حساب وثيقته · ويُعتمد الحساب البنكي منفصلًا عند المراجعة',
     fields: [],
   },
   {
@@ -636,7 +636,7 @@ export const regRows: RegRequest[] = [
   }),
   req('REQ-2026-947135', 'مركز الأثر للدراسات', 'حكومي', 'أخرى', 'الرياض', 'الرياض', '1004310', 'rejected', '2026-08-04', ['license'], 0, {
     decidedAt: '2026-08-10', reviewDays: 6, rejectReason: 'data',
-    note: 'الترخيص المرفوع صادر لجهة أخرى · ورقم الترخيص مسجَّل لجهة قائمة بالتصنيف نفسه (قاعدة 8).',
+    note: /* doc rule 8 */ 'الترخيص المرفوع صادر لجهة أخرى · ورقم الترخيص مسجَّل لجهة قائمة بالتصنيف نفسه.',
   }),
   req('REQ-2026-947134', 'جمعية الأسر المنتجة بجازان', 'جمعية أهلية', HRSD, 'جيزان', 'صبيا', '1004288', 'approved', '2022-04-11', ALL_DOCS.slice(0, 7), 63, {
     decidedAt: '2022-04-19', entityId: '774', reviewDays: 8,

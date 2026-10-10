@@ -76,7 +76,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
       {/* The project in the chain - rule 16: its status doesn't move during the cycle. */}
       <div className="payq-cond">
         <span className="lb">حالة المشروع</span>
-        <span>{evalApproved(c) ? 'مشروع مكتمل' : 'تحت التنفيذ · قاعدة 16'}</span>
+        <span>{evalApproved(c) ? 'مشروع مكتمل' : /* doc rule 16 */ 'تحت التنفيذ'}</span>
       </div>
 
       <ul className="payq-ck">
@@ -87,7 +87,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
               ? 'التقرير الختامي مكتمل'
               : <><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)} · {isolate(missing[0])}</>}
           </span>
-          <span className="payq-r">قاعدة <Num>4</Num></span>
+          {/* doc rule 4 */}
         </li>
         {/* Rule 9 - "when it was required" - and where it wasn't required, that's stated, not
             removed, or the card ends up a line shorter than its neighbor. */}
@@ -98,7 +98,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
               ? (done ? 'اعتمد الاتصال المؤسسي النشر' : 'النشر الإعلامي بانتظار مراجعة الاتصال المؤسسي')
               : 'لا التزام بالنشر · مراجعة الاتصال لا تنطبق'}
           </span>
-          <span className="payq-r">قاعدة <Num>9</Num></span>
+          {/* doc rule 9 */}
         </li>
         <li className={done ? 'ok' : 'ret'}>
           <Icon name={done ? icons.check : icons.clock} size="sm" />
@@ -107,12 +107,12 @@ export function CloseCard({ c }: { c: CloseRow }) {
               ? 'التقرير معتمد من المدير التنفيذي'
               : 'لا يبدأ التقييم قبل اعتماد المدير التنفيذي'}
           </span>
-          <span className="payq-r">قاعدة <Num>6</Num></span>
+          {/* doc rule 6 */}
         </li>
         <li className={req.ok ? 'ok' : 'no'}>
           <Icon name={req.ok ? icons.check : icons.alert} size="sm" />
           <span>{req.say}</span>
-          <span className="payq-r">قاعدة <Num>18</Num></span>
+          {/* doc rule 18 */}
         </li>
       </ul>
 

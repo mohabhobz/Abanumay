@@ -114,7 +114,7 @@ export default function UpdateReviewPage() {
                     </table>
                   )}
                 {dups.length > 0 && (
-                  <p className="bad cnote">{dups.map((d) => `${d.label} مسجَّل لـ«${d.who}»`).join(' · ')} · قاعدة 10</p>
+                  <p className="bad cnote">{dups.map((d) => `${d.label} مسجَّل لـ«${d.who}»`).join(' · ')}{/* doc rule 10 */}</p>
                 )}
               </Glass>
 
@@ -173,7 +173,7 @@ export default function UpdateReviewPage() {
                     { k: 'نهاية الترخيص', v: <DateText>{e.licenseEndsAt}</DateText> },
                   ]} />
                   <p className="sub cnote">
-                    {open ? 'نشاط الجهة معلّق بهذا الطلب · يعود إلى حالته السابقة عند القرار (القاعدة 16 في إجراء التحديث).' : 'أُغلق الطلب وانتهى تعليق النشاط.'}
+                    {open ? /* doc rule 16 */ 'نشاط الجهة معلّق بهذا الطلب · يعود إلى حالته السابقة عند القرار ( في إجراء التحديث).' : 'أُغلق الطلب وانتهى تعليق النشاط.'}
                   </p>
                   <Link className="btn btn-2 btn-sm" to={ROUTES.entity(e.id, 'requests')}>
                     <Icon name={icons.entity} size="sm" /> ملف الجهة وطلباتها
@@ -211,7 +211,7 @@ export default function UpdateReviewPage() {
               empty="لا ملاحظات · التعديلات لا تتعارض مع بيانات جهات أخرى."
               readings={[
                 ...(waiting.length ? [{ id: 'up-wait', kind: 'note' as const, label: 'يتطلب اعتمادًا', metric: { value: String(waiting.length), unit: 'تعديل' }, text: waiting.map((c) => c.label).join(' · '), src: 'إجراء تحديث البيانات' }] : []),
-                ...(dups.length ? [{ id: 'up-dup', kind: 'flag' as const, label: 'تكرار مع جهة أخرى', text: dups.map((d) => `${d.label} مسجَّل لـ«${d.who}»`).join(' · '), src: 'قاعدة 10' }] : []),
+                ...(dups.length ? [{ id: 'up-dup', kind: 'flag' as const, label: 'تكرار مع جهة أخرى', text: dups.map((d) => `${d.label} مسجَّل لـ«${d.who}»`).join(' · '), src: /* doc rule 10 */ '' }] : []),
                 ...u.banks.filter((b) => !ibanValid(b.iban)).map((b) => ({ id: `up-iban-${b.id}`, kind: 'flag' as const, label: 'آيبان غير صحيح', text: `${b.bankName} · ${b.iban}`, src: 'التحقق من الآيبان' })),
               ]}
             />

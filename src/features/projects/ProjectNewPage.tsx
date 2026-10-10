@@ -292,7 +292,7 @@ export default function ProjectNewPage() {
 
   const steps: StepItem[] = [
     { label: 'تعبئة الطلب', note: asEntity ? 'الجهة من البوابة' : 'مشرف المنح نيابةً عن الجهة', state: sent ? 'done' : 'now' },
-    { label: 'الدراسة والتوصية', note: 'خطوات 11 إلى 15', state: sent ? 'now' : 'todo' },
+    { label: 'الدراسة والتوصية', note: /* doc step 11 · 15 */ '', state: sent ? 'now' : 'todo' },
     { label: 'الاعتماد', note: 'حسب مصفوفة السقوف', state: 'todo' },
   ]
 

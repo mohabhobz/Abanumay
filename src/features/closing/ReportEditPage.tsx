@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { BackTo, Empty, Glass, Head, MoneyField, Num, Tag, Riyal } from '@/components/ui'
-import { DocList, UploadButton, type DocRow } from '@/components/docs'
+import { DocList, DocReadNote, UploadButton, useDocReads, type DocRow } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -46,6 +46,7 @@ export default function ReportEditPage() {
   const [bad, setBad] = useState<string[]>([])
   /* 10.1.input-3 · the financial report · spend per line and the settlements */
   const [spent, setSpent] = useState<string[]>(c?.finance?.lines.map((l) => l.spent?.toString() ?? '') ?? [])
+  const { reads, read } = useDocReads()
   const [settlements, setSettlements] = useState(c?.finance?.settlements ?? '')
 
   if (!c) {
@@ -88,17 +89,19 @@ export default function ReportEditPage() {
   const planBen = gaps.find((g) => g.key === 'ben')?.planned ?? 0
   const planBudget = gaps.find((g) => g.key === 'budget')?.planned ?? 0
   const missing = reportBlockers(c)
+  /* 10 Oct · the invoices are read for the total spent the report states */
+  const spentTotal = spent.reduce((n, x) => n + (Number(x) || 0), 0)
 
   const docRows: DocRow[] = CLOSE_DOCS.map((d) => ({
     name: c.report.files?.[d.key] ?? `${d.label}.pdf`,
-    meta: d.req ? 'مستند إلزامي · قاعدة 4' : 'مستند داعم · قاعدة 5',
+    meta: d.req ? /* doc rule 4 */ 'مستند إلزامي' : /* doc rule 5 */ 'مستند داعم',
     uploaded: c.report.docs.includes(d.key),
     required: d.req,
     action: !c.report.docs.includes(d.key) && !closed
       ? (
         <UploadButton
           label={`ارفع ${d.label}`}
-          onPick={(f) => attachDoc(c.id, d.key, c.entityName, f.name)}
+          onPick={(f) => { attachDoc(c.id, d.key, c.entityName, f.name); read(d.key, f, d.key === 'invoices' ? 'invoice' : 'report', d.key === 'invoices' && spentTotal ? { amount: String(spentTotal) } : {}) }}
         />
       )
       : undefined,
@@ -115,12 +118,12 @@ export default function ReportEditPage() {
               <h1 className="ptitle">التقرير الختامي · {c.projectName}</h1>
               <p className="sub mt-1">
                 {evalApproved(c)
-                  ? 'اكتمل الإغلاق · الصفحة للقراءة فقط، وأي تعديل بعده يحتاج إلى إجراء جديد (قاعدة 21)'
+                  ? /* doc rule 21 */ 'اكتمل الإغلاق · الصفحة للقراءة فقط، وأي تعديل بعده يحتاج إلى إجراء جديد'
                   : !asEntity && (c.stage === 'draft' || c.stage === 'returned')
                     ? 'تكتب الجهة التقرير من بوابتها · الصفحة للقراءة'
                   : closed
-                    ? 'التقرير في المراجعة · يُعدَّل حين يُعاد للجهة، وكل إعادة إصدار جديد (قاعدة 19)'
-                  : <>تحدّد القاعدة <span className="num">4</span> أربع بيانات حدًّا
+                    ? /* doc rule 19 */ 'التقرير في المراجعة · يُعدَّل حين يُعاد للجهة، وكل إعادة إصدار جديد'
+                  : <>تحدّد القواعد {/* doc rule 4 */} أربع بيانات حدًّا
                     أدنى · وبجانب كل منها القيمة المعتمدة ليظهر الفرق أثناء الكتابة</>}
               </p>
             </div>
@@ -136,7 +139,7 @@ export default function ReportEditPage() {
           <Glass>
             <Head
               title="التنفيذ الفعلي"
-              meta={<Tag tone="mute">قاعدة <Num>4</Num></Tag>}
+              /* doc rule 4 */
             />
 
             <div className="regfields">
@@ -206,7 +209,7 @@ export default function ReportEditPage() {
                 />
               </span>
               <span className="sub regf-h">
-                هذا البيان الرابع في القاعدة <span className="num">4</span> · ويقارنه
+                هذا البيان الرابع في {/* doc rule 4 */} · ويقارنه
                 المراجع بأهداف المشروع في الاتفاقية والخطة
               </span>
             </label>
@@ -229,7 +232,7 @@ export default function ReportEditPage() {
               </span>
               <span className="sub regf-h">
                 اختياري · لكن أي فرق عن المعتمد بلا تفسير يعود سؤالًا من المراجعة،
-                والإعادة تُنشئ إصدارًا جديدًا (قاعدة <span className="num">19</span>)
+                والإعادة تُنشئ إصدارًا جديدًا{/* doc rule 19 */}
               </span>
             </label>
           </Glass>
@@ -244,6 +247,7 @@ export default function ReportEditPage() {
               }
             />
             <DocList rows={docRows} label="المستندات الداعمة للتقرير الختامي وحالتها" />
+            {Object.entries(reads).map(([k, r]) => <div key={k}><span className="sub">{CLOSE_DOCS.find((d) => d.key === k)?.label}</span><DocReadNote r={r} /></div>)}
 
             {/* A cloud link is a different attachment type, not a substitute for one - rule 5 names
                 Google Drive explicitly, for a practical reason. */}
@@ -260,7 +264,7 @@ export default function ReportEditPage() {
                 />
               </span>
               <span className="sub regf-h">
-                تسمح القاعدة <span className="num">5</span> بإرسال المواد الإعلامية
+                تسمح القواعد {/* doc rule 5 */} بإرسال المواد الإعلامية
                 والفيديوهات روابطَ تخزين معتمدة · فهي عادةً أكبر من أي حدّ رفع
               </span>
             </label>
@@ -311,8 +315,7 @@ export default function ReportEditPage() {
           {/* The save note is shown only when a save button is present. */}
           {!closed && (
             <p className="sub tcen">
-              الحفظ لا يُرسل التقرير · الإرسال للمراجعة من صفحة الطلب، وتمنعه القاعدة{' '}
-              <span className="num">3</span> قبل اكتمال البيانات والمستندات.
+              الحفظ لا يُرسل التقرير · الإرسال للمراجعة من صفحة الطلب، ولا يُرسل {/* doc rule 3 */} قبل اكتمال البيانات والمستندات.
             </p>
           )}
         </div>

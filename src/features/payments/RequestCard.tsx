@@ -100,7 +100,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
           <li key={c.rule} className={c.ok ? 'ok' : 'no'}>
             <Icon name={c.ok ? icons.check : icons.alert} size="sm" />
             <span>{c.label}</span>
-            <span className="payq-r">قاعدة <Num>{c.rule}</Num></span>
+            {/* doc rule c.rule */}
           </li>
         ))}
         <li className={r.bank.active ? 'ok' : 'no'}>

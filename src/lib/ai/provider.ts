@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { pickValues, readText } from '@/lib/docRead'
 import { persist, readJson } from '@/lib/config'
 import { logSettings } from '@/data/shared/settingsLog'
 
@@ -85,10 +86,39 @@ export function useAi(task: AiTask, payload: unknown, local: () => Omit<AiAnswer
    content wasn't read · the type, size and legibility checks run either way. */
 
 export interface ReadField { key: string; label: string; value: string }
-export interface DocRead { fields: ReadField[]; source: 'model' | 'none'; note: string }
+export interface DocRead { fields: ReadField[]; source: 'model' | 'local' | 'none'; note: string }
 
-export async function readDocument(file: File, kind: string): Promise<DocRead> {
-  if (!aiLive('document')) return { fields: [], source: 'none', note: 'لم يُقرأ المحتوى · خدمة قراءة الوثائق غير مربوطة' }
+/* 10 Oct · what each kind of document is checked for when read locally · the typed value it should
+   carry, by the field's key. A kind not listed is read for its amounts and dates only. */
+const DOC_KEYS: Record<string, { key: string; label: string; pick: 'number' | 'date' | 'iban' | 'amount' }[]> = {
+  license: [{ key: 'licenseNo', label: 'رقم الترخيص', pick: 'number' }, { key: 'licenseEndsAt', label: 'تاريخ نهاية الترخيص', pick: 'date' }],
+  board: [{ key: 'boardEndsAt', label: 'تاريخ انتهاء تكليف المجلس', pick: 'date' }],
+  bank: [{ key: 'iban', label: 'الآيبان', pick: 'iban' }],
+  invoice: [{ key: 'amount', label: 'المبلغ', pick: 'amount' }],
+  report: [{ key: 'amount', label: 'المبلغ', pick: 'amount' }],
+  transfer: [{ key: 'amount', label: 'المبلغ', pick: 'amount' }, { key: 'ref', label: 'رقم العملية', pick: 'number' }],
+}
+
+/** Read the file in the browser · each expected value is looked for among what was read; a field is
+    returned only when the document carries values of that type, so a silent document raises nothing */
+async function readHere(file: File, kind: string, typed: Record<string, string>): Promise<DocRead> {
+  const t = await readText(file)
+  if (!t.text) return { fields: [], source: 'none', note: t.note }
+  const v = pickValues(t.text)
+  const fields: ReadField[] = []
+  for (const k of DOC_KEYS[kind] ?? []) {
+    const want = (typed[k.key] ?? '').trim()
+    const pool = k.pick === 'date' ? v.dates : k.pick === 'iban' ? v.ibans : k.pick === 'number' ? v.numbers : v.amounts.map(String)
+    if (!pool.length) continue
+    const norm = k.pick === 'iban' ? want.replace(/\s+/g, '').toUpperCase() : k.pick === 'amount' ? String(Number(want.replace(/[^\d.]/g, '')) || '') : want
+    fields.push({ key: k.key, label: k.label, value: norm && pool.includes(norm) ? want : pool[0] })
+  }
+  const seen = [v.amounts.length && `${v.amounts.length} مبلغ`, v.dates.length && `${v.dates.length} تاريخ`, v.ibans.length && `${v.ibans.length} آيبان`].filter(Boolean).join(' · ')
+  return { fields, source: 'local', note: `قراءة محلية · ${t.note}${seen ? ` · وُجد ${seen}` : ''}` }
+}
+
+export async function readDocument(file: File, kind: string, typed: Record<string, string> = {}): Promise<DocRead> {
+  if (!aiLive('document')) return readHere(file, kind, typed)
   try {
     const body = new FormData()
     body.append('file', file)
@@ -98,7 +128,8 @@ export async function readDocument(file: File, kind: string): Promise<DocRead> {
     const j = (await r.json()) as { fields?: ReadField[] }
     return { fields: j.fields ?? [], source: 'model', note: j.fields?.length ? `قُرئ ${j.fields.length} حقل من الوثيقة` : 'لم يُعثر على حقول في الوثيقة' }
   } catch {
-    return { fields: [], source: 'none', note: 'تعذّر الوصول إلى خدمة قراءة الوثائق · فُحص النوع والحجم فقط' }
+    const here = await readHere(file, kind, typed)
+    return { ...here, note: `تعذّر الوصول إلى خدمة قراءة الوثائق · ${here.note}` }
   }
 }
 

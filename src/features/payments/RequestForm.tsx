@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, Money, MoneyField, Mono, Num, Select, Tag, DockWhy,
 } from '@/components/ui'
-import { DocFile, UploadButton } from '@/components/docs'
+import { DocFile, DocReadNote, UploadButton, useDocReads } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -106,6 +106,9 @@ export default function RequestForm() {
 
   const [amount, setAmount] = useState<string>('')
   const [files, setFiles] = useState<Record<string, PayDoc>>({})
+  /* 10 Oct · the invoices are read for the previous payment's amount, the report for its period */
+  const { reads, read } = useDocReads()
+  const prevPaid = picked ? slots.filter((x) => x.no < picked.no && x.state === 'paid').slice(-1)[0] : undefined
   const [ack, setAck] = useState(false)
   const [sent, setSent] = useState<string>('')
   const [bad, setBad] = useState<string[]>([])
@@ -154,7 +157,7 @@ export default function RequestForm() {
             <Glass>
               <Empty
                 title="لا يُعدَّل هذا الطلب."
-                note="يُعدَّل الطلب ما دام مُعادًا للجهة لاستكماله فقط · وبعد اعتماده يكون التعديل بطلب جديد (القاعدة 18)."
+                note="يُعدَّل الطلب ما دام مُعادًا للجهة لاستكماله فقط · وبعد اعتماده يكون التعديل بطلب جديد."
                 actions={<button className="btn btn-2" onClick={() => navigate(`${ROUTES.payment(resend.id)}${asEntity ? '?as=entity' : ''}`)}>العودة إلى الطلب</button>}
               />
             </Glass>
@@ -318,9 +321,14 @@ export default function RequestForm() {
                                     <UploadButton
                                       label={n.label}
                                       accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png"
-                                      onPick={(file) => setFiles((x) => ({ ...x, [n.kind]: docFromFile(file, n.kind) }))}
+                                      onPick={(file) => {
+                                        setFiles((x) => ({ ...x, [n.kind]: docFromFile(file, n.kind) }))
+                                        if (n.kind === 'فواتير' && prevPaid) read(n.kind, file, 'invoice', { amount: String(prevPaid.amount) })
+                                        else read(n.kind, file, n.kind === 'تقرير' ? 'report' : 'list', {})
+                                      }}
                                     />
                                   )}
+                                  {files[n.kind] && <DocReadNote r={reads[n.kind]} />}
                                 </li>
                               )
                             })}
@@ -331,7 +339,7 @@ export default function RequestForm() {
                             </div>
                           )}
                           <p className="sub cnote">
-                            تشترط القاعدة 3 استيفاء كل المتطلبات <b>قبل</b> الإرسال، وترفض خطوة 3
+                            تشترط القواعد {/* doc rule 3 */} استيفاء كل المتطلبات <b>قبل</b> الإرسال، ويُرفض{/* doc step 3 */}
                             الإرسال عند وجود نواقص، لذلك تظهر القائمة قبل زر الإرسال.
                           </p>
                         </>
@@ -346,7 +354,7 @@ export default function RequestForm() {
                           meta={
                             picked.conditionMet
                               ? <Tag tone="ok">مستوفى</Tag>
-                              : <Tag tone="no">غير مستوفى · قاعدة 6</Tag>
+                              : <Tag tone="no">غير مستوفى{/* doc rule 6 */}</Tag>
                           }
                         />
                         <p className="sub cnote">{isolate(picked.condition)}</p>
@@ -362,7 +370,7 @@ export default function RequestForm() {
                             </button>
                           </div>
                         )}
-                        {held && asEntity && <p className="bad cnote">لا يُرسل الطلب قبل أن يؤكّد مشرف المنح استيفاء الشرط (القاعدة 6).</p>}
+                        {held && asEntity && <p className="bad cnote">لا يُرسل الطلب قبل أن يؤكّد مشرف المنح استيفاء الشرط{/* doc rule 6 */}.</p>}
                       </Glass>
                     )}
 
@@ -385,7 +393,7 @@ export default function RequestForm() {
 
                     {/* The amount and the summary · in the main column, the end column is the assistant's alone */}
                     <Glass>
-                      <Head title="قيمة الطلب" meta={<span className="sub">قاعدة 5</span>} />
+                      <Head title="قيمة الطلب" /* doc rule 5 */ />
                       <label className="payamt">
                         <span className="lb">المبلغ المطلوب</span>
                         <MoneyField
@@ -396,9 +404,9 @@ export default function RequestForm() {
                       </label>
                       <p className={over || overGrant ? 'bad cnote' : 'sub cnote'}>
                         {over
-                          ? <>المبلغ أعلى من الدفعة المعتمدة <Mono>{nf.format(picked.amount)}</Mono>. أدخل مبلغًا لا يتجاوزها (قاعدة 5)</>
+                          ? <>المبلغ أعلى من الدفعة المعتمدة <Mono>{nf.format(picked.amount)}</Mono>. أدخل مبلغًا لا يتجاوزها{/* doc rule 5 */}</>
                           : overGrant
-                            ? <>المبلغ يتجاوز المتبقي من المنحة <Mono>{nf.format(Math.max(0, left))}</Mono> (قاعدة 14)</>
+                            ? <>المبلغ يتجاوز المتبقي من المنحة <Mono>{nf.format(Math.max(0, left))}</Mono>{/* doc rule 14 */}</>
                             : <>الدفعة المعتمدة في الجدول <Mono>{nf.format(picked.amount)}</Mono> · تستحق في <DateText>{picked.dueAt}</DateText> · المتبقي من المنحة <Mono>{nf.format(left)}</Mono></>}
                       </p>
                     </Glass>
@@ -423,10 +431,10 @@ export default function RequestForm() {
                     empty="الطلب مكتمل · جاهز للإرسال."
                     ask={!asEntity}
                     readings={[
-                      ...(held ? [{ id: 'rf-held', kind: 'flag' as const, label: 'شرط الدفعة', text: `${picked.condition ?? ''} · لم يؤكّد المشرف استيفاءه بعد.`, src: 'قاعدة 6' }] : []),
-                      ...missing.map((n) => ({ id: `rf-${n.kind}`, kind: 'flag' as const, label: 'ينقص قبل الإرسال', text: n.label, src: 'قاعدة 3' })),
-                      ...(over ? [{ id: 'rf-over', kind: 'flag' as const, label: 'قيمة الطلب', text: `أعلى من الدفعة المعتمدة ${nf.format(picked.amount)}.`, src: 'قاعدة 5' }] : []),
-                      ...(overGrant ? [{ id: 'rf-grant', kind: 'flag' as const, label: 'سقف المنحة', text: `يتجاوز المتبقي من المنحة ${nf.format(Math.max(0, left))}.`, src: 'قاعدة 14' }] : []),
+                      ...(held ? [{ id: 'rf-held', kind: 'flag' as const, label: 'شرط الدفعة', text: `${picked.condition ?? ''} · لم يؤكّد المشرف استيفاءه بعد.`, src: /* doc rule 6 */ '' }] : []),
+                      ...missing.map((n) => ({ id: `rf-${n.kind}`, kind: 'flag' as const, label: 'ينقص قبل الإرسال', text: n.label, src: /* doc rule 3 */ '' })),
+                      ...(over ? [{ id: 'rf-over', kind: 'flag' as const, label: 'قيمة الطلب', text: `أعلى من الدفعة المعتمدة ${nf.format(picked.amount)}.`, src: /* doc rule 5 */ '' }] : []),
+                      ...(overGrant ? [{ id: 'rf-grant', kind: 'flag' as const, label: 'سقف المنحة', text: `يتجاوز المتبقي من المنحة ${nf.format(Math.max(0, left))}.`, src: /* doc rule 14 */ '' }] : []),
                       ...(needAck ? [{ id: 'rf-ack', kind: 'flag' as const, label: 'إقرار الممثل', text: 'أقرّ بصحة البيانات بصفتك ممثل الجهة المخوّل.', src: /* doc 9.1.input-3 */ '' }] : []),
                     ]}
                   />
@@ -445,7 +453,7 @@ export default function RequestForm() {
                   {sent
                     ? <>
                         {permit ? 'صدر الإذن' : 'أُرسل الطلب'} <Mono>{sent}</Mono> ·{' '}
-                        <b>{permit ? 'أُرسل إلى الجهة لإرفاق المسوّغات' : resend ? 'أُعيد إرساله إلى المشرف' : 'أُحيل إلى مشرف المنح'}</b>، وأُرسل الإشعار (قاعدة 17)
+                        <b>{permit ? 'أُرسل إلى الجهة لإرفاق المسوّغات' : resend ? 'أُعيد إرساله إلى المشرف' : 'أُحيل إلى مشرف المنح'}</b>، وأُرسل الإشعار{/* doc rule 17 */}
                       </>
                     : !mayOpen
                       ? <>ينشئ الطلبَ الجهةُ من بوابتها، أو مشرفُ المنح بإذن صرف</>
@@ -462,12 +470,12 @@ export default function RequestForm() {
                   className="btn btn-p"
                   disabled={!canSend}
                   title={
-                    held ? 'شرط الدفعة غير مستوفى · قاعدة 6'
-                    : over ? 'القيمة أعلى من الدفعة المعتمدة · قاعدة 5'
-                    : overGrant ? 'القيمة تتجاوز المتبقي من المنحة · قاعدة 14'
-                    : missing.length ? `ينقص ${missing.length} من المتطلبات · قاعدة 3`
+                    held ? /* doc rule 6 */ 'شرط الدفعة غير مستوفى'
+                    : over ? /* doc rule 5 */ 'القيمة أعلى من الدفعة المعتمدة'
+                    : overGrant ? /* doc rule 14 */ 'القيمة تتجاوز المتبقي من المنحة'
+                    : missing.length ? /* doc rule 3 */ `ينقص ${missing.length} من المتطلبات`
                     : needAck ? 'أقرّ بصفتك ممثل الجهة المخوّل أولًا'
-                    : permit ? /* doc 9.1.input-4 */ '' : 'خطوة 2 في الوثيقة'
+                    : permit ? /* doc 9.1.input-4 */ '' : /* doc step 2 */ 'إذن الصرف من المشرف'
                   }
                   onClick={send}
                 >
@@ -508,7 +516,7 @@ function SlotRow({
         disabled={!can && !slot.requestId}
         /* The reason is written in `title`, not left to color alone - color says "something's
            wrong" and the text says what. */
-        title={say.rule ? `${say.why} · قاعدة ${say.rule}` : say.why}
+        title={say.why /* doc · say.rule */}
       >
         <span className="payslot-n">الدفعة <span className="num">{slot.no}</span></span>
         <span className="payslot-a num">{nf.format(slot.amount)}</span>
