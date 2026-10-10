@@ -6,8 +6,8 @@ import { Icon, icons } from '@/components/ui'
 /* Shared wrapper for the auth screens - written once.
 
    Note: this used to be one screen and is now two - login, and creating an entity account. Both
-   share the exact same look: video background, a glass card in the frame's center opening, logo and
-   title above it, copyright line below.
+   share the exact same look: the sign-in column on the left (under a third of the width) with the
+   logo, title, form and copyright line, and the glass tree video filling the rest (10 Oct).
 
    Copying the wrapper into the second screen would have meant two things saying the same thing in
    two different shapes within a month. So only the content differs between the two screens; the
@@ -29,12 +29,14 @@ export interface AuthShellProps {
   err?: string
 }
 
-/* Background video.
-   The source clip is 12s; the asset is a palindrome (forward then reversed, ~24s) so the loop point
-   has no jump, and it plays at 0.6x (~40s per cycle) so the repeat is not noticeable.
-   Reduced motion: no video, the poster frame is shown still. */
-const VIDEO_RATE = 0.6
+/* Background video · the glass tree (10 Oct).
+   Two files: the tree growing (10s, once) and a seamless 8s loop made from its last frame, where
+   only the light moves (the leaves breathe, the motes drift, the stars twinkle). The loop's first
+   frame is the intro's last frame, so the hand-over can't be seen. The growth plays once per
+   visit: going from sign-in to «forgot password» and back doesn't replay it.
+   Reduced motion: no video, the grown tree is shown still. */
 const REDUCED = '(prefers-reduced-motion: reduce)'
+const GROWN = 'ab-tree-grown'
 
 function useReducedMotion() {
   const [reduced, setReduced] = useState(() =>
@@ -49,19 +51,31 @@ function useReducedMotion() {
   return reduced
 }
 
-function LoginVideo() {
-  const ref = useRef<HTMLVideoElement>(null)
-  const reduced = useReducedMotion()
-  // playbackRate resets on load, so it is applied on every loadedmetadata as well.
-  const slow = () => { if (ref.current) ref.current.playbackRate = VIDEO_RATE }
-  useEffect(slow, [reduced])
+const grownBefore = () => { try { return sessionStorage.getItem(GROWN) === '1' } catch { return false } }
 
-  if (reduced) return <img className="login-vid login-still" src="./login-poster.jpg" alt="" />
+function LoginVideo() {
+  const loop = useRef<HTMLVideoElement>(null)
+  const reduced = useReducedMotion()
+  const [grown, setGrown] = useState(grownBefore)
+  const toLoop = () => {
+    try { sessionStorage.setItem(GROWN, '1') } catch { /* storage blocked · the growth plays again next time */ }
+    setGrown(true)
+    void loop.current?.play().catch(() => undefined)
+  }
+
+  if (reduced) return <div className="login-vid login-still"><img className="login-v on" src="./login-poster.jpg" alt="" /></div>
   return (
-    <video ref={ref} className="login-vid" autoPlay muted loop playsInline
-      poster="./login-poster.jpg" onLoadedMetadata={slow} onPlay={slow}>
-      <source src="./login-bg.mp4" type="video/mp4" />
-    </video>
+    <div className="login-vid">
+      <video ref={loop} className={`login-v${grown ? ' on' : ''}`} muted loop playsInline preload="auto"
+        autoPlay={grown} poster="./login-poster.jpg" aria-hidden="true">
+        <source src="./login-tree-loop.mp4" type="video/mp4" />
+      </video>
+      {!grown && (
+        <video className="login-v on" autoPlay muted playsInline preload="auto" onEnded={toLoop} onError={toLoop} aria-hidden="true">
+          <source src="./login-tree-intro.mp4" type="video/mp4" />
+        </video>
+      )}
+    </div>
   )
 }
 
@@ -118,6 +132,13 @@ export function AuthField({
   id, name, label, icon, value, onChange,
   type = 'text', trailing, autoComplete, enterKeyHint, hint,
 }: AuthFieldProps) {
+  /* 10 Oct · password managers (the iCloud Passwords extension, among others) put up their prompt
+     the moment the page loads a sign-in form, and float it beside the column. Until the first
+     press or focus the field doesn't present as a sign-in field: autofill off, and the password
+     drawn as dots on a plain text field. Then it becomes the real thing, so the prompt comes when
+     the user goes to the field, next to it. */
+  const [armed, setArmed] = useState(false)
+  const arm = () => { if (!armed) setArmed(true) }
   return (
     <label className="lfield" htmlFor={id}>
       <span className="llbl">{label}</span>
@@ -126,10 +147,13 @@ export function AuthField({
         <input
           id={id}
           name={name}
-          type={type}
+          type={armed || type !== 'password' ? type : 'text'}
+          className={!armed && type === 'password' ? 'lmask' : undefined}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          autoComplete={autoComplete}
+          autoComplete={armed ? autoComplete : 'off'}
+          onPointerDown={arm}
+          onFocus={arm}
           enterKeyHint={enterKeyHint}
           autoCapitalize="none"
           autoCorrect="off"
