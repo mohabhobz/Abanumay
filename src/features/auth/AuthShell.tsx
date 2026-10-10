@@ -31,12 +31,11 @@ export interface AuthShellProps {
 
 /* Background video · the glass tree (10 Oct).
    Two files: the tree growing (10s, once) and a seamless 8s loop made from its last frame, where
-   only the light moves (the leaves breathe, the motes drift, the stars twinkle). The loop's first
-   frame is the intro's last frame, so the hand-over can't be seen. The growth plays once per
-   visit: going from sign-in to «forgot password» and back doesn't replay it.
+   the light moves and the leaves sway in a slow wind. The loop's first frame is the intro's last
+   frame, so the hand-over can't be seen. The growth plays each time the login page is opened
+   (client's call, 10 Oct).
    Reduced motion: no video, the grown tree is shown still. */
 const REDUCED = '(prefers-reduced-motion: reduce)'
-const GROWN = 'ab-tree-grown'
 
 function useReducedMotion() {
   const [reduced, setReduced] = useState(() =>
@@ -51,14 +50,11 @@ function useReducedMotion() {
   return reduced
 }
 
-const grownBefore = () => { try { return sessionStorage.getItem(GROWN) === '1' } catch { return false } }
-
 function LoginVideo() {
   const loop = useRef<HTMLVideoElement>(null)
   const reduced = useReducedMotion()
-  const [grown, setGrown] = useState(grownBefore)
+  const [grown, setGrown] = useState(false)
   const toLoop = () => {
-    try { sessionStorage.setItem(GROWN, '1') } catch { /* storage blocked · the growth plays again next time */ }
     setGrown(true)
     void loop.current?.play().catch(() => undefined)
   }
