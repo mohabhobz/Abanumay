@@ -122,19 +122,17 @@ export interface AuthFieldProps {
   enterKeyHint?: 'go' | 'next' | 'done' | 'send' | 'search' | 'enter'
   /** Line under the field - a condition or clarification. */
   hint?: ReactNode
+  /** Sign-in form armed as a whole (`useArmed`) · without it the field arms itself on first touch */
+  armed?: boolean
 }
 
 export function AuthField({
   id, name, label, icon, value, onChange,
-  type = 'text', trailing, autoComplete, enterKeyHint, hint,
+  type = 'text', trailing, autoComplete, enterKeyHint, hint, armed: formArmed,
 }: AuthFieldProps) {
-  /* 10 Oct · password managers (the iCloud Passwords extension, among others) put up their prompt
-     the moment the page loads a sign-in form, and float it beside the column. Until the first
-     press or focus the field doesn't present as a sign-in field: autofill off, and the password
-     drawn as dots on a plain text field. Then it becomes the real thing, so the prompt comes when
-     the user goes to the field, next to it. */
-  const [armed, setArmed] = useState(false)
-  const arm = () => { if (!armed) setArmed(true) }
+  const [own, setOwn] = useState(false)
+  const armed = formArmed ?? own
+  const arm = () => { if (formArmed === undefined && !own) setOwn(true) }
   return (
     <label className="lfield" htmlFor={id}>
       <span className="llbl">{label}</span>
@@ -142,7 +140,7 @@ export function AuthField({
         <Icon name={icon} size="md" />
         <input
           id={id}
-          name={name}
+          name={armed ? name : undefined}
           type={armed || type !== 'password' ? type : 'text'}
           className={!armed && type === 'password' ? 'lmask' : undefined}
           value={value}

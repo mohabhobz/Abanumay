@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from './AuthShell'
+import { useArmed } from './useArmed'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
 import { signIn } from '@/data/session'
 import { STAFF_LOGINS, staffLogin, writeRole } from '@/data/roles'
@@ -49,6 +50,7 @@ export default function LoginPage() {
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const { armed, formProps } = useArmed()
 
   /**
    * Shows the error as a toast and hides it on its own - the message is an alert, not a persistent
@@ -107,15 +109,9 @@ export default function LoginPage() {
     <AuthShell title="منح أبانمي" sub="مؤسسة سليمان أبانمي الأهلية" err={err}>
           {st?.reset && <p className="lnote sub lwhy">حُفظت كلمة المرور الجديدة · ادخل بها.</p>}
           {st?.expired && <p className="lnote sub lwhy">انتهت الجلسة لعدم النشاط · ادخل من جديد.</p>}
-          {/* method/action are present so password managers recognize the form and offer to save -
-              submission itself is blocked with preventDefault. */}
-          <form
-            className="lform"
-            onSubmit={submit}
-            method="post"
-            action="#"
-            noValidate
-          >
+          {/* method/action (added once armed) let password managers recognize the form and offer
+              to save - submission itself is blocked with preventDefault. */}
+          <form className="lform" onSubmit={submit} noValidate {...formProps}>
             <AuthField
               id="lg-user"
               name="username"
@@ -124,6 +120,7 @@ export default function LoginPage() {
               value={user}
               onChange={setUser}
               autoComplete="username"
+              armed={armed}
               enterKeyHint="next"
             />
             <AuthField
@@ -135,6 +132,7 @@ export default function LoginPage() {
               value={pass}
               onChange={setPass}
               autoComplete="current-password"
+              armed={armed}
               enterKeyHint="go"
               trailing={
                 <button
