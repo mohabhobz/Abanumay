@@ -3433,8 +3433,8 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   gap:var(--sp-5);padding:clamp(var(--sp-6), 4vh, var(--sp-8)) var(--sp-6)}
 /* Over the tree's branches the card needs a denser frost than the interior glass, or the
    leaves read through the labels */
-.login-mid .lcard.glass{background:linear-gradient(158deg, rgba(255,255,255,.74), rgba(255,255,255,.58));
-  -webkit-backdrop-filter:blur(22px) saturate(1.25);backdrop-filter:blur(22px) saturate(1.25)}
+.login-mid .lcard.glass{background:linear-gradient(158deg, rgba(255,255,255,.56), rgba(255,255,255,.38));
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3)}
 /* The copyright line sits on the floor at the screen's foot, not on the trunk under the card */
 @media (min-width:761px) and (min-height:700px){
   .login-mid>.lfoot{position:absolute;inset-inline:0;bottom:var(--sp-5);text-align:center;margin:0}
@@ -3513,6 +3513,25 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   box-shadow:inset 0 0 0 1px rgba(var(--noC),.26), var(--el-2);
   animation:ltoastin var(--mo-3) var(--ease-out) both}
 .ltoast svg{flex:none;color:var(--no)}
+/* The reason the user is here (session ended · password changed) · a toast at the screen's top,
+   over the tree, that stays until its close button is pressed */
+.lnotice{position:absolute;z-index:6;top:var(--sp-5);left:50%;transform:translateX(-50%);
+  width:max-content;max-width:min(32rem,calc(100% - var(--sp-6) * 2));
+  display:flex;align-items:center;gap:var(--sp-3);
+  padding-block:var(--sp-2);padding-inline:var(--sp-4) var(--sp-2);
+  border-radius:var(--r2);font-size:var(--fs-2);line-height:var(--lh-text);color:var(--t1);
+  background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.14), var(--el-3);
+  animation:lnoticein var(--mo-3) var(--ease-out) both}
+.lnotice>svg{flex:none;color:var(--t2)}
+.lnotice-x{flex:none;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:var(--r1);
+  background:none;color:var(--t2);cursor:pointer}
+.lnotice-x:hover{background:rgba(var(--edgeC),.08);color:var(--t1)}
+.lnotice-x:focus-visible{outline:2px solid var(--edge-i);outline-offset:1px}
+@keyframes lnoticein{from{opacity:0;transform:translate(-50%,calc(var(--mo-travel) * -1))}
+to{opacity:1;transform:translateX(-50%)}
+}
+:root[data-theme="dark"] .lnotice{background:rgba(14,16,16,.82);box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.16), var(--el-3)}
 @keyframes ltoastin{from{opacity:0;transform:translateY(calc(var(--mo-travel) * -1))}
 to{opacity:1;transform:none}
 }

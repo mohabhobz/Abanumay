@@ -106,9 +106,12 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell title="منح أبانمي" sub="مؤسسة سليمان أبانمي الأهلية" err={err}>
-          {st?.reset && <p className="lnote sub lwhy">حُفظت كلمة المرور الجديدة · ادخل بها.</p>}
-          {st?.expired && <p className="lnote sub lwhy">انتهت الجلسة لعدم النشاط · ادخل من جديد.</p>}
+    <AuthShell
+      title="منح أبانمي"
+      sub="مؤسسة سليمان أبانمي الأهلية"
+      err={err}
+      notice={st?.reset ? 'حُفظت كلمة المرور الجديدة · ادخل بها.' : st?.expired ? 'انتهت الجلسة لعدم النشاط · ادخل من جديد.' : undefined}
+    >
           {/* method/action (added once armed) let password managers recognize the form and offer
               to save - submission itself is blocked with preventDefault. */}
           <form className="lform" onSubmit={submit} noValidate {...formProps}>

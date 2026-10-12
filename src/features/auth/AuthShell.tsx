@@ -28,6 +28,9 @@ export interface AuthShellProps {
   children: ReactNode
   /** Alert message that floats over the card and disappears on its own. */
   err?: string
+  /** Why the user landed here (session ended, password changed) · a toast at the screen's top that
+      stays until closed, so it isn't missed and doesn't take room inside the card (12 Oct · client) */
+  notice?: string
 }
 
 /* Background video · the glass tree (10 Oct).
@@ -79,10 +82,21 @@ function LoginVideo() {
   )
 }
 
-export function AuthShell({ title, sub, children, err }: AuthShellProps) {
+export function AuthShell({ title, sub, children, err, notice }: AuthShellProps) {
+  const [shut, setShut] = useState<string | undefined>()
   return (
     <div className="login">
       <LoginVideo />
+
+      {notice && shut !== notice && (
+        <div className="lnotice" role="status">
+          <Icon name={icons.info} size="sm" />
+          <span>{notice}</span>
+          <button type="button" className="lnotice-x" aria-label="إغلاق التنبيه" onClick={() => setShut(notice)}>
+            <Icon name={icons.close} size="sm" />
+          </button>
+        </div>
+      )}
 
       <main className="login-mid">
         <div className="lcard glass">
