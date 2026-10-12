@@ -6,8 +6,9 @@ import { Icon, icons } from '@/components/ui'
 /* Shared wrapper for the auth screens - written once.
 
    Note: this used to be one screen and is now two - login, and creating an entity account. Both
-   share the exact same look: the sign-in column on the left (under a third of the width) with the
-   logo, title, form and copyright line, and the glass tree video filling the rest (10 Oct).
+   share the exact same look: the glass tree video filling the screen with the tree on its centre,
+   and a glass card over it holding the logo, title and form, with the copyright line under it
+   (12 Oct · the 10 Oct side column was dropped at the client's request).
 
    Copying the wrapper into the second screen would have meant two things saying the same thing in
    two different shapes within a month. So only the content differs between the two screens; the
@@ -36,6 +37,9 @@ export interface AuthShellProps {
    (client's call, 10 Oct).
    Reduced motion: no video, the grown tree is shown still. */
 const REDUCED = '(prefers-reduced-motion: reduce)'
+/* From the app's base, not `./` · on a nested route (`/entities/register/account`) a relative
+   path pointed under the route and the tree never loaded there */
+const BASE = import.meta.env.BASE_URL
 
 function useReducedMotion() {
   const [reduced, setReduced] = useState(() =>
@@ -59,16 +63,16 @@ function LoginVideo() {
     void loop.current?.play().catch(() => undefined)
   }
 
-  if (reduced) return <div className="login-vid login-still"><img className="login-v on" src="./login-poster.jpg" alt="" /></div>
+  if (reduced) return <div className="login-vid login-still"><img className="login-v on" src={`${BASE}login-poster.jpg`} alt="" /></div>
   return (
     <div className="login-vid">
       <video ref={loop} className={`login-v${grown ? ' on' : ''}`} muted loop playsInline preload="auto"
-        autoPlay={grown} poster="./login-poster.jpg" aria-hidden="true">
-        <source src="./login-tree-loop.mp4" type="video/mp4" />
+        autoPlay={grown} poster={`${BASE}login-poster.jpg`} aria-hidden="true">
+        <source src={`${BASE}login-tree-loop.mp4`} type="video/mp4" />
       </video>
       {!grown && (
         <video className="login-v on" autoPlay muted playsInline preload="auto" onEnded={toLoop} onError={toLoop} aria-hidden="true">
-          <source src="./login-tree-intro.mp4" type="video/mp4" />
+          <source src={`${BASE}login-tree-intro.mp4`} type="video/mp4" />
         </video>
       )}
     </div>

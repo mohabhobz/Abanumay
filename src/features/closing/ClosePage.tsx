@@ -324,25 +324,18 @@ export default function ClosePage() {
                         : <><span className="num">{c.report.days}</span>
                           <span className="sub"> يومًا</span></>,
                     },
+                    /* 12 Oct · audit P07 · the outcomes and challenges are rows of the same list,
+                       not shaded boxes under it: the boxes put their label 12px in and their text
+                       on its own edge, off both columns above. */
+                    ...(c.report.outcomes ? [{ k: 'أبرز المخرجات', v: <>{isolate(c.report.outcomes)}</> }] : []),
+                    ...(c.report.risks ? [{ k: 'التحديات', v: <>{isolate(c.report.risks)}</> }] : []),
                   ])}
                 />
 
-                {c.report.outcomes ? (
-                  <div className="payq-cond">
-                    <span className="lb">أبرز المخرجات</span>
-                    <span>{isolate(c.report.outcomes)}</span>
-                  </div>
-                ) : (
+                {!c.report.outcomes && (
                   <p className="sub cnote">
                     «أبرز المخرجات والنتائج» لم تُدخل بعد · وهي {/* doc rule 4 */} من الحدّ الأدنى.
                   </p>
-                )}
-
-                {c.report.risks && (
-                  <div className="payq-cond">
-                    <span className="lb">التحديات</span>
-                    <span>{isolate(c.report.risks)}</span>
-                  </div>
                 )}
 
                 {(!asEntity || !closed) && (
@@ -427,20 +420,11 @@ export default function ClosePage() {
                             : <><span className="num">{c.evaluation.score}</span>
                               <span className="sub"> من 5{/* doc rule 13 */}</span></>,
                         },
+                        /* audit P07 · rows of the list, like the report's outcomes */
+                        ...(c.evaluation.impact ? [{ k: 'الأثر المرصود', v: <>{isolate(c.evaluation.impact)}</> }] : []),
+                        ...(c.evaluation.lessons ? [{ k: 'الدروس المستفادة', v: <>{isolate(c.evaluation.lessons)}</> }] : []),
                       ])}
                     />
-                    {c.evaluation.impact && (
-                      <div className="payq-cond">
-                        <span className="lb">الأثر المرصود</span>
-                        <span>{isolate(c.evaluation.impact)}</span>
-                      </div>
-                    )}
-                    {c.evaluation.lessons && (
-                      <div className="payq-cond">
-                        <span className="lb">الدروس المستفادة</span>
-                        <span>{isolate(c.evaluation.lessons)}</span>
-                      </div>
-                    )}
                     {!asEntity && !closed && (
                       <div className="act-a">
                         <Link className="btn btn-2 btn-sm" to={ROUTES.closingEval(c.id)}>

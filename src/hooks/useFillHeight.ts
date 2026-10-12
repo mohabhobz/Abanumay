@@ -78,9 +78,25 @@ export function useFillHeight(
       if (capSelector) {
         const cap = document.querySelector<HTMLElement>(capSelector)
         if (cap) h = Math.min(h, cap.getBoundingClientRect().bottom - top)
+      } else if (el.classList.contains('aiside')) {
+        /* 12 Oct · client · the assistant grows and shrinks with the main column beside it: its
+           content's end (without the sticking pad under it) is the default cap, so a short page
+           doesn't get a card running past its last card. */
+        const main = el.previousElementSibling as HTMLElement | null
+        if (main) {
+          const pb = parseFloat(getComputedStyle(main).paddingBottom) || 0
+          h = Math.min(h, main.getBoundingClientRect().bottom - pb - top)
+        }
       }
 
       el.style.setProperty(varName, `${Math.max(min, Math.round(h))}px`)
+
+      /* Content taller than the screen can give it (an open reading list) → the card takes its own
+         height and stops sticking, so the page scrolls through it and nothing hides under the
+         decision bar or the floating assistant. The fill is never more than this space, so the
+         flag only flips on the content's own height. */
+      const room = window.innerHeight - stick - reserve
+      el.toggleAttribute('data-tall', el.offsetHeight > room + 1)
     }
 
     const schedule = () => {
@@ -100,7 +116,9 @@ export function useFillHeight(
     if (capSelector) {
       const cap = document.querySelector<HTMLElement>(capSelector)
       if (cap) ro.observe(cap)
-    }
+    } else if (el.previousElementSibling) ro.observe(el.previousElementSibling)
+    /* Its own height changes when the card opens or closes */
+    ro.observe(el)
 
     return () => {
       if (raf) cancelAnimationFrame(raf)
@@ -109,6 +127,7 @@ export function useFillHeight(
       window.removeEventListener('resize', schedule)
       ro.disconnect()
       el.style.removeProperty(varName)
+      el.removeAttribute('data-tall')
     }
   }, [ref, varName, reserveSelector, capSelector, min, gap])
 }

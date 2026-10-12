@@ -1097,7 +1097,12 @@ small{font-size:var(--fs-1)}
    adjacent unit (`.kpi-v`, `.rpcov-g .v`), or where it's a single Arabic
    word that belongs to the sentence's own flow (`.pamt .v` and the riyal
    symbol). Each case is marked where it's defined. */
-.num{direction:ltr;unicode-bidi:isolate}
+.num{direction:ltr;unicode-bidi:isolate;
+  /* 12 Oct · client (reports catalog strip) · the general fix for the cost above: a block `.num`
+     aligns as its parent does, not as `ltr` would — `match-parent` resolves the inherited
+     `start` against the parent's direction, so in an RTL card it sits on the right with its
+     label and in a numeric column (`td.n`, left) it stays left. */
+  text-align:match-parent}
 /* The Arabic-formatted date (e.g. “17 July 2026” with the month name
    spelled out): an isolated island with tabular figures, without `ltr`
    — that direction would reorder it to put the month name first. */
@@ -2151,7 +2156,10 @@ to{opacity:1;transform:none}
 .screen::-webkit-scrollbar{width:9px}
 .screen::-webkit-scrollbar-thumb{background:rgba(var(--edgeC),.18);border-radius:var(--rp)}
 .two{display:grid;grid-template-columns:1fr var(--ai-w);gap:var(--gap);align-items:start}
-.g2{display:grid;grid-template-columns:1.35fr 1fr;gap:var(--gap);align-items:start}
+.g2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:var(--gap);align-items:start}
+/* 12 Oct · audit P10 · `fr` alone has an `auto` floor, so the side column took its width from its
+   content and the main column's edge moved between projects and tabs (507 / 521 / 588 / 606px).
+   `minmax(0,…)` makes the split the grid's, never the content's. */
 .g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--gap)}
 /* Sidebar: single scroll.
    Sticky positioning (`position:sticky` + `max-height` + inner scroll) was removed: a
@@ -2225,6 +2233,20 @@ to{opacity:1;transform:none}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-3) var(--sp-5);font-size:var(--fs-2);align-items:baseline;margin:0}
 .kv dt{color:var(--t2);font-size:var(--fs-2);white-space:nowrap}
 .kv dd{margin:0;font-weight:400}
+/* 12 Oct · audit P07 · one rhythm and one value column for every label · value list:
+   · each row is one fixed line (20px, the height of a tag), so a row with a tag, a person or a
+     currency mark no longer opens the gap around it (23 → 25 → 29px);
+   · a person's avatar (28px) sits in that line without growing it;
+   · the label column has a floor (10rem, 40% in a narrow card), so stacked cards — and the
+     sections of one document — put their values on one edge instead of each one's own. */
+.kv{grid-template-columns:minmax(min(10rem,40%),max-content) minmax(0,1fr)}
+.kv dt,.kv dd{line-height:1.25rem;min-height:1.25rem}
+.kv dd :is(.tag,.tagret){vertical-align:middle}
+.kv dd>.prs,.kv dd>.chips>.prs{margin-block:-.25rem}
+/* A list under a progress bar's captions starts a block of its own (it sat 8px under them) */
+.qr-barl+.kv{margin-top:var(--sp-5)}
+/* …and the summary line after a list keeps its distance from the last row */
+.kv+:is(p.sub,p.cnote,.sub.cnote){margin-top:var(--sp-4)}
 /* Value with its label; the gap is an explicit token, not a whitespace character between
    the two elements. */
 .kvpair{display:inline-flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2) var(--sp-3)}
@@ -2345,7 +2367,7 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
 /* Header uses `.g2` columns with the same ratio and gap, so the two columns above land
    exactly on the two below, and the side padding is removed so the edge is the actual
    edge, not the edge minus 3px. */
-.phead-g2{display:grid;grid-template-columns:1.35fr 1fr;gap:var(--gap);
+.phead-g2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:var(--gap);
   align-items:center;padding-inline:0}
 @media (max-width:960px){.phead-g2{grid-template-columns:1fr}}
 .pmain{min-width:0;flex:1 1 420px}
@@ -3387,42 +3409,35 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .cb-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 
 }
-/* Sign-in screen (10 Oct · client).
-   Two columns: the sign-in column on the left, under a third of the width, and the glass tree
-   filling the rest. The tree sits in the left half of its frame, so the video is pinned to its
-   left edge (next to the column) and crops from the right on narrow windows · the tree stays
-   whole. Below 760px the column gives way and the card floats over the video as before. */
-.login{--login-col:clamp(340px, 30vw, 480px);
-  position:fixed;inset:0;overflow:hidden;background:var(--base);
-  display:grid;grid-template-columns:minmax(0,1fr) var(--login-col)}
-/* The tree is centred in the pane, not the frame: it sits at 30% of the video's width, so the
-   video is drawn at the pane's full height and slid until that point lands on the pane's middle
-   (container units · 16:9 → width = 177.78cqh, the tree's centre = 53.33cqh from its left edge).
-   Where the slide opens a gap on the left, the pane is filled with the frame's own left column
-   stretched sideways (`login-edge.png`, the floor's horizon included), and the video's edge fades
-   into it, so no seam shows. */
-.login-vid{position:relative;grid-row:1;grid-column:1;min-width:0;height:100%;overflow:hidden;
+/* Sign-in screen (12 Oct · client · back to the glass card).
+   The glass tree fills the whole screen with the tree on the screen's centre, and the sign-in
+   form floats over it in a glass card, centred too. (10 Oct had a side column beside the tree;
+   the client asked for the card back.) */
+.login{position:fixed;inset:0;overflow:hidden;background:var(--base)}
+/* The tree sits at 30% of the video's width, so the video is drawn at the screen's full height
+   and slid until that point lands on the screen's middle (container units · 16:9 → width =
+   177.78cqh, the tree's centre = 53.33cqh from its left edge). Where the slide opens a gap at
+   either side, the screen is filled with the frame's own edge column stretched sideways
+   (`login-edge.png`, the floor's horizon included), and the video's edges fade into it, so no
+   seam shows. */
+.login-vid{position:absolute;inset:0;overflow:hidden;
   z-index:0;pointer-events:none;container-type:size;
   background:url('../assets/login-edge.png') 0 0/100% 100% no-repeat}
 .login-v{position:absolute;top:0;left:calc(50cqw - 53.33cqh);height:100cqh;width:177.78cqh;
   max-width:none;object-fit:cover;opacity:0;
-  -webkit-mask-image:linear-gradient(90deg,transparent,rgb(0 0 0) 5cqh);mask-image:linear-gradient(90deg,transparent,rgb(0 0 0) 5cqh)}
+  -webkit-mask-image:linear-gradient(90deg,transparent,rgb(0 0 0) 5cqh,rgb(0 0 0) calc(100% - 5cqh),transparent);
+  mask-image:linear-gradient(90deg,transparent,rgb(0 0 0) 5cqh,rgb(0 0 0) calc(100% - 5cqh),transparent)}
 .login-v.on{opacity:1}
-.login-mid{position:relative;z-index:3;grid-row:1;grid-column:2;min-height:0;overflow:auto;
+.login-mid{position:relative;z-index:3;height:100%;overflow:auto;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:var(--sp-5);padding:clamp(var(--sp-6), 4vh, var(--sp-8)) var(--sp-6);
-  background:var(--g-pop);box-shadow:1px 0 0 rgba(var(--edgeC),var(--edge-hair))}
-@media (min-width:761px){
-  /* In the column the column is the surface · the card loses its own glass and shadow */
-  .login-mid .lcard,.login-mid .lcard.glass,
-  :root[data-theme="dark"] .login-mid .lcard,:root[data-theme="dark"] .login-mid .lcard.glass{
-    background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-  .login-mid .lcard.glass::before,.login-mid .lcard.glass::after{display:none}
-}
-@media (max-width:760px){
-  .login{display:flex;flex-direction:column}
-  .login-vid{position:absolute;inset:0}
-  .login-mid{flex:1;background:none;box-shadow:none}
+  gap:var(--sp-5);padding:clamp(var(--sp-6), 4vh, var(--sp-8)) var(--sp-6)}
+/* Over the tree's branches the card needs a denser frost than the interior glass, or the
+   leaves read through the labels */
+.login-mid .lcard.glass{background:linear-gradient(158deg, rgba(255,255,255,.74), rgba(255,255,255,.58));
+  -webkit-backdrop-filter:blur(22px) saturate(1.25);backdrop-filter:blur(22px) saturate(1.25)}
+/* The copyright line sits on the floor at the screen's foot, not on the trunk under the card */
+@media (min-width:761px) and (min-height:700px){
+  .login-mid>.lfoot{position:absolute;inset-inline:0;bottom:var(--sp-5);text-align:center;margin:0}
 }
 /* Same glass as the interior cards (`var(--g-card)`), just with a deeper outer shadow,
    since it sits over video rather than a calm background. */
@@ -3660,6 +3675,12 @@ header>.tag.mute,header>div>.tag.mute{box-shadow:inset 0 0 0 1px var(--edge-1)}
    positioned ancestor, anchoring to the page and stretching to the full screen width. */
 .fsel{position:relative;display:inline-flex;flex-direction:column;gap:var(--sp-2);min-width:0}
 .fsel-l{font-size:var(--fs-1);color:var(--t2);padding-inline-start:var(--sp-2)}
+/* 12 Oct · the client sent this twice (audit log, notification channels) · a filter with a label
+   above it is taller than the search box beside it, and the row centred them: the controls
+   themselves ended 9px apart. Any row holding a labelled filter lines its controls up on their
+   bottom edge, so a control with a label and one without sit on the same line.
+   Measured by `tools/ctlrow.mjs` (د) «صفّ مزاح» · it fails the run on any row like this. */
+:is(.ftool-f,.ftool-a,.ftool-r,.apv-row,.rowf,.cfgrow):has(>.fsel>.fsel-l){align-items:flex-end}
 /* Used to be square-cornered (`--r2`) under the rule "the field is the only
    square-cornered control: it says type here, while a pill says press me." That rule was
    overridden by the client's decision: search was a pill and the field was square-cornered
@@ -3691,6 +3712,12 @@ header>.tag.mute,header>div>.tag.mute{box-shadow:inset 0 0 0 1px var(--edge-1)}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:var(--sp-4) var(--sp-4);
   padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
 .fgrid-t{display:flex;align-items:flex-end;gap:var(--sp-3);flex-wrap:wrap}
+/* 12 Oct · same defect as the audit log · the toggle chips shared one 190px cell, wrapped onto two
+   lines, and their first line sat 18px above the labelled selects beside them. They take a row of
+   their own, on one line. */
+.fgrid-t{grid-column:1 / -1}
+/* and a filter without a label (the date range) lines up on the labelled ones' bottom edge */
+.fgrid{align-items:end}
 /* Active filters; each one can be removed on its own. */
 .factive{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
   padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
@@ -4162,7 +4189,7 @@ to{opacity:1;transform:none}
 /* The card's name is primary ink and its note secondary: two steps, so the eye reads the label first. */
 /* Dashboard grid. */
 .dgrid{display:grid;gap:var(--gap);align-items:start}
-.g21{grid-template-columns:1.7fr 1fr}
+.g21{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
 .g111{grid-template-columns:repeat(3,minmax(0,1fr))}
 .g11{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:1180px){.g21,.g111,.g11{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -6390,29 +6417,23 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
      reason. */
   .hasg2.g2fit>.g2>.col:first-child{padding-bottom:0}
 
-  .aiside{position:sticky;top:.35rem;align-self:start;
-    /* Height is computed from its actual position (`useFillHeight`): the screen
-       minus its offset from the top minus the decision-bar gutter. Before sticking
-       it stays short and its content shows through, and it grows as you scroll
-       down until it sticks and fills the screen. */
-    height:var(--ai-fill,26rem);
-    /* A measuring container: the poster inside measures itself against this
-       height, not the screen's. `size` is safe here because the height is only
-       known above 960px — below that the card sits in the normal flow, sized by
-       its own content. */
-    container-type:size}
-  .aiside>.aicard{height:100%;min-height:0;display:flex;flex-direction:column}
-  /* When collapsed, the card takes only the height of its content. It used to
-     fill the screen (~780px) with only four lines in the middle, so the left
-     half of the page was an empty pane of glass on every detail screen. Filling
-     the height is for the open state, which has a list of readings that
-     actually scrolls. */
-  .aiside:has(>.aicard.aishut){height:auto;container-type:normal}
-  /* 11 Oct · alignment audit (UI-004) · a side column of several cards (the study tab's) can't
-     take a fixed fill height: its cards ran on past the box, under the decision bar, and the end of
-     «قراءة المساعد» was unreachable. It sits in the flow at its own height and scrolls with the
-     page. */
-  .aiside:not(:has(>.aicard)){position:static;height:auto;container-type:normal}
+  /* 12 Oct · client · the assistant's column, one rule for every page:
+     · collapsed, its content sits centred in a card that fills the room beside the main column —
+       the screen's space from its position to the decision bar, never past the main column's end
+       (`useFillHeight` writes it as `--ai-fill`), so it grows and shrinks with the scroll;
+     · its content is never clipped: a fill is a floor (`min-height`), not a box, so a card whose
+       content is taller takes its own height;
+     · taller than the screen can give it (an open list of readings) → `data-tall`, it stops
+       sticking and the page scrolls through it, keeping the gutter of the decision bar and the
+       floating assistant under it. No inner scroll anywhere. */
+  .aiside{position:sticky;top:.35rem;align-self:start;display:flex;flex-direction:column}
+  .aiside>.aicard.aicard{flex:1 0 auto;min-height:var(--ai-fill,26rem);display:flex;flex-direction:column}
+  .aiside>.aicard.aishut{flex-direction:row;align-items:center;justify-content:center;overflow:visible}
+  .aiside>.aicard.aishut>.aishut-c{width:100%}
+  .aiside .aiscroll{flex:1 0 auto;overflow:visible}
+  .aiside[data-tall]{position:relative;top:auto;margin-bottom:var(--dock-h)}
+  /* 11 Oct · UI-004 · a side column of several cards sits in the flow at its own height */
+  .aiside:not(:has(>.aicard)){position:static}
   /* A line after the grid (the closing page's rule note) is past the column's reserved padding,
      so it ended under the decision bar and the floating button (UI-179). It keeps the same gutter. */
   .hasg2 .g2 ~ :last-child{padding-bottom:var(--dock-h)}
@@ -7543,6 +7564,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    lighter background in dark mode raises the background of everything
    inside it (same lesson as `.pkind`) */
 .cfglist li.on{box-shadow:inset 0 0 0 2px var(--edge-i)}
+/* 12 Oct · audit P12 (UI-073 · UI-136) · a switch beside a list of framed rows is one more row of
+   that list: unframed, its label sat 16px out from theirs and its toggle 16px past their fields. */
+.glass>.cfglist~.swrow,.glass>.swrow:has(~.cfglist){padding:var(--pad-in);border-radius:var(--r1);
+  background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1);margin-top:var(--sp-2)}
+.glass>.swrow+.cfglist{margin-top:var(--sp-2)}
 
 /* ═══ Settings inventory ═══
    Each group is a three-line row: the name and its type, where it shows up,
@@ -8730,3 +8756,8 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
    itself (the collapsed assistant card) has no content floor there, so on the session page it was
    squeezed to 47px with its leaf cut in half. Cards in the screen column keep their own height. */
 .screen.col>:is(.glass,.tabs,.tblwrap){flex-shrink:0}
+
+/* 12 Oct · the study's own side data, moved out of the assistant column into the main one · two
+   cards a row, so the four read as one block under the study */
+.g2-in{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap);align-items:start}
+@media (max-width:1100px){.g2-in{grid-template-columns:1fr}}

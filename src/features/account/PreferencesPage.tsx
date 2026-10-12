@@ -18,6 +18,8 @@ import {
 } from '@/lib/prefs'
 import { applyTheme, readTheme, writeTheme, type ThemeChoice } from '@/lib/theme'
 import { isolate, readDate } from '@/lib/format'
+import { AssistantAside } from '@/features/shared/AssistantAside'
+import type { Reading } from '@/components/assistant'
 
 const KEYS = ['tab'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -94,6 +96,11 @@ function NotifyTab({ roleKey, roleName }: { roleKey: string; roleName: string })
   const setFreq = (g: string, f: Freq) => setP((x) => ({ ...x, freq: { ...x.freq, [g]: f } }))
 
   const summaryGroups = NOTIFY_GROUPS.filter((g) => p.freq[g.key] !== 'now')
+  const readings: Reading[] = [
+    { id: 'now', kind: 'note', label: 'الفوري', metric: { value: String(NOTIFY_GROUPS.length - summaryGroups.length), unit: `من ${NOTIFY_GROUPS.length} مجموعات` }, text: 'تصلك فور حدوثها · والباقي في الملخّص اليومي.' },
+    { id: 'quiet', kind: 'note', label: 'ساعات الهدوء', text: p.quiet.on ? `لا رسائل نصية ولا بريد من ${p.quiet.from} إلى ${p.quiet.to}${p.quiet.weekend ? ' ولا يومي الجمعة والسبت' : ''} · العاجل يتجاوزها.` : 'متوقفة · تصلك الرسائل في أي وقت.' },
+    { id: 'news', kind: 'note', label: 'الأخبار', text: p.news.on ? 'وافقت على الأخبار والرسائل التوعوية · يمكنك سحب الموافقة متى شئت.' : 'لم توافق على الأخبار والرسائل التوعوية · رسائل العمل تصلك دونها.' },
+  ]
 
   return (
     <>
@@ -221,34 +228,35 @@ function NotifyTab({ roleKey, roleName }: { roleKey: string; roleName: string })
               يشترط نظام حماية البيانات الشخصية موافقة صريحة موثّقة لكل رسالة غير تشغيلية.
             </p>
           </Glass>
-        </div>
 
-        <Glass>
-          <Head title="ساعات الهدوء" meta={<span className="sub">على أسبوع العمل في المملكة</span>} />
-          <Switch
-            label="لا رسائل نصية ولا بريد خارج ساعات العمل"
-            note="الإشعار العاجل يتجاوزها · وما سواه يُجمع ويصلك عند انتهائها"
-            on={p.quiet.on}
-            onChange={(on) => setP((x) => ({ ...x, quiet: { ...x.quiet, on } }))}
-          />
-          {p.quiet.on && (
-            <>
-              <div className="pf-row">
-                <span className="lb">من</span>
-                <Select value={p.quiet.from} allowEmpty={false} options={HOURS}
-                  onChange={(x) => setP((y) => ({ ...y, quiet: { ...y.quiet, from: x ?? '16:00' } }))} />
-                <span className="lb">إلى</span>
-                <Select value={p.quiet.to} allowEmpty={false} options={HOURS}
-                  onChange={(x) => setP((y) => ({ ...y, quiet: { ...y.quiet, to: x ?? '08:00' } }))} />
-              </div>
-              <Switch
-                label="يوما الجمعة والسبت بالكامل"
-                on={p.quiet.weekend}
-                onChange={(weekend) => setP((x) => ({ ...x, quiet: { ...x.quiet, weekend } }))}
-              />
-            </>
-          )}
-        </Glass>
+          <Glass>
+            <Head title="ساعات الهدوء" meta={<span className="sub">على أسبوع العمل في المملكة</span>} />
+            <Switch
+              label="لا رسائل نصية ولا بريد خارج ساعات العمل"
+              note="الإشعار العاجل يتجاوزها · وما سواه يُجمع ويصلك عند انتهائها"
+              on={p.quiet.on}
+              onChange={(on) => setP((x) => ({ ...x, quiet: { ...x.quiet, on } }))}
+            />
+            {p.quiet.on && (
+              <>
+                <div className="pf-row">
+                  <span className="lb">من</span>
+                  <Select value={p.quiet.from} allowEmpty={false} options={HOURS}
+                    onChange={(x) => setP((y) => ({ ...y, quiet: { ...y.quiet, from: x ?? '16:00' } }))} />
+                  <span className="lb">إلى</span>
+                  <Select value={p.quiet.to} allowEmpty={false} options={HOURS}
+                    onChange={(x) => setP((y) => ({ ...y, quiet: { ...y.quiet, to: x ?? '08:00' } }))} />
+                </div>
+                <Switch
+                  label="يوما الجمعة والسبت بالكامل"
+                  on={p.quiet.weekend}
+                  onChange={(weekend) => setP((x) => ({ ...x, quiet: { ...x.quiet, weekend } }))}
+                />
+              </>
+            )}
+          </Glass>
+        </div>
+        <AssistantAside title="قراءة الإشعارات" cta="اقرأ إشعاراتك" empty="إشعاراتك على الإعداد الافتراضي · لا ملاحظات." readings={readings} ask={false} />
       </div>
     </>
   )
@@ -261,64 +269,72 @@ function DelegateTab({ me }: { me: string }) {
   const people = OWNERS.filter((o) => o !== me)
   const ready = d.from && d.to && d.delegate
   const live = d.on && ready && d.from <= today() && today() <= d.to
+  const readings: Reading[] = [
+    d.on && ready
+      ? { id: 'st', kind: 'note', label: live ? 'ساري' : 'مجدول', text: `${d.scope === 'approvals' ? 'اعتماداتك' : 'كل مهامك'} لدى ${d.delegate} من ${d.from} إلى ${d.to} · تعود إليك تلقائيًا بعدها.` }
+      : d.on
+        ? { id: 'st', kind: 'flag', label: 'ناقص', text: 'التفويض مفعّل بلا مدة أو زميل · لن ينتقل شيء حتى تكملهما.' }
+        : { id: 'st', kind: 'note', label: 'التفويض', text: 'لا تفويض · مهامك لديك.' },
+    { id: 'lim', kind: 'note', label: 'الحدود', text: 'يعتمد المفوَّض إليه ضمن حدوده هو · وما يتجاوزها يُرفع إلى المستوى التالي.' },
+  ]
 
   return (
     <div className="g2">
-      <Glass>
-        <Head
-          title="أنا خارج العمل"
-          meta={live ? <Tag tone="ok">التفويض ساري</Tag> : d.on && ready ? <Tag tone="mute">مجدول</Tag> : undefined}
-        />
-        <Switch
-          label="فعّل التفويض خلال غيابي"
-          note="تنتقل مهامك إلى من تختاره طوال المدة، ثم تعود إليك تلقائيًا"
-          on={d.on}
-          onChange={(on) => setD((x) => ({ ...x, on }))}
-        />
-        {d.on && (
-          <div className="regfields mt-3">
-            <div className="regf">
-              <span className="lb">من تاريخ<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <DateField value={d.from} onChange={(from) => setD((x) => ({ ...x, from }))} label="بداية التفويض" min={today()} />
-            </div>
-            <div className="regf">
-              <span className="lb">إلى تاريخ<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <DateField value={d.to} onChange={(to) => setD((x) => ({ ...x, to }))} label="نهاية التفويض" min={d.from || today()} />
-            </div>
-            <div className="regf">
-              <span className="lb">المفوَّض إليه<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <Select
-                value={d.delegate || undefined}
-                all="اختر الزميل…"
-                allowEmpty={false}
-                people
-                options={people}
-                onChange={(delegate) => setD((x) => ({ ...x, delegate: delegate ?? '' }))}
-              />
-            </div>
-            <div className="regf">
-              <span className="lb">النطاق</span>
-              <div className="seg" role="radiogroup" aria-label="نطاق التفويض">
-                {([['approvals', 'الاعتمادات فقط'], ['all', 'كل المهام']] as const).map(([k, l]) => (
-                  <button key={k} type="button" role="radio" aria-checked={d.scope === k}
-                    className={d.scope === k ? 'on' : ''} onClick={() => setD((x) => ({ ...x, scope: k }))}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <label className="regf regf-w">
-              <span className="lb">ملاحظة تظهر لمن يفتح مهامك</span>
-              <span className="fld fld-a">
-                <textarea rows={2} value={d.note} onChange={(e) => setD((x) => ({ ...x, note: e.target.value }))}
-                  placeholder="مثال: في إجازة سنوية، والعاجل عبر الزميل المفوَّض" aria-label="ملاحظة التفويض" />
-              </span>
-            </label>
-          </div>
-        )}
-      </Glass>
-
       <div className="col">
+        <Glass>
+          <Head
+            title="أنا خارج العمل"
+            meta={live ? <Tag tone="ok">التفويض ساري</Tag> : d.on && ready ? <Tag tone="mute">مجدول</Tag> : undefined}
+          />
+          <Switch
+            label="فعّل التفويض خلال غيابي"
+            note="تنتقل مهامك إلى من تختاره طوال المدة، ثم تعود إليك تلقائيًا"
+            on={d.on}
+            onChange={(on) => setD((x) => ({ ...x, on }))}
+          />
+          {d.on && (
+            <div className="regfields mt-3">
+              <div className="regf">
+                <span className="lb">من تاريخ<b className="regf-r" aria-label="إلزامي">*</b></span>
+                <DateField value={d.from} onChange={(from) => setD((x) => ({ ...x, from }))} label="بداية التفويض" min={today()} />
+              </div>
+              <div className="regf">
+                <span className="lb">إلى تاريخ<b className="regf-r" aria-label="إلزامي">*</b></span>
+                <DateField value={d.to} onChange={(to) => setD((x) => ({ ...x, to }))} label="نهاية التفويض" min={d.from || today()} />
+              </div>
+              <div className="regf">
+                <span className="lb">المفوَّض إليه<b className="regf-r" aria-label="إلزامي">*</b></span>
+                <Select
+                  value={d.delegate || undefined}
+                  all="اختر الزميل…"
+                  allowEmpty={false}
+                  people
+                  options={people}
+                  onChange={(delegate) => setD((x) => ({ ...x, delegate: delegate ?? '' }))}
+                />
+              </div>
+              <div className="regf">
+                <span className="lb">النطاق</span>
+                <div className="seg" role="radiogroup" aria-label="نطاق التفويض">
+                  {([['approvals', 'الاعتمادات فقط'], ['all', 'كل المهام']] as const).map(([k, l]) => (
+                    <button key={k} type="button" role="radio" aria-checked={d.scope === k}
+                      className={d.scope === k ? 'on' : ''} onClick={() => setD((x) => ({ ...x, scope: k }))}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="regf regf-w">
+                <span className="lb">ملاحظة تظهر لمن يفتح مهامك</span>
+                <span className="fld fld-a">
+                  <textarea rows={2} value={d.note} onChange={(e) => setD((x) => ({ ...x, note: e.target.value }))}
+                    placeholder="مثال: في إجازة سنوية، والعاجل عبر الزميل المفوَّض" aria-label="ملاحظة التفويض" />
+                </span>
+              </label>
+            </div>
+          )}
+        </Glass>
+
         <Glass>
           <Head title="كيف يظهر للآخرين" />
           {d.on && ready ? (
@@ -343,6 +359,7 @@ function DelegateTab({ me }: { me: string }) {
           </ul>
         </Glass>
       </div>
+      <AssistantAside title="قراءة التفويض" cta="اقرأ التفويض" empty="لا تفويض الآن." readings={readings} ask={false} />
     </div>
   )
 }
@@ -354,6 +371,10 @@ function DisplayTab() {
   const [d, setD] = useDisplay()
   useEffect(() => { applyTheme(theme); writeTheme(theme) }, [theme])
   const sample = today()
+  const readings: Reading[] = [
+    { id: 'th', kind: 'note', label: 'المظهر', text: theme === 'dark' ? 'المظهر الداكن · يتبعه كل النظام على هذا الجهاز.' : 'المظهر الفاتح · يتبعه كل النظام على هذا الجهاز.' },
+    { id: 'cal', kind: 'note', label: 'التقويم', text: `تاريخ اليوم يظهر: ${readDate(sample, d.cal)}.` },
+  ]
 
   const landing = [{ value: '', label: 'الافتراضي · اسأل أبانمي' }].concat(
     NAV.map((n) => ({ value: n.to, label: n.label })),
@@ -361,42 +382,45 @@ function DisplayTab() {
 
   return (
     <div className="g2">
-      <Glass>
-        <Head title="المظهر" />
-        <div className="seg" role="radiogroup" aria-label="المظهر">
-          {([['light', 'فاتح', icons.sun], ['dark', 'داكن', icons.moon]] as const).map(([k, l, ic]) => (
-            <button key={k} type="button" role="radio" aria-checked={theme === k}
-              className={theme === k ? 'on' : ''} onClick={() => setTheme(k)}>
-              <Icon name={ic} size="sm" /><span>{l}</span>
-            </button>
-          ))}
-        </div>
-        <div className="pf-row mt-4">
-          <span className="lb">الصفحة بعد تسجيل الدخول</span>
-          <Select value={d.landing} allowEmpty={false} options={landing}
-            onChange={(x) => setD({ landing: x ?? '' })} />
-        </div>
-      </Glass>
+      <div className="col">
+        <Glass>
+          <Head title="المظهر" />
+          <div className="seg" role="radiogroup" aria-label="المظهر">
+            {([['light', 'فاتح', icons.sun], ['dark', 'داكن', icons.moon]] as const).map(([k, l, ic]) => (
+              <button key={k} type="button" role="radio" aria-checked={theme === k}
+                className={theme === k ? 'on' : ''} onClick={() => setTheme(k)}>
+                <Icon name={ic} size="sm" /><span>{l}</span>
+              </button>
+            ))}
+          </div>
+          <div className="pf-row mt-4">
+            <span className="lb">الصفحة بعد تسجيل الدخول</span>
+            <Select value={d.landing} allowEmpty={false} options={landing}
+              onChange={(x) => setD({ landing: x ?? '' })} />
+          </div>
+        </Glass>
 
-      <Glass>
-        <Head title="التقويم" meta={<span className="sub">لكل التواريخ في النظام</span>} />
-        <div className="seg" role="radiogroup" aria-label="التقويم">
-          {([['gregory', 'ميلادي'], ['hijri', 'هجري'], ['both', 'الاثنان']] as const).map(([k, l]) => (
-            <button key={k} type="button" role="radio" aria-checked={d.cal === k}
-              className={d.cal === k ? 'on' : ''} onClick={() => setD({ cal: k as CalendarChoice })}>
-              {l}
-            </button>
-          ))}
-        </div>
-        <p className="sub cnote">
-          تاريخ اليوم يظهر هكذا: <b>{readDate(sample, d.cal)}</b> · والهجري بتقويم أم القرى.
-        </p>
-        <div className="pf-row">
-          <span className="lb">اللغة</span>
-          <span>العربية</span>
-          <Tag tone="mute">الإنجليزية لاحقًا</Tag>
-        </div>
-      </Glass>
+        <Glass>
+          <Head title="التقويم" meta={<span className="sub">لكل التواريخ في النظام</span>} />
+          <div className="seg" role="radiogroup" aria-label="التقويم">
+            {([['gregory', 'ميلادي'], ['hijri', 'هجري'], ['both', 'الاثنان']] as const).map(([k, l]) => (
+              <button key={k} type="button" role="radio" aria-checked={d.cal === k}
+                className={d.cal === k ? 'on' : ''} onClick={() => setD({ cal: k as CalendarChoice })}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <p className="sub cnote">
+            تاريخ اليوم يظهر هكذا: <b>{readDate(sample, d.cal)}</b> · والهجري بتقويم أم القرى.
+          </p>
+          <div className="pf-row">
+            <span className="lb">اللغة</span>
+            <span>العربية</span>
+            <Tag tone="mute">الإنجليزية لاحقًا</Tag>
+          </div>
+        </Glass>
+      </div>
+      <AssistantAside title="قراءة العرض" cta="اقرأ العرض" readings={readings} ask={false} />
     </div>
   )
 }
@@ -413,6 +437,12 @@ const SIZES: { k: TextSize; label: string }[] = [
 function A11yTab() {
   const [a, setA, reset] = useA11y()
   const changed = JSON.stringify(a) !== JSON.stringify(A11Y_DEFAULT)
+  const diff = (Object.keys(A11Y_DEFAULT) as (keyof typeof A11Y_DEFAULT)[]).filter((k) => a[k] !== A11Y_DEFAULT[k]).length
+  const readings: Reading[] = [
+    diff > 0
+      ? { id: 'ch', kind: 'note', label: 'المعدَّل', metric: { value: String(diff), unit: 'إعدادات' }, text: 'تختلف عن الافتراضي · تطبَّق على كل النظام على هذا الجهاز.' }
+      : { id: 'ch', kind: 'note', label: 'الإتاحة', text: 'كل الإعدادات على الافتراضي · المعاينة تتغيّر مع أي اختيار.' },
+  ]
 
   return (
     <div className="g2">
@@ -459,31 +489,32 @@ function A11yTab() {
             <Switch label="إطار تركيز واضح" note="إطار عريض على العنصر الحالي عند التنقّل بلوحة المفاتيح" on={a.focus} onChange={(focus) => setA({ focus })} />
           </div>
         </Glass>
-      </div>
 
-      {/* A live sample built from the system's own parts, so the user sees the effect on a real
-          card, field and button rather than a description of it. */}
-      <Glass className="pf-prev">
-        <Head title="معاينة" meta={<span className="sub">تتغيّر مع اختيارك</span>} />
-        <div className="kpi glass pf-kpi">
-          <span className="kpi-h"><span className="kpi-k">ينتظر قرارك</span></span>
-          <span className="kpi-v num">2</span>
-          <span className="kpi-n">1 فوق الحدّ</span>
-        </div>
-        <label className="regf mt-4">
-          <span className="lb">اسم المشروع</span>
-          <span className="fld"><input defaultValue="علاج 60 من مرضى الكلى بالأحساء" aria-label="اسم المشروع (معاينة)" /></span>
-          <span className="sub regf-h">كما سيظهر في الاتفاقية</span>
-        </label>
-        <p className="prose mt-4">
-          متوقف عند «رفع التقرير الختامي» منذ 110 أيام ·{' '}
-          <Link className="lnk" to={ROUTES.projects}>اعرض المشاريع</Link>
-        </p>
-        <div className="rowf gp-2 mt-4">
-          <button type="button" className="btn btn-p">توصية بالموافقة</button>
-          <button type="button" className="btn btn-2">طلب استكمال</button>
-        </div>
-      </Glass>
+        {/* A live sample built from the system's own parts, so the user sees the effect on a real
+            card, field and button rather than a description of it. */}
+        <Glass className="pf-prev">
+          <Head title="معاينة" meta={<span className="sub">تتغيّر مع اختيارك</span>} />
+          <div className="kpi glass pf-kpi">
+            <span className="kpi-h"><span className="kpi-k">ينتظر قرارك</span></span>
+            <span className="kpi-v num">2</span>
+            <span className="kpi-n">1 فوق الحدّ</span>
+          </div>
+          <label className="regf mt-4">
+            <span className="lb">اسم المشروع</span>
+            <span className="fld"><input defaultValue="علاج 60 من مرضى الكلى بالأحساء" aria-label="اسم المشروع (معاينة)" /></span>
+            <span className="sub regf-h">كما سيظهر في الاتفاقية</span>
+          </label>
+          <p className="prose mt-4">
+            متوقف عند «رفع التقرير الختامي» منذ 110 أيام ·{' '}
+            <Link className="lnk" to={ROUTES.projects}>اعرض المشاريع</Link>
+          </p>
+          <div className="rowf gp-2 mt-4">
+            <button type="button" className="btn btn-p">توصية بالموافقة</button>
+            <button type="button" className="btn btn-2">طلب استكمال</button>
+          </div>
+        </Glass>
+      </div>
+      <AssistantAside title="قراءة الإتاحة" cta="اقرأ الإتاحة" readings={readings} ask={false} />
     </div>
   )
 }

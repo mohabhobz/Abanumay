@@ -417,7 +417,13 @@ export default function ProjectPage() {
                 <OfficialNotes notes={appFlowOf(row.id).official} />
               )}
               {active === 'study' && row && (
-                <StudyTab key={`${row.id}-${flow?.study?.version ?? 0}-${row.field}`} row={row} me={me.name} editable={studyEditable} />
+                <>
+                  <StudyTab key={`${row.id}-${flow?.study?.version ?? 0}-${row.field}`} row={row} me={me.name} editable={studyEditable} />
+                  {/* 12 Oct · client · the end column is the assistant's alone: priority, the
+                      domain's budget, the fit reading and the consultant are the study's own data,
+                      so they sit in the main column under it */}
+                  <div className="g2-in"><StudyAside row={row} me={me.name} editable={studyEditable} /></div>
+                </>
               )}
               {active === 'data' && (
                 <DataTab
@@ -543,14 +549,10 @@ export default function ProjectPage() {
                 problem the client rejected: a column with several sticky cards creates
                 scroll-inside-scroll, while one card just takes its height and stays put. */}
             <div className="col aiside" ref={aside}>
-              {active === 'study' && row ? (
-                <StudyAside row={row} me={me.name} editable={studyEditable} />
-              ) : (
               <AnalysisCard
                 readings={analysis}
                 onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
               />
-              )}
             </div>
           </div>
         </div>

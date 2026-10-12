@@ -20,6 +20,8 @@ import {
 } from '@/data/mock/permissions'
 import { useStored } from '@/lib/prefs'
 import { PermMatrix } from '@/features/settings/PermMatrix'
+import { AssistantAside } from '@/features/shared/AssistantAside'
+import type { Reading } from '@/components/assistant'
 
 const KEYS = ['tab'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -121,6 +123,13 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
     setPhotoSaved(photo)
     setDone(true)
   }
+
+  const profileReadings: Reading[] = [
+    ...(!saved.signature ? [{ id: 'sig', kind: 'flag' as const, label: 'التوقيع', text: 'لم يُرفع توقيعك بعد · تُطبع وثائق الاعتماد باسمك دون توقيع.' }] : []),
+    ...(!photoSaved ? [{ id: 'ph', kind: 'note' as const, label: 'الصورة', text: 'بلا صورة شخصية · تظهر الأحرف الأولى من اسمك في القوائم والتعليقات.' }] : []),
+    ...(!MOBILE.test(saved.mobile) ? [{ id: 'mob', kind: 'flag' as const, label: 'الجوال', text: 'رقم الجوال غير صالح · لن تصلك رسائل التحقق.' }] : []),
+    { id: 'hr', kind: 'note' as const, label: 'الموارد البشرية', text: 'الاسم والمسمى والإدارة تُقرأ من نظام الموارد البشرية · تصحيحها هناك.' },
+  ]
 
   return (
     <div className="g2">
@@ -225,25 +234,26 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
             <span className="sub">png بخلفية شفافة</span>
           </span>
         </Glass>
-      </div>
 
-      <Glass>
-        <Head title="من الموارد البشرية" meta={<Icon name={icons.lock} size="sm" />} />
-        <KV
-          rows={[
-            { k: 'الاسم', v: name },
-            { k: 'المسمى', v: title },
-            { k: 'الإدارة', v: hr.dept },
-            ...(hr.manager ? [{ k: 'المدير المباشر', v: <Person name={hr.manager} /> }] : []),
-            { k: 'الرقم الوظيفي', v: <span dir="ltr">{hr.no}</span> },
-            { k: 'البريد', v: <span dir="ltr">{email}</span> },
-            { k: 'تاريخ الالتحاق', v: <DateText>{hr.joined}</DateText> },
-          ]}
-        />
-        <p className="sub cnote">
-          تُقرأ من نظام الموارد البشرية ولا تُعدَّل هنا · لتصحيح خطأ فيها تواصل مع الموارد البشرية.
-        </p>
-      </Glass>
+        <Glass>
+          <Head title="من الموارد البشرية" meta={<Icon name={icons.lock} size="sm" />} />
+          <KV
+            rows={[
+              { k: 'الاسم', v: name },
+              { k: 'المسمى', v: title },
+              { k: 'الإدارة', v: hr.dept },
+              ...(hr.manager ? [{ k: 'المدير المباشر', v: <Person name={hr.manager} /> }] : []),
+              { k: 'الرقم الوظيفي', v: <span dir="ltr">{hr.no}</span> },
+              { k: 'البريد', v: <span dir="ltr">{email}</span> },
+              { k: 'تاريخ الالتحاق', v: <DateText>{hr.joined}</DateText> },
+            ]}
+          />
+          <p className="sub cnote">
+            تُقرأ من نظام الموارد البشرية ولا تُعدَّل هنا · لتصحيح خطأ فيها تواصل مع الموارد البشرية.
+          </p>
+        </Glass>
+      </div>
+      <AssistantAside title="قراءة الحساب" cta="اقرأ الحساب" empty="بياناتك مكتملة · لا ملاحظات." readings={profileReadings} ask={false} />
     </div>
   )
 }
@@ -306,6 +316,13 @@ function SecurityTab() {
     setCur(''); setPw(''); setPw2(''); setOk(true)
   }
 
+  const age = Math.max(0, Math.round((Date.now() - new Date(s.changed).getTime()) / 864e5))
+  const secReadings: Reading[] = [
+    { id: 'age', kind: age > 90 ? 'flag' : 'note', label: 'كلمة المرور', metric: { value: String(age), unit: 'يومًا' }, text: age > 90 ? 'مضى على كلمة المرور أكثر من 90 يومًا · غيّرها الآن.' : 'منذ آخر تغيير لكلمة المرور.' },
+    { id: 'ses', kind: sessions.length > 1 ? 'flag' : 'note', label: 'الجلسات', metric: { value: String(sessions.length), unit: sessions.length > 1 ? 'جلسات نشطة' : 'جلسة نشطة' }, text: sessions.length > 1 ? 'راجع الأجهزة في «الجلسات النشطة» وأنهِ ما لا تعرفه.' : 'هذا الجهاز فقط.' },
+    ...(!s.twoStep ? [{ id: '2s', kind: 'flag' as const, label: 'التحقق بخطوتين', text: 'التحقق بخطوتين متوقف · فعّله لحماية الحساب.' }] : []),
+  ]
+
   return (
     <div className="g2">
       <div className="col">
@@ -359,32 +376,33 @@ function SecurityTab() {
               lockNote="إلزامي · حماية للحساب" onChange={() => undefined} />
           </div>
         </Glass>
-      </div>
 
-      <Glass>
-        <Head
-          title="الجلسات النشطة"
-          meta={sessions.length > 1 ? (
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => { signOutEverywhere(); keepThisSession(); setS((x) => ({ ...x, signedOut: true })) }}>
-              أنهِ الجلسات الأخرى
-            </button>
-          ) : <Tag tone="ok">هذا الجهاز فقط</Tag>}
-        />
-        <ul className="pf-sess">
-          {sessions.map((x) => (
-            <li key={x.id}>
-              <Icon name={icons.device} size="sm" />
-              <span>
-                <b>{x.device}</b>
-                <span className="sub"> · {x.place} · {x.at}</span>
-              </span>
-              <span className="pc-sp" />
-              {x.current && <Tag tone="ok">هذا الجهاز</Tag>}
-            </li>
-          ))}
-        </ul>
-        <p className="sub cnote">جلسة لا تعرفها؟ أنهِ الجلسات الأخرى ثم غيّر كلمة المرور.</p>
-      </Glass>
+        <Glass>
+          <Head
+            title="الجلسات النشطة"
+            meta={sessions.length > 1 ? (
+              <button type="button" className="btn btn-2 btn-sm" onClick={() => { signOutEverywhere(); keepThisSession(); setS((x) => ({ ...x, signedOut: true })) }}>
+                أنهِ الجلسات الأخرى
+              </button>
+            ) : <Tag tone="ok">هذا الجهاز فقط</Tag>}
+          />
+          <ul className="pf-sess">
+            {sessions.map((x) => (
+              <li key={x.id}>
+                <Icon name={icons.device} size="sm" />
+                <span>
+                  <b>{x.device}</b>
+                  <span className="sub"> · {x.place} · {x.at}</span>
+                </span>
+                <span className="pc-sp" />
+                {x.current && <Tag tone="ok">هذا الجهاز</Tag>}
+              </li>
+            ))}
+          </ul>
+          <p className="sub cnote">جلسة لا تعرفها؟ أنهِ الجلسات الأخرى ثم غيّر كلمة المرور.</p>
+        </Glass>
+      </div>
+      <AssistantAside title="قراءة الأمان" cta="اقرأ الأمان" empty="حسابك محمي · لا ملاحظات." readings={secReadings} ask={false} />
     </div>
   )
 }
@@ -414,10 +432,16 @@ function AccessTab({ name }: { name: string }) {
       }))),
     [user],
   )
+  const accReadings: Reading[] = [
+    { id: 'mods', kind: 'note', label: 'الوحدات', metric: { value: String(moduleCount(role, ov)), unit: `من ${PERM_MODULES.length} وحدة` }, text: 'متاحة لك بحسب دورك.' },
+    ...(n > 0 ? [{ id: 'ov', kind: 'flag' as const, label: 'خارج دورك', metric: { value: String(n), unit: 'صلاحية' }, text: 'مُنحت أو سُحبت يدويًا · تراجعها الإدارة دوريًا.' }] : []),
+    { id: 'fin', kind: 'note', label: 'الحدّ المالي', text: me.financialAuthority ? 'تعتمد الصرف حتى حدّك المالي · ما فوقه يُرفع لمن يليك.' : 'توصيتك تُرفع للاعتماد · لا حدّ مالي لدورك.' },
+  ]
 
   return (
     <>
       <div className="g2">
+        <div className="col">
         <Glass>
           <Head title="دورك" meta={<Tag tone="mute">{role?.label ?? me.title}</Tag>} />
           <KV
@@ -501,6 +525,8 @@ function AccessTab({ name }: { name: string }) {
             </>
           )}
         </Glass>
+        </div>
+        <AssistantAside title="قراءة صلاحياتك" cta="اقرأ صلاحياتك" empty="صلاحياتك كما في دورك · لا ملاحظات." readings={accReadings} ask={false} />
       </div>
 
       <Glass className="tblcard">
