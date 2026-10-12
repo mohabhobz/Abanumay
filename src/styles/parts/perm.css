@@ -39,7 +39,8 @@
 .pm-na{color:var(--t3)}
 .pm-dot{display:inline-block;width:var(--sp-3);height:var(--sp-3);border-radius:var(--r-dot);background:var(--solid)}
 .nfm-box>.pm-dot{position:absolute;top:50%;inset-inline-start:calc(100% + var(--sp-2));translate:0 -50%}
-.pm-legend{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-6);margin:0}
+/* 11 Oct · audit UI-220 · the legend sat 10px under the last row and 34px over the card edge · it gets the space above */
+.pm-legend{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-6);margin:var(--sp-5) 0 0}
 .pm-legend>span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 
 .pm-sod{display:flex;gap:var(--sp-3);align-items:flex-start;padding:var(--pad-in);border-radius:var(--r1);

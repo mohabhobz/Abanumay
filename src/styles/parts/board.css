@@ -52,7 +52,9 @@
 .gb-tip .gb-tip-v{fill:var(--t2);font-size:var(--fs-6);font-weight:500}
 
 .gb-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-5)}
-.gb-kpis>.gb-kpi{display:flex;flex-direction:column;gap:var(--sp-2)}
+.gb-kpis>.gb-kpi{display:grid;grid-row:span 4;grid-template-rows:subgrid;row-gap:var(--sp-2);align-content:start}
+/* 11 Oct · audit UI-002 · subgrid rows: a two-line title no longer pushes its number below the others */
+.gb-kpis>.gb-kpi>.gb-kpi-k{align-self:end}
 .gb-kpi-k{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-2);color:var(--t2)}
 .gb-kpi-v{font-family:var(--fd);font-size:var(--fd-3);font-weight:700;line-height:var(--lh-head);color:var(--t1)}
 .gb-line{display:block;width:100%;height:var(--sp-3);overflow:visible}

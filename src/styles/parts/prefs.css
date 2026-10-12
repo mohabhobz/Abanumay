@@ -65,3 +65,7 @@
 /* Event names wrap instead of being cut (the table's default is one line with an ellipsis). */
 .tbl.nfm td:first-child,.tbl.nfm th[scope=rowgroup]{white-space:normal;overflow:visible;text-overflow:clip}
 .tbl.nfm td:first-child{min-width:12rem}
+/* 11 Oct · audit UI-116 · in a filter bar the switch row is one control, not a settings row: it
+   took the whole bar, so the switch sat 1,000px from its label on a line of its own. */
+.ftool-f>.swrow{width:auto;flex:none}
+.ftool-f>.swrow>.swrow-t{flex:none}

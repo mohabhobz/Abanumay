@@ -201,7 +201,8 @@ export function Tabs({
           className={`tab ${t.slug === active ? 'on' : ''}`}
           onClick={() => onChange(t.slug)}
         >
-          <span>{t.label}</span>
+          {/* `data-t` reserves the bold width so selecting a tab doesn't shift the ones after it */}
+          <span data-t={typeof t.label === 'string' ? t.label : undefined}>{t.label}</span>
           {t.count !== undefined && <b className="num">{t.count}</b>}
         </button>
       ))}

@@ -4,7 +4,9 @@
    Nine columns: item · level · five amounts · status · actions. Scoped under `.btree` so it wins
    over the six-column base rule without touching index.css. */
 .btree .btree-h,.btree .btree-r{
-  grid-template-columns:minmax(14rem,1fr) 6rem 6.5rem 6.5rem 6.5rem 6.5rem 6.5rem 6rem 6rem}
+  grid-template-columns:minmax(14rem,1fr) 6rem 6.5rem 6.5rem 6.5rem 6.5rem 6.5rem 6rem 2.75rem}
+/* 11 Oct · audit UI-113 · the actions column held one ⋮ button in 96px while the names beside it
+   were cut («الرحلات التطويرية للجمعيـ…»). It's the button's width now, and the name takes the rest. */
 /* The domain's supervisor beside its name · a face, the name in the tooltip of the list */
 .btree-ow{flex:none;display:inline-flex}
 
@@ -73,6 +75,11 @@
 /* Project funding card · the shares table scrolls on a narrow screen, the history sits under it */
 .fnd-scroll{overflow-x:auto;min-width:0}
 .fnd-h{margin:var(--sp-5) 0 0;font-size:var(--fs-3);font-weight:600;color:var(--t1);display:flex;align-items:baseline;gap:var(--sp-2)}
+/* 11 Oct · audit UI-013/183 · the first entry under a section title sat on it with no gap */
+.fnd-h+.plchg,.fnd-h+ul,.fnd-h+.kv{margin-top:var(--sp-3)}
 .btree-hs{display:block;font-size:var(--fs-1);line-height:var(--lh-ui)}
 .fnd-c1{width:38%}
 .fnd-scroll .tbl{min-width:44rem}
+
+/* 11 Oct · audit UI-047 · budget list · the two tags share a fixed slot so the amounts form a column */
+.bgl-tags{flex:none;width:calc(var(--sp-12) * 3);display:flex;justify-content:flex-start;gap:var(--sp-2)}

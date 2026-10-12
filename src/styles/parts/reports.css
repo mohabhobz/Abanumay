@@ -15,9 +15,14 @@
 .impc-t{margin:0;font-family:var(--fd);font-size:var(--fs-6);font-weight:700;line-height:var(--lh-head);color:var(--t1)}
 .impc-top .lnk{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .impc-ks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
-.impc .impc-k{display:flex;flex-direction:column;gap:var(--sp-2)}
+.impc .impc-k{display:grid;grid-row:span 3;grid-template-rows:subgrid;row-gap:var(--sp-2);align-content:start}
+/* 11 Oct · audit P04 · the three tracks (label · figure · note) are shared by the row */
+.impc .impc-k>.impc-kl{align-self:end}
 .impc-kl{font-size:var(--fs-2);color:var(--t2)}
 .impc-kv{font-family:var(--fd);font-size:var(--fd-3);font-weight:700;line-height:var(--lh-head);color:var(--t1)}
+/* 11 Oct · audit UI-198 · `.num` is left-to-right, so as a block its start is the LEFT edge: the
+   figure sat on the card's left while its label and line sat on the right. It starts where they do. */
+.impc-kv{text-align:right}
 .impc-kn{font-size:var(--fs-1)}
 .impc-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
 .impc-c{min-width:0}

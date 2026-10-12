@@ -128,9 +128,12 @@ export function ChatList({
                   </span>
 
                   <button className="cl-main" onClick={() => onOpen(c.id)}>
+                    {/* 11 Oct · audit UI-215/216 · the title is its own box so it can end in «…» (a
+                        flex row can't), and the pin follows it, so pinned and unpinned titles start
+                        on the same edge. */}
                     <div className="cl-t">
+                      <span className="cl-tx">{c.title}</span>
                       {c.pinned && <Icon name={icons.pin} size="sm" />}
-                      {c.title}
                     </div>
                   </button>
 

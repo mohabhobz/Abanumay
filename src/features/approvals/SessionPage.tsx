@@ -194,7 +194,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
     <Glass>
       <Head
         title={p.name}
-        meta={<>{it.outcome ? <Tag tone={it.outcome === 'reject' ? 'no' : 'ok'}>{OUTCOME_SAY[it.outcome]}</Tag> : <Tag tone="warn">بانتظار القرار</Tag>} <Link className="lnk sub" to={ROUTES.projectTab(p.id, 'approval')}>ملف المشروع</Link></>}
+        meta={<span className="rowf gp-2">{it.outcome ? <Tag tone={it.outcome === 'reject' ? 'no' : 'ok'}>{OUTCOME_SAY[it.outcome]}</Tag> : <Tag tone="warn">بانتظار القرار</Tag>}<Link className="lnk sub" to={ROUTES.projectTab(p.id, 'approval')}>ملف المشروع</Link></span>}
       />
       <KV rows={[
         { k: 'المبلغ', v: <><Money sm>{p.amountRequested}</Money>{above && <span className="bad"> · فوق حد {HOLDER_LABEL[s.body]}</span>}</> },

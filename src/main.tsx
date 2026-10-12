@@ -9,6 +9,7 @@ import '@/data/approvals/store'
 import '@/data/payments/store'
 import '@/data/closing/store'
 import App from '@/app/App'
+import { installScrollHints } from '@/lib/scrollHint'
 import { ownerOfPath } from '@/app/entityAccess'
 import * as budgetStore from '@/data/budget/store'
 import * as payStore from '@/data/payments/store'
@@ -75,6 +76,7 @@ try {
 const root = document.getElementById('root')
 if (!root) throw new Error('عنصر #root غير موجود في index.html')
 
+installScrollHints()
 createRoot(root).render(
   <StrictMode>
     <App />

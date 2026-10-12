@@ -17,7 +17,8 @@
 
 /* Indicators · four figures with their labels */
 .ptn-ind{margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-4)}
-.ptn-ind>div{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-1);padding:var(--sp-3) var(--sp-4);
+/* 11 Oct · audit UI-098 · subgrid rows: wrapped labels no longer drop their figures */
+.ptn-ind>div{display:grid;grid-row:span 2;grid-template-rows:subgrid;justify-items:start;align-items:end;row-gap:var(--sp-1);padding:var(--sp-3) var(--sp-4);
   border-radius:var(--r1);box-shadow:inset 0 0 0 1px var(--edge-1)}
 .ptn-ind dt{font-size:var(--fs-1);color:var(--t2)}
 .ptn-ind dd{margin:0;font-family:var(--fd);font-size:var(--fs-5);font-weight:700}

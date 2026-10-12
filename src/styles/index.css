@@ -1195,6 +1195,7 @@ small{font-size:var(--fs-1)}
   line-height:var(--lh-flat);letter-spacing:0;
   box-shadow:inset 0 0 0 1px var(--edge-2)}
 .av-28{width:28px;height:28px;font-size:var(--fs-1)}
+.av-i{display:inline-block;white-space:nowrap;transform:scale(var(--av-s,1))}
 .av-30{width:30px;height:30px;font-size:var(--fs-1)}
 .av-34{width:34px;height:34px}
 .pht-28{width:28px;height:28px}
@@ -1320,6 +1321,13 @@ small{font-size:var(--fs-1)}
    plain `--t3` only gives 4.28:1 over the green patch of it; the `-g`
    variant already exists for text sitting on a colored background. */
 .stat .mut{color:var(--t3-g)}
+/* 11 Oct · audit P04 (UI-002/027/098/196) · a KPI row is read across: the numbers have to sit on one
+   line. When one card's label wrapped to two lines (or its date did), its number dropped ~14px below
+   its neighbours'. Each card takes the row's tracks (label · value · bar · line) through subgrid, so
+   the tallest label sets the label track for all of them and every value starts on the same line. */
+.stats4{grid-auto-rows:auto}
+.stats4>.stat{display:grid;grid-row:span 4;grid-template-rows:subgrid;row-gap:0;align-content:start}
+.stats4>.stat>.lb{align-self:end}
 .li{display:grid;grid-template-columns:1fr auto;gap:var(--sp-3) var(--sp-5);align-items:center;
   padding:var(--sp-5) var(--sp-6);cursor:pointer;transition:transform var(--mo-2) var(--ease-std);text-align:right;width:100%}
 .li:hover{transform:translateX(-3px)}
@@ -1506,6 +1514,12 @@ small{font-size:var(--fs-1)}
 .fld.pill{border-radius:var(--rp)}
 .fld.err{box-shadow:inset 0 0 0 1px rgba(192,67,42,.5)}
 .fld input::placeholder{color:var(--t3)}
+/* 11 Oct · audit UI-103/168/169 · a placeholder longer than its field was cut mid-word
+   («… · إلزا»). Every text input marks the cut instead. */
+input:not([type=checkbox],[type=radio],[type=range]){text-overflow:ellipsis}
+/* 11 Oct · audit UI-084 · a native date input lays out left to right, so its value sat at the far
+   (left) end while every other field's value starts on the right. Same start edge as its siblings. */
+.fld input[type=date]{text-align:right}
 
 /* The select-style menu inside a form (`FieldSelect`).
    The trigger uses the same `.fld` styling, and the panel is the exact
@@ -1567,6 +1581,9 @@ small{font-size:var(--fs-1)}
 .tbl td{height:var(--row-h);padding-block:0;padding-inline:var(--sp-4);font-size:var(--fs-3);background:var(--fl-1);box-shadow:inset 0 1px 0 rgba(var(--edgeC),.05);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tbl td>*{max-width:100%}
+/* 11 Oct · audit UI-070 · a cell whose link or line already ends in its own ellipsis drew a second
+   one after it («جمعية مسارا... ...»). The cell lets the child mark the cut. */
+.tbl td:has(>.tlink,>.trim1,>.mono,>.sub,>.tag){text-overflow:clip}
 /* `vertical-align` was `bottom`, so a number and its tag were hanging at
    the bottom of the line box instead of centering with the cell text next
    to them — flagged directly as "keep the numbers centered with the
@@ -1575,11 +1592,29 @@ small{font-size:var(--fs-1)}
    only: the same tag centers correctly outside a table but not inside one. */
 .tbl td .tlink,.tbl td .mono,.tbl td .sub{
   display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+/* 11 Oct · audit UI-066/067 · a `div.sub` in a cell is its second line (the time under the date,
+   the since-date under a status tag). The inline-block above put it on the first line, glued:
+   «7 أكتوبر 202608:00». It's a block again. */
+.tbl td>div.sub{display:block;margin-top:var(--sp-1)}
+/* 11 Oct · audit UI-135/162 · in a numeric column the header and the total sit on the left, but an
+   amount field inside a cell kept its value on the right, 120px away: three edges for one column.
+   A field in a numeric cell writes its figure on the column's edge too. */
+.tbl td.n .fld input,.tbl td.n input.num{text-align:left}
 .tbl td .tag{max-width:100%;overflow:hidden;vertical-align:middle}
+/* 11 Oct · audit UI-157/178 · a tag too long for its column was cut mid-word («الختام») with no
+   mark. A text-only tag becomes a block box so the ellipsis can show (it can't on a flex box);
+   a tag with an icon or dot keeps its flex layout. */
+.tbl td .tag:not(:has(svg,.dot,.tdot)){display:inline-block;text-overflow:ellipsis}
 /* The checkbox column: tighter padding, no truncation — the column is
    44px wide, and the regular cell padding (29px) would clip the checkbox
    itself and show an ellipsis next to it. */
 .tbl .tchk{padding-inline:var(--sp-3);text-overflow:clip}
+/* 11 Oct · audit UI-097 · the sub-projects table split its width in five equal columns, so the
+   checkbox took 135px and the project names were cut. The name takes what's left. */
+.subtbl th:nth-child(1){width:calc(var(--sp-9) + var(--sp-1))}
+.subtbl th:nth-child(3){width:calc(var(--sp-12) + var(--sp-9))}
+.subtbl th:nth-child(4),.subtbl th:nth-child(5){width:calc(var(--sp-12) + var(--sp-11))}
+.subtbl td:nth-child(5){white-space:normal;text-overflow:clip}
 .tbl .nmc{min-width:0}
 .tbl .nmc>span{overflow:hidden;text-overflow:ellipsis}
 /* Uses `tbody`, not `tr`: the hover state used to extend to the totals
@@ -1711,6 +1746,17 @@ small{font-size:var(--fs-1)}
 .tab.on{color:var(--t1);font-weight:600;background:none;
   box-shadow:inset 0 -2px 0 var(--solid)}
 .tab.on:hover{background:rgba(var(--edgeC),.05)}
+/* 11 Oct · audit UI-090 · the selected tab's heavier weight made it wider, so every tab after it
+   moved 4–8px each time the selection changed. The label reserves its bold width up front. */
+.tab>span[data-t]{display:inline-flex;flex-direction:column}
+.tab>span[data-t]::after{content:attr(data-t);font-weight:600;height:0;overflow:hidden;visibility:hidden;pointer-events:none}
+/* 11 Oct · audit UI-158/181 · a row of more tabs than fit wrapped to a second line that started
+   under the first tab and left the rest empty. One line always; the row scrolls, and the far edge
+   fades while tabs are hidden past it (`lib/scrollHint`). */
+.tabs{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex-shrink:0}
+.tabs>.tab{flex:none}
+.tabs[data-more]{-webkit-mask-image:linear-gradient(to right,transparent,rgb(0 0 0) var(--sp-10));
+  mask-image:linear-gradient(to right,transparent,rgb(0 0 0) var(--sp-10))}
 /* The event dot: one meaning, one diameter.
    The timeline used one dot size and the activity log used another for
    the exact same thing (something happened, at this time, in this color)
@@ -2238,6 +2284,9 @@ input[type=range]{accent-color:var(--lime-ink);width:130px;background:transparen
   margin-top:var(--sp-3)}
 .empty{padding:var(--sp-5) 0 var(--sp-2);text-align:center}
 .empty .t{font-size:var(--fs-3);color:var(--t2)}
+/* 11 Oct · audit UI-025 · a long reason in a centred empty state ran the card's full width and
+   ended on a lone word in the middle. The lines are balanced inside a reading measure. */
+.empty>.t,.empty>.sub{max-width:62ch;margin-inline:auto;text-wrap:balance}
 /* Focus.
    Rule: the field itself never gets a ring; the container is what responds, darkening its
    edge rather than taking on color. A colored ring on the raw element reads as a floating
@@ -3066,6 +3115,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   display:flex;align-items:center;gap:var(--sp-2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cl-t svg{width:var(--ic-sm);height:var(--ic-sm);color:var(--teal);flex:none}
+.cl-tx{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .cl-more{width:30px;height:30px;flex:none;border-radius:var(--ric);display:grid;place-items:center;
   color:var(--t3);opacity:0;transition:opacity var(--mo-2) var(--ease-std),background var(--mo-2) var(--ease-std)}
 .cl-row:hover .cl-more,.cl-row.on .cl-more{opacity:1}
@@ -3538,6 +3588,11 @@ header>.tag.mute,header>div>.tag.mute{box-shadow:inset 0 0 0 1px var(--edge-1)}
    switcher to another line and moves it horizontally every time. */
 .ftool-r{display:flex;align-items:flex-start;gap:var(--sp-3);flex-wrap:nowrap}
 .ftool-f{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
+/* 11 Oct · audit UI-001/026 · when the filters don't fit one line, the last one («فلاتر متقدمة»)
+   wrapped alone onto a second, nearly empty line. Below the width they all need, search takes the
+   first line and the filters share the second, so the bar is two even lines, never an orphan. */
+.ftool-f{container:ftool / inline-size}
+@container ftool (max-width:1080px){.ftool-f>.srch{flex-basis:100%}}
 .ftool-a{flex:none;display:flex;align-items:center;gap:var(--sp-3)}
 /* Search and the field are the same element with different content: same padding,
    height, corner, edge, and background. What sets them apart is that one is typed into and
@@ -3822,6 +3877,10 @@ to{opacity:1;transform:none}
 .pc-amt .v small{font-size:.72em;margin-inline-start:var(--sp-2);color:var(--t2)}
 /* Table. */
 .tblwrap{overflow-x:auto;scrollbar-width:thin}
+/* 11 Oct · audit UI-199 · while columns are left past the far edge, that edge fades
+   (`lib/scrollHint` sets the attribute), so a cut column reads as «more this way». */
+.tblwrap[data-more]{-webkit-mask-image:linear-gradient(to right,transparent,rgb(0 0 0) var(--sp-10));
+  mask-image:linear-gradient(to right,transparent,rgb(0 0 0) var(--sp-10))}
 .tbl tr.sel td{background:rgba(var(--retC2),.07)}
 .tlink{color:var(--t1);font-weight:500}
 .tlink:hover{text-decoration:underline;text-underline-offset:.22em}
@@ -4739,7 +4798,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 
 /* Document grid inside a card, using the same columns as `.pay-docs` without the top
    divider, since the card's own header above it already separates them. */
-.docgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+/* 11 Oct · audit UI-146 · at 210px a tile held ~110px of name, so every file name and date was
+   cut («كشف المستفيدين…»). A tile is wide enough for a name now; a column takes two, not three. */
+.docgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
   gap:var(--sp-2) var(--sp-4)}
 .paysrc-v{margin-inline-start:auto}
 
@@ -5325,6 +5386,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .fsel-sz>span{grid-area:1/1;min-width:0;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fsel-sz>span[aria-hidden]{visibility:hidden;height:0;pointer-events:none}
+/* 11 Oct · audit UI-111 · the 15rem cap is for a filter in a toolbar. In a form field the select
+   fills its field, so its arrow sits on the field's edge, not in the middle of it. */
+.regf .fsel-sz{max-width:none}
 .ftool-f>.fsel .fmulti-s{font-size:var(--fs-2)}
 .fmenu{position:absolute;top:calc(100% + .35rem);inset-inline-start:0;z-index:60;
   min-width:max(100%, var(--menu-min));max-width:min(300px,80vw);width:max-content;
@@ -5572,6 +5636,10 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .tbl{--tfoot-bg:rgba(var(--edgeC),.045)}
 .tbl tfoot td{padding-block:var(--sp-4);border-top:1px solid var(--edge-f);
   background:var(--tfoot-bg);font-size:var(--fs-2);color:var(--t1)}
+/* 11 Oct · audit UI-006 · the total's unit («يومًا في المتوسط») runs under the figure instead of
+   beside it: on one line it was cut to «44 يو…» in a narrow column. */
+.tbl tfoot td small.sub{display:block;white-space:normal;line-height:var(--lh-ui)}
+.tbl tfoot td:has(>small.sub){white-space:normal;text-overflow:clip}
 .tbl tfoot td.tcolx{background:linear-gradient(var(--tfoot-bg),var(--tfoot-bg)),var(--tbl-bg)}
 .tbl tfoot b{font-family:var(--fd);font-weight:700}
 .tbl tfoot small{font-size:var(--fs-1);font-weight:400}
@@ -6145,6 +6213,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
      as too faint. */
   color:#2A1C00;background:rgba(var(--warnC),.9)}
 .dthumb-lg .dthumb-scan{bottom:12px;inset-inline-start:12px;font-size:var(--fs-1);padding:var(--sp-2) var(--sp-3);border-radius:var(--r0)}
+/* 11 Oct · audit UI-110 · in the 34px thumbnail the tag ran past the edge and was cut, over the
+   page drawing. Small thumbnails carry it as a band across the bottom, inside the thumb. */
+.dthumb:not(.dthumb-lg) .dthumb-scan{inset-inline:0;bottom:0;text-align:center;padding-inline:0;border-radius:0}
 /* ── Row: thumbnail + name + download ── */
 .dfile{display:inline-flex;align-items:center;gap:var(--sp-2);max-width:100%;min-width:0}
 /* In tables it takes the cell's width, so the download button aligns in one
@@ -6337,6 +6408,14 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
      the height is for the open state, which has a list of readings that
      actually scrolls. */
   .aiside:has(>.aicard.aishut){height:auto;container-type:normal}
+  /* 11 Oct · alignment audit (UI-004) · a side column of several cards (the study tab's) can't
+     take a fixed fill height: its cards ran on past the box, under the decision bar, and the end of
+     «قراءة المساعد» was unreachable. It sits in the flow at its own height and scrolls with the
+     page. */
+  .aiside:not(:has(>.aicard)){position:static;height:auto;container-type:normal}
+  /* A line after the grid (the closing page's rule note) is past the column's reserved padding,
+     so it ended under the decision bar and the floating button (UI-179). It keeps the same gutter. */
+  .hasg2 .g2 ~ :last-child{padding-bottom:var(--dock-h)}
 }
 
 /* ── Collapsed state: the card starts like any other card ──
@@ -6355,6 +6434,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .aishut-c{display:flex;flex-direction:column;align-items:flex-start;text-align:start;
   gap:var(--sp-4);max-width:28rem}
 .badge-44{width:44px;height:44px}
+/* 11 Oct · audit P05 (108 pages) · the leaf sits in a 44px box at 82% and the glyph has its own
+   margin, so its drawn edge was 10px inside the title's start edge. Optical alignment: the box
+   moves out by exactly that, so the leaf's edge and the text edge are one line. */
+.aishut-c>.badge-44{margin-inline-start:calc(-1 * (var(--sp-3) + var(--sp-1)))}
 .aishut-t{font-family:var(--fd);font-weight:600;font-size:var(--fs-4);line-height:var(--lh-text);
   color:var(--t1);margin:var(--sp-1) 0 0}
 .aishut-m{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;justify-content:flex-start}
@@ -6993,6 +7076,15 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   gap:var(--sp-4);margin-top:var(--sp-4)}
 .regf{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
 .regf .lb{font-size:var(--fs-1);color:var(--t3-g)}
+/* 11 Oct · audit P12 (UI-083/099/137 …) · a field whose label wraps, or whose hint sits under it,
+   dropped its input below its neighbours'. In a grid of fields only, each field takes three rows of
+   the grid (label · control · hint), so every input in a row starts on the same line however its
+   label and hint run. */
+.regfields:not(:has(>:not(.regf))){grid-auto-rows:auto}
+.regfields:not(:has(>:not(.regf)))>.regf{display:grid;grid-row:span 3;grid-template-rows:subgrid;row-gap:var(--sp-2)}
+.regfields:not(:has(>:not(.regf)))>.regf>.lb{align-self:end}
+/* the badge after a label keeps its distance (UI-085) */
+.regf .lb .tag{margin-inline-start:var(--sp-2)}
 /* ⚠️ The asterisk is colored **and readable**: color alone isn't information
    for a screen reader, so it carries its own `aria-label` in the component
    itself. */
@@ -7459,6 +7551,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    "if I change this, what does it affect?" */
 .cfggrid{list-style:none;margin:var(--sp-4) 0 0;padding:0;
   display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--sp-3)}
+/* 11 Oct · audit UI-048 · five cards in four columns left one alone on a second row with three
+   quarters of it empty. Five go three and two. */
+@media (min-width:1100px){.cfggrid:has(>:nth-child(5):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* ⚠️ **A ring alone, no raised background.** `--fl-1` here was raising the
    "master data" tag's background in the green theme to 4.45 from 4.5 — the
    exact same thing that happened before in the partnership-type card. The
@@ -7587,7 +7682,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 /* The parent shrinks before the child does: where you are now matters more
    than the path that got you here */
 .crumbs li:not(:last-child) .crumb{max-width:11rem}
-.crumb{--h-exempt:"Decision open — breadcrumb — 44px on mobile only";display:inline-flex;align-items:center;min-width:0;
+/* 11 Oct · audit UI-003 · `inline-flex` can't draw an ellipsis, so a long project name was cut
+   mid-word («للطلاب المو»). A text crumb is a block box; the li around it does the centring. */
+.crumb{--h-exempt:"Decision open — breadcrumb — 44px on mobile only";display:inline-block;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   /* ⚠️ Touch target is 44px on mobile — height comes from `--h-sm`, and
      padding widens the target without adding to the visual gap */
@@ -7705,6 +7802,10 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 /* Dates take the remaining space, so tags collect at the end of the row */
 /* Never narrower than its dates · it used to shrink to 0 and the dates ran under the amount (client, 5 Oct) */
 .phase-d{flex:1 0 auto;white-space:nowrap;font-size:var(--fs-1)}
+/* 11 Oct · audit UI-159 · with a long name the header wrapped, and «2 متعثّر» with the arrow fell
+   onto a second line of their own while the phase above held one line. One line: the name gives way
+   (ellipsis, full name in the tree below) before anything wraps. */
+@media (min-width:961px){.phase-h{flex-wrap:nowrap}.phase-h>.phase-t{flex:0 1 auto}}
 .phase-c{flex:none;font-size:var(--fs-2);color:var(--t2)}
 
 /* ── Activities ──
@@ -7821,6 +7922,13 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .ptl-res{display:flex;align-items:flex-start;gap:var(--sp-3);
   padding:var(--pad-in);border-radius:var(--r1);
   background:rgba(var(--warnC),.09);color:var(--t1)}
+/* 11 Oct · audit UI-049/087 · the notice sat flush on the row above it (0–2px) and the button below
+   it (3px) while the rest of the card breathes. It keeps the card's stack gap on both sides. */
+.glass>.ptl-res{margin-block:var(--sp-4)}
+.glass>.ptl-res+.ptl-res{margin-top:0}
+/* 11 Oct · audit UI-186/187/191 · what follows a document list or a check list in a card (a cloud
+   link, a field, a key-value list) sat flush on its last row. */
+.glass>.dlist+*,.glass>.payq-ck+*{margin-top:var(--sp-5)}
 .ptl-res>svg{flex:none;color:var(--warn-ink);margin-top:var(--sp-1)}
 .ptl-res b{display:block;font-size:var(--fs-2);margin-bottom:var(--sp-2)}
 .ptl-res p{margin:0;font-size:var(--fs-2);line-height:var(--lh-long);color:var(--t2)}
@@ -8617,3 +8725,8 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .sessbar{position:fixed;inset-block-start:var(--sp-5);inset-inline:0;margin-inline:auto;width:max-content;max-width:calc(100% - var(--sp-8));z-index:90;display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-3) var(--sp-5);background:var(--g-pop);backdrop-filter:var(--mat-2);border-radius:var(--r2);box-shadow:var(--el-3);font-size:var(--fs-3)}
 /* A role in a column of people · the same 28px box as a face, with the role's icon instead of initials */
 .av-ic{color:var(--t2)}
+
+/* 11 Oct · audit UI-114 · the screen is a flex column that scrolls; a card that scrolls inside
+   itself (the collapsed assistant card) has no content floor there, so on the session page it was
+   squeezed to 47px with its leaf cut in half. Cards in the screen column keep their own height. */
+.screen.col>:is(.glass,.tabs,.tblwrap){flex-shrink:0}

@@ -209,9 +209,10 @@ function BoardPack() {
   }
   return (
     <>
-      <div className="ftool-r"><div className="ftool-f" /><div className="ftool-a"><ExportMenu sheet={sheet} note={sheet.title} /></div></div>
+      {/* 11 Oct · audit UI-130 · the export button stood alone on a full row above the card; it is
+          the card's own action now, beside its year */}
       <Glass>
-        <Head title="ملخص المحفظة" meta={<span className="sub">سنة <span className="num">{year}</span></span>} />
+        <Head title="ملخص المحفظة" meta={<span className="rowf"><span className="sub">سنة <span className="num">{year}</span></span><ExportMenu sheet={sheet} note={sheet.title} /></span>} />
         <KV rows={[
           { k: 'اعتُمد هذا العام', v: <><Num>{approved.length}</Num> مشروع · <Money sm>{approved.reduce((a, p) => a + p.amountGranted, 0)}</Money></> },
           { k: 'في مسار الاعتماد', v: <><Num>{pending.length}</Num> مشروع · <Money sm>{pending.reduce((a, p) => a + p.amountRequested, 0)}</Money></> },

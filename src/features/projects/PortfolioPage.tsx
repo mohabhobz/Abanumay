@@ -454,10 +454,10 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
       {!gate.ok && <p className="sub cnote"><Icon name={icons.lock} size="sm" /> {gate.why}</p>}
       {pf.items.length > 0 && (
         <div className="tblwrap">
-          <table className="tbl" aria-label="المشاريع الفرعية">
+          <table className="tbl subtbl" aria-label="المشاريع الفرعية">
             <thead>
               <tr>
-                <th>{pool.length > 0 && <input type="checkbox" aria-label="تحديد الكل" checked={sel.length === pool.length} onChange={(e) => setSel(e.target.checked ? pool.map((x) => x.id) : [])} />}</th>
+                <th className="tchk">{pool.length > 0 && <input type="checkbox" aria-label="تحديد الكل" checked={sel.length === pool.length} onChange={(e) => setSel(e.target.checked ? pool.map((x) => x.id) : [])} />}</th>
                 <th><span className="th-t">المشروع · المنطقة · المستهدف</span></th>
                 <th className="n"><span className="th-t">القيمة</span></th>
                 <th><span className="th-t">الاعتماد</span></th>
@@ -469,7 +469,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                 const sm = subMoney(pf, x)
                 return (
                   <tr key={x.id} id={x.id}>
-                    <td>{selectable(x) && <input type="checkbox" aria-label={`تحديد ${x.name}`} checked={sel.includes(x.id)} onChange={() => toggle(x.id)} />}</td>
+                    <td className="tchk">{selectable(x) && <input type="checkbox" aria-label={`تحديد ${x.name}`} checked={sel.includes(x.id)} onChange={() => toggle(x.id)} />}</td>
                     <td><b>{x.name}</b><div className="sub">{x.field ?? pf.field} · {x.region} · {nf.format(x.beneficiaries)} مستفيد · {x.outputs} · {x.files.join('، ')}</div></td>
                     <td className="n"><Money sm>{x.amount}</Money></td>
                     <td>

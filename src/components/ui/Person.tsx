@@ -1,4 +1,29 @@
+import { useLayoutEffect, useRef } from 'react'
 import { isNobody, isPerson, person } from '@/data/people'
+
+/* 11 Oct · audit UI-068 and five more · two Arabic initials in bold are wider than a 28px box in
+   some faces («س‌ف» measured 30px), so they were cut at its edges. The letters keep their size in
+   the type scale and shrink to fit the box only when they have to, with a margin each side. */
+function Initials({ text, box, title }: { text: string; box: string; title: string }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    const host = el?.parentElement
+    if (!el || !host) return
+    const fit = () => {
+      el.style.removeProperty('--av-s')
+      const room = host.clientWidth - 6
+      const w = el.scrollWidth
+      if (w > room && w > 0) el.style.setProperty('--av-s', String(Math.max(0.6, room / w)))
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    document.fonts?.ready.then(fit).catch(() => undefined)
+    return () => ro.disconnect()
+  }, [text])
+  return <span className={`av av-${box}`} title={title} aria-hidden="true"><span className="av-i" ref={ref}>{text}</span></span>
+}
 
 /* Person · face and name together.
 
@@ -35,7 +60,7 @@ export function Face({ name, size = 'sm' }: { name: string; size?: PersonProps['
   const box = size === 'lg' ? '34' : size === 'md' ? '30' : '28'
   const title = p.title ? `${p.name}، ${p.title}` : p.name
   if (p.photo) return <img className={`pht pht-${box}`} src={p.photo} alt="" title={title} />
-  return <span className={`av av-${box}`} title={title} aria-hidden="true">{p.initial}</span>
+  return <Initials text={p.initial} box={box} title={title} />
 }
 
 export function Person({ name, empty = 'بلا مالك', size = 'sm', bare, quiet = true }: PersonProps) {
