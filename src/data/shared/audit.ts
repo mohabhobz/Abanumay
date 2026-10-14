@@ -10,7 +10,7 @@ import { entityRows } from '@/data/mock/entities'
 import { allBudgets } from '@/data/mock/chain'
 import { PERM_INITIAL, PERM_KEY, type PermState } from '@/data/mock/permissions'
 import { BUDGET_REQS, REQ_KIND_SAY, docOf, eventsOf, linkHistory, LINK_CHANGE_SAY, movesOf, MOVE_SAY } from '@/data/budget/store'
-import { UPD_ROWS, overlayOf } from '@/data/entities/store'
+import { BATCHES, BATCH_SAY, UPD_ROWS, overlayOf } from '@/data/entities/store'
 import { flowEvents } from '@/data/intake/flow'
 import { approvalEvents } from '@/data/approvals/store'
 import { PLAN_LOG } from '@/data/plans/store'
@@ -94,6 +94,14 @@ function entityRowsLog(): AuditRow[] {
     (r.events ?? []).forEach((ev, i) => out.push({
       id: `rg-${r.id}-${i}`, module: 'entities', ref: `طلب تسجيل · ${r.name}`, href: ROUTES.entityRequest(r.id), action: ev.action, by: ev.by, at: ev.at.replace('T', ' ').slice(0, 16), note: ev.note, fields: ev.fields ?? [],
     }))
+  }
+  /* 14 Oct · a batch on a selection · one master line, each entity's own line names it */
+  for (const b of BATCHES) {
+    out.push({
+      id: `bt-${b.id}`, module: 'entities', ref: `دفعة ${b.id}`, href: `${ROUTES.audit}?q=${b.id}`, action: `${BATCH_SAY[b.act]} · إجراء جماعي`, by: b.by,
+      at: b.at.replace('T', ' ').slice(0, 16), note: b.note,
+      fields: [{ k: 'الدفعة', v: b.id }, { k: 'تم', v: String(b.ok.length) }, ...b.skipped.map((x) => ({ k: `مستثناة · ${x.reason}`, v: String(x.ids.length) })), ...(b.failed.length ? [{ k: 'تعذّر', v: String(b.failed.length) }] : [])],
+    })
   }
   for (const u of UPD_ROWS) {
     u.events.forEach((ev, i) => out.push({

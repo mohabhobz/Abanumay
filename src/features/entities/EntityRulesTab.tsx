@@ -18,7 +18,7 @@ export function EntityRulesTab() {
   const [d, setD] = useState<EntityRules>(() => structuredClone(ENTITY_RULES))
   const dirty = JSON.stringify(d) !== JSON.stringify(saved)
   const put = <K extends keyof EntityRules>(k: K, v: EntityRules[K]) => setD((x) => ({ ...x, [k]: v }))
-  const roles = (k: 'approveBy' | 'returnBy' | 'updateBy' | 'statusBy', label: string, note: string) => (
+  const roles = (k: 'approveBy' | 'returnBy' | 'updateBy' | 'suspendBy' | 'revokeBy' | 'archiveBy' | 'bankBy' | 'askBy' | 'notifyBy' | 'assignBy', label: string, note: string) => (
     <li className="itk-sup">
       <span className="cfgl"><b>{label}</b><span className="sub">{note}</span></span>
       <span className="pc-sp" />
@@ -78,8 +78,26 @@ export function EntityRulesTab() {
           {roles('approveBy', 'اعتماد طلب التسجيل أو رفضه', 'ومعه قرار كل حساب بنكي')}
           {roles('returnBy', 'إعادة طلب التسجيل للاستكمال', 'بملاحظة وحقول محدّدة')}
           {roles('updateBy', 'قرار طلب تحديث البيانات', 'اعتماد أو إعادة أو رفض')}
-          {roles('statusBy', 'تعليق الجهة وإلغاء اعتمادها وأرشفتها', 'وتعطيل الحسابات البنكية')}
+          {roles('suspendBy', 'تعليق الأهلية ورفعه', 'من ملف الجهة · بلوحة الأثر وتأكيد مزدوج')}
+          {roles('revokeBy', 'إلغاء اعتماد الجهة', 'من ملف الجهة · بلوحة الأثر وتأكيد مزدوج')}
+          {roles('archiveBy', 'أرشفة الجهة', 'تُمنع ما دام لها مشروع قائم أو دفعة أو طلب مفتوح')}
+          {roles('bankBy', 'إدارة الحسابات البنكية', 'إضافة وتعطيل · والحذف فقط بلا ارتباط مالي')}
         </ul>
+      </Glass>
+
+      <Glass>
+        <Head title="الإجراءات على القائمة" meta={<span className="sub">عند تحديد جهة أو أكثر</span>} />
+        <ul className="cfglist">
+          {roles('askBy', 'طلب تحديث البيانات', 'لا يغيّر حالة الجهة')}
+          {roles('notifyBy', 'إرسال إشعار', 'من قالب أو نص حر')}
+          {roles('assignBy', 'إسناد المراجعة', 'توزيع الطلبات المفتوحة على المشرفين')}
+          <li className="itk-sup">
+            <span className="cfgl"><b>الحد الأقصى للدفعة</b><span className="sub">للإشعارات وطلبات التحديث الجماعية</span></span>
+            <span className="pc-sp" />
+            <CfgNum value={d.bulkMax} min={1} label="الحد الأقصى للدفعة" suffix="جهة" onChange={(v) => put('bulkMax', v)} />
+          </li>
+        </ul>
+        <Switch label="تُسند الطلبات إلى مشرف محدد" note="إن لم تُستخدم يُحذف إجراء «إسناد المراجعة»" on={d.assignOn} onChange={(v) => put('assignOn', v)} />
       </Glass>
 
       <Glass>

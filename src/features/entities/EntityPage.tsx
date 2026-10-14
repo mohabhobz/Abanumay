@@ -1,5 +1,5 @@
 import { activationSay } from '@/data/shared/decisions'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { expiryAhead } from '@/data/shared/ai'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { EntityMark, Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
@@ -17,7 +17,8 @@ import { AnalysisCard } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { EntityFlow } from './EntityFlow'
 import { EntityRequestsTab, EntityStatusCard } from './EntityActions'
-import { useEntityFlow } from '@/data/entities/store'
+import { useEntityFlow, viewArchived } from '@/data/entities/store'
+import { meOf, readRole } from '@/data/roles'
 import { readEntity } from '@/data/readings'
 import { entityCode } from '@/lib/format'
 import {
@@ -54,6 +55,15 @@ export default function EntityPage() {
     reserveSelector: '.decdock, .askfab',
     min: 240,
   })
+
+  /* 14 Oct · LOCTech §1 · opening an archived entity's file is itself recorded · once a visit */
+  const archived = Boolean(entity?.archived)
+  useEffect(() => {
+    if (!archived || !id) return
+    const k = `ab-viewed-arch-${id}`
+    try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1') } catch { /* storage blocked */ }
+    viewArchived(id, meOf(readRole()))
+  }, [archived, id])
 
   if (!entity) return <Navigate to={ROUTES.entities} replace />
 

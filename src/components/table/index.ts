@@ -1,5 +1,6 @@
 /** Entry point for the generic data table. */
 export { DataTable, type DataTableProps } from './DataTable'
+export { DoneRows } from './done'
 export {
   aggregate, defaultCols, orderCols, readCols, writeCols, splitGroups,
   groupChain, groupTree, countLeaves, sheetOf, MAX_GROUP_DEPTH, readSort, writeSort, nextSort, sortRows,

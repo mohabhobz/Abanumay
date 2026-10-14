@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { readRole } from '@/data/roles'
+import { meOf, readRole } from '@/data/roles'
 import { useNavigate } from 'react-router-dom'
 import {
   DateField, Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, PAGE_SIZES, Pager, SearchBox, Segments,
@@ -27,10 +27,14 @@ import { regKpi } from '@/data/mock/registration'
 import { EntityCard } from './EntityCard'
 import { COLS, GROUPS } from './columns'
 import { UPD_ROWS } from '@/data/entities/store'
+import { ACT_SAY, actState, forWho, grantOf, lastRequestOf, type ActKey } from '@/data/entities/actions'
+import { logExport, nextBatchId, startReview, useEntityFlow, type Batch } from '@/data/entities/store'
+import { entityById } from '@/data/mock/entities'
+import { AskModal, AssignModal, BatchResult, MoreMenu, NotifyModal, type MoreItem } from './SelectionActions'
 import {
-  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols, readSort, writeSort, nextSort, sortRows,
+  DataTable, DoneRows, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols, readSort, writeSort, nextSort, sortRows,
 } from '@/components/table'
-import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
+import { exportXlsx, type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
 
 const KEYS = [
@@ -82,10 +86,17 @@ export default function EntitiesListPage() {
   const [fOrder, setFOrder] = useState<string[]>(() => readFilterOrder('entities', FILTER_KEYS))
 
   useEffect(() => writeFilterOrder('entities', fOrder), [fOrder])
-  /* Selection here scopes an export, not a decision: an entity has no "approve" or "reject" applied
-     in bulk - activating or suspending one is a decision made in its own file. So the bar states
-     the selection and exports it, nothing more. */
+  /* Selection scopes a request, a message or an export · never an eligibility decision: suspending,
+     revoking or archiving an entity is made in its own file, where its documents, projects and
+     payments are in view (LOCTech «الإجراءات عند التحديد» §3 · 14 Oct). The bar's buttons and the
+     «more» menu read one table (`data/entities/actions`). */
+  useEntityFlow()
+  const role = readRole()
+  const me = meOf(role)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [modal, setModal] = useState<'ask' | 'notify' | 'assign' | null>(null)
+  const [batch, setBatch] = useState<Batch | null>(null)
+  const [done, setDone] = useState<Set<string>>(new Set())
 
   useEffect(() => writeCols('entities', cols), [cols])
 
@@ -204,6 +215,7 @@ export default function EntitiesListPage() {
 
   const toggleOne = (id: string, on: boolean) =>
     setSelected((s) => {
+      setDone(new Set())
       const next = new Set(s)
       if (on) next.add(id)
       else next.delete(id)
@@ -233,6 +245,57 @@ export default function EntitiesListPage() {
     few: () => 'جهات محدَّدة',
     many: () => 'جهة محدَّدة',
   })
+
+  /* ── The selection's actions (§3 «مواضع الإجراءات») ── */
+  const selRows = useMemo(() => [...selected].map((id) => entityById(id)).filter((e): e is NonNullable<typeof e> => Boolean(e)), [selected])
+  const one = selRows.length === 1 ? selRows[0] : null
+  const st = (a: ActKey) => (one ? actState(a, one, role) : null)
+  /** Many · shown when the role may, greyed for a role that only sees it */
+  const bulkGrant = (a: ActKey) => grantOf(a, role)
+  const bulkWhy = (a: ActKey) => (bulkGrant(a) === 'see' ? `للاطلاع · القرار ${forWho(a)}` : undefined)
+  const finish = (b: Batch | null) => {
+    if (b) { setBatch(b); setDone(new Set(b.ok)) }
+  }
+  const exportSelected = () => {
+    exportXlsx(sheet)
+    const ids = selRows.map((e) => e.id)
+    logExport(ids, sheet.headers.length, selected.size ? 'الصفوف المحدَّدة' : 'نتيجة الفلتر', me,
+      ids.length > 1 ? { id: nextBatchId(), skipped: [], failed: [] } : undefined)
+  }
+  const goReview = () => {
+    if (!one) return
+    const r = st('review')
+    if (!r?.on) return
+    const req = lastRequestOf(one)
+    if (!req) return
+    startReview(req.id, me)
+    navigate(req.href)
+  }
+  const btn = (a: ActKey, onClick: () => void, label = ACT_SAY[a]) => {
+    const x = st(a)
+    if (!x?.show) return null
+    return (
+      <button key={a} className="btn btn-2 btn-sm" disabled={!x.on} title={x.why} onClick={onClick}>{label}</button>
+    )
+  }
+  const moreOne: MoreItem[] = one ? ([
+    ['notify', () => setModal('notify')],
+    ['export', exportSelected],
+    ['log', () => navigate(ROUTES.entity(one.id, 'log'))],
+    ['assign', () => setModal('assign')],
+  ] as [ActKey, () => void][]).flatMap(([a, run]) => {
+    const x = st(a)!
+    return x.show ? [{ label: ACT_SAY[a], onClick: run, why: x.on ? undefined : x.why }] : []
+  }) : []
+  const moreMany: MoreItem[] = [
+    ...(bulkGrant('assign') !== 'none' ? [{ label: ACT_SAY.assign, onClick: () => setModal('assign'), why: bulkWhy('assign') }] : []),
+    { label: 'إلغاء التحديد', onClick: () => { setSelected(new Set()); setDone(new Set()) } },
+  ]
+
+  /* «تحديد الكل» picks the page · then a link offers every match of the filter */
+  const pageIds = result.rows.map((e) => e.id)
+  const pageAll = !grouped && pageIds.length > 0 && pageIds.every((id) => selected.has(id))
+  const allMatch = allFiltered.length > 0 && allFiltered.every((e) => selected.has(e.id))
 
   const FILTER_DEFS: FilterDef[] = [
     { key: 'type', label: 'تصنيف الجهة' },
@@ -474,6 +537,20 @@ export default function EntitiesListPage() {
             </div>
           ) : (
             <Glass className="tblcard">
+              {pageAll && result.total > pageIds.length && (
+                <div className="selall sub">
+                  {allMatch ? (
+                    <>حُدّدت جميع الجهات المطابقة للتصفية (<span className="num">{allFiltered.length}</span>) ·{' '}
+                      <button className="lnk" onClick={() => setSelected(new Set())}>إلغاء التحديد</button></>
+                  ) : (
+                    <>حُدّدت {units.entity(pageIds.length)} في هذه الصفحة ·{' '}
+                      <button className="lnk" onClick={() => selectAll(true, allFiltered.map((e) => e.id))}>
+                        حدّد كل الجهات المطابقة للتصفية (<span className="num">{allFiltered.length}</span>)
+                      </button></>
+                  )}
+                </div>
+              )}
+              <DoneRows.Provider value={done}>
               <DataTable
                 rows={sortRows(result.rows, COLS, readSort(v.ord))}
                 sort={readSort(v.ord)}
@@ -490,6 +567,7 @@ export default function EntitiesListPage() {
                 group={grouped ? group : undefined}
                 count={units.entity}
               />
+              </DoneRows.Provider>
             </Glass>
           )}
 
@@ -511,7 +589,7 @@ export default function EntitiesListPage() {
 
         </div>
 
-        {/* Same toolbar as projects, with entity-specific actions: export only. */}
+        {/* One entity: open, review, ask · the rest under «more». Many: ask, notify, export. */}
         {selected.size > 0 && (
           <BulkBar
             count={selected.size}
@@ -524,18 +602,34 @@ export default function EntitiesListPage() {
               </>
             }
           >
-            <button className="btn btn-2 btn-sm" onClick={() => exportXlsx(sheet)}>
-              <Icon name={icons.export} size="sm" />
-              إكسل
-            </button>
-            <button className="btn btn-2 btn-sm" onClick={() => setTimeout(printArea, 60)}>
-              PDF
-            </button>
-            <button className="btn btn-2 btn-sm" onClick={() => exportPng(sheet)}>
-              صورة
-            </button>
+            {one ? (
+              <>
+                <button className="btn btn-2 btn-sm" onClick={() => navigate(ROUTES.entity(one.id))}>{ACT_SAY.view}</button>
+                {btn('review', goReview)}
+                {btn('ask', () => setModal('ask'))}
+                <MoreMenu items={moreOne} />
+              </>
+            ) : (
+              <>
+                {bulkGrant('ask') !== 'none' && (
+                  <button className="btn btn-2 btn-sm" disabled={Boolean(bulkWhy('ask'))} title={bulkWhy('ask')} onClick={() => setModal('ask')}>{ACT_SAY.ask}</button>
+                )}
+                {bulkGrant('notify') !== 'none' && (
+                  <button className="btn btn-2 btn-sm" disabled={Boolean(bulkWhy('notify'))} title={bulkWhy('notify')} onClick={() => setModal('notify')}>{ACT_SAY.notify}</button>
+                )}
+                <button className="btn btn-2 btn-sm" onClick={exportSelected}>
+                  <Icon name={icons.export} size="sm" />
+                  تصدير المحدد
+                </button>
+                <MoreMenu items={moreMany} />
+              </>
+            )}
           </BulkBar>
         )}
+        {modal === 'ask' && <AskModal rows={selRows} me={me} onClose={() => setModal(null)} onDone={finish} />}
+        {modal === 'notify' && <NotifyModal rows={selRows} me={me} onClose={() => setModal(null)} onDone={finish} />}
+        {modal === 'assign' && <AssignModal rows={selRows} me={me} onClose={() => setModal(null)} onDone={finish} />}
+        {batch && <BatchResult batch={batch} byId={entityById} onClose={() => setBatch(null)} />}
       </div>
     </AppLayout>
   )

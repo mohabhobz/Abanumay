@@ -379,7 +379,7 @@ function withOverlay(e: EntityRow, d: EntityDetail): EntityDetail {
     const r = o.renewed[x.name]
     return r ? { name: x.name, uploaded: true, at: r.at, expires: r.expires, expired: Boolean(r.expires && r.expires < today) } : x
   })
-  out.banks = [...(o.banks ?? d.banks), ...o.addedBanks].map((b) => {
+  out.banks = [...(o.banks ?? d.banks), ...o.addedBanks].filter((b) => !o.deletedBanks?.includes(b.id)).map((b) => {
     const s = o.bankStatus[b.id]
     return s ? { ...b, status: s.status, reason: s.reason } : b
   })

@@ -40,6 +40,8 @@ export interface EntityOverlay {
   statusReason?: string
   /** Status before an update request suspended it · restored when the request is decided */
   beforeUpdate?: EntityActivation
+  /** 14 Oct · accounts removed for good · only one with no financial history (rule 28) */
+  deletedBanks?: string[]
 }
 
 const OVERLAY = new Map<string, EntityOverlay>()
@@ -104,6 +106,28 @@ const enote = (to: string, topic: EntityNote['topic'], title: string, context: s
   ENTITY_NOTES.unshift({ id: id ?? `en-${ENTITY_NOTES.length + 1}`, to, topic, title, context, at: at.slice(0, 10), href })
 }
 
+/* ── 14 Oct · actions on a selection (LOCTech «الإجراءات عند التحديد») ──
+
+   What staff ask of an entity from the list: to update its data, a message, a request handed to a
+   supervisor. None changes a status. Each one done on more than one entity is a batch: one master
+   record (who, when, how many, what was left out and why) and one line on each entity's log that
+   names the batch, so the audit log reads both ways. */
+
+export interface DataAsk { id: string; entityId: string; items: string[]; due: string; reason: string; note?: string; batch?: string; at: string; by: string }
+export const DATA_ASKS: DataAsk[] = []
+
+export type BatchAct = 'ask' | 'notify' | 'assign' | 'export'
+export const BATCH_SAY: Record<BatchAct, string> = { ask: 'طلب تحديث البيانات', notify: 'إرسال إشعار', assign: 'إسناد المراجعة', export: 'تصدير المحدد' }
+export interface BatchSkip { reason: string; ids: string[] }
+export interface Batch { id: string; act: BatchAct; at: string; by: string; ok: string[]; skipped: BatchSkip[]; failed: string[]; note?: string }
+export const BATCHES: Batch[] = []
+
+/** Open requests handed to a supervisor · request id → name */
+export const ASSIGNED: Record<string, string> = {}
+
+/** The impact a suspension or revocation carried · kept with the decision */
+export interface StatusMeta { code: string; decision?: string; proof?: string; projects?: string[]; payments?: string[] }
+
 /* ── Operations ── */
 
 type Op = { at: string } & (
@@ -113,8 +137,15 @@ type Op = { at: string } & (
   | { op: 'regResubmit'; id: string; values: Record<string, string>; docs: string[]; by: string }
   | { op: 'regDecide'; id: string; outcome: 'approve' | 'reject'; note: string; banks: Record<string, string>; reason?: RegRejectReason; by: string }
   | { op: 'internal'; values: Record<string, string>; docs: string[]; partner: string; by: string; banks?: RegBank[] }
-  | { op: 'status'; entityId: string; to: EntityActivation; reason: string; by: string }
-  | { op: 'archive'; entityId: string; on: boolean; reason: string; by: string }
+  | { op: 'status'; entityId: string; to: EntityActivation; reason: string; by: string; meta?: StatusMeta }
+  | { op: 'archive'; entityId: string; on: boolean; reason: string; by: string; code?: string }
+  | { op: 'ask'; ids: string[]; items: string[]; due: string; reason: string; note?: string; by: string; batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'> }
+  | { op: 'notify'; ids: string[]; title: string; text: string; channel: string; template: string; by: string; batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'> }
+  | { op: 'assign'; reqs: { reqId: string; entityId: string }[]; to: string; by: string; batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'> }
+  | { op: 'export'; ids: string[]; cols: number; scope: string; by: string; batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'> }
+  | { op: 'bankDelete'; entityId: string; bankId: string; reason: string; by: string }
+  | { op: 'reviewStart'; reqId: string; by: string }
+  | { op: 'viewArchived'; entityId: string; by: string }
   | { op: 'bankStatus'; entityId: string; bankId: string; status: BankAccount['status']; reason?: string; by: string }
   | { op: 'updSave'; req: Omit<UpdateRequest, 'events' | 'state' | 'createdAt' | 'submittedAt'>; send: boolean }
   | { op: 'updDecide'; id: string; outcome: 'approve' | 'reject' | 'return'; note: string; by: string; bankNo?: Record<string, string> }
@@ -389,10 +420,22 @@ const apply = (x: Op) => {
       overlayOf(e.id).fields.adminNote = x.reason
       entityEvent(e.id, {
         kind: x.to === 'نشط' ? 'accept' : x.to === 'ملغى الاعتماد' ? 'reject' : 'stop',
-        action: x.to === 'نشط' ? 'إعادة تفعيل الجهة' : x.to === 'ملغى الاعتماد' ? 'إلغاء اعتماد الجهة' : 'تعليق اعتماد الجهة',
+        action: x.to === 'نشط' ? 'رفع تعليق الأهلية' : x.to === 'ملغى الاعتماد' ? 'إلغاء اعتماد الجهة' : 'تعليق الأهلية',
         by: x.by, at, note: x.reason, fields: [{ k: 'حالة التفعيل', v: `${from} ← ${x.to}` }],
       })
-      enote(e.name, 'status', x.to === 'نشط' ? 'أُعيد تفعيل جهتك' : x.to === 'ملغى الاعتماد' ? 'أُلغي اعتماد جهتك' : 'عُلّق اعتماد جهتك', x.reason, at, ROUTES.entityPortal)
+      if (x.meta) {
+        const ev = overlayOf(e.id).events[0]
+        ev.fields = [...(ev.fields ?? []),
+          { k: 'رمز السبب', v: x.meta.code },
+          ...(x.meta.decision ? [{ k: 'رقم القرار', v: x.meta.decision }] : []),
+          ...(x.meta.proof ? [{ k: 'الإثبات', v: x.meta.proof }] : []),
+          ...(x.meta.projects ? [{ k: 'المشاريع المتأثرة', v: x.meta.projects.length ? `${x.meta.projects.length} · ${x.meta.projects.join('، ')}` : '0' }] : []),
+          ...(x.meta.payments ? [{ k: 'الدفعات الموقوفة', v: x.meta.payments.length ? `${x.meta.payments.length} · ${x.meta.payments.join('، ')}` : '0' }] : []),
+        ]
+      }
+      enote(e.name, 'status', x.to === 'نشط' ? 'رُفع تعليق أهلية جهتك' : x.to === 'ملغى الاعتماد' ? 'أُلغي اعتماد جهتك' : 'عُلّقت أهلية جهتك', x.reason, at, ROUTES.entityPortal)
+      /* Lifting a suspension doesn't clear another block · an expired document keeps it inactive */
+      syncActivation(e, at)
       break
     }
     case 'archive': {
@@ -401,7 +444,68 @@ const apply = (x: Op) => {
       e.archived = x.on
       if (x.on) e.canApply = false
       else e.canApply = e.activation === 'نشط'
-      entityEvent(e.id, { kind: x.on ? 'stop' : 'accept', action: x.on ? 'أرشفة الجهة' : 'استعادة الجهة من الأرشيف', by: x.by, at, note: x.reason })
+      entityEvent(e.id, { kind: x.on ? 'stop' : 'accept', action: x.on ? 'أرشفة الجهة' : 'استعادة الجهة من الأرشيف', by: x.by, at, note: x.reason,
+        fields: x.on ? [...(x.code ? [{ k: 'رمز السبب', v: x.code }] : []), { k: 'الفحص المسبق', v: 'مشاريع قائمة 0 · دفعات معلّقة 0 · طلبات مفتوحة 0' }] : undefined })
+      break
+    }
+    case 'ask': {
+      const bid = x.batch?.id
+      for (const id of x.ids) {
+        const e = entityRows.find((y) => y.id === id)
+        if (!e) continue
+        DATA_ASKS.unshift({ id: `ASK-${DATA_ASKS.length + 1}`, entityId: id, items: x.items, due: x.due, reason: x.reason, note: x.note, batch: bid, at, by: x.by })
+        entityEvent(id, { kind: 'edit', action: 'طلب تحديث البيانات من الجهة', by: x.by, at, note: x.reason,
+          fields: [{ k: 'البنود المطلوبة', v: x.items.join('، ') }, { k: 'تاريخ الاستحقاق', v: x.due }, ...(bid ? [{ k: 'الدفعة', v: bid }] : []), { k: 'الإشعار', v: `en-ask-${id}-${at}` }] })
+        enote(e.name, 'update', 'مطلوب تحديث بيانات جهتك', `${x.items.join('، ')} · قبل ${x.due} · ${x.reason}`, at, `${ROUTES.entityUpdate}?entity=${id}`, `en-ask-${id}-${at}`)
+      }
+      if (x.batch) BATCHES.unshift({ ...x.batch, act: 'ask', at, by: x.by, ok: x.ids })
+      break
+    }
+    case 'notify': {
+      const bid = x.batch?.id
+      for (const id of x.ids) {
+        const e = entityRows.find((y) => y.id === id)
+        if (!e) continue
+        entityEvent(id, { kind: 'edit', action: 'إرسال إشعار للجهة', by: x.by, at, note: x.text,
+          fields: [{ k: 'القالب', v: x.template }, { k: 'القناة', v: x.channel }, { k: 'حالة التسليم', v: 'أُرسل' }, ...(bid ? [{ k: 'الدفعة', v: bid }] : [])] })
+        enote(e.name, 'status', x.title, x.text, at, ROUTES.entityPortal, `en-msg-${id}-${at}`)
+      }
+      if (x.batch) BATCHES.unshift({ ...x.batch, act: 'notify', at, by: x.by, ok: x.ids })
+      break
+    }
+    case 'assign': {
+      const bid = x.batch?.id
+      for (const r of x.reqs) {
+        const prev = ASSIGNED[r.reqId] ?? 'غير مُسنَد'
+        ASSIGNED[r.reqId] = x.to
+        entityEvent(r.entityId, { kind: 'edit', action: 'إسناد المراجعة', by: x.by, at,
+          fields: [{ k: 'الطلب', v: r.reqId }, { k: 'المُسند إليه', v: `${prev} ← ${x.to}` }, ...(bid ? [{ k: 'الدفعة', v: bid }] : [])] })
+      }
+      if (x.batch) BATCHES.unshift({ ...x.batch, act: 'assign', at, by: x.by, ok: x.reqs.map((r) => r.entityId) })
+      break
+    }
+    case 'export': {
+      if (x.batch) { BATCHES.unshift({ ...x.batch, act: 'export', at, by: x.by, ok: x.ids, note: `${x.scope} · ${x.cols} عمودًا` }); break }
+      for (const id of x.ids) entityEvent(id, { kind: 'edit', action: 'تصدير ملف الجهة', by: x.by, at, fields: [{ k: 'الأعمدة', v: String(x.cols) }, { k: 'عدد السجلات', v: '1' }] })
+      break
+    }
+    case 'bankDelete': {
+      const o = overlayOf(x.entityId)
+      o.deletedBanks = [...(o.deletedBanks ?? []), x.bankId]
+      o.addedBanks = o.addedBanks.filter((b) => b.id !== x.bankId)
+      entityEvent(x.entityId, { kind: 'bank', action: 'حذف حساب بنكي', by: x.by, at, note: x.reason,
+        fields: [{ k: 'الحساب', v: x.bankId }, { k: 'الارتباط المالي', v: 'لا يوجد' }] })
+      break
+    }
+    case 'reviewStart': {
+      const r = regRows.find((y) => y.id === x.reqId)
+      const u = UPD_ROWS.find((y) => y.id === x.reqId)
+      const ev = { kind: 'draft' as const, action: 'بدء المراجعة', by: x.by, at }
+      if (r) { r.events = [...(r.events ?? []), ev] } else if (u) u.events.push(ev)
+      break
+    }
+    case 'viewArchived': {
+      entityEvent(x.entityId, { kind: 'edit', action: 'الاطلاع على ملف جهة مؤرشفة', by: x.by, at })
       break
     }
     case 'bankStatus': {
@@ -619,11 +723,32 @@ export const registerInternal = (values: Record<string, string>, docs: string[],
   return lastInternal
 }
 
-export const setEntityStatus = (entityId: string, to: EntityActivation, reason: string, by: string) =>
-  run({ op: 'status', entityId, to, reason, by, at: now() })
+export const setEntityStatus = (entityId: string, to: EntityActivation, reason: string, by: string, meta?: StatusMeta) =>
+  run({ op: 'status', entityId, to, reason, by, meta, at: now() })
 
-export const archiveEntity = (entityId: string, on: boolean, reason: string, by: string) =>
-  run({ op: 'archive', entityId, on, reason, by, at: now() })
+export const archiveEntity = (entityId: string, on: boolean, reason: string, by: string, code?: string) =>
+  run({ op: 'archive', entityId, on, reason, by, code, at: now() })
+
+export const askData = (ids: string[], items: string[], due: string, reason: string, by: string, note?: string, batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'>) =>
+  run({ op: 'ask', ids, items, due, reason, note, by, batch, at: now() })
+
+export const notifyEntities = (ids: string[], title: string, text: string, channel: string, template: string, by: string, batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'>) =>
+  run({ op: 'notify', ids, title, text, channel, template, by, batch, at: now() })
+
+export const assignReview = (reqs: { reqId: string; entityId: string }[], to: string, by: string, batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'>) =>
+  run({ op: 'assign', reqs, to, by, batch, at: now() })
+
+export const logExport = (ids: string[], cols: number, scope: string, by: string, batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'>) =>
+  run({ op: 'export', ids, cols, scope, by, batch, at: now() })
+
+export const deleteBank = (entityId: string, bankId: string, reason: string, by: string) =>
+  run({ op: 'bankDelete', entityId, bankId, reason, by, at: now() })
+
+export const startReview = (reqId: string, by: string) => run({ op: 'reviewStart', reqId, by, at: now() })
+
+export const viewArchived = (entityId: string, by: string) => run({ op: 'viewArchived', entityId, by, at: now() })
+
+export const nextBatchId = (): string => `BAT-2026-${String(BATCHES.length + 1).padStart(6, '0')}`
 
 export const setBankStatus = (entityId: string, bankId: string, status: BankAccount['status'], by: string, reason?: string) =>
   run({ op: 'bankStatus', entityId, bankId, status, reason, by, at: now() })

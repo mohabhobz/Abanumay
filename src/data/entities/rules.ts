@@ -25,6 +25,19 @@ export interface EntityRules {
   returnBy: RoleKey[]
   updateBy: RoleKey[]
   statusBy: RoleKey[]
+  /** 14 Oct · «الإجراءات عند التحديد» (LOCTech · 8 Oct) · one setting per action, the document's
+      proposal as the default · the permission matrix decides the final names */
+  suspendBy: RoleKey[]
+  revokeBy: RoleKey[]
+  archiveBy: RoleKey[]
+  bankBy: RoleKey[]
+  askBy: RoleKey[]
+  notifyBy: RoleKey[]
+  assignBy: RoleKey[]
+  /** Use per-supervisor assignment of open requests · off removes «إسناد المراجعة» (open question 9) */
+  assignOn: boolean
+  /** Ceiling on one batch of notices or data requests */
+  bulkMax: number
   /** Fields whose change waits for approval · the rest apply at once (2.3.upd-8 · 2.3.upd-15) */
   approvalFields: string[]
 }
@@ -41,6 +54,15 @@ const DEFAULT: EntityRules = {
   returnBy: ['supervisor', 'grants-manager', 'ceo'],
   updateBy: ['grants-manager', 'ceo'],
   statusBy: ['grants-manager', 'ceo'],
+  suspendBy: ['grants-manager', 'ceo'],
+  revokeBy: ['ceo'],
+  archiveBy: ['grants-manager'],
+  bankBy: ['supervisor', 'grants-manager'],
+  askBy: ['supervisor', 'grants-manager'],
+  notifyBy: ['supervisor', 'grants-manager'],
+  assignBy: ['grants-manager'],
+  assignOn: true,
+  bulkMax: 200,
   approvalFields: ['name', 'type', 'licensor', 'licenseNo', 'region', 'city', 'licenseEndsAt', 'boardEndsAt'],
 }
 

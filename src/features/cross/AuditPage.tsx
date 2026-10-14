@@ -24,7 +24,8 @@ const PAGE = 30
 
 export default function AuditPage() {
   useAllStores()
-  const [q, setQ] = useState('')
+  /* 14 Oct · a batch's summary links here with its id */
+  const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '')
   const [mod, setMod] = useState<string | undefined>()
   const [by, setBy] = useState<string | undefined>()
   const [days, setDays] = useState<string | undefined>()

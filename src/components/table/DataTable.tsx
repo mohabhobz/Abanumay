@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useContext, useState, type ReactNode } from 'react'
+import { DoneRows } from './done'
 import { useMenu } from '@/hooks/useMenu'
 import { Icon, icons, MenuOpt, MenuPanel } from '@/components/ui'
 import { nf, pct, unitAfter } from '@/lib/format'
@@ -383,6 +384,7 @@ function Block<T>({
   resize: ColumnResize
 }) {
   const pick = Boolean(selected && onSelect)
+  const done = useContext(DoneRows)
   const allOn = pick && rows.length > 0 && rows.every((r) => selected!.has(id(r)))
   const hasTotals = cols.some((c) => c.agg)
 
@@ -512,6 +514,7 @@ function Block<T>({
                       onChange={(e) => onSelect!(rid, e.target.checked)}
                       aria-label={`تحديد ${rid}`}
                     />
+                    {done?.has(rid) && <span className="tdone" title="نُفّذ عليه الإجراء"><Icon name={icons.check} size="sm" /></span>}
                   </td>
                 )}
                 {cols.map((c) => (
