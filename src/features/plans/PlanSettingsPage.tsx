@@ -96,7 +96,7 @@ export default function PlanSettingsPage() {
                   plan has requested, so the column renders only when one exists. */}
               {/* Note: a name/value table sized to its content, not the card width - at full card
                   width, the value sat 1100px from its name. */}
-              <table className="tbl tbl-fit">
+              <table className="tbl">{/* audit UI-161 · the table fills its card like every list in the system */}
                 <colgroup><col /><col />{EVIDENCE_KINDS.some((k) => usage(k) === 0) && <col />}</colgroup>
                 <thead>
                   <tr>

@@ -572,17 +572,21 @@ function AllocTable({
         })}
       </tbody>
       <tfoot>
+        {/* 12 Oct · audit UI-057 · each total under its own column: the sum under «المخصص», the gap
+            under «الفرق», and what it is measured against in the last two columns */}
         <tr>
-          <td>مجموع الأبناء</td>
+          <td>المجموع</td>
           <td className="n"><Money sm>{total}</Money></td>
-          <td className="n mut">مخصص {parent?.label ?? 'الإجمالي'}</td>
-          <td className="n"><Money sm>{parent?.alloc ?? 0}</Money></td>
-          <td className="n" colSpan={2}>
+          <td className="n"><span className="sub"> </span></td>
+          <td className="n">
             {parent && (gap === 0
               ? <Tag tone="ok">متوازن</Tag>
               : <Tag tone={gap > 0 ? 'no' : 'warn'}>
                   {gap > 0 ? 'زيادة' : 'نقص'} <Money sm>{Math.abs(gap)}</Money>
                 </Tag>)}
+          </td>
+          <td colSpan={2}>
+            <span className="sub">مقابل مخصص {parent?.label ?? 'الإجمالي'} <Money sm>{parent?.alloc ?? 0}</Money></span>
           </td>
         </tr>
       </tfoot>

@@ -81,7 +81,11 @@
 .cfgtbl td.n .cfgnum{justify-content:flex-end}
 .cfgtbl td.n .cfgnum .fld{inline-size:calc(var(--sp-12) + var(--sp-8))}
 /* Level names share one column so every cap field starts at the same edge */
-.cfglist.cfgedit li>b{inline-size:calc(var(--sp-12) * 2)}
+.cfglist.cfgedit li>b{inline-size:calc(var(--sp-12) * 3)}
+/* 12 Oct · audit UI-028 · UI-041 · the name column fits the longest criterion on one line, and the
+   group list is one width, so its edge is one line down the list (it followed its value) */
+.cfglist.cfgedit li>.fldsel{flex:none;inline-size:calc(var(--sp-12) * 1.75)}
+.cfglist.cfgedit li>.fldsel>.fldsel-b{inline-size:100%}
 /* Units differ in length (ريال · % · يومًا · مشاريع); a shared slot keeps every field on one edge */
 .cfglist .cfgnum>.sub{min-inline-size:calc(var(--sp-10) + var(--sp-5))}
 
@@ -90,3 +94,15 @@
 .edlock svg{color:var(--t3)}
 /* Long rule lines wrap rather than clip: the text is the rule itself */
 .payq-ck.mt-2 li>span:first-of-type{white-space:normal}
+
+/* 12 Oct · audit P11 · rows of a list share their columns instead of each item starting where the
+   one before it ended:
+   · a list whose label is followed by a description (`cfgcols`) gives the label one width (UI-093);
+   · a short code before a name is one width (SA / MM · UI-060);
+   · the count closing a matrix row is one width, so the tags before it line up (UI-091). */
+.cfglist.cfgcols li>b{flex:none;inline-size:calc(var(--sp-12) * 3.25)}
+.cfglist li>b:first-child:has(>.mono:only-child){flex:none;inline-size:calc(var(--sp-10) + var(--sp-2))}
+.cfglist.cfgedit li>.tag:last-child{min-inline-size:calc(var(--sp-12) * 1.6);justify-content:center}
+.cfglist.cfgend li>.tag{min-inline-size:calc(var(--sp-12) * 1.4);justify-content:center}
+.cfglist.cfgend li>.swrow{flex:none;inline-size:calc(var(--sp-12) * 1.4);width:auto}
+/* (UI-117) the closing tag and switch are one width each, so they stand in two columns down the list */

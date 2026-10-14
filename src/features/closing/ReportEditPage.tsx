@@ -209,7 +209,7 @@ export default function ReportEditPage() {
                 />
               </span>
               <span className="sub regf-h">
-                هذا البيان الرابع في {/* doc rule 4 */} · ويقارنه
+                هذا البيان الرابع في الحدّ الأدنى للتقرير{/* doc rule 4 */} · ويقارنه
                 المراجع بأهداف المشروع في الاتفاقية والخطة
               </span>
             </label>

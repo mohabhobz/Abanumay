@@ -433,7 +433,8 @@ export default function RequestPage() {
 
               {/* Rules 11, 13 and 14 - the reserved amount, its impact, and the cap. */}
               <Glass>
-                <Head title="أثر الصرف" meta={<span className="sub">{/* doc rule 11 */} · 13 · 14</span>} />
+                {/* doc rule 11 · 13 · 14 */}
+                <Head title="أثر الصرف" />
                 <KV
                   rows={[
                     { k: 'المحجوز على الدفعة', v: <><Num>{r.reserved}</Num> <Riyal /></> },
@@ -465,7 +466,7 @@ export default function RequestPage() {
               <Glass>
                 <Head
                   title="الإشعارات"
-                  meta={<span className="sub">{/* doc rule 17 */} · لكل انتقال إشعار</span>}
+                  meta={<span className="sub">{/* doc rule 17 */}لكل انتقال إشعار</span>}
                 />
                 <ul className="paynotif">
                   {r.log.filter((e) => e.notified).map((e, i) => (

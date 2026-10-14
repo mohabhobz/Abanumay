@@ -142,12 +142,15 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
               {(['فني', 'مالي', 'إداري'] as const).map((g) => (
                 <li key={g}>
                   <b>التقييم {GROUP_SAY[g].eval}</b>
-                  {CRITERIA.list.filter((c) => c.group === g).map((c) => (
-                    <span key={c.key} className="sub">{c.label} <span className="num">{study.scores[c.key] ?? '–'}</span>/5</span>
-                  ))}
+                  {/* the criteria wrap inside their own column, never back under the label (UI-129) */}
+                  <span className="apv-sc">
+                    {CRITERIA.list.filter((c) => c.group === g).map((c) => (
+                      <span key={c.key} className="sub">{c.label} <span className="num">{study.scores[c.key] ?? '–'}</span>/5</span>
+                    ))}
+                  </span>
                 </li>
               ))}
-              <li><b>الدرجة</b><span className="num">{studyScore(study.scores)}</span> من <span className="num">100</span></li>
+              <li><b>الدرجة</b><span><span className="num">{studyScore(study.scores)}</span> من <span className="num">100</span></span></li>
             </ul>
           </div>
         )}
@@ -232,7 +235,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="الشروط الخاصة" meta={<span className="sub"><Num>{f.conditions.length}</Num> شرط · <bdi>{/* doc 5.4.16 */}</bdi></span>} />
+        <Head title="الشروط الخاصة" meta={<span className="sub"><Num>{f.conditions.length}</Num> شرط{/* doc 5.4.16 */}</span>} />
         {f.conditions.length === 0 && <p className="sub cnote">لا شروط على القرار.</p>}
         <ul className="apv-list">
           {f.conditions.map((c) => (
@@ -261,7 +264,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="الملاحظات الإلزامية" meta={<span className="sub"><bdi>{/* doc 5.4.14 */}</bdi> · تمنع الإحالة لأعلى حتى تُعالج</span>} />
+        <Head title="الملاحظات الإلزامية" meta={<span className="sub">{/* doc 5.4.14 */}تمنع الإحالة لأعلى حتى تُعالج</span>} />
         {f.notes.length === 0 && <p className="sub cnote">لا ملاحظات إلزامية.</p>}
         <ul className="apv-list">
           {f.notes.map((n) => (
@@ -289,7 +292,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="رأي إدارة مختصة" meta={<span className="sub"><bdi>{/* doc 5.4.15 */}</bdi> · استشاري</span>} />
+        <Head title="رأي إدارة مختصة" meta={<span className="sub">{/* doc 5.4.15 */}استشاري</span>} />
         {f.opinions.length === 0 && <p className="sub cnote">لم يُطلب رأي.</p>}
         <ul className="apv-list">
           {f.opinions.map((o) => (

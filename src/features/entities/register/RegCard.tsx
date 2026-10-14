@@ -34,9 +34,9 @@ export function RegCard({ r }: { r: RegRequest }) {
           <div className="payq-m sub">
             <Mono>{r.id}</Mono>
             <span className="pc-dot" />
-            {r.type}
+            <span>{r.type}</span>
             <span className="pc-dot" />
-            {r.region} · {r.city}
+            <span className="payq-e">{r.region} · {r.city}</span>
           </div>
         </div>
 
@@ -69,10 +69,10 @@ export function RegCard({ r }: { r: RegRequest }) {
           <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size="sm" />
           <span>
             {r.governanceClaim > 0
-              ? <>درجة الحوكمة المُقرّة <span className="num">{r.governanceClaim}</span></>
+              ? <>درجة الحوكمة المُقرّة <span className="num">{r.governanceClaim}</span><span className="sub"> · بإقرار الجهة</span></>
               : 'لم تُجرِ الجهة تقييم حوكمة · وأقرّت بدرجة صفر'}
           </span>
-          <span className="payq-r">إقرار الجهة</span>
+          {/* audit UI-053 · the source belongs to the sentence it qualifies, not alone at the row's far end */}
         </li>
         <li className="ok">
           <Icon name={icons.check} size="sm" />

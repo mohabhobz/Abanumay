@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { Background, MobileTop, Rail } from '@/components/shell'
-import { roles, type AssistantRole } from '@/data/mock/assistant'
+import { assistantFor } from '@/data/mock/assistant'
 import { useRole } from '@/hooks/useRole'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { ROUTES } from '@/app/routes'
@@ -36,12 +36,12 @@ export default function AssistantPage() {
   }
   const mobile = useIsMobile()
   /* Batch 1 · the signed-in person · it used to be the fixed sample user */
-  const { user } = useRole()
+  const { user, role: seat } = useRole()
   /* Note: collapsed state lives in the URL - a collapsed sidebar is still a state, and without this
      key the inventory would render the sidebar open every time. */
   const { values: v, set } = useQueryParams<{ list: string | undefined }>(['list'])
 
-  const role = roles[0] as AssistantRole
+  const role = assistantFor(seat.key, user.name)
   const out = () => { signOut(); navigate(ROUTES.login, { replace: true }) }
 
   return (

@@ -12,8 +12,18 @@
 .ptn-slots>li{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-4);min-height:var(--h-md);padding-block:var(--sp-2)}
 .ptn-slots>li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
 .ptn-slots>li>:first-child{flex:1;min-width:0}
+/* An amount phrase is one width too (المخصص · المتاح · UI-105) */
+.ptn-slots>li>.sub:has(>.amt){min-inline-size:calc(var(--sp-12) * 2.9);text-align:left}
+/* …and a dates phrase starts on one edge (UI-096) */
+.ptn-slots>li>.sub:not(:has(>.amt)){min-inline-size:calc(var(--sp-12) * 2.9)}
+/* A closing amount is one width, so the dates before it make one column (UI-096) */
+.ptn-slots>li>.amt:last-child{min-inline-size:calc(var(--sp-12) * 1.9);justify-content:flex-end;text-align:left}
 
-.ptn-chips{display:flex;flex-direction:column;gap:var(--sp-2)}
+.ptn-chips{display:grid;grid-template-columns:max-content max-content;gap:var(--sp-2) var(--sp-3);justify-content:start}
+/* 12 Oct · audit UI-106 · name and stage are two columns shared by every portfolio (subgrid), so the
+   stage tags start on one edge instead of after each name */
+.ptn-chips>a{display:grid;grid-column:span 2;grid-template-columns:subgrid;align-items:center}
+.ptn-chips>a>.tag{justify-self:start}
 
 /* Indicators · four figures with their labels */
 .ptn-ind{margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-4)}
@@ -29,6 +39,13 @@
 .ptn-exec>li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
 .ptn-exec-h{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-4)}
 .ptn-exec-h>b{flex:1;min-width:0;font-weight:600}
+/* 12 Oct · audit UI-100 · status and progress are columns, not items that start where the title
+   ends: one edge for every row */
+@media (min-width:961px){
+  .ptn-exec-h{display:grid;grid-template-columns:minmax(0,1fr) calc(var(--sp-12) * 1.1) calc(var(--sp-12) * 3.1) auto}
+  .ptn-exec-h>.sub{white-space:nowrap}
+  .ptn-exec-h>.tag{justify-self:start}
+}
 
 @media (max-width:900px){
   .ptn-ind{grid-template-columns:repeat(2,minmax(0,1fr))}

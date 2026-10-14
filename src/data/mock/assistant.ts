@@ -144,10 +144,10 @@ export const roles: AssistantRole[] = [
   },
   {
     key: 'finance',
-    name: 'ريم الشمري',
+    name: 'محمد المطيري',
     role: 'الإدارة المالية',
-    initial: 'ر',
-    greet: 'أهلًا ريم',
+    initial: 'م',
+    greet: 'أهلًا محمد',
     scope: 'الميزانية · الدفعات · الصرف',
     cards: [
       {
@@ -178,10 +178,10 @@ export const roles: AssistantRole[] = [
   },
   {
     key: 'committee',
-    name: 'د. فهد العمري',
+    name: 'تركي الخنيزان',
     role: 'عضو اللجنة التنفيذية',
-    initial: 'ف',
-    greet: 'أهلًا د. فهد',
+    initial: 'ت',
+    greet: 'أهلًا تركي',
     scope: 'غرفة القرار · حد مالي مليون ⃁ للمشروع',
     cards: [
       {
@@ -210,7 +210,45 @@ export const roles: AssistantRole[] = [
       },
     ],
   },
+  {
+    key: 'comms',
+    name: 'خالد السبيعي',
+    role: 'الاتصال المؤسسي',
+    initial: 'خ',
+    greet: 'أهلًا خالد',
+    scope: 'مراجعة التقارير الختامية قبل النشر',
+    cards: [
+      { icon: 'doc', title: 'تقارير بانتظار مراجعتك', sub: 'التقارير الختامية المحالة للاتصال', prompt: 'ما التقارير الختامية التي تنتظر مراجعتي؟' },
+      { icon: 'spark', title: 'ملخص قابل للنشر', sub: 'أبرز المخرجات بلغة عامة', prompt: 'لخّص أبرز مخرجات المشاريع المغلقة هذا الشهر' },
+      { icon: 'chart', title: 'أثر المؤسسة', sub: 'المستفيدون والمبالغ حسب المجال', prompt: 'ما أثر المؤسسة هذا العام حسب المجال؟' },
+      { icon: 'entity', title: 'قصص الجهات', sub: 'مشاريع تصلح للنشر', prompt: 'اقترح مشاريع مغلقة تصلح قصةً للنشر' },
+    ],
+  },
+  {
+    key: 'admin',
+    name: 'نورة القحطاني',
+    role: 'مدير النظام',
+    initial: 'ن',
+    greet: 'أهلًا نورة',
+    scope: 'المستخدمون والصلاحيات والإعدادات · لا قرار على المشاريع',
+    cards: [
+      { icon: 'shield', title: 'الصلاحيات خارج الأدوار', sub: 'من مُنح أو سُحب منه يدويًا', prompt: 'من لديه صلاحيات خارج دوره؟' },
+      { icon: 'gear', title: 'إعدادات ناقصة', sub: 'قوائم مكتوبة في الكود بلا مكان', prompt: 'ما الإعدادات الناقصة في النظام؟' },
+      { icon: 'clock', title: 'آخر التغييرات', sub: 'سجل التدقيق لهذا الأسبوع', prompt: 'اعرض آخر التغييرات في سجل التدقيق' },
+      { icon: 'users', title: 'الحسابات', sub: 'الجلسات النشطة والحسابات المقفلة', prompt: 'هل هناك حسابات مقفلة أو جلسات غريبة؟' },
+    ],
+  },
 ]
+
+/* 13 Oct · the assistant greets the person who signed in, with their seat's cards · it used to take
+   the first persona for everyone, so every account opened on «أهلًا عمر» and the supervisor's cards.
+   Committee and board members share the committee's cards. */
+const SEAT: Record<string, string> = { member: 'committee' }
+export function assistantFor(seat: string, name: string): AssistantRole {
+  const base = roles.find((r) => r.key === (SEAT[seat] ?? seat)) ?? roles[0]
+  const first = name.trim().split(/\s+/)[0] ?? ''
+  return { ...base, name, initial: first.charAt(0) || base.initial, greet: first ? `أهلًا ${first}` : base.greet }
+}
 
 /* Saved conversations
    The client said it in these words: "yesterday I looked something up, I want it kept for me" — so

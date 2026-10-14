@@ -85,7 +85,7 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="اللجنة التنفيذية" meta={<span className="sub"><bdi>{/* doc 6.4.19 – 6.4.21 */}</bdi> · حدّها في المصفوفة <Num>{capOf('committee')}</Num></span>} />
+        <Head title="اللجنة التنفيذية" meta={<span className="sub">{/* doc 6.4.19 – 6.4.21 */}حدّها في المصفوفة <Num>{capOf('committee')}</Num></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>عدد المشاريع المعتمدة للجهة</b><span className="sub">صفر = بلا حد</span></span>
@@ -152,7 +152,7 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="تعارض المصالح المعلن" meta={<span className="sub"><bdi>{/* doc 5.4.24 */}</bdi> · <Num>{d.conflicts.length}</Num></span>} />
+        <Head title="تعارض المصالح المعلن" meta={<span className="sub">{/* doc 5.4.24 */}<Num>{d.conflicts.length}</Num></span>} />
         <ul className="cfglist">
           {d.conflicts.map((c, i) => (
             <li key={`${c.person}-${c.entityId}`}>

@@ -110,19 +110,23 @@ export function FundingPlanCard({ row, amount, editable, me }: {
           const paid = paidInYear(row.id, yn)
           return (
             <li key={`${y.yearId}-${i}`} className="well">
+              {/* 12 Oct · audit UI-011 · UI-039 · the year and its status share the first column, so the
+                  year's amount stands over the shares' amounts and its × over theirs */}
               <div className="bgplan-h">
-                <FieldSelect
-                  value={y.yearId}
-                  label={`السنة المالية ${i + 1}`}
-                  disabled={!editable}
-                  options={fiscalYears.map((f) => ({ value: f.id, label: f.name }))}
-                  onChange={(v) => setYear(i, { yearId: v, shares: [] })}
-                />
+                <span className="bgplan-y">
+                  <FieldSelect
+                    value={y.yearId}
+                    label={`السنة المالية ${i + 1}`}
+                    disabled={!editable}
+                    options={fiscalYears.map((f) => ({ value: f.id, label: f.name }))}
+                    onChange={(v) => setYear(i, { yearId: v, shares: [] })}
+                  />
+                  {statusOf(y)}
+                </span>
                 <span className="fld">
                   <input type="text" inputMode="numeric" disabled={!editable || p.kind === 'single'} value={y.amount ? nf.format(y.amount) : ''} onChange={(e) => setYear(i, { amount: digits(e.target.value) })} aria-label={`مبلغ سنة ${yn}`} />
                   <Riyal />
                 </span>
-                {statusOf(y)}
                 {editable && p.kind === 'multi' && p.years.length > 1 && (
                   <button className="btn btn-ghost btn-sm" aria-label={`احذف سنة ${yn}`} onClick={() => setP((x) => ({ ...x, years: x.years.filter((_, j) => j !== i) }))}>
                     <Icon name={icons.close} size="sm" />

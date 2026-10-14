@@ -29,6 +29,9 @@
 .nfm input[type=checkbox]:disabled{cursor:not-allowed}
 .nfm-lock{position:absolute;top:50%;inset-inline-end:calc(100% + var(--sp-2));translate:0 -50%;color:var(--t3)}
 .nfm-g th{padding-top:var(--sp-5)}
+/* 12 Oct · audit UI-221 · the group's frequency cell is part of the group row: no cell fill and no
+   top line of its own, same top inset as the group's title */
+.tbl .nfm-g>td{background:none;box-shadow:none;padding-top:var(--sp-5)}
 .nfm-g th b{font-family:var(--fd);font-weight:600;color:var(--t1);margin-inline-end:var(--sp-3)}
 .nfm-g th .sub{font-weight:400}
 .nfm-e{display:inline-flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}

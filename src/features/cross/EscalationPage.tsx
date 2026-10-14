@@ -77,7 +77,7 @@ export default function EscalationPage() {
           <Glass className="tblcard">
             <Head title="حسب الإجراء" meta={proc ? <button type="button" className="lnk" onClick={() => set({ proc: undefined })}>كل الإجراءات</button> : <span className="sub">اختر إجراءً لعرض طلباته وحدها</span>} />
             <div className="tblwrap">
-              <table className="tbl" aria-label="المتأخر والمتعثر حسب الإجراء">
+              <table className="tbl esc-procs" aria-label="المتأخر والمتعثر حسب الإجراء">
                 <thead>
                   <tr>
                     <th><span className="th-t">الإجراء</span></th>

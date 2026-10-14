@@ -106,17 +106,17 @@ export default function EntityPage() {
                     <span className="pc-dot" />
                     <Icon name={icons.pinMap} size="sm" /> {entity.region} · {entity.city}
                   </div>
+                  <div className="ehead-m mt-4">
+                    {/* 13 Oct · audit UI-038 · under the name, on the text's edge, not the logo's · The page header isn't a card's status field - tags here are neutral, and colored
+                        detail lives in the tab cards. */}
+                    <Tag tone="mute">{entity.archived ? 'مؤرشفة' : activationSay(entity.activation)}</Tag>
+                    <Tag tone="mute">الحوكمة: {entity.governance}</Tag>
+                    {/* An expired license blocks contracting, so it belongs in the header, not inside a
+                        tab - the decision is made from the top. */}
+                    {detail.licenseExpired && <Tag tone="mute">الترخيص منتهٍ</Tag>}
+                    <span className="sub">{entity.licensor}</span>
+                  </div>
                 </div>
-              </div>
-              <div className="ehead-m mt-4">
-                {/* The page header isn't a card's status field - tags here are neutral, and colored
-                    detail lives in the tab cards. */}
-                <Tag tone="mute">{entity.archived ? 'مؤرشفة' : activationSay(entity.activation)}</Tag>
-                <Tag tone="mute">الحوكمة: {entity.governance}</Tag>
-                {/* An expired license blocks contracting, so it belongs in the header, not inside a
-                    tab - the decision is made from the top. */}
-                {detail.licenseExpired && <Tag tone="mute">الترخيص منتهٍ</Tag>}
-                <span className="sub">{entity.licensor}</span>
               </div>
             </div>
 

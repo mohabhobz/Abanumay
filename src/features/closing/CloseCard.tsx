@@ -42,7 +42,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
           <div className="payq-m sub">
             <Mono>{c.id}</Mono>
             <span className="pc-dot" />
-            {c.entityName}
+            <span className="payq-e" title={c.entityName}>{c.entityName}</span>
             <span className="pc-dot" />
             <span className="payq-pay">{CYCLE_SAY[closeCycle(c)]}</span>
           </div>

@@ -206,7 +206,7 @@ export default function EntityNewPage() {
             <div>
               <h1 className="ptitle">تسجيل جهة مباشرةً</h1>
               <p className="sub mt-1">
-                {/* doc rule 32 */} · يسجّل مشرف المنح جهة شريكة
+                {/* doc rule 32 */}يسجّل مشرف المنح جهة شريكة
                 دون المرور بالبوابة · منفّذة أو استراتيجية تدير محفظة · وتُنشأ فورًا بلا مراجعة
               </p>
             </div>

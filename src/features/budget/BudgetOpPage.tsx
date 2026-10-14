@@ -104,7 +104,7 @@ export default function BudgetOpPage() {
     const to = line(r.toId)
     if (from && r.kind !== 'increase') {
       const m = moneyOf(doc.nodes, from.id)
-      out.push({ k: `«${from.label}»`, v: <span className="sub">مخصص <Money sm>{from.allocated}</Money> ← <b><Money sm>{from.allocated - r.amount}</Money></b> · متاح <Money sm>{m.available}</Money> ← <Money sm>{m.available - r.amount}</Money></span> })
+      out.push({ k: `«${from.label}»`, v: <span className="sub"><span className="nobr">مخصص <Money sm>{from.allocated}</Money> ← <b><Money sm>{from.allocated - r.amount}</Money></b></span> · <span className="nobr">متاح <Money sm>{m.available}</Money> ← <Money sm>{m.available - r.amount}</Money></span></span> })
     }
     if (to && r.kind !== 'decrease') {
       out.push({ k: `«${to.label}»`, v: <span className="sub">مخصص <Money sm>{to.allocated}</Money> ← <b><Money sm>{to.allocated + r.amount}</Money></b></span> })

@@ -87,7 +87,8 @@ export const COLS: Col[] = [
   },
   {
     key: 'beneficiaries',
-    w: 120,
+    /* fits its label on one line, like every other head in the table (audit UI-194) */
+    w: 152,
     label: 'المستفيدون الفعليون',
     n: true,
     def: true,

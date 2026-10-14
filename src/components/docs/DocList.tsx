@@ -119,10 +119,17 @@ export function DocList({ rows, label, heads }: DocListProps) {
                   {stateTag(r)}
                   {/* The download cell is reserved even when empty — otherwise the status tag would
                       jump between an uploaded and a missing row in the same column. */}
-                  {r.uploaded ? <DocDownload name={r.name} /> : <span className="dfile-dl dl-slot" aria-hidden="true" />}
+                  {!acts && (r.uploaded ? <DocDownload name={r.name} /> : <span className="dfile-dl dl-slot" aria-hidden="true" />)}
                 </span>
               </td>
-              {acts && <td className="n">{r.action}</td>}
+              {/* 12 Oct · audit UI-008 · UI-030 · with an action column, the download is that column's
+                  action for an uploaded row, so «ارفع» and ⤓ share one edge instead of the icon
+                  sitting mid-table at the end of the status cell */}
+              {acts && (
+                <td className="n">
+                  <span className="dact">{r.uploaded && <DocDownload name={r.name} />}{r.action}</span>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

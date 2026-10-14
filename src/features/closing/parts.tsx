@@ -53,9 +53,10 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
           { k: 'المصروف للجهة حتى الآن', v: <Money sm>{paid}</Money> },
           { k: 'الفواتير المتحقَّق منها', v: f?.verified == null ? <span className="sub">لم يتحقّق المشرف بعد</span> : <><Money sm>{f.verified}</Money>{f.verifiedBy && <span className="sub"> · {f.verifiedBy}</span>}</> },
           { k: 'الوفر المستحق الاسترداد', v: sav > 0 ? <b className="bad"><Money sm>{sav}</Money></b> : <span className="sub">لا وفر</span> },
+          /* a row of the list, not a shaded box under it (audit P07) */
+          ...(f?.settlements ? [{ k: 'التسويات المالية', v: <>{isolate(f.settlements)}</> }] : []),
         ]}
       />
-      {f?.settlements && <div className="payq-cond"><span className="lb">التسويات المالية</span><span>{isolate(f.settlements)}</span></div>}
       {mayVerify && (
         <div className="apv-row mt-3">
           <MoneyField value={amount} onChange={setAmount} label="مبلغ الفواتير المتحقَّق منها" placeholder={c.report.budget !== null ? nf.format(c.report.budget) : '0'} />
@@ -180,7 +181,7 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
       )}
 
       {staff && receiving && left > 0 && (
-        <div className="apv-row mt-3">
+        <div className="apv-row mt-3 recrow">
           <MoneyField value={amount} onChange={setAmount} label="المبلغ المستلم" />
           <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="مرجع التحويل للمطابقة" aria-label="مرجع التحويل" /></span>
           <UploadButton label="إشعار التحويل" onPick={(f) => setFile(f.name)} />
@@ -193,7 +194,7 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
 
       {/* 10.9.9 · when it can't be recovered · the claims are proven, then escalated */}
       {staff && rec.state === 'open' && left > 0 && (
-        <div className="apv-row mt-3">
+        <div className="apv-row mt-3 recrow">
           <span className="fld"><input value={claim} onChange={(e) => setClaim(e.target.value)} placeholder="المطالبات المرسلة وردّ الجهة" aria-label="إثبات المطالبات" /></span>
           <UploadButton label="مستند المطالبة" onPick={(f) => setClaimFile(f.name)} />
           <button type="button" className="btn btn-2 btn-sm" disabled={!claim.trim()} onClick={() => done(failRecovery(owner, claim, user.name, claimFile || undefined), () => { setClaim(''); setClaimFile('') })}>

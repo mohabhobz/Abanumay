@@ -91,7 +91,8 @@ export function ReconcileTab({ me, canAct }: { me: string; canAct: boolean }) {
           </Glass>
         </>
       ) : (
-        <p className="sub cnote">لم تُرفع مطابقة بعد.</p>
+        /* audit UI-107 · the empty state sits in a card like the run it stands for, not on the page edge */
+        <Glass><p className="sub cnote">لم تُرفع مطابقة بعد.</p></Glass>
       )}
     </>
   )

@@ -264,7 +264,7 @@ export default function OrderPage() {
               </section>
 
               <p className="sub cnote">
-                أرشفة المستندات والتقارير والمرفقات مربوطة بالطلب <Mono>{r.id}</Mono> ·{/* doc rule 21 · output 4 */}
+                أرشفة المستندات والتقارير والمرفقات مربوطة بالطلب <Mono>{r.id}</Mono>{/* doc rule 21 · output 4 */} ·{' '}
                 <Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}.
               </p>
             </Glass>

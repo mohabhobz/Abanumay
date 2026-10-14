@@ -48,7 +48,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
           <div className="payq-m sub">
             <Mono>{r.id}</Mono>
             <span className="pc-dot" />
-            {r.entityName}
+            <span className="payq-e" title={r.entityName}>{r.entityName}</span>
             <span className="pc-dot" />
             <span className="payq-pay">الدفعة <Num>{r.no}</Num> من <Num>{r.of}</Num></span>
           </div>

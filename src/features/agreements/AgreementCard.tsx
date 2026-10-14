@@ -50,7 +50,7 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           <div className="payq-m sub">
             <Mono>{a.id}</Mono>
             <span className="pc-dot" />
-            {a.entityName}
+            <span className="payq-e" title={a.entityName}>{a.entityName}</span>
             <span className="pc-dot" />
             <span className="payq-pay">{a.kind}</span>
           </div>

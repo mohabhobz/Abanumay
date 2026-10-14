@@ -77,7 +77,7 @@ export default function ForgotPage() {
     <AuthShell title="استعادة كلمة المرور" sub="لحسابات الجهات في بوابة المنح" err={err}>
       {step === 'who' && (
         <form className="lform" onSubmit={identify} noValidate>
-          <p className="lnote sub lwhy">أدخل اسم المستخدم أو البريد الإلكتروني أو رقم الجوال المسجَّل · يصلك رمز تحقّق لتعيين كلمة مرور جديدة.</p>
+          <p className="lnote sub lwhy">أدخل اسم المستخدم أو البريد الإلكتروني أو رقم الجوال المسجَّل، ويصلك رمز تحقّق لتعيين كلمة مرور جديدة.</p>
           <AuthField id="fp-who" name="username" label="اسم المستخدم أو البريد أو الجوال" icon={icons.user}
             value={who} onChange={setWho} autoComplete="username" enterKeyHint="go" />
           <button className="btn btn-p btn-full" type="submit">أرسل رمز التحقّق</button>

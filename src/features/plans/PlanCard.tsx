@@ -77,7 +77,7 @@ export function PlanCard({ p }: { p: PlanRow }) {
           <div className="payq-m sub">
             <Mono>{p.id}</Mono>
             <span className="pc-dot" />
-            {p.entityName}
+            <span className="payq-e" title={p.entityName}>{p.entityName}</span>
             <span className="pc-dot" />
             {/* Note: zero is stated in its own sentence - "0 activities" reads as a number, while
                 "no activities yet" says the plan is still empty. */}

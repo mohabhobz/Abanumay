@@ -358,7 +358,7 @@ export default function RegReviewPage() {
 
               {/* The path and the log · in the main column, the end column is the assistant's alone */}
               <Glass>
-                <Head title="مسار الطلب" meta={<span className="sub">{/* doc rule 30 */} · سجل التدقيق</span>} />
+                <Head title="مسار الطلب" meta={<span className="sub">{/* doc rule 30 */}سجل التدقيق</span>} />
                 <Steps items={steps} flow="ladder" />
               </Glass>
 

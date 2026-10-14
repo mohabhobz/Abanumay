@@ -38,6 +38,9 @@
 .bgsrc{list-style:none;margin:var(--sp-3) 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
 .bgsrc li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,12rem) auto;align-items:center;gap:var(--sp-3)}
 .bgsrc li>.fldsel{min-width:0}
+/* 12 Oct · audit UI-127 · no remove button, no empty third track: its gap held the amount 8px in
+   from the edge of the fields above */
+.bgsrc li:not(:has(>.btn)){grid-template-columns:minmax(0,1fr) minmax(0,12rem)}
 @media (max-width:640px){.bgsrc li{grid-template-columns:minmax(0,1fr) auto}.bgsrc li>.fld{grid-column:1}}
 
 /* A line's split across sources · in the line modal (1.2.5) */
@@ -57,10 +60,16 @@
 /* Project financial plan · one block per fiscal year, its shares under it (1.4.46 · 1.4.50) */
 .bgplan{list-style:none;margin:var(--sp-3) 0;padding:0;display:flex;flex-direction:column}
 .bgplan>li{display:flex;flex-direction:column;gap:var(--sp-3);padding-block:var(--sp-4)}
-.bgplan-h{display:grid;grid-template-columns:minmax(0,10rem) minmax(0,12rem) auto auto;align-items:center;gap:var(--sp-3);justify-content:start}
+.bgplan-h{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,12rem) calc(var(--sp-12) * .7);align-items:center;gap:var(--sp-3)}
+.bgplan-y{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.bgplan-y>.fldsel{flex:none;inline-size:10rem}
+/* the × slot is one fixed track in both rows, so the amounts end on one edge whether or not a row
+   can be removed */
 .bgplan-s{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
-.bgplan-s li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,12rem) auto;align-items:center;gap:var(--sp-3)}
+.bgplan-s li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,12rem) calc(var(--sp-12) * .7);align-items:center;gap:var(--sp-3)}
 .bgplan-s li:last-child:has(>.btn:only-child){display:flex}
+/* …and with nothing to remove anywhere in the plan, there is no × track at all */
+.bgplan:not(:has(.bgplan-h>.btn,.bgplan-s li>.btn-ghost)) :is(.bgplan-h,.bgplan-s li){grid-template-columns:minmax(0,1fr) minmax(0,12rem)}
 .bgplan-i{margin:var(--sp-3) 0 0;padding-inline-start:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-1);line-height:var(--lh-text)}
 @media (max-width:640px){
   .bgplan-h{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}

@@ -221,7 +221,7 @@ function LimitsTab() {
     <Glass className="tblcard">
       <Head title="الحدود" meta={<span className="sub"><Num>{MONEY_LIMITS.length}</Num> حدود</span>} />
       {/* The unit belongs next to the number, not in it: the value stays numeric */}
-      <ul className="cfglist">
+      <ul className="cfglist cfgcols">
         {MONEY_LIMITS.map((l) => (
           <li key={l.key}>
             <b>{l.label}</b>

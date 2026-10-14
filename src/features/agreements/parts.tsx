@@ -26,7 +26,7 @@ export function ClausesCard({ clauses, onChange }: { clauses: Clause[]; onChange
   const put = (i: number, p: Partial<Clause>) => onChange?.(clauses.map((c, j) => (j === i ? { ...c, ...p } : c)))
   return (
     <Glass>
-      <Head title="البنود والشروط والالتزامات" meta={<span className="sub"><Num>{clauses.length}</Num> بندًا · <bdi>{/* doc 8.2.10 */}</bdi></span>} />
+      <Head title="البنود والشروط والالتزامات" meta={<span className="sub"><Num>{clauses.length}</Num> بندًا{/* doc 8.2.10 */}</span>} />
       <ol className="agx-cl">
         {clauses.map((c, i) => (
           <li key={c.id}>

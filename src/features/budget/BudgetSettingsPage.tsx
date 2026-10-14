@@ -292,7 +292,7 @@ function DirectionsTab() {
 
       <Glass className="tblcard">
         <Head title="التوجهات المعرَّفة" meta={<span className="sub"><Num>{DIRECTIONS.length}</Num> توجهات</span>} />
-        <ul className="cfglist">
+        <ul className="cfglist cfgcols cfgend">
           {DIRECTIONS.map((d) => (
             <li key={d.id}>
               <b>{d.name}</b>

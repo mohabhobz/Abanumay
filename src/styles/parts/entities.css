@@ -26,7 +26,7 @@
 
 /* ── Update review · before and after side by side (2.3.upd-10) ── */
 .updiff{margin-top:var(--sp-3)}
-.updiff td{vertical-align:top;padding-block:var(--sp-3);line-height:var(--lh-text)}
+.updiff td{vertical-align:middle;padding-block:var(--sp-3);line-height:var(--lh-text)}
 .updiff-old{color:var(--t3);text-decoration:line-through;text-decoration-color:var(--edge-2)}
 .updiff-new{color:var(--t1);font-weight:600}
 
@@ -48,4 +48,6 @@
 .cfglist li>.cfgl{flex:0 1 min(30rem,100%)}
 .cfglist li>.cfgl+.pc-sp{display:none}
 .glass>.swrow{justify-content:flex-start}
-.glass>.swrow>.swrow-t{flex:0 1 min(30rem,100%)}
+.glass>.swrow>.swrow-t{flex:0 1 min(66ch,100%)}
+/* 12 Oct · audit P02 (UI-075) · 30rem wrapped the notes to three lines with half the card empty;
+   the reading measure (66ch) is the cap, as for `.prose` */

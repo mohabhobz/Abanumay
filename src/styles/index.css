@@ -1082,6 +1082,8 @@ small{font-size:var(--fs-1)}
 .hd{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-4);margin-bottom:var(--sp-6)}
 .hd h3{font-size:var(--fs-4);font-weight:600}
 .hd .meta{font-size:var(--fs-1);color:var(--t3)}
+/* An icon alone has no baseline of its own · it centres on the title instead of sitting 3px high */
+.hd .meta:has(>svg:only-child){align-self:center;display:flex}
 .num,.amt,.stat .v,.imp .v,.tbl td.n{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 /* Every number is an isolated LTR island.
    All digits in the system are Latin, but that alone isn't enough: an
@@ -1440,6 +1442,9 @@ small{font-size:var(--fs-1)}
    sits next to a search field in the same row — something that used to
    break every time it was 28. */
 .btn-sm{font-size:var(--fs-2)}
+/* 12 Oct · audit UI-104 · a quiet button standing alone in a card's flow reads as a link: its text,
+   not its hover box, sits on the card's text edge */
+.glass>.btn-ghost{margin-inline-start:calc(-1 * var(--sp-5))}
 /* The icon-only button was 40, not 44 (over a hundred instances per
    theme, later corrected back to 44). Its icon is 16, not a 20 line
    height, so its own formula is 12 + 16 + 12. The floor here is the
@@ -1606,6 +1611,8 @@ input:not([type=checkbox],[type=radio],[type=range]){text-overflow:ellipsis}
    A field in a numeric cell writes its figure on the column's edge too. */
 .tbl td.n .fld input,.tbl td.n input.num{text-align:left}
 .tbl td .tag{max-width:100%;overflow:hidden;vertical-align:middle}
+/* An icon leading a cell's text (the tree's ▸) centres on it instead of sitting on its baseline (UI-058 · UI-213) */
+.tbl td>svg:first-child{vertical-align:middle}
 /* 11 Oct · audit UI-157/178 · a tag too long for its column was cut mid-word («الختام») with no
    mark. A text-only tag becomes a block box so the ellipsis can show (it can't on a flex box);
    a tag with an icon or dot keeps its flex layout. */
@@ -2214,7 +2221,9 @@ to{opacity:1;transform:none}
   background:var(--solid);
   box-shadow:inset 0 0 0 1px var(--edge-i)}
 .decbar{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;
-  gap:var(--sp-4);flex-wrap:wrap;padding:var(--sp-5) var(--sp-5);border-radius:var(--r2);z-index:3;
+  gap:var(--sp-4);flex-wrap:wrap;padding:var(--sp-5) var(--pad);border-radius:var(--r2);z-index:3;
+  /* 12 Oct · audit UI-207 · the bar's inset is the cards' (`--pad`), so its sentence starts on the
+     text edge of the cards above it (it sat 8px out) */
   box-shadow:inset 0 0 0 1px var(--edge-1)}
 .swatch{height:64px;border-radius:var(--r1);display:flex;align-items:flex-end;padding:var(--sp-3) var(--sp-3);
   font-size:var(--fs-1);font-family:var(--fm);direction:ltr;color:#04191A}
@@ -2240,10 +2249,18 @@ to{opacity:1;transform:none}
    · the label column has a floor (10rem, 40% in a narrow card), so stacked cards — and the
      sections of one document — put their values on one edge instead of each one's own. */
 .kv{grid-template-columns:minmax(min(10rem,40%),max-content) minmax(0,1fr)}
-.kv dt,.kv dd{line-height:1.25rem;min-height:1.25rem}
+.kv dt,.kv dd{line-height:var(--lh-md);min-height:var(--lh-md)}
 .kv dd :is(.tag,.tagret){vertical-align:middle}
-.kv dd>.prs,.kv dd>.chips>.prs{margin-block:-.25rem}
+.kv dd>.prs,.kv dd>.chips>.prs{margin-block:calc(-1 * var(--sp-2))}
 /* A list under a progress bar's captions starts a block of its own (it sat 8px under them) */
+/* 12 Oct · audit UI-119 · a card holding several lists (groups under their own sub-heads) gives them
+   one label column: the card is the grid, each list a subgrid of it, so the value edge is the
+   widest label's in every group, not each group's own */
+@media (min-width:961px){
+  .glass:has(>.kv~.kv){display:grid;grid-template-columns:minmax(min(10rem,40%),max-content) minmax(0,1fr)}
+  .glass:has(>.kv~.kv)>*{grid-column:1 / -1}
+  .glass:has(>.kv~.kv)>.kv{grid-template-columns:subgrid}
+}
 .qr-barl+.kv{margin-top:var(--sp-5)}
 /* …and the summary line after a list keeps its distance from the last row */
 .kv+:is(p.sub,p.cnote,.sub.cnote){margin-top:var(--sp-4)}
@@ -2309,6 +2326,15 @@ input[type=range]{accent-color:var(--lime-ink);width:130px;background:transparen
 /* 11 Oct · audit UI-025 · a long reason in a centred empty state ran the card's full width and
    ended on a lone word in the middle. The lines are balanced inside a reading measure. */
 .empty>.t,.empty>.sub{max-width:62ch;margin-inline:auto;text-wrap:balance}
+/* 12 Oct · audit P02 · no word left alone on a last line (a field's hint ended on «المنحة» by itself) */
+:where(p,.sub,.regf-h,.swrow-n,.lhint,.cnote){text-wrap:pretty}
+/* A phrase that reads as one unit (a «before ← after» pair) wraps whole, never at its arrow */
+.nobr{white-space:nowrap}
+/* 13 Oct · audit UI-122 · an empty list draws nothing, so its margin doesn't lengthen the card under
+   the «none» line (36px under against 24 over) */
+.glass :is(ul,ol):empty{display:none}
+/* A code block (`.mono`, ltr) in an RTL card starts on the card's edge like the text around it (UI-208) */
+.mono{text-align:match-parent}
 /* Focus.
    Rule: the field itself never gets a ring; the container is what responds, darkening its
    edge rather than taking on color. A colored ring on the raw element reads as a floating
@@ -2363,7 +2389,9 @@ input[type="checkbox"]:indeterminate::after{content:"";position:absolute;
 input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 /* Project header, no surface. */
 .phead{display:flex;justify-content:space-between;align-items:center;
-  gap:var(--sp-7) var(--sp-7);flex-wrap:wrap;padding:var(--sp-2) var(--sp-2) 0}
+  gap:var(--sp-7) var(--sp-7);flex-wrap:wrap;padding:0}
+/* 12 Oct · audit P19 · no inset: the title and the actions sat 4px in from the edge of the cards
+   and tabs below them, and 4px lower than every other page's title */
 /* Header uses `.g2` columns with the same ratio and gap, so the two columns above land
    exactly on the two below, and the side padding is removed so the edge is the actual
    edge, not the edge minus 3px. */
@@ -3103,6 +3131,9 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .chatlist.shut{width:0;margin-inline-start:0;box-shadow:none;
   pointer-events:none;visibility:hidden}
 .cl-head{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-4) var(--sp-5) var(--sp-3)}
+/* 12 Oct · audit UI-217 · the list's title starts on the text edge of its groups and rows (8px in from
+   their boxes), not 8px out from it */
+.cl-head{padding-inline-start:calc(var(--sp-5) + var(--sp-3))}
 .cl-title{flex:1;font-family:var(--fd);font-weight:700;font-size:var(--fs-3)}
 .cl-new{--h-exempt:"'Ask Abanumay' closed - chat list.";width:32px;height:32px;flex:none;border-radius:var(--ric);display:grid;place-items:center;
   color:var(--t2);background:var(--fl-5);
@@ -3223,6 +3254,9 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   opacity:var(--near,0);transition:opacity var(--mo-3) var(--ease-std)}
 .wcard>*{position:relative;z-index:1}
 .wcard .badge{margin-bottom:var(--sp-3)}
+/* 12 Oct · audit UI-214 · a boxless icon badge draws its glyph 8px inside its box · the box moves
+   out by that, so the glyph's edge and the title's are one line (as `.aishut-c>.badge-44`) */
+.wcard .badge:has(>svg){margin-inline-start:calc(-1 * var(--sp-3))}
 .wc-t{font-family:var(--fd);font-weight:600;font-size:var(--fs-3);line-height:var(--lh-ui)}
 .wc-s{font-size:var(--fs-1);color:var(--t3);line-height:var(--lh-text)}
 /* Messages. */
@@ -3434,7 +3468,7 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* Over the tree's branches the card needs a denser frost than the interior glass, or the
    leaves read through the labels */
 .login-mid .lcard.glass{background:linear-gradient(158deg, rgba(255,255,255,.56), rgba(255,255,255,.38));
-  -webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3)}
+  -webkit-backdrop-filter:var(--mat-1);backdrop-filter:var(--mat-1)}
 /* The copyright line sits on the floor at the screen's foot, not on the trunk under the card */
 @media (min-width:761px) and (min-height:700px){
   .login-mid>.lfoot{position:absolute;inset-inline:0;bottom:var(--sp-5);text-align:center;margin:0}
@@ -3520,11 +3554,11 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
   display:flex;align-items:center;gap:var(--sp-3);
   padding-block:var(--sp-2);padding-inline:var(--sp-4) var(--sp-2);
   border-radius:var(--r2);font-size:var(--fs-2);line-height:var(--lh-text);color:var(--t1);
-  background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);
+  background:rgba(255,255,255,.72);-webkit-backdrop-filter:var(--mat-1);backdrop-filter:var(--mat-1);
   box-shadow:inset 0 0 0 1px rgba(var(--edgeC),.14), var(--el-3);
   animation:lnoticein var(--mo-3) var(--ease-out) both}
 .lnotice>svg{flex:none;color:var(--t2)}
-.lnotice-x{flex:none;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:var(--r1);
+.lnotice-x{flex:none;display:grid;place-items:center;width:calc(var(--sp-8) - var(--sp-2));height:calc(var(--sp-8) - var(--sp-2));border:0;border-radius:var(--r1);
   background:none;color:var(--t2);cursor:pointer}
 .lnotice-x:hover{background:rgba(var(--edgeC),.08);color:var(--t1)}
 .lnotice-x:focus-visible{outline:2px solid var(--edge-i);outline-offset:1px}
@@ -4592,6 +4626,10 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    background together, so contrast shifts with whatever is behind the chip and can't be
    computed. Color is measured instead. */
 .map-chip.off{color:var(--t3)}
+/* 13 Oct · audit UI-016 · «بلا منطقة» isn't one more region in the row: it closes the list on its own
+   line, without a separator, so it never wraps alone behind a dangling «·» */
+.map-rank>.map-chip.off{flex-basis:100%;justify-content:center}
+.map-rank>.map-chip.off::before{content:none}
 .map-chip.off b{color:var(--t2)}
 .map-rank-l{white-space:nowrap}
 /* Dark themes.
@@ -4839,8 +4877,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    purpose - a fourth shape for the same thing was quietly being created. */
 .paysrc{list-style:none;margin:0;padding:0;
   display:flex;flex-direction:column;gap:var(--sp-2)}
-.paysrc li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
+.paysrc li{display:grid;grid-template-columns:minmax(0,1fr) calc(var(--sp-12) * .8) calc(var(--sp-12) * 1.4);
+  align-items:center;gap:var(--sp-3);min-width:0;
   font-size:var(--fs-2);line-height:var(--lh-2)}
+/* 12 Oct · audit UI-150 · source · share · amount are three columns (the share and the amount on the
+   left edge of theirs, as numbers), not three words 10px apart */
+.paysrc li>.num{text-align:left}
 
 /* Document grid inside a card, using the same columns as `.pay-docs` without the top
    divider, since the card's own header above it already separates them. */
@@ -4955,7 +4997,14 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .paylim-i .lb{flex:1 1 100%;font-size:var(--fs-1);color:var(--t3-g)}
 .paylim-i input{flex:none;width:4.5rem;font:inherit;font-weight:600;color:var(--t1)}
 
-.latetbl{width:100%;border-collapse:collapse;font-size:var(--fs-2)}
+.latetbl{width:100%;border-collapse:collapse;font-size:var(--fs-2);
+  /* 12 Oct · audit UI-144 · the stage groups stack one table each; fixed columns put «الحالة» and
+     the dates on one line down the page instead of each table sizing its own */
+  table-layout:fixed}
+.latetbl th:nth-child(2){inline-size:calc(var(--sp-12) * 1.9)}
+.latetbl th:nth-child(3){inline-size:calc(var(--sp-12) * 2)}
+.latetbl th:nth-child(4){inline-size:calc(var(--sp-12) * 1.3)}
+.latetbl th:nth-child(5){inline-size:calc(var(--sp-12) * 2.6)}
 .latetbl th,.latetbl td{padding:var(--sp-3) var(--sp-4);text-align:start;
   box-shadow:inset 0 -1px 0 var(--edge-d);vertical-align:middle}
 .latetbl th{font-size:var(--fs-1);color:var(--t3-g);font-weight:500;white-space:nowrap}
@@ -4980,6 +5029,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .order-t th,.order-t td{padding:var(--sp-2) var(--sp-3);text-align:start;
   box-shadow:inset 0 -1px 0 var(--edge-d)}
 .order-t th{font-size:var(--fs-1);color:var(--t3-g);font-weight:500}
+/* 12 Oct · audit UI-143 · the table's outer cells hold no inset, so its text is on the section's edge */
+.order-t :is(th,td):first-child{padding-inline-start:0}
+.order-t :is(th,td):last-child{padding-inline-end:0}
 .order-t tfoot td{font-weight:700;box-shadow:none}
 .order-sign{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
   gap:var(--gap);padding-block-start:var(--sp-6)}
@@ -5073,8 +5125,13 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .payq-p{font-family:var(--fd);font-weight:600;font-size:var(--fs-4);line-height:var(--lh-text);
   color:var(--t1);display:block}
 .payq-p:hover{text-decoration:underline;text-underline-offset:.22em}
-.payq-m{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;font-size:var(--fs-1);
-  line-height:var(--lh-text)}
+.payq-m{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-1);
+  line-height:var(--lh-text);min-width:0}
+/* 12 Oct · audit UI-139 · UI-160 · the meta line stays one line: wrapped, it left a «·» alone at a
+   line's start or end and made neighbouring cards different heights. The entity's name is what
+   gives way (its full name in the tooltip); the number and the payment never do. */
+.payq-m>*{flex:none}
+.payq-m>.payq-e{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* "Payment 2 of 4" is one unit — it used to break between the number and "of" */
 .payq-pay{white-space:nowrap}
 .payq-amt{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-1);
@@ -5095,6 +5152,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 /* List of conditions: each line has its own rule, so the pending one gets a
    label, not just a color */
 .payq-ck{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+/* 12 Oct · audit UI-062 · UI-190 · a second list right after the first (the locked items after the
+   editable ones) continues its rhythm: the gap between the lists is the gap between rows */
+.payq-ck.payq-ck+.payq-ck{margin-block-start:var(--sp-2)}
 .payq-ck li{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2);
   line-height:var(--lh-text);min-width:0}
 .payq-ck li>span:first-of-type{min-width:0;overflow:hidden;text-overflow:ellipsis;
@@ -5116,9 +5176,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   font-size:var(--fs-2);line-height:var(--lh-text);padding:var(--pad-in);border-radius:var(--r1)}
 .payq-note{color:var(--t1);background:rgba(var(--warnC),.09)}
 .payq-note svg{flex:none;color:var(--warn-ink);margin-top:var(--sp-2)}
-.payq-ai{color:var(--t2);background:rgba(var(--edgeC),.05);flex-wrap:wrap}
+.payq-ai{color:var(--t2);background:rgba(var(--edgeC),.05);flex-wrap:nowrap}
+/* 12 Oct · audit UI-140 · mark · sentence · tag never wrap apart: the sentence takes the room and
+   wraps inside itself, so the leaf and the «استرشادي» tag keep their places in every card */
 .payq-ai svg{flex:none;color:var(--solid);margin-top:var(--sp-2)}
-.payq-ai>span{min-width:0}
+.payq-ai>span{min-width:0;flex:1}
+.payq-ai>.tag{flex:none}
 
 /* `margin-top:auto` is what pins the card footer to the bottom.
    Cards in `.paygrid` stretch to the row's height, so a short card was leaving its gap
@@ -5230,6 +5293,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .rpcov-b>i{background:linear-gradient(90deg,rgba(var(--tone-1),.95),rgba(var(--tone-3),.95))}
 .rpcov-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-5)}
 .rpcov-g>div{position:relative;padding-inline:var(--sp-4)}
+/* 12 Oct · audit UI-210 · the first figure starts on the card's text edge; only the ones after a
+   divider keep the inset that clears it */
+.rpcov-g>div:first-child{padding-inline-start:0}
 .rpcov-g>div+div::before{content:"";position:absolute;inset-block:.1rem;inset-inline-start:0;
   width:1px;background:var(--edge-d)}
 /* Like `.kpi-v`: a block-level number with no attached symbol, needs RTL restored */
@@ -5265,6 +5331,9 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 .screen>header:not(.phead)>div:first-child{min-width:0;flex:1 1 22rem}
 /* Header actions in a single row, all at the same height as the control */
 .screen>header:not(.phead)>:not(div:first-child){flex:none}
+/* 13 Oct · audit UI-175 · a lone status tag in the header belongs to the title, not the subtitle line
+   the bottom alignment put it on */
+.screen>header:not(.phead)>.tag:last-child{align-self:flex-start;margin-block-start:var(--tag-at,var(--sp-4))}
 /* ═══ Header action group ═══
    ⚠️ **Flush with the end of the row so its last item lands in the corner.**
    This isn't a styling detail: the create button is the last item, and its edge sits at
@@ -5338,6 +5407,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
   align-items:center;gap:var(--sp-4);padding:var(--sp-3) var(--sp-2);
   box-shadow:inset 0 1px 0 var(--edge-d)}
 .rpm:first-child{box-shadow:none}
+/* 13 Oct · audit UI-211 · one row height whether or not a row carries a flaw tag (36 vs 32) */
+.rpm{min-block-size:calc(var(--sp-8) + var(--sp-2))}
 .rpm-t{font-size:var(--fs-2);color:var(--t1)}
 .rpm-p{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
 .rpm-p code{font-family:var(--fm);direction:ltr;font-size:var(--fs-1);color:var(--t3-g)}
@@ -5405,6 +5476,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 
 /* The button takes the shape of a select field so the row stays visually consistent */
 .fsel>.fsel-b{width:100%;cursor:pointer;text-align:start}
+/* 12 Oct · audit UI-040 · a list alone in a cell of the domains table fills it (scoped: the
+   notification matrix centres its lists under centred heads), so its edge and its text start
+   are the column's and not its value's («بلا مشرف» was narrower and centred) */
+.itk-dom td>.fsel:only-child{display:flex;width:100%}
+.itk-dom td>.fsel:only-child>.fsel-b{justify-content:flex-start}
+.itk-dom td>.fsel:only-child>.fsel-b>.chev,.itk-dom td>.fsel:only-child>.fsel-b>svg:last-child{margin-inline-start:auto}
 .fsel.off>.fsel-b{cursor:not-allowed}
 .fmulti-s{flex:1;min-width:0;font-size:var(--fs-2);color:var(--t1);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -5986,8 +6063,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    **inside** the circle. Each segment stops at the dot's edge, top and bottom, so
    the circle stays a circle no matter its background. */
 .stp-ladder .stp-i{position:relative;
-  display:grid;grid-template-columns:auto 1fr auto;align-items:center;
+  display:grid;grid-template-columns:minmax(calc(var(--sp-12) * 1.75),max-content) 1fr auto;align-items:center;
   gap:var(--sp-2) var(--sp-4);padding:var(--sp-3) 0;padding-inline-start:calc(var(--stp-dot) + var(--sp-4))}
+/* 12 Oct · audit UI-166 · the label column has a floor, so the second column (the role) starts on
+   one edge down the ladder instead of right after each step's name */
 .stp-ladder .stp-i::before,.stp-ladder .stp-i::after{content:"";position:absolute;
   inset-inline-start:calc((var(--stp-dot) - var(--stp-line)) / 2);
   width:var(--stp-line);background:rgba(var(--edgeC),.16)}
@@ -6392,6 +6471,11 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1)}
 .chat-empty b{display:block;font-weight:600;font-size:var(--fs-3);color:var(--t1)}
 .chat-empty p{margin:var(--sp-1) 0 0}
+/* 12 Oct · audit P16 · an empty channel is the note and the composer, nothing between: the
+   conversation's minimum height left ~90px of blank under the note, and the note sat narrower than
+   the composer under it */
+.chat:has(.chat-empty){min-height:0}
+.chat .chat-empty{align-self:stretch;max-width:none}
 .chat .composer{margin-top:auto;padding:0}
 .chat .cbox{max-width:none;margin:0}
 .chat .cbox.float{transform:none;background-image:none;background-color:var(--ctl-bg);
@@ -6536,10 +6620,15 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    date and tag their natural width and leaves the rest for the name. */
 .dlist .tbl{table-layout:auto}
 .dlist .tbl td:not(:first-child),.dlist .tbl th:not(:first-child){white-space:nowrap;width:1%}
+/* 12 Oct · the name column takes what the others leave and truncates in it, so the table never
+   runs wider than its card (the status and actions were scrolling out at the left edge) */
+.dlist .tbl td:first-child{width:100%;max-width:0}
+.dlist .dfile-t>.sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ⚠️ The download cell sits at the **end of the cell**, not after the tag — it
    used to shift by 42px with the tag's width ("uploaded" vs. "expired") */
 .dstat{display:flex;align-items:center;gap:var(--sp-3);width:100%}
 .dstat>.dfile-dl{margin-inline-start:auto}
+.dact{display:inline-flex;align-items:center;gap:var(--sp-2);vertical-align:middle}
 
 /* ── Last action under the definition ── */
 .lastact{margin-top:var(--sp-5);padding-top:var(--sp-5);
@@ -6758,7 +6847,12 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .tbl td.bad,.tbl td.n.bad{color:var(--t1);font-family:var(--fd);font-weight:700}
 .tbl tr.clk{cursor:pointer}
 
-.lrnav{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);flex-wrap:wrap}
+.lrnav{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:var(--sp-3)}
+/* 12 Oct · audit UI-212 · three columns, so «كل الشاشات» is on the centre whether or not there's a
+   previous screen (with space-between it slid toward the empty side) */
+.lrnav>:first-child{justify-self:start}
+.lrnav>:last-child{justify-self:end}
+.lrnav>*{max-width:100%;min-width:0}
 
 /* Helper text over the raw page gradient.
    `--t3` is designed for text over glass; on the gradient itself it drops below
@@ -7114,6 +7208,17 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    full-width field for a license number is misleading. */
 .regfields{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
   gap:var(--sp-4);margin-top:var(--sp-4)}
+/* 12 Oct · audit UI-188 · a field after a block of fields keeps the block's row gap, so its label
+   doesn't sit right under the last field's hint */
+.regfields+.regf{margin-top:var(--sp-4)}
+/* 13 Oct · audit UI-056 · right under a card's head the head's own margin is the gap; the block's top
+   margin on top of it opened 36px over the first labels against 20 everywhere else */
+.hd+.regfields{margin-top:0}
+/* 13 Oct · audit UI-071 · the two counts are narrow columns and the rule after them starts a clear
+   column away, instead of four equal quarters that put «بعد 5 أيام» 24px from a number */
+.esc-procs th:nth-child(2),.esc-procs th:nth-child(3){inline-size:calc(var(--sp-12) * 1.4)}
+.esc-procs th:nth-child(4){inline-size:calc(var(--sp-12) * 3.5);padding-inline-start:var(--sp-8)}
+.esc-procs td:nth-child(4){padding-inline-start:var(--sp-8)}
 .regf{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
 .regf .lb{font-size:var(--fs-1);color:var(--t3-g)}
 /* 11 Oct · audit P12 (UI-083/099/137 …) · a field whose label wraps, or whose hint sits under it,
@@ -7229,7 +7334,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .chain-gap>.chain-i{background:var(--warn);color:var(--on-solid);box-shadow:none}
 .chain-b{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
 .chain-h{display:flex;align-items:center;gap:var(--sp-3);min-width:0;
-  font-size:var(--fs-2);line-height:var(--lh-2)}
+  font-size:var(--fs-2);line-height:var(--lh-2);
+  /* 12 Oct · audit P18 · the head line is the ring's height, so its text centres on the ring
+     whether or not it carries a link (16 vs 21px put ring 1 four pixels low) */
+  min-height:1.45rem}
 .chain-h>b{font-family:var(--fd);font-weight:600;color:var(--t1);flex:none}
 .chain-s{font-size:var(--fs-1);line-height:var(--lh-1);color:var(--t3-g)}
 .chain-gap .chain-s{color:var(--t1);font-weight:600}
@@ -7464,6 +7572,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .btree-h{font-size:var(--fs-1);color:var(--t3-g);
   box-shadow:inset 0 -1px 0 var(--edge-1)}
 .btree-r{box-shadow:inset 0 -1px 0 var(--edge-d)}
+/* 12 Oct · audit P17 · one row height for the whole tree: the row with the ⋮ list (a 44px control)
+   was 60px and the root row without it 36, and a supervisor's face made a third height (44) */
+.btree-r{min-block-size:var(--h-md)}
+.btree:has(.btree-r .iact, .btree-r .btn) .btree-r{min-block-size:calc(var(--h-md) + var(--sp-5))}
 .btree-r:last-child{box-shadow:none}
 .btree-r:hover{background:var(--fl-2)}
 /* ⚠️ An item with a note — **the note itself** is shown beside it, and the
@@ -7531,6 +7643,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .btree-a:focus{outline:none;background:var(--ctl-bg);
   box-shadow:inset 0 0 0 1px var(--ctl-line-f)}
 .btree-act{display:flex;align-items:center;gap:var(--sp-1);justify-content:flex-end}
+/* 13 Oct · audit UI-126 · in the tree the empty slot is the icon button's own width (40), not the
+   control height (44) · the ✎ and ＋ stood 4px off between rows */
+.btree-act>.act-slot{inline-size:var(--sp-9)}
 
 /* Tree notes: same shape as the checklist in disbursement and agreements */
 .btree-iss,.blockers{list-style:none;margin:0;padding:0;
@@ -7583,9 +7698,18 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    lighter background in dark mode raises the background of everything
    inside it (same lesson as `.pkind`) */
 .cfglist li.on{box-shadow:inset 0 0 0 2px var(--edge-i)}
+/* 12 Oct · audit UI-138 · a list inside a settings row is already named by the row's own label;
+   its label above it only made the row 18px taller · kept for screen readers */
+.cfglist li .fsel>.fsel-l{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* 12 Oct · audit UI-133 · chips inside a settings row sit on the row's line (their list margin made
+   the row 80px against its neighbours' 68) · and a list in a row is one width, so its start edge is
+   one line down the card */
+.cfglist li>.fsel,.cfglist li>*>.fsel{min-inline-size:calc(var(--sp-12) * 2.8)}
+/* 12 Oct · audit UI-092 · in a list where rows carry a field, a row without one keeps the same height */
+.cfglist:has(li .fld) li{min-block-size:calc(var(--h-md) + var(--sp-4) * 2)}
 /* 12 Oct · audit P12 (UI-073 · UI-136) · a switch beside a list of framed rows is one more row of
    that list: unframed, its label sat 16px out from theirs and its toggle 16px past their fields. */
-.glass>.cfglist~.swrow,.glass>.swrow:has(~.cfglist){padding:var(--pad-in);border-radius:var(--r1);
+.glass>.cfglist~.swrow,.glass>.swrow:has(~.cfglist){--h-exempt:"A framed switch row is a row of the settings list beside it, not a toolbar control";padding:var(--pad-in);border-radius:var(--r1);
   background:var(--fl-2);box-shadow:inset 0 0 0 1px var(--edge-1);margin-top:var(--sp-2)}
 .glass>.swrow+.cfglist{margin-top:var(--sp-2)}
 
@@ -7616,7 +7740,8 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .cfgg-a:hover{background:var(--ctl-quiet-h);box-shadow:inset 0 0 0 1px var(--ctl-line-h)}
 .cfgg-a:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .cfgg-go{color:var(--t3);flex:none}
-.cfgg-h{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.cfgg-h{display:flex;align-items:baseline;gap:var(--sp-3);min-width:0}
+/* 12 Oct · audit UI-059 · baseline, so the tag sits on a two-line title's first line like on every one-line card */
 .cfgg-h>b{font-family:var(--fd);font-weight:600;color:var(--t1);min-width:0}
 .cfgg-w{font-size:var(--fs-1);line-height:var(--lh-1)}
 /* ⚠️ `margin-block-start:auto` isn't decoration: "where it shows up" text
@@ -7629,7 +7754,10 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    ⚠️ **This is a switch, not a filter:** cities belong to a region, so one
    must always stay active and there is no "all" option — the same
    constraint as the cycle switch in the budget. */
-.cfgchips{list-style:none;margin:var(--sp-4) 0 0;padding:0;
+/* 12 Oct · audit UI-148 · UI-164 · its top margin belongs to the card flow only: inside a row it
+   pushed the chips 6px under the button beside them */
+.glass>.cfgchips{margin-top:var(--sp-4)}
+.cfgchips{list-style:none;margin:0;padding:0;
   display:flex;flex-wrap:wrap;gap:var(--sp-2)}
 /* ⚠️ **The chip is a control in a row, so it's 44 like its neighbors (rule 6
    names it explicitly).** It used to be 4 + 15 + 4 = 23 with `--ric` — half
@@ -7866,6 +7994,9 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .act{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0;
   padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
 .acts>.act:first-child{padding-top:0;box-shadow:none}
+/* 13 Oct · audit UI-167 · in the plan editor the activities have no visible box, so no inset: their
+   fields keep the phase's edge and its columns */
+.acts.pledit-a{padding-inline:0}
 /* ⚠️ The activity the assistant pointed to gets **a quiet background**, not
    a side bar (see `.norail`). The background says "this is what I meant"
    without adding a fourth line along the row's edge. */
@@ -7933,6 +8064,9 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 /* ═══ Org portal ═══ */
 .ptl-miss{display:flex;flex-direction:column;gap:var(--sp-2);margin:var(--sp-4) 0 0;padding:0;list-style:none}
 .ptl-miss>li{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-2);color:var(--t1)}
+/* 13 Oct · audit UI-088 · in a list where a row carries a button, every row is the button's height,
+   so the rhythm is one step and the tags below it don't sit on the button */
+.ptl-miss:has(>li>.btn)>li{min-block-size:var(--h-md)}
 .ptl-miss>li>svg{flex:none;color:var(--no)}
 .ptl-mail{display:flex;flex-direction:column;gap:var(--sp-4);margin:var(--sp-4) 0 0;padding:0;list-style:none;min-width:0}
 .ptl-mail>li{display:flex;gap:var(--sp-3);min-width:0;opacity:.62}

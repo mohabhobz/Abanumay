@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Icon, icons } from '@/components/ui'
 import { Background } from '@/components/shell'
 import type { AssistantContext } from '@/components/assistant'
-import { roles, type AssistantRole } from '@/data/mock/assistant'
+import { assistantFor } from '@/data/mock/assistant'
+import { useRole } from '@/hooks/useRole'
 import { AssistantScreen } from './AssistantScreen'
 
 const FALLBACK_CONTEXT: AssistantContext = {
@@ -71,7 +72,8 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
      effectively saw two different assistants. Now it's the same component with the same copy and
      the same four cards; the only difference is the dialog's width (in CSS). Page context still
      reaches screen readers through the dialog's name. */
-  const role = roles[0] as AssistantRole
+  const { user, role: seat } = useRole()
+  const role = assistantFor(seat.key, user.name)
 
   return (
     <>
