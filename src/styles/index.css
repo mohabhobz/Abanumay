@@ -3448,20 +3448,26 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
    form floats over it in a glass card, centred too. (10 Oct had a side column beside the tree;
    the client asked for the card back.) */
 .login{position:fixed;inset:0;overflow:hidden;background:var(--base)}
-/* The tree sits at 30% of the video's width, so the video is drawn at the screen's full height
-   and slid until that point lands on the screen's middle (container units · 16:9 → width =
-   177.78cqh, the tree's centre = 53.33cqh from its left edge). Where the slide opens a gap at
+/* The tree sits at the video's centre (14 Oct · v4: the camera move was taken out, so the tree
+   grows in place, and the crown was widened), so the video is drawn at the screen's full height
+   and centred (container units · 16:9 → width = 177.78cqh, its centre = 88.89cqh from its left
+   edge). Where the slide opens a gap at
    either side, the screen is filled with the frame's own edge column stretched sideways
    (`login-edge.png`, the floor's horizon included), and the video's edges fade into it, so no
    seam shows. */
 .login-vid{position:absolute;inset:0;overflow:hidden;
   z-index:0;pointer-events:none;container-type:size;
   background:url('../assets/login-edge.png') 0 0/100% 100% no-repeat}
-.login-v{position:absolute;top:0;left:calc(50cqw - 53.33cqh);height:100cqh;width:177.78cqh;
+.login-v{position:absolute;top:0;left:calc(50cqw - 88.89cqh);height:100cqh;width:177.78cqh;
   max-width:none;object-fit:cover;opacity:0;
   -webkit-mask-image:linear-gradient(90deg,transparent,rgb(0 0 0) 5cqh,rgb(0 0 0) calc(100% - 5cqh),transparent);
   mask-image:linear-gradient(90deg,transparent,rgb(0 0 0) 5cqh,rgb(0 0 0) calc(100% - 5cqh),transparent)}
 .login-v.on{opacity:1}
+/* 14 Oct · client · the tree grows alone for 3s, then the card (and any notice) comes in · a key
+   or a click brings it at once (`AuthShell wait`) · hidden from focus too while it waits */
+.login-mid,.lnotice{transition:opacity var(--mo-5) var(--ease-out),visibility 0s linear 0s}
+.login-wait .login-mid,.login-wait .lnotice{opacity:0;visibility:hidden;
+  transition:opacity var(--mo-5) var(--ease-out),visibility 0s linear var(--mo-5)}
 .login-mid{position:relative;z-index:3;height:100%;overflow:auto;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:var(--sp-5);padding:clamp(var(--sp-6), 4vh, var(--sp-8)) var(--sp-6)}

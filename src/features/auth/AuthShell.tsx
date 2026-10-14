@@ -31,6 +31,9 @@ export interface AuthShellProps {
   /** Why the user landed here (session ended, password changed) · a toast at the screen's top that
       stays until closed, so it isn't missed and doesn't take room inside the card (12 Oct · client) */
   notice?: string
+  /** The sign-in screen lets the tree grow first · the card comes in after this many ms (any key
+      or click brings it at once) · 14 Oct · client */
+  wait?: number
 }
 
 /* Background video · the glass tree (10 Oct).
@@ -82,10 +85,24 @@ function LoginVideo() {
   )
 }
 
-export function AuthShell({ title, sub, children, err, notice }: AuthShellProps) {
+export function AuthShell({ title, sub, children, err, notice, wait = 0 }: AuthShellProps) {
   const [shut, setShut] = useState<string | undefined>()
+  const reduced = useReducedMotion()
+  const [shown, setShown] = useState(() => wait <= 0 || reduced)
+  useEffect(() => {
+    if (shown) return
+    const show = () => setShown(true)
+    const id = window.setTimeout(show, wait)
+    window.addEventListener('keydown', show)
+    window.addEventListener('pointerdown', show)
+    return () => {
+      window.clearTimeout(id)
+      window.removeEventListener('keydown', show)
+      window.removeEventListener('pointerdown', show)
+    }
+  }, [shown, wait])
   return (
-    <div className="login">
+    <div className={`login${shown ? '' : ' login-wait'}`}>
       <LoginVideo />
 
       {notice && shut !== notice && (

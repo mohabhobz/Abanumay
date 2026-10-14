@@ -107,6 +107,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell
+      wait={3000}
       title="منح أبانمي"
       sub="مؤسسة سليمان أبانمي الأهلية"
       err={err}
