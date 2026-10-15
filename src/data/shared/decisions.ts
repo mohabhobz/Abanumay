@@ -15,9 +15,6 @@ export type Level = 'manager' | 'exec' | 'committee' | 'board'
 export type ProjectKind = 'regular' | 'independent' | 'portfolio'
 
 export interface Decisions {
-  /** entities#8 · the status of an entity whose update request waits · the live system's «محدث» or
-      the document's «غير نشطة» (2.3.upd-16) */
-  updateStatus: 'محدث' | 'غير نشطة'
   /** payments#6 · the next payment opens once the one before is requested, or only once it is paid */
   payNext: 'requested' | 'paid'
   /** partners · which entities may be routed through Ehsan · any, or approved strategic partners only */
@@ -36,7 +33,6 @@ export interface Decisions {
 }
 
 const DEFAULT: Decisions = {
-  updateStatus: 'محدث',
   payNext: 'requested',
   ehsanEntities: 'any',
   priority: 'manual',
@@ -55,7 +51,7 @@ export const LEVEL_RANK: Record<Level, number> = { manager: 0, exec: 1, committe
 export const KIND_SAY: Record<ProjectKind, string> = { regular: 'مشروع عادي', independent: 'مشروع مستقل (شريك)', portfolio: 'محفظة' }
 
 const LABEL: Record<keyof Decisions, string> = {
-  updateStatus: 'حالة الجهة أثناء طلب التحديث', payNext: 'فتح الدفعة التالية', ehsanEntities: 'الجهات الموجّهة عبر إحسان',
+  payNext: 'فتح الدفعة التالية', ehsanEntities: 'الجهات الموجّهة عبر إحسان',
   priority: 'أولوية الطلب', typeFloor: 'نوع المشروع في مسار الاعتماد', impactBasis: 'أساس الأثر المتوقع',
   archivedInReports: 'مشاريع الجهات المؤرشفة في التقارير', holidayRederive: 'إعادة حساب النهاية عند تغيّر الإجازات',
 }
@@ -71,8 +67,18 @@ export function saveDecisions(next: Decisions, by: string): void {
   ))
 }
 
-/** The entity status as shown · the stored value stays «محدث», the label follows the decision */
-export const activationSay = (a: string): string => (a === 'محدث' ? DECISIONS.updateStatus === 'محدث' ? 'محدث' : 'غير نشطة · بانتظار التحديث' : a)
+/* v3 · 0.ent.6–9 · the entity account is read in the dictionary's four words · «مؤرشف» on top of
+   any of them · the open decision «محدث» or «غير نشطة» (entities#8) is settled by v3: «معلق» */
+type AccountLike = { activation: string; archived?: boolean; decision?: string }
+/** The account in one word · نشط · معلق · غير نشط · مؤرشف */
+export const accountSay = (e: AccountLike): string => (e.archived ? 'مؤرشف' : e.activation)
+/** What holds the account where it is · empty for an active one */
+export const accountWhy = (e: AccountLike): string =>
+  e.archived ? '' : e.activation === 'غير نشط'
+    ? e.decision === 'revoked' ? 'بقرار إلغاء الاعتماد' : e.decision === 'suspension' ? 'بقرار تعليق الأهلية' : 'لمستند إلزامي منتهٍ'
+    : e.activation === 'معلق' ? 'تحديث جوهري تحت المراجعة' : ''
+/** The account with its cause · «غير نشط · بقرار تعليق الأهلية» */
+export const accountLine = (e: AccountLike): string => [accountSay(e), accountWhy(e)].filter(Boolean).join(' · ')
 
 /** A project's kind for the approval path */
 export const kindOf = (p: { partnerType?: string }): ProjectKind =>

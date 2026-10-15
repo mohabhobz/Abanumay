@@ -167,7 +167,7 @@ export function ApprovalRulesTab() {
         </ul>
         <div className="apv-row">
           <MultiSelect label="الشخص" all="الشخص" people values={cp ? [cp] : []} options={STAFF()} onChange={(v) => setCp(v[v.length - 1] ?? '')} />
-          <FieldSelect value={ce} label="الجهة" placeholder="الجهة" searchAt={6} options={entityRows.slice(0, 200).map((e) => ({ value: e.id, label: e.name }))} onChange={setCe} />
+          <FieldSelect value={ce} label="الجهة" placeholder="الجهة" searchAt={6} options={entityRows.filter((e) => !e.archived).slice(0, 200).map((e) => ({ value: e.id, label: e.name }))} onChange={setCe} />
           <span className="fld"><input value={cr} onChange={(e) => setCr(e.target.value)} placeholder="سبب التعارض" aria-label="سبب التعارض" /></span>
           <button className="btn btn-2 btn-sm" disabled={!cp || !ce || !cr.trim()} onClick={() => { put('conflicts', [...d.conflicts, { person: cp, entityId: ce, reason: cr.trim() }]); setCp(''); setCe(''); setCr('') }}>
             <Icon name={icons.plus} size="sm" />أضف

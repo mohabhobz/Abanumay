@@ -3,6 +3,7 @@ import { heatOf } from '@/data/shared/escRules'
 import type { PayCheck, PayEvent, PayRequest, PayState } from '@/types/domain'
 import { AWAITING_AGREEMENT, SCENARIO, VIA_EHSAN, projectRows } from './projects'
 import { entityById } from './entities'
+import { BANKS } from './taxonomy'
 import { WALK_PROJECT, agreements } from './agreements'
 
 /* Disbursement requests · built on the procedures document, not on the live system
@@ -69,7 +70,8 @@ export const payHeat = (r: PayRequest): PayHeat => {
 export const payBlocked = (r: PayRequest): boolean =>
   r.checks.some((c) => !c.ok) || !r.bank.active
 
-const BANKS = ['مصرف الراجحي', 'مصرف الإنماء', 'بنك البلاد', 'البنك الأهلي السعودي', 'بنك الرياض']
+/* v3 · 2.4.29 · one bank list for every screen · a request goes to the entity's own first (active)
+   account, the one its file shows · this file used to keep a second, shorter list of its own */
 
 /** Bank account status as two filter options · the document's second output requires it approved */
 export const BANK_STATES = ['معتمد', 'معطَّل']
@@ -321,7 +323,8 @@ export const payRequests: PayRequest[] = (() => {
         hoursInState: state === 'paid' ? 0 : h,
         condition: cond ? pick(CONDITIONS) : undefined,
         checks: checksFor(state, cond),
-        bank: { name: pick(BANKS), active: rnd() > 0.07 },
+        /* the draw that used to pick a bank stays, so every value after it in the seed is unchanged */
+        bank: { name: ((): string => { rnd(); return BANKS[Number(e?.id ?? p.entityId) % BANKS.length] })(), active: rnd() > 0.07 },
         /* Usually a single source · multiple sources is exactly what rule 12 addresses */
         sources:
           rnd() > 0.8

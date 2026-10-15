@@ -27,7 +27,7 @@ export type RegState = 'draft' | 'review' | 'completion' | 'approved' | 'rejecte
 
 export const REG_STATES: { key: RegState; label: string; who: string }[] = [
   { key: 'draft', label: 'مسودة', who: 'عند الجهة · لم يُرسل بعد' },
-  { key: 'review', label: 'قيد المراجعة', who: 'عند مسؤول النظام' },
+  { key: 'review', label: 'تحت المراجعة', who: 'ينتظر مراجعة صاحب الصلاحية' },
   { key: 'completion', label: 'بانتظار الاستكمال', who: 'أُعيد إلى الجهة مع ملاحظات' },
   { key: 'approved', label: 'معتمد', who: 'أُنشئت الجهة وأُرسلت بيانات الدخول' },
   { key: 'rejected', label: 'مرفوض', who: /* doc rule 28 */ 'مؤرشف مع سبب الرفض' },

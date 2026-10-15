@@ -1,14 +1,20 @@
 import { useSyncExternalStore } from 'react'
-import type { EntityRow, EntityActivation } from '@/types/domain'
+import type { EntityRow, EntityActivation, EntityDecision } from '@/types/domain'
 import type { BankAccount, EntityDoc, EntityEvent } from '@/data/mock/entityDetail'
 import { entityRows } from '@/data/mock/entities'
+import { projectRows } from '@/data/mock/projects'
+import { agreements } from '@/data/mock/agreements'
+import { payRequests } from '@/data/mock/disbursements'
+import { banksOf } from '@/data/mock/payEntity'
+import { closeRows } from '@/data/mock/closing'
+import { planRows } from '@/data/mock/plans'
 import {
-  BANK_DOC_LABEL, REG_DOCS, REG_REJECT_REASONS, regRows, type RegBank, type RegEvent, type RegRejectReason, type RegRequest, type RegState,
+  BANK_DOC_LABEL, REG_DOCS, REG_REJECT_REASONS, licenseClash, regRows, type RegBank, type RegEvent, type RegRejectReason, type RegRequest, type RegState,
 } from '@/data/mock/registration'
 import { ENTITY_DOCS } from '@/data/mock/taxonomy'
 import type { RoleKey } from '@/data/roles'
 import { ENTITY_RULES, fileField, needsApproval } from './rules'
-import { setEntityIbans, todayIso } from './validate'
+import { licenseDup, setEntityIbans, todayIso } from './validate'
 import { ROUTES } from '@/app/routes'
 
 /* Beneficiary entities and their registration (BPD-002) · the actions.
@@ -38,8 +44,10 @@ export interface EntityOverlay {
   events: EntityEvent[]
   /** The reason given with the last status decision */
   statusReason?: string
-  /** Status before an update request suspended it · restored when the request is decided */
-  beforeUpdate?: EntityActivation
+  /** v3 · 2.4.2 · the update request under review that holds the account «معلق» */
+  pending?: string
+  /** The account went «غير نشط» for an expired document · its return reads as a re-activation */
+  lapsedOut?: boolean
   /** 14 Oct · accounts removed for good · only one with no financial history (rule 28) */
   deletedBanks?: string[]
 }
@@ -67,7 +75,7 @@ export type UpdState = 'draft' | 'review' | 'completion' | 'approved' | 'rejecte
 
 export const UPD_STATE_SAY: Record<UpdState, string> = {
   draft: 'مسودة',
-  review: 'قيد المراجعة',
+  review: 'تحت المراجعة',
   completion: 'بانتظار الاستكمال',
   approved: 'معتمد',
   rejected: 'مرفوض',
@@ -125,6 +133,26 @@ export const BATCHES: Batch[] = []
 /** Open requests handed to a supervisor · request id → name */
 export const ASSIGNED: Record<string, string> = {}
 
+/** v3 · 2.4.10 · 2.4.11 · a running project moved to another entity · kept for good with both ends */
+export interface Relink {
+  id: string; projectId: string; projectName: string
+  from: { id: string; name: string }; to: { id: string; name: string }
+  reason: string; file?: string; by: string; at: string
+  /** The records the move carried · agreements, payment requests, plans, closings */
+  touched: { agreements: number; payments: number; plans: number; closings: number }
+}
+export const RELINKS: Relink[] = []
+export const relinksOf = (projectId: string): Relink[] => RELINKS.filter((r) => r.projectId === projectId)
+const LATE: Op[] = []
+/* The agreements store renames the party in an agreement's clauses · handed in at its load */
+let partyRename: (agreementId: string, from: string, to: string) => void = () => {}
+export const setPartyRename = (f: typeof partyRename): void => { partyRename = f }
+const renameParty = (agreementId: string, from: string, to: string) => partyRename(agreementId, from, to)
+let bankSource: (entityId: string) => { name: string; active: boolean } | undefined = () => undefined
+const COUNTER: Partial<Record<string, 'projectsRunning' | 'projectsStalled' | 'projectsCompleted' | 'projectsDeclined'>> = {
+  'في التشغيل': 'projectsRunning', 'متعثر': 'projectsStalled', 'مكتمل': 'projectsCompleted', 'معتذر عنه': 'projectsDeclined',
+}
+
 /** The impact a suspension or revocation carried · kept with the decision */
 export interface StatusMeta { code: string; decision?: string; proof?: string; projects?: string[]; payments?: string[] }
 
@@ -137,7 +165,9 @@ type Op = { at: string } & (
   | { op: 'regResubmit'; id: string; values: Record<string, string>; docs: string[]; by: string }
   | { op: 'regDecide'; id: string; outcome: 'approve' | 'reject'; note: string; banks: Record<string, string>; reason?: RegRejectReason; by: string }
   | { op: 'internal'; values: Record<string, string>; docs: string[]; partner: string; by: string; banks?: RegBank[] }
-  | { op: 'status'; entityId: string; to: EntityActivation; reason: string; by: string; meta?: StatusMeta }
+  /* `to` · 'suspension' | 'revoked' | 'lift' · a file saved before 15 Oct carries the old account
+     names («معلق (موقوف)» · «ملغى الاعتماد» · «نشط») and replays as the same decision */
+  | { op: 'status'; entityId: string; to: string; reason: string; by: string; meta?: StatusMeta }
   | { op: 'archive'; entityId: string; on: boolean; reason: string; by: string; code?: string }
   | { op: 'ask'; ids: string[]; items: string[]; due: string; reason: string; note?: string; by: string; batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'> }
   | { op: 'notify'; ids: string[]; title: string; text: string; channel: string; template: string; by: string; batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'> }
@@ -146,6 +176,7 @@ type Op = { at: string } & (
   | { op: 'bankDelete'; entityId: string; bankId: string; reason: string; by: string }
   | { op: 'reviewStart'; reqId: string; by: string }
   | { op: 'viewArchived'; entityId: string; by: string }
+  | { op: 'relink'; projectId: string; to: string; reason: string; file?: string; by: string; bank?: { name: string; active: boolean } }
   | { op: 'bankStatus'; entityId: string; bankId: string; status: BankAccount['status']; reason?: string; by: string }
   | { op: 'updSave'; req: Omit<UpdateRequest, 'events' | 'state' | 'createdAt' | 'submittedAt'>; send: boolean }
   | { op: 'updDecide'; id: string; outcome: 'approve' | 'reject' | 'return'; note: string; by: string; bankNo?: Record<string, string> }
@@ -274,7 +305,7 @@ const createEntity = (r: RegRequest, bankDecisions: Record<string, string>, by: 
   entityEvent(id, { kind: 'reg', action: 'تسجيل جهة جديدة من البوابة', by: r.clerkName || r.name, at: r.submittedAt + 'T09:00',
     fields: [{ k: 'طلب التسجيل', v: r.id }, { k: 'التصنيف', v: r.type }, { k: 'رقم الترخيص', v: r.licenseNo }] })
   entityEvent(id, { kind: 'accept', action: 'اعتماد وتفعيل · إنشاء الملف الموحد', by, at,
-    fields: [{ k: 'حالة التفعيل', v: 'نشط' }, { k: 'صلاحية التقديم', v: 'مُنحت' }, { k: 'اسم المستخدم', v: r.acctEmail }] })
+    fields: [{ k: 'حالة الحساب', v: 'نشط' }, { k: 'صلاحية التقديم', v: 'مُنحت' }, { k: 'اسم المستخدم', v: r.acctEmail }] })
   return id
 }
 
@@ -304,27 +335,47 @@ const lapseDay = (e: EntityRow): string | undefined => {
   return `${d.toISOString().slice(0, 10)}T00:00`
 }
 
-const syncActivation = (e: EntityRow, now: string) => {
-  if (e.archived) return
+/** v3's account from what holds it (0.ent.6–9 · 2.4.2) · a decision or an expired mandatory document
+    makes it «غير نشط», an update under review «معلق», nothing «نشط» · archiving sits on top */
+const accountFrom = (e: EntityRow): EntityActivation =>
+  e.decision || mandatoryExpired(e).length ? 'غير نشط' : OVERLAY.get(e.id)?.pending ? 'معلق' : 'نشط'
+
+/** Bring the stored account in line with what holds it · the one place the account changes */
+const settle = (e: EntityRow, now: string) => {
+  const to = accountFrom(e)
+  const from = e.activation
   const lapsed = mandatoryExpired(e)
   /* Batch 3 · 8 Oct · the rule runs on every load (the rows are rebuilt from the seed), and it was
      stamped with the load's time · so each reload wrote the transition again, dated today, with a
      fresh notice to the entity. It now carries the day the document lapsed, and the notice its own
      id, so every load rebuilds the same one event and the same one notice. */
-  const at = lapseDay(e) ?? now
-  if (e.activation === 'نشط' && lapsed.length) {
-    e.activation = 'غير نشط'
-    entityEvent(e.id, { kind: 'stop', action: 'تحويل آلي إلى «غير نشطة»', by: 'النظام', at,
-      note: `انتهت صلاحية ${lapsed.join(' و')} · يلزم تقديم طلب تحديث بالنسخة السارية قبل أي تقديم جديد.`,
-      fields: [{ k: 'حالة التفعيل', v: 'نشط ← غير نشط' }] })
+  if (!e.archived && to !== from && to === 'غير نشط' && lapsed.length && !e.decision) {
+    const at = lapseDay(e) ?? now
+    entityEvent(e.id, { kind: 'stop', action: 'تحويل آلي إلى «غير نشط»', by: 'النظام', at,
+      note: `انتهت صلاحية ${lapsed.join(' و')} · لا تقديم ولا صرف حتى تُحدَّث بالنسخة السارية.`,
+      fields: [{ k: 'حالة الحساب', v: `${from} ← غير نشط` }] })
     /* Re-audit 7 Oct · 2.3.upd-19 · the entity is told which documents to update */
-    enote(e.name, 'status', 'تحوّلت جهتك إلى «غير نشطة»', `انتهت صلاحية ${lapsed.join(' و')} · قدّم طلب تحديث بالنسخة السارية`, at, `${ROUTES.entityUpdate}?entity=${e.id}`, `en-auto-${e.id}-${at.slice(0, 10)}`)
-  } else if (e.activation === 'غير نشط' && !lapsed.length) {
-    e.activation = 'نشط'
-    entityEvent(e.id, { kind: 'accept', action: 'إعادة التفعيل بعد تحديث الوثائق', by: 'النظام', at,
-      fields: [{ k: 'حالة التفعيل', v: 'غير نشط ← نشط' }] })
+    enote(e.name, 'status', 'تحوّل حساب جهتك إلى «غير نشط»', `انتهت صلاحية ${lapsed.join(' و')} · قدّم طلب تحديث بالنسخة السارية`, at, `${ROUTES.entityUpdate}?entity=${e.id}`, `en-auto-${e.id}-${at.slice(0, 10)}`)
+  } else if (!e.archived && from === 'غير نشط' && to !== 'غير نشط' && !lapsed.length && !e.decision && OVERLAY.get(e.id)?.lapsedOut) {
+    entityEvent(e.id, { kind: 'accept', action: 'إعادة التفعيل بعد تحديث الوثائق', by: 'النظام', at: now,
+      fields: [{ k: 'حالة الحساب', v: `غير نشط ← ${to}` }] })
   }
-  e.canApply = e.activation === 'نشط'
+  if (lapsed.length && !e.decision) overlayOf(e.id).lapsedOut = true
+  else if (OVERLAY.get(e.id)) OVERLAY.get(e.id)!.lapsedOut = false
+  e.activation = to
+  /* 2.4.22 · new requests only on an active account that isn't archived */
+  e.canApply = to === 'نشط' && !e.archived
+}
+
+/** v3 · 0.ent.8 · 2.4.22 · may this entity be paid now · the answer and why not */
+export const payBlock = (e: EntityRow | undefined): string => {
+  if (!e) return ''
+  if (e.archived) return 'الجهة مؤرشفة · لا صرف لجهة مؤرشفة'
+  if (e.activation !== 'غير نشط') return ''
+  if (e.decision === 'revoked') return 'اعتماد الجهة ملغى · لا صرف حتى يُبتّ في وضعها'
+  if (e.decision === 'suspension') return 'أهلية الجهة معلّقة بقرار · لا صرف حتى رفع التعليق'
+  const lapsed = mandatoryExpired(e)
+  return `حساب الجهة غير نشط · انتهت صلاحية ${lapsed.join(' و') || 'مستند إلزامي'} · لا صرف حتى تحديثه`
 }
 
 const applyChange = (e: EntityRow, c: Change) => {
@@ -352,7 +403,7 @@ const apply = (x: Op) => {
       r.events = [...(r.events ?? []),
         { kind: 'otp', action: 'تأكيد الإرسال برمز التحقق', by: x.values.clerkName || x.email, at, note: `جوال ${x.values.clerkMobile || ''}` },
         { kind: 'submit', action: 'إرسال الطلب للمراجعة', by: x.values.clerkName || x.email, at }]
-      enote(r.name, 'registration', 'استلمنا طلب تسجيلك', `الطلب ${r.id} قيد المراجعة · نبلغك بالنتيجة`, at, ROUTES.entityPortal)
+      enote(r.name, 'registration', 'استلمنا طلب تسجيلك', `الطلب ${r.id} تحت المراجعة · نبلغك بالنتيجة`, at, ROUTES.entityPortal)
       break
     }
     case 'regReturn': {
@@ -407,7 +458,7 @@ const apply = (x: Op) => {
       const o = overlayOf(id)
       o.fields.accountType = x.partner
       o.events = o.events.filter((ev) => ev.kind !== 'reg')
-      o.events[0] = { ...o.events[0], action: 'تسجيل داخلي · الجهة نشطة فور الحفظ', fields: [{ k: 'نوع الشراكة', v: x.partner }, { k: 'حالة التفعيل', v: 'نشط' }] }
+      o.events[0] = { ...o.events[0], action: 'تسجيل داخلي · الجهة نشطة فور الحفظ', fields: [{ k: 'نوع الشراكة', v: x.partner }, { k: 'حالة الحساب', v: 'نشط' }] }
       lastInternal = id
       break
     }
@@ -415,13 +466,17 @@ const apply = (x: Op) => {
       const e = entityRows.find((y) => y.id === x.entityId)
       if (!e) break
       const from = e.activation
-      e.activation = x.to; e.canApply = x.to === 'نشط'
+      const kind: EntityDecision | null = x.to === 'revoked' || x.to === 'ملغى الاعتماد' ? 'revoked'
+        : x.to === 'suspension' || x.to === 'معلق (موقوف)' ? 'suspension' : null
+      e.decision = kind ?? undefined
+      e.activation = accountFrom(e)
+      e.canApply = e.activation === 'نشط' && !e.archived
       overlayOf(e.id).statusReason = x.reason
       overlayOf(e.id).fields.adminNote = x.reason
       entityEvent(e.id, {
-        kind: x.to === 'نشط' ? 'accept' : x.to === 'ملغى الاعتماد' ? 'reject' : 'stop',
-        action: x.to === 'نشط' ? 'رفع تعليق الأهلية' : x.to === 'ملغى الاعتماد' ? 'إلغاء اعتماد الجهة' : 'تعليق الأهلية',
-        by: x.by, at, note: x.reason, fields: [{ k: 'حالة التفعيل', v: `${from} ← ${x.to}` }],
+        kind: !kind ? 'accept' : kind === 'revoked' ? 'reject' : 'stop',
+        action: !kind ? 'رفع تعليق الأهلية' : kind === 'revoked' ? 'إلغاء اعتماد الجهة' : 'تعليق الأهلية',
+        by: x.by, at, note: x.reason, fields: [{ k: 'حالة الحساب', v: `${from} ← ${e.activation}` }],
       })
       if (x.meta) {
         const ev = overlayOf(e.id).events[0]
@@ -433,17 +488,16 @@ const apply = (x: Op) => {
           ...(x.meta.payments ? [{ k: 'الدفعات الموقوفة', v: x.meta.payments.length ? `${x.meta.payments.length} · ${x.meta.payments.join('، ')}` : '0' }] : []),
         ]
       }
-      enote(e.name, 'status', x.to === 'نشط' ? 'رُفع تعليق أهلية جهتك' : x.to === 'ملغى الاعتماد' ? 'أُلغي اعتماد جهتك' : 'عُلّقت أهلية جهتك', x.reason, at, ROUTES.entityPortal)
+      enote(e.name, 'status', !kind ? 'رُفع تعليق أهلية جهتك' : kind === 'revoked' ? 'أُلغي اعتماد جهتك' : 'عُلّقت أهلية جهتك', x.reason, at, ROUTES.entityPortal)
       /* Lifting a suspension doesn't clear another block · an expired document keeps it inactive */
-      syncActivation(e, at)
+      settle(e, at)
       break
     }
     case 'archive': {
       const e = entityRows.find((y) => y.id === x.entityId)
       if (!e) break
       e.archived = x.on
-      if (x.on) e.canApply = false
-      else e.canApply = e.activation === 'نشط'
+      settle(e, at)
       entityEvent(e.id, { kind: x.on ? 'stop' : 'accept', action: x.on ? 'أرشفة الجهة' : 'استعادة الجهة من الأرشيف', by: x.by, at, note: x.reason,
         fields: x.on ? [...(x.code ? [{ k: 'رمز السبب', v: x.code }] : []), { k: 'الفحص المسبق', v: 'مشاريع قائمة 0 · دفعات معلّقة 0 · طلبات مفتوحة 0' }] : undefined })
       break
@@ -504,6 +558,50 @@ const apply = (x: Op) => {
       if (r) { r.events = [...(r.events ?? []), ev] } else if (u) u.events.push(ev)
       break
     }
+    case 'relink': {
+      /* v3 · 2.4.10 · the project's entity changes everywhere the project is carried · 2.4.11 · the
+         move is kept with the entity before and after, the time and who did it */
+      const p = projectRows.find((y) => y.id === x.projectId)
+      const toE = entityRows.find((y) => y.id === x.to)
+      /* a project the intake store adds on its own replay isn't here yet · the move waits for it */
+      if (!p) { if (!LATE.includes(x)) LATE.push(x); break }
+      if (!toE || p.entityId === toE.id) break
+      const fromE = entityRows.find((y) => y.id === p.entityId)
+      const from = { id: p.entityId, name: p.entityName }
+      const move = <T extends { projectId: string; entityId: string; entityName: string }>(rows: T[]) => {
+        let n = 0
+        for (const r of rows) if (r.projectId === p.id) { r.entityId = toE.id; r.entityName = toE.name; n++ }
+        return n
+      }
+      /* the open requests go to the new entity's own active account · read when the move was made
+         and kept on the op, so a replay pays where the move said */
+      const fb = banksOf(toE.id)[0]
+      const bank = x.bank ?? (fb ? { name: fb.bank, active: fb.active } : undefined)
+      for (const r of payRequests) if (r.projectId === p.id && r.state !== 'paid' && r.state !== 'closed' && bank) r.bank = { name: bank.name, active: bank.active }
+      const touched = { agreements: move(agreements), payments: move(payRequests), plans: move(planRows), closings: move(closeRows) }
+      /* the agreement text names its party · a clause that carries the old name takes the new one */
+      for (const a of agreements) if (a.projectId === p.id) renameParty(a.id, from.name, toE.name)
+      /* the entities' own counters follow the project */
+      const counter = COUNTER[p.statusGroup]
+      const shift = (e: EntityRow | undefined, d: 1 | -1) => {
+        if (!e) return
+        if (counter) e[counter] = Math.max(0, e[counter] + d)
+        if (p.amountGranted > 0) { e.projectsApproved = Math.max(0, e.projectsApproved + d); e.grantedTotal = Math.max(0, e.grantedTotal + d * p.amountGranted) }
+      }
+      shift(fromE, -1); shift(toE, 1)
+      p.entityId = toE.id; p.entityName = toE.name
+      RELINKS.unshift({ id: `RL-${RELINKS.length + 1}`, projectId: p.id, projectName: p.name, from, to: { id: toE.id, name: toE.name }, reason: x.reason, file: x.file, by: x.by, at, touched })
+      const fields = [
+        { k: 'المشروع', v: `${p.id} · ${p.name}` }, { k: 'الجهة السابقة', v: from.name }, { k: 'الجهة الجديدة', v: toE.name },
+        { k: 'السجلات المحدَّثة', v: `اتفاقيات ${touched.agreements} · طلبات صرف ${touched.payments} · خطط ${touched.plans} · إغلاق ${touched.closings}` },
+        ...(x.file ? [{ k: 'المستند', v: x.file }] : []),
+      ]
+      entityEvent(from.id, { kind: 'edit', action: 'نقل مشروع إلى جهة أخرى', by: x.by, at, note: x.reason, fields })
+      entityEvent(toE.id, { kind: 'edit', action: 'ربط مشروع منقول من جهة أخرى', by: x.by, at, note: x.reason, fields })
+      enote(from.name, 'update', `نُقل المشروع ${p.name} إلى جهة أخرى`, x.reason, at, ROUTES.entityPortal)
+      enote(toE.name, 'update', `رُبط بجهتك المشروع ${p.name}`, x.reason, at, ROUTES.entityPortal)
+      break
+    }
     case 'viewArchived': {
       entityEvent(x.entityId, { kind: 'edit', action: 'الاطلاع على ملف جهة مؤرشفة', by: x.by, at })
       break
@@ -540,18 +638,22 @@ const apply = (x: Op) => {
         fields: u.changes.map((c) => ({ k: `${c.label}${c.direct ? ' · مباشر' : ''}`, v: `${c.from || '—'} ← ${c.to || '—'}` })) })
       if (waits) {
         u.state = 'review'
-        /* 2.3.upd-16 · the entity's activity pauses while a change that needs approval is open */
-        if (e.activation !== 'محدث') {
-          overlayOf(e.id).beforeUpdate = e.activation
-          entityEvent(e.id, { kind: 'edit', action: 'طلب تحديث بانتظار الاعتماد', by: x.req.by, at,
-            note: 'يُعلَّق نشاط الجهة حتى يُبتّ في الطلب.', fields: [{ k: 'حالة التفعيل', v: `${e.activation} ← محدث` }, { k: 'الطلب', v: u.id }] })
-          e.activation = 'محدث'; e.canApply = false
+        /* v3 · 2.4.2 · 0.ent.7 · a substantive update under review holds the account «معلق» ·
+           running projects carry on, no new requests until it's decided (an account already
+           «غير نشط» for a real block stays so · the block wins) */
+        if (!overlayOf(e.id).pending) {
+          overlayOf(e.id).pending = u.id
+          const from = e.activation
+          settle(e, at)
+          entityEvent(e.id, { kind: 'edit', action: 'طلب تحديث تحت المراجعة', by: x.req.by, at,
+            note: e.activation === 'معلق' ? 'الحساب «معلق» حتى يُبتّ في الطلب · المشاريع القائمة كما هي ولا تقديم جديد.' : undefined,
+            fields: [{ k: 'حالة الحساب', v: `${from} ← ${e.activation}` }, { k: 'الطلب', v: u.id }] })
         }
       } else {
         u.state = 'approved'; u.decidedAt = at
         u.events.push({ kind: 'approve', action: 'طُبّق مباشرة · لا يتطلب اعتمادًا', by: 'النظام', at })
       }
-      enote(e.name, 'update', waits ? 'استلمنا طلب تحديث بياناتك' : 'حُدّثت بيانات جهتك', waits ? `الطلب ${u.id} بانتظار الاعتماد · يُعلَّق النشاط حتى البتّ` : 'طُبّقت بيانات الاتصال مباشرة', at, ROUTES.entityPortal)
+      enote(e.name, 'update', waits ? 'استلمنا طلب تحديث بياناتك' : 'حُدّثت بيانات جهتك', waits ? `الطلب ${u.id} تحت المراجعة · حساب جهتك «معلق» حتى البتّ فيه` : 'طُبّقت بيانات الاتصال مباشرة', at, ROUTES.entityPortal)
       break
     }
     case 'updDecide': {
@@ -567,6 +669,9 @@ const apply = (x: Op) => {
       }
       const o = overlayOf(e.id)
       if (x.outcome === 'approve') {
+        /* v3 · 2.4.9 · never approve a license and classification another entity already holds */
+        const ask = Object.fromEntries(u.changes.map((c) => [c.key, c.to]))
+        if (licenseDup(e.id, { licenseNo: ask.licenseNo, type: ask.type })) break
         const pending = u.changes.filter((c) => !c.direct)
         for (const c of pending) applyChange(e, c)
         u.bankDecisions = Object.fromEntries(u.banks.map((b) => [b.id, x.bankNo?.[b.id] ?? '']))
@@ -605,13 +710,14 @@ const apply = (x: Op) => {
         entityEvent(e.id, { kind: 'reject', action: 'رفض طلب تحديث البيانات', by: x.by, at, note: x.note, fields: [{ k: 'الطلب', v: u.id }] })
         enote(e.name, 'update', 'رُفض طلب تحديث بياناتك', x.note, at, ROUTES.entityPortal)
       }
-      /* The pause ends with the decision · back to the status before it, then the expiry rule */
-      if (e.activation === 'محدث') {
-        e.activation = o.beforeUpdate ?? 'نشط'
-        o.beforeUpdate = undefined
-        entityEvent(e.id, { kind: 'accept', action: 'انتهاء تعليق التحديث', by: 'النظام', at, fields: [{ k: 'حالة التفعيل', v: `محدث ← ${e.activation}` }] })
-      }
-      syncActivation(e, at)
+      /* The «معلق» ends with the decision (approve or reject) · the account reads again from what
+         still holds it · a return keeps it under review */
+      if (o.pending === u.id) {
+        const from = e.activation
+        o.pending = undefined
+        settle(e, at)
+        if (from !== e.activation) entityEvent(e.id, { kind: 'accept', action: 'انتهاء مراجعة التحديث', by: 'النظام', at, fields: [{ k: 'حالة الحساب', v: `${from} ← ${e.activation}` }] })
+      } else settle(e, at)
       break
     }
   }
@@ -633,7 +739,7 @@ const run = (o: Op) => {
 const seedUpdate = () => {
   const e = entityRows.find((y) => y.id === '803')
   if (!e || UPD_ROWS.some((u) => u.id === 'UPD-2026-000101')) return
-  overlayOf('803').beforeUpdate = 'نشط'
+  overlayOf('803').pending = 'UPD-2026-000101'
   overlayOf('803').fields.directorName = 'ناصر الشمري'
   UPD_ROWS.push({
     id: 'UPD-2026-000101', entityId: '803', entityName: e.name, state: 'review', by: 'مدخل بيانات الجهة',
@@ -648,13 +754,12 @@ const seedUpdate = () => {
 }
 
 const hydrate = () => {
-  for (const e of entityRows) e.canApply = e.activation === 'نشط'
   seedUpdate()
   try { ops = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Op[] } catch { ops = [] }
   for (const o of ops) apply(o)
   /* The expiry rule runs at load, so an entity whose license lapsed overnight reads inactive */
   const at = now()
-  for (const e of entityRows) syncActivation(e, at)
+  for (const e of entityRows) settle(e, at)
 }
 hydrate()
 
@@ -713,17 +818,24 @@ export const resubmitRegistration = (id: string, values: Record<string, string>,
   run({ op: 'regResubmit', id, values, docs, by, at: now() })
 
 export const decideRegistration = (id: string, outcome: 'approve' | 'reject', note: string, banks: Record<string, string>, by: string, reason?: RegRejectReason): string | undefined => {
+  /* v3 · 2.4.9 · the store checks the license pair too · an entity registered since the screen
+     opened can't be duplicated by the approval */
+  const r = regRows.find((y) => y.id === id)
+  if (outcome === 'approve' && r && licenseClash(r.licenseNo, r.type, entityRows)) return undefined
   run({ op: 'regDecide', id, outcome, note, banks, reason, by, at: now() })
   return regRows.find((r) => r.id === id)?.entityId
 }
 
 /** Register an entity from inside the system · returns its new id (2.4.32) */
 export const registerInternal = (values: Record<string, string>, docs: string[], partner: string, by: string, banks: RegBank[] = []): string => {
+  /* v3 · 2.4.9 · 2.4.34 · the same license and classification never register twice */
+  if (values.licenseNo && values.type && licenseClash(values.licenseNo, values.type, entityRows)) return ''
   run({ op: 'internal', values, docs, partner, by, banks, at: now() })
   return lastInternal
 }
 
-export const setEntityStatus = (entityId: string, to: EntityActivation, reason: string, by: string, meta?: StatusMeta) =>
+/** A decision on the account · 'suspension' · 'revoked' · or 'lift' to remove the one in force */
+export const setEntityStatus = (entityId: string, to: 'suspension' | 'revoked' | 'lift', reason: string, by: string, meta?: StatusMeta) =>
   run({ op: 'status', entityId, to, reason, by, meta, at: now() })
 
 export const archiveEntity = (entityId: string, on: boolean, reason: string, by: string, code?: string) =>
@@ -745,6 +857,23 @@ export const deleteBank = (entityId: string, bankId: string, reason: string, by:
   run({ op: 'bankDelete', entityId, bankId, reason, by, at: now() })
 
 export const startReview = (reqId: string, by: string) => run({ op: 'reviewStart', reqId, by, at: now() })
+
+/** v3 · 2.4.10 · move a project to another entity · its records follow */
+export const relinkEntity = (projectId: string, to: string, reason: string, by: string, file?: string) =>
+  run({ op: 'relink', projectId, to, reason, file, by, at: now(), bank: bankSource(to) })
+
+/** The intake store calls this when its replay adds a project it creates · a move recorded on that
+    project runs then */
+export const replayLateRelinks = (projectId: string): void => {
+  const waiting = LATE.filter((o) => o.op === 'relink' && o.projectId === projectId)
+  if (!waiting.length) return
+  for (const o of waiting) { LATE.splice(LATE.indexOf(o), 1); apply(o) }
+  emit()
+}
+
+/** Payments names the account a payment goes to · it hands its reader in at load, so the entity
+    store doesn't import it back */
+export const setBankSource = (f: (entityId: string) => { name: string; active: boolean } | undefined): void => { bankSource = f }
 
 export const viewArchived = (entityId: string, by: string) => run({ op: 'viewArchived', entityId, by, at: now() })
 

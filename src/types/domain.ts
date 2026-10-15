@@ -75,9 +75,15 @@ export type FollowUpType =
 
 // Entity
 
-/** Entity activation · «نشط» can apply · «غير نشط» lost it to an expired mandatory document (2.4.20) ·
-    «معلق (موقوف)» suspended by decision · «ملغى الاعتماد» revoked · «محدث» an update awaits approval (2.3.upd-16) */
-export type EntityActivation = 'نشط' | 'غير نشط' | 'معلق (جديد)' | 'معلق (موقوف)' | 'محدث' | 'ملغى الاعتماد' | 'مرفوض'
+/** The entity account · v3's dictionary (0.ent.6–9 · 2.4.1 · 2.4.2) · «نشط» applies and is paid ·
+    «معلق» a substantive update is under review (running projects carry on, no new requests) ·
+    «غير نشط» a real eligibility block (an expired mandatory document, or a suspension or revocation
+    decision · `EntityRow.decision`) · no requests and no payments · «مؤرشف» is the `archived` flag on
+    top of any of them. An entity record exists only once its registration is approved (2.4.3) · a
+    request still in review or rejected is a registration request, not an entity. */
+export type EntityActivation = 'نشط' | 'معلق' | 'غير نشط'
+/** The decision behind a «غير نشط» account, when a decision is behind it */
+export type EntityDecision = 'suspension' | 'revoked'
 
 export interface EntityDocument {
   name: string
@@ -559,6 +565,8 @@ export interface EntityRow {
   email: string
   /** Archived instead of deleted (2.4.28) · out of every list, found only by the archive search (2.4.29) */
   archived?: boolean
+  /** A suspension or revocation in force · keeps the account «غير نشط» until it's lifted */
+  decision?: EntityDecision
   /** May submit project requests · granted on approval (2.2.17 · 2.4.18), lost with activation */
   canApply?: boolean
 }

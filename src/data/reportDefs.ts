@@ -145,14 +145,16 @@ export function boardCards(yearId: string): ReportCard[] {
   }
 
   /* 4 · partners · the entity that will hold up an agreement */
-  const short = entityRows.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL)
-  const stalled = entityRows.filter((e) => e.projectsStalled > 0)
+  /* v3 · 2.4.31 · an archived entity is out of the readings */
+  const live = entityRows.filter((e) => !e.archived)
+  const short = live.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL)
+  const stalled = live.filter((e) => e.projectsStalled > 0)
   out.push({
     key: 'partners',
     question: 'أي الجهات ستعطّل الاعتماد؟',
     icon: 'entity',
     value: nf.format(short.length),
-    unit: `جهة ملفها ناقص من ${nf.format(entityRows.length)}`,
+    unit: `جهة ملفها ناقص من ${nf.format(live.length)}`,
     reading:
       `${countOf(short.length, NOUN.entity)} ملفها الورقي ناقص، فأي اعتماد لها يتوقف عند توقيع الاتفاقية. ` +
       `و${countOf(stalled.length, NOUN.entity)} لديها مشروع متعثّر لم يُغلق.`,
@@ -160,7 +162,7 @@ export function boardCards(yearId: string): ReportCard[] {
     danger: [`${countOf(short.length, NOUN.entity)}`],
     src: 'تقارير الشركاء · reports1_2',
     bars: [
-      { k: 'ملفها مكتمل', v: entityRows.length - short.length, tone: 'ok' },
+      { k: 'ملفها مكتمل', v: live.length - short.length, tone: 'ok' },
       { k: 'ناقص', v: short.length, tone: 'no' },
     ],
   })

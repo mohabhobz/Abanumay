@@ -1,4 +1,4 @@
-import { activationSay } from '@/data/shared/decisions'
+import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tag } from '@/components/ui'
@@ -15,7 +15,7 @@ import { ibanValid } from '@/lib/iban'
 import { BANK_REJECTS } from '@/data/mock/registration'
 import { meOf, readRole, roleByKey } from '@/data/roles'
 import { ENTITY_RULES } from '@/data/entities/rules'
-import { duplicates } from '@/data/entities/validate'
+import { duplicates, licenseDup } from '@/data/entities/validate'
 import {
   UPD_STATE_SAY, canDecide, decideUpdate, updById, useEntityFlow,
 } from '@/data/entities/store'
@@ -38,6 +38,8 @@ export default function UpdateReviewPage() {
   const [note, setNote] = useState('')
   /* Re-audit 7 Oct · each new account is decided on its own · approving the request accepted them all */
   const [bankNo, setBankNo] = useState<Record<string, string>>({})
+  /* v3 · 2.4.6 · renewed documents are read and confirmed legible before approval */
+  const [legible, setLegible] = useState(false)
   const role = readRole()
   const me = meOf(role)
   const may = canDecide('update', role)
@@ -61,12 +63,13 @@ export default function UpdateReviewPage() {
   const e = entityById(u.entityId)
   const waiting = u.changes.filter((c) => !c.direct)
   const direct = u.changes.filter((c) => c.direct)
-  const dups = duplicates(
-    Object.fromEntries(u.changes.map((c) => [c.key, c.to])) as Record<string, string>,
-    u.banks, { exceptEntity: u.entityId },
-  )
+  const asked = Object.fromEntries(u.changes.map((c) => [c.key, c.to])) as Record<string, string>
+  /* v3 · 2.4.9 · the license number and classification pair is checked on an update too */
+  const lic = licenseDup(u.entityId, { licenseNo: asked.licenseNo, type: asked.type })
+  const dups = [...duplicates(asked, u.banks, { exceptEntity: u.entityId }), ...(lic ? [lic] : [])]
   const badIban = u.banks.filter((b) => !bankNo[b.id] && !ibanValid(b.iban))
-  const blocked = dups.length > 0 || badIban.length > 0
+  const needsRead = u.docs.length > 0
+  const blocked = dups.length > 0 || badIban.length > 0 || (needsRead && !legible)
   const open = u.state === 'review'
   const deciders = ENTITY_RULES.updateBy.map((k) => roleByKey(k).title).join(' أو ')
 
@@ -167,7 +170,7 @@ export default function UpdateReviewPage() {
               {/* The entity now and the log · in the main column, the end column is the assistant's alone */}
               {e && (
                 <Glass>
-                  <Head title="الجهة الآن" meta={<Tag tone={activationTone(e.activation)}>{activationSay(e.activation)}</Tag>} />
+                  <Head title="الجهة الآن" meta={<Tag tone={activationTone(accountSay(e))}>{accountLine(e)}</Tag>} />
                   <KV rows={[
                     { k: 'صلاحية التقديم', v: e.canApply ? 'مفعّلة' : 'موقوفة حتى القرار' },
                     { k: 'نهاية الترخيص', v: <DateText>{e.licenseEndsAt}</DateText> },
@@ -243,6 +246,12 @@ export default function UpdateReviewPage() {
                     <span className="vis-h">الملاحظة</span>
                     <input value={note} onChange={(x) => setNote(x.target.value)} placeholder="الملاحظة · إلزامية للإعادة والرفض" />
                   </label>
+                  {needsRead && (
+                    <label className="rowf gp-2">
+                      <input type="checkbox" checked={legible} onChange={(x) => setLegible(x.target.checked)} />
+                      <span>راجعتُ الوثائق المجدَّدة وهي واضحة ومقروءة</span>
+                    </label>
+                  )}
                   <div className="rowf gp-2">
                     <button className="btn btn-2" data-needs-note="" disabled={!note.trim()} onClick={() => decideUpdate(u.id, 'return', note.trim(), me)}>
                       إعادة للاستكمال
@@ -253,7 +262,7 @@ export default function UpdateReviewPage() {
                     <button
                       className="btn btn-p"
                       disabled={blocked}
-                      title={blocked ? 'بيانات مكرّرة أو آيبان غير صحيح · أعده للاستكمال' : 'تُطبَّق التعديلات وتُحفظ القيم السابقة في سجل الجهة'}
+                      title={blocked ? (needsRead && !legible && !dups.length && !badIban.length ? 'أكّد وضوح الوثائق المجدَّدة وقراءتها أولًا' : 'بيانات مكرّرة أو آيبان غير صحيح · أعده للاستكمال') : 'تُطبَّق التعديلات وتُحفظ القيم السابقة في سجل الجهة'}
                       onClick={() => decideUpdate(u.id, 'approve', note.trim(), me, bankNo)}
                     >
                       اعتماد وتطبيق

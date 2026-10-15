@@ -136,7 +136,8 @@ export const LICENSORS = [
   'أخرى',
 ] as const
 
-export const ACTIVATIONS = ['نشط', 'غير نشط', 'معلق (جديد)', 'معلق (موقوف)', 'محدث', 'ملغى الاعتماد', 'مرفوض'] as const
+/** v3 · 0.ent.6–9 · the entity account · «مؤرشف» is the archive flag, searched on the archive page */
+export const ACTIVATIONS = ['نشط', 'معلق', 'غير نشط'] as const
 
 /** Governance score · "not assessed" is the most common value in the system */
 export const GOVERNANCE = ['ممتازة', 'جيدة', 'مقبولة', 'ضعيفة', 'لم تُقيَّم'] as const

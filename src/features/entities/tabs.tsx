@@ -1,4 +1,4 @@
-import { activationSay } from '@/data/shared/decisions'
+import { accountLine, accountSay } from '@/data/shared/decisions'
 import { accountEvents } from '@/data/entities/auth'
 import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
@@ -117,7 +117,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <Head title="بيانات النظام" />
         <KV
           rows={[
-            { k: 'حالة التفعيل', v: <Tag tone={activationTone(e.activation)}>{activationSay(e.activation)}</Tag> },
+            { k: 'حالة الحساب', v: <Tag tone={activationTone(accountSay(e))}>{accountLine(e)}</Tag> },
             { k: 'درجة الحوكمة', v: <b>{e.governance}</b> },
             { k: 'نوع الحساب', v: d.accountType },
             { k: 'اسم المستخدم', v: <Mono>{d.username}</Mono> },
@@ -167,7 +167,7 @@ export function EntityDocsTab({ d, entityId }: { d: EntityDetail; entityId: stri
           <Icon name={icons.alert} size="sm" />
           <div>
             <b><Num>{expired}</Num> {expired === 1 ? 'وثيقة منتهية' : 'وثائق منتهية'}</b>
-            <p>تتحول الجهة إلى «غير نشطة» عند انتهاء الترخيص أو قرار تكليف المجلس، ولا يُقبل منها طلب مشروع حتى تُعتمد النسخة السارية بطلب تحديث من بوابتها.{' '}
+            <p>يتحول حساب الجهة إلى «غير نشط» عند انتهاء الترخيص أو قرار تكليف المجلس، فلا يُقبل منها طلب مشروع ولا تُصرف لها دفعة حتى تُعتمد النسخة السارية بطلب تحديث من بوابتها.{' '}
               <Link className="lnk" to={`${ROUTES.entityUpdate}?entity=${entityId}`}>نموذج التحديث كما تراه الجهة</Link></p>
           </div>
         </div>

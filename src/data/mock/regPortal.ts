@@ -53,7 +53,7 @@ export const portalViewOf = (s: RegState): PortalView => {
     case 'review':
       return {
         state: s, tone: 'warn', editable: false, waiting: true,
-        say: 'الطلب قيد المراجعة لدى المؤسسة',
+        say: 'الطلب تحت المراجعة لدى المؤسسة',
         act: '',
       }
     case 'completion':

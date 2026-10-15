@@ -5,8 +5,8 @@ import type { RoleKey } from '@/data/roles'
    transfer policy the system checks before a request goes anywhere, and the spending limit of each
    management level. Every value here is a setting, read by the budget screens and the checks alike.
 
-   Finance isn't a role in the prototype's switcher · the executive director previews its step, as in
-   payments; once the backend arrives the token decides. */
+   Every step names its roles here · the switcher plays each of them, and once the backend arrives
+   the token decides. */
 
 export type Level = 'manager' | 'exec' | 'committee' | 'board'
 
@@ -39,9 +39,12 @@ export interface BudgetRules {
   migrated?: number
 }
 
+/* v3 · 1.1.desc-4 · preparing and approving the grants budget sits outside the grants department ·
+   the authority holders are named here · by default finance prepares and the executive director
+   reviews first (15 Oct · Mohab) */
 const DEFAULT: BudgetRules = {
-  prepareBy: ['supervisor', 'grants-manager'],
-  managerBy: ['grants-manager'],
+  prepareBy: ['finance'],
+  managerBy: ['ceo'],
   financeBy: ['finance'],
   execBy: ['ceo'],
   statusBy: ['grants-manager', 'ceo'],
@@ -51,7 +54,8 @@ const DEFAULT: BudgetRules = {
   spendCaps: { manager: 100_000, exec: 500_000, committee: 2_000_000, board: null },
   holdAt: 'recommend',
   relinkBy: ['grants-manager', 'ceo'],
-  migrated: 2,
+  /* no `migrated` here · readJson spreads the defaults under the stored file, so a version on the
+     default would mark an old file as migrated and skip the moves below */
 }
 
 export const BUDGET_RULES: BudgetRules = readJson(CFG.budgetRules, DEFAULT)
@@ -65,6 +69,15 @@ if ((BUDGET_RULES.migrated ?? 0) < 2) {
   if (moved) BUDGET_RULES.financeBy = ['finance']
   BUDGET_RULES.migrated = 2
   if (moved) persist(CFG.budgetRules, BUDGET_RULES)
+}
+/* v3 · 15 Oct · once · a file still on the grants department's old defaults moves to the v3 ones ·
+   a choice the admin made since stands */
+if ((BUDGET_RULES.migrated ?? 0) < 3) {
+  const same = (a: RoleKey[], b: RoleKey[]) => a.length === b.length && a.every((x) => b.includes(x))
+  const old = same(BUDGET_RULES.prepareBy, ['supervisor', 'grants-manager']) && same(BUDGET_RULES.managerBy, ['grants-manager'])
+  if (old) { BUDGET_RULES.prepareBy = [...DEFAULT.prepareBy]; BUDGET_RULES.managerBy = [...DEFAULT.managerBy] }
+  BUDGET_RULES.migrated = 3
+  if (old) persist(CFG.budgetRules, BUDGET_RULES)
 }
 
 export const saveBudgetRules = (next: BudgetRules): void => {

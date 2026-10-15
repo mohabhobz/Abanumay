@@ -83,19 +83,20 @@ export interface EntityOption {
   open: number
   /** Cap reached · stays in the list along with the reason */
   capped: boolean
-  /** An inactive entity can't submit · a rule from entity registration */
-  inactive: boolean
+  /** An entity whose account isn't «نشط» can't submit (2.4.22) · its account word, or '' */
+  inactive: string
 }
 
+/* v3 · 0.ent.9 · 2.4.31 · an archived entity is out of every list · the picker included */
 export const entityOptions = (): EntityOption[] =>
-  entityRows.map((e) => {
+  entityRows.filter((e) => !e.archived).map((e) => {
     const sent = requestsInPeriod(e.id)
     return {
       id: e.id,
       name: e.name,
       open: sent,
       capped: sent >= entityCap(),
-      inactive: e.activation !== 'نشط',
+      inactive: e.activation === 'نشط' ? '' : e.activation,
     }
   })
 
@@ -218,6 +219,10 @@ export const projectIssues = (val: PValues): PIssue[] => {
   const out: PIssue[] = []
 
   const ent = entityOptions().find((e) => e.id === val.entityId)
+  /* v3 · 2.4.31 · an archived entity is out of the picker, and a request carrying its id (the portal
+     link) stops here too */
+  const gone = entityRows.find((e) => e.id === val.entityId && e.archived)
+  if (gone) out.push({ key: 'archived', say: `«${gone.name}» مؤرشفة · لا تُقبل منها مشاريع جديدة.`, rule: 'تسجيل الجهات' })
   if (ent?.capped) {
     out.push({
       key: 'cap',
@@ -228,7 +233,7 @@ export const projectIssues = (val: PValues): PIssue[] => {
   if (ent?.inactive) {
     out.push({
       key: 'inactive',
-      say: `«${ent.name}» غير نشطة، ولا تُقبل مشاريع من جهة غير نشطة.`,
+      say: `حساب «${ent.name}» ${ent.inactive} · لا تُقبل مشاريع إلا من جهة حسابها نشط${ent.inactive === 'معلق' ? ' (تحديث جوهري تحت المراجعة)' : ''}.`,
       rule: 'تسجيل الجهات',
     })
   }
@@ -236,7 +241,7 @@ export const projectIssues = (val: PValues): PIssue[] => {
   /* 3.4.8 · 3.4.9 · the entity's own file must be valid when it applies: no expired mandatory
      document and at least one active bank account to receive the grant */
   const er = entityRows.find((e) => e.id === val.entityId)
-  if (er && !ent?.inactive) {
+  if (er && !er.archived && !ent?.inactive) {
     const det = entityDetail(er)
     const expired = det.docs.filter((d) => d.expired)
     if (expired.length) {

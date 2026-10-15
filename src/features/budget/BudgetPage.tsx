@@ -7,7 +7,8 @@ import { Mono } from '@/components/ui'
 import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
 import { BUDGET_STATE_SAY, budgetTone, docTitle, yearById } from '@/data/mock/budgetTree'
 import { allBudgets } from '@/data/mock/chain'
-import { BUDGET_REQS, lineDeps, shareSay, useBudget } from '@/data/budget/store'
+import { BUDGET_REQS, lineDeps, mayAct, shareSay, useBudget } from '@/data/budget/store'
+import { readRole } from '@/data/roles'
 import { docSources } from '@/data/mock/budgetTree'
 import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -116,7 +117,7 @@ export default function BudgetPage() {
                 A cycle is always selected, so there's no "all" option - `allowEmpty={false}`. */}
             <PageActions
               settings={ROUTES.budgetSettings}
-              create={{ label: 'ميزانية جديدة', to: ROUTES.budgetNew }}
+              create={mayAct('prepare', readRole()) ? { label: 'ميزانية جديدة', to: ROUTES.budgetNew } : undefined}
             />
           </header>
 

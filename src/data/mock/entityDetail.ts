@@ -150,8 +150,9 @@ export function entityDetail(e: EntityRow): EntityDetail {
   const pick = <T,>(a: readonly T[]) => a[Math.floor(rnd() * a.length)]
   const int = (lo: number, hi: number) => lo + Math.floor(rnd() * (hi - lo + 1))
 
-  const stopped = e.activation.startsWith('معلق') || e.activation === 'مرفوض'
-  const fresh = e.activation === 'معلق (جديد)'
+  /* v3 · a suspension or revocation decision is what stops an entity · there is no pre-approval
+     entity record any more (2.4.3) */
+  const stopped = Boolean(e.decision)
 
   /* Founding date is one to seven years before registration with us — an entity registers after
      it's already operating, not on the day it's founded. */
@@ -193,23 +194,19 @@ export function entityDetail(e: EntityRow): EntityDetail {
        ahead of today. It used to run from the first upload (registration + 200–900 days), so every
        entity registered before 2024 showed all three expired — and no active entity could apply
        for a project (3.4.8). Expired copies now belong to the entities whose license itself has
-       lapsed, plus the one copy marked for renewal on an entity with a «محدث» status. */
+       lapsed. */
     const today = iso(new Date())
     const renewedAt = shift(today, -int(20, 330))
-    const lapsed = licenseExpired || (e.activation === 'محدث' && i === 2)
+    const lapsed = licenseExpired
     const exp = lapsed ? shift(licenseExpired ? e.licenseEndsAt : today, -int(5, 60)) : shift(iso(renewedAt), 365 + int(30, 400))
     return { name, uploaded: true, at: iso(renewedAt), expires: iso(exp), expired: exp.getTime() < Date.now() }
   })
 
-  /* Bank accounts
-     A new entity has no active account: activation happens after acceptance, so its account stays
-     "pending activation". */
-  const bankCount = fresh ? 1 : int(1, 3)
+  /* Bank accounts · every entity here is approved (2.4.3), so its first account is active */
+  const bankCount = int(1, 3)
   const banks: BankAccount[] = Array.from({ length: bankCount }, (_, i) => {
     const bank = BANKS[(Number(e.id) + i) % BANKS.length]
-    const status: BankAccount['status'] = fresh
-      ? 'بانتظار التفعيل'
-      : i === 0
+    const status: BankAccount['status'] = i === 0
         ? 'مفعل'
         : rnd() < 0.55 ? 'غير مفعل' : 'مفعل'
     return {
@@ -247,7 +244,7 @@ export function entityDetail(e: EntityRow): EntityDetail {
     ],
   })
 
-  if (!fresh) {
+  {
     const dAccept = shift(e.registeredAt, int(2, 21))
     log.push({
       id: 'accept',
@@ -256,7 +253,7 @@ export function entityDetail(e: EntityRow): EntityDetail {
       by: staff(),
       ...at(dAccept),
       note: pick(NOTES_ACCEPT),
-      fields: [{ k: 'حالة التفعيل', v: 'نشط' }],
+      fields: [{ k: 'حالة الحساب', v: 'نشط' }],
     })
 
     const activated = banks.filter((b) => b.status === 'مفعل')
@@ -291,7 +288,7 @@ export function entityDetail(e: EntityRow): EntityDetail {
       })
     }
 
-    if (e.activation === 'محدث' || rnd() < 0.5) {
+    if (e.activation === 'معلق' || rnd() < 0.5) {
       log.push({
         id: 'edit',
         kind: 'edit',
@@ -309,12 +306,12 @@ export function entityDetail(e: EntityRow): EntityDetail {
   if (stopped) {
     log.push({
       id: 'stop',
-      kind: e.activation === 'مرفوض' ? 'reject' : 'stop',
-      action: e.activation === 'مرفوض' ? 'رفض وإيقاف' : 'إيقاف الجهة',
+      kind: e.decision === 'revoked' ? 'reject' : 'stop',
+      action: e.decision === 'revoked' ? 'إلغاء اعتماد الجهة' : 'تعليق الأهلية',
       by: staff(),
       ...at(shift(e.registeredAt, int(120, 700))),
       note: pick(NOTES_STOP),
-      fields: [{ k: 'حالة التفعيل', v: e.activation }],
+      fields: [{ k: 'حالة الحساب', v: `${e.activation} · ${e.decision === 'revoked' ? 'قرار إلغاء اعتماد' : 'قرار تعليق الأهلية'}` }],
     })
   }
 

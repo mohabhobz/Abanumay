@@ -1,10 +1,10 @@
 /* budget · review round Sept 30 */
 
 /* Budget tree · held, committed, paid and available sit after allocated (client request 11 · 1.4.5).
-   Nine columns: item · level · five amounts · status · actions. Scoped under `.btree` so it wins
-   over the six-column base rule without touching index.css. */
+   Ten columns: item · level · six amounts · status · actions (v3 · 1.4.46 · the hold split into
+   initial and final). Scoped under `.btree` so it wins over the six-column base rule. */
 .btree .btree-h,.btree .btree-r{
-  grid-template-columns:minmax(14rem,1fr) 6rem 6.5rem 6.5rem 6.5rem 6.5rem 6.5rem 6rem 2.75rem}
+  grid-template-columns:minmax(14rem,1fr) 6rem 6.5rem 6.5rem 6.5rem 6.5rem 6.5rem 6.5rem 6rem 2.75rem}
 /* 11 Oct · audit UI-113 · the actions column held one ⋮ button in 96px while the names beside it
    were cut («الرحلات التطويرية للجمعيـ…»). It's the button's width now, and the name takes the rest. */
 /* The domain's supervisor beside its name · a face, the name in the tooltip of the list */
@@ -21,10 +21,10 @@
   .btree .btree-r{grid-template-columns:repeat(2,minmax(0,1fr))}
   .btree .btree-r>span:nth-child(1){grid-column:1/-1}
   .btree .btree-r>span:nth-child(2){grid-column:1;justify-self:start;order:1}
-  .btree .btree-r>span:nth-child(8){grid-column:2;justify-self:end;order:1}
+  .btree .btree-r>span:nth-child(9){grid-column:2;justify-self:end;order:1}
   .btree .btree-r>.tnum{order:2}
-  .btree .btree-r>span:nth-child(9){grid-column:1/-1;order:3}
-  .btree .btree-f>span:nth-child(2),.btree .btree-f>span:nth-child(8),.btree .btree-f>span:nth-child(9){display:none}
+  .btree .btree-r>span:nth-child(10){grid-column:1/-1;order:3}
+  .btree .btree-f>span:nth-child(2),.btree .btree-f>span:nth-child(9),.btree .btree-f>span:nth-child(10){display:none}
   .btree .btree-r>.tnum{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);min-width:0}
   .btree .btree-r>.tnum::before{content:attr(data-k);flex:none;font-size:var(--fs-1);color:var(--t3)}
   .btree .btree-r>.tnum>.btree-a{flex:1;min-width:0}
@@ -86,7 +86,6 @@
 .fnd-h{margin:var(--sp-5) 0 0;font-size:var(--fs-3);font-weight:600;color:var(--t1);display:flex;align-items:baseline;gap:var(--sp-2)}
 /* 11 Oct · audit UI-013/183 · the first entry under a section title sat on it with no gap */
 .fnd-h+.plchg,.fnd-h+ul,.fnd-h+.kv{margin-top:var(--sp-3)}
-.btree-hs{display:block;font-size:var(--fs-1);line-height:var(--lh-ui)}
 .fnd-c1{width:38%}
 .fnd-scroll .tbl{min-width:44rem}
 

@@ -170,7 +170,7 @@ export default function RequestsPage() {
               <p className="sub mt-1">
                 <span className="num">{rows.length}</span> {nounAfter(rows.length, REQUEST_NOUN)} من{' '}
                 <span className="num">{regRows.length}</span> في هذا النموذج ·{' '}
-                <span className="num">{k.open}</span> قيد المراجعة · والجهة لا تُنشأ
+                <span className="num">{k.open}</span> تحت المراجعة · والجهة لا تُنشأ
                 إلا بعد الاعتماد{/* doc rule 2 */}
               </p>
             </div>

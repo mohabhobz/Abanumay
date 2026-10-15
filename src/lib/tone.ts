@@ -54,9 +54,9 @@ export const groupTone = (group: string): Tone => {
 export const activationTone = (activation: string): Tone => {
   switch (activation) {
     case 'نشط': return 'ok'
-    case 'ملغى الاعتماد': return 'no'
-    case 'محدث': return 'ret'
-    case 'مرفوض': return 'no'
+    case 'معلق': return 'ret'
+    case 'غير نشط': return 'no'
+    case 'مؤرشف': return 'mute'
     default: return 'warn'
   }
 }

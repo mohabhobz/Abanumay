@@ -298,7 +298,8 @@ export type BudgetState = 'draft' | 'returned' | 'submitted' | 'finance' | 'exec
 export const BUDGET_STATE_SAY: Record<BudgetState, string> = {
   draft: 'مسودة',
   returned: 'معادة للمُعِدّ',
-  submitted: 'لدى مدير المنح',
+  /* v3 · 1.1.desc-4 · the first reviewer is whoever settings name */
+  submitted: 'لدى صاحب الصلاحية',
   finance: 'لدى الإدارة المالية',
   exec: 'لدى المدير التنفيذي',
   approved: 'معتمدة · مفعّلة',

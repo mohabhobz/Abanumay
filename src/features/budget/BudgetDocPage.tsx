@@ -45,9 +45,10 @@ import { DocRequests, LedgerCard, SourceLedgerCard } from './doc/DocLedger'
    tell them what's wrong and why. Hiding it keeps the user from learning the structure; the message
    teaches it. The panel next to the tree shows every note with the source of each rule.
 
-   The budget's life (BPD-001) runs on this same screen: prepared and saved (1.2.1–1.2.7), sent to
-   the grants manager (1.2.8), approved forward or returned by the grants manager, finance and the
-   executive director in turn (1.2.9–1.2.11), and active once approved (1.2.12). Only a draft or a
+   The budget's life (BPD-001) runs on this same screen: prepared and saved (1.2.1–1.2.7) by the
+   roles settings name (finance by default · v3 1.1.desc-4), sent for review (1.2.8), approved
+   forward or returned by the reviewer, finance and the approver in turn (1.2.9–1.2.11 · a return
+   goes back to the preparer), and active once approved (1.2.12). Only a draft or a
    returned budget is editable; an approved one keeps its structure and changes through operation
    requests, while its lines can still be turned off and its domains assigned. Each step is written
    to the budget's history (1.2.13) and every money change to its ledger (1.4.5). */
@@ -73,7 +74,7 @@ const BLANK: Draft = {
 
 const STEP_SAY = {
   manager: { ok: 'وافق وأحِل إلى الإدارة المالية', back: 'أعد إلى المُعِدّ' },
-  finance: { ok: 'وافق وأحِل إلى المدير التنفيذي', back: 'أعد إلى مدير المنح' },
+  finance: { ok: 'وافق وأحِل إلى المدير التنفيذي', back: 'أعد إلى المُعِدّ' },
   exec: { ok: 'اعتمد الميزانية وفعّلها', back: 'أعد إلى الإدارة المالية' },
 } as const
 
@@ -174,7 +175,7 @@ export default function BudgetDocPage() {
     saveBudget(rec, me)
     if (send) submitBudget(theId, me)
     setDraft(structuredClone(docOf(theId) ?? rec))
-    setFlash(send ? 'أُرسلت إلى مدير المنح للمراجعة' : 'حُفظت المسودة')
+    setFlash(send ? `أُرسلت إلى ${whoActs('submitted')} للمراجعة` : 'حُفظت المسودة')
     if (!id) navigate(ROUTES.budgetDoc(theId), { replace: true })
   }
 
@@ -193,6 +194,19 @@ export default function BudgetDocPage() {
             </Glass>
           </div>
         </div>
+      </AppLayout>
+    )
+  }
+
+  /* v3 · 1.1.desc-4 · a new budget is prepared by the authority holders settings name · anyone else
+     is told who prepares, not handed a form they can't send */
+  if (!existing && !canPrepare) {
+    return (
+      <AppLayout assistantContext={assistFor.page('الميزانية')}>
+        <div className="viewstack"><div className="screen col">
+          <BackTo label="الميزانية" onClick={() => navigate(ROUTES.budget)} />
+          <Glass><Empty title="إعداد الميزانية لأصحاب الصلاحية" note={`يُعدّ الميزانية ويرسلها: ${whoActs('draft') || 'لا أحد بعد'} · خارج مسؤوليات إدارة المنح · يُضبط من إعدادات الميزانية.`} /></Glass>
+        </div></div>
       </AppLayout>
     )
   }
@@ -413,7 +427,9 @@ export default function BudgetDocPage() {
                     <span>البند</span>
                     <span>مستوى البند</span>
                     <span className="tnum">المبلغ المخصص</span>
-                    <span className="tnum">المبلغ المحتجز</span>
+                    {/* v3 · 1.4.46 · initial and final holds, each its own figure */}
+                    <span className="tnum">المحجوز مبدئيًا</span>
+                    <span className="tnum">المحجوز نهائيًا</span>
                     <span className="tnum">الملتزم به</span>
                     <span className="tnum">المبلغ المدفوع</span>
                     <span className="tnum">المبلغ المتاح</span>
@@ -465,11 +481,10 @@ export default function BudgetDocPage() {
                         {/* Held, committed and paid live on the leaf; a parent shows its children's
                             sums, and available is allocated − held − committed − paid. An inactive line
                             keeps them (1.4.38) · it only stops taking new projects. */}
-                        {/* 1.4.41 · the held figure split by stage · initial while the project climbs the path */}
-                        <span className="tnum" data-k="المحتجز" title={sp.initial ? `مبدئي ${nf.format(sp.initial)} · نهائي ${nf.format(sp.final)}` : undefined}>
-                          <Num>{m.held}</Num>
-                          {sp.initial > 0 && <span className="sub btree-hs">مبدئي <Num>{sp.initial}</Num></span>}
-                        </span>
+                        {/* v3 · 1.4.46 · the hold in two figures · initial while the project climbs the
+                            path, final once approved · their sum is what the available figure leaves out */}
+                        <span className="tnum" data-k="المحجوز مبدئيًا">{sp.initial ? <Num>{sp.initial}</Num> : <Nil />}</span>
+                        <span className="tnum" data-k="المحجوز نهائيًا">{sp.final ? <Num>{sp.final}</Num> : <Nil />}</span>
                         <span className="tnum" data-k="الملتزم به">{m.committed ? <Num>{m.committed}</Num> : <Nil />}</span>
                         <span className="tnum" data-k="المدفوع"><Num>{m.paid}</Num></span>
                         <span className="tnum" data-k="المتاح">{x.active ? <Num>{m.available}</Num> : <Nil />}</span>
@@ -516,12 +531,15 @@ export default function BudgetDocPage() {
                        row above reads in the same column. */
                     const top = childrenOf(nodes, root.id).map((k) => moneyOf(nodes, k.id))
                     const t = (f: keyof typeof top[number]) => top.reduce((a, k) => a + k[f], 0)
+                    const splits = childrenOf(nodes, root.id).map((k) => holdSplit(doc, k.id))
+                    const hs = (f: 'initial' | 'final') => splits.reduce((a, k) => a + k[f], 0)
                     return (
                       <div className="btree-r btree-f">
                         <span className="btree-n" title="مجموع بنود المستوى الأول"><b>الإجمالي</b></span>
                         <span />
                         <span className="tnum" data-k="المخصص"><b><Num>{t('allocated')}</Num></b></span>
-                        <span className="tnum" data-k="المحتجز"><b><Num>{t('held')}</Num></b></span>
+                        <span className="tnum" data-k="المحجوز مبدئيًا"><b><Num>{hs('initial')}</Num></b></span>
+                        <span className="tnum" data-k="المحجوز نهائيًا"><b><Num>{hs('final')}</Num></b></span>
                         <span className="tnum" data-k="الملتزم به"><b><Num>{t('committed')}</Num></b></span>
                         <span className="tnum" data-k="المدفوع"><b><Num>{t('paid')}</Num></b></span>
                         <span className="tnum" data-k="المتاح"><b><Num>{t('available')}</Num></b></span>
@@ -580,10 +598,10 @@ export default function BudgetDocPage() {
                   <button
                     className="btn btn-p"
                     disabled={!canSubmit}
-                    title={head[0] ?? (issues.length ? `${issues.length} ملاحظة على الشجرة` : 'أرسل إلى مدير المنح')}
+                    title={head[0] ?? (issues.length ? `${issues.length} ملاحظة على الشجرة` : `أرسل إلى ${whoActs('submitted')}`)}
                     onClick={() => persist(true)}
                   >
-                    أرسل إلى مدير المنح
+                    أرسل للمراجعة
                   </button>
                 </>
               )}
@@ -593,7 +611,7 @@ export default function BudgetDocPage() {
                   <button className="btn btn-2" onClick={() => setDecide('back')}>{STEP_SAY[myStep].back}</button>
                 </>
               )}
-              {live && existing && (
+              {live && existing && canPrepare && (
                 <Link className="btn btn-2" to={`${ROUTES.budgetOpNew}?doc=${existing.id}`}>
                   <Icon name={icons.redo} size="sm" />
                   طلب مناقلة أو تعزيز

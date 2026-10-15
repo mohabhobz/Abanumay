@@ -1,4 +1,4 @@
-import { activationSay } from '@/data/shared/decisions'
+import { accountLine, accountSay } from '@/data/shared/decisions'
 import { Link } from 'react-router-dom'
 import { DateText, Glass, Head, Icon, KV, Mono, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
@@ -21,13 +21,13 @@ export function PortalAccount({ e }: { e: EntityRow }) {
   const lapsed = [...new Set([...expiredMandatory(e), ...(det.licenseExpired ? ['الترخيص'] : []), ...(det.boardExpired ? ['قرار تكليف المجلس'] : [])])]
   const open = openUpdateOf(e.id)
   const reason = overlayOf(e.id).statusReason
-  const blocked = e.activation === 'معلق (موقوف)' || e.activation === 'ملغى الاعتماد' || e.archived
+  const blocked = Boolean(e.decision) || e.archived
 
   return (
     <Glass>
       <Head
         title="حساب الجهة"
-        meta={<Tag tone={activationTone(e.activation)}>{e.archived ? 'مؤرشفة' : activationSay(e.activation)}</Tag>}
+        meta={<Tag tone={activationTone(accountSay(e))}>{accountLine(e)}</Tag>}
       />
       <KV
         rows={[
@@ -42,7 +42,7 @@ export function PortalAccount({ e }: { e: EntityRow }) {
           <Icon name={icons.alert} size="sm" />
           <div>
             <b>انتهت صلاحية {lapsed.join(' و')}</b>
-            <p>الجهة غير نشطة حتى ترفع النسخة السارية بطلب تحديث، ولا يُقبل منها طلب مشروع قبل اعتماده.</p>
+            <p>حساب الجهة غير نشط حتى ترفع النسخة السارية بطلب تحديث · لا يُقبل منها طلب مشروع ولا تُصرف لها دفعة قبل اعتماده.</p>
           </div>
         </div>
       )}
@@ -53,14 +53,14 @@ export function PortalAccount({ e }: { e: EntityRow }) {
             <b>طلب التحديث <Mono>{open.id}</Mono> · {UPD_STATE_SAY[open.state]}</b>
             <p>{open.state === 'completion'
               ? `أعادته المؤسسة للاستكمال: ${open.note ?? ''}`
-              : open.state === 'draft' ? 'مسودة لم تُرسل بعد.' : 'نشاط الجهة معلّق حتى يُبتّ فيه.'}</p>
+              : open.state === 'draft' ? 'مسودة لم تُرسل بعد.' : 'حساب الجهة «معلق» حتى يُبتّ فيه · مشاريعك القائمة مستمرة ولا تقديم جديد.'}</p>
           </div>
         </div>
       )}
       {blocked && reason && (
         <div className="ptl-res no">
           <Icon name={icons.alert} size="sm" />
-          <div><b>{e.archived ? 'أُرشفت الجهة' : activationSay(e.activation)}</b><p>{reason}</p></div>
+          <div><b>{e.archived ? 'أُرشفت الجهة' : accountLine(e)}</b><p>{reason}</p></div>
         </div>
       )}
 

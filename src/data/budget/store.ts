@@ -127,7 +127,7 @@ export const REQ_KIND_SAY: Record<ReqKind, string> = { transfer: 'مناقلة',
 export const REQ_STATE_SAY: Record<ReqState, string> = {
   draft: 'مسودة',
   returned: 'معاد للمُعِدّ',
-  submitted: 'لدى مدير المنح',
+  submitted: 'لدى صاحب الصلاحية',
   finance: 'لدى الإدارة المالية',
   exec: 'لدى المدير التنفيذي',
   executed: 'معتمد · نُفِّذ',
@@ -282,6 +282,32 @@ const notify = (to: string[], title: string, context: string, at: string, href: 
   for (const t of to) BUDGET_NOTES.unshift({ id: `bn-${BUDGET_NOTES.length + 1}`, to: t, title, context, at: at.slice(0, 10), href })
 }
 const titlesOf = (roles: RoleKey[]) => roles.map((k) => roleByKey(k).title)
+/** What a save changed on a budget · for its log line */
+function saveDiff(a: BudgetDoc, b: BudgetDoc): string {
+  const out: string[] = []
+  const was = new Map(a.nodes.map((n) => [n.id, n]))
+  const now = new Map(b.nodes.map((n) => [n.id, n]))
+  const added = b.nodes.filter((n) => !was.has(n.id)).map((n) => n.label)
+  const gone = a.nodes.filter((n) => !now.has(n.id)).map((n) => n.label)
+  const moved = b.nodes.filter((n) => was.has(n.id) && was.get(n.id)!.allocated !== n.allocated)
+    .map((n) => `${n.label} ${nf.format(was.get(n.id)!.allocated)} ← ${nf.format(n.allocated)}`)
+  const renamed = b.nodes.filter((n) => was.has(n.id) && was.get(n.id)!.label !== n.label).map((n) => `${was.get(n.id)!.label} ← ${n.label}`)
+  if (a.name !== b.name) out.push(`الاسم: ${a.name ?? '—'} ← ${b.name ?? '—'}`)
+  if (a.total !== b.total) out.push(`الإجمالي: ${nf.format(a.total)} ← ${nf.format(b.total)}`)
+  if (added.length) out.push(`أُضيف: ${added.join('، ')}`)
+  if (gone.length) out.push(`حُذف: ${gone.join('، ')}`)
+  if (moved.length) out.push(`المخصص: ${moved.join('، ')}`)
+  if (renamed.length) out.push(`أُعيدت تسمية: ${renamed.join('، ')}`)
+  return out.join(' · ')
+}
+/** v3 · 1.1.desc-4 · the step's authority holders as settings name them · never a fixed title */
+const reviewerSay = () => titlesOf(BUDGET_RULES.managerBy).join(' أو ') || 'صاحب الصلاحية'
+/** Who stood at the review and the approval when a step was taken · kept on the op, so a later
+    change in settings doesn't rewrite the history (an old op without it reads today's settings) */
+interface Who { rv: string; ex: string }
+const whoNow = (): Who => ({ rv: reviewerSay(), ex: titlesOf(BUDGET_RULES.execBy).join(' أو ') || 'المدير التنفيذي' })
+/** v2 · 15 Oct · finance returns to the preparer · an op recorded before went back to the first reviewer */
+const FLOW_V = 2
 
 /* ── Readers ── */
 
@@ -432,8 +458,8 @@ type Op = { at: string } & (
   | { op: 'sourceRename'; code: string; name: string; by: string }
   | { op: 'dirSave'; dir: Direction; by: string }
   | { op: 'docSave'; doc: BudgetDoc; by: string }
-  | { op: 'docSubmit'; id: string; by: string }
-  | { op: 'docDecide'; id: string; outcome: 'approve' | 'return'; note: string; by: string }
+  | { op: 'docSubmit'; id: string; by: string; who?: Who }
+  | { op: 'docDecide'; id: string; outcome: 'approve' | 'return'; note: string; by: string; who?: Who; v?: number }
   | { op: 'lineStatus'; docId: string; nodeId: string; active: boolean; reason: string; by: string }
   | { op: 'lineOwner'; docId: string; nodeId: string; owners: string[]; by: string }
   | { op: 'link'; link: LinkInput; stage?: HoldStage; reason?: string }
@@ -444,8 +470,8 @@ type Op = { at: string } & (
   | { op: 'linkClose'; projectId: string; by: string; note: string }
   | { op: 'linkRecover'; projectId: string; amount: number; ref: string; by: string }
   | { op: 'linkResize'; projectId: string; amount: number; ref: string; by: string; reason: string }
-  | { op: 'reqSave'; req: Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt' | 'result'>; send: boolean }
-  | { op: 'reqDecide'; id: string; outcome: 'approve' | 'return' | 'reject'; note: string; by: string }
+  | { op: 'reqSave'; req: Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt' | 'result'>; send: boolean; who?: Who }
+  | { op: 'reqDecide'; id: string; outcome: 'approve' | 'return' | 'reject'; note: string; by: string; who?: Who; v?: number }
   | { op: 'planSave'; plan: Omit<FundingPlan, 'at' | 'version'> }
 )
 
@@ -750,12 +776,14 @@ const apply = (o: Op) => {
       if (cur && !budgetEditable(cur.state)) return
       const next = structuredClone(o.doc)
       next.state = cur?.state ?? 'draft'
+      /* 1.2.12 · a save names what it changed · lines added, removed, re-amounted, the head */
+      const what = cur ? saveDiff(cur, next) : ''
       if (cur) Object.assign(cur, next)
       else {
         register(next)
         log(next.id, { at: o.at, by: o.by, text: 'أُنشئت الميزانية كمسودة' })
       }
-      if (cur) log(cur.id, { at: o.at, by: o.by, text: 'حُفظت التعديلات' })
+      if (cur) log(cur.id, { at: o.at, by: o.by, text: what ? `حُفظت التعديلات · ${what}` : 'حُفظت التعديلات · بلا تغيير في البنود أو المبالغ' })
       return
     }
     case 'docSubmit': {
@@ -763,7 +791,7 @@ const apply = (o: Op) => {
       if (!d || !budgetEditable(d.state)) return
       if (headIssues(d).length || treeIssues(d).length) return
       d.state = 'submitted'
-      log(d.id, { at: o.at, by: o.by, text: 'أُرسلت إلى مدير المنح للمراجعة' })
+      log(d.id, { at: o.at, by: o.by, text: `أُرسلت إلى ${(o.who ?? whoNow()).rv} للمراجعة` })
       notify(titlesOf(BUDGET_RULES.managerBy), `ميزانية للمراجعة · ${docTitle(d)}`, `أرسلها ${o.by}`, o.at, ROUTES.budgetDoc(d.id))
       return
     }
@@ -771,28 +799,31 @@ const apply = (o: Op) => {
       const d = docOf(o.id)
       if (!d) return
       const from = d.state
+      /* v3 · 1.2.9 · finance returns the budget to whoever prepared it, not to the first reviewer */
       const next: Partial<Record<BudgetState, BudgetState>> = o.outcome === 'approve'
         ? { submitted: 'finance', finance: 'exec', exec: 'approved' }
-        : { submitted: 'returned', finance: 'submitted', exec: 'finance' }
+        : { submitted: 'returned', finance: (o.v ?? 1) >= 2 ? 'returned' : 'submitted', exec: 'finance' }
       const to = next[from]
       if (!to) return
       d.state = to
+      const w = o.who ?? whoNow()
       const say: Record<string, string> = {
-        'submitted>finance': 'وافق مدير المنح وأحالها إلى الإدارة المالية',
-        'finance>exec': 'وافقت الإدارة المالية وأحالتها إلى المدير التنفيذي',
-        'exec>approved': 'اعتمدها المدير التنفيذي وفُعّلت في النظام',
-        'submitted>returned': 'أعادها مدير المنح إلى مُعِدّها',
-        'finance>submitted': 'أعادتها الإدارة المالية إلى مدير المنح',
-        'exec>finance': 'أعادها المدير التنفيذي إلى الإدارة المالية',
+        'submitted>finance': `وافق ${w.rv} وأحالها إلى الإدارة المالية`,
+        'finance>exec': `وافقت الإدارة المالية وأحالتها إلى ${w.ex}`,
+        'exec>approved': `اعتمدها ${w.ex} وفُعّلت في النظام`,
+        'submitted>returned': `أعادها ${w.rv} إلى مُعِدّها`,
+        'finance>returned': 'أعادتها الإدارة المالية إلى مُعِدّها',
+        'finance>submitted': `أعادتها الإدارة المالية إلى ${w.rv}`,
+        'exec>finance': `أعادها ${w.ex} إلى الإدارة المالية`,
       }
       log(d.id, { at: o.at, by: o.by, text: say[`${from}>${to}`] ?? '', note: o.note || undefined, tone: o.outcome === 'approve' ? 'ok' : 'ret' })
       if (to === 'approved') {
         opening(d, o.at, o.by)
         syncOwners(d)
-        notify(['مدير المنح', 'مشرف المنح'], `اعتُمدت ${docTitle(d)}`, 'مفعّلة · متاحة لربط المشاريع والحجز', o.at, ROUTES.budgetDoc(d.id))
+        notify([...new Set([...titlesOf(BUDGET_RULES.prepareBy), 'مدير المنح', 'مشرف المنح'])], `اعتُمدت ${docTitle(d)}`, 'مفعّلة · متاحة لربط المشاريع والحجز', o.at, ROUTES.budgetDoc(d.id))
       } else {
         const st = stepOf(to)
-        const who = st === 'prepare' ? ['مشرف المنح'] : st ? [...(st === 'finance' ? ['الإدارة المالية'] : []), ...titlesOf(STEP_ROLES(st))] : []
+        const who = st ? [...(st === 'finance' ? ['الإدارة المالية'] : []), ...titlesOf(STEP_ROLES(st))] : []
         notify(who, `${o.outcome === 'approve' ? 'ميزانية للمراجعة' : 'ميزانية معادة'} · ${docTitle(d)}`, o.note || say[`${from}>${to}`] || '', o.at, ROUTES.budgetDoc(d.id))
       }
       return
@@ -1114,7 +1145,7 @@ const apply = (o: Op) => {
         if (reqIssues(r).length) return
         r.state = 'submitted'
         r.submittedAt = o.at
-        r.events.unshift({ at: o.at, by: o.req.by, text: 'أُرسل إلى مدير المنح للاعتماد' })
+        r.events.unshift({ at: o.at, by: o.req.by, text: `أُرسل إلى ${(o.who ?? whoNow()).rv} للاعتماد` })
         notify(titlesOf(BUDGET_RULES.managerBy), `طلب ${REQ_KIND_SAY[r.kind]} · ${r.id}`, `${nf.format(r.amount)} · ${docTitle(docOf(r.docId)!)}`, o.at, ROUTES.budgetOp(r.id))
       }
       return
@@ -1130,27 +1161,29 @@ const apply = (o: Op) => {
         r.events.unshift({ at: o.at, by: o.by, text: 'رُفض الطلب', note: o.note, tone: 'ret' })
         return
       }
+      /* v3 · 1.3.8 · finance returns the request to whoever prepared it */
       const next: Partial<Record<ReqState, ReqState>> = o.outcome === 'approve'
         ? { submitted: 'finance', finance: 'exec', exec: 'executed' }
-        : { submitted: 'returned', finance: 'submitted', exec: 'finance' }
+        : { submitted: 'returned', finance: (o.v ?? 1) >= 2 ? 'returned' : 'submitted', exec: 'finance' }
       const to = next[from]
       if (!to) return
+      const w = o.who ?? whoNow()
       if (to === 'executed' && reqIssues(r).length) return
       r.state = to
       r.note = o.outcome === 'return' ? o.note : r.note
       const say: Record<string, string> = {
-        'submitted>finance': 'وافق مدير المنح وأحاله إلى الإدارة المالية',
-        'finance>exec': 'وافقت الإدارة المالية وأحالته إلى المدير التنفيذي',
-        'exec>executed': 'اعتمده المدير التنفيذي ونُفِّذ آليًا',
-        'submitted>returned': 'أعاده مدير المنح إلى مُعِدّه',
-        'finance>submitted': 'أعادته الإدارة المالية إلى مدير المنح',
-        'exec>finance': 'أعاده المدير التنفيذي إلى الإدارة المالية',
+        'submitted>finance': `وافق ${w.rv} وأحاله إلى الإدارة المالية`,
+        'finance>exec': `وافقت الإدارة المالية وأحالته إلى ${w.ex}`,
+        'exec>executed': `اعتمده ${w.ex} ونُفِّذ آليًا`,
+        'submitted>returned': `أعاده ${w.rv} إلى مُعِدّه`,
+        'finance>returned': 'أعادته الإدارة المالية إلى مُعِدّه',
+        'finance>submitted': `أعادته الإدارة المالية إلى ${w.rv}`,
+        'exec>finance': `أعاده ${w.ex} إلى الإدارة المالية`,
       }
       r.events.unshift({ at: o.at, by: o.by, text: say[`${from}>${to}`] ?? '', note: o.note || undefined, tone: o.outcome === 'approve' ? 'ok' : 'ret' })
       if (to === 'executed') execute(r, o.at, o.by)
       const st = stepOf(to)
       const who = to === 'executed' ? ['مشرف المنح', 'مدير المنح']
-        : st === 'prepare' ? ['مشرف المنح']
           : st ? [...(st === 'finance' ? ['الإدارة المالية'] : []), ...titlesOf(STEP_ROLES(st))] : []
       notify(who, `طلب ${REQ_KIND_SAY[r.kind]} ${r.id} · ${REQ_STATE_SAY[to]}`, o.note || say[`${from}>${to}`] || '', o.at, ROUTES.budgetOp(r.id))
       return
@@ -1205,17 +1238,17 @@ function seed() {
       const at = d.from <= TODAY ? `${d.from}T09:00:00.000Z` : '2026-09-15T09:00:00.000Z'
       log(d.id, { at, by: 'عبدالرحمن الهليّل', text: 'اعتمدها المدير التنفيذي وفُعّلت في النظام', tone: 'ok' })
       log(d.id, { at, by: FINANCE_ACTOR, text: 'وافقت الإدارة المالية وأحالتها إلى المدير التنفيذي', tone: 'ok' })
-      log(d.id, { at, by: 'عبدالله الدوسري', text: 'وافق مدير المنح وأحالها إلى الإدارة المالية', tone: 'ok' })
-      log(d.id, { at, by: 'عمر قاسم', text: 'أُرسلت إلى مدير المنح للمراجعة' })
+      log(d.id, { at, by: 'عبدالرحمن الهليّل', text: 'وافق المدير التنفيذي وأحالها إلى الإدارة المالية', tone: 'ok' })
+      log(d.id, { at, by: FINANCE_ACTOR, text: 'أُرسلت إلى المدير التنفيذي للمراجعة' })
       opening(d, at, 'عبدالرحمن الهليّل')
     } else if (d.state === 'submitted') {
-      log(d.id, { at: '2026-09-28T10:30:00.000Z', by: 'عمر قاسم', text: 'أُرسلت إلى مدير المنح للمراجعة' })
+      log(d.id, { at: '2026-09-28T10:30:00.000Z', by: FINANCE_ACTOR, text: 'أُرسلت إلى المدير التنفيذي للمراجعة' })
     } else {
-      log(d.id, { at: '2026-09-20T08:00:00.000Z', by: 'عمر قاسم', text: 'أُنشئت الميزانية كمسودة' })
+      log(d.id, { at: '2026-09-20T08:00:00.000Z', by: FINANCE_ACTOR, text: 'أُنشئت الميزانية كمسودة' })
     }
   }
 
-  /* Two requests on the 2026 budget · one waiting on the grants manager, one on finance */
+  /* Two requests on the 2026 budget · one waiting on the first reviewer, one on finance · prepared by finance (v3 · 1.1.desc-4) */
   const d = docOf('BG-2026-SA')
   const leaves = d ? leavesOf(d.nodes).filter((n) => n.parentId !== null && freeOf(d, n.id) > 0).sort((a, b) => freeOf(d, b.id) - freeOf(d, a.id)) : []
   if (d && leaves.length >= 2) {
@@ -1224,20 +1257,20 @@ function seed() {
     BUDGET_REQS.push({
       id: 'BOP-2026-0001', yearId: d.yearId, docId: d.id, kind: 'transfer', fromId: a.id, toId: b.id, amount: amt,
       reason: `إعادة توجيه الوفر في «${a.label}» إلى «${b.label}» بعد اكتمال الدراسات`, files: [],
-      state: 'submitted', by: 'عمر قاسم', createdAt: '2026-09-29T09:00:00.000Z', submittedAt: '2026-09-29T09:10:00.000Z',
+      state: 'submitted', by: FINANCE_ACTOR, createdAt: '2026-09-29T09:00:00.000Z', submittedAt: '2026-09-29T09:10:00.000Z',
       events: [
-        { at: '2026-09-29T09:10:00.000Z', by: 'عمر قاسم', text: 'أُرسل إلى مدير المنح للاعتماد' },
-        { at: '2026-09-29T09:00:00.000Z', by: 'عمر قاسم', text: 'أُنشئ الطلب' },
+        { at: '2026-09-29T09:10:00.000Z', by: FINANCE_ACTOR, text: 'أُرسل إلى المدير التنفيذي للاعتماد' },
+        { at: '2026-09-29T09:00:00.000Z', by: FINANCE_ACTOR, text: 'أُنشئ الطلب' },
       ],
     })
     BUDGET_REQS.push({
       id: 'BOP-2026-0002', yearId: d.yearId, docId: d.id, kind: 'increase', toId: b.id, amount: 200_000,
       reason: 'تعزيز الهدف لاستيعاب مشاريع الدورة الثانية', files: ['قرار مجلس الأمناء بالتعزيز.pdf'],
-      state: 'finance', by: 'عبدالله الدوسري', createdAt: '2026-09-24T11:00:00.000Z', submittedAt: '2026-09-24T11:05:00.000Z',
+      state: 'finance', by: FINANCE_ACTOR, createdAt: '2026-09-24T11:00:00.000Z', submittedAt: '2026-09-24T11:05:00.000Z',
       events: [
-        { at: '2026-09-25T13:20:00.000Z', by: 'عبدالله الدوسري', text: 'وافق مدير المنح وأحاله إلى الإدارة المالية', tone: 'ok' },
-        { at: '2026-09-24T11:05:00.000Z', by: 'عبدالله الدوسري', text: 'أُرسل إلى مدير المنح للاعتماد' },
-        { at: '2026-09-24T11:00:00.000Z', by: 'عبدالله الدوسري', text: 'أُنشئ الطلب' },
+        { at: '2026-09-25T13:20:00.000Z', by: 'عبدالرحمن الهليّل', text: 'وافق المدير التنفيذي وأحاله إلى الإدارة المالية', tone: 'ok' },
+        { at: '2026-09-24T11:05:00.000Z', by: FINANCE_ACTOR, text: 'أُرسل إلى المدير التنفيذي للاعتماد' },
+        { at: '2026-09-24T11:00:00.000Z', by: FINANCE_ACTOR, text: 'أُنشئ الطلب' },
       ],
     })
   }
@@ -1341,9 +1374,9 @@ export const addSource = (source: FundSource, by: string) => run({ op: 'sourceAd
 export const renameSource = (code: string, name: string, by: string) => run({ op: 'sourceRename', code, name, by, at: now() })
 export const saveDirection = (dir: Direction, by: string) => run({ op: 'dirSave', dir, by, at: now() })
 export const saveBudget = (doc: BudgetDoc, by: string) => run({ op: 'docSave', doc, by, at: now() })
-export const submitBudget = (id: string, by: string) => run({ op: 'docSubmit', id, by, at: now() })
+export const submitBudget = (id: string, by: string) => run({ op: 'docSubmit', id, by, at: now(), who: whoNow() })
 export const decideBudget = (id: string, outcome: 'approve' | 'return', note: string, by: string) =>
-  run({ op: 'docDecide', id, outcome, note, by, at: now() })
+  run({ op: 'docDecide', id, outcome, note, by, at: now(), who: whoNow(), v: FLOW_V })
 export const setLineStatus = (docId: string, nodeId: string, active: boolean, reason: string, by: string) =>
   run({ op: 'lineStatus', docId, nodeId, active, reason, by, at: now() })
 export const setLineOwners = (docId: string, nodeId: string, owners: string[], by: string) =>
@@ -1393,9 +1426,9 @@ export function resizeIssue(projectId: string, amount: number): string {
   return free < diff ? `لا يكفي المتاح في البند (${nf.format(Math.max(0, free))}) لزيادة الحجز ${nf.format(diff)}` : ''
 }
 export const saveRequest = (req: Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt' | 'result'>, send: boolean) =>
-  run({ op: 'reqSave', req, send, at: now() })
+  run({ op: 'reqSave', req, send, at: now(), who: whoNow() })
 export const decideRequest = (id: string, outcome: 'approve' | 'return' | 'reject', note: string, by: string) =>
-  run({ op: 'reqDecide', id, outcome, note, by, at: now() })
+  run({ op: 'reqDecide', id, outcome, note, by, at: now(), who: whoNow(), v: FLOW_V })
 export const savePlan = (plan: Omit<FundingPlan, 'at' | 'version'>) => run({ op: 'planSave', plan, at: now() })
 
 export const resetBudget = () => {

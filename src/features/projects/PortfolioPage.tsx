@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { payBlock } from '@/data/entities/store'
 import { portfolioAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
@@ -584,6 +585,8 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
         })}
         {!pf.schedule.length && <li className="sub">يُحدَّد الجدول مع الاتفاقية.</li>}
       </ul>
+      {/* v3 · 0.ent.8 · 2.4.22 · the partner's account decides whether its portfolio is paid */}
+      {payBlock(entityById(pf.entityId)) && <p className="bad cnote">{payBlock(entityById(pf.entityId))}</p>}
       {/* Re-audit 7 Oct · 13.2.23 · the partner asks for its portfolio's payment from its own account · the
           supervisor may still file it on its behalf */}
       {(sup || asPartner) && open && next && (

@@ -3,7 +3,7 @@ import {
 } from '@/data/mock/budgetTree'
 import { allBudgets } from '@/data/mock/chain'
 import { projectRows } from '@/data/mock/projects'
-import { allLinks, allPlans, directionById, sourceName } from './store'
+import { allLinks, allPlans, directionById, holdSplit, sourceName } from './store'
 
 /* Consolidated reports across budgets (1.4.6) · each budget keeps its own balances, and this reads
    them side by side: by track, domain, goal, strategic direction, funding source or project, for
@@ -16,13 +16,16 @@ export const GROUP_SAY: Record<GroupBy, string> = {
   track: 'المسار', field: 'المجال', goal: 'الهدف', direction: 'التوجه الاستراتيجي', source: 'مصدر التمويل', project: 'المشروع',
 }
 
-export interface Part { docId: string; title: string; money: LineMoney }
-export interface ReportRow { key: string; label: string; money: LineMoney; parts: Part[] }
+/** v3 · 1.4.46 · the held figure carries its initial part · final = held − initial */
+export type ReportMoney = LineMoney & { initial: number }
+export interface Part { docId: string; title: string; money: ReportMoney }
+export interface ReportRow { key: string; label: string; money: ReportMoney; parts: Part[] }
 
-const zero = (): LineMoney => ({ allocated: 0, held: 0, committed: 0, paid: 0, available: 0 })
-const add = (a: LineMoney, b: LineMoney, f = 1): LineMoney => ({
+const zero = (): ReportMoney => ({ allocated: 0, held: 0, initial: 0, committed: 0, paid: 0, available: 0 })
+const add = (a: ReportMoney, b: ReportMoney, f = 1): ReportMoney => ({
   allocated: a.allocated + Math.round(b.allocated * f),
   held: a.held + Math.round(b.held * f),
+  initial: a.initial + Math.round(b.initial * f),
   committed: a.committed + Math.round(b.committed * f),
   paid: a.paid + Math.round(b.paid * f),
   available: a.available + Math.round(b.available * f),
@@ -50,7 +53,7 @@ const directionOf = (d: BudgetDoc, n: BudgetNode): string => {
 
 export function consolidate(by: GroupBy, docs: BudgetDoc[] = allBudgets): ReportRow[] {
   const rows = new Map<string, ReportRow>()
-  const put = (key: string, label: string, d: BudgetDoc, m: LineMoney, f = 1) => {
+  const put = (key: string, label: string, d: BudgetDoc, m: ReportMoney, f = 1) => {
     const r = rows.get(key) ?? { key, label, money: zero(), parts: [] }
     r.money = add(r.money, m, f)
     const p = r.parts.find((x) => x.docId === d.id)
@@ -74,7 +77,7 @@ export function consolidate(by: GroupBy, docs: BudgetDoc[] = allBudgets): Report
         const d = docs.find((y) => y.id === x.docId)
         if (!d) continue
         const live = l.stage === 'initial' || l.stage === 'final'
-        put(l.projectId, l.projectName, d, { ...zero(), allocated: x.amount, held: live ? x.amount - x.paid : 0, paid: x.paid })
+        put(l.projectId, l.projectName, d, { ...zero(), allocated: x.amount, held: live ? x.amount - x.paid : 0, initial: l.stage === 'initial' ? x.amount - x.paid : 0, paid: x.paid })
       }
     }
     for (const p of allPlans()) {
@@ -94,7 +97,7 @@ export function consolidate(by: GroupBy, docs: BudgetDoc[] = allBudgets): Report
   for (const d of docs) {
     for (const n of leavesOf(d.nodes)) {
       if (n.parentId === null) continue
-      const m = moneyOf(d.nodes, n.id)
+      const m: ReportMoney = { ...moneyOf(d.nodes, n.id), initial: holdSplit(d, n.id).initial }
       if (by === 'goal') { put(n.label, n.label, d, m); continue }
       if (by === 'track' || by === 'field') {
         const top = atLevel(d, n, by === 'track' ? 1 : 2) ?? (by === 'field' ? atLevel(d, n, 1) : undefined)
@@ -115,4 +118,4 @@ export function consolidate(by: GroupBy, docs: BudgetDoc[] = allBudgets): Report
   return [...rows.values()].sort((a, b) => b.money.allocated - a.money.allocated)
 }
 
-export const totalOf = (rows: ReportRow[]): LineMoney => rows.reduce((a, r) => add(a, r.money), zero())
+export const totalOf = (rows: ReportRow[]): ReportMoney => rows.reduce((a, r) => add(a, r.money), zero())

@@ -5,6 +5,7 @@ import { SOURCE_OF } from '@/data/mock/log'
 import { projectRows } from '@/data/mock/projects'
 import { stageMeta, FIELDS_BY_TRACK } from '@/data/mock/taxonomy'
 import { entityById } from '@/data/mock/entities'
+import { replayLateRelinks } from '@/data/entities/store'
 import { CYCLE, TODAY, addWorkingDays, type Distribution } from './cycle'
 import { CRITERIA, studyScore } from './criteria'
 import { nextSeq, type Stamped } from '@/data/opclock'
@@ -328,6 +329,8 @@ function applyOp(o: Op) {
         source: o.asEntity ? 'portal' : 'staff',
         createdAt: `${opDay()}T${NOW_TIME()}`, startAt: v.startAt, endAt: v.startAt && days ? addWorkingDays(v.startAt, days) : v.endAt,
       })
+      /* v3 · 2.4.10 · a move to another entity recorded on this project waits for it */
+      replayLateRelinks(o.id)
       const f = flowOf(o.id)
       /* Re-audit 7 Oct · a request saved as a draft first keeps the draft's date as its creation */
       f.sentAt = `${opDay()} ${NOW_TIME()}`

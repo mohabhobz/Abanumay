@@ -315,21 +315,21 @@ export function readEntities(all: EntityRow[], filtered: EntityRow[], isFiltered
     })
   }
 
-  const held = scope.filter((e) => e.activation.startsWith('معلق'))
+  const held = scope.filter((e) => Boolean(e.decision))
   if (held.length) {
     const declined = held.reduce((s, e) => s + e.projectsDeclined, 0)
     const d = units.project(declined, true)
     out.push({
       id: 'held',
       kind: 'note',
-      label: 'جهات معلّقة',
-      metric: { value: String(held.length), unit: 'جهة معلّقة' },
+      label: 'جهات بقرار تعليق',
+      metric: { value: String(held.length), unit: 'جهة معلّقة الأهلية' },
       text:
         `ولها ${d} معتذر عنها. يستحق التحقق: هل التعليق هو سبب ` +
         `الاعتذار؟`,
       bold: [d],
-      src: 'حالة التفعيل في سجل الشركاء',
-      to: `${ROUTES.entities}?activation=${[...new Set(held.map((e) => e.activation))].join(',')}${LIST}`,
+      src: 'حالة الحساب في سجل الشركاء',
+      to: `${ROUTES.entities}?activation=${encodeURIComponent('غير نشط')}${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -388,18 +388,18 @@ export function readEntity(
   /* Activation status comes before anything else: "suspended" or "rejected" means an agreement
      isn't even expected, so it shouldn't be read after lighter notes. */
   if (entity.activation !== 'نشط') {
-    const stopped = entity.activation.startsWith('معلق') || entity.activation === 'مرفوض'
+    const stopped = entity.activation === 'غير نشط'
     out.push({
       id: 'activation',
       kind: stopped ? 'flag' : 'note',
-      label: 'التفعيل',
-      metric: { value: entity.activation, unit: 'حالة التفعيل' },
+      label: 'حالة الحساب',
+      metric: { value: entity.activation, unit: 'حالة الحساب' },
       text: stopped
-        ? 'التعاقد موقوف حتى يُقبل التفعيل، وأي اعتماد الآن سيتوقف عند توقيع الاتفاقية.'
-        : 'حُدّثت بياناتها ولم تُراجع بعد، فالمقارنة بالجهات الأخرى مبنية على ملف قديم.',
+        ? 'لا تقديم ولا صرف حتى يزول المانع، وأي اعتماد الآن سيتوقف عند الصرف.'
+        : 'تحديث جوهري تحت المراجعة · المشاريع القائمة مستمرة، والمقارنة بالجهات الأخرى مبنية على الملف قبل التحديث.',
       bold: [entity.activation],
       danger: stopped ? [entity.activation] : undefined,
-      src: 'حقل التفعيل في ملف الجهة',
+      src: 'حالة الحساب في ملف الجهة',
     })
   }
 

@@ -11,7 +11,7 @@ import {
   type Decisions, type Level, type ProjectKind,
 } from '@/data/shared/decisions'
 import { APPROVAL_RULES, saveApprovalRules } from '@/data/approvals/rules'
-import { ENTITY_RULES, saveEntityRules } from '@/data/entities/rules'
+import { ENTITY_RULES, ENTITY_RULES_DEFAULT, saveEntityRules } from '@/data/entities/rules'
 import { logSettings } from '@/data/shared/settingsLog'
 
 /* «قرارات المؤسسة» · batch 8 (9 Oct).
@@ -58,7 +58,7 @@ export default function DecisionsPage() {
   const put = <K extends keyof Decisions>(k: K, v: Decisions[K]) => setD((x) => ({ ...x, [k]: v }))
   const changes = (Object.keys(d) as (keyof Decisions)[]).filter((k) => JSON.stringify(d[k]) !== JSON.stringify(saved.d[k])).length
     + (auto !== saved.auto ? 1 : 0) + (block !== saved.block ? 1 : 0)
-  const decided = (Object.keys(d) as (keyof Decisions)[]).filter((k) => JSON.stringify(d[k]) !== JSON.stringify(DECISIONS_DEFAULT[k])).length + (auto ? 1 : 0) + (block ? 1 : 0)
+  const decided = (Object.keys(d) as (keyof Decisions)[]).filter((k) => JSON.stringify(d[k]) !== JSON.stringify(DECISIONS_DEFAULT[k])).length + (auto ? 1 : 0) + (block !== ENTITY_RULES_DEFAULT.blockIncomplete ? 1 : 0)
 
   const save = () => {
     saveDecisions(d, user.name)
@@ -84,22 +84,11 @@ export default function DecisionsPage() {
               <h1 className="ptitle">قرارات المؤسسة</h1>
               <p className="sub mt-1">
                 أسئلة لا يجيب عنها إلا أصحاب القرار · كل سؤال مبني بالخيارين، والاختيار هنا يغيّر سلوك النظام فورًا ·
-                الخيار الأول هو ما كان يعمل به النظام · {decided ? <>اختير {decided} من 10</> : 'لم يُختر شيء بعد'}
+                الخيار الأول هو ما كان يعمل به النظام · {decided ? <>اختير {decided} من 9</> : 'لم يُختر شيء بعد'}
               </p>
             </div>
             {!can && <Tag tone="mute">للعرض · يختار المدير التنفيذي أو مدير النظام</Tag>}
           </header>
-
-          <Choice
-            title="حالة الجهة أثناء طلب التحديث" refs={/* doc 2.3.upd-16 · entities#8 */ ""} disabled={!can}
-            q="الجهة التي أرسلت طلب تحديث يتطلب اعتمادًا تُعلَّق حتى يُبتّ فيه · بأي اسم تظهر حالتها؟"
-            value={d.updateStatus} onChange={(v) => put('updateStatus', v)}
-            opts={[
-              { value: 'محدث', label: '«محدث» · اسم النظام العامل', does: 'تبقى التسمية التي يعرفها الموظفون من النظام الحالي.' },
-              { value: 'غير نشطة', label: '«غير نشطة» · اسم الوثيقة', does: 'تظهر «غير نشطة · بانتظار التحديث» كما في الوثيقة، والسلوك واحد: لا تقديم حتى يُبتّ في الطلب.' },
-            ]}
-            where={<>قائمة الجهات وملف الجهة وبوابتها ومراجعة التحديث</>}
-          />
 
           <Choice
             title="فتح الدفعة التالية" refs={/* doc BPD-009 · payments#6 */ ""} disabled={!can}
@@ -175,7 +164,7 @@ export default function DecisionsPage() {
             />
             <Switch
               label="منع إرسال طلب تسجيل الجهة قبل اكتمال بياناته ومرفقاته" disabled={!can}
-              note={/* doc 2.2.7 · 2.4.4 */ "أُوقف بطلب العميل في 30 سبتمبر · عند التفعيل لا يُرسل الطلب حتى يجتاز التحقق"}
+              note={/* v3 · 2.2.7 · 2.4.5 · 2.4.15 · 2.7.1 */ "مفعّل وفق وثيقة v3 (14 أكتوبر) · لا يُرسل الطلب حتى يجتاز التحقق من البيانات والمرفقات والصيغ · كان موقوفًا بطلب 30 سبتمبر"}
               on={block} onChange={setBlock}
             />
             <Switch

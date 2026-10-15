@@ -6,6 +6,8 @@ import { DecisionBar, Crumbs } from '@/components/shell'
 import { EhsanCard, EhsanNoAgreement, RoutingCard } from '@/features/partners/parts'
 import { viaEhsan } from '@/data/partners/store'
 import { AppLayout } from '@/app/layout/AppLayout'
+import { RelinkEntityButton, RelinkHistory } from '@/features/entities/RelinkEntity'
+import { relinksOf, useEntityFlow } from '@/data/entities/store'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { addDays, projectCode } from '@/lib/format'
@@ -89,6 +91,8 @@ export default function ProjectPage() {
   const { id, tab } = useParams<{ id: string; tab?: string }>()
   const navigate = useNavigate()
   const mobile = useIsMobile()
+  /* v3 · 2.4.10 · a move to another entity redraws the page */
+  useEntityFlow()
 
   /**
    * The same project's row from the list.
@@ -434,6 +438,8 @@ export default function ProjectPage() {
                   type={row?.partnerType === 'مستقل' ? `مشروع مستقل${row.platform ? ` · ${row.platform}` : ''}` : type}
                   entityName={entity.name}
                   entityId={String(entity.id)}
+                  entityAction={row ? <RelinkEntityButton projectId={row.id} entityId={row.entityId} projectName={row.name} /> : undefined}
+                  entityHistory={row && relinksOf(row.id).length ? <RelinkHistory projectId={row.id} /> : undefined}
                   /* The latest action, not the latest event: updates share the same timeline, with
                      the row labeled "latest action" above it. */
                   last={log.find((e) => !e.followUp)}

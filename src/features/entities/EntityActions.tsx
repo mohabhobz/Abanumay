@@ -1,15 +1,15 @@
-import { activationSay } from '@/data/shared/decisions'
+import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Tag, icons } from '@/components/ui'
 import {
-  ACCOUNT_SAY, ACT_SAY, REQ_SAY, accountOf, actState, archiveBlocks, bankLinked, forWho, impactOf, lastRequestOf, reasonOf, reasonText, type ActKey,
+  ACT_SAY, REQ_SAY, accountOf, actState, archiveBlocks, bankLinks, forWho, impactOf, lastRequestOf, reasonOf, reasonText, type ActKey,
 } from '@/data/entities/actions'
 import { Modal, ReasonField } from './SelectionActions'
 import { units } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
 import { activationTone } from '@/lib/tone'
-import type { EntityActivation, EntityRow } from '@/types/domain'
+import type { EntityRow } from '@/types/domain'
 import { BANK_REJECT_REASONS, entityDetail, type BankAccount } from '@/data/mock/entityDetail'
 import { entityById } from '@/data/mock/entities'
 import { REG_STATE_SAY } from '@/data/mock/registration'
@@ -86,7 +86,7 @@ function SensModal({ e, sens, me, onClose }: { e: EntityRow; sens: Sens; me: str
     if (sens === 'archive') archiveEntity(e.id, true, reason, me, code)
     else if (sens === 'restore') archiveEntity(e.id, false, reason, me, code)
     else {
-      const to: EntityActivation = sens === 'lift' ? 'نشط' : sens === 'revoke' ? 'ملغى الاعتماد' : 'معلق (موقوف)'
+      const to = sens === 'lift' ? 'lift' : sens === 'revoke' ? 'revoked' : 'suspension'
       setEntityStatus(e.id, to, shown, me, {
         code, decision: decision.trim() || undefined, proof: proof || undefined,
         projects: sens === 'lift' ? undefined : i.stopped.map((p) => p.id),
@@ -174,11 +174,11 @@ export function EntityStatusCard({ e }: { e: EntityRow }) {
 
   return (
     <Glass>
-      <Head title="حالة الجهة" meta={<Tag tone={e.archived ? 'mute' : activationTone(e.activation)}>{e.archived ? 'مؤرشفة' : activationSay(e.activation)}</Tag>} />
+      <Head title="حالة الجهة" meta={<Tag tone={activationTone(accountSay(e))}>{accountSay(e)}</Tag>} />
       <KV rows={[
-        { k: 'حالة الحساب', v: ACCOUNT_SAY[acc.state] + (acc.block === 'suspension' ? ' · بقرار تعليق' : acc.block === 'revoked' ? ' · بقرار إلغاء اعتماد' : acc.block === 'expired' ? ' · لمستند منتهٍ' : '') },
+        { k: 'حالة الحساب', v: accountLine(e) },
         { k: 'صلاحية التقديم', v: e.canApply ? <Tag tone="ok">مفعّلة</Tag> : <Tag tone="mute">موقوفة</Tag> },
-        ...(lapsed.length ? [{ k: 'وثائق منتهية', v: <span className="bad">{lapsed.join('، ')} · غير نشطة تلقائيًا حتى التحديث</span> }] : []),
+        ...(lapsed.length ? [{ k: 'وثائق منتهية', v: <span className="bad">{lapsed.join('، ')} · الحساب «غير نشط» تلقائيًا حتى التحديث</span> }] : []),
         ...(open ? [{ k: 'طلب تحديث', v: <Link className="lnk" to={ROUTES.entityUpdateReview(open.id)}><Mono>{open.id}</Mono> · {UPD_STATE_SAY[open.state]}</Link> }] : []),
         ...(o.statusReason ? [{ k: 'سبب آخر قرار', v: o.statusReason }] : []),
       ]} />
@@ -258,9 +258,10 @@ export function BankActions({ entityId, b }: { entityId: string; b: BankAccount 
   const st = actState('banks', e, role)
   if (st.grant !== 'do') return null
   if (!st.on) return <p className="sub cnote mt-3">{st.why}</p>
-  const linked = bankLinked(e, b.id)
+  const links = bankLinks(e, b.id)
+  const linked = links.length > 0
   const delBtn = (
-    <button className="btn btn-2 btn-sm" disabled={linked} title={linked ? 'مرتبط بمشاريع أو حركات مالية · عطّل الحساب بدلًا من حذفه' : undefined} onClick={() => setDel(true)}>
+    <button className="btn btn-2 btn-sm" disabled={linked} title={linked ? `له تاريخ مالي · ${links.length} طلب صرف (${links.slice(0, 3).join('، ')}) · عطّل الحساب بدلًا من حذفه` : 'لا تاريخ مالي على هذا الحساب'} onClick={() => setDel(true)}>
       <Icon name={icons.trash} size="sm" /> احذف
     </button>
   )

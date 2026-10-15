@@ -9,6 +9,7 @@ import { projectRows } from '@/data/mock/projects'
 import { agreements } from '@/data/mock/agreements'
 import { banksOf } from '@/data/mock/payEntity'
 import { entityById } from '@/data/mock/entities'
+import { payBlock, setBankSource } from '@/data/entities/store'
 import { entityDetail } from '@/data/mock/entityDetail'
 import { agreementsOfProject, inForceOf } from '@/data/agreements/store'
 import { docOf, linkOf, payYearIssue, recordPaid } from '@/data/budget/store'
@@ -109,6 +110,18 @@ export function accountOf(entityId: string): ReturnType<typeof banksOf>[number] 
   const real = e ? entityDetail(e).banks.find((b) => b.status === 'مفعل' && !/[X•]/.test(b.iban)) : undefined
   if (real) return { id: real.id, bank: real.bank, purpose: real.shortName, iban: real.iban, active: true }
   return banksOf(entityId)[0]
+}
+
+/* v3 · 2.4.10 · a project moved to another entity pays into that entity's own active account */
+setBankSource((entityId) => { const b = accountOf(entityId); return b ? { name: b.bank, active: b.active } : undefined })
+
+/** v3 · 2.4.29 · the payment requests tied to one of the entity's bank accounts · transferred to
+    its IBAN, or carried on its bank while open · the account's own financial history */
+export function bankHistory(entityId: string, b: { id: string; bank: string; iban: string }): string[] {
+  /* An entity holds one account per bank (the list is closed · 2.4.29), so the bank names it */
+  return payRequests.filter((r) => r.entityId === entityId && (
+    (r.transfer ? r.transfer.iban === b.iban || r.transfer.bank === b.bank : r.bank.name === b.bank)
+  )).map((r) => r.id)
 }
 
 /* ── The schedule (9.1.input-2 · 9.4.2) ── */
@@ -217,9 +230,12 @@ export function payableProjects(entityId?: string): PayProject[] {
     const agr = agreementOk(id)
     const slots = scheduleOf(id)
     if (!slots.length) continue
+    /* v3 · 0.ent.8 · 2.4.22 · no payment while the entity's account is «غير نشط» or archived */
+    const blocked = payBlock(entityById(p.entityId))
     out.push({
-      id, name: p.name, entity: p.entityName, entityId: p.entityId, can: running && agr && !STOPPED.has(id),
+      id, name: p.name, entity: p.entityName, entityId: p.entityId, can: running && agr && !STOPPED.has(id) && !blocked,
       why: STOPPED.has(id) ? /* doc 10.9.1 */ 'أُوقف المشروع بقرار معتمد · لا صرف بعده'
+        : blocked ? blocked
         : !agr ? /* doc rule 1 */ 'الاتفاقية غير سارية · لا صرف قبل تفعيل الاتفاقية'
         : !running ? /* doc 9.4.1 */ 'المشروع ليس «تحت التنفيذ» · لا يُفتح طلب صرف لمشروع مكتمل أو موقوف'
         : undefined,
@@ -268,6 +284,10 @@ export function payStops(r: PayRequest, act: PayAct): string[] {
      referral to finance (9.2.14) */
   const rules = act === 'recommend' ? [3, 6] : [3, 6, 10, 11]
   for (const c of r.checks) if (!c.ok && rules.includes(c.rule)) out.push(`${STOP_SAY[c.rule] ?? c.label} · قاعدة ${c.rule}`)
+  /* v3 · 0.ent.8 · 2.4.22 · every forward step stops while the entity's account is «غير نشط» ·
+     a suspension, a revocation or an expired mandatory document · or the entity is archived */
+  const blocked = payBlock(entityById(r.entityId))
+  if (blocked) out.push(blocked)
   const left = grantLeft(r.projectId, r.id)
   if (r.asked > left) out.push(/* doc rule 14 */ `المبلغ يتجاوز المتبقي من المنحة (${nf.format(Math.max(0, left))})`)
   if (r.asked > r.due) out.push(/* doc rule 5 */ 'قيمة الطلب أعلى من الدفعة المعتمدة')

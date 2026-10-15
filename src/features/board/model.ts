@@ -37,7 +37,7 @@ export function boardTotals() {
     funded: fundedRows.length,
     granted,
     paid,
-    entities: entityRows.length,
+    entities: entityRows.filter((e) => !e.archived).length,
     beneficiaries: ps.reduce((s, p) => s + p.beneficiaries, 0),
     regions: new Set(ps.map((p) => p.region).filter((r) => SAUDI_REGIONS.some((x) => x.name === r))).size,
   }

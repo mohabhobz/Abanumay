@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { DateText, Glass, Head, KV, Money, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
@@ -35,11 +36,14 @@ export interface DataTabProps {
   chain?: ChainLink[]
   /** The request's own documents card replaces the flat list (procedure 3 · 3.4.32) */
   hideAttachments?: boolean
+  /** v3 · 2.4.10 · 2.4.11 · the action that moves the project to another entity, and its history */
+  entityAction?: ReactNode
+  entityHistory?: ReactNode
 }
 
 /** Project data — summary, concept, phases, scope, and attachments. */
 export function DataTab({
-  project: P, code, type, entityName, entityId, last, onOpenLog, deps, chain, hideAttachments,
+  project: P, code, type, entityName, entityId, last, onOpenLog, deps, chain, hideAttachments, entityAction, entityHistory,
 }: DataTabProps) {
   const dep = deps ? projectDeps(deps.agreements, deps.payments) : undefined
   const gaps = chain?.filter((l) => l.state === 'gap').length ?? 0
@@ -64,8 +68,9 @@ export function DataTab({
                but behaves like a button. */
             {
               k: 'الجهة',
-              v: <Link className="tlink" to={ROUTES.entity(entityId)}>{entityName}</Link>,
+              v: <span className="rowf gp-2"><Link className="tlink" to={ROUTES.entity(entityId)}>{entityName}</Link>{entityAction}</span>,
             },
+            ...(entityHistory ? [{ k: 'تعديلات الجهة', v: entityHistory }] : []),
             { k: 'كود المشروع', v: <Mono>{code}</Mono> },
             { k: 'نوع المشروع', v: type },
             { k: 'الحالة', v: <Tag tone={P.status.tone}>{P.status.label}</Tag> },

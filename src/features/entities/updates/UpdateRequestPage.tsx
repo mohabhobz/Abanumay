@@ -14,7 +14,7 @@ import { entityDetail } from '@/data/mock/entityDetail'
 import { ENTITY_DOCS } from '@/data/mock/taxonomy'
 import { REG_STAGES, bankIssues, citiesOf, type RegBank, type RegField } from '@/data/mock/registration'
 import { FILE_FIELDS, needsApproval } from '@/data/entities/rules'
-import { duplicates, formatIssue, todayIso } from '@/data/entities/validate'
+import { duplicates, formatIssue, licenseDup, todayIso } from '@/data/entities/validate'
 import {
   UPD_STATE_SAY, nextUpdId, openUpdateOf, saveUpdate, updById, useEntityFlow, type UpdDoc,
 } from '@/data/entities/store'
@@ -98,7 +98,9 @@ export default function UpdateRequestPage() {
     const fx = FILE_FIELDS.find((x) => x.key === c.key)
     return [c.key, formatIssue(c.key, fx?.kind === 'url' ? 'url' : f?.kind ?? 'text', c.to)]
   }).filter(([, m]) => m))
-  const dups = duplicates(Object.fromEntries(changes.map((c) => [c.key, c.to])), banks, { exceptEntity: e.id })
+  const byKey = Object.fromEntries(changes.map((c) => [c.key, c.to]))
+  const lic = licenseDup(e.id, { licenseNo: byKey.licenseNo, type: byKey.type })
+  const dups = [...duplicates(byKey, banks, { exceptEntity: e.id }), ...(lic ? [lic] : [])]
   const bankGaps = banks.length ? bankIssues(banks).map((b) => b.say) : []
   const docGaps = docs.filter((x) => DOC_KEYS.find((k) => k.key === x.key)?.expiry && (!x.expires || x.expires <= todayIso()))
     .map((x) => `${x.label}: تاريخ نهاية صلاحية لاحق لليوم`)
@@ -159,7 +161,7 @@ export default function UpdateRequestPage() {
 
               {phase === 'sent' ? (
                 <Glass>
-                  <Head title="أُرسل طلب التحديث" meta={<Tag tone={waits ? 'warn' : 'ok'}>{waits ? 'قيد المراجعة' : 'طُبّق'}</Tag>} />
+                  <Head title="أُرسل طلب التحديث" meta={<Tag tone={waits ? 'warn' : 'ok'}>{waits ? 'تحت المراجعة' : 'طُبّق'}</Tag>} />
                   <ul className="payq-ck">
                     {changes.filter((c) => c.direct).length > 0 && (
                       <li className="ok"><Icon name={icons.check} size="sm" /><span>طُبّق فورًا: {changes.filter((c) => c.direct).map((c) => c.label).join('، ')}</span></li>
@@ -175,7 +177,7 @@ export default function UpdateRequestPage() {
                 </Glass>
               ) : locked ? (
                 <Glass>
-                  <Head title="طلبك قيد المراجعة" meta={<Tag tone="warn">{UPD_STATE_SAY.review}</Tag>} />
+                  <Head title="طلبك تحت المراجعة" meta={<Tag tone="warn">{UPD_STATE_SAY.review}</Tag>} />
                   <KV rows={existing!.changes.map((c) => ({ k: c.label, v: <>{show(c.from)} ← <b>{show(c.to)}</b>{c.direct ? ' · طُبّق' : ''}</> }))} />
                   <p className="sub cnote">لا يُعدَّل الطلب وهو عند المراجع · ستصلك النتيجة، أو يُعاد إليك للاستكمال.</p>
                 </Glass>
@@ -292,7 +294,7 @@ export default function UpdateRequestPage() {
                   <Glass>
                     <Head title="قبل الإرسال" meta={gaps.length ? <Tag tone="warn"><Num>{gaps.length}</Num> ملاحظة</Tag> : <Tag tone="ok">جاهز</Tag>} />
                     {gaps.length > 0 && <ul className="payq-ck">{gaps.map((x) => <li key={x} className="no"><Icon name={icons.alert} size="sm" /><span>{x}</span></li>)}</ul>}
-                    {waits && !gaps.length && <p className="sub cnote">في الطلب ما يحتاج إلى اعتماد · يُعلَّق نشاط الجهة (ومنه تقديم المشاريع) حتى يُبتّ فيه.</p>}
+                    {waits && !gaps.length && <p className="sub cnote">في الطلب ما يحتاج إلى اعتماد · يصير حساب الجهة «معلقًا» حتى يُبتّ فيه: مشاريعك القائمة مستمرة ولا تقديم جديد.</p>}
                     {otpTo.length > 0 && !gaps.length && <p className="sub cnote">غيّرت بريدًا أو جوالًا · يُرسل رمز تحقّق إلى القيمة الجديدة قبل الإرسال.</p>}
                     {saved && <p className="sub cnote">حُفظ الطلب مسودة · يُستكمل من البوابة في أي وقت.</p>}
                     <footer className="payq-f">

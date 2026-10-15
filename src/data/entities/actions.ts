@@ -6,7 +6,9 @@ import { payRequests } from '@/data/mock/disbursements'
 import { STAGES } from '@/data/mock/taxonomy'
 import { ROUTES } from '@/app/routes'
 import { ENTITY_RULES } from './rules'
-import { ASSIGNED, openUpdateOf, overlayOf, requestsOfEntity } from './store'
+import { ASSIGNED, openUpdateOf, requestsOfEntity } from './store'
+import { entityDetail } from '@/data/mock/entityDetail'
+import { bankHistory } from '@/data/payments/store'
 
 /* What can be done to an entity once it's selected · LOCTech «قائمة الجهات المستفيدة — نموذج
    الإجراءات عند التحديد» (8 Oct, a proposal for discussion).
@@ -17,9 +19,8 @@ import { ASSIGNED, openUpdateOf, overlayOf, requestsOfEntity } from './store'
    changes in one place. The doers come from settings (`ENTITY_RULES`), with the document's
    proposal as the default; the final names are the permission matrix's call (open question 1).
 
-   The stored statuses stay the live system's seven (`EntityActivation`). The document speaks of
-   four account states; `accountOf` reads one from the other, so the rules below are written in the
-   document's words without migrating a single record while questions 2 and 5 are open. */
+   15 Oct · v3 settled the dictionary · the stored account is v3's own (نشط · معلق · غير نشط, with
+   the archive flag and the decision behind a block) · `accountOf` reads it for the rules below. */
 
 /* ── Seats · ش م ر ن ── */
 
@@ -73,9 +74,9 @@ export const forWho = (a: ActKey): string => { const w = whoDoes(a); return w.st
 
 /* ── The document's words, read from the stored record ── */
 
-export type Account = 'active' | 'pending' | 'inactive' | 'archived' | 'never'
+export type Account = 'active' | 'pending' | 'inactive' | 'archived'
 export const ACCOUNT_SAY: Record<Account, string> = {
-  active: 'نشط', pending: 'معلق', inactive: 'غير نشط', archived: 'مؤرشف', never: 'لم يُعتمد بعد',
+  active: 'نشط', pending: 'معلق', inactive: 'غير نشط', archived: 'مؤرشف',
 }
 export type Block = 'suspension' | 'revoked' | 'expired' | null
 
@@ -83,11 +84,8 @@ export function accountOf(e: EntityRow): { state: Account; block: Block } {
   if (e.archived) return { state: 'archived', block: null }
   switch (e.activation) {
     case 'نشط': return { state: 'active', block: null }
-    case 'محدث': return { state: 'pending', block: null }
-    case 'غير نشط': return { state: 'inactive', block: 'expired' }
-    case 'معلق (موقوف)': return { state: 'inactive', block: 'suspension' }
-    case 'ملغى الاعتماد': return { state: 'inactive', block: 'revoked' }
-    default: return { state: 'never', block: null }
+    case 'معلق': return { state: 'pending', block: null }
+    default: return { state: 'inactive', block: e.decision ?? 'expired' }
   }
 }
 
@@ -154,8 +152,13 @@ export function archiveBlocks(e: EntityRow): { label: string; href: string }[] {
 
 /* ── Bank accounts · deletion only without a financial history (rule 28) ── */
 
-export const bankLinked = (e: EntityRow, bankId: string): boolean =>
-  !overlayOf(e.id).addedBanks.some((b) => b.id === bankId) && (e.grantedTotal > 0 || e.inDisbursement > 0)
+/** v3 · 2.4.29 · the account's own financial history · the payment requests transferred to it or
+    carried on it · an account with any can only be disabled, never deleted */
+export const bankLinks = (e: EntityRow, bankId: string): string[] => {
+  const b = entityDetail(e).banks.find((x) => x.id === bankId)
+  return b ? bankHistory(e.id, b) : []
+}
+export const bankLinked = (e: EntityRow, bankId: string): boolean => bankLinks(e, bankId).length > 0
 
 /* ── One entity · on, greyed with its reason, or not there ── */
 
@@ -180,21 +183,21 @@ export function actState(a: ActKey, e: EntityRow, role: RoleKey): ActState {
       if (req.state === 'completion') return off('بانتظار الجهة · أُعيد الطلب للاستكمال')
       return hide()
     case 'ask':
-      if (state === 'archived' || state === 'never') return hide()
+      if (state === 'archived') return hide()
       if (openUpdateOf(e.id)) return off('يوجد طلب تحديث مفتوح لهذه الجهة')
       return yes()
     case 'notify':
       return state === 'archived' ? hide() : yes()
     case 'suspend':
-      if (state === 'archived' || state === 'never') return hide()
+      if (state === 'archived') return hide()
       if (block === 'suspension') return off('الجهة معلّقة الأهلية بقرار قائم')
       if (block === 'revoked') return off('الجهة ملغاة الاعتماد')
-      if (state === 'inactive') return off('الجهة غير نشطة لمستند منتهٍ · التعليق يسري على النشطة أو المعلقة')
+      if (state === 'inactive') return off('حساب الجهة «غير نشط» لمستند منتهٍ · التعليق يسري على حساب «نشط» أو «معلق»')
       return yes()
     case 'lift':
       return block === 'suspension' ? yes() : hide()
     case 'revoke':
-      if (state === 'archived' || state === 'never' || block === 'revoked') return hide()
+      if (state === 'archived' || block === 'revoked') return hide()
       return yes()
     case 'archive': {
       if (state === 'archived') return hide()
@@ -227,7 +230,6 @@ export function splitFor(a: 'ask' | 'notify' | 'assign' | 'export', rows: Entity
       ok.push(e); continue
     }
     if (a === 'ask') {
-      if (state === 'never') { out('لم تُعتمد قط', e); continue }
       if (openUpdateOf(e.id)) { out('يوجد تحديث مفتوح', e); continue }
       ok.push(e); continue
     }

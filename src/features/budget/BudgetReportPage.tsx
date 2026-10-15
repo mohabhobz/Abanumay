@@ -37,9 +37,9 @@ export default function BudgetReportPage() {
   const sheet: Sheet = {
     file: `abanumay-budget-report-${by}`,
     title: `التقرير المجمّع للميزانيات · حسب ${GROUP_SAY[by]}`,
-    headers: [GROUP_SAY[by], 'عدد الميزانيات', 'المخصص', 'المحجوز', 'الملتزم به', 'المصروف', 'المتبقي'],
-    rows: rows.map((r) => [r.label, String(r.parts.length), String(r.money.allocated), String(r.money.held), String(r.money.committed), String(r.money.paid), String(r.money.available)]),
-    totals: ['الإجمالي', '', String(total.allocated), String(total.held), String(total.committed), String(total.paid), String(total.available)],
+    headers: [GROUP_SAY[by], 'عدد الميزانيات', 'المخصص', 'المحجوز مبدئيًا', 'المحجوز نهائيًا', 'الملتزم به', 'المصروف', 'المتبقي'],
+    rows: rows.map((r) => [r.label, String(r.parts.length), String(r.money.allocated), String(r.money.initial), String(r.money.held - r.money.initial), String(r.money.committed), String(r.money.paid), String(r.money.available)]),
+    totals: ['الإجمالي', '', String(total.allocated), String(total.initial), String(total.held - total.initial), String(total.committed), String(total.paid), String(total.available)],
   }
 
   return (
@@ -86,7 +86,8 @@ export default function BudgetReportPage() {
                       <th>{GROUP_SAY[by]}</th>
                       <th className="n">الميزانيات</th>
                       <th className="n">المخصص</th>
-                      <th className="n">المحجوز</th>
+                      <th className="n">المحجوز مبدئيًا</th>
+                      <th className="n">المحجوز نهائيًا</th>
                       <th className="n">الملتزم به</th>
                       <th className="n">المصروف</th>
                       <th className="n">المتبقي</th>
@@ -105,7 +106,8 @@ export default function BudgetReportPage() {
                             </td>
                             <td className="n"><Num>{r.parts.length}</Num></td>
                             <td className="n"><Money sm>{r.money.allocated}</Money></td>
-                            <td className="n"><Money sm>{r.money.held}</Money></td>
+                            <td className="n"><Money sm>{r.money.initial}</Money></td>
+                            <td className="n"><Money sm>{r.money.held - r.money.initial}</Money></td>
                             <td className="n"><Money sm>{r.money.committed}</Money></td>
                             <td className="n"><Money sm>{r.money.paid}</Money></td>
                             <td className="n"><Money sm>{r.money.available}</Money></td>
@@ -116,7 +118,8 @@ export default function BudgetReportPage() {
                               <td><Link className="lnk sub" to={ROUTES.budgetDoc(p.docId)}>{p.title}</Link></td>
                               <td />
                               <td className="n"><Money sm>{p.money.allocated}</Money></td>
-                              <td className="n"><Money sm>{p.money.held}</Money></td>
+                              <td className="n"><Money sm>{p.money.initial}</Money></td>
+                              <td className="n"><Money sm>{p.money.held - p.money.initial}</Money></td>
                               <td className="n"><Money sm>{p.money.committed}</Money></td>
                               <td className="n"><Money sm>{p.money.paid}</Money></td>
                               <td className="n"><Money sm>{p.money.available}</Money></td>
@@ -132,7 +135,8 @@ export default function BudgetReportPage() {
                       <td>الإجمالي</td>
                       <td />
                       <td className="n"><Money sm>{total.allocated}</Money></td>
-                      <td className="n"><Money sm>{total.held}</Money></td>
+                      <td className="n"><Money sm>{total.initial}</Money></td>
+                      <td className="n"><Money sm>{total.held - total.initial}</Money></td>
                       <td className="n"><Money sm>{total.committed}</Money></td>
                       <td className="n"><Money sm>{total.paid}</Money></td>
                       <td className="n"><Money sm>{total.available}</Money></td>

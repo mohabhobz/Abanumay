@@ -193,7 +193,9 @@ export function entityBlock(p: ProjectRow): string {
   const e = entityById(p.entityId)
   if (!e) return ''
   if (e.archived) return 'الجهة مؤرشفة'
-  if (e.activation !== 'نشط' && e.activation !== 'محدث') return `حالة الجهة «${e.activation}» · لا يصدر قرار إلا لجهة نشطة`
+  /* v3 · 2.4.2 · «معلق» (an update under review) leaves running projects as they are · only a real
+     block («غير نشط») stops the decision */
+  if (e.activation === 'غير نشط') return `حساب الجهة «غير نشط» · لا يصدر قرار إلا لجهة نشطة`
   const lapsed = expiredMandatory(e)
   if (lapsed.length) return `وثائق الجهة منتهية: ${lapsed.join('، ')}`
   return ''

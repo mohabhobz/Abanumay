@@ -233,10 +233,11 @@ export default function RegisterPage() {
     [tab, val, shortBy, files],
   )
 
-  /* Submission gate · a setting (2.2.7 · 2.4.4 · 2.4.13). Off by the client's decision of 30 Sept:
-     gaps stay visible as information and the reviewer handles them. On, the button refuses with
-     the reason, which is what the document asks for. */
-  const blocked = ENTITY_RULES.blockIncomplete && (missing.length > 0 || Boolean(clash))
+  /* Submission gate · v3 · 2.2.7 · 2.4.5 · 2.4.7 · 2.4.15 · 2.7.1 · on by default (the client's
+     30 Sept switch-off stays available in settings): a missing field or document, a format error,
+     an expired document or a duplicate keeps the request with the entity, with the reason. The
+     license and classification pair (2.4.9) blocks whatever the setting says. */
+  const blocked = Boolean(clash) || (ENTITY_RULES.blockIncomplete && missing.length > 0)
   const idOf = () => {
     if (reqId) return reqId
     const id = nextRegId()
@@ -388,8 +389,9 @@ export default function RegisterPage() {
               <Icon name={icons.chevron} size="sm" />
             </button>
           ) : (
-            /* Client request (Sept 30): submit is never blocked. Gaps are still reported as
-               info in the title and the dock counter; the reviewer handles them. */
+            /* v3 · 2.2.7 · 2.7.1 · send stops while a required item is missing (a setting ·
+               on by default) or the license clashes with a registered entity · the title and the
+               dock counter say what is left */
             <button
               className="btn btn-p"
               disabled={blocked}
@@ -459,7 +461,7 @@ export default function RegisterPage() {
               <h1 className="ptitle">طلب تسجيل جهة جديدة</h1>
               <p className="sub mt-1">
                 ما يُقدَّم هنا <b>طلب</b> لا حساب · وتُنشأ الجهة بعد اعتماد
-                مسؤول النظام وحده{/* doc rule 2 */}
+                صاحب الصلاحية في المؤسسة{/* doc rule 2 · v3 0.ent.2 */}
               </p>
             </div>
             {/* The count badge in the page header was removed - a single count now lives in the
@@ -780,7 +782,7 @@ export default function RegisterPage() {
 
               {phase === 'sent' && (
                 <Glass>
-                  <Head title="أُرسل الطلب" meta={<Tag tone={REG_TONE.review}>قيد المراجعة</Tag>} />
+                  <Head title="أُرسل الطلب" meta={<Tag tone={REG_TONE.review}>تحت المراجعة</Tag>} />
                   {/* Note: the reference number and its copy button match the client's screens.
                       Their format is `REQ-2026-947124`, not `RG-1039`, with a copy icon next to it.
                       The entity needs this number when contacting the institution, and a
@@ -792,7 +794,7 @@ export default function RegisterPage() {
                   <ul className="payq-ck regsent">
                     <li className="ok">
                       <Icon name={icons.check} size="sm" />
-                      <span>وصل الطلب إلى مسؤول النظام، وحالته «قيد المراجعة»</span>
+                      <span>وصل الطلب إلى صاحب الصلاحية في المؤسسة، وحالته «تحت المراجعة»</span>
                       {/* doc rule 26 */}
                     </li>
                     <li className="ok">

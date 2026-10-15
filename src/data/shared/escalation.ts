@@ -8,6 +8,9 @@ import { planRows, PLAN_LIMIT, PLAN_STAGES, planStageLabel } from '@/data/mock/p
 import { regRows, REG_STATE_SAY } from '@/data/mock/registration'
 import { allBudgets } from '@/data/mock/chain'
 import { UPD_ROWS } from '@/data/entities/store'
+import { ENTITY_RULES } from '@/data/entities/rules'
+import { BUDGET_RULES } from '@/data/budget/rules'
+import { roleByKey, type RoleKey } from '@/data/roles'
 import { BUDGET_REQS, REQ_KIND_SAY, eventsOf } from '@/data/budget/store'
 import { EHSAN_PAYS, PORTFOLIOS, PF_STAGE_SAY, PROFILES } from '@/data/partners/store'
 import { HOLDER_LABEL, type Holder } from '@/data/holders'
@@ -54,17 +57,23 @@ const study = (stage: string, label: string, who: string): EscStage => {
   }
 }
 
+/** The first role a setting names · the stage's owner reads it, so its alerts reach a real seat */
+const firstTitle = (ks: RoleKey[], fallback: string) => (ks[0] ? roleByKey(ks[0]).title : fallback)
+
 export function escStages(proc: EscProc): EscStage[] {
   switch (proc) {
     case 'budget': return [
-      own('budget.submitted', 'لدى مدير المنح', 'مدير المنح'),
+      /* v3 · 1.1.desc-4 · the first reviewer is whoever settings name */
+      own('budget.submitted', 'لدى صاحب الصلاحية', firstTitle(BUDGET_RULES.managerBy, 'المدير التنفيذي')),
       own('budget.finance', 'لدى الإدارة المالية', 'الإدارة المالية'),
       own('budget.exec', 'لدى المدير التنفيذي', 'المدير التنفيذي'),
     ]
     case 'registration': return [
-      own('registration.review', 'طلب تسجيل قيد المراجعة', 'مسؤول التسجيل'),
-      own('registration.completion', 'طلب تسجيل معاد للاستكمال', 'الجهة'),
-      own('registration.update', 'طلب تحديث بيانات قيد المراجعة', 'مدير المنح'),
+      /* v3 · 0.ent.2 · «تحت المراجعة» · and the owner is a real seat from settings, so the first
+         level of the alert lands in someone's bell (it named «مسؤول التسجيل», no seat's title) */
+      own('registration.review', 'طلب تسجيل تحت المراجعة', firstTitle(ENTITY_RULES.returnBy, 'مشرف المنح')),
+      own('registration.completion', 'طلب تسجيل بانتظار الاستكمال', 'الجهة'),
+      own('registration.update', 'طلب تحديث بيانات تحت المراجعة', firstTitle(ENTITY_RULES.updateBy, 'مدير المنح')),
     ]
     case 'study': return [
       study('دراسة المشروع', 'دراسة مشرف المنح', 'مشرف المنح'),

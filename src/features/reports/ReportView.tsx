@@ -308,7 +308,8 @@ function buildTable(key: string, yearId: string): Table | null {
           { key: 'grantedTotal', label: 'إجمالي الممنوح', n: true, money: true },
           { key: 'inDisbursement', label: 'تحت الصرف', n: true, money: true },
         ],
-        rows: entityRows.map((e) => ({
+        /* v3 · 2.4.31 · an archived entity is out of the reports */
+        rows: entityRows.filter((e) => !e.archived).map((e) => ({
           name: e.name,
           type: e.type,
           region: e.region,

@@ -10,7 +10,7 @@ import { entityRows } from '@/data/mock/entities'
 import { allBudgets } from '@/data/mock/chain'
 import { PERM_INITIAL, PERM_KEY, type PermState } from '@/data/mock/permissions'
 import { BUDGET_REQS, REQ_KIND_SAY, docOf, eventsOf, linkHistory, LINK_CHANGE_SAY, movesOf, MOVE_SAY } from '@/data/budget/store'
-import { BATCHES, BATCH_SAY, UPD_ROWS, overlayOf } from '@/data/entities/store'
+import { BATCHES, BATCH_SAY, RELINKS, UPD_ROWS, overlayOf } from '@/data/entities/store'
 import { flowEvents } from '@/data/intake/flow'
 import { approvalEvents } from '@/data/approvals/store'
 import { PLAN_LOG } from '@/data/plans/store'
@@ -94,6 +94,15 @@ function entityRowsLog(): AuditRow[] {
     (r.events ?? []).forEach((ev, i) => out.push({
       id: `rg-${r.id}-${i}`, module: 'entities', ref: `طلب تسجيل · ${r.name}`, href: ROUTES.entityRequest(r.id), action: ev.action, by: ev.by, at: ev.at.replace('T', ' ').slice(0, 16), note: ev.note, fields: ev.fields ?? [],
     }))
+  }
+  /* v3 · 2.4.11 · a project moved to another entity · before, after, when, who */
+  for (const r of RELINKS) {
+    out.push({
+      id: `rl-${r.id}`, module: 'projects', ref: r.projectName, href: ROUTES.project(r.projectId), action: 'تعديل الجهة المستفيدة المرتبطة بالمشروع', by: r.by,
+      at: r.at.replace('T', ' ').slice(0, 16), note: r.reason,
+      fields: [{ k: 'الجهة السابقة', v: r.from.name }, { k: 'الجهة الجديدة', v: r.to.name },
+        { k: 'السجلات المحدَّثة', v: `اتفاقيات ${r.touched.agreements} · طلبات صرف ${r.touched.payments} · خطط ${r.touched.plans} · إغلاق ${r.touched.closings}` }],
+    })
   }
   /* 14 Oct · a batch on a selection · one master line, each entity's own line names it */
   for (const b of BATCHES) {

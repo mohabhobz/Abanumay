@@ -8938,3 +8938,6 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .tbl .tchk .tdone{display:inline-flex;vertical-align:middle;margin-inline-start:var(--sp-1);color:var(--ok)}
 .sensbox{display:flex;flex-direction:column;gap:var(--sp-3);padding-block-start:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-d)}
 .sensbox-t{font-size:var(--fs-3);color:var(--t1)}
+/* 15 Oct · v3 · 2.4.11 · a project's entity moves · one line each, before ← after, then who and when */
+.relink{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.relink li{display:flex;flex-direction:column;gap:var(--sp-1)}

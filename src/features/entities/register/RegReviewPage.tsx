@@ -72,6 +72,9 @@ export default function RegReviewPage() {
   const [bankNo, setBankNo] = useState<Record<string, string>>({})
   /* The fields a return flags · the entity may edit these and only these (2.2.14) */
   const [flag, setFlag] = useState<string[]>([])
+  /* v3 · 2.4.6 · legible documents · the system can only measure size, so the reviewer confirms
+     reading them · approval waits for it */
+  const [legible, setLegible] = useState(false)
   const role = readRole()
   const me = meOf(role)
   const mayApprove = canDecide('approve', role)
@@ -131,7 +134,9 @@ export default function RegReviewPage() {
   const badIban = r.banks.filter((b) => !bankNo[b.id] && !ibanValid(b.iban.replace(/\s/g, '')))
   /* Batch 7 · entities#11 · a duplicate showed red under «ما يمنع الاعتماد» and approval stayed open ·
      it blocks now, as on the update review (2.4.10) */
+  /* v3 · 2.4.7 · a format error blocks too · and 2.4.6 · the documents' legibility confirmed */
   const blocked = missingDocs.length > 0 || Boolean(clash) || stale.length > 0 || badIban.length > 0 || dups.length > 0
+    || badFormat.length > 0 || (open && !legible)
 
   const steps: StepItem[] = [
     { label: 'تعبئة الجهة وإرسالها', at: <DateText>{r.submittedAt}</DateText>, state: 'done' },
@@ -241,17 +246,25 @@ export default function RegReviewPage() {
                       </li>
                     )
                   })()}
-                  {(badFormat.length > 0 || warnFiles.length > 0) && (
-                    <li className="no">
-                      <Icon name={icons.alert} size="sm" />
+                  <li className={badFormat.length ? 'no' : 'ok'}>
+                    <Icon name={badFormat.length ? icons.alert : icons.check} size="sm" />
+                    <span>{badFormat.length
+                      ? <>أخطاء صيغة: {badFormat.map((x) => `${x.f.label}: ${x.e}`).join(' · ')}</>
+                      : 'صيغ الحقول صحيحة'}</span>
+                    {/* v3 · 2.4.7 */}
+                  </li>
+                  {/* v3 · 2.4.6 · legible and readable · the size warning is a hint, the reviewer's
+                      reading is the check */}
+                  <li className={legible ? 'ok' : 'no'}>
+                    <Icon name={legible ? icons.check : icons.alert} size="sm" />
+                    <label className="rowf gp-2">
+                      <input type="checkbox" checked={legible} disabled={!open} onChange={(x) => setLegible(x.target.checked)} />
                       <span>
-                        {badFormat.map((x) => `${x.f.label}: ${x.e}`).join(' · ')}
-                        {badFormat.length > 0 && warnFiles.length > 0 && ' · '}
-                        {warnFiles.map(([k, f]) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k}: ${f.warn}`).join(' · ')}
+                        راجعتُ الوثائق النظامية وهي واضحة ومقروءة
+                        {warnFiles.length > 0 && <> · <span className="bad">{warnFiles.map(([k, f]) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k}: ${f.warn}`).join(' · ')}</span></>}
                       </span>
-                      {/* doc rule 6 */}
-                    </li>
-                  )}
+                    </label>
+                  </li>
                   <li className={r.governanceClaim > 0 ? 'ok' : 'no'}>
                     <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size="sm" />
                     <span>
@@ -598,7 +611,7 @@ export default function RegReviewPage() {
                       disabled={blocked || r.banks.every((b) => bankNo[b.id])}
                       title={
                         blocked
-                          ? /* doc rule 4 · 5 · 8 */ 'نواقص تمنع الاعتماد · وصحة الآيبان'
+                          ? /* doc rule 4 · 5 · 8 */ (legible ? 'نواقص تمنع الاعتماد · وصحة الآيبان والصيغ' : 'أكّد وضوح الوثائق وقراءتها أولًا')
                           : r.banks.every((b) => bankNo[b.id])
                             ? 'لا حساب بنكيًا مقبولًا · يلزم حساب واحد على الأقل'
                             : /* doc rule 2 */ 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم'

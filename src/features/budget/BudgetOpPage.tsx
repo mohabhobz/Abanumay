@@ -39,7 +39,7 @@ const KIND_NOTE: Record<ReqKind, string> = {
 }
 const STEP_SAY = {
   manager: { ok: 'وافق وأحِل إلى الإدارة المالية', back: 'أعد إلى المُعِدّ' },
-  finance: { ok: 'وافق وأحِل إلى المدير التنفيذي', back: 'أعد إلى مدير المنح' },
+  finance: { ok: 'وافق وأحِل إلى المدير التنفيذي', back: 'أعد إلى المُعِدّ' },
   exec: { ok: 'اعتمد ونفّذ', back: 'أعد إلى الإدارة المالية' },
 } as const
 
@@ -77,6 +77,18 @@ export default function BudgetOpPage() {
         <div className="viewstack"><div className="screen col">
           <BackTo label="طلبات العمليات" onClick={() => navigate(ROUTES.budgetOps)} />
           <Glass><Empty title="الطلب غير موجود." note="ربما يكون الرابط قديمًا." /></Glass>
+        </div></div>
+      </AppLayout>
+    )
+  }
+
+  /* v3 · 1.1.desc-4 · a new request is prepared by the authority holders settings name */
+  if (!id && !mayAct('prepare', role)) {
+    return (
+      <AppLayout assistantContext={assistFor.page('طلب عملية ميزانية')}>
+        <div className="viewstack"><div className="screen col">
+          <BackTo label="طلبات العمليات" onClick={() => navigate(ROUTES.budgetOps)} />
+          <Glass><Empty title="طلبات العمليات لأصحاب الصلاحية" note={`يُعدّ طلب المناقلة أو التعزيز أو التخفيض ويرسله: ${whoActs('draft') || 'لا أحد بعد'} · يُضبط من إعدادات الميزانية.`} /></Glass>
         </div></div>
       </AppLayout>
     )

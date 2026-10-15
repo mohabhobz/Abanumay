@@ -1,11 +1,12 @@
 import { PartnerArt } from '@/components/soul'
 import { registerInternal } from '@/data/entities/store'
+import { ENTITY_RULES } from '@/data/entities/rules'
 import { readRole, roleByKey } from '@/data/roles'
 import { useMemo, useRef, useState } from 'react'
-import { duplicates } from '@/data/entities/validate'
+import { DOC_EXPIRY, duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, type StepItem, DockWhy,
+  BackTo, Empty, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, type StepItem, DockWhy,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AnalysisCard } from '@/components/assistant'
@@ -125,6 +126,18 @@ export default function EntityNewPage() {
     set({ up: writeList(readList(v.up).filter((x) => x !== k)) })
   }
 
+  /* v3 · 2.4.34 · direct registration applies the same data rules as the portal · a value in the
+     wrong format (2.4.7) and a document already out of date (2.4.5) count as missing */
+  const errs = useMemo(() => {
+    const out: Record<string, string> = {}
+    for (const st of formStages) for (const f of st.fields) {
+      const e = formatIssue(f.key, f.kind, val[f.key] ?? '')
+      if (e) out[f.key] = e
+    }
+    return out
+  }, [val, formStages])
+  const stale = useMemo(() => expiredDocs(val, docs), [val, docs])
+
   /** What's missing at each stage - and the type stage's own missing item is the type itself. */
   const shortBy = useMemo(() => {
     const out: Record<string, string[]> = {}
@@ -132,13 +145,19 @@ export default function EntityNewPage() {
     for (const s of formStages) {
       out[s.key] =
         s.key === 'docs'
-          ? REG_DOCS.filter((d) => docRequired(d, type) && !docs.has(d.key)).map((d) => d.label)
+          ? [
+              ...REG_DOCS.filter((d) => docRequired(d, type) && !docs.has(d.key)).map((d) => d.label),
+              ...stale.map((k) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k} منتهٍ · ${DOC_EXPIRY[k].label} مضى`),
+            ]
           : s.key === 'bank'
           ? bankIssues(banks).map((b) => b.say)
-          : s.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label)
+          : [
+              ...s.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label),
+              ...s.fields.filter((f) => errs[f.key]).map((f) => `${f.label}: ${errs[f.key]}`),
+            ]
     }
     return out
-  }, [val, docs, type, partner, formStages, banks])
+  }, [val, docs, type, partner, formStages, banks, errs, stale])
 
   const missing = Object.values(shortBy).flat()
 
@@ -164,7 +183,10 @@ export default function EntityNewPage() {
   /* Batch 7 · entities#11 · the internal form checks duplicates too (name, email, mobile, IBAN) · it
      never called them, so a supervisor could register an entity that already exists */
   const dups = useMemo(() => duplicates({ name: val.name, email: val.email, mobile: val.mobile, clerkEmail: val.clerkEmail }, banks), [val.name, val.email, val.mobile, val.clerkEmail, banks])
-  const canSave = missing.length === 0 && !clash && advice.blocking.length === 0 && dups.length === 0
+  /* v3 · 2.4.6 · the one registering confirms the documents are legible, as the reviewer does on
+     the portal's requests · the system measures only size */
+  const [legible, setLegible] = useState(false)
+  const canSave = missing.length === 0 && !clash && advice.blocking.length === 0 && dups.length === 0 && (docs.size === 0 || legible)
 
   const at = STAGES.findIndex((x) => x.key === tab)
   const first = at <= 0
@@ -195,6 +217,24 @@ export default function EntityNewPage() {
       state: 'todo',
     },
   ]
+
+  /* v3 · 2.4.34 · direct registration is for the authority holders settings name · anyone else is
+     told who registers (the route was open to every staff seat) */
+  if (!ENTITY_RULES.registerBy.includes(readRole())) {
+    return (
+      <AppLayout assistantContext={assistFor.page('تسجيل جهة مباشرةً')}>
+        <div className="viewstack"><div className="screen col">
+          <BackTo label="الجهات" onClick={() => navigate(ROUTES.entities)} />
+          <Glass>
+            <Empty
+              title="التسجيل المباشر لأصحاب الصلاحية"
+              note={`يسجّل الجهات الشريكة والكيانات الاستراتيجية من داخل النظام: ${ENTITY_RULES.registerBy.map((k) => roleByKey(k).title).join(' أو ') || 'لا أحد بعد'} · يُضبط من إعدادات الجهات.`}
+            />
+          </Glass>
+        </div></div>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout assistantContext={assistFor.page('تسجيل جهة مباشرةً')}>
@@ -389,6 +429,13 @@ export default function EntityNewPage() {
                   </p>
                 )}
 
+                {tab === 'docs' && docs.size > 0 && (
+                  <label className="rowf gp-2 cnote">
+                    <input type="checkbox" checked={legible} onChange={(x) => setLegible(x.target.checked)} />
+                    <span>راجعتُ الوثائق النظامية وهي واضحة ومقروءة{/* doc 2.4.6 */}</span>
+                  </label>
+                )}
+
                 {dups.length > 0 && (
                   <p className="bad cnote">بيانات مكرّرة: {dups.map((d) => `${d.label} مع «${d.who}»`).join(' · ')} · لا تُحفظ جهة مكرّرة{/* doc 2.4.10 */}</p>
                 )}
@@ -533,11 +580,14 @@ export default function EntityNewPage() {
                       ? /* doc rule 8 */ 'رقم الترخيص مكرّر'
                       : missing.length
                         ? `ينقص ${missing.length} من الحقول الإلزامية`
-                        : 'سجّل الجهة'
+                        : docs.size > 0 && !legible
+                          ? 'أكّد أن الوثائق النظامية واضحة ومقروءة'
+                          : 'سجّل الجهة'
                   }
                   onClick={() => {
                     const by = roleByKey(readRole()).name
                     const id = registerInternal(val, [...docs], partner ? partnerKind(partner).label : 'جهة مستفيدة', by, banks)
+                    if (!id) return
                     /* 11.2.1 · 13.2.1 · the partnership type is kept on the partner record and waits for the grants manager */
                     if (strategic && id) requestPartner(id, entityById(id)?.name ?? '', ['portfolio'], false, by)
                     setNewId(id)

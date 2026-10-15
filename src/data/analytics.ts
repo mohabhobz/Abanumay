@@ -141,7 +141,7 @@ export const entityHealth = (entities: EntityRow[]): EntityHealth => ({
     (e) => e.docsUploaded >= ENTITY_DOCS_TOTAL && e.activation === 'نشط',
   ).length,
   incomplete: entities.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL).length,
-  held: entities.filter((e) => e.activation.startsWith('معلق')).length,
+  held: entities.filter((e) => Boolean(e.decision) && !e.archived).length,
   stalled: entities.filter((e) => e.projectsStalled > 0).length,
 })
 

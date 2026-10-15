@@ -1,4 +1,4 @@
-import { activationSay } from '@/data/shared/decisions'
+import { accountLine } from '@/data/shared/decisions'
 import { useEffect, useMemo, useRef } from 'react'
 import { expiryAhead } from '@/data/shared/ai'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -119,7 +119,7 @@ export default function EntityPage() {
                   <div className="ehead-m mt-4">
                     {/* 13 Oct · audit UI-038 · under the name, on the text's edge, not the logo's · The page header isn't a card's status field - tags here are neutral, and colored
                         detail lives in the tab cards. */}
-                    <Tag tone="mute">{entity.archived ? 'مؤرشفة' : activationSay(entity.activation)}</Tag>
+                    <Tag tone="mute">{accountLine(entity)}</Tag>
                     <Tag tone="mute">الحوكمة: {entity.governance}</Tag>
                     {/* An expired license blocks contracting, so it belongs in the header, not inside a
                         tab - the decision is made from the top. */}

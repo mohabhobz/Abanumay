@@ -1,4 +1,4 @@
-import { activationSay } from '@/data/shared/decisions'
+import { accountLine, accountSay } from '@/data/shared/decisions'
 import { Link } from 'react-router-dom'
 import { Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
@@ -52,8 +52,8 @@ export const COLS: Col[] = [
     w: 116,
     label: 'التفعيل',
     def: true,
-    cell: (e) => <Tag tone={activationTone(e.activation)}>{activationSay(e.activation)}</Tag>,
-    text: (e) => activationSay(e.activation),
+    cell: (e) => <Tag tone={activationTone(accountSay(e))}>{accountSay(e)}</Tag>,
+    text: (e) => accountLine(e),
   },
   {
     key: 'governance',
@@ -143,7 +143,7 @@ export const GROUPS: GroupBy<EntityRow>[] = [
   { key: 'city', label: 'المدينة', of: (e) => e.city },
   { key: 'type', label: 'تصنيف الجهة', of: (e) => e.type },
   { key: 'licensor', label: 'الجهة المرخِّصة', of: (e) => e.licensor },
-  { key: 'activation', label: 'التفعيل', of: (e) => activationSay(e.activation) },
+  { key: 'activation', label: 'حالة الحساب', of: (e) => accountSay(e) },
   { key: 'governance', label: 'الحوكمة', of: (e) => e.governance },
 ]
 

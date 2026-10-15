@@ -10,6 +10,7 @@ import { finalizeHold, hasFunding, linkIssues, linkOf, linkProject, recordPaid, 
 import { openPlanFor } from '@/data/plans/store'
 import { planOfProject, planDone } from '@/data/mock/plans'
 import { setEhsanGate } from '@/data/payments/store'
+import { payBlock } from '@/data/entities/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { approverFor } from '@/data/approval'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
@@ -886,6 +887,9 @@ export function payIssues(p: Pick<EhsanPay, 'target' | 'amount' | 'ref' | 'paidA
 /** A portfolio-level request · on its schedule, inside the portfolio's value (13.2.24 · 13.4.29 · 13.4.32) */
 export function pfReqIssue(pf: PortfolioRec, no: number, amount: number): string {
   if (pf.channel !== 'direct') return 'دفعات هذه المحفظة تنفّذها منصة إحسان وتُسجَّل لكل مشروع فرعي'
+  /* v3 · 0.ent.8 · 2.4.22 · a partner whose account is «غير نشط» or archived is not paid */
+  const blocked = payBlock(entityById(pf.entityId))
+  if (blocked) return blocked
   const slot = pf.schedule.find((s) => s.no === no)
   if (!slot) return 'الدفعة غير موجودة في جدول دفعات المحفظة'
   if (pf.requests.some((r) => r.no === no && r.state !== 'returned')) return 'طُلبت هذه الدفعة من قبل'
@@ -1148,7 +1152,11 @@ export function requestPfPay(pfId: string, no: number, amount: number, by: strin
   return []
 }
 export function actOnPfReq(pfId: string, reqId: string, act: 'order' | 'pay' | 'return', note: string, by: string, ref?: string): string[] {
-  const r = pfById(pfId)?.requests.find((x) => x.id === reqId)
+  const pf = pfById(pfId)
+  const r = pf?.requests.find((x) => x.id === reqId)
+  /* v3 · 0.ent.8 · the order and the transfer stop too while the account is blocked · a return stays open */
+  const blocked = act !== 'return' && pf ? payBlock(entityById(pf.entityId)) : ''
+  if (blocked) return [blocked]
   if (act === 'pay' && r?.state !== 'order') return ['يُعتمد أمر الصرف أولًا']
   if (act === 'pay' && !ref?.trim()) return ['رقم أمر التحويل']
   if (act === 'return' && !note.trim()) return ['اكتب سبب الإعادة']

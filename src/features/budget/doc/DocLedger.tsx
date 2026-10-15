@@ -4,8 +4,9 @@ import { DateText, Empty, Glass, Head, Icon, Mono, Money, Num, Person, Tag, icon
 import { ROUTES } from '@/app/routes'
 import { docSources, pathOf, sourceBalance, sourceByCode, splitOf, type BudgetDoc } from '@/data/mock/budgetTree'
 import {
-  BUDGET_REQS, MOVE_SAY, REQ_KIND_SAY, REQ_STATE_SAY, movesOf, reqTone, type MoveKind,
+  BUDGET_REQS, MOVE_SAY, REQ_KIND_SAY, REQ_STATE_SAY, mayAct, movesOf, reqTone, type MoveKind,
 } from '@/data/budget/store'
+import { readRole } from '@/data/roles'
 
 /* The budget's own ledger (1.4.5 · 1.4.24) · every movement on its lines with the figure before and
    after: the opening allocation, holds and their release, commitments of multi-year projects, the
@@ -75,7 +76,7 @@ export function DocRequests({ doc }: { doc: BudgetDoc }) {
     <Glass>
       <Head
         title="طلبات العمليات"
-        meta={<Link className="btn btn-2 btn-sm" to={`${ROUTES.budgetOpNew}?doc=${doc.id}`}><Icon name={icons.plus} size="sm" />طلب جديد</Link>}
+        meta={mayAct('prepare', readRole()) ? <Link className="btn btn-2 btn-sm" to={`${ROUTES.budgetOpNew}?doc=${doc.id}`}><Icon name={icons.plus} size="sm" />طلب جديد</Link> : undefined}
       />
       {rows.length === 0 ? (
         <p className="sub cnote">لا طلبات مناقلة أو تعزيز أو تخفيض على هذه الميزانية.</p>

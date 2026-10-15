@@ -20,6 +20,7 @@ import {
 } from '@/data/mock/taxonomy'
 import { ROUTES } from '@/app/routes'
 import { ENTITY_CREATE_LABEL } from './labels'
+import { ENTITY_RULES } from '@/data/entities/rules'
 import { QuickRead } from '@/components/assistant'
 import { BulkBar, PageActions } from '@/components/shell'
 import { readEntities } from '@/data/readings'
@@ -54,12 +55,13 @@ const NOT_FILTERS: (keyof Params)[] = [
 ]
 
 /** Saved views - the questions that actually block work. */
+/* v3 · 0.ent.6–9 · the account's own states · a registration still in review isn't an entity yet
+   (2.4.3) · it lives under «طلبات التسجيل» */
 const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
   { key: 'all', label: 'كل الجهات', patch: {} },
-  { key: 'new', label: 'بانتظار التفعيل', patch: { activation: 'معلق (جديد)' } },
-  { key: 'held', label: 'موقوفة', patch: { activation: 'معلق (موقوف)' } },
-  /* 2.4.20 · lost activity to an expired mandatory document */
-  { key: 'lapsed', label: 'غير نشطة', patch: { activation: 'غير نشط' } },
+  { key: 'pending', label: 'حسابها معلق · تحديث تحت المراجعة', patch: { activation: 'معلق' } },
+  /* 2.4.2 · a real eligibility block · an expired mandatory document or a suspension decision */
+  { key: 'lapsed', label: 'حسابها غير نشط', patch: { activation: 'غير نشط' } },
   { key: 'docs', label: 'ملفها ناقص', patch: { docs: '1' } },
 ]
 
@@ -332,7 +334,7 @@ export default function EntitiesListPage() {
 
   const chips = (
     [
-      ['activation', 'التفعيل'], ['type', 'تصنيف الجهة'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
+      ['activation', 'حالة الحساب'], ['type', 'تصنيف الجهة'], ['licensor', 'المرخِّص'], ['region', 'المنطقة'],
       ['city', 'المدينة'], ['governance', 'الحوكمة'],
     ] as [keyof Params, string][]
   )
@@ -382,7 +384,7 @@ export default function EntitiesListPage() {
                  using this is a grants supervisor inside the system registering a partner they
                  manage themselves (rule 32). The entity portal's entry point is the login screen,
                  since its owner has no account yet. */
-              create={{ label: ENTITY_CREATE_LABEL, to: ROUTES.entityNew }}
+              create={ENTITY_RULES.registerBy.includes(role) ? { label: ENTITY_CREATE_LABEL, to: ROUTES.entityNew } : undefined}
             />
           </header>
 
@@ -419,7 +421,7 @@ export default function EntitiesListPage() {
               />
               <MultiSelect
                 values={readList(v.activation)}
-                all={`كل حالات التفعيل (${result.total})`}
+                all={`كل حالات الحساب (${result.total})`}
                 options={ACTIVATIONS.filter((a) => counts[a]).map((a) => ({
                   value: a,
                   label: `${a} (${counts[a]})`,

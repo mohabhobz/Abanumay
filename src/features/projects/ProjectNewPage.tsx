@@ -80,7 +80,7 @@ function PField({
           placeholder="اختر"
           options={entityOptions().map((e) => ({
             value: e.id,
-            label: `${e.name}${e.capped ? ` · بلغت الحدّ (${e.open})` : ''}${e.inactive ? ' · غير نشطة' : ''}`,
+            label: `${e.name}${e.capped ? ` · بلغت الحدّ (${e.open})` : ''}${e.inactive ? ` · ${e.inactive}` : ''}`,
           }))}
         />
       ) : f.kind === 'select' ? (
@@ -423,7 +423,7 @@ export default function ProjectNewPage() {
                 {/* The rule is stated at its own stage, not in a message after submission. */}
                 {issues
                   .filter((i) => stage.fields.some((f) => f.key.startsWith(i.key)) ||
-                    ((tab === 'who' || (asEntity && tab === 'what')) && ['cap', 'inactive', 'docs-exp', 'bank'].includes(i.key)) ||
+                    ((tab === 'who' || (asEntity && tab === 'what')) && ['archived', 'cap', 'inactive', 'docs-exp', 'bank'].includes(i.key)) ||
                     (tab === 'what' && (i.key === 'field' || i.key === 'period')) ||
                     (tab === 'when' && i.key === 'dates') ||
                     (tab === 'money' && i.key === 'per'))

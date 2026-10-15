@@ -18,7 +18,7 @@ export function EntityRulesTab() {
   const [d, setD] = useState<EntityRules>(() => structuredClone(ENTITY_RULES))
   const dirty = JSON.stringify(d) !== JSON.stringify(saved)
   const put = <K extends keyof EntityRules>(k: K, v: EntityRules[K]) => setD((x) => ({ ...x, [k]: v }))
-  const roles = (k: 'approveBy' | 'returnBy' | 'updateBy' | 'suspendBy' | 'revokeBy' | 'archiveBy' | 'bankBy' | 'askBy' | 'notifyBy' | 'assignBy', label: string, note: string) => (
+  const roles = (k: 'approveBy' | 'returnBy' | 'updateBy' | 'suspendBy' | 'revokeBy' | 'archiveBy' | 'bankBy' | 'askBy' | 'notifyBy' | 'assignBy' | 'registerBy' | 'relinkEntityBy', label: string, note: string) => (
     <li className="itk-sup">
       <span className="cfgl"><b>{label}</b><span className="sub">{note}</span></span>
       <span className="pc-sp" />
@@ -29,10 +29,10 @@ export function EntityRulesTab() {
   return (
     <>
       <Glass>
-        <Head title="إرسال طلب التسجيل" meta={<Tag tone="warn">قرار معلّق</Tag>} />
+        <Head title="إرسال طلب التسجيل" meta={<Tag tone="ok">وفق v3</Tag>} />
         <Switch
           label="لا يُرسل طلب التسجيل قبل اكتمال البيانات والمستندات"
-          note={<>الوثيقة تشترطه (<bdi>{/* doc 2.2.7 · 2.4.4 */}</bdi>) · والعميل طلب في 30 سبتمبر إتاحة الإرسال وترك النواقص للمراجع · مطفأ على طلب العميل</>}
+          note={<>وثيقة v3 تشترطه (<bdi>{/* v3 · 2.2.7 · 2.4.5 · 2.4.15 · 2.7.1 */}</bdi>) · مفعّل افتراضيًا وفقها · أوقفه إن عاد العميل لطلب 30 سبتمبر (الإرسال مع النواقص وتركها للمراجع)</>}
           on={d.blockIncomplete}
           onChange={(v) => put('blockIncomplete', v)}
         />
@@ -82,6 +82,8 @@ export function EntityRulesTab() {
           {roles('revokeBy', 'إلغاء اعتماد الجهة', 'من ملف الجهة · بلوحة الأثر وتأكيد مزدوج')}
           {roles('archiveBy', 'أرشفة الجهة', 'تُمنع ما دام لها مشروع قائم أو دفعة أو طلب مفتوح')}
           {roles('bankBy', 'إدارة الحسابات البنكية', 'إضافة وتعطيل · والحذف فقط بلا ارتباط مالي')}
+          {roles('registerBy', 'التسجيل المباشر للجهة', 'جهة شريكة أو كيان استراتيجي دون البوابة')}
+          {roles('relinkEntityBy', 'تعديل الجهة المرتبطة بمشروع', 'عند تكرار بيانات الجهات · يُحدَّث الارتباط في كل سجلات المشروع')}
         </ul>
       </Glass>
 

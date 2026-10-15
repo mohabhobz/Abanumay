@@ -51,6 +51,20 @@ const norm = (s: string) => s.replace(/[\sـ]/g, '').replace(/[أإآ]/g, 'ا').
 
 export interface Dup { field: string; label: string; who: string }
 
+/** v3 · 2.4.9 · an update that changes the license number or the classification may not land on
+    another entity's (or a live request's) same pair · the two criteria, one rule */
+export const licenseDup = (entityId: string, change: { licenseNo?: string; type?: string }): Dup | null => {
+  if (change.licenseNo === undefined && change.type === undefined) return null
+  const me = entityRows.find((e) => e.id === entityId)
+  const lic = (change.licenseNo ?? me?.licenseNo ?? '').trim()
+  const type = change.type ?? me?.type ?? ''
+  if (!lic || !type) return null
+  const e = entityRows.find((x) => x.id !== entityId && x.licenseNo === lic && x.type === type)
+  if (e) return { field: 'licenseNo', label: `رقم الترخيص والتصنيف (${lic} · ${type})`, who: e.name }
+  const r = regRows.find((x) => x.state !== 'rejected' && x.entityId !== entityId && x.licenseNo === lic && x.type === type)
+  return r ? { field: 'licenseNo', label: `رقم الترخيص والتصنيف (${lic} · ${type})`, who: `${r.name} · طلب ${r.id}` } : null
+}
+
 /**
  * Same name, email, mobile or IBAN as an entity or a live request (2.4.10) · the license number has
  * its own rule (2.4.8 · 2.4.9) and is checked by `licenseClash`.

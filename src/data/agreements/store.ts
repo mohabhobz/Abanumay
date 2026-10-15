@@ -11,6 +11,7 @@ import { linkOf, docOf } from '@/data/budget/store'
 import { pathOf } from '@/data/mock/budgetTree'
 import { appFlowOf } from '@/data/approvals/store'
 import { flowOf } from '@/data/intake/flow'
+import { RELINKS, setPartyRename } from '@/data/entities/store'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type { AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, PayDoc, ProjectRow } from '@/types/domain'
@@ -664,6 +665,16 @@ function hydrate() {
   seedStations()
   try { ops = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Op[] } catch { ops = [] }
   for (const o of ops) apply(o)
+  /* v3 · 2.4.10 · a project moved to another entity · its agreement names the new party. A signed
+     text stays as signed (its hash is the proof) · the move is on the relink record and the row */
+  for (const r of [...RELINKS].reverse()) for (const a of agreements) if (a.projectId === r.projectId) renameParty(a.id, r.from.name, r.to.name)
+  setPartyRename(renameParty)
+}
+function renameParty(id: string, from: string, to: string) {
+  const a = agreementById(id)
+  const f = agrFlowOf(id)
+  if (!a || !from || from === to || a.stage === 'active' || f.entitySign || f.inForce !== undefined) return
+  f.clauses = f.clauses.map((c) => ({ ...c, title: c.title.split(from).join(to), body: c.body.split(from).join(to) }))
 }
 hydrate()
 

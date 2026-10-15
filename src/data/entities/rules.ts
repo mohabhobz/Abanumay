@@ -4,10 +4,10 @@ import type { RoleKey } from '@/data/roles'
 /* Entity registration and update rules (BPD-002) · every number and switch here is a setting, read
    by the forms, the review screens and the password reset alike.
 
-   `blockIncomplete` carries a decision, not a default: the document (2.2.7 · 2.4.4) forbids sending
-   a registration that is missing data or documents, and the client asked on 30 September that the
-   entity may send anyway and the reviewer handles the gaps. Both readings are built; the switch
-   decides which one runs, and it starts on the client's. */
+   `blockIncomplete` · the document (2.2.7 · 2.4.5 · 2.4.15 · 2.7.1) forbids sending a registration
+   that is missing data or documents or has a format error. The client asked on 30 September to let
+   it through; v3 (14 October) still forbids it, so it starts on v3's · the switch stays for the
+   client to turn back. */
 
 export interface EntityRules {
   /** 2.2.7 · 2.4.4 · 2.4.13 · refuse to send a registration with gaps */
@@ -34,16 +34,22 @@ export interface EntityRules {
   askBy: RoleKey[]
   notifyBy: RoleKey[]
   assignBy: RoleKey[]
+  /** v3 · 2.4.34 · registers a partner or strategic entity directly, without the portal */
+  registerBy: RoleKey[]
+  /** v3 · 2.4.10 · changes the entity a running project is tied to */
+  relinkEntityBy: RoleKey[]
   /** Use per-supervisor assignment of open requests · off removes «إسناد المراجعة» (open question 9) */
   assignOn: boolean
   /** Ceiling on one batch of notices or data requests */
   bulkMax: number
   /** Fields whose change waits for approval · the rest apply at once (2.3.upd-8 · 2.3.upd-15) */
   approvalFields: string[]
+  /** The file's migration version · a one-time move runs once */
+  migrated?: number
 }
 
 const DEFAULT: EntityRules = {
-  blockIncomplete: false,
+  blockIncomplete: true,
   otpMinutes: 5,
   otpAttempts: 3,
   resendSeconds: 60,
@@ -61,12 +67,22 @@ const DEFAULT: EntityRules = {
   askBy: ['supervisor', 'grants-manager'],
   notifyBy: ['supervisor', 'grants-manager'],
   assignBy: ['grants-manager'],
+  registerBy: ['supervisor', 'grants-manager'],
+  relinkEntityBy: ['grants-manager'],
   assignOn: true,
   bulkMax: 200,
   approvalFields: ['name', 'type', 'licensor', 'licenseNo', 'region', 'city', 'licenseEndsAt', 'boardEndsAt'],
 }
 
 export const ENTITY_RULES: EntityRules = readJson(CFG.entityRules, DEFAULT)
+/* v3 · 15 Oct · once · the send gate was off by default before v3 (2.2.7 · 2.7.1) · a file saved on
+   the old default moves to the v3 one · a choice the admin makes after this stands */
+if ((ENTITY_RULES.migrated ?? 0) < 1) {
+  const moved = ENTITY_RULES.blockIncomplete === false
+  if (moved) ENTITY_RULES.blockIncomplete = true
+  ENTITY_RULES.migrated = 1
+  if (moved) persist(CFG.entityRules, ENTITY_RULES)
+}
 
 export const saveEntityRules = (next: EntityRules): void => {
   Object.assign(ENTITY_RULES, structuredClone(next))
