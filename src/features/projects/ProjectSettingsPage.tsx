@@ -16,6 +16,13 @@ import { CFG, isConfigured, persist } from '@/lib/config'
 import { CfgNum, StageLimits } from '@/features/settings/CfgEdit'
 import { ConsultantsTab, CriteriaTab, CycleTab, ProspectsTab } from './IntakeSettings'
 import { ApprovalRulesTab } from '@/features/approvals/ApprovalRulesTab'
+import { ReadOnly } from '@/components/shell/ReadOnly'
+import { REJECT_REASONS, saveRejectReasons } from '@/data/intake/reasons'
+import { readRole, type RoleKey } from '@/data/roles'
+
+/* v3 · 3.4.42 · the rules, the intake cycle and the prospects list are kept by the authority holders
+   and the system administrator · every other role reads them */
+const EDIT_BY: RoleKey[] = ['grants-manager', 'ceo', 'admin']
 
 /* These are business rules, not master data. The difference: the number here changes the
    behavior of an action, not the content of a list — changing a cap moves projects from one
@@ -44,6 +51,8 @@ const TABS = [
   { slug: 'criteria', label: 'معايير التقييم' },
   { slug: 'consultants', label: 'المستشارون' },
   { slug: 'prospects', label: 'الجهات المقترحة' },
+  /* v3 · 3.4.24 */
+  { slug: 'reasons', label: 'أسباب الرفض' },
 ] as const
 
 /** Amount tested against the matrix, so the rule reads for itself */
@@ -54,6 +63,7 @@ export default function ProjectSettingsPage() {
   const { values: v, set } = useQueryParams<Params>(KEYS)
   const tab = TABS.some((t) => t.slug === v.tab) ? (v.tab as string) : TABS[0].slug
   const dock = useDockSlot()
+  const viewOnly = !EDIT_BY.includes(readRole())
 
   return (
     <AppLayout assistantContext={assistFor.page('إعدادات المشاريع والصرف')}>
@@ -70,11 +80,12 @@ export default function ProjectSettingsPage() {
                 تعديل برمجي، وتسري على النظام كله فور الحفظ
               </p>
             </div>
-            <Tag tone="mute">قابلة للإعداد</Tag>
+            {viewOnly ? <Tag tone="mute">للاطلاع · يعدّلها أصحاب الصلاحية ومدير النظام</Tag> : <Tag tone="mute">قابلة للإعداد</Tag>}
           </header>
 
           <Tabs items={TABS} active={tab} onChange={(x) => set({ tab: x === TABS[0].slug ? undefined : x })} />
 
+          <ReadOnly on={viewOnly}>
           {tab === 'approval' && <ApprovalTab />}
           {tab === 'path' && <ApprovalRulesTab />}
           {tab === 'limits' && <LimitsTab />}
@@ -83,6 +94,8 @@ export default function ProjectSettingsPage() {
           {tab === 'criteria' && <CriteriaTab />}
           {tab === 'consultants' && <ConsultantsTab />}
           {tab === 'prospects' && <ProspectsTab />}
+          {tab === 'reasons' && <ReasonsTab />}
+          </ReadOnly>
         </div>
         {/* The unsaved-changes dock · inside the view stack, so it spans the content column like the decision bar, not the rail */}
         <div className="dockslot" ref={dock.setEl} />
@@ -195,6 +208,51 @@ function ApprovalTab() {
         />
       )}
     </>
+  )
+}
+
+/* ═══ v3 · 3.4.24 · the reasons for a recommendation to reject ═══ */
+
+function ReasonsTab() {
+  const { user } = useRole()
+  const [saved, setSaved] = useState<string[]>(() => [...REJECT_REASONS])
+  const [d, setD] = useState<string[]>(saved)
+  const [add, setAdd] = useState('')
+  const [bad, setBad] = useState<string[]>([])
+  const changed = d.join('|') !== saved.join('|')
+  const save = () => {
+    const out = saveRejectReasons(d, user.name)
+    setBad(out)
+    if (!out.length) { setSaved([...REJECT_REASONS]); setD([...REJECT_REASONS]) }
+  }
+  return (
+    <Glass className="tblcard">
+      <Head title="أسباب التوصية بالرفض" meta={<span className="sub"><Num>{d.length}</Num> سببًا · ومعها «أخرى» بنص</span>} />
+      <ul className="cfglist">
+        {d.map((r, i) => (
+          <li key={i}>
+            <span className="fld"><input value={r} aria-label={`السبب ${i + 1}`} onChange={(e) => setD((x) => x.map((y, j) => (j === i ? e.target.value : y)))} /></span>
+            <span className="pc-sp" />
+            <button type="button" className="btn btn-2 btn-sm" onClick={() => setD((x) => x.filter((_, j) => j !== i))}>احذف</button>
+          </li>
+        ))}
+        <li>
+          <span className="fld"><input value={add} aria-label="سبب جديد" placeholder="سبب جديد" onChange={(e) => setAdd(e.target.value)} /></span>
+          <span className="pc-sp" />
+          <button type="button" className="btn btn-2 btn-sm" disabled={!add.trim()} onClick={() => { setD((x) => [...x, add.trim()]); setAdd('') }}>أضف</button>
+        </li>
+      </ul>
+      {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
+      <p className="sub cnote">يختار مشرف المنح سبب توصيته بالرفض من هذه القائمة، أو «أخرى» ويكتب السبب · ويُحفظ السبب في سجل المشروع.</p>
+      {changed && (
+        <SaveBar
+          count={1}
+          sentence={<>قائمة الأسباب معدّلة<span className="decsep" /><span className="sub"><Num>{d.length}</Num> سببًا</span></>}
+          onSave={save}
+          onDiscard={() => setD(saved)}
+        />
+      )}
+    </Glass>
   )
 }
 

@@ -30,7 +30,7 @@ const sum = (rows: ProjectRow[], pick: (p: ProjectRow) => number) =>
   rows.reduce((s, p) => s + pick(p), 0)
 
 function line(key: string, label: string, allocated: number, rows: ProjectRow[]): BudgetLine {
-  const reserved = sum(rows.filter((p) => p.statusGroup === 'في الدراسة'), (p) => p.amountRequested)
+  const reserved = sum(rows.filter((p) => p.statusGroup === 'قيد الدراسة'), (p) => p.amountRequested)
   const committed = sum(rows.filter((p) => p.supportStatus === 'معتمد'), (p) => p.amountGranted)
   const spent = sum(rows, (p) => p.amountSpent)
   return {

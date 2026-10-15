@@ -49,6 +49,7 @@ import { APPROVAL_RULES } from './approvals/rules'
 import { TODAY } from './clock'
 import { agrTargetDays, agrWasReturned, agreements } from './mock/agreements'
 import { yearById } from './mock/budgetTree'
+import { isDone, isLive } from '@/data/status'
 
 /** Denominator unit · "10 of 30" needs to say what the 30 is */
 export type Basis = 'project' | 'entity' | 'line' | 'source' | 'riyal' | 'agreement' | 'activity' | 'beneficiary'
@@ -328,9 +329,9 @@ const actDays = accepted.map(({ p, a }) => {
 
 const eh = ehsanProjects()
 const ehMoneyAll = eh.map((p) => ehMoney(p.id))
-const ehClosed = eh.filter((p) => p.statusGroup === 'مكتمل')
+const ehClosed = eh.filter((p) => isDone(p.statusGroup))
 /* Re-audit 7 Oct · late counts the stalled too, over the projects in execution, not over all of them */
-const ehRunning = eh.filter((p) => p.statusGroup === 'في التشغيل' || p.statusGroup === 'متعثر')
+const ehRunning = eh.filter((p) => isLive(p.statusGroup) || p.statusGroup === 'متعثر')
 const ehLate = ehRunning.filter((p) => p.statusGroup === 'متعثر' || (p.endAt && p.endAt < today))
 /* Re-audit 7 Oct · an Ehsan project closes in the partners' record, not in the closing module ·
    reading `closeRows` meant this was never measured */

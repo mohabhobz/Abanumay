@@ -532,7 +532,7 @@ export default function PlanPage() {
           <p className="sub tcen">
             مرحلة الخطة لا تغيّر حالة المشروع ·{' '}
             <Link to={ROUTES.project(p.projectId)} className="lnk">{p.projectName}</Link>{' '}
-            في «{pr?.stage ?? ''}» والخطة في «{planStageLabel(p.stage)}»، وكلاهما صحيح.
+            «{pr?.statusGroup ?? ''}» والخطة في «{planStageLabel(p.stage)}» · والخطة المطلوبة تُبقي المشروع قبل التنفيذ حتى تُعتمد.
             {readyToClose(p) && ' وكل أنشطة الخطة قُبلت، فالمشروع مؤهَّل للإغلاق.'}
             {issues.length > 0 && !live && (
               <> · وتوجد <span className="num">{issues.length}</span> ملاحظة تمنع الإرسال.</>

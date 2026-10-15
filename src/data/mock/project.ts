@@ -200,7 +200,7 @@ export const entity: Entity = {
   ],
   projects: [
     { id: '22444', name: 'البرنامج العلمي في جمعية الرياحين', region: 'الرياض', status: 'دراسة المشروع', tone: 'teal', weight: 0 },
-    { id: '22442', name: 'صناعة معايير التربية العلمية وتفعيلها', region: 'الرياض', status: 'معتذر عنه', tone: 'no', weight: 96 },
+    { id: '22442', name: 'صناعة معايير التربية العلمية وتفعيلها', region: 'الرياض', status: 'مرفوض', tone: 'no', weight: 96 },
     { id: '20940', name: 'المكملات المعرفية لطالب العلم', region: 'الرياض', status: 'الحالي', tone: 'brand', weight: 0 },
   ],
 }

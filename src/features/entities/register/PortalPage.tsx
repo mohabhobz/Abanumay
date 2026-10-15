@@ -24,6 +24,8 @@ import { portalViewOf, regThread } from '@/data/mock/regPortal'
 import { planStageLabel, plansOfEntity, waitingReview } from '@/data/mock/plans'
 import { projectsOfEntity } from '@/data/mock/projects'
 import { flowOf, missingDocs, resubmit, uploadDoc, useFlow, REQUEST_DOCS } from '@/data/intake/flow'
+import { draftKey, draftOf } from '@/data/intake/drafts'
+import { ReturnedEdit } from './ReturnedEdit'
 import { CYCLE, inPeriod } from '@/data/intake/cycle'
 import { entityById } from '@/data/mock/entities'
 import { regRows, REG_STAGES } from '@/data/mock/registration'
@@ -88,7 +90,10 @@ export default function PortalPage() {
   const reqOf = r ?? regRequestById(DEFAULT_REQ)!
   const entityId = ent ? ent.id : reqOf.state === 'approved' ? reqOf.entityId : undefined
   const account = entityId ? entityById(entityId) : undefined
-  const mine = entityId ? projectsOfEntity(entityId).filter((p) => p.statusGroup === 'في الدراسة' || p.stage === 'استكمال بيانات المشروع') : []
+  const mine = entityId ? projectsOfEntity(entityId).filter((p) => p.statusGroup === 'قيد الدراسة' || p.stage === 'استكمال بيانات المشروع') : []
+  /* v3 · 0.status.1 · the entity's unsent request · «مسودة» · it isn't a submitted project and no report counts it */
+  const draft = entityId ? draftOf(draftKey(true, entityId, '')) : undefined
+  const [editing, setEditing] = useState<string | null>(null)
 
   const view = portalViewOf(reqOf.state)
   /* The entity's plans - read from the `entityId` created after approval. */
@@ -450,8 +455,20 @@ export default function PortalPage() {
                   <p className="sub cnote">
                     {CYCLE.name} · التقديم مفتوح حتى <DateText>{CYCLE.to}</DateText>
                   </p>
-                  {mine.length === 0 && <p className="sub cnote">لا طلبات قيد الدراسة لديك الآن.</p>}
+                  {mine.length === 0 && !draft && <p className="sub cnote">لا طلبات قيد الدراسة لديك الآن.</p>}
                   <ul className="ptl-miss ptl-plans">
+                    {draft && (
+                      <li className="ptl-rq">
+                        <Icon name={icons.navProjects} size="sm" />
+                        <span className="ptl-rq-b">
+                          <b>{draft.val.name || 'طلب بلا اسم بعد'}</b>
+                          <span className="sub">حُفظ <DateText>{draft.savedAt.slice(0, 10)}</DateText> · لم يُرسل إلى المؤسسة</span>
+                        </span>
+                        <span className="pc-sp" />
+                        <Tag tone="mute">مسودة</Tag>
+                        <Link className="btn btn-2 btn-sm" to={`${ROUTES.projectNew}?as=entity&entity=${entityId}`}>أكمل الطلب</Link>
+                      </li>
+                    )}
                     {mine.map((p) => {
                       const f = flowOf(p.id)
                       const back = p.stage === 'استكمال بيانات المشروع'
@@ -461,9 +478,11 @@ export default function PortalPage() {
                           <Icon name={icons.navProjects} size="sm" />
                           <span className="ptl-rq-b">
                             <b>{p.name}</b>
+                            {/* v3 · 3.4.19 · the entity reads the main status alone · what it must do is a task, not a level */}
                             <span className="sub">
-                              {back ? `مُعاد للاستكمال · ${f.completionNote ?? 'راجع ملاحظة المشرف'}` : 'قيد الدراسة لدى المؤسسة'}
+                              {back ? `مطلوب منك استكمال الطلب · ${f.completionNote ?? 'راجع ملاحظة المشرف'}` : 'لدى المؤسسة'}
                             </span>
+                            {back && editing === p.id && <ReturnedEdit id={p.id} by={p.entityName} onDone={() => setEditing(null)} />}
                             {back && short.length > 0 && (
                               <span className="ptl-rq-up">
                                 {REQUEST_DOCS.filter((d) => short.includes(d.label)).map((d) => (
@@ -476,12 +495,20 @@ export default function PortalPage() {
                             )}
                           </span>
                           <span className="pc-sp" />
-                          {back
-                            ? <button className="btn btn-p btn-sm" disabled={short.length > 0} title={short.length ? 'ارفع المرفقات الناقصة أولًا' : undefined} onClick={() => resubmit(p.id, p.entityName)}>
-                                <Icon name={icons.send} size="sm" />
-                                أعد الإرسال
-                              </button>
-                            : <Tag tone="mute">قيد الدراسة</Tag>}
+                          <Tag tone="mute">{p.statusGroup}</Tag>
+                          {back && editing !== p.id && (
+                            /* v3 · 3.2.10 · the entity corrects the request itself, not only its attachments */
+                            <button className="btn btn-2 btn-sm" onClick={() => setEditing(p.id)}>
+                              <Icon name={icons.edit} size="sm" />
+                              عدّل بيانات الطلب
+                            </button>
+                          )}
+                          {back && (
+                            <button className="btn btn-p btn-sm" disabled={short.length > 0} title={short.length ? 'ارفع المرفقات الناقصة أولًا' : undefined} onClick={() => resubmit(p.id, p.entityName)}>
+                              <Icon name={icons.send} size="sm" />
+                              أعد الإرسال
+                            </button>
+                          )}
                         </li>
                       )
                     })}

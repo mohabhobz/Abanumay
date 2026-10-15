@@ -1,6 +1,7 @@
 import type { ProjectRow, Tone } from '@/types/domain'
 import { nf } from '@/lib/format'
 import type { AgreementDetail, PaymentDetail, ProjectDetail } from './detail'
+import { isDone, isDropped } from '@/data/status'
 
 /**
  * Project history log · the full lifecycle, generated from project status.
@@ -122,8 +123,8 @@ const REACHED = [
 ]
 
 const got = (row: ProjectRow, stage: string) => {
-  if (row.statusGroup === 'مكتمل') return true
-  if (row.statusGroup === 'معتذر عنه') return false
+  if (isDone(row.statusGroup)) return true
+  if (isDropped(row.statusGroup)) return false
   const a = REACHED.indexOf(row.stage)
   const b = REACHED.indexOf(stage)
   return a >= 0 && b >= 0 && a >= b
@@ -174,7 +175,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
       { k: 'المجال', v: row.field },
       { k: 'الهدف', v: row.goal },
       { k: 'وزن المشروع', v: `${row.weight} من 100`, strong: true },
-      { k: 'رأي الباحث', v: row.statusGroup === 'معتذر عنه' ? 'الاعتذار عن المشروع' : 'دعم المشروع', strong: true },
+      { k: 'رأي الباحث', v: isDropped(row.statusGroup) ? 'الاعتذار عن المشروع' : 'دعم المشروع', strong: true },
       { k: 'مبلغ الدعم الموصى به', v: nf.format(Math.round((grant * 1.16) / 1000) * 1000), strong: true },
       { k: 'عدد الدفعات', v: String(detail.payments.length || 1) },
       { k: 'مدة التنفيذ بالأيام', v: String(row.durationDays) },
@@ -189,13 +190,13 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
           `الجهة ${row.weight >= 85 ? 'ذات سجل جيد لدى المؤسسة' : 'جديدة على المؤسسة'}، والمشروع في ` +
           `${row.region}، وهي منطقة ${row.weight >= 80 ? 'ذات حاجة' : 'مخدومة نسبيًا'}. ` +
           `التكلفة ${row.beneficiaries > 0 ? `${nf.format(Math.round(row.amountRequested / Math.max(1, row.beneficiaries)))} ⃁ للمستفيد` : 'غير محسوبة لعدم توفر عدد المستفيدين'}، ` +
-          `وأرى ${row.statusGroup === 'معتذر عنه' ? 'الاعتذار لتكرار الدعم في الهدف نفسه' : `منح الجهة ${nf.format(grant)} ⃁`}.`,
+          `وأرى ${isDropped(row.statusGroup) ? 'الاعتذار لتكرار الدعم في الهدف نفسه' : `منح الجهة ${nf.format(grant)} ⃁`}.`,
       },
     ],
   })
 
   /* 2 · Excused path · five entries and done */
-  if (row.statusGroup === 'معتذر عنه') {
+  if (isDropped(row.statusGroup)) {
     b.add({
       after: 3, action: 'معتذر عنه', dept: 'اعتماد دراسة المشروع', by: manager,
       actor: 'staff', tone: 'no',
@@ -348,7 +349,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
   }
 
   /* 6 · Evaluation and closure */
-  if (row.statusGroup === 'مكتمل' || row.stage === 'تقييم المشروع') {
+  if (isDone(row.statusGroup) || row.stage === 'تقييم المشروع') {
     b.add({
       after: 27, action: 'تقييم المشروع', dept: 'تقييم المشروع', by: owner,
       actor: 'staff', tone: 'ret',
@@ -366,7 +367,7 @@ export function projectLog({ row, entityName, detail }: LogInput): LogEvent[] {
     })
   }
 
-  if (row.statusGroup === 'مكتمل') {
+  if (isDone(row.statusGroup)) {
     b.add({
       after: 1, action: 'توصية', dept: 'اعتماد التقييم', by: director,
       actor: 'staff', tone: 'ok', fields: [{ k: 'ملاحظات', v: '' }],

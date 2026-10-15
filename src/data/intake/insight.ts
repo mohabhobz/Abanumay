@@ -3,6 +3,7 @@ import { allBudgets } from '@/data/mock/chain'
 import { moneyOf, type LineMoney } from '@/data/mock/budgetTree'
 import { projectRows } from '@/data/mock/projects'
 import { entityById } from '@/data/mock/entities'
+import { isDone, isLive } from '@/data/status'
 
 /* What the supervisor studies against (3.2.11 · 3.2.12).
 
@@ -40,7 +41,7 @@ export const similarProjects = (p: ProjectRow, n = 3): ProjectRow[] => {
   const others = projectRows.filter((x) => x.id !== p.id && x.type !== 'محفظة')
   const same = others.filter((x) => x.goal === p.goal)
   const near = others.filter((x) => x.goal !== p.goal && x.field === p.field)
-  const rank = (x: ProjectRow) => (x.statusGroup === 'مكتمل' ? 0 : x.statusGroup === 'في التشغيل' ? 1 : 2)
+  const rank = (x: ProjectRow) => (isDone(x.statusGroup) ? 0 : isLive(x.statusGroup) ? 1 : 2)
   return [...same.sort((a, b) => rank(a) - rank(b)), ...near.sort((a, b) => rank(a) - rank(b))].slice(0, n)
 }
 

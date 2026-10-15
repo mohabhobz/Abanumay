@@ -7,7 +7,7 @@ import { isolate, nf, pct } from '@/lib/format'
 import type { ProjectRow } from '@/types/domain'
 import { approverFor } from '@/data/approval'
 import { HOLDER_LABEL, holderOf, type Holder } from '@/data/holders'
-import { flowOf } from '@/data/intake/flow'
+import { flowOf, orgOutputsOf, outputLine } from '@/data/intake/flow'
 import { CRITERIA, GROUP_SAY, studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { fitOf, similarProjects } from '@/data/intake/insight'
@@ -26,6 +26,7 @@ import {
   levelCap, makeOfficial, meetCondition, payPlanOf, planSuggested, resolveNote, sessionsOf, strategyOf, useApprovals,
   voteTally, type Opinion,
 } from '@/data/approvals/store'
+import { reasonSay } from '@/data/intake/reasons'
 
 /* «الاعتماد» · the project's decision file on the approval path (BPD-004 – BPD-007).
 
@@ -117,7 +118,8 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           ...(f.decided ? [{ k: 'القرار النهائي', v: <>{HOLDER_LABEL[f.decided.level]} · <Person name={f.decided.by} /> · <DateText>{f.decided.at}</DateText></> }] : []),
           ...(f.awaitingReview ? [{ k: 'بانتظار استكمال المراجعة', v: <span className="bad">{f.awaitingReview.note}</span> }] : []),
         ]} />
-        {holder === 'confirm' && f.decided && role === 'ceo' && (
+        {/* v3 · 5.4.21 · an approved decision is reopened by a documented act until the agreement work starts */}
+        {(holder === 'confirm' || row.statusGroup === 'معتمد') && f.decided && role === 'ceo' && (
           <div className="apv-row mt-3">
             <span className="fld"><input value={amend} onChange={(e) => setAmend(e.target.value)} placeholder="سبب إعادة فتح القرار" aria-label="سبب تعديل القرار" /></span>
             <button className="btn btn-2 btn-sm" disabled={!amend.trim()} onClick={() => { amendDecision(row, amend.trim(), me); setAmend('') }}>عدّل القرار بإجراء رسمي</button>
@@ -138,6 +140,15 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
               <Person name={study.by} /> <DateText>{study.at}</DateText>
             </div>
             <p className="sub cnote">{study.justification}</p>
+            {study.recommendation === 'reject' && study.rejectReason && <p className="sub cnote">سبب التوصية بالرفض: {reasonSay(study.rejectReason, study.rejectOther)}</p>}
+            {/* v3 · 3.4.45 · the foundation's outputs go up with the file · the entity's stay readable */}
+            {orgOutputsOf(row.id).length > 0 && (
+              <details className="mt-1" open>
+                <summary className="lnk">مخرجات المؤسسة · <Num>{orgOutputsOf(row.id).length}</Num></summary>
+                <ul className="outs-ro mt-1">{orgOutputsOf(row.id).map((o, i) => <li key={i}>{outputLine(o)}</li>)}</ul>
+                {(flowOf(row.id).entityOutputs ?? []).length > 0 && <p className="sub cnote">الأصل كما قدّمته الجهة: {(flowOf(row.id).entityOutputs ?? []).map(outputLine).join(' ؛ ')}</p>}
+              </details>
+            )}
             <ul className="apv-scores">
               {(['فني', 'مالي', 'إداري'] as const).map((g) => (
                 <li key={g}>

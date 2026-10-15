@@ -5,6 +5,8 @@ import type {
 } from '@/types/domain'
 import { AWAITING_AGREEMENT, SCENARIO, VIA_EHSAN, projectRows } from './projects'
 import { entityById } from './entities'
+import { isDone, isLive } from '@/data/status'
+import { workDayLimits } from '@/lib/sla'
 
 /* Agreements · 28 steps and 26 rules
 
@@ -70,7 +72,7 @@ export const AGR_TONE: Record<AgreementStage, 'mute' | 'warn' | 'ret' | 'ok' | '
  * The document gives no duration per stage; the first indicator measures "average agreement
  * drafting time" and the target is **empty**, exactly like the disbursement indicators.
  */
-export const AGR_LIMIT: Record<AgreementStage, number> = hydrate(CFG.agrLimits, {
+export const AGR_LIMIT: Record<AgreementStage, number> = hydrate(CFG.agrLimits, workDayLimits({
   draft: 168,
   manager: 96,
   executive: 96,
@@ -78,7 +80,7 @@ export const AGR_LIMIT: Record<AgreementStage, number> = hydrate(CFG.agrLimits, 
   returned: 120,
   active: 0,
   cancelled: 0,
-})
+}))
 
 export type AgrHeat = 'ok' | 'late' | 'stuck'
 
@@ -202,7 +204,7 @@ const atAgreement = (p: (typeof projectRows)[number]) => p.stage.includes('ال�
    project already paying out (AG-2026-3102..3106) */
 const eligible = projectRows.filter(
   (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) && !VIA_EHSAN.has(p.id) &&
-    (p.statusGroup === 'في التشغيل' || p.statusGroup === 'مكتمل' || atAgreement(p)),
+    (isLive(p.statusGroup) || isDone(p.statusGroup) || atAgreement(p)),
 ).sort((a, b) => Number(atAgreement(b)) - Number(atAgreement(a)))
 
 /** The steps each stage passes through · from the steps table itself */

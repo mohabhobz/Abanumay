@@ -7,6 +7,8 @@ import { studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { REQUEST_DOCS, closeRequest, flowOf, rescheduleStart, uploadDoc } from '@/data/intake/flow'
 import { P_STAGES } from '@/data/mock/projectNew'
+import { outputLine, parseOutputs } from '@/data/intake/flow'
+import { WEEKDAYS, foundationWeek, workDaysOf } from '@/data/intake/cycle'
 
 /* The request's own cards on «بيانات المشروع» · procedure 3.
 
@@ -54,8 +56,14 @@ export function RecommendationCard({ row }: { row: ProjectRow }) {
 }
 
 /** The request form's field labels · a version's values read with the form's own names */
+/* v3 · the outputs list and the execution days read as text, not as their stored form */
+const sayValue = (k: string, x: string): string =>
+  k === 'outputs' ? parseOutputs(x).map(outputLine).join(' ؛ ')
+    : k === 'execDays' ? (workDaysOf(x) ?? []).map((n) => WEEKDAYS[n]).join('، ')
+      : x
+
 const FIELD_LABEL: Record<string, string> = Object.fromEntries(
-  [...P_STAGES.flatMap((st) => st.fields.filter((x) => x.key !== 'entityId').map((x) => [x.key, x.label])), ['amount', 'المبلغ'], ['days', 'المدة بأيام العمل'], ['beneficiaries', 'المستفيدون'], ['startAt', 'بداية التنفيذ']],
+  [...P_STAGES.flatMap((st) => st.fields.filter((x) => x.key !== 'entityId').map((x) => [x.key, x.label])), ['amount', 'المبلغ'], ['days', 'المدة بأيام التنفيذ'], ['beneficiaries', 'المستفيدون'], ['startAt', 'تاريخ بدء التنفيذ المتوقع']],
 )
 
 export function RequestMetaCard({ row, me, canReschedule = false }: { row: ProjectRow; me?: string; canReschedule?: boolean }) {
@@ -63,7 +71,7 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
   /* Batch 6 · 8 Oct · the start can move, and the calculated end follows the duration · it was
      computed once at submission and no screen changed it after */
   const [edit, setEdit] = useState(false)
-  const [start, setStart] = useState(row.startAt ?? '')
+  const [start, setStart] = useState(row.actualStartAt ?? row.startAt ?? '')
   const [why, setWhy] = useState('')
   const [err, setErr] = useState<string[]>([])
   const created = f.createdAt ?? row.createdAt?.replace('T', ' ') ?? `${row.submittedAt} 09:00`
@@ -74,22 +82,27 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
         rows={[
           { k: 'أُنشئ', v: <span className="num">{created}</span> },
           { k: 'أُرسل', v: <DateText>{f.sentAt?.slice(0, 10) ?? row.submittedAt}</DateText> },
-          { k: 'بداية التنفيذ', v: row.startAt ? <DateText>{row.startAt}</DateText> : '—' },
+          /* v3 · 3.4.14 · 3.4.15 · the expected start, kept apart from the request's date · the project's
+             own days of the week · the end computed on them */
+          { k: 'تاريخ تقديم الطلب', v: <DateText>{row.submittedAt}</DateText> },
+          { k: 'تاريخ بدء التنفيذ المتوقع', v: row.startAt ? <DateText>{row.startAt}</DateText> : '—' },
+          { k: 'تاريخ بدء التنفيذ الفعلي', v: row.actualStartAt ? <DateText>{row.actualStartAt}</DateText> : <span className="sub">لم يُسجَّل بعد</span> },
+          { k: 'أيام التنفيذ من الأسبوع', v: (row.execDays ?? foundationWeek()).map((n) => WEEKDAYS[n]).join('، ') },
           { k: 'نهاية التنفيذ المحسوبة', v: row.endAt ? <DateText>{row.endAt}</DateText> : '—' },
-          ...(row.durationDays ? [{ k: 'المدة', v: <><Num>{row.durationDays}</Num> يوم عمل</> }] : []),
+          ...(row.durationDays ? [{ k: 'المدة المقترحة', v: <><Num>{row.durationDays}</Num> يوم تنفيذ <span className="sub">· استرشادية للدراسة</span></> }] : []),
         ]}
       />
       {canReschedule && row.durationDays ? (
         edit ? (
           <div className="regfields mt-3">
             <label className="regf">
-              <span className="lb">بداية التنفيذ الجديدة</span>
-              <DateField value={start} onChange={setStart} label="بداية التنفيذ الجديدة" />
+              <span className="lb">بداية التنفيذ الفعلي</span>
+              <DateField value={start} onChange={setStart} label="بداية التنفيذ الفعلي" />
             </label>
             <label className="regf">
               <span className="lb">السبب</span>
               <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب تعديل البداية" /></span>
-              <span className="sub regf-h">تُعاد النهاية من المدة · <Num>{row.durationDays}</Num> يوم عمل</span>
+              <span className="sub regf-h">تُعاد النهاية من المدة · <Num>{row.durationDays}</Num> يوم تنفيذ</span>
             </label>
             {err.length > 0 && <p className="bad">{err.join(' · ')}</p>}
             <div className="rowf gp-2">
@@ -102,8 +115,8 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
             </div>
           </div>
         ) : (
-          <button type="button" className="btn btn-2 btn-sm mt-2" onClick={() => { setStart(row.startAt ?? ''); setEdit(true) }}>
-            <Icon name={icons.edit} size="sm" />عدّل بداية التنفيذ
+          <button type="button" className="btn btn-2 btn-sm mt-2" onClick={() => { setStart(row.actualStartAt ?? row.startAt ?? ''); setEdit(true) }}>
+            <Icon name={icons.edit} size="sm" />سجّل بداية التنفيذ الفعلي
           </button>
         )
       ) : null}
@@ -117,7 +130,7 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
               <span className="sub"><DateText>{v.at}</DateText></span>
               {v.snap && (
                 <span className="sub rqv-snap">
-                  المبلغ <Money sm>{v.snap.amount}</Money> · المدة <Num>{v.snap.days}</Num> يوم عمل · المستفيدون <Num>{v.snap.reach}</Num> · المرفقات <Num>{v.snap.docs}</Num>
+                  المبلغ <Money sm>{v.snap.amount}</Money> · المدة <Num>{v.snap.days}</Num> يوم تنفيذ · المستفيدون <Num>{v.snap.reach}</Num> · المرفقات <Num>{v.snap.docs}</Num>
                 </span>
               )}
               {/* Batch 7 · intake#14 · the version read whole · each field as sent, the changes
@@ -128,7 +141,7 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
                   <KV rows={Object.entries(v.values).filter(([k, x]) => x && FIELD_LABEL[k]).map(([k, x]) => {
                     const before = f.versions.filter((y) => y.no < v.no && y.values).pop()?.values?.[k]
                     const changed = before !== undefined && before !== x
-                    return { k: FIELD_LABEL[k]!, v: changed ? <><b>{x}</b> <Tag tone="warn">تغيّر · كان {before}</Tag></> : x }
+                    return { k: FIELD_LABEL[k]!, v: changed ? <><b>{sayValue(k, x)}</b> <Tag tone="warn">تغيّر · كان {sayValue(k, before)}</Tag></> : sayValue(k, x) }
                   })} />
                   {v.docs && v.docs.length > 0 && <p className="sub cnote">المرفقات: {v.docs.join(' · ')}</p>}
                 </details>

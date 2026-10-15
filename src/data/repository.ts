@@ -167,7 +167,7 @@ export const REVIEWER = 'عمر قاسم'
 export const projectBucket = (r: ProjectRow): ProjectBucket =>
   r.portfolioId || r.type === 'محفظة'
     ? 'portfolios'
-    : r.owner === REVIEWER && r.statusGroup === 'في الدراسة'
+    : r.owner === REVIEWER && r.statusGroup === 'قيد الدراسة'
     ? 'mine'
     : stagePressure(r) > 1
       ? 'overdue'

@@ -150,7 +150,9 @@ export const setPartyRename = (f: typeof partyRename): void => { partyRename = f
 const renameParty = (agreementId: string, from: string, to: string) => partyRename(agreementId, from, to)
 let bankSource: (entityId: string) => { name: string; active: boolean } | undefined = () => undefined
 const COUNTER: Partial<Record<string, 'projectsRunning' | 'projectsStalled' | 'projectsCompleted' | 'projectsDeclined'>> = {
-  'في التشغيل': 'projectsRunning', 'متعثر': 'projectsStalled', 'مكتمل': 'projectsCompleted', 'معتذر عنه': 'projectsDeclined',
+  'معتمد': 'projectsRunning', 'استكمال متطلبات ما قبل التنفيذ': 'projectsRunning', 'تحت التنفيذ': 'projectsRunning', 'قيد الإغلاق': 'projectsRunning',
+  'متعثر': 'projectsStalled', 'مكتمل': 'projectsCompleted', 'مغلق بوفر': 'projectsCompleted', 'أعيد توجيه الدعم': 'projectsCompleted',
+  'مرفوض': 'projectsDeclined', 'ملغى': 'projectsDeclined',
 }
 
 /** The impact a suspension or revocation carried · kept with the decision */

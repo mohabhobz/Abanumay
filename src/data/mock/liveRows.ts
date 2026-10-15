@@ -89,7 +89,7 @@ function cell(col: LiveCol, r: () => number, i: number): string | number {
     case 'owner': return pick(r, OWNERS)
     case 'stage': return pick(r, STAGES).stage
     case 'dept': return LIVE_DEPTS[i % LIVE_DEPTS.length]
-    case 'status': return pick(r, ['معتذر عنه', 'معتذر عنه', 'في التشغيل', 'مكتمل', 'في الدراسة', 'متعثر'])
+    case 'status': return pick(r, ['مرفوض', 'مرفوض', 'تحت التنفيذ', 'مكتمل', 'قيد الدراسة', 'متعثر'])
     case 'method': return pick(r, ['بحث واستجابة', 'ابتكار وإنضاج'])
     case 'share': case 'ads': case 'impact': return pick(r, ['لا', 'لا', 'نعم'])
     case 'state': return pick(r, ['مدفوع', 'مدفوع', 'غير مدفوع'])

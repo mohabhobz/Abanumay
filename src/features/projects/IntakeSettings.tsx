@@ -1,6 +1,5 @@
 import { meOf, readRole } from '@/data/roles'
-import { DECISIONS } from '@/data/shared/decisions'
-import { rederiveEnds } from '@/data/intake/flow'
+import { calendarSnap, rederiveEnds } from '@/data/intake/flow'
 import { useMemo, useState } from 'react'
 import {
   DateField, FieldSelect, Glass, Head, Icon, icons, MultiSelect, Num, Person, Switch, Tag,
@@ -28,7 +27,7 @@ import { resetIntake } from '@/data/intake/flow'
      «الجهات المقترحة»   the outreach register for the grant year */
 
 const DIST: Distribution[] = ['manual', 'even', 'load', 'specialty']
-const inStudy = (field: string) => projectRows.filter((p) => p.field === field && p.statusGroup === 'في الدراسة').length
+const inStudy = (field: string) => projectRows.filter((p) => p.field === field && p.statusGroup === 'قيد الدراسة').length
 
 /* ═══ Cycle ═══ */
 
@@ -133,8 +132,21 @@ export function CycleTab() {
       </Glass>
 
       <Glass>
-        <Head title="تقويم المدد" meta={<span className="sub">أيام عمل · تُستبعد العطل</span>} />
-        <p className="sub cnote">تُحسب نهاية التنفيذ بأيام العمل من تاريخ البداية: تُستبعد العطلة الأسبوعية والإجازات الرسمية أدناه.</p>
+        <Head title="تقويم المدد" meta={<span className="sub">أيام عمل المؤسسة · وسياسة احتساب المدة</span>} />
+        <p className="sub cnote">أيام عمل المؤسسة أدناه تحسب مدد المراحل والتصعيد (SLA) · ومدة تنفيذ المشروع تُحسب بأيام تنفيذه من الأسبوع التي تحدّدها الجهة، وفق السياسة التالية.</p>
+        {/* v3 · 3.4.34 · whether the weekend and the holidays count inside a project's execution duration */}
+        <Switch
+          label="تدخل العطلة الأسبوعية ضمن مدة التنفيذ"
+          note="موقوف: يُحسب من أيام تنفيذ المشروع وحدها · مفعّل: تُحسب كل أيام الأسبوع"
+          on={Boolean(d.countWeekend)}
+          onChange={(v) => patch((x) => { x.countWeekend = v })}
+        />
+        <Switch
+          label="تدخل الإجازات الرسمية ضمن مدة التنفيذ"
+          note="موقوف: تُستبعد الإجازات أدناه من المدة · مفعّل: تُحسب ضمنها"
+          on={Boolean(d.countHolidays)}
+          onChange={(v) => patch((x) => { x.countHolidays = v })}
+        />
         <div className="cfgchips">
           {WEEKDAYS.map((w, i) => {
             const on = d.weekend.includes(i)
@@ -195,10 +207,11 @@ export function CycleTab() {
           count={1}
           sentence={<>تعديلات على «{d.name}»<span className="decsep" /><span className="sub">تسري على البوابة والإسناد فور الحفظ</span></>}
           onSave={() => {
-            const before = structuredClone(CYCLE.holidays)
+            const before = calendarSnap()
             saveCycle(d)
-            /* Batch 8 · intake#15 · when the foundation decided so, open projects' ends follow the new holidays */
-            if (DECISIONS.holidayRederive && JSON.stringify(before) !== JSON.stringify(CYCLE.holidays)) rederiveEnds(before, 'تحديث الإجازات الرسمية في إعدادات الاستقبال', meOf(readRole()))
+            /* v3 · 3.4.34 · open projects' ends follow every change to the calendar · the week, the
+               holidays or the duration policy */
+            if (JSON.stringify(before) !== JSON.stringify(calendarSnap())) rederiveEnds(before, 'تحديث تقويم المدد في إعدادات الاستقبال', meOf(readRole()))
             setSaved(structuredClone(CYCLE)); setD(structuredClone(CYCLE))
           }}
           onDiscard={() => setD(structuredClone(saved))}

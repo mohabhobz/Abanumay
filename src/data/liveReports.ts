@@ -146,7 +146,7 @@ export const LIVE_SPECS: LiveSpec[] = [
       { key: 'paid', label: 'عدد المشاريع المدفوعة', kind: 'num', w: 105 },
       { key: 'approved', label: 'عدد المشاريع المعتمدة', kind: 'num', w: 105 },
       { key: 'approvedY', label: 'المعتمدة للسنة الحالية', kind: 'num', w: 105 },
-      { key: 'running', label: 'في التشغيل للجهة', kind: 'num', w: 100 },
+      { key: 'running', label: 'تحت التنفيذ للجهة', kind: 'num', w: 100 },
       { key: 'declined', label: 'المعتذر عنها', kind: 'num', w: 95 },
       { key: 'stalled', label: 'المتعثرة', kind: 'num', w: 90 },
       { key: 'grantedY', label: 'الممنوحة خلال العام', kind: 'money', w: 130 },

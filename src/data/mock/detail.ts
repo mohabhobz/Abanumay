@@ -3,6 +3,7 @@ import type {
 } from '@/types/domain'
 import { countOf, nf, NOUN } from '@/lib/format'
 import { OWNERS } from './taxonomy'
+import { isDone, isDropped } from '@/data/status'
 
 /**
  * Derived project detail · agreement, disbursements, follow-ups, and correspondence.
@@ -56,8 +57,8 @@ const ORDER = [
 ]
 
 const reached = (row: ProjectRow, stage: string) => {
-  if (row.statusGroup === 'مكتمل') return true
-  if (row.statusGroup === 'معتذر عنه') return false
+  if (isDone(row.statusGroup)) return true
+  if (isDropped(row.statusGroup)) return false
   const at = ORDER.indexOf(row.stage)
   const want = ORDER.indexOf(stage)
   return at >= 0 && want >= 0 && at >= want
@@ -220,7 +221,7 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
   const split = count === 3 ? [0.5, 0.4, 0.1] : count === 2 ? [0.6, 0.4] : [1]
   const paidUpTo = !signed
     ? 0
-    : row.statusGroup === 'مكتمل'
+    : isDone(row.statusGroup)
       ? count
       : Math.max(1, Math.min(count - 1, Math.round(rnd() * count) || 1))
 
@@ -325,7 +326,7 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
           by: finance, from: 'staff', at: d(start, 87),
           body: `نأمل تعديل اسم الجهة في المرفق إلى (${entityName})، فقد رُفض المرفق السابق لخطأ في اسم الجهة.`,
         },
-        ...(row.statusGroup === 'مكتمل'
+        ...(isDone(row.statusGroup)
           ? [{
               by: 'الجهة' as const, from: 'entity' as const, at: d(start, 95),
               body: 'عدّلنا السند وأعدنا رفعه، جزاكم الله خيرًا.',

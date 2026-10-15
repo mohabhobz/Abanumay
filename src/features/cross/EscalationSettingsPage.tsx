@@ -103,7 +103,7 @@ export default function EscalationSettingsPage() {
             <div className="pmain">
               <h1 className="ptitle">آلية التصعيد</h1>
               <p className="sub mt-1">
-                مدد المراحل في جميع الإجراءات ومستويات التنبيه · يحرّرها مدير النظام مباشرة بلا مسار موافقات
+                مدد المراحل في جميع الإجراءات ومستويات التنبيه · تُحسب بأيام عمل المؤسسة وحدها (تُستبعد العطلة الأسبوعية والإجازات الرسمية) · يحرّرها مدير النظام مباشرة بلا مسار موافقات
                 {ESC_RULES.savedAt && <> · آخر حفظ <DateText>{ESC_RULES.savedAt}</DateText>{ESC_RULES.savedBy ? ` · ${ESC_RULES.savedBy}` : ''}</>}
               </p>
             </div>
@@ -133,15 +133,15 @@ export default function EscalationSettingsPage() {
                 />
                 <ul className="cfglist">
                   <li className="itk-sup">
-                    <span className="cfgl"><b>يصير الطلب متعثرًا</b><span className="sub">بعد تجاوز مدة المرحلة بعدد من الأيام · أو عند ضعفها</span></span>
+                    <span className="cfgl"><b>يصير الطلب متعثرًا</b><span className="sub">بعد تجاوز مدة المرحلة بعدد من أيام العمل · أو عند ضعفها</span></span>
                     <span className="pc-sp" />
                     {admin ? (
                       <span className="rowf gp-2">
                         <span className="cfgchips xs-chips" role="radiogroup" aria-label={`قاعدة التعثر في ${p.label}`}>
                           <button type="button" role="radio" aria-checked={n === null} className={`cfgchip${n === null ? ' on' : ''}`} onClick={() => putStuck(p.key, null)}>ضعف المدة</button>
-                          <button type="button" role="radio" aria-checked={n !== null} className={`cfgchip${n !== null ? ' on' : ''}`} onClick={() => putStuck(p.key, n ?? 7)}>أيام إضافية</button>
+                          <button type="button" role="radio" aria-checked={n !== null} className={`cfgchip${n !== null ? ' on' : ''}`} onClick={() => putStuck(p.key, n ?? 7)}>أيام عمل إضافية</button>
                         </span>
-                        {n !== null && <CfgNum value={n} min={1} label={`أيام التعثر في ${p.label}`} suffix="يومًا" onChange={(x) => putStuck(p.key, Math.max(1, x))} />}
+                        {n !== null && <CfgNum value={n} min={1} label={`أيام التعثر في ${p.label}`} suffix="يوم عمل" onChange={(x) => putStuck(p.key, Math.max(1, x))} />}
                       </span>
                     ) : (
                       <span className="sub">{n === null ? 'عند ضعف مدة المرحلة' : <>بعد <Num>{n}</Num> يومًا إضافية</>}</span>
@@ -154,7 +154,7 @@ export default function EscalationSettingsPage() {
                       <tr>
                         <th><span className="th-t">المرحلة</span></th>
                         <th><span className="th-t">المسؤول</span></th>
-                        <th className="n"><span className="th-t">المدة بالأيام</span></th>
+                        <th className="n"><span className="th-t">المدة بأيام العمل</span></th>
                         <th className="n"><span className="th-t">متعثر بعد</span></th>
                       </tr>
                     </thead>
@@ -165,7 +165,7 @@ export default function EscalationSettingsPage() {
                           <td className="sub">{s.who}</td>
                           <td className="n">
                             {admin
-                              ? <CfgNum value={days[s.key]} min={1} label={`مدة ${s.label} بالأيام`} onChange={(x) => setDays((y) => ({ ...y, [s.key]: Math.max(1, x) }))} />
+                              ? <CfgNum value={days[s.key]} min={1} label={`مدة ${s.label} بأيام العمل`} onChange={(x) => setDays((y) => ({ ...y, [s.key]: Math.max(1, x) }))} />
                               : <Num>{days[s.key]}</Num>}
                           </td>
                           <td className="n"><Num>{days[s.key] + (n === null ? days[s.key] : n)}</Num></td>

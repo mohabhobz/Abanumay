@@ -81,7 +81,7 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
 
   const save = () => {
     /* Re-audit 7 Oct · a stage's days edited here are kept in the settings history, before and after */
-    logSettings(title, `${here.pathname}${here.search}`, user.name, changed.map((s) => ({ k: s.label, from: countOf(saved[s.key], NOUN.day), to: countOf(d[s.key], NOUN.day) })))
+    logSettings(title, `${here.pathname}${here.search}`, user.name, changed.map((s) => ({ k: s.label, from: `${countOf(saved[s.key], NOUN.day)} عمل`, to: `${countOf(d[s.key], NOUN.day)} عمل` })))
     for (const s of stages) if ((limits[s.key] ?? 0) > 0) limits[s.key] = d[s.key] * 24
     persist(cfgKey, Object.fromEntries(stages.map((s) => [s.key, limits[s.key] ?? 0])))
     setSaved(d)
@@ -101,7 +101,7 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
             <th><span className="th-t">المحطة</span></th>
             {extraHead && <th><span className="th-t">{extraHead}</span></th>}
             <th><span className="th-t">المسؤول</span></th>
-            <th className="n"><span className="th-t">الحدّ بالأيام</span></th>
+            <th className="n"><span className="th-t">الحدّ بأيام العمل</span></th>
             <th className="n"><span className="th-t">{unitLabel}</span></th>
           </tr>
         </thead>
@@ -120,7 +120,7 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
                       value={d[s.key]}
                       min={1}
                       onChange={(x) => setD((y) => ({ ...y, [s.key]: x }))}
-                      label={`حدّ ${s.label} بالأيام`}
+                      label={`حدّ ${s.label} بأيام العمل`}
                     />
                   ) : open ? <span className="num">{d[s.key]}</span> : (
                     <span className="sub">بلا حدّ</span>

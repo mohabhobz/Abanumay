@@ -3,7 +3,7 @@ import { actDay, asOf } from '@/data/clock'
 import type { LogEvent } from '@/data/mock/log'
 import { ESC_RULES } from '@/data/shared/escRules'
 import {
-  TODAY, planById, planIssues, planOfProject, planRows, readyToClose,
+  TODAY, planById, planIssues, planOfProject, planRows, planStageLabel, readyToClose,
 } from '@/data/mock/plans'
 import { projectRows } from '@/data/mock/projects'
 import { appFlowOf, planSuggested, setConfirmHook } from '@/data/approvals/store'
@@ -11,6 +11,7 @@ import { roleByKey } from '@/data/roles'
 import { ROUTES } from '@/app/routes'
 import { nowStamp } from '@/lib/format'
 import type { PlanActivity, PlanPhase, PlanRow } from '@/types/domain'
+import { setPlanStatusGate } from '@/data/status'
 
 /* Project plans (BPD-012) · the actions.
 
@@ -382,6 +383,19 @@ function hydrate() {
   for (const o of ops) { apply(o); logOp(o) }
 }
 hydrate()
+
+/* v3 · 0.status.4 · 0.status.5 · a project whose plan is required stays in its pre-execution
+   requirements until the plan is approved · only then «تحت التنفيذ» */
+setPlanStatusGate((projectId) => {
+  const d = planDecisionOf(projectId)
+  /* a plan the approval required · a seeded project paying under the old rule (its plan known only
+     from the fixture, no decision on record) keeps the state it had */
+  if (!d?.needs || d.source === 'legacy') return ''
+  const pl = planOfProject(projectId)
+  if (!pl) return 'لم تُفتح بعد'
+  /* a plan approved once (its baseline locked) that is being revised doesn't hold the project back */
+  return pl.stage === 'active' || pl.stage === 'done' || pl.stage === 'cancelled' || pl.baselineAt || pl.baseline > 0 ? '' : planStageLabel(pl.stage)
+})
 
 /* Confirmed in this session · open the plan beside the agreement (12.2.3) */
 setConfirmHook((projectId, by) => {

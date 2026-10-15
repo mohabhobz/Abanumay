@@ -10,6 +10,7 @@ import type { ProjectRow, ProjectType } from '@/types/domain'
 import { stageMeta } from './taxonomy'
 import { entityById } from './entities'
 import { implementerName, portfolios } from './implementer'
+import { installStatus } from '@/data/status'
 
 type Seed = Pick<
   ProjectRow,
@@ -23,7 +24,7 @@ const mk = (s: Seed): ProjectRow => {
   const requested = s.amountRequested ?? 0
   return {
     entityName: entity?.name ?? 'غير محددة',
-    statusGroup: meta?.group ?? 'في الدراسة',
+    statusGroup: meta?.group ?? 'قيد الدراسة',
     stageLimit: meta?.limit ?? 0,
     hoursInStage: 0,
     amountRequested: requested,
@@ -794,7 +795,8 @@ const SCENARIO_SEEDS: ScenarioSeed[] = [
   /* Closing · report cycle */
   ['21010', 'برنامج الحفاظ للأطفال بالمدينة', '733', 'المنح النوعي', 'القرآن', 'روضات التبيان', 'طلب التقرير الختامي', 240_000, 300, 'عزام الخريف'],
   ['21011', 'إفطار صائم في قرى الباحة', '846', 'المنح الانتشاري', 'الإغاثة', 'السلال الغذائية', 'طلب التقرير الختامي', 160_000, 3_000, 'أحمد العبداللطيف'],
-  ['21012', 'دروس التقوية في الرياضيات بالرياض', '694', 'المنح النوعي', 'التعليم', 'دروس التقوية الإلكترونية', 'رفع التقرير الختامي', 300_000, 700, 'عمر قاسم'],
+  /* v3 · 0.status.5 · 10.4.2 · its second payment is still held on a condition · it pays «تحت التنفيذ», not in closing */
+  ['21012', 'دروس التقوية في الرياضيات بالرياض', '694', 'المنح النوعي', 'التعليم', 'دروس التقوية الإلكترونية', 'رفع تقرير مرحلي', 300_000, 700, 'عمر قاسم'],
   ['21013', 'صيانة مساجد الطرق بالقصيم', '815', 'المنح النوعي', 'المساجد', 'عمارة المساجد', 'رفع التقرير الختامي', 410_000, 2_200, 'حصة النملة'],
   ['21014', 'تأهيل 30 أسرة منتجة بالأحساء', '755', 'مسار تعميق الأثر', 'التطوير', 'تهيئة السكن للمحتاجين', 'رفع التقرير الختامي', 520_000, 30, 'حصة النملة'],
   ['21015', 'مسابقة حفظ القرآن الإقليمية', '733', 'المنح النوعي', 'القرآن', 'تطوير معلمي القرآن الكريم', 'اعتماد التقرير الختامي', 180_000, 500, 'عزام الخريف'],
@@ -972,6 +974,9 @@ export const assignOwner = (ids: readonly string[], owner: string): void => {
    because choosing it in bulk would just be guessing. Assigning an owner has its own separate field
    next to this. */
 
+/* v3 · the status is read from the record from here on (data/status.ts) */
+installStatus(projectRows)
+
 export type BulkDecision = 'approve' | 'complete' | 'decline' | 'escalate'
 
 /** A snapshot before the decision, so "undo" is a real reversal, not a second, opposing decision */
@@ -1059,7 +1064,7 @@ export const portfolioRows: ProjectRow[] = portfolios.map((p) => {
     region: p.region ?? 'عموم المملكة',
     city: p.region ?? 'عموم المملكة',
     stage: 'تنفيذ المحفظة',
-    statusGroup: 'في التشغيل',
+    statusGroup: 'تحت التنفيذ',
     stageLimit: 0,
     entityName: implementerName(p.entityId),
     amountRequested: p.total,

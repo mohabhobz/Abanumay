@@ -434,8 +434,8 @@ export default function AgreementsPage() {
               agreement "awaiting executive director" while its project still shows "agreement
               setup". */}
           <p className="sub tcen">
-            مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «إعداد الاتفاقية» حتى
-            اعتمادها النهائي{/* doc rule 25 */}.
+            مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «استكمال متطلبات ما قبل التنفيذ» حتى
+            سريانها واعتماد خطته إن كانت مطلوبة{/* doc rule 25 · 0.status.4 */}.
             وإجمالي قيمة الاتفاقيات تحت الإعداد{' '}
             <span className="num">{nf.format(k.openSum)}</span> <Riyal />.
           </p>

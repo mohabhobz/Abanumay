@@ -16,6 +16,7 @@ import { capOf } from './approval'
  */
 import type { ProjectRow } from '@/types/domain'
 import { projectRows } from './mock/projects'
+import { isDone, isDropped } from '@/data/status'
 
 /** The level where the final decision was made */
 export type DecisionLevel =
@@ -100,8 +101,8 @@ const ORDER = [
  * status.
  */
 const reach = (row: ProjectRow): number => {
-  if (row.statusGroup === 'مكتمل') return ORDER.length - 1
-  if (row.statusGroup === 'معتذر عنه') return 1
+  if (isDone(row.statusGroup)) return ORDER.length - 1
+  if (isDropped(row.statusGroup)) return 1
   if (row.statusGroup === 'متعثر') return ORDER.indexOf('رفع تقرير مرحلي')
   const i = ORDER.indexOf(row.stage)
   return i < 0 ? 1 : i

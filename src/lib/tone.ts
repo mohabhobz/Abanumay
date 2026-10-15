@@ -39,13 +39,20 @@ export const TONE = {
  */
 export const HEAT_TONE = { ok: TONE.done, late: TONE.late, stuck: TONE.stuck } as const
 
-/** The project's five-way status group. */
+/** v3 · the project status dictionary · study waits, the live statuses carry the brand, an end
+    reads done or dropped, a stalled project its own tone. */
 export const groupTone = (group: string): Tone => {
   switch (group) {
-    case 'في الدراسة': return 'ret'
-    case 'في التشغيل': return 'brand'
-    case 'مكتمل': return 'ok'
+    case 'قيد الدراسة': return 'ret'
+    case 'معتمد': return 'teal'
+    case 'استكمال متطلبات ما قبل التنفيذ': return 'warn'
+    case 'تحت التنفيذ': return 'brand'
+    case 'قيد الإغلاق': return 'teal'
+    case 'مكتمل':
+    case 'مغلق بوفر':
+    case 'أعيد توجيه الدعم': return 'ok'
     case 'متعثر': return TONE.stuck
+    case 'مسودة': return 'mute'
     default: return 'no'
   }
 }

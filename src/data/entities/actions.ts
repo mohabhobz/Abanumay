@@ -127,10 +127,10 @@ export interface Impact {
 export function impactOf(e: EntityRow): Impact {
   const ps = projectRows.filter((p) => p.entityId === e.id && !p.archived)
   const g = (p: ProjectRow) => STAGE_GROUP.get(p.stage) ?? p.statusGroup
-  const study = ps.filter((p) => g(p) === 'في الدراسة')
+  const study = ps.filter((p) => g(p) === 'قيد الدراسة')
   const pre = ps.filter((p) => PRE.includes(p.stage))
   const closing = ps.filter((p) => CLOSING.includes(p.stage))
-  const running = ps.filter((p) => g(p) === 'في التشغيل' && !PRE.includes(p.stage) && !CLOSING.includes(p.stage))
+  const running = ps.filter((p) => g(p) === 'تحت التنفيذ')
   const payments = payRequests
     .filter((r) => r.entityId === e.id && r.state !== 'paid' && r.state !== 'closed')
     .map((r) => ({ id: r.id, project: r.projectName, projectId: r.projectId }))

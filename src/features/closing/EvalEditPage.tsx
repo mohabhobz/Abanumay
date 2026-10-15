@@ -8,6 +8,7 @@ import { nf, MISSING_ITEM, nounAfter, pct, unitAfter } from '@/lib/format'
 import { canStartEval, closeById, evalApproved, evalBlockers } from '@/data/mock/closing'
 import { saveEvaluation, useClosing } from '@/data/closing/store'
 import { useRole } from '@/hooks/useRole'
+import { orgOutputsOf, outputLine } from '@/data/intake/flow'
 
 /* Project evaluation editor - written by the grants supervisor, not the entity.
 
@@ -128,6 +129,14 @@ export default function EvalEditPage() {
                 ? <>قبل الإرسال: <Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</>
                 : 'جاهز للإرسال'}</span>}
           </header>
+
+          {/* v3 · 3.4.45 · the evaluation reads against the foundation's outputs · the project's reference */}
+          {orgOutputsOf(c.projectId).length > 0 && (
+            <Glass>
+              <Head title="مخرجات المؤسسة المعتمدة" meta={<span className="sub">المرجع في التقييم</span>} />
+              <ul className="outs-ro">{orgOutputsOf(c.projectId).map((o, i) => <li key={i}>{outputLine(o)}</li>)}</ul>
+            </Glass>
+          )}
 
           <Glass>
             <Head

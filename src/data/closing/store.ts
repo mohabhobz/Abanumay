@@ -19,8 +19,9 @@ import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type {
   CaseKind, CaseRow, CaseStage, CloseAudit, CloseFinance, CloseRow, CloseStage, EntityFeedback, FinalReport,
-  ProjectEval, Recovery, RecoveryReceipt,
+  ProjectEval, Recovery, RecoveryReceipt, SupportRedirect,
 } from '@/types/domain'
+import { isDone, isLive } from '@/data/status'
 
 /* Closing and distress (BPD-010) · the actions.
 
@@ -47,8 +48,10 @@ import type {
 export interface CloseRules {
   /** 10.9.3 · 10.9.8 · recovered money goes back to the line at once when the recovery completes, or with each receipt */
   releaseMode: 'once' | 'gradual'
+  /** v3 · 0.status.9 · 10.4.11 · who records a redirection of support · a significant financial decision */
+  redirectBy?: RoleKey[]
 }
-export const CLOSE_RULES: CloseRules = { releaseMode: 'once' }
+export const CLOSE_RULES: CloseRules = { releaseMode: 'once', redirectBy: ['ceo'] }
 export const RELEASE_SAY: Record<CloseRules['releaseMode'], string> = {
   once: 'دفعة واحدة عند اكتمال الاسترداد',
   gradual: 'تدريجيًّا مع كل مبلغ يُستلم',
@@ -82,7 +85,8 @@ const addDays = (iso: string, n: number) => {
 }
 
 function isRunning(p: { statusGroup: string; stage: string }): boolean {
-  return p.statusGroup === 'في التشغيل' && !p.stage.includes('الإتفاقي') && !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(p.stage)
+  /* v3 · 0.status.5 · 0.status.6 · in execution or already closing */
+  return p.statusGroup === 'تحت التنفيذ' || p.statusGroup === 'قيد الإغلاق'
 }
 
 /** The execution's end · the project's own date, else its start plus its duration */
@@ -103,7 +107,7 @@ export function projectEnd(projectId: string): string | undefined {
 export const paidToDate = (projectId: string): number => {
   if (payRequests.some((r) => r.projectId === projectId) || scheduleOf(projectId).length || hasLegacy(projectId)) return paidOf(projectId)
   const p = projectOf(projectId)
-  return p && (isRunning(p) || p.statusGroup === 'مكتمل' || p.statusGroup === 'متعثر') ? (p.amountGranted || p.amountRequested) : 0
+  return p && (isRunning(p) || isDone(p.statusGroup) || p.statusGroup === 'متعثر') ? (p.amountGranted || p.amountRequested) : 0
 }
 export const grantOf = (projectId: string): number => {
   const p = projectOf(projectId)
@@ -164,7 +168,7 @@ export function requirementsOf(c: CloseRow): { key: string; label: string; ok: b
     { key: 'slots', label: 'الدفعات مصروفة أو مسوّاة', ok: isStopped(c.projectId) || !left.length, say: left.length && !isStopped(c.projectId) ? `الدفعة ${left.map((s) => s.no).join(' و')} لم تُصرف ولم تُسوَّ` : 'كل الدفعات مصروفة أو مسوّاة' },
     { key: 'finance', label: 'التقرير المالي الختامي', ok: Boolean(f && f.lines.every((l) => l.spent !== null)), say: f && f.lines.every((l) => l.spent !== null) ? 'مكتمل' : 'لم يكتمل التقرير المالي' },
     { key: 'invoices', label: 'التحقق من الفواتير', ok: f?.verified !== null && f?.verified !== undefined, say: f?.verified != null ? `تحقّق المشرف من ${nf.format(f.verified)}` : 'لم يتحقّق المشرف من الفواتير' },
-    { key: 'recovery', label: 'الوفر مسترد أو بقرار', ok: sav === 0 ? recSettled(c.recovery) : Boolean(c.recovery) && recSettled(c.recovery), say: sav === 0 && !c.recovery ? 'لا وفر' : !c.recovery ? `وفر ${nf.format(sav)} بلا مطالبة` : c.recovery.state === 'decided' ? 'قرار نهائي معتمد' : c.recovery.state === 'done' ? 'اكتمل الاسترداد' : `متبقٍّ ${nf.format(recLeft(c.recovery))}` },
+    { key: 'recovery', label: 'الوفر مسترد أو بقرار', ok: sav === 0 ? recSettled(c.recovery) : (Boolean(c.recovery) && recSettled(c.recovery)) || Boolean(c.redirect && c.redirect.redirected >= sav), say: c.redirect && c.redirect.redirected >= sav && !c.recovery ? `أُعيد توجيه ${nf.format(c.redirect.redirected)} بقرار معتمد` : sav === 0 && !c.recovery ? 'لا وفر' : !c.recovery ? `وفر ${nf.format(sav)} بلا مطالبة` : c.recovery.state === 'decided' ? 'قرار نهائي معتمد' : c.recovery.state === 'done' ? 'اكتمل الاسترداد' : `متبقٍّ ${nf.format(recLeft(c.recovery))}` },
     { key: 'feedback', label: 'تقييم الجهة للمؤسسة', ok: Boolean(c.feedback), say: c.feedback ? 'أرسلته الجهة' : 'لم تُرسله الجهة بعد' },
   ]
 }
@@ -281,6 +285,7 @@ type Op = { at: string; by: string } & (
   | { op: 'caseDoc'; id: string; key: 'report' | 'invoices' | 'annex'; file: string }
   | { op: 'caseSettle'; id: string; actual: number }
   | { op: 'caseAct'; id: string; act: CaseAct; note: string }
+  | { op: 'redirect'; id: string; v: Omit<SupportRedirect, 'by' | 'at'> }
 )
 
 const KEY = 'ab-close-ops'
@@ -504,7 +509,16 @@ function applyOp(o: Op) {
       c.note = undefined
       c.closedAt = day(o.at)
       elog(c, o.by, 'اعتماد التقييم', o.at)
-      log(c, o.by, 'الإغلاق النهائي · المشروع «مكتمل» وأُرشف ملفه', o.at)
+      log(c, o.by, 'الإغلاق النهائي · أُرشف ملف المشروع', o.at)
+      /* v3 · 0.status.8 · 10.2.20 · a saving left · the unpaid part of the grant and what was
+         recovered from the entity · the project reads «مغلق بوفر» with the value and where it went */
+      {
+        const p = projectOf(c.projectId)
+        const unpaid = Math.max(0, grantOf(c.projectId) - paidToDate(c.projectId))
+        const back = c.recovery ? c.recovery.receipts.reduce((s, x) => s + x.amount, 0) : 0
+        if (p && c.redirect) p.redirect = c.redirect
+        else if (p && unpaid + back > 0) p.closeSavings = { amount: unpaid + back, fate: back > 0 ? 'استُرد من الجهة وعاد إلى بند الميزانية' : 'غير المصروف عاد إلى بند الميزانية' }
+      }
       setProjectStage(c.projectId, 'مشروع مكتمل')
       /* 1.4.32 · what's held and unpaid goes back to the line · the recovered savings, if released once */
       if (live) releaseSavings(c.projectId, o.by, 'الإغلاق النهائي')
@@ -527,6 +541,16 @@ function applyOp(o: Op) {
     case 'rules':
       Object.assign(CLOSE_RULES, o.rules)
       return
+    case 'redirect': {
+      /* v3 · 0.status.9 · 10.9.7 · a formal decision redirects the support within the same relationship ·
+         the project reads «أعيد توجيه الدعم» once its closing ends */
+      const c = closeById(o.id)
+      if (!c || c.stage === 'closed' || c.redirect) return
+      c.redirect = { ...o.v, by: o.by, at: day(o.at) }
+      log(c, o.by, `إعادة توجيه الدعم · ${nf.format(o.v.redirected)} من ${nf.format(o.v.original)} · ${o.v.purpose} · القرار ${o.v.decision}`, o.at)
+      notify([c.entityName, c.owner], 'قرار إعادة توجيه الدعم', c.projectName, ROUTES.closing(c.id))
+      return
+    }
     case 'recOpen': {
       const rec: Recovery = { ...o.rec, receipts: [], claims: [], escalations: [], released: 0, state: 'open' }
       if (o.owner.kind === 'close') { const c = closeById(o.owner.id); if (!c || c.recovery) return; c.recovery = rec }
@@ -566,7 +590,7 @@ function applyOp(o: Op) {
       {
         const pid = projectOfOwner(o.owner)
         const p = pid ? projectOf(pid) : undefined
-        if (pid && p && p.statusGroup !== 'متعثر' && p.statusGroup !== 'مكتمل') { setProjectStage(pid, 'مشروع متعثر'); ownerLog(o.owner, 'النظام', 'حُوّلت حالة المشروع إلى «مشروع متعثر» لتعذّر الاسترداد', o.at) }
+        if (pid && p && p.statusGroup !== 'متعثر' && !isDone(p.statusGroup)) { setProjectStage(pid, 'مشروع متعثر'); ownerLog(o.owner, 'النظام', 'حُوّلت حالة المشروع إلى «مشروع متعثر» لتعذّر الاسترداد', o.at) }
       }
       return
     }
@@ -901,6 +925,33 @@ export function sendFeedback(id: string, scores: Record<string, number>, comment
 }
 export const saveCloseRules = (rules: CloseRules, by: string) => run({ op: 'rules', rules, by, at: now() })
 
+/** v3 · 0.status.9 · what a redirection starts from · the grant, what the verified invoices used, and
+    the most that can move */
+export function redirectBase(c: CloseRow): { original: number; used: number; max: number } {
+  const original = grantOf(c.projectId)
+  const used = c.finance?.verified ?? paidToDate(c.projectId)
+  return { original, used, max: Math.max(0, original - used) }
+}
+export const mayRedirect = (role: RoleKey): boolean => (CLOSE_RULES.redirectBy ?? ['ceo']).includes(role)
+export function redirectSupport(id: string, v: { redirected: number; purpose: string; decision: string; decisionFile: string; evidence: string[] }, by: string, role: RoleKey): string[] {
+  const c = closeById(id)
+  if (!c) return ['الإغلاق غير موجود']
+  if (!mayRedirect(role)) return ['إعادة توجيه الدعم لصاحب الصلاحية · المدير التنفيذي افتراضيًّا']
+  if (c.stage === 'closed') return ['أُغلق المشروع نهائيًّا']
+  if (c.redirect) return ['سُجّل قرار إعادة التوجيه من قبل']
+  const b = redirectBase(c)
+  const out: string[] = []
+  if (!(v.redirected > 0)) out.push('المبلغ المعاد توجيهه')
+  else if (v.redirected > b.max) out.push(`المعاد توجيهه في حدود غير المستخدم (${nf.format(b.max)})`)
+  if (!v.purpose.trim()) out.push('الغرض الجديد داخل العلاقة نفسها')
+  if (!v.decision.trim()) out.push('رقم القرار')
+  if (!v.decisionFile) out.push('مستند القرار')
+  if (!v.evidence.length) out.push('شاهد واحد على الأقل')
+  if (out.length) return out
+  run({ op: 'redirect', id, v: { original: b.original, used: b.used, redirected: v.redirected, purpose: v.purpose.trim(), decision: v.decision.trim(), decisionFile: v.decisionFile, evidence: v.evidence }, by, at: now() })
+  return []
+}
+
 /* Recovery · shared by the closing's savings and the distress cases */
 
 export function openSavingsRecovery(id: string, by: string): string[] {
@@ -948,7 +999,7 @@ export function createCase(v: { projectId: string; kind: CaseKind; reason: strin
   if (!p) return { errors: ['المشروع غير موجود'] }
   if (!v.reason.trim()) return { errors: ['اكتب سبب القرار'] }
   if (casesOfProject(v.projectId).some((c) => !['closed', 'rejected'].includes(c.stage))) return { errors: ['للمشروع حالة تعثّر مفتوحة'] }
-  if (!['في التشغيل', 'متعثر'].includes(p.statusGroup) || p.stage === 'مشروع موقوف') return { errors: ['يُتّخذ القرار على مشروع معتمد تحت التنفيذ'] }
+  if (!(isLive(p.statusGroup) || p.statusGroup === 'متعثر') || p.stage === 'مشروع موقوف') return { errors: ['يُتّخذ القرار على مشروع معتمد تحت التنفيذ'] }
   const g = grantOf(v.projectId)
   const paid = paidToDate(v.projectId)
   if (v.kind === 'reduce') {

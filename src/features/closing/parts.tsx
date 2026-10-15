@@ -7,7 +7,7 @@ import { CLOSE_DOCS, closeStageLabel, reportApproved } from '@/data/mock/closing
 import {
   CLOSE_RULES, DECISION_SAY, ESCALATION_STEPS, FEEDBACK_ITEMS, RELEASE_SAY, decideRecovery, escalateRecovery,
   failRecovery, openSavingsRecovery, paidToDate, recordReceipt, recoveryLeft, requirementsOf, savingsOf,
-  sendFeedback, useClosing, verifyInvoices,
+  mayRedirect, redirectBase, redirectSupport, sendFeedback, useClosing, verifyInvoices,
 } from '@/data/closing/store'
 import { settleSlot, unsettledSlots } from '@/data/payments/store'
 import type { CloseRow, CloseSnapshot, FinalReport, Recovery } from '@/types/domain'
@@ -241,6 +241,57 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
 }
 
 /* ── The entity's evaluation of the foundation · 10.3.2 ── */
+
+/* ── v3 · 0.status.9 · 10.9.7 · redirecting the support within the same relationship ── */
+
+export function RedirectCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }) {
+  useClosing()
+  const { role, user } = useRole()
+  const [amount, setAmount] = useState('')
+  const [purpose, setPurpose] = useState('')
+  const [decision, setDecision] = useState('')
+  const [file, setFile] = useState('')
+  const [evidence, setEvidence] = useState<string[]>([])
+  const [bad, setBad] = useState<string[]>([])
+  const r = c.redirect
+  if (!r && (asEntity || !mayRedirect(role.key) || c.stage === 'closed')) return null
+  const b = redirectBase(c)
+  return (
+    <Glass>
+      <Head title="إعادة توجيه الدعم" meta={r ? <Tag tone="ok">بقرار معتمد</Tag> : <span className="sub">داخل العلاقة نفسها · بقرار رسمي</span>} />
+      {r ? (
+        <KV
+          rows={[
+            { k: 'المبلغ الأصلي', v: <Money sm>{r.original}</Money> },
+            { k: 'المستخدم', v: <Money sm>{r.used}</Money> },
+            { k: 'المعاد توجيهه', v: <Money sm>{r.redirected}</Money> },
+            { k: 'الغرض', v: r.purpose },
+            { k: 'القرار', v: <>{r.decision} · {r.decisionFile}</> },
+            { k: 'الشواهد', v: r.evidence.join('، ') },
+            { k: 'سجّله', v: <><Person name={r.by} /> · <DateText>{r.at}</DateText></> },
+          ]}
+        />
+      ) : (
+        <>
+          <KV rows={[{ k: 'المبلغ الأصلي', v: <Money sm>{b.original}</Money> }, { k: 'المستخدم', v: <Money sm>{b.used}</Money> }, { k: 'الحد الأقصى للتوجيه', v: <Money sm>{b.max}</Money> }]} />
+          <div className="apv-row mt-3">
+            <MoneyField value={amount} onChange={setAmount} label="المبلغ المعاد توجيهه" />
+            <span className="fld"><input value={purpose} onChange={(e) => setPurpose(e.target.value)} aria-label="الغرض الجديد" placeholder="الغرض الجديد داخل العلاقة نفسها" /></span>
+            <span className="fld"><input value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="رقم القرار" placeholder="رقم القرار" /></span>
+          </div>
+          <div className="apv-row mt-2">
+            <UploadButton label={file || 'مستند القرار'} onPick={(f) => setFile(f.name)} />
+            <UploadButton label="شاهد" onPick={(f) => setEvidence((x) => [...x, f.name])} />
+            {evidence.length > 0 && <span className="sub">{evidence.join('، ')}</span>}
+            <button type="button" className="btn btn-p btn-sm" onClick={() => setBad(redirectSupport(c.id, { redirected: Number(amount.replace(/[^\d]/g, '')) || 0, purpose, decision, decisionFile: file, evidence }, user.name, role.key))}>اعتمد إعادة التوجيه</button>
+          </div>
+          <Err list={bad} />
+        </>
+      )}
+      <p className="sub cnote">يتحول المشروع إلى «أعيد توجيه الدعم» عند اكتمال إغلاقه، مع المبلغ الأصلي والمستخدم والمعاد توجيهه والغرض والقرار والشواهد.</p>
+    </Glass>
+  )
+}
 
 export function FeedbackCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }) {
   useClosing()

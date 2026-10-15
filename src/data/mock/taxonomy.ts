@@ -5,6 +5,7 @@
  * system, so the filters built on them match what the client sees.
  */
 import { CFG, readJson } from '@/lib/config'
+import { workDayLimit } from '@/lib/sla'
 
 /** Years = two separately funded entities, each with its own budget and processes */
 export const YEARS = [
@@ -80,9 +81,11 @@ export const TAGS = [
   'كفالات الأيتام والأرامل', 'مبادرة الحج', 'محو الأمية',
 ] as const
 
-/** Grouped statuses the system filters by */
+/** v3 · the project status dictionary (0.status) in its order · «مسودة» stays out · it never reaches
+    the list or the reports (0.status.1) */
 export const STATUS_GROUPS = [
-  'في الدراسة', 'في التشغيل', 'معتذر عنه', 'متعثر', 'مكتمل',
+  'قيد الدراسة', 'معتمد', 'استكمال متطلبات ما قبل التنفيذ', 'تحت التنفيذ', 'قيد الإغلاق',
+  'مكتمل', 'مغلق بوفر', 'أعيد توجيه الدعم', 'مرفوض', 'ملغى', 'متعثر',
 ] as const
 
 export const GRANT_METHODS = ['بحث واستجابة', 'ابتكار وإنضاج'] as const
@@ -201,30 +204,39 @@ export interface StageMeta {
   limit: number
 }
 
+/* v3 · 3.4.15 · the limits are working days (lib/sla.ts) · written here as their calendar hours */
+const wd = workDayLimit
 export const STAGES: StageMeta[] = [
-  { stage: 'دراسة المشروع', group: 'في الدراسة', limit: 900 },
-  { stage: 'استكمال بيانات المشروع', group: 'في الدراسة', limit: 720 },
-  { stage: 'اعتماد الإتفاقية', group: 'في التشغيل', limit: 480 },
-  { stage: 'الإتفاقيات الورقية', group: 'في التشغيل', limit: 480 },
+  /* v3 · 0.status.2 · under study from sending until the final decision · the level is the sub-status */
+  { stage: 'دراسة المشروع', group: 'قيد الدراسة', limit: wd(900) },
+  { stage: 'استكمال بيانات المشروع', group: 'قيد الدراسة', limit: wd(720) },
+  /* 0.status.3 · 0.status.4 · approved, then the pre-execution requirements · the status module tells
+     the two apart by whether the agreement work has started */
+  { stage: 'اعتماد الإتفاقية', group: 'استكمال متطلبات ما قبل التنفيذ', limit: wd(480) },
+  { stage: 'الإتفاقيات الورقية', group: 'استكمال متطلبات ما قبل التنفيذ', limit: wd(480) },
   /* Re-audit 7 Oct · named in the data, missing here · it read «في الدراسة» */
-  { stage: 'اعتماد الإتفاقية الكترونيًا', group: 'في التشغيل', limit: 480 },
-  { stage: 'المشرف إذن الصرف', group: 'في التشغيل', limit: 240 },
-  { stage: 'اصدار سند الصرف', group: 'في التشغيل', limit: 240 },
-  { stage: 'رفع سند القبض والقيد', group: 'في التشغيل', limit: 360 },
-  { stage: 'رفع تقرير مرحلي', group: 'في التشغيل', limit: 720 },
-  { stage: 'طلب التقرير الختامي', group: 'في التشغيل', limit: 720 },
-  { stage: 'رفع التقرير الختامي', group: 'في التشغيل', limit: 720 },
-  { stage: 'اعتماد التقرير الختامي', group: 'في التشغيل', limit: 480 },
-  { stage: 'تقييم المشروع', group: 'في التشغيل', limit: 480 },
+  { stage: 'اعتماد الإتفاقية الكترونيًا', group: 'استكمال متطلبات ما قبل التنفيذ', limit: wd(480) },
+  /* 0.status.5 · execution · the only status a payment runs in */
+  { stage: 'المشرف إذن الصرف', group: 'تحت التنفيذ', limit: wd(240) },
+  { stage: 'اصدار سند الصرف', group: 'تحت التنفيذ', limit: wd(240) },
+  { stage: 'رفع سند القبض والقيد', group: 'تحت التنفيذ', limit: wd(360) },
+  { stage: 'رفع تقرير مرحلي', group: 'تحت التنفيذ', limit: wd(720) },
+  /* 0.status.6 · from the final report's request until the closing requirements are approved */
+  { stage: 'طلب التقرير الختامي', group: 'قيد الإغلاق', limit: wd(720) },
+  { stage: 'رفع التقرير الختامي', group: 'قيد الإغلاق', limit: wd(720) },
+  { stage: 'اعتماد التقرير الختامي', group: 'قيد الإغلاق', limit: wd(480) },
+  { stage: 'تقييم المشروع', group: 'قيد الإغلاق', limit: wd(480) },
+  /* 0.status.7–9 · complete · or closed with a saving · or its support redirected (the module reads which) */
   { stage: 'مشروع مكتمل', group: 'مكتمل', limit: 0 },
+  /* 0.status.12 · a project whose execution can't go on · not a stage past its SLA */
   { stage: 'مشروع متعثر', group: 'متعثر', limit: 0 },
-  /* 10.9.1 · a stop approved by the CEO · its own status, under «متعثر» */
-  { stage: 'مشروع موقوف', group: 'متعثر', limit: 0 },
-  { stage: 'مشروع معتذر عنه', group: 'معتذر عنه', limit: 0 },
-  { stage: 'مشروع ملغي', group: 'معتذر عنه', limit: 0 },
-  /* 6.2.8 · 7.2.10 · a rejection by the committee or the board is its own status, not «معتذر عنه» */
-  { stage: 'مرفوض - اللجنة التنفيذية', group: 'معتذر عنه', limit: 0 },
-  { stage: 'مرفوض - مجلس الأمناء', group: 'معتذر عنه', limit: 0 },
+  /* 0.status.11 · 10.9.1 · a stop approved by the CEO ends as «ملغى» in v3 */
+  { stage: 'مشروع موقوف', group: 'ملغى', limit: 0 },
+  { stage: 'مشروع ملغي', group: 'ملغى', limit: 0 },
+  /* 0.status.10 · a refusal at any level · the level is kept in the decision's details */
+  { stage: 'مشروع معتذر عنه', group: 'مرفوض', limit: 0 },
+  { stage: 'مرفوض - اللجنة التنفيذية', group: 'مرفوض', limit: 0 },
+  { stage: 'مرفوض - مجلس الأمناء', group: 'مرفوض', limit: 0 },
 ]
 
 /* Meeting 1 Oct, item 9 · the study and completion limits come from the escalation settings now.

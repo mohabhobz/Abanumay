@@ -7,6 +7,7 @@ import { stagePressure } from '@/data/repository'
 import type { ProjectRow } from '@/types/domain'
 import { PRIORITY_TONE, priorityOf } from '@/data/intake/priority'
 import type { Col as TCol, GroupBy } from '@/components/table'
+import { subStatusOf } from '@/data/status'
 
 /* Project table column definitions — a single source for four consumers.
 
@@ -162,12 +163,14 @@ export const COLS: Col[] = [
        Progress" is a 75px label, and the column was 96px minus 24px of cell
        padding (2×12) = 72px, so the label was being truncated at a 1440px
        viewport width. */
-    w: 112,
+    w: 196,
     label: 'الحالة',
     def: true,
     cell: (r) => <Tag tone={groupTone(r.statusGroup)}>{r.statusGroup}</Tag>,
     text: (r) => r.statusGroup,
   },
+  /* v3 · 0.status.2 · 3.4.19 · the level under study · the agreement and the plan before execution */
+  { key: 'substatus', w: 168, label: 'الحالة الفرعية', def: true, cell: (r) => <span className="sub trim1" title={subStatusOf(r)}>{subStatusOf(r)}</span>, text: (r) => subStatusOf(r) },
   { key: 'method', w: 110, label: 'أسلوب المنح', cell: (r) => <span className="sub">{r.grantMethod}</span>, text: (r) => r.grantMethod },
   { key: 'support', w: 108, label: 'حالة الدعم', cell: (r) => r.supportStatus ?? <span className="sub"> </span>, text: (r) => r.supportStatus ?? '' },
   { key: 'submitted', w: 108, label: 'تاريخ التقديم', cell: (r) => <span className="sub num">{r.submittedAt}</span>, text: (r) => r.submittedAt },

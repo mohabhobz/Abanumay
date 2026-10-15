@@ -22,6 +22,7 @@ import { expiredMandatory } from '@/data/entities/store'
 import { EHSAN_PAYS, ehMoney, pfMoney, type PortfolioRec } from '@/data/partners/store'
 import { HOLDER_LABEL, type Holder } from '@/data/holders'
 import { countOf, nf, NOUN, pct, units } from '@/lib/format'
+import { isDone } from '@/data/status'
 
 /* Rule-based readings · cross «الذكاء الاصطناعي».
 
@@ -130,7 +131,7 @@ export function expectedImpact(p: ProjectRow): { expected: number; rate: number;
 export function readSimilar(p: ProjectRow): Reading | null {
   const sim = similarTo(p)
   if (!sim.length) return null
-  const done = sim.filter((x) => x.statusGroup === 'مكتمل')
+  const done = sim.filter((x) => isDone(x.statusGroup))
   const ei = expectedImpact(p)
   const expected = ei.expected
   return {
@@ -574,7 +575,7 @@ export function suggestAllocation(total: number): { track: string; share: number
   const prev = budgetByTrack('2025-f')
   const cur = budgetByTrack('2026-f')
   const demand = new Map<string, number>()
-  for (const p of projectRows.filter((x) => x.statusGroup === 'في الدراسة')) demand.set(p.track, (demand.get(p.track) ?? 0) + p.amountRequested)
+  for (const p of projectRows.filter((x) => x.statusGroup === 'قيد الدراسة')) demand.set(p.track, (demand.get(p.track) ?? 0) + p.amountRequested)
   const tracks = [...new Set([...prev, ...cur].map((l) => l.label))]
   const weight = tracks.map((t) => {
     const a = prev.find((l) => l.label === t); const b = cur.find((l) => l.label === t)

@@ -6,6 +6,7 @@ import { nowStamp } from '@/lib/format'
 import { TONE } from '@/lib/tone'
 import type { Tone } from '@/types/domain'
 import { SCENARIO, projectRows } from './projects'
+import { workDayLimits } from '@/lib/sla'
 
 /* Project execution plan · addresses a significant gap identified during review.
 
@@ -69,7 +70,7 @@ export const PLAN_TONE: Record<PlanStage, Tone> = {
  * The spec gave no duration per milestone — these numbers are assumptions recorded during planning,
  * same as the agreement and disbursement durations.
  */
-export const PLAN_LIMIT: Record<PlanStage, number> = hydrate(CFG.planLimits, {
+export const PLAN_LIMIT: Record<PlanStage, number> = hydrate(CFG.planLimits, workDayLimits({
   draft: 336,
   supervisor: 120,
   manager: 96,
@@ -77,7 +78,7 @@ export const PLAN_LIMIT: Record<PlanStage, number> = hydrate(CFG.planLimits, {
   active: 0,
   done: 0,
   cancelled: 0,
-})
+}))
 
 export const ACTIVITY_SAY: Record<ActivityState, string> = {
   todo: 'لم يبدأ',
@@ -241,8 +242,12 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
       out.push({ key: `dr-${ph.id}`, say: `حدّد تاريخي بداية «${ph.name || `المرحلة ${i + 1}`}» ونهايتها.`, rule: /* doc BPD-012 */ '' })
     }
     const pr = projectRows.find((x) => x.id === p.projectId)
-    if (pr?.startAt && ph.from && ph.from < pr.startAt) out.push({ key: `ps-${ph.id}`, say: `تبدأ «${ph.name}» قبل بداية تنفيذ المشروع.`, rule: /* doc BPD-012 */ '' })
-    if (pr?.endAt && ph.to && ph.to > pr.endAt) out.push({ key: `pe-${ph.id}`, say: `تنتهي «${ph.name}» بعد نهاية مدة المشروع.`, rule: /* doc BPD-012 */ '' })
+    /* v3 · 3.4.46 · the plan's dates fall inside the duration the agreement approved · the request's
+       proposed timeline was a guide for the study, not the plan */
+    /* the approved period · the actual start once recorded, else the expected one · to the computed end */
+    const from = pr?.actualStartAt ?? pr?.startAt
+    if (from && ph.from && ph.from < from) out.push({ key: `ps-${ph.id}`, say: `تبدأ «${ph.name}» قبل بداية المدة المعتمدة للمشروع.`, rule: /* doc 3.4.46 */ '' })
+    if (pr?.endAt && ph.to && ph.to > pr.endAt) out.push({ key: `pe-${ph.id}`, say: `تنتهي «${ph.name}» بعد نهاية المدة المعتمدة للمشروع.`, rule: /* doc 3.4.46 */ '' })
     if (ph.from && ph.to && ph.from > ph.to) {
       out.push({
         key: `dt-${ph.id}`,

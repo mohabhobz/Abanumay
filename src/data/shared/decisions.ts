@@ -39,7 +39,8 @@ const DEFAULT: Decisions = {
   typeFloor: { regular: null, independent: null, portfolio: null },
   impactBasis: 'similar',
   archivedInReports: false,
-  holidayRederive: false,
+  /* v3 · 3.4.34 · the document decided it · ends follow every change to the calendar */
+  holidayRederive: true,
 }
 
 export const DECISIONS: Decisions = readJson(CFG.decisions, DEFAULT)

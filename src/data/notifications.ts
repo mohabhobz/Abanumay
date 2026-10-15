@@ -113,7 +113,7 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
   }
 
   /* Needs your decision */
-  for (const p of query.projects({ owner: user.name, status: 'في الدراسة', sort: 'waiting', pageSize: 3 }).rows) {
+  for (const p of query.projects({ owner: user.name, status: 'قيد الدراسة', sort: 'waiting', pageSize: 3 }).rows) {
     out.push({
       id: `dec-${p.id}`, kind: 'decide', title: p.name,
       context: `${projectCode(p.id, p.year)} · ${p.stage} · ${p.entityName}`,

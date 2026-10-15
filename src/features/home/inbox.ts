@@ -81,7 +81,7 @@ const byWait = (a: InboxItem, b: InboxItem) => Number(b.late) - Number(a.late) |
 /* Approval bands by amount · read from the approval matrix in settings, so changing a cap there
    moves projects between the executive's, the committee's and the board's queues here. */
 
-const studying = () => fixtures.projects.filter((p) => p.statusGroup === 'في الدراسة')
+const studying = () => fixtures.projects.filter((p) => p.statusGroup === 'قيد الدراسة')
 
 const fromProject = (p: ProjectRow): InboxItem => ({
   id: p.id,
@@ -257,9 +257,9 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     return [
       projectsQueue('study', 'مشاريع للدراسة', 'مسندة إليك وتنتظر توصيتك',
         single.filter((p) => p.owner === me && holderOf(p) === 'supervisor'), `${ROUTES.projects}?tab=mine`),
-      /* 5.2.15 · 6.2.11 · 7.2.8 · the path is complete · the supervisor confirms before «معتمد» */
-      projectsQueue('confirm', 'تأكيد الاعتماد', 'اكتمل مسار الاعتماد · تحقّق من الشروط وأكّد',
-        single.filter((p) => p.owner === me && holderOf(p) === 'confirm'), `${ROUTES.projects}?tab=mine`),
+      /* v3 · 0.status.3 · approved at the decision · the supervisor's next step is the agreement */
+      projectsQueue('approved', 'معتمدة تنتظر الاتفاقية', 'صدر الاعتماد · أعدّ الاتفاقية وانقل الشروط إليها',
+        single.filter((p) => p.owner === me && p.statusGroup === 'معتمد'), `${ROUTES.projects}?status=معتمد`),
       portfolioItems('تنتظر توصيتك قبل أن تبدأ'),
       agreementsAt(['draft', 'returned'], undefined, 'supervisor'),
       paymentsAt('supervisor'),
@@ -275,7 +275,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     return [
       /* B-5 · what sits at his seat now · he approves within his cap and sends the rest up */
       projectsQueue('approve', 'مشاريع للاعتماد', 'عندك الآن · تعتمد ما في حدّك وترفع ما فوقه',
-        single.filter((p) => holderOf(p) === 'manager'), `${ROUTES.projects}?status=في الدراسة&sort=amount`),
+        single.filter((p) => holderOf(p) === 'manager'), `${ROUTES.projects}?status=قيد الدراسة&sort=amount`),
       projectsQueue('committee-sec', 'قرارات اللجنة للتسجيل', 'عند اللجنة التنفيذية · تسجّلها أمينًا للجنة في جلستها',
         single.filter((p) => holderOf(p) === 'committee'), ROUTES.committee),
       portfolioItems('تنتظر اعتمادك قبل أن تبدأ'),
@@ -340,7 +340,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     /* 5.2.1 · what the grants manager forwarded with his recommendation */
     projectsQueue('ceo', 'محالة من مدير المنح', 'بتوصيته · تعتمد ما في حدّك وتحيل ما فوقه للجنة',
       single.filter((p) => holderOf(p) === 'exec'),
-      `${ROUTES.projects}?status=في الدراسة&sort=amount`),
+      `${ROUTES.projects}?status=قيد الدراسة&sort=amount`),
     projectsQueue('committee', 'عند اللجنة التنفيذية', 'تُعرض في جلستها القادمة',
       single.filter((p) => holderOf(p) === 'committee'), ROUTES.committee),
     projectsQueue('board', 'عند مجلس الأمناء', 'يسجّل قراره المدير التنفيذي في جلسته',

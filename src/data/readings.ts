@@ -26,6 +26,7 @@ import { closingRows, gapOf, knowledgeRows } from './closing'
 import type { Journey } from './journey'
 import { countOf, MISSING_ITEM, nf, NOUN, pct as pctText, units } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
+import { isDone, isDropped, isLive } from '@/data/status'
 
 const days = (hours: number) => Math.round(hours / 24)
 
@@ -77,7 +78,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
   const inDays = days(row.hoursInStage)
 
   /* 1 · where it stands now and what's needed */
-  if (row.statusGroup === 'مكتمل') {
+  if (isDone(row.statusGroup)) {
     out.push({
       id: 'j-done',
       kind: 'note',
@@ -88,7 +89,7 @@ export function readJourney(row: ProjectRow, j: Journey | undefined): Reading[] 
       bold: [row.stage],
       src: 'حالة المشروع · سجل الإجراءات',
     })
-  } else if (row.statusGroup === 'معتذر عنه') {
+  } else if (isDropped(row.statusGroup)) {
     out.push({
       id: 'j-declined',
       kind: 'note',
@@ -261,7 +262,7 @@ export function readProjects({ all, filtered, isFiltered }: ProjectsReadingInput
       text: `سببها «${reason}»، ${c} من ${n} معتذر عنها في هذه الشريحة.`,
       bold: [`«${reason}»`, c],
       src: 'مبررات الاعتذار المقنّنة (9 مبررات)',
-      to: `${ROUTES.projects}?status=معتذر عنه${LIST}`,
+      to: `${ROUTES.projects}?status=مرفوض${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -688,7 +689,7 @@ export function readHome(input: HomeReadingInput): Reading[] {
 function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Reading[] {
   const out: Reading[] = []
 
-  const mine = projects.filter((p) => p.owner === owner && p.statusGroup === 'في الدراسة')
+  const mine = projects.filter((p) => p.owner === owner && p.statusGroup === 'قيد الدراسة')
   const mineLate = mine.filter((p) => stagePressure(p) > 1)
   if (mine.length) {
     const money = mine.reduce((s, p) => s + p.amountRequested, 0)
@@ -706,7 +707,7 @@ function readForSupervisor({ projects, entities, owner }: HomeReadingInput): Rea
         ...(mineLate.length ? [units.project(mineLate.length, true)] : [])],
       danger: mineLate.length ? [units.project(mineLate.length, true)] : [],
       src: 'المشاريع المسندة إليك',
-      to: `${ROUTES.projects}?owner=${encodeURIComponent(owner)}&status=في الدراسة${LIST}`,
+      to: `${ROUTES.projects}?owner=${encodeURIComponent(owner)}&status=قيد الدراسة${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -763,7 +764,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
 
   // Pending their approval · anything over the officer's threshold
   const waiting = projects.filter(
-    (p) => p.statusGroup === 'في الدراسة' && (ceiling === null || p.amountRequested > ceiling),
+    (p) => p.statusGroup === 'قيد الدراسة' && (ceiling === null || p.amountRequested > ceiling),
   )
   if (waiting.length) {
     const money = waiting.reduce((s, p) => s + p.amountRequested, 0)
@@ -777,7 +778,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
         `هذا المبلغ فقرارك أنت.`,
       bold: [`${nf.format(money)} ⃁`],
       src: 'حدود الاعتماد · قيم مؤقتة لحين اعتمادها',
-      to: `${ROUTES.projects}?status=في الدراسة&sort=amount${LIST}`,
+      to: `${ROUTES.projects}?status=قيد الدراسة&sort=amount${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -785,7 +786,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
   // Load distribution · this imbalance is what actually creates delay
   const load = new Map<string, ProjectRow[]>()
   for (const p of projects) {
-    if (p.statusGroup !== 'في الدراسة') continue
+    if (p.statusGroup !== 'قيد الدراسة') continue
     const k = p.owner ?? 'بلا مالك'
     load.set(k, [...(load.get(k) ?? []), p])
   }
@@ -803,7 +804,7 @@ function readForManager({ projects, entities, ceiling, budget }: HomeReadingInpu
         `يظهر هذا الفرق في مدد الانتظار قبل أن يظهر في أي تقرير.`,
       bold: [units.project(lightest[1].length, true), lightest[0]],
       src: 'المشاريع تحت الدراسة لكل مشرف',
-      to: `${ROUTES.projects}?owner=${encodeURIComponent(heaviest[0])}&status=في الدراسة${LIST}`,
+      to: `${ROUTES.projects}?owner=${encodeURIComponent(heaviest[0])}&status=قيد الدراسة${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -840,8 +841,8 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
   out.push(budgetReading(budget))
 
   // Impact: completed vs. excused · this ratio is the year's real outcome
-  const done = projects.filter((p) => p.statusGroup === 'مكتمل')
-  const declined = projects.filter((p) => p.statusGroup === 'معتذر عنه')
+  const done = projects.filter((p) => isDone(p.statusGroup))
+  const declined = projects.filter((p) => isDropped(p.statusGroup))
   const beneficiaries = done.reduce((s, p) => s + p.beneficiaries, 0)
   if (done.length) {
     out.push({
@@ -872,7 +873,7 @@ function readForExecutive({ projects, entities, budget }: HomeReadingInput): Rea
         `الشروط غير واضحة للجهات قبل التقديم.`,
       bold: [units.project(declined.length, true)],
       src: 'مبررات الاعتذار المقنّنة',
-      to: `${ROUTES.projects}?status=معتذر عنه${LIST}`,
+      to: `${ROUTES.projects}?status=مرفوض${LIST}`,
       toLabel: 'اعرضها',
     })
   }
@@ -917,7 +918,7 @@ function blockedReading(projects: ProjectRow[], entities: EntityRow[]): Reading[
     entities.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL).map((e) => e.id),
   )
   const blocked = projects.filter(
-    (p) => p.statusGroup === 'في التشغيل' && short.has(p.entityId),
+    (p) => isLive(p.statusGroup) && short.has(p.entityId),
   )
   if (!blocked.length) return []
   const money = blocked.reduce((s, p) => s + (p.amountGranted || p.amountRequested), 0)

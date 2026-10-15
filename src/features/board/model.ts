@@ -10,6 +10,7 @@ import type { Reading } from '@/components/assistant/reading'
 import type { IconName } from '@/components/ui'
 import type { ProjectStatusGroup } from '@/types/domain'
 import { nf } from '@/lib/format'
+import { DONE, DROPPED, isFunded } from '@/data/status'
 
 /* The glass board's numbers (trial · client, 6 Oct).
 
@@ -19,13 +20,23 @@ import { nf } from '@/lib/format'
    plan completion, agreements and closings from their own stages. Nothing here is typed by hand. */
 
 const live = () => projectRows.filter((p) => !p.archived && p.type !== 'محفظة')
-const funded = (g: ProjectStatusGroup) => g === 'في التشغيل' || g === 'مكتمل' || g === 'متعثر'
+const funded = (g: ProjectStatusGroup) => isFunded(g)
 
 export interface RingDatum { key: string; label: string; value: number; part: number; whole: number; unit: string; icon: IconName; hue: 1 | 2 | 3 | 4 | 5 }
-export interface RegionDatum { name: string; projects: number; granted: number; beneficiaries: number; entities: number; stages: { key: ProjectStatusGroup; n: number }[] }
+export interface RegionDatum { name: string; projects: number; granted: number; beneficiaries: number; entities: number; stages: { key: string; n: number }[] }
 export interface WaveSeries { key: string; label: string; hue: 2 | 4 | 5; values: number[] }
 
-export const STAGE_ORDER: ProjectStatusGroup[] = ['في الدراسة', 'في التشغيل', 'متعثر', 'مكتمل', 'معتذر عنه']
+/* v3 · the status dictionary folded to the board's seven families · the timeline stays readable */
+const FAMILY: { key: string; of: readonly ProjectStatusGroup[] }[] = [
+  { key: 'قيد الدراسة', of: ['قيد الدراسة'] },
+  { key: 'معتمدة · قبل التنفيذ', of: ['معتمد', 'استكمال متطلبات ما قبل التنفيذ'] },
+  { key: 'تحت التنفيذ', of: ['تحت التنفيذ'] },
+  { key: 'قيد الإغلاق', of: ['قيد الإغلاق'] },
+  { key: 'متعثر', of: ['متعثر'] },
+  { key: 'منتهية', of: DONE },
+  { key: 'مرفوضة أو ملغاة', of: DROPPED },
+]
+export const STAGE_ORDER: string[] = FAMILY.map((f) => f.key)
 
 export function boardTotals() {
   const ps = live()
@@ -67,7 +78,7 @@ const regionOf = (name: string, rows: ReturnType<typeof live>): RegionDatum => (
   granted: rows.filter((p) => funded(p.statusGroup)).reduce((s, p) => s + p.amountGranted, 0),
   beneficiaries: rows.reduce((s, p) => s + p.beneficiaries, 0),
   entities: new Set(rows.map((p) => p.entityId)).size,
-  stages: STAGE_ORDER.map((k) => ({ key: k, n: rows.filter((p) => p.statusGroup === k).length })),
+  stages: FAMILY.map((f) => ({ key: f.key, n: rows.filter((p) => f.of.includes(p.statusGroup)).length })),
 })
 
 export function boardRegions(): RegionDatum[] {

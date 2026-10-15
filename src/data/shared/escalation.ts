@@ -1,4 +1,5 @@
 import { ROUTES } from '@/app/routes'
+import { foundationDaysBetween, isWorkingDay } from '@/data/intake/cycle'
 import { projectRows } from '@/data/mock/projects'
 import { STAGES, stageMeta } from '@/data/mock/taxonomy'
 import { agreements, AGR_LIMIT, AGREEMENT_STAGES, agrStageLabel } from '@/data/mock/agreements'
@@ -31,9 +32,26 @@ export interface EscStage { key: string; label: string; who: string; hours: numb
 const H = 3_600_000
 const nowMs = () => Date.now()
 const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10)
+/* v3 · 3.4.15 · the SLA counts the foundation's working days only · a record's time since its last
+   move is the working days that passed after it, in the system's unit (24 per working day · lib/sla) */
 const hoursSince = (at: string | undefined): number => {
   const t = at ? Date.parse(at) : NaN
-  return Number.isFinite(t) ? Math.max(0, (nowMs() - t) / H) : 0
+  if (!Number.isFinite(t)) return 0
+  const from = isoDay(t)
+  const today = isoDay(nowMs())
+  if (from >= today) return 0
+  const next = new Date(`${from}T00:00:00Z`); next.setUTCDate(next.getUTCDate() + 1)
+  return foundationDaysBetween(isoDay(next.getTime()), today) * 24
+}
+/** The day `n` working days before today · where a late or stalled count began */
+const workDaysBack = (n: number): string => {
+  const d = new Date(`${isoDay(nowMs())}T00:00:00Z`)
+  let left = Math.max(0, Math.round(n))
+  for (let guard = 0; left > 0 && guard < 4000; guard++) {
+    d.setUTCDate(d.getUTCDate() - 1)
+    if (isWorkingDay(isoDay(d.getTime()))) left--
+  }
+  return isoDay(d.getTime())
 }
 
 /* ── The stages of every procedure · the settings page edits these in place ── */
@@ -79,8 +97,9 @@ export function escStages(proc: EscProc): EscStage[] {
       study('دراسة المشروع', 'دراسة مشرف المنح', 'مشرف المنح'),
       study('استكمال بيانات المشروع', 'استكمال الجهة', 'الجهة'),
     ]
-    case 'approval': return (['manager', 'exec', 'committee', 'board', 'confirm'] as const).map((h) =>
-      own(`approval.${h}`, h === 'confirm' ? 'تأكيد الاعتماد' : `لدى ${HOLDER_LABEL[h]}`, HOLDER_LABEL[h]))
+    /* v3 · 0.status.3 · no confirmation seat after the decision */
+    case 'approval': return (['manager', 'exec', 'committee', 'board'] as const).map((h) =>
+      own(`approval.${h}`, `لدى ${HOLDER_LABEL[h]}`, HOLDER_LABEL[h]))
     case 'agreement': return limited('agreement', AGREEMENT_STAGES, AGR_LIMIT)
     case 'payment': return limited('payment', PAY_STATES, PAY_LIMIT)
     case 'closing': return limited('closing', CLOSE_STAGES, CLOSE_LIMIT)
@@ -126,13 +145,12 @@ export interface EscItem {
 function make(x: Omit<EscItem, 'heat' | 'lateFrom' | 'stuckFrom' | 'over'>): EscItem | null {
   const heat = heatOf(x.hours, x.limit, x.proc)
   if (heat === 'ok') return null
-  const t = nowMs()
   const extra = ESC_RULES.stuck[x.proc]
   const margin = extra === null || extra === undefined ? x.limit : extra * 24
   return {
     ...x, heat,
-    lateFrom: isoDay(t - (x.hours - x.limit) * H),
-    stuckFrom: heat === 'stuck' ? isoDay(t - (x.hours - x.limit - margin) * H) : undefined,
+    lateFrom: workDaysBack((x.hours - x.limit) / 24),
+    stuckFrom: heat === 'stuck' ? workDaysBack((x.hours - x.limit - margin) / 24) : undefined,
     over: Math.max(1, Math.round((x.hours - x.limit) / 24)),
   }
 }
@@ -197,12 +215,12 @@ function collect(proc: EscProc): EscItem[] {
     }
     case 'approval': {
       for (const p of projectRows) {
-        if (p.stage !== 'دراسة المشروع' || !p.holder || p.holder === 'supervisor') continue
+        if (p.stage !== 'دراسة المشروع' || !p.holder || p.holder === 'supervisor' || p.holder === 'confirm') continue
         const h = p.holder as Holder
         const k = `approval.${h}`
         out.push(make({
           id: `esc-ap-${p.id}`, proc, stageKey: k, stage: escLabel(k), title: p.name, sub: p.entityName, href: ROUTES.projectTab(p.id, 'approval'),
-          owner: h === 'confirm' ? p.owner ?? 'مشرف المنح' : HOLDER_LABEL[h], entity: p.entityName, hours: p.hoursInStage, limit: ESC_LIMITS[k] ?? 0,
+          owner: HOLDER_LABEL[h], entity: p.entityName, hours: p.hoursInStage, limit: ESC_LIMITS[k] ?? 0,
         }))
       }
       break

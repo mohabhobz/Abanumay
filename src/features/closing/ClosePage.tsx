@@ -24,7 +24,7 @@ import {
 import {
   actOnClosing, attachDoc, closeActions, sendClosingReport, useClosing, type CloseAct,
 } from '@/data/closing/store'
-import { FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RequirementsCard, VersionsCard } from './parts'
+import { FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RedirectCard, RequirementsCard, VersionsCard } from './parts'
 import { projectById } from '@/data/mock/projects'
 import { closeReadings } from './readings'
 import { CloseActionDock } from './CloseActionDock'
@@ -453,6 +453,7 @@ export default function ClosePage() {
               <RequirementsCard c={c} asEntity={asEntity} />
               <FinanceCard c={c} asEntity={asEntity} />
               {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'close', id: c.id }} asEntity={asEntity} />}
+              <RedirectCard c={c} asEntity={asEntity} />
               <FeedbackCard c={c} asEntity={asEntity} />
 
               {/* Versions with their content and the two separate logs - rules 11, 15, 17 and 19 */}
@@ -490,14 +491,14 @@ export default function ClosePage() {
 
           {/* Rule 16 is stated on screen, not only in a comment. */}
           <p className="sub tcen">
-            محطة الإغلاق لا تغيّر حالة المشروع ·{' '}
+            مراحل التقرير لا تغيّر حالة المشروع ·{' '}
             <Link to={ROUTES.project(c.projectId)} className="lnk">{c.projectName}</Link>{' '}
-            في «{pr?.stage ?? ''}»
+            «{pr?.statusGroup ?? ''}»
             {closed
               ? <> والإغلاق اكتمل في <DateText>{c.closedAt ?? ''}</DateText>.</>
               : <> والإغلاق في «{closeStageLabel(c.stage)}»، وكلاهما صحيح{/* doc rule 16 */}.</>}
-            {' '}ويتحوّل المشروع إلى «مكتمل» باعتماد التقرير والتقييم واستكمال المتطلبات
-            المالية والإدارية معًا{/* doc rule 8 · 18 */}.
+            {' '}ويبقى «قيد الإغلاق» حتى اعتماد التقرير والتقييم واستكمال المتطلبات
+            المالية والإدارية معًا، ثم «مكتمل» أو «مغلق بوفر» أو «أعيد توجيه الدعم»{/* doc 10.4.20 · rule 8 · 18 */}.
             {!req.ok && <> وحاليًا: {req.say}.</>}
           </p>
         </div>

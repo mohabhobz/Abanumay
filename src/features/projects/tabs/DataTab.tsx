@@ -77,17 +77,18 @@ export function DataTab({
             { k: 'المسار', v: P.track },
             { k: 'المجال', v: P.field },
             { k: 'الهدف', v: P.goal },
+            ...(P.originalChoice ? [{ k: 'اختيار الجهة الأصلي', v: <span className="sub">{P.originalChoice} · قبل التحويل</span> }] : []),
             /* The two dates sit side by side: "330 days" alone doesn't say when it ends,
                and the end date is what determines whether the project crosses the
                fiscal year. The agreement's duration starts from the first payment
                disbursed. */
-            { k: 'تاريخ البدء', v: readDate(P.startDate) },
+            { k: 'تاريخ بدء التنفيذ المتوقع', v: readDate(P.startDate) },
             {
               k: 'الانتهاء المتوقع',
               v: (
                 <>
-                  {readDate(addDays(P.startDate, P.durationDays))}
-                  <span className="sub"> · بعد <span className="num">{nf.format(P.durationDays)}</span> {nounAfter(P.durationDays, NOUN.day)}</span>
+                  {readDate(P.endDate ?? addDays(P.startDate, P.durationDays))}
+                  <span className="sub"> · بعد <span className="num">{nf.format(P.durationDays)}</span> {P.endDate ? 'يوم تنفيذ' : nounAfter(P.durationDays, NOUN.day)}</span>
                 </>
               ),
             },
@@ -135,7 +136,7 @@ export function DataTab({
           label="مدة التنفيذ"
           value={P.durationDays}
           unit="يومًا"
-          note={`≈ ${units.month(Math.round(P.durationDays / 30))} · تبدأ من صرف الدفعة الأولى`}
+          note={`≈ ${units.month(Math.round(P.durationDays / 30))} · تُحسب من بداية التنفيذ (الفعلية إن سُجّلت)`}
         />
         <Stat
           label="المستفيدون"
@@ -160,7 +161,9 @@ export function DataTab({
         </div>
 
         <BulletSection title="الأهداف التفصيلية" items={P.goals} />
-        <BulletSection title="المخرجات" items={P.outputs} />
+        <BulletSection title={P.entityOutputs ? 'مخرجات المؤسسة' : 'المخرجات'} items={P.outputs} />
+        {/* v3 · 0.def.14 · 3.4.45 · the entity's outputs stay readable as the reference of what it sent */}
+        {P.entityOutputs && <BulletSection title="مخرجات الجهة كما قدّمتها" items={P.entityOutputs} />}
         <BulletSection title="المسوغات" items={P.rationale} />
       </Glass>
 

@@ -26,9 +26,10 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 const HEATS = [
   { key: '', label: 'المتأخر والمتعثر' },
   { key: 'late', label: 'متأخر' },
-  { key: 'stuck', label: 'متعثر' },
+  { key: 'stuck', label: 'مرحلة متعثرة' },
 ]
-const heatSay = (it: EscItem) => (it.heat === 'stuck' ? 'متعثر' : 'متأخر')
+/* v3 · 0.status.12 · a step past its SLA is «مرحلة متعثرة» · «متعثر» is the project's own status */
+const heatSay = (it: EscItem) => (it.heat === 'stuck' ? 'مرحلة متعثرة' : 'متأخر')
 
 export default function EscalationPage() {
   useAllStores()
@@ -59,7 +60,7 @@ export default function EscalationPage() {
             <div className="pmain">
               <h1 className="ptitle">المتأخر والمتعثر</h1>
               <p className="sub mt-1">
-                آلية التصعيد في جميع الإجراءات · <Num>{stuck}</Num> متعثر و<Num>{late}</Num> متأخر عن مدة المرحلة
+                آلية التصعيد في جميع الإجراءات · <Num>{stuck}</Num> مرحلة متعثرة و<Num>{late}</Num> متأخر عن مدة المرحلة · لا يغيّر أيٌّ منهما حالة المشروع
               </p>
             </div>
             <div className="rowf gp-2">
@@ -82,8 +83,8 @@ export default function EscalationPage() {
                   <tr>
                     <th><span className="th-t">الإجراء</span></th>
                     <th className="n"><span className="th-t">متأخر</span></th>
-                    <th className="n"><span className="th-t">متعثر</span></th>
-                    <th><span className="th-t">يصير متعثرًا</span></th>
+                    <th className="n"><span className="th-t">مرحلة متعثرة</span></th>
+                    <th><span className="th-t">تتعثر المرحلة بعد</span></th>
                   </tr>
                 </thead>
                 <tbody>

@@ -44,6 +44,10 @@ export interface CycleSetup {
   /** Calendar for execution durations (3.4.30) · weekday numbers 0 = Sunday … 6 = Saturday */
   weekend: number[]
   holidays: { date: string; name: string }[]
+  /** v3 · 3.4.34 · the duration policy · whether the weekend and the official holidays count inside a
+      project's execution duration (counted) or are left out of it (the default) */
+  countWeekend?: boolean
+  countHolidays?: boolean
 }
 
 export const ALL_FIELDS: string[] = Object.values(FIELDS_BY_TRACK).flat()
@@ -138,21 +142,55 @@ export const openFields = (date = liveDay()): string[] =>
 
 const iso = (d: Date) => d.toISOString().slice(0, 10)
 
+/** The foundation's working day · its own week and holidays · the SLA and escalation count these
+    (3.4.15 · v3: only the foundation's working days count for the SLA) */
 export const isWorkingDay = (date: string): boolean => {
   const d = new Date(`${date}T00:00:00Z`)
   return !CYCLE.weekend.includes(d.getUTCDay()) && !CYCLE.holidays.some((h) => h.date === date)
 }
 
-/** End date after `days` working days from `start` (the start counts as day 1 when it is one) */
-export const addWorkingDays = (start: string, days: number): string => {
+/** v3 · 3.4.15 · the project's own execution days of the week · a list of weekday numbers in its
+    value (0 = Sunday … 6 = Saturday) · the foundation's week when it gives none */
+export const workDaysOf = (v?: string): number[] | undefined => {
+  if (!v) return undefined
+  const days = v.split(',').map((x) => Number(x)).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6)
+  return days.length ? [...new Set(days)].sort() : undefined
+}
+export const foundationWeek = (): number[] => [0, 1, 2, 3, 4, 5, 6].filter((n) => !CYCLE.weekend.includes(n))
+
+/** A day of the project's execution · its own days of the week, with the duration policy (3.4.34) */
+export const isExecutionDay = (date: string, execDays?: number[]): boolean => {
+  const wd = new Date(`${date}T00:00:00Z`).getUTCDay()
+  const week = execDays ?? foundationWeek()
+  if (!CYCLE.countWeekend && !week.includes(wd)) return false
+  if (!CYCLE.countHolidays && CYCLE.holidays.some((h) => h.date === date)) return false
+  return true
+}
+
+/** End date after `days` execution days from `start` (the start counts as day 1 when it is one) ·
+    the project's days of the week and the policy decide which days count (3.4.15 · 3.4.34) */
+export const addWorkingDays = (start: string, days: number, execDays?: number[]): string => {
   if (!start || days <= 0) return start
   const d = new Date(`${start}T00:00:00Z`)
   let left = days
-  for (;;) {
-    if (isWorkingDay(iso(d))) left--
+  for (let guard = 0; guard < 20000; guard++) {
+    if (isExecutionDay(iso(d), execDays)) left--
     if (left <= 0) return iso(d)
     d.setUTCDate(d.getUTCDate() + 1)
   }
+  return iso(d)
+}
+
+/** The foundation's working days between two dates (the SLA's count) · both ends included */
+export const foundationDaysBetween = (from: string, to: string): number => {
+  if (!from || !to || to < from) return 0
+  const d = new Date(`${from}T00:00:00Z`)
+  let n = 0
+  while (iso(d) <= to) {
+    if (isWorkingDay(iso(d))) n++
+    d.setUTCDate(d.getUTCDate() + 1)
+  }
+  return n
 }
 
 /** Working days between two dates, both ends included */

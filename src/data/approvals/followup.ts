@@ -10,6 +10,7 @@ import { projectRows } from '@/data/mock/projects'
 import { agreementForProject, agrStageLabel } from '@/data/mock/agreements'
 import { hasFunding } from '@/data/budget/store'
 import { SESSIONS, appFlowOf, type Session, type SessionItem } from './store'
+import { isDone } from '@/data/status'
 
 export type FollowState = 'done' | 'moving' | 'waiting'
 export interface FollowUp {
@@ -31,7 +32,7 @@ export function followUp(s: Session, it: SessionItem): FollowUp | undefined {
   if (it.outcome === 'approve') {
     const open = appFlowOf(p.id).conditions.filter((c) => !c.met)
     const a = agreementForProject(p.id)
-    if (p.statusGroup === 'مكتمل') return { state: 'done', say: 'اعتُمد ونُفّذ · المشروع مكتمل', href: ROUTES.project(p.id) }
+    if (isDone(p.statusGroup)) return { state: 'done', say: 'اعتُمد ونُفّذ · المشروع مكتمل', href: ROUTES.project(p.id) }
     if (a?.stage === 'active') {
       return open.length
         ? { state: 'moving', say: 'الاتفاقية سارية · المشروع في التنفيذ', next: `شروط القرار المفتوحة: ${open.map((c) => c.text).join('، ')}`, href: ROUTES.project(p.id) }

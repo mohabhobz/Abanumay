@@ -126,7 +126,7 @@ export const ehsanProjects = () => projectRows.filter((p) => p.platform === 'م�
 const projectOf = (id: string) => projectRows.find((p) => p.id === id)
 const approvedProject = (id: string) => {
   const p = projectOf(id)
-  return Boolean(p && p.supportStatus === 'معتمد' && p.statusGroup !== 'في الدراسة')
+  return Boolean(p && p.supportStatus === 'معتمد' && p.statusGroup !== 'قيد الدراسة')
 }
 
 /** The independent project's money · granted, recorded, confirmed, left */
@@ -444,7 +444,7 @@ function listRow(pf: PortfolioRec) {
     id: pf.id, name: pf.name, entityId: pf.entityId, entityName: partnerName(pf.entityId), portfolioId: pf.id,
     amountRequested: pf.total, amountGranted: pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed' ? pf.total : 0,
     amountSpent: pfMoney(pf).spent, goal: `${pf.items.filter((x) => x.state === 'approved').length} مشاريع تحت المحفظة`,
-    stage: PF_STAGE_SAY[pf.stage], statusGroup: pf.stage === 'closed' ? 'مكتمل' : pf.stage === 'rejected' ? 'معتذر عنه' : pf.stage === 'approved' || pf.stage === 'closing' ? 'في التشغيل' : 'في الدراسة',
+    stage: PF_STAGE_SAY[pf.stage], statusGroup: pf.stage === 'closed' ? 'مكتمل' : pf.stage === 'rejected' ? 'مرفوض' : pf.stage === 'closing' ? 'قيد الإغلاق' : pf.stage === 'approved' ? 'تحت التنفيذ' : 'قيد الدراسة',
     owner: pf.owner, submittedAt: pf.openedAt, track: pf.track, partnerType: 'محفظة',
   })
   if (!row) portfolioRows.push(base)
@@ -494,7 +494,7 @@ function applyOp(o: Op) {
       const p = projectOf(o.projectId)
       /* Re-audit 7 Oct · the stage is checked when the decision is taken, not on replay: at load the
          project has already moved on (approved, in execution), and the routing used to drop away */
-      if (!p || (liveRun && p.statusGroup !== 'في الدراسة')) return
+      if (!p || (liveRun && p.statusGroup !== 'قيد الدراسة')) return
       p.platform = o.platform ? 'منصة إحسان' : undefined
       /* Batch 4 · 8 Oct · a regular entity's project routed through Ehsan is an independent project
          too · the type was set only for a strategic partner's projects, so 21038 read «مستقل» on its
@@ -510,7 +510,7 @@ function applyOp(o: Op) {
     }
     case 'routePropose': {
       const p = projectOf(o.projectId)
-      if (!p || (liveRun && p.statusGroup !== 'في الدراسة')) return
+      if (!p || (liveRun && p.statusGroup !== 'قيد الدراسة')) return
       PROPOSALS.set(p.id, { platform: o.platform, type: o.type, note: o.note, by: o.by, at: day(o.at) })
       ;(EH_OPS.get(p.id) ?? EH_OPS.set(p.id, []).get(p.id)!).push({ at: day(o.at), by: o.by, kind: 'اقتراح التوجيه', note: `${o.platform ? 'عبر منصة إحسان' : 'دعم مباشر'}${o.note ? ` · ${o.note}` : ''}` })
       if (liveRun) notify([roleByKey('ceo').name], `اقتراح توجيه بانتظار قرارك · ${p.name}`, o.platform ? 'عبر منصة إحسان' : 'دعم مباشر', ROUTES.project(p.id))
@@ -536,7 +536,13 @@ function applyOp(o: Op) {
       plog(pf, o.by, o.pf.origin === 'partner' ? 'قدّم الشريك طلب المحفظة من البوابة' : 'أنشأ مشرف المنح المحفظة', o.at)
       if (o.fromProject) {
         const p = projectOf(o.fromProject)
-        if (p) { p.archived = true; p.partnerType = 'محفظة'; plog(pf, o.by, `حُوِّل المشروع ${p.id} إلى محفظة أثناء الدراسة`, o.at) }
+        if (p) {
+          /* v3 · 3.2.17 · the approved project opens the portfolio path · its hold moves with it, so the
+             portfolio holds its own and the line isn't held twice */
+          if (liveRun && hasFunding(p.id)) unlinkProject(p.id, o.by, 'فُعّل مسار المحفظة · الحجز ينتقل إلى المحفظة')
+          p.archived = true; p.partnerType = 'محفظة'
+          plog(pf, o.by, p.supportStatus === 'معتمد' ? `فُعّل مسار المحفظة للمشروع المعتمد ${p.id}` : `حُوِّل المشروع ${p.id} إلى محفظة`, o.at)
+        }
       }
       if (o.send) plog(pf, o.by, 'أُرسلت للدراسة', o.at)
       listRow(pf)
@@ -1002,7 +1008,7 @@ export const setPartnerTypes = (entityId: string, allowed: PType[], by: string) 
 export function routeProject(projectId: string, platform: boolean, type: PType, by: string): string[] {
   const p = projectOf(projectId)
   if (!p) return ['المشروع غير موجود']
-  if (p.statusGroup !== 'في الدراسة') return ['يُحدَّد التوجيه والنوع قبل الاعتماد فقط']
+  if (p.statusGroup !== 'قيد الدراسة') return ['يُحدَّد التوجيه والنوع قبل الاعتماد فقط']
   if (isStrategic(p.entityId) && !typeAllowed(p.entityId, type)) return [/* doc 11.2.2 */ `«${PTYPE_SAY[type]}» غير مسموح لهذا الشريك`]
   if (platform && !isStrategic('860')) return ['منصة إحسان غير معتمدة شريكًا استراتيجيًّا']
   if (platform && DECISIONS.ehsanEntities === 'strategic' && !isStrategic(p.entityId)) return ['التوجيه عبر إحسان للشركاء الاستراتيجيين المعتمدين فقط (قرار المؤسسة)']
@@ -1014,7 +1020,7 @@ export function routeProject(projectId: string, platform: boolean, type: PType, 
 export function proposeRoute(projectId: string, platform: boolean, type: PType, note: string, by: string): string[] {
   const p = projectOf(projectId)
   if (!p) return ['المشروع غير موجود']
-  if (p.statusGroup !== 'في الدراسة') return ['يُقترح التوجيه أثناء الدراسة فقط']
+  if (p.statusGroup !== 'قيد الدراسة') return ['يُقترح التوجيه أثناء الدراسة فقط']
   if (isStrategic(p.entityId) && !typeAllowed(p.entityId, type)) return [/* doc 11.2.2 */ `«${PTYPE_SAY[type]}» غير مسموح لهذا الشريك`]
   if (platform && !isStrategic('860')) return ['منصة إحسان غير معتمدة شريكًا استراتيجيًّا']
   if (platform && DECISIONS.ehsanEntities === 'strategic' && !isStrategic(p.entityId)) return ['التوجيه عبر إحسان للشركاء الاستراتيجيين المعتمدين فقط (قرار المؤسسة)']

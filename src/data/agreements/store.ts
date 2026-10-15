@@ -10,11 +10,12 @@ import { roleByKey, type RoleKey } from '@/data/roles'
 import { linkOf, docOf } from '@/data/budget/store'
 import { pathOf } from '@/data/mock/budgetTree'
 import { appFlowOf } from '@/data/approvals/store'
-import { flowOf } from '@/data/intake/flow'
+import { flowOf, orgOutputsOf, outputLine } from '@/data/intake/flow'
 import { RELINKS, setPartyRename } from '@/data/entities/store'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type { AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, PayDoc, ProjectRow } from '@/types/domain'
+import { setAgreementStatusGate } from '@/data/status'
 
 /* Agreements (BPD-008) · the actions.
 
@@ -55,7 +56,9 @@ export function outputsOf(projectId: string | undefined): { outputs: string[]; p
   if (!projectId) return { outputs: [], phases: [] }
   const objectives = flowOf(projectId).objectives ?? []
   const p = projectRows.find((x) => x.id === projectId)
-  const outputs = objectives.length ? objectives : p ? [`${p.goal}${p.beneficiaries ? ` لـ ${nf.format(p.beneficiaries)} مستفيد` : ''}`] : []
+  /* v3 · 3.4.45 · the foundation's outputs are the agreement's reference · the objectives before them */
+  const org = orgOutputsOf(projectId).map(outputLine)
+  const outputs = org.length ? org : objectives.length ? objectives : p ? [`${p.goal}${p.beneficiaries ? ` لـ ${nf.format(p.beneficiaries)} مستفيد` : ''}`] : []
   const phases = planOfProject(projectId)?.phases.map((ph) => ph.name) ?? []
   return { outputs, phases }
 }
@@ -669,6 +672,12 @@ function hydrate() {
      text stays as signed (its hash is the proof) · the move is on the relink record and the row */
   for (const r of [...RELINKS].reverse()) for (const a of agreements) if (a.projectId === r.projectId) renameParty(a.id, r.from.name, r.to.name)
   setPartyRename(renameParty)
+  /* v3 · 0.status.3 · 0.status.4 · an approved project completes its pre-execution requirements once
+     its agreement work starts · the sub-status reads the agreement's own state */
+  setAgreementStatusGate((projectId) => {
+    const a = agreements.filter((x) => x.projectId === projectId && x.stage !== 'cancelled').at(-1)
+    return a ? agrStageSay(a) : ''
+  })
 }
 function renameParty(id: string, from: string, to: string) {
   const a = agreementById(id)

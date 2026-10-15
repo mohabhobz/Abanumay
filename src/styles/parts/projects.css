@@ -149,3 +149,12 @@
    are one width each, so «ارفع» and the buttons stand one over the other */
 .recrow>label.btn{flex:none;inline-size:calc(var(--sp-12) * 1.9)}
 .recrow>.btn:last-child{flex:none;inline-size:calc(var(--sp-12) * 2.9)}
+/* v3 · 0.def.14 · 0.def.15 · the outputs list · the output, its indicator and its target in one row */
+.outs{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0}
+.outs-r{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) auto;gap:var(--sp-3);align-items:center}
+.outs-r .iact{grid-column:4}
+.outs-add{align-self:flex-start}
+.outs-ro{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+@media (max-width:720px){.outs-r{grid-template-columns:minmax(0,1fr) auto}.outs-r .fld:first-child{grid-column:1/-1}}
+/* v3 · 3.2.10 · the entity corrects a returned request in place, under its row */
+.ptl-edit{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-3);min-width:0}

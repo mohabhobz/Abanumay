@@ -12,6 +12,7 @@ import { openPlanFor, planDecisionOf, planRuleSays, projectWindow, usePlans } fr
 import { readRole, roleByKey } from '@/data/roles'
 import { projectById, projectRows } from '@/data/mock/projects'
 import { NOUN, nf, nounAfter } from '@/lib/format'
+import { isDropped } from '@/data/status'
 
 /* Open a plan for a project.
 
@@ -47,7 +48,7 @@ export default function PlanNewPage() {
      until the decision is changed on the project (12.4.31) */
   const options = useMemo(
     () => { void ver; return projectRows
-      .filter((p) => p.amountGranted > 0 && !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(p.stage) && p.statusGroup !== 'معتذر عنه')
+      .filter((p) => p.amountGranted > 0 && !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(p.stage) && !isDropped(p.statusGroup))
       .filter((p) => !planOfProject(p.id) || planOfProject(p.id)!.stage === 'cancelled')
       .filter((p) => planDecisionOf(p.id)?.needs !== false)
       .map((p) => ({ value: p.id, label: `${p.name} · ${p.entityName}` })) },

@@ -14,6 +14,7 @@ import {
   setPartnerTypes, typeAllowed, usePartners, viaEhsan, PF_STAGE_SAY, PF_STAGE_TONE, decidePartner,
   EH_STATE_SAY, EH_STATE_TONE, type EhSlot, type EhsanPay, type PayTarget, type PType,
 } from '@/data/partners/store'
+import { flowOf } from '@/data/intake/flow'
 
 /* Partner pieces shared by the project page, the entity page, the portfolio and the partners
    hub · each states what it waits on and why, like every card in the system. */
@@ -166,7 +167,7 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const navigate = useNavigate()
   const strategic = isStrategic(row.entityId)
-  const study = row.statusGroup === 'في الدراسة'
+  const study = row.statusGroup === 'قيد الدراسة'
   const type: PType = row.partnerType === 'محفظة' ? 'portfolio' : 'independent'
   /* Batch 7 · partners#4 · 11.1.input-1 · the supervisor proposes the routing in the study, the
      executive decides it · the executive may also decide directly */
@@ -185,6 +186,7 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
     if (!out.length) setWhy('')
   }
   const mine = (sup && !prop) || ceo
+  const portfolioNext = role.key === 'supervisor' && row.statusGroup === 'معتمد' && flowOf(row.id).study?.classification === 'محفظة' && !row.archived
   return (
     <Glass>
       <Head title="التوجيه عبر الشريك" meta={row.platform ? <Tag tone="teal">منصة إحسان</Tag> : <Tag tone="mute">دعم مباشر</Tag>} />
@@ -206,10 +208,17 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
           <button type="button" className="btn btn-2 btn-sm" disabled={Boolean(row.platform)} onClick={() => set(true, 'independent')}>توجيه عبر منصة إحسان</button>
           {row.platform && <button type="button" className="btn btn-2 btn-sm" onClick={() => set(false, 'independent')}>دعم مباشر</button>}
           {sup && <span className="sub">يُرفع اقتراحًا · يقرّه المدير التنفيذي</span>}
-          {strategic && typeAllowed(row.entityId, 'portfolio') && <button type="button" className="btn btn-2 btn-sm" onClick={() => set(Boolean(row.platform), 'portfolio')}>تحويل إلى محفظة</button>}
+          {strategic && typeAllowed(row.entityId, 'portfolio') && <span className="sub">التصنيف «محفظة» من الدراسة · يُفعَّل مساره بعد الاعتماد</span>}
         </div>
       ) : (
         <p className="sub cnote">{study ? (prop ? 'الاقتراح عند المدير التنفيذي' : 'يقترحه مشرف المنح في الدراسة ويقرّه المدير التنفيذي') : 'حُدّد قبل الاعتماد · لا يتغيّر بعده'}</p>
+      )}
+      {/* v3 · 3.2.17 · an approved project classified a portfolio · the supervisor opens its path */}
+      {portfolioNext && (
+        <div className="apv-row mt-3">
+          <span className="sub">اعتُمد المشروع مصنَّفًا محفظة · يُفعَّل مسارها وفق إجراء إدارة المحافظ</span>
+          <button type="button" className="btn btn-p btn-sm" onClick={() => set(Boolean(row.platform), 'portfolio')}>فعّل مسار المحفظة</button>
+        </div>
       )}
       <Said said={said} />
     </Glass>

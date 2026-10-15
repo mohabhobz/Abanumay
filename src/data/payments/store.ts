@@ -213,8 +213,6 @@ export function unsettledSlots(projectId: string): { due: PaySlot[]; future: Pay
   return { due: slots.filter((s) => s.dueAt <= TODAY || s.state === 'pending'), future: slots.filter((s) => s.dueAt > TODAY && s.state !== 'pending') }
 }
 
-/** The closing steps · no new disbursement once a project is there (9.4.1 · 10.2.1) */
-const CLOSING_STAGES = ['اعتماد التقرير الختامي', 'تقييم المشروع']
 export interface PayProject { id: string; name: string; entity: string; entityId: string; can: boolean; why?: string; open: number }
 
 /** Projects that can request · 9.4.1 · under execution with the agreement in force · reason when not */
@@ -226,7 +224,9 @@ export function payableProjects(entityId?: string): PayProject[] {
     const p = projectOf(id)
     if (!p || (entityId && p.entityId !== entityId) || ehsanGate(id)) continue
     /* Re-audit 7 Oct · a project already at its final report or evaluation isn't paid anew */
-    const running = p.statusGroup === 'في التشغيل' && !p.stage.includes('الإتفاقي') && !CLOSING_STAGES.includes(p.stage)
+    /* v3 · 0.status.5 · a payment runs only «تحت التنفيذ» · the agreement in force and the plan, when
+       required, approved */
+    const running = p.statusGroup === 'تحت التنفيذ'
     const agr = agreementOk(id)
     const slots = scheduleOf(id)
     if (!slots.length) continue
@@ -237,7 +237,7 @@ export function payableProjects(entityId?: string): PayProject[] {
       why: STOPPED.has(id) ? /* doc 10.9.1 */ 'أُوقف المشروع بقرار معتمد · لا صرف بعده'
         : blocked ? blocked
         : !agr ? /* doc rule 1 */ 'الاتفاقية غير سارية · لا صرف قبل تفعيل الاتفاقية'
-        : !running ? /* doc 9.4.1 */ 'المشروع ليس «تحت التنفيذ» · لا يُفتح طلب صرف لمشروع مكتمل أو موقوف'
+        : !running ? /* doc 9.4.1 · v3 0.status.5 */ `المشروع «${p.statusGroup}» · لا يُفتح طلب صرف إلا لمشروع «تحت التنفيذ»`
         : undefined,
       open: slots.filter((s) => s.state === 'open').length,
     })
@@ -288,6 +288,11 @@ export function payStops(r: PayRequest, act: PayAct): string[] {
      a suspension, a revocation or an expired mandatory document · or the entity is archived */
   const blocked = payBlock(entityById(r.entityId))
   if (blocked) out.push(blocked)
+  /* v3 · 0.status.5 · a payment opens only «تحت التنفيذ» (payableProjects) · a request already on its
+     way finishes while the closing runs (the closing waits for it · 10.4.2 «لا طلب صرف مفتوح») · on any
+     other status no payment step moves */
+  const pst = projectOf(r.projectId)?.statusGroup
+  if (pst && pst !== 'تحت التنفيذ' && pst !== 'قيد الإغلاق') out.push(`المشروع «${pst}» · لا صرف إلا لمشروع «تحت التنفيذ»`)
   const left = grantLeft(r.projectId, r.id)
   if (r.asked > left) out.push(/* doc rule 14 */ `المبلغ يتجاوز المتبقي من المنحة (${nf.format(Math.max(0, left))})`)
   if (r.asked > r.due) out.push(/* doc rule 5 */ 'قيمة الطلب أعلى من الدفعة المعتمدة')

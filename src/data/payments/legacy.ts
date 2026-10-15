@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { projectRows } from '@/data/mock/projects'
 import { amountOf, colOf, dateOf, type Table } from '@/lib/sheetRead'
+import { isDone } from '@/data/status'
 
 /* The old system's payments · batch 8 (migration).
 
@@ -132,7 +133,7 @@ export function withdrawBatch(id: string, reason: string, by: string): string[] 
 
 /** Completed projects with no request here · what a first import usually covers · as a sample file */
 export function legacySample(): Table {
-  const done = projectRows.filter((p) => p.statusGroup === 'مكتمل' && (p.amountGranted || p.amountRequested) > 0).slice(0, 4)
+  const done = projectRows.filter((p) => isDone(p.statusGroup) && (p.amountGranted || p.amountRequested) > 0).slice(0, 4)
   const rows = done.flatMap((p, i) => {
     const g = p.amountGranted || p.amountRequested
     const half = Math.round(g / 2 / 1000) * 1000

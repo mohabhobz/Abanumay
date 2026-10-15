@@ -1,6 +1,7 @@
 import { agreements } from './agreements'
 import { projectRows } from './projects'
 import type { AgreementKind, AgreementPayment, ProjectRow } from '@/types/domain'
+import { isDropped } from '@/data/status'
 
 /* Creating an agreement
 
@@ -100,8 +101,8 @@ export const projectOptions = (): ProjectOption[] =>
     blocked:
       hasAgreement(p.id) ? 'له اتفاقية في دورة الاعتماد'
         : p.amountGranted <= 0 ? 'لم يُحجز له مخصص'
-          : p.statusGroup === 'في الدراسة' ? 'ما زال في الدراسة، ولم يكتمل اعتماده'
-            : p.statusGroup === 'معتذر عنه' ? 'معتذر عنه'
+          : p.statusGroup === 'قيد الدراسة' ? 'ما زال في الدراسة، ولم يكتمل اعتماده'
+            : isDropped(p.statusGroup) ? p.statusGroup
               /* 8.2.1 · the project reaches its agreement at «اعتماد الإتفاقية» · past it, only an
                  additional agreement to the one in force (8.4.25) */
               : !AGREEMENT_STAGE.has(p.stage) && !activeAgreementOf(p.id) ? 'ليس في مرحلة إعداد الاتفاقية'

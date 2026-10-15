@@ -7,6 +7,7 @@ import {
   evalApproved, needsComms, reportApproved, reportBlockers,
 } from '@/data/mock/closing'
 import type { CloseRow } from '@/types/domain'
+import { projectById } from '@/data/mock/projects'
 
 /* One closing request, as a decision.
 
@@ -76,7 +77,8 @@ export function CloseCard({ c }: { c: CloseRow }) {
       {/* The project in the chain - rule 16: its status doesn't move during the cycle. */}
       <div className="payq-cond">
         <span className="lb">حالة المشروع</span>
-        <span>{evalApproved(c) ? 'مشروع مكتمل' : /* doc rule 16 */ 'تحت التنفيذ'}</span>
+        {/* v3 · 10.4.20 · «قيد الإغلاق» through the cycle · then its end status */}
+        <span>{projectById(c.projectId)?.statusGroup ?? (evalApproved(c) ? 'مكتمل' : 'قيد الإغلاق')}</span>
       </div>
 
       <ul className="payq-ck">

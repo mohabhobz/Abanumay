@@ -13,6 +13,12 @@ import {
   adviceCode, flowOf, forwardBlockers, referConsultant, referralOpen, saveStudy, type Recommendation, type Study } from '@/data/intake/flow'
 import { FundingPlanCard } from '@/features/budget/FundingPlan'
 import { PRIORITY_SAY, PRIORITY_TONE, priorityLog, priorityOf, setPriority, usePriority, type Priority } from '@/data/intake/priority'
+import { OTHER, REJECT_REASONS } from '@/data/intake/reasons'
+import { isStrategic } from '@/data/partners/store'
+import { OutputsEditor } from '../OutputsEditor'
+import { orgOutputsOf, outputLine, saveOrgOutputs, useFlow, type Output } from '@/data/intake/flow'
+import { useRole } from '@/hooks/useRole'
+import { holderOf } from '@/data/holders'
 
 /* «الدراسة» · the supervisor's study of a project (3.2.11–3.2.16, 3.2.19, 3.4.25).
 
@@ -48,6 +54,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
 
   return (
     <>
+      <OrgOutputsCard row={row} />
       {f.returnNote && (
         <Glass>
           <Head title="أعاده مدير المنح" meta={<Tag tone="warn">للتحديث</Tag>} />
@@ -124,7 +131,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
               disabled={!editable}
               onClick={() => set('recommendation', r)}
             >
-              {r === 'approve' ? 'توصية بالموافقة' : 'توصية بالاعتذار'}
+              {r === 'approve' ? 'توصية بالموافقة' : 'توصية بالرفض'}
             </button>
           ))}
         </div>
@@ -141,6 +148,28 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
               <span className="sub regf-h">حتى المبلغ المطلوب <Money>{row.amountRequested}</Money></span>
             </label>
           )}
+          {/* v3 · 3.2.19 · 3.4.25 · the reason from the settings list, or «أخرى» with its text */}
+          {d.recommendation === 'reject' && (
+            <label className="regf">
+              <span className="lb">سبب التوصية بالرفض<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <FieldSelect value={d.rejectReason ?? ''} label="سبب التوصية بالرفض" placeholder="اختر السبب" disabled={!editable}
+                options={[...REJECT_REASONS, OTHER].map((x) => ({ value: x, label: x }))} onChange={(v) => set('rejectReason', v)} />
+            </label>
+          )}
+          {d.recommendation === 'reject' && d.rejectReason === OTHER && (
+            <label className="regf">
+              <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <span className="fld"><input value={d.rejectOther ?? ''} disabled={!editable} aria-label="سبب آخر" onChange={(e) => set('rejectOther', e.target.value)} /></span>
+            </label>
+          )}
+          {/* v3 · 3.2.17 · the project's classification · a portfolio takes the portfolio path after approval */}
+          <label className="regf">
+            <span className="lb">تصنيف المشروع</span>
+            <FieldSelect value={d.classification ?? 'مشروع عادي'} label="تصنيف المشروع" disabled={!editable || !isStrategic(row.entityId)}
+              options={['مشروع عادي', ...(isStrategic(row.entityId) ? ['محفظة'] : [])].map((x) => ({ value: x, label: x }))}
+              onChange={(v) => set('classification', v as 'مشروع عادي' | 'محفظة')} />
+            <span className="sub regf-h">{isStrategic(row.entityId) ? 'المحفظة تُفعَّل بعد الاعتماد وفق إجراء إدارة المحافظ' : 'المحفظة للشريك الاستراتيجي وحده'}</span>
+          </label>
           <label className="regf regf-w">
             <span className="lb">المبررات<b className="regf-r" aria-label="إلزامي">*</b></span>
             <span className="fld fld-a">
@@ -308,6 +337,49 @@ function PriorityCard({ row, me, editable }: { row: ProjectRow; me: string; edit
         </div>
       )}
       {log.length > 1 && <p className="sub cnote">تغيّرت <Num>{log.length}</Num> مرات · السابقة {PRIORITY_SAY[log.at(-2)!.level]}</p>}
+    </Glass>
+  )
+}
+
+/* v3 · 3.2.13 · 3.4.44 · 3.4.45 · the foundation's outputs · a copy of the entity's made when the
+   study starts · the supervisor studying it and the grants manager holding it edit, add and remove ·
+   every change is logged · the entity's stay as sent, readable beside them */
+function OrgOutputsCard({ row }: { row: ProjectRow }) {
+  useFlow()
+  const { role, user } = useRole()
+  const f = flowOf(row.id)
+  const holder = holderOf(row)
+  const can = (role.key === 'supervisor' && holder === 'supervisor' && row.owner === user.name) || (role.key === 'grants-manager' && holder === 'manager')
+  const [edit, setEdit] = useState(false)
+  const [d, setD] = useState<Output[]>(() => orgOutputsOf(row.id))
+  const [bad, setBad] = useState<string[]>([])
+  const org = orgOutputsOf(row.id)
+  const mine = f.entityOutputs ?? []
+  return (
+    <Glass>
+      <Head title="مخرجات المؤسسة" meta={f.orgOutputs ? <Tag tone="teal">المرجع المعتمد للمشروع</Tag> : <Tag tone="mute">تُنسخ من مخرجات الجهة عند بدء الدراسة</Tag>} />
+      {edit ? (
+        <>
+          <OutputsEditor list={d} onChange={setD} />
+          <div className="apv-row mt-3">
+            <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = saveOrgOutputs(row.id, d, user.name, role.key); setBad(out); if (!out.length) setEdit(false) }}>احفظ المخرجات</button>
+            <button type="button" className="btn btn-2 btn-sm" onClick={() => { setD(orgOutputsOf(row.id)); setEdit(false); setBad([]) }}>تراجع</button>
+          </div>
+          {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
+        </>
+      ) : (
+        <>
+          {org.length ? <ul className="outs-ro">{org.map((o, i) => <li key={i}>{outputLine(o)}</li>)}</ul> : <p className="sub cnote">لا مخرجات بعد.</p>}
+          {can && <button type="button" className="btn btn-2 btn-sm mt-2" onClick={() => { setD(orgOutputsOf(row.id)); setEdit(true) }}>عدّل المخرجات</button>}
+        </>
+      )}
+      {mine.length > 0 && (
+        <details className="mt-2">
+          <summary className="lnk">مخرجات الجهة كما قدّمتها · للقراءة فقط</summary>
+          <ul className="outs-ro mt-1">{mine.map((o, i) => <li key={i} className="sub">{outputLine(o)}</li>)}</ul>
+        </details>
+      )}
+      <p className="sub cnote">مخرجات المؤسسة هي المرجع في الاعتماد والاتفاقية والمتابعة والتقييم · ويُسجَّل كل تعديل عليها في السجل.</p>
     </Glass>
   )
 }

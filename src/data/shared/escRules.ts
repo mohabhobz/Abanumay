@@ -1,6 +1,7 @@
 import { CFG, hydrate, persist, readJson } from '@/lib/config'
 import { diffOf, logSettings } from './settingsLog'
 import { NOUN, countOf } from '@/lib/format'
+import { workDayLimits } from '@/lib/sla'
 
 /* Escalation rules · one mechanism for the thirteen procedures (cross · «التصعيد: متأخر ومتعثر»).
 
@@ -84,7 +85,7 @@ export const saveEscRules = (next: EscRules, by: string): void => {
 }
 
 /** Stage limits (hours) of the procedures that had none in code · edited on the escalation settings page */
-export const ESC_LIMITS: Record<string, number> = hydrate(CFG.escLimits, {
+export const ESC_LIMITS: Record<string, number> = hydrate(CFG.escLimits, workDayLimits({
   'budget.submitted': 72,
   'budget.finance': 72,
   'budget.exec': 72,
@@ -95,7 +96,6 @@ export const ESC_LIMITS: Record<string, number> = hydrate(CFG.escLimits, {
   'approval.exec': 120,
   'approval.committee': 336,
   'approval.board': 504,
-  'approval.confirm': 72,
   'ehsan.review': 72,
   'portfolio.supervisor': 168,
   'portfolio.manager': 96,
@@ -105,7 +105,7 @@ export const ESC_LIMITS: Record<string, number> = hydrate(CFG.escLimits, {
   'portfolio.returned': 240,
   'portfolio.subs': 120,
   'portfolio.finance': 72,
-})
+}))
 
 export type Heat = 'ok' | 'late' | 'stuck'
 

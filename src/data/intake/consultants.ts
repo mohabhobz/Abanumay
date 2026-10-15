@@ -31,7 +31,8 @@ const DEFAULT: ConsultantSetup = {
     { key: 'c2', name: 'د. فهد العمري', title: 'مستشار صحي', domains: ['الصحة', 'مجال الصحة'], accessDays: 7 },
   ],
   /* 4.4.3 · a consultant tied to the project gives the opinion before the grants manager sees it */
-  waitForOpinion: true,
+  /* v3 · rule 3.4.23 of v2 (wait for the consultant before forwarding) is gone · off by default */
+  waitForOpinion: false,
 }
 
 export const CONSULTANTS: ConsultantSetup = readJson(CFG.consultants, DEFAULT)

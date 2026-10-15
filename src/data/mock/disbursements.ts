@@ -5,6 +5,8 @@ import { AWAITING_AGREEMENT, SCENARIO, VIA_EHSAN, projectRows } from './projects
 import { entityById } from './entities'
 import { BANKS } from './taxonomy'
 import { WALK_PROJECT, agreements } from './agreements'
+import { isLive } from '@/data/status'
+import { workDayLimits } from '@/lib/sla'
 
 /* Disbursement requests · built on the procedures document, not on the live system
 
@@ -48,7 +50,7 @@ export const payStateWho = (s: PayState): string =>
  * count per stage comes **from settings**. These numbers are provisional until the Foundation gives
  * us the durations, like the empty "target value" in the indicators.
  */
-export const PAY_LIMIT: Record<PayState, number> = hydrate(CFG.payLimits, {
+export const PAY_LIMIT: Record<PayState, number> = hydrate(CFG.payLimits, workDayLimits({
   supervisor: 120,
   returned: 240,
   manager: 96,
@@ -56,7 +58,7 @@ export const PAY_LIMIT: Record<PayState, number> = hydrate(CFG.payLimits, {
   finance: 72,
   paid: 0,
   closed: 0,
-})
+}))
 
 /** Escalation · delayed once past the limit, stalled once past double it */
 export type PayHeat = 'ok' | 'late' | 'stuck'
@@ -219,7 +221,7 @@ const agreementActive = (id: string): boolean => {
   return !rows.length || rows.some((a) => a.stage === 'active')
 }
 const eligible = projectRows.filter(
-  (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) && !VIA_EHSAN.has(p.id) && p.statusGroup === 'في التشغيل' &&
+  (p) => !SCENARIO_IDS.has(p.id) && !AWAITING_AGREEMENT.has(p.id) && !VIA_EHSAN.has(p.id) && isLive(p.statusGroup) &&
     !p.stage.includes('الإتفاقي') && agreementActive(p.id),
 )
 

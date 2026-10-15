@@ -53,6 +53,7 @@ import type { Tone } from '@/types/domain'
 /** Today, in the mock · same date as the plans so the calculations line up */
 /** The demo's reference day · one for the whole prototype (`@/data/clock`) */
 import { TODAY, actDay } from '@/data/clock'
+import { workDayLimits } from '@/lib/sla'
 export { TODAY }
 
 export const CLOSE_STAGES: {
@@ -108,7 +109,7 @@ export const CLOSE_TONE: Record<CloseStage, Tone> = {
  * stage limits already in `taxonomy` so the delay chips work — **and this is still an open question
  * with the client**.
  */
-export const CLOSE_LIMIT: Record<CloseStage, number> = hydrate(CFG.closeLimits, {
+export const CLOSE_LIMIT: Record<CloseStage, number> = hydrate(CFG.closeLimits, workDayLimits({
   draft: 720,
   supervisor: 480,
   comms: 360,
@@ -120,7 +121,7 @@ export const CLOSE_LIMIT: Record<CloseStage, number> = hydrate(CFG.closeLimits, 
   evalExecutive: 480,
   closed: 0,
   returned: 720,
-})
+}))
 
 /** Supporting documents for the closing report · rule 5 */
 export const CLOSE_DOCS: { key: string; label: string; req?: boolean }[] = [

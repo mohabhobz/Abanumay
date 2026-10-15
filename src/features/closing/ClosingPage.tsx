@@ -444,8 +444,8 @@ export default function ClosingPage() {
           {/* Rule 16 is stated on screen, not only in a comment - it's the most confusing case: a
               report "with the executive director" while its project still shows "in progress". */}
           <p className="sub tcen">
-            محطة الإغلاق لا تغيّر حالة المشروع · يبقى «تحت التنفيذ» حتى يكتمل
-            اعتماد التقرير والتقييم والمتطلبات المالية والإدارية معًا{/* doc rule 16 · 18 */}.
+            المشروع «قيد الإغلاق» من بدء الإغلاق حتى يكتمل
+            اعتماد التقرير والتقييم والمتطلبات المالية والإدارية معًا · ولا تغيّر مراحل التقرير حالته{/* doc 10.4.20 · rule 16 · 18 */}.
           </p>
         </div>
       </div>

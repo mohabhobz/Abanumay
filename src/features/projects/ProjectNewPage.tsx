@@ -20,6 +20,9 @@ import { CYCLE, inPeriod, openFields } from '@/data/intake/cycle'
 import { entityById } from '@/data/mock/entities'
 import { isStrategic, proposeRoute, typeAllowed } from '@/data/partners/store'
 import { useRole } from '@/hooks/useRole'
+import { OutputsEditor } from './OutputsEditor'
+import { parseOutputs } from '@/data/intake/flow'
+import { WEEKDAYS, foundationWeek, workDaysOf } from '@/data/intake/cycle'
 
 /* Create a project - rule 31.
 
@@ -64,7 +67,7 @@ function PField({
   const opts = optionsFor(f, parent)
 
   return (
-    <label className={`regf${f.kind === 'long' || f.kind === 'multi' ? ' regf-w' : ''}`}>
+    <label className={`regf${f.kind === 'long' || f.kind === 'multi' || f.kind === 'outputs' || f.kind === 'weekdays' ? ' regf-w' : ''}`}>
       <span className="lb">
         {f.label}
         {f.req && <b className="regf-r" aria-label="إلزامي">*</b>}
@@ -161,6 +164,22 @@ function PField({
               </span>
             )
           })()}
+        </span>
+      ) : f.kind === 'outputs' ? (
+        <OutputsEditor list={parseOutputs(value)} onChange={(x) => onChange(JSON.stringify(x))} />
+      ) : f.kind === 'weekdays' ? (
+        /* v3 · 3.4.15 · the project's own execution days · the foundation's week until the entity picks */
+        <span className="pmulti">
+          {WEEKDAYS.map((w, i) => {
+            const cur = workDaysOf(value) ?? foundationWeek()
+            const on = cur.includes(i)
+            return (
+              <button key={w} type="button" className={`cfgchip${on ? ' on' : ''}`} aria-pressed={on}
+                onClick={() => { const next = on ? cur.filter((n) => n !== i) : [...cur, i].sort(); if (next.length) onChange(next.join(',')) }}>
+                {w}
+              </button>
+            )
+          })}
         </span>
       ) : f.kind === 'long' ? (
         <span className="fld fld-a">

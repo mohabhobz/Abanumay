@@ -36,13 +36,34 @@ export type ProcedureStage =
   | 'مشروع معتذر عنه'
   | 'مشروع ملغي'
 
-/** Grouped status — the system filters by this, only 5 values. */
+/** v3 · the project status dictionary (0.status.1–12) · the main status the system filters by.
+    «مسودة» is a request the entity hasn't sent · it never reaches the project list or the reports. */
 export type ProjectStatusGroup =
-  | 'في الدراسة'
-  | 'في التشغيل'
-  | 'معتذر عنه'
-  | 'متعثر'
+  | 'مسودة'
+  | 'قيد الدراسة'
+  | 'معتمد'
+  | 'استكمال متطلبات ما قبل التنفيذ'
+  | 'تحت التنفيذ'
+  | 'قيد الإغلاق'
   | 'مكتمل'
+  | 'مغلق بوفر'
+  | 'أعيد توجيه الدعم'
+  | 'مرفوض'
+  | 'ملغى'
+  | 'متعثر'
+
+/** v3 · 0.status.9 · support redirected within the same relationship by a formal decision */
+export interface SupportRedirect {
+  original: number
+  used: number
+  redirected: number
+  purpose: string
+  decision: string
+  decisionFile: string
+  evidence: string[]
+  by: string
+  at: string
+}
 
 /** Grant method, as in the system's filter. */
 export type GrantMethod = 'بحث واستجابة' | 'ابتكار وإنضاج'
@@ -50,17 +71,8 @@ export type GrantMethod = 'بحث واستجابة' | 'ابتكار وإنضاج
 /** Method for transferring the amount to the entity. */
 export type TransferMethod = 'حساب الجهة مباشر' | 'عبر منصة إحسان'
 
-/** Standardized decline reasons in the system (9). */
-export type DeclineReason =
-  | 'الاكتفاء بالمشاريع المدعومة في الهدف'
-  | 'الاكتفاء بدعم المشاريع الأخرى لنفس الجهة'
-  | 'مشروع مكرر لنفس الجهة'
-  | 'ضعف دراسة المشروع'
-  | 'الاكتفاء بالمشاريع المدعومة في المنطقة'
-  | 'نفاذ البند المخصص'
-  | 'مشروع ليس ضمن تخصص الجهة'
-  | 'خطأ في تعبئة البيانات'
-  | 'أخرى'
+/** v3 · 3.4.24 · the decline reasons are a settings list · a reason picked from it, or «أخرى» with text */
+export type DeclineReason = string
 
 /** The eight follow-up types. */
 export type FollowUpType =
@@ -254,6 +266,8 @@ export interface Project {
   score: number
 
   startDate: string
+  /** v3 · 3.4.14 · the computed end on the project's own execution days, when the record has it */
+  endDate?: string
   durationDays: number
 
   region: string
@@ -271,7 +285,12 @@ export interface Project {
   idea: string
   mainGoal: string
   goals: string[]
+  /** v3 · 0.def.15 · the foundation's outputs · the reference for approval, agreement and evaluation */
   outputs: string[]
+  /** v3 · 3.4.23 · the track, domain and goal as the entity chose them, when a transfer changed them */
+  originalChoice?: string
+  /** v3 · 0.def.14 · the entity's outputs as sent · read only */
+  entityOutputs?: string[]
   rationale: string[]
   phases: ProjectPhase[]
 
@@ -518,6 +537,16 @@ export interface ProjectRow {
   platform?: 'منصة إحسان'
   /** With a strategic partner · a project of its own or a portfolio (11.2.5 · 13.2.4) */
   partnerType?: 'مستقل' | 'محفظة'
+  /** v3 · 0.status.8 · the saving left at closing · recovered or returned to the line */
+  closeSavings?: { amount: number; fate: string }
+  /** v3 · 0.status.9 */
+  redirect?: SupportRedirect
+  /** v3 · 3.4.14 · the actual start of execution · recorded apart from the expected start and the request's date */
+  actualStartAt?: string
+  /** v3 · 3.4.15 · the project's own execution days of the week (0 = Sunday) · the foundation's week when absent */
+  execDays?: number[]
+  /** v3 · 0.status.10 · the level a refusal came from · kept in the decision's details */
+  refusedBy?: string
 }
 
 /** Project type as shown in the list filter and the identity card. */
@@ -1029,6 +1058,8 @@ export interface CloseRow {
   /** The entity's evaluation of the foundation (10.3.2). */
   feedback?: EntityFeedback
   /** Money the entity owes back — savings on closing (10.9.7). */
+  /** v3 · 0.status.9 · 10.9.7 · the saving, or part of the grant, redirected within the same relationship */
+  redirect?: SupportRedirect
   recovery?: Recovery
 }
 

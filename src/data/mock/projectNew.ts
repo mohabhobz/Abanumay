@@ -7,7 +7,9 @@ import {
 import { MONEY_LIMITS, TARGET_GROUPS } from './settings'
 import { entityDetail } from './entityDetail'
 import { NOUN, countOf } from '@/lib/format'
-import { CYCLE, TODAY, addWorkingDays, goalFunded, inPeriod, openFields } from '@/data/intake/cycle'
+import { CYCLE, TODAY, addWorkingDays, goalFunded, inPeriod, openFields, workDaysOf } from '@/data/intake/cycle'
+import { parseOutputs } from '@/data/intake/flow'
+import { OPEN } from '@/data/status'
 
 /* Create project · the most important action in the system, and a screen that was entirely missing.
 
@@ -34,7 +36,7 @@ import { CYCLE, TODAY, addWorkingDays, goalFunded, inPeriod, openFields } from '
    required fields only — otherwise it could reach 70% while every required field is still missing,
    giving a false sense of progress. */
 
-export type FieldKind = 'text' | 'long' | 'num' | 'date' | 'select' | 'multi'
+export type FieldKind = 'text' | 'long' | 'num' | 'date' | 'select' | 'multi' | 'outputs' | 'weekdays'
 
 export interface PFieldDef {
   key: string
@@ -72,7 +74,7 @@ export const requestsInPeriod = (entityId: string): number =>
   projectRows.filter((p) => p.entityId === entityId && p.submittedAt >= CYCLE.from && p.submittedAt <= CYCLE.to).length
 
 /** Open projects · shown beside the cap as context, no longer what it counts */
-const OPEN_GROUPS: ProjectStatusGroup[] = ['في الدراسة', 'في التشغيل', 'متعثر']
+const OPEN_GROUPS: readonly ProjectStatusGroup[] = OPEN
 
 export const openProjectsOf = (entityId: string): number =>
   projectRows.filter((p) => p.entityId === entityId && OPEN_GROUPS.includes(p.statusGroup)).length
@@ -129,6 +131,8 @@ export const P_STAGES: PStageDef[] = [
       { key: 'summary', label: 'وصف المشروع', kind: 'long', req: true, hint: 'المشكلة والحل في فقرة واحدة' },
       /* 3.1.input-2 · the project's own objectives, beyond the goal picked from the taxonomy */
       { key: 'objectives', label: 'الأهداف التفصيلية', kind: 'long', req: true, hint: 'هدف في كل سطر · ثلاثة أهداف على الأقل يُقاس كلٌّ منها' },
+      /* v3 · 0.def.14 · 3.2.13 · the entity's outputs · kept as sent · the foundation works on a copy */
+      { key: 'outputs', label: 'مخرجات المشروع', kind: 'outputs', req: true, hint: 'مخرج واحد على الأقل · لكل مخرج مؤشره وقيمته المستهدفة' },
     ],
   },
   {
@@ -160,9 +164,12 @@ export const P_STAGES: PStageDef[] = [
     label: 'المدة',
     note: /* doc rule 13 */ ' · تاريخ التنفيذ الفعلي مستقل عن تاريخ التقديم',
     fields: [
-      { key: 'startAt', label: 'بداية التنفيذ الفعلي', kind: 'date', req: true, hint: 'يختلف عن تاريخ تقديم الطلب' },
-      /* 3.4.30 · the duration is in working days and the end date is computed, not typed */
-      { key: 'workDays', label: 'مدة التنفيذ', kind: 'num', req: true, unit: 'يوم عمل', hint: 'تُستبعد العطلة الأسبوعية والإجازات الرسمية' },
+      /* v3 · 3.4.15 · the expected start · independent of the request's date (3.4.14) */
+      { key: 'startAt', label: 'تاريخ بدء التنفيذ المتوقع', kind: 'date', req: true, hint: 'يختلف عن تاريخ تقديم الطلب' },
+      /* v3 · 3.4.15 · the project's own execution days of the week · the end is computed on them */
+      { key: 'execDays', label: 'أيام التنفيذ من الأسبوع', kind: 'weekdays', hint: 'الأيام التي يُنفَّذ فيها المشروع · الافتراضي أيام عمل المؤسسة' },
+      /* 3.4.30 · the duration is in execution days and the end date is computed, not typed */
+      { key: 'workDays', label: 'مدة التنفيذ', kind: 'num', req: true, unit: 'يوم تنفيذ', hint: 'المدة المقترحة استرشادية للدراسة · لا تُعد خطة معتمدة (3.4.46)' },
       {
         key: 'multiYear', label: 'يمتد لأكثر من سنة مالية', kind: 'select',
         options: ['لا', 'نعم'],
@@ -177,7 +184,7 @@ export const DOCS_STAGE = 'docs'
 
 /** End of execution · start plus the working days, computed (3.4.13 · 3.4.30) */
 export const endOf = (val: PValues): string =>
-  val.startAt && Number(val.workDays) > 0 ? addWorkingDays(val.startAt, Number(val.workDays)) : ''
+  val.startAt && Number(val.workDays) > 0 ? addWorkingDays(val.startAt, Number(val.workDays), workDaysOf(val.execDays)) : ''
 
 /* Only the domains open in the cycle (3.4.6) · a track with none open isn't offered */
 const openTracks = () => TRACKS.filter((t) => (FIELDS_BY_TRACK[t] ?? []).some((f) => openFields().includes(f)))
@@ -196,8 +203,12 @@ export const optionsFor = (f: PFieldDef, parent: string): readonly string[] => {
 export type PValues = Record<string, string>
 
 /** Missing required fields in a station · optional ones don't count */
+/** A field holds a value · an outputs list needs one output with its text */
+export const filled = (f: PFieldDef, v?: string): boolean =>
+  f.kind === 'outputs' ? parseOutputs(v).some((o) => o.text.trim()) : Boolean(v?.trim())
+
 export const shortIn = (st: PStageDef, val: PValues): string[] =>
-  st.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label)
+  st.fields.filter((f) => f.req && !filled(f, val[f.key])).map((f) => f.label)
 
 /**
  * Completion percentage.
@@ -208,7 +219,7 @@ export const shortIn = (st: PStageDef, val: PValues): string[] =>
  */
 export const completion = (val: PValues): number => {
   const req = P_STAGES.flatMap((s) => s.fields.filter((f) => f.req))
-  const done = req.filter((f) => val[f.key]?.trim()).length
+  const done = req.filter((f) => filled(f, val[f.key])).length
   return req.length === 0 ? 0 : Math.round((done / req.length) * 100)
 }
 

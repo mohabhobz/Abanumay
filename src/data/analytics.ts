@@ -111,7 +111,7 @@ export interface OwnerLoad {
 
 /** Reviewer workload · imbalance shows up in wait times before any report does */
 export const ownerLoad = (rows: ProjectRow[]): OwnerLoad[] => {
-  const live = rows.filter((r) => r.statusGroup === 'في الدراسة')
+  const live = rows.filter((r) => r.statusGroup === 'قيد الدراسة')
   const names = [...new Set(live.map((r) => r.owner ?? 'بلا مالك'))]
   return names
     .map((name) => {

@@ -403,8 +403,8 @@ export default function PlansPage() {
           {/* Note: the two rules that cause confusion are documented on the screen, not only in a
               comment - exactly like rule 25 on agreements. */}
           <p className="sub tcen">
-            مرحلة الخطة لا تغيّر حالة المشروع · فهما إجراءان مستقلان يسيران بالتوازي
-            مع الاتفاقية. والنشاط لا يُحتسب إنجازًا إلا بعد قبول مشرف المنح{/* doc rule 14 */} ·{' '}
+            مرحلة الخطة لا تغيّر حالة المشروع · غير أن الخطة المطلوبة تُبقيه في «استكمال متطلبات ما قبل التنفيذ» حتى تُعتمد
+            (0.status.4). والنشاط لا يُحتسب إنجازًا إلا بعد قبول مشرف المنح{/* doc rule 14 */} ·{' '}
             <span className="num">{k.closable}</span> {nounAfter(k.closable, NOUN.project)} اكتملت خطته وصار
             مؤهَّلًا للإغلاق.
           </p>

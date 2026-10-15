@@ -6,11 +6,15 @@ import { projectRows } from '@/data/mock/projects'
 import { stageMeta, FIELDS_BY_TRACK } from '@/data/mock/taxonomy'
 import { entityById } from '@/data/mock/entities'
 import { replayLateRelinks } from '@/data/entities/store'
-import { CYCLE, TODAY, addWorkingDays, type Distribution } from './cycle'
+import { CYCLE, TODAY, addWorkingDays, workDaysOf, type Distribution } from './cycle'
 import { CRITERIA, studyScore } from './criteria'
 import { nextSeq, type Stamped } from '@/data/opclock'
 import { dayOf, liveDay, stampNow, timeOf } from '@/data/clock'
 import { CONSULTANTS, consultantByKey } from './consultants'
+import { isEnded } from '@/data/status'
+import { installStatus } from '@/data/status'
+import { domainBudget } from './insight'
+import { OTHER, reasonSay } from './reasons'
 
 /* Receiving projects and the supervisor's study · the actions (procedure 3).
 
@@ -63,6 +67,11 @@ export interface Study {
   /** Amount the supervisor recommends · up to the requested amount */
   amount: number
   justification: string
+  /** v3 · 3.2.19 · 3.4.25 · a recommendation to reject names its reason from the settings list, or «أخرى» with text */
+  rejectReason?: string
+  rejectOther?: string
+  /** v3 · 3.2.17 · the supervisor classifies the project · a portfolio takes its path after the approval */
+  classification?: 'مشروع عادي' | 'محفظة'
   by: string
   at: string
   /** Each save of a forwarded study after a return is a new version (3.4.26) */
@@ -89,8 +98,28 @@ const snapOf = (p: ProjectRow, f: { objectives: string[]; docs: { kind: string }
 })
 export interface FlowNote { id: string; to: string; title: string; context: string; at: string; projectId: string }
 
+/** v3 · 0.def.14 · 0.def.15 · an output with its indicator and target value */
+export interface Output { text: string; indicator: string; target: string }
+
+/** The outputs the request carries · a JSON list in the form's value */
+export const parseOutputs = (v?: string): Output[] => {
+  if (!v) return []
+  try {
+    const x = JSON.parse(v) as unknown
+    return Array.isArray(x) ? x.filter((o): o is Output => Boolean(o && typeof o === 'object' && typeof (o as Output).text === 'string')).map((o) => ({ text: o.text, indicator: o.indicator ?? '', target: o.target ?? '' })) : []
+  } catch { return [] }
+}
+export const outputLine = (o: Output): string => [o.text, o.indicator && `المؤشر: ${o.indicator}`, o.target && `المستهدف: ${o.target}`].filter(Boolean).join(' · ')
+
 export interface ProjectFlow {
   createdAt?: string
+  /** v3 · 3.4.23 · the domain, track and goal as the entity chose them · kept when the project moves */
+  original?: { track: string; field: string; goal: string }
+  /** v3 · 0.def.14 · the entity's outputs as sent · never edited */
+  entityOutputs?: Output[]
+  /** v3 · 0.def.15 · 3.2.13 · 3.4.44 · the foundation's copy · made when the study starts, edited by the
+      supervisor or the manager · the reference for the approval, the agreement and the evaluation */
+  orgOutputs?: Output[]
   sentAt?: string
   /** Every version sent · with what it carried, so an earlier one reads in full after a resubmission (3.4.31) */
   versions: { no: number; at: string; by: string; say: string; snap?: VersionSnap; /** The request as sent */ values?: Record<string, string>; /** Batch 7 · the attachments at that version */ docs?: string[] }[]
@@ -105,6 +134,8 @@ export interface ProjectFlow {
   /** The study was updated after the return · the version counts once per return */
   returnStudied?: boolean
   closed?: { kind: 'cancel' | 'archive'; reason: string; by: string; at: string }
+  /** v3 · 3.2.10 · the request as the entity corrected it after a return · the next version carries it */
+  amended?: Record<string, string>
   events: LogEvent[]
 }
 
@@ -117,7 +148,10 @@ type Op = Stamped & (
   | { op: 'recommend'; id: string; by: string }
   | { op: 'complete'; id: string; note: string; by: string }
   | { op: 'resubmit'; id: string; by: string }
-  | { op: 'transfer'; id: string; field: string; owner: string; reason: string; by: string }
+  | { op: 'transfer'; id: string; field: string; owner: string; reason: string; by: string; track?: string; goal?: string }
+  | { op: 'outputs'; id: string; list: Output[]; by: string }
+  /* v3 · 3.2.10 · the entity corrects its returned request · the values it may change */
+  | { op: 'amend'; id: string; values: Record<string, string>; by: string }
   | { op: 'return'; id: string; note: string; by: string }
   | { op: 'refer'; id: string; consultant: string; by: string; code?: string }
   | { op: 'opinion'; id: string; opinion: string; verdict: NonNullable<Referral['verdict']>; by: string }
@@ -250,7 +284,7 @@ const seedDocs = (id: string): DocFile[] => {
 /* ── Assignment (3.4.3 · 3.4.10) ── */
 
 const studyLoad = (owner: string) =>
-  projectRows.filter((p) => p.owner === owner && p.statusGroup === 'في الدراسة').length
+  projectRows.filter((p) => p.owner === owner && p.statusGroup === 'قيد الدراسة').length
 
 /** The supervisor a new request goes to, by the domain's rule · `null` = manual (the manager assigns) */
 export const pickSupervisor = (field: string, goal: string): string | null => {
@@ -276,6 +310,10 @@ export const missingDocs = (id: string): string[] => {
   return REQUEST_DOCS.filter((d) => d.required && !f.docs.some((x) => x.kind === d.key)).map((d) => d.label)
 }
 
+/* The budget store hands in what the project already holds · it imports this store, so not back */
+let ownHold: (projectId: string) => number = () => 0
+export const setOwnHold = (f: (projectId: string) => number): void => { ownHold = f }
+
 /** What stands between the study and forwarding to the grants manager (3.4.22) · empty = can forward */
 export const forwardBlockers = (id: string): string[] => {
   const p = row(id)
@@ -289,9 +327,21 @@ export const forwardBlockers = (id: string): string[] => {
     if (unscored.length) out.push(`${unscored.length} من معايير التقييم بلا درجة`)
     if (!f.study.recommendation) out.push('لم تُحدَّد التوصية')
     if (!f.study.justification.trim()) out.push('مبررات التوصية فارغة')
+    /* v3 · 3.2.19 · 3.4.25 */
+    if (f.study.recommendation === 'reject' && !f.study.rejectReason) out.push('اختر سبب التوصية بالرفض من القائمة أو «أخرى»')
+    if (f.study.recommendation === 'reject' && f.study.rejectReason === OTHER && !f.study.rejectOther?.trim()) out.push('اكتب سبب التوصية بالرفض')
   }
   const docs = missingDocs(id)
   if (docs.length) out.push(`مرفقات إلزامية ناقصة: ${docs.join('، ')}`)
+  /* v3 · 3.2.21 · 3.2.22 · a recommendation to approve needs the balance in the request's line · the
+     goal's line under the domain, else the domain's · the project's own hold on it counts back */
+  if (f.study?.recommendation === 'approve') {
+    const asked = f.study.amount || p.amountRequested
+    const b = domainBudget(p)
+    const line = b?.goal ?? (b ? { label: b.label, money: b.money } : undefined)
+    if (!line) out.push(`لا بند لمجال «${p.field}» في الميزانية المعتمدة · لا توصية بالموافقة بلا رصيد`)
+    else if (asked > line.money.available + ownHold(p.id)) out.push(`الرصيد المتاح في بند «${line.label}» (${Math.max(0, line.money.available).toLocaleString('en-US')}) لا يكفي المبلغ ${asked.toLocaleString('en-US')} · لا توصية بالموافقة`)
+  }
   if (CONSULTANTS.waitForOpinion && f.referral && !f.referral.opinion && f.referral.expiresAt >= liveDay()) {
     out.push('بانتظار رأي المستشار · الإعداد يشترط وصوله قبل الإحالة')
   }
@@ -320,15 +370,17 @@ function applyOp(o: Op) {
       projectRows.unshift({
         id: o.id, name: v.name, entityId: v.entityId, entityName: e?.name ?? '',
         track: v.track, field: v.field, goal: v.goal, region: v.region, city: v.city,
-        stage: 'دراسة المشروع', statusGroup: 'في الدراسة', stageLimit: stageMeta('دراسة المشروع')?.limit ?? 900,
+        stage: 'دراسة المشروع', statusGroup: 'قيد الدراسة', stageLimit: stageMeta('دراسة المشروع')?.limit ?? 900,
         hoursInStage: 0, amountRequested: amount, amountGranted: 0, amountSpent: 0, weight: 50, score: 0,
         owner, year: '2026-f', funding: 'foundation', tags: [], grantMethod: 'بحث واستجابة', shared: false,
         impact: false, supportStatus: null, submittedAt: opDay(), durationDays: days,
         beneficiaries: Number(v.reach) || 0, hasInterimReport: false, hasFinalReport: false,
         hasKnowledgeProduct: false, fieldVisit: false, type: 'مشروع عادي', holder: 'supervisor',
         source: o.asEntity ? 'portal' : 'staff',
-        createdAt: `${opDay()}T${NOW_TIME()}`, startAt: v.startAt, endAt: v.startAt && days ? addWorkingDays(v.startAt, days) : v.endAt,
+        createdAt: `${opDay()}T${NOW_TIME()}`, startAt: v.startAt, execDays: workDaysOf(v.execDays), endAt: v.startAt && days ? addWorkingDays(v.startAt, days, workDaysOf(v.execDays)) : v.endAt,
       })
+      /* v3 · the status reads from the record (data/status.ts) */
+      installStatus(projectRows[0]!)
       /* v3 · 2.4.10 · a move to another entity recorded on this project waits for it */
       replayLateRelinks(o.id)
       const f = flowOf(o.id)
@@ -336,6 +388,8 @@ function applyOp(o: Op) {
       f.sentAt = `${opDay()} ${NOW_TIME()}`
       f.createdAt = v.draftAt ? `${v.draftAt.slice(0, 10)} ${v.draftAt.slice(11, 16)}` : f.sentAt
       f.objectives = (v.objectives ?? '').split('\n').map((x) => x.trim()).filter(Boolean)
+      f.entityOutputs = parseOutputs(v.outputs)
+      f.original = { track: v.track, field: v.field, goal: v.goal }
       f.docs = o.docs.map((k) => ({ kind: k, name: `${REQUEST_DOCS.find((d) => d.key === k)?.label ?? k}.pdf`, by: o.asEntity ? e?.name ?? o.by : o.by, at: opDay() }))
       /* Re-audit 7 Oct · the version keeps the request's full content, not only its figures */
       f.versions = [{ no: 1, at: opDay(), by: o.by, say: o.asEntity ? 'أرسلته الجهة من البوابة' : 'أدخله مشرف المنح نيابةً عن الجهة', snap: snapOf(projectRows[0], f), values: { ...v }, docs: f.docs.map((d) => d.name) }]
@@ -353,14 +407,16 @@ function applyOp(o: Op) {
     }
     case 'reschedule': {
       const days = p!.durationDays ?? 0
-      if (!o.startAt || !days || ['مكتمل', 'معتذر عنه'].includes(p!.statusGroup)) break
-      const was = { start: p!.startAt, end: p!.endAt }
-      p!.startAt = o.startAt
-      p!.endAt = addWorkingDays(o.startAt, days)
-      event(o.id, { action: 'تعديل بداية التنفيذ · أُعيد حساب النهاية', by: o.by, tone: 'warn', fields: [
-        { k: 'البداية', v: `${was.start ?? '—'} ← ${o.startAt}`, strong: true },
+      if (!o.startAt || !days || isEnded(p!.statusGroup)) break
+      /* v3 · 3.4.14 · the actual start is its own record · the expected start the entity gave stays */
+      const was = { start: p!.actualStartAt ?? p!.startAt, end: p!.endAt }
+      p!.actualStartAt = o.startAt
+      p!.endAt = addWorkingDays(o.startAt, days, p!.execDays)
+      event(o.id, { action: 'تسجيل بداية التنفيذ الفعلي · أُعيد حساب النهاية', by: o.by, tone: 'warn', fields: [
+        { k: 'بداية التنفيذ الفعلي', v: `${was.start ?? '—'} ← ${o.startAt}`, strong: true },
+        { k: 'البداية المتوقعة في الطلب', v: p!.startAt ?? '—' },
         { k: 'النهاية المحسوبة', v: `${was.end ?? '—'} ← ${p!.endAt}` },
-        { k: 'المدة', v: `${days} يوم عمل` },
+        { k: 'المدة', v: `${days} يوم تنفيذ` },
         { k: 'السبب', v: o.reason },
       ] })
       note(o.id, p!.entityName, `تغيّرت مدة تنفيذ مشروعك · ${p!.name}`, `يبدأ ${o.startAt} وينتهي ${p!.endAt}`)
@@ -386,12 +442,16 @@ function applyOp(o: Op) {
       /* Re-audit 7 Oct · the return note stays until the supervisor sends the project back, so the
          «أعد الإرسال لمدير المنح» action survives saving the updated study */
       f.study = { ...o.study, at: opDay(), version: prev ? prev.version + (f.returnNote && !f.returnStudied ? 1 : 0) : 1, field: p!.field }
+      /* v3 · 3.2.13 · the study starts · the foundation's outputs begin as a copy of the entity's */
+      if (!f.orgOutputs) f.orgOutputs = structuredClone(f.entityOutputs ?? [])
       if (f.returnNote) f.returnStudied = true
       event(o.id, {
         action: prev ? 'تحديث دراسة المشروع' : 'تسجيل دراسة المشروع', by: o.study.by,
         fields: [
           { k: 'الدرجة', v: `${studyScore(o.study.scores)} من 100` },
-          { k: 'التوصية', v: o.study.recommendation === 'approve' ? 'الموافقة' : o.study.recommendation === 'reject' ? 'الاعتذار' : 'لم تُحدَّد', strong: true },
+          { k: 'التوصية', v: o.study.recommendation === 'approve' ? 'الموافقة' : o.study.recommendation === 'reject' ? 'الرفض' : 'لم تُحدَّد', strong: true },
+          ...(o.study.recommendation === 'reject' && o.study.rejectReason ? [{ k: 'سبب التوصية بالرفض', v: reasonSay(o.study.rejectReason, o.study.rejectOther) }] : []),
+          ...(o.study.classification ? [{ k: 'تصنيف المشروع', v: o.study.classification }] : []),
           ...(o.study.recommendation === 'approve' ? [{ k: 'المبلغ الموصى به', v: o.study.amount.toLocaleString('en-US') }] : []),
         ],
       })
@@ -405,10 +465,11 @@ function applyOp(o: Op) {
       p!.holder = 'manager'
       p!.hoursInStage = 0
       event(o.id, {
-        action: s?.recommendation === 'reject' ? 'توصية بالاعتذار وإحالة لمدير المنح' : 'توصية بالموافقة وإحالة لمدير المنح',
+        action: s?.recommendation === 'reject' ? 'توصية بالرفض وإحالة لمدير المنح' : 'توصية بالموافقة وإحالة لمدير المنح',
         by: o.by, tone: 'ok',
         fields: [
-          { k: 'التوصية', v: s?.recommendation === 'reject' ? 'الاعتذار' : 'الموافقة', strong: true },
+          { k: 'التوصية', v: s?.recommendation === 'reject' ? 'الرفض' : 'الموافقة', strong: true },
+          ...(s?.recommendation === 'reject' && s.rejectReason ? [{ k: 'سبب التوصية بالرفض', v: reasonSay(s.rejectReason, s.rejectOther), strong: true }] : []),
           { k: 'المبررات', v: s?.justification ?? '' },
           { k: 'أثرها', v: 'توصية استشارية · لا اعتماد ولا صرف' },
         ],
@@ -433,33 +494,84 @@ function applyOp(o: Op) {
          so a version can be read whole and against the one before it */
       const prevValues = [...f.versions].reverse().find((v) => v.values)?.values
       f.versions.push({ no: f.versions.length + 1, at: opDay(), by: o.by, say: `أعادت الجهة الإرسال بعد الاستكمال${f.completionNote ? ` · ${f.completionNote}` : ''}`, snap: snapOf(p!, f),
-        values: { ...(prevValues ?? {}), amount: String(p!.amountRequested), days: String(p!.durationDays ?? ''), beneficiaries: String(p!.beneficiaries ?? ''), ...(p!.startAt ? { startAt: p!.startAt } : {}) },
+        values: { ...(prevValues ?? {}), ...(f.amended ?? {}), amount: String(p!.amountRequested), days: String(p!.durationDays ?? ''), beneficiaries: String(p!.beneficiaries ?? ''), ...(p!.startAt ? { startAt: p!.startAt } : {}) },
         docs: f.docs.map((d) => d.name) })
       f.completionNote = undefined
+      f.amended = undefined
       event(o.id, { action: 'إعادة إرسال الطلب بعد الاستكمال', by: o.by, actor: 'entity', dept: 'استكمال بيانات المشروع' })
       if (p!.owner) note(o.id, p!.owner, `أعادت الجهة الإرسال · ${p!.name}`, 'استؤنفت الدراسة')
       break
     }
     case 'transfer': {
       const f = flowOf(o.id)
-      const from = { field: p!.field, owner: p!.owner }
+      const from = { field: p!.field, owner: p!.owner, track: p!.track, goal: p!.goal }
+      f.original ??= { track: p!.track, field: p!.field, goal: p!.goal }
       if (f.study) { f.pastStudies.unshift(f.study); f.study = undefined }
       p!.field = o.field
-      const t = trackOf(o.field)
+      /* v3 · 3.4.23 · the track and the goal move with the domain · picked, not left behind */
+      const t = o.track ?? trackOf(o.field)
       if (t) p!.track = t
+      if (o.goal) p!.goal = o.goal
       p!.owner = o.owner
       p!.holder = 'supervisor'
       p!.hoursInStage = 0
       event(o.id, {
         action: 'تحويل المشروع إلى مجال آخر', by: o.by, tone: 'warn',
         fields: [
-          { k: 'من', v: `${from.field} · ${from.owner ?? 'بلا مشرف'}` },
-          { k: 'إلى', v: `${o.field} · ${o.owner}`, strong: true },
+          { k: 'من', v: `${from.track} · ${from.field} · ${from.goal} · ${from.owner ?? 'بلا مشرف'}` },
+          { k: 'إلى', v: `${p!.track} · ${o.field} · ${p!.goal} · ${o.owner}`, strong: true },
           { k: 'السبب', v: o.reason },
           { k: 'الدراسة السابقة', v: 'محفوظة في السجل' },
         ],
       })
       note(o.id, o.owner, `حُوّل إليك · ${p!.name}`, `من مجال ${from.field} · ${o.reason}`)
+      break
+    }
+    case 'outputs': {
+      /* v3 · 3.4.44 · every change to the foundation's outputs is logged · the entity's stay as sent */
+      const f = flowOf(o.id)
+      const before = f.orgOutputs ?? f.entityOutputs ?? []
+      const key = (x: Output) => outputLine(x)
+      const added = o.list.filter((x) => !before.some((y) => key(y) === key(x)))
+      const removed = before.filter((x) => !o.list.some((y) => key(y) === key(x)))
+      f.orgOutputs = structuredClone(o.list)
+      event(o.id, {
+        action: 'تعديل مخرجات المؤسسة', by: o.by, dept: p!.holder === 'manager' ? 'مدير المنح' : 'دراسة المشروع',
+        fields: [
+          ...added.map((x) => ({ k: 'أُضيف', v: outputLine(x) })),
+          ...removed.map((x) => ({ k: 'حُذف أو عُدِّل', v: outputLine(x) })),
+          { k: 'عدد المخرجات', v: String(o.list.length) },
+        ],
+      })
+      break
+    }
+    case 'amend': {
+      /* v3 · 3.2.10 · the entity edits its returned request · the figures and the text it sent */
+      if (p!.stage !== 'استكمال بيانات المشروع') break
+      const f = flowOf(o.id)
+      const v = o.values
+      const changed: LogField[] = []
+      const set = <K extends keyof ProjectRow>(k: K, val: ProjectRow[K], label: string) => {
+        if (p![k] !== val) { changed.push({ k: label, v: `${String(p![k] ?? '—')} ← ${String(val ?? '—')}` }); p![k] = val }
+      }
+      if (v.name?.trim()) set('name', v.name.trim(), 'اسم المشروع')
+      if (v.amountRequested) set('amountRequested', Number(v.amountRequested) || p!.amountRequested, 'المبلغ المطلوب')
+      if (v.reach) set('beneficiaries', Number(v.reach) || p!.beneficiaries, 'عدد المستفيدين')
+      if (v.workDays) set('durationDays', Number(v.workDays) || p!.durationDays, 'مدة التنفيذ')
+      if (v.startAt) set('startAt', v.startAt, 'تاريخ بدء التنفيذ المتوقع')
+      if (v.execDays !== undefined) p!.execDays = workDaysOf(v.execDays)
+      if (p!.startAt && p!.durationDays) p!.endAt = addWorkingDays(p!.actualStartAt ?? p!.startAt, p!.durationDays, p!.execDays)
+      if (v.objectives !== undefined) {
+        const list = v.objectives.split('\n').map((x) => x.trim()).filter(Boolean)
+        if (list.join('|') !== f.objectives.join('|')) { changed.push({ k: 'الأهداف التفصيلية', v: `${list.length} هدف` }); f.objectives = list }
+      }
+      if (v.outputs !== undefined) {
+        const list = parseOutputs(v.outputs)
+        if (JSON.stringify(list) !== JSON.stringify(f.entityOutputs ?? [])) { changed.push({ k: 'مخرجات الجهة', v: `${list.length} مخرج` }); f.entityOutputs = list }
+      }
+      const last = [...f.versions].reverse().find((x) => x.values)?.values ?? {}
+      f.amended = { ...last, ...v }
+      event(o.id, { action: 'تعديل الجهة بيانات الطلب المُعاد', by: o.by, actor: 'entity', dept: 'استكمال بيانات المشروع', fields: changed.length ? changed : [{ k: 'التغيير', v: 'بلا تغيير في البيانات' }] })
       break
     }
     case 'return': {
@@ -551,37 +663,41 @@ export const rescheduleStart = (id: string, startAt: string, reason: string, by:
   const p = projectRows.find((x) => x.id === id)
   if (!p) return ['المشروع غير موجود']
   if (!p.durationDays) return ['لا مدة تنفيذ للمشروع · تُحسب النهاية من المدة']
-  if (['مكتمل', 'معتذر عنه'].includes(p.statusGroup)) return ['المشروع مغلق']
+  if (isEnded(p.statusGroup)) return ['المشروع مغلق']
   if (!reason.trim()) return ['اكتب سبب التعديل']
   if (!startAt) return ['حدّد تاريخ البداية']
   run({ op: 'reschedule', id, startAt, reason: reason.trim(), by })
   return []
 }
-/** Batch 8 · intake#15 · open projects whose end was computed from the calendar before the change
-    (`before` · the holidays as they were) and no longer matches it · a seeded end typed by hand is left alone */
-export function endsToRederive(before: { date: string; name: string }[]): string[] {
-  const now = CYCLE.holidays
-  const open = projectRows.filter((p) => p.startAt && p.durationDays && !['مكتمل', 'معتذر عنه'].includes(p.statusGroup))
-  CYCLE.holidays = before
-  const derived = open.filter((p) => p.endAt === addWorkingDays(p.startAt!, p.durationDays!))
-  CYCLE.holidays = now
-  return derived.filter((p) => p.endAt !== addWorkingDays(p.startAt!, p.durationDays!)).map((p) => p.id)
+/** v3 · 3.4.34 · the calendar a duration was computed with · the week, the holidays and the policy */
+export type CalendarSnap = Pick<typeof CYCLE, 'weekend' | 'holidays' | 'countWeekend' | 'countHolidays'>
+export const calendarSnap = (): CalendarSnap => structuredClone({ weekend: CYCLE.weekend, holidays: CYCLE.holidays, countWeekend: CYCLE.countWeekend, countHolidays: CYCLE.countHolidays })
+/** Batch 8 · intake#15 · v3 · 3.4.34 · open projects whose end was computed from the calendar before
+    the change (`before`) and no longer matches it · a seeded end typed by hand is left alone */
+export function endsToRederive(before: CalendarSnap): string[] {
+  const now = calendarSnap()
+  const open = projectRows.filter((p) => (p.actualStartAt ?? p.startAt) && p.durationDays && !isEnded(p.statusGroup))
+  Object.assign(CYCLE, structuredClone(before))
+  const derived = open.filter((p) => p.endAt === addWorkingDays((p.actualStartAt ?? p.startAt)!, p.durationDays!, p.execDays))
+  Object.assign(CYCLE, now)
+  return derived.filter((p) => p.endAt !== addWorkingDays((p.actualStartAt ?? p.startAt)!, p.durationDays!, p.execDays)).map((p) => p.id)
 }
 function applyRederive(ids: string[], reason: string, by: string) {
   for (const id of ids) {
     const p = row(id)
-    if (!p?.startAt || !p.durationDays) continue
+    const from = p?.actualStartAt ?? p?.startAt
+    if (!p || !from || !p.durationDays) continue
     const was = p.endAt
-    p.endAt = addWorkingDays(p.startAt, p.durationDays)
+    p.endAt = addWorkingDays(from, p.durationDays, p.execDays)
     if (was === p.endAt) continue
-    event(p.id, { action: 'أُعيد حساب نهاية التنفيذ · تغيّرت الإجازات الرسمية', by, tone: 'warn', fields: [
+    event(p.id, { action: 'أُعيد حساب نهاية التنفيذ · تغيّر تقويم المدد', by, tone: 'warn', fields: [
       { k: 'النهاية المحسوبة', v: `${was ?? '—'} ← ${p.endAt}`, strong: true }, { k: 'السبب', v: reason },
     ] })
-    note(p.id, p.entityName, `تغيّر تاريخ نهاية مشروعك · ${p.name}`, `ينتهي ${p.endAt} بعد تحديث الإجازات الرسمية`)
+    note(p.id, p.entityName, `تغيّر تاريخ نهاية مشروعك · ${p.name}`, `ينتهي ${p.endAt} بعد تحديث تقويم المدد`)
   }
 }
 /** Called after the holidays are saved · records one operation listing the projects it moved */
-export const rederiveEnds = (before: { date: string; name: string }[], reason: string, by: string): number => {
+export const rederiveEnds = (before: CalendarSnap, reason: string, by: string): number => {
   const ids = endsToRederive(before)
   if (ids.length) run({ op: 'rederive', id: '', ids, reason, by })
   return ids.length
@@ -598,8 +714,32 @@ export const recommend = (id: string, by: string): string[] => {
 }
 export const requestCompletion = (id: string, note: string, by: string) => run({ op: 'complete', id, note, by })
 export const resubmit = (id: string, by: string) => run({ op: 'resubmit', id, by })
-export const transferProject = (id: string, field: string, owner: string, reason: string, by: string) =>
-  run({ op: 'transfer', id, field, owner, reason, by })
+export const transferProject = (id: string, field: string, owner: string, reason: string, by: string, track?: string, goal?: string) =>
+  run({ op: 'transfer', id, field, owner, reason, by, track, goal })
+
+/** v3 · 3.4.44 · the supervisor or the grants manager edits the foundation's outputs */
+export function saveOrgOutputs(id: string, list: Output[], by: string, role: string): string[] {
+  if (role !== 'supervisor' && role !== 'grants-manager') return ['يعدّل مخرجات المؤسسة مشرف المنح أو مدير المنح']
+  const clean = list.map((o) => ({ text: o.text.trim(), indicator: o.indicator.trim(), target: o.target.trim() })).filter((o) => o.text)
+  if (!clean.length) return ['مخرج واحد على الأقل']
+  run({ op: 'outputs', id, list: clean, by })
+  return []
+}
+/** The foundation's outputs · its copy once the study started, the entity's before */
+export const orgOutputsOf = (id: string): Output[] => flowOf(id).orgOutputs ?? flowOf(id).entityOutputs ?? []
+
+/** v3 · 3.2.10 · the entity corrects its returned request before sending it again */
+export function amendRequest(id: string, values: Record<string, string>, by: string): string[] {
+  const p = row(id)
+  if (!p || p.stage !== 'استكمال بيانات المشروع') return ['الطلب ليس مُعادًا للاستكمال']
+  if (values.name !== undefined && !values.name.trim()) return ['اسم المشروع']
+  if (values.amountRequested !== undefined && !(Number(values.amountRequested) > 0)) return ['المبلغ المطلوب']
+  /* a request filed before the outputs field carries none · an empty list stays allowed for it */
+  const had = (flowOf(id).entityOutputs ?? []).length > 0
+  if (values.outputs !== undefined && had && !parseOutputs(values.outputs).some((o) => o.text.trim())) return ['مخرج واحد على الأقل']
+  run({ op: 'amend', id, values, by })
+  return []
+}
 export const returnToSupervisor = (id: string, note: string, by: string) => run({ op: 'return', id, note, by })
 /** Six random digits · the code isn't derived from anything on the page */
 const drawCode = (): string => {

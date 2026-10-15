@@ -19,6 +19,7 @@ import { countOf, df, nf, NOUN, nounAfter, pct, projectCode } from '@/lib/format
 import { days, TONE } from '@/lib/tone'
 import { IdentityBanner } from '@/components/soul'
 import { ImpactPanel } from '@/features/reports/ImpactPanel'
+import { isDone, isLive } from '@/data/status'
 
 /* The combined dashboard · the home page until 3 Oct 2026, now a category of its own in Reports
    (meeting 1 Oct, E-9) at ROUTES.overview. Switching «اليوم» back to it is still a one-line change
@@ -40,7 +41,18 @@ import { ImpactPanel } from '@/features/reports/ImpactPanel'
 /* Request totals - color is category, and only the two genuinely status-based states use status
    color. */
 const GROUP_HUE: Record<string, Hue> = {
-  'في الدراسة': 'c2', 'في التشغيل': 'c1', 'معتذر عنه': 'c6', 'متعثر': 'cl', 'مكتمل': 'c4',
+  'قيد الدراسة': 'c2', 'معتمدة · قبل التنفيذ': 'c3', 'تحت التنفيذ': 'c1', 'قيد الإغلاق': 'c5',
+  'منتهية': 'c4', 'مرفوضة أو ملغاة': 'c6', 'متعثر': 'cl',
+}
+/* v3 · the eleven statuses fold to seven families for the waffle · one hue each, never shared */
+const FAMILY_OF = (g: string): string =>
+  g === 'معتمد' || g === 'استكمال متطلبات ما قبل التنفيذ' ? 'معتمدة · قبل التنفيذ'
+    : g === 'مكتمل' || g === 'مغلق بوفر' || g === 'أعيد توجيه الدعم' ? 'منتهية'
+      : g === 'مرفوض' || g === 'ملغى' ? 'مرفوضة أو ملغاة' : g
+const families = (gs: { key: string; label: string; value: number }[]) => {
+  const m = new Map<string, number>()
+  for (const g of gs) m.set(FAMILY_OF(g.key), (m.get(FAMILY_OF(g.key)) ?? 0) + g.value)
+  return Object.keys(GROUP_HUE).map((k) => ({ key: k, label: k, value: m.get(k) ?? 0 })).filter((x) => x.value > 0)
 }
 
 const GREET = () => (new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير')
@@ -52,13 +64,13 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
   const entities = fixtures.entities
   const budget = useMemo(() => budgetForYear('2026-f'), [])
 
-  const mine = projects.filter((p) => p.owner === user.name && p.statusGroup === 'في الدراسة')
+  const mine = projects.filter((p) => p.owner === user.name && p.statusGroup === 'قيد الدراسة')
   const late = projects.filter((p) => stagePressure(p) > 1)
   const orphan = projects.filter((p) => p.owner === null)
   const shortDocs = entities.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL)
   const waiting = projects.filter(
     (p) =>
-      p.statusGroup === 'في الدراسة' &&
+      p.statusGroup === 'قيد الدراسة' &&
       (role.financialAuthority === null || p.amountRequested > role.financialAuthority),
   )
   const liveDays = projects.filter((p) => p.stageLimit > 0).map((p) => days(p.hoursInStage))
@@ -67,8 +79,8 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
     () =>
       query.projects(
         role.lens === 'own'
-          ? { owner: user.name, status: 'في الدراسة', sort: 'waiting', pageSize: 4 }
-          : { status: 'في الدراسة', sort: 'amount', pageSize: 4 },
+          ? { owner: user.name, status: 'قيد الدراسة', sort: 'waiting', pageSize: 4 }
+          : { status: 'قيد الدراسة', sort: 'amount', pageSize: 4 },
       ).rows,
     [user.name, role.lens],
   )
@@ -122,28 +134,28 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
   ]
   const usedPct = Math.round(((budget.reserved + budget.committed) / budget.allocated) * 100)
   const doneBeneficiaries = projects
-    .filter((p) => p.statusGroup === 'مكتمل')
+    .filter((p) => isDone(p.statusGroup))
     .reduce((s, p) => s + p.beneficiaries, 0)
 
   /* -- Indicators, by role -- */
   const kpis =
     role.lens === 'own'
       ? [
-          { k: 'ينتظر قرارك', v: String(mine.length), note: `${mine.filter((p) => stagePressure(p) > 1).length} فوق الحدّ`, to: `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`},
+          { k: 'ينتظر قرارك', v: String(mine.length), note: `${mine.filter((p) => stagePressure(p) > 1).length} فوق الحدّ`, to: `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=قيد الدراسة`},
           { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`},
           { k: 'تجاوز الحدّ', v: String(late.length), note: 'في النظام كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`},
           { k: 'بلا مالك', v: String(orphan.length), note: 'تحتاج إلى إسناد', to: `${ROUTES.projects}?unowned=1`},
         ]
       : role.lens === 'team'
         ? [
-            { k: 'ينتظر اعتمادك', v: String(waiting.length), note: 'فوق الحد المالي للمشرف', to: `${ROUTES.projects}?status=في الدراسة&sort=amount`},
+            { k: 'ينتظر اعتمادك', v: String(waiting.length), note: 'فوق الحد المالي للمشرف', to: `${ROUTES.projects}?status=قيد الدراسة&sort=amount`},
             { k: 'وسيط المكوث', v: String(median(liveDays)), note: 'يومًا في القسم', to: `${ROUTES.projects}?sort=waiting`},
             { k: 'تجاوز الحدّ', v: String(late.length), note: 'في النظام كله', to: `${ROUTES.projects}?overdue=1&sort=waiting`},
             { k: 'بلا مالك', v: String(orphan.length), note: 'تحتاج إلى إسناد', to: `${ROUTES.projects}?unowned=1`},
           ]
         : [
             { k: 'الملتزم به', v: `${(budget.committed / 1_000_000).toFixed(1)} م`, note: `${pct(usedPct)} من المخصص`, to: ROUTES.budget},
-            { k: 'تحت التشغيل', v: String(groups.find((g) => g.key === 'في التشغيل')?.value ?? 0), note: 'مشروعًا جاريًا', to: `${ROUTES.projects}?status=في التشغيل`},
+            { k: 'المشاريع الجارية', v: String(groups.filter((g) => isLive(g.key)).reduce((a, g) => a + g.value, 0)), note: 'معتمدة حتى الإغلاق', to: `${ROUTES.projects}?status=تحت التنفيذ`},
             { k: 'المستفيدون', v: nf.format(doneBeneficiaries), note: 'من المشاريع المكتملة', to: `${ROUTES.projects}?status=مكتمل`},
             { k: 'جهات ملفها ناقص', v: String(shortDocs.length), note: 'تتوقف عندها الاتفاقيات', to: `${ROUTES.entities}?docs=1`},
           ]
@@ -333,14 +345,14 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
             <Glass className="hx-card">
               <Head title="حصيلة الطلبات" meta={<span className="sub">{projects.length} {nounAfter(projects.length, NOUN.request)}</span>} />
               <Waffle
-                parts={groups.map((g) => ({ ...g, hue: GROUP_HUE[g.key] ?? 'c6' }))}
+                parts={families(groups).map((g) => ({ ...g, hue: GROUP_HUE[g.key] ?? 'c6' }))}
               />
             </Glass>
 
             <Glass className="hx-card">
               <Head
                 title="مبررات الاعتذار"
-                meta={<Link className="lnk" to={`${ROUTES.projects}?status=معتذر عنه`}>الكل</Link>}
+                meta={<Link className="lnk" to={`${ROUTES.projects}?status=مرفوض`}>الكل</Link>}
               />
               {reasons.length ? (
                 <Pareto rows={reasons} />
@@ -397,8 +409,8 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
                       className="lnk"
                       to={
                         role.lens === 'own'
-                          ? `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=في الدراسة`
-                          : `${ROUTES.projects}?status=في الدراسة&sort=amount`
+                          ? `${ROUTES.projects}?owner=${encodeURIComponent(user.name)}&status=قيد الدراسة`
+                          : `${ROUTES.projects}?status=قيد الدراسة&sort=amount`
                       }
                     >
                       الكل

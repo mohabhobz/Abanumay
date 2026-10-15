@@ -50,15 +50,15 @@ import type { PaymentDetail } from '@/data/mock/detail'
 import { EditableCard } from '@/features/shared/EditableCard'
 import { HOLDER_LABEL, authorityFor, holderOf } from '@/data/holders'
 import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, useApprovals } from '@/data/approvals/store'
-import {
-  flowEvents, flowOf, recommend, requestCompletion, saveStudy, useFlow,
-} from '@/data/intake/flow'
+import { flowEvents, flowOf, recommend, requestCompletion, saveStudy, useFlow, orgOutputsOf, outputLine } from '@/data/intake/flow'
 import { RecommendationCard, RequestCloseCard, RequestDocsCard, RequestMetaCard } from './tabs/RequestCards'
 import { StudyAside, StudyTab } from './tabs'
 import { ApprovalTab, OfficialNotes } from './tabs/ApprovalTab'
 import { TransferModal } from './TransferModal'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import type { DecisionAction } from '@/types/domain'
+import { isDropped, isLive, statusLine } from '@/data/status'
+import { OTHER } from '@/data/intake/reasons'
 
 /** Number of days the current process has been open - from the action log. */
 const OPEN_DAYS = 87
@@ -73,11 +73,20 @@ const OPEN_DAYS = 87
 /** The request's own content and the plan's phases · empty keys fall back to the fixture */
 function ownContent(id: string): Partial<typeof fixtures.project> {
   const f = flowOf(id)
-  const sent = f.versions.find((v) => v.values)?.values
+  /* v3 · 3.2.10 · the latest version the entity sent, and its correction since */
+  const sent = { ...([...f.versions].reverse().find((v) => v.values)?.values ?? {}), ...(f.amended ?? {}) } as Record<string, string> | undefined
   const plan = planOfProject(id)
   const out: Partial<typeof fixtures.project> = {}
   if (sent?.summary) out.idea = sent.summary
+  /* A request filed in the system carries its own goal · the fixture's text is a seeded project's */
+  const row = projectById(id)
+  if (f.versions.some((v) => v.values) && row) out.mainGoal = `${row.goal} · ضمن مجال ${row.field} (${row.track})`
   if (f.objectives.length) { out.goals = f.objectives; out.outputs = f.objectives }
+  /* v3 · 0.def.14 · 0.def.15 · the foundation's outputs, and the entity's as sent beside them */
+  const org = orgOutputsOf(id)
+  if (org.length) out.outputs = org.map(outputLine)
+  if (f.entityOutputs?.length) out.entityOutputs = f.entityOutputs.map(outputLine)
+  if (f.original && row && (f.original.field !== row.field || f.original.goal !== row.goal || f.original.track !== row.track)) out.originalChoice = `${f.original.track} · ${f.original.field} · ${f.original.goal}`
   if (plan?.phases.length) {
     out.phases = plan.phases.map((ph, i) => ({
       name: ph.name, tasks: ph.activities.map((a) => a.name).join('، ') || '—', months: `${ph.from} – ${ph.to}`,
@@ -123,9 +132,18 @@ export default function ProjectPage() {
         durationDays: row.durationDays,
         /* The requested start date from the application form. The fixture used to return the same
            day for every project, so every screen read the same date. */
-        startDate: addDays(row.submittedAt, 30),
+        /* v3 · 3.4.14 · the expected start the request carries, apart from its date · the seeded rows
+           without one keep the sample offset */
+        startDate: row.startAt ?? addDays(row.submittedAt, 30),
+        endDate: row.endAt,
         /* 5.2.10 · returned by the executive director, the project reads its own state */
-        status: { label: appFlowOf(row.id).awaitingReview && row.holder === 'manager' ? 'بانتظار استكمال المراجعة' : row.stage, tone: groupTone(row.statusGroup) },
+        /* v3 · 0.status.2 · 3.4.19 · the main status and, for the institution, the level it stands at ·
+           the entity reads the main status alone */
+        status: {
+          label: new URLSearchParams(window.location.search).get('as') === 'entity' ? row.statusGroup
+            : appFlowOf(row.id).awaitingReview && row.holder === 'manager' ? `${row.statusGroup} · بانتظار استكمال المراجعة` : statusLine(row),
+          tone: groupTone(row.statusGroup),
+        },
         /* Batch 7 · approvals#8 · the project's own idea, objectives and phases where it has them ·
            the request as sent, and the approved plan · the fixture stays the fallback for a seeded row */
         ...ownContent(row.id),
@@ -178,7 +196,9 @@ export default function ProjectPage() {
     if (a.label === 'توصية بالموافقة' || a.label === 'توصية بالرفض' || a.label === 'أعد الإرسال لمدير المنح') {
       const want = a.label === 'توصية بالرفض' ? 'reject' : a.label === 'توصية بالموافقة' ? 'approve' : flowOf(row.id).study?.recommendation || 'approve'
       const s = flowOf(row.id).study
-      if (s && s.recommendation !== want) saveStudy(row.id, { ...s, recommendation: want, by: me.name })
+      /* v3 · 3.4.25 · the note written with «توصية بالرفض» is kept · as «أخرى» when no reason was picked */
+      const reason = want === 'reject' && s && !s.rejectReason && note.trim() ? { rejectReason: OTHER, rejectOther: note.trim() } : {}
+      if (s && (s.recommendation !== want || Object.keys(reason).length)) saveStudy(row.id, { ...s, recommendation: want, ...reason, by: me.name })
       return recommend(row.id, me.name)
     }
     if (a.label === 'طلب استكمال') { requestCompletion(row.id, note, me.name); return }
@@ -190,7 +210,7 @@ export default function ProjectPage() {
   const editState = holder
     ? holder === 'supervisor' ? 'دراسة المشروع' : holder
     : row?.stage === 'استكمال بيانات المشروع' ? row.stage
-      : row?.statusGroup === 'في التشغيل' ? 'running' : 'done'
+      : row && isLive(row.statusGroup) ? 'running' : 'done'
 
   /* The display code is the one the list shows (`PRJ-YYYY-NNNNN`), so a number copied from the
      list matches the project page everywhere. The raw id stays the URL key. */
@@ -298,7 +318,7 @@ export default function ProjectPage() {
      passed to the button so it appears in the `title` instead of a disabled button with no
      explanation. */
   usePlans()
-  const planApproved = Boolean(row && row.amountGranted > 0 && !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(row.stage) && row.statusGroup !== 'معتذر عنه')
+  const planApproved = Boolean(row && row.amountGranted > 0 && !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(row.stage) && !isDropped(row.statusGroup))
   const planDecision = row ? planDecisionOf(row.id) : undefined
   const planBlock = !planApproved ? 'يُفتح بعد الاعتماد النهائي للمشروع'
     : planDecision && !planDecision.needs ? 'قرار مدير المنح: لا يتطلب خطة · يُعدَّل القرار أولًا'
@@ -336,10 +356,14 @@ export default function ProjectPage() {
   )
 
   const analysis = useMemo(
-    () => [
+    () => asEntity && row ? [
+      /* v3 · 3.4.19 · the entity reads its request's main status · the internal stage, its seat and
+         its time there stay the institution's */
+      { id: 'ent-status', kind: 'note' as const, label: 'حالة طلبك', text: `«${row.statusGroup}»${row.stage === 'استكمال بيانات المشروع' ? ' · مطلوب منك استكمال الطلب وإعادة إرساله من بوابتك' : ''}` },
+    ] : [
       ...(row ? readJourney(row, journeys.get(row.id)) : []),
       /* Cross · the readings of the reviewer's seat and of a project through Ehsan */
-      ...(row && row.statusGroup === 'في الدراسة' && !asEntity ? projectAi(row) : []),
+      ...(row && row.statusGroup === 'قيد الدراسة' && !asEntity ? projectAi(row) : []),
       ...(row && row.platform === 'منصة إحسان' && !asEntity ? ehsanAi(row) : []),
       ...readInsights(fixtures.insights),
     ],
@@ -412,8 +436,8 @@ export default function ProjectPage() {
             <div className="col">
               {active === 'data' && row && !asEntity && <RecommendationCard row={row} />}
               {/* BPD-011 · the routing decision under study, and an Ehsan project's own management after it */}
-              {active === 'data' && row && !asEntity && (row.statusGroup === 'في الدراسة' || row.platform) && <RoutingCard row={row} />}
-              {active === 'data' && row && !asEntity && row.platform && row.statusGroup !== 'في الدراسة' && <EhsanCard row={row} />}
+              {active === 'data' && row && !asEntity && (row.statusGroup === 'قيد الدراسة' || row.platform || (row.statusGroup === 'معتمد' && flowOf(row.id).study?.classification === 'محفظة')) && <RoutingCard row={row} />}
+              {active === 'data' && row && !asEntity && row.platform && row.statusGroup !== 'قيد الدراسة' && <EhsanCard row={row} />}
               {/* 12.2.2 · the plan decision is part of the project's data */}
               {active === 'data' && row && !asEntity && planApproved && <PlanDecisionCard projectId={row.id} approved={planApproved} />}
               {active === 'approval' && row && <ApprovalTab row={row} />}
@@ -438,7 +462,7 @@ export default function ProjectPage() {
                   type={row?.partnerType === 'مستقل' ? `مشروع مستقل${row.platform ? ` · ${row.platform}` : ''}` : type}
                   entityName={entity.name}
                   entityId={String(entity.id)}
-                  entityAction={row ? <RelinkEntityButton projectId={row.id} entityId={row.entityId} projectName={row.name} /> : undefined}
+                  entityAction={row && !asEntity ? <RelinkEntityButton projectId={row.id} entityId={row.entityId} projectName={row.name} /> : undefined}
                   entityHistory={row && relinksOf(row.id).length ? <RelinkHistory projectId={row.id} /> : undefined}
                   /* The latest action, not the latest event: updates share the same timeline, with
                      the row labeled "latest action" above it. */
@@ -455,7 +479,7 @@ export default function ProjectPage() {
                 <>
                   <RequestMetaCard row={row} me={me.name} canReschedule={!asEntity && !closed && ((role.key === 'supervisor' && row.owner === me.name) || role.key === 'grants-manager')} />
                   <RequestDocsCard row={row} me={me.name} asEntity={asEntity} canUpload={!closed && (asEntity ? waiting : true)} />
-                  {!asEntity && (row.statusGroup === 'في الدراسة' || closed) ? <RequestCloseCard row={row} me={me.name} /> : null}
+                  {!asEntity && (row.statusGroup === 'قيد الدراسة' || closed) ? <RequestCloseCard row={row} me={me.name} /> : null}
                 </>
               )}
               {active === 'entity' && <EntityTab entity={entity} bank={project.bank} />}
@@ -544,7 +568,8 @@ export default function ProjectPage() {
                 />
               )}
               {/* What can change at this stage · in the main column, the end column is the assistant's alone */}
-              <EditableCard module="project" state={editState} label={holder ? HOLDER_LABEL[holder] : row?.stage} />
+              {/* v3 · 3.4.19 · the entity reads the main status alone · the seat and the internal stage are the institution's */}
+              <EditableCard module="project" state={editState} label={asEntity ? row?.statusGroup : holder ? HOLDER_LABEL[holder] : row?.stage} />
             </div>
 
             {/* === Side column - one sticky card ===
@@ -569,7 +594,7 @@ export default function ProjectPage() {
           compact={mobile}
           atEnd={atEnd}
           /* The grants manager links the project to a budget line as part of the decision. */
-          hold={waiting ? 'بانتظار استكمال الجهة · الدراسة متوقفة حتى تعيد إرسال الطلب' : closed ? (flow?.closed?.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف') : seat && (!seat.mine || seat.actions.length === 0) ? seat.say : undefined}
+          hold={asEntity ? (waiting ? 'مطلوب منك استكمال الطلب وإعادة إرساله من بوابتك' : undefined) : waiting ? 'بانتظار استكمال الجهة · الدراسة متوقفة حتى تعيد إرسال الطلب' : closed ? (flow?.closed?.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف') : seat && (!seat.mine || seat.actions.length === 0) ? seat.say : undefined}
           onDecide={decide}
           intercept={intercept}
           context={holder === 'supervisor' && seat?.mine && flow?.study ? (

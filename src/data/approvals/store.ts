@@ -11,7 +11,7 @@ import { ACTS_FOR, HOLDER_LABEL, nextOf, type Holder } from '@/data/holders'
 import type { RoleKey } from '@/data/roles'
 import { TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
 import { dayOf, stampNow, timeOf } from '@/data/clock'
-import { flowOf, intakeLog, referConsultant } from '@/data/intake/flow'
+import { flowOf, intakeLog, referConsultant, setOwnHold } from '@/data/intake/flow'
 import { nextSeq, replayTogether, type Stamped } from '@/data/opclock'
 import { expiredMandatory } from '@/data/entities/store'
 import { hasFunding, linkOf, unlinkProject, usableLines, directionById, docOf, fundingIssues, finalizeHold } from '@/data/budget/store'
@@ -19,6 +19,7 @@ import { nf } from '@/lib/format'
 import { setConditionGate } from '@/data/mock/agreementNew'
 import { ROUTES } from '@/app/routes'
 import { APPROVAL_RULES } from './rules'
+import { reasonSay } from '@/data/intake/reasons'
 
 /* The approval path (BPD-004 – BPD-007) · the actions above the supervisor's recommendation.
 
@@ -146,6 +147,9 @@ const event = (id: string, e: { action: string; by: string; fields?: LogField[];
 const notify = (to: string[], projectId: string, title: string, context: string, href = ROUTES.projectTab(projectId, 'approval')) => {
   for (const t of to) APPROVAL_NOTES.unshift({ id: `apn-${APPROVAL_NOTES.length + 1}`, to: t, title, context, at: opDay(), href })
 }
+
+/* v3 · 3.2.22 · the supervisor's balance check counts back what the project already holds */
+setOwnHold((id) => linkOf(id)?.amount ?? 0)
 
 /* Registered by the plans store · a registry, so the approvals store doesn't import it */
 let confirmHook: ((projectId: string, by: string) => void) | null = null
@@ -371,18 +375,53 @@ export function useApprovals(): number {
 
 const now = () => new Date().toISOString()
 
-/** Final approval at a level · the path is complete, the hold is final, the supervisor confirms */
-const finalise = (p: ProjectRow, f: AppFlow, level: Level, by: string) => {
+/** Final approval at a level · the path is complete and the hold is final · v3 · 0.status.3 · the
+    project reads «معتمد» the moment the decision is recorded · the supervisor's confirmation step v2
+    had is gone (5.2.16 · 6.2.11 · 7.2.8) · the conditions go to the agreement, which checks them */
+const finalise = (p: ProjectRow, f: AppFlow, level: Level, by: string, fields: LogField[]) => {
   f.decided = { level, at: opDay(), by }
   f.hold = 'final'
-  p.holder = 'confirm'
-  p.hoursInStage = 0
-  notify([p.owner ?? 'مشرف المنح'], p.id, `اكتمل اعتماد ${p.name}`, `${HOLDER_LABEL[level]} · تحقّق من الشروط وأكّد`)
+  activate(p, by, fields)
+}
+
+/** The approved project moves on · to its agreement, or straight to execution for an independent
+    project through Ehsan (11.2.17) */
+const activate = (p: ProjectRow, by: string, fields: LogField[]) => {
+  p.supportStatus = 'معتمد'
+  if (p.amountGranted === 0) p.amountGranted = p.amountRequested
+  p.decidedAt = opDay()
+  p.holder = undefined
+  if (p.platform === 'منصة إحسان' && p.partnerType === 'مستقل') {
+    moveTo(p, 'المشرف إذن الصرف')
+    fields.push({ k: 'الحالة', v: 'معتمد · إلى التنفيذ عبر منصة إحسان · بلا اتفاقية', strong: true })
+    notify([p.entityName, 'مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, 'إلى التنفيذ عبر منصة إحسان', ROUTES.project(p.id))
+    confirmHook?.(p.id, by)
+    notify([p.owner ?? 'مشرف المنح', 'مشرف المنح'], p.id, `أعدّ خطة المشروع وجدول دفعاته · ${p.name}`, 'معفى من الاتفاقية · يُنفَّذ عبر منصة إحسان', ROUTES.project(p.id))
+    return
+  }
+  /* v3 · 3.2.17 · classified a portfolio in the study · the portfolio path opens now, after the approval */
+  if (flowOf(p.id).study?.classification === 'محفظة') {
+    moveTo(p, 'اعتماد الإتفاقية')
+    fields.push({ k: 'الحالة', v: 'معتمد · مصنَّف محفظة · يُفعَّل مسار المحفظة', strong: true })
+    notify([p.owner ?? 'مشرف المنح', 'مشرف المنح'], p.id, `فعّل مسار المحفظة · ${p.name}`, 'اعتُمد المشروع المصنَّف محفظة · أنشئ المحفظة وفق إجراء إدارة المحافظ', ROUTES.project(p.id))
+    notify([p.entityName, 'مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, 'إلى مسار المحفظة', ROUTES.project(p.id))
+    return
+  }
+  moveTo(p, 'اعتماد الإتفاقية')
+  fields.push({ k: 'الحالة', v: 'معتمد · إلى إعداد الاتفاقية', strong: true })
+  notify([p.entityName, 'مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, 'إلى إعداد الاتفاقية', ROUTES.project(p.id))
+  /* 12.2.3 · a project that needs a plan gets its plan record opened with the agreement */
+  confirmHook?.(p.id, by)
+  /* 8.2.2 · the supervisor learns the project is ready for its agreement · and the conditions to carry */
+  notify([p.owner ?? 'مشرف المنح', 'مشرف المنح'], p.id, `مشروع جاهز لإعداد الاتفاقية · ${p.name}`, 'اكتمل الاعتماد وثبت الحجز', ROUTES.agreementNew(p.id))
 }
 
 /** A final refusal · the request closes, the hold is released, the entity reads why (4.4.18) */
 const refuse = (p: ProjectRow, f: AppFlow, stage: string, note: string, by: string) => {
   p.supportStatus = 'مرفوض'
+  /* v3 · 3.4.25 · the supervisor's reason from the list stays the project's decline reason */
+  const st = flowOf(p.id).study
+  if (!p.declineReason && st?.recommendation === 'reject' && st.rejectReason) p.declineReason = reasonSay(st.rejectReason, st.rejectOther)
   p.amountGranted = 0
   p.holder = undefined
   moveTo(p, stage)
@@ -419,16 +458,18 @@ const applyOp = (o: Op) => {
           break
         }
         case 'final-approve':
-          finalise(p, f, o.level as Level, o.by)
+          finalise(p, f, o.level as Level, o.by, fields)
           break
         case 'final-reject':
         case 'reject':
           refuse(p, f, o.level === 'committee' ? 'مرفوض - اللجنة التنفيذية' : o.level === 'board' ? 'مرفوض - مجلس الأمناء' : 'مشروع معتذر عنه', o.note, o.by)
+          /* v3 · 0.status.10 · «مرفوض» at any level · the level stays in the decision's details */
+          p.refusedBy = lvl
           fields.push({ k: 'الحجز', v: 'أُلغي وعاد المبلغ للميزانية' })
           break
         case 'approve':
-          finalise(p, f, o.level as Level, o.by)
           fields.push({ k: 'الحجز', v: 'نهائي' })
+          finalise(p, f, o.level as Level, o.by, fields)
           break
         case 'refer': {
           const to = nextOf(o.level) ?? 'board'
@@ -465,33 +506,19 @@ const applyOp = (o: Op) => {
           notify(['المدير التنفيذي'], p.id, `أعاد مدير المنح الإرسال · ${p.name}`, o.note)
           break
         case 'confirm':
-          p.supportStatus = 'معتمد'
-          if (p.amountGranted === 0) p.amountGranted = p.amountRequested
-          p.decidedAt = opDay()
-          p.holder = undefined
-          /* Re-audit 7 Oct · 11.2.17 · an independent project through Ehsan has no agreement · it goes
-             straight to execution with its plan and payment schedule */
-          if (p.platform === 'منصة إحسان' && p.partnerType === 'مستقل') {
-            moveTo(p, 'المشرف إذن الصرف')
-            fields.push({ k: 'الحالة', v: 'معتمد · إلى التنفيذ عبر منصة إحسان · بلا اتفاقية', strong: true })
-            notify([p.entityName, 'مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, 'إلى التنفيذ عبر منصة إحسان', ROUTES.project(p.id))
-            confirmHook?.(p.id, o.by)
-            notify([p.owner ?? 'مشرف المنح', 'مشرف المنح'], p.id, `أعدّ خطة المشروع وجدول دفعاته · ${p.name}`, 'معفى من الاتفاقية · يُنفَّذ عبر منصة إحسان', ROUTES.project(p.id))
-            break
-          }
-          moveTo(p, 'اعتماد الإتفاقية')
-          fields.push({ k: 'الحالة', v: 'معتمد · إلى إعداد الاتفاقية', strong: true })
-          notify([p.entityName, 'مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, 'إلى إعداد الاتفاقية', ROUTES.project(p.id))
-          /* 12.2.3 · a project that needs a plan gets its plan record opened with the agreement */
-          confirmHook?.(p.id, o.by)
-          /* 8.2.2 · the supervisor learns the project is ready for its agreement */
-          notify([p.owner ?? 'مشرف المنح', 'مشرف المنح'], p.id, `مشروع جاهز لإعداد الاتفاقية · ${p.name}`, 'اكتمل الاعتماد وثبت الحجز', ROUTES.agreementNew(p.id))
+          /* A log written while v2's confirmation step stood · the project already moved at the decision */
+          if (p.holder !== 'confirm') break
+          activate(p, o.by, fields)
           break
         case 'amend':
           /* 5.4.21 · a decision isn't deleted · it's reopened by a documented act at the deciding level */
           /* Re-audit 7 Oct · reopening the decision doesn't touch the money · the budget link stays as
              it was (final after an approval), so the approval card reads what the budget holds */
-          if (f.decided) { p.holder = f.decided.level; f.decided = undefined; f.hold = linkOf(p.id)?.stage === 'final' ? 'final' : f.hold }
+          if (f.decided) {
+            p.holder = f.decided.level; f.decided = undefined; f.hold = linkOf(p.id)?.stage === 'final' ? 'final' : f.hold
+            /* v3 · the decision moved the project on · reopening it brings it back to the level's study */
+            if (p.supportStatus === 'معتمد' && p.stage !== 'دراسة المشروع') { p.supportStatus = null; p.decidedAt = undefined; moveTo(p, 'دراسة المشروع') }
+          }
           fields.push({ k: 'الإجراء', v: 'أُعيد فتح القرار بإجراء رسمي موثّق' }, { k: 'الحجز', v: f.hold === 'final' ? 'يبقى نهائيًّا حتى القرار الجديد' : 'مبدئي' })
           break
       }
