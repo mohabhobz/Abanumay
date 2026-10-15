@@ -24,8 +24,12 @@ import {
   DEPT_SAY, OUTCOME_SAY, VERDICT_SAY, VOTE_SAY, addCondition, addMandNote, amendDecision, answerOpinion,
   appFlowOf, askOpinion, conflictOf, declareConflict, entityBlock, entityLimitBlock, entityTally, holdLine,
   levelCap, makeOfficial, meetCondition, payPlanOf, planSuggested, resolveNote, sessionsOf, strategyOf, useApprovals,
-  voteTally, type Opinion,
+  voteTally, type Opinion, finPosition, supportAmount,
 } from '@/data/approvals/store'
+import { AmountCard, FinKV } from '@/features/approvals/AmountCard'
+import { CONSULTANTS, consultantsFor } from '@/data/intake/consultants'
+import { referConsultant } from '@/data/intake/flow'
+import { FieldSelect } from '@/components/ui'
 import { reasonSay } from '@/data/intake/reasons'
 
 /* «الاعتماد» · the project's decision file on the approval path (BPD-004 – BPD-007).
@@ -61,7 +65,9 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
   const role = readRole()
   const me = meOf(role)
   const holder = holderOf(row)
-  const decider = approverFor(row.amountRequested)
+  const amount = supportAmount(row)
+  const decider = approverFor(amount)
+  const fin = finPosition(row)
   const hold = holdLine(row.id)
   const s = strategyOf(row)
   /* Batch 6 · the executive panel's targets and plan */
@@ -100,7 +106,9 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
   const [ans, setAns] = useState<Record<string, string>>({})
   const [conf, setConf] = useState('')
   const [amend, setAmend] = useState('')
-  const per = row.beneficiaries > 0 ? Math.round(row.amountRequested / row.beneficiaries) : 0
+  const per = row.beneficiaries > 0 ? Math.round(amount / row.beneficiaries) : 0
+  const [cons, setCons] = useState('')
+  const consOpts = consultantsFor(row.field)
   const m = hold?.doc && hold.node ? moneyOf(hold.doc.nodes, hold.node.id) : undefined
   const sessions = sessionsOf(row.id)
   const conflict = holder ? conflictOf(row, me) : undefined
@@ -129,6 +137,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <FundingCard row={row} />
+      <AmountCard row={row} />
 
       <Glass>
         <Head title="ملف المراجعة" meta={<span className="sub">التوصيات السابقة كما صدرت</span>} />
@@ -169,7 +178,17 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           <div className="apv-rec">
             <div className="apv-rec-h"><b>المستشار · {consultantByKey(ref.consultant)?.name}</b><span className="pc-sp" /><Tag tone={ref.opinion ? 'ok' : 'warn'}>{ref.opinion ? ref.verdict : 'بانتظار الرأي'}</Tag></div>
             {ref.opinion && <p className="sub cnote">{ref.opinion}</p>}
+            <p className="sub cnote">{/* doc 4.4.7 · 4.4.8 */}رأي استشاري غير ملزم · لا يوقف مسار الاعتماد ولا يُتخذ مسار إعادة.</p>
           </div>
+        )}
+        {/* v3 · 4.2.8 · 4.4.7 · the grants manager asks a consultant himself · the path goes on */}
+        {holder === 'manager' && role === 'grants-manager' && !(ref && !ref.opinion) && (
+          consOpts.length ? (
+            <div className="cfgrow">
+              <FieldSelect value={cons} label="مستشار مختص" options={consOpts.map((c) => ({ value: c.key, label: `${c.name} · ${c.accessDays} أيام` }))} onChange={setCons} />
+              <button type="button" className="btn btn-2 cfgadd" disabled={!cons} onClick={() => { referConsultant(row.id, cons, me); setCons('') }}>اطلب رأي المستشار</button>
+            </div>
+          ) : <p className="sub cnote">لا مستشار مرتبط بمجال «{row.field}» · يُضاف من إعدادات المستشارين ({CONSULTANTS.list.length}).</p>
         )}
         {[...f.recs].reverse().filter((r) => r.level !== 'supervisor' || !study).map((r, i) => (
           <div key={`${r.level}-${i}`} className="apv-rec">
@@ -193,18 +212,19 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       <Glass>
         <Head title="اللوحة التنفيذية" meta={<Tag tone="mute">للعرض · لا تعديل على بيانات المشروع</Tag>} />
         <KV rows={[
-          { k: 'قيمة التمويل', v: <b><Money sm>{row.amountRequested}</Money></b> },
+          { k: 'مبلغ الدعم', v: <b><Money sm>{amount}</Money></b> },
           { k: 'المستفيدون · تكلفة المستفيد', v: <><Num>{row.beneficiaries}</Num> · <Money sm>{per}</Money></> },
           { k: 'المدة', v: <><Num>{row.durationDays ?? 0}</Num> يومًا</> },
           ...(m && hold?.doc ? [
             { k: 'بند الميزانية', v: <Link className="lnk" to={`${ROUTES.budgetDoc(hold.doc.id)}?line=${hold.link.nodeId}#line-${hold.link.nodeId}`}>{hold.node?.label} · {hold.doc.name}</Link> },
-            { k: 'المتاح في البند بعد الحجز', v: <Money sm>{m.available}</Money> },
             { k: 'مصادر التمويل', v: shareSay(docSources(hold.doc)) },
           ] : [{ k: 'بند الميزانية', v: <span className="bad">لم يُربط بعد</span> }]),
           { k: 'التوافق مع التوجهات', v: <span className={s.ok ? '' : 'bad'}>{s.say}</span> },
           { k: 'حالة الجهة ووثائقها', v: eb ? <span className="bad">{eb}</span> : 'نشطة ووثائقها سارية' },
           { k: 'اعتمادات الجهة في الفترة', v: <><Num>{tally.count}</Num> مشروع · <Money sm>{tally.total}</Money>{entityLimitBlock(row, 'exec') && <span className="bad"> · {entityLimitBlock(row, 'exec')}</span>}</> },
         ]} />
+        {/* v3 · 5.4.8 · the financial card, live · holds, balances and what the decision leaves */}
+        {fin && <><h3 className="stdy-h mt-3">الموقف المالي اللحظي</h3><FinKV fin={fin} /></>}
         {/* Batch 6 · 8 Oct · the panel carries the project's expected results and its plan (5.2.2 ·
             5.2.4) · the targets the request states, the entity's record on its closed projects, the
             funding plan across the years and the payment plan a body approved */}
@@ -220,7 +240,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         <h3 className="stdy-h mt-3">الخطة</h3>
         <KV rows={[
           { k: 'الخطة المالية', v: fplan ? fplan.years.map((y) => `${yearById(y.yearId)?.name ?? y.yearId}: ${nf.format(y.amount)}`).join(' · ') : 'سنة واحدة · من بند الحجز' },
-          { k: 'آلية الدفعات', v: payPlan ? <>{<Num>{payPlan.count}</Num>} دفعات · {payPlan.note}</> : 'تُحدَّد في الاتفاقية' },
+          { k: 'توجيهات الصرف', v: payPlan?.note ? <>{payPlan.count ? <><Num>{payPlan.count}</Num> دفعات · </> : null}{payPlan.note} · <span className="sub">الجدول التفصيلي في الاتفاقية</span></> : 'جدول الدفعات يُعدّ في الاتفاقية' },
           { k: 'خطة التنفيذ', v: needsPlan === undefined ? 'يُقرَّر مع الاعتماد' : needsPlan ? 'يتطلب خطة تنفيذ · تُفتح بعد الاعتماد' : 'لا يتطلب خطة' },
         ]} />
       </Glass>

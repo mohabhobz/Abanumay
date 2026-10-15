@@ -26,6 +26,7 @@ export function ApprovalRulesTab() {
   const [cp, setCp] = useState('')
   const [ce, setCe] = useState('')
   const [cr, setCr] = useState('')
+  const [crit, setCrit] = useState('')
 
   /* Zero reads as «no limit» in the field, the rule stores `null` */
   const limit = (k: 'execEntity' | 'committeeEntity', f: keyof EntityLimit, label: string, suffix: string) => (
@@ -45,9 +46,7 @@ export function ApprovalRulesTab() {
         />
         <ul className="cfglist">
           <li className="itk-sup">
-            <span className="cfgl"><b>حد الرفض النهائي</b><span className="sub">فوقه يُرفع الرفض توصيةً للمدير التنفيذي</span></span>
-            <span className="pc-sp" />
-            <CfgNum value={d.managerRejectUpTo} label="حد الرفض النهائي" suffix="ريال" onChange={(n) => put('managerRejectUpTo', n)} />
+            <span className="cfgl"><b>الرفض النهائي</b><span className="sub">{/* v3 · 4.2.17 */}لمدير المنح على كل المشاريع أيًّا كانت قيمتها</span></span>
           </li>
           <li className="itk-sup">
             <span className="cfgl"><b>يُقترح «يتطلب خطة» من مبلغ</b><span className="sub">أو مدة تتجاوز السنة · ويختار المدير{/* doc 4.4.2 */}</span></span>
@@ -61,10 +60,25 @@ export function ApprovalRulesTab() {
         <Head title="المدير التنفيذي" meta={<span className="sub"><bdi>{/* doc 5.3.1 · 5.4.27-b · 5.4.28 */}</bdi></span>} />
         <Switch
           label="إحالة تلقائية للجنة فوق حد المدير التنفيذي"
-          note={/* doc 5.4.11 */ "عند التفعيل تذهب توصية مدير المنح بالموافقة فوق حد المدير التنفيذي إلى اللجنة مباشرة · بانتظار قرار المؤسسة"}
+          note={/* v3 · 5.2.14 */ "مفعّل افتراضيًا · توصية مدير المنح بالموافقة فوق حد المدير التنفيذي تذهب إلى اللجنة مباشرة وفق مصفوفة الصلاحيات"}
           on={Boolean(d.autoReferAboveExec)}
           onChange={(v) => put('autoReferAboveExec', v)}
         />
+        {/* v3 · 6.4.1 · within his authority the executive refers to the committee only on a criterion */}
+        <h4 className="fnd-h">معايير الإحالة للجنة ضمن صلاحيته</h4>
+        <ul className="cfglist">
+          {d.referCriteria.map((c, i) => (
+            <li key={`${c}-${i}`} className="itk-sup">
+              <span className="cfgl"><b>{c}</b></span>
+              <span className="pc-sp" />
+              <button type="button" className="iact" aria-label={`احذف المعيار ${c}`} title="احذف" onClick={() => put('referCriteria', d.referCriteria.filter((_, j) => j !== i))}><Icon name={icons.close} size="sm" /></button>
+            </li>
+          ))}
+        </ul>
+        <div className="cfgrow">
+          <span className="fld"><input value={crit} onChange={(e) => setCrit(e.target.value)} placeholder="معيار إحالة جديد" aria-label="معيار إحالة جديد" /></span>
+          <button type="button" className="btn btn-2 cfgadd" disabled={!crit.trim() || d.referCriteria.includes(crit.trim())} onClick={() => { put('referCriteria', [...d.referCriteria, crit.trim()]); setCrit('') }}>أضف المعيار</button>
+        </div>
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>نسبة التجاوز المسموحة لحده</b><span className="sub">حدّه <Num>{execCap}</Num> · بالتجاوز <Num>{Math.round(execCap * (1 + d.execOverPct / 100))}</Num></span></span>

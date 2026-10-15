@@ -37,9 +37,9 @@ export default function BudgetReportPage() {
   const sheet: Sheet = {
     file: `abanumay-budget-report-${by}`,
     title: `التقرير المجمّع للميزانيات · حسب ${GROUP_SAY[by]}`,
-    headers: [GROUP_SAY[by], 'عدد الميزانيات', 'المخصص', 'المحجوز مبدئيًا', 'المحجوز نهائيًا', 'الملتزم به', 'المصروف', 'المتبقي'],
-    rows: rows.map((r) => [r.label, String(r.parts.length), String(r.money.allocated), String(r.money.initial), String(r.money.held - r.money.initial), String(r.money.committed), String(r.money.paid), String(r.money.available)]),
-    totals: ['الإجمالي', '', String(total.allocated), String(total.initial), String(total.held - total.initial), String(total.committed), String(total.paid), String(total.available)],
+    headers: [GROUP_SAY[by], 'عدد الميزانيات', 'المخصص', 'المحجوز مبدئيًا', 'المحجوز نهائيًا', 'الملتزم به', 'المصروف', 'الرصيد المحاسبي', 'المتاح فعليًا'],
+    rows: rows.map((r) => [r.label, String(r.parts.length), String(r.money.allocated), String(r.money.initial), String(r.money.held - r.money.initial), String(r.money.committed), String(r.money.paid), String(r.money.available + r.money.initial), String(r.money.available)]),
+    totals: ['الإجمالي', '', String(total.allocated), String(total.initial), String(total.held - total.initial), String(total.committed), String(total.paid), String(total.available + total.initial), String(total.available)],
   }
 
   return (
@@ -90,7 +90,9 @@ export default function BudgetReportPage() {
                       <th className="n">المحجوز نهائيًا</th>
                       <th className="n">الملتزم به</th>
                       <th className="n">المصروف</th>
-                      <th className="n">المتبقي</th>
+                      {/* v3 · 1.4.12 · two balances · the accounting one keeps the initial holds in */}
+                      <th className="n" title="المخصص ناقصًا المعتمد النهائي · دون خصم الحجوزات المبدئية">الرصيد المحاسبي</th>
+                      <th className="n" title="بعد خصم الحجوزات المبدئية القائمة">المتاح فعليًا</th>
                       <th className="n">الاستهلاك</th>
                     </tr>
                   </thead>
@@ -110,6 +112,7 @@ export default function BudgetReportPage() {
                             <td className="n"><Money sm>{r.money.held - r.money.initial}</Money></td>
                             <td className="n"><Money sm>{r.money.committed}</Money></td>
                             <td className="n"><Money sm>{r.money.paid}</Money></td>
+                            <td className="n"><Money sm>{r.money.available + r.money.initial}</Money></td>
                             <td className="n"><Money sm>{r.money.available}</Money></td>
                             <td className="n"><span className="num">{pct(use(r.money))}</span></td>
                           </tr>
@@ -122,6 +125,7 @@ export default function BudgetReportPage() {
                               <td className="n"><Money sm>{p.money.held - p.money.initial}</Money></td>
                               <td className="n"><Money sm>{p.money.committed}</Money></td>
                               <td className="n"><Money sm>{p.money.paid}</Money></td>
+                              <td className="n"><Money sm>{p.money.available + p.money.initial}</Money></td>
                               <td className="n"><Money sm>{p.money.available}</Money></td>
                               <td className="n"><span className="num">{pct(use(p.money))}</span></td>
                             </tr>
@@ -139,6 +143,7 @@ export default function BudgetReportPage() {
                       <td className="n"><Money sm>{total.held - total.initial}</Money></td>
                       <td className="n"><Money sm>{total.committed}</Money></td>
                       <td className="n"><Money sm>{total.paid}</Money></td>
+                      <td className="n"><Money sm>{total.available + total.initial}</Money></td>
                       <td className="n"><Money sm>{total.available}</Money></td>
                       <td className="n"><span className="num">{pct(use(total))}</span></td>
                     </tr>

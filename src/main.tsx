@@ -50,6 +50,7 @@ import * as notify from '@/data/shared/notify'
 import * as exportLib from '@/lib/export'
 import * as impactMod from '@/data/impact'
 import * as cycle from '@/data/intake/cycle'
+import * as relocStore from '@/data/budget/relocate'
 import { APPROVAL_RULES as apprRules } from '@/data/approvals/rules'
 import '@/styles/index.css'
 
@@ -60,7 +61,7 @@ try {
     const w = window as unknown as Record<string, unknown>
     w.__abOwner = ownerOfPath
     /* Reading the stores from a test · the figures behind a screen, not a way to change them */
-    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore, auth: authStore, ai: aiShared, apprRules, decisions, priority, recon, legacy, textCheck, sheet, guard, aiProvider, notify, exportLib, impactMod, cycle }
+    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore, auth: authStore, ai: aiShared, apprRules, decisions, priority, recon, legacy, textCheck, sheet, guard, aiProvider, notify, exportLib, impactMod, cycle, reloc: relocStore }
   }
   /* The drawn audits (tools/) visit entity views too · each load takes the session its URL needs:
      the record's own entity for an entity view or a portal, staff otherwise */

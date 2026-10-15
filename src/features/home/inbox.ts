@@ -36,7 +36,8 @@ import { projectCode } from '@/lib/format'
 import { rowCode, rowHref, isPortfolio } from '@/features/projects/list/columns'
 import type { RoleKey } from '@/data/roles'
 import { EHSAN_PAYS, PORTFOLIOS } from '@/data/partners/store'
-import { SESSIONS } from '@/data/approvals/store'
+import { SESSIONS, appFlowOf } from '@/data/approvals/store'
+import { RELOC_SAY, movingOf, relocationsWaiting } from '@/data/budget/relocate'
 import { escItems } from '@/data/shared/escalation'
 import type { ProjectRow } from '@/types/domain'
 
@@ -248,6 +249,19 @@ const budgets = (role: RoleKey): InboxQueue => {
   }
 }
 
+/* v3 · 1.3b · relocation requests at this role's step · 6.4.3 · bodies' decisions waiting for their cover */
+const relocations = (role: RoleKey): InboxQueue => ({
+  key: 'relocations', label: 'طلبات إعادة التسكين', note: role === 'ceo' ? 'تنتظر اعتمادك · تُنفَّذ تلقائيًا عند الاعتماد' : 'أُعيدت إليك للتعديل', icon: 'budget', all: ROUTES.budgetOps,
+  items: relocationsWaiting(role).map((r) => ({
+    id: r.id, code: r.id, title: r.projectName, sub: RELOC_SAY[r.state], amount: movingOf(r.from, r.scope),
+    days: 0, late: false, limit: 0, region: regionOf(r.projectId), to: ROUTES.projectTab(r.projectId, 'approval'),
+  })),
+})
+const uncovered = (): InboxQueue => ({
+  key: 'uncovered', label: 'قرارات بانتظار التغطية المالية', note: 'صدر القرار ولم ينفذ ماليًا · يُعالج الرصيد بمناقلة أو تعزيز ثم ينفّذه المدير التنفيذي أو مدير المنح', icon: 'budget', all: `${ROUTES.projects}?status=قيد الدراسة`,
+  items: fixtures.projects.filter((p) => { const c = appFlowOf(p.id).coverage; return c && !c.done }).map((p) => ({ ...fromProject(p), to: ROUTES.projectTab(p.id, 'approval') })),
+})
+
 /* ── Per role, in the client's order ── */
 
 export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
@@ -286,6 +300,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       closingsAt('evals', ['evalManager']),
       transfers('manager'),
       budgets(role),
+      uncovered(),
     ]
   }
 
@@ -295,6 +310,8 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     return [
       paymentsAt('finance'),
       budgets(role),
+      relocations(role),
+      uncovered(),
       {
         key: 'ehsan', label: 'دفعات منصة إحسان', note: 'راجع مستنداتها وأكّد حالتها', icon: 'pay', all: ROUTES.partnersTab('finance'),
         items: EHSAN_PAYS.filter((x) => x.state === 'review').map((x) => ({
@@ -351,6 +368,8 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     closingsAt('evals', ['evalExecutive']),
     budgets(role),
     transfers('executive'),
+    relocations(role),
+    uncovered(),
   ]
 }
 

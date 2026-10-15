@@ -38,6 +38,8 @@ export const ROUTES = {
   partnersTab: (tab: string) => `/partners?tab=${tab}`,
   project: (id: string) => `/projects/${id}`,
   projectTab: (id: string, tab: string) => `/projects/${id}/${tab}`,
+  /** v3 · 5.2.3 · 6.2.2 · 7.2.3 · a level's presentation file, printable to PDF */
+  projectBrief: (id: string, brief: string) => `/projects/${id}/brief/${brief}`,
 
   /**
    * Settings inventory.

@@ -462,7 +462,9 @@ type Op = { at: string } & (
   | { op: 'docDecide'; id: string; outcome: 'approve' | 'return'; note: string; by: string; who?: Who; v?: number }
   | { op: 'lineStatus'; docId: string; nodeId: string; active: boolean; reason: string; by: string }
   | { op: 'lineOwner'; docId: string; nodeId: string; owners: string[]; by: string }
-  | { op: 'link'; link: LinkInput; stage?: HoldStage; reason?: string }
+  | { op: 'link'; link: LinkInput; stage?: HoldStage; reason?: string; keepPaid?: boolean; ref?: string }
+  | { op: 'holdInitial'; projectId: string; by: string }
+  | { op: 'holdPlan'; projectId: string; by: string; reason: string }
   | { op: 'unlink'; projectId: string; by: string; reason?: string }
   | { op: 'holdFinal'; projectId: string; by: string }
   | { op: 'linkPaid'; projectId: string; amount: number; ref: string; by: string }
@@ -855,8 +857,35 @@ const apply = (o: Op) => {
       if (!shares.length || linkIssues(o.link).length) return
       const id = o.link.projectId
       const prev = LINKS.get(id)
-      const stage: HoldStage = prev?.stage === 'final' ? 'final' : o.stage ?? 'initial'
+      /* v3 · a redistribution keeps the hold where it stands · an initial hold isn't released because
+         the link was redrawn at a seat that links without holding (1.4.30) */
+      const stage: HoldStage = prev?.stage === 'final' ? 'final' : prev?.stage === 'initial' ? 'initial' : o.stage ?? 'initial'
       const paidBefore = prev ? prev.shares.reduce((a, x) => a + x.paid, 0) : 0
+      /* v3 · 1.3b.3 · a relocation of the unpaid money only · what was paid stays on its old lines, as
+         shares of their paid amount, and the rest moves to the new ones */
+      if (o.keepPaid && prev && prev.stage !== 'planned' && prev.stage !== 'closed') {
+        const kept: LinkShare[] = prev.shares.filter((x) => x.paid > 0).map((x) => ({ ...x, amount: x.paid }))
+        for (const x of prev.shares) {
+          const pd = docOf(x.docId)
+          if (pd && x.amount - x.paid > 0) hold(pd, x.nodeId, -(x.amount - x.paid), o.at, o.link.by, 'release', id, 'إعادة تسكين · المبالغ غير المصروفة')
+        }
+        const moved: LinkShare[] = shares.map((x) => ({ docId: x.docId, nodeId: x.nodeId, amount: x.amount, paid: 0 }))
+        for (const x of moved) hold(docOf(x.docId)!, x.nodeId, x.amount, o.at, o.link.by, 'hold', id, `${o.link.projectName} · إعادة تسكين`)
+        /* The same line on both sides · one share, its paid part and the moved part together */
+        const all: LinkShare[] = []
+        /* The moved shares first · a later resize lands on the line that now funds the project */
+        for (const x of [...moved, ...kept]) {
+          const same = all.find((y) => y.docId === x.docId && y.nodeId === x.nodeId)
+          if (same) { same.amount += x.amount; same.paid += x.paid } else all.push({ ...x })
+        }
+        const amount = all.reduce((a, x) => a + x.amount, 0)
+        LINKS.set(id, { ...prev, shares: all, amount, by: o.link.by, at: o.at, docId: all[0].docId, nodeId: all[0].nodeId })
+        logLink(id, {
+          at: o.at, by: o.link.by, kind: 'relink', reason: o.reason, from: prev.shares.map((x) => ({ ...x })), to: all.map((x) => ({ ...x })), amount,
+          text: `أُعيد تسكين المبالغ غير المصروفة (${nf.format(moved.reduce((a, x) => a + x.amount, 0))}) · بقي المصروف (${nf.format(paidBefore)}) على بنوده${o.ref ? ` · ${o.ref}` : ''}`,
+        })
+        return
+      }
       /* The old shares leave whole · their hold is released and what was paid on them moves with
          the project to the new lines (1.4.56 · 1.4.57) */
       if (prev && prev.stage !== 'planned') {
@@ -924,6 +953,27 @@ const apply = (o: Op) => {
         at: o.at, by: o.by, kind: 'release', reason: o.reason, from: prev.shares.map((x) => ({ ...x })), amount: back,
         text: back ? `حُرّر الحجز وأُعيد ${nf.format(back)} إلى ${prev.shares.length > 1 ? 'بنوده بنفس التوزيع' : 'بنده'}` : 'أُلغي الربط',
       })
+      return
+    }
+    case 'holdInitial': {
+      /* v3 · 1.4.30 · 4.2.14 · 4.4.13 · the grants manager's recommendation to approve holds the money ·
+         the link drawn at his seat was checked, not held · all shares or none */
+      const l = LINKS.get(o.projectId)
+      if (!l || l.stage !== 'planned') return
+      if (l.shares.some((x) => { const d = docOf(x.docId); return !d || freeOf(d, x.nodeId) < x.amount })) return
+      for (const x of l.shares) hold(docOf(x.docId)!, x.nodeId, x.amount, o.at, o.by, 'hold', l.projectId, `${l.projectName} · حجز مبدئي عند التوصية`)
+      l.stage = 'initial'
+      logLink(l.projectId, { at: o.at, by: o.by, kind: 'link', amount: l.amount, text: `حُجز المبلغ مبدئيًّا (${nf.format(l.amount)}) عند توصية مدير المنح بالموافقة` })
+      return
+    }
+    case 'holdPlan': {
+      /* v3 · a recommendation to refuse, or a return with the hold released · the link stays drawn
+         and the money goes back to the line until a recommendation to approve holds it again */
+      const l = LINKS.get(o.projectId)
+      if (!l || l.stage !== 'initial') return
+      for (const x of l.shares) { const d = docOf(x.docId); if (d) hold(d, x.nodeId, -(x.amount - x.paid), o.at, o.by, 'release', l.projectId, o.reason) }
+      l.stage = 'planned'
+      logLink(l.projectId, { at: o.at, by: o.by, kind: 'release', reason: o.reason, amount: l.amount, text: `حُرّر الحجز المبدئي (${nf.format(l.amount)}) وبقي التوزيع مرسومًا بلا حجز` })
       return
     }
     case 'holdFinal': {
@@ -1392,9 +1442,40 @@ export const linkProject = (link: LinkInput, reason?: string): string[] => {
   const prev = LINKS.get(link.projectId)
   if (prev?.stage === 'final' && !reason?.trim()) return [/* doc 1.4.58 */ 'سبب تعديل الارتباط بعد الاعتماد إلزامي']
   if (prev?.stage === 'closed') return ['المشروع مغلق · لا يُعدَّل ارتباطه']
-  run({ op: 'link', link, stage: BUDGET_RULES.holdAt === 'approval' ? 'planned' : 'initial', reason: reason?.trim() || undefined, at: now() })
+  run({ op: 'link', link, stage: BUDGET_RULES.holdAt === 'approval' || atManagerSeat(link.projectId) ? 'planned' : 'initial', reason: reason?.trim() || undefined, at: now() })
   return []
 }
+/** v3 · 1.4.30 · the grants manager links while he studies · the money is held when he recommends,
+    not when he picks the line */
+const atManagerSeat = (projectId: string): boolean => {
+  const p = projectRows.find((x) => x.id === projectId)
+  return Boolean(p && p.stage === 'دراسة المشروع' && p.holder === 'manager')
+}
+/** v3 · 1.4.30 · 4.2.14 · hold the drawn link at the recommendation · the reasons it can't, with the
+    shortfall per line · empty = held (or nothing to hold) */
+export function holdAtRecommendation(projectId: string, by: string): string[] {
+  const l = LINKS.get(projectId)
+  if (!l || l.stage !== 'planned' || BUDGET_RULES.holdAt === 'approval') return []
+  const out: string[] = []
+  for (const x of l.shares) {
+    const d = docOf(x.docId)
+    const n = d ? nodeOf(d, x.nodeId) : undefined
+    if (!d || !n) { out.push('بند الارتباط لم يعد موجودًا'); continue }
+    const free = freeOf(d, x.nodeId)
+    if (free < x.amount) out.push(`الرصيد غير كافٍ في «${n.label}» (${docTitle(d)}) · المتاح ${nf.format(Math.max(0, free))} والمطلوب ${nf.format(x.amount)} · العجز ${nf.format(x.amount - Math.max(0, free))}`)
+  }
+  if (out.length) return out
+  run({ op: 'holdInitial', projectId, by, at: now() })
+  return []
+}
+/** Release the initial hold and keep the drawn link (a recommendation to refuse, a return that lets
+    the money go) */
+export const releaseToPlanned = (projectId: string, by: string, reason: string) => {
+  if (LINKS.get(projectId)?.stage === 'initial') run({ op: 'holdPlan', projectId, by, reason, at: now() })
+}
+/** v3 · 1.3b · a relocation approved · executes the new link · `keepPaid` moves the unpaid money only */
+export const relocateLink = (link: LinkInput, reason: string, keepPaid: boolean, ref: string) =>
+  run({ op: 'link', link, reason, keepPaid, ref, at: now() })
 /** The fixture's holds · applied before the saved operations replay, and not saved themselves */
 export function seedLink(link: LinkInput): void {
   if (!LINKS.has(link.projectId)) apply({ op: 'link', link, stage: 'initial', at: SEED_AT })
@@ -1560,7 +1641,7 @@ export function fundingIssues(projectId: string, need: number): string[] {
     for (const a of upChain(d, n.id)) {
       if (moneyOf(d.nodes, a.id).available < 0) { out.push(`«${a.label}» تجاوز مخصصه · راجع المصادر قبل الاعتماد`); break }
     }
-    if (l.stage === 'planned' && freeOf(d, n.id) < x.amount) out.push(`«${n.label}» لم يعد يكفي للحجز عند الاعتماد`)
+    if (l.stage === 'planned' && freeOf(d, n.id) < x.amount) out.push(`الرصيد غير كافٍ في «${n.label}» للحجز · المتاح ${nf.format(Math.max(0, freeOf(d, n.id)))} والمطلوب ${nf.format(x.amount)} · العجز ${nf.format(x.amount - Math.max(0, freeOf(d, n.id)))}`)
     out.push(...sourceIssues(d, n.id))
   }
   return [...new Set(out)]
@@ -1600,6 +1681,15 @@ export function holdSplit(d: BudgetDoc, nodeId: string): { initial: number; fina
   }
   const m = moneyOf(d.nodes, nodeId)
   return { initial, final: Math.max(0, m.held - initial), committed: m.committed }
+}
+
+/** v3 · 0.def.9 – 0.def.13 · a line's two balances · the final approved (final holds, future-year
+    commitments and what was paid), the accounting balance (the allocation less that, the initial
+    holds left in) and the available one (the initial holds out too · what any decision uses) */
+export function lineBalances(d: BudgetDoc, nodeId: string): { allocated: number; finalApproved: number; initial: number; accounting: number; available: number } {
+  const m = moneyOf(d.nodes, nodeId)
+  const sp = holdSplit(d, nodeId)
+  return { allocated: m.allocated, finalApproved: sp.final + m.committed + m.paid, initial: sp.initial, accounting: m.available + sp.initial, available: m.available }
 }
 
 /** One project's funding report · each share with its held, paid and remaining (1.4.42) */

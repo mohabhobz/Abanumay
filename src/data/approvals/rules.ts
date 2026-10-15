@@ -18,8 +18,8 @@ export interface EntityLimit {
 export interface ApprovalRules {
   /** 4.3.2 · 4.4.19 · the grants manager may approve finally, within the matrix's manager cap */
   managerFinal: boolean
-  /** 4.3.1 · 4.4.20 · the grants manager rejects finally up to this amount · above it the
-      rejection is a recommendation that goes to the executive director */
+  /** v2 · 4.4.20 · a ceiling on the grants manager's final refusal · v3 · 4.2.17 lifts it (he refuses
+      finally whatever the amount) · kept on file, read by nothing */
   managerRejectUpTo: number
   /** 5.3.1 · 5.4.28-a · the share by which an amount may pass the executive director's cap */
   execOverPct: number
@@ -44,6 +44,9 @@ export interface ApprovalRules {
   /** Batch 7 · approvals#19 · 5.4.11 · a recommendation to approve above the executive's cap goes to the
       committee on its own, without passing the executive · off until the foundation decides */
   autoReferAboveExec?: boolean
+  /** v3 · 6.4.1 · the referral criteria · within his authority the executive director refers to the
+      committee only on one of these */
+  referCriteria: string[]
 }
 
 const DEFAULT: ApprovalRules = {
@@ -62,6 +65,9 @@ const DEFAULT: ApprovalRules = {
   committeeBy: ['grants-manager', 'ceo'],
   boardBy: ['ceo'],
   conflicts: [{ person: 'عبدالرحمن الهليّل', entityId: '748', reason: 'عضو في مجلس إدارة الجهة' }],
+  /* v3 · 5.2.14 · above the executive's authority the project goes to the committee on its own */
+  autoReferAboveExec: true,
+  referCriteria: ['مشروع استراتيجي أو نوعي', 'سابقة أو استثناء من السياسات', 'مخاطر عالية أو حساسية', 'تعارض مع توصية سابقة'],
 }
 
 export const APPROVAL_RULES: ApprovalRules = readJson(CFG.approvalRules, DEFAULT)

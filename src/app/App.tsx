@@ -12,6 +12,7 @@ import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
 import PortalPage from '@/features/entities/register/PortalPage'
 import AdvicePage from '@/features/advice/AdvicePage'
+import BriefPage from '@/features/approvals/BriefPage'
 import RegisterPage from '@/features/entities/register/RegisterPage'
 import RegisterAccountPage from '@/features/entities/register/AccountPage'
 import RequestsPage from '@/features/entities/register/RequestsPage'
@@ -140,6 +141,7 @@ export default function App() {
         <Route path={ROUTES.partners} element={<PartnersPage />} />
         <Route path={`${ROUTES.projects}/:id`} element={<ProjectPage />} />
         <Route path={`${ROUTES.projects}/:id/:tab`} element={<ProjectPage />} />
+        <Route path={`${ROUTES.projects}/:id/brief/:brief`} element={<BriefPage />} />
 
         <Route path={ROUTES.entities} element={<EntitiesListPage />} />
         {/* Register a new entity. ⚠️ `register` and `requests` must come **before** `:id` — the

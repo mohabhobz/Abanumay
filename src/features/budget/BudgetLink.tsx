@@ -6,15 +6,16 @@ import { CfgNum } from '@/features/settings/CfgEdit'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf } from '@/lib/format'
 import {
-  docSources, docTitle, fiscalYears, moneyOf, sourceBalance, splitOf, yearById, type BudgetDoc, type BudgetNode,
+  docSources, docTitle, moneyOf, sourceBalance, splitOf, yearById, type BudgetNode,
 } from '@/data/mock/budgetTree'
 import { approverFor } from '@/data/approval'
 import { projectRows } from '@/data/mock/projects'
 import { readRole, roleByKey } from '@/data/roles'
 import {
-  HOLD_STAGE_SAY, linkIssues, linkOf, linkProject, planOf, sourceName, unlinkProject, usableLines, useBudget,
+  HOLD_STAGE_SAY, linkIssues, linkOf, linkProject, planOf, sourceName, unlinkProject, useBudget,
 } from '@/data/budget/store'
 import { BUDGET_RULES } from '@/data/budget/rules'
+import { linesFor, type LineOpt } from './lines'
 
 /* Link a project to the budget · one line, or a split over several budgets (client request 11 ·
    1.4.7 – 1.4.14 · 1.4.56 – 1.4.58).
@@ -36,12 +37,6 @@ export interface BudgetLinkProject {
   amount: number
 }
 
-interface LineOpt {
-  doc: BudgetDoc
-  node: BudgetNode
-  key: string
-}
-
 interface Row { key: string; amount: number }
 
 /** The line's path under the root · the option itself carries the goal name only, so the
@@ -55,15 +50,6 @@ const trail = (nodes: BudgetNode[], n: BudgetNode): string => {
     cur = nodes.find((x) => x.id === up)
   }
   return parts.reverse().join(' · ')
-}
-
-/** Lines of the project's year first · any approved budget's lines may join a split (1.4.7) */
-function linesFor(year: string): LineOpt[] {
-  const name = year.slice(0, 4)
-  const fy = fiscalYears.find((y) => y.name === name)
-  const ofYear = fy ? usableLines(fy.id) : []
-  const rest = usableLines().filter((l) => !ofYear.some((x) => x.key === l.key))
-  return [...ofYear, ...rest].map(({ doc, node, key }) => ({ doc, node, key }))
 }
 
 export function BudgetLinkAction({ project, label }: { project: BudgetLinkProject; label?: string }) {
@@ -135,7 +121,9 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
   const docHref = (l: LineOpt) => `${ROUTES.budgetDoc(l.doc.id)}?line=${l.node.id}#line-${l.node.id}`
 
   const button = label ?? (after ? 'تعديل الارتباط' : held ? 'مرتبط بالميزانية' : 'ربط بالميزانية')
-  const go = after ? 'عدّل الارتباط' : held ? 'احفظ التوزيع' : BUDGET_RULES.holdAt === 'approval' ? 'اربط' : 'اربط واحجز'
+  /* v3 · 1.4.30 · at the grants manager's seat the link is drawn now and held at his recommendation */
+  const atManager = (() => { const p = projectRows.find((x) => x.id === project.id); return p?.stage === 'دراسة المشروع' && p.holder === 'manager' })()
+  const go = after ? 'عدّل الارتباط' : held ? 'احفظ التوزيع' : BUDGET_RULES.holdAt === 'approval' || atManager ? 'اربط' : 'اربط واحجز'
   const stop = issues[0] || (after && !reason.trim() ? /* doc 1.4.58 */ 'اكتب سبب التعديل أولًا' : '') || (plan?.kind === 'multi' ? 'المشروع متعدد السنوات · يُحجز من خطته المالية' : '')
 
   return (

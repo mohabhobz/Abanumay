@@ -15,8 +15,7 @@ import { meOf, readRole, roleByKey } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import {
   OUTCOME_SAY, SESSIONS, appFlowOf, awaitingSession, levelCap, mayRecord, nextSessionId, saveSession, useApprovals,
-  type Session,
-} from '@/data/approvals/store'
+  type Session, supportAmount } from '@/data/approvals/store'
 import { liveBudgets } from '@/data/budget/store'
 import { closeRows } from '@/data/mock/closing'
 import { paidToDate, useClosing } from '@/data/closing/store'
@@ -89,8 +88,8 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
                             <tr key={p.id}>
                               <td><Link className="lnk" to={ROUTES.projectTab(p.id, 'approval')}>{p.name}</Link></td>
                               <td className="trim1">{p.entityName}</td>
-                              <td className="n"><Money sm>{p.amountRequested}</Money></td>
-                              <td>{p.amountRequested > levelCap(body) ? <Tag tone="warn">فوق حدها · يُحال</Tag> : <Tag tone="ok">ضمن حدها</Tag>}</td>
+                              <td className="n"><Money sm>{supportAmount(p)}</Money></td>
+                              <td>{supportAmount(p) > levelCap(body) ? <Tag tone="warn">فوق حدها · يُحال</Tag> : <Tag tone="ok">ضمن حدها</Tag>}</td>
                               <td>{s ? <Link className="lnk" to={ROUTES.approvalSession(s.id)}>{s.title} · <DateText>{s.date}</DateText></Link> : <span className="sub">لم يُدرج بعد</span>}</td>
                             </tr>
                           )
@@ -123,7 +122,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
                       <li key={p.id}>
                         <label className="bchk-i">
                           <input type="checkbox" checked={pick.includes(p.id)} onChange={(e) => setPick((x) => (e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id)))} />
-                          <span><b>{p.name}</b><span className="sub"><Money sm>{p.amountRequested}</Money> · {p.entityName}</span></span>
+                          <span><b>{p.name}</b><span className="sub"><Money sm>{supportAmount(p)}</Money> · {p.entityName}</span></span>
                         </label>
                       </li>
                     ))}
@@ -176,7 +175,7 @@ function BoardPack() {
   const year = '2026'
   const approved = projectRows.filter((p) => p.supportStatus === 'معتمد' && (p.decidedAt ?? '').startsWith(year))
   const pending = projectRows.filter((p) => p.stage === 'دراسة المشروع' && p.holder && p.holder !== 'supervisor')
-  const above = pending.filter((p) => p.amountRequested > levelCap('exec'))
+  const above = pending.filter((p) => supportAmount(p) > levelCap('exec'))
   const decided = SESSIONS.filter((s) => s.body === 'board').flatMap((s) => s.items.filter((i) => i.outcome).map((i) => ({ s, i })))
   const budgets = liveBudgets().map((d) => { const r = rootOf(d.nodes); return { d, m: r ? moneyOf(d.nodes, r.id) : undefined } })
   /* Batch 6 · 8 Oct · the pack follows up the board's decisions (7.4 · 7.1.importance-1) · each
@@ -200,10 +199,10 @@ function BoardPack() {
     headers: ['البند', 'العدد', 'القيمة'],
     rows: [
       ['مشاريع اعتُمدت هذا العام', String(approved.length), String(approved.reduce((a, p) => a + p.amountGranted, 0))],
-      ['مشاريع في مسار الاعتماد', String(pending.length), String(pending.reduce((a, p) => a + p.amountRequested, 0))],
-      ['منها فوق حد المدير التنفيذي', String(above.length), String(above.reduce((a, p) => a + p.amountRequested, 0))],
+      ['مشاريع في مسار الاعتماد', String(pending.length), String(pending.reduce((a, p) => a + supportAmount(p), 0))],
+      ['منها فوق حد المدير التنفيذي', String(above.length), String(above.reduce((a, p) => a + supportAmount(p), 0))],
       ...budgets.map(({ d, m }) => [`${d.name ?? d.id} · المصروف من المخصص`, '', `${m?.paid ?? 0} / ${m?.allocated ?? 0}`]),
-      ...follow.map(({ p, paid }) => [`متابعة قرار المجلس · ${p.name}`, p.stage, `${paid} / ${p.amountGranted || p.amountRequested}`]),
+      ...follow.map(({ p, paid }) => [`متابعة قرار المجلس · ${p.name}`, p.stage, `${paid} / ${p.amountGranted || supportAmount(p)}`]),
       ...evals.map(({ c, score, reached, target }) => [`تقرير تقييم · ${c.projectName}`, score === null ? '—' : String(score), `${reached ?? '—'} / ${target}`]),
     ],
   }
@@ -215,7 +214,7 @@ function BoardPack() {
         <Head title="ملخص المحفظة" meta={<span className="rowf"><span className="sub">سنة <span className="num">{year}</span></span><ExportMenu sheet={sheet} note={sheet.title} /></span>} />
         <KV rows={[
           { k: 'اعتُمد هذا العام', v: <><Num>{approved.length}</Num> مشروع · <Money sm>{approved.reduce((a, p) => a + p.amountGranted, 0)}</Money></> },
-          { k: 'في مسار الاعتماد', v: <><Num>{pending.length}</Num> مشروع · <Money sm>{pending.reduce((a, p) => a + p.amountRequested, 0)}</Money></> },
+          { k: 'في مسار الاعتماد', v: <><Num>{pending.length}</Num> مشروع · <Money sm>{pending.reduce((a, p) => a + supportAmount(p), 0)}</Money></> },
           { k: 'فوق حد المدير التنفيذي', v: <><Num>{above.length}</Num> مشروع</> },
           { k: 'قرارات المجلس المسجّلة', v: <Num>{decided.length}</Num> },
         ]} />
@@ -286,7 +285,7 @@ function BoardPack() {
         {pending.filter((p) => p.holder === 'board').length === 0 ? <p className="sub cnote">لا مشاريع عند المجلس الآن.</p> : (
           <ul className="apv-list">
             {pending.filter((p) => p.holder === 'board').map((p) => (
-              <li key={p.id}><span className="apv-t"><Link className="lnk" to={ROUTES.projectTab(p.id, 'approval')}><b>{p.name}</b></Link><span className="sub"><Money sm>{p.amountRequested}</Money> · {p.owner ? <Person name={p.owner} /> : 'بلا مشرف'}</span></span></li>
+              <li key={p.id}><span className="apv-t"><Link className="lnk" to={ROUTES.projectTab(p.id, 'approval')}><b>{p.name}</b></Link><span className="sub"><Money sm>{supportAmount(p)}</Money> · {p.owner ? <Person name={p.owner} /> : 'بلا مشرف'}</span></span></li>
             ))}
           </ul>
         )}

@@ -40,7 +40,7 @@ export const ROUTES = [
   /* B-5 · a project at each seat · and A-6 scenario records */
   '/projects/21039', '/projects/21041', '/projects/20974', '/closings/CL-2103', '/plans/PL-1104',
   /* الإجراء 3 · الدراسة والطلب والإعدادات */
-  '/projects/20940/study', '/projects/21044', '/projects/21037/study', '/projects/new?tab=docs', '/projects/new?as=entity&entity=694',
+  '/projects/20940/study', '/projects/20971/brief/br-20971-1-exec', '/projects/21044', '/projects/21037/study', '/projects/new?tab=docs', '/projects/new?as=entity&entity=694',
   '/projects/settings?tab=cycle', '/projects/settings?tab=criteria', '/projects/settings?tab=consultants', '/projects/settings?tab=prospects', '/projects/settings?tab=reasons',
   '/projects/20852', '/projects/20852/agreement', '/projects/20852/payments',
   /* ⚠️ تاب الخطة بحالتيه: ٢٠٨٤٥ ليه خطة قيد التنفيذ، و٢٠٩٤٠

@@ -432,7 +432,10 @@ export default function BudgetDocPage() {
                     <span className="tnum">المحجوز نهائيًا</span>
                     <span className="tnum">الملتزم به</span>
                     <span className="tnum">المبلغ المدفوع</span>
-                    <span className="tnum">المبلغ المتاح</span>
+                    {/* v3 · 1.4.12 · 0.def.11 · the accounting balance leaves the initial holds in ·
+                        the available one takes them out, and decides */}
+                    <span className="tnum" title="المخصص ناقصًا المعتمد النهائي · دون خصم الحجوزات المبدئية">الرصيد المحاسبي</span>
+                    <span className="tnum" title="المخصص ناقصًا المعتمد النهائي والحجوزات المبدئية القائمة">المتاح فعليًا</span>
                     <span>الحالة</span>
                     <span />
                   </div>
@@ -487,7 +490,8 @@ export default function BudgetDocPage() {
                         <span className="tnum" data-k="المحجوز نهائيًا">{sp.final ? <Num>{sp.final}</Num> : <Nil />}</span>
                         <span className="tnum" data-k="الملتزم به">{m.committed ? <Num>{m.committed}</Num> : <Nil />}</span>
                         <span className="tnum" data-k="المدفوع"><Num>{m.paid}</Num></span>
-                        <span className="tnum" data-k="المتاح">{x.active ? <Num>{m.available}</Num> : <Nil />}</span>
+                        <span className="tnum" data-k="الرصيد المحاسبي"><Num>{m.available + sp.initial}</Num></span>
+                        <span className="tnum" data-k="المتاح فعليًا">{x.active ? <Num>{m.available}</Num> : <Nil />}</span>
 
                         <span>
                           <Tag tone={x.active ? 'ok' : 'mute'}>{x.active ? 'نشط' : x.offBy ? 'موقوف مع أبيه' : 'غير نشط'}</Tag>
@@ -542,7 +546,8 @@ export default function BudgetDocPage() {
                         <span className="tnum" data-k="المحجوز نهائيًا"><b><Num>{hs('final')}</Num></b></span>
                         <span className="tnum" data-k="الملتزم به"><b><Num>{t('committed')}</Num></b></span>
                         <span className="tnum" data-k="المدفوع"><b><Num>{t('paid')}</Num></b></span>
-                        <span className="tnum" data-k="المتاح"><b><Num>{t('available')}</Num></b></span>
+                        <span className="tnum" data-k="الرصيد المحاسبي"><b><Num>{t('available') + hs('initial')}</Num></b></span>
+                        <span className="tnum" data-k="المتاح فعليًا"><b><Num>{t('available')}</Num></b></span>
                         <span />
                         <span />
                       </div>

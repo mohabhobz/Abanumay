@@ -24,8 +24,11 @@ import {
   conflictOf, DEPT_SAY, SESSIONS, entityLimitBlock,
   OUTCOME_SAY, VERDICT_SAY, VOTE_SAY, appFlowOf, attachMinutes, awaitingSession, carried, castVote, closeSession,
   decideInSession, holdLine, levelCap, mayRecord, sessionById, sessionItemBlockers, setAgenda, strategyOf,
-  useApprovals, voteTally, type Outcome, type Session, type SessionItem, type Vote,
+  useApprovals, voteTally, type Outcome, type Session, type SessionItem, type Vote, finPosition, supportAmount,
 } from '@/data/approvals/store'
+import { FinKV } from '@/features/approvals/AmountCard'
+import { MoneyField } from '@/components/ui'
+import type { RoleKey } from '@/data/roles'
 
 /* One session of the executive committee or the board (6.2.2 – 6.2.9 · 7.2.2 – 7.2.11).
 
@@ -81,7 +84,7 @@ export default function SessionPage() {
           {/* Cross · the meeting's aggregate report and the projects' relative priority (7.4 · 6.4) */}
           {s.items.length > 0 && <AnalysisCard title="تقرير الجلسة" cta="اقرأ الجلسة" readings={sessionReport(s)} ask={false} onAsk={() => undefined} />}
           {s.items.length === 0 && <Glass><Empty title="جدول الأعمال فارغ." note="أضف المشاريع المحالة من القائمة أدناه." /></Glass>}
-          {s.items.map((it) => <Item key={it.projectId} s={s} it={it} may={may} me={me} />)}
+          {s.items.map((it) => <Item key={it.projectId} s={s} it={it} may={may} me={me} role={role} />)}
 
           {/* 10 Oct · each decision followed through to its execution (7.1.output-4) */}
           {decided > 0 && (
@@ -114,7 +117,7 @@ export default function SessionPage() {
               <ul className="apv-list">
                 {add.map((p) => (
                   <li key={p.id}>
-                    <span className="apv-t"><b>{p.name}</b><span className="sub"><Money sm>{p.amountRequested}</Money> · {p.entityName}</span></span>
+                    <span className="apv-t"><b>{p.name}</b><span className="sub"><Money sm>{supportAmount(p)}</Money> · {p.entityName}</span></span>
                     <span className="pc-sp" />
                     <button className="btn btn-2 btn-sm" onClick={() => setAgenda(s.id, p.id, true)}><Icon name={icons.plus} size="sm" />أدرج</button>
                   </li>
@@ -139,13 +142,15 @@ export default function SessionPage() {
   )
 }
 
-function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; me: string }) {
+function Item({ s, it, may, me, role }: { s: Session; it: SessionItem; may: boolean; me: string; role: RoleKey }) {
   const p = projectRows.find((x) => x.id === it.projectId)
   const [outcome, setOutcome] = useState<Outcome | ''>('')
   const [target, setTarget] = useState<Holder>('exec')
   const [note, setNote] = useState('')
-  const [count, setCount] = useState('3')
   const [plan, setPlan] = useState('')
+  const [amt, setAmt] = useState(0)
+  const [amtWhy, setAmtWhy] = useState('')
+  const [said, setSaid] = useState<string[]>([])
   /* Batch 8 · the model's summary when the AI service is connected (settings › الذكاء الاصطناعي) */
   const ai = useAi('summary', { projectId: it.projectId, body: s.body }, () => ({ text: '' }))
   if (!p) return null
@@ -157,21 +162,27 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
   const strat = strategyOf(p)
   const fit = fitOf(p)
   const last = f.recs[0]
-  const above = p.amountRequested > levelCap(s.body)
+  const amount = supportAmount(p)
+  const fin = finPosition(p)
+  /* v3 · 6.4.5 · 7.4.7 · the amount the body decides · the current one unless it fixes another */
+  const decided = amt > 0 ? amt : amount
+  const above = decided > levelCap(s.body)
   const outcomes: Outcome[] = s.body === 'committee' ? (above ? ['refer', 'return', 'reject'] : ['approve', 'refer', 'return', 'reject']) : ['approve', 'return', 'reject']
   const targets: Holder[] = s.body === 'committee' ? ['exec', 'manager', 'supervisor'] : ['committee', 'exec', 'manager', 'supervisor']
-  const why = outcome ? sessionItemBlockers(s, it, outcome) : []
+  const why = outcome ? sessionItemBlockers(s, it, outcome, decided) : []
+  /* v3 · 6.4.4 · 7.4.6 · the body may give payment guidance · the detailed schedule is the agreement's */
   const needsPay = outcome === 'approve' || (outcome === 'refer' && s.body === 'committee')
+  const amtMoved = amt > 0 && amt !== amount && (outcome === 'approve' || outcome === 'refer')
   /* The assistant's executive summary for the members (6.2.3 · 7.2.4) · deterministic from the file */
   /* Batch 7 · approvals#59 · the summary carries the risks and the expected impact */
   const ei = expectedImpact(p)
   const risks = [
     ...fit.signals.filter((x) => x.tone !== 'ok').map((x) => x.text),
     s.body === 'committee' ? entityLimitBlock(p, 'committee') : '',
-    fundingIssues(p.id, p.amountRequested)[0],
+    fundingIssues(p.id, amount)[0],
     ...f.conditions.filter((x) => !x.met).map((x) => `شرط لم يُستوفَ: ${x.text}`),
   ].filter((x): x is string => Boolean(x))
-  const summary = isolate(`${p.name} · ${p.entityName} · ${nf.format(p.amountRequested)} ريال لـ${nf.format(p.beneficiaries)} مستفيد في ${p.field}. ` +
+  const summary = isolate(`${p.name} · ${p.entityName} · ${nf.format(amount)} ريال لـ${nf.format(p.beneficiaries)} مستفيد في ${p.field}. ` +
     `${study ? `درجة الدراسة ${studyScore(study.scores)} من 100 وتوصية المشرف ${study.recommendation === 'approve' ? 'بالموافقة' : 'بالرفض'}. ` : ''}` +
     `${strat.ok ? strat.say : `تنبيه: ${strat.say}`}. ` +
     `الأثر المتوقع نحو ${nf.format(ei.expected)} مستفيد فعلي${ei.from === 'default' ? ' (تقدير افتراضي)' : ` بنسبة تحقّق ${Math.round(ei.rate * 100)} بالمئة في ${ei.basis} مشاريع`}. ` +
@@ -197,7 +208,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
         meta={<span className="rowf gp-2">{it.outcome ? <Tag tone={it.outcome === 'reject' ? 'no' : 'ok'}>{OUTCOME_SAY[it.outcome]}</Tag> : <Tag tone="warn">بانتظار القرار</Tag>}<Link className="lnk sub" to={ROUTES.projectTab(p.id, 'approval')}>ملف المشروع</Link></span>}
       />
       <KV rows={[
-        { k: 'المبلغ', v: <><Money sm>{p.amountRequested}</Money>{above && <span className="bad"> · فوق حد {HOLDER_LABEL[s.body]}</span>}</> },
+        { k: 'مبلغ الدعم', v: <><Money sm>{amount}</Money>{amount !== p.amountRequested && <span className="sub"> · المطلوب <Money sm>{p.amountRequested}</Money></span>}{above && <span className="bad"> · فوق حد {HOLDER_LABEL[s.body]}</span>}</> },
         {
           k: 'الارتباط المالي',
           v: (
@@ -206,7 +217,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
                 ? <span>{HOLD_STAGE_SAY[hold.link.stage]} · {hold.link.shares.length > 1 ? `${nf.format(hold.link.shares.length)} بنود` : hold.node.label}</span>
                 : <span className="bad">لا حجز · يُمنع العرض{/* doc 6.2.10 */}</span>}
               {/* 6.4.2 · 7.4.2 · the body reviews the link and may change it before it decides */}
-              {may && !it.outcome && <BudgetLinkAction project={{ id: p.id, name: p.name, year: p.year, goal: p.goal, amount: p.amountRequested }} label={hold ? 'راجع الارتباط' : 'ربط بالميزانية'} />}
+              {may && !it.outcome && <BudgetLinkAction project={{ id: p.id, name: p.name, year: p.year, goal: p.goal, amount }} label={hold ? 'راجع الارتباط' : 'ربط بالميزانية'} />}
             </span>
           ),
         },
@@ -220,9 +231,13 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
           ...(study ? [{ k: 'الدراسة بمحاورها', v: <>فني <Num>{groupScore('فني') ?? 0}</Num> · مالي <Num>{groupScore('مالي') ?? 0}</Num> · إداري <Num>{groupScore('إداري') ?? 0}</Num> · الإجمالي <Num>{studyScore(study.scores)}</Num> من <Num>{100}</Num></> }] : []),
           ...(ref ? [{ k: 'رأي المستشار', v: ref.opinion ? `${consultantByKey(ref.consultant)?.name ?? ''} · ${ref.verdict ?? ''} · ${ref.opinion}` : 'بانتظار الرأي' }] : []),
           ...f.opinions.map((o) => ({ k: `رأي ${DEPT_SAY[o.dept]}`, v: o.answer ?? 'بانتظار الرد' })),
-          ...(committeePlan ? [{ k: 'خطة الصرف المقرّة من اللجنة', v: <><Num>{committeePlan.count}</Num> دفعات · {committeePlan.note}</> }] : []),
+          ...(committeePlan ? [{ k: 'خطة الصرف المقرّة من اللجنة', v: <>{committeePlan.count ? <><Num>{committeePlan.count}</Num> دفعات · </> : null}{committeePlan.note}</> }] : []),
           { k: 'الوثائق', v: docs.length ? docs.map((d) => d.name).join(' · ') : '—' },
         ]} />
+        {fin && <><h4 className="ptn-sub">الموقف المالي</h4><FinKV fin={fin} /></>}
+        {f.briefs.some((b) => b.level === s.body) && (
+          <p className="sub cnote"><Link className="lnk" to={ROUTES.projectBrief(p.id, f.briefs.find((b) => b.level === s.body)!.id)}>ملف العرض PDF للأعضاء</Link> · لقطة الموقف المالي وقت إنشائه</p>
+        )}
         <h4 className="ptn-sub">آخر الإجراءات</h4>
         <ul className="apv-list">
           {f.recs.slice(0, 5).map((r, i) => <li key={i}><span className="apv-t"><b>{HOLDER_LABEL[r.level]} · {VERDICT_SAY[r.verdict]}</b><span className="sub"><Person name={r.by} /> · <DateText>{r.at}</DateText>{r.note ? ` · ${r.note}` : ''}</span></span></li>)}
@@ -234,17 +249,20 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
       <ul className="apv-votes">
         {s.members.map((m) => {
           const conflicted = Boolean(conflictOf(p, m))
-          const own = m === me && s.state === 'planned' && !it.outcome && !conflicted
+          /* v3 · 6.2.5 · 7.2.7 · the executive director records each member's vote · the member votes too */
+          const proxy = role === 'ceo' && may && m !== me
+          const own = (m === me || proxy) && s.state === 'planned' && !it.outcome && !conflicted
           return (
           <li key={m}>
             <Person name={m} />
             {conflicted && <Tag tone="warn">تعارض مصالح · لا يصوّت</Tag>}
             {m === me && !conflicted && <Tag tone="mute">صوتك</Tag>}
+            {(it.proxied ?? []).includes(m) && <Tag tone="mute">سجّله المدير التنفيذي</Tag>}
             <span className="pc-sp" />
             {own ? (
               <div className="cfgchips" role="radiogroup" aria-label={`صوت ${m}`}>
                 {VOTES.map((v) => (
-                  <button key={v} type="button" role="radio" aria-checked={it.votes[m] === v} className={`cfgchip${it.votes[m] === v ? ' on' : ''}`} onClick={() => castVote(s.id, p.id, m, v, me)}>
+                  <button key={v} type="button" role="radio" aria-checked={it.votes[m] === v} className={`cfgchip${it.votes[m] === v ? ' on' : ''}`} onClick={() => castVote(s.id, p.id, m, v, me, role)}>
                     {VOTE_SAY[v]}
                   </button>
                 ))}
@@ -257,7 +275,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
           )
         })}
       </ul>
-      <p className="sub cnote">يصوّت كل عضو بنفسه من حسابه · يسجّل الأمين المحضر والقرار فقط</p>
+      <p className="sub cnote">يصوّت كل عضو من حسابه، أو يسجّل المدير التنفيذي قرار كل عضو · ويسجّل الأمين المحضر والقرار</p>
       <p className="sub cnote">{c ? <>النتيجة بالتصويت: <b>{VOTE_SAY[c]}</b></> : t.cast < APPROVAL_RULES.quorum ? `لم يكتمل النصاب (${t.cast} من ${APPROVAL_RULES.quorum})` : 'لا أغلبية بعد'} · نسبة المشاركة <span className="num">{pct(Math.round((t.cast / Math.max(1, s.members.length)) * 100))}</span></p>
 
       <div className="apv-row">
@@ -271,12 +289,12 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
       </div>
 
       {it.outcome ? (
-        <p className="sub cnote">القرار: <b>{OUTCOME_SAY[it.outcome]}</b>{it.target && ` إلى ${HOLDER_LABEL[it.target]}`} · {it.note}{it.payPlan && <> · آلية الدفعات: <Num>{it.payPlan.count}</Num> دفعات · {it.payPlan.note}</>} · <DateText>{it.decidedAt ?? ''}</DateText>{s.state === 'closed' && ' · مقفل'}</p>
+        <p className="sub cnote">القرار: <b>{OUTCOME_SAY[it.outcome]}</b>{it.uncovered && !f.coverage?.done && <span className="bad"> · حُفظ كما صدر بانتظار التغطية المالية: {it.uncovered}</span>}{it.target && ` إلى ${HOLDER_LABEL[it.target]}`} · {it.note}{it.payPlan?.note && <> · توجيهات الصرف: {it.payPlan.count ? <><Num>{it.payPlan.count}</Num> دفعات · </> : null}{it.payPlan.note}</>} · <DateText>{it.decidedAt ?? ''}</DateText>{s.state === 'closed' && ' · مقفل'}</p>
       ) : may ? (
         <div className="apv-dec">
           <div className="cfgchips" role="radiogroup" aria-label="القرار">
             {outcomes.map((o) => (
-              <button key={o} type="button" role="radio" aria-checked={outcome === o} className={`cfgchip${outcome === o ? ' on' : ''}`} onClick={() => setOutcome(o)}>
+              <button key={o} type="button" role="radio" aria-checked={outcome === o} className={`cfgchip${outcome === o ? ' on' : ''}`} onClick={() => { setOutcome(o); setAmt(0); setAmtWhy(''); setSaid([]) }}>
                 {o === 'refer' && s.body === 'committee' ? 'موافقة وإحالة للمجلس' : OUTCOME_SAY[o]}
               </button>
             ))}
@@ -285,26 +303,38 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
             <div className="cfgchips" role="radiogroup" aria-label="الإعادة إلى">
               {targets.map((x) => (
                 <button key={x} type="button" role="radio" aria-checked={target === x} className={`cfgchip${target === x ? ' on' : ''}`} onClick={() => setTarget(x)}>
-                  {HOLDER_LABEL[x]}{x === 'supervisor' ? ' · يُلغى الحجز' : ''}
+                  {HOLDER_LABEL[x]}{x === 'supervisor' ? ' · يبقى الحجز' : ''}
                 </button>
               ))}
             </div>
           )}
-          {needsPay && (
+          {(outcome === 'approve' || outcome === 'refer') && (
             <div className="regfields">
-              <label className="regf"><span className="lb">عدد الدفعات</span><span className="fld"><input inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value.replace(/[^\d]/g, ''))} aria-label="عدد الدفعات" /></span></label>
-              <label className="regf regf-w"><span className="lb">آلية وجدول الصرف</span><span className="fld"><input value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="مثال: أربعون بالمئة عند التوقيع ثم دفعتان مرحليتان" aria-label="آلية الصرف" /></span></label>
+              <label className="regf">
+                <span className="lb">مبلغ الدعم المقرر</span>
+                <MoneyField value={String(decided)} label="مبلغ الدعم المقرر" onChange={(x) => setAmt(Number(x) || 0)} />
+              </label>
+              {amtMoved && (
+                <label className="regf regf-w">
+                  <span className="lb">مبررات تعديل المبلغ<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <span className="fld"><input value={amtWhy} onChange={(e) => setAmtWhy(e.target.value)} aria-label="مبررات تعديل المبلغ في الجلسة" /></span>
+                </label>
+              )}
             </div>
+          )}
+          {outcome === 'approve' && amtMoved && fin && decided - amount > fin.maxRaise && <p className="bad cnote">{/* doc 6.4.3 */}المبلغ المقرر يتجاوز الرصيد المتاح · يُحفظ القرار كما صدر ولا يصبح نافذًا ماليًا حتى معالجة التغطية.</p>}
+          {needsPay && (
+            <label className="regf regf-w"><span className="lb">توجيهات الصرف <span className="sub">اختيارية · الجدول التفصيلي يُعدّ في الاتفاقية</span></span><span className="fld"><input value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="مثال: ربط الدفعة الثانية بالتقرير المرحلي" aria-label="توجيهات الصرف" /></span></label>
           )}
           <label className="regf regf-w">
             <span className="lb">نص القرار والملاحظات<b className="regf-r" aria-label="إلزامي">*</b></span>
             <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="نص القرار" /></span>
           </label>
-          {why.length > 0 && <ul className="apv-sig">{why.map((w) => <li key={w} className="no"><Icon name={icons.alert} size="sm" /><span>{w}</span></li>)}</ul>}
+          {[...why, ...said].length > 0 && <ul className="apv-sig">{[...new Set([...why, ...said])].map((w) => <li key={w} className="no"><Icon name={icons.alert} size="sm" /><span>{w}</span></li>)}</ul>}
           <button
             className={`btn ${outcome === 'reject' ? 'btn-d' : 'btn-p'}`}
-            disabled={!outcome || !note.trim() || why.length > 0 || (needsPay && !(Number(count) > 0))}
-            onClick={() => outcome && decideInSession(s.id, p.id, outcome, note.trim(), me, outcome === 'return' ? target : undefined, needsPay ? { count: Number(count), note: plan.trim() || 'وفق خطة التنفيذ' } : undefined)}
+            disabled={!outcome || !note.trim() || why.length > 0 || (amtMoved && !amtWhy.trim())}
+            onClick={() => outcome && setSaid(decideInSession(s.id, p.id, outcome, note.trim(), me, outcome === 'return' ? target : undefined, needsPay && plan.trim() ? { note: plan.trim() } : undefined, amtMoved ? { to: amt, reason: amtWhy.trim() } : undefined))}
           >
             سجّل قرار {HOLDER_LABEL[s.body]}
           </button>

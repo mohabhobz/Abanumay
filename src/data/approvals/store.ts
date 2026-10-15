@@ -1,4 +1,5 @@
 import { typeFloorBlock } from '@/data/shared/decisions'
+import { setStudyNoteGate } from '@/data/status'
 import { useSyncExternalStore } from 'react'
 import type { DecisionAction, ProjectRow } from '@/types/domain'
 import type { LogEvent, LogField } from '@/data/mock/log'
@@ -11,10 +12,15 @@ import { ACTS_FOR, HOLDER_LABEL, nextOf, type Holder } from '@/data/holders'
 import type { RoleKey } from '@/data/roles'
 import { TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
 import { dayOf, stampNow, timeOf } from '@/data/clock'
-import { flowOf, intakeLog, referConsultant, setOwnHold } from '@/data/intake/flow'
+import { flowOf, intakeLog, orgOutputsOf, outputLine, setOwnHold, setSupervisorAmountHook } from '@/data/intake/flow'
 import { nextSeq, replayTogether, type Stamped } from '@/data/opclock'
 import { expiredMandatory } from '@/data/entities/store'
-import { hasFunding, linkOf, unlinkProject, usableLines, directionById, docOf, fundingIssues, finalizeHold } from '@/data/budget/store'
+import {
+  hasFunding, linkOf, unlinkProject, usableLines, directionById, docOf, fundingIssues, finalizeHold, holdAtRecommendation,
+  releaseToPlanned, resizeIssue, resizeLink, lineBalances,
+} from '@/data/budget/store'
+import { docTitle } from '@/data/mock/budgetTree'
+import { BUDGET_RULES } from '@/data/budget/rules'
 import { nf } from '@/lib/format'
 import { setConditionGate } from '@/data/mock/agreementNew'
 import { ROUTES } from '@/app/routes'
@@ -63,6 +69,31 @@ export interface Rec {
   target?: Holder | 'consultant'
 }
 
+/** v3 · 4.2.5 · 5.4.11 · 6.4.5 · 7.4.7 · one change of the support amount · who, at which level, from
+    what to what and why · shown to the levels before and kept in the project's history */
+export interface AmountChange { level: Holder; by: string; at: string; from: number; to: number; reason: string; session?: string }
+/** v3 · 6.4.3 · 7.4.5 · a body's decision recorded as issued whose money the balance didn't cover ·
+    not a financial approval and the hold doesn't turn final until the cover is found */
+export interface Coverage { level: 'committee' | 'board'; amount: number; short: string; by: string; at: string; sessionId: string; note: string; done?: { by: string; at: string } }
+/** v3 · 5.2.3 · 6.2.2 · 7.2.3 · the presentation file made when the project reaches a level · its
+    financial position is the one at the moment it was made */
+export interface FinLine { label: string; budget: string; share: number; allocated: number; finalApproved: number; initial: number; accounting: number; available: number }
+export interface FinPosition { amount: number; stage: string; lines: FinLine[]; maxRaise: number; afterDecision: number; accountingAfter: number }
+export interface Brief {
+  id: string
+  level: Holder
+  at: string
+  time: string
+  by: string
+  amount: number
+  fin: FinPosition
+  recs: { level: Holder; verdict: string; note: string; by: string; at: string }[]
+  orgOutputs: string[]
+  entityOutputs: string[]
+  conditions: string[]
+  amounts: AmountChange[]
+}
+
 export interface Condition { id: string; text: string; when: 'agreement' | 'firstPay'; by: string; at: string; met?: { by: string; at: string } }
 export interface MandNote { id: string; text: string; level: Holder; by: string; at: string; resolved?: { by: string; at: string; reply: string } }
 export interface Opinion { id: string; dept: 'finance' | 'legal' | 'other'; ask: string; by: string; at: string; answer?: string; answeredBy?: string; answeredAt?: string }
@@ -82,8 +113,13 @@ export interface SessionItem {
   outcome?: Outcome
   target?: Holder
   note?: string
-  /** 6.1.input-4 · 7.1.output-3 · the payments the decision settles */
-  payPlan?: { count: number; note: string }
+  /** v3 · 6.4.4 · 7.4.6 · the body's payment guidance · the detailed schedule is the agreement's ·
+      a count only on a decision recorded before v3 */
+  payPlan?: { count?: number; note: string }
+  /** v3 · 6.4.3 · the decision was recorded as issued with its money uncovered */
+  uncovered?: string
+  /** v3 · 6.2.5 · votes the secretary entered for a member */
+  proxied?: string[]
   decidedAt?: string
 }
 export interface Session {
@@ -111,6 +147,10 @@ export interface AppFlow {
   /** The level that took the final decision, and when */
   decided?: { level: Level; at: string; by: string }
   needsPlan?: boolean
+  /** v3 · the support amount's changes on the path, oldest first */
+  amounts: AmountChange[]
+  coverage?: Coverage
+  briefs: Brief[]
   events: LogEvent[]
 }
 
@@ -121,7 +161,7 @@ export const APPROVAL_NOTES: ApprovalNote[] = []
 
 export const appFlowOf = (id: string): AppFlow => {
   let f = FLOWS.get(id)
-  if (!f) { f = { recs: [], conditions: [], notes: [], opinions: [], official: [], hold: 'none', events: [] }; FLOWS.set(id, f) }
+  if (!f) { f = { recs: [], conditions: [], notes: [], opinions: [], official: [], hold: 'none', amounts: [], briefs: [], events: [] }; FLOWS.set(id, f) }
   return f
 }
 export const approvalEvents = (id: string): LogEvent[] => FLOWS.get(id)?.events ?? []
@@ -132,6 +172,43 @@ export const payPlanOf = (projectId: string): SessionItem['payPlan'] =>
 export const sessionsOf = (projectId: string): Session[] => SESSIONS.filter((s) => s.items.some((i) => i.projectId === projectId))
 
 const row = (id: string) => projectRows.find((p) => p.id === id)
+
+/** The first change keeps where the path started · the supervisor's amount, else the request's */
+const trailBase = (p: ProjectRow, f: AppFlow, start: number) => {
+  if (f.amounts.length) return
+  const st = flowOf(p.id).study
+  f.amounts.push({ level: 'supervisor', by: st?.by ?? p.owner ?? '', at: st?.at ?? p.submittedAt, from: p.amountRequested, to: start, reason: st?.recommendation === 'approve' ? 'المبلغ الموصى به في الدراسة' : 'المبلغ المطلوب' })
+}
+
+/** v3 · the support amount on the path · the supervisor's recommendation, then each level's change ·
+    the entity's requested amount until there is one */
+export const supportAmount = (p: Pick<ProjectRow, 'amountSupport' | 'amountRequested'>): number => p.amountSupport ?? p.amountRequested
+
+/** v3 · 5.4.8 · 5.2.3 · the project's financial position · each funding line's allocation, final
+    approved, initial holds, accounting and available balances, the most the amount may rise and the
+    balance the decision leaves */
+export function finPosition(p: ProjectRow): FinPosition | undefined {
+  const l = linkOf(p.id)
+  if (!l) return undefined
+  const lines: FinLine[] = l.shares.map((x) => {
+    const d = docOf(x.docId)
+    const n = d?.nodes.find((y) => y.id === x.nodeId)
+    const b = d ? lineBalances(d, x.nodeId) : { allocated: 0, finalApproved: 0, initial: 0, accounting: 0, available: 0 }
+    return { label: n?.label ?? x.nodeId, budget: d ? docTitle(d) : x.docId, share: x.amount, ...b }
+  })
+  const amount = supportAmount(p)
+  const first = lines[0]
+  /* An initial hold is already out of the available balance · a planned link isn't */
+  const heldNow = l.stage === 'initial' || l.stage === 'final'
+  const avail = lines.reduce((a, x) => a + x.available, 0)
+  return {
+    amount, stage: l.stage, lines,
+    /* A planned link holds nothing yet · its own amount still has to come out of the line */
+    maxRaise: Math.max(0, (first?.available ?? 0) - (heldNow ? 0 : l.amount)),
+    afterDecision: heldNow ? avail - Math.max(0, amount - l.amount) : avail - amount,
+    accountingAfter: lines.reduce((a, x) => a + x.accounting, 0) - (l.stage === 'final' ? 0 : amount),
+  }
+}
 /* The running op's stamp · every date an action writes is its own time, replayed the same on reload */
 let OP_AT: string | undefined
 const opDay = () => dayOf(OP_AT ?? stampNow())
@@ -148,8 +225,26 @@ const notify = (to: string[], projectId: string, title: string, context: string,
   for (const t of to) APPROVAL_NOTES.unshift({ id: `apn-${APPROVAL_NOTES.length + 1}`, to: t, title, context, at: opDay(), href })
 }
 
+/* v3 · 5.2.11 · 6.4.3 · the study's level reads the return and the pending cover */
+setStudyNoteGate((id) => {
+  const f = FLOWS.get(id)
+  if (!f) return ''
+  if (f.coverage && !f.coverage.done) return 'قرار صادر بانتظار التغطية المالية'
+  if (f.awaitingReview && row(id)?.holder === 'manager') return 'أعاده المدير التنفيذي'
+  return ''
+})
+
+/* v3 · 6.4.12 · the supervisor re-sent with a new study amount · the trail keeps it */
+setSupervisorAmountHook((id, from, to, by, at) => {
+  const p = row(id)
+  if (!p) return
+  const f = appFlowOf(id)
+  trailBase(p, f, from)
+  f.amounts.push({ level: 'supervisor', by, at, from, to, reason: 'مبلغ الدراسة المحدّث عند إعادة الإرسال' })
+})
+
 /* v3 · 3.2.22 · the supervisor's balance check counts back what the project already holds */
-setOwnHold((id) => linkOf(id)?.amount ?? 0)
+setOwnHold((id) => { const l = linkOf(id); return l && (l.stage === 'initial' || l.stage === 'final') ? l.amount : 0 })
 
 /* Registered by the plans store · a registry, so the approvals store doesn't import it */
 let confirmHook: ((projectId: string, by: string) => void) | null = null
@@ -179,7 +274,7 @@ export function entityTally(entityId: string, exceptId?: string): { count: numbe
   const inPath = (p: ProjectRow) => p.holder === 'confirm' && p.stage === 'دراسة المشروع'
   const hits = projectRows.filter((p) => p.id !== exceptId && p.entityId === entityId &&
     ((p.supportStatus === 'معتمد' && (p.decidedAt ?? '') >= since) || inPath(p)))
-  return { count: hits.length, total: hits.reduce((a, p) => a + (p.amountGranted || p.amountRequested), 0) }
+  return { count: hits.length, total: hits.reduce((a, p) => a + (p.amountGranted || supportAmount(p)), 0) }
 }
 
 /** Why a level can't approve a project for its entity · empty when it can */
@@ -188,7 +283,7 @@ export function entityLimitBlock(p: ProjectRow, level: 'exec' | 'committee'): st
   const t = entityTally(p.entityId, p.id)
   const who = level === 'exec' ? 'المدير التنفيذي' : 'اللجنة التنفيذية'
   if (lim.count !== null && t.count + 1 > lim.count) return `تجاوز حد عدد المشاريع المعتمدة للجهة لـ${who} (${nf.format(lim.count)} خلال ${nf.format(APPROVAL_RULES.periodDays)} يومًا)`
-  if (lim.total !== null && t.total + p.amountRequested > lim.total) return `تجاوز حد إجمالي قيمة مشاريع الجهة لـ${who} (${nf.format(lim.total)})`
+  if (lim.total !== null && t.total + supportAmount(p) > lim.total) return `تجاوز حد إجمالي قيمة مشاريع الجهة لـ${who} (${nf.format(lim.total)})`
   return ''
 }
 
@@ -232,12 +327,12 @@ export const conflictOf = (p: ProjectRow, person: string) =>
 
 /** Plan needed by rule (4.4.2) · a suggestion the manager confirms or changes */
 export const planSuggested = (p: ProjectRow): boolean =>
-  p.amountRequested >= APPROVAL_RULES.planFrom || (p.durationDays ?? 0) > 365
+  supportAmount(p) >= APPROVAL_RULES.planFrom || (p.durationDays ?? 0) > 365
 
 const openNotes = (f: AppFlow) => f.notes.filter((n) => !n.resolved)
 
 /** What stands before an approving or upward step at a level · empty = clear */
-export function upBlockers(p: ProjectRow, level: Holder, approving: boolean): string[] {
+export function upBlockers(p: ProjectRow, level: Holder, approving: boolean, withFunding = true): string[] {
   const f = appFlowOf(p.id)
   const out: string[] = []
   const eb = entityBlock(p)
@@ -245,7 +340,7 @@ export function upBlockers(p: ProjectRow, level: Holder, approving: boolean): st
   if (openNotes(f).length) out.push(/* doc 5.4.14 */ `${nf.format(openNotes(f).length)} ملاحظة إلزامية لم تُعالج · لا إحالة لمستوى أعلى قبلها`)
   /* The funding is checked on every approval, and again before the project goes up to the
      committee or the board (4.4.11 · 5.4.5 · 6.2.10 · 7.2.2) */
-  if (approving || level === 'exec' || level === 'committee') out.push(...fundingIssues(p.id, p.amountRequested))
+  if (withFunding && (approving || level === 'exec' || level === 'committee')) out.push(...fundingIssues(p.id, supportAmount(p)))
   if (approving) {
     if (level !== 'manager' && APPROVAL_RULES.requireStrategy) {
       const s = strategyOf(p)
@@ -264,14 +359,17 @@ const recorderOf = (h: Holder): RoleKey[] =>
 
 export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: string): SeatOptions {
   const f = appFlowOf(p.id)
-  const amount = p.amountRequested
+  const amount = supportAmount(p)
   /* Re-audit 7 Oct · the supervisor's seat (study and confirmation) belongs to the project's own
      supervisor, not to anyone holding the role · a project with no owner waits for assignment */
   const mine = recorderOf(holder).includes(viewer) && (holder !== 'supervisor' && holder !== 'confirm' ? true : p.owner === me)
   const by = holder === 'committee' ? ' · تُسجَّل قراراتها في جلستها' : holder === 'board' ? ' · تُسجَّل قراراته في جلسته' : ''
-  const say = f.awaitingReview && holder === 'manager'
-    ? `بانتظار استكمال المراجعة عند مدير المنح · ${f.awaitingReview.note}`
-    : `المشروع عند ${HOLDER_LABEL[holder]}${by}`
+  /* v3 · 5.2.11 · returned by the executive director · «قيد الدراسة · مدير المنح» with his note */
+  const say = f.coverage && !f.coverage.done
+    ? `قرار ${HOLDER_LABEL[f.coverage.level]} صادر · بانتظار التغطية المالية · ${f.coverage.short}`
+    : f.awaitingReview && holder === 'manager'
+      ? `قيد الدراسة · مدير المنح · أعاده المدير التنفيذي: ${f.awaitingReview.note}`
+      : `المشروع عند ${HOLDER_LABEL[holder]}${by}`
   if (!mine) return { actions: [], say, mine, holder }
 
   const conflict = holder !== 'supervisor' && holder !== 'confirm' ? conflictOf(p, me) : undefined
@@ -306,12 +404,14 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
       }
       actions.push({ label: 'توصية بالموافقة', kind: APPROVAL_RULES.managerFinal && amount <= capOf('manager') ? 'btn-2' : 'btn-p', needsNote: true, choose: planChoice, blocked: up('manager', true) })
       actions.push({ label: 'توصية بالرفض', kind: 'btn-2', needsNote: true, blocked: up('manager', false) })
-      if (amount <= APPROVAL_RULES.managerRejectUpTo) actions.push({ label: 'رفض نهائي', kind: 'btn-d', needsNote: true })
+      /* v3 · 4.2.17 · the grants manager refuses finally whatever the amount */
+      actions.push({ label: 'رفض نهائي', kind: 'btn-d', needsNote: true })
     }
-    const ref = flowOf(p.id).referral
+    /* v3 · 1.4.33 · 4.4.18 · back to the supervisor, the grants manager says what happens to the hold ·
+       4.4.8 · the consultant is never a return path · the return goes to the supervisor */
     actions.push({
       label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true,
-      choose: ref ? { label: 'إلى', options: [{ value: 'supervisor', label: 'مشرف المنح' }, { value: 'consultant', label: 'المستشار ومعه المشرف' }] } : undefined,
+      choose: linkOf(p.id)?.stage === 'initial' || (!linkOf(p.id) && hasFunding(p.id)) ? { label: 'الحجز', options: [{ value: 'keep', label: 'الإبقاء على الحجز' }, { value: 'release', label: 'إلغاء الحجز' }] } : undefined,
     })
     return { holder, mine, say, actions }
   }
@@ -321,7 +421,11 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
     const lim = entityLimitBlock(p, 'exec')
     const actions: DecisionAction[] = []
     if (within) actions.push({ label: 'اعتماد', kind: 'btn-p', needsNote: true, blocked: lim || up('exec', true) })
-    actions.push({ label: 'إحالة للجنة التنفيذية', kind: within && !lim ? 'btn-2' : 'btn-p', needsNote: true, blocked: up('exec', false) })
+    /* v3 · 6.4.1 · within his authority the referral needs one of the referral criteria */
+    actions.push({
+      label: 'إحالة للجنة التنفيذية', kind: within && !lim ? 'btn-2' : 'btn-p', needsNote: true, blocked: up('exec', false),
+      choose: within && !lim ? { label: 'معيار الإحالة', options: APPROVAL_RULES.referCriteria.map((c) => ({ value: c, label: c })) } : undefined,
+    })
     actions.push({ label: 'إعادة لمدير المنح', kind: 'btn-2', needsNote: true })
     actions.push({ label: 'اعتذار', kind: 'btn-d', needsNote: true })
     return { holder, mine, say: within ? say : floor ? `${say} · ${floor}` : `${say} · المبلغ فوق حد المدير التنفيذي (${nf.format(levelCap('exec'))}) فالإحالة للجنة`, actions }
@@ -343,7 +447,10 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
 /* ── Operations ── */
 
 type Op = { at: string } & Stamped & (
-  | { op: 'decide'; id: string; level: Holder; verdict: Verdict; note: string; by: string; needsPlan?: boolean; target?: Rec['target'] }
+  | { op: 'decide'; id: string; level: Holder; verdict: Verdict; note: string; by: string; needsPlan?: boolean; target?: Rec['target']; keepHold?: boolean; criterion?: string }
+  | { op: 'amount'; id: string; level: Holder; to: number; reason: string; by: string; session?: string }
+  | { op: 'cover'; id: string; by: string }
+  | { op: 'brief'; id: string; brief: Brief }
   | { op: 'cond'; id: string; cond: Condition }
   | { op: 'condMet'; id: string; condId: string; by: string }
   | { op: 'note'; id: string; note: MandNote }
@@ -354,9 +461,9 @@ type Op = { at: string } & Stamped & (
   | { op: 'conflict'; id: string; level: Holder; reason: string; by: string }
   | { op: 'session'; session: Session }
   | { op: 'agenda'; sessionId: string; projectId: string; add: boolean }
-  | { op: 'vote'; sessionId: string; projectId: string; member: string; vote: Vote }
+  | { op: 'vote'; sessionId: string; projectId: string; member: string; vote: Vote; by?: string }
   | { op: 'minutes'; sessionId: string; projectId: string; file: string; by: string }
-  | { op: 'sessionDecide'; sessionId: string; projectId: string; outcome: Outcome; target?: Holder; note: string; payPlan?: SessionItem['payPlan']; by: string }
+  | { op: 'sessionDecide'; sessionId: string; projectId: string; outcome: Outcome; target?: Holder; note: string; payPlan?: SessionItem['payPlan']; by: string; short?: string }
   | { op: 'sessionClose'; sessionId: string; by: string }
 )
 
@@ -388,7 +495,8 @@ const finalise = (p: ProjectRow, f: AppFlow, level: Level, by: string, fields: L
     project through Ehsan (11.2.17) */
 const activate = (p: ProjectRow, by: string, fields: LogField[]) => {
   p.supportStatus = 'معتمد'
-  if (p.amountGranted === 0) p.amountGranted = p.amountRequested
+  /* v3 · the granted amount is the support amount the deciding level left */
+  if (p.amountGranted === 0 || p.amountSupport !== undefined) p.amountGranted = supportAmount(p)
   p.decidedAt = opDay()
   p.holder = undefined
   if (p.platform === 'منصة إحسان' && p.partnerType === 'مستقل') {
@@ -441,6 +549,7 @@ const applyOp = (o: Op) => {
       const fields: LogField[] = [{ k: 'القرار', v: VERDICT_SAY[o.verdict], strong: true }]
       if (o.note) fields.push({ k: o.verdict.includes('approve') || o.verdict === 'approve' ? 'المبررات' : 'الملاحظات', v: o.note })
       if (o.needsPlan !== undefined) { f.needsPlan = o.needsPlan; fields.push({ k: 'الخطة', v: o.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة' }) }
+      if (o.criterion) fields.push({ k: 'معيار الإحالة', v: o.criterion })
       const tone: LogEvent['tone'] = /approve|confirm|refer|resubmit/.test(o.verdict) ? 'ok' : o.verdict === 'return' ? 'warn' : 'no'
       const lvl = HOLDER_LABEL[o.level]
       switch (o.verdict) {
@@ -449,9 +558,11 @@ const applyOp = (o: Op) => {
           /* Batch 7 · approvals#19 · above the executive's cap (or past the entity's limit with him), a
              recommendation to approve can go straight to the committee when the setting says so */
           const auto = o.verdict === 'recommend-approve' && APPROVAL_RULES.autoReferAboveExec
-            && (p.amountRequested > levelCap('exec') || Boolean(entityLimitBlock(p, 'exec')) || Boolean(typeFloorBlock(p, 'exec')))
+            && (supportAmount(p) > levelCap('exec') || Boolean(entityLimitBlock(p, 'exec')) || Boolean(typeFloorBlock(p, 'exec')))
           p.holder = auto ? 'committee' : 'exec'; p.hoursInStage = 0
-          if (o.verdict === 'recommend-approve') f.hold = linkOf(p.id) ? 'initial' : f.hold
+          /* v3 · 1.4.30 · the recommendation to approve held the money (the action did, on the budget's
+             own log) · a recommendation to refuse leaves it with the line */
+          if (o.verdict === 'recommend-approve') { const h = Boolean(linkOf(p.id)) && BUDGET_RULES.holdAt !== 'approval'; f.hold = h ? 'initial' : f.hold; fields.push({ k: 'الحجز', v: h ? 'مبدئي بالمبلغ الموصى به' : 'يُحجز عند الاعتماد النهائي وفق السياسة المالية' }) } else { f.hold = 'none'; fields.push({ k: 'الحجز', v: 'لا حجز مع التوصية بالرفض' }) }
           fields.push({ k: 'الإحالة', v: auto ? /* doc 5.4.11 */ 'اللجنة التنفيذية · إحالة تلقائية فوق حد المدير التنفيذي' : 'المدير التنفيذي' })
           if (auto) notify(['المدير التنفيذي', 'مدير المنح'], p.id, `أُحيل إلى اللجنة تلقائيًا · ${p.name}`, 'المبلغ فوق حد المدير التنفيذي · ينتظر جلسة اللجنة')
           else notify(['المدير التنفيذي'], p.id, `توصية مدير المنح · ${p.name}`, `${VERDICT_SAY[o.verdict]} · ${o.note}`)
@@ -481,15 +592,19 @@ const applyOp = (o: Op) => {
         case 'return': {
           const to = o.target ?? 'manager'
           if (to === 'supervisor' || to === 'consultant') {
-            /* Back to study · the hold is released and the budget is checked again on the way back (4.4.17 · 6.4.9) */
+            /* v3 · 1.4.33 · back to study · the last held amount stays · only the grants manager may let
+               it go, and says so (4.4.18) · a body's return keeps it whatever the reason (6.4.11 · 7.4.11) */
+            /* An op saved before v3 carries no choice · it released the hold on the budget's log then */
+            const keep = o.keepHold ?? (o.level !== 'manager' && Boolean(linkOf(o.id) || hasFunding(o.id)))
+            const had = f.hold
             p.holder = 'supervisor'
-            f.hold = 'none'
+            if (!keep) f.hold = 'none'
             f.awaitingReview = undefined
             /* The study tab reads the note from the intake record, where the supervisor works */
             flowOf(o.id).returnNote = o.note
             flowOf(o.id).returnStudied = undefined
             if (p.owner) notify([p.owner], p.id, `أُعيد إليك · ${p.name}`, o.note, ROUTES.projectTab(p.id, 'study'))
-            fields.push({ k: 'إلى', v: to === 'consultant' ? 'المستشار ومشرف المنح' : 'مشرف المنح' }, { k: 'الحجز', v: 'أُلغي · يُعاد التحقق عند العودة' })
+            fields.push({ k: 'إلى', v: 'مشرف المنح' }, { k: 'الحجز', v: had === 'none' ? 'لا حجز قائم' : keep ? `محفوظ بآخر مبلغ محجوز${o.level === 'manager' ? ' · بقرار مدير المنح' : ''}` : 'أُلغي بقرار مدير المنح · يُعاد الحجز عند التوصية القادمة' })
           } else {
             p.holder = to as Holder
             if (to === 'manager' && o.level !== 'manager') f.awaitingReview = { note: o.note, by: o.by, at: opDay() }
@@ -523,6 +638,47 @@ const applyOp = (o: Op) => {
           break
       }
       event(o.id, { action: `${lvl} · ${VERDICT_SAY[o.verdict]}`, by: o.by, fields, tone, actor: o.level === 'committee' || o.level === 'board' ? 'committee' : 'staff', dept: lvl })
+      return
+    }
+    case 'amount': {
+      /* v3 · 4.2.5 · 5.4.11 · 6.4.5 · 7.4.7 · the level fixed, raised or cut the support amount · the
+         hold followed on the budget's own log (the action resized it) */
+      const p = row(o.id)
+      if (!p) return
+      const f = appFlowOf(o.id)
+      const from = supportAmount(p)
+      if (from === o.to) return
+      trailBase(p, f, from)
+      f.amounts.push({ level: o.level, by: o.by, at: opDay(), from, to: o.to, reason: o.reason, session: o.session })
+      p.amountSupport = o.to
+      event(o.id, {
+        action: `${HOLDER_LABEL[o.level]} · تعديل مبلغ الدعم`, by: o.by, tone: 'warn', dept: HOLDER_LABEL[o.level],
+        actor: o.level === 'committee' || o.level === 'board' ? 'committee' : 'staff',
+        fields: [{ k: 'المبلغ السابق', v: nf.format(from) }, { k: 'المبلغ الجديد', v: nf.format(o.to), strong: true }, { k: 'المبررات', v: o.reason }],
+      })
+      /* The levels before see it at once */
+      notify([...new Set([p.owner ?? 'مشرف المنح', 'مدير المنح', ...(o.level === 'committee' || o.level === 'board' ? ['المدير التنفيذي'] : [])])].filter((x) => x !== o.by), p.id,
+        `عُدّل مبلغ الدعم · ${p.name}`, `${HOLDER_LABEL[o.level]} · ${nf.format(from)} ← ${nf.format(o.to)} · ${o.reason}`)
+      return
+    }
+    case 'cover': {
+      /* v3 · 6.4.3 · 7.4.5 · the cover was found · the decision recorded becomes the financial approval */
+      const p = row(o.id)
+      const f = appFlowOf(o.id)
+      const c = f.coverage
+      if (!p || !c || c.done) return
+      c.done = { by: o.by, at: opDay() }
+      const fields: LogField[] = [{ k: 'القرار', v: `${HOLDER_LABEL[c.level]} · اعتماد`, strong: true }, { k: 'التغطية المالية', v: 'اكتملت · نفذ القرار ماليًا' }, { k: 'الحجز', v: 'نهائي' }]
+      finalise(p, f, c.level, o.by, fields)
+      event(o.id, { action: 'نفاذ القرار ماليًا بعد التغطية', by: o.by, tone: 'ok', fields })
+      return
+    }
+    case 'brief': {
+      const f = appFlowOf(o.id)
+      if (!f.briefs.some((b) => b.id === o.brief.id)) {
+        f.briefs.unshift(o.brief)
+        event(o.id, { action: `ملف العرض · ${HOLDER_LABEL[o.brief.level]}`, by: o.brief.by, fields: [{ k: 'الموقف المالي', v: `حتى ${o.brief.at} ${o.brief.time}` }, { k: 'الصيغة', v: 'PDF جاهز للإرسال بالبريد' }] })
+      }
       return
     }
     case 'cond': appFlowOf(o.id).conditions.push(o.cond); event(o.id, { action: 'إضافة شرط خاص', by: o.cond.by, fields: [{ k: 'الشرط', v: o.cond.text, strong: true }, { k: 'قبل', v: o.cond.when === 'agreement' ? 'توقيع الاتفاقية' : 'صرف الدفعة الأولى' }] }); return
@@ -587,7 +743,13 @@ const applyOp = (o: Op) => {
       const it = itemOf(o.sessionId, o.projectId)
       const pr = row(o.projectId)
       /* 6.4.21 · a member who declared a conflict with the entity doesn't vote on its project */
-      if (it && !it.outcome && sessionById(o.sessionId)?.state === 'planned' && !(pr && conflictOf(pr, o.member))) it.votes[o.member] = o.vote
+      if (it && !it.outcome && sessionById(o.sessionId)?.state === 'planned' && !(pr && conflictOf(pr, o.member))) {
+        it.votes[o.member] = o.vote
+        /* v3 · 6.2.5 · 7.2.7 · the executive director (the secretary) may enter a member's vote · it reads so */
+        const px = new Set(it.proxied ?? [])
+        if (o.by && o.by !== o.member) px.add(o.member); else px.delete(o.member)
+        it.proxied = [...px]
+      }
       return
     }
     case 'minutes': {
@@ -607,18 +769,30 @@ const applyOp = (o: Op) => {
       it.outcome = o.outcome; it.target = o.target; it.note = o.note; it.payPlan = o.payPlan; it.decidedAt = opDay()
       const tally = voteTally(it)
       const verdict: Verdict = o.outcome === 'approve' ? 'approve' : o.outcome === 'refer' ? 'refer' : o.outcome === 'reject' ? 'reject' : 'return'
-      apply({ op: 'decide', id: p.id, level: s.body, verdict, note: o.note, by: o.by, target: o.target, at: o.at })
+      if (o.outcome === 'approve' && o.short) {
+        /* v3 · 6.4.3 · 7.4.5 · recorded as issued · the money isn't covered, so no financial approval
+           and no final hold until it is · the holder stays the body, with the decision on file */
+        it.uncovered = o.short
+        const f = appFlowOf(p.id)
+        f.coverage = { level: s.body, amount: supportAmount(p), short: o.short, by: o.by, at: opDay(), sessionId: s.id, note: o.note }
+        f.recs.unshift({ level: s.body, verdict: 'approve', note: o.note, by: o.by, at: opDay() })
+        event(p.id, {
+          action: `${HOLDER_LABEL[s.body]} · اعتماد · بانتظار التغطية المالية`, by: o.by, tone: 'warn', actor: 'committee', dept: HOLDER_LABEL[s.body],
+          fields: [{ k: 'القرار', v: 'اعتماد · حُفظ كما صدر', strong: true }, { k: 'النفاذ المالي', v: `معلّق · ${o.short}` }, { k: 'الحجز', v: 'يبقى مبدئيًا حتى التغطية' }],
+        })
+        notify(['المدير التنفيذي', 'مدير المنح', 'الإدارة المالية'], p.id, `قرار بانتظار التغطية المالية · ${p.name}`, o.short)
+      } else apply({ op: 'decide', id: p.id, level: s.body, verdict, note: o.note, by: o.by, target: o.target, at: o.at })
       event(p.id, {
         action: `محضر ${HOLDER_LABEL[s.body]} · ${s.title}`, by: o.by, actor: 'committee', dept: HOLDER_LABEL[s.body],
         fields: [
           { k: 'التصويت', v: `موافقة ${tally.approve} · رفض ${tally.reject} · إعادة ${tally.return} · امتناع ${tally.abstain}`, strong: true },
-          ...(o.payPlan ? [{ k: 'آلية الدفعات', v: `${o.payPlan.count} دفعات · ${o.payPlan.note}` }] : []),
+          ...(o.payPlan?.note ? [{ k: 'توجيهات الصرف', v: o.payPlan.count ? `${o.payPlan.count} دفعات · ${o.payPlan.note}` : o.payPlan.note }] : []),
         ],
         files: it.minutes ? [it.minutes] : undefined,
       })
       /* Cross · notifications · the session's decision reaches the parties (6.4.12 · 7.4.12) */
       notify([...new Set([p.owner ?? 'مشرف المنح', 'مدير المنح', 'المدير التنفيذي'])], p.id, `قرار ${HOLDER_LABEL[s.body]} · ${p.name}`, `${OUTCOME_SAY[o.outcome]}${o.note ? ` · ${o.note}` : ''}`)
-      if (o.outcome === 'approve') notify([p.entityName], p.id, `اعتمد ${HOLDER_LABEL[s.body]} مشروعك · ${p.name}`, 'يتبعه تأكيد الاعتماد وإعداد الاتفاقية', ROUTES.project(p.id))
+      if (o.outcome === 'approve' && !o.short) notify([p.entityName], p.id, `اعتمد ${HOLDER_LABEL[s.body]} مشروعك · ${p.name}`, 'يتبعه إعداد الاتفاقية', ROUTES.project(p.id))
       return
     }
     case 'sessionClose': {
@@ -655,7 +829,7 @@ export function carried(it: SessionItem): Vote | null {
 }
 
 /** What stands before recording a session decision (6.4.6 · 6.2.10 · 7.2.2) */
-export function sessionItemBlockers(s: Session, it: SessionItem, outcome: Outcome): string[] {
+export function sessionItemBlockers(s: Session, it: SessionItem, outcome: Outcome, amount?: number): string[] {
   const p = row(it.projectId)
   if (!p) return ['المشروع غير موجود']
   const out: string[] = []
@@ -665,9 +839,11 @@ export function sessionItemBlockers(s: Session, it: SessionItem, outcome: Outcom
   const want: Vote = outcome === 'refer' ? 'approve' : outcome
   if (t.cast >= APPROVAL_RULES.quorum && c !== want) out.push(`القرار لا يطابق نتيجة التصويت${c ? ` (${VOTE_SAY[c]})` : ' · لا أغلبية'}`)
   if (!it.minutes) out.push('أرفق محضر الاجتماع أولًا')
-  if (outcome === 'approve' || outcome === 'refer') out.push(...upBlockers(p, s.body, true))
+  /* v3 · 6.4.3 · 7.4.5 · the balance doesn't stop a body's decision from being recorded · an uncovered
+     approval is saved as issued with its money suspended (`sessionShort`) */
+  if (outcome === 'approve' || outcome === 'refer') out.push(...upBlockers(p, s.body, true, outcome === 'refer'))
   if (outcome === 'approve') {
-    if (p.amountRequested > levelCap(s.body)) out.push(`المبلغ فوق حد ${HOLDER_LABEL[s.body]} · الإحالة لمجلس الأمناء`)
+    if ((amount ?? supportAmount(p)) > levelCap(s.body)) out.push(`المبلغ فوق حد ${HOLDER_LABEL[s.body]} · الإحالة لمجلس الأمناء`)
     if (s.body === 'committee') { const l = entityLimitBlock(p, 'committee'); if (l) out.push(l) }
     const fl = typeFloorBlock(p, s.body); if (fl) out.push(fl)
   }
@@ -698,6 +874,18 @@ function seed() {
     if (p.holder === 'committee' || p.holder === 'board') {
       f.recs.unshift({ level: 'exec', verdict: 'refer', note: 'المبلغ فوق حد المدير التنفيذي · يُعرض على اللجنة', by: 'عبدالرحمن الهليّل', at: at(3) })
     }
+  }
+  /* v3 · 5.2.3 · 6.2.2 · the fixture's projects above the grants manager carry the file made when they
+     arrived · its financial position is the one at load, kept as it is */
+  for (const p of projectRows.filter((x) => x.stage === 'دراسة المشروع' && (x.holder === 'exec' || x.holder === 'committee' || x.holder === 'board'))) {
+    const fin = finPosition(p)
+    const f = appFlowOf(p.id)
+    if (!fin) continue
+    f.briefs.push({
+      id: `br-${p.id}-1-${p.holder}`, level: p.holder!, at: at(p.holder === 'exec' ? 6 : 3), time: '09:00', by: 'النظام', amount: supportAmount(p), fin,
+      recs: f.recs.map((r) => ({ level: r.level, verdict: VERDICT_SAY[r.verdict], note: r.note, by: r.by, at: r.at })),
+      orgOutputs: orgOutputsOf(p.id).map(outputLine), entityOutputs: (flowOf(p.id).entityOutputs ?? []).map(outputLine), conditions: [], amounts: [],
+    })
   }
   /* A planned committee session with the two referred projects on its agenda, and the board's next */
   const referred = projectRows.filter((p) => p.holder === 'committee' && p.stage === 'دراسة المشروع').map((p) => p.id)
@@ -746,38 +934,148 @@ const settleHold = (id: string, me: string) => {
   if (l && FLOWS.get(id)?.hold === 'final' && l.stage !== 'final' && l.stage !== 'closed') finalizeHold(id, me)
 }
 
+/** v3 · 6.4.12 · 7.4.12 · the amount changed since the hold · on the way up again the hold follows it
+    when the line has the balance · the standing check says what's short when it hasn't */
+function syncHold(p: ProjectRow, me: string): void {
+  const l = linkOf(p.id)
+  const want = supportAmount(p)
+  if (!l || l.stage === 'closed' || l.stage === 'final' || l.amount === want) return
+  if (!resizeIssue(p.id, want)) resizeLink(p.id, want, p.id, me, 'تحديث آلي للحجز إلى مبلغ الدعم الحالي')
+}
+
+/** The presentation file at a level · made when the project arrives there (5.2.3 · 6.2.2 · 7.2.3) ·
+    its financial position is read now and kept as it is */
+function makeBrief(p: ProjectRow, level: Holder, me: string): void {
+  if (level !== 'exec' && level !== 'committee' && level !== 'board') return
+  const fin = finPosition(p)
+  if (!fin) return
+  const f = appFlowOf(p.id)
+  const at = stampNow()
+  const brief: Brief = {
+    id: `br-${p.id}-${f.briefs.length + 1}-${level}`, level, at: dayOf(at), time: timeOf(at), by: me, amount: supportAmount(p), fin,
+    recs: f.recs.map((r) => ({ level: r.level, verdict: VERDICT_SAY[r.verdict], note: r.note, by: r.by, at: r.at })),
+    orgOutputs: orgOutputsOf(p.id).map(outputLine),
+    entityOutputs: (flowOf(p.id).entityOutputs ?? []).map(outputLine),
+    conditions: f.conditions.map((c) => c.text),
+    amounts: f.amounts.map((x) => ({ ...x })),
+  }
+  run({ op: 'brief', id: p.id, brief, at: now() })
+}
+/** Each level the decision just sent the project to gets its file */
+const briefOnArrival = (p: ProjectRow, before: Holder | undefined, me: string) => {
+  if (p.holder && p.holder !== before && p.stage === 'دراسة المشروع') makeBrief(p, p.holder, me)
+}
+
+/** v3 · 4.2.5 · 5.4.11 · 6.4.5 · 7.4.7 · fix, raise or cut the support amount at the level that holds
+    the project · with its reason · the hold follows when the line has the balance, and a raise it
+    can't cover is refused (outside a session · a body's decision is recorded as issued, 6.4.3) */
+export function changeAmount(p: ProjectRow, level: Holder, to: number, reason: string, me: string, session?: string): string[] {
+  if (p.stage !== 'دراسة المشروع' || (p.holder ?? 'supervisor') !== level) return ['المشروع ليس عند هذه المحطة']
+  if (!(to > 0)) return ['أدخل مبلغ الدعم']
+  if (!reason.trim()) return ['اكتب مبررات تعديل المبلغ']
+  const from = supportAmount(p)
+  if (to === from) return ['المبلغ لم يتغيّر']
+  const l = linkOf(p.id)
+  if (l && l.stage !== 'planned') {
+    const why = resizeIssue(p.id, to)
+    if (why && !session) return [why]
+    if (!why) resizeLink(p.id, to, p.id, me, `تعديل مبلغ الدعم · ${HOLDER_LABEL[level]} · ${reason.trim()}`)
+  } else if (l?.stage === 'planned' && l.amount !== to) {
+    /* A drawn link with no hold yet · redrawn on its first line, held at the recommendation */
+    resizeLink(p.id, to, p.id, me, `تعديل مبلغ الدعم · ${HOLDER_LABEL[level]}`)
+  }
+  run({ op: 'amount', id: p.id, level, to, reason: reason.trim(), by: me, session, at: now() })
+  return []
+}
+
+/** v3 · 6.4.3 · what the balance leaves uncovered for a body's approval · '' = covered */
+export function sessionShort(p: ProjectRow): string {
+  return fundingIssues(p.id, supportAmount(p))[0] ?? ''
+}
+
+/** v3 · 6.4.3 · 7.4.5 · the cover was found (a transfer, a raise of the line or a relink) · the
+    decision recorded becomes the financial approval · the reasons it can't yet */
+export function completeCoverage(p: ProjectRow, me: string): string[] {
+  const f = appFlowOf(p.id)
+  if (!f.coverage || f.coverage.done) return ['لا قرار بانتظار التغطية']
+  syncHold(p, me)
+  const why = fundingIssues(p.id, supportAmount(p))
+  if (why.length) return why
+  run({ op: 'cover', id: p.id, by: me, at: now() })
+  settleHold(p.id, me)
+  return []
+}
+
 export function decide(p: ProjectRow, level: Holder, label: string, note: string, choice: string, me: string): string[] {
   if (p.stage !== 'دراسة المشروع' || (p.holder ?? 'supervisor') !== level) return ['المشروع ليس عند هذه المحطة']
   const at = now()
-  const go = (verdict: Verdict, extra: Partial<Extract<Op, { op: 'decide' }>> = {}) =>
+  const before = p.holder
+  const go = (verdict: Verdict, extra: Partial<Extract<Op, { op: 'decide' }>> = {}) => {
     run({ op: 'decide', id: p.id, level, verdict, note, by: me, at, ...extra })
+    briefOnArrival(p, before, me)
+  }
+  /* v3 · 6.4.12 · an amount changed since the hold · the hold follows before the checks read it */
+  if (/اعتماد|توصية بالموافقة|أعد الإرسال|إحالة/.test(label)) syncHold(p, me)
   const block = (approving: boolean) => upBlockers(p, level, approving)
+  /* The checks before the recommendation's hold · a planned link reads the line's balance itself */
   switch (label) {
     case 'إحالة لصاحب صلاحية بديل': run({ op: 'conflict', id: p.id, level, reason: note, by: me, at }); return []
-    case 'اعتماد نهائي': { const fl = typeFloorBlock(p, 'manager'); if (fl) return [fl]; const b = block(true); if (b.length) return b; if (!choice) return ['حدّد إن كان المشروع يتطلب خطة']; go('final-approve', { needsPlan: choice === 'yes' }); settleHold(p.id, me); return [] }
-    case 'توصية بالموافقة': { const b = block(true); if (b.length) return b; if (!choice) return [/* doc 4.2.3 */ 'حدّد إن كان المشروع يتطلب خطة']; go('recommend-approve', { needsPlan: choice === 'yes' }); return [] }
-    case 'توصية بالرفض': { const b = block(false); if (b.length) return b; go('recommend-reject'); return [] }
+    case 'اعتماد نهائي': {
+      const fl = typeFloorBlock(p, 'manager'); if (fl) return [fl]
+      if (!choice) return ['حدّد إن كان المشروع يتطلب خطة']
+      const b = block(true); if (b.length) return b
+      const held = holdAtRecommendation(p.id, me); if (held.length) return held
+      go('final-approve', { needsPlan: choice === 'yes' }); settleHold(p.id, me); return []
+    }
+    case 'توصية بالموافقة': {
+      if (!choice) return [/* doc 4.2.3 */ 'حدّد إن كان المشروع يتطلب خطة']
+      /* v3 · 4.2.14 · 4.4.13 · the recommendation holds the money · a line short of it stops the
+         recommendation with the shortfall named */
+      const b = block(true); if (b.length) return b
+      const held = holdAtRecommendation(p.id, me); if (held.length) return held
+      go('recommend-approve', { needsPlan: choice === 'yes' }); return []
+    }
+    case 'توصية بالرفض': {
+      const b = upBlockers(p, level, false, false); if (b.length) return b
+      if (linkOf(p.id)?.stage === 'initial') releaseToPlanned(p.id, me, 'توصية بالرفض · لا حجز')
+      go('recommend-reject'); return []
+    }
     case 'رفض نهائي': {
-      if (p.amountRequested > APPROVAL_RULES.managerRejectUpTo) return [/* doc 4.2.15 */ 'المبلغ فوق حد الرفض النهائي لمدير المنح · يُرفع بتوصية للمدير التنفيذي']
+      /* v3 · 4.2.17 · whatever the amount */
       if (hasFunding(p.id)) unlinkProject(p.id, me, 'رفض نهائي من مدير المنح')
       go('final-reject'); return []
     }
     case 'إعادة للمشرف': {
-      if (hasFunding(p.id)) unlinkProject(p.id, me, /* doc 4.4.17 */ 'إعادة المشروع للمشرف')
-      const target = choice === 'consultant' ? 'consultant' : 'supervisor'
-      go('return', { target })
-      if (target === 'consultant') { const r = flowOf(p.id).referral; if (r) referConsultant(p.id, r.consultant, me) }
+      /* v3 · 1.4.33 · 4.4.18 · keep the last held amount, or release it · the grants manager's call */
+      const l = linkOf(p.id)
+      const held = l?.stage === 'initial' || (!l && hasFunding(p.id))
+      if (held && choice !== 'keep' && choice !== 'release') return ['حدّد الإجراء بشأن الحجز المالي: الإبقاء أو الإلغاء']
+      /* Nothing held (a link drawn at his seat, or none) · nothing to keep or release · the drawn link stays */
+      const keep = !held || choice === 'keep'
+      if (!keep) {
+        /* The money goes back to the line · the drawn link stays for the next recommendation to hold
+           again · a multi-year plan has no drawn link, so its holds are released whole */
+        if (l) releaseToPlanned(p.id, me, /* doc 4.4.18 */ 'إعادة المشروع للمشرف · إلغاء الحجز بقرار مدير المنح')
+        else unlinkProject(p.id, me, 'إعادة المشروع للمشرف · إلغاء الحجز بقرار مدير المنح')
+      }
+      go('return', { target: 'supervisor', keepHold: keep })
       return []
     }
     case 'أعد الإرسال للمدير التنفيذي': { const b = block(false); if (b.length) return b; go('resubmit'); return [] }
     case 'اعتماد': {
-      if (p.amountRequested > levelCap('exec')) return [/* doc 5.4.11 */ `المبلغ فوق حد المدير التنفيذي (${nf.format(levelCap('exec'))}) · الإحالة للجنة`]
+      if (supportAmount(p) > levelCap('exec')) return [/* doc 5.4.11 */ `المبلغ فوق حد المدير التنفيذي (${nf.format(levelCap('exec'))}) · الإحالة للجنة`]
       const lim = entityLimitBlock(p, 'exec'); if (lim) return [lim, 'تُحال للجنة التنفيذية']
       const fl = typeFloorBlock(p, 'exec'); if (fl) return [fl]
       const b = block(true); if (b.length) return b
       go('approve'); settleHold(p.id, me); return []
     }
-    case 'إحالة للجنة التنفيذية': { const b = block(false); if (b.length) return b; go('refer'); return [] }
+    case 'إحالة للجنة التنفيذية': {
+      const b = block(false); if (b.length) return b
+      /* v3 · 6.4.1 · within the executive's authority, only on a referral criterion */
+      const within = supportAmount(p) <= levelCap('exec') && !typeFloorBlock(p, 'exec') && !entityLimitBlock(p, 'exec')
+      if (within && !choice) return ['المبلغ ضمن صلاحية المدير التنفيذي · اختر معيار الإحالة للجنة']
+      go('refer', { criterion: within ? choice : 'تجاوز حدود صلاحية المدير التنفيذي' }); return []
+    }
     case 'إعادة لمدير المنح': go('return', { target: 'manager' }); return []
     case 'اعتذار': if (hasFunding(p.id)) unlinkProject(p.id, me, 'اعتذار المدير التنفيذي'); go('reject'); return []
     case 'تأكيد الاعتماد': {
@@ -805,24 +1103,48 @@ export const saveSession = (s: Session) => run({ op: 'session', session: s, at: 
 export const setAgenda = (sessionId: string, projectId: string, add: boolean) => run({ op: 'agenda', sessionId, projectId, add, at: now() })
 /** Re-audit 7 Oct · each member casts his own vote from his own account · the secretary records the
     minutes and the decision, not the members' votes (6.4.6 · 7.4.6) */
-export function castVote(sessionId: string, projectId: string, member: string, vote: Vote, by: string): string[] {
-  if (member !== by) return ['يصوّت العضو بنفسه من حسابه']
+export function castVote(sessionId: string, projectId: string, member: string, vote: Vote, by: string, role?: RoleKey): string[] {
   const s = sessionById(sessionId)
+  /* v3 · 6.2.5 · 7.2.7 · the executive director records each member's decision · a member votes from
+     his own account too */
+  if (member !== by && !(s && role === 'ceo' && mayRecord(s.body, role))) return ['يصوّت العضو بنفسه من حسابه أو يسجّله المدير التنفيذي']
   const p = row(projectId)
   if (!s?.members.includes(member)) return ['ليس عضوًا في هذه الجلسة']
   if (p && conflictOf(p, member)) return ['أُعلن تعارض مصالح مع الجهة · لا يصوّت على مشروعها']
-  run({ op: 'vote', sessionId, projectId, member, vote, at: now() })
+  run({ op: 'vote', sessionId, projectId, member, vote, by, at: now() })
   return []
 }
 export const attachMinutes = (sessionId: string, projectId: string, file: string, by: string) => run({ op: 'minutes', sessionId, projectId, file, by, at: now() })
-export const decideInSession = (sessionId: string, projectId: string, outcome: Outcome, note: string, by: string, target?: Holder, payPlan?: SessionItem['payPlan']) => {
+export const decideInSession = (sessionId: string, projectId: string, outcome: Outcome, note: string, by: string, target?: Holder, payPlan?: SessionItem['payPlan'], amount?: { to: number; reason: string }): string[] => {
   const p = row(projectId)
-  /* Batch 7 · a multi-year project's held years leave too · `hasFunding` covers the plan, `linkOf` didn't */
-  if (p && (outcome === 'reject' || (outcome === 'return' && target === 'supervisor')) && hasFunding(projectId)) {
-    unlinkProject(projectId, by, outcome === 'reject' ? 'رفض في الجلسة' : /* doc 6.4.9 */ 'إعادة للدراسة أو لتعديل جوهري · يُعاد التحقق عند العودة')
+  const s = sessionById(sessionId)
+  if (!p || !s) return ['الجلسة أو المشروع غير موجود']
+  const before = p.holder
+  const it = itemOf(sessionId, projectId)
+  if (!it || it.outcome || s.state === 'closed') return ['القرار مسجّل أو الجلسة مقفلة']
+  /* Validate before any money moves · a blocked decision leaves the hold as it was */
+  const moved = amount && amount.to !== supportAmount(p) && (outcome === 'approve' || outcome === 'refer') ? amount : undefined
+  const pre = sessionItemBlockers(s, it, outcome, moved?.to)
+  if (pre.length) return pre
+  if (moved && !moved.reason.trim()) return ['اكتب مبررات تعديل المبلغ']
+  /* A referral carries the hold up · a raise it can't hold is refused (7.2.2) · only an approval is
+     recorded uncovered (6.4.3) */
+  if (outcome === 'refer' && moved && moved.to > supportAmount(p)) { const w = resizeIssue(p.id, moved.to); if (w) return [w] }
+  /* v3 · 6.4.5 · 7.4.7 · the body fixes, raises or cuts the amount with its decision */
+  if (moved) {
+    const amount = moved
+    const why = changeAmount(p, s.body, amount.to, amount.reason, by, sessionId)
+    if (why.length) return why
   }
-  run({ op: 'sessionDecide', sessionId, projectId, outcome, target, note, payPlan, by, at: now() })
-  settleHold(projectId, by)
+  if (outcome === 'approve' || outcome === 'refer') syncHold(p, by)
+  /* Batch 7 · a multi-year project's held years leave too · v3 · 6.4.11 · 7.4.11 · a return keeps the
+     hold whatever the stage it goes back to · only a refusal releases it */
+  if (outcome === 'reject' && hasFunding(projectId)) unlinkProject(projectId, by, 'رفض في الجلسة')
+  const short = outcome === 'approve' ? sessionShort(p) : ''
+  run({ op: 'sessionDecide', sessionId, projectId, outcome, target, note, payPlan, by, short: short || undefined, at: now() })
+  if (!short) settleHold(projectId, by)
+  briefOnArrival(p, before, by)
+  return []
 }
 export const closeSession = (sessionId: string, by: string) => run({ op: 'sessionClose', sessionId, by, at: now() })
 
@@ -835,7 +1157,7 @@ export const nextSessionId = (body: Session['body']) => {
 
 /** Projects waiting for a body's session · referred and not yet on an open session's agenda */
 export const awaitingSession = (body: Session['body']): ProjectRow[] =>
-  projectRows.filter((p) => p.stage === 'دراسة المشروع' && p.holder === body)
+  projectRows.filter((p) => p.stage === 'دراسة المشروع' && p.holder === body && !(FLOWS.get(p.id)?.coverage && !FLOWS.get(p.id)?.coverage?.done))
 
 export const mayRecord = (body: Session['body'], role: RoleKey) => recorderOf(body).includes(role)
 

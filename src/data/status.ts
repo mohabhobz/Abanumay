@@ -28,6 +28,10 @@ let agreementGate: Gate = () => ''
 let planGate: Gate = () => ''
 export const setAgreementStatusGate = (f: Gate): void => { agreementGate = f }
 export const setPlanStatusGate = (f: Gate): void => { planGate = f }
+/** v3 · what the approval path adds to the study's level · a return from the executive (5.2.11), a
+    body's decision waiting for its financial cover (6.4.3) · '' when nothing */
+let studyNote: Gate = () => ''
+export const setStudyNoteGate = (f: Gate): void => { studyNote = f }
 
 const PRE = 'استكمال متطلبات ما قبل التنفيذ'
 
@@ -62,7 +66,12 @@ export const STUDY_LEVEL: Record<string, string> = {
 /** The sub-status · '' where the dictionary gives none */
 export function subStatusOf(p: Pick<ProjectRow, 'id' | 'stage' | 'holder' | 'supportStatus' | 'closeSavings' | 'redirect' | 'type' | 'refusedBy'>): string {
   const s = statusOf(p)
-  if (s === 'قيد الدراسة') return p.stage === 'استكمال بيانات المشروع' ? 'استكمال الجهة' : STUDY_LEVEL[p.holder ?? 'supervisor'] ?? STUDY_LEVEL.supervisor!
+  if (s === 'قيد الدراسة') {
+    if (p.stage === 'استكمال بيانات المشروع') return 'استكمال الجهة'
+    const lvl = STUDY_LEVEL[p.holder ?? 'supervisor'] ?? STUDY_LEVEL.supervisor!
+    const n = studyNote(p.id)
+    return n ? `${lvl} · ${n}` : lvl
+  }
   if (s === PRE) {
     /* 0.status.4 · the agreement's state and the plan's, each on its own */
     const a = agreementGate(p.id)

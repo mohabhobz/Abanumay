@@ -133,6 +133,9 @@ export interface ProjectFlow {
   returnNote?: string
   /** The study was updated after the return · the version counts once per return */
   returnStudied?: boolean
+  /** v3 · 4.2.5 · the study amount the last forward put on the approval path · a re-send that didn't
+      change it leaves a level's later change standing (6.4.12) */
+  appliedAmount?: number
   closed?: { kind: 'cancel' | 'archive'; reason: string; by: string; at: string }
   /** v3 · 3.2.10 · the request as the entity corrected it after a return · the next version carries it */
   amended?: Record<string, string>
@@ -310,6 +313,10 @@ export const missingDocs = (id: string): string[] => {
   return REQUEST_DOCS.filter((d) => d.required && !f.docs.some((x) => x.kind === d.key)).map((d) => d.label)
 }
 
+/* The approvals store keeps the amount's trail · it imports this store, so it hands its writer in */
+let amountHook: (projectId: string, from: number, to: number, by: string, at: string) => void = () => undefined
+export const setSupervisorAmountHook = (f: typeof amountHook): void => { amountHook = f }
+
 /* The budget store hands in what the project already holds · it imports this store, so not back */
 let ownHold: (projectId: string) => number = () => 0
 export const setOwnHold = (f: (projectId: string) => number): void => { ownHold = f }
@@ -464,6 +471,14 @@ function applyOp(o: Op) {
       f.returnStudied = undefined
       p!.holder = 'manager'
       p!.hoursInStage = 0
+      /* v3 · 4.2.5 · the supervisor's recommended amount is where the approval path starts · on a re-send
+         it moves the path's amount only when the supervisor changed it in the study (6.4.12) */
+      if (s?.recommendation === 'approve' && s.amount > 0 && (p!.amountSupport === undefined || s.amount !== f.appliedAmount)) {
+        const from = p!.amountSupport
+        p!.amountSupport = s.amount
+        if (from !== undefined && from !== s.amount) amountHook(o.id, from, s.amount, o.by, opDay())
+      }
+      if (s?.recommendation === 'approve' && s.amount > 0) f.appliedAmount = s.amount
       event(o.id, {
         action: s?.recommendation === 'reject' ? 'توصية بالرفض وإحالة لمدير المنح' : 'توصية بالموافقة وإحالة لمدير المنح',
         by: o.by, tone: 'ok',

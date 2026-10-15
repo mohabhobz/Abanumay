@@ -421,15 +421,21 @@ function RulesTab() {
             <div className="cfgchips" role="radiogroup" aria-label="مرحلة الحجز">
               {(['recommend', 'approval'] as const).map((v) => (
                 <button key={v} type="button" role="radio" aria-checked={d.holdAt === v} className={`cfgchip${d.holdAt === v ? ' on' : ''}`} onClick={() => put('holdAt', v)}>
-                  {v === 'recommend' ? 'مبدئي عند توصية مدير المنح' : 'عند الاعتماد النهائي'}
+                  {v === 'recommend' ? 'مبدئي عند توصية مدير المنح بالموافقة' : 'عند الاعتماد النهائي'}
                 </button>
               ))}
             </div>
           </li>
+          {/* v3 · 1.3b · the link of an approved project moves by a relocation request */}
           <li className="itk-sup">
-            <span className="cfgl"><b>تعديل الارتباط بعد الاعتماد</b><span className="sub">يُلغى الحجز السابق ويُحجز الجديد على كامل القيمة بسبب موثّق</span></span>
+            <span className="cfgl"><b>طلب إعادة تسكين مشروع</b><span className="sub">ينشئه على المشروع المعتمد ويرسله للاعتماد النهائي</span></span>
             <span className="pc-sp" />
-            <MultiSelect all="لا أحد" values={d.relinkBy} options={ROLE_OPTS} onChange={(x) => put('relinkBy', x as RoleKey[])} />
+            <MultiSelect all="لا أحد" values={d.relocateBy} options={ROLE_OPTS} onChange={(x) => put('relocateBy', x as RoleKey[])} />
+          </li>
+          <li className="itk-sup">
+            <span className="cfgl"><b>اعتماد إعادة التسكين</b><span className="sub">يعتمد الطلب أو يعيده للمراجعة · وعند الاعتماد يُنفَّذ تلقائيًا</span></span>
+            <span className="pc-sp" />
+            <MultiSelect all="لا أحد" values={d.relocateApproveBy} options={ROLE_OPTS} onChange={(x) => put('relocateApproveBy', x as RoleKey[])} />
           </li>
         </ul>
       </Glass>

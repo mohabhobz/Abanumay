@@ -10,6 +10,9 @@ import {
   type HoldStage, type LinkShare,
 } from '@/data/budget/store'
 import { BudgetLinkAction } from '@/features/budget/BudgetLink'
+import { supportAmount } from '@/data/approvals/store'
+import { RelocationPanel } from './RelocationPanel'
+import { lineBalances } from '@/data/budget/store'
 import { nf } from '@/lib/format'
 
 /* «الارتباط المالي» · one project's funding, read by every seat (1.4.42 · 5.2.5 · 6.2.10 · 7.2.2).
@@ -40,8 +43,10 @@ export function FundingCard({ row }: { row: ProjectRow }) {
   const seat = studying && (
     (holder === 'manager' && role === 'grants-manager') || (holder === 'exec' && role === 'ceo') ||
     (holder === 'committee' && APPROVAL_RULES.committeeBy.includes(role)) || (holder === 'board' && APPROVAL_RULES.boardBy.includes(role)))
-  const canEdit = l?.stage === 'closed' ? false : l?.stage === 'final' ? BUDGET_RULES.relinkBy.includes(role) : Boolean(seat)
-  const issues = studying && holder && holder !== 'supervisor' ? fundingIssues(row.id, row.amountRequested) : []
+  /* v3 · 1.3b · an approved project's link moves by a relocation request, not from here */
+  const canEdit = l?.stage === 'closed' || l?.stage === 'final' ? false : Boolean(seat)
+  const amount = supportAmount(row)
+  const issues = studying && holder && holder !== 'supervisor' ? fundingIssues(row.id, amount) : []
   /* Labels between the root and the leaf · the root is the budget itself, named once */
   const above = (x: LinkShare): string[] => {
     const nodes = docOf(x.docId)?.nodes ?? []
@@ -67,8 +72,8 @@ export function FundingCard({ row }: { row: ProjectRow }) {
               : <span className="sub">غير مرتبط</span>}
             {canEdit && !multi && (
               <BudgetLinkAction
-                project={{ id: row.id, name: row.name, year: row.year, goal: row.goal, amount: row.amountRequested }}
-                label={l?.stage === 'final' ? 'تعديل الارتباط' : l ? 'عدّل التوزيع' : 'ربط بالميزانية'}
+                project={{ id: row.id, name: row.name, year: row.year, goal: row.goal, amount }}
+                label={l ? 'عدّل التوزيع' : 'ربط بالميزانية'}
               />
             )}
           </span>
@@ -83,7 +88,7 @@ export function FundingCard({ row }: { row: ProjectRow }) {
         <p className="sub cnote">
           {BUDGET_RULES.holdAt === 'approval'
             ? 'يُربط المشروع ببند أو أكثر عند التوصية · ويُحجز المبلغ عند الاعتماد النهائي وفق السياسة المالية.'
-            : 'يُربط المشروع ببند أو أكثر ويُحجز المبلغ مبدئيًّا عند توصية مدير المنح · ويثبت نهائيًّا عند الاعتماد.'}
+            : 'يُربط المشروع ببند أو أكثر في دراسة مدير المنح · ويُحجز المبلغ مبدئيًّا عند توصيته بالموافقة · ويثبت نهائيًّا عند الاعتماد.'}
         </p>
       ) : (
         <div className="fnd-scroll">
@@ -104,6 +109,11 @@ export function FundingCard({ row }: { row: ProjectRow }) {
                     <span className="apv-t">
                       <b>{r.node?.label ?? r.share.nodeId}</b>
                       <span className="sub">{[r.doc ? docTitle(r.doc) : r.share.docId, ...above(r.share)].join(' · ')}</span>
+                      {/* v3 · 1.4.12 · the line's two balances, each its own figure */}
+                      {r.doc && (() => {
+                        const b = lineBalances(r.doc, r.share.nodeId)
+                        return <span className="sub">البند: الرصيد المحاسبي <Money sm>{b.accounting}</Money> · المتاح فعليًا <Money sm>{b.available}</Money> · الحجوزات المبدئية <Money sm>{b.initial}</Money></span>
+                      })()}
                     </span>
                   </td>
                   <td className="n"><Money sm>{r.share.amount}</Money></td>
@@ -136,6 +146,8 @@ export function FundingCard({ row }: { row: ProjectRow }) {
       {studying && rep && issues.length === 0 && (
         <ul className="apv-sig"><li className="ok"><Icon name={icons.check} size="sm" /><span>المبلغ ومصادره متحققان · التوزيع يساوي قيمة المشروع وكل مستويات البنود تغطيه</span></li></ul>
       )}
+
+      <RelocationPanel row={row} />
 
       {log.length > 0 && (
         <>

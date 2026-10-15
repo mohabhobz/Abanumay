@@ -49,7 +49,7 @@ import { PAY_SLOT_SAY, payRequestById } from '@/data/mock/disbursements'
 import type { PaymentDetail } from '@/data/mock/detail'
 import { EditableCard } from '@/features/shared/EditableCard'
 import { HOLDER_LABEL, authorityFor, holderOf } from '@/data/holders'
-import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, useApprovals } from '@/data/approvals/store'
+import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, supportAmount, useApprovals } from '@/data/approvals/store'
 import { flowEvents, flowOf, recommend, requestCompletion, saveStudy, useFlow, orgOutputsOf, outputLine } from '@/data/intake/flow'
 import { RecommendationCard, RequestCloseCard, RequestDocsCard, RequestMetaCard } from './tabs/RequestCards'
 import { StudyAside, StudyTab } from './tabs'
@@ -141,7 +141,7 @@ export default function ProjectPage() {
            the entity reads the main status alone */
         status: {
           label: new URLSearchParams(window.location.search).get('as') === 'entity' ? row.statusGroup
-            : appFlowOf(row.id).awaitingReview && row.holder === 'manager' ? `${row.statusGroup} · بانتظار استكمال المراجعة` : statusLine(row),
+            : statusLine(row),
           tone: groupTone(row.statusGroup),
         },
         /* Batch 7 · approvals#8 · the project's own idea, objectives and phases where it has them ·
@@ -175,7 +175,7 @@ export default function ProjectPage() {
   /* B-5 · the seat the project sits at decides the fan and the bar's buttons — not the signed-in
      role alone. Out of study, the fan shows the full path as passed. */
   const holder = row && !closed ? holderOf(row) : null
-  const authority = row ? authorityFor(row.amountRequested, holder) : fixtures.authority
+  const authority = row ? authorityFor(supportAmount(row), holder) : fixtures.authority
   useApprovals()
   useAgreements()
   /* A budget link changes what the seat may do (4.2.12) */
@@ -590,7 +590,7 @@ export default function ProjectPage() {
 
         <DecisionBar
           user={user}
-          project={{ name: project.name, amount: project.amountRequested }}
+          project={{ name: project.name, amount: row ? supportAmount(row) : project.amountRequested }}
           compact={mobile}
           atEnd={atEnd}
           /* The grants manager links the project to a budget line as part of the decision. */
@@ -609,7 +609,7 @@ export default function ProjectPage() {
             <BudgetLinkAction
               project={{
                 id: project.id, name: project.name, year: row?.year ?? '2026-f',
-                goal: row?.goal, amount: project.amountRequested,
+                goal: row?.goal, amount: row ? supportAmount(row) : project.amountRequested,
               }}
             />
           ) : undefined}

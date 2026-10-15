@@ -10,7 +10,7 @@ import {
   DECISIONS, DECISIONS_DEFAULT, KIND_SAY, LEVEL_SAY, saveDecisions,
   type Decisions, type Level, type ProjectKind,
 } from '@/data/shared/decisions'
-import { APPROVAL_RULES, saveApprovalRules } from '@/data/approvals/rules'
+import { APPROVAL_RULES, saveApprovalRules, APPROVAL_RULES_DEFAULT } from '@/data/approvals/rules'
 import { ENTITY_RULES, ENTITY_RULES_DEFAULT, saveEntityRules } from '@/data/entities/rules'
 import { logSettings } from '@/data/shared/settingsLog'
 
@@ -58,7 +58,7 @@ export default function DecisionsPage() {
   const put = <K extends keyof Decisions>(k: K, v: Decisions[K]) => setD((x) => ({ ...x, [k]: v }))
   const changes = (Object.keys(d) as (keyof Decisions)[]).filter((k) => JSON.stringify(d[k]) !== JSON.stringify(saved.d[k])).length
     + (auto !== saved.auto ? 1 : 0) + (block !== saved.block ? 1 : 0)
-  const decided = (Object.keys(d) as (keyof Decisions)[]).filter((k) => JSON.stringify(d[k]) !== JSON.stringify(DECISIONS_DEFAULT[k])).length + (auto ? 1 : 0) + (block !== ENTITY_RULES_DEFAULT.blockIncomplete ? 1 : 0)
+  const decided = (Object.keys(d) as (keyof Decisions)[]).filter((k) => JSON.stringify(d[k]) !== JSON.stringify(DECISIONS_DEFAULT[k])).length + (auto !== Boolean(APPROVAL_RULES_DEFAULT.autoReferAboveExec) ? 1 : 0) + (block !== ENTITY_RULES_DEFAULT.blockIncomplete ? 1 : 0)
 
   const save = () => {
     saveDecisions(d, user.name)
@@ -169,7 +169,7 @@ export default function DecisionsPage() {
             />
             <Switch
               label="إحالة تلقائية للجنة فوق حد المدير التنفيذي" disabled={!can}
-              note={/* doc 5.4.11 */ "توصية مدير المنح بالموافقة فوق حد المدير التنفيذي تذهب للجنة مباشرة"}
+              note={/* v3 · 5.2.14 */ "مفعّلة افتراضيًا وفق v3 · توصية مدير المنح بالموافقة فوق حد المدير التنفيذي تذهب للجنة مباشرة"}
               on={auto} onChange={setAuto}
             />
           </Glass>

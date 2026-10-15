@@ -547,6 +547,9 @@ export interface ProjectRow {
   execDays?: number[]
   /** v3 · 0.status.10 · the level a refusal came from · kept in the decision's details */
   refusedBy?: string
+  /** v3 · 4.2.5 · 5.4.11 · 6.4.5 · 7.4.7 · the support amount on the approval path · the supervisor's
+      recommended amount, then whatever a level fixed, raised or cut · the request's amount stays apart */
+  amountSupport?: number
 }
 
 /** Project type as shown in the list filter and the identity card. */

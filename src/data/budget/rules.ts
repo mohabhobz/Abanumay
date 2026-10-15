@@ -33,8 +33,13 @@ export interface BudgetRules {
       recommendation (an initial hold that turns final on approval), or only at the final approval
       (the link is checked and planned until then) */
   holdAt: 'recommend' | 'approval'
-  /** 1.4.56 · who may change a project's budget link after its approval */
+  /** 1.4.56 · v2 · who changed a project's budget link after its approval directly · v3 · 1.3b moves
+      that to a relocation request · kept on file, read by nothing */
   relinkBy: RoleKey[]
+  /** v3 · 1.3b.1 · who opens a relocation request on an approved project */
+  relocateBy: RoleKey[]
+  /** v3 · 1.3b.6 · who approves it (and so executes it) */
+  relocateApproveBy: RoleKey[]
   /** The file's migration version · a one-time move runs once */
   migrated?: number
 }
@@ -54,6 +59,9 @@ const DEFAULT: BudgetRules = {
   spendCaps: { manager: 100_000, exec: 500_000, committee: 2_000_000, board: null },
   holdAt: 'recommend',
   relinkBy: ['grants-manager', 'ceo'],
+  /* v3 · 1.3b · finance requests, the executive director approves (15 Oct · Mohab) */
+  relocateBy: ['finance'],
+  relocateApproveBy: ['ceo'],
   /* no `migrated` here · readJson spreads the defaults under the stored file, so a version on the
      default would mark an old file as migrated and skip the moves below */
 }
