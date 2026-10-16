@@ -354,7 +354,17 @@ export interface AgreementPayment {
   dueAt: string
   /** Disbursement requirements — linked to reports or deliverables. */
   requirement?: string
+  /** v3 · 8.2.9 · the date the entity's requirements for this payment fall due · apart from the
+      planned payment date (`dueAt`) · the payment date when absent */
+  reqDueAt?: string
+  /** v3 · 8.2.9 · 12.4.14 · structured conditions · a date, a plan activity, a report or an output ·
+      one or more, checked against the record */
+  conds?: PayCond[]
 }
+
+/** v3 · one structured payment condition · `ref` is the date, the activity id, the report key or the
+    output's index */
+export interface PayCond { kind: 'date' | 'activity' | 'report' | 'output'; ref: string; label: string }
 
 /** An event in the agreement's audit log — Rule 22. */
 export interface AgreementEvent {
@@ -616,7 +626,9 @@ export interface EntityRow {
 
 /** State of a disbursement request · BPD-009 steps 4-19 */
 export type PayState =
-  | 'supervisor'   /* steps 4-7   · with the grants supervisor      */
+  | 'supervisor'   /* steps 4-7   · the payment's requirements with the grants supervisor */
+  /** v3 · 9.2.7 · 9.2.10 · requirements approved · «مؤهلة للصرف» · the supervisor creates the permit by hand */
+  | 'eligible'
   | 'returned'     /* steps 10-11 · back with the beneficiary       */
   | 'manager'      /* steps 12-13 · with the grants manager         */
   | 'exec'         /* step 13     · above the manager's spending limit (1.1.input-6) */
@@ -687,10 +699,16 @@ export interface PayRequest {
 
   /* What the live flow adds · set by the payments store. */
 
-  /** Who opened it — the entity (the document's direction) or a supervisor's permit (9.1.input-4). */
-  origin?: 'entity' | 'supervisor'
-  /** A supervisor's permit still waiting for the entity's justification (9.1.input-4). */
-  permit?: boolean
+  /** v3 · 9.2.2 · 9.4.5 · who raised the requirements · the entity from its portal, the authority on an
+      external party's behalf (`proxy`), or none · a first or only payment with no condition of its own
+      (`supervisor`) goes straight to the permit */
+  origin?: 'entity' | 'supervisor' | 'proxy'
+  /** v3 · 9.2.2 · the payment's requirements as the agreement names them · each a file */
+  needs?: { kind: string; label: string }[]
+  /** v3 · 9.2.10 · the permit the supervisor created by hand once the payment was eligible */
+  permitAt?: { at: string; by: string }
+  /** v3 · 9.4.24 · permits cancelled before the transfer · each with its reason */
+  cancels?: { at: string; by: string; role: string; note: string }[]
   /** The entity's authorized representative, from the agreement in force (9.1.input-3). */
   rep?: { name: string; title: string }
   /** Special approvals or exceptions recorded before disbursing (9.1.input-6). */
@@ -867,7 +885,12 @@ export interface PlanChange {
   by: string
   /** What was requested to change, in text. */
   say: string
-  state: 'waiting' | 'approved' | 'rejected' | 'returned'
+  state: 'waiting' | 'approved' | 'rejected' | 'returned' | 'toAgreement'
+  /** v3 · 12.4.15 · an operational change is made in the plan · a contractual one (the amount, a
+      payment's due date or condition, the period) needs the agreement amended first */
+  kind?: 'operational' | 'contractual'
+  /** Why it reads contractual */
+  contractual?: string[]
   /** The grants manager's decision and its reason. */
   note?: string
   /** When and by whom the decision was taken (12.4.22) */
@@ -894,6 +917,9 @@ export interface PlanRow {
   baseline: number
   /** Date the baseline was locked in — empty before approval. */
   baselineAt?: string
+  /** v3 · 12.2.11 · the approver's actual name, and whether he approved by delegation */
+  approvedBy?: string
+  approvedAs?: string
   phases: PlanPhase[]
   /** The responsible grants reviewer. */
   owner: string

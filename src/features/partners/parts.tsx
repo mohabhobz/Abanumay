@@ -10,7 +10,7 @@ import { planOfProject } from '@/data/mock/plans'
 import type { ProjectRow } from '@/types/domain'
 import {
   PTYPE_SAY, addEhOp, closeEhsanProject, ehCloseChecks, ehCloseOf, ehGate, ehMoney, ehOpsOf, ehScheduleOf, isStrategic,
-  openEhsanPlan, paysOf, pfOfEntity, profileOf, recordEhsanPay, reviewEhsanPay, routeProject, proposeRoute, decideRoute, routeProposalOf, saveEhReport, saveEhSchedule,
+  paysOf, addExtDoc, extDocsOf, pfOfEntity, profileOf, recordEhsanPay, reviewEhsanPay, routeProject, proposeRoute, decideRoute, routeProposalOf, saveEhReport, saveEhSchedule,
   setPartnerTypes, typeAllowed, usePartners, viaEhsan, PF_STAGE_SAY, PF_STAGE_TONE, decidePartner,
   EH_STATE_SAY, EH_STATE_TONE, type EhSlot, type EhsanPay, type PayTarget, type PType,
 } from '@/data/partners/store'
@@ -65,6 +65,12 @@ export function PayForm({ target, max, onDone }: { target: PayTarget; max: numbe
   }
   return (
     <div className="ptn-form">
+      {target.kind === 'project' && (
+        <p className="sub cnote">
+          لا تصرف الإدارة المالية أي مبلغ دون إذن صرف من النظام{/* doc 9.4.5 */} · ترفع متطلبات الدفعة نيابةً عن الجهة من{' '}
+          <Link className="lnk" to={ROUTES.paymentNew(target.projectId)}>جدول الدفعات</Link>، وتُسجَّل عملية المنصة هنا بعد صرف الإذن.
+        </p>
+      )}
       <div className="regfields">
         <label className="regf"><span className="lb">المبلغ المنفّذ</span><MoneyField value={amount} onChange={setAmount} label="المبلغ المنفّذ" /><span className="sub regf-h">المتبقي <span className="num">{nf.format(Math.max(0, max))}</span></span></label>
         <label className="regf"><span className="lb">رقم العملية على المنصة</span><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم العملية على منصة إحسان" /></span></label>
@@ -252,8 +258,16 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
         <Head title="مشروع عبر منصة إحسان" meta={<Tag tone="teal">{closed ? 'مغلق' : 'مستقل · بلا اتفاقية'}</Tag>} />
         <KV rows={[
           { k: 'الشريك', v: <Link className="tlink" to={ROUTES.entity(row.entityId)}>{row.entityName}</Link> },
-          { k: 'الاتفاقية', v: <span className="sub">لا يوجد · يُكتفى بالخطة وجدول الدفعات والمستندات{/* doc 11.2.17 */}</span> },
-          { k: 'الخطة', v: plan ? <Link className="tlink" to={ROUTES.plan(plan.id)}>خطة المشروع · {plan.stage === 'active' || plan.stage === 'done' ? 'معتمدة' : 'قيد الإعداد'}</Link> : g.plan && sup ? <button type="button" className="btn btn-2 btn-sm" onClick={() => r(openEhsanPlan(row.id, user.name), 'فتح الخطة')}>أعدّ الخطة</button> : <span className="sub">{g.why}</span> },
+          { k: 'الاتفاقية', v: <span className="sub">لا يوجد · يُكتفى بجدول الدفعات والمستندات والاتفاقية الخارجية مرجعًا{/* doc 8.3.28 */}</span> },
+          /* v3 · 12.2.1 · 11.4.5 · an external project has no plan · a plan from before stays readable */
+          { k: 'الخطة', v: plan ? <Link className="tlink" to={ROUTES.plan(plan.id)}>خطة سابقة للاطلاع · لا تُشترط للصرف ولا للإغلاق</Link> : <span className="sub">لا يتطلب خطة · مشروع خارجي</span> },
+          /* v3 · 8.3.28 · the external agreement or document kept as a reference */
+          { k: 'الاتفاقية الخارجية', v: (
+            <span className="rowf gp-2">
+              {extDocsOf(row.id).length ? extDocsOf(row.id).map((d) => <Tag key={d.file} tone="ok"><Icon name={icons.clip} size="sm" /> {d.file}</Tag>) : <span className="sub">لم تُرفع · مرجع لا اتفاقية داخلية</span>}
+              {sup && !closed && <UploadButton label="ارفع الاتفاقية أو الوثيقة (PDF)" onPick={(f) => r(addExtDoc(row.id, f.name, user.name), 'الاتفاقية الخارجية')} />}
+            </span>
+          ) },
           { k: 'قيمة المشروع', v: <Money sm>{m.value}</Money> },
           { k: 'نفّذته المنصة · مؤكد', v: <Money sm>{m.confirmed}</Money> },
           { k: 'بانتظار المالية', v: <Money sm>{m.review}</Money> },

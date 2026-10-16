@@ -57,7 +57,7 @@ export default function OrderPage() {
           <div className="screen col">
             <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
             <Glass>
-              <Empty title="الطلب غير موجود." note="ربما أُغلق الطلب، أو أن الرابط قديم." />
+              <Empty title="السجل غير موجود." note="ربما أُغلق، أو أن الرابط قديم." />
             </Glass>
           </div>
         </div>
@@ -106,13 +106,13 @@ export default function OrderPage() {
               <Empty
                 title="أمر الصرف لم يُنشأ بعد."
                 note={
-                  `الطلب ما زال بانتظار ${r.state === 'supervisor' ? 'مشرف المنح' : 'مدير المنح'}. ` +
-                  /* doc rule 9 · step 16 */ 'لا يُنفَّذ الصرف قبل اكتمال كل الاعتمادات، ويُنشأ الأمر ' +
+                  `${r.state === 'supervisor' || r.state === 'returned' ? 'متطلبات الدفعة لم تُعتمد بعد' : r.state === 'eligible' ? 'الدفعة مؤهلة للصرف ولم يُنشأ إذنها بعد' : r.state === 'exec' ? 'إذن الصرف ما زال بانتظار المدير التنفيذي' : r.state === 'closed' ? 'رُفض إذن الصرف نهائيًّا' : 'إذن الصرف ما زال بانتظار مدير المنح'}. ` +
+                  /* doc 9.4.11 · 9.2.15 */ 'لا يُنفَّذ الصرف قبل اكتمال كل الاعتمادات، ويُنشأ الأمر ' +
                   'بعد اعتماد الإدارة المالية.'
                 }
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payment(r.id))}>
-                    العودة إلى الطلب
+                    العودة إلى الدفعة
                   </button>
                 }
               />
@@ -161,13 +161,13 @@ export default function OrderPage() {
                   <dt>تاريخ الاستحقاق</dt><dd><DateText>{r.dueAt}</DateText></dd>
                   <dt>قيمة الدفعة المعتمدة</dt>
                   <dd><span className="num">{nf.format(r.due)}</span> <Riyal /></dd>
-                  {r.condition && <><dt>شرط الصرف</dt><dd>{r.condition}</dd></>}
+                  {r.condition && <><dt>شروط الدفعة</dt><dd>{r.condition}</dd></>}
                 </dl>
 
                 {/* Note: amount in words - this document goes to the bank, and nothing else catches
                     a digit that's off by one place. */}
                 <div className="order-amt">
-                  <div className="lb">المبلغ المطلوب صرفه</div>
+                  <div className="lb">قيمة إذن الصرف</div>
                   <div className="v">
                     <span className="num">{nf.format(r.asked)}</span> <Riyal />
                   </div>
@@ -247,9 +247,9 @@ export default function OrderPage() {
 
               {/* Signatures - the document is held physically, so approvals belong on it. */}
               <section className="order-sign">
-                {['مشرف المنح', 'مدير المنح', 'الإدارة المالية'].map((role) => {
+                {['مشرف المنح', 'مدير المنح', ...(r.log.some((e) => e.role === 'المدير التنفيذي' && e.step === 12) ? ['المدير التنفيذي'] : []), 'الإدارة المالية'].map((role) => {
                   /* The approving step of each desk · a return isn't a signature */
-                  const step = role === 'مشرف المنح' ? 7 : role === 'مدير المنح' ? 13 : 15
+                  const step = role === 'مشرف المنح' ? 10 : role === 'الإدارة المالية' ? 14 : 12
                   const ev = [...r.log].reverse().find((e) => e.role === role && e.step === step && !/أعاد/.test(e.what))
                   return (
                     <div className="order-sg" key={role}>

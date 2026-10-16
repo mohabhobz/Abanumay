@@ -1,4 +1,6 @@
-import { DateField, DateText, Icon, Money, Num, Riyal, Tag, icons } from '@/components/ui'
+import { DateField, DateText, FieldSelect, Icon, Money, Num, Riyal, Tag, icons } from '@/components/ui'
+import { COND_SAY, condMet, condOptions } from '@/data/agreements/conds'
+import type { PayCond } from '@/types/domain'
 import { nf, pct } from '@/lib/format'
 import { scheduleTotal, shareOf, type DraftPay } from '@/data/mock/agreementNew'
 import type { AgreementPayment } from '@/types/domain'
@@ -28,6 +30,8 @@ export interface ScheduleEditorProps {
   onChange?: (rows: DraftPay[]) => void
   /** No edits after signing - rule 17. */
   readOnly?: boolean
+  /** v3 · 8.2.9 · the project · its plan activities, reports and outputs a payment can be tied to */
+  projectId?: string
 }
 
 const digits = (v: string) => Number(v.replace(/[^\d]/g, '')) || 0
@@ -39,9 +43,14 @@ export const asDraft = (ps: AgreementPayment[]): DraftPay[] =>
     amount: p.amount,
     dueAt: p.dueAt,
     requirement: p.requirement ?? '',
+    reqDueAt: p.reqDueAt,
+    conds: p.conds,
   }))
 
-export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEditorProps) {
+const condKey = (c: PayCond) => `${c.kind}|${c.ref}`
+
+export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: ScheduleEditorProps) {
+  const opts = projectId ? condOptions(projectId) : []
   const total = scheduleTotal(rows)
   const gap = amount - total
   const match = amount > 0 && gap === 0
@@ -57,7 +66,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
     const last = rows[rows.length - 1]
     onChange?.(renum([
       ...rows,
-      { no: 0, amount: Math.max(0, gap), dueAt: last?.dueAt ?? '', requirement: '' },
+      { no: 0, amount: Math.max(0, gap), dueAt: last?.dueAt ?? '', requirement: '', conds: [] },
     ]))
   }
 
@@ -79,7 +88,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
           {/* Note: widths live in CSS (`.t-sched`), not here. `<col>` is deliberately empty - it
               anchors the column, and width is a style concern. */}
           <colgroup>
-            <col /><col /><col /><col /><col />
+            <col /><col /><col /><col /><col /><col />
             {edit && <col />}
           </colgroup>
 
@@ -88,8 +97,10 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
               <th><span className="th-t">الدفعة</span></th>
               <th className="n"><span className="th-t">المبلغ</span></th>
               <th className="n"><span className="th-t">النسبة</span></th>
-              <th><span className="th-t">الاستحقاق</span></th>
-              <th><span className="th-t">شرط الاستحقاق</span></th>
+              <th><span className="th-t">التاريخ المخطط للصرف</span></th>
+              {/* v3 · 8.2.9 · the requirements fall due on their own date */}
+              <th><span className="th-t">استحقاق المتطلبات</span></th>
+              <th><span className="th-t">شروط الصرف ومتطلباته</span></th>
               {edit && <th aria-label="حذف" />}
             </tr>
           </thead>
@@ -129,6 +140,16 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
 
                 <td>
                   {edit ? (
+                    <DateField
+                      value={r.reqDueAt ?? ''}
+                      onChange={(x) => patch(i, { reqDueAt: x })}
+                      label={`استحقاق متطلبات الدفعة ${r.no}`}
+                    />
+                  ) : r.reqDueAt ? <DateText>{r.reqDueAt}</DateText> : <span className="sub">مع تاريخ الصرف</span>}
+                </td>
+
+                <td>
+                  {edit ? (
                     <span className="fld">
                       <input
                         value={r.requirement}
@@ -137,7 +158,46 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
                         aria-label={`شرط الدفعة ${r.no}`}
                       />
                     </span>
-                  ) : <span className="sub">{r.requirement || 'بلا شرط'}</span>}
+                  ) : <span className="sub">{r.requirement || ((r.conds ?? []).length ? '' : 'بلا شرط')}</span>}
+                  {/* v3 · 8.2.9 · 12.4.14 · the structured conditions · each read against its record */}
+                  {((r.conds ?? []).length > 0 || (edit && projectId)) && (
+                    <span className="pcond">
+                      {(r.conds ?? []).map((c) => {
+                        const st = projectId && !edit ? condMet(projectId, c) : undefined
+                        return (
+                          <Tag key={condKey(c)} tone={st ? (st.met ? 'ok' : st.met === false ? 'warn' : 'mute') : 'mute'}>
+                            {COND_SAY[c.kind]}: {c.kind === 'date'
+                              ? (edit ? <DateField value={c.ref} label={`تاريخ شرط الدفعة ${r.no}`} onChange={(x) => patch(i, { conds: (r.conds ?? []).map((y) => (condKey(y) === condKey(c) ? { ...y, ref: x, label: x } : y)) })} /> : <DateText>{c.ref}</DateText>)
+                              : c.label}
+                            {st && <span className="sub"> · {st.say}</span>}
+                            {edit && (
+                              <button type="button" className="iact" aria-label={`احذف الشرط ${c.label || c.ref}`} title="احذف" onClick={() => patch(i, { conds: (r.conds ?? []).filter((x) => condKey(x) !== condKey(c)) })}>
+                                <Icon name={icons.close} size="sm" />
+                              </button>
+                            )}
+                          </Tag>
+                        )
+                      })}
+                      {edit && projectId && (
+                        <FieldSelect
+                          value=""
+                          label={`أضف شرطًا للدفعة ${r.no}`}
+                          placeholder="أضف شرطًا"
+                          searchAt={8}
+                          options={[
+                            { value: 'date|', label: 'تاريخ · تاريخ الصرف المخطط' },
+                            ...opts.filter((o) => !(r.conds ?? []).some((c) => c.kind === o.kind && c.ref === o.ref)).map((o) => ({ value: `${o.kind}|${o.ref}`, label: `${COND_SAY[o.kind]} · ${o.label}` })),
+                          ]}
+                          onChange={(v) => {
+                            const [kind, ref] = v.split('|') as [PayCond['kind'], string]
+                            const o = opts.find((x) => x.kind === kind && x.ref === ref)
+                            const c: PayCond = kind === 'date' ? { kind, ref: r.dueAt, label: r.dueAt } : { kind, ref, label: o?.label ?? ref }
+                            if (!(r.conds ?? []).some((x) => condKey(x) === condKey(c))) patch(i, { conds: [...(r.conds ?? []), c] })
+                          }}
+                        />
+                      )}
+                    </span>
+                  )}
                 </td>
 
                 {edit && (
@@ -163,7 +223,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly }: ScheduleEdi
               <td>الإجمالي</td>
               <td className="n"><Money sm>{total}</Money></td>
               <td className="n">{pct(shareOf(total, amount))}</td>
-              <td colSpan={edit ? 3 : 2}>
+              <td colSpan={edit ? 4 : 3}>
                 {amount <= 0
                   ? <span className="sub">لا توجد قيمة منحة</span>
                   : match

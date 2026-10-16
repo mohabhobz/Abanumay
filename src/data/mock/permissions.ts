@@ -53,7 +53,7 @@ export const PERM_MODULES: PermModule[] = [
   { key: 'portfolios', label: 'المحافظ', note: 'المحافظ ومشاريعها الفرعية', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
   { key: 'agreements', label: 'الاتفاقيات', note: 'الصياغة والتوقيع والدفعات', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
   { key: 'plans', label: 'الخطط', note: 'الخطط التنفيذية والشواهد', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
-  { key: 'payments', label: 'الصرف', note: 'طلبات الصرف وأوامره', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
+  { key: 'payments', label: 'الصرف', note: 'متطلبات الدفعات وأذونات الصرف وأوامره', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
   { key: 'closings', label: 'الإغلاق', note: 'التقرير الختامي والتقييم', actions: ['view', 'create', 'edit', 'approve', 'export'], scoped: true },
   { key: 'reports', label: 'التقارير', note: 'تقارير الإجراءات والشاشات', actions: ['view', 'export'] },
   { key: 'assistant', label: 'المساعد', note: 'الأسئلة على بيانات النظام', actions: ['view'] },

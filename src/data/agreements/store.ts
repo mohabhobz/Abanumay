@@ -14,7 +14,8 @@ import { flowOf, orgOutputsOf, outputLine } from '@/data/intake/flow'
 import { RELINKS, setPartyRename } from '@/data/entities/store'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
-import type { AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, PayDoc, ProjectRow } from '@/types/domain'
+import type { AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, PayCond, PayDoc, ProjectRow } from '@/types/domain'
+import { requirementOf } from './conds'
 import { setAgreementStatusGate } from '@/data/status'
 
 /* Agreements (BPD-008) · the actions.
@@ -67,13 +68,12 @@ export const templateClauses = (p: { id?: string; name: string; entityName: stri
   const o = outputsOf(p.id)
   return [
   ...base(p, stamp),
-  /* Re-audit 7 Oct · the outputs and the plan's phases are part of the text, not only the annex */
-  ...(o.outputs.length || o.phases.length ? [{
-    id: `cl-${stamp}-6`, kind: 'clause' as const, source: 'template' as const, title: 'مخرجات المشروع وخطة التنفيذ',
-    body: [
-      o.outputs.length ? `تلتزم الجهة بتحقيق المخرجات الآتية: ${o.outputs.join('، ')}.` : '',
-      o.phases.length ? `وتُنفَّذ وفق مراحل خطة التنفيذ المعتمدة (${nf.format(o.phases.length)}): ${o.phases.join('، ')}.` : '',
-    ].filter(Boolean).join(' '),
+  /* v3 · 8.3.5 · the outputs aren't a clause the supervisor edits · the text reads them live from the
+     project (the foundation's outputs), so a change goes through the project · the plan's phases stay
+     as the agreement's own term */
+  ...(o.phases.length ? [{
+    id: `cl-${stamp}-6`, kind: 'clause' as const, source: 'template' as const, title: 'خطة التنفيذ',
+    body: `تُنفَّذ المنحة وفق مراحل خطة التنفيذ المعتمدة (${nf.format(o.phases.length)}): ${o.phases.join('، ')}.`,
   }] : []),
   ]
 }
@@ -107,7 +107,13 @@ export interface AgrVersion {
   docs: PayDoc[]
   /** Signed and approved · the version that was in force */
   final: boolean
+  /** v3 · 8.2.14 · a copy kept when the version went back for changes · not in force */
+  returned?: boolean
 }
+/** v3 · 8.3.29 · an amending annex · the original stays the reference with its annexes in force ·
+    a terms annex climbs the agreement's own cycle, a value annex comes approved from the closing's
+    decision (10.9.5 · 10.9.6) */
+export interface AgrAnnex { base?: number; superseded?: boolean; no: number; kind: 'terms' | 'value'; at: string; by: string; reason: string; summary: string; ref?: string; file?: string; version?: number }
 export interface AgrFlow {
   clauses: Clause[]
   /** A return's destination · the supervisor (manager's and entity's returns) or the grants
@@ -125,18 +131,24 @@ export interface AgrFlow {
   replacedBy?: string
   /** The paper agreement's draft copy, uploaded at creation (8.2.30) */
   paperCopy?: string
+  /** v3 · 8.3.29 · the version being prepared is an annex to the one in force, or a full replacement */
+  mode?: 'annex' | 'full'
+  /** v3 · 8.3.29 · the annexes in force with the original */
+  annexes: AgrAnnex[]
 }
 
 const FLOWS = new Map<string, AgrFlow>()
 export const agrFlowOf = (id: string): AgrFlow => {
   let f = FLOWS.get(id)
-  if (!f) { f = { clauses: [], submitted: false, versions: [] }; FLOWS.set(id, f) }
+  if (!f) { f = { clauses: [], submitted: false, versions: [], annexes: [] }; FLOWS.set(id, f) }
   return f
 }
 
 /** Who holds the agreement now · a role, or the entity */
 export type AgrHolder = RoleKey | 'entity' | null
 export function agrHolder(a: AgreementRow): AgrHolder {
+  /* v3 · 8.3.26 · a cancelled project's agreement waits on no one */
+  if (a.stage !== 'active' && projectCancelled(a.projectId)) return null
   const f = agrFlowOf(a.id)
   switch (a.stage) {
     case 'draft': return 'supervisor'
@@ -153,8 +165,12 @@ export const HOLDER_SAY: Record<Exclude<AgrHolder, null>, string> = {
   supervisor: 'مشرف المنح', 'grants-manager': 'مدير المنح', ceo: 'المدير التنفيذي', finance: 'الإدارة المالية', comms: 'الاتصال المؤسسي', member: 'عضو اللجنة والمجلس', admin: 'مدير النظام', entity: 'الجهة المستفيدة',
 }
 /** The stage's name as the holder reads it · a return names where it went */
+/** v3 · 8.3.26 · the project was cancelled by the closing procedure (its stop approved) */
+/* Read from the stage, not the status · the status reads the agreement's state, which reads this */
+export const projectCancelled = (projectId: string): boolean => { const p = projectRows.find((x) => x.id === projectId); return Boolean(p && stageMeta(p.stage)?.group === 'ملغى') }
 export function agrStageSay(a: AgreementRow): string {
   const f = agrFlowOf(a.id)
+  if (a.stage !== 'active' && a.stage !== 'cancelled' && projectCancelled(a.projectId)) return 'أُلغي المشروع · أُوقفت الاتفاقية'
   if (a.stage === 'returned') return f.returnedTo === 'manager' ? 'مُعادة إلى مدير المنح' : 'بانتظار التعديل'
   if (a.stage === 'entity' && f.entitySign) return 'بانتظار اعتماد ممثل المؤسسة'
   if (a.stage === 'cancelled' && f.replacedBy) return `حلّت محلها ${f.replacedBy}`
@@ -183,10 +199,14 @@ export const reservedOf = (a: { projectId: string; reserved: number }): number =
 }
 
 /** The project's execution window · start, end · the payment dates must sit inside it (8.2.12) */
-export function windowOf(projectId: string): { from?: string; to?: string } {
+export function windowOf(projectId: string, withPending = false): { from?: string; to?: string } {
   const p = projectRows.find((x) => x.id === projectId)
   const plan = planOfProject(projectId)
-  if (plan?.phases.length) return { from: plan.phases[0].from, to: plan.phases[plan.phases.length - 1].to }
+  /* v3 · 12.4.15 · a contractual plan change waiting for this agreement's annex · the annex is checked
+     against the period it proposes, or the two wait on each other */
+  const pending = withPending ? plan?.changes.find((c) => c.state === 'toAgreement' && c.proposed)?.proposed : undefined
+  const phases = pending?.length ? pending : plan?.phases
+  if (phases?.length) return { from: phases[0].from, to: phases.map((x) => x.to).filter(Boolean).sort().at(-1) ?? phases[phases.length - 1].to }
   if (p?.startAt) return { from: p.startAt, to: p.endAt }
   return {}
 }
@@ -202,7 +222,7 @@ export function agrIssues(v: {
   signer: { name: string; title: string }
   amount: number
   reserved: number
-  payments: { no: number; amount: number; dueAt: string; requirement?: string }[]
+  payments: { no: number; amount: number; dueAt: string; requirement?: string; reqDueAt?: string; conds?: PayCond[] }[]
   clauses: Clause[]
   docs: { kind: string; name: string }[]
   paperCopy?: string
@@ -220,14 +240,23 @@ export function agrIssues(v: {
     const gap = v.amount - total
     out.push({ key: 'sum', say: gap > 0 ? `مجموع الدفعات ينقص عن قيمة المنحة ${nf.format(gap)}.` : `مجموع الدفعات يزيد على قيمة المنحة ${nf.format(-gap)}.`, rule: /* doc 8.2.12 */ '' })
   }
-  const noReq = v.payments.filter((p) => !(p.requirement ?? '').trim()).map((p) => p.no)
+  const noReq = v.payments.filter((p) => !(p.requirement ?? '').trim() && !(p.conds ?? []).length).map((p) => p.no)
+  const noDate = v.payments.filter((p) => (p.conds ?? []).some((c) => c.kind === 'date' && !c.ref)).map((p) => p.no)
+  if (noDate.length) out.push({ key: 'conddate', say: `شرط التاريخ في الدفعة ${noDate.join('، ')} بلا تاريخ.`, rule: /* doc 12.4.14 */ '' })
   if (noReq.length) out.push({ key: 'req', say: `الدفعة ${noReq.join('، ')} بلا شرط استحقاق.`, rule: /* doc 8.1.output-4 */ '' })
+  /* v3 · 8.2.9 · the requirements fall due before the money goes out */
+  const reqLate = v.payments.filter((p) => p.reqDueAt && p.dueAt && p.reqDueAt > p.dueAt).map((p) => p.no)
+  if (reqLate.length) out.push({ key: 'reqdue', say: `استحقاق متطلبات الدفعة ${reqLate.join('، ')} بعد تاريخ صرفها المخطط.`, rule: /* doc 8.2.9 */ '' })
+  /* v3 · 12.4.14 · an activity the plan no longer has can't hold a payment */
+  const plan = planOfProject(v.projectId)
+  const gone = v.payments.filter((p) => (p.conds ?? []).some((c) => c.kind === 'activity' && !plan?.phases.some((ph) => ph.activities.some((x) => x.id === c.ref)))).map((p) => p.no)
+  if (gone.length) out.push({ key: 'actgone', say: `الدفعة ${gone.join('، ')} مرتبطة بنشاط لم يعد في الخطة.`, rule: /* doc 12.4.14 */ '' })
   for (let i = 1; i < v.payments.length; i++) {
     const a = v.payments[i - 1], b = v.payments[i]
     if (a.dueAt && b.dueAt && b.dueAt < a.dueAt) { out.push({ key: 'order', say: `تاريخ الدفعة ${b.no} يسبق تاريخ الدفعة ${a.no}.`, rule: /* doc 8.2.12 */ '' }); break }
   }
   /* The dates against the implementation plan · a payment after the project ends has nothing to pay for */
-  const w = windowOf(v.projectId)
+  const w = windowOf(v.projectId, true)
   const late = v.payments.filter((p) => p.dueAt && w.to && p.dueAt > w.to).map((p) => p.no)
   const early = v.payments.filter((p) => p.dueAt && w.from && p.dueAt < w.from).map((p) => p.no)
   if (late.length) out.push({ key: 'late', say: `الدفعة ${late.join('، ')} بعد نهاية التنفيذ في الخطة (${w.to}).`, rule: /* doc 8.2.12 */ '' })
@@ -256,7 +285,7 @@ export const issuesOfRow = (a: AgreementRow): AgrIssue[] => {
 export interface TextPart { h: string; body: string[] }
 export function agreementText(v: {
   projectId: string; amount: number; template: string; kind: AgreementKind | ''
-  signer: { name: string; title: string }; payments: { no: number; amount: number; dueAt: string; requirement?: string }[]; clauses: Clause[]
+  signer: { name: string; title: string }; payments: { no: number; amount: number; dueAt: string; requirement?: string; reqDueAt?: string; conds?: PayCond[] }[]; clauses: Clause[]
 }): TextPart[] {
   const p = projectOf(v)
   const plan = planOfProject(v.projectId)
@@ -277,8 +306,10 @@ export function agreementText(v: {
       `قيمة المنحة ${nf.format(v.amount)} ريال، محجوزة في الميزانية المعتمدة.`,
       ...lines.map((x) => `البند: ${x}`),
     ] },
+    /* v3 · 8.3.5 · the foundation's final outputs, read from the project · not editable here */
+    ...(outputsOf(v.projectId).outputs.length ? [{ h: 'مخرجات المشروع (مخرجات المؤسسة · من بيانات المشروع)', body: [`تلتزم الجهة بتحقيق المخرجات الآتية: ${outputsOf(v.projectId).outputs.join('، ')}.`] }] : []),
     ...(plan?.phases.length ? [{ h: 'خطة التنفيذ (ملحق)', body: plan.phases.map((x, i) => `المرحلة ${i + 1}: ${x.name} · من ${x.from} إلى ${x.to} · ${nf.format(x.cost)} ريال`) }] : []),
-    { h: 'جدول صرف الدفعات', body: v.payments.map((x) => `الدفعة ${x.no}: ${nf.format(x.amount)} ريال · تستحق ${x.dueAt || '—'} · بشرط ${x.requirement || '—'}`) },
+    { h: 'جدول صرف الدفعات', body: v.payments.map((x) => `الدفعة ${x.no}: ${nf.format(x.amount)} ريال · الصرف المخطط ${x.dueAt || '—'} · تستحق متطلباتها ${x.reqDueAt || x.dueAt || '—'} · بشرط ${requirementOf(x) || '—'}`) },
     ...v.clauses.map((c) => ({ h: `${CLAUSE_SAY[c.kind]} · ${c.title}`, body: [c.body] })),
     { h: 'التوقيع', body: [v.kind === 'ورقية' ? 'تُوقَّع ورقيًّا من الطرفين وتُرفع النسخة الموقّعة في النظام.' : 'تُوقَّع إلكترونيًّا من بوابة المنح ثم يعتمدها ممثل المؤسسة.'] },
   ]
@@ -292,7 +323,7 @@ export function agrReview(v: Parameters<typeof agrIssues>[0]): AgrHint[] {
   const out: AgrHint[] = []
   const w = windowOf(v.projectId)
   const last = v.payments[v.payments.length - 1]
-  if (last && !/ختامي|نهائي/.test(last.requirement ?? '')) out.push({ id: 'last', tone: 'warn', text: 'شرط الدفعة الأخيرة غير مرتبط بالتقرير الختامي · يُقترح ربطها به.' })
+  if (last && !/ختامي|نهائي/.test(requirementOf(last))) out.push({ id: 'last', tone: 'warn', text: 'شرط الدفعة الأخيرة غير مرتبط بالتقرير الختامي · يُقترح ربطها به.' })
   if (last && w.to && last.dueAt > w.to) out.push({ id: 'end', tone: 'warn', text: `الدفعة الأخيرة بعد نهاية خطة التنفيذ (${w.to}).` })
   if (!v.clauses.some((c) => c.kind === 'followup')) out.push({ id: 'fu', tone: 'warn', text: 'لا توجد آلية متابعة.', add: { kind: 'followup', source: 'ai', title: 'آلية المتابعة والتقارير', body: 'ترفع الجهة تقريرًا مرحليًّا عند كل دفعة وتقريرًا ختاميًّا عند نهاية التنفيذ.' } })
   const dup = v.clauses.map((c) => c.title.trim()).filter((t, i, xs) => t && xs.indexOf(t) !== i)
@@ -358,7 +389,7 @@ type Op = { at: string; by: string } & (
   | { op: 'save'; id: string; patch: Patch }
   | { op: 'submit'; id: string }
   | { op: 'act'; id: string; act: AgrAct; note: string; file?: string; sig?: ESig }
-  | { op: 'newVersion'; id: string; reason: string }
+  | { op: 'newVersion'; id: string; reason: string; mode?: 'annex' | 'full' }
   | { op: 'annex'; projectId: string; amount: number; ref: string; file?: string; reason: string }
 )
 export type AgrAct =
@@ -387,6 +418,35 @@ const snapshot = (a: AgreementRow, f: AgrFlow, by: string, at: string, reason: s
   payments: structuredClone(a.payments), clauses: structuredClone(f.clauses), signer: { ...a.signer }, docs: structuredClone(a.docs), final,
 })
 
+/** v3 · 8.2.14 · what a save or a version changed · amount, schedule, signer, clauses */
+function diffSay(prev: { amount: number; payments: AgreementPayment[]; clauses: Clause[]; signer: { name: string; title: string }; kind: AgreementKind; template?: string; docs?: number } | undefined, a: AgreementRow, f: AgrFlow): string {
+  if (!prev) return ''
+  const out: string[] = []
+  if (prev.kind !== a.kind) out.push(`النوع ${prev.kind} ← ${a.kind}`)
+  if (prev.amount !== a.amount) out.push(`القيمة ${nf.format(prev.amount)} ← ${nf.format(a.amount)}`)
+  if (prev.payments.length !== a.payments.length) out.push(`الدفعات ${nf.format(prev.payments.length)} ← ${nf.format(a.payments.length)}`)
+  for (const p of a.payments) {
+    const q = prev.payments.find((x) => x.no === p.no)
+    if (!q) continue
+    if (q.amount !== p.amount) out.push(`مبلغ الدفعة ${p.no} ${nf.format(q.amount)} ← ${nf.format(p.amount)}`)
+    if (q.dueAt !== p.dueAt) out.push(`تاريخ الدفعة ${p.no} ${q.dueAt} ← ${p.dueAt}`)
+    if (requirementOf(q) !== requirementOf(p)) out.push(`شرط الدفعة ${p.no}`)
+  }
+  const was = new Set(prev.clauses.map((c) => c.title))
+  const now = new Set(f.clauses.map((c) => c.title))
+  const added = [...now].filter((t) => !was.has(t))
+  const gone = [...was].filter((t) => !now.has(t))
+  if (added.length) out.push(`بنود مضافة: ${added.join('، ')}`)
+  if (gone.length) out.push(`بنود محذوفة: ${gone.join('، ')}`)
+  const edited = f.clauses.filter((c) => { const o = prev.clauses.find((x) => x.title === c.title); return o && o.body !== c.body }).map((c) => c.title)
+  if (edited.length) out.push(`نصّ معدّل: ${edited.join('، ')}`)
+  if (prev.signer.name !== a.signer.name || prev.signer.title !== a.signer.title) out.push('ممثل الجهة')
+  for (const p of a.payments) { const q = prev.payments.find((x) => x.no === p.no); if (q && (q.reqDueAt ?? '') !== (p.reqDueAt ?? '')) out.push(`استحقاق متطلبات الدفعة ${p.no}`) }
+  if (prev.template !== undefined && prev.template !== a.template) out.push('النموذج')
+  if (prev.docs !== undefined && prev.docs !== a.docs.length) out.push(`المرفقات ${nf.format(prev.docs)} ← ${nf.format(a.docs.length)}`)
+  return out.join(' · ')
+}
+
 /* The project moves with its agreement only at the end (8.4.26 · 8.4.27) · activation puts it
    into execution, at the first stage of disbursing */
 const EXEC_STAGE = 'المشرف إذن الصرف'
@@ -407,12 +467,16 @@ function applyOp(o: Op) {
     /* Re-audit 7 Oct · 10.9.5 · 10.9.6 · an approved value change is an annex on the agreement in
        force · its value moves with the project's, and the annex sits in its record */
     case 'annex': {
-      const a = agreements.find((x) => x.projectId === o.projectId && x.stage === 'active')
+      /* the agreement in force · an annex or a version under preparation on it carries the new value too */
+      const a = inForceOf(o.projectId)
       if (!a || a.amount === o.amount) return
       const was = a.amount
       a.amount = o.amount
       if (o.file && !a.docs.some((d) => d.name === o.file)) a.docs.push({ name: o.file, kind: 'ملحق الاتفاقية', at: o.at.slice(0, 10), size: '—' })
       log(a, 26, o.by, 'النظام', `ملحق ${o.ref} · عُدّلت قيمة الاتفاقية من ${nf.format(was)} إلى ${nf.format(o.amount)}`, o.at, o.reason)
+      /* v3 · 8.3.29 · the value annex is on record with the original, approved by the closing's decision */
+      const fa = agrFlowOf(a.id)
+      fa.annexes.push({ base: fa.inForce, no: fa.annexes.length + 1, kind: 'value', at: day(o.at), by: o.by, reason: o.reason, summary: `القيمة ${nf.format(was)} ← ${nf.format(o.amount)}`, ref: o.ref, file: o.file })
       return
     }
     case 'create': {
@@ -447,10 +511,12 @@ function applyOp(o: Op) {
       /* The kind is fixed once the version went for approval · only a new version changes it (8.4.3) */
       if (o.patch.kind && o.patch.kind !== a.kind && f.submitted) return
       const { clauses, paperCopy, ...rest } = o.patch
+      const before = { amount: a.amount, payments: structuredClone(a.payments), clauses: structuredClone(f.clauses), signer: { ...a.signer }, kind: a.kind, template: a.template, docs: a.docs.length }
       Object.assign(a, structuredClone(rest))
       if (clauses) f.clauses = structuredClone(clauses)
       if (paperCopy !== undefined) f.paperCopy = paperCopy
-      log(a, 8, o.by, 'مشرف المنح', 'حفظ تعديلات المسودة', o.at)
+      /* v3 · 8.2.14 · the log says what changed, not only that something did */
+      log(a, 8, o.by, 'مشرف المنح', 'حفظ تعديلات المسودة', o.at, diffSay(before, a, f) || 'بلا تغيير في البنود أو الجدول')
       return
     }
     case 'submit': {
@@ -491,6 +557,8 @@ function applyOp(o: Op) {
             notify([MGR()], a, `أعاد المدير التنفيذي الاتفاقية · ${a.projectName}`, o.note)
           } else return
           a.note = o.note
+          /* v3 · 8.2.14 · the version as it went back is kept · «بانتظار التعديل» */
+          f.versions.push({ ...snapshot(a, f, o.by, o.at, `أُعيدت للتعديل · ${o.note}`, false), returned: true })
           move(a, 'returned')
           return
         /* 8.2.20 · 8.2.22 · the grants manager acts on the executive's return: back up after
@@ -524,6 +592,7 @@ function applyOp(o: Op) {
           return
         case 'cancel':
           if (a.stage !== 'executive' && a.stage !== 'manager') return
+          /* An op saved before v3 · the agreement read «ملغاة» on its own then · kept for the replay */
           log(a, 18, o.by, 'المدير التنفيذي', 'ألغى الاتفاقية · يبقى المشروع في إعداد الاتفاقية', o.at, o.note)
           move(a, 'cancelled')
           notify([a.owner, MGR()], a, `أُلغيت الاتفاقية · ${a.projectName}`, o.note)
@@ -546,6 +615,7 @@ function applyOp(o: Op) {
         case 'entityReturn':
           if (a.stage !== 'entity' || f.entitySign) return
           log(a, 22, o.by, 'الجهة المستفيدة', 'أعادت الجهة الاتفاقية بملاحظات', o.at, o.note, 'مشرف المنح · أعادت الجهة الاتفاقية بملاحظات')
+          f.versions.push({ ...snapshot(a, f, o.by, o.at, `أعادتها الجهة · ${o.note}`, false), returned: true })
           f.returnedTo = 'supervisor'
           a.note = o.note
           move(a, 'returned')
@@ -558,12 +628,23 @@ function applyOp(o: Op) {
           f.foundationSign = { at: day(o.at), by: o.by }
           log(a, 23, o.by, 'ممثل المؤسسة', 'اعتمد النسخة النهائية ووقّعها عن المؤسسة', o.at)
           log(a, 24, 'النظام', 'النظام', 'تحقّق من اكتمال الاعتمادات والتوقيعات واعتمد النسخة النهائية ومنع تعديلها', o.at)
-          f.versions.push(snapshot(a, f, o.by, o.at, a.version > 1 ? 'إصدار معدّل نافذ' : 'النسخة النهائية', true))
+          /* v3 · 8.3.29 · an annex keeps the original as the reference · its changes ride with it */
+          if (f.mode === 'annex') {
+            const base = [...f.versions].reverse().find((v) => v.final)
+            const summary = base ? diffSay({ ...base, docs: base.docs.length }, a, f) : ''
+            f.annexes.push({ base: base?.version, no: f.annexes.length + 1, kind: 'terms', at: day(o.at), by: o.by, reason: [...a.log].reverse().find((e) => e.step === 3)?.note ?? 'ملحق تعديلي', summary: summary || 'تعديل على البنود', version: a.version })
+            f.versions.push(snapshot(a, f, o.by, o.at, `ملحق تعديلي ${nf.format(f.annexes.length)} نافذ مع الأصل`, true))
+          } else {
+            f.versions.push(snapshot(a, f, o.by, o.at, a.version > 1 ? 'إصدار كامل بديل نافذ' : 'النسخة النهائية', true))
+            /* a full replacement supersedes the annexes of the version before it */
+            for (const x of f.annexes) x.superseded = true
+          }
+          f.mode = undefined
           log(a, 25, 'النظام', 'النظام', 'أرشف النسخة النهائية وملاحقها وربطها بالمشروع والجهة والميزانية وجدول الدفعات', o.at)
           f.inForce = a.version
           move(a, 'active')
           a.activeAt = day(o.at)
-          log(a, 26, 'النظام', 'النظام', 'فعّل الاتفاقية ومكّن إجراءات المتابعة وطلبات صرف الدفعات', o.at, undefined, 'جميع الأطراف · الاتفاقية سارية')
+          log(a, 26, 'النظام', 'النظام', 'فعّل الاتفاقية ومكّن إجراءات المتابعة ومتطلبات الدفعات', o.at, undefined, 'جميع الأطراف · الاتفاقية سارية')
           if (f.replaces) {
             const old = agreementById(f.replaces)
             if (old && old.stage === 'active') {
@@ -574,16 +655,17 @@ function applyOp(o: Op) {
           }
           const p = projectRows.find((x) => x.id === a.projectId)
           /* Re-audit 7 Oct · any agreement stage moves to execution · paper and electronic ones stayed put */
-          if (p && AGREEMENT_STAGES.includes(p.stage)) {
-            activateProject(a.projectId)
-            log(a, 28, 'النظام', 'النظام', 'حوّل حالة المشروع إلى «تحت التنفيذ»', o.at)
-          }
-          notify([a.owner, MGR(), CEO(), a.entityName], a, `سرت الاتفاقية · ${a.projectName}`, 'أصبحت طلبات صرف الدفعات متاحة')
+          if (p && AGREEMENT_STAGES.includes(p.stage)) activateProject(a.projectId)
+          /* v3 · 8.2.26 · 8.3.30 · «تحت التنفيذ» only with the required plan approved too */
+          const running = p?.statusGroup === 'تحت التنفيذ'
+          log(a, 28, 'النظام', 'النظام', running ? 'حوّل حالة المشروع إلى «تحت التنفيذ»' : 'يبقى المشروع «استكمال متطلبات ما قبل التنفيذ» حتى اعتماد الخطة المطلوبة', o.at)
+          notify([a.owner, MGR(), CEO(), a.entityName], a, `سرت الاتفاقية · ${a.projectName}`, running ? 'أصبحت متطلبات الدفعات متاحة' : 'تُتاح متطلبات الدفعات بعد اعتماد خطة المشروع')
           return
         }
         case 'finalReturn':
           if (a.stage !== 'entity' || !f.entitySign) return
           log(a, 23, o.by, 'ممثل المؤسسة', 'أعاد الاتفاقية الموقّعة إلى مشرف المنح قبل الاعتماد', o.at, o.note)
+          f.versions.push({ ...snapshot(a, f, o.by, o.at, `أعادها ممثل المؤسسة · ${o.note}`, false), returned: true })
           f.entitySign = undefined
           f.returnedTo = 'supervisor'
           a.note = o.note
@@ -600,13 +682,14 @@ function applyOp(o: Op) {
       const f = agrFlowOf(a.id)
       if (!f.versions.some((v) => v.version === a.version)) f.versions.push(snapshot(a, f, o.by, o.at, 'النسخة النهائية', true))
       a.version += 1
+      f.mode = o.mode ?? 'full'
       f.submitted = false
       f.entitySign = undefined
       f.foundationSign = undefined
       f.returnedTo = undefined
       a.note = undefined
       move(a, 'draft')
-      log(a, 3, o.by, 'مشرف المنح', `فتح الإصدار ${nf.format(a.version)} للتعديل · ${o.reason} · يبقى الإصدار ${nf.format(f.inForce ?? a.version - 1)} نافذًا حتى سريان الجديد`, o.at, o.reason)
+      log(a, 3, o.by, 'مشرف المنح', `${f.mode === 'annex' ? 'فتح ملحقًا تعديليًا' : 'فتح إصدارًا كاملًا بديلًا'} (${nf.format(a.version)}) · ${o.reason} · يبقى النافذ ساريًا حتى اعتماده`, o.at, o.reason)
       notify([MGR()], a, `إصدار جديد قيد الإعداد · ${a.projectName}`, o.reason)
       return
     }
@@ -675,7 +758,8 @@ function hydrate() {
   /* v3 · 0.status.3 · 0.status.4 · an approved project completes its pre-execution requirements once
      its agreement work starts · the sub-status reads the agreement's own state */
   setAgreementStatusGate((projectId) => {
-    const a = agreements.filter((x) => x.projectId === projectId && x.stage !== 'cancelled').at(-1)
+    /* the newest · `create` puts a new agreement first */
+    const a = agreements.find((x) => x.projectId === projectId && x.stage !== 'cancelled')
     return a ? agrStageSay(a) : ''
   })
 }
@@ -736,9 +820,11 @@ export function actOnAgreement(id: string, act: AgrAct, note: string, by: string
   run({ op: 'act', id, act, note: note.trim(), file, sig, by, at: now() })
   return JSON.stringify([a.stage, agrFlowOf(id).entitySign, agrFlowOf(id).returnedTo]) === before ? ['الإجراء غير متاح في هذه المرحلة'] : []
 }
-export function openNewVersion(id: string, reason: string, by: string): string[] {
+export function openNewVersion(id: string, reason: string, by: string, mode: 'annex' | 'full' = 'full'): string[] {
   if (!reason.trim()) return ['سبب الإصدار الجديد إلزامي']
-  run({ op: 'newVersion', id, reason: reason.trim(), by, at: now() })
+  const ag = agreementById(id)
+  if (ag && projectCancelled(ag.projectId)) return ['أُلغي المشروع · لا يُعدَّل اتفاقه']
+  run({ op: 'newVersion', id, reason: reason.trim(), mode, by, at: now() })
   return []
 }
 export const resetAgreements = () => { try { localStorage.removeItem(KEY) } catch { /* ignore */ } location.reload() }
@@ -746,6 +832,8 @@ export const resetAgreements = () => { try { localStorage.removeItem(KEY) } catc
 /** The actions a seat has on an agreement (8.2.14 – 8.2.29) */
 export interface AgrAction { act: AgrAct | 'submit'; label: string; kind: 'btn-p' | 'btn-2' | 'btn-d'; needsNote?: boolean; needsFile?: boolean; step: number }
 export function agrActions(a: AgreementRow, role: RoleKey, asEntity: boolean): AgrAction[] {
+  /* v3 · 8.3.26 · a cancelled project's agreement goes no further */
+  if (projectCancelled(a.projectId) && a.stage !== 'active') return []
   const h = agrHolder(a)
   if (asEntity) {
     return h === 'entity' && a.kind === 'إلكترونية'
@@ -769,7 +857,8 @@ export function agrActions(a: AgreementRow, role: RoleKey, asEntity: boolean): A
     return [
       { act: 'send', label: 'اعتماد وإرسال للجهة', kind: 'btn-p', step: 20 },
       { act: 'return', label: 'إعادة لمدير المنح', kind: 'btn-2', needsNote: true, step: 18 },
-      { act: 'cancel', label: 'إلغاء الاتفاقية', kind: 'btn-d', needsNote: true, step: 18 },
+      /* v3 · 8.3.26 · no «reject» state for an agreement · not going on is a project cancellation,
+         through the closing procedure (10.9.1) · the agreement page links to it */
     ]
   }
   /* A paper signature arrives on paper · the supervisor attaches the signed copy */
@@ -793,9 +882,21 @@ export const mayEdit = (a: AgreementRow, role: RoleKey, asEntity: boolean) => !a
 
 /** Agreements of one project, newest first · one in force at most (8.4.25) */
 export const agreementsOfProject = (projectId: string): AgreementRow[] => agreements.filter((a) => a.projectId === projectId)
-export const inForceOf = (projectId: string): AgreementRow | undefined =>
-  agreements.find((a) => a.projectId === projectId && agrFlowOf(a.id).inForce !== undefined && a.stage !== 'cancelled')
+/* a declaration, not a const · the 'annex' op reads it while the log replays at load, above here */
+/** v3 · 9.4.6 · the payments in force · while an annex or a new version is being prepared, the signed
+    version's schedule stands · the draft's reaches the payments only once it is approved */
+export function inForcePayments(a: AgreementRow): AgreementRow['payments'] {
+  const f = agrFlowOf(a.id)
+  if (f.inForce === undefined || f.inForce === a.version) return a.payments
+  return f.versions.find((v) => v.version === f.inForce)?.payments ?? a.payments
+}
+/** An agreement no operation has touched yet · still the fixture's row */
+export const agrTouched = (id: string): boolean => ops.some((o) => 'id' in o && (o as { id?: string }).id === id)
+
+export function inForceOf(projectId: string): AgreementRow | undefined {
+  return agreements.find((a) => a.projectId === projectId && agrFlowOf(a.id).inForce !== undefined && a.stage !== 'cancelled')
     ?? agreements.find((a) => a.projectId === projectId && a.stage === 'active')
+}
 
 /** Batch 8 · the fingerprint of what is signed · the clauses, the schedule, the amount and the signer
     · the same text gives the same hash, so a later change to the agreement can't pass as signed */

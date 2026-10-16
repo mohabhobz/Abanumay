@@ -12,8 +12,8 @@ import { assistFor } from '@/data/mock/assistant'
 import { isolate, nf, NOUN, nounAfter, MISSING_ITEM } from '@/lib/format'
 import { PAY_SLOT_SAY, payRequestById, type PaySlot } from '@/data/mock/disbursements'
 import {
-  REQUEST_NEEDS, condConfirmed, confirmCondition, createRequest, docFromFile, grantLeft, mayResubmit,
-  payableProjects, repOf, resubmitRequest, scheduleOf, usePayments,
+  PROXY_ROLES, condConfirmed, confirmCondition, createPermit, createRequest, docFromFile, grantLeft, mayResubmit,
+  needsFor, payableProjects, repOf, resubmitRequest, scheduleOf, usePayments,
 } from '@/data/payments/store'
 import { inForceOf } from '@/data/agreements/store'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -22,49 +22,23 @@ import type { PayDoc } from '@/types/domain'
 const KEYS = ['project', 'pay', 'as'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
-/* Disbursement request - screen 2, steps 1, 2, 3, 11 - rule 19.
+/* A payment's requirements · v3 · 9.2.1 – 9.2.3 · 9.2.9 · 9.2.10 · 9.4.5 · 9.4.7 · 9.4.8.
 
-   Note: this isn't a form, it's the approved payment schedule. An empty form asks the entity "how
-   much?" and lets them type a wrong number before rejecting it. The spec works the other way: step
-   1 says the system enables creation once due and eligible - meaning availability is shown before
-   the click, not rejection after it.
+   The screen is the approved payment schedule, not a form asking «how much?»: every payment of the
+   agreement with its state and its reason, shown before the click.
 
-   So the screen shows every payment on the agreement, each with its status and reason, and four
-   rules are enforced through display rather than validation:
-
-     Rule 1 - no request before the agreement is active   -> the whole screen is locked with the
-     reason stated
-     Rule 2 - due payments only                            -> "not yet due" is locked
-     Rule 4 - one open request per payment                 -> "has an open request" links to it
-     Rule 6 - a conditional payment can't be submitted      -> "held pending a condition"
-     Rule 5 - amount can't exceed the approved value        -> validated live in the field
-     Rule 3 - requirements before submission                -> a checklist, and submission stays
-     locked until met
-
-   Note: rule 3 is a checklist, not an error message. Step 3 says the system "rejects submission on
-   missing items" - rejecting after the click leaves the entity to try and fail. The checklist
-   before the click states what's missing up front.
-
-   === Same screen for step 11 ===
-
-   Step 11 - "complete the notes and resubmit the request" - same table, same field, same checklist,
-   with the difference being the return notes appear on top and the payment is preselected. A
-   separate screen would have been a near-duplicate.
-
-   === Three openers, one screen ===
-
-   · the entity, from its portal (`?as=entity`) · uploads each requirement as a file and the
-     representative's acknowledgment, and sends it to the supervisor (9.2.2)
-   · the grants supervisor · issues a disbursement permit (9.1.input-4) that waits for the entity's
-     justification, the live system's direction kept beside the document's
-   · anyone else reads the schedule · the request is the entity's or the supervisor's to open
-
-   Rule 18 · the edit route opens only on a request returned to the entity; after approval a change
-   is a new request, and the screen says so instead of opening a form. */
+   · the entity (`?as=entity`) raises a payment's requirements · the reports, documents and outputs
+     the agreement ties it to, each a file · when they're ready, before the planned date too (9.4.7) ·
+     no amount: the payment's value is the schedule's (9.2.2)
+   · the authority raises them on an external party's behalf (9.4.5)
+   · a first or only payment with no condition of its own is eligible from the activation · the
+     supervisor creates its permit straight from here (9.2.2 · 9.2.10)
+   · a payment tied to a report, an activity or a date not met yet is held (9.4.8)
+   · step 9 · the same screen completes what the supervisor returned */
 
 const SLOT_TONE: Record<string, 'ok' | 'warn' | 'no' | 'mute' | 'teal'> = {
   open: 'teal',
-  early: 'mute',
+  eligible: 'ok',
   queued: 'mute',
   pending: 'warn',
   paid: 'ok',
@@ -96,13 +70,17 @@ export default function RequestForm() {
   const projects = entityId ? all.filter((p) => p.entityId === entityId) : all
   const project = projects.find((p) => p.id === projectId)
   const slots = projectId ? scheduleOf(projectId) : []
-  /* 9.1.input-4 · the supervisor's permit · the entity attaches the justification afterwards */
-  const permit = !asEntity && !resend && role.key === 'supervisor'
-  const mayOpen = asEntity || permit
-
+  /* the mode the send was made in · the slot turns «قيد الصرف» right after it */
+  const [sentPermit, setSentPermit] = useState(false)
   const picked = resend
     ? slots.find((s) => s.no === resend.no)
     : slots.find((s) => String(s.no) === v.pay)
+  /* 9.2.10 · a payment eligible from the activation · the supervisor creates its permit here */
+  const permit = sentPermit || (!asEntity && !resend && role.key === 'supervisor' && picked?.state === 'eligible')
+  /* 9.4.5 · an external party's requirements are raised by the authority on its behalf */
+  const external = Boolean(project?.external ?? (resend && resend.origin === 'proxy'))
+  const proxy = !asEntity && external && PROXY_ROLES.includes(role.key)
+  const mayOpen = permit || (external ? proxy : asEntity)
 
   const [amount, setAmount] = useState<string>('')
   const [files, setFiles] = useState<Record<string, PayDoc>>({})
@@ -114,37 +92,43 @@ export default function RequestForm() {
   const [bad, setBad] = useState<string[]>([])
   const [condNote, setCondNote] = useState('')
 
-  const value = amount === '' ? (resend?.asked ?? picked?.amount ?? 0) : Number(amount) || 0
-  /* Rule 5 - amount can't exceed the approved payment - validated in the field itself, not after
-     submission, so the entity knows before they click. */
-  const over = picked ? value > picked.amount : false
-  /* Rule 14 · 9.4.14 · nor what's left of the grant once the paid payments are counted */
+  /* 9.4.4 · the permit's amount · the payment's value at most · it is the permit's alone, the
+     requirements carry none */
+  const cap = picked ? (picked.left ?? picked.amount) : 0
+  const value = permit ? (amount === '' ? cap : Number(amount) || 0) : (resend?.due ?? picked?.amount ?? 0)
+  const over = permit && picked ? value > cap : false
+  /* 9.4.16 · nor what's left of the grant once the paid payments are counted */
   const left = projectId ? grantLeft(projectId, resend?.id) : 0
-  const overGrant = Boolean(picked) && value > left
+  const overGrant = permit && Boolean(picked) && value > left
   const have = (kind: string) => Boolean(files[kind]) || Boolean(resend?.docs.some((d) => d.kind === kind))
-  const missing = permit ? [] : REQUEST_NEEDS.filter((n) => !have(n.kind))
+  const needs = resend ? needsFor(resend) : picked?.needs ?? []
+  const missing = permit ? [] : needs.filter((n) => !have(n.kind))
   const rep = projectId ? (resend?.rep ?? repOf(projectId)) : undefined
   const needAck = asEntity && !ack
-  const pickable = picked && (picked.state === 'open' || picked.state === 'held' || Boolean(resend) || Boolean(sent))
-  /* 9.4.6 · a payment held by its condition doesn't send · the button says why */
+  const pickable = picked && (picked.state === 'open' || picked.state === 'held' || picked.state === 'eligible' || Boolean(resend) || Boolean(sent))
+  /* 9.4.8 · a payment tied to a report, an activity or a date not met yet doesn't go up · the button says why */
   const held = !resend && picked?.state === 'held'
-  const canSend = mayOpen && Boolean(picked) && !held && !over && !overGrant && value > 0 && missing.length === 0 && !needAck
+  /* a first or only payment with no condition is the supervisor's permit · nothing to raise */
+  const noCycle = !resend && picked?.state === 'eligible'
+  const canSend = mayOpen && Boolean(picked) && !held && !over && !overGrant && value > 0 && missing.length === 0 && !needAck && (permit || !noCycle) && !(permit && picked?.notBefore)
 
-  const title = resend ? (resend.permit ? 'استكمال إذن الصرف' : 'إعادة إرسال طلب الصرف') : permit ? 'إذن صرف جديد' : 'طلب صرف جديد'
+  const title = resend ? 'استكمال متطلبات الدفعة' : permit ? 'إذن صرف جديد' : 'متطلبات الدفعة'
   const back = asEntity ? `${ROUTES.entityPortal}?entity=${project?.entityId ?? resend?.entityId ?? ''}` : ROUTES.payments
 
   const send = () => {
     const docs = Object.values(files)
     if (resend) {
-      const out = resubmitRequest(resend.id, value, docs, rep?.name ?? user.name)
+      const out = resubmitRequest(resend.id, docs, asEntity ? (rep?.name ?? user.name) : user.name, role.key, asEntity)
       setBad(out)
       if (!out.length) setSent(resend.id)
       return
     }
     if (!picked || !projectId) return
-    const out = createRequest({ projectId, no: picked.no, asked: value, docs, origin: permit ? 'supervisor' : 'entity' }, asEntity ? (rep?.name ?? user.name) : user.name)
+    const out = permit
+      ? createPermit({ projectId, no: picked.no, asked: value }, user.name, role.key)
+      : createRequest({ projectId, no: picked.no, docs, origin: proxy ? 'proxy' : 'entity' }, asEntity ? (rep?.name ?? user.name) : user.name, role.key)
     setBad(out.errors)
-    if (out.id) setSent(out.id)
+    if (out.id) { setSent(out.id); setSentPermit(permit) }
   }
 
   /* Rule 18 · after approval a change is a new request · the edit route states it, no form */
@@ -153,12 +137,12 @@ export default function RequestForm() {
       <AppLayout assistantContext={assistFor.page('الصرف')}>
         <div className="viewstack">
           <div className="screen col">
-            <BackTo label="الطلب" onClick={() => navigate(`${ROUTES.payment(resend.id)}${asEntity ? '?as=entity' : ''}`)} />
+            <BackTo label="الدفعة" onClick={() => navigate(`${ROUTES.payment(resend.id)}${asEntity ? '?as=entity' : ''}`)} />
             <Glass>
               <Empty
-                title="لا يُعدَّل هذا الطلب."
-                note="يُعدَّل الطلب ما دام مُعادًا للجهة لاستكماله فقط · وبعد اعتماده يكون التعديل بطلب جديد."
-                actions={<button className="btn btn-2" onClick={() => navigate(`${ROUTES.payment(resend.id)}${asEntity ? '?as=entity' : ''}`)}>العودة إلى الطلب</button>}
+                title="لا تُعدَّل متطلبات هذه الدفعة."
+                note="تُستكمل المتطلبات ما دامت مُعادة للاستكمال فقط · وبعد اعتمادها لا تُعدَّل (9.4.20)."
+                actions={<button className="btn btn-2" onClick={() => navigate(`${ROUTES.payment(resend.id)}${asEntity ? '?as=entity' : ''}`)}>العودة إلى الدفعة</button>}
               />
             </Glass>
           </div>
@@ -175,8 +159,8 @@ export default function RequestForm() {
             <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
             <Glass>
               <Empty
-                title="الطلب غير موجود."
-                note="ربما أُغلق الطلب، أو أن الرابط قديم."
+                title="السجل غير موجود."
+                note="ربما أُغلق، أو أن الرابط قديم."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
                     العودة إلى صندوق الصرف
@@ -195,7 +179,7 @@ export default function RequestForm() {
       <div className="viewstack">
         <div className="screen col">
           <BackTo
-            label={resend ? 'الطلب' : asEntity ? 'البوابة' : 'الصرف'}
+            label={resend ? 'الدفعة' : asEntity ? 'البوابة' : 'الصرف'}
             onClick={() => navigate(resend ? `${ROUTES.payment(resend.id)}${asEntity ? '?as=entity' : ''}` : back)}
           />
 
@@ -205,8 +189,8 @@ export default function RequestForm() {
               <p className="sub mt-1">
                 {project
                   ? <>{project.name} · {project.entity}</>
-                  : 'اختر المشروع، ويحدّد جدول الدفعات المعتمد الدفعات المتاحة للطلب'}
-                {permit && <> · يصدر المشرف الإذن، وترفق الجهة مسوّغاته من بوابتها</>}
+                  : 'اختر المشروع، ويعرض جدول الدفعات المعتمد متطلبات كل دفعة'}
+                {proxy && <> · مشروع عبر جهة خارجية · ترفع المتطلبات نيابةً عنها وتثبتها{/* doc 9.4.5 */}</>}
               </p>
             </div>
           </header>
@@ -217,7 +201,7 @@ export default function RequestForm() {
               opening the table, not after. */}
           {resend?.note && (
             <Glass>
-              <Head title={resend.permit ? 'ملاحظة إذن الصرف' : 'ملاحظات المشرف'} meta={<Tag tone="warn">مطلوب استكمالها</Tag>} />
+              <Head title="ما ينقص المتطلبات" meta={<Tag tone="warn">مطلوب استكمالها</Tag>} />
               <div className="payq-note">
                 <Icon name={icons.chat} size="sm" />
                 <span>{isolate(resend.note)}</span>
@@ -248,14 +232,14 @@ export default function RequestForm() {
             <Glass>
               <Empty
                 title="اختر المشروع أولًا."
-                note="يحدّد جدول الدفعات المعتمد الدفعات المتاحة للطلب."
+                note="يعرض جدول الدفعات المعتمد متطلبات كل دفعة وحالتها."
               />
             </Glass>
           ) : !project.can ? (
             /* Rule 1 - the screen is locked and the reason is stated, not hidden. */
             <Glass>
               <Empty
-                title="لا يمكن إنشاء طلب صرف لهذا المشروع."
+                title="لا صرف لهذا المشروع الآن."
                 note={project.why}
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.project(project.id))}>
@@ -289,32 +273,33 @@ export default function RequestForm() {
               {pickable && picked && (
                 <div className="g2">
                   <div className="col">
-                    {/* Rule 3 - a checklist before submission, not a message after. */}
+                    {/* 9.2.2 · 9.2.3 · the requirements before the click, each a file */}
                     <Glass>
                       <Head
-                        title="متطلبات الإرسال"
+                        title="متطلبات الدفعة"
                         meta={
-                          missing.length
-                            ? <Tag tone="warn"><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
-                            : <Tag tone="ok">مكتملة</Tag>
+                          noCycle || permit
+                            ? <Tag tone="ok">لا دورة متطلبات</Tag>
+                            : missing.length
+                              ? <Tag tone="warn"><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
+                              : <Tag tone="ok">مكتملة</Tag>
                         }
                       />
-                      {permit ? (
+                      {noCycle ? (
                         <p className="sub cnote">
-                          يصدر الإذن دون مرفقات · ترفع الجهة التقارير والمستندات من بوابتها، ثم يعود
-                          الطلب إلى مشرف المنح (<bdi>{/* doc 9.1.input-4 */}</bdi>).
+                          {picked.left !== undefined ? 'باقي دفعة صُرف جزء منها · اعتُمدت متطلباتها،' : <>{picked.of === 1 ? 'الدفعة الوحيدة' : 'الدفعة الأولى'} بلا شروط خاصة في الاتفاقية · مؤهلة للصرف منذ التفعيل،</>}
+                          وينشئ مشرف المنح إذن الصرف مباشرة{/* doc 9.2.2 · 9.2.10 */}.
                         </p>
                       ) : (
                         <>
-                          {/* 9.2.2 · each requirement is a file, uploaded and kept on the request (rule 21) */}
                           <ul className="paycheckl">
-                            {REQUEST_NEEDS.map((n) => {
+                            {needs.map((n) => {
                               const f = files[n.kind] ?? resend?.docs.find((d) => d.kind === n.kind)
                               return (
                                 <li key={n.kind} className="payneed">
                                   <Icon name={f ? icons.check : icons.doc} size="sm" className={f ? 'ok-ink' : ''} />
                                   <span className="payneed-t">
-                                    <span>{n.label}</span>
+                                    <span>{isolate(n.label)}</span>
                                     {f && <span className="sub trim1">{f.name}</span>}
                                   </span>
                                   {mayOpen && !sent && (
@@ -324,7 +309,7 @@ export default function RequestForm() {
                                       onPick={(file) => {
                                         setFiles((x) => ({ ...x, [n.kind]: docFromFile(file, n.kind) }))
                                         if (n.kind === 'فواتير' && prevPaid) read(n.kind, file, 'invoice', { amount: String(prevPaid.amount) })
-                                        else read(n.kind, file, n.kind === 'تقرير' ? 'report' : 'list', {})
+                                        else read(n.kind, file, n.kind.startsWith('report') || n.kind === 'تقرير' ? 'report' : 'list', {})
                                       }}
                                     />
                                   )}
@@ -339,8 +324,8 @@ export default function RequestForm() {
                             </div>
                           )}
                           <p className="sub cnote">
-                            تشترط القواعد {/* doc rule 3 */} استيفاء كل المتطلبات <b>قبل</b> الإرسال، ويُرفض{/* doc step 3 */}
-                            الإرسال عند وجود نواقص، لذلك تظهر القائمة قبل زر الإرسال.
+                            ما تشترطه الاتفاقية لهذه الدفعة · يتحقق النظام من اكتمالها ويرفض الإرسال عند النقص{/* doc 9.2.3 */}،
+                            وتُرفع متى جهزت ولو قبل تاريخ الدفعة{/* doc 9.4.7 */}.
                           </p>
                         </>
                       )}
@@ -350,19 +335,19 @@ export default function RequestForm() {
                     {picked.condition && (
                       <Glass>
                         <Head
-                          title="شرط الدفعة"
+                          title="شروط الدفعة"
                           meta={
                             picked.conditionMet
-                              ? <Tag tone="ok">مستوفى</Tag>
-                              : <Tag tone="no">غير مستوفى{/* doc rule 6 */}</Tag>
+                              ? <Tag tone="ok">مستوفاة</Tag>
+                              : held ? <Tag tone="no">غير مستوفاة{/* doc 9.4.8 */}</Tag> : <Tag tone="warn">يتحقق منها المشرف</Tag>
                           }
                         />
                         <p className="sub cnote">{isolate(picked.condition)}</p>
                         {condConfirmed(projectId ?? '', picked.no) && (
                           <p className="sub cnote">أكّد المشرف استيفاءه · {condConfirmed(projectId ?? '', picked.no)?.note}</p>
                         )}
-                        {/* 9.4.6 · the supervisor confirms the condition · the entity waits for it */}
-                        {held && role.key === 'supervisor' && !asEntity && (
+                        {/* the supervisor confirms what the record can't read (an output, a note) */}
+                        {!picked.conditionMet && !held && role.key === 'supervisor' && !asEntity && (
                           <div className="apv-row mt-3">
                             <span className="fld"><input value={condNote} onChange={(e) => setCondNote(e.target.value)} placeholder="ما استُوفي به الشرط · إلزامي" aria-label="ما استُوفي به الشرط" /></span>
                             <button type="button" className="btn btn-2 btn-sm" disabled={!condNote.trim()} onClick={() => { const out = confirmCondition(projectId ?? '', picked.no, condNote, user.name); setBad(out); if (!out.length) setCondNote('') }}>
@@ -370,7 +355,7 @@ export default function RequestForm() {
                             </button>
                           </div>
                         )}
-                        {held && asEntity && <p className="bad cnote">لا يُرسل الطلب قبل أن يؤكّد مشرف المنح استيفاء الشرط{/* doc rule 6 */}.</p>}
+                        {held && <p className="bad cnote">لا تُرفع متطلبات الدفعة قبل استيفاء ما ارتبطت به من تقرير أو نشاط أو تاريخ{/* doc 9.4.8 */}.</p>}
                       </Glass>
                     )}
 
@@ -391,28 +376,27 @@ export default function RequestForm() {
                       </Glass>
                     )}
 
-                    {/* The amount and the summary · in the main column, the end column is the assistant's alone */}
-                    <Glass>
-                      <Head title="قيمة الطلب" /* doc rule 5 */ />
-                      <label className="payamt">
-                        <span className="lb">المبلغ المطلوب</span>
-                        <MoneyField
-                          value={amount === '' ? (resend?.asked ?? picked.amount) : amount}
-                          onChange={setAmount}
-                          label="المبلغ المطلوب"
-                        />
-                      </label>
-                      <p className={over || overGrant ? 'bad cnote' : 'sub cnote'}>
-                        {over
-                          ? <>المبلغ أعلى من الدفعة المعتمدة <Mono>{nf.format(picked.amount)}</Mono>. أدخل مبلغًا لا يتجاوزها{/* doc rule 5 */}</>
-                          : overGrant
-                            ? <>المبلغ يتجاوز المتبقي من المنحة <Mono>{nf.format(Math.max(0, left))}</Mono>{/* doc rule 14 */}</>
-                            : <>الدفعة المعتمدة في الجدول <Mono>{nf.format(picked.amount)}</Mono> · تستحق في <DateText>{picked.dueAt}</DateText> · المتبقي من المنحة <Mono>{nf.format(left)}</Mono></>}
-                      </p>
-                    </Glass>
+                    {/* 9.4.4 · the permit's amount · the payment's value at most */}
+                    {permit && (
+                      <Glass>
+                        <Head title="قيمة إذن الصرف" />
+                        <label className="payamt">
+                          <span className="lb">قيمة الإذن</span>
+                          <MoneyField value={amount === '' ? cap : amount} onChange={setAmount} label="قيمة الإذن" />
+                        </label>
+                        <p className={over || overGrant ? 'bad cnote' : 'sub cnote'}>
+                          {over
+                            ? <>القيمة أعلى من {picked.left !== undefined ? 'باقي الدفعة' : 'الدفعة المعتمدة'} <Mono>{nf.format(cap)}</Mono>{/* doc 9.4.4 */}</>
+                            : overGrant
+                              ? <>القيمة تتجاوز المتبقي من المنحة <Mono>{nf.format(Math.max(0, left))}</Mono>{/* doc 9.4.16 */}</>
+                              : <>{picked.left !== undefined ? <>باقي الدفعة بعد إذنها السابق <Mono>{nf.format(picked.left)}</Mono> من <Mono>{nf.format(picked.amount)}</Mono></> : <>الدفعة المعتمدة <Mono>{nf.format(picked.amount)}</Mono></>} · المخطط صرفها في <DateText>{picked.dueAt}</DateText> · المتبقي من المنحة <Mono>{nf.format(left)}</Mono></>}
+                        </p>
+                        {picked.notBefore && <p className="bad cnote">لا صرف قبل <DateText>{picked.notBefore}</DateText> · شرط الاتفاقية{/* doc 9.4.7 */}</p>}
+                      </Glass>
+                    )}
 
                     <Glass>
-                      <Head title="ملخّص الطلب" />
+                      <Head title="الدفعة" />
                       <ul className="paysum">
                         <li><span>المشروع</span><span className="trim1">{project.name}</span></li>
                         <li><span>الجهة</span><span className="trim1">{project.entity}</span></li>
@@ -421,20 +405,21 @@ export default function RequestForm() {
                           <span className="num">{picked.no}/{picked.of}</span>
                         </li>
                         <li><span>القيمة</span><span><Money sm>{value}</Money></span></li>
+                        <li><span>المخطط صرفها</span><span><DateText>{picked.dueAt}</DateText>{picked.ahead ? ' · قبل موعدها' : ''}</span></li>
                       </ul>
                     </Glass>
                   </div>
 
                   <AssistantAside
-                    title="مراجعة الطلب"
-                    cta="راجع الطلب"
-                    empty="الطلب مكتمل · جاهز للإرسال."
+                    title="مراجعة المتطلبات"
+                    cta="راجع المتطلبات"
+                    empty="المتطلبات مكتملة · جاهزة للإرسال."
                     ask={!asEntity}
                     readings={[
-                      ...(held ? [{ id: 'rf-held', kind: 'flag' as const, label: 'شرط الدفعة', text: `${picked.condition ?? ''} · لم يؤكّد المشرف استيفاءه بعد.`, src: /* doc rule 6 */ '' }] : []),
-                      ...missing.map((n) => ({ id: `rf-${n.kind}`, kind: 'flag' as const, label: 'ينقص قبل الإرسال', text: n.label, src: /* doc rule 3 */ '' })),
-                      ...(over ? [{ id: 'rf-over', kind: 'flag' as const, label: 'قيمة الطلب', text: `أعلى من الدفعة المعتمدة ${nf.format(picked.amount)}.`, src: /* doc rule 5 */ '' }] : []),
-                      ...(overGrant ? [{ id: 'rf-grant', kind: 'flag' as const, label: 'سقف المنحة', text: `يتجاوز المتبقي من المنحة ${nf.format(Math.max(0, left))}.`, src: /* doc rule 14 */ '' }] : []),
+                      ...(held ? [{ id: 'rf-held', kind: 'flag' as const, label: 'شروط الدفعة', text: `${picked.condition ?? ''} · لم يُستوفَ بعد.`, src: /* doc 9.4.8 */ '' }] : []),
+                      ...missing.map((n) => ({ id: `rf-${n.kind}`, kind: 'flag' as const, label: 'ينقص قبل الإرسال', text: n.label, src: /* doc 9.2.3 */ '' })),
+                      ...(over ? [{ id: 'rf-over', kind: 'flag' as const, label: 'قيمة الإذن', text: `أعلى من الدفعة المعتمدة ${nf.format(picked.amount)}.`, src: /* doc 9.4.4 */ '' }] : []),
+                      ...(overGrant ? [{ id: 'rf-grant', kind: 'flag' as const, label: 'سقف المنحة', text: `يتجاوز المتبقي من المنحة ${nf.format(Math.max(0, left))}.`, src: /* doc 9.4.16 */ '' }] : []),
                       ...(needAck ? [{ id: 'rf-ack', kind: 'flag' as const, label: 'إقرار الممثل', text: 'أقرّ بصحة البيانات بصفتك ممثل الجهة المخوّل.', src: /* doc 9.1.input-3 */ '' }] : []),
                     ]}
                   />
@@ -452,11 +437,11 @@ export default function RequestForm() {
                 <span className="decsent">
                   {sent
                     ? <>
-                        {permit ? 'صدر الإذن' : 'أُرسل الطلب'} <Mono>{sent}</Mono> ·{' '}
-                        <b>{permit ? 'أُرسل إلى الجهة لإرفاق المسوّغات' : resend ? 'أُعيد إرساله إلى المشرف' : 'أُحيل إلى مشرف المنح'}</b>، وأُرسل الإشعار{/* doc rule 17 */}
+                        {permit ? 'أُنشئ إذن الصرف' : 'رُفعت المتطلبات'} <Mono>{sent}</Mono> ·{' '}
+                        <b>{permit ? 'أُحيل إلى مدير المنح' : 'أُحيلت إلى مشرف المنح'}</b>، وأُرسل الإشعار
                       </>
                     : !mayOpen
-                      ? <>ينشئ الطلبَ الجهةُ من بوابتها، أو مشرفُ المنح بإذن صرف</>
+                      ? <>{noCycle ? 'مؤهلة للصرف · ينشئ مشرف المنح إذن الصرف' : external ? 'يرفع المتطلبات صاحب الصلاحية نيابةً عن الجهة الخارجية' : 'ترفع الجهة المتطلبات من بوابتها'}</>
                       : <>
                           الدفعة <b><Num>{picked?.no ?? 0}</Num> من <Num>{picked?.of ?? 0}</Num></b>
                           <span className="decsep" />
@@ -470,21 +455,21 @@ export default function RequestForm() {
                   className="btn btn-p"
                   disabled={!canSend}
                   title={
-                    held ? /* doc rule 6 */ 'شرط الدفعة غير مستوفى'
-                    : over ? /* doc rule 5 */ 'القيمة أعلى من الدفعة المعتمدة'
-                    : overGrant ? /* doc rule 14 */ 'القيمة تتجاوز المتبقي من المنحة'
-                    : missing.length ? /* doc rule 3 */ `ينقص ${missing.length} من المتطلبات`
+                    held ? /* doc 9.4.8 */ 'شروط الدفعة غير مستوفاة'
+                    : over ? /* doc 9.4.4 */ 'القيمة أعلى من الدفعة المعتمدة'
+                    : overGrant ? /* doc 9.4.16 */ 'القيمة تتجاوز المتبقي من المنحة'
+                    : missing.length ? /* doc 9.2.3 */ `ينقص ${missing.length} من المتطلبات`
                     : needAck ? 'أقرّ بصفتك ممثل الجهة المخوّل أولًا'
-                    : permit ? /* doc 9.1.input-4 */ '' : /* doc step 2 */ 'إذن الصرف من المشرف'
+                    : ''
                   }
                   onClick={send}
                 >
-                  {resend ? 'أعد إرسال الطلب' : permit ? 'أصدر إذن الصرف' : 'أرسل الطلب'}
+                  {resend ? 'أعد رفع المتطلبات' : permit ? 'أنشئ إذن الصرف' : 'ارفع المتطلبات'}
                 </button>
               )}
               {sent && (
                 <Link className="btn btn-2" to={`${ROUTES.payment(sent)}${asEntity ? '?as=entity' : ''}`}>
-                  افتح الطلب
+                  افتح الدفعة
                 </Link>
               )}
             </div>
@@ -505,8 +490,8 @@ function SlotRow({
   onOpen: () => void
 }) {
   const say = PAY_SLOT_SAY[slot.state]
-  /* A held payment is pickable · its condition card says why it doesn't send (9.4.6) */
-  const can = (slot.state === 'open' || slot.state === 'held') && !locked
+  /* A held payment is pickable · its condition card says why it doesn't go up (9.4.8) */
+  const can = (slot.state === 'open' || slot.state === 'held' || slot.state === 'eligible') && !locked
 
   return (
     <li className={`payslot${picked ? ' on' : ''}${can ? '' : ' off'}`}>
@@ -520,7 +505,7 @@ function SlotRow({
       >
         <span className="payslot-n">الدفعة <span className="num">{slot.no}</span></span>
         <span className="payslot-a num">{nf.format(slot.amount)}</span>
-        <DateText>{slot.dueAt}</DateText>
+        <span className="payslot-d"><DateText>{slot.dueAt}</DateText>{slot.ahead && slot.state !== 'paid' ? <span className="sub"> · لم يحن</span> : null}</span>
         {/* Note: fixed-width cells - the condition used to float in the row's text after a flexible
             gap, and a row with no condition had its badge drift; the checkmark now has its own cell
             even when unselected. */}

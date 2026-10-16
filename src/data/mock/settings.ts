@@ -108,7 +108,7 @@ export interface LimitRow {
 export const MONEY_LIMITS: LimitRow[] = hydrateRows(CFG.limits, [
   {
     key: 'minPay', label: 'الحد الأدنى للدفعة الواحدة', unit: 'ريال', value: 5_000,
-    where: /* doc step 2 */ 'إنشاء طلب صرف', assumed: true,
+    where: /* doc step 2 */ 'رفع متطلبات الدفعة', assumed: true,
   },
   {
     key: 'firstPayPct', label: 'أقصى نسبة للدفعة الأولى', unit: '%', value: 40,
@@ -237,7 +237,7 @@ export const SETTING_MODULES: SettingModule[] = [
     groups: [
       {
         key: 'approval', tab: 'approval', label: 'مصفوفة الاعتماد', kind: 'rule', owner: 'إدارة المنح',
-        where: 'اعتماد المشروع · واعتماد طلب الصرف',
+        where: 'اعتماد المشروع · واعتماد إذن الصرف',
         count: APPROVAL_MATRIX.length,
       },
       {
@@ -247,7 +247,7 @@ export const SETTING_MODULES: SettingModule[] = [
       },
       {
         key: 'limits', tab: 'limits', label: 'الحدود المالية والزمنية', kind: 'rule', owner: 'الإدارة المالية',
-        where: 'إنشاء طلب الصرف · جدول الدفعات · التصعيد',
+        where: 'متطلبات الدفعة · جدول الدفعات · التصعيد',
         count: MONEY_LIMITS.length,
       },
       {

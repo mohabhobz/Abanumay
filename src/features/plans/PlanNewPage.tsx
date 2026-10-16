@@ -1,3 +1,4 @@
+import { planKind } from '@/data/approvals/store'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -51,6 +52,8 @@ export default function PlanNewPage() {
       .filter((p) => p.amountGranted > 0 && !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(p.stage) && !isDropped(p.statusGroup))
       .filter((p) => !planOfProject(p.id) || planOfProject(p.id)!.stage === 'cancelled')
       .filter((p) => planDecisionOf(p.id)?.needs !== false)
+      /* v3 · 12.2.1 · no plan for an external project */
+      .filter((p) => planKind(p) !== 'external')
       .map((p) => ({ value: p.id, label: `${p.name} · ${p.entityName}` })) },
     [done, ver],
   )
@@ -210,6 +213,7 @@ export default function PlanNewPage() {
                       onClick={() => {
                         if (!pr) return
                         const id = openPlanFor(pr.id, by, needReason ? reason : '', me)
+                        if (!id) return
                         setDone(id)
                         navigate(ROUTES.planEdit(id))
                       }}

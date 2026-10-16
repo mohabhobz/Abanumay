@@ -6,6 +6,7 @@ import type {
 import { SCENARIO, projectRows } from './projects'
 import { planOfProject, planDone } from './plans'
 import { payRequests } from './disbursements'
+import { WALK_PROJECT } from './agreements'
 import { NOUN, countOf } from '@/lib/format'
 import { TONE } from '@/lib/tone'
 import type { Tone } from '@/types/domain'
@@ -355,9 +356,22 @@ const row = (
   }
 }
 
+/* Re-audit 15 Oct · 10.4.2 · a closing opens only on a project with no open payment record · the
+   fixture's closings sat on the payment scenario's projects · a hand-written closing whose project
+   is busy takes a free one from the closing scenario, and the generated ones draw only free ones */
+const busy = (pid: string) => pid === WALK_PROJECT || payRequests.some((r) => r.projectId === pid && r.state !== 'paid' && r.state !== 'closed')
+const FREE = SCENARIO.closing.filter((id) => !busy(id))
+/* and a project with a payment still on its way is under execution, not closing · its stage says so */
+for (const p of projectRows) if (busy(p.id) && p.statusGroup === 'قيد الإغلاق') p.stage = 'رفع تقرير مرحلي'
+const handPid = (pid: string): string => (busy(pid) ? FREE.shift() ?? pid : pid)
+const entOf = (pid: string, fallback: string) => projectRows.find((p) => p.id === pid)?.entityName ?? fallback
+const P2041 = handPid('20852')
+const P2043 = handPid('20824')
+const P2044 = handPid('20866')
+
 export const closeRows: CloseRow[] = [
   /* 1 · with the entity · not yet submitted, missing the minimum */
-  row('CL-2041', '20852', 'draft', {
+  row('CL-2041', P2041, 'draft', {
     report: mkReport({
       beneficiaries: 780,
       outcomes: 'نُفّذت 42 جلسة من 48، وأُجّل الباقي لظروف تتعلق بالمقر.',
@@ -387,7 +401,7 @@ export const closeRows: CloseRow[] = [
   }),
 
   /* 3 · with outreach · rule 9 */
-  row('CL-2043', '20824', 'comms', {
+  row('CL-2043', P2043, 'comms', {
     report: mkReport({
       beneficiaries: 640,
       budget: 512_000,
@@ -400,13 +414,13 @@ export const closeRows: CloseRow[] = [
     mediaRequired: true,
     audit: [
       a('2026-08-01', 'حصة النملة', 'إنشاء طلب التقرير الختامي'),
-      a('2026-09-01', 'جمعية العناية بالمساجد بالقصيم', 'إرسال التقرير الختامي'),
+      a('2026-09-01', entOf(P2043, 'جمعية العناية بالمساجد بالقصيم'), 'إرسال التقرير الختامي'),
       a('2026-09-09', 'حصة النملة', 'اعتماد مشرف المنح · إحالة إلى الاتصال المؤسسي'),
     ],
   }),
 
   /* 4 · sent back with notes · a second version · rule 19 */
-  row('CL-2044', '20866', 'returned', {
+  row('CL-2044', P2044, 'returned', {
     returnedTo: 'draft',
     note: 'الفواتير المرفوعة تغطي \u206660%\u2069 فقط من الميزانية الفعلية المذكورة. أرفق مستندات تغطي الفرق.',
     report: mkReport({
@@ -424,7 +438,7 @@ export const closeRows: CloseRow[] = [
     ],
     audit: [
       a('2026-08-01', 'عزام الخريف', 'إنشاء طلب التقرير الختامي'),
-      a('2026-08-28', 'جمعية تحفيظ القرآن بالمدينة', 'إرسال التقرير الختامي'),
+      a('2026-08-28', entOf(P2044, 'جمعية تحفيظ القرآن بالمدينة'), 'إرسال التقرير الختامي'),
       a('2026-09-03', 'عزام الخريف', 'اعتماد مشرف المنح'),
       a('2026-09-12', 'مدير المنح', 'إعادة بملاحظات · إصدار 2'),
     ],
@@ -557,10 +571,11 @@ const scDay = (start: string, d: number): string => {
 }
 
 ;(() => {
-  const pool = SCENARIO.closing.slice()
+  const pool = FREE.slice()
   let seq = 0
-  for (const stage of SC_ORDER) {
-    while (closeRows.filter((c) => c.stage === stage).length < 3 && pool.length) {
+  /* round by round · every stage gets one before any gets a second, so a shorter pool still covers them all */
+  for (let round = 1; round <= 3; round++) for (const stage of SC_ORDER) {
+    while (closeRows.filter((c) => c.stage === stage).length < round && pool.length) {
       const pid = pool.shift()!
       const pr = projectRows.find((p) => p.id === pid)
       if (!pr) continue

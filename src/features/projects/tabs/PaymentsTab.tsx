@@ -42,7 +42,7 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
         <Head title="جدول الدفعات" meta="صُرف قبل النظام" />
         <Empty
           title={<>صُرفت المنحة في النظام السابق · <Money>{paidBefore}</Money></>}
-          note={projectId && hasLegacy(projectId) ? `من سندات النظام السابق المستوردة: ${legacyOf(projectId!).map((v) => `${v.voucher} (${v.amount.toLocaleString('en-US')} · ${v.paidAt})`).join('، ')}` : 'لا جدول دفعات ولا طلبات صرف لهذا المشروع في النظام · المصروف يُقرأ من قيمة المنحة، وهو ما يعتمده الإغلاق والتقارير.'}
+          note={projectId && hasLegacy(projectId) ? `من سندات النظام السابق المستوردة: ${legacyOf(projectId!).map((v) => `${v.voucher} (${v.amount.toLocaleString('en-US')} · ${v.paidAt})`).join('، ')}` : 'لا جدول دفعات ولا سجلات صرف لهذا المشروع في النظام · المصروف يُقرأ من قيمة المنحة، وهو ما يعتمده الإغلاق والتقارير.'}
         />
       </Glass>
     )
@@ -113,7 +113,7 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
                 <>
                   <span className="decsep" />
                   <Link className="lnk" to={`${ROUTES.payments}?q=${projectId}`}>
-                    طلبات الصرف
+                    سجلات الصرف
                   </Link>
                 </>
               )}

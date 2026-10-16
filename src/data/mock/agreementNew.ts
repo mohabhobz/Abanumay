@@ -1,6 +1,6 @@
 import { agreements } from './agreements'
 import { projectRows } from './projects'
-import type { AgreementKind, AgreementPayment, ProjectRow } from '@/types/domain'
+import type { PayCond, AgreementKind, AgreementPayment, ProjectRow } from '@/types/domain'
 import { isDropped } from '@/data/status'
 
 /* Creating an agreement
@@ -124,6 +124,10 @@ export interface DraftPay {
   amount: number
   dueAt: string
   requirement: string
+  /** v3 · 8.2.9 · the requirements' own due date · the payment date when empty */
+  reqDueAt?: string
+  /** v3 · 8.2.9 · 12.4.14 · structured conditions */
+  conds?: PayCond[]
 }
 
 /** A starting schedule · two even disbursements · a starting point to edit, not a final value */
@@ -142,9 +146,11 @@ export const seedSchedule = (amount: number, from: string, count?: number, note?
       requirement: i === 0 ? 'توقيع الاتفاقية' : i === count - 1 ? 'التقرير الختامي ومخرجات المشروع' : (note || 'التقرير المرحلي'),
     }))
   }
+  /* v3 · 8.2.9 · each payment's requirements fall due a week before its money · the last one is tied
+     to the final report, structured */
   return [
-    { no: 1, amount: half, dueAt: later(from, 14), requirement: 'توقيع الاتفاقية' },
-    { no: 2, amount: amount - half, dueAt: later(from, 120), requirement: 'التقرير الختامي ومخرجات المشروع' },
+    { no: 1, amount: half, dueAt: later(from, 14), reqDueAt: later(from, 7), requirement: 'توقيع الاتفاقية', conds: [] },
+    { no: 2, amount: amount - half, dueAt: later(from, 120), reqDueAt: later(from, 113), requirement: 'تسليم مخرجات المشروع', conds: [{ kind: 'report', ref: 'final', label: 'التقرير الختامي' }] },
   ]
 }
 
@@ -162,6 +168,8 @@ export const toPayments = (rows: DraftPay[], amount: number): AgreementPayment[]
     share: shareOf(r.amount, amount),
     dueAt: r.dueAt,
     requirement: r.requirement || undefined,
+    reqDueAt: r.reqDueAt || undefined,
+    conds: r.conds?.length ? r.conds : undefined,
   }))
 
 /* Validation · the rules stated before submission */

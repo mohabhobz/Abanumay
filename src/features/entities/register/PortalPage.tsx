@@ -108,7 +108,7 @@ export default function PortalPage() {
   const pays = entityId
     ? requestsOfEntity(entityId).slice().sort((x, y) => Number(y.state === 'returned') - Number(x.state === 'returned'))
     : []
-  const due = entityId ? payableProjects(entityId).filter((p) => p.can && p.open > 0) : []
+  const due = entityId ? payableProjects(entityId).filter((p) => p.can && !p.external && p.raise > 0) : []
   useClosing()
   /* 10.2.2 · the closings waiting on the entity first · and its distress cases (10.9) */
   const closes = entityId
@@ -118,10 +118,10 @@ export default function PortalPage() {
   /* The entity's assistant · what waits on it across its procedures, the most pressing first */
   const portalReadings: Reading[] = [
     ...agrs.filter((ag) => agrHolder(ag) === 'entity').map((ag) => ({ id: `pt-ag-${ag.id}`, kind: 'flag' as const, label: 'اتفاقية بانتظار توقيعك', text: ag.projectName, src: 'إجراء الاتفاقيات' })),
-    ...pays.filter((r) => r.state === 'returned').map((r) => ({ id: `pt-pay-${r.id}`, kind: 'flag' as const, label: r.permit ? 'إذن صرف بانتظار مسوّغاتك' : 'طلب صرف مُعاد للاستكمال', text: `${r.projectName} · الدفعة ${r.no}${r.note ? ` · ${r.note}` : ''}`, src: 'إجراء الصرف' })),
+    ...pays.filter((r) => r.state === 'returned').map((r) => ({ id: `pt-pay-${r.id}`, kind: 'flag' as const, label: 'متطلبات دفعة مُعادة للاستكمال', text: `${r.projectName} · الدفعة ${r.no}${r.note ? ` · ${r.note}` : ''}`, src: 'إجراء الصرف' })),
     ...closes.filter((c) => c.stage === 'draft' || c.stage === 'returned').map((c) => ({ id: `pt-cl-${c.id}`, kind: 'flag' as const, label: 'تقرير ختامي مطلوب', text: `${c.projectName}${c.note ? ` · ${c.note}` : ''}`, src: 'إجراء الإغلاق' })),
     ...cases.filter((c) => c.stage === 'settle' || (c.recovery && c.recovery.state === 'open')).map((c) => ({ id: `pt-cs-${c.id}`, kind: 'flag' as const, label: c.stage === 'settle' ? 'تسوية المصروف' : 'مبلغ مطلوب إعادته', text: c.projectName, src: 'حالات التعثر' })),
-    ...due.map((d) => ({ id: `pt-due-${d.id}`, kind: 'note' as const, label: 'دفعة مستحقة', metric: { value: String(d.open), unit: d.open === 1 ? 'دفعة' : 'دفعات' }, text: `${d.name} · يمكنك طلب صرفها الآن.`, src: 'جدول الدفعات المعتمد' })),
+    ...due.map((d) => ({ id: `pt-due-${d.id}`, kind: 'note' as const, label: 'متطلبات دفعات متاحة', metric: { value: String(d.raise), unit: d.raise === 1 ? 'دفعة' : 'دفعات' }, text: `${d.name} · ارفع متطلباتها متى جهزت.`, src: 'جدول الدفعات المعتمد' })),
   ]
   const missing = regMissingDocs(reqOf)
 
@@ -538,20 +538,20 @@ export default function PortalPage() {
                   entity's own five states, with what it should do now */}
               {entityId && (pays.length > 0 || due.length > 0) && (
                 <Glass>
-                  <Head title="طلبات الصرف" meta={<span className="sub"><Num>{pays.length}</Num> {nounAfter(pays.length, NOUN.request)}</span>} />
+                  <Head title="الدفعات" meta={<span className="sub"><Num>{pays.length}</Num> {nounAfter(pays.length, NOUN.request)}</span>} />
                   <ul className="ptl-miss ptl-plans">
                     {due.map((d) => (
                       <li key={`due-${d.id}`}>
                         <Icon name={icons.pay} size="sm" />
                         <span className="trim1">{d.name}</span>
                         <span className="pc-sp" />
-                        <Tag tone="teal"><Num>{d.open}</Num> مستحقة</Tag>
-                        <Link className="btn btn-p btn-sm" to={`${ROUTES.paymentNew(d.id)}&as=entity`}>اطلب الصرف</Link>
+                        <Tag tone="teal"><Num>{d.raise}</Num> متاحة للمتطلبات</Tag>
+                        <Link className="btn btn-p btn-sm" to={`${ROUTES.paymentNew(d.id)}&as=entity`}>ارفع المتطلبات</Link>
                       </li>
                     ))}
                     {pays.map((r) => {
                       const st = entityStateOf(r.state)
-                      const label = r.permit ? 'إذن صرف بانتظار مسوّغاتك' : st.label
+                      const label = st.label
                       return (
                         <li key={r.id}>
                           <Icon name={icons.doc} size="sm" />

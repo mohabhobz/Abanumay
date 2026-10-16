@@ -16,7 +16,7 @@ export type ProjectKind = 'regular' | 'independent' | 'portfolio'
 
 export interface Decisions {
   /** payments#6 · the next payment opens once the one before is requested, or only once it is paid */
-  payNext: 'requested' | 'paid'
+  payNext: 'off' | 'requested' | 'paid'
   /** partners · which entities may be routed through Ehsan · any, or approved strategic partners only */
   ehsanEntities: 'any' | 'strategic'
   /** Priority of a request in study · set by the supervisor, or computed from the study */
@@ -33,7 +33,7 @@ export interface Decisions {
 }
 
 const DEFAULT: Decisions = {
-  payNext: 'requested',
+  payNext: 'off',
   ehsanEntities: 'any',
   priority: 'manual',
   typeFloor: { regular: null, independent: null, portfolio: null },

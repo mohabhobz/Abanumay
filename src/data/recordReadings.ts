@@ -14,7 +14,7 @@ import type { CaseRow, PayRequest } from '@/types/domain'
    number, its source, and advisory only — the assistant names what blocks or what's off, it
    never approves. */
 
-const FORWARD: Partial<Record<PayRequest['state'], PayAct>> = { supervisor: 'recommend', manager: 'approve', finance: 'order' }
+const FORWARD: Partial<Record<PayRequest['state'], PayAct>> = { supervisor: 'qualify', eligible: 'permit', manager: 'approve', exec: 'approve', finance: 'order' }
 
 /** A disbursement request · what stops the next exit, the grant left, the stage's clock, the reports' analysis */
 export function readPayRequest(r: PayRequest): Reading[] {
@@ -34,7 +34,7 @@ export function readPayRequest(r: PayRequest): Reading[] {
     out.push({
       id: 'pr-left', kind: r.asked > left ? 'flag' : 'note', label: 'المتبقي من المنحة',
       metric: { value: nf.format(Math.max(0, left)), unit: 'ريال' },
-      text: r.asked > left ? /* doc rule 14 */ `الطلب ${nf.format(r.asked)} يتجاوز المتبقي · تمنعه .` : `بعد هذه الدفعة يبقى ${nf.format(left - r.asked)} من ${nf.format(r.granted)}.`,
+      text: r.asked > left ? /* doc 9.4.16 */ `الإذن ${nf.format(r.asked)} يتجاوز المتبقي من المنحة · تمنعه القاعدة 9.4.16.` : `بعد هذه الدفعة يبقى ${nf.format(left - r.asked)} من ${nf.format(r.granted)}.`,
       src: /* doc rule 14 */ 'قيمة المنحة ناقص المصروف',
       bar: { value: r.granted - left + r.asked, limit: r.granted, valueLabel: 'بعد الصرف', limitLabel: 'المنحة', unit: 'ريال' },
     })

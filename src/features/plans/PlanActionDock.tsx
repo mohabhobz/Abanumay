@@ -1,3 +1,4 @@
+import { mayApprovePlan } from '@/data/plans/auth'
 import { useRef } from 'react'
 import { Num, Person } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
@@ -61,7 +62,8 @@ export function planActionsFor(role: RoleKey, stage: PlanStage, asEntity = false
       { key: 'returnEntity', label: 'إعادة للجهة بملاحظات', kind: 'btn-2', needsNote: true, why: /* doc 12.2.8 */ 'الجهة كاتبة الخطة، فتُعاد إليها لتعدّلها' },
     ]
   }
-  if (stage === 'manager' && role === 'grants-manager') {
+  /* v3 · 12.2.11 · the grants manager, or an authority holder he delegated */
+  if (stage === 'manager' && mayApprovePlan(role)) {
     return [
       { key: 'approve', label: 'اعتماد وتثبيت النسخة المرجعية', kind: 'btn-p', gated: true, why: 'الاعتماد يثبّت الهيكل، وأي تعديل بعده يلزمه طلب رسمي' },
       /* 12.2.11 · the manager's return goes to the supervisor, who reviews it with the entity */

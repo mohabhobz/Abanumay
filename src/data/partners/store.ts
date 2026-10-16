@@ -7,9 +7,8 @@ import {
 } from '@/data/mock/implementer'
 import { stageMeta } from '@/data/mock/taxonomy'
 import { finalizeHold, hasFunding, linkIssues, linkOf, linkProject, recordPaid, releaseSavings, unlinkProject, isPaidRef, useBudget } from '@/data/budget/store'
-import { openPlanFor } from '@/data/plans/store'
-import { planOfProject, planDone } from '@/data/mock/plans'
-import { setEhsanGate } from '@/data/payments/store'
+import { planOfProject } from '@/data/mock/plans'
+import { paidOf, setEhsanGate, setExternalBefore, setExternalSchedule } from '@/data/payments/store'
 import { payBlock } from '@/data/entities/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { approverFor } from '@/data/approval'
@@ -94,6 +93,8 @@ export interface EhsanPay {
   at: string
   reviewedBy?: string
   reviewNote?: string
+  /** Recorded before the payments ran this procedure (v3 · 9.4.5) · the fixture's */
+  seed?: boolean
 }
 export const EHSAN_PAYS: EhsanPay[] = []
 export const EH_STATE_SAY: Record<EhState, string> = { review: 'بانتظار المراجعة المالية', confirmed: 'مؤكدة', returned: 'معادة' }
@@ -112,6 +113,9 @@ export interface EhClose { report: string; evidence: string[]; by: string; at: s
 const SCHEDULES = new Map<string, EhSlot[]>()
 const EH_OPS = new Map<string, EhOp[]>()
 const EH_CLOSE = new Map<string, EhClose>()
+/** v3 · 8.3.28 · an external project's agreement or document, kept as a reference */
+const EXT_DOCS = new Map<string, { file: string; by: string; at: string }[]>()
+export const extDocsOf = (projectId: string) => EXT_DOCS.get(projectId) ?? []
 /** Batch 7 · a routing the supervisor proposed and the executive hasn't decided */
 export interface RouteProposal { platform: boolean; type: PType; note: string; by: string; at: string }
 const PROPOSALS = new Map<string, RouteProposal>()
@@ -142,24 +146,19 @@ export function ehMoney(projectId: string) {
 /** What opens on an independent project · the plan and schedule after approval (11.2.16) */
 export function ehGate(projectId: string): { plan: boolean; schedule: boolean; pay: boolean; why: string } {
   if (!approvedProject(projectId)) return { plan: false, schedule: false, pay: false, why: /* doc 11.2.8 */ 'بعد الاعتماد النهائي للمشروع' }
-  const plan = planOfProject(projectId)
+  /* v3 · 12.2.1 · 11.4.5 · an external project has no plan in the system · its schedule opens with the approval */
   const sched = ehScheduleOf(projectId).length > 0
-  if (!plan) return { plan: true, schedule: false, pay: false, why: /* doc 11.2.16 */ 'أعدّ خطة المشروع أولًا' }
-  /* Re-audit 7 Oct · the schedule and its payments follow an approved plan, not a draft */
-  if (plan.stage !== 'active' && plan.stage !== 'done') return { plan: true, schedule: false, pay: false, why: /* doc 11.2.16 */ 'تُعتمد خطة المشروع أولًا ثم جدول دفعاته' }
-  if (!sched) return { plan: true, schedule: true, pay: false, why: /* doc 11.2.16 */ 'أدخل جدول الدفعات' }
-  return { plan: true, schedule: true, pay: true, why: '' }
+  if (!sched) return { plan: false, schedule: true, pay: false, why: /* doc 11.2.7 */ 'أدخل جدول الدفعات' }
+  return { plan: false, schedule: true, pay: true, why: '' }
 }
 
 /** The independent project's closing checks (11.2.15 · 11.2.21) */
 export function ehCloseChecks(projectId: string): { key: string; label: string; ok: boolean }[] {
   const m = ehMoney(projectId)
-  const plan = planOfProject(projectId)
   const c = ehCloseOf(projectId)
   return [
     { key: 'pays', label: 'كل الدفعات المسجلة مؤكدة من الإدارة المالية', ok: m.review === 0 && m.recorded > 0 },
     { key: 'cap', label: 'الدفعات في حدود قيمة المشروع', ok: m.recorded <= m.value },
-    { key: 'plan', label: 'خطة المشروع منجزة', ok: Boolean(plan && planDone(plan) >= 100) },
     { key: 'report', label: 'التقرير الختامي والشواهد مسجّلة', ok: Boolean(c?.report.trim() && c.evidence.length) },
   ]
 }
@@ -187,6 +186,8 @@ export interface SubProject {
   decidedBy?: string
   decidedAt?: string
   exec?: SubExec
+  /** v3 · 12.4.13 · the portfolio plan's activity this sub-project serves · several may serve one */
+  activityId?: string
 }
 /* Batch 7 · partners#11 · a phase carries its activities, each with its output and the evidence it
    needs (12.2.6 – 12.2.9) · the plan was phases alone */
@@ -276,7 +277,26 @@ export function subsGate(pf: PortfolioRec): { ok: boolean; why: string } {
   return { ok: true, why: '' }
 }
 
-export interface SubDraft { name: string; region: string; city?: string; amount: number; beneficiaries: number; outputs: string; files: string[] }
+export interface SubDraft { name: string; region: string; city?: string; amount: number; beneficiaries: number; outputs: string; files: string[]; activityId?: string }
+
+/** v3 · 12.4.13 · the portfolio plan's activities a sub-project can serve · a phase without activities
+    stands for one */
+export function pfActivities(pf: PortfolioRec): { id: string; label: string }[] {
+  return pf.plan.phases.flatMap((ph) => (ph.activities?.length ? ph.activities.map((a) => ({ id: a.id, label: `${ph.name} · ${a.name}` })) : [{ id: `ph:${ph.id}`, label: ph.name }]))
+}
+/** v3 · 12.4.13 · how an activity reads from its sub-projects · evidence beside it, or its progress
+    updated · `PF_ACTIVITY_MODE` is the setting */
+export const PF_ACTIVITY_MODE: { mode: 'evidence' | 'update' } = (() => { try { return JSON.parse(localStorage.getItem('ab-cfg-pf-activity') ?? '') as { mode: 'evidence' | 'update' } } catch { return { mode: 'update' } } })()
+export const setPfActivityMode = (mode: 'evidence' | 'update') => { PF_ACTIVITY_MODE.mode = mode; try { localStorage.setItem('ab-cfg-pf-activity', JSON.stringify(PF_ACTIVITY_MODE)) } catch { /* blocked */ } }
+export function pfActivityProgress(pf: PortfolioRec, activityId: string): { linked: number; done: number; pct: number; say: string } {
+  const subs = pf.items.filter((x) => x.activityId === activityId && x.state === 'approved')
+  const done = subs.filter((x) => x.exec?.status === 'مكتمل').length
+  const pct = subs.length ? Math.round((done / subs.length) * 100) : 0
+  const say = !subs.length ? 'لا مشاريع فرعية مرتبطة' : PF_ACTIVITY_MODE.mode === 'update'
+    ? `${done} من ${subs.length} مكتمل · الإنجاز ${pct}%${done === subs.length ? ' · النشاط مكتمل' : ''}`
+    : `${done} من ${subs.length} مكتمل · شواهد للنشاط`
+  return { linked: subs.length, done, pct, say }
+}
 /** Before a sub-project is saved or sent · complete, valid, not a duplicate (13.2.13 · 13.4.12 · 13.4.13) */
 export function subIssues(pf: PortfolioRec, d: SubDraft, except?: string): string[] {
   const out: string[] = []
@@ -410,6 +430,8 @@ type Op = { by: string; at: string } & (
   | { op: 'pfReq'; pfId: string; req: Pick<PfRequest, 'id' | 'no' | 'amount' | 'why' | 'docs'> }
   | { op: 'pfReqAct'; pfId: string; reqId: string; act: 'order' | 'pay' | 'return'; ref?: string; note: string }
   | { op: 'pfReport'; id: string; report: string; evidence: string[] }
+  | { op: 'extDoc'; projectId: string; file: string }
+  | { op: 'subLink'; pfId: string; subId: string; activityId: string }
   | { op: 'pfClose'; id: string }
   | { op: 'ehSchedule'; projectId: string; slots: EhSlot[] }
   | { op: 'ehOp'; projectId: string; kind: string; ref?: string; note: string }
@@ -463,7 +485,9 @@ const setStage = (projectId: string, stage: string) => {
 /** A confirmed payment is money Ehsan already paid · recorded once on the hold by its reference, never a new disbursement (11.4.23) */
 function settleOnBudget(p: EhsanPay, by: string) {
   if (!liveRun) return
-  const holder = p.target.kind === 'project' ? p.target.projectId : p.target.pfId
+  /* v3 · 9.4.5 · a project's money left on the system's permit · its transfer moved the hold already */
+  if (p.target.kind === 'project') return
+  const holder = p.target.pfId
   if (hasFunding(holder) && !isPaidRef(p.ref)) recordPaid(holder, p.amount, p.ref, by)
 }
 
@@ -837,6 +861,18 @@ function applyOp(o: Op) {
       ;(EH_OPS.get(o.projectId) ?? EH_OPS.set(o.projectId, []).get(o.projectId)!).push({ at: day(o.at), by: o.by, kind: o.kind, ref: o.ref, note: o.note })
       return
     }
+    case 'subLink': {
+      const pf = pfById(o.pfId)
+      const sb = pf?.items.find((x) => x.id === o.subId)
+      if (pf && sb && (o.activityId === '' || pfActivities(pf).some((x) => x.id === o.activityId))) sb.activityId = o.activityId || undefined
+      return
+    }
+    case 'extDoc': {
+      const l = EXT_DOCS.get(o.projectId) ?? []
+      if (!l.some((x) => x.file === o.file)) l.push({ file: o.file, by: o.by, at: o.at.slice(0, 10) })
+      EXT_DOCS.set(o.projectId, l)
+      return
+    }
     case 'ehReport': {
       if (!viaEhsan(o.projectId) || !approvedProject(o.projectId)) return
       const c = EH_CLOSE.get(o.projectId)
@@ -872,6 +908,10 @@ export function payIssues(p: Pick<EhsanPay, 'target' | 'amount' | 'ref' | 'paidA
     if (!viaEhsan(t.projectId)) out.push('المشروع غير موجّه عبر إحسان')
     const g = ehGate(t.projectId)
     if (!g.pay) out.push(g.why)
+    /* v3 · 9.4.5 · finance pays nothing without the system's permit · the platform's operation is
+       recorded against what the permits paid */
+    const covered = paidOf(t.projectId) - sumOf(paysOf(t), live)
+    if (p.amount > covered) out.push(/* doc 9.4.5 */ `لا تُسجَّل دفعة قبل صرفها بإذن صرف من النظام · المتاح ${nf.format(Math.max(0, covered))}`)
     const m = ehMoney(t.projectId)
     if (p.amount > m.left) out.push(`تتجاوز المتبقي من قيمة المشروع ${nf.format(Math.max(0, m.left))}`)
   } else {
@@ -975,7 +1015,7 @@ function seed() {
       { no: 2, amount: 500_000, dueAt: '2026-10-15' },
       { no: 3, amount: p.amountGranted - 900_000, dueAt: '2027-02-15' },
     ])
-    for (const x of e.paid) EHSAN_PAYS.push({ id: `EP-${x.ref}`, target: { kind: 'project', projectId: p.id }, amount: x.amount, ref: x.ref, paidAt: '2026-06-16', docs: ['إشعار منصة إحسان.pdf'], state: 'confirmed', by: SUP, at: '2026-06-16', reviewedBy: FIN })
+    for (const x of e.paid) EHSAN_PAYS.push({ id: `EP-${x.ref}`, target: { kind: 'project', projectId: p.id }, amount: x.amount, ref: x.ref, paidAt: '2026-06-16', docs: ['إشعار منصة إحسان.pdf'], state: 'confirmed', by: SUP, at: '2026-06-16', reviewedBy: FIN, seed: true })
     EH_OPS.set(p.id, [
       { at: '2026-03-18', by: SUP, kind: 'قرار التوجيه', note: 'يُوجَّه الدعم عبر منصة إحسان · مشروع مستقل' },
       { at: '2026-06-16', by: SUP, kind: 'دفعة عبر إحسان', ref: 'EH-21060-1', note: 'نفّذت المنصة الدفعة الأولى 400,000' },
@@ -994,7 +1034,10 @@ function hydrate() {
 hydrate()
 
 /* The payments module routes an Ehsan project's money here, not to the entity's requests (11.2.17) */
-setEhsanGate((projectId) => (viaEhsan(projectId) ? 'دفعاته تنفّذها منصة إحسان وتُسجَّل من صفحة المشروع' : ''))
+setEhsanGate((projectId) => (viaEhsan(projectId) ? 'مشروع عبر منصة إحسان · يرفع صاحب الصلاحية متطلباته نيابةً عن الجهة' : ''))
+/* v3 · 9.4.5 · its payments run the payment procedure · on the schedule kept here */
+setExternalBefore((projectId) => (viaEhsan(projectId) ? EHSAN_PAYS.filter((p) => p.seed && p.target.kind === 'project' && p.target.projectId === projectId).reduce((s, p) => s + p.amount, 0) : 0))
+setExternalSchedule((projectId) => (viaEhsan(projectId) ? ehScheduleOf(projectId) : []))
 
 /* ── Actions ── */
 
@@ -1104,6 +1147,7 @@ export function addSub(pfId: string, d: SubDraft, by: string): { id?: string; er
   if (!g.ok) return { errors: [g.why] }
   const bad = subIssues(pf, d)
   if (bad.length) return { errors: bad }
+  if (d.activityId && !pfActivities(pf).some((x) => x.id === d.activityId)) return { errors: ['النشاط ليس في خطة المحفظة'] }
   const id = `${pf.id.slice(-3)}-S${pf.items.length + 1 + subSeq++}`
   run({ op: 'subAdd', pfId, sub: { id, ...d }, by, at: now() })
   return { id, errors: [] }
@@ -1203,10 +1247,22 @@ export function addEhOp(projectId: string, kind: string, note: string, by: strin
 }
 /** The supervisor opens the plan of an Ehsan project · there's no entity on the portal to draft it (11.2.16) */
 export function openEhsanPlan(projectId: string, by: string): string[] {
-  const g = ehGate(projectId)
-  if (!g.plan) return [g.why]
-  if (planOfProject(projectId)) return []
-  openPlanFor(projectId, 'supervisor', 'مشروع عبر منصة إحسان · يعدّ المشرف الخطة', by)
+  /* v3 · 12.2.1 · no plan is made for an external project */
+  void projectId; void by
+  return ['المشروع الخارجي لا يتطلب خطة · لا تُنشأ له خطة في النظام']
+}
+/** v3 · 12.4.13 · tie an existing sub-project to a portfolio plan activity, or untie it */
+export function linkSubActivity(pfId: string, subId: string, activityId: string, by: string): string[] {
+  const pf = pfById(pfId)
+  if (!pf?.items.some((x) => x.id === subId)) return ['المشروع الفرعي غير موجود']
+  if (activityId && !pfActivities(pf).some((x) => x.id === activityId)) return ['النشاط ليس في خطة المحفظة']
+  run({ op: 'subLink', pfId, subId, activityId, by, at: now() })
+  return []
+}
+export function addExtDoc(projectId: string, file: string, by: string): string[] {
+  if (!viaEhsan(projectId)) return ['للمشروع الخارجي وحده']
+  if (!/\.pdf$/i.test(file)) return ['الاتفاقية أو الوثيقة الخارجية بصيغة PDF']
+  run({ op: 'extDoc', projectId, file, by, at: now() })
   return []
 }
 export function saveEhReport(projectId: string, report: string, evidence: string[], by: string): string[] {

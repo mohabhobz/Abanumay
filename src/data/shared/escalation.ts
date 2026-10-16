@@ -241,7 +241,7 @@ function collect(proc: EscProc): EscItem[] {
         const k = `payment.${r.state}`
         out.push(make({
           id: `esc-py-${r.id}`, proc, stageKey: k, stage: payStateLabel(r.state), title: `الدفعة ${r.no} من ${r.of} · ${r.projectName}`, sub: r.entityName,
-          href: ROUTES.payment(r.id), owner: r.state === 'returned' ? r.entityName : r.state === 'supervisor' ? r.owner : payStateWho(r.state) || r.owner,
+          href: ROUTES.payment(r.id), owner: r.state === 'returned' ? (r.origin === 'proxy' ? r.owner : r.entityName) : r.state === 'supervisor' || r.state === 'eligible' ? r.owner : payStateWho(r.state) || r.owner,
           entity: r.entityName, hours: r.hoursInState, limit: PAY_LIMIT[r.state] ?? 0,
         }))
       }

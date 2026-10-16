@@ -13,15 +13,15 @@ import { assistFor } from '@/data/mock/assistant'
 import { PAY_LIMIT, PAY_STATES, payRequestById, payStateWho } from '@/data/mock/disbursements'
 import { isolate, NOUN, nounAfter, pct, readDate } from '@/lib/format'
 import {
-  BANK_CHANGE_DENIED, BANK_CHANGE_ROLES, ENTITY_STATES, ORIGINS, PAY_PROOFS,
-  bankIssues, banksOf, entityStateOf, originOf, type PayOrigin,
+  BANK_CHANGE_DENIED, BANK_CHANGE_ROLES, ENTITY_STATES, PAY_PROOFS,
+  bankIssues, banksOf, entityStateOf,
 } from '@/data/mock/payEntity'
 import type { PayRequest } from '@/types/domain'
 import { ActionDock } from './ActionDock'
 import { PayExceptions } from './PayExceptions'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readPayRequest } from '@/data/recordReadings'
-import { actOnPay, grantLeft, mayResubmit, payActions, usePayments, type PayAction } from '@/data/payments/store'
+import { PROXY_ROLES, actOnPay, grantLeft, mayResubmit, payActions, usePayments, type PayAction } from '@/data/payments/store'
 import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
@@ -55,18 +55,20 @@ import { EditableCard } from '@/features/shared/EditableCard'
    its portal (`?as=entity`) to follow its request (9.4.19): its own five states, the notes to
    complete, the attachments and the log - without the institution's internal cards or exits. */
 
-/** The four steps the user sees - sourced from the steps table. */
+/** The stages the user sees · v3 · 9.2.1 – 9.2.18 */
 const LADDER: { key: string; label: string; note: string; steps: number[] }[] = [
-  { key: 'entity', label: 'إنشاء الطلب', note: 'الجهة المستفيدة', steps: [1, 2, 3, 4] },
-  { key: 'supervisor', label: 'مراجعة المشرف', note: 'مشرف المنح', steps: [5, 6, 7] },
-  { key: 'manager', label: 'موافقة مدير المنح', note: 'مدير المنح', steps: [12, 13] },
-  { key: 'exec', label: 'اعتماد المدير التنفيذي', note: 'فوق حد صرف المدير', steps: [13] },
-  { key: 'finance', label: 'أمر الصرف والتحويل', note: 'الإدارة المالية', steps: [15, 16, 17, 18, 19] },
+  { key: 'entity', label: 'رفع المتطلبات', note: 'الجهة المستفيدة', steps: [1, 2, 3, 4, 9] },
+  { key: 'supervisor', label: 'اعتماد المتطلبات', note: 'مشرف المنح', steps: [5, 6, 7] },
+  { key: 'eligible', label: 'إذن الصرف', note: 'مشرف المنح', steps: [10, 11] },
+  { key: 'manager', label: 'اعتماد مدير المنح', note: 'مدير المنح', steps: [12] },
+  { key: 'exec', label: 'اعتماد المدير التنفيذي', note: 'فوق حد صرف المدير', steps: [12] },
+  { key: 'finance', label: 'أمر الصرف والتحويل', note: 'الإدارة المالية', steps: [13, 14, 15, 16, 17, 18] },
 ]
 
-/** Which stage the request is currently at. */
+/** Which stage the record is currently at. */
 const NOW_AT: Record<string, string> = {
   supervisor: 'supervisor',
+  eligible: 'eligible',
   returned: 'entity',
   manager: 'manager',
   exec: 'exec',
@@ -78,12 +80,13 @@ const NOW_AT: Record<string, string> = {
 /* Re-audit 7 Oct · a stage reads done once the request is past it · it used to need every step of
    the stage logged, and step 6 is never logged, so «مراجعة المشرف» read «لم تبدأ» to the end */
 function ladderFor(r: PayRequest): StepItem[] {
-  const viaExec = r.state === 'exec' || r.log.some((e) => e.role === 'المدير التنفيذي' && e.step === 13)
-  const stages = LADDER.filter((s) => s.key !== 'exec' || viaExec)
+  const viaExec = r.state === 'exec' || r.log.some((e) => e.role === 'المدير التنفيذي' && e.step === 12)
+  /* a payment with no requirements cycle starts at the permit (9.2.2) */
+  const stages = LADDER.filter((s) => (s.key !== 'exec' || viaExec) && (r.origin !== 'supervisor' || (s.key !== 'entity' && s.key !== 'supervisor')))
   const now = NOW_AT[r.state]
   const nowAt = r.state === 'paid' ? stages.length : stages.findIndex((s) => s.key === now)
   const steps = stages.map((s, i): StepItem => {
-    const at = [...r.log].reverse().find((e) => s.steps.includes(e.step) && (s.key !== 'exec' || e.role === 'المدير التنفيذي'))
+    const at = [...r.log].reverse().find((e) => s.steps.includes(e.step) && (s.key !== 'exec' ? s.key !== 'manager' || e.role !== 'المدير التنفيذي' : e.role === 'المدير التنفيذي'))
     return {
       label: s.label,
       note: s.note,
@@ -132,8 +135,8 @@ export default function RequestPage() {
             <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
             <Glass>
               <Empty
-                title="الطلب غير موجود."
-                note="ربما أُغلق الطلب، أو أن الرابط قديم."
+                title="السجل غير موجود."
+                note="ربما أُغلق، أو أن الرابط قديم."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
                     العودة إلى صندوق الصرف
@@ -154,9 +157,9 @@ export default function RequestPage() {
   const bankOk = r.bank.active
   const actions = payActions(r, role.key, asEntity)
   /* Cross · the attachments read against the request's amount */
-  const readings = [...readPayRequest(r), ...(asEntity ? [] : [readFiles('ai-pay-docs', 'قراءة مرفقات الطلب', r.docs.map((d) => d.name), { amount: r.asked })])]
-  const onAct = (a: PayAction, file?: string) => {
-    const out = actOnPay(r.id, a.act, note, user.name, role.key, file)
+  const readings = [...readPayRequest(r), ...(asEntity ? [] : [readFiles('ai-pay-docs', 'قراءة متطلبات الدفعة', r.docs.map((d) => d.name), { amount: r.asked })])]
+  const onAct = (a: PayAction, file?: string, amount?: number) => {
+    const out = actOnPay(r.id, a.act, note, user.name, role.key, file, amount)
     if (out.length) { setSaid({ bad: out }); return }
     setSaid({ ok: a.label })
     setNote('')
@@ -169,11 +172,11 @@ export default function RequestPage() {
   /* H-3 - status from the entity's point of view - not a hook, so it belongs here normally. */
   const ent = entityStateOf(r.state)
 
-  /* H-2 - request direction - the entity's by default, or a supervisor's permit (9.1.input-4). */
-  const origin: PayOrigin = r.origin ?? 'entity'
+  /* v3 · 9.2.10 · the permit exists once the supervisor created it */
+  const permitOn = Boolean(r.permitAt)
 
   return (
-    <AppLayout assistantContext={assistFor.page(`طلب ${r.id}`, r.projectName)}>
+    <AppLayout assistantContext={assistFor.page(`الدفعة ${r.no} · ${r.id}`, r.projectName)}>
       <div className={`viewstack${actions.length > 0 ? ' hasdock' : ''}`}>
         <div className="screen col hasg2">
           <BackTo
@@ -199,14 +202,16 @@ export default function RequestPage() {
               </p>
 
               <div className="pamt">
-                <div className="lb">قيمة الطلب</div>
+                <div className="lb">{permitOn ? 'قيمة إذن الصرف' : 'قيمة الدفعة'}</div>
                 <div className="v"><Money sm>{r.asked}</Money></div>
                 <div className="sub">
-                  {/* Rule 5 - request amount can't exceed the approved payment. */}
+                  {/* 9.4.4 · the permit can't exceed the approved payment */}
                   {r.asked === r.due
-                    ? <>مطابقة للدفعة المعتمدة · تستحق في <DateText>{r.dueAt}</DateText></>
+                    ? <>مطابقة للدفعة المعتمدة · المخطط صرفها في <DateText>{r.dueAt}</DateText></>
+                    : r.asked < r.due
+                    ? <>جزء من الدفعة المعتمدة <Money sm>{r.due}</Money></>
                     : <span className="bad">
-                        أعلى من الدفعة المعتمدة <Money sm>{r.due}</Money> · مخالفة لل{/* doc rule 5 */}
+                        أعلى من الدفعة المعتمدة <Money sm>{r.due}</Money> · مخالفة للقاعدة 9.4.4{/* doc 9.4.4 */}
                       </span>}
                 </div>
               </div>
@@ -220,9 +225,9 @@ export default function RequestPage() {
           {/* Rule 15 - a closed request states that it's closed, with its log remaining beneath it. */}
           {r.state === 'closed' && (
             <Glass>
-              <Head title="الطلب مغلق" meta={<Tag tone="no">رفض نهائي</Tag>} />
+              <Head title="مغلق" meta={<Tag tone="no">رفض نهائي</Tag>} />
               <p className="sub cnote">
-                تنص القواعد {/* doc rule 15 */} على أن يُغلق النظام الطلب عند الرفض النهائي
+                تنص القواعد {/* doc 9.4.17 */} على أن يُغلق النظام السجل عند الرفض النهائي
                 <b> مع الاحتفاظ بسجل إجراءاته</b> · السجل كامل أدناه، والتعديل مغلق.
               </p>
               {r.note && <div className="payq-note"><Icon name={icons.chat} size="sm" /><span>{isolate(r.note)}</span></div>}
@@ -234,7 +239,7 @@ export default function RequestPage() {
             {/* Status bar outside the card - the badge is neutral and delay is stated in the text
                 beside it. */}
             <Tag tone={asEntity ? ent.tone : 'mute'}>
-              {asEntity ? ent.label : r.permit ? 'إذن صرف بانتظار مسوّغات الجهة' : meta?.label ?? 'مغلق'}
+              {asEntity ? ent.label : meta?.label ?? 'مغلق'}
             </Tag>
             {r.state !== 'paid' && r.state !== 'closed' && !asEntity && (
               <span className="sub">
@@ -256,58 +261,46 @@ export default function RequestPage() {
               </Link>
             )}
             {/* Step 11 - the entity completes and resubmits · rule 18: only while returned to it. */}
-            {asEntity && mayResubmit(r) && (
-              <Link className="btn btn-p btn-sm" to={`${ROUTES.paymentEdit(r.id)}?as=entity`}>
-                {r.permit ? 'أرفق المسوّغات وأرسل الطلب' : 'أكمل الطلب وأعد إرساله'}
+            {/* 9.2.9 · whoever raised them completes them · the entity, or the authority for an external party (9.4.5) */}
+            {mayResubmit(r) && (r.origin === 'proxy' ? !asEntity && PROXY_ROLES.includes(role.key) : asEntity) && (
+              <Link className="btn btn-p btn-sm" to={`${ROUTES.paymentEdit(r.id)}${asEntity ? '?as=entity' : ''}`}>
+                أكمل المتطلبات وأعد رفعها
               </Link>
             )}
-            {!asEntity && r.state === 'returned' && <span className="sub">عند الجهة لاستكماله</span>}
+            {!asEntity && r.state === 'returned' && r.origin !== 'proxy' && <span className="sub">عند الجهة لاستكمالها</span>}
           </div>
 
           <div className="g2">
             {/* === Main column - what the decision is made on === */}
             <div className="col">
-              {/* === H-2 - who initiates the request ===
-                  Note: this isn't an extra screen, it's a reversed direction. The difference isn't
-                  step count, it's who's waiting on whom: in the current app the supervisor has to
-                  remember to create the request; in the spec, the queue comes to them. The card
-                  places both side by side because that difference is what needs a decision from the
-                  institution. */}
-              {!asEntity && <Glass>
-                <Head
-                  title="من يُصدر طلب الدفعة"
-                  meta={<Tag tone="warn">يختلف عن النظام الحالي</Tag>}
-                />
-                <div className="payorig">
-                  {ORIGINS.map((o) => (
-                    <div key={o.key} className={`payorig-c${o.key === origin ? ' on' : ''}`}>
-                      <span className="payorig-h">
-                        <b>{o.label}</b>
-                        {o.key === 'entity' && <Tag tone="ok">المستهدف</Tag>}
-                      </span>
-                      <ol className="payorig-f">
-                        {o.flow.map((f, i) => (
-                          <li key={f}>
-                            <span className="num">{i + 1}</span>
-                            <span className="trim1">{f}</span>
-                          </li>
-                        ))}
-                      </ol>
-                      <span className="sub">{o.note}</span>
+              {/* v3 · 9.2.10 · 9.4.24 · the permit, and any cancelled before the transfer */}
+              {!asEntity && (permitOn || (r.cancels?.length ?? 0) > 0) && (
+                <Glass>
+                  <Head title="إذن الصرف" meta={permitOn ? <Tag tone="ok">صادر</Tag> : <Tag tone="mute">لا إذن قائم</Tag>} />
+                  {r.permitAt && (
+                    <KV rows={[
+                      { k: 'أنشأه', v: <Person name={r.permitAt.by} /> },
+                      { k: 'في', v: <DateText>{r.permitAt.at}</DateText> },
+                      { k: 'القيمة', v: <Money sm>{r.asked}</Money> },
+                      ...(r.origin === 'supervisor' ? [{ k: 'المتطلبات', v: <span>{r.of === 1 ? 'دفعة وحيدة' : 'دفعة أولى'} بلا دورة متطلبات{/* doc 9.2.2 */}</span> }] : []),
+                    ]} />
+                  )}
+                  {(r.cancels ?? []).map((c, i) => (
+                    <div key={i} className="payq-note">
+                      <Icon name={icons.alert} size="sm" />
+                      <span>أُلغي إذن سابق · <Person name={c.by} /> ({c.role}) · <DateText>{c.at}</DateText> · {isolate(c.note)}</span>
                     </div>
                   ))}
-                </div>
-                <p className="sub cnote">
-                  بدأ هذا الطلب في النموذج من <b>{originOf(origin).who}</b> ·
-                  والانتقال إلى الاتجاه المستهدف يفتح بوابة المنح للجهة، فتصل
-                  المسوّغات من البداية لا في منتصف الطريق.
-                </p>
-              </Glass>}
+                  <p className="sub cnote">
+                    ينشئ مشرف المنح الإذن يدويًّا بعد تأهل الدفعة، ولا ينشئه النظام تلقائيًّا{/* doc 9.2.10 */} · ويُلغى قبل التحويل بسبب مسجّل{/* doc 9.4.24 */}.
+                  </p>
+                </Glass>
+              )}
 
               {/* The conditions blocking progress - each with its rule cited. */}
               <Glass>
                 <Head
-                  title="شروط الصرف"
+                  title="متطلبات الدفعة وشروطها"
                   meta={
                     blocked.length || !bankOk
                       ? <Tag tone="warn">
@@ -318,7 +311,7 @@ export default function RequestPage() {
                 />
                 {r.condition && (
                   <div className="payq-cond">
-                    <span className="lb">شرط الدفعة</span>
+                    <span className="lb">شروط الدفعة</span>
                     <span>{isolate(r.condition)}</span>
                   </div>
                 )}
@@ -339,8 +332,8 @@ export default function RequestPage() {
                 {/* Rule 9 - execution is forbidden before every approval is complete. */}
                 {(blocked.length > 0 || !bankOk) && (
                   <p className="sub cnote">
-                    لا ينتقل الطلب قبل استيفاء هذه الشروط · تمنع القواعد {/* doc rule 9 */} التنفيذ
-                    قبل اكتمال كل الاعتمادات.
+                    لا يُنشأ إذن الصرف قبل استيفاء متطلبات الدفعة وشروطها{/* doc 9.4.2 */} · ولا يُنفَّذ الصرف
+                    قبل اكتمال كل الاعتمادات{/* doc 9.4.11 */}.
                   </p>
                 )}
               </Glass>
@@ -354,7 +347,7 @@ export default function RequestPage() {
               {r.note && r.state !== 'closed' && (
                 <Glass>
                   <Head
-                    title={r.permit ? 'ملاحظة إذن الصرف' : 'ملاحظات الإعادة'}
+                    title={r.cancels?.length && r.state === 'eligible' && !r.returnedBy ? 'سبب إلغاء الإذن' : 'ملاحظات الإعادة'}
                     meta={<Tag tone="warn">{r.returnedBy === 'manager' ? 'من مدير المنح' : r.returnedBy === 'finance' ? 'من الإدارة المالية' : 'للاستكمال'}</Tag>}
                   />
                   <div className="payq-note">
@@ -478,7 +471,7 @@ export default function RequestPage() {
                     </li>
                   ))}
                   {r.log.every((e) => !e.notified) && (
-                    <li className="sub">لا توجد إشعارات بعد، فالطلب ما زال في مرحلته الأولى.</li>
+                    <li className="sub">لا توجد إشعارات بعد.</li>
                   )}
                 </ul>
               </Glass>
@@ -510,9 +503,9 @@ export default function RequestPage() {
                   ))}
                 </ul>
                 <p className="sub cnote">
-                  للدورة في المؤسسة <b><Num>7</Num> مراحل</b>، وترى الجهة منها{' '}
-                  <b><Num>{ENTITY_STATES.length}</Num></b> · وتُجمع ثلاث منها في
-                  «تحت إجراء الدفع» لأن الجهة لا تملك أي إجراء فيها.
+                  للدورة في المؤسسة <b><Num>8</Num> مراحل</b>، وترى الجهة منها{' '}
+                  <b><Num>{ENTITY_STATES.length}</Num></b> · وتُجمع مراحل الإذن في
+                  «مؤهلة للصرف · تحت إجراء الدفع» لأن الجهة لا تملك أي إجراء فيها.
                 </p>
               </Glass>
 
@@ -642,7 +635,7 @@ export default function RequestPage() {
               </Glass>
             </div>
 
-            <AssistantAside title="قراءة طلب الصرف" cta="اقرأ الطلب" empty="لا ملاحظات على هذا الطلب الآن." readings={readings} />
+            <AssistantAside title="قراءة الدفعة" cta="اقرأ الدفعة" empty="لا ملاحظات على هذه الدفعة الآن." readings={readings} />
           </div>
         </div>
 

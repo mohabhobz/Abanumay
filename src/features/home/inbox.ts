@@ -25,6 +25,7 @@ import { fixtures, stagePressure } from '@/data/repository'
 import { agreements, AGR_LIMIT } from '@/data/mock/agreements'
 import { agrHolder } from '@/data/agreements/store'
 import { payRequests, PAY_LIMIT } from '@/data/mock/disbursements'
+import { payableProjects, scheduleOf } from '@/data/payments/store'
 import { planRows, PLAN_LIMIT, waitingReview } from '@/data/mock/plans'
 import { closeRows, CLOSE_LIMIT } from '@/data/mock/closing'
 import { BUDGET_STATE_SAY, docTitle, type BudgetState } from '@/data/mock/budgetTree'
@@ -38,6 +39,7 @@ import type { RoleKey } from '@/data/roles'
 import { EHSAN_PAYS, PORTFOLIOS } from '@/data/partners/store'
 import { SESSIONS, appFlowOf } from '@/data/approvals/store'
 import { RELOC_SAY, movingOf, relocationsWaiting } from '@/data/budget/relocate'
+import { mayApprovePlan } from '@/data/plans/auth'
 import { escItems } from '@/data/shared/escalation'
 import type { ProjectRow } from '@/types/domain'
 
@@ -121,10 +123,10 @@ const agreementsAt = (stages: string[], owner?: string, holderKey?: RoleKey): In
     .sort(byWait),
 })
 
-const paymentsAt = (state: 'supervisor' | 'manager' | 'exec' | 'finance', owner?: string): InboxQueue => ({
-  key: 'payments',
-  label: 'الدفعات',
-  note: state === 'supervisor' ? 'طلبات صرف وصلت إلى مرحلتك' : state === 'finance' ? 'أوامر صرف وتحويلات بانتظارك' : 'بانتظار اعتمادك قبل المالية',
+const paymentsAt = (state: 'supervisor' | 'eligible' | 'manager' | 'exec' | 'finance', owner?: string): InboxQueue => ({
+  key: state === 'eligible' ? 'payments-eligible' : 'payments',
+  label: state === 'eligible' ? 'مؤهلة للصرف' : 'الدفعات',
+  note: state === 'supervisor' ? 'متطلبات دفعات بانتظار مراجعتك' : state === 'eligible' ? 'دفعات مؤهلة للصرف · أنشئ إذن الصرف' : state === 'finance' ? 'أوامر صرف وتحويلات بانتظارك' : 'أذونات صرف بانتظار اعتمادك قبل المالية',
   icon: 'pay',
   all: `${ROUTES.payments}?state=${state}`,
   items: payRequests
@@ -133,6 +135,16 @@ const paymentsAt = (state: 'supervisor' | 'manager' | 'exec' | 'finance', owner?
       id: r.id, code: r.id.toUpperCase(), title: r.projectName, sub: `${r.entityName} · الدفعة ${r.no} من ${r.of}`,
       amount: r.asked, days: d(r.hoursInState), late: late(r.hoursInState, PAY_LIMIT[r.state]), limit: d(PAY_LIMIT[r.state]), region: regionOf(r.projectId), city: cityOf(r.projectId), to: ROUTES.payment(r.id),
     }))
+    /* v3 · 9.2.2 · 9.2.10 · 9.4.5 · a payment eligible from the activation has no record yet · and an
+       external party's open payments wait for the authority to raise them · both are the supervisor's */
+    .concat(state !== 'eligible' ? [] : payableProjects().filter((p) => p.can).flatMap((p) => scheduleOf(p.id)
+      .filter((sl) => (sl.state === 'eligible' && !(sl.requestId && payRequests.some((r) => r.id === sl.requestId && r.state !== 'paid' && r.state !== 'closed'))) || (p.external && sl.state === 'open'))
+      .map((sl) => ({
+        id: `slot-${p.id}-${sl.no}`, code: `${p.id} · ${sl.no}`, title: p.name,
+        sub: `${p.entity} · الدفعة ${sl.no} من ${sl.of} · ${sl.state === 'eligible' ? 'أنشئ إذن الصرف' : 'ارفع المتطلبات نيابةً عن الجهة الخارجية'}`,
+        amount: sl.left ?? sl.amount, days: 0, late: false, limit: 0, region: regionOf(p.id), city: cityOf(p.id),
+        to: `${ROUTES.paymentNew(p.id)}&pay=${sl.no}`,
+      }))))
     .sort(byWait),
 })
 
@@ -277,6 +289,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       portfolioItems('تنتظر توصيتك قبل أن تبدأ'),
       agreementsAt(['draft', 'returned'], undefined, 'supervisor'),
       paymentsAt('supervisor'),
+      paymentsAt('eligible'),
       plansAt('supervisor'),
       activities(),
       closingsAt('reports', ['supervisor']),
@@ -363,6 +376,8 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     projectsQueue('board', 'عند مجلس الأمناء', 'يسجّل قراره المدير التنفيذي في جلسته',
       single.filter((p) => holderOf(p) === 'board'), ROUTES.board),
     agreementsAt(['executive', 'entity'], undefined, 'ceo'),
+    /* v3 · 12.2.11 · plans reach the executive only by a delegation in force */
+    ...(mayApprovePlan('ceo') ? [plansAt('manager')] : []),
     paymentsAt('exec'),
     closingsAt('reports', ['executive']),
     closingsAt('evals', ['evalExecutive']),

@@ -370,7 +370,9 @@ export default function AgreementNewPage() {
             {tab === 'sched' && (
               project
                 ? <>
-                    <ScheduleEditor rows={rows} amount={amount} onChange={setRows} />
+                    {/* v3 · 6.4.4 · 7.4.6 · the body's payment guidance · the schedule is drawn here */}
+                    {payPlanOf(projectId)?.note && <p className="sub cnote">توجيهات الصرف من جهة الاعتماد: {payPlanOf(projectId)!.note}</p>}
+                    <ScheduleEditor rows={rows} amount={amount} onChange={setRows} projectId={projectId} />
                     {windowOf(projectId).from && <p className="sub cnote">مدة التنفيذ في الخطة من <DateText>{windowOf(projectId).from!}</DateText> إلى <DateText>{windowOf(projectId).to ?? ''}</DateText> · تقع الدفعات داخلها.</p>}
                   </>
                 : <p className="sub cnote">اختر المشروع أولًا · يُطابَق الجدول مع قيمة المنحة.</p>

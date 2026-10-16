@@ -325,9 +325,18 @@ export function strategyOf(p: ProjectRow): { ok: boolean; say: string; direction
 export const conflictOf = (p: ProjectRow, person: string) =>
   APPROVAL_RULES.conflicts.find((c) => c.person === person && c.entityId === p.entityId)
 
+/** v3 · 12.2.1 · what the project's type allows for the plan decision */
+export const planKind = (p: ProjectRow): 'external' | 'portfolio' | 'regular' =>
+  /* BPD-011 · supported through an external party (Ehsan here) · the fixture's «مشروع خارجي» type runs an
+     internal agreement and plan, so it reads regular until the partners batch reshapes it */
+  p.platform === 'منصة إحسان' ? 'external'
+    : flowOf(p.id).study?.classification === 'محفظة' || p.partnerType === 'محفظة' ? 'portfolio' : 'regular'
+/** The choice the type forces · '' when the manager decides */
+const forcedPlan = (p: ProjectRow): string => (planKind(p) === 'external' ? 'no' : planKind(p) === 'portfolio' ? 'yes' : '')
+
 /** Plan needed by rule (4.4.2) · a suggestion the manager confirms or changes */
 export const planSuggested = (p: ProjectRow): boolean =>
-  supportAmount(p) >= APPROVAL_RULES.planFrom || (p.durationDays ?? 0) > 365
+  planKind(p) === 'portfolio' || (planKind(p) !== 'external' && supportAmount(p) >= APPROVAL_RULES.planFrom) || (p.durationDays ?? 0) > 365
 
 const openNotes = (f: AppFlow) => f.notes.filter((n) => !n.resolved)
 
@@ -380,7 +389,9 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
     }
   }
   const up = (lvl: Holder, approving: boolean) => upBlockers(p, lvl, approving)[0]
-  const planChoice = { label: 'الخطة', options: [{ value: 'yes', label: 'يتطلب خطة' }, { value: 'no', label: 'لا يتطلب خطة' }] }
+  /* v3 · 12.2.1 · a portfolio always needs a plan · an external project never has one in the system */
+  const pk = planKind(p)
+  const planChoice = { label: 'الخطة', options: pk === 'external' ? [{ value: 'no', label: 'لا يتطلب خطة · مشروع خارجي' }] : pk === 'portfolio' ? [{ value: 'yes', label: 'يتطلب خطة · محفظة' }] : [{ value: 'yes', label: 'يتطلب خطة' }, { value: 'no', label: 'لا يتطلب خطة' }] }
 
   if (holder === 'supervisor') {
     const back = flowOf(p.id).returnNote
@@ -1022,12 +1033,15 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
     case 'إحالة لصاحب صلاحية بديل': run({ op: 'conflict', id: p.id, level, reason: note, by: me, at }); return []
     case 'اعتماد نهائي': {
       const fl = typeFloorBlock(p, 'manager'); if (fl) return [fl]
+      if (forcedPlan(p)) choice = forcedPlan(p)
       if (!choice) return ['حدّد إن كان المشروع يتطلب خطة']
       const b = block(true); if (b.length) return b
       const held = holdAtRecommendation(p.id, me); if (held.length) return held
       go('final-approve', { needsPlan: choice === 'yes' }); settleHold(p.id, me); return []
     }
     case 'توصية بالموافقة': {
+      /* v3 · 12.2.1 · the type decides for a portfolio and an external project */
+      if (forcedPlan(p)) choice = forcedPlan(p)
       if (!choice) return [/* doc 4.2.3 */ 'حدّد إن كان المشروع يتطلب خطة']
       /* v3 · 4.2.14 · 4.4.13 · the recommendation holds the money · a line short of it stops the
          recommendation with the shortfall named */

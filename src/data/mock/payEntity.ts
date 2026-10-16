@@ -1,48 +1,11 @@
 import { BANKS } from './registration'
 import type { PayRequest, PayState } from '@/types/domain'
 
-/* Disbursement · covers who issues the payment request, what the entity sees, whether a receipt is
+/* Disbursement · what the entity sees, whether a receipt is
    mandatory, and the bank account. */
 
-/* The action's direction is reversed.
-
-   This isn't an added screen, it's a reversed flow. Currently the grant officer creates the request
-   and sends it to the entity to attach justification and return it. In the revised flow the entity
-   initiates: it says "we're done, send this payment" along with its justification from the start.
-
-   The practical difference isn't the number of steps, it's who is waiting on whom: currently the
-   officer has to remember to create the request; in the revised flow the queue comes to them. */
-export type PayOrigin = 'entity' | 'supervisor'
-
-export interface OriginDef {
-  key: PayOrigin
-  label: string
-  who: string
-  /** Steps in order · read as a sentence */
-  flow: string[]
-  note: string
-}
-
-export const ORIGINS: OriginDef[] = [
-  {
-    key: 'entity',
-    label: 'الوثيقة · الجهة تبدأ',
-    who: 'الجهة المستفيدة',
-    flow: ['تُصدر الجهة الطلب مع مسوغاته', 'مشرف المنح', 'مدير المنح', 'الإدارة المالية'],
-    note: 'تصل الطلبات إلى المشرف دون أن يضطر إلى تذكّرها',
-  },
-  {
-    key: 'supervisor',
-    label: 'النظام الحالي · المشرف يبدأ',
-    who: 'مشرف المنح',
-    flow: ['ينشئ المشرف الطلب', 'يُرسل إلى الجهة لإرفاق المسوغات', 'يعود إلى المشرف', 'الإدارة المالية'],
-    note: 'يعتمد على تذكّر المشرف · والجهة تنتظر طلبًا لا تعرف موعده',
-  },
-]
-
-export const originOf = (k: PayOrigin): OriginDef =>
-  ORIGINS.find((x) => x.key === k) ?? ORIGINS[0]
-
+/* v3 · 9.2.2 · the entity raises its payment's requirements · the supervisor creates the permit once
+   they're approved (9.2.10) · the older «permit first» direction is gone */
 /* What the entity sees.
 
    The payment report shows only two states: paid and unpaid — while the real cycle has seven
@@ -53,7 +16,7 @@ export const originOf = (k: PayOrigin): OriginDef =>
    act on — so it becomes worry, not information.
 
    The five shown here are the ones the entity can act on: continue, wait, or done. */
-export type EntityPayState = 'draft' | 'inflight' | 'complete' | 'paid' | 'rejected'
+export type EntityPayState = 'draft' | 'review' | 'inflight' | 'complete' | 'paid' | 'rejected'
 
 export interface EntityStateDef {
   key: EntityPayState
@@ -74,16 +37,20 @@ export interface EntityStateDef {
 
 export const ENTITY_STATES: EntityStateDef[] = [
   {
-    key: 'draft', label: 'مسودة', act: 'أكمل البيانات وأرسل الطلب',
-    tone: 'mute', inner: 'لم يُرسل بعد · لدى الجهة',
+    key: 'draft', label: 'مسودة', act: 'أكمل المتطلبات وارفعها',
+    tone: 'mute', inner: 'لم تُرفع بعد · لدى الجهة',
   },
   {
-    key: 'inflight', label: 'تحت إجراء الدفع', act: '', waiting: true,
-    tone: 'teal', inner: 'مشرف المنح · مدير المنح · الإدارة المالية',
+    key: 'review', label: 'متطلبات قيد المراجعة', act: '', waiting: true,
+    tone: 'teal', inner: 'مشرف المنح يراجع المتطلبات',
   },
   {
-    key: 'complete', label: 'لاستكمال البيانات', act: 'ارفع الناقص وأعد الإرسال',
-    tone: 'warn', inner: 'أعاده مشرف المنح',
+    key: 'inflight', label: 'مؤهلة للصرف · تحت إجراء الدفع', act: '', waiting: true,
+    tone: 'teal', inner: 'اعتُمدت المتطلبات · إذن الصرف عند مشرف المنح ثم مدير المنح ثم الإدارة المالية',
+  },
+  {
+    key: 'complete', label: 'لاستكمال المتطلبات', act: 'ارفع الناقص وأعد رفع المتطلبات',
+    tone: 'warn', inner: 'أعادها مشرف المنح',
   },
   { key: 'paid', label: 'مدفوع', act: '', tone: 'ok', inner: 'حُوّل المبلغ' },
   { key: 'rejected', label: 'مرفوض', act: '', tone: 'no', inner: 'رفض نهائي' },
@@ -99,6 +66,7 @@ export const ENTITY_STATES: EntityStateDef[] = [
 export const entityStateOf = (s: PayState): EntityStateDef => {
   const k: EntityPayState =
     s === 'returned' ? 'complete'
+      : s === 'supervisor' ? 'review'
       : s === 'paid' ? 'paid'
         : s === 'closed' ? 'rejected'
           : 'inflight'

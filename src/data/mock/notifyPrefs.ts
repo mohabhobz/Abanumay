@@ -59,9 +59,9 @@ export const NOTIFY_GROUPS: NotifyGroup[] = [
   {
     key: 'money',
     label: 'الصرف',
-    note: 'طلبات الصرف ودفعات الاتفاقيات',
+    note: 'متطلبات الدفعات وأذونات الصرف',
     events: [
-      { key: 'payStage', label: 'طلب صرف وصل إلى مرحلتي', urgent: true },
+      { key: 'payStage', label: 'دفعة وصلت إلى مرحلتي', urgent: true },
       { key: 'payStuck', label: 'دفعة متعثّرة' },
       { key: 'paid', label: 'تم صرف دفعة' },
     ],

@@ -19,7 +19,7 @@ import {
   HOLDER_SAY, actOnAgreement, agrActions, agrFlowOf, agrHolder, agrIssues, agrReview, agrStageSay, agreementText,
   issuesOfRow, mayEdit, openNewVersion, reservedOf, saveAgreement, submitAgreement, useAgreements,
   type AgrAction, type Clause,
-signHash, } from '@/data/agreements/store'
+signHash, projectCancelled } from '@/data/agreements/store'
 import type { AgreementKind, AgreementRow, PayDoc } from '@/types/domain'
 import { AgrActionDock } from './AgrActionDock'
 import { OtpPanel } from '@/features/entities/OtpPanel'
@@ -247,7 +247,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
                     ? 'راجع نص الاتفاقية وجدول الدفعات، ثم وقّعها إلكترونيًّا باسم ممثلك المخوّل أو أعدها بملاحظاتك إلى مشرف المنح.'
                     : 'الاتفاقية ورقية · تُسلَّم لك مطبوعة وتوقّعها ثم تُعيدها إلى مشرف المنح ليرفع النسخة الموقّعة.'
                   : f.entitySign && a.stage === 'entity' ? 'وقّعت الاتفاقية · بانتظار اعتماد ممثل المؤسسة للنسخة النهائية.'
-                    : a.stage === 'active' ? 'الاتفاقية سارية · يمكنك تقديم طلبات صرف الدفعات المستحقة.' : 'الاتفاقية في مراجعة المؤسسة الداخلية.'}
+                    : a.stage === 'active' ? 'الاتفاقية سارية · ترفع متطلبات كل دفعة متى جهزت.' : 'الاتفاقية في مراجعة المؤسسة الداخلية.'}
               </p>
               {holder === 'entity' && a.kind === 'إلكترونية' && <p className="sub cnote">الموقّع: <b>{a.signer.name}</b> · {a.signer.title}</p>}
             </Glass>
@@ -295,7 +295,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
           {edit && (
             <Glass className="tblcard">
               <Head title="جدول صرف الدفعات" meta={balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن{/* doc 8.2.12 */}</Tag>} />
-              <ScheduleEditor rows={rows} amount={a.amount} onChange={setRows} />
+              <ScheduleEditor rows={rows} amount={a.amount} onChange={setRows} projectId={a.projectId} />
             </Glass>
           )}
 
@@ -304,7 +304,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
               {!edit && (
                 <Glass className="tblcard">
                   <Head title="جدول صرف الدفعات" meta={balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن{/* doc 8.2.12 */}</Tag>} />
-                  <ScheduleEditor rows={asDraft(a.payments)} amount={a.amount} readOnly />
+                  <ScheduleEditor rows={asDraft(a.payments)} amount={a.amount} readOnly projectId={a.projectId} />
                 </Glass>
               )}
 
@@ -382,12 +382,20 @@ function AgreementView({ a }: { a: AgreementRow }) {
                   {a.stage === 'active' && role.key === 'supervisor' && (
                     <div className="apv-row mt-3">
                       <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="سبب التعديل بعد التوقيع" aria-label="سبب الإصدار الجديد" /></span>
-                      <button type="button" className="btn btn-2 btn-sm" disabled={!reason.trim()} onClick={() => { const out = openNewVersion(a.id, reason, user.name); setSaid(out[0] ?? ''); setReason('') }}>
-                        <Icon name={icons.plus} size="sm" />افتح إصدارًا جديدًا
+                      {/* v3 · 8.3.29 · an amending annex beside the original, or a full replacement */}
+                      <button type="button" className="btn btn-2 btn-sm" disabled={!reason.trim()} onClick={() => { const out = openNewVersion(a.id, reason, user.name, 'annex'); setSaid(out[0] ?? ''); setReason('') }}>
+                        <Icon name={icons.plus} size="sm" />ملحق تعديلي
+                      </button>
+                      <button type="button" className="btn btn-2 btn-sm" disabled={!reason.trim()} onClick={() => { const out = openNewVersion(a.id, reason, user.name, 'full'); setSaid(out[0] ?? ''); setReason('') }}>
+                        <Icon name={icons.plus} size="sm" />إصدار كامل بديل
                       </button>
                     </div>
                   )}
-                  {a.stage === 'active' && <p className="sub cnote">لا تُعدَّل الاتفاقية بعد التوقيع · التعديل إصدار جديد يمرّ بدورة الاعتماد كاملة، ويبقى الإصدار النافذ ساريًا حتى سريانه.{/* doc 8.4.17 */}</p>}
+                  {a.stage === 'active' && <p className="sub cnote">لا تُعدَّل الاتفاقية بعد التوقيع · الملحق التعديلي يُضاف إلى الأصل ويبقيان معًا المرجع النافذ، والإصدار الكامل البديل يحلّ محله · وكلاهما يمرّ بدورة الاعتماد كاملة ويبقى النافذ ساريًا حتى اعتماده.{/* doc 8.3.29 */}</p>}
+                  {/* v3 · 8.3.26 · not going on is a project cancellation through the closing procedure */}
+                  {a.stage !== 'active' && a.stage !== 'cancelled' && !projectCancelled(a.projectId) && (role.key === 'supervisor' || role.key === 'grants-manager' || role.key === 'ceo') && (
+                    <p className="sub cnote">لا رفض للاتفاقية · الملاحظات تُعاد للتعديل، وعدم الاستمرار في المشروع يكون <Link className="lnk" to={ROUTES.distressNew(a.projectId, 'stop')}>بطلب إلغاء المشروع وفق إجراء الإغلاق</Link> فتتحول حالته إلى «ملغى» ويُحرَّر الحجز.</p>
+                  )}
                 </VersionsCard>
               )}
             </div>

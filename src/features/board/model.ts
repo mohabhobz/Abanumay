@@ -108,7 +108,7 @@ export function boardWaves(months: string[]): WaveSeries[] {
   return [
     { key: 'in', label: 'طلبات المنح الواردة', hue: 2, values: per(ps.map((p) => p.submittedAt)) },
     { key: 'dec', label: 'قرارات المنح', hue: 5, values: per(ps.map((p) => p.decidedAt)) },
-    { key: 'pay', label: 'طلبات الصرف', hue: 4, values: per(payRequests.map((r) => r.at)) },
+    { key: 'pay', label: 'سجلات الصرف', hue: 4, values: per(payRequests.map((r) => r.at)) },
   ]
 }
 

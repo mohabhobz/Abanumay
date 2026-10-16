@@ -1654,7 +1654,10 @@ input:not([type=checkbox],[type=radio],[type=range]){text-overflow:ellipsis}
 .t-sched col:nth-child(2){width:11rem}
 .t-sched col:nth-child(3){width:6rem}
 .t-sched col:nth-child(4){width:11rem}
-.t-sched col:nth-child(6){width:3.5rem}
+.t-sched col:nth-child(5){width:11rem}
+.t-sched col:nth-child(7){width:3.5rem}
+/* v3 · 8.2.9 · a payment's structured conditions · chips under the note */
+.t-sched .pcond{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-2);align-items:center}
 
 .t-pf col:nth-child(2){width:9rem}
 .t-pf col:nth-child(3){width:10rem}
@@ -5054,7 +5057,7 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 /* Exit bar: same box as the decision bar, with an extra note field. */
 .payact{flex-wrap:wrap;gap:var(--sp-3)}
 .payact-w{flex:1 1 auto;min-width:0}
-.payact-n{flex:1 1 16rem;min-width:0;display:flex}
+.payact-n,.payact-a{flex:1 1 16rem;min-width:0;display:flex}
 /* The field sits next to its own button, not next to the decision-owner's name
    (caught in a visual review). With flex wrap, "return reason" used to sit on the first
    line next to the sentence, while "return to entity" landed on the second line 360px
@@ -5073,12 +5076,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    the start of the second. The group now drops as one block, with the field inside it
    taking the free space and the return button flush against it. */
 .payact-g{display:flex;align-items:center;gap:var(--sp-3);flex:1 1 32rem;min-width:0}
-.payact-g>.payact-n{flex:1 1 12rem}
+.payact-g>.payact-n,.payact-g>.payact-a{flex:1 1 12rem}
 .payact-g>.rowf{flex:none;flex-wrap:nowrap}
 .payact-g{justify-content:flex-end}
 .payact-g:not(:has(.payact-n)){flex:0 1 auto}
-.payact-n input{width:100%;min-width:0;font:inherit;color:var(--t1)}
-.payact-n input::placeholder{color:var(--t3-g)}
+.payact-n input,.payact-a input{width:100%;min-width:0;font:inherit;color:var(--t1)}
+.payact-n input::placeholder,.payact-a input::placeholder{color:var(--t3-g)}
 /* Bare field, with a face: one definition shared by three fields.
    There used to be three different recipes for the same field, all at 27px, next to a 44
    button in the decision bar: amount (`.payamt`), overdue threshold (`.paylim-i`), and
@@ -5086,12 +5089,12 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
    same bug the comment above `.payamt` explains (`--ctl-edge` is a number, not a color, so
    the declaration is invalid and the field has no border at all). Now the exact same
    neutral family recipe (`--ctl-bg` + `--ctl-line`) with the height formula: 12 + 20 + 12. */
-.payamt>input,.paylim-i input,.payact-n input{
+.payamt>input,.paylim-i input,.payact-n input,.payact-a input{
   padding:var(--pb-md) var(--sp-4);line-height:var(--lh-md);
   border-radius:var(--r1);border:0;background:var(--ctl-bg);
   box-shadow:inset 0 0 0 1px var(--ctl-line)}
-.payamt>input:hover,.paylim-i input:hover,.payact-n input:hover{box-shadow:inset 0 0 0 1px var(--ctl-line-h)}
-.payamt>input:focus,.paylim-i input:focus,.payact-n input:focus{box-shadow:inset 0 0 0 1px var(--ctl-line-f)}
+.payamt>input:hover,.paylim-i input:hover,.payact-n input:hover,.payact-a input:hover{box-shadow:inset 0 0 0 1px var(--ctl-line-h)}
+.payamt>input:focus,.paylim-i input:focus,.payact-n input:focus,.payact-a input:focus{box-shadow:inset 0 0 0 1px var(--ctl-line-f)}
 .payamt>input:focus{outline:none}
 
 /* Group. */

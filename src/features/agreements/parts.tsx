@@ -1,3 +1,4 @@
+import { requirementOf } from '@/data/agreements/conds'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { DateText, Glass, Head, Icon, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
@@ -169,27 +170,47 @@ export function IssuesCard({ issues, ready }: { issues: AgrIssue[]; ready: strin
 export function VersionsCard({ a, versions, children }: { a: AgreementRow; versions: AgrVersion[]; children?: ReactNode }) {
   const [open, setOpen] = useState<number | null>(null)
   const f = agrFlowOf(a.id)
+  const finals = versions.filter((v) => v.final)
+  const live = f.annexes.filter((x) => !x.superseded)
+  const base = live.length ? [...finals].reverse().find((v) => !/ملحق/.test(v.reason)) : undefined
   return (
     <Glass>
-      <Head title="الإصدارات" meta={<span className="sub">الحالي <Num>{a.version}</Num>{f.inForce !== undefined && <> · النافذ <Num>{f.inForce}</Num></>}</span>} />
+      <Head title="الإصدارات والملاحق" meta={<span className="sub">الحالي <Num>{a.version}</Num>{f.inForce !== undefined && <> · النافذ {base ? <>الإصدار <Num>{base.version}</Num> مع <Num>{live.length}</Num> ملحق</> : <Num>{f.inForce}</Num>}</>}</span>} />
+      {/* v3 · 8.3.29 · the original with its annexes is the reference in force */}
+      {f.annexes.length > 0 && (
+        <ul className="apv-list">
+          {f.annexes.map((x) => (
+            <li key={x.no}>
+              <Tag tone={x.superseded ? 'mute' : 'ok'}>ملحق {nf.format(x.no)} · {x.kind === 'value' ? 'قيمة' : 'بنود'}{x.superseded ? ' · حلّ محله إصدار بديل' : ''}</Tag>
+              <span className="apv-t">
+                <b>{x.summary}</b>
+                <span className="sub">{x.reason}{x.ref ? ` · ${x.ref}` : ''}{x.file ? ` · ${x.file}` : ''}{x.kind === 'value' ? ' · معتمد بقرار إجراء الإغلاق' : ' · مرّ بدورة اعتماد الاتفاقية'}</span>
+              </span>
+              <span className="pc-sp" />
+              <Person name={x.by} />
+              <span className="sub"><DateText>{x.at}</DateText></span>
+            </li>
+          ))}
+        </ul>
+      )}
       {versions.length === 0 ? (
-        <p className="sub cnote">لا إصدارات مؤرشفة بعد · تُؤرشف النسخة النهائية عند اعتمادها وتفعيلها.</p>
+        <p className="sub cnote">لا إصدارات مؤرشفة بعد · تُحفظ نسخة عند كل إعادة للتعديل، وتُؤرشف النسخة النهائية عند اعتمادها وتفعيلها.</p>
       ) : (
         <ul className="apv-list">
-          {[...versions].reverse().map((v) => (
-            <li key={v.version}>
+          {[...versions].map((v, i) => ({ v, i })).reverse().map(({ v, i }) => (
+            <li key={`${v.version}-${i}`}>
               <span className="apv-t">
                 <b>الإصدار {nf.format(v.version)} · {v.reason}</b>
                 <span className="sub">{v.kind} · {v.template} · <Money sm>{v.amount}</Money> · <Num>{v.payments.length}</Num> دفعات · <Num>{v.clauses.length}</Num> بندًا</span>
               </span>
               <span className="pc-sp" />
-              {v.version === f.inForce && <Tag tone="ok">نافذ</Tag>}
+              {v.returned ? <Tag tone="warn">نسخة عند الإعادة</Tag> : v.final && v.version === f.inForce ? <Tag tone="ok">نافذ</Tag> : null}
               <Person name={v.by} />
               <span className="sub"><DateText>{v.at}</DateText></span>
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => setOpen(open === v.version ? null : v.version)}>{open === v.version ? 'أخفِ' : 'اعرض'}</button>
-              {open === v.version && (
+              <button type="button" className="btn btn-2 btn-sm" onClick={() => setOpen(open === i ? null : i)}>{open === i ? 'أخفِ' : 'اعرض'}</button>
+              {open === i && (
                 <div className="agx-ver">
-                  {v.payments.map((p) => <span key={p.no} className="sub">الدفعة {nf.format(p.no)} · {nf.format(p.amount)} · {p.dueAt} · {p.requirement}</span>)}
+                  {v.payments.map((p) => <span key={p.no} className="sub">الدفعة {nf.format(p.no)} · {nf.format(p.amount)} · {p.dueAt} · {requirementOf(p)}</span>)}
                   {v.clauses.map((c) => <span key={c.id} className="sub">{CLAUSE_SAY[c.kind]} · {c.title}</span>)}
                 </div>
               )}

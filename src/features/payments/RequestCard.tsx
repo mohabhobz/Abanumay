@@ -134,7 +134,7 @@ export function RequestCard({ r, showState }: RequestCardProps) {
         {/* The request, not the project - the card summarizes the decision and the request page
             carries it through, so the button continues the path instead of leaving it. */}
         <Link className="btn btn-2 btn-sm" to={ROUTES.payment(r.id)}>
-          افتح الطلب
+          افتح الدفعة
           <Icon name={icons.chevron} size="sm" />
         </Link>
       </footer>

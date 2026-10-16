@@ -20,8 +20,7 @@ import {
   PF_STAGE_SAY, PF_STAGE_TONE, SUB_STATE_SAY, SUB_STATE_TONE, actOnPfAgreement, actOnPfPlan, actOnPfReq, actOnPortfolio, addSub, capIssue,
   closePortfolio, decideSubs, dropSub, pfActions, pfById, pfCloseChecks, pfIndicators, pfMoney, pfStops, savePfPlan, savePfSchedule,
   sendSubs, subMoney, subsGate, submitPfReport, updateSubExec, usePartners, paysOf, requestPfPay, pfReqIssue, profileOf,
-  type PfPhase, type PortfolioRec, type SubExec, type SubProject,
-} from '@/data/partners/store'
+  type PfPhase, type PortfolioRec, type SubExec, type SubProject, pfActivities, pfActivityProgress, PF_ACTIVITY_MODE, setPfActivityMode, linkSubActivity } from '@/data/partners/store'
 import { Checks, PayForm, PayList, Said, SlotsEditor } from '@/features/partners/parts'
 import type { Reading } from '@/components/assistant/reading'
 
@@ -350,6 +349,8 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
       ) : (
         <ul className="ptn-slots">
           {pf.plan.phases.map((p) => <li key={p.id}><span>{p.name}</span><span className="sub"><DateText>{p.from}</DateText> – <DateText>{p.to}</DateText>{p.activities?.length ? ` · ${p.activities.map((a) => `${a.name}${a.output ? ` (${a.output})` : ''}`).join('، ')}` : ''}</span><Money sm>{p.cost}</Money></li>)}
+          {/* v3 · 12.4.13 · each activity read from the sub-projects that serve it */}
+          {pfActivities(pf).filter((a) => pfActivityProgress(pf, a.id).linked > 0).map((a) => <li key={`pr-${a.id}`}><span>{a.label}</span><span className="sub">{pfActivityProgress(pf, a.id).say}</span></li>)}
           {!pf.plan.phases.length && <li className="sub">يعدّها الشريك أو مشرف المنح بعد الاعتماد النهائي.</li>}
         </ul>
       )}
@@ -358,6 +359,15 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
           <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة المشرف على الخطة" placeholder="سبب الإعادة للشريك" /></span>
           <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = actOnPfPlan(pf.id, 'return', note, user.name); setSaid(out.length ? { bad: out } : { ok: 'إعادة الخطة للشريك' }) }}>أعدها للشريك</button>
           <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfPlan(pf.id, 'toManager', '', user.name); setSaid(out.length ? { bad: out } : { ok: 'إحالة الخطة لمدير المنح' }) }}>أحلها لمدير المنح</button>
+        </div>
+      )}
+      {!asPartner && role.key === 'grants-manager' && pfActivities(pf).length > 0 && (
+        <div className="cfgchips mt-2" role="radiogroup" aria-label="أثر اكتمال المشروع الفرعي على النشاط">
+          {(['update', 'evidence'] as const).map((m) => (
+            <button key={m} type="button" role="radio" aria-checked={PF_ACTIVITY_MODE.mode === m} className={`cfgchip${PF_ACTIVITY_MODE.mode === m ? ' on' : ''}`} onClick={() => { setPfActivityMode(m); setSaid({ ok: 'الإعداد' }) }}>
+              {m === 'update' ? 'اكتمال المشاريع الفرعية يحدّث إنجاز النشاط' : 'اكتمالها دليل على النشاط فقط'}
+            </button>
+          ))}
         </div>
       )}
       {!asPartner && role.key === 'grants-manager' && pf.plan.state === 'review' && (
@@ -422,7 +432,7 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
 }
 
 /* ── Sub-projects · added, sent, decided one by one within the ceiling (13.2.11 – 13.2.19) ── */
-const EMPTY = { name: '', region: '', amount: '', beneficiaries: '', outputs: '', files: [] as string[] }
+const EMPTY = { name: '', region: '', amount: '', beneficiaries: '', outputs: '', files: [] as string[], activityId: '' }
 function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const { role, user } = useRole()
   const [d, setD] = useState(EMPTY)
@@ -442,7 +452,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const cap = capIssue(pf, sel)
   const r = (out: string[], ok: string) => { setSaid(out.length ? { bad: out } : { ok }); if (!out.length) setSel([]) }
   const add = () => {
-    const out = addSub(pf.id, { name: d.name, region: d.region, amount: Number(d.amount) || 0, beneficiaries: Number(d.beneficiaries) || 0, outputs: d.outputs, files: d.files }, user.name)
+    const out = addSub(pf.id, { name: d.name, region: d.region, amount: Number(d.amount) || 0, beneficiaries: Number(d.beneficiaries) || 0, outputs: d.outputs, files: d.files, activityId: d.activityId || undefined }, user.name)
     if (out.errors.length) { setSaid({ bad: [`ينقص: ${out.errors.join('، ')}`] }); return }
     setSaid({ ok: 'المشروع الفرعي · مسودة' })
     setD(EMPTY)
@@ -471,7 +481,10 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                 return (
                   <tr key={x.id} id={x.id}>
                     <td className="tchk">{selectable(x) && <input type="checkbox" aria-label={`تحديد ${x.name}`} checked={sel.includes(x.id)} onChange={() => toggle(x.id)} />}</td>
-                    <td><b>{x.name}</b><div className="sub">{x.field ?? pf.field} · {x.region} · {nf.format(x.beneficiaries)} مستفيد · {x.outputs} · {x.files.join('، ')}</div></td>
+                    <td><b>{x.name}</b><div className="sub">{x.field ?? pf.field} · {x.region} · {nf.format(x.beneficiaries)} مستفيد · {x.outputs} · {x.files.join('، ')}{x.activityId ? ` · النشاط: ${pfActivities(pf).find((a) => a.id === x.activityId)?.label ?? x.activityId}` : ''}</div>
+                      {(asPartner || role.key === 'supervisor') && pfActivities(pf).length > 0 && x.state !== 'rejected' && (
+                        <FieldSelect value={x.activityId ?? ''} label={`نشاط خطة المحفظة · ${x.name}`} placeholder="اربط بنشاط" options={[{ value: '', label: 'بلا نشاط' }, ...pfActivities(pf).map((a) => ({ value: a.id, label: a.label }))]} onChange={(v) => r(linkSubActivity(pf.id, x.id, v, user.name), 'ربط النشاط')} />
+                      )}</td>
                     <td className="n"><Money sm>{x.amount}</Money></td>
                     <td>
                       <Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}</Tag>
@@ -507,6 +520,10 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             <label className="regf"><span className="lb">القيمة</span><MoneyField value={d.amount} onChange={(v) => setD({ ...d, amount: v })} label="قيمة المشروع الفرعي" /></label>
             <label className="regf"><span className="lb">المستفيدون المستهدفون</span><span className="fld"><input inputMode="numeric" value={d.beneficiaries} onChange={(e) => setD({ ...d, beneficiaries: e.target.value.replace(/\D/g, '') })} aria-label="المستفيدون المستهدفون" /></span></label>
             <label className="regf ptn-wide"><span className="lb">المخرجات المستهدفة</span><span className="fld"><input value={d.outputs} onChange={(e) => setD({ ...d, outputs: e.target.value })} aria-label="المخرجات المستهدفة" /></span></label>
+            {/* v3 · 12.4.13 · the plan activity it serves · several sub-projects may serve one */}
+            {pfActivities(pf).length > 0 && (
+              <label className="regf"><span className="lb">نشاط خطة المحفظة</span><FieldSelect value={d.activityId} onChange={(v) => setD({ ...d, activityId: v })} label="نشاط خطة المحفظة" placeholder="اختياري" options={pfActivities(pf).map((a) => ({ value: a.id, label: a.label }))} /></label>
+            )}
           </div>
           <div className="apv-row mt-2">
             <span className="sub">{d.files.length ? d.files.join(' · ') : 'مرفقات المشروع الفرعي · مستقلة عن مرفقات المحفظة'}</span>

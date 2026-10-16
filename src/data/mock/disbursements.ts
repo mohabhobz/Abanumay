@@ -31,12 +31,13 @@ import { workDayLimits } from '@/lib/sla'
 
 /** Request statuses · states who's holding it, not "paid / unpaid" */
 export const PAY_STATES: { key: PayState; label: string; who: string; steps: string }[] = [
-  { key: 'supervisor', label: 'بانتظار مشرف المنح', who: 'مشرف المنح', steps: '4–7' },
-  { key: 'returned', label: 'مُعاد للاستكمال', who: 'الجهة المستفيدة', steps: '10–11' },
-  { key: 'manager', label: 'بانتظار مدير المنح', who: 'مدير المنح', steps: '12–13' },
-  { key: 'exec', label: 'بانتظار المدير التنفيذي', who: 'المدير التنفيذي', steps: '13' },
-  { key: 'finance', label: 'بانتظار الإدارة المالية', who: 'الإدارة المالية', steps: '14–17' },
-  { key: 'paid', label: 'تم الصرف', who: '', steps: '18–19' },
+  { key: 'supervisor', label: 'متطلبات بانتظار المشرف', who: 'مشرف المنح', steps: '4–7' },
+  { key: 'eligible', label: 'مؤهلة للصرف', who: 'مشرف المنح', steps: '7–10' },
+  { key: 'returned', label: 'مُعاد للاستكمال', who: 'الجهة المستفيدة', steps: '8–9' },
+  { key: 'manager', label: 'بانتظار مدير المنح', who: 'مدير المنح', steps: '11–12' },
+  { key: 'exec', label: 'بانتظار المدير التنفيذي', who: 'المدير التنفيذي', steps: '12' },
+  { key: 'finance', label: 'بانتظار الإدارة المالية', who: 'الإدارة المالية', steps: '13–16' },
+  { key: 'paid', label: 'تم الصرف', who: '', steps: '17–18' },
 ]
 
 export const payStateLabel = (s: PayState): string =>
@@ -52,6 +53,7 @@ export const payStateWho = (s: PayState): string =>
  */
 export const PAY_LIMIT: Record<PayState, number> = hydrate(CFG.payLimits, workDayLimits({
   supervisor: 120,
+  eligible: 48,
   returned: 240,
   manager: 96,
   exec: 96,
@@ -170,35 +172,40 @@ const DOC_KINDS = [
   { name: 'سند التعهّد الموقّع.pdf', kind: 'سند' },
 ]
 
-/** The steps each stage passes through · sourced from the steps table itself */
+/** The steps each stage passes through · v3 numbering (9.2.1 – 9.2.18) · the human steps per stage
+    stay as many as before, so the generator draws the same dates */
 const PASSED: Record<PayState, number[]> = {
   supervisor: [1, 2, 3, 4],
-  returned: [1, 2, 3, 4, 5, 6, 7, 10],
-  manager: [1, 2, 3, 4, 5, 6, 7, 12],
-  exec: [1, 2, 3, 4, 5, 6, 7, 12, 13],
-  finance: [1, 2, 3, 4, 5, 6, 7, 12, 13, 14],
-  paid: [1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19],
-  closed: [1, 2, 3, 4, 15],
+  eligible: [1, 2, 3, 4, 5, 6, 7],
+  returned: [1, 2, 3, 4, 5, 6, 7, 8],
+  manager: [1, 2, 3, 4, 5, 6, 7, 10, 11],
+  exec: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12],
+  finance: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13],
+  paid: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+  /* a rejected permit · its middle steps not drawn, so the generator keeps its dates (the human steps
+     per stage stay as many as before) */
+  closed: [1, 2, 3, 4, 12],
 }
 
 /** The text for each log step · the actor, the action, and the notification sent with it */
 const STEP_SAY: Record<number, { role: string; what: string; notified?: string }> = {
-  1: { role: 'النظام', what: 'أتاح إنشاء طلب الصرف · استحقت الدفعة واستُوفيت شروط التقديم' },
-  2: { role: 'الجهة المستفيدة', what: 'أنشأت طلب الصرف وأرفقت التقارير والمستندات' },
-  3: { role: 'النظام', what: 'تحقّق من اكتمال البيانات والمتطلبات الإلزامية' },
-  4: { role: 'النظام', what: 'أرسل الطلب إلى مشرف المنح', notified: 'مشرف المنح · طلب صرف جديد' },
-  5: { role: 'مشرف المنح', what: 'راجع الطلب وتحقّق من المتطلبات والتقارير' },
+  1: { role: 'النظام', what: 'عرض متطلبات الدفعة وفق جدول الدفعات منذ تفعيل الاتفاقية' },
+  2: { role: 'الجهة المستفيدة', what: 'رفعت متطلبات الدفعة · التقارير والمستندات والمخرجات المطلوبة' },
+  3: { role: 'النظام', what: 'تحقّق من اكتمال متطلبات الدفعة الإلزامية' },
+  4: { role: 'النظام', what: 'أحال متطلبات الدفعة إلى مشرف المنح', notified: 'مشرف المنح · متطلبات جديدة للمراجعة' },
+  5: { role: 'مشرف المنح', what: 'راجع متطلبات الدفعة والتقارير المرفوعة' },
   6: { role: 'الذكاء الاصطناعي', what: 'حلّل التقارير وقارن الإنجاز بخطة التنفيذ' },
-  7: { role: 'مشرف المنح', what: 'سجّل التوصية' },
-  10: { role: 'النظام', what: 'حدّث حالة الطلب وأشعر الجهة بالملاحظات', notified: 'الجهة المستفيدة · الطلب مُعاد للاستكمال' },
-  12: { role: 'النظام', what: 'أرسل الطلب إلى مدير المنح', notified: 'مدير المنح · طلب بانتظار الاعتماد' },
-  13: { role: 'مدير المنح', what: 'راجع الطلب واعتمده' },
-  14: { role: 'النظام', what: 'تحقّق من سريان الاتفاقية وتوفّر المبلغ المحجوز، ثم أرسل الطلب إلى الإدارة المالية', notified: 'الإدارة المالية · طلب بانتظار أمر الصرف' },
-  15: { role: 'الإدارة المالية', what: 'راجعت الطلب واعتمدت أمر الصرف' },
-  16: { role: 'النظام', what: 'أنشأ أمر الصرف وربطه بالمشروع والاتفاقية والدفعة ومصادر التمويل' },
-  17: { role: 'الإدارة المالية', what: 'نفّذت التحويل إلى الحساب البنكي المعتمد' },
-  18: { role: 'النظام', what: 'حدّث حالة الدفعة إلى (تم الصرف) وحوّل المبلغ من محجوز إلى مصروف' },
-  19: { role: 'النظام', what: 'أشعر الجهة بتنفيذ الصرف', notified: 'الجهة المستفيدة · نُفّذ الصرف' },
+  7: { role: 'مشرف المنح', what: 'اعتمد المتطلبات · أصبحت الدفعة «مؤهلة للصرف»' },
+  8: { role: 'النظام', what: 'حدّث حالة متطلبات الدفعة وأشعر الجهة بالنقص المطلوب استكماله', notified: 'الجهة المستفيدة · متطلبات الدفعة مُعادة للاستكمال' },
+  10: { role: 'مشرف المنح', what: 'أنشأ إذن الصرف يدويًّا' },
+  11: { role: 'النظام', what: 'أحال إذن الصرف إلى مدير المنح للاعتماد', notified: 'مدير المنح · إذن صرف بانتظار الاعتماد' },
+  12: { role: 'مدير المنح', what: 'راجع إذن الصرف واعتمده' },
+  13: { role: 'النظام', what: 'تحقّق من سريان الاتفاقية وتوفّر المبلغ المحجوز، ثم أحال إذن الصرف إلى الإدارة المالية', notified: 'الإدارة المالية · إذن بانتظار أمر الصرف' },
+  14: { role: 'الإدارة المالية', what: 'راجعت إذن الصرف واعتمدت أمر الصرف' },
+  15: { role: 'النظام', what: 'أنشأ أمر الصرف وربطه بالمشروع والاتفاقية والدفعة ومصادر التمويل' },
+  16: { role: 'الإدارة المالية', what: 'نفّذت التحويل إلى الحساب البنكي المعتمد' },
+  17: { role: 'النظام', what: 'حدّث حالة الدفعة إلى (تم الصرف) وحوّل المبلغ من محجوز إلى مصروف' },
+  18: { role: 'النظام', what: 'أشعر الجهة بتنفيذ الصرف', notified: 'الجهة المستفيدة · نُفّذ الصرف' },
 }
 
 /** Log dates are generated backward from the creation date, a day per step */
@@ -460,7 +467,9 @@ export const payRequests: PayRequest[] = (() => {
        And steps don't take the same time either: system steps (referral, validation, status update)
        happen instantly, while the ones taking days are the human steps. So the gap is computed per
        step, not by index. */
-    const HUMAN = new Set([2, 5, 7, 11, 13, 15, 17])
+    /* the permit (10) follows the requirements' approval the same day · so the human steps per stage
+       are as many as the v2 numbering had */
+    const HUMAN = new Set([2, 5, 7, 12, 14, 16])
     const offsets: number[] = []
     let cursor = 0
     for (const step of PASSED[r.state]) {
@@ -480,9 +489,9 @@ export const payRequests: PayRequest[] = (() => {
       /* Step 7 has two outputs · the text follows what actually happened, not a fixed one */
       const what =
         step === 7 && r.state === 'returned'
-          ? 'أعاد الطلب للجهة مع توضيح الملاحظات'
-          : step === 7
-            ? 'سجّل التوصية بالموافقة'
+          ? 'أعاد متطلبات الدفعة للجهة مع توضيح النقص'
+          : step === 12 && r.state === 'closed'
+            ? 'رفض إذن الصرف نهائيًّا وأغلقه مع الاحتفاظ بسجله'
             : say.what
       return {
         at: dayAfter(r.at, offsets[i] ?? 0),
@@ -518,7 +527,7 @@ export const payRequests: PayRequest[] = (() => {
  * **from settings** and the Foundation hasn't given us the numbers yet.
  */
 export const PAY_TARGET_DAYS = Math.round(
-  (PAY_LIMIT.supervisor + PAY_LIMIT.manager + PAY_LIMIT.finance) / 24,
+  (PAY_LIMIT.supervisor + PAY_LIMIT.eligible + PAY_LIMIT.manager + PAY_LIMIT.finance) / 24,
 )
 
 /** Days between two dates in YYYY-MM-DD format */
@@ -537,11 +546,11 @@ export const payKpi = (list: PayRequest[] = payRequests) => {
   const inTarget = paid.filter(
     (r) => r.paidAt && daysBetween(r.at, r.paidAt) <= PAY_TARGET_DAYS,
   ).length
-  /* Indicator 3 · from **the grants manager's approval** (step 13) to executing the transfer (step
-     17) · not from the request's creation */
+  /* Indicator 3 · from **the grants manager's approval** (step 12) to executing the transfer (step
+     16) · not from the request's creation */
   const finance = paid
     .map((r) => {
-      const approved = r.log.find((e) => e.step === 13)
+      const approved = r.log.find((e) => e.step === 12)
       return approved && r.paidAt ? daysBetween(approved.at, r.paidAt) : null
     })
     .filter((x): x is number => x !== null && x >= 0)
@@ -588,21 +597,21 @@ export const payKpi = (list: PayRequest[] = payRequests) => {
    itself is information that's shown, not a button that rejects after being clicked. */
 
 export type PaySlotState =
-  /** Due and ready to request */
+  /** v3 · 9.2.1 · its requirements may be raised now · before its planned date too (9.4.7) */
   | 'open'
-  /** Not yet due · rule 2 */
-  | 'early'
-  /** Re-audit 7 Oct · an earlier payment is still open · payments go in order */
+  /** v3 · 9.2.2 · a first or only payment with no condition of its own · eligible from activation */
+  | 'eligible'
+  /** Re-audit 7 Oct · an earlier payment is still open · only when the foundation keeps the order on */
   | 'queued'
-  /** Has an open request · rule 4 */
+  /** Has an open record · rule 3 */
   | 'pending'
   /** Spent */
   | 'paid'
-  /** Due but its condition isn't met · rule 6 */
+  /** v3 · 9.4.8 · tied to a report, an activity or a date not met yet */
   | 'held'
   /** The project was stopped by an approved decision · 10.9.1 · 10.9.4 */
   | 'stopped'
-  /** Won't be paid · the obligation was settled before closing · 10.4.2 */
+  /** The obligation was settled instead of paid · 10.4.2 */
   | 'settled'
 
 export interface PaySlot {
@@ -613,6 +622,14 @@ export interface PaySlot {
   condition?: string
   conditionMet: boolean
   state: PaySlotState
+  /** v3 · 9.4.7 · before its planned date · a follow-up mark, not a lock */
+  ahead?: boolean
+  /** v3 · 9.2.2 · the requirements the agreement names for it */
+  needs?: { kind: string; label: string }[]
+  /** v3 · 9.4.4 · a permit paid below the payment's value · what is left of it for a permit of its own */
+  left?: number
+  /** v3 · 9.4.7 · the agreement's date before which it isn't paid · the upload isn't stopped by it */
+  notBefore?: string
   /** The request tied to the disbursement, if any */
   requestId?: string
   /** Batch 8 · paid in the old system · the imported voucher that covers it */
@@ -624,12 +641,12 @@ import { TODAY } from '@/data/clock'
 export { TODAY }
 
 export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; rule?: number }> = {
-  open: { label: 'مستحقة', why: 'جاهزة لإنشاء طلب صرف' },
-  early: { label: 'لم تستحق', why: 'يُقدَّم الطلب للدفعات المستحقة وفق الجدول المعتمد فقط', rule: 2 },
-  queued: { label: 'بعد الدفعة السابقة', why: 'تُطلب الدفعات بترتيبها · لا تُطلب دفعة قبل طلب سابقتها أو صرفها أو تسويتها' },
-  pending: { label: 'لها طلب مفتوح', why: 'لا يُفتح لكل دفعة أكثر من طلب صرف واحد', rule: 4 },
+  open: { label: 'متاحة للمتطلبات', why: /* doc 9.2.1 · 9.4.7 */ 'ترفع الجهة متطلبات الدفعة متى جهزت · تاريخ الاستحقاق هدف للمتابعة لا شرط' },
+  eligible: { label: 'مؤهلة للصرف', why: /* doc 9.2.2 */ 'دفعة أولى أو وحيدة بلا شروط خاصة · ينشئ مشرف المنح إذن الصرف مباشرة' },
+  queued: { label: 'بعد الدفعة السابقة', why: 'قرار المؤسسة: تُصرف الدفعات بترتيبها · لا تُفتح دفعة قبل سابقتها' },
+  pending: { label: 'قيد الصرف', why: /* doc 9.4.3 */ 'لا يُفتح للدفعة أكثر من إذن صرف واحد', rule: 3 },
   paid: { label: 'مصروفة', why: 'اكتمل تحويلها' },
-  held: { label: 'موقوفة بشرط', why: 'لا يُرسل طلب الدفعة المرتبطة بتقارير قبل استيفائها', rule: 6 },
+  held: { label: 'موقوفة بشرط', why: /* doc 9.4.8 */ 'الدفعة مرتبطة بتقرير أو نشاط أو تاريخ لم يُستوفَ بعد', rule: 8 },
   stopped: { label: 'موقوفة بقرار', why: /* doc 10.9.1 */ 'أُوقف المشروع بقرار معتمد من الرئيس التنفيذي · لا صرف بعده' },
   settled: { label: 'مسوّاة', why: /* doc 10.4.2 */ 'سُوّي الالتزام فلا تُصرف الدفعة · يُحرَّر محجوزها عند الإغلاق' },
 }

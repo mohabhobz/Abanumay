@@ -10,6 +10,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { EVIDENCE_KINDS, PLAN_LIMIT, PLAN_STAGES, planRows } from '@/data/mock/plans'
 import type { PlanStage } from '@/types/domain'
 import { NOUN, nounAfter } from '@/lib/format'
+import { PlanAuthTab } from './PlanAuthTab'
 
 /* Plan settings - D-1 and D-3.
 
@@ -38,6 +39,7 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 const TABS = [
   { slug: 'evidence', label: 'أنواع الشواهد' },
   { slug: 'limits', label: 'حدود المراحل' },
+  { slug: 'auth', label: 'صلاحية الاعتماد' },
 ] as const
 
 export default function PlanSettingsPage() {
@@ -81,7 +83,7 @@ export default function PlanSettingsPage() {
             onChange={(x) => set({ tab: x === TABS[0].slug ? undefined : x })}
           />
 
-          {tab === 'evidence' ? (
+          {tab === 'auth' ? <PlanAuthTab /> : tab === 'evidence' ? (
             <Glass className="tblcard">
               <Head
                 title="أنواع الشواهد"

@@ -6,12 +6,16 @@ import {
   TODAY, planById, planIssues, planOfProject, planRows, planStageLabel, readyToClose,
 } from '@/data/mock/plans'
 import { projectRows } from '@/data/mock/projects'
-import { appFlowOf, planSuggested, setConfirmHook } from '@/data/approvals/store'
+import { appFlowOf, planKind, planSuggested, setConfirmHook } from '@/data/approvals/store'
 import { roleByKey } from '@/data/roles'
 import { ROUTES } from '@/app/routes'
 import { nowStamp } from '@/lib/format'
 import type { PlanActivity, PlanPhase, PlanRow } from '@/types/domain'
 import { setPlanStatusGate } from '@/data/status'
+import { agrFlowOf, inForceOf } from '@/data/agreements/store'
+import { PLAN_AUTH, approvalCapacity, delegationOf, mayApprovePlan } from './auth'
+const approverTitles = (): string[] => [...PLAN_AUTH.approveBy, ...PLAN_AUTH.delegations.filter((d) => delegationOf(d.to)).map((d) => d.to)].map((k) => roleByKey(k).title)
+import type { RoleKey } from '@/data/roles'
 
 /* Project plans (BPD-012) · the actions.
 
@@ -97,7 +101,7 @@ type Op = { at: string; by: string } & (
   | { op: 'open'; projectId: string; planId: string; drafter: 'entity' | 'supervisor'; reason?: string }
   | { op: 'save'; planId: string; phases: PlanPhase[] }
   | { op: 'send'; planId: string; actor: 'entity' | 'supervisor' }
-  | { op: 'review'; planId: string; act: 'toManager' | 'returnEntity' | 'approve' | 'managerReturn'; note: string }
+  | { op: 'review'; planId: string; act: 'toManager' | 'returnEntity' | 'approve' | 'managerReturn'; note: string; as?: string }
   | { op: 'start'; planId: string; actId: string }
   | { op: 'evidence'; planId: string; actId: string; evId: string; kind: string; fileName: string; replace?: string }
   | { op: 'evidenceDrop'; planId: string; actId: string; evId: string }
@@ -106,8 +110,8 @@ type Op = { at: string; by: string } & (
   | { op: 'reject'; planId: string; actId: string; note: string }
   | { op: 'comment'; planId: string; actId: string; say: string; from: 'staff' | 'entity' }
   | { op: 'actData'; planId: string; actId: string; text: string; reached: number | null; doneOn: string }
-  | { op: 'change'; planId: string; changeId: string; say: string; proposed?: PlanPhase[] }
-  | { op: 'changeDecide'; planId: string; changeId: string; outcome: 'approve' | 'reject' | 'return'; note: string }
+  | { op: 'change'; planId: string; changeId: string; say: string; proposed?: PlanPhase[]; kind?: 'operational' | 'contractual'; contractual?: string[] }
+  | { op: 'changeDecide'; planId: string; changeId: string; outcome: 'approve' | 'reject' | 'return' | 'toAgreement'; note: string }
 )
 
 const KEY = 'ab-plan-ops'
@@ -176,6 +180,9 @@ function applyOp(o: Op) {
       return
     }
     case 'open': {
+      /* v3 · 12.2.1 · an op saved before v3 for an external project · no plan in the system */
+      const pe = projectRows.find((x) => x.id === o.projectId)
+      if (pe && planKind(pe) === 'external') return
       if (o.reason) {
         const list = DECISIONS.get(o.projectId) ?? []
         if (!list[0]?.needs) { list.unshift({ needs: true, by: o.by, at: o.at.slice(0, 10), reason: o.reason, source: 'change' }); DECISIONS.set(o.projectId, list) }
@@ -204,7 +211,8 @@ function applyOp(o: Op) {
       if (!p) return
       if (o.act === 'toManager' && p.stage === 'supervisor') {
         touch(p, 'manager')
-        notify([MGR()], p, `خطة بانتظار اعتمادك · ${p.projectName}`, 'راجعها مشرف المنح')
+        /* v3 · 12.2.11 · the approvers in their own right and the delegates in force */
+        notify([...new Set([MGR(), ...approverTitles()])], p, `خطة بانتظار اعتمادك · ${p.projectName}`, 'راجعها مشرف المنح')
       } else if (o.act === 'returnEntity' && p.stage === 'supervisor') {
         touch(p, 'returned', o.note)
         notify([p.entityName], p, `أُعيدت خطتك بملاحظات · ${p.projectName}`, o.note, `${ROUTES.planEdit(p.id)}?as=entity`)
@@ -215,8 +223,14 @@ function applyOp(o: Op) {
       } else if (o.act === 'approve' && p.stage === 'manager') {
         p.baseline = p.baseline === 0 ? 1 : p.baseline
         p.baselineAt = actDay()
+        /* v3 · 12.2.11 · the actual approver, and in what capacity */
+        p.approvedBy = o.by
+        p.approvedAs = o.as
         touch(p, 'active')
-        notify([p.entityName, p.owner], p, `اعتُمدت الخطة · ${p.projectName}`, 'ثُبّتت النسخة المرجعية وبدأ التنفيذ')
+        /* v3 · 8.2.26 · with the agreement already in force, the plan's approval is what puts the project
+           «تحت التنفيذ» and opens its payments */
+        const inForce = Boolean(inForceOf(p.projectId))
+        notify([p.entityName, p.owner], p, `اعتُمدت الخطة · ${p.projectName}`, inForce ? 'ثُبّتت النسخة المرجعية · والاتفاقية سارية فأصبح المشروع «تحت التنفيذ» وطلبات الصرف متاحة' : 'ثُبّتت النسخة المرجعية · يصبح المشروع «تحت التنفيذ» عند سريان الاتفاقية')
       }
       return
     }
@@ -293,20 +307,26 @@ function applyOp(o: Op) {
       const was = p.changes.find((c) => c.id === o.changeId)
       if (was) {
         if (was.state !== 'returned') return
-        Object.assign(was, { say: o.say, proposed: o.proposed ? structuredClone(o.proposed) : undefined, state: 'waiting', at: actDay(), by: o.by })
+        Object.assign(was, { say: o.say, proposed: o.proposed ? structuredClone(o.proposed) : undefined, state: 'waiting', at: actDay(), by: o.by, kind: o.kind, contractual: o.contractual })
       } else {
-        p.changes = [...p.changes, { id: o.changeId, at: actDay(), by: o.by, say: o.say, state: 'waiting', proposed: o.proposed ? structuredClone(o.proposed) : undefined }]
+        p.changes = [...p.changes, { id: o.changeId, at: actDay(), by: o.by, say: o.say, state: 'waiting', proposed: o.proposed ? structuredClone(o.proposed) : undefined, kind: o.kind, contractual: o.contractual }]
       }
-      notify([MGR()], p, `طلب تعديل جوهري على خطة · ${p.projectName}`, o.say)
+      notify([MGR()], p, `طلب تعديل ${o.kind === 'contractual' ? 'تعاقدي' : 'تشغيلي'} على خطة · ${p.projectName}`, o.say)
       return
     }
     case 'changeDecide': {
       const p = planById(o.planId)
       const c = p?.changes.find((x) => x.id === o.changeId)
-      if (!p || !c || c.state !== 'waiting') return
+      if (!p || !c || (c.state !== 'waiting' && c.state !== 'toAgreement')) return
       c.note = o.note
       c.decidedAt = actDay()
       c.decidedBy = o.by
+      if (o.outcome === 'toAgreement') {
+        /* v3 · 12.4.15 · a contractual change goes to the agreement first · the supervisor opens its annex */
+        c.state = 'toAgreement'
+        notify([p.owner, SUP()], p, `تغيير تعاقدي · افتح ملحقًا للاتفاقية · ${p.projectName}`, o.note)
+        return
+      }
       if (o.outcome === 'approve') {
         c.state = 'approved'
         c.before = structuredClone(p.phases)
@@ -408,12 +428,18 @@ const id6 = () => Math.random().toString(36).slice(2, 8)
 
 export function changePlanDecision(projectId: string, needs: boolean, reason: string, by: string): string[] {
   if (!reason.trim()) return [/* doc 12.4.31 */ 'سبب تعديل القرار إلزامي']
+  /* v3 · 12.2.1 · the type decides · a portfolio always has a plan, an external project never does */
+  const pr = projectRows.find((x) => x.id === projectId)
+  if (pr && planKind(pr) === 'external' && needs) return ['المشروع الخارجي لا يتطلب خطة · لا تُنشأ له خطة في النظام']
+  if (pr && planKind(pr) === 'portfolio' && !needs) return ['المحفظة تتطلب خطة دائمًا']
   const cur = planDecisionOf(projectId)
   if (cur && cur.needs === needs) return ['القرار الحالي هو نفسه']
   run({ op: 'decide', projectId, needs, reason: reason.trim(), planId: `PL-${1030 + planRows.length}`, by, at: now() })
   return []
 }
 export function openPlanFor(projectId: string, drafter: 'entity' | 'supervisor', reason: string, by: string): string {
+  const pr = projectRows.find((x) => x.id === projectId)
+  if (pr && planKind(pr) === 'external') return ''
   const has = planOfProject(projectId)
   if (has && has.stage !== 'cancelled') return has.id
   const planId = `PL-${1030 + planRows.length}`
@@ -422,10 +448,12 @@ export function openPlanFor(projectId: string, drafter: 'entity' | 'supervisor',
 }
 export const savePlanPhases = (planId: string, phases: PlanPhase[], by: string) => run({ op: 'save', planId, phases, by, at: now() })
 export const sendPlanFor = (planId: string, actor: 'entity' | 'supervisor', by: string) => run({ op: 'send', planId, actor, by, at: now() })
-export function reviewPlan(planId: string, act: 'toManager' | 'returnEntity' | 'approve' | 'managerReturn', note: string, by: string): string[] {
+export function reviewPlan(planId: string, act: 'toManager' | 'returnEntity' | 'approve' | 'managerReturn', note: string, by: string, role?: RoleKey): string[] {
   /* Re-audit 7 Oct · a return carries its note in the store too, not only in the dock */
   if ((act === 'returnEntity' || act === 'managerReturn') && !note.trim()) return ['ملاحظة الإعادة إلزامية']
-  run({ op: 'review', planId, act, note, by, at: now() })
+  /* v3 · 12.2.11 · the grants manager, or an authority holder he delegated */
+  if ((act === 'approve' || act === 'managerReturn') && role && !mayApprovePlan(role)) return ['اعتماد الخطة لمدير المنح أو صاحب صلاحية مفوّض']
+  run({ op: 'review', planId, act, note, by, as: act === 'approve' && role ? approvalCapacity(role) : undefined, at: now() })
   return []
 }
 export const startActivity = (planId: string, actId: string, by: string) => run({ op: 'start', planId, actId, by, at: now() })
@@ -446,15 +474,51 @@ export function saveActivityData(planId: string, actId: string, d: { text: strin
   run({ op: 'actData', planId, actId, text: d.text.trim(), reached: d.reached, doneOn: d.doneOn, by, at: now() })
   return []
 }
+/** v3 · 12.4.15 · what makes a plan change contractual · it moves the money, the period, or an activity
+    a payment's condition rests on · empty = operational, made in the plan */
+export function contractualOf(p: PlanRow, proposed: PlanPhase[] | undefined): string[] {
+  if (!proposed) return []
+  const out: string[] = []
+  const cost = (xs: PlanPhase[]) => xs.reduce((a, x) => a + (x.cost || 0), 0)
+  if (cost(proposed) !== cost(p.phases)) out.push(`يغيّر قيمة الخطة (${cost(p.phases).toLocaleString('en-US')} ← ${cost(proposed).toLocaleString('en-US')})`)
+  const end = (xs: PlanPhase[]) => xs.map((x) => x.to).filter(Boolean).sort().at(-1) ?? ''
+  if (end(proposed) > end(p.phases)) out.push(`يمدّ مدة التنفيذ (${end(p.phases)} ← ${end(proposed)})`)
+  const ag = inForceOf(p.projectId)
+  for (const pay of ag?.payments ?? []) {
+    for (const c of pay.conds ?? []) {
+      if (c.kind !== 'activity') continue
+      const now = proposed.flatMap((x) => x.activities).find((x) => x.id === c.ref)
+      if (!now) out.push(`يحذف نشاطًا يرتبط به شرط الدفعة ${pay.no}`)
+      else if (now.to && pay.dueAt && now.to > pay.dueAt) out.push(`يؤخّر نشاطًا يرتبط به شرط الدفعة ${pay.no} بعد تاريخ صرفها`)
+    }
+  }
+  return out
+}
+
 export function requestChange(planId: string, say: string, proposed: PlanPhase[] | undefined, by: string, changeId?: string): string[] {
   if (!say.trim()) return ['اكتب التعديل المطلوب وسببه']
   const p = planById(planId)
-  if (!changeId && p?.changes.some((c) => c.state === 'waiting')) return ['يوجد طلب بانتظار مدير المنح بالفعل']
-  run({ op: 'change', planId, changeId: changeId ?? `ch-${id6()}`, say: say.trim(), proposed, by, at: now() })
+  if (!changeId && p?.changes.some((c) => c.state === 'waiting' || c.state === 'toAgreement')) return ['يوجد طلب بانتظار مدير المنح بالفعل']
+  const why = p ? contractualOf(p, proposed) : []
+  /* A request in words only · what it names decides · the money, the period, a payment's due date or condition */
+  if (!proposed && /المبلغ|القيمة|التكلفة|تمديد|المدة|الاستحقاق|شرط الصرف|الدفعة/.test(say)) why.push('يذكر تغييرًا في المبلغ أو المدة أو الدفعات')
+  run({ op: 'change', planId, changeId: changeId ?? `ch-${id6()}`, say: say.trim(), proposed, kind: why.length ? 'contractual' : 'operational', contractual: why.length ? why : undefined, by, at: now() })
   return []
 }
-export function decideChangeBy(planId: string, changeId: string, outcome: 'approve' | 'reject' | 'return', note: string, by: string): string[] {
+
+/** A contractual change waits for an annex to the agreement signed after it was asked */
+export const annexAfter = (projectId: string, since: string): boolean => {
+  const ag = inForceOf(projectId)
+  return Boolean(ag && agrFlowOf(ag.id).annexes.some((x) => x.kind === 'terms' && x.at >= since))
+}
+
+export function decideChangeBy(planId: string, changeId: string, outcome: 'approve' | 'reject' | 'return' | 'toAgreement', note: string, by: string, role?: RoleKey): string[] {
   if (!note.trim()) return [/* doc 12.4.22 */ 'اكتب ملاحظة القرار']
+  if (role && !mayApprovePlan(role)) return ['قرار التعديل لمدير المنح أو صاحب صلاحية مفوّض']
+  const p = planById(planId)
+  const c = p?.changes.find((x) => x.id === changeId)
+  /* v3 · 12.4.15 · the contractual part changes in the agreement before the plan takes it */
+  if (p && c?.kind === 'contractual' && outcome === 'approve' && !annexAfter(p.projectId, c.at)) return ['تغيير تعاقدي · يُعدَّل أولًا بملحق في الاتفاقية ثم يُعتمد في الخطة']
   run({ op: 'changeDecide', planId, changeId, outcome, note: note.trim(), by, at: now() })
   return []
 }

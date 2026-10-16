@@ -164,7 +164,7 @@ export const ROUTES = [
      وفيها زراير رفع الشواهد و«خلّصت النشاط» · ومن غير المسار ده
      نص الموديول ما بيتفحصش. */
   '/plans/PL-1021?as=entity', '/plans/PL-1026/edit?as=entity', '/plans/PL-1026?as=entity', '/projects/21018/plan',
-  '/plans/settings', '/plans/settings?tab=limits',
+  '/plans/settings', '/plans/settings?tab=limits', '/plans/settings?tab=auth',
   /* الإغلاق · BPD-011 · والستة دول **دورتان في ست حالات** لا نسخ:
      واحد عند الجهة ناقص، وواحد عند المشرف مكتمل، وواحد عند الاتصال
      المؤسسي (قاعدة 9)، وواحد مُعاد بإصدار تاني (قاعدة 19)، وواحد

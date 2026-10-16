@@ -76,6 +76,8 @@ export const CFG = {
   prospects: 'ab-cfg-prospects',
   /** v3 · 3.4.24 · the reasons a supervisor picks for a recommendation to reject */
   rejectReasons: 'ab-cfg-reject-reasons',
+  /** v3 · 12.2.11 · who approves a plan, and the delegations in force */
+  planAuth: 'ab-cfg-plan-auth',
   /** Entity registration and update rules · BPD-002 */
   entityRules: 'ab-cfg-entity-rules',
   /** Budget approval roles, transfer policy and spending limits · BPD-001 */

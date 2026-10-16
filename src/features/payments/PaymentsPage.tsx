@@ -276,7 +276,7 @@ export default function PaymentsPage() {
                 ...(k.late + k.stuck > 0 ? [{ label: 'المتأخر', to: ROUTES.paymentsLate, icon: 'alert' as const, count: k.late + k.stuck }] : []),
                 ...(role.key === 'finance' || role.key === 'admin' ? [{ label: 'دفعات النظام السابق', to: ROUTES.paymentsLegacy, icon: 'upload' as const }] : []),
               ]}
-              create={{ label: role.key === 'supervisor' ? 'إذن صرف جديد' : 'طلب صرف جديد', to: ROUTES.paymentNew() }}
+              create={{ label: role.key === 'supervisor' ? 'جدول الدفعات · إذن صرف' : 'متطلبات دفعة', to: ROUTES.paymentNew() }}
             />
           </header>
 
@@ -289,7 +289,7 @@ export default function PaymentsPage() {
             variant="bar"
             title="قراءة سريعة للصندوق"
             readings={readings}
-            empty="لا يوجد طلب صرف موقوف أو متأخر في النطاق الحالي. وسّع الفلتر لعرض المزيد."
+            empty="لا توجد دفعة موقوفة أو متأخرة في النطاق الحالي. وسّع الفلتر لعرض المزيد."
           />
 
           {/* Note: these four cards are the spec's own four indicators (9.8), not four cards chosen

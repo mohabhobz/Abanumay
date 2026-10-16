@@ -1,3 +1,4 @@
+import { mayApprovePlan } from '@/data/plans/auth'
 import { useMemo, useRef, useState } from 'react'
 import { forecastPlan } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -23,8 +24,7 @@ import {
 import {
   acceptActivityBy, claimActivityBy, commentOn, saveActivityData, decideChangeBy, dropEvidence, mayDraft, projectWindow,
   rejectActivityBy, reviewPlan, sendPlanFor, startActivity, stuckActivities, uploadEvidence, usePlans,
-  planLogOf,
-} from '@/data/plans/store'
+  planLogOf, annexAfter } from '@/data/plans/store'
 import { PlanDecisionCard } from './PlanDecisionCard'
 import type { PlanAction } from './PlanActionDock'
 import { projectById } from '@/data/mock/projects'
@@ -211,7 +211,7 @@ export default function PlanPage() {
 
   const take = (x: PlanAction) => {
     if (x.key === 'send') sendPlanFor(p.id, asEntity ? 'entity' : 'supervisor', who)
-    else if (x.key === 'approve' || x.key === 'toManager' || x.key === 'returnEntity' || x.key === 'managerReturn') reviewPlan(p.id, x.key, note.trim(), who)
+    else if (x.key === 'approve' || x.key === 'toManager' || x.key === 'returnEntity' || x.key === 'managerReturn') reviewPlan(p.id, x.key, note.trim(), who, role.key)
     setNote('')
     setSaid(`سُجّل: ${x.label}`)
     setTick((t) => t + 1)
@@ -233,7 +233,8 @@ export default function PlanPage() {
                 <Link to={ROUTES.entity(p.entityId)} className="tlink">{p.entityName}</Link> ·{' '}
                 {p.baseline > 0
                   ? <>النسخة المرجعية <Num>{ver(p.baseline)}</Num>{' '}
-                    {p.baselineAt && <>من <DateText>{p.baselineAt}</DateText></>}</>
+                    {p.baselineAt && <>من <DateText>{p.baselineAt}</DateText></>}
+                    {p.approvedBy && <> · اعتمدها {p.approvedBy}{p.approvedAs ? ` (${p.approvedAs})` : ''}</>}</>
                   : 'لم تُعتمد بعد · الهيكل مفتوح للتعديل'}
               </p>
               <div className="gt-tag">
@@ -461,7 +462,7 @@ export default function PlanPage() {
                         <li key={c.id}>
                           <div className="plchg-h">
                             <Tag tone={c.state === 'approved' ? 'ok' : c.state === 'rejected' ? 'no' : 'warn'}>
-                              {c.state === 'approved' ? 'معتمَد' : c.state === 'rejected' ? 'مرفوض' : c.state === 'returned' ? 'أُعيد للاستكمال' : 'بانتظار مدير المنح'}
+                              {c.state === 'approved' ? 'معتمَد' : c.state === 'rejected' ? 'مرفوض' : c.state === 'returned' ? 'أُعيد للاستكمال' : c.state === 'toAgreement' ? 'بانتظار ملحق الاتفاقية' : 'بانتظار مدير المنح'}
                             </Tag>
                             <span className="sub">
                               <DateText>{c.at}</DateText> · {c.by}
@@ -476,13 +477,17 @@ export default function PlanPage() {
                               <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}?change=${c.id}${asEntity ? '&as=entity' : ''}`}>استكمل الطلب وأعد إرساله</Link>
                             </div>
                           )}
-                          {c.state === 'waiting' && role.key === 'grants-manager' && !asEntity && (
+                          {/* v3 · 12.4.15 · operational changes are made in the plan · contractual ones go to the agreement */}
+                          {c.kind && <p className="sub"><Tag tone={c.kind === 'contractual' ? 'warn' : 'mute'}>{c.kind === 'contractual' ? 'تغيير تعاقدي' : 'تغيير تشغيلي'}</Tag>{c.contractual?.length ? <> · {c.contractual.join(' · ')}</> : <> · يُنفَّذ في الخطة ويُسجَّل في سجلها</>}</p>}
+                          {c.state === 'toAgreement' && <p className="sub">أُحيل لملحق تعديلي في الاتفاقية · يُعتمد في الخطة بعد اعتماد الملحق{annexAfter(p.projectId, c.at) ? ' · اعتُمد الملحق' : ''}</p>}
+                          {(c.state === 'waiting' || c.state === 'toAgreement') && mayApprovePlan(role.key) && !asEntity && (
                             <div className="act-a">
                               <span className="fld"><input value={chNote[c.id] ?? ''} onChange={(e) => setChNote({ ...chNote, [c.id]: e.target.value })} placeholder="ملاحظة القرار · إلزامية" aria-label="ملاحظة قرار التعديل" /></span>
-                              {(['approve', 'return', 'reject'] as const).map((o) => (
-                                <button key={o} className={`btn ${o === 'approve' ? 'btn-p' : 'btn-2'} btn-sm`} disabled={!(chNote[c.id] ?? '').trim()}
-                                  onClick={() => { decideChangeBy(p.id, c.id, o, chNote[c.id] ?? '', user.name); setTick((x) => x + 1) }}>
-                                  {o === 'approve' ? 'اعتمد التعديل' : o === 'return' ? 'أعده للاستكمال' : 'ارفض التعديل'}
+                              {([...(c.kind === 'contractual' && c.state === 'waiting' ? ['toAgreement'] as const : []), 'approve', 'return', 'reject'] as const).map((o) => (
+                                <button key={o} className={`btn ${o === 'approve' || o === 'toAgreement' ? 'btn-p' : 'btn-2'} btn-sm`} disabled={!(chNote[c.id] ?? '').trim() || (o === 'approve' && c.kind === 'contractual' && !annexAfter(p.projectId, c.at))}
+                                  title={o === 'approve' && c.kind === 'contractual' && !annexAfter(p.projectId, c.at) ? 'يُعدَّل أولًا بملحق في الاتفاقية' : undefined}
+                                  onClick={() => { const w = decideChangeBy(p.id, c.id, o, chNote[c.id] ?? '', user.name, role.key); if (w.length) setSaid(w[0]); setTick((x) => x + 1) }}>
+                                  {o === 'approve' ? 'اعتمد التعديل' : o === 'toAgreement' ? 'أحله لملحق الاتفاقية' : o === 'return' ? 'أعده للاستكمال' : 'ارفض التعديل'}
                                 </button>
                               ))}
                             </div>
