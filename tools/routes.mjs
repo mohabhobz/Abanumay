@@ -190,7 +190,7 @@ export const ROUTES = [
      والحالتان هنا مختلفتان: فاضية بينتظر اختيار مشروع، وواصلة من
      تاب المشروع بالمشروع مختار سلفًا · شوف `tools/routemount.mjs` */
   '/plans/new', '/plans/new?project=20845',
-  '/reports', '/reports/impact', '/reports/build', '/reports/catalog', '/reports/coverage',
+  '/reports', '/reports/board', '/reports/impact', '/reports/build', '/reports/catalog', '/reports/coverage',
   '/reports/view/budget', '/reports/screen/budget', '/reports/screen/closing',
   '/reports/process/p1', '/reports/process/bpd-012', '/assistant',
   /* ⚠️ التلاتة دول اتضافوا لمّا `routecover.mjs` مسكهم (١٤ سبتمبر):

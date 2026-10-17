@@ -58,7 +58,7 @@ export default function ReportView() {
               <Empty
                 title="التقرير غير موجود."
                 note="عُد إلى لوحة التقارير واختر تقريرًا منها."
-                actions={<Link className="btn btn-2" to={ROUTES.reports}>العودة إلى لوحة التقارير</Link>}
+                actions={<Link className="btn btn-2" to={ROUTES.reportTab('board')}>العودة إلى لوحة التقارير</Link>}
               />
             </Glass>
           </div>

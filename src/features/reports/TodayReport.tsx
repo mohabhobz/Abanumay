@@ -1,0 +1,233 @@
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Glass, Head, Icon, icons, Money } from '@/components/ui'
+import { BoardBody } from '@/features/board/BoardBody'
+import { ROUTES } from '@/app/routes'
+import { useRole } from '@/hooks/useRole'
+import { NOUN, nounAfter, pct } from '@/lib/format'
+import { TONE } from '@/lib/tone'
+import { Columns, Spark, StackBar } from '@/components/charts'
+import {
+  amountTrend, backlogTrend, complianceTrend, inboxFor, oldestTrend, TREND_DAYS,
+  type InboxItem, type InboxQueue, type TrendPoint,
+} from '@/features/home/inbox'
+import { budgetOf, myProjects, topEntities } from '@/features/home/mine'
+
+/* 17 Oct · «تقارير اليوم» · a frozen copy of the Today page as it stood on 17 Oct 2026, before its
+   redesign (client: keep it in Reports, first tab). It is its own file on purpose: the new Today
+   page changes `HomePage.tsx`, and this copy must not move with it. The role's queues, numbers and
+   charts read the same live data as before. The impact panel is left out · Reports draws it above
+   every tab already. */
+
+export function TodayReport() {
+  const { role, user } = useRole()
+  const queues = useMemo(() => inboxFor(role.key, user.name), [role.key, user.name])
+  /* Phone only (F-5) · the drawn analysis stays folded until asked for */
+  const [more, setMore] = useState(false)
+
+  const all = queues.flatMap((q) => q.items)
+  const late = all.filter((i) => i.late)
+  const busy = queues.filter((q) => q.items.length > 0)
+  const oldest = [...all].sort((a, b) => b.days - a.days)[0]
+  const lateQ = [...queues].sort((a, b) => lateOf(b) - lateOf(a))[0]
+  const money = all.reduce((a, i) => a + (i.amount ?? 0), 0)
+  const richQ = [...queues].sort((a, b) => moneyOf(b) - moneyOf(a))[0]
+  const within = all.length ? Math.round(((all.length - late.length) / all.length) * 100) : 100
+  const verb = role.key === 'supervisor' ? 'توصيتك' : role.key === 'grants-manager' ? 'اعتمادك' : 'قرارك'
+
+  /* E-6 · E-8 · the money and the partners of the role's own projects */
+  const mine = useMemo(() => myProjects(role.key, user.name), [role.key, user.name])
+  const bud = useMemo(() => budgetOf(mine), [mine])
+  const tops = useMemo(() => topEntities(mine, 3), [mine])
+  const budParts = [
+    { key: 'spent', label: 'المصروف', value: bud.spent, color: 'var(--ch-1)' },
+    { key: 'reserved', label: 'المحجوز', value: bud.reserved, color: 'var(--ch-2)' },
+    { key: 'remaining', label: 'المتبقي', value: bud.remaining, color: 'var(--ch-4)' },
+  ]
+  const scope = role.key === 'supervisor' ? 'مشاريعك' : role.key === 'grants-manager' ? 'مشاريع فريقك' : 'المحفظة'
+
+  const tiles: Tile[] = [
+    {
+      k: `بانتظار ${verb}`,
+      v: String(all.length),
+      note: `في ${busy.length} قوائم`,
+      to: (busy[0] ?? queues[0]).all,
+      trend: backlogTrend(all),
+    },
+    {
+      k: 'ضمن المدة',
+      v: pct(within),
+      note: late.length ? `${late.length} متأخرة` : 'لا متأخر',
+      to: lateQ.all,
+      trend: complianceTrend(all),
+    },
+    {
+      k: 'القيمة المنتظرة',
+      v: (money / 1_000_000).toFixed(1),
+      note: 'مليون ريال',
+      to: richQ.all,
+      trend: amountTrend(all),
+    },
+    {
+      k: 'أقدم انتظار',
+      v: String(oldest?.days ?? 0),
+      note: oldest ? nounAfter(oldest.days, NOUN.day) : 'لا شيء ينتظر',
+      to: oldest ? oldest.to : queues[0].all,
+      trend: oldestTrend(all),
+    },
+  ]
+
+  return (
+    <>
+          {/* One screen, no scroll on desktop: the fold takes the view's height, the strip takes
+              its own, and the work row gets the rest · each card shrinks its chart into the space
+              instead of the page growing. On narrow screens it falls back to a normal stack. */}
+          {/* The foundation board, the same for every role (client, 6 Oct) · then the work */}
+          <BoardBody />
+
+          <section className="ibx-fold">
+            <div className={`ibx-main${more ? ' more' : ''}`}>
+              <div className="kpis">
+                {tiles.map((t) => (
+                  <Link key={t.k} to={t.to} className="kpi glass has-spk">
+                    <TileBody {...t} />
+                  </Link>
+                ))}
+              </div>
+
+              <div className="ibx-more">
+                <button type="button" className="btn btn-2" aria-expanded={more} onClick={() => setMore((x) => !x)}>
+                  <Icon name={icons.chart} size="sm" />
+                  {more ? 'أخفِ الأعمار والميزانية' : 'اعرض الأعمار والميزانية والجهات'}
+                </button>
+              </div>
+
+              <div className="ibx-side">
+                <Glass className="ibx-age">
+                  <Head title="أعمار الطلبات" meta={<span className="sub">بالأيام</span>} />
+                  <Columns cols={ageing(all)} />
+                </Glass>
+                <Glass className="ibx-bud">
+                  <Head
+                    title={`ميزانية ${scope}`}
+                    meta={<span className="sub"><Money sm>{bud.granted}</Money></span>}
+                  />
+                  <StackBar parts={budParts} total={bud.granted} />
+                  {/* One line, not a stacked legend: the card shares the column with two others */}
+                  <ul className="ibx-budl">
+                    {budParts.map((x) => (
+                      <li key={x.key}>
+                        <i className={`ibx-sw-${x.key}`} aria-hidden="true" />
+                        {x.label} <b className="num">{(x.value / 1_000_000).toFixed(1)} م</b>
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+                <Glass className="ibx-entcard">
+                  <Head title="أعلى جهاتك دعمًا" meta={<span className="sub">{yearSpan(tops)}</span>} />
+                  <ul className="ibx-ents">
+                    {tops.map((e) => (
+                      <li key={e.id}>
+                        <Link to={ROUTES.entity(e.id)} title={`${e.projects} ${nounAfter(e.projects, NOUN.project)} · ${e.years.join('، ')}`}>
+                          <span className="ibx-tn">{e.name}</span>
+                          <span className="ibx-tm">{e.projects} {nounAfter(e.projects, NOUN.project)}</span>
+                          <Money sm>{e.total}</Money>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+              </div>
+
+              <QueueList queues={queues} />
+            </div>
+          </section>
+    </>
+  )
+}
+
+interface Tile { k: string; v: string; note: string; to: string; trend: TrendPoint[] }
+
+const lateOf = (q: InboxQueue) => q.items.filter((i) => i.late).length
+const moneyOf = (q: InboxQueue) => q.items.reduce((a, i) => a + (i.amount ?? 0), 0)
+
+/** The years the ranking covers · it accumulates across years instead of resetting each one */
+const yearSpan = (rows: { years: string[] }[]): string => {
+  const ys = [...new Set(rows.flatMap((r) => r.years))].sort()
+  return ys.length > 1 ? `${ys[0]}–${ys[ys.length - 1]}` : ys[0] ?? 'كل السنوات'
+}
+
+/* Buckets on the decision boundaries the system already uses: a week is fine, two raise a question,
+   a month is a problem. A column turns amber or red by the share of its requests past their limit. */
+function ageing(items: InboxItem[]) {
+  const b = [
+    { key: '0–7', label: 'حتى 7', test: (d: number) => d <= 7 },
+    { key: '8–14', label: '8–14', test: (d: number) => d > 7 && d <= 14 },
+    { key: '15–30', label: '15–30', test: (d: number) => d > 14 && d <= 30 },
+    { key: '+30', label: 'أكثر من 30', test: (d: number) => d > 30 },
+  ]
+  return b.map((x) => {
+    const here = items.filter((i) => x.test(i.days))
+    const share = here.length ? here.filter((i) => i.late).length / here.length : 0
+    return {
+      key: x.key,
+      label: x.label,
+      value: here.length,
+      color: share >= 0.5 ? 'var(--ch-late)' : share > 0 ? 'var(--ch-warn)' : 'var(--ch-2)',
+    }
+  })
+}
+
+const SLA_SAY = { ok: 'ضمن الحدّ', near: 'قريب من الحدّ', late: 'فوق الحدّ' } as const
+
+function TileBody({ k, v, note, trend }: Tile) {
+  const first = trend[0]
+  const last = trend[trend.length - 1]
+  return (
+    <>
+      <span className="kpi-h">
+        <span className="kpi-k">{k}</span>
+        <Icon name={icons.chevron} size="sm" className="kpi-go" />
+      </span>
+      <span className="kpi-v num">{v}</span>
+      <span className="kpi-n">{note}</span>
+      <Spark
+        points={trend}
+        label={`${k} خلال آخر ${TREND_DAYS} يومًا: من ${first.value} إلى ${last.value} · اليوم ${SLA_SAY[last.sla]}`}
+      />
+    </>
+  )
+}
+
+/* The queues as one list · each row is the queue's door: it opens the module's list at the stage
+   that sits with this role. Empty queues stay in place (the order is the client's) but quiet. */
+function QueueList({ queues }: { queues: InboxQueue[] }) {
+  return (
+    <Glass className="ibx-listcard">
+      <Head title="قوائمك" meta={<span className="sub">بترتيب العمل</span>} />
+      <ul className="ibx-list">
+        {queues.map((q) => {
+          const n = q.items.length
+          const over = lateOf(q)
+          const old = Math.max(0, ...q.items.map((i) => i.days))
+          return (
+            <li key={q.key}>
+              <Link to={q.all} className={n === 0 ? 'none' : ''}>
+                <Icon name={icons[q.icon]} size="sm" />
+                <span className="ibx-l">
+                  <span className="ibx-lt">{q.label}</span>
+                  <span className="sub ibx-ln">
+                    {n === 0 ? 'لا شيء بانتظارك' : old > 0 ? `أقدمها ${old} ${nounAfter(old, NOUN.day)}` : q.note}
+                  </span>
+                </span>
+                {over > 0 && <span className={`tag ${TONE.late}`}>{over} فوق الحدّ</span>}
+                <b className="ibx-n num">{n}</b>
+                <Icon name={icons.chevron} size="sm" className="ibx-go" />
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </Glass>
+  )
+}

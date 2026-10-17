@@ -182,7 +182,7 @@ export const ROUTES = {
   paymentsLegacy: '/payments/legacy',
 
   reports: '/reports',
-  reportTab: (tab?: string) => `/reports${tab && tab !== 'board' ? `/${tab}` : ''}`,
+  reportTab: (tab?: string) => `/reports${tab && tab !== 'today' ? `/${tab}` : ''}`,
   /** Full report on our own schedule. */
   reportView: (key: string) => `/reports/view/${key}`,
   /** Process indicator sheet — inside the measurement view. */
@@ -257,6 +257,8 @@ export const DEFAULT_ENTITY_TAB: EntityTabSlug = 'data'
  * about the grants.
  */
 export const REPORT_TABS = [
+  /* 17 Oct · the Today page as it stood before its redesign, kept here as the first tab */
+  { slug: 'today', label: 'تقارير اليوم' },
   { slug: 'board', label: 'اللوحة' },
   /* E-9 · the combined dashboard, moved off «اليوم» into Reports as its own category */
   { slug: 'overview', label: 'اللوحة المجمّعة' },
@@ -269,7 +271,7 @@ export const REPORT_TABS = [
 
 export type ReportTabSlug = (typeof REPORT_TABS)[number]['slug']
 
-export const DEFAULT_REPORT_TAB: ReportTabSlug = 'board'
+export const DEFAULT_REPORT_TAB: ReportTabSlug = 'today'
 
 export const DEFAULT_PROJECT_TAB: ProjectTabSlug = 'data'
 

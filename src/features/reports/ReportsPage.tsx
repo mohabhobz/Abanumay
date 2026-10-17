@@ -1,3 +1,4 @@
+import { TodayReport } from './TodayReport'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Tabs, Tag } from '@/components/ui'
@@ -73,6 +74,7 @@ export default function ReportsPage() {
 
           {/* Client, 8 Oct · the impact on every report screen · the «الأثر» tab draws it in full */}
           {active === 'impact' ? <ImpactPanel full /> : <ImpactPanel />}
+          {active === 'today' && <TodayReport />}
           {active === 'board' && <Board period={period} onPeriod={setPeriod} />}
           {active === 'build' && <Builder />}
           {active === 'catalog' && <Catalog />}
