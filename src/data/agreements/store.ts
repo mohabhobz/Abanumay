@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { liveClock } from '@/data/stageClock'
 import { SEED_AT, actDay, asOf } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
@@ -709,7 +710,7 @@ function applyOp(o: Op) {
 }
 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ } }
-const run = (o: Op) => { ops.push(o); apply(o); save(); emit() }
+const run = (o: Op) => { ops.push(o); apply(o); save(); emit(); done(o.op, 'الاتفاقيات') }
 export const annexValue = (projectId: string, amount: number, ref: string, by: string, reason: string, file?: string) =>
   run({ op: 'annex', projectId, amount, ref, file, reason, by, at: new Date().toISOString() })
 

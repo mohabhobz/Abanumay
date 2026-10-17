@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { actsAs } from '@/data/behalf'
 import { asOf } from '@/data/clock'
 import { liveClock } from '@/data/stageClock'
@@ -652,6 +653,7 @@ const run = (o: Op) => {
   apply(o)
   save()
   emit()
+  done(o.op, 'المشاريع')
 }
 
 /* Replay at load · together with the approval path's log, in clock order (see opclock.ts). The

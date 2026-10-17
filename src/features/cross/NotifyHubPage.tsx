@@ -33,7 +33,7 @@ const STATE_SAY: Record<Message['state'], { say: string; tone: 'ok' | 'no' | 'wa
 const CHNL = (Object.keys(CHANNEL_SAY) as EscChannel[]).map((k) => ({ value: k, label: CHANNEL_SAY[k] }))
 const TOPICS = Object.keys(TOPIC_SAY) as Topic[]
 const AUDS = Object.keys(AUDIENCE_SAY) as Audience[]
-const PAGE = 25
+const PAGE0 = 25
 
 export default function NotifyHubPage() {
   useAllStores()
@@ -57,6 +57,8 @@ export default function NotifyHubPage() {
   const [chn, setChn] = useState<string | undefined>()
   const [top, setTop] = useState<string | undefined>()
   const [page, setPage] = useState(1)
+  /* 17 Oct · the page-size control did nothing · it sets the size and goes back to the first page */
+  const [PAGE, setPageSize] = useState(PAGE0)
 
   const all = outbox()
   const rows = all.filter((m) =>
@@ -124,7 +126,7 @@ export default function NotifyHubPage() {
                   </div>
                 )}
               </Glass>
-              {rows.length > PAGE && <Pager page={page} pageSize={PAGE} total={rows.length} onPage={setPage} onPageSize={() => undefined} />}
+              {rows.length > PAGE && <Pager page={page} pageSize={PAGE} total={rows.length} onPage={setPage} onPageSize={(n) => { setPageSize(n); setPage(1) }} />}
             </>
           )}
 

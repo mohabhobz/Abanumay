@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { liveClock } from '@/data/stageClock'
 import { setPfCloseRules } from '@/data/partners/store'
 import { hasLegacy } from '@/data/payments/legacy'
@@ -944,7 +945,7 @@ function applyCase(c: CaseRow, by: string, at: string) {
 }
 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ } }
-const run = (o: Op) => { ops.push(o); live = true; apply(o); save(); emit() }
+const run = (o: Op) => { ops.push(o); live = true; apply(o); save(); emit(); done(o.op, 'الإغلاق') }
 
 /* ── Seed · the fixture's records take their finance, feedback and separate evaluation log ── */
 

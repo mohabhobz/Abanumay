@@ -20,7 +20,7 @@ const PERIODS = [
   { value: '30', label: 'آخر 30 يومًا' },
   { value: '90', label: 'آخر 90 يومًا' },
 ]
-const PAGE = 30
+const PAGE0 = 30
 
 export default function AuditPage() {
   useAllStores()
@@ -31,6 +31,8 @@ export default function AuditPage() {
   const [rl, setRl] = useState<string | undefined>()
   const [days, setDays] = useState<string | undefined>()
   const [page, setPage] = useState(1)
+  /* 17 Oct · the page-size control did nothing · it sets the size and goes back to the first page */
+  const [PAGE, setPageSize] = useState(PAGE0)
   const [open, setOpen] = useState<string | null>(null)
 
   const all = auditRows()
@@ -120,7 +122,7 @@ export default function AuditPage() {
               </div>
             )}
           </Glass>
-          {rows.length > PAGE && <Pager page={page} pageSize={PAGE} total={rows.length} onPage={setPage} onPageSize={() => undefined} />}
+          {rows.length > PAGE && <Pager page={page} pageSize={PAGE} total={rows.length} onPage={setPage} onPageSize={(n) => { setPageSize(n); setPage(1) }} />}
         </div>
       </div>
     </AppLayout>

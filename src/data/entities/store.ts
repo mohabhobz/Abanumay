@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { useSyncExternalStore } from 'react'
 import type { EntityRow, EntityActivation, EntityDecision } from '@/types/domain'
 import type { BankAccount, EntityDoc, EntityEvent } from '@/data/mock/entityDetail'
@@ -734,6 +735,7 @@ const run = (o: Op) => {
   apply(o)
   save()
   emit()
+  done(o.op, 'الجهات')
 }
 
 /* ── Seed · one open update request, so the review screen has something real to open ── */

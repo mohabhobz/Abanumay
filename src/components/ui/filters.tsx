@@ -658,6 +658,8 @@ export function GroupPicker({
         aria-haspopup="listbox"
         aria-expanded={open}
         id={`${id}-b`}
+        title={chain.length ? chain.map(labelOf).join(' ← ') : 'بلا تجميع'}
+        aria-label={chain.length ? `التجميع: ${chain.map(labelOf).join(' ثم ')}` : 'بلا تجميع'}
         onClick={() => setOpen((x) => !x)}
       >
         {icon && <Icon name={icon} size="sm" />}

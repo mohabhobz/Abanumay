@@ -3329,6 +3329,9 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .iact{--h-exempt:"Open decision: quiet 32/24 icon button - decision #19 concerns `.btn` only.";width:32px;height:32px;flex:none;border-radius:var(--ric);display:grid;place-items:center;color:var(--t3);
   transition:color var(--mo-2) var(--ease-std),background var(--mo-2) var(--ease-std)}
 .iact:hover{color:var(--t1);background:var(--ctl-quiet-h)}
+/* 17 Oct · a rating that was given stays pressed · the press is said, not only seen */
+.iact[aria-pressed="true"]{color:var(--t1);background:var(--ctl-quiet-h)}
+.iact.upbtn{position:relative;cursor:pointer}
 /* Smaller variant, next to a reference number inline with text rather than in a button
    row. */
 .iact-sm{width:24px;height:24px}
@@ -3669,12 +3672,23 @@ header>.tag.mute,header>div>.tag.mute{box-shadow:inset 0 0 0 1px var(--edge-1)}
    wrapped alone onto a second, nearly empty line. Below the width they all need, search takes the
    first line and the filters share the second, so the bar is two even lines, never an orphan. */
 .ftool-f{container:ftool / inline-size}
-@container ftool (max-width:1080px){.ftool-f>.srch{flex-basis:100%}}
+/* 17 Oct · the line holds search beside the filters down to here · the search's own basis is the first to give */
+@container ftool (max-width:900px){.ftool-f>.srch{flex-basis:100%}}
 .ftool-a{flex:none;display:flex;align-items:center;gap:var(--sp-3)}
+/* 17 Oct · on the client's comment · the filters dropped under the search at 1440 because the tools
+   group spent ~340px on words. Below the width where words and filters share one line, the tools say
+   themselves by their icon (title + aria-label keep the name), so search and filters stay side by
+   side · a grouping that is on keeps its chain, it is information, not a label */
+.ftoolbar{container:ftb / inline-size}
+@container ftb (max-width:1720px){
+  .ftool-a .tb-l,.ftool-a .fgrp .fgrp-s{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  /* an icon alone keeps the control's height · the box is square on the same --h-md */
+  .ftool-a .fchip,.ftool-a .fgrp>.fsel-b{min-block-size:var(--h-md);min-inline-size:var(--h-md);justify-content:center}
+}
 /* Search and the field are the same element with different content: same padding,
    height, corner, edge, and background. What sets them apart is that one is typed into and
    the other is pressed. */
-.srch{flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:var(--sp-3);
+.srch{flex:1 1 200px;min-width:0;display:flex;align-items:center;gap:var(--sp-3);
   padding-block:var(--pb-md);padding-inline:var(--pi-md);line-height:var(--lh-md);
   font-size:var(--fs-3);border-radius:var(--r1);color:var(--t3);
   background:var(--ctl-bg);
@@ -5521,6 +5535,8 @@ a.map-chip:hover,.map-chip.on{color:var(--t1);text-decoration:underline;text-und
 /* 11 Oct · audit UI-111 · the 15rem cap is for a filter in a toolbar. In a form field the select
    fills its field, so its arrow sits on the field's edge, not in the middle of it. */
 .regf .fsel-sz{max-width:none}
+/* 17 Oct · in a filter bar the reserved width stops sooner · a long option ellipsises, the search keeps room beside them */
+.ftool-f>.fsel .fsel-sz{max-width:10rem}
 .ftool-f>.fsel .fmulti-s{font-size:var(--fs-2)}
 .fmenu{position:absolute;top:calc(100% + .35rem);inset-inline-start:0;z-index:60;
   min-width:max(100%, var(--menu-min));max-width:min(300px,80vw);width:max-content;
@@ -6562,18 +6578,20 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    `align-items:center` keeps the child at its natural length, and
    `margin:auto` centers it without clipping its start if it grows long
    (unlike `justify-content`). */
-.aicard.aishut{padding:var(--pad);display:flex;align-items:flex-start;justify-content:flex-start;overflow:auto;
+.aicard.aishut{padding:var(--pad);display:flex;align-items:center;justify-content:center;overflow:auto;
   scrollbar-width:thin;scrollbar-color:rgba(var(--edgeC),.2) transparent}
-.aishut-c{display:flex;flex-direction:column;align-items:flex-start;text-align:start;
-  gap:var(--sp-4);max-width:28rem}
+/* 17 Oct · on the client's comment · before its first run the card is an invitation, not a card among
+   cards: the leaf, the title, the glimpse and the button stand in one centered column, the leaf larger */
+.aishut-c{display:flex;flex-direction:column;align-items:center;text-align:center;
+  gap:var(--sp-4);max-width:28rem;margin-inline:auto}
 .badge-44{width:44px;height:44px}
 /* 11 Oct · audit P05 (108 pages) · the leaf sits in a 44px box at 82% and the glyph has its own
    margin, so its drawn edge was 10px inside the title's start edge. Optical alignment: the box
    moves out by exactly that, so the leaf's edge and the text edge are one line. */
-.aishut-c>.badge-44{margin-inline-start:calc(-1 * (var(--sp-3) + var(--sp-1)))}
+.aishut-c>.badge-44{inline-size:var(--sp-11);block-size:var(--sp-11);border-radius:var(--r1)}
 .aishut-t{font-family:var(--fd);font-weight:600;font-size:var(--fs-4);line-height:var(--lh-text);
   color:var(--t1);margin:var(--sp-1) 0 0}
-.aishut-m{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;justify-content:flex-start}
+.aishut-m{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;justify-content:center}
 /* The preview clips at three lines: the card stays short before it sticks, and
    a long paragraph would push the button out of view. */
 /* No divider line: the poster is four things in one centered column — spark,

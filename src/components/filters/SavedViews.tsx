@@ -54,10 +54,12 @@ export function SavedViews({
         className={`fchip${active ? ' on' : ''}`}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={active ? active.name : 'الوضع المحفوظ'}
+        title={active ? active.name : 'الوضع المحفوظ'}
         onClick={() => setOpen((x) => !x)}
       >
         <Icon name={icons.pin} size="sm" />
-        {active ? active.name : 'الوضع المحفوظ'}
+        <span className="tb-l">{active ? active.name : 'الوضع المحفوظ'}</span>
         {!active && views.length > 0 && <b className="num">{views.length}</b>}
       </button>
 

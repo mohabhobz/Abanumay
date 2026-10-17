@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { useSyncExternalStore } from 'react'
 import { dayOf, stampNow } from '@/data/clock'
 import { docTitle, moneyOf } from '@/data/mock/budgetTree'
@@ -171,7 +172,7 @@ const apply = (o: Op) => {
 }
 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked */ } }
-const run = (o: Op) => { ops.push(o); apply(o); save(); emit() }
+const run = (o: Op) => { ops.push(o); apply(o); save(); emit(); done(o.op, 'الميزانية') }
 
 try { ops = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Op[] } catch { ops = [] }
 for (const o of ops) apply(o)

@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { SEED_AT } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
 import { allBudgets } from '@/data/mock/chain'
@@ -1276,6 +1277,7 @@ const run = (o: Op) => {
   apply(o)
   save()
   emit()
+  done(o.op, 'الميزانية')
 }
 
 /* ── Seed · what the fixture already carries ── */

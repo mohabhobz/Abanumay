@@ -23,3 +23,18 @@
 /* An entity session on its own record · the staff rail gives way to a small bar back to its portal */
 .xs-etop{position:fixed;z-index:20;inset-block-end:var(--sp-4);inset-inline-end:var(--sp-4);
   display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2);border-radius:var(--r2)}
+
+/* 17 Oct · on the client's comment · every action answers · the toast is a floating surface (it
+   covers, so --g-pop), small (--el-2), a capsule like a tag (--rp) · it sits above the decision bar
+   and the floating assistant, centered, and leaves on its own */
+.toasts{position:fixed;z-index:90;inset-inline:0;inset-block-end:calc(var(--dock-h, var(--sp-10)) + var(--sp-8));
+  display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);pointer-events:none}
+.toast{pointer-events:auto;display:inline-flex;align-items:center;gap:var(--sp-3);min-block-size:var(--h-md);
+  padding-block:var(--pb-md);padding-inline:var(--sp-5);border-radius:var(--rp);border:0;cursor:pointer;
+  background:var(--g-pop);backdrop-filter:var(--mat-3);box-shadow:var(--el-2),inset 0 0 0 1px var(--ctl-line);
+  color:var(--t1);font-size:var(--fs-3);line-height:var(--lh-md);animation:airise var(--mo-3) var(--ease-out) both}
+.toast>svg{flex:none}
+.toast-ok>svg{color:var(--ok-ink)}
+.toast-warn>svg{color:var(--warn-ink)}
+.toast-bad>svg{color:var(--no-ink)}
+.toast-info>svg{color:var(--t2)}

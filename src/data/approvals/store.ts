@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { actsAs } from '@/data/behalf'
 import { asOf } from '@/data/clock'
 import { typeFloorBlock } from '@/data/shared/decisions'
@@ -868,7 +869,7 @@ export function sessionItemBlockers(s: Session, it: SessionItem, outcome: Outcom
 const save = () => {
   try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ }
 }
-const run = (o: Op) => { o.seq = nextSeq(); ops.push(o); apply(o); save(); emit() }
+const run = (o: Op) => { o.seq = nextSeq(); ops.push(o); apply(o); save(); emit(); done(o.op, 'الاعتماد') }
 
 /* ── Seed · the projects already on the path carry the recommendations that put them there ── */
 

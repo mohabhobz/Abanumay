@@ -4,6 +4,7 @@ import { EvidenceBlock } from './EvidenceBlock'
 import { md } from './md'
 import type { AiMessageModel } from './types'
 import { AbLeaf } from '@/components/soul'
+import { toast } from '@/data/feedback'
 
 /**
  * Assistant message.
@@ -19,6 +20,10 @@ export function AiMessage({
 }) {
   const [openThink, setOpenThink] = useState(true)
   const [copied, setCopied] = useState(false)
+  /* 17 Oct · every press answers · a rating is kept and said, a regenerate asks again, an action
+     is handed back to the assistant as the user's next request */
+  const [rated, setRated] = useState<'up' | 'down' | null>(null)
+  const rate = (r: 'up' | 'down') => { setRated(r); toast(r === 'up' ? 'شكرًا · سُجّل أن الإجابة مفيدة' : 'شكرًا · سُجّل أن الإجابة غير مفيدة، وسيُراعى ذلك في التحسين', 'info') }
 
   const thinking = message.state === 'think'
   const typing = message.state === 'type'
@@ -33,6 +38,7 @@ export function AiMessage({
   const copy = () => {
     navigator.clipboard?.writeText(message.text ?? '').catch(() => {})
     setCopied(true)
+    toast('نُسخت الإجابة')
     setTimeout(() => setCopied(false), 1400)
   }
 
@@ -96,19 +102,19 @@ export function AiMessage({
       {done && (
         <div className="cact rise">
           {message.actions?.map((a) => (
-            <button className={`btn ${a.kind} btn-sm`} key={a.label}>{a.label}</button>
+            <button type="button" className={`btn ${a.kind} btn-sm`} key={a.label} onClick={() => onFollow(a.label)}>{a.label}</button>
           ))}
           <span className="cact-sp" />
           <button className="iact" onClick={copy} title="نسخ" aria-label="نسخ">
             <Icon name={copied ? icons.check : icons.copy} size="sm" />
           </button>
-          <button className="iact" title="أعد توليد الإجابة" aria-label="أعد توليد الإجابة">
+          <button type="button" className="iact" title="أعد توليد الإجابة" aria-label="أعد توليد الإجابة" onClick={() => onFollow('أعد صياغة الإجابة السابقة بطريقة أوضح')}>
             <Icon name={icons.redo} size="sm" />
           </button>
-          <button className="iact" title="إجابة مفيدة" aria-label="إجابة مفيدة">
+          <button type="button" className={`iact${rated === 'up' ? ' on' : ''}`} aria-pressed={rated === 'up'} title="إجابة مفيدة" aria-label="إجابة مفيدة" onClick={() => rate('up')}>
             <Icon name={icons.up} size="sm" />
           </button>
-          <button className="iact" title="إجابة غير مفيدة" aria-label="إجابة غير مفيدة">
+          <button type="button" className={`iact${rated === 'down' ? ' on' : ''}`} aria-pressed={rated === 'down'} title="إجابة غير مفيدة" aria-label="إجابة غير مفيدة" onClick={() => rate('down')}>
             <Icon name={icons.downv} size="sm" />
           </button>
         </div>

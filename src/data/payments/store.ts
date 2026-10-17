@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { seedWorkHours } from '@/lib/sla'
 import { liveClock } from '@/data/stageClock'
 import { EXT_CLOSE_STAGE } from '@/data/mock/taxonomy'
@@ -809,7 +810,7 @@ function applyOp(o: Op) {
 }
 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ } }
-const run = (o: Op) => { ops.push(o); apply(o); refreshAll(); save(); emit() }
+const run = (o: Op) => { ops.push(o); apply(o); refreshAll(); save(); emit(); done(o.op, 'الصرف') }
 
 /** What a record of the seed carries · the requirements before v3 named them per payment */
 export const REQUEST_NEEDS: { kind: string; label: string }[] = [

@@ -1,3 +1,4 @@
+import { Toaster } from '@/components/feedback/Toaster'
 import { Navigate, Outlet, Route, BrowserRouter, Routes } from 'react-router-dom'
 import LoginPage from '@/features/auth/LoginPage'
 import ProjectPage from '@/features/projects/ProjectPage'
@@ -84,6 +85,8 @@ import { PortalGate } from './PortalGate'
 export default function App() {
   return (
     <BrowserRouter>
+      {/* 17 Oct · every action answers · one toaster for the whole app */}
+      <Toaster />
       <Routes>
         <Route path={ROUTES.login} element={<LoginPage />} />
         <Route path={ROUTES.forgot} element={<ForgotPage />} />

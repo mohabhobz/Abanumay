@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { liveClock } from '@/data/stageClock'
 import { useSyncExternalStore } from 'react'
 import { actDay, asOf } from '@/data/clock'
@@ -387,7 +388,7 @@ export const planDecisionEvents = (projectId: string): LogEvent[] =>
   }))
 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ } }
-const run = (o: Op) => { ops.push(o); apply(o); logOp(o); save(); emit() }
+const run = (o: Op) => { ops.push(o); apply(o); logOp(o); save(); emit(); done(o.op, 'الخطط') }
 
 /* ── Seed · projects approved with «يتطلب خطة» and no plan yet get their record ── */
 

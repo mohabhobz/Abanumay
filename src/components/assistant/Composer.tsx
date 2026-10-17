@@ -2,6 +2,7 @@ import { useEffect, useRef, type RefObject } from 'react'
 import { Icon, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { Disclaimer } from './Disclaimer'
+import { toast } from '@/data/feedback'
 
 export interface ComposerProps {
   value: string
@@ -67,9 +68,17 @@ export function Composer({
         />
 
         <div className="cbox-b">
-          <button className="iact" title="إرفاق ملف" aria-label="إرفاق ملف">
+          {/* 17 Oct · the attach button opens the picker and the file joins the message by name */}
+          <label className="iact upbtn" title="إرفاق ملف" aria-label="إرفاق ملف">
             <Icon name={icons.clip} size="sm" />
-          </button>
+            <input type="file" onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (!f) return
+              onChange(`${value ? `${value} ` : ''}[مرفق: ${f.name}]`)
+              toast(`أُرفق «${f.name}» · يُرسل مع رسالتك`)
+              e.target.value = ''
+            }} />
+          </label>
           {busy ? (
             <button className="go stop" onClick={onStop} title="إيقاف" aria-label="إيقاف">
               <span className="sq" />

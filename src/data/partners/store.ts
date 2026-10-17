@@ -1,3 +1,4 @@
+import { done } from '@/data/feedback'
 import { DECISIONS } from '@/data/shared/decisions'
 import { useSyncExternalStore } from 'react'
 import { projectRows, portfolioRows, subRows } from '@/data/mock/projects'
@@ -1473,7 +1474,7 @@ export function pfReqIssue(pf: PortfolioRec, no: number, amount: number): string
 }
 
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ops)) } catch { /* storage blocked · state holds for this visit */ } }
-const run = (o: Op) => { ops.push(o); liveRun = true; apply(o); save(); emit() }
+const run = (o: Op) => { ops.push(o); liveRun = true; apply(o); save(); emit(); done(o.op, 'الشركاء') }
 
 /* ── Seed · the partners, the fixture's portfolios and the Ehsan project ── */
 

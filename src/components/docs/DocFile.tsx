@@ -1,3 +1,4 @@
+import { downloadDoc } from '@/lib/download'
 import { useState } from 'react'
 import { Icon, icons } from '@/components/ui'
 import { DocThumb } from './DocThumb'
@@ -69,7 +70,7 @@ export function DocDownload({ name }: { name: string }) {
       className="dfile-dl"
       download={name}
       href="#"
-      onClick={(e) => e.preventDefault()}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); downloadDoc(name) }}
       title="تنزيل"
       aria-label={`تنزيل ${name}`}
     >

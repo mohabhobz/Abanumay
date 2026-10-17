@@ -73,10 +73,12 @@ export function ExportMenu({
           className={`fchip${open ? ' on' : ''}`}
           aria-haspopup="menu"
           aria-expanded={open}
+          aria-label="تصدير"
+          title="تصدير"
           onClick={() => setOpen((x) => !x)}
         >
           <Icon name={icons.export} size="sm" />
-          تصدير
+          <span className="tb-l">تصدير</span>
           {count ? <b className="num">{count}</b> : null}
         </button>
 
