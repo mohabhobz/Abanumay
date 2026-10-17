@@ -1,5 +1,5 @@
-import { AgentDecide } from '@/components/assistant/AgentDecide'
-import { agentDecide } from '@/data/shared/agent'
+import { NextStep } from '@/components/assistant/NextStep'
+import { suggestNext } from '@/data/shared/agent'
 import { closeScore } from '@/data/shared/ai'
 import { Related } from '@/components/related/Related'
 import { useMemo, useRef, useState } from 'react'
@@ -215,13 +215,13 @@ export default function ClosePage() {
     setNote('')
   }
 
-  /* 17 Oct · agentic · the report's own gaps decide between approving and returning */
-  const agentPlan = agentDecide(actions, {
+  /* 17 Oct · the assistant suggests · the report's own gaps decide between approving and returning */
+  const nextPlan = suggestNext(actions, {
     issues: c.stage === 'supervisor' ? reportBlockers(c).map((x) => `ينقص في التقرير: ${x}`) : [],
     stops: (a) => closeStops(c, a),
     good: [`درجة الإغلاق ${closeScore(c).score} من 100`, gaps.every((g) => g.actual !== null) ? 'كل المؤشرات لها قيمة فعلية' : ''],
   })
-  const agentExec = (a: CloseAct, n: string) => {
+  const nextExec = (a: CloseAct, n: string) => {
     const out = actOnClosing(c.id, a, n, user.name, role.key)
     if (!out.length) { setFresh(a.act === 'return' ? null : { step: at, sealed: evalApproved(c) }); setNote('') }
     return out
@@ -282,9 +282,6 @@ export default function ClosePage() {
               />
             </div>
           </header>
-          {actions.length > 0 && (
-            <AgentDecide module="closing" record={{ ref: c.projectName, href: ROUTES.closing(c.id) }} plan={agentPlan} user={user.name} role={role.title} exec={agentExec} />
-          )}
 
           {/* Note: the entity needs to know the institution is comparing, not just receiving. This
               is the most likely misunderstanding here: the entity uploads its actual figures and
@@ -515,6 +512,7 @@ export default function ClosePage() {
             <div className="col aiside" ref={aside}>
               <AnalysisCard
                 title="قراءة التقرير الختامي"
+                suggest={actions.length > 0 ? <NextStep s={nextPlan} exec={nextExec} /> : undefined}
                 cta="اقرأ التقرير"
                 empty="لا توجد ملاحظات على هذا الطلب حاليًا."
                 readings={readings}

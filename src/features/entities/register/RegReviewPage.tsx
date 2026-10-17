@@ -1,5 +1,5 @@
-import { AgentDecide } from '@/components/assistant/AgentDecide'
-import { agentDecide } from '@/data/shared/agent'
+import { NextStep } from '@/components/assistant/NextStep'
+import { suggestNext } from '@/data/shared/agent'
 import { textIssues } from '@/lib/textCheck'
 import { ibanValid } from '@/lib/iban'
 import { useMemo, useState } from 'react'
@@ -139,10 +139,10 @@ export default function RegReviewPage() {
   /* v3 · 2.4.7 · a format error blocks too · and 2.4.6 · the documents' legibility confirmed */
   const blocked = missingDocs.length > 0 || Boolean(clash) || stale.length > 0 || badIban.length > 0 || dups.length > 0
     || badFormat.length > 0 || (open && !legible)
-  /* 17 Oct · agentic · the registration's own checks decide between approving and returning ·
+  /* 17 Oct · the assistant suggests · the registration's own checks decide between approving and returning ·
      a rejection (archives the entity) stays the person's */
   type RegAct = { label: string; kind: string }
-  const agentPlan = agentDecide<RegAct>([
+  const nextPlan = suggestNext<RegAct>([
     ...(mayApprove ? [{ label: 'اعتماد وتفعيل', kind: 'btn-p' }] : []),
     ...(mayReturn ? [{ label: 'إعادة للاستكمال', kind: 'btn-2' }] : []),
   ].filter(() => open), {
@@ -157,7 +157,7 @@ export default function RegReviewPage() {
     stops: (a) => (a.label === 'اعتماد وتفعيل' ? [...(!legible ? ['تأكيد وضوح الوثائق عمل المراجع'] : []), ...(r.banks.every((b) => bankNo[b.id]) ? ['لا حساب بنكيًا مقبولًا'] : [])] : []),
     good: [`${r.docs.length} مستندات مرفقة`, 'الحقول بصيغها الصحيحة', 'لا تكرار مع جهة مسجّلة'],
   })
-  const agentExec = (a: RegAct, n: string) => {
+  const nextExec = (a: RegAct, n: string) => {
     if (a.label === 'إعادة للاستكمال') { returnRegistration(r.id, n, flag, me); setTaken('return') }
     else { decideRegistration(r.id, 'approve', n, bankNo, me); setTaken('approve') }
     return []
@@ -208,9 +208,6 @@ export default function RegReviewPage() {
             <Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag>
           </header>
 
-          {open && (mayApprove || mayReturn) && (
-            <AgentDecide module="entities" record={{ ref: r.name, href: ROUTES.entityRequest(r.id) }} plan={agentPlan} user={me} role={roleByKey(role).title} exec={agentExec} />
-          )}
 
           <div className="g2">
             <div className="col">
@@ -528,6 +525,7 @@ export default function RegReviewPage() {
 
             <AssistantAside
               title="مراجعة طلب التسجيل"
+              suggest={open && (mayApprove || mayReturn) ? <NextStep s={nextPlan} exec={nextExec} /> : undefined}
               cta="راجع الطلب"
               empty="لا مانع من الاعتماد · الترخيص غير مكرَّر والمستندات مكتملة وسارية."
               readings={[

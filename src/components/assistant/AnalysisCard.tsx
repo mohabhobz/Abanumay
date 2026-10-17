@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Glass, Icon, icons } from '@/components/ui'
 import { MetricText, ReadingBlock, ReadingPeek } from './ReadingBlock'
 import { useOnScreen } from '@/hooks/useOnScreen'
@@ -35,6 +35,11 @@ export interface AnalysisCardProps {
    * exist is worse than no button. The card there is limited to the reading alone.
    */
   ask?: boolean
+  /**
+   * 17 Oct · «الحل المقترح» — the best next step for this seat and its options (`NextStep`).
+   * It sits inside the assistant, open or closed: the first thing the employee reads is what to do.
+   */
+  suggest?: ReactNode
 }
 
 /**
@@ -56,7 +61,7 @@ export interface AnalysisCardProps {
  * state becomes real waiting, not a timer.
  */
 export function AnalysisCard({
-  readings, onAsk, title: heading = 'تحليلات المشروع السريعة', cta, ask = true, empty,
+  readings, onAsk, title: heading = 'تحليلات المشروع السريعة', cta, ask = true, empty, suggest,
 }: AnalysisCardProps) {
   const card = useRef<HTMLDivElement>(null)
   const onScreen = useOnScreen(card)
@@ -103,7 +108,9 @@ export function AnalysisCard({
           {/* Glimpse of the most important reading: "where does this stand and what does it need"
               is the first question asked, so it reads with no click, and the detail is computed on
               request. */}
-          {list[0] && (
+          {suggest}
+
+          {!suggest && list[0] && (
             <p className="aishut-p">
               {list[0].metric && (
                 <b>
@@ -153,6 +160,8 @@ export function AnalysisCard({
           <Icon name={open ? icons.chevronUp : icons.chevronDown} size="sm" />
         </button>
       </div>
+
+      {suggest}
 
       {open && thinking && (
         <div className="skel" aria-hidden="true">

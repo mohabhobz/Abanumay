@@ -1,5 +1,5 @@
-import { AgentDecide } from '@/components/assistant/AgentDecide'
-import { agentDecide } from '@/data/shared/agent'
+import { NextStep } from '@/components/assistant/NextStep'
+import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
 import { mayApprovePlan } from '@/data/plans/auth'
 import { useMemo, useRef, useState } from 'react'
@@ -220,13 +220,13 @@ export default function PlanPage() {
     setTick((t) => t + 1)
   }
 
-  /* 17 Oct · agentic · the plan's own checks decide · a gated exit needs a clean plan */
-  const agentPlan = agentDecide(actions, {
+  /* 17 Oct · the assistant suggests · the plan's own checks decide · a gated exit needs a clean plan */
+  const nextPlan = suggestNext(actions, {
     issues: issues.map((x) => x.say),
     stops: (x) => (x.gated && issues.length ? ['الخطة فيها مخالفات'] : []),
     good: [`${p.phases.length} مراحل بأنشطتها`, cost <= grant ? 'التكلفة ضمن قيمة المنحة' : ''],
   })
-  const agentExec = (x: PlanAction, n: string) => {
+  const nextExec = (x: PlanAction, n: string) => {
     const out = x.key === 'send' ? (sendPlanFor(p.id, 'supervisor', who) ?? []) : reviewPlan(p.id, x.key, n, who, role.key)
     if (!out?.length) { setNote(''); setTick((t) => t + 1) }
     return out ?? []
@@ -280,9 +280,6 @@ export default function PlanPage() {
               />
             </div>
           </header>
-          {!asEntity && actions.length > 0 && (
-            <AgentDecide module="plans" record={{ ref: `خطة ${p.projectName}`, href: ROUTES.plan(p.id) }} plan={agentPlan} user={user.name} role={role.title} exec={agentExec} />
-          )}
           {said && <p className="sub cnote tcen" aria-live="polite">{said}</p>}
 
           {/* Note: the entity needs to know that "done" isn't "counted". This is the biggest
@@ -539,6 +536,7 @@ export default function PlanPage() {
             {/* Side column - one sticky card, like the project page. */}
             <div className="col aiside" ref={aside}>
               <AnalysisCard
+                suggest={!asEntity && actions.length > 0 ? <NextStep s={nextPlan} exec={nextExec} /> : undefined}
                 title="قراءة الخطة"
                 cta="اقرأ الخطة"
                 empty="لا توجد ملاحظات على هذه الخطة الآن."

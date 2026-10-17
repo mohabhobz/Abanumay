@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { AnalysisCard, type Reading } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
 
@@ -12,8 +12,8 @@ import { useFillHeight } from '@/hooks/useFillHeight'
    component so a page can't drift from it. */
 
 export function AssistantAside({
-  readings, title, cta, empty, ask = true,
-}: { readings: Reading[]; title?: string; cta?: string; empty?: string; ask?: boolean }) {
+  readings, title, cta, empty, ask = true, suggest,
+}: { readings: Reading[]; title?: string; cta?: string; empty?: string; ask?: boolean; suggest?: ReactNode }) {
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
   return (
@@ -24,6 +24,7 @@ export function AssistantAside({
         cta={cta}
         empty={empty}
         ask={ask}
+        suggest={suggest}
         onAsk={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
       />
     </div>

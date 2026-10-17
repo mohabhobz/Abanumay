@@ -1,5 +1,5 @@
-import { AgentDecide } from '@/components/assistant/AgentDecide'
-import { agentDecide } from '@/data/shared/agent'
+import { NextStep } from '@/components/assistant/NextStep'
+import { suggestNext } from '@/data/shared/agent'
 import { rowGo } from '@/lib/rowGo'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { FieldSelect, Glass, Head, KV, Money, Tabs, Tag } from '@/components/ui'
@@ -150,7 +150,6 @@ export default function PartnersPage() {
                 <Head title="عمليات منصات الجهات الخارجية" meta={<span className="sub">مراجعة المستندات وتأكيد الحالة · الإدارة المالية</span>} />
                 <PayList list={fq.pays} finance={role.key === 'finance'} />
               </Glass>
-              {role.key === 'finance' && <EhsanAgent pays={fq.pays} user={user.name} role={role.title} />}
               {/* Cross · each operation's documents read against its amount, number and date */}
               {fq.pays.some((x) => x.state === 'review') && (
                 <AnalysisCard
@@ -158,6 +157,7 @@ export default function PartnersPage() {
                   cta="اقرأ المستندات"
                   ask={false}
                   onAsk={() => undefined}
+                  suggest={role.key === 'finance' ? <EhsanNext pays={fq.pays} user={user.name} /> : undefined}
                   readings={fq.pays.filter((x) => x.state === 'review').map((x) => readFiles(`ai-eh-${x.id}`, `العملية ${x.ref}`, x.docs, { amount: x.amount, ref: x.ref, date: x.paidAt }))}
                 />
               )}
@@ -300,24 +300,27 @@ function ExternalTab() {
   )
 }
 
-/* 17 Oct · agentic · the assistant reads each operation's documents against its amount, number and
-   date, then confirms the clean ones and returns the rest with what it found */
-function EhsanAgent({ pays, user, role }: { pays: ReturnType<typeof financeQueue>['pays']; user: string; role: string }) {
+/* 17 Oct · the assistant reads each operation's documents against its amount, number and date and
+   suggests confirming the clean ones and returning the rest with what it found · the officer presses it */
+function EhsanNext({ pays, user }: { pays: ReturnType<typeof financeQueue>['pays']; user: string }) {
   const due = pays.filter((x) => x.state === 'review')
   const read = due.map((x) => ({ x, bad: readFiles(`ai-eh-${x.id}`, x.ref, x.docs, { amount: x.amount, ref: x.ref, date: x.paidAt }).danger ?? [] }))
   const ok = read.filter((r) => !r.bad.length)
   const back = read.filter((r) => r.bad.length)
-  type EhAct = { label: string; kind: string }
-  const plan = agentDecide<EhAct>(due.length ? [{ label: `مراجعة ${due.length} عمليات: تأكيد ${ok.length} · ردّ ${back.length} للجهة`, kind: 'btn-p' }] : [], {
+  type EhAct = { label: string; kind: string; go: 'all' | 'ok' }
+  const s = suggestNext<EhAct>(due.length ? [
+    { label: `تأكيد ${ok.length} وردّ ${back.length} للجهة بملاحظاتها`, kind: 'btn-p', go: 'all' },
+    ...(back.length && ok.length ? [{ label: `تأكيد السليمة فقط (${ok.length})`, kind: 'btn-2', go: 'ok' as const }] : []),
+  ] : [], {
     issues: [],
     good: [...ok.slice(0, 2).map((r) => `${r.x.ref}: المستندات تطابق المبلغ والمرجع`), ...back.slice(0, 2).map((r) => `${r.x.ref}: ${r.bad[0]}`)],
   })
-  const exec = () => {
+  const exec = (a: EhAct) => {
     const out: string[] = []
-    for (const r of ok) out.push(...reviewEhsanPay(r.x.id, 'confirm', 'أكّده مساعد أبانمي · المستندات مطابقة', user))
-    for (const r of back) out.push(...reviewEhsanPay(r.x.id, 'return', `أعاده مساعد أبانمي: ${r.bad.join(' · ')}`, user))
+    for (const r of ok) out.push(...reviewEhsanPay(r.x.id, 'confirm', 'المستندات مطابقة للمبلغ والمرجع والتاريخ', user))
+    if (a.go === 'all') for (const r of back) out.push(...reviewEhsanPay(r.x.id, 'return', r.bad.join(' · '), user))
     return out
   }
   if (!due.length) return null
-  return <AgentDecide module="partners" record={{ ref: 'عمليات منصات الجهات الخارجية', href: ROUTES.partnersTab('finance') }} plan={plan} user={user} role={role} exec={exec} />
+  return <NextStep s={s} exec={exec} />
 }

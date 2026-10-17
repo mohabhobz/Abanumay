@@ -1,5 +1,5 @@
-import { AgentDecide } from '@/components/assistant/AgentDecide'
-import { agentDecide } from '@/data/shared/agent'
+import { NextStep } from '@/components/assistant/NextStep'
+import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
 import { useState } from 'react'
 import { readClauses } from '@/data/shared/ai'
@@ -173,10 +173,10 @@ function AgreementView({ a }: { a: AgreementRow }) {
     if (!out.length) setNote('')
   }
 
-  /* 17 Oct · agentic · the assistant decides this seat's exit on the agreement's own checks */
-  const agentActs = actions.filter((x) => x.act !== 'entitySign')
-  const agentPlan = agentDecide(agentActs, { issues: issues.map((x) => x.say), good: [hints.length ? '' : 'لا ملاحظات على نص البنود', gap === 0 ? 'القيمة مطابقة للمحجوز في الميزانية' : '', balance.balanced ? 'الدفعات متوازنة مع قيمة المنحة' : ''] })
-  const agentExec = (x: AgrAction, n: string) => {
+  /* 17 Oct · the assistant suggests the next step from the agreement's own checks · the employee picks */
+  const nextActs = actions.filter((x) => x.act !== 'entitySign')
+  const nextPlan = suggestNext(nextActs, { issues: issues.map((x) => x.say), good: [hints.length ? '' : 'لا ملاحظات على نص البنود', gap === 0 ? 'القيمة مطابقة للمحجوز في الميزانية' : '', balance.balanced ? 'الدفعات متوازنة مع قيمة المنحة' : ''] })
+  const nextExec = (x: AgrAction, n: string) => {
     const out = x.act === 'submit' ? (dirty && saveDraft(), submitAgreement(a.id, user.name)) : actOnAgreement(a.id, x.act, n, user.name)
     if (!out.length) setNote('')
     return out
@@ -219,9 +219,6 @@ function AgreementView({ a }: { a: AgreementRow }) {
               <StepArc steps={ladder} compact={mobile} aria={`مسار اعتماد الاتفاقية، ${center.t}`} holderKey={center.k} holder={center.t} rest={center.rest} />
             </div>
           </header>
-          {!asEntity && agentActs.length > 0 && (
-            <AgentDecide module="agreements" record={{ ref: `${a.id} · ${a.projectName}`, href: ROUTES.agreement(a.id) }} plan={agentPlan} user={user.name} role={role.title} exec={agentExec} />
-          )}
 
           <div className="prow">
             <Tag tone={heat === 'ok' ? (a.stage === 'active' ? 'ok' : a.stage === 'returned' ? 'warn' : 'mute') : HEAT_TONE[heat]}>{agrStageSay(a)}</Tag>
@@ -418,6 +415,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
 
             <AssistantAside
               title="مراجعة الاتفاقية"
+              suggest={!asEntity && nextActs.length > 0 ? <NextStep s={nextPlan} exec={nextExec} /> : undefined}
               cta="راجع الاتفاقية"
               empty="لا ملاحظات · الاتفاقية مطابقة لبيانات المشروع والجدول."
               ask={!asEntity}

@@ -1,5 +1,5 @@
-import { AgentDecide } from '@/components/assistant/AgentDecide'
-import { agentDecide } from '@/data/shared/agent'
+import { NextStep } from '@/components/assistant/NextStep'
+import { suggestNext } from '@/data/shared/agent'
 import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -74,14 +74,14 @@ export default function UpdateReviewPage() {
   const blocked = dups.length > 0 || badIban.length > 0 || (needsRead && !legible)
   const open = u.state === 'review'
   const deciders = ENTITY_RULES.updateBy.map((k) => roleByKey(k).title).join(' أو ')
-  /* 17 Oct · agentic · duplicates and a bad IBAN return it · a clean update is applied */
+  /* 17 Oct · the assistant suggests · duplicates and a bad IBAN return it · a clean update is applied */
   type UpdAct = { label: string; kind: string }
-  const agentPlan = agentDecide<UpdAct>(open && may ? [{ label: 'اعتماد وتطبيق', kind: 'btn-p' }, { label: 'إعادة للاستكمال', kind: 'btn-2' }] : [], {
+  const nextPlan = suggestNext<UpdAct>(open && may ? [{ label: 'اعتماد وتطبيق', kind: 'btn-p' }, { label: 'إعادة للاستكمال', kind: 'btn-2' }] : [], {
     issues: [...dups.map((d) => `مكرر مع سجل آخر: ${d.label}`), ...badIban.map((b) => `آيبان غير صحيح: ${b.iban}`)],
     stops: (a) => (a.label === 'اعتماد وتطبيق' && needsRead && !legible ? ['تأكيد وضوح الوثائق المجدَّدة عمل المراجع'] : []),
     good: [`${u.changes.length} تعديلات مقابل ملف الجهة`, 'لا تكرار مع جهة أخرى'],
   })
-  const agentExec = (a: UpdAct, n: string) => {
+  const nextExec = (a: UpdAct, n: string) => {
     decideUpdate(u.id, a.label === 'اعتماد وتطبيق' ? 'approve' : 'return', n, me, bankNo)
     return []
   }
@@ -103,9 +103,6 @@ export default function UpdateReviewPage() {
             <Tag tone="mute">{UPD_STATE_SAY[u.state]}</Tag>
           </header>
 
-          {open && may && (
-            <AgentDecide module="entities" record={{ ref: `تحديث ${u.entityName}`, href: `${ROUTES.entityUpdates}/${u.id}` }} plan={agentPlan} user={me} role={roleByKey(role).title} exec={agentExec} />
-          )}
 
           <div className="g2">
             <div className="col">
@@ -227,6 +224,7 @@ export default function UpdateReviewPage() {
 
             <AssistantAside
               title="مراجعة طلب التحديث"
+              suggest={open && may ? <NextStep s={nextPlan} exec={nextExec} /> : undefined}
               cta="راجع الطلب"
               empty="لا ملاحظات · التعديلات لا تتعارض مع بيانات جهات أخرى."
               readings={[

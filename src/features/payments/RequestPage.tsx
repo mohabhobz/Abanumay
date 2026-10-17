@@ -1,5 +1,5 @@
-import { AgentDecide } from '@/components/assistant/AgentDecide'
-import { agentDecide } from '@/data/shared/agent'
+import { NextStep } from '@/components/assistant/NextStep'
+import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
 import { useMemo, useState } from 'react'
 import { readFiles, readNeeds } from '@/data/shared/ai'
@@ -161,13 +161,13 @@ export default function RequestPage() {
   const bankOk = r.bank.active
   const actions = payActions(r, role.key, asEntity)
   /* Cross · the attachments read against the request's amount */
-  /* 17 Oct · agentic · the assistant picks this seat's exit itself and can run it */
-  const agentPlan = agentDecide(actions, {
+  /* 17 Oct · the assistant suggests this seat's next step · the employee picks it inside the assistant */
+  const nextPlan = suggestNext(actions, {
     issues: r.state === 'supervisor' || r.state === 'eligible' ? readNeeds(r).danger?.map((d) => `ينقص مرفق: ${d}`) ?? [] : r.state === 'manager' || r.state === 'exec' ? blocked.map((c) => c.label) : [],
     stops: (a) => payStops(r, a.act, Math.min(r.asked, r.due)),
     good: [`${r.checks.filter((c) => c.ok).length} من ${r.checks.length} فحوص سليمة`, r.asked <= r.due ? 'المبلغ ضمن الدفعة المعتمدة' : '', bankOk ? 'الحساب البنكي نشط' : ''],
   })
-  const agentExec = (a: PayAction, n: string) => {
+  const nextExec = (a: PayAction, n: string) => {
     const out = actOnPay(r.id, a.act, n, user.name, role.key, undefined, a.needsAmount ? Math.min(r.asked, r.due) : undefined)
     if (!out.length) setNote('')
     return out
@@ -237,9 +237,6 @@ export default function RequestPage() {
               <Steps items={ladder} flow="ladder" />
             </div>
           </header>
-          {actions.length > 0 && (
-            <AgentDecide module="payments" record={{ ref: `الدفعة ${r.no} · ${r.projectName}`, href: ROUTES.payment(r.id) }} plan={agentPlan} user={user.name} role={role.title} exec={agentExec} />
-          )}
 
           {/* Rule 15 - a closed request states that it's closed, with its log remaining beneath it. */}
           {r.state === 'closed' && (
@@ -656,7 +653,7 @@ export default function RequestPage() {
               </Glass>
             </div>
 
-            <AssistantAside title="قراءة الدفعة" cta="اقرأ الدفعة" empty="لا ملاحظات على هذه الدفعة الآن." readings={readings} />
+            <AssistantAside suggest={actions.length > 0 ? <NextStep s={nextPlan} exec={nextExec} /> : undefined} title="قراءة الدفعة" cta="اقرأ الدفعة" empty="لا ملاحظات على هذه الدفعة الآن." readings={readings} />
           </div>
         </div>
 

@@ -1,5 +1,5 @@
-import { AgentDecide } from '@/components/assistant/AgentDecide'
-import { agentDecide } from '@/data/shared/agent'
+import { NextStep } from '@/components/assistant/NextStep'
+import { suggestNext } from '@/data/shared/agent'
 import { useAi } from '@/lib/ai/provider'
 import { useState } from 'react'
 import { expectedImpact, sessionReport } from '@/data/shared/ai'
@@ -20,7 +20,7 @@ import { CRITERIA, studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { fundingIssues } from '@/data/budget/store'
 import { fitOf } from '@/data/intake/insight'
-import { meOf, readRole, roleByKey } from '@/data/roles'
+import { meOf, readRole } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { FOLLOW_SAY, FOLLOW_TONE, followUp } from '@/data/approvals/followup'
 import {
@@ -65,14 +65,14 @@ export default function SessionPage() {
   const may = mayRecord(s.body, role) && s.state === 'planned'
   const add = awaitingSession(s.body).filter((p) => !s.items.some((i) => i.projectId === p.id))
   const decided = s.items.filter((i) => i.outcome).length
-  /* 17 Oct · agentic · the assistant builds the agenda itself from what awaits this body */
+  /* 17 Oct · the assistant suggests putting what awaits this body on the agenda · the employee presses it */
   type SesAct = { label: string; kind: string }
-  const agentPlan = agentDecide<SesAct>(may ? [{ label: `إدراج ${add.length} مشاريع منتظرة في جدول الأعمال`, kind: 'btn-p' }] : [], {
+  const nextPlan = suggestNext<SesAct>(may ? [{ label: `إدراج ${add.length} مشاريع منتظرة في جدول الأعمال`, kind: 'btn-p' }] : [], {
     issues: [],
     stops: () => (add.length ? [] : ['لا مشاريع منتظرة خارج جدول الأعمال']),
     good: add.slice(0, 3).map((p) => `${p.name} ينتظر قرار ${HOLDER_LABEL[s.body]}`),
   })
-  const agentExec = () => { add.forEach((p) => setAgenda(s.id, p.id, true)); return [] }
+  const nextExec = () => { add.forEach((p) => setAgenda(s.id, p.id, true)); return [] }
 
   return (
     <AppLayout assistantContext={assistFor.page(s.title)}>
@@ -87,9 +87,6 @@ export default function SessionPage() {
             <Tag tone={s.state === 'closed' ? 'mute' : 'warn'}>{s.state === 'closed' ? `مقفلة · ${s.closedAt ?? ''}` : 'مجدولة'}</Tag>
           </header>
 
-          {may && (
-            <AgentDecide module="projects" record={{ ref: s.title, href: ROUTES.approvalSession(s.id) }} plan={agentPlan} user={me} role={roleByKey(role).title} exec={agentExec} />
-          )}
 
           <Glass>
             <Head title="الأعضاء" />
@@ -97,7 +94,7 @@ export default function SessionPage() {
           </Glass>
 
           {/* Cross · the meeting's aggregate report and the projects' relative priority (7.4 · 6.4) */}
-          {s.items.length > 0 && <AnalysisCard title="تقرير الجلسة" cta="اقرأ الجلسة" readings={sessionReport(s)} ask={false} onAsk={() => undefined} />}
+          {(s.items.length > 0 || may) && <AnalysisCard title="تقرير الجلسة" cta="اقرأ الجلسة" readings={sessionReport(s)} ask={false} onAsk={() => undefined} suggest={may ? <NextStep s={nextPlan} exec={nextExec} /> : undefined} />}
           {s.items.length === 0 && <Glass><Empty title="جدول الأعمال فارغ." note="أضف المشاريع المحالة من القائمة أدناه." /></Glass>}
           {s.items.map((it) => <Item key={it.projectId} s={s} it={it} may={may} me={me} role={role} />)}
           {/* v3 · 13.2.6 · a portfolio on the same session · its votes, minutes and decision on its own page */}
