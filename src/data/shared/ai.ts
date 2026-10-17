@@ -19,7 +19,7 @@ import { fundingBlock, goalFunded, CYCLE } from '@/data/intake/cycle'
 import { appFlowOf, strategyOf, VERDICT_SAY, OUTCOME_SAY, type Session } from '@/data/approvals/store'
 import { linkOf } from '@/data/budget/store'
 import { expiredMandatory } from '@/data/entities/store'
-import { EHSAN_PAYS, ehMoney, pfMoney, type PortfolioRec } from '@/data/partners/store'
+import { EHSAN_PAYS, ehMoney, isLiveSub, pfMoney, type PortfolioRec } from '@/data/partners/store'
 import { HOLDER_LABEL, type Holder } from '@/data/holders'
 import { countOf, nf, NOUN, pct, units } from '@/lib/format'
 import { isDone } from '@/data/status'
@@ -457,7 +457,7 @@ export function portfolioAi(pf: PortfolioRec): Reading[] {
   const m = pfMoney(pf)
   const items = pf.items
   const t = todayIso()
-  const late = items.filter((s) => s.state === 'approved' && s.exec && s.exec.progress < 100 && pf.plan.phases.some((ph) => ph.to < t)).length
+  const late = items.filter((s) => isLiveSub(s) && s.state !== 'done' && s.exec && s.exec.progress < 100 && pf.plan.phases.some((ph) => ph.to < t)).length
   const pays = EHSAN_PAYS.filter((x) => x.target.kind !== 'project' && x.target.pfId === pf.id)
   /* Duplicates among the proposed sub-projects · same region and close names or outputs */
   const dup: string[] = []
@@ -470,8 +470,8 @@ export function portfolioAi(pf: PortfolioRec): Reading[] {
     if (common >= Math.max(2, Math.min(wa.size, wb.size) * 0.5)) dup.push(`«${a.name}» و«${b.name}»`)
   }
   const goalWords = words(pf.goals)
-  const off = items.filter((s) => s.state !== 'rejected' && goalWords.size && ![...words(`${s.name} ${s.outputs}`)].some((w) => goalWords.has(w)))
-  const progress = avg(items.filter((s) => s.state === 'approved').map((s) => s.exec?.progress ?? 0))
+  const off = items.filter((s) => s.state !== 'rejected' && s.state !== 'excluded' && goalWords.size && ![...words(`${s.name} ${s.outputs}`)].some((w) => goalWords.has(w)))
+  const progress = avg(items.filter(isLiveSub).map((s) => s.exec?.progress ?? 0))
   const phasesDone = pf.plan.phases.filter((ph) => ph.to < t).length
   const expected = pf.plan.phases.length ? (phasesDone / pf.plan.phases.length) * 100 : 0
   return [

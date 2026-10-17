@@ -543,8 +543,11 @@ export interface ProjectRow {
   type?: ProjectType
   /** Portfolio rows only · the portfolio this row opens. */
   portfolioId?: string
-  /** Support routed through a partner platform (11.2.4 · 11.4.3) · the project carries the tag */
-  platform?: 'منصة إحسان'
+  /** v3 · BPD-011 · supported through an external party · its name (the platform, here «منصة إحسان») · the
+      project carries the tag «مشروع مدعوم عبر جهة خارجية» */
+  platform?: string
+  /** v3 · 11.2.1 · the external party's internal reference record (an entity row marked `external`) */
+  externalId?: string
   /** With a strategic partner · a project of its own or a portfolio (11.2.5 · 13.2.4) */
   partnerType?: 'مستقل' | 'محفظة'
   /** v3 · 0.status.8 · the saving left at closing · recovered or returned to the line */
@@ -563,7 +566,7 @@ export interface ProjectRow {
 }
 
 /** Project type as shown in the list filter and the identity card. */
-export type ProjectType = 'مشروع عادي' | 'مشروع خارجي' | 'محفظة'
+export type ProjectType = 'مشروع عادي' | 'مشروع خارجي' | 'محفظة' | 'مشروع فرعي'
 
 /** A row in the entities list — identity plus cumulative performance. */
 export interface EntityRow {
@@ -611,6 +614,9 @@ export interface EntityRow {
   decision?: EntityDecision
   /** May submit project requests · granted on approval (2.2.17 · 2.4.18), lost with activation */
   canApply?: boolean
+  /** v3 · 11.2.1 · 11.4.1 · an external party's internal reference record · no portal account, no user,
+      no representative · its transfer details and references only */
+  external?: { transfer?: string; refs?: string; by: string; at: string }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -707,6 +713,9 @@ export interface PayRequest {
   needs?: { kind: string; label: string }[]
   /** v3 · 9.2.10 · the permit the supervisor created by hand once the payment was eligible */
   permitAt?: { at: string; by: string }
+  /** v3 · 11.2.10 · 11.4.10 · a transfer to a third party · only on a formal document that justifies it ·
+      the actual beneficiary and the reference stand on the permit */
+  payee?: { name: string; ref: string; doc: string; by: string; at: string }
   /** v3 · 9.4.24 · permits cancelled before the transfer · each with its reason */
   cancels?: { at: string; by: string; role: string; note: string }[]
   /** The entity's authorized representative, from the agreement in force (9.1.input-3). */
@@ -1010,6 +1019,14 @@ export interface FinalReport {
    * — it's another type of one.
    */
   links: { label: string; url: string }[]
+  /** v3 · 10.4.4 · the project's total value · the foundation's contribution is the grant */
+  projectValue?: number | null
+  /** v3 · 10.4.4 · the outputs agreed (from the project) and what was achieved against each */
+  outputs?: { text: string; achieved: string }[]
+  /** v3 · 10.4.4 · when the foundation funded part of the project · how its share relates to what was achieved */
+  contribution?: string
+  /** v3 · 10.4.7 · the entity used the foundation's template, or its own with the mandatory data entered here */
+  template?: 'foundation' | 'own'
 }
 
 /**
@@ -1026,6 +1043,9 @@ export interface ProjectEval {
   lessons: string
   /** Overall rating out of 5 — advisory. */
   score: number | null
+  /** v3 · 10.4.31 · the questions and weights in force when the evaluation started · rated 1–5 each ·
+      the score out of 100 is read from them · an older evaluation keeps its own */
+  criteria?: { key: string; label: string; weight: number; rating: number | null }[]
 }
 
 /**
@@ -1090,6 +1110,10 @@ export interface CloseRow {
   /** v3 · 0.status.9 · 10.9.7 · the saving, or part of the grant, redirected within the same relationship */
   redirect?: SupportRedirect
   recovery?: Recovery
+  /** v3 · 10.4.6 · detailed invoices aren't required as a rule · the authority may ask for them, with its reason */
+  invoicesAsked?: { at: string; by: string; note: string }
+  /** v3 · 10.4.32 · documented exceptional changes after the final closing */
+  exceptions?: { at: string; by: string; role: string; field: string; was: string; now: string; reason: string; decision: string; file: string }[]
 }
 
 /** A version's content · the report or the evaluation as it stood when it was sent back. */
@@ -1107,7 +1131,7 @@ export interface CloseSnapshot {
 export interface CloseFinance {
   lines: { label: string; approved: number; spent: number | null }[]
   settlements: string
-  /** Invoices the supervisor verified against the spend (10.9.7) · null until checked. */
+  /** v3 · 10.4.6 · the spend the supervisor approved from the executive financial report · null until checked */
   verified: number | null
   verifiedBy?: string
   verifiedAt?: string
@@ -1182,8 +1206,19 @@ export interface CaseRow {
   annex?: string
   /** A raise · an additional payment, or the schedule adjusted (10.9.6). */
   extra?: { amount: number; dueAt: string }
-  /** A stop after money went out · the entity's report and invoices, and the spend approved (10.9.3 · 10.9.4). */
-  settlement?: { report?: string; invoices?: string; actual: number | null; approvedBy?: string; approvedAt?: string }
+  /** A stop after money went out · the entity's executive financial report and its outputs' evidence, and
+      the spend approved (v3 · 10.9.3 · 10.9.4) · `invoices` is an older log's */
+  settlement?: { report?: string; evidence?: string; invoices?: string; actual: number | null; approvedBy?: string; approvedAt?: string }
+  /** v3 · 10.9.1 – 10.9.3 · 10.4.28 · what the decision makes of the project and its money ·
+      a stop: cancelled, distressed, or its support redirected · a cut: the difference recovered or
+      redirected · a raise: an annex on this project, or a separate project of its own */
+  outcome?: 'cancel' | 'distress' | 'redirect' | 'recover' | 'annex' | 'independent'
+  /** The redirection the decision records (purpose, decision, its file) */
+  redirect?: { purpose: string; decision: string; file: string }
+  /** v3 · 10.4.28 · the separate project the raise opened */
+  independentId?: string
+  /** Verifier · 16 Oct · the redirect the approved decision made · lands on the project at its final closing */
+  applied?: SupportRedirect
   recovery?: Recovery
   note?: string
   returnedTo?: CaseStage

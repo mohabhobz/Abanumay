@@ -19,6 +19,7 @@ import {
 import type { PayRequest } from '@/types/domain'
 import { ActionDock } from './ActionDock'
 import { PayExceptions } from './PayExceptions'
+import { PayeeCard } from './PayeeCard'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readPayRequest } from '@/data/recordReadings'
 import { PROXY_ROLES, actOnPay, grantLeft, mayResubmit, payActions, usePayments, type PayAction } from '@/data/payments/store'
@@ -296,6 +297,8 @@ export default function RequestPage() {
                   </p>
                 </Glass>
               )}
+
+              {!asEntity && <PayeeCard r={r} />}
 
               {/* The conditions blocking progress - each with its rule cited. */}
               <Glass>

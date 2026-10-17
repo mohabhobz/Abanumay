@@ -17,7 +17,7 @@ import { DECISIONS } from '@/data/shared/decisions'
    with the whole portfolio's estimate would read as a failure that is only an unclosed year. */
 import { projectRows } from './mock/projects'
 import { closeRows } from './mock/closing'
-import { PORTFOLIOS } from './partners/store'
+import { PORTFOLIOS, isLiveSub } from './partners/store'
 import { ROUTES } from '@/app/routes'
 
 export interface ImpactRow { key: string; label: string; beneficiaries: number; amount: number; projects: number }
@@ -52,12 +52,13 @@ export interface Impact {
    unit here with its own region, track and field, its goal the portfolio's, and «reached» from its
    execution report once complete (13.2.21). */
 interface Unit { id: string; name: string; region: string; track: string; field: string; goal: string; beneficiaries: number; amountGranted: number }
-const subUnits = (): (Unit & { reached: number | null })[] =>
+const subUnits = (): (Unit & { reached: number | null; noGeo: boolean })[] =>
   PORTFOLIOS.filter((pf) => pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed').flatMap((pf) =>
-    pf.items.filter((x) => x.state === 'approved').map((x) => ({
+    pf.items.filter(isLiveSub).map((x) => ({
       id: `${pf.id}/${x.id}`, name: x.name, region: x.region, track: x.track ?? pf.track, field: x.field ?? pf.field, goal: pf.goals.split(/[\n·،]/)[0]?.trim() || pf.name,
-      beneficiaries: x.beneficiaries, amountGranted: x.amount,
-      reached: x.exec?.status === 'مكتمل' && typeof x.exec.reached === 'number' ? x.exec.reached : null,
+      /* v3 · 13.4.30 · the sub-projects' values split the cost by region only when the portfolio marks them reliable */
+      beneficiaries: x.beneficiaries, amountGranted: x.amount, noGeo: !pf.reliable,
+      reached: x.state === 'done' && typeof x.exec?.reached === 'number' ? x.exec.reached : null,
     })))
 
 const group = (rows: Unit[], key: (p: Unit) => string): ImpactRow[] => {
@@ -101,7 +102,8 @@ export function impact(): Impact {
     reportedEstimate,
     reached,
     rate: reportedEstimate ? Math.round((reached / reportedEstimate) * 100) : null,
-    regions: group(funded, (p) => p.region),
+    /* v3 · 13.4.30 · the regions read the sub-projects' reach always, their cost only when their values are reliable */
+    regions: group(funded.map((u) => ('noGeo' in u && u.noGeo ? { ...u, amountGranted: 0 } : u)), (p) => p.region),
     tracks: group(funded, (p) => p.track),
     fields: group(funded, (p) => p.field),
     goals: group(funded, (p) => p.goal),

@@ -34,7 +34,7 @@ import { formatIssue } from '@/data/entities/validate'
 import { entityCode } from '@/lib/format'
 import { Field } from './Field'
 import { AssistantAside } from '@/features/shared/AssistantAside'
-import { PF_STAGE_SAY, PF_STAGE_TONE, isStrategic, pfOfEntity, typeAllowed, usePartners } from '@/data/partners/store'
+import { PF_STAGE_SAY, PF_STAGE_TONE, isLiveSub, isStrategic, pfOfEntity, typeAllowed, usePartners } from '@/data/partners/store'
 import type { Reading } from '@/components/assistant'
 import { PortalAccount } from './PortalAccount'
 import { PortalNotices } from './PortalNotices'
@@ -429,7 +429,7 @@ export default function PortalPage() {
                       <li key={pf.id}>
                         <Link className="tlink" to={`${ROUTES.portfolio(pf.id)}?as=partner`}>{pf.name}</Link>
                         <Tag tone={PF_STAGE_TONE[pf.stage]}>{PF_STAGE_SAY[pf.stage]}</Tag>
-                        <span className="sub">{pf.items.filter((x) => x.state === 'approved').length} مشروع معتمد · {pf.items.filter((x) => x.state === 'draft').length} مسودة</span>
+                        <span className="sub">{pf.items.filter(isLiveSub).length} مشروع معتمد · {pf.items.filter((x) => x.state === 'draft').length} مسودة</span>
                       </li>
                     ))}
                     {!pfOfEntity(entityId).length && <li className="sub">لا محافظ بعد.</li>}

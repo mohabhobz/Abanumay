@@ -43,7 +43,7 @@ import { BUDGET_REQS } from './budget/store'
 import { appFlowOf, SESSIONS } from './approvals/store'
 import { flowOf } from './intake/flow'
 import { isStuck, PLAN_LOG } from './plans/store'
-import { EHSAN_PAYS, PORTFOLIOS, ehCloseOf, ehMoney, ehsanProjects, pfMoney } from './partners/store'
+import { EHSAN_PAYS, PORTFOLIOS, ehCloseOf, ehMoney, ehsanProjects, isLiveSub, pfMoney } from './partners/store'
 import { ESC_LIMITS } from './shared/escRules'
 import { APPROVAL_RULES } from './approvals/rules'
 import { TODAY } from './clock'
@@ -344,7 +344,7 @@ const ehCloseDays = eh.map((p) => {
 const pfs = PORTFOLIOS
 const subs = pfs.flatMap((pf) => pf.items)
 const subsSent = subs.filter((x) => x.state !== 'draft')
-const subsOk = subs.filter((x) => x.state === 'approved')
+const subsOk = subs.filter(isLiveSub)
 /* The portfolios whose value is approved · the base of «utilization» */
 const pfLive = pfs.filter((pf) => pf.stage === 'approved' || pf.stage === 'closed')
 const pfMoneyAll = pfs.map((pf) => pfMoney(pf))

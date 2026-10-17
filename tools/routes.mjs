@@ -127,7 +127,7 @@ export const ROUTES = [
   '/projects/new?tab=money', '/projects/new?tab=when',
   /* المحفظة · ب-8 · كيان أب برّه قايمة المشاريع */
   '/projects/portfolio/PF-2026-001', '/projects/portfolio/PF-2026-002?as=partner', '/projects/portfolio/PF-2026-004',
-  '/projects/portfolio/new', '/projects/portfolio/new?as=partner&entity=860', '/partners', '/partners?tab=finance', '/partners?tab=reconcile', '/partners?tab=report', '/projects/21060',
+  '/projects/portfolio/new', '/projects/portfolio/new?as=partner&entity=860', '/partners', '/partners?tab=external', '/partners/external/new', '/partners?tab=finance', '/partners?tab=reconcile', '/partners?tab=report', '/projects/21060',
   '/budget/doc/BG-2025-SA', '/budget/new',
   /* ميزانية 2026 · مولَّدة من المشاريع عشان السلسلة تمشي على داتا
      واحدة (هـ-7) · وشجرتها تلات مستويات من مفردات النظام العامل */
@@ -181,7 +181,7 @@ export const ROUTES = [
      مفتوحة · من غير الاتنين الجرد بيقيس واحدة ويرجع أخضر */
   '/closings/CL-2041/report', '/closings/CL-2046/report',
   '/closings/CL-2045/evaluation', '/closings/CL-2041/evaluation',
-  '/closings/settings', '/closings/settings?tab=limits',
+  '/closings/settings', '/closings/settings?tab=limits', '/closings/settings?tab=matrix', '/closings/settings?tab=eval',
   '/closings/cases', '/closings/cases/TS-3001', '/closings/cases/TS-3002', '/closings/cases/TS-3001?as=entity',
   '/closings/cases/new', '/closings/cases/new?project=20831&kind=stop', '/closings/cases/new?project=20859&kind=increase', '/closings/CL-2122', '/projects/20831/closing',
   /* ⚠️ **شاشة فتح الخطة · والزرار بتاعها كان شايل لـ«غير موجود»**

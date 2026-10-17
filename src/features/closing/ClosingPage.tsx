@@ -410,7 +410,7 @@ export default function ClosingPage() {
             <Glass className="tblcard">
               <Head
                 title="إغلاقات الشركاء"
-                meta={<span className="sub">مشاريع منصة إحسان والمحافظ · تُغلق من صفحتها · <Num>{partners.filter((x) => x.state === 'closing').length}</Num> بانتظار الإغلاق</span>}
+                meta={<span className="sub">المشاريع عبر جهات خارجية والمحافظ · تُغلق من صفحتها · <Num>{partners.filter((x) => x.state === 'closing').length}</Num> بانتظار الإغلاق</span>}
               />
               <div className="tblwrap">
                 <table className="tbl">
@@ -428,7 +428,7 @@ export default function ClosingPage() {
                     {partners.map((x) => (
                       <tr key={`${x.kind}-${x.id}`}>
                         <td><Link className="lnk" to={x.href}>{x.name}</Link></td>
-                        <td>{x.kind === 'portfolio' ? 'محفظة' : 'مشروع عبر إحسان'}</td>
+                        <td>{x.kind === 'portfolio' ? 'محفظة' : 'مشروع مدعوم عبر جهة خارجية'}</td>
                         <td>{x.partner}</td>
                         <td>{x.owner ? <Person name={x.owner} /> : '—'}</td>
                         <td><Tag tone={x.state === 'closed' ? 'ok' : x.state === 'closing' ? 'warn' : 'mute'}>{PARTNER_CLOSE_SAY[x.state]}</Tag></td>

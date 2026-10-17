@@ -6,7 +6,7 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { nf, MISSING_ITEM, nounAfter, pct, unitAfter } from '@/lib/format'
 import { canStartEval, closeById, evalApproved, evalBlockers } from '@/data/mock/closing'
-import { saveEvaluation, useClosing } from '@/data/closing/store'
+import { evalScore, saveEvaluation, useClosing } from '@/data/closing/store'
 import { useRole } from '@/hooks/useRole'
 import { orgOutputsOf, outputLine } from '@/data/intake/flow'
 
@@ -43,6 +43,7 @@ export default function EvalEditPage() {
   const [impact, setImpact] = useState(c?.evaluation?.impact ?? '')
   const [lessons, setLessons] = useState(c?.evaluation?.lessons ?? '')
   const [score, setScore] = useState(c?.evaluation?.score?.toString() ?? '')
+  const [rates, setRates] = useState<string[]>(c?.evaluation?.criteria?.map((x) => x.rating?.toString() ?? '') ?? [])
   const [vals, setVals] = useState<string[]>(
     c?.evaluation?.indicators.map((i) => i.actual?.toString() ?? '') ?? [],
   )
@@ -83,10 +84,10 @@ export default function EvalEditPage() {
               <Empty
                 title={canStartEval(c)
                   ? 'اعتُمد التقرير · يمكن بدء التقييم الآن.'
-                  : 'لا يبدأ التقييم قبل اعتماد المدير التنفيذي للتقرير الختامي.'}
+                  : 'لا يبدأ التقييم قبل اعتماد التقرير الختامي بالكامل من صاحب الصلاحية.'}
                 note={canStartEval(c)
                   ? /* doc rule 17 */ 'ابدأه من رصيف صفحة الطلب · يُعدّه مشرف المنح، ودورته سجلّ منفصل.'
-                  : /* doc rule 6 */ 'تربط  بدء التقييم باعتماد المدير التنفيذي تحديدًا، لا باعتماد المشرف ولا المدير.'}
+                  : /* doc 10.4.9 */ 'يرتبط بدء التقييم باعتماد صاحب الصلاحية المحدد في مصفوفة الصلاحيات.'}
                 actions={
                   <Link className="btn btn-p" to={ROUTES.closing(c.id)}>افتح الطلب</Link>
                 }
@@ -225,7 +226,7 @@ export default function EvalEditPage() {
               </span>
             </label>
 
-            <label className="regf">
+            {!ev.criteria?.length && <label className="regf">
               <span className="lb">
                 التقدير العام<b className="regf-r" aria-label="إلزامي">*</b>
               </span>
@@ -240,8 +241,25 @@ export default function EvalEditPage() {
                 استرشادي · تنص القواعد {/* doc rule 13 */} على أن مخرجات
                 التحليل دعم للمراجعة لا بديل عن اعتماد أصحاب الصلاحية
               </span>
-            </label>
+            </label>}
           </Glass>
+
+          {/* v3 · 10.4.31 · the questions and weights set by the authority · a score out of 100 · a low
+              score doesn't stop the closing */}
+          {(ev.criteria?.length ?? 0) > 0 && (
+            <Glass>
+              <Head title="أسئلة التقييم وأوزانها" meta={<span className="sub">الدرجة <Num>{evalScore({ ...ev, criteria: ev.criteria!.map((x, i) => ({ ...x, rating: rates[i] ? Number(rates[i]) : null })) }) ?? '—'}</Num> من 100</span>} />
+              <div className="regfields">
+                {ev.criteria!.map((x, i) => (
+                  <label className="regf" key={x.key}>
+                    <span className="lb">{x.label} · الوزن <Num>{x.weight}</Num><b className="regf-r" aria-label="إلزامي">*</b></span>
+                    <FieldSelect value={rates[i] ?? ''} options={SCORES} onChange={(v) => setRates((r) => { const n = [...r]; n[i] = v; return n })} label={x.label} placeholder="اختر من 5" />
+                  </label>
+                ))}
+              </div>
+              <p className="sub cnote">الأسئلة والأوزان من إعدادات الإغلاق وقت بدء التقييم · وتغييرها لاحقًا لا يمسّ هذا التقييم{/* doc 10.4.31 */} · وانخفاض الدرجة لا يمنع الإغلاق.</p>
+            </Glass>
+          )}
 
           {!closed && (
             <div className="act-a">
@@ -252,6 +270,7 @@ export default function EvalEditPage() {
                   saveEvaluation(c.id, {
                     indicators: ev.indicators.map((i, n) => ({ ...i, actual: vals[n] ? Number(vals[n]) : null })),
                     impact, lessons, score: score ? Number(score) : null,
+                    ...(ev.criteria ? { criteria: ev.criteria.map((x, i) => ({ ...x, rating: rates[i] ? Number(rates[i]) : null })) } : {}),
                   }, user.name)
                   navigate(ROUTES.closing(c.id))
                 }}

@@ -375,7 +375,7 @@ function applyOp(o: Op) {
       const amount = Number(v.amountRequested) || 0
       const days = Number(v.workDays) || 0
       projectRows.unshift({
-        id: o.id, name: v.name, entityId: v.entityId, entityName: e?.name ?? '',
+        id: o.id, name: v.name, entityId: v.entityId, entityName: e?.name ?? v.externalName ?? '',
         track: v.track, field: v.field, goal: v.goal, region: v.region, city: v.city,
         stage: 'دراسة المشروع', statusGroup: 'قيد الدراسة', stageLimit: stageMeta('دراسة المشروع')?.limit ?? 900,
         hoursInStage: 0, amountRequested: amount, amountGranted: 0, amountSpent: 0, weight: 50, score: 0,
@@ -386,6 +386,9 @@ function applyOp(o: Op) {
         source: o.asEntity ? 'portal' : 'staff',
         createdAt: `${opDay()}T${NOW_TIME()}`, startAt: v.startAt, execDays: workDaysOf(v.execDays), endAt: v.startAt && days ? addWorkingDays(v.startAt, days, workDaysOf(v.execDays)) : v.endAt,
       })
+      /* v3 · 11.2.2 · 11.2.3 · created by the authority through the simplified form · supported through the
+         external party, classified as such from its creation · no portal, no plan */
+      if (v.external) Object.assign(projectRows[0]!, { platform: v.externalName ?? 'جهة خارجية', externalId: v.external, partnerType: 'مستقل', source: 'staff', type: 'مشروع خارجي' })
       /* v3 · the status reads from the record (data/status.ts) */
       installStatus(projectRows[0]!)
       /* v3 · 2.4.10 · a move to another entity recorded on this project waits for it */

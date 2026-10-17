@@ -17,6 +17,7 @@ const LOGOS: Record<string, string> = Object.fromEntries(
   ).map(([path, url]) => [path.replace(/^.*entity-|\.svg$/g, ''), url]),
 )
 
+export const entityRowOf = (...a: Parameters<typeof row>) => row(...a)
 const row = (
   id: string,
   name: string,

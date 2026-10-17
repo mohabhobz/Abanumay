@@ -23,7 +23,7 @@ import {
   insights as mockInsights,
   followUpTypes as mockFollowUpTypes,
 } from './mock/project'
-import { projectRows, projectById, projectsOfEntity, portfolioRows } from './mock/projects'
+import { projectRows, projectById, projectsOfEntity, portfolioRows, subRows } from './mock/projects'
 import { entityRows, entityById } from './mock/entities'
 import { entityCode, projectCode } from '@/lib/format'
 
@@ -356,7 +356,7 @@ export const fixtures = {
 
 /** Rows a query runs over · portfolio rows join only when the caller asks for them */
 const poolOf = (q: ProjectQuery): ProjectRow[] =>
-  q.portfolios ? [...projectRows, ...portfolioRows] : projectRows
+  q.portfolios ? [...projectRows, ...portfolioRows, ...subRows] : projectRows
 
 /** Synchronous copies of the same logic · used by screens until there's a real server */
 export const query = {

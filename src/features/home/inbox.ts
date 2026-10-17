@@ -28,15 +28,16 @@ import { payRequests, PAY_LIMIT } from '@/data/mock/disbursements'
 import { payableProjects, scheduleOf } from '@/data/payments/store'
 import { planRows, PLAN_LIMIT, waitingReview } from '@/data/mock/plans'
 import { closeRows, CLOSE_LIMIT } from '@/data/mock/closing'
+import { CASES, CASE_KIND_SAY, CASE_STAGE_SAY, caseActions, endedUnclosed, openGate } from '@/data/closing/store'
+import { projectById } from '@/data/mock/projects'
 import { BUDGET_STATE_SAY, docTitle, type BudgetState } from '@/data/mock/budgetTree'
 import { allBudgets } from '@/data/mock/chain'
 import { TODAY } from '@/data/intake/cycle'
 import { BUDGET_REQS, REQ_KIND_SAY, REQ_STATE_SAY, eventsOf, mayAct, stepOf } from '@/data/budget/store'
-import { portfolios } from '@/data/mock/implementer'
 import { projectCode } from '@/lib/format'
 import { rowCode, rowHref, isPortfolio } from '@/features/projects/list/columns'
 import type { RoleKey } from '@/data/roles'
-import { EHSAN_PAYS, PORTFOLIOS } from '@/data/partners/store'
+import { EHSAN_PAYS, PF_CLOSE_SAY, PF_REQ_SAY, PF_STAGE_SAY, PORTFOLIOS, externalClosingsWaiting, externalEnded, routeProposals } from '@/data/partners/store'
 import { SESSIONS, appFlowOf } from '@/data/approvals/store'
 import { RELOC_SAY, movingOf, relocationsWaiting } from '@/data/budget/relocate'
 import { mayApprovePlan } from '@/data/plans/auth'
@@ -196,17 +197,75 @@ const closingsAt = (key: 'reports' | 'evals', stages: string[], owner?: string, 
     .sort(byWait),
 })
 
-/** Projects inside a portfolio that haven't started · each needs its own approval */
-const portfolioItems = (note: string): InboxQueue => ({
-  key: 'portfolios',
-  label: 'مشاريع المحافظ للاعتماد',
-  note,
-  icon: 'grid',
-  all: `${ROUTES.projects}?tab=portfolios`,
-  items: portfolios.flatMap((pf) => pf.items.filter((x) => x.status === 'لم يبدأ').map((x) => ({
-    id: x.id, code: x.id, title: x.name, sub: pf.name, amount: x.amount,
-    days: 0, late: false, limit: 0, region: x.region, to: ROUTES.portfolio(pf.id),
-  }))),
+/** v3 · 10.2.1 · projects whose execution period ended with no closing yet · the supervisor checks and opens it */
+const endedQueue = (me: string): InboxQueue => ({
+  key: 'ended',
+  label: 'انتهت مدة تنفيذها',
+  note: 'تحقّق من اكتمال التنفيذ وافتح متطلبات الإغلاق · الحالة لا تتغيّر تلقائيًّا',
+  icon: 'navClosings',
+  all: ROUTES.closings,
+  /* Verifier · 16 Oct · his own projects, and only those whose closing can open now (no payment in flight) */
+  items: endedUnclosed().filter((p) => (!p.owner || p.owner === me) && openGate(p.id).ok).map((p) => ({
+    id: `end-${p.id}`, code: p.id, title: p.name, sub: p.entityName, days: 0, late: false, limit: 0,
+    region: regionOf(p.id), city: cityOf(p.id), to: ROUTES.projectTab(p.id, 'closing'),
+  })),
+})
+
+/** v3 · 11.2.13 · 11.2.14 · the external projects · the supervisor's ended ones and the grants manager's closings */
+const externalQueue = (role: RoleKey, me: string): InboxQueue => ({
+  key: 'external',
+  label: role === 'supervisor' ? 'مشاريع خارجية انتهت مدتها' : 'إغلاقات مشاريع خارجية',
+  note: role === 'supervisor' ? 'اجمع متطلبات الإغلاق وإثباتات التحويل والتنفيذ وارفعها لمدير المنح' : 'اعتمد الإغلاق أو أعده للمشرف · بلا تقرير ختامي ولا تقييم',
+  icon: 'navClosings',
+  all: ROUTES.partnersTab('ehsan'),
+  items: (role === 'supervisor' ? externalEnded().filter((p) => !p.owner || p.owner === me) : externalClosingsWaiting()).map((p) => ({
+    id: `ext-${p.id}`, code: p.id, title: p.name, sub: p.platform ?? '', days: 0, late: false, limit: 0, region: regionOf(p.id), city: cityOf(p.id), to: ROUTES.project(p.id),
+  })),
+})
+
+/** Verifier · 16 Oct · v3 · 10.9 · the distress decisions waiting on this seat · the supervisor's settlement included */
+const casesQueue = (role: RoleKey, me: string): InboxQueue => ({
+  key: 'cases',
+  label: 'حالات التعثّر والتعديل',
+  note: role === 'supervisor' ? 'تسوية المصروف ورفع القرار' : 'إيقاف أو تخفيض أو زيادة بانتظار قرارك',
+  icon: 'navClosings',
+  all: ROUTES.distresses,
+  items: CASES.filter((c) => {
+    if (role === 'supervisor') {
+      const mine = c.openedBy === me || projectById(c.projectId)?.owner === me
+      return mine && ((c.stage === 'settle' && Boolean(c.settlement?.report) && Boolean(c.settlement?.evidence || c.settlement?.invoices)) || caseActions(c, role).length > 0)
+    }
+    return caseActions(c, role).length > 0
+  }).map((c) => ({
+    id: c.id, code: c.id, title: c.projectName, sub: `${CASE_KIND_SAY[c.kind]} · ${CASE_STAGE_SAY[c.stage]}`, days: 0, late: false, limit: 0,
+    region: regionOf(c.projectId), city: cityOf(c.projectId), to: ROUTES.distress(c.id),
+  })),
+})
+
+/** v3 · BPD-013 · what waits on this seat across the portfolios · the portfolio's own stage, its sub-projects,
+    its payments and its closing · read from the live records, each seat its own */
+const portfolioItems = (role: RoleKey): InboxQueue => {
+  const items: InboxItem[] = []
+  const add = (pf: (typeof PORTFOLIOS)[number], code: string, title: string, sub: string, amount?: number, anchor = '') =>
+    items.push({ id: `${pf.id}-${code}-${items.length}`, code: pf.id, title, sub, amount, days: 0, late: false, limit: 0, to: `${ROUTES.portfolio(pf.id)}${anchor}` })
+  const stage = { supervisor: 'supervisor', 'grants-manager': 'manager', ceo: 'ceo' } as Record<string, string>
+  const reqSeat = { supervisor: ['supervisor', 'eligible'], 'grants-manager': ['manager'], ceo: ['exec'] } as Record<string, string[]>
+  const subSeat = { supervisor: ['submitted', 'study'], 'grants-manager': ['pending'] } as Record<string, string[]>
+  const closeSeat = { supervisor: ['supervisor', 'evalDraft'], 'grants-manager': ['manager', 'evalManager'], ceo: ['executive', 'evalExecutive'] } as Record<string, string[]>
+  for (const pf of PORTFOLIOS) {
+    if (pf.stage === stage[role]) add(pf, 'stage', pf.name, `اعتماد المحفظة · ${PF_STAGE_SAY[pf.stage]}`, pf.total)
+    const subs = pf.items.filter((x) => (subSeat[role] ?? []).includes(x.state))
+    if (subs.length) add(pf, 'subs', `${subs.length} مشروع فرعي · ${pf.name}`, role === 'supervisor' ? 'مرفوعة للدراسة والتوصية' : 'بتوصية المشرف · بانتظار قرارك', subs.reduce((n, x) => n + x.amount, 0))
+    if (role === 'supervisor') { const res = pf.items.filter((x) => x.state === 'closing' && x.ready); if (res.length) add(pf, 'res', `${res.length} نتائج للاعتماد · ${pf.name}`, 'طلب الشريك اعتماد النتائج') }
+    for (const q of pf.requests.filter((x) => (reqSeat[role] ?? []).includes(x.state))) add(pf, q.id, `الدفعة ${q.no} · ${pf.name}`, PF_REQ_SAY[q.state], q.amount)
+    if ((closeSeat[role] ?? []).includes(pf.close.stage ?? '')) add(pf, 'close', pf.name, PF_CLOSE_SAY[pf.close.stage!])
+  }
+  return { key: 'portfolios', label: 'المحافظ', note: 'الاعتماد والمشاريع الفرعية والدفعات والإغلاق · ما ينتظرك أنت', icon: 'grid', all: ROUTES.partnersTab('portfolios'), items }
+}
+/** v3 · 11.2.4 · the routing proposals waiting on the executive */
+const routeQueue = (): InboxQueue => ({
+  key: 'routes', label: 'اقتراحات التوجيه عبر جهة خارجية', note: 'اقترحها مشرف المنح في الدراسة · أقرّها أو ارفضها', icon: 'grid', all: ROUTES.partnersTab('ehsan'),
+  items: routeProposals().map((x) => ({ id: `rt-${x.project.id}`, code: x.project.id, title: x.project.name, sub: x.platform ? `عبر ${x.partyName ?? 'جهة خارجية'}` : 'دعم مباشر', days: 0, late: false, limit: 0, to: ROUTES.project(x.project.id) })),
 })
 
 /* ── Budget transfers · no module yet, so a small sample until the transfers screen exists ── */
@@ -286,7 +345,7 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       /* v3 · 0.status.3 · approved at the decision · the supervisor's next step is the agreement */
       projectsQueue('approved', 'معتمدة تنتظر الاتفاقية', 'صدر الاعتماد · أعدّ الاتفاقية وانقل الشروط إليها',
         single.filter((p) => p.owner === me && p.statusGroup === 'معتمد'), `${ROUTES.projects}?status=معتمد`),
-      portfolioItems('تنتظر توصيتك قبل أن تبدأ'),
+      portfolioItems(role),
       agreementsAt(['draft', 'returned'], undefined, 'supervisor'),
       paymentsAt('supervisor'),
       paymentsAt('eligible'),
@@ -294,6 +353,9 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       activities(),
       closingsAt('reports', ['supervisor']),
       closingsAt('evals', ['reportDone', 'evalDraft']),
+      endedQueue(me),
+      externalQueue(role, me),
+      casesQueue(role, me),
       budgets(role),
     ]
   }
@@ -305,12 +367,14 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
         single.filter((p) => holderOf(p) === 'manager'), `${ROUTES.projects}?status=قيد الدراسة&sort=amount`),
       projectsQueue('committee-sec', 'قرارات اللجنة للتسجيل', 'عند اللجنة التنفيذية · تسجّلها أمينًا للجنة في جلستها',
         single.filter((p) => holderOf(p) === 'committee'), ROUTES.committee),
-      portfolioItems('تنتظر اعتمادك قبل أن تبدأ'),
+      portfolioItems(role),
       agreementsAt(['manager', 'returned'], undefined, 'grants-manager'),
       paymentsAt('manager'),
       plansAt('manager'),
       closingsAt('reports', ['manager']),
       closingsAt('evals', ['evalManager']),
+      casesQueue(role, me),
+      externalQueue(role, me),
       transfers('manager'),
       budgets(role),
       uncovered(),
@@ -326,9 +390,9 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       relocations(role),
       uncovered(),
       {
-        key: 'ehsan', label: 'دفعات منصة إحسان', note: 'راجع مستنداتها وأكّد حالتها', icon: 'pay', all: ROUTES.partnersTab('finance'),
+        key: 'ehsan', label: 'عمليات منصات الجهات الخارجية', note: 'راجع مستنداتها وأكّد حالتها', icon: 'pay', all: ROUTES.partnersTab('finance'),
         items: EHSAN_PAYS.filter((x) => x.state === 'review').map((x) => ({
-          id: x.id, code: x.ref, title: `دفعة ${x.ref}`, sub: 'نفّذتها منصة إحسان', amount: x.amount,
+          id: x.id, code: x.ref, title: `دفعة ${x.ref}`, sub: 'نفّذتها منصة الجهة الخارجية', amount: x.amount,
           days: Math.max(0, Math.round((t - Date.parse(x.at)) / 864e5)), late: false, limit: 3, to: ROUTES.partnersTab('finance'),
         })),
       },
@@ -379,8 +443,11 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     /* v3 · 12.2.11 · plans reach the executive only by a delegation in force */
     ...(mayApprovePlan('ceo') ? [plansAt('manager')] : []),
     paymentsAt('exec'),
+    portfolioItems(role),
+    routeQueue(),
     closingsAt('reports', ['executive']),
     closingsAt('evals', ['evalExecutive']),
+    casesQueue(role, me),
     budgets(role),
     transfers('executive'),
     relocations(role),

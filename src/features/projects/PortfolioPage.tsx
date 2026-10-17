@@ -18,10 +18,16 @@ import { noteFirst } from '@/lib/dock'
 import { HOLD_STAGE_SAY, linkOf, usableLines } from '@/data/budget/store'
 import {
   PF_STAGE_SAY, PF_STAGE_TONE, SUB_STATE_SAY, SUB_STATE_TONE, actOnPfAgreement, actOnPfPlan, actOnPfReq, actOnPortfolio, addSub, capIssue,
-  closePortfolio, decideSubs, dropSub, pfActions, pfById, pfCloseChecks, pfIndicators, pfMoney, pfStops, savePfPlan, savePfSchedule,
-  sendSubs, subMoney, subsGate, submitPfReport, updateSubExec, usePartners, paysOf, requestPfPay, pfReqIssue, profileOf,
-  type PfPhase, type PortfolioRec, type SubExec, type SubProject, pfActivities, pfActivityProgress, PF_ACTIVITY_MODE, setPfActivityMode, linkSubActivity } from '@/data/partners/store'
-import { Checks, PayForm, PayList, Said, SlotsEditor } from '@/features/partners/parts'
+  decideSubs, dropSub, pfActions, pfById, pfCloseChecks, pfIndicators, pfMoney, pfStops, savePfPlan, savePfSchedule,
+  sendSubs, subsGate, submitPfReport, updateSubExec, usePartners, requestPfPay, pfReqIssue, profileOf,
+  type PfPhase, type PortfolioRec, type SubExec, type SubProject, pfActivities, pfActivityProgress, PF_ACTIVITY_MODE, setPfActivityMode, linkSubActivity,
+  PF_CLOSE_SAY, PF_REQ_SAY, SUB_FIELDS_DEFAULT, SUB_FIELD_SAY, actOnPfClose, actOnPfEval, attachPfCriteria, attachPfMinutes, cancelPortfolio, castPfVote, completeSub,
+  excludeSub, isLiveSub, pfApproverOf, pfEvalScore, pfSessions, pfToSession, recommendSubs, recordPfReceipt, savePfEval, savePfForm, setPfReliable, stallSub, studySubs,
+  type PfRequest, type SubField, type SubState,
+} from '@/data/partners/store'
+import { SESSIONS, voteTally } from '@/data/approvals/store'
+import { APPROVAL_RULES } from '@/data/approvals/rules'
+import { Checks, Said, SlotsEditor } from '@/features/partners/parts'
 import type { Reading } from '@/components/assistant/reading'
 
 /* A portfolio · a strategic partner's parent record with sub-projects under it (BPD-013).
@@ -73,7 +79,8 @@ export default function PortfolioPage() {
   const actions = pfActions(pf, role.key, asPartner)
   const needNote = actions.some((a) => a.needsNote)
   const lines = usableLines('fy-2026')
-  const preferred = lines.find((l) => l.node.id === (pf.channel === 'ehsan' ? 'tPg1' : 'tPg2'))
+  /* the partners' portfolios allocation first · then the partnerships' other allocation · then any line that covers it */
+  const preferred = lines.find((l) => l.node.id === 'tPg2' && l.free >= pf.total) ?? lines.find((l) => l.node.id === 'tPg1' && l.free >= pf.total) ?? lines.find((l) => l.free >= pf.total)
   const lineKey = line || preferred?.key || ''
   const pick = lines.find((l) => l.key === lineKey)
   /* Batch 6 · 8 Oct · the hold can split across lines, in one budget or several (13.2.7) · the parts
@@ -94,7 +101,7 @@ export default function PortfolioPage() {
     { label: 'الدراسة والاعتماد', note: 'حسب مصفوفة الاعتماد', state: ['supervisor', 'manager', 'ceo', 'committee', 'board'].includes(pf.stage) ? 'now' : ['draft', 'returned', 'rejected'].includes(pf.stage) ? 'todo' : 'done' },
     { label: 'الخطة والاتفاقية', note: 'قبل أي مشروع فرعي', state: pf.stage !== 'approved' && pf.stage !== 'closing' && pf.stage !== 'closed' ? 'todo' : gate.ok || pf.stage !== 'approved' ? 'done' : 'now' },
     { label: 'المشاريع الفرعية', note: `${m.approvedCount} معتمد`, state: gate.ok ? 'now' : pf.stage === 'closing' || pf.stage === 'closed' ? 'done' : 'todo' },
-    { label: 'الإغلاق', note: 'بعد آخر مشروع', state: pf.stage === 'closed' ? 'done' : pf.stage === 'closing' ? 'now' : 'todo' },
+    { label: pf.stage === 'cancelled' ? 'ملغاة' : 'الإغلاق', note: pf.stage === 'cancelled' ? 'استرداد على مستوى المحفظة' : 'التقرير الشامل والتقييم', state: pf.stage === 'closed' || pf.stage === 'cancelled' ? 'done' : pf.stage === 'closing' ? 'now' : 'todo' },
   ]
 
   const readings: Reading[] = [
@@ -122,7 +129,7 @@ export default function PortfolioPage() {
               </p>
               <div className="gt-tag rowf gp-2">
                 <Tag tone={PF_STAGE_TONE[pf.stage]}>{PF_STAGE_SAY[pf.stage]}</Tag>
-                <Tag tone="mute">{pf.channel === 'ehsan' ? 'الدفعات عبر منصة إحسان' : 'دفعات على مستوى المحفظة'}</Tag>
+                <Tag tone="mute">دفعات على مستوى المحفظة</Tag>
               </div>
             </div>
           </header>
@@ -153,9 +160,13 @@ export default function PortfolioPage() {
                 ]} />
               </Glass>
 
+              {!asPartner && <SettingsCard pf={pf} asPartner={asPartner} />}
+
               {!asPartner && <HoldCard pf={pf} lineKey={lineKey} setLine={setLine} lines={lines} link={link} split={split} setSplit={setSplit} />}
 
-              {(pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed') && (
+              {!asPartner && (pf.stage === 'committee' || pf.stage === 'board') && <SessionCard pf={pf} />}
+
+              {(pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed' || pf.stage === 'cancelled') && (
                 <>
                   <PlanCard pf={pf} asPartner={asPartner} />
                   <AgreementCard pf={pf} asPartner={asPartner} />
@@ -164,7 +175,7 @@ export default function PortfolioPage() {
 
               <SubsCard pf={pf} asPartner={asPartner} />
 
-              {(pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed') && (
+              {(pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed' || pf.stage === 'cancelled') && (
                 <>
                   <Glass>
                     <Head title="الموقف المالي" meta={<span className="sub">المحفظة ككل</span>} />
@@ -183,7 +194,7 @@ export default function PortfolioPage() {
                     <Head title="مؤشرات التنفيذ" meta={<span className="sub">المشاريع المعتمدة</span>} />
                     <dl className="ptn-ind">
                       <div><dt>المشاريع</dt><dd className="num">{ind.count}</dd></div>
-                      <div><dt>مكتمل · تحت التنفيذ · لم يبدأ</dt><dd className="num">{ind.done} · {ind.running} · {ind.waiting}</dd></div>
+                      <div><dt>مكتمل · قيد الإغلاق · معتمد · متعثر</dt><dd className="num">{ind.done} · {ind.closing} · {ind.running} · {ind.stalled}</dd></div>
                       <div><dt>متوسط الإنجاز</dt><dd className="num">{pct(ind.progress)}</dd></div>
                       <div><dt>المستفيدون · فعلي من مستهدف</dt><dd className="num">{nf.format(ind.reached)} / {nf.format(ind.target)}</dd></div>
                     </dl>
@@ -193,6 +204,7 @@ export default function PortfolioPage() {
                   <PaysCard pf={pf} asPartner={asPartner} />
                   <ExecCard pf={pf} asPartner={asPartner} />
                   <CloseCard pf={pf} asPartner={asPartner} />
+                  <CancelCard pf={pf} asPartner={asPartner} />
                 </>
               )}
 
@@ -262,7 +274,7 @@ function HoldCard({ pf, lineKey, setLine, lines, link, split, setSplit }: {
       <Head title="حجز قيمة المحفظة" meta={link ? <Tag tone={link.stage === 'final' ? 'ok' : 'warn'}>{HOLD_STAGE_SAY[link.stage]}</Tag> : <Tag tone="mute">لم يُحجز</Tag>} />
       {link ? (
         <KV rows={[
-          { k: link.shares.length > 1 ? 'البنود' : 'البند', v: link.shares.map((s) => `${s.nodeId === 'tPg1' ? 'مخصص منصة إحسان' : s.nodeId === 'tPg2' ? 'مخصص محافظ الشركاء' : label(`${s.docId}/${s.nodeId}`)}${link.shares.length > 1 ? ` · ${nf.format(s.amount)}` : ''}`).join(' · ') },
+          { k: link.shares.length > 1 ? 'البنود' : 'البند', v: link.shares.map((s) => `${s.nodeId === 'tPg1' ? 'مخصص الشراكات' : s.nodeId === 'tPg2' ? 'مخصص محافظ الشركاء' : label(`${s.docId}/${s.nodeId}`)}${link.shares.length > 1 ? ` · ${nf.format(s.amount)}` : ''}`).join(' · ') },
           { k: 'المحجوز', v: <Money sm>{link.amount}</Money> },
           { k: 'المصروف منه', v: <Money sm>{link.shares.reduce((s, x) => s + x.paid, 0)}</Money> },
         ]} />
@@ -431,37 +443,46 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
   )
 }
 
-/* ── Sub-projects · added, sent, decided one by one within the ceiling (13.2.11 – 13.2.19) ── */
-const EMPTY = { name: '', region: '', amount: '', beneficiaries: '', outputs: '', files: [] as string[], activityId: '' }
+/* ── Sub-projects · added, sent, studied, recommended and decided one by one within the ceiling (13.2.11 – 13.2.19) ── */
+const EMPTY = { name: '', region: '', city: '', amount: '', beneficiaries: '', outputs: '', files: [] as string[], activityId: '' }
 function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const { role, user } = useRole()
   const [d, setD] = useState(EMPTY)
   const [sel, setSel] = useState<string[]>([])
   const [reasons, setReasons] = useState<Record<string, string>>({})
+  const [why, setWhy] = useState('')
+  const [one, setOne] = useState('')
   const [adding, setAdding] = useState(false)
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const gate = subsGate(pf)
   const adder = gate.ok && (asPartner || role.key === 'supervisor')
-  const decider = !asPartner && role.key === 'grants-manager'
+  const sup = !asPartner && role.key === 'supervisor'
+  const mgr = !asPartner && role.key === 'grants-manager'
   const dropper = (asPartner || role.key === 'supervisor') && (gate.ok || pf.stage === 'closing')
   const toggle = (id: string) => setSel((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]))
-  const drafts = pf.items.filter((x) => x.state === 'draft')
-  const pending = pf.items.filter((x) => x.state === 'pending')
-  const selectable = (x: SubProject) => (decider ? x.state === 'pending' : adder && x.state === 'draft')
+  const count = (s: SubState) => pf.items.filter((x) => x.state === s).length
+  /* v3 · 0.sub.1 – 0.sub.3 · each seat selects what waits on it */
+  const selectable = (x: SubProject) => (mgr ? x.state === 'pending' : sup ? x.state === 'draft' || x.state === 'submitted' || x.state === 'study' : adder && x.state === 'draft')
   const pool = pf.items.filter(selectable)
-  const cap = capIssue(pf, sel)
-  const r = (out: string[], ok: string) => { setSaid(out.length ? { bad: out } : { ok }); if (!out.length) setSel([]) }
+  const picked = pf.items.filter((x) => sel.includes(x.id))
+  const drafts = picked.filter((x) => x.state === 'draft')
+  const sent = picked.filter((x) => x.state === 'submitted')
+  const studied = picked.filter((x) => x.state === 'study' || x.state === 'submitted')
+  const cap = capIssue(pf, drafts.map((x) => x.id))
+  const req = pf.subFields ?? SUB_FIELDS_DEFAULT
+  const r = (out: string[], ok: string) => { setSaid(out.length ? { bad: out } : { ok }); if (!out.length) { setSel([]); setWhy('') } }
   const add = () => {
-    const out = addSub(pf.id, { name: d.name, region: d.region, amount: Number(d.amount) || 0, beneficiaries: Number(d.beneficiaries) || 0, outputs: d.outputs, files: d.files, activityId: d.activityId || undefined }, user.name)
+    const out = addSub(pf.id, { name: d.name, region: d.region, city: d.city || undefined, amount: Number(d.amount) || 0, beneficiaries: Number(d.beneficiaries) || 0, outputs: d.outputs, files: d.files, activityId: d.activityId || undefined }, asPartner ? entityName(pf) : user.name)
     if (out.errors.length) { setSaid({ bad: [`ينقص: ${out.errors.join('، ')}`] }); return }
     setSaid({ ok: 'المشروع الفرعي · مسودة' })
     setD(EMPTY)
     setAdding(false)
   }
-  const decide = (outcome: 'approve' | 'reject') => r(decideSubs(pf.id, sel.map((subId) => ({ subId, outcome, reason: reasons[subId] })), user.name), outcome === 'approve' ? 'اعتماد المحدد' : 'رفض المحدد')
+  const decide = (outcome: 'approve' | 'reject') => r(decideSubs(pf.id, sel.map((subId) => ({ subId, outcome, reason: reasons[subId], note: outcome === 'approve' ? reasons[subId] : undefined })), user.name, role.key), outcome === 'approve' ? 'اعتماد المحدد' : 'رفض المحدد')
+  const recommend = (outcome: 'approve' | 'reject') => r(recommendSubs(pf.id, studied.map((x) => ({ subId: x.id, outcome, note: reasons[x.id] ?? '' })), user.name, role.key), outcome === 'approve' ? 'التوصية بالاعتماد' : 'التوصية بالرفض')
   return (
     <Glass className="tblcard">
-      <Head title="المشاريع الفرعية" meta={<span className="sub">{pf.items.filter((x) => x.state === 'approved').length} معتمد · {pending.length} قيد الاعتماد · {drafts.length} مسودة</span>} />
+      <Head title="المشاريع الفرعية" meta={<span className="sub">{pf.items.filter(isLiveSub).length} معتمد · {count('submitted') + count('study')} مرفوع وقيد الدراسة · {count('pending')} بانتظار الاعتماد · {count('draft')} مسودة</span>} />
       {!gate.ok && <p className="sub cnote"><Icon name={icons.lock} size="sm" /> {gate.why}</p>}
       {pf.items.length > 0 && (
         <div className="tblwrap">
@@ -471,67 +492,78 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                 <th className="tchk">{pool.length > 0 && <input type="checkbox" aria-label="تحديد الكل" checked={sel.length === pool.length} onChange={(e) => setSel(e.target.checked ? pool.map((x) => x.id) : [])} />}</th>
                 <th><span className="th-t">المشروع · المنطقة · المستهدف</span></th>
                 <th className="n"><span className="th-t">القيمة</span></th>
-                <th><span className="th-t">الاعتماد</span></th>
-                <th className="n"><span className="th-t">المؤكد · المتبقي</span></th>
+                <th><span className="th-t">الحالة</span></th>
               </tr>
             </thead>
             <tbody>
-              {pf.items.map((x) => {
-                const sm = subMoney(pf, x)
-                return (
-                  <tr key={x.id} id={x.id}>
-                    <td className="tchk">{selectable(x) && <input type="checkbox" aria-label={`تحديد ${x.name}`} checked={sel.includes(x.id)} onChange={() => toggle(x.id)} />}</td>
-                    <td><b>{x.name}</b><div className="sub">{x.field ?? pf.field} · {x.region} · {nf.format(x.beneficiaries)} مستفيد · {x.outputs} · {x.files.join('، ')}{x.activityId ? ` · النشاط: ${pfActivities(pf).find((a) => a.id === x.activityId)?.label ?? x.activityId}` : ''}</div>
-                      {(asPartner || role.key === 'supervisor') && pfActivities(pf).length > 0 && x.state !== 'rejected' && (
-                        <FieldSelect value={x.activityId ?? ''} label={`نشاط خطة المحفظة · ${x.name}`} placeholder="اربط بنشاط" options={[{ value: '', label: 'بلا نشاط' }, ...pfActivities(pf).map((a) => ({ value: a.id, label: a.label }))]} onChange={(v) => r(linkSubActivity(pf.id, x.id, v, user.name), 'ربط النشاط')} />
-                      )}</td>
-                    <td className="n"><Money sm>{x.amount}</Money></td>
-                    <td>
-                      <Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}</Tag>
-                      {x.reason && <span className="sub"> · {x.reason}</span>}
-                      {decider && x.state === 'pending' && sel.includes(x.id) && (
-                        <span className="fld mt-1"><input value={reasons[x.id] ?? ''} onChange={(e) => setReasons((r0) => ({ ...r0, [x.id]: e.target.value }))} aria-label={`سبب رفض ${x.name}`} placeholder="سبب الرفض إن رُفض" /></span>
-                      )}
-                      {dropper && x.state === 'draft' && <button type="button" className="btn btn-ghost btn-sm" onClick={() => dropSub(pf.id, x.id, user.name)}>حذف المسودة</button>}
-                    </td>
-                    <td className="n">{x.state === 'approved' ? <><Money sm>{sm.confirmed}</Money><span className="sub"> · <Money sm>{sm.remaining}</Money></span></> : <span className="sub">—</span>}</td>
-                  </tr>
-                )
-              })}
+              {pf.items.map((x) => (
+                <tr key={x.id} id={x.id}>
+                  <td className="tchk">{selectable(x) && <input type="checkbox" aria-label={`تحديد ${x.name}`} checked={sel.includes(x.id)} onChange={() => toggle(x.id)} />}</td>
+                  <td><b>{x.name}</b><div className="sub">{x.field ?? pf.field} · {x.region}{x.city ? ` · ${x.city}` : ''} · {nf.format(x.beneficiaries)} مستفيد · {x.outputs} · {x.files.join('، ')}{x.activityId ? ` · النشاط: ${pfActivities(pf).find((a) => a.id === x.activityId)?.label ?? x.activityId}` : ''}</div>
+                    {(asPartner || role.key === 'supervisor') && pfActivities(pf).length > 0 && x.state !== 'rejected' && x.state !== 'excluded' && (
+                      <FieldSelect value={x.activityId ?? ''} label={`نشاط خطة المحفظة · ${x.name}`} placeholder="اربط بنشاط" options={[{ value: '', label: 'بلا نشاط' }, ...pfActivities(pf).map((a) => ({ value: a.id, label: a.label }))]} onChange={(v) => r(linkSubActivity(pf.id, x.id, v, asPartner ? entityName(pf) : user.name), 'ربط النشاط')} />
+                    )}</td>
+                  <td className="n"><Money sm>{x.amount}</Money></td>
+                  <td>
+                    <Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}</Tag>
+                    {x.rec && x.state === 'pending' && <span className="sub"> · توصية المشرف: {x.rec.outcome === 'approve' ? 'اعتماد' : 'رفض'}{x.rec.note ? ` · ${x.rec.note}` : ''}</span>}
+                    {x.reason && <span className="sub"> · {x.reason}</span>}
+                    {x.note && <span className="sub"> · {x.note}</span>}
+                    {x.outcome && (x.state === 'stalled' || x.state === 'excluded') && <span className="sub"> · {x.outcome.note}</span>}
+                    {(mgr || sup) && sel.includes(x.id) && x.state !== 'draft' && (
+                      <span className="fld mt-1"><input value={reasons[x.id] ?? ''} onChange={(e) => setReasons((r0) => ({ ...r0, [x.id]: e.target.value }))} aria-label={`ملاحظة على ${x.name}`} placeholder={mgr ? 'سبب الرفض أو ملاحظة الاعتماد' : 'ملاحظة التوصية · إلزامية للرفض'} /></span>
+                    )}
+                    {dropper && x.state === 'draft' && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { dropSub(pf.id, x.id, asPartner ? entityName(pf) : user.name); r([], 'حذف المسودة') }}>حذف المسودة</button>}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       )}
       {sel.length > 0 && (
         <div className="apv-row mt-3">
-          <span className="sub">{sel.length} محدد · <span className="num">{nf.format(pf.items.filter((x) => sel.includes(x.id)).reduce((s, x) => s + x.amount, 0))}</span></span>
-          {cap && !decider && <span className="bad">{cap}</span>}
-          {!decider && <button type="button" className="btn btn-p btn-sm" disabled={Boolean(cap)} onClick={() => r(sendSubs(pf.id, sel, user.name), 'طلب الاعتماد')}>أرسل للاعتماد</button>}
-          {decider && <button type="button" className="btn btn-2 btn-sm" onClick={() => decide('reject')}>ارفض المحدد</button>}
-          {decider && <button type="button" className="btn btn-p btn-sm" onClick={() => decide('approve')}>اعتمد المحدد</button>}
+          <span className="sub">{sel.length} محدد · <span className="num">{nf.format(picked.reduce((s, x) => s + x.amount, 0))}</span></span>
+          {cap && drafts.length > 0 && <span className="bad">{cap}</span>}
+          {(asPartner || sup) && drafts.length > 0 && <button type="button" className="btn btn-p btn-sm" disabled={Boolean(cap)} onClick={() => r(sendSubs(pf.id, drafts.map((x) => x.id), asPartner ? entityName(pf) : user.name), 'رفع المحدد للمراجعة')}>ارفع للمراجعة</button>}
+          {sup && sent.length > 0 && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(studySubs(pf.id, sent.map((x) => x.id), user.name, role.key), 'بدء الدراسة')}>ابدأ الدراسة</button>}
+          {sup && studied.length > 0 && <button type="button" className="btn btn-2 btn-sm" onClick={() => recommend('reject')}>أوصِ بالرفض</button>}
+          {sup && studied.length > 0 && <button type="button" className="btn btn-p btn-sm" onClick={() => recommend('approve')}>أوصِ بالاعتماد</button>}
+          {mgr && <button type="button" className="btn btn-2 btn-sm" onClick={() => decide('reject')}>ارفض المحدد</button>}
+          {mgr && <button type="button" className="btn btn-p btn-sm" onClick={() => decide('approve')}>اعتمد المحدد</button>}
         </div>
       )}
-      {adder && !adding && <div className="apv-row mt-3"><button type="button" className="btn btn-2 btn-sm" onClick={() => setAdding(true)}>أضف مشروعًا فرعيًّا</button><span className="sub">الرصيد المتاح <span className="num">{nf.format(Math.max(0, pfMoney(pf).available))}</span></span></div>}
+      {/* v3 · 0.sub.7 · 0.sub.8 · 13.4.14 · a substantive change · stalled, or excluded with its value back */}
+      {(sup || mgr) && pf.items.some((x) => ['pending', 'approved', 'closing', 'stalled'].includes(x.state)) && (
+        <div className="apv-row mt-3">
+          <FieldSelect value={one} onChange={setOne} label="مشروع فرعي للاستبعاد أو التعثر" placeholder="اختر مشروعًا فرعيًّا" options={pf.items.filter((x) => ['pending', 'approved', 'closing', 'stalled'].includes(x.state)).map((x) => ({ value: x.id, label: `${x.name} · ${SUB_STATE_SAY[x.state]}` }))} />
+          <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب الاستبعاد أو التعثر" placeholder="السبب · إلزامي" /></span>
+          {['approved', 'closing'].includes(pf.items.find((x) => x.id === one)?.state ?? '') && <button type="button" className="btn btn-2 btn-sm" onClick={() => { r(stallSub(pf.id, one, why, user.name, role.key), 'متعثر'); setOne('') }}>متعثر</button>}
+          <button type="button" className="btn btn-d btn-sm" disabled={!one} onClick={() => { r(excludeSub(pf.id, one, why, user.name, role.key), 'استبعاد المشروع الفرعي'); setOne('') }}>استبعد · تعود القيمة للرصيد</button>
+        </div>
+      )}
+      {adder && !adding && <div className="apv-row mt-3"><button type="button" className="btn btn-2 btn-sm" onClick={() => setAdding(true)}>أضف مشروعًا فرعيًّا</button><span className="sub">الرصيد المتاح <span className="num">{nf.format(Math.max(0, pfMoney(pf).available))}</span> · المسودات قد تتجاوزه</span></div>}
       {adder && adding && (
         <div className="ptn-form mt-3">
           <div className="regfields">
             <label className="regf"><span className="lb">اسم المشروع الفرعي</span><span className="fld"><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} aria-label="اسم المشروع الفرعي" /></span></label>
             <label className="regf"><span className="lb">المنطقة</span><FieldSelect value={d.region} onChange={(v) => setD({ ...d, region: v })} label="المنطقة" options={[...new Set(['عموم المملكة', ...REGIONS])]} /></label>
             <label className="regf"><span className="lb">القيمة</span><MoneyField value={d.amount} onChange={(v) => setD({ ...d, amount: v })} label="قيمة المشروع الفرعي" /></label>
-            <label className="regf"><span className="lb">المستفيدون المستهدفون</span><span className="fld"><input inputMode="numeric" value={d.beneficiaries} onChange={(e) => setD({ ...d, beneficiaries: e.target.value.replace(/\D/g, '') })} aria-label="المستفيدون المستهدفون" /></span></label>
-            <label className="regf ptn-wide"><span className="lb">المخرجات المستهدفة</span><span className="fld"><input value={d.outputs} onChange={(e) => setD({ ...d, outputs: e.target.value })} aria-label="المخرجات المستهدفة" /></span></label>
+            <label className="regf"><span className="lb">المستفيدون المستهدفون{req.includes('beneficiaries') ? '' : ' · اختياري'}</span><span className="fld"><input inputMode="numeric" value={d.beneficiaries} onChange={(e) => setD({ ...d, beneficiaries: e.target.value.replace(/\D/g, '') })} aria-label="المستفيدون المستهدفون" /></span></label>
+            <label className="regf"><span className="lb">المدينة{req.includes('city') ? '' : ' · اختياري'}</span><span className="fld"><input value={d.city} onChange={(e) => setD({ ...d, city: e.target.value })} aria-label="المدينة" /></span></label>
+            <label className="regf ptn-wide"><span className="lb">المخرجات المستهدفة{req.includes('outputs') ? '' : ' · اختياري'}</span><span className="fld"><input value={d.outputs} onChange={(e) => setD({ ...d, outputs: e.target.value })} aria-label="المخرجات المستهدفة" /></span></label>
             {/* v3 · 12.4.13 · the plan activity it serves · several sub-projects may serve one */}
             {pfActivities(pf).length > 0 && (
-              <label className="regf"><span className="lb">نشاط خطة المحفظة</span><FieldSelect value={d.activityId} onChange={(v) => setD({ ...d, activityId: v })} label="نشاط خطة المحفظة" placeholder="اختياري" options={pfActivities(pf).map((a) => ({ value: a.id, label: a.label }))} /></label>
+              <label className="regf"><span className="lb">نشاط خطة المحفظة{req.includes('activity') ? '' : ' · اختياري'}</span><FieldSelect value={d.activityId} onChange={(v) => setD({ ...d, activityId: v })} label="نشاط خطة المحفظة" placeholder="اختياري" options={pfActivities(pf).map((a) => ({ value: a.id, label: a.label }))} /></label>
             )}
           </div>
           <div className="apv-row mt-2">
-            <span className="sub">{d.files.length ? d.files.join(' · ') : 'مرفقات المشروع الفرعي · مستقلة عن مرفقات المحفظة'}</span>
+            <span className="sub">{d.files.length ? d.files.join(' · ') : `مرفقات المشروع الفرعي${req.includes('files') ? '' : ' · اختياري'}`}</span>
             <UploadButton label="مرفق" onPick={(f) => setD((x) => ({ ...x, files: [...x.files, f.name] }))} />
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setD(EMPTY) }}>إلغاء</button>
             <button type="button" className="btn btn-p btn-sm" onClick={add}>احفظ مسودة</button>
           </div>
-          <p className="sub cnote">يرث المسار والمجال من المحفظة ({pf.track} · {pf.field}) · ويُرسل للاعتماد وحده أو مع غيره.</p>
+          <p className="sub cnote">يرث المسار والمجال من المحفظة ({pf.track} · {pf.field}) · يُرفع للمراجعة وحده أو مع غيره · يدرسه المشرف ويوصي، ويقرّه مدير المنح.</p>
         </div>
       )}
       <Said said={said} />
@@ -539,40 +571,98 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   )
 }
 
-/* ── The money · Ehsan's executed payments per sub-project, or the portfolio's own requests (13.2.23 – 13.2.25) ── */
+/* ── v3 · 13.4.16 · 13.4.17 · 13.4.30 · the portfolio's own settings · its sub-project form, its criteria, its values' reliability ── */
+function SettingsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
+  const { role, user } = useRole()
+  const may = !asPartner && (role.key === 'supervisor' || role.key === 'grants-manager')
+  const [fields, setFields] = useState<SubField[]>(pf.subFields ?? SUB_FIELDS_DEFAULT)
+  const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
+  const r = (out: string[], ok: string) => setSaid(out.length ? { bad: out } : { ok })
+  return (
+    <Glass>
+      <Head title="إعدادات المحفظة" meta={<span className="sub">نموذج المشروع الفرعي · المعايير · موثوقية القيم</span>} />
+      <KV rows={[
+        { k: 'حقول المشروع الفرعي الإلزامية', v: <span className="rowf gp-2">{(Object.keys(SUB_FIELD_SAY) as SubField[]).map((f) => <button key={f} type="button" disabled={!may} className={`btn btn-sm ${fields.includes(f) ? 'btn-2' : 'btn-ghost'}`} aria-pressed={fields.includes(f)} onClick={() => setFields((x) => (x.includes(f) ? x.filter((y) => y !== f) : [...x, f]))}>{SUB_FIELD_SAY[f]}</button>)}</span> },
+        { k: 'معايير المحفظة المعتمدة', v: <span className="rowf gp-2">{pf.criteria ? <Tag tone="ok"><Icon name={icons.clip} size="sm" /> {pf.criteria.file}</Tag> : <span className="sub">لم تُحفظ · يُتفق عليها خارج النظام</span>}{may && <UploadButton label="احفظ المعايير (PDF)" onPick={(f) => r(attachPfCriteria(pf.id, f.name, user.name, role.key), 'معايير المحفظة')} />}</span> },
+        { k: 'قيم المشاريع الفرعية للتوزيع الجغرافي للتكلفة', v: may ? <button type="button" className={`btn btn-sm ${pf.reliable ? 'btn-2' : 'btn-ghost'}`} aria-pressed={Boolean(pf.reliable)} onClick={() => { setPfReliable(pf.id, !pf.reliable, user.name); setSaid({ ok: 'موثوقية القيم' }) }}>{pf.reliable ? 'موثوقة · تُستخدم' : 'غير موثوقة · لا تُستخدم'}</button> : <span className="sub">{pf.reliable ? 'موثوقة' : 'لا تُستخدم للتكلفة'}</span> },
+      ]} />
+      {may && <div className="apv-row mt-3"><button type="button" className="btn btn-p btn-sm" onClick={() => r(savePfForm(pf.id, fields, user.name, role.key), 'نموذج المشروع الفرعي')}>احفظ النموذج</button><span className="sub">الاسم والمنطقة والقيمة إلزامية دائمًا · ولا يلزم المشروع الفرعي حقول المشروع العادي{/* doc 13.4.16 */}</span></div>}
+      <Said said={said} />
+    </Glass>
+  )
+}
+
+/* ── v3 · 13.2.6 · the body's session · the members' votes, the minutes, then the decision (6.2 · 7.2) ── */
+function SessionCard({ pf }: { pf: PortfolioRec }) {
+  const { role, user } = useRole()
+  const [sid, setSid] = useState('')
+  const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
+  const body = pf.stage === 'board' ? 'board' : 'committee'
+  const secretary = (body === 'committee' ? APPROVAL_RULES.committeeBy : APPROVAL_RULES.boardBy).includes(role.key)
+  const it = pf.session
+  const ss = it ? SESSIONS.find((x) => x.id === it.id) : undefined
+  const t = it ? voteTally({ projectId: pf.id, votes: it.votes }) : undefined
+  const r = (out: string[], ok: string) => setSaid(out.length ? { bad: out } : { ok })
+  const voters = ss ? ss.members.filter((m) => m === user.name || role.key === 'ceo') : []
+  return (
+    <Glass>
+      <Head title={body === 'committee' ? 'جلسة اللجنة التنفيذية' : 'جلسة مجلس الأمناء'} meta={it ? <Tag tone="teal">{it.id}</Tag> : <Tag tone="warn">لم تُدرج</Tag>} />
+      {!it ? (
+        secretary ? (
+          <div className="apv-row">
+            <FieldSelect value={sid} onChange={setSid} label="الجلسة" placeholder="اختر جلسة قادمة" options={pfSessions(pf).map((x) => ({ value: x.id, label: `${x.title} · ${x.date}` }))} />
+            <button type="button" className="btn btn-p btn-sm" onClick={() => r(pfToSession(pf.id, sid, user.name, role.key), 'الإدراج على الجلسة')}>أدرج على الجلسة</button>
+          </div>
+        ) : <p className="sub cnote">يُدرجها أمين الجلسة على جدول جلسة قادمة.</p>
+      ) : (
+        <>
+          <KV rows={[
+            { k: 'الأصوات', v: `${t!.approve} موافقة · ${t!.reject} رفض · ${t!.return} إعادة · ${t!.abstain} امتناع · النصاب ${APPROVAL_RULES.quorum}` },
+            { k: 'المحضر', v: it.minutes ?? <span className="sub">لم يُرفق</span> },
+          ]} />
+          {voters.length > 0 && (
+            <ul className="ptn-slots mt-2">
+              {voters.map((m) => (
+                <li key={m}>
+                  <Person name={m} />
+                  {it.votes[m] && <Tag tone="mute">{({ approve: 'موافقة', reject: 'رفض', return: 'إعادة', abstain: 'امتناع' } as const)[it.votes[m]!]}</Tag>}
+                  {(['approve', 'reject', 'return', 'abstain'] as const).map((v) => <button key={v} type="button" className="btn btn-ghost btn-sm" onClick={() => r(castPfVote(pf.id, m, v, user.name, role.key), `صوت ${m}`)}>{({ approve: 'موافقة', reject: 'رفض', return: 'إعادة', abstain: 'امتناع' } as const)[v]}</button>)}
+                </li>
+              ))}
+            </ul>
+          )}
+          {secretary && !it.minutes && <div className="apv-row mt-2"><UploadButton label="محضر الجلسة" onPick={(f) => r(attachPfMinutes(pf.id, f.name, user.name), 'المحضر')} /></div>}
+        </>
+      )}
+      <p className="sub cnote">تخضع المحفظة لمسار الاعتماد نفسه · النصاب والأغلبية والمحضر قبل تسجيل القرار{/* doc 13.2.6 */}.</p>
+      <Said said={said} />
+    </Glass>
+  )
+}
+
+/* ── The money · the portfolio's requests on its schedule, by the payment procedure (13.2.23 – 13.2.25 · BPD-009) ── */
 function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const { role, user } = useRole()
-  const [sub, setSub] = useState('')
   const [ref, setRef] = useState('')
   const [note, setNote] = useState('')
   const [why, setWhy] = useState('')
+  const [amt, setAmt] = useState('')
   const [docs, setDocs] = useState<string[]>([])
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
-  const approved = pf.items.filter((x) => x.state === 'approved')
-  const target = approved.find((x) => x.id === sub) ?? approved[0]
-  const fin = !asPartner && role.key === 'finance'
   const sup = !asPartner && role.key === 'supervisor'
   const open = pf.stage === 'approved'
-  if (pf.channel === 'ehsan') {
-    const list = approved.flatMap((x) => paysOf({ kind: 'sub', pfId: pf.id, subId: x.id }))
-    return (
-      <Glass>
-        <Head title="دفعات المحفظة عبر إحسان" meta={<span className="sub">تنفّذها المنصة · يسجّلها المشرف لكل مشروع فرعي · تؤكّدها المالية</span>} />
-        <PayList list={list} finance={fin} />
-        {sup && open && target && (
-          <>
-            <label className="regf mt-3"><span className="lb">المشروع الفرعي</span><FieldSelect value={target.id} onChange={setSub} label="المشروع الفرعي" options={approved.map((x) => ({ value: x.id, label: `${x.name} · متبقٍّ ${nf.format(x.amount - subMoney(pf, x).recorded)}` }))} /></label>
-            <PayForm target={{ kind: 'sub', pfId: pf.id, subId: target.id }} max={target.amount - subMoney(pf, target).recorded} />
-          </>
-        )}
-        <p className="sub cnote">الدفعة لا تتجاوز قيمة المشروع الفرعي ولا قيمة المحفظة · وتُقيَّد كعملية نفّذتها المنصة، لا صرفًا جديدًا.{/* doc 11.4.23 */}</p>
-      </Glass>
-    )
+  const act = (rq: PfRequest, a: 'qualify' | 'permit' | 'approve' | 'order' | 'pay' | 'return', ok: string) => {
+    const out = actOnPfReq(pf.id, rq.id, a, note, user.name, ref, role.key, a === 'permit' ? (Number(amt) || rq.asked || rq.amount) : undefined)
+    setSaid(out.length ? { bad: out } : { ok })
+    if (!out.length) { setNote(''); setRef(''); setAmt('') }
   }
+  const mine = (rq: PfRequest) => !asPartner && (
+    ((rq.state === 'supervisor' || rq.state === 'eligible') && role.key === 'supervisor') || (rq.state === 'manager' && role.key === 'grants-manager')
+    || (rq.state === 'exec' && role.key === 'ceo') || ((rq.state === 'finance' || rq.state === 'order') && role.key === 'finance'))
   const next = pf.schedule.find((s) => !pf.requests.some((r) => r.no === s.no && r.state !== 'returned'))
   return (
     <Glass>
-      <Head title="دفعات المحفظة" meta={<span className="sub">تُطلب على مستوى المحفظة وفق الجدول · لا لكل مشروع فرعي</span>} />
+      <Head title="دفعات المحفظة" meta={<span className="sub">على مستوى المحفظة وفق الجدول · بإجراء صرف الدفعات · لا لكل مشروع فرعي</span>} />
       <ul className="ptn-slots">
         {pf.schedule.map((s) => {
           const rq = pf.requests.filter((r) => r.no === s.no).at(-1)
@@ -580,21 +670,17 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             <li key={s.no}>
               <span>الدفعة <span className="num">{s.no}</span> · <DateText>{s.dueAt}</DateText></span>
               <Money sm>{s.amount}</Money>
-              {rq ? <Tag tone={rq.state === 'paid' ? 'ok' : rq.state === 'finance' || rq.state === 'order' ? 'warn' : 'ret'}>{rq.state === 'paid' ? `صُرفت · ${rq.ref}` : rq.state === 'finance' ? 'لدى المالية · أمر الصرف' : rq.state === 'order' ? 'أمر الصرف معتمد · بانتظار التحويل' : `معادة · ${rq.note}`}</Tag> : <Tag tone="mute">لم تُطلب</Tag>}
+              {rq ? <Tag tone={rq.state === 'paid' ? 'ok' : rq.state === 'returned' ? 'ret' : 'warn'}>{PF_REQ_SAY[rq.state]}{rq.state === 'paid' ? ` · ${rq.ref}` : rq.state === 'returned' && rq.note ? ` · ${rq.note}` : ''}</Tag> : <Tag tone="mute">لم تُطلب</Tag>}
               {rq?.why && <span className="sub">{rq.why}{rq.docs?.length ? ` · ${rq.docs.join('، ')}` : ''}</span>}
-              {fin && rq?.state === 'finance' && (
+              {rq && mine(rq) && (
                 <span className="rowf gp-2">
-                  <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfReq(pf.id, rq.id, 'order', '', user.name); setSaid(out.length ? { bad: out } : { ok: 'اعتماد أمر الصرف' }) }}>اعتمد أمر الصرف</button>
+                  {rq.state === 'supervisor' && <button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'qualify', 'اعتماد المتطلبات')}>اعتمد المتطلبات</button>}
+                  {rq.state === 'eligible' && <><MoneyField value={amt} onChange={setAmt} label={`قيمة إذن الدفعة ${rq.no}`} placeholder={nf.format(rq.asked ?? rq.amount)} /><button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'permit', 'إذن الصرف')}>أنشئ إذن الصرف</button></>}
+                  {(rq.state === 'manager' || rq.state === 'exec') && <button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'approve', 'اعتماد الإذن')}>اعتمد الإذن</button>}
+                  {rq.state === 'finance' && <button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'order', 'اعتماد أمر الصرف')}>اعتمد أمر الصرف</button>}
+                  {rq.state === 'order' && <><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم أمر التحويل" placeholder="رقم أمر التحويل" /></span><button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'pay', 'صرف الدفعة')}>صرف</button></>}
                   <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="سبب الإعادة" placeholder="سبب الإعادة" /></span>
-                  <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = actOnPfReq(pf.id, rq.id, 'return', note, user.name); setSaid(out.length ? { bad: out } : { ok: 'إعادة الطلب' }) }}>أعد</button>
-                </span>
-              )}
-              {fin && rq?.state === 'order' && (
-                <span className="rowf gp-2">
-                  <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم أمر التحويل" placeholder="رقم أمر التحويل" /></span>
-                  <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfReq(pf.id, rq.id, 'pay', '', user.name, ref); setSaid(out.length ? { bad: out } : { ok: 'صرف الدفعة' }) }}>صرف</button>
-                  <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="سبب الإعادة" placeholder="سبب الإعادة" /></span>
-                  <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = actOnPfReq(pf.id, rq.id, 'return', note, user.name); setSaid(out.length ? { bad: out } : { ok: 'إعادة الطلب' }) }}>أعد</button>
+                  <button type="button" className="btn btn-2 btn-sm" onClick={() => act(rq, 'return', 'إعادة الطلب')}>أعد</button>
                 </span>
               )}
             </li>
@@ -612,40 +698,50 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
           <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبرّر طلب الدفعة" placeholder="مبرّر الطلب وما أُنجز" /></span>
           <UploadButton label="مستند الطلب" onPick={(f) => setDocs((x) => [...x, f.name])} />
           {docs.length > 0 && <span className="sub">{docs.join('، ')}</span>}
-          <button type="button" className="btn btn-p btn-sm" disabled={Boolean(pfReqIssue(pf, next.no, next.amount)) || pf.agreement.state !== 'signed'} title={pf.agreement.state !== 'signed' ? 'بعد توقيع الاتفاقية' : ''} onClick={() => { const out = requestPfPay(pf.id, next.no, next.amount, user.name, why, docs); setSaid(out.length ? { bad: out } : { ok: `طلب الدفعة ${next.no}` }); if (!out.length) { setWhy(''); setDocs([]) } }}>اطلب الدفعة {next.no}</button>
+          <button type="button" className="btn btn-p btn-sm" disabled={Boolean(pfReqIssue(pf, next.no, next.amount)) || pf.agreement.state !== 'signed'} title={pf.agreement.state !== 'signed' ? 'بعد توقيع الاتفاقية' : ''} onClick={() => { const out = requestPfPay(pf.id, next.no, next.amount, asPartner ? entityName(pf) : user.name, why, docs); setSaid(out.length ? { bad: out } : { ok: `متطلبات الدفعة ${next.no}` }); if (!out.length) { setWhy(''); setDocs([]) } }}>ارفع متطلبات الدفعة {next.no}</button>
         </div>
       )}
+      <p className="sub cnote">لا يُشترط توزيع الدفعة على المشاريع الفرعية ولا ربطها بتفاصيلها المالية · قيمها توزيع داخلي ومتابعة لا أساس للصرف{/* doc 13.4.37 · 13.4.38 */}.</p>
       <Said said={said} />
     </Glass>
   )
 }
 
-/* ── Execution and results the partner reports on each approved sub-project (13.2.20 · 13.2.21) ── */
+/* ── Results the partner records on each approved sub-project · the foundation approves them (13.2.20 · 13.2.21 · 0.sub.6) ── */
 function ExecCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const { role, user } = useRole()
   const [open, setOpen] = useState<string | null>(null)
   const [e, setE] = useState<Omit<SubExec, 'at' | 'by'>>({ status: 'لم يبدأ', progress: 0, reached: 0, results: '', evidence: [] })
+  const [note, setNote] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
-  const approved = pf.items.filter((x) => x.state === 'approved')
+  const live = pf.items.filter(isLiveSub)
   const editor = (asPartner || role.key === 'supervisor') && pf.stage === 'approved'
-  if (!approved.length) return null
+  const sup = !asPartner && role.key === 'supervisor'
+  if (!live.length) return null
   return (
     <Glass>
-      <Head title="تنفيذ المشاريع الفرعية ونتائجها" meta={<span className="sub">يحدّثها الشريك · المستهدف مسودة والفعلي يُدخل مقابله</span>} />
+      <Head title="نتائج المشاريع الفرعية" meta={<span className="sub">يسجّلها الشريك · يعتمدها مشرف المنح · دون تقرير ختامي مستقل</span>} />
       <ul className="ptn-exec">
-        {approved.map((x) => (
+        {live.map((x) => (
           <li key={x.id}>
             <div className="ptn-exec-h">
               <b>{x.name}</b>
-              <Tag tone={x.exec?.status === 'مكتمل' ? 'ok' : x.exec?.status === 'تحت التنفيذ' ? 'teal' : 'mute'}>{x.exec?.status ?? 'لم يبدأ'}</Tag>
+              <Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}{x.ready && x.state === 'closing' ? ' · طلب اعتماد النتائج' : ''}</Tag>
               <span className="sub">إنجاز <span className="num">{pct(x.exec?.progress ?? 0)}</span> · مستفيدون <span className="num">{nf.format(x.exec?.reached ?? 0)}</span> من <span className="num">{nf.format(x.beneficiaries)}</span></span>
-              {editor && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOpen(open === x.id ? null : x.id); setE({ status: x.exec?.status ?? 'لم يبدأ', progress: x.exec?.progress ?? 0, reached: x.exec?.reached ?? 0, results: x.exec?.results ?? '', evidence: x.exec?.evidence ?? [] }) }}>{open === x.id ? 'إغلاق' : 'حدّث'}</button>}
+              {editor && (x.state === 'approved' || x.state === 'closing') && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOpen(open === x.id ? null : x.id); setE({ status: x.exec?.status ?? 'لم يبدأ', progress: x.exec?.progress ?? 0, reached: x.exec?.reached ?? 0, results: x.exec?.results ?? '', evidence: x.exec?.evidence ?? [] }) }}>{open === x.id ? 'إغلاق' : 'سجّل النتائج'}</button>}
             </div>
             {x.exec?.results && <p className="sub">{isolate(x.exec.results)}{x.exec.evidence.length ? ` · ${x.exec.evidence.join('، ')}` : ''}</p>}
+            {x.outcome && x.state === 'closing' && !x.ready && <p className="bad cnote">{x.outcome.note}</p>}
+            {sup && x.state === 'closing' && x.ready && (
+              <div className="apv-row mt-2">
+                <span className="fld"><input value={note} onChange={(v) => setNote(v.target.value)} aria-label={`ملاحظة على نتائج ${x.name}`} placeholder="ما ينقص · عند الإعادة" /></span>
+                <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = completeSub(pf.id, x.id, 'return', note, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'إعادة النتائج للشريك' }); if (!out.length) setNote('') }}>أعد للشريك</button>
+                <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = completeSub(pf.id, x.id, 'approve', note, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: `«${x.name}» مكتمل` }) }}>اعتمد النتائج · مكتمل</button>
+              </div>
+            )}
             {open === x.id && (
               <div className="ptn-form mt-2">
                 <div className="regfields">
-                  <label className="regf"><span className="lb">الحالة</span><FieldSelect value={e.status} onChange={(v) => setE({ ...e, status: v as SubExec['status'] })} label="حالة التنفيذ" options={['لم يبدأ', 'تحت التنفيذ', 'مكتمل']} /></label>
                   <label className="regf"><span className="lb">نسبة الإنجاز</span><span className="fld"><input inputMode="numeric" value={String(e.progress)} onChange={(v) => setE({ ...e, progress: Number(v.target.value.replace(/\D/g, '')) || 0 })} aria-label="نسبة الإنجاز" /></span></label>
                   <label className="regf"><span className="lb">المستفيدون الفعليون</span><span className="fld"><input inputMode="numeric" value={String(e.reached)} onChange={(v) => setE({ ...e, reached: Number(v.target.value.replace(/\D/g, '')) || 0 })} aria-label="المستفيدون الفعليون" /></span></label>
                   <label className="regf ptn-wide"><span className="lb">النتائج الفعلية</span><span className="fld"><input value={e.results} onChange={(v) => setE({ ...e, results: v.target.value })} aria-label="النتائج الفعلية" placeholder={`المستهدف: ${x.outputs}`} /></span></label>
@@ -653,7 +749,8 @@ function ExecCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                 <div className="apv-row mt-2">
                   <span className="sub">{e.evidence.length ? e.evidence.join(' · ') : 'الشواهد'}</span>
                   <UploadButton label="شاهد" onPick={(f) => setE((y) => ({ ...y, evidence: [...y.evidence, f.name] }))} />
-                  <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = updateSubExec(pf.id, x.id, e, user.name); setSaid(out.length ? { bad: out } : { ok: `تنفيذ «${x.name}»` }); if (!out.length) setOpen(null) }}>احفظ</button>
+                  <label className="rowf gp-2"><input type="checkbox" checked={e.status === 'مكتمل'} onChange={(v) => setE({ ...e, status: v.target.checked ? 'مكتمل' : 'لم يبدأ' })} aria-label="اطلب اعتماد النتائج" /> <span className="sub">اكتمل التنفيذ · اطلب اعتماد النتائج</span></label>
+                  <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = updateSubExec(pf.id, x.id, e, asPartner ? entityName(pf) : user.name); setSaid(out.length ? { bad: out } : { ok: `نتائج «${x.name}»` }); if (!out.length) setOpen(null) }}>احفظ</button>
                 </div>
               </div>
             )}
@@ -665,33 +762,114 @@ function ExecCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   )
 }
 
-/* ── Closing · the partner's final report, every sub-project's requirements, then the close (13.2.28 – 13.2.30) ── */
+/* ── Closing · the comprehensive report, the evaluation, the requirements · by the closing procedure (13.2.28 – 13.2.31) ── */
 function CloseCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const { role, user } = useRole()
   const [report, setReport] = useState(pf.close.report)
   const [evidence, setEvidence] = useState<string[]>(pf.close.evidence)
+  const [note, setNote] = useState('')
+  const [crit, setCrit] = useState(() => pf.close.evaluation?.criteria ?? [])
+  const [evNotes, setEvNotes] = useState(pf.close.evaluation?.notes ?? '')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const checks = pfCloseChecks(pf)
+  const st = pf.close.stage
+  const r = (out: string[], ok: string) => { setSaid(out.length ? { bad: out } : { ok }); if (!out.length) setNote('') }
+  const seat = st === 'supervisor' || st === 'evalDraft' ? 'supervisor' : st === 'manager' || st === 'evalManager' ? 'grants-manager' : st === 'executive' || st === 'evalExecutive' ? 'ceo' : ''
+  const mine = !asPartner && role.key === seat
+  const evalStage = st === 'evalDraft' || st === 'evalManager' || st === 'evalExecutive'
+  const criteria = pf.close.evaluation?.criteria ?? []
   return (
     <Glass>
-      <Head title="إغلاق المحفظة" meta={pf.stage === 'closed' ? <Tag tone="ok">أُغلقت <DateText>{pf.close.closedAt!}</DateText></Tag> : <Tag tone="mute">بعد آخر مشروع</Tag>} />
+      <Head title="إغلاق المحفظة" meta={pf.stage === 'closed' ? <Tag tone="ok">أُغلقت <DateText>{pf.close.closedAt!}</DateText></Tag> : st ? <Tag tone="warn">{PF_CLOSE_SAY[st]}</Tag> : <Tag tone="mute">بعد آخر مشروع</Tag>} />
       <Checks items={checks} />
-      {asPartner && (pf.stage === 'approved' || pf.stage === 'closing') && (
+      {pf.close.note && (st === 'returned' || st === 'evalDraft' || st === 'evalManager') && <p className="bad cnote">{pf.close.note}</p>}
+      {asPartner && (pf.stage === 'approved' || (pf.stage === 'closing' && st === 'returned')) && (
         <>
-          <label className="regf mt-3"><span className="lb">التقرير الختامي</span><span className="fld"><textarea rows={3} value={report} onChange={(e) => setReport(e.target.value)} aria-label="التقرير الختامي للمحفظة" /></span></label>
+          <label className="regf mt-3"><span className="lb">التقرير الشامل للمحفظة</span><span className="fld"><textarea rows={3} value={report} onChange={(e) => setReport(e.target.value)} aria-label="التقرير الختامي للمحفظة" /></span></label>
           <div className="apv-row mt-2">
             <span className="sub">{evidence.length ? evidence.join(' · ') : 'الشواهد'}</span>
             <UploadButton label="شاهد" onPick={(f) => setEvidence((x) => [...x, f.name])} />
-            <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = submitPfReport(pf.id, report, evidence, user.name); setSaid(out.length ? { bad: out } : { ok: 'التقرير الختامي' }) }}>ارفع التقرير</button>
+            <button type="button" className="btn btn-p btn-sm" onClick={() => r(submitPfReport(pf.id, report, evidence, entityName(pf)), 'التقرير الشامل')}>ارفع التقرير</button>
           </div>
         </>
       )}
-      {!asPartner && pf.close.report && <p className="prose mt-2">{isolate(pf.close.report)}</p>}
-      {!asPartner && (role.key === 'supervisor' || role.key === 'grants-manager') && pf.stage === 'closing' && (
+      {!asPartner && pf.close.report && <p className="prose mt-2">{isolate(pf.close.report)}{pf.close.evidence.length ? ` · ${pf.close.evidence.join('، ')}` : ''}</p>}
+      {mine && !evalStage && st && st !== 'returned' && (
         <div className="apv-row mt-3">
-          <button type="button" className="btn btn-p btn-sm" disabled={checks.some((c) => !c.ok)} onClick={() => { const out = closePortfolio(pf.id, user.name); setSaid(out.length ? { bad: out } : { ok: 'إغلاق المحفظة' }) }}>أغلق المحفظة</button>
+          <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على التقرير الشامل" placeholder="سبب الإعادة" /></span>
+          <button type="button" className="btn btn-2 btn-sm" onClick={() => r(actOnPfClose(pf.id, 'return', note, user.name, role.key), 'إعادة التقرير للشريك')}>أعده للشريك</button>
+          <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfClose(pf.id, 'approve', '', user.name, role.key), 'اعتماد التقرير الشامل')}>اعتمد التقرير الشامل</button>
         </div>
       )}
+      {/* v3 · 13.2.30 · the portfolio's evaluation · the closing procedure's questions and weights, out of 100 */}
+      {evalStage && (
+        <>
+          <h4 className="ptn-sub">تقييم المحفظة{pfEvalScore(pf) !== null ? ` · ${pfEvalScore(pf)} من 100` : ''}</h4>
+          {mine && st === 'evalDraft' ? (
+            <div className="regfields">
+              {(crit.length ? crit : criteria).map((c, i) => (
+                <label key={c.key} className="regf"><span className="lb">{c.label} · الوزن {nf.format(c.weight)}</span><FieldSelect value={c.rating ? String(c.rating) : ''} onChange={(v) => setCrit((x) => (x.length ? x : criteria).map((y, j) => (j === i ? { ...y, rating: Number(v) || null } : y)))} label={`تقييم ${c.label}`} placeholder="من 5" options={['1', '2', '3', '4', '5']} /></label>
+              ))}
+              <label className="regf ptn-wide"><span className="lb">ملاحظات التقييم</span><span className="fld"><input value={evNotes} onChange={(e) => setEvNotes(e.target.value)} aria-label="ملاحظات تقييم المحفظة" /></span></label>
+            </div>
+          ) : (
+            <KV rows={criteria.map((c) => ({ k: `${c.label} · الوزن ${nf.format(c.weight)}`, v: c.rating === null ? <span className="sub">لم يُقيَّم</span> : `${c.rating} من 5` }))} />
+          )}
+          {mine && (
+            <div className="apv-row mt-3">
+              {st === 'evalDraft' && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(savePfEval(pf.id, crit.length ? crit : criteria, evNotes, user.name, role.key), 'حفظ التقييم')}>احفظ التقييم</button>}
+              {st === 'evalDraft' && <button type="button" className="btn btn-p btn-sm" onClick={() => { savePfEval(pf.id, crit.length ? crit : criteria, evNotes, user.name, role.key); r(actOnPfEval(pf.id, 'send', '', user.name, role.key), 'إرسال التقييم لمدير المنح') }}>أرسل لمدير المنح</button>}
+              {st !== 'evalDraft' && <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على التقييم" placeholder="سبب الإعادة" /></span>}
+              {st !== 'evalDraft' && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(actOnPfEval(pf.id, 'return', note, user.name, role.key), 'إعادة التقييم')}>أعد التقييم</button>}
+              {st !== 'evalDraft' && <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfEval(pf.id, 'approve', '', user.name, role.key), 'اعتماد التقييم')}>{st === 'evalManager' && pfApproverOf(pf, 'eval') === 'ceo' ? 'اعتمد وأحل للمدير التنفيذي' : 'اعتمد التقييم والإغلاق النهائي'}</button>}
+            </div>
+          )}
+        </>
+      )}
+      <p className="sub cnote">يُعتمد التقرير الشامل والتقييم وفق مصفوفة صلاحيات الإغلاق · ثم تُغلق المحفظة مع حفظ بياناتها ومشاريعها الفرعية ونتائجها{/* doc 13.2.30 · 13.2.31 */}.</p>
+      <Said said={said} />
+    </Glass>
+  )
+}
+
+/* ── v3 · 13.4.43 · cancelling an approved portfolio · its recovery on the portfolio's relationship ── */
+function CancelCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
+  const { role, user } = useRole()
+  const [reason, setReason] = useState('')
+  const [recover, setRecover] = useState('')
+  const [amount, setAmount] = useState('')
+  const [ref, setRef] = useState('')
+  const [file, setFile] = useState('')
+  const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
+  const rc = pf.recovery
+  const ceo = !asPartner && role.key === 'ceo' && (pf.stage === 'approved' || pf.stage === 'closing')
+  if (!ceo && !pf.cancel) return null
+  const got = rc ? rc.receipts.reduce((n, x) => n + x.amount, 0) : 0
+  return (
+    <Glass>
+      <Head title="إلغاء المحفظة والاسترداد" meta={pf.cancel ? <Tag tone="no">ملغاة</Tag> : <span className="sub">للمدير التنفيذي</span>} />
+      {pf.cancel ? (
+        <KV rows={[
+          { k: 'السبب', v: pf.cancel.reason },
+          { k: 'ألغاها', v: <><Person name={pf.cancel.by} /> · <DateText>{pf.cancel.at}</DateText></> },
+          ...(rc ? [{ k: 'المسترد على مستوى المحفظة', v: <><Money sm>{got}</Money> <span className="sub">من <Money sm>{rc.due}</Money></span></> }] : []),
+        ]} />
+      ) : (
+        <div className="apv-row">
+          <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب إلغاء المحفظة" placeholder="سبب الإلغاء" /></span>
+          <MoneyField value={recover} onChange={setRecover} label="المبلغ المطلوب استرداده" placeholder="0" />
+          <button type="button" className="btn btn-d btn-sm" onClick={() => { const out = cancelPortfolio(pf.id, reason, Number(recover) || 0, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'إلغاء المحفظة' }) }}>ألغِ المحفظة</button>
+        </div>
+      )}
+      {rc && got < rc.due && !asPartner && (role.key === 'finance' || role.key === 'supervisor') && (
+        <div className="apv-row mt-3">
+          <MoneyField value={amount} onChange={setAmount} label="المبلغ المستلم" />
+          <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="مرجع التحويل" placeholder="مرجع التحويل" /></span>
+          <UploadButton label={file || 'إشعار التحويل'} onPick={(f) => setFile(f.name)} />
+          <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = recordPfReceipt(pf.id, Number(amount) || 0, ref, file, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'استلام المبلغ' }) }}>سجّل الاستلام</button>
+        </div>
+      )}
+      <p className="sub cnote">الإلغاء والاسترداد على مستوى العلاقة المالية للمحفظة الرئيسية · لا استرداد مستقل لكل مشروع فرعي{/* doc 13.4.43 */}.</p>
       <Said said={said} />
     </Glass>
   )

@@ -56,7 +56,7 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
   const ver = useBudget()
   const lines = useMemo(() => { void ver; return linesFor(project.year) }, [project.year, ver])
   /* Re-audit 7 Oct · a project through Ehsan is funded from the Ehsan allocation, not its domain line */
-  const viaEhsanPlatform = projectRows.find((x) => x.id === project.id)?.platform === 'منصة إحسان'
+  const viaEhsanPlatform = Boolean(projectRows.find((x) => x.id === project.id)?.platform)
   const guess = (viaEhsanPlatform ? lines.find((l) => /منصة إحسان/.test(l.node.label))?.key : undefined)
     ?? lines.find((l) => l.node.label === project.goal)?.key ?? ''
   const held = linkOf(project.id)

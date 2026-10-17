@@ -18,7 +18,7 @@ import { REQUEST_DOCS, pickSupervisor, submitRequest } from '@/data/intake/flow'
 import { draftKey, draftOf, dropDraft, saveDraft } from '@/data/intake/drafts'
 import { CYCLE, inPeriod, openFields } from '@/data/intake/cycle'
 import { entityById } from '@/data/mock/entities'
-import { isStrategic, proposeRoute, typeAllowed } from '@/data/partners/store'
+import { externalParties, isStrategic, proposeRoute, typeAllowed } from '@/data/partners/store'
 import { useRole } from '@/hooks/useRole'
 import { OutputsEditor } from './OutputsEditor'
 import { parseOutputs } from '@/data/intake/flow'
@@ -300,7 +300,9 @@ export default function ProjectNewPage() {
     if (val.ptype === 'محفظة') { navigate(`${ROUTES.portfolioNew}?entity=${val.entityId}${asEntity ? '&as=partner' : ''}`); return }
     const id = submitRequest({ ...val, endAt, ...(draft ? { draftAt: draft.createdAt } : {}) }, Object.keys(docs), asEntity ? entityById(val.entityId)?.name ?? user.name : user.name, asEntity)
     /* Batch 7 · partners#4 · the form records the routing as a proposal · the executive decides it */
-    if (val.platform === 'منصة إحسان' || isStrategic(val.entityId)) proposeRoute(id, val.platform === 'منصة إحسان', 'independent', 'من نموذج الطلب', user.name)
+    /* v3 · BPD-011 · the party named in the form · one of the external reference records */
+    const party = externalParties().find((e) => e.name === val.platform)
+    if (party || isStrategic(val.entityId)) proposeRoute(id, Boolean(party), 'independent', 'من نموذج الطلب', user.name, party?.id)
     dropDraft(dkey)
     setSentId(id)
   }

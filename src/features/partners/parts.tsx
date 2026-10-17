@@ -10,11 +10,14 @@ import { planOfProject } from '@/data/mock/plans'
 import type { ProjectRow } from '@/types/domain'
 import {
   PTYPE_SAY, addEhOp, closeEhsanProject, ehCloseChecks, ehCloseOf, ehGate, ehMoney, ehOpsOf, ehScheduleOf, isStrategic,
+  EXT_KIND, EXT_CREATE, EXEC_STATES, decideExternalClosing, ehExecLog, ehExecOf, extFilesOf, externalParties, recordExec, type ExecState,
   paysOf, addExtDoc, extDocsOf, pfOfEntity, profileOf, recordEhsanPay, reviewEhsanPay, routeProject, proposeRoute, decideRoute, routeProposalOf, saveEhReport, saveEhSchedule,
   setPartnerTypes, typeAllowed, usePartners, viaEhsan, PF_STAGE_SAY, PF_STAGE_TONE, decidePartner,
   EH_STATE_SAY, EH_STATE_TONE, type EhSlot, type EhsanPay, type PayTarget, type PType,
 } from '@/data/partners/store'
 import { flowOf } from '@/data/intake/flow'
+import { paidOf, usePayments } from '@/data/payments/store'
+import { payRequests } from '@/data/mock/disbursements'
 
 /* Partner pieces shared by the project page, the entity page, the portfolio and the partners
    hub · each states what it waits on and why, like every card in the system. */
@@ -102,7 +105,7 @@ export function PayList({ list, finance }: { list: EhsanPay[]; finance?: boolean
   return (
     <>
       <div className="tblwrap">
-        <table className="tbl" aria-label="الدفعات عبر منصة إحسان">
+        <table className="tbl" aria-label="عمليات منصة الجهة الخارجية">
           <thead><tr><th><span className="th-t">العملية</span></th><th><span className="th-t">التاريخ</span></th><th className="n"><span className="th-t">المبلغ</span></th><th><span className="th-t">الحالة</span></th>{finance && <th><span className="th-t">المراجعة</span></th>}</tr></thead>
           <tbody>
             {list.map((p) => (
@@ -132,15 +135,18 @@ export function PayList({ list, finance }: { list: EhsanPay[]; finance?: boolean
   )
 }
 
-/** A payment schedule editor · rows of value and due date (11.2.16 · 13.2.24) */
-export function SlotsEditor({ slots, total, onSave, locked }: { slots: EhSlot[]; total: number; onSave: (s: EhSlot[]) => string[]; locked?: boolean }) {
-  const [rows, setRows] = useState<{ amount: string; dueAt: string }[]>(() => (slots.length ? slots : [{ no: 1, amount: 0, dueAt: '' }]).map((s) => ({ amount: s.amount ? String(s.amount) : '', dueAt: s.dueAt })))
+/** A payment schedule editor · rows of value and due date (11.2.16 · 13.2.24) · with `terms`, the
+    requirements and conditions of each payment as the external document states them (v3 · 11.2.7) */
+export function SlotsEditor({ slots, total, onSave, locked, terms, upTo }: { slots: EhSlot[]; total: number; onSave: (s: EhSlot[]) => string[]; locked?: boolean; terms?: boolean; upTo?: boolean }) {
+  const [rows, setRows] = useState<{ amount: string; dueAt: string; needs: string; cond: string }[]>(() => (slots.length ? slots : [{ no: 1, amount: 0, dueAt: '' }]).map((s) => ({ amount: s.amount ? String(s.amount) : '', dueAt: s.dueAt, needs: s.needs ?? '', cond: s.cond ?? '' })))
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const sum = rows.reduce((s, r) => s + (Number(r.amount) || 0), 0)
+  const off = upTo ? sum > total : sum !== total
+  const put = (i: number, k: 'amount' | 'dueAt' | 'needs' | 'cond', v: string) => setRows((x) => x.map((y, j) => (j === i ? { ...y, [k]: v } : y)))
   if (locked) {
     return (
       <ul className="ptn-slots">
-        {slots.map((s) => <li key={s.no}><span>الدفعة <span className="num">{s.no}</span></span><Money sm>{s.amount}</Money><DateText>{s.dueAt}</DateText></li>)}
+        {slots.map((s) => <li key={s.no}><span>الدفعة <span className="num">{s.no}</span></span><Money sm>{s.amount}</Money><DateText>{s.dueAt}</DateText>{s.needs && <span className="sub">المتطلبات: {s.needs}</span>}{s.cond && <span className="sub">الشرط: {s.cond}</span>}</li>)}
       </ul>
     )
   }
@@ -148,15 +154,18 @@ export function SlotsEditor({ slots, total, onSave, locked }: { slots: EhSlot[];
     <div className="ptn-form">
       {rows.map((r, i) => (
         <div key={i} className="regfields">
-          <label className="regf"><span className="lb">الدفعة {i + 1}</span><MoneyField value={r.amount} onChange={(v) => setRows((x) => x.map((y, j) => (j === i ? { ...y, amount: v } : y)))} label={`قيمة الدفعة ${i + 1}`} /></label>
-          <label className="regf"><span className="lb">الاستحقاق</span><DateField value={r.dueAt} onChange={(v) => setRows((x) => x.map((y, j) => (j === i ? { ...y, dueAt: v } : y)))} label={`استحقاق الدفعة ${i + 1}`} /></label>
+          <label className="regf"><span className="lb">الدفعة {i + 1}</span><MoneyField value={r.amount} onChange={(v) => put(i, 'amount', v)} label={`قيمة الدفعة ${i + 1}`} /></label>
+          <label className="regf"><span className="lb">الاستحقاق</span><DateField value={r.dueAt} onChange={(v) => put(i, 'dueAt', v)} label={`استحقاق الدفعة ${i + 1}`} /></label>
+          {terms && <label className="regf"><span className="lb">المتطلبات</span><span className="fld"><input value={r.needs} onChange={(e) => put(i, 'needs', e.target.value)} aria-label={`متطلبات الدفعة ${i + 1}`} placeholder="ما يُرفع قبل الصرف" /></span></label>}
+          {terms && <label className="regf"><span className="lb">الشروط</span><span className="fld"><input value={r.cond} onChange={(e) => put(i, 'cond', e.target.value)} aria-label={`شروط الدفعة ${i + 1}`} placeholder="اختياري" /></span></label>}
         </div>
       ))}
       <div className="apv-row mt-2">
-        <span className={`sub${sum !== total ? ' bad' : ''}`}>المجموع <span className="num">{nf.format(sum)}</span> من <span className="num">{nf.format(total)}</span></span>
-        <button type="button" className="btn btn-2 btn-sm" onClick={() => setRows((x) => [...x, { amount: '', dueAt: '' }])}>دفعة أخرى</button>
+        <span className={`sub${off ? ' bad' : ''}`}>المجموع <span className="num">{nf.format(sum)}</span> {upTo ? 'لا يتجاوز' : 'من'} <span className="num">{nf.format(total)}</span></span>
+        <button type="button" className="btn btn-2 btn-sm" onClick={() => setRows((x) => [...x, { amount: '', dueAt: '', needs: '', cond: '' }])}>دفعة أخرى</button>
+        {rows.length > 1 && <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRows((x) => x.slice(0, -1))}>احذف الأخيرة</button>}
         <button type="button" className="btn btn-p btn-sm" onClick={() => {
-          const out = onSave(rows.map((r, i) => ({ no: i + 1, amount: Number(r.amount) || 0, dueAt: r.dueAt })))
+          const out = onSave(rows.map((r, i) => ({ no: i + 1, amount: Number(r.amount) || 0, dueAt: r.dueAt, ...(terms ? { needs: r.needs, cond: r.cond } : {}) })))
           setSaid(out.length ? { bad: out } : { ok: 'جدول الدفعات' })
         }}>احفظ الجدول</button>
       </div>
@@ -181,25 +190,29 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
   const sup = role.key === 'supervisor' && study
   const prop = routeProposalOf(row.id)
   const [why, setWhy] = useState('')
+  /* v3 · 11.4.1 · the external party is one of the reference records */
+  const parties = externalParties()
+  const [party, setParty] = useState<string>(row.externalId ?? parties[0]?.id ?? '')
   const set = (platform: boolean, t: PType) => {
     if (t === 'portfolio') { navigate(`${ROUTES.portfolioNew}?entity=${row.entityId}&from=${row.id}`); return }
-    const out = ceo ? routeProject(row.id, platform, t, user.name) : proposeRoute(row.id, platform, t, why, user.name)
-    setSaid(out.length ? { bad: out } : { ok: ceo ? (platform ? 'التوجيه عبر منصة إحسان' : 'الدعم المباشر') : 'اقتراح التوجيه للمدير التنفيذي' })
+    const out = ceo ? routeProject(row.id, platform, t, user.name, party, role.key) : proposeRoute(row.id, platform, t, why, user.name, party, role.key)
+    setSaid(out.length ? { bad: out } : { ok: ceo ? (platform ? 'التوجيه عبر الجهة الخارجية' : 'الدعم المباشر') : 'اقتراح التوجيه للمدير التنفيذي' })
   }
   const decide = (accept: boolean) => {
-    const out = decideRoute(row.id, accept, why, user.name)
+    const out = decideRoute(row.id, accept, why, user.name, role.key)
     setSaid(out.length ? { bad: out } : { ok: accept ? 'إقرار التوجيه' : 'رفض الاقتراح' })
     if (!out.length) setWhy('')
   }
   const mine = (sup && !prop) || ceo
-  const portfolioNext = role.key === 'supervisor' && row.statusGroup === 'معتمد' && flowOf(row.id).study?.classification === 'محفظة' && !row.archived
+  /* v3 · 11.4.11 · a portfolio is never supported through an external party */
+  const portfolioNext = role.key === 'supervisor' && row.statusGroup === 'معتمد' && flowOf(row.id).study?.classification === 'محفظة' && !row.archived && !row.platform
   return (
     <Glass>
-      <Head title="التوجيه عبر الشريك" meta={row.platform ? <Tag tone="teal">منصة إحسان</Tag> : <Tag tone="mute">دعم مباشر</Tag>} />
+      <Head title="الدعم عبر جهة خارجية" meta={row.platform ? <Tag tone="teal">{EXT_KIND}</Tag> : <Tag tone="mute">دعم مباشر</Tag>} />
       <KV rows={[
-        { k: 'منصة الشريك', v: row.platform ?? 'بلا منصة · الجهة تستلم مباشرة' },
+        { k: 'الجهة الخارجية', v: row.platform ? (row.externalId ? <Link className="tlink" to={ROUTES.entity(row.externalId)}>{row.platform}</Link> : row.platform) : 'لا جهة خارجية · الجهة تستلم مباشرة' },
         ...(strategic ? [{ k: 'نوع المشروع', v: PTYPE_SAY[type] }] : []),
-        ...(prop ? [{ k: 'اقتراح بانتظار المدير التنفيذي', v: <>{prop.platform ? 'عبر منصة إحسان' : 'دعم مباشر'} · <Person name={prop.by} />{prop.note ? ` · ${prop.note}` : ''}</> }] : []),
+        ...(prop ? [{ k: 'اقتراح بانتظار المدير التنفيذي', v: <>{prop.platform ? `عبر ${entityById(prop.party ?? '860')?.name ?? 'جهة خارجية'}` : 'دعم مباشر'} · <Person name={prop.by} />{prop.note ? ` · ${prop.note}` : ''}</> }] : []),
       ]} />
       {ceo && prop && (
         <div className="apv-row mt-3">
@@ -211,7 +224,8 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
       {mine ? (
         <div className="apv-row mt-3">
           {sup && <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبرّر الاقتراح" placeholder="مبرّر الاقتراح · اختياري" /></span>}
-          <button type="button" className="btn btn-2 btn-sm" disabled={Boolean(row.platform)} onClick={() => set(true, 'independent')}>توجيه عبر منصة إحسان</button>
+          {!row.platform && <FieldSelect value={party} onChange={setParty} label="الجهة الخارجية" options={parties.map((e) => ({ value: e.id, label: e.name }))} />}
+          <button type="button" className="btn btn-2 btn-sm" disabled={Boolean(row.platform) || !party} onClick={() => set(true, 'independent')}>توجيه عبر الجهة الخارجية</button>
           {row.platform && <button type="button" className="btn btn-2 btn-sm" onClick={() => set(false, 'independent')}>دعم مباشر</button>}
           {sup && <span className="sub">يُرفع اقتراحًا · يقرّه المدير التنفيذي</span>}
           {strategic && typeAllowed(row.entityId, 'portfolio') && <span className="sub">التصنيف «محفظة» من الدراسة · يُفعَّل مساره بعد الاعتماد</span>}
@@ -223,7 +237,7 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
       {portfolioNext && (
         <div className="apv-row mt-3">
           <span className="sub">اعتُمد المشروع مصنَّفًا محفظة · يُفعَّل مسارها وفق إجراء إدارة المحافظ</span>
-          <button type="button" className="btn btn-p btn-sm" onClick={() => set(Boolean(row.platform), 'portfolio')}>فعّل مسار المحفظة</button>
+          <button type="button" className="btn btn-p btn-sm" onClick={() => set(false, 'portfolio')}>فعّل مسار المحفظة</button>
         </div>
       )}
       <Said said={said} />
@@ -231,16 +245,19 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
   )
 }
 
-/* ── A project of its own through Ehsan · plan, schedule, payments, follow-ups and closing ── */
+/* ── A project supported through an external party (BPD-011) · its document, schedule, execution and closing ── */
 
 export function EhsanCard({ row }: { row: ProjectRow }) {
   usePartners()
+  usePayments()
   const { role, user } = useRole()
   const [kind, setKind] = useState('زيارة ميدانية')
   const [note, setNote] = useState('')
   const [ref, setRef] = useState('')
   const [report, setReport] = useState(() => ehCloseOf(row.id)?.report ?? '')
   const [evidence, setEvidence] = useState<string[]>(() => ehCloseOf(row.id)?.evidence ?? [])
+  const [ex, setEx] = useState<{ status: string; progress: string; note: string; files: string[] }>(() => { const x = ehExecOf(row.id); return { status: x?.status ?? 'جارٍ التنفيذ', progress: String(x?.progress ?? ''), note: '', files: [] } })
+  const [back, setBack] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   if (!viaEhsan(row.id)) return null
   const g = ehGate(row.id)
@@ -248,50 +265,92 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
   const plan = planOfProject(row.id)
   const sched = ehScheduleOf(row.id)
   const sup = role.key === 'supervisor'
+  const auth = EXT_CREATE.includes(role.key)
   const fin = role.key === 'finance'
-  const closed = Boolean(ehCloseOf(row.id)?.closedAt)
+  const mgr = role.key === 'grants-manager'
+  const cl = ehCloseOf(row.id)
+  const closed = Boolean(cl?.closedAt)
+  const paid = paidOf(row.id)
+  const started = payRequests.some((x) => x.projectId === row.id)
+  const vals = flowOf(row.id).versions[0]?.values ?? {}
+  const exec = ehExecOf(row.id)
   const r = (out: string[], ok: string) => setSaid(out.length ? { bad: out } : { ok })
 
   return (
     <>
       <Glass>
-        <Head title="مشروع عبر منصة إحسان" meta={<Tag tone="teal">{closed ? 'مغلق' : 'مستقل · بلا اتفاقية'}</Tag>} />
+        <Head title={EXT_KIND} meta={<Tag tone="teal">{closed ? 'مغلق' : 'بلا اتفاقية داخلية ولا خطة'}</Tag>} />
         <KV rows={[
-          { k: 'الشريك', v: <Link className="tlink" to={ROUTES.entity(row.entityId)}>{row.entityName}</Link> },
-          { k: 'الاتفاقية', v: <span className="sub">لا يوجد · يُكتفى بجدول الدفعات والمستندات والاتفاقية الخارجية مرجعًا{/* doc 8.3.28 */}</span> },
+          { k: 'الجهة الخارجية', v: <Link className="tlink" to={ROUTES.entity(row.externalId ?? row.entityId)}>{row.platform}</Link> },
+          ...(vals.method ? [{ k: 'طريقة التحويل أو التنفيذ', v: vals.method }] : []),
+          ...(vals.funding ? [{ k: 'مصدر التمويل', v: vals.funding }] : []),
+          { k: 'الاتفاقية الداخلية', v: <span className="sub">لا تلزم · قد لا توجد اتفاقية أصلًا{/* doc 11.2.6 */}</span> },
           /* v3 · 12.2.1 · 11.4.5 · an external project has no plan · a plan from before stays readable */
-          { k: 'الخطة', v: plan ? <Link className="tlink" to={ROUTES.plan(plan.id)}>خطة سابقة للاطلاع · لا تُشترط للصرف ولا للإغلاق</Link> : <span className="sub">لا يتطلب خطة · مشروع خارجي</span> },
-          /* v3 · 8.3.28 · the external agreement or document kept as a reference */
-          { k: 'الاتفاقية الخارجية', v: (
+          { k: 'الخطة', v: plan ? <Link className="tlink" to={ROUTES.plan(plan.id)}>خطة سابقة للاطلاع · لا تُشترط للصرف ولا للإغلاق</Link> : <span className="sub">لا تُنشأ له خطة · ما يرد من الجهة يُحفظ مرفقًا{/* doc 11.4.5 */}</span> },
+          /* v3 · 11.2.6 · the external agreement or memorandum (perhaps tripartite) kept as a reference */
+          { k: 'الوثيقة الخارجية', v: (
             <span className="rowf gp-2">
-              {extDocsOf(row.id).length ? extDocsOf(row.id).map((d) => <Tag key={d.file} tone="ok"><Icon name={icons.clip} size="sm" /> {d.file}</Tag>) : <span className="sub">لم تُرفع · مرجع لا اتفاقية داخلية</span>}
-              {sup && !closed && <UploadButton label="ارفع الاتفاقية أو الوثيقة (PDF)" onPick={(f) => r(addExtDoc(row.id, f.name, user.name), 'الاتفاقية الخارجية')} />}
+              {extDocsOf(row.id).length ? extDocsOf(row.id).map((d) => <Tag key={d.file} tone="ok"><Icon name={icons.clip} size="sm" /> {d.file}</Tag>) : <span className="sub">لم تُسجَّل · إن وُجدت</span>}
+              {auth && !closed && <UploadButton label="سجّل الاتفاقية أو المذكرة (PDF)" onPick={(f) => r(addExtDoc(row.id, f.name, user.name), 'الوثيقة الخارجية')} />}
             </span>
           ) },
+          ...(extFilesOf(row.id).length ? [{ k: 'المرفقات', v: extFilesOf(row.id).join('، ') }] : []),
           { k: 'قيمة المشروع', v: <Money sm>{m.value}</Money> },
-          { k: 'نفّذته المنصة · مؤكد', v: <Money sm>{m.confirmed}</Money> },
-          { k: 'بانتظار المالية', v: <Money sm>{m.review}</Money> },
-          { k: 'المتبقي', v: <Money sm>{m.left}</Money> },
+          { k: 'صُرف بأذونات النظام', v: <Money sm>{paid}</Money> },
+          { k: 'المتبقي', v: <Money sm>{Math.max(0, m.value - paid)}</Money> },
         ]} />
         <Said said={said} />
       </Glass>
 
       <Glass>
-        <Head title="جدول الدفعات" meta={<span className="sub">بعد الاعتماد والخطة</span>} />
+        <Head title="جدول الدفعات" meta={<span className="sub">من الوثيقة الخارجية · أو دفعة واحدة</span>} />
         {g.schedule
-          ? <SlotsEditor slots={sched} total={m.value} locked={!sup || closed || m.recorded > 0} onSave={(s) => saveEhSchedule(row.id, s, user.name)} />
+          ? <SlotsEditor slots={sched} total={m.value} terms upTo locked={!auth || closed || started} onSave={(s) => saveEhSchedule(row.id, s, user.name)} />
           : <p className="sub cnote">{g.why}</p>}
-        {sup && m.recorded > 0 && <p className="sub cnote">الجدول مقفل بعد أول دفعة · يُعدَّل بقرار تعديل القيمة.{/* doc 10.9 */}</p>}
+        <p className="sub cnote">
+          {started ? 'بدأ الصرف على الجدول · يُعدَّل بقرار تعديل القيمة.' : 'سجّل الدفعات كبيانات منظمة (القيمة والتاريخ والمتطلبات والشروط) · وإن لم تتضمن الوثيقة دفعات فدفعة واحدة وفق الواقع المالي · لا يتجاوز المجموع القيمة المعتمدة.'}{/* doc 11.2.7 · 11.2.8 */}
+          {' '}الصرف بإذن صرف من النظام{/* doc 11.2.9 */} · <Link className="lnk" to={ROUTES.paymentNew(row.id)}>ارفع متطلبات الدفعة نيابةً عن الجهة</Link>.
+        </p>
       </Glass>
 
       <Glass>
-        <Head title="الدفعات المنفّذة عبر إحسان" meta={<span className="sub">يسجّلها المشرف · تؤكّدها المالية</span>} />
-        <PayList list={paysOf({ kind: 'project', projectId: row.id })} finance={fin} />
-        {sup && !closed && (g.pay ? <PayForm target={{ kind: 'project', projectId: row.id }} max={m.left} /> : <p className="sub cnote">{g.why}</p>)}
+        <Head title="حالة التنفيذ" meta={exec ? <Tag tone={exec.status === 'منجز' ? 'ok' : exec.status === 'متعثر' ? 'no' : 'warn'}>{exec.status} · {nf.format(exec.progress)} بالمئة</Tag> : <Tag tone="mute">لم تُسجَّل</Tag>} />
+        {ehExecLog(row.id).length > 0 && (
+          <ul className="plchg">
+            {ehExecLog(row.id).slice().reverse().map((x, i) => (
+              <li key={`${x.at}-${i}`}>
+                <div className="plchg-h"><Tag tone="mute"><DateText>{x.at}</DateText></Tag><span className="sub">{x.status} · {nf.format(x.progress)} بالمئة · {x.by}</span></div>
+                <p className="plchg-t">{x.note || '—'}{x.files.length ? ` · ${x.files.join('، ')}` : ''}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        {auth && !closed && (
+          <div className="regfields mt-3">
+            <label className="regf"><span className="lb">الحالة</span><FieldSelect value={ex.status} onChange={(v) => setEx((x) => ({ ...x, status: v }))} label="حالة التنفيذ" options={[...EXEC_STATES]} /></label>
+            <label className="regf"><span className="lb">نسبة الإنجاز</span><span className="fld"><input inputMode="numeric" value={ex.progress} onChange={(e) => setEx((x) => ({ ...x, progress: e.target.value.replace(/[^\d]/g, '') }))} aria-label="نسبة الإنجاز" /></span></label>
+            <label className="regf ptn-wide"><span className="lb">ما ورد من الجهة</span><span className="fld"><input value={ex.note} onChange={(e) => setEx((x) => ({ ...x, note: e.target.value }))} aria-label="ملاحظة التنفيذ" /></span></label>
+            <span className="rowf gp-2">
+              <span className="sub">{ex.files.length ? ex.files.join(' · ') : 'إثبات التنفيذ'}</span>
+              <UploadButton label="إثبات" onPick={(f) => setEx((x) => ({ ...x, files: [...x.files, f.name] }))} />
+              <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = recordExec(row.id, { status: ex.status as ExecState, progress: Number(ex.progress) || 0, note: ex.note, files: ex.files }, user.name, role.key); r(out, 'حالة التنفيذ'); if (!out.length) setEx((x) => ({ ...x, note: '', files: [] })) }}>حدّث الحالة</button>
+            </span>
+          </div>
+        )}
+        <p className="sub cnote">يسجّل صاحب الصلاحية إثباتات التحويل والتنفيذ الواردة من الجهة الخارجية ويحدّث حالة التنفيذ{/* doc 11.2.11 */}.</p>
       </Glass>
 
+      {/* a party that executes on its own platform · its operations recorded after the permit's transfer */}
+      {(paysOf({ kind: 'project', projectId: row.id }).length > 0 || vals.method === 'تنفيذ عبر منصة الجهة الخارجية' || row.externalId === '860') && (
+        <Glass>
+          <Head title="عمليات منصة الجهة الخارجية" meta={<span className="sub">بعد صرف الإذن · تؤكّدها المالية</span>} />
+          <PayList list={paysOf({ kind: 'project', projectId: row.id })} finance={fin} />
+          {sup && !closed && (g.pay ? <PayForm target={{ kind: 'project', projectId: row.id }} max={m.left} /> : <p className="sub cnote">{g.why}</p>)}
+        </Glass>
+      )}
+
       <Glass>
-        <Head title="متابعة المشروع على المنصة" meta={<span className="sub">ما جرى على إحسان ينعكس هنا</span>} />
+        <Head title="متابعة المشروع" meta={<span className="sub">ما يرد من الجهة الخارجية ينعكس هنا</span>} />
         <ul className="plchg">
           {ehOpsOf(row.id).slice().reverse().map((o, i) => (
             <li key={`${o.at}-${i}`}>
@@ -302,8 +361,8 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
         </ul>
         {sup && !closed && (
           <div className="regfields mt-3">
-            <label className="regf"><span className="lb">النوع</span><FieldSelect value={kind} onChange={setKind} label="نوع المتابعة" options={['زيارة ميدانية', 'تحديث تنفيذ', 'عملية على المنصة', 'ملاحظة']} /></label>
-            <label className="regf"><span className="lb">المرجع على المنصة</span><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="مرجع المتابعة" /></span></label>
+            <label className="regf"><span className="lb">النوع</span><FieldSelect value={kind} onChange={setKind} label="نوع المتابعة" options={['زيارة ميدانية', 'عملية على المنصة', 'ملاحظة']} /></label>
+            <label className="regf"><span className="lb">المرجع</span><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="مرجع المتابعة" /></span></label>
             <label className="regf ptn-wide"><span className="lb">ما جرى</span><span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ما جرى" /></span></label>
             <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = addEhOp(row.id, kind, note, user.name, ref || undefined); r(out, 'المتابعة'); if (!out.length) { setNote(''); setRef('') } }}>سجّل</button>
           </div>
@@ -311,19 +370,28 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="إغلاق المشروع" meta={closed ? <Tag tone="ok">أُغلق <DateText>{ehCloseOf(row.id)!.closedAt!}</DateText></Tag> : <Tag tone="mute">يكتبه المشرف</Tag>} />
+        <Head title="إغلاق المشروع" meta={closed ? <Tag tone="ok">أُغلق <DateText>{cl!.closedAt!}</DateText></Tag> : cl?.state === 'manager' ? <Tag tone="teal">عند مدير المنح</Tag> : cl?.state === 'returned' ? <Tag tone="ret">معاد لاستكمال المتطلبات</Tag> : <Tag tone="mute">يجمعه المشرف · يعتمده مدير المنح</Tag>} />
         <Checks items={ehCloseChecks(row.id)} />
-        {sup && !closed && (
+        {cl?.note && cl.state === 'returned' && <p className="bad cnote">ملاحظة مدير المنح: {cl.note}</p>}
+        {sup && !closed && cl?.state !== 'manager' && (
           <>
-            <label className="regf mt-3"><span className="lb">التقرير الختامي</span><span className="fld"><textarea rows={3} value={report} onChange={(e) => setReport(e.target.value)} aria-label="التقرير الختامي" /></span></label>
+            <label className="regf mt-3"><span className="lb">ملخص الإغلاق</span><span className="fld"><textarea rows={3} value={report} onChange={(e) => setReport(e.target.value)} aria-label="ملخص الإغلاق" placeholder="ما نُفّذ وما صُرف · دون تقرير ختامي اعتيادي" /></span></label>
             <div className="apv-row mt-2">
-              <span className="sub">{evidence.length ? evidence.join(' · ') : 'الشواهد · صور التنفيذ ومحاضر التسليم'}</span>
-              <UploadButton label="شاهد" onPick={(f) => setEvidence((x) => [...x, f.name])} />
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => r(saveEhReport(row.id, report, evidence, user.name), 'التقرير الختامي')}>احفظ التقرير</button>
-              <button type="button" className="btn btn-p btn-sm" disabled={ehCloseChecks(row.id).some((c) => !c.ok)} onClick={() => r(closeEhsanProject(row.id, user.name), 'إغلاق المشروع')}>أغلق المشروع</button>
+              <span className="sub">{evidence.length ? evidence.join(' · ') : 'إثباتات التحويل والتنفيذ'}</span>
+              <UploadButton label="إثبات" onPick={(f) => setEvidence((x) => [...x, f.name])} />
+              <button type="button" className="btn btn-2 btn-sm" onClick={() => r(saveEhReport(row.id, report, evidence, user.name), 'ملخص الإغلاق')}>احفظ</button>
+              <button type="button" className="btn btn-p btn-sm" onClick={() => r(closeEhsanProject(row.id, user.name, report, evidence), 'إحالة الإغلاق إلى مدير المنح')}>ارفع الإغلاق لمدير المنح</button>
             </div>
           </>
         )}
+        {mgr && cl?.state === 'manager' && (
+          <div className="apv-row mt-3">
+            <span className="fld"><input value={back} onChange={(e) => setBack(e.target.value)} aria-label="ملاحظة الإعادة" placeholder="ما ينقص · عند الإعادة" /></span>
+            <button type="button" className="btn btn-2 btn-sm" onClick={() => r(decideExternalClosing(row.id, 'return', back, user.name, role.key), 'إعادة الإغلاق للمشرف')}>أعده للمشرف</button>
+            <button type="button" className="btn btn-p btn-sm" onClick={() => r(decideExternalClosing(row.id, 'approve', '', user.name, role.key), 'اعتماد الإغلاق')}>اعتمد الإغلاق</button>
+          </div>
+        )}
+        <p className="sub cnote">لا تقرير ختامي اعتيادي ولا تقييم إلزامي{/* doc 11.4.12 */} · عند الاعتماد يصير «مكتمل»، أو «مغلق بوفر» ويُحرَّر غير المصروف إلى بنده{/* doc 11.2.14 */}.</p>
       </Glass>
     </>
   )
@@ -351,7 +419,7 @@ export function PartnerCard({ entityId }: { entityId: string }) {
       <Head title={<>الشراكة الاستراتيجية · <Link className="tlink" to={ROUTES.entity(entityId)}>{p.name || entityById(entityId)?.name || entityId}</Link></>} meta={<Tag tone={p.state === 'approved' ? 'ok' : p.state === 'review' ? 'warn' : 'no'}>{p.state === 'approved' ? 'شريك استراتيجي معتمد' : p.state === 'review' ? 'بانتظار اعتماد مدير المنح' : 'مرفوض'}</Tag>} />
       <KV rows={[
         { k: 'نوع الشراكة', v: 'شريك استراتيجي' },
-        { k: 'منصة تنفيذ الدفعات', v: p.platform ? 'منصة إحسان · تنفّذ الدفعات بنفسها' : 'تُطلب الدفعات على مستوى المحفظة' },
+        { k: 'الدفعات', v: 'تُطلب على مستوى المحفظة وفق إجراء صرف الدفعات' },
         { k: 'أنواع المشاريع المسموحة', v: p.allowed.map((t) => PTYPE_SAY[t]).join(' · ') },
         { k: 'المحافظ', v: pfs.length ? <span className="ptn-chips">{pfs.map((x) => <Link key={x.id} className="tlink" to={ROUTES.portfolio(x.id)}>{x.name} <Tag tone={PF_STAGE_TONE[x.stage]}>{PF_STAGE_SAY[x.stage]}</Tag></Link>)}</span> : <span className="sub">لا محافظ بعد</span> },
       ]} />
@@ -377,12 +445,12 @@ export function PartnerCard({ entityId }: { entityId: string }) {
   )
 }
 
-/** A project's agreement tab when the support goes through Ehsan · the exemption, said (11.2.17) */
+/** A project's agreement tab when the support goes through an external party · the exemption, said (11.2.6) */
 export function EhsanNoAgreement({ children }: { children?: ReactNode }) {
   return (
     <Glass>
-      <Head title="الاتفاقية" meta={<Tag tone="teal">معفى</Tag>} />
-      <p className="prose">المشروع موجّه عبر منصة إحسان كمشروع مستقل · لا تُعدّ له اتفاقية، ويُكتفى بالخطة وجدول الدفعات والمستندات، وتنفّذ المنصة الدفعات ويؤكّدها قسم المالية.</p>
+      <Head title="الاتفاقية" meta={<Tag tone="teal">لا تلزم</Tag>} />
+      <p className="prose">مشروع مدعوم عبر جهة خارجية · لا تلزم الاتفاقية الإلكترونية الداخلية، وقد لا توجد اتفاقية أصلًا · وإن وُجدت تُسجَّل الاتفاقية أو المذكرة الخارجية (وقد تكون ثلاثية الأطراف) بصيغة PDF مرجعًا من بطاقة المشروع، ويُسجَّل جدول دفعاتها بيانات منظمة ويُصرف بإذن صرف من النظام.</p>
       {children}
     </Glass>
   )

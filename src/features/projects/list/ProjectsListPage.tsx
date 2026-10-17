@@ -554,7 +554,7 @@ export default function ProjectsListPage() {
                 all="كل الأنواع"
                 options={PROJECT_TYPES.map((t) => ({
                   value: t,
-                  label: `${t} (${typeCounts[t] ?? 0})`,
+                  label: `${t === 'مشروع خارجي' ? 'مدعوم عبر جهة خارجية' : t} (${typeCounts[t] ?? 0})`,
                 }))}
                 onChange={(x) => set({ type: writeList(x) })}
               />

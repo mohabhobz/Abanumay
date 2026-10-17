@@ -78,8 +78,8 @@ export function readCase(c: CaseRow): Reading[] {
     const ph = stopPhase(c.projectId)
     out.push({ id: 'cs-phase', kind: 'note', label: 'موضع الإيقاف', text: ph.say, src: /* doc 10.9.1 – 10.9.4 */ '' })
     if (c.settlement && c.settlement.actual == null) {
-      const miss = [!c.settlement.report && 'تقرير التنفيذ', !c.settlement.invoices && 'الفواتير'].filter(Boolean)
-      out.push({ id: 'cs-settle', kind: 'flag', label: 'التسوية', text: miss.length ? `بانتظار الجهة: ${miss.join(' و')}.` : 'وصل التقرير والفواتير · يعتمد المشرف المصروف الفعلي.', src: /* doc 10.9.3 */ '' })
+      const miss = [!c.settlement.report && 'التقرير المالي التنفيذي', !(c.settlement.evidence || c.settlement.invoices) && 'أدلة المخرجات'].filter(Boolean)
+      out.push({ id: 'cs-settle', kind: 'flag', label: 'التسوية', text: miss.length ? `بانتظار الجهة: ${miss.join(' و')}.` : 'وصل التقرير المالي التنفيذي وأدلة المخرجات · يعتمد المشرف المصروف الفعلي.', src: /* doc 10.9.3 */ '' })
     }
   }
   if (c.kind !== 'stop' && c.newAmount !== undefined) {

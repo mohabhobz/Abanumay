@@ -34,7 +34,8 @@ const writePass = (v: Record<string, { pass: string; at: string }>) => {
 
 /** Every account the portal knows · the registration accounts and the approved entities' users */
 export const accounts = (): PortalAccount[] => [
-  ...entityRows.filter((e) => !e.archived).map((e) => ({
+  /* v3 · 11.2.1 · 11.4.1 · an external party's reference record has no portal account */
+  ...entityRows.filter((e) => !e.archived && !e.external).map((e) => ({
     id: `e-${e.id}`, username: `dept${e.id}`, email: e.email, mobile: e.mobile, name: e.name, kind: 'entity' as const,
   })),
   ...regRows.filter((r) => !r.entityId).map((r) => ({

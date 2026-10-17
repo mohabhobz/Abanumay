@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { BackTo, Glass, Head, Num, Select, Tabs, Tag } from '@/components/ui'
 import { useRole } from '@/hooks/useRole'
-import { CLOSE_RULES, RELEASE_SAY, saveCloseRules, useClosing, type CloseRules } from '@/data/closing/store'
+import { CLOSE_RULES, EVAL_CRITERIA_DEFAULT, MATRIX_SAY, RELEASE_SAY, saveCloseRules, useClosing, type CloseRules, type EvalCriterion, type MatrixKey, type MatrixRule } from '@/data/closing/store'
+import { MoneyField } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, useDockSlot } from '@/components/shell'
 import { StageLimits } from '@/features/settings/CfgEdit'
@@ -38,6 +39,8 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 const TABS = [
   { slug: 'docs', label: 'المستندات الداعمة' },
   { slug: 'limits', label: 'حدود المحطات' },
+  { slug: 'matrix', label: 'مصفوفة الصلاحيات' },
+  { slug: 'eval', label: 'أسئلة التقييم' },
 ] as const
 
 export default function CloseSettingsPage() {
@@ -77,7 +80,7 @@ export default function CloseSettingsPage() {
             onChange={(x) => set({ tab: x === TABS[0].slug ? undefined : x })}
           />
 
-          {tab === 'docs' ? (
+          {tab === 'matrix' ? <MatrixTab /> : tab === 'eval' ? <CriteriaTab /> : tab === 'docs' ? (
             <Glass className="tblcard">
               <Head
                 title="المستندات الداعمة"
@@ -165,7 +168,9 @@ export default function CloseSettingsPage() {
 
 function ReleasePolicy() {
   useClosing()
-  const { user } = useRole()
+  const { role, user } = useRole()
+  /* Verifier · 16 Oct · a policy of the foundation · set by the executive, the admin, or finance */
+  const may = role.key === 'ceo' || role.key === 'admin' || role.key === 'finance'
   const [mode, setMode] = useState<CloseRules['releaseMode']>(CLOSE_RULES.releaseMode)
   const [saved, setSaved] = useState(false)
   return (
@@ -179,13 +184,97 @@ function ReleasePolicy() {
           options={(Object.keys(RELEASE_SAY) as CloseRules['releaseMode'][]).map((k) => ({ value: k, label: RELEASE_SAY[k] }))}
           onChange={(v) => { setMode((v as CloseRules['releaseMode']) ?? 'once'); setSaved(false) }}
         />
-        <button type="button" className="btn btn-2 btn-sm" disabled={mode === CLOSE_RULES.releaseMode} onClick={() => { saveCloseRules({ releaseMode: mode }, user.name); setSaved(true) }}>احفظ السياسة</button>
+        <button type="button" className="btn btn-2 btn-sm" disabled={!may || mode === CLOSE_RULES.releaseMode} onClick={() => { saveCloseRules({ releaseMode: mode }, user.name); setSaved(true) }}>احفظ السياسة</button>
       </div>
       {saved && <p className="ok-ink cnote">حُفظت السياسة</p>}
       <p className="sub cnote">
         يعود المحجوز غير المصروف عند الإيقاف أو الإغلاق إلى بنده مباشرة · أما المبالغ المستردة من
         الجهة فتعود دفعة واحدة عند اكتمال استردادها، أو تدريجيًّا مع كل مبلغ يُستلم (<bdi>{/* doc 10.9.8 */}</bdi>).
       </p>
+    </Glass>
+  )
+}
+
+/* v3 · 10.4.11 · who approves each closing item last · the executive by default · the grants manager when
+   set so, or below a value the foundation enters · nothing fixed in the code */
+function MatrixTab() {
+  useClosing()
+  const { role, user } = useRole()
+  const may = role.key === 'ceo' || role.key === 'admin'
+  const keys = Object.keys(MATRIX_SAY) as MatrixKey[]
+  const [rows, setRows] = useState<Record<MatrixKey, MatrixRule>>(() => Object.fromEntries(keys.map((k) => [k, { final: 'ceo', ...(CLOSE_RULES.matrix?.[k] ?? {}) }])) as Record<MatrixKey, MatrixRule>)
+  const [saved, setSaved] = useState(false)
+  const put = (k: MatrixKey, r: Partial<MatrixRule>) => { setRows((x) => ({ ...x, [k]: { ...x[k], ...r } })); setSaved(false) }
+  return (
+    <Glass className="tblcard">
+      <Head title="مصفوفة صلاحيات الإغلاق" meta={<Tag tone="mute">{may ? 'يعدّلها المدير التنفيذي' : 'للعرض'}</Tag>} />
+      <p className="sub cnote">
+        لكل قرار معتمده النهائي · المدير التنفيذي افتراضيًّا، ويُفوَّض مدير المنح كليًّا أو تحت قيمة تحدّدها المؤسسة{/* doc 10.4.11 */} ·
+        ولا يثبت النظام حدًّا ماليًّا دائمًا.
+      </p>
+      <table className="tbl">
+        <colgroup><col /><col /><col /></colgroup>
+        <thead><tr><th><span className="th-t">القرار</span></th><th><span className="th-t">المعتمد النهائي</span></th><th className="n"><span className="th-t">مدير المنح تحت قيمة</span></th></tr></thead>
+        <tbody>
+          {keys.map((k) => (
+            <tr key={k}>
+              <td>{MATRIX_SAY[k]}</td>
+              <td>
+                <Select value={rows[k].final} allowEmpty={false} all="المعتمد" disabled={!may}
+                  options={[{ value: 'ceo', label: 'المدير التنفيذي' }, { value: 'grants-manager', label: 'مدير المنح' }]}
+                  onChange={(v) => put(k, { final: (v as MatrixRule['final']) ?? 'ceo' })} />
+              </td>
+              <td className="n">{rows[k].final === 'ceo'
+                ? <MoneyField value={rows[k].below ? String(rows[k].below) : ''} disabled={!may} onChange={(v) => put(k, { below: v ? Number(v) : undefined })} label={`حد تفويض ${MATRIX_SAY[k]}`} placeholder="بلا تفويض" />
+                : <span className="sub">مدير المنح دائمًا</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {may && (
+        <div className="act-a">
+          <button type="button" className="btn btn-p btn-sm" onClick={() => { saveCloseRules({ ...CLOSE_RULES, matrix: rows }, user.name); setSaved(true) }}>احفظ المصفوفة</button>
+        </div>
+      )}
+      {saved && <p className="ok-ink cnote">حُفظت المصفوفة · تسري على القرارات القادمة</p>}
+    </Glass>
+  )
+}
+
+/* v3 · 10.4.31 · the evaluation's questions and weights · for evaluations started after the change */
+function CriteriaTab() {
+  useClosing()
+  const { role, user } = useRole()
+  const may = role.key === 'ceo' || role.key === 'admin' || role.key === 'grants-manager'
+  const [list, setList] = useState<EvalCriterion[]>(() => (CLOSE_RULES.evalCriteria ?? EVAL_CRITERIA_DEFAULT).map((x) => ({ ...x })))
+  const [label, setLabel] = useState('')
+  const [saved, setSaved] = useState(false)
+  const total = list.reduce((n, x) => n + x.weight, 0)
+  return (
+    <Glass className="tblcard">
+      <Head title="أسئلة تقييم المشروع وأوزانها" meta={<span className="sub">مجموع الأوزان <Num>{total}</Num></span>} />
+      <p className="sub cnote">تُقيَّم كل مسألة من 5 وتُحسب الدرجة من 100 بأوزانها{/* doc 10.4.31 */} · والتغيير يسري على التقييمات التي تبدأ بعده، ولا يمسّ القديمة · وانخفاض الدرجة لا يمنع الإغلاق.</p>
+      <table className="tbl">
+        <colgroup><col /><col /><col /></colgroup>
+        <thead><tr><th><span className="th-t">السؤال</span></th><th className="n"><span className="th-t">الوزن</span></th><th><span className="th-t" /></th></tr></thead>
+        <tbody>
+          {list.map((x, i) => (
+            <tr key={x.key}>
+              <td>{x.label}</td>
+              <td className="n"><span className="fld"><input className="num" inputMode="numeric" disabled={!may} value={String(x.weight)} aria-label={`وزن ${x.label}`} onChange={(e) => { const w = Number(e.target.value.replace(/\D/g, '')) || 0; setList((l) => l.map((y, j) => (j === i ? { ...y, weight: w } : y))); setSaved(false) }} /></span></td>
+              <td>{may && list.length > 1 && <button type="button" className="btn btn-2 btn-sm" onClick={() => { setList((l) => l.filter((_, j) => j !== i)); setSaved(false) }}>احذف</button>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {may && (
+        <div className="apv-row mt-2">
+          <span className="fld"><input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="سؤال جديد" aria-label="سؤال تقييم جديد" /></span>
+          <button type="button" className="btn btn-2 btn-sm" disabled={!label.trim()} onClick={() => { setList((l) => [...l, { key: `q${Date.now().toString(36)}`, label: label.trim(), weight: 10 }]); setLabel(''); setSaved(false) }}>أضف السؤال</button>
+          <button type="button" className="btn btn-p btn-sm" disabled={!total} onClick={() => { saveCloseRules({ ...CLOSE_RULES, evalCriteria: list }, user.name); setSaved(true) }}>احفظ الأسئلة</button>
+        </div>
+      )}
+      {saved && <p className="ok-ink cnote">حُفظت · تسري على التقييمات الجديدة</p>}
     </Glass>
   )
 }

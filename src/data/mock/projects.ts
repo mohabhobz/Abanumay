@@ -1046,7 +1046,10 @@ export const projectsOfEntity = (entityId: string): ProjectRow[] =>
   projectRows.filter((p) => p.entityId === entityId)
 
 /** Project types · list filter order. */
-export const PROJECT_TYPES: readonly ProjectType[] = ['مشروع عادي', 'مشروع خارجي', 'محفظة']
+export const PROJECT_TYPES: readonly ProjectType[] = ['مشروع عادي', 'مشروع خارجي', 'محفظة', 'مشروع فرعي']
+/** v3 · 13.2.27 · 13.4.41 · a portfolio's approved sub-projects in the general lists · marked and tied to it ·
+    the partners store keeps them */
+export const subRows: ProjectRow[] = []
 
 /**
  * Portfolio rows · shown in the projects list only (opt-in via `ProjectQuery.portfolios`), so

@@ -11,6 +11,7 @@ import { BudgetLinkAction } from '@/features/budget/BudgetLink'
 import { assistFor } from '@/data/mock/assistant'
 import { isolate, nf, pct } from '@/lib/format'
 import { projectRows } from '@/data/mock/projects'
+import { PORTFOLIOS } from '@/data/partners/store'
 import { HOLDER_LABEL, type Holder } from '@/data/holders'
 import { flowOf } from '@/data/intake/flow'
 import { CRITERIA, studyScore } from '@/data/intake/criteria'
@@ -85,6 +86,17 @@ export default function SessionPage() {
           {s.items.length > 0 && <AnalysisCard title="تقرير الجلسة" cta="اقرأ الجلسة" readings={sessionReport(s)} ask={false} onAsk={() => undefined} />}
           {s.items.length === 0 && <Glass><Empty title="جدول الأعمال فارغ." note="أضف المشاريع المحالة من القائمة أدناه." /></Glass>}
           {s.items.map((it) => <Item key={it.projectId} s={s} it={it} may={may} me={me} role={role} />)}
+          {/* v3 · 13.2.6 · a portfolio on the same session · its votes, minutes and decision on its own page */}
+          {PORTFOLIOS.some((pf) => pf.session?.id === s.id) && (
+            <Glass>
+              <Head title="محافظ على جدول الجلسة" meta={<span className="sub">مسار الاعتماد نفسه · يُصوَّت عليها ويُسجَّل قرارها من صفحتها</span>} />
+              <ul className="apv-list">
+                {PORTFOLIOS.filter((pf) => pf.session?.id === s.id).map((pf) => (
+                  <li key={pf.id}><span className="apv-t"><Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link><span className="sub">{nf.format(pf.total)} ريال · {Object.keys(pf.session!.votes).length} صوت</span></span></li>
+                ))}
+              </ul>
+            </Glass>
+          )}
 
           {/* 10 Oct · each decision followed through to its execution (7.1.output-4) */}
           {decided > 0 && (

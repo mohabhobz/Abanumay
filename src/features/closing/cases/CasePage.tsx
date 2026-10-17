@@ -11,6 +11,7 @@ import { noteFirst } from '@/lib/dock'
 import {
   CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, actOnCase, attachCaseDoc, caseActions, caseById, caseStops,
   settleCase, stopPhase, useClosing,
+  OUTCOME_SAY, caseFinalIsMgr,
 } from '@/data/closing/store'
 import { RecoveryCard } from '../parts'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -101,6 +102,9 @@ export default function CasePage() {
                     ...(c.newAmount !== undefined ? [{ k: 'القيمة الجديدة', v: <Money sm>{c.newAmount}</Money> }] : []),
                     ...(c.kind === 'reduce' ? [{ k: 'ملحق الاتفاقية', v: c.annex ?? <span className="bad">لم يُرفع</span> }] : []),
                     ...(c.extra ? [{ k: 'الدفعة الإضافية', v: <><Money sm>{c.extra.amount}</Money> · <DateText>{c.extra.dueAt}</DateText></> }] : []),
+                    ...(c.outcome ? [{ k: 'نتيجة القرار', v: OUTCOME_SAY[c.outcome] }] : []),
+                    ...(c.redirect ? [{ k: 'إعادة التوجيه', v: <>{isolate(c.redirect.purpose)} · القرار {c.redirect.decision} · {c.redirect.file}</> }] : []),
+                    ...(c.independentId ? [{ k: 'المشروع المستقل', v: <Link className="tlink" to={ROUTES.project(c.independentId)}>{c.independentId}</Link> }] : []),
                     ...(c.decidedAt ? [{ k: 'تاريخ القرار', v: <DateText>{c.decidedAt}</DateText> }] : []),
                   ]}
                 />
@@ -109,16 +113,16 @@ export default function CasePage() {
                 )}
               </Glass>
 
-              {/* 10.9.3 · 10.9.4 · a stop after money went out · the entity's report and invoices, then the spend approved */}
+              {/* 10.9.3 · 10.9.4 · a stop after money went out · the entity's executive financial report and outputs' evidence, then the spend approved (v3) */}
               {s && (
                 <Glass>
                   <Head title="تسوية المصروف الفعلي" meta={s.actual != null ? <Tag tone="ok">اعتُمد المصروف</Tag> : <Tag tone="warn">بانتظار التسوية</Tag>} />
                   <ul className="payq-ck">
-                    {(['report', 'invoices'] as const).map((k) => (
+                    {(['report', 'evidence'] as const).map((k) => (
                       <li key={k} className={s[k] ? 'ok' : 'no'}>
                         <Icon name={s[k] ? icons.check : icons.alert} size="sm" />
-                        <span>{k === 'report' ? 'تقرير التنفيذ' : 'الفواتير'}{s[k] ? ` · ${s[k]}` : ''}</span>
-                        {asEntity && !s[k] && c.stage === 'settle' && <UploadButton label={k === 'report' ? 'تقرير التنفيذ' : 'الفواتير'} onPick={(f) => attachCaseDoc(c.id, k, f.name, c.entityName)} />}
+                        <span>{k === 'report' ? 'التقرير المالي التنفيذي' : 'أدلة المخرجات لما صُرف'}{s[k] ? ` · ${s[k]}` : k === 'evidence' && s.invoices ? ` · ${s.invoices}` : ''}</span>
+                        {asEntity && !s[k] && c.stage === 'settle' && <UploadButton label={k === 'report' ? 'التقرير المالي التنفيذي' : 'أدلة المخرجات'} onPick={(f) => attachCaseDoc(c.id, k, f.name, c.entityName)} />}
                       </li>
                     ))}
                   </ul>
@@ -132,18 +136,18 @@ export default function CasePage() {
                   {!asEntity && role.key === 'supervisor' && c.stage === 'settle' && (
                     <div className="apv-row mt-3">
                       <MoneyField value={actual} onChange={setActual} label="المصروف الفعلي المعتمد" />
-                      <button type="button" className="btn btn-2 btn-sm" disabled={actual === '' || !s.report || !s.invoices} onClick={() => { const out = settleCase(c.id, Number(actual), user.name); setSaid(out.length ? { bad: out } : { ok: 'اعتماد المصروف الفعلي' }) }}>
+                      <button type="button" className="btn btn-2 btn-sm" disabled={actual === '' || !s.report || !(s.evidence || s.invoices)} onClick={() => { const out = settleCase(c.id, Number(actual), user.name); setSaid(out.length ? { bad: out } : { ok: 'اعتماد المصروف الفعلي' }) }}>
                         اعتمد المصروف الفعلي
                       </button>
                     </div>
                   )}
-                  <p className="sub cnote">يُطلب من الجهة تقرير تنفيذ وفواتير، ويعتمد المشرف ما صُرف فعلًا من {nf.format(c.paid)} · والفرق يُسترد ويعود إلى مخصص المجال.</p>
+                  <p className="sub cnote">يُطلب من الجهة التقرير المالي التنفيذي وأدلة المخرجات، ويعتمد المشرف ما صُرف فعلًا من {nf.format(c.paid)} · والفرق يُسترد ويعود إلى مخصص المجال.</p>
                 </Glass>
               )}
 
               {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'case', id: c.id }} asEntity={asEntity} />}
               <Glass>
-                <Head title="سجلّ الحالة" meta={<span className="sub">مشرف المنح · مدير المنح · الرئيس التنفيذي</span>} />
+                <Head title="سجلّ الحالة" meta={<span className="sub">مشرف المنح · مدير المنح{caseFinalIsMgr(c) ? '' : ' · المدير التنفيذي'}</span>} />
                 <ul className="plchg">
                   {c.log.map((a, i) => (
                     <li key={`${a.at}-${i}`}>

@@ -5,7 +5,7 @@ import type { DecisionAction, ProjectRow } from '@/types/domain'
 import type { LogEvent, LogField } from '@/data/mock/log'
 import { SOURCE_OF } from '@/data/mock/log'
 import { projectRows } from '@/data/mock/projects'
-import { stageMeta } from '@/data/mock/taxonomy'
+import { EXT_PRE_STAGE, stageMeta } from '@/data/mock/taxonomy'
 import { entityById } from '@/data/mock/entities'
 import { capOf, type ApprovalRow } from '@/data/approval'
 import { ACTS_FOR, HOLDER_LABEL, nextOf, type Holder } from '@/data/holders'
@@ -327,16 +327,15 @@ export const conflictOf = (p: ProjectRow, person: string) =>
 
 /** v3 · 12.2.1 · what the project's type allows for the plan decision */
 export const planKind = (p: ProjectRow): 'external' | 'portfolio' | 'regular' =>
-  /* BPD-011 · supported through an external party (Ehsan here) · the fixture's «مشروع خارجي» type runs an
-     internal agreement and plan, so it reads regular until the partners batch reshapes it */
-  p.platform === 'منصة إحسان' ? 'external'
+  /* BPD-011 · supported through an external party · the type «مشروع خارجي» follows it (partners store) */
+  p.platform ? 'external'
     : flowOf(p.id).study?.classification === 'محفظة' || p.partnerType === 'محفظة' ? 'portfolio' : 'regular'
 /** The choice the type forces · '' when the manager decides */
 const forcedPlan = (p: ProjectRow): string => (planKind(p) === 'external' ? 'no' : planKind(p) === 'portfolio' ? 'yes' : '')
 
 /** Plan needed by rule (4.4.2) · a suggestion the manager confirms or changes */
 export const planSuggested = (p: ProjectRow): boolean =>
-  planKind(p) === 'portfolio' || (planKind(p) !== 'external' && supportAmount(p) >= APPROVAL_RULES.planFrom) || (p.durationDays ?? 0) > 365
+  planKind(p) === 'portfolio' || (planKind(p) !== 'external' && (supportAmount(p) >= APPROVAL_RULES.planFrom || (p.durationDays ?? 0) > 365))
 
 const openNotes = (f: AppFlow) => f.notes.filter((n) => !n.resolved)
 
@@ -510,12 +509,14 @@ const activate = (p: ProjectRow, by: string, fields: LogField[]) => {
   if (p.amountGranted === 0 || p.amountSupport !== undefined) p.amountGranted = supportAmount(p)
   p.decidedAt = opDay()
   p.holder = undefined
-  if (p.platform === 'منصة إحسان' && p.partnerType === 'مستقل') {
-    moveTo(p, 'المشرف إذن الصرف')
-    fields.push({ k: 'الحالة', v: 'معتمد · إلى التنفيذ عبر منصة إحسان · بلا اتفاقية', strong: true })
-    notify([p.entityName, 'مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, 'إلى التنفيذ عبر منصة إحسان', ROUTES.project(p.id))
+  if (p.platform && p.partnerType === 'مستقل') {
+    /* v3 · 11.2.5 · approved, the hold final, then «استكمال متطلبات ما قبل التنفيذ» · the external document
+       and the schedule are registered before it runs (11.2.6 – 11.2.8) */
+    moveTo(p, EXT_PRE_STAGE)
+    fields.push({ k: 'الحالة', v: `معتمد · استكمال متطلبات ما قبل التنفيذ · مدعوم عبر ${p.platform} · بلا اتفاقية داخلية`, strong: true })
+    notify(['مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, `مدعوم عبر ${p.platform}`, ROUTES.project(p.id))
     confirmHook?.(p.id, by)
-    notify([p.owner ?? 'مشرف المنح', 'مشرف المنح'], p.id, `أعدّ خطة المشروع وجدول دفعاته · ${p.name}`, 'معفى من الاتفاقية · يُنفَّذ عبر منصة إحسان', ROUTES.project(p.id))
+    notify([p.owner ?? 'مشرف المنح', 'مشرف المنح'], p.id, `سجّل الوثيقة الخارجية وجدول الدفعات · ${p.name}`, 'لا اتفاقية داخلية ولا خطة · يتحول إلى «تحت التنفيذ» بعد الجدول', ROUTES.project(p.id))
     return
   }
   /* v3 · 3.2.17 · classified a portfolio in the study · the portfolio path opens now, after the approval */

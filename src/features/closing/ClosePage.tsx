@@ -19,12 +19,12 @@ import { isolate, MISSING_ITEM, nf, NOUN, nounAfter, pct, unitAfter, withUnit } 
 import {
   CLOSE_DOCS, CLOSE_LIMIT, CLOSE_STAGES, canStartEval,
   closeById, closeCycle, closeRequirements, closeStageLabel, closeStageWho, evalApproved, reportApproved,
-  needsComms, reportBlockers, reportGap,
+  STOPPED_DOCS, needsComms, reportBlockers, reportGap,
 } from '@/data/mock/closing'
 import {
-  actOnClosing, attachDoc, closeActions, sendClosingReport, useClosing, type CloseAct,
+  APPROVER_SAY, actOnClosing, approverFor, attachDoc, closeActions, evalScore, sendClosingReport, useClosing, type CloseAct,
 } from '@/data/closing/store'
-import { FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RedirectCard, RequirementsCard, VersionsCard } from './parts'
+import { ExceptionCard, FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RedirectCard, RequirementsCard, VersionsCard } from './parts'
 import { projectById } from '@/data/mock/projects'
 import { closeReadings } from './readings'
 import { CloseActionDock } from './CloseActionDock'
@@ -123,7 +123,10 @@ export default function ClosePage() {
   /* Note: the stepper's stages come from the spec, not from screen state - and `comms` is skipped
      when coverage isn't required, and it's stated as skipped rather than hidden (our absence rule,
      plus rule 9: "when it was required"). */
-  const path: readonly string[] = cycle === 'report' ? REPORT_PATH : EVAL_PATH
+  /* v3 · 10.4.11 · the executive's station shows only when the matrix makes him the last approver */
+  /* Verifier · 16 Oct · the stage the record sits at stays on the path, whatever the matrix says now */
+  const path: readonly string[] = (cycle === 'report' ? REPORT_PATH : EVAL_PATH).filter((k) => k === c.stage ||
+    ((k !== 'executive' || approverFor('report', c.projectId) === 'ceo') && (k !== 'evalExecutive' || approverFor('eval', c.projectId) === 'ceo')))
   /* A returned report sits with whoever it went back to; an approved report waits on the
      supervisor to open the evaluation. */
   const here: string =
@@ -176,20 +179,23 @@ export default function ClosePage() {
     <>دورة <b className="num">{cycle === 'report' ? 1 : 2}</b> من <b className="num">2</b> ·{' '}
       {cycle === 'report' ? 'مسار التقرير الختامي' : 'مسار تقييم المشروع'}</>,
     cycle === 'report'
-      ? <>لا يبدأ التقييم قبل اعتماد المدير التنفيذي{/* doc rule 6 */}</>
+      ? <>لا يبدأ التقييم قبل اعتماد {APPROVER_SAY(approverFor('report', c.projectId))} للتقرير{/* doc 10.4.9 */}</>
       : <>التقييم سجلّ منفصل يُعدّه مشرف المنح{/* doc rule 17 */}</>,
   ]
 
   /* Attachments - one `DocList`, not a hand-built table. */
-  const docRows: DocRow[] = CLOSE_DOCS.map((d) => ({
+  /* v3 · 10.4.5 · 10.4.6 · a stopped project's own requirements · the invoices only when asked for */
+  const reqOf = (k: string, req?: boolean) => (c.basis === 'stopped' ? STOPPED_DOCS.includes(k) : Boolean(req)) || (k === 'invoices' && Boolean(c.invoicesAsked))
+  const docRows: DocRow[] = CLOSE_DOCS.filter((d) => d.key !== 'invoices' || c.invoicesAsked || c.report.docs.includes('invoices')).map((d) => ({
     name: c.report.files?.[d.key] ?? `${d.label}.pdf`,
-    meta: d.req ? /* doc rule 4 */ 'مستند إلزامي' : /* doc rule 5 */ 'مستند داعم',
+    meta: reqOf(d.key, d.req) ? /* doc rule 4 */ 'مستند إلزامي' : /* doc rule 5 */ 'مستند داعم',
     uploaded: c.report.docs.includes(d.key),
-    required: d.req,
-    action: !c.report.docs.includes(d.key) && asEntity && !closed
+    required: reqOf(d.key, d.req),
+    /* v3 · 10.4.23 · the version locks once sent · files change, or are replaced, before sending or after a formal return */
+    action: asEntity && (c.stage === 'draft' || c.stage === 'returned')
       ? (
         <UploadButton
-          label={`ارفع ${d.label}`}
+          label={c.report.docs.includes(d.key) ? `استبدل ${d.label}` : `ارفع ${d.label}`}
           onPick={(f) => attachDoc(c.id, d.key, c.entityName, f.name)}
         />
       )
@@ -279,10 +285,11 @@ export default function ClosePage() {
                 meta={<Tag tone="mute">الجهة المستفيدة</Tag>}
               />
               <p className="sub cnote">
-                تُلزم القواعد {/* doc rule 4 */} بأربع بيانات حدًّا أدنى:
-                عدد المستفيدين الفعلي، والميزانية الفعلية، ومدة التنفيذ، وأبرز المخرجات ·
-                وتقارنها المؤسسة بما اعتُمد في الاتفاقية والخطة. وتمنع القواعد {/* doc rule 3 */} الإرسال قبل اكتمالها مع
-                المستندات الداعمة.
+                {c.basis === 'stopped'
+                  ? <>مشروعك موقوف بقرار · المطلوب التقرير المالي التنفيذي لما صُرف وأدلة المخرجات المتحققة{/* doc 10.9.3 */}، ولا يُرسل الطلب قبل اكتمالهما.</>
+                  : <>المطلوب{/* doc 10.4.4 · 10.4.5 */}: عدد المستفيدين الفعلي، والميزانية الفعلية، ومدة التنفيذ، وأبرز المخرجات، وقيمة المشروع
+                    والمخرجات المتفق عليها مقابل المتحققة، ومساهمتكم إن زادت القيمة على المنحة، مع التقرير المالي التنفيذي وصور التنفيذ وأدلة المخرجات ·
+                    وتقارنها المؤسسة بما اعتُمد في الاتفاقية والخطة، ولا يُرسل التقرير قبل اكتمالها.</>}
               </p>
             </Glass>
           )}
@@ -329,6 +336,10 @@ export default function ClosePage() {
                        on its own edge, off both columns above. */
                     ...(c.report.outcomes ? [{ k: 'أبرز المخرجات', v: <>{isolate(c.report.outcomes)}</> }] : []),
                     ...(c.report.risks ? [{ k: 'التحديات', v: <>{isolate(c.report.risks)}</> }] : []),
+                    /* v3 · 10.4.4 · the reviewers read the value, the agreed outputs against the achieved, and the entity's share */
+                    ...(c.report.projectValue != null ? [{ k: 'قيمة المشروع الكلية', v: <Money sm>{c.report.projectValue}</Money> }] : []),
+                    ...(c.report.outputs ?? []).map((x, i) => ({ k: `مخرج ${nf.format(i + 1)} · ${x.text}`, v: x.achieved ? <>{isolate(x.achieved)}</> : <span className="sub">لم يُذكر المتحقق</span> })),
+                    ...(c.report.contribution ? [{ k: 'مساهمة الجهة', v: <>{isolate(c.report.contribution)}</> }] : []),
                   ])}
                 />
 
@@ -414,12 +425,16 @@ export default function ClosePage() {
                           </span>,
                       })).concat([
                         {
-                          k: 'التقدير العام · استرشادي',
-                          v: c.evaluation.score === null
+                          k: c.evaluation.criteria?.length ? 'الدرجة الموزونة' : 'التقدير العام · استرشادي',
+                          v: evalScore(c.evaluation) === null
                             ? <span className="sub">لم يُحدَّد</span>
-                            : <><span className="num">{c.evaluation.score}</span>
-                              <span className="sub"> من 5{/* doc rule 13 */}</span></>,
+                            : <><span className="num">{evalScore(c.evaluation)}</span>
+                              <span className="sub"> من 100{/* doc 10.4.31 */}</span></>,
                         },
+                        ...(c.evaluation.criteria ?? []).map((k) => ({
+                          k: `${k.label} · الوزن ${nf.format(k.weight)}`,
+                          v: k.rating === null ? <span className="sub">لم يُقيَّم</span> : <><span className="num">{k.rating}</span><span className="sub"> من 5</span></>,
+                        })),
                         /* audit P07 · rows of the list, like the report's outcomes */
                         ...(c.evaluation.impact ? [{ k: 'الأثر المرصود', v: <>{isolate(c.evaluation.impact)}</> }] : []),
                         ...(c.evaluation.lessons ? [{ k: 'الدروس المستفادة', v: <>{isolate(c.evaluation.lessons)}</> }] : []),
@@ -442,14 +457,15 @@ export default function ClosePage() {
                     {canStartEval(c)
                       ? <>اعتُمد التقرير، فيمكن بدء التقييم الآن · يُعدّه مشرف
                         المنح، ولدورته سجلّ منفصل{/* doc rule 17 */}.</>
-                      : <>تمنع القواعد {/* doc rule 6 */} بدء التقييم قبل
-                        اعتماد المدير التنفيذي للتقرير الختامي · فهو بانتظار دوره لا
+                      : <>لا يبدأ التقييم قبل اعتماد التقرير الختامي بالكامل من صاحب
+                        الصلاحية وفق المصفوفة{/* doc 10.4.9 */} · فهو بانتظار دوره لا
                         متأخّر.</>}
                   </p>
                 )}
               </Glass>
 
               {/* 10.4.8 · 10.4.18 · the requirements, named · the financial report and its savings */}
+              <ExceptionCard c={c} asEntity={asEntity} />
               <RequirementsCard c={c} asEntity={asEntity} />
               <FinanceCard c={c} asEntity={asEntity} />
               {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'close', id: c.id }} asEntity={asEntity} />}
@@ -489,16 +505,16 @@ export default function ClosePage() {
             </div>
           </div>
 
-          {/* Rule 16 is stated on screen, not only in a comment. */}
+          {/* v3 · 10.4.20 · the project's status follows its closing · v2's rule 16 is gone */}
           <p className="sub tcen">
-            مراحل التقرير لا تغيّر حالة المشروع ·{' '}
             <Link to={ROUTES.project(c.projectId)} className="lnk">{c.projectName}</Link>{' '}
             «{pr?.statusGroup ?? ''}»
             {closed
-              ? <> والإغلاق اكتمل في <DateText>{c.closedAt ?? ''}</DateText>.</>
-              : <> والإغلاق في «{closeStageLabel(c.stage)}»، وكلاهما صحيح{/* doc rule 16 */}.</>}
-            {' '}ويبقى «قيد الإغلاق» حتى اعتماد التقرير والتقييم واستكمال المتطلبات
-            المالية والإدارية معًا، ثم «مكتمل» أو «مغلق بوفر» أو «أعيد توجيه الدعم»{/* doc 10.4.20 · rule 8 · 18 */}.
+              ? <> · والإغلاق اكتمل في <DateText>{c.closedAt ?? ''}</DateText>.</>
+              : <> · والإغلاق في «{closeStageLabel(c.stage)}».</>}
+            {' '}{c.basis === 'stopped'
+              ? <>مشروع موقوف · يبقى على الحالة التي قرّرها الإيقاف، ويُسوّى ماليًّا وإداريًّا بالإغلاق{/* doc 10.9.1 */}.</>
+              : <>يبقى «قيد الإغلاق» حتى اعتماد التقرير والتقييم واستكمال المتطلبات المالية والإدارية معًا، ثم «مكتمل» أو «مغلق بوفر» أو «أعيد توجيه الدعم»{/* doc 10.4.20 · rule 8 · 18 */}.</>}
             {!req.ok && <> وحاليًا: {req.say}.</>}
           </p>
         </div>

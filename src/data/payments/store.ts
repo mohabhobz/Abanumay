@@ -1,3 +1,4 @@
+import { EXT_CLOSE_STAGE } from '@/data/mock/taxonomy'
 import { condLine, condMet, requirementOf, unmetConds } from '@/data/agreements/conds'
 import type { PayCond } from '@/types/domain'
 import { hasLegacy, legacyCover, legacyTotal } from './legacy'
@@ -67,7 +68,7 @@ export const routedElsewhere = (projectId: string): string => ehsanGate(projectI
     requirements on the external party's behalf, and finance pays nothing without the system's permit ·
     its schedule is the one the partners store keeps for it, when it has no agreement here */
 export const isExternal = (projectId: string): boolean => Boolean(ehsanGate(projectId))
-let externalSchedule: (projectId: string) => { no: number; amount: number; dueAt: string }[] = () => []
+let externalSchedule: (projectId: string) => { no: number; amount: number; dueAt: string; requirement?: string }[] = () => []
 /** What the platform paid an external project before its payments ran this procedure · the fixture's */
 let externalBefore: (projectId: string) => number = () => 0
 export const setExternalBefore = (f: typeof externalBefore) => { externalBefore = f }
@@ -287,6 +288,8 @@ export function needsOf(b: { no: number; requirement?: string; conds?: PayCond[]
     last one, which follows the final report (the one the agreement ties to it, or the schedule's last) */
 const tiedToFinal = (s: { conds?: PayCond[] }) => Boolean(s.conds?.some((c) => c.kind === 'report' && c.ref === 'final'))
 export function closingBlock(projectId: string, no: number, of?: number): string {
+  /* Verifier · 17 Oct · an external project's closing at the grants manager · nothing more is raised or permitted */
+  if (projectRows.find((p) => p.id === projectId)?.stage === EXT_CLOSE_STAGE) return 'إغلاق المشروع الخارجي عند مدير المنح · لا تُرفع متطلبات ولا يُنشأ إذن'
   const c = closeOfProject(projectId)
   if (!c || c.stage === 'closed') return ''
   const b = payIn(projectId)?.find((p) => p.no === no)
@@ -485,6 +488,7 @@ type Op = { at: string; by: string } & (
   | { op: 'create'; id: string; projectId: string; no: number; asked?: number; docs: PayDoc[]; origin: 'entity' | 'proxy' | 'supervisor'; note?: string }
   /* v3 · 9.2.2 · 9.2.10 · a first or only payment with no condition · straight to the permit */
   | { op: 'permitNew'; id: string; projectId: string; no: number; asked: number; note?: string }
+  | { op: 'payee'; id: string; name: string; ref: string; doc: string }
   | { op: 'resubmit'; id: string; asked?: number; docs: PayDoc[] }
   | { op: 'act'; id: string; act: PayAct; note: string; file?: string; amount?: number; role?: string }
   | { op: 'cond'; projectId: string; no: number; note: string }
@@ -515,13 +519,11 @@ const ENTITY_ROLE = 'الجهة المستفيدة'
    loads · its records and every move on them wait for it, then replay in order */
 let gated = false
 const DEFERRED: Op[] = []
-const deferIds = new Set<string>()
-const viaPlatform = (projectId: string) => projectRows.find((p) => p.id === projectId)?.platform === 'منصة إحسان'
 function apply(o: Op) {
-  const id = 'id' in o ? o.id : undefined
-  if (!gated && ((id && deferIds.has(id)) || ((o.op === 'create' || o.op === 'permitNew') && viaPlatform(o.projectId)))) {
-    DEFERRED.push(o); if (id) deferIds.add(id); return
-  }
+  /* Batch 7 · 17 Oct · a project is routed to an external party by the partners log, which replays after this
+     one · a record raised on it replayed as a regular project's and was lost · the whole log waits for the
+     partners store (loaded next, main.tsx), then replays in order */
+  if (!gated) { DEFERRED.push(o); return }
   asOf(o.at, () => applyOp(o))
 }
 function applyOp(o: Op) {
@@ -554,7 +556,8 @@ function applyOp(o: Op) {
           { label: 'متطلبات الدفعة مكتملة', ok: direct || docsOk, rule: 3 },
           ...(slot.condition ? [{ label: 'شروط الدفعة مستوفاة', ok: slot.conditionMet, rule: 6 } as PayCheck] : []),
         ],
-        bank: { name: bank?.bank ?? 'مصرف الراجحي', active: bank?.active ?? true },
+        /* v3 · 11.2.1 · an external party's transfer details are its reference record's */
+        bank: entityById(p.entityId)?.external?.transfer ? { name: entityById(p.entityId)!.external!.transfer!, active: true } : { name: bank?.bank ?? 'مصرف الراجحي', active: bank?.active ?? true },
         sources, owner: p.owner ?? roleByKey('supervisor').name, at: day(o.at),
         agreement: { id: ag?.id ?? `AG-${p.id}`, active: isExternal(p.id) || agreementOk(p.id), endsAt: p.endAt ?? first?.agreement.endsAt ?? '' },
         granted: grantOf(p.id), spent: paidOf(p.id), reserved: slot.amount, docs, log: [],
@@ -586,6 +589,15 @@ function applyOp(o: Op) {
       log(r, 3, 'النظام', 'النظام', 'تحقّق من اكتمال متطلبات الدفعة الإلزامية', o.at)
       log(r, 4, 'النظام', 'النظام', 'أحال متطلبات الدفعة إلى مشرف المنح', o.at, undefined, 'مشرف المنح · متطلبات جديدة للمراجعة')
       notify([r.owner], r, 'متطلبات دفعة جديدة بانتظار مراجعتك')
+      return
+    }
+    case 'payee': {
+      const r = payRequestById(o.id)
+      if (!r || !PAYEE_STATES.includes(r.state)) return
+      r.payee = { name: o.name, ref: o.ref, doc: o.doc, by: o.by, at: day(o.at) }
+      log(r, 10, o.by, 'مشرف المنح', `${r.payee && r.payee.at !== day(o.at) ? 'عدّل' : 'سجّل'} التحويل لطرف ثالث · المستفيد الفعلي ${o.name} · المرجع ${o.ref} · المستند المبرّر ${o.doc}`, o.at)
+      /* the transfer goes to the actual beneficiary named on the permit */
+      r.bank = { name: `${o.name} · ${o.ref}`, active: true }
       return
     }
     case 'resubmit': {
@@ -928,6 +940,24 @@ export function createPermit(v: { projectId: string; no: number; asked: number; 
   const id = nextRequestId()
   run({ op: 'permitNew', id, ...v, by, at: now() })
   return { id, errors: [] }
+}
+
+/** v3 · 11.2.10 · the permit's states before the transfer order · the payee may be set */
+const PAYEE_STATES: PayRequest['state'][] = ['supervisor', 'eligible', 'manager', 'exec']
+export const mayPayee = (r: PayRequest, role: RoleKey) => role === 'supervisor' && isExternal(r.projectId) && PAYEE_STATES.includes(r.state)
+/** v3 · 11.2.10 · 11.4.10 · a transfer to a third party · its formal document, the actual beneficiary and the reference */
+export function setPayee(id: string, v: { name: string; ref: string; doc: string }, by: string, role: RoleKey): string[] {
+  const r = payRequestById(id)
+  if (!r) return ['السجل غير موجود']
+  if (!isExternal(r.projectId)) return ['التحويل لطرف ثالث للمشروع المدعوم عبر جهة خارجية']
+  if (!mayPayee(r, role)) return ['يُسجَّل قبل أمر الصرف · من مشرف المنح']
+  const out: string[] = []
+  if (!v.doc) out.push('المستند أو الاتفاقية الرسمية المبرّرة')
+  if (!v.name.trim()) out.push('اسم المستفيد الفعلي')
+  if (!v.ref.trim()) out.push('المرجع')
+  if (out.length) return out
+  run({ op: 'payee', id, name: v.name.trim(), ref: v.ref.trim(), doc: v.doc, by, at: now() })
+  return []
 }
 
 /** 9.2.9 · the entity (or the authority, for an external party) completes what was missing */

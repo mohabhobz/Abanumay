@@ -125,10 +125,13 @@ export const CLOSE_LIMIT: Record<CloseStage, number> = hydrate(CFG.closeLimits, 
 }))
 
 /** Supporting documents for the closing report · rule 5 */
+/* v3 · 10.4.6 · an executive financial report with the outputs' evidence replaces the detailed invoices ·
+   those are asked for only when the authority needs them (`invoicesAsked`) */
 export const CLOSE_DOCS: { key: string; label: string; req?: boolean }[] = [
   { key: 'final', label: 'التقرير الختامي التفصيلي', req: true },
-  { key: 'photos', label: 'صور التنفيذ', req: true },
-  { key: 'invoices', label: 'الفواتير والمستندات المالية', req: true },
+  { key: 'finrep', label: 'التقرير المالي التنفيذي', req: true },
+  { key: 'photos', label: 'صور التنفيذ وأدلة المخرجات', req: true },
+  { key: 'invoices', label: 'الفواتير التفصيلية · عند طلبها' },
   { key: 'media', label: 'المواد الإعلامية' },
   { key: 'handover', label: 'محاضر الاستلام' },
   { key: 'beneficiaries', label: 'كشف المستفيدين' },
@@ -183,16 +186,29 @@ export const canOpenClose = (projectId: string): { ok: boolean; why: string } =>
  * Warning: **rule 4 states the minimum verbatim**: "actual beneficiary count, actual budget,
  * execution duration, and the key outputs and results achieved." These four aren't optional.
  */
+/** v3 · 10.4.5 · a stopped project closes on what its state needs · the executive financial report, the
+    outputs' evidence and what was done · not the full report of a completed project */
+export const STOPPED_DOCS = ['finrep', 'photos']
 export const reportBlockers = (c: CloseRow): string[] => {
   const out: string[] = []
   const r = c.report
-  if (r.beneficiaries === null) out.push('عدد المستفيدين الفعلي')
-  if (r.budget === null) out.push('الميزانية الفعلية')
-  if (r.days === null) out.push('مدة التنفيذ')
-  if (!r.outcomes.trim()) out.push('أبرز المخرجات والنتائج')
-  for (const d of CLOSE_DOCS) {
-    if (d.req && !r.docs.includes(d.key)) out.push(d.label)
+  const stopped = c.basis === 'stopped'
+  if (!stopped) {
+    if (r.beneficiaries === null) out.push('عدد المستفيدين الفعلي')
+    if (r.budget === null) out.push('الميزانية الفعلية')
+    if (r.days === null) out.push('مدة التنفيذ')
+    /* v3 · 10.4.4 · the project's value, the outputs agreed against those achieved, and the relation of
+       the foundation's share to what was achieved when it funded part */
+    if (r.projectValue === null || r.projectValue === undefined) out.push('قيمة المشروع الإجمالية')
+    if ((r.outputs ?? []).some((x) => !x.achieved.trim())) out.push('المتحقق من كل مخرج متفق عليه')
+    const grant = projectRows.find((p) => p.id === c.projectId)?.amountGranted ?? 0
+    if (r.projectValue && grant && r.projectValue > grant && !(r.contribution ?? '').trim()) out.push('بيان علاقة مساهمة المؤسسة بما تحقق (تمويل جزئي)')
   }
+  if (!r.outcomes.trim()) out.push(stopped ? 'ما نُفّذ حتى الإيقاف' : 'أبرز المخرجات والنتائج')
+  for (const d of CLOSE_DOCS) {
+    if ((stopped ? STOPPED_DOCS.includes(d.key) : d.req) && !r.docs.includes(d.key)) out.push(d.label)
+  }
+  if (c.invoicesAsked && !r.docs.includes('invoices')) out.push('الفواتير التفصيلية المطلوبة')
   /* Re-audit 7 Oct · the financial report's lines add up to the actual budget it declares */
   const lines = c.finance?.lines ?? []
   /* Batch 2 · 8 Oct · an empty financial table passed · the check below only ran when a line had a
@@ -215,7 +231,9 @@ export const evalBlockers = (c: CloseRow): string[] => {
   if (e.indicators.some((i) => i.actual === null)) out.push('مؤشرات بلا قيمة متحقّقة')
   if (!e.impact.trim()) out.push('الأثر المرصود')
   if (!e.lessons.trim()) out.push('الدروس المستفادة')
-  if (e.score === null) out.push('التقدير العام')
+  /* v3 · 10.4.31 · each weighted question rated · the older form keeps its overall rating */
+  if (e.criteria?.length) { if (e.criteria.some((x) => x.rating === null)) out.push('أسئلة التقييم بلا درجة') }
+  else if (e.score === null) out.push('التقدير العام')
   return out
 }
 

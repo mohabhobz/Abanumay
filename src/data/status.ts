@@ -1,5 +1,5 @@
 import type { ProjectRow, ProjectStatusGroup } from '@/types/domain'
-import { stageMeta } from '@/data/mock/taxonomy'
+import { EXT_PRE_STAGE, stageMeta } from '@/data/mock/taxonomy'
 
 /* v3 · the project status dictionary (0.status.1–12) · one reading of a project's main status and
    its sub-status, live from the record.
@@ -43,7 +43,8 @@ export function statusOf(p: Pick<ProjectRow, 'id' | 'stage' | 'supportStatus' | 
       /* An approval recorded under the old confirmation seat reads approved at once */
       return p.supportStatus === 'معتمد' ? 'معتمد' : g
     case PRE:
-      return agreementGate(p.id) ? PRE : 'معتمد'
+      /* v3 · 11.2.5 · approved, then the external project's pre-execution requirements */
+      return p.stage === EXT_PRE_STAGE || agreementGate(p.id) ? PRE : 'معتمد'
     case 'تحت التنفيذ':
       return planGate(p.id) ? PRE : g
     case 'مكتمل':

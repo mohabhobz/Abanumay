@@ -3,11 +3,12 @@ import { DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select
 import { UploadButton } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { isolate, nf } from '@/lib/format'
-import { CLOSE_DOCS, closeStageLabel, reportApproved } from '@/data/mock/closing'
+import { CLOSE_DOCS, closeById, closeStageLabel, reportApproved } from '@/data/mock/closing'
 import {
   CLOSE_RULES, DECISION_SAY, ESCALATION_STEPS, FEEDBACK_ITEMS, RELEASE_SAY, decideRecovery, escalateRecovery,
-  failRecovery, openSavingsRecovery, paidToDate, recordReceipt, recoveryLeft, requirementsOf, savingsOf,
+  failRecovery, openSavingsRecovery, paidToDate, recordReceipt, recoveryLeft, requirementsOf, savingsOf, savingsDue, caseSettled, finLinesTotal, approverFor, evalScore, caseById,
   mayRedirect, redirectBase, redirectSupport, sendFeedback, useClosing, verifyInvoices,
+  EXC_FIELDS, mayException, recordException, type ExcField,
 } from '@/data/closing/store'
 import { settleSlot, unsettledSlots } from '@/data/payments/store'
 import type { CloseRow, CloseSnapshot, FinalReport, Recovery } from '@/types/domain'
@@ -37,12 +38,16 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
   const f = c.finance
   const paid = paidToDate(c.projectId)
   const sav = savingsOf(c)
-  const mayVerify = !asEntity && role.key === 'supervisor' && c.stage !== 'closed'
+  const due = savingsDue(c)
+  const settled = caseSettled(c.projectId)
+  /* v3 · 10.4.6 · the spend is approved at the supervisor's review · locked once the report goes on */
+  const mayVerify = !asEntity && role.key === 'supervisor' && c.stage === 'supervisor'
+  const mayClaim = !asEntity && role.key === 'supervisor' && c.stage !== 'closed'
   return (
     <Glass>
       <Head
-        title="التقرير المالي والتسوية"
-        meta={f?.verified != null ? <Tag tone="ok">تحقّق المشرف من الفواتير</Tag> : <Tag tone="warn">الفواتير لم تُطابَق بعد</Tag>}
+        title="التقرير المالي التنفيذي والتسوية"
+        meta={f?.verified != null ? <Tag tone="ok">اعتمد المشرف المصروف</Tag> : <Tag tone="warn">لم يُعتمد المصروف بعد</Tag>}
       />
       <KV
         rows={[
@@ -51,31 +56,78 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
             v: l.spent === null ? <span className="sub">لم يُدخل بعد</span> : <span className={l.spent > l.approved ? 'bad' : undefined}><Num>{l.spent}</Num></span>,
           })),
           { k: 'المصروف للجهة حتى الآن', v: <Money sm>{paid}</Money> },
-          { k: 'الفواتير المتحقَّق منها', v: f?.verified == null ? <span className="sub">لم يتحقّق المشرف بعد</span> : <><Money sm>{f.verified}</Money>{f.verifiedBy && <span className="sub"> · {f.verifiedBy}</span>}</> },
-          { k: 'الوفر المستحق الاسترداد', v: sav > 0 ? <b className="bad"><Money sm>{sav}</Money></b> : <span className="sub">لا وفر</span> },
+          ...(settled > 0 ? [{ k: 'سُوّي بقرار الحالة (استرداد أو توجيه)', v: <Money sm>{settled}</Money> }] : []),
+          { k: 'المصروف المعتمد من التقرير المالي', v: f?.verified == null ? <span className="sub">لم يعتمده المشرف بعد</span> : <><Money sm>{f.verified}</Money>{f.verifiedBy && <span className="sub"> · {f.verifiedBy}</span>}</> },
+          { k: 'الوفر المستحق الاسترداد', v: due > 0 ? <b className="bad"><Money sm>{due}</Money></b> : sav > 0 ? <span className="sub">أُعيد توجيهه بقرار</span> : <span className="sub">لا وفر</span> },
           /* a row of the list, not a shaded box under it (audit P07) */
           ...(f?.settlements ? [{ k: 'التسويات المالية', v: <>{isolate(f.settlements)}</> }] : []),
         ]}
       />
       {mayVerify && (
         <div className="apv-row mt-3">
-          <MoneyField value={amount} onChange={setAmount} label="مبلغ الفواتير المتحقَّق منها" placeholder={c.report.budget !== null ? nf.format(c.report.budget) : '0'} />
-          <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة المطابقة · اختيارية" aria-label="ملاحظة مطابقة الفواتير" /></span>
+          <MoneyField value={amount} onChange={setAmount} label="المصروف الفعلي المعتمد" placeholder={nf.format(finLinesTotal(c))} />
+          <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة الاعتماد · اختيارية" aria-label="ملاحظة اعتماد المصروف" /></span>
           <button type="button" className="btn btn-2 btn-sm" disabled={amount === ''} onClick={() => { const out = verifyInvoices(c.id, Number(amount), note, user.name); setBad(out); if (!out.length) { setAmount(''); setNote('') } }}>
-            طابِق الفواتير
+            اعتمد المصروف
           </button>
         </div>
       )}
-      {sav > 0 && !c.recovery && mayVerify && (
+      {due > 0 && !c.recovery && mayClaim && (
         <div className="act-a">
           <button type="button" className="btn btn-p btn-sm" onClick={() => setBad(openSavingsRecovery(c.id, user.name))}>طالب الجهة بإعادة الوفر</button>
         </div>
       )}
       <Err list={bad} />
       <p className="sub cnote">
-        يطابق المشرف الفواتير بالمبلغ المصروف · وما صُرف ولم تغطِّه الفواتير وفرٌ تُطالَب الجهة بإعادته،
+        يعتمد المشرف المصروف الفعلي من التقرير المالي التنفيذي وأدلة المخرجات{/* doc 10.4.6 */} · ولا تُطلب الفواتير التفصيلية إلا عند الحاجة · وما صُرف ولم يُستخدم وفرٌ يُسترد أو يُعاد توجيهه،
         ويعود مع المحجوز غير المصروف إلى مخصص المجال (<bdi>{/* doc 10.9.7 */}</bdi>).
       </p>
+    </Glass>
+  )
+}
+
+/* ── v3 · 10.4.32 · after the final closing · read and archive · a change only by a documented exception ── */
+
+export function ExceptionCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }) {
+  useClosing()
+  const { role, user } = useRole()
+  const [field, setField] = useState<ExcField | undefined>()
+  const [value, setValue] = useState('')
+  const [reason, setReason] = useState('')
+  const [decision, setDecision] = useState('')
+  const [file, setFile] = useState('')
+  const [bad, setBad] = useState<string[]>([])
+  if (c.stage !== 'closed') return null
+  const may = !asEntity && mayException(c, role.key)
+  const list = c.exceptions ?? []
+  if (!may && !list.length) return null
+  return (
+    <Glass>
+      <Head title="المشروع مغلق · للقراءة والأرشفة" meta={list.length ? <Tag tone="warn"><Num>{list.length}</Num> تعديل استثنائي</Tag> : <Tag tone="mute">بلا تعديل</Tag>} />
+      <p className="sub cnote">لا يُحذف المشروع المغلق ولا يُعاد فتحه بالطريقة الاعتيادية · وأي تعديل لاحق إجراء استثنائي موثّق بقرار ومستنده{/* doc 10.4.32 */}.</p>
+      {list.length > 0 && (
+        <ul className="apv-list">
+          {list.map((x, i) => (
+            <li key={i}><span className="apv-t"><b>{x.field}: {x.was || '—'} ← {x.now}</b><span className="sub">{x.reason} · القرار {x.decision} · {x.file} · <Person name={x.by} /> ({x.role}) · <DateText>{x.at}</DateText></span></span></li>
+          ))}
+        </ul>
+      )}
+      {may && (
+        <>
+          <div className="regfields">
+            <label className="regf"><span className="lb">الحقل</span><Select value={field} all="اختر الحقل" allowEmpty={false} options={EXC_FIELDS.map((x) => ({ value: x.key, label: x.label }))} onChange={(v) => setField(v as ExcField)} /></label>
+            <label className="regf"><span className="lb">القيمة الجديدة</span><span className="fld"><input value={value} onChange={(e) => setValue(e.target.value)} aria-label="القيمة الجديدة" /></span></label>
+            <label className="regf"><span className="lb">سبب التعديل</span><span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التعديل الاستثنائي" /></span></label>
+            <label className="regf"><span className="lb">رقم القرار</span><span className="fld"><input value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="رقم قرار التعديل" /></span></label>
+          </div>
+          <div className="apv-row mt-2">
+            <span className="sub">{file || 'مستند القرار · إلزامي'}</span>
+            <UploadButton label="مستند القرار" onPick={(f) => setFile(f.name)} />
+            <button type="button" className="btn btn-2 btn-sm" onClick={() => { if (!field) { setBad(['اختر الحقل']); return } const out = recordException(c.id, { field, value, reason, decision, file }, user.name, role.key); setBad(out); if (!out.length) { setValue(''); setReason(''); setDecision(''); setFile('') } }}>سجّل التعديل الاستثنائي</button>
+          </div>
+        </>
+      )}
+      <Err list={bad} />
     </Glass>
   )
 }
@@ -135,6 +187,7 @@ const REC_SAY: Record<Recovery['state'], { label: string; tone: 'warn' | 'ok' | 
 export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: { kind: 'close' | 'case'; id: string }; asEntity: boolean }) {
   useClosing()
   const { role, user } = useRole()
+  const pid = owner.kind === 'close' ? closeById(owner.id)?.projectId : caseById(owner.id)?.projectId
   const [amount, setAmount] = useState('')
   const [ref, setRef] = useState('')
   const [file, setFile] = useState('')
@@ -222,7 +275,7 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
           <button type="button" className="btn btn-2 btn-sm" disabled={!step} onClick={() => done(escalateRecovery(owner, step ?? '', stepText, user.name), () => { setStep(undefined); setStepText('') })}>صعِّد</button>
         </div>
       )}
-      {!asEntity && role.key === 'ceo' && rec.state === 'failed' && (
+      {!asEntity && (role.key === 'ceo' || (pid !== undefined && role.key === approverFor('savings', pid))) && rec.state === 'failed' && (
         <div className="apv-row mt-3">
           <Select value={kind} all="القرار النهائي" options={Object.entries(DECISION_SAY).map(([value, label]) => ({ value, label }))} onChange={setKind} />
           <span className="fld"><input value={decision} onChange={(e) => setDecision(e.target.value)} placeholder="نص القرار" aria-label="نص القرار النهائي" /></span>
@@ -254,7 +307,7 @@ export function RedirectCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
   const [evidence, setEvidence] = useState<string[]>([])
   const [bad, setBad] = useState<string[]>([])
   const r = c.redirect
-  if (!r && (asEntity || !mayRedirect(role.key) || c.stage === 'closed')) return null
+  if (!r && (asEntity || !mayRedirect(role.key, c.projectId) || c.stage === 'closed')) return null
   const b = redirectBase(c)
   return (
     <Glass>
@@ -273,7 +326,7 @@ export function RedirectCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
         />
       ) : (
         <>
-          <KV rows={[{ k: 'المبلغ الأصلي', v: <Money sm>{b.original}</Money> }, { k: 'المستخدم', v: <Money sm>{b.used}</Money> }, { k: 'الحد الأقصى للتوجيه', v: <Money sm>{b.max}</Money> }]} />
+          <KV rows={[{ k: 'المبلغ الأصلي', v: <Money sm>{b.original}</Money> }, { k: 'المستخدم', v: <Money sm>{b.used}</Money> }, { k: 'الحد الأقصى للتوجيه', v: c.finance?.verified == null ? <span className="sub">بعد اعتماد المصروف الفعلي</span> : <Money sm>{b.max}</Money> }]} />
           <div className="apv-row mt-3">
             <MoneyField value={amount} onChange={setAmount} label="المبلغ المعاد توجيهه" />
             <span className="fld"><input value={purpose} onChange={(e) => setPurpose(e.target.value)} aria-label="الغرض الجديد" placeholder="الغرض الجديد داخل العلاقة نفسها" /></span>
@@ -304,7 +357,7 @@ export function FeedbackCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
   if (!fb && !can && asEntity) return null
   return (
     <Glass>
-      <Head title="تقييم الجهة للمؤسسة" meta={fb ? <Tag tone="ok">أرسلته الجهة</Tag> : <Tag tone="mute">لم يُرسل بعد</Tag>} />
+      <Head title="تقييم الجهة للمؤسسة" meta={fb ? <Tag tone="ok">أرسلته الجهة</Tag> : <Tag tone="mute">اختياري</Tag>} />
       {fb && (
         <>
           <KV rows={FEEDBACK_ITEMS.map((x) => ({ k: x.label, v: <><Num>{fb.scores[x.key] ?? 0}</Num> <span className="sub">من 5</span></> }))} />
@@ -330,7 +383,7 @@ export function FeedbackCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
           </div>
         </>
       )}
-      {!fb && !asEntity && <p className="sub cnote">تقيّم الجهة المؤسسة بعد اعتماد تقريرها الختامي، ويُعدّ من المتطلبات الإدارية للإغلاق.</p>}
+      {!fb && <p className="sub cnote">اختياري · مؤجَّل في الإجراء لمرحلة لاحقة{/* doc 10.4.30 */}، ولا يمنع الإغلاق.</p>}
       <Err list={bad} />
     </Glass>
   )
@@ -344,12 +397,19 @@ const FIELD_SAY: { key: keyof FinalReport; label: string }[] = [
   { key: 'days', label: 'مدة التنفيذ' },
   { key: 'outcomes', label: 'المخرجات' },
   { key: 'risks', label: 'التحديات' },
+  { key: 'projectValue', label: 'قيمة المشروع' },
+  { key: 'contribution', label: 'مساهمة الجهة' },
 ]
 const say = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : typeof v === 'number' ? nf.format(v) : String(v))
 
 function diffOf(s: CloseSnapshot, c: CloseRow): { label: string; was: string; now: string }[] {
   if (s.report) {
     const out = FIELD_SAY.filter((f) => s.report![f.key] !== c.report[f.key]).map((f) => ({ label: f.label, was: say(s.report![f.key]), now: say(c.report[f.key]) }))
+    const outs = (r?: FinalReport) => (r?.outputs ?? []).map((x) => `${x.text}: ${x.achieved || '—'}`).join(' · ')
+    if (outs(s.report) !== outs(c.report)) out.push({ label: 'المخرجات المتفق عليها والمحققة', was: outs(s.report) || '—', now: outs(c.report) || '—' })
+    const files = (r: FinalReport) => Object.entries(r.files ?? {}).filter(([k, f]) => s.report!.docs.includes(k) && (s.report!.files ?? {})[k] !== f).map(([k]) => CLOSE_DOCS.find((d) => d.key === k)?.label ?? k)
+    const swapped = files(c.report)
+    if (swapped.length) out.push({ label: 'مرفقات مستبدلة', was: '', now: swapped.join('، ') })
     const added = c.report.docs.filter((d) => !s.report!.docs.includes(d))
     if (added.length) out.push({ label: 'المرفقات', was: `${s.report.docs.length}`, now: `${c.report.docs.length} · أُضيف ${added.map((k) => CLOSE_DOCS.find((d) => d.key === k)?.label ?? k).join('، ')}` })
     return out
@@ -359,7 +419,10 @@ function diffOf(s: CloseSnapshot, c: CloseRow): { label: string; was: string; no
     s.evaluation.indicators.forEach((i, n) => { const now = c.evaluation!.indicators[n]; if (now && now.actual !== i.actual) out.push({ label: i.name, was: say(i.actual), now: say(now.actual) }) })
     if (s.evaluation.impact !== c.evaluation.impact) out.push({ label: 'الأثر', was: say(s.evaluation.impact), now: say(c.evaluation.impact) })
     if (s.evaluation.lessons !== c.evaluation.lessons) out.push({ label: 'الدروس', was: say(s.evaluation.lessons), now: say(c.evaluation.lessons) })
-    if (s.evaluation.score !== c.evaluation.score) out.push({ label: 'التقدير', was: say(s.evaluation.score), now: say(c.evaluation.score) })
+    ;(s.evaluation.criteria ?? []).forEach((k) => { const now = c.evaluation!.criteria?.find((x) => x.key === k.key); if (now && now.rating !== k.rating) out.push({ label: `${k.label} (${nf.format(k.weight)})`, was: say(k.rating), now: say(now.rating) }) })
+    const was = evalScore(s.evaluation)
+    const nowScore = evalScore(c.evaluation)
+    if (was !== nowScore) out.push({ label: 'الدرجة من 100', was: say(was), now: say(nowScore) })
     return out
   }
   return []

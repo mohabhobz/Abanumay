@@ -708,6 +708,9 @@ function seed() {
     const f = agrFlowOf(a.id)
     f.clauses = templateClauses({ id: a.projectId, name: a.projectName, entityName: a.entityName }, a.id)
     for (const c of appFlowOf(a.projectId).conditions) f.clauses.push({ id: `cl-${a.id}-c${c.id}`, kind: 'condition', source: 'approval', title: 'شرط الاعتماد', body: c.text })
+    /* v3 · 10.2.11 · the fixture's agreements carry a media obligation on about half · the closing's
+       outreach review reads it from here */
+    if (Number(a.projectId) % 2 === 1) f.clauses.push({ id: `cl-${a.id}-m`, kind: 'obligation', source: 'template', title: 'الظهور الإعلامي', body: 'تُشير الجهة إلى دعم المؤسسة في المواد الإعلامية للمشروع وفق دليل الهوية، وترفع ما يثبت ذلك مع التقرير الختامي.' })
     if (!a.docs.some((d) => REQUIRED_ANNEXES.includes(d.kind) || d.kind === 'تفويض')) a.docs.push({ name: 'تفويض ممثل الجهة.pdf', kind: 'تفويض ممثل الجهة', at: a.openedAt, size: '420 ك.ب' })
     for (const d of a.docs) if (d.kind === 'تفويض') d.kind = 'تفويض ممثل الجهة'
     if (a.kind === 'ورقية') f.paperCopy = 'نسخة الاتفاقية الورقية.pdf'

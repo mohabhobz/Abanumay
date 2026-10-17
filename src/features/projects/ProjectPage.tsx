@@ -364,7 +364,7 @@ export default function ProjectPage() {
       ...(row ? readJourney(row, journeys.get(row.id)) : []),
       /* Cross · the readings of the reviewer's seat and of a project through Ehsan */
       ...(row && row.statusGroup === 'قيد الدراسة' && !asEntity ? projectAi(row) : []),
-      ...(row && row.platform === 'منصة إحسان' && !asEntity ? ehsanAi(row) : []),
+      ...(row && row.platform && !asEntity ? ehsanAi(row) : []),
       ...readInsights(fixtures.insights),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -459,7 +459,7 @@ export default function ProjectPage() {
                   project={project}
                   code={code}
                   /* Re-audit 7 Oct · the routing card and the data tab read the same type */
-                  type={row?.partnerType === 'مستقل' ? `مشروع مستقل${row.platform ? ` · ${row.platform}` : ''}` : type}
+                  type={row?.platform ? `مشروع مدعوم عبر جهة خارجية · ${row.platform}` : row?.partnerType === 'مستقل' ? 'مشروع مستقل' : type}
                   entityName={entity.name}
                   entityId={String(entity.id)}
                   entityAction={row && !asEntity ? <RelinkEntityButton projectId={row.id} entityId={row.entityId} projectName={row.name} /> : undefined}

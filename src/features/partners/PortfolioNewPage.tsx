@@ -44,7 +44,7 @@ export default function PortfolioNewPage() {
   const save = (send: boolean) => {
     const out = createPortfolio({
       name, entityId, total: Number(total) || 0, track, field, goals, summary, files,
-      origin: asPartner ? 'partner' : 'internal', channel: prof?.platform ? 'ehsan' : 'direct',
+      origin: asPartner ? 'partner' : 'internal', channel: 'direct',
     }, send, asPartner ? prof?.name ?? user.name : user.name, from?.id)
     if (out.errors.length || !out.id) { setSaid({ bad: [`ينقص: ${out.errors.join('، ')}`] }); return }
     navigate(`${ROUTES.portfolio(out.id)}${asPartner ? '?as=partner' : ''}`)
@@ -78,7 +78,7 @@ export default function PortfolioNewPage() {
                   </label>
                   <label className="regf">
                     <span className="lb">منصة الشريك</span>
-                    <span className="fld"><input value={prof?.platform ? 'منصة إحسان · تنفّذ الدفعات بنفسها' : 'بلا منصة · تُطلب الدفعات على مستوى المحفظة'} readOnly aria-label="منصة الشريك" /></span>
+                    <span className="fld"><input value="تُطلب الدفعات على مستوى المحفظة وفق إجراء صرف الدفعات" readOnly aria-label="الدفعات" /></span>
                   </label>
                 </div>
               </Glass>

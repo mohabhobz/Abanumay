@@ -23,7 +23,7 @@ import { readEntity } from '@/data/readings'
 import { entityCode } from '@/lib/format'
 import {
   EntityBanksTab, EntityDataTab, EntityDocsTab, EntityGoTo, EntityLogTab,
-  EntityProjectsTab, EntityRecord,
+  EntityEvalCard, EntityProjectsTab, EntityRecord,
 } from './tabs'
 
 /**
@@ -145,6 +145,7 @@ export default function EntityPage() {
               {active === 'docs' && <EntityDocsTab d={detail} entityId={entity.id} />}
               {active === 'banks' && <EntityBanksTab d={detail} entityId={entity.id} />}
               {active === 'projects' && <EntityProjectsTab rows={projects} />}
+              {active === 'projects' && <EntityEvalCard entityId={entity.id} />}
               {active === 'requests' && <EntityRequestsTab e={entity} />}
               {active === 'log' && <EntityLogTab d={detail} entityId={entity.id} />}
 

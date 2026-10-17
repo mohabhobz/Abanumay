@@ -10,6 +10,9 @@ import { ENTITY_DOCS_TOTAL, stagePressure } from '@/data/repository'
 import type { EntityDetail, EntityEvent } from '@/data/mock/entityDetail'
 import type { EntityRow, ProjectRow } from '@/types/domain'
 import { BankActions } from './EntityActions'
+import { useState } from 'react'
+import { useRole } from '@/hooks/useRole'
+import { entityEvalSummary, entityLessons, saveEntityLessons, useClosing } from '@/data/closing/store'
 
 /* === Entity data === */
 
@@ -322,6 +325,33 @@ export function EntityLogTab({ d, entityId }: { d: EntityDetail; entityId?: stri
 }
 
 /* === Its projects === */
+
+/** v3 · 10.4.30 · a simple average of the entity's project evaluations · advisory · and its lessons learned */
+export function EntityEvalCard({ entityId }: { entityId: string }) {
+  useClosing()
+  const { role, user } = useRole()
+  const sum = entityEvalSummary(entityId)
+  const les = entityLessons(entityId)
+  const [text, setText] = useState(les?.text ?? '')
+  const [bad, setBad] = useState<string[]>([])
+  const may = ['supervisor', 'grants-manager', 'ceo'].includes(role.key)
+  return (
+    <Glass id="ent-evals">
+      <Head title="تقييمات مشاريع الجهة" meta={sum.avg !== null ? <span className="sub">المتوسط <Num>{sum.avg}</Num> من 100 · <Num>{sum.n}</Num> {nounAfter(sum.n, NOUN.project)}</span> : <span className="sub">لا مشاريع مقيّمة مغلقة بعد</span>} />
+      {sum.projects.length > 0 && (
+        <KV rows={sum.projects.map((x) => ({ k: x.name, v: <><Num>{x.score}</Num> <span className="sub">من 100</span></> }))} />
+      )}
+      <p className="sub cnote">متوسط بسيط استرشادي{/* doc 10.4.30 */} · لا يُقرّر وحده في دراسة مشاريع الجهة القادمة.</p>
+      <label className="regf">
+        <span className="lb">الدروس المستفادة على مستوى الجهة</span>
+        <span className="fld"><textarea rows={2} value={text} disabled={!may} onChange={(e) => setText(e.target.value)} aria-label="الدروس المستفادة على مستوى الجهة" placeholder="ما تعلّمته المؤسسة من العمل مع هذه الجهة" /></span>
+        {les && <span className="sub regf-h">آخر تحديث · <Person name={les.by} /> · <DateText>{les.at}</DateText></span>}
+      </label>
+      {may && <div className="act-a"><button type="button" className="btn btn-2 btn-sm" disabled={!text.trim() || text === les?.text} onClick={() => setBad(saveEntityLessons(entityId, text, user.name, role.key))}>احفظ الدروس</button></div>}
+      {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
+    </Glass>
+  )
+}
 
 export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
   if (rows.length === 0) {

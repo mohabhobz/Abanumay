@@ -206,6 +206,9 @@ export interface StageMeta {
 
 /* v3 · 3.4.15 · the limits are working days (lib/sla.ts) · written here as their calendar hours */
 const wd = workDayLimit
+/** v3 · BPD-011 · the external project's own stages */
+export const EXT_PRE_STAGE = 'متطلبات المشروع الخارجي'
+export const EXT_CLOSE_STAGE = 'اعتماد إغلاق المشروع الخارجي'
 export const STAGES: StageMeta[] = [
   /* v3 · 0.status.2 · under study from sending until the final decision · the level is the sub-status */
   { stage: 'دراسة المشروع', group: 'قيد الدراسة', limit: wd(900) },
@@ -216,6 +219,9 @@ export const STAGES: StageMeta[] = [
   { stage: 'الإتفاقيات الورقية', group: 'استكمال متطلبات ما قبل التنفيذ', limit: wd(480) },
   /* Re-audit 7 Oct · named in the data, missing here · it read «في الدراسة» */
   { stage: 'اعتماد الإتفاقية الكترونيًا', group: 'استكمال متطلبات ما قبل التنفيذ', limit: wd(480) },
+  /* v3 · 11.2.5 · 11.2.8 · a project supported through an external party · its document and schedule are
+     registered before it runs · no internal agreement */
+  { stage: 'متطلبات المشروع الخارجي', group: 'استكمال متطلبات ما قبل التنفيذ', limit: wd(480) },
   /* 0.status.5 · execution · the only status a payment runs in */
   { stage: 'المشرف إذن الصرف', group: 'تحت التنفيذ', limit: wd(240) },
   { stage: 'اصدار سند الصرف', group: 'تحت التنفيذ', limit: wd(240) },
@@ -226,6 +232,8 @@ export const STAGES: StageMeta[] = [
   { stage: 'رفع التقرير الختامي', group: 'قيد الإغلاق', limit: wd(720) },
   { stage: 'اعتماد التقرير الختامي', group: 'قيد الإغلاق', limit: wd(480) },
   { stage: 'تقييم المشروع', group: 'قيد الإغلاق', limit: wd(480) },
+  /* v3 · 11.2.14 · the external project's closing at the grants manager · no final report, no evaluation */
+  { stage: 'اعتماد إغلاق المشروع الخارجي', group: 'قيد الإغلاق', limit: wd(240) },
   /* 0.status.7–9 · complete · or closed with a saving · or its support redirected (the module reads which) */
   { stage: 'مشروع مكتمل', group: 'مكتمل', limit: 0 },
   /* 0.status.12 · a project whose execution can't go on · not a stage past its SLA */

@@ -7,6 +7,9 @@ import '@/data/agreements/store'
 import '@/data/plans/store'
 import '@/data/approvals/store'
 import '@/data/payments/store'
+/* v3 · 9.4.5 · BPD-011 · the partners store routes projects to external parties and gives the payments their
+   external schedules · the payments replay waits for it, so it loads right after them, before the closing */
+import '@/data/partners/store'
 import '@/data/closing/store'
 import '@/data/slaSeed'
 import App from '@/app/App'
@@ -22,7 +25,7 @@ import * as planStore from '@/data/plans/store'
 import * as planMock from '@/data/mock/plans'
 import * as closeStore from '@/data/closing/store'
 import { stageMeta } from '@/data/mock/taxonomy'
-import { projectRows } from '@/data/mock/projects'
+import { projectRows, subRows } from '@/data/mock/projects'
 import { agreements as agrRows } from '@/data/mock/agreements'
 import * as kpi from '@/data/kpi'
 import * as closeMock from '@/data/mock/closing'
@@ -61,7 +64,7 @@ try {
     const w = window as unknown as Record<string, unknown>
     w.__abOwner = ownerOfPath
     /* Reading the stores from a test · the figures behind a screen, not a way to change them */
-    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore, auth: authStore, ai: aiShared, apprRules, decisions, priority, recon, legacy, textCheck, sheet, guard, aiProvider, notify, exportLib, impactMod, cycle, reloc: relocStore }
+    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, subRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore, auth: authStore, ai: aiShared, apprRules, decisions, priority, recon, legacy, textCheck, sheet, guard, aiProvider, notify, exportLib, impactMod, cycle, reloc: relocStore }
   }
   /* The drawn audits (tools/) visit entity views too · each load takes the session its URL needs:
      the record's own entity for an entity view or a portal, staff otherwise */

@@ -108,7 +108,7 @@ export function escStages(proc: EscProc): EscStage[] {
     case 'portfolio': return [
       own('portfolio.supervisor', 'دراسة مشرف المنح', 'مشرف المنح'),
       own('portfolio.manager', 'لدى مدير المنح', 'مدير المنح'),
-      own('portfolio.ceo', 'لدى الرئيس التنفيذي', 'المدير التنفيذي'),
+      own('portfolio.ceo', 'لدى المدير التنفيذي', 'المدير التنفيذي'),
       own('portfolio.committee', 'عند اللجنة التنفيذية', 'اللجنة التنفيذية'),
       own('portfolio.board', 'عند مجلس الأمناء', 'مجلس الأمناء'),
       own('portfolio.returned', 'معادة للشريك', 'الشريك'),
@@ -293,7 +293,7 @@ function collect(proc: EscProc): EscItem[] {
         const pid = x.target.kind === 'project' ? x.target.projectId : undefined
         const name = pid ? projectRows.find((p) => p.id === pid)?.name ?? pid : pf?.name ?? ''
         out.push(make({
-          id: `esc-eh-${x.id}`, proc, stageKey: 'ehsan.review', stage: escLabel('ehsan.review'), title: `دفعة ${x.ref} · ${name}`, sub: 'نفّذتها منصة إحسان',
+          id: `esc-eh-${x.id}`, proc, stageKey: 'ehsan.review', stage: escLabel('ehsan.review'), title: `دفعة ${x.ref} · ${name}`, sub: 'نفّذتها منصة الجهة الخارجية',
           href: `${ROUTES.partners}?tab=finance`, owner: escWho('ehsan.review'), hours: hoursSince(x.at), limit: ESC_LIMITS['ehsan.review'] ?? 0,
         }))
       }

@@ -7,6 +7,7 @@ import JourneyPage from '@/features/journey/JourneyPage'
 import GlassBoard from '@/features/board/GlassBoard'
 import PartnersPage from '@/features/partners/PartnersPage'
 import PortfolioNewPage from '@/features/partners/PortfolioNewPage'
+import ExternalNewPage from '@/features/partners/ExternalNewPage'
 import ProjectsListPage from '@/features/projects/list/ProjectsListPage'
 import EntitiesListPage from '@/features/entities/EntitiesListPage'
 import EntityPage from '@/features/entities/EntityPage'
@@ -139,6 +140,7 @@ export default function App() {
         <Route path={ROUTES.portfolioNew} element={<PortfolioNewPage />} />
         <Route path="/projects/portfolio/:id" element={<PortfolioPage />} />
         <Route path={ROUTES.partners} element={<PartnersPage />} />
+        <Route path={ROUTES.externalNew} element={<ExternalNewPage />} />
         <Route path={`${ROUTES.projects}/:id`} element={<ProjectPage />} />
         <Route path={`${ROUTES.projects}/:id/:tab`} element={<ProjectPage />} />
         <Route path={`${ROUTES.projects}/:id/brief/:brief`} element={<BriefPage />} />

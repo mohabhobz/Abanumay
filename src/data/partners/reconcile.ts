@@ -144,7 +144,9 @@ export function resolveItem(runId: string, key: string, note: string, by: string
 /** A sample of the platform's export · the recorded payments with three differences, for a first try */
 export function sampleTable(): Table {
   const live = EHSAN_PAYS.filter((p) => p.state !== 'returned')
-  const rows = live.slice(0, Math.max(0, live.length - 1)).map((p, i) => [p.ref, String(i === 1 ? p.amount + 500 : p.amount), i === 2 ? p.paidAt.replace(/\d{2}$/, '01') : p.paidAt, targetName(p.target)])
+  /* Every kind shows when there are records enough · with fewer, the records read matched (a sample is not a mistake) */
+  const full = live.length >= 4
+  const rows = (full ? live.slice(0, live.length - 1) : live).map((p, i) => [p.ref, String(full && i === 1 ? p.amount + 500 : p.amount), full && i === 2 ? p.paidAt.replace(/\d{2}$/, '01') : p.paidAt, targetName(p.target)])
   rows.push(['EH-99901', '18000', live[0]?.paidAt ?? '2026-09-01', 'غير مسجّلة في النظام'])
   return [['رقم العملية', 'المبلغ', 'التاريخ', 'المشروع'], ...rows]
 }

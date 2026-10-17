@@ -106,8 +106,8 @@ export function CloseCard({ c }: { c: CloseRow }) {
           <Icon name={done ? icons.check : icons.clock} size="sm" />
           <span>
             {done
-              ? 'التقرير معتمد من المدير التنفيذي'
-              : 'لا يبدأ التقييم قبل اعتماد المدير التنفيذي'}
+              ? 'التقرير معتمد من صاحب الصلاحية'
+              : 'لا يبدأ التقييم قبل اعتماد التقرير بالكامل'}
           </span>
           {/* doc rule 6 */}
         </li>

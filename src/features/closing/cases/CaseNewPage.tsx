@@ -11,8 +11,8 @@ import { assistFor } from '@/data/mock/assistant'
 import { projectById } from '@/data/mock/projects'
 import { nf } from '@/lib/format'
 import { resizeIssue } from '@/data/budget/store'
-import { CASE_KIND_SAY, createCase, grantOf, paidToDate, stopPhase, useClosing } from '@/data/closing/store'
-import type { CaseKind } from '@/types/domain'
+import { APPROVER_SAY, CASE_KIND_SAY, OUTCOME_SAY, approverFor, createCase, grantOf, outcomesFor, paidToDate, stopPhase, useClosing } from '@/data/closing/store'
+import type { CaseKind, CaseRow } from '@/types/domain'
 
 /* Opening a distress case · 10.9.
 
@@ -41,6 +41,10 @@ export default function CaseNewPage() {
   const [extra, setExtra] = useState('')
   const [dueAt, setDueAt] = useState('')
   const [bad, setBad] = useState<string[]>([])
+  const [outcome, setOutcome] = useState<CaseRow['outcome']>()
+  const [purpose, setPurpose] = useState('')
+  const [decision, setDecision] = useState('')
+  const [rfile, setRfile] = useState('')
 
   if (!p) {
     return (
@@ -59,8 +63,18 @@ export default function CaseNewPage() {
   const value = Number(amount) || 0
   const claim = kind === 'reduce' && value ? Math.max(0, paid - value) : 0
   const raise = kind === 'increase' && value > granted ? value - granted : 0
-  const issue = kind === 'increase' && value ? resizeIssue(p.id, value) : ''
-  const ready = reason.trim() && (kind === 'stop' || (kind === 'reduce' ? value > 0 && value < granted && annex : value > granted && !issue))
+  /* v3 · 10.9.1 – 10.9.3 · 10.4.28 · what the decision makes of the project and its money */
+  const outs = outcomesFor(kind, p.id, value || undefined)
+  const pick = outcome && outs.includes(outcome) ? outcome : outs[0]
+  const independent = kind === 'increase' && pick === 'independent'
+  const redirect = pick === 'redirect'
+  const issue = kind === 'increase' && value && !independent ? resizeIssue(p.id, value) : ''
+  const docsOk = !redirect || (purpose.trim() && decision.trim() && rfile)
+  const ready = reason.trim() && docsOk && (kind === 'stop' || (kind === 'reduce' ? value > 0 && value < granted && annex : value > granted && !issue))
+  /* v3 · 10.4.11 · a redirect outcome also needs the redirect row's approver */
+  const own = approverFor(kind, p.id, kind === 'increase' ? value || undefined : undefined)
+  const finalKey = own === 'grants-manager' && (!redirect || approverFor('redirect', p.id) === 'grants-manager') ? 'grants-manager' : 'ceo'
+  const approver = APPROVER_SAY(finalKey)
   const mine = role.key === 'supervisor'
 
   const submit = () => {
@@ -68,7 +82,8 @@ export default function CaseNewPage() {
       projectId: p.id, kind, reason,
       newAmount: kind === 'stop' ? undefined : value,
       annex: kind === 'reduce' ? annex : undefined,
-      extra: kind === 'increase' ? { amount: Number(extra) || raise, dueAt: dueAt || '2026-11-01' } : undefined,
+      extra: kind === 'increase' && !independent ? { amount: Number(extra) || raise, dueAt: dueAt || '2026-11-01' } : undefined,
+      outcome: pick, redirect: redirect ? { purpose, decision, file: rfile } : undefined,
     }, user.name)
     setBad(out.errors)
     if (out.id) navigate(ROUTES.distress(out.id))
@@ -119,7 +134,23 @@ export default function CaseNewPage() {
                     <UploadButton label="ملحق الاتفاقية" onPick={(f) => setAnnex(f.name)} />
                   </div>
                 )}
-                {kind === 'increase' && (
+                <label className="regf">
+                  <span className="lb">نتيجة القرار<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <Select value={pick} allowEmpty={false} all="النتيجة" options={outs.map((o) => ({ value: o, label: OUTCOME_SAY[o] }))} onChange={(x) => setOutcome(x as CaseRow['outcome'])} />
+                  <span className="sub regf-h">{/* doc 10.9.1 – 10.9.3 · 10.4.28 */}
+                    {kind === 'stop' ? 'قبل أي صرف «ملغى» · وبعد الصرف استرداد غير المستخدم، أو إعادة توجيهه، أو «متعثر» وفق القرار'
+                      : kind === 'reduce' ? 'يُسترد فرق ما صُرف فوق القيمة الجديدة أو يُعاد توجيهه'
+                      : 'ملحق يزيد قيمة هذا المشروع، أو مشروع مستقل جديد للجهة نفسها يمرّ بدورة الدراسة والاعتماد'}
+                  </span>
+                </label>
+                {redirect && (
+                  <div className="regfields">
+                    <label className="regf"><span className="lb">الغرض الجديد داخل العلاقة نفسها<b className="regf-r" aria-label="إلزامي">*</b></span><span className="fld"><input value={purpose} onChange={(e) => setPurpose(e.target.value)} aria-label="الغرض الجديد للدعم المعاد توجيهه" /></span></label>
+                    <label className="regf"><span className="lb">رقم القرار<b className="regf-r" aria-label="إلزامي">*</b></span><span className="fld"><input value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="رقم قرار إعادة التوجيه" /></span></label>
+                    <div className="apv-row"><span className="sub">{rfile || 'مستند القرار · إلزامي'}</span><UploadButton label="مستند قرار إعادة التوجيه" onPick={(f) => setRfile(f.name)} /></div>
+                  </div>
+                )}
+                {kind === 'increase' && !independent && (
                   <div className="regfields">
                     <label className="regf">
                       <span className="lb">الدفعة الإضافية</span>
@@ -144,13 +175,16 @@ export default function CaseNewPage() {
                     { k: 'المصروف حتى الآن', v: <Money sm>{paid}</Money> },
                     ...(kind === 'stop' ? [{ k: 'موضع الإيقاف', v: phase.say }] : []),
                     ...(kind === 'reduce' ? [{ k: 'يُطالَب بإعادته', v: claim ? <b className="bad"><Money sm>{claim}</Money></b> : <span className="sub">لا شيء · يُخفَّض الحجز والجدول</span> }] : []),
-                    ...(kind === 'increase' ? [{ k: 'زيادة الحجز', v: raise ? <Money sm>{raise}</Money> : <span className="sub">—</span> }] : []),
+                    ...(kind === 'increase' ? [{ k: independent ? 'قيمة المشروع المستقل' : 'زيادة الحجز', v: raise ? <Money sm>{raise}</Money> : <span className="sub">—</span> }] : []),
+                    { k: 'النتيجة', v: pick ? OUTCOME_SAY[pick] : '—' },
+                    { k: 'يعتمده نهائيًّا', v: <>{approver}{/* doc 10.4.11 */}</> },
                   ]}
                 />
                 <p className="sub cnote">
                   {kind === 'stop'
-                    ? 'باعتماد الرئيس التنفيذي تُغلق طلبات الصرف المفتوحة وتُوقف الدفعات القادمة، ويُحرَّر المحجوز غير المصروف إلى مخصص المجال، ويُطالَب بما لم يُصرف فعليًّا.'
-                    : 'يُحدَّث المشروع بالقيمة الجديدة باعتماد الرئيس التنفيذي وحده، ويتبعه الحجز وجدول الدفعات.'}
+                    ? `باعتماد ${approver} تُغلق سجلات الصرف المفتوحة وتُوقف الدفعات القادمة، ويُحرَّر المحجوز غير المصروف إلى مخصص المجال، ويُسترد ما لم يُستخدم أو يُعاد توجيهه.`
+                    : independent ? `باعتماد ${approver} يُفتح طلب مشروع مستقل للجهة مرتبط بهذا المشروع · ولا تتغيّر قيمة المشروع الحالي.`
+                    : `يُحدَّث المشروع بالقيمة الجديدة باعتماد ${approver}، ويتبعه الحجز وجدول الدفعات.`}
                 </p>
               </Glass>
             </div>
@@ -158,7 +192,7 @@ export default function CaseNewPage() {
             <AssistantAside
               title="مراجعة القرار"
               cta="راجع القرار"
-              empty="القرار مكتمل · يُرفع إلى مدير المنح ثم الرئيس التنفيذي."
+              empty={`القرار مكتمل · يُرفع إلى مدير المنح${finalKey === 'grants-manager' ? '' : ` ثم ${approver}`}.`}
               readings={[
                 ...(!reason.trim() ? [{ id: 'cn-reason', kind: 'flag' as const, label: 'ينقص', text: 'سبب القرار', src: '10.9' }] : []),
                 ...(kind === 'stop' ? [{ id: 'cn-phase', kind: 'note' as const, label: 'موضع الإيقاف', text: phase.say, src: /* doc 10.9.1 – 10.9.4 */ '' }] : []),
@@ -173,7 +207,7 @@ export default function CaseNewPage() {
         <div className="decdock">
           <div className="chrome decbar payact">
             <div className="rowf gp-3 payact-w">
-              <span className="decsent">{mine ? <>يُرفع القرار إلى مدير المنح ثم الرئيس التنفيذي</> : <>يفتح الحالةَ مشرفُ المنح</>}</span>
+              <span className="decsent">{mine ? <>يُرفع القرار إلى مدير المنح{approver !== APPROVER_SAY('grants-manager') ? <> ثم {approver}</> : null}</> : <>يفتح الحالةَ مشرفُ المنح</>}</span>
             </div>
             {mine && <button type="button" className="btn btn-p" disabled={!ready} onClick={submit}>افتح الحالة</button>}
           </div>

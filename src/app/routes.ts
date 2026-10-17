@@ -36,6 +36,8 @@ export const ROUTES = {
   /** Strategic partners · the partners, their portfolios, the Ehsan projects and the finance desk (BPD-011 · BPD-013) */
   partners: '/partners',
   partnersTab: (tab: string) => `/partners?tab=${tab}`,
+  /** v3 · 11.2.2 · a project supported through an external party · the simplified form */
+  externalNew: '/partners/external/new',
   project: (id: string) => `/projects/${id}`,
   projectTab: (id: string, tab: string) => `/projects/${id}/${tab}`,
   /** v3 · 5.2.3 · 6.2.2 · 7.2.3 · a level's presentation file, printable to PDF */
