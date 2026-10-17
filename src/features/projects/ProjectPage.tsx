@@ -30,7 +30,9 @@ import { closeOfProject } from '@/data/mock/closing'
 import { openClosing, paidToDate } from '@/data/closing/store'
 import { DistressCard } from '@/features/closing/DistressCard'
 import { AnalysisCard } from '@/components/assistant'
-import { ehsanAi, projectAi } from '@/data/shared/ai'
+import { alignmentOf, ehsanAi, projectAi } from '@/data/shared/ai'
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
 import { readInsights, readJourney } from '@/data/readings'
 import { exampleWith, projectDetail } from '@/data/mock/detail'
 import { projectLog } from '@/data/mock/log'
@@ -203,6 +205,18 @@ export default function ProjectPage() {
     }
     if (a.label === 'طلب استكمال') { requestCompletion(row.id, note, me.name); return }
   }
+  /* 17 Oct · agentic · the assistant decides this seat's decision on the file's own readings */
+  const agentActs = user.actions.filter((a) => !a.label.startsWith('تحويل'))
+  const st = row ? flowOf(row.id).study : undefined
+  const agentPlan = agentDecide(agentActs, {
+    issues: [],
+    stops: (a) => [...(a.blocked ? [a.blocked] : []), ...(a.choose ? [`«${a.label}» يتطلب اختيار ${a.choose.label}`] : [])],
+    forward: st?.recommendation === 'reject' ? /توصية بالرفض/ : /موافقة|اعتماد|أعد الإرسال/,
+    allow: /^توصية بالرفض$/,
+    good: row ? [`التوافق الاستراتيجي ${alignmentOf(row).score} من 100`, st?.recommendation ? `توصية الدراسة: ${st.recommendation === 'approve' ? 'الموافقة' : 'الرفض'}` : ''] : [],
+  })
+  const agentExec = (a: DecisionAction, n: string) => decide(a, n, '') || []
+
   const intercept = (a: DecisionAction) => {
     if (a.label.startsWith('تحويل')) { setTransfer(true); return true }
     return false
@@ -429,11 +443,16 @@ export default function ProjectPage() {
             </div>
           </header>
 
+
           <Tabs items={tabs} active={active} onChange={goTab} />
 
           <div className="g2">
             {/* === Main column === */}
             <div className="col">
+              {/* 17 Oct · agentic · the seat's decision, taken by the assistant · on every tab */}
+              {row && !asEntity && agentActs.length > 0 && (
+                <AgentDecide module="projects" record={{ ref: row.name, href: ROUTES.project(row.id) }} plan={agentPlan} user={me.name} role={role.title} exec={agentExec} />
+              )}
               {active === 'data' && row && !asEntity && <RecommendationCard row={row} />}
               {/* BPD-011 · the routing decision under study, and an Ehsan project's own management after it */}
               {active === 'data' && row && !asEntity && (row.statusGroup === 'قيد الدراسة' || row.platform || (row.statusGroup === 'معتمد' && flowOf(row.id).study?.classification === 'محفظة')) && <RoutingCard row={row} />}

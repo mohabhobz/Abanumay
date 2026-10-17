@@ -1,5 +1,6 @@
+import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { DateField, DateText, Empty, Glass, Head, Icon, KV, Money, MultiSelect, Num, Person, Tabs, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ExportMenu } from '@/components/export'
@@ -27,6 +28,7 @@ import { moneyOf, rootOf } from '@/data/mock/budgetTree'
    its agenda, each member's vote, the minutes, and the decision the votes carry. */
 
 export default function BodyPage({ body }: { body: Session['body'] }) {
+  const navigate = useNavigate()
   useApprovals()
   const role = readRole()
   const me = meOf(role)
@@ -85,7 +87,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
                         {waiting.map((p) => {
                           const s = onAgenda(p.id)
                           return (
-                            <tr key={p.id}>
+                            <tr key={p.id} {...rowGo(navigate, ROUTES.projectTab(p.id, 'approval'))}>
                               <td><Link className="lnk" to={ROUTES.projectTab(p.id, 'approval')}>{p.name}</Link></td>
                               <td className="trim1">{p.entityName}</td>
                               <td className="n"><Money sm>{supportAmount(p)}</Money></td>
@@ -172,6 +174,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
     the budgets' use · one export ready for the meeting (7.1.importance-1) */
 function BoardPack() {
   useClosing()
+  const navigate = useNavigate()
   const year = '2026'
   const approved = projectRows.filter((p) => p.supportStatus === 'معتمد' && (p.decidedAt ?? '').startsWith(year))
   const pending = projectRows.filter((p) => p.stage === 'دراسة المشروع' && p.holder && p.holder !== 'supervisor')
@@ -226,7 +229,7 @@ function BoardPack() {
             <thead><tr><th>الميزانية</th><th className="n">المخصص</th><th className="n">المحجوز</th><th className="n">المصروف</th><th className="n">المتاح</th></tr></thead>
             <tbody>
               {budgets.map(({ d, m }) => (
-                <tr key={d.id}>
+                <tr key={d.id} {...rowGo(navigate, ROUTES.budgetDoc(d.id))}>
                   <td><Link className="lnk" to={ROUTES.budgetDoc(d.id)}>{d.name ?? d.id}</Link></td>
                   <td className="n"><Money sm>{m?.allocated ?? 0}</Money></td>
                   <td className="n"><Money sm>{m?.held ?? 0}</Money></td>
@@ -246,7 +249,7 @@ function BoardPack() {
               <thead><tr><th>المشروع</th><th>القرار</th><th>المرحلة الآن</th><th className="n">المصروف</th><th>الإغلاق</th></tr></thead>
               <tbody>
                 {follow.map(({ p, paid, close, outcome }) => (
-                  <tr key={p.id}>
+                  <tr key={p.id} {...rowGo(navigate, ROUTES.project(p.id))}>
                     <td><Link className="lnk" to={ROUTES.project(p.id)}>{p.name}</Link></td>
                     <td>{outcome ? OUTCOME_SAY[outcome] : p.supportStatus ?? '—'}</td>
                     <td>{p.stage}</td>

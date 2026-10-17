@@ -1,3 +1,7 @@
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
+import { closeScore } from '@/data/shared/ai'
+import { Related } from '@/components/related/Related'
 import { useMemo, useRef, useState } from 'react'
 import { closingAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -22,7 +26,7 @@ import {
   STOPPED_DOCS, needsComms, reportBlockers, reportGap,
 } from '@/data/mock/closing'
 import {
-  APPROVER_SAY, actOnClosing, approverFor, attachDoc, closeActions, evalScore, sendClosingReport, useClosing, type CloseAct,
+  APPROVER_SAY, actOnClosing, approverFor, attachDoc, closeActions, closeStops, evalScore, sendClosingReport, useClosing, type CloseAct,
 } from '@/data/closing/store'
 import { ExceptionCard, FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RedirectCard, RequirementsCard, VersionsCard } from './parts'
 import { projectById } from '@/data/mock/projects'
@@ -211,6 +215,18 @@ export default function ClosePage() {
     setNote('')
   }
 
+  /* 17 Oct · agentic · the report's own gaps decide between approving and returning */
+  const agentPlan = agentDecide(actions, {
+    issues: c.stage === 'supervisor' ? reportBlockers(c).map((x) => `ينقص في التقرير: ${x}`) : [],
+    stops: (a) => closeStops(c, a),
+    good: [`درجة الإغلاق ${closeScore(c).score} من 100`, gaps.every((g) => g.actual !== null) ? 'كل المؤشرات لها قيمة فعلية' : ''],
+  })
+  const agentExec = (a: CloseAct, n: string) => {
+    const out = actOnClosing(c.id, a, n, user.name, role.key)
+    if (!out.length) { setFresh(a.act === 'return' ? null : { step: at, sealed: evalApproved(c) }); setNote('') }
+    return out
+  }
+
   return (
     <AppLayout assistantContext={assistFor.page(`إغلاق ${c.projectName}`)}>
       <div className="viewstack hasdock">
@@ -236,6 +252,7 @@ export default function ClosePage() {
                   <> · الإصدار <span className="num">{c.versions.length}</span></>
                 )}
               </p>
+              <Related plain={asEntity} links={[{ kind: 'project', id: c.projectId, label: c.projectName }, { kind: 'entity', id: c.entityId, label: c.entityName }]} />
               <div className="gt-tag">
                 <Tag tone="mute">{closeStageLabel(c.stage)}</Tag>
               </div>
@@ -265,6 +282,9 @@ export default function ClosePage() {
               />
             </div>
           </header>
+          {actions.length > 0 && (
+            <AgentDecide module="closing" record={{ ref: c.projectName, href: ROUTES.closing(c.id) }} plan={agentPlan} user={user.name} role={role.title} exec={agentExec} />
+          )}
 
           {/* Note: the entity needs to know the institution is comparing, not just receiving. This
               is the most likely misunderstanding here: the entity uploads its actual figures and

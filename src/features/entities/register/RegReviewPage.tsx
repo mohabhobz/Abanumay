@@ -1,3 +1,5 @@
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
 import { textIssues } from '@/lib/textCheck'
 import { ibanValid } from '@/lib/iban'
 import { useMemo, useState } from 'react'
@@ -137,6 +139,29 @@ export default function RegReviewPage() {
   /* v3 · 2.4.7 · a format error blocks too · and 2.4.6 · the documents' legibility confirmed */
   const blocked = missingDocs.length > 0 || Boolean(clash) || stale.length > 0 || badIban.length > 0 || dups.length > 0
     || badFormat.length > 0 || (open && !legible)
+  /* 17 Oct · agentic · the registration's own checks decide between approving and returning ·
+     a rejection (archives the entity) stays the person's */
+  type RegAct = { label: string; kind: string }
+  const agentPlan = agentDecide<RegAct>([
+    ...(mayApprove ? [{ label: 'اعتماد وتفعيل', kind: 'btn-p' }] : []),
+    ...(mayReturn ? [{ label: 'إعادة للاستكمال', kind: 'btn-2' }] : []),
+  ].filter(() => open), {
+    issues: [
+      ...missingDocs.map((d) => `ينقص مستند: ${d.label}`),
+      ...stale.map((x) => `منتهي: ${x}`),
+      ...badFormat.map((x) => `${x.f.label}: ${x.e}`),
+      ...(clash ? [`رقم الترخيص مسجّل لجهة أخرى (${clash.name})`] : []),
+      ...dups.map((d) => `مكرر مع سجل آخر: ${d.label}`),
+      ...badIban.map((b) => `آيبان غير صحيح: ${b.iban}`),
+    ],
+    stops: (a) => (a.label === 'اعتماد وتفعيل' ? [...(!legible ? ['تأكيد وضوح الوثائق عمل المراجع'] : []), ...(r.banks.every((b) => bankNo[b.id]) ? ['لا حساب بنكيًا مقبولًا'] : [])] : []),
+    good: [`${r.docs.length} مستندات مرفقة`, 'الحقول بصيغها الصحيحة', 'لا تكرار مع جهة مسجّلة'],
+  })
+  const agentExec = (a: RegAct, n: string) => {
+    if (a.label === 'إعادة للاستكمال') { returnRegistration(r.id, n, flag, me); setTaken('return') }
+    else { decideRegistration(r.id, 'approve', n, bankNo, me); setTaken('approve') }
+    return []
+  }
 
   const steps: StepItem[] = [
     { label: 'تعبئة الجهة وإرسالها', at: <DateText>{r.submittedAt}</DateText>, state: 'done' },
@@ -182,6 +207,10 @@ export default function RegReviewPage() {
             </div>
             <Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag>
           </header>
+
+          {open && (mayApprove || mayReturn) && (
+            <AgentDecide module="entities" record={{ ref: r.name, href: ROUTES.entityRequest(r.id) }} plan={agentPlan} user={me} role={roleByKey(role).title} exec={agentExec} />
+          )}
 
           <div className="g2">
             <div className="col">

@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { rowGo } from '@/lib/rowGo'
 import { Icon, icons, Money, Mono, Person, Tag } from '@/components/ui'
-import { ROUTES } from '@/app/routes'
 import { NOUN, nounAfter } from '@/lib/format'
 import { stagePressure } from '@/data/repository'
 import { days, groupTone, pressureColor, TONE } from '@/lib/tone'
@@ -21,11 +21,12 @@ export interface ProjectCardProps {
  * spent in that stage — the number that shows a reviewer has been stuck for 87 days.
  */
 export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
+  const go = useNavigate()
   const pressure = stagePressure(row)
   const live = row.stageLimit > 0
 
   return (
-    <article className={`pcard glass${selected ? ' sel' : ''}`}>
+    <article {...rowGo(go, rowHref(row), `pcard glass${selected ? ' sel' : ''}`)}>
       <div className="pc-top">
         <label className="pc-chk" onClick={(e) => e.stopPropagation()}>
           <input
@@ -49,10 +50,10 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
             {row.entityName}
           </span>
         ) : (
-          <Link className="pc-ent" to={ROUTES.entity(row.entityId)}>
+          <span className="pc-ent">
             <Icon name={icons.entity} size="sm" />
             {row.entityName}
-          </Link>
+          </span>
         )}
         <span className="pc-dot" />
         <span className="pc-loc">

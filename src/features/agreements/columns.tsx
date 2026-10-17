@@ -35,7 +35,7 @@ export const COLS: Col[] = [
     w: 200,
     label: 'المشروع',
     fixed: true,
-    cell: (a) => <Link to={ROUTES.project(a.projectId)} className="tlink">{a.projectName}</Link>,
+    cell: (a) => <span className="tname">{a.projectName}</span>,
     text: (a) => a.projectName,
   },
   {
@@ -43,7 +43,7 @@ export const COLS: Col[] = [
     w: 156,
     label: 'الجهة',
     def: true,
-    cell: (a) => <Link to={ROUTES.entity(a.entityId)} className="tlink">{a.entityName}</Link>,
+    cell: (a) => <span className="tname">{a.entityName}</span>,
     text: (a) => a.entityName,
   },
   {

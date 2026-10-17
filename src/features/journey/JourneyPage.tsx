@@ -1,3 +1,4 @@
+import { toast } from '@/data/feedback'
 import { useMemo, useState } from 'react'
 import {
   DateText, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, StepArc, Steps, Tag,
@@ -84,7 +85,7 @@ export default function JourneyPage() {
 
   /* The assistant's reading of the journey · where it stands, who's next, what the record holds */
   const journeyReadings: Reading[] = finished
-    ? [{ id: 'jr-done', kind: 'note', label: 'اكتمل المسار', metric: { value: String(TOTAL_STEPS), unit: 'خطوة' }, text: 'مرّ المشروع بكل الإجراءات من أول مرة: اعتماد واتفاقية وخطة وصرف وإغلاق.', src: 'سجل المسار' }]
+    ? [{ id: 'jr-done', kind: 'note', label: 'اكتمل المسار', metric: { value: String(TOTAL_STEPS), unit: 'خطوة' }, text: 'مرّ المشروع بكل الإجراءات من أول مرة: تسجيل ودراسة واعتماد وخطة واتفاقية وصرف وإغلاق.', src: 'سجل المسار' }]
     : [
         { id: 'jr-now', kind: 'flag', label: 'يتصرّف الآن', text: `${step?.person ?? FLOW[here.proc]!.steps[here.step]!.person} · ${FLOW[here.proc]!.steps[here.step]!.act} في «${FLOW[here.proc]!.label}».`, src: FLOW[here.proc]!.id },
         { id: 'jr-left', kind: 'note', label: 'المتبقي', metric: { value: String(TOTAL_STEPS - done), unit: 'خطوة' }, text: `أُنجزت ${done} من ${TOTAL_STEPS} خطوة · والإجراء الحالي ${doneHere} من ${proc.steps.length}.`, src: 'سجل المسار' },
@@ -212,13 +213,13 @@ export default function JourneyPage() {
             </div>
             <div className="rowf gp-2">
               {done > 0 && (
-                <button className="btn btn-ghost" onClick={() => setDone(0)}>ابدأ من جديد</button>
+                <button className="btn btn-ghost" onClick={() => { setDone(0); toast('بدأ المسار من جديد', 'info') }}>ابدأ من جديد</button>
               )}
               {view !== null && !live && !finished && (
                 <button className="btn btn-2" onClick={() => setView(null)}>عُد إلى الخطوة الحالية</button>
               )}
               {live && step && (
-                <button className="btn btn-p" onClick={() => setDone(done + 1)}>{step.act}</button>
+                <button className="btn btn-p" onClick={() => { setDone(done + 1); toast(`${step.done}${done + 1 >= TOTAL_STEPS ? ' · اكتمل المسار' : ''}`) }}>{step.act}</button>
               )}
             </div>
           </div>

@@ -1,3 +1,5 @@
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
@@ -11,7 +13,7 @@ import { isolate, nf } from '@/lib/format'
 import {
   docSources, docTitle, fiscalYears, leavesOf, lineUsable, moneyOf, pathOf, yearById, type BudgetDoc,
 } from '@/data/mock/budgetTree'
-import { meOf, readRole } from '@/data/roles'
+import { meOf, readRole, roleByKey } from '@/data/roles'
 import {
   REQ_KIND_SAY, REQ_STATE_SAY, decideRequest, docOf, freeOf, liveBudgets, mayAct, nextReqId,
   reqById, reqIssues, reqTone, saveRequest, sourceName, stepOf, useBudget, whoActs,
@@ -128,6 +130,13 @@ export default function BudgetOpPage() {
   })()
 
   const title = existing ? `${REQ_KIND_SAY[existing.kind]} · ${existing.id}` : 'طلب عملية ميزانية'
+  /* 17 Oct · agentic · the request's own issues decide at each approval step · a rejection stays human */
+  type OpAct = { label: string; kind: string; d: 'ok' | 'back' }
+  const agentPlan = agentDecide<OpAct>(myStep && existing ? [{ label: STEP_SAY[myStep].ok, kind: 'btn-p', d: 'ok' }, { label: STEP_SAY[myStep].back, kind: 'btn-2', d: 'back' }] : [], {
+    issues,
+    good: [`${REQ_KIND_SAY[r.kind]} بمبلغ ${nf.format(r.amount)} · فحوص الطلب سليمة`],
+  })
+  const agentExec = (a: OpAct, n: string) => { if (existing) decideRequest(existing.id, a.d === 'ok' ? 'approve' : 'return', n, me); return [] }
 
   return (
     <AppLayout assistantContext={assistFor.page(title)}>
@@ -141,6 +150,10 @@ export default function BudgetOpPage() {
             </div>
             {existing && <Tag tone={reqTone(existing.state)}>{REQ_STATE_SAY[existing.state]}</Tag>}
           </header>
+
+          {myStep && existing && (
+            <AgentDecide module="budget" record={{ ref: title, href: ROUTES.budgetOp(existing.id) }} plan={agentPlan} user={me} role={roleByKey(role).title} exec={agentExec} />
+          )}
 
           {existing?.state === 'returned' && existing.note && (
             <Glass>

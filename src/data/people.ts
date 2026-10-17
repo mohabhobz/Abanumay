@@ -108,7 +108,7 @@ const NOT_A_PERSON = new Set([
   /* Roles aren't people. "Grants officer" was rendering with an initials avatar on new entity
      documents — a role with no name is text, like "the system" */
   'مشرف المنح', 'مدير المنح', 'مسؤول النظام', 'المدير التنفيذي', 'القسم المالي',
-  'الاتصال المؤسسي', 'المؤسسة',
+  'الاتصال المؤسسي', 'المؤسسة', 'مساعد أبانمي',
 ])
 
 /**

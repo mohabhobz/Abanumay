@@ -170,7 +170,7 @@ export const COLS: Col[] = [
        every status except "approved". */
     cell: (r) =>
       r.entityId
-        ? <Link to={ROUTES.entity(r.entityId)} className="tlink"><Mono>{r.entityId}</Mono></Link>
+        ? <Mono>{r.entityId}</Mono>
         : <span className="sub">لم تُنشأ بعد</span>,
     text: (r) => r.entityId ?? 'لم تُنشأ بعد',
   },

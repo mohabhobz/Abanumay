@@ -38,3 +38,22 @@
 .toast-warn>svg{color:var(--warn-ink)}
 .toast-bad>svg{color:var(--no-ink)}
 .toast-info>svg{color:var(--t2)}
+
+/* 17 Oct · the related-records strip on every detail page (project · entity · agreement …).
+   The links a table row no longer carries live here. */
+.related{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-5)}
+.related-i{display:inline-flex;align-items:center;gap:var(--sp-2);min-block-size:var(--h-md)}
+.related-i>svg{color:var(--t3);flex:none}
+
+/* 17 Oct · «قرار المساعد» · the assistant decides and runs it (agentic sample on every action point) */
+.agent{display:flex;flex-direction:column;gap:var(--sp-3)}
+.agent-h{display:flex;align-items:center;gap:var(--sp-3)}
+.agent-t{display:flex;flex-direction:column;min-width:0;flex:1}
+.agent-p{margin:0;line-height:var(--lh-text)}
+.agent-why{margin:0;padding-inline-start:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-1);color:var(--t2);line-height:var(--lh-text)}
+.agent-a{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3)}
+.agent-a>.swrow{flex:1;min-width:16rem}
+.agent-cd{font-weight:600}
+
+/* 17 Oct · a record card opens its record from anywhere on it, like a table row */
+.glass.clickable{cursor:pointer}

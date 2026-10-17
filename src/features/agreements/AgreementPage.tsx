@@ -1,3 +1,6 @@
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
+import { Related } from '@/components/related/Related'
 import { useState } from 'react'
 import { readClauses } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -170,6 +173,15 @@ function AgreementView({ a }: { a: AgreementRow }) {
     if (!out.length) setNote('')
   }
 
+  /* 17 Oct · agentic · the assistant decides this seat's exit on the agreement's own checks */
+  const agentActs = actions.filter((x) => x.act !== 'entitySign')
+  const agentPlan = agentDecide(agentActs, { issues: issues.map((x) => x.say), good: [hints.length ? '' : 'لا ملاحظات على نص البنود', gap === 0 ? 'القيمة مطابقة للمحجوز في الميزانية' : '', balance.balanced ? 'الدفعات متوازنة مع قيمة المنحة' : ''] })
+  const agentExec = (x: AgrAction, n: string) => {
+    const out = x.act === 'submit' ? (dirty && saveDraft(), submitAgreement(a.id, user.name)) : actOnAgreement(a.id, x.act, n, user.name)
+    if (!out.length) setNote('')
+    return out
+  }
+
   const center: { k: string; t: string; rest: React.ReactNode[] } =
     a.stage === 'active'
       ? { k: 'اكتمل مسار الاعتماد', t: 'الاتفاقية سارية', rest: [a.activeAt ? <>فُعّلت في <DateText>{a.activeAt}</DateText></> : null] }
@@ -192,6 +204,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
                 {a.version > 1 && <> · الإصدار <span className="num">{a.version}</span></>}
                 {f.inForce !== undefined && f.inForce !== a.version && <> · النافذ الإصدار <span className="num">{f.inForce}</span></>}
               </p>
+              <Related plain={asEntity} links={[{ kind: 'project', id: a.projectId, label: a.projectName }, { kind: 'entity', id: a.entityId, label: a.entityName }]} />
               <div className="pamt">
                 <div className="lb">قيمة المنحة</div>
                 <div className="v"><Money sm>{a.amount}</Money></div>
@@ -206,6 +219,9 @@ function AgreementView({ a }: { a: AgreementRow }) {
               <StepArc steps={ladder} compact={mobile} aria={`مسار اعتماد الاتفاقية، ${center.t}`} holderKey={center.k} holder={center.t} rest={center.rest} />
             </div>
           </header>
+          {!asEntity && agentActs.length > 0 && (
+            <AgentDecide module="agreements" record={{ ref: `${a.id} · ${a.projectName}`, href: ROUTES.agreement(a.id) }} plan={agentPlan} user={user.name} role={role.title} exec={agentExec} />
+          )}
 
           <div className="prow">
             <Tag tone={heat === 'ok' ? (a.stage === 'active' ? 'ok' : a.stage === 'returned' ? 'warn' : 'mute') : HEAT_TONE[heat]}>{agrStageSay(a)}</Tag>

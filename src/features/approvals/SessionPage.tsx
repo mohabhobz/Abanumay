@@ -1,3 +1,5 @@
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
 import { useAi } from '@/lib/ai/provider'
 import { useState } from 'react'
 import { expectedImpact, sessionReport } from '@/data/shared/ai'
@@ -18,7 +20,7 @@ import { CRITERIA, studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { fundingIssues } from '@/data/budget/store'
 import { fitOf } from '@/data/intake/insight'
-import { meOf, readRole } from '@/data/roles'
+import { meOf, readRole, roleByKey } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { FOLLOW_SAY, FOLLOW_TONE, followUp } from '@/data/approvals/followup'
 import {
@@ -63,6 +65,14 @@ export default function SessionPage() {
   const may = mayRecord(s.body, role) && s.state === 'planned'
   const add = awaitingSession(s.body).filter((p) => !s.items.some((i) => i.projectId === p.id))
   const decided = s.items.filter((i) => i.outcome).length
+  /* 17 Oct · agentic · the assistant builds the agenda itself from what awaits this body */
+  type SesAct = { label: string; kind: string }
+  const agentPlan = agentDecide<SesAct>(may ? [{ label: `إدراج ${add.length} مشاريع منتظرة في جدول الأعمال`, kind: 'btn-p' }] : [], {
+    issues: [],
+    stops: () => (add.length ? [] : ['لا مشاريع منتظرة خارج جدول الأعمال']),
+    good: add.slice(0, 3).map((p) => `${p.name} ينتظر قرار ${HOLDER_LABEL[s.body]}`),
+  })
+  const agentExec = () => { add.forEach((p) => setAgenda(s.id, p.id, true)); return [] }
 
   return (
     <AppLayout assistantContext={assistFor.page(s.title)}>
@@ -76,6 +86,10 @@ export default function SessionPage() {
             </div>
             <Tag tone={s.state === 'closed' ? 'mute' : 'warn'}>{s.state === 'closed' ? `مقفلة · ${s.closedAt ?? ''}` : 'مجدولة'}</Tag>
           </header>
+
+          {may && (
+            <AgentDecide module="projects" record={{ ref: s.title, href: ROUTES.approvalSession(s.id) }} plan={agentPlan} user={me} role={roleByKey(role).title} exec={agentExec} />
+          )}
 
           <Glass>
             <Head title="الأعضاء" />

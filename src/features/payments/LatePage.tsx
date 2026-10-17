@@ -1,3 +1,4 @@
+import { rowGo } from '@/lib/rowGo'
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { HEAT_TONE } from '@/lib/tone'
@@ -194,7 +195,7 @@ export default function LatePage() {
                         {g.rows.map((r) => {
                           const heat = payHeat(r)
                           return (
-                            <tr key={r.id} onClick={() => navigate(ROUTES.payment(r.id))}>
+                            <tr key={r.id} {...rowGo(navigate, ROUTES.payment(r.id))}>
                               <td>
                                 <div className="trim1">{r.projectName}</div>
                                 <div className="sub trim1">{r.entityName}</div>

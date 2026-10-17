@@ -63,7 +63,7 @@ export const COLS: Col[] = [
     cell: (r) =>
       isPortfolio(r)
         ? <span className="sub">{r.entityName}</span>
-        : <Link to={ROUTES.entity(r.entityId)} className="tlink sub">{r.entityName}</Link>,
+        : <span className="tname sub">{r.entityName}</span>,
     text: (r) => r.entityName,
   },
   {

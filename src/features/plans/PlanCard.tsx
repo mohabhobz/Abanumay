@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { rowGo } from '@/lib/rowGo'
 import { DateText, Icon, Mono, Num, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, NOUN, nounAfter, units, ver } from '@/lib/format'
@@ -52,6 +53,7 @@ function Check({ ok, say, src }: { ok: boolean; say: React.ReactNode; src: React
 }
 
 export function PlanCard({ p }: { p: PlanRow }) {
+  const go = useNavigate()
   const done = planDone(p)
   const claim = planClaimed(p)
   const want = planPlanned(p)
@@ -69,7 +71,7 @@ export function PlanCard({ p }: { p: PlanRow }) {
   const measured = p.baseline > 0
 
   return (
-    <article className="agrq glass">
+    <article {...rowGo(go, ROUTES.plan(p.id), 'agrq glass')}>
       {/* -- 1. Who -- */}
       <header className="payq-h">
         <div className="payq-id">

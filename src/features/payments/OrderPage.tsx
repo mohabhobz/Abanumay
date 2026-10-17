@@ -1,3 +1,4 @@
+import { Related } from '@/components/related/Related'
 import { Fragment } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
@@ -89,6 +90,7 @@ export default function OrderPage() {
           <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">أمر الصرف</h1>
+              <Related links={[{ kind: 'payment', id: r.id, label: r.id }, { kind: 'project', id: r.projectId, label: r.projectName }, { kind: 'entity', id: r.entityId, label: r.entityName }]} />
               <p className="sub mt-1">
                 <Mono>{orderNo}</Mono>{/* doc · output 1 · step 16 */}
               </p>
@@ -134,7 +136,7 @@ export default function OrderPage() {
               <section className="order-s">
                 <h3><span className="num">1</span> · المشروع</h3>
                 <dl className="kv">
-                  <dt>اسم المشروع</dt><dd>{r.projectName}</dd>
+                  <dt>اسم المشروع</dt><dd><Link className="tlink" to={ROUTES.project(r.projectId)}>{r.projectName}</Link></dd>
                   <dt>كود المشروع</dt><dd><Mono>{projectCode(r.projectId, projectById(r.projectId)?.year ?? '2026')}</Mono></dd>
                   <dt>الجهة المستفيدة</dt>
                   <dd><Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link></dd>

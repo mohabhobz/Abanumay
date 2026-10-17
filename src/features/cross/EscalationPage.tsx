@@ -1,3 +1,4 @@
+import { rowGo } from '@/lib/rowGo'
 import { Link, useNavigate } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, icons, Num, Segments, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -134,7 +135,7 @@ export default function EscalationPage() {
                       </thead>
                       <tbody>
                         {g.rows.map((r) => (
-                          <tr key={r.id} onClick={() => navigate(r.href)}>
+                          <tr key={r.id} {...rowGo(navigate, r.href)}>
                             <td><Link className="tlink" to={r.href} onClick={(e) => e.stopPropagation()}>{r.title}</Link><div className="sub trim1">{r.sub}</div></td>
                             <td className="sub">{r.stage}</td>
                             <td><Tag tone={HEAT_TONE[r.heat]}>{heatSay(r)}</Tag>{r.stuckFrom && <div className="sub">منذ <DateText>{r.stuckFrom}</DateText></div>}</td>

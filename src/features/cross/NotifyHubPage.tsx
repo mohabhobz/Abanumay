@@ -1,5 +1,6 @@
+import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, MultiSelect, Num, Pager, SearchBox, Select, Tabs, Tag } from '@/components/ui'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -36,6 +37,7 @@ const AUDS = Object.keys(AUDIENCE_SAY) as Audience[]
 const PAGE0 = 25
 
 export default function NotifyHubPage() {
+  const navigate = useNavigate()
   useAllStores()
   const dock = useDockSlot()
   const [params, setParams] = useSearchParams()
@@ -112,7 +114,7 @@ export default function NotifyHubPage() {
                       </thead>
                       <tbody>
                         {shown.map((m) => (
-                          <tr key={m.id}>
+                          <tr key={m.id} {...rowGo(navigate, m.notice.href)}>
                             <td><DateText>{m.notice.at}</DateText></td>
                             <td><Link className="tlink" to={m.notice.href}>{m.notice.title}</Link><div className="sub trim1" title={m.text}>{TOPIC_SAY[m.notice.topic]} · {m.channel === 'app' ? m.notice.context : m.text}</div></td>
                             <td><span className="rowf gp-2"><Who name={m.notice.to} /><span className="sub">{AUDIENCE_SAY[m.audience]}</span></span></td>

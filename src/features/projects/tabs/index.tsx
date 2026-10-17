@@ -1,4 +1,7 @@
+import { rowGo } from '@/lib/rowGo'
 import type { CSSProperties } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '@/app/routes'
 import { Glass, Head, Mono, Num, Tag } from '@/components/ui'
 import { countOf, nf, NOUN, projectCode } from '@/lib/format'
 import { projectById } from '@/data/mock/projects'
@@ -22,6 +25,7 @@ export { FollowUpsTab, type FollowUpsTabProps } from './FollowUpsTab'
 export function HistoryTab({
   entity: E, currentId, year,
 }: { entity: Entity; currentId: string; year: string }) {
+  const navigate = useNavigate()
   return (
     <>
       <Glass>
@@ -48,7 +52,7 @@ export function HistoryTab({
             </thead>
             <tbody>
               {E.projects.map((p) => (
-                <tr key={p.id} className={p.id === currentId ? 'lv0' : ''}>
+                <tr key={p.id} {...(p.id === currentId ? { className: 'lv0' } : rowGo(navigate, ROUTES.project(p.id)))}>
                   <td><Mono>{projectCode(p.id, projectById(p.id)?.year ?? year)}</Mono></td>
                   <td>{p.name}</td>
                   <td>{p.region}</td>

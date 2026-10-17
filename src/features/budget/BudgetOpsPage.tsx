@@ -1,3 +1,4 @@
+import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BackTo, DateText, Empty, Glass, Head, Icon, Mono, Money, Num, Tag, icons } from '@/components/ui'
@@ -85,7 +86,7 @@ export default function BudgetOpsPage() {
                       const d = docOf(r.docId)
                       const line = (nid?: string) => (d && nid ? pathOf(d.nodes, nid).split(' · ').slice(-1)[0] : '')
                       return (
-                        <tr key={r.id} className="clk" onClick={() => navigate(ROUTES.budgetOp(r.id))}>
+                        <tr key={r.id} {...rowGo(navigate, ROUTES.budgetOp(r.id))}>
                           <td><Link className="lnk" to={ROUTES.budgetOp(r.id)} onClick={(e) => e.stopPropagation()}><Mono>{r.id}</Mono></Link></td>
                           <td>{REQ_KIND_SAY[r.kind]}</td>
                           <td className="trim1">{d ? docTitle(d) : r.docId}</td>

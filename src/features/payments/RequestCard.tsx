@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { rowGo } from '@/lib/rowGo'
 import { DateText, Icon, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { payHeat, payStateWho } from '@/data/mock/disbursements'
@@ -33,6 +34,7 @@ export interface RequestCardProps {
 const HEAT_SAY = { ok: '', late: 'متأخر', stuck: 'متعثر' } as const
 
 export function RequestCard({ r, showState }: RequestCardProps) {
+  const go = useNavigate()
   const heat = payHeat(r)
   const days = Math.round(r.hoursInState / 24)
   const multi = r.sources.length > 1
@@ -41,10 +43,10 @@ export function RequestCard({ r, showState }: RequestCardProps) {
      `hold` class was removed: status is conveyed by the badge, the check rows, and the note line -
      the side bar that used to draw it is gone. */
   return (
-    <article className="payq glass">
+    <article {...rowGo(go, ROUTES.payment(r.id), 'payq glass')}>
       <header className="payq-h">
         <div className="payq-id">
-          <Link className="payq-p" to={ROUTES.project(r.projectId)}>{r.projectName}</Link>
+          <Link className="payq-p" to={ROUTES.payment(r.id)}>{r.projectName}</Link>
           <div className="payq-m sub">
             <Mono>{r.id}</Mono>
             <span className="pc-dot" />

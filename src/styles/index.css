@@ -1593,14 +1593,14 @@ input:not([type=checkbox],[type=radio],[type=range]){text-overflow:ellipsis}
 .tbl td>*{max-width:100%}
 /* 11 Oct · audit UI-070 · a cell whose link or line already ends in its own ellipsis drew a second
    one after it («جمعية مسارا... ...»). The cell lets the child mark the cut. */
-.tbl td:has(>.tlink,>.trim1,>.mono,>.sub,>.tag){text-overflow:clip}
+.tbl td:has(>.tlink,>.tname,>.trim1,>.mono,>.sub,>.tag){text-overflow:clip}
 /* `vertical-align` was `bottom`, so a number and its tag were hanging at
    the bottom of the line box instead of centering with the cell text next
    to them — flagged directly as "keep the numbers centered with the
    text". `display:inline-block` was also overriding `.tag`'s own
    `inline-flex`, so the tag lost its `align-items:center` inside a table
    only: the same tag centers correctly outside a table but not inside one. */
-.tbl td .tlink,.tbl td .mono,.tbl td .sub{
+.tbl td .tlink,.tbl td .tname,.tbl td .mono,.tbl td .sub{
   display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 /* 11 Oct · audit UI-066/067 · a `div.sub` in a cell is its second line (the time under the date,
    the since-date under a status tag). The inline-block above put it on the first line, glued:
@@ -3960,7 +3960,7 @@ to{opacity:1;transform:none}
 .pc-meta{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
 .pc-meta svg{vertical-align:-2px;margin-inline-end:var(--sp-1)}
 .pc-ent{color:var(--t2);font-size:var(--fs-1)}
-.pc-ent:hover{text-decoration:underline;text-underline-offset:.22em}
+/* 17 Oct · the entity is text on the card now · the card opens the project and the project links its entity */
 .pc-loc{white-space:nowrap}
 .pc-dot{width:3px;height:3px;border-radius:var(--r-dot);background:rgba(var(--edgeC),.3);flex:none}
 .pc-goal{font-size:var(--fs-1)}

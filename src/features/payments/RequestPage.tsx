@@ -1,3 +1,6 @@
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
+import { Related } from '@/components/related/Related'
 import { useMemo, useState } from 'react'
 import { readFiles, readNeeds } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -22,7 +25,7 @@ import { PayExceptions } from './PayExceptions'
 import { PayeeCard } from './PayeeCard'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readPayRequest } from '@/data/recordReadings'
-import { PROXY_ROLES, actOnPay, grantLeft, mayResubmit, payActions, usePayments, type PayAction } from '@/data/payments/store'
+import { PROXY_ROLES, actOnPay, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
 import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
@@ -158,6 +161,17 @@ export default function RequestPage() {
   const bankOk = r.bank.active
   const actions = payActions(r, role.key, asEntity)
   /* Cross · the attachments read against the request's amount */
+  /* 17 Oct · agentic · the assistant picks this seat's exit itself and can run it */
+  const agentPlan = agentDecide(actions, {
+    issues: r.state === 'supervisor' || r.state === 'eligible' ? readNeeds(r).danger?.map((d) => `ينقص مرفق: ${d}`) ?? [] : r.state === 'manager' || r.state === 'exec' ? blocked.map((c) => c.label) : [],
+    stops: (a) => payStops(r, a.act, Math.min(r.asked, r.due)),
+    good: [`${r.checks.filter((c) => c.ok).length} من ${r.checks.length} فحوص سليمة`, r.asked <= r.due ? 'المبلغ ضمن الدفعة المعتمدة' : '', bankOk ? 'الحساب البنكي نشط' : ''],
+  })
+  const agentExec = (a: PayAction, n: string) => {
+    const out = actOnPay(r.id, a.act, n, user.name, role.key, undefined, a.needsAmount ? Math.min(r.asked, r.due) : undefined)
+    if (!out.length) setNote('')
+    return out
+  }
   const readings = [...readPayRequest(r), ...(asEntity ? [] : [readFiles('ai-pay-docs', 'قراءة متطلبات الدفعة', r.docs.map((d) => d.name), { amount: r.asked }), readNeeds(r)])]
   const onAct = (a: PayAction, file?: string, amount?: number) => {
     const out = actOnPay(r.id, a.act, note, user.name, role.key, file, amount)
@@ -201,6 +215,7 @@ export default function RequestPage() {
                 <Mono>{r.id}</Mono> · {r.entityName} ·{' '}
                 الدفعة <Num>{r.no}</Num> من <Num>{r.of}</Num>
               </p>
+              <Related plain={asEntity} links={[{ kind: 'project', id: r.projectId, label: r.projectName }, { kind: 'entity', id: r.entityId, label: r.entityName }, !!r.agreement?.id && { kind: 'agreement', id: r.agreement.id, label: r.agreement.id }]} />
 
               <div className="pamt">
                 <div className="lb">{permitOn ? 'قيمة إذن الصرف' : 'قيمة الدفعة'}</div>
@@ -222,6 +237,9 @@ export default function RequestPage() {
               <Steps items={ladder} flow="ladder" />
             </div>
           </header>
+          {actions.length > 0 && (
+            <AgentDecide module="payments" record={{ ref: `الدفعة ${r.no} · ${r.projectName}`, href: ROUTES.payment(r.id) }} plan={agentPlan} user={user.name} role={role.title} exec={agentExec} />
+          )}
 
           {/* Rule 15 - a closed request states that it's closed, with its log remaining beneath it. */}
           {r.state === 'closed' && (

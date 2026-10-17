@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { rowGo } from '@/lib/rowGo'
 import { DateText, Icon, icons, Money, Mono, Num, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, MISSING_ITEM, nf, NOUN, nounAfter } from '@/lib/format'
@@ -30,13 +31,14 @@ import { projectById } from '@/data/mock/projects'
 const CYCLE_SAY = { report: 'التقرير الختامي', eval: 'تقييم المشروع' } as const
 
 export function CloseCard({ c }: { c: CloseRow }) {
+  const go = useNavigate()
   const days = Math.round(c.hoursInStage / 24)
   const missing = reportBlockers(c)
   const req = closeRequirements(c)
   const done = reportApproved(c)
 
   return (
-    <article className="agrq glass">
+    <article {...rowGo(go, ROUTES.closing(c.id), 'agrq glass')}>
       <header className="payq-h">
         <div className="payq-id">
           <Link className="payq-p" to={ROUTES.closing(c.id)}>{c.projectName}</Link>

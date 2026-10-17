@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { rowGo } from '@/lib/rowGo'
 import { DateText, Icon, icons, Mono, Num, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, NOUN, nounAfter } from '@/lib/format'
@@ -22,12 +23,13 @@ import {
    system, not the spec document. */
 
 export function RegCard({ r }: { r: RegRequest }) {
+  const go = useNavigate()
   const need = REG_DOCS.filter((d) => docRequired(d, r.type))
   const missing = regMissingDocs(r)
   const have = need.length - missing.length
 
   return (
-    <article className="agrq glass">
+    <article {...rowGo(go, ROUTES.entityRequest(r.id), 'agrq glass')}>
       <header className="payq-h">
         <div className="payq-id">
           <Link className="payq-p" to={ROUTES.entityRequest(r.id)}>{r.name}</Link>

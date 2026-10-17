@@ -1,3 +1,5 @@
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, MoneyField, Mono, Person, Tag, icons } from '@/components/ui'
@@ -60,6 +62,13 @@ export default function CasePage() {
     if (!out.length) setNote('')
   }
 
+  /* 17 Oct · agentic · the case's own exits · a rejection stays human */
+  const agentPlan = agentDecide(actions, {
+    issues: [],
+    good: [`${CASE_KIND_SAY[c.kind]} · ${c.projectName}`, c.reason ? `السبب المسجّل: ${c.reason}` : ''],
+  })
+  const agentExec = (a: (typeof actions)[number], n: string) => { const out = actOnCase(c.id, a.act, n, user.name, role.key); if (!out.length) setNote(''); return out }
+
   return (
     <AppLayout assistantContext={assistFor.page(`${CASE_KIND_SAY[c.kind]} ${c.projectName}`)}>
       <div className={`viewstack${actions.length ? ' hasdock' : ''}`}>
@@ -81,6 +90,9 @@ export default function CasePage() {
               <div className="gt-tag"><Tag tone={CASE_STAGE_TONE[c.stage]}>{CASE_STAGE_SAY[c.stage]}</Tag></div>
             </div>
           </header>
+          {actions.length > 0 && (
+            <AgentDecide module="closing" record={{ ref: `${c.id} · ${c.projectName}`, href: ROUTES.distress(c.id) }} plan={agentPlan} user={user.name} role={role.title} exec={agentExec} />
+          )}
 
           {c.note && (c.stage === 'returned' || c.stage === 'manager' || c.stage === 'rejected') && (
             <Glass>

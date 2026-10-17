@@ -18,6 +18,7 @@ import { PORTFOLIOS, allEhOps } from '@/data/partners/store'
 import { accountEvents } from '@/data/entities/auth'
 import { CASES } from '@/data/closing/store'
 import { BEHALF_LOG, behalfAt, behalfOnDay } from '@/data/behalf'
+import { AGENT_LOG, AGENT_NAME } from '@/data/shared/agent'
 import { ROLES, STAFF_DIRECTORY, roleByKey } from '@/data/roles'
 import { ESC_RULES } from './escRules'
 import { NOTIFY_RULES } from './notify'
@@ -153,7 +154,7 @@ function roleOf(by: string): string {
 }
 const ADMIN_NAMES = () => new Set(STAFF_DIRECTORY.filter((a) => a.role === 'admin').map((a) => a.name))
 function stamped(r: AuditRow): AuditRow {
-  if (r.id.startsWith('bh-')) return r
+  if (r.id.startsWith('bh-') || r.by === AGENT_NAME) return r
   /* A date-only row places nothing inside a span · its own «الصفة» says the seat it was taken in, and
      the admin's name on another seat's action is a takeover that day (Verifier · 17 Oct) */
   const own = r.fields.find((f) => f.k === 'الصفة')?.v
@@ -190,6 +191,12 @@ function auditRaw(): AuditRow[] {
       { id: `bh-${b.id}-s`, module: 'settings', ref: `تولّي · ${roleByKey(b.role).title}`, href: ROUTES.escalation, action: 'بدء تولّي إجراء نيابةً عن دور آخر', by: b.by, at: b.from.slice(0, 16), note: b.reason, fields: [{ k: 'الدور الأصلي', v: roleByKey(b.role).title }], role: roleByKey('admin').title },
       ...(b.to ? [{ id: `bh-${b.id}-e`, module: 'settings' as const, ref: `تولّي · ${roleByKey(b.role).title}`, href: ROUTES.escalation, action: 'إنهاء التولّي', by: b.by, at: b.to.slice(0, 16), fields: [{ k: 'الدور الأصلي', v: roleByKey(b.role).title }], role: roleByKey('admin').title }] : []),
     ]),
+    /* 17 Oct · agentic · each decision the assistant took · what, why, how sure, and for whom */
+    ...AGENT_LOG.map((e): AuditRow => ({
+      id: `ag-${e.id}`, module: e.module, ref: e.ref, href: e.href, action: `قرار المساعد · ${e.action}`, by: AGENT_NAME, at: e.at.slice(0, 16), note: e.why.join(' · '),
+      role: `${AGENT_NAME} · نيابةً عن ${e.role ?? e.for}`,
+      fields: [{ k: 'نُفّذ لصالح', v: e.for }, { k: 'الثقة', v: `${Math.round(e.confidence * 100)}%` }, { k: 'طريقة التنفيذ', v: e.auto ? 'تلقائي بتفويض' : 'بأمر المستخدم' }],
+    })),
     ...closingExtra(),
     ...budgetRows(),
     ...entityRowsLog(),

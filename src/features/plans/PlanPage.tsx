@@ -1,3 +1,6 @@
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
+import { Related } from '@/components/related/Related'
 import { mayApprovePlan } from '@/data/plans/auth'
 import { useMemo, useRef, useState } from 'react'
 import { forecastPlan } from '@/data/shared/ai'
@@ -217,6 +220,18 @@ export default function PlanPage() {
     setTick((t) => t + 1)
   }
 
+  /* 17 Oct · agentic · the plan's own checks decide · a gated exit needs a clean plan */
+  const agentPlan = agentDecide(actions, {
+    issues: issues.map((x) => x.say),
+    stops: (x) => (x.gated && issues.length ? ['الخطة فيها مخالفات'] : []),
+    good: [`${p.phases.length} مراحل بأنشطتها`, cost <= grant ? 'التكلفة ضمن قيمة المنحة' : ''],
+  })
+  const agentExec = (x: PlanAction, n: string) => {
+    const out = x.key === 'send' ? (sendPlanFor(p.id, 'supervisor', who) ?? []) : reviewPlan(p.id, x.key, n, who, role.key)
+    if (!out?.length) { setNote(''); setTick((t) => t + 1) }
+    return out ?? []
+  }
+
   return (
     <AppLayout assistantContext={assistFor.page(`خطة ${p.projectName}`)}>
       <div className="viewstack hasdock">
@@ -237,6 +252,7 @@ export default function PlanPage() {
                     {p.approvedBy && <> · اعتمدها {p.approvedBy}{p.approvedAs ? ` (${p.approvedAs})` : ''}</>}</>
                   : 'لم تُعتمد بعد · الهيكل مفتوح للتعديل'}
               </p>
+              <Related plain={asEntity} links={[{ kind: 'project', id: p.projectId, label: p.projectName }, { kind: 'entity', id: p.entityId, label: p.entityName }]} />
               <div className="gt-tag">
                 <Tag tone="mute">{planStageLabel(p.stage)}</Tag>
               </div>
@@ -264,6 +280,9 @@ export default function PlanPage() {
               />
             </div>
           </header>
+          {!asEntity && actions.length > 0 && (
+            <AgentDecide module="plans" record={{ ref: `خطة ${p.projectName}`, href: ROUTES.plan(p.id) }} plan={agentPlan} user={user.name} role={role.title} exec={agentExec} />
+          )}
           {said && <p className="sub cnote tcen" aria-live="polite">{said}</p>}
 
           {/* Note: the entity needs to know that "done" isn't "counted". This is the biggest

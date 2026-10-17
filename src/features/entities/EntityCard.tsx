@@ -1,5 +1,6 @@
 import { accountSay } from '@/data/shared/decisions'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { rowGo } from '@/lib/rowGo'
 import { EntityMark, Icon, icons, Money, Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { ENTITY_DOCS_TOTAL } from '@/data/repository'
@@ -15,11 +16,12 @@ import type { EntityRow } from '@/types/domain'
  * complete file, and how has our track record with it been?
  */
 export function EntityCard({ row }: { row: EntityRow }) {
+  const go = useNavigate()
   const docsPct = Math.round((row.docsUploaded / ENTITY_DOCS_TOTAL) * 100)
   const complete = row.docsUploaded >= ENTITY_DOCS_TOTAL
 
   return (
-    <article className="ecard glass">
+    <article {...rowGo(go, ROUTES.entity(row.id), 'ecard glass')}>
       <div className="ec-top">
         <EntityMark logo={row.logo} />
         <div className="ec-id">

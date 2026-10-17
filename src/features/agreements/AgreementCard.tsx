@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { rowGo } from '@/lib/rowGo'
 import { DateText, Icon, icons, Money, Mono, Num, Person, Tag, Riyal} from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, NOUN, nounAfter, pct } from '@/lib/format'
@@ -37,13 +38,14 @@ import type { AgreementRow } from '@/types/domain'
 const HEAT_SAY = { ok: '', late: 'متأخرة', stuck: 'متعثرة' } as const
 
 export function AgreementCard({ a }: { a: AgreementRow }) {
+  const go = useNavigate()
   const heat = agrHeat(a)
   const days = Math.round(a.hoursInStage / 24)
   const balance = agrPaymentsBalance(a)
   const gap = (a.amount - reservedOf(a))
 
   return (
-    <article className="agrq glass">
+    <article {...rowGo(go, ROUTES.agreement(a.id), 'agrq glass')}>
       <header className="payq-h">
         <div className="payq-id">
           <Link className="payq-p" to={ROUTES.agreement(a.id)}>{a.projectName}</Link>

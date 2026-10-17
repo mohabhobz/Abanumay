@@ -1,3 +1,6 @@
+import { AgentDecide } from '@/components/assistant/AgentDecide'
+import { agentDecide } from '@/data/shared/agent'
+import { rowGo } from '@/lib/rowGo'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { FieldSelect, Glass, Head, KV, Money, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -11,6 +14,7 @@ import {
   usePartners, actOnPfReq,
   EXT_ADMIN, EXT_CFG, EXT_CREATE, EXT_KIND, EXT_PARTY_FIELD_SAY, EXT_PROJECT_FIELD_SAY, createExternalParty, externalClosingsWaiting, externalParties, saveExtCfg,
   type ExtPartyField, type ExtProjectField,
+  reviewEhsanPay,
 } from '@/data/partners/store'
 import { paidOf } from '@/data/payments/store'
 import { REGIONS } from '@/data/mock/taxonomy'
@@ -94,7 +98,7 @@ export default function PartnersPage() {
                       const m = pfMoney(pf)
                       const l = linkOf(pf.id)
                       return (
-                        <tr key={pf.id}>
+                        <tr key={pf.id} {...rowGo(navigate, ROUTES.portfolio(pf.id))}>
                           <td><Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link><span className="sub"> · {pf.id}</span></td>
                           <td className="sub">{PROFILES.find((p) => p.entityId === pf.entityId)?.name}</td>
                           <td><Tag tone={PF_STAGE_TONE[pf.stage]}>{PF_STAGE_SAY[pf.stage]}</Tag></td>
@@ -124,7 +128,7 @@ export default function PartnersPage() {
                     {ehsanProjects().map((p) => {
                       const m = ehMoney(p.id)
                       return (
-                        <tr key={p.id}>
+                        <tr key={p.id} {...rowGo(navigate, ROUTES.project(p.id))}>
                           <td><Link className="tlink" to={ROUTES.project(p.id)}>{p.name}</Link><span className="sub"> · {p.id}</span></td>
                           <td><Tag tone="teal">{p.platform}</Tag></td>
                           <td className="sub">{p.statusGroup} · {p.stage}</td>
@@ -146,6 +150,7 @@ export default function PartnersPage() {
                 <Head title="عمليات منصات الجهات الخارجية" meta={<span className="sub">مراجعة المستندات وتأكيد الحالة · الإدارة المالية</span>} />
                 <PayList list={fq.pays} finance={role.key === 'finance'} />
               </Glass>
+              {role.key === 'finance' && <EhsanAgent pays={fq.pays} user={user.name} role={role.title} />}
               {/* Cross · each operation's documents read against its amount, number and date */}
               {fq.pays.some((x) => x.state === 'review') && (
                 <AnalysisCard
@@ -197,7 +202,7 @@ export default function PartnersPage() {
                   <thead><tr><th><span className="th-t">النوع</span></th><th><span className="th-t">الاسم</span></th><th><span className="th-t">الشريك أو المحفظة</span></th><th><span className="th-t">المنطقة</span></th><th className="n"><span className="th-t">القيمة</span></th><th className="n"><span className="th-t">المصروف</span></th><th><span className="th-t">الحالة</span></th></tr></thead>
                   <tbody>
                     {rows.map((x) => (
-                      <tr key={x.key}>
+                      <tr key={x.key} {...rowGo(navigate, x.href)}>
                         <td><Tag tone={x.kind === 'محفظة' ? 'teal' : x.kind === 'مشروع فرعي' ? 'mute' : 'ok'}>{x.kind}</Tag></td>
                         <td><Link className="tlink" to={x.href}>{x.name}</Link></td>
                         <td className="sub">{x.partner}</td>
@@ -293,4 +298,26 @@ function ExternalTab() {
       {EXT_CREATE.includes(role.key) && <div className="apv-row"><button type="button" className="btn btn-2 btn-sm" onClick={() => navigate(ROUTES.externalNew)}>مشروع مدعوم عبر جهة خارجية</button></div>}
     </>
   )
+}
+
+/* 17 Oct · agentic · the assistant reads each operation's documents against its amount, number and
+   date, then confirms the clean ones and returns the rest with what it found */
+function EhsanAgent({ pays, user, role }: { pays: ReturnType<typeof financeQueue>['pays']; user: string; role: string }) {
+  const due = pays.filter((x) => x.state === 'review')
+  const read = due.map((x) => ({ x, bad: readFiles(`ai-eh-${x.id}`, x.ref, x.docs, { amount: x.amount, ref: x.ref, date: x.paidAt }).danger ?? [] }))
+  const ok = read.filter((r) => !r.bad.length)
+  const back = read.filter((r) => r.bad.length)
+  type EhAct = { label: string; kind: string }
+  const plan = agentDecide<EhAct>(due.length ? [{ label: `مراجعة ${due.length} عمليات: تأكيد ${ok.length} · ردّ ${back.length} للجهة`, kind: 'btn-p' }] : [], {
+    issues: [],
+    good: [...ok.slice(0, 2).map((r) => `${r.x.ref}: المستندات تطابق المبلغ والمرجع`), ...back.slice(0, 2).map((r) => `${r.x.ref}: ${r.bad[0]}`)],
+  })
+  const exec = () => {
+    const out: string[] = []
+    for (const r of ok) out.push(...reviewEhsanPay(r.x.id, 'confirm', 'أكّده مساعد أبانمي · المستندات مطابقة', user))
+    for (const r of back) out.push(...reviewEhsanPay(r.x.id, 'return', `أعاده مساعد أبانمي: ${r.bad.join(' · ')}`, user))
+    return out
+  }
+  if (!due.length) return null
+  return <AgentDecide module="partners" record={{ ref: 'عمليات منصات الجهات الخارجية', href: ROUTES.partnersTab('finance') }} plan={plan} user={user} role={role} exec={exec} />
 }
