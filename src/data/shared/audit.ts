@@ -16,6 +16,9 @@ import { approvalEvents } from '@/data/approvals/store'
 import { PLAN_LOG } from '@/data/plans/store'
 import { PORTFOLIOS, allEhOps } from '@/data/partners/store'
 import { accountEvents } from '@/data/entities/auth'
+import { CASES } from '@/data/closing/store'
+import { BEHALF_LOG, behalfAt, behalfOnDay } from '@/data/behalf'
+import { ROLES, STAFF_DIRECTORY, roleByKey } from '@/data/roles'
 import { ESC_RULES } from './escRules'
 import { NOTIFY_RULES } from './notify'
 import { SETTINGS_LOG } from './settingsLog'
@@ -49,6 +52,9 @@ export interface AuditRow {
   at: string
   note?: string
   fields: AuditField[]
+  /** Batch 8 · 0.def.18 · the role the action was taken in · and, for the admin's takeovers, «on behalf of» (0.def.16) */
+  role?: string
+  behalf?: { role: string; reason: string }
 }
 
 const d10 = (s: string) => s.slice(0, 10)
@@ -133,9 +139,58 @@ function projectLog(): AuditRow[] {
   return out
 }
 
+/* Batch 8 · 0.def.18 · the role is a column of the log · a staff member's seat from the directory,
+   an entity's name as the beneficiary, the system as itself */
+const ENTITY_TITLE = 'الجهة المستفيدة'
+function roleOf(by: string): string {
+  const a = STAFF_DIRECTORY.find((x) => x.name === by)
+  if (a) return roleByKey(a.role).title
+  const seat = ROLES.find((r) => r.title === by || r.name === by)
+  if (seat) return seat.title
+  if (by === 'النظام' || by.startsWith('النظام')) return 'النظام'
+  if (entityRows.some((e) => e.name === by) || regRows.some((r) => r.name === by)) return ENTITY_TITLE
+  return '—'
+}
+const ADMIN_NAMES = () => new Set(STAFF_DIRECTORY.filter((a) => a.role === 'admin').map((a) => a.name))
+function stamped(r: AuditRow): AuditRow {
+  if (r.id.startsWith('bh-')) return r
+  /* A date-only row places nothing inside a span · its own «الصفة» says the seat it was taken in, and
+     the admin's name on another seat's action is a takeover that day (Verifier · 17 Oct) */
+  const own = r.fields.find((f) => f.k === 'الصفة')?.v
+  const b = behalfAt(r.by, r.at) ?? (own && ADMIN_NAMES().has(r.by) && own !== roleByKey('admin').title ? behalfOnDay(r.by, r.at.slice(0, 10), own) : undefined)
+  if (b) {
+    const seat = roleByKey(b.role).title
+    return { ...r, role: `${roleByKey('admin').title} · نيابةً عن ${seat}`, behalf: { role: seat, reason: b.reason }, fields: [...r.fields, { k: 'الدور الأصلي', v: seat }, { k: 'سبب التولّي', v: b.reason }] }
+  }
+  return { ...r, role: r.role ?? r.fields.find((f) => f.k === 'الصفة')?.v ?? roleOf(r.by) }
+}
+
+/* Batch 8 · 10.4.15 · the closing's evaluation cycle and the cases (stop · cut · raise · recovery) join the log */
+function closingExtra(): AuditRow[] {
+  return [
+    ...closeRows.flatMap((c) => (c.evalAudit ?? []).map((e, i): AuditRow => ({
+      id: `ce-${c.id}-${i}`, module: 'closing', ref: `تقييم · ${c.projectName}`, href: ROUTES.closing(c.id), action: e.what, by: e.by, at: e.at, fields: [],
+    }))),
+    ...CASES.flatMap((k) => k.log.map((e, i): AuditRow => ({
+      id: `cs-${k.id}-${i}`, module: 'closing', ref: `${k.id} · ${k.projectName}`, href: ROUTES.distress(k.id), action: e.what, by: e.by, at: e.at,
+      fields: [...(k.newAmount !== undefined && i === 0 ? [{ k: 'القيمة السابقة', v: fmt(k.granted) }, { k: 'القيمة الجديدة', v: fmt(k.newAmount) }] : [])],
+    }))),
+  ]
+}
+
 export function auditRows(): AuditRow[] {
+  return auditRaw().map(stamped)
+}
+
+function auditRaw(): AuditRow[] {
   const perm = readJson<PermState>(PERM_KEY, PERM_INITIAL)
   return [
+    /* The takeovers themselves · who, which role, why, from and until (0.def.16) */
+    ...BEHALF_LOG.flatMap((b): AuditRow[] => [
+      { id: `bh-${b.id}-s`, module: 'settings', ref: `تولّي · ${roleByKey(b.role).title}`, href: ROUTES.escalation, action: 'بدء تولّي إجراء نيابةً عن دور آخر', by: b.by, at: b.from.slice(0, 16), note: b.reason, fields: [{ k: 'الدور الأصلي', v: roleByKey(b.role).title }], role: roleByKey('admin').title },
+      ...(b.to ? [{ id: `bh-${b.id}-e`, module: 'settings' as const, ref: `تولّي · ${roleByKey(b.role).title}`, href: ROUTES.escalation, action: 'إنهاء التولّي', by: b.by, at: b.to.slice(0, 16), fields: [{ k: 'الدور الأصلي', v: roleByKey(b.role).title }], role: roleByKey('admin').title }] : []),
+    ]),
+    ...closingExtra(),
     ...budgetRows(),
     ...entityRowsLog(),
     ...projectLog(),

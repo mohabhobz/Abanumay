@@ -472,6 +472,8 @@ export interface CurrentUser {
   /** null = recommendation-only authority, no financial cap. */
   financialAuthority: number | null
   actions: DecisionAction[]
+  /** Batch 8 · 0.def.16 · the system admin acting on another role's behalf · its title and her reason */
+  behalf?: { role: string; reason: string }
 }
 
 // Assistant insights

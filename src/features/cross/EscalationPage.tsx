@@ -10,6 +10,7 @@ import { countOf, NOUN } from '@/lib/format'
 import { ESC_PROCS, procLabel, stuckSay, type EscProc } from '@/data/shared/escRules'
 import { escCounts, escItems, type EscItem } from '@/data/shared/escalation'
 import { Who } from './parts'
+import { BehalfCard } from './Behalf'
 import { useAllStores } from './useAllStores'
 
 const KEYS = ['heat', 'proc'] as const
@@ -72,6 +73,9 @@ export default function EscalationPage() {
               <button type="button" className="btn btn-2 btn-sm" onClick={() => setTimeout(printArea, 60)}>اطبع</button>
             </div>
           </header>
+
+          {/* Batch 8 · 0.def.16 · the admin takes a stalled step over from here */}
+          <BehalfCard />
 
           <Segments items={HEATS} active={v.heat ?? ''} onChange={(x) => set({ heat: x })} />
 

@@ -1,5 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+/* Batch 8 · the stage clocks are armed before any store replays, so a move replayed from the log starts its clock (data/stageClock.ts) */
+import '@/data/slaSeed'
 import '@/data/entities/store'
 import '@/data/budget/store'
 import '@/data/budget/hooks'
@@ -11,8 +13,11 @@ import '@/data/payments/store'
    external schedules · the payments replay waits for it, so it loads right after them, before the closing */
 import '@/data/partners/store'
 import '@/data/closing/store'
-import '@/data/slaSeed'
 import App from '@/app/App'
+import * as escMod from '@/data/shared/escalation'
+import * as escRulesMod from '@/data/shared/escRules'
+import * as auditMod from '@/data/shared/audit'
+import * as behalfMod from '@/data/behalf'
 import { installScrollHints } from '@/lib/scrollHint'
 import { ownerOfPath } from '@/app/entityAccess'
 import * as budgetStore from '@/data/budget/store'
@@ -64,7 +69,7 @@ try {
     const w = window as unknown as Record<string, unknown>
     w.__abOwner = ownerOfPath
     /* Reading the stores from a test · the figures behind a screen, not a way to change them */
-    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, subRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore, auth: authStore, ai: aiShared, apprRules, decisions, priority, recon, legacy, textCheck, sheet, guard, aiProvider, notify, exportLib, impactMod, cycle, reloc: relocStore }
+    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, subRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore, auth: authStore, ai: aiShared, apprRules, decisions, priority, recon, legacy, textCheck, sheet, guard, aiProvider, notify, exportLib, impactMod, cycle, reloc: relocStore, esc: escMod, escRules: escRulesMod, audit: auditMod, behalf: behalfMod }
   }
   /* The drawn audits (tools/) visit entity views too · each load takes the session its URL needs:
      the record's own entity for an entity view or a portal, staff otherwise */

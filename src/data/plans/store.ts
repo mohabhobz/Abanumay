@@ -1,3 +1,4 @@
+import { liveClock } from '@/data/stageClock'
 import { useSyncExternalStore } from 'react'
 import { actDay, asOf } from '@/data/clock'
 import type { LogEvent } from '@/data/mock/log'
@@ -139,7 +140,7 @@ function openFor(projectId: string, planId: string, drafter: 'entity' | 'supervi
     stage: 'draft', baseline: 0, phases: [], owner: pr.owner ?? 'عمر قاسم', drafter, openedAt: actDay(), hoursInStage: 0, changes: [],
   }
   /* A cancelled plan stays on record · the new one is the project's plan from now (12.4.5) */
-  planRows.unshift(p)
+  planRows.unshift(liveClock(p, 'hoursInStage', true))
   notify([pr.entityName], p, `افتح خطة مشروعك · ${pr.name}`, 'اكتب المراحل والأنشطة والشواهد من البوابة', `${ROUTES.planEdit(p.id)}?as=entity`)
   notify([pr.owner ?? SUP(), SUP()], p, `فُتحت خطة · ${pr.name}`, drafter === 'entity' ? 'تكتبها الجهة من البوابة' : 'يكتبها المشرف بالنيابة')
   return p

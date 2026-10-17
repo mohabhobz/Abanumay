@@ -1,3 +1,5 @@
+import { seedWorkHours } from '@/lib/sla'
+import { liveClock } from '@/data/stageClock'
 import { EXT_CLOSE_STAGE } from '@/data/mock/taxonomy'
 import { condLine, condMet, requirementOf, unmetConds } from '@/data/agreements/conds'
 import type { PayCond } from '@/types/domain'
@@ -565,7 +567,7 @@ function applyOp(o: Op) {
         permitAt: direct ? { at: day(o.at), by: o.by } : undefined,
         note: legacyPermit ? (o.note?.trim() || 'أرفق متطلبات الدفعة وأرسلها') : undefined,
       }
-      payRequests.push(r)
+      payRequests.push(liveClock(r, 'hoursInState', true))
       refresh(r)
       const ahead = slot.dueAt > day(o.at) ? ` · قبل تاريخها المخطط ${slot.dueAt}` : ''
       if (direct) {
@@ -780,7 +782,7 @@ function applyOp(o: Op) {
         r.note = `أُوقف المشروع بقرار معتمد · ${o.note}`
         r.closedAt = day(o.at)
         move(r, 'closed')
-        log(r, 12, o.by, 'الرئيس التنفيذي', 'أُغلق السجل بقرار إيقاف المشروع', o.at, o.note, 'الجهة المستفيدة · أُوقف المشروع')
+        log(r, 12, o.by, 'المدير التنفيذي', 'أُغلق السجل بقرار إيقاف المشروع', o.at, o.note, 'الجهة المستفيدة · أُوقف المشروع')
       }
       return
     }
@@ -853,7 +855,8 @@ function seed() {
   for (const r of payRequests.filter((x) => x.state === 'supervisor' && x.checks.every((c) => c.ok) && !closingBlock(x.projectId, x.no, x.of) && !payStops(x, 'qualify').length).slice(0, 2)) {
     const at = r.log[r.log.length - 1]?.at ?? r.at
     r.state = 'eligible'
-    r.hoursInState = 20
+    /* Batch 8 · the clock is armed before this seed · the seeded age is written in working-day units */
+    r.hoursInState = seedWorkHours(20)
     r.log.push({ at, who: r.owner, role: 'مشرف المنح', what: 'راجع متطلبات الدفعة والتقارير المرفوعة', step: 5 })
     r.log.push({ at, who: r.owner, role: 'مشرف المنح', what: 'اعتمد المتطلبات · أصبحت الدفعة «مؤهلة للصرف»', step: 7, notified: 'الجهة المستفيدة · اعتُمدت متطلبات الدفعة' })
   }

@@ -26,7 +26,7 @@ export const ESC_PROCS: { key: EscProc; label: string; bpd: string }[] = [
   { key: 'payment', label: 'صرف الدفعات', bpd: 'BPD-009' },
   { key: 'closing', label: 'إغلاق المشروع', bpd: 'BPD-010' },
   { key: 'plan', label: 'خطط المشاريع', bpd: 'BPD-012' },
-  { key: 'ehsan', label: 'مشاريع إحسان', bpd: 'BPD-011' },
+  { key: 'ehsan', label: 'المشاريع عبر جهات خارجية', bpd: 'BPD-011' },
   { key: 'portfolio', label: 'المحافظ', bpd: 'BPD-013' },
 ]
 export const procLabel = (k: EscProc): string => ESC_PROCS.find((p) => p.key === k)?.label ?? k
@@ -51,6 +51,8 @@ export interface EscRules {
   late: EscLevel
   /** The second level · fires every day while the request stays stalled */
   stalled: EscLevel
+  /** Batch 8 · 0.def.21 · «التنبيه» · a reminder before the limit · `days` working days ahead · 0 = off */
+  near?: EscLevel & { days: number }
   /** The last time the admin saved, and who */
   savedBy?: string
   savedAt?: string
@@ -63,11 +65,13 @@ const DEFAULT: EscRules = {
   },
   late: { to: ['owner'], channels: ['app', 'email'] },
   stalled: { to: ['owner', 'manager', 'ceo'], channels: ['app', 'email', 'sms'] },
+  near: { days: 2, to: ['owner'], channels: ['app'] },
 }
 
 export const ESC_RULES: EscRules = readJson(CFG.escalation, DEFAULT)
 /* `readJson` merges one level · a saved file from before a procedure existed still gets its default */
 ESC_RULES.stuck = { ...DEFAULT.stuck, ...ESC_RULES.stuck }
+ESC_RULES.near ??= structuredClone(DEFAULT.near)
 export const ESC_DEFAULT = DEFAULT
 
 const levelSay = (l: EscLevel) => `${l.to.map((x) => RECIPIENT_SAY[x]).join('، ')} · ${l.channels.map((x) => CHANNEL_SAY[x]).join('، ')}`
@@ -79,6 +83,7 @@ export const saveEscRules = (next: EscRules, by: string): void => {
     ...diffOf(ESC_RULES.stuck, next.stuck, (k) => `هامش التعثّر · ${procLabel(k as EscProc)}`, days),
     ...(JSON.stringify(ESC_RULES.late) !== JSON.stringify(next.late) ? [{ k: 'المستوى الأول · متأخر', from: levelSay(ESC_RULES.late), to: levelSay(next.late) }] : []),
     ...(JSON.stringify(ESC_RULES.stalled) !== JSON.stringify(next.stalled) ? [{ k: 'المستوى الثاني · متعثر', from: levelSay(ESC_RULES.stalled), to: levelSay(next.stalled) }] : []),
+    ...(JSON.stringify(ESC_RULES.near) !== JSON.stringify(next.near) ? [{ k: 'تذكير قبل انتهاء المدة', from: ESC_RULES.near?.days ? `${days(ESC_RULES.near.days)} · ${levelSay(ESC_RULES.near)}` : 'متوقف', to: next.near?.days ? `${days(next.near.days)} · ${levelSay(next.near)}` : 'متوقف' }] : []),
   ])
   Object.assign(ESC_RULES, next, { savedBy: by, savedAt: new Date().toISOString().slice(0, 10) })
   persist(CFG.escalation, ESC_RULES)
@@ -97,13 +102,19 @@ export const ESC_LIMITS: Record<string, number> = hydrate(CFG.escLimits, workDay
   'approval.committee': 336,
   'approval.board': 504,
   'ehsan.review': 72,
+  /* Batch 8 · 11.5 · the external procedure's own stages (v3) */
+  'ehsan.pre': 168,
+  'ehsan.ended': 120,
+  'ehsan.close': 96,
   'portfolio.supervisor': 168,
   'portfolio.manager': 96,
   'portfolio.ceo': 96,
   'portfolio.committee': 336,
   'portfolio.board': 504,
   'portfolio.returned': 240,
+  'portfolio.study': 120,
   'portfolio.subs': 120,
+  'portfolio.pay': 72,
   'portfolio.finance': 72,
 }))
 

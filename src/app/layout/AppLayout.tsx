@@ -5,6 +5,7 @@ import { Icon, icons } from '@/components/ui'
 import { portalOf } from '@/app/entityAccess'
 import { AskDock, Background, MobileTop, NotificationBell, Rail } from '@/components/shell'
 import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
+import { BehalfBar } from '@/features/cross/Behalf'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useHashScroll } from '@/hooks/useHashScroll'
 import { ROUTES } from '@/app/routes'
@@ -110,6 +111,9 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
           )}
 
           {children}
+
+          {/* Batch 8 · 0.def.16 · the system admin's takeover, said on every screen */}
+          {!entity && <BehalfBar />}
 
           <AssistantOverlay
             open={assistantOpen}

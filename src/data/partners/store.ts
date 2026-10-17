@@ -252,6 +252,8 @@ export interface SubProject {
   reqId?: string
   addedBy: string
   addedAt: string
+  /** Batch 8 · x.5 · when it reached its state · the escalation counts from it */
+  stateAt?: string
   decidedBy?: string
   decidedAt?: string
   exec?: SubExec
@@ -281,7 +283,7 @@ export const PF_REQ_SAY: Record<PfReqState, string> = {
   supervisor: 'متطلبات عند مشرف المنح', eligible: 'مؤهلة للصرف · بانتظار الإذن', manager: 'إذن صرف عند مدير المنح', exec: 'إذن صرف عند المدير التنفيذي',
   finance: 'لدى المالية · أمر الصرف', order: 'أمر الصرف معتمد · بانتظار التحويل', paid: 'صُرفت', returned: 'معادة',
 }
-export interface PfRequest { id: string; no: number; amount: number; at: string; by: string; state: PfReqState; ref?: string; note?: string; why?: string; docs?: string[]; orderBy?: string; asked?: number; permitBy?: string }
+export interface PfRequest { id: string; no: number; amount: number; at: string; by: string; state: PfReqState; /** Batch 8 · x.5 · when it reached its seat · the escalation counts from it */ stateAt?: string; ref?: string; note?: string; why?: string; docs?: string[]; orderBy?: string; asked?: number; permitBy?: string }
 export interface PfApproval { id: string; subIds: string[]; at: string; by: string }
 export interface PortfolioRec {
   id: string
@@ -942,7 +944,7 @@ function applyOp(o: Op) {
       const list = pf.items.filter((x) => o.subIds.includes(x.id) && x.state === 'draft')
       if (!list.length) return
       /* v3 · 0.sub.1 · «مرفوع» · the supervisor studies it first (0.sub.2) */
-      for (const x of list) { x.state = 'submitted'; x.reqId = o.reqId }
+      for (const x of list) { x.state = 'submitted'; x.reqId = o.reqId; x.stateAt = o.at }
       pf.approvals.push({ id: o.reqId, subIds: list.map((x) => x.id), at: day(o.at), by: o.by })
       plog(pf, o.by, `رفع ${list.length > 1 ? `${list.length} مشاريع فرعية` : `«${list[0].name}»`} للمراجعة · ${nf.format(list.reduce((s, x) => s + x.amount, 0))}`, o.at)
       notify([pf.owner], `مشاريع فرعية للدراسة · ${pf.name}`, `${list.length} مشروع`, ROUTES.portfolio(pf.id))
@@ -990,7 +992,7 @@ function applyOp(o: Op) {
       const pf = pfById(o.pfId)
       if (!pf) return
       const list = pf.items.filter((x) => o.subIds.includes(x.id) && x.state === 'submitted')
-      for (const x of list) x.state = 'study'
+      for (const x of list) { x.state = 'study'; x.stateAt = o.at }
       if (list.length) plog(pf, o.by, `بدأ مشرف المنح دراسة ${list.length > 1 ? `${list.length} مشاريع فرعية` : `«${list[0].name}»`}`, o.at)
       return
     }
@@ -1002,6 +1004,7 @@ function applyOp(o: Op) {
         const x = pf.items.find((i) => i.id === d.subId)
         if (!x || (x.state !== 'study' && x.state !== 'submitted')) continue
         x.state = 'pending'
+        x.stateAt = o.at
         x.rec = { outcome: d.outcome, note: d.note, by: o.by, at: day(o.at) }
         n++
       }
@@ -1132,7 +1135,7 @@ function applyOp(o: Op) {
       /* checked when raised · on replay the partner's account reads its state now, not then */
       if (liveRun && pfReqIssue(pf, o.req.no, o.req.amount)) return
       /* v3 · 13.2.24 · the requirements go to the supervisor first, like any payment (BPD-009) */
-      pf.requests.push({ ...o.req, asked: o.req.amount, at: day(o.at), by: o.by, state: 'supervisor' })
+      pf.requests.push({ ...o.req, asked: o.req.amount, at: day(o.at), by: o.by, state: 'supervisor', stateAt: o.at })
       plog(pf, o.by, `رفع متطلبات الدفعة ${o.req.no} على مستوى المحفظة · ${nf.format(o.req.amount)}`, o.at)
       notify([pf.owner], `متطلبات دفعة محفظة · ${pf.name}`, nf.format(o.req.amount), ROUTES.portfolio(pf.id))
       return
@@ -1184,6 +1187,7 @@ function applyOp(o: Op) {
         plog(pf, o.by, `${from === 'finance' || from === 'order' ? 'أعادت المالية' : 'أُعيد'} طلب الدفعة ${r.no} · ${o.note}`, o.at)
         notify([pf.origin === 'partner' ? partnerName(pf.entityId) : pf.owner], `أُعيد طلب دفعة المحفظة · ${pf.name}`, o.note, ROUTES.portfolio(pf.id))
       }
+      r.stateAt = o.at
       listRow(pf)
       return
     }

@@ -1,3 +1,6 @@
+import { actsAs } from '@/data/behalf'
+import { asOf } from '@/data/clock'
+import { liveClock } from '@/data/stageClock'
 import { useSyncExternalStore } from 'react'
 import type { ProjectRow } from '@/types/domain'
 import type { LogEvent, LogField } from '@/data/mock/log'
@@ -361,7 +364,7 @@ const nextId = () => String(21_900 + projectRows.filter((p) => Number(p.id) >= 2
 
 const trackOf = (field: string) => Object.entries(FIELDS_BY_TRACK).find(([, fs]) => fs.includes(field))?.[0] ?? ''
 
-function apply(o: Op) { OP_AT = o.at; try { applyOp(o) } finally { OP_AT = undefined } }
+function apply(o: Op) { OP_AT = o.at; try { asOf(o.at, () => applyOp(o)) } finally { OP_AT = undefined } }
 function applyOp(o: Op) {
   if (o.op === 'rederive') { applyRederive(o.ids, o.reason, o.by); return }
   const p = o.op === 'submit' ? undefined : row(o.id)
@@ -386,6 +389,7 @@ function applyOp(o: Op) {
         source: o.asEntity ? 'portal' : 'staff',
         createdAt: `${opDay()}T${NOW_TIME()}`, startAt: v.startAt, execDays: workDaysOf(v.execDays), endAt: v.startAt && days ? addWorkingDays(v.startAt, days, workDaysOf(v.execDays)) : v.endAt,
       })
+      liveClock(projectRows[0], 'hoursInStage', true)
       /* v3 · 11.2.2 · 11.2.3 · created by the authority through the simplified form · supported through the
          external party, classified as such from its creation · no portal, no plan */
       if (v.external) Object.assign(projectRows[0]!, { platform: v.externalName ?? 'جهة خارجية', externalId: v.external, partnerType: 'مستقل', source: 'staff', type: 'مشروع خارجي' })
@@ -440,10 +444,12 @@ function applyOp(o: Op) {
     }
     case 'doc': {
       const f = flowOf(o.id)
+      /* Batch 8 · 3.4.37 · a replacement reads as one, with the file it replaced */
+      const was = f.docs.find((d) => d.kind === o.kind)
       f.docs = f.docs.filter((d) => d.kind !== o.kind)
       f.docs.push({ kind: o.kind, name: o.name, by: o.by, at: opDay() })
       const k = REQUEST_DOCS.find((d) => d.key === o.kind)
-      event(o.id, { action: 'رفع مرفق', by: o.by, actor: k?.audience === 'entity' && o.by === p!.entityName ? 'entity' : 'staff', fields: [{ k: 'المرفق', v: k?.label ?? o.kind }, { k: 'الاطلاع', v: k?.audience === 'internal' ? 'داخلي · لا تراه الجهة' : 'الجهة والفريق' }], files: [o.name] })
+      event(o.id, { action: was ? 'استبدال مرفق' : 'رفع مرفق', by: o.by, actor: k?.audience === 'entity' && o.by === p!.entityName ? 'entity' : 'staff', fields: [{ k: 'المرفق', v: k?.label ?? o.kind }, ...(was ? [{ k: 'الملف السابق', v: was.name }, { k: 'الملف الجديد', v: o.name }] : []), { k: 'الاطلاع', v: k?.audience === 'internal' ? 'داخلي · لا تراه الجهة' : 'الجهة والفريق' }], files: [o.name] })
       break
     }
     case 'study': {
@@ -775,7 +781,7 @@ export const closeRequest = (id: string, kind: 'cancel' | 'archive', reason: str
 function atSupervisorSeat(id: string, by: string): string {
   const p = row(id)
   if (!p || p.stage !== 'دراسة المشروع' || (p.holder && p.holder !== 'supervisor')) return 'ليس عند مشرف المنح'
-  if (p.owner !== by) return 'مسند لمشرف آخر'
+  if (p.owner !== by && !actsAs(by, 'supervisor')) return 'مسند لمشرف آخر'
   return ''
 }
 

@@ -1607,6 +1607,31 @@ export function linkIssues(i: LinkInput, need?: number): string[] {
   return out
 }
 
+/** Batch 8 · 4.6.3 · the best split of a project's amount over a line's sources · by the line's own
+    shares first, and what a source can't cover moved to the sources with balance left · advisory, the
+    link still draws by the line's shares until finance changes them */
+export function suggestSourceSplit(d: BudgetDoc, nodeId: string, amount: number): { code: string; name: string; share: number; suggest: number; balance: number }[] {
+  const n = nodeOf(d, nodeId)
+  const split = n ? splitOf(d, nodeId) : undefined
+  if (!n || !split || split.length < 2 || !n.allocated || amount <= 0) return []
+  const rows = split.map((x) => {
+    const share = Math.round(amount * x.amount / n.allocated)
+    const balance = Math.max(0, sourceBalance(d, x.code))
+    return { code: x.code, name: sourceByCode(x.code)?.name ?? x.code, share, balance, suggest: Math.min(share, balance) }
+  })
+  let short = amount - rows.reduce((a, r) => a + r.suggest, 0)
+  for (const r of [...rows].sort((a, b) => (b.balance - b.suggest) - (a.balance - a.suggest))) {
+    if (short <= 0) break
+    const more = Math.min(short, r.balance - r.suggest)
+    r.suggest += more
+    short -= more
+  }
+  /* The rounded shares may pass the amount by a riyal · the largest gives it back */
+  const over = rows.reduce((a, r) => a + r.suggest, 0) - amount
+  if (over > 0) [...rows].sort((a, b) => b.suggest - a.suggest)[0].suggest -= over
+  return rows
+}
+
 /** Batch 7 · funding#15 · a line split across sources must find each source still covering it · the
     standing check reads the sources too, not the line and its levels alone (1.2.5 · 5.4.5) */
 function sourceIssues(d: BudgetDoc, nodeId: string): string[] {

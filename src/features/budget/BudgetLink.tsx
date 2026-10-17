@@ -12,7 +12,7 @@ import { approverFor } from '@/data/approval'
 import { projectRows } from '@/data/mock/projects'
 import { readRole, roleByKey } from '@/data/roles'
 import {
-  HOLD_STAGE_SAY, linkIssues, linkOf, linkProject, planOf, sourceName, unlinkProject, useBudget,
+  HOLD_STAGE_SAY, linkIssues, linkOf, linkProject, planOf, sourceName, unlinkProject, useBudget, suggestSourceSplit,
 } from '@/data/budget/store'
 import { BUDGET_RULES } from '@/data/budget/rules'
 import { linesFor, type LineOpt } from './lines'
@@ -225,6 +225,13 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                         k: 'مصادر التمويل',
                         v: isolate(splitOf(one.doc, one.node.id)!.map((x) => `${sourceName(x.code)} ${nf.format(x.amount)} · متاح في البند ${nf.format(m.allocated ? Math.max(0, Math.round(m.available * x.amount / m.allocated)) : 0)} · رصيد المصدر في الميزانية ${nf.format(Math.max(0, sourceBalance(one.doc, x.code)))}`).join(' · ')),
                       }] : docSources(one.doc).length === 1 ? [{ k: 'مصدر التمويل', v: sourceName(docSources(one.doc)[0]!.code) }] : []),
+                      /* Batch 8 · 4.6.3 · the best split over the sources · advisory */
+                      ...(() => {
+                        const sg = suggestSourceSplit(one.doc, one.node.id, project.amount)
+                        if (!sg.length) return []
+                        const moved = sg.some((x) => x.suggest !== x.share)
+                        return [{ k: 'التوزيع المقترح على المصادر', v: isolate(`${sg.map((x) => `${x.name} ${nf.format(x.suggest)}`).join(' · ')}${moved ? ' · نُقل ما لا يغطيه مصدر إلى مصدر برصيد' : ' · بحصص البند'} · استرشادي`) }]
+                      })(),
                       { k: 'مبلغ المشروع', v: <Money sm>{project.amount}</Money> },
                       { k: 'يعتمده', v: tier.role },
                       {

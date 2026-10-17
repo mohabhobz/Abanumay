@@ -2,6 +2,7 @@ import { ROUTES } from '@/app/routes'
 import { CFG, persist, readJson } from '@/lib/config'
 import { logSettings } from './settingsLog'
 import { entityRows } from '@/data/mock/entities'
+import { entityDetail } from '@/data/mock/entityDetail'
 import { regRows } from '@/data/mock/registration'
 import { person } from '@/data/people'
 import { ROLES } from '@/data/roles'
@@ -14,7 +15,7 @@ import { PLAN_NOTES } from '@/data/plans/store'
 import { PAY_NOTES } from '@/data/payments/store'
 import { CLOSE_NOTES } from '@/data/closing/store'
 import { PARTNER_NOTES } from '@/data/partners/store'
-import { ENTITY_NOTES } from '@/data/entities/store'
+import { ENTITY_NOTES, UPD_ROWS } from '@/data/entities/store'
 import { passwordEvents } from '@/data/entities/auth'
 import { CHANNEL_SAY, type EscChannel } from './escRules'
 import { escAlerts } from './escalation'
@@ -90,11 +91,40 @@ function accountNotices(): Notice[] {
   }))
 }
 
+/* Batch 8 · 2.6.7 · the entity is told before a document lapses · not only the staff reading its file ·
+   once a day, 30 days ahead (the notification settings' «ترخيص أو مستند ينتهي خلال 30 يومًا») */
+const EXPIRY_DAYS = 30
+let expiryMemo: { day: string; list: Notice[] } | undefined
+function expiryNotices(): Notice[] {
+  const t = new Date().toISOString().slice(0, 10)
+  /* Verifier · 17 Oct · a renewal approved today clears its notice · the memo keys on the updates too */
+  const key = `${t}|${UPD_ROWS.filter((u) => u.state === 'approved').length}|${entityRows.length}`
+  if (expiryMemo?.day === key) return expiryMemo.list
+  const days = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
+  const list: Notice[] = []
+  for (const e of entityRows) {
+    if (e.external) continue
+    const d = entityDetail(e)
+    const soon = [
+      ...d.docs.filter((x) => x.expires && x.expires >= t && days(t, x.expires) <= EXPIRY_DAYS).map((x) => ({ name: x.name, at: x.expires! })),
+      ...(e.licenseEndsAt >= t && days(t, e.licenseEndsAt) <= EXPIRY_DAYS && !d.docs.some((x) => x.expires === e.licenseEndsAt) ? [{ name: 'الترخيص', at: e.licenseEndsAt }] : []),
+    ].sort((a, b) => a.at.localeCompare(b.at))
+    for (const x of soon) {
+      list.push({
+        id: `exp-${e.id}-${x.name}-${x.at}`, to: e.name, topic: 'registration' as const, at: t, href: ROUTES.entityUpdate,
+        title: `${x.name} ينتهي خلال ${days(t, x.at)} يومًا`, context: `تاريخ الانتهاء ${x.at} · جدّده وارفعه بطلب تحديث البيانات قبل أن يتوقف نشاط الجهة`,
+      })
+    }
+  }
+  expiryMemo = { day: key, list }
+  return list
+}
+
 function escalationNotices(): Notice[] {
   return escAlerts(7).flatMap((a) => a.to.map((to) => ({
     id: `${a.id}-${to}`, to, topic: 'escalation' as const, at: a.at, href: a.item.href,
-    title: a.level === 'late' ? `تجاوز مدته · ${a.item.title}` : `متعثر · اليوم ${a.day} · ${a.item.title}`,
-    context: `${a.item.stage} · ${a.item.over} يومًا فوق المدة`,
+    title: a.level === 'near' ? `يقترب موعده · ${a.item.title}` : a.level === 'late' ? `تجاوز مدته · ${a.item.title}` : `متعثر · اليوم ${a.day} · ${a.item.title}`,
+    context: a.level === 'near' ? `${a.item.stage} · تنتهي مدته ${a.item.dueOn}` : `${a.item.stage} · ${a.item.over} يومًا فوق المدة`,
   })))
 }
 
@@ -112,6 +142,7 @@ export function allNotices(): Notice[] {
     ...tagged(PARTNER_NOTES, 'partners'),
     ...tagged(BUDGET_NOTES, 'budget'),
     ...escalationNotices(),
+    ...expiryNotices(),
   ].sort((a, b) => b.at.localeCompare(a.at))
 }
 

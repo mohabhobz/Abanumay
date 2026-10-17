@@ -1,3 +1,5 @@
+import { actsAs } from '@/data/behalf'
+import { asOf } from '@/data/clock'
 import { typeFloorBlock } from '@/data/shared/decisions'
 import { setStudyNoteGate } from '@/data/status'
 import { useSyncExternalStore } from 'react'
@@ -370,7 +372,7 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
   const amount = supportAmount(p)
   /* Re-audit 7 Oct · the supervisor's seat (study and confirmation) belongs to the project's own
      supervisor, not to anyone holding the role · a project with no owner waits for assignment */
-  const mine = recorderOf(holder).includes(viewer) && (holder !== 'supervisor' && holder !== 'confirm' ? true : p.owner === me)
+  const mine = recorderOf(holder).includes(viewer) && (holder !== 'supervisor' && holder !== 'confirm' ? true : p.owner === me || actsAs(me, 'supervisor'))
   const by = holder === 'committee' ? ' · تُسجَّل قراراتها في جلستها' : holder === 'board' ? ' · تُسجَّل قراراته في جلسته' : ''
   /* v3 · 5.2.11 · returned by the executive director · «قيد الدراسة · مدير المنح» with his note */
   const say = f.coverage && !f.coverage.done
@@ -550,7 +552,7 @@ const refuse = (p: ProjectRow, f: AppFlow, stage: string, note: string, by: stri
   notify([p.entityName], p.id, `قرار طلبك · ${p.name}`, note, ROUTES.project(p.id))
 }
 
-const apply = (o: Op) => { OP_AT = o.at; try { applyOp(o) } finally { OP_AT = undefined } }
+const apply = (o: Op) => { OP_AT = o.at; try { asOf(o.at, () => applyOp(o)) } finally { OP_AT = undefined } }
 const applyOp = (o: Op) => {
   switch (o.op) {
     case 'decide': {

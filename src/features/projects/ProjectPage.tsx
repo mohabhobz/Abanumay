@@ -184,7 +184,7 @@ export default function ProjectPage() {
   /* A project waiting on the entity, or closed, has no decision for anyone (3.4.16 · 3.4.27) */
   const frozen = waiting || closed
   const user = frozen ? { ...me, actions: [] } : seat ? { ...me, actions: seat.actions } : me
-  const studyEditable = role.key === 'supervisor' && holder === 'supervisor' && !frozen && row?.owner === me.name
+  const studyEditable = role.key === 'supervisor' && holder === 'supervisor' && !frozen && (row?.owner === me.name || Boolean(me.behalf))
   const [transfer, setTransfer] = useState(false)
 
   /* What each seat's button does (procedure 3) · the supervisor's recommendation forwards, never
@@ -477,7 +477,7 @@ export default function ProjectPage() {
               )}
               {active === 'data' && row && (
                 <>
-                  <RequestMetaCard row={row} me={me.name} canReschedule={!asEntity && !closed && ((role.key === 'supervisor' && row.owner === me.name) || role.key === 'grants-manager')} />
+                  <RequestMetaCard row={row} me={me.name} canReschedule={!asEntity && !closed && ((role.key === 'supervisor' && (row.owner === me.name || Boolean(me.behalf))) || role.key === 'grants-manager')} />
                   <RequestDocsCard row={row} me={me.name} asEntity={asEntity} canUpload={!closed && (asEntity ? waiting : true)} />
                   {!asEntity && (row.statusGroup === 'قيد الدراسة' || closed) ? <RequestCloseCard row={row} me={me.name} /> : null}
                 </>

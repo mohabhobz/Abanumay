@@ -28,16 +28,19 @@ export default function AuditPage() {
   const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '')
   const [mod, setMod] = useState<string | undefined>()
   const [by, setBy] = useState<string | undefined>()
+  const [rl, setRl] = useState<string | undefined>()
   const [days, setDays] = useState<string | undefined>()
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState<string | null>(null)
 
   const all = auditRows()
   const people = [...new Set(all.map((r) => r.by).filter(Boolean))].sort()
+  /* Batch 8 · 0.def.18 · the role is a column and a filter · the admin's takeovers read as their own role */
+  const roles = [...new Set(all.map((r) => r.role ?? '').filter((x) => x && x !== '—'))].sort()
   const since = days ? new Date(Date.now() - Number(days) * 86_400_000).toISOString().slice(0, 10) : ''
   const n = q.trim()
   const rows = all.filter((r) =>
-    (!mod || r.module === mod) && (!by || r.by === by) && (!since || r.at.slice(0, 10) >= since) &&
+    (!mod || r.module === mod) && (!by || r.by === by) && (!rl || r.role === rl) && (!since || r.at.slice(0, 10) >= since) &&
     (!n || [r.action, r.ref, r.note ?? '', r.by, ...r.fields.map((f) => `${f.k} ${f.v}`)].some((t) => t.includes(n))))
   const shown = rows.slice((page - 1) * PAGE, page * PAGE)
   const reset = () => setPage(1)
@@ -45,8 +48,8 @@ export default function AuditPage() {
   const sheet: Sheet = {
     file: `abanumay-audit-${new Date().toISOString().slice(0, 10)}`,
     title: 'سجل التدقيق',
-    headers: ['التاريخ', 'الوحدة', 'السجل', 'الإجراء', 'المنفّذ', 'الملاحظة', 'القيم'],
-    rows: rows.map((r) => [r.at, MODULE_SAY[r.module], r.ref, r.action, r.by, r.note ?? '', r.fields.map((f) => `${f.k}: ${f.v}`).join(' · ')]),
+    headers: ['التاريخ', 'الوحدة', 'السجل', 'الإجراء', 'المنفّذ', 'الدور', 'الملاحظة', 'القيم'],
+    rows: rows.map((r) => [r.at, MODULE_SAY[r.module], r.ref, r.action, r.by, r.role ?? '', r.note ?? '', r.fields.map((f) => `${f.k}: ${f.v}`).join(' · ')]),
   }
 
   return (
@@ -70,6 +73,7 @@ export default function AuditPage() {
                 <SearchBox value={q} onChange={(v) => { setQ(v); reset() }} placeholder="ابحث في الإجراء أو السجل أو القيم…" />
                 <Select label="الوحدة" all="كل الوحدات" value={mod} options={MODS.map((m) => ({ value: m, label: MODULE_SAY[m] }))} onChange={(v) => { setMod(v); reset() }} />
                 <Select label="المنفّذ" all="كل المنفّذين" value={by} options={people} onChange={(v) => { setBy(v); reset() }} />
+                <Select label="الدور" all="كل الأدوار" value={rl} options={roles} onChange={(v) => { setRl(v); reset() }} />
                 <Select label="الفترة" all="كل الفترات" value={days} options={PERIODS} onChange={(v) => { setDays(v); reset() }} />
               </div>
             </div>
@@ -86,6 +90,7 @@ export default function AuditPage() {
                       <th><span className="th-t">السجل</span></th>
                       <th><span className="th-t">الإجراء</span></th>
                       <th><span className="th-t">المنفّذ</span></th>
+                      <th><span className="th-t">الدور</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -106,6 +111,7 @@ export default function AuditPage() {
                             ) : more ? <div className="sub trim1">{r.note ?? r.fields.map((f) => `${f.k}: ${f.v}`).join(' · ')}</div> : null}
                           </td>
                           <td><Who name={r.by} /></td>
+                          <td>{r.behalf ? <Tag tone="warn">نيابةً عن {r.behalf.role}</Tag> : <span className="sub">{r.role}</span>}</td>
                         </tr>
                       )
                     })}

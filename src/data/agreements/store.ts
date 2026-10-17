@@ -1,3 +1,4 @@
+import { liveClock } from '@/data/stageClock'
 import { SEED_AT, actDay, asOf } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
 import { agreements, agreementById, setBlockedGate } from '@/data/mock/agreements'
@@ -375,8 +376,19 @@ export function clauseTextHints(v: Parameters<typeof agrIssues>[0], entityName: 
     const cm = body.match(/على\s+(\d+|[\u0600-\u06FF]+)\s+دفع/)
     const said = cm ? Number(cm[1]) || COUNT_WORDS[cm[1]!] : /دفعة واحدة/.test(body) ? 1 : 0
     if (said && v.payments.length && said !== v.payments.length) out.push({ id: `cnt-${c.id}`, tone: 'warn', text: `البند «${c.title}» يذكر ${said} دفعات والجدول فيه ${v.payments.length}.` })
+    /* Batch 8 · 8.5.3 · percentages in one clause that add up past the whole */
+    const ps = [...body.matchAll(/(\d{1,3})\s*(?:%|\u066A|بالمئة|في المئة)/g)].map((m) => Number(m[1]))
+    if (ps.length >= 2 && ps.reduce((a, b) => a + b, 0) > 100) out.push({ id: `pct-${c.id}`, tone: 'warn', text: `نسب «${c.title}» مجموعها ${ps.reduce((a, b) => a + b, 0)} بالمئة · تتجاوز المئة.` })
     const vague = VAGUE.filter((x) => body.includes(x))
     if (vague.length && (c.kind === 'obligation' || c.kind === 'condition')) out.push({ id: `vague-${c.id}`, tone: 'warn', text: `صياغة غير ملزمة في «${c.title}»: ${vague.join('، ')} · يُقترح تحديد ما يُطلب ومتى.` })
+  }
+  /* Batch 8 · 8.5.3 · the same text under two titles · a repeat the title check misses */
+  const seen = new Map<string, string>()
+  for (const c of v.clauses) {
+    const b = c.body.replace(/\s+/g, ' ').trim()
+    if (b.length < 20) continue
+    if (seen.has(b) && seen.get(b) !== c.title) out.push({ id: `same-${c.id}`, tone: 'warn', text: `نص «${c.title}» يكرر نص «${seen.get(b)}».` })
+    else seen.set(b, c.title)
   }
   return out
 }
@@ -488,7 +500,7 @@ function applyOp(o: Op) {
         amount: p.amountGranted, reserved: reservedOf({ projectId: p.id, reserved: p.amountGranted }), owner: p.owner ?? o.by,
         openedAt: day(o.at), hoursInStage: 0, log: [],
       }
-      agreements.unshift(a)
+      agreements.unshift(liveClock(a, 'hoursInStage', true))
       const f = agrFlowOf(a.id)
       f.clauses = structuredClone(o.clauses)
       f.paperCopy = o.paperCopy

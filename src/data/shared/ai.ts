@@ -4,6 +4,7 @@ import type { Reading } from '@/components/assistant/reading'
 import type { AgreementRow, CloseRow, EntityRow, PlanRow, ProjectRow } from '@/types/domain'
 import { ROUTES } from '@/app/routes'
 import { projectRows } from '@/data/mock/projects'
+import { agreements } from '@/data/mock/agreements'
 import { entityRows } from '@/data/mock/entities'
 import { regRows, type RegRequest } from '@/data/mock/registration'
 import { CITIES_BY_REGION } from '@/data/mock/taxonomy'
@@ -14,12 +15,17 @@ import { MONEY_LIMITS } from '@/data/mock/settings'
 import type { EntityDetail } from '@/data/mock/entityDetail'
 import { budgetByTrack } from '@/data/budget'
 import { flowOf } from '@/data/intake/flow'
-import { studyScore } from '@/data/intake/criteria'
-import { fundingBlock, goalFunded, CYCLE } from '@/data/intake/cycle'
+import { CRITERIA, studyScore } from '@/data/intake/criteria'
+import { addWorkingDays, fundingBlock, goalFunded, CYCLE } from '@/data/intake/cycle'
 import { appFlowOf, strategyOf, VERDICT_SAY, OUTCOME_SAY, type Session } from '@/data/approvals/store'
 import { linkOf } from '@/data/budget/store'
+import { allBudgets } from '@/data/mock/chain'
+import { childrenOf, leavesOf, type BudgetDoc, type BudgetNode } from '@/data/mock/budgetTree'
 import { expiredMandatory } from '@/data/entities/store'
-import { EHSAN_PAYS, ehMoney, isLiveSub, pfMoney, type PortfolioRec } from '@/data/partners/store'
+import { EHSAN_PAYS, ehCloseOf, ehExecLog, ehExecOf, isLiveSub, pfMoney, type PortfolioRec } from '@/data/partners/store'
+import { scheduleOf } from '@/data/payments/store'
+import { payRequests } from '@/data/mock/disbursements'
+import { EXT_PRE_STAGE } from '@/data/mock/taxonomy'
 import { HOLDER_LABEL, type Holder } from '@/data/holders'
 import { countOf, nf, NOUN, pct, units } from '@/lib/format'
 import { isDone } from '@/data/status'
@@ -87,8 +93,15 @@ export function readSummary(p: ProjectRow): Reading {
   const recs = ap.recs.slice(-3)
   const seat = (p.holder ?? 'supervisor') as Holder
   const reader = p.stage === 'دراسة المشروع' ? HOLDER_LABEL[seat] : 'المراجع'
+  /* Batch 8 · 6.6.1 · 7.6.1 · the goals, the target groups and the expected outputs head the summary */
+  const vals = [...f.versions].reverse().find((v) => v.values)?.values ?? {}
+  const targets = (vals.targets ?? '').split(/[,،\n]/).map((x) => x.trim()).filter(Boolean)
+  const outs = (f.orgOutputs?.length ? f.orgOutputs : f.entityOutputs ?? []).slice(0, 3)
   const parts = [
     `${p.entityName} تطلب ${money(p.amountRequested)} لمشروع في ${p.field} · ${p.region}، مدته ${units.day(p.durationDays ?? 0)} ويستهدف ${nf.format(p.beneficiaries ?? 0)} مستفيد.`,
+    `الهدف: ${p.goal}${f.objectives.length ? ` · الأهداف التفصيلية: ${f.objectives.slice(0, 3).join('، ')}` : ''}.`,
+    targets.length ? `الفئة المستهدفة: ${targets.join('، ')}.` : 'لم تُحدَّد الفئة المستهدفة في الطلب.',
+    outs.length ? `المخرجات المتوقعة: ${outs.map((o) => [o.text, o.target && `(${o.target})`].filter(Boolean).join(' ')).join('، ')}.` : 'لم تُسجَّل مخرجات للمشروع.',
     st ? `دراسة المشرف: ${studyScore(st.scores)} من 100، والتوصية ${st.recommendation === 'approve' ? `بالموافقة على ${money(st.amount)}` : st.recommendation === 'reject' ? 'بالاعتذار' : 'لم تُحدَّد'}${st.justification ? ` لأن ${st.justification}` : ''}.` : 'لم تُسجَّل دراسة المشرف بعد.',
     ...recs.map((r) => `${HOLDER_LABEL[r.level]}: ${VERDICT_SAY[r.verdict]}${r.note ? ` · ${r.note}` : ''}.`),
     `التوافق الاستراتيجي ${pct(alignmentOf(p).score)}.`,
@@ -201,9 +214,44 @@ export function readRationale(p: ProjectRow): Reading {
   }
 }
 
+/* ── Strengths and risks from the recommendations (6.6.3 · batch 8) ──
+   What the supervisor's study and the seats' notes add up to · the criteria that scored highest, those
+   that scored lowest, the amount cut, the returns, the strategic gaps and the words a note raised as risk */
+const RISK_WORDS = ['مخاطر', 'خطر', 'يتجاوز', 'تأخر', 'ضعف', 'نقص', 'غير واضح', 'لا تُقرأ', 'متعثر', 'تحفظ']
+export function readRecAnalysis(p: ProjectRow): Reading | null {
+  const f = flowOf(p.id)
+  const ap = appFlowOf(p.id)
+  const st = f.study
+  if (!st && !ap.recs.length) return null
+  const crit = st ? Object.entries(st.scores).map(([k, v]) => ({ k, v, label: CRITERIA.list.find((c) => c.key === k)?.label ?? k })) : []
+  const strong = crit.filter((c) => c.v >= 4).sort((a, b) => b.v - a.v).slice(0, 3)
+  const weak = crit.filter((c) => c.v <= 2).sort((a, b) => a.v - b.v).slice(0, 3)
+  const notes = [st?.technical, st?.admin, st?.justification, ...ap.recs.map((r) => r.note)].filter((x): x is string => Boolean(x))
+  const raised = notes.filter((n) => RISK_WORDS.some((w) => n.includes(w)))
+  const cut = st?.recommendation === 'approve' && st.amount && st.amount < p.amountRequested ? p.amountRequested - st.amount : 0
+  const gaps = alignmentOf(p).parts.filter((x) => !x.ok).map((x) => x.say)
+  const returns = ap.recs.filter((r) => /return|إعادة/.test(r.verdict)).length
+  const risks = [
+    ...weak.map((c) => `${c.label} (${c.v} من 5)`),
+    ...(cut ? [`خفّض المشرف المبلغ ${money(cut)}`] : []),
+    ...gaps,
+    ...(returns ? [`أُعيد ${nf.format(returns)} مرة`] : []),
+    ...raised.slice(0, 2).map((n) => `«${n.length > 80 ? `${n.slice(0, 80)}…` : n}»`),
+  ]
+  return {
+    id: 'ai-recs', kind: risks.length > 2 ? 'flag' : 'note', label: 'نقاط القوة والمخاطر',
+    text: `${strong.length ? `نقاط القوة: ${strong.map((c) => `${c.label} (${c.v} من 5)`).join('، ')}.` : 'لم تبرز نقطة قوة بدرجة عالية في الدراسة.'} ${risks.length ? `المخاطر والملاحظات: ${risks.join('، ')}.` : 'لم تُرصد مخاطر في الدراسة ولا في توصيات المراحل.'}`,
+    bold: strong.map((c) => c.label),
+    danger: weak.map((c) => c.label),
+    src: `دراسة مشرف المنح · توصيات المراحل (${ap.recs.length}) · التوافق الاستراتيجي · ${advisory()}`,
+  }
+}
+
 /** The approval seat's readings · summary, alignment, similar, budget and the draft */
 export function projectAi(p: ProjectRow): Reading[] {
   const out: Reading[] = [readSummary(p), readAlignment(p)]
+  const ra = readRecAnalysis(p)
+  if (ra) out.push(ra)
   const sim = readSimilar(p)
   if (sim) out.push(sim)
   out.push(readBudget(p))
@@ -424,6 +472,38 @@ export function closingAi(c: CloseRow): Reading[] {
       src: 'نص التقرير الختامي ومرفقاته',
     })
   }
+  /* Batch 8 · 10.6.1 · the performance indicators the report carries · reach, spend, time and outputs */
+  const p = projectRows.find((x) => x.id === c.projectId)
+  const outs = r.outputs ?? []
+  const met = outs.filter((o) => o.achieved.trim()).length
+  const kpis = [
+    p?.beneficiaries && r.beneficiaries !== null ? `الوصول ${pct(Math.round((r.beneficiaries / p.beneficiaries) * 100))} من المستهدفين` : '',
+    p?.amountGranted && r.budget !== null ? `الصرف ${pct(Math.round((r.budget / p.amountGranted) * 100))} من المنحة` : '',
+    p?.durationDays && r.days !== null ? `المدة ${pct(Math.round((r.days / p.durationDays) * 100))} من المخطط` : '',
+    outs.length ? `مخرجات تحقق منها ${met} من ${outs.length}` : '',
+  ].filter(Boolean)
+  if (kpis.length) out.push({
+    id: 'ai-close-kpi', kind: met < outs.length ? 'flag' : 'note', label: 'مؤشرات الأداء من التقرير',
+    text: `${kpis.join('، ')}.`,
+    src: `التقرير الختامي · المستهدف المعتمد · ${advisory()}`,
+  })
+  /* Batch 8 · 10.6.2 · against the agreement too · its value, its schedule and its end */
+  const ag = agreements.find((a) => a.projectId === c.projectId && a.stage === 'active') ?? agreements.find((a) => a.projectId === c.projectId)
+  if (ag) {
+    const dev: string[] = []
+    if (r.budget !== null && ag.amount && Math.abs(r.budget - ag.amount) / ag.amount > 0.1) dev.push(`المصروف الفعلي ${money(r.budget)} مقابل قيمة الاتفاقية ${money(ag.amount)}`)
+    const endAg = p?.endAt ?? ag.payments.map((x) => x.dueAt).sort().at(-1) ?? ''
+    if (endAg && p?.startAt && r.days !== null) {
+      const end = addWorkingDays(p.startAt, r.days)
+      if (end > endAg) dev.push(`انتهى التنفيذ (${end}) بعد نهاية مدة الاتفاقية (${endAg})`)
+    }
+    out.push({
+      id: 'ai-close-agr', kind: dev.length ? 'flag' : 'note', label: 'المقارنة بالاتفاقية',
+      text: dev.length ? `${dev.join('، ')}.` : `يتسق التنفيذ مع الاتفاقية ${ag.id} في القيمة والمدة.`,
+      danger: dev,
+      src: `الاتفاقية ${ag.id} · التقرير الختامي · ${advisory()}`,
+    })
+  }
   return out
 }
 
@@ -496,25 +576,80 @@ export function portfolioAi(pf: PortfolioRec): Reading[] {
   ]
 }
 
+/* Batch 8 · 11.6 · the external project's readings, over any external party (v3) · its money through
+   BPD-009's permits, the proofs on file, the next step to take · advisory, nothing is done on its own */
+const extMoney = (p: ProjectRow) => {
+  const reqs = payRequests.filter((r) => r.projectId === p.id)
+  const paid = reqs.filter((r) => r.state === 'paid').reduce((n, r) => n + r.asked, 0)
+  const open = reqs.filter((r) => r.state !== 'paid' && r.state !== 'closed').reduce((n, r) => n + r.asked, 0)
+  return { value: p.amountGranted, paid, open, left: Math.max(0, p.amountGranted - paid), reqs }
+}
+
 export function ehsanAi(p: ProjectRow): Reading[] {
-  const m = ehMoney(p.id)
+  const m = extMoney(p)
   const t = todayIso()
   const elapsed = p.startAt ? Math.max(0, daysBetween(p.startAt, t)) : 0
   const span = p.durationDays || 1
   const timePct = Math.min(100, Math.round((elapsed / span) * 100))
-  const paidPct = m.value ? Math.round((m.confirmed / m.value) * 100) : 0
+  const paidPct = m.value ? Math.round((m.paid / m.value) * 100) : 0
+  const ex = ehExecOf(p.id)
+  /* 11.6.1 · the proofs against the payments · a transfer without its proof, a third party without its document */
+  const paidReqs = m.reqs.filter((r) => r.state === 'paid')
+  const noProof = paidReqs.filter((r) => !(r.transfer?.proof || r.docs.some((d) => d.kind === 'إثبات التحويل'))).map((r) => r.no)
+  const noDoc = m.reqs.filter((r) => r.payee && !r.payee.doc.trim()).map((r) => r.no)
+  const execFiles = ehExecLog(p.id).flatMap((x) => x.files).length
+  const issues = [
+    ...(noProof.length ? [`الدفعة ${noProof.join('، ')} صُرفت بلا إثبات تحويل`] : []),
+    ...(noDoc.length ? [`الدفعة ${noDoc.join('، ')} لطرف ثالث بلا مستند مبرّر`] : []),
+    ...(ex && ex.progress >= 100 && paidPct < 100 ? [`أُبلغ التنفيذ منجزًا والمصروف ${pct(paidPct)} من القيمة`] : []),
+    ...(ex && ex.progress < 100 && paidPct >= 100 ? [`صُرفت القيمة كاملة والتنفيذ ${pct(ex.progress)}`] : []),
+  ]
+  /* 11.6.2 · the next step the supervisor may take · suggested, not taken */
+  const slots = scheduleOf(p.id)
+  const ready = slots.find((x) => x.state === 'open' || x.state === 'eligible')
+  const eligible = m.reqs.find((r) => r.state === 'eligible')
+  const ended = (p.endAt ?? '9999') <= t
+  const next = p.stage === EXT_PRE_STAGE ? 'سجّل جدول دفعات الوثيقة الخارجية · يبدأ التنفيذ بعده'
+    : eligible ? `أنشئ إذن صرف الدفعة ${eligible.no}`
+      : ended && !ehCloseOf(p.id)?.closedAt ? 'انتهت المدة · اجمع إثباتات التحويل والتنفيذ وابدأ الإغلاق'
+        : ready ? `ارفع متطلبات الدفعة ${ready.no} نيابةً عن الجهة (موعدها ${ready.dueAt})`
+          : 'لا إجراء مستحق الآن'
   return [
     {
-      id: 'ai-eh-summary', kind: 'note', label: 'ملخص مشروع إحسان',
-      text: `نفّذت المنصة ${money(m.confirmed)} من ${money(m.value)} (${pct(paidPct)})، وبانتظار المراجعة المالية ${money(m.review)}. انقضى من المدة ${pct(timePct)}.`,
-      src: 'دفعات المنصة · مدة المشروع',
+      id: 'ai-eh-summary', kind: 'note', label: 'ملخص المشروع الخارجي',
+      text: `المعتمد ${money(m.value)}، صُرف ${money(m.paid)} (${pct(paidPct)})، وقيد الصرف ${money(m.open)}، والمتبقي ${money(m.left)}. انقضى من المدة ${pct(timePct)}${ex ? ` · التنفيذ «${ex.status}» ${pct(ex.progress)}` : ''}.`,
+      src: 'أذونات الصرف (BPD-009) · حالة التنفيذ · مدة المشروع',
     },
     {
-      id: 'ai-eh-forecast', kind: timePct > paidPct + 25 ? 'flag' : 'note', label: 'تنبؤ مبكر بالتأخر',
-      text: timePct > paidPct + 25 ? `الصرف متأخر عن الزمن بفارق ${pct(timePct - paidPct)} · قد يتعثر التنفيذ إن لم تُسجَّل الدفعات المستحقة.` : 'الصرف يسير مع الزمن · لا مؤشر تعثر.',
-      src: `نسبة الصرف مقابل نسبة المدة · ${advisory()}`,
+      id: 'ai-eh-proofs', kind: issues.length ? 'flag' : 'note', label: 'الإثباتات مقابل الدفعات',
+      text: issues.length ? `${issues.join('، ')}.` : `الدفعات المصروفة (${paidReqs.length}) موثقة بإثبات تحويل · ${countOf(execFiles, NOUN.doc)} من إثباتات التنفيذ مرفقة.`,
+      danger: issues,
+      src: `أذونات الصرف ومرفقاتها · إثباتات التنفيذ · ${advisory()}`,
+    },
+    {
+      id: 'ai-eh-forecast', kind: timePct > paidPct + 25 || next !== 'لا إجراء مستحق الآن' ? 'flag' : 'note', label: 'الإجراء المقترح',
+      text: `${next}.${timePct > paidPct + 25 ? ` الصرف متأخر عن الزمن بفارق ${pct(timePct - paidPct)}.` : ''} لا يُنفَّذ شيء تلقائيًا.`,
+      src: `جدول الدفعات · نهاية المدة · ${advisory()}`,
     },
   ]
+}
+
+/** 11.6.3 · a periodic digest over every external project · approved, paid, left, and what to watch */
+export function externalDigest(rows: ProjectRow[]): Reading | null {
+  const live = rows.filter((p) => p.supportStatus === 'معتمد')
+  if (!live.length) return null
+  const ms = live.map((p) => ({ p, m: extMoney(p) }))
+  const value = ms.reduce((n, x) => n + x.m.value, 0)
+  const paid = ms.reduce((n, x) => n + x.m.paid, 0)
+  const t = todayIso()
+  const ended = live.filter((p) => (p.endAt ?? '9999') <= t && !ehCloseOf(p.id)?.closedAt)
+  const noProof = ms.filter((x) => x.m.reqs.some((r) => r.state === 'paid' && !(r.transfer?.proof || r.docs.some((d) => d.kind === 'إثبات التحويل'))))
+  const pre = live.filter((p) => p.stage === EXT_PRE_STAGE)
+  return {
+    id: 'ai-ext-digest', kind: ended.length || noProof.length ? 'flag' : 'note', label: 'ملخص دوري · المشاريع عبر جهات خارجية',
+    text: `${countOf(live.length, NOUN.project)} معتمدة بقيمة ${money(value)} · صُرف ${money(paid)} (${pct(value ? Math.round((paid / value) * 100) : 0)}) والمتبقي ${money(Math.max(0, value - paid))}.${pre.length ? ` بانتظار جدول الدفعات: ${pre.map((p) => p.name).slice(0, 3).join('، ')}.` : ''}${ended.length ? ` انتهت مدتها دون إغلاق: ${ended.map((p) => p.name).slice(0, 3).join('، ')}.` : ''}${noProof.length ? ` دفعات بلا إثبات تحويل في: ${noProof.map((x) => x.p.name).slice(0, 3).join('، ')}.` : ''}`,
+    src: `أذونات الصرف · حالة المشاريع · ${advisory()}`,
+  }
 }
 
 /* ── Agreements · template and clause review (cross-19be8e4a2a · cross-ac4f84fe1a) ── */
@@ -593,9 +728,85 @@ export function readAllocation(total: number): Reading {
   const s = suggestAllocation(total)
   return {
     id: 'ai-alloc', kind: 'note', label: 'اقتراح توزيع المخصصات',
-    text: `${s.slice(0, 4).map((x) => `${x.track} ${pct(x.share)} (${money(x.amount)})`).join('، ')}. الوزن: ${pct(70)} للصرف والالتزام في السنتين و${pct(30)} للطلب قيد الدراسة.`,
+    text: `حسب المسار: ${s.slice(0, 4).map((x) => `${x.track} ${pct(x.share)} (${money(x.amount)})`).join('، ')}. حسب المجال: ${suggestAllocationBy(total, 'field').slice(0, 3).map((x) => `${x.key} ${pct(x.share)}`).join('، ')}. حسب الهدف: ${suggestAllocationBy(total, 'goal').slice(0, 3).map((x) => `${x.key} ${pct(x.share)}`).join('، ')}. الوزن: ${pct(70)} للصرف والالتزام و${pct(30)} للطلب قيد الدراسة.`,
     src: `ميزانيتا 2025 و2026 · الطلبات قيد الدراسة · ${advisory()}`,
   }
+}
+
+/* ── Budget · efficiency, balance and next year's need (1.6.1 – 1.6.4 · batch 8) ──
+   Read from the budgets before this one: each line's use (paid and held over allocated), the demand
+   of the requests in its field, and how the doc spreads its money · advisory, the finance team decides */
+const shareOf = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0)
+export function readBudgetAdvice(doc: BudgetDoc): Reading[] {
+  const leaves = leavesOf(doc.nodes).filter((n) => n.active)
+  if (!leaves.length || doc.total <= 0) return []
+  const before = allBudgets.filter((d) => d.id !== doc.id && d.yearId < doc.yearId && d.state === 'approved')
+  const pastOf = (label: string) => before.flatMap((d) => leavesOf(d.nodes)).filter((n) => n.label === label)
+  const used = (n: BudgetNode) => (n.paid ?? 0) + (n.held ?? 0) + Math.max(0, n.allocated - n.available - (n.paid ?? 0) - (n.held ?? 0))
+  const demandOf = (label: string) => projectRows.filter((x) => x.statusGroup === 'قيد الدراسة' && (label.includes(x.field) || label.includes(x.goal))).reduce((n, x) => n + x.amountRequested, 0)
+  const out: Reading[] = []
+  /* 1.6.1 · lines the earlier years left mostly unused, and lines they ran out of */
+  const rates = leaves.map((n) => {
+    const past = pastOf(n.label)
+    const a = past.reduce((x, y) => x + y.allocated, 0)
+    return { n, rate: a ? shareOf(past.reduce((x, y) => x + used(y), 0), a) : null, a }
+  }).filter((x) => x.rate !== null) as { n: BudgetNode; rate: number; a: number }[]
+  const low = rates.filter((x) => x.rate < 40)
+  const high = rates.filter((x) => x.rate > 90)
+  out.push({
+    id: 'ai-bd-eff', kind: low.length || high.length ? 'flag' : 'note', label: 'كفاءة التوزيع من السنوات السابقة',
+    text: rates.length
+      ? `${low.length ? `استُخدم أقل من ${pct(40)} من: ${low.slice(0, 3).map((x) => `${x.n.label} (${pct(x.rate)})`).join('، ')} · يُقترح خفضها. ` : ''}${high.length ? `نفدت تقريبًا: ${high.slice(0, 3).map((x) => `${x.n.label} (${pct(x.rate)})`).join('، ')} · يُقترح رفعها. ` : ''}${!low.length && !high.length ? 'استخدام البنود في السنوات السابقة متوازن بين 40 و90 بالمئة.' : ''}`
+      : 'لا ميزانية معتمدة سابقة بنفس البنود للمقارنة.',
+    danger: low.map((x) => x.n.label),
+    src: `ميزانيات معتمدة سابقة (${before.length}) · المصروف والمحجوز على كل بند · ${advisory()}`,
+  })
+  /* 1.6.3 · next year's need per line · the past use grown by the trend, plus the demand under study */
+  const need = leaves.map((n) => {
+    const past = pastOf(n.label)
+    const last = past.at(-1)
+    const prev = past.at(-2)
+    const trend = last && prev && used(prev) > 0 ? Math.max(-0.3, Math.min(0.5, used(last) / used(prev) - 1)) : 0
+    const est = Math.round(((last ? used(last) : 0) * (1 + trend) + demandOf(n.label)) / 1000) * 1000
+    return { n, est, gap: est - n.allocated }
+  }).filter((x) => x.est > 0).sort((a, b) => b.gap - a.gap)
+  if (need.length) out.push({
+    id: 'ai-bd-need', kind: 'note', label: 'الاحتياج المتوقع لكل بند',
+    text: `${need.slice(0, 4).map((x) => `${x.n.label}: ${money(x.est)} (${x.gap >= 0 ? `يزيد ${money(x.gap)}` : `يقل ${money(-x.gap)}`} عن المخصص)`).join('، ')}.`,
+    src: `اتجاه الاستخدام بين آخر سنتين · الطلبات قيد الدراسة في مجال البند · ${advisory()}`,
+  })
+  /* 1.6.4 · an uneven spread · a line's share of the money against its share of the demand, and a line
+     that takes most of its parent */
+  const allDemand = leaves.reduce((n, x) => n + demandOf(x.label), 0)
+  const off = allDemand > 0 ? leaves.map((n) => ({ n, d: shareOf(n.allocated, doc.total) - shareOf(demandOf(n.label), allDemand) })).filter((x) => Math.abs(x.d) >= 15) : []
+  const heavy = doc.nodes.filter((p) => childrenOf(doc.nodes, p.id).length >= 3).flatMap((p) => childrenOf(doc.nodes, p.id).filter((c) => p.allocated > 0 && c.allocated / p.allocated > 0.6).map((c) => ({ c, p })))
+  const zero = leaves.filter((n) => n.allocated <= 0)
+  out.push({
+    id: 'ai-bd-bal', kind: off.length || heavy.length || zero.length ? 'flag' : 'note', label: 'توازن التوزيع',
+    text: off.length || heavy.length || zero.length
+      ? [
+        ...off.slice(0, 3).map((x) => `${x.n.label} ${x.d > 0 ? 'يأخذ أكثر' : 'يأخذ أقل'} من حصته من الطلب بـ${pct(Math.abs(x.d))}`),
+        ...heavy.slice(0, 2).map((x) => `${x.c.label} يأخذ ${pct(shareOf(x.c.allocated, x.p.allocated))} من ${x.p.label}`),
+        ...(zero.length ? [`${countOf(zero.length, NOUN.line)} بلا مخصص`] : []),
+      ].join('، ') + ' · راجع هذه البنود.'
+      : 'التوزيع قريب من حصص الطلب ولا بند يستأثر بأبيه.',
+    danger: [...off.map((x) => x.n.label), ...heavy.map((x) => x.c.label)],
+    src: `حصة كل بند من الإجمالي مقابل حصته من الطلب قيد الدراسة · ${advisory()}`,
+  })
+  return out
+}
+
+/* 1.6.2 · the split by field and by goal, not only by track · the same weighting (past use and demand) */
+export function suggestAllocationBy(total: number, by: 'field' | 'goal'): { key: string; share: number; amount: number }[] {
+  const w = new Map<string, number>()
+  for (const p of projectRows) {
+    const k = by === 'field' ? p.field : p.goal
+    if (!k) continue
+    const x = p.statusGroup === 'قيد الدراسة' ? p.amountRequested * 0.3 : (p.amountSpent + (p.supportStatus === 'معتمد' ? p.amountGranted - p.amountSpent : 0)) * 0.7
+    w.set(k, (w.get(k) ?? 0) + x)
+  }
+  const W = [...w.values()].reduce((a, b) => a + b, 0) || 1
+  return [...w.entries()].map(([key, v]) => ({ key, share: Math.round((v / W) * 100), amount: Math.round((total * v) / W / 1000) * 1000 })).sort((a, b) => b.amount - a.amount)
 }
 
 /* ── The board's session · an aggregate report with relative priority (cross-f65e0b21da) ── */
@@ -624,6 +835,21 @@ export function sessionReport(s: Session): Reading[] {
 }
 
 /* ── Attachments of a payment or an Ehsan operation, read against the record (cross-5198b6b362) ── */
+
+/** Batch 8 · 9.6.2 · the attachments against the payment's own requirements (the agreement's list) */
+export function readNeeds(r: { needs?: { kind: string; label: string }[]; docs: { kind: string; name: string }[]; condition?: string }): Reading {
+  const needs = r.needs ?? []
+  const missing = needs.filter((n) => !r.docs.some((d) => d.kind === n.kind || d.kind === n.label))
+  const extra = r.docs.filter((d) => needs.length && !needs.some((n) => d.kind === n.kind || d.kind === n.label) && d.kind !== 'إثبات التحويل')
+  return {
+    id: 'ai-pay-needs', kind: missing.length ? 'flag' : 'note', label: 'المرفقات مقابل متطلبات الدفعة',
+    text: needs.length
+      ? `${missing.length ? `ينقص: ${missing.map((n) => n.label).join('، ')}.` : `المتطلبات ${needs.length} كلها مرفقة.`}${extra.length ? ` مرفقات خارج المتطلبات: ${extra.map((d) => d.name).slice(0, 3).join('، ')}.` : ''}${r.condition ? ` شرط الدفعة: ${r.condition}.` : ''}`
+      : 'لا تسمّي الاتفاقية متطلبات لهذه الدفعة.',
+    danger: missing.map((n) => n.label),
+    src: `متطلبات الدفعة في الاتفاقية · مرفقات الطلب · ${advisory()}`,
+  }
+}
 
 export function readFiles(id: string, label: string, files: string[], expect: { amount?: number; ref?: string; date?: string }): Reading {
   const found: string[] = []

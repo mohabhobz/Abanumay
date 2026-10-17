@@ -1,5 +1,6 @@
 import { ROUTES } from '@/app/routes'
-import { foundationDaysBetween, isWorkingDay } from '@/data/intake/cycle'
+import { workHoursSince } from '@/data/stageClock'
+import { isWorkingDay } from '@/data/intake/cycle'
 import { projectRows } from '@/data/mock/projects'
 import { STAGES, stageMeta } from '@/data/mock/taxonomy'
 import { agreements, AGR_LIMIT, AGREEMENT_STAGES, agrStageLabel } from '@/data/mock/agreements'
@@ -13,7 +14,8 @@ import { ENTITY_RULES } from '@/data/entities/rules'
 import { BUDGET_RULES } from '@/data/budget/rules'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { BUDGET_REQS, REQ_KIND_SAY, eventsOf } from '@/data/budget/store'
-import { EHSAN_PAYS, PORTFOLIOS, PF_STAGE_SAY, PROFILES } from '@/data/partners/store'
+import { EHSAN_PAYS, PORTFOLIOS, PF_STAGE_SAY, PF_REQ_SAY, PROFILES, ehCloseOf, externalClosingsWaiting, externalEnded, externalProjects } from '@/data/partners/store'
+import { EXT_PRE_STAGE } from '@/data/mock/taxonomy'
 import { HOLDER_LABEL, type Holder } from '@/data/holders'
 import { isStuck } from '@/data/plans/store'
 import {
@@ -34,15 +36,7 @@ const nowMs = () => Date.now()
 const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 /* v3 · 3.4.15 · the SLA counts the foundation's working days only · a record's time since its last
    move is the working days that passed after it, in the system's unit (24 per working day · lib/sla) */
-const hoursSince = (at: string | undefined): number => {
-  const t = at ? Date.parse(at) : NaN
-  if (!Number.isFinite(t)) return 0
-  const from = isoDay(t)
-  const today = isoDay(nowMs())
-  if (from >= today) return 0
-  const next = new Date(`${from}T00:00:00Z`); next.setUTCDate(next.getUTCDate() + 1)
-  return foundationDaysBetween(isoDay(next.getTime()), today) * 24
-}
+const hoursSince = workHoursSince
 /** The day `n` working days before today · where a late or stalled count began */
 const workDaysBack = (n: number): string => {
   const d = new Date(`${isoDay(nowMs())}T00:00:00Z`)
@@ -104,7 +98,13 @@ export function escStages(proc: EscProc): EscStage[] {
     case 'payment': return limited('payment', PAY_STATES, PAY_LIMIT)
     case 'closing': return limited('closing', CLOSE_STAGES, CLOSE_LIMIT)
     case 'plan': return limited('plan', PLAN_STAGES, PLAN_LIMIT)
-    case 'ehsan': return [own('ehsan.review', 'دفعة بانتظار المراجعة المالية', 'الإدارة المالية')]
+    /* Batch 8 · 11.5.1 · the external procedure's stages (v3 BPD-011) · its payments run on BPD-009's stages */
+    case 'ehsan': return [
+      own('ehsan.pre', 'متطلبات المشروع الخارجي · جدول الدفعات', 'مشرف المنح'),
+      own('ehsan.ended', 'انتهت المدة · بانتظار إرسال الإغلاق', 'مشرف المنح'),
+      own('ehsan.close', 'اعتماد إغلاق المشروع الخارجي', 'مدير المنح'),
+      own('ehsan.review', 'دفعة قديمة بانتظار المراجعة المالية', 'الإدارة المالية'),
+    ]
     case 'portfolio': return [
       own('portfolio.supervisor', 'دراسة مشرف المنح', 'مشرف المنح'),
       own('portfolio.manager', 'لدى مدير المنح', 'مدير المنح'),
@@ -112,7 +112,10 @@ export function escStages(proc: EscProc): EscStage[] {
       own('portfolio.committee', 'عند اللجنة التنفيذية', 'اللجنة التنفيذية'),
       own('portfolio.board', 'عند مجلس الأمناء', 'مجلس الأمناء'),
       own('portfolio.returned', 'معادة للشريك', 'الشريك'),
-      own('portfolio.subs', 'مشاريع فرعية بانتظار الاعتماد', 'مدير المنح'),
+      /* Batch 8 · 13.5.1 · the sub-project's study and the request's seats (v3) */
+      own('portfolio.study', 'مشاريع فرعية لدى مشرف المنح', 'مشرف المنح'),
+      own('portfolio.subs', 'مشاريع فرعية بانتظار قرار مدير المنح', 'مدير المنح'),
+      own('portfolio.pay', 'إذن صرف محفظة قيد الاعتماد', 'مشرف المنح'),
       own('portfolio.finance', 'طلب صرف لدى المالية', 'الإدارة المالية'),
     ]
   }
@@ -140,11 +143,33 @@ export interface EscItem {
   stuckFrom?: string
   /** Days past the limit */
   over: number
+  /** Batch 8 · 0.def.21 · not late yet · the limit passes on `dueOn` (working days ahead) */
+  near?: boolean
+  dueOn?: string
 }
+
+/** The day `n` working days after today · when an approaching limit passes */
+const workDaysAhead = (n: number): string => {
+  const d = new Date(`${isoDay(nowMs())}T00:00:00Z`)
+  let left = Math.max(0, Math.ceil(n))
+  for (let guard = 0; left > 0 && guard < 4000; guard++) {
+    d.setUTCDate(d.getUTCDate() + 1)
+    if (isWorkingDay(isoDay(d.getTime()))) left--
+  }
+  return isoDay(d.getTime())
+}
+
+/* Batch 8 · 0.def.21 · the collectors also hand back what is close to its limit while this is on */
+let WANT_NEAR = false
 
 function make(x: Omit<EscItem, 'heat' | 'lateFrom' | 'stuckFrom' | 'over'>): EscItem | null {
   const heat = heatOf(x.hours, x.limit, x.proc)
-  if (heat === 'ok') return null
+  if (heat === 'ok') {
+    /* Verifier · 17 Oct · never on arrival · a short stage reminds from its half, not from hour zero */
+    const ahead = Math.min((ESC_RULES.near?.days ?? 0) * 24, x.limit / 2)
+    if (!WANT_NEAR || !ahead || x.limit <= 0 || x.hours <= 0 || x.hours < x.limit - ahead) return null
+    return { ...x, heat, near: true, lateFrom: '', over: 0, dueOn: workDaysAhead((x.limit - x.hours) / 24) }
+  }
   const extra = ESC_RULES.stuck[x.proc]
   const margin = extra === null || extra === undefined ? x.limit : extra * 24
   return {
@@ -287,6 +312,20 @@ function collect(proc: EscProc): EscItem[] {
       break
     }
     case 'ehsan': {
+      /* Batch 8 · 11.5.1 · the external project's own stages */
+      for (const p of externalProjects()) {
+        const base = { proc, title: p.name, sub: p.platform ?? '', href: ROUTES.project(p.id), entity: p.platform }
+        if (p.stage === EXT_PRE_STAGE) {
+          out.push(make({ ...base, id: `esc-xp-${p.id}`, stageKey: 'ehsan.pre', stage: escLabel('ehsan.pre'), owner: p.owner ?? escWho('ehsan.pre'), hours: p.hoursInStage, limit: ESC_LIMITS['ehsan.pre'] ?? 0 }))
+        }
+      }
+      for (const p of externalEnded()) {
+        if (ehCloseOf(p.id)?.state === 'manager') continue
+        out.push(make({ proc, title: p.name, sub: p.platform ?? '', href: ROUTES.project(p.id), entity: p.platform, id: `esc-xe-${p.id}`, stageKey: 'ehsan.ended', stage: escLabel('ehsan.ended'), owner: p.owner ?? escWho('ehsan.ended'), hours: hoursSince(p.endAt), limit: ESC_LIMITS['ehsan.ended'] ?? 0 }))
+      }
+      for (const p of externalClosingsWaiting()) {
+        out.push(make({ proc, title: p.name, sub: p.platform ?? '', href: ROUTES.project(p.id), entity: p.platform, id: `esc-xc-${p.id}`, stageKey: 'ehsan.close', stage: escLabel('ehsan.close'), owner: escWho('ehsan.close'), hours: hoursSince(ehCloseOf(p.id)?.sentAt ?? ehCloseOf(p.id)?.at), limit: ESC_LIMITS['ehsan.close'] ?? 0 }))
+      }
       for (const x of EHSAN_PAYS) {
         if (x.state !== 'review') continue
         const pf = x.target.kind !== 'project' ? PORTFOLIOS.find((f) => f.id === (x.target as { pfId: string }).pfId) : undefined
@@ -310,18 +349,33 @@ function collect(proc: EscProc): EscItem[] {
             owner: pf.stage === 'supervisor' ? pf.owner : pf.stage === 'returned' ? partner : escWho(k), entity: partner, hours: hoursSince(since), limit: ESC_LIMITS[k] ?? 0,
           }))
         }
+        const study = pf.items.filter((s) => s.state === 'submitted' || s.state === 'study')
+        if (study.length) {
+          out.push(make({
+            id: `esc-pq-${pf.id}`, proc, stageKey: 'portfolio.study', stage: escLabel('portfolio.study'), title: `${study.length} مشاريع فرعية · ${pf.name}`, sub: partner,
+            href: ROUTES.portfolio(pf.id), owner: pf.owner, entity: partner,
+            hours: hoursSince(study.map((s) => s.stateAt ?? s.addedAt).sort()[0]), limit: ESC_LIMITS['portfolio.study'] ?? 0,
+          }))
+        }
+        for (const r of pf.requests.filter((x) => ['supervisor', 'eligible', 'manager', 'exec'].includes(x.state))) {
+          out.push(make({
+            id: `esc-pp-${pf.id}-${r.id}`, proc, stageKey: 'portfolio.pay', stage: PF_REQ_SAY[r.state], title: `الدفعة ${r.no} · ${pf.name}`, sub: partner,
+            href: ROUTES.portfolio(pf.id), owner: r.state === 'manager' ? 'مدير المنح' : r.state === 'exec' ? 'المدير التنفيذي' : pf.owner, entity: partner,
+            hours: hoursSince(r.stateAt ?? r.at), limit: ESC_LIMITS['portfolio.pay'] ?? 0,
+          }))
+        }
         const pending = pf.items.filter((s) => s.state === 'pending')
         if (pending.length) {
           out.push(make({
             id: `esc-ps-${pf.id}`, proc, stageKey: 'portfolio.subs', stage: escLabel('portfolio.subs'), title: `${pending.length} مشاريع فرعية · ${pf.name}`, sub: partner,
             href: ROUTES.portfolio(pf.id), owner: escWho('portfolio.subs'), entity: partner,
-            hours: hoursSince(pending.map((s) => s.addedAt).sort().at(-1)), limit: ESC_LIMITS['portfolio.subs'] ?? 0,
+            hours: hoursSince(pending.map((s) => s.stateAt ?? s.addedAt).sort()[0]), limit: ESC_LIMITS['portfolio.subs'] ?? 0,
           }))
         }
-        for (const r of pf.requests.filter((x) => x.state === 'finance')) {
+        for (const r of pf.requests.filter((x) => x.state === 'finance' || x.state === 'order')) {
           out.push(make({
             id: `esc-pr-${pf.id}-${r.id}`, proc, stageKey: 'portfolio.finance', stage: escLabel('portfolio.finance'), title: `الدفعة ${r.no} · ${pf.name}`, sub: partner,
-            href: ROUTES.portfolio(pf.id), owner: escWho('portfolio.finance'), entity: partner, hours: hoursSince(r.at), limit: ESC_LIMITS['portfolio.finance'] ?? 0,
+            href: ROUTES.portfolio(pf.id), owner: escWho('portfolio.finance'), entity: partner, hours: hoursSince(r.stateAt ?? r.at), limit: ESC_LIMITS['portfolio.finance'] ?? 0,
           }))
         }
       }
@@ -347,6 +401,15 @@ export function escItems(proc?: EscProc): EscItem[] {
   return procs.flatMap(collect).sort((a, b) => (a.heat === b.heat ? b.over - a.over : a.heat === 'stuck' ? -1 : 1))
 }
 
+/** Batch 8 · 0.def.21 · what reaches its limit within the reminder's days · not late yet */
+export function escNear(proc?: EscProc): EscItem[] {
+  WANT_NEAR = true
+  try {
+    const procs: EscProc[] = proc ? [proc] : ['budget', 'registration', 'study', 'approval', 'agreement', 'payment', 'closing', 'plan', 'ehsan', 'portfolio']
+    return procs.flatMap(collect).filter((x) => x.near).sort((a, b) => (a.dueOn ?? '').localeCompare(b.dueOn ?? ''))
+  } finally { WANT_NEAR = false }
+}
+
 export function escCounts(): Record<EscProc, { late: number; stuck: number }> {
   const out = {} as Record<EscProc, { late: number; stuck: number }>
   for (const it of escItems()) {
@@ -362,7 +425,7 @@ export function escCounts(): Record<EscProc, { late: number; stuck: number }> {
 export interface EscAlert {
   id: string
   item: EscItem
-  level: 'late' | 'stalled'
+  level: 'near' | 'late' | 'stalled'
   /** The day it went out */
   at: string
   /** The stall's day count on that alert · 1 on the first daily alert */
@@ -381,6 +444,9 @@ const recipients = (list: EscRecipient[], it: EscItem): string[] =>
 export function escAlerts(days = 14): EscAlert[] {
   const out: EscAlert[] = []
   const today = isoDay(nowMs())
+  /* Batch 8 · 0.def.21 · the reminder before the limit · today, once */
+  const near = ESC_RULES.near
+  if (near?.days) for (const it of escNear()) out.push({ id: `${it.id}-${it.stageKey}-near`, item: it, level: 'near', at: today, to: recipients(near.to, it), channels: near.channels })
   for (const it of escItems()) {
     out.push({ id: `${it.id}-late`, item: it, level: 'late', at: it.lateFrom, to: recipients(ESC_RULES.late.to, it), channels: ESC_RULES.late.channels })
     if (it.heat !== 'stuck' || !it.stuckFrom) continue

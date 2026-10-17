@@ -1,3 +1,4 @@
+import { liveClock } from '@/data/stageClock'
 import { CFG, hydrate } from '@/lib/config'
 import { heatOf, type Heat } from '@/data/shared/escRules'
 import type {
@@ -670,12 +671,12 @@ export const openClose = (projectId: string): string => {
   if (has) return has.id
   const pr = projectRows.find((p) => p.id === projectId)
   const id = `CL-${2050 + closeRows.length}`
-  closeRows.push(row(id, projectId, 'draft', {
+  closeRows.push(liveClock(row(id, projectId, 'draft', {
     openedAt: actDay(),
     hoursInStage: 0,
     versions: [v(1, actDay(), pr?.owner ?? 'مشرف المنح', 'طلب التقرير الختامي')],
     audit: [a(actDay(), pr?.owner ?? 'مشرف المنح', 'إنشاء طلب التقرير الختامي')],
-  }))
+  }), 'hoursInStage', true))
   return id
 }
 

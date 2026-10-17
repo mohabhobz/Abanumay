@@ -43,7 +43,7 @@ import { BUDGET_REQS } from './budget/store'
 import { appFlowOf, SESSIONS } from './approvals/store'
 import { flowOf } from './intake/flow'
 import { isStuck, PLAN_LOG } from './plans/store'
-import { EHSAN_PAYS, PORTFOLIOS, ehCloseOf, ehMoney, ehsanProjects, isLiveSub, pfMoney } from './partners/store'
+import { PORTFOLIOS, ehCloseOf, ehsanProjects, isLiveSub, pfMoney } from './partners/store'
 import { ESC_LIMITS } from './shared/escRules'
 import { APPROVAL_RULES } from './approvals/rules'
 import { TODAY } from './clock'
@@ -328,8 +328,6 @@ const actDays = accepted.map(({ p, a }) => {
 /* Ehsan and portfolios */
 
 const eh = ehsanProjects()
-const ehMoneyAll = eh.map((p) => ehMoney(p.id))
-const ehClosed = eh.filter((p) => isDone(p.statusGroup))
 /* Re-audit 7 Oct · late counts the stalled too, over the projects in execution, not over all of them */
 const ehRunning = eh.filter((p) => isLive(p.statusGroup) || p.statusGroup === 'متعثر')
 const ehLate = ehRunning.filter((p) => p.statusGroup === 'متعثر' || (p.endAt && p.endAt < today))
@@ -338,9 +336,15 @@ const ehLate = ehRunning.filter((p) => p.statusGroup === 'متعثر' || (p.endA
 const ehCloseDays = eh.map((p) => {
   const c = ehCloseOf(p.id)
   if (!c?.closedAt) return null
+  /* v3 · 11.8.3 · from the end of the term to the closing's approval */
   const from = p.endAt && p.endAt <= c.closedAt ? p.endAt : c.at
   return dayDiff(from, c.closedAt)
 }).filter((x): x is number => x !== null)
+/* Batch 8 · 11.8 · the approved external projects, the completed, and their executed permits (BPD-009) */
+const extApproved = eh.filter((p) => p.supportStatus === 'معتمد')
+const extDone = extApproved.filter((p) => isDone(p.statusGroup) || Boolean(ehCloseOf(p.id)?.closedAt))
+const extIds = new Set(extApproved.map((p) => p.id))
+const extPaid = payRequests.filter((r) => extIds.has(r.projectId) && r.state === 'paid')
 const pfs = PORTFOLIOS
 const subs = pfs.flatMap((pf) => pf.items)
 const subsSent = subs.filter((x) => x.state !== 'draft')
@@ -436,7 +440,7 @@ return [
     owner: 'الإدارة التنفيذية',
     source: 'doc',
     kpis: [
-      { no: 1, name: 'متوسط مدة المراجعة التنفيذية', how: 'متوسط الزمن من استلام المشروع حتى تسجيل قرار الرئيس التنفيذي.', unit: 'days', value: execRec.value, better: 'down', target: null, derived: execRec.derived },
+      { no: 1, name: 'متوسط مدة المراجعة التنفيذية', how: 'متوسط الزمن من استلام المشروع حتى تسجيل قرار المدير التنفيذي.', unit: 'days', value: execRec.value, better: 'down', target: null, derived: execRec.derived },
       { no: 2, name: 'نسبة القرارات ضمن المدة المستهدفة', how: `عدد المشاريع التي صدر قرارها ضمن اتفاقية مستوى الخدمة ÷ إجمالي المشاريع × 100%. والمدة ${countNoun(Math.round((ESC_LIMITS['approval.exec'] ?? 120) / 24), NOUN.day)} من آلية التصعيد.`, unit: 'pct', ...ratio(countOf(reachedExec, execIn), reachedExec.length), better: 'up', target: null, derived: execRec.derived, to: `${ROUTES.escalation}?proc=approval` },
       { no: 3, name: 'نسبة المشاريع المعادة إلى مدير المنح', how: 'عدد المشاريع المعادة لاستكمال الملاحظات ÷ إجمالي المشاريع المستلمة × 100%.', unit: 'pct', ...ratio(countOf(reachedExec, (r) => execReturns(r) > 0), reachedExec.length), better: 'down', target: null },
       { no: 4, name: 'متوسط عدد مرات إعادة المشروع', how: 'إجمالي مرات الإعادة ÷ عدد المشاريع المعادة.', unit: 'avg', value: (() => { const back = reachedExec.filter((r) => execReturns(r) > 0); return back.length ? Math.round((back.reduce((n, r) => n + execReturns(r), 0) / back.length) * 10) / 10 : null })(), gap: reachedExec.some((r) => execReturns(r) > 0) ? undefined : 'لم يُعِد المدير التنفيذي أي مشروع بعد · يُحسب من إعاداته المسجّلة.', better: 'down', target: null },
@@ -467,7 +471,7 @@ return [
     source: 'doc',
     kpis: [
       { no: 1, name: 'نسبة المشاريع المعروضة ضمن المدة المحددة', how: `عدد المشاريع التي عرضت ضمن المدة المستهدفة ÷ إجمالي المشاريع المحالة × 100%. والمدة ${countNoun(Math.round((ESC_LIMITS['approval.board'] ?? 504) / 24), NOUN.day)} من آلية التصعيد.`, unit: 'pct', ...ratio(boardOnTime.length, boardItems.length), gap: boardItems.length ? undefined : 'لا مشروع عُرض على المجلس في جلسة مسجّلة بعد.', better: 'up', target: null, to: ROUTES.board },
-      { no: 2, name: 'متوسط مدة إصدار قرار اللجنة', how: 'متوسط الزمن من تاريخ انعقاد الاجتماع حتى اعتماد القرار في النظام.', unit: 'days', value: (() => { const m = decisionLag('board'); return m === null ? null : Math.round(m) })(), gap: decisionLag('board') === null ? 'لا جلسة للمجلس صدر فيها قرار بعد · يُحسب من تاريخ الجلسة وتاريخ القرار.' : undefined, better: 'down', target: null, to: ROUTES.board },
+      { no: 2, name: 'متوسط مدة إصدار قرار المجلس', how: 'متوسط الزمن من تاريخ انعقاد الاجتماع حتى اعتماد القرار في النظام.', unit: 'days', value: (() => { const m = decisionLag('board'); return m === null ? null : Math.round(m) })(), gap: decisionLag('board') === null ? 'لا جلسة للمجلس صدر فيها قرار بعد · يُحسب من تاريخ الجلسة وتاريخ القرار.' : undefined, better: 'down', target: null, to: ROUTES.board },
       { no: 3, name: 'نسبة المشاريع التي صدر قرار بشأنها من أول عرض', how: 'عدد المشاريع التي تم البت فيها من أول اجتماع ÷ إجمالي المشاريع المعروضة × 100%.', unit: 'pct', ...ratio(boardFirst.ok, boardShown.length), better: 'up', target: null, derived: boardFirst.derived, to: ROUTES.board },
       { no: 4, name: 'نسبة المشاريع المرفوضة', how: 'عدد المشاريع المرفوضة ÷ إجمالي المشاريع المعروضة × 100%.', unit: 'pct', ...(() => { const pool = decided.filter((r) => j(r)?.decidedBy === 'مجلس الأمناء'); return ratio(countOf(pool, (r) => r.supportStatus === 'مرفوض'), pool.length) })(), better: 'down', target: null },
     ],
@@ -531,15 +535,16 @@ return [
     id: 'BPD-011',
     key: 'bpd-011',
     no: 11,
-    title: 'مشاريع إحسان',
+    title: 'المشاريع المدعومة عبر جهات خارجية',
     owner: 'إدارة المنح',
-    source: 'paraphrase',
+    source: 'doc',
     kpis: [
-      { no: 1, name: 'نسبة إنجاز مشاريع إحسان', how: '(مشاريع إحسان المكتملة ÷ إجمالي مشاريع إحسان) × 100%.', unit: 'pct', ...ratio(ehClosed.length, eh.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=ehsan` },
-      { no: 2, name: 'نسبة المشاريع المتأخرة أو المتعثرة', how: '(مشاريع إحسان التي تجاوزت نهاية مدتها ولم تكتمل أو تعثّرت ÷ مشاريع إحسان الجاري تنفيذها) × 100%.', unit: 'pct', ...ratio(ehLate.length, ehRunning.length), better: 'down', target: null, to: `${ROUTES.escalation}?proc=ehsan` },
-      { no: 3, name: 'نسبة تنفيذ الدفعات', how: '(قيمة الدفعات المؤكدة ÷ إجمالي قيمة مشاريع إحسان) × 100%.', unit: 'pct', ...ratio(ehMoneyAll.reduce((n, m) => n + m.confirmed, 0), ehMoneyAll.reduce((n, m) => n + m.value, 0), 'riyal'), better: 'up', target: null, to: `${ROUTES.partners}?tab=finance` },
-      { no: 4, name: 'متوسط مدة الإغلاق', how: 'متوسط الأيام من اكتمال التنفيذ حتى إغلاق مشروع إحسان · من سجل الإغلاق في إحسان.', unit: 'days', value: (() => { const m = mean(ehCloseDays); return m === null ? null : Math.round(m) })(), gap: ehCloseDays.length ? undefined : 'لم يُغلق مشروع إحسان بعد · يُحسب من نهاية التنفيذ حتى الإغلاق.', better: 'down', target: null, to: `${ROUTES.partners}?tab=ehsan` },
-      { no: 5, name: 'الدفعات بانتظار المراجعة المالية', how: 'عدد دفعات المنصة التي لم تؤكدها الإدارة المالية بعد.', unit: 'count', value: EHSAN_PAYS.filter((x) => x.state === 'review').length, better: 'down', target: null, ours: true, to: `${ROUTES.partners}?tab=finance` },
+      /* Batch 8 · 17 Oct · 11.8 · the document's four indicators, over every external party (v3) */
+      { no: 1, name: 'نسبة المشاريع الخارجية المكتملة', how: '(عدد المشاريع الخارجية المكتملة ÷ إجمالي المشاريع الخارجية المعتمدة) × 100.', unit: 'pct', ...ratio(extDone.length, extApproved.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=external` },
+      { no: 2, name: 'نسبة تنفيذ الدفعات', how: '(إجمالي قيمة أذونات الصرف المنفذة ÷ إجمالي قيمة الدعم المعتمد للمشاريع الخارجية) × 100.', unit: 'pct', ...ratio(extPaid.reduce((n, r) => n + r.asked, 0), extApproved.reduce((n, p) => n + (p.amountGranted || 0), 0), 'riyal'), better: 'up', target: null, to: ROUTES.payments },
+      { no: 3, name: 'متوسط مدة إغلاق المشروع الخارجي', how: '(مجموع عدد الأيام من انتهاء المدة حتى اعتماد الإغلاق) ÷ عدد المشاريع الخارجية المغلقة.', unit: 'days', value: (() => { const m = mean(ehCloseDays); return m === null ? null : Math.round(m) })(), gap: ehCloseDays.length ? undefined : 'لم يُغلق مشروع خارجي بعد · يُحسب من نهاية المدة حتى اعتماد الإغلاق.', better: 'down', target: null, to: `${ROUTES.partners}?tab=external` },
+      { no: 4, name: 'نسبة الدفعات الموثقة بإثبات تحويل', how: '(عدد الدفعات التي أُرفق لها إثبات تحويل ÷ إجمالي الدفعات المنفذة) × 100.', unit: 'pct', ...ratio(extPaid.filter((r) => Boolean(r.transfer?.proof) || r.docs.some((d) => d.kind === 'إثبات التحويل')).length, extPaid.length), gap: extPaid.length ? undefined : 'لم تُنفَّذ دفعة لمشروع خارجي بعد.', better: 'up', target: null, to: ROUTES.payments },
+      { no: 5, name: 'نسبة المشاريع المتأخرة أو المتعثرة', how: '(المشاريع الخارجية التي تجاوزت نهاية مدتها ولم تُغلق أو تعثّرت ÷ الجاري تنفيذها) × 100%.', unit: 'pct', ...ratio(ehLate.length, ehRunning.length), better: 'down', target: null, ours: true, to: `${ROUTES.escalation}?proc=ehsan` },
     ],
   },
   /* Project plans · section 12.8 (batch 5 · 8 Oct)

@@ -17,7 +17,7 @@ import { REGIONS } from '@/data/mock/taxonomy'
 import { PartnerCard, PayList, Said } from './parts'
 import { ReconcileTab } from './Reconcile'
 import { AnalysisCard } from '@/components/assistant'
-import { readFiles } from '@/data/shared/ai'
+import { externalDigest, readFiles } from '@/data/shared/ai'
 import { useState } from 'react'
 
 /* Strategic partners · one hub for BPD-011 and BPD-013.
@@ -237,8 +237,11 @@ function ExternalTab() {
   }
   const flip = <K extends 'party' | 'project'>(k: K, f: (K extends 'party' ? ExtPartyField : ExtProjectField)) =>
     setCfg((c) => ({ ...c, [k]: (c[k] as string[]).includes(f) ? (c[k] as string[]).filter((x) => x !== f) : [...(c[k] as string[]), f] }))
+  const digest = externalDigest(ehsanProjects())
   return (
     <>
+      {/* Batch 8 · 11.6.3 · a periodic digest over every external project */}
+      {digest && <AnalysisCard title="ملخص دوري" cta="حدّث الملخص" ask={false} onAsk={() => undefined} readings={[digest]} />}
       <Glass className="tblcard">
         <Head title="السجلات المرجعية للجهات الخارجية" meta={<span className="sub">لا حساب بوابة · لا مستخدم · لا ممثل تنفيذي</span>} />
         <div className="tblwrap">

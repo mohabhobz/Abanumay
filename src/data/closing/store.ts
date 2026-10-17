@@ -1,3 +1,4 @@
+import { liveClock } from '@/data/stageClock'
 import { setPfCloseRules } from '@/data/partners/store'
 import { hasLegacy } from '@/data/payments/legacy'
 import { SEED_AT, actDay, asOf } from '@/data/clock'
@@ -470,7 +471,7 @@ function applyOp(o: Op) {
       c.finance = financeFor(c)
       /* Verifier · 16 Oct · a stop already approved the actual spend on its case (10.9.3) · the closing starts from it */
       if (o.verified !== undefined) c.finance = { ...c.finance, verified: o.verified, verifiedBy: 'النظام', verifiedAt: day(o.at) }
-      closeRows.push(c)
+      closeRows.push(liveClock(c, 'hoursInStage', true))
       log(c, o.by, `${o.basis === 'stopped' ? 'إنشاء متطلبات إغلاق مشروع موقوف (تقرير مالي تنفيذي وأدلة المخرجات)' : 'إنشاء طلب التقرير الختامي'} · ${o.basis === 'stopped' ? 'بقرار إيقاف' : o.basis === 'complete' ? 'اكتملت الأنشطة' : 'انتهت مدة التنفيذ'} · ${c.mediaRequired ? 'الاتفاقية تطلب النشر الإعلامي' : 'لا نشر إعلامي في الاتفاقية'} · وأُبلغت الجهة بالمتطلبات`, o.at)
       closeStage(c, 'طلب التقرير الختامي')
       notify([p.entityName], 'طلب التقرير الختامي لمشروعك', p.name, `${ROUTES.closing(c.id)}?as=entity`)

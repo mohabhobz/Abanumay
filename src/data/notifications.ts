@@ -147,9 +147,9 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
   for (const al of escAlertsFor(user.name, user.role ?? '')) {
     const it = al.item
     out.push({
-      id: al.level === 'late' ? `late-${it.id}` : `stall-${it.id}`, kind: 'late',
-      title: al.level === 'late' ? `تجاوز مدته · ${it.title}` : `متعثر · ${it.title}`,
-      context: `${it.stage} · ${countOf(it.over, NOUN.day)} فوق المدة${al.level === 'stalled' ? ` · تنبيه يومي ${al.day}` : ''} · ${it.owner}`,
+      id: al.level === 'near' ? `near-${it.id}` : al.level === 'late' ? `late-${it.id}` : `stall-${it.id}`, kind: al.level === 'near' ? 'info' : 'late',
+      title: al.level === 'near' ? `يقترب موعده · ${it.title}` : al.level === 'late' ? `تجاوز مدته · ${it.title}` : `متعثر · ${it.title}`,
+      context: al.level === 'near' ? `${it.stage} · تنتهي مدته ${it.dueOn} · ${it.owner}` : `${it.stage} · ${countOf(it.over, NOUN.day)} فوق المدة${al.level === 'stalled' ? ` · تنبيه يومي ${al.day}` : ''} · ${it.owner}`,
       at: al.at, to: it.href, from: { type: 'system' },
     })
   }

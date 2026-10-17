@@ -1,3 +1,4 @@
+import { liveClock } from '@/data/stageClock'
 import { CFG, hydrate } from '@/lib/config'
 import type {
   ActivityState, PlanActivity, PlanChange, PlanPhase, PlanRow, PlanStage,
@@ -839,7 +840,7 @@ export const openPlan = (projectId: string, drafter: 'entity' | 'supervisor'): s
 
   const pr = projectRows.find((x) => x.id === projectId)
   const id = `PL-${1030 + planRows.length}`
-  planRows.push({
+  planRows.push(liveClock({
     id,
     projectId,
     projectName: pr?.name ?? projectId,
@@ -853,6 +854,6 @@ export const openPlan = (projectId: string, drafter: 'entity' | 'supervisor'): s
     openedAt: actDay(),
     hoursInStage: 0,
     changes: [],
-  })
+  }, 'hoursInStage', true))
   return id
 }

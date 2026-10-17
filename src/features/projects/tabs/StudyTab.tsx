@@ -349,7 +349,7 @@ function OrgOutputsCard({ row }: { row: ProjectRow }) {
   const { role, user } = useRole()
   const f = flowOf(row.id)
   const holder = holderOf(row)
-  const can = (role.key === 'supervisor' && holder === 'supervisor' && row.owner === user.name) || (role.key === 'grants-manager' && holder === 'manager')
+  const can = (role.key === 'supervisor' && holder === 'supervisor' && (row.owner === user.name || Boolean(user.behalf))) || (role.key === 'grants-manager' && holder === 'manager')
   const [edit, setEdit] = useState(false)
   const [d, setD] = useState<Output[]>(() => orgOutputsOf(row.id))
   const [bad, setBad] = useState<string[]>([])

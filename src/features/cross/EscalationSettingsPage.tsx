@@ -38,7 +38,7 @@ const CHNL = (Object.keys(CHANNEL_SAY) as EscChannel[]).map((k) => ({ value: k, 
 
 type Days = Record<string, number>
 const allDays = (): Days => Object.fromEntries(ESC_PROCS.flatMap((p) => escStages(p.key)).map((s) => [s.key, Math.round(s.hours / 24)]))
-const rulesNow = (): EscRules => structuredClone({ stuck: ESC_RULES.stuck, late: ESC_RULES.late, stalled: ESC_RULES.stalled })
+const rulesNow = (): EscRules => structuredClone({ stuck: ESC_RULES.stuck, late: ESC_RULES.late, stalled: ESC_RULES.stalled, near: ESC_RULES.near })
 
 function persistLimits(): void {
   persist(CFG.agrLimits, AGR_LIMIT)
@@ -77,6 +77,8 @@ export default function EscalationSettingsPage() {
   }
   const discard = () => { setDays(savedDays); setD(saved) }
   const putLevel = (k: 'late' | 'stalled', v: Partial<EscLevel>) => setD((x) => ({ ...x, [k]: { ...x[k], ...v } }))
+  const nearNow = d.near ?? { days: 0, to: ['owner'] as EscRecipient[], channels: ['app'] as EscChannel[] }
+  const putNear = (v: Partial<EscLevel & { days: number }>) => setD((x) => ({ ...x, near: { ...nearNow, ...v } }))
   const putStuck = (p: EscProc, v: number | null) => setD((x) => ({ ...x, stuck: { ...x.stuck, [p]: v } }))
 
   const level = (k: 'late' | 'stalled', title: string, note: string) => (
@@ -116,6 +118,19 @@ export default function EscalationSettingsPage() {
           <Glass>
             <Head title="مستويات التنبيه" meta={<span className="sub">داخل النظام إلزامي في المستويين</span>} />
             <ul className="cfglist">
+              {/* Batch 8 · 0.def.21 · «التنبيه» · a reminder before the limit, not only after it */}
+              <li className="itk-sup">
+                <span className="cfgl"><b>تذكير قبل انتهاء المدة</b><span className="sub">تنبيه مرة واحدة حين يقترب الطلب من حدّ مرحلته · صفر يوقفه</span></span>
+                <span className="pc-sp" />
+                {admin ? (
+                  <span className="rowf gp-2">
+                    <CfgNum value={nearNow.days} min={0} label="أيام التذكير قبل انتهاء المدة" suffix="يوم عمل" onChange={(x) => putNear({ days: Math.max(0, x) })} />
+                    <MultiSelect label="مستلمو التذكير" all="اختر المستلمين" values={nearNow.to} options={RCPT} onChange={(v) => putNear({ to: v.length ? (v as EscRecipient[]) : nearNow.to })} />
+                  </span>
+                ) : (
+                  <span className="sub">{nearNow.days ? <>قبل <Num>{nearNow.days}</Num> يوم عمل · {nearNow.to.map((r) => RECIPIENT_SAY[r]).join('، ')}</> : 'متوقف'}</span>
+                )}
+              </li>
               {level('late', 'المستوى الأول · متأخر', 'تنبيه مرة واحدة يوم تجاوز مدة المرحلة')}
               {level('stalled', 'المستوى الثاني · متعثر', 'تنبيه يومي متكرر حتى اتخاذ الإجراء أو انتقال المرحلة')}
             </ul>
