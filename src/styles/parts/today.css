@@ -5,7 +5,7 @@
 .tday{gap:var(--sp-6)}
 
 /* ── Top row · the next step (wide) beside progress ── */
-.tday-top{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--sp-6);align-items:stretch}
+.tday-top{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:var(--sp-6);align-items:stretch}
 .tday-step{font-family:var(--fd);font-weight:600;font-size:var(--fs-4)}
 
 .tday .tday-focus{display:flex;flex-direction:column;gap:var(--sp-5);padding:var(--sp-7);
@@ -19,13 +19,7 @@
 .tday-line rect{rx:var(--sp-2)}
 .tday-line .gb-line-f{transform-box:fill-box;transform-origin:right center;animation:mo-bar var(--mo-5) var(--ease-data) both}
 .tday-tick-l{fill:var(--ch-warn);rx:1px}
-.tday-knob{fill:var(--g-pop);stroke:var(--ch-1);stroke-width:4;animation:mo-fade var(--mo-4) var(--ease-out) var(--mo-4) both}
-.tday-track-l{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-5);color:var(--t2);font-size:var(--fs-2)}
-.tday-track-l>span{display:inline-flex;align-items:center;gap:var(--sp-2)}
-.tday-track-l i{inline-size:var(--sp-4);block-size:var(--sp-2);border-radius:var(--rp);background:var(--ctl-line)}
-.tday-track-l .s-done{background:var(--ch-2)}
-.tday-track-l .s-now{background:var(--ch-1);block-size:var(--sp-3)}
-.tday-track-l .s-late{background:var(--ch-warn)}
+.tday-knob{fill:var(--lime);stroke:var(--g-pop);stroke-width:4;animation:mo-fade var(--mo-4) var(--ease-out) var(--mo-4) both}
 
 .tday-focus-b{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--sp-5)}
 .tday-ic{display:grid;place-items:center;inline-size:var(--sp-11);block-size:var(--sp-11);border-radius:var(--r1);
@@ -42,7 +36,8 @@
 .tday-pill.sm{font-size:var(--fs-1)}
 .tday-acts{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2)}
 .tday-go{padding-inline:var(--sp-7)}
-.tday-then{margin:0;color:var(--t2)}
+.tday-then{margin:0;color:var(--t2);font-size:var(--fs-2)}
+.tday-then b{font-weight:600;color:var(--t1)}
 
 /* Progress · a big count, a bar, seven days · words, no score */
 .tday .tday-prog{display:flex;flex-direction:column;gap:var(--sp-4);padding:var(--sp-7)}
@@ -62,7 +57,7 @@
 .tday-donel{display:flex;flex-direction:column;gap:var(--sp-2)}
 .tday-donel ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
 .tday-donel li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--sp-3)}
-.tday-donel a{display:block;min-width:0;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tday-donel a{display:block;font-size:var(--fs-2);min-width:0;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tday-tick{display:grid;place-items:center;inline-size:var(--sp-6);block-size:var(--sp-6);border-radius:var(--r-dot);background:var(--ch-2);color:var(--on-ch-2)}
 .tday-wn{color:var(--t2)}
 .tday-big{display:flex;align-items:baseline;gap:var(--sp-3)}
@@ -190,3 +185,7 @@
 .tday-leaves>span:nth-child(2){animation-delay:calc(var(--mo-4) + var(--mo-stagger))}
 .tday-leaves>span:nth-child(3){animation-delay:calc(var(--mo-4) + var(--mo-stagger) * 2)}
 .tday-bar>i{transform-origin:right center;animation:mo-bar var(--mo-5) var(--ease-data) var(--mo-3) both}
+
+/* 18 Oct · «ما أنجزته اليوم» read as a log, not as headings · regular weight, the small step */
+.tday-donel a b{font-weight:500}
+.tday-donel a .sub{font-size:var(--fs-1)}

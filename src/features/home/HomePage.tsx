@@ -113,12 +113,7 @@ export default function HomePage() {
                 {/* The day's line · the same gradient bar the old top cards carried · filled up to where I
                     am, a knob on «now», a tick for each late item still ahead */}
                 <DayLine share={total ? day.progress.today / total : 0} late={ordered.map((x, k) => (x.lane === 'due' ? (day.progress.today + k + 0.5) / total : -1)).filter((x) => x > 0)} />
-                <div className="tday-track-l">
-                  <span><i className="s-done" aria-hidden="true" />أنجزت <b className="num">{day.progress.today}</b></span>
-                  <span><i className="s-now" aria-hidden="true" />أنت هنا</span>
-                  <span><i className="s-late" aria-hidden="true" />متأخر <b className="num">{ordered.filter((x) => x.lane === 'due').length}</b></span>
-                  <span><i className="s-next" aria-hidden="true" />بقي <b className="num">{ordered.length - 1}</b> بعده</span>
-                </div>
+                {after && <p className="tday-then">بعده: <b>{after.title}</b> <span className="sub">· {after.queue}</span></p>}
 
                 <div className="tday-focus-b">
                   <span className="tday-ic" aria-hidden="true"><Icon name={icons[next.icon]} /></span>
@@ -140,7 +135,6 @@ export default function HomePage() {
                     </button>
                   </div>
                 </div>
-                {after && <p className="tday-then">بعده: <b>{after.title}</b> <span className="sub">· {after.queue}</span></p>}
               </Glass>
             )}
 
