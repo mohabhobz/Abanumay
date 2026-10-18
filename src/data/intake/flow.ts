@@ -13,7 +13,7 @@ import { replayLateRelinks } from '@/data/entities/store'
 import { CYCLE, TODAY, addWorkingDays, workDaysOf, type Distribution } from './cycle'
 import { CRITERIA, studyScore } from './criteria'
 import { nextSeq, type Stamped } from '@/data/opclock'
-import { dayOf, liveDay, stampNow, timeOf } from '@/data/clock'
+import { liveDay, localDayOf, stampNow, timeOf } from '@/data/clock'
 import { CONSULTANTS, consultantByKey } from './consultants'
 import { isEnded } from '@/data/status'
 import { installStatus } from '@/data/status'
@@ -209,7 +209,7 @@ const row = (id: string) => projectRows.find((p) => p.id === id)
 
 /* The running op's stamp · the dates an action writes are its own, the same on every replay */
 let OP_AT: string | undefined
-const opDay = () => dayOf(OP_AT ?? stampNow())
+const opDay = () => localDayOf(OP_AT ?? stampNow())
 const NOW_TIME = () => {
   return timeOf(OP_AT)
 }

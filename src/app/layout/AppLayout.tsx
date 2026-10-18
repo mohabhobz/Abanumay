@@ -6,6 +6,7 @@ import { portalOf } from '@/app/entityAccess'
 import { AskDock, Background, MobileTop, NotificationBell, Rail } from '@/components/shell'
 import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
 import { BehalfBar } from '@/features/cross/Behalf'
+import { TodayReturn } from '@/features/home/TodayReturn'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useHashScroll } from '@/hooks/useHashScroll'
 import { ROUTES } from '@/app/routes'
@@ -114,6 +115,8 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
 
           {/* Batch 8 · 0.def.16 · the system admin's takeover, said on every screen */}
           {!entity && <BehalfBar />}
+          {/* 17 Oct · a record opened from «اليوم» · the way back, and the next item once it's done */}
+          {!entity && <TodayReturn />}
 
           <AssistantOverlay
             open={assistantOpen}

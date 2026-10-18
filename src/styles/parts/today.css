@@ -1,0 +1,67 @@
+/* 17 Oct · «اليوم» · the person's working day (client brief) · same identity as the rest: the cards
+   are .glass, the controls are the family's, no colour of its own · calm by construction: one
+   accent (the next step), the late items said in words with the warning ink, never a red wall */
+
+.tday-first{margin:0;padding:var(--sp-4) var(--sp-5);border-radius:var(--r1);background:var(--fl-2);line-height:var(--lh-text);color:var(--t2)}
+.tday-g{align-items:start}
+
+/* The next step · the one card that leads */
+.tday-next{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-7);
+  transition:opacity var(--mo-2) var(--ease-std),transform var(--mo-2) var(--ease-std);animation:tday-in var(--mo-3) var(--ease-std)}
+.tday-next.out{opacity:0;transform:translateY(calc(var(--sp-3) * -1))}
+@keyframes tday-in{from{opacity:0;transform:translateY(var(--sp-3))}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tday-next{animation:none;transition:none}.tday-next.out{transform:none}}
+.tday-next-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--sp-2)}
+.tday-q{display:inline-flex;align-items:center;gap:var(--sp-2);color:var(--t2);font-size:var(--fs-2)}
+.tday-next-t{margin:0;font-family:var(--fd);font-size:var(--fs-7);font-weight:600;line-height:var(--lh-head)}
+.tday-next p{margin:0}
+.tday-next-m{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-top:var(--sp-2)}
+.tday-why{font-weight:500}
+.tday-next-a{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);margin-top:var(--sp-4)}
+.tday-then{margin-top:var(--sp-2)}
+
+/* The stages as personal queues · a filter over the lanes */
+.tday-chips{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+
+/* The lanes · short ordered lists */
+.tday-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.tday-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;align-items:center;gap:var(--sp-3);
+  min-block-size:var(--h-md);padding:var(--sp-3) var(--sp-2);border-radius:var(--r1)}
+.tday-row+.tday-row{box-shadow:inset 0 1px 0 0 var(--edge-hair)}
+.tday-row.clickable{cursor:pointer}
+.tday-row.clickable:hover{background:var(--fl-2)}
+.tday-row>svg{color:var(--t3)}
+.tday-rt{display:flex;flex-direction:column;min-width:0}
+.tday-rn{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tday-rs{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tday-rw{font-size:var(--fs-2);white-space:nowrap}
+.tday-go{color:var(--t3)}
+.tday-more{margin-top:var(--sp-2)}
+
+/* Progress · a bar that fills and plain words · no chart */
+.tday-prog{display:flex;flex-direction:column;gap:var(--sp-2)}
+.tday-prog p{margin:0}
+.tday-bar{block-size:var(--sp-2);border-radius:var(--rp);background:var(--fl-3);overflow:hidden}
+.tday-bar>i{display:block;block-size:100%;border-radius:var(--rp);background:var(--ch-2);transition:inline-size var(--mo-3) var(--ease-std)}
+.tday-pl{font-size:var(--fs-4)}
+.tday-sh{margin:var(--sp-3) 0 0;font-size:var(--fs-3);font-weight:600}
+.tday-moved{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+.tday-moved a{color:var(--t1);line-height:var(--lh-text)}
+
+/* The finish line · its own calm screen */
+.tday-done{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--sp-3);padding:var(--sp-9) var(--sp-7)}
+.tday-done-t{margin:0;font-family:var(--fd);font-size:var(--fs-7);font-weight:600}
+.tday-done p{margin:0;max-width:52ch}
+
+/* The bar on a record opened from «اليوم» · a floating surface (it covers) · top, centred */
+.tday-ret{position:fixed;z-index:30;inset-block-start:var(--sp-4);inset-inline:0;margin-inline:auto;inline-size:max-content;
+  max-inline-size:calc(100% - var(--sp-8));display:flex;align-items:center;gap:var(--sp-3);
+  padding:var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-2);padding-inline-start:var(--sp-5);
+  border-radius:var(--r2);background:var(--g-pop);backdrop-filter:var(--mat-3);box-shadow:var(--el-2)}
+.tday-ret>span{display:inline-flex;align-items:center;gap:var(--sp-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:720px){.tday-row{grid-template-columns:auto minmax(0,1fr) auto}.tday-row>.tday-rw,.tday-row>.tday-go{display:none}}
+.tday-late{color:var(--warn-ink)}
+.nfilter{display:flex;flex-wrap:wrap;gap:var(--sp-2);padding-inline:var(--sp-5);padding-block:0 var(--sp-3)}
+.tday-done>.badge{align-self:center;margin-inline:auto}
+/* .glass sets display:flow-root after these rules · the day cards keep their own flex column */
+.tday .tday-done,.tday .tday-next,.tday .tday-prog{display:flex}

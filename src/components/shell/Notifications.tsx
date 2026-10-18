@@ -4,7 +4,24 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
 import { DateText, EntityMark, Face, Icon, icons } from '@/components/ui'
-import { buildNotes, entityNotes, isRead, markRead, NOTE_GROUPS, useReadSet, type NoteFrom } from '@/data/notifications'
+import { buildNotes, entityNotes, isRead, markRead, NOTE_GROUPS, useReadSet, type Note, type NoteFrom } from '@/data/notifications'
+import { readRole } from '@/data/roles'
+import { todayFor } from '@/features/home/today'
+import { TODAY } from '@/data/clock'
+
+/* 17 Oct · client · the bell stays as it is, with the important cases added and a filter on the
+   important and the late · the important cases are the person's own items past or at their limit
+   (from «اليوم»), said once each, beside what the bell already held */
+type NoteFilter = 'all' | 'important' | 'late'
+const IMPORTANT = /أُعيد|إعادة|رفض|تصعيد|متأخر|تجاوز|يقترب|يحتاج قرارك|بانتظار قرارك|عاجل/
+const isLate = (n: Note) => n.kind === 'late' || /متأخر|تجاوز|يقترب/.test(`${n.title} ${n.context}`)
+const isImportant = (n: Note) => n.kind === 'decide' || isLate(n) || IMPORTANT.test(`${n.title} ${n.context}`)
+function dueNotes(name: string, have: Note[]): Note[] {
+  const seen = new Set(have.filter((n) => n.kind === 'late').map((n) => n.to))
+  return todayFor(readRole(), name).byLane.due
+    .filter((i) => !seen.has(i.to))
+    .map((i): Note => ({ id: `td-${i.queueKey}-${i.id}`, kind: 'late', title: i.title, context: `${i.queue} · ${i.why}`, at: TODAY, to: i.to, from: { type: 'system' } }))
+}
 
 /** The card's leading mark: sender photo, entity/project logo, or the Abanumay mark for the system. */
 function NoteMark({ from }: { from: NoteFrom }) {
@@ -34,8 +51,15 @@ export function NotificationBell({ user, place = 'rail', entity }: { user: { nam
   const flowV = useFlow()
   /* Batch 3 · an entity session has its own bell · what the foundation sent the entity (payments,
      closing, agreements, its registration), the same list as «إشعاراتك» on its portal */
+  const notes = useMemo(() => {
+    if (entity) return entityNotes(entity)
+    const base = buildNotes(user)
+    return [...base, ...dueNotes(user.name, base)]
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const notes = useMemo(() => (entity ? entityNotes(entity) : buildNotes(user)), [user, entity, flowV])
+  }, [user, entity, flowV])
+  const [filter, setFilter] = useState<NoteFilter>('all')
+  const pass = (n: Note) => filter === 'all' || (filter === 'late' ? isLate(n) : isImportant(n))
+  const counts = { all: notes.length, important: notes.filter(isImportant).length, late: notes.filter(isLate).length }
   const read = useReadSet()
   const unread = notes.filter((n) => !isRead(n, read)).length
   const bell = useRef<HTMLButtonElement>(null)
@@ -113,9 +137,18 @@ export function NotificationBell({ user, place = 'rail', entity }: { user: { nam
               </button>
             </header>
 
+            <div className="nfilter" role="group" aria-label="تصفية الإشعارات">
+              {([['all', 'الكل'], ['important', 'المهم'], ['late', 'المتأخر']] as const).map(([k, l]) => (
+                <button key={k} type="button" className={`fchip${filter === k ? ' on' : ''}`} aria-pressed={filter === k} onClick={() => setFilter(k)}>
+                  {l} <span className="num">{counts[k]}</span>
+                </button>
+              ))}
+            </div>
+
             <div className="ndrawer-b">
+              {notes.filter(pass).length === 0 && <p className="sub cnote">لا إشعارات في هذا التصنيف.</p>}
               {NOTE_GROUPS.map((g) => {
-                const rows = notes.filter((n) => n.kind === g.kind)
+                const rows = notes.filter((n) => n.kind === g.kind && pass(n))
                 if (!rows.length) return null
                 return (
                   <section key={g.kind} className="ngroup" aria-labelledby={`ng-${g.kind}`}>

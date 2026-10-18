@@ -59,6 +59,8 @@ export interface InboxItem {
   /** The stage's limit in days · 0 when the stage has none. Feeds the SLA colour of the trend lines */
   limit: number
   to: string
+  /** 17 Oct · it came back to this seat for a change or a completion · its own lane on «اليوم» */
+  returned?: boolean
 }
 
 export interface InboxQueue {
@@ -119,7 +121,7 @@ const agreementsAt = (stages: string[], owner?: string, holderKey?: RoleKey): In
     .filter((a) => (holderKey ? agrHolder(a) === holderKey || (holderKey === 'supervisor' && a.kind === 'ورقية' && agrHolder(a) === 'entity') : stages.includes(a.stage)) && (!owner || a.owner === owner))
     .map((a) => ({
       id: a.id, code: a.id.toUpperCase(), title: a.projectName, sub: a.entityName, amount: a.amount,
-      days: d(a.hoursInStage), late: late(a.hoursInStage, AGR_LIMIT[a.stage]), limit: d(AGR_LIMIT[a.stage]), region: regionOf(a.projectId), city: cityOf(a.projectId), to: ROUTES.agreement(a.id),
+      days: d(a.hoursInStage), late: late(a.hoursInStage, AGR_LIMIT[a.stage]), limit: d(AGR_LIMIT[a.stage]), region: regionOf(a.projectId), city: cityOf(a.projectId), to: ROUTES.agreement(a.id), returned: a.stage === 'returned',
     }))
     .sort(byWait),
 })
@@ -309,12 +311,12 @@ const budgets = (role: RoleKey): InboxQueue => {
     items: [
       ...docs.map((b) => ({
         id: b.id, code: b.id, title: docTitle(b), sub: BUDGET_STATE_SAY[b.state], amount: b.total,
-        days: ago(eventsOf(b.id)[0]?.at), late: false, limit: 0, to: ROUTES.budgetDoc(b.id),
+        days: ago(eventsOf(b.id)[0]?.at), late: false, limit: 0, to: ROUTES.budgetDoc(b.id), returned: b.state === 'returned',
       })),
       ...reqs.map((r) => ({
         id: r.id, code: r.id, title: `${REQ_KIND_SAY[r.kind]} · ${docTitle(allBudgets.find((d) => d.id === r.docId)!)}`,
         sub: REQ_STATE_SAY[r.state], amount: r.amount,
-        days: ago(r.events[0]?.at), late: false, limit: 0, to: ROUTES.budgetOp(r.id),
+        days: ago(r.events[0]?.at), late: false, limit: 0, to: ROUTES.budgetOp(r.id), returned: r.state === 'returned',
       })),
     ],
   }
@@ -325,7 +327,7 @@ const relocations = (role: RoleKey): InboxQueue => ({
   key: 'relocations', label: 'طلبات إعادة التسكين', note: role === 'ceo' ? 'تنتظر اعتمادك · تُنفَّذ تلقائيًا عند الاعتماد' : 'أُعيدت إليك للتعديل', icon: 'budget', all: ROUTES.budgetOps,
   items: relocationsWaiting(role).map((r) => ({
     id: r.id, code: r.id, title: r.projectName, sub: RELOC_SAY[r.state], amount: movingOf(r.from, r.scope),
-    days: 0, late: false, limit: 0, region: regionOf(r.projectId), to: ROUTES.projectTab(r.projectId, 'approval'),
+    days: 0, late: false, limit: 0, region: regionOf(r.projectId), to: ROUTES.projectTab(r.projectId, 'approval'), returned: role !== 'ceo',
   })),
 })
 const uncovered = (): InboxQueue => ({

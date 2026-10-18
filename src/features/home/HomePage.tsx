@@ -1,251 +1,218 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Money } from '@/components/ui'
-import { BoardBody } from '@/features/board/BoardBody'
-import { ImpactPanel } from '@/features/reports/ImpactPanel'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { DateText, Glass, Head, Icon, icons, Money, Tag } from '@/components/ui'
+import { AbLeaf } from '@/components/soul'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
-import { NOUN, nounAfter, pct } from '@/lib/format'
-import { TONE } from '@/lib/tone'
-import { Columns, Spark, StackBar } from '@/components/charts'
-import {
-  amountTrend, backlogTrend, complianceTrend, inboxFor, oldestTrend, TREND_DAYS,
-  type InboxItem, type InboxQueue, type TrendPoint,
-} from './inbox'
-import { budgetOf, myProjects, topEntities } from './mine'
+import { onToast, toast } from '@/data/feedback'
+import { rowGo } from '@/lib/rowGo'
+import { LANE_NOTE, LANE_SAY, todayFor, type Lane, type TodayItem } from './today'
+import { setTrail } from './trail'
 
-/* Today · what waits on me, per role.
+/* «اليوم» · the person's working day on one screen (client brief, 17 Oct).
 
-   The home page used to be one combined dashboard for every role (now `HomeOverview`, a category
-   in Reports at ROUTES.overview). The client asked for the opposite: each role opens on the requests that sit
-   with it, in the order its work arrives. So the page is the role's queues, nothing else:
+   The previous page answered «how is the foundation?» · it is kept whole as the first tab of
+   Reports («تقارير اليوم», `features/reports/TodayReport.tsx`) and backed up as files. This one
+   answers «what do I do now?»:
 
-     four numbers with their trend: how much waits, how much of it is within its limit, what it
-     is worth, and how old the oldest is
-     the queues as one plain list in the client's order · a row opens the module's list filtered to
-     that stage (the same count, so nothing disappears on the way)
-     then the same work drawn: where it is on the map, how old it is, and where the money sits.
+     one next step, with one action · finishing it brings up the one after
+     the rest in four quiet lanes · due today · returned to me · waiting on me · coming
+     my progress · what I did today and this week, and what moved after my step
+     a real finish line · «أنجزتَ كل شيء لليوم» has its own calm screen
 
-   Switching the profile from the account menu swaps the whole page, which is how the three views
-   are reviewed in the prototype. */
+   Each role sees its own work only. The foundation's numbers (the board, the impact, the map)
+   left the page · the executive and the grants manager reach them from «نظرة المؤسسة» in the
+   header. No points, no badges, no streaks, no confetti: the reward is the list emptying. */
+
+const LANES: Lane[] = ['due', 'returned', 'waiting']
+const SHOW = 5
 
 export default function HomePage() {
   const { role, user } = useRole()
-  const queues = useMemo(() => inboxFor(role.key, user.name), [role.key, user.name])
-  /* Phone only (F-5) · the drawn analysis stays folded until asked for */
-  const [more, setMore] = useState(false)
+  const navigate = useNavigate()
+  /* Every action anywhere answers with a toast · the day is re-read on it */
+  const [tick, setTick] = useState(0)
+  useEffect(() => onToast(() => setTick((t) => t + 1)), [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const day = useMemo(() => todayFor(role.key, user.name), [role.key, user.name, tick])
+  const [later, setLater] = useState<string[]>([])
+  const [queue, setQueue] = useState<string>('')
+  const [leaving, setLeaving] = useState(false)
+  const [open, setOpen] = useState<Record<string, boolean>>({})
 
-  const all = queues.flatMap((q) => q.items)
-  const late = all.filter((i) => i.late)
-  const busy = queues.filter((q) => q.items.length > 0)
-  const oldest = [...all].sort((a, b) => b.days - a.days)[0]
-  const lateQ = [...queues].sort((a, b) => lateOf(b) - lateOf(a))[0]
-  const money = all.reduce((a, i) => a + (i.amount ?? 0), 0)
-  const richQ = [...queues].sort((a, b) => moneyOf(b) - moneyOf(a))[0]
-  const within = all.length ? Math.round(((all.length - late.length) / all.length) * 100) : 100
-  const verb = role.key === 'supervisor' ? 'توصيتك' : role.key === 'grants-manager' ? 'اعتمادك' : 'قرارك'
+  const key = (i: TodayItem) => `${i.queueKey}|${i.id}`
+  /* «لاحقًا» moves an item to the end of this visit's order · it stays in its lane */
+  const ordered = [...day.items.filter((i) => !later.includes(key(i))), ...day.items.filter((i) => later.includes(key(i)))]
+  const next = ordered[0]
+  const after = ordered[1]
+  const done = day.items.length === 0
+  const lateN = day.byLane.due.length
+  const overview = role.key === 'ceo' || role.key === 'grants-manager'
 
-  /* E-6 · E-8 · the money and the partners of the role's own projects */
-  const mine = useMemo(() => myProjects(role.key, user.name), [role.key, user.name])
-  const bud = useMemo(() => budgetOf(mine), [mine])
-  const tops = useMemo(() => topEntities(mine, 3), [mine])
-  const budParts = [
-    { key: 'spent', label: 'المصروف', value: bud.spent, color: 'var(--ch-1)' },
-    { key: 'reserved', label: 'المحجوز', value: bud.reserved, color: 'var(--ch-2)' },
-    { key: 'remaining', label: 'المتبقي', value: bud.remaining, color: 'var(--ch-4)' },
-  ]
-  const scope = role.key === 'supervisor' ? 'مشاريعك' : role.key === 'grants-manager' ? 'مشاريع فريقك' : 'المحفظة'
+  const go = (i: TodayItem) => { setTrail({ id: i.id, queueKey: i.queueKey, title: i.title, to: i.to }); navigate(i.to) }
+  const finish = (i: TodayItem) => {
+    if (!i.quick) return go(i)
+    const out = i.quick.run()
+    if (out.length) { toast(`لم يُنفّذ «${i.quick.label}» · ${out[0]}`, 'warn'); return }
+    /* The card leaves, then the next one comes up · the toast names it */
+    setLeaving(true)
+    window.setTimeout(() => {
+      setLeaving(false)
+      toast(after ? `تم · التالي: ${after.title}` : 'تم · أنجزت كل ما ينتظرك', 'ok')
+    }, 260)
+  }
+  /* The next step isn't repeated in its lane below it */
+  const shown = (l: Lane) => day.byLane[l].filter((i) => (!queue || i.queueKey === queue) && !(next && key(i) === key(next)))
 
-  const tiles: Tile[] = [
-    {
-      k: `بانتظار ${verb}`,
-      v: String(all.length),
-      note: `في ${busy.length} قوائم`,
-      to: (busy[0] ?? queues[0]).all,
-      trend: backlogTrend(all),
-    },
-    {
-      k: 'ضمن المدة',
-      v: pct(within),
-      note: late.length ? `${late.length} متأخرة` : 'لا متأخر',
-      to: lateQ.all,
-      trend: complianceTrend(all),
-    },
-    {
-      k: 'القيمة المنتظرة',
-      v: (money / 1_000_000).toFixed(1),
-      note: 'مليون ريال',
-      to: richQ.all,
-      trend: amountTrend(all),
-    },
-    {
-      k: 'أقدم انتظار',
-      v: String(oldest?.days ?? 0),
-      note: oldest ? nounAfter(oldest.days, NOUN.day) : 'لا شيء ينتظر',
-      to: oldest ? oldest.to : queues[0].all,
-      trend: oldestTrend(all),
-    },
-  ]
+  const hour = new Date().getHours()
+  const greet = hour < 12 ? 'صباح الخير' : 'مساء الخير'
+  const first = user.name.split(' ')[0]
 
   return (
-    <AppLayout assistantContext={assistFor.home(user.name, all.length, late.length)}>
+    <AppLayout assistantContext={assistFor.home(user.name, day.items.length, lateN)}>
       <div className="viewstack">
-        <div className="screen col pt">
-          {/* One screen, no scroll on desktop: the fold takes the view's height, the strip takes
-              its own, and the work row gets the rest · each card shrinks its chart into the space
-              instead of the page growing. On narrow screens it falls back to a normal stack. */}
-          {/* The foundation board, the same for every role (client, 6 Oct) · then the work */}
-          <BoardBody />
-          {/* Client, 8 Oct · who the grants reached and where · for every role */}
-          <ImpactPanel />
-
-          <section className="ibx-fold">
-            <div className={`ibx-main${more ? ' more' : ''}`}>
-              <div className="kpis">
-                {tiles.map((t) => (
-                  <Link key={t.k} to={t.to} className="kpi glass has-spk">
-                    <TileBody {...t} />
-                  </Link>
-                ))}
-              </div>
-
-              <div className="ibx-more">
-                <button type="button" className="btn btn-2" aria-expanded={more} onClick={() => setMore((x) => !x)}>
-                  <Icon name={icons.chart} size="sm" />
-                  {more ? 'أخفِ الأعمار والميزانية' : 'اعرض الأعمار والميزانية والجهات'}
-                </button>
-              </div>
-
-              <div className="ibx-side">
-                <Glass className="ibx-age">
-                  <Head title="أعمار الطلبات" meta={<span className="sub">بالأيام</span>} />
-                  <Columns cols={ageing(all)} />
-                </Glass>
-                <Glass className="ibx-bud">
-                  <Head
-                    title={`ميزانية ${scope}`}
-                    meta={<span className="sub"><Money sm>{bud.granted}</Money></span>}
-                  />
-                  <StackBar parts={budParts} total={bud.granted} />
-                  {/* One line, not a stacked legend: the card shares the column with two others */}
-                  <ul className="ibx-budl">
-                    {budParts.map((x) => (
-                      <li key={x.key}>
-                        <i style={{ background: x.color }} aria-hidden="true" />
-                        {x.label} <b className="num">{(x.value / 1_000_000).toFixed(1)} م</b>
-                      </li>
-                    ))}
-                  </ul>
-                </Glass>
-                <Glass className="ibx-entcard">
-                  <Head title="أعلى جهاتك دعمًا" meta={<span className="sub">{yearSpan(tops)}</span>} />
-                  <ul className="ibx-ents">
-                    {tops.map((e) => (
-                      <li key={e.id}>
-                        <Link to={ROUTES.entity(e.id)} title={`${e.projects} ${nounAfter(e.projects, NOUN.project)} · ${e.years.join('، ')}`}>
-                          <span className="ibx-tn">{e.name}</span>
-                          <span className="ibx-tm">{e.projects} {nounAfter(e.projects, NOUN.project)}</span>
-                          <Money sm>{e.total}</Money>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </Glass>
-              </div>
-
-              <QueueList queues={queues} />
+        <div className="screen col tday">
+          <header>
+            <div>
+              <h1 className="ptitle">يومك</h1>
+              <p className="sub mt-1">
+                {greet}، {first} ·{' '}
+                {done ? 'لا شيء ينتظرك الآن' : <>أمامك <span className="num">{day.items.length}</span> {day.items.length === 1 ? 'بند' : 'بنود'}{lateN ? <> · <span className="num">{lateN}</span> مستحقة اليوم</> : ' · كلها ضمن مددها'} · مرتّبة لك</>}
+              </p>
             </div>
-          </section>
+            {overview && (
+              <Link className="btn btn-2" to={ROUTES.reports}>
+                <Icon name={icons.chart} size="sm" />
+                نظرة المؤسسة
+              </Link>
+            )}
+          </header>
+
+          {day.progress.first && !done && (
+            <p className="tday-first">هذا يومك · رتّبنا لك ما ينتظرك حسب أقربه لنهاية مدته · ابدأ بالبطاقة الأولى، وكلما أنجزت بندًا ظهر الذي يليه.</p>
+          )}
+
+          <div className="g2 tday-g">
+            <div className="col">
+              {done ? (
+                <Glass className="tday-done">
+                  <span className="badge badge-44"><AbLeaf className="aispark" /></span>
+                  <h2 className="tday-done-t">أنجزتَ كل شيء لليوم</h2>
+                  <p className="sub">
+                    {day.progress.today
+                      ? <>أنجزت <span className="num">{day.progress.today}</span> {day.progress.today === 1 ? 'إجراءً' : 'إجراءات'} اليوم · لا شيء آخر ينتظرك.</>
+                      : 'لا شيء ينتظرك الآن · ما يصل إليك يظهر هنا أولًا.'}
+                  </p>
+                  {day.progress.moved.length > 0 && (
+                    <ul className="tday-moved">
+                      {day.progress.moved.map((m) => <li key={m.href}><Link to={m.href}>{m.text}</Link></li>)}
+                    </ul>
+                  )}
+                </Glass>
+              ) : next && (
+                <Glass className={`tday-next${leaving ? ' out' : ''}`} key={key(next)}>
+                  <div className="tday-next-h">
+                    <span className="tday-q"><Icon name={icons[next.icon]} size="sm" />{next.queue}</span>
+                    <Tag tone={next.lane === 'due' ? 'warn' : next.lane === 'returned' ? 'teal' : 'mute'}>{LANE_SAY[next.lane]}</Tag>
+                  </div>
+                  <span className="sub">ابدأ بهذا</span>
+                  <h2 className="tday-next-t">{next.title}</h2>
+                  <p className="sub">{next.sub}{next.code ? ` · ${next.code}` : ''}</p>
+                  <div className="tday-next-m">
+                    <span className={next.lane === 'due' ? 'tday-why tday-late' : 'tday-why'}>{next.why}</span>
+                    {next.amount ? <Money sm>{next.amount}</Money> : null}
+                  </div>
+                  <div className="tday-next-a">
+                    <button type="button" className="btn btn-p" onClick={() => finish(next)}>{next.quick ? next.quick.label : 'افتح وأنجزه'}</button>
+                    {next.quick && <button type="button" className="btn btn-2" onClick={() => go(next)}>افتح السجل</button>}
+                    {after && <button type="button" className="btn btn-ghost" onClick={() => setLater((x) => [...x, key(next)])}>لاحقًا</button>}
+                  </div>
+                  {after && <p className="sub tday-then">ثم: {after.title} · {after.queue}</p>}
+                </Glass>
+              )}
+
+              {!done && day.queues.length > 1 && (
+                <div className="tday-chips" role="group" aria-label="بنودك حسب المرحلة">
+                  <button type="button" className={`fchip${!queue ? ' on' : ''}`} aria-pressed={!queue} onClick={() => setQueue('')}>
+                    الكل <span className="num">{day.items.length}</span>
+                  </button>
+                  {day.queues.map((q) => (
+                    <button key={q.key} type="button" className={`fchip${queue === q.key ? ' on' : ''}`} aria-pressed={queue === q.key} onClick={() => setQueue(queue === q.key ? '' : q.key)}>
+                      {q.label} <span className="num">{q.count}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {LANES.map((l) => {
+                const rows = shown(l)
+                if (!rows.length) return null
+                const all = open[l]
+                return (
+                  <Glass key={l} className="tday-lane">
+                    <Head title={<>{LANE_SAY[l]} <span className="num sub">{rows.length}</span></>} meta={<span className="sub">{LANE_NOTE[l]}</span>} />
+                    <ul className="tday-list">
+                      {(all ? rows : rows.slice(0, SHOW)).map((i) => <Row key={key(i)} i={i} go={go} />)}
+                    </ul>
+                    {rows.length > SHOW && (
+                      <button type="button" className="btn btn-ghost btn-sm tday-more" onClick={() => setOpen((o) => ({ ...o, [l]: !all }))}>
+                        {all ? 'اعرض أقل' : `اعرض الكل (${rows.length})`}
+                      </button>
+                    )}
+                  </Glass>
+                )
+              })}
+            </div>
+
+            <div className="col">
+              <Glass className="tday-prog">
+                <Head title="تقدّمك" meta={<span className="sub">من سجل التدقيق باسمك</span>} />
+                <div className="tday-bar" role="img" aria-label={`أنجزت ${day.progress.today} من ${day.progress.today + day.items.length} اليوم`}>
+                  <i style={{ inlineSize: `${Math.round(day.progress.share * 100)}%` }} />
+                </div>
+                <p className="tday-pl">
+                  أنجزت <b className="num">{day.progress.today}</b> اليوم
+                  {day.items.length ? <> · بقي <b className="num">{day.items.length}</b></> : ' · لا شيء متبقٍّ'}
+                </p>
+                <p className="sub">هذا الأسبوع: <span className="num">{day.progress.week}</span> {day.progress.week === 1 ? 'إجراء' : 'إجراءات'} باسمك</p>
+                <h3 className="tday-sh">تحرّك بفضلك</h3>
+                {day.progress.moved.length ? (
+                  <ul className="tday-moved">
+                    {day.progress.moved.map((m) => <li key={m.href}><Link to={m.href}>{m.text}</Link></li>)}
+                  </ul>
+                ) : <p className="sub">يظهر هنا ما يتقدّم بعد خطوتك: مشروع اعتُمد بعد توصيتك، دفعة صُرفت بعد إذنك، مشروع أُغلق.</p>}
+              </Glass>
+
+              {day.byLane.coming.length > 0 && (
+                <Glass className="tday-lane">
+                  <Head title={<>{LANE_SAY.coming} <span className="num sub">{day.byLane.coming.length}</span></>} meta={<span className="sub">{LANE_NOTE.coming}</span>} />
+                  <ul className="tday-list">
+                    {day.byLane.coming.slice(0, SHOW).map((i) => <Row key={key(i)} i={i} go={go} />)}
+                  </ul>
+                </Glass>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </AppLayout>
   )
 }
 
-interface Tile { k: string; v: string; note: string; to: string; trend: TrendPoint[] }
-
-const lateOf = (q: InboxQueue) => q.items.filter((i) => i.late).length
-const moneyOf = (q: InboxQueue) => q.items.reduce((a, i) => a + (i.amount ?? 0), 0)
-
-/** The years the ranking covers · it accumulates across years instead of resetting each one */
-const yearSpan = (rows: { years: string[] }[]): string => {
-  const ys = [...new Set(rows.flatMap((r) => r.years))].sort()
-  return ys.length > 1 ? `${ys[0]}–${ys[ys.length - 1]}` : ys[0] ?? 'كل السنوات'
-}
-
-/* Buckets on the decision boundaries the system already uses: a week is fine, two raise a question,
-   a month is a problem. A column turns amber or red by the share of its requests past their limit. */
-function ageing(items: InboxItem[]) {
-  const b = [
-    { key: '0–7', label: 'حتى 7', test: (d: number) => d <= 7 },
-    { key: '8–14', label: '8–14', test: (d: number) => d > 7 && d <= 14 },
-    { key: '15–30', label: '15–30', test: (d: number) => d > 14 && d <= 30 },
-    { key: '+30', label: 'أكثر من 30', test: (d: number) => d > 30 },
-  ]
-  return b.map((x) => {
-    const here = items.filter((i) => x.test(i.days))
-    const share = here.length ? here.filter((i) => i.late).length / here.length : 0
-    return {
-      key: x.key,
-      label: x.label,
-      value: here.length,
-      color: share >= 0.5 ? 'var(--ch-late)' : share > 0 ? 'var(--ch-warn)' : 'var(--ch-2)',
-    }
-  })
-}
-
-const SLA_SAY = { ok: 'ضمن الحدّ', near: 'قريب من الحدّ', late: 'فوق الحدّ' } as const
-
-function TileBody({ k, v, note, trend }: Tile) {
-  const first = trend[0]
-  const last = trend[trend.length - 1]
+/** One item · the whole row opens it, and the visit remembers where it came from */
+function Row({ i, go }: { i: TodayItem; go: (i: TodayItem) => void }) {
   return (
-    <>
-      <span className="kpi-h">
-        <span className="kpi-k">{k}</span>
-        <Icon name={icons.chevron} size="sm" className="kpi-go" />
+    <li {...rowGo(() => go(i), i.to, 'tday-row')}>
+      <Icon name={icons[i.icon]} size="sm" />
+      <span className="tday-rt">
+        <span className="tday-rn">{i.title}</span>
+        <span className="sub tday-rs">{i.queue} · {i.sub}</span>
       </span>
-      <span className="kpi-v num">{v}</span>
-      <span className="kpi-n">{note}</span>
-      <Spark
-        points={trend}
-        label={`${k} خلال آخر ${TREND_DAYS} يومًا: من ${first.value} إلى ${last.value} · اليوم ${SLA_SAY[last.sla]}`}
-      />
-    </>
-  )
-}
-
-/* The queues as one list · each row is the queue's door: it opens the module's list at the stage
-   that sits with this role. Empty queues stay in place (the order is the client's) but quiet. */
-function QueueList({ queues }: { queues: InboxQueue[] }) {
-  return (
-    <Glass className="ibx-listcard">
-      <Head title="قوائمك" meta={<span className="sub">بترتيب العمل</span>} />
-      <ul className="ibx-list">
-        {queues.map((q) => {
-          const n = q.items.length
-          const over = lateOf(q)
-          const old = Math.max(0, ...q.items.map((i) => i.days))
-          return (
-            <li key={q.key}>
-              <Link to={q.all} className={n === 0 ? 'none' : ''}>
-                <Icon name={icons[q.icon]} size="sm" />
-                <span className="ibx-l">
-                  <span className="ibx-lt">{q.label}</span>
-                  <span className="sub ibx-ln">
-                    {n === 0 ? 'لا شيء بانتظارك' : old > 0 ? `أقدمها ${old} ${nounAfter(old, NOUN.day)}` : q.note}
-                  </span>
-                </span>
-                {over > 0 && <span className={`tag ${TONE.late}`}>{over} فوق الحدّ</span>}
-                <b className="ibx-n num">{n}</b>
-                <Icon name={icons.chevron} size="sm" className="ibx-go" />
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </Glass>
+      <span className={i.lane === 'due' ? 'tday-rw tday-late' : 'tday-rw sub'}>{i.why}{i.date && <> <DateText>{i.date}</DateText></>}</span>
+      {i.amount ? <Money sm>{i.amount}</Money> : <span />}
+      <Icon name={icons.chevron} size="sm" className="tday-go" />
+    </li>
   )
 }

@@ -14,7 +14,7 @@ import { capOf, type ApprovalRow } from '@/data/approval'
 import { ACTS_FOR, HOLDER_LABEL, nextOf, type Holder } from '@/data/holders'
 import type { RoleKey } from '@/data/roles'
 import { TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
-import { dayOf, stampNow, timeOf } from '@/data/clock'
+import { dayOf, localDayOf, stampNow, timeOf } from '@/data/clock'
 import { flowOf, intakeLog, orgOutputsOf, outputLine, setOwnHold, setSupervisorAmountHook } from '@/data/intake/flow'
 import { nextSeq, replayTogether, type Stamped } from '@/data/opclock'
 import { expiredMandatory } from '@/data/entities/store'
@@ -214,7 +214,7 @@ export function finPosition(p: ProjectRow): FinPosition | undefined {
 }
 /* The running op's stamp · every date an action writes is its own time, replayed the same on reload */
 let OP_AT: string | undefined
-const opDay = () => dayOf(OP_AT ?? stampNow())
+const opDay = () => localDayOf(OP_AT ?? stampNow())
 let seq = 0
 const event = (id: string, e: { action: string; by: string; fields?: LogField[]; tone?: LogEvent['tone']; actor?: LogEvent['actor']; dept?: string; files?: string[]; at?: string }) => {
   const actor = e.actor ?? 'staff'
@@ -967,7 +967,7 @@ function makeBrief(p: ProjectRow, level: Holder, me: string): void {
   const f = appFlowOf(p.id)
   const at = stampNow()
   const brief: Brief = {
-    id: `br-${p.id}-${f.briefs.length + 1}-${level}`, level, at: dayOf(at), time: timeOf(at), by: me, amount: supportAmount(p), fin,
+    id: `br-${p.id}-${f.briefs.length + 1}-${level}`, level, at: localDayOf(at), time: timeOf(at), by: me, amount: supportAmount(p), fin,
     recs: f.recs.map((r) => ({ level: r.level, verdict: VERDICT_SAY[r.verdict], note: r.note, by: r.by, at: r.at })),
     orgOutputs: orgOutputsOf(p.id).map(outputLine),
     entityOutputs: (flowOf(p.id).entityOutputs ?? []).map(outputLine),

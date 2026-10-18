@@ -31,6 +31,14 @@ export const stampNow = (): string => new Date().toISOString()
 export const dayOf = (at?: string): string => (at ? at.slice(0, 10) : TODAY)
 
 /** The clock time of an action · «HH:MM» from its stamp, in the viewer's zone */
+/** 18 Oct · the local day of a stamp · the partner of `timeOf`, which reads local hours · a log row
+    that joined the UTC day to the local time read «17 Oct 00:05» for an action taken at 00:05 on the
+    18th, so near midnight it fell outside spans it sat in (the admin's takeover) */
+export const localDayOf = (at?: string): string => {
+  const d = at ? new Date(at) : new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export const timeOf = (at?: string): string => {
   const d = at ? new Date(at) : new Date()
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
