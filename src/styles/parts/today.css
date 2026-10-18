@@ -14,14 +14,12 @@
 @keyframes tday-in{from{opacity:0;transform:translateY(var(--sp-4))}to{opacity:1;transform:none}}
 .tday-focus-h{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-3)}
 
-/* The day's track · one segment per item (like a story bar) · done → now → what follows */
-.tday-track{display:flex;align-items:center;gap:var(--sp-1);block-size:var(--sp-5)}
-.tday-track>i{flex:1 1 0;min-inline-size:0;block-size:var(--sp-2);border-radius:var(--rp);background:var(--ctl-line);
-  transition:background var(--mo-2) var(--ease-std),block-size var(--mo-2) var(--ease-std)}
-.tday-track>i:hover{block-size:var(--sp-4)}
-.tday-track>.s-done{background:var(--ch-2)}
-.tday-track>.s-now{flex-grow:3;block-size:var(--sp-4);background:var(--ch-1);box-shadow:0 0 0 var(--sp-1) var(--fl-4)}
-.tday-track>.s-late{background:var(--ch-warn)}
+/* The day's line · the old top cards' gradient bar, thicker, with a knob on «now» */
+.tday-line{block-size:var(--sp-4);margin-block:var(--sp-2)}
+.tday-line rect{rx:var(--sp-2)}
+.tday-line .gb-line-f{transform-box:fill-box;transform-origin:right center;animation:mo-bar var(--mo-5) var(--ease-data) both}
+.tday-tick-l{fill:var(--ch-warn);rx:1px}
+.tday-knob{fill:var(--g-pop);stroke:var(--ch-1);stroke-width:4;animation:mo-fade var(--mo-4) var(--ease-out) var(--mo-4) both}
 .tday-track-l{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-5);color:var(--t2);font-size:var(--fs-2)}
 .tday-track-l>span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .tday-track-l i{inline-size:var(--sp-4);block-size:var(--sp-2);border-radius:var(--rp);background:var(--ctl-line)}
@@ -82,6 +80,8 @@
 .tday-week>.on i{background:var(--ch-1)}
 .tday-week small{color:var(--t3);font-size:var(--fs-1)}
 .tday-week>.on small{color:var(--t1);font-weight:600}
+.tday-week>.fut i{background:transparent;box-shadow:inset 0 0 0 1px var(--ctl-line);block-size:var(--sp-1)}
+.tday-week>.fut small{opacity:.6}
 .tday-moved{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:auto;padding-block-start:var(--sp-4);box-shadow:inset 0 1px 0 0 var(--edge-hair)}
 .tday-sh{font-weight:600}
 .tday-moved ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
@@ -96,8 +96,10 @@
 .tday-done-t{margin:0;font-family:var(--fd);font-size:var(--fs-8);font-weight:700}
 .tday-done p{margin:0;max-width:52ch}
 
-/* The stages as personal queues */
+/* The stages as personal queues · the selected one is the page's accent, unmistakable */
 .tday-chips{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.tday-chips .fchip.on{background:var(--ch-1);color:var(--on-ch-1);box-shadow:var(--el-1)}
+.tday-chips .fchip.on .num,.tday-chips .fchip.on svg{color:var(--on-ch-1)}
 
 /* ── The board · four columns ── */
 .tday-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-5);align-items:start}
@@ -113,7 +115,18 @@
 .tday-card{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-4);border-radius:var(--r1);
   background:var(--fl-4);box-shadow:inset 0 0 0 1px var(--edge-hair);transition:transform var(--mo-2) var(--ease-std),box-shadow var(--mo-2) var(--ease-std)}
 .tday-card.clickable{cursor:pointer}
-.tday-card.clickable:hover{transform:translateY(calc(var(--sp-1) * -1));box-shadow:inset 0 0 0 1px var(--ctl-line-h),var(--el-1)}
+.tday-card{position:relative}
+.tday-card.clickable:hover{transform:translateY(calc(var(--sp-2) * -1));background:var(--g-pop);box-shadow:inset 0 0 0 1px var(--ctl-line-h),var(--el-2)}
+.tday-card-q svg{transition:transform var(--mo-2) var(--ease-std),color var(--mo-2) var(--ease-std)}
+.tday-card.clickable:hover .tday-card-q{color:var(--ch-1)}
+.tday-card.clickable:hover .tday-card-q svg{transform:scale(1.25) rotate(-8deg);color:var(--ch-1)}
+.tday-card-go{position:absolute;inset-block-start:var(--sp-4);inset-inline-end:var(--sp-4);color:var(--ch-1);opacity:0;
+  transform:translateX(var(--sp-2));transition:opacity var(--mo-2) var(--ease-std),transform var(--mo-2) var(--ease-std)}
+.tday-card.clickable:hover .tday-card-go{opacity:1;transform:none}
+.tday-ic{transition:transform var(--mo-3) var(--ease-out)}
+.tday-focus:hover .tday-ic{transform:translateY(calc(var(--sp-1) * -1)) rotate(-6deg)}
+.tday-leaves>span{transition:transform var(--mo-2) var(--ease-std),background var(--mo-3) var(--ease-std),color var(--mo-3) var(--ease-std)}
+.tday-leaves>span:hover{transform:translateY(calc(var(--sp-1) * -1))}
 .tday-card-q{display:inline-flex;align-items:center;gap:var(--sp-2);color:var(--t3);font-size:var(--fs-1)}
 .tday-card-t{font-weight:600;line-height:var(--lh-ui);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tday-card-f{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
@@ -123,7 +136,7 @@
 .tday-late{color:var(--warn-ink)}
 
 @media (prefers-reduced-motion:reduce){
-  .tday .tday-focus,.tday-card,.tday-track>i,.tday-leaves>span{animation:none;transition:none}
+  .tday .tday-focus,.tday-card,.tday-leaves>span{animation:none;transition:none}
   .tday .tday-focus.out{transform:none}
 }
 @media (max-width:1180px){.tday-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -155,3 +168,25 @@
 .tday-wk-c .tday-week{block-size:calc(var(--sp-11) + var(--sp-4))}
 .tday-wk-c p{margin:0}
 @media (max-width:900px){.tday-wk-c{grid-template-columns:minmax(0,1fr)}}
+
+/* 18 Oct · the page arrives the way the old one did · each block rises in, one after the other, the
+   bars and leaves grow · every visit to «اليوم» (it is the home page), within the motion scale, so a
+   reduced-motion setting makes it still (--mo-rise and --mo-k fall to 0) */
+.tday>*{animation:mo-enter var(--mo-4) var(--ease-out) both}
+.tday>*:nth-child(2){animation-delay:var(--mo-stagger)}
+.tday>*:nth-child(3){animation-delay:calc(var(--mo-stagger) * 2)}
+.tday>*:nth-child(4){animation-delay:calc(var(--mo-stagger) * 3)}
+.tday-top>*:nth-child(2){animation:mo-enter var(--mo-4) var(--ease-out) var(--mo-stagger) both}
+.tday-board>.tday-col{animation:mo-enter var(--mo-4) var(--ease-out) both}
+.tday-board>.tday-col:nth-child(2){animation-delay:var(--mo-stagger)}
+.tday-board>.tday-col:nth-child(3){animation-delay:calc(var(--mo-stagger) * 2)}
+.tday-board>.tday-col:nth-child(4){animation-delay:calc(var(--mo-stagger) * 3)}
+.tday-cards>li{animation:mo-enter var(--mo-3) var(--ease-out) calc(var(--mo-stagger) * 3) both}
+.tday-cards>li:nth-child(2){animation-delay:calc(var(--mo-stagger) * 4)}
+.tday-cards>li:nth-child(3){animation-delay:calc(var(--mo-stagger) * 5)}
+.tday-cards>li:nth-child(4){animation-delay:calc(var(--mo-stagger) * 6)}
+.tday-week i{transform-origin:50% 100%;animation:mo-col var(--mo-5) var(--ease-data) var(--mo-3) both}
+.tday-leaves>span.on,.tday-leaves>span.half{animation:mo-stamp var(--mo-4) var(--ease-out) var(--mo-4) both}
+.tday-leaves>span:nth-child(2){animation-delay:calc(var(--mo-4) + var(--mo-stagger))}
+.tday-leaves>span:nth-child(3){animation-delay:calc(var(--mo-4) + var(--mo-stagger) * 2)}
+.tday-bar>i{transform-origin:right center;animation:mo-bar var(--mo-5) var(--ease-data) var(--mo-3) both}

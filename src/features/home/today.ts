@@ -185,7 +185,7 @@ export interface Progress {
   /** never acted in the system · the first-visit line */
   first: boolean
   /** my actions on each of the last seven days, oldest first · the week strip */
-  days: { day: string; n: number }[]
+  days: { day: string; n: number; future?: boolean }[]
   /** what I did today, newest first · «ما أنجزته اليوم» */
   done: { action: string; ref: string; href: string; at: string }[]
 }
@@ -219,11 +219,15 @@ export function progressFor(me: string, open: number): Progress {
   const todayRows = mine.filter((r) => day10(r.at) === now)
   const today = todayRows.length
   const weekRows = mine.filter((r) => day10(r.at) >= weekFrom && day10(r.at) <= now)
+  /* The calendar week, Sunday first (client, 18 Oct · «the week starts on Sunday, on the right») ·
+     the days still ahead are drawn empty */
+  const dow = new Date(`${now}T12:00:00Z`).getUTCDay()
+  const sunday = Date.parse(`${now}T12:00:00Z`) - dow * 864e5
   const days = Array.from({ length: 7 }, (_, k) => {
-    const day = new Date(Date.parse(`${now}T12:00:00Z`) - (6 - k) * 864e5).toISOString().slice(0, 10)
+    const day = new Date(sunday + k * 864e5).toISOString().slice(0, 10)
     const n = mine.filter((r) => day10(r.at) === day).length
     /* the days before today carry the demo's usual week where nothing is recorded */
-    return { day, n: k < 6 && !n && morning.length ? WEEK_SHAPE[k]! : n }
+    return { day, n: day < now && !n && morning.length ? WEEK_SHAPE[k % WEEK_SHAPE.length]! : n, future: day > now }
   })
   return {
     today,

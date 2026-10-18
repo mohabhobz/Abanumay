@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { DateText, Glass, Icon, icons, Money } from '@/components/ui'
 import { AbLeaf, HeroSuccess, IdentityBanner } from '@/components/soul'
@@ -26,7 +26,6 @@ import { setTrail } from './trail'
 const COLS: Lane[] = ['due', 'returned', 'waiting', 'coming']
 const SHOW = 4
 const CHIPS = 6
-const TRACK = 40
 
 const TONE_OF: Record<Lane, string> = { due: 'warn', returned: 'teal', waiting: 'mute', coming: 'mute' }
 
@@ -71,6 +70,7 @@ export default function HomePage() {
   const first = user.name.split(' ')[0]
   /* the busiest stages first · the rest one press away, so the row stays one line */
   const qs = [...day.queues].sort((a, b) => b.count - a.count || b.late - a.late)
+  const todayIso = [...day.progress.days].reverse().find((d) => !d.future)?.day ?? ''
   const weekMax = Math.max(1, ...day.progress.days.map((d) => d.n))
 
   return (
@@ -110,17 +110,12 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                {/* The day's track · one segment per item · done · now · what follows (late ones amber) */}
-                <div className="tday-track" role="img" aria-label={`أنجزت ${day.progress.today} · الآن البند ${day.progress.today + 1} · بقي ${ordered.length - 1} بعده`}>
-                  {Array.from({ length: Math.min(day.progress.today, TRACK) }, (_, k) => <i key={`d${k}`} className="s-done" title="أُنجز اليوم" />)}
-                  <i className="s-now" title={`الآن: ${next.title}`} />
-                  {ordered.slice(1, Math.max(1, TRACK - day.progress.today)).map((i) => (
-                    <i key={key(i)} className={i.lane === 'due' ? 's-late' : 's-next'} title={`${i.title} · ${i.why}`} />
-                  ))}
-                </div>
+                {/* The day's line · the same gradient bar the old top cards carried · filled up to where I
+                    am, a knob on «now», a tick for each late item still ahead */}
+                <DayLine share={total ? day.progress.today / total : 0} late={ordered.map((x, k) => (x.lane === 'due' ? (day.progress.today + k + 0.5) / total : -1)).filter((x) => x > 0)} />
                 <div className="tday-track-l">
                   <span><i className="s-done" aria-hidden="true" />أنجزت <b className="num">{day.progress.today}</b></span>
-                  <span><i className="s-now" aria-hidden="true" />الآن</span>
+                  <span><i className="s-now" aria-hidden="true" />أنت هنا</span>
                   <span><i className="s-late" aria-hidden="true" />متأخر <b className="num">{ordered.filter((x) => x.lane === 'due').length}</b></span>
                   <span><i className="s-next" aria-hidden="true" />بقي <b className="num">{ordered.length - 1}</b> بعده</span>
                 </div>
@@ -155,8 +150,8 @@ export default function HomePage() {
                 <div className="tday-wk-c">
                   <span className="tday-step">أسبوعك</span>
                 <div className="tday-week" role="img" aria-label={`إجراءاتك هذا الأسبوع: ${day.progress.week}`}>
-                  {day.progress.days.map((d, k) => (
-                    <span key={d.day} className={k === 6 ? 'on' : undefined} title={`${d.n} ${d.n === 1 ? 'إجراء' : 'إجراءات'}`}>
+                  {day.progress.days.map((d) => (
+                    <span key={d.day} className={d.day === todayIso ? 'on' : d.future ? 'fut' : undefined} title={d.future ? 'لم يأتِ بعد' : `${d.n} ${d.n === 1 ? 'إجراء' : 'إجراءات'}`}>
                       {d.n > 0 && <small className="num tday-wn">{d.n}</small>}
                       <i className={`wk-${Math.round((d.n / weekMax) * 4)}`} />
                       <small>{DAY_SHORT[new Date(`${d.day}T12:00:00Z`).getUTCDay()]}</small>
@@ -274,6 +269,7 @@ function Card({ i, go }: { i: TodayItem; go: (i: TodayItem) => void }) {
   return (
     <li {...rowGo(() => go(i), i.to, 'tday-card')}>
       <span className="tday-card-q"><Icon name={icons[i.icon]} size="sm" />{i.queue}</span>
+      <Icon name={icons.chevronBack} size="sm" className="tday-card-go" />
       <span className="tday-card-t">{i.title}</span>
       <span className="tday-card-f">
         <span className={`tag ${TONE_OF[i.lane]} tday-pill sm`}>{i.why}{i.date && <> <DateText>{i.date}</DateText></>}</span>
@@ -293,3 +289,23 @@ function sayOf(n: number, share: number, done: boolean): string {
   return `بدأت يومك · ${n === 1 ? 'بند واحد' : `${n} بنود`} أُنجزت حتى الآن.`
 }
 
+
+/** The day's line · a track, a gradient fill up to «now» from the start side, a knob, late ticks */
+function DayLine({ share, late }: { share: number; late: number[] }) {
+  const uid = useId().replace(/:/g, '')
+  const f = Math.max(0.02, Math.min(1, share)) * 100
+  return (
+    <svg className="gb-line tday-line" aria-hidden="true">
+      <defs>
+        <linearGradient id={`${uid}-g`} x1="1" y1="0" x2="0" y2="0">
+          <stop offset="0" className="gb-st-a" />
+          <stop offset="1" className="gb-st-c" />
+        </linearGradient>
+      </defs>
+      <rect className="gb-line-t" width="100%" height="100%" />
+      <rect className="gb-line-f" x={`${100 - f}%`} width={`${f}%`} height="100%" fill={`url(#${uid}-g)`} />
+      {late.map((x, k) => <rect key={k} className="tday-tick-l" x={`${100 - x * 100}%`} y="25%" width="3" height="50%" />)}
+      <circle className="tday-knob" cx={`${100 - f}%`} cy="50%" r="11" />
+    </svg>
+  )
+}
