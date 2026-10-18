@@ -112,9 +112,11 @@
 .tday-card.clickable{cursor:pointer}
 .tday-card{position:relative}
 .tday-card.clickable:hover{transform:translateY(calc(var(--sp-2) * -1));background:var(--g-pop);box-shadow:inset 0 0 0 1px var(--ctl-line-h),var(--el-2)}
-.tday-card-q svg{transition:transform var(--mo-2) var(--ease-std),color var(--mo-2) var(--ease-std)}
 .tday-card.clickable:hover .tday-card-q{color:var(--ch-1)}
-.tday-card.clickable:hover .tday-card-q svg{transform:scale(1.2);color:var(--teal)}
+/* the system's own icon hover (index.css · svg.ic2): the teal, the pop, the small turn · a card row is
+   a <li>, not a link, so it's said here once */
+.tday-card.clickable:hover svg.ic2{color:var(--ic-hover);scale:var(--ic-pop,1.14);rotate:-6deg}
+@media (prefers-reduced-motion:reduce){.tday-card.clickable:hover svg.ic2{scale:none;rotate:none}}
 .tday-card-go{position:absolute;inset-block-start:var(--sp-4);inset-inline-end:var(--sp-4);color:var(--ch-1);opacity:0;
   transform:translateX(var(--sp-2));transition:opacity var(--mo-2) var(--ease-std),transform var(--mo-2) var(--ease-std)}
 .tday-card.clickable:hover .tday-card-go{opacity:1;transform:none}

@@ -263,7 +263,7 @@ function Card({ i, go }: { i: TodayItem; go: (i: TodayItem) => void }) {
   return (
     <li {...rowGo(() => go(i), i.to, 'tday-card')}>
       <span className="tday-card-q"><Icon name={icons[i.icon]} size="sm" />{i.queue}</span>
-      <Icon name={icons.chevronBack} size="sm" className="tday-card-go" />
+      <Icon name={icons.chevron} size="sm" className="tday-card-go" />
       <span className="tday-card-t">{i.title}</span>
       <span className="tday-card-f">
         <span className={`tag ${TONE_OF[i.lane]} tday-pill sm`}>{i.why}{i.date && <> <DateText>{i.date}</DateText></>}</span>
