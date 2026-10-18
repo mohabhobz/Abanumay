@@ -1,4 +1,5 @@
 import { NextStep } from '@/components/assistant/NextStep'
+import { extDocsOf, isExternalParty } from '@/data/partners/store'
 import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
 import { useMemo, useState } from 'react'
@@ -413,6 +414,21 @@ export default function RequestPage() {
                 </Glass>
               )}
               {/* Rule 10 - the agreement and its validity shown on the request. */}
+              {/* Re-audit 17 Oct · v3 · 11.2.6 · 11.4.1 · an external party's project has no internal
+                  agreement and no representative · it reads its external document instead */}
+              {isExternalParty(r.entityId) ? (
+                <Glass>
+                  <Head title="الوثيقة الخارجية" meta={<Tag tone="mute">جهة خارجية</Tag>} />
+                  <KV
+                    rows={[
+                      { k: 'الوثيقة', v: extDocsOf(r.projectId).length ? extDocsOf(r.projectId).map((d) => d.file).join(' · ') : <span className="sub">لم تُسجَّل وثيقة بعد</span> },
+                      { k: 'المشروع', v: <Link className="tlink" to={ROUTES.project(r.projectId)}><Mono>{r.projectId}</Mono></Link> },
+                      { k: 'الجهة', v: <Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link> },
+                    ]}
+                  />
+                  <p className="sub cnote">لا اتفاقية داخلية ولا ممثل مسجّل · سجل مرجعي داخلي بلا حساب بوابة</p>
+                </Glass>
+              ) : (
               <Glass>
                 <Head
                   title="الاتفاقية"
@@ -441,6 +457,7 @@ export default function RequestPage() {
                   ]}
                 />
               </Glass>
+              )}
 
               {/* Rules 11, 13 and 14 - the reserved amount, its impact, and the cap. */}
               <Glass>

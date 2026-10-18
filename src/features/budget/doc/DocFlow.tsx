@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { DateText, Glass, Head, Icon, Person, Steps, Tag, icons, type StepItem } from '@/components/ui'
 import { BUDGET_STATE_SAY, budgetTone, type BudgetState } from '@/data/mock/budgetTree'
 import { whoActs, type BudgetEvent } from '@/data/budget/store'
+import { noReviewStep } from '@/data/budget/rules'
 import { readDateTime } from '@/lib/format'
 
 /* The path a budget or an operation request walks (1.7.1) · prepared, the grants manager, finance,
@@ -20,15 +21,20 @@ const STOP_OF: Record<string, Stop> = {
 }
 
 export function FlowSteps({ state, last }: { state: string; last: string }) {
-  const at = ORDER.indexOf(STOP_OF[state] ?? 'prepare')
+  /* client 18 Oct · #6 · prepared → finance → the executive · the first review shows only when a
+     setting names it */
+  const skip = noReviewStep()
+  const order = ORDER.filter((s) => !(skip && s === 'manager'))
+  const stop = skip && state === 'submitted' ? 'finance' : STOP_OF[state] ?? 'prepare'
+  const at = order.indexOf(stop)
   const say: Record<Stop, string> = {
     /* v3 · 1.1.desc-4 · the reviewer and the approver as settings name them · finance is the department */
     prepare: 'الإعداد', manager: whoActs('submitted') || 'صاحب الصلاحية', finance: 'الإدارة المالية', exec: whoActs('exec') || 'المدير التنفيذي', done: last,
   }
-  const items: StepItem[] = ORDER.map((s, i) => ({
+  const items: StepItem[] = order.map((s, i) => ({
     label: say[s],
     state: state === 'rejected' && s === 'done' ? 'no'
-      : i < at || (s === 'done' && at === ORDER.length - 1) ? 'done'
+      : i < at || (s === 'done' && at === order.length - 1) ? 'done'
         : i === at ? 'now' : 'todo',
     note: s === 'prepare' && state === 'returned' ? 'معادة للاستكمال' : undefined,
   }))

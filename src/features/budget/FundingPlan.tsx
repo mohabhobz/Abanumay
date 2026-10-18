@@ -3,6 +3,7 @@ import { DateText, FieldSelect, Glass, Head, Icon, Money, Riyal, Tag, icons } fr
 import { isolate, nf } from '@/lib/format'
 import type { ProjectRow } from '@/types/domain'
 import { docTitle, fiscalYears, yearById } from '@/data/mock/budgetTree'
+import { BUDGET_RULES } from '@/data/budget/rules'
 import { payRequests, payStateLabel } from '@/data/mock/disbursements'
 import { TODAY } from '@/data/intake/cycle'
 import {
@@ -64,8 +65,9 @@ export function FundingPlanCard({ row, amount, editable, me }: {
   const pays = payRequests.filter((r) => r.projectId === row.id)
 
   const statusOf = (y: PlanYear) => {
-    /* Re-audit 7 Oct · a single-year project is held once, by the manager's link */
-    if (p.kind === 'single') return <Tag tone="mute">يُحجز عند ربط مدير المنح</Tag>
+    /* Re-audit 7 Oct · a single-year project is held once · re-audit 17 Oct: at the recommendation
+       to approve (or the final approval, by the budget rules), not at the link */
+    if (p.kind === 'single') return <Tag tone="mute">{BUDGET_RULES.holdAt === 'approval' ? 'يُحجز عند الاعتماد النهائي' : 'يُحجز عند التوصية بالموافقة'}</Tag>
     const s = saved?.years.find((x) => x.yearId === y.yearId)
     if (s?.heldAt) return <Tag tone="ok">محجوزة · <DateText>{s.heldAt}</DateText></Tag>
     if (s?.refused) return <Tag tone="no">تعذّر الحجز</Tag>

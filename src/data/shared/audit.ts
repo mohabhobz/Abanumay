@@ -98,14 +98,14 @@ function entityRowsLog(): AuditRow[] {
   }
   for (const r of regRows) {
     (r.events ?? []).forEach((ev, i) => out.push({
-      id: `rg-${r.id}-${i}`, module: 'entities', ref: `طلب تسجيل · ${r.name}`, href: ROUTES.entityRequest(r.id), action: ev.action, by: ev.by, at: ev.at.replace('T', ' ').slice(0, 16), note: ev.note, fields: ev.fields ?? [],
+      id: `rg-${r.id}-${i}`, module: 'entities', ref: `طلب تسجيل · ${r.name}`, href: ROUTES.entityRequest(r.id), action: ev.action, by: ev.by, at: ev.at, note: ev.note, fields: ev.fields ?? [],
     }))
   }
   /* v3 · 2.4.11 · a project moved to another entity · before, after, when, who */
   for (const r of RELINKS) {
     out.push({
       id: `rl-${r.id}`, module: 'projects', ref: r.projectName, href: ROUTES.project(r.projectId), action: 'تعديل الجهة المستفيدة المرتبطة بالمشروع', by: r.by,
-      at: r.at.replace('T', ' ').slice(0, 16), note: r.reason,
+      at: r.at, note: r.reason,
       fields: [{ k: 'الجهة السابقة', v: r.from.name }, { k: 'الجهة الجديدة', v: r.to.name },
         { k: 'السجلات المحدَّثة', v: `اتفاقيات ${r.touched.agreements} · طلبات صرف ${r.touched.payments} · خطط ${r.touched.plans} · إغلاق ${r.touched.closings}` }],
     })
@@ -114,13 +114,13 @@ function entityRowsLog(): AuditRow[] {
   for (const b of BATCHES) {
     out.push({
       id: `bt-${b.id}`, module: 'entities', ref: `دفعة ${b.id}`, href: `${ROUTES.audit}?q=${b.id}`, action: `${BATCH_SAY[b.act]} · إجراء جماعي`, by: b.by,
-      at: b.at.replace('T', ' ').slice(0, 16), note: b.note,
+      at: b.at, note: b.note,
       fields: [{ k: 'الدفعة', v: b.id }, { k: 'تم', v: String(b.ok.length) }, ...b.skipped.map((x) => ({ k: `مستثناة · ${x.reason}`, v: String(x.ids.length) })), ...(b.failed.length ? [{ k: 'تعذّر', v: String(b.failed.length) }] : [])],
     })
   }
   for (const u of UPD_ROWS) {
     u.events.forEach((ev, i) => out.push({
-      id: `up-${u.id}-${i}`, module: 'entities', ref: `تحديث بيانات · ${u.entityName}`, href: ROUTES.entityUpdateReview(u.id), action: ev.action, by: ev.by, at: ev.at.replace('T', ' ').slice(0, 16), note: ev.note, fields: ev.fields ?? [],
+      id: `up-${u.id}-${i}`, module: 'entities', ref: `تحديث بيانات · ${u.entityName}`, href: ROUTES.entityUpdateReview(u.id), action: ev.action, by: ev.by, at: ev.at, note: ev.note, fields: ev.fields ?? [],
     }))
   }
   return out
@@ -178,8 +178,20 @@ function closingExtra(): AuditRow[] {
   ]
 }
 
+/* Re-audit 17 Oct · one clock in the log · rows stamped as ISO (UTC: takeovers, settings, accounts,
+   plan decisions) were cut to «HH:MM» in UTC while the project rows carry local time, so a takeover
+   read 11:51 and the action inside it 14:52 in the same minute, and «T» and « » sorted apart.
+   Every ISO stamp is read in the viewer's zone as «YYYY-MM-DD HH:MM»; a local or date-only one stays. */
+const pad = (n: number) => String(n).padStart(2, '0')
+export function auditStamp(at: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}T/.test(at)) return at
+  const d = new Date(at)
+  if (Number.isNaN(d.getTime())) return at.replace('T', ' ').slice(0, 16)
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export function auditRows(): AuditRow[] {
-  return auditRaw().map(stamped)
+  return auditRaw().map(stamped).map((r) => ({ ...r, at: auditStamp(r.at) })).sort((a, b) => b.at.localeCompare(a.at))
 }
 
 function auditRaw(): AuditRow[] {
@@ -187,8 +199,8 @@ function auditRaw(): AuditRow[] {
   return [
     /* The takeovers themselves · who, which role, why, from and until (0.def.16) */
     ...BEHALF_LOG.flatMap((b): AuditRow[] => [
-      { id: `bh-${b.id}-s`, module: 'settings', ref: `تولّي · ${roleByKey(b.role).title}`, href: ROUTES.escalation, action: 'بدء تولّي إجراء نيابةً عن دور آخر', by: b.by, at: b.from.slice(0, 16), note: b.reason, fields: [{ k: 'الدور الأصلي', v: roleByKey(b.role).title }], role: roleByKey('admin').title },
-      ...(b.to ? [{ id: `bh-${b.id}-e`, module: 'settings' as const, ref: `تولّي · ${roleByKey(b.role).title}`, href: ROUTES.escalation, action: 'إنهاء التولّي', by: b.by, at: b.to.slice(0, 16), fields: [{ k: 'الدور الأصلي', v: roleByKey(b.role).title }], role: roleByKey('admin').title }] : []),
+      { id: `bh-${b.id}-s`, module: 'settings', ref: `تولّي · ${roleByKey(b.role).title}`, href: ROUTES.escalation, action: 'بدء تولّي إجراء نيابةً عن دور آخر', by: b.by, at: b.from, note: b.reason, fields: [{ k: 'الدور الأصلي', v: roleByKey(b.role).title }], role: roleByKey('admin').title },
+      ...(b.to ? [{ id: `bh-${b.id}-e`, module: 'settings' as const, ref: `تولّي · ${roleByKey(b.role).title}`, href: ROUTES.escalation, action: 'إنهاء التولّي', by: b.by, at: b.to, fields: [{ k: 'الدور الأصلي', v: roleByKey(b.role).title }], role: roleByKey('admin').title }] : []),
     ]),
     ...closingExtra(),
     ...budgetRows(),
@@ -210,7 +222,7 @@ function auditRaw(): AuditRow[] {
       /* A plan decision on a project without a plan is recorded on the project */
       const pid = e.planId.startsWith('project:') ? e.planId.slice(8) : ''
       const pr = pid ? projectRows.find((x) => x.id === pid) : undefined
-      return { id: `pl-${e.planId}-${PLAN_LOG.length - i}`, module: 'plans', ref: p ? `خطة ${p.projectName}` : pr ? `مشروع ${pr.name}` : e.planId, href: pid ? ROUTES.project(pid) : ROUTES.plan(e.planId), action: e.what, by: e.by, at: e.at.replace('T', ' ').slice(0, 16), note: e.note, fields: [] }
+      return { id: `pl-${e.planId}-${PLAN_LOG.length - i}`, module: 'plans', ref: p ? `خطة ${p.projectName}` : pr ? `مشروع ${pr.name}` : e.planId, href: pid ? ROUTES.project(pid) : ROUTES.plan(e.planId), action: e.what, by: e.by, at: e.at, note: e.note, fields: [] }
     }),
     ...PORTFOLIOS.flatMap((pf) => pf.log.map((e, i): AuditRow => ({
       id: `pf-${pf.id}-${i}`, module: 'partners', ref: pf.name, href: ROUTES.portfolio(pf.id), action: e.what, by: e.by, at: e.at, fields: [],
@@ -220,13 +232,13 @@ function auditRaw(): AuditRow[] {
       id: `eh-${projectId}-${i}`, module: 'partners', ref: projectRows.find((p) => p.id === projectId)?.name ?? projectId, href: ROUTES.project(projectId), action: e.kind, by: e.by, at: e.at, note: e.note, fields: [],
     }))),
     ...accountEvents().map((e, i): AuditRow => ({
-      id: `acct-${i}`, module: 'entities', ref: e.account, href: e.id.startsWith('e-') ? ROUTES.entity(e.id.slice(2)) : ROUTES.entityRequests, action: e.created ? 'إنشاء حساب في بوابة الجهات' : 'تعيين كلمة مرور جديدة للحساب', by: e.account, at: e.at.replace('T', ' ').slice(0, 16), fields: [],
+      id: `acct-${i}`, module: 'entities', ref: e.account, href: e.id.startsWith('e-') ? ROUTES.entity(e.id.slice(2)) : ROUTES.entityRequests, action: e.created ? 'إنشاء حساب في بوابة الجهات' : 'تعيين كلمة مرور جديدة للحساب', by: e.account, at: e.at, fields: [],
     })),
     ...perm.log.map((e): AuditRow => ({ id: `pm-${e.id}`, module: 'settings', ref: e.target, href: `${ROUTES.permissions}?tab=log`, action: e.change, by: e.by, at: e.at, fields: [] })),
     /* Re-audit 7 Oct · every save of the rules, with each value before and after · it used to be one
        line per page, overwritten by the next save. A save from before the history keeps its line */
     ...SETTINGS_LOG.map((e): AuditRow => ({
-      id: e.id, module: 'settings', ref: e.ref, href: e.href, action: `تعديل ${e.ref}`, by: e.by, at: e.at.replace('T', ' ').slice(0, 16),
+      id: e.id, module: 'settings', ref: e.ref, href: e.href, action: `تعديل ${e.ref}`, by: e.by, at: e.at,
       fields: e.changes.map((c) => ({ k: c.k, v: `${c.from} ← ${c.to}` })),
     })),
     ...(ESC_RULES.savedAt && !SETTINGS_LOG.some((e) => e.ref === 'آلية التصعيد') ? [{ id: 'esc-saved', module: 'settings' as const, ref: 'آلية التصعيد', href: ROUTES.escalationSettings, action: 'تعديل آلية التصعيد', by: ESC_RULES.savedBy ?? '', at: ESC_RULES.savedAt, fields: [] }] : []),

@@ -111,7 +111,7 @@ export const ROLES: Role[] = [
   },
   {
     /* A member of the executive committee and the board · reads the session's files before the
-       meeting and casts his own vote (6.2.3 · 7.2.3) */
+       meeting · client 18 Oct (decision 14): no votes in the system, the CEO records the decision */
     key: 'member',
     name: 'تركي الخنيزان',
     title: 'عضو اللجنة والمجلس',
@@ -202,7 +202,7 @@ export const STAFF_DIRECTORY: StaffAccount[] = [
   { login: 'abdulrahman', name: 'عبدالرحمن الهليّل', role: 'ceo' },
   { login: 'mohammed', name: 'محمد المطيري', role: 'finance' },
   { login: 'khalid', name: 'خالد السبيعي', role: 'comms' },
-  /* The committee and the board members who aren't staff seats · each votes from their own account */
+  /* The committee and the board members who aren't staff seats · each reads the session's files from their own account */
   { login: 'turki', name: 'تركي الخنيزان', role: 'member' },
   { login: 'sultan', name: 'سلطان العتيبي', role: 'member' },
   { login: 'nawaf', name: 'نواف الشهري', role: 'member' },

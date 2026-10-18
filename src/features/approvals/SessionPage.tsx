@@ -21,28 +21,24 @@ import { consultantByKey } from '@/data/intake/consultants'
 import { fundingIssues } from '@/data/budget/store'
 import { fitOf } from '@/data/intake/insight'
 import { meOf, readRole } from '@/data/roles'
-import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { FOLLOW_SAY, FOLLOW_TONE, followUp } from '@/data/approvals/followup'
 import {
   conflictOf, DEPT_SAY, SESSIONS, entityLimitBlock,
-  OUTCOME_SAY, VERDICT_SAY, VOTE_SAY, appFlowOf, attachMinutes, awaitingSession, carried, castVote, closeSession,
+  OUTCOME_SAY, VERDICT_SAY, appFlowOf, attachMinutes, awaitingSession, closeSession,
   decideInSession, holdLine, levelCap, mayRecord, sessionById, sessionItemBlockers, setAgenda, strategyOf,
-  useApprovals, voteTally, type Outcome, type Session, type SessionItem, type Vote, finPosition, supportAmount,
+  useApprovals, type Outcome, type Session, type SessionItem, finPosition, supportAmount,
 } from '@/data/approvals/store'
 import { FinKV } from '@/features/approvals/AmountCard'
 import { MoneyField } from '@/components/ui'
-import type { RoleKey } from '@/data/roles'
 
 /* One session of the executive committee or the board (6.2.2 – 6.2.9 · 7.2.2 – 7.2.11).
 
    The agenda's projects each carry their file for the members (the recommendations, the money and
-   its hold, the fit, the assistant's executive summary · advisory only), every member's vote, the
-   minutes, and the decision. The decision must match what the votes carry under the voting rule,
-   and needs the minutes; approving checks the cap and the per-entity limits, a referral sends it to
+   its hold, the fit, the assistant's executive summary · advisory only), the minutes, and the
+   decision. Client 18 Oct (decision 14): no per-member votes · the CEO records the body's final
+   decision, and it needs the minutes; approving checks the cap and the per-entity limits, a referral sends it to
    the board, a return names the stage it goes back to, a rejection releases the hold. Closing the
    session locks every decision in it (6.4.14 · 7.4.14); undecided items return to the queue. */
-
-const VOTES: Vote[] = ['approve', 'reject', 'return', 'abstain']
 
 export default function SessionPage() {
   const { id } = useParams()
@@ -82,7 +78,7 @@ export default function SessionPage() {
           <header>
             <div>
               <h1 className="ptitle">{s.title}</h1>
-              <p className="sub mt-1"><DateText>{s.date}</DateText> · <Num>{s.members.length}</Num> عضو · النصاب <Num>{APPROVAL_RULES.quorum}</Num> · {APPROVAL_RULES.voting === 'majority' ? 'بالأغلبية' : 'بالإجماع'}</p>
+              <p className="sub mt-1"><DateText>{s.date}</DateText> · <Num>{s.members.length}</Num> عضو · يسجّل المدير التنفيذي القرار النهائي مع المحضر</p>
             </div>
             <Tag tone={s.state === 'closed' ? 'mute' : 'warn'}>{s.state === 'closed' ? `مقفلة · ${s.closedAt ?? ''}` : 'مجدولة'}</Tag>
           </header>
@@ -96,14 +92,14 @@ export default function SessionPage() {
           {/* Cross · the meeting's aggregate report and the projects' relative priority (7.4 · 6.4) */}
           {(s.items.length > 0 || may) && <AnalysisCard title="تقرير الجلسة" cta="اقرأ الجلسة" readings={sessionReport(s)} ask={false} onAsk={() => undefined} suggest={may ? <NextStep s={nextPlan} exec={nextExec} /> : undefined} />}
           {s.items.length === 0 && <Glass><Empty title="جدول الأعمال فارغ." note="أضف المشاريع المحالة من القائمة أدناه." /></Glass>}
-          {s.items.map((it) => <Item key={it.projectId} s={s} it={it} may={may} me={me} role={role} />)}
+          {s.items.map((it) => <Item key={it.projectId} s={s} it={it} may={may} me={me} />)}
           {/* v3 · 13.2.6 · a portfolio on the same session · its votes, minutes and decision on its own page */}
           {PORTFOLIOS.some((pf) => pf.session?.id === s.id) && (
             <Glass>
-              <Head title="محافظ على جدول الجلسة" meta={<span className="sub">مسار الاعتماد نفسه · يُصوَّت عليها ويُسجَّل قرارها من صفحتها</span>} />
+              <Head title="محافظ على جدول الجلسة" meta={<span className="sub">مسار الاعتماد نفسه · يُسجَّل قرارها من صفحتها</span>} />
               <ul className="apv-list">
                 {PORTFOLIOS.filter((pf) => pf.session?.id === s.id).map((pf) => (
-                  <li key={pf.id}><span className="apv-t"><Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link><span className="sub">{nf.format(pf.total)} ريال · {Object.keys(pf.session!.votes).length} صوت</span></span></li>
+                  <li key={pf.id}><span className="apv-t"><Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link><span className="sub">{nf.format(pf.total)} ريال{pf.stage === 'committee' || pf.stage === 'board' ? ' · بانتظار القرار' : ' · القرار مسجّل'}</span></span></li>
                 ))}
               </ul>
             </Glass>
@@ -165,7 +161,7 @@ export default function SessionPage() {
   )
 }
 
-function Item({ s, it, may, me, role }: { s: Session; it: SessionItem; may: boolean; me: string; role: RoleKey }) {
+function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; me: string }) {
   const p = projectRows.find((x) => x.id === it.projectId)
   const [outcome, setOutcome] = useState<Outcome | ''>('')
   const [target, setTarget] = useState<Holder>('exec')
@@ -179,8 +175,6 @@ function Item({ s, it, may, me, role }: { s: Session; it: SessionItem; may: bool
   if (!p) return null
   const f = appFlowOf(p.id)
   const study = flowOf(p.id).study
-  const t = voteTally(it)
-  const c = carried(it)
   const hold = holdLine(p.id)
   const strat = strategyOf(p)
   const fit = fitOf(p)
@@ -228,7 +222,7 @@ function Item({ s, it, may, me, role }: { s: Session; it: SessionItem; may: bool
     <Glass>
       <Head
         title={p.name}
-        meta={<span className="rowf gp-2">{it.outcome ? <Tag tone={it.outcome === 'reject' ? 'no' : 'ok'}>{OUTCOME_SAY[it.outcome]}</Tag> : <Tag tone="warn">بانتظار القرار</Tag>}<Link className="lnk sub" to={ROUTES.projectTab(p.id, 'approval')}>ملف المشروع</Link></span>}
+        meta={<span className="rowf gp-2">{/* Re-audit 17 Oct · an approval waiting for its cover isn't financially in force · the tag says so */ it.outcome ? (it.uncovered && !f.coverage?.done ? <Tag tone="warn">{OUTCOME_SAY[it.outcome]} · بانتظار التغطية</Tag> : <Tag tone={it.outcome === 'reject' ? 'no' : 'ok'}>{OUTCOME_SAY[it.outcome]}</Tag>) : <Tag tone="warn">بانتظار القرار</Tag>}<Link className="lnk sub" to={ROUTES.projectTab(p.id, 'approval')}>ملف المشروع</Link></span>}
       />
       <KV rows={[
         { k: 'مبلغ الدعم', v: <><Money sm>{amount}</Money>{amount !== p.amountRequested && <span className="sub"> · المطلوب <Money sm>{p.amountRequested}</Money></span>}{above && <span className="bad"> · فوق حد {HOLDER_LABEL[s.body]}</span>}</> },
@@ -268,38 +262,13 @@ function Item({ s, it, may, me, role }: { s: Session; it: SessionItem; may: bool
         </ul>
       </details>
 
-      <h3 className="stdy-h mt-3">التصويت · موافقة <span className="num">{t.approve}</span> · رفض <span className="num">{t.reject}</span> · إعادة <span className="num">{t.return}</span> · امتناع <span className="num">{t.abstain}</span></h3>
-      <ul className="apv-votes">
-        {s.members.map((m) => {
-          const conflicted = Boolean(conflictOf(p, m))
-          /* v3 · 6.2.5 · 7.2.7 · the executive director records each member's vote · the member votes too */
-          const proxy = role === 'ceo' && may && m !== me
-          const own = (m === me || proxy) && s.state === 'planned' && !it.outcome && !conflicted
-          return (
-          <li key={m}>
-            <Person name={m} />
-            {conflicted && <Tag tone="warn">تعارض مصالح · لا يصوّت</Tag>}
-            {m === me && !conflicted && <Tag tone="mute">صوتك</Tag>}
-            {(it.proxied ?? []).includes(m) && <Tag tone="mute">سجّله المدير التنفيذي</Tag>}
-            <span className="pc-sp" />
-            {own ? (
-              <div className="cfgchips" role="radiogroup" aria-label={`صوت ${m}`}>
-                {VOTES.map((v) => (
-                  <button key={v} type="button" role="radio" aria-checked={it.votes[m] === v} className={`cfgchip${it.votes[m] === v ? ' on' : ''}`} onClick={() => castVote(s.id, p.id, m, v, me, role)}>
-                    {VOTE_SAY[v]}
-                  </button>
-                ))}
-              </div>
-            ) : !conflicted && (
-              /* Another member's vote reads · it is cast from that member's own account */
-              it.votes[m] ? <Tag tone={it.votes[m] === 'approve' ? 'ok' : it.votes[m] === 'reject' ? 'no' : 'mute'}>{VOTE_SAY[it.votes[m] as keyof typeof VOTE_SAY]}</Tag> : <span className="sub">لم يصوّت بعد</span>
-            )}
-          </li>
-          )
-        })}
-      </ul>
-      <p className="sub cnote">يصوّت كل عضو من حسابه، أو يسجّل المدير التنفيذي قرار كل عضو · ويسجّل الأمين المحضر والقرار</p>
-      <p className="sub cnote">{c ? <>النتيجة بالتصويت: <b>{VOTE_SAY[c]}</b></> : t.cast < APPROVAL_RULES.quorum ? `لم يكتمل النصاب (${t.cast} من ${APPROVAL_RULES.quorum})` : 'لا أغلبية بعد'} · نسبة المشاركة <span className="num">{pct(Math.round((t.cast / Math.max(1, s.members.length)) * 100))}</span></p>
+      {/* Client 18 Oct · decision 14 · no per-member votes · the CEO records the body's final decision
+          with the minutes · the members read the file and the conflicts still stand */}
+      <h3 className="stdy-h mt-3">قرار {HOLDER_LABEL[s.body]}</h3>
+      {s.members.some((m) => conflictOf(p, m)) && (
+        <p className="sub cnote">تعارض مصالح معلن: {s.members.filter((m) => conflictOf(p, m)).map((m) => <Tag key={m} tone="warn">{m}</Tag>)} · لا يشارك في القرار على مشروع الجهة</p>
+      )}
+      <p className="sub cnote">يسجّل المدير التنفيذي قرار {HOLDER_LABEL[s.body]} النهائي كما ورد في محضر الاجتماع · لا تصويت للأعضاء في النظام</p>
 
       <div className="apv-row">
         {it.minutes ? <Tag tone="ok"><Icon name={icons.clip} size="sm" /> {it.minutes}</Tag> : <span className="sub">لا محضر بعد</span>}

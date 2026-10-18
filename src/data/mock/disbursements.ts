@@ -624,6 +624,8 @@ export interface PaySlot {
   state: PaySlotState
   /** v3 · 9.4.7 · before its planned date · a follow-up mark, not a lock */
   ahead?: boolean
+  /** Re-audit 17 Oct · its planned date came and nothing was raised for it */
+  overdue?: boolean
   /** v3 · 9.2.2 · the requirements the agreement names for it */
   needs?: { kind: string; label: string }[]
   /** v3 · 9.4.4 · a permit paid below the payment's value · what is left of it for a permit of its own */
@@ -651,11 +653,8 @@ export const PAY_SLOT_SAY: Record<PaySlotState, { label: string; why: string; ru
   settled: { label: 'مسوّاة', why: /* doc 10.4.2 */ 'سُوّي الالتزام فلا تُصرف الدفعة · يُحرَّر محجوزها عند الإغلاق' },
 }
 
-/* 8.2.31 · an agreement activated in the system opens disbursement · registered by the agreements
-   store, so this mock doesn't import it */
-let agreementGate: (projectId: string) => boolean = () => false
-export const setAgreementGate = (f: (projectId: string) => boolean): void => { agreementGate = f }
-export const agreementInForce = (projectId: string): boolean => agreementGate(projectId)
+/* Re-audit 17 Oct · the old «agreementInForce» gate here had no reader · payments read the agreement
+   through the payments store's own gate (agreementOk) */
 
 export const payByState = (s: PayState): PayRequest[] =>
   payRequests.filter((r) => r.state === s)

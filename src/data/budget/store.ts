@@ -16,7 +16,7 @@ import { ALL_FIELDS, CYCLE, TODAY, setFundingGate } from '@/data/intake/cycle'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { nf, pct } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
-import { BUDGET_RULES } from './rules'
+import { BUDGET_RULES, noReviewStep } from './rules'
 
 /* Budget (BPD-001) · the actions.
 
@@ -242,9 +242,10 @@ export interface LinkInput {
   nodeId?: string
   amount?: number
 }
-export type LinkChangeKind = 'link' | 'split' | 'final' | 'relink' | 'release' | 'paid' | 'unpaid' | 'savings' | 'recover' | 'resize'
+export type LinkChangeKind = 'link' | 'plan' | 'split' | 'final' | 'relink' | 'release' | 'paid' | 'unpaid' | 'savings' | 'recover' | 'resize'
 export const LINK_CHANGE_SAY: Record<LinkChangeKind, string> = {
-  link: 'ربط وحجز', split: 'إعادة توزيع', final: 'تثبيت الحجز', relink: 'تعديل الارتباط بعد الاعتماد',
+  /* re-audit 17 Oct · a link that holds nothing yet reads as such */
+  link: 'ربط وحجز', plan: 'ربط بلا حجز', split: 'إعادة توزيع', final: 'تثبيت الحجز', relink: 'تعديل الارتباط بعد الاعتماد',
   release: 'تحرير الحجز', paid: 'صرف', unpaid: 'تراجع عن صرف', savings: 'إعادة الوفر',
   recover: 'تحرير مبلغ مسترد', resize: 'تعديل قيمة المشروع',
 }
@@ -302,7 +303,7 @@ function saveDiff(a: BudgetDoc, b: BudgetDoc): string {
   return out.join(' · ')
 }
 /** v3 · 1.1.desc-4 · the step's authority holders as settings name them · never a fixed title */
-const reviewerSay = () => titlesOf(BUDGET_RULES.managerBy).join(' أو ') || 'صاحب الصلاحية'
+const reviewerSay = () => noReviewStep() ? 'الإدارة المالية' : titlesOf(BUDGET_RULES.managerBy).join(' أو ') || 'صاحب الصلاحية'
 /** Who stood at the review and the approval when a step was taken · kept on the op, so a later
     change in settings doesn't rewrite the history (an old op without it reads today's settings) */
 interface Who { rv: string; ex: string }
@@ -322,13 +323,14 @@ export const FINANCE_ACTOR = 'محمد المطيري'
 export type Step = 'prepare' | 'manager' | 'finance' | 'exec' | 'status'
 const STEP_ROLES = (s: Step): RoleKey[] =>
   s === 'prepare' ? BUDGET_RULES.prepareBy
-    : s === 'manager' ? BUDGET_RULES.managerBy
+    /* client 18 Oct · #6 · with no first review, a record still in «submitted» is finance's */
+    : s === 'manager' ? (noReviewStep() ? BUDGET_RULES.financeBy : BUDGET_RULES.managerBy)
       : s === 'finance' ? BUDGET_RULES.financeBy
         : s === 'exec' ? BUDGET_RULES.execBy
           : BUDGET_RULES.statusBy
 export const mayAct = (s: Step, role: RoleKey): boolean => STEP_ROLES(s).includes(role)
 export const stepOf = (s: BudgetState | ReqState): Step | null =>
-  s === 'draft' || s === 'returned' ? 'prepare' : s === 'submitted' ? 'manager' : s === 'finance' ? 'finance' : s === 'exec' ? 'exec' : null
+  s === 'draft' || s === 'returned' ? 'prepare' : s === 'submitted' ? (noReviewStep() ? 'finance' : 'manager') : s === 'finance' ? 'finance' : s === 'exec' ? 'exec' : null
 export const whoActs = (s: BudgetState | ReqState): string => {
   const st = stepOf(s)
   return st ? STEP_ROLES(st).map((k) => (st === 'finance' ? 'الإدارة المالية' : roleByKey(k).title)).filter((x, i, a) => a.indexOf(x) === i).join(' أو ') : ''
@@ -341,7 +343,9 @@ export function headIssues(d: BudgetDoc): string[] {
   if (!d.yearId) out.push('اختر السنة المالية')
   if (!(d.total > 0)) out.push('أدخل المبلغ الإجمالي')
   const src = docSources(d)
-  if (!src.length) out.push('اختر مصدر تمويل واحدًا على الأقل')
+  if (!src.length) out.push('اختر مصدر التمويل')
+  /* client 18 Oct · #37 · each funding source has its own budget */
+  if (src.length > 1) out.push('لكل مصدر تمويل ميزانية منفصلة · اختر مصدرًا واحدًا وأنشئ للآخر ميزانيته')
   if (src.some((x) => !(x.amount > 0))) out.push('لكل مصدر تمويل مبلغه')
   if (new Set(src.map((x) => x.code)).size !== src.length) out.push('مصدر التمويل مكرّر')
   if (!d.directionIds?.length) out.push('اختر التوجه الاستراتيجي الذي تُبنى عليه الميزانية')
@@ -793,9 +797,10 @@ const apply = (o: Op) => {
       const d = docOf(o.id)
       if (!d || !budgetEditable(d.state)) return
       if (headIssues(d).length || treeIssues(d).length) return
-      d.state = 'submitted'
+      /* client 18 Oct · #6 · no first review step → straight to finance */
+      d.state = noReviewStep() ? 'finance' : 'submitted'
       log(d.id, { at: o.at, by: o.by, text: `أُرسلت إلى ${(o.who ?? whoNow()).rv} للمراجعة` })
-      notify(titlesOf(BUDGET_RULES.managerBy), `ميزانية للمراجعة · ${docTitle(d)}`, `أرسلها ${o.by}`, o.at, ROUTES.budgetDoc(d.id))
+      notify(noReviewStep() ? ['الإدارة المالية', ...titlesOf(BUDGET_RULES.financeBy)] : titlesOf(BUDGET_RULES.managerBy), `ميزانية للمراجعة · ${docTitle(d)}`, `أرسلها ${o.by}`, o.at, ROUTES.budgetDoc(d.id))
       return
     }
     case 'docDecide': {
@@ -804,14 +809,15 @@ const apply = (o: Op) => {
       const from = d.state
       /* v3 · 1.2.9 · finance returns the budget to whoever prepared it, not to the first reviewer */
       const next: Partial<Record<BudgetState, BudgetState>> = o.outcome === 'approve'
-        ? { submitted: 'finance', finance: 'exec', exec: 'approved' }
-        : { submitted: 'returned', finance: (o.v ?? 1) >= 2 ? 'returned' : 'submitted', exec: 'finance' }
+        ? { submitted: noReviewStep() ? 'exec' : 'finance', finance: 'exec', exec: 'approved' }
+        : { submitted: 'returned', finance: (o.v ?? 1) >= 2 || noReviewStep() ? 'returned' : 'submitted', exec: 'finance' }
       const to = next[from]
       if (!to) return
       d.state = to
       const w = o.who ?? whoNow()
       const say: Record<string, string> = {
         'submitted>finance': `وافق ${w.rv} وأحالها إلى الإدارة المالية`,
+        'submitted>exec': `وافقت الإدارة المالية وأحالتها إلى ${w.ex}`,
         'finance>exec': `وافقت الإدارة المالية وأحالتها إلى ${w.ex}`,
         'exec>approved': `اعتمدها ${w.ex} وفُعّلت في النظام`,
         'submitted>returned': `أعادها ${w.rv} إلى مُعِدّها`,
@@ -823,7 +829,7 @@ const apply = (o: Op) => {
       if (to === 'approved') {
         opening(d, o.at, o.by)
         syncOwners(d)
-        notify([...new Set([...titlesOf(BUDGET_RULES.prepareBy), 'مدير المنح', 'مشرف المنح'])], `اعتُمدت ${docTitle(d)}`, 'مفعّلة · متاحة لربط المشاريع والحجز', o.at, ROUTES.budgetDoc(d.id))
+        notify([...new Set([...titlesOf(BUDGET_RULES.prepareBy), ...titlesOf(BUDGET_RULES.notifyLive)])], `اعتُمدت ${docTitle(d)}`, 'مفعّلة · متاحة لربط المشاريع والحجز', o.at, ROUTES.budgetDoc(d.id))
       } else {
         const st = stepOf(to)
         const who = st ? [...(st === 'finance' ? ['الإدارة المالية'] : []), ...titlesOf(STEP_ROLES(st))] : []
@@ -915,12 +921,12 @@ const apply = (o: Op) => {
       }
       const amount = next.reduce((a, x) => a + x.amount, 0)
       LINKS.set(id, { projectId: id, projectName: o.link.projectName, shares: next, amount, stage, by: o.link.by, at: o.at, docId: next[0].docId, nodeId: next[0].nodeId })
-      const kind: LinkChangeKind = !prev ? 'link' : prev.stage === 'final' ? 'relink' : 'split'
+      const kind: LinkChangeKind = !prev ? (stage === 'planned' ? 'plan' : 'link') : prev.stage === 'final' ? 'relink' : 'split'
       logLink(id, {
         at: o.at, by: o.link.by, kind, reason: o.reason, from: prev?.shares.map((x) => ({ ...x })), to: next.map((x) => ({ ...x })),
         moved: kind === 'relink' && paidBefore ? paidBefore : undefined, amount,
-        text: kind === 'link'
-          ? `${stage === 'planned' ? 'رُبط' : 'رُبط وحُجز مبدئيًّا'} على ${next.length > 1 ? `${nf.format(next.length)} بنود` : 'بند واحد'} بمبلغ ${nf.format(amount)}`
+        text: kind === 'link' || kind === 'plan'
+          ? `${stage === 'planned' ? 'رُبط بلا حجز' : 'رُبط وحُجز مبدئيًّا'} على ${next.length > 1 ? `${nf.format(next.length)} بنود` : 'بند واحد'} بمبلغ ${nf.format(amount)}`
           : kind === 'relink'
             ? `عُدّل الارتباط بعد الاعتماد · أُلغي الحجز السابق وحُجز ${nf.format(amount)} على الارتباط الجديد${paidBefore ? ` ونُقل المصروف ${nf.format(paidBefore)}` : ''}`
             : `أُعيد توزيع الارتباط على ${nf.format(next.length)} ${next.length > 1 ? 'بنود' : 'بند'} بمبلغ ${nf.format(amount)}`,
@@ -1156,7 +1162,8 @@ const apply = (o: Op) => {
       logLink(l.projectId, { at: o.at, by: o.by, kind: 'recover', amount: amt, text: `أُعيد مبلغ مسترد ${nf.format(amt)} إلى مخصص المجال` })
       return
     }
-    /* 10.9.5 · 10.9.6 · the project's value changed by an approved annex · the hold follows it:
+    /* 10.9.5 · 10.9.6 · the project's value changed by an approved annex (ref = the closing case),
+       or at an approval seat (ref = the project · re-audit 17 Oct: not an annex) · the hold follows it:
        a cut releases what isn't paid, a raise holds more on the first share's line */
     case 'linkResize': {
       const l = LINKS.get(o.projectId)
@@ -1182,7 +1189,7 @@ const apply = (o: Op) => {
         sh.amount += diff
       }
       l.amount = l.shares.reduce((a, x) => a + x.amount, 0)
-      logLink(l.projectId, { at: o.at, by: o.by, kind: 'resize', amount: Math.abs(diff), reason: o.reason, text: `${diff < 0 ? 'خُفّضت' : 'زيدت'} قيمة الارتباط إلى ${nf.format(l.amount)} بملحق معتمد` })
+      logLink(l.projectId, { at: o.at, by: o.by, kind: 'resize', amount: Math.abs(diff), reason: o.reason, text: `${diff < 0 ? 'خُفّضت' : 'زيدت'} قيمة الارتباط إلى ${nf.format(l.amount)} ${o.ref && o.ref !== o.projectId ? 'بملحق معتمد' : 'بتعديل مبلغ الدعم في مسار الاعتماد'}` })
       return
     }
     case 'reqSave': {
@@ -1194,10 +1201,10 @@ const apply = (o: Op) => {
       } else Object.assign(r, structuredClone(o.req))
       if (o.send) {
         if (reqIssues(r).length) return
-        r.state = 'submitted'
+        r.state = noReviewStep() ? 'finance' : 'submitted'
         r.submittedAt = o.at
         r.events.unshift({ at: o.at, by: o.req.by, text: `أُرسل إلى ${(o.who ?? whoNow()).rv} للاعتماد` })
-        notify(titlesOf(BUDGET_RULES.managerBy), `طلب ${REQ_KIND_SAY[r.kind]} · ${r.id}`, `${nf.format(r.amount)} · ${docTitle(docOf(r.docId)!)}`, o.at, ROUTES.budgetOp(r.id))
+        notify(noReviewStep() ? ['الإدارة المالية', ...titlesOf(BUDGET_RULES.financeBy)] : titlesOf(BUDGET_RULES.managerBy), `طلب ${REQ_KIND_SAY[r.kind]} · ${r.id}`, `${nf.format(r.amount)} · ${docTitle(docOf(r.docId)!)}`, o.at, ROUTES.budgetOp(r.id))
       }
       return
     }
@@ -1214,8 +1221,8 @@ const apply = (o: Op) => {
       }
       /* v3 · 1.3.8 · finance returns the request to whoever prepared it */
       const next: Partial<Record<ReqState, ReqState>> = o.outcome === 'approve'
-        ? { submitted: 'finance', finance: 'exec', exec: 'executed' }
-        : { submitted: 'returned', finance: (o.v ?? 1) >= 2 ? 'returned' : 'submitted', exec: 'finance' }
+        ? { submitted: noReviewStep() ? 'exec' : 'finance', finance: 'exec', exec: 'executed' }
+        : { submitted: 'returned', finance: (o.v ?? 1) >= 2 || noReviewStep() ? 'returned' : 'submitted', exec: 'finance' }
       const to = next[from]
       if (!to) return
       const w = o.who ?? whoNow()
@@ -1224,6 +1231,7 @@ const apply = (o: Op) => {
       r.note = o.outcome === 'return' ? o.note : r.note
       const say: Record<string, string> = {
         'submitted>finance': `وافق ${w.rv} وأحاله إلى الإدارة المالية`,
+        'submitted>exec': `وافقت الإدارة المالية وأحالته إلى ${w.ex}`,
         'finance>exec': `وافقت الإدارة المالية وأحالته إلى ${w.ex}`,
         'exec>executed': `اعتمده ${w.ex} ونُفِّذ آليًا`,
         'submitted>returned': `أعاده ${w.rv} إلى مُعِدّه`,
@@ -1234,7 +1242,7 @@ const apply = (o: Op) => {
       r.events.unshift({ at: o.at, by: o.by, text: say[`${from}>${to}`] ?? '', note: o.note || undefined, tone: o.outcome === 'approve' ? 'ok' : 'ret' })
       if (to === 'executed') execute(r, o.at, o.by)
       const st = stepOf(to)
-      const who = to === 'executed' ? ['مشرف المنح', 'مدير المنح']
+      const who = to === 'executed' ? titlesOf(BUDGET_RULES.notifyLive)
           : st ? [...(st === 'finance' ? ['الإدارة المالية'] : []), ...titlesOf(STEP_ROLES(st))] : []
       notify(who, `طلب ${REQ_KIND_SAY[r.kind]} ${r.id} · ${REQ_STATE_SAY[to]}`, o.note || say[`${from}>${to}`] || '', o.at, ROUTES.budgetOp(r.id))
       return
@@ -1289,18 +1297,18 @@ function seed() {
          log opened on seven events of 1 January 2027 · it was approved before the year, mid-September */
       const at = d.from <= TODAY ? `${d.from}T09:00:00.000Z` : '2026-09-15T09:00:00.000Z'
       log(d.id, { at, by: 'عبدالرحمن الهليّل', text: 'اعتمدها المدير التنفيذي وفُعّلت في النظام', tone: 'ok' })
+      /* client 18 Oct · #6 · prepared → finance reviews and approves → the executive approves */
       log(d.id, { at, by: FINANCE_ACTOR, text: 'وافقت الإدارة المالية وأحالتها إلى المدير التنفيذي', tone: 'ok' })
-      log(d.id, { at, by: 'عبدالرحمن الهليّل', text: 'وافق المدير التنفيذي وأحالها إلى الإدارة المالية', tone: 'ok' })
-      log(d.id, { at, by: FINANCE_ACTOR, text: 'أُرسلت إلى المدير التنفيذي للمراجعة' })
+      log(d.id, { at, by: FINANCE_ACTOR, text: 'أُرسلت إلى الإدارة المالية للمراجعة' })
       opening(d, at, 'عبدالرحمن الهليّل')
-    } else if (d.state === 'submitted') {
-      log(d.id, { at: '2026-09-28T10:30:00.000Z', by: FINANCE_ACTOR, text: 'أُرسلت إلى المدير التنفيذي للمراجعة' })
+    } else if (d.state === 'submitted' || d.state === 'finance') {
+      log(d.id, { at: '2026-09-28T10:30:00.000Z', by: FINANCE_ACTOR, text: `أُرسلت إلى ${reviewerSay()} للمراجعة` })
     } else {
       log(d.id, { at: '2026-09-20T08:00:00.000Z', by: FINANCE_ACTOR, text: 'أُنشئت الميزانية كمسودة' })
     }
   }
 
-  /* Two requests on the 2026 budget · one waiting on the first reviewer, one on finance · prepared by finance (v3 · 1.1.desc-4) */
+  /* Two requests on the 2026 budget · one waiting on finance, one on the executive · prepared by finance (v3 · 1.1.desc-4 · client 18 Oct #6) */
   const d = docOf('BG-2026-SA')
   const leaves = d ? leavesOf(d.nodes).filter((n) => n.parentId !== null && freeOf(d, n.id) > 0).sort((a, b) => freeOf(d, b.id) - freeOf(d, a.id)) : []
   if (d && leaves.length >= 2) {
@@ -1309,19 +1317,20 @@ function seed() {
     BUDGET_REQS.push({
       id: 'BOP-2026-0001', yearId: d.yearId, docId: d.id, kind: 'transfer', fromId: a.id, toId: b.id, amount: amt,
       reason: `إعادة توجيه الوفر في «${a.label}» إلى «${b.label}» بعد اكتمال الدراسات`, files: [],
-      state: 'submitted', by: FINANCE_ACTOR, createdAt: '2026-09-29T09:00:00.000Z', submittedAt: '2026-09-29T09:10:00.000Z',
+      state: noReviewStep() ? 'finance' : 'submitted', by: FINANCE_ACTOR, createdAt: '2026-09-29T09:00:00.000Z', submittedAt: '2026-09-29T09:10:00.000Z',
       events: [
-        { at: '2026-09-29T09:10:00.000Z', by: FINANCE_ACTOR, text: 'أُرسل إلى المدير التنفيذي للاعتماد' },
+        { at: '2026-09-29T09:10:00.000Z', by: FINANCE_ACTOR, text: `أُرسل إلى ${reviewerSay()} للاعتماد` },
         { at: '2026-09-29T09:00:00.000Z', by: FINANCE_ACTOR, text: 'أُنشئ الطلب' },
       ],
     })
     BUDGET_REQS.push({
       id: 'BOP-2026-0002', yearId: d.yearId, docId: d.id, kind: 'increase', toId: b.id, amount: 200_000,
       reason: 'تعزيز الهدف لاستيعاب مشاريع الدورة الثانية', files: ['قرار مجلس الأمناء بالتعزيز.pdf'],
-      state: 'finance', by: FINANCE_ACTOR, createdAt: '2026-09-24T11:00:00.000Z', submittedAt: '2026-09-24T11:05:00.000Z',
+      /* client 18 Oct · #6 · finance approved it on to the executive */
+      state: 'exec', by: FINANCE_ACTOR, createdAt: '2026-09-24T11:00:00.000Z', submittedAt: '2026-09-24T11:05:00.000Z',
       events: [
-        { at: '2026-09-25T13:20:00.000Z', by: 'عبدالرحمن الهليّل', text: 'وافق المدير التنفيذي وأحاله إلى الإدارة المالية', tone: 'ok' },
-        { at: '2026-09-24T11:05:00.000Z', by: FINANCE_ACTOR, text: 'أُرسل إلى المدير التنفيذي للاعتماد' },
+        { at: '2026-09-25T13:20:00.000Z', by: FINANCE_ACTOR, text: 'وافقت الإدارة المالية وأحالته إلى المدير التنفيذي', tone: 'ok' },
+        { at: '2026-09-24T11:05:00.000Z', by: FINANCE_ACTOR, text: 'أُرسل إلى الإدارة المالية للاعتماد' },
         { at: '2026-09-24T11:00:00.000Z', by: FINANCE_ACTOR, text: 'أُنشئ الطلب' },
       ],
     })

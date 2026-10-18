@@ -5,6 +5,7 @@ import type {
   CloseAudit, CloseCycle, CloseRow, CloseStage, CloseVersion, FinalReport, ProjectEval,
 } from '@/types/domain'
 import { SCENARIO, projectRows } from './projects'
+import { stageMeta } from './taxonomy'
 import { planOfProject, planDone } from './plans'
 import { payRequests } from './disbursements'
 import { WALK_PROJECT } from './agreements'
@@ -170,13 +171,7 @@ export const canOpenClose = (projectId: string): { ok: boolean; why: string } =>
     return { ok: false, why: /* doc rule 1 */ 'لم تكتمل خطة التنفيذ بعد' }
   }
 
-  /* Rule 2 · no outstanding disbursement left unspent */
-  const open = payRequests.filter(
-    (r) => r.projectId === projectId && r.state !== 'paid' && r.state !== 'closed',
-  )
-  if (open.length > 0) {
-    return { ok: false, why: /* doc rule 2 */ `${countOf(open.length, NOUN.payment)} لم تُسوَّ بعد` }
-  }
+  /* Client 18 Oct · decision 21 · an open payment request no longer holds the opening · the store stops it */
 
   return { ok: true, why: 'المشروع مؤهَّل للإغلاق' }
 }
@@ -387,6 +382,9 @@ const entOf = (pid: string, fallback: string) => projectRows.find((p) => p.id ==
 const P2041 = handPid('20852')
 const P2043 = handPid('20824')
 const P2044 = handPid('20866')
+/* Re-audit 17 Oct · CL-2042 sat on 20838, a running project whose fourth payment is still ahead and
+   whose term hadn't ended · it takes a project from the closing scenario */
+const P2042 = FREE.shift() ?? '20838'
 
 export const closeRows: CloseRow[] = [
   /* 1 · with the entity · not yet submitted, missing the minimum */
@@ -401,7 +399,7 @@ export const closeRows: CloseRow[] = [
   }),
 
   /* 2 · with the grants supervisor · complete and awaiting review */
-  row('CL-2042', '20838', 'supervisor', {
+  row('CL-2042', P2042, 'supervisor', {
     report: mkReport({
       beneficiaries: 1120,
       budget: 296_400,
@@ -409,13 +407,13 @@ export const closeRows: CloseRow[] = [
       outcomes: 'نُفّذ البرنامج بالكامل: 12 فعالية و3 ورش تدريبية.',
       risks: 'تأخّر التوريد شهرًا في المرحلة الثانية.',
       docs: ['final', 'photos', 'invoices', 'media'],
-      links: [{ label: 'صور ومقاطع التنفيذ', url: 'https://drive.google.com/drive/folders/ab-20838' }],
+      links: [{ label: 'صور ومقاطع التنفيذ', url: `https://drive.google.com/drive/folders/ab-${P2042}` }],
     }),
     hoursInStage: 300,
     versions: [v(1, '2026-08-01', 'عمر قاسم', 'طلب التقرير الختامي')],
     audit: [
       a('2026-08-01', 'عمر قاسم', 'إنشاء طلب التقرير الختامي'),
-      a('2026-09-06', 'جمعية الدعوة وتوعية الجاليات', 'إرسال التقرير الختامي'),
+      a('2026-09-06', entOf(P2042, 'الجهة المستفيدة'), 'إرسال التقرير الختامي'),
     ],
   }),
 
@@ -647,6 +645,29 @@ const scDay = (start: string, d: number): string => {
     }
   }
 })()
+
+/* Re-audit 17 Oct · v3 · the project's stage follows its closing's station, the way the store moves it ·
+   seeded closings in the evaluation sat on projects already «مكتمل», report stations on projects in
+   «تقييم المشروع», and a project could read «قيد الإغلاق» with no closing record at all */
+const STAGE_OF_CLOSE: Record<CloseStage, string> = {
+  draft: 'طلب التقرير الختامي', returned: 'رفع التقرير الختامي',
+  supervisor: 'اعتماد التقرير الختامي', comms: 'اعتماد التقرير الختامي', manager: 'اعتماد التقرير الختامي', executive: 'اعتماد التقرير الختامي',
+  reportDone: 'تقييم المشروع', evalDraft: 'تقييم المشروع', evalManager: 'تقييم المشروع', evalExecutive: 'تقييم المشروع',
+  closed: 'مشروع مكتمل',
+}
+function setStage(p: (typeof projectRows)[number], stage: string) {
+  if (p.stage === stage) return
+  p.stage = stage
+  p.statusGroup = stageMeta(stage)?.group ?? p.statusGroup
+}
+for (const c of closeRows) {
+  const p = projectRows.find((x) => x.id === c.projectId)
+  if (!p || c.basis === 'stopped' || p.platform) continue
+  if (p.statusGroup === 'قيد الإغلاق' || p.statusGroup === 'مكتمل' || p.statusGroup === 'تحت التنفيذ') setStage(p, STAGE_OF_CLOSE[c.stage])
+}
+for (const p of projectRows) {
+  if (p.statusGroup === 'قيد الإغلاق' && !p.platform && !closeRows.some((c) => c.projectId === p.id)) setStage(p, 'رفع تقرير مرحلي')
+}
 
 export const closeById = (id: string): CloseRow | undefined =>
   closeRows.find((c) => c.id === id)

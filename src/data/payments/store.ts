@@ -7,10 +7,10 @@ import type { PayCond } from '@/types/domain'
 import { hasLegacy, legacyCover, legacyTotal } from './legacy'
 import { DECISIONS } from '@/data/shared/decisions'
 import { closeOfProject } from '@/data/mock/closing'
-import { actDay, asOf } from '@/data/clock'
+import { actDay, asOf, liveDay } from '@/data/clock'
 import { useSyncExternalStore } from 'react'
 import {
-  TODAY, payRequestById, payRequests, type PaySlot, type PaySlotState,
+  payRequestById, payRequests, type PaySlot, type PaySlotState,
 } from '@/data/mock/disbursements'
 import { projectRows } from '@/data/mock/projects'
 import { agreements } from '@/data/mock/agreements'
@@ -79,6 +79,7 @@ export const setExternalSchedule = (f: typeof externalSchedule) => {
   externalSchedule = f
   gated = true
   for (const o of DEFERRED.splice(0)) { asOf(o.at, () => applyOp(o)); refreshAll() }
+  noteOverdue()
   emit()
 }
 /** Who may raise an external party's requirements on its behalf (9.4.5) */
@@ -258,7 +259,7 @@ export function scheduleOf(projectId: string): PaySlot[] {
     if (DECISIONS.payNext !== 'off' && state !== 'paid' && state !== 'settled' && (state !== 'pending' || DECISIONS.payNext === 'paid')) blocked = true
     return {
       no: b.no, of, amount: b.amount, dueAt: b.dueAt, condition: b.requirement, conditionMet, state, requestId: req?.id,
-      legacy: paid ? undefined : legacy.get(b.no), ahead: b.dueAt > TODAY, needs: partial ? [] : needsOf(b),
+      legacy: paid ? undefined : legacy.get(b.no), ahead: b.dueAt > liveDay(), overdue: (state === 'open' || state === 'eligible') && !legacy.has(b.no) && b.dueAt <= liveDay(), needs: partial ? [] : needsOf(b),
       left: partial ? b.amount - paidSum : undefined, notBefore: dateOf(projectId, b)[0]?.ref,
     }
   })
@@ -296,8 +297,11 @@ export function closingBlock(projectId: string, no: number, of?: number): string
   const c = closeOfProject(projectId)
   if (!c || c.stage === 'closed') return ''
   const b = payIn(projectId)?.find((p) => p.no === no)
-  if ((b && tiedToFinal(b)) || (of !== undefined && no === of)) return ''
-  return `للمشروع إغلاق مفتوح (${c.id}) · لا تُرفع متطلبات دفعة ولا يُنشأ إذن صرف أثناءه إلا للدفعة الأخيرة`
+  /* Re-audit 17 Oct · the last payment is exempt only when it follows the final report · tied to it by the
+     agreement, or (no structured condition) its requirement names the final report */
+  const lastFollowsFinal = of !== undefined && no === of && Boolean(b) && !b!.conds?.length && /الختامي/.test(b!.requirement ?? '')
+  if ((b && tiedToFinal(b)) || lastFollowsFinal) return ''
+  return `للمشروع إغلاق مفتوح (${c.id}) · لا تُرفع متطلبات دفعة ولا يُنشأ إذن صرف أثناءه إلا للدفعة المرتبطة بالتقرير الختامي`
 }
 
 /* ── Closing and distress (BPD-010) · what they do to the schedule ── */
@@ -311,7 +315,10 @@ export const settledOf = (projectId: string, no: number) => SETTLED.get(condKey(
 /** 10.4.2 · what still owes a payment · due ones block opening closure, any of them blocks final closing */
 export function unsettledSlots(projectId: string): { due: PaySlot[]; future: PaySlot[] } {
   const slots = scheduleOf(projectId).filter((s) => s.state !== 'paid' && s.state !== 'settled' && s.state !== 'stopped')
-  return { due: slots.filter((s) => s.dueAt <= TODAY || s.state === 'pending'), future: slots.filter((s) => s.dueAt > TODAY && s.state !== 'pending') }
+  /* Re-audit 17 Oct · the real day, the one actions are stamped with · the fixed reference day read a
+     payment due on 15 Oct «لم يحن» while payments were being made on the 17th */
+  const today = liveDay()
+  return { due: slots.filter((s) => s.dueAt <= today || s.state === 'pending'), future: slots.filter((s) => s.dueAt > today && s.state !== 'pending') }
 }
 
 export interface PayProject { id: string; name: string; entity: string; entityId: string; can: boolean; why?: string; open: number; raise: number; external?: boolean }
@@ -497,6 +504,7 @@ type Op = { at: string; by: string } & (
   | { op: 'cond'; projectId: string; no: number; note: string }
   | { op: 'exception'; id: string; ex: PayException }
   | { op: 'stop'; projectId: string; note: string }
+  | { op: 'closeStop'; projectId: string; closeId: string }
   | { op: 'settle'; projectId: string; no: number; note: string }
   | { op: 'adjust'; projectId: string; cut?: number; extra?: { amount: number; dueAt: string } }
 )
@@ -787,6 +795,19 @@ function applyOp(o: Op) {
       }
       return
     }
+    /* Client 18 Oct · decision 21 · opening the closing stops the project's open payment requests · the
+       record and its log stay · the payment is settled in the closing (10.4.2) */
+    case 'closeStop': {
+      for (const r of payRequests.filter((x) => x.projectId === o.projectId && isOpen(x))) {
+        r.note = `أُوقف الطلب لبدء الإغلاق · ${o.closeId}`
+        r.closedAt = day(o.at)
+        r.permitAt = undefined
+        move(r, 'closed')
+        log(r, 12, o.by, 'النظام', 'أُوقف الطلب لبدء الإغلاق', o.at, o.closeId, 'الجهة المستفيدة ومشرف المنح · أُوقف الطلب لبدء الإغلاق')
+        notify([r.entityName, r.owner], r, 'أُوقف الطلب لبدء الإغلاق')
+      }
+      return
+    }
     case 'settle':
       SETTLED.set(condKey(o.projectId, o.no), { by: o.by, at: day(o.at), note: o.note })
       return
@@ -1015,6 +1036,31 @@ export function recordException(id: string, v: { kind: PayException['kind']; rul
 
 /** 10.9.1 · applied by the distress case once the CEO approves the stop */
 export const stopProjectPayments = (projectId: string, note: string, by: string) => run({ op: 'stop', projectId, note, by, at: now() })
+/** Client 18 Oct · decision 21 · the open requests stop when the closing opens · how many */
+export function stopForClosing(projectId: string, closeId: string, by: string): number {
+  const n = payRequests.filter((x) => x.projectId === projectId && isOpen(x)).length
+  if (n) run({ op: 'closeStop', projectId, closeId, by, at: now() })
+  return n
+}
+
+/* Re-audit 17 Oct · 9.4.2 · a payment whose planned date came with nothing raised for it · one note to
+   the entity and the supervisor, once per payment (derived at load, so a reload doesn't repeat it) */
+const OVERDUE_SENT = new Set<string>()
+export function noteOverdue(): void {
+  for (const p of projectRows) {
+    if (p.statusGroup !== 'تحت التنفيذ') continue
+    let slots: PaySlot[]
+    try { slots = scheduleOf(p.id) } catch { continue }
+    for (const sl of slots.filter((x) => x.overdue)) {
+      const k = condKey(p.id, sl.no)
+      if (OVERDUE_SENT.has(k)) continue
+      OVERDUE_SENT.add(k)
+      for (const to of [p.entityName, p.owner].filter(Boolean) as string[]) {
+        PAY_NOTES.push({ id: `pay-due-${k}-${to}`, to, title: `حلّ موعد متطلبات الدفعة ${sl.no} ولم تُرفع`, context: `${p.name} · الدفعة ${sl.no} من ${sl.of} · موعدها ${sl.dueAt}`, at: liveDay(), href: ROUTES.paymentNew(p.id) })
+      }
+    }
+  }
+}
 /** 10.4.2 · the supervisor settles an obligation instead of paying it, with its reason */
 export function settleSlot(projectId: string, no: number, note: string, by: string): string[] {
   if (!note.trim()) return ['اذكر سبب التسوية']

@@ -13,6 +13,7 @@ import { nf, NOUN, nounAfter, pct, projectCode, riyals } from '@/lib/format'
 import { projectById } from '@/data/mock/projects'
 import { printArea } from '@/lib/export'
 import { usePayments } from '@/data/payments/store'
+import { extDocsOf, isExternalParty } from '@/data/partners/store'
 
 /* Disbursement order - step 16, and the spec's first output.
 
@@ -66,6 +67,7 @@ export default function OrderPage() {
     )
   }
 
+  const ext = isExternalParty(r.entityId)
   /* The order is generated at step 16, i.e. after finance approval - before that, the request is
      still moving through approvals. */
   const ready = r.state === 'finance' || r.state === 'paid'
@@ -145,11 +147,18 @@ export default function OrderPage() {
 
               {/* 2 - Agreement */}
               <section className="order-s">
-                <h3><span className="num">2</span> · الاتفاقية</h3>
+                <h3><span className="num">2</span> · {ext ? 'الوثيقة الخارجية' : 'الاتفاقية'}</h3>
                 <dl className="kv">
-                  <dt>رقم الاتفاقية</dt><dd><Mono>{r.agreement.id}</Mono></dd>
-                  <dt>سريانها</dt>
-                  <dd>{r.agreement.active ? 'سارية' : 'غير سارية'} حتى <DateText>{r.agreement.endsAt}</DateText></dd>
+                  {/* Re-audit 17 Oct · v3 · 11.2.6 · an external party's project has no internal agreement */}
+                  {ext ? (
+                    <><dt>الوثيقة</dt><dd>{extDocsOf(r.projectId).map((d) => d.file).join(' · ') || 'لم تُسجَّل وثيقة'}</dd></>
+                  ) : (
+                    <>
+                      <dt>رقم الاتفاقية</dt><dd><Mono>{r.agreement.id}</Mono></dd>
+                      <dt>سريانها</dt>
+                      <dd>{r.agreement.active ? 'سارية' : 'غير سارية'} حتى <DateText>{r.agreement.endsAt}</DateText></dd>
+                    </>
+                  )}
                   <dt>قيمة المنحة</dt><dd><span className="num">{nf.format(r.granted)}</span> <Riyal /></dd>
                 </dl>
               </section>
@@ -216,7 +225,7 @@ export default function OrderPage() {
                   <dt>حالة الحساب</dt>
                   <dd>{r.bank.active ? 'معتمد' : <span className="bad">غير نشط · لا يُحوَّل إليه</span>}</dd>
                   <dt>اسم المستفيد</dt><dd>{r.entityName}</dd>
-                  {r.rep && <><dt>ممثل الجهة المخوّل</dt><dd>{r.rep.name} · {r.rep.title}</dd></>}
+                  {r.rep && !ext && <><dt>ممثل الجهة المخوّل</dt><dd>{r.rep.name} · {r.rep.title}</dd></>}
                 </dl>
               </section>
 

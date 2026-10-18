@@ -5,6 +5,7 @@ import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
 import {
   CLOSE_TONE, closeCycle, closeLate, closeStageLabel, reportBlockers,
 } from '@/data/mock/closing'
+import { closeSayOf } from '@/data/closing/store'
 import type { CloseRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
 
@@ -62,8 +63,8 @@ export const COLS: Col[] = [
     w: 182,
     label: 'المحطة',
     def: true,
-    cell: (c) => <Tag tone={CLOSE_TONE[c.stage]}>{closeStageLabel(c.stage)}</Tag>,
-    text: (c) => closeStageLabel(c.stage),
+    cell: (c) => <Tag tone={CLOSE_TONE[c.stage]}>{closeSayOf(c)}</Tag>,
+    text: (c) => closeSayOf(c),
   },
   {
     key: 'missing',

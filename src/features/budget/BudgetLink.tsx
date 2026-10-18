@@ -12,7 +12,7 @@ import { approverFor } from '@/data/approval'
 import { projectRows } from '@/data/mock/projects'
 import { readRole, roleByKey } from '@/data/roles'
 import {
-  HOLD_STAGE_SAY, linkIssues, linkOf, linkProject, planOf, sourceName, unlinkProject, useBudget, suggestSourceSplit,
+  HOLD_STAGE_SAY, holdSplit, lineBalances, linkIssues, linkOf, linkProject, planOf, sourceName, unlinkProject, useBudget, suggestSourceSplit,
 } from '@/data/budget/store'
 import { BUDGET_RULES } from '@/data/budget/rules'
 import { linesFor, type LineOpt } from './lines'
@@ -184,7 +184,10 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                           .filter((l) => l.key === r.key || !rows.some((x) => x.key === l.key))
                           .map((l) => {
                             const a = moneyOf(l.doc.nodes, l.node.id).available
-                            const where = multiDoc ? `${yearById(l.doc.yearId)?.name ?? ''} · ` : ''
+                            /* client 18 Oct · #37 · each source has its own budgets · the option names the
+                               source, so the link draws from the chosen source's budget */
+                            const src = docSources(l.doc).map((x) => sourceName(x.code)).join('، ')
+                            const where = multiDoc ? `${yearById(l.doc.yearId)?.name ?? ''} · ${src} · ` : ''
                             return { value: l.key, label: isolate(`${where}${l.node.label} · متاح ${nf.format(a)}`) }
                           })}
                         onChange={(v) => put(i, { key: v })}
@@ -214,11 +217,15 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                     rows={[
                       { k: 'الميزانية', v: docTitle(one.doc) },
                       { k: 'البند', v: trail(one.doc.nodes, one.node) },
+                      /* Re-audit 17 Oct · the same reading as the card and the tree · the hold in its two
+                         kinds, the accounting balance (initial holds left in) and the available one */
                       { k: 'المبلغ المخصص', v: <Money sm>{m.allocated}</Money> },
-                      { k: 'المبلغ المحتجز', v: <Money sm>{m.held}</Money> },
+                      { k: 'الحجوزات المبدئية', v: <Money sm>{holdSplit(one.doc, one.node.id).initial}</Money> },
+                      { k: 'الحجوزات النهائية', v: <Money sm>{holdSplit(one.doc, one.node.id).final}</Money> },
                       { k: 'الملتزم به', v: <Money sm>{m.committed}</Money> },
                       { k: 'المبلغ المدفوع', v: <Money sm>{m.paid}</Money> },
-                      { k: 'المبلغ المتاح', v: <b><Money sm>{m.available}</Money></b> },
+                      { k: 'الرصيد المحاسبي', v: <Money sm>{lineBalances(one.doc, one.node.id).accounting}</Money> },
+                      { k: 'الرصيد المتاح فعليًا', v: <b><Money sm>{m.available}</Money></b> },
                       /* Re-audit 7 Oct · 5.2.5 · the line's sources and what each still has on the line ·
                          batch 5 · and each source's own balance in the budget, which the link checks too */
                       ...(docSources(one.doc).length > 1 && splitOf(one.doc, one.node.id)?.length ? [{

@@ -22,7 +22,7 @@ import { meOf, readRole } from '@/data/roles'
 import { readEntity } from '@/data/readings'
 import { entityCode } from '@/lib/format'
 import {
-  EntityBanksTab, EntityDataTab, EntityDocsTab, EntityGoTo, EntityLogTab,
+  EntityBanksTab, EntityDataTab, ExternalRecordTab, EntityDocsTab, EntityGoTo, EntityLogTab,
   EntityEvalCard, EntityProjectsTab, EntityRecord,
 } from './tabs'
 
@@ -123,7 +123,7 @@ export default function EntityPage() {
                     <Tag tone="mute">الحوكمة: {entity.governance}</Tag>
                     {/* An expired license blocks contracting, so it belongs in the header, not inside a
                         tab - the decision is made from the top. */}
-                    {detail.licenseExpired && <Tag tone="mute">الترخيص منتهٍ</Tag>}
+                    {detail.licenseExpired && !entity.external && <Tag tone="mute">الترخيص منتهٍ</Tag>}
                     <span className="sub">{entity.licensor}</span>
                   </div>
                 </div>
@@ -139,9 +139,11 @@ export default function EntityPage() {
 
           <div className="g2">
             <div className="col">
-              {active === 'data' && <EntityStatusCard e={entity} />}
+              {/* Re-audit 17 Oct · v3 · 11.2.1 · 11.4.1 · an external party is an internal reference record ·
+                  no account, no users, no license cycle · its file reads only what was recorded */}
+              {active === 'data' && !entity.external && <EntityStatusCard e={entity} />}
               {active === 'data' && <PartnerCard entityId={entity.id} />}
-              {active === 'data' && <EntityDataTab e={entity} d={detail} />}
+              {active === 'data' && (entity.external ? <ExternalRecordTab e={entity} /> : <EntityDataTab e={entity} d={detail} />)}
               {active === 'docs' && <EntityDocsTab d={detail} entityId={entity.id} />}
               {active === 'banks' && <EntityBanksTab d={detail} entityId={entity.id} />}
               {active === 'projects' && <EntityProjectsTab rows={projects} />}

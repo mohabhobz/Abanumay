@@ -40,7 +40,7 @@ export interface PlanAction {
   why: string
 }
 
-export function planActionsFor(role: RoleKey, stage: PlanStage, asEntity = false): PlanAction[] {
+export function planActionsFor(role: RoleKey, stage: PlanStage, asEntity = false, me?: string): PlanAction[] {
   /* 12.2.7 · 12.2.9 · the entity sends its draft, and its edited plan after a return */
   if (asEntity) {
     return stage === 'draft' || stage === 'returned'
@@ -63,7 +63,7 @@ export function planActionsFor(role: RoleKey, stage: PlanStage, asEntity = false
     ]
   }
   /* v3 · 12.2.11 · the grants manager, or an authority holder he delegated */
-  if (stage === 'manager' && mayApprovePlan(role)) {
+  if (stage === 'manager' && mayApprovePlan(role, me)) {
     return [
       { key: 'approve', label: 'اعتماد وتثبيت النسخة المرجعية', kind: 'btn-p', gated: true, why: 'الاعتماد يثبّت الهيكل، وأي تعديل بعده يلزمه طلب رسمي' },
       /* 12.2.11 · the manager's return goes to the supervisor, who reviews it with the entity */

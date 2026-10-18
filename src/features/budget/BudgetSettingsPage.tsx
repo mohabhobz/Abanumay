@@ -375,7 +375,7 @@ function RulesTab() {
   const [d, setD] = useState<BudgetRules>(() => structuredClone(BUDGET_RULES))
   const dirty = JSON.stringify(d) !== JSON.stringify(saved)
   const put = <K extends keyof BudgetRules>(k: K, x: BudgetRules[K]) => setD((s) => ({ ...s, [k]: x }))
-  const roles = (k: 'prepareBy' | 'managerBy' | 'financeBy' | 'execBy' | 'statusBy', label: string, note: string) => (
+  const roles = (k: 'prepareBy' | 'managerBy' | 'financeBy' | 'execBy' | 'statusBy' | 'notifyLive', label: string, note: string) => (
     <li className="itk-sup">
       <span className="cfgl"><b>{label}</b><span className="sub">{note}</span></span>
       <span className="pc-sp" />
@@ -389,10 +389,11 @@ function RulesTab() {
         <Head title="مسار الاعتماد" meta={<span className="sub">خارج مسؤوليات إدارة المنح · يُسند لأصحاب الصلاحية<bdi>{/* v3 · 1.1.desc-4 · doc 1.2.7–1.2.11 · 1.3.6–1.3.9 */}</bdi></span>} />
         <ul className="cfglist">
           {roles('prepareBy', 'إعداد الميزانية وطلبات العمليات', 'صاحب الصلاحية · يُنشئ ويرسل')}
-          {roles('managerBy', 'مراجعة صاحب الصلاحية', 'موافقة وإحالة للإدارة المالية · أو إعادة للمُعِدّ')}
-          {roles('financeBy', 'مراجعة الإدارة المالية', 'موافقة وإحالة للمدير التنفيذي · أو إعادة للمُعِدّ')}
+          {roles('managerBy', 'مراجعة قبل الإدارة المالية (اختيارية)', 'قرار المؤسسة (18 أكتوبر): بلا هذه الخطوة · «لا أحد» = تذهب الميزانية من مُعِدّها إلى الإدارة المالية مباشرة')}
+          {roles('financeBy', 'مراجعة الإدارة المالية واعتمادها', 'موافقة وإحالة للمدير التنفيذي · أو إعادة للمُعِدّ')}
           {roles('execBy', 'اعتماد المدير التنفيذي', 'اعتماد وتفعيل · أو إعادة للإدارة المالية')}
           {roles('statusBy', 'تفعيل البنود وإيقافها', 'على الميزانية المعتمدة · ويسري على ما تحت البند')}
+          {roles('notifyLive', 'يُبلَّغ بتفعيل الميزانية وتنفيذ العمليات', 'من يربط المشاريع بالميزانية')}
         </ul>
       </Glass>
 

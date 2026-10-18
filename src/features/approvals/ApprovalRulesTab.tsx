@@ -46,7 +46,16 @@ export function ApprovalRulesTab() {
         />
         <ul className="cfglist">
           <li className="itk-sup">
-            <span className="cfgl"><b>الرفض النهائي</b><span className="sub">{/* v3 · 4.2.17 */}لمدير المنح على كل المشاريع أيًّا كانت قيمتها</span></span>
+            <span className="cfgl"><b>الرفض النهائي</b><span className="sub">{/* v3 · 4.2.17 · decision 2 */}صلاحية عامة لمدير المنح على كل المشاريع · ويمكن تحديد حدّ لمبلغه</span></span>
+          </li>
+          <li className="itk-sup">
+            <Switch
+              label="حدّ مبلغ الرفض النهائي"
+              note={d.managerRejectCapOn ? <>فوق <Num>{d.managerRejectUpTo}</Num> ريال يُرفع المشروع بتوصية بالرفض بدل الرفض النهائي</> : 'غير مفعّل · يرفض مدير المنح أيًّا كانت القيمة'}
+              on={Boolean(d.managerRejectCapOn)}
+              onChange={(v) => put('managerRejectCapOn', v)}
+            />
+            {d.managerRejectCapOn && <CfgNum value={d.managerRejectUpTo} label="حدّ مبلغ الرفض النهائي" suffix="ريال" onChange={(n) => put('managerRejectUpTo', n)} />}
           </li>
           <li className="itk-sup">
             <span className="cfgl"><b>يُقترح «يتطلب خطة» من مبلغ</b><span className="sub">أو مدة تتجاوز السنة · ويختار المدير{/* doc 4.4.2 */}</span></span>
@@ -120,7 +129,7 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="الجلسات والتصويت" meta={<span className="sub"><bdi>{/* doc 6.4.6 · 7.4.6 */}</bdi></span>} />
+        <Head title="الجلسات" meta={<span className="sub"><bdi>{/* doc 6.4.6 · 7.4.6 */}</bdi></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>أعضاء اللجنة التنفيذية</b></span><span className="pc-sp" />
@@ -131,19 +140,11 @@ export function ApprovalRulesTab() {
             <MultiSelect label="أعضاء المجلس" all="اختر الأعضاء" people values={d.boardMembers} options={STAFF()} onChange={(v) => put('boardMembers', v)} />
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>النصاب</b><span className="sub">أقل عدد أصوات لصدور القرار</span></span><span className="pc-sp" />
+            <span className="cfgl"><b>النصاب</b><span className="sub">أقل عدد أعضاء لانعقاد الجلسة</span></span><span className="pc-sp" />
             <CfgNum value={d.quorum} min={1} label="النصاب" suffix="أعضاء" onChange={(n) => put('quorum', n)} />
           </li>
-          <li className="itk-sup">
-            <span className="cfgl"><b>آلية التصويت</b></span><span className="pc-sp" />
-            <div className="cfgchips" role="radiogroup" aria-label="آلية التصويت">
-              {(['majority', 'unanimous'] as const).map((v) => (
-                <button key={v} type="button" role="radio" aria-checked={d.voting === v} className={`cfgchip${d.voting === v ? ' on' : ''}`} onClick={() => put('voting', v)}>
-                  {v === 'majority' ? 'الأغلبية' : 'الإجماع'}
-                </button>
-              ))}
-            </div>
-          </li>
+          {/* Client 18 Oct · decision 14 · no per-member votes · the voting rule is retired · the CEO records
+              the body's final decision with the minutes */}
           <li className="itk-sup">
             <span className="cfgl"><b>من يسجّل جلسات اللجنة</b></span><span className="pc-sp" />
             <MultiSelect all="لا أحد" values={d.committeeBy} options={ROLE_OPTS} onChange={(v) => put('committeeBy', v as RoleKey[])} />

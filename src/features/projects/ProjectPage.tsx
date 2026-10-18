@@ -89,6 +89,16 @@ function ownContent(id: string): Partial<typeof fixtures.project> {
   if (org.length) out.outputs = org.map(outputLine)
   if (f.entityOutputs?.length) out.entityOutputs = f.entityOutputs.map(outputLine)
   if (f.original && row && (f.original.field !== row.field || f.original.goal !== row.goal || f.original.track !== row.track)) out.originalChoice = `${f.original.track} · ${f.original.field} · ${f.original.goal}`
+  /* Re-audit 17 Oct · v3 · 11.2.2 · a project created by the simplified form carries only what the form
+     asked · nothing falls back to the seeded project's idea, rationale or stages */
+  if (row?.externalId) {
+    out.idea = f.objectives.join(' · ') || row.goal
+    out.mainGoal = `${row.goal} · ضمن مجال ${row.field} (${row.track})`
+    out.goals = f.objectives
+    out.outputs = org.length ? org.map(outputLine) : []
+    out.rationale = []
+    out.phases = []
+  }
   if (plan?.phases.length) {
     out.phases = plan.phases.map((ph, i) => ({
       name: ph.name, tasks: ph.activities.map((a) => a.name).join('، ') || '—', months: `${ph.from} – ${ph.to}`,
@@ -185,14 +195,17 @@ export default function ProjectPage() {
   const seat = holder && row ? seatOptions(row, holder, role.key, me.name) : null
   /* A project waiting on the entity, or closed, has no decision for anyone (3.4.16 · 3.4.27) */
   const frozen = waiting || closed
-  const user = frozen ? { ...me, actions: [] } : seat ? { ...me, actions: seat.actions } : me
+  /* Re-audit 17 Oct · out of study (approved and beyond) no study seat stands · the role's default
+     study buttons must not show, nor route to the supervisor's path */
+  const outOfStudy = Boolean(row) && !holder
+  const user = frozen || outOfStudy ? { ...me, actions: [] } : seat ? { ...me, actions: seat.actions } : me
   const studyEditable = role.key === 'supervisor' && holder === 'supervisor' && !frozen && (row?.owner === me.name || Boolean(me.behalf))
   const [transfer, setTransfer] = useState(false)
 
   /* What each seat's button does (procedure 3) · the supervisor's recommendation forwards, never
      approves; a return goes back to the supervisor with its note */
   const decide = (a: DecisionAction, note: string, choice: string): string[] | void => {
-    if (!row) return
+    if (!row || outOfStudy) return
     /* Above the supervisor, every seat's decision runs through the approval path (BPD-004–007) */
     if (holder && holder !== 'supervisor') return decideApproval(row, holder, a.label, note, choice, me.name)
     if (a.label === 'توصية بالموافقة' || a.label === 'توصية بالرفض' || a.label === 'أعد الإرسال لمدير المنح') {
@@ -610,12 +623,12 @@ export default function ProjectPage() {
           compact={mobile}
           atEnd={atEnd}
           /* The grants manager links the project to a budget line as part of the decision. */
-          hold={asEntity ? (waiting ? 'مطلوب منك استكمال الطلب وإعادة إرساله من بوابتك' : undefined) : waiting ? 'بانتظار استكمال الجهة · الدراسة متوقفة حتى تعيد إرسال الطلب' : closed ? (flow?.closed?.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف') : seat && (!seat.mine || seat.actions.length === 0) ? seat.say : undefined}
+          hold={asEntity ? (waiting ? 'مطلوب منك استكمال الطلب وإعادة إرساله من بوابتك' : undefined) : waiting ? 'بانتظار استكمال الجهة · الدراسة متوقفة حتى تعيد إرسال الطلب' : closed ? (flow?.closed?.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف') : seat && (!seat.mine || seat.actions.length === 0) ? seat.say : outOfStudy && row ? `${row.statusGroup} · خارج مسار الدراسة والاعتماد` : undefined}
           onDecide={decide}
           intercept={intercept}
           context={holder === 'supervisor' && seat?.mine && flow?.study ? (
             <p className="sub cnote">
-              التوصية المسجّلة: <b>{flow.study.recommendation === 'approve' ? 'الموافقة' : flow.study.recommendation === 'reject' ? 'الاعتذار' : 'لم تُحدَّد'}</b>
+              التوصية المسجّلة: <b>{flow.study.recommendation === 'approve' ? 'الموافقة' : flow.study.recommendation === 'reject' ? 'الرفض' : 'لم تُحدَّد'}</b>
               {' · '}تُحال لمدير المنح ولا يترتب عليها اعتماد
             </p>
           ) : undefined}

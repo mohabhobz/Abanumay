@@ -1,4 +1,4 @@
-import { actAt } from '@/data/clock'
+import { actAt, TODAY } from '@/data/clock'
 import { foundationDaysBetween } from '@/data/intake/cycle'
 
 /* Batch 8 · 17 Oct · cross x.5.1 · the stage clock runs.
@@ -8,7 +8,8 @@ import { foundationDaysBetween } from '@/data/intake/cycle'
    the seeded ages. The number is now a clock: what was written plus the foundation's working days
    since it was written (3.4.15 · 24 units a day, lib/sla). A move writes zero and stamps the move's own
    time (the op's stamp on a replay, so a reload reads the same age), and the clock runs from there.
-   A seeded age stays as written · it is the record's age on the demo's reference day. */
+   A seeded age is the record's age on the demo's reference day, and runs from that day (re-audit
+   17 Oct · a seeded record left without a stamp never aged, so «تنتهي مدته غدًا» read the same every day). */
 
 const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 
@@ -31,7 +32,7 @@ export function liveClock<T extends object>(row: T, key: 'hoursInStage' | 'hours
   ARMED.add(row)
   const r = row as Record<string, unknown>
   let base = Number(r[key]) || 0
-  let at: string | undefined = fresh ? actAt() : undefined
+  let at: string | undefined = fresh ? actAt() : `${TODAY}T12:00:00Z`
   Object.defineProperty(row, key, {
     enumerable: true, configurable: true,
     get: () => base + workHoursSince(at),

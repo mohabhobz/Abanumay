@@ -1,4 +1,4 @@
-import { APPROVAL_MATRIX, approverFor, type ApprovalRow } from './approval'
+import { APPROVAL_MATRIX, deciderFor, type ApprovalRow } from './approval'
 import type { AuthorityMatrix, AuthorityRole, ProjectRow } from '@/types/domain'
 import type { RoleKey } from './roles'
 
@@ -45,7 +45,7 @@ export const holderOf = (row: Pick<ProjectRow, 'stage' | 'holder'>): Holder | nu
 
 /** The authority fan for one project · from the live matrix, with the holder marked */
 export const authorityFor = (amount: number, holder: Holder | null): AuthorityMatrix => {
-  const decider = approverFor(amount).key
+  const decider = deciderFor(amount).key
   const stops: Holder[] = ['supervisor', ...APPROVAL_MATRIX.map((r) => r.key)]
   /* At the supervisor's confirmation every level has passed */
   const at = holder === 'confirm' ? stops.length : holder ? stops.indexOf(holder) : stops.indexOf(decider) + 1

@@ -1,3 +1,4 @@
+import { holds, holdersSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BackTo, Empty, Glass, Head, KV, Money, MoneyField, Select, Tag } from '@/components/ui'
@@ -75,7 +76,9 @@ export default function CaseNewPage() {
   const own = approverFor(kind, p.id, kind === 'increase' ? value || undefined : undefined)
   const finalKey = own === 'grants-manager' && (!redirect || approverFor('redirect', p.id) === 'grants-manager') ? 'grants-manager' : 'ceo'
   const approver = APPROVER_SAY(finalKey)
-  const mine = role.key === 'supervisor'
+  /* Client 18 Oct · #17 · a value annex is opened by whoever holds the permission */
+  const valueAnnex = kind === 'reduce' || pick === 'annex'
+  const mine = valueAnnex ? holds('annexBy', role.key) : role.key === 'supervisor'
 
   const submit = () => {
     const out = createCase({
@@ -84,7 +87,7 @@ export default function CaseNewPage() {
       annex: kind === 'reduce' ? annex : undefined,
       extra: kind === 'increase' && !independent ? { amount: Number(extra) || raise, dueAt: dueAt || '2026-11-01' } : undefined,
       outcome: pick, redirect: redirect ? { purpose, decision, file: rfile } : undefined,
-    }, user.name)
+    }, user.name, role.key)
     setBad(out.errors)
     if (out.id) navigate(ROUTES.distress(out.id))
   }
@@ -207,7 +210,7 @@ export default function CaseNewPage() {
         <div className="decdock">
           <div className="chrome decbar payact">
             <div className="rowf gp-3 payact-w">
-              <span className="decsent">{mine ? <>يُرفع القرار إلى مدير المنح{approver !== APPROVER_SAY('grants-manager') ? <> ثم {approver}</> : null}</> : <>يفتح الحالةَ مشرفُ المنح</>}</span>
+              <span className="decsent">{mine ? <>يُرفع القرار إلى مدير المنح{approver !== APPROVER_SAY('grants-manager') ? <> ثم {approver}</> : null}</> : <>{valueAnnex ? <>يتخذ قرار ملحق القيمة {holdersSay('annexBy')}</> : 'يفتح الحالةَ مشرفُ المنح'}</>}</span>
             </div>
             {mine && <button type="button" className="btn btn-p" disabled={!ready} onClick={submit}>افتح الحالة</button>}
           </div>

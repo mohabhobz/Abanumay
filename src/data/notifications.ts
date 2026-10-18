@@ -128,19 +128,8 @@ export function buildNotes(user: { name: string; role?: string }): Note[] {
     })
   }
 
-  /* Messages and comments · the sender's face leads the card */
-  const MSGS: { by: string; body: string }[] = [
-    { by: 'عبدالله الدوسري', body: 'راجعت الدراسة، نحتاج تحديث بند التشغيل قبل العرض على اللجنة.' },
-    { by: 'ريم الشمري', body: 'أرفقت مؤشرات الأداء للربع الأخير في ملف المشروع.' },
-  ]
-  query.projects({ owner: user.name, sort: 'waiting', pageSize: MSGS.length }).rows.forEach((p, i) => {
-    const m = MSGS[i]
-    out.push({
-      id: `msg-${p.id}`, kind: 'msg', title: `${m.by} علّق على «${p.name}»`,
-      context: m.body,
-      at: dayOf((i + 1) * 5 * HOUR), to: ROUTES.project(p.id), from: { type: 'person', name: m.by },
-    })
-  })
+  /* Re-audit 17 Oct · the two fixed comments «عبدالله الدوسري» and «ريم الشمري» pinned to the first
+     projects were made up · the bell carries only what the records say */
 
   /* Past its limit · cross «التصعيد» · the shared mechanism's alerts addressed to this person or
      desk: once on the day a stage passed its days, then one a day while it stays stalled (9.5) */

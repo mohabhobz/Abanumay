@@ -1,5 +1,6 @@
 import { CFG, persist, readJson } from '@/lib/config'
 import { logSettings, diffOf } from './settingsLog'
+import type { RoleKey } from '@/data/roles'
 
 /* The client's open decisions · batch 8 (9 Oct).
 
@@ -27,24 +28,30 @@ export interface Decisions {
   impactBasis: 'similar' | 'field'
   /** entities#49 · the projects of an archived entity in the impact and reports */
   archivedInReports: boolean
-  /** intake#15 · when an official holiday is added or removed, the end dates of projects not yet
-      closed are computed again */
-  holidayRederive: boolean
+  /** Client 18 Oct · #17 · who may take a closing decision that changes the agreement's value by
+      an annex (a raise by annex · a cut) · a system permission, not a fixed seat */
+  annexBy: RoleKey[]
+  /** Client 18 Oct · #34 · who may cancel an approved portfolio · a system permission */
+  portfolioCancelBy: RoleKey[]
 }
 
 const DEFAULT: Decisions = {
-  payNext: 'off',
+  /* Client 18 Oct · #19 · the order is kept · each payment still waits for its own conditions */
+  payNext: 'requested',
   ehsanEntities: 'any',
   priority: 'manual',
   typeFloor: { regular: null, independent: null, portfolio: null },
   impactBasis: 'similar',
   archivedInReports: false,
-  /* v3 · 3.4.34 · the document decided it · ends follow every change to the calendar */
-  holidayRederive: true,
+  annexBy: ['supervisor'],
+  portfolioCancelBy: ['ceo'],
 }
 
-export const DECISIONS: Decisions = readJson(CFG.decisions, DEFAULT)
+export const DECISIONS: Decisions = readJson(CFG.decisions, structuredClone(DEFAULT))
 DECISIONS.typeFloor = { ...DEFAULT.typeFloor, ...DECISIONS.typeFloor }
+/* Re-audit 17 Oct · «holidayRederive» left the dictionary · v3 3.4.34 decided it (the ends always follow
+   the calendar, IntakeSettings) · a copy saved before drops it so it isn't counted as a choice */
+delete (DECISIONS as unknown as Record<string, unknown>).holidayRederive
 export const DECISIONS_DEFAULT = DEFAULT
 
 export const LEVEL_SAY: Record<Level, string> = { manager: 'مدير المنح', exec: 'المدير التنفيذي', committee: 'اللجنة التنفيذية', board: 'مجلس الأمناء' }
@@ -52,10 +59,18 @@ export const LEVEL_RANK: Record<Level, number> = { manager: 0, exec: 1, committe
 export const KIND_SAY: Record<ProjectKind, string> = { regular: 'مشروع عادي', independent: 'مشروع مستقل (شريك)', portfolio: 'محفظة' }
 
 const LABEL: Record<keyof Decisions, string> = {
-  payNext: 'فتح الدفعة التالية', ehsanEntities: 'الجهات الموجّهة عبر إحسان',
+  payNext: 'فتح الدفعة التالية', ehsanEntities: 'الجهات الموجّهة عبر شريك استراتيجي',
   priority: 'أولوية الطلب', typeFloor: 'نوع المشروع في مسار الاعتماد', impactBasis: 'أساس الأثر المتوقع',
-  archivedInReports: 'مشاريع الجهات المؤرشفة في التقارير', holidayRederive: 'إعادة حساب النهاية عند تغيّر الإجازات',
+  archivedInReports: 'مشاريع الجهات المؤرشفة في التقارير',
+  annexBy: 'من يتخذ قرار ملحق القيمة', portfolioCancelBy: 'من يلغي المحفظة',
 }
+
+/** The seats a role permission may be given to · in the decisions page */
+export const SEAT_SAY: Partial<Record<RoleKey, string>> = { supervisor: 'مشرف المنح', 'grants-manager': 'مدير المنح', ceo: 'المدير التنفيذي', finance: 'المالية', admin: 'مدير النظام' }
+/** Does this seat hold the permission? */
+export const holds = (k: 'annexBy' | 'portfolioCancelBy', role: RoleKey): boolean => DECISIONS[k].includes(role)
+/** The permission's holders in words · «مشرف المنح أو مدير المنح» */
+export const holdersSay = (k: 'annexBy' | 'portfolioCancelBy'): string => DECISIONS[k].map((r) => SEAT_SAY[r] ?? r).join(' أو ') || 'لا أحد'
 
 export function saveDecisions(next: Decisions, by: string): void {
   const before = structuredClone(DECISIONS)
@@ -64,7 +79,7 @@ export function saveDecisions(next: Decisions, by: string): void {
   logSettings('قرارات المؤسسة', '/settings/decisions', by, diffOf(
     before as unknown as Record<string, unknown>, DECISIONS as unknown as Record<string, unknown>,
     (k) => LABEL[k as keyof Decisions] ?? k,
-    (v) => typeof v === 'boolean' ? (v ? 'مفعّل' : 'موقوف') : typeof v === 'object' && v ? Object.entries(v).map(([a, b]) => `${KIND_SAY[a as ProjectKind] ?? a}: ${b ? LEVEL_SAY[b as Level] : 'بالمبلغ'}`).join('، ') : String(v),
+    (v) => typeof v === 'boolean' ? (v ? 'مفعّل' : 'موقوف') : Array.isArray(v) ? v.map((r) => SEAT_SAY[r as RoleKey] ?? r).join('، ') || 'لا أحد' : typeof v === 'object' && v ? Object.entries(v).map(([a, b]) => `${KIND_SAY[a as ProjectKind] ?? a}: ${b ? LEVEL_SAY[b as Level] : 'بالمبلغ'}`).join('، ') : String(v),
   ))
 }
 

@@ -52,7 +52,7 @@ import { yearById } from './mock/budgetTree'
 import { isDone, isLive } from '@/data/status'
 
 /** Denominator unit · "10 of 30" needs to say what the 30 is */
-export type Basis = 'project' | 'entity' | 'line' | 'source' | 'riyal' | 'agreement' | 'activity' | 'beneficiary'
+export type Basis = 'project' | 'entity' | 'line' | 'source' | 'riyal' | 'agreement' | 'activity' | 'beneficiary' | 'payment'
 
 /** Indicator unit as given in the document's "unit of measurement" column */
 export type KpiUnit = 'pct' | 'days' | 'count' | 'avg'
@@ -177,7 +177,12 @@ const sourcesUnused = srcs.filter(([, v]) => v.paid === 0 && v.held === 0).lengt
 /* Registration · from the requests' own history */
 
 const regDecided = regRows.filter((r) => (r.state === 'approved' || r.state === 'rejected') && r.decidedAt && r.submittedAt)
-const returns = (r: (typeof regRows)[number]) => (r.events ?? []).filter((e) => e.kind === 'return').length
+/* Re-audit 17 Oct · 2.8.3 read 0 with three requests «بانتظار الاستكمال» · a seeded request back for
+   completion carries no return event, and its history (regHistory) reads the return from its note */
+const returns = (r: (typeof regRows)[number]) => {
+  const n = (r.events ?? []).filter((e) => e.kind === 'return').length
+  return n || (!r.events?.length && r.state === 'completion' && r.note ? 1 : 0)
+}
 const regYear = regRows.filter((r) => (r.decidedAt ?? '').startsWith(YEAR))
 /* Re-audit 7 Oct · the document divides by every request, not the decided ones · drafts aren't requests yet */
 const regSent = regRows.filter((r) => r.state !== 'draft')
@@ -345,6 +350,10 @@ const extApproved = eh.filter((p) => p.supportStatus === 'معتمد')
 const extDone = extApproved.filter((p) => isDone(p.statusGroup) || Boolean(ehCloseOf(p.id)?.closedAt))
 const extIds = new Set(extApproved.map((p) => p.id))
 const extPaid = payRequests.filter((r) => extIds.has(r.projectId) && r.state === 'paid')
+/* Re-audit 17 Oct · 11.8.4 counts payments, over every external project's executed payment · a project
+   closed or ended since is still external, so its payments still count */
+const extAllIds = new Set(eh.map((p) => p.id))
+const extPaidAll = payRequests.filter((r) => extAllIds.has(r.projectId) && r.state === 'paid')
 const pfs = PORTFOLIOS
 const subs = pfs.flatMap((pf) => pf.items)
 const subsSent = subs.filter((x) => x.state !== 'draft')
@@ -543,7 +552,7 @@ return [
       { no: 1, name: 'نسبة المشاريع الخارجية المكتملة', how: '(عدد المشاريع الخارجية المكتملة ÷ إجمالي المشاريع الخارجية المعتمدة) × 100.', unit: 'pct', ...ratio(extDone.length, extApproved.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=external` },
       { no: 2, name: 'نسبة تنفيذ الدفعات', how: '(إجمالي قيمة أذونات الصرف المنفذة ÷ إجمالي قيمة الدعم المعتمد للمشاريع الخارجية) × 100.', unit: 'pct', ...ratio(extPaid.reduce((n, r) => n + r.asked, 0), extApproved.reduce((n, p) => n + (p.amountGranted || 0), 0), 'riyal'), better: 'up', target: null, to: ROUTES.payments },
       { no: 3, name: 'متوسط مدة إغلاق المشروع الخارجي', how: '(مجموع عدد الأيام من انتهاء المدة حتى اعتماد الإغلاق) ÷ عدد المشاريع الخارجية المغلقة.', unit: 'days', value: (() => { const m = mean(ehCloseDays); return m === null ? null : Math.round(m) })(), gap: ehCloseDays.length ? undefined : 'لم يُغلق مشروع خارجي بعد · يُحسب من نهاية المدة حتى اعتماد الإغلاق.', better: 'down', target: null, to: `${ROUTES.partners}?tab=external` },
-      { no: 4, name: 'نسبة الدفعات الموثقة بإثبات تحويل', how: '(عدد الدفعات التي أُرفق لها إثبات تحويل ÷ إجمالي الدفعات المنفذة) × 100.', unit: 'pct', ...ratio(extPaid.filter((r) => Boolean(r.transfer?.proof) || r.docs.some((d) => d.kind === 'إثبات التحويل')).length, extPaid.length), gap: extPaid.length ? undefined : 'لم تُنفَّذ دفعة لمشروع خارجي بعد.', better: 'up', target: null, to: ROUTES.payments },
+      { no: 4, name: 'نسبة الدفعات الموثقة بإثبات تحويل', how: '(عدد الدفعات التي أُرفق لها إثبات تحويل ÷ إجمالي الدفعات المنفذة) × 100.', unit: 'pct', ...ratio(extPaidAll.filter((r) => Boolean(r.transfer?.proof) || r.docs.some((d) => d.kind === 'إثبات التحويل')).length, extPaidAll.length, 'payment'), gap: extPaidAll.length ? undefined : 'لم تُنفَّذ دفعة لمشروع خارجي بعد.', better: 'up', target: null, to: ROUTES.payments },
       { no: 5, name: 'نسبة المشاريع المتأخرة أو المتعثرة', how: '(المشاريع الخارجية التي تجاوزت نهاية مدتها ولم تُغلق أو تعثّرت ÷ الجاري تنفيذها) × 100%.', unit: 'pct', ...ratio(ehLate.length, ehRunning.length), better: 'down', target: null, ours: true, to: `${ROUTES.escalation}?proc=ehsan` },
     ],
   },
@@ -576,9 +585,10 @@ return [
     owner: 'إدارة المنح',
     source: 'paraphrase',
     kpis: [
-      { no: 1, name: 'نسبة استغلال قيمة المحفظة', how: '(قيم المشاريع الفرعية المعتمدة ÷ القيمة المعتمدة للمحافظ) × 100%.', unit: 'pct', ...ratio(pfLive.reduce((n, pf) => n + pfMoney(pf).approved, 0), pfLive.reduce((n, pf) => n + pf.total, 0), 'riyal'), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
-      { no: 2, name: 'نسبة اعتماد المشاريع الفرعية', how: '(المشاريع الفرعية المعتمدة ÷ المشاريع الفرعية المرسلة للاعتماد) × 100%.', unit: 'pct', ...ratio(subsOk.length, subsSent.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
-      { no: 3, name: 'نسبة إنجاز المشاريع الفرعية', how: '(المشاريع الفرعية المكتملة ÷ المشاريع الفرعية المعتمدة) × 100%.', unit: 'pct', ...ratio(subsOk.filter((x) => x.exec?.status === 'مكتمل').length, subsOk.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
+      /* Re-audit 17 Oct · v3's order · the approval rate first, then the use of the portfolio's value */
+      { no: 1, name: 'نسبة اعتماد المشاريع الفرعية', how: '(المشاريع الفرعية المعتمدة ÷ المشاريع الفرعية المرسلة للاعتماد) × 100%.', unit: 'pct', ...ratio(subsOk.length, subsSent.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
+      { no: 2, name: 'نسبة استغلال قيمة المحفظة', how: '(قيم المشاريع الفرعية المعتمدة ÷ القيمة المعتمدة للمحافظ) × 100%.', unit: 'pct', ...ratio(pfLive.reduce((n, pf) => n + pfMoney(pf).approved, 0), pfLive.reduce((n, pf) => n + pf.total, 0), 'riyal'), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
+      { no: 3, name: 'نسبة إنجاز المشاريع الفرعية', how: '(المشاريع الفرعية المكتملة ÷ المشاريع الفرعية المعتمدة) × 100%.', unit: 'pct', /* Re-audit 17 Oct · the approved state «مكتمل» · not the partner's own request */ ...ratio(subsOk.filter((x) => x.state === 'done').length, subsOk.length), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
       { no: 4, name: 'نسبة تحقيق مستهدفات المستفيدين', how: '(المستفيدون الفعليون ÷ المستفيدون المستهدفون في المشاريع الفرعية المعتمدة) × 100%.', unit: 'pct', ...ratio(subsOk.reduce((n, x) => n + (x.exec?.reached ?? 0), 0), subsOk.reduce((n, x) => n + x.beneficiaries, 0), 'beneficiary'), better: 'up', target: null, to: `${ROUTES.partners}?tab=portfolios` },
       { no: 5, name: 'نسبة الصرف من المحافظ', how: '(المصروف المؤكد ÷ إجمالي قيمة المحافظ) × 100%.', unit: 'pct', ...ratio(pfMoneyAll.reduce((n, m) => n + m.confirmed, 0), pfMoneyAll.reduce((n, m) => n + m.total, 0), 'riyal'), better: 'up', target: null, ours: true, to: `${ROUTES.partners}?tab=finance` },
       { no: 6, name: 'نسبة المحافظ المتأخرة', how: '(المحافظ التي انقضت مراحل خطتها ولم تُغلق ÷ المحافظ المعتمدة) × 100%.', unit: 'pct', ...ratio(pfLate.length, pfs.filter((x) => x.stage === 'approved').length), better: 'down', target: null, ours: true, to: `${ROUTES.escalation}?proc=portfolio` },

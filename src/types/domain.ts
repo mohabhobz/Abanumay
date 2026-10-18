@@ -872,6 +872,8 @@ export interface PlanActivity {
   /** Batch 6 · what the entity reports it did · editable by the entity until the activity is
       accepted, then fixed with it (12.2.13 · 12.4.16) */
   actual?: { text: string; reached: number | null; doneOn: string; by: string; at: string }
+  /** Client 18 Oct (#32) · a portfolio plan's activity names its output */
+  output?: string
   /**
    * Activity's weight in the completion percentage — the weights of a
    * phase's activities sum to 100.

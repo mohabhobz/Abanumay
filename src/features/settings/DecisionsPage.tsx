@@ -7,12 +7,13 @@ import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
 import {
-  DECISIONS, DECISIONS_DEFAULT, KIND_SAY, LEVEL_SAY, saveDecisions,
+  DECISIONS, DECISIONS_DEFAULT, KIND_SAY, LEVEL_SAY, SEAT_SAY, saveDecisions,
   type Decisions, type Level, type ProjectKind,
 } from '@/data/shared/decisions'
 import { APPROVAL_RULES, saveApprovalRules, APPROVAL_RULES_DEFAULT } from '@/data/approvals/rules'
 import { ENTITY_RULES, ENTITY_RULES_DEFAULT, saveEntityRules } from '@/data/entities/rules'
 import { logSettings } from '@/data/shared/settingsLog'
+import type { RoleKey } from '@/data/roles'
 
 /* «قرارات المؤسسة» · batch 8 (9 Oct).
 
@@ -84,7 +85,7 @@ export default function DecisionsPage() {
               <h1 className="ptitle">قرارات المؤسسة</h1>
               <p className="sub mt-1">
                 أسئلة لا يجيب عنها إلا أصحاب القرار · كل سؤال مبني بالخيارين، والاختيار هنا يغيّر سلوك النظام فورًا ·
-                الخيار الأول هو ما كان يعمل به النظام · {decided ? <>اختير {decided} من 9</> : 'لم يُختر شيء بعد'}
+                الخيار الأول هو ما كان يعمل به النظام · {decided ? <>اختير {decided} من 10</> : 'لم يُختر شيء بعد'}
               </p>
             </div>
             {!can && <Tag tone="mute">للعرض · يختار المدير التنفيذي أو مدير النظام</Tag>}
@@ -92,7 +93,7 @@ export default function DecisionsPage() {
 
           <Choice
             title="ترتيب الدفعات" refs={/* doc BPD-009 · 9.4.7 · payments#6 */ ""} disabled={!can}
-            q="هل تُصرف الدفعات بترتيبها؟ الإجراء (v3) يجيز صرف أي دفعة اكتملت متطلباتها، ولو قبل تاريخها"
+            q="هل تُصرف الدفعات بترتيبها؟ قرار المؤسسة (18 أكتوبر): الترتيب ملزم، وكل دفعة تبقى مقيّدة بشروطها في الاتفاقية"
             value={d.payNext} onChange={(v) => put('payNext', v)}
             opts={[
               { value: 'off', label: 'بلا ترتيب (الإجراء)', does: 'أي دفعة اكتملت متطلباتها تُصرف · القيد الوحيد شروط الاتفاقية، ومنها شرط التاريخ.' },
@@ -103,8 +104,8 @@ export default function DecisionsPage() {
           />
 
           <Choice
-            title="الجهات الموجّهة عبر إحسان" refs={/* doc BPD-011 · 11.2.4 */ ""} disabled={!can}
-            q="من يُسمح بتوجيه مشروعه عبر منصة إحسان؟"
+            title="الجهات الموجّهة عبر شريك استراتيجي" refs={/* doc BPD-011 · 11.2.4 */ ""} disabled={!can}
+            q="من يُسمح بتوجيه مشروعه عبر شريك استراتيجي (منصة إحسان مثال)؟ · قرار المؤسسة 18 أكتوبر: الاسم الأساسي «شريك استراتيجي» والجهة مسجّلة في النظام"
             value={d.ehsanEntities} onChange={(v) => put('ehsanEntities', v)}
             opts={[
               { value: 'any', label: 'أي جهة', does: 'المنصة نفسها هي الشريك، فيُوجَّه مشروع أي جهة معتمدة.' },
@@ -150,6 +151,31 @@ export default function DecisionsPage() {
             ]}
             where={<>تبويب الاعتماد واللوحة التنفيذية وملخص الجلسات</>}
           />
+
+          <Glass>
+            <Head title="صلاحيات القرار" meta={<span className="sub"><bdi>{/* client 18 Oct · #17 · #34 */}</bdi></span>} />
+            <p className="sub">من يملك هذه القرارات · صلاحية في النظام لا مقعد ثابت · يُختار مقعد واحد على الأقل</p>
+            {([
+              { k: 'annexBy', t: 'قرار ملحق القيمة من الإغلاق', n: 'تخفيض قيمة المشروع أو زيادتها بملحق اتفاقية · يمر بعدها بمسار اعتماده المعتاد' },
+              { k: 'portfolioCancelBy', t: 'إلغاء المحفظة', n: 'إلغاء محفظة معتمدة قبل إغلاقها، مع ما يُسترد على مستواها' },
+            ] as const).map((x) => (
+              <div key={x.k} className="mt-3">
+                <p><b>{x.t}</b></p>
+                <p className="sub cnote">{x.n}</p>
+                <ul className="cfglist mt-2">
+                  {(Object.keys(SEAT_SAY) as RoleKey[]).map((r) => {
+                    const on = d[x.k].includes(r)
+                    return (
+                      <li key={r}>
+                        <Switch label={SEAT_SAY[r]!} disabled={!can || (on && d[x.k].length === 1)} on={on}
+                          onChange={(v) => put(x.k, v ? [...d[x.k], r] : d[x.k].filter((y) => y !== r))} />
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </Glass>
 
           <Glass>
             <Head title="مسائل تشغيل" meta={<span className="sub"><bdi>{/* doc entities#49 · intake#15 · 2.2.7 · 5.4.11 */}</bdi></span>} />

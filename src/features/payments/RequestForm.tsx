@@ -505,7 +505,7 @@ function SlotRow({
       >
         <span className="payslot-n">الدفعة <span className="num">{slot.no}</span></span>
         <span className="payslot-a num">{nf.format(slot.amount)}</span>
-        <span className="payslot-d"><DateText>{slot.dueAt}</DateText>{slot.ahead && slot.state !== 'paid' ? <span className="sub"> · لم يحن</span> : null}</span>
+        <span className="payslot-d"><DateText>{slot.dueAt}</DateText>{slot.ahead && slot.state !== 'paid' ? <span className="sub"> · لم يحن</span> : null}{slot.overdue ? <span className="sub"> · حلّ موعدها ولم تُرفع</span> : null}</span>
         {/* Note: fixed-width cells - the condition used to float in the row's text after a flexible
             gap, and a row with no condition had its badge drift; the checkmark now has its own cell
             even when unselected. */}

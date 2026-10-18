@@ -14,7 +14,7 @@ import { ROUTES } from '@/app/routes'
 import { nowStamp } from '@/lib/format'
 import type { PlanActivity, PlanPhase, PlanRow } from '@/types/domain'
 import { setPlanStatusGate } from '@/data/status'
-import { agrFlowOf, inForceOf } from '@/data/agreements/store'
+import { activateIfReady, agrFlowOf, holdForPlan, inForceOf } from '@/data/agreements/store'
 import { PLAN_AUTH, approvalCapacity, delegationOf, mayApprovePlan } from './auth'
 const approverTitles = (): string[] => [...PLAN_AUTH.approveBy, ...PLAN_AUTH.delegations.filter((d) => delegationOf(d.to)).map((d) => d.to)].map((k) => roleByKey(k).title)
 import type { RoleKey } from '@/data/roles'
@@ -37,8 +37,11 @@ import type { RoleKey } from '@/data/roles'
 
 /* ── The plan decision ── */
 
-export interface PlanDecision { needs: boolean; by: string; at: string; reason?: string; source: 'approval' | 'change' | 'legacy' | 'rule' }
+export interface PlanDecision { needs: boolean; by: string; at: string; reason?: string; source: 'approval' | 'change' | 'legacy' | 'rule' | 'late' }
 const DECISIONS = new Map<string, PlanDecision[]>()
+/* Re-audit 17 Oct · a seeded approved project with no decision on record gets one at load · migrated
+   «لا يتطلب خطة» · so the status gate never waves through a project because nothing was recorded */
+const SEEDED = new Map<string, PlanDecision>()
 
 /** The decision in force · the last change, else the approval's, else a plan the project already has */
 export function planDecisionOf(projectId: string): PlanDecision | undefined {
@@ -53,7 +56,7 @@ export function originalDecision(projectId: string): PlanDecision | undefined {
   if (rec) return { needs: rec.needsPlan!, by: rec.by, at: rec.at, source: 'approval' }
   if (f.needsPlan !== undefined) return { needs: f.needsPlan, by: roleByKey('grants-manager').name, at: TODAY, source: 'approval' }
   if (planOfProject(projectId)) return { needs: true, by: roleByKey('grants-manager').name, at: planOfProject(projectId)!.openedAt, source: 'legacy' }
-  return undefined
+  return SEEDED.get(projectId)
 }
 export const planDecisionHistory = (projectId: string): PlanDecision[] => DECISIONS.get(projectId) ?? []
 /** The rule's suggestion (4.4.2) · amount or duration · the manager confirms or changes it */
@@ -74,6 +77,34 @@ const notify = (to: string[], p: PlanRow, title: string, context: string, href =
 const SUP = () => roleByKey('supervisor').title
 const MGR = () => roleByKey('grants-manager').title
 
+/* ── Plan targets · client 18 Oct (#32) · a portfolio's plan runs through this module (BPD-012) ──
+   The portfolio registers itself here (the partners store owns it); its plan is a plan row like a
+   project's, keyed by the portfolio's id, with the same drafting, review, approval, execution and
+   change requests. What differs is read from the target: its value, its period, whether it runs. */
+
+export interface PlanTarget {
+  kind: 'portfolio'
+  id: string; name: string; entityId: string; entityName: string; owner: string
+  total: number; from?: string; to?: string
+  /** Its agreement is in force · activities run only then */
+  running: () => boolean
+}
+const TARGETS = new Map<string, PlanTarget>()
+export const planTargetOf = (projectId: string): PlanTarget | undefined => TARGETS.get(projectId)
+/** The value the plan's phases add up to · the portfolio's total, or the project's grant */
+export const planGrantOf = (projectId: string): number =>
+  TARGETS.get(projectId)?.total ?? projectRows.find((x) => x.id === projectId)?.amountGranted ?? 0
+/** Re-audit 17 Oct · 12.2.12 · a plan executes only with its agreement in force */
+const RUNS = ['تحت التنفيذ', 'قيد الإغلاق', 'متعثر']
+const runningOf = (projectId: string): boolean => {
+  const t = TARGETS.get(projectId)
+  if (t) return t.running()
+  /* the project in execution · its agreement in force and its plan approved (0.status.5), or a migrated
+     running project · not one still «معتمد» or completing its pre-execution requirements */
+  return RUNS.includes(projectRows.find((x) => x.id === projectId)?.statusGroup ?? '')
+}
+export const pfPlanId = (pfId: string): string => `PL-${pfId}`
+
 /* ── Readers ── */
 
 const actOf = (p: PlanRow, actId: string): PlanActivity | undefined => p.phases.flatMap((ph) => ph.activities).find((a) => a.id === actId)
@@ -88,6 +119,8 @@ export const stuckActivities = (p: PlanRow): PlanActivity[] => p.phases.flatMap(
 
 /** The plan's execution window against the project's approved duration (12.2.4) */
 export function projectWindow(projectId: string): { from?: string; to?: string; days: number } {
+  const t = TARGETS.get(projectId)
+  if (t) return { from: t.from, to: t.to, days: t.from && t.to ? days(t.from, t.to) : 0 }
   const p = projectRows.find((x) => x.id === projectId)
   return { from: p?.startAt, to: p?.endAt, days: p?.durationDays ?? 0 }
 }
@@ -168,7 +201,8 @@ function applyOp(o: Op) {
       /* Re-audit 7 Oct · the first decision on a project that had none is the original one, not a
          later change · and it carries the day it was taken */
       const first = !list.length && !originalDecision(o.projectId)
-      list.unshift({ needs: o.needs, by: o.by, at: o.at.slice(0, 10), reason: o.reason, source: first ? 'approval' : 'change' })
+      /* re-audit 17 Oct · a first decision taken after the approval isn't «مع توصية الاعتماد» · it's late */
+      list.unshift({ needs: o.needs, by: o.by, at: o.at.slice(0, 10), reason: o.reason, source: first ? 'late' : 'change' })
       DECISIONS.set(o.projectId, list)
       const p = planOfProject(o.projectId)
       if (!o.needs && p && p.stage !== 'done' && p.stage !== 'cancelled') {
@@ -203,7 +237,7 @@ function applyOp(o: Op) {
       if (!p || (p.stage !== 'draft' && p.stage !== 'returned')) return
       /* Batch 7 · plans#10 · the store holds the rule too, not the screen alone · a plan with open
          issues (dates, totals, the project's window) isn't sent */
-      if (planIssues(p, projectRows.find((x) => x.id === p.projectId)?.amountGranted ?? 0).length) return
+      if (planIssues(p, planGrantOf(p.projectId)).length) return
       touch(p, 'supervisor')
       notify([p.owner, SUP()], p, `خطة بانتظار مراجعتك · ${p.projectName}`, o.actor === 'entity' ? 'أرسلتها الجهة' : 'أرسلها المشرف بالنيابة')
       return
@@ -232,13 +266,17 @@ function applyOp(o: Op) {
         /* v3 · 8.2.26 · with the agreement already in force, the plan's approval is what puts the project
            «تحت التنفيذ» and opens its payments */
         const inForce = Boolean(inForceOf(p.projectId))
-        notify([p.entityName, p.owner], p, `اعتُمدت الخطة · ${p.projectName}`, inForce ? 'ثُبّتت النسخة المرجعية · والاتفاقية سارية فأصبح المشروع «تحت التنفيذ» وطلبات الصرف متاحة' : 'ثُبّتت النسخة المرجعية · يصبح المشروع «تحت التنفيذ» عند سريان الاتفاقية')
+        /* re-audit 17 Oct · the agreement already in force moved nothing while the plan waited · it moves now */
+        if (!TARGETS.has(p.projectId)) activateIfReady(p.projectId)
+        notify([p.entityName, p.owner], p, `اعتُمدت الخطة · ${p.projectName}`, TARGETS.has(p.projectId)
+          ? 'ثُبّتت النسخة المرجعية · تُفتح المشاريع الفرعية بعد اعتماد اتفاقية المحفظة'
+          : inForce ? 'ثُبّتت النسخة المرجعية · والاتفاقية سارية فأصبح المشروع «تحت التنفيذ» وطلبات الصرف متاحة' : 'ثُبّتت النسخة المرجعية · يصبح المشروع «تحت التنفيذ» عند سريان الاتفاقية')
       }
       return
     }
     case 'start': {
       const p = planById(o.planId); const a = p && actOf(p, o.actId)
-      if (!p || !a || p.stage !== 'active' || (a.state !== 'todo')) return
+      if (!p || !a || p.stage !== 'active' || (a.state !== 'todo') || !runningOf(p.projectId)) return
       a.state = 'doing'
       logOn(a, o.by, 'بدأ تنفيذ النشاط', 'entity')
       return
@@ -265,6 +303,8 @@ function applyOp(o: Op) {
       const p = planById(o.planId); const a = p && actOf(p, o.actId)
       if (!p || !a || p.stage !== 'active' || a.state === 'accepted' || a.state === 'claimed') return
       if (a.needs.some((n) => !a.evidence.some((e) => e.kind === n))) return
+      /* re-audit 17 Oct · not before the agreement is in force · not before the activity's planned start */
+      if (!runningOf(p.projectId) || (a.from && a.from > actDay())) return
       a.state = 'claimed'
       /* 12.4.15 · the supervisor learns there's an activity to review */
       notify([p.owner, SUP()], p, `نشاط بانتظار قبولك · ${a.name}`, p.projectName)
@@ -272,7 +312,7 @@ function applyOp(o: Op) {
     }
     case 'accept': {
       const p = planById(o.planId); const a = p && actOf(p, o.actId)
-      if (!p || !a || a.state !== 'claimed') return
+      if (!p || !a || a.state !== 'claimed' || !runningOf(p.projectId)) return
       a.state = 'accepted'
       a.doneAt = actDay()
       if (readyToClose(p)) {
@@ -283,7 +323,7 @@ function applyOp(o: Op) {
     }
     case 'reject': {
       const p = planById(o.planId); const a = p && actOf(p, o.actId)
-      if (!p || !a || a.state !== 'claimed') return
+      if (!p || !a || a.state !== 'claimed' || !o.note.trim()) return
       a.state = 'rejected'
       a.notes = [...(a.notes ?? []), { kind: 'reject', by: o.by, at: nowStamp(), say: o.note, from: 'staff' }]
       notify([p.entityName], p, `أُعيد نشاط بملاحظة · ${a.name}`, o.note, `${ROUTES.plan(p.id)}?as=entity`)
@@ -305,7 +345,7 @@ function applyOp(o: Op) {
     }
     case 'change': {
       const p = planById(o.planId)
-      if (!p || p.baseline === 0) return
+      if (!p || p.baseline === 0 || p.stage === 'done' || p.stage === 'cancelled') return
       const was = p.changes.find((c) => c.id === o.changeId)
       if (was) {
         if (was.state !== 'returned') return
@@ -398,11 +438,23 @@ function seed() {
     const f = appFlowOf(pr.id)
     if (f.decided && f.needsPlan) openFor(pr.id, `PL-P${pr.id}`, 'entity')
   }
+  /* re-audit 17 Oct · 4.2.3 · 12.2.1 · every approved project carries a decision · a seeded one with
+     none recorded (21047 · 21048 and the older running ones) reads migrated «لا يتطلب خطة» */
+  for (const pr of projectRows) {
+    if (!isApproved(pr) || planKind(pr) === 'external' || originalDecision(pr.id)) continue
+    SEEDED.set(pr.id, { needs: false, by: roleByKey('grants-manager').name, at: pr.startAt ?? TODAY, reason: 'مُرحّل · لم يُسجَّل قرار خطة في النظام السابق', source: 'legacy' })
+  }
 }
+/* Ops on a portfolio's plan wait until the partners store registers the portfolio (it loads after) */
+let waiting: Op[] = []
+const targetOp = (o: Op): o is Op & { planId: string } => o.op !== 'decide' && o.op !== 'open' && 'planId' in o && o.planId.startsWith('PL-PF-')
 function hydrate() {
   seed()
   try { ops = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Op[] } catch { ops = [] }
-  for (const o of ops) { apply(o); logOp(o) }
+  for (const o of ops) {
+    if (targetOp(o) && !planById(o.planId)) { waiting.push(o); continue }
+    apply(o); logOp(o)
+  }
 }
 hydrate()
 
@@ -410,6 +462,11 @@ hydrate()
    requirements until the plan is approved · only then «تحت التنفيذ» */
 setPlanStatusGate((projectId) => {
   const d = planDecisionOf(projectId)
+  /* re-audit 17 Oct · 8.3.30 · no decision on record holds the project · it was waved through before */
+  if (!d) {
+    const pr = projectRows.find((x) => x.id === projectId)
+    return pr && isApproved(pr) && planKind(pr) !== 'external' ? 'لم يُقرَّر بعد' : ''
+  }
   /* a plan the approval required · a seeded project paying under the old rule (its plan known only
      from the fixture, no decision on record) keeps the state it had */
   if (!d?.needs || d.source === 'legacy') return ''
@@ -419,6 +476,10 @@ setPlanStatusGate((projectId) => {
   return pl.stage === 'active' || pl.stage === 'done' || pl.stage === 'cancelled' || pl.baselineAt || pl.baseline > 0 ? '' : planStageLabel(pl.stage)
 })
 
+/* Re-audit 17 Oct · an agreement activated while its plan waited (during the agreements' replay the gate
+   wasn't set yet) stays at its agreement stage */
+holdForPlan()
+
 /* Confirmed in this session · open the plan beside the agreement (12.2.3) */
 setConfirmHook((projectId, by) => {
   if (appFlowOf(projectId).needsPlan && !planOfProject(projectId)) run({ op: 'open', projectId, planId: `PL-P${projectId}`, drafter: 'entity', by, at: now() })
@@ -427,6 +488,8 @@ setConfirmHook((projectId, by) => {
 /* ── Actions ── */
 
 const id6 = () => Math.random().toString(36).slice(2, 8)
+/* a project plan's id · the sequence counts project plans only, so a portfolio's plan doesn't move it */
+const nextPlanId = () => `PL-${1030 + planRows.filter((x) => !TARGETS.has(x.projectId)).length}`
 
 export function changePlanDecision(projectId: string, needs: boolean, reason: string, by: string): string[] {
   if (!reason.trim()) return [/* doc 12.4.31 */ 'سبب تعديل القرار إلزامي']
@@ -436,7 +499,7 @@ export function changePlanDecision(projectId: string, needs: boolean, reason: st
   if (pr && planKind(pr) === 'portfolio' && !needs) return ['المحفظة تتطلب خطة دائمًا']
   const cur = planDecisionOf(projectId)
   if (cur && cur.needs === needs) return ['القرار الحالي هو نفسه']
-  run({ op: 'decide', projectId, needs, reason: reason.trim(), planId: `PL-${1030 + planRows.length}`, by, at: now() })
+  run({ op: 'decide', projectId, needs, reason: reason.trim(), planId: nextPlanId(), by, at: now() })
   return []
 }
 export function openPlanFor(projectId: string, drafter: 'entity' | 'supervisor', reason: string, by: string): string {
@@ -444,7 +507,7 @@ export function openPlanFor(projectId: string, drafter: 'entity' | 'supervisor',
   if (pr && planKind(pr) === 'external') return ''
   const has = planOfProject(projectId)
   if (has && has.stage !== 'cancelled') return has.id
-  const planId = `PL-${1030 + planRows.length}`
+  const planId = nextPlanId()
   run({ op: 'open', projectId, planId, drafter, reason: reason.trim() || undefined, by, at: now() })
   return planOfProject(projectId)?.id ?? planId
 }
@@ -454,17 +517,53 @@ export function reviewPlan(planId: string, act: 'toManager' | 'returnEntity' | '
   /* Re-audit 7 Oct · a return carries its note in the store too, not only in the dock */
   if ((act === 'returnEntity' || act === 'managerReturn') && !note.trim()) return ['ملاحظة الإعادة إلزامية']
   /* v3 · 12.2.11 · the grants manager, or an authority holder he delegated */
-  if ((act === 'approve' || act === 'managerReturn') && role && !mayApprovePlan(role)) return ['اعتماد الخطة لمدير المنح أو صاحب صلاحية مفوّض']
-  run({ op: 'review', planId, act, note, by, as: act === 'approve' && role ? approvalCapacity(role) : undefined, at: now() })
+  /* re-audit 17 Oct · the seat is checked always · a call without a role no longer skips it */
+  if ((act === 'approve' || act === 'managerReturn') && (!role || !mayApprovePlan(role, by))) return ['اعتماد الخطة لمدير المنح أو صاحب صلاحية مفوّض']
+  if ((act === 'toManager' || act === 'returnEntity') && role && role !== 'supervisor') return ['مراجعة الخطة لمشرف المنح']
+  const p = planById(planId)
+  if (!p) return ['الخطة غير موجودة']
+  const at = { toManager: 'supervisor', returnEntity: 'supervisor', approve: 'manager', managerReturn: 'manager' }[act]
+  if (p.stage !== at) return ['الإجراء غير متاح في هذه المرحلة']
+  run({ op: 'review', planId, act, note, by, as: act === 'approve' && role ? approvalCapacity(role, by) : undefined, at: now() })
   return []
 }
-export const startActivity = (planId: string, actId: string, by: string) => run({ op: 'start', planId, actId, by, at: now() })
+/** Re-audit 17 Oct · 12.2.12 · what stops the plan's execution now · '' when it may run */
+export function execStop(planId: string): string {
+  const p = planById(planId)
+  if (!p) return 'الخطة غير موجودة'
+  if (p.stage !== 'active') return 'تُنفَّذ الخطة بعد اعتمادها'
+  if (!runningOf(p.projectId)) return TARGETS.has(p.projectId) ? 'تُنفَّذ خطة المحفظة بعد توقيع اتفاقيتها' : 'تُنفَّذ الخطة بعد سريان الاتفاقية ودخول المشروع «تحت التنفيذ»'
+  return ''
+}
+export function startActivity(planId: string, actId: string, by: string): string[] {
+  const why = execStop(planId)
+  if (why) return [why]
+  run({ op: 'start', planId, actId, by, at: now() })
+  return []
+}
 export const uploadEvidence = (planId: string, actId: string, kind: string, fileName: string, by: string, replace?: string) =>
   run({ op: 'evidence', planId, actId, evId: `ev-${id6()}`, kind, fileName, replace, by, at: now() })
 export const dropEvidence = (planId: string, actId: string, evId: string, by: string) => run({ op: 'evidenceDrop', planId, actId, evId, by, at: now() })
-export const claimActivityBy = (planId: string, actId: string, by: string) => run({ op: 'claim', planId, actId, by, at: now() })
-export const acceptActivityBy = (planId: string, actId: string, by: string) => run({ op: 'accept', planId, actId, by, at: now() })
-export const rejectActivityBy = (planId: string, actId: string, note: string, by: string) => run({ op: 'reject', planId, actId, note, by, at: now() })
+export function claimActivityBy(planId: string, actId: string, by: string): string[] {
+  const why = execStop(planId)
+  if (why) return [why]
+  const a = actOf(planById(planId)!, actId)
+  if (a?.from && a.from > actDay()) return ['لا يُقدَّم النشاط قبل تاريخ بدئه المخطط']
+  run({ op: 'claim', planId, actId, by, at: now() })
+  return []
+}
+export function acceptActivityBy(planId: string, actId: string, by: string): string[] {
+  const why = execStop(planId)
+  if (why) return [why]
+  run({ op: 'accept', planId, actId, by, at: now() })
+  return []
+}
+/** Re-audit 17 Oct · 12.4.14 · a return carries its note in the store too */
+export function rejectActivityBy(planId: string, actId: string, note: string, by: string): string[] {
+  if (!note.trim()) return ['ملاحظة الإعادة إلزامية']
+  run({ op: 'reject', planId, actId, note: note.trim(), by, at: now() })
+  return []
+}
 export const commentOn = (planId: string, actId: string, say: string, by: string, from: 'staff' | 'entity') => run({ op: 'comment', planId, actId, say, from, by, at: now() })
 /** Batch 6 · the entity's own data on an activity before acceptance · what was done, who was reached, when */
 export function saveActivityData(planId: string, actId: string, d: { text: string; reached: number | null; doneOn: string }, by: string): string[] {
@@ -500,6 +599,9 @@ export function contractualOf(p: PlanRow, proposed: PlanPhase[] | undefined): st
 export function requestChange(planId: string, say: string, proposed: PlanPhase[] | undefined, by: string, changeId?: string): string[] {
   if (!say.trim()) return ['اكتب التعديل المطلوب وسببه']
   const p = planById(planId)
+  /* re-audit 17 Oct · a done or cancelled plan takes no change request */
+  if (!p || p.baseline === 0) return ['التعديل الجوهري على خطة معتمدة']
+  if (p.stage === 'done' || p.stage === 'cancelled') return [p.stage === 'done' ? 'اكتملت الخطة · لا يُطلب تعديل عليها' : 'أُلغيت الخطة']
   if (!changeId && p?.changes.some((c) => c.state === 'waiting' || c.state === 'toAgreement')) return ['يوجد طلب بانتظار مدير المنح بالفعل']
   const why = p ? contractualOf(p, proposed) : []
   /* A request in words only · what it names decides · the money, the period, a payment's due date or condition */
@@ -516,7 +618,8 @@ export const annexAfter = (projectId: string, since: string): boolean => {
 
 export function decideChangeBy(planId: string, changeId: string, outcome: 'approve' | 'reject' | 'return' | 'toAgreement', note: string, by: string, role?: RoleKey): string[] {
   if (!note.trim()) return [/* doc 12.4.22 */ 'اكتب ملاحظة القرار']
-  if (role && !mayApprovePlan(role)) return ['قرار التعديل لمدير المنح أو صاحب صلاحية مفوّض']
+  /* re-audit 17 Oct · checked always, a call without a role included */
+  if (!role || !mayApprovePlan(role, by)) return ['قرار التعديل لمدير المنح أو صاحب صلاحية مفوّض']
   const p = planById(planId)
   const c = p?.changes.find((x) => x.id === changeId)
   /* v3 · 12.4.15 · the contractual part changes in the agreement before the plan takes it */
@@ -524,4 +627,44 @@ export function decideChangeBy(planId: string, changeId: string, outcome: 'appro
   run({ op: 'changeDecide', planId, changeId, outcome, note: note.trim(), by, at: now() })
   return []
 }
+/* ── Portfolio plans · client 18 Oct (#32) ── */
+
+const PF_STAGE: Record<string, PlanRow['stage']> = { none: 'draft', draft: 'draft', supervisor: 'supervisor', review: 'manager', approved: 'active', returned: 'returned' }
+/** The partners store registers each portfolio · with its plan as the fixture holds it, when it has one */
+export function registerPortfolioPlan(t: PlanTarget, seed?: { state: string; phases: PlanPhase[]; drafter: 'entity' | 'supervisor' }): void {
+  TARGETS.set(t.id, t)
+  if (seed && !planOfProject(t.id)) {
+    const stage = PF_STAGE[seed.state] ?? 'draft'
+    const approved = stage === 'active'
+    planRows.unshift(liveClock<PlanRow>({
+      id: pfPlanId(t.id), projectId: t.id, projectName: t.name, entityId: t.entityId, entityName: t.entityName,
+      stage, baseline: approved ? 1 : 0, baselineAt: approved ? t.from : undefined, approvedBy: approved ? roleByKey('grants-manager').name : undefined,
+      phases: structuredClone(seed.phases), owner: t.owner, drafter: seed.drafter, openedAt: t.from ?? TODAY, hoursInStage: 0, changes: [],
+    }, 'hoursInStage', true))
+  }
+  /* the ops saved on its plan, held since the load · only once the plan row exists (a portfolio
+     registers at its creation and its plan opens at its approval) */
+  if (!planOfProject(t.id)) return
+  const mine = waiting.filter((o) => targetOp(o) && o.planId === pfPlanId(t.id))
+  if (!mine.length) return
+  waiting = waiting.filter((o) => !mine.includes(o))
+  for (const o of mine) { apply(o); logOp(o) }
+  emit()
+}
+/** 13.2.8 · the portfolio's final approval opens its plan · the partner drafts it, or the supervisor */
+export function openPortfolioPlan(pfId: string, quiet = false): string {
+  const t = TARGETS.get(pfId)
+  if (!t) return ''
+  const has = planOfProject(pfId)
+  if (has) return has.id
+  registerPortfolioPlan(t, { state: 'draft', phases: [], drafter: 'entity' })
+  const p = planOfProject(pfId)!
+  /* a replay of the portfolio's approval opens the plan again with no new notices */
+  if (quiet) return p.id
+  notify([t.entityName], p, `أعدّ خطة المحفظة · ${t.name}`, 'تُكتب المراحل والأنشطة والشواهد في وحدة الخطط', `${ROUTES.planEdit(p.id)}?as=entity`)
+  notify([t.owner, SUP()], p, `فُتحت خطة محفظة · ${t.name}`, 'يكتبها الشريك أو مشرف المنح بالنيابة')
+  emit()
+  return p.id
+}
+
 export const resetPlans = () => { try { localStorage.removeItem(KEY) } catch { /* ignore */ } location.reload() }

@@ -344,7 +344,11 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     return [
       projectsQueue('study', 'مشاريع للدراسة', 'مسندة إليك وتنتظر توصيتك',
         single.filter((p) => p.owner === me && holderOf(p) === 'supervisor'), `${ROUTES.projects}?tab=mine`),
-      /* v3 · 0.status.3 · approved at the decision · the supervisor's next step is the agreement */
+      /* Client 18 Oct · decision 11 · the path is complete · the supervisor confirms the notes and
+         conditions before the project reads «معتمد» */
+      projectsQueue('confirm', 'اعتماد ينتظر تأكيدك', 'اكتمل مسار القرار · تحقّق من الملاحظات والشروط ثم أكّد',
+        single.filter((p) => p.owner === me && holderOf(p) === 'confirm'), `${ROUTES.projects}?tab=mine`),
+      /* v3 · 0.status.3 · approved after the confirmation · the supervisor's next step is the agreement */
       projectsQueue('approved', 'معتمدة تنتظر الاتفاقية', 'صدر الاعتماد · أعدّ الاتفاقية وانقل الشروط إليها',
         single.filter((p) => p.owner === me && p.statusGroup === 'معتمد'), `${ROUTES.projects}?status=معتمد`),
       portfolioItems(role),
@@ -414,11 +418,11 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
     /* The projects on the agenda of a planned session he sits on · read before the meeting (6.2.3 · 7.2.3) */
     const onAgenda = SESSIONS.filter((x) => x.state === 'planned' && x.members.includes(me))
     return onAgenda.map((x) => ({
-      key: `session-${x.id}`, label: x.title, note: `${x.body === 'committee' ? 'اللجنة التنفيذية' : 'مجلس الأمناء'} · صوّت على كل مشروع بنفسك`, icon: 'checks' as const,
+      key: `session-${x.id}`, label: x.title, note: `${x.body === 'committee' ? 'اللجنة التنفيذية' : 'مجلس الأمناء'} · اطّلع على ملفات جدول الأعمال قبل الاجتماع`, icon: 'checks' as const,
       all: `/approvals/sessions/${x.id}`,
       items: x.items.flatMap((it) => {
         const p = fixtures.projects.find((y) => y.id === it.projectId)
-        return p ? [{ ...fromProject(p), to: `/approvals/sessions/${x.id}`, sub: it.votes[me] ? `صوّتَّ · ${p.entityName}` : `لم تصوّت بعد · ${p.entityName}` }] : []
+        return p ? [{ ...fromProject(p), to: `/approvals/sessions/${x.id}`, sub: it.outcome ? `قُرّر · ${p.entityName}` : `على جدول الأعمال · ${p.entityName}` }] : []
       }),
     }))
   }

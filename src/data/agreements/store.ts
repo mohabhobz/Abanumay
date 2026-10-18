@@ -6,19 +6,18 @@ import { agreements, agreementById, setBlockedGate } from '@/data/mock/agreement
 import { projectRows } from '@/data/mock/projects'
 import { planOfProject } from '@/data/mock/plans'
 import { stageMeta } from '@/data/mock/taxonomy'
-import { setAgreementGate } from '@/data/mock/disbursements'
 import { setFundingGate as setAgrFundingGate } from '@/data/mock/agreementNew'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { linkOf, docOf } from '@/data/budget/store'
 import { pathOf } from '@/data/mock/budgetTree'
 import { appFlowOf } from '@/data/approvals/store'
-import { flowOf, orgOutputsOf, outputLine } from '@/data/intake/flow'
+import { flowOf, orgOutputsAreEntity, orgOutputsOf, outputLine } from '@/data/intake/flow'
 import { RELINKS, setPartyRename } from '@/data/entities/store'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type { AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, PayCond, PayDoc, ProjectRow } from '@/types/domain'
 import { requirementOf } from './conds'
-import { setAgreementStatusGate } from '@/data/status'
+import { planHoldOf, setAgreementStatusGate } from '@/data/status'
 
 /* Agreements (BPD-008) · the actions.
 
@@ -55,15 +54,25 @@ export const REQUIRED_ANNEXES = ['تفويض ممثل الجهة']
 
 /** The template's clauses · the starting text of every new agreement */
 /** The project's outputs and its plan's phases · written into the agreement (8.1.input-4) */
-export function outputsOf(projectId: string | undefined): { outputs: string[]; phases: string[] } {
-  if (!projectId) return { outputs: [], phases: [] }
+export function outputsOf(projectId: string | undefined): { outputs: string[]; phases: string[]; source: 'org' | 'entity' | 'objectives' | 'project' } {
+  if (!projectId) return { outputs: [], phases: [], source: 'project' }
   const objectives = flowOf(projectId).objectives ?? []
   const p = projectRows.find((x) => x.id === projectId)
-  /* v3 · 3.4.45 · the foundation's outputs are the agreement's reference · the objectives before them */
+  /* v3 · 3.4.45 · the foundation's outputs are the agreement's reference · the objectives before them ·
+     re-audit 17 Oct · what the list really is is named · the entity's own list (no foundation copy
+     yet) or the project's goal never reads «مخرجات المؤسسة» */
   const org = orgOutputsOf(projectId).map(outputLine)
   const outputs = org.length ? org : objectives.length ? objectives : p ? [`${p.goal}${p.beneficiaries ? ` لـ ${nf.format(p.beneficiaries)} مستفيد` : ''}`] : []
+  const source = org.length ? (orgOutputsAreEntity(projectId) ? 'entity' : 'org') : objectives.length ? 'objectives' : 'project'
   const phases = planOfProject(projectId)?.phases.map((ph) => ph.name) ?? []
-  return { outputs, phases }
+  return { outputs, phases, source }
+}
+/** The outputs clause's heading · by where the list comes from */
+export const OUTPUTS_HEAD: Record<ReturnType<typeof outputsOf>['source'], string> = {
+  org: 'مخرجات المشروع (مخرجات المؤسسة · من بيانات المشروع)',
+  entity: 'مخرجات المشروع (مخرجات الجهة في الطلب · لم تُعتمد نسخة المؤسسة بعد)',
+  objectives: 'مخرجات المشروع (أهداف المشروع)',
+  project: 'مخرجات المشروع (هدف المشروع ومستفيدوه · لم تُسجَّل مخرجات)',
 }
 
 export const templateClauses = (p: { id?: string; name: string; entityName: string }, stamp: string): Clause[] => {
@@ -309,7 +318,7 @@ export function agreementText(v: {
       ...lines.map((x) => `البند: ${x}`),
     ] },
     /* v3 · 8.3.5 · the foundation's final outputs, read from the project · not editable here */
-    ...(outputsOf(v.projectId).outputs.length ? [{ h: 'مخرجات المشروع (مخرجات المؤسسة · من بيانات المشروع)', body: [`تلتزم الجهة بتحقيق المخرجات الآتية: ${outputsOf(v.projectId).outputs.join('، ')}.`] }] : []),
+    ...(outputsOf(v.projectId).outputs.length ? [{ h: OUTPUTS_HEAD[outputsOf(v.projectId).source], body: [`تلتزم الجهة بتحقيق المخرجات الآتية: ${outputsOf(v.projectId).outputs.join('، ')}.`] }] : []),
     ...(plan?.phases.length ? [{ h: 'خطة التنفيذ (ملحق)', body: plan.phases.map((x, i) => `المرحلة ${i + 1}: ${x.name} · من ${x.from} إلى ${x.to} · ${nf.format(x.cost)} ريال`) }] : []),
     { h: 'جدول صرف الدفعات', body: v.payments.map((x) => `الدفعة ${x.no}: ${nf.format(x.amount)} ريال · الصرف المخطط ${x.dueAt || '—'} · تستحق متطلباتها ${x.reqDueAt || x.dueAt || '—'} · بشرط ${requirementOf(x) || '—'}`) },
     ...v.clauses.map((c) => ({ h: `${CLAUSE_SAY[c.kind]} · ${c.title}`, body: [c.body] })),
@@ -468,10 +477,29 @@ const AGREEMENT_STAGES = ['اعتماد الإتفاقية', 'الإتفاقيا
 const activateProject = (projectId: string) => {
   const p = projectRows.find((x) => x.id === projectId)
   if (!p) return
+  /* re-audit 17 Oct · v3 · 8.2.26 · 8.3.30 · a plan the approval required and not yet approved keeps
+     the project at its agreement stage · the plan's approval moves it (activateIfReady) */
+  if (planHoldOf(projectId)) return
   const meta = stageMeta(EXEC_STAGE)
   p.stage = EXEC_STAGE
   if (meta) { p.statusGroup = meta.group; p.stageLimit = meta.limit }
   p.hoursInStage = 0
+}
+
+/** Re-audit 17 Oct · at load · an activation replayed before the plans' gate was set moved a project the
+    plan still holds · it goes back to its agreement stage */
+export function holdForPlan(): void {
+  for (const p of projectRows) {
+    if (p.stage !== EXEC_STAGE || !planHoldOf(p.id) || !inForceOf(p.id)) continue
+    const meta = stageMeta(AGREEMENT_STAGES[0]!)
+    p.stage = AGREEMENT_STAGES[0]!
+    if (meta) p.stageLimit = meta.limit
+  }
+}
+/** Re-audit 17 Oct · the plan approved after the agreement went in force · the project moves to execution then */
+export function activateIfReady(projectId: string): void {
+  const p = projectRows.find((x) => x.id === projectId)
+  if (p && AGREEMENT_STAGES.includes(p.stage) && inForceOf(projectId)) activateProject(projectId)
 }
 
 function apply(o: Op) { asOf(o.at, () => applyOp(o)) }
@@ -795,9 +823,6 @@ setAgrFundingGate((projectId) => {
   return l && l.stage !== 'final' ? 'لم يكتمل الحجز النهائي للمخصص' : ''
 })
 
-/* Disbursement opens on the version in force (8.2.31 · 8.4.19) */
-setAgreementGate((projectId) => agreements.some((a) => a.projectId === projectId && agrFlowOf(a.id).inForce !== undefined && (a.stage !== 'cancelled' || !agrFlowOf(a.id).replacedBy)))
-
 /* ── Actions ── */
 
 export const nextAgreementId = (): string => {
@@ -827,7 +852,9 @@ export function submitAgreement(id: string, by: string): string[] {
 export function actOnAgreement(id: string, act: AgrAct, note: string, by: string, file?: string, sig?: ESig): string[] {
   const a = agreementById(id)
   if (!a) return ['الاتفاقية غير موجودة']
-  if (act === 'cancel' && !note.trim()) return ['سبب الإلغاء إلزامي']
+  /* v3 · 8.3.26 · re-audit 17 Oct · an agreement isn't cancelled on its own any more · the project's
+     cancellation runs through the closing procedure · the op stays for replaying older saves only */
+  if (act === 'cancel') return ['لا تُلغى الاتفاقية مباشرة · يُطلب إلغاء المشروع عبر إجراء الإغلاق (8.3.26)']
   if ((act === 'return' || act === 'toSupervisor' || act === 'entityReturn' || act === 'finalReturn') && !note.trim()) return ['سبب الإعادة إلزامي']
   if ((act === 'approve' || act === 'resubmit') && issuesOfRow(a).length) return issuesOfRow(a).map((i) => i.say)
   if (act === 'paperSign' && !file) return ['ارفع النسخة الموقّعة']

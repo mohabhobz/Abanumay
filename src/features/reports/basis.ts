@@ -31,4 +31,6 @@ export const basisText = (n: number, basis: Basis): string =>
               ? countOf(n, NOUN.activity)
               : basis === 'beneficiary'
                 ? countOf(n, NOUN.beneficiary)
-                : units.project(n, true)
+                : basis === 'payment'
+                  ? countOf(n, NOUN.payment)
+                  : units.project(n, true)

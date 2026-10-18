@@ -1,4 +1,5 @@
 import { CFG, hydrateRows } from '@/lib/config'
+import { APPROVAL_RULES } from '@/data/approvals/rules'
 
 /* Approval matrix · who decides a project by its amount.
 
@@ -27,6 +28,13 @@ export const APPROVAL_MATRIX: ApprovalRow[] = hydrateRows(CFG.approval, [
 /** Who approves a given amount */
 export const approverFor = (amount: number): ApprovalRow =>
   APPROVAL_MATRIX.find((r) => r.upTo === null || amount <= r.upTo) ??
+  APPROVAL_MATRIX[APPROVAL_MATRIX.length - 1]
+
+/** Who finally decides a single project's amount · re-audit 17 Oct · the grants manager's row only
+    counts when his final approval is switched on (4.3.2 · 4.4.19) · off, he recommends and the
+    executive decides what sits under the manager's cap */
+export const deciderFor = (amount: number): ApprovalRow =>
+  APPROVAL_MATRIX.find((r) => (r.key !== 'manager' || APPROVAL_RULES.managerFinal) && (r.upTo === null || amount <= r.upTo)) ??
   APPROVAL_MATRIX[APPROVAL_MATRIX.length - 1]
 
 /** A level's cap · `Infinity` for the open top */

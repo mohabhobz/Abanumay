@@ -417,8 +417,10 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
       }
       actions.push({ label: 'توصية بالموافقة', kind: APPROVAL_RULES.managerFinal && amount <= capOf('manager') ? 'btn-2' : 'btn-p', needsNote: true, choose: planChoice, blocked: up('manager', true) })
       actions.push({ label: 'توصية بالرفض', kind: 'btn-2', needsNote: true, blocked: up('manager', false) })
-      /* v3 · 4.2.17 · the grants manager refuses finally whatever the amount */
-      actions.push({ label: 'رفض نهائي', kind: 'btn-d', needsNote: true })
+      /* v3 · 4.2.17 · the grants manager refuses finally whatever the amount · client, 18 Oct (decision 2):
+         unless the foundation set a ceiling in settings, then above it the refusal goes up as a recommendation */
+      const overCap = Boolean(APPROVAL_RULES.managerRejectCapOn) && amount > APPROVAL_RULES.managerRejectUpTo
+      actions.push({ label: 'رفض نهائي', kind: 'btn-d', needsNote: true, blocked: overCap ? `فوق حدّ الرفض النهائي (${nf.format(APPROVAL_RULES.managerRejectUpTo)} ريال) · ارفعه بتوصية بالرفض` : undefined })
     }
     /* v3 · 1.4.33 · 4.4.18 · back to the supervisor, the grants manager says what happens to the hold ·
        4.4.8 · the consultant is never a return path · the return goes to the supervisor */
@@ -495,13 +497,17 @@ export function useApprovals(): number {
 
 const now = () => new Date().toISOString()
 
-/** Final approval at a level · the path is complete and the hold is final · v3 · 0.status.3 · the
-    project reads «معتمد» the moment the decision is recorded · the supervisor's confirmation step v2
-    had is gone (5.2.16 · 6.2.11 · 7.2.8) · the conditions go to the agreement, which checks them */
+/** Final approval at a level · the path is complete and the hold is final.
+    Client 18 Oct · decision 11 · «تأكيد مشرف المنح» is back as the last step: the decision holds the
+    money (final, as before · the least disruptive place) and the project waits at the supervisor's
+    confirmation seat · it reads «معتمد» and moves to its agreement only once he confirms the notes
+    and conditions (5.2.15 · 6.2.11 · 7.2.8). */
 const finalise = (p: ProjectRow, f: AppFlow, level: Level, by: string, fields: LogField[]) => {
   f.decided = { level, at: opDay(), by }
   f.hold = 'final'
-  activate(p, by, fields)
+  p.holder = 'confirm'; p.hoursInStage = 0
+  fields.push({ k: 'الحجز', v: 'نهائي' }, { k: 'الحالة', v: 'اكتمل مسار القرار · بانتظار تأكيد مشرف المنح', strong: true })
+  notify([p.owner ?? 'مشرف المنح'], p.id, `أكّد الاعتماد · ${p.name}`, `${HOLDER_LABEL[level]} · اعتماد · تحقّق من الملاحظات والشروط ثم أكّد`, ROUTES.projectTab(p.id, 'approval'))
 }
 
 /** The approved project moves on · to its agreement, or straight to execution for an independent
@@ -594,7 +600,6 @@ const applyOp = (o: Op) => {
           fields.push({ k: 'الحجز', v: 'أُلغي وعاد المبلغ للميزانية' })
           break
         case 'approve':
-          fields.push({ k: 'الحجز', v: 'نهائي' })
           finalise(p, f, o.level as Level, o.by, fields)
           break
         case 'refer': {
@@ -619,7 +624,7 @@ const applyOp = (o: Op) => {
             flowOf(o.id).returnNote = o.note
             flowOf(o.id).returnStudied = undefined
             if (p.owner) notify([p.owner], p.id, `أُعيد إليك · ${p.name}`, o.note, ROUTES.projectTab(p.id, 'study'))
-            fields.push({ k: 'إلى', v: 'مشرف المنح' }, { k: 'الحجز', v: had === 'none' ? 'لا حجز قائم' : keep ? `محفوظ بآخر مبلغ محجوز${o.level === 'manager' ? ' · بقرار مدير المنح' : ''}` : 'أُلغي بقرار مدير المنح · يُعاد الحجز عند التوصية القادمة' })
+            fields.push({ k: 'إلى', v: 'مشرف المنح' }, { k: 'الحجز', v: had === 'none' ? 'لا حجز قائم' : keep ? `محفوظ بآخر مبلغ محجوز · ${nf.format(linkOf(o.id)?.amount ?? supportAmount(p))} ريال${o.level === 'manager' ? ' · بقرار مدير المنح' : ''}` : 'أُلغي بقرار مدير المنح · يُعاد الحجز عند التوصية القادمة' })
           } else {
             p.holder = to as Holder
             if (to === 'manager' && o.level !== 'manager') f.awaitingReview = { note: o.note, by: o.by, at: opDay() }
@@ -627,7 +632,7 @@ const applyOp = (o: Op) => {
             notify([HOLDER_LABEL[to as Holder]], p.id, `أُعيد إليك · ${p.name}`, o.note)
           }
           p.hoursInStage = 0
-          if (f.decided && o.level === 'confirm') { f.decided = undefined; f.hold = 'initial' }
+          if (f.decided && o.level === 'confirm') { f.decided = undefined; f.hold = linkOf(o.id)?.stage === 'final' ? 'final' : 'initial' }
           break
         }
         case 'resubmit':
@@ -636,7 +641,7 @@ const applyOp = (o: Op) => {
           notify(['المدير التنفيذي'], p.id, `أعاد مدير المنح الإرسال · ${p.name}`, o.note)
           break
         case 'confirm':
-          /* A log written while v2's confirmation step stood · the project already moved at the decision */
+          /* Decision 11 · the supervisor confirms · the project reads «معتمد» and moves on */
           if (p.holder !== 'confirm') break
           activate(p, o.by, fields)
           break
@@ -800,7 +805,9 @@ const applyOp = (o: Op) => {
       event(p.id, {
         action: `محضر ${HOLDER_LABEL[s.body]} · ${s.title}`, by: o.by, actor: 'committee', dept: HOLDER_LABEL[s.body],
         fields: [
-          { k: 'التصويت', v: `موافقة ${tally.approve} · رفض ${tally.reject} · إعادة ${tally.return} · امتناع ${tally.abstain}`, strong: true },
+          /* Client 18 Oct · decision 14 · the body's decision as recorded · no tally */
+          { k: 'القرار', v: `${OUTCOME_SAY[o.outcome]} · قرار ${HOLDER_LABEL[s.body]} النهائي كما ورد في المحضر`, strong: true },
+          ...(tally.cast ? [{ k: 'أصوات مسجّلة قبل القرار', v: `موافقة ${tally.approve} · رفض ${tally.reject} · إعادة ${tally.return} · امتناع ${tally.abstain}` }] : []),
           ...(o.payPlan?.note ? [{ k: 'توجيهات الصرف', v: o.payPlan.count ? `${o.payPlan.count} دفعات · ${o.payPlan.note}` : o.payPlan.note }] : []),
         ],
         files: it.minutes ? [it.minutes] : undefined,
@@ -848,11 +855,8 @@ export function sessionItemBlockers(s: Session, it: SessionItem, outcome: Outcom
   const p = row(it.projectId)
   if (!p) return ['المشروع غير موجود']
   const out: string[] = []
-  const t = voteTally(it)
-  if (t.cast < APPROVAL_RULES.quorum) out.push(`لم يكتمل النصاب · سُجّل ${nf.format(t.cast)} صوت من ${nf.format(APPROVAL_RULES.quorum)}`)
-  const c = carried(it)
-  const want: Vote = outcome === 'refer' ? 'approve' : outcome
-  if (t.cast >= APPROVAL_RULES.quorum && c !== want) out.push(`القرار لا يطابق نتيجة التصويت${c ? ` (${VOTE_SAY[c]})` : ' · لا أغلبية'}`)
+  /* Client 18 Oct · decision 14 · no per-member votes · the CEO records the body's final decision as
+     the minutes carry it · the minutes are what stands behind it */
   if (!it.minutes) out.push('أرفق محضر الاجتماع أولًا')
   /* v3 · 6.4.3 · 7.4.5 · the balance doesn't stop a body's decision from being recorded · an uncovered
      approval is saved as issued with its money suspended (`sessionShort`) */
@@ -985,6 +989,9 @@ const briefOnArrival = (p: ProjectRow, before: Holder | undefined, me: string) =
     the project · with its reason · the hold follows when the line has the balance, and a raise it
     can't cover is refused (outside a session · a body's decision is recorded as issued, 6.4.3) */
 export function changeAmount(p: ProjectRow, level: Holder, to: number, reason: string, me: string, session?: string): string[] {
+  /* Client, 18 Oct · decision 12 · every level after the supervisor may raise or cut the amount · the
+     supervisor's figure is his study's recommended amount, not a change at a seat */
+  if (level === 'supervisor') return ['تعديل المبلغ لمستويات الاعتماد بعد مشرف المنح · المشرف يحدّد المبلغ الموصى به في الدراسة']
   if (p.stage !== 'دراسة المشروع' || (p.holder ?? 'supervisor') !== level) return ['المشروع ليس عند هذه المحطة']
   if (!(to > 0)) return ['أدخل مبلغ الدعم']
   if (!reason.trim()) return ['اكتب مبررات تعديل المبلغ']
@@ -1059,7 +1066,8 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
       go('recommend-reject'); return []
     }
     case 'رفض نهائي': {
-      /* v3 · 4.2.17 · whatever the amount */
+      /* v3 · 4.2.17 · whatever the amount · decision 2 · unless the foundation's ceiling is on */
+      if (APPROVAL_RULES.managerRejectCapOn && supportAmount(p) > APPROVAL_RULES.managerRejectUpTo) return [`المبلغ فوق حدّ الرفض النهائي لمدير المنح (${nf.format(APPROVAL_RULES.managerRejectUpTo)} ريال) · ارفعه بتوصية بالرفض`]
       if (hasFunding(p.id)) unlinkProject(p.id, me, 'رفض نهائي من مدير المنح')
       go('final-reject'); return []
     }
@@ -1119,18 +1127,11 @@ export const makeOfficial = (id: string, text: string, by: string) => run({ op: 
 export const declareConflict = (p: ProjectRow, level: Holder, reason: string, me: string) => run({ op: 'conflict', id: p.id, level, reason, by: me, at: now() })
 export const saveSession = (s: Session) => run({ op: 'session', session: s, at: now() })
 export const setAgenda = (sessionId: string, projectId: string, add: boolean) => run({ op: 'agenda', sessionId, projectId, add, at: now() })
-/** Re-audit 7 Oct · each member casts his own vote from his own account · the secretary records the
-    minutes and the decision, not the members' votes (6.4.6 · 7.4.6) */
-export function castVote(sessionId: string, projectId: string, member: string, vote: Vote, by: string, role?: RoleKey): string[] {
-  const s = sessionById(sessionId)
-  /* v3 · 6.2.5 · 7.2.7 · the executive director records each member's decision · a member votes from
-     his own account too */
-  if (member !== by && !(s && role === 'ceo' && mayRecord(s.body, role))) return ['يصوّت العضو بنفسه من حسابه أو يسجّله المدير التنفيذي']
-  const p = row(projectId)
-  if (!s?.members.includes(member)) return ['ليس عضوًا في هذه الجلسة']
-  if (p && conflictOf(p, member)) return ['أُعلن تعارض مصالح مع الجهة · لا يصوّت على مشروعها']
-  run({ op: 'vote', sessionId, projectId, member, vote, by, at: now() })
-  return []
+/** Retired 18 Oct (client decision 14) · kept so old callers get a plain refusal */
+export function castVote(_sessionId: string, _projectId: string, _member: string, _vote: Vote, _by: string, _role?: RoleKey): string[] {
+  /* Client 18 Oct · decision 14 · members don't vote in the system · the CEO records the body's final
+     decision with the minutes · the `vote` op stays so records written before still read */
+  return ['لا تصويت للأعضاء في النظام · يسجّل المدير التنفيذي قرار الجهة النهائي مع المحضر (قرار المؤسسة)']
 }
 export const attachMinutes = (sessionId: string, projectId: string, file: string, by: string) => run({ op: 'minutes', sessionId, projectId, file, by, at: now() })
 export const decideInSession = (sessionId: string, projectId: string, outcome: Outcome, note: string, by: string, target?: Holder, payPlan?: SessionItem['payPlan'], amount?: { to: number; reason: string }): string[] => {

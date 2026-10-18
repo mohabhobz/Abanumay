@@ -10,6 +10,7 @@ import { flowOf } from '@/data/intake/flow'
 import { printArea } from '@/lib/export'
 import { nf } from '@/lib/format'
 import { appFlowOf, useApprovals, type Brief } from '@/data/approvals/store'
+import { closeRows } from '@/data/mock/closing'
 
 /* v3 · 5.2.3 · 6.2.2 · 7.2.3 · «ملف العرض» · one file made when the project reached the executive
    director, the committee or the board, ready to print to PDF and send by mail · the project card,
@@ -18,7 +19,13 @@ import { appFlowOf, useApprovals, type Brief } from '@/data/approvals/store'
    never recomputed. The members read it before the meeting. In production the server renders the
    PDF; here the browser's print does. */
 
-function BriefBody({ b, name, entity, field, docs }: { b: Brief; name: string; entity: string; field: string; docs: string[] }) {
+/** v3 · 5.2.3 · 6.2.2 · 7.2.3 · «التقرير السابق إن وجد» · the entity's last closed project, its final report */
+function priorReport(entityId: string, exceptId: string) {
+  const mine = closeRows.filter((c) => c.stage === 'closed' && c.projectId !== exceptId && projectRows.find((p) => p.id === c.projectId)?.entityId === entityId)
+  return [...mine].sort((a, b) => (b.closedAt ?? '').localeCompare(a.closedAt ?? ''))[0]
+}
+
+function BriefBody({ b, name, entity, field, docs, prior }: { b: Brief; name: string; entity: string; field: string; docs: string[]; prior?: ReturnType<typeof priorReport> }) {
   const one = b.fin.lines.length === 1 ? b.fin.lines[0] : undefined
   const row = (k: string, v: string) => <tr key={k}><th>{k}</th><td>{v}</td></tr>
   return (
@@ -43,6 +50,17 @@ function BriefBody({ b, name, entity, field, docs }: { b: Brief; name: string; e
       <h3>مخرجات المؤسسة</h3>
       {b.orgOutputs.length ? <ul>{b.orgOutputs.map((o) => <li key={o}>{o}</li>)}</ul> : <p className="sub">لا مخرجات مسجّلة</p>}
       {b.entityOutputs.length > 0 && <p className="sub">مخرجات الجهة كما قدّمتها (للاطلاع): {b.entityOutputs.join(' ؛ ')}</p>}
+      <h3>التقرير السابق</h3>
+      {prior ? (
+        <table><tbody>
+          {row('المشروع', `${prior.projectName} · ${prior.projectId}`)}
+          {prior.closedAt ? row('أُغلق في', prior.closedAt) : null}
+          {prior.report.beneficiaries !== null ? row('المستفيدون الفعليون', nf.format(prior.report.beneficiaries)) : null}
+          {prior.report.budget !== null ? row('الميزانية الفعلية', nf.format(prior.report.budget)) : null}
+          {prior.report.outcomes ? row('النتائج', prior.report.outcomes) : null}
+          {typeof prior.evaluation?.score === 'number' ? row('تقييم المشروع', `${nf.format(prior.evaluation.score)} من 100`) : null}
+        </tbody></table>
+      ) : <p className="sub">لا تقرير سابق · لا مشروع مغلق سابق للجهة</p>}
       <h3>الشروط</h3>
       {b.conditions.length ? <ul>{b.conditions.map((c) => <li key={c}>{c}</li>)}</ul> : <p className="sub">لا شروط</p>}
       <h3>الموقف المالي</h3>
@@ -92,9 +110,9 @@ export default function BriefPage() {
               </header>
               <Glass>
                 <Head title="محتوى الملف" meta={<span className="sub">جاهز للطباعة إلى PDF والإرسال بالبريد</span>} />
-                <BriefBody b={b} name={p.name} entity={p.entityName} field={p.field} docs={docs} />
+                <BriefBody b={b} name={p.name} entity={p.entityName} field={p.field} docs={docs} prior={priorReport(p.entityId, p.id)} />
               </Glass>
-              {createPortal(<div className="printsheet"><BriefBody b={b} name={p.name} entity={p.entityName} field={p.field} docs={docs} /></div>, document.body)}
+              {createPortal(<div className="printsheet"><BriefBody b={b} name={p.name} entity={p.entityName} field={p.field} docs={docs} prior={priorReport(p.entityId, p.id)} /></div>, document.body)}
             </>
           )}
         </div>

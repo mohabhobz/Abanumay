@@ -3,12 +3,12 @@ import { DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select
 import { UploadButton } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { isolate, nf } from '@/lib/format'
-import { CLOSE_DOCS, closeById, closeStageLabel, reportApproved } from '@/data/mock/closing'
+import { CLOSE_DOCS, closeById, reportApproved } from '@/data/mock/closing'
 import {
   CLOSE_RULES, DECISION_SAY, ESCALATION_STEPS, FEEDBACK_ITEMS, RELEASE_SAY, decideRecovery, escalateRecovery,
   failRecovery, openSavingsRecovery, paidToDate, recordReceipt, recoveryLeft, requirementsOf, savingsOf, savingsDue, caseSettled, finLinesTotal, approverFor, evalScore, caseById,
   mayRedirect, redirectBase, redirectSupport, sendFeedback, useClosing, verifyInvoices,
-  EXC_FIELDS, mayException, recordException, type ExcField,
+  closeSayOf, EXC_FIELDS, mayException, recordException, type ExcField,
 } from '@/data/closing/store'
 import { settleSlot, unsettledSlots } from '@/data/payments/store'
 import type { CloseRow, CloseSnapshot, FinalReport, Recovery } from '@/types/domain'
@@ -80,7 +80,7 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
       <Err list={bad} />
       <p className="sub cnote">
         يعتمد المشرف المصروف الفعلي من التقرير المالي التنفيذي وأدلة المخرجات{/* doc 10.4.6 */} · ولا تُطلب الفواتير التفصيلية إلا عند الحاجة · وما صُرف ولم يُستخدم وفرٌ يُسترد أو يُعاد توجيهه،
-        ويعود مع المحجوز غير المصروف إلى مخصص المجال (<bdi>{/* doc 10.9.7 */}</bdi>).
+        ويعود مع المحجوز غير المصروف إلى مخصص المجال{/* doc 10.9.7 · re-audit 17 Oct · an empty «()» stood here */}.
       </p>
     </Glass>
   )
@@ -490,7 +490,7 @@ export function LogsCard({ c }: { c: CloseRow }) {
   )
   return (
     <Glass>
-      <Head title="سجلّ الإجراء" meta={<span className="sub">سجلّان منفصلان{/* doc rule 17 */} · الآن: {closeStageLabel(c.stage)}</span>} />
+      <Head title="سجلّ الإجراء" meta={<span className="sub">سجلّان منفصلان{/* doc rule 17 */} · الآن: {closeSayOf(c)}</span>} />
       {part('دورة التقرير الختامي', c.audit)}
       {part('دورة تقييم المشروع', c.evalAudit ?? [])}
       <p className="sub cnote">تمنع القواعد {/* doc rule 21 */} أي تعديل بعد الإغلاق النهائي · وأي تغيير بعده إجراء جديد.</p>

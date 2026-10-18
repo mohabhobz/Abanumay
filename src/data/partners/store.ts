@@ -1,11 +1,14 @@
 import { done } from '@/data/feedback'
-import { DECISIONS } from '@/data/shared/decisions'
+import { openPortfolioPlan, registerPortfolioPlan, reviewPlan, savePlanPhases, sendPlanFor } from '@/data/plans/store'
+import { planOfProject } from '@/data/mock/plans'
+import type { PlanActivity, PlanPhase } from '@/types/domain'
+import { DECISIONS, holds, holdersSay } from '@/data/shared/decisions'
 import { useSyncExternalStore } from 'react'
 import { projectRows, portfolioRows, subRows } from '@/data/mock/projects'
 import { entityById, entityRowOf, entityRows } from '@/data/mock/entities'
 import { payRequests } from '@/data/mock/disbursements'
-import { TODAY } from '@/data/intake/cycle'
-import { submitRequest } from '@/data/intake/flow'
+import { TODAY, addWorkingDays } from '@/data/intake/cycle'
+import { setExtMissingDocs, submitRequest } from '@/data/intake/flow'
 import {
   EHSAN_SEED, portfolios as PF_SEED, seedPayRef, type Portfolio as PfSeed, type PortfolioStage,
 } from '@/data/mock/implementer'
@@ -15,7 +18,7 @@ import { paidOf, setEhsanGate, setExternalBefore, setExternalSchedule } from '@/
 import { payBlock } from '@/data/entities/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { approverFor } from '@/data/approval'
-import { SESSIONS, carried, voteTally, type Vote } from '@/data/approvals/store'
+import { SESSIONS, type Vote } from '@/data/approvals/store'
 import { spendLevelFor } from '@/data/budget/rules'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { ROUTES } from '@/app/routes'
@@ -127,6 +130,9 @@ export const ehExecOf = (projectId: string): EhExec | undefined => EH_EXEC.get(p
 export const ehExecLog = (projectId: string): EhExec[] => EH_EXEC.get(projectId) ?? []
 /** v3 · 11.2.2 · the files the authority attached when creating the project */
 const EXT_FILES = new Map<string, string[]>()
+/** Re-audit 17 Oct · the highest sub-project number a portfolio ever used, dropped drafts included ·
+    the next one follows it · a session counter on top made the numbers jump (S1 · S3 · S6 · S10) */
+const SUB_TOP = new Map<string, number>()
 export const extFilesOf = (projectId: string) => EXT_FILES.get(projectId) ?? []
 
 /* ── v3 · 11.2.1 · 11.4.1 – 11.4.3 · the external party's reference record and the simplified form ── */
@@ -215,8 +221,12 @@ export function ehCloseChecks(projectId: string): { key: string; label: string; 
   ]
 }
 /** v3 · 11.2.13 · running external projects past their period with no closing sent · the supervisor is alerted */
+/** Re-audit 17 Oct · an external project created without a start date has no `endAt` · its end is
+    read from its creation and its duration, so the end-of-term alert still reaches its supervisor */
+export const extEndOf = (p: (typeof projectRows)[number]): string | undefined =>
+  p.endAt ?? (p.durationDays ? addWorkingDays(p.startAt ?? p.submittedAt, p.durationDays, p.execDays) : undefined)
 export function externalEnded(): typeof projectRows {
-  return ehsanProjects().filter((p) => p.statusGroup === 'تحت التنفيذ' && (p.endAt ?? '9999') <= TODAY && ehCloseOf(p.id)?.state !== 'manager' && !ehCloseOf(p.id)?.closedAt)
+  return ehsanProjects().filter((p) => p.statusGroup === 'تحت التنفيذ' && (extEndOf(p) ?? '9999') <= TODAY && ehCloseOf(p.id)?.state !== 'manager' && !ehCloseOf(p.id)?.closedAt)
 }
 /** v3 · 11.2.14 · the closings waiting on the grants manager */
 export const externalClosingsWaiting = () => ehsanProjects().filter((p) => ehCloseOf(p.id)?.state === 'manager' && !ehCloseOf(p.id)?.closedAt)
@@ -309,7 +319,9 @@ export interface PortfolioRec {
      («supervisor») before the manager · the agreement: the manager, then the executive director,
      the partner's signature, then the foundation's counter-signature («foundation») before it's in
      force. The short paths skipped the supervisor's review and the executive and foundation steps */
-  plan: { state: 'none' | 'draft' | 'supervisor' | 'review' | 'approved' | 'returned'; phases: PfPhase[]; note?: string; by?: string; drafter?: 'partner' | 'supervisor' }
+  /** Client 18 Oct (#32) · read live from the plans module (BPD-012) · the portfolio's plan is a plan row
+      there · `planId` opens it · this field is a view, written only by the fixture before the binding */
+  plan: { state: 'none' | 'draft' | 'supervisor' | 'review' | 'approved' | 'returned'; phases: PfPhase[]; note?: string; by?: string; drafter?: 'partner' | 'supervisor'; planId?: string }
   agreement: { state: 'none' | 'draft' | 'manager' | 'executive' | 'partner' | 'foundation' | 'signed' | 'returned'; file?: string; note?: string; signedBy?: string; countersignedBy?: string
     /** Batch 7 · partners#12 · the agreement's text, drafted from the template with the portfolio's own terms, and each draft kept */
     body?: string[]; versions?: { no: number; at: string; by: string; body: string[] }[] }
@@ -531,16 +543,12 @@ export function pfStops(pf: PortfolioRec, act: PfAct, shares?: PortfolioRec['sha
     if (!pf.files.length) out.push('أرفق وثيقة المحفظة')
     if (!isStrategic(pf.entityId)) out.push('الجهة ليست شريكًا استراتيجيًّا معتمدًا')
   }
-  /* v3 · 13.2.6 · 6.2 · 7.2 · the body decides in its session · quorum, the vote's majority and the minutes */
+  /* v3 · 13.2.6 · client 18 Oct · decisions 14 and 33 · the body decides in its session like a project ·
+     no per-member votes · the CEO records the body's final decision with the minutes */
   if ((pf.stage === 'committee' || pf.stage === 'board') && (act === 'approve' || act === 'reject')) {
     const it = pf.session
     if (!it) out.push('أدرج المحفظة على جدول جلسة')
-    else {
-      const t = voteTally({ projectId: pf.id, votes: it.votes })
-      if (t.cast < APPROVAL_RULES.quorum) out.push(`لم يكتمل النصاب · ${nf.format(t.cast)} من ${nf.format(APPROVAL_RULES.quorum)}`)
-      else if (carried({ projectId: pf.id, votes: it.votes }) !== act) out.push('القرار لا يطابق نتيجة التصويت')
-      if (!it.minutes) out.push('أرفق محضر الاجتماع')
-    }
+    else if (!it.minutes) out.push('أرفق محضر الاجتماع')
   }
   if (act === 'recommend') {
     const sh = shares ?? pf.shares
@@ -643,12 +651,13 @@ function listRow(pf: PortfolioRec) {
   if (!row) portfolioRows.push(base)
   /* v3 · 13.2.27 · its approved sub-projects join the general lists, marked «مشروع فرعي» and tied to it */
   for (let i = subRows.length - 1; i >= 0; i--) if (subRows[i]!.portfolioId === pf.id) subRows.splice(i, 1)
-  const SG: Partial<Record<SubState, string>> = { approved: 'تحت التنفيذ', closing: 'قيد الإغلاق', done: 'مكتمل', stalled: 'متعثر' }
+  /* Re-audit 17 Oct · v3 · 13.4.15 · a sub-project's dictionary has no «تحت التنفيذ» · approved reads «معتمد» */
+  const SG: Partial<Record<SubState, string>> = { approved: 'معتمد', closing: 'قيد الإغلاق', done: 'مكتمل', stalled: 'متعثر' }
   for (const x of pf.items.filter(isLiveSub)) {
     subRows.push({
       ...base, id: `${pf.id}/${x.id}`, name: x.name, region: x.region, city: x.city ?? '', track: x.track ?? pf.track, field: x.field ?? pf.field, goal: pf.name,
       amountRequested: x.amount, amountGranted: x.amount, amountSpent: 0, beneficiaries: x.beneficiaries, stage: SUB_STATE_SAY[x.state],
-      statusGroup: (SG[x.state] ?? 'تحت التنفيذ') as typeof base.statusGroup, type: 'مشروع فرعي', portfolioId: pf.id, partnerType: undefined,
+      statusGroup: (SG[x.state] ?? 'معتمد') as typeof base.statusGroup, type: 'مشروع فرعي', portfolioId: pf.id, partnerType: undefined,
     })
   }
 }
@@ -689,8 +698,7 @@ function closeOut(pf: PortfolioRec, by: string, at: string) {
 const sessionSay = (pf: PortfolioRec) => {
   const it = pf.session
   if (!it) return ''
-  const t = voteTally({ projectId: pf.id, votes: it.votes })
-  return `جلسة ${it.id} · ${t.approve} موافقة · ${t.reject} رفض · ${t.return} إعادة${it.minutes ? ` · المحضر ${it.minutes}` : ''}`
+  return `جلسة ${it.id} · قرار الجهة كما ورد في المحضر${it.minutes ? ` · المحضر ${it.minutes}` : ''}`
 }
 
 function apply(o: Op) { asOf(o.at, () => applyOp(o)) }
@@ -765,6 +773,7 @@ function applyOp(o: Op) {
         close: { report: '', evidence: [] }, log: [],
       }
       PORTFOLIOS.push(pf)
+      if (liveRun) bindPfPlan(pf)
       plog(pf, o.by, o.pf.origin === 'partner' ? 'قدّم الشريك طلب المحفظة من البوابة' : 'أنشأ مشرف المنح المحفظة', o.at)
       if (o.fromProject) {
         const p = projectOf(o.fromProject)
@@ -809,6 +818,9 @@ function applyOp(o: Op) {
           const who = SAY[pf.stage]
           pf.stage = 'approved'
           if (liveRun && linkOf(pf.id)) finalizeHold(pf.id, o.by)
+          /* client 18 Oct (#32) · 13.2.8 · its plan opens in the plans module */
+          /* 18 Oct · on replay too · the plan's own ops wait for it (quiet: no notices again) */
+          openPortfolioPlan(pf.id, !liveRun)
           plog(pf, o.by, `${who === 'اللجنة التنفيذية' ? 'اعتمدتها' : 'اعتمدها'} ${who} نهائيًّا${voted}${o.note ? ` · ${o.note}` : ''} · ثُبّت الحجز وفُعّلت إدارتها`, o.at)
           notify([pf.owner, partnerName(pf.entityId)], `اعتُمدت المحفظة · ${pf.name}`, 'الخطوة التالية: الخطة والاتفاقية', ROUTES.portfolio(pf.id))
         } else {
@@ -924,6 +936,7 @@ function applyOp(o: Op) {
     case 'subAdd': {
       const pf = pfById(o.pfId)
       if (!pf || !subsGate(pf).ok || pf.items.some((x) => x.id === o.sub.id)) return
+      SUB_TOP.set(pf.id, Math.max(SUB_TOP.get(pf.id) ?? 0, Number(o.sub.id.split('-S')[1]) || 0))
       pf.items.push({ ...o.sub, track: pf.track, field: pf.field, state: 'draft', addedBy: o.by, addedAt: day(o.at) })
       plog(pf, o.by, `أضاف مسودة مشروع فرعي «${o.sub.name}» · ${nf.format(o.sub.amount)}${o.sub.files.length ? ` · ${o.sub.files.join('، ')}` : ''}`, o.at)
       return
@@ -1204,11 +1217,14 @@ function applyOp(o: Op) {
       pf.close.at = day(o.at)
       if (pf.close.report.trim() && pf.close.evidence.length) {
         pf.stage = 'closing'
+        /* Re-audit 17 Oct · a second upload while it already sits with the supervisor replaces the files ·
+           it says so once, not «رفع» again */
+        const again = pf.close.stage === 'supervisor'
         /* v3 · 13.2.30 · the comprehensive report goes through the closing procedure's review */
         if (!pf.close.stage || pf.close.stage === 'returned') pf.close.stage = 'supervisor'
         pf.close.note = undefined
-        plog(pf, o.by, 'رفع الشريك التقرير الشامل للمحفظة والشواهد', o.at)
-        notify([pf.owner], `تقرير شامل للمحفظة · ${pf.name}`, 'راجعه وفق إجراء الإغلاق', ROUTES.portfolio(pf.id))
+        plog(pf, o.by, again ? 'حدّث الشريك التقرير الشامل والشواهد قبل المراجعة' : 'رفع الشريك التقرير الشامل للمحفظة والشواهد', o.at)
+        if (!again) notify([pf.owner], `تقرير شامل للمحفظة · ${pf.name}`, 'راجعه وفق إجراء الإغلاق', ROUTES.portfolio(pf.id))
       }
       listRow(pf)
       return
@@ -1336,7 +1352,11 @@ function applyOp(o: Op) {
     }
     case 'extDoc': {
       const l = EXT_DOCS.get(o.projectId) ?? []
-      if (!l.some((x) => x.file === o.file)) l.push({ file: o.file, by: o.by, at: o.at.slice(0, 10) })
+      if (!l.some((x) => x.file === o.file)) {
+        l.push({ file: o.file, by: o.by, at: o.at.slice(0, 10) })
+        /* Re-audit 17 Oct · v3 · 11.4.15 · the external document is on the project's operations and the audit log */
+        ;(EH_OPS.get(o.projectId) ?? EH_OPS.set(o.projectId, []).get(o.projectId)!).push({ at: day(o.at), by: o.by, kind: 'الوثيقة الخارجية', note: `سُجّلت الوثيقة الخارجية · ${o.file}` })
+      }
       EXT_DOCS.set(o.projectId, l)
       return
     }
@@ -1354,6 +1374,8 @@ function applyOp(o: Op) {
       return
     case 'extFiles':
       EXT_FILES.set(o.projectId, [...(EXT_FILES.get(o.projectId) ?? []), ...o.files])
+      /* Re-audit 17 Oct · v3 · 11.4.15 · the creation's attachments are on the record too */
+      ;(EH_OPS.get(o.projectId) ?? EH_OPS.set(o.projectId, []).get(o.projectId)!).push({ at: day(o.at), by: o.by, kind: 'مرفقات الإنشاء', note: o.files.join('، ') })
       return
     case 'ehExec': {
       if (!viaEhsan(o.projectId) || ehCloseOf(o.projectId)?.closedAt) return
@@ -1482,7 +1504,8 @@ function fromSeed(s: PfSeed): PortfolioRec {
   const stage = s.stage ?? 'approved'
   const at = s.openedAt
   const pf: PortfolioRec = {
-    id: s.id, name: s.name, entityId: s.entityId === '860' ? '861' : s.entityId, total: s.total, year: s.year,
+    /* Re-audit 17 Oct · moved off the platform to the portfolios partner · its name follows the move */
+    id: s.id, name: s.entityId === '860' ? s.name.replace(/^محفظة إحسان/, 'المحافظ الخيرية') : s.name, entityId: s.entityId === '860' ? '861' : s.entityId, total: s.total, year: s.year,
     track: s.track ?? 'المنح الانتشاري', field: s.field ?? 'الإغاثة', goals: s.goals ?? '', summary: s.goals ?? '',
     /* v3 · 11.4.11 · no portfolio through an external party · the fixture's platform portfolios belong to the
        portfolios partner, paid at the portfolio's level (13.4.36) */
@@ -1569,8 +1592,13 @@ function seed() {
   }
 }
 
+const AUTO = 'ph:'
+const split = (n: number, i: number) => (i === n - 1 ? 100 - Math.floor(100 / n) * (n - 1) : Math.floor(100 / n))
+const PF_PLAN_VIEW = { draft: 'draft', returned: 'returned', supervisor: 'supervisor', manager: 'review', active: 'approved', done: 'approved', cancelled: 'none' } as const
 function hydrate() {
   seed()
+  /* 18 Oct · #32 · the plans bind before the replay · a sub-project op checks the plan's state */
+  for (const pf of PORTFOLIOS) bindPfPlan(pf)
   try { ops = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Op[] } catch { ops = [] }
   for (const o of ops) apply(o)
   liveRun = true
@@ -1580,6 +1608,9 @@ function hydrate() {
 }
 hydrate()
 
+/* Re-audit 17 Oct · v3 · 11.4.3 · the simplified form's attachments are what an external project needs ·
+   required only when the settings ask for them */
+setExtMissingDocs((projectId) => (EXT_CFG.project.includes('files') && !extFilesOf(projectId).length && !extDocsOf(projectId).length ? ['مرفقات المشروع من النموذج المبسط'] : []))
 /* The payments module routes an Ehsan project's money here, not to the entity's requests (11.2.17) */
 setEhsanGate((projectId) => (viaEhsan(projectId) ? `${EXT_KIND} · يرفع صاحب الصلاحية متطلباته نيابةً عن الجهة الخارجية` : ''))
 /* v3 · 9.4.5 · its payments run the payment procedure · on the schedule kept here */
@@ -1671,20 +1702,75 @@ export function actOnPortfolio(id: string, act: PfAct, note: string, by: string,
   run({ op: 'pfAct', id, act, note, shares, final: act === 'approve' ? LEVEL[pf.stage] === pfDecider(pf) : undefined, by, at: now() })
   return []
 }
-export const savePfPlan = (id: string, phases: PfPhase[], by: string) => run({ op: 'pfPlan', id, phases, by, at: now() })
+/* ── The portfolio's plan · client 18 Oct (#32) · through the plans module (BPD-012) ──
+   The plan is a plan row keyed by the portfolio's id. Its phases are the plans module's · a phase
+   with no activity of its own carries one standing for it (`ph:<phase>`), so the sub-projects that
+   serve the phase keep their tie. The old `pfPlan` / `pfPlanAct` ops stay for replaying older saves. */
+
+export function toPlanPhase(ph: PfPhase): PlanPhase {
+  const acts: PlanActivity[] = ph.activities?.length
+    ? ph.activities.map((a, i, xs) => ({ id: a.id, name: a.name, state: 'todo', from: ph.from, to: ph.to, needs: [a.evidence?.trim() || 'شاهد الإنجاز'], evidence: [], weight: split(xs.length, i), output: a.output }))
+    : [{ id: `${AUTO}${ph.id}`, name: ph.name, state: 'todo', from: ph.from, to: ph.to, needs: ['تقرير إنجاز المرحلة'], evidence: [], weight: 100 }]
+  return { id: ph.id, name: ph.name, from: ph.from, to: ph.to, cost: ph.cost, activities: acts }
+}
+export function fromPlanPhase(ph: PlanPhase): PfPhase {
+  return {
+    id: ph.id, name: ph.name, from: ph.from, to: ph.to, cost: ph.cost,
+    activities: ph.activities.filter((a) => !a.id.startsWith(AUTO)).map((a) => ({ id: a.id, name: a.name, output: a.output ?? '', evidence: a.needs[0] ?? '' })),
+  }
+}
+function pfPlanView(pf: PortfolioRec): PortfolioRec['plan'] {
+  const p = planOfProject(pf.id)
+  if (!p) return { state: 'none', phases: [] }
+  const phases = p.phases.map(fromPlanPhase)
+  return {
+    state: p.stage === 'draft' && !phases.length ? 'none' : PF_PLAN_VIEW[p.stage], phases, note: p.stage === 'returned' || p.stage === 'supervisor' ? p.note : undefined,
+    by: p.owner, drafter: p.drafter === 'entity' ? 'partner' : 'supervisor', planId: p.id,
+  }
+}
+/* hoisted functions and constants above hydrate() · bindPfPlan runs from it (18 Oct · TDZ) */
+function pfEnd(pf: PortfolioRec) { return pf.plan.phases.map((x) => x.to).filter(Boolean).sort().at(-1) }
+/** Registers the portfolio with the plans module · its fixture plan becomes the plan row · from then
+    on `pf.plan` reads the row */
+function bindPfPlan(pf: PortfolioRec) {
+  const was = pf.plan
+  const open = ['approved', 'closing', 'closed'].includes(pf.stage)
+  registerPortfolioPlan(
+    { kind: 'portfolio', id: pf.id, name: pf.name, entityId: pf.entityId, entityName: partnerName(pf.entityId), owner: pf.owner, total: pf.total, from: pf.openedAt, to: pfEnd(pf), running: () => pf.agreement.state === 'signed' },
+    open ? { state: was.state, phases: was.phases.map(toPlanPhase), drafter: was.drafter === 'supervisor' ? 'supervisor' : 'entity' } : undefined,
+  )
+  Object.defineProperty(pf, 'plan', { get: () => pfPlanView(pf), set() { /* the plans module holds it */ }, enumerable: true, configurable: true })
+}
+
+/** Kept for older callers · writes the draft through the plans module */
+export function savePfPlan(id: string, phases: PfPhase[], by: string): string[] {
+  const pf = pfById(id)
+  if (!pf) return ['المحفظة غير موجودة']
+  const planId = pf.plan.planId ?? openPortfolioPlan(id)
+  if (!planId) return ['تُعدّ الخطة بعد الاعتماد النهائي للمحفظة']
+  savePlanPhases(planId, phases.map(toPlanPhase), by)
+  return []
+}
+/** Kept for older callers · each step is the plans module's own (12.2.6 – 12.2.11) */
 export function actOnPfPlan(id: string, act: 'send' | 'toManager' | 'approve' | 'return', note: string, by: string): string[] {
   const pf = pfById(id)
   if (!pf) return ['المحفظة غير موجودة']
+  const planId = pf.plan.planId
+  if (!planId) return ['لم تُفتح خطة المحفظة بعد']
   if (act === 'send') {
     const cost = pf.plan.phases.reduce((s, x) => s + x.cost, 0)
     if (!pf.plan.phases.length) return ['أضف مرحلة واحدة على الأقل']
     if (pf.plan.phases.some((x) => !x.name.trim() || !x.from || !x.to || x.to < x.from)) return ['أكمل اسم كل مرحلة وتاريخيها']
     if (pf.plan.phases.some((x) => (x.activities ?? []).some((a) => !a.name.trim() || !a.output.trim()))) return ['أكمل اسم كل نشاط ومخرجه أو احذفه']
     if (cost !== pf.total) return [`مجموع تكلفة المراحل ${nf.format(cost)} يساوي قيمة المحفظة ${nf.format(pf.total)}`]
+    const st = planOfProject(id)?.stage
+    sendPlanFor(planId, by === partnerName(pf.entityId) ? 'entity' : 'supervisor', by)
+    return planOfProject(id)?.stage === st ? ['تحقق من مراحل الخطة وأنشطتها وتواريخها'] : []
   }
   if (act === 'return' && !note.trim()) return ['اكتب سبب الإعادة']
-  run({ op: 'pfPlanAct', id, act, note, by, at: now() })
-  return []
+  if (act === 'toManager') return reviewPlan(planId, 'toManager', note, by, 'supervisor')
+  if (act === 'approve') return reviewPlan(planId, 'approve', note, by, 'grants-manager')
+  return pf.plan.state === 'supervisor' ? reviewPlan(planId, 'returnEntity', note, by, 'supervisor') : reviewPlan(planId, 'managerReturn', note, by, 'grants-manager')
 }
 export function actOnPfAgreement(id: string, act: Extract<Op, { op: 'pfAgr' }>['act'], note: string, by: string, file?: string): string[] {
   if (act === 'sign' && !file) return ['ارفع الاتفاقية الموقعة']
@@ -1702,7 +1788,6 @@ export function savePfSchedule(id: string, slots: EhSlot[], by: string): string[
   return []
 }
 
-let subSeq = 0
 export function addSub(pfId: string, d: SubDraft, by: string): { id?: string; errors: string[] } {
   const pf = pfById(pfId)
   if (!pf) return { errors: ['المحفظة غير موجودة'] }
@@ -1712,8 +1797,8 @@ export function addSub(pfId: string, d: SubDraft, by: string): { id?: string; er
   if (bad.length) return { errors: bad }
   if (d.activityId && !pfActivities(pf).some((x) => x.id === d.activityId)) return { errors: ['النشاط ليس في خطة المحفظة'] }
   /* Verifier · 17 Oct · past the highest number in use · the count reused a dropped draft's id after a reload */
-  const top = Math.max(0, ...pf.items.map((x) => Number(x.id.split('-S')[1]) || 0))
-  const id = `${pf.id.slice(-3)}-S${top + 1 + subSeq++}`
+  const top = Math.max(SUB_TOP.get(pf.id) ?? 0, ...pf.items.map((x) => Number(x.id.split('-S')[1]) || 0))
+  const id = `${pf.id.slice(-3)}-S${top + 1}`
   run({ op: 'subAdd', pfId, sub: { id, ...d }, by, at: now() })
   return { id, errors: [] }
 }
@@ -1825,15 +1910,9 @@ export function pfToSession(id: string, sessionId: string, by: string, role: Rol
   return []
 }
 export const pfSessions = (pf: PortfolioRec) => SESSIONS.filter((x) => x.state === 'planned' && x.body === (pf.stage === 'board' ? 'board' : 'committee'))
-export function castPfVote(id: string, member: string, vote: Vote, by: string, role: RoleKey): string[] {
-  const pf = pfById(id)
-  const ss = pf?.session ? SESSIONS.find((x) => x.id === pf.session!.id) : undefined
-  if (!pf?.session || !ss) return ['المحفظة ليست على جدول جلسة']
-  if (!ss.members.includes(member)) return ['ليس عضوًا في هذه الجلسة']
-  if (member !== by && role !== 'ceo') return ['يصوّت العضو بنفسه أو يسجّله المدير التنفيذي']
-  if (APPROVAL_RULES.conflicts.some((c) => c.person === member && c.entityId === pf.entityId)) return ['أُعلن تعارض مصالح مع الشريك · لا يصوّت']
-  run({ op: 'pfVote', id, member, vote, proxied: member !== by, by, at: now() })
-  return []
+/** Retired 18 Oct (client decisions 14 · 33) · no per-member votes · the `pfVote` op still replays */
+export function castPfVote(_id: string, _member: string, _vote: Vote, _by: string, _role: RoleKey): string[] {
+  return ['لا تصويت للأعضاء في النظام · يسجّل المدير التنفيذي قرار الجهة النهائي مع المحضر (قرار المؤسسة)']
 }
 export function attachPfMinutes(id: string, file: string, by: string): string[] {
   if (!pfById(id)?.session) return ['المحفظة ليست على جدول جلسة']
@@ -1876,7 +1955,8 @@ export function actOnPfEval(id: string, act: 'send' | 'approve' | 'return', note
 export function cancelPortfolio(id: string, reason: string, recover: number, by: string, role: RoleKey): string[] {
   const pf = pfById(id)
   if (!pf) return ['المحفظة غير موجودة']
-  if (role !== 'ceo') return ['يلغي المحفظة المدير التنفيذي']
+  /* Client 18 Oct · #34 · a system permission */
+  if (!holds('portfolioCancelBy', role)) return [`يلغي المحفظة ${holdersSay('portfolioCancelBy')} (صلاحية في قرارات المؤسسة)`]
   if (pf.stage !== 'approved' && pf.stage !== 'closing') return ['تُلغى محفظة معتمدة قبل إغلاقها']
   if (!reason.trim()) return ['اكتب سبب الإلغاء']
   const paid = pfMoney(pf).confirmed

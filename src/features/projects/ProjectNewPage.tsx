@@ -429,8 +429,14 @@ export default function ProjectNewPage() {
                 {tab === 'when' && endAt && (
                   <p className="sub cnote">
                     نهاية التنفيذ المحسوبة <b><DateText>{endAt}</DateText></b> · بعد{' '}
-                    <span className="num">{val.workDays}</span> يوم عمل من <DateText>{val.startAt}</DateText>،
-                    باستبعاد العطلة الأسبوعية والإجازات الرسمية.
+                    <span className="num">{val.workDays}</span> يوم تنفيذ من <DateText>{val.startAt}</DateText>،
+                    {/* Re-audit 17 Oct · the note says what the count actually excludes · the project's own days and the duration policy */}
+                    {' '}{(() => {
+                      const own = workDaysOf(val.execDays)
+                      const rest = own ? `الأيام خارج أيام التنفيذ المختارة (${own.map((d) => WEEKDAYS[d]).join('، ')})` : 'العطلة الأسبوعية'
+                      const out = [!CYCLE.countWeekend && rest, !CYCLE.countHolidays && 'الإجازات الرسمية'].filter(Boolean)
+                      return out.length ? `باستبعاد ${out.join(' و')}.` : 'تُحتسب كل الأيام بما فيها العطل وفق سياسة المدد.'
+                    })()}
                   </p>
                 )}
                 {tab === 'what' && val.field && (

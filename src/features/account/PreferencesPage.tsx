@@ -290,7 +290,7 @@ function DelegateTab({ me }: { me: string }) {
             label="فعّل التفويض خلال غيابي"
             note="تنتقل مهامك إلى من تختاره طوال المدة، ثم تعود إليك تلقائيًا"
             on={d.on}
-            onChange={(on) => setD((x) => ({ ...x, on }))}
+            onChange={(on) => setD((x) => ({ ...x, on, who: me }))}
           />
           {d.on && (
             <div className="regfields mt-3">

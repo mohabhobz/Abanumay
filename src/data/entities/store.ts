@@ -581,7 +581,10 @@ const apply = (x: Op) => {
       const fb = banksOf(toE.id)[0]
       const bank = x.bank ?? (fb ? { name: fb.bank, active: fb.active } : undefined)
       for (const r of payRequests) if (r.projectId === p.id && r.state !== 'paid' && r.state !== 'closed' && bank) r.bank = { name: bank.name, active: bank.active }
-      const touched = { agreements: move(agreements), payments: move(payRequests), plans: move(planRows), closings: move(closeRows) }
+      /* Re-audit 17 Oct · a paid request stays with the entity it was paid to · moving it rewrote the old
+         entity's bank history (bankHistory reads r.entityId), so money sent to its account read as the new one's */
+      const unpaid = payRequests.filter((r) => r.state !== 'paid' && r.state !== 'closed')
+      const touched = { agreements: move(agreements), payments: move(unpaid), plans: move(planRows), closings: move(closeRows) }
       /* the agreement text names its party · a clause that carries the old name takes the new one */
       for (const a of agreements) if (a.projectId === p.id) renameParty(a.id, from.name, toE.name)
       /* the entities' own counters follow the project */

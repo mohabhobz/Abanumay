@@ -206,7 +206,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
                 <span className="sub">{s.field} · <DateText>{s.at}</DateText></span>
                 <span className="pc-sp" />
                 <Tag tone="mute"><Num>{studyScore(s.scores)}</Num> من <Num>{100}</Num></Tag>
-                <Tag tone="mute">{s.recommendation === 'approve' ? 'موافقة' : s.recommendation === 'reject' ? 'اعتذار' : 'بلا توصية'}</Tag>
+                <Tag tone="mute">{s.recommendation === 'approve' ? 'موافقة' : s.recommendation === 'reject' ? 'رفض' : 'بلا توصية'}</Tag>
               </li>
             ))}
           </ul>

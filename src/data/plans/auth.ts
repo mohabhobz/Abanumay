@@ -1,6 +1,6 @@
 import { CFG, persist, readJson } from '@/lib/config'
 import { liveDay } from '@/data/clock'
-import { roleByKey, type RoleKey } from '@/data/roles'
+import { STAFF_DIRECTORY, roleByKey, type RoleKey } from '@/data/roles'
 
 /* v3 · 12.2.11 · who approves a project plan · the grants manager by default, or an authority holder
    he delegates to for a period · the plan records the actual approver's name, the date, and that he
@@ -26,11 +26,26 @@ export const savePlanAuth = (next: PlanAuth): void => {
 export const delegationOf = (role: RoleKey, day = liveDay()): PlanDelegation | undefined =>
   PLAN_AUTH.delegations.find((d) => d.to === role && d.until >= day)
 
-export const mayApprovePlan = (role: RoleKey): boolean => PLAN_AUTH.approveBy.includes(role) || Boolean(delegationOf(role))
+/* Re-audit 17 Oct · the personal delegation in «التفويض والإجازة» (account preferences) is read here · an
+   approver away hands his plan approvals to the colleague he named, for the dates he set */
+interface Personal { on: boolean; from: string; to: string; delegate: string; scope: 'all' | 'approvals'; who?: string }
+export function personalDelegation(name: string | undefined, day = liveDay()): Personal | undefined {
+  if (!name) return undefined
+  let d: Personal | null = null
+  try { d = JSON.parse(localStorage.getItem('ab-delegation') ?? 'null') as Personal | null } catch { d = null }
+  if (!d?.on || !d.who || d.delegate !== name || !d.from || !d.to || d.from > day || day > d.to) return undefined
+  const from = STAFF_DIRECTORY.find((a) => a.name === d!.who)
+  return from && PLAN_AUTH.approveBy.includes(from.role) ? d : undefined
+}
+
+export const mayApprovePlan = (role: RoleKey, name?: string): boolean =>
+  PLAN_AUTH.approveBy.includes(role) || Boolean(delegationOf(role)) || Boolean(personalDelegation(name))
 
 /** How the approval reads on the plan · in his own right, or by delegation from whom */
-export const approvalCapacity = (role: RoleKey): string => {
+export const approvalCapacity = (role: RoleKey, name?: string): string => {
   if (PLAN_AUTH.approveBy.includes(role)) return roleByKey(role).title
   const d = delegationOf(role)
-  return d ? `${roleByKey(role).title} · بالتفويض من ${d.by} حتى ${d.until}` : roleByKey(role).title
+  if (d) return `${roleByKey(role).title} · بالتفويض من ${d.by} حتى ${d.until}`
+  const p = personalDelegation(name)
+  return p ? `${roleByKey(role).title} · بالتفويض من ${p.who} حتى ${p.to}` : roleByKey(role).title
 }

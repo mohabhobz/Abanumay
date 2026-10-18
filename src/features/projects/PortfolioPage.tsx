@@ -1,9 +1,10 @@
+import { holds, holdersSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { payBlock } from '@/data/entities/store'
 import { portfolioAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  BackTo, DateField, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Steps, Tag, icons, type StepItem,
+  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -17,15 +18,15 @@ import { isolate, nf, pct } from '@/lib/format'
 import { noteFirst } from '@/lib/dock'
 import { HOLD_STAGE_SAY, linkOf, usableLines } from '@/data/budget/store'
 import {
-  PF_STAGE_SAY, PF_STAGE_TONE, SUB_STATE_SAY, SUB_STATE_TONE, actOnPfAgreement, actOnPfPlan, actOnPfReq, actOnPortfolio, addSub, capIssue,
-  decideSubs, dropSub, pfActions, pfById, pfCloseChecks, pfIndicators, pfMoney, pfStops, savePfPlan, savePfSchedule,
+  PF_STAGE_SAY, PF_STAGE_TONE, SUB_STATE_SAY, SUB_STATE_TONE, actOnPfAgreement, actOnPfReq, actOnPortfolio, addSub, capIssue,
+  decideSubs, dropSub, pfActions, pfById, pfCloseChecks, pfIndicators, pfMoney, pfStops, savePfSchedule,
   sendSubs, subsGate, submitPfReport, updateSubExec, usePartners, requestPfPay, pfReqIssue, profileOf,
-  type PfPhase, type PortfolioRec, type SubExec, type SubProject, pfActivities, pfActivityProgress, PF_ACTIVITY_MODE, setPfActivityMode, linkSubActivity,
-  PF_CLOSE_SAY, PF_REQ_SAY, SUB_FIELDS_DEFAULT, SUB_FIELD_SAY, actOnPfClose, actOnPfEval, attachPfCriteria, attachPfMinutes, cancelPortfolio, castPfVote, completeSub,
+  type PortfolioRec, type SubExec, type SubProject, pfActivities, pfActivityProgress, PF_ACTIVITY_MODE, setPfActivityMode, linkSubActivity,
+  PF_CLOSE_SAY, PF_REQ_SAY, SUB_FIELDS_DEFAULT, SUB_FIELD_SAY, actOnPfClose, actOnPfEval, attachPfCriteria, attachPfMinutes, cancelPortfolio, completeSub,
   excludeSub, isLiveSub, pfApproverOf, pfEvalScore, pfSessions, pfToSession, recommendSubs, recordPfReceipt, savePfEval, savePfForm, setPfReliable, stallSub, studySubs,
   type PfRequest, type SubField, type SubState,
 } from '@/data/partners/store'
-import { SESSIONS, voteTally } from '@/data/approvals/store'
+import { SESSIONS } from '@/data/approvals/store'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { Checks, Said, SlotsEditor } from '@/features/partners/parts'
 import type { Reading } from '@/components/assistant/reading'
@@ -46,8 +47,6 @@ import type { Reading } from '@/components/assistant/reading'
      approved sub-project meets its requirements (13.2.20 – 13.2.30)
    The partner opens the same page with `?as=partner`: it adds and follows its own sub-projects,
    signs the agreement and files the final report · it decides nothing. */
-
-const sumOf = (xs: { cost: number }[]) => xs.reduce((s, x) => s + x.cost, 0)
 
 export default function PortfolioPage() {
   const { id } = useParams()
@@ -315,62 +314,32 @@ function HoldCard({ pf, lineKey, setLine, lines, link, split, setSplit }: {
   )
 }
 
-/* ── The portfolio's plan · prepared on the plans procedure's terms, approved by the grants manager (13.2.8 · 13.2.9) ── */
+/* ── The portfolio's plan · client 18 Oct (#32) · it runs through the plans module (BPD-012) ──
+   Drafting, the supervisor's review, the grants manager's approval, execution and change requests are
+   the plans module's · this card shows where the plan stands and opens it there. */
 function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
-  const { role, user } = useRole()
-  const [rows, setRows] = useState<PfPhase[]>(() => (pf.plan.phases.length ? pf.plan.phases : [{ id: 'ph1', name: '', from: '', to: '', cost: 0 }]))
-  const [note, setNote] = useState('')
+  const { role } = useRole()
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
-  /* Batch 6 · the partner drafts its plan too (12.2.4) · its draft goes to the supervisor first */
-  const mine = pf.plan.drafter === undefined || (pf.plan.drafter === 'partner') === asPartner
-  const editable = pf.stage === 'approved' && (asPartner || role.key === 'supervisor')
-    && (pf.plan.state === 'none' || ((pf.plan.state === 'draft' || pf.plan.state === 'returned') && mine))
-  const who = asPartner ? (entityById(pf.entityId)?.name ?? profileOf(pf.entityId)?.name ?? user.name) : user.name
   const tone = pf.plan.state === 'approved' ? 'ok' : pf.plan.state === 'review' || pf.plan.state === 'supervisor' ? 'warn' : pf.plan.state === 'returned' ? 'ret' : 'mute'
   const say = { none: 'لم تُعدّ', draft: 'مسودة', supervisor: 'بانتظار مراجعة المشرف', review: 'بانتظار مدير المنح', approved: 'معتمدة', returned: 'معادة' }[pf.plan.state]
+  const id = pf.plan.planId
+  /* the drafter writes it · the partner from the portal, the supervisor on its behalf */
+  const writes = (pf.plan.state === 'none' || pf.plan.state === 'draft' || pf.plan.state === 'returned') && (asPartner || role.key === 'supervisor')
   return (
     <Glass>
       <Head title="خطة المحفظة" meta={<Tag tone={tone}>{say}</Tag>} />
       {pf.plan.note && pf.plan.state === 'returned' && <p className="bad cnote">{pf.plan.note}</p>}
-      {editable ? (
-        <div className="ptn-form">
-          {rows.map((r, i) => (
-            <div key={r.id} className="regfields">
-              <label className="regf"><span className="lb">المرحلة {i + 1}</span><span className="fld"><input value={r.name} onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, name: e.target.value } : y)))} aria-label={`اسم المرحلة ${i + 1}`} /></span></label>
-              <label className="regf"><span className="lb">من</span><DateField value={r.from} onChange={(v) => setRows((x) => x.map((y, j) => (j === i ? { ...y, from: v } : y)))} label={`بداية المرحلة ${i + 1}`} /></label>
-              <label className="regf"><span className="lb">إلى</span><DateField value={r.to} onChange={(v) => setRows((x) => x.map((y, j) => (j === i ? { ...y, to: v } : y)))} label={`نهاية المرحلة ${i + 1}`} /></label>
-              <label className="regf"><span className="lb">التكلفة</span><MoneyField value={r.cost ? String(r.cost) : ''} onChange={(v) => setRows((x) => x.map((y, j) => (j === i ? { ...y, cost: Number(v) || 0 } : y)))} label={`تكلفة المرحلة ${i + 1}`} /></label>
-              {/* Batch 7 · partners#11 · each phase's activities, with the output and the evidence each needs */}
-              {(r.activities ?? []).map((ac, k) => (
-                <div className="rowf gp-2" key={ac.id}>
-                  <span className="fld"><input value={ac.name} onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, activities: (y.activities ?? []).map((z, m) => (m === k ? { ...z, name: e.target.value } : z)) } : y)))} aria-label={`نشاط ${k + 1} في المرحلة ${i + 1}`} placeholder="النشاط" /></span>
-                  <span className="fld"><input value={ac.output} onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, activities: (y.activities ?? []).map((z, m) => (m === k ? { ...z, output: e.target.value } : z)) } : y)))} aria-label={`مخرج النشاط ${k + 1} في المرحلة ${i + 1}`} placeholder="المخرج" /></span>
-                  <span className="fld"><input value={ac.evidence} onChange={(e) => setRows((x) => x.map((y, j) => (j === i ? { ...y, activities: (y.activities ?? []).map((z, m) => (m === k ? { ...z, evidence: e.target.value } : z)) } : y)))} aria-label={`شاهد النشاط ${k + 1} في المرحلة ${i + 1}`} placeholder="الشاهد المطلوب" /></span>
-                </div>
-              ))}
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRows((x) => x.map((y, j) => (j === i ? { ...y, activities: [...(y.activities ?? []), { id: `a${Date.now()}`, name: '', output: '', evidence: '' }] } : y)))}>أضف نشاطًا للمرحلة {i + 1}</button>
-            </div>
-          ))}
-          <div className="apv-row mt-2">
-            <span className={`sub${sumOf(rows) !== pf.total ? ' bad' : ''}`}>المجموع <span className="num">{nf.format(sumOf(rows))}</span> من <span className="num">{nf.format(pf.total)}</span></span>
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => setRows((x) => [...x, { id: `ph${x.length + 1}`, name: '', from: '', to: '', cost: 0 }])}>مرحلة أخرى</button>
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => { savePfPlan(pf.id, rows, who); setSaid({ ok: 'مسودة الخطة' }) }}>احفظ</button>
-            <button type="button" className="btn btn-p btn-sm" onClick={() => { savePfPlan(pf.id, rows, who); const out = actOnPfPlan(pf.id, 'send', '', who); setSaid(out.length ? { bad: out } : { ok: asPartner ? 'إرسال الخطة لمشرف المنح' : 'إرسال الخطة لمدير المنح' }) }}>{asPartner ? 'أرسل لمشرف المنح' : 'أرسل للاعتماد'}</button>
-          </div>
-        </div>
-      ) : (
-        <ul className="ptn-slots">
-          {pf.plan.phases.map((p) => <li key={p.id}><span>{p.name}</span><span className="sub"><DateText>{p.from}</DateText> – <DateText>{p.to}</DateText>{p.activities?.length ? ` · ${p.activities.map((a) => `${a.name}${a.output ? ` (${a.output})` : ''}`).join('، ')}` : ''}</span><Money sm>{p.cost}</Money></li>)}
-          {/* v3 · 12.4.13 · each activity read from the sub-projects that serve it */}
-          {pfActivities(pf).filter((a) => pfActivityProgress(pf, a.id).linked > 0).map((a) => <li key={`pr-${a.id}`}><span>{a.label}</span><span className="sub">{pfActivityProgress(pf, a.id).say}</span></li>)}
-          {!pf.plan.phases.length && <li className="sub">يعدّها الشريك أو مشرف المنح بعد الاعتماد النهائي.</li>}
-        </ul>
-      )}
-      {!asPartner && role.key === 'supervisor' && pf.plan.state === 'supervisor' && (
+      <ul className="ptn-slots">
+        {pf.plan.phases.map((p) => <li key={p.id}><span>{p.name}</span><span className="sub"><DateText>{p.from}</DateText> – <DateText>{p.to}</DateText>{p.activities?.length ? ` · ${p.activities.map((a) => `${a.name}${a.output ? ` (${a.output})` : ''}`).join('، ')}` : ''}</span><Money sm>{p.cost}</Money></li>)}
+        {/* v3 · 12.4.13 · each activity read from the sub-projects that serve it */}
+        {pfActivities(pf).filter((a) => pfActivityProgress(pf, a.id).linked > 0).map((a) => <li key={`pr-${a.id}`}><span>{a.label}</span><span className="sub">{pfActivityProgress(pf, a.id).say}</span></li>)}
+        {!pf.plan.phases.length && <li className="sub">{id ? 'يعدّها الشريك أو مشرف المنح في وحدة الخطط.' : 'تُفتح في وحدة الخطط بعد الاعتماد النهائي للمحفظة.'}</li>}
+      </ul>
+      {id && (
         <div className="apv-row mt-3">
-          <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة المشرف على الخطة" placeholder="سبب الإعادة للشريك" /></span>
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = actOnPfPlan(pf.id, 'return', note, user.name); setSaid(out.length ? { bad: out } : { ok: 'إعادة الخطة للشريك' }) }}>أعدها للشريك</button>
-          <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfPlan(pf.id, 'toManager', '', user.name); setSaid(out.length ? { bad: out } : { ok: 'إحالة الخطة لمدير المنح' }) }}>أحلها لمدير المنح</button>
+          {writes && <Link className="btn btn-p btn-sm" to={`${ROUTES.planEdit(id)}${asPartner ? '?as=entity' : ''}`}>{pf.plan.phases.length ? 'أكمل الخطة' : 'أعدّ الخطة'}</Link>}
+          <Link className={`btn ${writes ? 'btn-2' : 'btn-p'} btn-sm`} to={`${ROUTES.plan(id)}${asPartner ? '?as=entity' : ''}`}>افتح الخطة · <bdi>{id}</bdi></Link>
+          <span className="sub">المراجعة والاعتماد والتنفيذ وطلبات التعديل في وحدة الخطط (BPD-012)</span>
         </div>
       )}
       {!asPartner && role.key === 'grants-manager' && pfActivities(pf).length > 0 && (
@@ -380,13 +349,6 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
               {m === 'update' ? 'اكتمال المشاريع الفرعية يحدّث إنجاز النشاط' : 'اكتمالها دليل على النشاط فقط'}
             </button>
           ))}
-        </div>
-      )}
-      {!asPartner && role.key === 'grants-manager' && pf.plan.state === 'review' && (
-        <div className="apv-row mt-3">
-          <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على الخطة" placeholder="سبب الإعادة" /></span>
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = actOnPfPlan(pf.id, 'return', note, user.name); setSaid(out.length ? { bad: out } : { ok: 'إعادة الخطة' }) }}>أعد الخطة</button>
-          <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfPlan(pf.id, 'approve', '', user.name); setSaid(out.length ? { bad: out } : { ok: 'اعتماد الخطة' }) }}>اعتمد الخطة</button>
         </div>
       )}
       <Said said={said} />
@@ -592,7 +554,7 @@ function SettingsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean 
   )
 }
 
-/* ── v3 · 13.2.6 · the body's session · the members' votes, the minutes, then the decision (6.2 · 7.2) ── */
+/* ── v3 · 13.2.6 · the body's session · the minutes, then the decision the CEO records (client 18 Oct · decisions 14 · 33) ── */
 function SessionCard({ pf }: { pf: PortfolioRec }) {
   const { role, user } = useRole()
   const [sid, setSid] = useState('')
@@ -601,9 +563,7 @@ function SessionCard({ pf }: { pf: PortfolioRec }) {
   const secretary = (body === 'committee' ? APPROVAL_RULES.committeeBy : APPROVAL_RULES.boardBy).includes(role.key)
   const it = pf.session
   const ss = it ? SESSIONS.find((x) => x.id === it.id) : undefined
-  const t = it ? voteTally({ projectId: pf.id, votes: it.votes }) : undefined
   const r = (out: string[], ok: string) => setSaid(out.length ? { bad: out } : { ok })
-  const voters = ss ? ss.members.filter((m) => m === user.name || role.key === 'ceo') : []
   return (
     <Glass>
       <Head title={body === 'committee' ? 'جلسة اللجنة التنفيذية' : 'جلسة مجلس الأمناء'} meta={it ? <Tag tone="teal">{it.id}</Tag> : <Tag tone="warn">لم تُدرج</Tag>} />
@@ -617,24 +577,13 @@ function SessionCard({ pf }: { pf: PortfolioRec }) {
       ) : (
         <>
           <KV rows={[
-            { k: 'الأصوات', v: `${t!.approve} موافقة · ${t!.reject} رفض · ${t!.return} إعادة · ${t!.abstain} امتناع · النصاب ${APPROVAL_RULES.quorum}` },
+            ...(ss ? [{ k: 'الجلسة', v: `${ss.title} · ${ss.date}` }] : []),
             { k: 'المحضر', v: it.minutes ?? <span className="sub">لم يُرفق</span> },
           ]} />
-          {voters.length > 0 && (
-            <ul className="ptn-slots mt-2">
-              {voters.map((m) => (
-                <li key={m}>
-                  <Person name={m} />
-                  {it.votes[m] && <Tag tone="mute">{({ approve: 'موافقة', reject: 'رفض', return: 'إعادة', abstain: 'امتناع' } as const)[it.votes[m]!]}</Tag>}
-                  {(['approve', 'reject', 'return', 'abstain'] as const).map((v) => <button key={v} type="button" className="btn btn-ghost btn-sm" onClick={() => r(castPfVote(pf.id, m, v, user.name, role.key), `صوت ${m}`)}>{({ approve: 'موافقة', reject: 'رفض', return: 'إعادة', abstain: 'امتناع' } as const)[v]}</button>)}
-                </li>
-              ))}
-            </ul>
-          )}
           {secretary && !it.minutes && <div className="apv-row mt-2"><UploadButton label="محضر الجلسة" onPick={(f) => r(attachPfMinutes(pf.id, f.name, user.name), 'المحضر')} /></div>}
         </>
       )}
-      <p className="sub cnote">تخضع المحفظة لمسار الاعتماد نفسه · النصاب والأغلبية والمحضر قبل تسجيل القرار{/* doc 13.2.6 */}.</p>
+      <p className="sub cnote">تخضع المحفظة لمسار الاعتماد نفسه · يسجّل المدير التنفيذي قرار الجهة النهائي من شريط القرار بعد إرفاق المحضر · لا تصويت للأعضاء{/* doc 13.2.6 · client 18 Oct */}.</p>
       <Said said={said} />
     </Glass>
   )
@@ -842,12 +791,12 @@ function CancelCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean })
   const [file, setFile] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const rc = pf.recovery
-  const ceo = !asPartner && role.key === 'ceo' && (pf.stage === 'approved' || pf.stage === 'closing')
+  const ceo = !asPartner && holds('portfolioCancelBy', role.key) && (pf.stage === 'approved' || pf.stage === 'closing')
   if (!ceo && !pf.cancel) return null
   const got = rc ? rc.receipts.reduce((n, x) => n + x.amount, 0) : 0
   return (
     <Glass>
-      <Head title="إلغاء المحفظة والاسترداد" meta={pf.cancel ? <Tag tone="no">ملغاة</Tag> : <span className="sub">للمدير التنفيذي</span>} />
+      <Head title="إلغاء المحفظة والاسترداد" meta={pf.cancel ? <Tag tone="no">ملغاة</Tag> : <span className="sub">لـ{holdersSay('portfolioCancelBy')}</span>} />
       {pf.cancel ? (
         <KV rows={[
           { k: 'السبب', v: pf.cancel.reason },

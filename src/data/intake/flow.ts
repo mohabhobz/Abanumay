@@ -312,7 +312,14 @@ export const pickSupervisor = (field: string, goal: string): string | null => {
 
 /* ── Guards ── */
 
+/* Re-audit 17 Oct · v3 · 11.2.2 · 11.4.3 · a project created by the simplified external form carries the
+   form's attachments, not a regular request's four · the partners store hands in what its form asks
+   (it imports this store, so not back) */
+let extMissing: (id: string) => string[] | null = () => null
+export const setExtMissingDocs = (f: (id: string) => string[] | null): void => { extMissing = f }
 export const missingDocs = (id: string): string[] => {
+  const ext = row(id)?.externalId ? extMissing(id) : null
+  if (ext) return ext
   const f = flowOf(id)
   return REQUEST_DOCS.filter((d) => d.required && !f.docs.some((x) => x.kind === d.key)).map((d) => d.label)
 }
@@ -746,13 +753,22 @@ export const transferProject = (id: string, field: string, owner: string, reason
 /** v3 · 3.4.44 · the supervisor or the grants manager edits the foundation's outputs */
 export function saveOrgOutputs(id: string, list: Output[], by: string, role: string): string[] {
   if (role !== 'supervisor' && role !== 'grants-manager') return ['يعدّل مخرجات المؤسسة مشرف المنح أو مدير المنح']
+  /* Re-audit 17 Oct · the station too, not the role alone · the supervisor at his seat, the grants
+     manager while the project is with him */
+  const p = row(id)
+  const at = p && p.stage === 'دراسة المشروع' ? p.holder ?? 'supervisor' : ''
+  if (role === 'supervisor' && at !== 'supervisor') return ['المشروع ليس عند مشرف المنح']
+  if (role === 'grants-manager' && at !== 'manager') return ['المشروع ليس عند مدير المنح']
   const clean = list.map((o) => ({ text: o.text.trim(), indicator: o.indicator.trim(), target: o.target.trim() })).filter((o) => o.text)
   if (!clean.length) return ['مخرج واحد على الأقل']
   run({ op: 'outputs', id, list: clean, by })
   return []
 }
-/** The foundation's outputs · its copy once the study started, the entity's before */
+/** The foundation's outputs · its copy once the study started, the entity's before · re-audit 17 Oct ·
+    callers that title them «مخرجات المؤسسة» should tell which (`orgOutputsAreEntity`) */
 export const orgOutputsOf = (id: string): Output[] => flowOf(id).orgOutputs ?? flowOf(id).entityOutputs ?? []
+/** No foundation copy yet · the list `orgOutputsOf` gives is the entity's own */
+export const orgOutputsAreEntity = (id: string): boolean => !flowOf(id).orgOutputs
 
 /** v3 · 3.2.10 · the entity corrects its returned request before sending it again */
 export function amendRequest(id: string, values: Record<string, string>, by: string): string[] {

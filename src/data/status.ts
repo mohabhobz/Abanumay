@@ -28,6 +28,8 @@ let agreementGate: Gate = () => ''
 let planGate: Gate = () => ''
 export const setAgreementStatusGate = (f: Gate): void => { agreementGate = f }
 export const setPlanStatusGate = (f: Gate): void => { planGate = f }
+/** What holds the project's execution on its plan · '' when nothing (re-audit 17 Oct · read by the agreement's activation) */
+export const planHoldOf = (projectId: string): string => planGate(projectId)
 /** v3 · what the approval path adds to the study's level · a return from the executive (5.2.11), a
     body's decision waiting for its financial cover (6.4.3) · '' when nothing */
 let studyNote: Gate = () => ''
@@ -44,7 +46,8 @@ export function statusOf(p: Pick<ProjectRow, 'id' | 'stage' | 'supportStatus' | 
       return p.supportStatus === 'معتمد' ? 'معتمد' : g
     case PRE:
       /* v3 · 11.2.5 · approved, then the external project's pre-execution requirements */
-      return p.stage === EXT_PRE_STAGE || agreementGate(p.id) ? PRE : 'معتمد'
+      /* re-audit 17 Oct · 8.2.1 · 0.status.4 · the plan's work counts too, not only the agreement's */
+      return p.stage === EXT_PRE_STAGE || agreementGate(p.id) || planGate(p.id) ? PRE : 'معتمد'
     case 'تحت التنفيذ':
       return planGate(p.id) ? PRE : g
     case 'مكتمل':
@@ -62,6 +65,8 @@ export const STUDY_LEVEL: Record<string, string> = {
   exec: 'المدير التنفيذي',
   committee: 'اللجنة التنفيذية',
   board: 'مجلس الأمناء',
+  /* Client 18 Oct · decision 11 · the path is complete, the supervisor confirms */
+  confirm: 'بانتظار تأكيد مشرف المنح',
 }
 
 /** The sub-status · '' where the dictionary gives none */

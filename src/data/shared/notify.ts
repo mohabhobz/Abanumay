@@ -67,7 +67,11 @@ export const saveNotifyRules = (next: NotifyRules, by: string): void => {
 
 /* ── Notices · every module's list in one shape ── */
 
-export interface Notice { id: string; to: string; title: string; context: string; at: string; href: string; topic: Topic }
+export interface Notice {
+  id: string; to: string; title: string; context: string; at: string; href: string; topic: Topic
+  /** Re-audit 17 Oct · an escalation alert goes on its level's channels (/settings/escalation), not the topic's */
+  channels?: EscChannel[]
+}
 
 const tagged = (list: { id: string; to: string; title: string; context: string; at: string; href?: string; projectId?: string }[], topic: Topic): Notice[] =>
   list.map((n) => ({ id: n.id, to: n.to, title: n.title, context: n.context, at: n.at, href: n.href ?? (n.projectId ? ROUTES.project(n.projectId) : ROUTES.home), topic }))
@@ -122,7 +126,7 @@ function expiryNotices(): Notice[] {
 
 function escalationNotices(): Notice[] {
   return escAlerts(7).flatMap((a) => a.to.map((to) => ({
-    id: `${a.id}-${to}`, to, topic: 'escalation' as const, at: a.at, href: a.item.href,
+    id: `${a.id}-${to}`, to, topic: 'escalation' as const, at: a.at, href: a.item.href, channels: a.channels,
     title: a.level === 'near' ? `يقترب موعده · ${a.item.title}` : a.level === 'late' ? `تجاوز مدته · ${a.item.title}` : `متعثر · اليوم ${a.day} · ${a.item.title}`,
     context: a.level === 'near' ? `${a.item.stage} · تنتهي مدته ${a.item.dueOn}` : `${a.item.stage} · ${a.item.over} يومًا فوق المدة`,
   })))
@@ -224,7 +228,7 @@ export function outbox(): Message[] {
   const out: Message[] = []
   for (const n of allNotices()) {
     const audience = audienceOf(n.to)
-    for (const channel of NOTIFY_RULES.channels[audience][n.topic] ?? ['app']) {
+    for (const channel of n.channels?.length ? n.channels : NOTIFY_RULES.channels[audience][n.topic] ?? ['app']) {
       const address = addressOf(n.to, channel)
       const tpl = TEMPLATES.list[n.topic]
       const state: Message['state'] = !address ? 'failed' : channel === 'app' ? 'sent' : TEMPLATES.gateway.mode === 'api' && TEMPLATES.gateway.endpoint ? 'queued' : 'logged'

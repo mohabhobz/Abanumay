@@ -9,7 +9,7 @@ import { BUDGET_STATE_SAY, budgetTone, docTitle, yearById } from '@/data/mock/bu
 import { allBudgets } from '@/data/mock/chain'
 import { BUDGET_REQS, lineDeps, mayAct, shareSay, useBudget } from '@/data/budget/store'
 import { readRole } from '@/data/roles'
-import { docSources } from '@/data/mock/budgetTree'
+import { docSources, fundSources } from '@/data/mock/budgetTree'
 import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
@@ -43,6 +43,9 @@ import { GapPeek } from './GapPeek'
 export default function BudgetPage() {
   useBudget()
   const [cycleId, setCycleId] = useState(CYCLES[0].id)
+  /* client 18 Oct · #37 · each funding source has its own budgets · the list reads by source */
+  const [src, setSrc] = useState('')
+  const shownBudgets = src ? allBudgets.filter((d) => docSources(d).some((x) => x.code === src)) : allBudgets
   const [path, setPath] = useState<string[]>([])
   const [view, setView] = useState<'alloc' | 'use'>('alloc')
 
@@ -132,6 +135,13 @@ export default function BudgetPage() {
               }))}
               onChange={(v) => { if (v) { setCycleId(v); setPath([]) } }}
             />
+            <Select
+              icon={icons.budget}
+              value={src}
+              all="كل مصادر التمويل"
+              options={fundSources.map((f) => ({ value: f.code, label: f.name }))}
+              onChange={(v) => setSrc(v ?? '')}
+            />
           </div>
 
           {/* Note: the budgets themselves were missing from the budget screen. What was below were
@@ -143,7 +153,7 @@ export default function BudgetPage() {
               title="الميزانيات المعرَّفة"
               meta={
                 <span className="rowf gp-2">
-                  <span className="sub"><Num>{allBudgets.length}</Num> {nounAfter(allBudgets.length, NOUN.budget)}</span>
+                  <span className="sub"><Num>{shownBudgets.length}</Num> {nounAfter(shownBudgets.length, NOUN.budget)}</span>
                   <Link className="btn btn-2 btn-sm" to={ROUTES.budgetOps}>
                     <Icon name={icons.redo} size="sm" />
                     طلبات العمليات
@@ -159,7 +169,7 @@ export default function BudgetPage() {
               }
             />
             <ul className="cfglist">
-              {allBudgets.map((d) => {
+              {shownBudgets.map((d) => {
                 /* Note: dependent count in place of a delete button · the budget's own projects,
                    read from its root line (links, plans and the projects it was built from) */
                 const root = d.nodes.find((n) => n.parentId === null)

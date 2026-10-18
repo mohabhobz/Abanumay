@@ -839,7 +839,8 @@ export const openPlan = (projectId: string, drafter: 'entity' | 'supervisor'): s
   if (has) return has.id
 
   const pr = projectRows.find((x) => x.id === projectId)
-  const id = `PL-${1030 + planRows.length}`
+  /* a portfolio's plan (PL-PF-…) doesn't count in the project plans' sequence */
+  const id = `PL-${1030 + planRows.filter((x) => !x.id.startsWith('PL-PF-')).length}`
   planRows.push(liveClock({
     id,
     projectId,

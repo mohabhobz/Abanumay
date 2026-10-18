@@ -26,7 +26,7 @@ import {
   STOPPED_DOCS, needsComms, reportBlockers, reportGap,
 } from '@/data/mock/closing'
 import {
-  APPROVER_SAY, actOnClosing, approverFor, attachDoc, closeActions, closeStops, evalScore, sendClosingReport, useClosing, type CloseAct,
+  APPROVER_SAY, actOnClosing, approverFor, attachDoc, closeActions, closeSayOf, closeStops, evalScore, sendClosingReport, useClosing, type CloseAct,
 } from '@/data/closing/store'
 import { ExceptionCard, FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RedirectCard, RequirementsCard, VersionsCard } from './parts'
 import { projectById } from '@/data/mock/projects'
@@ -254,7 +254,7 @@ export default function ClosePage() {
               </p>
               <Related plain={asEntity} links={[{ kind: 'project', id: c.projectId, label: c.projectName }, { kind: 'entity', id: c.entityId, label: c.entityName }]} />
               <div className="gt-tag">
-                <Tag tone="mute">{closeStageLabel(c.stage)}</Tag>
+                <Tag tone="mute">{closeSayOf(c)}</Tag>
               </div>
 
               {pr && (

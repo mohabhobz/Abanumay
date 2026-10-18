@@ -96,7 +96,8 @@ export function PayList({ list, finance }: { list: EhsanPay[]; finance?: boolean
   const { user } = useRole()
   const [note, setNote] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
-  if (!list.length) return <p className="sub cnote">لا دفعات مسجلة بعد.</p>
+  /* Re-audit 17 Oct · the last one reviewed empties the list · its message still shows */
+  if (!list.length) return <><p className="sub cnote">لا دفعات مسجلة بعد.</p><Said said={said} /></>
   const act = (id: string, a: 'confirm' | 'return') => {
     const out = reviewEhsanPay(id, a, note, user.name)
     setSaid(out.length ? { bad: out } : { ok: a === 'confirm' ? 'تأكيد الدفعة' : 'إعادة الدفعة' })

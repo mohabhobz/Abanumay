@@ -169,6 +169,8 @@ export interface Delegation {
   delegate: string
   scope: 'all' | 'approvals'
   note: string
+  /** Re-audit 17 Oct · who set it · the plans' approval reads it (12.2.11) */
+  who?: string
 }
 
 export const DELEGATION_DEFAULT: Delegation = {

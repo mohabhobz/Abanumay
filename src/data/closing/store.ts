@@ -16,9 +16,10 @@ import { agrFlowOf, inForceOf, annexValue, outputsOf } from '@/data/agreements/s
 import { submitRequest } from '@/data/intake/flow'
 import { hasFunding, releaseRecovered, releaseSavings, resizeIssue, resizeLink } from '@/data/budget/store'
 import {
-  adjustSchedule, isStopped, paidOf, scheduleOf, stopProjectPayments, unsettledSlots, usePayments,
+  adjustSchedule, isStopped, paidOf, scheduleOf, stopForClosing, stopProjectPayments, unsettledSlots, usePayments,
 } from '@/data/payments/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
+import { holds, holdersSay } from '@/data/shared/decisions'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type {
@@ -120,6 +121,13 @@ export function mediaInAgreement(projectId: string): boolean {
 const agreedOutputs = (projectId: string) => outputsOf(projectId).outputs.map((text) => ({ text, achieved: '' }))
 
 const projectOf = (id: string) => projectRows.find((p) => p.id === id)
+/** Re-audit 17 Oct · a closed closing names the status its project closed on · «مغلق · مغلق بوفر» read
+    «مغلق · مكتمل» for a project that kept a saving */
+export const closeSayOf = (c: Pick<CloseRow, 'stage' | 'projectId'>): string => {
+  if (c.stage !== 'closed') return closeStageLabel(c.stage)
+  const g = projectOf(c.projectId)?.statusGroup
+  return g && g !== 'مكتمل' ? `مغلق · ${g}` : closeStageLabel(c.stage)
+}
 const addDays = (iso: string, n: number) => {
   const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + n)
@@ -182,9 +190,10 @@ export function openGate(projectId: string): { ok: boolean; why: string; basis?:
     }
   }
   if (!stopped) {
-    const open = payRequests.filter((r) => r.projectId === projectId && r.state !== 'paid' && r.state !== 'closed')
-    if (open.length) return { ok: false, why: /* doc rule 2 */ `${open.length === 1 ? 'طلب صرف مفتوح' : `${open.length} طلبات صرف مفتوحة`}` }
-    const due = unsettledSlots(projectId).due
+    /* Client 18 Oct · decision 21 · an open payment request no longer holds the opening · it is stopped
+       when the closing opens, and its payment is settled in the closing · so a payment that only waits
+       on its open request isn't «due unpaid» here */
+    const due = unsettledSlots(projectId).due.filter((s) => s.state !== 'pending')
     if (due.length) return { ok: false, why: /* doc rule 2 */ `دفعة مستحقة لم تُصرف ولم تُسوَّ (الدفعة ${due.map((s) => s.no).join(' و')})` }
   }
   return { ok: true, why: basis === 'stopped' ? 'مؤهَّل · قرار إيقاف معتمد' : basis === 'complete' ? 'مؤهَّل · اكتملت الأنشطة' : 'مؤهَّل · انتهت مدة التنفيذ', basis }
@@ -370,7 +379,7 @@ export function entityEvalSummary(entityId: string): { avg: number | null; n: nu
 type ReportPatch = Partial<Pick<FinalReport, 'beneficiaries' | 'budget' | 'days' | 'outcomes' | 'risks' | 'projectValue' | 'outputs' | 'contribution' | 'template'>> & { finance?: Pick<CloseFinance, 'lines' | 'settlements'> }
 type RecOwner = { kind: 'close' | 'case'; id: string }
 type Op = { at: string; by: string } & (
-  | { op: 'open'; id: string; projectId: string; basis: NonNullable<CloseRow['basis']>; mediaRequired?: boolean; outputs?: { text: string; achieved: string }[]; verified?: number }
+  | { op: 'open'; id: string; projectId: string; basis: NonNullable<CloseRow['basis']>; mediaRequired?: boolean; outputs?: { text: string; achieved: string }[]; verified?: number; payStopped?: number }
   | { op: 'save'; id: string; patch: ReportPatch }
   | { op: 'doc'; id: string; key: string; file?: string }
   | { op: 'link'; id: string; label: string; url: string }
@@ -474,6 +483,7 @@ function applyOp(o: Op) {
       if (o.verified !== undefined) c.finance = { ...c.finance, verified: o.verified, verifiedBy: 'النظام', verifiedAt: day(o.at) }
       closeRows.push(liveClock(c, 'hoursInStage', true))
       log(c, o.by, `${o.basis === 'stopped' ? 'إنشاء متطلبات إغلاق مشروع موقوف (تقرير مالي تنفيذي وأدلة المخرجات)' : 'إنشاء طلب التقرير الختامي'} · ${o.basis === 'stopped' ? 'بقرار إيقاف' : o.basis === 'complete' ? 'اكتملت الأنشطة' : 'انتهت مدة التنفيذ'} · ${c.mediaRequired ? 'الاتفاقية تطلب النشر الإعلامي' : 'لا نشر إعلامي في الاتفاقية'} · وأُبلغت الجهة بالمتطلبات`, o.at)
+      if (o.payStopped) log(c, o.by, `أُوقف ${o.payStopped === 1 ? 'طلب صرف مفتوح' : `${o.payStopped} طلبات صرف مفتوحة`} لبدء الإغلاق · تُسوّى دفعته في الإغلاق`, o.at)
       closeStage(c, 'طلب التقرير الختامي')
       notify([p.entityName], 'طلب التقرير الختامي لمشروعك', p.name, `${ROUTES.closing(c.id)}?as=entity`)
       return
@@ -1026,7 +1036,9 @@ export function openClosing(projectId: string, by: string): { id?: string; error
   /* Verifier · 16 Oct · past the highest id in use · the fixture's own ids sit above 2050 + its count */
   const id = `CL-${Math.max(2050, ...closeRows.map((x) => Number(x.id.replace(/\D/g, '')) || 0)) + 1}`
   const stop = g.basis === 'stopped' ? casesOfProject(projectId).find((k) => k.kind === 'stop' && (k.stage === 'approved' || k.stage === 'closed')) : undefined
-  run({ op: 'open', id, projectId, basis: g.basis, mediaRequired: mediaInAgreement(projectId), outputs: agreedOutputs(projectId), verified: stop ? (stop.settlement?.actual ?? stop.paid) : undefined, by, at: now() })
+  /* Client 18 Oct · decision 21 · the open payment requests stop with the opening */
+  const payStopped = stopForClosing(projectId, id, by)
+  run({ op: 'open', id, projectId, basis: g.basis, mediaRequired: mediaInAgreement(projectId), outputs: agreedOutputs(projectId), verified: stop ? (stop.settlement?.actual ?? stop.paid) : undefined, payStopped: payStopped || undefined, by, at: now() })
   return { id, errors: [] }
 }
 export const saveReport = (id: string, patch: ReportPatch, by: string) => run({ op: 'save', id, patch, by, at: now() })
@@ -1240,7 +1252,7 @@ export function decideRecovery(owner: RecOwner, kind: NonNullable<Recovery['deci
 /* Distress cases */
 
 export const nextCaseId = () => `TS-${3001 + CASES.length}`
-export function createCase(v: { projectId: string; kind: CaseKind; reason: string; newAmount?: number; annex?: string; extra?: { amount: number; dueAt: string }; outcome?: CaseRow['outcome']; redirect?: CaseRow['redirect'] }, by: string): { id?: string; errors: string[] } {
+export function createCase(v: { projectId: string; kind: CaseKind; reason: string; newAmount?: number; annex?: string; extra?: { amount: number; dueAt: string }; outcome?: CaseRow['outcome']; redirect?: CaseRow['redirect'] }, by: string, role?: RoleKey): { id?: string; errors: string[] } {
   const p = projectOf(v.projectId)
   if (!p) return { errors: ['المشروع غير موجود'] }
   if (!v.reason.trim()) return { errors: ['اكتب سبب القرار'] }
@@ -1260,6 +1272,8 @@ export function createCase(v: { projectId: string; kind: CaseKind; reason: strin
   const allowed = outcomesFor(v.kind, v.projectId, v.newAmount)
   const outcome = v.outcome ?? allowed[0]
   if (!outcome || !allowed.includes(outcome)) return { errors: [`النتيجة غير متاحة لهذه الحالة · المتاح: ${allowed.map((x) => OUTCOME_SAY[x]).join('، ')}`] }
+  /* Client 18 Oct · #17 · a value annex (a cut · a raise by annex) is a system permission */
+  if (role && (v.kind === 'reduce' || outcome === 'annex') && !holds('annexBy', role)) return { errors: [`قرار ملحق القيمة لـ${holdersSay('annexBy')} (صلاحية في قرارات المؤسسة)`] }
   if (outcome === 'redirect' && (!v.redirect?.purpose.trim() || !v.redirect.decision.trim() || !v.redirect.file)) return { errors: [/* doc 10.9.2 */ 'وثّق إعادة التوجيه · الغرض الجديد ورقم القرار ومستنده'] }
   if (v.kind === 'reduce' && outcome === 'redirect' && paid <= (v.newAmount ?? 0)) return { errors: ['لا فرق مصروف يُعاد توجيهه'] }
   const id = nextCaseId()

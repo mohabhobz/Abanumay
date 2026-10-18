@@ -19,8 +19,11 @@ export interface ApprovalRules {
   /** 4.3.2 · 4.4.19 · the grants manager may approve finally, within the matrix's manager cap */
   managerFinal: boolean
   /** v2 · 4.4.20 · a ceiling on the grants manager's final refusal · v3 · 4.2.17 lifts it (he refuses
-      finally whatever the amount) · kept on file, read by nothing */
+      finally whatever the amount) · client, 18 Oct (decision 2): refusal stays a general permission over
+      every project, and the system lets the foundation add an amount ceiling · applied only when on */
   managerRejectUpTo: number
+  /** Client, 18 Oct · decision 2 · the ceiling above is enforced · off = refuse whatever the amount (4.2.17) */
+  managerRejectCapOn?: boolean
   /** 5.3.1 · 5.4.28-a · the share by which an amount may pass the executive director's cap */
   execOverPct: number
   /** Per-entity limits within the period (5.4.27-b · 5.4.28-b · 6.4.20 · 6.4.21) */
@@ -52,6 +55,7 @@ export interface ApprovalRules {
 const DEFAULT: ApprovalRules = {
   managerFinal: false,
   managerRejectUpTo: 100_000,
+  managerRejectCapOn: false,
   execOverPct: 5,
   periodDays: 365,
   execEntity: { count: 6, total: 3_000_000 },
@@ -62,7 +66,8 @@ const DEFAULT: ApprovalRules = {
   boardMembers: ['تركي الخنيزان', 'عبدالرحمن الهليّل', 'نواف الشهري', 'خالد السبيعي', 'نورة القحطاني'],
   quorum: 3,
   voting: 'majority',
-  committeeBy: ['grants-manager', 'ceo'],
+  /* Client 18 Oct · decision 14 · the CEO records the body's final decision */
+  committeeBy: ['ceo'],
   boardBy: ['ceo'],
   conflicts: [{ person: 'عبدالرحمن الهليّل', entityId: '748', reason: 'عضو في مجلس إدارة الجهة' }],
   /* v3 · 5.2.14 · above the executive's authority the project goes to the committee on its own */

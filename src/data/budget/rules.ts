@@ -13,7 +13,8 @@ export type Level = 'manager' | 'exec' | 'committee' | 'board'
 export interface BudgetRules {
   /** Prepares a budget and a budget operation request · «صاحب الصلاحية» (1.2.1–1.2.8 · 1.3.1) */
   prepareBy: RoleKey[]
-  /** Reviews and forwards or returns (1.2.9 · 1.3.7) */
+  /** Reviews and forwards or returns (1.2.9 · 1.3.7) · client 18 Oct (#6) · empty = no such step ·
+      the budget goes from its preparer straight to finance */
   managerBy: RoleKey[]
   /** The finance department's review (1.2.10 · 1.3.8) */
   financeBy: RoleKey[]
@@ -40,16 +41,21 @@ export interface BudgetRules {
   relocateBy: RoleKey[]
   /** v3 · 1.3b.6 · who approves it (and so executes it) */
   relocateApproveBy: RoleKey[]
+  /** Told when a budget goes live and when a budget operation is executed · the grants seats
+      that link projects to it (re-audit 17 Oct · was a fixed pair of titles) */
+  notifyLive: RoleKey[]
   /** The file's migration version · a one-time move runs once */
   migrated?: number
 }
 
 /* v3 · 1.1.desc-4 · preparing and approving the grants budget sits outside the grants department ·
-   the authority holders are named here · by default finance prepares and the executive director
-   reviews first (15 Oct · Mohab) */
+   the authority holders are named here · client 18 Oct (#6): prepared by whoever holds the
+   permission (finance by default) → finance reviews and approves → the executive director gives
+   the final approval · the first review step is off by default (it put the executive on the same
+   budget twice) and stays a setting */
 const DEFAULT: BudgetRules = {
   prepareBy: ['finance'],
-  managerBy: ['ceo'],
+  managerBy: [],
   financeBy: ['finance'],
   execBy: ['ceo'],
   statusBy: ['grants-manager', 'ceo'],
@@ -62,11 +68,12 @@ const DEFAULT: BudgetRules = {
   /* v3 · 1.3b · finance requests, the executive director approves (15 Oct · Mohab) */
   relocateBy: ['finance'],
   relocateApproveBy: ['ceo'],
+  notifyLive: ['supervisor', 'grants-manager'],
   /* no `migrated` here · readJson spreads the defaults under the stored file, so a version on the
      default would mark an old file as migrated and skip the moves below */
 }
 
-export const BUDGET_RULES: BudgetRules = readJson(CFG.budgetRules, DEFAULT)
+export const BUDGET_RULES: BudgetRules = readJson(CFG.budgetRules, structuredClone(DEFAULT))
 /* Re-audit 7 Oct · finance has its own seat now · a file saved while the executive stood in for it
    moves to the finance role */
 /* Batch 5 · 8 Oct · once, not on every load · it rewrote a choice made after the move, so an admin
@@ -87,6 +94,22 @@ if ((BUDGET_RULES.migrated ?? 0) < 3) {
   BUDGET_RULES.migrated = 3
   if (old) persist(CFG.budgetRules, BUDGET_RULES)
 }
+
+/* Client 18 Oct · #6 · once · a file still on the 15 Oct default (the executive as first reviewer)
+   drops that step · a different choice stands */
+if ((BUDGET_RULES.migrated ?? 0) < 4) {
+  const old = BUDGET_RULES.managerBy.length === 1 && BUDGET_RULES.managerBy[0] === 'ceo'
+  if (old) BUDGET_RULES.managerBy = []
+  BUDGET_RULES.migrated = 4
+  /* a stored file carries the version even when this step moved nothing · an earlier step may have
+     persisted it at 3, and it must not run again */
+  let stored = false
+  try { stored = localStorage.getItem(CFG.budgetRules) !== null } catch { /* private window */ }
+  if (old || stored) persist(CFG.budgetRules, BUDGET_RULES)
+}
+
+/** No first review step · a sent budget or request goes straight to finance */
+export const noReviewStep = (): boolean => !BUDGET_RULES.managerBy.length
 
 export const saveBudgetRules = (next: BudgetRules): void => {
   Object.assign(BUDGET_RULES, structuredClone(next))

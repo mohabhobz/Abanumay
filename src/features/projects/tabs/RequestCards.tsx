@@ -34,7 +34,7 @@ export function RecommendationCard({ row }: { row: ProjectRow }) {
         meta={
           <>
             <Tag tone={s.recommendation === 'approve' ? 'ok' : s.recommendation === 'reject' ? 'no' : 'mute'}>
-              {s.recommendation === 'approve' ? 'الموافقة' : s.recommendation === 'reject' ? 'الاعتذار' : 'لم تُحدَّد'}
+              {s.recommendation === 'approve' ? 'الموافقة' : s.recommendation === 'reject' ? 'الرفض' : 'لم تُحدَّد'}
             </Tag>
             {' '}<Tag tone="mute">{sent ? 'أُحيلت لمدير المنح' : 'مسودة لدى المشرف'}</Tag>
           </>

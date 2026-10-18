@@ -14,6 +14,30 @@ import { useState } from 'react'
 import { useRole } from '@/hooks/useRole'
 import { entityEvalSummary, entityLessons, saveEntityLessons, useClosing } from '@/data/closing/store'
 
+/* === An external party's reference record (v3 · 11.2.1 · 11.4.1) ===
+   Re-audit 17 Oct · the file used to fill an external party with a generated director, clerk,
+   username and license · it has none of these · it reads what was recorded, nothing more */
+export function ExternalRecordTab({ e }: { e: EntityRow }) {
+  const x = e.external!
+  return (
+    <Glass>
+      <Head title="سجل مرجعي داخلي" meta={<Tag tone="mute">جهة خارجية</Tag>} />
+      <KV
+        rows={[
+          { k: 'اسم الجهة', v: e.name },
+          { k: 'المنطقة', v: e.region },
+          { k: 'المحافظة / المدينة', v: e.city },
+          { k: 'طريقة التحويل', v: x.transfer ?? '—' },
+          { k: 'المراجع', v: x.refs ?? '—' },
+          { k: 'أنشأه', v: <Person name={x.by} quiet={false} /> },
+          { k: 'تاريخ الإنشاء', v: <DateText>{x.at}</DateText> },
+        ]}
+      />
+      <p className="sub mt-3">لا حساب بوابة ولا مستخدمين ولا ممثل مسجّل · تُدار مشاريعها داخليًا عبر إجراء الجهات الخارجية.</p>
+    </Glass>
+  )
+}
+
 /* === Entity data === */
 
 /**

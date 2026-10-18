@@ -180,7 +180,7 @@ export default function EscalationSettingsPage() {
                           <td className="sub">{s.who}</td>
                           <td className="n">
                             {admin
-                              ? <CfgNum value={days[s.key]} min={1} label={`مدة ${s.label} بأيام العمل`} onChange={(x) => setDays((y) => ({ ...y, [s.key]: Math.max(1, x) }))} />
+                              ? <CfgNum value={days[s.key]} min={1} label={`مدة ${s.label} بأيام العمل · ${p.label}`} onChange={(x) => setDays((y) => ({ ...y, [s.key]: Math.max(1, x) }))} />
                               : <Num>{days[s.key]}</Num>}
                           </td>
                           <td className="n"><Num>{days[s.key] + (n === null ? days[s.key] : n)}</Num></td>

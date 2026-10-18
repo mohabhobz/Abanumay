@@ -5,7 +5,7 @@ import { DateText, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from 
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, pct } from '@/lib/format'
 import type { ProjectRow } from '@/types/domain'
-import { approverFor } from '@/data/approval'
+import { deciderFor } from '@/data/approval'
 import { HOLDER_LABEL, holderOf, type Holder } from '@/data/holders'
 import { flowOf, orgOutputsOf, outputLine } from '@/data/intake/flow'
 import { CRITERIA, GROUP_SAY, studyScore } from '@/data/intake/criteria'
@@ -24,7 +24,7 @@ import {
   DEPT_SAY, OUTCOME_SAY, VERDICT_SAY, VOTE_SAY, addCondition, addMandNote, amendDecision, answerOpinion,
   appFlowOf, askOpinion, conflictOf, declareConflict, entityBlock, entityLimitBlock, entityTally, holdLine,
   levelCap, makeOfficial, meetCondition, payPlanOf, planSuggested, resolveNote, sessionsOf, strategyOf, useApprovals,
-  voteTally, type Opinion, finPosition, supportAmount,
+  type Opinion, finPosition, supportAmount,
 } from '@/data/approvals/store'
 import { AmountCard, FinKV } from '@/features/approvals/AmountCard'
 import { CONSULTANTS, consultantsFor } from '@/data/intake/consultants'
@@ -55,7 +55,6 @@ export function OfficialNotes({ notes }: { notes: { id: string; text: string; by
   )
 }
 
-const HOLD_SAY = { none: 'لا حجز', initial: 'حجز مبدئي', final: 'حجز نهائي' } as const
 
 export function ApprovalTab({ row }: { row: ProjectRow }) {
   useApprovals()
@@ -66,7 +65,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
   const me = meOf(role)
   const holder = holderOf(row)
   const amount = supportAmount(row)
-  const decider = approverFor(amount)
+  const decider = deciderFor(amount)
   const fin = finPosition(row)
   const hold = holdLine(row.id)
   const s = strategyOf(row)
@@ -121,7 +120,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           { k: 'صاحب القرار حسب المبلغ', v: <>{decider.role}{decider.upTo !== null && <span className="sub"> · حتى <Num>{decider.upTo}</Num></span>}</> },
           ...(floorOf(row) && LEVEL_RANK[floorOf(row)!] > LEVEL_RANK[decider.key] ? [{ k: 'صاحب القرار حسب النوع', v: <>{LEVEL_SAY[floorOf(row)!]} فأعلى <span className="sub">· {KIND_SAY[kindOf(row)]}</span></> }] : []),
           { k: 'حد المدير التنفيذي بالتجاوز المسموح', v: <><Num>{levelCap('exec')}</Num> <span className="sub">({pct(APPROVAL_RULES.execOverPct)})</span></> },
-          { k: 'الحجز', v: <>{hold ? HOLD_STAGE_SAY[hold.link.stage] : HOLD_SAY[f.hold]}{hold?.node && <span className="sub"> · {hold.link.shares.length > 1 ? `${nf.format(hold.link.shares.length)} بنود` : hold.node.label} · <Money sm>{hold.link.amount}</Money></span>}</> },
+          { k: 'الحجز', v: <>{/* Re-audit 17 Oct · one source · the budget link (or the multi-year plan), never the path's own flag */ hold ? HOLD_STAGE_SAY[hold.link.stage] : fplan ? (f.hold === 'none' ? 'لا حجز' : 'على خطة التمويل متعددة السنوات') : 'لا حجز · لا ارتباط بالميزانية بعد'}{hold?.node && <span className="sub"> · {hold.link.shares.length > 1 ? `${nf.format(hold.link.shares.length)} بنود` : hold.node.label} · <Money sm>{hold.link.amount}</Money></span>}</> },
           ...(f.needsPlan !== undefined ? [{ k: 'الخطة', v: f.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة' }] : [{ k: 'الخطة', v: <span className="sub">{planSuggested(row) ? 'مقترح: يتطلب خطة (وفق القاعدة)' : 'مقترح: لا يتطلب خطة'}</span> }]),
           ...(f.decided ? [{ k: 'القرار النهائي', v: <>{HOLDER_LABEL[f.decided.level]} · <Person name={f.decided.by} /> · <DateText>{f.decided.at}</DateText></> }] : []),
           ...(f.awaitingReview ? [{ k: 'بانتظار استكمال المراجعة', v: <span className="bad">{f.awaitingReview.note}</span> }] : []),
@@ -368,12 +367,11 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           <ul className="apv-list">
             {sessions.map((x) => {
               const it = x.items.find((i) => i.projectId === row.id)!
-              const t = voteTally(it)
               return (
                 <li key={x.id}>
                   <span className="apv-t">
                     <Link className="lnk" to={ROUTES.approvalSession(x.id)}><b>{x.title}</b></Link>
-                    <span className="sub"><DateText>{x.date}</DateText> · موافقة {nf.format(t.approve)} · رفض {nf.format(t.reject)} · إعادة {nf.format(t.return)}{it.minutes && <> · المحضر: {it.minutes}</>}</span>
+                    <span className="sub"><DateText>{x.date}</DateText>{it.minutes ? <> · المحضر: {it.minutes}</> : ' · لا محضر بعد'}</span>
                   </span>
                   <span className="pc-sp" />
                   <Tag tone={it.outcome ? (it.outcome === 'reject' ? 'no' : 'ok') : 'warn'}>{it.outcome ? OUTCOME_SAY[it.outcome] : 'على جدول الأعمال'}</Tag>

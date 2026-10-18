@@ -304,8 +304,9 @@ export default function BudgetDocPage() {
                   </label>
                 </div>
 
-                {/* Funding sources · one or more, each with its amount (1.2.2 · 1.4.4) */}
-                <h3 className="stdy-h mt-3">مصادر التمويل</h3>
+                {/* Funding source (1.2.2 · 1.4.4) · client 18 Oct (#37): each source has its own budget,
+                    so a budget takes one · an older two-source budget still shows both and is asked to drop one */}
+                <h3 className="stdy-h mt-3">مصدر التمويل</h3>
                 <ul className="bgsrc">
                   {sources.map((s, i) => (
                     <li key={`${s.code}-${i}`}>
@@ -330,7 +331,7 @@ export default function BudgetDocPage() {
                     </li>
                   ))}
                 </ul>
-                {!ro && sources.length < fundSources.length && (
+                {!ro && sources.length === 0 && (
                   <button
                     className="btn btn-2 btn-sm"
                     onClick={() => {
@@ -342,6 +343,7 @@ export default function BudgetDocPage() {
                     {sources.length ? 'أضف مصدرًا آخر' : 'اختر مصدر التمويل'}
                   </button>
                 )}
+                <p className="sub cnote">لكل مصدر تمويل ميزانية منفصلة · لمصدر آخر أنشئ ميزانيته (قرار المؤسسة)</p>
                 {many && (
                   <p className="sub cnote">
                     مجموع المصادر <Money sm>{sources.reduce((a, x) => a + x.amount, 0)}</Money> من <Money sm>{doc.total}</Money> · ويوزَّع كل بند على هذه المصادر.

@@ -167,7 +167,8 @@ export function DataTab({
         <BulletSection title="المسوغات" items={P.rationale} />
       </Glass>
 
-      <Glass>
+      {/* Re-audit 17 Oct · a project without stages (the simplified external form) shows none */}
+      {P.phases.length > 0 && <Glass>
         <Head title="مراحل التنفيذ" meta={`${countOf(P.phases.length, NOUN.phase)} · 11 شهرًا`} />
         <Timeline
           events={P.phases.map((ph) => ({
@@ -180,7 +181,7 @@ export function DataTab({
           في النظام الحالي هذه المراحل نصٌّ حر داخل حقل واحد. وهنا كيان له بنود وتواريخ، ويمكن
           ربط دفعات الصرف به.
         </div>
-      </Glass>
+      </Glass>}
 
       <Glass>
         <Head title="النطاق والأثر" meta="مطابقة لنموذج التقديم" />
@@ -338,6 +339,7 @@ export function DataTab({
  * same card.
  */
 function BulletSection({ title, items }: { title: string; items: string[] }) {
+  if (!items.length) return null
   return (
     <>
       <div className="hd" style={{ marginTop: 'var(--sp-7)', marginBottom: 'var(--sp-4)' }}>

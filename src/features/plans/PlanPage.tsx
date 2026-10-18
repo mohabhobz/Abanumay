@@ -27,7 +27,7 @@ import {
 import {
   acceptActivityBy, claimActivityBy, commentOn, saveActivityData, decideChangeBy, dropEvidence, mayDraft, projectWindow,
   rejectActivityBy, reviewPlan, sendPlanFor, startActivity, stuckActivities, uploadEvidence, usePlans,
-  planLogOf, annexAfter } from '@/data/plans/store'
+  planLogOf, annexAfter, execStop, planGrantOf, planTargetOf } from '@/data/plans/store'
 import { PlanDecisionCard } from './PlanDecisionCard'
 import type { PlanAction } from './PlanActionDock'
 import { projectById } from '@/data/mock/projects'
@@ -141,7 +141,9 @@ export default function PlanPage() {
   }
 
   const pr = projectById(p.projectId)
-  const grant = pr?.amountGranted ?? 0
+  /* client 18 Oct (#32) · a portfolio's plan · its value and its page are the portfolio's */
+  const pfT = planTargetOf(p.projectId)
+  const grant = planGrantOf(p.projectId)
   const done = planDone(p)
   const claim = planClaimed(p)
   const want = planPlanned(p)
@@ -151,7 +153,7 @@ export default function PlanPage() {
   const late = lateActivities(p)
   const issues = planIssues(p, grant)
   const live = p.stage === 'active' || p.stage === 'done'
-  const actions = planActionsFor(role.key, p.stage, asEntity)
+  const actions = planActionsFor(role.key, p.stage, asEntity, user.name)
   const stuck = stuckActivities(p)
   const win = projectWindow(p.projectId)
   const who = asEntity ? p.entityName : user.name
@@ -252,15 +254,17 @@ export default function PlanPage() {
                     {p.approvedBy && <> · اعتمدها {p.approvedBy}{p.approvedAs ? ` (${p.approvedAs})` : ''}</>}</>
                   : 'لم تُعتمد بعد · الهيكل مفتوح للتعديل'}
               </p>
-              <Related plain={asEntity} links={[{ kind: 'project', id: p.projectId, label: p.projectName }, { kind: 'entity', id: p.entityId, label: p.entityName }]} />
+              {pfT
+                ? <p className="sub mt-2">خطة محفظة · {asEntity ? p.projectName : <Link className="lnk" to={ROUTES.portfolio(pfT.id)}>{p.projectName}</Link>} · {p.entityName}</p>
+                : <Related plain={asEntity} links={[{ kind: 'project', id: p.projectId, label: p.projectName }, { kind: 'entity', id: p.entityId, label: p.entityName }]} />}
               <div className="gt-tag">
                 <Tag tone="mute">{planStageLabel(p.stage)}</Tag>
               </div>
 
-              {pr && (
+              {(pr || pfT) && (
                 <div className="pamt">
-                  <div className="lb">قيمة المنحة</div>
-                  <div className="v"><Money sm>{grant || pr.amountRequested}</Money></div>
+                  <div className="lb">{pfT ? 'قيمة المحفظة' : 'قيمة المنحة'}</div>
+                  <div className="v"><Money sm>{grant || pr?.amountRequested || 0}</Money></div>
                   <div className="sub">
                     تكلفة المراحل <Num>{cost}</Num> · <Num>{p.phases.length}</Num> {nounAfter(p.phases.length, NOUN.phase)}
                     {win.days > 0 && <> · مدة المشروع <Num>{win.days}</Num> يومًا</>}
@@ -281,6 +285,8 @@ export default function PlanPage() {
             </div>
           </header>
           {said && <p className="sub cnote tcen" aria-live="polite">{said}</p>}
+          {/* re-audit 17 Oct · 12.2.12 · an approved plan waits for its agreement before it runs */}
+          {p.stage === 'active' && execStop(p.id) && <p className="sub cnote tcen">{execStop(p.id)}</p>}
 
           {/* Note: the entity needs to know that "done" isn't "counted". This is the biggest
               possible misunderstanding on this screen: the entity uploads evidence, marks it done,
@@ -416,12 +422,12 @@ export default function PlanPage() {
                     live={live}
                     canReview={!asEntity && role.key === 'supervisor'}
                     canClaim={asEntity}
-                    onClaim={(actId) => { claimActivityBy(p.id, actId, who); setTick((x) => x + 1) }}
+                    onClaim={(actId) => { const e = claimActivityBy(p.id, actId, who); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
                     /* A real file picker · the evidence row knows its kind, and a replaced file
                        stays in the activity's log (12.2.20 · 12.4.19) */
                     onUpload={(actId, kind, fileName, replace) => { uploadEvidence(p.id, actId, kind, fileName, who, replace); setTick((x) => x + 1) }}
                     onDrop={(actId, evId) => { dropEvidence(p.id, actId, evId, who); setTick((x) => x + 1) }}
-                    onStart={(actId) => { startActivity(p.id, actId, who); setTick((x) => x + 1) }}
+                    onStart={(actId) => { const e = startActivity(p.id, actId, who); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
                     onData={(actId, d) => { const e = saveActivityData(p.id, actId, d, who); setTick((x) => x + 1); return e }}
                     open={shown}
                     focus={focus}
@@ -431,7 +437,7 @@ export default function PlanPage() {
                       else next.add(phId)
                       return next
                     })}
-                    onAccept={(actId) => { acceptActivityBy(p.id, actId, user.name); setTick((x) => x + 1) }}
+                    onAccept={(actId) => { const e = acceptActivityBy(p.id, actId, user.name); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
                     onReject={(actId) => setReject({ id: actId, note: '' })}
                     /* The entity comments under its own name, the institution under the signed-in
                        user's. */
@@ -496,7 +502,7 @@ export default function PlanPage() {
                           {/* v3 · 12.4.15 · operational changes are made in the plan · contractual ones go to the agreement */}
                           {c.kind && <p className="sub"><Tag tone={c.kind === 'contractual' ? 'warn' : 'mute'}>{c.kind === 'contractual' ? 'تغيير تعاقدي' : 'تغيير تشغيلي'}</Tag>{c.contractual?.length ? <> · {c.contractual.join(' · ')}</> : <> · يُنفَّذ في الخطة ويُسجَّل في سجلها</>}</p>}
                           {c.state === 'toAgreement' && <p className="sub">أُحيل لملحق تعديلي في الاتفاقية · يُعتمد في الخطة بعد اعتماد الملحق{annexAfter(p.projectId, c.at) ? ' · اعتُمد الملحق' : ''}</p>}
-                          {(c.state === 'waiting' || c.state === 'toAgreement') && mayApprovePlan(role.key) && !asEntity && (
+                          {(c.state === 'waiting' || c.state === 'toAgreement') && mayApprovePlan(role.key, user.name) && !asEntity && (
                             <div className="act-a">
                               <span className="fld"><input value={chNote[c.id] ?? ''} onChange={(e) => setChNote({ ...chNote, [c.id]: e.target.value })} placeholder="ملاحظة القرار · إلزامية" aria-label="ملاحظة قرار التعديل" /></span>
                               {([...(c.kind === 'contractual' && c.state === 'waiting' ? ['toAgreement'] as const : []), 'approve', 'return', 'reject'] as const).map((o) => (
@@ -515,7 +521,7 @@ export default function PlanPage() {
                 </Glass>
               )}
               {/* The plan decision and what can change · in the main column, the end column is the assistant's alone */}
-              {!asEntity && <PlanDecisionCard projectId={p.projectId} approved />}
+              {!asEntity && !pfT && <PlanDecisionCard projectId={p.projectId} approved />}
               {/* Cross · the plan's history · every operation in order, who and when (12.4.30) */}
               {!asEntity && planLogOf(p.id).length > 0 && (
                 <Glass>
@@ -551,7 +557,7 @@ export default function PlanPage() {
           {/* Note: the rule is documented on the screen, not only in a comment - this is the most
               confusing thing to see: a plan "in progress" whose project sits at an entirely
               different stage. */}
-          <p className="sub tcen">
+          {!pfT && <p className="sub tcen">
             مرحلة الخطة لا تغيّر حالة المشروع ·{' '}
             <Link to={ROUTES.project(p.projectId)} className="lnk">{p.projectName}</Link>{' '}
             «{pr?.statusGroup ?? ''}» والخطة في «{planStageLabel(p.stage)}» · والخطة المطلوبة تُبقي المشروع قبل التنفيذ حتى تُعتمد.
@@ -559,7 +565,7 @@ export default function PlanPage() {
             {issues.length > 0 && !live && (
               <> · وتوجد <span className="num">{issues.length}</span> ملاحظة تمنع الإرسال.</>
             )}
-          </p>
+          </p>}
         </div>
 
         {/* === Return an activity - modal ===
@@ -609,7 +615,8 @@ export default function PlanPage() {
                   className="btn btn-p"
                   disabled={!reject.note.trim()}
                   onClick={() => {
-                    rejectActivityBy(p.id, reject.id, reject.note.trim(), user.name)
+                    const e = rejectActivityBy(p.id, reject.id, reject.note.trim(), user.name)
+                    if (e.length) setSaid(e[0]!)
                     setReject(null)
                     setTick((x) => x + 1)
                   }}

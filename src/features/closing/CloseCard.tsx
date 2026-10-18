@@ -4,9 +4,10 @@ import { DateText, Icon, icons, Money, Mono, Num, Person, Tag } from '@/componen
 import { ROUTES } from '@/app/routes'
 import { isolate, MISSING_ITEM, nf, NOUN, nounAfter } from '@/lib/format'
 import {
-  CLOSE_TONE, closeCycle, closeLate, closeRequirements, closeStageLabel,
+  CLOSE_TONE, closeCycle, closeLate, closeRequirements,
   evalApproved, needsComms, reportApproved, reportBlockers,
 } from '@/data/mock/closing'
+import { closeSayOf } from '@/data/closing/store'
 import type { CloseRow } from '@/types/domain'
 import { projectById } from '@/data/mock/projects'
 
@@ -68,7 +69,7 @@ export function CloseCard({ c }: { c: CloseRow }) {
 
       <div className="payq-tags">
         {/* One colored tag per card = the stage. Everything else is information with a neutral tag. */}
-        <Tag tone={CLOSE_TONE[c.stage]}>{closeStageLabel(c.stage)}</Tag>
+        <Tag tone={CLOSE_TONE[c.stage]}>{closeSayOf(c)}</Tag>
         {evalApproved(c) && c.closedAt
           ? <Tag tone="mute">أُغلق <DateText>{c.closedAt}</DateText></Tag>
           : <span className="sub">في هذه المحطة منذ <Num>{days}</Num> {nounAfter(days, NOUN.day)}</span>}

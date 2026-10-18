@@ -11,9 +11,8 @@ import {
   EVIDENCE_KINDS, canEditShape, evenWeights, newActivity, newPhase,
   planById, planIssues, planStageLabel,
 } from '@/data/mock/plans'
-import { projectWindow, requestChange, savePlanPhases, sendPlanFor, usePlans } from '@/data/plans/store'
+import { planGrantOf, projectWindow, requestChange, savePlanPhases, sendPlanFor, usePlans } from '@/data/plans/store'
 import { useRole } from '@/hooks/useRole'
-import { projectById } from '@/data/mock/projects'
 import type { PlanPhase } from '@/types/domain'
 
 /* Plan editor.
@@ -54,7 +53,7 @@ export default function PlanEditPage() {
   const [said, setSaid] = useState('')
   const [proposing, setProposing] = useState(Boolean(returnedChange))
 
-  const grant = p ? projectById(p.projectId)?.amountGranted ?? 0 : 0
+  const grant = p ? planGrantOf(p.projectId) : 0
   const issues = useMemo(
     () => (p ? planIssues({ ...p, phases }, grant) : []),
     [p, phases, grant],

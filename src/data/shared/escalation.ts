@@ -76,7 +76,8 @@ export function escStages(proc: EscProc): EscStage[] {
   switch (proc) {
     case 'budget': return [
       /* v3 · 1.1.desc-4 · the first reviewer is whoever settings name */
-      own('budget.submitted', 'لدى صاحب الصلاحية', firstTitle(BUDGET_RULES.managerBy, 'المدير التنفيذي')),
+      /* client 18 Oct · #6 · with no first review step, a sent budget sits with finance */
+      own('budget.submitted', 'لدى صاحب الصلاحية', firstTitle(BUDGET_RULES.managerBy.length ? BUDGET_RULES.managerBy : BUDGET_RULES.financeBy, 'الإدارة المالية')),
       own('budget.finance', 'لدى الإدارة المالية', 'الإدارة المالية'),
       own('budget.exec', 'لدى المدير التنفيذي', 'المدير التنفيذي'),
     ]

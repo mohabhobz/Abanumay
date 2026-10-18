@@ -792,42 +792,43 @@ export const budgetDocs: BudgetDoc[] = [
       n('t4', 'مسار تفطير الصائمين', 'main', 'b0', 0, 0, false),
     ],
   },
-  /* A second, independent budget in 2026 from the same source (1.4.3), funded by two sources and
-     split on its lines (1.2.5) · waiting on the grants manager, so the approval path has a case */
+  /* A second, independent budget in 2026 from the same source (1.4.3) · waiting on finance, so
+     the approval path has a case · client 18 Oct (#37): each funding source has its own budget, so
+     it carries one source and its lines no split (it was SA 2M + MM 1M split on every line) */
   {
     id: 'BG-2026-SA-2',
     name: 'ميزانية المبادرات الطارئة 2026',
     description: 'استجابة للاحتياجات الطارئة خارج الخطة السنوية · تُدار مستقلة عن ميزانية المنح',
     yearId: 'fy-2026',
     sourceCode: 'SA',
-    sources: [{ code: 'SA', amount: 2_000_000 }, { code: 'MM', amount: 1_000_000 }],
+    sources: [{ code: 'SA', amount: 3_000_000 }],
     directionIds: ['dir-community'],
     from: '2026-07-01',
     to: '2026-12-31',
     total: 3_000_000,
-    state: 'submitted',
+    /* client 18 Oct · #6 · a sent budget sits with finance */
+    state: 'finance',
     nodes: [
       n('e0', 'ميزانية المبادرات الطارئة 2026', 'base', null, 3_000_000, 3_000_000),
-      { ...n('e1', 'مسار الإغاثة', 'main', 'e0', 1_800_000, 1_800_000), sources: [{ code: 'SA', amount: 1_200_000 }, { code: 'MM', amount: 600_000 }] },
+      n('e1', 'مسار الإغاثة', 'main', 'e0', 1_800_000, 1_800_000),
       { ...n('e11', 'مجال الإيواء العاجل', 'main', 'e1', 1_800_000, 1_800_000), owners: ['عمر قاسم'] },
-      { ...leaf('e111', 'هدف السكن المؤقت', 'e11', 1_000_000, 0, 0), sources: [{ code: 'SA', amount: 700_000 }, { code: 'MM', amount: 300_000 }] },
-      { ...leaf('e112', 'هدف الاحتياجات الأساسية', 'e11', 800_000, 0, 0), sources: [{ code: 'SA', amount: 500_000 }, { code: 'MM', amount: 300_000 }] },
-      { ...n('e2', 'مسار الدعم الصحي العاجل', 'main', 'e0', 1_200_000, 1_200_000), sources: [{ code: 'SA', amount: 800_000 }, { code: 'MM', amount: 400_000 }] },
+      leaf('e111', 'هدف السكن المؤقت', 'e11', 1_000_000, 0, 0),
+      leaf('e112', 'هدف الاحتياجات الأساسية', 'e11', 800_000, 0, 0),
+      n('e2', 'مسار الدعم الصحي العاجل', 'main', 'e0', 1_200_000, 1_200_000),
       { ...n('e21', 'مجال الأدوية والمستلزمات', 'main', 'e2', 1_200_000, 1_200_000), owners: ['حصة النملة'] },
-      { ...leaf('e211', 'هدف توفير الأدوية', 'e21', 1_200_000, 0, 0), sources: [{ code: 'SA', amount: 800_000 }, { code: 'MM', amount: 400_000 }] },
+      leaf('e211', 'هدف توفير الأدوية', 'e21', 1_200_000, 0, 0),
     ],
   },
-  /* Batch 5 · 8 Oct (funding#1) · an approved budget funded by two sources with its lines split
-     between them, so the link screen has a live line whose sources it reads · the other two-source
-     budget waits on the grants manager and takes no link. The second source is mostly spent on the
-     paid line, so its balance is the tighter one */
+  /* Batch 5 · 8 Oct (funding#1) · an approved partnerships budget · client 18 Oct (#37): one
+     funding source per budget · it was split SA 400K + MM 200K on its lines, and is now the second
+     endowment's own budget */
   {
     id: 'BG-2026-SP',
     name: 'ميزانية الشراكات المجتمعية 2026',
-    description: 'مشاريع مشتركة يموّلها الوقفان معًا · لكل بند حصّته من كل مصدر',
+    description: 'مشاريع مشتركة · ميزانية مستقلة بمصدر تمويلها',
     yearId: 'fy-2026',
-    sourceCode: 'SA',
-    sources: [{ code: 'SA', amount: 400_000 }, { code: 'MM', amount: 200_000 }],
+    sourceCode: 'MM',
+    sources: [{ code: 'MM', amount: 600_000 }],
     directionIds: ['dir-community'],
     from: '2026-01-01',
     to: '2026-12-31',
@@ -835,10 +836,10 @@ export const budgetDocs: BudgetDoc[] = [
     state: 'approved',
     nodes: [
       n('w0', 'ميزانية الشراكات المجتمعية 2026', 'base', null, 600_000, 420_000),
-      { ...n('w1', 'مسار الشراكات', 'main', 'w0', 600_000, 420_000), sources: [{ code: 'SA', amount: 400_000 }, { code: 'MM', amount: 200_000 }] },
+      n('w1', 'مسار الشراكات', 'main', 'w0', 600_000, 420_000),
       { ...n('w11', 'مجال المبادرات المشتركة', 'main', 'w1', 600_000, 420_000), owners: ['عمر قاسم', 'عزام الخريف'] },
-      { ...leaf('w111', 'هدف المبادرات الأسرية المشتركة', 'w11', 400_000, 0, 0), sources: [{ code: 'SA', amount: 300_000 }, { code: 'MM', amount: 100_000 }] },
-      { ...leaf('w112', 'هدف المبادرات الشبابية المشتركة', 'w11', 200_000, 0, 180_000), sources: [{ code: 'SA', amount: 100_000 }, { code: 'MM', amount: 100_000 }] },
+      leaf('w111', 'هدف المبادرات الأسرية المشتركة', 'w11', 400_000, 0, 0),
+      leaf('w112', 'هدف المبادرات الشبابية المشتركة', 'w11', 200_000, 0, 180_000),
     ],
   },
   /* Next year's budget, approved ahead · future commitments of multi-year projects land on its

@@ -15,7 +15,7 @@ import { nf } from '@/lib/format'
    to. The manager may change it either way with a reason: switching off cancels the plan and
    stops its procedures, switching on opens one. Each change stays in the history. */
 
-const SOURCE_SAY = { approval: 'مع توصية الاعتماد', change: 'تعديل لاحق', legacy: 'خطة قائمة قبل التوثيق', rule: 'وفق القاعدة' } as const
+const SOURCE_SAY = { approval: 'مع توصية الاعتماد', change: 'تعديل لاحق', legacy: 'مُرحّل من النظام السابق', rule: 'وفق القاعدة', late: 'قرار بعد الاعتماد' } as const
 
 export function PlanDecisionCard({ projectId, approved }: { projectId: string; approved: boolean }) {
   usePlans()
