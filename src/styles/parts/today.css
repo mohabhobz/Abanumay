@@ -24,7 +24,7 @@
 .tday-focus-b{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--sp-5)}
 .tday-ic{display:grid;place-items:center;inline-size:var(--sp-11);block-size:var(--sp-11);border-radius:var(--r1);
   background:var(--ch-1);color:var(--on-ch-1)}
-.tday-ic svg{inline-size:var(--sp-7);block-size:var(--sp-7)}
+.tday-ic svg{inline-size:var(--sp-8);block-size:var(--sp-8)}
 .tday-focus-t{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
 .tday-focus-t h2{margin:0;font-family:var(--fd);font-size:var(--fs-7);font-weight:700;line-height:var(--lh-head)}
 .tday-focus-t p{margin:0}
@@ -114,12 +114,12 @@
 .tday-card.clickable:hover{transform:translateY(calc(var(--sp-2) * -1));background:var(--g-pop);box-shadow:inset 0 0 0 1px var(--ctl-line-h),var(--el-2)}
 .tday-card-q svg{transition:transform var(--mo-2) var(--ease-std),color var(--mo-2) var(--ease-std)}
 .tday-card.clickable:hover .tday-card-q{color:var(--ch-1)}
-.tday-card.clickable:hover .tday-card-q svg{transform:scale(1.25) rotate(-8deg);color:var(--ch-1)}
+.tday-card.clickable:hover .tday-card-q svg{transform:scale(1.2);color:var(--teal)}
 .tday-card-go{position:absolute;inset-block-start:var(--sp-4);inset-inline-end:var(--sp-4);color:var(--ch-1);opacity:0;
   transform:translateX(var(--sp-2));transition:opacity var(--mo-2) var(--ease-std),transform var(--mo-2) var(--ease-std)}
 .tday-card.clickable:hover .tday-card-go{opacity:1;transform:none}
 .tday-ic{transition:transform var(--mo-3) var(--ease-out)}
-.tday-focus:hover .tday-ic{transform:translateY(calc(var(--sp-1) * -1)) rotate(-6deg)}
+.tday-focus:hover .tday-ic{transform:translateY(calc(var(--sp-1) * -1))}
 .tday-leaves>span{transition:transform var(--mo-2) var(--ease-std),background var(--mo-3) var(--ease-std),color var(--mo-3) var(--ease-std)}
 .tday-leaves>span:hover{transform:translateY(calc(var(--sp-1) * -1))}
 .tday-card-q{display:inline-flex;align-items:center;gap:var(--sp-2);color:var(--t3);font-size:var(--fs-1)}
@@ -157,10 +157,10 @@
 /* 18 Oct · the next step and the week share the wide column · the progress card beside them is no
    longer the only tall one, so the next step doesn't float above an empty field */
 .tday-main{gap:var(--sp-6);min-width:0}
-.tday .tday-wk{padding:var(--sp-6) var(--sp-7)}
+.tday .tday-wk{padding:var(--sp-7)}
 .tday-wk-b{display:block}
-.tday-wk-c{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:end;gap:var(--sp-7)}
-.tday-wk-c .tday-week{block-size:calc(var(--sp-11) + var(--sp-4))}
+.tday-wk-c{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--sp-7)}
+.tday-wk-c .tday-week{block-size:calc(var(--sp-11) + var(--sp-6))}
 .tday-wk-c p{margin:0}
 @media (max-width:900px){.tday-wk-c{grid-template-columns:minmax(0,1fr)}}
 
@@ -189,3 +189,30 @@
 /* 18 Oct · «ما أنجزته اليوم» read as a log, not as headings · regular weight, the small step */
 .tday-donel a b{font-weight:500}
 .tday-donel a .sub{font-size:var(--fs-1)}
+
+/* 18 Oct · client: «use the second turquoise with the primary, to break it up and give the page a
+   soul» · the brand teal (--teal) joins the dark green on shapes only (marks, fills, glows) · text
+   that needs a colour keeps --ch-2, the teal darkened for 4.5:1 */
+.tday .tday-focus,.tday .tday-prog,.tday .tday-wk{position:relative;isolation:isolate;overflow:hidden}
+.tday .tday-focus::after,.tday .tday-prog::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(90% 70% at 100% 0,rgba(var(--ch-2C),.14),transparent 62%)}
+.tday .tday-prog::after{background:radial-gradient(90% 70% at 0 100%,rgba(var(--ch-2C),.16),transparent 62%)}
+.tday-ic{background:linear-gradient(135deg,var(--teal),var(--ch-1))}
+.tday-step{color:var(--ch-1)}
+.tday-step::before{content:"";display:inline-block;inline-size:var(--sp-2);block-size:var(--sp-5);margin-inline-end:var(--sp-3);
+  border-radius:var(--rp);background:var(--teal);vertical-align:middle}
+.tday-big>b{color:var(--ch-2)}
+.tday-pct{color:var(--ch-2)}
+.tday-leaves>span.on{background:linear-gradient(135deg,var(--teal),var(--ch-1));color:var(--on-ch-1)}
+.tday-leaves>span.half{color:var(--teal);background:rgba(var(--ch-2C),.12)}
+.tday-tick{background:var(--teal)}
+.tday-week .wk-1,.tday-week .wk-2,.tday-week .wk-3,.tday-week .wk-4{background:var(--ch-1)}
+.tday-week>.on i{background:linear-gradient(180deg,var(--teal),var(--ch-2))}
+.tday-week>.on small{color:var(--ch-2)}
+.c-waiting .tday-dot{background:var(--teal)}
+.tday-n{background:rgba(var(--ch-2C),.14);color:var(--ch-1)}
+.tday-chips .fchip.on{background:linear-gradient(135deg,var(--ch-2),var(--ch-1))}
+.tday-moved li>svg{color:var(--teal)}
+.tday-card.clickable:hover{box-shadow:inset 0 0 0 1px rgba(var(--ch-2C),.45),var(--el-2)}
+.tday-card.clickable:hover .tday-card-q,.tday-card-go{color:var(--ch-2)}
+.tday-knob{stroke:var(--g-pop)}
