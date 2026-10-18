@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { textIssues } from '@/lib/textCheck'
 import { useNavigate } from 'react-router-dom'
 import {
   DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, Blockers, DockWhy, blockerCount,
@@ -211,6 +212,13 @@ function PField({
       )}
 
       {f.hint && <span className="sub regf-h">{f.hint}</span>}
+      {/* 18 Oct · 2.6.3 · spelling and formatting of what was typed · a one-click fix when it's certain */}
+      {!entitySlot && (f.kind === 'text' || f.kind === 'long') && textIssues(value).map((x, i) => (
+        <span key={i} className="sub regf-h">
+          {x.say}
+          {x.fixed !== undefined && <> · <button type="button" className="lnk" onClick={() => onChange(x.fixed!)}>صحّح</button></>}
+        </span>
+      ))}
     </label>
   )
 }

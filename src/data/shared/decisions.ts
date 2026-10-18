@@ -33,6 +33,15 @@ export interface Decisions {
   annexBy: RoleKey[]
   /** Client 18 Oct · #34 · who may cancel an approved portfolio · a system permission */
   portfolioCancelBy: RoleKey[]
+  /** Re-audit 17 Oct · 10.9.2 – 10.9.4 · client item 26 (under review) · a stop decision that redirects the
+      support · the project reads «أعيد توجيه الدعم» from the decision's approval (v3), or only once its
+      closing ends (the behaviour before) */
+  redirectStatusAt: 'decision' | 'closing'
+  /** Client 18 Oct (sheet V2 · #42 · #48) · distress and recovery are system permissions · who opens a
+      distress case (a stop, a cut, a raise) */
+  distressBy: RoleKey[]
+  /** … and who takes the final decision on a balance not recovered (write-off · scheduling · legal follow-up) */
+  recoveryBy: RoleKey[]
 }
 
 const DEFAULT: Decisions = {
@@ -45,6 +54,9 @@ const DEFAULT: Decisions = {
   archivedInReports: false,
   annexBy: ['supervisor'],
   portfolioCancelBy: ['ceo'],
+  redirectStatusAt: 'decision',
+  distressBy: ['supervisor'],
+  recoveryBy: ['ceo'],
 }
 
 export const DECISIONS: Decisions = readJson(CFG.decisions, structuredClone(DEFAULT))
@@ -62,15 +74,17 @@ const LABEL: Record<keyof Decisions, string> = {
   payNext: 'فتح الدفعة التالية', ehsanEntities: 'الجهات الموجّهة عبر شريك استراتيجي',
   priority: 'أولوية الطلب', typeFloor: 'نوع المشروع في مسار الاعتماد', impactBasis: 'أساس الأثر المتوقع',
   archivedInReports: 'مشاريع الجهات المؤرشفة في التقارير',
-  annexBy: 'من يتخذ قرار ملحق القيمة', portfolioCancelBy: 'من يلغي المحفظة',
+  annexBy: 'من يتخذ قرار ملحق القيمة', redirectStatusAt: 'متى تظهر حالة «أعيد توجيه الدعم»', portfolioCancelBy: 'من يلغي المحفظة',
+  distressBy: 'من يفتح حالة التعثر', recoveryBy: 'من يقرّر في الرصيد غير المسترد',
 }
 
 /** The seats a role permission may be given to · in the decisions page */
 export const SEAT_SAY: Partial<Record<RoleKey, string>> = { supervisor: 'مشرف المنح', 'grants-manager': 'مدير المنح', ceo: 'المدير التنفيذي', finance: 'المالية', admin: 'مدير النظام' }
 /** Does this seat hold the permission? */
-export const holds = (k: 'annexBy' | 'portfolioCancelBy', role: RoleKey): boolean => DECISIONS[k].includes(role)
+export type SeatKey = 'annexBy' | 'portfolioCancelBy' | 'distressBy' | 'recoveryBy'
+export const holds = (k: SeatKey, role: RoleKey): boolean => DECISIONS[k].includes(role)
 /** The permission's holders in words · «مشرف المنح أو مدير المنح» */
-export const holdersSay = (k: 'annexBy' | 'portfolioCancelBy'): string => DECISIONS[k].map((r) => SEAT_SAY[r] ?? r).join(' أو ') || 'لا أحد'
+export const holdersSay = (k: SeatKey): string => DECISIONS[k].map((r) => SEAT_SAY[r] ?? r).join(' أو ') || 'لا أحد'
 
 export function saveDecisions(next: Decisions, by: string): void {
   const before = structuredClone(DECISIONS)

@@ -11,6 +11,7 @@ import { closingRows, knowledgeRows } from '@/data/closing'
 import { budgetByTrack, budgetForYear } from '@/data/budget'
 import { projectRows } from '@/data/mock/projects'
 import { entityRows } from '@/data/mock/entities'
+import { reportable, reportableEntity } from '@/data/shared/testData'
 import { ENTITY_DOCS_TOTAL, stagePressure } from '@/data/repository'
 import { days } from '@/lib/tone'
 import { type Sheet } from '@/lib/export'
@@ -197,7 +198,7 @@ function render(v: string | number | undefined, c: Table['cols'][number]) {
 /* Definition of each report */
 
 function buildTable(key: string, yearId: string): Table | null {
-  const rows = projectRows.filter((p) => p.year === yearId)
+  const rows = projectRows.filter((p) => p.year === yearId && reportable(p))
 
   switch (key) {
     /* Allocated and spent by track — the five values the system tracks. */
@@ -309,7 +310,7 @@ function buildTable(key: string, yearId: string): Table | null {
           { key: 'inDisbursement', label: 'تحت الصرف', n: true, money: true },
         ],
         /* v3 · 2.4.31 · an archived entity is out of the reports */
-        rows: entityRows.filter((e) => !e.archived).map((e) => ({
+        rows: entityRows.filter((e) => !e.archived && reportableEntity(e)).map((e) => ({
           name: e.name,
           type: e.type,
           region: e.region,

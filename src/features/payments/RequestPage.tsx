@@ -4,6 +4,7 @@ import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
 import { useMemo, useState } from 'react'
 import { readFiles, readNeeds } from '@/data/shared/ai'
+import { useDocReads } from '@/lib/docCache'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
@@ -112,6 +113,7 @@ export default function RequestPage() {
   const [params] = useSearchParams()
   const asEntity = params.get('as') === 'entity'
   const ver = usePayments()
+  useDocReads() /* re-read the attachments once their content is in */
   const r = payRequestById(id)
   const [note, setNote] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
@@ -173,7 +175,7 @@ export default function RequestPage() {
     if (!out.length) setNote('')
     return out
   }
-  const readings = [...readPayRequest(r), ...(asEntity ? [] : [readFiles('ai-pay-docs', 'قراءة متطلبات الدفعة', r.docs.map((d) => d.name), { amount: r.asked }), readNeeds(r)])]
+  const readings = [...readPayRequest(r), ...(asEntity ? [] : [readFiles('ai-pay-docs', 'قراءة متطلبات الدفعة', r.docs.map((d) => d.name), { amount: r.asked, findings: true }), readNeeds(r)])]
   const onAct = (a: PayAction, file?: string, amount?: number) => {
     const out = actOnPay(r.id, a.act, note, user.name, role.key, file, amount)
     if (out.length) { setSaid({ bad: out }); return }

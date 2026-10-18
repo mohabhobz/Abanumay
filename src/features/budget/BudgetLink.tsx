@@ -15,7 +15,7 @@ import {
   HOLD_STAGE_SAY, holdSplit, lineBalances, linkIssues, linkOf, linkProject, planOf, sourceName, unlinkProject, useBudget, suggestSourceSplit,
 } from '@/data/budget/store'
 import { BUDGET_RULES } from '@/data/budget/rules'
-import { linesFor, type LineOpt } from './lines'
+import { linesFor, suggestLineSplit, type LineOpt } from './lines'
 
 /* Link a project to the budget · one line, or a split over several budgets (client request 11 ·
    1.4.7 – 1.4.14 · 1.4.56 – 1.4.58).
@@ -112,6 +112,10 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
     const next = xs.filter((_, j) => j !== i)
     return next.length === 1 ? [{ ...next[0], amount: project.amount }] : next
   })
+
+  /* 4.6.3 · the suggested split over lines (one budget is one source · decision 37) · advisory */
+  const sg = useMemo(() => suggestLineSplit(lines, project.amount, rows[0]?.key || guess, (l) => moneyOf(l.doc.nodes, l.node.id).available + (held && held.stage !== 'planned' ? held.shares.filter((x) => `${x.docId}/${x.nodeId}` === l.key).reduce((a, x) => a + x.amount, 0) : 0)), [lines, project.amount, rows, guess, held])
+  const sameAsSg = sg.rows.length === rows.length && sg.rows.every((x, i) => rows[i]?.key === x.key && rows[i]?.amount === x.amount)
 
   const one = rows.length === 1 ? optOf(rows[0].key) : undefined
   const m = one ? moneyOf(one.doc.nodes, one.node.id) : undefined
@@ -210,6 +214,21 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                   الحجز على البنود الفرعية وحدها · ويُحجز كل جزء على بنده مستقلًّا ويُصرف ويُبلَّغ عنه وحده
                 </span>
               </div>
+
+              {/* 4.6.3 · the best split · one click fills the rows */}
+              {sg.rows.length > 0 && !sameAsSg && (
+                <div className="regf">
+                  <span className="lb">التوزيع المقترح</span>
+                  <span className="sub">
+                    {isolate(sg.rows.map((x) => { const o = optOf(x.key); return o ? `${docTitle(o.doc)} · ${sourceName(docSources(o.doc)[0]?.code ?? '')} · ${o.node.label} ${nf.format(x.amount)}` : '' }).filter(Boolean).join(' · '))}
+                    {sg.short > 0 ? isolate(` · لا يغطيه أي بند: ${nf.format(sg.short)}`) : ''}
+                  </span>
+                  <span className="sub regf-h">{sg.why} · استرشادي</span>
+                  <button type="button" className="btn btn-2 btn-sm bglink-go" onClick={() => setRows(sg.rows.length ? sg.rows.map((x) => ({ ...x })) : rows)}>
+                    طبّق الاقتراح
+                  </button>
+                </div>
+              )}
 
               {one && m ? (
                 <>

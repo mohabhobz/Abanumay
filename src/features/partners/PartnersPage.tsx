@@ -1,4 +1,5 @@
 import { NextStep } from '@/components/assistant/NextStep'
+import { useDocReads } from '@/lib/docCache'
 import { suggestNext } from '@/data/shared/agent'
 import { rowGo } from '@/lib/rowGo'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -43,6 +44,7 @@ const TABS = [
 
 export default function PartnersPage() {
   usePartners()
+  useDocReads() /* 11.6.1 · the transfer proofs' content once it's read */
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const { role, user } = useRole()
@@ -303,6 +305,7 @@ function ExternalTab() {
 /* 17 Oct · the assistant reads each operation's documents against its amount, number and date and
    suggests confirming the clean ones and returning the rest with what it found · the officer presses it */
 function EhsanNext({ pays, user }: { pays: ReturnType<typeof financeQueue>['pays']; user: string }) {
+  useDocReads()
   const due = pays.filter((x) => x.state === 'review')
   const read = due.map((x) => ({ x, bad: readFiles(`ai-eh-${x.id}`, x.ref, x.docs, { amount: x.amount, ref: x.ref, date: x.paidAt }).danger ?? [] }))
   const ok = read.filter((r) => !r.bad.length)

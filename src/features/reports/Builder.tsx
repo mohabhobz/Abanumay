@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Glass, Head, icons, Money, Num, Select } from '@/components/ui'
 import { nf, NOUN, nounAfter, pct, unitAfter } from '@/lib/format'
 import { projectRows } from '@/data/mock/projects'
+import { reportable } from '@/data/shared/testData'
 import { PERIODS } from '@/data/reportDefs'
 import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
@@ -62,7 +63,7 @@ export function Builder() {
   const mea = MEASURES.find((m) => m.key === meaKey) ?? MEASURES[0]
 
   const rows = useMemo(() => {
-    const src = projectRows.filter((p) => p.year === period)
+    const src = projectRows.filter((p) => p.year === period && reportable(p))
     const by = new Map<string, { n: number; total: number }>()
     for (const p of src) {
       const k = dim.of(p) || 'بلا قيمة'

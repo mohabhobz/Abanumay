@@ -21,12 +21,16 @@ export const AI_TASK_SAY: Record<AiTask, { title: string; where: string; local: 
   summary: { title: 'الملخص التنفيذي', where: 'جلسات اللجنة والمجلس · اللوحة التنفيذية', local: 'يُبنى من الدراسة والتوصيات والمخاطر' },
   report: { title: 'تحليل تقارير الإنجاز', where: 'طلبات الصرف · التقرير الختامي', local: 'يقارن الأرقام المُدخلة بالخطة والجدول' },
   spell: { title: 'التدقيق الإملائي', where: 'تسجيل الجهة · مراجعة التسجيل', local: 'قواعد الأخطاء الشائعة والتنسيق' },
-  document: { title: 'قراءة الوثائق', where: 'مرفقات التسجيل والصرف والإغلاق', local: 'يفحص النوع والحجم والوضوح · لا يقرأ المحتوى' },
+  document: { title: 'قراءة الوثائق', where: 'مرفقات التسجيل والصرف والإغلاق', local: 'يقرأ محتوى النص والجداول وPDF النصي في المتصفح · الصور الممسوحة بخدمة التعرف الضوئي' },
   clauses: { title: 'مراجعة بنود الاتفاقية', where: 'إعداد الاتفاقية ومراجعتها', local: 'يفحص البنود الناقصة والأرقام والتواريخ والصياغة' },
   impact: { title: 'الأثر المتوقع', where: 'تبويب الاعتماد · الجلسات', local: 'من نسب تحقّق المشاريع المشابهة المغلقة' },
 }
 
-export interface AiCfg { mode: 'rules' | 'api'; endpoint: string; tasks: Record<AiTask, boolean>; savedBy?: string; savedAt?: string }
+export interface AiCfg {
+  mode: 'rules' | 'api'; endpoint: string; tasks: Record<AiTask, boolean>; savedBy?: string; savedAt?: string
+  /** 18 Oct · audit 2.6.4 · 9.6.2 · 11.6.1 · the OCR service for scanned images · `POST` multipart `file` → `{ text }` */
+  ocrEndpoint?: string
+}
 const DEFAULT: AiCfg = { mode: 'rules', endpoint: '', tasks: { summary: true, report: true, spell: true, document: true, clauses: true, impact: true } }
 const KEY = 'ab-cfg-ai'
 export const AI_CFG: AiCfg = readJson(KEY, DEFAULT)
@@ -41,6 +45,7 @@ export function saveAiCfg(next: AiCfg, by: string): void {
   const changes = [
     ...(AI_CFG.mode !== next.mode ? [{ k: 'وضع الخدمة', from: AI_CFG.mode === 'api' ? 'خدمة الخادم' : 'قواعد محلية', to: next.mode === 'api' ? 'خدمة الخادم' : 'قواعد محلية' }] : []),
     ...(AI_CFG.endpoint !== next.endpoint ? [{ k: 'عنوان الخدمة', from: AI_CFG.endpoint || '—', to: next.endpoint || '—' }] : []),
+    ...((AI_CFG.ocrEndpoint ?? '') !== (next.ocrEndpoint ?? '') ? [{ k: 'خدمة التعرف الضوئي', from: AI_CFG.ocrEndpoint || '—', to: next.ocrEndpoint || '—' }] : []),
     ...(Object.keys(next.tasks) as AiTask[]).filter((t) => AI_CFG.tasks[t] !== next.tasks[t]).map((t) => ({ k: AI_TASK_SAY[t].title, from: AI_CFG.tasks[t] ? 'مفعّلة' : 'موقوفة', to: next.tasks[t] ? 'مفعّلة' : 'موقوفة' })),
   ]
   logSettings('الذكاء الاصطناعي', '/settings/ai', by, changes)

@@ -22,7 +22,7 @@ import {
   DIRECTIONS, decideBudget, deleteBlock, directionById, docOf, eventsOf, headIssues, mayAct, nextDocId,
   holdSplit, ownersOf, saveBudget, shareSay, sourceName, stepOf, submitBudget, useBudget, whoActs,
 } from '@/data/budget/store'
-import { BUDGET_RULES, LEVEL_SAY, type Level } from '@/data/budget/rules'
+import { LEVEL_SAY, type Level } from '@/data/budget/rules'
 import { NodeModal } from './doc/NodeModal'
 import { LineActModal } from './doc/LineActModal'
 import { FlowCard, NoteModal } from './doc/DocFlow'
@@ -368,10 +368,10 @@ export default function BudgetDocPage() {
                 <Head title="حدود الاعتماد والصرف" meta={<Link className="lnk sub" to={`${ROUTES.budgetSettings}?tab=limits`}>الإعدادات</Link>} />
                 <KV rows={(['manager', 'exec', 'committee', 'board'] as Level[]).map((l) => {
                   const a = APPROVAL_MATRIX.find((r) => r.key === l)?.upTo
-                  const sp = BUDGET_RULES.spendCaps[l]
                   return {
                     k: LEVEL_SAY[l],
-                    v: <span className="sub">اعتماد {a == null ? 'بلا حدّ' : <span className="num">{nf.format(a)}</span>} · صرف {sp == null ? 'بلا حدّ' : <span className="num">{nf.format(sp)}</span>}</span>,
+                    /* client 18 Oct · decision 41 · no financial limit on approving a disbursement */
+                    v: <span className="sub">اعتماد {a == null ? 'بلا حدّ' : <span className="num">{nf.format(a)}</span>} · صرف الدفعات بلا حدّ مالي</span>,
                   }
                 })} />
               </Glass>

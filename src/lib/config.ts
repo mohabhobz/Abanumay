@@ -96,4 +96,6 @@ export const CFG = {
   decisions: 'ab-cfg-decisions',
   /** Batch 8 · message templates per topic and channel */
   templates: 'ab-cfg-templates',
+  /** 18 Oct · text rules · spelling corrections, mandatory agreement clauses, unapproved wording (2.6.3 · 8.5.3) */
+  textRules: 'ab-cfg-text-rules',
 } as const

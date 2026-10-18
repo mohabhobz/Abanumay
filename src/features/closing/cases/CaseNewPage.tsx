@@ -12,7 +12,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { projectById } from '@/data/mock/projects'
 import { nf } from '@/lib/format'
 import { resizeIssue } from '@/data/budget/store'
-import { APPROVER_SAY, CASE_KIND_SAY, OUTCOME_SAY, approverFor, createCase, grantOf, outcomesFor, paidToDate, stopPhase, useClosing } from '@/data/closing/store'
+import { APPROVER_SAY, CASE_KIND_SAY, OUTCOME_SAY, approverFor, cancelBlockers, createCase, grantOf, outcomesFor, paidToDate, stopPhase, useClosing } from '@/data/closing/store'
 import type { CaseKind, CaseRow } from '@/types/domain'
 
 /* Opening a distress case · 10.9.
@@ -78,7 +78,7 @@ export default function CaseNewPage() {
   const approver = APPROVER_SAY(finalKey)
   /* Client 18 Oct · #17 · a value annex is opened by whoever holds the permission */
   const valueAnnex = kind === 'reduce' || pick === 'annex'
-  const mine = valueAnnex ? holds('annexBy', role.key) : role.key === 'supervisor'
+  const mine = valueAnnex ? holds('annexBy', role.key) : holds('distressBy', role.key)
 
   const submit = () => {
     const out = createCase({
@@ -166,6 +166,10 @@ export default function CaseNewPage() {
                     </label>
                   </div>
                 )}
+                {/* Client 18 Oct (sheet V2 · #4) · warned now · checked at the approval that cancels the project */}
+                {kind === 'stop' && pick === 'cancel' && cancelBlockers(p.id).map((x) => (
+                  <p key={x} className="bad cnote" role="status">قبل اعتماد الإلغاء · {x}</p>
+                ))}
                 {issue && <p className="bad cnote">{issue}</p>}
                 {bad.map((b) => <p key={b} className="bad cnote" role="alert">{b}</p>)}
               </Glass>
@@ -210,7 +214,7 @@ export default function CaseNewPage() {
         <div className="decdock">
           <div className="chrome decbar payact">
             <div className="rowf gp-3 payact-w">
-              <span className="decsent">{mine ? <>يُرفع القرار إلى مدير المنح{approver !== APPROVER_SAY('grants-manager') ? <> ثم {approver}</> : null}</> : <>{valueAnnex ? <>يتخذ قرار ملحق القيمة {holdersSay('annexBy')}</> : 'يفتح الحالةَ مشرفُ المنح'}</>}</span>
+              <span className="decsent">{mine ? <>يُرفع القرار إلى مدير المنح{approver !== APPROVER_SAY('grants-manager') ? <> ثم {approver}</> : null}</> : <>{valueAnnex ? <>يتخذ قرار ملحق القيمة {holdersSay('annexBy')}</> : `يفتح الحالةَ ${holdersSay('distressBy')}`}</>}</span>
             </div>
             {mine && <button type="button" className="btn btn-p" disabled={!ready} onClick={submit}>افتح الحالة</button>}
           </div>

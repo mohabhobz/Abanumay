@@ -17,6 +17,7 @@ import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type { AgreementEvent, AgreementKind, AgreementPayment, AgreementRow, PayCond, PayDoc, ProjectRow } from '@/types/domain'
 import { requirementOf } from './conds'
+import { TEXT_RULES } from '@/lib/textRules'
 import { planHoldOf, setAgreementStatusGate } from '@/data/status'
 
 /* Agreements (BPD-008) · the actions.
@@ -399,6 +400,59 @@ export function clauseTextHints(v: Parameters<typeof agrIssues>[0], entityName: 
     if (b.length < 20) continue
     if (seen.has(b) && seen.get(b) !== c.title) out.push({ id: `same-${c.id}`, tone: 'warn', text: `نص «${c.title}» يكرر نص «${seen.get(b)}».` })
     else seen.set(b, c.title)
+  }
+  out.push(...clauseRuleHints(v))
+  return out
+}
+
+/* 18 Oct · 8.5.3 · 8.5.4 · more of the clauses' own text · advisory like the rest (the 17 Oct verifier:
+   text checks never stop a send) · the lists come from the settings (lib/textRules) */
+const ORDINAL: Record<string, number> = { 'الأولى': 1, 'الاولى': 1, 'الثانية': 2, 'الثالثة': 3, 'الرابعة': 4, 'الخامسة': 5, 'السادسة': 6, 'السابعة': 7, 'الثامنة': 8 }
+const MANDATORY_BODY: Record<string, string> = {
+  'الالتزامات': 'تلتزم الجهة بتنفيذ المشروع وفق خطة التنفيذ المعتمدة وتقديم التقارير في مواعيدها.',
+  'الإنهاء': 'للمؤسسة إنهاء الاتفاقية عند الإخلال الجوهري بعد إشعار الجهة كتابيًّا ومنحها مدة للتصحيح.',
+  'السرية': 'يلتزم الطرفان بسرية البيانات والمعلومات المتبادلة ولا تُستخدم إلا لأغراض هذه الاتفاقية.',
+  'تسوية النزاعات': 'يُسوّى أي خلاف وديًّا، فإن تعذّر فيُحال إلى الجهة القضائية المختصة في المملكة العربية السعودية.',
+  'المخرجات': 'تلتزم الجهة بتحقيق المخرجات المعتمدة في الاتفاقية وتقديم شواهد إنجازها.',
+}
+const words = (t: string) => new Set(t.replace(/[^\u0600-\u06FF0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length > 2))
+const stem = (t: string) => t.trim().replace(/^ال/, '')
+export function clauseRuleHints(v: Parameters<typeof agrIssues>[0]): AgrHint[] {
+  const out: AgrHint[] = []
+  const all = v.clauses.map((c) => `${c.title} ${c.body}`).join(' ')
+  /* topics every agreement must carry · from the settings */
+  for (const t of TEXT_RULES.mandatory) {
+    if (!t.trim() || all.includes(t) || all.includes(stem(t))) continue
+    const body = MANDATORY_BODY[t]
+    out.push({ id: `mand-${t}`, tone: 'warn', text: `لا يوجد بند عن «${t}» · من البنود الإلزامية في الإعدادات.`, add: body ? { kind: t === 'الالتزامات' ? 'obligation' : 'clause', source: 'ai', title: t, body } : undefined })
+  }
+  /* near-duplicates · most of the words shared, under different texts */
+  const sets = v.clauses.map((c) => ({ c, w: words(c.body) }))
+  for (let i = 0; i < sets.length; i++) {
+    for (let j = i + 1; j < sets.length; j++) {
+      const a = sets[i]!, b = sets[j]!
+      if (a.w.size < 6 || b.w.size < 6 || a.c.body.replace(/\s+/g, ' ').trim() === b.c.body.replace(/\s+/g, ' ').trim()) continue
+      const common = [...a.w].filter((x) => b.w.has(x)).length
+      if (common / Math.min(a.w.size, b.w.size) >= 0.8) out.push({ id: `near-${a.c.id}-${b.c.id}`, tone: 'warn', text: `نص «${b.c.title}» يكاد يكرر «${a.c.title}» · يُقترح دمجهما.` })
+    }
+  }
+  const p = projectOf(v)
+  for (const c of v.clauses) {
+    const body = c.body.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    /* a payment the schedule doesn't have */
+    for (const m of body.matchAll(/الدفعة\s+(?:رقم\s+)?(\d+|[\u0600-\u06FF]+)/g)) {
+      const n = Number(m[1]) || ORDINAL[m[1]!] || 0
+      if (n && v.payments.length && n > v.payments.length) out.push({ id: `payref-${c.id}-${n}`, tone: 'warn', text: `البند «${c.title}» يشير إلى الدفعة ${n} والجدول فيه ${v.payments.length} دفعات.` })
+    }
+    /* a duration in the text that the project's own doesn't match */
+    const dm = body.match(/مدة[^.،]*?(\d+)\s*(يوم|يومًا|يوما|أيام|شهر|شهرًا|شهرا|أشهر|شهور)/)
+    if (dm && p?.durationDays) {
+      const days = /شهر|أشهر|شهور/.test(dm[2]!) ? Number(dm[1]) * 30 : Number(dm[1])
+      if (Math.abs(days - p.durationDays) > Math.max(5, p.durationDays * 0.1)) out.push({ id: `dur-${c.id}`, tone: 'warn', text: `البند «${c.title}» يذكر مدة ${dm[1]} ${dm[2]} ومدة المشروع ${nf.format(p.durationDays)} يومًا.` })
+    }
+    /* wording the foundation doesn't approve · from the settings */
+    const bad = TEXT_RULES.forbidden.filter((x) => x.trim() && body.includes(x))
+    if (bad.length) out.push({ id: `forbid-${c.id}`, tone: 'warn', text: `صياغة غير معتمدة في «${c.title}»: ${bad.join('، ')}.` })
   }
   return out
 }

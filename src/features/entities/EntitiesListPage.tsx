@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { reportableEntity } from '@/data/shared/testData'
 import { meOf, readRole } from '@/data/roles'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -199,9 +200,10 @@ export default function EntitiesListPage() {
     () => query.entities({ ...q, page: 1, pageSize: 9999 }).rows,
     [q],
   )
-  const exportRows = selected.size
+  /* v3 · 2.4.35 · in production, test data stays out of the export */
+  const exportRows = (selected.size
     ? allFiltered.filter((e) => selected.has(e.id))
-    : allFiltered
+    : allFiltered).filter(reportableEntity)
 
   const sheet: Sheet = useMemo(() => {
     /* Note: the sheet is built in `sheetOf`, not here. Five screens used to write the same three

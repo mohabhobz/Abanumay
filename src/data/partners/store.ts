@@ -19,10 +19,10 @@ import { payBlock } from '@/data/entities/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { approverFor } from '@/data/approval'
 import { SESSIONS, type Vote } from '@/data/approvals/store'
-import { spendLevelFor } from '@/data/budget/rules'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
+import { CRITERIA, studyScore } from '@/data/intake/criteria'
 
 /* Strategic partners · the Ehsan platform (BPD-011) and the partners' portfolios (BPD-013).
 
@@ -120,6 +120,9 @@ export interface EhSlot { no: number; amount: number; dueAt: string; needs?: str
 export interface EhOp { at: string; by: string; kind: string; ref?: string; note: string }
 /** v3 · 11.2.13 · 11.2.14 · the external project's closing · the supervisor gathers the requirements and the
     transfer and execution proofs (no regular final report, no evaluation), the grants manager approves or returns */
+/** v3 · 11.2.14 · the closing's outcome at the grants manager's approval · «مكتمل» or «مغلق بوفر» by the money, or a cancellation, or a redirect */
+export type ExtCloseOutcome = 'complete' | 'cancel' | 'redirect'
+export const EXT_CLOSE_OUTCOME_SAY: Record<ExtCloseOutcome, string> = { complete: 'مكتمل · أو مغلق بوفر', cancel: 'ملغى', redirect: 'أعيد توجيه الدعم' }
 export interface EhClose { report: string; evidence: string[]; by: string; at: string; state?: 'draft' | 'manager' | 'returned'; note?: string; sentAt?: string; closedAt?: string; closedBy?: string }
 /** v3 · 11.2.11 · the execution's state as the authority records it from the external party's proofs */
 export const EXEC_STATES = ['لم يبدأ', 'جارٍ التنفيذ', 'متعثر', 'منجز'] as const
@@ -244,7 +247,12 @@ export const SUB_FINAL: SubState[] = ['done', 'stalled', 'excluded', 'rejected']
 export type SubField = 'beneficiaries' | 'outputs' | 'files' | 'city' | 'activity'
 export const SUB_FIELD_SAY: Record<SubField, string> = { beneficiaries: 'المستفيدون المستهدفون', outputs: 'المخرجات المستهدفة', files: 'المرفقات', city: 'المدينة', activity: 'نشاط خطة المحفظة' }
 export const SUB_FIELDS_DEFAULT: SubField[] = ['beneficiaries', 'outputs', 'files']
-export interface SubExec { status: 'لم يبدأ' | 'تحت التنفيذ' | 'مكتمل'; progress: number; reached: number; results: string; evidence: string[]; at: string; by: string }
+/** v3 · 13.4.15 · the partner's own progress field · «تحت التنفيذ» is not a sub-project state, so the field never offers it ·
+    a stored or seeded «تحت التنفيذ» reads «جارٍ التنفيذ» (subExecStatus) */
+export type SubExecStatus = 'لم يبدأ' | 'جارٍ التنفيذ' | 'مكتمل'
+export const SUB_EXEC_STATES: readonly SubExecStatus[] = ['لم يبدأ', 'جارٍ التنفيذ', 'مكتمل']
+export const subExecStatus = (v: string | undefined): SubExecStatus => (v === 'مكتمل' ? 'مكتمل' : v === 'تحت التنفيذ' || v === 'جارٍ التنفيذ' ? 'جارٍ التنفيذ' : 'لم يبدأ')
+export interface SubExec { status: SubExecStatus; progress: number; reached: number; results: string; evidence: string[]; at: string; by: string }
 export interface SubProject {
   id: string
   name: string
@@ -344,6 +352,8 @@ export interface PortfolioRec {
   reliable?: boolean
   /** v3 · 13.2.6 · 6.2 · 7.2 · the body's session the portfolio sits on · its members' votes and minutes */
   session?: { id: string; votes: Record<string, Vote>; minutes?: string; proxied?: string[] }
+  /** v3 · 13.2.6 · 13.4.4 · the supervisor's study by the same weighted criteria as a project's (3.2.13) */
+  study?: { scores: Record<string, number>; note: string; by: string; at: string }
   /** v3 · 13.4.43 · a cancellation and its recovery at the portfolio's level */
   cancel?: { by: string; at: string; reason: string }
   recovery?: { due: number; receipts: { amount: number; ref: string; file: string; by: string; at: string }[]; released: number }
@@ -551,6 +561,8 @@ export function pfStops(pf: PortfolioRec, act: PfAct, shares?: PortfolioRec['sha
     else if (!it.minutes) out.push('أرفق محضر الاجتماع')
   }
   if (act === 'recommend') {
+    /* v3 · 13.2.6 · 13.4.4 · the portfolio is studied by the evaluation criteria before its recommendation */
+    out.push(...pfStudyIssues(pf))
     const sh = shares ?? pf.shares
     if (!sh?.length) out.push(/* doc 13.2.7 */ 'اختر بند الميزانية لحجز قيمة المحفظة')
     else if (sh.reduce((s, x) => s + x.amount, 0) !== pf.total) out.push(`مجموع الحجز يساوي قيمة المحفظة ${nf.format(pf.total)}`)
@@ -596,6 +608,7 @@ type Op = { by: string; at: string } & (
   | { op: 'pfEvalSave'; id: string; criteria: { key: string; label: string; weight: number; rating: number | null }[]; notes: string }
   | { op: 'pfEvalAct'; id: string; act: 'send' | 'approve' | 'return'; note: string; toExec?: boolean }
   | { op: 'pfCancel'; id: string; reason: string; recover: number }
+  | { op: 'pfStudy'; id: string; scores: Record<string, number>; note: string }
   | { op: 'pfRecReceipt'; id: string; amount: number; ref: string; file: string }
   | { op: 'subExec'; pfId: string; subId: string; exec: Omit<SubExec, 'at' | 'by'> }
   | { op: 'pay'; pay: Omit<EhsanPay, 'state' | 'by' | 'at'> }
@@ -615,7 +628,7 @@ type Op = { by: string; at: string } & (
   | { op: 'extFiles'; projectId: string; files: string[] }
   | { op: 'ehExec'; projectId: string; exec: Omit<EhExec, 'by' | 'at'> }
   | { op: 'ehCloseSend'; projectId: string; report: string; evidence: string[] }
-  | { op: 'ehCloseAct'; projectId: string; act: 'approve' | 'return'; note: string; paid?: number }
+  | { op: 'ehCloseAct'; projectId: string; act: 'approve' | 'return'; note: string; paid?: number; outcome?: ExtCloseOutcome; redirect?: { purpose: string; decision: string; file: string } }
 )
 
 const KEY = 'ab-partner-ops'
@@ -992,7 +1005,7 @@ function applyOp(o: Op) {
       const pf = pfById(o.pfId)
       const x = pf?.items.find((i) => i.id === o.subId)
       if (!pf || !x || (x.state !== 'approved' && x.state !== 'closing') || pf.stage === 'closed') return
-      x.exec = { ...o.exec, progress: Math.max(0, Math.min(100, o.exec.progress)), at: day(o.at), by: o.by }
+      x.exec = { ...o.exec, status: subExecStatus(o.exec.status), progress: Math.max(0, Math.min(100, o.exec.progress)), at: day(o.at), by: o.by }
       /* v3 · 0.sub.5 · results and evidence being recorded · «قيد الإغلاق» · 0.sub.6 · «مكتمل» only once the
          foundation approves them */
       if (o.exec.results.trim() || o.exec.evidence.length) x.state = 'closing'
@@ -1172,7 +1185,8 @@ function applyOp(o: Op) {
         plog(pf, o.by, `أنشأ إذن صرف الدفعة ${r.no} · ${nf.format(o.amount)}`, o.at)
         notify([MGR()], `إذن صرف محفظة بانتظار اعتمادك · ${pf.name}`, nf.format(o.amount), ROUTES.portfolio(pf.id))
       } else if (o.act === 'approve') {
-        if (r.state === 'manager' && (o.toExec ?? spendLevelFor(r.amount) !== 'manager')) {
+        /* client 18 Oct · decision 41 · no spending limit · only an older save carries toExec */
+        if (r.state === 'manager' && o.toExec) {
           r.state = 'exec'
           plog(pf, o.by, `وافق مدير المنح على إذن الدفعة ${r.no} · فوق حدّه فأُحيل للمدير التنفيذي`, o.at)
           notify([CEO()], `إذن صرف محفظة بانتظار اعتمادك · ${pf.name}`, nf.format(r.amount), ROUTES.portfolio(pf.id))
@@ -1290,6 +1304,13 @@ function applyOp(o: Op) {
       if (liveRun && pfCloseChecks(pf).some((c) => !c.ok && c.key !== 'report')) return
       plog(pf, o.by, `اعتُمد تقييم المحفظة · ${pfEvalScore(pf)} من 100`, o.at)
       closeOut(pf, o.by, o.at)
+      return
+    }
+    case 'pfStudy': {
+      const pf = pfById(o.id)
+      if (!pf || pf.stage !== 'supervisor') return
+      pf.study = { scores: { ...o.scores }, note: o.note, by: o.by, at: day(o.at) }
+      plog(pf, o.by, `دراسة المحفظة بمعايير التقييم · ${studyScore(o.scores)} من 100${o.note ? ` · ${o.note}` : ''}`, o.at)
       return
     }
     case 'pfCancel': {
@@ -1413,14 +1434,31 @@ function applyOp(o: Op) {
       c.closedAt = day(o.at)
       c.closedBy = o.by
       c.state = undefined
-      /* v3 · 11.2.14 · «مكتمل», or «مغلق بوفر» when part of the value went unpaid · the rest is released */
       /* what was paid when approved · carried in the op, since the payments log replays after this one */
-      const unpaid = Math.max(0, (p.amountGranted || 0) - (o.paid ?? paidOf(p.id)))
-      if (unpaid > 0) p.closeSavings = { amount: unpaid, fate: 'غير المصروف عاد إلى بند الميزانية' }
-      setStage(p.id, 'مشروع مكتمل')
-      if (liveRun && hasFunding(p.id)) releaseSavings(p.id, o.by, 'أُغلق المشروع الخارجي')
-      ;(EH_OPS.get(p.id) ?? EH_OPS.set(p.id, []).get(p.id)!).push({ at: day(o.at), by: o.by, kind: 'الإغلاق', note: `اعتمد مدير المنح الإغلاق · ${unpaid > 0 ? `مغلق بوفر ${nf.format(unpaid)} حُرّر إلى البند` : 'مكتمل'}` })
-      notify([p.owner ?? SUP], `اعتُمد إغلاق المشروع الخارجي · ${p.name}`, unpaid > 0 ? 'مغلق بوفر' : 'مكتمل', ROUTES.project(p.id))
+      const paidNow = o.paid ?? paidOf(p.id)
+      const unpaid = Math.max(0, (p.amountGranted || 0) - paidNow)
+      const outcome = o.outcome ?? 'complete'
+      let say: string
+      if (outcome === 'cancel') {
+        /* v3 · 11.2.14 · a cancellation · «ملغى» · what wasn't paid goes back to its line */
+        setStage(p.id, 'مشروع ملغي')
+        say = `ملغى${unpaid > 0 ? ` · حُرّر غير المصروف ${nf.format(unpaid)} إلى البند` : ''}`
+        if (liveRun && hasFunding(p.id)) releaseSavings(p.id, o.by, 'أُلغي المشروع الخارجي عند إغلاقه')
+      } else if (outcome === 'redirect' && o.redirect) {
+        /* v3 · 11.2.14 · 10.9.2 · the support turned to a new purpose by a documented decision · the unpaid part is released */
+        p.redirect = { original: p.amountGranted || 0, used: paidNow, redirected: paidNow, purpose: o.redirect.purpose, decision: o.redirect.decision, decisionFile: o.redirect.file, evidence: [...c.evidence], by: o.by, at: day(o.at) }
+        setStage(p.id, 'مشروع مكتمل')
+        say = `أعيد توجيه الدعم · ${o.redirect.purpose} · القرار ${o.redirect.decision}${unpaid > 0 ? ` · حُرّر غير المصروف ${nf.format(unpaid)} إلى البند` : ''}`
+        if (liveRun && hasFunding(p.id)) releaseSavings(p.id, o.by, 'أعيد توجيه دعم المشروع الخارجي')
+      } else {
+        /* v3 · 11.2.14 · «مكتمل», or «مغلق بوفر» when part of the value went unpaid · the rest is released */
+        if (unpaid > 0) p.closeSavings = { amount: unpaid, fate: 'غير المصروف عاد إلى بند الميزانية' }
+        setStage(p.id, 'مشروع مكتمل')
+        say = unpaid > 0 ? `مغلق بوفر ${nf.format(unpaid)} حُرّر إلى البند` : 'مكتمل'
+        if (liveRun && hasFunding(p.id)) releaseSavings(p.id, o.by, 'أُغلق المشروع الخارجي')
+      }
+      ;(EH_OPS.get(p.id) ?? EH_OPS.set(p.id, []).get(p.id)!).push({ at: day(o.at), by: o.by, kind: 'الإغلاق', note: `اعتمد مدير المنح الإغلاق · ${say}${o.note ? ` · ${o.note}` : ''}` })
+      notify([p.owner ?? SUP], `اعتُمد إغلاق المشروع الخارجي · ${p.name}`, say, ROUTES.project(p.id))
       return
     }
     case 'ehReport': {
@@ -1533,7 +1571,7 @@ function fromSeed(s: PfSeed): PortfolioRec {
         files: ['دراسة المشروع.pdf'], state, reason: x.reason, reqId: state === 'pending' ? `AR-${s.id.slice(-3)}-1` : undefined,
         rec: state === 'pending' ? { outcome: 'approve' as const, note: 'الدراسة مكتملة · نوصي بالاعتماد', by: s.owner ?? SUP, at } : undefined,
         addedBy: partnerName(s.entityId), addedAt: at, decidedBy: state === 'approved' || state === 'rejected' ? 'عبدالله الدوسري' : undefined,
-        exec: state === 'approved' ? { status: x.status, progress: x.progress ?? 0, reached: x.reached ?? 0, results: x.results ?? '', evidence: x.status === 'مكتمل' ? ['تقرير الإنجاز.pdf'] : [], at, by: partnerName(s.entityId) } : undefined,
+        exec: state === 'approved' ? { status: subExecStatus(x.status), progress: x.progress ?? 0, reached: x.reached ?? 0, results: x.results ?? '', evidence: x.status === 'مكتمل' ? ['تقرير الإنجاز.pdf'] : [], at, by: partnerName(s.entityId) } : undefined,
       }
     }),
   }
@@ -1575,6 +1613,9 @@ function seed() {
     else if (p.type === 'مشروع خارجي') p.type = 'مشروع عادي'
   }
   for (const s of PF_SEED) PORTFOLIOS.push(fromSeed(s))
+  /* v3 · 13.2.6 · a seeded portfolio past its study carries a completed one */
+  for (const pf of PORTFOLIOS) if (!['draft', 'returned', 'supervisor'].includes(pf.stage) && !pf.study)
+    pf.study = { scores: Object.fromEntries(CRITERIA.list.map((c, i) => [c.key, 4 + (i % 2)])), note: 'دراسة مرحّلة من النظام السابق', by: pf.owner, at: pf.openedAt }
   for (const e of EHSAN_SEED) {
     const p = projectOf(e.projectId)
     if (!p) continue
@@ -1687,6 +1728,26 @@ export function createPortfolio(v: Omit<Extract<Op, { op: 'pfCreate' }>['pf'], '
   const id = nextPortfolioId()
   run({ op: 'pfCreate', pf: { ...v, id }, send, fromProject, by, at: now() })
   return { id, errors: [] }
+}
+/* ── v3 · 13.2.6 · 13.4.4 · the portfolio's study by the evaluation criteria ── */
+/** The weighted study score out of 100 · null before any study */
+export const pfStudyScore = (pf: PortfolioRec): number | null => (pf.study ? studyScore(pf.study.scores) : null)
+/** What the study still lacks · every criterion rated 1 – 5 */
+export function pfStudyIssues(pf: PortfolioRec): string[] {
+  if (!pf.study) return ['ادرس المحفظة بمعايير التقييم قبل التوصية']
+  const miss = CRITERIA.list.filter((c) => !(pf.study!.scores[c.key] >= 1))
+  return miss.length ? [`قيّم معايير الدراسة كلها · ناقص: ${miss.map((c) => c.label).join('، ')}`] : []
+}
+/** The supervisor saves the study at the study stage */
+export function savePfStudy(id: string, scores: Record<string, number>, note: string, by: string, role: RoleKey): string[] {
+  const pf = pfById(id)
+  if (!pf) return ['المحفظة غير موجودة']
+  if (role !== 'supervisor') return ['يدرس المحفظة مشرف المنح']
+  if (pf.stage !== 'supervisor') return ['تُدرس المحفظة في مرحلة الدراسة']
+  const bad = Object.entries(scores).filter(([, v]) => !(v >= 1 && v <= 5))
+  if (bad.length) return ['الدرجة من 1 إلى 5']
+  run({ op: 'pfStudy', id, scores, note: note.trim(), by, at: now() })
+  return []
 }
 export function actOnPortfolio(id: string, act: PfAct, note: string, by: string, shares?: PortfolioRec['shares']): string[] {
   const pf = pfById(id)
@@ -2020,7 +2081,7 @@ export function actOnPfReq(pfId: string, reqId: string, act: 'qualify' | 'permit
   if (act === 'pay' && !ref?.trim()) return ['رقم أمر التحويل']
   if (act === 'return' && !note.trim()) return ['اكتب سبب الإعادة']
   if (pf && (pf.stage === 'closed' || pf.stage === 'cancelled') && act !== 'return') return ['المحفظة مغلقة أو ملغاة']
-  run({ op: 'pfReqAct', pfId, reqId, act, ref, note, amount, toExec: act === 'approve' && r?.state === 'manager' ? spendLevelFor(r.amount) !== 'manager' : undefined, by, at: now() })
+  run({ op: 'pfReqAct', pfId, reqId, act, ref, note, amount, toExec: undefined, by, at: now() })
   return []
 }
 export function submitPfReport(id: string, report: string, evidence: string[], by: string): string[] {
@@ -2103,12 +2164,17 @@ export function closeEhsanProject(projectId: string, by: string, report?: string
   return []
 }
 /** v3 · 11.2.14 · the grants manager approves the closing or returns it */
-export function decideExternalClosing(projectId: string, act: 'approve' | 'return', note: string, by: string, role: RoleKey): string[] {
+export function decideExternalClosing(projectId: string, act: 'approve' | 'return', note: string, by: string, role: RoleKey,
+  outcome: ExtCloseOutcome = 'complete', redirect?: { purpose: string; decision: string; file: string }): string[] {
   if (role !== 'grants-manager') return ['يعتمد إغلاق المشروع الخارجي مدير المنح']
   if (ehCloseOf(projectId)?.state !== 'manager') return ['لا إغلاق بانتظار الاعتماد']
   if (act === 'return' && !note.trim()) return ['اكتب ما ينقص']
   if (act === 'approve') { const miss = ehCloseChecks(projectId).filter((x) => !x.ok); if (miss.length) return miss.map((x) => x.label) }
-  run({ op: 'ehCloseAct', projectId, act, note: note.trim(), paid: paidOf(projectId), by, at: now() })
+  /* v3 · 11.2.14 · a cancellation carries its reason · a redirect its new purpose, decision number and document (10.9.2) */
+  if (act === 'approve' && outcome === 'cancel' && !note.trim()) return ['اكتب سبب الإلغاء']
+  if (act === 'approve' && outcome === 'redirect' && (!redirect?.purpose.trim() || !redirect.decision.trim() || !redirect.file)) return ['وثّق إعادة التوجيه · الغرض الجديد ورقم القرار ومستنده']
+  run({ op: 'ehCloseAct', projectId, act, note: note.trim(), paid: paidOf(projectId), outcome: act === 'approve' ? outcome : undefined,
+    redirect: act === 'approve' && outcome === 'redirect' ? { purpose: redirect!.purpose.trim(), decision: redirect!.decision.trim(), file: redirect!.file } : undefined, by, at: now() })
   return []
 }
 /** v3 · 11.2.11 · the execution's state from the external party's proofs */

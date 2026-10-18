@@ -13,11 +13,12 @@ import { noteFirst } from '@/lib/dock'
 import {
   CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, actOnCase, attachCaseDoc, caseActions, caseById, caseStops,
   settleCase, stopPhase, useClosing,
-  OUTCOME_SAY, caseFinalIsMgr,
+  OUTCOME_SAY, caseFinalIsMgr, cancelBlockers,
 } from '@/data/closing/store'
 import { RecoveryCard } from '../parts'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readCase } from '@/data/recordReadings'
+import { cancelOpenRequests, usePayments } from '@/data/payments/store'
 
 /* A distress case · 10.9.
 
@@ -36,6 +37,7 @@ export default function CasePage() {
   const asEntity = params.get('as') === 'entity'
   const { role, user } = useRole()
   useClosing()
+  usePayments()
   const c = caseById(id)
   const [note, setNote] = useState('')
   const [actual, setActual] = useState('')
@@ -117,6 +119,16 @@ export default function CasePage() {
                     ...(c.decidedAt ? [{ k: 'تاريخ القرار', v: <DateText>{c.decidedAt}</DateText> }] : []),
                   ]}
                 />
+                {/* Client 18 Oct (sheet V2 · #4) · the cancellation waits for every open operation */}
+                {c.kind === 'stop' && c.outcome === 'cancel' && !['approved', 'closed', 'rejected'].includes(c.stage) && cancelBlockers(c.projectId).map((x) => (
+                  <p key={x} className="bad cnote" role="alert">لا يُلغى المشروع قبل إلغاء عملياته · {x}</p>
+                ))}
+                {c.kind === 'stop' && c.outcome === 'cancel' && !['approved', 'closed', 'rejected'].includes(c.stage) && !asEntity && role.key !== 'finance'
+                  && cancelBlockers(c.projectId).some((x) => x.startsWith('طلب صرف')) && (
+                  <div className="act-a">
+                    <button type="button" className="btn btn-2 btn-sm" onClick={() => cancelOpenRequests(c.projectId, c.id, user.name)}>ألغِ طلبات الصرف المفتوحة</button>
+                  </div>
+                )}
                 {c.kind === 'reduce' && !c.annex && !asEntity && role.key === 'supervisor' && (
                   <div className="act-a"><UploadButton label="ملحق الاتفاقية" onPick={(f) => attachCaseDoc(c.id, 'annex', f.name, user.name)} /></div>
                 )}

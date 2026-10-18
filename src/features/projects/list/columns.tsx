@@ -8,6 +8,7 @@ import type { ProjectRow } from '@/types/domain'
 import { PRIORITY_TONE, priorityOf } from '@/data/intake/priority'
 import type { Col as TCol, GroupBy } from '@/components/table'
 import { subStatusOf } from '@/data/status'
+import { projectIsTest } from '@/data/shared/testData'
 
 /* Project table column definitions — a single source for four consumers.
 
@@ -51,7 +52,8 @@ export const COLS: Col[] = [
     w: 154,
     label: 'المشروع',
     fixed: true,
-    cell: (r) => <Link to={rowHref(r)} className="tlink">{r.name}</Link>,
+    /* v3 · 2.4.35 · a project (or its entity) flagged as test data is tagged in the list */
+    cell: (r) => <><Link to={rowHref(r)} className="tlink">{r.name}</Link>{projectIsTest(r) && <> <Tag tone="mute">تجريبي</Tag></>}</>,
     text: (r) => r.name,
   },
   {

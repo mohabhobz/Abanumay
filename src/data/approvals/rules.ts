@@ -44,8 +44,8 @@ export interface ApprovalRules {
   boardBy: RoleKey[]
   /** 5.4.24 · declared conflicts of interest · the person can't decide on the entity's projects */
   conflicts: { person: string; entityId: string; reason: string }[]
-  /** Batch 7 · approvals#19 · 5.4.11 · a recommendation to approve above the executive's cap goes to the
-      committee on its own, without passing the executive · off until the foundation decides */
+  /** Batch 7 · approvals#19 · 5.4.11 · client 18 Oct (decision 5) · a recommendation to approve above the
+      executive's cap reaches the executive's seat and is referred from it to the committee automatically */
   autoReferAboveExec?: boolean
   /** v3 · 6.4.1 · the referral criteria · within his authority the executive director refers to the
       committee only on one of these */

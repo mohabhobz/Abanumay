@@ -164,7 +164,6 @@ export default function SessionPage() {
 function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; me: string }) {
   const p = projectRows.find((x) => x.id === it.projectId)
   const [outcome, setOutcome] = useState<Outcome | ''>('')
-  const [target, setTarget] = useState<Holder>('exec')
   const [note, setNote] = useState('')
   const [plan, setPlan] = useState('')
   const [amt, setAmt] = useState(0)
@@ -185,7 +184,9 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
   const decided = amt > 0 ? amt : amount
   const above = decided > levelCap(s.body)
   const outcomes: Outcome[] = s.body === 'committee' ? (above ? ['refer', 'return', 'reject'] : ['approve', 'refer', 'return', 'reject']) : ['approve', 'return', 'reject']
-  const targets: Holder[] = s.body === 'committee' ? ['exec', 'manager', 'supervisor'] : ['committee', 'exec', 'manager', 'supervisor']
+  /* Client 18 Oct · decision 15 · a return from the session goes to the level just before it only (the
+     general flowchart) · the committee returns to the executive, the board to the committee */
+  const target: Holder = s.body === 'committee' ? 'exec' : 'committee'
   const why = outcome ? sessionItemBlockers(s, it, outcome, decided) : []
   /* v3 · 6.4.4 · 7.4.6 · the body may give payment guidance · the detailed schedule is the agreement's */
   const needsPay = outcome === 'approve' || (outcome === 'refer' && s.body === 'committee')
@@ -292,13 +293,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
             ))}
           </div>
           {outcome === 'return' && (
-            <div className="cfgchips" role="radiogroup" aria-label="الإعادة إلى">
-              {targets.map((x) => (
-                <button key={x} type="button" role="radio" aria-checked={target === x} className={`cfgchip${target === x ? ' on' : ''}`} onClick={() => setTarget(x)}>
-                  {HOLDER_LABEL[x]}{x === 'supervisor' ? ' · يبقى الحجز' : ''}
-                </button>
-              ))}
-            </div>
+            <p className="sub cnote">تُعاد إلى المستوى السابق: <b>{HOLDER_LABEL[target]}</b> · يبقى الحجز</p>
           )}
           {(outcome === 'approve' || outcome === 'refer') && (
             <div className="regfields">

@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { watchUploads } from '@/lib/docCache'
 /* Batch 8 · the stage clocks are armed before any store replays, so a move replayed from the log starts its clock (data/stageClock.ts) */
 import '@/data/slaSeed'
 import '@/data/entities/store'
@@ -34,6 +35,7 @@ import { projectRows, subRows } from '@/data/mock/projects'
 import { agreements as agrRows } from '@/data/mock/agreements'
 import * as kpi from '@/data/kpi'
 import * as closeMock from '@/data/mock/closing'
+import * as criteriaMod from '@/data/intake/criteria'
 import { spendLevelFor } from '@/data/budget/rules'
 import * as budgetRules from '@/data/budget/rules'
 import * as entStore from '@/data/entities/store'
@@ -69,7 +71,7 @@ try {
     const w = window as unknown as Record<string, unknown>
     w.__abOwner = ownerOfPath
     /* Reading the stores from a test · the figures behind a screen, not a way to change them */
-    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, subRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore, auth: authStore, ai: aiShared, apprRules, decisions, priority, recon, legacy, textCheck, sheet, guard, aiProvider, notify, exportLib, impactMod, cycle, reloc: relocStore, esc: escMod, escRules: escRulesMod, audit: auditMod, behalf: behalfMod }
+    w.__abProbe = { budget: budgetStore, pay: payStore, allBudgets, moneyOf, payRequests, agr: agrStore, plan: planStore, planMock, close: closeStore, stageMeta, projectRows, subRows, agrRows, kpi, closeMock, spendLevelFor, ent: entStore, entVal, entityDetail, entityRows, ibanValid, partners: partnersStore, appr: apprStore, rules: budgetRules, flow: flowStore, auth: authStore, ai: aiShared, apprRules, decisions, priority, recon, legacy, textCheck, sheet, guard, aiProvider, notify, exportLib, impactMod, cycle, reloc: relocStore, esc: escMod, escRules: escRulesMod, audit: auditMod, behalf: behalfMod, criteria: criteriaMod }
   }
   /* The drawn audits (tools/) visit entity views too · each load takes the session its URL needs:
      the record's own entity for an entity view or a portal, staff otherwise */
@@ -87,6 +89,8 @@ const root = document.getElementById('root')
 if (!root) throw new Error('عنصر #root غير موجود في index.html')
 
 installScrollHints()
+/* 18 Oct · every picked file is read in the browser as it's picked (audit 2.6.4 · 9.6.2 · 11.6.1) */
+watchUploads()
 createRoot(root).render(
   <StrictMode>
     <App />

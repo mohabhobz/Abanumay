@@ -4,6 +4,7 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { SETTING_MODULES } from '@/data/mock/settings'
+import { TestDataCard } from './TestDataCard'
 
 /* Settings inventory.
 
@@ -83,6 +84,9 @@ export default function SettingsIndexPage() {
               </ul>
             </Glass>
           ))}
+
+          {/* v3 · 2.4.35 · the environment and the test-data flags */}
+          <TestDataCard />
 
           {/* These two distinctions are deliberately placed last — the page opens
               onto what the user came here to do, and the rules explain themselves

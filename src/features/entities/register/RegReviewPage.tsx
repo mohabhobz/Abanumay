@@ -1,3 +1,4 @@
+import { useDocReads } from '@/lib/docCache'
 import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { textIssues } from '@/lib/textCheck'
@@ -65,6 +66,7 @@ export default function RegReviewPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   useEntityFlow()
+  useDocReads() /* 2.6.4 · the documents' content once it's read */
   const r = id ? regRequestById(id) : undefined
   const [note, setNote] = useState('')
   /* Re-audit 7 Oct · the rejection reason is picked from a coded list · the indicator counts it */

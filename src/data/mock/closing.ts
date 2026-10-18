@@ -373,10 +373,13 @@ const row = (
 /* Re-audit 15 Oct · 10.4.2 · a closing opens only on a project with no open payment record · the
    fixture's closings sat on the payment scenario's projects · a hand-written closing whose project
    is busy takes a free one from the closing scenario, and the generated ones draw only free ones */
-const busy = (pid: string) => pid === WALK_PROJECT || payRequests.some((r) => r.projectId === pid && r.state !== 'paid' && r.state !== 'closed')
+/* Client 18 Oct (sheet V2 · #47) · and only on a project whose payments are all paid · a project with
+   payment records here may still have a payment ahead, so a seeded closing draws only projects paid in
+   the old system (no record here · the payments store reads them paid) */
+const busy = (pid: string) => pid === WALK_PROJECT || payRequests.some((r) => r.projectId === pid)
 const FREE = SCENARIO.closing.filter((id) => !busy(id))
 /* and a project with a payment still on its way is under execution, not closing · its stage says so */
-for (const p of projectRows) if (busy(p.id) && p.statusGroup === 'قيد الإغلاق') p.stage = 'رفع تقرير مرحلي'
+for (const p of projectRows) if (payRequests.some((r) => r.projectId === p.id && r.state !== 'paid' && r.state !== 'closed') && p.statusGroup === 'قيد الإغلاق') p.stage = 'رفع تقرير مرحلي'
 const handPid = (pid: string): string => (busy(pid) ? FREE.shift() ?? pid : pid)
 const entOf = (pid: string, fallback: string) => projectRows.find((p) => p.id === pid)?.entityName ?? fallback
 const P2041 = handPid('20852')

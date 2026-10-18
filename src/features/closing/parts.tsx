@@ -1,12 +1,13 @@
+import { holds } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select, Tag, icons } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { isolate, nf } from '@/lib/format'
-import { CLOSE_DOCS, closeById, reportApproved } from '@/data/mock/closing'
+import { CLOSE_DOCS, reportApproved } from '@/data/mock/closing'
 import {
   CLOSE_RULES, DECISION_SAY, ESCALATION_STEPS, FEEDBACK_ITEMS, RELEASE_SAY, decideRecovery, escalateRecovery,
-  failRecovery, openSavingsRecovery, paidToDate, recordReceipt, recoveryLeft, requirementsOf, savingsOf, savingsDue, caseSettled, finLinesTotal, approverFor, evalScore, caseById,
+  failRecovery, openSavingsRecovery, paidToDate, recordReceipt, recoveryLeft, requirementsOf, savingsOf, savingsDue, caseSettled, finLinesTotal, evalScore,
   mayRedirect, redirectBase, redirectSupport, sendFeedback, useClosing, verifyInvoices,
   closeSayOf, EXC_FIELDS, mayException, recordException, type ExcField,
 } from '@/data/closing/store'
@@ -187,7 +188,6 @@ const REC_SAY: Record<Recovery['state'], { label: string; tone: 'warn' | 'ok' | 
 export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: { kind: 'close' | 'case'; id: string }; asEntity: boolean }) {
   useClosing()
   const { role, user } = useRole()
-  const pid = owner.kind === 'close' ? closeById(owner.id)?.projectId : caseById(owner.id)?.projectId
   const [amount, setAmount] = useState('')
   const [ref, setRef] = useState('')
   const [file, setFile] = useState('')
@@ -197,6 +197,9 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
   const [stepText, setStepText] = useState('')
   const [kind, setKind] = useState<string | undefined>()
   const [decision, setDecision] = useState('')
+  /* Client 18 Oct (sheet V2 · #42) · each step carries its supporting document */
+  const [stepFile, setStepFile] = useState('')
+  const [decFile, setDecFile] = useState('')
   const [bad, setBad] = useState<string[]>([])
   const got = rec.receipts.reduce((s, x) => s + x.amount, 0)
   const left = recoveryLeft(rec)
@@ -250,7 +253,7 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
         <div className="apv-row mt-3 recrow">
           <span className="fld"><input value={claim} onChange={(e) => setClaim(e.target.value)} placeholder="المطالبات المرسلة وردّ الجهة" aria-label="إثبات المطالبات" /></span>
           <UploadButton label="مستند المطالبة" onPick={(f) => setClaimFile(f.name)} />
-          <button type="button" className="btn btn-2 btn-sm" disabled={!claim.trim()} onClick={() => done(failRecovery(owner, claim, user.name, claimFile || undefined), () => { setClaim(''); setClaimFile('') })}>
+          <button type="button" className="btn btn-2 btn-sm" disabled={!claim.trim() || !claimFile} title={claimFile ? undefined : 'ارفع إثبات المطالبات المرسلة'} onClick={() => done(failRecovery(owner, claim, user.name, claimFile || undefined, role.key), () => { setClaim(''); setClaimFile('') })}>
             تعذّر الاسترداد · أثبت المطالبة
           </button>
         </div>
@@ -263,7 +266,7 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
               <li key={i}><span className="apv-t"><b>{isolate(x.text)}</b>{x.file && <span className="sub">{x.file}</span>}</span><span className="pc-sp" /><Person name={x.by} /><span className="sub"><DateText>{x.at}</DateText></span></li>
             ))}
             {rec.escalations.map((x, i) => (
-              <li key={`e${i}`}><span className="apv-t"><b>تصعيد · {x.step}</b>{x.text && <span className="sub">{isolate(x.text)}</span>}</span><span className="pc-sp" /><Person name={x.by} /><span className="sub"><DateText>{x.at}</DateText></span></li>
+              <li key={`e${i}`}><span className="apv-t"><b>تصعيد · {x.step}</b>{x.text && <span className="sub">{isolate(x.text)}</span>}{x.file && <span className="sub">{x.file}</span>}</span><span className="pc-sp" /><Person name={x.by} /><span className="sub"><DateText>{x.at}</DateText></span></li>
             ))}
           </ul>
         </>
@@ -272,18 +275,20 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
         <div className="apv-row mt-3">
           <Select value={step} all="خطوة التصعيد" options={ESCALATION_STEPS.map((x) => ({ value: x, label: x }))} onChange={setStep} />
           <span className="fld"><input value={stepText} onChange={(e) => setStepText(e.target.value)} placeholder="تفاصيل الخطوة" aria-label="تفاصيل التصعيد" /></span>
-          <button type="button" className="btn btn-2 btn-sm" disabled={!step} onClick={() => done(escalateRecovery(owner, step ?? '', stepText, user.name), () => { setStep(undefined); setStepText('') })}>صعِّد</button>
+          <UploadButton label={stepFile || 'مستند الخطوة'} onPick={(f) => setStepFile(f.name)} />
+          <button type="button" className="btn btn-2 btn-sm" disabled={!step || !stepFile} title={stepFile ? undefined : 'ارفع مستند خطوة التصعيد'} onClick={() => done(escalateRecovery(owner, step ?? '', stepText, user.name, stepFile, role.key), () => { setStep(undefined); setStepText(''); setStepFile('') })}>صعِّد</button>
         </div>
       )}
-      {!asEntity && (role.key === 'ceo' || (pid !== undefined && role.key === approverFor('savings', pid))) && rec.state === 'failed' && (
+      {!asEntity && holds('recoveryBy', role.key) && rec.state === 'failed' && (
         <div className="apv-row mt-3">
           <Select value={kind} all="القرار النهائي" options={Object.entries(DECISION_SAY).map(([value, label]) => ({ value, label }))} onChange={setKind} />
           <span className="fld"><input value={decision} onChange={(e) => setDecision(e.target.value)} placeholder="نص القرار" aria-label="نص القرار النهائي" /></span>
-          <button type="button" className="btn btn-p btn-sm" disabled={!kind || !decision.trim()} onClick={() => done(decideRecovery(owner, kind as never, decision, user.name, role.key), () => { setKind(undefined); setDecision('') })}>اعتمد القرار</button>
+          <UploadButton label={decFile || 'مستند القرار'} onPick={(f) => setDecFile(f.name)} />
+          <button type="button" className="btn btn-p btn-sm" disabled={!kind || !decision.trim() || !decFile} title={decFile ? undefined : 'ارفع مستند القرار'} onClick={() => done(decideRecovery(owner, kind as never, decision, user.name, role.key, decFile), () => { setKind(undefined); setDecision(''); setDecFile('') })}>اعتمد القرار</button>
         </div>
       )}
       {rec.decision && (
-        <div className="payq-cond"><span className="lb">القرار النهائي · {DECISION_SAY[rec.decision.kind]}</span><span>{isolate(rec.decision.text)} · {rec.decision.by}</span></div>
+        <div className="payq-cond"><span className="lb">القرار النهائي · {DECISION_SAY[rec.decision.kind]}</span><span>{isolate(rec.decision.text)} · {rec.decision.by}{rec.decision.file ? ` · ${rec.decision.file}` : ''}</span></div>
       )}
       <Err list={bad} />
       {asEntity && left > 0 && receiving && (

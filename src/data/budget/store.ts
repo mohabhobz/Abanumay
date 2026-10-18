@@ -32,10 +32,17 @@ import { BUDGET_RULES, noReviewStep } from './rules'
 
 /* ── Strategic directions (1.1.input-1) ── */
 
-export interface Direction { id: string; name: string; note: string; active: boolean }
+export interface Direction {
+  id: string; name: string; note: string; active: boolean
+  /** 1.6.2 · the direction's strategic priority, 1 (low) to 5 (high) · weighs the allocation
+      suggestion · 3 when not set */
+  priority?: number
+}
+/** 1.6.2 · a priority's weight on the suggestion · 3 is neutral (×1), each step ±25% */
+export const priorityWeight = (p?: number): number => 1 + ((Math.min(5, Math.max(1, p ?? 3)) - 3) * 0.25)
 
 export const DIRECTIONS: Direction[] = [
-  { id: 'dir-edu', name: 'تمكين التعليم النوعي', note: 'رفع جودة التعليم العام والعالي وربطه بسوق العمل', active: true },
+  { id: 'dir-edu', name: 'تمكين التعليم النوعي', note: 'رفع جودة التعليم العام والعالي وربطه بسوق العمل', active: true, priority: 4 },
   { id: 'dir-health', name: 'صحة المجتمع والوقاية', note: 'الرعاية الصحية والتوعية والبرامج الوقائية', active: true },
   { id: 'dir-community', name: 'التنمية المجتمعية المستدامة', note: 'تمكين الأفراد والأسر ودعم المبادرات المحلية', active: true },
   { id: 'dir-relief', name: 'الإغاثة والاستجابة العاجلة', note: 'الاحتياجات الطارئة خارج الخطة السنوية', active: true },

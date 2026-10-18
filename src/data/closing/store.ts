@@ -12,14 +12,14 @@ import { projectRows } from '@/data/mock/projects'
 import { planDone, planOfProject } from '@/data/mock/plans'
 import { stageMeta } from '@/data/mock/taxonomy'
 import { payRequests } from '@/data/mock/disbursements'
-import { agrFlowOf, inForceOf, annexValue, outputsOf } from '@/data/agreements/store'
+import { agrFlowOf, agreementsOfProject, inForceOf, annexValue, outputsOf } from '@/data/agreements/store'
 import { submitRequest } from '@/data/intake/flow'
 import { hasFunding, releaseRecovered, releaseSavings, resizeIssue, resizeLink } from '@/data/budget/store'
 import {
-  adjustSchedule, isStopped, paidOf, scheduleOf, stopForClosing, stopProjectPayments, unsettledSlots, usePayments,
+  adjustSchedule, isStopped, paidOf, scheduleOf, stopForClosing, stopProjectPayments, unsettledSlots, unpaidBeforeClosing, usePayments,
 } from '@/data/payments/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
-import { holds, holdersSay } from '@/data/shared/decisions'
+import { DECISIONS, holds, holdersSay } from '@/data/shared/decisions'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type {
@@ -190,11 +190,11 @@ export function openGate(projectId: string): { ok: boolean; why: string; basis?:
     }
   }
   if (!stopped) {
-    /* Client 18 Oct · decision 21 · an open payment request no longer holds the opening · it is stopped
-       when the closing opens, and its payment is settled in the closing · so a payment that only waits
-       on its open request isn't «due unpaid» here */
-    const due = unsettledSlots(projectId).due.filter((s) => s.state !== 'pending')
-    if (due.length) return { ok: false, why: /* doc rule 2 */ `دفعة مستحقة لم تُصرف ولم تُسوَّ (الدفعة ${due.map((s) => s.no).join(' و')})` }
+    /* Client 18 Oct (sheet V2 · #47) · the closing opens only once every payment is paid or settled · the
+       one that follows the final report is the exception (the closing pays it) · decision 21 still stops
+       an open request on that exempt payment when the closing opens */
+    const due = unpaidBeforeClosing(projectId)
+    if (due.length) return { ok: false, why: /* doc rule 2 */ `لا يُفتح الإغلاق قبل صرف كل الدفعات أو تسويتها (الدفعة ${due.map((s) => s.no).join(' و')}) · المستثناة الدفعة المرتبطة بالتقرير الختامي` }
   }
   return { ok: true, why: basis === 'stopped' ? 'مؤهَّل · قرار إيقاف معتمد' : basis === 'complete' ? 'مؤهَّل · اكتملت الأنشطة' : 'مؤهَّل · انتهت مدة التنفيذ', basis }
 }
@@ -303,6 +303,21 @@ export function caseFinalIsMgr(c: CaseRow): boolean {
 /** Who decides last on a case · its title */
 export const caseApproverSay = (c: CaseRow): string => (caseFinalIsMgr(c) ? MGR() : CEO())
 
+/** Client 18 Oct (sheet V2 · #4) · a project is cancelled only once every operation on it is cancelled or
+    done · no payment request in flight, no agreement in an open cycle (a draft, a review, a signature, a
+    return, an annex in preparation) · what's still open, one line each */
+const AGR_OPEN_SAY: Record<string, string> = { draft: 'مسودة', manager: 'عند مدير المنح', executive: 'عند المدير التنفيذي', entity: 'بانتظار توقيع الجهة', returned: 'معادة للتعديل' }
+export function cancelBlockers(projectId: string): string[] {
+  const out: string[] = []
+  for (const r of payRequests.filter((x) => x.projectId === projectId && x.state !== 'paid' && x.state !== 'closed')) out.push(`طلب صرف مفتوح ${r.id} (الدفعة ${r.no}) · يُوقف أو يُغلق أولًا`)
+  for (const a of agreementsOfProject(projectId).filter((x) => x.stage in AGR_OPEN_SAY)) out.push(`اتفاقية في دورة مفتوحة ${a.id} (${AGR_OPEN_SAY[a.stage]}) · تُلغى أو تُستكمل أولًا`)
+  return out
+}
+/** The case ends in the project's cancellation */
+const cancelsProject = (c: CaseRow) => c.kind === 'stop' && c.outcome === 'cancel'
+/** This approval is the decision's last one · the project changes with it */
+const finalApproval = (c: CaseRow, act: CaseAct) => act === 'approve' && (c.stage === 'ceo' || ((c.stage === 'manager' || c.stage === 'recover') && caseFinalIsMgr(c) && (dueOf(c) <= 0 || c.stage === 'recover')))
+
 export function caseStops(c: CaseRow, act: CaseAct): string[] {
   if (act === 'return' || act === 'reject') return []
   const out: string[] = []
@@ -314,6 +329,8 @@ export function caseStops(c: CaseRow, act: CaseAct): string[] {
     const i = resizeIssue(c.projectId, c.newAmount ?? 0)
     if (i) out.push(i)
   }
+  /* Client 18 Oct (sheet V2 · #4) · checked at the approval that cancels the project · warned at its creation */
+  if (cancelsProject(c) && finalApproval(c, act)) out.push(...cancelBlockers(c.projectId).map((x) => `لا يُلغى المشروع قبل إلغاء عملياته · ${x}`))
   if (act === 'close' && !recSettled(c.recovery)) out.push(/* doc 10.9.8 */ 'لم يكتمل الاسترداد ولا قرار نهائي بشأنه')
   if (act === 'approve' && c.stage === 'recover' && !recSettled(c.recovery)) out.push(/* doc 10.9.3 · 10.9.5 */ 'لم يكتمل استرداد الفرق ولا قرار نهائي بشأنه')
   return out
@@ -398,8 +415,8 @@ type Op = { at: string; by: string } & (
   | { op: 'recOpen'; owner: RecOwner; rec: Omit<Recovery, 'receipts' | 'claims' | 'escalations' | 'released' | 'state'> }
   | { op: 'recReceipt'; owner: RecOwner; receipt: RecoveryReceipt }
   | { op: 'recFail'; owner: RecOwner; text: string; file?: string }
-  | { op: 'recEscalate'; owner: RecOwner; step: string; text: string }
-  | { op: 'recDecide'; owner: RecOwner; kind: NonNullable<Recovery['decision']>['kind']; text: string }
+  | { op: 'recEscalate'; owner: RecOwner; step: string; text: string; file?: string }
+  | { op: 'recDecide'; owner: RecOwner; kind: NonNullable<Recovery['decision']>['kind']; text: string; file?: string }
   | { op: 'caseCreate'; row: Pick<CaseRow, 'id' | 'projectId' | 'kind' | 'reason' | 'newAmount' | 'annex' | 'extra' | 'outcome' | 'redirect'> & { paid?: number; granted?: number } }
   | { op: 'caseDoc'; id: string; key: 'report' | 'evidence' | 'invoices' | 'annex'; file: string }
   | { op: 'caseSettle'; id: string; actual: number }
@@ -431,7 +448,8 @@ const setProjectStage = (projectId: string, stage: string) => {
   const meta = stageMeta(stage)
   if (!p || !meta) return
   p.stage = stage
-  p.statusGroup = meta.group
+  /* 18 Oct · 10.9.2 · a redirect the decision already landed keeps its status through the closing */
+  p.statusGroup = p.redirect ? 'أعيد توجيه الدعم' : meta.group
   p.stageLimit = meta.limit
   p.hoursInStage = 0
 }
@@ -704,7 +722,8 @@ function applyOp(o: Op) {
     }
     case 'redirect': {
       /* v3 · 0.status.9 · 10.9.7 · a formal decision redirects the support within the same relationship ·
-         the project reads «أعيد توجيه الدعم» once its closing ends */
+         the project reads «أعيد توجيه الدعم» once its closing ends (a stop decision's redirect may land earlier ·
+         decisions · redirectStatusAt) */
       const c = closeById(o.id)
       if (!c || c.stage === 'closed' || c.redirect) return
       c.redirect = { ...o.v, by: o.by, at: day(o.at) }
@@ -758,16 +777,16 @@ function applyOp(o: Op) {
     case 'recEscalate': {
       const r = recOf(o.owner)
       if (!r || r.state !== 'failed') return
-      r.escalations.push({ at: day(o.at), by: o.by, step: o.step, text: o.text })
-      ownerLog(o.owner, o.by, `تصعيد نظامي · ${o.step}`, o.at)
+      r.escalations.push({ at: day(o.at), by: o.by, step: o.step, text: o.text, file: o.file })
+      ownerLog(o.owner, o.by, `تصعيد نظامي · ${o.step}${o.file ? ` · ${o.file}` : ''}`, o.at)
       return
     }
     case 'recDecide': {
       const r = recOf(o.owner)
       if (!r || r.state !== 'failed') return
-      r.decision = { at: day(o.at), by: o.by, text: o.text, kind: o.kind }
+      r.decision = { at: day(o.at), by: o.by, text: o.text, kind: o.kind, file: o.file }
       r.state = 'decided'
-      ownerLog(o.owner, o.by, `قرار نهائي بشأن الرصيد غير المسترد (${nf.format(recLeft(r))}) · ${DECISION_SAY[o.kind]}`, o.at)
+      ownerLog(o.owner, o.by, `قرار نهائي بشأن الرصيد غير المسترد (${nf.format(recLeft(r))}) · ${DECISION_SAY[o.kind]}${o.file ? ` · ${o.file}` : ''}`, o.at)
       return
     }
     case 'caseCreate': {
@@ -916,6 +935,9 @@ function applyCase(c: CaseRow, by: string, at: string) {
     const actual = c.settlement?.actual ?? c.paid
     if (c.outcome === 'redirect') {
       c.applied = redirectOf(Math.max(0, c.paid - actual), actual)
+      /* 18 Oct · 10.9.2 – 10.9.4 · v3 · the status follows the decision · or, by the foundation's choice, waits
+         for the final closing (decisions · redirectStatusAt) */
+      if (DECISIONS.redirectStatusAt !== 'closing') { p.redirect = c.applied; p.statusGroup = 'أعيد توجيه الدعم' }
       clog(c, 'النظام', `أُعيد توجيه الرصيد غير المستخدم ${nf.format(Math.max(0, c.paid - actual))} · ${c.redirect?.purpose ?? ''} · القرار ${c.redirect?.decision ?? ''}`, at)
     }
     due = c.outcome === 'redirect' ? 0 : Math.max(0, c.paid - actual)
@@ -1230,22 +1252,28 @@ export function recordReceipt(owner: RecOwner, amount: number, ref: string, file
   run({ op: 'recReceipt', owner, receipt: { id: `${r.id}-${r.receipts.length + 1}`, at: day(now()), amount, ref: ref.trim(), file, by }, by, at: now() })
   return []
 }
-export function failRecovery(owner: RecOwner, text: string, by: string, file?: string): string[] {
+/* Client 18 Oct (sheet V2 · #42 · #48) · every distress and recovery step is a permission, and none runs
+   without its supporting document */
+export function failRecovery(owner: RecOwner, text: string, by: string, file?: string, role?: RoleKey): string[] {
+  if (role && !holds('distressBy', role) && !holds('recoveryBy', role)) return [`إثبات تعذّر الاسترداد لـ${holdersSay('distressBy')} (صلاحية في قرارات المؤسسة)`]
   if (!text.trim()) return ['اذكر المطالبات المرسلة وردّ الجهة']
+  if (!file) return ['ارفع إثبات المطالبات المرسلة']
   run({ op: 'recFail', owner, text: text.trim(), file, by, at: now() })
   return []
 }
 export const ESCALATION_STEPS = ['إنذار رسمي', 'مطالبة عبر الإدارة القانونية', 'إحالة إلى الجهة المختصة']
-export function escalateRecovery(owner: RecOwner, step: string, text: string, by: string): string[] {
+export function escalateRecovery(owner: RecOwner, step: string, text: string, by: string, file?: string, role?: RoleKey): string[] {
+  if (role && !holds('recoveryBy', role) && !holds('distressBy', role)) return [`التصعيد لـ${holdersSay('recoveryBy')} أو ${holdersSay('distressBy')} (صلاحية في قرارات المؤسسة)`]
   if (!step) return ['اختر خطوة التصعيد']
-  run({ op: 'recEscalate', owner, step, text: text.trim(), by, at: now() })
+  if (!file) return ['ارفع مستند خطوة التصعيد']
+  run({ op: 'recEscalate', owner, step, text: text.trim(), file, by, at: now() })
   return []
 }
-export function decideRecovery(owner: RecOwner, kind: NonNullable<Recovery['decision']>['kind'], text: string, by: string, role: RoleKey): string[] {
-  const pid = projectOfOwner(owner)
-  if (role !== 'ceo' && !(pid && role === approverFor('savings', pid))) return ['القرار النهائي لصاحب الصلاحية · المدير التنفيذي افتراضيًّا']
+export function decideRecovery(owner: RecOwner, kind: NonNullable<Recovery['decision']>['kind'], text: string, by: string, role: RoleKey, file?: string): string[] {
+  if (!holds('recoveryBy', role)) return [`القرار في الرصيد غير المسترد لـ${holdersSay('recoveryBy')} (صلاحية في قرارات المؤسسة)`]
   if (!text.trim()) return ['اكتب نص القرار']
-  run({ op: 'recDecide', owner, kind, text: text.trim(), by, at: now() })
+  if (!file) return ['ارفع مستند القرار']
+  run({ op: 'recDecide', owner, kind, text: text.trim(), file, by, at: now() })
   return []
 }
 
@@ -1272,6 +1300,8 @@ export function createCase(v: { projectId: string; kind: CaseKind; reason: strin
   const allowed = outcomesFor(v.kind, v.projectId, v.newAmount)
   const outcome = v.outcome ?? allowed[0]
   if (!outcome || !allowed.includes(outcome)) return { errors: [`النتيجة غير متاحة لهذه الحالة · المتاح: ${allowed.map((x) => OUTCOME_SAY[x]).join('، ')}`] }
+  /* Client 18 Oct (sheet V2 · #42) · opening a distress case is a system permission */
+  if (role && !(v.kind === 'reduce' || outcome === 'annex') && !holds('distressBy', role)) return { errors: [`فتح حالة التعثر لـ${holdersSay('distressBy')} (صلاحية في قرارات المؤسسة)`] }
   /* Client 18 Oct · #17 · a value annex (a cut · a raise by annex) is a system permission */
   if (role && (v.kind === 'reduce' || outcome === 'annex') && !holds('annexBy', role)) return { errors: [`قرار ملحق القيمة لـ${holdersSay('annexBy')} (صلاحية في قرارات المؤسسة)`] }
   if (outcome === 'redirect' && (!v.redirect?.purpose.trim() || !v.redirect.decision.trim() || !v.redirect.file)) return { errors: [/* doc 10.9.2 */ 'وثّق إعادة التوجيه · الغرض الجديد ورقم القرار ومستنده'] }

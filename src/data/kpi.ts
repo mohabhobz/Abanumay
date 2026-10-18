@@ -28,6 +28,7 @@
  */
 import type { ProjectRow } from '@/types/domain'
 import { projectRows } from './mock/projects'
+import { reportable } from '@/data/shared/testData'
 import { journeys } from './journey'
 import { ROUTES } from '@/app/routes'
 import { planKpi } from './mock/plans'
@@ -139,7 +140,8 @@ const link = (qs: string) => `${P}?${qs}`
 const YEAR = TODAY.slice(0, 4)
 
 function build(): ProcessKpis[] {
-const rows: ProjectRow[] = projectRows
+/* v3 · 2.4.35 · in production, records flagged as test data stay out of the KPIs */
+const rows: ProjectRow[] = projectRows.filter(reportable)
 const decided = rows.filter((r) => r.supportStatus !== null)
 const approved = rows.filter((r) => r.supportStatus === 'معتمد')
 const rejected = rows.filter((r) => r.supportStatus === 'مرفوض')

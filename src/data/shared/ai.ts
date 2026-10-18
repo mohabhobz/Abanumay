@@ -1,4 +1,5 @@
 import { AI_CFG, aiSourceSay } from '@/lib/ai/provider'
+import { cachedRead, reportFindings } from '@/lib/docCache'
 import { DECISIONS } from '@/data/shared/decisions'
 import type { Reading } from '@/components/assistant/reading'
 import type { AgreementRow, CloseRow, EntityRow, PlanRow, ProjectRow } from '@/types/domain'
@@ -18,7 +19,7 @@ import { flowOf } from '@/data/intake/flow'
 import { CRITERIA, studyScore } from '@/data/intake/criteria'
 import { addWorkingDays, fundingBlock, goalFunded, CYCLE } from '@/data/intake/cycle'
 import { appFlowOf, strategyOf, VERDICT_SAY, OUTCOME_SAY, type Session } from '@/data/approvals/store'
-import { linkOf } from '@/data/budget/store'
+import { DIRECTIONS, linkOf, priorityWeight } from '@/data/budget/store'
 import { allBudgets } from '@/data/mock/chain'
 import { childrenOf, leavesOf, type BudgetDoc, type BudgetNode } from '@/data/mock/budgetTree'
 import { expiredMandatory } from '@/data/entities/store'
@@ -280,18 +281,29 @@ export function regIssues(r: RegRequest): string[] {
   return out
 }
 
-/** What the system reads from the attached files · type, size and the numbers and dates in the name */
+/** What the system reads from the attached files · type, size, and the content read at upload (the name's numbers and dates for older files) */
 export function docReading(files: Record<string, { name: string; size: number; warn?: string }> | undefined, form: { licenseNo?: string; licenseEndsAt?: string }) {
   const out: { doc: string; got: string[]; clash?: string }[] = []
   for (const [k, f] of Object.entries(files ?? {})) {
     const got: string[] = [`${f.name.split('.').pop()?.toUpperCase() ?? ''} · ${nf.format(Math.round(f.size / 1024))} ك.ب`]
-    const date = f.name.match(/(20\d\d)[-_]?(\d\d)[-_]?(\d\d)/)
-    const num = f.name.match(/\d{5,}/)
-    if (date) got.push(`تاريخ ${date[1]}-${date[2]}-${date[3]}`)
-    if (num) got.push(`رقم ${num[0]}`)
     let clash: string | undefined
-    if (k.includes('license') && num && form.licenseNo && num[0] !== form.licenseNo) clash = `رقم الملف ${num[0]} لا يطابق رقم الترخيص في النموذج ${form.licenseNo}`
-    if (k.includes('license') && date && form.licenseEndsAt && `${date[1]}-${date[2]}-${date[3]}` !== form.licenseEndsAt) clash = clash ?? 'تاريخ الملف لا يطابق تاريخ انتهاء الترخيص في النموذج'
+    /* 18 Oct · audit 2.6.4 · the document's content when it was read at upload · its name otherwise */
+    const c = cachedRead(f.name, f.size)
+    if (c && c.how !== 'none') {
+      got.push(c.how === 'ocr' ? 'قُرئ بالتعرف الضوئي' : 'قُرئ المحتوى')
+      if (c.picked.dates.length) got.push(`تاريخ ${c.picked.dates[0]}`)
+      if (c.picked.numbers.length) got.push(`رقم ${c.picked.numbers[0]}`)
+      if (k.includes('license') && form.licenseNo && c.picked.numbers.length && !c.picked.numbers.includes(form.licenseNo)) clash = `رقم الترخيص في الوثيقة ${c.picked.numbers[0]} · المُدخَل ${form.licenseNo}`
+      if (k.includes('license') && form.licenseEndsAt && c.picked.dates.length && !c.picked.dates.includes(form.licenseEndsAt)) clash = clash ?? `تاريخ الوثيقة ${c.picked.dates[0]} · نهاية الترخيص المُدخلة ${form.licenseEndsAt}`
+    } else {
+      if (c) got.push(c.note)
+      const date = f.name.match(/(20\d\d)[-_]?(\d\d)[-_]?(\d\d)/)
+      const num = f.name.match(/\d{5,}/)
+      if (date) got.push(`تاريخ ${date[1]}-${date[2]}-${date[3]} (من الاسم)`)
+      if (num) got.push(`رقم ${num[0]} (من الاسم)`)
+      if (k.includes('license') && num && form.licenseNo && num[0] !== form.licenseNo) clash = `رقم الملف ${num[0]} لا يطابق رقم الترخيص في النموذج ${form.licenseNo}`
+      if (k.includes('license') && date && form.licenseEndsAt && `${date[1]}-${date[2]}-${date[3]}` !== form.licenseEndsAt) clash = clash ?? 'تاريخ الملف لا يطابق تاريخ انتهاء الترخيص في النموذج'
+    }
     if (f.warn) clash = clash ?? f.warn
     out.push({ doc: k, got, clash })
   }
@@ -706,6 +718,22 @@ export function readClauses(a: AgreementRow): Reading {
 
 /* ── Budget · allocation for a new budget from the years before (cross-93dd998215) ── */
 
+/* 1.6.2 · the strategic direction a track, field or goal serves · read from the budget trees: the
+   line with that label, then up its parents to the track that carries a direction */
+function directionOfLabel(label: string): { name: string; w: number; p: number } | undefined {
+  for (const d of allBudgets) {
+    let n: BudgetNode | undefined = d.nodes.find((x) => x.label === label)
+    while (n && !n.directionId) n = n.parentId ? d.nodes.find((x) => x.id === n!.parentId) : undefined
+    const dir = n?.directionId ? DIRECTIONS.find((x) => x.id === n!.directionId) : undefined
+    if (dir) return { name: dir.name, w: priorityWeight(dir.priority), p: dir.priority ?? 3 }
+  }
+  return undefined
+}
+const dirWhy = (label: string) => {
+  const d = directionOfLabel(label)
+  return d ? ` · التوجه «${d.name}» بأولوية ${d.p} من 5 (وزن ×${d.w.toFixed(2)})` : ' · بلا توجه مرتبط (وزن ×1)'
+}
+
 export function suggestAllocation(total: number): { track: string; share: number; amount: number; why: string }[] {
   const prev = budgetByTrack('2025-f')
   const cur = budgetByTrack('2026-f')
@@ -715,12 +743,13 @@ export function suggestAllocation(total: number): { track: string; share: number
   const weight = tracks.map((t) => {
     const a = prev.find((l) => l.label === t); const b = cur.find((l) => l.label === t)
     const used = (a?.spent ?? 0) + (b?.spent ?? 0) + (b?.committed ?? 0)
-    return { t, w: used * 0.7 + (demand.get(t) ?? 0) * 0.3, used }
+    /* 1.6.2 · past use and demand, weighed by the strategic priority of the direction the track serves */
+    return { t, w: (used * 0.7 + (demand.get(t) ?? 0) * 0.3) * (directionOfLabel(t)?.w ?? 1), used }
   })
   const W = weight.reduce((s, x) => s + x.w, 0) || 1
   return weight.map((x) => ({
     track: x.t, share: Math.round((x.w / W) * 100), amount: Math.round((total * x.w) / W / 1000) * 1000,
-    why: `صرف والتزام سابق ${money(x.used)} · طلب قيد الدراسة ${money(demand.get(x.t) ?? 0)}`,
+    why: `صرف والتزام سابق ${money(x.used)} · طلب قيد الدراسة ${money(demand.get(x.t) ?? 0)}${dirWhy(x.t)}`,
   })).sort((a, b) => b.amount - a.amount)
 }
 
@@ -728,7 +757,7 @@ export function readAllocation(total: number): Reading {
   const s = suggestAllocation(total)
   return {
     id: 'ai-alloc', kind: 'note', label: 'اقتراح توزيع المخصصات',
-    text: `حسب المسار: ${s.slice(0, 4).map((x) => `${x.track} ${pct(x.share)} (${money(x.amount)})`).join('، ')}. حسب المجال: ${suggestAllocationBy(total, 'field').slice(0, 3).map((x) => `${x.key} ${pct(x.share)}`).join('، ')}. حسب الهدف: ${suggestAllocationBy(total, 'goal').slice(0, 3).map((x) => `${x.key} ${pct(x.share)}`).join('، ')}. الوزن: ${pct(70)} للصرف والالتزام و${pct(30)} للطلب قيد الدراسة.`,
+    text: `حسب المسار: ${s.slice(0, 4).map((x) => `${x.track} ${pct(x.share)} (${money(x.amount)}${dirWhy(x.track).replace(' · التوجه', ' · توجه')})`).join('، ')}. حسب المجال: ${suggestAllocationBy(total, 'field').slice(0, 3).map((x) => `${x.key} ${pct(x.share)} (${x.why})`).join('، ')}. حسب الهدف: ${suggestAllocationBy(total, 'goal').slice(0, 3).map((x) => `${x.key} ${pct(x.share)}`).join('، ')}. الوزن: ${pct(70)} للصرف والالتزام و${pct(30)} للطلب قيد الدراسة، مضروبًا في أولوية التوجه الاستراتيجي (${DIRECTIONS.filter((d) => d.active).map((d) => `${d.name} ${d.priority ?? 3}/5`).join('، ')}).`,
     src: `ميزانيتا 2025 و2026 · الطلبات قيد الدراسة · ${advisory()}`,
   }
 }
@@ -797,16 +826,24 @@ export function readBudgetAdvice(doc: BudgetDoc): Reading[] {
 }
 
 /* 1.6.2 · the split by field and by goal, not only by track · the same weighting (past use and demand) */
-export function suggestAllocationBy(total: number, by: 'field' | 'goal'): { key: string; share: number; amount: number }[] {
+export function suggestAllocationBy(total: number, by: 'field' | 'goal'): { key: string; share: number; amount: number; why: string }[] {
   const w = new Map<string, number>()
+  const trackOf = new Map<string, string>()
   for (const p of projectRows) {
     const k = by === 'field' ? p.field : p.goal
     if (!k) continue
     const x = p.statusGroup === 'قيد الدراسة' ? p.amountRequested * 0.3 : (p.amountSpent + (p.supportStatus === 'معتمد' ? p.amountGranted - p.amountSpent : 0)) * 0.7
     w.set(k, (w.get(k) ?? 0) + x)
+    if (!trackOf.has(k)) trackOf.set(k, p.track)
   }
+  /* 1.6.2 · weighed by the strategic priority of the direction the key serves (its own line, or its track's) */
+  const dirOf = (k: string) => directionOfLabel(k) ?? directionOfLabel(trackOf.get(k) ?? '')
+  for (const [k, v] of w) w.set(k, v * (dirOf(k)?.w ?? 1))
   const W = [...w.values()].reduce((a, b) => a + b, 0) || 1
-  return [...w.entries()].map(([key, v]) => ({ key, share: Math.round((v / W) * 100), amount: Math.round((total * v) / W / 1000) * 1000 })).sort((a, b) => b.amount - a.amount)
+  return [...w.entries()].map(([key, v]) => {
+    const d = dirOf(key)
+    return { key, share: Math.round((v / W) * 100), amount: Math.round((total * v) / W / 1000) * 1000, why: d ? `التوجه «${d.name}» بأولوية ${d.p} من 5 (وزن ×${d.w.toFixed(2)})` : 'بلا توجه مرتبط (وزن ×1)' }
+  }).sort((a, b) => b.amount - a.amount)
 }
 
 /* ── The board's session · an aggregate report with relative priority (cross-f65e0b21da) ── */
@@ -851,24 +888,60 @@ export function readNeeds(r: { needs?: { kind: string; label: string }[]; docs: 
   }
 }
 
-export function readFiles(id: string, label: string, files: string[], expect: { amount?: number; ref?: string; date?: string }): Reading {
+export function readFiles(id: string, label: string, files: string[], expect: { amount?: number; ref?: string; date?: string; iban?: string; findings?: boolean }): Reading {
   const found: string[] = []
   const clash: string[] = []
+  const seen: string[] = []
+  let byContent = 0
   for (const f of files) {
+    /* 18 Oct · audit 2.6.4 · 9.6.2 · 11.6.1 · the file's CONTENT when it was read at upload */
+    const c = cachedRead(f)
+    if (c && c.how !== 'none') {
+      byContent++
+      const v = c.picked
+      const bits: string[] = []
+      if (v.amounts.length) bits.push(`مبلغ ${v.amounts.slice(0, 2).map((n) => nf.format(n)).join('، ')}`)
+      if (v.dates.length) bits.push(`تاريخ ${v.dates[0]}`)
+      if (v.ibans.length) bits.push(`آيبان ${v.ibans[0]}`)
+      if (v.numbers.length) bits.push(`رقم ${v.numbers[0]}`)
+      found.push(`«${f}» (${c.how === 'ocr' ? 'بالتعرف الضوئي' : 'من المحتوى'}${bits.length ? ` · ${bits.join('، ')}` : ' · لا قيم'})`)
+      const want = expect.amount ? Math.round(expect.amount) : 0
+      if (want && v.amounts.length) {
+        if (v.amounts.includes(want)) seen.push(`المبلغ ${nf.format(want)} مطابق في «${f}»`)
+        /* a report carries many figures · its not naming the amount is a note, a proof's is a clash */
+        else if (expect.findings) seen.push(`لا يذكر «${f}» المبلغ المسجّل ${nf.format(want)}`)
+        else clash.push(`المبلغ في المستند ${nf.format(v.amounts[0]!)} · المسجّل ${nf.format(want)}`)
+      }
+      if (expect.ref && /\d{4,}/.test(expect.ref)) {
+        const ref = expect.ref.replace(/\D/g, '')
+        if (c.text.replace(/\D/g, ' ').split(/\s+/).some((x) => x && (x === ref || x.endsWith(ref)))) seen.push(`رقم العملية ${expect.ref} في «${f}»`)
+        else if (v.numbers.length) clash.push(`رقم العملية في المستند ${v.numbers[0]} · المسجّل ${expect.ref}`)
+      }
+      if (expect.iban && v.ibans.length && !v.ibans.includes(expect.iban.replace(/\s+/g, '').toUpperCase())) clash.push(`الآيبان في المستند ${v.ibans[0]} · المسجّل ${expect.iban}`)
+      if (expect.date && v.dates.length && v.dates.every((d) => d > expect.date!)) clash.push(`تاريخ «${f}» ${v.dates[0]} بعد تاريخ العملية ${expect.date}`)
+      if (expect.findings) {
+        const fi = reportFindings(c.text)
+        if (fi.length) seen.push(`أبرز ما في «${f}»: ${fi.map((x) => `${x.label} ${x.value}`).join('، ')}`)
+      }
+      continue
+    }
+    if (c && c.how === 'none') { found.push(`«${f}» (${c.note})`); continue }
+    /* a seeded file or one picked before this reading existed · its name only */
     const nums = f.match(/\d[\d,]{3,}/g)?.map((x) => Number(x.replace(/,/g, ''))) ?? []
     const date = f.match(/(20\d\d)[-_]?(\d\d)[-_]?(\d\d)/)
     const bits: string[] = []
     if (date) bits.push(`تاريخ ${date[1]}-${date[2]}-${date[3]}`)
     if (nums.length) bits.push(`رقم ${nf.format(nums[0])}`)
-    found.push(`«${f}»${bits.length ? ` (${bits.join('، ')})` : ''}`)
+    found.push(`«${f}» (من اسم الملف${bits.length ? ` · ${bits.join('، ')}` : ''})`)
     if (expect.amount && nums.some((n) => n > 1000) && !nums.includes(Math.round(expect.amount))) clash.push(`مبلغ في «${f}» لا يطابق ${money(expect.amount)}`)
     if (expect.ref && /\d{4,}/.test(expect.ref) && nums.length && !f.includes(expect.ref)) clash.push(`«${f}» لا يحمل رقم العملية ${expect.ref}`)
     if (expect.date && date && `${date[1]}-${date[2]}-${date[3]}` > expect.date) clash.push(`«${f}» مؤرخ بعد تاريخ العملية`)
   }
+  const how = byContent ? (byContent === files.length ? 'محتوى الملفات' : `محتوى ${byContent} من ${files.length} · والباقي من أسمائها`) : 'أسماء الملفات (لم يُقرأ محتواها · ملفات سابقة)'
   return {
     id, kind: clash.length || !files.length ? 'flag' : 'note', label,
-    text: files.length ? `قرأ النظام ${files.length} مرفقات: ${found.join('، ')}. ${clash.length ? clash.join('. ') + '.' : 'لا تعارض مع بيانات العملية.'}` : 'لا مرفقات يقرؤها النظام · الطلب بلا مستند.',
+    text: files.length ? `قرأ النظام ${files.length} مرفقات: ${found.join('، ')}. ${clash.length ? clash.join('. ') + '.' : 'لا تعارض مع بيانات العملية.'}${seen.length ? ` ${seen.join('. ')}.` : ''}` : 'لا مرفقات يقرؤها النظام · الطلب بلا مستند.',
     danger: clash,
-    src: `بيانات الملفات مقابل المبلغ والمرجع والتاريخ · ${advisory()}`,
+    src: `${how} مقابل المبلغ والمرجع والتاريخ · ${advisory()}`,
   }
 }

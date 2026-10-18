@@ -8,7 +8,7 @@ import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { NOUN, nf, nounAfter } from '@/lib/format'
+import { NOUN, nf, nounAfter, pct } from '@/lib/format'
 import { fiscalYears, fundSources, docSources, yearOverlap } from '@/data/mock/budgetTree'
 import { allBudgets } from '@/data/mock/chain'
 import { APPROVAL_MATRIX } from '@/data/approval'
@@ -299,11 +299,14 @@ function DirectionsTab() {
               <span className="sub trim1">{d.note}</span>
               <span className="pc-sp" />
               {used(d.id) > 0 ? <Tag tone="mute"><Num>{used(d.id)}</Num> {nounAfter(used(d.id), NOUN.budget)}</Tag> : <Tag tone="ok">بلا متعلقات</Tag>}
+              {/* 1.6.2 · the priority weighs the allocation suggestion */}
+              <CfgNum value={d.priority ?? 3} min={1} label={`أولوية ${d.name}`} suffix="من 5" onChange={(n) => saveDirection({ ...d, priority: Math.min(5, Math.max(1, n)) }, me())} />
               <Switch label={d.active ? 'مفعّل' : 'موقوف'} on={d.active} onChange={(on) => saveDirection({ ...d, active: on }, me())} />
             </li>
           ))}
         </ul>
         <p className="sub cnote">التوجه الموقوف لا يُختار لميزانية جديدة · ويبقى على الميزانيات المبنية عليه.</p>
+        <p className="sub cnote">الأولوية من 1 إلى 5 · تدخل في اقتراح توزيع المخصصات (1.6.2): 3 محايدة، وكل درجة فوقها أو تحتها تزيد وزن مسارات التوجه أو تنقصه بنسبة {pct(25)}.</p>
       </Glass>
     </>
   )
@@ -353,7 +356,7 @@ function LimitsTab() {
         {broken && <p className="bad cnote">الحدود تتصاعد مستوى بعد مستوى · لا يصرف مستوى أعلى أقل من الذي تحته.</p>}
         <p className="sub cnote">
           حدود اعتماد المشروع من مصفوفة الاعتماد (مصدر واحد للنظام كله) · <Link className="lnk" to={`${ROUTES.projectSettings}?tab=approval`}>عدّلها في إعدادات المشاريع</Link>.
-          وحد الصرف هو أكبر دفعة يعتمد صرفها المستوى · ما فوق حد مدير المنح يعتمده المدير التنفيذي قبل الإدارة المالية، وما فوق حدّه يُعتمد بقرار اللجنة أو المجلس.
+          قرار المؤسسة (18 أكتوبر · بند 41): لا حدود مالية في اعتماد صرف الدفعات · يعتمد مدير المنح إذن الصرف ويُحال للإدارة المالية بأي مبلغ، فحدود الصرف هنا لا تُطبَّق على الإذن.
         </p>
       </Glass>
       {dirty && (

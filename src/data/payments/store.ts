@@ -20,7 +20,6 @@ import { payBlock, setBankSource } from '@/data/entities/store'
 import { entityDetail } from '@/data/mock/entityDetail'
 import { agrTouched, agreementsOfProject, inForceOf, inForcePayments } from '@/data/agreements/store'
 import { docOf, linkOf, payYearIssue, recordPaid } from '@/data/budget/store'
-import { LEVEL_SAY, spendLevelFor } from '@/data/budget/rules'
 import { docTitle } from '@/data/mock/budgetTree'
 import { unmetBefore } from '@/data/approvals/store'
 import { roleByKey, type RoleKey } from '@/data/roles'
@@ -94,8 +93,13 @@ export function agreementOk(projectId: string): boolean {
 /** Paid before the system · a completed project whose agreement is on record and that never had
     a request here · its payments were made in the old system (batch 2 · 8 Oct · the schedule read
     them as unpaid and «held» while closing read them as paid) */
-export const paidBefore = (projectId: string): boolean =>
-  projectOf(projectId)?.statusGroup === 'مكتمل' && !payRequests.some((r) => r.projectId === projectId)
+export const paidBefore = (projectId: string): boolean => {
+  const g = projectOf(projectId)?.statusGroup
+  if (payRequests.some((r) => r.projectId === projectId)) return false
+  /* Client 18 Oct (sheet V2 · #47) · a closing opens only once the payments are paid · a seeded closing
+     with no request here was paid in the old system, like a completed project */
+  return g === 'مكتمل' || (g === 'قيد الإغلاق' && Boolean(closeOfProject(projectId)))
+}
 
 /** What's left of the grant before a request · paid requests only (rule 14) · plus a schedule paid
     before the system */
@@ -312,6 +316,21 @@ const ADJUST = new Map<string, { cut: number; extra: { amount: number; dueAt: st
 export const isStopped = (projectId: string) => STOPPED.has(projectId)
 export const settledOf = (projectId: string, no: number) => SETTLED.get(condKey(projectId, no))
 
+/** Client 18 Oct (sheet V2 · #47) · the payment the closing itself pays · tied to the final report by the
+    agreement, or (no structured condition) the schedule's last one whose requirement names it */
+export function followsFinal(projectId: string, no: number): boolean {
+  const sl = scheduleOf(projectId)
+  const of = sl.length
+  const b = payIn(projectId)?.find((p) => p.no === no)
+  if (!b) return false
+  return tiedToFinal(b) || (no === of && !b.conds?.length && /الختامي/.test(b.requirement ?? ''))
+}
+/** Client 18 Oct (sheet V2 · #47) · a project reaches its closing only once every payment is paid or
+    settled · except the one that follows the final report · what still holds it */
+export function unpaidBeforeClosing(projectId: string): PaySlot[] {
+  return scheduleOf(projectId).filter((s) => s.state !== 'paid' && s.state !== 'settled' && s.state !== 'stopped' && !followsFinal(projectId, s.no))
+}
+
 /** 10.4.2 · what still owes a payment · due ones block opening closure, any of them blocks final closing */
 export function unsettledSlots(projectId: string): { due: PaySlot[]; future: PaySlot[] } {
   const slots = scheduleOf(projectId).filter((s) => s.state !== 'paid' && s.state !== 'settled' && s.state !== 'stopped')
@@ -457,7 +476,8 @@ export function payActions(r: PayRequest, role: RoleKey, asEntity = false): PayA
   if (r.state === 'manager' && role === 'grants-manager') return [
     /* Batch 2 · the label says where the approval sends it · above the manager's limit it goes to
        the executive, not finance (1.1.input-6) */
-    { act: 'approve', label: spendLevelFor(r.asked) === 'manager' ? 'اعتماد الإذن وإحالته للمالية' : `اعتماد الإذن وإحالته إلى ${LEVEL_SAY.exec}`, kind: 'btn-p', step: 12 },
+    /* Client 18 Oct · decision 41 · no spending limit · the approval always sends it to finance */
+    { act: 'approve', label: 'اعتماد الإذن وإحالته للمالية', kind: 'btn-p', step: 12 },
     { act: 'returnSup', label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true, step: 12 },
     /* Rule 17 · closing isn't deleting · the log stays readable */
     { act: 'reject', label: 'رفض نهائي وإغلاق', kind: 'btn-d', needsNote: true, step: 12 },
@@ -465,8 +485,10 @@ export function payActions(r: PayRequest, role: RoleKey, asEntity = false): PayA
   ]
   /* Re-audit 7 Oct · above the manager's spending limit the executive approves the disbursement
      (1.1.input-6) · and above his, he records the body's decision that allowed it */
-  if (r.state === 'exec' && role === 'ceo') return [
-    { act: 'approve', label: 'اعتماد الصرف وإحالة للمالية', kind: 'btn-p', needsNote: spendLevelFor(r.asked) !== 'exec', step: 12 },
+  /* a permit left at the executive by an older save · decision 41 removed that step, so he or the grants
+     manager approves it on to finance */
+  if (r.state === 'exec' && (role === 'ceo' || role === 'grants-manager')) return [
+    { act: 'approve', label: 'اعتماد الصرف وإحالة للمالية', kind: 'btn-p', step: 12 },
     { act: 'returnSup', label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true, step: 12 },
     ...cancel,
   ]
@@ -504,7 +526,7 @@ type Op = { at: string; by: string } & (
   | { op: 'cond'; projectId: string; no: number; note: string }
   | { op: 'exception'; id: string; ex: PayException }
   | { op: 'stop'; projectId: string; note: string }
-  | { op: 'closeStop'; projectId: string; closeId: string }
+  | { op: 'closeStop'; projectId: string; closeId: string; why?: 'closing' | 'cancel' }
   | { op: 'settle'; projectId: string; no: number; note: string }
   | { op: 'adjust'; projectId: string; cut?: number; extra?: { amount: number; dueAt: string } }
 )
@@ -699,20 +721,14 @@ function applyOp(o: Op) {
         }
         case 'approve':
           if (r.state !== 'manager' && r.state !== 'exec') return
-          /* Re-audit 7 Oct · the spending limits are read here (1.1.input-6) · a disbursement above the
-             manager's limit goes to the executive before finance */
-          if (r.state === 'manager' && spendLevelFor(r.asked) !== 'manager') {
-            move(r, 'exec')
-            r.note = undefined
-            log(r, 12, o.by, 'مدير المنح', `راجع إذن الصرف ووافق عليه · المبلغ فوق حد صرفه فأُحيل إلى المدير التنفيذي`, o.at, note, 'المدير التنفيذي · إذن صرف فوق حد مدير المنح')
-            notify([roleByKey('ceo').name], r, 'إذن صرف بانتظار اعتمادك')
-            return
-          }
+          /* Client 18 Oct · decision 41 · no financial limits on approving a disbursement · the manager's
+             approval sends every permit to finance. An older save whose replay still moves a permit to the
+             executive is no longer produced · a permit already at the executive (seed or older save) is
+             approved there, by him or by the grants manager */
           if (r.state === 'exec') {
-            const lvl = spendLevelFor(r.asked)
             move(r, 'finance')
             r.note = undefined
-            log(r, 12, o.by, 'المدير التنفيذي', lvl === 'exec' ? 'اعتمد الصرف في حدّه' : `اعتمد الصرف بقرار ${LEVEL_SAY[lvl]}`, o.at, note)
+            log(r, 12, o.by, o.by === roleByKey('ceo').name ? 'المدير التنفيذي' : 'مدير المنح', 'اعتمد إذن الصرف', o.at, note)
             log(r, 13, 'النظام', 'النظام', 'تحقّق من سريان الاتفاقية وتوفّر المبلغ المحجوز، ثم أحال إذن الصرف إلى الإدارة المالية', o.at, undefined, 'الإدارة المالية · إذن بانتظار أمر الصرف')
             notify([FIN, roleByKey('finance').name], r, 'إذن صرف بانتظار أمر الصرف')
             return
@@ -798,13 +814,15 @@ function applyOp(o: Op) {
     /* Client 18 Oct · decision 21 · opening the closing stops the project's open payment requests · the
        record and its log stay · the payment is settled in the closing (10.4.2) */
     case 'closeStop': {
+      /* sheet V2 · #4 · the same stop, taken by hand before a project's cancellation */
+      const say = o.why === 'cancel' ? 'أُلغي الطلب قبل إلغاء المشروع' : 'أُوقف الطلب لبدء الإغلاق'
       for (const r of payRequests.filter((x) => x.projectId === o.projectId && isOpen(x))) {
-        r.note = `أُوقف الطلب لبدء الإغلاق · ${o.closeId}`
+        r.note = `${say} · ${o.closeId}`
         r.closedAt = day(o.at)
         r.permitAt = undefined
         move(r, 'closed')
-        log(r, 12, o.by, 'النظام', 'أُوقف الطلب لبدء الإغلاق', o.at, o.closeId, 'الجهة المستفيدة ومشرف المنح · أُوقف الطلب لبدء الإغلاق')
-        notify([r.entityName, r.owner], r, 'أُوقف الطلب لبدء الإغلاق')
+        log(r, 12, o.by, o.why === 'cancel' ? 'صاحب القرار' : 'النظام', say, o.at, o.closeId, `الجهة المستفيدة ومشرف المنح · ${say}`)
+        notify([r.entityName, r.owner], r, say)
       }
       return
     }
@@ -1037,6 +1055,13 @@ export function recordException(id: string, v: { kind: PayException['kind']; rul
 /** 10.9.1 · applied by the distress case once the CEO approves the stop */
 export const stopProjectPayments = (projectId: string, note: string, by: string) => run({ op: 'stop', projectId, note, by, at: now() })
 /** Client 18 Oct · decision 21 · the open requests stop when the closing opens · how many */
+/** Client 18 Oct (sheet V2 · #4) · a project is cancelled only once its operations are · the decision's
+    holder cancels its open payment requests first, on the record, with the case's number */
+export function cancelOpenRequests(projectId: string, caseId: string, by: string): number {
+  const n = payRequests.filter((x) => x.projectId === projectId && isOpen(x)).length
+  if (n) run({ op: 'closeStop', projectId, closeId: caseId, why: 'cancel', by, at: now() })
+  return n
+}
 export function stopForClosing(projectId: string, closeId: string, by: string): number {
   const n = payRequests.filter((x) => x.projectId === projectId && isOpen(x)).length
   if (n) run({ op: 'closeStop', projectId, closeId, by, at: now() })

@@ -5,11 +5,20 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
 import { AI_CFG, AI_TASK_SAY, saveAiCfg, type AiCfg, type AiTask } from '@/lib/ai/provider'
+import { TEXT_RULES, saveTextRules, type TextRules } from '@/lib/textRules'
+import { logSettings } from '@/data/shared/settingsLog'
 
 /* «الذكاء الاصطناعي» settings · batch 8 · where the readings come from: local rules (today) or the
    server's AI service, task by task. See `lib/ai/provider.ts` for the contract. */
 
 const TASKS = Object.keys(AI_TASK_SAY) as AiTask[]
+
+/* 18 Oct · 2.6.3 · 8.5.3 · 8.5.4 · the lists behind the text checks · one entry per line */
+const LISTS: { k: keyof TextRules; t: string; n: string }[] = [
+  { k: 'spell', t: 'تصحيحات إملائية إضافية', n: 'سطر لكل تصحيح بصيغة «الخطأ=الصواب» · تُضاف إلى القاموس المدمج وتظهر في نماذج التسجيل وطلب المشروع' },
+  { k: 'mandatory', t: 'بنود إلزامية في الاتفاقية', n: 'موضوع لكل سطر · ينبّه المساعد حين لا يجد بندًا عنه في نص الاتفاقية · اقتراح لا يمنع الإرسال' },
+  { k: 'forbidden', t: 'صياغات غير معتمدة', n: 'عبارة لكل سطر · ينبّه المساعد حين تظهر في أي بند' },
+]
 
 export default function AiSettingsPage() {
   const dock = useDockSlot()
@@ -18,7 +27,10 @@ export default function AiSettingsPage() {
   const [saved, setSaved] = useState<AiCfg>(() => structuredClone(AI_CFG))
   const [d, setD] = useState<AiCfg>(() => structuredClone(AI_CFG))
   const [ping, setPing] = useState('')
-  const dirty = JSON.stringify(d) !== JSON.stringify(saved)
+  const [tSaved, setTSaved] = useState<TextRules>(() => structuredClone(TEXT_RULES))
+  const [t, setT] = useState<TextRules>(() => structuredClone(TEXT_RULES))
+  const tDirty = JSON.stringify(t) !== JSON.stringify(tSaved)
+  const dirty = JSON.stringify(d) !== JSON.stringify(saved) || tDirty
   const live = d.mode === 'api' && Boolean(d.endpoint)
 
   return (
@@ -49,6 +61,16 @@ export default function AiSettingsPage() {
           </Glass>
 
           <Glass>
+            <Head title="خدمة التعرف الضوئي (OCR)" meta={<span className="sub"><bdi>{/* 2.6.4 · 9.6.2 · 11.6.1 */}</bdi></span>} />
+            <p className="sub">يقرأ النظام في المتصفح محتوى النص والجداول وملفات PDF النصية لحظة رفعها · الصور الممسوحة وملفات PDF المصوّرة تُرسل لهذه الخدمة حين تُربط</p>
+            <div className="apv-row mt-2">
+              <span className="fld"><input dir="ltr" value={d.ocrEndpoint ?? ''} disabled={!admin} onChange={(e) => setD({ ...d, ocrEndpoint: e.target.value })} aria-label="عنوان خدمة التعرف الضوئي" placeholder="https://api…/ocr" /></span>
+              {d.ocrEndpoint ? <Tag tone="teal">مربوطة</Tag> : <Tag tone="warn">غير مربوطة</Tag>}
+            </div>
+            <p className="sub cnote">العقد: طلب <bdi className="num">POST {'{العنوان}'}</bdi> بالملف (multipart · file)، ويعود <bdi className="num">{'{ text }'}</bdi> · يُقرأ النص بعدها كأي ملف نصي.</p>
+          </Glass>
+
+          <Glass>
             <Head title="المهام" meta={<span className="sub">كل مهمة تُربط وحدها</span>} />
             {TASKS.map((t) => (
               <Switch
@@ -62,12 +84,35 @@ export default function AiSettingsPage() {
             ))}
           </Glass>
 
+          <Glass>
+            <Head title="قواعد النصوص" meta={<span className="sub"><bdi>{/* 2.6.3 · 8.5.3 · 8.5.4 */}</bdi></span>} />
+            <p className="sub">تعمل الآن بالقواعد المحلية · يُعدّلها مدير النظام بلا تعديل برمجي</p>
+            {LISTS.map((x) => (
+              <label key={x.k} className="regf regf-w mt-3">
+                <span className="lb">{x.t}</span>
+                <span className="fld fld-a">
+                  <textarea rows={4} value={t[x.k].join('\n')} disabled={!admin} aria-label={x.t}
+                    onChange={(e) => setT({ ...t, [x.k]: e.target.value.split('\n') })} />
+                </span>
+                <span className="sub regf-h">{x.n}</span>
+              </label>
+            ))}
+          </Glass>
+
           {admin && dirty && (
             <SaveBar
               count={1}
               sentence={<>إعدادات الذكاء الاصطناعي<span className="decsep" /><span className="sub">تسري على القراءات فور الحفظ</span></>}
-              onSave={() => { saveAiCfg(d, user.name); setSaved(structuredClone(d)) }}
-              onDiscard={() => setD(structuredClone(saved))}
+              onSave={() => {
+                saveAiCfg(d, user.name); setSaved(structuredClone(d))
+                if (tDirty) {
+                  const before = structuredClone(TEXT_RULES)
+                  saveTextRules(t)
+                  logSettings('الذكاء الاصطناعي', '/settings/ai', user.name, LISTS.filter((x) => before[x.k].join('|') !== TEXT_RULES[x.k].join('|')).map((x) => ({ k: x.t, from: `${before[x.k].length} عنصر`, to: `${TEXT_RULES[x.k].length} عنصر` })))
+                  setT(structuredClone(TEXT_RULES)); setTSaved(structuredClone(TEXT_RULES))
+                }
+              }}
+              onDiscard={() => { setD(structuredClone(saved)); setT(structuredClone(tSaved)) }}
             />
           )}
         </div>

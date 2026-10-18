@@ -1173,8 +1173,9 @@ export interface Recovery {
   /** Proof of the claims sent to the entity (10.9.9). */
   claims: { at: string; by: string; text: string; file?: string }[]
   /** Legal escalation steps (10.9.9). */
-  escalations: { at: string; by: string; step: string; text: string }[]
-  decision?: { at: string; by: string; text: string; kind: 'writeoff' | 'installments' | 'pursue' }
+  escalations: { at: string; by: string; step: string; text: string; file?: string }[]
+  /** Client 18 Oct (sheet V2 · #42) · the decision carries its supporting document */
+  decision?: { at: string; by: string; text: string; kind: 'writeoff' | 'installments' | 'pursue'; file?: string }
   /** Already released to the domain allocation. */
   released: number
 }

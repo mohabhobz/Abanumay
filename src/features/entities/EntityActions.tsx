@@ -1,7 +1,8 @@
 import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Tag, icons } from '@/components/ui'
+import { DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Switch, Tag, icons } from '@/components/ui'
+import { isTest, markTest, sysEnv } from '@/data/shared/testData'
 import {
   ACT_SAY, REQ_SAY, accountOf, actState, archiveBlocks, bankLinks, forWho, impactOf, lastRequestOf, reasonOf, reasonText, type ActKey,
 } from '@/data/entities/actions'
@@ -171,6 +172,7 @@ export function EntityStatusCard({ e }: { e: EntityRow }) {
   const doable = sens.filter((x) => x.s.grant === 'do')
   const blocks = archiveBlocks(e)
   const restore = e.archived && role === 'admin'
+  const [testOn, setTestOn] = useState(() => isTest('entity', e.id))
 
   return (
     <Glass>
@@ -204,6 +206,18 @@ export function EntityStatusCard({ e }: { e: EntityRow }) {
             </details>
           )}
           {acc.block === 'revoked' && <p className="sub cnote">إعادة جهة أُلغي اعتمادها بانتظار قرار المؤسسة · أم يلزمها طلب تسجيل جديد؟</p>}
+        </div>
+      )}
+      {role === 'admin' && (
+        /* v3 · 2.4.35 · the admin flags a record as test data · logged · in production it leaves the
+           reports, the KPIs, the impact board and the exports */
+        <div className="mt-3">
+          <Switch
+            label="بيانات تجريبية"
+            note={sysEnv() === 'prod' ? 'مفعّل: الجهة ومشاريعها خارج التقارير والمؤشرات ولوحة الأثر والتصدير، وتُعلَّم «تجريبي» في القوائم · ويمكن أرشفتها بلا قيود' : 'النظام في بيئة «اختبار» · تظهر البيانات التجريبية كغيرها'}
+            on={testOn}
+            onChange={(v) => { markTest('entity', e.id, v, me, role); setTestOn(isTest('entity', e.id)) }}
+          />
         </div>
       )}
       {act && <SensModal e={e} sens={act} me={me} onClose={() => setAct(null)} />}

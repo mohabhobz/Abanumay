@@ -1,4 +1,5 @@
 import { accountLine, accountSay } from '@/data/shared/decisions'
+import { isTest } from '@/data/shared/testData'
 import { Link } from 'react-router-dom'
 import { Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
@@ -40,7 +41,8 @@ export const COLS: Col[] = [
     w: 212,
     label: 'الجهة',
     fixed: true,
-    cell: (e) => <Link to={ROUTES.entity(e.id)} className="tlink">{e.name}</Link>,
+    /* v3 · 2.4.35 · a record flagged as test data is tagged in the list */
+    cell: (e) => <><Link to={ROUTES.entity(e.id)} className="tlink">{e.name}</Link>{isTest('entity', e.id) && <> <Tag tone="mute">تجريبي</Tag></>}</>,
     text: (e) => e.name,
   },
   { key: 'type', w: 124, label: 'تصنيف الجهة', def: true, cell: (e) => <span className="sub">{e.type}</span>, text: (e) => e.type },

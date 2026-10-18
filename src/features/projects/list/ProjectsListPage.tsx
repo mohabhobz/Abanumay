@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { reportable } from '@/data/shared/testData'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, Pager, PAGE_SIZES, Person, SearchBox,
@@ -285,9 +286,10 @@ export default function ProjectsListPage() {
     () => query.projects({ ...q, page: 1, pageSize: 9999 }).rows,
     [q],
   )
-  const exportRows = selected.size
+  /* v3 · 2.4.35 · in production, test data stays out of the export */
+  const exportRows = (selected.size
     ? allFiltered.filter((r) => selected.has(r.id))
-    : allFiltered
+    : allFiltered).filter(reportable)
 
   const sheet: Sheet = useMemo(() => {
     /* The sheet is built in `sheetOf`, not here. Five screens used to hand-write the
@@ -340,6 +342,12 @@ export default function ProjectsListPage() {
     (BULK_OF[a.label] || BULK_RECOMMEND[a.label] || BULK_APPROVAL.includes(a.label))
     && !(role.key !== 'supervisor' && BULK_RECOMMEND[a.label] === 'approve'))
   const [bulkNote, setBulkNote] = useState('')
+  /* Client 18 Oct (#40) · a batch of requests in different statuses has no common action · the
+     decision buttons hide and say why */
+  const mixed = useMemo(() => {
+    const keys = new Set(allFiltered.filter((r) => selected.has(r.id)).map((r) => `${r.stage}|${r.holder ?? ''}`))
+    return keys.size > 1
+  }, [allFiltered, selected])
   /* A recorded decision carries its note · the supervisor's recommendation carries the study's */
   const needsNote = (a: { label: string }) =>
     !(role.key === 'supervisor' && BULK_RECOMMEND[a.label]) && (BULK_APPROVAL.includes(a.label) || Boolean(BULK_OF[a.label]))
@@ -761,12 +769,13 @@ export default function ProjectsListPage() {
           >
             {/* A decision on the whole batch. The actions are the same role actions as on
                 the project page, minus anything that needs a per-project target. */}
-            {bulkActions.some(needsNote) && (
+            {mixed && <span className="sub">اختر طلبات بنفس الحالة لتظهر الإجراءات</span>}
+            {!mixed && bulkActions.some(needsNote) && (
               <span className="fld bulk-note">
                 <input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="مبررات القرار · تُسجَّل على كل مشروع" aria-label="مبررات القرار الجماعي" />
               </span>
             )}
-            {bulkActions.map((a) => (
+            {!mixed && bulkActions.map((a) => (
               <button
                 key={a.label}
                 className={`btn btn-sm ${a.kind}`}

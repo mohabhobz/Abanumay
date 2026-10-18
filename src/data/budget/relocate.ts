@@ -88,11 +88,14 @@ export function relocationEffects(r: Pick<Relocation, 'from' | 'to' | 'scope'>):
 }
 
 /** The request's checks · before it's sent and again before it executes (1.3b.4) */
-export function relocationIssues(r: Pick<Relocation, 'projectId' | 'projectName' | 'by' | 'to' | 'scope' | 'reason'>): string[] {
+export function relocationIssues(r: Pick<Relocation, 'projectId' | 'projectName' | 'by' | 'to' | 'scope' | 'reason'> & { files?: string[] }): string[] {
   const out: string[] = []
   const l = linkOf(r.projectId)
   if (!l || l.stage !== 'final') return ['إعادة التسكين لمشروع معتمد بحجز نهائي']
   if (!r.reason.trim()) out.push('اكتب سبب إعادة التسكين')
+  /* Client 18 Oct (#7) · sent only once the data the system asks for is complete · the decision or
+     supporting document is part of it */
+  if (r.files !== undefined && !r.files.length) out.push('أرفق القرار أو المستند الداعم')
   if (!r.to.length || r.to.some((x) => !x.docId || !x.nodeId)) out.push('اختر بند الارتباط الجديد')
   const need = movingOf(l.shares, r.scope)
   const total = r.to.reduce((a, x) => a + x.amount, 0)
@@ -198,7 +201,8 @@ export function decideRelocation(id: string, outcome: 'approve' | 'return', note
   if (!r || r.state !== 'submitted') return ['الطلب ليس بانتظار الاعتماد']
   if (outcome === 'return' && !noteText.trim()) return ['اكتب ملاحظات الإعادة']
   if (outcome === 'approve') {
-    const why = relocationIssues(r)
+    /* the document was checked at sending · the execution re-checks the money only */
+    const why = relocationIssues({ ...r, files: undefined })
     if (why.length) return why
     const p = projectRows.find((x) => x.id === r.projectId)
     const before = JSON.stringify(linkOf(r.projectId)?.shares)

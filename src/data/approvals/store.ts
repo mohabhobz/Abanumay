@@ -584,8 +584,12 @@ const applyOp = (o: Op) => {
           /* v3 · 1.4.30 · the recommendation to approve held the money (the action did, on the budget's
              own log) · a recommendation to refuse leaves it with the line */
           if (o.verdict === 'recommend-approve') { const h = Boolean(linkOf(p.id)) && BUDGET_RULES.holdAt !== 'approval'; f.hold = h ? 'initial' : f.hold; fields.push({ k: 'الحجز', v: h ? 'مبدئي بالمبلغ الموصى به' : 'يُحجز عند الاعتماد النهائي وفق السياسة المالية' }) } else { f.hold = 'none'; fields.push({ k: 'الحجز', v: 'لا حجز مع التوصية بالرفض' }) }
-          fields.push({ k: 'الإحالة', v: auto ? /* doc 5.4.11 */ 'اللجنة التنفيذية · إحالة تلقائية فوق حد المدير التنفيذي' : 'المدير التنفيذي' })
-          if (auto) notify(['المدير التنفيذي', 'مدير المنح'], p.id, `أُحيل إلى اللجنة تلقائيًا · ${p.name}`, 'المبلغ فوق حد المدير التنفيذي · ينتظر جلسة اللجنة')
+          /* Client 18 Oct · decision 5 · the path always reaches the executive director · above his cap the
+             referral to the committee is his seat's, made automatically per the settings · the record
+             shows both steps (manager → executive → committee) */
+          fields.push({ k: 'الإحالة', v: auto ? /* doc 5.4.11 */ 'المدير التنفيذي ← اللجنة التنفيذية · إحالة تلقائية من المدير التنفيذي فوق حدّه' : 'المدير التنفيذي' })
+          if (auto) f.recs.unshift({ level: 'exec', verdict: 'refer', note: 'إحالة تلقائية فوق حد المدير التنفيذي (الإعدادات)', by: 'النظام', at: opDay() })
+          if (auto) notify(['المدير التنفيذي', 'مدير المنح'], p.id, `أحاله المدير التنفيذي إلى اللجنة تلقائيًا · ${p.name}`, 'المبلغ فوق حد المدير التنفيذي · ينتظر جلسة اللجنة')
           else notify(['المدير التنفيذي'], p.id, `توصية مدير المنح · ${p.name}`, `${VERDICT_SAY[o.verdict]} · ${o.note}`)
           break
         }
@@ -1139,6 +1143,8 @@ export const decideInSession = (sessionId: string, projectId: string, outcome: O
   const s = sessionById(sessionId)
   if (!p || !s) return ['الجلسة أو المشروع غير موجود']
   const before = p.holder
+  /* Client 18 Oct · decision 15 · a session returns to the level just before it only */
+  if (outcome === 'return') target = s.body === 'committee' ? 'exec' : 'committee'
   const it = itemOf(sessionId, projectId)
   if (!it || it.outcome || s.state === 'closed') return ['القرار مسجّل أو الجلسة مقفلة']
   /* Validate before any money moves · a blocked decision leaves the hold as it was */

@@ -1,4 +1,5 @@
 import { DECISIONS } from '@/data/shared/decisions'
+import { reportable, reportableEntity } from '@/data/shared/testData'
 import { entityById } from '@/data/mock/entities'
 import { countOf, nf, NOUN, pct } from '@/lib/format'
 import { projectRows } from './mock/projects'
@@ -58,7 +59,7 @@ export const PERIODS = YEARS.map((y) => ({ id: y.id, label: y.label }))
 
 export function boardCards(yearId: string): ReportCard[] {
   /* Batch 8 · entities#49 · an archived entity's projects stay out unless the foundation decides otherwise */
-  const rows = projectRows.filter((p) => p.year === yearId && (DECISIONS.archivedInReports || !entityById(p.entityId)?.archived))
+  const rows = projectRows.filter((p) => p.year === yearId && reportable(p) && (DECISIONS.archivedInReports || !entityById(p.entityId)?.archived))
   const bud = budgetForYear(yearId)
   /* The final report and "lessons learned" fields are cumulative: the final report is submitted one
      or two years after the grant year, so filtering strictly by grant year would make the card read
@@ -146,7 +147,7 @@ export function boardCards(yearId: string): ReportCard[] {
 
   /* 4 · partners · the entity that will hold up an agreement */
   /* v3 · 2.4.31 · an archived entity is out of the readings */
-  const live = entityRows.filter((e) => !e.archived)
+  const live = entityRows.filter((e) => !e.archived && reportableEntity(e))
   const short = live.filter((e) => e.docsUploaded < ENTITY_DOCS_TOTAL)
   const stalled = live.filter((e) => e.projectsStalled > 0)
   out.push({

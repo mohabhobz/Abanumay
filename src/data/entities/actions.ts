@@ -1,4 +1,5 @@
 import type { EntityRow, ProjectRow } from '@/types/domain'
+import { isTest } from '@/data/shared/testData'
 import type { RoleKey } from '@/data/roles'
 import { roleByKey } from '@/data/roles'
 import { projectRows } from '@/data/mock/projects'
@@ -141,6 +142,8 @@ export function impactOf(e: EntityRow): Impact {
 
 /** Archiving is refused while any of these exist (rules 29–30) */
 export function archiveBlocks(e: EntityRow): { label: string; href: string }[] {
+  /* v3 · 2.4.35 · test data is archived freely · a real record keeps its history and its blocks */
+  if (isTest('entity', e.id)) return []
   const i = impactOf(e)
   const open = lastRequestOf(e)
   return [

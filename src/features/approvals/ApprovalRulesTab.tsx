@@ -69,7 +69,7 @@ export function ApprovalRulesTab() {
         <Head title="المدير التنفيذي" meta={<span className="sub"><bdi>{/* doc 5.3.1 · 5.4.27-b · 5.4.28 */}</bdi></span>} />
         <Switch
           label="إحالة تلقائية للجنة فوق حد المدير التنفيذي"
-          note={/* v3 · 5.2.14 */ "مفعّل افتراضيًا · توصية مدير المنح بالموافقة فوق حد المدير التنفيذي تذهب إلى اللجنة مباشرة وفق مصفوفة الصلاحيات"}
+          note={/* v3 · 5.2.14 · client 18 Oct · decision 5 */ "مفعّل افتراضيًا · التوصية تصل المدير التنفيذي دائمًا، وفوق حدّه يحيلها المدير التنفيذي إلى اللجنة تلقائيًا وفق مصفوفة الصلاحيات"}
           on={Boolean(d.autoReferAboveExec)}
           onChange={(v) => put('autoReferAboveExec', v)}
         />

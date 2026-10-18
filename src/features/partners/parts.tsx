@@ -10,7 +10,7 @@ import { planOfProject } from '@/data/mock/plans'
 import type { ProjectRow } from '@/types/domain'
 import {
   PTYPE_SAY, addEhOp, closeEhsanProject, ehCloseChecks, ehCloseOf, ehGate, ehMoney, ehOpsOf, ehScheduleOf, isStrategic,
-  EXT_KIND, EXT_CREATE, EXEC_STATES, decideExternalClosing, ehExecLog, ehExecOf, extFilesOf, externalParties, recordExec, type ExecState,
+  EXT_KIND, EXT_CREATE, EXEC_STATES, EXT_CLOSE_OUTCOME_SAY, type ExtCloseOutcome, decideExternalClosing, ehExecLog, ehExecOf, extFilesOf, externalParties, recordExec, type ExecState,
   paysOf, addExtDoc, extDocsOf, pfOfEntity, profileOf, recordEhsanPay, reviewEhsanPay, routeProject, proposeRoute, decideRoute, routeProposalOf, saveEhReport, saveEhSchedule,
   setPartnerTypes, typeAllowed, usePartners, viaEhsan, PF_STAGE_SAY, PF_STAGE_TONE, decidePartner,
   EH_STATE_SAY, EH_STATE_TONE, type EhSlot, type EhsanPay, type PayTarget, type PType,
@@ -259,6 +259,10 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
   const [evidence, setEvidence] = useState<string[]>(() => ehCloseOf(row.id)?.evidence ?? [])
   const [ex, setEx] = useState<{ status: string; progress: string; note: string; files: string[] }>(() => { const x = ehExecOf(row.id); return { status: x?.status ?? 'جارٍ التنفيذ', progress: String(x?.progress ?? ''), note: '', files: [] } })
   const [back, setBack] = useState('')
+  const [outcome, setOutcome] = useState<ExtCloseOutcome>('complete')
+  const [rdPurpose, setRdPurpose] = useState('')
+  const [rdDecision, setRdDecision] = useState('')
+  const [rdFile, setRdFile] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   if (!viaEhsan(row.id)) return null
   const g = ehGate(row.id)
@@ -386,13 +390,28 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
           </>
         )}
         {mgr && cl?.state === 'manager' && (
-          <div className="apv-row mt-3">
-            <span className="fld"><input value={back} onChange={(e) => setBack(e.target.value)} aria-label="ملاحظة الإعادة" placeholder="ما ينقص · عند الإعادة" /></span>
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => r(decideExternalClosing(row.id, 'return', back, user.name, role.key), 'إعادة الإغلاق للمشرف')}>أعده للمشرف</button>
-            <button type="button" className="btn btn-p btn-sm" onClick={() => r(decideExternalClosing(row.id, 'approve', '', user.name, role.key), 'اعتماد الإغلاق')}>اعتمد الإغلاق</button>
-          </div>
+          <>
+            {/* v3 · 11.2.14 · the outcome at the approval · complete (or with savings) · cancelled · redirected */}
+            <div className="cfgchips mt-3" role="radiogroup" aria-label="نتيجة الإغلاق">
+              {(Object.keys(EXT_CLOSE_OUTCOME_SAY) as ExtCloseOutcome[]).map((k) => (
+                <button key={k} type="button" role="radio" aria-checked={outcome === k} className={`cfgchip${outcome === k ? ' on' : ''}`} onClick={() => setOutcome(k)}>{EXT_CLOSE_OUTCOME_SAY[k]}</button>
+              ))}
+            </div>
+            {outcome === 'redirect' && (
+              <div className="apv-row mt-2">
+                <span className="fld"><input value={rdPurpose} onChange={(e) => setRdPurpose(e.target.value)} aria-label="الغرض الجديد للدعم" placeholder="الغرض الجديد" /></span>
+                <span className="fld"><input value={rdDecision} onChange={(e) => setRdDecision(e.target.value)} aria-label="رقم قرار إعادة التوجيه" placeholder="رقم القرار" /></span>
+                <UploadButton label={rdFile || 'مستند القرار'} onPick={(f) => setRdFile(f.name)} />
+              </div>
+            )}
+            <div className="apv-row mt-2">
+              <span className="fld"><input value={back} onChange={(e) => setBack(e.target.value)} aria-label="ملاحظة الإعادة" placeholder={outcome === 'cancel' ? 'سبب الإلغاء · أو ما ينقص عند الإعادة' : 'ما ينقص · عند الإعادة'} /></span>
+              <button type="button" className="btn btn-2 btn-sm" onClick={() => r(decideExternalClosing(row.id, 'return', back, user.name, role.key), 'إعادة الإغلاق للمشرف')}>أعده للمشرف</button>
+              <button type="button" className="btn btn-p btn-sm" onClick={() => r(decideExternalClosing(row.id, 'approve', outcome === 'complete' ? '' : back, user.name, role.key, outcome, outcome === 'redirect' ? { purpose: rdPurpose, decision: rdDecision, file: rdFile } : undefined), 'اعتماد الإغلاق')}>اعتمد الإغلاق</button>
+            </div>
+          </>
         )}
-        <p className="sub cnote">لا تقرير ختامي اعتيادي ولا تقييم إلزامي{/* doc 11.4.12 */} · عند الاعتماد يصير «مكتمل»، أو «مغلق بوفر» ويُحرَّر غير المصروف إلى بنده{/* doc 11.2.14 */}.</p>
+        <p className="sub cnote">لا تقرير ختامي اعتيادي ولا تقييم إلزامي{/* doc 11.4.12 */} · عند الاعتماد يصير «مكتمل»، أو «مغلق بوفر»، أو «ملغى»، أو «أعيد توجيه الدعم» بقرار ومستند · ويُحرَّر غير المصروف إلى بنده{/* doc 11.2.14 */}.</p>
       </Glass>
     </>
   )

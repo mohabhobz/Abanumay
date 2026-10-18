@@ -24,8 +24,9 @@ import {
   type PortfolioRec, type SubExec, type SubProject, pfActivities, pfActivityProgress, PF_ACTIVITY_MODE, setPfActivityMode, linkSubActivity,
   PF_CLOSE_SAY, PF_REQ_SAY, SUB_FIELDS_DEFAULT, SUB_FIELD_SAY, actOnPfClose, actOnPfEval, attachPfCriteria, attachPfMinutes, cancelPortfolio, completeSub,
   excludeSub, isLiveSub, pfApproverOf, pfEvalScore, pfSessions, pfToSession, recommendSubs, recordPfReceipt, savePfEval, savePfForm, setPfReliable, stallSub, studySubs,
-  type PfRequest, type SubField, type SubState,
+  type PfRequest, type SubField, type SubState, SUB_EXEC_STATES, subExecStatus, pfStudyIssues, pfStudyScore, savePfStudy,
 } from '@/data/partners/store'
+import { CRITERIA, GROUP_SAY, type Criterion } from '@/data/intake/criteria'
 import { SESSIONS } from '@/data/approvals/store'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { Checks, Said, SlotsEditor } from '@/features/partners/parts'
@@ -161,6 +162,8 @@ export default function PortfolioPage() {
 
               {!asPartner && <SettingsCard pf={pf} asPartner={asPartner} />}
 
+              {!asPartner && (pf.stage === 'supervisor' || pf.study) && <StudyCard pf={pf} />}
+
               {!asPartner && <HoldCard pf={pf} lineKey={lineKey} setLine={setLine} lines={lines} link={link} split={split} setSplit={setSplit} />}
 
               {!asPartner && (pf.stage === 'committee' || pf.stage === 'board') && <SessionCard pf={pf} />}
@@ -260,6 +263,65 @@ export default function PortfolioPage() {
 const entityName = (pf: PortfolioRec) => profileOf(pf.entityId)?.name ?? entityById(pf.entityId)?.name ?? pf.entityId
 
 /* ── The budget hold · the total, once, from one line or more (13.2.7) ── */
+/* ── v3 · 13.2.6 · 13.4.4 · the portfolio is studied by the same weighted criteria as a project ──
+   The supervisor rates each criterion 1 – 5 at the study stage · the weights are the settings' («معايير
+   التقييم») · the recommendation waits for a complete study · the score travels up the approval steps. */
+const STUDY_GROUPS: Criterion['group'][] = ['فني', 'مالي', 'إداري']
+const STUDY_SCALE = [1, 2, 3, 4, 5] as const
+function StudyCard({ pf }: { pf: PortfolioRec }) {
+  const { role, user } = useRole()
+  const editable = pf.stage === 'supervisor' && role.key === 'supervisor'
+  const [scores, setScores] = useState<Record<string, number>>(() => ({ ...(pf.study?.scores ?? {}) }))
+  const [note, setNote] = useState(pf.study?.note ?? '')
+  const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
+  const score = pfStudyScore({ ...pf, study: { scores, note, by: '', at: '' } }) ?? 0
+  const missing = editable ? pfStudyIssues({ ...pf, study: { scores, note, by: '', at: '' } }) : []
+  return (
+    <Glass>
+      <Head title="دراسة المحفظة بمعايير التقييم" meta={<Tag tone={score >= 70 ? 'ok' : score >= 50 ? 'warn' : 'mute'}>{score} من 100</Tag>} />
+      <p className="sub cnote">
+        {editable ? 'قيّم كل معيار من 1 إلى 5 · الأوزان من «معايير التقييم» في الإعدادات · التوصية بعد اكتمال الدراسة.'
+          : pf.study ? <>دراسة <Person name={pf.study.by} /> · <DateText>{pf.study.at}</DateText></> : 'لم تُسجَّل دراسة بعد.'}
+      </p>
+      {STUDY_GROUPS.map((g) => (
+        <div key={g} className="stdy-g">
+          <h3 className="stdy-h">الدراسة {GROUP_SAY[g].study}</h3>
+          <ul className="stdy-list">
+            {CRITERIA.list.filter((c) => c.group === g).map((c) => (
+              <li key={c.key}>
+                <span className="stdy-l">{c.label}</span>
+                <span className="sub">{pct(c.weight)}</span>
+                <span className="pc-sp" />
+                <span className="stdy-scale" role="radiogroup" aria-label={`${c.label} · المحفظة`}>
+                  {STUDY_SCALE.map((n) => (
+                    <button key={n} type="button" role="radio" aria-checked={scores[c.key] === n} className={`cfgchip${scores[c.key] === n ? ' on' : ''}`}
+                      disabled={!editable} onClick={() => { setScores((x) => ({ ...x, [c.key]: n })); setSaid({}) }}>
+                      <span className="num">{n}</span>
+                    </button>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {(editable || note) && (
+        <label className="regf regf-w">
+          <span className="lb">ملاحظات الدراسة</span>
+          <span className="fld fld-a"><textarea rows={3} value={note} disabled={!editable} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظات دراسة المحفظة" /></span>
+        </label>
+      )}
+      {editable && (
+        <div className="apv-row mt-3">
+          <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = savePfStudy(pf.id, scores, note, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'دراسة المحفظة' }) }}>احفظ الدراسة</button>
+          {missing.length > 0 && <span className="sub">{missing[0]}</span>}
+        </div>
+      )}
+      <Said said={said} />
+    </Glass>
+  )
+}
+
 function HoldCard({ pf, lineKey, setLine, lines, link, split, setSplit }: {
   pf: PortfolioRec; lineKey: string; setLine: (k: string) => void; lines: ReturnType<typeof usableLines>; link: ReturnType<typeof linkOf>
   split: { key: string; amount: string }[]; setSplit: (x: { key: string; amount: string }[]) => void
@@ -430,6 +492,8 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const drafts = picked.filter((x) => x.state === 'draft')
   const sent = picked.filter((x) => x.state === 'submitted')
   const studied = picked.filter((x) => x.state === 'study' || x.state === 'submitted')
+  /* Client 18 Oct (#40) · a selection in different states has no common action */
+  const mixed = new Set(picked.map((x) => x.state)).size > 1
   const cap = capIssue(pf, drafts.map((x) => x.id))
   const req = pf.subFields ?? SUB_FIELDS_DEFAULT
   const r = (out: string[], ok: string) => { setSaid(out.length ? { bad: out } : { ok }); if (!out.length) { setSel([]); setWhy('') } }
@@ -486,6 +550,8 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
       {sel.length > 0 && (
         <div className="apv-row mt-3">
           <span className="sub">{sel.length} محدد · <span className="num">{nf.format(picked.reduce((s, x) => s + x.amount, 0))}</span></span>
+          {mixed && <span className="sub">اختر طلبات بنفس الحالة لتظهر الإجراءات</span>}
+          {!mixed && <>
           {cap && drafts.length > 0 && <span className="bad">{cap}</span>}
           {(asPartner || sup) && drafts.length > 0 && <button type="button" className="btn btn-p btn-sm" disabled={Boolean(cap)} onClick={() => r(sendSubs(pf.id, drafts.map((x) => x.id), asPartner ? entityName(pf) : user.name), 'رفع المحدد للمراجعة')}>ارفع للمراجعة</button>}
           {sup && sent.length > 0 && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(studySubs(pf.id, sent.map((x) => x.id), user.name, role.key), 'بدء الدراسة')}>ابدأ الدراسة</button>}
@@ -493,6 +559,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
           {sup && studied.length > 0 && <button type="button" className="btn btn-p btn-sm" onClick={() => recommend('approve')}>أوصِ بالاعتماد</button>}
           {mgr && <button type="button" className="btn btn-2 btn-sm" onClick={() => decide('reject')}>ارفض المحدد</button>}
           {mgr && <button type="button" className="btn btn-p btn-sm" onClick={() => decide('approve')}>اعتمد المحدد</button>}
+          </>}
         </div>
       )}
       {/* v3 · 0.sub.7 · 0.sub.8 · 13.4.14 · a substantive change · stalled, or excluded with its value back */}
@@ -677,7 +744,7 @@ function ExecCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
               <b>{x.name}</b>
               <Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}{x.ready && x.state === 'closing' ? ' · طلب اعتماد النتائج' : ''}</Tag>
               <span className="sub">إنجاز <span className="num">{pct(x.exec?.progress ?? 0)}</span> · مستفيدون <span className="num">{nf.format(x.exec?.reached ?? 0)}</span> من <span className="num">{nf.format(x.beneficiaries)}</span></span>
-              {editor && (x.state === 'approved' || x.state === 'closing') && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOpen(open === x.id ? null : x.id); setE({ status: x.exec?.status ?? 'لم يبدأ', progress: x.exec?.progress ?? 0, reached: x.exec?.reached ?? 0, results: x.exec?.results ?? '', evidence: x.exec?.evidence ?? [] }) }}>{open === x.id ? 'إغلاق' : 'سجّل النتائج'}</button>}
+              {editor && (x.state === 'approved' || x.state === 'closing') && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOpen(open === x.id ? null : x.id); setE({ status: subExecStatus(x.exec?.status), progress: x.exec?.progress ?? 0, reached: x.exec?.reached ?? 0, results: x.exec?.results ?? '', evidence: x.exec?.evidence ?? [] }) }}>{open === x.id ? 'إغلاق' : 'سجّل النتائج'}</button>}
             </div>
             {x.exec?.results && <p className="sub">{isolate(x.exec.results)}{x.exec.evidence.length ? ` · ${x.exec.evidence.join('، ')}` : ''}</p>}
             {x.outcome && x.state === 'closing' && !x.ready && <p className="bad cnote">{x.outcome.note}</p>}
@@ -698,7 +765,9 @@ function ExecCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                 <div className="apv-row mt-2">
                   <span className="sub">{e.evidence.length ? e.evidence.join(' · ') : 'الشواهد'}</span>
                   <UploadButton label="شاهد" onPick={(f) => setE((y) => ({ ...y, evidence: [...y.evidence, f.name] }))} />
-                  <label className="rowf gp-2"><input type="checkbox" checked={e.status === 'مكتمل'} onChange={(v) => setE({ ...e, status: v.target.checked ? 'مكتمل' : 'لم يبدأ' })} aria-label="اطلب اعتماد النتائج" /> <span className="sub">اكتمل التنفيذ · اطلب اعتماد النتائج</span></label>
+                  {/* v3 · 13.4.15 · the partner's progress · «لم يبدأ» · «جارٍ التنفيذ» · «مكتمل» · never «تحت التنفيذ» */}
+                  <span className="sub">الحالة: {e.status === 'مكتمل' ? 'مكتمل' : e.progress > 0 ? SUB_EXEC_STATES[1] : SUB_EXEC_STATES[0]}</span>
+                  <label className="rowf gp-2"><input type="checkbox" checked={e.status === 'مكتمل'} onChange={(v) => setE({ ...e, status: v.target.checked ? 'مكتمل' : e.progress > 0 ? 'جارٍ التنفيذ' : 'لم يبدأ' })} aria-label="اطلب اعتماد النتائج" /> <span className="sub">اكتمل التنفيذ · اطلب اعتماد النتائج</span></label>
                   <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = updateSubExec(pf.id, x.id, e, asPartner ? entityName(pf) : user.name); setSaid(out.length ? { bad: out } : { ok: `نتائج «${x.name}»` }); if (!out.length) setOpen(null) }}>احفظ</button>
                 </div>
               </div>
