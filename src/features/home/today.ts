@@ -22,7 +22,7 @@ import { actOnPay, payActions, payStops, type PayAction } from '@/data/payments/
 import { projectRows } from '@/data/mock/projects'
 import { closeRows } from '@/data/mock/closing'
 import { SESSIONS } from '@/data/approvals/store'
-import { liveDay, TODAY } from '@/data/clock'
+import { liveDay, localDayOf, TODAY } from '@/data/clock'
 import { payableProjects, scheduleOf } from '@/data/payments/store'
 import { projectById } from '@/data/mock/projects'
 
@@ -184,22 +184,56 @@ export interface Progress {
   moved: Moved[]
   /** never acted in the system · the first-visit line */
   first: boolean
+  /** my actions on each of the last seven days, oldest first · the week strip */
+  days: { day: string; n: number }[]
+  /** what I did today, newest first · «ما أنجزته اليوم» */
+  done: { action: string; ref: string; href: string; at: string }[]
 }
 
 const day10 = (s: string) => s.slice(0, 10)
 
+/* 18 Oct · the demo's morning (client: «I open Omar's account and need to see progress»).
+   The seeded records stop on the demo's reference day, so a fresh visit always opened on «0 today».
+   Each demo person's morning is their own most recent recorded actions, read as done this morning
+   (08:40 onwards) · real records, real outcomes («تحرّك بفضلك» reads them live) · and the actions taken
+   in this visit add on top of them. With a server, the day is simply the person's audit rows of today. */
+const MORNING = 5
+const WEEK_SHAPE = [3, 5, 0, 4, 6, 2]
+function morningOf(mine: AuditRow[], now: string): AuditRow[] {
+  return [...mine].filter((r) => day10(r.at) < now).sort((a, b) => b.at.localeCompare(a.at)).slice(0, MORNING)
+    .map((r, k) => {
+      const m = 40 + (MORNING - 1 - k) * 37
+      const at = `${now} ${String(8 + Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+      return { ...r, id: `am-${r.id}`, at }
+    })
+}
+
 export function progressFor(me: string, open: number): Progress {
-  const mine = auditRows().filter((r) => r.by === me)
-  const now = liveDay()
+  const real = auditRows().filter((r) => r.by === me)
+  /* the local day · an action taken after midnight belongs to the new day (18 Oct fix) */
+  const loc = localDayOf()
+  const now = loc > liveDay() ? loc : liveDay()
+  const morning = morningOf(real, now)
+  const mine = [...real, ...morning]
   const weekFrom = new Date(Date.parse(`${now}T12:00:00Z`) - 6 * 864e5).toISOString().slice(0, 10)
-  const today = mine.filter((r) => day10(r.at) === now).length
+  const todayRows = mine.filter((r) => day10(r.at) === now)
+  const today = todayRows.length
   const weekRows = mine.filter((r) => day10(r.at) >= weekFrom && day10(r.at) <= now)
+  const days = Array.from({ length: 7 }, (_, k) => {
+    const day = new Date(Date.parse(`${now}T12:00:00Z`) - (6 - k) * 864e5).toISOString().slice(0, 10)
+    const n = mine.filter((r) => day10(r.at) === day).length
+    /* the days before today carry the demo's usual week where nothing is recorded */
+    return { day, n: k < 6 && !n && morning.length ? WEEK_SHAPE[k]! : n }
+  })
   return {
     today,
-    week: weekRows.length,
+    week: days.reduce((a, d) => a + d.n, 0),
     share: today + open > 0 ? today / (today + open) : 1,
     moved: movedBy(weekRows),
-    first: mine.length === 0,
+    first: real.length === 0,
+    done: todayRows.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 5)
+      .map((r) => ({ action: r.action, ref: r.ref, href: r.href, at: r.at })),
+    days,
   }
 }
 

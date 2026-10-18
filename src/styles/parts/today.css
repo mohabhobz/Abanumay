@@ -1,67 +1,157 @@
-/* 17 Oct · «اليوم» · the person's working day (client brief) · same identity as the rest: the cards
-   are .glass, the controls are the family's, no colour of its own · calm by construction: one
-   accent (the next step), the late items said in words with the warning ink, never a red wall */
+/* 17 Oct · «اليوم» · the person's working day · reworked 18 Oct on the client's comment (layout,
+   life, «what do I do first»). Same identity: the identity field, .glass cards, the control family,
+   the chart colours for the lane marks only. One primary action on the page: «ابدأ الآن». */
 
-.tday-first{margin:0;padding:var(--sp-4) var(--sp-5);border-radius:var(--r1);background:var(--fl-2);line-height:var(--lh-text);color:var(--t2)}
-.tday-g{align-items:start}
+.tday{gap:var(--sp-6)}
 
-/* The next step · the one card that leads */
-.tday-next{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-7);
-  transition:opacity var(--mo-2) var(--ease-std),transform var(--mo-2) var(--ease-std);animation:tday-in var(--mo-3) var(--ease-std)}
-.tday-next.out{opacity:0;transform:translateY(calc(var(--sp-3) * -1))}
-@keyframes tday-in{from{opacity:0;transform:translateY(var(--sp-3))}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.tday-next{animation:none;transition:none}.tday-next.out{transform:none}}
-.tday-next-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--sp-2)}
-.tday-q{display:inline-flex;align-items:center;gap:var(--sp-2);color:var(--t2);font-size:var(--fs-2)}
-.tday-next-t{margin:0;font-family:var(--fd);font-size:var(--fs-7);font-weight:600;line-height:var(--lh-head)}
-.tday-next p{margin:0}
-.tday-next-m{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-top:var(--sp-2)}
-.tday-why{font-weight:500}
-.tday-next-a{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);margin-top:var(--sp-4)}
-.tday-then{margin-top:var(--sp-2)}
+/* ── Top row · the next step (wide) beside progress ── */
+.tday-top{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--sp-6);align-items:stretch}
+.tday-step{font-family:var(--fd);font-weight:600;font-size:var(--fs-4)}
 
-/* The stages as personal queues · a filter over the lanes */
+.tday .tday-focus{display:flex;flex-direction:column;gap:var(--sp-5);padding:var(--sp-7);
+  transition:opacity var(--mo-2) var(--ease-std),transform var(--mo-2) var(--ease-std);animation:tday-in var(--mo-3) var(--ease-out)}
+.tday .tday-focus.out{opacity:0;transform:translateX(calc(var(--sp-7) * -1))}
+@keyframes tday-in{from{opacity:0;transform:translateY(var(--sp-4))}to{opacity:1;transform:none}}
+.tday-focus-h{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-3)}
+
+/* The day's track · one segment per item (like a story bar) · done → now → what follows */
+.tday-track{display:flex;align-items:center;gap:var(--sp-1);block-size:var(--sp-5)}
+.tday-track>i{flex:1 1 0;min-inline-size:0;block-size:var(--sp-2);border-radius:var(--rp);background:var(--ctl-line);
+  transition:background var(--mo-2) var(--ease-std),block-size var(--mo-2) var(--ease-std)}
+.tday-track>i:hover{block-size:var(--sp-4)}
+.tday-track>.s-done{background:var(--ch-2)}
+.tday-track>.s-now{flex-grow:3;block-size:var(--sp-4);background:var(--ch-1);box-shadow:0 0 0 var(--sp-1) var(--fl-4)}
+.tday-track>.s-late{background:var(--ch-warn)}
+.tday-track-l{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-5);color:var(--t2);font-size:var(--fs-2)}
+.tday-track-l>span{display:inline-flex;align-items:center;gap:var(--sp-2)}
+.tday-track-l i{inline-size:var(--sp-4);block-size:var(--sp-2);border-radius:var(--rp);background:var(--ctl-line)}
+.tday-track-l .s-done{background:var(--ch-2)}
+.tday-track-l .s-now{background:var(--ch-1);block-size:var(--sp-3)}
+.tday-track-l .s-late{background:var(--ch-warn)}
+
+.tday-focus-b{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--sp-5)}
+.tday-ic{display:grid;place-items:center;inline-size:var(--sp-11);block-size:var(--sp-11);border-radius:var(--r1);
+  background:var(--ch-1);color:var(--on-ch-1)}
+.tday-ic svg{inline-size:var(--sp-7);block-size:var(--sp-7)}
+.tday-focus-t{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.tday-focus-t h2{margin:0;font-family:var(--fd);font-size:var(--fs-7);font-weight:700;line-height:var(--lh-head)}
+.tday-focus-t p{margin:0}
+.tday-q{color:var(--t2);font-size:var(--fs-2);font-weight:500}
+.tday-amt{display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-1);font-size:var(--fs-6);font-weight:600}
+.tday-focus-f{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--sp-4);
+  padding-block-start:var(--sp-5);box-shadow:inset 0 1px 0 0 var(--edge-hair)}
+.tday-pill{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-3);font-weight:500}
+.tday-pill.sm{font-size:var(--fs-1)}
+.tday-acts{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2)}
+.tday-go{padding-inline:var(--sp-7)}
+.tday-then{margin:0;color:var(--t2)}
+
+/* Progress · a big count, a bar, seven days · words, no score */
+.tday .tday-prog{display:flex;flex-direction:column;gap:var(--sp-4);padding:var(--sp-7)}
+.tday-prog p{margin:0}
+.tday-prog-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3)}
+.tday-pct{margin-inline-start:auto;font-family:var(--fd);font-size:var(--fs-6);font-weight:700;color:var(--ch-1)}
+/* The leaves · five, one per fifth of the day · they fill as the day is done */
+.tday-leaves{display:flex;gap:var(--sp-2)}
+.tday-leaves>span{display:grid;place-items:center;flex:1 1 0;block-size:var(--sp-10);border-radius:var(--r1);
+  background:var(--fl-3);color:var(--ctl-line);transition:background var(--mo-3) var(--ease-std),color var(--mo-3) var(--ease-std)}
+.tday-leaves>span.half{color:var(--ch-2);background:var(--fl-4)}
+.tday-leaves>span.on{color:var(--on-ch-1);background:var(--ch-1)}
+.tday-leaf{inline-size:var(--sp-7);block-size:var(--sp-7)}
+.tday-say{font-weight:500;line-height:var(--lh-text)}
+.tday-prog.on .tday-say{color:var(--ch-1)}
+/* What I did today · ticked, timed, each one opens its record */
+.tday-donel{display:flex;flex-direction:column;gap:var(--sp-2)}
+.tday-donel ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.tday-donel li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--sp-3)}
+.tday-donel a{display:block;min-width:0;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tday-tick{display:grid;place-items:center;inline-size:var(--sp-6);block-size:var(--sp-6);border-radius:var(--r-dot);background:var(--ch-2);color:var(--on-ch-2)}
+.tday-wn{color:var(--t2)}
+.tday-big{display:flex;align-items:baseline;gap:var(--sp-3)}
+.tday-big>b{font-family:var(--fd);font-size:var(--fs-9);font-weight:700;line-height:var(--lh-flat)}
+.tday-bar{block-size:var(--sp-3);border-radius:var(--rp);background:var(--ctl-line);overflow:hidden}
+.tday-bar>i{display:block;block-size:100%;border-radius:var(--rp);background:var(--ch-2);transition:inline-size var(--mo-3) var(--ease-std)}
+.tday-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--sp-2);align-items:end;block-size:calc(var(--sp-11) + var(--sp-6))}
+.tday-week>span{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:var(--sp-1);block-size:100%}
+.tday-week i{display:block;inline-size:100%;max-inline-size:var(--sp-7);border-radius:var(--r-hair);background:var(--ctl-line)}
+.tday-week .wk-0{block-size:var(--sp-1)}
+.tday-week .wk-1{block-size:var(--sp-4);background:var(--ch-2)}
+.tday-week .wk-2{block-size:var(--sp-6);background:var(--ch-2)}
+.tday-week .wk-3{block-size:var(--sp-8);background:var(--ch-2)}
+.tday-week .wk-4{block-size:var(--sp-10);background:var(--ch-2)}
+.tday-week>.on i{background:var(--ch-1)}
+.tday-week small{color:var(--t3);font-size:var(--fs-1)}
+.tday-week>.on small{color:var(--t1);font-weight:600}
+.tday-moved{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:auto;padding-block-start:var(--sp-4);box-shadow:inset 0 1px 0 0 var(--edge-hair)}
+.tday-sh{font-weight:600}
+.tday-moved ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.tday-moved li{display:flex;align-items:center;gap:var(--sp-2)}
+.tday-moved li>svg{color:var(--ch-2);flex:none}
+.tday-moved a{display:block;min-width:0;color:var(--t1);line-height:var(--lh-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* The finish line · its own calm moment, the one illustration of the page */
+.tday .tday-done{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:var(--sp-7);padding:var(--sp-7)}
+.tday-done .ill-hero{inline-size:calc(var(--sp-11) * 3);block-size:auto}
+.tday-done-b{display:flex;flex-direction:column;gap:var(--sp-3)}
+.tday-done-t{margin:0;font-family:var(--fd);font-size:var(--fs-8);font-weight:700}
+.tday-done p{margin:0;max-width:52ch}
+
+/* The stages as personal queues */
 .tday-chips{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
 
-/* The lanes · short ordered lists */
-.tday-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.tday-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;align-items:center;gap:var(--sp-3);
-  min-block-size:var(--h-md);padding:var(--sp-3) var(--sp-2);border-radius:var(--r1)}
-.tday-row+.tday-row{box-shadow:inset 0 1px 0 0 var(--edge-hair)}
-.tday-row.clickable{cursor:pointer}
-.tday-row.clickable:hover{background:var(--fl-2)}
-.tday-row>svg{color:var(--t3)}
-.tday-rt{display:flex;flex-direction:column;min-width:0}
-.tday-rn{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tday-rs{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tday-rw{font-size:var(--fs-2);white-space:nowrap}
-.tday-go{color:var(--t3)}
-.tday-more{margin-top:var(--sp-2)}
+/* ── The board · four columns ── */
+.tday-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-5);align-items:start}
+.tday .tday-col{display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-5)}
+.tday-col-h{display:flex;align-items:center;gap:var(--sp-2);font-family:var(--fd);font-size:var(--fs-4)}
+.tday-dot{inline-size:var(--sp-3);block-size:var(--sp-3);border-radius:var(--r-dot);flex:none;background:var(--il-ghost)}
+.c-due .tday-dot{background:var(--ch-warn)}
+.c-returned .tday-dot{background:var(--ch-3)}
+.c-waiting .tday-dot{background:var(--ch-2)}
+.tday-n{margin-inline-start:auto;min-inline-size:var(--sp-7);text-align:center;padding:0 var(--sp-2);border-radius:var(--rp);background:var(--fl-3);font-size:var(--fs-2)}
+.tday-col-n{margin:0;font-size:var(--fs-1)}
+.tday-cards{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.tday-card{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-4);border-radius:var(--r1);
+  background:var(--fl-4);box-shadow:inset 0 0 0 1px var(--edge-hair);transition:transform var(--mo-2) var(--ease-std),box-shadow var(--mo-2) var(--ease-std)}
+.tday-card.clickable{cursor:pointer}
+.tday-card.clickable:hover{transform:translateY(calc(var(--sp-1) * -1));box-shadow:inset 0 0 0 1px var(--ctl-line-h),var(--el-1)}
+.tday-card-q{display:inline-flex;align-items:center;gap:var(--sp-2);color:var(--t3);font-size:var(--fs-1)}
+.tday-card-t{font-weight:600;line-height:var(--lh-ui);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tday-card-f{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
+.tday-empty{margin:0;display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-5) var(--sp-4);border-radius:var(--r1);
+  color:var(--t3);box-shadow:inset 0 0 0 1px var(--edge-hair)}
+.tday-more{align-self:center}
+.tday-late{color:var(--warn-ink)}
 
-/* Progress · a bar that fills and plain words · no chart */
-.tday-prog{display:flex;flex-direction:column;gap:var(--sp-2)}
-.tday-prog p{margin:0}
-.tday-bar{block-size:var(--sp-2);border-radius:var(--rp);background:var(--fl-3);overflow:hidden}
-.tday-bar>i{display:block;block-size:100%;border-radius:var(--rp);background:var(--ch-2);transition:inline-size var(--mo-3) var(--ease-std)}
-.tday-pl{font-size:var(--fs-4)}
-.tday-sh{margin:var(--sp-3) 0 0;font-size:var(--fs-3);font-weight:600}
-.tday-moved{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-1)}
-.tday-moved a{color:var(--t1);line-height:var(--lh-text)}
-
-/* The finish line · its own calm screen */
-.tday-done{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--sp-3);padding:var(--sp-9) var(--sp-7)}
-.tday-done-t{margin:0;font-family:var(--fd);font-size:var(--fs-7);font-weight:600}
-.tday-done p{margin:0;max-width:52ch}
+@media (prefers-reduced-motion:reduce){
+  .tday .tday-focus,.tday-card,.tday-track>i,.tday-leaves>span{animation:none;transition:none}
+  .tday .tday-focus.out{transform:none}
+}
+@media (max-width:1180px){.tday-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.tday-top{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){
+  .tday-board{grid-template-columns:minmax(0,1fr)}
+  .tday-focus-b{grid-template-columns:auto minmax(0,1fr)}
+  .tday-amt{grid-column:1 / -1;align-items:flex-start}
+  .tday .tday-done{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}
+}
 
 /* The bar on a record opened from «اليوم» · a floating surface (it covers) · top, centred */
 .tday-ret{position:fixed;z-index:30;inset-block-start:var(--sp-4);inset-inline:0;margin-inline:auto;inline-size:max-content;
   max-inline-size:calc(100% - var(--sp-8));display:flex;align-items:center;gap:var(--sp-3);
-  padding:var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-2);padding-inline-start:var(--sp-5);
+  padding:var(--sp-2);padding-inline-start:var(--sp-5);
   border-radius:var(--r2);background:var(--g-pop);backdrop-filter:var(--mat-3);box-shadow:var(--el-2)}
 .tday-ret>span{display:inline-flex;align-items:center;gap:var(--sp-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:720px){.tday-row{grid-template-columns:auto minmax(0,1fr) auto}.tday-row>.tday-rw,.tday-row>.tday-go{display:none}}
-.tday-late{color:var(--warn-ink)}
+
+/* The bell's filter · الكل · المهم · المتأخر */
 .nfilter{display:flex;flex-wrap:wrap;gap:var(--sp-2);padding-inline:var(--sp-5);padding-block:0 var(--sp-3)}
-.tday-done>.badge{align-self:center;margin-inline:auto}
-/* .glass sets display:flow-root after these rules · the day cards keep their own flex column */
-.tday .tday-done,.tday .tday-next,.tday .tday-prog{display:flex}
+.tday-donel a>*{display:inline;white-space:nowrap}
+
+/* 18 Oct · the next step and the week share the wide column · the progress card beside them is no
+   longer the only tall one, so the next step doesn't float above an empty field */
+.tday-main{gap:var(--sp-6);min-width:0}
+.tday .tday-wk{padding:var(--sp-6) var(--sp-7)}
+.tday-wk-b{display:block}
+.tday-wk-c{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:end;gap:var(--sp-7)}
+.tday-wk-c .tday-week{block-size:calc(var(--sp-11) + var(--sp-4))}
+.tday-wk-c p{margin:0}
+@media (max-width:900px){.tday-wk-c{grid-template-columns:minmax(0,1fr)}}
