@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { DateText, Glass, Icon, icons, Money } from '@/components/ui'
+import { DateText, Glass, Icon, icons, Money, Tabs } from '@/components/ui'
 import { AbLeaf, HeroSuccess, IdentityBanner } from '@/components/soul'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -25,7 +25,6 @@ import { setTrail } from './trail'
 
 const COLS: Lane[] = ['due', 'returned', 'waiting', 'coming']
 const SHOW = 4
-const CHIPS = 6
 
 const TONE_OF: Record<Lane, string> = { due: 'warn', returned: 'teal', waiting: 'mute', coming: 'mute' }
 
@@ -42,7 +41,6 @@ export default function HomePage() {
   const [queue, setQueue] = useState<string>('')
   const [leaving, setLeaving] = useState(false)
   const [open, setOpen] = useState<Record<string, boolean>>({})
-  const [moreQ, setMoreQ] = useState(false)
 
   const key = (i: TodayItem) => `${i.queueKey}|${i.id}`
   const ordered = [...day.items.filter((i) => !later.includes(key(i))), ...day.items.filter((i) => later.includes(key(i)))]
@@ -206,20 +204,14 @@ export default function HomePage() {
 
           {/* The role's stages as personal queues · a filter over the board */}
           {!done && day.queues.length > 1 && (
-            <div className="tday-chips" role="group" aria-label="بنودك حسب المرحلة">
-              <button type="button" className={`fchip${!queue ? ' on' : ''}`} aria-pressed={!queue} onClick={() => setQueue('')}>
-                الكل <span className="num">{day.items.length}</span>
-              </button>
-              {(moreQ ? qs : qs.slice(0, CHIPS)).map((q) => (
-                <button key={q.key} type="button" className={`fchip${queue === q.key ? ' on' : ''}`} aria-pressed={queue === q.key} onClick={() => setQueue(queue === q.key ? '' : q.key)}>
-                  <Icon name={icons[q.icon]} size="sm" />{q.label} <span className="num">{q.count}</span>
-                </button>
-              ))}
-              {qs.length > CHIPS && (
-                <button type="button" className="fchip" aria-expanded={moreQ} onClick={() => setMoreQ((x) => !x)}>
-                  {moreQ ? 'أقل' : <>مراحل أخرى <span className="num">{qs.length - CHIPS}</span></>}
-                </button>
-              )}
+            /* 19 Oct · client · the system's one tab shape (`Tabs`) · was a row of filter chips with its
+               own selected style and a «مراحل أخرى» toggle · every stage is a tab now, the row scrolls */
+            <div className="tday-tabs">
+              <Tabs
+                items={[{ slug: '', label: 'الكل', count: day.items.length }, ...qs.map((q) => ({ slug: q.key, label: q.label, count: q.count }))]}
+                active={queue}
+                onChange={setQueue}
+              />
             </div>
           )}
 

@@ -92,9 +92,6 @@
 .tday-done p{margin:0;max-width:52ch}
 
 /* The stages as personal queues · the selected one is the page's accent, unmistakable */
-.tday-chips{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
-.tday-chips .fchip.on{background:var(--ch-1);color:var(--on-ch-1);box-shadow:var(--el-1)}
-.tday-chips .fchip.on .num,.tday-chips .fchip.on svg{color:var(--on-ch-1)}
 
 /* ── The board · four columns ── */
 .tday-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-5);align-items:start}
@@ -213,7 +210,6 @@
 .tday-week>.on small{color:var(--ch-2)}
 .c-waiting .tday-dot{background:var(--teal)}
 .tday-n{background:rgba(var(--ch-2C),.14);color:var(--ch-1)}
-.tday-chips .fchip.on{background:linear-gradient(135deg,var(--ch-2),var(--ch-1))}
 .tday-moved li>svg{color:var(--teal)}
 .tday-card.clickable:hover{box-shadow:inset 0 0 0 1px rgba(var(--ch-2C),.45),var(--el-2)}
 .tday-card.clickable:hover .tday-card-q,.tday-card-go{color:var(--ch-2)}
