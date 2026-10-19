@@ -1,3 +1,4 @@
+import { readExpiry } from '@/data/entities/expiry'
 import { useMemo, useState } from 'react'
 import { isPortalPreview } from '@/data/session'
 import { ReadOnly } from '@/components/shell/ReadOnly'
@@ -73,6 +74,7 @@ export default function UpdateRequestPage() {
   }))
   const [banks, setBanks] = useState<RegBank[]>(() => existing?.banks ?? [])
   const [docs, setDocs] = useState<UpdDoc[]>(() => existing?.docs ?? [])
+  const [readAt, setReadAt] = useState<Record<string, string>>({})
   const [phase, setPhase] = useState<Phase>('form')
   const [reqId] = useState(() => existing?.id ?? nextUpdId())
   const [saved, setSaved] = useState(false)
@@ -272,7 +274,11 @@ export default function UpdateRequestPage() {
                             ? <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDocs((s) => s.filter((y) => y.key !== k.key))}>
                                 <Icon name={icons.close} size="sm" /> أزل
                               </button>
-                            : <UploadButton label={was?.uploaded && !was.expired ? `استبدل ${k.label}` : `ارفع ${k.label}`} onPick={(file) => setDocs((s) => [...s, { key: k.key, label: k.label, file: file.name }])} />,
+                            : <UploadButton label={was?.uploaded && !was.expired ? `استبدل ${k.label}` : `ارفع ${k.label}`} onPick={(file) => {
+                                setDocs((s) => [...s, { key: k.key, label: k.label, file: file.name }])
+                                /* client 19 Oct · the expiry read from the document prefills its date */
+                                if (k.expiry) void readExpiry(file).then((at) => { if (at) { setDocs((s) => s.map((y) => (y.key === k.key && !y.expires ? { ...y, expires: at } : y))); setReadAt((r) => ({ ...r, [k.key]: at })) } })
+                              }} />,
                         }
                       })}
                     />
@@ -285,6 +291,7 @@ export default function UpdateRequestPage() {
                             <span className="lb">نهاية صلاحية {x.label}<b className="regf-r" aria-label="إلزامي">*</b></span>
                             <DateField label={`نهاية صلاحية ${x.label}`} value={x.expires ?? ''} min={todayIso()}
                               onChange={(v) => setDocs((s) => s.map((y) => (y.key === x.key ? { ...y, expires: v } : y)))} />
+                            {readAt[x.key] && readAt[x.key] === x.expires && <span className="sub">قُرئ تاريخ الانتهاء من المستند</span>}
                           </label>
                         ))}
                       </div>

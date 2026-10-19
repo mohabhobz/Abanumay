@@ -1612,6 +1612,10 @@ input:not([type=checkbox],[type=radio],[type=range]){text-overflow:ellipsis}
    A field in a numeric cell writes its figure on the column's edge too. */
 .tbl td.n .fld input,.tbl td.n input.num{text-align:left}
 .tbl td .tag{max-width:100%;overflow:hidden;vertical-align:middle}
+/* 19 Oct · a long status (with its seat) stays inside its column · the full text is in the title */
+.tbl td .tagfit{display:inline-block;max-width:100%;vertical-align:middle}
+.tbl td .tagfit .tag{display:inline-block;white-space:nowrap;text-overflow:ellipsis}
+.tbl td .tagfit .tseat{display:block;margin-block-start:var(--sp-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* An icon leading a cell's text (the tree's ▸) centres on it instead of sitting on its baseline (UI-058 · UI-213) */
 .tbl td>svg:first-child{vertical-align:middle}
 /* 11 Oct · audit UI-157/178 · a tag too long for its column was cut mid-word («الختام») with no

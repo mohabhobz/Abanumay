@@ -76,6 +76,8 @@ export interface PermRole {
   /** The persona it belongs to · meeting 1 Oct: the system is designed persona by persona */
   persona: Persona
   grants: Grants
+  /** Client 18 Oct · every cell granted, whatever is stored or overridden */
+  superAdmin?: boolean
 }
 
 /**
@@ -158,8 +160,10 @@ export const PERM_ROLES: PermRole[] = [
     grants: g({ projects: 'vce:own', agreements: 'v:own', plans: 'vce:own', payments: 'vc:own', closings: 'vce:own' }),
   },
   {
-    key: 'admin', label: 'مدير النظام', note: 'يدير المستخدمين والأدوار والإعدادات', persona: 'admin',
-    grants: g({ today: 'v', reports: 'vx', settings: 've', permissions: 've' }),
+    /* Client 18 Oct · the super admin · every module, every action, all records */
+    key: 'admin', label: 'مدير النظام', note: 'صلاحيات كاملة · يدير المستخدمين والأدوار والإعدادات ويعدّل أي بيانات', persona: 'admin',
+    superAdmin: true,
+    grants: Object.fromEntries(PERM_MODULES.map((m) => [m.key, { acts: [...m.actions], scope: m.scoped ? 'all' : undefined }])) as Grants,
   },
 ]
 
@@ -218,13 +222,14 @@ export interface PermState {
 }
 
 /* Bumped when roles or modules change shape, so a stored copy from an older build doesn't hide them */
-export const PERM_KEY = 'ab-perm-v2'
+export const PERM_KEY = 'ab-perm-v3'
 export const PERM_INITIAL: PermState = { roles: PERM_ROLES, users: PERM_USERS, log: PERM_LOG }
 
 /* ── Derivations ── */
 
 /** Effective grant of one cell · the override wins, otherwise the role */
 export const effective = (role: PermRole | undefined, ov: Overrides, mod: string, act: ActionKey): boolean => {
+  if (role?.superAdmin || role?.key === 'admin') return Boolean(moduleByKey(mod)?.actions.includes(act))
   const o = ov[mod]?.[act]
   if (o !== undefined) return o
   return Boolean(role?.grants[mod]?.acts.includes(act))

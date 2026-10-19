@@ -16,6 +16,7 @@ import { PAY_NOTES } from '@/data/payments/store'
 import { CLOSE_NOTES } from '@/data/closing/store'
 import { PARTNER_NOTES } from '@/data/partners/store'
 import { ENTITY_NOTES, UPD_ROWS } from '@/data/entities/store'
+import { ENTITY_RULES, expiryLine, expiryOffsets } from '@/data/entities/rules'
 import { passwordEvents } from '@/data/entities/auth'
 import { CHANNEL_SAY, type EscChannel } from './escRules'
 import { escAlerts } from './escalation'
@@ -95,28 +96,49 @@ function accountNotices(): Notice[] {
   }))
 }
 
-/* Batch 8 · 2.6.7 · the entity is told before a document lapses · not only the staff reading its file ·
-   once a day, 30 days ahead (the notification settings' «ترخيص أو مستند ينتهي خلال 30 يومًا») */
-const EXPIRY_DAYS = 30
+/* Batch 8 · 2.6.7 · the entity is told before a document lapses · not only the staff reading its file.
+   Client 19 Oct · a reminder at each offset of the entity rules (30 and 5 days by default), each once
+   per document and offset (its id carries both, so the outbox sends it once), then a notice on the
+   day it lapses that the account is suspended (the account rule turns it «غير نشط»). The texts are
+   the rules' templates. */
 let expiryMemo: { day: string; list: Notice[] } | undefined
 function expiryNotices(): Notice[] {
   const t = new Date().toISOString().slice(0, 10)
-  /* Verifier · 17 Oct · a renewal approved today clears its notice · the memo keys on the updates too */
-  const key = `${t}|${UPD_ROWS.filter((u) => u.state === 'approved').length}|${entityRows.length}`
+  const offs = expiryOffsets()
+  /* Verifier · 17 Oct · a renewal approved today clears its notice · the memo keys on the updates and
+     the rules too */
+  const key = `${t}|${UPD_ROWS.filter((u) => u.state === 'approved').length}|${entityRows.length}|${offs.join(',')}|${ENTITY_RULES.expiryText}|${ENTITY_RULES.expiryUrgentText}|${ENTITY_RULES.expiredText}`
   if (expiryMemo?.day === key) return expiryMemo.list
   const days = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
+  const shift = (d: string, n: number) => new Date(Date.parse(d) - n * 86_400_000).toISOString().slice(0, 10)
+  const widest = offs[0] ?? 0
   const list: Notice[] = []
   for (const e of entityRows) {
     if (e.external) continue
     const d = entityDetail(e)
-    const soon = [
-      ...d.docs.filter((x) => x.expires && x.expires >= t && days(t, x.expires) <= EXPIRY_DAYS).map((x) => ({ name: x.name, at: x.expires! })),
-      ...(e.licenseEndsAt >= t && days(t, e.licenseEndsAt) <= EXPIRY_DAYS && !d.docs.some((x) => x.expires === e.licenseEndsAt) ? [{ name: 'الترخيص', at: e.licenseEndsAt }] : []),
+    const docs = [
+      ...d.docs.filter((x) => x.expires).map((x) => ({ name: x.name, at: x.expires! })),
+      ...(e.licenseEndsAt && !d.docs.some((x) => x.expires === e.licenseEndsAt) ? [{ name: 'الترخيص', at: e.licenseEndsAt }] : []),
     ].sort((a, b) => a.at.localeCompare(b.at))
-    for (const x of soon) {
-      list.push({
-        id: `exp-${e.id}-${x.name}-${x.at}`, to: e.name, topic: 'registration' as const, at: t, href: ROUTES.entityUpdate,
-        title: `${x.name} ينتهي خلال ${days(t, x.at)} يومًا`, context: `تاريخ الانتهاء ${x.at} · جدّده وارفعه بطلب تحديث البيانات قبل أن يتوقف نشاط الجهة`,
+    for (const x of docs) {
+      const left = days(t, x.at)
+      if (left < 0) {
+        /* lapsed · one notice, on the day it lapsed */
+        list.push({
+          id: `exp-${e.id}-${x.name}-${x.at}-end`, to: e.name, topic: 'registration' as const, at: x.at, href: ROUTES.entityUpdate,
+          title: expiryLine(ENTITY_RULES.expiredText, x.name, 0, x.at), context: `تاريخ الانتهاء ${x.at} · ارفع المستند المجدَّد بطلب تحديث البيانات ليُرفع التعليق`,
+        })
+        continue
+      }
+      if (left > widest) continue
+      /* every offset already reached · dated on the day it fell due */
+      offs.filter((o) => left <= o).forEach((o) => {
+        const last = o === offs[offs.length - 1] && offs.length > 1
+        list.push({
+          id: `exp-${e.id}-${x.name}-${x.at}-${o}`, to: e.name, topic: 'registration' as const, at: shift(x.at, o), href: ROUTES.entityUpdate,
+          title: expiryLine(last ? ENTITY_RULES.expiryUrgentText : ENTITY_RULES.expiryText, x.name, o, x.at),
+          context: `تاريخ الانتهاء ${x.at} · جدّده وارفعه بطلب تحديث البيانات قبل أن يُعلَّق حساب الجهة`,
+        })
       })
     }
   }

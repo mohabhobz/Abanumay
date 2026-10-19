@@ -8,6 +8,7 @@ import type { ProjectRow } from '@/types/domain'
 import { PRIORITY_TONE, priorityOf } from '@/data/intake/priority'
 import type { Col as TCol, GroupBy } from '@/components/table'
 import { subStatusOf } from '@/data/status'
+import { holderOf } from '@/data/holders'
 import { projectIsTest } from '@/data/shared/testData'
 
 /* Project table column definitions — a single source for four consumers.
@@ -168,8 +169,9 @@ export const COLS: Col[] = [
     w: 196,
     label: 'الحالة',
     def: true,
-    cell: (r) => <Tag tone={groupTone(r.statusGroup)}>{r.statusGroup}</Tag>,
-    text: (r) => r.statusGroup,
+    /* Client 19 Oct · the status names where the project stands · in study, its seat */
+    cell: (r) => { const t = statusSeat(r); const seat = seatOf(r); return <span className="tagfit" title={t}><Tag tone={groupTone(r.statusGroup)}>{r.statusGroup}</Tag>{seat && <span className="sub tseat">{seat}</span>}</span> },
+    text: (r) => statusSeat(r),
   },
   /* v3 · 0.status.2 · 3.4.19 · the level under study · the agreement and the plan before execution */
   { key: 'substatus', w: 168, label: 'الحالة الفرعية', def: true, cell: (r) => <span className="sub trim1" title={subStatusOf(r)}>{subStatusOf(r)}</span>, text: (r) => subStatusOf(r) },
@@ -196,3 +198,21 @@ export const GROUPS: GroupBy<ProjectRow>[] = [
 
 export const groupByKey = (key: string | undefined): GroupBy<ProjectRow> | undefined =>
   GROUPS.find((g) => g.key === key)
+
+/* Client 19 Oct · «قيد الدراسة · مدير المنح» · the seat a project in study waits at */
+const SEAT_SHORT: Record<string, string> = {
+  supervisor: 'مشرف المنح', manager: 'مدير المنح', exec: 'المدير التنفيذي', committee: 'اللجنة التنفيذية', board: 'مجلس الأمناء', confirm: 'تأكيد مشرف المنح',
+}
+/** The seat alone · shown under the status tag so it is never cut at narrow widths */
+function seatOf(r: ProjectRow): string {
+  if (r.statusGroup !== 'قيد الدراسة') return ''
+  if (r.stage === 'استكمال بيانات المشروع') return 'استكمال الجهة'
+  const h = holderOf(r) ?? r.holder
+  return h && SEAT_SHORT[h] ? SEAT_SHORT[h] : ''
+}
+function statusSeat(r: ProjectRow): string {
+  if (r.statusGroup !== 'قيد الدراسة') return r.statusGroup
+  if (r.stage === 'استكمال بيانات المشروع') return `${r.statusGroup} · استكمال الجهة`
+  const h = holderOf(r) ?? r.holder
+  return h && SEAT_SHORT[h] ? `${r.statusGroup} · ${SEAT_SHORT[h]}` : r.statusGroup
+}

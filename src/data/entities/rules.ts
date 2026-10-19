@@ -44,6 +44,13 @@ export interface EntityRules {
   bulkMax: number
   /** Fields whose change waits for approval · the rest apply at once (2.3.upd-8 · 2.3.upd-15) */
   approvalFields: string[]
+  /** Client 19 Oct · 2.6.7 · the days before a document's expiry when the entity is reminded ·
+      each offset once per document */
+  expiryOffsets: number[]
+  /** The three reminder texts · {المستند} the document · {n} days left · {التاريخ} its expiry date */
+  expiryText: string
+  expiryUrgentText: string
+  expiredText: string
   /** The file's migration version · a one-time move runs once */
   migrated?: number
 }
@@ -72,9 +79,13 @@ const DEFAULT: EntityRules = {
   assignOn: true,
   bulkMax: 200,
   approvalFields: ['name', 'type', 'licensor', 'licenseNo', 'region', 'city', 'licenseEndsAt', 'boardEndsAt'],
+  expiryOffsets: [30, 5],
+  expiryText: 'باقي على انتهاء {المستند} {n} يومًا · يرجى التجديد أو تحديث البيانات',
+  expiryUrgentText: 'تنبيه أخير · باقي على انتهاء {المستند} {n} أيام · يرجى التجديد أو تحديث البيانات قبل تعليق الحساب',
+  expiredText: 'انتهى {المستند} · يرجى التحديث · تم تعليق الحساب',
 }
 
-export const ENTITY_RULES: EntityRules = readJson(CFG.entityRules, DEFAULT)
+export const ENTITY_RULES: EntityRules = readJson(CFG.entityRules, structuredClone(DEFAULT))
 /* v3 · 15 Oct · once · the send gate was off by default before v3 (2.2.7 · 2.7.1) · a file saved on
    the old default moves to the v3 one · a choice the admin makes after this stands */
 if ((ENTITY_RULES.migrated ?? 0) < 1) {
@@ -90,6 +101,12 @@ export const saveEntityRules = (next: EntityRules): void => {
 }
 
 export const ENTITY_RULES_DEFAULT = DEFAULT
+
+/** The reminder offsets, largest first, positive and distinct */
+export const expiryOffsets = (): number[] => [...new Set((ENTITY_RULES.expiryOffsets ?? DEFAULT.expiryOffsets).filter((n) => n > 0))].sort((a, b) => b - a)
+/** A reminder text with its placeholders filled */
+export const expiryLine = (tpl: string, doc: string, n: number, at: string): string =>
+  tpl.replaceAll('{المستند}', doc).replaceAll('{n}', String(n)).replaceAll('{التاريخ}', at)
 
 /* ── The fields of an entity file · what an update request may change ── */
 

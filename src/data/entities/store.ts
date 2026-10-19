@@ -183,6 +183,7 @@ type Op = { at: string } & (
   | { op: 'bankStatus'; entityId: string; bankId: string; status: BankAccount['status']; reason?: string; by: string }
   | { op: 'updSave'; req: Omit<UpdateRequest, 'events' | 'state' | 'createdAt' | 'submittedAt'>; send: boolean }
   | { op: 'updDecide'; id: string; outcome: 'approve' | 'reject' | 'return'; note: string; by: string; bankNo?: Record<string, string> }
+  | { op: 'adminEdit'; entityId: string; changes: Change[]; reason: string; by: string }
 )
 
 const KEY = 'ab-entity-ops'
@@ -383,7 +384,7 @@ export const payBlock = (e: EntityRow | undefined): string => {
 
 const applyChange = (e: EntityRow, c: Change) => {
   const o = overlayOf(e.id)
-  const rowKeys: (keyof EntityRow)[] = ['name', 'type', 'licensor', 'licenseNo', 'region', 'city', 'licenseEndsAt', 'mobile', 'email']
+  const rowKeys: (keyof EntityRow)[] = ['name', 'type', 'licensor', 'licenseNo', 'region', 'city', 'licenseEndsAt', 'mobile', 'email', 'governance']
   if ((rowKeys as string[]).includes(c.key)) (e as unknown as Record<string, unknown>)[c.key] = c.to
   else o.fields[c.key === 'boardEndsAt' ? 'boardMandateEndsAt' : c.key] = c.to
   o.fields.updatedAt = todayIso()
@@ -662,6 +663,20 @@ const apply = (x: Op) => {
       enote(e.name, 'update', waits ? 'استلمنا طلب تحديث بياناتك' : 'حُدّثت بيانات جهتك', waits ? `الطلب ${u.id} تحت المراجعة · حساب جهتك «معلق» حتى البتّ فيه` : 'طُبّقت بيانات الاتصال مباشرة', at, ROUTES.entityPortal)
       break
     }
+    case 'adminEdit': {
+      /* Client 19 Oct · the system admin corrects the file directly · no request back to the entity,
+         no «معلق» · logged on the file and in the audit log · a renewed date lifts a lapse at once */
+      const e = entityRows.find((y) => y.id === x.entityId)
+      if (!e || !x.changes.length) break
+      const from = e.activation
+      for (const c of x.changes) applyChange(e, c)
+      entityEvent(e.id, { kind: 'edit', action: 'تعديل مباشر من مدير النظام', by: x.by, at, note: x.reason || undefined,
+        fields: x.changes.map((c) => ({ k: c.label, v: `${c.from || '—'} ← ${c.to || '—'}` })) })
+      settle(e, at)
+      if (from !== e.activation) entityEvent(e.id, { kind: 'accept', action: 'تغيّر حالة الحساب بعد التعديل', by: 'النظام', at, fields: [{ k: 'حالة الحساب', v: `${from} ← ${e.activation}` }] })
+      enote(e.name, 'update', 'عدّلت المؤسسة بيانات جهتك', x.changes.map((c) => c.label).join('، '), at, ROUTES.entityPortal)
+      break
+    }
     case 'updDecide': {
       const u = UPD_ROWS.find((y) => y.id === x.id)
       const e = u && entityRows.find((y) => y.id === u.entityId)
@@ -794,6 +809,31 @@ export const requestsOfEntity = (entityId: string): { kind: 'reg' | 'upd'; id: s
   ...regRows.filter((r) => r.entityId === entityId).map((r) => ({ kind: 'reg' as const, id: r.id, state: r.state, at: r.submittedAt, title: 'طلب تسجيل الجهة' })),
   ...UPD_ROWS.filter((u) => u.entityId === entityId).map((u) => ({ kind: 'upd' as const, id: u.id, state: u.state, at: day(u.submittedAt ?? u.createdAt), title: 'طلب تحديث بيانات' })),
 ]
+
+
+/** Client 19 Oct · the fields the system admin may correct directly on the file */
+export const ADMIN_EDIT_FIELDS: { key: string; label: string; kind: 'text' | 'date' | 'digits' | 'select' | 'tel' | 'email' | 'url' }[] = [
+  ...['name', 'type', 'licensor', 'licenseNo', 'region', 'city', 'licenseEndsAt', 'boardEndsAt'].map((k) => ({ key: k, label: fileField(k)?.label ?? k, kind: fileField(k)?.kind ?? 'text' })),
+  { key: 'governance', label: 'درجة تقييم الحوكمة', kind: 'text' },
+  ...['phone', 'mobile', 'email', 'website', 'directorName', 'directorMobile', 'clerkName', 'clerkMobile', 'clerkEmail'].map((k) => ({ key: k, label: fileField(k)?.label ?? k, kind: fileField(k)?.kind ?? 'text' })),
+]
+/** Who edits the file directly · the system admin (super admin) */
+export const canAdminEdit = (role: RoleKey | string): boolean => role === 'admin'
+/** The direct edit · refused only for a licence another entity holds · never for a document close to
+    its expiry (that guard is the entity's own update request's) */
+export function adminEditEntity(entityId: string, changes: { key: string; from: string; to: string }[], reason: string, by: string, role: RoleKey | string): string[] {
+  if (!canAdminEdit(role)) return ['التعديل المباشر لمدير النظام']
+  const e = entityRows.find((y) => y.id === entityId)
+  if (!e) return ['الجهة غير موجودة']
+  const list = changes.filter((c) => c.to !== c.from)
+  if (!list.length) return ['لم يتغيّر شيء']
+  const ask = Object.fromEntries(list.map((c) => [c.key, c.to]))
+  const dup = licenseDup(e.id, { licenseNo: ask.licenseNo ?? e.licenseNo, type: ask.type ?? e.type })
+  if (dup && (ask.licenseNo || ask.type)) return [`رقم الترخيص والتصنيف مسجَّلان لـ«${dup.who}»`]
+  run({ op: 'adminEdit', entityId, reason: reason.trim(), by, at: now(),
+    changes: list.map((c) => ({ ...c, label: ADMIN_EDIT_FIELDS.find((f) => f.key === c.key)?.label ?? c.key, direct: true })) })
+  return []
+}
 
 export const updById = (id: string): UpdateRequest | undefined => UPD_ROWS.find((u) => u.id === id)
 

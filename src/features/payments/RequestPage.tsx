@@ -2,13 +2,14 @@ import { NextStep } from '@/components/assistant/NextStep'
 import { extDocsOf, isExternalParty } from '@/data/partners/store'
 import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { readFiles, readNeeds } from '@/data/shared/ai'
 import { useDocReads } from '@/lib/docCache'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
-  Steps, Tag, type StepItem,
+  StepArc, Tag, type GateStep,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -62,13 +63,13 @@ import { EditableCard } from '@/features/shared/EditableCard'
    complete, the attachments and the log - without the institution's internal cards or exits. */
 
 /** The stages the user sees · v3 · 9.2.1 – 9.2.18 */
-const LADDER: { key: string; label: string; note: string; steps: number[] }[] = [
-  { key: 'entity', label: 'رفع المتطلبات', note: 'الجهة المستفيدة', steps: [1, 2, 3, 4, 9] },
-  { key: 'supervisor', label: 'اعتماد المتطلبات', note: 'مشرف المنح', steps: [5, 6, 7] },
-  { key: 'eligible', label: 'إذن الصرف', note: 'مشرف المنح', steps: [10, 11] },
-  { key: 'manager', label: 'اعتماد مدير المنح', note: 'مدير المنح', steps: [12] },
-  { key: 'exec', label: 'اعتماد المدير التنفيذي', note: 'فوق حد صرف المدير', steps: [12] },
-  { key: 'finance', label: 'أمر الصرف والتحويل', note: 'الإدارة المالية', steps: [13, 14, 15, 16, 17, 18] },
+const LADDER: { key: string; label: string; note: string; cap: string; steps: number[] }[] = [
+  { key: 'entity', label: 'رفع المتطلبات', note: 'الجهة المستفيدة', cap: 'المتطلبات', steps: [1, 2, 3, 4, 9] },
+  { key: 'supervisor', label: 'اعتماد المتطلبات', note: 'مشرف المنح', cap: 'اعتماد المتطلبات', steps: [5, 6, 7] },
+  { key: 'eligible', label: 'إذن الصرف', note: 'مشرف المنح', cap: 'إذن الصرف', steps: [10, 11] },
+  { key: 'manager', label: 'اعتماد مدير المنح', note: 'مدير المنح', cap: 'اعتماد الإذن', steps: [12] },
+  { key: 'exec', label: 'اعتماد المدير التنفيذي', note: 'المدير التنفيذي', cap: 'اعتماد الإذن', steps: [12] },
+  { key: 'finance', label: 'أمر الصرف والتحويل', note: 'الإدارة المالية', cap: 'التحويل', steps: [13, 14, 15, 16, 17, 18] },
 ]
 
 /** Which stage the record is currently at. */
@@ -85,24 +86,32 @@ const NOW_AT: Record<string, string> = {
 
 /* Re-audit 7 Oct · a stage reads done once the request is past it · it used to need every step of
    the stage logged, and step 6 is never logged, so «مراجعة المشرف» read «لم تبدأ» to the end */
-function ladderFor(r: PayRequest): StepItem[] {
+/* Client 19 Oct · the payment's approvals read like the project's and the other procedures' · the
+   same arc (StepArc) the agreement, the closing and the plan carry · each sector names who holds the
+   step, its caption the step, and hovering reads who did it and when */
+function ladderFor(r: PayRequest): GateStep[] {
   const viaExec = r.state === 'exec' || r.log.some((e) => e.role === 'المدير التنفيذي' && e.step === 12)
   /* a payment with no requirements cycle starts at the permit (9.2.2) */
   const stages = LADDER.filter((s) => (s.key !== 'exec' || viaExec) && (r.origin !== 'supervisor' || (s.key !== 'entity' && s.key !== 'supervisor')))
   const now = NOW_AT[r.state]
   const nowAt = r.state === 'paid' ? stages.length : stages.findIndex((s) => s.key === now)
-  const steps = stages.map((s, i): StepItem => {
+  const days = Math.round(r.hoursInState / 24)
+  const steps = stages.map((s, i): GateStep => {
     const at = [...r.log].reverse().find((e) => s.steps.includes(e.step) && (s.key !== 'exec' ? s.key !== 'manager' || e.role !== 'المدير التنفيذي' : e.role === 'المدير التنفيذي'))
+    /* Batch 7 · payments#10 · a closed (finally rejected) request reads the stages it passed as
+       done, then its closing · it read every stage «لم تبدأ» */
+    const state: GateStep['state'] = r.state === 'closed' ? (at ? 'done' : 'pending') : i === nowAt ? 'now' : nowAt >= 0 && i < nowAt ? 'done' : 'pending'
     return {
-      label: s.label,
-      note: s.note,
-      at: at ? <DateText>{at.at}</DateText> : undefined,
-      /* Batch 7 · payments#10 · a closed (finally rejected) request reads the stages it passed as
-         done, then its closing · it read every stage «لم تبدأ» */
-      state: r.state === 'closed' ? (at ? 'done' : 'todo') : i === nowAt ? 'now' : nowAt >= 0 && i < nowAt ? 'done' : 'todo',
+      label: s.note, title: s.label, cap: s.cap, state,
+      lines: state === 'now'
+        ? [<>مفتوح منذ <b>{days}</b> {nounAfter(days, NOUN.day)}</>]
+        : state === 'done'
+        ? [at ? <>{at.who} · <DateText>{at.at}</DateText></> : null, at ? isolate(at.what) : null]
+        : ['تبدأ بعد اكتمال المرحلة السابقة'],
+      src: state === 'pending' ? 'المصدر: مسار الصرف' : 'المصدر: سجل الطلب',
     }
   })
-  if (r.state === 'closed') steps.push({ label: 'مغلق · رفض نهائي', note: /* doc rule 15 */ 'يبقى للاطلاع', state: 'now' })
+  if (r.state === 'closed') steps.push({ label: 'مغلق', title: 'مغلق · رفض نهائي', cap: 'رفض نهائي', state: 'now', lines: [/* doc rule 15 */ 'يبقى للاطلاع'] })
   return steps
 }
 
@@ -117,6 +126,7 @@ export default function RequestPage() {
   const r = payRequestById(id)
   const [note, setNote] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
+  const mobile = useIsMobile()
 
   /* `ver` re-reads the ladder after every move · the request object itself is mutated in place */
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,6 +168,13 @@ export default function RequestPage() {
   }
 
   const days = Math.round(r.hoursInState / 24)
+  /* the arc's hollow center · who holds the request now, like the agreement's */
+  const center: { k: string; t: string; rest: ReactNode[] } =
+    r.state === 'paid'
+      ? { k: 'اكتمل مسار الصرف', t: 'تم الصرف', rest: [] }
+      : r.state === 'closed'
+        ? { k: 'توقّف مسار الصرف', t: 'مغلق · رفض نهائي', rest: [] }
+        : { k: 'صاحب الإجراء الآن', t: payStateWho(r.state), rest: [PAY_STATES.find((x) => x.key === r.state)?.label ?? null] }
   const limitDays = Math.round(PAY_LIMIT[r.state] / 24)
   const meta = PAY_STATES.find((s) => s.key === r.state)
   const blocked = r.checks.filter((c) => !c.ok)
@@ -211,7 +228,7 @@ export default function RequestPage() {
 
           {/* Two-column header - same layout as the project and entity pages: name and amount on
               the right, the ladder opposite. */}
-          <header className="phead phead-g2">
+          <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">{r.projectName}</h1>
               <p className="sub mt-1">
@@ -236,8 +253,15 @@ export default function RequestPage() {
               </div>
             </div>
 
-            <div className="col">
-              <Steps items={ladder} flow="ladder" />
+            <div className="pgates">
+              <StepArc
+                steps={ladder}
+                compact={mobile}
+                aria={`مسار اعتماد الصرف، ${center.t}`}
+                holderKey={center.k}
+                holder={center.t}
+                rest={center.rest}
+              />
             </div>
           </header>
 

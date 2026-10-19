@@ -82,7 +82,8 @@ const LABEL: Record<keyof Decisions, string> = {
 export const SEAT_SAY: Partial<Record<RoleKey, string>> = { supervisor: 'مشرف المنح', 'grants-manager': 'مدير المنح', ceo: 'المدير التنفيذي', finance: 'المالية', admin: 'مدير النظام' }
 /** Does this seat hold the permission? */
 export type SeatKey = 'annexBy' | 'portfolioCancelBy' | 'distressBy' | 'recoveryBy'
-export const holds = (k: SeatKey, role: RoleKey): boolean => DECISIONS[k].includes(role)
+/* Client 18 Oct · the super admin (system admin) holds every decision permission too */
+export const holds = (k: SeatKey, role: RoleKey): boolean => role === 'admin' || DECISIONS[k].includes(role)
 /** The permission's holders in words · «مشرف المنح أو مدير المنح» */
 export const holdersSay = (k: SeatKey): string => DECISIONS[k].map((r) => SEAT_SAY[r] ?? r).join(' أو ') || 'لا أحد'
 

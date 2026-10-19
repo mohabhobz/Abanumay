@@ -295,7 +295,7 @@ function UserEditor({ user, roles, onSave }: {
         role={role}
         overrides={d.overrides}
         onToggle={toggle}
-        locked={(mod) => self && mod === 'permissions'}
+        locked={(mod) => (self && mod === 'permissions') || role?.key === 'admin'}
       />
 
       <div className="pm-foot">
@@ -451,6 +451,8 @@ function RoleEditor({ role, members, onSave }: {
         )}
         {role.external && ' · دور من خارج المؤسسة، وما يُمنح له يُقرأ في حدود سجلاته وحدها'}
       </p>
+      {/* Client 18 Oct · the super admin */}
+      {role.key === 'admin' && <p className="sub cnote">مدير النظام · صلاحيات كاملة على كل الموديولات والإجراءات وكل السجلات، ويعدّل أي إعداد أو بيانات · والعمل في مقعد اعتماد غيره يكون بالتولّي المسجَّل بسببه</p>}
 
       {members.length > 0 && (
         <div className="pm-faces">
@@ -464,7 +466,7 @@ function RoleEditor({ role, members, onSave }: {
         overrides={{}}
         onToggle={toggle}
         onScope={setScope}
-        locked={(mod) => role.key === 'admin' && mod === 'permissions'}
+        locked={() => role.key === 'admin'}
       />
 
       {sod.length > 0 && <SodNote pairs={sod} />}

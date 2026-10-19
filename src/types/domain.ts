@@ -437,6 +437,9 @@ export interface AuthorityRole {
   kind?: AuthorityKind
   state: AuthorityState
   note?: string
+  /** Client 19 Oct · the project's own amount at this stage · `null` = not reached yet («—») ·
+      when set, the arc shows it in place of the settings ceiling */
+  amount?: number | null
 }
 
 export interface AuthorityMatrix {

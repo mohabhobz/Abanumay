@@ -1,9 +1,11 @@
+import { readExpiry } from '@/data/entities/expiry'
 import { readDocument, readMismatches } from '@/lib/ai/provider'
 import { textIssues } from '@/lib/textCheck'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BackTo, CopyId, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, DockWhy,
+  DateText,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -124,6 +126,7 @@ export default function RegisterPage() {
   const [files, setFiles] = useState<Record<string, { name: string; size: number; warn?: string }>>(() => resumable?.files ?? {})
   const [reads, setReads] = useState<Record<string, { note: string; diff: string[] }>>({})
   const [refused, setRefused] = useState<Record<string, string>>({})
+  const [expRead, setExpRead] = useState<Record<string, string>>({})
   /* The draft's documents land in the URL once, like any other uploaded set */
   useEffect(() => {
     if (resumable && !v.up && resumable.docs.length) set({ up: writeList(resumable.docs) })
@@ -156,6 +159,9 @@ export default function RegisterPage() {
       setFiles((s) => ({ ...s, [k]: { name: f.name, size: f.size, warn: legibilityWarning(f) || undefined } }))
       /* Batch 8 · the content is read when the document-reading service is connected */
       void readDocument(f, k, val).then((r) => setReads((x) => ({ ...x, [k]: { note: r.note, diff: readMismatches(r.fields, val).map((m) => `${m.label}: في الوثيقة «${m.value}» والمُدخَل «${val[m.key]}»`) } })))
+      /* client 19 Oct · the expiry the document states prefills its date field, when empty */
+      const ex = DOC_EXPIRY[k]
+      if (ex) void readExpiry(f).then((at) => { if (at) { setVal((s) => (s[ex.field] ? s : { ...s, [ex.field]: at })); setExpRead((x) => ({ ...x, [k]: at })) } })
     }
     set({ up: writeList([...new Set([...readList(v.up), k])]) })
   }
@@ -683,6 +689,9 @@ export default function RegisterPage() {
                                       </span>
                                     </label>
                                     </>
+                                  )}
+                                  {on && expRead[d.key] && DOC_EXPIRY[d.key] && val[DOC_EXPIRY[d.key].field] === expRead[d.key] && (
+                                    <p className="sub cnote">قُرئ تاريخ الانتهاء من المستند · {DOC_EXPIRY[d.key].label}: <DateText>{expRead[d.key]}</DateText></p>
                                   )}
                                   {on && reads[d.key] && (
                                     <p className={`cnote ${reads[d.key]!.diff.length ? 'bad' : 'sub'}`}>{reads[d.key]!.diff.length ? `لا يطابق المُدخَل · ${reads[d.key]!.diff.join(' · ')}` : reads[d.key]!.note}</p>

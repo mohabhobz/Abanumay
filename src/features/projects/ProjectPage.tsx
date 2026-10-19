@@ -51,6 +51,7 @@ import { PAY_SLOT_SAY, payRequestById } from '@/data/mock/disbursements'
 import type { PaymentDetail } from '@/data/mock/detail'
 import { EditableCard } from '@/features/shared/EditableCard'
 import { HOLDER_LABEL, authorityFor, holderOf } from '@/data/holders'
+import { APPROVAL_MATRIX } from '@/data/approval'
 import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, supportAmount, useApprovals } from '@/data/approvals/store'
 import { flowEvents, flowOf, recommend, requestCompletion, saveStudy, useFlow, orgOutputsOf, outputLine } from '@/data/intake/flow'
 import { RecommendationCard, RequestCloseCard, RequestDocsCard, RequestMetaCard } from './tabs/RequestCards'
@@ -58,7 +59,7 @@ import { StudyAside, StudyTab } from './tabs'
 import { ApprovalTab, OfficialNotes } from './tabs/ApprovalTab'
 import { TransferModal } from './TransferModal'
 import { useQueryParams } from '@/hooks/useQueryParams'
-import type { DecisionAction } from '@/types/domain'
+import type { AuthorityMatrix, DecisionAction, ProjectRow } from '@/types/domain'
 import { isDropped, isLive, statusLine } from '@/data/status'
 import { OTHER } from '@/data/intake/reasons'
 
@@ -187,7 +188,7 @@ export default function ProjectPage() {
   /* B-5 · the seat the project sits at decides the fan and the bar's buttons — not the signed-in
      role alone. Out of study, the fan shows the full path as passed. */
   const holder = row && !closed ? holderOf(row) : null
-  const authority = row ? authorityFor(supportAmount(row), holder) : fixtures.authority
+  const authority = row ? withStageAmounts(authorityFor(supportAmount(row), holder), row) : fixtures.authority
   useApprovals()
   useAgreements()
   /* A budget link changes what the seat may do (4.2.12) */
@@ -647,4 +648,25 @@ export default function ProjectPage() {
       {transfer && row && <TransferModal row={row} me={me.name} onClose={() => setTransfer(false)} />}
     </AppLayout>
   )
+}
+
+/* Client 19 Oct · the arc shows the project's own amount at each stage, not the settings ceilings ·
+   the request at the submission, the supervisor's recommended amount (where the path's amount
+   chain starts), then the amount after each level's change · the stage the project sits at shows
+   today's support amount · a stage not reached reads «—» */
+function withStageAmounts(m: AuthorityMatrix, p: ProjectRow): AuthorityMatrix {
+  const keys = ['submit', 'supervisor', ...APPROVAL_MATRIX.map((r) => r.key)]
+  const chain = appFlowOf(p.id).amounts
+  let carry = chain[0]?.from ?? supportAmount(p)
+  return {
+    ...m,
+    roles: m.roles.map((r, i) => {
+      const k = keys[i]
+      if (k === 'submit') return { ...r, amount: p.amountRequested }
+      if (r.state === 'now') return { ...r, amount: supportAmount(p) }
+      if (r.state !== 'done') return { ...r, amount: null }
+      if (k !== 'supervisor') { const last = [...chain].reverse().find((c) => c.level === k); if (last) carry = last.to }
+      return { ...r, amount: carry }
+    }),
+  }
 }

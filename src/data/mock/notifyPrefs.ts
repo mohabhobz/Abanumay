@@ -52,7 +52,7 @@ export const NOTIFY_GROUPS: NotifyGroup[] = [
     note: 'ما يصل من الجهات عبر البوابة',
     events: [
       { key: 'upload', label: 'رفعت الجهة مستندًا' },
-      { key: 'expiry', label: 'ترخيص أو مستند ينتهي خلال 30 يومًا' },
+      { key: 'expiry', label: 'ترخيص أو مستند يقترب انتهاؤه أو انتهى (حسب مواعيد قواعد الجهات)' },
       { key: 'reply', label: 'ردّت الجهة في المراسلات' },
     ],
   },

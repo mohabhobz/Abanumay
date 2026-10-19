@@ -78,6 +78,29 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
 
   /** The reading shown inside the arc · a different question for each state */
   const detail = (role: AuthorityRole, i: number): Detail => {
+    if (byAmount) {
+      const amt = role.amount != null ? <>مبلغ المشروع في هذه المرحلة <b>{nf.format(role.amount)}</b></> : null
+      if (i > decider) return { k: 'غير مطلوبة لهذا المبلغ', t: role.role, lines: ['لا يصل إليها المشروع بمبلغه الحالي'], src: 'المصدر: مسار الاعتماد' }
+      if (role.state === 'now') {
+        return {
+          k: 'متوقف هنا الآن', t: role.role,
+          lines: [
+            standing ? <><Person name={standing.by} quiet={false} /> · مفتوح منذ <b>{standing.days}</b> {nounAfter(standing.days, NOUN.day)}</> : null,
+            amt,
+            role.kind === 'recommend' ? 'صلاحيته توصية فقط، لا قرار مالي' : null,
+          ],
+          src: 'المصدر: سجل الإجراءات',
+        }
+      }
+      if (role.state === 'done') {
+        return {
+          k: 'تمّت', t: role.role,
+          lines: [role.kind === 'submit' ? 'قدّمت الجهة المشروع، وانتقل إلى الدراسة' : role.kind === 'recommend' ? 'أوصى وأحال المشروع للمستوى التالي' : 'أنهى مرحلته وأحال المشروع', amt],
+          src: 'المصدر: سجل المشروع',
+        }
+      }
+      return { k: i === decider ? 'صاحب القرار في هذا المبلغ' : 'ضمن المسار', t: role.role, lines: ['لم يصل إليها المشروع بعد'], src: 'المصدر: مسار الاعتماد' }
+    }
     if (i > decider) {
       // Not required — what matters is the number that activates it
       let gate: number | null = null
@@ -152,9 +175,16 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
     return 'wait'
   }
 
+  /* Client 19 Oct (Mozaffar) · «ازالة مبالغ الاعدادات من مراحل الاعتماد و استبدالها بالمبالغ الـ…» ·
+     the message was cut there · our reading: each stage shows the project's own amount at that stage
+     (recommended, then after each level's decision) in place of the settings ceilings, and the
+     provisional-limits note goes · a matrix without stage amounts (fixtures) keeps the ceilings */
+  const byAmount = roles.some((r) => r.amount !== undefined)
   const slots: Slot[] = roles.map((role, i) => {
     const cap = (c: boolean) =>
-      role.ceiling
+      byAmount
+        ? role.kind === 'submit' && role.amount == null ? 'تمّ' : role.amount != null ? nf.format(role.amount) : '—'
+        : role.ceiling
         ? nf.format(role.ceiling)
         : role.kind === 'submit'
           ? 'تمّ'
@@ -174,13 +204,13 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
   })
 
   const fallback: (ReactNode | null)[] = [
-    uplifted && decided.ceiling ? (
+    !byAmount && uplifted && decided.ceiling ? (
       <>
         حده المالي <b className="num">{nf.format(decided.ceiling)}</b> · يمكنه الرفع حتى{' '}
         <Money>{uplifted}</Money>
       </>
     ) : null,
-    authority.provisional ? (
+    !byAmount && authority.provisional ? (
       <span className="fhp">الحدود المالية مؤقتة، بانتظار تأكيد العميل</span>
     ) : null,
   ]
@@ -244,8 +274,9 @@ const STEP_CLS: Record<GateStepState, SlotCls> = {
 }
 
 export function StepArc({ steps, holderKey, holder, rest = [], compact = false, aria }: StepArcProps) {
-  const slots: Slot[] = steps.map((s) => ({
-    key: s.label,
+  const slots: Slot[] = steps.map((s, i) => ({
+    /* one seat may hold two steps (the supervisor approves the requirements, then writes the permit) */
+    key: `${i}:${s.label}`,
     label: s.label,
     cap: s.cap,
     capCompact: s.cap,

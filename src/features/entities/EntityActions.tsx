@@ -1,7 +1,7 @@
 import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Switch, Tag, icons } from '@/components/ui'
+import { DateField, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Switch, Tag, icons } from '@/components/ui'
 import { isTest, markTest, sysEnv } from '@/data/shared/testData'
 import {
   ACT_SAY, REQ_SAY, accountOf, actState, archiveBlocks, bankLinks, forWho, impactOf, lastRequestOf, reasonOf, reasonText, type ActKey,
@@ -16,7 +16,7 @@ import { entityById } from '@/data/mock/entities'
 import { REG_STATE_SAY } from '@/data/mock/registration'
 import { meOf, readRole } from '@/data/roles'
 import {
-  UPD_STATE_SAY, archiveEntity, deleteBank, expiredMandatory, isRegState, openUpdateOf, overlayOf,
+  ADMIN_EDIT_FIELDS, UPD_STATE_SAY, adminEditEntity, archiveEntity, canAdminEdit, deleteBank, expiredMandatory, isRegState, openUpdateOf, overlayOf,
   requestsOfEntity, setBankStatus, setEntityStatus, type UpdState,
 } from '@/data/entities/store'
 
@@ -318,5 +318,70 @@ function BankDelete({ e, b, me, onClose }: { e: EntityRow; b: BankAccount; me: s
         <span className="fld"><input dir="ltr" inputMode="numeric" value={typed} onChange={(x) => setTyped(x.target.value)} aria-label="رقم الترخيص للتأكيد" /></span>
       </label>
     </Modal>
+  )
+}
+
+/* Client 19 Oct · the system admin corrects the entity's file directly (name, classification, licence
+   number, governance score, dates, contacts) · no request back to the entity and no «معلق» · logged on
+   the file and in the audit log. The guard on a document close to its expiry belongs to the entity's
+   own update request · here it's a note, never a refusal. */
+export function AdminEditCard({ e }: { e: EntityRow }) {
+  const role = readRole()
+  const d = entityDetail(e)
+  const current = (k: string): string => {
+    const row = e as unknown as Record<string, unknown>
+    const det = d as unknown as Record<string, unknown>
+    const v = k === 'boardEndsAt' ? d.boardMandateEndsAt : row[k] ?? det[k]
+    return v == null ? '' : String(v)
+  }
+  const [open, setOpen] = useState(false)
+  const [vals, setVals] = useState<Record<string, string>>({})
+  const [reason, setReason] = useState('')
+  const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
+  if (!canAdminEdit(role) || e.external) return null
+  const today = new Date().toISOString().slice(0, 10)
+  const left = (at: string) => Math.round((Date.parse(at) - Date.parse(today)) / 86_400_000)
+  const near = [
+    { name: 'الترخيص', at: e.licenseEndsAt },
+    { name: 'قرار تكليف المجلس', at: d.boardMandateEndsAt },
+  ].filter((x) => x.at && left(x.at) >= 0 && left(x.at) <= 30)
+  const changes = ADMIN_EDIT_FIELDS.filter((f) => vals[f.key] !== undefined && vals[f.key] !== current(f.key))
+    .map((f) => ({ key: f.key, from: current(f.key), to: vals[f.key]! }))
+  const save = () => {
+    const out = adminEditEntity(e.id, changes, reason, meOf(role), role)
+    if (out.length) { setSaid({ bad: out }); return }
+    setSaid({ ok: `حُفظ التعديل · ${changes.length} حقول` })
+    setVals({}); setReason(''); setOpen(false)
+  }
+  return (
+    <Glass>
+      <Head title="تعديل مباشر لبيانات الجهة" meta={<Tag tone="teal">مدير النظام</Tag>} />
+      <p className="sub cnote">يُطبَّق التعديل فورًا دون إعادة الطلب للجهة · يُسجَّل في سجل الجهة وسجل التدقيق وتُبلَّغ الجهة.</p>
+      {near.length > 0 && <p className="sub cnote">{near.map((x) => `باقي على انتهاء ${x.name} ${left(x.at)} يومًا`).join(' · ')} · لا يمنع ذلك التعديل المباشر</p>}
+      {!open ? (
+        <div className="apv-row mt-2"><button type="button" className="btn btn-2" onClick={() => { setOpen(true); setSaid({}) }}>عدّل البيانات</button></div>
+      ) : (
+        <>
+          <div className="regfields mt-3">
+            {ADMIN_EDIT_FIELDS.map((f) => (
+              <label key={f.key} className="regf">
+                <span className="lb">{f.label}</span>
+                {f.kind === 'date'
+                  ? <DateField label={f.label} value={vals[f.key] ?? current(f.key)} onChange={(v) => setVals((x) => ({ ...x, [f.key]: v }))} />
+                  : <span className="fld"><input value={vals[f.key] ?? current(f.key)} aria-label={f.label} dir={['email', 'url', 'tel', 'digits'].includes(f.kind) ? 'ltr' : undefined}
+                      onChange={(ev) => setVals((x) => ({ ...x, [f.key]: ev.target.value }))} /></span>}
+              </label>
+            ))}
+          </div>
+          <div className="apv-row mt-3">
+            <span className="fld"><input value={reason} onChange={(ev) => setReason(ev.target.value)} aria-label="سبب التعديل" placeholder="سبب التعديل (اختياري)" /></span>
+            <button type="button" className="btn btn-p" disabled={!changes.length} onClick={save}>احفظ التعديل{changes.length ? <> · <Num>{changes.length}</Num></> : null}</button>
+            <button type="button" className="btn btn-ghost" onClick={() => { setOpen(false); setVals({}) }}>إلغاء</button>
+          </div>
+        </>
+      )}
+      {said.ok && <p className="sub cnote">{said.ok}</p>}
+      {said.bad && <p className="bad cnote">{said.bad.join(' · ')}</p>}
+    </Glass>
   )
 }

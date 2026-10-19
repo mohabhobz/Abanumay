@@ -82,7 +82,7 @@ export function AccountMenu({
             <Avatar user={user} />
             <div style={{ minWidth: 0 }}>
               <div className="acct-name">{user.name}</div>
-              <div className="sub acct-role">{user.role}</div>
+              <div className="sub acct-role">{user.role}{role.key === 'admin' ? ' · صلاحيات كاملة' : ''}</div>
             </div>
             {switcherOn() && <button
               type="button"

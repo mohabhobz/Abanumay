@@ -135,6 +135,11 @@ export const ROLES: Role[] = [
   },
 ]
 
+/** Client 18 Oct · the system admin is the super admin: every permission, every settings and data edit.
+    Acting in another person's approval seat still goes through the logged takeover («تولّي»), so the
+    four-eyes rules aren't bypassed silently. */
+export const isSuper = (role: RoleKey | string | undefined): boolean => role === 'admin'
+
 /** The roles a business rule can name · the system admin configures, she doesn't decide */
 export const STAFF_ROLES: Role[] = ROLES.filter((r) => r.key !== 'admin' && r.key !== 'member')
 

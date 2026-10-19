@@ -115,6 +115,30 @@ export function EntityRulesTab() {
       </Glass>
 
       <Glass>
+        <Head title="تنبيه انتهاء المستندات" meta={<span className="sub"><bdi>{/* doc 2.6.7 · client 19 Oct */}</bdi></span>} />
+        <p className="sub cnote">يُنبَّه المستفيد قبل انتهاء الترخيص أو قرار تكليف المجلس أو أي مستند له تاريخ انتهاء، مرة عند كل موعد، ثم يوم انتهائه بتعليق الحساب · المتغيّرات: {'{المستند}'} · {'{n}'} الأيام الباقية · {'{التاريخ}'} تاريخ الانتهاء</p>
+        <ul className="cfglist mt-2">
+          <li className="itk-sup">
+            <span className="cfgl"><b>مواعيد التنبيه</b><span className="sub">أيام قبل الانتهاء · مفصولة بفاصلة · الأقرب للانتهاء نصّه «التنبيه الأخير»</span></span>
+            <span className="pc-sp" />
+            <span className="fld"><input dir="ltr" value={d.expiryOffsets.join(', ')} aria-label="مواعيد التنبيه بالأيام"
+              onChange={(e) => put('expiryOffsets', e.target.value.split(/[,،\s]+/).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0))} /></span>
+          </li>
+          {([
+            ['expiryText', 'نص التنبيه', 'عند كل موعد قبل الأخير'],
+            ['expiryUrgentText', 'نص التنبيه الأخير', 'عند أقرب موعد للانتهاء'],
+            ['expiredText', 'نص الانتهاء', 'يوم انتهاء المستند · يُعلَّق معه الحساب'],
+          ] as const).map(([k, t, n]) => (
+            <li key={k} className="itk-sup">
+              <span className="cfgl"><b>{t}</b><span className="sub">{n}</span></span>
+              <span className="pc-sp" />
+              <span className="fld"><input value={d[k]} aria-label={t} onChange={(e) => put(k, e.target.value)} /></span>
+            </li>
+          ))}
+        </ul>
+      </Glass>
+
+      <Glass>
         <Head title="بيانات العرض التجريبي" />
         <p className="sub cnote">يُعيد طلبات التسجيل والتحديث وحالات الجهات إلى بداية العرض.</p>
         <button type="button" className="btn btn-2" onClick={resetEntities}>أعد ضبط بيانات الجهات</button>
