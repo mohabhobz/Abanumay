@@ -24,7 +24,7 @@
  * Usage stays the same: <Icon name={icons.home} size={20} />
  */
 import {
-  Briefcase, Path, SealCheck, Bell, Checks,
+  Briefcase, Path, SealCheck, Bell, Checks, Handshake,
   ArrowClockwise, ArrowDown, ArrowLeft, ArrowsIn, ArrowsOut, Buildings, CalendarDots, CaretDown,
   CaretLeft, CaretRight, CaretUp, ChartBar, ChatCircle, Check, Clock, Copy,
   CreditCard, DotsSixVertical, DotsThreeVertical, DownloadSimple, Envelope, Eye, EyeSlash, File,
@@ -66,6 +66,8 @@ export const icons = {
   /* Timeline-specific icons · separate keys because `doc`, `plan`, and `check` are used elsewhere
      with their generic meaning */
   navProjects: Briefcase,
+  /* Strategic partners and their portfolios · a rail entry of their own (19 Oct) */
+  navPartners: Handshake,
   navPlans: Path,
   navClosings: SealCheck,
   pay: CreditCard,

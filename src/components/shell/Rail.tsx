@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
 import LogoLockup from '@/assets/LogoLockup'
 import { Icon, icons, type IconName } from '@/components/ui'
@@ -67,6 +67,8 @@ const readWidth = (): number => {
 
 export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
   const allowed = NAV.filter((n) => !n.perm || !permissions || permissions.includes(n.perm))
+  /* the active entry is computed here · NavLink alone lit «المشاريع» on a portfolio page */
+  const path = useLocation().pathname
 
   const [w, setW] = useState(readWidth)
   /* The width saved before a forced collapse — `null` means it isn't forced closed. */
@@ -207,6 +209,9 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
       </div>
 
       {allowed.map((item) => {
+        /* lit by its path, plus the paths it owns elsewhere, minus the ones another entry owns */
+        const at = (p: string) => path === p || path.startsWith(p.endsWith('/') ? p : `${p}/`)
+        const lit = item.to === '/' ? path === '/' : (at(item.to) || Boolean(item.also?.some(at))) && !item.not?.some(at)
         return (
           <NavLink
             key={item.key}
@@ -216,15 +221,14 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
                competing rhythms in a list of a few items, and a gap before just one item at the end
                reads as "this is separate" rather than "here's a group." Removed — the spacing is
                now uniform. */
-            className={({ isActive }) =>
-              `railitem${isActive ? ' on' : ''}${item.mob ? '' : ' nomob'}`
-            }
+            className={`railitem${lit ? ' on' : ''}${item.mob ? '' : ' nomob'}`}
+            aria-current={lit ? 'page' : undefined}
           >
-            {({ isActive }) => (
+            {() => (
               <>
                 {/* The active item has a filled icon — outline is the default state, fill marks
                     "here." */}
-                <Icon name={icons[item.icon as IconName]} active={isActive} />
+                <Icon name={icons[item.icon as IconName]} active={lit} />
                 <span className="rail-l">{item.label}</span>
                 {/* The tooltip is its own element, not the native `title` attribute: the browser's
                     own tooltip delays a full second, and the collapsed rail needs the name

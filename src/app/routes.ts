@@ -295,6 +295,10 @@ export interface NavItem {
   group: 'work' | 'money' | 'knowledge'
   mob?: boolean
   perm?: string
+  /** Other paths that belong to this entry (the portfolio pages under `/projects/portfolio` are the partners') */
+  also?: string[]
+  /** Paths under `to` that belong to another entry */
+  not?: string[]
 }
 
 /**
@@ -319,8 +323,12 @@ export const NAV: NavItem[] = [
      everywhere else in the system, so "Today" read as "another assistant." Today is numbers and
      readings, so its icon is a dashboard. */
   { key: 'home', label: 'اليوم', to: ROUTES.home, icon: 'dashboard', group: 'work', mob: true },
-  { key: 'projects', label: 'المشاريع', to: ROUTES.projects, icon: 'navProjects', group: 'work', mob: true, perm: 'projects.read' },
+  { key: 'projects', label: 'المشاريع', to: ROUTES.projects, icon: 'navProjects', group: 'work', mob: true, perm: 'projects.read', not: ['/projects/portfolio'] },
   { key: 'entities', label: 'الجهات', to: ROUTES.entities, icon: 'entity', group: 'work', mob: true, perm: 'entities.read' },
+  /* Client 19 Oct · the partners hub had no place of its own · reached from a button in the projects
+     header, so on it no rail entry was lit and a portfolio page lit «المشاريع» · it's its own procedure
+     (BPD-011 · BPD-013), so it gets its entry, and the portfolio pages light it */
+  { key: 'partners', label: 'الشركاء', to: ROUTES.partners, icon: 'navPartners', group: 'work', perm: 'projects.read', also: ['/projects/portfolio'] },
   { key: 'budget', label: 'الميزانية', to: ROUTES.budget, icon: 'budget', group: 'money', perm: 'budget.read' },
   /* Agreement before disbursement in the sequence — the disbursement process blocks any request
      before it's active, so the rail order follows the workflow order. */
