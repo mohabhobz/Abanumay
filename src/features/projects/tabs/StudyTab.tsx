@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  DateText, FieldSelect, Glass, Head, Icon, icons, KV, Money, MoneyField, Num, Person, Tag,
+  DateText, FieldSelect, Glass, Head, Icon, icons, KV, Money, MoneyField, Num, Person, Switch, Tag,
 } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, pct } from '@/lib/format'
@@ -19,6 +19,8 @@ import { OutputsEditor } from '../OutputsEditor'
 import { orgOutputsOf, outputLine, saveOrgOutputs, useFlow, type Output } from '@/data/intake/flow'
 import { useRole } from '@/hooks/useRole'
 import { holderOf } from '@/data/holders'
+import { CYCLE } from '@/data/intake/cycle'
+import { assignSupervisor } from '@/data/intake/flow'
 
 /* «الدراسة» · the supervisor's study of a project (3.2.11–3.2.16, 3.2.19, 3.4.25).
 
@@ -32,6 +34,12 @@ import { holderOf } from '@/data/holders'
    study can be saved and revised before it goes anywhere. */
 
 const SCALE = [1, 2, 3, 4, 5] as const
+/* Meeting 20 Oct · the three project types the study can set */
+const CLASSES: { value: NonNullable<Study['classification']>; label: string; hint: string }[] = [
+  { value: 'مشروع عادي', label: 'مشروع عادي', hint: 'يمر بالاعتماد والاتفاقية والخطة الاختيارية' },
+  { value: 'مشروع لجهة خارجية', label: 'مشروع لجهة خارجية', hint: 'بلا خطة ولا اتفاقية · يُغلق مباشرة بعد سداد دفعاته' },
+  { value: 'محفظة', label: 'مشروع محفظة', hint: 'تُفعَّل المحفظة بعد الاعتماد · خطتها إلزامية' },
+]
 const GROUPS: Criterion['group'][] = ['فني', 'مالي', 'إداري']
 
 export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; editable: boolean }) {
@@ -54,6 +62,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
 
   return (
     <>
+      <OwnerCard row={row} />
       <OrgOutputsCard row={row} />
       {f.returnNote && (
         <Glass>
@@ -162,13 +171,14 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
               <span className="fld"><input value={d.rejectOther ?? ''} disabled={!editable} aria-label="سبب آخر" onChange={(e) => set('rejectOther', e.target.value)} /></span>
             </label>
           )}
-          {/* v3 · 3.2.17 · the project's classification · a portfolio takes the portfolio path after approval */}
+          {/* v3 · 3.2.17 · meeting 20 Oct · the supervisor classifies the project during the study ·
+              regular, for an external party, or a portfolio (a portfolio takes its path after approval) */}
           <label className="regf">
             <span className="lb">تصنيف المشروع</span>
-            <FieldSelect value={d.classification ?? 'مشروع عادي'} label="تصنيف المشروع" disabled={!editable || !isStrategic(row.entityId)}
-              options={['مشروع عادي', ...(isStrategic(row.entityId) ? ['محفظة'] : [])].map((x) => ({ value: x, label: x }))}
-              onChange={(v) => set('classification', v as 'مشروع عادي' | 'محفظة')} />
-            <span className="sub regf-h">{isStrategic(row.entityId) ? 'المحفظة تُفعَّل بعد الاعتماد وفق إجراء إدارة المحافظ' : 'المحفظة للشريك الاستراتيجي وحده'}</span>
+            <FieldSelect value={d.classification ?? 'مشروع عادي'} label="تصنيف المشروع" disabled={!editable}
+              options={CLASSES.map((x) => ({ value: x.value, label: x.label }))}
+              onChange={(v) => set('classification', v as NonNullable<Study['classification']>)} />
+            <span className="sub regf-h">{CLASSES.find((x) => x.value === (d.classification ?? 'مشروع عادي'))?.hint}{d.classification === 'محفظة' && !isStrategic(row.entityId) ? ' · الجهة ليست شريكًا استراتيجيًا بعد' : ''}</span>
           </label>
           <label className="regf regf-w">
             <span className="lb">المبررات<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -183,6 +193,18 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
               />
             </span>
           </label>
+          {/* Meeting 20 Oct · the consultant is an option of the study, not a fixed block */}
+          <div className="regf-w">
+            <Switch
+              label="يحتاج رأي مستشار"
+              note="اختياري · يُختار المستشار من قائمة مستشاري المجال"
+              on={Boolean(d.needsConsultant || f.referral)}
+              disabled={!editable || Boolean(f.referral)}
+              lockNote={f.referral ? 'أُحيل المشروع إلى مستشار' : undefined}
+              onChange={(v) => set('needsConsultant', v)}
+            />
+            {(d.needsConsultant || f.referral) && <ConsultantPick row={row} me={me} editable={editable} />}
+          </div>
         </div>
         {editable && (
           <div className="regfoot">
@@ -222,10 +244,6 @@ export function StudyAside({ row, me, editable }: { row: ProjectRow; me: string;
   const budget = domainBudget(row)
   const fit = fitOf(row)
   const similar = similarProjects(row)
-  const options = consultantsFor(row.field)
-  const ref = f.referral
-  const refC = ref ? consultantByKey(ref.consultant) : undefined
-  const [pick, setPick] = useState(options[0]?.key ?? '')
   const asked = f.study?.recommendation === 'approve' ? f.study.amount : row.amountRequested
 
   return (
@@ -273,46 +291,57 @@ export function StudyAside({ row, me, editable }: { row: ProjectRow; me: string;
         <p className="sub cnote">قراءة مساندة · لا تقرّر ولا تُلزم.</p>
       </Glass>
 
-      <Glass>
-        <Head
-          title="رأي المستشار"
-          meta={ref ? (ref.opinion ? <Tag tone="ok">{ref.verdict}</Tag> : referralOpen(ref) ? <Tag tone="warn">بانتظار الرأي</Tag> : <Tag tone="mute">انتهت المدة</Tag>) : <Tag tone="mute">اختياري</Tag>}
-        />
-        {ref ? (
-          <>
-            <p className="sub cnote">
-              <Person name={refC?.name ?? ref.consultant} /> · وصول حتى <DateText>{ref.expiresAt}</DateText>
-            </p>
-            {ref.opinion && <p className="cnote">{ref.opinion}</p>}
-            <p className="sub cnote">
-              <Link className="tlink" to={ROUTES.advice(row.id)}>شاشة المستشار</Link> · رمز الوصول المرسل له <b className="num">{adviceCode(row.id, ref)}</b> · الرأي استشاري غير ملزم.
-            </p>
-          </>
-        ) : editable ? (
-          options.length ? (
-            <>
-              <p className="sub cnote">تُحال إليه بعد تسجيل التوصية، ويرى المشروع وحده خلال مدة وصوله.</p>
-              <div className="cfgrow">
-                <FieldSelect value={pick} label="المستشار" options={options.map((c) => ({ value: c.key, label: `${c.name} · ${c.accessDays} أيام` }))} onChange={setPick} />
-                <button
-                  type="button"
-                  className="btn btn-2 cfgadd"
-                  disabled={!pick || !f.study?.recommendation}
-                  title={!f.study?.recommendation ? 'سجّل التوصية في الدراسة أولًا' : undefined}
-                  onClick={() => referConsultant(row.id, pick, me)}
-                >
-                  أحِل إلى المستشار
-                </button>
-              </div>
-            </>
-          ) : (
-            <p className="sub cnote">لا مستشار مرتبط بمجال «{row.field}» · يُضاف من إعدادات المستشارين.</p>
-          )
-        ) : (
-          <p className="sub cnote">لم يُطلب رأي مستشار.</p>
-        )}
-      </Glass>
     </>
+  )
+}
+
+/** The consultant under the study's option · the referral status once sent, the pick before it */
+function ConsultantPick({ row, me, editable }: { row: ProjectRow; me: string; editable: boolean }) {
+  useFlow()
+  const f = flowOf(row.id)
+  const options = consultantsFor(row.field)
+  const ref = f.referral
+  const refC = ref ? consultantByKey(ref.consultant) : undefined
+  const [pick, setPick] = useState(options[0]?.key ?? '')
+  return (
+    <div className="mt-2">
+      {ref && <p className="sub cnote">
+        رأي المستشار {(ref.opinion ? <Tag tone="ok">{ref.verdict}</Tag> : referralOpen(ref) ? <Tag tone="warn">بانتظار الرأي</Tag> : <Tag tone="mute">انتهت المدة</Tag>)}
+      </p>}
+      {ref ? (
+        <>
+          <p className="sub cnote">
+            <Person name={refC?.name ?? ref.consultant} /> · وصول حتى <DateText>{ref.expiresAt}</DateText>
+          </p>
+          {ref.opinion && <p className="cnote">{ref.opinion}</p>}
+          <p className="sub cnote">
+            <Link className="tlink" to={ROUTES.advice(row.id)}>شاشة المستشار</Link> · رمز الوصول المرسل له <b className="num">{adviceCode(row.id, ref)}</b> · الرأي استشاري غير ملزم.
+          </p>
+        </>
+      ) : editable ? (
+        options.length ? (
+          <>
+            <p className="sub cnote">تُحال إليه بعد تسجيل التوصية، ويرى المشروع وحده خلال مدة وصوله.</p>
+            <div className="cfgrow">
+              <FieldSelect value={pick} label="المستشار" options={options.map((c) => ({ value: c.key, label: `${c.name} · ${c.accessDays} أيام` }))} onChange={setPick} />
+              <button
+                type="button"
+                className="btn btn-2 cfgadd"
+                disabled={!pick || !f.study?.recommendation}
+                title={!f.study?.recommendation ? 'سجّل التوصية في الدراسة أولًا' : undefined}
+                onClick={() => referConsultant(row.id, pick, me)}
+              >
+                أحِل إلى المستشار
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="sub cnote">لا مستشار مرتبط بمجال «{row.field}» · يُضاف من إعدادات المستشارين.</p>
+        )
+      ) : (
+        <p className="sub cnote">لم يُطلب رأي مستشار.</p>
+      )}
+    </div>
   )
 }
 
@@ -380,6 +409,33 @@ function OrgOutputsCard({ row }: { row: ProjectRow }) {
         </details>
       )}
       <p className="sub cnote">مخرجات المؤسسة هي المرجع في الاعتماد والاتفاقية والمتابعة والتقييم · ويُسجَّل كل تعديل عليها في السجل.</p>
+    </Glass>
+  )
+}
+
+/* Meeting 20 Oct · the project's owner is part of the study, not of the entity's data · the
+   supervisor who studies it owns it · the grants manager can hand it to another supervisor of the
+   same domain */
+function OwnerCard({ row }: { row: ProjectRow }) {
+  useFlow()
+  const { role, user } = useRole()
+  const sups = CYCLE.domains[row.field]?.supervisors ?? []
+  const [pick, setPick] = useState('')
+  const can = role.key === 'grants-manager' && !row.archived
+  return (
+    <Glass>
+      <Head title="مالك المشروع" meta={<span className="sub">مشرف المنح المسؤول</span>} />
+      <div className="rowf gp-2">
+        {row.owner ? <Person name={row.owner} /> : <Tag tone="warn">غير مُسنَد</Tag>}
+        <span className="sub">يدرس المشروع ويتابعه حتى إغلاقه</span>
+      </div>
+      {can && sups.length > 0 && (
+        <div className="apv-row mt-2">
+          <FieldSelect value={pick} label="مشرف المجال" placeholder="أسند إلى مشرف"
+            options={sups.filter((x) => x !== row.owner).map((x) => ({ value: x, label: x }))} onChange={setPick} />
+          <button type="button" className="btn btn-2 btn-sm" disabled={!pick} onClick={() => { assignSupervisor(row.id, pick, user.name); setPick('') }}>أسند</button>
+        </div>
+      )}
     </Glass>
   )
 }

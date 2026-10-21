@@ -12,7 +12,7 @@ import { nf } from '@/lib/format'
 import { HOLD_STAGE_SAY, linkOf, usableLines } from '@/data/budget/store'
 import {
   PF_STAGE_SAY, PF_STAGE_TONE, PROFILES, PORTFOLIOS, ehMoney, ehsanProjects, financeQueue, partnerReport, pfMoney,
-  usePartners, actOnPfReq,
+  usePartners,
   EXT_ADMIN, EXT_CFG, EXT_CREATE, EXT_KIND, EXT_PARTY_FIELD_SAY, EXT_PROJECT_FIELD_SAY, createExternalParty, externalClosingsWaiting, externalParties, saveExtCfg,
   type ExtPartyField, type ExtProjectField,
   reviewEhsanPay,
@@ -21,6 +21,7 @@ import { paidOf } from '@/data/payments/store'
 import { REGIONS } from '@/data/mock/taxonomy'
 import { PartnerCard, PayList, Said } from './parts'
 import { ReconcileTab } from './Reconcile'
+import { PfPayDesk } from './PfPayDesk'
 import { AnalysisCard } from '@/components/assistant'
 import { externalDigest, readFiles } from '@/data/shared/ai'
 import { useState } from 'react'
@@ -37,7 +38,7 @@ const TABS = [
   { slug: 'portfolios', label: 'المحافظ' },
   { slug: 'external', label: 'الجهات الخارجية' },
   { slug: 'ehsan', label: 'المشاريع عبر جهات خارجية' },
-  { slug: 'finance', label: 'المراجعة المالية' },
+  { slug: 'finance', label: 'المراجعة المالية والصرف' },
   { slug: 'reconcile', label: 'مطابقة المنصة' },
   { slug: 'report', label: 'التقرير' },
 ] as const
@@ -50,9 +51,6 @@ export default function PartnersPage() {
   const { role, user } = useRole()
   const tab = TABS.find((t) => t.slug === params.get('tab'))?.slug ?? 'partners'
   const fq = financeQueue()
-  /* Re-audit 7 Oct · one transfer number per request, and the refusal said beside it */
-  const [refs, setRefs] = useState<Record<string, string>>({})
-  const [refErr, setRefErr] = useState<Record<string, string>>({})
   const alloc = usableLines('fy-2026').filter((l) => l.node.id === 'tPg1' || l.node.id === 'tPg2')
   const items = TABS.map((t) => ({ ...t, count: t.slug === 'finance' ? fq.pays.length + fq.requests.length : t.slug === 'portfolios' ? PORTFOLIOS.length : t.slug === 'external' ? externalParties().length : t.slug === 'ehsan' ? ehsanProjects().length : undefined }))
   /* v3 · 11.4.14 · 11.1.output-4 · the report filtered by kind and by the external party */
@@ -70,7 +68,7 @@ export default function PartnersPage() {
               <p className="sub mt-1">المشاريع المدعومة عبر جهات خارجية والمحافظ · <span className="num">{PROFILES.filter((p) => p.state === 'approved').length}</span> شريك معتمد · <span className="num">{PORTFOLIOS.length}</span> محافظ</p>
             </div>
             <span className="rowf gp-2">
-              {EXT_CREATE.includes(role.key) && <button type="button" className="btn btn-2" onClick={() => navigate(ROUTES.externalNew)}>مشروع عبر جهة خارجية</button>}
+              {EXT_CREATE.includes(role.key) && <button type="button" className="btn btn-2" onClick={() => navigate(ROUTES.externalNew)}>مشروع لجهة خارجية</button>}
               {role.key === 'supervisor' && <button type="button" className="btn btn-2" onClick={() => navigate(ROUTES.portfolioNew)}>محفظة جديدة</button>}
             </span>
           </header>
@@ -163,31 +161,8 @@ export default function PartnersPage() {
                   readings={fq.pays.filter((x) => x.state === 'review').map((x) => readFiles(`ai-eh-${x.id}`, `العملية ${x.ref}`, x.docs, { amount: x.amount, ref: x.ref, date: x.paidAt }))}
                 />
               )}
-              <Glass>
-                <Head title="طلبات صرف على مستوى المحفظة" />
-                {fq.requests.length ? (
-                  <ul className="ptn-slots">
-                    {fq.requests.map(({ pf, r }) => (
-                      <li key={r.id}>
-                        <Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link>
-                        <span>الدفعة <span className="num">{r.no}</span></span>
-                        <Money sm>{r.amount}</Money>
-                        {r.why && <span className="sub">{r.why}</span>}
-                        {role.key === 'finance' && r.state === 'finance' && (
-                          <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfReq(pf.id, r.id, 'order', '', user.name); setRefErr((m) => ({ ...m, [r.id]: out.join(' · ') })) }}>اعتمد أمر الصرف</button>
-                        )}
-                        {role.key === 'finance' && r.state === 'order' && (
-                          <span className="rowf gp-2">
-                            <span className="fld"><input value={refs[r.id] ?? ''} onChange={(e) => setRefs((m) => ({ ...m, [r.id]: e.target.value }))} aria-label={`رقم أمر التحويل · الدفعة ${r.no}`} placeholder="رقم أمر التحويل" /></span>
-                            <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = actOnPfReq(pf.id, r.id, 'pay', '', user.name, refs[r.id] ?? ''); setRefErr((m) => ({ ...m, [r.id]: out.length ? `ينقص: ${out.join(' · ')}` : '' })) }}>صرف</button>
-                            {refErr[r.id] && <span className="bad">{refErr[r.id]}</span>}
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : <p className="sub cnote">لا طلبات لدى المالية.</p>}
-              </Glass>
+              {/* Client 20 Oct (#25) · the portfolios' payments are filed and approved here, not on the portfolio */}
+              <PfPayDesk />
             </>
           )}
 
@@ -274,7 +249,7 @@ function ExternalTab() {
           <div className="regfields">
             <label className="regf"><span className="lb">اسم الجهة الخارجية</span><span className="fld"><input value={v.name} onChange={(e) => setV((x) => ({ ...x, name: e.target.value }))} aria-label="اسم الجهة الخارجية" /></span></label>
             <label className="regf"><span className="lb">المنطقة · اختياري</span><FieldSelect value={v.region} onChange={(x) => setV((y) => ({ ...y, region: x }))} label="منطقة الجهة الخارجية" options={[...REGIONS]} /></label>
-            <label className="regf"><span className="lb">بيانات الحساب أو التحويل{EXT_CFG.party.includes('transfer') ? '' : ' · إذا لزم'}</span><span className="fld"><input value={v.transfer} onChange={(e) => setV((x) => ({ ...x, transfer: e.target.value }))} aria-label="بيانات الحساب أو التحويل" /></span></label>
+            <label className="regf"><span className="lb">بيانات الحساب البنكي{EXT_CFG.party.includes('transfer') ? '' : ' · إذا لزم'}</span><span className="fld"><input value={v.transfer} onChange={(e) => setV((x) => ({ ...x, transfer: e.target.value }))} aria-label="بيانات الحساب أو التحويل" /></span></label>
             <label className="regf"><span className="lb">البيانات المرجعية{EXT_CFG.party.includes('refs') ? '' : ' · اختياري'}</span><span className="fld"><input value={v.refs} onChange={(e) => setV((x) => ({ ...x, refs: e.target.value }))} aria-label="البيانات المرجعية" /></span></label>
           </div>
           <div className="apv-row mt-3"><button type="button" className="btn btn-p btn-sm" onClick={add}>أنشئ السجل المرجعي</button></div>
@@ -297,7 +272,7 @@ function ExternalTab() {
           <ul className="ptn-slots">{waiting.map((p) => <li key={p.id}><Link className="tlink" to={ROUTES.project(p.id)}>{p.name}</Link><span className="sub">{p.platform}</span></li>)}</ul>
         </Glass>
       )}
-      {EXT_CREATE.includes(role.key) && <div className="apv-row"><button type="button" className="btn btn-2 btn-sm" onClick={() => navigate(ROUTES.externalNew)}>مشروع مدعوم عبر جهة خارجية</button></div>}
+      {EXT_CREATE.includes(role.key) && <div className="apv-row"><button type="button" className="btn btn-2 btn-sm" onClick={() => navigate(ROUTES.externalNew)}>مشروع لجهة خارجية</button></div>}
     </>
   )
 }

@@ -11,7 +11,7 @@ import { useStickyGroup } from '@/hooks/useStickyGroup'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { QuickRead } from '@/components/assistant'
 import {
-  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols,
+  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols, readSort, writeSort, nextSort, sortRows,
 } from '@/components/table'
 import { ExportMenu } from '@/components/export'
 import { PageActions } from '@/components/shell'
@@ -28,7 +28,7 @@ import type { Sheet } from '@/lib/export'
 import { PlanCard } from './PlanCard'
 import { COLS, GROUPS } from './columns'
 
-const KEYS = ['q', 'stage', 'owner', 'wait', 'late', 'stuck', 'entity', 'view', 'group', 'adv'] as const
+const KEYS = ['q', 'stage', 'owner', 'wait', 'late', 'stuck', 'entity', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Plans inbox - the most significant gap found in the audit.
@@ -368,7 +368,9 @@ export default function PlansPage() {
             <>
               <Glass className="tblcard">
                 <DataTable
-                  rows={sorted}
+                  rows={sortRows(sorted, COLS, readSort(v.ord))}
+                  sort={readSort(v.ord)}
+                  onSort={(k) => set({ ord: writeSort(nextSort(readSort(v.ord), k)) })}
                   all={COLS}
                   table="plans"
                   cols={cols}

@@ -1,5 +1,5 @@
 import { DateField, DateText, FieldSelect, Icon, Money, Num, Riyal, Tag, icons } from '@/components/ui'
-import { COND_SAY, condMet, condOptions } from '@/data/agreements/conds'
+import { BASIS_SAY, COND_SAY, basisLine, basisOf, condMet, condOptions } from '@/data/agreements/conds'
 import type { PayCond } from '@/types/domain'
 import { nf, pct } from '@/lib/format'
 import { scheduleTotal, shareOf, type DraftPay } from '@/data/mock/agreementNew'
@@ -45,6 +45,7 @@ export const asDraft = (ps: AgreementPayment[]): DraftPay[] =>
     requirement: p.requirement ?? '',
     reqDueAt: p.reqDueAt,
     conds: p.conds,
+    basis: p.basis,
   }))
 
 const condKey = (c: PayCond) => `${c.kind}|${c.ref}`
@@ -149,6 +150,34 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
                 </td>
 
                 <td>
+                  {/* Client meeting 20 Oct · what the payment rests on · a plan activity or an
+                      interim report · picking it also adds the matching condition, so it's checked
+                      against the record and not just written */}
+                  {edit && projectId ? (
+                    <span className="pbasis mb-2">
+                      <FieldSelect
+                        value={(() => { const b = basisOf(r); return b ? (b.kind === 'report' ? 'report|' : `activity|${b.ref ?? ''}`) : '' })()}
+                        label={`أساس الدفعة ${r.no}`}
+                        placeholder="أساس الدفعة"
+                        searchAt={8}
+                        options={[
+                          { value: '', label: 'بلا أساس · صرف عند التوقيع' },
+                          { value: 'report|', label: BASIS_SAY.report },
+                          ...opts.filter((o) => o.kind === 'activity').map((o) => ({ value: `activity|${o.ref}`, label: `نشاط من الخطة · ${o.label}` })),
+                        ]}
+                        onChange={(v) => {
+                          const [kind, ref] = v.split('|') as ['activity' | 'report' | '', string]
+                          /* the basis' own condition replaces the previous basis' condition */
+                          const prev = basisOf(r)
+                          const rest = (r.conds ?? []).filter((c) => !(prev && ((prev.kind === 'report' && c.kind === 'report' && c.ref === 'interim') || (prev.kind === 'activity' && c.kind === 'activity' && c.ref === prev.ref))))
+                          if (!kind) return patch(i, { basis: undefined, conds: rest })
+                          if (kind === 'report') return patch(i, { basis: { kind }, conds: [...rest, { kind: 'report', ref: 'interim', label: 'التقرير المرحلي' }] })
+                          const o = opts.find((x) => x.kind === 'activity' && x.ref === ref)
+                          patch(i, { basis: { kind, ref, label: o?.label }, conds: [...rest.filter((c) => !(c.kind === 'activity' && c.ref === ref)), { kind: 'activity', ref, label: o?.label ?? ref }] })
+                        }}
+                      />
+                    </span>
+                  ) : basisOf(r) ? <span className="pbasis mb-2"><Tag tone="mute">{basisLine(basisOf(r))}</Tag></span> : null}
                   {edit ? (
                     <span className="fld">
                       <input

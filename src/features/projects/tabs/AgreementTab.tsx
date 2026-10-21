@@ -165,7 +165,7 @@ export function AgreementTab({
                         specificity, so the size stayed the table's size — so the intended effect
                         worked while the class name claimed something else. `mut` states what
                         actually happens: color only. */}
-                    <td className="mut">{p.condition}</td>
+                    <td className="mut">{[p.basis, p.condition].filter(Boolean).join(' · ')}</td>
                   </tr>
                 ))}
               </tbody>

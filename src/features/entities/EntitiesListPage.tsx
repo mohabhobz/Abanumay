@@ -67,9 +67,11 @@ const VIEWS: { key: string; label: string; patch: Partial<Params> }[] = [
 ]
 
 const SORTS = [
-  { key: 'granted', label: 'الأكثر دعمًا' },
+  { key: 'granted', label: 'الدعم · من الأكبر' },
+  { key: 'grantedAsc', label: 'الدعم · من الأصغر' },
   { key: 'projects', label: 'الأكثر مشاريع' },
   { key: 'newest', label: 'الأحدث تسجيلًا' },
+  { key: 'oldest', label: 'الأقدم تسجيلًا' },
   { key: 'name', label: 'الاسم' },
 ] as const
 

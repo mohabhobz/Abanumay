@@ -1,6 +1,6 @@
 import { agreements } from './agreements'
 import { projectRows } from './projects'
-import type { PayCond, AgreementKind, AgreementPayment, ProjectRow } from '@/types/domain'
+import type { PayBasis, PayCond, AgreementKind, AgreementPayment, ProjectRow } from '@/types/domain'
 import { isDropped } from '@/data/status'
 
 /* Creating an agreement
@@ -128,6 +128,8 @@ export interface DraftPay {
   reqDueAt?: string
   /** v3 · 8.2.9 · 12.4.14 · structured conditions */
   conds?: PayCond[]
+  /** Client meeting 20 Oct · a plan activity or an interim report */
+  basis?: PayBasis
 }
 
 /** A starting schedule · two even disbursements · a starting point to edit, not a final value */
@@ -144,6 +146,7 @@ export const seedSchedule = (amount: number, from: string, count?: number, note?
     return Array.from({ length: count }, (_, i) => ({
       no: i + 1, amount: i === count - 1 ? amount - each * (count - 1) : each, dueAt: later(from, 14 + i * 90),
       requirement: i === 0 ? 'توقيع الاتفاقية' : i === count - 1 ? 'التقرير الختامي ومخرجات المشروع' : (note || 'التقرير المرحلي'),
+      ...(i > 0 && i < count - 1 ? { basis: { kind: 'report' as const } } : {}),
     }))
   }
   /* v3 · 8.2.9 · each payment's requirements fall due a week before its money · the last one is tied
@@ -170,6 +173,7 @@ export const toPayments = (rows: DraftPay[], amount: number): AgreementPayment[]
     requirement: r.requirement || undefined,
     reqDueAt: r.reqDueAt || undefined,
     conds: r.conds?.length ? r.conds : undefined,
+    basis: r.basis,
   }))
 
 /* Validation · the rules stated before submission */

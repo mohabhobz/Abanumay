@@ -4,6 +4,7 @@ import { DateText, Icon, Money, Mono, Num, Person, Tag, icons } from '@/componen
 import { ROUTES } from '@/app/routes'
 import { payHeat, payStateWho } from '@/data/mock/disbursements'
 import type { PayRequest } from '@/types/domain'
+import { basisOfRequest } from '@/data/payments/store'
 import { isolate, NOUN, nounAfter } from '@/lib/format'
 
 /* ═══════════════════════════════════════════════════════════
@@ -92,6 +93,13 @@ export function RequestCard({ r, showState }: RequestCardProps) {
         <div className="payq-cond">
           <span className="lb">شرط الدفعة</span>
           <span>{isolate(r.condition)}</span>
+        </div>
+      )}
+      {/* Client meeting 20 Oct · a plan activity or an interim report */}
+      {basisOfRequest(r) && (
+        <div className="payq-cond">
+          <span className="lb">أساس الدفعة</span>
+          <span>{basisOfRequest(r)}</span>
         </div>
       )}
 

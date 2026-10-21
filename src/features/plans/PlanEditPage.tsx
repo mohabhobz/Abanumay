@@ -39,7 +39,7 @@ export default function PlanEditPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   usePlans()
-  const { user } = useRole()
+  const { user, role } = useRole()
   /* 12.2.5 · the entity writes its plan from the portal · the same editor, under its name */
   const asEntity = params.get('as') === 'entity'
   const p = planById(id)
@@ -51,7 +51,14 @@ export default function PlanEditPage() {
   const [phases, setPhases] = useState<PlanPhase[]>(() => structuredClone(returnedChange?.proposed ?? p?.phases ?? []))
   const [ask, setAsk] = useState(returnedChange?.say ?? '')
   const [said, setSaid] = useState('')
-  const [proposing, setProposing] = useState(Boolean(returnedChange))
+  /* client 20 Oct (#36) · «طلب تعديل الخطة» opens the whole plan in the editor · «طلب إلغاء الخطة»
+     opens the cancellation form · both carry a justification, and the change its type */
+  const mode = params.get('mode') === 'cancel' || returnedChange?.mode === 'cancel' ? 'cancel' : params.get('mode') === 'change' ? 'change' : undefined
+  const [proposing, setProposing] = useState(Boolean(returnedChange) || mode === 'change')
+  const [why, setWhy] = useState(returnedChange?.why ?? '')
+  const [kind, setKind] = useState<'operational' | 'contractual'>(returnedChange?.kind ?? 'operational')
+  const from: 'entity' | 'supervisor' | 'manager' = asEntity ? 'entity' : role.key === 'supervisor' ? 'supervisor' : 'manager'
+  const route = from === 'entity' ? 'يمرّ الطلب بمشرف المنح ثم يعتمده مدير المنح' : from === 'supervisor' ? 'يُرسل الطلب إلى مدير المنح للاعتماد' : 'يُسجَّل الطلب ويُعتمد من صاحب صلاحية الاعتماد'
 
   const grant = p ? planGrantOf(p.projectId) : 0
   const issues = useMemo(
@@ -75,9 +82,74 @@ export default function PlanEditPage() {
   }
 
   const cost = phases.reduce((s, ph) => s + ph.cost, 0)
+  /* #36 · the request's own fields · its type (a change only) and its justification */
+  const reqFields = (
+    <div className="plreq">
+      {mode !== 'cancel' && (
+        <div className="regf regf-w">
+          <span className="lb">نوع التعديل<b className="regf-r" aria-label="إلزامي">*</b></span>
+          <div className="cfgchips" role="radiogroup" aria-label="نوع التعديل">
+            {(['operational', 'contractual'] as const).map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={kind === k} className={`cfgchip${kind === k ? ' on' : ''}`} onClick={() => setKind(k)}>
+                {k === 'operational' ? 'تشغيلي' : 'تعاقدي'}
+              </button>
+            ))}
+          </div>
+          <span className="sub regf-h">{kind === 'contractual' ? 'التعديل التعاقدي يمسّ الاتفاقية · أثره على الاتفاقية في المرحلة القادمة، ويُحال لملحق قبل اعتماده' : 'يُنفَّذ في الخطة ويُسجَّل في سجلها'}</span>
+        </div>
+      )}
+      <label className="regf regf-w">
+        <span className="lb">المبررات<b className="regf-r" aria-label="إلزامي">*</b></span>
+        <span className="fld fld-a"><textarea rows={2} value={why} onChange={(e) => setWhy(e.target.value)} aria-label="المبررات" placeholder="لماذا يلزم الطلب · ما الذي تغيّر على أرض الواقع" /></span>
+      </label>
+    </div>
+  )
+  const req = { mode: mode === 'cancel' ? 'cancel' as const : 'change' as const, why, kind, from }
   const win = projectWindow(p.projectId)
   const patch = (phId: string, next: Partial<PlanPhase>) =>
     setPhases((xs) => xs.map((x) => (x.id === phId ? { ...x, ...next } : x)))
+
+  /* === #36 · cancellation request · the plan stays as it is until the manager approves === */
+  if (mode === 'cancel') {
+    return (
+      <AppLayout assistantContext={assistFor.page(`إلغاء خطة ${p.projectName}`)}>
+        <div className="viewstack">
+          <div className="screen col">
+            <BackTo label="الخطة" onClick={() => navigate(back)} />
+            <header>
+              <div>
+                <h1 className="ptitle">طلب إلغاء خطة {p.projectName}</h1>
+                <p className="sub mt-1">النسخة النشطة <Num>{ver(p.baseline)}</Num> · {route}</p>
+              </div>
+              <Tag tone="no">طلب إلغاء</Tag>
+            </header>
+            <Glass>
+              <Head title="بيانات الطلب" />
+              <p className="sub cnote">عند اعتماد الإلغاء تصبح الخطة «ملغاة» وتبقى في سجل المشروع، وتتوقف إجراءاتها · وتُفتح للمشروع خطة جديدة عند الحاجة، فلا تكون للمشروع إلا خطة نشطة واحدة.</p>
+              <div className="regfields">
+                <label className="regf regf-w">
+                  <span className="lb">سبب الإلغاء<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <span className="fld fld-a"><textarea rows={2} value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="سبب الإلغاء" placeholder="توقّف المشروع لتعذّر الحصول على الترخيص" /></span>
+                </label>
+              </div>
+              {reqFields}
+              {said && <p className="bad cnote">{said}</p>}
+              <div className="regfoot">
+                <span className="decsent sub">{route}</span>
+                <div className="rowf gp-2">
+                  <button type="button" className="btn btn-2" onClick={() => navigate(back)}>تراجع</button>
+                  <button type="button" className="btn btn-p" disabled={!ask.trim() || !why.trim()}
+                    onClick={() => { const out = requestChange(p.id, ask, undefined, who, returnedChange?.id, req); setSaid(out[0] ?? ''); if (!out.length) navigate(back) }}>
+                    {returnedChange ? 'أعد إرسال طلب الإلغاء' : 'أرسل طلب الإلغاء'}
+                  </button>
+                </div>
+              </div>
+            </Glass>
+          </div>
+        </div>
+      </AppLayout>
+    )
+  }
 
   /* === Structure locked - formal amendment request === */
   if (!canEditShape(p) && !proposing) {
@@ -140,6 +212,7 @@ export default function PlanEditPage() {
                 </label>
               </div>
 
+              {reqFields}
               {said && <p className="bad cnote">{said}</p>}
               <div className="regfoot">
                 <span className="decsent sub">
@@ -153,8 +226,8 @@ export default function PlanEditPage() {
                   </button>
                   <button
                     className="btn btn-p"
-                    disabled={!ask.trim()}
-                    onClick={() => { const out = requestChange(p.id, ask, undefined, who); setSaid(out[0] ?? ''); if (!out.length) navigate(back) }}
+                    disabled={!ask.trim() || !why.trim()}
+                    onClick={() => { const out = requestChange(p.id, ask, undefined, who, undefined, req); setSaid(out[0] ?? ''); if (!out.length) navigate(back) }}
                   >
                     أرسل طلب التعديل
                   </button>
@@ -176,10 +249,10 @@ export default function PlanEditPage() {
 
           <header>
             <div>
-              <h1 className="ptitle">{proposing ? 'طلب تعديل جوهري على' : 'تحرير'} خطة {p.projectName}</h1>
+              <h1 className="ptitle">{proposing ? 'طلب تعديل' : 'تحرير'} خطة {p.projectName}</h1>
               <p className="sub mt-1">
                 {proposing
-                  ? <>الهيكل المقترح · يُطبَّق عند اعتماد مدير المنح ويرتفع رقم النسخة المرجعية إلى <Num>{ver(p.baseline + 1)}</Num>، وتُحفظ النسخة السابقة</>
+                  ? <>الخطة كاملة للتعديل · تُطبَّق عند اعتماد مدير المنح فتصبح النسخة <Num>{ver(p.baseline + 1)}</Num> هي النشطة وتُلغى النسخة <Num>{ver(p.baseline)}</Num> وتبقى للمقارنة</>
                   : <>{planStageLabel(p.stage)} · الهيكل مفتوح حتى اعتماد مدير المنح</>}
                 {' · '}قيمة المنحة <Money sm>{grant}</Money>
                 {win.days > 0 && <> · مدة المشروع <Num>{win.days}</Num> يومًا{win.from && <> من <DateText>{win.from}</DateText> إلى <DateText>{win.to ?? ''}</DateText></>}</>}
@@ -463,13 +536,14 @@ export default function PlanEditPage() {
                     <span className="lb">التعديل المطلوب وسببه<b className="regf-r" aria-label="إلزامي">*</b></span>
                     <span className="fld fld-a"><textarea rows={3} value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="التعديل المطلوب" placeholder="تمديد المرحلة الثانية شهرين لتأخّر تسليم المقر" /></span>
                   </label>
+                  {reqFields}
                   {said && <p className="bad cnote">{said}</p>}
                   <div className="regfoot">
-                    <span className="decsent sub">يُرسل الطلب بالهيكل المقترح إلى مدير المنح · ولا يتغيّر شيء في الخطة قبل اعتماده</span>
+                    <span className="decsent sub">{route} · ولا يتغيّر شيء في الخطة قبل اعتماده، وعند اعتماده تُلغى النسخة الحالية وتصبح المقترحة هي النشطة</span>
                     <div className="rowf gp-2">
-                      {!returnedChange && <button className="btn btn-2" onClick={() => { setProposing(false); setPhases(structuredClone(p.phases)) }}>تراجع</button>}
-                      <button className="btn btn-p" disabled={!ask.trim() || issues.length > 0} title={issues[0]?.say ?? 'أرسل الطلب إلى مدير المنح'}
-                        onClick={() => { const out = requestChange(p.id, ask, phases, who, returnedChange?.id); setSaid(out[0] ?? ''); if (!out.length) navigate(back) }}>
+                      {!returnedChange && <button className="btn btn-2" onClick={() => { if (mode === 'change') { navigate(back); return } setProposing(false); setPhases(structuredClone(p.phases)) }}>تراجع</button>}
+                      <button className="btn btn-p" disabled={!ask.trim() || !why.trim() || issues.length > 0} title={issues[0]?.say ?? (!why.trim() ? 'المبررات إلزامية' : route)}
+                        onClick={() => { const out = requestChange(p.id, ask, phases, who, returnedChange?.id, req); setSaid(out[0] ?? ''); if (!out.length) navigate(back) }}>
                         {returnedChange ? 'أعد إرسال طلب التعديل' : 'أرسل طلب التعديل'}
                       </button>
                     </div>

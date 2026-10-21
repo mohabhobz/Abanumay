@@ -123,6 +123,8 @@ export interface AgreementClause {
 export interface PaymentDetail extends Payment {
   /** Disbursement condition written on the payment order · from the supervisor's notes */
   condition?: string
+  /** Client meeting 20 Oct · «معتمدة على تقرير مرحلي» or «معتمدة على نشاط من الخطة · …» */
+  basis?: string
   /** Transfer made via */
   via?: string
   /** The entity uploaded the receipt voucher */
@@ -231,6 +233,9 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
     'بعد اعتماد التقرير الختامي واستيفاء المخرجات.',
   ]
 
+  /* Client meeting 20 Oct · each payment's basis, matching its condition above */
+  const BASES = [undefined, 'معتمدة على تقرير مرحلي', 'معتمدة على نشاط من الخطة · تسليم المخرجات']
+
   const payments: PaymentDetail[] = signed
     ? split.map((f, i) => ({
         no: i + 1,
@@ -239,6 +244,7 @@ export function projectDetail(row: ProjectRow, entityName: string): ProjectDetai
         status: i < paidUpTo ? 'مدفوع' : 'غير مدفوع',
         voucher: i < paidUpTo ? `SV-${row.year.slice(0, 4)}-${row.id}-${i + 1}` : undefined,
         condition: CONDITIONS[Math.min(i, CONDITIONS.length - 1)],
+        basis: BASES[Math.min(i, BASES.length - 1)],
         via: i < paidUpTo ? 'حساب الجهة مباشر' : undefined,
         receipt: i < paidUpTo,
       }))

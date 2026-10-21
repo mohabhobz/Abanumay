@@ -4,8 +4,9 @@ import { payBlock } from '@/data/entities/store'
 import { portfolioAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Steps, Tag, icons, type StepItem,
+  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Steps, Tabs, Tag, icons, type StepItem,
 } from '@/components/ui'
+import { CHART_COLORS, Legend, RankBars, StackBar, type Slice } from '@/components/charts'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -18,13 +19,13 @@ import { isolate, nf, pct } from '@/lib/format'
 import { noteFirst } from '@/lib/dock'
 import { HOLD_STAGE_SAY, linkOf, usableLines } from '@/data/budget/store'
 import {
-  PF_STAGE_SAY, PF_STAGE_TONE, SUB_STATE_SAY, SUB_STATE_TONE, actOnPfAgreement, actOnPfReq, actOnPortfolio, addSub, capIssue,
+  PF_STAGE_SAY, PF_STAGE_TONE, SUB_STATE_SAY, SUB_STATE_TONE, actOnPfAgreement, actOnPortfolio, addSub, capIssue,
   decideSubs, dropSub, pfActions, pfById, pfCloseChecks, pfIndicators, pfMoney, pfStops, savePfSchedule,
-  sendSubs, subsGate, submitPfReport, updateSubExec, usePartners, requestPfPay, pfReqIssue, profileOf,
-  type PortfolioRec, type SubExec, type SubProject, pfActivities, pfActivityProgress, PF_ACTIVITY_MODE, setPfActivityMode, linkSubActivity,
-  PF_CLOSE_SAY, PF_REQ_SAY, SUB_FIELDS_DEFAULT, SUB_FIELD_SAY, actOnPfClose, actOnPfEval, attachPfCriteria, attachPfMinutes, cancelPortfolio, completeSub,
+  sendSubs, subsGate, submitPfReport, usePartners, profileOf,
+  type PortfolioRec, type SubProject, pfActivities, pfActivityProgress, PF_ACTIVITY_MODE, setPfActivityMode, linkSubActivity,
+  PF_CLOSE_SAY, PF_REQ_SAY, SUB_FIELDS_DEFAULT, SUB_FIELD_SAY, actOnPfClose, actOnPfEval, attachPfCriteria, attachPfMinutes, cancelPortfolio,
   excludeSub, isLiveSub, pfApproverOf, pfEvalScore, pfSessions, pfToSession, recommendSubs, recordPfReceipt, savePfEval, savePfForm, setPfReliable, stallSub, studySubs,
-  type PfRequest, type SubField, type SubState, SUB_EXEC_STATES, subExecStatus, pfStudyIssues, pfStudyScore, savePfStudy,
+  type SubField, type SubState, pfStudyIssues, pfStudyScore, savePfStudy,
 } from '@/data/partners/store'
 import { CRITERIA, GROUP_SAY, type Criterion } from '@/data/intake/criteria'
 import { SESSIONS } from '@/data/approvals/store'
@@ -52,7 +53,7 @@ import type { Reading } from '@/components/assistant/reading'
 export default function PortfolioPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const asPartner = params.get('as') === 'partner'
   usePartners()
   const { role, user } = useRole()
@@ -74,7 +75,6 @@ export default function PortfolioPage() {
   }
 
   const m = pfMoney(pf)
-  const ind = pfIndicators(pf)
   const gate = subsGate(pf)
   const actions = pfActions(pf, role.key, asPartner)
   const needNote = actions.some((a) => a.needsNote)
@@ -103,6 +103,29 @@ export default function PortfolioPage() {
     { label: 'المشاريع الفرعية', note: `${m.approvedCount} معتمد`, state: gate.ok ? 'now' : pf.stage === 'closing' || pf.stage === 'closed' ? 'done' : 'todo' },
     { label: pf.stage === 'cancelled' ? 'ملغاة' : 'الإغلاق', note: pf.stage === 'cancelled' ? 'استرداد على مستوى المحفظة' : 'التقرير الشامل والتقييم', state: pf.stage === 'closed' || pf.stage === 'cancelled' ? 'done' : pf.stage === 'closing' ? 'now' : 'todo' },
   ]
+
+  /* The tabs open with the portfolio's life · the plan, agreement, indicators, payments and closing
+     exist once it is finally approved, and the partner never sees the study and the hold */
+  const post = pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed' || pf.stage === 'cancelled'
+  const tabs = [
+    { slug: 'data', label: 'بيانات المحفظة' },
+    ...(asPartner ? [] : [{ slug: 'study', label: 'الدراسة والاعتماد' }]),
+    { slug: 'subs', label: 'المشاريع الفرعية', count: pf.items.length },
+    ...(post ? [
+      { slug: 'ind', label: 'المؤشرات' },
+      { slug: 'plan', label: 'الخطة' },
+      { slug: 'agreement', label: 'الاتفاقية' },
+      { slug: 'pays', label: 'الدفعات' },
+      { slug: 'close', label: 'الإغلاق' },
+    ] : []),
+    { slug: 'log', label: 'السجل' },
+  ]
+  /* the study is where a portfolio waiting on the supervisor or a body stands · the sub-projects once it's approved */
+  const fallback = !asPartner && ['supervisor', 'manager', 'ceo', 'committee', 'board'].includes(pf.stage) ? 'study' : post ? 'subs' : 'data'
+  const active = tabs.find((t) => t.slug === params.get('tab'))?.slug ?? fallback
+  /* «?tab=all» lays every pane out in order · the end-to-end runs read the whole portfolio in one pass */
+  const on = (slug: string) => params.get('tab') === 'all' ? tabs.some((t) => t.slug === slug) : active === slug
+  const goTab = (slug: string) => { const next = new URLSearchParams(params); next.set('tab', slug); setParams(next, { replace: true }) }
 
   const readings: Reading[] = [
     ...(pf.stage === 'supervisor' && !link ? [{ id: 'pf-hold', kind: 'flag' as const, label: 'الحجز', text: 'اختر بند الميزانية قبل التوصية · تُحجز القيمة كاملةً مرة واحدة.', src: /* doc 13.2.7 */ '' }] : []),
@@ -141,86 +164,73 @@ export default function PortfolioPage() {
             </Glass>
           )}
 
+          {/* Client 20 Oct (#21) · the portfolio is a project from its study on · the same tabbed page
+              as a regular project, each tab one question, the side reading fixed beside them */}
+          <Tabs items={tabs} active={active} onChange={goTab} />
+
           <div className="g2">
             <div className="col">
-              <Glass>
-                <Head title="مسار المحفظة" meta={<span className="sub">المسار المعتاد والصلاحيات المالية</span>} />
-                <Steps items={steps} flow="ladder" />
-              </Glass>
-
-              <Glass>
-                <Head title="بيانات المحفظة" />
-                <KV rows={[
-                  { k: 'الشريك', v: entityName(pf) },
-                  { k: 'قيمة المحفظة', v: <Money>{pf.total}</Money> },
-                  { k: 'المسار والمجال', v: `${pf.track} · ${pf.field} · يرثهما كل مشروع فرعي` },
-                  { k: 'الأهداف', v: isolate(pf.goals) },
-                  { k: 'المرفقات', v: pf.files.join(' · ') || '—' },
-                  { k: 'مشرف المنح', v: <Person name={pf.owner} /> },
-                ]} />
-              </Glass>
-
-              {!asPartner && <SettingsCard pf={pf} asPartner={asPartner} />}
-
-              {!asPartner && (pf.stage === 'supervisor' || pf.study) && <StudyCard pf={pf} />}
-
-              {!asPartner && <HoldCard pf={pf} lineKey={lineKey} setLine={setLine} lines={lines} link={link} split={split} setSplit={setSplit} />}
-
-              {!asPartner && (pf.stage === 'committee' || pf.stage === 'board') && <SessionCard pf={pf} />}
-
-              {(pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed' || pf.stage === 'cancelled') && (
-                <>
-                  <PlanCard pf={pf} asPartner={asPartner} />
-                  <AgreementCard pf={pf} asPartner={asPartner} />
-                </>
-              )}
-
-              <SubsCard pf={pf} asPartner={asPartner} />
-
-              {(pf.stage === 'approved' || pf.stage === 'closing' || pf.stage === 'closed' || pf.stage === 'cancelled') && (
+              {on('data') && (
                 <>
                   <Glass>
-                    <Head title="الموقف المالي" meta={<span className="sub">المحفظة ككل</span>} />
+                    <Head title="مسار المحفظة" meta={<span className="sub">المسار المعتاد والصلاحيات المالية</span>} />
+                    <Steps items={steps} flow="ladder" />
+                  </Glass>
+
+                  <Glass>
+                    <Head title="بيانات المحفظة" />
                     <KV rows={[
-                      { k: 'المعتمد للمحفظة', v: <Money sm>{m.total}</Money> },
-                      { k: 'المشاريع المعتمدة', v: <><Money sm>{m.approved}</Money> <span className="sub">· {m.approvedCount} مشروع</span></> },
-                      { k: 'قيد الاعتماد', v: <Money sm>{m.pending}</Money> },
-                      { k: 'الرصيد المتاح', v: <Money sm>{m.available}</Money> },
-                      { k: 'الدفعات المسجلة', v: <Money sm>{m.recorded}</Money> },
-                      { k: 'الدفعات المؤكدة · المصروف', v: <Money sm>{m.confirmed}</Money> },
-                      { k: 'المتبقي', v: <Money sm>{m.remaining}</Money> },
+                      { k: 'الشريك', v: entityName(pf) },
+                      { k: 'قيمة المحفظة', v: <Money>{pf.total}</Money> },
+                      { k: 'المسار والمجال', v: `${pf.track} · ${pf.field} · يرثهما كل مشروع فرعي` },
+                      { k: 'الأهداف', v: isolate(pf.goals) },
+                      { k: 'المرفقات', v: pf.files.join(' · ') || '—' },
+                      { k: 'مشرف المنح', v: <Person name={pf.owner} /> },
                     ]} />
                   </Glass>
 
-                  <Glass>
-                    <Head title="مؤشرات التنفيذ" meta={<span className="sub">المشاريع المعتمدة</span>} />
-                    <dl className="ptn-ind">
-                      <div><dt>المشاريع</dt><dd className="num">{ind.count}</dd></div>
-                      <div><dt>مكتمل · قيد الإغلاق · معتمد · متعثر</dt><dd className="num">{ind.done} · {ind.closing} · {ind.running} · {ind.stalled}</dd></div>
-                      <div><dt>متوسط الإنجاز</dt><dd className="num">{pct(ind.progress)}</dd></div>
-                      <div><dt>المستفيدون · فعلي من مستهدف</dt><dd className="num">{nf.format(ind.reached)} / {nf.format(ind.target)}</dd></div>
-                    </dl>
-                    <p className="sub cnote">التوزيع الجغرافي · {ind.regions.length ? ind.regions.map(([r, n]) => `${r} ${n}`).join(' · ') : 'لا مشاريع معتمدة بعد'}</p>
-                  </Glass>
+                  {!asPartner && <SettingsCard pf={pf} asPartner={asPartner} />}
+                </>
+              )}
 
-                  <PaysCard pf={pf} asPartner={asPartner} />
-                  <ExecCard pf={pf} asPartner={asPartner} />
+              {on('study') && (
+                <>
+                  {(pf.stage === 'supervisor' || pf.study) ? <StudyCard pf={pf} /> : <Glass><Head title="دراسة المحفظة بمعايير التقييم" /><p className="sub cnote">يدرسها مشرف المنح بمعايير التقييم عند وصولها إليه.</p></Glass>}
+                  <HoldCard pf={pf} lineKey={lineKey} setLine={setLine} lines={lines} link={link} split={split} setSplit={setSplit} />
+                  {(pf.stage === 'committee' || pf.stage === 'board') && <SessionCard pf={pf} />}
+                </>
+              )}
+
+              {on('subs') && <SubsCard pf={pf} asPartner={asPartner} />}
+
+              {on('ind') && <IndicatorsCards pf={pf} />}
+
+              {on('plan') && <PlanCard pf={pf} asPartner={asPartner} />}
+
+              {on('agreement') && <AgreementCard pf={pf} asPartner={asPartner} />}
+
+              {on('pays') && <PaysCard pf={pf} asPartner={asPartner} />}
+
+              {on('close') && (
+                <>
                   <CloseCard pf={pf} asPartner={asPartner} />
                   <CancelCard pf={pf} asPartner={asPartner} />
                 </>
               )}
 
-              <Glass>
-                <Head title="سجلّ المحفظة" />
-                <ul className="plchg">
-                  {pf.log.slice().reverse().map((a, i) => (
-                    <li key={`${a.at}-${i}`}>
-                      <div className="plchg-h"><Tag tone="mute"><DateText>{a.at}</DateText></Tag><span className="sub">{a.by}</span></div>
-                      <p className="plchg-t">{isolate(a.what)}</p>
-                    </li>
-                  ))}
-                </ul>
-              </Glass>
+              {on('log') && (
+                <Glass>
+                  <Head title="سجلّ المحفظة" />
+                  <ul className="plchg">
+                    {pf.log.slice().reverse().map((a, i) => (
+                      <li key={`${a.at}-${i}`}>
+                        <div className="plchg-h"><Tag tone="mute"><DateText>{a.at}</DateText></Tag><span className="sub">{a.by}</span></div>
+                        <p className="plchg-t">{isolate(a.what)}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+              )}
             </div>
 
             <AssistantAside title="قراءة المحفظة" cta="اقرأ المحفظة" empty="المحفظة في مسارها · لا ملاحظات." readings={readings} ask={!asPartner} />
@@ -468,6 +478,15 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
 }
 
 /* ── Sub-projects · added, sent, studied, recommended and decided one by one within the ceiling (13.2.11 – 13.2.19) ── */
+const FILTERS: { key: string; label: string; test: (x: SubProject) => boolean }[] = [
+  { key: 'all', label: 'الكل', test: () => true },
+  { key: 'draft', label: 'مسودة', test: (x) => x.state === 'draft' },
+  { key: 'study', label: 'مرفوع وقيد الدراسة', test: (x) => x.state === 'submitted' || x.state === 'study' },
+  { key: 'pending', label: 'بانتظار الاعتماد', test: (x) => x.state === 'pending' },
+  { key: 'live', label: 'معتمد', test: (x) => x.state === 'approved' || x.state === 'closing' || x.state === 'stalled' },
+  { key: 'done', label: 'مكتمل', test: (x) => x.state === 'done' },
+  { key: 'out', label: 'مرفوض أو مستبعد', test: (x) => x.state === 'rejected' || x.state === 'excluded' },
+]
 const EMPTY = { name: '', region: '', city: '', amount: '', beneficiaries: '', outputs: '', files: [] as string[], activityId: '' }
 function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const { role, user } = useRole()
@@ -478,6 +497,11 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const [one, setOne] = useState('')
   const [adding, setAdding] = useState(false)
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
+  /* Client 20 Oct (#21) · the sub-projects filtered like a project list · by state, and by name or region */
+  const [flt, setFlt] = useState('all')
+  const [q, setQ] = useState('')
+  const test = FILTERS.find((f) => f.key === flt)?.test ?? (() => true)
+  const shown = pf.items.filter((x) => test(x) && (!q.trim() || `${x.name} ${x.region} ${x.city ?? ''}`.includes(q.trim())))
   const gate = subsGate(pf)
   const adder = gate.ok && (asPartner || role.key === 'supervisor')
   const sup = !asPartner && role.key === 'supervisor'
@@ -511,6 +535,22 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
       <Head title="المشاريع الفرعية" meta={<span className="sub">{pf.items.filter(isLiveSub).length} معتمد · {count('submitted') + count('study')} مرفوع وقيد الدراسة · {count('pending')} بانتظار الاعتماد · {count('draft')} مسودة</span>} />
       {!gate.ok && <p className="sub cnote"><Icon name={icons.lock} size="sm" /> {gate.why}</p>}
       {pf.items.length > 0 && (
+        <div className="ftool-f mb-2">
+          <div className="cfgchips" role="radiogroup" aria-label="حالة المشروع الفرعي">
+            {FILTERS.map((f) => {
+              const n = pf.items.filter(f.test).length
+              return (n > 0 || f.key === 'all') && (
+                <button key={f.key} type="button" role="radio" aria-checked={flt === f.key} className={`cfgchip${flt === f.key ? ' on' : ''}`} onClick={() => setFlt(f.key)}>
+                  {f.label} <span className="num">{n}</span>
+                </button>
+              )
+            })}
+          </div>
+          <SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المشروع الفرعي أو المنطقة" />
+        </div>
+      )}
+      {pf.items.length > 0 && !shown.length && <p className="sub cnote">لا مشاريع فرعية تطابق الفلتر.</p>}
+      {shown.length > 0 && (
         <div className="tblwrap">
           <table className="tbl subtbl" aria-label="المشاريع الفرعية">
             <thead>
@@ -522,20 +562,25 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {pf.items.map((x) => (
+              {shown.map((x) => (
                 <tr key={x.id} id={x.id}>
                   <td className="tchk">{selectable(x) && <input type="checkbox" aria-label={`تحديد ${x.name}`} checked={sel.includes(x.id)} onChange={() => toggle(x.id)} />}</td>
-                  <td><b>{x.name}</b><div className="sub">{x.field ?? pf.field} · {x.region}{x.city ? ` · ${x.city}` : ''} · {nf.format(x.beneficiaries)} مستفيد · {x.outputs} · {x.files.join('، ')}{x.activityId ? ` · النشاط: ${pfActivities(pf).find((a) => a.id === x.activityId)?.label ?? x.activityId}` : ''}</div>
+                  <td><Link className="tlink" to={`${ROUTES.subProject(pf.id, x.id)}${asPartner ? '?as=partner' : ''}`}><b>{x.name}</b></Link><div className="sub"><span className="num">{x.serial ?? x.id}</span> · {x.field ?? pf.field} · {x.region}{x.city ? ` · ${x.city}` : ''} · {nf.format(x.beneficiaries)} مستفيد · {x.outputs} · {x.files.join('، ')}{x.activityId ? ` · النشاط: ${pfActivities(pf).find((a) => a.id === x.activityId)?.label ?? x.activityId}` : ''}</div>
                     {(asPartner || role.key === 'supervisor') && pfActivities(pf).length > 0 && x.state !== 'rejected' && x.state !== 'excluded' && (
                       <FieldSelect value={x.activityId ?? ''} label={`نشاط خطة المحفظة · ${x.name}`} placeholder="اربط بنشاط" options={[{ value: '', label: 'بلا نشاط' }, ...pfActivities(pf).map((a) => ({ value: a.id, label: a.label }))]} onChange={(v) => r(linkSubActivity(pf.id, x.id, v, asPartner ? entityName(pf) : user.name), 'ربط النشاط')} />
                     )}</td>
                   <td className="n"><Money sm>{x.amount}</Money></td>
-                  <td>
-                    <Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}</Tag>
-                    {x.rec && x.state === 'pending' && <span className="sub"> · توصية المشرف: {x.rec.outcome === 'approve' ? 'اعتماد' : 'رفض'}{x.rec.note ? ` · ${x.rec.note}` : ''}</span>}
-                    {x.reason && <span className="sub"> · {x.reason}</span>}
-                    {x.note && <span className="sub"> · {x.note}</span>}
-                    {x.outcome && (x.state === 'stalled' || x.state === 'excluded') && <span className="sub"> · {x.outcome.note}</span>}
+                  <td className="subst">
+                    {/* Client 20 Oct (#30) · the state tag stays whole and the seat's note sits under it on one
+                        line, cut with its full text on hover · it spilled out of the table beside the tag */}
+                    {(() => {
+                      const why = [
+                        x.rec && x.state === 'pending' ? `توصية المشرف: ${x.rec.outcome === 'approve' ? 'اعتماد' : 'رفض'}${x.rec.note ? ` · ${x.rec.note}` : ''}` : '',
+                        x.reason ?? '', x.note ?? '', x.outcome && (x.state === 'stalled' || x.state === 'excluded') ? x.outcome.note : '',
+                      ].filter(Boolean).join(' · ')
+                      return <span className="tagfit" title={why || undefined}><Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}</Tag>{why && <span className="sub tseat">{why}</span>}</span>
+                    })()}
+                    {x.exec && isLiveSub(x) && <div className="sub">إنجاز <span className="num">{pct(x.exec.progress)}</span> · <span className="num">{nf.format(x.exec.reached)}</span> مستفيد</div>}
                     {(mgr || sup) && sel.includes(x.id) && x.state !== 'draft' && (
                       <span className="fld mt-1"><input value={reasons[x.id] ?? ''} onChange={(e) => setReasons((r0) => ({ ...r0, [x.id]: e.target.value }))} aria-label={`ملاحظة على ${x.name}`} placeholder={mgr ? 'سبب الرفض أو ملاحظة الاعتماد' : 'ملاحظة التوصية · إلزامية للرفض'} /></span>
                     )}
@@ -656,29 +701,14 @@ function SessionCard({ pf }: { pf: PortfolioRec }) {
   )
 }
 
-/* ── The money · the portfolio's requests on its schedule, by the payment procedure (13.2.23 – 13.2.25 · BPD-009) ── */
+/* ── The money · client 20 Oct (#25) · read-only here ──
+   A portfolio's payment is never entered from the portfolio: it's filed and approved in the
+   disbursement procedure (the partners' finance desk) and reflects here · this tab shows each
+   scheduled payment and where it stands, with no action on it. */
 function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
-  const { role, user } = useRole()
-  const [ref, setRef] = useState('')
-  const [note, setNote] = useState('')
-  const [why, setWhy] = useState('')
-  const [amt, setAmt] = useState('')
-  const [docs, setDocs] = useState<string[]>([])
-  const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
-  const sup = !asPartner && role.key === 'supervisor'
-  const open = pf.stage === 'approved'
-  const act = (rq: PfRequest, a: 'qualify' | 'permit' | 'approve' | 'order' | 'pay' | 'return', ok: string) => {
-    const out = actOnPfReq(pf.id, rq.id, a, note, user.name, ref, role.key, a === 'permit' ? (Number(amt) || rq.asked || rq.amount) : undefined)
-    setSaid(out.length ? { bad: out } : { ok })
-    if (!out.length) { setNote(''); setRef(''); setAmt('') }
-  }
-  const mine = (rq: PfRequest) => !asPartner && (
-    ((rq.state === 'supervisor' || rq.state === 'eligible') && role.key === 'supervisor') || (rq.state === 'manager' && role.key === 'grants-manager')
-    || (rq.state === 'exec' && role.key === 'ceo') || ((rq.state === 'finance' || rq.state === 'order') && role.key === 'finance'))
-  const next = pf.schedule.find((s) => !pf.requests.some((r) => r.no === s.no && r.state !== 'returned'))
   return (
     <Glass>
-      <Head title="دفعات المحفظة" meta={<span className="sub">على مستوى المحفظة وفق الجدول · بإجراء صرف الدفعات · لا لكل مشروع فرعي</span>} />
+      <Head title="دفعات المحفظة" meta={<span className="sub">على مستوى المحفظة وفق الجدول · للعرض</span>} />
       <ul className="ptn-slots">
         {pf.schedule.map((s) => {
           const rq = pf.requests.filter((r) => r.no === s.no).at(-1)
@@ -686,19 +716,8 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             <li key={s.no}>
               <span>الدفعة <span className="num">{s.no}</span> · <DateText>{s.dueAt}</DateText></span>
               <Money sm>{s.amount}</Money>
-              {rq ? <Tag tone={rq.state === 'paid' ? 'ok' : rq.state === 'returned' ? 'ret' : 'warn'}>{PF_REQ_SAY[rq.state]}{rq.state === 'paid' ? ` · ${rq.ref}` : rq.state === 'returned' && rq.note ? ` · ${rq.note}` : ''}</Tag> : <Tag tone="mute">لم تُطلب</Tag>}
+              {rq ? <Tag tone={rq.state === 'paid' ? 'ok' : rq.state === 'returned' ? 'ret' : 'warn'}>{PF_REQ_SAY[rq.state]}{rq.state === 'paid' ? ` · ${rq.ref}` : ''}</Tag> : <Tag tone="mute">لم تُطلب</Tag>}
               {rq?.why && <span className="sub">{rq.why}{rq.docs?.length ? ` · ${rq.docs.join('، ')}` : ''}</span>}
-              {rq && mine(rq) && (
-                <span className="rowf gp-2">
-                  {rq.state === 'supervisor' && <button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'qualify', 'اعتماد المتطلبات')}>اعتمد المتطلبات</button>}
-                  {rq.state === 'eligible' && <><MoneyField value={amt} onChange={setAmt} label={`قيمة إذن الدفعة ${rq.no}`} placeholder={nf.format(rq.asked ?? rq.amount)} /><button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'permit', 'إذن الصرف')}>أنشئ إذن الصرف</button></>}
-                  {(rq.state === 'manager' || rq.state === 'exec') && <button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'approve', 'اعتماد الإذن')}>اعتمد الإذن</button>}
-                  {rq.state === 'finance' && <button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'order', 'اعتماد أمر الصرف')}>اعتمد أمر الصرف</button>}
-                  {rq.state === 'order' && <><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم أمر التحويل" placeholder="رقم أمر التحويل" /></span><button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'pay', 'صرف الدفعة')}>صرف</button></>}
-                  <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="سبب الإعادة" placeholder="سبب الإعادة" /></span>
-                  <button type="button" className="btn btn-2 btn-sm" onClick={() => act(rq, 'return', 'إعادة الطلب')}>أعد</button>
-                </span>
-              )}
             </li>
           )
         })}
@@ -706,77 +725,75 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
       </ul>
       {/* v3 · 0.ent.8 · 2.4.22 · the partner's account decides whether its portfolio is paid */}
       {payBlock(entityById(pf.entityId)) && <p className="bad cnote">{payBlock(entityById(pf.entityId))}</p>}
-      {/* Re-audit 7 Oct · 13.2.23 · the partner asks for its portfolio's payment from its own account · the
-          supervisor may still file it on its behalf */}
-      {(sup || asPartner) && open && next && (
-        <div className="apv-row mt-3">
-          {pfReqIssue(pf, next.no, next.amount) ? <span className="sub">{pfReqIssue(pf, next.no, next.amount)}</span> : null}
-          <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبرّر طلب الدفعة" placeholder="مبرّر الطلب وما أُنجز" /></span>
-          <UploadButton label="مستند الطلب" onPick={(f) => setDocs((x) => [...x, f.name])} />
-          {docs.length > 0 && <span className="sub">{docs.join('، ')}</span>}
-          <button type="button" className="btn btn-p btn-sm" disabled={Boolean(pfReqIssue(pf, next.no, next.amount)) || pf.agreement.state !== 'signed'} title={pf.agreement.state !== 'signed' ? 'بعد توقيع الاتفاقية' : ''} onClick={() => { const out = requestPfPay(pf.id, next.no, next.amount, asPartner ? entityName(pf) : user.name, why, docs); setSaid(out.length ? { bad: out } : { ok: `متطلبات الدفعة ${next.no}` }); if (!out.length) { setWhy(''); setDocs([]) } }}>ارفع متطلبات الدفعة {next.no}</button>
-        </div>
-      )}
+      <div className="apv-row mt-3">
+        {!asPartner && <Link className="btn btn-2 btn-sm" to={ROUTES.partnersTab('finance')}>افتح إجراء الصرف</Link>}
+        <span className="sub">تُطلب الدفعة وتُعتمد وتُصرف في إجراء صرف الدفعات · وتنعكس هنا</span>
+      </div>
       <p className="sub cnote">لا يُشترط توزيع الدفعة على المشاريع الفرعية ولا ربطها بتفاصيلها المالية · قيمها توزيع داخلي ومتابعة لا أساس للصرف{/* doc 13.4.37 · 13.4.38 */}.</p>
-      <Said said={said} />
     </Glass>
   )
 }
 
-/* ── Results the partner records on each approved sub-project · the foundation approves them (13.2.20 · 13.2.21 · 0.sub.6) ── */
-function ExecCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
-  const { role, user } = useRole()
-  const [open, setOpen] = useState<string | null>(null)
-  const [e, setE] = useState<Omit<SubExec, 'at' | 'by'>>({ status: 'لم يبدأ', progress: 0, reached: 0, results: '', evidence: [] })
-  const [note, setNote] = useState('')
-  const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
+/* ── Client 20 Oct (#22 · #23 · #24 · #28) · the portfolio's indicators ──
+   The financial position as figures with one ruler under them, the execution as one labelled tile per
+   state (it read «1 · 0 · 3 · 0» under a four-word label), the beneficiaries against their target, and
+   the sub-projects' values by region. Each approved sub-project moves these as it's recorded, and on
+   the portfolio's closing they are the sum of its sub-projects. */
+function IndicatorsCards({ pf }: { pf: PortfolioRec }) {
+  const m = pfMoney(pf)
+  const ind = pfIndicators(pf)
   const live = pf.items.filter(isLiveSub)
-  const editor = (asPartner || role.key === 'supervisor') && pf.stage === 'approved'
-  const sup = !asPartner && role.key === 'supervisor'
-  if (!live.length) return null
+  const reach = ind.target ? Math.min(100, Math.round((ind.reached / ind.target) * 100)) : 0
+  const regions = new Map<string, { value: number; n: number }>()
+  for (const x of live) { const r = regions.get(x.region) ?? { value: 0, n: 0 }; regions.set(x.region, { value: r.value + x.amount, n: r.n + 1 }) }
+  const geo = [...regions].sort((a, b) => b[1].value - a[1].value).map(([r, v]) => ({ key: r, label: `${r} · ${v.n} ${v.n === 1 ? 'مشروع' : 'مشاريع'}`, value: v.value }))
+  const split: Slice[] = [
+    { key: 'approved', label: 'معتمد للمشاريع الفرعية', value: m.approved, color: CHART_COLORS[0] },
+    { key: 'pending', label: 'قيد الاعتماد', value: m.pending, color: CHART_COLORS[2] },
+    { key: 'free', label: 'الرصيد المتاح', value: Math.max(0, m.available), color: CHART_COLORS[4] },
+  ]
+  const paid: Slice[] = [
+    { key: 'paid', label: 'المصروف', value: m.confirmed, color: CHART_COLORS[1] },
+    { key: 'open', label: 'مسجّل بانتظار المالية', value: Math.max(0, m.recorded - m.confirmed), color: CHART_COLORS[3] },
+    { key: 'rest', label: 'المتبقي للصرف', value: Math.max(0, pf.total - m.recorded), color: CHART_COLORS[5] },
+  ]
+  const STATES: { key: SubState; label: string }[] = [
+    { key: 'approved', label: 'معتمد · قيد التنفيذ' }, { key: 'closing', label: 'قيد الإغلاق' }, { key: 'done', label: 'مكتمل' }, { key: 'stalled', label: 'متعثر' },
+  ]
   return (
-    <Glass>
-      <Head title="نتائج المشاريع الفرعية" meta={<span className="sub">يسجّلها الشريك · يعتمدها مشرف المنح · دون تقرير ختامي مستقل</span>} />
-      <ul className="ptn-exec">
-        {live.map((x) => (
-          <li key={x.id}>
-            <div className="ptn-exec-h">
-              <b>{x.name}</b>
-              <Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}{x.ready && x.state === 'closing' ? ' · طلب اعتماد النتائج' : ''}</Tag>
-              <span className="sub">إنجاز <span className="num">{pct(x.exec?.progress ?? 0)}</span> · مستفيدون <span className="num">{nf.format(x.exec?.reached ?? 0)}</span> من <span className="num">{nf.format(x.beneficiaries)}</span></span>
-              {editor && (x.state === 'approved' || x.state === 'closing') && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOpen(open === x.id ? null : x.id); setE({ status: subExecStatus(x.exec?.status), progress: x.exec?.progress ?? 0, reached: x.exec?.reached ?? 0, results: x.exec?.results ?? '', evidence: x.exec?.evidence ?? [] }) }}>{open === x.id ? 'إغلاق' : 'سجّل النتائج'}</button>}
-            </div>
-            {x.exec?.results && <p className="sub">{isolate(x.exec.results)}{x.exec.evidence.length ? ` · ${x.exec.evidence.join('، ')}` : ''}</p>}
-            {x.outcome && x.state === 'closing' && !x.ready && <p className="bad cnote">{x.outcome.note}</p>}
-            {sup && x.state === 'closing' && x.ready && (
-              <div className="apv-row mt-2">
-                <span className="fld"><input value={note} onChange={(v) => setNote(v.target.value)} aria-label={`ملاحظة على نتائج ${x.name}`} placeholder="ما ينقص · عند الإعادة" /></span>
-                <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = completeSub(pf.id, x.id, 'return', note, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'إعادة النتائج للشريك' }); if (!out.length) setNote('') }}>أعد للشريك</button>
-                <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = completeSub(pf.id, x.id, 'approve', note, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: `«${x.name}» مكتمل` }) }}>اعتمد النتائج · مكتمل</button>
-              </div>
-            )}
-            {open === x.id && (
-              <div className="ptn-form mt-2">
-                <div className="regfields">
-                  <label className="regf"><span className="lb">نسبة الإنجاز</span><span className="fld"><input inputMode="numeric" value={String(e.progress)} onChange={(v) => setE({ ...e, progress: Number(v.target.value.replace(/\D/g, '')) || 0 })} aria-label="نسبة الإنجاز" /></span></label>
-                  <label className="regf"><span className="lb">المستفيدون الفعليون</span><span className="fld"><input inputMode="numeric" value={String(e.reached)} onChange={(v) => setE({ ...e, reached: Number(v.target.value.replace(/\D/g, '')) || 0 })} aria-label="المستفيدون الفعليون" /></span></label>
-                  <label className="regf ptn-wide"><span className="lb">النتائج الفعلية</span><span className="fld"><input value={e.results} onChange={(v) => setE({ ...e, results: v.target.value })} aria-label="النتائج الفعلية" placeholder={`المستهدف: ${x.outputs}`} /></span></label>
-                </div>
-                <div className="apv-row mt-2">
-                  <span className="sub">{e.evidence.length ? e.evidence.join(' · ') : 'الشواهد'}</span>
-                  <UploadButton label="شاهد" onPick={(f) => setE((y) => ({ ...y, evidence: [...y.evidence, f.name] }))} />
-                  {/* v3 · 13.4.15 · the partner's progress · «لم يبدأ» · «جارٍ التنفيذ» · «مكتمل» · never «تحت التنفيذ» */}
-                  <span className="sub">الحالة: {e.status === 'مكتمل' ? 'مكتمل' : e.progress > 0 ? SUB_EXEC_STATES[1] : SUB_EXEC_STATES[0]}</span>
-                  <label className="rowf gp-2"><input type="checkbox" checked={e.status === 'مكتمل'} onChange={(v) => setE({ ...e, status: v.target.checked ? 'مكتمل' : e.progress > 0 ? 'جارٍ التنفيذ' : 'لم يبدأ' })} aria-label="اطلب اعتماد النتائج" /> <span className="sub">اكتمل التنفيذ · اطلب اعتماد النتائج</span></label>
-                  <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = updateSubExec(pf.id, x.id, e, asPartner ? entityName(pf) : user.name); setSaid(out.length ? { bad: out } : { ok: `نتائج «${x.name}»` }); if (!out.length) setOpen(null) }}>احفظ</button>
-                </div>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-      <Said said={said} />
-    </Glass>
+    <>
+      <Glass>
+        <Head title="الموقف المالي" meta={<span className="sub">المحفظة ككل</span>} />
+        <div className="pfi-kpi">
+          <Stat label="قيمة المحفظة المعتمدة" value={<Money>{m.total}</Money>} note={`${m.approvedCount} مشروع فرعي معتمد`} />
+          <Stat label="المعتمد للمشاريع الفرعية" value={<Money>{m.approved}</Money>} note={`${pct(m.total ? Math.round((m.approved / m.total) * 100) : 0)} من المحفظة`} />
+          <Stat label="قيد الاعتماد" value={<Money>{m.pending}</Money>} note="محجوز داخل المحفظة" />
+          <Stat label="الرصيد المتاح" value={<Money>{Math.max(0, m.available)}</Money>} note="لمشاريع فرعية جديدة" />
+          <Stat label="المصروف" value={<Money>{m.confirmed}</Money>} note="دفعات أكدتها المالية" />
+          <Stat label="المتبقي" value={<Money>{m.remaining}</Money>} note="من قيمة المحفظة" />
+        </div>
+        <h4 className="ptn-sub">توزيع قيمة المحفظة</h4>
+        <StackBar parts={split} total={m.total} />
+        <Legend items={split} format={(v) => nf.format(v)} />
+        <h4 className="ptn-sub">الصرف</h4>
+        <StackBar parts={paid} total={m.total} />
+        <Legend items={paid} format={(v) => nf.format(v)} />
+      </Glass>
+
+      <Glass>
+        <Head title="مؤشرات التنفيذ" meta={<span className="sub">{ind.count} مشروع فرعي معتمد</span>} />
+        <dl className="ptn-ind">
+          {STATES.map((s) => <div key={s.key}><dt>{s.label}</dt><dd className="num">{live.filter((x) => x.state === s.key).length}</dd></div>)}
+        </dl>
+        <div className="pfi-two mt-3">
+          <Stat label="متوسط الإنجاز" value={<span className="num">{pct(ind.progress)}</span>} bar={{ w: `${ind.progress}%`, c: CHART_COLORS[0] }} note="من إنجاز المشاريع الفرعية المعتمدة" />
+          <Stat label="المستفيدون الفعليون من المستهدف" value={<span className="num">{nf.format(ind.reached)}</span>} unit={`من ${nf.format(ind.target)}`} bar={{ w: `${reach}%`, c: CHART_COLORS[1] }} note={`${pct(reach)} من المستهدف`} />
+        </div>
+        <h4 className="ptn-sub">التوزيع الجغرافي لقيم المشاريع الفرعية</h4>
+        {geo.length ? <RankBars rows={geo} total={m.approved} hue="c1" /> : <p className="sub cnote">لا مشاريع فرعية معتمدة بعد.</p>}
+        <p className="sub cnote">كل مشروع فرعي يُعتمد يُحدّث المؤشرات مباشرةً · وعند إغلاق المحفظة يجمع النظام قيم مؤشرات التنفيذ من مشاريعها الفرعية.</p>
+      </Glass>
+    </>
   )
 }
 

@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, KV, Money, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
+import { DateText, Glass, Head, KV, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { DocList } from '@/components/docs'
 import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, pct, readDate, units } from '@/lib/format'
 import type { Project, ProjectType } from '@/types/domain'
 import type { LogEvent } from '@/data/mock/log'
-import { projectDeps } from '@/data/mock/settings'
 import type { ChainLink } from '@/data/mock/chain'
 
 export interface DataTabProps {
@@ -43,17 +42,43 @@ export interface DataTabProps {
 
 /** Project data — summary, concept, phases, scope, and attachments. */
 export function DataTab({
-  project: P, code, type, entityName, entityId, last, onOpenLog, deps, chain, hideAttachments, entityAction, entityHistory,
+  project: P, type, entityName, entityId, last, onOpenLog, hideAttachments, entityAction, entityHistory,
 }: DataTabProps) {
-  const dep = deps ? projectDeps(deps.agreements, deps.payments) : undefined
-  const gaps = chain?.filter((l) => l.state === 'gap').length ?? 0
   const perBeneficiary = costPerBeneficiary(P.amountRequested, P.beneficiaries)
   const uploaded = P.attachments.filter((a) => a.uploaded).length
 
   return (
     <>
+      {/* Meeting 20 Oct · the figures lead the data tab */}
+      <div className="stats4">
+        <Stat
+          label="المبلغ المطلوب"
+          value={<Num>{P.amountRequested}</Num>}
+          unit={<Riyal />}
+          bar={{ w: '100%', c: 'var(--teal)' }}
+          note={`${pct(100)} من إجمالي المشروع`}
+        />
+        <Stat
+          label="مدة التنفيذ"
+          value={P.durationDays}
+          unit="يومًا"
+          note={`≈ ${units.month(Math.round(P.durationDays / 30))} · تُحسب من بداية التنفيذ (الفعلية إن سُجّلت)`}
+        />
+        <Stat
+          label="المستفيدون"
+          value={nf.format(P.beneficiaries)}
+          note="تقدير الجهة، ولم يراجعه المشرف بعد"
+        />
+        <Stat
+          label="تكلفة المستفيد"
+          value={<Num>{perBeneficiary}</Num>}
+          unit={<Riyal />}
+          note="محسوبة، لمقارنة المشاريع"
+        />
+      </div>
+
       <Glass>
-        <Head title="التعريف" meta="10 حقول" />
+        <Head title="التعريف" />
         <KV
           rows={[
             /* Two mistakes in one line.
@@ -71,7 +96,7 @@ export function DataTab({
               v: <span className="rowf gp-2"><Link className="tlink" to={ROUTES.entity(entityId)}>{entityName}</Link>{entityAction}</span>,
             },
             ...(entityHistory ? [{ k: 'تعديلات الجهة', v: entityHistory }] : []),
-            { k: 'كود المشروع', v: <Mono>{code}</Mono> },
+            /* Meeting 20 Oct · the code moved to the page header */
             { k: 'نوع المشروع', v: type },
             { k: 'الحالة', v: <Tag tone={P.status.tone}>{P.status.label}</Tag> },
             { k: 'المسار', v: P.track },
@@ -124,32 +149,6 @@ export function DataTab({
         )}
       </Glass>
 
-      <div className="stats4">
-        <Stat
-          label="المبلغ المطلوب"
-          value={<Num>{P.amountRequested}</Num>}
-          unit={<Riyal />}
-          bar={{ w: '100%', c: 'var(--teal)' }}
-          note={`${pct(100)} من إجمالي المشروع`}
-        />
-        <Stat
-          label="مدة التنفيذ"
-          value={P.durationDays}
-          unit="يومًا"
-          note={`≈ ${units.month(Math.round(P.durationDays / 30))} · تُحسب من بداية التنفيذ (الفعلية إن سُجّلت)`}
-        />
-        <Stat
-          label="المستفيدون"
-          value={nf.format(P.beneficiaries)}
-          note="تقدير الجهة، ولم يراجعه المشرف بعد"
-        />
-        <Stat
-          label="تكلفة المستفيد"
-          value={<Num>{perBeneficiary}</Num>}
-          unit={<Riyal />}
-          note="محسوبة، لمقارنة المشاريع"
-        />
-      </div>
 
       <Glass>
         <Head title="فكرة المشروع" meta="من نموذج التقديم" />
@@ -271,65 +270,7 @@ export function DataTab({
           البيانات البنكية مصدرها ملف الجهة، معروضة هنا للمراجعة فقط ولا تُحرَّر من المشروع.
         </div>
       </Glass>
-
-      {/* Chain.
-
-          This card merges two things that would otherwise be two cards.
-          "Dependencies" states what's still pending on the project so it can't be
-          deleted, and "Chain" states where a number flows from and to — the same
-          information from two angles. Two adjacent cards with near-identical names
-          would have read as duplicates.
-
-          Each link is also verified, not just displayed. The target allocation
-          must cover the approved amount, the agreement value must equal the
-          approved amount, and the schedule total must equal the agreement — and a
-          broken link is called out. A chain that shows four numbers with no
-          verification would be showing a connection that doesn't actually exist. */}
-      {chain && (
-        <Glass>
-          <Head
-            title="السلسلة"
-            meta={
-              gaps > 0
-                ? <Tag tone="warn"><Num>{gaps}</Num> حلقة مكسورة</Tag>
-                : <Tag tone="ok">متّصلة</Tag>
-            }
-          />
-          <ol className="chain">
-            {chain.map((l, i) => (
-              <li key={l.key} className={`chain-${l.state}`}>
-                <span className="chain-i num">{i + 1}</span>
-                <span className="chain-b">
-                  <span className="chain-h">
-                    <b>{l.label}</b>
-                    {/* `to` existed in the data but wasn't used on screen. The chain says
-                        "Agreement · AG-2026-3107" and is meant to trace where the money goes:
-                        anyone reading it would ask "show me that agreement." The link was naming
-                        the destination without actually taking you there. A field declared in
-                        the type that nobody reads is an intent that was never implemented — the
-                        same family of bug as a rule written in a comment that nothing enforces. */}
-                    {l.to
-                      ? <Link className="tlink trim1" to={l.to}>· {l.name}</Link>
-                      : <span className="sub trim1">· {l.name}</span>}
-                    <span className="pc-sp" />
-                    {l.value > 0 && <span className="num"><Money>{l.value}</Money></span>}
-                  </span>
-                  <span className="chain-s">{l.say}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-
-          {dep && (
-            <p className="sub cnote">
-              {dep.count > 0
-                ? <>ويرتبط بالمشروع <b>{dep.say}</b> · فلا يمكن حذفه، والسلسلة
-                    تمنع الحذف من بدايتها: سنة ← ميزانية ← مشروع ← اتفاقية ودفعات.</>
-                : <>لا توجد اتفاقيات ولا دفعات مرتبطة بهذا المشروع حتى الآن.</>}
-            </p>
-          )}
-        </Glass>
-      )}
+      {/* Meeting 20 Oct · the chain card is gone · the tabs reach the same records */}
     </>
   )
 }

@@ -75,7 +75,9 @@ export interface Study {
   rejectReason?: string
   rejectOther?: string
   /** v3 · 3.2.17 · the supervisor classifies the project · a portfolio takes its path after the approval */
-  classification?: 'مشروع عادي' | 'محفظة'
+  classification?: 'مشروع عادي' | 'مشروع لجهة خارجية' | 'محفظة'
+  /** Meeting 20 Oct · the consultant is an option of the study, not a fixed block */
+  needsConsultant?: boolean
   by: string
   at: string
   /** Each save of a forwarded study after a return is a new version (3.4.26) */

@@ -9,7 +9,8 @@ import strategic from '@/assets/illus/partner-strategic.svg?raw'
  * three-layer SVG (ink, tone, accent), colored from the drawing's own tokens in `:root`, so it
  * works in both themes with no second copy.
  */
-const ART: Record<string, string> = { beneficiary, implementer, strategic }
+/* the external party reuses the beneficiary's bud · a reference record with no portal of its own */
+const ART: Record<string, string> = { beneficiary, implementer, strategic, external: beneficiary }
 
 export function PartnerArt({ kind }: { kind: string }) {
   const svg = ART[kind]

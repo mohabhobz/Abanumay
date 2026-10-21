@@ -7,7 +7,7 @@ import { forecastPlan } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tag,
+  BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tabs, Tag,
   icons, type GateStep,
 } from '@/components/ui'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
@@ -27,7 +27,7 @@ import {
 import {
   acceptActivityBy, claimActivityBy, commentOn, saveActivityData, decideChangeBy, dropEvidence, mayDraft, projectWindow,
   rejectActivityBy, reviewPlan, sendPlanFor, startActivity, stuckActivities, uploadEvidence, usePlans,
-  planLogOf, annexAfter, execStop, planGrantOf, planTargetOf } from '@/data/plans/store'
+  planLogOf, annexAfter, execStop, planGrantOf, planTargetOf, forwardChange, planVersions, diffPhases } from '@/data/plans/store'
 import { PlanDecisionCard } from './PlanDecisionCard'
 import type { PlanAction } from './PlanActionDock'
 import { projectById } from '@/data/mock/projects'
@@ -87,6 +87,15 @@ export default function PlanPage() {
   const [tick, setTick] = useState(0)
   const [open, setOpen] = useState<Set<string>>(new Set())
   const [reject, setReject] = useState<{ id: string; note: string } | null>(null)
+  /* #37 · the plan card's two tabs · the active version, then the cancelled versions and the requests */
+  /* a request waiting on the supervisor or the grants manager opens the requests tab · that's where their step is */
+  const [pane, setPane] = useState<'active' | 'history'>(() => {
+    const ch = p?.changes ?? []
+    const waiting = ch.some((c) => c.state === 'waiting' || c.state === 'toAgreement')
+    const back = ch.some((c) => c.state === 'returned' && (c.from ?? 'entity') === 'entity')
+    return (waiting && !asEntity) || (back && asEntity) ? 'history' : 'active'
+  })
+  const [cmp, setCmp] = useState<string | null>(null)
 
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
@@ -159,6 +168,10 @@ export default function PlanPage() {
   const who = asEntity ? p.entityName : user.name
   const canDraft = mayDraft(p, asEntity) || (!asEntity && role.key === 'supervisor' && (p.stage === 'draft' || p.stage === 'returned'))
   const cost = p.phases.reduce((s, ph) => s + ph.cost, 0)
+  /* #36 · who may ask to change or cancel an approved plan · the entity, the supervisor, the manager */
+  const mayAsk = p.baseline > 0 && p.stage === 'active' && (asEntity || role.key === 'supervisor' || mayApprovePlan(role.key, user.name))
+  const versions = planVersions(p)
+  const oldVersions = versions.filter((v) => v.state === 'cancelled' && v.change)
 
   /* The same fan as the project, agreement and closing headers, driven by the plan's own path.
      «مُعادة للجهة» isn't a step on the path: a returned plan sits back with the entity, at the
@@ -398,145 +411,6 @@ export default function PlanPage() {
                 )}
               </Glass>
 
-              {/* === Phases and activities === */}
-              <Glass>
-                <Head
-                  title="المراحل والأنشطة"
-                  meta={
-                    <span className="sub">
-                      <Num>{p.phases.length}</Num> {nounAfter(p.phases.length, NOUN.phase)} ·{' '}
-                      <Num>{p.phases.reduce((s, ph) => s + ph.activities.length, 0)}</Num> {nounAfter(p.phases.reduce((s, ph) => s + ph.activities.length, 0), NOUN.activity)} ·{' '}
-                      <Money sm>{cost}</Money>
-                    </span>
-                  }
-                />
-
-                {p.phases.length === 0 ? (
-                  <Empty
-                    title="الخطة بلا مراحل."
-                    note="المرحلة هي وحدة القياس، ومن دونها لا يُحتسب أي إنجاز."
-                  />
-                ) : (
-                  <PhaseTree
-                    phases={p.phases}
-                    live={live}
-                    canReview={!asEntity && role.key === 'supervisor'}
-                    canClaim={asEntity}
-                    onClaim={(actId) => { const e = claimActivityBy(p.id, actId, who); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
-                    /* A real file picker · the evidence row knows its kind, and a replaced file
-                       stays in the activity's log (12.2.20 · 12.4.19) */
-                    onUpload={(actId, kind, fileName, replace) => { uploadEvidence(p.id, actId, kind, fileName, who, replace); setTick((x) => x + 1) }}
-                    onDrop={(actId, evId) => { dropEvidence(p.id, actId, evId, who); setTick((x) => x + 1) }}
-                    onStart={(actId) => { const e = startActivity(p.id, actId, who); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
-                    onData={(actId, d) => { const e = saveActivityData(p.id, actId, d, who); setTick((x) => x + 1); return e }}
-                    open={shown}
-                    focus={focus}
-                    onToggle={(phId) => setOpen(() => {
-                      const next = new Set(shown)
-                      if (next.has(phId)) next.delete(phId)
-                      else next.add(phId)
-                      return next
-                    })}
-                    onAccept={(actId) => { const e = acceptActivityBy(p.id, actId, user.name); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
-                    onReject={(actId) => setReject({ id: actId, note: '' })}
-                    /* The entity comments under its own name, the institution under the signed-in
-                       user's. */
-                    me={asEntity ? p.entityName : user.name}
-                    onComment={(actId, say) => {
-                      commentOn(p.id, actId, say, who, asEntity ? 'entity' : 'staff')
-                      setTick((x) => x + 1)
-                    }}
-                  />
-                )}
-
-                {/* Note: phase totals against the grant - same discipline as the budget tree and
-                    the payment schedule, and it's written below the table since it's a property of
-                    the total, not of any single row. */}
-                {grant > 0 && (
-                  <p className={`sub cnote${cost !== grant ? ' bad' : ''}`}>
-                    مجموع تكلفة المراحل <Money sm>{cost}</Money> وقيمة المنحة{' '}
-                    <Money sm>{grant}</Money>
-                    {cost !== grant
-                      ? ' · يجب أن يتساويا قبل الاعتماد.'
-                      : ' · متطابقان.'}
-                  </p>
-                )}
-              </Glass>
-
-              {/* === Substantive amendment requests - rule 21 === */}
-              {(p.changes.length > 0 || p.baseline > 0) && (
-                <Glass>
-                  <Head
-                    title="طلبات التعديل الجوهري"
-                    meta={p.stage === 'active' && (asEntity || role.key === 'supervisor')
-                      ? <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}${asEntity ? '?as=entity' : ''}`}>اطلب تعديلًا</Link>
-                      : null /* doc rule 21 */}
-                  />
-                  {p.changes.length === 0 ? (
-                    <p className="sub cnote">
-                      لا توجد طلبات · أي تعديل على المراحل أو التواريخ أو التكلفة بعد
-                      الاعتماد يمرّ من هنا، ويرفع رقم النسخة المرجعية عند
-                      اعتماده. ومن دون ذلك يفقد الانحراف مرجعه.
-                    </p>
-                  ) : (
-                    <ul className="plchg">
-                      {p.changes.map((c) => (
-                        <li key={c.id}>
-                          <div className="plchg-h">
-                            <Tag tone={c.state === 'approved' ? 'ok' : c.state === 'rejected' ? 'no' : 'warn'}>
-                              {c.state === 'approved' ? 'معتمَد' : c.state === 'rejected' ? 'مرفوض' : c.state === 'returned' ? 'أُعيد للاستكمال' : c.state === 'toAgreement' ? 'بانتظار ملحق الاتفاقية' : 'بانتظار مدير المنح'}
-                            </Tag>
-                            <span className="sub">
-                              <DateText>{c.at}</DateText> · {c.by}
-                            </span>
-                          </div>
-                          <p className="plchg-t">{isolate(c.say)}</p>
-                          {c.note && <p className="sub">{isolate(c.note)}</p>}
-                          {c.decidedAt && <p className="sub">قرار {c.decidedBy} · <DateText>{c.decidedAt}</DateText></p>}
-                          {c.proposed && <p className="sub">بهيكل مقترح · <Num>{c.proposed.length}</Num> {nounAfter(c.proposed.length, NOUN.phase)}{c.before && <> · حُفظ الهيكل السابق (<Num>{c.before.length}</Num> {nounAfter(c.before.length, NOUN.phase)})</>}</p>}
-                          {c.state === 'returned' && (
-                            <div className="act-a">
-                              <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}?change=${c.id}${asEntity ? '&as=entity' : ''}`}>استكمل الطلب وأعد إرساله</Link>
-                            </div>
-                          )}
-                          {/* v3 · 12.4.15 · operational changes are made in the plan · contractual ones go to the agreement */}
-                          {c.kind && <p className="sub"><Tag tone={c.kind === 'contractual' ? 'warn' : 'mute'}>{c.kind === 'contractual' ? 'تغيير تعاقدي' : 'تغيير تشغيلي'}</Tag>{c.contractual?.length ? <> · {c.contractual.join(' · ')}</> : <> · يُنفَّذ في الخطة ويُسجَّل في سجلها</>}</p>}
-                          {c.state === 'toAgreement' && <p className="sub">أُحيل لملحق تعديلي في الاتفاقية · يُعتمد في الخطة بعد اعتماد الملحق{annexAfter(p.projectId, c.at) ? ' · اعتُمد الملحق' : ''}</p>}
-                          {(c.state === 'waiting' || c.state === 'toAgreement') && mayApprovePlan(role.key, user.name) && !asEntity && (
-                            <div className="act-a">
-                              <span className="fld"><input value={chNote[c.id] ?? ''} onChange={(e) => setChNote({ ...chNote, [c.id]: e.target.value })} placeholder="ملاحظة القرار · إلزامية" aria-label="ملاحظة قرار التعديل" /></span>
-                              {([...(c.kind === 'contractual' && c.state === 'waiting' ? ['toAgreement'] as const : []), 'approve', 'return', 'reject'] as const).map((o) => (
-                                <button key={o} className={`btn ${o === 'approve' || o === 'toAgreement' ? 'btn-p' : 'btn-2'} btn-sm`} disabled={!(chNote[c.id] ?? '').trim() || (o === 'approve' && c.kind === 'contractual' && !annexAfter(p.projectId, c.at))}
-                                  title={o === 'approve' && c.kind === 'contractual' && !annexAfter(p.projectId, c.at) ? 'يُعدَّل أولًا بملحق في الاتفاقية' : undefined}
-                                  onClick={() => { const w = decideChangeBy(p.id, c.id, o, chNote[c.id] ?? '', user.name, role.key); if (w.length) setSaid(w[0]); setTick((x) => x + 1) }}>
-                                  {o === 'approve' ? 'اعتمد التعديل' : o === 'toAgreement' ? 'أحله لملحق الاتفاقية' : o === 'return' ? 'أعده للاستكمال' : 'ارفض التعديل'}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Glass>
-              )}
-              {/* The plan decision and what can change · in the main column, the end column is the assistant's alone */}
-              {!asEntity && !pfT && <PlanDecisionCard projectId={p.projectId} approved />}
-              {/* Cross · the plan's history · every operation in order, who and when (12.4.30) */}
-              {!asEntity && planLogOf(p.id).length > 0 && (
-                <Glass>
-                  <Head title="سجل الخطة" meta={<span className="sub"><Num>{planLogOf(p.id).length}</Num> عملية · لا يُعدَّل</span>} />
-                  <ul className="xs-notes">
-                    {planLogOf(p.id).slice(0, 12).map((e, i) => (
-                      <li key={`${e.at}-${i}`}>
-                        <b>{e.what}</b>
-                        <span className="sub">{e.by} · <DateText>{e.at.slice(0, 10)}</DateText>{e.note ? ` · ${e.note}` : ''}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Glass>
-              )}
-              <EditableCard module="plan" state={p.stage} label={planStageLabel(p.stage)} />
             </div>
 
             {/* Side column - one sticky card, like the project page. */}
@@ -553,6 +427,221 @@ export default function PlanPage() {
               />
             </div>
           </div>
+          {/* client 20 Oct (#31) · the activity table runs the full width · ten columns beside the reading column were cut */}
+          {/* === Phases and activities · client 20 Oct (#36 · #37) ===
+              One card, two tabs: the active version of the plan, and everything that came
+              before it · the versions an approved change cancelled and the requests on the plan.
+              Only one version is ever active. The requests to change or cancel the plan start
+              from the card's head, for the entity, the supervisor and the manager. */}
+          <Glass>
+            <Head
+              title="المراحل والأنشطة"
+              meta={
+                <span className="rowf gp-2">
+                  <span className="sub">
+                    {p.baseline > 0 && <>النسخة <Num>{ver(p.baseline)}</Num> · </>}
+                    <Num>{p.phases.length}</Num> {nounAfter(p.phases.length, NOUN.phase)} ·{' '}
+                    <Num>{p.phases.reduce((s, ph) => s + ph.activities.length, 0)}</Num> {nounAfter(p.phases.reduce((s, ph) => s + ph.activities.length, 0), NOUN.activity)} ·{' '}
+                    <Money sm>{cost}</Money>
+                  </span>
+                  {mayAsk && <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}?mode=change${asEntity ? '&as=entity' : ''}`}>طلب تعديل الخطة</Link>}
+                  {mayAsk && <Link className="btn btn-ghost btn-sm" to={`${ROUTES.planEdit(p.id)}?mode=cancel${asEntity ? '&as=entity' : ''}`}>طلب إلغاء الخطة</Link>}
+                </span>
+              }
+            />
+            {(p.baseline > 0 || p.changes.length > 0) && (
+              <Tabs
+                items={[
+                  { slug: 'active', label: p.stage === 'cancelled' ? 'الخطة' : 'الخطة النشطة' },
+                  { slug: 'history', label: 'الملغاة وطلبات التعديل', count: oldVersions.length + p.changes.length },
+                ]}
+                active={pane}
+                onChange={(x) => setPane(x === 'history' ? 'history' : 'active')}
+              />
+            )}
+
+            {pane === 'active' ? (<>
+            {p.phases.length === 0 ? (
+              <Empty
+                title="الخطة بلا مراحل."
+                note="المرحلة هي وحدة القياس، ومن دونها لا يُحتسب أي إنجاز."
+              />
+            ) : (
+              <PhaseTree
+                planId={p.id}
+                phases={p.phases}
+                live={live}
+                canReview={!asEntity && role.key === 'supervisor'}
+                canClaim={asEntity}
+                onClaim={(actId) => { const e = claimActivityBy(p.id, actId, who); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
+                /* A real file picker · the evidence row knows its kind, and a replaced file
+                   stays in the activity's log (12.2.20 · 12.4.19) */
+                onUpload={(actId, kind, fileName, replace) => { uploadEvidence(p.id, actId, kind, fileName, who, replace); setTick((x) => x + 1) }}
+                onDrop={(actId, evId) => { dropEvidence(p.id, actId, evId, who); setTick((x) => x + 1) }}
+                onStart={(actId) => { const e = startActivity(p.id, actId, who); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
+                onData={(actId, d) => { const e = saveActivityData(p.id, actId, d, who); setTick((x) => x + 1); return e }}
+                open={shown}
+                focus={focus}
+                onToggle={(phId) => setOpen(() => {
+                  const next = new Set(shown)
+                  if (next.has(phId)) next.delete(phId)
+                  else next.add(phId)
+                  return next
+                })}
+                onAccept={(actId) => { const e = acceptActivityBy(p.id, actId, user.name); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
+                onReject={(actId) => setReject({ id: actId, note: '' })}
+                /* The entity comments under its own name, the institution under the signed-in
+                   user's. */
+                me={asEntity ? p.entityName : user.name}
+                onComment={(actId, say) => {
+                  commentOn(p.id, actId, say, who, asEntity ? 'entity' : 'staff')
+                  setTick((x) => x + 1)
+                }}
+              />
+            )}
+
+            {/* Note: phase totals against the grant - same discipline as the budget tree and
+                the payment schedule, and it's written below the table since it's a property of
+                the total, not of any single row. */}
+            {grant > 0 && (
+              <p className={`sub cnote${cost !== grant ? ' bad' : ''}`}>
+                مجموع تكلفة المراحل <Money sm>{cost}</Money> وقيمة المنحة{' '}
+                <Money sm>{grant}</Money>
+                {cost !== grant
+                  ? ' · يجب أن يتساويا قبل الاعتماد.'
+                  : ' · متطابقان.'}
+              </p>
+            )}
+            </>) : (
+              <>
+                <h4 className="fnd-h">النسخ الملغاة</h4>
+                {oldVersions.length === 0 ? (
+                  <p className="sub cnote">لا توجد نسخ ملغاة · كل طلب تعديل يُعتمد يلغي النسخة السابقة ويُنشئ نسخة جديدة نشطة، وتبقى السابقة هنا للمقارنة.</p>
+                ) : (
+                  <ul className="plver">
+                    {oldVersions.map((v) => {
+                      const next = versions.find((x) => x.no === v.no + 1) ?? versions[0]
+                      const diff = cmp === `v${v.no}` && next ? diffPhases(v.phases, next.phases) : []
+                      return (
+                        <li key={`v${v.no}-${v.change ?? ''}`}>
+                          <div className="plver-h">
+                            <b>النسخة <Num>{ver(v.no)}</Num></b>
+                            <Tag tone="no">ملغاة</Tag>
+                            {v.at && <span className="sub">أُلغيت <DateText>{v.at}</DateText>{v.by ? ` · ${v.by}` : ''}</span>}
+                            <span className="pc-sp" />
+                            <span className="sub"><Num>{v.phases.reduce((n, ph) => n + ph.activities.length, 0)}</Num> {nounAfter(v.phases.reduce((n, ph) => n + ph.activities.length, 0), NOUN.activity)}</span>
+                            {next && (
+                              <button type="button" className="btn btn-ghost btn-sm" aria-expanded={cmp === `v${v.no}`} onClick={() => setCmp(cmp === `v${v.no}` ? null : `v${v.no}`)}>
+                                {cmp === `v${v.no}` ? 'أخفِ المقارنة' : `قارن بالنسخة ${ver(next.no)}`}
+                              </button>
+                            )}
+                          </div>
+                          {cmp === `v${v.no}` && (diff.length === 0
+                            ? <p className="sub">لا فرق في الأنشطة بين النسختين · الفرق في المراحل أو التكلفة</p>
+                            : (
+                              <ul className="pldiff">
+                                {diff.map((d, i) => (
+                                  <li key={i}><b>{d.name}</b><span className="sub">{d.say.map((x) => isolate(x)).join(' · ')}</span></li>
+                                ))}
+                              </ul>
+                            ))}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+
+                <h4 className="fnd-h">طلبات التعديل والإلغاء</h4>
+                {p.changes.length === 0 ? (
+                  <p className="sub cnote">
+                    لا توجد طلبات · أي تعديل على الأنشطة أو التواريخ أو الشواهد بعد الاعتماد يمرّ من هنا: تقدّمه الجهة
+                    أو مشرف المنح أو مدير المنح، ويمرّ طلب الجهة بمشرف المنح ثم يعتمده مدير المنح.
+                  </p>
+                ) : (
+                  <ul className="plchg">
+                    {[...p.changes].reverse().map((c) => {
+                      const atSup = c.state === 'waiting' && c.step === 'supervisor'
+                      const atMgr = (c.state === 'waiting' || c.state === 'toAgreement') && c.step !== 'supervisor'
+                      return (
+                        <li key={c.id}>
+                          <div className="plchg-h">
+                            <Tag tone={c.mode === 'cancel' ? 'no' : 'mute'}>{c.mode === 'cancel' ? 'طلب إلغاء' : 'طلب تعديل'}</Tag>
+                            <Tag tone={c.state === 'approved' ? 'ok' : c.state === 'rejected' ? 'no' : 'warn'}>
+                              {c.state === 'approved' ? 'معتمَد' : c.state === 'rejected' ? 'مرفوض' : c.state === 'returned' ? 'أُعيد للاستكمال' : c.state === 'toAgreement' ? 'بانتظار ملحق الاتفاقية' : atSup ? 'بانتظار مشرف المنح' : 'بانتظار مدير المنح'}
+                            </Tag>
+                            <span className="sub"><DateText>{c.at}</DateText> · {c.by}</span>
+                            {c.state === 'approved' && c.toVersion && <span className="sub">ألغى النسخة <Num>{ver(c.fromVersion ?? c.toVersion - 1)}</Num> وأنشأ <Num>{ver(c.toVersion)}</Num></span>}
+                          </div>
+                          <p className="plchg-t">{isolate(c.say)}</p>
+                          {c.why && <p className="sub">المبررات: {isolate(c.why)}</p>}
+                          {c.note && <p className="sub">{isolate(c.note)}</p>}
+                          {c.decidedAt && <p className="sub">قرار {c.decidedBy} · <DateText>{c.decidedAt}</DateText></p>}
+                          {c.proposed && <p className="sub">بهيكل مقترح · <Num>{c.proposed.length}</Num> {nounAfter(c.proposed.length, NOUN.phase)}{c.before && <> · حُفظ الهيكل السابق (<Num>{c.before.length}</Num> {nounAfter(c.before.length, NOUN.phase)})</>}</p>}
+                          {c.proposed && c.state !== 'approved' && (() => {
+                            const d = diffPhases(p.phases, c.proposed)
+                            return d.length > 0 && (
+                              <ul className="pldiff">
+                                {d.slice(0, 6).map((x, i) => <li key={i}><b>{x.name}</b><span className="sub">{x.say.map((y) => isolate(y)).join(' · ')}</span></li>)}
+                                {d.length > 6 && <li className="sub">و<Num>{d.length - 6}</Num> تغييرات أخرى</li>}
+                              </ul>
+                            )
+                          })()}
+                          {c.state === 'returned' && (asEntity || c.from !== 'entity') && (
+                            <div className="act-a">
+                              <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}?change=${c.id}&mode=${c.mode ?? 'change'}${asEntity ? '&as=entity' : ''}`}>استكمل الطلب وأعد إرساله</Link>
+                            </div>
+                          )}
+                          {/* v3 · 12.4.15 · operational changes are made in the plan · contractual ones go to the agreement */}
+                          {c.kind && c.mode !== 'cancel' && <p className="sub"><Tag tone={c.kind === 'contractual' ? 'warn' : 'mute'}>{c.kind === 'contractual' ? 'تغيير تعاقدي' : 'تغيير تشغيلي'}</Tag>{c.contractual?.length ? <> · {c.contractual.join(' · ')}</> : <> · يُنفَّذ في الخطة ويُسجَّل في سجلها</>}</p>}
+                          {c.state === 'toAgreement' && <p className="sub">أُحيل لملحق تعديلي في الاتفاقية · يُعتمد في الخطة بعد اعتماد الملحق{annexAfter(p.projectId, c.at) ? ' · اعتُمد الملحق' : ''}</p>}
+                          {/* #36 · the supervisor's step on the entity's request */}
+                          {atSup && !asEntity && role.key === 'supervisor' && (
+                            <div className="act-a">
+                              <span className="fld"><input value={chNote[c.id] ?? ''} onChange={(e) => setChNote({ ...chNote, [c.id]: e.target.value })} placeholder="ملاحظة · إلزامية مع الإعادة" aria-label="ملاحظة مشرف المنح على الطلب" /></span>
+                              <button type="button" className="btn btn-p btn-sm" onClick={() => { const w = forwardChange(p.id, c.id, 'toManager', chNote[c.id] ?? '', user.name, role.key); if (w.length) setSaid(w[0]); setTick((x) => x + 1) }}>ارفعه لمدير المنح</button>
+                              <button type="button" className="btn btn-2 btn-sm" disabled={!(chNote[c.id] ?? '').trim()} onClick={() => { const w = forwardChange(p.id, c.id, 'returnEntity', chNote[c.id] ?? '', user.name, role.key); if (w.length) setSaid(w[0]); setTick((x) => x + 1) }}>أعده للجهة</button>
+                            </div>
+                          )}
+                          {atMgr && mayApprovePlan(role.key, user.name) && !asEntity && (
+                            <div className="act-a">
+                              <span className="fld"><input value={chNote[c.id] ?? ''} onChange={(e) => setChNote({ ...chNote, [c.id]: e.target.value })} placeholder="ملاحظة القرار · إلزامية" aria-label="ملاحظة قرار التعديل" /></span>
+                              {([...(c.kind === 'contractual' && c.mode !== 'cancel' && c.state === 'waiting' ? ['toAgreement'] as const : []), 'approve', 'return', 'reject'] as const).map((o) => {
+                                const blocked = o === 'approve' && c.kind === 'contractual' && c.mode !== 'cancel' && !annexAfter(p.projectId, c.at)
+                                return (
+                                  <button key={o} type="button" className={`btn ${o === 'approve' || o === 'toAgreement' ? 'btn-p' : 'btn-2'} btn-sm`} disabled={!(chNote[c.id] ?? '').trim() || blocked}
+                                    title={blocked ? 'يُعدَّل أولًا بملحق في الاتفاقية' : undefined}
+                                    onClick={() => { const w = decideChangeBy(p.id, c.id, o, chNote[c.id] ?? '', user.name, role.key); if (w.length) setSaid(w[0]); setTick((x) => x + 1) }}>
+                                    {o === 'approve' ? (c.mode === 'cancel' ? 'اعتمد الإلغاء' : 'اعتمد التعديل') : o === 'toAgreement' ? 'أحله لملحق الاتفاقية' : o === 'return' ? 'أعده للاستكمال' : 'ارفض الطلب'}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </>
+            )}
+          </Glass>
+          {/* The plan decision and what can change · in the main column, the end column is the assistant's alone */}
+          {!asEntity && !pfT && <PlanDecisionCard projectId={p.projectId} approved />}
+          {/* Cross · the plan's history · every operation in order, who and when (12.4.30) */}
+          {!asEntity && planLogOf(p.id).length > 0 && (
+            <Glass>
+              <Head title="سجل الخطة" meta={<span className="sub"><Num>{planLogOf(p.id).length}</Num> عملية · لا يُعدَّل</span>} />
+              <ul className="xs-notes">
+                {planLogOf(p.id).slice(0, 12).map((e, i) => (
+                  <li key={`${e.at}-${i}`}>
+                    <b>{e.what}</b>
+                    <span className="sub">{e.by} · <DateText>{e.at.slice(0, 10)}</DateText>{e.note ? ` · ${e.note}` : ''}</span>
+                  </li>
+                ))}
+              </ul>
+            </Glass>
+          )}
+          <EditableCard module="plan" state={p.stage} label={planStageLabel(p.stage)} />
 
           {/* Note: the rule is documented on the screen, not only in a comment - this is the most
               confusing thing to see: a plan "in progress" whose project sits at an entirely

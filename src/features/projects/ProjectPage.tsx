@@ -1,7 +1,7 @@
 import { useLegacy } from '@/data/payments/legacy'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { GateArc, Money, Num, Tabs } from '@/components/ui'
+import { GateArc, Mono, Money, Num, Person, Tabs } from '@/components/ui'
 import { DecisionBar, Crumbs } from '@/components/shell'
 import { EhsanCard, EhsanNoAgreement, RoutingCard } from '@/features/partners/parts'
 import { viaEhsan } from '@/data/partners/store'
@@ -39,7 +39,6 @@ import { projectLog } from '@/data/mock/log'
 import { projectOptions } from '@/data/mock/agreementNew'
 import { agreementsOfProject, useAgreements } from '@/data/agreements/store'
 import { ProjectAgreements } from '@/features/agreements/parts'
-import { projectChain } from '@/data/mock/chain'
 import { planOfProject } from '@/data/mock/plans'
 import { planDecisionEvents, planDecisionOf, usePlans } from '@/data/plans/store'
 import { PlanDecisionCard } from '@/features/plans/PlanDecisionCard'
@@ -315,7 +314,7 @@ export default function ProjectPage() {
     return {
       no: x.no, amount: x.amount, date: paid ? r?.paidAt ?? x.legacy?.paidAt ?? x.dueAt : x.dueAt,
       status: paid ? 'مدفوع' : PAY_SLOT_SAY[x.state].label, voucher: paid ? r?.id ?? x.legacy?.voucher : undefined,
-      condition: x.condition, via: paid ? r?.bank?.name ?? (r ? 'حساب الجهة' : undefined) : undefined, receipt: paid && Boolean(r),
+      condition: x.condition, basis: x.basis, via: paid ? r?.bank?.name ?? (r ? 'حساب الجهة' : undefined) : undefined, receipt: paid && Boolean(r),
       authorized: paid || r?.state === 'finance', before: paid && !r,
     }
   })
@@ -426,6 +425,15 @@ export default function ProjectPage() {
           {/* === Header - no surface, sits directly on the background === */}
           <header className="phead">
             <div className="pmain">
+              {/* Meeting 20 Oct · the code is the project's identity (searching is by number) and the
+                  owner is a named person · both lead the header, above the title */}
+              <div className="pid">
+                <Mono>{code}</Mono>
+                <span className="pid-o">
+                  <span className="lb">مالك المشروع</span>
+                  {row?.owner ? <Person name={row.owner} /> : <span className="sub">غير مُسنَد</span>}
+                </span>
+              </div>
               <h1 className="ptitle">{project.name}</h1>
 
               <div className="pamt">
@@ -465,10 +473,12 @@ export default function ProjectPage() {
             <div className="col">
               {active === 'data' && row && !asEntity && <RecommendationCard row={row} />}
               {/* BPD-011 · the routing decision under study, and an Ehsan project's own management after it */}
-              {active === 'data' && row && !asEntity && (row.statusGroup === 'قيد الدراسة' || row.platform || (row.statusGroup === 'معتمد' && flowOf(row.id).study?.classification === 'محفظة')) && <RoutingCard row={row} />}
+              {/* Meeting 20 Oct · «الدعم عبر جهة خارجية» left the project screen · the card stays only
+                  where it carries the portfolio activation of an approved project classified a portfolio */}
+              {active === 'data' && row && !asEntity && row.statusGroup === 'معتمد' && !row.platform && flowOf(row.id).study?.classification === 'محفظة' && <RoutingCard row={row} />}
               {active === 'data' && row && !asEntity && row.platform && row.statusGroup !== 'قيد الدراسة' && <EhsanCard row={row} />}
               {/* 12.2.2 · the plan decision is part of the project's data */}
-              {active === 'data' && row && !asEntity && planApproved && <PlanDecisionCard projectId={row.id} approved={planApproved} />}
+              {/* Meeting 20 Oct · the work-plan card lives in the plan tab alone */}
               {active === 'approval' && row && <ApprovalTab row={row} />}
               {active === 'data' && row && asEntity && appFlowOf(row.id).official.length > 0 && (
                 <OfficialNotes notes={appFlowOf(row.id).official} />
@@ -488,7 +498,7 @@ export default function ProjectPage() {
                   project={project}
                   code={code}
                   /* Re-audit 7 Oct · the routing card and the data tab read the same type */
-                  type={row?.platform ? `مشروع مدعوم عبر جهة خارجية · ${row.platform}` : row?.partnerType === 'مستقل' ? 'مشروع مستقل' : type}
+                  type={row?.platform ? `مشروع لجهة خارجية · ${row.platform}` : row?.partnerType === 'مستقل' ? 'مشروع مستقل' : type}
                   entityName={entity.name}
                   entityId={String(entity.id)}
                   entityAction={row && !asEntity ? <RelinkEntityButton projectId={row.id} entityId={row.entityId} projectName={row.name} /> : undefined}
@@ -501,7 +511,6 @@ export default function ProjectPage() {
                     agreements: detail.agreement ? 1 : 0,
                     payments: livePayments.length,
                   }}
-                  chain={row ? projectChain(row) : undefined}
                 />
               )}
               {active === 'data' && row && (

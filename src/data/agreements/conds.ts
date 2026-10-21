@@ -1,4 +1,4 @@
-import type { AgreementPayment, PayCond } from '@/types/domain'
+import type { AgreementPayment, PayBasis, PayCond } from '@/types/domain'
 import { projectRows } from '@/data/mock/projects'
 import { planOfProject } from '@/data/mock/plans'
 import { closeRows } from '@/data/mock/closing'
@@ -32,6 +32,26 @@ export const condLine = (c: PayCond): string => (c.kind === 'date' ? `بعد ت�
 /** The payment's condition as one line · the structured ones, then the note */
 export const requirementOf = (p: Pick<AgreementPayment, 'requirement' | 'conds'>): string =>
   [...(p.conds ?? []).map(condLine), ...(p.requirement?.trim() ? [p.requirement.trim()] : [])].join(' · ')
+
+/* Client meeting 20 Oct · each payment says what it rests on · a plan activity or an interim
+   report. Stated on the payment when the schedule names it, otherwise read from its conditions
+   (an activity condition, then an interim-report condition, then the note's own words), so an
+   older schedule still answers the question. */
+
+export const BASIS_SAY: Record<PayBasis['kind'], string> = { activity: 'معتمدة على نشاط من الخطة', report: 'معتمدة على تقرير مرحلي' }
+
+export function basisOf(p: Pick<AgreementPayment, 'basis' | 'conds' | 'requirement'>): PayBasis | null {
+  if (p.basis) return p.basis
+  const act = (p.conds ?? []).find((c) => c.kind === 'activity')
+  if (act) return { kind: 'activity', ref: act.ref, label: act.label }
+  if ((p.conds ?? []).some((c) => c.kind === 'report' && c.ref === 'interim')) return { kind: 'report' }
+  if (p.requirement?.includes('التقرير المرحلي') || p.requirement?.includes('تقرير مرحلي')) return { kind: 'report' }
+  return null
+}
+
+/** The basis as one line · «معتمدة على نشاط من الخطة · اسم النشاط» */
+export const basisLine = (b: PayBasis | null): string =>
+  !b ? '' : b.kind === 'activity' && b.label ? `${BASIS_SAY.activity} · ${b.label}` : BASIS_SAY[b.kind]
 
 /** Is the condition met · `null` when the record can't tell (an output's evidence is read at the
     payment's review) */

@@ -12,7 +12,7 @@ import { payRequestById } from '@/data/mock/disbursements'
 import { nf, NOUN, nounAfter, pct, projectCode, riyals } from '@/lib/format'
 import { projectById } from '@/data/mock/projects'
 import { printArea } from '@/lib/export'
-import { usePayments } from '@/data/payments/store'
+import { basisOfRequest, usePayments } from '@/data/payments/store'
 import { extDocsOf, isExternalParty } from '@/data/partners/store'
 
 /* Disbursement order - step 16, and the spec's first output.
@@ -173,6 +173,7 @@ export default function OrderPage() {
                   <dt>قيمة الدفعة المعتمدة</dt>
                   <dd><span className="num">{nf.format(r.due)}</span> <Riyal /></dd>
                   {r.condition && <><dt>شروط الدفعة</dt><dd>{r.condition}</dd></>}
+                  {basisOfRequest(r) && <><dt>أساس الدفعة</dt><dd>{basisOfRequest(r)}</dd></>}
                 </dl>
 
                 {/* Note: amount in words - this document goes to the bank, and nothing else catches

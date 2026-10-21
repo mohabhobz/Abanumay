@@ -67,7 +67,7 @@ export const REG_TONE: Record<RegState, Tone> = {
    That's why each type here carries what it unlocks, and the screen shows it at selection time, not
    after. */
 
-export type PartnerKind = 'beneficiary' | 'implementer' | 'strategic'
+export type PartnerKind = 'beneficiary' | 'implementer' | 'strategic' | 'external'
 
 export interface PartnerKindDef {
   key: PartnerKind
@@ -108,9 +108,9 @@ export const PARTNER_KINDS: PartnerKindDef[] = [
      «الشريك الاستراتيجي»: it sees and feeds its own portfolios and decides nothing. */
   {
     key: 'strategic',
-    label: 'شريك استراتيجي · مدير محفظة',
+    label: 'شريك استراتيجي',
     from: 'internal',
-    example: 'منصة إحسان · تدير محفظة مشاريع',
+    example: 'مدير محفظة · مثل منصة إحسان',
     opens: [
       'لا تتقدّم من البوابة · يضيفها مشرف المنح من الداخل',
       'تدير محفظة مشاريع فرعية بمبلغ إجمالي واحد',
@@ -118,7 +118,25 @@ export const PARTNER_KINDS: PartnerKindDef[] = [
       'اتفاقية واحدة للمحفظة · بلا اتفاقية لكل مشروع فرعي',
     ],
   },
+  /* Client 20 Oct (#41) · an external party added from inside the system · a reference record that
+     receives a transfer · only its name and bank account are mandatory */
+  {
+    key: 'external',
+    label: 'جهة خارجية',
+    from: 'internal',
+    example: 'جهة تُدعم عبرها مشاريع · بلا بوابة',
+    opens: [
+      'سجل مرجعي بلا حساب بوابة · يُدعم عبره مشروع لجهة خارجية',
+      'الإلزامي حقلان فقط · اسم الجهة وبيانات الحساب البنكي',
+      'يُنشأ مشروعها بالنموذج المبسط من داخل النظام',
+    ],
+  },
 ]
+
+/** Client 20 Oct (#41) · the kinds direct registration offers · the beneficiary comes from the portal alone */
+export const DIRECT_KINDS: PartnerKindDef[] = PARTNER_KINDS.filter((k) => k.key !== 'beneficiary')
+/** Client 20 Oct (#41) · kinds registered with the two-field minimum (name + bank account) */
+export const LITE_KINDS: PartnerKind[] = ['implementer', 'external']
 
 export const partnerKind = (k: PartnerKind): PartnerKindDef =>
   PARTNER_KINDS.find((x) => x.key === k) ?? PARTNER_KINDS[0]

@@ -463,6 +463,12 @@ const apply = (x: Op) => {
       o.fields.accountType = x.partner
       o.events = o.events.filter((ev) => ev.kind !== 'reg')
       o.events[0] = { ...o.events[0], action: 'تسجيل داخلي · الجهة نشطة فور الحفظ', fields: [{ k: 'نوع الشراكة', v: x.partner }, { k: 'حالة الحساب', v: 'نشط' }] }
+      /* Client 20 Oct (#41) · an external party is a reference record · the external-project form lists it */
+      if (x.partner === 'جهة خارجية') {
+        const er = entityRows.find((y) => y.id === id)
+        const b = (x.banks ?? [])[0]
+        if (er) er.external = { transfer: b ? `${b.bankName} · ${b.bankHolder} · ${b.iban}` : undefined, by: x.by, at }
+      }
       lastInternal = id
       break
     }

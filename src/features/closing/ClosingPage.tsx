@@ -12,7 +12,7 @@ import { useStickyGroup } from '@/hooks/useStickyGroup'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { QuickRead } from '@/components/assistant'
 import {
-  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols,
+  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols, readSort, writeSort, nextSort, sortRows,
 } from '@/components/table'
 import { ExportMenu } from '@/components/export'
 import { ROUTES } from '@/app/routes'
@@ -27,7 +27,7 @@ import type { Sheet } from '@/lib/export'
 import { CloseCard } from './CloseCard'
 import { COLS, GROUPS } from './columns'
 
-const KEYS = ['q', 'stage', 'cycle', 'owner', 'late', 'short', 'view', 'group', 'adv'] as const
+const KEYS = ['q', 'stage', 'cycle', 'owner', 'late', 'short', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Closing inbox.
@@ -358,7 +358,9 @@ export default function ClosingPage() {
             <>
               <Glass className="tblcard">
                 <DataTable
-                  rows={sorted}
+                  rows={sortRows(sorted, COLS, readSort(v.ord))}
+                  sort={readSort(v.ord)}
+                  onSort={(k) => set({ ord: writeSort(nextSort(readSort(v.ord), k)) })}
                   all={COLS}
                   table="closings"
                   cols={cols}
@@ -428,7 +430,7 @@ export default function ClosingPage() {
                     {partners.map((x) => (
                       <tr key={`${x.kind}-${x.id}`}>
                         <td><Link className="lnk" to={x.href}>{x.name}</Link></td>
-                        <td>{x.kind === 'portfolio' ? 'محفظة' : 'مشروع مدعوم عبر جهة خارجية'}</td>
+                        <td>{x.kind === 'portfolio' ? 'محفظة' : 'مشروع لجهة خارجية'}</td>
                         <td>{x.partner}</td>
                         <td>{x.owner ? <Person name={x.owner} /> : '—'}</td>
                         <td><Tag tone={x.state === 'closed' ? 'ok' : x.state === 'closing' ? 'warn' : 'mute'}>{PARTNER_CLOSE_SAY[x.state]}</Tag></td>

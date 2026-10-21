@@ -25,7 +25,7 @@ import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
 import { COLS, GROUPS, rowHref } from './columns'
 import {
-  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols,
+  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols, readSort, writeSort, nextSort, sortRows,
 } from '@/components/table'
 import { NOUN, nounAfter, plural, units } from '@/lib/format'
 import {
@@ -43,7 +43,7 @@ import { ProjectCard } from './ProjectCard'
 const KEYS = [
   'q', 'status', 'stage', 'year', 'track', 'field', 'goal', 'region', 'city',
   'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact', 'portal', 'type',
-  'sort', 'page', 'size', 'view', 'adv', 'group', 'tab',
+  'sort', 'page', 'size', 'view', 'adv', 'group', 'tab', 'ord',
 ] as const
 
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -54,7 +54,7 @@ const PAGE_SIZE = PAGE_SIZES[0]
    don't count toward the "advanced filters" badge — that counter reflects only
    what's hidden. */
 const NOT_FILTERS: (keyof Params)[] = [
-  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'status', 'unowned', 'overdue', 'type', 'tab',
+  'q', 'sort', 'page', 'size', 'view', 'adv', 'group', 'status', 'unowned', 'overdue', 'type', 'tab', 'ord',
 ]
 
 /* Saved views, the questions a reviewer asks every day. The tabs partition the list: each project
@@ -104,7 +104,11 @@ const FILTER_KEYS = [
 const SORTS: { key: ProjectSort; label: string }[] = [
   { key: 'waiting', label: 'الأطول انتظارًا' },
   { key: 'newest', label: 'الأحدث تقديمًا' },
-  { key: 'amount', label: 'الأكبر مبلغًا' },
+  { key: 'oldest', label: 'الأقدم تقديمًا' },
+  { key: 'amount', label: 'المبلغ · من الأكبر' },
+  { key: 'amountAsc', label: 'المبلغ · من الأصغر' },
+  { key: 'longest', label: 'مدة التنفيذ · من الأطول' },
+  { key: 'shortest', label: 'مدة التنفيذ · من الأقصر' },
   { key: 'weight', label: 'الأعلى وزنًا' },
   { key: 'name', label: 'الاسم' },
 ]
@@ -561,7 +565,7 @@ export default function ProjectsListPage() {
                 all="كل الأنواع"
                 options={PROJECT_TYPES.map((t) => ({
                   value: t,
-                  label: `${t === 'مشروع خارجي' ? 'مدعوم عبر جهة خارجية' : t} (${typeCounts[t] ?? 0})`,
+                  label: `${t === 'مشروع خارجي' ? 'مشروع لجهة خارجية' : t} (${typeCounts[t] ?? 0})`,
                 }))}
                 onChange={(x) => set({ type: writeList(x) })}
               />
@@ -710,7 +714,9 @@ export default function ProjectsListPage() {
           ) : (
             <Glass className="tblcard">
               <DataTable
-                rows={result.rows}
+                rows={sortRows(result.rows, COLS, readSort(v.ord))}
+                sort={readSort(v.ord)}
+                onSort={(k) => set({ ord: writeSort(nextSort(readSort(v.ord), k)) })}
                 all={COLS}
                 table="projects"
                 cols={cols}

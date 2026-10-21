@@ -127,6 +127,8 @@ export const ROUTES = [
   '/projects/new?tab=money', '/projects/new?tab=when',
   /* المحفظة · ب-8 · كيان أب برّه قايمة المشاريع */
   '/projects/portfolio/PF-2026-001', '/projects/portfolio/PF-2026-002?as=partner', '/projects/portfolio/PF-2026-004',
+  /* المشروع الفرعي · صفحة كاملة (عميل ٢٠ أكتوبر) · جاري التنفيذ وبانتظار الاعتماد */
+  '/projects/portfolio/PF-2026-001/sub/PF-2', '/projects/portfolio/PF-2026-002/sub/PF-7',
   '/projects/portfolio/new', '/projects/portfolio/new?as=partner&entity=860', '/partners', '/partners?tab=external', '/partners/external/new', '/partners?tab=finance', '/partners?tab=reconcile', '/partners?tab=report', '/projects/21060',
   '/budget/doc/BG-2025-SA', '/budget/new',
   /* ميزانية 2026 · مولَّدة من المشاريع عشان السلسلة تمشي على داتا

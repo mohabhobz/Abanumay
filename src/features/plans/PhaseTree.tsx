@@ -1,31 +1,33 @@
-import { useState } from 'react'
-import { DateField, DateText, Icon, Money, Num, Tag, icons } from '@/components/ui'
-import {
-  ACTIVITY_SAY, ACTIVITY_TONE, TODAY, phaseDone,
-} from '@/data/mock/plans'
+import { useEffect, useState } from 'react'
+import { DateField, DateText, Icon, Money, Mono, Num, Tag, icons } from '@/components/ui'
+import { phaseDone } from '@/data/mock/plans'
 import { pct } from '@/lib/format'
 import type { PlanActivity, PlanPhase } from '@/types/domain'
 import { NoteTrail } from '@/components/notes'
 import { isStuck } from '@/data/plans/store'
+import { PROGRESS_SAY, PROGRESS_TONE, VERIFY_SAY, actSerial, progressOf, verifyOf } from '@/data/plans/timing'
 
 /* Phase and activity tree - the plan's core.
 
-   Note: a phase collapses over its activities, while activities stay expanded. This is the opposite
-   of our tables' default (grouping starts collapsed), because the question here isn't "how many
-   phases" - it's "which activity is pending". A phase whose activities are all accepted collapses
-   on its own, since it's genuinely done.
+   Client meeting 20 Oct (#31 · #32 · #33 · #34) · inside a phase the activities are a plain list,
+   one line each, with the columns of the client's sheet: the serial, the activity, its evidence, its
+   dates, its execution status, its attachments, the supervisor's check and the notes. Every decision
+   sits on the row itself (accept / return for the supervisor, «مكتمل» for the entity), so nothing
+   opens a screen of its own. What used to grow the row (the uploaded files, the execution data, the
+   note trail) moved behind the row's «المرفقات» link, into a sheet that opens over the plan and
+   closes back to one line.
 
-   Note: a late activity is tagged from its date, not its status. An activity can be "in progress"
-   with its due date a month past - status says work is happening, and date says that work is late.
-   They're two different pieces of information.
+   Note: a phase collapses over its activities. A phase with pending work opens on its own (the
+   page decides), because the question here is "which activity is pending", not "how many phases".
 
-   Note: the accept and reject buttons sit on the activity itself, not on the page's action dock.
-   The dock takes one decision for the whole document, while review here happens activity by
-   activity - a dock-level decision would accept every piece of evidence with one click, and that's
-   exactly what rule 14 exists to prevent. */
+   Note: the execution status is read from the dates and the plan settings (delay and stall
+   margins), and «مكتمل» is the entity's word · the supervisor's check is its own column, so
+   «مكتمل» never reads as counted (rule 14). */
 
 export interface PhaseTreeProps {
   phases: PlanPhase[]
+  /** The plan's id · the activity serial is keyed by plan and activity */
+  planId?: string
   /** The plan is approved - before that, activity review doesn't exist at all. */
   live: boolean
   /** The current user is the grants supervisor - only they can accept or reject. */
@@ -53,197 +55,211 @@ export interface PhaseTreeProps {
   focus?: string
 }
 
-const isLate = (a: PlanActivity) => a.state !== 'accepted' && a.to < TODAY
+const missingOf = (a: PlanActivity) => a.needs.filter((n) => !a.evidence.some((e) => e.kind === n))
 
-export function PhaseTree({
-  phases, live, canReview, canClaim, open, onToggle, onAccept, onReject, onClaim,
-  onUpload, onDrop, onStart, focus, onComment, me = '', onData,
-}: PhaseTreeProps) {
+export function PhaseTree(props: PhaseTreeProps) {
+  const { phases, planId = '', live, canReview, canClaim, open, onToggle, onAccept, onReject, onClaim, onStart, focus } = props
+  const [sheet, setSheet] = useState<string | null>(null)
+  const all = phases.flatMap((ph) => ph.activities)
+  const cur = sheet ? all.find((a) => a.id === sheet) : undefined
+
   return (
     <div className="phtree">
       {phases.map((ph, i) => {
         const done = phaseDone(ph)
         const shut = !open.has(ph.id)
         const queue = ph.activities.filter((a) => a.state === 'claimed').length
-        const late = ph.activities.filter(isLate).length
+        const late = ph.activities.filter((a) => progressOf(a) === 'late').length
         const stuck = ph.activities.filter((a) => isStuck(a)).length
 
         return (
           <section className="phase" key={ph.id}>
-            <button
-              type="button"
-              className="phase-h"
-              aria-expanded={!shut}
-              onClick={() => onToggle(ph.id)}
-            >
+            <button type="button" className="phase-h" aria-expanded={!shut} onClick={() => onToggle(ph.id)}>
               <Icon name={shut ? icons.chevronDown : icons.chevronUp} size="sm" />
               <span className="phase-n num">{i + 1}</span>
               <span className="phase-t">{ph.name || 'مرحلة بلا اسم'}</span>
-
-              <span className="phase-d sub">
-                <DateText>{ph.from}</DateText> ← <DateText>{ph.to}</DateText>
-              </span>
-
+              <span className="phase-d sub"><DateText>{ph.from}</DateText> ← <DateText>{ph.to}</DateText></span>
               <span className="phase-c"><Money sm>{ph.cost}</Money></span>
-
               {/* Percentage of the accepted amount alone - rule 14. */}
-              <Tag tone={done === 100 ? 'ok' : done > 0 ? 'teal' : 'mute'}>
-                {pct(done)}
-              </Tag>
-              {/* Percentage is the phase's status - both counters are weighted text, not badges. */}
+              <Tag tone={done === 100 ? 'ok' : done > 0 ? 'teal' : 'mute'}>{pct(done)}</Tag>
               {queue > 0 && <span className="sub"><b><Num>{queue}</Num></b> بانتظار</span>}
               {late > 0 && <span className="sub"><b><Num>{late}</Num></b> متأخّر</span>}
               {stuck > 0 && <span className="sub"><b><Num>{stuck}</Num></b> متعثّر</span>}
             </button>
 
-            {!shut && (
-              <ul className="acts">
-                {ph.activities.length === 0 && (
-                  <li className="act">
-                    <span className="sub">
-                      المرحلة بلا أنشطة · تُقاس المرحلة بأنشطتها، فلا يوجد ما يُراجَع.
-                    </span>
-                  </li>
-                )}
-                {ph.activities.map((a) => (
-                  <li
-                    className={`act${a.id === focus ? ' on' : ''}${isLate(a) ? ' late' : ''}`}
-                    key={a.id}
-                    id={`act-${a.id}`}
-                  >
-                    <div className="act-h">
-                      <span className="act-t">{a.name}</span>
-                      <Tag tone={ACTIVITY_TONE[a.state]}>{ACTIVITY_SAY[a.state]}</Tag>
-                      {/* Note: delay is a tag independent of status - "in progress" and "due a
-                          month ago" are two different pieces of information. */}
-                      {/* A neutral badge - the only colored element in the row is status. */}
-                      {isStuck(a) ? <Tag tone="no">متعثّر</Tag> : isLate(a) && <Tag tone="mute">تجاوز موعده</Tag>}
-                      <span className="pc-sp" />
-                      <span className="sub act-w">
-                        الوزن <span className="num">{a.weight}</span>
-                      </span>
-                    </div>
-
-                    <div className="act-m sub">
-                      <DateText>{a.from}</DateText> ← <DateText>{a.to}</DateText>
-                      {a.doneAt && <> · قُبِل <DateText>{a.doneAt}</DateText></>}
-                    </div>
-
-                    {/* Required evidence against what's uploaded - the check is visible in the row,
-                        not hidden behind opening the activity. */}
-                    <ul className="act-ev">
-                      {a.needs.map((need) => {
-                        const got = a.evidence.find((e) => e.kind === need)
-                        return (
-                          <li key={need} className={got ? 'ok' : 'no'}>
-                            <Icon name={got ? icons.check : icons.alert} size="sm" />
-                            <span>{need}</span>
-                            {got
-                              ? <span className="sub act-f">{got.fileName}</span>
-                              : <span className="sub act-f">لم يُرفع</span>}
-                            {/* Note: upload sits next to the specific missing evidence item, not
-                                behind one button above. A generic "upload attachment" button lets
-                                the entity upload a file and pick its type, and picking wrong sends
-                                the activity back. The button here already knows its type from the
-                                row it's in, so there's no choice to get wrong. */}
-                            {/* 12.2.20 · before submission the entity replaces or removes what it uploaded */}
-                            {live && canClaim && onUpload && a.state !== 'accepted' && a.state !== 'claimed' && (
-                              <label className="btn btn-ghost btn-sm act-up">
-                                <Icon name={icons.upload} size="sm" />
-                                {got ? 'استبدل' : 'ارفع الشاهد'}
-                                <input className="vis-h" type="file" aria-label={`${got ? 'استبدل' : 'ارفع'} ${need} · ${a.name}`} onChange={(e) => {
-                                  const f = e.target.files?.[0]
-                                  if (f) onUpload(a.id, need, f.name, got?.id)
-                                  e.target.value = ''
-                                }} />
-                              </label>
-                            )}
-                            {live && canClaim && got && onDrop && a.state !== 'accepted' && a.state !== 'claimed' && (
-                              <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${got.fileName}`} onClick={() => onDrop(a.id, got.id)}>
-                                <Icon name={icons.close} size="sm" />
-                              </button>
-                            )}
-                          </li>
-                        )
-                      })}
-                    </ul>
-
-                    {/* Batch 6 · the activity's own data · the entity writes and edits it until the
-                        activity is accepted, and everyone reads it */}
-                    <ActData a={a} edit={Boolean(live && canClaim && onData && a.state !== 'accepted' && a.state !== 'claimed')} onSave={(d) => onData?.(a.id, d) ?? []} />
-
-                    {/* Note: a log, not a single line. Every note carries its author and time, and
-                        the add button opens a field under the name of whoever opened the screen.
-                        The button appears only on an activity with a note or one under review, not
-                        on every activity in the tree - a comment button on an activity that "hasn't
-                        started" has nothing to say. */}
-                    <NoteTrail
-                      notes={a.notes ?? []}
-                      me={me}
-                      onAdd={onComment && live
-                        && ((a.notes?.length ?? 0) > 0 || a.state === 'claimed' || a.state === 'rejected')
-                        ? (say) => onComment(a.id, say)
-                        : undefined}
-                    />
-
-                    {/* Note: the decision sits on the activity - acceptance is locked if a required
-                        piece of evidence is missing, and the reason is written in the tooltip. */}
-                    {live && canReview && a.state === 'claimed' && (
-                      <div className="act-a">
-                        {(() => {
-                          const missing = a.needs.filter(
-                            (n) => !a.evidence.some((e) => e.kind === n),
-                          )
-                          return (
-                            <>
-                              <button
-                                className="btn btn-p btn-sm"
-                                disabled={missing.length > 0}
-                                title={missing.length > 0
-                                  ? `ينقص: ${missing.join(' · ')}`
-                                  : /* doc rule 14 */ 'يُحتسب إنجازًا من لحظة القبول'}
-                                onClick={() => onAccept?.(a.id)}
-                              >
-                                اقبل النشاط
-                              </button>
-                              <button
-                                className="btn btn-2 btn-sm"
-                                onClick={() => onReject?.(a.id)}
-                              >
-                                أعده بملاحظة
-                              </button>
-                            </>
-                          )
-                        })()}
-                      </div>
-                    )}
-
-                    {/* The entity's portal - "done" reads as claimed, not accepted. */}
-                    {live && canClaim
-                      && (a.state === 'doing' || a.state === 'todo' || a.state === 'rejected') && (
-                      <div className="act-a">
-                        {a.state === 'todo' && onStart && (
-                          <button className="btn btn-ghost btn-sm" onClick={() => onStart(a.id)}>ابدأ النشاط</button>
-                        )}
-                        <button
-                          className="btn btn-2 btn-sm"
-                          disabled={a.needs.some((n) => !a.evidence.some((e) => e.kind === n))}
-                          title={a.needs.some((n) => !a.evidence.some((e) => e.kind === n))
-                            ? 'ارفع الشواهد المطلوبة أولًا'
-                            : 'يحتسبه المشرف إنجازًا بعد المراجعة'}
-                          onClick={() => onClaim?.(a.id)}
-                        >
-                          أرسل النشاط المكتمل للمراجعة
-                        </button>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+            {!shut && (ph.activities.length === 0 ? (
+              <p className="sub cnote acttbl-empty">المرحلة بلا أنشطة · تُقاس المرحلة بأنشطتها، فلا يوجد ما يُراجَع.</p>
+            ) : (
+              <div className="tblwrap acttbl-w">
+                <table className="tbl acttbl">
+                  <colgroup>
+                    <col className="c-name" /><col className="c-ev" /><col className="c-d" />
+                    <col className="c-st" /><col className="c-att" /><col className="c-vf" /><col className="c-nt" /><col className="c-act" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th><span className="th-t">النشاط · م</span></th>
+                      <th><span className="th-t">الشاهد</span></th>
+                      <th><span className="th-t">البدء · الانتهاء</span></th>
+                      <th><span className="th-t">حالة الإنجاز</span></th>
+                      <th><span className="th-t">المرفقات</span></th>
+                      <th><span className="th-t">تحقق المشرف</span></th>
+                      <th><span className="th-t">ملاحظات</span></th>
+                      <th><span className="th-t vis-h">الإجراء</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ph.activities.map((a) => {
+                      const st = progressOf(a)
+                      const vf = verifyOf(a)
+                      const missing = missingOf(a)
+                      const notes = a.notes ?? []
+                      const lastNote = notes.at(-1)
+                      return (
+                        <tr key={a.id} id={`act-${a.id}`} className={a.id === focus ? 'on' : undefined}>
+                          {/* the serial rides under the name · ten narrow columns cut both of them */}
+                          <td className="acttbl-2"><b className="acttbl-n" title={a.name}>{a.name}</b><Mono>{actSerial(planId, a.id)}</Mono></td>
+                          <td className="acttbl-2"><span className="sub" title={a.needs.join(' · ')}>{a.needs.length ? a.needs.join(' · ') : 'بلا شاهد'}</span></td>
+                          <td className="acttbl-2"><DateText>{a.from}</DateText><DateText>{a.to}</DateText></td>
+                          <td><Tag tone={PROGRESS_TONE[st]}>{PROGRESS_SAY[st]}</Tag></td>
+                          <td className="acttbl-2">
+                            <button type="button" className="tlink acttbl-l" onClick={() => setSheet(a.id)}
+                              aria-label={`المرفقات · ${a.name}`}>
+                              المرفقات (<Num>{a.evidence.length}</Num>)
+                            </button>
+                            {missing.length > 0 && <span className="sub">ينقص <Num>{missing.length}</Num></span>}
+                          </td>
+                          <td>{vf ? <Tag tone={vf === 'ok' ? 'ok' : vf === 'no' ? 'no' : 'warn'}>{VERIFY_SAY[vf]}</Tag> : <span className="sub">—</span>}</td>
+                          <td>
+                            {notes.length > 0
+                              ? <button type="button" className="tlink acttbl-l" title={lastNote?.say} onClick={() => setSheet(a.id)}><Num>{notes.length}</Num> · {lastNote?.say}</button>
+                              : <span className="sub">—</span>}
+                          </td>
+                          <td>
+                            <span className="acttbl-a">
+                              {live && canReview && a.state === 'claimed' && (
+                                <>
+                                  <button type="button" className="btn btn-p btn-sm" disabled={missing.length > 0}
+                                    title={missing.length ? `ينقص: ${missing.join(' · ')}` : 'يُحتسب إنجازًا من لحظة القبول'}
+                                    onClick={() => onAccept?.(a.id)}>اقبل النشاط</button>
+                                  <button type="button" className="btn btn-2 btn-sm" onClick={() => onReject?.(a.id)}>أعده بملاحظة</button>
+                                </>
+                              )}
+                              {live && canClaim && a.state === 'todo' && onStart && st !== 'notYet' && (
+                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => onStart(a.id)}>ابدأ</button>
+                              )}
+                              {live && canClaim && (a.state === 'doing' || a.state === 'todo' || a.state === 'rejected') && (
+                                <button type="button" className="btn btn-2 btn-sm" disabled={missing.length > 0}
+                                  title={missing.length ? 'ارفع الشواهد المطلوبة من «المرفقات» أولًا' : 'يذهب لمشرف المنح للتحقق ولا يُحتسب قبل قبوله'}
+                                  onClick={() => onClaim?.(a.id)}>مكتمل</button>
+                              )}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ))}
           </section>
         )
       })}
+
+      {cur && <ActSheet a={cur} serial={actSerial(planId, cur.id)} {...props} onClose={() => setSheet(null)} />}
+    </div>
+  )
+}
+
+/** #33 · an activity's attachments, its execution data and its notes · over the plan, not under the row */
+function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me = '', onData, onClose }: PhaseTreeProps & { a: PlanActivity; serial: string; onClose: () => void }) {
+  const edit = Boolean(live && canClaim && a.state !== 'accepted' && a.state !== 'claimed')
+  const extra = a.evidence.filter((e) => !a.needs.includes(e.kind))
+  /* Escape closes the sheet like every other overlay in the system */
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', esc)
+    return () => window.removeEventListener('keydown', esc)
+  }, [onClose])
+  return (
+    <div className="bmask" role="presentation" onClick={onClose}>
+      <div className="chrome modal" role="dialog" aria-modal="true" aria-label={`مرفقات النشاط · ${a.name}`} onClick={(e) => e.stopPropagation()}>
+        <div className="mh">
+          <Icon name={icons.upload} size="md" />
+          <b>{a.name}</b>
+          <Mono>{serial}</Mono>
+        </div>
+        <div className="mb col">
+          <h4 className="fnd-h">المرفقات</h4>
+          {/* Upload sits next to the specific evidence item · the button already knows its type */}
+          <ul className="act-ev">
+            {a.needs.map((need) => {
+              const got = a.evidence.find((e) => e.kind === need)
+              return (
+                <li key={need} className={got ? 'ok' : 'no'}>
+                  <Icon name={got ? icons.check : icons.alert} size="sm" />
+                  <span>{need}</span>
+                  <span className="sub act-f">{got ? got.fileName : 'لم يُرفع'}</span>
+                  {edit && onUpload && (
+                    <label className="btn btn-ghost btn-sm act-up">
+                      <Icon name={icons.upload} size="sm" />
+                      {got ? 'استبدل' : 'ارفع الشاهد'}
+                      <input className="vis-h" type="file" aria-label={`${got ? 'استبدل' : 'ارفع'} ${need} · ${a.name}`} onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) onUpload(a.id, need, f.name, got?.id)
+                        e.target.value = ''
+                      }} />
+                    </label>
+                  )}
+                  {edit && got && onDrop && (
+                    <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${got.fileName}`} onClick={() => onDrop(a.id, got.id)}>
+                      <Icon name={icons.close} size="sm" />
+                    </button>
+                  )}
+                </li>
+              )
+            })}
+            {extra.map((e) => (
+              <li key={e.id} className="ok">
+                <Icon name={icons.check} size="sm" />
+                <span>{e.kind}</span>
+                <span className="sub act-f">{e.fileName}</span>
+                {edit && onDrop && (
+                  <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${e.fileName}`} onClick={() => onDrop(a.id, e.id)}>
+                    <Icon name={icons.close} size="sm" />
+                  </button>
+                )}
+              </li>
+            ))}
+            {a.needs.length === 0 && extra.length === 0 && <li className="sub">لا يطلب النشاط شاهدًا ولا مرفقات عليه</li>}
+          </ul>
+          {edit && onUpload && (
+            <label className="btn btn-2 btn-sm act-up">
+              <Icon name={icons.plus} size="sm" />
+              أضف مرفقًا آخر
+              <input className="vis-h" type="file" aria-label={`أضف مرفقًا · ${a.name}`} onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) onUpload(a.id, 'مرفق إضافي', f.name)
+                e.target.value = ''
+              }} />
+            </label>
+          )}
+
+          <h4 className="fnd-h">بيانات التنفيذ</h4>
+          <ActData a={a} edit={Boolean(edit && onData)} onSave={(d) => onData?.(a.id, d) ?? []} />
+
+          <h4 className="fnd-h">الملاحظات</h4>
+          <NoteTrail
+            notes={a.notes ?? []}
+            me={me}
+            onAdd={onComment && live ? (say) => onComment(a.id, say) : undefined}
+          />
+          {(a.notes ?? []).length === 0 && !(onComment && live) && <p className="sub">لا ملاحظات</p>}
+        </div>
+        <div className="mf">
+          <button type="button" className="btn btn-2" onClick={onClose}>إغلاق</button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -255,7 +271,6 @@ function ActData({ a, edit, onSave }: { a: PlanActivity; edit: boolean; onSave: 
   const [reached, setReached] = useState(a.actual?.reached === null || a.actual?.reached === undefined ? '' : String(a.actual.reached))
   const [doneOn, setDoneOn] = useState(a.actual?.doneOn ?? '')
   const [err, setErr] = useState<string[]>([])
-  if (!a.actual && !edit) return null
   if (open) {
     return (
       <div className="regfields mt-2">
@@ -287,7 +302,7 @@ function ActData({ a, edit, onSave }: { a: PlanActivity; edit: boolean; onSave: 
     <div className="act-m sub">
       {a.actual ? (
         <>
-          بيانات التنفيذ: {a.actual.text}
+          {a.actual.text}
           {a.actual.reached !== null && <> · <Num>{a.actual.reached}</Num> مستفيد</>}
           {a.actual.doneOn && <> · <DateText>{a.actual.doneOn}</DateText></>}
         </>

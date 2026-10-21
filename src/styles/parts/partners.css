@@ -50,3 +50,18 @@
 @media (max-width:900px){
   .ptn-ind{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* Client 20 Oct (#17) · the sub-project's own page · its value beside the title, its copied outputs */
+.spj-amt{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-1)}
+.spj-amt .amt{font-family:var(--fd);font-size:var(--fs-6);font-weight:700}
+.spj-list{margin:0;padding-inline-start:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-2);line-height:var(--lh-text)}
+
+/* Client 20 Oct (#24) · the portfolio's financial position · six figures, three to a row, then the rulers */
+.pfi-kpi,.pfi-two{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-4);grid-auto-rows:auto}
+.pfi-two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pfi-kpi>.stat,.pfi-two>.stat{display:grid;grid-row:span 4;grid-template-rows:subgrid;row-gap:0;align-content:start}
+@media (max-width:720px){.pfi-kpi,.pfi-two{grid-template-columns:minmax(0,1fr)}}
+/* Client 20 Oct (#30) · the sub-project's state cell keeps its tag inside the column */
+.subtbl td.subst{max-inline-size:calc(var(--sp-12) * 4)}
+/* Client 20 Oct (#25) · one portfolio per block on the disbursement desk */
+.pfdesk+.pfdesk{margin-block-start:var(--sp-5);padding-block-start:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-1)}

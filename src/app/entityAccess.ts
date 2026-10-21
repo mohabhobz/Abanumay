@@ -23,7 +23,8 @@ function ownerOf(path: string, q: URLSearchParams): string | undefined {
   let m: RegExpMatchArray | null
   if (path === ROUTES.projectNew) return q.get('entity') ?? undefined
   if (path === ROUTES.portfolioNew) return q.get('entity') ?? undefined
-  if ((m = path.match(/^\/projects\/portfolio\/([^/]+)$/))) return PORTFOLIOS.find((x) => x.id === m![1])?.entityId
+  /* client 20 Oct (#17) · a sub-project's page belongs to its portfolio's partner */
+  if ((m = path.match(/^\/projects\/portfolio\/([^/]+)(\/sub\/[^/]+)?$/))) return PORTFOLIOS.find((x) => x.id === m![1])?.entityId
   if ((m = path.match(/^\/projects\/([^/]+)(\/[^/]+)?$/))) return projectRows.find((x) => x.id === m![1])?.entityId
   if ((m = path.match(/^\/agreements\/([^/]+)$/))) return agreements.find((x) => x.id === m![1])?.entityId
   if ((m = path.match(/^\/plans\/([^/]+)(\/edit)?$/))) return planRows.find((x) => x.id === m![1])?.entityId

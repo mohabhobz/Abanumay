@@ -42,7 +42,11 @@ function resolve<T>(value: T): Promise<T> {
 export type ProjectSort =
   | 'waiting'      // Longest waiting in its department · the default
   | 'newest'
-  | 'amount'
+  | 'oldest'
+  | 'amount'       // Largest amount first
+  | 'amountAsc'    // Smallest amount first
+  | 'longest'      // Longest implementation duration first
+  | 'shortest'
   | 'weight'
   | 'name'
 
@@ -115,7 +119,7 @@ export interface EntityQuery {
   /** Archived only · the archive search (2.4.29); every other list hides them (2.4.28) */
   archived?: boolean
   search?: string
-  sort?: 'granted' | 'projects' | 'newest' | 'name'
+  sort?: 'granted' | 'grantedAsc' | 'projects' | 'newest' | 'oldest' | 'name'
   page?: number
   pageSize?: number
 }
@@ -218,8 +222,16 @@ const sortProjects = (rows: ProjectRow[], sort: ProjectSort = 'waiting'): Projec
   switch (sort) {
     case 'newest':
       return out.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
+    case 'oldest':
+      return out.sort((a, b) => a.submittedAt.localeCompare(b.submittedAt))
     case 'amount':
       return out.sort((a, b) => b.amountRequested - a.amountRequested)
+    case 'amountAsc':
+      return out.sort((a, b) => a.amountRequested - b.amountRequested)
+    case 'longest':
+      return out.sort((a, b) => b.durationDays - a.durationDays)
+    case 'shortest':
+      return out.sort((a, b) => a.durationDays - b.durationDays)
     case 'weight':
       return out.sort((a, b) => b.weight - a.weight)
     case 'name':
@@ -262,6 +274,10 @@ const sortEntities = (rows: EntityRow[], sort: EntityQuery['sort'] = 'granted'):
       )
     case 'newest':
       return out.sort((a, b) => b.registeredAt.localeCompare(a.registeredAt))
+    case 'oldest':
+      return out.sort((a, b) => a.registeredAt.localeCompare(b.registeredAt))
+    case 'grantedAsc':
+      return out.sort((a, b) => a.grantedTotal - b.grantedTotal)
     case 'name':
       return out.sort((a, b) => a.name.localeCompare(b.name, 'ar'))
     default:

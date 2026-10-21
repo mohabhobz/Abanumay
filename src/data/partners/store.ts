@@ -133,24 +133,46 @@ export const ehExecOf = (projectId: string): EhExec | undefined => EH_EXEC.get(p
 export const ehExecLog = (projectId: string): EhExec[] => EH_EXEC.get(projectId) ?? []
 /** v3 · 11.2.2 · the files the authority attached when creating the project */
 const EXT_FILES = new Map<string, string[]>()
+/** Client 20 Oct (#43 · #44) · how the support is transferred and who shares in the project ·
+    the entity's own registered account, or a third party's account with its documents */
+export type ExtTransfer = 'self' | 'third'
+export const EXT_TRANSFER_SAY: Record<ExtTransfer, string> = { self: 'عن طريق الجهة نفسها', third: 'عن طريق طرف ثالث' }
+export interface ExtThird { holder: string; bank: string; iban: string; files: string[] }
+export interface ExtMeta { transfer: ExtTransfer; account?: string; third?: ExtThird; sharedWith?: string }
+const EXT_META = new Map<string, ExtMeta>()
+export const extMetaOf = (projectId: string): ExtMeta | undefined => EXT_META.get(projectId)
 /** Re-audit 17 Oct · the highest sub-project number a portfolio ever used, dropped drafts included ·
     the next one follows it · a session counter on top made the numbers jump (S1 · S3 · S6 · S10) */
 const SUB_TOP = new Map<string, number>()
+/** Client 20 Oct (#19) · the last sub-project serial issued · the seed numbers first, then the replay in order */
+const SUB_SERIAL = { n: 0 }
+const nextSubSerial = () => `SPRJ-2026-${String(++SUB_SERIAL.n).padStart(5, '0')}`
+/** Client 20 Oct (#17) · a sub-project's own history line */
+const slog = (x: { log?: PfLog[] }, by: string, what: string, at: string) => { (x.log ??= []).push({ at: at.slice(0, 10), by, what }) }
+/** Client 20 Oct (#20) · the portfolio's outputs and execution stages, copied onto a new sub-project ·
+    the plan's activity outputs, or the portfolio's goals when the plan has none */
+function pfCopy(pf: { goals: string; plan: { phases: { name: string; from: string; to: string; activities?: { output: string }[] }[] } }) {
+  const fromPlan = [...new Set(pf.plan.phases.flatMap((ph) => (ph.activities ?? []).map((a) => a.output.trim()).filter(Boolean)))]
+  const outputsCopy = fromPlan.length ? fromPlan : pf.goals.split(/[·،\n]/).map((x) => x.trim()).filter(Boolean)
+  return { outputsCopy, phasesCopy: pf.plan.phases.map((ph) => ({ name: ph.name, from: ph.from, to: ph.to })) }
+}
 export const extFilesOf = (projectId: string) => EXT_FILES.get(projectId) ?? []
 
 /* ── v3 · 11.2.1 · 11.4.1 – 11.4.3 · the external party's reference record and the simplified form ── */
 
 /** The stages an external project takes · its own pre-execution step and its closing's approval */
 export { EXT_PRE_STAGE, EXT_CLOSE_STAGE }
-export const EXT_KIND = 'مشروع مدعوم عبر جهة خارجية' as const
+export const EXT_KIND = 'مشروع لجهة خارجية' as const
 export type ExtPartyField = 'transfer' | 'refs'
 export type ExtProjectField = 'goal' | 'description' | 'funding' | 'method' | 'region' | 'startAt' | 'files'
-export const EXT_PARTY_FIELD_SAY: Record<ExtPartyField, string> = { transfer: 'بيانات الحساب أو التحويل', refs: 'البيانات المرجعية' }
+export const EXT_PARTY_FIELD_SAY: Record<ExtPartyField, string> = { transfer: 'بيانات الحساب البنكي', refs: 'البيانات المرجعية' }
 export const EXT_PROJECT_FIELD_SAY: Record<ExtProjectField, string> = {
   goal: 'الهدف', description: 'الوصف', funding: 'مصدر التمويل', method: 'طريقة التحويل أو التنفيذ', region: 'المنطقة', startAt: 'تاريخ البدء', files: 'المرفقات المتاحة',
 }
 /** v3 · 11.4.2 · 11.4.3 · the minimum the foundation asks for · set by the authority */
-export const EXT_CFG: { party: ExtPartyField[]; project: ExtProjectField[] } = { party: [], project: ['goal', 'description', 'method'] }
+/* Client 20 Oct (#42) · the simplified form's mandatory set is name · party · field · track · goal · amount ·
+   transfer method · everything else is optional unless the authority asks for it */
+export const EXT_CFG: { party: ExtPartyField[]; project: ExtProjectField[] } = { party: ['transfer'], project: ['goal', 'method'] }
 export const EXT_METHODS = ['تحويل إلى حساب الجهة الخارجية', 'تنفيذ عبر منصة الجهة الخارجية', 'تحويل لطرف ثالث بمستند رسمي'] as const
 export const EXT_FUNDING = ['ميزانية المنح', 'مخصص الشراكات', 'تبرع مقيّد'] as const
 export const externalParties = () => entityRows.filter((e) => e.external && !e.archived)
@@ -216,7 +238,8 @@ export function ehCloseChecks(projectId: string): { key: string; label: string; 
   /* v3 · 11.2.13 · 11.4.12 · the closing requirements, the transfer proofs and the execution proofs ·
      no regular final report, no evaluation */
   return [
-    { key: 'pays', label: 'لا إذن صرف مفتوح · ما صُرف صُرف بإذن من النظام وإثبات تحويل', ok: !open.length && paid > 0 },
+    /* Client 20 Oct (#45) · the closing waits until every payment is paid · if the project has any */
+    { key: 'pays', label: open.length ? `جميع الدفعات مدفوعة · ${nf.format(open.length)} ${open.length === 1 ? 'دفعة لم تُصرف بعد' : 'دفعات لم تُصرف بعد'}` : 'جميع الدفعات مدفوعة · لا إذن صرف مفتوح', ok: !open.length },
     { key: 'platform', label: 'العمليات المسجلة على منصة الجهة مؤكدة من الإدارة المالية', ok: m.review === 0 },
     { key: 'cap', label: 'المصروف في حدود قيمة المشروع', ok: paid <= m.value },
     { key: 'exec', label: 'حالة التنفيذ «منجز» بإثبات من الجهة الخارجية', ok: x?.status === 'منجز' && x.files.length > 0 },
@@ -286,7 +309,31 @@ export interface SubProject {
   ready?: boolean
   /** v3 · 0.sub.6 · 0.sub.7 · 0.sub.8 · who closed it out and why */
   outcome?: { by: string; at: string; note: string }
+  /** Client 20 Oct (#19) · the sub-project's own serial · SPRJ-2026-00001 · issued once, never reused */
+  serial?: string
+  /** Client 20 Oct (#18) · who carries it out · the portfolio's owner, an association or a company */
+  implementer?: SubImplementer
+  implementerName?: string
+  /** Client 20 Oct (#18) · the end beneficiaries beside the direct ones · and the full cost beside the grant */
+  finalBeneficiaries?: number
+  cost?: number
+  /** Client 20 Oct (#18) · the detailed evaluation, by the portfolio's approved model, as a file */
+  evalFile?: string
+  /** Client 20 Oct (#20) · copied from the portfolio when the sub-project is created · its own copy after that */
+  outputsCopy?: string[]
+  phasesCopy?: { name: string; from: string; to: string }[]
+  /** Client 20 Oct (#27) · the results the entity records · the supervisor approves them */
+  results?: SubResults
+  /** Client 20 Oct (#17) · sent back · by the supervisor to the entity, or by the manager to the supervisor */
+  returned?: { by: string; at: string; note: string; seat: 'supervisor' | 'grants-manager' }
+  /** Client 20 Oct (#17) · its own history · the portfolio's log keeps the portfolio-level entries */
+  log?: PfLog[]
 }
+/** Client 20 Oct (#18) · who carries a sub-project out */
+export type SubImplementer = 'owner' | 'association' | 'company'
+export const SUB_IMPL_SAY: Record<SubImplementer, string> = { owner: 'مالك المحفظة', association: 'جمعية', company: 'شركة' }
+/** Client 20 Oct (#27) · the closing data · actual cost, actual beneficiaries, one attachment or more */
+export interface SubResults { cost: number; reached: number; files: string[]; note: string; at: string; by: string }
 /* Batch 7 · partners#11 · a phase carries its activities, each with its output and the evidence it
    needs (12.2.6 – 12.2.9) · the plan was phases alone */
 export interface PfActivity { id: string; name: string; output: string; evidence: string }
@@ -426,7 +473,9 @@ export function subsGate(pf: PortfolioRec): { ok: boolean; why: string } {
   return { ok: true, why: '' }
 }
 
-export interface SubDraft { name: string; region: string; city?: string; amount: number; beneficiaries: number; outputs: string; files: string[]; activityId?: string }
+export interface SubDraft { name: string; region: string; city?: string; amount: number; beneficiaries: number; outputs: string; files: string[]; activityId?: string
+  /* Client 20 Oct (#18) · optional on the form · the sub-project's page completes them */
+  implementer?: SubImplementer; implementerName?: string; finalBeneficiaries?: number; cost?: number; evalFile?: string }
 
 /** v3 · 12.4.13 · the portfolio plan's activities a sub-project can serve · a phase without activities
     stands for one */
@@ -598,6 +647,13 @@ type Op = { by: string; at: string } & (
   | { op: 'subComplete'; pfId: string; subId: string; act: 'approve' | 'return'; note: string }
   | { op: 'subStall'; pfId: string; subId: string; reason: string }
   | { op: 'subExclude'; pfId: string; subId: string; reason: string }
+  /* Client 20 Oct (#17) · the supervisor sends it back to the entity or rejects it outright · the manager
+     returns it to the supervisor for completion */
+  | { op: 'subReturn'; pfId: string; subId: string; note: string; seat: 'supervisor' | 'grants-manager' }
+  | { op: 'subRejectDirect'; pfId: string; subId: string; note: string }
+  /* Client 20 Oct (#18 · #27) · the sub-project's own data · and the results the entity sends */
+  | { op: 'subInfo'; pfId: string; subId: string; info: Pick<SubProject, 'implementer' | 'implementerName' | 'city' | 'finalBeneficiaries' | 'cost' | 'evalFile'> }
+  | { op: 'subResults'; pfId: string; subId: string; cost: number; reached: number; files: string[]; note: string }
   | { op: 'pfForm'; id: string; fields: SubField[] }
   | { op: 'pfCriteria'; id: string; file: string }
   | { op: 'pfReliable'; id: string; on: boolean }
@@ -626,6 +682,7 @@ type Op = { by: string; at: string } & (
   | { op: 'extParty'; id: string; name: string; region: string; city: string; transfer: string; refs: string }
   | { op: 'extCfg'; party: ExtPartyField[]; project: ExtProjectField[] }
   | { op: 'extFiles'; projectId: string; files: string[] }
+  | { op: 'extMeta'; projectId: string; meta: ExtMeta }
   | { op: 'ehExec'; projectId: string; exec: Omit<EhExec, 'by' | 'at'> }
   | { op: 'ehCloseSend'; projectId: string; report: string; evidence: string[] }
   | { op: 'ehCloseAct'; projectId: string; act: 'approve' | 'return'; note: string; paid?: number; outcome?: ExtCloseOutcome; redirect?: { purpose: string; decision: string; file: string } }
@@ -950,7 +1007,10 @@ function applyOp(o: Op) {
       const pf = pfById(o.pfId)
       if (!pf || !subsGate(pf).ok || pf.items.some((x) => x.id === o.sub.id)) return
       SUB_TOP.set(pf.id, Math.max(SUB_TOP.get(pf.id) ?? 0, Number(o.sub.id.split('-S')[1]) || 0))
-      pf.items.push({ ...o.sub, track: pf.track, field: pf.field, state: 'draft', addedBy: o.by, addedAt: day(o.at) })
+      /* Client 20 Oct (#19 · #20) · its serial, and its own copy of the portfolio's outputs and stages */
+      const nx: SubProject = { ...o.sub, track: pf.track, field: pf.field, state: 'draft', addedBy: o.by, addedAt: day(o.at), serial: nextSubSerial(), ...pfCopy(pf) }
+      slog(nx, o.by, `أنشأ المسودة · ${nf.format(o.sub.amount)} · نُسخت مخرجات المحفظة ومراحل تنفيذها`, o.at)
+      pf.items.push(nx)
       plog(pf, o.by, `أضاف مسودة مشروع فرعي «${o.sub.name}» · ${nf.format(o.sub.amount)}${o.sub.files.length ? ` · ${o.sub.files.join('، ')}` : ''}`, o.at)
       return
     }
@@ -971,7 +1031,7 @@ function applyOp(o: Op) {
       const list = pf.items.filter((x) => o.subIds.includes(x.id) && x.state === 'draft')
       if (!list.length) return
       /* v3 · 0.sub.1 · «مرفوع» · the supervisor studies it first (0.sub.2) */
-      for (const x of list) { x.state = 'submitted'; x.reqId = o.reqId; x.stateAt = o.at }
+      for (const x of list) { x.state = 'submitted'; x.reqId = o.reqId; x.stateAt = o.at; x.returned = undefined; slog(x, o.by, 'رفعته الجهة لمشرف المنح', o.at) }
       pf.approvals.push({ id: o.reqId, subIds: list.map((x) => x.id), at: day(o.at), by: o.by })
       plog(pf, o.by, `رفع ${list.length > 1 ? `${list.length} مشاريع فرعية` : `«${list[0].name}»`} للمراجعة · ${nf.format(list.reduce((s, x) => s + x.amount, 0))}`, o.at)
       notify([pf.owner], `مشاريع فرعية للدراسة · ${pf.name}`, `${list.length} مشروع`, ROUTES.portfolio(pf.id))
@@ -992,6 +1052,7 @@ function applyOp(o: Op) {
         x.note = d.note?.trim() || undefined
         x.decidedBy = o.by
         x.decidedAt = day(o.at)
+        slog(x, o.by, d.outcome === 'approve' ? `اعتمده مدير المنح${x.note ? ` · ${x.note}` : ''} · جاري التنفيذ` : `رفضه مدير المنح · ${d.reason}`, o.at)
         if (d.outcome === 'approve') { ok++; x.exec ??= { status: 'لم يبدأ', progress: 0, reached: 0, results: '', evidence: [], at: day(o.at), by: o.by } } else no++
       }
       if (ok + no) {
@@ -1011,6 +1072,7 @@ function applyOp(o: Op) {
       if (o.exec.results.trim() || o.exec.evidence.length) x.state = 'closing'
       x.ready = o.exec.status === 'مكتمل'
       plog(pf, o.by, `حدّث نتائج «${x.name}» · إنجاز ${o.exec.progress} بالمئة${x.ready ? ' · طلب اعتماد النتائج' : ''}`, o.at)
+      slog(x, o.by, `حدّث التنفيذ · إنجاز ${o.exec.progress} بالمئة${x.ready ? ' · طلب اعتماد النتائج' : ''}`, o.at)
       if (x.ready) notify([pf.owner], `اعتماد نتائج مشروع فرعي · ${pf.name}`, x.name, ROUTES.portfolio(pf.id))
       listRow(pf)
       return
@@ -1019,7 +1081,7 @@ function applyOp(o: Op) {
       const pf = pfById(o.pfId)
       if (!pf) return
       const list = pf.items.filter((x) => o.subIds.includes(x.id) && x.state === 'submitted')
-      for (const x of list) { x.state = 'study'; x.stateAt = o.at }
+      for (const x of list) { x.state = 'study'; x.stateAt = o.at; slog(x, o.by, 'بدأ مشرف المنح الدراسة', o.at) }
       if (list.length) plog(pf, o.by, `بدأ مشرف المنح دراسة ${list.length > 1 ? `${list.length} مشاريع فرعية` : `«${list[0].name}»`}`, o.at)
       return
     }
@@ -1033,6 +1095,7 @@ function applyOp(o: Op) {
         x.state = 'pending'
         x.stateAt = o.at
         x.rec = { outcome: d.outcome, note: d.note, by: o.by, at: day(o.at) }
+        slog(x, o.by, `${d.outcome === 'approve' ? 'أوصى بالموافقة' : 'أوصى بالرفض'}${d.note ? ` · ${d.note}` : ''} · أُحيل لمدير المنح`, o.at)
         n++
       }
       if (n) {
@@ -1051,6 +1114,7 @@ function applyOp(o: Op) {
         x.ready = false
         x.outcome = { by: o.by, at: day(o.at), note: o.note }
         plog(pf, o.by, `أعاد نتائج «${x.name}» للشريك · ${o.note}`, o.at)
+        slog(x, o.by, `أعاد النتائج للجهة · ${o.note}`, o.at)
         notify([partnerName(pf.entityId)], `أُعيدت نتائج مشروع فرعي · ${pf.name}`, o.note, `${ROUTES.portfolio(pf.id)}?as=partner`)
         return
       }
@@ -1058,6 +1122,7 @@ function applyOp(o: Op) {
       x.ready = false
       x.outcome = { by: o.by, at: day(o.at), note: o.note }
       plog(pf, o.by, `اعتمد نتائج «${x.name}» · مكتمل · دون تقرير ختامي مستقل`, o.at)
+      slog(x, o.by, `اعتمد مشرف المنح النتائج · مغلق${o.note ? ` · ${o.note}` : ''}`, o.at)
       listRow(pf)
       return
     }
@@ -1068,6 +1133,7 @@ function applyOp(o: Op) {
       x.state = 'stalled'
       x.outcome = { by: o.by, at: day(o.at), note: o.reason }
       plog(pf, o.by, `«${x.name}» متعثر · ${o.reason}`, o.at)
+      slog(x, o.by, `متعثر · ${o.reason}`, o.at)
       notify([partnerName(pf.entityId)], `مشروع فرعي متعثر · ${pf.name}`, x.name, `${ROUTES.portfolio(pf.id)}?as=partner`)
       listRow(pf)
       return
@@ -1081,7 +1147,64 @@ function applyOp(o: Op) {
       /* v3 · 13.4.14 · its history kept · its value back in the portfolio's balance · a replacement takes the
          regular path */
       plog(pf, o.by, `استُبعد «${x.name}» · ${o.reason} · عادت قيمته ${nf.format(x.amount)} إلى رصيد المحفظة`, o.at)
+      slog(x, o.by, `استُبعد · ${o.reason}`, o.at)
       notify([partnerName(pf.entityId)], `استُبعد مشروع فرعي · ${pf.name}`, `${x.name} · ${o.reason}`, `${ROUTES.portfolio(pf.id)}?as=partner`)
+      listRow(pf)
+      return
+    }
+    case 'subReturn': {
+      const pf = pfById(o.pfId)
+      const x = pf?.items.find((i) => i.id === o.subId)
+      if (!pf || !x || !o.note.trim()) return
+      /* the supervisor returns what's with him to the entity · the manager returns a pending one to the supervisor */
+      if (o.seat === 'supervisor' ? !['submitted', 'study'].includes(x.state) : x.state !== 'pending') return
+      x.state = o.seat === 'supervisor' ? 'draft' : 'study'
+      x.stateAt = o.at
+      x.rec = undefined
+      x.returned = { by: o.by, at: day(o.at), note: o.note, seat: o.seat }
+      plog(pf, o.by, `${o.seat === 'supervisor' ? 'أعاد مشرف المنح' : 'أعاد مدير المنح'} «${x.name}» للاستكمال · ${o.note}`, o.at)
+      slog(x, o.by, `${o.seat === 'supervisor' ? 'أعاده للجهة' : 'أعاده لمشرف المنح للاستكمال'} · ${o.note}`, o.at)
+      if (o.seat === 'supervisor') notify([partnerName(pf.entityId)], `أُعيد مشروع فرعي للاستكمال · ${pf.name}`, `${x.name} · ${o.note}`, `${ROUTES.subProject(pf.id, x.id)}?as=partner`)
+      else notify([pf.owner], `أُعيد مشروع فرعي للاستكمال · ${pf.name}`, `${x.name} · ${o.note}`, ROUTES.subProject(pf.id, x.id))
+      listRow(pf)
+      return
+    }
+    case 'subRejectDirect': {
+      const pf = pfById(o.pfId)
+      const x = pf?.items.find((i) => i.id === o.subId)
+      if (!pf || !x || !['submitted', 'study'].includes(x.state) || !o.note.trim()) return
+      x.state = 'rejected'
+      x.stateAt = o.at
+      x.reason = o.note
+      x.decidedBy = o.by
+      x.decidedAt = day(o.at)
+      plog(pf, o.by, `رفض مشرف المنح «${x.name}» مباشرة · ${o.note}`, o.at)
+      slog(x, o.by, `رفضه مشرف المنح مباشرة · ${o.note}`, o.at)
+      notify([partnerName(pf.entityId)], `رُفض مشروع فرعي · ${pf.name}`, `${x.name} · ${o.note}`, `${ROUTES.subProject(pf.id, x.id)}?as=partner`)
+      listRow(pf)
+      return
+    }
+    case 'subInfo': {
+      const pf = pfById(o.pfId)
+      const x = pf?.items.find((i) => i.id === o.subId)
+      if (!pf || !x || ['rejected', 'excluded', 'done'].includes(x.state)) return
+      Object.assign(x, o.info)
+      slog(x, o.by, 'حدّث بيانات المشروع الفرعي', o.at)
+      return
+    }
+    case 'subResults': {
+      const pf = pfById(o.pfId)
+      const x = pf?.items.find((i) => i.id === o.subId)
+      if (!pf || !x || (x.state !== 'approved' && x.state !== 'closing') || pf.stage === 'closed') return
+      x.results = { cost: o.cost, reached: o.reached, files: o.files, note: o.note, at: day(o.at), by: o.by }
+      /* the portfolio's indicators read the execution record · the results fill it */
+      x.exec = { status: 'مكتمل', progress: 100, reached: o.reached, results: o.note, evidence: o.files, at: day(o.at), by: o.by }
+      x.state = 'closing'
+      x.ready = true
+      x.outcome = undefined
+      plog(pf, o.by, `أرسل نتائج «${x.name}» لاعتماد مشرف المنح · ${nf.format(o.reached)} مستفيد · التكلفة الفعلية ${nf.format(o.cost)}`, o.at)
+      slog(x, o.by, `أرسل النتائج · ${nf.format(o.reached)} مستفيد · ${nf.format(o.cost)} ريال · ${o.files.length} مرفق`, o.at)
+      notify([pf.owner], `اعتماد نتائج مشروع فرعي · ${pf.name}`, x.name, ROUTES.subProject(pf.id, x.id))
       listRow(pf)
       return
     }
@@ -1393,6 +1516,12 @@ function applyOp(o: Op) {
       EXT_CFG.party = [...o.party]
       EXT_CFG.project = [...o.project]
       return
+    case 'extMeta':
+      EXT_META.set(o.projectId, structuredClone(o.meta))
+      if (o.meta.third?.files.length) EXT_FILES.set(o.projectId, [...(EXT_FILES.get(o.projectId) ?? []), ...o.meta.third.files])
+      ;(EH_OPS.get(o.projectId) ?? EH_OPS.set(o.projectId, []).get(o.projectId)!).push({ at: day(o.at), by: o.by, kind: 'طريقة التحويل',
+        note: `${EXT_TRANSFER_SAY[o.meta.transfer]}${o.meta.third ? ` · ${o.meta.third.holder} · ${o.meta.third.bank}` : ''}${o.meta.sharedWith ? ` · جهة مشاركة: ${entityById(o.meta.sharedWith)?.name ?? o.meta.sharedWith}` : ''}` })
+      return
     case 'extFiles':
       EXT_FILES.set(o.projectId, [...(EXT_FILES.get(o.projectId) ?? []), ...o.files])
       /* Re-audit 17 Oct · v3 · 11.4.15 · the creation's attachments are on the record too */
@@ -1589,7 +1718,32 @@ function fromSeed(s: PfSeed): PortfolioRec {
     paid -= amount
   }
   for (const x of pf.items) if (x.state === 'approved' && x.exec?.status === 'مكتمل') { x.state = 'done'; x.outcome = { by: pf.owner, at, note: 'اعتُمدت النتائج' } }
+  /* Client 20 Oct (#18 – #20 · #27) · the seeded sub-projects carry the client's fields, a serial, the
+     portfolio's copied outputs and stages, and the results the completed ones closed on */
+  const copy = pfCopy(pf)
+  for (const x of pf.items) {
+    const e = SUB_SEED_EXTRA[x.id]
+    Object.assign(x, { serial: nextSubSerial(), ...copy, outputsCopy: [...copy.outputsCopy], phasesCopy: copy.phasesCopy.map((p) => ({ ...p })) })
+    if (e) Object.assign(x, { city: e.city, implementer: e.impl, implementerName: e.implName ?? (e.impl === 'owner' ? partnerName(pf.entityId) : undefined), finalBeneficiaries: e.final, cost: e.cost, evalFile: 'التقييم التفصيلي.pdf' })
+    slog(x, x.addedBy, `أضاف الشريك «${x.name}» · ${nf.format(x.amount)}`, at)
+    if (x.decidedBy) slog(x, x.decidedBy, x.state === 'rejected' ? `رفضه مدير المنح · ${x.reason ?? ''}` : 'اعتمده مدير المنح', at)
+    if (x.state === 'done' && x.exec) {
+      x.results = { cost: e?.cost ?? x.amount, reached: x.exec.reached, files: x.exec.evidence.length ? x.exec.evidence : ['تقرير الإنجاز.pdf'], note: x.exec.results, at, by: x.addedBy }
+      slog(x, pf.owner, 'اعتمد مشرف المنح النتائج · مغلق', at)
+    }
+  }
   return pf
+}
+/* Client 20 Oct (#18) · the seeded sub-projects' data as the client's sheet lists it */
+const SUB_SEED_EXTRA: Record<string, { city: string; impl: SubImplementer; implName?: string; final: number; cost: number }> = {
+  'PF-1': { city: 'متعددة', impl: 'owner', final: 3_200, cost: 2_000_000 },
+  'PF-2': { city: 'الرياض', impl: 'association', implName: 'جمعية البر بالرياض', final: 30_000, cost: 1_950_000 },
+  'PF-3': { city: 'مكة المكرمة', impl: 'company', implName: 'شركة البناء المتين للمقاولات', final: 600, cost: 1_520_000 },
+  'PF-4': { city: 'تبوك', impl: 'association', implName: 'جمعية البر بتبوك', final: 3_000, cost: 800_000 },
+  'PF-5': { city: 'الرياض', impl: 'owner', final: 150, cost: 1_500_000 },
+  'PF-6': { city: 'بريدة', impl: 'company', implName: 'شركة المعرفة للتدريب', final: 12_000, cost: 1_180_000 },
+  'PF-7': { city: 'حائل', impl: 'company', implName: 'شركة التقنية المتقدمة', final: 2_400, cost: 640_000 },
+  'PF-7B': { city: 'جيزان', impl: 'association', implName: 'جمعية تعليم جيزان', final: 1_000, cost: 400_000 },
 }
 
 function seed() {
@@ -1947,6 +2101,76 @@ export function excludeSub(pfId: string, subId: string, reason: string, by: stri
   run({ op: 'subExclude', pfId, subId, reason: reason.trim(), by, at: now() })
   return []
 }
+/* ── Client 20 Oct (#17 – #20 · #27) · the sub-project's own page ── */
+/** A sub-project with its portfolio */
+export function subOf(pfId: string, subId: string): { pf: PortfolioRec; sub: SubProject } | undefined {
+  const pf = pfById(pfId)
+  const sub = pf?.items.find((x) => x.id === subId)
+  return pf && sub ? { pf, sub } : undefined
+}
+/** The sub-project's path · the entity → the supervisor → the grants manager → execution → the results'
+    approval → closed · the step it stands on */
+export const SUB_STEPS = ['الجهة', 'مشرف المنح', 'مدير المنح', 'جاري التنفيذ', 'اعتماد النتائج', 'مغلق'] as const
+export function subStep(x: SubProject): number {
+  switch (x.state) {
+    case 'draft': return 0
+    case 'submitted': case 'study': return 1
+    case 'pending': return 2
+    case 'approved': case 'stalled': return 3
+    case 'closing': return x.ready ? 4 : 3
+    case 'done': return 5
+    default: return x.rec ? 2 : 1
+  }
+}
+/** The supervisor sends it back to the entity · the grants manager back to the supervisor (client 20 Oct #17) */
+export function returnSub(pfId: string, subId: string, note: string, by: string, role: RoleKey): string[] {
+  const x = subOf(pfId, subId)?.sub
+  if (!x) return ['المشروع الفرعي غير موجود']
+  if (!note.trim()) return ['اكتب ما ينقص']
+  if (role === 'supervisor') {
+    if (!['submitted', 'study'].includes(x.state)) return ['يُعاد للجهة ما عند مشرف المنح']
+    run({ op: 'subReturn', pfId, subId, note: note.trim(), seat: 'supervisor', by, at: now() })
+    return []
+  }
+  if (role === 'grants-manager') {
+    if (x.state !== 'pending') return ['يُعاد ما بانتظار قرار مدير المنح']
+    run({ op: 'subReturn', pfId, subId, note: note.trim(), seat: 'grants-manager', by, at: now() })
+    return []
+  }
+  return ['لصاحب الصلاحية']
+}
+/** The supervisor rejects it outright · no recommendation to the manager (client 20 Oct #17) */
+export function rejectSubDirect(pfId: string, subId: string, note: string, by: string, role: RoleKey): string[] {
+  if (role !== 'supervisor') return ['يرفض مباشرة مشرف المنح']
+  const x = subOf(pfId, subId)?.sub
+  if (!x || !['submitted', 'study'].includes(x.state)) return ['يُرفض مباشرة المرفوع أو قيد الدراسة']
+  if (!note.trim()) return ['اكتب سبب الرفض']
+  run({ op: 'subRejectDirect', pfId, subId, note: note.trim(), by, at: now() })
+  return []
+}
+/** The sub-project's own data · the entity or the supervisor completes it (client 20 Oct #18) */
+export function saveSubInfo(pfId: string, subId: string, info: Extract<Op, { op: 'subInfo' }>['info'], by: string): string[] {
+  const x = subOf(pfId, subId)?.sub
+  if (!x) return ['المشروع الفرعي غير موجود']
+  if (['rejected', 'excluded', 'done'].includes(x.state)) return ['أُغلق المشروع الفرعي · لا تعديل']
+  if (info.finalBeneficiaries !== undefined && info.finalBeneficiaries < 0) return ['عدد المستفيد النهائي غير صحيح']
+  if (info.cost !== undefined && info.cost > 0 && info.cost < x.amount) return ['التكلفة الكلية لا تقل عن قيمة المنحة']
+  run({ op: 'subInfo', pfId, subId, info, by, at: now() })
+  return []
+}
+/** The entity records the results · the supervisor approves them with `completeSub` (client 20 Oct #27) */
+export function submitSubResults(pfId: string, subId: string, v: { cost: number; reached: number; files: string[]; note: string }, by: string): string[] {
+  const x = subOf(pfId, subId)?.sub
+  if (!x || (x.state !== 'approved' && x.state !== 'closing')) return ['تُسجَّل النتائج بعد اعتماد المشروع الفرعي']
+  if (x.state === 'closing' && x.ready) return ['النتائج عند مشرف المنح']
+  const out: string[] = []
+  if (!(v.cost > 0)) out.push('التكلفة الفعلية')
+  if (!(v.reached > 0)) out.push('المستفيدون الفعليون')
+  if (!v.files.length) out.push('مرفق واحد على الأقل')
+  if (out.length) return [`ينقص: ${out.join('، ')}`]
+  run({ op: 'subResults', pfId, subId, ...v, note: v.note.trim(), by, at: now() })
+  return []
+}
 export function savePfForm(id: string, fields: SubField[], by: string, role: RoleKey): string[] {
   if (role !== 'supervisor' && role !== 'grants-manager') return ['يُعدّ النموذج صاحب الصلاحية']
   run({ op: 'pfForm', id, fields, by, at: now() })
@@ -2210,17 +2434,38 @@ export function saveExtCfg(cfg: { party: ExtPartyField[]; project: ExtProjectFie
 }
 /** v3 · 11.2.2 · 11.4.3 · the authority creates the project inside the system with the simplified data ·
     it then goes through the regular study and approval (11.2.4) */
-export interface ExtProjectDraft { name: string; party: string; track: string; field: string; goal: string; description: string; amount: number; days: number; funding: string; method: string; region: string; startAt: string; files: string[] }
+export interface ExtProjectDraft {
+  name: string; party: string; track: string; field: string; goal: string; description: string; amount: number; days: number; funding: string; method: string; region: string; startAt: string; files: string[]
+  /** Client 20 Oct (#43) · the transfer method · the entity's own account, or a third party's */
+  transfer?: ExtTransfer | ''
+  account?: string
+  third?: ExtThird
+  /** Client 20 Oct (#44) · «هل يوجد جهة مشاركة؟» · the sharing entity from the system's list */
+  shared?: boolean
+  sharedWith?: string
+}
+const ibanOk = (x: string) => /^SA\d{22}$/.test(x.replace(/\s+/g, '').toUpperCase())
 export function externalDraftIssues(v: ExtProjectDraft): string[] {
   const out: string[] = []
   if (!v.name.trim()) out.push('اسم المشروع')
   if (partyIssue(v.party)) out.push(partyIssue(v.party))
   if (!v.track) out.push('المسار')
   if (!v.field) out.push('المجال')
+  if (!v.goal) out.push('الهدف')
   if (!(v.amount > 0)) out.push('المبلغ')
-  if (!(v.days > 0)) out.push('مدة التنفيذ بالأيام')
-  const has: Record<ExtProjectField, boolean> = { goal: Boolean(v.goal), description: Boolean(v.description.trim()), funding: Boolean(v.funding), method: Boolean(v.method), region: Boolean(v.region), startAt: Boolean(v.startAt), files: v.files.length > 0 }
-  for (const f of EXT_CFG.project) if (!has[f]) out.push(EXT_PROJECT_FIELD_SAY[f])
+  /* a legacy draft names the method in words · it counts as the transfer method */
+  if (!v.transfer && !v.method) out.push('طريقة التحويل')
+  if (v.transfer === 'self' && !v.account) out.push('حساب الجهة البنكي')
+  if (v.transfer === 'third') {
+    if (!v.third?.holder.trim()) out.push('اسم صاحب حساب الطرف الثالث')
+    if (!v.third?.bank) out.push('بنك الطرف الثالث')
+    if (!v.third?.iban.trim()) out.push('آيبان الطرف الثالث')
+    else if (!ibanOk(v.third.iban)) out.push('آيبان الطرف الثالث بصيغة SA و22 رقمًا')
+    if (!v.third?.files.length) out.push('مستند حساب الطرف الثالث')
+  }
+  if (v.shared && !v.sharedWith) out.push('الجهة المشاركة')
+  const has: Record<ExtProjectField, boolean> = { goal: Boolean(v.goal), description: Boolean(v.description.trim()), funding: Boolean(v.funding), method: Boolean(v.transfer || v.method), region: Boolean(v.region), startAt: Boolean(v.startAt), files: v.files.length > 0 }
+  for (const f of EXT_CFG.project) if (!has[f] && !out.includes(EXT_PROJECT_FIELD_SAY[f]) && f !== 'goal' && f !== 'method') out.push(EXT_PROJECT_FIELD_SAY[f])
   return out
 }
 export function createExternalProject(v: ExtProjectDraft, by: string, role: RoleKey): { id?: string; errors: string[] } {
@@ -2228,12 +2473,17 @@ export function createExternalProject(v: ExtProjectDraft, by: string, role: Role
   const errors = externalDraftIssues(v)
   if (errors.length) return { errors }
   const party = entityById(v.party)!
+  const method = v.transfer ? EXT_TRANSFER_SAY[v.transfer] : v.method
   const id = submitRequest({
     entityId: party.id, external: party.id, externalName: party.name, name: v.name.trim(), track: v.track, field: v.field, goal: v.goal,
-    region: v.region || party.region, city: party.city, amountRequested: String(v.amount), workDays: String(v.days), reach: '0',
-    objectives: v.description.trim(), outputs: '', startAt: v.startAt, method: v.method, funding: v.funding,
+    region: v.region || party.region, city: party.city, amountRequested: String(v.amount), workDays: v.days > 0 ? String(v.days) : '', reach: '0',
+    objectives: v.description.trim(), outputs: '', startAt: v.startAt, method, funding: v.funding,
   }, [], by, false)
   if (v.files.length) run({ op: 'extFiles', projectId: id, files: v.files, by, at: now() })
+  if (v.transfer) {
+    const meta: ExtMeta = { transfer: v.transfer, ...(v.transfer === 'self' ? { account: v.account } : { third: { holder: v.third!.holder.trim(), bank: v.third!.bank, iban: v.third!.iban.replace(/\s+/g, '').toUpperCase(), files: v.third!.files } }), ...(v.shared && v.sharedWith ? { sharedWith: v.sharedWith } : {}) }
+    run({ op: 'extMeta', projectId: id, meta, by, at: now() })
+  }
   return { id, errors: [] }
 }
 

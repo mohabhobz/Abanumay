@@ -1,12 +1,14 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tag, icons } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tabs, Tag, icons } from '@/components/ui'
 import { TONE } from '@/lib/tone'
 import { ROUTES } from '@/app/routes'
 import { NOUN, nounAfter, pct, ver } from '@/lib/format'
 import {
-  PLAN_TONE, lateActivities, planClaimed, planDone, planPlanned, planSpi,
+  PLAN_TONE, lateActivities, planClaimed, planDone, planPlanned, planRows, planSpi,
   planStageLabel, readyToClose, spiSay, waitingReview,
 } from '@/data/mock/plans'
+import { planVersions } from '@/data/plans/store'
 import { PlanBar } from '@/features/plans/PlanBar'
 import type { PlanRow } from '@/types/domain'
 
@@ -32,6 +34,9 @@ export interface PlanTabProps {
 }
 
 export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProps) {
+  /* Client meeting 20 Oct (#37) · the active plan by default · and beside it everything that came
+     before: the versions an approved change cancelled, the project's cancelled plans, the requests */
+  const [pane, setPane] = useState<'active' | 'history'>('active')
   if (!p) {
     return (
       <Glass>
@@ -65,6 +70,9 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
   const late = lateActivities(p).length
   const live = p.stage === 'active' || p.stage === 'done'
   const cost = p.phases.reduce((s, ph) => s + ph.cost, 0)
+  const old = planVersions(p).filter((v) => v.state === 'cancelled' && v.change)
+  const otherPlans = planRows.filter((x) => x.projectId === p.projectId && x.id !== p.id)
+  const histCount = old.length + otherPlans.length + p.changes.length
 
   return (
     <Glass>
@@ -72,6 +80,47 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
         title="خطة تنفيذ المشروع"
         meta={<Tag tone={PLAN_TONE[p.stage]}>{planStageLabel(p.stage)}</Tag>}
       />
+      {histCount > 0 && (
+        <Tabs
+          items={[{ slug: 'active', label: p.stage === 'cancelled' ? 'الخطة' : 'الخطة النشطة' }, { slug: 'history', label: 'الملغاة وطلبات التعديل', count: histCount }]}
+          active={pane}
+          onChange={(x) => setPane(x === 'history' ? 'history' : 'active')}
+        />
+      )}
+      {pane === 'history' && histCount > 0 ? (
+        <ul className="plver">
+          {old.map((v) => (
+            <li key={`v${v.no}`}>
+              <div className="plver-h">
+                <b>النسخة <Num>{ver(v.no)}</Num></b>
+                <Tag tone="no">ملغاة</Tag>
+                {v.at && <span className="sub">أُلغيت <DateText>{v.at}</DateText></span>}
+              </div>
+            </li>
+          ))}
+          {otherPlans.map((x) => (
+            <li key={x.id}>
+              <div className="plver-h">
+                <Link className="tlink" to={ROUTES.plan(x.id)}>{x.id}</Link>
+                <Tag tone={PLAN_TONE[x.stage]}>{planStageLabel(x.stage)}</Tag>
+                <span className="sub">فُتحت <DateText>{x.openedAt}</DateText></span>
+              </div>
+            </li>
+          ))}
+          {[...p.changes].reverse().map((c) => (
+            <li key={c.id}>
+              <div className="plver-h">
+                <b>{c.mode === 'cancel' ? 'طلب إلغاء' : 'طلب تعديل'}</b>
+                <Tag tone={c.state === 'approved' ? 'ok' : c.state === 'rejected' ? 'no' : 'warn'}>
+                  {c.state === 'approved' ? 'معتمَد' : c.state === 'rejected' ? 'مرفوض' : c.state === 'returned' ? 'أُعيد للاستكمال' : c.state === 'toAgreement' ? 'بانتظار ملحق الاتفاقية' : c.step === 'supervisor' ? 'بانتظار مشرف المنح' : 'بانتظار مدير المنح'}
+                </Tag>
+                <span className="sub"><DateText>{c.at}</DateText> · {c.by}</span>
+              </div>
+              <span className="sub">{c.why ?? c.say}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (<>
 
       {live && <PlanBar done={done} claim={claim} want={want} />}
 
@@ -141,6 +190,8 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
           {live && <> · المقبول الآن {pct(done)}</>}.
         </p>
       )}
+
+      </>)}
 
       <div className="rowf gp-2">
         <Link to={ROUTES.plan(p.id)} className="btn btn-p">

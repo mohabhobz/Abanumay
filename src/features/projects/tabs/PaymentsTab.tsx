@@ -143,6 +143,13 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
                   <span>{isolate(p.condition)}</span>
                 </div>
               )}
+              {/* Client meeting 20 Oct · what the payment rests on · a plan activity or an interim report */}
+              {p.basis && (
+                <div className="pay-cond">
+                  <span className="lb">أساس الدفعة</span>
+                  <span>{p.basis}</span>
+                </div>
+              )}
               {p.via && (
                 <div className="pay-cond">
                   <span className="lb">التحويل عبر</span>

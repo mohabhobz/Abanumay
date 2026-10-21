@@ -2,8 +2,8 @@ import { done } from '@/data/feedback'
 import { seedWorkHours } from '@/lib/sla'
 import { liveClock } from '@/data/stageClock'
 import { EXT_CLOSE_STAGE } from '@/data/mock/taxonomy'
-import { condLine, condMet, requirementOf, unmetConds } from '@/data/agreements/conds'
-import type { PayCond } from '@/types/domain'
+import { basisLine, basisOf, condLine, condMet, requirementOf, unmetConds } from '@/data/agreements/conds'
+import type { PayBasis, PayCond } from '@/types/domain'
 import { hasLegacy, legacyCover, legacyTotal } from './legacy'
 import { DECISIONS } from '@/data/shared/decisions'
 import { closeOfProject } from '@/data/mock/closing'
@@ -197,10 +197,10 @@ export function scheduleOf(projectId: string): PaySlot[] {
   const ag = payIn(projectId)
   /* v3 · 9.1.input-2 · the agreement in force is the schedule · its values, dates and conditions,
      requests or not · a project with no agreement row here reads the fixture's */
-  let base: { no: number; amount: number; dueAt: string; requirement?: string; conds?: PayCond[] }[] = []
+  let base: { no: number; amount: number; dueAt: string; requirement?: string; conds?: PayCond[]; basis?: PayBasis }[] = []
   if (ag) {
     /* v3 · 8.2.9 · the structured conditions read their records · the note beside them is confirmed by hand */
-    base = ag.map((p) => ({ no: p.no, amount: p.amount, dueAt: p.dueAt, requirement: requirementOf(p) || undefined, conds: p.conds }))
+    base = ag.map((p) => ({ no: p.no, amount: p.amount, dueAt: p.dueAt, requirement: requirementOf(p) || undefined, conds: p.conds, basis: basisOf(p) ?? undefined }))
   } else if (isExternal(projectId) && externalSchedule(projectId).length) {
     base = externalSchedule(projectId).map((p) => ({ ...p }))
   } else {
@@ -262,7 +262,7 @@ export function scheduleOf(projectId: string): PaySlot[] {
       : 'open'
     if (DECISIONS.payNext !== 'off' && state !== 'paid' && state !== 'settled' && (state !== 'pending' || DECISIONS.payNext === 'paid')) blocked = true
     return {
-      no: b.no, of, amount: b.amount, dueAt: b.dueAt, condition: b.requirement, conditionMet, state, requestId: req?.id,
+      no: b.no, of, amount: b.amount, dueAt: b.dueAt, condition: b.requirement, basis: basisLine(b.basis ?? basisOf(b)) || undefined, conditionMet, state, requestId: req?.id,
       legacy: paid ? undefined : legacy.get(b.no), ahead: b.dueAt > liveDay(), overdue: (state === 'open' || state === 'eligible') && !legacy.has(b.no) && b.dueAt <= liveDay(), needs: partial ? [] : needsOf(b),
       left: partial ? b.amount - paidSum : undefined, notBefore: dateOf(projectId, b)[0]?.ref,
     }
@@ -386,7 +386,7 @@ function refresh(r: PayRequest) {
   if (!isOpen(r)) return
   /* the record follows its payment · a value change (10.9.5) or an annex (9.4.6) reaches it */
   const sl = scheduleOf(r.projectId).find((x) => x.no === r.no)
-  if (sl) { r.due = sl.left ?? sl.amount; if (sl.condition !== undefined) r.condition = sl.condition }
+  if (sl) { r.due = sl.left ?? sl.amount; if (sl.condition !== undefined) r.condition = sl.condition; r.basis = sl.basis }
   const ag = inForceOf(r.projectId)
   r.agreement.active = agreementOk(r.projectId)
   if (ag) r.agreement.id = ag.id
@@ -585,6 +585,7 @@ function applyOp(o: Op) {
         no: slot.no, of: slot.of, due: slot.left ?? slot.amount, asked: direct ? o.asked : slot.amount, dueAt: slot.dueAt,
         state: direct ? 'manager' : legacyPermit ? 'returned' : 'supervisor', hoursInState: 0,
         condition: slot.condition,
+        basis: slot.basis,
         checks: [
           { label: 'متطلبات الدفعة مكتملة', ok: direct || docsOk, rule: 3 },
           ...(slot.condition ? [{ label: 'شروط الدفعة مستوفاة', ok: slot.conditionMet, rule: 6 } as PayCheck] : []),
@@ -1105,3 +1106,7 @@ export const resetPayments = () => { try { localStorage.removeItem(KEY) } catch 
 export const docFromFile = (f: File, kind: string): PayDoc => ({
   name: f.name, kind, at: day(now()), size: `${Math.max(1, Math.round(f.size / 1024))} ك.ب`,
 })
+
+/** Client meeting 20 Oct · a request's basis · its own, or its payment's in the schedule */
+export const basisOfRequest = (r: Pick<PayRequest, 'basis' | 'projectId' | 'no'>): string | undefined =>
+  r.basis ?? scheduleOf(r.projectId).find((x) => x.no === r.no)?.basis

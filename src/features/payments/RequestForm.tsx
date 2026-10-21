@@ -343,6 +343,8 @@ export default function RequestForm() {
                           }
                         />
                         <p className="sub cnote">{isolate(picked.condition)}</p>
+                        {/* Client meeting 20 Oct · the payment's basis */}
+                        {picked.basis && <p className="sub cnote">أساس الدفعة · {picked.basis}</p>}
                         {condConfirmed(projectId ?? '', picked.no) && (
                           <p className="sub cnote">أكّد المشرف استيفاءه · {condConfirmed(projectId ?? '', picked.no)?.note}</p>
                         )}

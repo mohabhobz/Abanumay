@@ -74,6 +74,7 @@ import EntitySettingsPage from '@/features/entities/EntitySettingsPage'
 import ProjectSettingsPage from '@/features/projects/ProjectSettingsPage'
 import ProjectNewPage from '@/features/projects/ProjectNewPage'
 import PortfolioPage from '@/features/projects/PortfolioPage'
+import SubProjectPage from '@/features/projects/SubProjectPage'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
 import { PortalGate } from './PortalGate'
@@ -142,6 +143,7 @@ export default function App() {
         <Route path={ROUTES.projectNew} element={<ProjectNewPage />} />
         <Route path={ROUTES.portfolioNew} element={<PortfolioNewPage />} />
         <Route path="/projects/portfolio/:id" element={<PortfolioPage />} />
+        <Route path="/projects/portfolio/:id/sub/:sid" element={<SubProjectPage />} />
         <Route path={ROUTES.partners} element={<PartnersPage />} />
         <Route path={ROUTES.externalNew} element={<ExternalNewPage />} />
         <Route path={`${ROUTES.projects}/:id`} element={<ProjectPage />} />

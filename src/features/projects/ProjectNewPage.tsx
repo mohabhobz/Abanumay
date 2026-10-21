@@ -263,6 +263,9 @@ export default function ProjectNewPage() {
       if (k === 'region') next.city = ''
       return next
     })
+  /* Client 20 Oct (#42) · a project for an external party goes to the simplified form · its required
+     fields are name · party · field · track · goal · amount · transfer method */
+  const EXT_TYPE = 'لجهة خارجية'
 
   const docShort = ENTITY_DOCS.filter((d) => d.required && !docs[d.key]).map((d) => d.label)
   const reqDocs = ENTITY_DOCS.filter((d) => d.required).length
@@ -272,10 +275,12 @@ export default function ProjectNewPage() {
     /* 11.2.2 · 13.4.1 · the type has to be one the partner may have · a portfolio is a partner's alone */
     const t = val.ptype === 'محفظة' ? 'portfolio' : 'independent'
     const own = [
+      ...(val.ptype === EXT_TYPE ? [{ key: 'ptype', say: asEntity ? 'المشروع لجهة خارجية يُنشئه صاحب الصلاحية من داخل النظام' : 'المشروع لجهة خارجية يُنشأ بالنموذج المبسّط · افتحه من بطاقة نوع المشروع', rule: '' }] : []),
       ...(val.ptype === 'محفظة' && val.entityId && !isStrategic(val.entityId) ? [{ key: 'ptype', say: 'المحفظة لشريك استراتيجي معتمد وحده', rule: /* doc 13.4.1 */ '' }] : []),
       ...(val.entityId && isStrategic(val.entityId) && !typeAllowed(val.entityId, t) ? [{ key: 'ptype', say: `«${val.ptype || 'مستقل'}» غير مسموح لهذا الشريك`, rule: /* doc 11.2.2 */ '' }] : []),
     ]
     return [...projectIssues(val), ...own]
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [val])
   const shortBy = useMemo(
     () => Object.fromEntries(STAGES.map((s) => [s.key, s.key === DOCS_STAGE ? docShort : shortIn(s, val)])),
@@ -433,6 +438,14 @@ export default function ProjectNewPage() {
                     />
                   ))}
                 </div>
+
+                {/* Client 20 Oct (#42) · the external type switches to the simplified form */}
+                {tab === 'who' && val.ptype === EXT_TYPE && (
+                  <div className="apv-row mt-3">
+                    <span className="sub">{asEntity ? 'المشروع لجهة خارجية يُنشئه مشرف المنح أو مدير المنح من داخل النظام' : 'نموذج مبسّط · الإلزامي: الاسم والجهة الخارجية والمجال والمسار والهدف والمبلغ وطريقة التحويل'}</span>
+                    {!asEntity && <button type="button" className="btn btn-p btn-sm" onClick={() => navigate(ROUTES.externalNew)}>افتح النموذج المبسّط</button>}
+                  </div>
+                )}
 
                 {tab === 'when' && endAt && (
                   <p className="sub cnote">

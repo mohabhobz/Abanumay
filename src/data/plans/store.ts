@@ -3,7 +3,7 @@ import { liveClock } from '@/data/stageClock'
 import { useSyncExternalStore } from 'react'
 import { actDay, asOf } from '@/data/clock'
 import type { LogEvent } from '@/data/mock/log'
-import { ESC_RULES } from '@/data/shared/escRules'
+import { ACT_TIMING, ACT_TIMING_DEFAULT } from './timing'
 import {
   TODAY, planById, planIssues, planOfProject, planRows, planStageLabel, readyToClose,
 } from '@/data/mock/plans'
@@ -110,11 +110,13 @@ export const pfPlanId = (pfId: string): string => `PL-${pfId}`
 const actOf = (p: PlanRow, actId: string): PlanActivity | undefined => p.phases.flatMap((ph) => ph.activities).find((a) => a.id === actId)
 const days = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
 
-/** «متعثر» · past its end by more than a month without acceptance, or returned twice (12.4.25) */
-export const STUCK_DAYS = 30
-const stuckDays = () => ESC_RULES.stuck.plan ?? STUCK_DAYS
+/** «متعثر» · past its end by more than the stall margin of the plan settings and not completed, or
+    returned twice (12.4.25) · client 20 Oct (#35) · the margin is the settings' «مدة التعثّر», no longer
+    the escalation's 30 days */
+export const STUCK_DAYS = ACT_TIMING_DEFAULT.stallDays
+const stuckDays = () => ACT_TIMING.stallDays
 export const isStuck = (a: PlanActivity, today = TODAY): boolean =>
-  a.state !== 'accepted' && ((a.to && days(a.to, today) > stuckDays()) || (a.notes ?? []).filter((n) => n.kind === 'reject').length >= 2)
+  a.state !== 'accepted' && ((a.state !== 'claimed' && Boolean(a.to) && days(a.to, today) > stuckDays()) || (a.notes ?? []).filter((n) => n.kind === 'reject').length >= 2)
 export const stuckActivities = (p: PlanRow): PlanActivity[] => p.phases.flatMap((ph) => ph.activities).filter((a) => isStuck(a))
 
 /** The plan's execution window against the project's approved duration (12.2.4) */
@@ -145,7 +147,10 @@ type Op = { at: string; by: string } & (
   | { op: 'reject'; planId: string; actId: string; note: string }
   | { op: 'comment'; planId: string; actId: string; say: string; from: 'staff' | 'entity' }
   | { op: 'actData'; planId: string; actId: string; text: string; reached: number | null; doneOn: string }
-  | { op: 'change'; planId: string; changeId: string; say: string; proposed?: PlanPhase[]; kind?: 'operational' | 'contractual'; contractual?: string[] }
+  | { op: 'change'; planId: string; changeId: string; say: string; proposed?: PlanPhase[]; kind?: 'operational' | 'contractual'; contractual?: string[]
+      /* client 20 Oct (#36) · optional so ops saved before keep replaying */
+      mode?: 'change' | 'cancel'; why?: string; from?: 'entity' | 'supervisor' | 'manager' }
+  | { op: 'changeForward'; planId: string; changeId: string; act: 'toManager' | 'returnEntity'; note: string }
   | { op: 'changeDecide'; planId: string; changeId: string; outcome: 'approve' | 'reject' | 'return' | 'toAgreement'; note: string }
 )
 
@@ -347,13 +352,36 @@ function applyOp(o: Op) {
       const p = planById(o.planId)
       if (!p || p.baseline === 0 || p.stage === 'done' || p.stage === 'cancelled') return
       const was = p.changes.find((c) => c.id === o.changeId)
+      /* client 20 Oct (#36) · the entity's request passes the supervisor before the manager · a request
+         from the supervisor or the manager goes to the manager directly · an op saved before has no
+         `from` and keeps going to the manager as it did */
+      const step: 'supervisor' | 'manager' = o.from === 'entity' ? 'supervisor' : 'manager'
+      const extra = { mode: o.mode ?? 'change', why: o.why, from: o.from, step }
       if (was) {
         if (was.state !== 'returned') return
-        Object.assign(was, { say: o.say, proposed: o.proposed ? structuredClone(o.proposed) : undefined, state: 'waiting', at: actDay(), by: o.by, kind: o.kind, contractual: o.contractual })
+        Object.assign(was, { say: o.say, proposed: o.proposed ? structuredClone(o.proposed) : undefined, state: 'waiting', at: actDay(), by: o.by, kind: o.kind, contractual: o.contractual, ...extra })
       } else {
-        p.changes = [...p.changes, { id: o.changeId, at: actDay(), by: o.by, say: o.say, state: 'waiting', proposed: o.proposed ? structuredClone(o.proposed) : undefined, kind: o.kind, contractual: o.contractual }]
+        p.changes = [...p.changes, { id: o.changeId, at: actDay(), by: o.by, say: o.say, state: 'waiting', proposed: o.proposed ? structuredClone(o.proposed) : undefined, kind: o.kind, contractual: o.contractual, ...extra }]
       }
-      notify([MGR()], p, `طلب تعديل ${o.kind === 'contractual' ? 'تعاقدي' : 'تشغيلي'} على خطة · ${p.projectName}`, o.say)
+      const what = o.mode === 'cancel' ? 'طلب إلغاء خطة' : `طلب تعديل ${o.kind === 'contractual' ? 'تعاقدي' : 'تشغيلي'} على خطة`
+      if (step === 'supervisor') notify([p.owner, SUP()], p, `${what} بانتظار مراجعتك · ${p.projectName}`, o.why ?? o.say)
+      else notify([MGR()], p, `${what} · ${p.projectName}`, o.why ?? o.say)
+      return
+    }
+    case 'changeForward': {
+      const p = planById(o.planId)
+      const c = p?.changes.find((x) => x.id === o.changeId)
+      if (!p || !c || c.state !== 'waiting' || c.step !== 'supervisor') return
+      if (o.act === 'toManager') {
+        c.step = 'manager'
+        notify([MGR()], p, `${c.mode === 'cancel' ? 'طلب إلغاء خطة' : 'طلب تعديل خطة'} رفعه مشرف المنح · ${p.projectName}`, o.note || (c.why ?? c.say))
+      } else {
+        c.state = 'returned'
+        c.note = o.note
+        c.decidedAt = actDay()
+        c.decidedBy = o.by
+        notify([p.entityName], p, `أُعيد طلبك على الخطة للاستكمال · ${p.projectName}`, o.note, `${ROUTES.plan(p.id)}?as=entity`)
+      }
       return
     }
     case 'changeDecide': {
@@ -369,11 +397,20 @@ function applyOp(o: Op) {
         notify([p.owner, SUP()], p, `تغيير تعاقدي · افتح ملحقًا للاتفاقية · ${p.projectName}`, o.note)
         return
       }
-      if (o.outcome === 'approve') {
+      if (o.outcome === 'approve' && c.mode === 'cancel') {
+        /* #36 · an approved cancellation ends the plan · it stays on record, and the project may open a new one */
         c.state = 'approved'
         c.before = structuredClone(p.phases)
+        c.fromVersion = p.baseline
+        touch(p, 'cancelled', `أُلغيت بطلب معتمد · ${c.why ?? c.say}`)
+      } else if (o.outcome === 'approve') {
+        c.state = 'approved'
+        c.before = structuredClone(p.phases)
+        /* #37 · the version it replaced is cancelled · one active version, the new one */
+        c.fromVersion = p.baseline
         if (c.proposed) applyStructure(p, c.proposed)
         p.baseline += 1
+        c.toVersion = p.baseline
         p.baselineAt = actDay()
       } else c.state = o.outcome === 'reject' ? 'rejected' : 'returned'
       notify([p.entityName, p.owner], p, `قرار طلب التعديل · ${p.projectName}`, `${c.state === 'approved' ? 'اعتُمد' : c.state === 'rejected' ? 'رُفض' : 'أُعيد للاستكمال'} · ${o.note}`)
@@ -403,7 +440,8 @@ function describe(o: Op): { what: string; note?: string } {
     case 'reject': return { what: `إعادة نشاط · ${act(o.actId)}`, note: o.note }
     case 'comment': return { what: `تعليق على نشاط · ${act(o.actId)}`, note: o.say }
     case 'actData': return { what: `تحديث بيانات تنفيذ نشاط · ${act(o.actId)}`, note: o.text }
-    case 'change': return { what: 'طلب تعديل جوهري', note: o.say }
+    case 'change': return { what: o.mode === 'cancel' ? 'طلب إلغاء الخطة' : 'طلب تعديل الخطة', note: o.why ?? o.say }
+    case 'changeForward': return { what: o.act === 'toManager' ? 'رفع المشرف طلب الخطة لمدير المنح' : 'إعادة المشرف طلب الخطة للجهة', note: o.note || undefined }
     case 'changeDecide': return { what: o.outcome === 'approve' ? 'اعتماد طلب التعديل' : o.outcome === 'reject' ? 'رفض طلب التعديل' : 'إعادة طلب التعديل', note: o.note }
   }
 }
@@ -596,18 +634,72 @@ export function contractualOf(p: PlanRow, proposed: PlanPhase[] | undefined): st
   return out
 }
 
-export function requestChange(planId: string, say: string, proposed: PlanPhase[] | undefined, by: string, changeId?: string): string[] {
-  if (!say.trim()) return ['اكتب التعديل المطلوب وسببه']
+export interface ChangeAsk {
+  /** #36 · a change of the plan, or its cancellation */
+  mode?: 'change' | 'cancel'
+  /** The justification · required */
+  why?: string
+  /** The requester's own reading · تشغيلي or تعاقدي · the store's check can still make it contractual */
+  kind?: 'operational' | 'contractual'
+  /** Who asks · the entity, the supervisor or the manager */
+  from?: 'entity' | 'supervisor' | 'manager'
+}
+export function requestChange(planId: string, say: string, proposed: PlanPhase[] | undefined, by: string, changeId?: string, ask: ChangeAsk = {}): string[] {
+  if (!say.trim()) return [ask.mode === 'cancel' ? 'اكتب سبب طلب الإلغاء' : 'اكتب التعديل المطلوب وسببه']
+  if (ask.from && !ask.why?.trim()) return ['المبررات إلزامية']
   const p = planById(planId)
   /* re-audit 17 Oct · a done or cancelled plan takes no change request */
   if (!p || p.baseline === 0) return ['التعديل الجوهري على خطة معتمدة']
   if (p.stage === 'done' || p.stage === 'cancelled') return [p.stage === 'done' ? 'اكتملت الخطة · لا يُطلب تعديل عليها' : 'أُلغيت الخطة']
-  if (!changeId && p?.changes.some((c) => c.state === 'waiting' || c.state === 'toAgreement')) return ['يوجد طلب بانتظار مدير المنح بالفعل']
-  const why = p ? contractualOf(p, proposed) : []
+  if (!changeId && p?.changes.some((c) => c.state === 'waiting' || c.state === 'toAgreement')) return ['يوجد طلب معلّق على الخطة بالفعل']
+  const why = p && ask.mode !== 'cancel' ? contractualOf(p, proposed) : []
+  /* #36 · the requester chose «تعاقدي» · its agreement effect is the next phase's, the reading says so */
+  if (ask.kind === 'contractual' && !why.length) why.push('اختاره مقدّم الطلب تعديلًا تعاقديًا · أثره على الاتفاقية في المرحلة القادمة')
   /* A request in words only · what it names decides · the money, the period, a payment's due date or condition */
   if (!proposed && /المبلغ|القيمة|التكلفة|تمديد|المدة|الاستحقاق|شرط الصرف|الدفعة/.test(say)) why.push('يذكر تغييرًا في المبلغ أو المدة أو الدفعات')
-  run({ op: 'change', planId, changeId: changeId ?? `ch-${id6()}`, say: say.trim(), proposed, kind: why.length ? 'contractual' : 'operational', contractual: why.length ? why : undefined, by, at: now() })
+  run({ op: 'change', planId, changeId: changeId ?? `ch-${id6()}`, say: say.trim(), proposed: ask.mode === 'cancel' ? undefined : proposed, kind: why.length ? 'contractual' : 'operational', contractual: why.length ? why : undefined, mode: ask.mode, why: ask.why?.trim() || undefined, from: ask.from, by, at: now() })
   return []
+}
+/** #36 · the supervisor's step on the entity's request · raise it to the manager, or return it */
+export function forwardChange(planId: string, changeId: string, act: 'toManager' | 'returnEntity', note: string, by: string, role?: RoleKey): string[] {
+  if (role !== 'supervisor') return ['مراجعة الطلب لمشرف المنح']
+  if (act === 'returnEntity' && !note.trim()) return ['ملاحظة الإعادة إلزامية']
+  const c = planById(planId)?.changes.find((x) => x.id === changeId)
+  if (!c || c.state !== 'waiting' || c.step !== 'supervisor') return ['الطلب ليس عند مشرف المنح']
+  run({ op: 'changeForward', planId, changeId, act, note: note.trim(), by, at: now() })
+  return []
+}
+/** #37 · a plan's versions · the active one, the ones an approved change replaced, and the requests
+    still open · newest first */
+export interface PlanVersion { no: number; state: 'active' | 'cancelled'; phases: PlanPhase[]; at?: string; by?: string; change?: string }
+export function planVersions(p: PlanRow): PlanVersion[] {
+  const done = p.changes.filter((c) => c.state === 'approved' && c.before)
+  const out: PlanVersion[] = []
+  if (p.baseline > 0) out.push({ no: p.baseline, state: p.stage === 'cancelled' ? 'cancelled' : 'active', phases: p.phases, at: p.baselineAt, by: p.approvedBy })
+  for (const c of [...done].reverse()) {
+    if (c.mode === 'cancel') continue
+    out.push({ no: c.fromVersion ?? Math.max(1, (c.toVersion ?? p.baseline) - 1), state: 'cancelled', phases: c.before!, at: c.decidedAt, by: c.decidedBy, change: c.id })
+  }
+  return out
+}
+/** #37 · what changed between two versions, activity by activity */
+export interface ActDiff { name: string; say: string[] }
+export function diffPhases(before: PlanPhase[], after: PlanPhase[]): ActDiff[] {
+  const a0 = new Map(before.flatMap((ph) => ph.activities).map((x) => [x.id, x]))
+  const a1 = new Map(after.flatMap((ph) => ph.activities).map((x) => [x.id, x]))
+  const out: ActDiff[] = []
+  for (const [id, n] of a1) {
+    const o = a0.get(id)
+    if (!o) { out.push({ name: n.name, say: ['نشاط جديد'] }); continue }
+    const say: string[] = []
+    if (o.name !== n.name) say.push(`الاسم: ${o.name} ← ${n.name}`)
+    if (o.from !== n.from) say.push(`البدء: ${o.from} ← ${n.from}`)
+    if (o.to !== n.to) say.push(`الانتهاء: ${o.to} ← ${n.to}`)
+    if (o.needs.join('،') !== n.needs.join('،')) say.push(`الشاهد: ${o.needs.join(' · ') || '—'} ← ${n.needs.join(' · ') || '—'}`)
+    if (say.length) out.push({ name: n.name, say })
+  }
+  for (const [id, o] of a0) if (!a1.has(id)) out.push({ name: o.name, say: ['حُذف النشاط'] })
+  return out
 }
 
 /** A contractual change waits for an annex to the agreement signed after it was asked */
@@ -622,8 +714,10 @@ export function decideChangeBy(planId: string, changeId: string, outcome: 'appro
   if (!role || !mayApprovePlan(role, by)) return ['قرار التعديل لمدير المنح أو صاحب صلاحية مفوّض']
   const p = planById(planId)
   const c = p?.changes.find((x) => x.id === changeId)
+  /* #36 · the entity's request is the supervisor's first */
+  if (c?.step === 'supervisor') return ['الطلب عند مشرف المنح · يرفعه أولًا لمدير المنح']
   /* v3 · 12.4.15 · the contractual part changes in the agreement before the plan takes it */
-  if (p && c?.kind === 'contractual' && outcome === 'approve' && !annexAfter(p.projectId, c.at)) return ['تغيير تعاقدي · يُعدَّل أولًا بملحق في الاتفاقية ثم يُعتمد في الخطة']
+  if (p && c?.kind === 'contractual' && c.mode !== 'cancel' && outcome === 'approve' && !annexAfter(p.projectId, c.at)) return ['تغيير تعاقدي · يُعدَّل أولًا بملحق في الاتفاقية ثم يُعتمد في الخطة']
   run({ op: 'changeDecide', planId, changeId, outcome, note: note.trim(), by, at: now() })
   return []
 }

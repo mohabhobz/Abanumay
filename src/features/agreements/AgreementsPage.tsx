@@ -12,7 +12,7 @@ import { useStickyGroup } from '@/hooks/useStickyGroup'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { QuickRead } from '@/components/assistant'
 import {
-  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols,
+  DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols, readSort, writeSort, nextSort, sortRows,
 } from '@/components/table'
 import { ExportMenu } from '@/components/export'
 import { ROUTES } from '@/app/routes'
@@ -28,7 +28,7 @@ import type { Sheet } from '@/lib/export'
 import { AgreementCard } from './AgreementCard'
 import { COLS, GROUPS } from './columns'
 
-const KEYS = ['q', 'stage', 'heat', 'owner', 'kind', 'hold', 'view', 'group', 'adv'] as const
+const KEYS = ['q', 'stage', 'heat', 'owner', 'kind', 'hold', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Agreements inbox.
@@ -383,7 +383,9 @@ export default function AgreementsPage() {
             <>
               <Glass className="tblcard">
                 <DataTable
-                  rows={sorted}
+                  rows={sortRows(sorted, COLS, readSort(v.ord))}
+                  sort={readSort(v.ord)}
+                  onSort={(k) => set({ ord: writeSort(nextSort(readSort(v.ord), k)) })}
                   all={COLS}
                   table="agreements"
                   cols={cols}

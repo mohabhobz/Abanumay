@@ -31,6 +31,8 @@ export const ROUTES = {
    * projects under it, and its route is kept separate so it doesn't collide with project ids.
    */
   portfolio: (id: string) => `/projects/portfolio/${id}`,
+  /** Client 20 Oct (#17) · a sub-project's own page · under its portfolio */
+  subProject: (pfId: string, subId: string) => `/projects/portfolio/${pfId}/sub/${subId}`,
   /** A new portfolio · internal, or the partner's request from its portal (`?as=partner&entity=`) (13.2.2 · 13.2.3) */
   portfolioNew: '/projects/portfolio/new',
   /** Strategic partners · the partners, their portfolios, the Ehsan projects and the finance desk (BPD-011 · BPD-013) */

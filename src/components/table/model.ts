@@ -102,15 +102,23 @@ export const writeSort = (s: ColSort | null): string | undefined => (s ? `${s.ke
 export const nextSort = (cur: ColSort | null, key: string): ColSort | null =>
   cur?.key !== key ? { key, dir: 'asc' } : cur.dir === 'asc' ? { key, dir: 'desc' } : null
 
+/** A date column without its own `value` sorts by the date, not by its text · an ISO day reads
+    chronologically, and a column whose cell is "لم تُعتمد" for some rows keeps those rows last. */
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}/
+const dayOf = (t: string): number | null => (ISO_DAY.test(t) ? Date.parse(t.slice(0, 10)) : null)
+
 export const sortRows = <T,>(rows: T[], cols: Col<T>[], s: ColSort | null): T[] => {
   const c = s && cols.find((x) => x.key === s.key)
   if (!s || !c) return rows
   const k = s.dir === 'asc' ? 1 : -1
+  /* A column is a date column when every row that has a date holds an ISO day */
+  const dated = !c.value && rows.some((r) => dayOf(c.text(r)) !== null)
+  const num = c.value ?? (dated ? (r: T) => dayOf(c.text(r)) : undefined)
   return [...rows].sort((a, b) => {
-    const va = c.value?.(a)
-    const vb = c.value?.(b)
-    if (c.value && va != null && vb != null) return (va - vb) * k
-    if (c.value && (va == null) !== (vb == null)) return va == null ? 1 : -1
+    const va = num?.(a)
+    const vb = num?.(b)
+    if (num && va != null && vb != null) return (va - vb) * k
+    if (num && (va == null) !== (vb == null)) return va == null ? 1 : -1
     return c.text(a).localeCompare(c.text(b), 'ar') * k
   })
 }

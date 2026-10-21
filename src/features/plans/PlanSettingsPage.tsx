@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BackTo, Glass, Head, Nil, Num, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -11,6 +12,7 @@ import { EVIDENCE_KINDS, PLAN_LIMIT, PLAN_STAGES, planRows } from '@/data/mock/p
 import type { PlanStage } from '@/types/domain'
 import { NOUN, nounAfter } from '@/lib/format'
 import { PlanAuthTab } from './PlanAuthTab'
+import { ACT_TIMING, ACT_TIMING_DEFAULT, saveActTiming, timingIssues } from '@/data/plans/timing'
 
 /* Plan settings - D-1 and D-3.
 
@@ -38,6 +40,7 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const TABS = [
   { slug: 'evidence', label: 'أنواع الشواهد' },
+  { slug: 'timing', label: 'تأخّر الأنشطة وتعثّرها' },
   { slug: 'limits', label: 'حدود المراحل' },
   { slug: 'auth', label: 'صلاحية الاعتماد' },
 ] as const
@@ -83,7 +86,7 @@ export default function PlanSettingsPage() {
             onChange={(x) => set({ tab: x === TABS[0].slug ? undefined : x })}
           />
 
-          {tab === 'auth' ? <PlanAuthTab /> : tab === 'evidence' ? (
+          {tab === 'timing' ? <ActTimingTab /> : tab === 'auth' ? <PlanAuthTab /> : tab === 'evidence' ? (
             <Glass className="tblcard">
               <Head
                 title="أنواع الشواهد"
@@ -165,5 +168,43 @@ export default function PlanSettingsPage() {
       </div>
       </DockSlotProvider>
     </AppLayout>
+  )
+}
+
+/* Client meeting 20 Oct (#35) · when an activity reads «متأخر» and when «متعثر» · in days after its
+   planned end · the stall margin is never shorter than the delay margin, and the screen says so
+   before it saves */
+function ActTimingTab() {
+  const [delay, setDelay] = useState(String(ACT_TIMING.delayDays))
+  const [stall, setStall] = useState(String(ACT_TIMING.stallDays))
+  const [said, setSaid] = useState('')
+  const next = { delayDays: Number(delay), stallDays: Number(stall) }
+  const issues = delay === '' || stall === '' ? ['أدخل المدتين'] : timingIssues(next)
+  const dirty = next.delayDays !== ACT_TIMING.delayDays || next.stallDays !== ACT_TIMING.stallDays
+  return (
+    <Glass>
+      <Head title="تأخّر الأنشطة وتعثّرها" meta={<span className="sub">الافتراضي <Num>{ACT_TIMING_DEFAULT.delayDays}</Num> و<Num>{ACT_TIMING_DEFAULT.stallDays}</Num> أيام</span>} />
+      <p className="sub cnote">
+        تُقرأ حالة إنجاز النشاط من تواريخه: «لم يحن وقته» قبل تاريخ بدئه، و«جاري التنفيذ» حتى تاريخ انتهائه،
+        ثم «متأخر» إذا تجاوزه بأكثر من مدة التأخير، و«متعثر» إذا تجاوزه بأكثر من مدة التعثّر · و«مكتمل» حين تعلن الجهة
+        اكتماله فيذهب لمشرف المنح للتحقق.
+      </p>
+      <div className="actcfg">
+        <label className="regf">
+          <span className="lb">مدة التأخير · بالأيام بعد تاريخ الانتهاء<b className="regf-r" aria-label="إلزامي">*</b></span>
+          <span className="fld"><input inputMode="numeric" value={delay} onChange={(e) => { setDelay(e.target.value.replace(/[^\d]/g, '')); setSaid('') }} aria-label="مدة التأخير بالأيام" /></span>
+        </label>
+        <label className="regf">
+          <span className="lb">مدة التعثّر · بالأيام بعد تاريخ الانتهاء<b className="regf-r" aria-label="إلزامي">*</b></span>
+          <span className="fld"><input inputMode="numeric" value={stall} onChange={(e) => { setStall(e.target.value.replace(/[^\d]/g, '')); setSaid('') }} aria-label="مدة التعثّر بالأيام" aria-invalid={issues.length > 0} /></span>
+        </label>
+        <button type="button" className="btn btn-p" disabled={!dirty || issues.length > 0}
+          onClick={() => { const e = saveActTiming(next); setSaid(e[0] ?? 'حُفظت المدد · تُقرأ بها حالة كل نشاط من الآن') }}>
+          احفظ المدد
+        </button>
+      </div>
+      {issues.length > 0 && <p className="bad cnote" role="alert">{issues.join(' · ')}</p>}
+      {said && !issues.length && <p className="sub cnote" aria-live="polite">{said}</p>}
+    </Glass>
   )
 }

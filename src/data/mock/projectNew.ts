@@ -116,7 +116,8 @@ export const P_STAGES: PStageDef[] = [
       /* 11.2.4 · 11.2.5 · 13.2.4 · routing through a partner platform and the project's type · both
          stay open to the supervisor until the approval */
       { key: 'platform', label: 'الدعم عبر جهة خارجية', kind: 'select', options: ['بلا جهة خارجية', 'منصة إحسان'], hint: 'اقتراح توجيه الدعم · يقرّه المدير التنفيذي في الدراسة' },
-      { key: 'ptype', label: 'نوع المشروع', kind: 'select', options: ['مستقل', 'محفظة'], hint: 'للشريك الاستراتيجي وحده · المحفظة تُنشأ في صفحتها' },
+      /* Client 20 Oct (#42) · «لجهة خارجية» opens the simplified form from inside the system */
+      { key: 'ptype', label: 'نوع المشروع', kind: 'select', options: ['مستقل', 'لجهة خارجية', 'محفظة'], hint: 'المحفظة للشريك الاستراتيجي وتُنشأ في صفحتها · ولجهة خارجية بنموذج مبسّط' },
     ],
   },
   {

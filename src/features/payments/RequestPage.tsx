@@ -28,7 +28,7 @@ import { PayExceptions } from './PayExceptions'
 import { PayeeCard } from './PayeeCard'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readPayRequest } from '@/data/recordReadings'
-import { PROXY_ROLES, actOnPay, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
+import { PROXY_ROLES, actOnPay, basisOfRequest, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
 import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
@@ -358,6 +358,13 @@ export default function RequestPage() {
                   <div className="payq-cond">
                     <span className="lb">شروط الدفعة</span>
                     <span>{isolate(r.condition)}</span>
+                  </div>
+                )}
+                {/* Client meeting 20 Oct · what the payment rests on */}
+                {basisOfRequest(r) && (
+                  <div className="payq-cond">
+                    <span className="lb">أساس الدفعة</span>
+                    <span>{basisOfRequest(r)}</span>
                   </div>
                 )}
                 <ul className="payq-ck">

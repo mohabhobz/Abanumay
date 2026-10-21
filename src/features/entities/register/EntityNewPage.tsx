@@ -20,7 +20,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { entityRows } from '@/data/mock/entities'
 import { regReadings, stageAdvice, stepState } from '@/data/mock/regPortal'
 import {
-  FORM_STAGES, PARTNER_ACCESS_STAGE, PARTNER_KINDS, REG_DOCS, docRequired, licenseClash,
+  DIRECT_KINDS, FORM_STAGES, LITE_KINDS, PARTNER_ACCESS_STAGE, REG_DOCS, docRequired, licenseClash,
   partnerKind, type PartnerKind, type RegStage,
 } from '@/data/mock/registration'
 import { Field } from './Field'
@@ -82,7 +82,7 @@ export default function EntityNewPage() {
   /* Note: type lives in the URL, not in state - and this isn't a code preference. When it was
      `useState`, the selected card's state was unreachable to testing, so every check ran against
      the empty card alone - the same blind spot that pushed the portal form's steps into the URL. */
-  const partner = PARTNER_KINDS.some((k) => k.key === v.kind)
+  const partner = DIRECT_KINDS.some((k) => k.key === v.kind)
     ? (v.kind as PartnerKind)
     : ''
   const setPartner = (k: PartnerKind) => set({ kind: k })
@@ -104,6 +104,10 @@ export default function EntityNewPage() {
   const [newId, setNewId] = useState('')
 
   const type = val.type ?? ''
+  /* Client 20 Oct (#41) · an implementing partner or an external party added from inside needs only its
+     name and its bank account · every other field and document stays optional */
+  const lite = partner !== '' && LITE_KINDS.includes(partner)
+  const need = (d: (typeof REG_DOCS)[number]) => !lite && docRequired(d, type)
 
   const setField = (k: string, x: string) =>
     setVal((s) => {
@@ -146,18 +150,19 @@ export default function EntityNewPage() {
       out[s.key] =
         s.key === 'docs'
           ? [
-              ...REG_DOCS.filter((d) => docRequired(d, type) && !docs.has(d.key)).map((d) => d.label),
+              ...REG_DOCS.filter((d) => need(d) && !docs.has(d.key)).map((d) => d.label),
               ...stale.map((k) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k} منتهٍ · ${DOC_EXPIRY[k].label} مضى`),
             ]
           : s.key === 'bank'
-          ? bankIssues(banks).map((b) => b.say)
+          ? bankIssues(banks).filter((b) => !lite || !b.key.endsWith('-short')).map((b) => b.say)
           : [
-              ...s.fields.filter((f) => f.req && !val[f.key]?.trim()).map((f) => f.label),
+              ...s.fields.filter((f) => (lite ? f.key === 'name' : f.req) && !val[f.key]?.trim()).map((f) => f.label),
               ...s.fields.filter((f) => errs[f.key]).map((f) => `${f.label}: ${errs[f.key]}`),
             ]
     }
     return out
-  }, [val, docs, type, partner, formStages, banks, errs, stale])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [val, docs, type, partner, formStages, banks, errs, stale, lite])
 
   const missing = Object.values(shortBy).flat()
 
@@ -281,6 +286,9 @@ export default function EntityNewPage() {
                   }
                 />
                 {stage.note && <p className="sub cnote">{stage.note}</p>}
+                {lite && tab !== 'partner' && (
+                  <p className="sub cnote">{/* Client 20 Oct (#41) */}الإلزامي لـ«{partnerKind(partner as PartnerKind).label}» حقلان فقط · اسم الجهة وبيانات الحساب البنكي · والباقي اختياري</p>
+                )}
 
                 {tab === 'partner' && (
                   <>
@@ -288,7 +296,7 @@ export default function EntityNewPage() {
                         unlocks is shown at selection time, not after, and stated in text rather
                         than coded into a tag alone. */}
                     <ul className="pkinds">
-                      {PARTNER_KINDS.map((k) => (
+                      {DIRECT_KINDS.map((k) => (
                         <li key={k.key}>
                           <label className={`pkind${partner === k.key ? ' on' : ''}`}>
                             <input
@@ -346,11 +354,11 @@ export default function EntityNewPage() {
                     </div>
                     <ul className="regdocs">
                       {REG_DOCS.map((d) => {
-                        const need = docRequired(d, type)
+                        const required = need(d)
                         const on = docs.has(d.key)
                         const picked = files[d.key]
                         return (
-                          <li key={d.key} className={on ? 'ok' : need ? 'no' : ''}>
+                          <li key={d.key} className={on ? 'ok' : required ? 'no' : ''}>
                             <div className="regdoc-h">
                               <span className="regdocs-l">{d.label}</span>
                               <span className="pc-sp" />
@@ -358,7 +366,7 @@ export default function EntityNewPage() {
                                   "required" used to turn green once uploaded, so the same document
                                   read "required" in amber on one screen and green on another. */}
                               {on && <Tag tone="ok">مرفوع</Tag>}
-                              {need
+                              {required
                                 ? <Tag tone="warn">
                                     {d.reqFor ? `إلزامي للتصنيف ${d.reqFor[0]}` : 'إلزامي'}
                                   </Tag>
@@ -412,7 +420,7 @@ export default function EntityNewPage() {
                     {fields.map((f) => (
                       <Field
                         key={f.key}
-                        f={f}
+                        f={lite ? { ...f, req: f.key === 'name' } : f}
                         value={val[f.key] ?? ''}
                         parent={f.dependsOn ? val[f.dependsOn] ?? '' : ''}
                         onChange={(x) => setField(f.key, x)}

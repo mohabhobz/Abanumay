@@ -7,6 +7,17 @@ import { planOfProject, planStageLabel } from '@/data/mock/plans'
 import { changePlanDecision, originalDecision, planDecisionHistory, planDecisionOf, planRuleSays, usePlans, type PlanDecision } from '@/data/plans/store'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { nf } from '@/lib/format'
+import { planKind } from '@/data/approvals/store'
+import { projectRows } from '@/data/mock/projects'
+
+/* Client meeting 20 Oct (#38) · the project's type decides first · a portfolio always has a plan, an
+   external project has neither a plan nor an agreement, and a regular project's plan is optional ·
+   the grants manager decides it */
+const KIND_SAY = {
+  portfolio: { t: 'محفظة · تتطلب خطة دائمًا', s: 'لا يُعدَّل القرار · خطة المحفظة شرط لتنفيذ مشاريعها الفرعية' },
+  external: { t: 'مشروع خارجي · بلا خطة ولا اتفاقية', s: 'لا تُنشأ للمشروع الخارجي خطة في النظام ولا اتفاقية · يُصرف ويُغلق مباشرة' },
+  regular: { t: 'مشروع عادي · الخطة اختيارية', s: 'يقرّر مدير المنح «يتطلب خطة» أو «لا يتطلب خطة» · واقتراح القاعدة أدناه' },
+} as const
 
 /* «خطة العمل» · the plan decision on the project (12.2.1 · 12.2.2 · 12.4.31 – 12.4.33).
 
@@ -28,12 +39,21 @@ export function PlanDecisionCard({ projectId, approved }: { projectId: string; a
   const [reason, setReason] = useState('')
   const [said, setSaid] = useState('')
   const me = meOf(role)
-  const mayChange = role === 'grants-manager' && approved
+  const pr = projectRows.find((x) => x.id === projectId)
+  const kind = pr ? planKind(pr) : 'regular'
+  /* the type forces the decision for a portfolio and an external project · the manager decides only a regular one */
+  const mayChange = role === 'grants-manager' && approved && kind === 'regular'
 
   return (
     <Glass>
       <Head title="خطة العمل" meta={d ? <Tag tone={d.needs ? 'teal' : 'mute'}>{d.needs ? 'يتطلب خطة' : 'لا يتطلب خطة'}</Tag> : <span className="sub">لم يُقرَّر بعد</span>} />
       <ul className="apv-list">
+        <li>
+          <span className="apv-t">
+            <b>{KIND_SAY[kind].t}</b>
+            <span className="sub">{KIND_SAY[kind].s}</span>
+          </span>
+        </li>
         {d && (
           <li>
             <span className="apv-t">

@@ -360,7 +360,13 @@ export interface AgreementPayment {
   /** v3 · 8.2.9 · 12.4.14 · structured conditions · a date, a plan activity, a report or an output ·
       one or more, checked against the record */
   conds?: PayCond[]
+  /** Client meeting 20 Oct · what the payment rests on · an activity of the plan (`ref` is its id)
+      or an interim report · stated per payment, read from the conditions when absent */
+  basis?: PayBasis
 }
+
+/** The payment's basis · a plan activity or an interim report */
+export interface PayBasis { kind: 'activity' | 'report'; ref?: string; label?: string }
 
 /** v3 · one structured payment condition · `ref` is the date, the activity id, the report key or the
     output's index */
@@ -676,6 +682,8 @@ export interface PayRequest {
   hoursInState: number
   /** Disbursement condition — rule 6 — empty when the payment carries no condition. */
   condition?: string
+  /** Client meeting 20 Oct · the payment's basis · a plan activity or an interim report */
+  basis?: string
   /** Conditions the system verifies before allowing the transition. */
   checks: PayCheck[]
   /** The approved bank — the spec's second deliverable: "the approved bank account." */
@@ -916,6 +924,17 @@ export interface PlanChange {
   proposed?: PlanPhase[]
   /** The structure before the change · kept when it's applied (12.4.23) */
   before?: PlanPhase[]
+  /** Client 20 Oct (#36) · a change to the plan, or a request to cancel it */
+  mode?: 'change' | 'cancel'
+  /** The justification · required with every request */
+  why?: string
+  /** Where the request stands · the entity's request passes the supervisor first, then the manager */
+  step?: 'supervisor' | 'manager'
+  /** Who asked · the entity, the supervisor or the manager */
+  from?: 'entity' | 'supervisor' | 'manager'
+  /** #37 · the version this request replaced, and the one it made, once approved */
+  fromVersion?: number
+  toVersion?: number
 }
 
 export interface PlanRow {

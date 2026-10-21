@@ -16,6 +16,7 @@
 @import './parts/account.css';
 @import './parts/inbox.css';
 @import './parts/payments.css';
+@import './parts/plans.css';
 
 /* Official Saudi Riyal symbol
    U+20C1, officially issued and added to Unicode 17.
@@ -1663,6 +1664,7 @@ input:not([type=checkbox],[type=radio],[type=range]){text-overflow:ellipsis}
 .t-sched col:nth-child(7){width:3.5rem}
 /* v3 · 8.2.9 · a payment's structured conditions · chips under the note */
 .t-sched .pcond{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-2);align-items:center}
+.t-sched .pbasis{display:block}
 
 .t-pf col:nth-child(2){width:9rem}
 .t-pf col:nth-child(3){width:10rem}

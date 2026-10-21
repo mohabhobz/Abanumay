@@ -620,6 +620,8 @@ export interface PaySlot {
   amount: number
   dueAt: string
   condition?: string
+  /** Client meeting 20 Oct · «معتمدة على نشاط من الخطة · …» or «معتمدة على تقرير مرحلي» */
+  basis?: string
   conditionMet: boolean
   state: PaySlotState
   /** v3 · 9.4.7 · before its planned date · a follow-up mark, not a lock */
