@@ -3,7 +3,7 @@ import { useDocReads } from '@/lib/docCache'
 import { suggestNext } from '@/data/shared/agent'
 import { rowGo } from '@/lib/rowGo'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { FieldSelect, Glass, Head, KV, Money, Tabs, Tag } from '@/components/ui'
+import { BackTo, FieldSelect, Glass, Head, KV, Money, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -62,6 +62,8 @@ export default function PartnersPage() {
     <AppLayout assistantContext={assistFor.page('الشركاء الاستراتيجيون')}>
       <div className="viewstack">
         <div className="screen col">
+          {/* client meeting 20 Oct · the partners live under «الجهات» · no rail entry of their own */}
+          <BackTo label="الجهات" onClick={() => navigate(ROUTES.entities)} />
           <header>
             <div>
               <h1 className="ptitle">الشركاء الاستراتيجيون</h1>
@@ -98,8 +100,8 @@ export default function PartnersPage() {
                       const m = pfMoney(pf)
                       const l = linkOf(pf.id)
                       return (
-                        <tr key={pf.id} {...rowGo(navigate, ROUTES.portfolio(pf.id))}>
-                          <td><Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link><span className="sub"> · {pf.id}</span></td>
+                        <tr key={pf.id} {...rowGo(navigate, `${ROUTES.portfolio(pf.id)}?from=partners`)}>
+                          <td><Link className="tlink" to={`${ROUTES.portfolio(pf.id)}?from=partners`}>{pf.name}</Link><span className="sub"> · {pf.id}</span></td>
                           <td className="sub">{PROFILES.find((p) => p.entityId === pf.entityId)?.name}</td>
                           <td><Tag tone={PF_STAGE_TONE[pf.stage]}>{PF_STAGE_SAY[pf.stage]}</Tag></td>
                           <td className="n"><Money sm>{pf.total}</Money></td>

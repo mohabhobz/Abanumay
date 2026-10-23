@@ -55,6 +55,8 @@ export default function PortfolioPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const asPartner = params.get('as') === 'partner'
+  /* opened from the partners hub (`?from=partners`) · the way back returns there, otherwise to the projects */
+  const fromPartners = params.get('from') === 'partners'
   usePartners()
   const { role, user } = useRole()
   const pf = id ? pfById(id) : undefined
@@ -67,7 +69,7 @@ export default function PortfolioPage() {
     return (
       <AppLayout assistantContext={assistFor.page('المحافظ')}>
         <div className="viewstack"><div className="screen col">
-          <BackTo label="الشركاء" onClick={() => navigate(ROUTES.partners)} />
+          <BackTo label="المشاريع" onClick={() => navigate(ROUTES.projects)} />
           <Glass><Empty title="المحفظة غير موجودة." note="تُسجَّل المحافظ للشركاء الاستراتيجيين المعتمدين." /></Glass>
         </div></div>
       </AppLayout>
@@ -141,7 +143,9 @@ export default function PortfolioPage() {
     <AppLayout assistantContext={assistFor.page(pf.name)}>
       <div className={`viewstack${actions.length ? ' hasdock' : ''}`}>
         <div className="screen col hasg2">
-          <BackTo label={asPartner ? 'البوابة' : 'الشركاء'} onClick={() => navigate(asPartner ? `${ROUTES.entityPortal}?entity=${partner}` : ROUTES.partnersTab('portfolios'))} />
+          {/* client meeting 20 Oct · a portfolio opened from the projects list went back to «الشركاء», which
+              read as a module the user never passed through · the way back follows where it was opened from */}
+          <BackTo label={asPartner ? 'البوابة' : fromPartners ? 'الشركاء' : 'المشاريع'} onClick={() => navigate(asPartner ? `${ROUTES.entityPortal}?entity=${partner}` : fromPartners ? ROUTES.partnersTab('portfolios') : `${ROUTES.projects}?tab=portfolios`)} />
           <Said said={said} />
 
           <header className="phead">

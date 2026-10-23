@@ -379,6 +379,8 @@ export default function EntitiesListPage() {
               settings={ROUTES.entitySettings}
               secondary={[
                 { label: 'طلبات التسجيل', to: ROUTES.entityRequests, icon: 'doc', count: reg.open },
+                /* client meeting 20 Oct · the strategic partners are entities · their hub opens from here */
+                { label: 'الشركاء الاستراتيجيون', to: ROUTES.partners, icon: 'navPartners' },
                 /* 2.3.upd · the other request an entity sends, after it exists */
                 { label: 'طلبات التحديث', to: ROUTES.entityUpdates, icon: 'edit', count: UPD_ROWS.filter((u) => u.state === 'review').length },
                 /* Re-audit 7 Oct · the archive is the system admin's alone (rule 29) */

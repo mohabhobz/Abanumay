@@ -47,7 +47,7 @@ function PfPays({ pf }: { pf: PortfolioRec }) {
   const issue = next ? pfReqIssue(pf, next.no, next.amount) : ''
   return (
     <section className="pfdesk">
-      <h4 className="ptn-sub"><Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link> <span className="sub">· {pf.id}</span></h4>
+      <h4 className="ptn-sub"><Link className="tlink" to={`${ROUTES.portfolio(pf.id)}?from=partners`}>{pf.name}</Link> <span className="sub">· {pf.id}</span></h4>
       <ul className="ptn-slots">
         {pf.schedule.map((s) => {
           const rq = pf.requests.filter((r) => r.no === s.no).at(-1)

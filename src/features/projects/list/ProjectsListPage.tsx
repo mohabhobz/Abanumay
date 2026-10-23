@@ -511,6 +511,8 @@ export default function ProjectsListPage() {
                 changing it shows who's affected. */}
             <PageActions
               settings={ROUTES.projectSettings}
+              /* client meeting 20 Oct · the partners and their portfolios are reached from here and from «الجهات» */
+              secondary={[{ label: 'الشركاء والمحافظ', to: ROUTES.partnersTab('portfolios'), icon: 'navPartners' }]}
               create={{ label: 'مشروع جديد', to: ROUTES.projectNew }}
             />
           </header>
