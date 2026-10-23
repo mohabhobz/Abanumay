@@ -114,8 +114,19 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
 
   return (
     <>
+      {/* Client 21 Oct (#27) · whatever level decided, the file comes back to the supervisor last · he
+          reads what the decision changed (the amount, the outputs, the conditions) and confirms «اعتماد مكتمل» */}
+      {holder === 'confirm' && f.decided && <ReviewCard row={row} />}
       <Glass>
         <Head title="مسار القرار" meta={<Tag tone={holder === 'confirm' ? 'ok' : holder ? 'warn' : 'mute'}>{holder ? HOLDER_LABEL[holder] : row.stage}</Tag>} />
+        {/* Client 21 Oct (#23) · a recommendation to refuse doesn't bind the levels above · it stays on file */}
+        {study?.recommendation === 'reject' && holder && holder !== 'supervisor' && (
+          <p className="sub cnote">
+            <Tag tone="no">أوصى مشرف المنح بالرفض</Tag>{' '}
+            {study.rejectReason ? <>{reasonSay(study.rejectReason, study.rejectOther)} · </> : null}
+            لصاحب القرار أن يعتمد أو يوصي بالموافقة خلافها · تبقى التوصية محفوظة في ملف المراجعة وسجل المشروع.
+          </p>
+        )}
         <KV rows={[
           { k: 'صاحب القرار حسب المبلغ', v: <>{decider.role}{decider.upTo !== null && <span className="sub"> · حتى <Num>{decider.upTo}</Num></span>}</> },
           ...(floorOf(row) && LEVEL_RANK[floorOf(row)!] > LEVEL_RANK[decider.key] ? [{ k: 'صاحب القرار حسب النوع', v: <>{LEVEL_SAY[floorOf(row)!]} فأعلى <span className="sub">· {KIND_SAY[kindOf(row)]}</span></> }] : []),
@@ -232,7 +243,8 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           { k: 'المستفيدون المستهدفون', v: <Num>{row.beneficiaries}</Num> },
           /* Batch 7 · approvals#8 · the expected impact from the reach really reported (cross#28) */
           { k: 'الأثر المتوقع', v: <><Num>{ei.expected}</Num> مستفيد · {ei.from === 'default' ? 'تقدير افتراضي' : <>بنسبة تحقّق <span className="num">{pct(Math.round(ei.rate * 100))}</span> في <Num>{ei.basis}</Num> {ei.from === 'similar' ? 'مشابهًا' : 'من المجال'}</>}</> },
-          { k: 'نهاية التنفيذ المحسوبة', v: row.endAt ? <DateText>{row.endAt}</DateText> : '—' },
+          /* Client 21 Oct (#28) · the end is a date the entity gave (moved with the actual start) · the duration the days between */
+          { k: 'نهاية التنفيذ', v: row.endAt ? <><DateText>{row.endAt}</DateText>{row.durationDays ? <span className="sub"> · <Num>{row.durationDays}</Num> يومًا من البداية</span> : null}</> : '—' },
           { k: 'الأهداف التفصيلية', v: objectives.length ? <><Num>{objectives.length}</Num> · {objectives.slice(0, 2).join('، ')}{objectives.length > 2 ? '…' : ''}</> : '—' },
           { k: 'سجلّ الجهة في المشاريع المغلقة', v: past.n ? <><Num>{past.n}</Num> مشروع · متوسط التقييم {past.score === null ? '—' : <Num>{past.score}</Num>} · تحقق المستفيدين {past.reach === null ? '—' : <span className="num">{pct(past.reach)}</span>}</> : 'لا مشاريع مغلقة للجهة بعد' },
         ]} />
@@ -270,7 +282,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         <ul className="apv-list">
           {f.conditions.map((c) => (
             <li key={c.id}>
-              <span className="apv-t"><b>{c.text}</b><span className="sub">قبل {c.when === 'agreement' ? 'توقيع الاتفاقية' : 'صرف الدفعة الأولى'} · <Person name={c.by} /></span></span>
+              <span className="apv-t"><b>{c.text}</b><span className="sub">قبل {c.when === 'agreement' ? 'توقيع الاتفاقية' : 'صرف الدفعة الأولى'} · <Person name={c.by} />{c.by === study?.by ? ' · من دراسة مشرف المنح' : ''}</span></span>
               <span className="pc-sp" />
               {c.met ? <Tag tone="ok">مستوفى · <DateText>{c.met.at}</DateText></Tag>
                 : role === 'supervisor' ? <button className="btn btn-2 btn-sm" onClick={() => meetCondition(row.id, c.id, me)}>علّمه مستوفى</button>
@@ -395,5 +407,30 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         </Glass>
       )}
     </>
+  )
+}
+
+/** Client 21 Oct (#27) · the supervisor's closing review · what the decision left on the file, read
+    before «اعتماد مكتمل» · a review of the result, not a second approval */
+function ReviewCard({ row }: { row: ProjectRow }) {
+  const f = appFlowOf(row.id)
+  const study = flowOf(row.id).study
+  const outputs = orgOutputsOf(row.id)
+  const unmet = f.conditions.filter((c) => !c.met)
+  const open = f.notes.filter((n) => !n.resolved)
+  const decided = f.decided
+  return (
+    <Glass>
+      <Head title="مراجعة المشرف" meta={<Tag tone={unmet.length || open.length ? 'warn' : 'ok'}>{unmet.length || open.length ? 'قبل التأكيد' : 'جاهزة للتأكيد'}</Tag>} />
+      <KV rows={[
+        ...(decided ? [{ k: 'القرار', v: <>{HOLDER_LABEL[decided.level]} · اعتماد · <Person name={decided.by} /> · <DateText>{decided.at}</DateText></> }] : []),
+        { k: 'المبلغ', v: <>المطلوب <Money sm>{row.amountRequested}</Money>{study?.recommendation === 'approve' ? <> · الموصى به <Money sm>{study.amount}</Money></> : null} · المعتمد <b><Money sm>{supportAmount(row)}</Money></b></> },
+        { k: 'تعديلات المبلغ على المسار', v: f.amounts.filter((a) => a.level !== 'supervisor').length ? f.amounts.filter((a) => a.level !== 'supervisor').map((a) => `${HOLDER_LABEL[a.level]}: ${nf.format(a.from)} ← ${nf.format(a.to)}`).join(' · ') : <span className="sub">لا تعديل</span> },
+        { k: 'مخرجات المؤسسة', v: outputs.length ? <><Num>{outputs.length}</Num> · {outputs.slice(0, 2).map(outputLine).join(' ؛ ')}{outputs.length > 2 ? '…' : ''}</> : <span className="sub">لا مخرجات مسجّلة</span> },
+        { k: 'الشروط الخاصة', v: f.conditions.length ? <>{unmet.length ? <span className="bad"><Num>{unmet.length}</Num> لم تُستوفَ</span> : 'مستوفاة'} · <Num>{f.conditions.length}</Num> شرط</> : <span className="sub">لا شروط</span> },
+        { k: 'الملاحظات الإلزامية', v: open.length ? <span className="bad"><Num>{open.length}</Num> لم تُعالج</span> : <span className="sub">لا ملاحظات مفتوحة</span> },
+      ]} />
+      <p className="sub cnote">آخر خطوة في المسار مهما كان صاحب القرار · يتحقق مشرف المنح ثم يؤكد «اعتماد مكتمل» من شريط القرار · بعدها يُفتح إعداد الاتفاقية.</p>
+    </Glass>
   )
 }

@@ -494,6 +494,7 @@ function Tree({
                   at a height of 30 instead of 31, that wouldn't pick up any improvement made to the
                   original. It's now `Segments`, like everywhere else. */}
               <Segments
+                pin={false}
                 items={[{ key: 'alloc', label: 'التخصيص' }, { key: 'use', label: 'الاستهلاك' }]}
                 active={view}
                 onChange={(k) => onView((k ?? 'alloc') as typeof view)}

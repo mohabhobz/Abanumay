@@ -216,6 +216,8 @@ export const PROJECT_TABS = [
   { slug: 'approval', label: 'الاعتماد' },
   { slug: 'entity', label: 'الجهة' },
   { slug: 'history', label: 'المشاريع السابقة' },
+  /* Client 21 Oct (#31) · every document of the project in one place, its own tab */
+  { slug: 'attachments', label: 'المرفقات' },
   { slug: 'agreement', label: 'الاتفاقية' },
   { slug: 'plan', label: 'الخطة' },
   { slug: 'payments', label: 'الدفعات' },
@@ -226,7 +228,7 @@ export const PROJECT_TABS = [
   /* Manual activities sit right before the log: they are added here and read there. */
   { slug: 'activities', label: 'الفعاليات' },
   { slug: 'log', label: 'سجل المشروع' },
-  { slug: 'correspondence', label: 'المراسلات' },
+  /* client 21 Oct (#2) · «المراسلات» left the tabs · the correspondence is a floating chat on the page */
 ] as const
 
 export type ProjectTabSlug = (typeof PROJECT_TABS)[number]['slug']

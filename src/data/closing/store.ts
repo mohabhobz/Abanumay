@@ -24,7 +24,7 @@ import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type {
   CaseKind, CaseRow, CaseStage, CloseAudit, CloseFinance, CloseRow, CloseStage, EntityFeedback, FinalReport,
-  ProjectEval, Recovery, RecoveryReceipt, SupportRedirect,
+  ProjectEval, Recovery, RecoveryReceipt, ReportUpload, SupportRedirect,
 } from '@/types/domain'
 import { isDone, isLive } from '@/data/status'
 
@@ -338,23 +338,12 @@ export function caseStops(c: CaseRow, act: CaseAct): string[] {
 
 /* ── Live state ── */
 
-const FIN_SPLIT: { label: string; share: number }[] = [
-  { label: 'تكاليف التنفيذ المباشرة', share: 0.75 },
-  { label: 'التشغيل والإدارة', share: 0.25 },
-]
-const financeFor = (c: CloseRow): CloseFinance => {
-  const g = grantOf(c.projectId)
-  const spent = c.report.budget
-  return {
-    lines: FIN_SPLIT.map((x, i) => ({
-      label: x.label,
-      approved: i === FIN_SPLIT.length - 1 ? g - Math.round(g * FIN_SPLIT[0]!.share) : Math.round(g * x.share),
-      spent: spent === null ? null : i === FIN_SPLIT.length - 1 ? spent - Math.round(spent * FIN_SPLIT[0]!.share) : Math.round(spent * x.share),
-    })),
-    settlements: '',
-    verified: null,
-  }
-}
+/* Client 21 Oct (#6) · the costs are two figures, not a split by line · the project's whole budget and
+   the foundation's support · the financial report carries the support line alone, read from the
+   report's actual support figure · no settlements text */
+export const SUPPORT_LINE = 'مبلغ دعم المؤسسة'
+const financeLines = (c: CloseRow): CloseFinance['lines'] => [{ label: SUPPORT_LINE, approved: grantOf(c.projectId), spent: c.report.budget }]
+const financeFor = (c: CloseRow): CloseFinance => ({ lines: financeLines(c), settlements: '', verified: null })
 
 const PAST_SUPERVISOR: CloseStage[] = ['comms', 'manager', 'executive', 'reportDone', 'evalDraft', 'evalManager', 'evalExecutive', 'closed']
 const FEEDBACK_SEEDED: CloseStage[] = ['evalManager', 'closed']
@@ -365,7 +354,7 @@ export type ExcField = 'beneficiaries' | 'days' | 'budget' | 'outcomes'
 export const EXC_FIELDS: { key: ExcField; label: string; num: boolean }[] = [
   { key: 'beneficiaries', label: 'عدد المستفيدين الفعلي', num: true },
   { key: 'days', label: 'مدة التنفيذ الفعلية', num: true },
-  { key: 'budget', label: 'الميزانية الفعلية', num: true },
+  { key: 'budget', label: 'مبلغ دعم المؤسسة الفعلي', num: true },
   { key: 'outcomes', label: 'النتائج الفعلية', num: false },
 ]
 
@@ -400,6 +389,9 @@ type Op = { at: string; by: string } & (
   | { op: 'save'; id: string; patch: ReportPatch }
   | { op: 'doc'; id: string; key: string; file?: string }
   | { op: 'link'; id: string; label: string; url: string }
+  | { op: 'files'; id: string; files: Omit<ReportUpload, 'at' | 'by'>[] }
+  | { op: 'fileDrop'; id: string; fileId: string }
+  | { op: 'reopen'; id: string; reason: string; role: string }
   | { op: 'send'; id: string }
   | { op: 'act'; id: string; act: 'approve' | 'return'; note: string; file?: string; invoices?: boolean }
   | { op: 'exception'; id: string; field: ExcField; value: string; reason: string; decision: string; file: string; role: string }
@@ -511,7 +503,9 @@ function applyOp(o: Op) {
       if (!c || (c.stage !== 'draft' && c.stage !== 'returned')) return
       const { finance, ...rest } = o.patch
       Object.assign(c.report, rest)
+      /* Client 21 Oct (#6) · an older save carried its lines · a new one derives the support line from the report */
       if (finance) c.finance = { ...(c.finance ?? financeFor(c)), ...structuredClone(finance) }
+      else c.finance = { ...(c.finance ?? financeFor(c)), lines: financeLines(c), settlements: '' }
       log(c, o.by, 'حفظ بيانات التقرير الختامي', o.at)
       return
     }
@@ -531,7 +525,42 @@ function applyOp(o: Op) {
       const c = closeById(o.id)
       if (!c || (c.stage !== 'draft' && c.stage !== 'returned')) return
       c.report.links.push({ label: o.label, url: o.url })
-      log(c, o.by, 'إضافة رابط تخزين سحابي', o.at)
+      log(c, o.by, 'إضافة رابط تخزين خارجي', o.at)
+      return
+    }
+    case 'files': {
+      const c = closeById(o.id)
+      if (!c || (c.stage !== 'draft' && c.stage !== 'returned') || !o.files.length) return
+      const list = (c.report.uploads ??= [])
+      for (const f of o.files) if (!list.some((x) => x.id === f.id)) list.push({ ...f, at: day(o.at), by: o.by })
+      log(c, o.by, `رفع ${o.files.length === 1 ? `ملف · ${o.files[0]!.name}` : `${o.files.length} ملفات · ${o.files.map((x) => x.name).join('، ')}`}`, o.at)
+      return
+    }
+    case 'fileDrop': {
+      const c = closeById(o.id)
+      if (!c || (c.stage !== 'draft' && c.stage !== 'returned')) return
+      const f = c.report.uploads?.find((x) => x.id === o.fileId)
+      if (!f) return
+      c.report.uploads = c.report.uploads!.filter((x) => x.id !== o.fileId)
+      log(c, o.by, `حذف ملف · ${f.name}`, o.at)
+      return
+    }
+    case 'reopen': {
+      /* Client 21 Oct (#16) · a closed project opens again only by its permission and a recorded reason ·
+         the closed report and evaluation stay as versions · the money already settled doesn't move */
+      const c = closeById(o.id)
+      if (!c || c.stage !== 'closed' || !o.reason.trim()) return
+      snapshot(c, 'report', o.by, o.at, 'قبل إعادة الفتح')
+      if (c.evaluation) snapshot(c, 'eval', o.by, o.at, 'قبل إعادة الفتح')
+      c.versions.push({ no: c.versions.length + 1, at: day(o.at), by: o.by, say: `إعادة فتح بعد الإغلاق · ${o.reason.trim()}` })
+      move(c, 'returned')
+      c.returnedTo = 'draft'
+      c.note = o.reason.trim()
+      c.closedAt = undefined
+      log(c, o.by, `إعادة فتح المشروع بعد الإغلاق النهائي (${o.role}) · السبب: ${o.reason.trim()} · التسويات المالية المعتمدة لا تتغير`, o.at)
+      closeStage(c, 'رفع التقرير الختامي')
+      notify([c.entityName], 'أُعيد فتح الإغلاق · حدّث التقرير الختامي', c.projectName, `${ROUTES.closing(c.id)}?as=entity`)
+      notify([c.owner], 'أُعيد فتح إغلاق مشروع', c.projectName, ROUTES.closing(c.id))
       return
     }
     case 'send': {
@@ -1065,6 +1094,40 @@ export function openClosing(projectId: string, by: string): { id?: string; error
 }
 export const saveReport = (id: string, patch: ReportPatch, by: string) => run({ op: 'save', id, patch, by, at: now() })
 export const attachDoc = (id: string, key: string, by: string, file?: string) => run({ op: 'doc', id, key, file, by, at: now() })
+
+/* Client 21 Oct (#7) · the execution files go to the foundation's storage, not to a drive link ·
+   the record names each file · its bytes, in this prototype, live for the session as an object URL */
+const FILE_URLS = new Map<string, string>()
+/** The file's address in the storage · empty when its bytes aren't on this device (an older session) */
+export const reportFileUrl = (fileId: string): string => FILE_URLS.get(fileId) ?? ''
+const UPLOAD_MAX_MB = 200
+export function addReportFiles(id: string, files: File[], by: string): string[] {
+  const c = closeById(id)
+  if (!c) return ['الطلب غير موجود']
+  if (c.stage !== 'draft' && c.stage !== 'returned') return ['تُرفع الملفات قبل الإرسال أو بعد إعادة رسمية']
+  const big = files.filter((f) => f.size > UPLOAD_MAX_MB * 1024 * 1024)
+  if (big.length) return [`${big.map((f) => f.name).join('، ')} أكبر من ${UPLOAD_MAX_MB} ميجابايت`]
+  const rows = files.map((f) => {
+    const fid = `UP-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+    try { FILE_URLS.set(fid, URL.createObjectURL(f)) } catch { /* no object URLs here · the record still names it */ }
+    return { id: fid, name: f.name, type: f.type || 'application/octet-stream', size: f.size }
+  })
+  if (rows.length) run({ op: 'files', id, files: rows, by, at: now() })
+  return []
+}
+export const dropReportFile = (id: string, fileId: string, by: string) => run({ op: 'fileDrop', id, fileId, by, at: now() })
+
+/** Client 21 Oct (#16) · reopening a closed project is a dedicated permission · the grants manager or the system admin */
+export const mayReopen = (c: CloseRow, role: RoleKey): boolean => c.stage === 'closed' && (role === 'grants-manager' || role === 'admin')
+export function reopenClosing(id: string, reason: string, by: string, role: RoleKey): string[] {
+  const c = closeById(id)
+  if (!c) return ['الطلب غير موجود']
+  if (c.stage !== 'closed') return ['يُعاد فتح المشروع بعد إغلاقه النهائي فقط']
+  if (!mayReopen(c, role)) return ['إعادة الفتح صلاحية لمدير المنح ومدير النظام']
+  if (!reason.trim()) return ['سبب إعادة الفتح إلزامي']
+  run({ op: 'reopen', id, reason: reason.trim(), role: roleByKey(role).title, by, at: now() })
+  return []
+}
 export function addLink(id: string, label: string, url: string, by: string): string[] {
   if (!/^https?:\/\//.test(url.trim())) return ['الرابط غير صالح']
   run({ op: 'link', id, label: label.trim() || 'رابط تخزين سحابي', url: url.trim(), by, at: now() })
@@ -1087,8 +1150,8 @@ export function closeActions(c: CloseRow, role: RoleKey): CloseAct[] {
   if (c.stage === 'supervisor' && role === 'supervisor') return [
     { kind: 'report', act: 'approve', label: 'اعتماد التقرير وإحالته', btn: 'btn-p', gated: true, why: /* doc step 7 */ 'مراجعة مشرف المنح ثم الاتصال المؤسسي أو مدير المنح' },
     { kind: 'report', act: 'return', label: back, btn: 'btn-2', needsNote: true, why: /* doc rule 19 */ ' · تعود الإعادة إلى الجهة وتُنشئ إصدارًا جديدًا' },
-    /* v3 · 10.4.6 · the detailed invoices only when the authority asks for them · the request goes back to the entity */
-    ...(c.invoicesAsked ? [] : [{ kind: 'report' as const, act: 'return' as const, label: 'طلب الفواتير التفصيلية', btn: 'btn-2' as const, needsNote: true, invoices: true, why: /* doc 10.4.6 */ 'لا تُلزم الجهة بالفواتير قاعدةً · تُطلب عند الحاجة المالية بسببها' }]),
+    /* Client 21 Oct (#8) · the invoices aren't required, as a rule with no exception · the request that
+       made them mandatory left the dock · the entity may still attach them as a supporting document */
   ]
   /* Re-audit 7 Oct · corporate communications reviews in its own seat (10.2.12 · 10.2.13) */
   if (c.stage === 'comms' && role === 'comms') return [

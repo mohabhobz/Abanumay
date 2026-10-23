@@ -42,7 +42,7 @@ export const ROUTES = [
   /* الإجراء 3 · الدراسة والطلب والإعدادات */
   '/projects/20940/study', '/projects/20971/brief/br-20971-1-exec', '/projects/21044', '/projects/21037/study', '/projects/new?tab=docs', '/projects/new?as=entity&entity=694',
   '/projects/settings?tab=cycle', '/projects/settings?tab=criteria', '/projects/settings?tab=consultants', '/projects/settings?tab=prospects', '/projects/settings?tab=reasons',
-  '/projects/20852', '/projects/20852/agreement', '/projects/20852/payments',
+  '/projects/20852', '/projects/20852/attachments', '/projects/20852/agreement', '/projects/20852/payments',
   /* ⚠️ تاب الخطة بحالتيه: ٢٠٨٤٥ ليه خطة قيد التنفيذ، و٢٠٩٤٠
      اتقرّر إنه ما يتطلبش · والحالة التانية **جملة مكتوبة** لا
      شاشة فاضية، فلازم تتفحص زي أي شاشة */

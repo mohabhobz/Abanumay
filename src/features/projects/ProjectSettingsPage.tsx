@@ -18,6 +18,7 @@ import { ConsultantsTab, CriteriaTab, CycleTab, ProspectsTab } from './IntakeSet
 import { ApprovalRulesTab } from '@/features/approvals/ApprovalRulesTab'
 import { ReadOnly } from '@/components/shell/ReadOnly'
 import { REJECT_REASONS, saveRejectReasons } from '@/data/intake/reasons'
+import { EXCLUSIONS, exclusionKey, saveExclusions, type Exclusion } from '@/data/intake/exclusion'
 import { readRole, type RoleKey } from '@/data/roles'
 
 /* v3 · 3.4.42 · the rules, the intake cycle and the prospects list are kept by the authority holders
@@ -49,6 +50,8 @@ const TABS = [
   /* Procedure 3 · what is set before requests arrive */
   { slug: 'cycle', label: 'دورة الاستقبال' },
   { slug: 'criteria', label: 'معايير التقييم' },
+  /* Client 21 Oct (#20) · the yes/no questions answered before the scores */
+  { slug: 'exclusion', label: 'معايير الاستبعاد' },
   { slug: 'consultants', label: 'المستشارون' },
   { slug: 'prospects', label: 'الجهات المقترحة' },
   /* v3 · 3.4.24 */
@@ -92,6 +95,7 @@ export default function ProjectSettingsPage() {
           {tab === 'stages' && <StagesTab />}
           {tab === 'cycle' && <CycleTab />}
           {tab === 'criteria' && <CriteriaTab />}
+          {tab === 'exclusion' && <ExclusionTab />}
           {tab === 'consultants' && <ConsultantsTab />}
           {tab === 'prospects' && <ProspectsTab />}
           {tab === 'reasons' && <ReasonsTab />}
@@ -248,6 +252,51 @@ function ReasonsTab() {
         <SaveBar
           count={1}
           sentence={<>قائمة الأسباب معدّلة<span className="decsep" /><span className="sub"><Num>{d.length}</Num> سببًا</span></>}
+          onSave={save}
+          onDiscard={() => setD(saved)}
+        />
+      )}
+    </Glass>
+  )
+}
+
+/* ═══ Exclusion criteria · client 21 Oct (#20) ═══ */
+
+function ExclusionTab() {
+  const { user } = useRole()
+  const [saved, setSaved] = useState<Exclusion[]>(() => EXCLUSIONS.map((x) => ({ ...x })))
+  const [d, setD] = useState<Exclusion[]>(saved)
+  const [add, setAdd] = useState('')
+  const [bad, setBad] = useState<string[]>([])
+  const changed = d.map((x) => x.label).join('|') !== saved.map((x) => x.label).join('|')
+  const save = () => {
+    const out = saveExclusions(d, user.name)
+    setBad(out)
+    if (!out.length) { setSaved(EXCLUSIONS.map((x) => ({ ...x }))); setD(EXCLUSIONS.map((x) => ({ ...x }))) }
+  }
+  return (
+    <Glass className="tblcard">
+      <Head title="معايير الاستبعاد" meta={<span className="sub"><Num>{d.length}</Num> {nounAfter(d.length, NOUN.criterion)} · نعم / لا</span>} />
+      <ul className="cfglist cfglist-w">
+        {d.map((r, i) => (
+          <li key={r.key}>
+            <span className="fld"><input value={r.label} aria-label={`معيار الاستبعاد ${i + 1}`} onChange={(e) => setD((x) => x.map((y, j) => (j === i ? { ...y, label: e.target.value } : y)))} /></span>
+            <span className="pc-sp" />
+            <button type="button" className="btn btn-2 btn-sm" onClick={() => setD((x) => x.filter((_, j) => j !== i))}>احذف</button>
+          </li>
+        ))}
+        <li>
+          <span className="fld"><input value={add} aria-label="معيار استبعاد جديد" placeholder="معيار جديد · سؤال يُجاب بنعم أو لا" onChange={(e) => setAdd(e.target.value)} /></span>
+          <span className="pc-sp" />
+          <button type="button" className="btn btn-2 btn-sm" disabled={!add.trim()} onClick={() => { setD((x) => [...x, { key: exclusionKey(), label: add.trim() }]); setAdd('') }}>أضف</button>
+        </li>
+      </ul>
+      {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
+      <p className="sub cnote">يجيب مشرف المنح عنها قبل معايير الدراسة · أي «نعم» يستبعد المشروع ويقترح التوصية بالرفض · والدراسات المحفوظة تبقى على الأسئلة كما كانت عند حفظها.</p>
+      {changed && (
+        <SaveBar
+          count={1}
+          sentence={<>معايير الاستبعاد معدّلة<span className="decsep" /><span className="sub"><Num>{d.length}</Num> {nounAfter(d.length, NOUN.criterion)}</span></>}
           onSave={save}
           onDiscard={() => setD(saved)}
         />

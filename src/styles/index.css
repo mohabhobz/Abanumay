@@ -17,6 +17,8 @@
 @import './parts/inbox.css';
 @import './parts/payments.css';
 @import './parts/plans.css';
+@import './parts/chat.css';
+@import './parts/closing.css';
 
 /* Official Saudi Riyal symbol
    U+20C1, officially issued and added to Unicode 17.
@@ -1777,6 +1779,21 @@ input:not([type=checkbox],[type=radio],[type=range]){text-overflow:ellipsis}
    fades while tabs are hidden past it (`lib/scrollHint`). */
 .tabs{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex-shrink:0}
 .tabs>.tab{flex:none}
+/* Client 21 Oct (#30) · a page's tabs stay pinned to the top of the scrolling screen.
+   At rest the row is a plain line on the page. Once it sticks (`data-stuck`, set by `Tabs`) it
+   takes the opaque floating surface (`--pop` · the 92% glass let the figures under it show
+   through, seen in review 22 Oct) so content passing under it doesn't show through, and the surface
+   reaches the screen's side gutters through two horizontal copies of the box (a directional
+   shadow, not an elevation), clipped by the screen itself. Above the cards and the side column,
+   below the decision bar's menus, the assistant panel and every overlay. */
+.tabs-pin{position:sticky;top:calc(-1 * var(--padt, 0px));z-index:15}
+.tabs-pin[data-stuck]{background:var(--pop);
+  box-shadow:inset 0 -1px 0 var(--edge-1),var(--sp-9) 0 0 0 var(--pop),calc(-1 * var(--sp-9)) 0 0 0 var(--pop),var(--el-1)}
+/* The scroll fade would fade the surface too and let the page show through at the edge */
+.tabs-pin[data-stuck][data-more]{-webkit-mask-image:none;mask-image:none}
+/* The row sticks at the screen's very top edge, over its top padding (a sticky box otherwise stops
+   at the padding, and cards scrolled past would show above it) · the side column, sticky at the
+   padding plus its own gap, lands right under it */
 .tabs[data-more]{-webkit-mask-image:linear-gradient(to right,transparent,rgb(0 0 0) var(--sp-10));
   mask-image:linear-gradient(to right,transparent,rgb(0 0 0) var(--sp-10))}
 /* The event dot: one meaning, one diameter.
@@ -3027,7 +3044,8 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
    slot out of six, and a silent duplicate avatar getting tapped with no response. */
   .railfoot>.acctwrap{display:none}
 /* Bottom clearance for the bottom bar and the decision bar. */
-  .screen{padding:var(--sp-5) clamp(var(--sp-5), 3vw, var(--sp-6)) 0;
+  /* `--padt` follows the real top padding · the pinned tabs stick over exactly that much */
+  .screen{--padt:var(--sp-5);padding:var(--sp-5) clamp(var(--sp-5), 3vw, var(--sp-6)) 0;
     padding-bottom:calc(var(--sp-12) * 2 - var(--sp-3) + env(safe-area-inset-bottom,0px))}
 .decdock{bottom:calc(62px + env(safe-area-inset-bottom,0px));
     padding:0 clamp(var(--sp-4), 3vw, var(--sp-5)) var(--sp-3)}
@@ -8159,9 +8177,6 @@ a.crumb:hover{color:var(--t1);background:rgba(var(--solidC),.08)}
 .ptl-short-l{flex:1;min-width:0;font-size:var(--fs-2);color:var(--t1);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* The thread takes the column's full height — the channel is the other screen's job */
-.ptl-talk .thread{max-width:none;gap:var(--sp-4)}
-.ptl-talk .msg{max-width:92%}
 
 
 /* ═══ The channel when empty ═══

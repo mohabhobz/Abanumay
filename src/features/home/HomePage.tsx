@@ -206,13 +206,12 @@ export default function HomePage() {
           {!done && day.queues.length > 1 && (
             /* 19 Oct · client · the system's one tab shape (`Tabs`) · was a row of filter chips with its
                own selected style and a «مراحل أخرى» toggle · every stage is a tab now, the row scrolls */
-            <div className="tday-tabs">
-              <Tabs
-                items={[{ slug: '', label: 'الكل', count: day.items.length }, ...qs.map((q) => ({ slug: q.key, label: q.label, count: q.count }))]}
-                active={queue}
-                onChange={setQueue}
-              />
-            </div>
+            <Tabs
+              className="tday-tabs"
+              items={[{ slug: '', label: 'الكل', count: day.items.length }, ...qs.map((q) => ({ slug: q.key, label: q.label, count: q.count }))]}
+              active={queue}
+              onChange={setQueue}
+            />
           )}
 
           {/* 4 · the board · gone on the finish line, where four empty columns would only be noise */}

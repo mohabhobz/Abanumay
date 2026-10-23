@@ -71,13 +71,27 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
 
   // Approver: the first tier with a ceiling that covers the amount
   let decider = roles.findIndex((r) => r.ceiling !== null && r.ceiling >= amount)
-  if (decider === -1) decider = roles.length - 1
+  /* the supervisor's closing review (#27) is never the one who decides */
+  if (decider === -1) decider = roles.map((r) => r.kind).lastIndexOf('final') >= 0 ? roles.map((r) => r.kind).lastIndexOf('final') : roles.length - 1
 
   const decided = roles[decider] as AuthorityRole
   const uplifted = decided.uplift ? Math.round(amount * (1 + decided.uplift / 100)) : null
 
   /** The reading shown inside the arc · a different question for each state */
   const detail = (role: AuthorityRole, i: number): Detail => {
+    /* Client 21 Oct (#27) · after the decision the file comes back to the supervisor · he reviews the
+       amounts, the outputs and the changes, then confirms «اعتماد مكتمل» */
+    if (role.kind === 'review') {
+      return {
+        k: role.state === 'now' ? 'متوقف هنا الآن' : role.state === 'done' ? 'تمّت' : 'آخر خطوة في المسار',
+        t: role.role,
+        lines: role.state === 'done'
+          ? ['راجع مشرف المنح القرار وأكّد اعتماد المشروع مكتملًا']
+          : [role.state === 'now' && standing ? <><Person name={standing.by} quiet={false} /> · مفتوح منذ <b>{standing.days}</b> {nounAfter(standing.days, NOUN.day)}</> : null,
+              'يراجع مشرف المنح المبالغ والمخرجات والتعديلات بعد القرار ثم يؤكد «اعتماد مكتمل»', 'مراجعة لا موافقة'],
+        src: 'المصدر: مسار الاعتماد',
+      }
+    }
     if (byAmount) {
       const amt = role.amount != null ? <>مبلغ المشروع في هذه المرحلة <b>{nf.format(role.amount)}</b></> : null
       if (i > decider) return { k: 'غير مطلوبة لهذا المبلغ', t: role.role, lines: ['لا يصل إليها المشروع بمبلغه الحالي'], src: 'المصدر: مسار الاعتماد' }
@@ -169,6 +183,7 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
   }
 
   const skin = (role: AuthorityRole, i: number): SlotCls => {
+    if (role.kind === 'review') return role.state === 'now' ? 'now' : role.state === 'done' ? 'done' : 'wait'
     if (i > decider) return 'skip'
     if (role.state === 'now') return 'now'
     if (role.state === 'done') return 'done'
@@ -182,7 +197,12 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
   const byAmount = roles.some((r) => r.amount !== undefined)
   const slots: Slot[] = roles.map((role, i) => {
     const cap = (c: boolean) =>
-      byAmount
+      role.kind === 'review'
+        ? 'مراجعة'
+        /* a level the amount never reaches carries no stage amount */
+        : byAmount && i > decider
+        ? '—'
+        : byAmount
         ? role.kind === 'submit' && role.amount == null ? 'تمّ' : role.amount != null ? nf.format(role.amount) : '—'
         : role.ceiling
         ? nf.format(role.ceiling)

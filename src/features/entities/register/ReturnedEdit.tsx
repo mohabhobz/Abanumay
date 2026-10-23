@@ -20,7 +20,7 @@ export function ReturnedEdit({ id, by, onDone }: { id: string; by: string; onDon
     amountRequested: String(p?.amountRequested ?? ''),
     reach: String(p?.beneficiaries ?? ''),
     startAt: p?.startAt ?? last.startAt ?? '',
-    workDays: String(p?.durationDays ?? ''),
+    endAt: p?.endAt ?? last.endAt ?? '',
   }))
   const [bad, setBad] = useState<string[]>([])
   const put = (k: string, x: string) => setV((s) => ({ ...s, [k]: x }))
@@ -43,9 +43,10 @@ export function ReturnedEdit({ id, by, onDone }: { id: string; by: string; onDon
           <span className="lb">تاريخ بدء التنفيذ المتوقع</span>
           <DateField value={v.startAt ?? ''} onChange={(x) => put('startAt', x)} label="تاريخ بدء التنفيذ المتوقع" />
         </label>
+        {/* Client 21 Oct (#28) · the end is a date · the duration follows the two dates */}
         <label className="regf">
-          <span className="lb">مدة التنفيذ بأيام التنفيذ</span>
-          <span className="fld"><input className="num" inputMode="numeric" value={v.workDays} aria-label="مدة التنفيذ" onChange={(e) => put('workDays', e.target.value.replace(/[^\d]/g, ''))} /></span>
+          <span className="lb">تاريخ انتهاء التنفيذ المتوقع</span>
+          <DateField value={v.endAt ?? ''} onChange={(x) => put('endAt', x)} label="تاريخ انتهاء التنفيذ المتوقع" />
         </label>
         <label className="regf regf-w">
           <span className="lb">وصف المشروع</span>

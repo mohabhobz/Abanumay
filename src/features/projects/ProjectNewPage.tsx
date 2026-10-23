@@ -12,7 +12,7 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { nf, NOUN, nounAfter, pct as sayPct } from '@/lib/format'
 import {
-  DOCS_STAGE, P_STAGES, completion, endOf, entityCap, entityOptions, optionsFor,
+  DOCS_STAGE, P_STAGES, completion, daysOf, endOf, entityCap, entityOptions, optionsFor,
   projectIssues, shortIn, type PFieldDef, type PStageDef, type PValues,
 } from '@/data/mock/projectNew'
 import { REQUEST_DOCS, pickSupervisor, submitRequest } from '@/data/intake/flow'
@@ -448,16 +448,10 @@ export default function ProjectNewPage() {
                 )}
 
                 {tab === 'when' && endAt && (
+                  /* Client 21 Oct (#28) · the duration is counted from the two dates · the week is information */
                   <p className="sub cnote">
-                    نهاية التنفيذ المحسوبة <b><DateText>{endAt}</DateText></b> · بعد{' '}
-                    <span className="num">{val.workDays}</span> يوم تنفيذ من <DateText>{val.startAt}</DateText>،
-                    {/* Re-audit 17 Oct · the note says what the count actually excludes · the project's own days and the duration policy */}
-                    {' '}{(() => {
-                      const own = workDaysOf(val.execDays)
-                      const rest = own ? `الأيام خارج أيام التنفيذ المختارة (${own.map((d) => WEEKDAYS[d]).join('، ')})` : 'العطلة الأسبوعية'
-                      const out = [!CYCLE.countWeekend && rest, !CYCLE.countHolidays && 'الإجازات الرسمية'].filter(Boolean)
-                      return out.length ? `باستبعاد ${out.join(' و')}.` : 'تُحتسب كل الأيام بما فيها العطل وفق سياسة المدد.'
-                    })()}
+                    المدة <b><Num>{daysOf(val)}</Num> يومًا</b> من <DateText>{val.startAt}</DateText> إلى <DateText>{endAt}</DateText>
+                    {' '}· تُحسب من التاريخين، وأيام التنفيذ المختارة{workDaysOf(val.execDays) ? ` (${workDaysOf(val.execDays)!.map((d) => WEEKDAYS[d]).join('، ')})` : ''} للعلم ولا تغيّر المدة.
                   </p>
                 )}
                 {tab === 'what' && val.field && (

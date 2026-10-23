@@ -21,6 +21,11 @@ export interface ComposerProps {
    * is this: a box that grows with the text, with the buttons in a row underneath.
    */
   placeholder?: string
+  /** The correspondence thread takes the picked file itself (kept with the message) instead of
+      writing its name into the text · the assistant keeps the name-in-text behavior */
+  onAttach?: (file: File) => void
+  /** Send is allowed without text · a message that carries only files */
+  canSend?: boolean
 }
 
 /** Input box — grows with the text, and responds to the mouse before you reach it. */
@@ -33,6 +38,8 @@ export function Composer({
   inputRef,
   docked,
   placeholder = 'اسأل عن مشروع، جهة، بند ميزانية…',
+  onAttach,
+  canSend,
 }: ComposerProps) {
   const area = useRef<HTMLTextAreaElement | null>(null)
   const box = useRef<HTMLDivElement | null>(null)
@@ -71,7 +78,12 @@ export function Composer({
           {/* 17 Oct · the attach button opens the picker and the file joins the message by name */}
           <label className="iact upbtn" title="إرفاق ملف" aria-label="إرفاق ملف">
             <Icon name={icons.clip} size="sm" />
-            <input type="file" onChange={(e) => {
+            <input type="file" multiple={Boolean(onAttach)} onChange={(e) => {
+              if (onAttach) {
+                for (const f of Array.from(e.target.files ?? [])) onAttach(f)
+                e.target.value = ''
+                return
+              }
               const f = e.target.files?.[0]
               if (!f) return
               onChange(`${value ? `${value} ` : ''}[مرفق: ${f.name}]`)
@@ -87,7 +99,7 @@ export function Composer({
             <button
               className="go"
               onClick={() => onSend(value)}
-              disabled={!value.trim()}
+              disabled={!value.trim() && !canSend}
               title="إرسال"
               aria-label="إرسال"
             >

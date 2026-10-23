@@ -45,6 +45,9 @@ export interface DocRow {
   extra?: ReactNode[]
   /** The screen's action on this row — placed in the last column. */
   action?: ReactNode
+  /** Client 21 Oct (#7) · a stored file's address · the preview opens the real file */
+  src?: string
+  mime?: string
 }
 
 export interface DocListProps {
@@ -96,7 +99,7 @@ export function DocList({ rows, label, heads }: DocListProps) {
                     start; the thumbnail slot is now held with a dashed border meaning "no file
                     here." */}
                 {r.uploaded
-                  ? <DocFile name={r.name} meta={r.meta} download={false} />
+                  ? <DocFile name={r.name} meta={r.meta} download={false} src={r.src} mime={r.mime} />
                   : (
                     <span className="dfile dmiss">
                       <span className="dfile-b">

@@ -11,7 +11,7 @@ import { roleByKey, type RoleKey } from '@/data/roles'
 import { linkOf, docOf } from '@/data/budget/store'
 import { pathOf } from '@/data/mock/budgetTree'
 import { appFlowOf } from '@/data/approvals/store'
-import { flowOf, orgOutputsAreEntity, orgOutputsOf, outputLine } from '@/data/intake/flow'
+import { flowOf, orgOutputsAreEntity, orgOutputsOf, outputLine, startFromEvent } from '@/data/intake/flow'
 import { RELINKS, setPartyRename } from '@/data/entities/store'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
@@ -749,6 +749,8 @@ function applyOp(o: Op) {
             }
           }
           const p = projectRows.find((x) => x.id === a.projectId)
+          /* Client 21 Oct (#26) · the agreement's signature is the project's actual start */
+          if (f.mode !== 'annex') startFromEvent(a.projectId, day(o.at), 'agreement', o.by)
           /* Re-audit 7 Oct · any agreement stage moves to execution · paper and electronic ones stayed put */
           if (p && AGREEMENT_STAGES.includes(p.stage)) activateProject(a.projectId)
           /* v3 · 8.2.26 · 8.3.30 · «تحت التنفيذ» only with the required plan approved too */

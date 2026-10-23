@@ -12,7 +12,7 @@ import {
 } from '@/components/ui'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
 import { DocList, UploadButton, type DocRow } from '@/components/docs'
-import { Thread } from '@/components/thread/Thread'
+import { ChatDock } from '@/components/thread'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -28,7 +28,9 @@ import {
 import {
   APPROVER_SAY, actOnClosing, approverFor, attachDoc, closeActions, closeSayOf, closeStops, evalScore, sendClosingReport, useClosing, type CloseAct,
 } from '@/data/closing/store'
-import { ExceptionCard, FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RedirectCard, RequirementsCard, VersionsCard } from './parts'
+import { ExceptionCard, FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RedirectCard, ReopenCard, RequirementsCard, VersionsCard } from './parts'
+import { ReportFiles, TargetActual } from './report'
+import { closeKindSay } from './reportData'
 import { projectById } from '@/data/mock/projects'
 import { closeReadings } from './readings'
 import { CloseActionDock } from './CloseActionDock'
@@ -189,8 +191,9 @@ export default function ClosePage() {
 
   /* Attachments - one `DocList`, not a hand-built table. */
   /* v3 · 10.4.5 · 10.4.6 · a stopped project's own requirements · the invoices only when asked for */
-  const reqOf = (k: string, req?: boolean) => (c.basis === 'stopped' ? STOPPED_DOCS.includes(k) : Boolean(req)) || (k === 'invoices' && Boolean(c.invoicesAsked))
-  const docRows: DocRow[] = CLOSE_DOCS.filter((d) => d.key !== 'invoices' || c.invoicesAsked || c.report.docs.includes('invoices')).map((d) => ({
+  /* Client 21 Oct (#8) · the invoices are never required · shown only when the entity attached them */
+  const reqOf = (k: string, req?: boolean) => (c.basis === 'stopped' ? STOPPED_DOCS.includes(k) : Boolean(req))
+  const docRows: DocRow[] = CLOSE_DOCS.filter((d) => d.key !== 'invoices' || c.report.docs.includes('invoices')).map((d) => ({
     name: c.report.files?.[d.key] ?? `${d.label}.pdf`,
     meta: reqOf(d.key, d.req) ? /* doc rule 4 */ 'مستند إلزامي' : /* doc rule 5 */ 'مستند داعم',
     uploaded: c.report.docs.includes(d.key),
@@ -248,6 +251,8 @@ export default function ClosePage() {
                 <Mono>{c.id}</Mono> ·{' '}
                 <Link to={ROUTES.entity(c.entityId)} className="tlink">{c.entityName}</Link> ·{' '}
                 فُتح الطلب <DateText>{c.openedAt}</DateText>
+                {/* Client 21 Oct (#11) · the closing follows the project's type · named on the page */}
+                {' · '}{closeKindSay(c)}
                 {c.versions.length > 1 && (
                   <> · الإصدار <span className="num">{c.versions.length}</span></>
                 )}
@@ -264,7 +269,7 @@ export default function ClosePage() {
                   <div className="sub">
                     التقرير الختامي {reportApproved(c) ? 'معتمد' : 'قيد الاعتماد'}
                     {c.report.budget !== null && (
-                      <> · الميزانية الفعلية <Num>{c.report.budget}</Num></>
+                      <> · دعم المؤسسة الفعلي <Num>{c.report.budget}</Num></>
                     )}
                   </div>
                 </div>
@@ -304,9 +309,9 @@ export default function ClosePage() {
               <p className="sub cnote">
                 {c.basis === 'stopped'
                   ? <>مشروعك موقوف بقرار · المطلوب التقرير المالي التنفيذي لما صُرف وأدلة المخرجات المتحققة{/* doc 10.9.3 */}، ولا يُرسل الطلب قبل اكتمالهما.</>
-                  : <>المطلوب{/* doc 10.4.4 · 10.4.5 */}: عدد المستفيدين الفعلي، والميزانية الفعلية، ومدة التنفيذ، وأبرز المخرجات، وقيمة المشروع
-                    والمخرجات المتفق عليها مقابل المتحققة، ومساهمتكم إن زادت القيمة على المنحة، مع التقرير المالي التنفيذي وصور التنفيذ وأدلة المخرجات ·
-                    وتقارنها المؤسسة بما اعتُمد في الاتفاقية والخطة، ولا يُرسل التقرير قبل اكتمالها.</>}
+                  : <>المطلوب{/* doc 10.4.4 · 10.4.5 · client 21 Oct */}: الفعلي مقابل المستهدف لعدد المستفيدين ومدة التنفيذ والميزانية الإجمالية للمشروع ومبلغ دعم المؤسسة،
+                    وما تحقق من كل مخرج متفق عليه، وأبرز النتائج، مع التقرير المالي التنفيذي وصور التنفيذ وأدلة المخرجات · وترفع ملفات التنفيذ مباشرة هنا ·
+                    ولا يُرسل التقرير قبل اكتمالها، والفواتير ليست شرطًا.</>}
               </p>
             </Glass>
           )}
@@ -317,47 +322,21 @@ export default function ClosePage() {
               {/* Actual vs. approved - the core of the screen */}
               <Glass>
                 <Head
-                  title="الفعلي مقابل المعتمد"
+                  title="المستهدف والفعلي"
                   meta={missing.length > 0
                     ? <Tag tone={TONE.missing}><Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</Tag>
                     : <Tag tone="ok">الحدّ الأدنى مكتمل</Tag>}
                 />
 
+                {/* Client 21 Oct (#5 · #6) · the same table the entity filled · target, actual and the gap */}
+                {c.basis !== 'stopped' && <TargetActual c={c} />}
                 <KV
-                  rows={gaps.map((g) => ({
-                    k: `${g.label} · المعتمد ${nf.format(g.planned)}`,
-                    v: g.actual === null
-                      ? <span className="sub">لم يُدخل بعد</span>
-                      : (() => {
-                        const diff = g.planned > 0
-                          ? Math.round(((g.actual - g.planned) / g.planned) * 100)
-                          : 0
-                        return (
-                          <span className={Math.abs(diff) >= 10 ? 'bad' : undefined}>
-                            <span className="num">{nf.format(g.actual)}</span>
-                            <span className="sub"> {unitAfter(g.actual, g.unit)} · </span>
-                            <span className="num">{diff > 0 ? '+' : ''}{diff}%</span>
-                          </span>
-                        )
-                      })(),
-                  })).concat([
-                    {
-                      k: 'مدة التنفيذ الفعلية',
-                      v: c.report.days === null
-                        ? <span className="sub">لم تُدخل بعد</span>
-                        : <><span className="num">{c.report.days}</span>
-                          <span className="sub"> يومًا</span></>,
-                    },
-                    /* 12 Oct · audit P07 · the outcomes and challenges are rows of the same list,
-                       not shaded boxes under it: the boxes put their label 12px in and their text
-                       on its own edge, off both columns above. */
-                    ...(c.report.outcomes ? [{ k: 'أبرز المخرجات', v: <>{isolate(c.report.outcomes)}</> }] : []),
+                  rows={[
+                    ...(c.report.outcomes ? [{ k: 'أبرز النتائج المحققة', v: <>{isolate(c.report.outcomes)}</> }] : []),
                     ...(c.report.risks ? [{ k: 'التحديات', v: <>{isolate(c.report.risks)}</> }] : []),
-                    /* v3 · 10.4.4 · the reviewers read the value, the agreed outputs against the achieved, and the entity's share */
-                    ...(c.report.projectValue != null ? [{ k: 'قيمة المشروع الكلية', v: <Money sm>{c.report.projectValue}</Money> }] : []),
-                    ...(c.report.outputs ?? []).map((x, i) => ({ k: `مخرج ${nf.format(i + 1)} · ${x.text}`, v: x.achieved ? <>{isolate(x.achieved)}</> : <span className="sub">لم يُذكر المتحقق</span> })),
-                    ...(c.report.contribution ? [{ k: 'مساهمة الجهة', v: <>{isolate(c.report.contribution)}</> }] : []),
-                  ])}
+                    ...(c.report.contribution ? [{ k: 'علاقة مساهمة المؤسسة بما تحقق', v: <>{isolate(c.report.contribution)}</> }] : []),
+                    { k: 'نموذج التقرير', v: c.report.template === 'foundation' ? 'قالب المؤسسة' : 'نموذج الجهة الخاص' },
+                  ]}
                 />
 
                 {!c.report.outcomes && (
@@ -415,6 +394,9 @@ export default function ClosePage() {
                   </p>
                 )}
               </Glass>
+
+              {/* Client 21 Oct (#7) · the execution files in the foundation's storage · the reviewer opens them in place */}
+              <ReportFiles c={c} edit={asEntity && (c.stage === 'draft' || c.stage === 'returned')} by={asEntity ? c.entityName : user.name} />
 
               {/* Evaluation - second cycle */}
               <Glass>
@@ -483,6 +465,8 @@ export default function ClosePage() {
 
               {/* 10.4.8 · 10.4.18 · the requirements, named · the financial report and its savings */}
               <ExceptionCard c={c} asEntity={asEntity} />
+              {/* Client 21 Oct (#16) · reopening a closed project · its own permission and a recorded reason */}
+              <ReopenCard c={c} asEntity={asEntity} />
               <RequirementsCard c={c} asEntity={asEntity} />
               <FinanceCard c={c} asEntity={asEntity} />
               {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'close', id: c.id }} asEntity={asEntity} />}
@@ -495,18 +479,19 @@ export default function ClosePage() {
 
               {!asEntity && <EditableCard module="closing" state={c.stage} label={closeStageLabel(c.stage)} />}
 
-              {/* Correspondence - the same shared component */}
-              <Glass>
-                <Head title="التواصل مع الجهة" />
-                <Thread
-                  messages={[]}
-                  entityName={c.entityName}
-                  me={asEntity ? 'entity' : 'staff'}
-                  placeholder="اكتب ملاحظتك على التقرير الختامي…"
-                  emptyTitle="لا توجد مراسلات على الإغلاق"
-                  emptyNote="تُفتح القناة حين يتوقف إجراء على أحد الطرفين، مثل ملاحظة على التقرير أو مستند ناقص."
-                />
-              </Glass>
+              {/* Correspondence · client 21 Oct (#2) · a floating chat over the page instead of a card at
+                  its foot · the same thread as the project and the portal, kept per closing case */}
+              <ChatDock
+                title={asEntity ? 'التواصل مع المؤسسة' : 'التواصل مع الجهة'}
+                channel={`close:${c.id}`}
+                by={asEntity ? c.entityName : user.name}
+                messages={[]}
+                entityName={c.entityName}
+                me={asEntity ? 'entity' : 'staff'}
+                placeholder="اكتب ملاحظتك على التقرير الختامي…"
+                emptyTitle="لا توجد مراسلات على الإغلاق"
+                emptyNote="تُفتح القناة حين يتوقف إجراء على أحد الطرفين، مثل ملاحظة على التقرير أو مستند ناقص."
+              />
             </div>
 
             <div className="col aiside" ref={aside}>

@@ -1,6 +1,6 @@
 import { holds } from '@/data/shared/decisions'
 import { useState } from 'react'
-import { DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select, Tag, icons } from '@/components/ui'
+import { DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select, Tabs, Tag, icons } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { isolate, nf } from '@/lib/format'
@@ -9,7 +9,7 @@ import {
   CLOSE_RULES, DECISION_SAY, ESCALATION_STEPS, FEEDBACK_ITEMS, RELEASE_SAY, decideRecovery, escalateRecovery,
   failRecovery, openSavingsRecovery, paidToDate, recordReceipt, recoveryLeft, requirementsOf, savingsOf, savingsDue, caseSettled, finLinesTotal, evalScore,
   mayRedirect, redirectBase, redirectSupport, sendFeedback, useClosing, verifyInvoices,
-  closeSayOf, EXC_FIELDS, mayException, recordException, type ExcField,
+  closeSayOf, EXC_FIELDS, mayException, recordException, type ExcField, mayReopen, reopenClosing,
 } from '@/data/closing/store'
 import { settleSlot, unsettledSlots } from '@/data/payments/store'
 import type { CloseRow, CloseSnapshot, FinalReport, Recovery } from '@/types/domain'
@@ -47,7 +47,7 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
   return (
     <Glass>
       <Head
-        title="التقرير المالي التنفيذي والتسوية"
+        title="المصروف والتسوية"
         meta={f?.verified != null ? <Tag tone="ok">اعتمد المشرف المصروف</Tag> : <Tag tone="warn">لم يُعتمد المصروف بعد</Tag>}
       />
       <KV
@@ -60,8 +60,7 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
           ...(settled > 0 ? [{ k: 'سُوّي بقرار الحالة (استرداد أو توجيه)', v: <Money sm>{settled}</Money> }] : []),
           { k: 'المصروف المعتمد من التقرير المالي', v: f?.verified == null ? <span className="sub">لم يعتمده المشرف بعد</span> : <><Money sm>{f.verified}</Money>{f.verifiedBy && <span className="sub"> · {f.verifiedBy}</span>}</> },
           { k: 'الوفر المستحق الاسترداد', v: due > 0 ? <b className="bad"><Money sm>{due}</Money></b> : sav > 0 ? <span className="sub">أُعيد توجيهه بقرار</span> : <span className="sub">لا وفر</span> },
-          /* a row of the list, not a shaded box under it (audit P07) */
-          ...(f?.settlements ? [{ k: 'التسويات المالية', v: <>{isolate(f.settlements)}</> }] : []),
+          /* Client 21 Oct (#6) · no settlements text · the two cost figures live in the report's table */
         ]}
       />
       {mayVerify && (
@@ -80,7 +79,7 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
       )}
       <Err list={bad} />
       <p className="sub cnote">
-        يعتمد المشرف المصروف الفعلي من التقرير المالي التنفيذي وأدلة المخرجات{/* doc 10.4.6 */} · ولا تُطلب الفواتير التفصيلية إلا عند الحاجة · وما صُرف ولم يُستخدم وفرٌ يُسترد أو يُعاد توجيهه،
+        يعتمد المشرف المصروف الفعلي من التقرير المالي التنفيذي وأدلة المخرجات{/* doc 10.4.6 */} · والفواتير التفصيلية ليست شرطًا · وما صُرف ولم يُستخدم وفرٌ يُسترد أو يُعاد توجيهه،
         ويعود مع المحجوز غير المصروف إلى مخصص المجال{/* doc 10.9.7 · re-audit 17 Oct · an empty «()» stood here */}.
       </p>
     </Glass>
@@ -128,6 +127,27 @@ export function ExceptionCard({ c, asEntity }: { c: CloseRow; asEntity: boolean 
           </div>
         </>
       )}
+      <Err list={bad} />
+    </Glass>
+  )
+}
+
+/* ── Client 21 Oct (#16) · reopening a closed project · a dedicated permission and a recorded reason ── */
+
+export function ReopenCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }) {
+  useClosing()
+  const { role, user } = useRole()
+  const [reason, setReason] = useState('')
+  const [bad, setBad] = useState<string[]>([])
+  if (asEntity || !mayReopen(c, role.key)) return null
+  return (
+    <Glass>
+      <Head title="إعادة فتح المشروع" meta={<Tag tone="mute">صلاحية {role.title}</Tag>} />
+      <p className="sub cnote">الأصل ألّا يُفتح المشروع بعد إغلاقه · وعند الحاجة يُعاد فتح دورة التقرير بسبب إلزامي يُسجَّل في السجل، ويبقى الإغلاق السابق إصدارًا محفوظًا · والتسويات المالية المعتمدة لا تتغير.</p>
+      <div className="apv-row">
+        <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب إعادة الفتح" placeholder="سبب إعادة الفتح · إلزامي" /></span>
+        <button type="button" className="btn btn-2 btn-sm" disabled={!reason.trim()} onClick={() => { const out = reopenClosing(c.id, reason, user.name, role.key); setBad(out); if (!out.length) setReason('') }}>أعد فتح المشروع</button>
+      </div>
       <Err list={bad} />
     </Glass>
   )
@@ -398,11 +418,11 @@ export function FeedbackCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
 
 const FIELD_SAY: { key: keyof FinalReport; label: string }[] = [
   { key: 'beneficiaries', label: 'المستفيدون' },
-  { key: 'budget', label: 'الميزانية الفعلية' },
+  { key: 'budget', label: 'مبلغ دعم المؤسسة الفعلي' },
   { key: 'days', label: 'مدة التنفيذ' },
   { key: 'outcomes', label: 'المخرجات' },
   { key: 'risks', label: 'التحديات' },
-  { key: 'projectValue', label: 'قيمة المشروع' },
+  { key: 'projectValue', label: 'الميزانية الإجمالية الفعلية' },
   { key: 'contribution', label: 'مساهمة الجهة' },
 ]
 const say = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : typeof v === 'number' ? nf.format(v) : String(v))
@@ -436,41 +456,60 @@ function diffOf(s: CloseSnapshot, c: CloseRow): { label: string; was: string; no
 export function VersionsCard({ c }: { c: CloseRow }) {
   useClosing()
   const [open, setOpen] = useState<string>('')
+  const [pane, setPane] = useState<'report' | 'eval'>('report')
   const snaps = c.snapshots ?? []
-  const rows = [
-    ...c.versions.map((v) => ({ cycle: 'report' as const, ...v })),
-    ...c.evalVersions.map((v) => ({ cycle: 'eval' as const, ...v })),
-  ]
+  /* Client 21 Oct (#12) · the standard of the plans · every version stays with its state and its files ·
+     only the last one is active · a returned one reads «مُعاد» and an older closing «أعيد فتحه» */
+  const list = pane === 'report' ? c.versions : c.evalVersions
+  const stateOf = (no: number, n: number, sayNext?: string) =>
+    no === n ? { tone: 'ok' as const, say: 'النسخة النشطة' }
+      : sayNext?.startsWith('إعادة فتح') ? { tone: 'mute' as const, say: 'أُغلق ثم أعيد فتحه' }
+        : { tone: 'warn' as const, say: 'مُعاد · محفوظ' }
   return (
     <Glass>
-      <Head title="الإصدارات" meta={<span className="sub"><Num>{c.versions.length}</Num> للتقرير · <Num>{c.evalVersions.length}</Num> للتقييم</span>} />
+      <Head title="الإصدارات" meta={<span className="sub">نسخة واحدة نشطة · وما قبلها محفوظ بملفاته</span>} />
+      <Tabs
+        items={[
+          { slug: 'report', label: 'التقرير الختامي', count: c.versions.length },
+          { slug: 'eval', label: 'التقييم', count: c.evalVersions.length },
+        ]}
+        active={pane}
+        onChange={(x) => setPane(x === 'eval' ? 'eval' : 'report')}
+      />
+      {list.length === 0 && <p className="sub cnote">لا إصدارات للتقييم بعد.</p>}
       <ul className="apv-list">
-        {rows.map((v) => {
-          const key = `${v.cycle}-${v.no}`
-          const snap = snaps.find((s) => s.cycle === v.cycle && s.no === v.no)
+        {[...list].reverse().map((v) => {
+          const key = `${pane}-${v.no}`
+          const snap = snaps.find((s) => s.cycle === pane && s.no === v.no)
           const d = snap ? diffOf(snap, c) : []
+          const st = stateOf(v.no, list.length, list.find((x) => x.no === v.no + 1)?.say)
+          const files = snap?.report ? [
+            ...snap.report.docs.map((k) => snap.report!.files?.[k] ?? CLOSE_DOCS.find((x) => x.key === k)?.label ?? k),
+            ...(snap.report.uploads ?? []).map((u) => u.name),
+          ] : []
           return (
             <li key={key}>
               <span className="apv-t">
-                <b>{v.cycle === 'report' ? 'التقرير' : 'التقييم'} · الإصدار <Num>{v.no}</Num></b>
+                <b>{pane === 'report' ? 'التقرير' : 'التقييم'} · الإصدار <Num>{v.no}</Num> <Tag tone={st.tone}>{st.say}</Tag></b>
                 <span className="sub">{v.say} · {v.by} · <DateText>{v.at}</DateText></span>
+                {files.length > 0 && <span className="sub">ملفات هذا الإصدار: {files.join('، ')}</span>}
                 {open === key && snap && (
                   d.length
                     ? <span className="sub">{d.map((x) => `${x.label}: كان ${x.was} · صار ${x.now}`).join(' | ')}</span>
-                    : <span className="sub">لا فرق عن الحالي</span>
+                    : <span className="sub">لا فرق عن النسخة النشطة</span>
                 )}
               </span>
               <span className="pc-sp" />
               {snap && (
                 <button type="button" className="btn btn-2 btn-sm" onClick={() => setOpen(open === key ? '' : key)}>
-                  {open === key ? 'أخفِ المقارنة' : 'قارِن بالحالي'}
+                  {open === key ? 'أخفِ المقارنة' : 'قارِن بالنشطة'}
                 </button>
               )}
             </li>
           )
         })}
       </ul>
-      <p className="sub cnote">كل إعادة تُنشئ إصدارًا جديدًا ويُحفظ محتوى السابق ليُقرأ ويُقارَن · وللتقييم إصداراته المستقلة (القاعدتان 15 و19).</p>
+      <p className="sub cnote">كل إعادة تُنشئ إصدارًا جديدًا ويُحفظ السابق بحالته وملفاته ليُقرأ ويُقارَن (القاعدتان 15 و19) · وهي القاعدة نفسها في الخطط وكل الإجراءات.</p>
     </Glass>
   )
 }

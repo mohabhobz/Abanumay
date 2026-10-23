@@ -15,7 +15,7 @@ import { ACTS_FOR, HOLDER_LABEL, nextOf, type Holder } from '@/data/holders'
 import type { RoleKey } from '@/data/roles'
 import { TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
 import { dayOf, localDayOf, stampNow, timeOf } from '@/data/clock'
-import { flowOf, intakeLog, orgOutputsOf, outputLine, setOwnHold, setSupervisorAmountHook } from '@/data/intake/flow'
+import { flowOf, intakeLog, orgOutputsOf, outputLine, setOwnHold, setRecommendHook, setSupervisorAmountHook, startFromEvent } from '@/data/intake/flow'
 import { nextSeq, replayTogether, type Stamped } from '@/data/opclock'
 import { expiredMandatory } from '@/data/entities/store'
 import {
@@ -57,7 +57,7 @@ export const VERDICT_SAY: Record<Verdict, string> = {
   approve: 'اعتماد',
   refer: 'إحالة للمستوى التالي',
   reject: 'رفض نهائي',
-  confirm: 'تأكيد الاعتماد',
+  confirm: 'اعتماد مكتمل · مراجعة المشرف',
   amend: 'تعديل قرار بإجراء رسمي',
 }
 
@@ -247,6 +247,9 @@ setSupervisorAmountHook((id, from, to, by, at) => {
 })
 
 /* v3 · 3.2.22 · the supervisor's balance check counts back what the project already holds */
+/* Client 21 Oct (#24) · the supervisor's recommendation to refuse holds nothing · a line he drew in the
+   study goes back to «planned», the grants manager holds it if he approves (5.4.19) */
+setRecommendHook((id, rec, by) => { if (rec === 'reject' && linkOf(id)?.stage === 'initial') releaseToPlanned(id, by, 'توصية مشرف المنح بالرفض · لا حجز') })
 setOwnHold((id) => { const l = linkOf(id); return l && (l.stage === 'initial' || l.stage === 'final') ? l.amount : 0 })
 
 /* Registered by the plans store · a registry, so the approvals store doesn't import it */
@@ -409,6 +412,10 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
   }
   if (holder === 'manager') {
     const actions: DecisionAction[] = []
+    /* Client 21 Oct (#23) · the supervisor's recommendation to refuse doesn't close the grants manager's
+       options · he may approve or recommend approval, and the supervisor's recommendation stays on file */
+    const against = flowOf(p.id).study?.recommendation === 'reject' && !f.awaitingReview
+      ? ' · أوصى مشرف المنح بالرفض · لك أن تعتمد أو توصي بالموافقة وتبقى توصيته في الملف' : ''
     if (f.awaitingReview) {
       actions.push({ label: 'أعد الإرسال للمدير التنفيذي', kind: 'btn-p', needsNote: true, blocked: up('manager', false) })
     } else {
@@ -428,7 +435,7 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
       label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true,
       choose: linkOf(p.id)?.stage === 'initial' || (!linkOf(p.id) && hasFunding(p.id)) ? { label: 'الحجز', options: [{ value: 'keep', label: 'الإبقاء على الحجز' }, { value: 'release', label: 'إلغاء الحجز' }] } : undefined,
     })
-    return { holder, mine, say, actions }
+    return { holder, mine, say: `${say}${against}`, actions }
   }
   if (holder === 'exec') {
     const floor = typeFloorBlock(p, 'exec')
@@ -448,9 +455,10 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
   if (holder === 'confirm') {
     const unmet = f.conditions.filter((c) => !c.met)
     return {
-      holder, mine, say: 'اكتمل مسار الاعتماد · تحقّق من استيفاء الملاحظات والشروط ثم أكّد',
+      holder, mine, say: 'اكتمل مسار القرار · راجع المبالغ والمخرجات والتعديلات والشروط ثم أكّد «اعتماد مكتمل» · مراجعة لا موافقة',
       actions: [
-        { label: 'تأكيد الاعتماد', kind: 'btn-p', blocked: openNotes(f).length ? 'ملاحظات إلزامية لم تُعالج' : unmet.length ? `${nf.format(unmet.length)} شرط لم يُعلَّم مستوفى في تبويب الاعتماد` : '' },
+        /* Client 21 Oct (#27) · the supervisor's closing review · whatever level decided */
+        { label: 'اعتماد مكتمل', kind: 'btn-p', blocked: openNotes(f).length ? 'ملاحظات إلزامية لم تُعالج' : unmet.length ? `${nf.format(unmet.length)} شرط لم يُعلَّم مستوفى في تبويب الاعتماد` : '' },
         { label: 'إعادة لصاحب القرار', kind: 'btn-2', needsNote: true },
       ],
     }
@@ -522,6 +530,8 @@ const activate = (p: ProjectRow, by: string, fields: LogField[]) => {
     /* v3 · 11.2.5 · approved, the hold final, then «استكمال متطلبات ما قبل التنفيذ» · the external document
        and the schedule are registered before it runs (11.2.6 – 11.2.8) */
     moveTo(p, EXT_PRE_STAGE)
+    /* Client 21 Oct (#26) · no agreement · the completed approval is the actual start */
+    startFromEvent(p.id, opDay(), 'approval', by)
     fields.push({ k: 'الحالة', v: `معتمد · استكمال متطلبات ما قبل التنفيذ · مدعوم عبر ${p.platform} · بلا اتفاقية داخلية`, strong: true })
     notify(['مدير المنح'], p.id, `اعتُمد المشروع · ${p.name}`, `مدعوم عبر ${p.platform}`, ROUTES.project(p.id))
     confirmHook?.(p.id, by)
@@ -571,6 +581,11 @@ const applyOp = (o: Op) => {
       if (o.note) fields.push({ k: o.verdict.includes('approve') || o.verdict === 'approve' ? 'المبررات' : 'الملاحظات', v: o.note })
       if (o.needsPlan !== undefined) { f.needsPlan = o.needsPlan; fields.push({ k: 'الخطة', v: o.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة' }) }
       if (o.criterion) fields.push({ k: 'معيار الإحالة', v: o.criterion })
+      /* Client 21 Oct (#23) · approving against the supervisor's recommendation to refuse · his
+         recommendation stays on file and the decision says so */
+      if ((o.verdict === 'recommend-approve' || o.verdict === 'final-approve' || o.verdict === 'approve') && flowOf(o.id).study?.recommendation === 'reject') {
+        fields.push({ k: 'توصية مشرف المنح', v: 'بالرفض · محفوظة في ملف المراجعة · القرار خلافها' })
+      }
       const tone: LogEvent['tone'] = /approve|confirm|refer|resubmit/.test(o.verdict) ? 'ok' : o.verdict === 'return' ? 'warn' : 'no'
       const lvl = HOLDER_LABEL[o.level]
       switch (o.verdict) {
@@ -1108,6 +1123,8 @@ export function decide(p: ProjectRow, level: Holder, label: string, note: string
     }
     case 'إعادة لمدير المنح': go('return', { target: 'manager' }); return []
     case 'اعتذار': if (hasFunding(p.id)) unlinkProject(p.id, me, 'اعتذار المدير التنفيذي'); go('reject'); return []
+    /* «تأكيد الاعتماد» is the label written before 21 Oct · callers and tests may still use it */
+    case 'اعتماد مكتمل':
     case 'تأكيد الاعتماد': {
       const f = appFlowOf(p.id)
       if (openNotes(f).length) return ['ملاحظات إلزامية لم تُعالج']

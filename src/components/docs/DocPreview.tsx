@@ -8,7 +8,21 @@ import { docKind, isScan, KIND_LABEL } from './kind'
 export interface DocPreviewProps {
   name: string
   meta?: string
+  /** Client 21 Oct (#7) · the file's address in the storage · an image, video or PDF opens inside the
+      preview itself, read in the browser with no download · without it the page drawing stands in */
+  src?: string
+  /** The file's MIME type · picks the viewer when the name has no telling extension */
+  mime?: string
   onClose: () => void
+}
+
+/** Which in-browser viewer a stored file gets · none falls back to the drawn page */
+const viewerOf = (name: string, mime = ''): 'img' | 'video' | 'pdf' | '' => {
+  const n = name.toLowerCase()
+  if (mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|heic)$/.test(n)) return 'img'
+  if (mime.startsWith('video/') || /\.(mp4|mov|webm|m4v)$/.test(n)) return 'video'
+  if (mime === 'application/pdf' || n.endsWith('.pdf')) return 'pdf'
+  return ''
 }
 
 /**
@@ -18,7 +32,7 @@ export interface DocPreviewProps {
  * The page inside the preview is **the same thumbnail drawing, scaled up**, so what the user
  * clicked is what opens — no jump between the two shapes.
  */
-export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
+export function DocPreview({ name, meta, src, mime, onClose }: DocPreviewProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
@@ -27,6 +41,7 @@ export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
 
   const kind = docKind(name)
   const scan = isScan(name)
+  const view = src ? viewerOf(name, mime) : ''
 
   return createPortal(
     <>
@@ -39,10 +54,11 @@ export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
             <div className="atitle">{name}</div>
             <div className="sub">
               {KIND_LABEL[kind]}
-              {scan ? ' · صورة ممسوحة، لا تُقرأ آليًا' : ' · صفحة 1 من 1'}
+              {scan ? ' · صورة ممسوحة، لا تُقرأ آليًا' : view ? ' · من مخزن المؤسسة' : ' · صفحة 1 من 1'}
               {meta && ` · ${meta}`}
             </div>
           </div>
+          {src && <a className="aclose" href={src} target="_blank" rel="noreferrer" title="افتح في تبويب" aria-label="افتح في تبويب"><Icon name={icons.link} size="sm" /></a>}
           <a className="aclose" download={name} href="#" onClick={(e) => { e.preventDefault(); downloadDoc(name) }} title="تنزيل" aria-label="تنزيل">
             <Icon name={icons.export} size="sm" />
           </a>
@@ -52,12 +68,17 @@ export function DocPreview({ name, meta, onClose }: DocPreviewProps) {
         </div>
 
         <div className="fpbody">
-          <div className="fppage">
-            <DocThumb name={name} size="lg" />
-            <div className="fpnote sub">
-              تُعرض المعاينة من مخزن المرفقات مباشرة دون تنزيل.
+          {view === 'img' && <img className="fpmedia" src={src} alt={name} />}
+          {view === 'video' && <video className="fpmedia" src={src} controls preload="metadata" aria-label={name} />}
+          {view === 'pdf' && <iframe className="fpmedia fpframe" src={src} title={name} />}
+          {!view && (
+            <div className="fppage">
+              <DocThumb name={name} size="lg" />
+              <div className="fpnote sub">
+                تُعرض المعاينة من مخزن المرفقات مباشرة دون تنزيل.
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {scan && (

@@ -432,7 +432,8 @@ export interface AgreementRow {
 
 // Permissions
 
-export type AuthorityKind = 'submit' | 'recommend' | 'approve' | 'final'
+/** `review` · client 21 Oct (#27) · the supervisor's last look after the decision · a review, not an approval */
+export type AuthorityKind = 'submit' | 'recommend' | 'approve' | 'final' | 'review'
 export type AuthorityState = 'done' | 'now' | 'pending'
 
 export interface AuthorityRole {
@@ -1053,6 +1054,20 @@ export interface FinalReport {
   contribution?: string
   /** v3 · 10.4.7 · the entity used the foundation's template, or its own with the mandatory data entered here */
   template?: 'foundation' | 'own'
+  /** Client 21 Oct (#7) · the execution files uploaded to the foundation's storage · images, videos,
+      contracts · many at once · read in the browser without a download */
+  uploads?: ReportUpload[]
+}
+
+/** One file uploaded with the final report · its bytes live in the storage, the record names it */
+export interface ReportUpload {
+  id: string
+  name: string
+  /** The MIME type · picks the viewer (image, video, PDF) */
+  type: string
+  size: number
+  at: string
+  by: string
 }
 
 /**

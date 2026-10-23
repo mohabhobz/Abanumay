@@ -25,10 +25,12 @@ export interface UploadButtonProps {
   accept?: string
   /** Size cap in MB · 10 like the request form */
   maxMb?: number
+  /** Client 21 Oct · several files in one pick · each one is checked, the accepted ones arrive together */
+  onPickMany?: (files: File[]) => void
 }
 
 export function UploadButton({
-  onPick, label, accept = '.pdf,.jpg,.jpeg,.png', maxMb = 10,
+  onPick, label, accept = '.pdf,.jpg,.jpeg,.png', maxMb = 10, onPickMany,
 }: UploadButtonProps) {
   const [err, setErr] = useState('')
   return (
@@ -38,7 +40,17 @@ export function UploadButton({
         type="file"
         accept={accept}
         aria-label={label}
+        multiple={Boolean(onPickMany)}
         onChange={(e) => {
+          if (onPickMany) {
+            const all = [...(e.target.files ?? [])]
+            const bad = all.map((x) => uploadRefusal(x, accept, maxMb)).filter(Boolean)
+            const good = all.filter((x) => !uploadRefusal(x, accept, maxMb))
+            setErr(bad.length ? `${bad[0]}${bad.length > 1 ? ` · و${bad.length - 1} ملفات أخرى` : ''}` : '')
+            if (good.length) onPickMany(good)
+            e.target.value = ''
+            return
+          }
           const f = e.target.files?.[0]
           const why = f ? uploadRefusal(f, accept, maxMb) : ''
           setErr(why)

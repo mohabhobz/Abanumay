@@ -260,6 +260,7 @@ export const NOUN = {
   beneficiary: { one: 'مستفيد', few: 'مستفيدين', many: 'مستفيدًا' },
   section: { one: 'قسم', few: 'أقسام', many: 'قسمًا' },
   indicator: { one: 'مؤشر', few: 'مؤشرات', many: 'مؤشرًا' },
+  criterion: { one: 'معيار', few: 'معايير', many: 'معيارًا' },
   describedColumn: { one: 'عمود موصوف', few: 'أعمدة موصوفة', many: 'عمودًا موصوفًا' },
   /* Noun plus adjective — the adjective inflects with the count just like
      the noun ("open projects" · "an open project"), so both are handled

@@ -385,13 +385,17 @@ export function Segments({
   items,
   active,
   onChange,
+  pin = true,
 }: {
   items: SegItem[]
   active?: string
   onChange: (key: string | undefined) => void
+  /** A list's saved views pin to the top like a page's tabs · a toggle inside a toolbar row doesn't */
+  pin?: boolean
 }) {
   return (
     <Tabs
+      pin={pin}
       items={items.map((it) => ({ slug: it.key, label: it.label, count: it.count }))}
       active={active ?? ''}
       onChange={(slug) => onChange(slug || undefined)}

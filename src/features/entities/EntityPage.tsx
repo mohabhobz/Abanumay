@@ -2,7 +2,7 @@ import { accountLine } from '@/data/shared/decisions'
 import { useEffect, useMemo, useRef } from 'react'
 import { expiryAhead } from '@/data/shared/ai'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { EntityMark, Icon, icons, Mono, Tabs, Tag } from '@/components/ui'
+import { EntityMark, Icon, icons, Mono, Num, Tabs, Tag } from '@/components/ui'
 import { Crumbs } from '@/components/shell'
 import { PartnerCard } from '@/features/partners/parts'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -20,7 +20,8 @@ import { AdminEditCard, EntityRequestsTab, EntityStatusCard } from './EntityActi
 import { useEntityFlow, viewArchived } from '@/data/entities/store'
 import { meOf, readRole } from '@/data/roles'
 import { readEntity } from '@/data/readings'
-import { entityCode } from '@/lib/format'
+import { entityCode, nounAfter, NOUN } from '@/lib/format'
+import { entityEvalSummary, useClosing } from '@/data/closing/store'
 import {
   EntityBanksTab, EntityDataTab, ExternalRecordTab, EntityDocsTab, EntityGoTo, EntityLogTab,
   EntityEvalCard, EntityProjectsTab, EntityRecord,
@@ -41,6 +42,7 @@ import {
  */
 export default function EntityPage() {
   useEntityFlow()
+  useClosing()
   const { id, tab } = useParams<{ id: string; tab?: string }>()
   const navigate = useNavigate()
   const entity = id ? entityById(id) : undefined
@@ -72,6 +74,7 @@ export default function EntityPage() {
   const goTab = (slug: string) => navigate(ROUTES.entity(entity.id, slug))
 
   const detail = entityDetail(entity)
+  const evalSum = entityEvalSummary(entity.id)
   const ahead = expiryAhead(detail, entity)
   const readings = [...(ahead ? [ahead] : []), ...readEntity(entity, projects, detail)]
 
@@ -121,6 +124,9 @@ export default function EntityPage() {
                         detail lives in the tab cards. */}
                     <Tag tone="mute">{accountLine(entity)}</Tag>
                     <Tag tone="mute">الحوكمة: {entity.governance}</Tag>
+                    {/* Client 21 Oct (#14) · the entity's overall evaluation · the average of its closed projects ·
+                        this record is the staff's · the entity's portal never shows it */}
+                    {evalSum.avg !== null && <Tag tone="mute">متوسط تقييم الجهة <Num>{evalSum.avg}</Num> من 100 · <Num>{evalSum.n}</Num> {nounAfter(evalSum.n, NOUN.project)}</Tag>}
                     {/* An expired license blocks contracting, so it belongs in the header, not inside a
                         tab - the decision is made from the top. */}
                     {detail.licenseExpired && !entity.external && <Tag tone="mute">الترخيص منتهٍ</Tag>}

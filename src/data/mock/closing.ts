@@ -133,7 +133,7 @@ export const CLOSE_DOCS: { key: string; label: string; req?: boolean }[] = [
   { key: 'final', label: 'التقرير الختامي التفصيلي', req: true },
   { key: 'finrep', label: 'التقرير المالي التنفيذي', req: true },
   { key: 'photos', label: 'صور التنفيذ وأدلة المخرجات', req: true },
-  { key: 'invoices', label: 'الفواتير التفصيلية · عند طلبها' },
+  { key: 'invoices', label: 'الفواتير التفصيلية · اختيارية' },
   { key: 'media', label: 'المواد الإعلامية' },
   { key: 'handover', label: 'محاضر الاستلام' },
   { key: 'beneficiaries', label: 'كشف المستفيدين' },
@@ -191,11 +191,11 @@ export const reportBlockers = (c: CloseRow): string[] => {
   const stopped = c.basis === 'stopped'
   if (!stopped) {
     if (r.beneficiaries === null) out.push('عدد المستفيدين الفعلي')
-    if (r.budget === null) out.push('الميزانية الفعلية')
+    if (r.budget === null) out.push('مبلغ دعم المؤسسة الفعلي')
     if (r.days === null) out.push('مدة التنفيذ')
     /* v3 · 10.4.4 · the project's value, the outputs agreed against those achieved, and the relation of
        the foundation's share to what was achieved when it funded part */
-    if (r.projectValue === null || r.projectValue === undefined) out.push('قيمة المشروع الإجمالية')
+    if (r.projectValue === null || r.projectValue === undefined) out.push('الميزانية الإجمالية للمشروع الفعلية')
     if ((r.outputs ?? []).some((x) => !x.achieved.trim())) out.push('المتحقق من كل مخرج متفق عليه')
     const grant = projectRows.find((p) => p.id === c.projectId)?.amountGranted ?? 0
     if (r.projectValue && grant && r.projectValue > grant && !(r.contribution ?? '').trim()) out.push('بيان علاقة مساهمة المؤسسة بما تحقق (تمويل جزئي)')
@@ -204,18 +204,8 @@ export const reportBlockers = (c: CloseRow): string[] => {
   for (const d of CLOSE_DOCS) {
     if ((stopped ? STOPPED_DOCS.includes(d.key) : d.req) && !r.docs.includes(d.key)) out.push(d.label)
   }
-  if (c.invoicesAsked && !r.docs.includes('invoices')) out.push('الفواتير التفصيلية المطلوبة')
-  /* Re-audit 7 Oct · the financial report's lines add up to the actual budget it declares */
-  const lines = c.finance?.lines ?? []
-  /* Batch 2 · 8 Oct · an empty financial table passed · the check below only ran when a line had a
-     figure, so a report with no lines, or no spending on any line, was sent */
-  if (c.finance && (lines.length === 0 || lines.every((l) => l.spent === null || l.spent === undefined))) {
-    out.push('بنود التقرير المالي · المصروف لكل بند')
-  }
-  if (r.budget !== null && lines.some((l) => l.spent !== null && l.spent !== undefined)) {
-    const sum = lines.reduce((a, l) => a + (l.spent ?? 0), 0)
-    if (sum !== r.budget) out.push(`مجموع بنود التقرير المالي ${sum.toLocaleString('en-US')} لا يساوي الميزانية الفعلية ${r.budget.toLocaleString('en-US')}`)
-  }
+  /* Client 21 Oct (#6 · #8) · the costs are the two figures above, so no line table to balance · and the
+     invoices are never a condition of sending, even when someone asked for them */
   return out
 }
 

@@ -451,6 +451,7 @@ export default function PlanPage() {
             />
             {(p.baseline > 0 || p.changes.length > 0) && (
               <Tabs
+                pin={false}
                 items={[
                   { slug: 'active', label: p.stage === 'cancelled' ? 'الخطة' : 'الخطة النشطة' },
                   { slug: 'history', label: 'الملغاة وطلبات التعديل', count: oldVersions.length + p.changes.length },

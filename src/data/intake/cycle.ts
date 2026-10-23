@@ -181,6 +181,23 @@ export const addWorkingDays = (start: string, days: number, execDays?: number[])
   return iso(d)
 }
 
+/** Client 21 Oct (#28) · a project's duration is the calendar days from its start to its end, both
+    included · the days of the week it works on are information only and never move either date */
+export const calendarDaysBetween = (from: string, to: string): number => {
+  if (!from || !to || to < from) return 0
+  const a = Date.parse(`${from}T00:00:00Z`)
+  const b = Date.parse(`${to}T00:00:00Z`)
+  return Number.isNaN(a) || Number.isNaN(b) ? 0 : Math.round((b - a) / 86_400_000) + 1
+}
+
+/** The end of a duration in calendar days from `start` · the start is day 1 */
+export const endAfterDays = (start: string, days: number): string => {
+  if (!start || days <= 0) return start
+  const d = new Date(`${start}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days - 1)
+  return iso(d)
+}
+
 /** The foundation's working days between two dates (the SLA's count) · both ends included */
 export const foundationDaysBetween = (from: string, to: string): number => {
   if (!from || !to || to < from) return 0

@@ -90,11 +90,28 @@
 .stdy-list li{display:flex;align-items:center;gap:var(--sp-3);min-width:0;padding-block:var(--sp-2)}
 .stdy-list li+li{box-shadow:inset 0 1px 0 var(--edge-1)}
 .stdy-l{min-width:0;font-size:var(--fs-2);color:var(--t1)}
-.stdy-scale{display:inline-flex;flex:none;gap:var(--sp-2)}
-.stdy-scale .cfgchip{min-inline-size:var(--h-md);justify-content:center}
-.stdy-scale .cfgchip:disabled{cursor:default}
+.stdy-scale,.stdy-yn{display:inline-flex;flex:none;gap:var(--sp-2)}
+.stdy-scale .cfgchip,.stdy-yn .cfgchip{min-inline-size:var(--h-md);justify-content:center}
+.stdy-scale .cfgchip:disabled,.stdy-yn .cfgchip:disabled{cursor:default}
 .stdy-sim{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
 .stdy-sim li{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0;font-size:var(--fs-2)}
+/* Client 21 Oct · the study in one column · exclusions · the budget beside the recommendation ·
+   the reading in two columns · the special conditions under the reasons */
+.stdy-ex{margin-block-end:var(--sp-3)}
+/* a settings list of sentences · the field takes the row, not the default width */
+.cfglist-w .fld{flex:1;min-width:0}
+.stdy-bud{margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-radius:var(--r1);
+  background:var(--fl-1);box-shadow:inset 0 0 0 1px var(--edge-1)}
+.stdy-bud>div{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0;padding:var(--sp-3) var(--sp-4)}
+.stdy-bud>div+div{box-shadow:inset -1px 0 0 var(--edge-1)}
+.stdy-bud dt{font-size:var(--fs-1);color:var(--t2)}
+.stdy-bud dd{margin:0;font-size:var(--fs-3);font-weight:600;color:var(--t1);font-variant-numeric:tabular-nums}
+.stdy-bud>.bad dd{color:var(--warn-ink)}
+.stdy-read{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--sp-5);align-items:start}
+.stdy-cond{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2);font-size:var(--fs-2)}
+.stdy-cond li{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.stdy-own{padding-top:var(--sp-3);box-shadow:inset 0 1px 0 var(--edge-1)}
+.stdy-own .lb{color:var(--t2);font-size:var(--fs-2)}
 .rqv,.rqobj{margin:var(--sp-3) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2);font-size:var(--fs-2);line-height:var(--lh-text)}
 .rqv{list-style:none}
 .rqv li{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--sp-1) var(--sp-3);min-width:0}
@@ -103,6 +120,10 @@
 .rqobj{padding-inline-start:var(--sp-6)}
 @media (max-width:720px){
   .stdy-list li{flex-wrap:wrap}
+  .stdy-bud{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stdy-bud>div:nth-child(3){box-shadow:inset 0 1px 0 var(--edge-1)}
+  .stdy-bud>div:nth-child(4){box-shadow:inset -1px 0 0 var(--edge-1),inset 0 1px 0 var(--edge-1)}
+  .stdy-read{grid-template-columns:1fr}
 }
 
 /* Approval path (BPD-004–007) · the decision file, sessions and votes */
@@ -154,7 +175,7 @@
 .outs-r{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) auto;gap:var(--sp-3);align-items:center}
 .outs-r .iact{grid-column:4}
 .outs-add{align-self:flex-start}
-.outs-ro{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.outs-ro{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2);font-size:var(--fs-2);line-height:var(--lh-text)}
 @media (max-width:720px){.outs-r{grid-template-columns:minmax(0,1fr) auto}.outs-r .fld:first-child{grid-column:1/-1}}
 /* v3 · 3.2.10 · the entity corrects a returned request in place, under its row */
 .ptl-edit{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-3);min-width:0}

@@ -1,4 +1,4 @@
-import { forwardRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
+import { forwardRef, useEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from './Icon'
 import { icons } from './icons'
@@ -186,13 +186,38 @@ export function Tabs({
   items,
   active,
   onChange,
+  pin = true,
+  className,
 }: {
   items: readonly TabItem[]
   active: string
   onChange: (slug: string) => void
+  /** Client 21 Oct (#30) · a page's tabs stay pinned to the top of the screen while it scrolls.
+      Tabs inside a card (a plan's versions, a header row) pass `pin={false}` and scroll with it. */
+  pin?: boolean
+  className?: string
 }) {
+  const ref = useRef<HTMLDivElement>(null)
+  /* The row only takes its chrome surface once it's actually stuck · at rest it sits on the page
+     like any other line, so the header above it doesn't read as cut by a band */
+  useEffect(() => {
+    const el = ref.current
+    if (!pin || !el) return
+    const scroller = el.closest('.screen')
+    if (!scroller) return
+    const check = () => {
+      const stuck = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top <= 1 && scroller.scrollTop > 0
+      if (stuck !== (el.dataset.stuck === '1')) {
+        if (stuck) el.dataset.stuck = '1'
+        else delete el.dataset.stuck
+      }
+    }
+    check()
+    scroller.addEventListener('scroll', check, { passive: true })
+    return () => scroller.removeEventListener('scroll', check)
+  }, [pin])
   return (
-    <div className="tabs" role="tablist">
+    <div ref={ref} className={`tabs${pin ? ' tabs-pin' : ''}${className ? ` ${className}` : ''}`} role="tablist">
       {items.map((t) => (
         <button
           key={t.slug}

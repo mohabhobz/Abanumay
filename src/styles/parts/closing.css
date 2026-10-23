@@ -1,0 +1,20 @@
+/* ── Closing · client meeting 21 Oct ── */
+
+/* #5 · #6 · the target against the actual · the item, then two numeric columns and the gap */
+.tva col.tva-c-k{width:36%}
+.tva col.tva-c-v{width:24%}
+.tva col.tva-c-d{width:16%}
+.tva-k{font-weight:600}
+/* an output's text wraps · a long agreed output is read whole, not cut */
+.tva td.tva-w{white-space:normal;height:auto;padding-block:var(--sp-3);line-height:var(--lh-ui)}
+.tva td.n .fld{min-width:0}
+
+/* #4 · the report's terms · a numbered list in the card's own rhythm */
+.rptterms{margin:0;padding-inline-start:var(--sp-6);display:grid;gap:var(--sp-2);font-size:var(--fs-3);line-height:var(--lh-ui)}
+
+/* #7 · many files at once · the upload control sits above the list like every upload in the system */
+.rptup{align-self:flex-start}
+
+/* #7 · a stored image, video or PDF opens inside the preview itself */
+.fpmedia{display:block;max-width:100%;max-height:calc(86vh - var(--sp-12) * 2);margin-inline:auto;border-radius:var(--r1);background:var(--fl-2)}
+.fpframe{width:100%;height:calc(86vh - var(--sp-12) * 2);border:0}

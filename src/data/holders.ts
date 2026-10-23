@@ -62,6 +62,9 @@ export const authorityFor = (amount: number, holder: Holder | null): AuthorityMa
         state: state(i + 1),
         ...(r.key === 'committee' ? { note: 'للمشروع الواحد' } : {}),
       })),
+      /* Client 21 Oct (#27) · whatever level decided, the file returns to the supervisor last ·
+         he reviews and confirms «اعتماد مكتمل» (the confirmation seat) */
+      { role: 'مراجعة المشرف', ceiling: null, kind: 'review', state: holder === 'confirm' ? 'now' : holder ? 'pending' : 'done' },
     ],
   }
 }

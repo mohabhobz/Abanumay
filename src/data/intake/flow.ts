@@ -10,8 +10,9 @@ import { projectRows } from '@/data/mock/projects'
 import { stageMeta, FIELDS_BY_TRACK } from '@/data/mock/taxonomy'
 import { entityById } from '@/data/mock/entities'
 import { replayLateRelinks } from '@/data/entities/store'
-import { CYCLE, TODAY, addWorkingDays, workDaysOf, type Distribution } from './cycle'
+import { CYCLE, TODAY, addWorkingDays, calendarDaysBetween, endAfterDays, workDaysOf, type Distribution } from './cycle'
 import { CRITERIA, studyScore } from './criteria'
+import { excludedBy, type ExclusionAnswer } from './exclusion'
 import { nextSeq, type Stamped } from '@/data/opclock'
 import { liveDay, localDayOf, stampNow, timeOf } from '@/data/clock'
 import { CONSULTANTS, consultantByKey } from './consultants'
@@ -59,6 +60,18 @@ export const REQUEST_DOCS: DocKind[] = [
 
 export interface DocFile { kind: string; name: string; by: string; at: string }
 
+/** Client 21 Oct (#32) · «مرفقات أخرى» · any number of files at once, beside the named attachments ·
+    each keeps who added it and when, and its uploader may remove it while the request is still open */
+export interface ExtraDoc { id: string; name: string; size: number; by: string; at: string; internal?: boolean }
+
+/* A seeded example so the section reads with content on a demo project */
+const SEED_EXTRAS: Record<string, ExtraDoc[]> = {
+  '20852': [
+    { id: 'x-20852-1', name: 'صور زيارة مركز الغسيل.jpg', size: 1_840_000, by: 'جمعية البر بالأحساء', at: '2026-06-14' },
+    { id: 'x-20852-2', name: 'خطاب تأييد وزارة الصحة.pdf', size: 420_000, by: 'جمعية البر بالأحساء', at: '2026-06-14' },
+  ],
+}
+
 /* ── Study (3.2.11–16 · 3.4.25) ── */
 
 export type Recommendation = 'approve' | 'reject'
@@ -78,6 +91,11 @@ export interface Study {
   classification?: 'مشروع عادي' | 'مشروع لجهة خارجية' | 'محفظة'
   /** Meeting 20 Oct · the consultant is an option of the study, not a fixed block */
   needsConsultant?: boolean
+  /** Client 21 Oct · the exclusion criteria as answered · the questions' text is kept with the study */
+  exclusions?: ExclusionAnswer[]
+  /** Client 21 Oct · the study's notes in one place · `technical` and `admin` are read into it for
+      studies saved before */
+  notes?: string
   by: string
   at: string
   /** Each save of a forwarded study after a return is a new version (3.4.26) */
@@ -131,6 +149,8 @@ export interface ProjectFlow {
   versions: { no: number; at: string; by: string; say: string; snap?: VersionSnap; /** The request as sent */ values?: Record<string, string>; /** Batch 7 · the attachments at that version */ docs?: string[] }[]
   objectives: string[]
   docs: DocFile[]
+  /** #32 · «مرفقات أخرى» */
+  extras?: ExtraDoc[]
   study?: Study
   /** Earlier studies · a transfer or a return keeps them on record */
   pastStudies: Study[]
@@ -153,6 +173,9 @@ export interface ProjectFlow {
 type Op = Stamped & (
   | { op: 'submit'; id: string; values: Record<string, string>; by: string; asEntity: boolean; docs: string[] }
   | { op: 'doc'; id: string; kind: string; name: string; by: string }
+  /* Client 21 Oct (#32) · several «other» files in one pick · and the uploader's removal */
+  | { op: 'docMore'; id: string; files: { name: string; size: number }[]; by: string; internal?: boolean }
+  | { op: 'docDrop'; id: string; doc: string; by: string }
   | { op: 'study'; id: string; study: Omit<Study, 'at' | 'version' | 'field'> }
   | { op: 'recommend'; id: string; by: string }
   | { op: 'complete'; id: string; note: string; by: string }
@@ -167,7 +190,7 @@ type Op = Stamped & (
   | { op: 'close'; id: string; kind: 'cancel' | 'archive'; reason: string; by: string }
   | { op: 'assign'; id: string; owner: string; by: string }
   /* Batch 6 · 8 Oct · the start moves · the end follows from the duration (3.4.input · the calculated end) */
-  | { op: 'reschedule'; id: string; startAt: string; reason: string; by: string }
+  | { op: 'reschedule'; id: string; startAt: string; reason: string; by: string; source?: StartSource }
   /* Batch 8 · intake#15 · the official holidays changed · each open project's end is computed again */
   | { op: 'rederive'; id: string; ids: string[]; reason: string; by: string }
 )
@@ -197,7 +220,7 @@ export const flowOf = (id: string): ProjectFlow => {
     const r0 = row(id)
     f = {
       versions: r0 ? [{ no: 1, at: r0.submittedAt, by: r0.entityName, say: 'أرسلته الجهة من البوابة' }] : [],
-      objectives: [], docs: seedDocs(id), pastStudies: [], events: [],
+      objectives: [], docs: seedDocs(id), extras: (SEED_EXTRAS[id] ?? []).map((x) => ({ ...x })), pastStudies: [], events: [],
     }
     const seeded = SEED_STUDY[id]
     if (seeded) f.study = { ...seeded, field: row(id)?.field ?? seeded.field }
@@ -350,6 +373,9 @@ export const forwardBlockers = (id: string): string[] => {
     /* v3 · 3.2.19 · 3.4.25 */
     if (f.study.recommendation === 'reject' && !f.study.rejectReason) out.push('اختر سبب التوصية بالرفض من القائمة أو «أخرى»')
     if (f.study.recommendation === 'reject' && f.study.rejectReason === OTHER && !f.study.rejectOther?.trim()) out.push('اكتب سبب التوصية بالرفض')
+    /* Client 21 Oct (#20) · a project an exclusion criterion applies to isn't recommended for approval */
+    const ex = excludedBy(f.study.exclusions)
+    if (f.study.recommendation === 'approve' && ex.length) out.push(`معيار استبعاد منطبق: ${ex[0].label} · لا توصية بالموافقة`)
   }
   const docs = missingDocs(id)
   if (docs.length) out.push(`مرفقات إلزامية ناقصة: ${docs.join('، ')}`)
@@ -386,7 +412,10 @@ function applyOp(o: Op) {
       const e = entityById(v.entityId)
       const owner = pickSupervisor(v.field, v.goal)
       const amount = Number(v.amountRequested) || 0
-      const days = Number(v.workDays) || 0
+      /* Client 21 Oct (#28) · the entity gives the start and the end · the duration is the calendar days
+         between them · a request saved before carried a duration in working days and keeps its end */
+      const byDates = Boolean(v.startAt && v.endAt)
+      const days = byDates ? calendarDaysBetween(v.startAt, v.endAt) : Number(v.workDays) || 0
       projectRows.unshift({
         id: o.id, name: v.name, entityId: v.entityId, entityName: e?.name ?? v.externalName ?? '',
         track: v.track, field: v.field, goal: v.goal, region: v.region, city: v.city,
@@ -397,7 +426,7 @@ function applyOp(o: Op) {
         beneficiaries: Number(v.reach) || 0, hasInterimReport: false, hasFinalReport: false,
         hasKnowledgeProduct: false, fieldVisit: false, type: 'مشروع عادي', holder: 'supervisor',
         source: o.asEntity ? 'portal' : 'staff',
-        createdAt: `${opDay()}T${NOW_TIME()}`, startAt: v.startAt, execDays: workDaysOf(v.execDays), endAt: v.startAt && days ? addWorkingDays(v.startAt, days, workDaysOf(v.execDays)) : v.endAt,
+        createdAt: `${opDay()}T${NOW_TIME()}`, startAt: v.startAt, execDays: workDaysOf(v.execDays), endAt: byDates ? v.endAt : v.startAt && days ? addWorkingDays(v.startAt, days, workDaysOf(v.execDays)) : v.endAt,
       })
       liveClock(projectRows[0], 'hoursInStage', true)
       /* v3 · 11.2.2 · 11.2.3 · created by the authority through the simplified form · supported through the
@@ -430,18 +459,24 @@ function applyOp(o: Op) {
       break
     }
     case 'reschedule': {
-      const days = p!.durationDays ?? 0
-      if (!o.startAt || !days || isEnded(p!.statusGroup)) break
-      /* v3 · 3.4.14 · the actual start is its own record · the expected start the entity gave stays */
-      const was = { start: p!.actualStartAt ?? p!.startAt, end: p!.endAt }
+      if (!o.startAt || isEnded(p!.statusGroup)) break
+      /* Client 21 Oct (#26 · #28) · the actual start is its own record · the expected start the entity gave
+         stays · the project keeps its length in calendar days, so the end moves with the start · an op saved
+         before carried a duration in working days, the calendar length of its dates is what it lasts */
+      const from0 = p!.actualStartAt ?? p!.startAt
+      const days = from0 && p!.endAt ? calendarDaysBetween(from0, p!.endAt) || (p!.durationDays ?? 0) : (p!.durationDays ?? 0)
+      if (!days) break
+      const was = { start: from0, end: p!.endAt }
       p!.actualStartAt = o.startAt
-      p!.endAt = addWorkingDays(o.startAt, days, p!.execDays)
-      event(o.id, { action: 'تسجيل بداية التنفيذ الفعلي · أُعيد حساب النهاية', by: o.by, tone: 'warn', fields: [
+      p!.durationDays = days
+      p!.endAt = endAfterDays(o.startAt, days)
+      const why = o.source === 'agreement' ? 'توقيع الاتفاقية' : o.source === 'approval' ? 'اكتمال الاعتماد · مشروع خارجي بلا اتفاقية' : ''
+      event(o.id, { action: why ? `بداية التنفيذ الفعلي مع ${why}` : 'تعديل بداية التنفيذ الفعلي · أُعيدت النهاية', by: o.by, tone: why ? 'ok' : 'warn', fields: [
         { k: 'بداية التنفيذ الفعلي', v: `${was.start ?? '—'} ← ${o.startAt}`, strong: true },
         { k: 'البداية المتوقعة في الطلب', v: p!.startAt ?? '—' },
-        { k: 'النهاية المحسوبة', v: `${was.end ?? '—'} ← ${p!.endAt}` },
-        { k: 'المدة', v: `${days} يوم تنفيذ` },
-        { k: 'السبب', v: o.reason },
+        { k: 'نهاية التنفيذ', v: `${was.end ?? '—'} ← ${p!.endAt}` },
+        { k: 'المدة', v: `${days} يومًا من البداية إلى النهاية` },
+        { k: why ? 'المصدر' : 'السبب', v: why || o.reason },
       ] })
       note(o.id, p!.entityName, `تغيّرت مدة تنفيذ مشروعك · ${p!.name}`, `يبدأ ${o.startAt} وينتهي ${p!.endAt}`)
       break
@@ -450,6 +485,22 @@ function applyOp(o: Op) {
       p!.owner = o.owner
       event(o.id, { action: 'إسناد المشروع لمشرف', by: o.by, fields: [{ k: 'المشرف', v: o.owner, strong: true }] })
       note(o.id, o.owner, `أُسند إليك · ${p!.name}`, `من ${o.by}`)
+      break
+    }
+    case 'docMore': {
+      const f = flowOf(o.id)
+      const list = (f.extras ??= [])
+      const at = opDay()
+      o.files.forEach((x, i) => list.push({ id: `x-${o.id}-${o.seq ?? at}-${list.length}-${i}`, name: x.name, size: x.size, by: o.by, at, internal: o.internal }))
+      event(o.id, { action: 'رفع مرفقات أخرى', by: o.by, actor: o.by === p!.entityName ? 'entity' : 'staff', fields: [{ k: 'العدد', v: String(o.files.length) }, { k: 'الاطلاع', v: o.internal ? 'داخلي · لا تراه الجهة' : 'الجهة والفريق' }], files: o.files.map((x) => x.name) })
+      break
+    }
+    case 'docDrop': {
+      const f = flowOf(o.id)
+      const was = (f.extras ?? []).find((x) => x.id === o.doc)
+      if (!was || was.by !== o.by) break
+      f.extras = (f.extras ?? []).filter((x) => x.id !== o.doc)
+      event(o.id, { action: 'حذف مرفق', by: o.by, actor: o.by === p!.entityName ? 'entity' : 'staff', fields: [{ k: 'المرفق', v: was.name }] })
       break
     }
     case 'doc': {
@@ -477,6 +528,7 @@ function applyOp(o: Op) {
           { k: 'الدرجة', v: `${studyScore(o.study.scores)} من 100` },
           { k: 'التوصية', v: o.study.recommendation === 'approve' ? 'الموافقة' : o.study.recommendation === 'reject' ? 'الرفض' : 'لم تُحدَّد', strong: true },
           ...(o.study.recommendation === 'reject' && o.study.rejectReason ? [{ k: 'سبب التوصية بالرفض', v: reasonSay(o.study.rejectReason, o.study.rejectOther) }] : []),
+          ...(excludedBy(o.study.exclusions).length ? [{ k: 'معايير الاستبعاد المنطبقة', v: excludedBy(o.study.exclusions).map((x) => x.label).join('، ') }] : []),
           ...(o.study.classification ? [{ k: 'تصنيف المشروع', v: o.study.classification }] : []),
           ...(o.study.recommendation === 'approve' ? [{ k: 'المبلغ الموصى به', v: o.study.amount.toLocaleString('en-US') }] : []),
         ],
@@ -591,10 +643,17 @@ function applyOp(o: Op) {
       if (v.name?.trim()) set('name', v.name.trim(), 'اسم المشروع')
       if (v.amountRequested) set('amountRequested', Number(v.amountRequested) || p!.amountRequested, 'المبلغ المطلوب')
       if (v.reach) set('beneficiaries', Number(v.reach) || p!.beneficiaries, 'عدد المستفيدين')
-      if (v.workDays) set('durationDays', Number(v.workDays) || p!.durationDays, 'مدة التنفيذ')
       if (v.startAt) set('startAt', v.startAt, 'تاريخ بدء التنفيذ المتوقع')
       if (v.execDays !== undefined) p!.execDays = workDaysOf(v.execDays)
-      if (p!.startAt && p!.durationDays) p!.endAt = addWorkingDays(p!.actualStartAt ?? p!.startAt, p!.durationDays, p!.execDays)
+      if (v.endAt) {
+        /* Client 21 Oct (#28) · the end is typed · the duration follows the two dates */
+        set('endAt', v.endAt, 'تاريخ انتهاء التنفيذ المتوقع')
+        if (p!.startAt) set('durationDays', calendarDaysBetween(p!.actualStartAt ?? p!.startAt, v.endAt), 'المدة بالأيام')
+      } else {
+        /* an amendment saved before carried the duration in working days */
+        if (v.workDays) set('durationDays', Number(v.workDays) || p!.durationDays, 'مدة التنفيذ')
+        if (p!.startAt && p!.durationDays) p!.endAt = addWorkingDays(p!.actualStartAt ?? p!.startAt, p!.durationDays, p!.execDays)
+      }
       if (v.objectives !== undefined) {
         const list = v.objectives.split('\n').map((x) => x.trim()).filter(Boolean)
         if (list.join('|') !== f.objectives.join('|')) { changed.push({ k: 'الأهداف التفصيلية', v: `${list.length} هدف` }); f.objectives = list }
@@ -697,19 +756,46 @@ export const assignSupervisor = (id: string, owner: string, by: string) => run({
 export const rescheduleStart = (id: string, startAt: string, reason: string, by: string): string[] => {
   const p = projectRows.find((x) => x.id === id)
   if (!p) return ['المشروع غير موجود']
-  if (!p.durationDays) return ['لا مدة تنفيذ للمشروع · تُحسب النهاية من المدة']
+  if (!p.durationDays && !(p.startAt && p.endAt)) return ['لا مدة تنفيذ للمشروع · تُحسب النهاية من المدة']
   if (isEnded(p.statusGroup)) return ['المشروع مغلق']
   if (!reason.trim()) return ['اكتب سبب التعديل']
   if (!startAt) return ['حدّد تاريخ البداية']
-  run({ op: 'reschedule', id, startAt, reason: reason.trim(), by })
+  run({ op: 'reschedule', id, startAt, reason: reason.trim(), by, source: 'manual' })
   return []
 }
+/** Where an actual start came from · the agreement's signature, the approval of an external project
+    (it has no agreement), or a documented edit by the supervisor or the grants manager */
+export type StartSource = 'agreement' | 'approval' | 'manual'
+/** Client 21 Oct (#26) · the actual start is set by the event that starts the work · the agreement's
+    signature, or the approval of an external project that has none · it follows that event's own record
+    (replayed with it, never saved twice) · the expected start the entity gave is never overwritten, and a
+    start already recorded (a documented edit) is left alone */
+export const startFromEvent = (id: string, startAt: string, source: Exclude<StartSource, 'manual'>, by: string): void => {
+  const p = projectRows.find((x) => x.id === id)
+  if (!p || !startAt || p.actualStartAt || isEnded(p.statusGroup)) return
+  const from0 = p.startAt
+  const days = from0 && p.endAt ? calendarDaysBetween(from0, p.endAt) || (p.durationDays ?? 0) : (p.durationDays ?? 0)
+  p.actualStartAt = startAt
+  if (days) { p.durationDays = days; p.endAt = endAfterDays(startAt, days) }
+  event(id, { action: `بداية التنفيذ الفعلي مع ${source === 'agreement' ? 'توقيع الاتفاقية' : 'اكتمال الاعتماد · مشروع خارجي بلا اتفاقية'}`, by, tone: 'ok', fields: [
+    { k: 'بداية التنفيذ الفعلي', v: startAt, strong: true },
+    { k: 'البداية المتوقعة في الطلب', v: from0 ?? '—' },
+    ...(days ? [{ k: 'نهاية التنفيذ', v: p.endAt ?? '—' }, { k: 'المدة', v: `${days} يومًا من البداية إلى النهاية` }] : []),
+  ] })
+}
+
+/** Client 21 Oct (#28) · durations are calendar days · the working-days rule below is kept for records written before */
+const CALENDAR_DURATION = true
 /** v3 · 3.4.34 · the calendar a duration was computed with · the week, the holidays and the policy */
 export type CalendarSnap = Pick<typeof CYCLE, 'weekend' | 'holidays' | 'countWeekend' | 'countHolidays'>
 export const calendarSnap = (): CalendarSnap => structuredClone({ weekend: CYCLE.weekend, holidays: CYCLE.holidays, countWeekend: CYCLE.countWeekend, countHolidays: CYCLE.countHolidays })
 /** Batch 8 · intake#15 · v3 · 3.4.34 · open projects whose end was computed from the calendar before
     the change (`before`) and no longer matches it · a seeded end typed by hand is left alone */
 export function endsToRederive(before: CalendarSnap): string[] {
+  /* Client 21 Oct (#28) · a project's start and end are dates the entity gives, its duration the calendar
+     days between them · a change to the week or the holidays no longer moves any end · the operation
+     stays so a change recorded before still replays */
+  if (CALENDAR_DURATION) return []
   const now = calendarSnap()
   const open = projectRows.filter((p) => (p.actualStartAt ?? p.startAt) && p.durationDays && !isEnded(p.statusGroup))
   Object.assign(CYCLE, structuredClone(before))
@@ -738,13 +824,31 @@ export const rederiveEnds = (before: CalendarSnap, reason: string, by: string): 
   return ids.length
 }
 export const uploadDoc = (id: string, kind: string, name: string, by: string) => run({ op: 'doc', id, kind, name, by })
+/** #32 · the project's «other» attachments · the seeded or uploaded files, oldest first */
+export const extrasOf = (id: string): ExtraDoc[] => flowOf(id).extras ?? []
+export const uploadMore = (id: string, files: { name: string; size: number }[], by: string, internal = false) => {
+  if (files.length) run({ op: 'docMore', id, files, by, internal })
+}
+/** Only the person who added a file removes it · refused (returns why) otherwise */
+export const dropMore = (id: string, doc: string, by: string): string[] => {
+  const x = extrasOf(id).find((d) => d.id === doc)
+  if (!x) return ['المرفق غير موجود']
+  if (x.by !== by) return ['يحذف المرفق من رفعه فقط']
+  run({ op: 'docDrop', id, doc, by })
+  return []
+}
 export const saveStudy = (id: string, study: Omit<Study, 'at' | 'version' | 'field'>) => run({ op: 'study', id, study })
 
 /** Forward with the recorded recommendation · refused (returns the reasons) when a guard fails */
+/** Client 21 Oct (#24) · what the budget does when the supervisor forwards · a recommendation to
+    refuse holds nothing · set by the approvals store (no import cycle) */
+let recommendHook: (id: string, rec: Study['recommendation'] | undefined, by: string) => void = () => {}
+export const setRecommendHook = (f: typeof recommendHook): void => { recommendHook = f }
 export const recommend = (id: string, by: string): string[] => {
   const b = forwardBlockers(id)
   if (b.length) return b
   run({ op: 'recommend', id, by })
+  recommendHook(id, flowOf(id).study?.recommendation, by)
   return []
 }
 export const requestCompletion = (id: string, note: string, by: string) => run({ op: 'complete', id, note, by })
@@ -778,6 +882,8 @@ export function amendRequest(id: string, values: Record<string, string>, by: str
   if (!p || p.stage !== 'استكمال بيانات المشروع') return ['الطلب ليس مُعادًا للاستكمال']
   if (values.name !== undefined && !values.name.trim()) return ['اسم المشروع']
   if (values.amountRequested !== undefined && !(Number(values.amountRequested) > 0)) return ['المبلغ المطلوب']
+  const start = values.startAt || p.startAt
+  if (values.endAt && start && values.endAt < start) return ['تاريخ الانتهاء قبل تاريخ البدء']
   /* a request filed before the outputs field carries none · an empty list stays allowed for it */
   const had = (flowOf(id).entityOutputs ?? []).length > 0
   if (values.outputs !== undefined && had && !parseOutputs(values.outputs).some((o) => o.text.trim())) return ['مخرج واحد على الأقل']
@@ -830,7 +936,7 @@ export const recommendMany = (ids: readonly string[], by: string): { done: strin
     const seat = atSupervisorSeat(id, by)
     const b = seat ? [seat] : forwardBlockers(id)
     if (b.length) held.push({ id, why: b[0]! })
-    else { const o: Op = { op: 'recommend', id, by, seq: nextSeq(), at: stampNow() }; ops.push(o); apply(o); done.push(id) }
+    else { const o: Op = { op: 'recommend', id, by, seq: nextSeq(), at: stampNow() }; ops.push(o); apply(o); recommendHook(id, flowOf(id).study?.recommendation, by); done.push(id) }
   }
   save()
   emit()

@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { BackTo, Empty, Glass, Head, MoneyField, Num, Tag, Riyal } from '@/components/ui'
+import { BackTo, Empty, Glass, Head, Icon, Num, Tag, icons } from '@/components/ui'
 import { DocList, DocReadNote, UploadButton, useDocReads, type DocRow } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { nf, MISSING_ITEM, nounAfter, NOUN } from '@/lib/format'
+import { MISSING_ITEM, nounAfter } from '@/lib/format'
 import {
-  CLOSE_DOCS, STOPPED_DOCS, closeById, evalApproved, reportBlockers, reportGap,
+  CLOSE_DOCS, STOPPED_DOCS, closeById, evalApproved, reportBlockers,
 } from '@/data/mock/closing'
 import { projectRows } from '@/data/mock/projects'
 import { addLink, attachDoc, saveReport, useClosing } from '@/data/closing/store'
+import { ReportFiles, TargetActual } from './report'
+import { REPORT_TERMS, type TvaKey } from './reportData'
 
 /* Final report editor - written by the entity.
 
@@ -45,10 +47,7 @@ export default function ReportEditPage() {
   const [link, setLink] = useState('')
   const [linkLabel, setLinkLabel] = useState('')
   const [bad, setBad] = useState<string[]>([])
-  /* 10.1.input-3 · the financial report · spend per line and the settlements */
-  const [spent, setSpent] = useState<string[]>(c?.finance?.lines.map((l) => l.spent?.toString() ?? '') ?? [])
   const { reads, read } = useDocReads()
-  const [settlements, setSettlements] = useState(c?.finance?.settlements ?? '')
   /* v3 · 10.4.4 · 10.4.7 */
   const [value, setValue] = useState(c?.report.projectValue?.toString() ?? '')
   const [outs, setOuts] = useState<{ text: string; achieved: string }[]>(c?.report.outputs ?? [])
@@ -84,25 +83,24 @@ export default function ReportEditPage() {
   const back = `${ROUTES.closing(c.id)}${asEntity ? '?as=entity' : ''}`
   const num = (v: string) => (v === '' ? null : Number(v))
   const onSave = () => {
-    const lines = (c.finance?.lines ?? []).map((l, i) => ({ ...l, spent: num(spent[i] ?? '') }))
+    /* Client 21 Oct (#6) · the costs are two figures · the store derives the support line from them */
     saveReport(c.id, {
       beneficiaries: num(ben), budget: num(budget), days: num(days), outcomes, risks,
       projectValue: num(value), outputs: outs, contribution, template,
-      finance: { lines, settlements },
     }, asEntity ? c.entityName : c.owner)
     navigate(back)
   }
-  const gaps = reportGap(c)
-  const planBen = gaps.find((g) => g.key === 'ben')?.planned ?? 0
-  const planBudget = gaps.find((g) => g.key === 'budget')?.planned ?? 0
   const missing = reportBlockers(c)
-  /* 10 Oct · the invoices are read for the total spent the report states */
-  const spentTotal = spent.reduce((n, x) => n + (Number(x) || 0), 0)
+  /* 10 Oct · the invoices are read for the support spent the report states */
+  const spentTotal = Number(budget) || 0
+  const tva: Partial<Record<TvaKey, string>> = { ben, days, total: value, support: budget }
+  const setTva = (k: TvaKey, v: string) => ({ ben: setBen, days: setDays, total: setValue, support: setBudget })[k](v)
 
   const stopped = c.basis === 'stopped'
   const grant = projectRows.find((p) => p.id === c.projectId)?.amountGranted ?? 0
   const partial = Number(value) > grant && grant > 0
-  const reqOf = (k: string, req?: boolean) => (stopped ? STOPPED_DOCS.includes(k) : Boolean(req)) || (k === 'invoices' && Boolean(c.invoicesAsked))
+  /* Client 21 Oct (#8) · the invoices are never required · a supporting document like the rest */
+  const reqOf = (k: string, req?: boolean) => (stopped ? STOPPED_DOCS.includes(k) : Boolean(req))
   /* v3 · 10.4.7 · the foundation's template · the mandatory data stays entered here either way */
   const downloadTemplate = () => {
     const body = [
@@ -114,7 +112,7 @@ export default function ReportEditPage() {
     const a = document.createElement('a'); a.href = url; a.download = `قالب التقرير الختامي · ${c.projectId}.txt`; a.click(); URL.revokeObjectURL(url)
   }
 
-  const docRows: DocRow[] = CLOSE_DOCS.filter((d) => d.key !== 'invoices' || c.invoicesAsked || c.report.docs.includes('invoices') || !closed).map((d) => ({
+  const docRows: DocRow[] = CLOSE_DOCS.filter((d) => d.key !== 'invoices' || c.report.docs.includes('invoices') || !closed).map((d) => ({
     name: c.report.files?.[d.key] ?? `${d.label}.pdf`,
     meta: reqOf(d.key, d.req) ? /* doc rule 4 */ 'مستند إلزامي' : /* doc rule 5 */ 'مستند داعم',
     uploaded: c.report.docs.includes(d.key),
@@ -146,8 +144,8 @@ export default function ReportEditPage() {
                     ? 'تكتب الجهة التقرير من بوابتها · الصفحة للقراءة'
                   : closed
                     ? /* doc rule 19 */ 'التقرير في المراجعة · يُعدَّل حين يُعاد للجهة، وكل إعادة إصدار جديد'
-                  : <>تحدّد القواعد {/* doc rule 4 */} أربع بيانات حدًّا
-                    أدنى · وبجانب كل منها القيمة المعتمدة ليظهر الفرق أثناء الكتابة</>}
+                  : <>تحدّد القواعد {/* doc rule 4 */} بيانات حدًّا
+                    أدنى · والمستهدف بجانب كل منها ليظهر الفرق أثناء الكتابة</>}
               </p>
             </div>
             {/* Status as text, not a colored tag - the page header isn't a card's status field.
@@ -159,13 +157,6 @@ export default function ReportEditPage() {
                 : 'جاهز للإرسال'}</span>}
           </header>
 
-          {c.invoicesAsked && (
-            <Glass>
-              <Head title="طُلبت الفواتير التفصيلية" meta={<Tag tone="warn">إلزامية لهذا التقرير</Tag>} />
-              <p className="sub cnote">{c.invoicesAsked.note} · {c.invoicesAsked.by}{/* doc 10.4.6 */}</p>
-            </Glass>
-          )}
-
           {stopped && (
             <Glass>
               <Head title="متطلبات إغلاق مشروع موقوف" meta={<Tag tone="warn">وفق حالته</Tag>} />
@@ -176,108 +167,44 @@ export default function ReportEditPage() {
             </Glass>
           )}
 
-          {/* v3 · 10.4.7 · the foundation's template, or the entity's own · the mandatory data entered here either way */}
+          {/* Client 21 Oct (#4) · the report's terms on top · the template changes how the report looks, never
+              what this form asks for · the same fields whichever the entity picks */}
           {!stopped && (
             <Glass>
-              <Head title="نموذج التقرير" meta={<span className="sub">{template === 'foundation' ? 'قالب المؤسسة' : 'نموذج الجهة'}</span>} />
-              <div className="rowf gp-2">
-                <button type="button" className={`btn btn-sm ${template === 'foundation' ? 'btn-p' : 'btn-2'}`} disabled={closed} onClick={() => setTemplate('foundation')}>قالب المؤسسة</button>
-                <button type="button" className={`btn btn-sm ${template === 'own' ? 'btn-p' : 'btn-2'}`} disabled={closed} onClick={() => setTemplate('own')}>نموذج الجهة الخاص</button>
-                <button type="button" className="btn btn-2 btn-sm" onClick={downloadTemplate}>نزّل قالب المؤسسة</button>
+              <Head title="شروط التقرير الختامي" meta={<span className="sub">{template === 'foundation' ? 'بقالب المؤسسة' : 'بنموذج الجهة الخاص'}</span>} />
+              <ol className="rptterms">
+                {REPORT_TERMS.map((t) => <li key={t}>{t}</li>)}
+              </ol>
+              <div className="rowf gp-2 mt-3" role="radiogroup" aria-label="نموذج التقرير">
+                <button type="button" role="radio" aria-checked={template === 'foundation'} className={`cfgchip${template === 'foundation' ? ' on' : ''}`} disabled={closed} onClick={() => setTemplate('foundation')}>قالب المؤسسة</button>
+                <button type="button" role="radio" aria-checked={template === 'own'} className={`cfgchip${template === 'own' ? ' on' : ''}`} disabled={closed} onClick={() => setTemplate('own')}>نموذج الجهة الخاص</button>
+                <span className="pc-sp" />
+                <button type="button" className="btn btn-2 btn-sm" onClick={downloadTemplate}><Icon name={icons.export} size="sm" />نزّل قالب المؤسسة</button>
               </div>
-              <p className="sub cnote">أيًّا كان النموذج · تُدخل البيانات الإلزامية هنا وتُضمَّن في التقرير{/* doc 10.4.7 */}.</p>
+              <p className="sub cnote">يجوز تصميم الجهة الخاص بشرط أن يتضمن البنود أعلاه · وأيًّا كان النموذج تُدخل الأرقام هنا وتُقارن بالمستهدف{/* doc 10.4.7 */}.</p>
             </Glass>
           )}
 
+          {/* Client 21 Oct (#5 · #6) · the target from the approved project beside the actual the entity writes ·
+              the costs are two figures · the project's whole budget and the foundation's support */}
           {!stopped && (
             <Glass>
-              <Head title="القيمة والمخرجات" />
-              <div className="regfields">
-                <label className="regf">
-                  <span className="lb">قيمة المشروع الإجمالية<b className="regf-r" aria-label="إلزامي">*</b></span>
-                  <MoneyField value={value} disabled={closed} onChange={setValue} label="قيمة المشروع الإجمالية" />
-                  <span className="sub regf-h">مساهمة المؤسسة <span className="num">{nf.format(grant)}</span> <Riyal />{partial ? ' · تمويل جزئي' : ''}</span>
-                </label>
-              </div>
-              {outs.length > 0 && (
-                <ul className="apv-list">
-                  {outs.map((o, i) => (
-                    <li key={o.text}>
-                      <label className="regf">
-                        <span className="lb">{o.text}<b className="regf-r" aria-label="إلزامي">*</b></span>
-                        <span className="fld"><input value={o.achieved} disabled={closed} onChange={(e) => setOuts((x) => x.map((y, j) => (j === i ? { ...y, achieved: e.target.value } : y)))} aria-label={`المتحقق · ${o.text}`} placeholder="المتحقق فعلًا مقابل المتفق عليه" /></span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <Head title="المستهدف والفعلي" meta={<span className="sub">المستهدف من المشروع المعتمد · والفعلي تُدخله الجهة</span>} />
+              {closed
+                ? <TargetActual c={c} />
+                : <TargetActual c={c} edit values={tva} onValue={setTva} outputs={outs} onOutput={(i, v) => setOuts((x) => x.map((y, j) => (j === i ? { ...y, achieved: v } : y)))} />}
               {partial && (
-                <label className="regf">
+                <label className="regf mt-3">
                   <span className="lb">علاقة مساهمة المؤسسة بما تحقق<b className="regf-r" aria-label="إلزامي">*</b></span>
                   <span className="fld"><textarea rows={2} value={contribution} disabled={closed} onChange={(e) => setContribution(e.target.value)} aria-label="علاقة مساهمة المؤسسة بما تحقق" placeholder="ما الذي موّلته مساهمة المؤسسة تحديدًا من المخرجات" /></span>
-                  <span className="sub regf-h">مطلوب عند التمويل الجزئي{/* doc 10.4.4 */}</span>
+                  <span className="sub regf-h">مطلوب لأن الميزانية الإجمالية أكبر من دعم المؤسسة{/* doc 10.4.4 */}</span>
                 </label>
               )}
             </Glass>
           )}
 
-          {!stopped && <Glass>
-            <Head
-              title="التنفيذ الفعلي"
-              /* doc rule 4 */
-            />
-
-            <div className="regfields">
-              <label className="regf">
-                <span className="lb">
-                  عدد المستفيدين الفعلي<b className="regf-r" aria-label="إلزامي">*</b>
-                </span>
-                <span className="fld">
-                  <input
-                    inputMode="numeric"
-                    value={ben}
-                    disabled={closed}
-                    onChange={(e) => setBen(e.target.value.replace(/\D/g, ''))}
-                    aria-label="عدد المستفيدين الفعلي"
-                    placeholder="0"
-                  />
-                </span>
-                <span className="sub regf-h">
-                  المعتمد في المشروع <span className="num">{nf.format(planBen)}</span> {nounAfter(planBen, NOUN.beneficiary)}
-                </span>
-              </label>
-
-              <label className="regf">
-                <span className="lb">
-                  الميزانية الفعلية<b className="regf-r" aria-label="إلزامي">*</b>
-                </span>
-                <MoneyField value={budget} disabled={closed} onChange={setBudget} label="الميزانية الفعلية" />
-                <span className="sub regf-h">
-                  قيمة المنحة <span className="num">{nf.format(planBudget)}</span> <Riyal />
-                </span>
-              </label>
-
-              <label className="regf">
-                <span className="lb">
-                  مدة التنفيذ الفعلية<b className="regf-r" aria-label="إلزامي">*</b>
-                </span>
-                <span className="fld">
-                  <input
-                    inputMode="numeric"
-                    value={days}
-                    disabled={closed}
-                    onChange={(e) => setDays(e.target.value.replace(/\D/g, ''))}
-                    aria-label="مدة التنفيذ الفعلية بالأيام"
-                    placeholder="0"
-                  />
-                </span>
-                <span className="sub regf-h">بالأيام · من بداية التنفيذ إلى نهايته</span>
-              </label>
-            </div>
-          </Glass>}
-
           <Glass>
-            <Head title="المخرجات والتحديات" />
+            <Head title="النتائج والتحديات" />
 
             <label className="regf">
               <span className="lb">
@@ -293,18 +220,12 @@ export default function ReportEditPage() {
                   placeholder="نُفّذت 42 جلسة من 48 · وخدمت 780 مستفيدًا في ستة مراكز"
                 />
               </span>
-              <span className="sub regf-h">
-                هذا البيان الرابع في الحدّ الأدنى للتقرير{/* doc rule 4 */} · ويقارنه
-                المراجع بأهداف المشروع في الاتفاقية والخطة
-              </span>
             </label>
 
-            {/* Note: "challenges" isn't required, and it's the most important field on the page.
-                Rule 4 doesn't require it, but an unexplained gap between approved and actual comes
-                back as a reviewer's question, and the cycle runs one extra lap. The line under the
-                field says this outright. */}
+            {/* Note: "challenges" isn't required · an unexplained gap between target and actual comes
+                back as a reviewer's question, and the cycle runs one extra lap. */}
             <label className="regf">
-              <span className="lb">التحديات والانحرافات</span>
+              <span className="lb">التحديات والانحرافات · اختياري</span>
               <span className="fld">
                 <textarea
                   rows={3}
@@ -316,76 +237,42 @@ export default function ReportEditPage() {
                 />
               </span>
               <span className="sub regf-h">
-                اختياري · لكن أي فرق عن المعتمد بلا تفسير يعود سؤالًا من المراجعة،
-                والإعادة تُنشئ إصدارًا جديدًا{/* doc rule 19 */}
+                أي فرق عن المستهدف بلا تفسير يعود سؤالًا من المراجعة · والإعادة تُنشئ إصدارًا جديدًا{/* doc rule 19 */}
               </span>
             </label>
           </Glass>
 
           <Glass>
             <Head
-              title="المستندات الداعمة"
+              title="المستندات"
               meta={
                 <span className="sub">
                   <Num>{c.report.docs.length}</Num> من <Num>{CLOSE_DOCS.length}</Num>
                 </span>
               }
             />
-            <DocList rows={docRows} label="المستندات الداعمة للتقرير الختامي وحالتها" />
+            <DocList rows={docRows} label="مستندات التقرير الختامي وحالتها" />
             {Object.entries(reads).map(([k, r]) => <div key={k}><span className="sub">{CLOSE_DOCS.find((d) => d.key === k)?.label}</span><DocReadNote r={r} /></div>)}
+            <p className="sub cnote">الفواتير التفصيلية ليست شرطًا{/* client 21 Oct (#8) */} · تُرفق إن رغبت الجهة مستندًا داعمًا.</p>
+          </Glass>
 
-            {/* A cloud link is a different attachment type, not a substitute for one - rule 5 names
-                Google Drive explicitly, for a practical reason. */}
-            <label className="regf">
-              <span className="lb">رابط تخزين سحابي</span>
-              <span className="fld">
-                <input
-                  type="url"
-                  value={link}
-                  disabled={closed}
-                  onChange={(e) => setLink(e.target.value)}
-                  aria-label="رابط تخزين سحابي"
-                  placeholder="https://drive.google.com/..."
-                />
-              </span>
-              <span className="sub regf-h">
-                تسمح القواعد {/* doc rule 5 */} بإرسال المواد الإعلامية
-                والفيديوهات روابطَ تخزين معتمدة · فهي عادةً أكبر من أي حدّ رفع
-              </span>
-            </label>
+          {/* Client 21 Oct (#7) · the execution files in the foundation's storage · many at once · read in place */}
+          <ReportFiles c={c} edit={!closed} by={asEntity ? c.entityName : c.owner} />
+
+          {/* An outside link stays possible · no longer the main way to send the media */}
+          <Glass>
+            <Head title="رابط خارجي · اختياري" meta={c.report.links.length ? <span className="sub"><Num>{c.report.links.length}</Num> رابط</span> : undefined} />
             {!closed && (
-              <div className="apv-row mt-2">
+              <div className="apv-row">
+                <span className="fld"><input type="url" value={link} onChange={(e) => setLink(e.target.value)} aria-label="رابط خارجي" placeholder="https://" /></span>
                 <span className="fld"><input value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} placeholder="وصف الرابط" aria-label="وصف الرابط" /></span>
                 <button type="button" className="btn btn-2 btn-sm" disabled={!link.trim()} onClick={() => { const out = addLink(c.id, linkLabel, link, c.entityName); setBad(out); if (!out.length) { setLink(''); setLinkLabel('') } }}>أضف الرابط</button>
               </div>
             )}
-            {c.report.links.length > 0 && (
-              <ul className="apv-list">
-                {c.report.links.map((l) => <li key={l.url}><span className="apv-t"><b>{l.label}</b><span className="sub">{l.url}</span></span></li>)}
-              </ul>
-            )}
+            {c.report.links.length > 0
+              ? <ul className="apv-list">{c.report.links.map((l) => <li key={l.url}><span className="apv-t"><b>{l.label}</b><span className="sub">{l.url}</span></span></li>)}</ul>
+              : <p className="sub cnote">الأفضل رفع الملفات مباشرة أعلاه · فالرابط قد يحتاج صلاحية وصول.</p>}
             {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
-          </Glass>
-
-          {/* 10.1.input-3 · the final financial report · each line's spend against what was approved */}
-          <Glass>
-            <Head title="التقرير المالي التنفيذي" meta={<Tag tone="mute">بديل الفواتير التفصيلية</Tag>} />
-            <div className="regfields">
-              {(c.finance?.lines ?? []).map((l, i) => (
-                <label className="regf" key={l.label}>
-                  <span className="lb">{l.label}<b className="regf-r" aria-label="إلزامي">*</b></span>
-                  <MoneyField value={spent[i] ?? ''} disabled={closed} onChange={(v) => setSpent((x) => { const n = [...x]; n[i] = v; return n })} label={`المصروف في ${l.label}`} />
-                  <span className="sub regf-h">المعتمد <span className="num">{nf.format(l.approved)}</span> <Riyal /></span>
-                </label>
-              ))}
-            </div>
-            <label className="regf">
-              <span className="lb">التسويات المالية</span>
-              <span className="fld">
-                <textarea rows={2} value={settlements} disabled={closed} onChange={(e) => setSettlements(e.target.value)} aria-label="التسويات المالية" placeholder="مبالغ معلّقة لدى المورّدين أو مردودات أو فروق أسعار" />
-              </span>
-              <span className="sub regf-h">ما بقي من التزامات أو مردودات · ويعتمد المشرف المصروف الفعلي منه{/* doc 10.4.6 */}</span>
-            </label>
           </Glass>
 
           {!closed && (

@@ -20,8 +20,9 @@ import { assistFor } from '@/data/mock/assistant'
 import {
   DEFAULT_PROJECT_TAB, PROJECT_TABS, ROUTES, type ProjectTabSlug,
 } from '@/app/routes'
+import { ChatDock } from '@/components/thread'
 import {
-  ActivitiesTab, AgreementTab, CloseTab, CorrespondenceTab, DataTab, EntityTab, FollowUpsTab,
+  ActivitiesTab, AgreementTab, AttachmentsTab, CloseTab, DataTab, EntityTab, FollowUpsTab,
   HistoryTab, LogTab, PaymentsTab, PlanTab,
 } from './tabs'
 import { ACTIVITY_FOLLOW_TYPES, activitiesFromFollowUps, useActivities, withActivities } from './activities'
@@ -54,7 +55,7 @@ import { APPROVAL_MATRIX } from '@/data/approval'
 import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, supportAmount, useApprovals } from '@/data/approvals/store'
 import { flowEvents, flowOf, recommend, requestCompletion, saveStudy, useFlow, orgOutputsOf, outputLine } from '@/data/intake/flow'
 import { RecommendationCard, RequestCloseCard, RequestDocsCard, RequestMetaCard } from './tabs/RequestCards'
-import { StudyAside, StudyTab } from './tabs'
+import { StudyTab } from './tabs'
 import { ApprovalTab, OfficialNotes } from './tabs/ApprovalTab'
 import { TransferModal } from './TransferModal'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -486,10 +487,8 @@ export default function ProjectPage() {
               {active === 'study' && row && (
                 <>
                   <StudyTab key={`${row.id}-${flow?.study?.version ?? 0}-${row.field}`} row={row} me={me.name} editable={studyEditable} />
-                  {/* 12 Oct · client · the end column is the assistant's alone: priority, the
-                      domain's budget, the fit reading and the consultant are the study's own data,
-                      so they sit in the main column under it */}
-                  <div className="g2-in"><StudyAside row={row} me={me.name} editable={studyEditable} /></div>
+                  {/* Client 21 Oct (#19) · the study is one column in the order it's worked · priority,
+                      the domain's budget and the assistant's reading sit inside it at their step */}
                 </>
               )}
               {active === 'data' && (
@@ -523,6 +522,11 @@ export default function ProjectPage() {
               {active === 'entity' && <EntityTab entity={entity} bank={project.bank} />}
               {active === 'history' && (
                 <HistoryTab entity={entity} currentId={project.id} year={row?.year ?? '2026'} />
+              )}
+              {/* Client 21 Oct (#31) · the project's documents, every procedure's, in one tab */}
+              {active === 'attachments' && (
+                <AttachmentsTab row={row} projectId={project.id} me={asEntity && row ? row.entityName : me.name} asEntity={asEntity}
+                  canUpload={!closed && (asEntity ? waiting : true)} fallback={project.attachments} />
               )}
               {active === 'agreement' && viaEhsan(project.id) && <EhsanNoAgreement />}
               {active === 'agreement' && !viaEhsan(project.id) && agreementsOfProject(project.id).length > 0 && (
@@ -598,13 +602,6 @@ export default function ProjectPage() {
                 />
               )}
               {active === 'log' && <LogTab events={fullLog} entityName={entity.name} />}
-              {active === 'correspondence' && (
-                <CorrespondenceTab
-                  messages={detail.messages}
-                  entityName={entity.name}
-                  why={detail.threadWhy}
-                />
-              )}
               {/* What can change at this stage · in the main column, the end column is the assistant's alone */}
               {/* v3 · 3.4.19 · the entity reads the main status alone · the seat and the internal stage are the institution's */}
               <EditableCard module="project" state={editState} label={asEntity ? row?.statusGroup : holder ? HOLDER_LABEL[holder] : row?.stage} />
@@ -655,6 +652,20 @@ export default function ProjectPage() {
         />
       </div>
       {transfer && row && <TransferModal row={row} me={me.name} onClose={() => setTransfer(false)} />}
+      {/* client 21 Oct (#2) · the correspondence with the entity · a floating chat on every tab instead
+          of the «المراسلات» tab at the end of the row · its seed is the project's thread */}
+      <ChatDock
+        title={asEntity ? 'التواصل مع المؤسسة' : 'التواصل مع الجهة'}
+        channel={`project:${project.id}`}
+        by={asEntity ? entity.name : me.name}
+        messages={detail.messages}
+        entityName={entity.name}
+        me={asEntity ? 'entity' : 'staff'}
+        why={detail.threadWhy}
+        placeholder={asEntity ? 'اكتب رسالة إلى المؤسسة…' : `اكتب رسالة إلى ${entity.name}…`}
+        emptyTitle="لا توجد مراسلات على هذا المشروع."
+        emptyNote="تُستخدم القناة عمليًا حين يتوقف إجراء على أحد الطرفين: طلب استكمال، أو سند لم يُرفع، أو تقرير متأخر. وفي غير ذلك يجري التواصل عبر المتابعات."
+      />
     </AppLayout>
   )
 }

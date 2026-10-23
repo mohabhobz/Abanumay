@@ -113,7 +113,7 @@ export function DataTab({
               v: (
                 <>
                   {readDate(P.endDate ?? addDays(P.startDate, P.durationDays))}
-                  <span className="sub"> · بعد <span className="num">{nf.format(P.durationDays)}</span> {P.endDate ? 'يوم تنفيذ' : nounAfter(P.durationDays, NOUN.day)}</span>
+                  <span className="sub"> · بعد <span className="num">{nf.format(P.durationDays)}</span> {nounAfter(P.durationDays, NOUN.day)}</span>
                 </>
               ),
             },

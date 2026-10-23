@@ -82,6 +82,7 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
       />
       {histCount > 0 && (
         <Tabs
+          pin={false}
           items={[{ slug: 'active', label: p.stage === 'cancelled' ? 'الخطة' : 'الخطة النشطة' }, { slug: 'history', label: 'الملغاة وطلبات التعديل', count: histCount }]}
           active={pane}
           onChange={(x) => setPane(x === 'history' ? 'history' : 'active')}

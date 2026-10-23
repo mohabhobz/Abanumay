@@ -4,7 +4,7 @@ import {
   CopyId, DateText, Glass, Head, Icon, KV, Mono, Num, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
-import { Thread } from '@/components/thread'
+import { ChatDock } from '@/components/thread'
 import { Background, NotificationBell } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
 import { ROUTES } from '@/app/routes'
@@ -628,28 +628,19 @@ export default function PortalPage() {
                 </Glass>
               )}
 
-            {/* Correspondence · in the main column, the end column is the assistant's alone
-                Note: the exact same `Thread` as the project page - whatever's stuck with the entity
-                gets resolved with a word, not a form, and the channel is the natural place for a
-                question. */}
-              <Glass className="ptl-talk">
-                <Head
-                  title="التواصل مع المؤسسة"
-                  /* Note: the counter shows only when there are messages - "none" next to a
-                     placeholder saying the same thing in a full sentence is redundant. */
-                  meta={thread.length > 0
-                    ? <span className="sub"><Num>{thread.length}</Num> رسائل</span>
-                    : undefined}
-                />
-                <Thread
-                  messages={thread}
-                  entityName={reqOf.name}
-                  me="entity"
-                  placeholder="اكتب رسالة إلى المؤسسة…"
-                  emptyTitle="قناة التواصل مفتوحة عند الحاجة"
-                  emptyNote="راسل المؤسسة إن كان في الطلب ما يحتاج إلى توضيح · مثل مستند لا يُعرف مصدره، أو ملاحظة تحتاج إلى شرح. أما حالة الطلب فتُتابع من البطاقة المجاورة."
-                />
-              </Glass>
+            {/* Correspondence · client 21 Oct (#2) · the same floating chat as the project and the
+                closing · whatever's stuck with the entity gets resolved with a word, not a form */}
+              <ChatDock
+                title="التواصل مع المؤسسة"
+                channel={`reg:${reqOf.id}`}
+                by={reqOf.name}
+                messages={thread}
+                entityName={reqOf.name}
+                me="entity"
+                placeholder="اكتب رسالة إلى المؤسسة…"
+                emptyTitle="قناة التواصل مفتوحة عند الحاجة"
+                emptyNote="راسل المؤسسة إن كان في الطلب ما يحتاج إلى توضيح · مثل مستند لا يُعرف مصدره، أو ملاحظة تحتاج إلى شرح. أما حالة الطلب فتُتابع من البطاقة المجاورة."
+              />
 
               {/* Note: the paragraph "this account is for your application..." was removed at the
                   client's request - it explained rule 2 to someone here to finish two documents,

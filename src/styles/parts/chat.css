@@ -1,0 +1,57 @@
+/* ── Correspondence with the entity · the floating chat · client 21 Oct (#2 · #3) ──
+   The button stays on the screen at the end edge, stacked above «اسأل أبانمي» (the column of
+   floating buttons) · the window opens above the button and covers the page, so
+   it takes the floating surface (`--g-pop`) and the floating elevation, not the card's. */
+
+:root{--chat-x:clamp(var(--sp-7), 3vw, var(--sp-9));--chat-w:auto;
+  --chat-b:calc(clamp(var(--sp-5), 2vw, var(--sp-7)) + var(--h-md) * 2)}
+
+.chatfab{position:fixed;z-index:22;bottom:var(--chat-b);left:var(--chat-x);min-width:var(--chat-w);
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-3);height:var(--h-md);padding-inline:var(--sp-5);
+  border-radius:var(--r1);font:inherit;font-weight:600;font-size:var(--fs-3);color:var(--t1);cursor:pointer;
+  background:var(--g-pop);-webkit-backdrop-filter:var(--mat-3);backdrop-filter:var(--mat-3);
+  box-shadow:inset 0 0 0 1px var(--ctl-line), var(--el-2)}
+.chatfab:hover{box-shadow:inset 0 0 0 1px var(--ctl-line-h), var(--el-3)}
+.chatfab.on{box-shadow:inset 0 0 0 1px var(--ctl-line-f), var(--el-3)}
+.chatfab-t{white-space:nowrap}
+.chatfab-n{display:inline-flex;align-items:center;justify-content:center;min-width:var(--h-badge);height:var(--h-badge);
+  padding-inline:var(--sp-2);border-radius:var(--rp);font-size:var(--fs-1);font-variant-numeric:tabular-nums;
+  color:var(--on-ch-1);background:var(--ch-1)}
+
+.chatpop{position:fixed;z-index:22;display:flex;flex-direction:column;
+  left:var(--chat-x);
+  bottom:calc(var(--chat-b) + var(--h-md) + var(--sp-3));
+  width:min(calc(var(--sp-12) * 6), calc(100vw - var(--chat-x) - var(--sp-8)));
+  max-height:min(calc(var(--sp-12) * 8), calc(100vh - var(--chat-b) - var(--h-md) - var(--sp-9)));
+  border-radius:var(--r3);background:var(--g-pop);-webkit-backdrop-filter:var(--mat-3);backdrop-filter:var(--mat-3);
+  box-shadow:inset 0 0 0 1px var(--edge-1), var(--el-4);overflow:hidden}
+.chatpop-h{flex:none;display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-4) var(--sp-5);
+  box-shadow:inset 0 -1px 0 var(--edge-1)}
+.chatpop-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.chatpop-t b{font-family:var(--fd);font-weight:600;font-size:var(--fs-4);line-height:var(--lh-head)}
+.chatpop-t .sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* inside the window the thread fills it · the log scrolls, the composer stays at the bottom */
+.chatpop .chat{flex:1;min-height:0;margin:0;border-radius:0;background:none;box-shadow:none;padding:var(--sp-4) var(--sp-5)}
+.chatpop .chat-log{max-height:none;min-height:0}
+.chatpop .cbox{max-width:none}
+
+/* #3 · a file on a message · the sender sees what went, and opens it again */
+.msg-files{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-3)}
+.msg-file{display:inline-flex;align-items:center;gap:var(--sp-2);max-width:100%;min-height:var(--h-md);
+  padding-inline:var(--sp-3);border-radius:var(--r1);font:inherit;font-size:var(--fs-2);color:var(--t1);
+  background:var(--ctl-bg);box-shadow:inset 0 0 0 1px var(--ctl-line);cursor:pointer;text-align:start}
+.msg-file:hover{background:var(--ctl-bg-h)}
+.msg-file-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-file .sub{flex:none}
+.msg-pending{margin-top:0}
+.msg-pending .msg-file{cursor:default}
+
+/* Mobile · the bottom bar, then «اسأل أبانمي» at the end edge and this button at the start edge on
+   one row, the decision bar above them · the label goes, the icon and the count stay */
+@media (max-width:960px){
+  :root{--chat-x:0rem}
+  :root{--chat-b:var(--ask-mob)}
+  .chatfab{left:auto;min-width:0;inset-inline-start:clamp(var(--sp-4), 3vw, var(--sp-5));padding-inline:var(--sp-4)}
+  .chatfab-t{display:none}
+  .chatpop{left:auto;inset-inline:clamp(var(--sp-4), 3vw, var(--sp-5));width:auto}
+}

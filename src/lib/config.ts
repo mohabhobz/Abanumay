@@ -76,6 +76,8 @@ export const CFG = {
   prospects: 'ab-cfg-prospects',
   /** v3 · 3.4.24 · the reasons a supervisor picks for a recommendation to reject */
   rejectReasons: 'ab-cfg-reject-reasons',
+  /** Client 21 Oct · the study's exclusion criteria · yes/no questions answered before scoring */
+  exclusions: 'ab-cfg-exclusions',
   /** v3 · 12.2.11 · who approves a plan, and the delegations in force */
   planAuth: 'ab-cfg-plan-auth',
   /** Entity registration and update rules · BPD-002 */

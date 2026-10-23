@@ -7,8 +7,10 @@ import { studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { REQUEST_DOCS, closeRequest, flowOf, rescheduleStart, uploadDoc } from '@/data/intake/flow'
 import { P_STAGES } from '@/data/mock/projectNew'
+import { agreements } from '@/data/mock/agreements'
 import { outputLine, parseOutputs } from '@/data/intake/flow'
-import { WEEKDAYS, foundationWeek, workDaysOf } from '@/data/intake/cycle'
+import { OtherDocs } from './OtherDocs'
+import { WEEKDAYS, calendarDaysBetween, endAfterDays, foundationWeek, workDaysOf } from '@/data/intake/cycle'
 
 /* The request's own cards on «بيانات المشروع» · procedure 3.
 
@@ -63,18 +65,27 @@ const sayValue = (k: string, x: string): string =>
       : x
 
 const FIELD_LABEL: Record<string, string> = Object.fromEntries(
-  [...P_STAGES.flatMap((st) => st.fields.filter((x) => x.key !== 'entityId').map((x) => [x.key, x.label])), ['amount', 'المبلغ'], ['days', 'المدة بأيام التنفيذ'], ['beneficiaries', 'المستفيدون'], ['startAt', 'تاريخ بدء التنفيذ المتوقع']],
+  [...P_STAGES.flatMap((st) => st.fields.filter((x) => x.key !== 'entityId').map((x) => [x.key, x.label])), ['amount', 'المبلغ'], ['days', 'المدة بالأيام'], ['beneficiaries', 'المستفيدون'], ['startAt', 'تاريخ بدء التنفيذ المتوقع']],
 )
 
 export function RequestMetaCard({ row, me, canReschedule = false }: { row: ProjectRow; me?: string; canReschedule?: boolean }) {
   const f = flowOf(row.id)
-  /* Batch 6 · 8 Oct · the start can move, and the calculated end follows the duration · it was
-     computed once at submission and no screen changed it after */
+  /* Client 21 Oct (#26 · #28) · the expected dates are the entity's, the duration the calendar days
+     between them · the actual start comes with the agreement's signature (or the approval of an external
+     project) · after the approvals the supervisor and the grants manager may move it, with a reason,
+     and the end moves with it by the same number of days */
   const [edit, setEdit] = useState(false)
   const [start, setStart] = useState(row.actualStartAt ?? row.startAt ?? '')
   const [why, setWhy] = useState('')
   const [err, setErr] = useState<string[]>([])
   const created = f.createdAt ?? row.createdAt?.replace('T', ' ') ?? `${row.submittedAt} 09:00`
+  const days = row.startAt && row.endAt && !row.actualStartAt ? calendarDaysBetween(row.startAt, row.endAt) || (row.durationDays ?? 0) : (row.durationDays ?? 0)
+  const expectedEnd = row.actualStartAt ? (row.startAt && days ? endAfterDays(row.startAt, days) : '') : (row.endAt ?? '')
+  const external = Boolean(row.platform)
+  const approved = row.supportStatus === 'معتمد' || !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(row.stage)
+  const week = (row.execDays ?? foundationWeek()).map((n) => WEEKDAYS[n]).join('، ')
+  /* a record from before the rule carries no actual start · its agreement's signature is that start */
+  const signed = row.actualStartAt ? undefined : agreements.find((a) => a.projectId === row.id && a.stage === 'active' && a.activeAt)?.activeAt?.slice(0, 10)
   return (
     <Glass>
       <Head title="بيانات الطلب" meta={<span className="sub"><Num>{Math.max(1, f.versions.length)}</Num> إصدار</span>} />
@@ -82,17 +93,22 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
         rows={[
           { k: 'أُنشئ', v: <span className="num">{created}</span> },
           { k: 'أُرسل', v: <DateText>{f.sentAt?.slice(0, 10) ?? row.submittedAt}</DateText> },
-          /* v3 · 3.4.14 · 3.4.15 · the expected start, kept apart from the request's date · the project's
-             own days of the week · the end computed on them */
           { k: 'تاريخ تقديم الطلب', v: <DateText>{row.submittedAt}</DateText> },
-          { k: 'تاريخ بدء التنفيذ المتوقع', v: row.startAt ? <DateText>{row.startAt}</DateText> : '—' },
-          { k: 'تاريخ بدء التنفيذ الفعلي', v: row.actualStartAt ? <DateText>{row.actualStartAt}</DateText> : <span className="sub">لم يُسجَّل بعد</span> },
-          { k: 'أيام التنفيذ من الأسبوع', v: (row.execDays ?? foundationWeek()).map((n) => WEEKDAYS[n]).join('، ') },
-          { k: 'نهاية التنفيذ المحسوبة', v: row.endAt ? <DateText>{row.endAt}</DateText> : '—' },
-          ...(row.durationDays ? [{ k: 'المدة المقترحة', v: <><Num>{row.durationDays}</Num> يوم تنفيذ <span className="sub">· استرشادية للدراسة</span></> }] : []),
+          { k: 'تاريخ بدء التنفيذ المتوقع', v: row.startAt ? <><DateText>{row.startAt}</DateText> <span className="sub">· كما أدخلته الجهة</span></> : '—' },
+          { k: 'تاريخ انتهاء التنفيذ المتوقع', v: expectedEnd ? <DateText>{expectedEnd}</DateText> : '—' },
+          ...(days ? [{ k: 'المدة', v: <><Num>{days}</Num> يومًا <span className="sub">· من تاريخ البدء إلى تاريخ الانتهاء</span></> }] : []),
+          {
+            k: 'تاريخ بدء التنفيذ الفعلي',
+            v: row.actualStartAt
+              ? <DateText>{row.actualStartAt}</DateText>
+              : signed ? <><DateText>{signed}</DateText> <span className="sub">· مع توقيع الاتفاقية</span></>
+              : <span className="sub">{external ? 'يُسجَّل مع اكتمال الاعتماد · المشروع الخارجي بلا اتفاقية' : 'يُسجَّل مع توقيع الاتفاقية'}</span>,
+          },
+          ...(row.actualStartAt && row.endAt ? [{ k: 'نهاية التنفيذ', v: <><DateText>{row.endAt}</DateText> <span className="sub">· من البداية الفعلية بالمدة نفسها</span></> }] : []),
+          { k: 'أيام التنفيذ من الأسبوع', v: <>{week} <span className="sub">· للعلم · لا تغيّر المدة</span></> },
         ]}
       />
-      {canReschedule && row.durationDays ? (
+      {canReschedule && approved && days ? (
         edit ? (
           <div className="regfields mt-3">
             <label className="regf">
@@ -100,9 +116,9 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
               <DateField value={start} onChange={setStart} label="بداية التنفيذ الفعلي" />
             </label>
             <label className="regf">
-              <span className="lb">السبب</span>
+              <span className="lb">سبب التعديل<b className="regf-r" aria-label="إلزامي">*</b></span>
               <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب تعديل البداية" /></span>
-              <span className="sub regf-h">تُعاد النهاية من المدة · <Num>{row.durationDays}</Num> يوم تنفيذ</span>
+              <span className="sub regf-h">تنتقل النهاية بالمدة نفسها · <Num>{days}</Num> يومًا</span>
             </label>
             {err.length > 0 && <p className="bad">{err.join(' · ')}</p>}
             <div className="rowf gp-2">
@@ -110,13 +126,13 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
                 const e = rescheduleStart(row.id, start, why, me ?? '')
                 setErr(e)
                 if (!e.length) { setEdit(false); setWhy('') }
-              }}>احفظ وأعد حساب النهاية</button>
+              }}>احفظ البداية الفعلية</button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setEdit(false); setErr([]) }}>إلغاء</button>
             </div>
           </div>
         ) : (
           <button type="button" className="btn btn-2 btn-sm mt-2" onClick={() => { setStart(row.actualStartAt ?? row.startAt ?? ''); setEdit(true) }}>
-            <Icon name={icons.edit} size="sm" />سجّل بداية التنفيذ الفعلي
+            <Icon name={icons.edit} size="sm" />{row.actualStartAt ? 'عدّل بداية التنفيذ الفعلي' : 'سجّل بداية التنفيذ الفعلي'}
           </button>
         )
       ) : null}
@@ -130,7 +146,7 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
               <span className="sub"><DateText>{v.at}</DateText></span>
               {v.snap && (
                 <span className="sub rqv-snap">
-                  المبلغ <Money sm>{v.snap.amount}</Money> · المدة <Num>{v.snap.days}</Num> يوم تنفيذ · المستفيدون <Num>{v.snap.reach}</Num> · المرفقات <Num>{v.snap.docs}</Num>
+                  المبلغ <Money sm>{v.snap.amount}</Money> · المدة <Num>{v.snap.days}</Num> يومًا · المستفيدون <Num>{v.snap.reach}</Num> · المرفقات <Num>{v.snap.docs}</Num>
                 </span>
               )}
               {/* Batch 7 · intake#14 · the version read whole · each field as sent, the changes
@@ -173,7 +189,9 @@ export function RequestDocsCard({ row, me, asEntity, canUpload }: { row: Project
         meta={<span className="sub"><Num>{f.docs.length}</Num> مرفوعة</span>}
       />
       {groups.map((g) => {
-        const kinds = REQUEST_DOCS.filter((d) => d.audience === g)
+        /* #32 · the named «more» slot gives way to the «مرفقات أخرى» list below · a file already
+           sent in it stays visible as it was */
+        const kinds = REQUEST_DOCS.filter((d) => d.audience === g && (d.key !== 'more' || f.docs.some((x) => x.kind === 'more')))
         return (
           <div key={g} className="stdy-g">
             <h3 className="stdy-h">
@@ -198,6 +216,7 @@ export function RequestDocsCard({ row, me, asEntity, canUpload }: { row: Project
           </div>
         )
       })}
+      <OtherDocs projectId={row.id} me={asEntity ? row.entityName : me} asEntity={asEntity} canUpload={canUpload} />
     </Glass>
   )
 }

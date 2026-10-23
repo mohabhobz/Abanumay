@@ -17,6 +17,9 @@ export interface DocFileProps {
    * spot.
    */
   download?: boolean
+  /** Client 21 Oct (#7) · the stored file's address · its preview opens the real image, video or PDF */
+  src?: string
+  mime?: string
 }
 
 /**
@@ -29,7 +32,7 @@ export interface DocFileProps {
  * knows the budget is a **scanned image** from the row itself, which is why the sample project has
  * a completion request.
  */
-export function DocFile({ name, meta, block, download = true }: DocFileProps) {
+export function DocFile({ name, meta, block, download = true, src, mime }: DocFileProps) {
   const [open, setOpen] = useState(false)
   const kind = docKind(name)
 
@@ -58,7 +61,7 @@ export function DocFile({ name, meta, block, download = true }: DocFileProps) {
         {download && <DocDownload name={name} />}
       </div>
 
-      {open && <DocPreview name={name} meta={meta} onClose={() => setOpen(false)} />}
+      {open && <DocPreview name={name} meta={meta} src={src} mime={mime} onClose={() => setOpen(false)} />}
     </>
   )
 }

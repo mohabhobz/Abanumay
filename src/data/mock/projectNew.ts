@@ -7,7 +7,7 @@ import {
 import { MONEY_LIMITS, TARGET_GROUPS } from './settings'
 import { entityDetail } from './entityDetail'
 import { NOUN, countOf } from '@/lib/format'
-import { CYCLE, TODAY, addWorkingDays, goalFunded, inPeriod, openFields, workDaysOf } from '@/data/intake/cycle'
+import { CYCLE, TODAY, calendarDaysBetween, goalFunded, inPeriod, openFields } from '@/data/intake/cycle'
 import { parseOutputs } from '@/data/intake/flow'
 import { OPEN } from '@/data/status'
 
@@ -167,10 +167,10 @@ export const P_STAGES: PStageDef[] = [
     fields: [
       /* v3 · 3.4.15 · the expected start · independent of the request's date (3.4.14) */
       { key: 'startAt', label: 'تاريخ بدء التنفيذ المتوقع', kind: 'date', req: true, hint: 'يختلف عن تاريخ تقديم الطلب' },
-      /* v3 · 3.4.15 · the project's own execution days of the week · the end is computed on them */
-      { key: 'execDays', label: 'أيام التنفيذ من الأسبوع', kind: 'weekdays', hint: 'الأيام التي يُنفَّذ فيها المشروع · الافتراضي أيام عمل المؤسسة' },
-      /* 3.4.30 · the duration is in execution days and the end date is computed, not typed */
-      { key: 'workDays', label: 'مدة التنفيذ', kind: 'num', req: true, unit: 'يوم تنفيذ', hint: 'المدة المقترحة استرشادية للدراسة · لا تُعد خطة معتمدة (3.4.46)' },
+      /* Client 21 Oct (#28) · the entity gives the start and the end · the duration is the calendar days
+         between them, counted by the system · the days of the week are information only */
+      { key: 'endAt', label: 'تاريخ انتهاء التنفيذ المتوقع', kind: 'date', req: true, hint: 'المدة تُحسب تلقائيًا من التاريخين · استرشادية للدراسة ولا تُعد خطة معتمدة (3.4.46)' },
+      { key: 'execDays', label: 'أيام التنفيذ من الأسبوع', kind: 'weekdays', hint: 'للعلم فقط · لا تغيّر المدة ولا تاريخ الانتهاء' },
       {
         key: 'multiYear', label: 'يمتد لأكثر من سنة مالية', kind: 'select',
         options: ['لا', 'نعم'],
@@ -183,9 +183,10 @@ export const P_STAGES: PStageDef[] = [
 /** Documents stage key · its content is the upload list, not fields */
 export const DOCS_STAGE = 'docs'
 
-/** End of execution · start plus the working days, computed (3.4.13 · 3.4.30) */
-export const endOf = (val: PValues): string =>
-  val.startAt && Number(val.workDays) > 0 ? addWorkingDays(val.startAt, Number(val.workDays), workDaysOf(val.execDays)) : ''
+/** End of execution · the date the entity gives (client 21 Oct · #28) */
+export const endOf = (val: PValues): string => (val.startAt && val.endAt && val.endAt >= val.startAt ? val.endAt : '')
+/** The duration · the calendar days from the start to the end, both included */
+export const daysOf = (val: PValues): number => calendarDaysBetween(val.startAt ?? '', val.endAt ?? '')
 
 /* Only the domains open in the cycle (3.4.6) · a track with none open isn't offered */
 const openTracks = () => TRACKS.filter((t) => (FIELDS_BY_TRACK[t] ?? []).some((f) => openFields().includes(f)))
@@ -274,6 +275,9 @@ export const projectIssues = (val: PValues): PIssue[] => {
 
   if (val.startAt && val.startAt < TODAY) {
     out.push({ key: 'dates', say: 'بداية التنفيذ قبل تاريخ اليوم · اختر تاريخًا قادمًا.', rule: /* doc 3.4.13 */ '' })
+  }
+  if (val.startAt && val.endAt && val.endAt < val.startAt) {
+    out.push({ key: 'endAt', say: 'تاريخ الانتهاء قبل تاريخ البدء · اختر تاريخًا بعده.', rule: '' })
   }
 
   const asked = Number(val.amountRequested) || 0

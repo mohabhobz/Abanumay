@@ -6,11 +6,9 @@ import { Glass, Head, Mono, Num, Tag } from '@/components/ui'
 import { countOf, nf, NOUN, projectCode } from '@/lib/format'
 import { projectById } from '@/data/mock/projects'
 import type { Entity } from '@/types/domain'
-import type { ThreadMessage } from '@/data/mock/detail'
-import { Thread } from '@/components/thread'
 
 export { DataTab } from './DataTab'
-export { StudyTab, StudyAside } from './StudyTab'
+export { StudyTab } from './StudyTab'
 export { EntityTab } from './EntityTab'
 export { AgreementTab, type AgreementTabProps } from './AgreementTab'
 export { PlanTab, type PlanTabProps } from './PlanTab'
@@ -19,6 +17,7 @@ export { PaymentsTab, type PaymentsTabProps } from './PaymentsTab'
 export { LogTab, type LogTabProps } from './LogTab'
 export { ActivitiesTab, type ActivitiesTabProps } from './ActivitiesTab'
 export { FollowUpsTab, type FollowUpsTabProps } from './FollowUpsTab'
+export { AttachmentsTab, type AttachmentsTabProps } from './AttachmentsTab'
 
 /* Previous projects */
 
@@ -88,46 +87,3 @@ export function HistoryTab({
  * focused view of it.
  */
 /* Correspondence */
-
-/**
- * Correspondence with the entity.
- *
- * This channel is nearly inactive in the current system: zero messages
- * across the 38 projects examined, and the one thread found was entirely
- * about a stalled receipt voucher. So it isn't a general communication
- * channel — it opens when an action is blocked on the entity.
- *
- * We show it exactly as that: if an action is blocked on the entity, the
- * thread exists with the reason it's blocked. Otherwise, we say it's empty
- * and state when it's used, instead of showing an empty chat box on every
- * project.
- */
-export function CorrespondenceTab({
-  messages,
-  entityName,
-  why,
-}: {
-  messages: ThreadMessage[]
-  entityName: string
-  /** Reason the channel is open — stated above the thread. */
-  why: string
-}) {
-  return (
-    <Glass>
-      <Head
-        title="المراسلة مع الجهة"
-        meta={messages.length ? `${messages.length} رسائل` : undefined}
-      />
-
-      <Thread
-        messages={messages}
-        entityName={entityName}
-        me="staff"
-        why={why}
-        placeholder={`اكتب رسالة إلى ${entityName}…`}
-        emptyTitle="لا توجد مراسلات على هذا المشروع."
-        emptyNote="تُستخدم القناة عمليًا حين يتوقف إجراء على الجهة: طلب استكمال، أو سند لم يُرفع، أو تقرير متأخر. وفي غير ذلك يجري التواصل عبر المتابعات."
-      />
-    </Glass>
-  )
-}

@@ -183,7 +183,7 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
           {embedded ? (
             <div className="ovhead">
               <h1 className="ptitle">التقارير</h1>
-              <Tabs items={REPORT_TABS} active="overview" onChange={(s) => navigate(ROUTES.reportTab(s))} />
+              <Tabs pin={false} items={REPORT_TABS} active="overview" onChange={(s) => navigate(ROUTES.reportTab(s))} />
             </div>
           ) : (
           <IdentityBanner
