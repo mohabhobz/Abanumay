@@ -126,6 +126,34 @@ export const setFundingGate = (g: FundingGate): void => { gate = g }
 export const fundingBlock = (field: string): string => gate.field(field)
 export const goalFunded = (field: string, goal: string): boolean => gate.goal(field, goal)
 
+/* Client 24 Oct (#86) · the support options follow the budget · one source of truth for how a
+   domain or a goal is offered in the project form, the portal's and the staff's alike.
+
+     · `requireFunding` (budget settings · 1.1.output-5) decides whether money is a condition to
+       file at all: a domain or a goal the budget doesn't fund can't take a new request.
+     · `portalLink` (budget settings · «ربط خيارات الدعم في البوابة بالميزانية») decides how that
+       condition reads: on, every domain open in the cycle and every goal under it stays LISTED, the
+       ones without an allocation (or spent) disabled with their reason and the thin ones with a hint;
+       off, the unfunded ones are simply left out, as before.
+
+   The budget store registers the reading at load (no import of the budget here, same as the gate
+   above). The submit check reads the same function, so a disabled choice is refused at sending too. */
+export interface SupportReading {
+  ok: boolean
+  reason: string
+  hint: string
+}
+export interface SupportGate {
+  /** The portal link switch · on lists the unfunded options disabled instead of hiding them */
+  listed: () => boolean
+  /** How a domain, or a goal under it, is offered */
+  of: (field: string, goal?: string) => SupportReading
+}
+let support: SupportGate = { listed: () => false, of: () => ({ ok: true, reason: '', hint: '' }) }
+export const setSupportGate = (g: SupportGate): void => { support = g }
+export const supportListed = (): boolean => support.listed()
+export const supportOf = (field: string, goal?: string): SupportReading => support.of(field, goal)
+
 /** Why a domain can't open · empty when it can */
 export const openBlock = (field: string): string =>
   (CYCLE.domains[field]?.supervisors.length ?? 0) === 0 ? 'لا يُفتح مجال قبل ربطه بمشرف منح واحد على الأقل' : fundingBlock(field)
@@ -141,6 +169,16 @@ export const openFields = (date = liveDay()): string[] =>
   inPeriod(date)
     ? ALL_FIELDS.filter((f) => CYCLE.domains[f]?.open && (CYCLE.domains[f]?.supervisors.length ?? 0) > 0 && !fundingBlock(f))
     : []
+
+/** Domains the cycle opens, money aside · the form lists them when the portal link is on, the ones the
+    budget doesn't fund disabled with their reason (#86) */
+export const cycleFields = (date = liveDay()): string[] =>
+  inPeriod(date)
+    ? ALL_FIELDS.filter((f) => CYCLE.domains[f]?.open && (CYCLE.domains[f]?.supervisors.length ?? 0) > 0)
+    : []
+
+/** The domains the form offers · listed (open in the cycle) or only the funded ones, per the switch */
+export const offeredFields = (date = liveDay()): string[] => (supportListed() ? cycleFields(date) : openFields(date))
 
 /* ── Working-day calendar (3.4.13 · 3.4.30) ──
    Execution durations count working days: the weekend and official holidays are skipped. */

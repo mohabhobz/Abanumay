@@ -40,7 +40,7 @@ import { projectLog } from '@/data/mock/log'
 import { projectOptions } from '@/data/mock/agreementNew'
 import { agreementsOfProject, useAgreements } from '@/data/agreements/store'
 import { ProjectAgreements } from '@/features/agreements/parts'
-import { planOfProject } from '@/data/mock/plans'
+import { planCounts, planDone, planExecution, planOfProject } from '@/data/mock/plans'
 import { planDecisionEvents, planDecisionOf, usePlans } from '@/data/plans/store'
 import { PlanDecisionCard } from '@/features/plans/PlanDecisionCard'
 import { journeys } from '@/data/journey'
@@ -61,6 +61,8 @@ import { TransferModal } from './TransferModal'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import type { AuthorityMatrix, DecisionAction, ProjectRow } from '@/types/domain'
 import { isDropped, statusLine, statusOf, subStatusOf } from '@/data/status'
+import { projectOutcome } from '@/data/shared/outcome'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { OTHER } from '@/data/intake/reasons'
 
 /** Number of days the current process has been open - from the action log. */
@@ -444,6 +446,8 @@ export default function ProjectPage() {
               <div className="ehead-t">
                 <h1 className="ptitle">{project.name}</h1>
                 {row && <span className="ehead-st"><Tag tone={groupTone(row.statusGroup)}>{statusOf(row)}</Tag></span>}
+                {/* Client sheet 24 Oct (#95) · the outcome once the project ends */}
+                {row && <OutcomeTag outcome={projectOutcome(row.statusGroup)} />}
                 {/* Client 24 Oct · the level it stands at reads here, once · «التعريف» no longer repeats it */}
                 {row && !asEntity && (subStatusOf(row) || (row.stage !== statusOf(row) ? row.stage : '')) && <span className="sub">{subStatusOf(row) || row.stage}</span>}
               </div>
@@ -509,6 +513,7 @@ export default function ProjectPage() {
                   code={code}
                   /* Re-audit 7 Oct · the routing card and the data tab read the same type */
                   type={row?.platform ? `مشروع لجهة خارجية · ${row.platform}` : row?.partnerType === 'مستقل' ? 'مشروع مستقل' : type}
+                  completion={(() => { const pl = row ? planOfProject(row.id) : undefined; if (!pl || !['active', 'done'].includes(pl.stage)) return undefined; const c = planCounts(pl); return { pct: planDone(pl), ...c, exec: planExecution(pl).pct } })()}
                 />
               )}
               {active === 'data' && row && (

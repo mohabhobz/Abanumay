@@ -27,9 +27,10 @@ import {
 import type { Sheet } from '@/lib/export'
 import { RegCard } from './RegCard'
 import { COLS, GROUPS } from './columns'
+import { OUTCOME_PICK_SAY, outcomeMatches, outcomeOptions, regOutcome, type OutcomePick } from '@/data/shared/outcome'
 import { useEntityFlow } from '@/data/entities/store'
 
-const KEYS = ['q', 'state', 'type', 'region', 'city', 'lic', 'from', 'to', 'short', 'view', 'group', 'adv', 'ord'] as const
+const KEYS = ['q', 'state', 'type', 'region', 'city', 'lic', 'from', 'to', 'short', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Registration request inbox.
@@ -54,7 +55,9 @@ const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'state', 'sh
 /* Client 23 Oct · the inbox filters like the projects list · region, city, technical-oversight
    authority and the submission date, alongside classification and the short-file toggle. One
    predicate for the rows and the tab counts, so a count never disagrees with its list. */
-const passes = (r: RegRow, v: Params): boolean => {
+const passes = (r: RegRow, v: Params, skipRes = false): boolean => {
+  /* Client sheet 24 Oct (#95) · the request's outcome */
+  if (!skipRes && !outcomeMatches(regOutcome(r.state), readList(v.res))) return false
   const needle = v.q?.trim()
   const types = readList(v.type)
   const regions = readList(v.region)
@@ -89,6 +92,12 @@ export default function RequestsPage() {
     void ver /* the rows are mutable · a flow action re-reads them */
     const states = readList(v.state)
     return regRows.filter((r) => (!states.length || states.includes(r.state)) && passes(r, v))
+  }, [v, ver])
+  /* The filter without its outcome pick · the «النتيجة» options count over it */
+  const resBase = useMemo(() => {
+    void ver
+    const states = readList(v.state)
+    return regRows.filter((r) => (!states.length || states.includes(r.state)) && passes(r, v, true))
   }, [v, ver])
 
   /* Oldest submission first - the inbox is a review role, and a review role goes by date · a click
@@ -147,13 +156,13 @@ export default function RequestsPage() {
     })
 
   const chips = (
-    [['state', 'الحالة'], ['type', 'التصنيف'], ['region', 'المنطقة'], ['city', 'المدينة'], ['lic', 'جهة الإشراف']] as [keyof Params, string][]
+    [['state', 'الحالة'], ['type', 'التصنيف'], ['region', 'المنطقة'], ['city', 'المدينة'], ['lic', 'جهة الإشراف'], ['res', 'النتيجة']] as [keyof Params, string][]
   ).flatMap(([key, label]) =>
     readList(v[key]).map((value) => ({
       key,
       label,
       value,
-      text: key === 'state' ? REG_STATE_SAY[value as RegState] ?? value : value,
+      text: key === 'state' ? REG_STATE_SAY[value as RegState] ?? value : key === 'res' ? OUTCOME_PICK_SAY[value as OutcomePick] ?? value : value,
     })),
   )
 
@@ -302,6 +311,16 @@ export default function RequestsPage() {
 
             {advOpen && (
               <div className="fgrid">
+                {/* Client sheet 24 Oct (#95) · مكتمل / مرفوض / ملغي, or still under way */}
+                <div className="fgrid-i">
+                  <MultiSelect
+                    label="النتيجة"
+                    values={readList(v.res)}
+                    all="كل النتائج"
+                    options={outcomeOptions(resBase, (r) => regOutcome(r.state))}
+                    onChange={(x) => set({ res: writeList(x) })}
+                  />
+                </div>
                 <div className="fgrid-i">
                   <MultiSelect
                     label="المنطقة"

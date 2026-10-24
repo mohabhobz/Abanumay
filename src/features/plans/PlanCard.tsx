@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { rowGo } from '@/lib/rowGo'
 import { DateText, Icon, Mono, Num, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { isolate, NOUN, nounAfter, units, ver } from '@/lib/format'
+import { isolate, NOUN, nounAfter, pct, units, ver } from '@/lib/format'
 import {
   PLAN_TONE, lateActivities, planClaimed, planDone, planPlanned, planSpi,
   planStageLabel, spiSay, waitingReview,
@@ -120,7 +120,7 @@ export function PlanCard({ p }: { p: PlanRow }) {
         <Check
           ok={measured ? say.tone === 'ok' : true}
           say={measured
-            ? <>{say.say}{spi !== null && <> · أداء الجدول <span className="num">{spi.toFixed(2)}</span></>}</>
+            ? <>{say.say}{spi !== null && <> · نسبة تنفيذ المشروع <span className="num">{pct(Math.round(spi * 100))}</span></>}</>
             : 'لم يبدأ القياس بعد'}
           src="الجدول"
         />

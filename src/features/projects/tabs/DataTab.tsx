@@ -1,5 +1,5 @@
 import { Glass, Head, KV, Mono, Num, Riyal, Stat, Timeline } from '@/components/ui'
-import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, readDate, units } from '@/lib/format'
+import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, pct, readDate, units } from '@/lib/format'
 import type { Project, ProjectType } from '@/types/domain'
 
 export interface DataTabProps {
@@ -8,11 +8,13 @@ export interface DataTabProps {
   code: string
   /** Regular, external, or portfolio */
   type: ProjectType | string
+  /** Client sheet 24 Oct (#96) · «نسبة اكتمال المشروع» from its plan · absent without a plan */
+  completion?: { pct: number; accepted: number; total: number; exec: number | null }
 }
 
 /** Project data — the basics: summary, concept, phases and scope. */
 export function DataTab({
-  project: P, type,
+  project: P, type, completion,
 }: DataTabProps) {
   const perBeneficiary = costPerBeneficiary(P.amountRequested, P.beneficiaries)
 
@@ -20,7 +22,15 @@ export function DataTab({
     <>
       {/* Meeting 20 Oct · the figures lead the data tab · client 24 Oct · the requested amount reads in
           the page header, so the tab doesn't repeat it */}
-      <div className="stats4 n3">
+      <div className={`stats4${completion ? '' : ' n3'}`}>
+        {completion && (
+          <Stat
+            label="نسبة اكتمال المشروع"
+            value={<Num>{pct(completion.pct)}</Num>}
+            bar={{ w: `${Math.min(100, completion.pct)}%`, c: 'var(--teal)' }}
+            note={<>{nf.format(completion.accepted)} من {nf.format(completion.total)} مقبولة{completion.exec !== null && <> · التنفيذ {pct(completion.exec)}</>}</>}
+          />
+        )}
         <Stat
           label="مدة التنفيذ"
           value={P.durationDays}

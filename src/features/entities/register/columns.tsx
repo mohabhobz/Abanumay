@@ -52,12 +52,14 @@ export const COLS: Col[] = [
     text: (r) => REG_STATE_SAY[r.state],
   },
   /* Client sheet 24 Oct (#95) · the procedure's outcome · مكتمل / مرفوض / ملغي, empty while under way ·
-     offered in the column picker */
+     shown by default */
   {
     key: 'outcome',
     w: 104,
     label: 'النتيجة',
-    cell: (r) => <OutcomeTag outcome={regOutcome(r.state)} />,
+    def: true,
+    added: '2026-10-24',
+    cell: (r) => <OutcomeTag outcome={regOutcome(r.state)} pending />,
     text: (r) => { const o = regOutcome(r.state); return o ? OUTCOME_SAY[o] : '' },
   },
   {

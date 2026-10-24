@@ -7,7 +7,7 @@ import {
 import { MONEY_LIMITS, TARGET_GROUPS } from './settings'
 import { entityDetail } from './entityDetail'
 import { NOUN, countOf } from '@/lib/format'
-import { CYCLE, TODAY, calendarDaysBetween, goalFunded, inPeriod, openFields } from '@/data/intake/cycle'
+import { CYCLE, TODAY, calendarDaysBetween, goalFunded, inPeriod, offeredFields, supportListed, supportOf } from '@/data/intake/cycle'
 import { parseOutputs, stagesOf } from '@/data/intake/flow'
 import { OPEN } from '@/data/status'
 
@@ -191,18 +191,27 @@ export const endOf = (val: PValues): string => (val.startAt && val.endAt && val.
 /** The duration · the calendar days from the start to the end, both included */
 export const daysOf = (val: PValues): number => calendarDaysBetween(val.startAt ?? '', val.endAt ?? '')
 
-/* Only the domains open in the cycle (3.4.6) · a track with none open isn't offered */
-const openTracks = () => TRACKS.filter((t) => (FIELDS_BY_TRACK[t] ?? []).some((f) => openFields().includes(f)))
+/* Only the domains open in the cycle (3.4.6) · a track with none open isn't offered · with the portal
+   link on (#86) the domains the budget doesn't fund stay listed, disabled in the form with their reason */
+const openTracks = () => TRACKS.filter((t) => (FIELDS_BY_TRACK[t] ?? []).some((f) => offeredFields().includes(f)))
 
 /** Options for a dependent field · same cascading filter pattern used elsewhere */
 export const optionsFor = (f: PFieldDef, parent: string): readonly string[] => {
   if (f.key === 'track') return openTracks()
   if (f.options) return f.options
-  if (f.dependsOn === 'track') return (FIELDS_BY_TRACK[parent] ?? []).filter((x) => openFields().includes(x))
-  /* 1.4.37 · only the goals an approved budget funds under the domain */
-  if (f.dependsOn === 'field') return (GOALS_BY_FIELD[parent] ?? []).filter((g) => goalFunded(parent, g))
+  if (f.dependsOn === 'track') return (FIELDS_BY_TRACK[parent] ?? []).filter((x) => offeredFields().includes(x))
+  /* 1.4.37 · only the goals an approved budget funds under the domain · or all of them, the unfunded
+     disabled, with the portal link on (#86) */
+  if (f.dependsOn === 'field') return (GOALS_BY_FIELD[parent] ?? []).filter((g) => supportListed() || goalFunded(parent, g))
   if (f.dependsOn === 'region') return CITIES_BY_REGION[parent] ?? []
   return []
+}
+
+/** #86 · how an option of the field or goal list reads · `off` is the reason it can't be picked */
+export const supportOption = (key: string, parent: string, x: string): { value: string; label: string; off?: string } => {
+  if ((key !== 'field' && key !== 'goal') || !supportListed()) return { value: x, label: x }
+  const a = key === 'field' ? supportOf(x) : supportOf(parent, x)
+  return { value: x, label: a.hint ? `${x} · ${a.hint}` : x, off: a.ok ? undefined : a.reason }
 }
 
 export type PValues = Record<string, string>
@@ -274,8 +283,14 @@ export const projectIssues = (val: PValues): PIssue[] => {
   if (!inPeriod()) {
     out.push({ key: 'period', say: `فترة التقديم من ${CYCLE.from} إلى ${CYCLE.to} · لا يُقبل طلب جديد خارجها.`, rule: /* doc 3.2.3 */ '' })
   }
-  if (val.field && !openFields().includes(val.field)) {
+  if (val.field && !offeredFields().includes(val.field)) {
     out.push({ key: 'field', say: `مجال «${val.field}» غير مفتوح في هذه الدورة.`, rule: /* doc 3.4.6 */ '' })
+  } else if (val.field && supportListed()) {
+    /* #86 · a domain or goal the budget doesn't fund is refused at sending too, with the form's reason */
+    const fs = supportOf(val.field)
+    const gs = val.goal ? supportOf(val.field, val.goal) : undefined
+    if (!fs.ok) out.push({ key: 'field', say: `مجال «${val.field}» غير متاح للدعم · ${fs.reason}.`, rule: /* doc 1.1.output-5 */ '' })
+    else if (gs && !gs.ok) out.push({ key: 'goal', say: `الهدف «${val.goal}» غير متاح للدعم · ${gs.reason}.`, rule: /* doc 1.4.37 */ '' })
   }
 
   if (val.startAt && val.startAt < TODAY) {

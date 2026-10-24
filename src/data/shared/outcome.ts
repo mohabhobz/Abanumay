@@ -35,7 +35,42 @@ export const closeOutcome = read<string>({ closed: 'done' })
 export const caseOutcome = read<string>({ approved: 'done', closed: 'done', rejected: 'rejected' })
 /** Budget transfers and requests */
 export const budgetReqOutcome = read<string>({ executed: 'done', rejected: 'rejected' })
-/** Portfolios */
-export const portfolioOutcome = read<string>({ approved: 'done', closed: 'done', rejected: 'rejected', cancelled: 'cancelled' })
+/** Portfolios · an approved portfolio is still under way (its sub-projects run) · it ends closed */
+export const portfolioOutcome = read<string>({ closed: 'done', rejected: 'rejected', cancelled: 'cancelled' })
 /** Portfolio sub-projects · done, refused, or excluded from the portfolio */
 export const subOutcome = read<string>({ done: 'done', rejected: 'rejected', excluded: 'cancelled' })
+/** Projects (and portfolios read as projects) · from the main status · a redirected support ends the
+    original procedure, so it reads cancelled; a stalled project is still under way */
+export const projectOutcome = read<string>({
+  'مكتمل': 'done', 'مغلق بوفر': 'done', 'مرفوض': 'rejected', 'ملغى': 'cancelled', 'أعيد توجيه الدعم': 'cancelled',
+})
+/** Budget documents · approved and in force, or retired */
+export const budgetDocOutcome = read<string>({ approved: 'done', closed: 'done', rejected: 'rejected', cancelled: 'cancelled' })
+/** Relocation requests (1.3b) */
+export const relocOutcome = read<string>({ approved: 'done', rejected: 'rejected', cancelled: 'cancelled' })
+
+/* ── The «النتيجة» filter · one shape in every list ── */
+
+/** The filter's values · the three outcomes and «قيد الإجراء» for a procedure still on its way */
+export type OutcomePick = Outcome | 'open'
+
+export const OUTCOME_PICKS: { value: OutcomePick; label: string }[] = [
+  { value: 'done', label: OUTCOME_SAY.done },
+  { value: 'rejected', label: OUTCOME_SAY.rejected },
+  { value: 'cancelled', label: OUTCOME_SAY.cancelled },
+  { value: 'open', label: 'قيد الإجراء' },
+]
+
+export const OUTCOME_PICK_SAY: Record<OutcomePick, string> = { ...OUTCOME_SAY, open: 'قيد الإجراء' }
+
+/** A row passes when no outcome is picked, or its outcome (or «قيد الإجراء») is one of the picks */
+export const outcomeMatches = (o: Outcome | undefined, picks: readonly string[]): boolean =>
+  !picks.length || picks.includes(o ?? 'open')
+
+/** The filter's options with the count each one would show · counted over the rows the other filters
+    leave, so a count always equals what picking it lists */
+export function outcomeOptions<T>(rows: readonly T[], of: (r: T) => Outcome | undefined): { value: string; label: string }[] {
+  const n: Record<OutcomePick, number> = { done: 0, rejected: 0, cancelled: 0, open: 0 }
+  for (const r of rows) n[of(r) ?? 'open'] += 1
+  return OUTCOME_PICKS.map((p) => ({ value: p.value, label: `${p.label} (${n[p.value]})` }))
+}

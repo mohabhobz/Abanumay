@@ -27,8 +27,9 @@ import type { AgreementRow, AgreementStage } from '@/types/domain'
 import type { Sheet } from '@/lib/export'
 import { AgreementCard } from './AgreementCard'
 import { COLS, GROUPS } from './columns'
+import { OUTCOME_PICK_SAY, agreementOutcome, outcomeMatches, outcomeOptions, type OutcomePick } from '@/data/shared/outcome'
 
-const KEYS = ['q', 'stage', 'heat', 'owner', 'kind', 'hold', 'view', 'group', 'adv', 'ord'] as const
+const KEYS = ['q', 'stage', 'heat', 'owner', 'kind', 'hold', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Agreements inbox.
@@ -74,13 +75,14 @@ export default function AgreementsPage() {
   const view = mobile ? 'cards' : v.view === 'table' ? 'table' : 'cards'
   const advOpen = v.adv === '1'
 
-  const rows = useMemo(() => {
+  /* The filter without its outcome pick · the «النتيجة» options count over it */
+  const [rows, resBase] = useMemo(() => {
     void ver
     const needle = v.q?.trim()
     const stages = readList(v.stage)
     const owners = readList(v.owner)
     const kinds = readList(v.kind)
-    return agreements.filter((a) => {
+    const base = agreements.filter((a) => {
       if (stages.length && !stages.includes(a.stage)) return false
       if (v.heat && agrHeat(a) !== v.heat) return false
       if (owners.length && !owners.includes(a.owner)) return false
@@ -92,6 +94,8 @@ export default function AgreementsPage() {
       }
       return true
     })
+    /* Client sheet 24 Oct (#95) · the procedure's outcome */
+    return [base.filter((a) => outcomeMatches(agreementOutcome(a.stage), readList(v.res))), base] as const
   }, [v, ver])
 
   /* Longest-waiting sits at top - the inbox sorts by risk, not by date. */
@@ -110,6 +114,7 @@ export default function AgreementsPage() {
     const owners = readList(v.owner)
     const kinds = readList(v.kind)
     const base = agreements.filter((a) => {
+      if (!outcomeMatches(agreementOutcome(a.stage), readList(v.res))) return false
       if (v.heat && agrHeat(a) !== v.heat) return false
       if (owners.length && !owners.includes(a.owner)) return false
       if (kinds.length && !kinds.includes(a.kind)) return false
@@ -121,7 +126,7 @@ export default function AgreementsPage() {
     const m = new Map<AgreementStage, number>()
     for (const a of base) m.set(a.stage, (m.get(a.stage) ?? 0) + 1)
     return { m, total: base.length }
-  }, [v.heat, v.owner, v.kind, v.hold, v.q, ver])
+  }, [v.heat, v.owner, v.kind, v.hold, v.q, ver, v.res])
 
   /* Grouping persists with the session instead of resetting on every logout. */
   useStickyGroup('agreements', v.group, (x) => set({ group: x }))
@@ -169,7 +174,7 @@ export default function AgreementsPage() {
     })
 
   const chips = (
-    [['stage', 'المرحلة'], ['owner', 'المشرف'], ['kind', 'النوع']] as [keyof Params, string][]
+    [['stage', 'المرحلة'], ['owner', 'المشرف'], ['kind', 'النوع'], ['res', 'النتيجة']] as [keyof Params, string][]
   ).flatMap(([key, label]) =>
     readList(v[key]).map((value) => ({
       key,
@@ -177,6 +182,7 @@ export default function AgreementsPage() {
       value,
       text: key === 'stage'
         ? AGREEMENT_STAGES.find((s) => s.key === value)?.label ?? value
+        : key === 'res' ? OUTCOME_PICK_SAY[value as OutcomePick] ?? value
         : value,
     })),
   )
@@ -325,6 +331,16 @@ export default function AgreementsPage() {
 
             {advOpen && (
               <div className="fgrid">
+                {/* Client sheet 24 Oct (#95) · مكتمل / مرفوض / ملغي, or still under way */}
+                <div className="fgrid-i">
+                  <MultiSelect
+                    label="النتيجة"
+                    values={readList(v.res)}
+                    all="كل النتائج"
+                    options={outcomeOptions(resBase, (a) => agreementOutcome(a.stage))}
+                    onChange={(x) => set({ res: writeList(x) })}
+                  />
+                </div>
                 <div className="fgrid-i">
                   <MultiSelect
                     label="نوع الاتفاقية"

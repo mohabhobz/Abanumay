@@ -18,12 +18,15 @@ import {
   portfolioRows, PROJECT_TYPES, type BulkDecision,
 } from '@/data/mock/projects'
 import { useRole } from '@/hooks/useRole'
+import { CYCLE } from '@/data/intake/cycle'
+import { projectRows } from '@/data/mock/projects'
 import { assignSupervisor, completeMany, flowOf, recommendMany } from '@/data/intake/flow'
 import { decideMany } from '@/data/approvals/store'
 import { ROUTES } from '@/app/routes'
 import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
 import { COLS, GROUPS, rowHref } from './columns'
+import { OUTCOME_PICK_SAY, outcomeOptions, projectOutcome, type OutcomePick } from '@/data/shared/outcome'
 import {
   DataTable, countLeaves, groupChain, groupTree, orderCols, readCols, sheetOf, writeCols, readSort, writeSort, nextSort, sortRows,
 } from '@/components/table'
@@ -42,7 +45,7 @@ import { ProjectCard } from './ProjectCard'
    the same name is sent to the server as a query string once wired up. */
 const KEYS = [
   'q', 'status', 'stage', 'year', 'track', 'field', 'goal', 'region', 'city',
-  'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact', 'portal', 'type',
+  'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact', 'portal', 'type', 'res',
   'sort', 'page', 'size', 'view', 'adv', 'group', 'tab', 'ord',
 ] as const
 
@@ -164,6 +167,7 @@ export default function ProjectsListPage() {
     () => ({
       search: v.q,
       status: readList(v.status),
+      outcome: readList(v.res),
       stage: readList(v.stage),
       year: readList(v.year),
       track: readList(v.track),
@@ -386,12 +390,36 @@ export default function ProjectsListPage() {
     bump((n) => n + 1)
   }
 
+  /* Client 24 Oct (#90) · the bulk assignment follows the same rule as the project page: a supervisor
+     takes only projects of his own fields, and replacing a project's current supervisor is a change
+     with a reason, logged before → after */
+  const ownerPlan = (() => {
+    if (!bulkOwner) return { take: [] as string[], off: [] as string[], change: 0 }
+    const take: string[] = []; const off: string[] = []; let change = 0
+    for (const id of selected) {
+      const r = projectRows.find((x) => x.id === id)
+      if (!r) continue
+      if (!(CYCLE.domains[r.field]?.supervisors ?? []).includes(bulkOwner)) { off.push(id); continue }
+      take.push(id)
+      if (r.owner && r.owner !== bulkOwner) change++
+    }
+    return { take, off, change }
+  })()
   const applyBulk = () => {
-    if (!bulkOwner || selected.size === 0) return
+    if (!bulkOwner || ownerPlan.take.length === 0) return
+    if (ownerPlan.change > 0 && !bulkNote.trim()) return
     /* Each assignment is a recorded event with a notice to the supervisor (3.4.3 · manual rule) */
-    for (const id of selected) assignSupervisor(id, bulkOwner, user.name)
+    for (const id of ownerPlan.take) {
+      const from = projectRows.find((x) => x.id === id)?.owner ?? undefined
+      assignSupervisor(id, bulkOwner, user.name, from, bulkNote.trim() || undefined)
+    }
+    setLastBulk({
+      text: `أُسند ${units.project(ownerPlan.take.length)} إلى ${bulkOwner}${ownerPlan.off.length ? ` · بقي ${units.project(ownerPlan.off.length)} خارج مجالاته` : ''}`,
+      undo: undefined,
+    })
     setSelected(new Set())
     setBulkOwner(undefined)
+    setBulkNote('')
     bump((n) => n + 1)
   }
 
@@ -473,7 +501,7 @@ export default function ProjectsListPage() {
     [
       ['status', 'الحالة'], ['stage', 'القسم'], ['year', 'السنة'], ['track', 'المسار'], ['field', 'المجال'],
       ['goal', 'الهدف'], ['region', 'المنطقة'], ['city', 'المدينة'], ['tag', 'الوسم'],
-      ['method', 'الأسلوب'], ['support', 'الدعم'], ['owner', 'المالك'], ['type', 'النوع'],
+      ['method', 'الأسلوب'], ['support', 'الدعم'], ['owner', 'المالك'], ['type', 'النوع'], ['res', 'النتيجة'],
     ] as [keyof Params, string][]
   )
     /* One chip per value, not per filter: someone with three regions selected wants
@@ -634,6 +662,17 @@ export default function ProjectsListPage() {
                   {fOrder.map((k) => (
                     <div key={k} className="fgrid-i">{FILTERS[k]}</div>
                   ))}
+                  {/* Client sheet 24 Oct (#95) · the outcome · مكتمل / مرفوض / ملغي, or still under way ·
+                      fixed in the grid so a saved filter order can't hide it */}
+                  <div className="fgrid-i">
+                    <MultiSelect
+                      label="النتيجة"
+                      values={readList(v.res)}
+                      all="كل النتائج"
+                      options={outcomeOptions(query.projects({ ...q, outcome: undefined, page: 1, pageSize: 9999 }).rows, (r) => projectOutcome(r.statusGroup))}
+                      onChange={(x) => set({ res: writeList(x), page: undefined })}
+                    />
+                  </div>
                   <div className="fgrid-t">
                     <Toggle label="تمويل مشترك" on={v.shared === '1'} onChange={(on) => set({ shared: on ? '1' : undefined })} />
                     <Toggle label="مشروع أثر" on={v.impact === '1'} onChange={(on) => set({ impact: on ? '1' : undefined })} />
@@ -662,7 +701,7 @@ export default function ProjectsListPage() {
                     }
                   >
                     <span className="sub">{c.label}:</span>{' '}
-                    {c.k === 'owner' ? <Person name={c.value} quiet={false} /> : c.value}
+                    {c.k === 'owner' ? <Person name={c.value} quiet={false} /> : c.k === 'res' ? OUTCOME_PICK_SAY[c.value as OutcomePick] ?? c.value : c.value}
                     <Icon name={icons.close} size="sm" />
                   </button>
                 ))}
@@ -804,7 +843,17 @@ export default function ProjectsListPage() {
               options={OWNERS}
               onChange={setBulkOwner}
             />
-            <button className="btn btn-p btn-sm" disabled={!bulkOwner} onClick={applyBulk}>
+            {bulkOwner && ownerPlan.change > 0 && (
+              <span className="fld bulk-note">
+                <input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder={`سبب تعديل المشرف · ${units.project(ownerPlan.change)} لها مشرف حاليًا`} aria-label="سبب تعديل مشرف المنح" />
+              </span>
+            )}
+            <button
+              className="btn btn-p btn-sm"
+              disabled={!bulkOwner || ownerPlan.take.length === 0 || (ownerPlan.change > 0 && !bulkNote.trim())}
+              title={bulkOwner && ownerPlan.take.length === 0 ? 'لا مشروع من مجالات هذا المشرف في التحديد' : bulkOwner && ownerPlan.change > 0 && !bulkNote.trim() ? 'اكتب سبب تعديل المشرف' : bulkOwner && ownerPlan.off.length ? `${units.project(ownerPlan.off.length)} خارج مجالاته · لا تُسند` : undefined}
+              onClick={applyBulk}
+            >
               أسند المالك
             </button>
           </BulkBar>

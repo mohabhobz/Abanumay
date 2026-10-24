@@ -65,9 +65,10 @@ export function PlanBar({ done, claim, want, pending }: PlanBarProps) {
       <div className="qr-barl">
         <span className="sub">المخطَّط لليوم {pct(want)}</span>
         <span className="sub">
+          {/* Client sheet 24 Oct (#96) · «نسبة اكتمال المشروع» · accepted activities ÷ all activities */}
           {claim > done
-            ? <>المُعلَن {pct(claim)} · المقبول {pct(done)}</>
-            : <>المقبول {pct(done)}</>}
+            ? <>المُعلَن {pct(claim)} · نسبة اكتمال المشروع {pct(done)}</>
+            : <>نسبة اكتمال المشروع {pct(done)}</>}
         </span>
       </div>
     </>

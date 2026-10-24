@@ -60,18 +60,20 @@ export const COLS: Col[] = [
     text: (p) => planStageLabel(p.stage),
   },
   /* Client sheet 24 Oct (#95) · the procedure's outcome · مكتمل / مرفوض / ملغي, empty while under way ·
-     offered in the column picker */
+     shown by default */
   {
     key: 'outcome',
     w: 104,
     label: 'النتيجة',
-    cell: (p) => <OutcomeTag outcome={planOutcome(p.stage)} />,
+    def: true,
+    added: '2026-10-24',
+    cell: (p) => <OutcomeTag outcome={planOutcome(p.stage)} pending />,
     text: (p) => { const o = planOutcome(p.stage); return o ? OUTCOME_SAY[o] : '' },
   },
   {
     key: 'done',
     w: 132,
-    label: 'المنجَز المقبول',
+    label: 'نسبة اكتمال المشروع',
     def: true,
     n: true,
     /* Note: the two numbers sit side by side on purpose. Accepted is what counts, declared is what
@@ -108,20 +110,20 @@ export const COLS: Col[] = [
   {
     key: 'spi',
     w: 112,
-    label: 'أداء الجدول',
+    /* Client sheet 24 Oct (#97) · «نسبة تنفيذ المشروع» · accepted ÷ the activities due by today */
+    label: 'نسبة تنفيذ المشروع',
     def: true,
     n: true,
-    /* SPI = completed / planned - exactly 1 means on schedule. */
     cell: (p) => {
       const v = planSpi(p)
-      if (v === null) return <span className="sub">لم يبدأ</span>
+      if (v === null) return <span className="sub">لم يحن موعد</span>
       return (
         <span className={v < 0.8 ? 'over' : undefined}>
-          <span className="num">{v.toFixed(2)}</span>
+          <span className="num">{pct(Math.round(v * 100))}</span>
         </span>
       )
     },
-    text: (p) => { const v = planSpi(p); return v === null ? 'لم يبدأ' : v.toFixed(2) },
+    text: (p) => { const v = planSpi(p); return v === null ? 'لم يحن موعد' : `${Math.round(v * 100)}%` },
     /* Note: `null`, not `0` - "not started" isn't zero performance, it's the absence of a
        measurement. */
     value: (p) => planSpi(p),

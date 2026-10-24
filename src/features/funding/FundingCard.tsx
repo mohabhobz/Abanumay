@@ -116,10 +116,10 @@ export function FundingCard({ row }: { row: ProjectRow }) {
                       })()}
                     </span>
                   </td>
-                  <td className="n"><Money sm>{r.share.amount}</Money></td>
-                  <td className="n"><Money sm>{r.held}</Money></td>
-                  <td className="n"><Money sm>{r.paid}</Money></td>
-                  <td className="n"><Money sm>{rep.link.stage === 'closed' ? r.released : r.remaining}</Money></td>
+                  <td className="n" data-k="المبلغ"><Money sm>{r.share.amount}</Money></td>
+                  <td className="n" data-k="المحجوز"><Money sm>{r.held}</Money></td>
+                  <td className="n" data-k="المصروف"><Money sm>{r.paid}</Money></td>
+                  <td className="n" data-k={rep.link.stage === 'closed' ? 'أُعيد للبند' : 'المتبقي'}><Money sm>{rep.link.stage === 'closed' ? r.released : r.remaining}</Money></td>
                 </tr>
               ))}
             </tbody>
@@ -127,10 +127,10 @@ export function FundingCard({ row }: { row: ProjectRow }) {
               <tfoot>
                 <tr>
                   <td><b>الإجمالي</b></td>
-                  <td className="n"><b><Money sm>{rep.totals.amount}</Money></b></td>
-                  <td className="n"><Money sm>{rep.totals.held}</Money></td>
-                  <td className="n"><Money sm>{rep.totals.paid}</Money></td>
-                  <td className="n"><Money sm>{rep.link.stage === 'closed' ? rep.totals.released : rep.totals.remaining}</Money></td>
+                  <td className="n" data-k="المبلغ"><b><Money sm>{rep.totals.amount}</Money></b></td>
+                  <td className="n" data-k="المحجوز"><Money sm>{rep.totals.held}</Money></td>
+                  <td className="n" data-k="المصروف"><Money sm>{rep.totals.paid}</Money></td>
+                  <td className="n" data-k={rep.link.stage === 'closed' ? 'أُعيد للبند' : 'المتبقي'}><Money sm>{rep.link.stage === 'closed' ? rep.totals.released : rep.totals.remaining}</Money></td>
                 </tr>
               </tfoot>
             )}

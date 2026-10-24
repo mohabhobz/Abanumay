@@ -199,7 +199,7 @@ type Op = Stamped & (
   | { op: 'refer'; id: string; consultant: string; by: string; code?: string }
   | { op: 'opinion'; id: string; opinion: string; verdict: NonNullable<Referral['verdict']>; by: string }
   | { op: 'close'; id: string; kind: 'cancel' | 'archive'; reason: string; by: string }
-  | { op: 'assign'; id: string; owner: string; by: string }
+  | { op: 'assign'; id: string; owner: string; by: string; from?: string; reason?: string }
   /* Batch 6 · 8 Oct · the start moves · the end follows from the duration (3.4.input · the calculated end) */
   | { op: 'reschedule'; id: string; startAt: string; reason: string; by: string; source?: StartSource }
   /* Batch 8 · intake#15 · the official holidays changed · each open project's end is computed again */
@@ -499,7 +499,10 @@ function applyOp(o: Op) {
     }
     case 'assign': {
       p!.owner = o.owner
-      event(o.id, { action: 'إسناد المشروع لمشرف', by: o.by, fields: [{ k: 'المشرف', v: o.owner, strong: true }] })
+      /* Client 24 Oct (#90) · a project that already had a supervisor is a change, logged before → after
+         with its reason · a first assignment stays a plain assignment */
+      if (o.from && o.from !== o.owner) event(o.id, { action: 'تعديل مشرف المنح', by: o.by, fields: [{ k: 'المشرف', v: `${o.from} ← ${o.owner}`, strong: true }, ...(o.reason ? [{ k: 'السبب', v: o.reason }] : [])] })
+      else event(o.id, { action: 'إسناد المشروع لمشرف', by: o.by, fields: [{ k: 'المشرف', v: o.owner, strong: true }] })
       note(o.id, o.owner, `أُسند إليك · ${p!.name}`, `من ${o.by}`)
       break
     }
@@ -767,7 +770,7 @@ export const submitRequest = (values: Record<string, string>, docs: string[], by
   run({ op: 'submit', id, values, by, asEntity, docs })
   return id
 }
-export const assignSupervisor = (id: string, owner: string, by: string) => run({ op: 'assign', id, owner, by })
+export const assignSupervisor = (id: string, owner: string, by: string, from?: string, reason?: string) => run({ op: 'assign', id, owner, by, from, reason })
 /** Batch 6 · move the execution's start · the calculated end follows from the duration in working days */
 export const rescheduleStart = (id: string, startAt: string, reason: string, by: string): string[] => {
   const p = projectRows.find((x) => x.id === id)

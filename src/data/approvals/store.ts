@@ -1023,7 +1023,8 @@ function seed() {
   })
   SESSIONS.push({
     id: 'BT-2026-04', body: 'board', title: 'اجتماع مجلس الأمناء الرابع', date: '2026-10-22',
-    members: [...APPROVAL_RULES.boardMembers], items: [], state: 'planned', by: 'عبدالرحمن الهليّل',
+    /* 24 Oct · the board's next session carries the project referred to it, so its decision is seen */
+    members: [...APPROVAL_RULES.boardMembers], items: projectRows.filter((p) => p.holder === 'board' && p.stage === 'دراسة المشروع').map((p) => ({ projectId: p.id, votes: {} })), state: 'planned', by: 'عبدالرحمن الهليّل',
   })
   /* A condition and an official note on one decided project, to show both */
   const ex = projectRows.find((p) => p.holder === 'exec' && p.stage === 'دراسة المشروع')

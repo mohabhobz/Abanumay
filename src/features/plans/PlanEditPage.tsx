@@ -6,9 +6,9 @@ import {
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { nf, ver, countOf, NOUN } from '@/lib/format'
+import { nf, ver, countOf, NOUN, nounAfter } from '@/lib/format'
 import {
-  EVIDENCE_KINDS, canEditShape, evenWeights, newActivity, newPhase,
+  EVIDENCE_KINDS, canEditShape, newActivity, newPhase,
   planById, planIssues, planStageLabel,
 } from '@/data/mock/plans'
 import { planGrantOf, projectWindow, requestChange, savePlanPhases, sendPlanFor, usePlans } from '@/data/plans/store'
@@ -30,9 +30,8 @@ import type { PlanPhase } from '@/types/domain'
    the user testing them one by one until they understand why - a screen stating "the structure is
    locked, here's how to change it" conveys the same thing in one line.
 
-   Note: weights summing correctly is a displayed rule, not an automatic fix. The stated
-   requirement: keep the options available for the user to choose, and give an error message if they
-   don't sum correctly - so equal distribution is a button, and an incorrect total is stated loudly. */
+   Client sheet 24 Oct (#96) · the plan's completion is its accepted activities ÷ all its activities,
+   so activities carry no weight to type in and no weights-sum rule. */
 
 export default function PlanEditPage() {
   const { id = '' } = useParams()
@@ -298,23 +297,15 @@ export default function PlanEditPage() {
             </Glass>
           ) : (
             phases.map((ph, i) => {
-              const w = ph.activities.reduce((s, a) => s + a.weight, 0)
               return (
                 <Glass key={ph.id}>
                   <Head
                     title={`المرحلة ${i + 1}`}
                     meta={
                       <div className="rowf gp-2">
-                        <Tag tone={w === 100 ? 'ok' : 'warn'}>
-                          الأوزان <Num>{w}</Num>
-                        </Tag>
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => setPhases((xs) =>
-                            xs.map((x) => (x.id === ph.id ? evenWeights(x) : x)))}
-                        >
-                          وزّع بالتساوي
-                        </button>
+                        {/* Client sheet 24 Oct (#96) · completion counts accepted activities, every activity
+                            weighs one · the per-activity weights and their sum rule are gone */}
+                        <Tag tone="mute"><Num>{ph.activities.length}</Num> {nounAfter(ph.activities.length, NOUN.activity)}</Tag>
                         <button
                           className="btn btn-ghost btn-sm"
                           onClick={() => setPhases((xs) => xs.filter((x) => x.id !== ph.id))}
@@ -424,22 +415,6 @@ export default function PlanEditPage() {
                             />
                           </label>
 
-                          <label className="regf">
-                            <span className="lb">الوزن في المرحلة</span>
-                            <span className="fld">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={a.weight || ''}
-                                onChange={(e) => patch(ph.id, {
-                                  activities: ph.activities.map((x) => (x.id === a.id
-                                    ? { ...x, weight: Number(e.target.value.replace(/[^\d]/g, '')) || 0 }
-                                    : x)),
-                                })}
-                                aria-label={`وزن النشاط ${j + 1}`}
-                              />
-                            </span>
-                          </label>
 
                           {/* Note: required evidence isn't decoration - it's what makes review
                               possible. An activity with no required evidence means the supervisor

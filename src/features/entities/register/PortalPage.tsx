@@ -26,7 +26,7 @@ import { projectsOfEntity } from '@/data/mock/projects'
 import { flowOf, missingDocs, resubmit, uploadDoc, useFlow, REQUEST_DOCS } from '@/data/intake/flow'
 import { draftKey, draftOf } from '@/data/intake/drafts'
 import { ReturnedEdit } from './ReturnedEdit'
-import { CYCLE, inPeriod } from '@/data/intake/cycle'
+import { CYCLE, inPeriod, offeredFields, supportOf } from '@/data/intake/cycle'
 import { entityById } from '@/data/mock/entities'
 import { regRows, REG_STAGES } from '@/data/mock/registration'
 import { resubmitRegistration, useEntityFlow, valuesOf, fieldLabel } from '@/data/entities/store'
@@ -469,6 +469,18 @@ export default function PortalPage() {
                   <p className="sub cnote">
                     {CYCLE.name} · التقديم مفتوح حتى <DateText>{CYCLE.to}</DateText>
                   </p>
+                  {/* Client 24 Oct (#86) · what the budget opens for support this year, before the form */}
+                  {inPeriod() && (() => {
+                    const all = offeredFields()
+                    const shut = all.filter((f) => !supportOf(f).ok)
+                    if (!all.length) return null
+                    return (
+                      <p className="sub cnote">
+                        مفتوح للدعم هذا العام: {all.filter((f) => supportOf(f).ok).join('، ') || 'لا مجال'}
+                        {shut.length > 0 && <> · بلا مخصص في الميزانية: {shut.join('، ')}</>}
+                      </p>
+                    )
+                  })()}
                   {mine.length === 0 && !draft && <p className="sub cnote">لا طلبات قيد الدراسة لديك الآن.</p>}
                   <ul className="ptl-miss ptl-plans">
                     {draft && (

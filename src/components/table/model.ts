@@ -20,6 +20,9 @@ export interface Col<T> {
   fixed?: boolean
   /** Visible by default. */
   def?: boolean
+  /** A default column added after people saved their own layout · its tag lets a saved layout take it
+      once (then the person's choice stands) · client 24 Oct: «النتيجة» */
+  added?: string
   cell: (r: T) => ReactNode
   /** Plain text for export and image output. */
   text: (r: T) => string
@@ -148,7 +151,18 @@ export const readCols = <T,>(table: string, cols: Col<T>[]): string[] => {
     const valid = keys.filter((k): k is string => typeof k === 'string' && cols.some((c) => c.key === k))
     /* Defaults are returned even if the stored value is outdated and missing them. */
     const fixed = cols.filter((c) => c.fixed).map((c) => c.key)
-    return valid.length ? [...new Set([...fixed, ...valid])] : fallback
+    if (!valid.length) return fallback
+    /* A default column added since the layout was saved joins it once · later the person's own
+       choice (to hide it) is kept, since its tag is recorded as seen */
+    const seenKey = `ab-cols-${table}-seen`
+    const seen = new Set<string>(JSON.parse(localStorage.getItem(seenKey) ?? '[]') as string[])
+    const fresh = cols.filter((c) => c.def && c.added && !seen.has(`${c.key}@${c.added}`))
+    if (fresh.length) {
+      for (const c of fresh) seen.add(`${c.key}@${c.added}`)
+      localStorage.setItem(seenKey, JSON.stringify([...seen]))
+    }
+    const keep = [...fixed, ...valid, ...fresh.map((c) => c.key)]
+    return [...new Set(keep)]
   } catch {
     return fallback
   }

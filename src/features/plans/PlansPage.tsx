@@ -27,8 +27,9 @@ import { stuckActivities } from '@/data/plans/store'
 import type { Sheet } from '@/lib/export'
 import { PlanCard } from './PlanCard'
 import { COLS, GROUPS } from './columns'
+import { OUTCOME_PICK_SAY, planOutcome, outcomeMatches, outcomeOptions, type OutcomePick } from '@/data/shared/outcome'
 
-const KEYS = ['q', 'stage', 'owner', 'wait', 'late', 'stuck', 'entity', 'view', 'group', 'adv', 'ord'] as const
+const KEYS = ['q', 'stage', 'owner', 'wait', 'late', 'stuck', 'entity', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Plans inbox - the most significant gap found in the audit.
@@ -67,7 +68,9 @@ export default function PlansPage() {
     [],
   )
 
-  const match = (p: PlanRow, skipStage = false) => {
+  const match = (p: PlanRow, skipStage = false, skipRes = false): boolean => {
+    /* Client sheet 24 Oct (#95) · the procedure's outcome */
+    if (!skipRes && !outcomeMatches(planOutcome(p.stage), readList(v.res))) return false
     const needle = v.q?.trim()
     const stages = readList(v.stage)
     const owners = readList(v.owner)
@@ -86,6 +89,8 @@ export default function PlansPage() {
   }
 
   const rows = useMemo(() => planRows.filter((p) => match(p)), [v])
+  /* The filter without its outcome pick · the «النتيجة» options count over it */
+  const resBase = useMemo(() => planRows.filter((p) => match(p, false, true)), [v])
 
   /* Note: order is by queue, not date. A plan with five activities awaiting acceptance is today's
      work - date sorts by age, an entirely different question. After the queue comes late items,
@@ -107,7 +112,7 @@ export default function PlansPage() {
     const m = new Map<PlanStage, number>()
     for (const p of base) m.set(p.stage, (m.get(p.stage) ?? 0) + 1)
     return { m, total: base.length }
-  }, [v.owner, v.entity, v.wait, v.late, v.stuck, v.q])
+  }, [v.owner, v.entity, v.wait, v.late, v.stuck, v.q, v.res])
 
   useStickyGroup('plans', v.group, (x) => set({ group: x }))
 
@@ -141,7 +146,7 @@ export default function PlansPage() {
     })
 
   const chips = (
-    [['stage', 'المرحلة'], ['owner', 'المشرف'], ['entity', 'الجهة']] as [keyof Params, string][]
+    [['stage', 'المرحلة'], ['owner', 'المشرف'], ['entity', 'الجهة'], ['res', 'النتيجة']] as [keyof Params, string][]
   ).flatMap(([key, label]) =>
     readList(v[key]).map((value) => ({
       key,
@@ -149,6 +154,7 @@ export default function PlansPage() {
       value,
       text: key === 'stage'
         ? PLAN_STAGES.find((s) => s.key === value)?.label ?? value
+        : key === 'res' ? OUTCOME_PICK_SAY[value as OutcomePick] ?? value
         : value,
     })),
   )
@@ -306,6 +312,15 @@ export default function PlansPage() {
 
             {advOpen && (
               <div className="fgrid">
+                {/* Client sheet 24 Oct (#95) · مكتمل / مرفوض / ملغي, or still under way */}
+                <div className="fgrid-i">
+                  <MultiSelect
+                    values={readList(v.res)}
+                    all="كل النتائج"
+                    options={outcomeOptions(resBase, (p) => planOutcome(p.stage))}
+                    onChange={(x) => set({ res: writeList(x) })}
+                  />
+                </div>
                 <div className="fgrid-i">
                   <MultiSelect
                     values={readList(v.entity)}

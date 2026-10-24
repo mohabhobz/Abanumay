@@ -1,3 +1,5 @@
+import { budgetReqOutcome } from '@/data/shared/outcome'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { useMemo, useState, type ReactNode } from 'react'
@@ -190,6 +192,8 @@ export default function BudgetOpPage() {
               <div className="ehead-t">
                 <h1 className="ptitle">{title}</h1>
                 {existing && <span className="ehead-st"><Tag tone={reqTone(existing.state)}>{REQ_STATE_SAY[existing.state]}</Tag></span>}
+                {/* Client sheet 24 Oct (#95) · the outcome once the request ends */}
+                {existing && <OutcomeTag outcome={budgetReqOutcome(existing.state)} />}
               </div>
               <p className="sub mt-1">
                 {doc ? <>{docTitle(doc)} · </> : null}

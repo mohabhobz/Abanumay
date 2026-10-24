@@ -105,12 +105,14 @@ export const COLS: Col[] = [
     text: (a) => agrStageSay(a),
   },
   /* Client sheet 24 Oct (#95) · the procedure's outcome · مكتمل / مرفوض / ملغي, empty while under way ·
-     offered in the column picker */
+     shown by default */
   {
     key: 'outcome',
     w: 104,
     label: 'النتيجة',
-    cell: (a) => <OutcomeTag outcome={agreementOutcome(a.stage)} />,
+    def: true,
+    added: '2026-10-24',
+    cell: (a) => <OutcomeTag outcome={agreementOutcome(a.stage)} pending />,
     text: (a) => { const o = agreementOutcome(a.stage); return o ? OUTCOME_SAY[o] : '' },
   },
   {

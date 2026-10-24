@@ -12,7 +12,7 @@ import { projectRows } from '@/data/mock/projects'
 import { payRequests } from '@/data/mock/disbursements'
 import { agreements } from '@/data/mock/agreements'
 import { EHSAN_SEED, portfolios, seededPays } from '@/data/mock/implementer'
-import { ALL_FIELDS, CYCLE, TODAY, setFundingGate } from '@/data/intake/cycle'
+import { ALL_FIELDS, CYCLE, TODAY, setFundingGate, setSupportGate } from '@/data/intake/cycle'
 import { roleByKey, type RoleKey } from '@/data/roles'
 import { nf, pct } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
@@ -450,10 +450,13 @@ export function fundedLines(yearName = TODAY.slice(0, 4)): { fields: Set<string>
   return { fields, goals }
 }
 
-/* Client 24 Oct (#86 · «للمناقشة» · a first version) · the portal's support options follow the budget.
-   For a domain, or a goal under it, the allocation and the available balance of this year's approved
-   budgets · a choice with nothing available is offered disabled with its reason, and one nearly spent
-   carries a hint. Off in budget settings, every option stays open. */
+/* Client 24 Oct (#86) · the support options follow the budget · see `SupportGate` in the intake cycle
+   for how the two switches combine. For a domain, or a goal under it, this year's approved budgets give
+   the allocation and the available balance:
+     · no allocation, or nothing left → closed while money is a condition (`requireFunding`), with the
+       reason · when it isn't a condition the option stays open and the reason reads as a hint
+     · less than `lowFundPct` left → open, with a hint
+   A goal the budget tree doesn't carry under its domain reads by its domain (as the funding gate). */
 export interface SupportAvailability {
   ok: boolean
   /** Why the option is closed · empty when it's open */
@@ -465,8 +468,6 @@ export interface SupportAvailability {
 }
 
 export function supportAvailability(field: string, goal?: string, yearName = TODAY.slice(0, 4)): SupportAvailability {
-  const open: SupportAvailability = { ok: true, reason: '', hint: '', allocated: 0, available: 0 }
-  if (!BUDGET_RULES.portalLink) return open
   let allocated = 0
   let available = 0
   let seen = false
@@ -483,13 +484,21 @@ export function supportAvailability(field: string, goal?: string, yearName = TOD
       available += m.available
     }
   }
-  /* a goal the budget tree doesn't carry under its domain reads by its domain */
   if (goal && !seen) return supportAvailability(field, undefined, yearName)
-  if (!seen || allocated <= 0) return { ok: false, reason: `لا مخصص في ميزانية ${yearName} المعتمدة`, hint: '', allocated, available }
-  if (available <= 0) return { ok: false, reason: `استُنفد مخصص ${yearName}`, hint: '', allocated, available }
+  const closed = !seen || allocated <= 0 ? `لا مخصص في ميزانية ${yearName} المعتمدة` : available <= 0 ? `استُنفد مخصص ${yearName}` : ''
+  if (closed) {
+    return BUDGET_RULES.requireFunding
+      ? { ok: false, reason: closed, hint: '', allocated, available }
+      : { ok: true, reason: '', hint: `${closed} · يُدرس دون حجز`, allocated, available }
+  }
   const low = available / allocated * 100 < BUDGET_RULES.lowFundPct
   return { ok: true, reason: '', hint: low ? `المتاح قليل · ${nf.format(available)} من ${nf.format(allocated)}` : '', allocated, available }
 }
+
+setSupportGate({
+  listed: () => BUDGET_RULES.portalLink,
+  of: (field, goal) => supportAvailability(field, goal),
+})
 
 setFundingGate({
   field: (f) => {

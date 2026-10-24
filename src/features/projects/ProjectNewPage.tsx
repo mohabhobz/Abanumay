@@ -11,13 +11,12 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { nf, NOUN, nounAfter, pct as sayPct } from '@/lib/format'
 import {
-  DOCS_STAGE, P_STAGES, completion, daysOf, endOf, entityCap, entityOptions, optionsFor,
+  DOCS_STAGE, P_STAGES, completion, daysOf, endOf, entityCap, entityOptions, optionsFor, supportOption,
   projectIssues, shortIn, type PFieldDef, type PStageDef, type PValues,
 } from '@/data/mock/projectNew'
 import { REQUEST_DOCS, pickSupervisor, submitRequest } from '@/data/intake/flow'
 import { draftKey, draftOf, dropDraft, saveDraft } from '@/data/intake/drafts'
 import { CYCLE, inPeriod, openFields } from '@/data/intake/cycle'
-import { supportAvailability } from '@/data/budget/store'
 import { entityById } from '@/data/mock/entities'
 import { externalParties, isStrategic, proposeRoute, typeAllowed } from '@/data/partners/store'
 import { useRole } from '@/hooks/useRole'
@@ -70,14 +69,8 @@ function PField({
 }) {
   const opts = optionsFor(f, parent)
   /* Client 24 Oct (#86) · the field and goal lists follow the budget · an option without an allocation
-     stays listed, disabled with its reason, and a thin one carries a hint · the switch is in the budget
-     settings («ربط خيارات الدعم في البوابة بالميزانية») */
-  const budgetOpts = (f.key === 'field' || f.key === 'goal')
-    ? opts.map((x) => {
-      const a = f.key === 'field' ? supportAvailability(x) : supportAvailability(parent, x)
-      return { value: x, label: a.hint ? `${x} · ${a.hint}` : x, off: a.ok ? undefined : a.reason }
-    })
-    : opts
+     stays listed, disabled with its reason, and a thin one carries a hint (`supportOption`) */
+  const budgetOpts = opts.map((x) => supportOption(f.key, parent, x))
 
   return (
     <label className={`regf${f.kind === 'long' || f.kind === 'multi' || f.kind === 'outputs' || f.kind === 'weekdays' || f.kind === 'stages' ? ' regf-w' : ''}`}>

@@ -21,7 +21,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import {
   PLAN_LIMIT, PLAN_STAGES, lateActivities,
   planById, planClaimed, planDone, planIssues, planPlanned,
-  planSpi, planStageLabel, planStageWho, readyToClose, spiSay,
+  planExecution, planSpi, planStageLabel, planStageWho, readyToClose, spiSay,
   waitingReview,
 } from '@/data/mock/plans'
 import {
@@ -197,7 +197,7 @@ export default function PlanPage() {
           limit > 0
             ? <><b>{nf.format(p.hoursInStage)}</b> ساعة مقابل حدّ <b>{nf.format(limit)}</b></>
             : s.key === 'active'
-              ? <>الإنجاز المقبول <b>{pct(done)}</b> مقابل المخطَّط <b>{pct(want)}</b></>
+              ? <>نسبة اكتمال المشروع <b>{pct(done)}</b> مقابل المخطَّط <b>{pct(want)}</b></>
               : s.note,
         ],
         src: 'المصدر: سجل الخطة',
@@ -219,7 +219,7 @@ export default function PlanPage() {
       : { k: 'صاحب القرار الآن', t: steps[at]?.label ?? planStageWho(p.stage) }
   const holderRest = [
     live
-      ? <>الإنجاز المقبول <b className="num">{pct(done)}</b> · المخطَّط <b className="num">{pct(want)}</b></>
+      ? <>نسبة اكتمال المشروع <b className="num">{pct(done)}</b> · المخطَّط <b className="num">{pct(want)}</b></>
       : returned
         ? <>أُعيدت للجهة · تعود للمراجعة بعد التعديل</>
         : <>الاعتماد يثبّت النسخة المرجعية · وبعده يُقاس الانحراف</>,
@@ -366,12 +366,13 @@ export default function PlanPage() {
                     <KV
                       rows={[
                         {
-                          k: 'أداء الجدول · SPI',
+                          /* Client sheet 24 Oct (#97) */
+                          k: 'نسبة تنفيذ المشروع',
                           v: spi === null
-                            ? <span className="sub">لم يبدأ</span>
+                            ? <span className="sub">لم يحن موعد أي نشاط بعد</span>
                             : <span className={spi < 0.8 ? 'bad' : undefined}>
-                              <span className="num">{spi.toFixed(2)}</span>
-                              <span className="sub"> · المقبول ÷ المخطَّط</span>
+                              <span className="num">{pct(Math.round(spi * 100))}</span>
+                              <span className="sub"> · {(() => { const e = planExecution(p); return `${nf.format(e.accepted)} مقبولة من ${nf.format(e.due)} ${nounAfter(e.due, NOUN.activity)} حلّ موعدها` })()} · {say.say}</span>
                             </span>,
                         },
                         {

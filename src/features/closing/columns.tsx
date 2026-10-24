@@ -69,12 +69,14 @@ export const COLS: Col[] = [
     text: (c) => closeSayOf(c),
   },
   /* Client sheet 24 Oct (#95) · the procedure's outcome · مكتمل / مرفوض / ملغي, empty while under way ·
-     offered in the column picker */
+     shown by default */
   {
     key: 'outcome',
     w: 104,
     label: 'النتيجة',
-    cell: (c) => <OutcomeTag outcome={closeOutcome(c.stage)} />,
+    def: true,
+    added: '2026-10-24',
+    cell: (c) => <OutcomeTag outcome={closeOutcome(c.stage)} pending />,
     text: (c) => { const o = closeOutcome(c.stage); return o ? OUTCOME_SAY[o] : '' },
   },
   {

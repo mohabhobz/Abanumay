@@ -113,27 +113,32 @@ export const EVIDENCE_KINDS = [
 
 /* Calculation */
 
-/**
- * Completion is calculated from `accepted` only.
- * `claimed` means "the entity says it's done" — counting it toward the percentage would turn review
- * into self-reporting. This percentage feeds the closure decision, so it must be reviewed, not just
- * announced.
- */
-export const phaseDone = (p: PlanPhase): number => {
-  const w = p.activities.reduce((s, a) => s + a.weight, 0)
-  if (w === 0) return 0
-  const got = p.activities
-    .filter((a) => a.state === 'accepted')
-    .reduce((s, a) => s + a.weight, 0)
-  return Math.round((got / w) * 100)
+/* Client sheet 24 Oct (#96) · «نسبة اكتمال المشروع» = the accepted activities ÷ all the plan's
+   activities · a count, the same weight for every activity · the claimed and the planned figures use
+   the same basis, so the gap between them and the schedule index compare like with like.
+
+   Completion is calculated from `accepted` only. `claimed` means "the entity says it's done" —
+   counting it toward the percentage would turn review into self-reporting. This percentage feeds the
+   closure decision, so it must be reviewed, not just announced. */
+
+const allActs = (p: PlanRow) => p.phases.flatMap((ph) => ph.activities)
+
+/** The plan's activities and how many of them the supervisor accepted */
+export const planCounts = (p: PlanRow): { accepted: number; total: number } => {
+  const acts = allActs(p)
+  return { accepted: acts.filter((a) => a.state === 'accepted').length, total: acts.length }
 }
 
-/** Overall completion percentage · weighted by stage cost, not stage count */
+/** One stage's completion · its accepted activities ÷ its activities */
+export const phaseDone = (p: PlanPhase): number => {
+  if (!p.activities.length) return 0
+  return Math.round((p.activities.filter((a) => a.state === 'accepted').length / p.activities.length) * 100)
+}
+
+/** «نسبة اكتمال المشروع» · the accepted activities ÷ all activities */
 export const planDone = (p: PlanRow): number => {
-  const total = p.phases.reduce((s, ph) => s + ph.cost, 0)
-  if (total === 0) return 0
-  const got = p.phases.reduce((s, ph) => s + (ph.cost * phaseDone(ph)) / 100, 0)
-  return Math.round((got / total) * 100)
+  const { accepted, total } = planCounts(p)
+  return total ? Math.round((accepted / total) * 100) : 0
 }
 
 /**
@@ -142,56 +147,46 @@ export const planDone = (p: PlanRow): number => {
  * officer unaware they have a backlog.
  */
 export const planClaimed = (p: PlanRow): number => {
-  const total = p.phases.reduce((s, ph) => s + ph.cost, 0)
-  if (total === 0) return 0
-  const got = p.phases.reduce((s, ph) => {
-    const w = ph.activities.reduce((x, a) => x + a.weight, 0)
-    if (w === 0) return s
-    const c = ph.activities
-      .filter((a) => a.state === 'accepted' || a.state === 'claimed')
-      .reduce((x, a) => x + a.weight, 0)
-    return s + (ph.cost * (c / w))
-  }, 0)
-  return Math.round((got / total) * 100)
+  const acts = allActs(p)
+  if (!acts.length) return 0
+  return Math.round((acts.filter((a) => a.state === 'accepted' || a.state === 'claimed').length / acts.length) * 100)
 }
 
 /**
  * The **planned** percentage for today · what should be done if the plan is on schedule.
  * Calculated from reference dates: an activity whose end date has passed should be done, and one
- * within its window is calculated proportionally.
+ * within its window counts proportionally · every activity weighs one, as in `planDone`.
  */
 export const planPlanned = (p: PlanRow, today = TODAY): number => {
-  const total = p.phases.reduce((s, ph) => s + ph.cost, 0)
-  if (total === 0) return 0
+  const acts = allActs(p)
+  if (!acts.length) return 0
   const now = new Date(today).getTime()
-  const got = p.phases.reduce((s, ph) => {
-    const w = ph.activities.reduce((x, a) => x + a.weight, 0)
-    if (w === 0) return s
-    const due = ph.activities.reduce((x, a) => {
-      const a0 = new Date(a.from).getTime()
-      const a1 = new Date(a.to).getTime()
-      /* Re-audit 7 Oct · an activity without dates isn't due yet · it read NaN into the plan */
-      if (Number.isNaN(a0) || Number.isNaN(a1)) return x
-      if (now >= a1) return x + a.weight
-      if (now <= a0 || a1 === a0) return x
-      return x + (a.weight * (now - a0)) / (a1 - a0)
-    }, 0)
-    return s + ph.cost * (due / w)
+  const due = acts.reduce((x, a) => {
+    const a0 = new Date(a.from).getTime()
+    const a1 = new Date(a.to).getTime()
+    /* Re-audit 7 Oct · an activity without dates isn't due yet · it read NaN into the plan */
+    if (Number.isNaN(a0) || Number.isNaN(a1)) return x
+    if (now >= a1) return x + 1
+    if (now <= a0 || a1 === a0) return x
+    return x + (now - a0) / (a1 - a0)
   }, 0)
-  return Math.round((got / total) * 100)
+  return Math.round((due / acts.length) * 100)
 }
 
-/**
- * `SPI` · schedule performance index (actual ÷ planned).
- *
- * A value of exactly one means "on schedule", not "good". The number alone reads as a verdict, so
- * the screen shows both figures behind it — an `SPI` without its two components is a judgment with
- * no support.
- */
+/* Client sheet 24 Oct (#97) · «نسبة تنفيذ المشروع» = the accepted activities ÷ the activities whose
+   end date has come (on or before today) · where the plan should be by now against what was
+   reviewed and accepted · nothing is due yet → no measure (null), not zero. */
+export const planExecution = (p: PlanRow, today = TODAY): { pct: number | null; accepted: number; due: number } => {
+  const acts = allActs(p)
+  const accepted = acts.filter((a) => a.state === 'accepted').length
+  const due = acts.filter((a) => Boolean(a.to) && a.to <= today).length
+  return { pct: due ? Math.round((accepted / due) * 100) : null, accepted, due }
+}
+
+/** The schedule index the status words read · «نسبة تنفيذ المشروع» as a ratio (1 = on schedule) */
 export const planSpi = (p: PlanRow, today = TODAY): number | null => {
-  const want = planPlanned(p, today)
-  if (want === 0) return null
-  return Math.round((planDone(p) / want) * 100) / 100
+  const e = planExecution(p, today)
+  return e.pct === null ? null : e.pct / 100
 }
 
 export const spiSay = (v: number | null): { say: string; tone: 'ok' | 'warn' | 'no' | 'mute' } => {
@@ -282,14 +277,7 @@ export const planIssues = (p: PlanRow, grant: number): PlanIssue[] => {
         })
       }
     }
-    const w = ph.activities.reduce((s, a) => s + a.weight, 0)
-    if (ph.activities.length > 0 && w !== 100) {
-      out.push({
-        key: `wt-${ph.id}`,
-        say: `مجموع أوزان أنشطة «${ph.name}» ${w}، ويلزم أن يساوي 100.`,
-        rule: /* doc BPD-012 */ '',
-      })
-    }
+    /* Client sheet 24 Oct (#96) · no weights-sum rule · every activity counts one toward completion */
   })
 
   /* The sum of stages must equal the grant amount — same discipline as the budget tree and payment
@@ -802,25 +790,6 @@ export const savePhases = (id: string, phases: PlanPhase[]): void => {
   if (p) p.phases = phases
 }
 
-/**
- * Equal weight distribution is a button, not automatic behavior.
- * The rule is that a stage's activity weights sum to 100, and doing this automatically would
- * overwrite a weight the user typed in by hand. The button makes distribution a deliberate action,
- * and the message states the total is wrong until it's fixed.
- */
-export const evenWeights = (ph: PlanPhase): PlanPhase => {
-  const n = ph.activities.length
-  if (n === 0) return ph
-  const base = Math.floor(100 / n)
-  return {
-    ...ph,
-    activities: ph.activities.map((a, i) => ({
-      ...a,
-      /* The remainder goes to the first activity · the total must equal exactly 100 */
-      weight: i === 0 ? base + (100 - base * n) : base,
-    })),
-  }
-}
 
 /**
  * Opens a plan for a project · returns its id.

@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
+import { planCounts, planDone, planExecution, planOfProject } from '@/data/mock/plans'
 import { Mono, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { nf, projectCode } from '@/lib/format'
+import { nf, pct, projectCode } from '@/lib/format'
 import { days, groupTone } from '@/lib/tone'
 import { stagePressure } from '@/data/repository'
 import type { ProjectRow } from '@/types/domain'
@@ -10,6 +11,8 @@ import type { Col as TCol, GroupBy } from '@/components/table'
 import { subStatusOf } from '@/data/status'
 import { holderOf } from '@/data/holders'
 import { projectIsTest } from '@/data/shared/testData'
+import { OUTCOME_SAY, projectOutcome } from '@/data/shared/outcome'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
 
 /* Project table column definitions — a single source for four consumers.
 
@@ -172,6 +175,41 @@ export const COLS: Col[] = [
     /* Client 19 Oct · the status names where the project stands · in study, its seat */
     cell: (r) => { const t = statusSeat(r); const seat = seatOf(r); return <span className="tagfit" title={t}><Tag tone={groupTone(r.statusGroup)}>{r.statusGroup}</Tag>{seat && <span className="sub tseat">{seat}</span>}</span> },
     text: (r) => statusSeat(r),
+  },
+  /* Client sheet 24 Oct (#95) · the outcome · مكتمل / مرفوض / ملغي, empty while under way */
+  {
+    key: 'outcome',
+    w: 104,
+    label: 'النتيجة',
+    def: true,
+    added: '2026-10-24',
+    cell: (r) => <OutcomeTag outcome={projectOutcome(r.statusGroup)} pending />,
+    text: (r) => { const o = projectOutcome(r.statusGroup); return o ? OUTCOME_SAY[o] : '' },
+  },
+  /* Client sheet 24 Oct (#96) · «نسبة اكتمال المشروع» · the plan's accepted activities ÷ all its
+     activities · a project without a plan reads «—» */
+  {
+    key: 'completion',
+    w: 112,
+    label: 'نسبة الاكتمال',
+    def: true,
+    added: '2026-10-24',
+    n: true,
+    cell: (r) => { const pl = planOfProject(r.id); if (!pl) return <span className="sub">—</span>; const c = planCounts(pl); return <span title={`${c.accepted} من ${c.total} نشاطًا مقبولًا`}>{pct(planDone(pl))}</span> },
+    text: (r) => { const pl = planOfProject(r.id); return pl ? `${planDone(pl)}%` : '' },
+    value: (r) => { const pl = planOfProject(r.id); return pl ? planDone(pl) : -1 },
+  },
+  /* Client sheet 24 Oct (#97) · «نسبة تنفيذ المشروع» · accepted ÷ the activities due by today */
+  {
+    key: 'execution',
+    w: 112,
+    label: 'نسبة التنفيذ',
+    def: true,
+    added: '2026-10-24',
+    n: true,
+    cell: (r) => { const pl = planOfProject(r.id); const e = pl ? planExecution(pl) : undefined; if (!e || e.pct === null) return <span className="sub">—</span>; return <span className={e.pct < 80 ? 'over' : undefined} title={`${e.accepted} مقبولة من ${e.due} حلّ موعدها`}>{pct(e.pct)}</span> },
+    text: (r) => { const pl = planOfProject(r.id); const e = pl ? planExecution(pl) : undefined; return e && e.pct !== null ? `${e.pct}%` : '' },
+    value: (r) => { const pl = planOfProject(r.id); const e = pl ? planExecution(pl) : undefined; return e && e.pct !== null ? e.pct : -1 },
   },
   /* v3 · 0.status.2 · 3.4.19 · the level under study · the agreement and the plan before execution */
   { key: 'substatus', w: 168, label: 'الحالة الفرعية', def: true, cell: (r) => <span className="sub trim1" title={subStatusOf(r)}>{subStatusOf(r)}</span>, text: (r) => subStatusOf(r) },

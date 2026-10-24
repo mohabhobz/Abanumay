@@ -1,7 +1,10 @@
 import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { BackTo, DateText, Empty, Glass, Head, Icon, Mono, Money, Num, Tag, icons } from '@/components/ui'
+import { BackTo, DateText, Empty, Glass, Head, Icon, Mono, Money, MultiSelect, Num, Tag, icons } from '@/components/ui'
+import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
+import { budgetReqOutcome, outcomeMatches, outcomeOptions } from '@/data/shared/outcome'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { Segments } from '@/components/ui/filters'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -32,8 +35,14 @@ export default function BudgetOpsPage() {
     const st = stepOf(s)
     return !!st && (st === 'prepare' ? s === 'returned' && mayAct('prepare', role) : mayAct(st, role))
   }
-  const rows = BUDGET_REQS.filter((r) =>
-    !seg ? true : seg === 'mine' ? mine(r.state) : GROUPS.find((g) => g.key === seg)?.states.includes(r.state))
+  /* Client sheet 24 Oct (#95) · the request's outcome · مكتمل / مرفوض / ملغي, or still under way ·
+     the segments count within the outcome pick */
+  const { values: v, set } = useQueryParams(['res'])
+  const res = readList(v.res)
+  const inRes = BUDGET_REQS.filter((r) => outcomeMatches(budgetReqOutcome(r.state), res))
+  const inSeg = (r: (typeof BUDGET_REQS)[number]) =>
+    !seg ? true : seg === 'mine' ? mine(r.state) : Boolean(GROUPS.find((g) => g.key === seg)?.states.includes(r.state))
+  const rows = inRes.filter(inSeg)
 
   return (
     <AppLayout assistantContext={assistFor.page('طلبات عمليات الميزانية')}>
@@ -55,13 +64,26 @@ export default function BudgetOpsPage() {
 
           <Segments
             items={[
-              { key: '', label: 'الكل', count: BUDGET_REQS.length },
-              { key: 'mine', label: 'عند خطوتي', count: BUDGET_REQS.filter((r) => mine(r.state)).length },
-              ...GROUPS.map((g) => ({ key: g.key, label: g.label, count: BUDGET_REQS.filter((r) => g.states.includes(r.state)).length })),
+              { key: '', label: 'الكل', count: inRes.length },
+              { key: 'mine', label: 'عند خطوتي', count: inRes.filter((r) => mine(r.state)).length },
+              ...GROUPS.map((g) => ({ key: g.key, label: g.label, count: inRes.filter((r) => g.states.includes(r.state)).length })),
             ]}
             active={seg ?? ''}
             onChange={(k) => setSeg(k || undefined)}
           />
+
+          <Glass className="ftoolbar">
+            <div className="ftool-r">
+              <div className="ftool-f">
+                <MultiSelect
+                  values={res}
+                  all="كل النتائج"
+                  options={outcomeOptions(BUDGET_REQS.filter(inSeg), (r) => budgetReqOutcome(r.state))}
+                  onChange={(x) => set({ res: writeList(x) })}
+                />
+              </div>
+            </div>
+          </Glass>
 
           <Glass className="tblcard">
             <Head title="الطلبات" meta={<span className="sub"><Num>{rows.length}</Num> طلب</span>} />
@@ -78,6 +100,7 @@ export default function BudgetOpsPage() {
                       <th>البند</th>
                       <th className="n">المبلغ</th>
                       <th>الحالة</th>
+                      <th>النتيجة</th>
                       <th>التاريخ</th>
                     </tr>
                   </thead>
@@ -95,6 +118,7 @@ export default function BudgetOpsPage() {
                           </td>
                           <td className="n"><Money sm>{r.amount}</Money></td>
                           <td><Tag tone={reqTone(r.state)}>{REQ_STATE_SAY[r.state]}</Tag></td>
+                          <td><OutcomeTag outcome={budgetReqOutcome(r.state)} pending /></td>
                           <td><DateText>{r.createdAt.slice(0, 10)}</DateText></td>
                         </tr>
                       )

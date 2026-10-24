@@ -21,7 +21,7 @@ import { orgOutputsOf, outputLine, saveOrgOutputs, useFlow, type Output } from '
 import { useRole } from '@/hooks/useRole'
 import { holderOf } from '@/data/holders'
 import { CYCLE } from '@/data/intake/cycle'
-import { assignSupervisor } from '@/data/intake/flow'
+import { TransferModal } from '@/features/projects/TransferModal'
 import { blankExclusions, excludedBy, exclusionsOf } from '@/data/intake/exclusion'
 import { addCondition, appFlowOf, useApprovals } from '@/data/approvals/store'
 import { useBudget } from '@/data/budget/store'
@@ -564,28 +564,31 @@ function OrgOutputsCard({ row }: { row: ProjectRow }) {
 }
 
 /* Meeting 20 Oct · the project's owner is part of the study, not of the entity's data · the
-   supervisor who studies it owns it · the grants manager can hand it to another supervisor of the
-   same domain */
+   supervisor who studies it owns it.
+   Client sheet 24 Oct (#90) · one path to change the supervisor, the same rule everywhere: a supervisor
+   of the same domain, a mandatory reason, logged before → after («تعديل مشرف المنح») · the card opens the
+   project's transfer dialog in its supervisor mode (`reownProject` decides who may) instead of a second,
+   looser assignment of its own. */
 function OwnerRow({ row }: { row: ProjectRow }) {
   useFlow()
   const { role, user } = useRole()
+  const [open, setOpen] = useState(false)
   const sups = CYCLE.domains[row.field]?.supervisors ?? []
-  const [pick, setPick] = useState('')
-  const can = role.key === 'grants-manager' && !row.archived
+  const studying = row.stage === 'دراسة المشروع' && (row.holder ?? 'supervisor') === 'supervisor'
+  const can = !row.archived && sups.length > 0 && (role.key === 'grants-manager' || (role.key === 'supervisor' && studying && (row.owner === user.name || Boolean(user.behalf))))
   return (
     <div className="stdy-own mt-3">
       <div className="rowf gp-2">
         <span className="lb">مالك المشروع</span>
         {row.owner ? <Person name={row.owner} /> : <Tag tone="warn">غير مُسنَد</Tag>}
         <span className="sub">مشرف المنح المسؤول · يدرس المشروع ويتابعه حتى إغلاقه</span>
+        {can && (
+          <button type="button" className="btn btn-2 btn-sm" onClick={() => setOpen(true)}>
+            {row.owner ? 'عدّل المشرف' : 'أسند إلى مشرف'}
+          </button>
+        )}
       </div>
-      {can && sups.length > 0 && (
-        <div className="apv-row mt-2">
-          <FieldSelect value={pick} label="مشرف المجال" placeholder="أسند إلى مشرف"
-            options={sups.filter((x) => x !== row.owner).map((x) => ({ value: x, label: x }))} onChange={setPick} />
-          <button type="button" className="btn btn-2 btn-sm" disabled={!pick} onClick={() => { assignSupervisor(row.id, pick, user.name); setPick('') }}>أسند</button>
-        </div>
-      )}
+      {open && <TransferModal row={row} me={user.name} mode="owner" onClose={() => setOpen(false)} />}
     </div>
   )
 }

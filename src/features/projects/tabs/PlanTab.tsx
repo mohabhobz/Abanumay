@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import { DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tabs, Tag, icons } from '@/components/ui'
 import { TONE } from '@/lib/tone'
 import { ROUTES } from '@/app/routes'
-import { NOUN, nounAfter, pct, ver } from '@/lib/format'
+import { nf, NOUN, nounAfter, pct, ver } from '@/lib/format'
 import {
-  PLAN_TONE, lateActivities, planClaimed, planDone, planPlanned, planRows, planSpi,
+  PLAN_TONE, lateActivities, planClaimed, planDone, planExecution, planPlanned, planRows, planSpi,
   planStageLabel, readyToClose, spiSay, waitingReview,
 } from '@/data/mock/plans'
 import { planVersions } from '@/data/plans/store'
@@ -152,12 +152,13 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
           },
           ...(live ? [
             {
-              k: 'أداء الجدول · SPI',
+              /* Client sheet 24 Oct (#97) */
+              k: 'نسبة تنفيذ المشروع',
               v: spi === null
-                ? <span className="sub">لم يبدأ التنفيذ</span>
+                ? <span className="sub">لم يحن موعد أي نشاط بعد</span>
                 : <span className={spi < 0.8 ? 'bad' : undefined}>
-                  <span className="num">{spi.toFixed(2)}</span>
-                  <span className="sub"> · {say.say}</span>
+                  <span className="num">{pct(Math.round(spi * 100))}</span>
+                  <span className="sub"> · {(() => { const e = planExecution(p); return `${nf.format(e.accepted)} مقبولة من ${nf.format(e.due)} ${nounAfter(e.due, NOUN.activity)} حلّ موعدها` })()} · {say.say}</span>
                 </span>,
             },
             {

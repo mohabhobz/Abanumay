@@ -26,8 +26,9 @@ import type { CloseRow, CloseStage } from '@/types/domain'
 import type { Sheet } from '@/lib/export'
 import { CloseCard } from './CloseCard'
 import { COLS, GROUPS } from './columns'
+import { OUTCOME_PICK_SAY, closeOutcome, outcomeMatches, outcomeOptions, type OutcomePick } from '@/data/shared/outcome'
 
-const KEYS = ['q', 'stage', 'cycle', 'owner', 'late', 'short', 'view', 'group', 'adv', 'ord'] as const
+const KEYS = ['q', 'stage', 'cycle', 'owner', 'late', 'short', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Closing inbox.
@@ -73,7 +74,9 @@ export default function ClosingPage() {
   const view = mobile ? 'cards' : v.view === 'table' ? 'table' : 'cards'
   const advOpen = v.adv === '1'
 
-  const match = (c: CloseRow, skipStage = false): boolean => {
+  const match = (c: CloseRow, skipStage = false, skipRes = false): boolean => {
+    /* Client sheet 24 Oct (#95) · the procedure's outcome */
+    if (!skipRes && !outcomeMatches(closeOutcome(c.stage), readList(v.res))) return false
     const needle = v.q?.trim()
     const stages = readList(v.stage)
     const owners = readList(v.owner)
@@ -90,6 +93,8 @@ export default function ClosingPage() {
   }
 
   const rows = useMemo(() => closeRows.filter((c) => match(c)), [v])
+  /* The filter without its outcome pick · the «النتيجة» options count over it */
+  const resBase = useMemo(() => closeRows.filter((c) => match(c, false, true)), [v])
 
   /* Longest-waiting sits at top - the inbox sorts by risk, not by date. */
   const sorted = useMemo(
@@ -105,7 +110,7 @@ export default function ClosingPage() {
     const m = new Map<CloseStage, number>()
     for (const c of base) m.set(c.stage, (m.get(c.stage) ?? 0) + 1)
     return { m, total: base.length }
-  }, [v.cycle, v.owner, v.late, v.short, v.q])
+  }, [v.cycle, v.owner, v.late, v.short, v.q, v.res])
 
   useStickyGroup('closings', v.group, (x) => set({ group: x }))
 
@@ -147,7 +152,7 @@ export default function ClosingPage() {
     })
 
   const chips = (
-    [['stage', 'المحطة'], ['owner', 'المشرف']] as [keyof Params, string][]
+    [['stage', 'المحطة'], ['owner', 'المشرف'], ['res', 'النتيجة']] as [keyof Params, string][]
   ).flatMap(([key, label]) =>
     readList(v[key]).map((value) => ({
       key,
@@ -155,6 +160,7 @@ export default function ClosingPage() {
       value,
       text: key === 'stage'
         ? CLOSE_STAGES.find((s) => s.key === value)?.label ?? value
+        : key === 'res' ? OUTCOME_PICK_SAY[value as OutcomePick] ?? value
         : value,
     })),
   )
@@ -296,6 +302,16 @@ export default function ClosingPage() {
 
             {advOpen && (
               <div className="fgrid">
+                {/* Client sheet 24 Oct (#95) · مكتمل / مرفوض / ملغي, or still under way */}
+                <div className="fgrid-i">
+                  <MultiSelect
+                    label="النتيجة"
+                    values={readList(v.res)}
+                    all="كل النتائج"
+                    options={outcomeOptions(resBase, (c) => closeOutcome(c.stage))}
+                    onChange={(x) => set({ res: writeList(x) })}
+                  />
+                </div>
                 <div className="fgrid-i">
                   <Toggle
                     label="المتأخر عن حدّ المحطة"

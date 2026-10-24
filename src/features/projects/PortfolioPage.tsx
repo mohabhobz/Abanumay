@@ -4,7 +4,7 @@ import { payBlock } from '@/data/entities/store'
 import { portfolioAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Steps, Tabs, Tag, icons, type StepItem, CheckChip } from '@/components/ui'
+  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Steps, Tabs, Tag, icons, type StepItem, CheckChip, MultiSelect } from '@/components/ui'
 import { CHART_COLORS, Legend, RankBars, StackBar, type Slice } from '@/components/charts'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -32,7 +32,7 @@ import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { Checks, Said, SlotsEditor } from '@/features/partners/parts'
 import type { Reading } from '@/components/assistant/reading'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
-import { portfolioOutcome } from '@/data/shared/outcome'
+import { outcomeMatches, outcomeOptions, portfolioOutcome, subOutcome } from '@/data/shared/outcome'
 
 /* A portfolio · a strategic partner's parent record with sub-projects under it (BPD-013).
 
@@ -507,8 +507,11 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   /* Client 20 Oct (#21) · the sub-projects filtered like a project list · by state, and by name or region */
   const [flt, setFlt] = useState('all')
   const [q, setQ] = useState('')
+  /* Client sheet 24 Oct (#95) · the sub-project's outcome · مكتمل / مرفوض / ملغي, or still under way */
+  const [res, setRes] = useState<string[]>([])
   const test = FILTERS.find((f) => f.key === flt)?.test ?? (() => true)
-  const shown = pf.items.filter((x) => test(x) && (!q.trim() || `${x.name} ${x.region} ${x.city ?? ''}`.includes(q.trim())))
+  const inQ = pf.items.filter((x) => test(x) && (!q.trim() || `${x.name} ${x.region} ${x.city ?? ''}`.includes(q.trim())))
+  const shown = inQ.filter((x) => outcomeMatches(subOutcome(x.state), res))
   const gate = subsGate(pf)
   const adder = gate.ok && (asPartner || role.key === 'supervisor')
   const sup = !asPartner && role.key === 'supervisor'
@@ -554,6 +557,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             })}
           </div>
           <SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المشروع الفرعي أو المنطقة" />
+          <MultiSelect values={res} all="كل النتائج" options={outcomeOptions(inQ, (x) => subOutcome(x.state))} onChange={setRes} />
         </div>
       )}
       {pf.items.length > 0 && !shown.length && <p className="sub cnote">لا مشاريع فرعية تطابق الفلتر.</p>}
@@ -566,6 +570,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                 <th><span className="th-t">المشروع · المنطقة · المستهدف</span></th>
                 <th className="n"><span className="th-t">القيمة</span></th>
                 <th><span className="th-t">الحالة</span></th>
+                <th><span className="th-t">النتيجة</span></th>
               </tr>
             </thead>
             <tbody>
@@ -593,6 +598,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                     )}
                     {dropper && x.state === 'draft' && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { dropSub(pf.id, x.id, asPartner ? entityName(pf) : user.name); r([], 'حذف المسودة') }}>حذف المسودة</button>}
                   </td>
+                  <td><OutcomeTag outcome={subOutcome(x.state)} pending /></td>
                 </tr>
               ))}
             </tbody>

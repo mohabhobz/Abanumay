@@ -1,3 +1,5 @@
+import { budgetDocOutcome } from '@/data/shared/outcome'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { useMemo, useState } from 'react'
 import { readAllocation, readBudgetAdvice } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -228,7 +230,8 @@ export default function BudgetDocPage() {
                 {doc.description?.trim() || <>للميزانية سنة مالية ومصدر تمويل أو أكثر · والبنود شجرة، والصرف يكون على آخر مستوياتها</>}
               </p>
             </div>
-            <Tag tone={budgetTone(doc.state)}>{BUDGET_STATE_SAY[doc.state]}</Tag>
+            {/* Client sheet 24 Oct (#95) · the outcome beside the state once the budget is approved */}
+            <span className="rowf gp-2"><Tag tone={budgetTone(doc.state)}>{BUDGET_STATE_SAY[doc.state]}</Tag><OutcomeTag outcome={budgetDocOutcome(doc.state)} /></span>
           </header>
 
           {existing?.state === 'returned' && eventsOf(existing.id)[0]?.note && (

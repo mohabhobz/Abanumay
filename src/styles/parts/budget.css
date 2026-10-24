@@ -88,7 +88,22 @@
 /* 11 Oct · audit UI-013/183 · the first entry under a section title sat on it with no gap */
 .fnd-h+.plchg,.fnd-h+ul,.fnd-h+.kv{margin-top:var(--sp-3)}
 .fnd-c1{width:38%}
-.fnd-scroll .tbl{min-width:44rem}
+/* 24 Oct · the shares table fits its card · it used to hold a 44rem floor, wider than the card at
+   1440, so its last column («المتبقي») was cut · the line's text wraps, the figures don't */
+.fnd-scroll .tbl{width:100%}
+.fnd-scroll .tbl th.n,.fnd-scroll .tbl td.n{white-space:nowrap}
+/* A narrow screen reads each share as a block: the line on its own row, the four figures under it,
+   each with its name (as the budget tree does) */
+@media (max-width:620px){
+  .fnd-scroll .tbl thead{display:none}
+  .fnd-scroll .tbl,.fnd-scroll .tbl tbody,.fnd-scroll .tbl tfoot{display:block}
+  .fnd-scroll .tbl td{height:auto;max-height:none;overflow:visible;white-space:normal}
+  .fnd-scroll .tbl tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--sp-4)}
+  .fnd-scroll .tbl td:first-child{grid-column:1/-1}
+  .fnd-scroll .tbl td.n{white-space:nowrap;padding-block:var(--sp-2);display:flex;justify-content:space-between;gap:var(--sp-2);text-align:start}
+  .fnd-scroll .tbl td.n::before{content:attr(data-k);font-size:var(--fs-1);color:var(--t3)}
+  .fnd-scroll .tbl colgroup{display:none}
+}
 
 /* 11 Oct · audit UI-047 · budget list · the two tags share a fixed slot so the amounts form a column */
 .bgl-tags{flex:none;width:calc(var(--sp-12) * 3);display:flex;justify-content:flex-start;gap:var(--sp-2)}

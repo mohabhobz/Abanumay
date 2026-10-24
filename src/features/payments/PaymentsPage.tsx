@@ -30,8 +30,9 @@ import type { PayRequest, PayState } from '@/types/domain'
 import type { Sheet } from '@/lib/export'
 import { RequestCard } from './RequestCard'
 import { COLS, GROUPS } from './columns'
+import { OUTCOME_PICK_SAY, outcomeMatches, outcomeOptions, payOutcome, type OutcomePick } from '@/data/shared/outcome'
 
-const KEYS = ['q', 'state', 'heat', 'owner', 'entity', 'bank', 'hold', 'view', 'group', 'adv', 'ord'] as const
+const KEYS = ['q', 'state', 'heat', 'owner', 'entity', 'bank', 'hold', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Disbursement inbox.
@@ -105,13 +106,15 @@ export default function PaymentsPage() {
   const view = mobile ? 'cards' : v.view === 'table' ? 'table' : 'cards'
   const advOpen = v.adv === '1'
 
-  const rows = useMemo(() => {
+  /* The filter without its outcome pick · the «النتيجة» options count over it */
+  const [rows, resBase] = useMemo(() => {
     const needle = v.q?.trim()
     const states = readList(v.state)
     const owners = readList(v.owner)
     const entities = readList(v.entity)
     const banks = readList(v.bank)
-    return payRequests.filter((r) => {
+    const res = readList(v.res)
+    const base = payRequests.filter((r) => {
       if (states.length && !states.includes(r.state)) return false
       if (v.heat && payHeat(r) !== v.heat) return false
       if (owners.length && !owners.includes(r.owner)) return false
@@ -124,6 +127,8 @@ export default function PaymentsPage() {
       }
       return true
     })
+    /* Client sheet 24 Oct (#95) · the procedure's outcome */
+    return [base.filter((r) => outcomeMatches(payOutcome(r.state), res)), base] as const
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [v, ver])
 
@@ -154,7 +159,9 @@ export default function PaymentsPage() {
     const owners = readList(v.owner)
     const entities = readList(v.entity)
     const banks = readList(v.bank)
+    const res = readList(v.res)
     const base = payRequests.filter((r) => {
+      if (!outcomeMatches(payOutcome(r.state), res)) return false
       if (v.heat && payHeat(r) !== v.heat) return false
       if (owners.length && !owners.includes(r.owner)) return false
       if (!inEntities(r, entities)) return false
@@ -167,7 +174,7 @@ export default function PaymentsPage() {
     const m = new Map<PayState, number>()
     for (const r of base) m.set(r.state, (m.get(r.state) ?? 0) + 1)
     return { m, total: base.length }
-  }, [v.heat, v.owner, v.entity, v.bank, v.hold, v.q])
+  }, [v.heat, v.owner, v.entity, v.bank, v.hold, v.q, v.res])
 
   /** Entities that actually have requests - a filter shouldn't show an option with no results. */
   const entityOptions = useMemo(() => {
@@ -233,7 +240,7 @@ export default function PaymentsPage() {
 
   const chips = (
     [
-      ['state', 'المرحلة'], ['owner', 'المشرف'], ['entity', 'الجهة'], ['bank', 'الحساب'],
+      ['state', 'المرحلة'], ['owner', 'المشرف'], ['entity', 'الجهة'], ['bank', 'الحساب'], ['res', 'النتيجة'],
     ] as [keyof Params, string][]
   ).flatMap(([key, label]) =>
     readList(v[key]).map((value) => ({
@@ -243,6 +250,7 @@ export default function PaymentsPage() {
       text:
         key === 'state' ? PAY_STATES.find((s) => s.key === value)?.label ?? value
         : key === 'entity' ? entityLabel(value)
+        : key === 'res' ? OUTCOME_PICK_SAY[value as OutcomePick] ?? value
         : value,
     })),
   )
@@ -433,6 +441,16 @@ export default function PaymentsPage() {
                     all={`كل الجهات (${entityOptions.length})`}
                     options={entityOptions}
                     onChange={(x) => set({ entity: writeList(x) })}
+                  />
+                </div>
+                {/* Client sheet 24 Oct (#95) · مكتمل / مرفوض / ملغي, or still under way */}
+                <div className="fgrid-i">
+                  <MultiSelect
+                    label="النتيجة"
+                    values={readList(v.res)}
+                    all="كل النتائج"
+                    options={outcomeOptions(resBase, (r) => payOutcome(r.state))}
+                    onChange={(x) => set({ res: writeList(x) })}
                   />
                 </div>
                 <div className="fgrid-i">

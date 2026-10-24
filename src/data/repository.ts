@@ -10,6 +10,7 @@
  * eventually be sent to the server as a query string, so the screen doesn't change when the real
  * connection is wired in.
  */
+import { projectOutcome } from '@/data/shared/outcome'
 import { openUpdateOf } from '@/data/entities/store'
 import type {
   Project, Entity, AuthorityMatrix, CurrentUser, Insight, FollowUpType,
@@ -72,6 +73,8 @@ export interface ProjectQuery {
   city?: Filter
   /** Grouped status */
   status?: Filter
+  /** Client sheet 24 Oct (#95) · the outcome · done / rejected / cancelled, or «open» while under way */
+  outcome?: Filter
   /** The actual process department */
   stage?: Filter
   supportStatus?: Filter
@@ -191,6 +194,7 @@ const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
   if (!eq(q.region, r.region)) return false
   if (!eq(q.city, r.city)) return false
   if (!eq(q.status, r.statusGroup)) return false
+  if (!eq(q.outcome, projectOutcome(r.statusGroup) ?? 'open')) return false
   if (!eq(q.stage, r.stage)) return false
   if (!eq(q.grantMethod, r.grantMethod)) return false
   if (!eq(q.funding, r.funding)) return false
