@@ -8,8 +8,7 @@ import { registrationAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Blockers, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tabs, Tag,
-  blockerCount, type Blocker, type StepItem,
-} from '@/components/ui'
+  blockerCount, type Blocker, type StepItem, CheckChip } from '@/components/ui'
 import { DocFile, DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -162,7 +161,7 @@ export default function RegReviewPage() {
     ...dups.map((d) => ({ head: d.label, text: <>مكرَّر مع «{d.who}»</>, why: see('data', 'rg-def') })),
     ...badIban.map((b) => ({ head: `آيبان ${b.bankName}`, text: 'غير صحيح · ارفض الحساب أو أعد الطلب لتصحيحه', why: see('data', 'rg-banks') })),
     ...(noBank ? [{ head: 'الحسابات البنكية', text: 'لا حساب مقبول · يلزم حساب واحد على الأقل', why: see('data', 'rg-banks') }] : []),
-    ...(open && !legible ? [{ head: 'الوثائق النظامية', text: 'لم يُؤكَّد وضوحها وقراءتها بعد · أكّده في قائمة الفحص', why: see('data', 'rg-check') }] : []),
+    ...(open && !legible ? [{ head: 'الوثائق النظامية', text: 'لم يُؤكَّد وضوحها وقراءتها بعد · يؤكّدها المراجع بعلامة الفحص', why: see('data', 'rg-check') }] : []),
   ]
   const nStop = blockerCount(stops)
   const pick = (p: PickedReason) => {
@@ -243,103 +242,99 @@ export default function RegReviewPage() {
 
           <div className="g2">
             <div className="col">
-              {/* Client 23 Oct · what stops the request, named field by field · on every tab */}
-              {open && nStop > 0 && (
+              {/* Client 23 Oct · what stops the request, named field by field · the data tab carries it in
+                  «ما يمنع الاعتماد» itself, the other tabs read it here */}
+              {open && nStop > 0 && tab !== 'data' && (
                 <Blockers title="الطلب متوقف للأسباب أدناه" items={stops} noun={STOP_NOUN} ready="" />
               )}
               {tab === 'data' && (
                 <>
               {/* Note: the verification card sits above the data on purpose - the reviewer needs
                   "what hasn't been verified" before "what the data is". */}
+              {/* Client 23 Oct (twice · the recording and the sheet) · the card said «موقوف» while the
+                  request was still under review, and mixed what passed with what blocks · it now says
+                  «الطلب متوقف للأسباب أدناه» and lists the blockers by field, each with where to fix it;
+                  what passed folds under them, and the advisory notes (wording, the governance claim)
+                  sit apart since they never block */}
               <Glass id="rg-check">
                 <Head
                   title="ما يمنع الاعتماد"
-                  meta={blocked ? <Tag tone="no">موقوف</Tag> : <Tag tone="ok">لا مانع</Tag>}
+                  meta={nStop > 0 ? <Tag tone="warn"><Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)}</Tag> : <Tag tone="ok">لا مانع</Tag>}
                 />
-                <ul className="payq-ck">
-                  <li className={clash ? 'no' : 'ok'}>
-                    <Icon name={clash ? icons.alert : icons.check} size="sm" />
-                    <span>
-                      {clash
-                        ? <>رقم الترخيص مسجَّل لـ «{clash.name}» بنفس التصنيف</>
-                        : <>رقم الترخيص <Mono>{r.licenseNo}</Mono> غير مكرَّر في هذا التصنيف</>}
-                    </span>
-                    {/* doc rule 8 */}
-                  </li>
-                  <li className={badIban.length ? 'no' : 'ok'}>
-                    <Icon name={badIban.length ? icons.alert : icons.check} size="sm" />
-                    <span>
-                      {badIban.length
-                        ? <>آيبان غير صحيح في <Num>{badIban.length}</Num> {badIban.length > 1 ? 'حسابات' : 'حساب'} مقبول · ارفض الحساب أو أعد الطلب لتصحيحه</>
-                        : 'كل الحسابات المقبولة آيبانها صحيح'}
-                    </span>
-                    {/* doc 2.4.6 */}
-                  </li>
-                  <li className={missingDocs.length ? 'no' : 'ok'}>
-                    <Icon name={missingDocs.length ? icons.alert : icons.check} size="sm" />
-                    <span>
-                      {missingDocs.length
-                        ? <>ينقص <Num>{missingDocs.length}</Num>: {missingDocs.map((d) => d.label).join(' · ')}</>
-                        : 'كل المستندات الإلزامية لهذا التصنيف مرفوعة'}
-                    </span>
-                    {/* doc rule 4 */}
-                  </li>
-                  <li className={stale.length ? 'no' : 'ok'}>
-                    <Icon name={stale.length ? icons.alert : icons.check} size="sm" />
-                    <span>{stale.length
-                      ? <>وثيقة منتهية عند التقديم: {stale.map((k) => REG_DOCS.find((d) => d.key === k)?.label).join(' · ')}</>
-                      : 'الترخيص وقرار تكليف المجلس ساريان'}</span>
-                    {/* doc rule 5 */}
-                  </li>
-                  <li className={dups.length ? 'no' : 'ok'}>
-                    <Icon name={dups.length ? icons.alert : icons.check} size="sm" />
-                    <span>{dups.length
-                      ? <>بيانات مكرّرة: {dups.map((d) => `${d.label} مع «${d.who}»`).join(' · ')}</>
-                      : 'الاسم والبريد والجوال والآيبان غير مكرّرة'}</span>
-                    {/* doc rule 10 */}
-                  </li>
-                  {/* Batch 8 · spelling and formatting of the request's text · advisory, it doesn't block */}
-                  {(() => {
-                    const found = REG_STAGES.flatMap((st) => st.fields ?? []).filter((f) => f.kind === 'text')
-                      .flatMap((f) => textIssues(String((r as unknown as Record<string, unknown>)[f.key] ?? '')).map((x) => `${f.label}: ${x.say}${x.fixed !== undefined ? ` (المقترح «${x.fixed}»)` : ''}`))
-                    return (
-                      <li className={found.length ? 'no' : 'ok'}>
-                        <Icon name={found.length ? icons.alert : icons.check} size="sm" />
-                        <span>{found.length ? <>ملاحظات الصياغة: {found.join(' · ')}</> : 'لا أخطاء إملائية ولا تنسيقية في النصوص'}</span>
-                        <span className="payq-r">استرشادي</span>
-                      </li>
-                    )
-                  })()}
-                  <li className={badFormat.length ? 'no' : 'ok'}>
-                    <Icon name={badFormat.length ? icons.alert : icons.check} size="sm" />
-                    <span>{badFormat.length
-                      ? <>أخطاء صيغة: {badFormat.map((x) => `${x.f.label}: ${x.e}`).join(' · ')}</>
-                      : 'صيغ الحقول صحيحة'}</span>
-                    {/* v3 · 2.4.7 */}
-                  </li>
-                  {/* v3 · 2.4.6 · legible and readable · the size warning is a hint, the reviewer's
-                      reading is the check */}
-                  <li className={legible ? 'ok' : 'no'}>
-                    <Icon name={legible ? icons.check : icons.alert} size="sm" />
-                    <label className="rowf gp-2">
-                      <input type="checkbox" checked={legible} disabled={!open} onChange={(x) => setLegible(x.target.checked)} />
-                      <span>
-                        راجعتُ الوثائق النظامية وهي واضحة ومقروءة
-                        {warnFiles.length > 0 && <> · <span className="bad">{warnFiles.map(([k, f]) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k}: ${f.warn}`).join(' · ')}</span></>}
-                      </span>
-                    </label>
-                  </li>
-                  <li className={r.governanceClaim > 0 ? 'ok' : 'no'}>
-                    <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size="sm" />
-                    <span>
-                      درجة الحوكمة{' '}
-                      {r.governanceClaim > 0
-                        ? <><span className="num">{r.governanceClaim}</span> · <b>إقرار الجهة</b> لا تقييم المؤسسة</>
-                        : <>أُقرّت بصفر · النظام يطلب ذلك عند عدم إجراء التقييم</>}
-                    </span>
-                    <span className="payq-r">نوتة ن-<Num>2</Num></span>
-                  </li>
-                </ul>
+                {nStop > 0 ? (
+                  <>
+                    <p className="sub cnote">{open ? 'الطلب متوقف للأسباب أدناه · عالجها، أو أعد الطلب للجهة لتصحيحها' : 'كان الطلب متوقفًا للأسباب أدناه'}</p>
+                    <ul className="blockers mt-2">
+                      {stops.map((b, k) => (
+                        <li key={k}>
+                          <Icon name={icons.alert} size="sm" />
+                          <span>{b.head && <><b>{b.head}</b> · </>}{b.text}</span>
+                          {b.why && <span className="payq-r">{b.why}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="sub cnote">{decided ? 'لم يكن على الطلب مانع عند القرار.' : 'اكتملت الفحوص · لا شيء يمنع الاعتماد.'}</p>
+                )}
+                {/* v3 · 2.4.6 · legible and readable · the reviewer's own check, kept beside the blockers ·
+                    the size warning is a hint, the reading is the check */}
+                <label className="rowf gp-2 mt-3">
+                  <input type="checkbox" checked={legible} disabled={!open} onChange={(x) => setLegible(x.target.checked)} />
+                  <span>
+                    راجعتُ الوثائق النظامية وهي واضحة ومقروءة
+                    {warnFiles.length > 0 && <> · <span className="bad">{warnFiles.map(([k, f]) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k}: ${f.warn}`).join(' · ')}</span></>}
+                  </span>
+                </label>
+                {(() => {
+                  const passed = [
+                    ...(!clash ? [<>رقم الترخيص <Mono>{r.licenseNo}</Mono> غير مكرَّر في هذا التصنيف</>] : []),
+                    ...(!badIban.length ? ['كل الحسابات المقبولة آيبانها صحيح'] : []),
+                    ...(!missingDocs.length ? ['كل المستندات الإلزامية لهذا التصنيف مرفوعة'] : []),
+                    ...(!stale.length ? ['الترخيص وقرار تكليف المجلس ساريان'] : []),
+                    ...(!dups.length ? ['الاسم والبريد والجوال والآيبان غير مكرّرة'] : []),
+                    ...(!badFormat.length ? ['صيغ الحقول صحيحة'] : []),
+                  ]
+                  if (!passed.length) return null
+                  return (
+                    <details className="mt-3" open={nStop === 0}>
+                      <summary className="lnk">تحقّق بالفعل · <Num>{passed.length}</Num></summary>
+                      <ul className="payq-ck mt-2">
+                        {passed.map((x, k) => (
+                          <li key={k} className="ok">
+                            <Icon name={icons.check} size="sm" />
+                            <span>{x}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )
+                })()}
+                {/* Batch 8 · the wording notes and the governance claim · for the reviewer's eye, never a blocker */}
+                {(() => {
+                  const found = REG_STAGES.flatMap((st) => st.fields ?? []).filter((f) => f.kind === 'text')
+                    .flatMap((f) => textIssues(String((r as unknown as Record<string, unknown>)[f.key] ?? '')).map((x) => `${f.label}: ${x.say}${x.fixed !== undefined ? ` (المقترح «${x.fixed}»)` : ''}`))
+                  return (
+                    <>
+                      <p className="lb mt-3">للعلم · لا تمنع الاعتماد</p>
+                      <ul className="payq-ck mt-1">
+                        <li className={found.length ? 'no' : 'ok'}>
+                          <Icon name={found.length ? icons.info : icons.check} size="sm" />
+                          <span>{found.length ? <>ملاحظات الصياغة: {found.join(' · ')}</> : 'لا أخطاء إملائية ولا تنسيقية في النصوص'}</span>
+                        </li>
+                        <li className="ok">
+                          <Icon name={icons.info} size="sm" />
+                          <span>
+                            درجة الحوكمة{' '}
+                            {r.governanceClaim > 0
+                              ? <><span className="num">{r.governanceClaim}</span> · <b>إقرار الجهة</b> لا تقييم المؤسسة</>
+                              : <>أُقرّت بصفر · النظام يطلب ذلك عند عدم إجراء التقييم</>}
+                          </span>
+                        </li>
+                      </ul>
+                    </>
+                  )
+                })()}
               </Glass>
 
               <Glass id="rg-def">
@@ -460,14 +455,12 @@ export default function RegReviewPage() {
                   <ul className="cfgchips">
                     {REG_STAGES.flatMap((st) => st.fields).map((f) => (
                       <li key={f.key}>
-                        <button
-                          type="button"
-                          className={`cfgchip${flag.includes(f.key) ? ' on' : ''}`}
-                          aria-pressed={flag.includes(f.key)}
-                          onClick={() => setFlag((x) => (x.includes(f.key) ? x.filter((y) => y !== f.key) : [...x, f.key]))}
+                        <CheckChip
+                          on={flag.includes(f.key)}
+                          onToggle={() => setFlag((x) => (x.includes(f.key) ? x.filter((y) => y !== f.key) : [...x, f.key]))}
                         >
                           {f.label}
-                        </button>
+                        </CheckChip>
                       </li>
                     ))}
                   </ul>

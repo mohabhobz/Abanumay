@@ -3,7 +3,7 @@ import { useDocReads } from '@/lib/docCache'
 import { suggestNext } from '@/data/shared/agent'
 import { rowGo } from '@/lib/rowGo'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { BackTo, FieldSelect, Glass, Head, KV, Money, Tabs, Tag } from '@/components/ui'
+import { BackTo, FieldSelect, Glass, Head, KV, Money, Tabs, Tag, CheckChip } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -261,8 +261,8 @@ function ExternalTab() {
       <Glass>
         <Head title="الحد الأدنى من البيانات" meta={<span className="sub">{may ? 'قابل للإعداد' : 'للاطلاع'}</span>} />
         <KV rows={[
-          { k: 'الجهة الخارجية', v: <span className="rowf gp-2">{(Object.keys(EXT_PARTY_FIELD_SAY) as ExtPartyField[]).map((f) => <button key={f} type="button" disabled={!may} className={`btn btn-sm ${cfg.party.includes(f) ? 'btn-2' : 'btn-ghost'}`} aria-pressed={cfg.party.includes(f)} onClick={() => flip('party', f)}>{EXT_PARTY_FIELD_SAY[f]}</button>)}</span> },
-          { k: 'المشروع · فوق الاسم والجهة والمسار والمجال والمبلغ والمدة', v: <span className="rowf gp-2">{(Object.keys(EXT_PROJECT_FIELD_SAY) as ExtProjectField[]).map((f) => <button key={f} type="button" disabled={!may} className={`btn btn-sm ${cfg.project.includes(f) ? 'btn-2' : 'btn-ghost'}`} aria-pressed={cfg.project.includes(f)} onClick={() => flip('project', f)}>{EXT_PROJECT_FIELD_SAY[f]}</button>)}</span> },
+          { k: 'الجهة الخارجية', v: <span className="rowf gp-2">{(Object.keys(EXT_PARTY_FIELD_SAY) as ExtPartyField[]).map((f) => <CheckChip key={f} disabled={!may} on={cfg.party.includes(f)} onToggle={() => flip('party', f)}>{EXT_PARTY_FIELD_SAY[f]}</CheckChip>)}</span> },
+          { k: 'المشروع · فوق الاسم والجهة والمسار والمجال والمبلغ والمدة', v: <span className="rowf gp-2">{(Object.keys(EXT_PROJECT_FIELD_SAY) as ExtProjectField[]).map((f) => <CheckChip key={f} disabled={!may} on={cfg.project.includes(f)} onToggle={() => flip('project', f)}>{EXT_PROJECT_FIELD_SAY[f]}</CheckChip>)}</span> },
         ]} />
         {may && <div className="apv-row mt-3"><button type="button" className="btn btn-p btn-sm" onClick={() => { const out = saveExtCfg(cfg, user.name, role.key); setCfgSaid(out.length ? { bad: out } : { ok: 'الحد الأدنى من البيانات' }) }}>احفظ الإعداد</button></div>}
         <Said said={cfgSaid} />

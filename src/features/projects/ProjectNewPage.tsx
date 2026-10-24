@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react'
 import { textIssues } from '@/lib/textCheck'
 import { useNavigate } from 'react-router-dom'
 import {
-  DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, Blockers, DockWhy, blockerCount,
-} from '@/components/ui'
+  DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, Blockers, DockWhy, blockerCount, CheckChip, FieldMultiSelect } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { blockerReadings } from '@/features/shared/blockerReadings'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -97,49 +96,26 @@ function PField({
           placeholder={f.dependsOn && !parent ? 'اختر الحقل السابق أولًا' : 'اختر'}
         />
       ) : f.kind === 'multi' ? (
-        /* Note: target categories are tags, not a dropdown - selection is multiple, and a
-           multi-select dropdown hides what's already chosen. */
+        /* 24 Oct · on the client's comment · the target categories are a dropdown list with a
+           checkbox per option (they were a row of tags) · «أخرى» stays one of the options and opens
+           a field for a category the list doesn't have, stored as «أخرى: <name>» beside the others */
         <span className="pmulti-w">
-          <span className="pmulti">
-            {opts.map((o) => {
-              const on = value.split('،').filter(Boolean).includes(o)
-              return (
-                <button
-                  key={o}
-                  type="button"
-                  className={`cfgchip${on ? ' on' : ''}`}
-                  aria-pressed={on}
-                  onClick={() => {
-                    const cur = value.split('،').filter(Boolean)
-                    const next = on ? cur.filter((x) => x !== o) : [...cur, o]
-                    onChange(next.join('،'))
-                  }}
-                >
-                  {o}
-                </button>
-              )
-            })}
-            {/* «أخرى» opens a field for a category the list doesn't have. It is stored as
-                «أخرى: <name>» beside the others, so the review step and the record read it as is. */}
-            {(() => {
-              const cur = value.split('،').filter(Boolean)
-              const on = cur.some((x) => x.startsWith(OTHER))
-              return (
-                <button
-                  type="button"
-                  className={`cfgchip${on ? ' on' : ''}`}
-                  aria-pressed={on}
-                  aria-expanded={on}
-                  onClick={() => {
-                    const next = on ? cur.filter((x) => !x.startsWith(OTHER)) : [...cur, OTHER]
-                    onChange(next.join('،'))
-                  }}
-                >
-                  {OTHER}
-                </button>
-              )
-            })()}
-          </span>
+          {(() => {
+            const cur = value.split('،').filter(Boolean)
+            const picked = cur.map((x) => (x.startsWith(OTHER) ? OTHER : x))
+            return (
+              <FieldMultiSelect
+                values={picked}
+                options={[...opts, OTHER]}
+                label={f.label}
+                placeholder="اختر الفئات"
+                onChange={(next) => {
+                  const keep = cur.find((x) => x.startsWith(OTHER))
+                  onChange(next.map((x) => (x === OTHER ? keep ?? OTHER : x)).join('،'))
+                }}
+              />
+            )
+          })()}
           {(() => {
             const cur = value.split('،').filter(Boolean)
             const other = cur.find((x) => x.startsWith(OTHER))
@@ -175,10 +151,10 @@ function PField({
             const cur = workDaysOf(value) ?? foundationWeek()
             const on = cur.includes(i)
             return (
-              <button key={w} type="button" className={`cfgchip${on ? ' on' : ''}`} aria-pressed={on}
-                onClick={() => { const next = on ? cur.filter((n) => n !== i) : [...cur, i].sort(); if (next.length) onChange(next.join(',')) }}>
+              <CheckChip key={w} on={on}
+                onToggle={() => { const next = on ? cur.filter((n) => n !== i) : [...cur, i].sort(); if (next.length) onChange(next.join(',')) }}>
                 {w}
-              </button>
+              </CheckChip>
             )
           })}
         </span>
@@ -211,14 +187,20 @@ function PField({
         </span>
       )}
 
-      {f.hint && <span className="sub regf-h">{f.hint}</span>}
-      {/* 18 Oct · 2.6.3 · spelling and formatting of what was typed · a one-click fix when it's certain */}
-      {!entitySlot && (f.kind === 'text' || f.kind === 'long') && textIssues(value).map((x, i) => (
-        <span key={i} className="sub regf-h">
-          {x.say}
-          {x.fixed !== undefined && <> · <button type="button" className="lnk" onClick={() => onChange(x.fixed!)}>صحّح</button></>}
-        </span>
-      ))}
+      {/* 24 Oct · on the client's comment · the field's note is one line · while the text reads well
+          it is the hint, and the moment a wording note applies it takes the hint's place (with its
+          one-click fix) · the line never grows to a second one, the field below never moves */}
+      {(() => {
+        const issues = !entitySlot && (f.kind === 'text' || f.kind === 'long') ? textIssues(value) : []
+        const x = issues[0]
+        if (!x) return f.hint ? <span className="sub regf-h regf-1">{f.hint}</span> : null
+        return (
+          <span className="sub regf-h regf-1 warn" title={issues.map((y) => y.say).join(' · ')}>
+            {x.say}{issues.length > 1 && <> · +<Num>{issues.length - 1}</Num></>}
+            {x.fixed !== undefined && <> · <button type="button" className="lnk" onClick={() => onChange(x.fixed!)}>صحّح</button></>}
+          </span>
+        )
+      })()}
     </label>
   )
 }

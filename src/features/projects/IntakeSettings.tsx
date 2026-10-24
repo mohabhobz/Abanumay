@@ -2,8 +2,7 @@ import { meOf, readRole } from '@/data/roles'
 import { calendarSnap, rederiveEnds } from '@/data/intake/flow'
 import { useMemo, useState } from 'react'
 import {
-  DateField, FieldSelect, Glass, Head, Icon, icons, MultiSelect, Num, Person, Switch, Tag,
-} from '@/components/ui'
+  DateField, FieldSelect, Glass, Head, Icon, icons, MultiSelect, Num, Person, Switch, Tag, CheckChip } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import { FIELDS_BY_TRACK, GOALS_BY_FIELD, OWNERS } from '@/data/mock/taxonomy'
@@ -151,15 +150,13 @@ export function CycleTab() {
           {WEEKDAYS.map((w, i) => {
             const on = d.weekend.includes(i)
             return (
-              <button
+              <CheckChip
                 key={w}
-                type="button"
-                className={`cfgchip${on ? ' on' : ''}`}
-                aria-pressed={on}
-                onClick={() => patch((x) => { x.weekend = on ? x.weekend.filter((n) => n !== i) : [...x.weekend, i].sort() })}
+                on={on}
+                onToggle={() => patch((x) => { x.weekend = on ? x.weekend.filter((n) => n !== i) : [...x.weekend, i].sort() })}
               >
                 {w}{on && <b>عطلة</b>}
-              </button>
+              </CheckChip>
             )
           })}
         </div>

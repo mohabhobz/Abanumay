@@ -4,8 +4,7 @@ import { payBlock } from '@/data/entities/store'
 import { portfolioAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Steps, Tabs, Tag, icons, type StepItem,
-} from '@/components/ui'
+  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Steps, Tabs, Tag, icons, type StepItem, CheckChip } from '@/components/ui'
 import { CHART_COLORS, Legend, RankBars, StackBar, type Slice } from '@/components/charts'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -660,7 +659,7 @@ function SettingsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean 
     <Glass>
       <Head title="إعدادات المحفظة" meta={<span className="sub">نموذج المشروع الفرعي · المعايير · موثوقية القيم</span>} />
       <KV rows={[
-        { k: 'حقول المشروع الفرعي الإلزامية', v: <span className="rowf gp-2">{(Object.keys(SUB_FIELD_SAY) as SubField[]).map((f) => <button key={f} type="button" disabled={!may} className={`btn btn-sm ${fields.includes(f) ? 'btn-2' : 'btn-ghost'}`} aria-pressed={fields.includes(f)} onClick={() => setFields((x) => (x.includes(f) ? x.filter((y) => y !== f) : [...x, f]))}>{SUB_FIELD_SAY[f]}</button>)}</span> },
+        { k: 'حقول المشروع الفرعي الإلزامية', v: <span className="rowf gp-2">{(Object.keys(SUB_FIELD_SAY) as SubField[]).map((f) => <CheckChip key={f} disabled={!may} on={fields.includes(f)} onToggle={() => setFields((x) => (x.includes(f) ? x.filter((y) => y !== f) : [...x, f]))}>{SUB_FIELD_SAY[f]}</CheckChip>)}</span> },
         { k: 'معايير المحفظة المعتمدة', v: <span className="rowf gp-2">{pf.criteria ? <Tag tone="ok"><Icon name={icons.clip} size="sm" /> {pf.criteria.file}</Tag> : <span className="sub">لم تُحفظ · يُتفق عليها خارج النظام</span>}{may && <UploadButton label="احفظ المعايير (PDF)" onPick={(f) => r(attachPfCriteria(pf.id, f.name, user.name, role.key), 'معايير المحفظة')} />}</span> },
         { k: 'قيم المشاريع الفرعية للتوزيع الجغرافي للتكلفة', v: may ? <button type="button" className={`btn btn-sm ${pf.reliable ? 'btn-2' : 'btn-ghost'}`} aria-pressed={Boolean(pf.reliable)} onClick={() => { setPfReliable(pf.id, !pf.reliable, user.name); setSaid({ ok: 'موثوقية القيم' }) }}>{pf.reliable ? 'موثوقة · تُستخدم' : 'غير موثوقة · لا تُستخدم'}</button> : <span className="sub">{pf.reliable ? 'موثوقة' : 'لا تُستخدم للتكلفة'}</span> },
       ]} />

@@ -2888,6 +2888,13 @@ to{opacity:1;transform:none}
    underneath it, not something sitting still. */
 .viewstack{position:relative}
 :root{--dock-h:clamp(7rem,11vh,9.5rem)}
+/* Client 24 Oct · the decision bar and «اسأل أبانمي» read as one block at one height on every
+   screen · a bar holding only a sentence used to shrink to its text (56) while one with a button
+   stood at 76, and the button beside it followed · the height is now the control's plus the bar's
+   padding, whatever the bar holds · a bar that wraps on a narrow screen still grows, and the button
+   still follows it (useMatchHeight) */
+:root{--bar-h:calc(var(--h-md) + 2 * var(--sp-5))}
+.decdock .decbar{min-block-size:var(--bar-h)}
 .screen{padding-bottom:var(--dock-h)}
 /* "Ask Abanumay" button width plus the gap between it and the bar. The bar takes the
    rest, so both sit in a single row rather than stacked. */
@@ -4507,7 +4514,7 @@ to{opacity:1;transform:none}
      eating into its own height. */
   /* Leaves room below for the floating "Ask Abanumay" button; without it, the button
      was sitting on top of the first two column labels in "time in stage" (+60 and 31-60). */
-  .fold{min-height:calc(100dvh - var(--padt) - var(--ask-h, 63px) - var(--sp-5));
+  .fold{min-height:calc(100dvh - var(--padt) - var(--ask-h, var(--bar-h)) - var(--sp-5));
     /* `flex:none`: the fold is a flex child of `.screen`, and the default shrink was
        clipping it to exactly the screen height, so when its content grows taller (the Cairo
        font, an 800 screen) the grid overflowed and overlapped the cards below it. Minimum
@@ -6229,7 +6236,7 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
   /* Same corner radius as the row beside it — the two sit on one line and read as
      a single block, so two different corner radii would say they're two different
      things */
-  width:max-content;height:var(--ask-h,auto);min-height:var(--ask-h,63px);
+  width:max-content;height:var(--ask-h,var(--bar-h));min-height:var(--bar-h);
   padding:var(--sp-5) var(--sp-5);border-radius:var(--r2);
   color:var(--t1);font-family:var(--fd);font-weight:600;font-size:var(--fs-3);
   /* Same glass, same shadow, and same hover feel too: the two are one piece split
@@ -7295,6 +7302,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .regf .fld{width:100%}
 .regf .fld.off{opacity:.72}
 .regf-h{font-size:var(--fs-1)}
+/* 24 Oct · a field's note is one line · a longer one ends in an ellipsis rather than wrapping */
+.regf-1{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.regf-1.warn{color:var(--warn-tag)}
 /* A field that takes the full row: the description and options need width,
    and squeezing them into a one-of-three column wraps the text at four words
    per line */
@@ -7828,6 +7838,15 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .cfgchip.on{color:var(--t1);box-shadow:inset 0 0 0 2px var(--edge-i)}
 .cfgchip>b{font-weight:600;color:var(--t3)}
 .cfgchip.on>b{color:var(--t1)}
+/* 24 Oct · a multiple-choice chip carries a checkbox (CheckChip) · the box is the system's checkbox
+   (same size, ring and solid fill as \`input[type=checkbox]\`), and a picked chip takes the active
+   control surface besides its ring */
+.ckchip-b{flex:none;display:grid;place-items:center;width:var(--sp-5);height:var(--sp-5);border-radius:var(--r0);
+  color:var(--on-solid);background:var(--fl-5);box-shadow:inset 0 0 0 1px var(--edge-i);
+  transition:background var(--mo-2) var(--ease-std),box-shadow var(--mo-2) var(--ease-std)}
+.ckchip.on{background:var(--ctl-bg-a)}
+.ckchip.on>.ckchip-b{background:var(--solid);box-shadow:none}
+.ckchip:disabled{cursor:default;opacity:.6}
 
 @media (max-width:900px){
   .btree-h{display:none}

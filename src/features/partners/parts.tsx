@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { DateField, DateText, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Tag, icons } from '@/components/ui'
+import { DateField, DateText, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Tag, icons, CheckChip } from '@/components/ui'
 import { DocReadNote, UploadButton, useDocReads } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -447,7 +447,7 @@ export function PartnerCard({ entityId }: { entityId: string }) {
         <div className="apv-row mt-3">
           <span className="sub">الأنواع المسموحة</span>
           {(['independent', 'portfolio'] as PType[]).map((t) => (
-            <button key={t} type="button" className={`btn btn-sm ${p.allowed.includes(t) ? 'btn-2' : 'btn-ghost'}`} aria-pressed={p.allowed.includes(t)} onClick={() => toggle(t)}>{PTYPE_SAY[t]}</button>
+            <CheckChip key={t} on={p.allowed.includes(t)} onToggle={() => toggle(t)}>{PTYPE_SAY[t]}</CheckChip>
           ))}
         </div>
       )}

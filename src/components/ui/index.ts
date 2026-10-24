@@ -19,10 +19,11 @@ export {
   SearchBox, Select, MultiSelect, GroupPicker, Toggle, Segments, Pager, PageSize, PAGE_SIZES, ViewToggle,
   type SelectProps, type MultiSelectProps, type SegItem, type SelectOption,
 } from './filters'
-export { FieldSelect, type FieldSelectProps } from './FieldSelect'
+export { FieldSelect, FieldMultiSelect, type FieldSelectProps, type FieldMultiSelectProps } from './FieldSelect'
 export { Switch } from './Switch'
 export { MoneyField } from './MoneyField'
 /* Warning: date field · a hand-drawn calendar, not `type="date"` */
 export { DateField, type DateFieldProps } from './DateField'
 /* Warning: the one panel · every list in the system renders from it */
 export { MenuPanel, MenuOpt, CheckMark, type MenuPanelProps, type MenuOptProps } from './menu'
+export { CheckChip, type CheckChipProps } from './CheckChip'
