@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { ROUTES } from '@/app/routes'
 import { Glass, Head, Tag, Mono, KV, DateText } from '@/components/ui'
 import { useRole } from '@/hooks/useRole'
 import { askData, DATA_ASKS, useEntityFlow } from '@/data/entities/store'
@@ -11,10 +13,14 @@ import type { BankAccount, Entity } from '@/types/domain'
 export interface EntityTabProps {
   entity: Entity
   bank: BankAccount
+  /** v3 · 2.4.10 · 2.4.11 · moving the project to another entity, and its history · client 24 Oct ·
+      they left «بيانات المشروع» for this tab, where the entity is */
+  action?: ReactNode
+  history?: ReactNode
 }
 
 /** The entity's file, documents, and bank account. */
-export function EntityTab({ entity: E, bank }: EntityTabProps) {
+export function EntityTab({ entity: E, bank, action, history }: EntityTabProps) {
   useEntityFlow()
   const { user } = useRole()
   const uploaded = E.docs.filter((d) => d.uploaded).length
@@ -39,7 +45,8 @@ export function EntityTab({ entity: E, bank }: EntityTabProps) {
         <Head title="ملف الجهة" meta={E.type} />
         <KV
           rows={[
-            { k: 'اسم الجهة', v: E.name },
+            { k: 'اسم الجهة', v: <span className="rowf gp-2">{eid ? <Link className="tlink" to={ROUTES.entity(String(eid))}>{E.name}</Link> : E.name}{action}</span> },
+            ...(history ? [{ k: 'تعديلات الجهة', v: history }] : []),
             { k: 'التصنيف', v: E.type },
             { k: 'الجهة المرخِّصة', v: E.licensor },
             { k: 'الإشراف الفني', v: E.supervisor },

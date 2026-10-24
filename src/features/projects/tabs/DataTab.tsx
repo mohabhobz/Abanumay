@@ -1,12 +1,6 @@
-import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, KV, Mono, Num, Riyal, Stat, Tag, Timeline } from '@/components/ui'
-import { ROUTES } from '@/app/routes'
-import { DocList } from '@/components/docs'
-import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, pct, readDate, units } from '@/lib/format'
+import { Glass, Head, KV, Mono, Num, Riyal, Stat, Timeline } from '@/components/ui'
+import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, readDate, units } from '@/lib/format'
 import type { Project, ProjectType } from '@/types/domain'
-import type { LogEvent } from '@/data/mock/log'
-import type { ChainLink } from '@/data/mock/chain'
 
 export interface DataTabProps {
   project: Project
@@ -14,50 +8,19 @@ export interface DataTabProps {
   code: string
   /** Regular, external, or portfolio */
   type: ProjectType | string
-  entityName: string
-  /** Entity ID — needed for a real link to its file. */
-  entityId: string
-  /** Most recent log entry — shown under the summary. */
-  last?: LogEvent
-  onOpenLog: () => void
-  /**
-   * Dependencies.
-   *
-   * This card isn't an error message, it's an inventory. The chain year →
-   * budget → project → agreement and payments blocks deletion from the top
-   * down, and that rule used to be enforced only on the first two links.
-   * There's no delete button here at all, so the card states what's still
-   * pending on this project — which surfaces the reason before anyone tries,
-   * while also showing the chain.
-   */
-  deps?: { agreements: number; payments: number }
-  /** Chain links — computed on the page and displayed here. */
-  chain?: ChainLink[]
-  /** The request's own documents card replaces the flat list (procedure 3 · 3.4.32) */
-  hideAttachments?: boolean
-  /** v3 · 2.4.10 · 2.4.11 · the action that moves the project to another entity, and its history */
-  entityAction?: ReactNode
-  entityHistory?: ReactNode
 }
 
-/** Project data — summary, concept, phases, scope, and attachments. */
+/** Project data — the basics: summary, concept, phases and scope. */
 export function DataTab({
-  project: P, type, entityName, entityId, last, onOpenLog, hideAttachments, entityAction, entityHistory,
+  project: P, type,
 }: DataTabProps) {
   const perBeneficiary = costPerBeneficiary(P.amountRequested, P.beneficiaries)
-  const uploaded = P.attachments.filter((a) => a.uploaded).length
 
   return (
     <>
-      {/* Meeting 20 Oct · the figures lead the data tab */}
-      <div className="stats4">
-        <Stat
-          label="المبلغ المطلوب"
-          value={<Num>{P.amountRequested}</Num>}
-          unit={<Riyal />}
-          bar={{ w: '100%', c: 'var(--teal)' }}
-          note={`${pct(100)} من إجمالي المشروع`}
-        />
+      {/* Meeting 20 Oct · the figures lead the data tab · client 24 Oct · the requested amount reads in
+          the page header, so the tab doesn't repeat it */}
+      <div className="stats4 n3">
         <Stat
           label="مدة التنفيذ"
           value={P.durationDays}
@@ -81,27 +44,15 @@ export function DataTab({
         <Head title="التعريف" />
         <KV
           rows={[
-            /* Two mistakes in one line.
-
-               1. It used to link to the "Entity" tab inside the project — which is a
-               summary of the entity, not its full file. The full file was needed, and
-               the entity's own tabs (documents, accounts, its log) don't exist in that
-               summary at all.
-
-               2. `<a onClick>` with no `href` isn't a link: it doesn't open in a new tab,
-               can't be copied, and can't be reached by keyboard — it looks like a link
-               but behaves like a button. */
-            {
-              k: 'الجهة',
-              v: <span className="rowf gp-2"><Link className="tlink" to={ROUTES.entity(entityId)}>{entityName}</Link>{entityAction}</span>,
-            },
-            ...(entityHistory ? [{ k: 'تعديلات الجهة', v: entityHistory }] : []),
+            /* Client 24 Oct · what another tab shows isn't repeated here · the entity (and moving the
+               project to another one) lives in «الجهة», the status beside the title, the log in its tab */
             /* Meeting 20 Oct · the code moved to the page header */
             { k: 'نوع المشروع', v: type },
-            { k: 'الحالة', v: <Tag tone={P.status.tone}>{P.status.label}</Tag> },
             { k: 'المسار', v: P.track },
             { k: 'المجال', v: P.field },
             { k: 'الهدف', v: P.goal },
+            /* Client 23 Oct · the contact card left the tab · the project manager stays, one line */
+            { k: 'مدير المشروع', v: <span>{P.manager.name} · <Mono>{P.manager.phone}</Mono></span> },
             ...(P.originalChoice ? [{ k: 'اختيار الجهة الأصلي', v: <span className="sub">{P.originalChoice} · قبل التحويل</span> }] : []),
             /* The two dates sit side by side: "330 days" alone doesn't say when it ends,
                and the end date is what determines whether the project crosses the
@@ -124,29 +75,6 @@ export function DataTab({
           ]}
         />
 
-        {/* Last action sits right under the summary — it used to be a card in the
-            side column, which was far from the question it follows: "what is this
-            project, and what last happened on it." Both now live in the same card. */}
-        {last && (
-          <div className="lastact">
-            <div className="lastact-h">
-              <span className="lb">آخر إجراء</span>
-              <span className="pc-sp" />
-              <button className="lnk" onClick={onOpenLog}>السجل كاملًا</button>
-            </div>
-            <div className="lastact-b">
-              <b>{last.action}</b>
-              <span className="lastact-d">{last.dept}</span>
-            </div>
-            <div className="sub mt-1">
-              {last.by} · <DateText>{last.at}</DateText>
-              {' · '}
-              <span className={last.hours > last.limit ? 'bad' : undefined}>
-                <Num>{last.days}</Num> {nounAfter(last.days, NOUN.day)} · <Num>{last.hours}</Num> من <Num>{last.limit}</Num> ساعة
-              </span>
-            </div>
-          </div>
-        )}
       </Glass>
 
 
@@ -160,9 +88,6 @@ export function DataTab({
         </div>
 
         <BulletSection title="الأهداف التفصيلية" items={P.goals} />
-        <BulletSection title={P.entityOutputs ? 'مخرجات المؤسسة' : 'المخرجات'} items={P.outputs} />
-        {/* v3 · 0.def.14 · 3.4.45 · the entity's outputs stay readable as the reference of what it sent */}
-        {P.entityOutputs && <BulletSection title="مخرجات الجهة كما قدّمتها" items={P.entityOutputs} />}
         <BulletSection title="المسوغات" items={P.rationale} />
       </Glass>
 
@@ -176,10 +101,6 @@ export function DataTab({
             by: isolate(ph.months),
           }))}
         />
-        <div className="sub mt-4">
-          في النظام الحالي هذه المراحل نصٌّ حر داخل حقل واحد. وهنا كيان له بنود وتواريخ، ويمكن
-          ربط دفعات الصرف به.
-        </div>
       </Glass>}
 
       <Glass>
@@ -240,36 +161,6 @@ export function DataTab({
         </div>
       </Glass>
 
-      {!hideAttachments && <Glass>
-        <Head title="المرفقات" meta={`${uploaded} من ${P.attachments.length} مرفوعة`} />
-        <DocList
-          label="مرفقات المشروع وحالتها"
-          rows={P.attachments.map((a) => ({
-            name: a.name, uploaded: a.uploaded, required: a.required,
-          }))}
-        />
-        <div className="sub mt-3">
-          الموازنة التفصيلية هي المطلوبة في طلب الاستكمال الحالي، لأن الملف المرفوع صورة لا تُقرأ آليًا.
-        </div>
-      </Glass>}
-
-      <Glass>
-        <Head title="جهة الاتصال والحساب البنكي" meta="من نموذج التقديم" />
-        <KV
-          rows={[
-            { k: 'مدير المشروع', v: P.manager.name },
-            { k: 'الجوال', v: <Mono>{P.manager.phone}</Mono> },
-            { k: 'البريد', v: <Mono>{P.manager.email}</Mono> },
-            { k: 'المصرف', v: P.bank.name },
-            { k: 'اسم الحساب', v: P.bank.account },
-            { k: 'الآيبان', v: <Mono>{P.bank.iban}</Mono> },
-            { k: 'حالة الحساب', v: <Tag tone="ok">{P.bank.status}</Tag> },
-          ]}
-        />
-        <div className="sub mt-3">
-          البيانات البنكية مصدرها ملف الجهة، معروضة هنا للمراجعة فقط ولا تُحرَّر من المشروع.
-        </div>
-      </Glass>
       {/* Meeting 20 Oct · the chain card is gone · the tabs reach the same records */}
     </>
   )

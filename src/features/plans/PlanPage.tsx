@@ -35,7 +35,6 @@ import { planReadings } from './readings'
 import { PhaseTree } from './PhaseTree'
 import { PlanBar } from './PlanBar'
 import { PlanActionDock, planActionsFor } from './PlanActionDock'
-import { EditableCard } from '@/features/shared/EditableCard'
 
 /* Names inside the fan's sectors · who holds each step, like the project's roles */
 const STEP_LABEL: Record<string, string> = {
@@ -642,7 +641,6 @@ export default function PlanPage() {
               </ul>
             </Glass>
           )}
-          <EditableCard module="plan" state={p.stage} label={planStageLabel(p.stage)} />
 
           {/* Note: the rule is documented on the screen, not only in a comment - this is the most
               confusing thing to see: a plan "in progress" whose project sits at an entirely

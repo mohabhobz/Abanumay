@@ -38,6 +38,8 @@ import { regRows } from '@/data/mock/registration'
    - entity: "register a new entity" below, and from there "already have an account? open your
    application portal" - the actual path an entity follows. */
 
+const WRONG = 'يوجد خطأ في البريد الإلكتروني أو كلمة المرور'
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const loc = useLocation()
@@ -76,7 +78,8 @@ export default function LoginPage() {
     /* A portal account whose password was set (registration or reset) must match it (2.3.pw-11) */
     if (passwordOk(user, pass) === false) {
       const left = loginFailed(user)
-      fail(left ? `كلمة المرور غير صحيحة · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : `كلمة المرور غير صحيحة · قُفل الحساب ${AUTH_RULES.lockMinutes} دقيقة`)
+      /* Client 23 Oct · one message for a wrong user or password · it never says which of the two */
+      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : `${WRONG} · قُفل الحساب ${AUTH_RULES.lockMinutes} دقيقة`)
       return
     }
     loginSucceeded(user)
@@ -96,7 +99,7 @@ export default function LoginPage() {
       const staff = staffLogin(user)
       if (!staff) {
         setBusy(false)
-        fail(`اسم المستخدم غير معروف · جرّب: ${STAFF_LOGINS}`)
+        fail(`${WRONG} · حسابات التجربة: ${STAFF_LOGINS}`)
         return
       }
       writeRole(staff.role)

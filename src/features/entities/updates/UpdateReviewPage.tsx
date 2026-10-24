@@ -3,7 +3,7 @@ import { suggestNext } from '@/data/shared/agent'
 import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tag } from '@/components/ui'
+import { Blockers, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tabs, Tag, blockerCount, type Blocker } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -12,7 +12,11 @@ import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { entityById } from '@/data/mock/entities'
 import { activationTone } from '@/lib/tone'
-import { isolate } from '@/lib/format'
+import { isolate, nounAfter } from '@/lib/format'
+import { useQueryParams } from '@/hooks/useQueryParams'
+import { pickedSay, type PickedReason } from '@/data/entities/reasons'
+import { ReasonDialog } from '@/features/entities/ReasonDialog'
+import { REQ_TABS, STOP_NOUN } from '@/features/entities/register/reqTabs'
 import { ibanValid } from '@/lib/iban'
 import { BANK_REJECTS } from '@/data/mock/registration'
 import { meOf, readRole, roleByKey } from '@/data/roles'
@@ -27,7 +31,10 @@ import {
    The reviewer reads a comparison, not a form: every changed field with its value before and the
    value asked for, side by side, with what already applied marked as such. Approving applies the
    waiting rows and keeps the old values in the entity's log; returning sends it back with a note;
-   rejecting leaves the file as it was. Either way the pause on the entity's activity ends. */
+   rejecting leaves the file as it was. Either way the pause on the entity's activity ends.
+
+   Client meeting 23 Oct · return and reject ask their reason in a popup fed by the entity settings
+   (or «أخرى» with a written reason) · the reason lands in the request's log with who and when. */
 
 /** A value as the file shows it · a date through `DateText`, the rest isolated for RTL */
 const show = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? <DateText>{v}</DateText> : isolate(v || '—'))
@@ -37,7 +44,9 @@ export default function UpdateReviewPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const u = id ? updById(id) : undefined
-  const [note, setNote] = useState('')
+  const [ask, setAsk] = useState<'return' | 'reject' | null>(null)
+  const { values: q, set: setQ } = useQueryParams(['tab'])
+  const tab = REQ_TABS.some((t) => t.slug === q.tab) ? (q.tab as string) : 'data'
   /* Re-audit 7 Oct · each new account is decided on its own · approving the request accepted them all */
   const [bankNo, setBankNo] = useState<Record<string, string>>({})
   /* v3 · 2.4.6 · renewed documents are read and confirmed legible before approval */
@@ -73,6 +82,17 @@ export default function UpdateReviewPage() {
   const needsRead = u.docs.length > 0
   const blocked = dups.length > 0 || badIban.length > 0 || (needsRead && !legible)
   const open = u.state === 'review'
+  /* Client 23 Oct · «الطلب متوقف للأسباب أدناه» · each blocker named by its field */
+  const stops: Blocker[] = [
+    ...dups.map((d) => ({ head: d.label, text: <>مسجَّل لـ«{d.who}»</> })),
+    ...badIban.map((b) => ({ head: `آيبان ${b.bankName}`, text: 'غير صحيح · ارفض الحساب أو أعد الطلب لتصحيحه' })),
+    ...(needsRead && !legible ? [{ head: 'الوثائق المجدَّدة', text: 'لم يُؤكَّد وضوحها وقراءتها بعد · أكّده في شريط القرار' }] : []),
+  ]
+  const nStop = blockerCount(stops)
+  const pick = (p: PickedReason) => {
+    if (ask) decideUpdate(u.id, ask, pickedSay(p), me)
+    setAsk(null)
+  }
   const deciders = ENTITY_RULES.updateBy.map((k) => roleByKey(k).title).join(' أو ')
   /* 17 Oct · the assistant suggests · duplicates and a bad IBAN return it · a clean update is applied */
   type UpdAct = { label: string; kind: string }
@@ -103,9 +123,13 @@ export default function UpdateReviewPage() {
             <Tag tone="mute">{UPD_STATE_SAY[u.state]}</Tag>
           </header>
 
+          <Tabs items={REQ_TABS} active={tab} onChange={(x) => setQ({ tab: x === 'data' ? undefined : x })} />
 
           <div className="g2">
             <div className="col">
+              {open && nStop > 0 && <Blockers title="الطلب متوقف للأسباب أدناه" items={stops} noun={STOP_NOUN} ready="" />}
+              {tab === 'data' && (
+                <>
               <Glass>
                 <Head
                   title="التعديلات"
@@ -167,6 +191,17 @@ export default function UpdateReviewPage() {
                 </Glass>
               )}
 
+                </>
+              )}
+              {tab === 'docs' && (
+                <>
+              {u.docs.length === 0 && u.banks.length === 0 && <Glass><Empty title="لا مرفقات في هذا الطلب." note="الطلب يعدّل حقولًا فقط." /></Glass>}
+              {u.banks.length > 0 && (
+                <Glass>
+                  <Head title="وثائق الحسابات البنكية" meta={<span className="sub"><Num>{u.banks.length}</Num> حساب</span>} />
+                  <DocList label="وثائق الحسابات البنكية" rows={u.banks.map((b) => ({ name: b.doc || 'وثيقة الحساب البنكي.pdf', uploaded: Boolean(b.doc), required: true, meta: b.bankName }))} />
+                </Glass>
+              )}
               {u.docs.length > 0 && (
                 <Glass>
                   <Head title="الوثائق الداعمة" meta={<span className="sub"><Num>{u.docs.length}</Num> مرفوعة</span>} />
@@ -181,8 +216,9 @@ export default function UpdateReviewPage() {
                 </Glass>
               )}
 
-              {/* The entity now and the log · in the main column, the end column is the assistant's alone */}
-              {e && (
+                </>
+              )}
+              {tab === 'data' && e && (
                 <Glass>
                   <Head title="الجهة الآن" meta={<Tag tone={activationTone(accountSay(e))}>{accountLine(e)}</Tag>} />
                   <KV rows={[
@@ -198,6 +234,7 @@ export default function UpdateReviewPage() {
                 </Glass>
               )}
 
+              {tab === 'log' && (
               <Glass>
                 <Head title="سجل الطلب" meta={<span className="sub"><Num>{u.events.length}</Num> إجراء</span>} />
                 <ul className="lg">
@@ -220,6 +257,7 @@ export default function UpdateReviewPage() {
                   ))}
                 </ul>
               </Glass>
+              )}
             </div>
 
             <AssistantAside
@@ -257,10 +295,6 @@ export default function UpdateReviewPage() {
                   <span className="decsent">قرارك في تحديث <b>{u.entityName}</b></span>
                 </div>
                 <div className="payact-g">
-                  <label className="payact-n">
-                    <span className="vis-h">الملاحظة</span>
-                    <input value={note} onChange={(x) => setNote(x.target.value)} placeholder="الملاحظة · إلزامية للإعادة والرفض" />
-                  </label>
                   {needsRead && (
                     <label className="rowf gp-2">
                       <input type="checkbox" checked={legible} onChange={(x) => setLegible(x.target.checked)} />
@@ -268,26 +302,38 @@ export default function UpdateReviewPage() {
                     </label>
                   )}
                   <div className="rowf gp-2">
-                    <button className="btn btn-2" data-needs-note="" disabled={!note.trim()} onClick={() => decideUpdate(u.id, 'return', note.trim(), me)}>
+                    <button className="btn btn-2" onClick={() => setAsk('return')}>
                       إعادة للاستكمال
                     </button>
-                    <button className="btn btn-d" data-needs-note="" disabled={!note.trim()} onClick={() => decideUpdate(u.id, 'reject', note.trim(), me)}>
+                    <button className="btn btn-d" onClick={() => setAsk('reject')}>
                       رفض التحديث
                     </button>
                     <button
                       className="btn btn-p"
                       disabled={blocked}
-                      title={blocked ? (needsRead && !legible && !dups.length && !badIban.length ? 'أكّد وضوح الوثائق المجدَّدة وقراءتها أولًا' : 'بيانات مكرّرة أو آيبان غير صحيح · أعده للاستكمال') : 'تُطبَّق التعديلات وتُحفظ القيم السابقة في سجل الجهة'}
-                      onClick={() => decideUpdate(u.id, 'approve', note.trim(), me, bankNo)}
+                      title={blocked ? 'نواقص تمنع الاعتماد: ' + stops.map((x) => `${x.head} · ${typeof x.text === 'string' ? x.text : ''}`).join('\n') : 'تُطبَّق التعديلات وتُحفظ القيم السابقة في سجل الجهة'}
+                      onClick={() => decideUpdate(u.id, 'approve', '', me, bankNo)}
                     >
                       اعتماد وتطبيق
                     </button>
                   </div>
+                  {nStop > 0 && <span className="sub">قبل الاعتماد: <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)} · الأسباب أعلى الصفحة</span>}
                 </div>
               </>
             )}
           </div>
         </div>
+        {ask && (
+          <ReasonDialog
+            kind={ask === 'return' ? 'updReturn' : 'updReject'}
+            title={ask === 'return' ? 'إعادة طلب التحديث للاستكمال' : 'رفض طلب التحديث'}
+            subject={ask === 'return' ? `${u.entityName} · يُعاد إلى الجهة مع السبب` : `${u.entityName} · يبقى ملف الجهة كما كان وينتهي تعليق نشاطها`}
+            confirm={ask === 'return' ? 'أعد للاستكمال' : 'ارفض التحديث'}
+            tone={ask === 'return' ? 'btn-p' : 'btn-d'}
+            onConfirm={pick}
+            onClose={() => setAsk(null)}
+          />
+        )}
       </div>
     </AppLayout>
   )

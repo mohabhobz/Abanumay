@@ -79,11 +79,9 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
   const pending = entity.inDisbursement
   const paid = Math.max(0, total - pending)
   /* Every link lands on the section that explains it: the payments inbox scoped to this entity
-     only (all its requests, every stage), scrolled to the matching section; the year's approved
-     amounts land on this entity's own projects. */
+     only (all its requests, every stage), scrolled to the matching section. */
   const payOf = (section: string) =>
     `${ROUTES.payments}?entity=${encodeURIComponent(entity.id)}#${section}`
-  const byEntity = `${ROUTES.entity(entity.id, 'projects')}#ent-projects`
 
   const share = (v: number) => (total ? Math.round((v / total) * 100) : 0)
   const paidPct = share(paid)
@@ -160,12 +158,14 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
           <span className="lf-p num">{pct(share(pending))}</span>
         </Link>
         <span className="lf-hr" aria-hidden="true" />
-        <Link to={byEntity} className="lf-row lf-r-cyc">
+        {/* Client 23 Oct · the year's approved amount is a figure, not a way in · it led to a list that
+            added nothing the figure doesn't say */}
+        <div className="lf-row lf-r-cyc lf-still">
           <svg className="lf-dot" viewBox="0 0 24 24" aria-hidden="true"><path d={ABLEAF_PATH} /></svg>
           <span className="lf-k">المبالغ المعتمدة 2026</span>
           <b><Money sm>{entity.grantedThisYear}</Money></b>
           <span className="lf-p num">{pct(share(entity.grantedThisYear))}</span>
-        </Link>
+        </div>
       </div>
     </div>
   )

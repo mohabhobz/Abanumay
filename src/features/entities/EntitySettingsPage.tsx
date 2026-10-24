@@ -4,6 +4,7 @@ import { BackTo, Glass, Head, Icon, icons, Num, Tabs, Tag } from '@/components/u
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, useDockSlot } from '@/components/shell'
 import { EntityRulesTab } from './EntityRulesTab'
+import { EntityReasonsTab } from './EntityReasonsTab'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -37,6 +38,8 @@ const TABS = [
   { slug: 'targets', label: 'الفئات المستهدفة' },
   /* BPD-002 · the switches and numbers behind registration, codes, passwords and updates */
   { slug: 'rules', label: 'قواعد التسجيل والتحديث' },
+  /* Client 23 Oct · the reasons behind rejecting, returning, disabling and deleting */
+  { slug: 'reasons', label: 'أسباب القرارات' },
 ] as const
 
 export default function EntitySettingsPage() {
@@ -133,8 +136,9 @@ export default function EntitySettingsPage() {
           )}
 
           {tab === 'rules' && <EntityRulesTab />}
+          {tab === 'reasons' && <EntityReasonsTab />}
 
-          {tab !== 'rules' && <Glass className="tblcard">
+          {tab !== 'rules' && tab !== 'reasons' && <Glass className="tblcard">
             <Head
               title={tab === 'places' ? `مدن ${region}` : TABS.find((t) => t.slug === tab)!.label}
               meta={<span className="sub"><Num>{rows.length}</Num> {unitAfter(rows.length, unit)}</span>}

@@ -7,8 +7,8 @@ import { useMemo, useState } from 'react'
 import { registrationAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tag,
-  type StepItem,
+  Blockers, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tabs, Tag,
+  blockerCount, type Blocker, type StepItem,
 } from '@/components/ui'
 import { DocFile, DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
@@ -16,14 +16,16 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { isolate, nounAfter } from '@/lib/format'
+import { useQueryParams } from '@/hooks/useQueryParams'
+import { pickedSay, type PickedReason } from '@/data/entities/reasons'
+import { ReasonDialog } from '@/features/entities/ReasonDialog'
+import { REQ_TABS, STOP_NOUN } from './reqTabs'
 import { entityRows } from '@/data/mock/entities'
 import {
-  BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_REJECT_REASONS, REG_STATES, REG_STATE_SAY, REG_STATE_WHO,
-  docRequired, licenseClash, partnerKind, regMissingDocs, regRequestById,
+  BANK_DOC_LABEL, BANK_REJECTS, REG_DOCS, REG_REJECT_REASONS, REG_STATE_SAY, REG_STATE_WHO,
+  docRequired, licenseClash, partnerKind, regMissingDocs, regRequestById, type RegRejectReason,
 } from '@/data/mock/registration'
-import type { RegRejectReason } from '@/data/mock/registration'
 import { AssistantAside } from '@/features/shared/AssistantAside'
-import { EditableCard } from '@/features/shared/EditableCard'
 import { canDecide, decideRegistration, fieldLabel, regHistory, returnRegistration, useEntityFlow } from '@/data/entities/store'
 import { duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
 import { meOf, readRole, roleByKey } from '@/data/roles'
@@ -43,9 +45,10 @@ import { ENTITY_RULES } from '@/data/entities/rules'
      Return for completion - goes back to the entity with a note (rule 26)
      Reject and suspend    - archived with a reason (rules 28 and 31)
 
-   The admin note is required for the latter two - the live system enforces it on "approve and
-   activate" and "reject and suspend", and rule 31 requires writing the reason for suspension or
-   approval withdrawal.
+   Client meeting 23 Oct · the decision is picked first, then the reason: return and reject each open
+   a popup with the reasons kept in the entity settings, or «أخرى» with a written reason (rule 31
+   still holds · no return or rejection without one). The reason lands in the request's log with
+   who and when. The inline note field that sat in the dock is gone.
 
    Note: bank account approval is separate - the system has two bank screens and seven coded
    rejection reasons, so the bank makes its own decision even when tied to the same request (rule
@@ -55,6 +58,9 @@ import { ENTITY_RULES } from '@/data/entities/rules'
    This absence is documented on the screen because an absence doesn't explain itself. */
 
 type Outcome = 'approve' | 'return' | 'reject'
+
+/** A reason picked in settings, mapped to the coded key the rejection indicator counts */
+const codeOf = (p: PickedReason): RegRejectReason => REG_REJECT_REASONS.find((x) => x.label === p.reason)?.key ?? 'other'
 
 const OUT_SAY: Record<Outcome, string> = {
   approve: 'اعتماد وتفعيل · أُنشئت الجهة وأُرسل اسم المستخدم',
@@ -68,9 +74,10 @@ export default function RegReviewPage() {
   useEntityFlow()
   useDocReads() /* 2.6.4 · the documents' content once it's read */
   const r = id ? regRequestById(id) : undefined
-  const [note, setNote] = useState('')
-  /* Re-audit 7 Oct · the rejection reason is picked from a coded list · the indicator counts it */
-  const [why, setWhy] = useState<RegRejectReason | ''>('')
+  /* Client 23 Oct · the decision is picked in the dock, its reason in a popup */
+  const [ask, setAsk] = useState<'return' | 'reject' | null>(null)
+  const { values: q, set: setQ } = useQueryParams(['tab'])
+  const tab = REQ_TABS.some((t) => t.slug === q.tab) ? (q.tab as string) : 'data'
   const [taken, setTaken] = useState<Outcome | null>(null)
   /* One decision per account (2.2.15) · '' accepted, otherwise one of the coded reasons */
   const [bankNo, setBankNo] = useState<Record<string, string>>({})
@@ -141,6 +148,28 @@ export default function RegReviewPage() {
   /* v3 · 2.4.7 · a format error blocks too · and 2.4.6 · the documents' legibility confirmed */
   const blocked = missingDocs.length > 0 || Boolean(clash) || stale.length > 0 || badIban.length > 0 || dups.length > 0
     || badFormat.length > 0 || (open && !legible)
+  /* Client 23 Oct · «الطلب متوقف للأسباب أدناه» · each blocker names the field or document it
+     stands on, and where to see it */
+  const noBank = r.banks.length > 0 && r.banks.every((b) => bankNo[b.id])
+  const see = (to: string, at: string) => (
+    <button type="button" className="lnk" onClick={() => { setQ({ tab: to === 'data' ? undefined : to }); setTimeout(() => document.getElementById(at)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 0) }}>عرض</button>
+  )
+  const stops: Blocker[] = [
+    ...(clash ? [{ head: 'رقم الترخيص', text: <>مسجَّل لـ«{clash.name}» بنفس التصنيف</>, why: see('data', 'rg-def') }] : []),
+    ...missingDocs.map((d) => ({ head: d.label, text: 'مستند إلزامي لهذا التصنيف غير مرفوع', why: see('docs', 'rg-docs') })),
+    ...stale.map((k) => ({ head: REG_DOCS.find((d) => d.key === k)?.label ?? k, text: 'منتهية عند التقديم', why: see('docs', 'rg-docs') })),
+    ...badFormat.map((x) => ({ head: x.f.label, text: x.e, why: see('data', 'rg-def') })),
+    ...dups.map((d) => ({ head: d.label, text: <>مكرَّر مع «{d.who}»</>, why: see('data', 'rg-def') })),
+    ...badIban.map((b) => ({ head: `آيبان ${b.bankName}`, text: 'غير صحيح · ارفض الحساب أو أعد الطلب لتصحيحه', why: see('data', 'rg-banks') })),
+    ...(noBank ? [{ head: 'الحسابات البنكية', text: 'لا حساب مقبول · يلزم حساب واحد على الأقل', why: see('data', 'rg-banks') }] : []),
+    ...(open && !legible ? [{ head: 'الوثائق النظامية', text: 'لم يُؤكَّد وضوحها وقراءتها بعد · أكّده في قائمة الفحص', why: see('data', 'rg-check') }] : []),
+  ]
+  const nStop = blockerCount(stops)
+  const pick = (p: PickedReason) => {
+    if (ask === 'return') { returnRegistration(r.id, pickedSay(p), flag, me); setTaken('return') }
+    else if (ask === 'reject') { decideRegistration(r.id, 'reject', pickedSay(p), bankNo, me, codeOf(p)); setTaken('reject') }
+    setAsk(null)
+  }
   /* 17 Oct · the assistant suggests · the registration's own checks decide between approving and returning ·
      a rejection (archives the entity) stays the person's */
   type RegAct = { label: string; kind: string }
@@ -210,12 +239,19 @@ export default function RegReviewPage() {
             <Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag>
           </header>
 
+          <Tabs items={REQ_TABS} active={tab} onChange={(x) => setQ({ tab: x === 'data' ? undefined : x })} />
 
           <div className="g2">
             <div className="col">
+              {/* Client 23 Oct · what stops the request, named field by field · on every tab */}
+              {open && nStop > 0 && (
+                <Blockers title="الطلب متوقف للأسباب أدناه" items={stops} noun={STOP_NOUN} ready="" />
+              )}
+              {tab === 'data' && (
+                <>
               {/* Note: the verification card sits above the data on purpose - the reviewer needs
                   "what hasn't been verified" before "what the data is". */}
-              <Glass>
+              <Glass id="rg-check">
                 <Head
                   title="ما يمنع الاعتماد"
                   meta={blocked ? <Tag tone="no">موقوف</Tag> : <Tag tone="ok">لا مانع</Tag>}
@@ -306,7 +342,7 @@ export default function RegReviewPage() {
                 </ul>
               </Glass>
 
-              <Glass>
+              <Glass id="rg-def">
                 <Head title="التعريف" meta="كما أقرّت به الجهة" />
                 <KV
                   rows={[
@@ -366,72 +402,8 @@ export default function RegReviewPage() {
                 />
               </Glass>
 
-              {/* Documents are handled the same as for projects and entities: `DocFile` with a
-                  thumbnail, so the reviewer can tell the license is a scanned image straight from
-                  the row before opening it. */}
-              <Glass>
-                <Head
-                  title="المستندات"
-                  meta={
-                    <span className="sub">
-                      <Num>{r.docs.length}</Num> {nounAfter(r.docs.length, { one: "مرفوع", few: "مرفوعة", many: "مرفوعًا" })} · المطلوب للتصنيف{' '}
-                      <Num>{REG_DOCS.filter((d) => docRequired(d, r.type)).length}</Num>
-                    </span>
-                  }
-                />
-                {/* Note: the document list is now a single implementation (UA-22). There used to be
-                    a 3-column grid with names truncated at 131px (even "...pdf" got cut) plus a
-                    separate list for missing ones, and a third layout for the same role next to the
-                    `/entities/:id/docs` table and the closing rows. Now `DocList` matches all of
-                    them exactly: uploaded items with a thumbnail, missing ones with a reserved slot
-                    tagged "required/optional". Uploaded items come first. */}
-                <DocList
-                  label="مستندات طلب التسجيل وحالتها"
-                  rows={[...REG_DOCS].sort((a, b) => Number(r.docs.includes(b.key)) - Number(r.docs.includes(a.key)))
-                    .map((d) => ({
-                      name: `${d.label}.pdf`,
-                      uploaded: r.docs.includes(d.key),
-                      required: docRequired(d, r.type),
-                      meta: docRequired(d, r.type) ? 'إلزامي لهذا التصنيف' : 'اختياري',
-                    }))}
-                />
-              </Glass>
-
-              {/* The path and the log · in the main column, the end column is the assistant's alone */}
-              <Glass>
-                <Head title="مسار الطلب" meta={<span className="sub">{/* doc rule 30 */}سجل التدقيق</span>} />
-                <Steps items={steps} flow="ladder" />
-              </Glass>
-
-              {/* 2.4.3 · 2.4.15 · every action kept · a second return never overwrites the first */}
-              <Glass>
-                <Head title="سجل الطلب" meta={<span className="sub"><Num>{regHistory(r).length}</Num> إجراء · الإصدار <Num>{r.version ?? 1}</Num></span>} />
-                <ul className="lg">
-                  {[...regHistory(r)].reverse().map((ev, i) => (
-                    <li className="lgi" key={`${ev.at}-${i}`}>
-                      <span className={`lgdot ${ev.kind === 'approve' ? 't-ok' : ev.kind === 'reject' ? 't-no' : ev.kind === 'return' ? 't-ret' : 't-mute'}`} />
-                      <div className="lghead">
-                        <span className="lgact">{ev.action}</span>
-                        <span className="pc-sp" />
-                        <span className="lgtime sub"><DateText>{ev.at.slice(0, 10)}</DateText> · <Num>{ev.at.slice(11, 16) || '09:00'}</Num></span>
-                      </div>
-                      <div className="lgby"><span className="lgwho">{ev.by}</span></div>
-                      {ev.fields && (
-                        <div className="lgfields">
-                          {ev.fields.map((f) => (
-                            <div className="lgf" key={f.k}><span className="lgf-k">{f.k}</span><span className="lgf-v">{f.v}</span></div>
-                          ))}
-                        </div>
-                      )}
-                      {ev.note && <p className="lgnote">{isolate(ev.note)}</p>}
-                    </li>
-                  ))}
-                </ul>
-              </Glass>
-              <EditableCard module="registration" state={r.state} label={REG_STATES.find((x) => x.key === r.state)?.label} />
-
               {/* Bank account - a separate decision even though it's entered together. */}
-              <Glass>
+              <Glass id="rg-banks">
                 <Head
                   title="الحسابات البنكية"
                   meta={<>
@@ -523,6 +495,88 @@ export default function RegReviewPage() {
                   النظام وحده في <Link className="lnk" to={ROUTES.entityArchive}>أرشيف الجهات</Link>{' '}{/* doc rule 29 */}.
                 </p>
               </Glass>
+                </>
+              )}
+              {tab === 'docs' && (
+                <>
+              {/* Documents are handled the same as for projects and entities: `DocFile` with a
+                  thumbnail, so the reviewer can tell the license is a scanned image straight from
+                  the row before opening it. */}
+              <Glass id="rg-docs">
+                <Head
+                  title="المستندات"
+                  meta={
+                    <span className="sub">
+                      <Num>{r.docs.length}</Num> {nounAfter(r.docs.length, { one: "مرفوع", few: "مرفوعة", many: "مرفوعًا" })} · المطلوب للتصنيف{' '}
+                      <Num>{REG_DOCS.filter((d) => docRequired(d, r.type)).length}</Num>
+                    </span>
+                  }
+                />
+                {/* Note: the document list is now a single implementation (UA-22). There used to be
+                    a 3-column grid with names truncated at 131px (even "...pdf" got cut) plus a
+                    separate list for missing ones, and a third layout for the same role next to the
+                    `/entities/:id/docs` table and the closing rows. Now `DocList` matches all of
+                    them exactly: uploaded items with a thumbnail, missing ones with a reserved slot
+                    tagged "required/optional". Uploaded items come first. */}
+                <DocList
+                  label="مستندات طلب التسجيل وحالتها"
+                  rows={[...REG_DOCS].sort((a, b) => Number(r.docs.includes(b.key)) - Number(r.docs.includes(a.key)))
+                    .map((d) => ({
+                      name: `${d.label}.pdf`,
+                      uploaded: r.docs.includes(d.key),
+                      required: docRequired(d, r.type),
+                      meta: docRequired(d, r.type) ? 'إلزامي لهذا التصنيف' : 'اختياري',
+                    }))}
+                />
+              </Glass>
+
+              {r.banks.length > 0 && (
+                <Glass>
+                  <Head title="وثائق الحسابات البنكية" meta={<span className="sub"><Num>{r.banks.length}</Num> حساب</span>} />
+                  <DocList
+                    label="وثائق الحسابات البنكية"
+                    rows={r.banks.map((b) => ({ name: b.doc || `${BANK_DOC_LABEL}.pdf`, uploaded: Boolean(b.doc), required: true, meta: `${b.bankName} · ${b.bankHolder}` }))}
+                  />
+                </Glass>
+              )}
+                </>
+              )}
+              {tab === 'log' && (
+                <>
+              {/* The path and the log · in the main column, the end column is the assistant's alone */}
+              <Glass>
+                <Head title="مسار الطلب" meta={<span className="sub">{/* doc rule 30 */}سجل التدقيق</span>} />
+                <Steps items={steps} flow="ladder" />
+              </Glass>
+
+              {/* 2.4.3 · 2.4.15 · every action kept · a second return never overwrites the first */}
+              <Glass>
+                <Head title="سجل الطلب" meta={<span className="sub"><Num>{regHistory(r).length}</Num> إجراء · الإصدار <Num>{r.version ?? 1}</Num></span>} />
+                <ul className="lg">
+                  {[...regHistory(r)].reverse().map((ev, i) => (
+                    <li className="lgi" key={`${ev.at}-${i}`}>
+                      <span className={`lgdot ${ev.kind === 'approve' ? 't-ok' : ev.kind === 'reject' ? 't-no' : ev.kind === 'return' ? 't-ret' : 't-mute'}`} />
+                      <div className="lghead">
+                        <span className="lgact">{ev.action}</span>
+                        <span className="pc-sp" />
+                        <span className="lgtime sub"><DateText>{ev.at.slice(0, 10)}</DateText> · <Num>{ev.at.slice(11, 16) || '09:00'}</Num></span>
+                      </div>
+                      <div className="lgby"><span className="lgwho">{ev.by}</span></div>
+                      {ev.fields && (
+                        <div className="lgfields">
+                          {ev.fields.map((f) => (
+                            <div className="lgf" key={f.k}><span className="lgf-k">{f.k}</span><span className="lgf-v">{f.v}</span></div>
+                          ))}
+                        </div>
+                      )}
+                      {ev.note && <p className="lgnote">{isolate(ev.note)}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </Glass>
+
+                </>
+              )}
             </div>
 
             <AssistantAside
@@ -588,74 +642,56 @@ export default function RegReviewPage() {
                   </span>
                 </div>
 
-                {/* Admin note - required on return-for-revision and rejection - the live system
-                    enforces it, and rule 31 requires it. */}
+                {/* Client 23 Oct · the decision first · return and reject then ask their reason in a
+                    popup fed by the entity settings · the approve button states what stops it */}
                 <div className="payact-g">
-                <label className="payact-n">
-                  <span className="vis-h">الملاحظة الإدارية</span>
-                  <input
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="الملاحظة الإدارية · إلزامية للإعادة والرفض"
-                  />
-                </label>
-                {mayApprove && (
-                  <label className="regf">
-                    <span className="lb">سبب الرفض · عند الرفض</span>
-                    <FieldSelect
-                      value={why}
-                      options={[{ value: '', label: 'اختر سبب الرفض' }, ...REG_REJECT_REASONS.map((x) => ({ value: x.key, label: x.label }))]}
-                      onChange={(x) => setWhy(x as RegRejectReason | '')}
-                      label="سبب الرفض"
-                    />
-                  </label>
-                )}
-
                 <div className="rowf gp-2">
                   {mayReturn && (
                     <button
                       className="btn btn-2"
-                      data-needs-note=""
-                      disabled={!note.trim()}
-                      title={note.trim() ? `يُعاد إلى الجهة مع الملاحظة${flag.length ? ` · ويُفتح لها ${flag.map(fieldLabel).join('، ')}` : ''}` : 'اكتب الملاحظة الإدارية أولًا'}
-                      onClick={() => { returnRegistration(r.id, note.trim(), flag, me); setTaken('return') }}
+                      title={`يُعاد إلى الجهة مع السبب${flag.length ? ` · ويُفتح لها ${flag.map(fieldLabel).join('، ')}` : ''}`}
+                      onClick={() => setAsk('return')}
                     >
                       إعادة للاستكمال
                     </button>
                   )}
                   {mayApprove && (
-                    <button
-                      className="btn btn-d"
-                      data-needs-note=""
-                      disabled={!note.trim() || !why}
-                      title={!note.trim() ? 'اكتب سبب الرفض أولًا' : !why ? 'اختر سبب الرفض من القائمة' : /* doc rule 28 */ 'يُؤرشف بسببه'}
-                      onClick={() => { if (why) { decideRegistration(r.id, 'reject', note.trim(), bankNo, me, why); setTaken('reject') } }}
-                    >
+                    <button className="btn btn-d" title={/* doc rule 28 */ 'يُؤرشف بسببه'} onClick={() => setAsk('reject')}>
                       رفض وإيقاف
                     </button>
                   )}
                   {mayApprove && (
                     <button
                       className="btn btn-p"
-                      disabled={blocked || r.banks.every((b) => bankNo[b.id])}
-                      title={
-                        blocked
-                          ? /* doc rule 4 · 5 · 8 */ (legible ? 'نواقص تمنع الاعتماد · وصحة الآيبان والصيغ' : 'أكّد وضوح الوثائق وقراءتها أولًا')
-                          : r.banks.every((b) => bankNo[b.id])
-                            ? 'لا حساب بنكيًا مقبولًا · يلزم حساب واحد على الأقل'
-                            : /* doc rule 2 */ 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم'
-                      }
-                      onClick={() => { decideRegistration(r.id, 'approve', note.trim(), bankNo, me); setTaken('approve') }}
+                      disabled={blocked || noBank}
+                      title={nStop ? 'نواقص تمنع الاعتماد: ' + stops.map((x) => `${x.head} · ${typeof x.text === 'string' ? x.text : ''}`).join('\n') : /* doc rule 2 */ 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم'}
+                      onClick={() => { decideRegistration(r.id, 'approve', '', bankNo, me); setTaken('approve') }}
                     >
                       اعتماد وتفعيل
                     </button>
                   )}
                 </div>
+                {mayApprove && nStop > 0 && (
+                  <span className="sub">قبل الاعتماد: <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)} · <a className="lnk" href="#rg-stop" onClick={(e) => { e.preventDefault(); document.querySelector('.screen')?.scrollTo({ top: 0, behavior: 'smooth' }) }}>الأسباب أعلى الصفحة</a></span>
+                )}
                 </div>
               </>
             )}
           </div>
         </div>
+        {ask && (
+          <ReasonDialog
+            kind={ask === 'return' ? 'regReturn' : 'regReject'}
+            title={ask === 'return' ? 'إعادة الطلب للاستكمال' : 'رفض الطلب وإيقافه'}
+            subject={ask === 'return'
+              ? `${r.name} · يُعاد إلى الجهة مع السبب${flag.length ? ` · ويُفتح لها ${flag.length} ${nounAfter(flag.length, { one: 'حقل', few: 'حقول', many: 'حقلًا' })}` : ''}`
+              : `${r.name} · يُؤرشف الطلب بسببه ولا يُحذف`}
+            confirm={ask === 'return' ? 'أعد للاستكمال' : 'ارفض وأوقف'}
+            tone={ask === 'return' ? 'btn-p' : 'btn-d'}
+            onConfirm={pick}
+            onClose={() => setAsk(null)}
+          />
+        )}
       </div>
     </AppLayout>
   )

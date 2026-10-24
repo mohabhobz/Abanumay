@@ -1,15 +1,16 @@
-import { accountLine, accountSay } from '@/data/shared/decisions'
 import { accountEvents } from '@/data/entities/auth'
-import { Link } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { DateText, Empty, Glass, Head, Icon, KV, Mono, Num, Person, Tabs, Tag, icons } from '@/components/ui'
+import { DataTable, nextSort, readCols, sortRows, type ColSort } from '@/components/table'
+import { COLS, rowHref } from '@/features/projects/list/columns'
+import { DONE, DROPPED, LIVE } from '@/data/status'
 import { DocFile, DocList } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
-import { entityCode, NOUN, nounAfter } from '@/lib/format'
-import { activationTone, days, groupTone, TONE } from '@/lib/tone'
-import { ENTITY_DOCS_TOTAL, stagePressure } from '@/data/repository'
+import { NOUN, nounAfter, units } from '@/lib/format'
+import { ENTITY_DOCS_TOTAL } from '@/data/repository'
 import type { EntityDetail, EntityEvent } from '@/data/mock/entityDetail'
 import type { EntityRow, ProjectRow } from '@/types/domain'
-import { BankActions } from './EntityActions'
+import { AddBank, BankActions } from './EntityActions'
 import { useState } from 'react'
 import { useRole } from '@/hooks/useRole'
 import { entityEvalSummary, entityLessons, saveEntityLessons, useClosing } from '@/data/closing/store'
@@ -54,13 +55,8 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <Head title="التعريف" meta="من سجل الجهة في النظام" />
         <KV
           rows={[
-            { k: 'اسم الجهة', v: e.name },
-            { k: 'كود الجهة', v: <Mono>{entityCode(e.id, e.registeredAt)}</Mono> },
-            { k: 'تصنيف الجهة', v: e.type },
-            { k: 'الجهة المرخِّصة', v: e.licensor },
-            { k: 'رقم الترخيص', v: <Mono>{e.licenseNo}</Mono> },
-            { k: 'المنطقة', v: e.region },
-            { k: 'المحافظة / المدينة', v: e.city },
+            /* Client 24 Oct · what the header already shows (name, code, classification, licence,
+               licensor, region and city, governance) isn't repeated in the tab */
             { k: 'تاريخ التأسيس', v: <DateText>{d.foundedAt}</DateText> },
             { k: 'تاريخ التسجيل في المؤسسة', v: <DateText>{e.registeredAt}</DateText> },
           ]}
@@ -118,9 +114,6 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
             { k: 'الموقع الإلكتروني', v: <Mono>{d.website}</Mono> },
           ]}
         />
-        <p className="sub mt-3">
-          بيانات الاتصال هنا مموّهة عمدًا لأن المستودع عام.
-        </p>
       </Glass>
 
       <Glass>
@@ -144,8 +137,6 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <Head title="بيانات النظام" />
         <KV
           rows={[
-            { k: 'حالة الحساب', v: <Tag tone={activationTone(accountSay(e))}>{accountLine(e)}</Tag> },
-            { k: 'درجة الحوكمة', v: <b>{e.governance}</b> },
             { k: 'نوع الحساب', v: d.accountType },
             { k: 'اسم المستخدم', v: <Mono>{d.username}</Mono> },
             { k: 'رقم المستخدم', v: <Mono>{d.userNo}</Mono> },
@@ -227,11 +218,17 @@ export function EntityDocsTab({ d, entityId }: { d: EntityDetail; entityId: stri
  */
 export function EntityBanksTab({ d, entityId }: { d: EntityDetail; entityId: string }) {
   if (d.banks.length === 0) {
-    return <Glass><Empty art={{ done: 0, total: 2 }} title="لا توجد حسابات بنكية مسجّلة." note="الصرف موقوف حتى تسجّل الجهة حسابًا بنكيًا ويُفعَّل." /></Glass>
+    return <Glass><Empty art={{ done: 0, total: 2 }} title="لا توجد حسابات بنكية مسجّلة." note="الصرف موقوف حتى تسجّل الجهة حسابًا بنكيًا ويُفعَّل." actions={<AddBank entityId={entityId} />} /></Glass>
   }
 
+  const on = d.banks.filter((b) => b.status === 'مفعل').length
   return (
     <div className="col">
+      {/* Client 23 Oct · the staff add an account from here · active on save */}
+      <Glass>
+        <Head title="الحسابات البنكية" meta={<span className="sub"><Num>{d.banks.length}</Num> {nounAfter(d.banks.length, { one: 'حساب', few: 'حسابات', many: 'حسابًا' })} · <Num>{on}</Num> مفعّل</span>} />
+        <AddBank entityId={entityId} />
+      </Glass>
       {d.banks.map((b) => (
         <Glass key={b.id}>
           <Head
@@ -252,7 +249,7 @@ export function EntityBanksTab({ d, entityId }: { d: EntityDetail; entityId: str
 
           {b.reason && (
             <div className="lastact">
-              <span className="sub">سبب عدم التفعيل، من الأسباب السبعة المقنّنة</span>
+              <span className="sub">سبب التعطيل</span>
               <p>{b.reason}</p>
             </div>
           )}
@@ -377,88 +374,55 @@ export function EntityEvalCard({ entityId }: { entityId: string }) {
   )
 }
 
+/* Client 23 Oct · the entity's projects by where they stand · it replaces the «أداء الجهة» box: the
+   same five counts, now each one opens its projects · and the table is the projects list's own,
+   same columns, so a project reads the same in both places. */
+const PRJ_TABS: { slug: string; label: string; has: readonly string[] }[] = [
+  /* Every project that was approved, wherever it went since · the record's «مشاريع معتمدة» */
+  { slug: 'approved', label: 'معتمدة', has: [...LIVE, ...DONE, 'متعثر'] },
+  /* From the approval to the closing · as the entity's running counter counts it */
+  { slug: 'running', label: 'تحت التشغيل', has: LIVE },
+  { slug: 'done', label: 'مكتملة', has: DONE },
+  { slug: 'declined', label: 'معتذر عنها', has: DROPPED },
+  { slug: 'stalled', label: 'متعثرة', has: ['متعثر'] },
+]
+
 export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
+  const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const [cols, setCols] = useState<string[]>(() => readCols('projects', COLS))
+  const [sort, setSort] = useState<ColSort | null>(null)
   if (rows.length === 0) {
     return <Glass id="ent-projects"><Empty art={{ done: 0 }} title="لا توجد مشاريع لهذه الجهة." note="الجهة مسجّلة، لكنها لم تتقدّم بأي مشروع في هذا النموذج." /></Glass>
   }
-
+  const of = (has: readonly string[]) => rows.filter((r) => has.includes(r.statusGroup))
+  const items = [
+    { slug: 'all', label: 'كل المشاريع', count: rows.length },
+    ...PRJ_TABS.map((t) => ({ slug: t.slug, label: t.label, count: of(t.has).length })),
+  ]
+  const pt = items.some((t) => t.slug === params.get('pt')) ? (params.get('pt') as string) : 'all'
+  const tab = PRJ_TABS.find((t) => t.slug === pt)
+  const shown = tab ? of(tab.has) : rows
   return (
-    <Glass id="ent-projects">
+    <Glass id="ent-projects" className="tblcard">
       <Head title="مشاريع الجهة" meta={<><span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.project)}</>} />
-      <div className="eprj">
-        {rows.map((p) => {
-          const over = stagePressure(p) > 1
-          return (
-            <Link key={p.id} to={ROUTES.project(p.id)} className="eprj-r well">
-              <div className="eprj-h">
-                <Mono>{p.id}</Mono>
-                <Tag tone={groupTone(p.statusGroup)}>{p.statusGroup}</Tag>
-                <span className="pc-sp" />
-                <Money>{p.amountGranted > 0 ? p.amountGranted : p.amountRequested}</Money>
-              </div>
-              <div className="eprj-n">{p.name}</div>
-              <div className="sub eprj-f">
-                {p.stage}
-                {p.stageLimit > 0 && (
-                  <>
-                    {' · '}
-                    <span className="num">{days(p.hoursInStage)}</span>
-                    {' يومًا في القسم'}
-                    {over && <span className={`tag ${TONE.late}`}>متأخر</span>}
-                  </>
-                )}
-                {p.declineReason && <> · {p.declineReason}</>}
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-    </Glass>
-  )
-}
-
-/**
- * Entity performance - the cumulative record, shown under every tab because it's persistent
- * context.
- */
-export function EntityRecord({ e }: { e: EntityRow }) {
-  return (
-    <Glass>
-      <Head title="أداء الجهة" meta="السجل التراكمي" />
-      <KV
-        rows={[
-          { k: 'مشاريع معتمدة', v: <Num>{e.projectsApproved}</Num> },
-          { k: 'تحت التشغيل', v: <Num>{e.projectsRunning}</Num> },
-          { k: 'مكتملة', v: <Num>{e.projectsCompleted}</Num> },
-          { k: 'معتذر عنها', v: <Num>{e.projectsDeclined}</Num> },
-          {
-            k: 'متعثرة',
-            v: (
-              <>
-                <Num>{e.projectsStalled}</Num>
-                {e.projectsStalled > 0 && <span className="dotmark" />}
-              </>
-            ),
-          },
-        ]}
-      />
-    </Glass>
-  )
-}
-
-/** Quick links */
-export function EntityGoTo({ e }: { e: EntityRow }) {
-  return (
-    <Glass>
-      <Head title="اذهب إلى" />
-      <div className="chips">
-        <Link className="chip" to={`${ROUTES.projects}?q=${encodeURIComponent(e.name)}`}>
-          <Icon name={icons.link} size="sm" /> مشاريع الجهة في القائمة
-        </Link>
-        <Link className="chip" to={`${ROUTES.entities}?region=${encodeURIComponent(e.region)}`}>
-          جهات {e.region}
-        </Link>
-      </div>
+      <Tabs pin={false} items={items} active={pt} onChange={(s) => setParams((x) => { const n = new URLSearchParams(x); if (s === 'all') n.delete('pt'); else n.set('pt', s); return n }, { replace: true })} />
+      {shown.length === 0 ? (
+        <Empty title={`لا مشاريع ${tab?.label ?? ''} لهذه الجهة.`} />
+      ) : (
+        <DataTable
+          rows={sortRows(shown, COLS, sort)}
+          sort={sort}
+          onSort={(k) => setSort((x) => nextSort(x, k))}
+          all={COLS}
+          table="projects"
+          cols={cols}
+          onCols={setCols}
+          id={(r) => r.id}
+          onOpen={(r) => navigate(rowHref(r))}
+          count={units.project}
+        />
+      )}
     </Glass>
   )
 }

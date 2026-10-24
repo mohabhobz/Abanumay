@@ -89,9 +89,6 @@
 /* Units differ in length (ريال · % · يومًا · مشاريع); a shared slot keeps every field on one edge */
 .cfglist .cfgnum>.sub{min-inline-size:calc(var(--sp-10) + var(--sp-5))}
 
-/* «ما يُعدَّل الآن» · the locked list reads quieter than the editable one */
-.edlock li{color:var(--t2)}
-.edlock svg{color:var(--t3)}
 /* Long rule lines wrap rather than clip: the text is the rule itself */
 .payq-ck.mt-2 li>span:first-of-type{white-space:normal}
 

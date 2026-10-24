@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { regTrends } from '@/data/shared/ai'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
+  DateField, DateText, Empty, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
 import { countOf, NOUN, nounAfter, pct, REQUEST_NOUN } from '@/lib/format'
@@ -22,14 +22,14 @@ import { assistFor } from '@/data/mock/assistant'
 import { readRegRequests } from '@/data/readings'
 import { ENTITY_TYPES } from '@/data/mock/taxonomy'
 import {
-  REG_STATES, REG_STATE_SAY, regKpi, regMissingDocs, regRows, type RegState,
+  REG_STATES, REG_STATE_SAY, regKpi, regMissingDocs, regRows, type RegRequest as RegRow, type RegState,
 } from '@/data/mock/registration'
 import type { Sheet } from '@/lib/export'
 import { RegCard } from './RegCard'
 import { COLS, GROUPS } from './columns'
 import { useEntityFlow } from '@/data/entities/store'
 
-const KEYS = ['q', 'state', 'type', 'region', 'short', 'view', 'group', 'adv', 'ord'] as const
+const KEYS = ['q', 'state', 'type', 'region', 'city', 'lic', 'from', 'to', 'short', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Registration request inbox.
@@ -51,6 +51,26 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
 
 const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'state', 'short']
 
+/* Client 23 Oct · the inbox filters like the projects list · region, city, technical-oversight
+   authority and the submission date, alongside classification and the short-file toggle. One
+   predicate for the rows and the tab counts, so a count never disagrees with its list. */
+const passes = (r: RegRow, v: Params): boolean => {
+  const needle = v.q?.trim()
+  const types = readList(v.type)
+  const regions = readList(v.region)
+  const cities = readList(v.city)
+  const lics = readList(v.lic)
+  if (types.length && !types.includes(r.type)) return false
+  if (regions.length && !regions.includes(r.region)) return false
+  if (cities.length && !cities.includes(r.city)) return false
+  if (lics.length && !lics.includes(r.licensor)) return false
+  if (v.from && r.submittedAt < v.from) return false
+  if (v.to && r.submittedAt > v.to) return false
+  if (v.short === '1' && regMissingDocs(r).length === 0) return false
+  if (needle && !`${r.id} ${r.name} ${r.licenseNo} ${r.clerkName}`.includes(needle)) return false
+  return true
+}
+
 export default function RequestsPage() {
   const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
   const navigate = useNavigate()
@@ -67,18 +87,8 @@ export default function RequestsPage() {
 
   const rows = useMemo(() => {
     void ver /* the rows are mutable · a flow action re-reads them */
-    const needle = v.q?.trim()
     const states = readList(v.state)
-    const types = readList(v.type)
-    const regions = readList(v.region)
-    return regRows.filter((r) => {
-      if (states.length && !states.includes(r.state)) return false
-      if (types.length && !types.includes(r.type)) return false
-      if (regions.length && !regions.includes(r.region)) return false
-      if (v.short === '1' && regMissingDocs(r).length === 0) return false
-      if (needle && !`${r.id} ${r.name} ${r.licenseNo} ${r.clerkName}`.includes(needle)) return false
-      return true
-    })
+    return regRows.filter((r) => (!states.length || states.includes(r.state)) && passes(r, v))
   }, [v, ver])
 
   /* Oldest submission first - the inbox is a review role, and a review role goes by date · a click
@@ -95,20 +105,11 @@ export default function RequestsPage() {
   /** Count per status within the current scope - excluding the status filter itself. */
   const counts = useMemo(() => {
     void ver
-    const needle = v.q?.trim()
-    const types = readList(v.type)
-    const regions = readList(v.region)
-    const base = regRows.filter((r) => {
-      if (types.length && !types.includes(r.type)) return false
-      if (regions.length && !regions.includes(r.region)) return false
-      if (v.short === '1' && regMissingDocs(r).length === 0) return false
-      if (needle && !`${r.id} ${r.name} ${r.licenseNo} ${r.clerkName}`.includes(needle)) return false
-      return true
-    })
+    const base = regRows.filter((r) => passes(r, v))
     const m = new Map<RegState, number>()
     for (const r of base) m.set(r.state, (m.get(r.state) ?? 0) + 1)
     return { m, total: base.length }
-  }, [v.type, v.region, v.short, v.q, ver])
+  }, [v, ver])
 
   /* Grouping persists with the session instead of resetting on every sign-out. */
   useStickyGroup('reg-requests', v.group, (x) => set({ group: x }))
@@ -146,7 +147,7 @@ export default function RequestsPage() {
     })
 
   const chips = (
-    [['state', 'الحالة'], ['type', 'التصنيف'], ['region', 'المنطقة']] as [keyof Params, string][]
+    [['state', 'الحالة'], ['type', 'التصنيف'], ['region', 'المنطقة'], ['city', 'المدينة'], ['lic', 'جهة الإشراف']] as [keyof Params, string][]
   ).flatMap(([key, label]) =>
     readList(v[key]).map((value) => ({
       key,
@@ -307,13 +308,47 @@ export default function RequestsPage() {
                     values={readList(v.region)}
                     all="الكل"
                     options={[...new Set(regRows.map((r) => r.region))]}
-                    onChange={(x) => set({ region: writeList(x) })}
+                    onChange={(x) => {
+                      /* a city outside the picked regions drops with them */
+                      const keep = readList(v.city).filter((c) => !x.length || regRows.some((r) => r.city === c && x.includes(r.region)))
+                      set({ region: writeList(x), city: writeList(keep) })
+                    }}
                   />
+                </div>
+                <div className="fgrid-i">
+                  <MultiSelect
+                    label="المدينة"
+                    values={readList(v.city)}
+                    all="الكل"
+                    options={[...new Set(regRows.filter((r) => !readList(v.region).length || readList(v.region).includes(r.region)).map((r) => r.city))]}
+                    onChange={(x) => set({ city: writeList(x) })}
+                  />
+                </div>
+                <div className="fgrid-i">
+                  <MultiSelect
+                    label="جهة الإشراف الفني"
+                    values={readList(v.lic)}
+                    all="الكل"
+                    options={[...new Set(regRows.map((r) => r.licensor))]}
+                    onChange={(x) => set({ lic: writeList(x) })}
+                  />
+                </div>
+                <div className="fgrid-i">
+                  <span className="fsel">
+                    <span className="fsel-l">أُرسل من</span>
+                    <DateField value={v.from ?? ''} max={v.to} label="أُرسل من" onChange={(x) => set({ from: x || undefined })} />
+                  </span>
+                </div>
+                <div className="fgrid-i">
+                  <span className="fsel">
+                    <span className="fsel-l">أُرسل حتى</span>
+                    <DateField value={v.to ?? ''} min={v.from} label="أُرسل حتى" end onChange={(x) => set({ to: x || undefined })} />
+                  </span>
                 </div>
               </div>
             )}
 
-            {(chips.length > 0 || v.short === '1') && (
+            {(chips.length > 0 || v.short === '1' || v.from || v.to) && (
               <div className="factive">
                 {chips.map((c) => (
                   <button
@@ -329,6 +364,12 @@ export default function RequestsPage() {
                     <Icon name={icons.close} size="sm" />
                   </button>
                 ))}
+                {(v.from || v.to) && (
+                  <button className="fpill" onClick={() => set({ from: undefined, to: undefined })}>
+                    <span className="sub">تاريخ الإرسال:</span> {v.from ? <DateText>{v.from}</DateText> : '…'} – {v.to ? <DateText>{v.to}</DateText> : '…'}
+                    <Icon name={icons.close} size="sm" />
+                  </button>
+                )}
                 {v.short === '1' && (
                   <button className="fpill" onClick={() => set({ short: undefined })}>
                     ملفها ناقص

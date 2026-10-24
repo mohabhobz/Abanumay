@@ -498,14 +498,6 @@ export default function RegisterPage() {
                     />
                     <span>أقرّ بأن الجهة مستوفية للضوابط الخمسة أعلاه</span>
                   </label>
-                  {/* Note: these guardrails aren't in the spec - they come from the live system,
-                      and they're here because they're an eligibility filter that saves the entity
-                      twenty minutes on a form that's headed for rejection. */}
-                  <p className="sub cnote">
-                    الضوابط مأخوذة من صفحة «ضوابط قبول الجهة» في النظام العامل ·
-                    والوثيقة تبدأ خطواتها الـ<span className="num">17</span> من تعبئة
-                    النموذج مباشرة، فوجود هذه المحطة فرق مسجَّل للمراجعة.
-                  </p>
                   {foot}
                 </Glass>
               )}

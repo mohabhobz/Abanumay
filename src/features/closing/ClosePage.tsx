@@ -35,7 +35,6 @@ import { projectById } from '@/data/mock/projects'
 import { closeReadings } from './readings'
 import { CloseActionDock } from './CloseActionDock'
 import { SealedTitle } from '@/components/soul'
-import { EditableCard } from '@/features/shared/EditableCard'
 
 /* Closing page.
 
@@ -477,7 +476,6 @@ export default function ClosePage() {
               <VersionsCard c={c} />
               <LogsCard c={c} />
 
-              {!asEntity && <EditableCard module="closing" state={c.stage} label={closeStageLabel(c.stage)} />}
 
               {/* Correspondence · client 21 Oct (#2) · a floating chat over the page instead of a card at
                   its foot · the same thread as the project and the portal, kept per closing case */}

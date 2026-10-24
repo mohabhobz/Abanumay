@@ -1,7 +1,7 @@
 import { useLegacy } from '@/data/payments/legacy'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { GateArc, Mono, Money, Num, Person, Tabs } from '@/components/ui'
+import { GateArc, Mono, Money, Num, Person, Tabs, Tag } from '@/components/ui'
 import { DecisionBar, Crumbs } from '@/components/shell'
 import { EhsanCard, EhsanNoAgreement, RoutingCard } from '@/features/partners/parts'
 import { viaEhsan } from '@/data/partners/store'
@@ -49,8 +49,7 @@ import { useBudget } from '@/data/budget/store'
 import { scheduleOf, usePayments } from '@/data/payments/store'
 import { PAY_SLOT_SAY, payRequestById } from '@/data/mock/disbursements'
 import type { PaymentDetail } from '@/data/mock/detail'
-import { EditableCard } from '@/features/shared/EditableCard'
-import { HOLDER_LABEL, authorityFor, holderOf } from '@/data/holders'
+import { authorityFor, holderOf } from '@/data/holders'
 import { APPROVAL_MATRIX } from '@/data/approval'
 import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, supportAmount, useApprovals } from '@/data/approvals/store'
 import { flowEvents, flowOf, recommend, requestCompletion, saveStudy, useFlow, orgOutputsOf, outputLine } from '@/data/intake/flow'
@@ -60,7 +59,7 @@ import { ApprovalTab, OfficialNotes } from './tabs/ApprovalTab'
 import { TransferModal } from './TransferModal'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import type { AuthorityMatrix, DecisionAction, ProjectRow } from '@/types/domain'
-import { isDropped, isLive, statusLine } from '@/data/status'
+import { isDropped, statusLine, statusOf, subStatusOf } from '@/data/status'
 import { OTHER } from '@/data/intake/reasons'
 
 /** Number of days the current process has been open - from the action log. */
@@ -235,10 +234,6 @@ export default function ProjectPage() {
     if (a.label.startsWith('تحويل')) { setTransfer(true); return true }
     return false
   }
-  const editState = holder
-    ? holder === 'supervisor' ? 'دراسة المشروع' : holder
-    : row?.stage === 'استكمال بيانات المشروع' ? row.stage
-      : row && isLive(row.statusGroup) ? 'running' : 'done'
 
   /* The display code is the one the list shows (`PRJ-YYYY-NNNNN`), so a number copied from the
      list matches the project page everywhere. The raw id stays the URL key. */
@@ -435,7 +430,14 @@ export default function ProjectPage() {
                   {row?.owner ? <Person name={row.owner} /> : <span className="sub">غير مُسنَد</span>}
                 </span>
               </div>
-              <h1 className="ptitle">{project.name}</h1>
+              {/* Client 23 Oct · the main status beside the name, in its colour, as on the entity file ·
+                  the level it stands at reads on hover and in «التعريف» */}
+              <div className="ehead-t">
+                <h1 className="ptitle">{project.name}</h1>
+                {row && <span className="ehead-st"><Tag tone={groupTone(row.statusGroup)}>{statusOf(row)}</Tag></span>}
+                {/* Client 24 Oct · the level it stands at reads here, once · «التعريف» no longer repeats it */}
+                {row && !asEntity && (subStatusOf(row) || (row.stage !== statusOf(row) ? row.stage : '')) && <span className="sub">{subStatusOf(row) || row.stage}</span>}
+              </div>
 
               <div className="pamt">
                 <div className="lb">المبلغ المطلوب للدعم</div>
@@ -493,23 +495,10 @@ export default function ProjectPage() {
               )}
               {active === 'data' && (
                 <DataTab
-                  hideAttachments={Boolean(row)}
                   project={project}
                   code={code}
                   /* Re-audit 7 Oct · the routing card and the data tab read the same type */
                   type={row?.platform ? `مشروع لجهة خارجية · ${row.platform}` : row?.partnerType === 'مستقل' ? 'مشروع مستقل' : type}
-                  entityName={entity.name}
-                  entityId={String(entity.id)}
-                  entityAction={row && !asEntity ? <RelinkEntityButton projectId={row.id} entityId={row.entityId} projectName={row.name} /> : undefined}
-                  entityHistory={row && relinksOf(row.id).length ? <RelinkHistory projectId={row.id} /> : undefined}
-                  /* The latest action, not the latest event: updates share the same timeline, with
-                     the row labeled "latest action" above it. */
-                  last={log.find((e) => !e.followUp)}
-                  onOpenLog={() => goTab('log')}
-                  deps={{
-                    agreements: detail.agreement ? 1 : 0,
-                    payments: livePayments.length,
-                  }}
                 />
               )}
               {active === 'data' && row && (
@@ -519,7 +508,14 @@ export default function ProjectPage() {
                   {!asEntity && (row.statusGroup === 'قيد الدراسة' || closed) ? <RequestCloseCard row={row} me={me.name} /> : null}
                 </>
               )}
-              {active === 'entity' && <EntityTab entity={entity} bank={project.bank} />}
+              {active === 'entity' && (
+                <EntityTab
+                  entity={entity}
+                  bank={project.bank}
+                  action={row && !asEntity ? <RelinkEntityButton projectId={row.id} entityId={row.entityId} projectName={row.name} /> : undefined}
+                  history={row && relinksOf(row.id).length ? <RelinkHistory projectId={row.id} /> : undefined}
+                />
+              )}
               {active === 'history' && (
                 <HistoryTab entity={entity} currentId={project.id} year={row?.year ?? '2026'} />
               )}
@@ -604,7 +600,6 @@ export default function ProjectPage() {
               {active === 'log' && <LogTab events={fullLog} entityName={entity.name} />}
               {/* What can change at this stage · in the main column, the end column is the assistant's alone */}
               {/* v3 · 3.4.19 · the entity reads the main status alone · the seat and the internal stage are the institution's */}
-              <EditableCard module="project" state={editState} label={asEntity ? row?.statusGroup : holder ? HOLDER_LABEL[holder] : row?.stage} />
             </div>
 
             {/* === Side column - one sticky card ===

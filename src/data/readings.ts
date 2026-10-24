@@ -483,7 +483,7 @@ export function readEntity(
         `لأنه يدل على قدرتها على التنفيذ، لا على ملفها الورقي.`,
       bold: [n],
       danger: [n],
-      src: 'أداء الجهة · السجل التراكمي',
+      src: 'مشاريع الجهة · السجل التراكمي',
     })
   }
 
@@ -524,7 +524,7 @@ export function readEntity(
         `أكملت ${done} من ${entity.projectsApproved}` +
         `${entity.projectsRunning > 0 ? `، و${units.project(entity.projectsRunning, true)} لا تزال تحت التنفيذ` : ''}.`,
       bold: [done],
-      src: 'أداء الجهة · السجل التراكمي',
+      src: 'مشاريع الجهة · السجل التراكمي',
       bar: {
         value: entity.projectsCompleted,
         limit: entity.projectsApproved,
@@ -550,7 +550,7 @@ export function readEntity(
         `اعتُذر عن ${n} من ${units.project(asked, true)} تقدّمت بها. ` +
         `يستحق سبب الاعتذار السابق القراءة قبل الطلب الجديد، فإن تكرّر السبب تكرّر القرار.`,
       bold: [n],
-      src: 'أداء الجهة · السجل التراكمي',
+      src: 'مشاريع الجهة · السجل التراكمي',
     })
   }
 
@@ -565,7 +565,7 @@ export function readEntity(
       metric: { value: String(entity.projectsRunning), unit: 'تحت التنفيذ الآن' },
       text: `لديها ${n} تحت التنفيذ في الوقت نفسه، والطلب الجديد يُضاف إلى هذا الحمل لا إلى ملف فارغ.`,
       bold: [n],
-      src: 'أداء الجهة · السجل التراكمي',
+      src: 'مشاريع الجهة · السجل التراكمي',
     })
   }
 

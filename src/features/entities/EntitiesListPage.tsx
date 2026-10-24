@@ -372,17 +372,16 @@ export default function EntitiesListPage() {
                 separates them is that a request isn't an entity, so the two can't lead to the same
                 screen. */}
             {/* Note: the order isn't this screen's choice - it's a contract defined once in
-                `PageActions`: settings -> secondary -> create, in the corner. Entities happened to
-                be the closest screen to that contract already, and everything else was aligned to
-                match it. */}
+                `PageActions`: create -> secondary -> settings, in the corner (client 23 Oct). */}
             <PageActions
               settings={ROUTES.entitySettings}
               secondary={[
-                { label: 'طلبات التسجيل', to: ROUTES.entityRequests, icon: 'doc', count: reg.open },
+                /* Client 23 Oct · the button names what it opens · the queue under review, on its own tab */
+                { label: 'طلبات التسجيل تحت المراجعة', to: `${ROUTES.entityRequests}?state=review`, icon: 'doc', count: reg.open },
                 /* client meeting 20 Oct · the strategic partners are entities · their hub opens from here */
                 { label: 'الشركاء الاستراتيجيون', to: ROUTES.partners, icon: 'navPartners' },
                 /* 2.3.upd · the other request an entity sends, after it exists */
-                { label: 'طلبات التحديث', to: ROUTES.entityUpdates, icon: 'edit', count: UPD_ROWS.filter((u) => u.state === 'review').length },
+                { label: 'طلبات التحديث تحت المراجعة', to: `${ROUTES.entityUpdates}?state=review`, icon: 'edit', count: UPD_ROWS.filter((u) => u.state === 'review').length },
                 /* Re-audit 7 Oct · the archive is the system admin's alone (rule 29) */
                 ...(readRole() === 'admin' ? [{ label: 'الأرشيف', to: ROUTES.entityArchive, icon: 'folder' as const }] : []),
               ]}

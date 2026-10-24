@@ -181,6 +181,8 @@ type Op = { at: string } & (
   | { op: 'viewArchived'; entityId: string; by: string }
   | { op: 'relink'; projectId: string; to: string; reason: string; file?: string; by: string; bank?: { name: string; active: boolean } }
   | { op: 'bankStatus'; entityId: string; bankId: string; status: BankAccount['status']; reason?: string; by: string }
+  /* Client 23 Oct · an account added by the staff from inside the system · active on save */
+  | { op: 'bankAdd'; entityId: string; bank: BankAccount; by: string }
   | { op: 'updSave'; req: Omit<UpdateRequest, 'events' | 'state' | 'createdAt' | 'submittedAt'>; send: boolean }
   | { op: 'updDecide'; id: string; outcome: 'approve' | 'reject' | 'return'; note: string; by: string; bankNo?: Record<string, string> }
   | { op: 'adminEdit'; entityId: string; changes: Change[]; reason: string; by: string }
@@ -619,6 +621,13 @@ const apply = (x: Op) => {
       entityEvent(x.entityId, { kind: 'edit', action: 'الاطلاع على ملف جهة مؤرشفة', by: x.by, at })
       break
     }
+    case 'bankAdd': {
+      const o = overlayOf(x.entityId)
+      if (!o.addedBanks.some((b) => b.id === x.bank.id)) o.addedBanks.push({ ...x.bank })
+      entityEvent(x.entityId, { kind: 'bank', action: 'إضافة حساب بنكي من النظام', by: x.by, at,
+        fields: [{ k: 'البنك', v: x.bank.bank }, { k: 'الآيبان', v: x.bank.iban }, { k: 'الحالة', v: x.bank.status }] })
+      break
+    }
     case 'bankStatus': {
       const o = overlayOf(x.entityId)
       o.bankStatus[x.bankId] = { status: x.status, reason: x.reason }
@@ -931,6 +940,10 @@ export const setBankSource = (f: (entityId: string) => { name: string; active: b
 export const viewArchived = (entityId: string, by: string) => run({ op: 'viewArchived', entityId, by, at: now() })
 
 export const nextBatchId = (): string => `BAT-2026-${String(BATCHES.length + 1).padStart(6, '0')}`
+
+/** Client 23 Oct · add an account from inside the system · it is active at once */
+export const addBank = (entityId: string, bank: BankAccount, by: string) =>
+  run({ op: 'bankAdd', entityId, bank, by, at: now() })
 
 export const setBankStatus = (entityId: string, bankId: string, status: BankAccount['status'], by: string, reason?: string) =>
   run({ op: 'bankStatus', entityId, bankId, status, reason, by, at: now() })

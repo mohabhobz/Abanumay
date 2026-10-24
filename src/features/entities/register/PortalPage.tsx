@@ -255,7 +255,21 @@ export default function PortalPage() {
                 {!resent && <p className="sub cnote">{view.say}</p>}
 
                 {/* Review outcome - what the institution said, verbatim */}
-                {reqOf.note && (
+                {/* Client 23 Oct · a returned request says plainly that it's stopped, and on what:
+                    the reason, the fields to correct and the documents still missing */}
+                {reqOf.state === 'completion' && !resent ? (
+                  <div className="ptl-res">
+                    <Icon name={icons.alert} size="sm" />
+                    <div>
+                      <b>الطلب متوقف للأسباب أدناه</b>
+                      <ul className="payq-ck">
+                        {reqOf.note && <li className="no"><Icon name={icons.chat} size="sm" /><span>{reqOf.note}</span></li>}
+                        {flagged.map((k) => <li key={k} className="no"><Icon name={icons.edit} size="sm" /><span><strong>{fieldLabel(k)}</strong> · مطلوب تعديله</span></li>)}
+                        {missing.map((d) => <li key={d.key} className="no"><Icon name={icons.doc} size="sm" /><span><strong>{d.label}</strong> · مستند ناقص</span></li>)}
+                      </ul>
+                    </div>
+                  </div>
+                ) : reqOf.note && (
                   <div className={`ptl-res${reqOf.state === 'rejected' ? ' no' : ''}`}>
                     <Icon name={icons.alert} size="sm" />
                     <div>

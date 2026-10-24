@@ -1,4 +1,5 @@
-import { accountLine } from '@/data/shared/decisions'
+import { accountSay, accountWhy } from '@/data/shared/decisions'
+import { activationTone } from '@/lib/tone'
 import { useEffect, useMemo, useRef } from 'react'
 import { expiryAhead } from '@/data/shared/ai'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -16,15 +17,15 @@ import {
 import { AnalysisCard } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { EntityFlow } from './EntityFlow'
-import { AdminEditCard, EntityRequestsTab, EntityStatusCard } from './EntityActions'
+import { AdminEditCard, EntityActionDock, EntityRequestsTab, EntityStatusCard } from './EntityActions'
 import { useEntityFlow, viewArchived } from '@/data/entities/store'
 import { meOf, readRole } from '@/data/roles'
 import { readEntity } from '@/data/readings'
 import { entityCode, nounAfter, NOUN } from '@/lib/format'
 import { entityEvalSummary, useClosing } from '@/data/closing/store'
 import {
-  EntityBanksTab, EntityDataTab, ExternalRecordTab, EntityDocsTab, EntityGoTo, EntityLogTab,
-  EntityEvalCard, EntityProjectsTab, EntityRecord,
+  EntityBanksTab, EntityDataTab, ExternalRecordTab, EntityDocsTab, EntityLogTab,
+  EntityEvalCard, EntityProjectsTab,
 } from './tabs'
 
 /**
@@ -107,7 +108,12 @@ export default function EntityPage() {
               <div className="ehead-id">
                 <EntityMark logo={entity.logo} size="lg" />
                 <div style={{ minWidth: 0 }}>
-                  <h1 className="ptitle">{entity.name}</h1>
+                  {/* Client 23 Oct · the account's standing sits beside the name, in its colour · the one
+                      place it is shown on the file · its cause reads on hover and in «حالة الجهة» */}
+                  <div className="ehead-t">
+                    <h1 className="ptitle">{entity.name}</h1>
+                    {!entity.external && <span className="ehead-st" title={accountWhy(entity) || undefined}><Tag tone={activationTone(accountSay(entity))}>{accountSay(entity)}</Tag></span>}
+                  </div>
                   {/* Code and classification lead: they are the entity's identity in the list too,
                       under the same names, so the two screens read as one record. */}
                   <div className="ehead-m sub">
@@ -122,7 +128,6 @@ export default function EntityPage() {
                   <div className="ehead-m mt-4">
                     {/* 13 Oct · audit UI-038 · under the name, on the text's edge, not the logo's · The page header isn't a card's status field - tags here are neutral, and colored
                         detail lives in the tab cards. */}
-                    <Tag tone="mute">{accountLine(entity)}</Tag>
                     <Tag tone="mute">الحوكمة: {entity.governance}</Tag>
                     {/* Client 21 Oct (#14) · the entity's overall evaluation · the average of its closed projects ·
                         this record is the staff's · the entity's portal never shows it */}
@@ -143,6 +148,10 @@ export default function EntityPage() {
 
           <Tabs items={ENTITY_TABS} active={active} onChange={goTab} />
 
+          {/* Client 23 Oct · the projects table is the projects list's own · it takes the full width
+              so its columns read as they do there */}
+          {active === 'projects' && <EntityProjectsTab rows={projects} />}
+
           <div className="g2">
             <div className="col">
               {/* Re-audit 17 Oct · v3 · 11.2.1 · 11.4.1 · an external party is an internal reference record ·
@@ -152,15 +161,10 @@ export default function EntityPage() {
               {active === 'data' && (entity.external ? <ExternalRecordTab e={entity} /> : <><AdminEditCard e={entity} /><EntityDataTab e={entity} d={detail} /></>)}
               {active === 'docs' && <EntityDocsTab d={detail} entityId={entity.id} />}
               {active === 'banks' && <EntityBanksTab d={detail} entityId={entity.id} />}
-              {active === 'projects' && <EntityProjectsTab rows={projects} />}
               {active === 'projects' && <EntityEvalCard entityId={entity.id} />}
               {active === 'requests' && <EntityRequestsTab e={entity} />}
               {active === 'log' && <EntityLogTab d={detail} entityId={entity.id} />}
 
-              {/* The running log and links sit below every tab: persistent context, not tab content
-                  - a supervisor needs it while reading anything. */}
-              <EntityRecord e={entity} />
-              <EntityGoTo e={entity} />
             </div>
 
             {/* Side column - one sticky card */}
@@ -173,6 +177,8 @@ export default function EntityPage() {
             </div>
           </div>
         </div>
+        {/* Client 23 Oct · the eligibility decisions moved from the status card to the page's action bar */}
+        {!entity.external && <EntityActionDock e={entity} />}
       </div>
     </AppLayout>
   )

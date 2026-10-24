@@ -30,7 +30,6 @@ import { entityById } from '@/data/mock/entities'
 import { ScheduleEditor, asDraft } from './ScheduleEditor'
 import { AgreementTextCard, AnnexesCard, ClausesCard, IssuesCard, ReviewCard, SignaturesCard, VersionsCard } from './parts'
 import { AssistantAside } from '@/features/shared/AssistantAside'
-import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single agreement · every station of the flow on one screen (BPD-008).
 
@@ -358,7 +357,6 @@ function AgreementView({ a }: { a: AgreementRow }) {
               )}
 
               {/* What supports the decision · in the main column, the end column is the assistant's alone */}
-              {!asEntity && <EditableCard module="agreement" state={a.stage} label={agrStageSay(a)} />}
               {!asEntity && a.stage !== 'active' && a.stage !== 'cancelled' && (
                 <IssuesCard issues={issues} ready="الاتفاقية مكتملة · البيانات والبنود والملاحق والجدول والقيمة مطابقة." />
               )}

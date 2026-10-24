@@ -51,3 +51,14 @@
 .glass>.swrow>.swrow-t{flex:0 1 min(66ch,100%)}
 /* 12 Oct · audit P02 (UI-075) · 30rem wrapped the notes to three lines with half the card empty;
    the reading measure (66ch) is the cap, as for `.prose` */
+
+/* Client 23 Oct · the account's standing beside the entity's name · one line, the tag on the
+   title's baseline row, wrapping under it on a narrow screen */
+.ehead-t{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2) var(--sp-3);min-width:0}
+.ehead-t>.ptitle{min-width:0}
+.ehead-st{display:inline-flex;flex:none}
+/* The year's approved amount is a figure, not a link · no hover surface */
+.lf-row.lf-still{cursor:default}
+.lf-row.lf-still:hover{background:none}
+/* The standing reads at the title's scale, not a list tag's · a larger type in the same tag */
+.ehead-st>.tag{font-size:var(--fs-3);line-height:var(--lh-md);padding-inline:var(--sp-4)}

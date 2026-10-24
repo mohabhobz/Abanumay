@@ -1,7 +1,12 @@
-import { accountLine, accountSay } from '@/data/shared/decisions'
-import { useState } from 'react'
+import { accountWhy } from '@/data/shared/decisions'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateField, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Switch, Tag, icons } from '@/components/ui'
+import { DateField, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Person, Switch, Tag, icons } from '@/components/ui'
+import { useProximity } from '@/hooks/useProximity'
+import { ibanValid } from '@/lib/iban'
+import { BANKS } from '@/data/mock/taxonomy'
+import { pickedSay } from '@/data/entities/reasons'
+import { ReasonDialog } from './ReasonDialog'
 import { isTest, markTest, sysEnv } from '@/data/shared/testData'
 import {
   ACT_SAY, REQ_SAY, accountOf, actState, archiveBlocks, bankLinks, forWho, impactOf, lastRequestOf, reasonOf, reasonText, type ActKey,
@@ -9,15 +14,14 @@ import {
 import { Modal, ReasonField } from './SelectionActions'
 import { units } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
-import { activationTone } from '@/lib/tone'
 import type { EntityRow } from '@/types/domain'
-import { BANK_REJECT_REASONS, entityDetail, type BankAccount } from '@/data/mock/entityDetail'
+import { entityDetail, type BankAccount } from '@/data/mock/entityDetail'
 import { entityById } from '@/data/mock/entities'
 import { REG_STATE_SAY } from '@/data/mock/registration'
 import { meOf, readRole } from '@/data/roles'
 import {
-  ADMIN_EDIT_FIELDS, UPD_STATE_SAY, adminEditEntity, archiveEntity, canAdminEdit, deleteBank, expiredMandatory, isRegState, openUpdateOf, overlayOf,
-  requestsOfEntity, setBankStatus, setEntityStatus, type UpdState,
+  ADMIN_EDIT_FIELDS, UPD_STATE_SAY, addBank, adminEditEntity, archiveEntity, canAdminEdit, deleteBank, expiredMandatory, isRegState, openUpdateOf, overlayOf,
+  requestsOfEntity, setBankStatus, setEntityStatus, useEntityFlow, type UpdState,
 } from '@/data/entities/store'
 
 /* What can be done to an entity from its file · LOCTech «الإجراءات عند التحديد» §1 · §3 · §4.
@@ -157,57 +161,35 @@ function SensModal({ e, sens, me, onClose }: { e: EntityRow; sens: Sens; me: str
   )
 }
 
-/** The entity's standing · its status, why, and the sensitive decisions that change it */
+/** The entity's standing · why it stands where it does · its status tag sits beside the name in the
+    page header (client 23 Oct), and the decisions that change it sit in the page's action bar */
 export function EntityStatusCard({ e }: { e: EntityRow }) {
   const role = readRole()
   const me = meOf(role)
-  const [act, setAct] = useState<Sens | null>(null)
   const o = overlayOf(e.id)
   /* The file's own reading of its dates · the license on the row and the board mandate on the file */
   const det = entityDetail(e)
   const lapsed = [...new Set([...expiredMandatory(e), ...(det.licenseExpired ? ['الترخيص'] : []), ...(det.boardExpired ? ['قرار تكليف المجلس'] : [])])]
   const open = openUpdateOf(e.id)
   const acc = accountOf(e)
-  const sens = (['suspend', 'lift', 'revoke', 'archive'] as Sens[]).map((k) => ({ k, s: actState(k as ActKey, e, role) })).filter((x) => x.s.show)
-  const doable = sens.filter((x) => x.s.grant === 'do')
-  const blocks = archiveBlocks(e)
-  const restore = e.archived && role === 'admin'
+  const why = accountWhy(e)
   const [testOn, setTestOn] = useState(() => isTest('entity', e.id))
 
   return (
     <Glass>
-      <Head title="حالة الجهة" meta={<Tag tone={activationTone(accountSay(e))}>{accountSay(e)}</Tag>} />
+      <Head title="حالة الجهة" />
       <KV rows={[
-        { k: 'حالة الحساب', v: accountLine(e) },
+        ...(why ? [{ k: 'سبب الحالة', v: why }] : []),
         { k: 'صلاحية التقديم', v: e.canApply ? <Tag tone="ok">مفعّلة</Tag> : <Tag tone="mute">موقوفة</Tag> },
         ...(lapsed.length ? [{ k: 'وثائق منتهية', v: <span className="bad">{lapsed.join('، ')} · الحساب «غير نشط» تلقائيًا حتى التحديث</span> }] : []),
         ...(open ? [{ k: 'طلب تحديث', v: <Link className="lnk" to={ROUTES.entityUpdateReview(open.id)}><Mono>{open.id}</Mono> · {UPD_STATE_SAY[open.state]}</Link> }] : []),
         ...(o.statusReason ? [{ k: 'سبب آخر قرار', v: o.statusReason }] : []),
       ]} />
-
-      {(sens.length > 0 || restore) && (
-        <div className="sensbox mt-3">
-          <b className="sensbox-t">إجراءات حساسة</b>
-          {doable.length > 0 || restore ? (
-            <div className="rowf gp-2">
-              {doable.map(({ k, s }) => (
-                <button key={k} className={`btn btn-sm ${SENS_TONE[k]}`} disabled={!s.on} title={s.why} onClick={() => setAct(k)}>{SENS_SAY[k]}</button>
-              ))}
-              {restore && <button className="btn btn-sm btn-p" onClick={() => setAct('restore')}>{SENS_SAY.restore}</button>}
-            </div>
-          ) : null}
-          {sens.filter((x) => x.s.grant === 'see').map(({ k }) => (
-            <p key={k} className="sub cnote">{SENS_SAY[k]} {forWho(k as ActKey)}.</p>
-          ))}
-          {doable.some((x) => x.k === 'archive' && !x.s.on) && blocks.length > 0 && (
-            <details className="selres-g">
-              <summary>ما يمنع الأرشفة · <span className="num">{blocks.length}</span></summary>
-              <ul className="sub">{blocks.map((b) => <li key={b.label}><Link className="lnk" to={b.href}>{b.label}</Link></li>)}</ul>
-            </details>
-          )}
-          {acc.block === 'revoked' && <p className="sub cnote">إعادة جهة أُلغي اعتمادها بانتظار قرار المؤسسة · أم يلزمها طلب تسجيل جديد؟</p>}
-        </div>
-      )}
+      {/* Whoever may not decide sees who does · the decisions themselves sit in the action bar */}
+      {(['suspend', 'lift', 'revoke', 'archive'] as Sens[]).filter((k) => { const x = actState(k as ActKey, e, role); return x.show && x.grant === 'see' }).map((k) => (
+        <p key={k} className="sub cnote">{SENS_SAY[k]} {forWho(k as ActKey)}.</p>
+      ))}
+      {acc.block === 'revoked' && <p className="sub cnote">إعادة جهة أُلغي اعتمادها بانتظار قرار المؤسسة · أم يلزمها طلب تسجيل جديد؟</p>}
       {role === 'admin' && (
         /* v3 · 2.4.35 · the admin flags a record as test data · logged · in production it leaves the
            reports, the KPIs, the impact board and the exports */
@@ -220,8 +202,70 @@ export function EntityStatusCard({ e }: { e: EntityRow }) {
           />
         </div>
       )}
-      {act && <SensModal e={e} sens={act} me={me} onClose={() => setAct(null)} />}
     </Glass>
+  )
+}
+
+/* Client 23 Oct · the eligibility decisions in the page's action bar, the same bar every detail page
+   decides from · each one still opens the impact panel and the double confirmation (`SensModal`).
+   Archiving with something still holding the entity (an open project, a pending payment) doesn't
+   run · it opens the list of what prevents it. Who may decide comes from settings; anyone else
+   sees none of the buttons. */
+export function EntityActionDock({ e }: { e: EntityRow }) {
+  useEntityFlow()
+  const role = readRole()
+  const me = meOf(role)
+  const bar = useRef<HTMLDivElement>(null)
+  useProximity(bar)
+  const [act, setAct] = useState<Sens | null>(null)
+  const [blocked, setBlocked] = useState(false)
+  const doable = (['suspend', 'lift', 'revoke', 'archive'] as Sens[]).map((k) => ({ k, s: actState(k as ActKey, e, role) })).filter((x) => x.s.show && x.s.grant === 'do')
+  const blocks = archiveBlocks(e)
+  const restore = Boolean(e.archived) && role === 'admin'
+  if (!doable.length && !restore) return null
+  const pick = (k: Sens, on: boolean) => {
+    if (k === 'archive' && !on && blocks.length) { setBlocked(true); return }
+    setAct(k)
+  }
+  return (
+    <div className="decdock">
+      <div className="chrome decbar payact" ref={bar}>
+        <div className="rowf gp-3 payact-w">
+          <Person name={me} size="lg" quiet={false} />
+          <span className="decsent">
+            قرارات الأهلية والأرشفة · <b>{e.name}</b>
+          </span>
+        </div>
+        <div className="payact-g">
+          <div className="rowf gp-2">
+            {doable.map(({ k, s }) => (
+              <button key={k} type="button" className={`btn ${SENS_TONE[k]}`}
+                disabled={!s.on && !(k === 'archive' && blocks.length > 0)}
+                title={k === 'archive' && !s.on && blocks.length ? 'ما يمنع الأرشفة' : s.why}
+                onClick={() => pick(k, s.on)}>
+                {SENS_SAY[k]}
+              </button>
+            ))}
+            {restore && <button type="button" className="btn btn-p" onClick={() => setAct('restore')}>{SENS_SAY.restore}</button>}
+          </div>
+        </div>
+      </div>
+      {act && <SensModal e={e} sens={act} me={me} onClose={() => setAct(null)} />}
+      {blocked && (
+        <Modal title={`ما يمنع أرشفة ${e.name}`} icon={icons.folder} onClose={() => setBlocked(false)}
+          foot={<button type="button" className="btn btn-2" onClick={() => setBlocked(false)}>حسنًا</button>}>
+          <p className="sub cnote">لا تُؤرشف الجهة وعليها ارتباط قائم · أنهِ ما يلي أولًا ثم أعد المحاولة.</p>
+          <ul className="payq-ck">
+            {blocks.map((b) => (
+              <li key={b.label}>
+                <Icon name={icons.lock} size="sm" />
+                <Link className="lnk" to={b.href} onClick={() => setBlocked(false)}>{b.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </Modal>
+      )}
+    </div>
   )
 }
 
@@ -260,13 +304,13 @@ export function EntityRequestsTab({ e }: { e: EntityRow }) {
   )
 }
 
-/** One account's decision · disable with a coded reason, activate (2.4.27) · or delete one with no
-    financial history, behind the same double confirmation (rule 28 · LOCTech §4) */
+/** One account's decision · disable or delete with a reason from the entity settings (client 23 Oct ·
+    the same dialog as a rejected request), activate (2.4.27) · deleting needs no financial history
+    (rule 28) */
 export function BankActions({ entityId, b }: { entityId: string; b: BankAccount }) {
   const role = readRole()
   const me = meOf(role)
-  const [why, setWhy] = useState('')
-  const [del, setDel] = useState(false)
+  const [ask, setAsk] = useState<'disable' | 'delete' | null>(null)
   const e = entityById(entityId)
   if (!e) return null
   const st = actState('banks', e, role)
@@ -274,50 +318,105 @@ export function BankActions({ entityId, b }: { entityId: string; b: BankAccount 
   if (!st.on) return <p className="sub cnote mt-3">{st.why}</p>
   const links = bankLinks(e, b.id)
   const linked = links.length > 0
-  const delBtn = (
-    <button className="btn btn-2 btn-sm" disabled={linked} title={linked ? `له تاريخ مالي · ${links.length} طلب صرف (${links.slice(0, 3).join('، ')}) · عطّل الحساب بدلًا من حذفه` : 'لا تاريخ مالي على هذا الحساب'} onClick={() => setDel(true)}>
-      <Icon name={icons.trash} size="sm" /> احذف
-    </button>
-  )
+  const tail = `${b.iban.replace(/\s/g, '').slice(0, 4)}…${b.iban.replace(/\s/g, '').slice(-4)}`
   return (
     <>
-      {b.status === 'مفعل' ? (
-        <div className="rowf gp-2 mt-3">
-          <FieldSelect value={why} options={BANK_REJECT_REASONS} onChange={setWhy} label={`سبب تعطيل ${b.bank}`} placeholder="سبب التعطيل" />
-          <button className="btn btn-2 btn-sm" disabled={!why} onClick={() => setBankStatus(entityId, b.id, 'غير مفعل', me, why)}>عطّل الحساب</button>
-          {delBtn}
-        </div>
-      ) : (
-        <div className="rowf gp-2 mt-3">
-          <button className="btn btn-p btn-sm" onClick={() => setBankStatus(entityId, b.id, 'مفعل', me)}>
+      <div className="rowf gp-2 mt-3">
+        {b.status === 'مفعل' ? (
+          <button type="button" className="btn btn-2 btn-sm" onClick={() => setAsk('disable')}>عطّل الحساب</button>
+        ) : (
+          <button type="button" className="btn btn-p btn-sm" onClick={() => setBankStatus(entityId, b.id, 'مفعل', me)}>
             <Icon name={icons.check} size="sm" /> فعّل الحساب
           </button>
-          {delBtn}
-        </div>
+        )}
+        <button type="button" className="btn btn-2 btn-sm" disabled={linked} title={linked ? `له تاريخ مالي · ${links.length} طلب صرف (${links.slice(0, 3).join('، ')}) · عطّل الحساب بدلًا من حذفه` : 'لا تاريخ مالي على هذا الحساب'} onClick={() => setAsk('delete')}>
+          <Icon name={icons.trash} size="sm" /> احذف
+        </button>
+      </div>
+      {ask === 'disable' && (
+        <ReasonDialog kind="bankDisable" title={`تعطيل الحساب · ${b.bank}`} subject={`${b.accountName} · ${tail} · لا يُصرف عليه حتى يُفعَّل من جديد.`}
+          confirm="عطّل الحساب" onClose={() => setAsk(null)}
+          onConfirm={(p) => { setBankStatus(entityId, b.id, 'غير مفعل', me, pickedSay(p)); setAsk(null) }} />
       )}
-      {del && <BankDelete e={e} b={b} me={me} onClose={() => setDel(false)} />}
+      {ask === 'delete' && (
+        <ReasonDialog kind="bankDelete" title={`حذف الحساب · ${b.bank}`} subject={`${b.accountName} · ${tail} · بلا أي ارتباط مالي · الحذف لا رجعة فيه.`}
+          confirm="احذف نهائيًا" onClose={() => setAsk(null)}
+          onConfirm={(p) => { deleteBank(entityId, b.id, pickedSay(p), me); setAsk(null) }} />
+      )}
     </>
   )
 }
 
-function BankDelete({ e, b, me, onClose }: { e: EntityRow; b: BankAccount; me: string; onClose: () => void }) {
-  const [code, setCode] = useState('')
-  const [text, setText] = useState('')
-  const [typed, setTyped] = useState('')
-  const reason = reasonText('bank', code, text)
+/** Client 23 Oct · the staff add an account from inside the system · bank, account name, IBAN and its
+    certificate · active the moment it's saved, and logged on the entity's file */
+export function AddBank({ entityId }: { entityId: string }) {
+  const role = readRole()
+  const me = meOf(role)
+  const [open, setOpen] = useState(false)
+  const [bank, setBank] = useState('')
+  const [name, setName] = useState('')
+  const [iban, setIban] = useState('')
+  const [file, setFile] = useState('')
+  const [tried, setTried] = useState(false)
+  const e = entityById(entityId)
+  if (!e) return null
+  /* Client 24 Oct · open to every staff role for now · the client sets who may add from the
+     permissions matrix later («إدارة الحسابات البنكية») */
+  const clean = iban.replace(/\s/g, '').toUpperCase()
+  const dup = entityDetail(e).banks.some((x) => x.iban.replace(/\s/g, '').toUpperCase() === clean)
+  const issues = [
+    ...(!bank ? ['اختر البنك'] : []),
+    ...(!name.trim() ? ['اكتب اسم الحساب'] : []),
+    ...(!ibanValid(clean) ? ['الآيبان غير صحيح · SA ثم 22 رقمًا'] : []),
+    ...(dup ? ['الآيبان مسجّل لهذه الجهة'] : []),
+    ...(!file ? ['أرفق شهادة الآيبان'] : []),
+  ]
+  const close = () => { setOpen(false); setBank(''); setName(''); setIban(''); setFile(''); setTried(false) }
+  const save = () => {
+    setTried(true)
+    if (issues.length) return
+    addBank(entityId, {
+      id: `${entityId}-s${Date.now().toString(36)}`, bank, shortName: bank, accountName: name.trim(),
+      iban: clean.replace(/(.{4})/g, '$1 ').trim(), status: 'مفعل', certificate: file,
+    }, me)
+    close()
+  }
   return (
-    <Modal title={`حذف الحساب · ${b.bank}`} onClose={onClose}
-      foot={<>
-        <button className="btn btn-d" disabled={!reason || typed.trim() !== e.licenseNo} onClick={() => { deleteBank(e.id, b.id, reason, me); onClose() }}>احذف نهائيًا</button>
-        <button className="btn btn-2" onClick={onClose}>تراجع</button>
-      </>}>
-      <p className="sub cnote">الحساب <Mono>{b.iban.slice(0, 4)}…{b.iban.slice(-4)}</Mono> بلا أي ارتباط مالي · الحذف لا رجعة فيه.</p>
-      <ReasonField kind="bank" code={code} text={text} onCode={setCode} onText={setText} />
-      <label className="regf">
-        <span className="lb">اكتب رقم الترخيص <Mono>{e.licenseNo}</Mono> للتأكيد</span>
-        <span className="fld"><input dir="ltr" inputMode="numeric" value={typed} onChange={(x) => setTyped(x.target.value)} aria-label="رقم الترخيص للتأكيد" /></span>
-      </label>
-    </Modal>
+    <>
+      <div className="act-a"><button type="button" className="btn btn-p" onClick={() => setOpen(true)}><Icon name={icons.plus} size="sm" /> إضافة حساب بنكي</button></div>
+      {open && (
+        <Modal title={`إضافة حساب بنكي · ${e.name}`} icon={icons.pay} onClose={close}
+          foot={<>
+            <button type="button" className="btn btn-p" onClick={save}>احفظ الحساب</button>
+            <button type="button" className="btn btn-2" onClick={close}>تراجع</button>
+          </>}>
+          <div className="regf">
+            <span className="lb">اسم البنك<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <FieldSelect value={bank} options={BANKS} onChange={setBank} label="اسم البنك" placeholder="اختر البنك" />
+          </div>
+          <label className="regf">
+            <span className="lb">اسم الحساب<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <span className="fld"><input value={name} onChange={(x) => setName(x.target.value)} aria-label="اسم الحساب" placeholder="كما في شهادة الآيبان" /></span>
+          </label>
+          <label className="regf">
+            <span className="lb">الآيبان<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <span className="fld"><input dir="ltr" value={iban} onChange={(x) => setIban(x.target.value)} aria-label="الآيبان" placeholder="SA00 0000 0000 0000 0000 0000" /></span>
+          </label>
+          <div className="regf">
+            <span className="lb">شهادة الآيبان<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <span className="apv-row">
+              <label className="btn btn-2 btn-sm">
+                <Icon name={icons.upload} size="sm" />{file ? 'استبدل الملف' : 'ارفع الملف'}
+                <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label="شهادة الآيبان" onChange={(x) => { const f = x.target.files?.[0]; if (f) setFile(f.name); x.target.value = '' }} />
+              </label>
+              {file ? <Tag tone="ok">{file}</Tag> : <span className="sub">لا ملف بعد</span>}
+            </span>
+          </div>
+          {tried && issues.length > 0 && <p className="bad cnote">{issues.join(' · ')}</p>}
+          <p className="sub cnote">يُفعَّل الحساب فور الحفظ ويُسجَّل في سجل الجهة باسمك.</p>
+        </Modal>
+      )}
+    </>
   )
 }
 

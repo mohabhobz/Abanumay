@@ -1,7 +1,7 @@
 import { toast } from '@/data/feedback'
 import { useMemo, useState } from 'react'
 import {
-  DateText, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, StepArc, Steps, Tag,
+  DateText, Glass, Head, KV, Money, Mono, Num, Person, StepArc, Steps, Tag,
   type GateStep, type StepItem,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -160,15 +160,6 @@ export default function JourneyPage() {
                   <div className="jr-who">
                     <Person name={step.person} size="md" quiet={false} />
                   </div>
-                  <p className="sub cnote">ما يُعدَّل في هذه الخطوة</p>
-                  <ul className="payq-ck mt-2">
-                    {step.edit.map((x) => (
-                      <li key={x} className="ok">
-                        <Icon name={icons.edit} size="sm" />
-                        <span>{x}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </Glass>
               )}
 

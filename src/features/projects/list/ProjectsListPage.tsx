@@ -102,8 +102,9 @@ const FILTER_KEYS = [
 ]
 
 const SORTS: { key: ProjectSort; label: string }[] = [
+  /* Client 23 Oct · the list opens on the latest project added first */
+  { key: 'newest', label: 'الأحدث إضافةً' },
   { key: 'waiting', label: 'الأطول انتظارًا' },
-  { key: 'newest', label: 'الأحدث تقديمًا' },
   { key: 'oldest', label: 'الأقدم تقديمًا' },
   { key: 'amount', label: 'المبلغ · من الأكبر' },
   { key: 'amountAsc', label: 'المبلغ · من الأصغر' },
@@ -183,7 +184,7 @@ export default function ProjectsListPage() {
       bucket: v.tab as ProjectBucket | undefined,
       /* Portfolio rows live in this list only: each one opens its portfolio page. */
       portfolios: true,
-      sort: (v.sort as ProjectSort) ?? 'waiting',
+      sort: (v.sort as ProjectSort) ?? 'newest',
       page,
       pageSize: size,
     }),
@@ -573,7 +574,7 @@ export default function ProjectsListPage() {
               />
               <Select
                 icon={icons.sort}
-                value={v.sort ?? 'waiting'}
+                value={v.sort ?? 'newest'}
                 all={SORTS[0].label}
                 options={SORTS.slice(1).map((x) => ({ value: x.key, label: x.label }))}
                 onChange={(x) => set({ sort: x })}

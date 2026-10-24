@@ -23,3 +23,6 @@
 .ptl-rq-b{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
 .ptl-rq-up{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-4);margin-top:var(--sp-2)}
 .ptl-rq-doc{display:inline-flex;align-items:center;gap:var(--sp-2)}
+
+/* Client 23 Oct · entity settings · the reason lists, one heading per kind of decision */
+.rsn-h{margin:var(--sp-4) 0 0;font-family:var(--fd);font-size:var(--fs-4);font-weight:600;line-height:var(--lh-head);color:var(--t1)}

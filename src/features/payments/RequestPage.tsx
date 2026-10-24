@@ -29,7 +29,6 @@ import { PayeeCard } from './PayeeCard'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readPayRequest } from '@/data/recordReadings'
 import { PROXY_ROLES, actOnPay, basisOfRequest, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
-import { EditableCard } from '@/features/shared/EditableCard'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
 
@@ -429,7 +428,6 @@ export default function RequestPage() {
               </Glass>
 
               {/* What supports the decision · in the main column, the end column is the assistant's alone */}
-              {!asEntity && <EditableCard module="payment" state={r.state} label={meta?.label} />}
 
               {/* 9.2.17 · 9.1.output-2 - the executed transfer, with its proof. */}
               {r.transfer && (
