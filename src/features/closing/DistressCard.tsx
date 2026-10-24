@@ -16,8 +16,9 @@ import {
 export function DistressCard({ projectId }: { projectId: string }) {
   useClosing()
   const { role } = useRole()
-  const list = casesOfProject(projectId)
-  const open = list.some((c) => c.stage !== 'closed' && c.stage !== 'rejected')
+  /* #27 · the direct closing has its own card */
+  const list = casesOfProject(projectId).filter((c) => c.kind !== 'direct')
+  const open = casesOfProject(projectId).some((c) => c.stage !== 'closed' && c.stage !== 'rejected')
   const phase = stopPhase(projectId)
   return (
     <Glass>

@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { payHref } from '@/features/agreements/ScheduleEditor'
 import { DateText, Empty, Glass, Head, Icon, Money, Mono, Num, Steps, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { DocFile } from '@/components/docs'
@@ -9,6 +10,8 @@ export interface AgreementTabProps {
   agreement: AgreementDetail | null
   payments: PaymentDetail[]
   entityName: string
+  /** Client sheet 24 Oct (#104) · each payment row opens its payment screen */
+  projectId?: string
   /** A project that has reached this stage — for the empty state. */
   example?: { id: string; name: string }
   onOpenExample?: (id: string) => void
@@ -40,8 +43,9 @@ export interface AgreementTabProps {
  * showing a blank screen.
  */
 export function AgreementTab({
-  agreement: A, payments, entityName, example, onOpenExample, onStart, startBlocked,
+  agreement: A, payments, entityName, projectId, example, onOpenExample, onStart, startBlocked,
 }: AgreementTabProps) {
+  const go = useNavigate()
   if (!A) {
     return (
       <Glass>
@@ -156,8 +160,8 @@ export function AgreementTab({
               </thead>
               <tbody>
                 {payments.map((p) => (
-                  <tr key={p.no}>
-                    <td><Num>{p.no}</Num></td>
+                  <tr key={p.no} className={projectId ? 'clk' : undefined} onClick={projectId ? (ev) => { if (!(ev.target as HTMLElement).closest('a')) go(payHref(projectId, p.no)) } : undefined}>
+                    <td>{projectId ? <Link className="tlink" to={payHref(projectId, p.no)}>الدفعة <Num>{p.no}</Num></Link> : <Num>{p.no}</Num>}</td>
                     <td className="n"><Money>{p.amount}</Money></td>
                     <td><DateText>{p.date}</DateText></td>
                     {/* `mut`, not `sub`: the intent was to mute the column, and `sub` both mutes

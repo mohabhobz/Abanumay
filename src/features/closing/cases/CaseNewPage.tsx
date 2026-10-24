@@ -12,7 +12,9 @@ import { assistFor } from '@/data/mock/assistant'
 import { projectById } from '@/data/mock/projects'
 import { nf } from '@/lib/format'
 import { resizeIssue } from '@/data/budget/store'
-import { APPROVER_SAY, CASE_KIND_SAY, OUTCOME_SAY, approverFor, cancelBlockers, createCase, grantOf, outcomesFor, paidToDate, stopPhase, useClosing } from '@/data/closing/store'
+import { APPROVER_SAY, CASE_KIND_SAY, DIRECT_PATH, OUTCOME_SAY, approverFor, cancelBlockers, createCase, grantOf, outcomesFor, paidToDate, stopPhase, useClosing } from '@/data/closing/store'
+import { payRequests } from '@/data/mock/disbursements'
+import { closeOfProject } from '@/data/mock/closing'
 import type { CaseKind, CaseRow } from '@/types/domain'
 
 /* Opening a distress case · 10.9.
@@ -35,7 +37,7 @@ export default function CaseNewPage() {
   useClosing()
   const { values: v, set } = useQueryParams<Params>(KEYS)
   const p = v.project ? projectById(v.project) : undefined
-  const kind = (['stop', 'reduce', 'increase'].includes(v.kind ?? '') ? v.kind : 'stop') as CaseKind
+  const kind = (['stop', 'reduce', 'increase', 'direct'].includes(v.kind ?? '') ? v.kind : 'stop') as CaseKind
   const [reason, setReason] = useState('')
   const [amount, setAmount] = useState('')
   const [annex, setAnnex] = useState('')
@@ -58,6 +60,8 @@ export default function CaseNewPage() {
     )
   }
 
+  if (kind === 'direct') return <DirectNew projectId={p.id} />
+
   const granted = grantOf(p.id)
   const paid = paidToDate(p.id)
   const phase = stopPhase(p.id)
@@ -73,7 +77,7 @@ export default function CaseNewPage() {
   const docsOk = !redirect || (purpose.trim() && decision.trim() && rfile)
   const ready = reason.trim() && docsOk && (kind === 'stop' || (kind === 'reduce' ? value > 0 && value < granted && annex : value > granted && !issue))
   /* v3 · 10.4.11 · a redirect outcome also needs the redirect row's approver */
-  const own = approverFor(kind, p.id, kind === 'increase' ? value || undefined : undefined)
+  const own = approverFor(kind as Exclude<CaseKind, 'direct'>, p.id, kind === 'increase' ? value || undefined : undefined)
   const finalKey = own === 'grants-manager' && (!redirect || approverFor('redirect', p.id) === 'grants-manager') ? 'grants-manager' : 'ceo'
   const approver = APPROVER_SAY(finalKey)
   /* Client 18 Oct · #17 · a value annex is opened by whoever holds the permission */
@@ -217,6 +221,91 @@ export default function CaseNewPage() {
               <span className="decsent">{mine ? <>يُرفع القرار إلى مدير المنح{approver !== APPROVER_SAY('grants-manager') ? <> ثم {approver}</> : null}</> : <>{valueAnnex ? <>يتخذ قرار ملحق القيمة {holdersSay('annexBy')}</> : `يفتح الحالةَ ${holdersSay('distressBy')}`}</>}</span>
             </div>
             {mine && <button type="button" className="btn btn-p" disabled={!ready} onClick={submit}>افتح الحالة</button>}
+          </div>
+        </div>
+      </div>
+    </AppLayout>
+  )
+}
+
+/** Client sheet 24 Oct (#27) · opening a direct closing · the reason and its document · what the
+    closing will do to the money is shown before it goes up, and nothing changes before finance */
+function DirectNew({ projectId }: { projectId: string }) {
+  const navigate = useNavigate()
+  const { role, user } = useRole()
+  useClosing()
+  const p = projectById(projectId)!
+  const [reason, setReason] = useState('')
+  const [file, setFile] = useState('')
+  const [bad, setBad] = useState<string[]>([])
+  const granted = grantOf(p.id)
+  const paid = paidToDate(p.id)
+  const open = payRequests.filter((r) => r.projectId === p.id && r.state !== 'paid' && r.state !== 'closed')
+  const cycle = closeOfProject(p.id)
+  const mine = holds('distressBy', role.key)
+  const ready = Boolean(reason.trim() && file)
+  const submit = () => {
+    const out = createCase({ projectId: p.id, kind: 'direct', reason, file }, user.name, role.key)
+    setBad(out.errors)
+    if (out.id) navigate(ROUTES.distress(out.id))
+  }
+  return (
+    <AppLayout assistantContext={assistFor.page(CASE_KIND_SAY.direct, p.name)}>
+      <div className="viewstack hasdock">
+        <div className="screen col hasg2">
+          <BackTo label="المشروع" onClick={() => navigate(ROUTES.projectTab(p.id, 'closing'))} />
+          <header>
+            <div>
+              <h1 className="ptitle">{CASE_KIND_SAY.direct}</h1>
+              <p className="sub mt-1"><Link className="tlink" to={ROUTES.project(p.id)}>{p.name}</Link> · {p.entityName}</p>
+            </div>
+          </header>
+          <div className="g2">
+            <div className="col">
+              <Glass>
+                <Head title="طلب الإغلاق" meta={<Tag tone="mute">مشرف المنح</Tag>} />
+                <label className="regf">
+                  <span className="lb">سبب الإغلاق المباشر<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <span className="fld"><textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب الإغلاق المباشر" /></span>
+                </label>
+                <div className="apv-row mt-2">
+                  <span className="sub">مستند الإغلاق{file ? ` · ${file}` : ' · إلزامي'}</span>
+                  <UploadButton label="مستند الإغلاق" onPick={(f) => setFile(f.name)} />
+                </div>
+                {cycle && cycle.stage !== 'closed' && <p className="bad cnote" role="status">للمشروع إغلاق قائم {cycle.id} · الإغلاق المباشر لا يُفتح فوقه</p>}
+                {bad.map((b) => <p key={b} className="bad cnote" role="alert">{b}</p>)}
+              </Glass>
+              <Glass>
+                <Head title="أثر الإغلاق" />
+                <KV rows={[
+                  { k: 'قيمة المنحة', v: <Money sm>{granted}</Money> },
+                  { k: 'المصروف حتى الآن', v: <Money sm>{paid}</Money> },
+                  { k: 'يعود إلى بند الميزانية', v: <Money sm>{Math.max(0, granted - paid)}</Money> },
+                  { k: 'طلبات صرف مفتوحة تُغلق', v: open.length ? open.map((r) => r.id).join('، ') : <span className="sub">لا شيء</span> },
+                  { k: 'مسار الاعتماد', v: DIRECT_PATH.join(' ← ') },
+                  { k: 'حالة المشروع بعده', v: 'مشروع مكتمل' },
+                ]} />
+                <p className="sub cnote">لا يتغيّر المشروع قبل اعتماد الإدارة المالية للتسوية في آخر المسار · ولا يمرّ بدورة التقرير الختامي والتقييم.</p>
+              </Glass>
+            </div>
+            <AssistantAside
+              title="مراجعة الطلب"
+              cta="راجع الطلب"
+              empty="الطلب مكتمل · يُرفع إلى مدير المنح ثم المدير التنفيذي ثم الإدارة المالية."
+              readings={[
+                ...(!reason.trim() ? [{ id: 'dc-reason', kind: 'flag' as const, label: 'ينقص', text: 'سبب الإغلاق المباشر', src: '' }] : []),
+                ...(!file ? [{ id: 'dc-file', kind: 'flag' as const, label: 'ينقص', text: 'مستند الإغلاق', src: '' }] : []),
+                ...(open.length ? [{ id: 'dc-open', kind: 'note' as const, label: 'طلبات صرف', text: `تُغلق ${open.length} طلبات مفتوحة عند اعتماد الإدارة المالية`, src: '' }] : []),
+              ]}
+            />
+          </div>
+        </div>
+        <div className="decdock">
+          <div className="chrome decbar payact">
+            <div className="rowf gp-3 payact-w">
+              <span className="decsent">{mine ? <>يُرفع الطلب إلى {DIRECT_PATH.slice(1).join(' ثم ')}</> : `يفتح الإغلاق المباشر ${holdersSay('distressBy')}`}</span>
+            </div>
+            {mine && <button type="button" className="btn btn-p" disabled={!ready} title={!reason.trim() ? 'اكتب السبب' : !file ? 'أرفق مستند الإغلاق' : undefined} onClick={submit}>افتح الإغلاق المباشر</button>}
           </div>
         </div>
       </div>

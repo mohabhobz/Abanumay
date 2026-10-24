@@ -44,6 +44,14 @@ export const formatIssue = (key: string, kind: string, value: string): string =>
     matched a real account. A registry, not an import, since the store imports this file. */
 let entityIbans: (entityId: string) => string[] = () => []
 export const setEntityIbans = (f: (entityId: string) => string[]) => { entityIbans = f }
+const ibanKey = (s: string): string => s.replace(/\s/g, '').toUpperCase()
+/** Client sheet 24 Oct (#101) · the entity that holds this IBAN on an active account · any entity but
+    `except` · archived ones too: an active account keeps its IBAN while the file is archived */
+export const ibanOwner = (iban: string, except?: string): string | undefined => {
+  const k = ibanKey(iban)
+  if (!k || masked(k)) return undefined
+  return entityRows.find((x) => x.id !== except && entityIbans(x.id).some((y) => !masked(y) && ibanKey(y) === k))?.name
+}
 
 /** A value fixtures hide on purpose (9665XXXXXXXX, SA00 0000…) never counts as a duplicate */
 const masked = (s: string) => /X/.test(s) || /^SA0+$/i.test(s.replace(/\s/g, ''))
@@ -93,8 +101,8 @@ export const duplicates = (
     const iban = b.iban.replace(/\s/g, '').toUpperCase()
     if (!iban || masked(iban)) continue
     /* Re-audit 7 Oct · the accounts of existing entities too, not only other requests */
-    const e = ents.find((x) => entityIbans(x.id).some((y) => !masked(y) && y.replace(/\s/g, '').toUpperCase() === iban))
-    if (e) { out.push({ field: 'iban', label: `الآيبان ${b.iban}`, who: e.name }); continue }
+    const owner = ibanOwner(iban, opts.exceptEntity)
+    if (owner) { out.push({ field: 'iban', label: `الآيبان ${b.iban}`, who: owner }); continue }
     const r = reqs.find((x) => x.banks.some((y) => y.iban.replace(/\s/g, '').toUpperCase() === iban))
     if (r) out.push({ field: 'iban', label: `الآيبان ${b.iban}`, who: `${r.name} · طلب ${r.id}` })
   }

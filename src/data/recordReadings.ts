@@ -86,6 +86,10 @@ export function readCase(c: CaseRow): Reading[] {
     const diff = c.newAmount - c.granted
     out.push({ id: 'cs-val', kind: 'note', label: CASE_KIND_SAY[c.kind], metric: { value: nf.format(Math.abs(diff)), unit: 'ريال' }, text: `من ${nf.format(c.granted)} إلى ${nf.format(c.newAmount)} · والمصروف ${nf.format(c.paid)}.`, src: c.kind === 'reduce' ? /* doc 10.9.5 */ '' : /* doc 10.9.6 */ '' })
   }
+  /* #27 · a direct closing · what finance's settlement will do */
+  if (c.kind === 'direct' && c.stage !== 'closed' && c.stage !== 'rejected') {
+    out.push({ id: 'cs-direct', kind: 'note', label: 'الإغلاق المباشر', metric: { value: nf.format(Math.max(0, c.granted - c.paid)), unit: 'ريال يُحرَّر' }, text: 'باعتماد الإدارة المالية تُغلق طلبات الصرف المفتوحة ويعود غير المصروف إلى بند الميزانية ويصبح المشروع «مكتملًا».', src: '' })
+  }
   if (c.recovery) {
     const left = recoveryLeft(c.recovery)
     out.push({ id: 'cs-rec', kind: left > 0 ? 'flag' : 'note', label: 'الاسترداد', metric: { value: nf.format(left), unit: 'ريال متبقٍّ' }, text: `من ${nf.format(c.recovery.due)} مطالَب بها · ${c.recovery.receipts.length} عملية استلام.`, src: /* doc 10.9.8 */ '', bar: { value: c.recovery.due - left, limit: c.recovery.due, valueLabel: 'المستلم', limitLabel: 'المطالَب', unit: 'ريال' } })

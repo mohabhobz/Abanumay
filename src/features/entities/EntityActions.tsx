@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { DateField, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Person, Switch, Tag, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { ibanValid } from '@/lib/iban'
+import { ibanOwner } from '@/data/entities/validate'
 import { BANKS } from '@/data/mock/taxonomy'
 import { pickedSay } from '@/data/entities/reasons'
 import { ReasonDialog } from './ReasonDialog'
@@ -17,7 +18,8 @@ import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
 import { entityDetail, type BankAccount } from '@/data/mock/entityDetail'
 import { entityById } from '@/data/mock/entities'
-import { REG_STATE_SAY } from '@/data/mock/registration'
+import { REG_STAGES, REG_STATE_SAY } from '@/data/mock/registration'
+import { Field } from './register/Field'
 import { meOf, readRole } from '@/data/roles'
 import {
   ADMIN_EDIT_FIELDS, UPD_STATE_SAY, addBank, adminEditEntity, archiveEntity, canAdminEdit, deleteBank, expiredMandatory, isRegState, openUpdateOf, overlayOf,
@@ -186,8 +188,8 @@ export function EntityStatusCard({ e }: { e: EntityRow }) {
         ...(o.statusReason ? [{ k: 'سبب آخر قرار', v: o.statusReason }] : []),
       ]} />
       {/* Whoever may not decide sees who does · the decisions themselves sit in the action bar */}
-      {(['suspend', 'lift', 'revoke', 'archive'] as Sens[]).filter((k) => { const x = actState(k as ActKey, e, role); return x.show && x.grant === 'see' }).map((k) => (
-        <p key={k} className="sub cnote">{SENS_SAY[k]} {forWho(k as ActKey)}.</p>
+      {(['suspend', 'lift', 'revoke', 'archive', 'deactivate', 'activate'] as ActKey[]).filter((k) => { const x = actState(k, e, role); return x.show && x.grant === 'see' }).map((k) => (
+        <p key={k} className="sub cnote">{ACT_SAY[k]} {forWho(k)}.</p>
       ))}
       {acc.block === 'revoked' && <p className="sub cnote">إعادة جهة أُلغي اعتمادها بانتظار قرار المؤسسة · أم يلزمها طلب تسجيل جديد؟</p>}
       {role === 'admin' && (
@@ -222,7 +224,10 @@ export function EntityActionDock({ e }: { e: EntityRow }) {
   const doable = (['suspend', 'lift', 'revoke', 'archive'] as Sens[]).map((k) => ({ k, s: actState(k as ActKey, e, role) })).filter((x) => x.s.show && x.s.grant === 'do')
   const blocks = archiveBlocks(e)
   const restore = Boolean(e.archived) && role === 'admin'
-  if (!doable.length && !restore) return null
+  /* Client sheet 24 Oct (#102) · the account's status by hand · whoever holds «تعديل حالة الجهة» */
+  const [flip, setFlip] = useState<'deactivate' | 'activate' | null>(null)
+  const status = (['deactivate', 'activate'] as const).map((k) => ({ k, s: actState(k, e, role) })).filter((x) => x.s.show && x.s.grant === 'do')
+  if (!doable.length && !restore && !status.length) return null
   const pick = (k: Sens, on: boolean) => {
     if (k === 'archive' && !on && blocks.length) { setBlocked(true); return }
     setAct(k)
@@ -246,11 +251,35 @@ export function EntityActionDock({ e }: { e: EntityRow }) {
                 {SENS_SAY[k]}
               </button>
             ))}
+            {status.map(({ k, s }) => (
+              <button key={k} type="button" className={`btn ${k === 'activate' ? 'btn-p' : 'btn-2'}`} disabled={!s.on} title={s.why} onClick={() => setFlip(k)}>
+                {ACT_SAY[k]}
+              </button>
+            ))}
             {restore && <button type="button" className="btn btn-p" onClick={() => setAct('restore')}>{SENS_SAY.restore}</button>}
           </div>
         </div>
       </div>
       {act && <SensModal e={e} sens={act} me={me} onClose={() => setAct(null)} />}
+      {flip && (() => {
+        const i = impactOf(e)
+        const off = flip === 'deactivate'
+        const lapsed = off ? [] : expiredMandatory(e)
+        return (
+          <ReasonDialog kind={off ? 'statusOff' : 'statusOn'} tone={off ? 'btn-d' : 'btn-p'}
+            title={`${ACT_SAY[flip]} · ${e.name}`}
+            subject={off
+              ? `يتوقف التقديم والصرف ما دامت الجهة «غير نشط» · ${i.stopped.length ? `دفعات ${units.project(i.stopped.length, true)} تتوقف` : 'لا مشاريع قائمة تتأثر'} · وتُبلَّغ الجهة`
+              : lapsed.length ? `يبقى الحساب «غير نشط» بعد الإعادة لانتهاء ${lapsed.join(' و')}` : 'يعود الحساب «نشطًا» ويُستأنف التقديم والصرف · وتُبلَّغ الجهة'}
+            confirm={ACT_SAY[flip]} onClose={() => setFlip(null)}
+            onConfirm={(p) => {
+              setEntityStatus(e.id, off ? 'inactive' : 'lift', pickedSay(p), me, off
+                ? { code: 'تعديل الحالة', projects: i.stopped.map((x) => x.id), payments: i.payments.map((x) => x.id) }
+                : { code: 'تعديل الحالة' })
+              setFlip(null)
+            }} />
+        )
+      })()}
       {blocked && (
         <Modal title={`ما يمنع أرشفة ${e.name}`} icon={icons.folder} onClose={() => setBlocked(false)}
           foot={<button type="button" className="btn btn-2" onClick={() => setBlocked(false)}>حسنًا</button>}>
@@ -317,6 +346,7 @@ export function BankActions({ entityId, b }: { entityId: string; b: BankAccount 
   if (st.grant !== 'do') return null
   if (!st.on) return <p className="sub cnote mt-3">{st.why}</p>
   const links = bankLinks(e, b.id)
+  const taken = b.status !== 'مفعل' ? ibanOwner(b.iban, entityId) : undefined
   const linked = links.length > 0
   const tail = `${b.iban.replace(/\s/g, '').slice(0, 4)}…${b.iban.replace(/\s/g, '').slice(-4)}`
   return (
@@ -325,11 +355,11 @@ export function BankActions({ entityId, b }: { entityId: string; b: BankAccount 
         {b.status === 'مفعل' ? (
           <button type="button" className="btn btn-2 btn-sm" onClick={() => setAsk('disable')}>عطّل الحساب</button>
         ) : (
-          <button type="button" className="btn btn-p btn-sm" onClick={() => setBankStatus(entityId, b.id, 'مفعل', me)}>
+          <button type="button" className="btn btn-p btn-sm" disabled={Boolean(taken)} title={taken ? `الآيبان مفعّل لجهة أخرى · ${taken} · لا يُفعَّل لجهتين` : undefined} onClick={() => setBankStatus(entityId, b.id, 'مفعل', me)}>
             <Icon name={icons.check} size="sm" /> فعّل الحساب
           </button>
         )}
-        <button type="button" className="btn btn-2 btn-sm" disabled={linked} title={linked ? `له تاريخ مالي · ${links.length} طلب صرف (${links.slice(0, 3).join('، ')}) · عطّل الحساب بدلًا من حذفه` : 'لا تاريخ مالي على هذا الحساب'} onClick={() => setAsk('delete')}>
+        <button type="button" className="btn btn-2 btn-sm" disabled={linked} title={linked ? `مسجَّل في مشروع أو له تاريخ مالي · ${links.slice(0, 3).join('، ')}${links.length > 3 ? ` +${links.length - 3}` : ''} · عطّل الحساب بدلًا من حذفه` : 'غير مسجَّل في أي مشروع ولا تاريخ مالي عليه'} onClick={() => setAsk('delete')}>
           <Icon name={icons.trash} size="sm" /> احذف
         </button>
       </div>
@@ -339,7 +369,7 @@ export function BankActions({ entityId, b }: { entityId: string; b: BankAccount 
           onConfirm={(p) => { setBankStatus(entityId, b.id, 'غير مفعل', me, pickedSay(p)); setAsk(null) }} />
       )}
       {ask === 'delete' && (
-        <ReasonDialog kind="bankDelete" title={`حذف الحساب · ${b.bank}`} subject={`${b.accountName} · ${tail} · بلا أي ارتباط مالي · الحذف لا رجعة فيه.`}
+        <ReasonDialog kind="bankDelete" title={`حذف الحساب · ${b.bank}`} subject={`${b.accountName} · ${tail} · غير مسجَّل في مشروع ولا ارتباط مالي عليه · الحذف لا رجعة فيه.`}
           confirm="احذف نهائيًا" onClose={() => setAsk(null)}
           onConfirm={(p) => { deleteBank(entityId, b.id, pickedSay(p), me); setAsk(null) }} />
       )}
@@ -364,11 +394,14 @@ export function AddBank({ entityId }: { entityId: string }) {
      permissions matrix later («إدارة الحسابات البنكية») */
   const clean = iban.replace(/\s/g, '').toUpperCase()
   const dup = entityDetail(e).banks.some((x) => x.iban.replace(/\s/g, '').toUpperCase() === clean)
+  const other = ibanValid(clean) ? ibanOwner(clean, entityId) : undefined
   const issues = [
     ...(!bank ? ['اختر البنك'] : []),
     ...(!name.trim() ? ['اكتب اسم الحساب'] : []),
     ...(!ibanValid(clean) ? ['الآيبان غير صحيح · SA ثم 22 رقمًا'] : []),
     ...(dup ? ['الآيبان مسجّل لهذه الجهة'] : []),
+    /* #101 · an IBAN active on another entity isn't added a second time */
+    ...(!dup && other ? [`الآيبان مفعّل لجهة أخرى · ${other}`] : []),
     ...(!file ? ['أرفق شهادة الآيبان'] : []),
   ]
   const close = () => { setOpen(false); setBank(''); setName(''); setIban(''); setFile(''); setTried(false) }
@@ -424,6 +457,8 @@ export function AddBank({ entityId }: { entityId: string }) {
    number, governance score, dates, contacts) · no request back to the entity and no «معلق» · logged on
    the file and in the audit log. The guard on a document close to its expiry belongs to the entity's
    own update request · here it's a note, never a refusal. */
+const REG_FIELD_OF = (k: string) => REG_STAGES.flatMap((st) => st.fields).find((x) => x.key === k)
+
 export function AdminEditCard({ e }: { e: EntityRow }) {
   const role = readRole()
   const d = entityDetail(e)
@@ -462,15 +497,24 @@ export function AdminEditCard({ e }: { e: EntityRow }) {
       ) : (
         <>
           <div className="regfields mt-3">
-            {ADMIN_EDIT_FIELDS.map((f) => (
-              <label key={f.key} className="regf">
-                <span className="lb">{f.label}</span>
-                {f.kind === 'date'
-                  ? <DateField label={f.label} value={vals[f.key] ?? current(f.key)} onChange={(v) => setVals((x) => ({ ...x, [f.key]: v }))} />
-                  : <span className="fld"><input value={vals[f.key] ?? current(f.key)} aria-label={f.label} dir={['email', 'url', 'tel', 'digits'].includes(f.kind) ? 'ltr' : undefined}
-                      onChange={(ev) => setVals((x) => ({ ...x, [f.key]: ev.target.value }))} /></span>}
-              </label>
-            ))}
+            {ADMIN_EDIT_FIELDS.map((f) => {
+              /* Client sheet 24 Oct (#103) · the closed fields keep their closed lists · the city follows
+                 the region the admin picks, as on the registration form */
+              const rf = REG_FIELD_OF(f.key)
+              if (f.kind === 'select' && rf) {
+                return <Field key={f.key} f={{ ...rf, req: false, wide: false, nl: false }} value={vals[f.key] ?? current(f.key)} parent={vals.region ?? current('region')}
+                  onChange={(v) => setVals((x) => ({ ...x, [f.key]: v, ...(f.key === 'region' && v !== (x.region ?? current('region')) ? { city: '' } : {}) }))} />
+              }
+              return (
+                <label key={f.key} className="regf">
+                  <span className="lb">{f.label}</span>
+                  {f.kind === 'date'
+                    ? <DateField label={f.label} value={vals[f.key] ?? current(f.key)} onChange={(v) => setVals((x) => ({ ...x, [f.key]: v }))} />
+                    : <span className="fld"><input value={vals[f.key] ?? current(f.key)} aria-label={f.label} dir={['email', 'url', 'tel', 'digits'].includes(f.kind) ? 'ltr' : undefined}
+                        onChange={(ev) => setVals((x) => ({ ...x, [f.key]: ev.target.value }))} /></span>}
+                </label>
+              )
+            })}
           </div>
           <div className="apv-row mt-3">
             <span className="fld"><input value={reason} onChange={(ev) => setReason(ev.target.value)} aria-label="سبب التعديل" placeholder="سبب التعديل (اختياري)" /></span>

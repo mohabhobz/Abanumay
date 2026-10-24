@@ -241,13 +241,15 @@ export function requirementsOf(c: CloseRow): { key: string; label: string; ok: b
 export const CASES: CaseRow[] = []
 export const caseById = (id: string) => CASES.find((c) => c.id === id)
 export const casesOfProject = (projectId: string) => CASES.filter((c) => c.projectId === projectId)
-export const CASE_KIND_SAY: Record<CaseKind, string> = { stop: 'إيقاف المشروع', reduce: 'تخفيض القيمة', increase: 'زيادة القيمة' }
+export const CASE_KIND_SAY: Record<CaseKind, string> = { stop: 'إيقاف المشروع', reduce: 'تخفيض القيمة', increase: 'زيادة القيمة', direct: 'إغلاق مباشر' }
+/** #27 · the direct closing's fixed path · the client named it */
+export const DIRECT_PATH = ['مشرف المنح', 'مدير المنح', 'المدير التنفيذي', 'الإدارة المالية']
 export const CASE_STAGE_SAY: Record<CaseStage, string> = {
-  draft: 'عند مشرف المنح', settle: 'تسوية المصروف', manager: 'عند مدير المنح', recover: 'استرداد قبل الرفع', ceo: 'عند المدير التنفيذي',
+  draft: 'عند مشرف المنح', settle: 'تسوية المصروف', manager: 'عند مدير المنح', recover: 'استرداد قبل الرفع', ceo: 'عند المدير التنفيذي', finance: 'عند الإدارة المالية',
   approved: 'معتمد · استرداد جارٍ', returned: 'مُعاد بملاحظات', rejected: 'مرفوض', closed: 'مقفل',
 }
 export const CASE_STAGE_TONE: Record<CaseStage, 'mute' | 'warn' | 'teal' | 'ok' | 'no' | 'ret'> = {
-  draft: 'mute', settle: 'warn', manager: 'teal', recover: 'warn', ceo: 'teal', approved: 'warn', returned: 'ret', rejected: 'no', closed: 'ok',
+  draft: 'mute', settle: 'warn', manager: 'teal', recover: 'warn', ceo: 'teal', finance: 'teal', approved: 'warn', returned: 'ret', rejected: 'no', closed: 'ok',
 }
 
 /** v3 · 10.9.1 – 10.9.3 · 10.4.28 · the outcomes a decision may take · by its kind and where the money stands */
@@ -255,6 +257,7 @@ export const OUTCOME_SAY: Record<NonNullable<CaseRow['outcome']>, string> = {
   cancel: 'إلغاء المشروع («ملغى»)', distress: 'مشروع متعثر', redirect: 'إعادة توجيه الدعم', recover: 'استرداد الفرق', annex: 'ملحق بزيادة القيمة', independent: 'مشروع مستقل جديد',
 }
 export function outcomesFor(kind: CaseKind, projectId: string, newAmount?: number): NonNullable<CaseRow['outcome']>[] {
+  if (kind === 'direct') return []
   const paid = paidToDate(projectId)
   if (kind === 'stop') return paid <= 0 ? ['cancel'] : paid >= grantOf(projectId) ? ['cancel', 'redirect'] : ['distress', 'cancel', 'redirect']
   if (kind === 'reduce') return paid > (newAmount ?? 0) ? ['recover', 'redirect'] : ['recover']
@@ -276,6 +279,24 @@ export interface CaseAction { act: CaseAct; label: string; kind: 'btn-p' | 'btn-
 export type CaseAct = 'submit' | 'approve' | 'return' | 'reject' | 'close'
 export function caseActions(c: CaseRow, role: RoleKey, asEntity = false): CaseAction[] {
   if (asEntity) return []
+  /* #27 · a direct closing walks the client's fixed path · supervisor → grants manager → CEO → finance */
+  if (c.kind === 'direct') {
+    if ((c.stage === 'draft' || c.stage === 'returned') && role === 'supervisor') return [{ act: 'submit', label: c.stage === 'returned' ? 'أعد الرفع لمدير المنح' : 'ارفع لمدير المنح', kind: 'btn-p' }]
+    if (c.stage === 'manager' && role === 'grants-manager') return [
+      { act: 'approve', label: 'وافق وارفعه للمدير التنفيذي', kind: 'btn-p' },
+      { act: 'return', label: 'إعادة للمشرف', kind: 'btn-2', needsNote: true },
+    ]
+    if (c.stage === 'ceo' && role === 'ceo') return [
+      { act: 'approve', label: 'اعتماد الإغلاق وإحالته للإدارة المالية', kind: 'btn-p' },
+      { act: 'return', label: 'إعادة لمدير المنح', kind: 'btn-2', needsNote: true },
+      { act: 'reject', label: 'رفض', kind: 'btn-d', needsNote: true },
+    ]
+    if (c.stage === 'finance' && role === 'finance') return [
+      { act: 'approve', label: 'اعتماد التسوية المالية وإغلاق المشروع', kind: 'btn-p' },
+      { act: 'return', label: 'إعادة للمدير التنفيذي', kind: 'btn-2', needsNote: true },
+    ]
+    return []
+  }
   if ((c.stage === 'draft' || c.stage === 'returned') && role === 'supervisor') return [{ act: 'submit', label: c.stage === 'returned' ? 'أعد الرفع لمدير المنح' : 'ارفع لمدير المنح', kind: 'btn-p' }]
   /* v3 · 10.4.11 · the grants manager approves last when the matrix says so */
   const mgrFinal = caseFinalIsMgr(c)
@@ -297,11 +318,12 @@ export function caseActions(c: CaseRow, role: RoleKey, asEntity = false): CaseAc
 }
 /** v3 · 10.4.11 · the decision's last approver · a redirect outcome needs the redirect row as well */
 export function caseFinalIsMgr(c: CaseRow): boolean {
+  if (c.kind === 'direct') return false
   const own = approverFor(c.kind, c.projectId, c.kind === 'increase' ? c.newAmount : undefined) === 'grants-manager'
   return own && (c.outcome !== 'redirect' || approverFor('redirect', c.projectId) === 'grants-manager')
 }
 /** Who decides last on a case · its title */
-export const caseApproverSay = (c: CaseRow): string => (caseFinalIsMgr(c) ? MGR() : CEO())
+export const caseApproverSay = (c: CaseRow): string => (c.kind === 'direct' ? roleByKey('finance').title : caseFinalIsMgr(c) ? MGR() : CEO())
 
 /** Client 18 Oct (sheet V2 · #4) · a project is cancelled only once every operation on it is cancelled or
     done · no payment request in flight, no agreement in an open cycle (a draft, a review, a signature, a
@@ -409,7 +431,7 @@ type Op = { at: string; by: string } & (
   | { op: 'recFail'; owner: RecOwner; text: string; file?: string }
   | { op: 'recEscalate'; owner: RecOwner; step: string; text: string; file?: string }
   | { op: 'recDecide'; owner: RecOwner; kind: NonNullable<Recovery['decision']>['kind']; text: string; file?: string }
-  | { op: 'caseCreate'; row: Pick<CaseRow, 'id' | 'projectId' | 'kind' | 'reason' | 'newAmount' | 'annex' | 'extra' | 'outcome' | 'redirect'> & { paid?: number; granted?: number } }
+  | { op: 'caseCreate'; row: Pick<CaseRow, 'id' | 'projectId' | 'kind' | 'reason' | 'newAmount' | 'annex' | 'extra' | 'outcome' | 'redirect' | 'file'> & { paid?: number; granted?: number } }
   | { op: 'caseDoc'; id: string; key: 'report' | 'evidence' | 'invoices' | 'annex'; file: string }
   | { op: 'caseSettle'; id: string; actual: number }
   | { op: 'caseAct'; id: string; act: CaseAct; note: string }
@@ -867,11 +889,12 @@ function applyOp(o: Op) {
           notify([MGR()], `${CASE_KIND_SAY[c.kind]} بانتظار قرارك`, c.projectName, ROUTES.distress(c.id))
           return
         case 'return':
-          if (!note || (c.stage !== 'manager' && c.stage !== 'ceo')) return
+          if (!note || (c.stage !== 'manager' && c.stage !== 'ceo' && c.stage !== 'finance')) return
           c.note = note
-          c.returnedTo = c.stage === 'ceo' ? 'manager' : 'draft'
-          c.stage = c.stage === 'ceo' ? 'manager' : 'returned'
-          clog(c, o.by, `إعادة بملاحظات إلى ${c.stage === 'manager' ? 'مدير المنح' : 'مشرف المنح'}`, o.at)
+          c.returnedTo = c.stage === 'finance' ? 'ceo' : c.stage === 'ceo' ? 'manager' : 'draft'
+          c.stage = c.stage === 'finance' ? 'ceo' : c.stage === 'ceo' ? 'manager' : 'returned'
+          clog(c, o.by, `إعادة بملاحظات إلى ${c.stage === 'ceo' ? 'المدير التنفيذي' : c.stage === 'manager' ? 'مدير المنح' : 'مشرف المنح'}`, o.at)
+          if (c.stage === 'ceo') notify([CEO()], `${CASE_KIND_SAY[c.kind]} مُعاد من الإدارة المالية`, c.projectName, ROUTES.distress(c.id))
           return
         case 'reject':
           if (!note || c.stage !== 'ceo') return
@@ -881,6 +904,22 @@ function applyOp(o: Op) {
           clog(c, o.by, 'رفض المدير التنفيذي القرار', o.at)
           return
         case 'approve': {
+          /* #27 · the direct closing · each approval moves it one seat · finance's closes the project */
+          if (c.kind === 'direct') {
+            if (c.stage === 'manager') {
+              c.stage = 'ceo'; c.note = undefined
+              clog(c, o.by, 'موافقة مدير المنح · رفع للمدير التنفيذي', o.at)
+              notify([CEO()], 'إغلاق مباشر بانتظار اعتمادك', c.projectName, ROUTES.distress(c.id))
+            } else if (c.stage === 'ceo') {
+              c.stage = 'finance'; c.note = undefined
+              clog(c, o.by, 'اعتماد المدير التنفيذي · إحالة للإدارة المالية للتسوية والإغلاق', o.at)
+              notify([roleByKey('finance').title], 'إغلاق مباشر بانتظار التسوية المالية', c.projectName, ROUTES.distress(c.id))
+            } else if (c.stage === 'finance') {
+              c.decidedAt = day(o.at)
+              applyDirect(c, o.by, o.at, note)
+            }
+            return
+          }
           /* Re-audit 7 Oct · 10.9.3 · 10.9.5 · a stop or a cut that leaves money with the entity asks
              for it back first · the case goes to the executive once it's back or decided */
           if (c.stage === 'manager' && dueOf(c) > 0 && !c.recovery) {
@@ -944,6 +983,27 @@ function dueOf(c: CaseRow): number {
   if (c.kind === 'stop') return Math.max(0, c.paid - (c.settlement?.actual ?? c.paid))
   if (c.kind === 'reduce') return Math.max(0, c.paid - (c.newAmount ?? c.granted))
   return 0
+}
+
+/** #27 · finance settled a direct closing · the open requests and the payments still ahead stop, what's
+    held and unpaid goes back to the line, and the project is complete · no final report, no evaluation */
+function applyDirect(c: CaseRow, by: string, at: string, note: string) {
+  const p = projectOf(c.projectId)
+  if (!p) return
+  const stopped = payRequests.filter((r) => r.projectId === c.projectId && r.state !== 'paid' && r.state !== 'closed').map((r) => r.id)
+  const unpaid = Math.max(0, grantOf(c.projectId) - paidToDate(c.projectId))
+  if (live) stopProjectPayments(c.projectId, `إغلاق مباشر ${c.id} · ${c.reason}`, by)
+  if (live) releaseSavings(c.projectId, by, `إغلاق مباشر ${c.id}`)
+  setProjectStage(c.projectId, 'مشروع مكتمل')
+  p.closedDirect = { id: c.id, at: day(at) }
+  if (unpaid > 0) p.closeSavings = { amount: unpaid, fate: 'غير المصروف عاد إلى بند الميزانية بالإغلاق المباشر' }
+  c.finance = { by, at: day(at), note, released: unpaid, stopped }
+  c.stage = 'closed'
+  c.note = undefined
+  clog(c, by, `اعتماد الإدارة المالية للتسوية${note ? ` · ${note}` : ''}`, at)
+  clog(c, 'النظام', `أُغلق المشروع مباشرة · ${stopped.length ? `أُغلقت ${stopped.length} طلبات صرف مفتوحة (${stopped.join('، ')}) · ` : ''}${unpaid > 0 ? `حُرّر ${nf.format(unpaid)} غير مصروف إلى بند الميزانية · ` : ''}الحالة: مشروع مكتمل`, at)
+  notify([c.entityName], 'أُغلق مشروعك', c.projectName, `${ROUTES.distress(c.id)}?as=entity`)
+  notify([p.owner ?? MGR()], 'اكتمل الإغلاق المباشر', c.projectName, ROUTES.distress(c.id))
 }
 
 /** The CEO approved · the project changes now, not before (10.9.1 – 10.9.6) */
@@ -1343,11 +1403,21 @@ export function decideRecovery(owner: RecOwner, kind: NonNullable<Recovery['deci
 /* Distress cases */
 
 export const nextCaseId = () => `TS-${3001 + CASES.length}`
-export function createCase(v: { projectId: string; kind: CaseKind; reason: string; newAmount?: number; annex?: string; extra?: { amount: number; dueAt: string }; outcome?: CaseRow['outcome']; redirect?: CaseRow['redirect'] }, by: string, role?: RoleKey): { id?: string; errors: string[] } {
+export function createCase(v: { projectId: string; kind: CaseKind; reason: string; file?: string; newAmount?: number; annex?: string; extra?: { amount: number; dueAt: string }; outcome?: CaseRow['outcome']; redirect?: CaseRow['redirect'] }, by: string, role?: RoleKey): { id?: string; errors: string[] } {
   const p = projectOf(v.projectId)
   if (!p) return { errors: ['المشروع غير موجود'] }
   if (!v.reason.trim()) return { errors: ['اكتب سبب القرار'] }
   if (casesOfProject(v.projectId).some((c) => !['closed', 'rejected'].includes(c.stage))) return { errors: ['للمشروع حالة تعثّر مفتوحة'] }
+  if (v.kind === 'direct') {
+    /* #27 · an independent procedure · not over a closing already running */
+    const open = closeOfProject(v.projectId)
+    if (open && open.stage !== 'closed') return { errors: [`للمشروع إغلاق قائم ${open.id} · يُستكمل من صفحته`] }
+    if (!isLive(p.statusGroup) && p.statusGroup !== 'متعثر') return { errors: ['يُغلق مباشرة مشروع معتمد تحت التنفيذ'] }
+    if (role && !holds('distressBy', role)) return { errors: [`فتح الإغلاق المباشر لـ${holdersSay('distressBy')} (صلاحية في قرارات المؤسسة)`] }
+    const id = nextCaseId()
+    run({ op: 'caseCreate', row: { id, paid: paidToDate(v.projectId), granted: grantOf(v.projectId), projectId: v.projectId, kind: 'direct', reason: v.reason.trim(), file: v.file }, by, at: now() })
+    return { id, errors: [] }
+  }
   if (!(isLive(p.statusGroup) || p.statusGroup === 'متعثر') || p.stage === 'مشروع موقوف') return { errors: ['يُتّخذ القرار على مشروع معتمد تحت التنفيذ'] }
   const g = grantOf(v.projectId)
   const paid = paidToDate(v.projectId)

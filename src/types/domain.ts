@@ -95,7 +95,9 @@ export type FollowUpType =
     request still in review or rejected is a registration request, not an entity. */
 export type EntityActivation = 'نشط' | 'معلق' | 'غير نشط'
 /** The decision behind a «غير نشط» account, when a decision is behind it */
-export type EntityDecision = 'suspension' | 'revoked'
+/** Client sheet 24 Oct (#102) · 'inactive' · the account set «غير نشط» by an authority holder, no
+    eligibility decision behind it */
+export type EntityDecision = 'suspension' | 'revoked' | 'inactive'
 
 export interface EntityDocument {
   name: string
@@ -564,6 +566,8 @@ export interface ProjectRow {
   partnerType?: 'مستقل' | 'محفظة'
   /** v3 · 0.status.8 · the saving left at closing · recovered or returned to the line */
   closeSavings?: { amount: number; fate: string }
+  /** Client sheet 24 Oct (#27) · closed by a direct closing, not the closing cycle */
+  closedDirect?: { id: string; at: string }
   /** v3 · 0.status.9 */
   redirect?: SupportRedirect
   /** v3 · 3.4.14 · the actual start of execution · recorded apart from the expected start and the request's date */
@@ -1226,8 +1230,10 @@ export interface Recovery {
    CEO), and the project only changes when the CEO approves.
    ═══════════════════════════════════════════════════════════ */
 
-export type CaseKind = 'stop' | 'reduce' | 'increase'
-export type CaseStage = 'draft' | 'settle' | 'manager' | 'recover' | 'ceo' | 'approved' | 'returned' | 'rejected' | 'closed'
+/** Client sheet 24 Oct (#27) · 'direct' · closing a project directly, an independent procedure ·
+    supervisor → grants manager → CEO → finance, without the final report and evaluation cycle */
+export type CaseKind = 'stop' | 'reduce' | 'increase' | 'direct'
+export type CaseStage = 'draft' | 'settle' | 'manager' | 'recover' | 'ceo' | 'finance' | 'approved' | 'returned' | 'rejected' | 'closed'
 
 export interface CaseRow {
   id: string
@@ -1257,6 +1263,9 @@ export interface CaseRow {
   outcome?: 'cancel' | 'distress' | 'redirect' | 'recover' | 'annex' | 'independent'
   /** The redirection the decision records (purpose, decision, its file) */
   redirect?: { purpose: string; decision: string; file: string }
+  /** #27 · a direct closing · the supporting document, and finance's settlement at the last step */
+  file?: string
+  finance?: { by: string; at: string; note: string; released: number; stopped: string[] }
   /** v3 · 10.4.28 · the separate project the raise opened */
   independentId?: string
   /** Verifier · 16 Oct · the redirect the approved decision made · lands on the project at its final closing */

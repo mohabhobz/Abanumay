@@ -30,6 +30,7 @@ import { useFollowUps } from './followups'
 import { closeOfProject } from '@/data/mock/closing'
 import { openClosing, paidToDate } from '@/data/closing/store'
 import { DistressCard } from '@/features/closing/DistressCard'
+import { DirectCloseCard } from '@/features/closing/DirectCloseCard'
 import { AnalysisCard } from '@/components/assistant'
 import { alignmentOf, ehsanAi, projectAi } from '@/data/shared/ai'
 import { NextStep } from '@/components/assistant/NextStep'
@@ -552,6 +553,7 @@ export default function ProjectPage() {
                   agreement={null}
                   payments={livePayments}
                   entityName={entity.name}
+                  projectId={project.id}
                   example={examples.agreement}
                   onOpenExample={(x) => navigate(ROUTES.projectTab(x, 'agreement'))}
                   onStart={() => navigate(ROUTES.agreementNew(project.id))}
@@ -582,6 +584,7 @@ export default function ProjectPage() {
                     projectId={project.id}
                     onOpen={role.key === 'supervisor' ? () => { const out = openClosing(project.id, user.name); if (out.id) navigate(ROUTES.closing(out.id)) } : undefined}
                   />
+                  <DirectCloseCard projectId={project.id} />
                   <DistressCard projectId={project.id} />
                 </>
               )}

@@ -13,7 +13,7 @@ import { noteFirst } from '@/lib/dock'
 import {
   CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, actOnCase, attachCaseDoc, caseActions, caseById, caseStops,
   settleCase, stopPhase, useClosing,
-  OUTCOME_SAY, caseFinalIsMgr, cancelBlockers,
+  OUTCOME_SAY, caseFinalIsMgr, cancelBlockers, DIRECT_PATH,
 } from '@/data/closing/store'
 import { RecoveryCard } from '../parts'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -96,7 +96,7 @@ export default function CasePage() {
             </div>
           </header>
 
-          {c.note && (c.stage === 'returned' || c.stage === 'manager' || c.stage === 'rejected') && (
+          {c.note && (c.stage === 'returned' || c.stage === 'manager' || c.stage === 'ceo' || c.stage === 'rejected') && (
             <Glass>
               <Head title={c.stage === 'rejected' ? 'سبب الرفض' : 'ملاحظات الإعادة'} meta={<Tag tone={c.stage === 'rejected' ? 'no' : 'warn'}>{c.stage === 'rejected' ? 'مرفوض' : 'للاستكمال'}</Tag>} />
               <div className="payq-note"><Icon name={icons.chat} size="sm" /><span>{isolate(c.note)}</span></div>
@@ -113,6 +113,16 @@ export default function CasePage() {
                     { k: 'قيمة المنحة عند الفتح', v: <Money sm>{c.granted}</Money> },
                     { k: 'المصروف عند الفتح', v: <Money sm>{c.paid}</Money> },
                     ...(c.kind === 'stop' ? [{ k: 'موضع الإيقاف', v: phase.say }] : []),
+                    /* Client sheet 24 Oct (#27) · the direct closing · its document, its path, finance's settlement */
+                    ...(c.kind === 'direct' ? [
+                      { k: 'مستند الإغلاق', v: c.file ?? <span className="sub">—</span> },
+                      { k: 'مسار الاعتماد', v: DIRECT_PATH.join(' ← ') },
+                      ...(c.finance ? [
+                        { k: 'التسوية المالية', v: <><Person name={c.finance.by} /> <span className="sub">· <DateText>{c.finance.at}</DateText>{c.finance.note ? ` · ${c.finance.note}` : ''}</span></> },
+                        { k: 'حُرّر إلى بند الميزانية', v: <Money sm>{c.finance.released}</Money> },
+                        { k: 'طلبات صرف أُغلقت', v: c.finance.stopped.length ? c.finance.stopped.join('، ') : <span className="sub">لا شيء</span> },
+                      ] : [{ k: 'يعود إلى بند الميزانية', v: <Money sm>{Math.max(0, c.granted - c.paid)}</Money> }]),
+                    ] : []),
                     ...(c.newAmount !== undefined ? [{ k: 'القيمة الجديدة', v: <Money sm>{c.newAmount}</Money> }] : []),
                     ...(c.kind === 'reduce' ? [{ k: 'ملحق الاتفاقية', v: c.annex ?? <span className="bad">لم يُرفع</span> }] : []),
                     ...(c.extra ? [{ k: 'الدفعة الإضافية', v: <><Money sm>{c.extra.amount}</Money> · <DateText>{c.extra.dueAt}</DateText></> }] : []),
@@ -171,7 +181,7 @@ export default function CasePage() {
 
               {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'case', id: c.id }} asEntity={asEntity} />}
               <Glass>
-                <Head title="سجلّ الحالة" meta={<span className="sub">مشرف المنح · مدير المنح{caseFinalIsMgr(c) ? '' : ' · المدير التنفيذي'}</span>} />
+                <Head title="سجلّ الحالة" meta={<span className="sub">{c.kind === 'direct' ? DIRECT_PATH.join(' · ') : <>مشرف المنح · مدير المنح{caseFinalIsMgr(c) ? '' : ' · المدير التنفيذي'}</>}</span>} />
                 <ul className="plchg">
                   {c.log.map((a, i) => (
                     <li key={`${a.at}-${i}`}>

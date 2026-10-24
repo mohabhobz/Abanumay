@@ -5,7 +5,7 @@ import { TONE } from '@/lib/tone'
 import { ROUTES } from '@/app/routes'
 import { nf, NOUN, nounAfter, pct, ver } from '@/lib/format'
 import {
-  PLAN_TONE, lateActivities, planClaimed, planDone, planExecution, planPlanned, planRows, planSpi,
+  PLAN_TONE, lateActivities, planClaimed, planDone, planCounts, planExecution, planPlanned, planRows, planSpi,
   planStageLabel, readyToClose, spiSay, waitingReview,
 } from '@/data/mock/plans'
 import { planVersions } from '@/data/plans/store'
@@ -151,6 +151,12 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
             </>,
           },
           ...(live ? [
+            {
+              /* Client sheet 24 Oct (#96) · accepted activities ÷ all activities */
+              k: 'نسبة اكتمال المشروع',
+              v: <span><span className="num">{pct(done)}</span>
+                <span className="sub"> · {(() => { const c = planCounts(p); return `${nf.format(c.accepted)} مقبولة من ${nf.format(c.total)} ${nounAfter(c.total, NOUN.activity)}` })()}</span></span>,
+            },
             {
               /* Client sheet 24 Oct (#97) */
               k: 'نسبة تنفيذ المشروع',

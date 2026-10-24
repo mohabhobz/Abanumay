@@ -7,6 +7,7 @@ import {
   closeStageWho, evalApproved, needsComms, reportApproved, reportBlockers,
 } from '@/data/mock/closing'
 import type { CloseRow } from '@/types/domain'
+import { projectById } from '@/data/mock/projects'
 
 /* Close tab on the project page.
 
@@ -28,6 +29,18 @@ export interface CloseTabProps {
 }
 
 export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
+  /* Client sheet 24 Oct (#27) · a project closed directly has no closing cycle · it says so */
+  const direct = projectById(projectId)?.closedDirect
+  if (!c && direct) {
+    return (
+      <Glass>
+        <Head title="إغلاق المشروع" meta={<Tag tone="ok">مغلق مباشرة</Tag>} />
+        <Empty title={`أُغلق المشروع بإجراء الإغلاق المباشر ${direct.id}.`}
+          note="اعتمدته الإدارة المالية في آخر مساره · دون دورة التقرير الختامي والتقييم."
+          actions={<Link className="btn btn-2" to={ROUTES.distress(direct.id)}>افتح الإغلاق المباشر</Link>} />
+      </Glass>
+    )
+  }
   if (!c) {
     const gate = canOpenClose(projectId)
     return (

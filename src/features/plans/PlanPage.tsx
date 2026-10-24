@@ -21,7 +21,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import {
   PLAN_LIMIT, PLAN_STAGES, lateActivities,
   planById, planClaimed, planDone, planIssues, planPlanned,
-  planExecution, planSpi, planStageLabel, planStageWho, readyToClose, spiSay,
+  planCounts, planExecution, planSpi, planStageLabel, planStageWho, readyToClose, spiSay,
   waitingReview,
 } from '@/data/mock/plans'
 import {
@@ -365,6 +365,12 @@ export default function PlanPage() {
 
                     <KV
                       rows={[
+                        {
+                          /* Client sheet 24 Oct (#96) · accepted activities ÷ all activities */
+                          k: 'نسبة اكتمال المشروع',
+                          v: <span><span className="num">{pct(done)}</span>
+                            <span className="sub"> · {(() => { const c = planCounts(p); return `${nf.format(c.accepted)} مقبولة من ${nf.format(c.total)} ${nounAfter(c.total, NOUN.activity)}` })()}</span></span>,
+                        },
                         {
                           /* Client sheet 24 Oct (#97) */
                           k: 'نسبة تنفيذ المشروع',

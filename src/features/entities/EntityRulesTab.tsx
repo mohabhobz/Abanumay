@@ -18,7 +18,7 @@ export function EntityRulesTab() {
   const [d, setD] = useState<EntityRules>(() => structuredClone(ENTITY_RULES))
   const dirty = JSON.stringify(d) !== JSON.stringify(saved)
   const put = <K extends keyof EntityRules>(k: K, v: EntityRules[K]) => setD((x) => ({ ...x, [k]: v }))
-  const roles = (k: 'approveBy' | 'returnBy' | 'updateBy' | 'suspendBy' | 'revokeBy' | 'archiveBy' | 'bankBy' | 'askBy' | 'notifyBy' | 'assignBy' | 'registerBy' | 'relinkEntityBy', label: string, note: string) => (
+  const roles = (k: 'approveBy' | 'returnBy' | 'updateBy' | 'statusBy' | 'suspendBy' | 'revokeBy' | 'archiveBy' | 'bankBy' | 'askBy' | 'notifyBy' | 'assignBy' | 'registerBy' | 'relinkEntityBy', label: string, note: string) => (
     <li className="itk-sup">
       <span className="cfgl"><b>{label}</b><span className="sub">{note}</span></span>
       <span className="pc-sp" />
@@ -78,10 +78,11 @@ export function EntityRulesTab() {
           {roles('approveBy', 'اعتماد طلب التسجيل أو رفضه', 'ومعه قرار كل حساب بنكي')}
           {roles('returnBy', 'إعادة طلب التسجيل للاستكمال', 'بملاحظة وحقول محدّدة')}
           {roles('updateBy', 'قرار طلب تحديث البيانات', 'اعتماد أو إعادة أو رفض')}
+          {roles('statusBy', 'تعديل حالة الجهة', '«نشط» ⇄ «غير نشط» بسبب من الإعدادات · يُوقف التقديم والصرف ما دام «غير نشط»')}
           {roles('suspendBy', 'تعليق الأهلية ورفعه', 'من ملف الجهة · بلوحة الأثر وتأكيد مزدوج')}
           {roles('revokeBy', 'إلغاء اعتماد الجهة', 'من ملف الجهة · بلوحة الأثر وتأكيد مزدوج')}
           {roles('archiveBy', 'أرشفة الجهة', 'تُمنع ما دام لها مشروع قائم أو دفعة أو طلب مفتوح')}
-          {roles('bankBy', 'إدارة الحسابات البنكية', 'إضافة وتعطيل · والحذف فقط بلا ارتباط مالي')}
+          {roles('bankBy', 'إدارة الحسابات البنكية', 'إضافة وتعطيل · والحذف فقط لحساب غير مسجَّل في مشروع ولا تاريخ مالي عليه')}
           {roles('registerBy', 'التسجيل المباشر للجهة', 'جهة شريكة أو كيان استراتيجي دون البوابة')}
           {roles('relinkEntityBy', 'تعديل الجهة المرتبطة بمشروع', 'عند تكرار بيانات الجهات · يُحدَّث الارتباط في كل سجلات المشروع')}
         </ul>

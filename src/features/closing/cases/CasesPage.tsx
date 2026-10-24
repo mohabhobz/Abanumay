@@ -6,6 +6,7 @@ import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
+import type { CaseKind } from '@/types/domain'
 import {
   CASES, CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, recoveryLeft, useClosing,
 } from '@/data/closing/store'
@@ -17,11 +18,13 @@ import {
 export default function CasesPage() {
   const navigate = useNavigate()
   useClosing()
-  const { values: v, set } = useQueryParams(['res'])
+  const { values: v, set } = useQueryParams(['res', 'kind'])
   const all = [...CASES].sort((a, b) => Number(a.stage === 'closed' || a.stage === 'rejected') - Number(b.stage === 'closed' || b.stage === 'rejected'))
   /* Client sheet 24 Oct (#95) · the case's outcome · مكتمل / مرفوض / ملغي, or still under way */
   const res = readList(v.res)
-  const rows = all.filter((c) => outcomeMatches(caseOutcome(c.stage), res))
+  /* #27 · the direct closings sit here too · a filter by the procedure */
+  const kinds = readList(v.kind)
+  const rows = all.filter((c) => outcomeMatches(caseOutcome(c.stage), res) && (!kinds.length || kinds.includes(c.kind)))
   return (
     <AppLayout assistantContext={assistFor.page('حالات التعثر')}>
       <div className="viewstack">
@@ -30,12 +33,18 @@ export default function CasesPage() {
           <header>
             <div>
               <h1 className="ptitle">حالات التعثر</h1>
-              <p className="sub mt-1">إيقاف المشاريع وتعديل قيمها والمبالغ المستردة · <Num>{all.length}</Num> حالة</p>
+              <p className="sub mt-1">إيقاف المشاريع وتعديل قيمها والإغلاق المباشر والمبالغ المستردة · <Num>{all.length}</Num> حالة</p>
             </div>
           </header>
           <Glass className="ftoolbar">
             <div className="ftool-r">
               <div className="ftool-f">
+                <MultiSelect
+                  values={kinds}
+                  all="كل الإجراءات"
+                  options={(['stop', 'reduce', 'increase', 'direct'] as CaseKind[]).map((k) => ({ value: k, label: CASE_KIND_SAY[k] }))}
+                  onChange={(x) => set({ kind: writeList(x) })}
+                />
                 <MultiSelect
                   values={res}
                   all="كل النتائج"
@@ -46,7 +55,7 @@ export default function CasesPage() {
             </div>
           </Glass>
           <Glass>
-            <Head title="الحالات" meta={res.length ? <span className="sub"><Num>{rows.length}</Num> من <Num>{all.length}</Num></span> : undefined} />
+            <Head title="الحالات" meta={res.length || kinds.length ? <span className="sub"><Num>{rows.length}</Num> من <Num>{all.length}</Num></span> : undefined} />
             {rows.length ? (
               <ul className="apv-list">
                 {rows.map((c) => (
@@ -60,8 +69,8 @@ export default function CasesPage() {
                   </li>
                 ))}
               </ul>
-            ) : res.length
-              ? <Empty title="لا حالات بهذه النتيجة." actions={<button type="button" className="btn btn-2" onClick={() => set({ res: undefined })}>مسح الفلتر</button>} />
+            ) : res.length || kinds.length
+              ? <Empty title="لا حالات بهذه النتيجة." actions={<button type="button" className="btn btn-2" onClick={() => set({ res: undefined, kind: undefined })}>مسح الفلتر</button>} />
               : <Empty title="لا حالات تعثّر." note="تُفتح الحالة من تبويب الإغلاق في صفحة المشروع." />}
           </Glass>
         </div>

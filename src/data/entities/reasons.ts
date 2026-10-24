@@ -13,7 +13,7 @@ import { BANK_REJECT_REASONS } from '@/data/mock/taxonomy'
 
 export const OTHER = 'أخرى'
 
-export type ReasonKind = 'regReject' | 'regReturn' | 'updReject' | 'updReturn' | 'bankDisable' | 'bankDelete'
+export type ReasonKind = 'regReject' | 'regReturn' | 'updReject' | 'updReturn' | 'bankDisable' | 'bankDelete' | 'statusOff' | 'statusOn'
 
 export const REASON_KINDS: { kind: ReasonKind; label: string; hint: string }[] = [
   { kind: 'regReject', label: 'رفض طلب التسجيل', hint: 'يختارها صاحب الصلاحية عند رفض طلب تسجيل جهة' },
@@ -22,6 +22,8 @@ export const REASON_KINDS: { kind: ReasonKind; label: string; hint: string }[] =
   { kind: 'updReturn', label: 'إعادة طلب التحديث للاستكمال', hint: 'تظهر للجهة مع الطلب المعاد' },
   { kind: 'bankDisable', label: 'تعطيل حساب بنكي', hint: 'عند تعطيل حساب بنكي لجهة' },
   { kind: 'bankDelete', label: 'حذف حساب بنكي', hint: 'عند حذف حساب بنكي لم يُصرف عليه' },
+  { kind: 'statusOff', label: 'تحويل الجهة إلى «غير نشط»', hint: 'عند تعديل حالة الجهة من «نشط» إلى «غير نشط»' },
+  { kind: 'statusOn', label: 'إعادة الجهة إلى «نشط»', hint: 'عند إعادة تفعيل جهة حُوّلت إلى «غير نشط» بقرار' },
 ]
 
 const DEFAULTS: Record<ReasonKind, string[]> = {
@@ -31,6 +33,8 @@ const DEFAULTS: Record<ReasonKind, string[]> = {
   updReturn: ['مستند داعم ناقص', 'بيانات غير مكتملة', 'المرفق غير واضح'],
   bankDisable: [...BANK_REJECT_REASONS],
   bankDelete: ['أُضيف الحساب بالخطأ', 'إلغاء الحساب بناءً على طلب الجمعية', 'الحساب مكرر'],
+  statusOff: ['توقّف نشاط الجهة', 'بناءً على طلب الجهة', 'عدم التجاوب مع المؤسسة', 'قرار إداري'],
+  statusOn: ['استئناف نشاط الجهة', 'بناءً على طلب الجهة', 'زوال سبب الإيقاف'],
 }
 
 const saved = readJson<Partial<Record<ReasonKind, string[]>>>(CFG.entityReasons, {})

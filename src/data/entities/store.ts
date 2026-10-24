@@ -64,10 +64,15 @@ export const overlayOf = (id: string): EntityOverlay => {
   return o
 }
 
-/* The duplicate-IBAN check reads the accounts on each entity's own file (2.4.10) */
+/* Client sheet 24 Oct (#101) · the duplicate-IBAN check reads each entity's active accounts on its own
+   file · the registration's, the ones added since · a disabled or deleted one doesn't hold its IBAN ·
+   the generated seed accounts are masked, so the overlay is the whole of the real ones */
 setEntityIbans((id) => {
   const o = OVERLAY.get(id)
-  return o ? [...(o.banks ?? []), ...o.addedBanks].map((b) => b.iban) : []
+  if (!o) return []
+  return [...(o.banks ?? []), ...o.addedBanks]
+    .filter((b) => !o.deletedBanks?.includes(b.id) && (o.bankStatus[b.id]?.status ?? b.status) === 'مفعل')
+    .map((b) => b.iban)
 })
 
 /* ── Update requests (2.3.upd) ── */
@@ -380,6 +385,7 @@ export const payBlock = (e: EntityRow | undefined): string => {
   if (e.activation !== 'غير نشط') return ''
   if (e.decision === 'revoked') return 'اعتماد الجهة ملغى · لا صرف حتى يُبتّ في وضعها'
   if (e.decision === 'suspension') return 'أهلية الجهة معلّقة بقرار · لا صرف حتى رفع التعليق'
+  if (e.decision === 'inactive') return 'حُوّلت الجهة إلى «غير نشط» بقرار · لا صرف حتى إعادة تفعيلها'
   const lapsed = mandatoryExpired(e)
   return `حساب الجهة غير نشط · انتهت صلاحية ${lapsed.join(' و') || 'مستند إلزامي'} · لا صرف حتى تحديثه`
 }
@@ -479,7 +485,8 @@ const apply = (x: Op) => {
       if (!e) break
       const from = e.activation
       const kind: EntityDecision | null = x.to === 'revoked' || x.to === 'ملغى الاعتماد' ? 'revoked'
-        : x.to === 'suspension' || x.to === 'معلق (موقوف)' ? 'suspension' : null
+        : x.to === 'suspension' || x.to === 'معلق (موقوف)' ? 'suspension' : x.to === 'inactive' ? 'inactive' : null
+      const wasManual = e.decision === 'inactive'
       e.decision = kind ?? undefined
       e.activation = accountFrom(e)
       e.canApply = e.activation === 'نشط' && !e.archived
@@ -487,7 +494,7 @@ const apply = (x: Op) => {
       overlayOf(e.id).fields.adminNote = x.reason
       entityEvent(e.id, {
         kind: !kind ? 'accept' : kind === 'revoked' ? 'reject' : 'stop',
-        action: !kind ? 'رفع تعليق الأهلية' : kind === 'revoked' ? 'إلغاء اعتماد الجهة' : 'تعليق الأهلية',
+        action: !kind ? (wasManual ? 'تعديل حالة الجهة إلى «نشط»' : 'رفع تعليق الأهلية') : kind === 'revoked' ? 'إلغاء اعتماد الجهة' : kind === 'inactive' ? 'تعديل حالة الجهة إلى «غير نشط»' : 'تعليق الأهلية',
         by: x.by, at, note: x.reason, fields: [{ k: 'حالة الحساب', v: `${from} ← ${e.activation}` }],
       })
       if (x.meta) {
@@ -500,7 +507,7 @@ const apply = (x: Op) => {
           ...(x.meta.payments ? [{ k: 'الدفعات الموقوفة', v: x.meta.payments.length ? `${x.meta.payments.length} · ${x.meta.payments.join('، ')}` : '0' }] : []),
         ]
       }
-      enote(e.name, 'status', !kind ? 'رُفع تعليق أهلية جهتك' : kind === 'revoked' ? 'أُلغي اعتماد جهتك' : 'عُلّقت أهلية جهتك', x.reason, at, ROUTES.entityPortal)
+      enote(e.name, 'status', !kind ? (wasManual ? 'أُعيد حساب جهتك إلى «نشط»' : 'رُفع تعليق أهلية جهتك') : kind === 'revoked' ? 'أُلغي اعتماد جهتك' : kind === 'inactive' ? 'حُوّل حساب جهتك إلى «غير نشط»' : 'عُلّقت أهلية جهتك', x.reason, at, ROUTES.entityPortal)
       /* Lifting a suspension doesn't clear another block · an expired document keeps it inactive */
       settle(e, at)
       break
@@ -897,7 +904,7 @@ export const registerInternal = (values: Record<string, string>, docs: string[],
 }
 
 /** A decision on the account · 'suspension' · 'revoked' · or 'lift' to remove the one in force */
-export const setEntityStatus = (entityId: string, to: 'suspension' | 'revoked' | 'lift', reason: string, by: string, meta?: StatusMeta) =>
+export const setEntityStatus = (entityId: string, to: 'suspension' | 'revoked' | 'inactive' | 'lift', reason: string, by: string, meta?: StatusMeta) =>
   run({ op: 'status', entityId, to, reason, by, meta, at: now() })
 
 export const archiveEntity = (entityId: string, on: boolean, reason: string, by: string, code?: string) =>

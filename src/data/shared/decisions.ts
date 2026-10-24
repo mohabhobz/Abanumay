@@ -106,7 +106,7 @@ export const accountSay = (e: AccountLike): string => (e.archived ? 'مؤرشف'
 /** What holds the account where it is · empty for an active one */
 export const accountWhy = (e: AccountLike): string =>
   e.archived ? '' : e.activation === 'غير نشط'
-    ? e.decision === 'revoked' ? 'بقرار إلغاء الاعتماد' : e.decision === 'suspension' ? 'بقرار تعليق الأهلية' : 'لمستند إلزامي منتهٍ'
+    ? e.decision === 'revoked' ? 'بقرار إلغاء الاعتماد' : e.decision === 'suspension' ? 'بقرار تعليق الأهلية' : e.decision === 'inactive' ? 'بقرار تعديل الحالة' : 'لمستند إلزامي منتهٍ'
     : e.activation === 'معلق' ? 'تحديث جوهري تحت المراجعة' : ''
 /** The account with its cause · «غير نشط · بقرار تعليق الأهلية» */
 export const accountLine = (e: AccountLike): string => [accountSay(e), accountWhy(e)].filter(Boolean).join(' · ')

@@ -9,7 +9,7 @@ import { ROUTES } from '@/app/routes'
 import { ENTITY_RULES } from './rules'
 import { ASSIGNED, openUpdateOf, requestsOfEntity } from './store'
 import { entityDetail } from '@/data/mock/entityDetail'
-import { bankHistory } from '@/data/payments/store'
+import { accountOf as payAccountOf, bankHistory } from '@/data/payments/store'
 
 /* What can be done to an entity once it's selected · LOCTech «قائمة الجهات المستفيدة — نموذج
    الإجراءات عند التحديد» (8 Oct, a proposal for discussion).
@@ -31,11 +31,14 @@ export const seatOf = (r: RoleKey): Seat | null => SEAT_OF[r] ?? null
 
 export type ActKey =
   | 'view' | 'review' | 'ask' | 'notify' | 'suspend' | 'lift' | 'revoke' | 'archive' | 'banks' | 'log' | 'export' | 'assign'
+  /* Client sheet 24 Oct (#102) · the account's status set by hand · «نشط» ⇄ «غير نشط» */
+  | 'deactivate' | 'activate'
 
 export const ACT_SAY: Record<ActKey, string> = {
   view: 'عرض ملف الجهة', review: 'مراجعة الطلب', ask: 'طلب تحديث البيانات', notify: 'إرسال إشعار',
   suspend: 'تعليق الأهلية', lift: 'رفع تعليق الأهلية', revoke: 'إلغاء اعتماد الجهة', archive: 'أرشفة الجهة',
   banks: 'إدارة الحسابات البنكية', log: 'سجل الإجراءات', export: 'تصدير', assign: 'إسناد المراجعة',
+  deactivate: 'تحويل إلى «غير نشط»', activate: 'إعادة إلى «نشط»',
 }
 
 /** ● from settings · ○ fixed by the document · anything else is hidden */
@@ -49,7 +52,9 @@ const doers = (a: ActKey): RoleKey[] => {
     case 'suspend': case 'lift': return r.suspendBy
     case 'revoke': return r.revokeBy
     case 'archive': return r.archiveBy
-    case 'banks': return r.bankBy
+    /* Client sheet 24 Oct (#103) · the system admin edits everything on the file, its accounts too */
+    case 'banks': return [...new Set([...r.bankBy, 'admin' as RoleKey])]
+    case 'deactivate': case 'activate': return r.statusBy
     case 'assign': return r.assignBy
   }
 }
@@ -57,6 +62,7 @@ const SEES: Record<ActKey, Seat[]> = {
   view: [], log: [], export: [],
   review: ['ceo'], ask: [], notify: ['ceo'], suspend: ['sup'], lift: ['sup'], revoke: ['sup', 'mgr'],
   archive: ['sup', 'ceo', 'adm'], banks: ['ceo'], assign: ['sup'],
+  deactivate: ['sup'], activate: ['sup'],
 }
 
 export type Grant = 'do' | 'see' | 'none'
@@ -79,7 +85,7 @@ export type Account = 'active' | 'pending' | 'inactive' | 'archived'
 export const ACCOUNT_SAY: Record<Account, string> = {
   active: 'نشط', pending: 'معلق', inactive: 'غير نشط', archived: 'مؤرشف',
 }
-export type Block = 'suspension' | 'revoked' | 'expired' | null
+export type Block = 'suspension' | 'revoked' | 'inactive' | 'expired' | null
 
 export function accountOf(e: EntityRow): { state: Account; block: Block } {
   if (e.archived) return { state: 'archived', block: null }
@@ -159,7 +165,12 @@ export function archiveBlocks(e: EntityRow): { label: string; href: string }[] {
     carried on it · an account with any can only be disabled, never deleted */
 export const bankLinks = (e: EntityRow, bankId: string): string[] => {
   const b = entityDetail(e).banks.find((x) => x.id === bankId)
-  return b ? bankHistory(e.id, b) : []
+  if (!b) return []
+  /* Client sheet 24 Oct (#100) · an account registered on a project isn't deleted · the account the
+     entity's live projects pay into (pre-execution, running, closing) is registered on each of them */
+  const pays = payAccountOf(e.id)
+  const live = pays?.id === b.id ? impactOf(e).stopped.map((p) => p.id) : []
+  return [...new Set([...live, ...bankHistory(e.id, b)])]
 }
 export const bankLinked = (e: EntityRow, bankId: string): boolean => bankLinks(e, bankId).length > 0
 
@@ -199,6 +210,12 @@ export function actState(a: ActKey, e: EntityRow, role: RoleKey): ActState {
       return yes()
     case 'lift':
       return block === 'suspension' ? yes() : hide()
+    case 'deactivate':
+      if (state === 'archived' || block === 'revoked' || block === 'suspension' || block === 'inactive') return hide()
+      if (state === 'inactive') return off('الحساب «غير نشط» أصلًا لمستند إلزامي منتهٍ')
+      return yes()
+    case 'activate':
+      return block === 'inactive' && state !== 'archived' ? yes() : hide()
     case 'revoke':
       if (state === 'archived' || block === 'revoked') return hide()
       return yes()

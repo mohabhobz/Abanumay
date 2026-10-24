@@ -229,7 +229,7 @@ const externalQueue = (role: RoleKey, me: string): InboxQueue => ({
 const casesQueue = (role: RoleKey, me: string): InboxQueue => ({
   key: 'cases',
   label: 'حالات التعثّر والتعديل',
-  note: role === 'supervisor' ? 'تسوية المصروف ورفع القرار' : 'إيقاف أو تخفيض أو زيادة بانتظار قرارك',
+  note: role === 'supervisor' ? 'تسوية المصروف ورفع القرار' : role === 'finance' ? 'إغلاق مباشر بانتظار التسوية المالية' : 'إيقاف أو تخفيض أو زيادة أو إغلاق مباشر بانتظار قرارك',
   icon: 'navClosings',
   all: ROUTES.distresses,
   items: CASES.filter((c) => {
@@ -395,6 +395,8 @@ export function inboxFor(role: RoleKey, me: string): InboxQueue[] {
       budgets(role),
       relocations(role),
       uncovered(),
+      /* Client sheet 24 Oct (#27) · the direct closings waiting on finance's settlement */
+      casesQueue(role, me),
       {
         key: 'ehsan', label: 'عمليات منصات الجهات الخارجية', note: 'راجع مستنداتها وأكّد حالتها', icon: 'pay', all: ROUTES.partnersTab('finance'),
         items: EHSAN_PAYS.filter((x) => x.state === 'review').map((x) => ({

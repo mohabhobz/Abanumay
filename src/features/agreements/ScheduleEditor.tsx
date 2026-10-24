@@ -4,6 +4,16 @@ import type { PayCond } from '@/types/domain'
 import { nf, pct } from '@/lib/format'
 import { scheduleTotal, shareOf, type DraftPay } from '@/data/mock/agreementNew'
 import type { AgreementPayment } from '@/types/domain'
+import { Link, useNavigate } from 'react-router-dom'
+import { ROUTES } from '@/app/routes'
+import { payRequests } from '@/data/mock/disbursements'
+
+/** Client sheet 24 Oct (#104) · where a payment of the schedule opens · its request when one was filed
+    (the latest), otherwise the request form on that payment */
+export const payHref = (projectId: string, no: number): string => {
+  const r = payRequests.filter((x) => x.projectId === projectId && x.no === no).sort((a, b) => (b.id > a.id ? 1 : -1))[0]
+  return r ? ROUTES.payment(r.id) : `${ROUTES.paymentNew(projectId)}&pay=${no}`
+}
 
 /* Payment schedule - one table for both reading and editing.
 
@@ -56,6 +66,9 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
   const gap = amount - total
   const match = amount > 0 && gap === 0
   const edit = !readOnly && Boolean(onChange)
+  const go = useNavigate()
+  /* #104 · read only, each payment row opens its payment screen */
+  const open = !edit && projectId ? (no: number) => payHref(projectId, no) : null
 
   /** Numbering resets after any add or delete - the number is an order, not an identifier. */
   const renum = (xs: DraftPay[]) => xs.map((r, i) => ({ ...r, no: i + 1 }))
@@ -108,8 +121,8 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
 
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i}>
-                <td><Num>{r.no}</Num></td>
+              <tr key={i} className={open ? 'clk' : undefined} onClick={open ? (ev) => { if (!(ev.target as HTMLElement).closest('a,button,input')) go(open(r.no)) } : undefined}>
+                <td>{open ? <Link className="tlink" to={open(r.no)} aria-label={`افتح الدفعة ${r.no}`}>الدفعة <Num>{r.no}</Num></Link> : <Num>{r.no}</Num>}</td>
 
                 <td className="n">
                   {edit ? (
