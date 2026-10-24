@@ -3,8 +3,10 @@ import { suggestNext } from '@/data/shared/agent'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  BackTo, Blockers, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Person, Riyal, Tag, icons,
+  BackTo, Blockers, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Person, Riyal, StepArc, Tag, icons,
+  type GateStep,
 } from '@/components/ui'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -15,12 +17,12 @@ import {
 } from '@/data/mock/budgetTree'
 import { meOf, readRole } from '@/data/roles'
 import {
-  REQ_KIND_SAY, REQ_STATE_SAY, decideRequest, docOf, freeOf, liveBudgets, mayAct, nextReqId,
+  REQ_KIND_SAY, REQ_STATE_SAY, decideRequest, docOf, financeDecides, freeOf, liveBudgets, mayAct, nextReqId,
   reqById, reqIssues, reqTone, saveRequest, sourceName, stepOf, useBudget, whoActs,
   type BudgetRequest, type ReqKind,
 } from '@/data/budget/store'
-import { BUDGET_RULES } from '@/data/budget/rules'
-import { FlowSteps, History, NoteModal } from './doc/DocFlow'
+import { BUDGET_RULES, noReviewStep } from '@/data/budget/rules'
+import { History, NoteModal } from './doc/DocFlow'
 
 /* A budget operation request (1.3) · transfer between two lines of one budget, an increase, or a
    decrease · prepared, then the grants manager, finance and the executive director in turn.
@@ -44,6 +46,43 @@ const STEP_SAY = {
   finance: { ok: 'وافق وأحِل إلى المدير التنفيذي', back: 'أعد إلى المُعِدّ' },
   exec: { ok: 'اعتمد ونفّذ', back: 'أعد إلى الإدارة المالية' },
 } as const
+/* Client 24 Oct (#87) · finance holds the final word up to its amount · its approve executes */
+const okSay = (step: keyof typeof STEP_SAY, amount: number): string =>
+  step === 'finance' && financeDecides(amount) ? 'اعتمد ونفّذ' : STEP_SAY[step].ok
+
+/* Client 24 Oct (#87) · a budget operation reads its approvals like every other procedure · the same
+   arc (StepArc) the project, the payment, the agreement and the plan carry · the preparer, the first
+   review when settings name one, finance, and the executive director unless finance decides the
+   amount · each sector names the step, hovering reads who did it and when (from the request's log) */
+type Stage = 'prepare' | 'manager' | 'finance' | 'exec'
+const STAGE_OF: Partial<Record<BudgetRequest['state'], Stage>> = {
+  draft: 'prepare', returned: 'prepare', submitted: 'manager', finance: 'finance', exec: 'exec',
+}
+function ladderFor(r: Pick<BudgetRequest, 'state' | 'amount' | 'events' | 'by'>): GateStep[] {
+  const stages: Stage[] = ['prepare', ...(noReviewStep() ? [] : ['manager' as const]), 'finance', ...(financeDecides(r.amount) ? [] : ['exec' as const])]
+  const raw = STAGE_OF[r.state]
+  const now = raw === 'manager' && noReviewStep() ? 'finance' : raw
+  const nowAt = r.state === 'executed' ? stages.length : r.state === 'rejected' ? -1 : stages.indexOf(now ?? 'prepare')
+  const say: Record<Stage, { label: string; cap: string }> = {
+    prepare: { label: 'المُعِدّ', cap: 'الإعداد والإرسال' },
+    manager: { label: whoActs('submitted') || 'صاحب الصلاحية', cap: 'المراجعة' },
+    finance: { label: 'الإدارة المالية', cap: financeDecides(r.amount) ? 'الاعتماد والتنفيذ' : 'المراجعة المالية' },
+    exec: { label: whoActs('exec') || 'المدير التنفيذي', cap: 'الاعتماد والتنفيذ' },
+  }
+  const steps = stages.map((st, i): GateStep => {
+    const state: GateStep['state'] = r.state === 'rejected' ? (i === 0 ? 'done' : 'pending') : i === nowAt ? 'now' : i < nowAt ? 'done' : 'pending'
+    const ev = r.events.find((e) => (st === 'prepare' ? /أُرسل|أُنشئ/ : st === 'finance' ? /الإدارة المالية/ : st === 'exec' ? /اعتمده/ : /وافق|أعاده/).test(e.text))
+    return {
+      label: say[st].label, cap: say[st].cap, state,
+      lines: state === 'done' && ev ? [<><Person name={ev.by} /> · <DateText>{ev.at.slice(0, 10)}</DateText></>, isolate(ev.text)]
+        : state === 'now' ? [st === 'prepare' ? <>بيد <Person name={r.by} /></> : 'ينتظر قرار هذه المرحلة']
+          : ['تبدأ بعد اكتمال المرحلة السابقة'],
+      src: state === 'pending' ? 'المصدر: مسار اعتماد العمليات · إعدادات الميزانية' : 'المصدر: سجل الطلب',
+    }
+  })
+  if (r.state === 'rejected') steps.push({ label: 'مرفوض', title: 'مرفوض · أُغلق الطلب', cap: 'رفض', state: 'now', lines: ['يبقى في السجل للاطلاع'] })
+  return steps
+}
 
 const digits = (v: string) => Number(v.replace(/[^\d]/g, '')) || 0
 
@@ -53,6 +92,7 @@ export default function BudgetOpPage() {
   const { id } = useParams()
   const [q] = useSearchParams()
   const navigate = useNavigate()
+  const mobile = useIsMobile()
   useBudget()
   const role = readRole()
   const me = meOf(role)
@@ -132,7 +172,7 @@ export default function BudgetOpPage() {
   const title = existing ? `${REQ_KIND_SAY[existing.kind]} · ${existing.id}` : 'طلب عملية ميزانية'
   /* 17 Oct · the assistant suggests · the request's own issues decide at each approval step · a rejection stays human */
   type OpAct = { label: string; kind: string; d: 'ok' | 'back' }
-  const nextPlan = suggestNext<OpAct>(myStep && existing ? [{ label: STEP_SAY[myStep].ok, kind: 'btn-p', d: 'ok' }, { label: STEP_SAY[myStep].back, kind: 'btn-2', d: 'back' }] : [], {
+  const nextPlan = suggestNext<OpAct>(myStep && existing ? [{ label: okSay(myStep, existing.amount), kind: 'btn-p', d: 'ok' }, { label: STEP_SAY[myStep].back, kind: 'btn-2', d: 'back' }] : [], {
     issues,
     good: [`${REQ_KIND_SAY[r.kind]} بمبلغ ${nf.format(r.amount)} · فحوص الطلب سليمة`],
   })
@@ -143,12 +183,35 @@ export default function BudgetOpPage() {
       <div className="viewstack hasdock">
         <div className="screen col hasg2">
           <BackTo label="طلبات العمليات" onClick={() => navigate(ROUTES.budgetOps)} />
-          <header>
-            <div>
-              <h1 className="ptitle">{title}</h1>
-              <p className="sub mt-1">مناقلة أو تعزيز أو تخفيض على ميزانية معتمدة · يُعتمد بمسار الميزانية نفسه ويُنفَّذ آليًا عند الاعتماد النهائي</p>
+          {/* Client 24 Oct (#87) · the two-column header of every procedure · name and amount opposite
+              the approval arc */}
+          <header className="phead">
+            <div className="pmain">
+              <div className="ehead-t">
+                <h1 className="ptitle">{title}</h1>
+                {existing && <span className="ehead-st"><Tag tone={reqTone(existing.state)}>{REQ_STATE_SAY[existing.state]}</Tag></span>}
+              </div>
+              <p className="sub mt-1">
+                {doc ? <>{docTitle(doc)} · </> : null}
+                مناقلة أو تعزيز أو تخفيض على ميزانية معتمدة · يُنفَّذ آليًا عند الاعتماد النهائي
+              </p>
+              {r.amount > 0 && (
+                <div className="pamt">
+                  <div className="lb">مبلغ العملية</div>
+                  <div className="v"><Money sm>{r.amount}</Money></div>
+                  <div className="sub">{financeDecides(r.amount) ? <>ضمن صلاحية الإدارة المالية · حتى <Money sm>{BUDGET_RULES.opFinanceUpTo}</Money></> : 'يعتمده المدير التنفيذي بعد الإدارة المالية'}</div>
+                </div>
+              )}
             </div>
-            {existing && <Tag tone={reqTone(existing.state)}>{REQ_STATE_SAY[existing.state]}</Tag>}
+            <div className="pgates">
+              <StepArc
+                steps={ladderFor({ state: existing?.state ?? 'draft', amount: r.amount, events: existing?.events ?? [], by: existing?.by ?? me })}
+                compact={mobile}
+                aria="مسار اعتماد عملية الميزانية"
+                holderKey={existing?.state === 'executed' ? 'نُفِّذ' : existing?.state === 'rejected' ? 'مرفوض' : 'صاحب القرار الآن'}
+                holder={existing?.state === 'executed' ? 'اكتمل المسار' : existing?.state === 'rejected' ? 'أُغلق الطلب' : existing ? whoActs(existing.state) || 'المُعِدّ' : 'المُعِدّ'}
+              />
+            </div>
           </header>
 
 
@@ -298,9 +361,7 @@ export default function BudgetOpPage() {
               )}
               {existing && (
                 <Glass>
-                  <Head title="مسار الاعتماد" meta={<Tag tone={reqTone(existing.state)}>{REQ_STATE_SAY[existing.state]}</Tag>} />
-                  <FlowSteps state={existing.state} last="التنفيذ" />
-                  <h3 className="stdy-h mt-3">السجل</h3>
+                  <Head title="سجل الطلب" meta={<span className="sub">كل إجراء بصاحبه ووقته وسببه</span>} />
                   <History events={existing.events} />
                 </Glass>
               )}
@@ -321,7 +382,7 @@ export default function BudgetOpPage() {
             <div className="rowf gp-3 payact-w">
               <span className="decsent">
                 {editable ? (issues.length ? <>{issues.length} ملاحظة قبل الإرسال</> : <>جاهز · <Money>{f.amount}</Money></>)
-                  : myStep ? <>بانتظار قرارك · <b>{STEP_SAY[myStep].ok}</b></>
+                  : myStep && existing ? <>بانتظار قرارك · <b>{okSay(myStep, existing.amount)}</b></>
                     : existing?.state === 'executed' ? 'نُفِّذ · انعكس على أرصدة البنود وسجل الحركات'
                       : existing ? <>بانتظار <b>{whoActs(existing.state) || 'المُعِدّ'}</b></> : null}
               </span>
@@ -335,7 +396,7 @@ export default function BudgetOpPage() {
               )}
               {myStep && existing && (
                 <>
-                  <button className="btn btn-p" disabled={execBlocked.length > 0} title={execBlocked[0]} onClick={() => setDecide('ok')}>{STEP_SAY[myStep].ok}</button>
+                  <button className="btn btn-p" disabled={execBlocked.length > 0} title={execBlocked[0]} onClick={() => setDecide('ok')}>{okSay(myStep, existing.amount)}</button>
                   <button className="btn btn-2" onClick={() => setDecide('back')}>{STEP_SAY[myStep].back}</button>
                   <button className="btn btn-d" onClick={() => setDecide('reject')}>ارفض الطلب</button>
                 </>
@@ -350,11 +411,12 @@ export default function BudgetOpPage() {
 
       {decide && myStep && existing && (
         <NoteModal
-          title={`${decide === 'reject' ? 'ارفض الطلب' : STEP_SAY[myStep][decide]} · ${existing.id}`}
-          cta={decide === 'reject' ? 'ارفض الطلب' : STEP_SAY[myStep][decide]}
+          title={`${decide === 'reject' ? 'ارفض الطلب' : decide === 'ok' ? okSay(myStep, existing.amount) : STEP_SAY[myStep].back} · ${existing.id}`}
+          cta={decide === 'reject' ? 'ارفض الطلب' : decide === 'ok' ? okSay(myStep, existing.amount) : STEP_SAY[myStep].back}
+          reasons={decide === 'reject' ? BUDGET_RULES.opRejectReasons : decide === 'back' ? BUDGET_RULES.opReturnReasons : undefined}
           tone={decide === 'ok' ? 'btn-p' : decide === 'reject' ? 'btn-d' : 'btn-2'}
           required={decide !== 'ok'}
-          hint={decide === 'ok' && myStep === 'exec' ? 'الاعتماد النهائي ينفّذ العملية آليًا ويحدّث أرصدة البنود المتأثرة.' : undefined}
+          hint={decide === 'ok' && (myStep === 'exec' || (myStep === 'finance' && financeDecides(existing.amount))) ? 'الاعتماد النهائي ينفّذ العملية آليًا ويحدّث أرصدة البنود المتأثرة.' : undefined}
           onClose={() => setDecide(null)}
           onDone={(note) => decideRequest(existing.id, decide === 'ok' ? 'approve' : decide === 'back' ? 'return' : 'reject', note, me)}
         />

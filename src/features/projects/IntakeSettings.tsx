@@ -25,7 +25,7 @@ import { resetIntake } from '@/data/intake/flow'
      «المستشارون»        consultants, their domains and access window, and the wait-for-opinion rule
      «الجهات المقترحة»   the outreach register for the grant year */
 
-const DIST: Distribution[] = ['manual', 'even', 'load', 'specialty']
+const DIST: Distribution[] = ['fixed', 'manual', 'even', 'load', 'specialty']
 const inStudy = (field: string) => projectRows.filter((p) => p.field === field && p.statusGroup === 'قيد الدراسة').length
 
 /* ═══ Cycle ═══ */
@@ -117,6 +117,7 @@ export function CycleTab() {
               <th><span className="th-t">المجال</span></th>
               <th><span className="th-t">المشرفون</span></th>
               <th><span className="th-t">التوزيع</span></th>
+              <th><span className="th-t">يُسند الطلب الجديد إلى</span></th>
               <th><span className="th-t">مفتوح للتقديم</span></th>
               <th className="n"><span className="th-t">في الدراسة الآن</span></th>
             </tr>
@@ -227,7 +228,7 @@ function DomainGroup({ track, fields, d, patch }: {
 }) {
   return (
     <>
-      <tr className="itk-track"><td colSpan={5}><b>{track}</b></td></tr>
+      <tr className="itk-track"><td colSpan={6}><b>{track}</b></td></tr>
       {fields.map((f) => {
         const dm = d.domains[f] ?? { supervisors: [], distribution: 'manual' as Distribution, open: false }
         const none = dm.supervisors.length === 0
@@ -251,8 +252,23 @@ function DomainGroup({ track, fields, d, patch }: {
                 value={dm.distribution}
                 label={`توزيع ${f}`}
                 options={DIST.map((k) => ({ value: k, label: DISTRIBUTION_LABEL[k] }))}
-                onChange={(v) => patch((x) => { x.domains[f] = { ...x.domains[f]!, distribution: v as Distribution } })}
+                onChange={(v) => patch((x) => { x.domains[f] = { ...x.domains[f]!, distribution: v as Distribution, lead: x.domains[f]!.lead ?? x.domains[f]!.supervisors[0] } })}
               />
+            </td>
+            {/* Client sheet 24 Oct (#89) · who a new request lands on · the named supervisor under the
+                «fixed» rule (picked here among the domain's supervisors), the rule's pick otherwise */}
+            <td>
+              {none ? <span className="sub">بلا مشرف</span>
+                : dm.distribution === 'fixed' ? (
+                  <FieldSelect
+                    value={dm.lead && dm.supervisors.includes(dm.lead) ? dm.lead : dm.supervisors[0]!}
+                    label={`المشرف المحدّد لـ${f}`}
+                    options={dm.supervisors}
+                    onChange={(v) => patch((x) => { x.domains[f] = { ...x.domains[f]!, lead: v } })}
+                  />
+                ) : dm.distribution === 'manual'
+                  ? (dm.supervisors.length === 1 ? <Person name={dm.supervisors[0]!} /> : <span className="sub">يُسنده مدير المنح</span>)
+                  : <span className="sub">{dm.supervisors.length === 1 ? <Person name={dm.supervisors[0]!} /> : <>أحد <Num>{dm.supervisors.length}</Num> مشرفين بالقاعدة</>}</span>}
             </td>
             <td>
               <Switch

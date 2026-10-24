@@ -93,7 +93,7 @@ export function DataTab({
 
       {/* Re-audit 17 Oct · a project without stages (the simplified external form) shows none */}
       {P.phases.length > 0 && <Glass>
-        <Head title="مراحل التنفيذ" meta={`${countOf(P.phases.length, NOUN.phase)} · 11 شهرًا`} />
+        <Head title="مراحل التنفيذ" meta={countOf(P.phases.length, NOUN.phase)} />
         <Timeline
           events={P.phases.map((ph) => ({
             tone: ph.tone,

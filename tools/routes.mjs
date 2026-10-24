@@ -152,7 +152,7 @@ export const ROUTES = [
   '/agreements/new', '/agreements/new?project=20852&tab=form',
   '/agreements/new?project=20852&tab=sched',
   '/agreements/new?project=21047&tab=terms', '/agreements/new?project=21047&tab=text', '/agreements/new?project=21048&tab=form',
-  '/agreements/AG-2026-3101?as=entity', '/projects/21047/agreement',
+  '/agreements/AG-2026-3101?as=entity', '/projects/21047/agreement', '/projects/21047/funding',
   /* الخطط · BPD-012 · والأربعة دول حالات مختلفة فعلًا لا نسخ:
      واحدة قيد التنفيذ فيها طابور مراجعة، وواحدة متأخّرة ومعاها
      طلب تعديل معتمد، وواحدة في دورة الاعتماد، وواحدة مُعادة */

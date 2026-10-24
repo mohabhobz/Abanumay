@@ -9,6 +9,8 @@ import {
 import { stuckActivities } from '@/data/plans/store'
 import type { PlanRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { OUTCOME_SAY, planOutcome } from '@/data/shared/outcome'
 
 /* Plans inbox columns - same contract as projects, agreements, and disbursement.
 
@@ -56,6 +58,15 @@ export const COLS: Col[] = [
     def: true,
     cell: (p) => <Tag tone={PLAN_TONE[p.stage]}>{planStageLabel(p.stage)}</Tag>,
     text: (p) => planStageLabel(p.stage),
+  },
+  /* Client sheet 24 Oct (#95) · the procedure's outcome · مكتمل / مرفوض / ملغي, empty while under way ·
+     offered in the column picker */
+  {
+    key: 'outcome',
+    w: 104,
+    label: 'النتيجة',
+    cell: (p) => <OutcomeTag outcome={planOutcome(p.stage)} />,
+    text: (p) => { const o = planOutcome(p.stage); return o ? OUTCOME_SAY[o] : '' },
   },
   {
     key: 'done',

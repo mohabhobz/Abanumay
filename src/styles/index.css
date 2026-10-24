@@ -7771,6 +7771,13 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 .cfglist li>.fsel,.cfglist li>*>.fsel{min-inline-size:calc(var(--sp-12) * 2.8)}
 /* 12 Oct · audit UI-092 · in a list where rows carry a field, a row without one keeps the same height */
 .cfglist:has(li .fld) li{min-block-size:calc(var(--h-md) + var(--sp-4) * 2)}
+/* Client 24 Oct (#82 – #84) · «خيارات الاعتماد» · an option's editor sits under its row · its fields and
+   its button on one line, aligned on their bottom edge (the fields carry labels) */
+.cfglist li.aopt-ed{align-items:flex-end;flex-wrap:wrap;gap:var(--sp-3) var(--sp-4)}
+.cfglist li.aopt-ed>.regf{flex:1 1 calc(var(--sp-12) * 3);margin:0}
+.cfglist li.aopt-ed>.cfgl{flex:1 0 100%}
+.cfglist li.aopt-ed>.regf:not(.regf-w){flex:0 1 calc(var(--sp-12) * 3)}
+.cfglist li>.cfgchips{flex:none}
 /* 12 Oct · audit P12 (UI-073 · UI-136) · a switch beside a list of framed rows is one more row of
    that list: unframed, its label sat 16px out from theirs and its toggle 16px past their fields. */
 .glass>.cfglist~.swrow,.glass>.swrow:has(~.cfglist){--h-exempt:"A framed switch row is a row of the settings list beside it, not a toolbar control";padding:var(--pad-in);border-radius:var(--r1);

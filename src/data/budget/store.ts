@@ -338,6 +338,8 @@ const STEP_ROLES = (s: Step): RoleKey[] =>
 export const mayAct = (s: Step, role: RoleKey): boolean => STEP_ROLES(s).includes(role)
 export const stepOf = (s: BudgetState | ReqState): Step | null =>
   s === 'draft' || s === 'returned' ? 'prepare' : s === 'submitted' ? (noReviewStep() ? 'finance' : 'manager') : s === 'finance' ? 'finance' : s === 'exec' ? 'exec' : null
+/** Client 24 Oct (#87) · finance holds the final word on an operation up to this amount */
+export const financeDecides = (amount: number): boolean => BUDGET_RULES.opFinanceUpTo > 0 && amount <= BUDGET_RULES.opFinanceUpTo
 export const whoActs = (s: BudgetState | ReqState): string => {
   const st = stepOf(s)
   return st ? STEP_ROLES(st).map((k) => (st === 'finance' ? 'الإدارة المالية' : roleByKey(k).title)).filter((x, i, a) => a.indexOf(x) === i).join(' أو ') : ''
@@ -446,6 +448,47 @@ export function fundedLines(yearName = TODAY.slice(0, 4)): { fields: Set<string>
     }
   }
   return { fields, goals }
+}
+
+/* Client 24 Oct (#86 · «للمناقشة» · a first version) · the portal's support options follow the budget.
+   For a domain, or a goal under it, the allocation and the available balance of this year's approved
+   budgets · a choice with nothing available is offered disabled with its reason, and one nearly spent
+   carries a hint. Off in budget settings, every option stays open. */
+export interface SupportAvailability {
+  ok: boolean
+  /** Why the option is closed · empty when it's open */
+  reason: string
+  /** A note on an open option · empty when there's nothing to say */
+  hint: string
+  allocated: number
+  available: number
+}
+
+export function supportAvailability(field: string, goal?: string, yearName = TODAY.slice(0, 4)): SupportAvailability {
+  const open: SupportAvailability = { ok: true, reason: '', hint: '', allocated: 0, available: 0 }
+  if (!BUDGET_RULES.portalLink) return open
+  let allocated = 0
+  let available = 0
+  let seen = false
+  for (const d of liveBudgets()) {
+    if (yearById(d.yearId)?.name !== yearName) continue
+    for (const n of d.nodes) {
+      if (n.parentId === null || !lineUsable(d.nodes, n.id)) continue
+      const up = d.nodes.find((x) => x.id === n.parentId)
+      const hit = goal ? n.kind === 'sub' && up?.label === field && n.label === goal : n.kind === 'main' && n.label === field
+      if (!hit) continue
+      seen = true
+      const m = moneyOf(d.nodes, n.id)
+      allocated += m.allocated
+      available += m.available
+    }
+  }
+  /* a goal the budget tree doesn't carry under its domain reads by its domain */
+  if (goal && !seen) return supportAvailability(field, undefined, yearName)
+  if (!seen || allocated <= 0) return { ok: false, reason: `لا مخصص في ميزانية ${yearName} المعتمدة`, hint: '', allocated, available }
+  if (available <= 0) return { ok: false, reason: `استُنفد مخصص ${yearName}`, hint: '', allocated, available }
+  const low = available / allocated * 100 < BUDGET_RULES.lowFundPct
+  return { ok: true, reason: '', hint: low ? `المتاح قليل · ${nf.format(available)} من ${nf.format(allocated)}` : '', allocated, available }
 }
 
 setFundingGate({
@@ -1230,7 +1273,10 @@ const apply = (o: Op) => {
       const next: Partial<Record<ReqState, ReqState>> = o.outcome === 'approve'
         ? { submitted: noReviewStep() ? 'exec' : 'finance', finance: 'exec', exec: 'executed' }
         : { submitted: 'returned', finance: (o.v ?? 1) >= 2 || noReviewStep() ? 'returned' : 'submitted', exec: 'finance' }
-      const to = next[from]
+      /* Client 24 Oct (#87) · the one approval way · finance decides on its own up to the amount
+         settings give it, and the request executes there · above it the executive director decides */
+      const atFinance = from === 'finance' || (from === 'submitted' && noReviewStep())
+      const to = o.outcome === 'approve' && atFinance && financeDecides(r.amount) ? 'executed' : next[from]
       if (!to) return
       const w = o.who ?? whoNow()
       if (to === 'executed' && reqIssues(r).length) return
@@ -1241,6 +1287,8 @@ const apply = (o: Op) => {
         'submitted>exec': `وافقت الإدارة المالية وأحالته إلى ${w.ex}`,
         'finance>exec': `وافقت الإدارة المالية وأحالته إلى ${w.ex}`,
         'exec>executed': `اعتمده ${w.ex} ونُفِّذ آليًا`,
+        'finance>executed': 'اعتمدته الإدارة المالية ضمن صلاحيتها ونُفِّذ آليًا',
+        'submitted>executed': 'اعتمدته الإدارة المالية ضمن صلاحيتها ونُفِّذ آليًا',
         'submitted>returned': `أعاده ${w.rv} إلى مُعِدّه`,
         'finance>returned': 'أعادته الإدارة المالية إلى مُعِدّه',
         'finance>submitted': `أعادته الإدارة المالية إلى ${w.rv}`,

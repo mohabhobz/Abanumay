@@ -413,7 +413,22 @@ function RulesTab() {
             <span className="pc-sp" />
             <CfgNum value={d.attachAbove} label="مبلغ المرفق الإلزامي" suffix="ريال" onChange={(n) => put('attachAbove', n)} />
           </li>
+          {/* Client 24 Oct (#87) · the operation's approval by amount, as every approval in the system */}
+          <li className="itk-sup">
+            <span className="cfgl"><b>تعتمد الإدارة المالية وتنفّذ حتى مبلغ</b><span className="sub">فوقه يعتمده المدير التنفيذي بعدها · «0» = كل الطلبات للمدير التنفيذي</span></span>
+            <span className="pc-sp" />
+            <CfgNum value={d.opFinanceUpTo} label="حد اعتماد الإدارة المالية للعمليات" suffix="ريال" onChange={(n) => put('opFinanceUpTo', n)} />
+          </li>
         </ul>
+      </Glass>
+
+      {/* Client 24 Oct (#87) · a returned or rejected operation picks its reason, as the other approvals do */}
+      <Glass>
+        <Head title="أسباب إعادة العمليات ورفضها" meta={<span className="sub">ومعها «أخرى» بنص · تُسجَّل في سجل الطلب</span>} />
+        <div className="g2 gp-4">
+          <ReasonList title="أسباب الإعادة للمُعِدّ" list={d.opReturnReasons} onChange={(x) => put('opReturnReasons', x)} />
+          <ReasonList title="أسباب الرفض" list={d.opRejectReasons} onChange={(x) => put('opRejectReasons', x)} />
+        </div>
       </Glass>
 
       <Glass>
@@ -452,6 +467,22 @@ function RulesTab() {
           on={d.requireFunding}
           onChange={(x) => put('requireFunding', x)}
         />
+        {/* Client 24 Oct (#86) · the portal's support options follow the budget's balances */}
+        <Switch
+          label="ربط خيارات الدعم في البوابة بالميزانية"
+          note="يرى مقدّم الطلب المجال أو الهدف الذي لا متاح له في ميزانية السنة معطّلًا مع سببه · والهدف القريب من النفاد عليه تنبيه"
+          on={d.portalLink}
+          onChange={(x) => put('portalLink', x)}
+        />
+        {d.portalLink && (
+          <ul className="cfglist mt-3">
+            <li className="itk-sup">
+              <span className="cfgl"><b>تنبيه «المتاح قليل» تحت</b><span className="sub">من مخصص الهدف المتبقي متاحًا</span></span>
+              <span className="pc-sp" />
+              <CfgNum value={d.lowFundPct} min={0} label="نسبة تنبيه المتاح القليل" suffix="بالمئة" onChange={(n) => put('lowFundPct', Math.min(100, n))} />
+            </li>
+          </ul>
+        )}
       </Glass>
 
       <Glass>
@@ -469,5 +500,30 @@ function RulesTab() {
         />
       )}
     </>
+  )
+}
+
+/* Client 24 Oct (#87) · one editable reason list · add, rename, remove · «أخرى» is always offered
+   beside them in the decision, so it isn't a list item */
+function ReasonList({ title, list, onChange }: { title: string; list: string[]; onChange: (x: string[]) => void }) {
+  const [add, setAdd] = useState('')
+  return (
+    <div className="col">
+      <h3 className="stdy-h">{title} <span className="sub">· <Num>{list.length}</Num></span></h3>
+      <ul className="cfglist">
+        {list.map((r, i) => (
+          <li key={i}>
+            <span className="fld"><input value={r} aria-label={`${title} ${i + 1}`} onChange={(e) => onChange(list.map((y, j) => (j === i ? e.target.value : y)))} /></span>
+            <span className="pc-sp" />
+            <button type="button" className="btn btn-2 btn-sm" disabled={list.length <= 1} onClick={() => onChange(list.filter((_, j) => j !== i))}>احذف</button>
+          </li>
+        ))}
+        <li>
+          <span className="fld"><input value={add} aria-label={`${title} · سبب جديد`} placeholder="سبب جديد" onChange={(e) => setAdd(e.target.value)} /></span>
+          <span className="pc-sp" />
+          <button type="button" className="btn btn-2 btn-sm" disabled={!add.trim() || list.includes(add.trim())} onClick={() => { onChange([...list, add.trim()]); setAdd('') }}>أضف</button>
+        </li>
+      </ul>
+    </div>
   )
 }

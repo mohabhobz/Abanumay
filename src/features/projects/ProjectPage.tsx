@@ -10,7 +10,7 @@ import { RelinkEntityButton, RelinkHistory } from '@/features/entities/RelinkEnt
 import { relinksOf, useEntityFlow } from '@/data/entities/store'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useFillHeight } from '@/hooks/useFillHeight'
-import { addDays, projectCode } from '@/lib/format'
+import { addDays, projectCode, readDate } from '@/lib/format'
 import { fixtures } from '@/data/repository'
 import { useRole } from '@/hooks/useRole'
 import { projectById } from '@/data/mock/projects'
@@ -45,6 +45,7 @@ import { planDecisionEvents, planDecisionOf, usePlans } from '@/data/plans/store
 import { PlanDecisionCard } from '@/features/plans/PlanDecisionCard'
 import { journeys } from '@/data/journey'
 import { BudgetLinkAction } from '@/features/budget/BudgetLink'
+import { FundingTab } from './tabs/FundingTab'
 import { useBudget } from '@/data/budget/store'
 import { scheduleOf, usePayments } from '@/data/payments/store'
 import { PAY_SLOT_SAY, payRequestById } from '@/data/mock/disbursements'
@@ -52,7 +53,7 @@ import type { PaymentDetail } from '@/data/mock/detail'
 import { authorityFor, holderOf } from '@/data/holders'
 import { APPROVAL_MATRIX } from '@/data/approval'
 import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, supportAmount, useApprovals } from '@/data/approvals/store'
-import { flowEvents, flowOf, recommend, requestCompletion, saveStudy, useFlow, orgOutputsOf, outputLine } from '@/data/intake/flow'
+import { flowEvents, flowOf, recommend, requestCompletion, saveStudy, useFlow, orgOutputsOf, outputLine, stagesOf } from '@/data/intake/flow'
 import { RecommendationCard, RequestCloseCard, RequestDocsCard, RequestMetaCard } from './tabs/RequestCards'
 import { StudyTab } from './tabs'
 import { ApprovalTab, OfficialNotes } from './tabs/ApprovalTab'
@@ -98,6 +99,14 @@ function ownContent(id: string): Partial<typeof fixtures.project> {
     out.outputs = org.length ? org.map(outputLine) : []
     out.rationale = []
     out.phases = []
+  }
+  /* Client sheet 24 Oct (#92) · the stages the request carries · the approved plan replaces them below */
+  const asked = stagesOf(sent?.stages)
+  if (asked.length) {
+    out.phases = asked.map((x, i) => ({
+      name: x.name, tasks: x.desc || '—', months: `${readDate(x.from)} – ${readDate(x.to)}`,
+      tone: i === asked.length - 1 ? 'mute' : i < 2 ? 'teal' : 'lime',
+    })) as typeof fixtures.project.phases
   }
   if (plan?.phases.length) {
     out.phases = plan.phases.map((ph, i) => ({
@@ -243,7 +252,7 @@ export default function ProjectPage() {
 
   /* The entity's view never shows the supervisor's study (3.4.32) · its tab is dropped, and the
      view is kept across tab changes */
-  const tabs = asEntity ? PROJECT_TABS.filter((t) => t.slug !== 'study' && t.slug !== 'approval') : PROJECT_TABS
+  const tabs = asEntity ? PROJECT_TABS.filter((t) => t.slug !== 'study' && t.slug !== 'approval' && t.slug !== 'funding') : PROJECT_TABS
   const active: ProjectTabSlug =
     tabs.find((t) => t.slug === tab)?.slug ?? DEFAULT_PROJECT_TAB
 
@@ -483,6 +492,7 @@ export default function ProjectPage() {
               {/* 12.2.2 · the plan decision is part of the project's data */}
               {/* Meeting 20 Oct · the work-plan card lives in the plan tab alone */}
               {active === 'approval' && row && <ApprovalTab row={row} />}
+              {active === 'funding' && row && <FundingTab row={row} />}
               {active === 'data' && row && asEntity && appFlowOf(row.id).official.length > 0 && (
                 <OfficialNotes notes={appFlowOf(row.id).official} />
               )}

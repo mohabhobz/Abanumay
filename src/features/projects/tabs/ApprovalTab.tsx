@@ -17,7 +17,6 @@ import { HOLD_STAGE_SAY, planOf, shareSay } from '@/data/budget/store'
 import { yearById } from '@/data/mock/budgetTree'
 import { closeRows } from '@/data/mock/closing'
 import { projectRows } from '@/data/mock/projects'
-import { FundingCard } from '@/features/funding/FundingCard'
 import { meOf, readRole } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import {
@@ -27,6 +26,7 @@ import {
   type Opinion, finPosition, supportAmount,
 } from '@/data/approvals/store'
 import { AmountCard, FinKV } from '@/features/approvals/AmountCard'
+import { ApprovalOptions } from '@/features/approvals/ApprovalOptions'
 import { CONSULTANTS, consultantsFor } from '@/data/intake/consultants'
 import { referConsultant } from '@/data/intake/flow'
 import { FieldSelect } from '@/components/ui'
@@ -133,6 +133,8 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           { k: 'حد المدير التنفيذي بالتجاوز المسموح', v: <><Num>{levelCap('exec')}</Num> <span className="sub">({pct(APPROVAL_RULES.execOverPct)})</span></> },
           { k: 'الحجز', v: <>{/* Re-audit 17 Oct · one source · the budget link (or the multi-year plan), never the path's own flag */ hold ? HOLD_STAGE_SAY[hold.link.stage] : fplan ? (f.hold === 'none' ? 'لا حجز' : 'على خطة التمويل متعددة السنوات') : 'لا حجز · لا ارتباط بالميزانية بعد'}{hold?.node && <span className="sub"> · {hold.link.shares.length > 1 ? `${nf.format(hold.link.shares.length)} بنود` : hold.node.label} · <Money sm>{hold.link.amount}</Money></span>}</> },
           ...(f.needsPlan !== undefined ? [{ k: 'الخطة', v: f.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة' }] : [{ k: 'الخطة', v: <span className="sub">{planSuggested(row) ? 'مقترح: يتطلب خطة (وفق القاعدة)' : 'مقترح: لا يتطلب خطة'}</span> }]),
+          ...(f.source ? [{ k: 'مصدر التمويل', v: <>{f.source.name} <span className="sub">· <Person name={f.source.by} /></span></> }] : []),
+          ...(f.levelNotes?.length ? [{ k: 'ملاحظات مستويات الاعتماد', v: <span className="sub">{f.levelNotes.map((n) => `${HOLDER_LABEL[n.level]}: ${n.text}`).join(' · ')}</span> }] : []),
           ...(f.decided ? [{ k: 'القرار النهائي', v: <>{HOLDER_LABEL[f.decided.level]} · <Person name={f.decided.by} /> · <DateText>{f.decided.at}</DateText></> }] : []),
           ...(f.awaitingReview ? [{ k: 'بانتظار استكمال المراجعة', v: <span className="bad">{f.awaitingReview.note}</span> }] : []),
         ]} />
@@ -146,7 +148,9 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         <p className="sub cnote">لا يُحذف القرار بعد صدوره · يُعاد فتحه بإجراء رسمي موثّق في السجل.{/* doc 5.4.21 */}</p>
       </Glass>
 
-      <FundingCard row={row} />
+      {/* Client 24 Oct (#82 · #83) · what the seat may change with its decision */}
+      <ApprovalOptions row={row} />
+      {/* Client 24 Oct (#85) · the financial link reads in its own tab «الربط المالي» */}
       <AmountCard row={row} />
 
       <Glass>

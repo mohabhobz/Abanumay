@@ -214,6 +214,8 @@ export const PROJECT_TABS = [
   { slug: 'study', label: 'الدراسة' },
   /* Procedures 4–7 · the decision file on the approval path */
   { slug: 'approval', label: 'الاعتماد' },
+  /* Client 24 Oct (#85) · the project's link to the budget and its standing, its own tab */
+  { slug: 'funding', label: 'الربط المالي' },
   { slug: 'entity', label: 'الجهة' },
   { slug: 'history', label: 'المشاريع السابقة' },
   /* Client 21 Oct (#31) · every document of the project in one place, its own tab */

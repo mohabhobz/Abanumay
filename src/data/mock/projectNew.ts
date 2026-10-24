@@ -8,7 +8,7 @@ import { MONEY_LIMITS, TARGET_GROUPS } from './settings'
 import { entityDetail } from './entityDetail'
 import { NOUN, countOf } from '@/lib/format'
 import { CYCLE, TODAY, calendarDaysBetween, goalFunded, inPeriod, openFields } from '@/data/intake/cycle'
-import { parseOutputs } from '@/data/intake/flow'
+import { parseOutputs, stagesOf } from '@/data/intake/flow'
 import { OPEN } from '@/data/status'
 
 /* Create project · the most important action in the system, and a screen that was entirely missing.
@@ -36,7 +36,7 @@ import { OPEN } from '@/data/status'
    required fields only — otherwise it could reach 70% while every required field is still missing,
    giving a false sense of progress. */
 
-export type FieldKind = 'text' | 'long' | 'num' | 'date' | 'select' | 'multi' | 'outputs' | 'weekdays'
+export type FieldKind = 'text' | 'long' | 'num' | 'date' | 'select' | 'multi' | 'outputs' | 'weekdays' | 'stages'
 
 export interface PFieldDef {
   key: string
@@ -170,6 +170,9 @@ export const P_STAGES: PStageDef[] = [
       /* Client 21 Oct (#28) · the entity gives the start and the end · the duration is the calendar days
          between them, counted by the system · the days of the week are information only */
       { key: 'endAt', label: 'تاريخ انتهاء التنفيذ المتوقع', kind: 'date', req: true, hint: 'المدة تُحسب تلقائيًا من التاريخين · استرشادية للدراسة ولا تُعد خطة معتمدة (3.4.46)' },
+      /* Client sheet 24 Oct (#92) · the execution stages, inside the project's duration · optional, each
+         its name, description and expected start and end */
+      { key: 'stages', label: 'مراحل التنفيذ', kind: 'stages', hint: 'اختياري · لكل مرحلة اسمها ووصفها وتاريخاها داخل مدة المشروع' },
       { key: 'execDays', label: 'أيام التنفيذ من الأسبوع', kind: 'weekdays', hint: 'للعلم فقط · لا تغيّر المدة ولا تاريخ الانتهاء' },
       {
         key: 'multiYear', label: 'يمتد لأكثر من سنة مالية', kind: 'select',
@@ -207,7 +210,9 @@ export type PValues = Record<string, string>
 /** Missing required fields in a station · optional ones don't count */
 /** A field holds a value · an outputs list needs one output with its text */
 export const filled = (f: PFieldDef, v?: string): boolean =>
-  f.kind === 'outputs' ? parseOutputs(v).some((o) => o.text.trim()) : Boolean(v?.trim())
+  f.kind === 'outputs' ? parseOutputs(v).some((o) => o.text.trim())
+    : f.kind === 'stages' ? stagesOf(v).some((x) => x.name.trim())
+      : Boolean(v?.trim())
 
 export const shortIn = (st: PStageDef, val: PValues): string[] =>
   st.fields.filter((f) => f.req && !filled(f, val[f.key])).map((f) => f.label)
@@ -279,6 +284,19 @@ export const projectIssues = (val: PValues): PIssue[] => {
   if (val.startAt && val.endAt && val.endAt < val.startAt) {
     out.push({ key: 'endAt', say: 'تاريخ الانتهاء قبل تاريخ البدء · اختر تاريخًا بعده.', rule: '' })
   }
+
+  /* Client sheet 24 Oct (#92) · each stage named, its end after its start, both inside the project's dates */
+  stagesOf(val.stages).forEach((x, i) => {
+    const n = i + 1
+    const any = x.name.trim() || x.desc.trim() || x.from || x.to
+    if (!any) return
+    if (!x.name.trim()) out.push({ key: `stages-${n}-name`, say: `المرحلة ${n} بلا اسم.`, rule: '' })
+    if (!x.from || !x.to) out.push({ key: `stages-${n}-dates`, say: `حدّد تاريخي بدء المرحلة ${n} وانتهائها.`, rule: '' })
+    else if (x.to < x.from) out.push({ key: `stages-${n}-order`, say: `انتهاء المرحلة ${n} قبل بدئها.`, rule: '' })
+    if ((x.from && val.startAt && x.from < val.startAt) || (x.to && val.endAt && x.to > val.endAt)) {
+      out.push({ key: `stages-${n}-range`, say: `المرحلة ${n} خارج مدة المشروع · من بدء التنفيذ إلى انتهائه.`, rule: '' })
+    }
+  })
 
   const asked = Number(val.amountRequested) || 0
   const reach = Number(val.reach) || 0

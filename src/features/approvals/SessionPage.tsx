@@ -168,6 +168,10 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
   const [plan, setPlan] = useState('')
   const [amt, setAmt] = useState(0)
   const [amtWhy, setAmtWhy] = useState('')
+  /* Client 24 Oct (#84) · the body's options with its decision · the beneficiaries and its notes */
+  const [ben, setBen] = useState(0)
+  const [benWhy, setBenWhy] = useState('')
+  const [extra, setExtra] = useState('')
   const [said, setSaid] = useState<string[]>([])
   /* Batch 8 · the model's summary when the AI service is connected (settings › الذكاء الاصطناعي) */
   const ai = useAi('summary', { projectId: it.projectId, body: s.body }, () => ({ text: '' }))
@@ -191,6 +195,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
   /* v3 · 6.4.4 · 7.4.6 · the body may give payment guidance · the detailed schedule is the agreement's */
   const needsPay = outcome === 'approve' || (outcome === 'refer' && s.body === 'committee')
   const amtMoved = amt > 0 && amt !== amount && (outcome === 'approve' || outcome === 'refer')
+  const benMoved = ben > 0 && ben !== p.beneficiaries && (outcome === 'approve' || outcome === 'refer')
   /* The assistant's executive summary for the members (6.2.3 · 7.2.4) · deterministic from the file */
   /* Batch 7 · approvals#59 · the summary carries the risks and the expected impact */
   const ei = expectedImpact(p)
@@ -287,7 +292,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
         <div className="apv-dec">
           <div className="cfgchips" role="radiogroup" aria-label="القرار">
             {outcomes.map((o) => (
-              <button key={o} type="button" role="radio" aria-checked={outcome === o} className={`cfgchip${outcome === o ? ' on' : ''}`} onClick={() => { setOutcome(o); setAmt(0); setAmtWhy(''); setSaid([]) }}>
+              <button key={o} type="button" role="radio" aria-checked={outcome === o} className={`cfgchip${outcome === o ? ' on' : ''}`} onClick={() => { setOutcome(o); setAmt(0); setAmtWhy(''); setBen(0); setBenWhy(''); setSaid([]) }}>
                 {o === 'refer' && s.body === 'committee' ? 'موافقة وإحالة للمجلس' : OUTCOME_SAY[o]}
               </button>
             ))}
@@ -307,6 +312,16 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
                   <span className="fld"><input value={amtWhy} onChange={(e) => setAmtWhy(e.target.value)} aria-label="مبررات تعديل المبلغ في الجلسة" /></span>
                 </label>
               )}
+              <label className="regf">
+                <span className="lb">عدد المستفيدين المقرر</span>
+                <span className="fld"><input className="num" inputMode="numeric" value={nf.format(ben > 0 ? ben : p.beneficiaries)} aria-label="عدد المستفيدين المقرر" onChange={(e) => setBen(Number(e.target.value.replace(/[^\d]/g, '')) || 0)} /></span>
+              </label>
+              {benMoved && (
+                <label className="regf regf-w">
+                  <span className="lb">مبررات تعديل عدد المستفيدين<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <span className="fld"><input value={benWhy} onChange={(e) => setBenWhy(e.target.value)} aria-label="مبررات تعديل عدد المستفيدين في الجلسة" /></span>
+                </label>
+              )}
             </div>
           )}
           {outcome === 'approve' && amtMoved && fin && decided - amount > fin.maxRaise && <p className="bad cnote">{/* doc 6.4.3 */}المبلغ المقرر يتجاوز الرصيد المتاح · يُحفظ القرار كما صدر ولا يصبح نافذًا ماليًا حتى معالجة التغطية.</p>}
@@ -314,14 +329,19 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
             <label className="regf regf-w"><span className="lb">توجيهات الصرف <span className="sub">اختيارية · الجدول التفصيلي يُعدّ في الاتفاقية</span></span><span className="fld"><input value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="مثال: ربط الدفعة الثانية بالتقرير المرحلي" aria-label="توجيهات الصرف" /></span></label>
           )}
           <label className="regf regf-w">
-            <span className="lb">نص القرار والملاحظات<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <span className="lb">نص القرار<b className="regf-r" aria-label="إلزامي">*</b></span>
             <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="نص القرار" /></span>
+          </label>
+          <label className="regf regf-w">
+            <span className="lb">ملاحظات {HOLDER_LABEL[s.body]} <span className="sub">اختيارية · تُحفظ مع القرار في سجل المشروع</span></span>
+            <span className="fld"><input value={extra} onChange={(e) => setExtra(e.target.value)} aria-label="ملاحظات على القرار" /></span>
           </label>
           {[...why, ...said].length > 0 && <ul className="apv-sig">{[...new Set([...why, ...said])].map((w) => <li key={w} className="no"><Icon name={icons.alert} size="sm" /><span>{w}</span></li>)}</ul>}
           <button
             className={`btn ${outcome === 'reject' ? 'btn-d' : 'btn-p'}`}
-            disabled={!outcome || !note.trim() || why.length > 0 || (amtMoved && !amtWhy.trim())}
-            onClick={() => outcome && setSaid(decideInSession(s.id, p.id, outcome, note.trim(), me, outcome === 'return' ? target : undefined, needsPay && plan.trim() ? { note: plan.trim() } : undefined, amtMoved ? { to: amt, reason: amtWhy.trim() } : undefined))}
+            disabled={!outcome || !note.trim() || why.length > 0 || (amtMoved && !amtWhy.trim()) || (benMoved && !benWhy.trim())}
+            onClick={() => outcome && setSaid(decideInSession(s.id, p.id, outcome, note.trim(), me, outcome === 'return' ? target : undefined, needsPay && plan.trim() ? { note: plan.trim() } : undefined, amtMoved ? { to: amt, reason: amtWhy.trim() } : undefined,
+              { benef: benMoved ? { to: ben, reason: benWhy.trim() } : undefined, note: extra.trim() || undefined }))}
           >
             سجّل قرار {HOLDER_LABEL[s.body]}
           </button>

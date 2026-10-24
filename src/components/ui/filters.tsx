@@ -53,7 +53,8 @@ export function SearchBox({
    `.fsel-b` and `.fmenu`. */
 
 /** List option · plain text, or a value and a title when the title carries a counter */
-export type SelectOption = string | { value: string; label: string }
+/** `off` · a reason the option can't be picked now · it stays listed, disabled, with the reason (client 24 Oct #86) */
+export type SelectOption = string | { value: string; label: string; off?: string }
 
 export const optValue = (o: SelectOption): string => (typeof o === 'string' ? o : o.value)
 export const optLabel = (o: SelectOption): string => (typeof o === 'string' ? o : o.label)

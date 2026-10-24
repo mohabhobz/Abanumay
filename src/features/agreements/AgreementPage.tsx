@@ -30,6 +30,8 @@ import { entityById } from '@/data/mock/entities'
 import { ScheduleEditor, asDraft } from './ScheduleEditor'
 import { AgreementTextCard, AnnexesCard, ClausesCard, IssuesCard, ReviewCard, SignaturesCard, VersionsCard } from './parts'
 import { AssistantAside } from '@/features/shared/AssistantAside'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { agreementOutcome } from '@/data/shared/outcome'
 
 /* A single agreement · every station of the flow on one screen (BPD-008).
 
@@ -221,6 +223,8 @@ function AgreementView({ a }: { a: AgreementRow }) {
 
           <div className="prow">
             <Tag tone={heat === 'ok' ? (a.stage === 'active' ? 'ok' : a.stage === 'returned' ? 'warn' : 'mute') : HEAT_TONE[heat]}>{agrStageSay(a)}</Tag>
+            {/* Client sheet 24 Oct (#95) · the agreement's outcome once its approval ends */}
+            <OutcomeTag outcome={agreementOutcome(a.stage)} />
             {holder && <span className="sub">عند {HOLDER_SAY[holder]} منذ <Num>{days}</Num> {nounAfter(days, NOUN.day)}</span>}
             {a.stage === 'active' && a.activeAt && <span className="sub">فُعّلت في <DateText>{a.activeAt}</DateText></span>}
             <span className="pc-sp" />

@@ -25,6 +25,8 @@ import { duplicates, licenseDup } from '@/data/entities/validate'
 import {
   UPD_STATE_SAY, canDecide, decideUpdate, updById, useEntityFlow,
 } from '@/data/entities/store'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { regOutcome } from '@/data/shared/outcome'
 
 /* Reviewing an entity's update request (2.3.upd-9 – 2.3.upd-13).
 
@@ -120,7 +122,10 @@ export default function UpdateReviewPage() {
               <h1 className="ptitle">{u.entityName}</h1>
               <p className="sub mt-1"><Mono>{u.id}</Mono> · طلب تحديث بيانات · أرسله {u.by}</p>
             </div>
-            <Tag tone="mute">{UPD_STATE_SAY[u.state]}</Tag>
+            {/* Client sheet 24 Oct (#95) · a decided request reads its outcome beside its state */}
+            {regOutcome(u.state)
+              ? <span className="rowf gp-2"><OutcomeTag outcome={regOutcome(u.state)} /><Tag tone="mute">{UPD_STATE_SAY[u.state]}</Tag></span>
+              : <Tag tone="mute">{UPD_STATE_SAY[u.state]}</Tag>}
           </header>
 
           <Tabs items={REQ_TABS} active={tab} onChange={(x) => setQ({ tab: x === 'data' ? undefined : x })} />

@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { DateText, Empty, Glass, Head, Icon, Mono, SearchBox, Select, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import type { ActorKind, LogEvent } from '@/data/mock/log'
+import { HOLDER_LABEL } from '@/data/holders'
+import { person } from '@/data/people'
 
 export interface LogTabProps {
   events: LogEvent[]
@@ -49,6 +51,19 @@ const ACTOR: Record<ActorKind, string> = {
   entity: 'الجهة',
   committee: 'قرار جماعي',
   system: 'النظام',
+}
+
+/* Client sheet 24 Oct (#94) · the level an action was taken at, beside the name, instead of «موظف» ·
+   a live event records its seat as its department (مشرف المنح · مدير المنح · المدير التنفيذي ·
+   اللجنة التنفيذية · مجلس الأمناء), a seeded one is read from the person's title, and the study's own
+   department is the supervisor's · «موظف» stays only for a name with no known level */
+const SEATS = new Set<string>(Object.values(HOLDER_LABEL))
+const DEPT_SEAT: Record<string, string> = { 'دراسة المشروع': HOLDER_LABEL.supervisor, 'اعتماد دراسة المشروع': HOLDER_LABEL.manager }
+const levelOf = (e: LogEvent): string => {
+  if (e.actor === 'committee') return SEATS.has(e.dept) ? e.dept : /مجلس الأمناء/.test(e.by) ? HOLDER_LABEL.board : /اللجنة التنفيذية/.test(e.by) ? HOLDER_LABEL.committee : ACTOR.committee
+  if (e.actor !== 'staff') return ACTOR[e.actor]
+  if (SEATS.has(e.dept)) return e.dept
+  return person(e.by).title ?? DEPT_SEAT[e.dept] ?? ACTOR.staff
 }
 
 /**
@@ -186,7 +201,7 @@ export function LogTab({ events, entityName }: LogTabProps) {
                     <span className={`lgwho k-${e.actor}`}>
                       {e.actor === 'entity' ? entityName : e.by}
                     </span>
-                    <span className="lgkind sub">{e.manual ? 'إدخال يدوي' : ACTOR[e.actor]}</span>
+                    <span className="lgkind sub">{e.manual ? 'إدخال يدوي' : levelOf(e)}</span>
                     {e.source && <span className="lgsrc sub">المصدر: {e.source}</span>}
                     {!e.followUp && !e.manual && (
                       <span className={`lgdur${late ? ' late' : ''}`}>

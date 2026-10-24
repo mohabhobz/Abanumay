@@ -75,6 +75,11 @@ const stagesFor = (partner: PartnerKind | ''): RegStage[] => {
 
 const EMPTY: Record<string, string> = {}
 
+/* Client sheet 24 Oct (#88) · an entity added from inside the system is an implementing partner or
+   an external party · the strategic partner is no longer offered on this form (its stage and the
+   partnership request below stay for the records already registered that way) */
+const ADD_KINDS = DIRECT_KINDS.filter((k) => k.key !== 'strategic')
+
 export default function EntityNewPage() {
   const navigate = useNavigate()
   const { values: v, set } = useQueryParams<Params>(KEYS)
@@ -82,7 +87,7 @@ export default function EntityNewPage() {
   /* Note: type lives in the URL, not in state - and this isn't a code preference. When it was
      `useState`, the selected card's state was unreachable to testing, so every check ran against
      the empty card alone - the same blind spot that pushed the portal form's steps into the URL. */
-  const partner = DIRECT_KINDS.some((k) => k.key === v.kind)
+  const partner = ADD_KINDS.some((k) => k.key === v.kind)
     ? (v.kind as PartnerKind)
     : ''
   const setPartner = (k: PartnerKind) => set({ kind: k })
@@ -252,7 +257,7 @@ export default function EntityNewPage() {
               <h1 className="ptitle">تسجيل جهة مباشرةً</h1>
               <p className="sub mt-1">
                 {/* doc rule 32 */}يسجّل مشرف المنح جهة شريكة
-                دون المرور بالبوابة · منفّذة أو استراتيجية تدير محفظة · وتُنشأ فورًا بلا مراجعة
+                دون المرور بالبوابة · شريك منفّذ أو جهة خارجية · وتُنشأ فورًا بلا مراجعة
               </p>
             </div>
             {/* Note: the "22 missing" tag was removed from the page header - a third count of the
@@ -296,7 +301,7 @@ export default function EntityNewPage() {
                         unlocks is shown at selection time, not after, and stated in text rather
                         than coded into a tag alone. */}
                     <ul className="pkinds">
-                      {DIRECT_KINDS.map((k) => (
+                      {ADD_KINDS.map((k) => (
                         <li key={k.key}>
                           <label className={`pkind${partner === k.key ? ' on' : ''}`}>
                             <input

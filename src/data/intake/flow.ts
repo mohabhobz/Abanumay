@@ -126,6 +126,17 @@ export interface FlowNote { id: string; to: string; title: string; context: stri
 export interface Output { text: string; indicator: string; target: string }
 
 /** The outputs the request carries · a JSON list in the form's value */
+/* Client sheet 24 Oct (#92) · the execution stages the entity gives with its request · each its name,
+   description and expected dates inside the project's duration · kept as sent in the request's values */
+export interface ExecStage { name: string; desc: string; from: string; to: string }
+export const stagesOf = (v?: string): ExecStage[] => {
+  if (!v) return []
+  try {
+    const x = JSON.parse(v) as ExecStage[]
+    return Array.isArray(x) ? x.map((y) => ({ name: String(y.name ?? ''), desc: String(y.desc ?? ''), from: String(y.from ?? ''), to: String(y.to ?? '') })) : []
+  } catch { return [] }
+}
+
 export const parseOutputs = (v?: string): Output[] => {
   if (!v) return []
   try {
@@ -323,6 +334,8 @@ export const pickSupervisor = (field: string, goal: string): string | null => {
   const d = CYCLE.domains[field]
   if (!d || d.supervisors.length === 0) return null
   const rule: Distribution = d.distribution
+  /* Client sheet 24 Oct (#89) · the domain's named supervisor */
+  if (rule === 'fixed') return d.lead && d.supervisors.includes(d.lead) ? d.lead : d.supervisors[0]!
   if (rule === 'manual') return d.supervisors.length === 1 ? d.supervisors[0]! : null
   if (rule === 'specialty') {
     const hit = d.supervisors.find((s) => (CYCLE.specialties[s] ?? []).includes(goal))
@@ -410,7 +423,9 @@ function applyOp(o: Op) {
     case 'submit': {
       const v = o.values
       const e = entityById(v.entityId)
-      const owner = pickSupervisor(v.field, v.goal)
+      /* Client sheet 24 Oct (#93) · a supervisor filing the request inside the system owns it · the
+         domain's rule (#89) assigns the rest */
+      const owner = !o.asEntity && v.filedBySupervisor ? v.filedBySupervisor : pickSupervisor(v.field, v.goal)
       const amount = Number(v.amountRequested) || 0
       /* Client 21 Oct (#28) · the entity gives the start and the end · the duration is the calendar days
          between them · a request saved before carried a duration in working days and keeps its end */
@@ -451,10 +466,11 @@ function applyOp(o: Op) {
         fields: [
           { k: 'المبلغ المطلوب', v: amount.toLocaleString('en-US') },
           { k: 'المجال', v: v.field },
-          { k: 'الإسناد', v: owner ? `${owner} · ${CYCLE.domains[v.field]?.distribution === 'manual' ? 'المشرف الوحيد للمجال' : 'تلقائي حسب قاعدة المجال'}` : 'بانتظار إسناد مدير المنح', strong: true },
+          { k: 'الإسناد', v: owner ? `${owner} · ${!o.asEntity && v.filedBySupervisor ? 'سجّله مشرف المنح فهو مالكه' : CYCLE.domains[v.field]?.distribution === 'fixed' ? 'المشرف المحدّد للمجال' : CYCLE.domains[v.field]?.distribution === 'manual' ? 'المشرف الوحيد للمجال' : 'تلقائي حسب قاعدة المجال'}` : 'بانتظار إسناد مدير المنح', strong: true },
+          ...(stagesOf(v.stages).length ? [{ k: 'مراحل التنفيذ', v: `${stagesOf(v.stages).length}` }] : []),
         ],
       })
-      if (owner) note(o.id, owner, `طلب جديد · ${v.name}`, `أُسند إليك تلقائيًا في مجال ${v.field}`)
+      if (owner && owner !== o.by) note(o.id, owner, `طلب جديد · ${v.name}`, `أُسند إليك تلقائيًا في مجال ${v.field}`)
       else note(o.id, 'مدير المنح', `طلب بلا مشرف · ${v.name}`, `مجال ${v.field} توزيعه يدوي · يحتاج إسنادًا`)
       break
     }

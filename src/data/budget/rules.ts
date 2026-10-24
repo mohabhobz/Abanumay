@@ -44,6 +44,19 @@ export interface BudgetRules {
   /** Told when a budget goes live and when a budget operation is executed · the grants seats
       that link projects to it (re-audit 17 Oct · was a fixed pair of titles) */
   notifyLive: RoleKey[]
+  /** Client 24 Oct (#87) · a budget operation goes the system's one approval way · finance approves
+      and executes on its own up to this amount, above it the executive director decides · 0 = every
+      request goes to the executive */
+  opFinanceUpTo: number
+  /** Client 24 Oct (#87) · the reasons a returned or rejected operation request picks from, with
+      «أخرى» and a written reason · kept in the request's log */
+  opReturnReasons: string[]
+  opRejectReasons: string[]
+  /** Client 24 Oct (#86) · the support options an entity is offered on the portal follow the budget ·
+      a domain or goal with no available allocation this year is shown disabled with its reason */
+  portalLink: boolean
+  /** Below this share of its allocation still available, a goal on the portal carries a hint */
+  lowFundPct: number
   /** The file's migration version · a one-time move runs once */
   migrated?: number
 }
@@ -69,6 +82,11 @@ const DEFAULT: BudgetRules = {
   relocateBy: ['finance'],
   relocateApproveBy: ['ceo'],
   notifyLive: ['supervisor', 'grants-manager'],
+  opFinanceUpTo: 0,
+  opReturnReasons: ['مستند داعم ناقص', 'المبلغ يحتاج مراجعة', 'البند غير مناسب للعملية', 'السبب غير واضح'],
+  opRejectReasons: ['لا مبرر كافٍ للعملية', 'يخالف سياسة المناقلة', 'الرصيد مطلوب لالتزامات قائمة'],
+  portalLink: true,
+  lowFundPct: 10,
   /* no `migrated` here · readJson spreads the defaults under the stored file, so a version on the
      default would mark an old file as migrated and skip the moves below */
 }

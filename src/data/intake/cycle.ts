@@ -11,9 +11,11 @@ import { FIELDS_BY_TRACK, OWNERS } from '@/data/mock/taxonomy'
 
    Saved from the settings tab «دورة الاستقبال»; the defaults below are the prototype's sample. */
 
-export type Distribution = 'manual' | 'even' | 'load' | 'specialty'
+/* Client sheet 24 Oct (#89) · «fixed» · the domain names one supervisor every new request goes to */
+export type Distribution = 'fixed' | 'manual' | 'even' | 'load' | 'specialty'
 
 export const DISTRIBUTION_LABEL: Record<Distribution, string> = {
+  fixed: 'مشرف محدّد · يُسند إليه كل طلب',
   manual: 'يدوي · يُسنده مدير المنح',
   even: 'بالتساوي بين مشرفي المجال',
   load: 'حسب عبء العمل الحالي',
@@ -24,6 +26,9 @@ export interface DomainSetup {
   /** Supervisors of this domain · one or more (3.2.2 · 3.4.2) */
   supervisors: string[]
   distribution: Distribution
+  /** Client sheet 24 Oct (#89) · the supervisor every request goes to under the «fixed» rule · one of
+      `supervisors` (the first when unset or no longer among them) */
+  lead?: string
   /** Open for requests in this cycle · only possible with at least one supervisor */
   open: boolean
 }

@@ -6,6 +6,8 @@ import { whoActs, type BudgetEvent } from '@/data/budget/store'
 import { noReviewStep } from '@/data/budget/rules'
 import { readDateTime } from '@/lib/format'
 
+const OTHER = 'أخرى'
+
 /* The path a budget or an operation request walks (1.7.1) · prepared, the grants manager, finance,
    the executive director · and the history under it, each step with who and when (1.2.13).
 
@@ -81,26 +83,50 @@ export function FlowCard({ state, events }: { state: BudgetState; events: Budget
 }
 
 /** A decision that carries a note · required on a return, optional on an approval */
-export function NoteModal({ title, cta, tone, required, hint, onClose, onDone }: {
+/** A decision's note · client 24 Oct (#87) · a return or a rejection may carry a reason list (from
+    budget settings) · the reason is picked first, «أخرى» needs its text, and the note reads
+    «السبب · الملاحظة» in the log, the same way every other approval in the system records it */
+export function NoteModal({ title, cta, tone, required, hint, reasons, onClose, onDone }: {
   title: string; cta: string; tone: string; required: boolean; hint?: string
+  reasons?: string[]
   onClose: () => void; onDone: (note: string) => void
 }) {
   const [note, setNote] = useState('')
+  const [reason, setReason] = useState('')
+  const picks = reasons?.length ? [...reasons, OTHER] : []
+  const other = reason === OTHER
+  const ok = picks.length
+    ? Boolean(reason) && (!other || note.trim().length > 0)
+    : !required || note.trim().length > 0
+  const said = picks.length
+    ? (other ? `${OTHER}: ${note.trim()}` : note.trim() ? `${reason} · ${note.trim()}` : reason)
+    : note.trim()
   return createPortal(
     <div className="bmask" role="presentation" onClick={onClose}>
       <div className="chrome modal" role="dialog" aria-modal="true" aria-label={title} onClick={(x) => x.stopPropagation()}>
         <div className="mh"><Icon name={required ? icons.redo : icons.check} size="md" /><b>{title}</b></div>
         <div className="mb col">
           {hint && <p className="sub cnote">{hint}</p>}
+          {picks.length > 0 && (
+            <div className="regf regf-w">
+              <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <div className="cfgchips" role="radiogroup" aria-label="السبب">
+                {picks.map((r) => (
+                  <button key={r} type="button" role="radio" aria-checked={reason === r} className={`cfgchip${reason === r ? ' on' : ''}`} onClick={() => setReason(r)}>{r}</button>
+                ))}
+              </div>
+            </div>
+          )}
           <label className="regf">
-            <span className="lb">الملاحظة{required && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
+            <span className="lb">{picks.length ? (other ? 'اكتب السبب' : 'ملاحظة') : 'الملاحظة'}{(picks.length ? other : required) && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
             <span className="fld fld-a">
-              <textarea rows={3} autoFocus value={note} onChange={(x) => setNote(x.target.value)} aria-label="الملاحظة" />
+              <textarea rows={3} autoFocus={!picks.length} value={note} onChange={(x) => setNote(x.target.value)} aria-label="الملاحظة" />
             </span>
           </label>
+          {picks.length > 0 && <p className="sub cnote">يُسجَّل السبب في سجل الطلب باسمك ووقته · والقائمة تُعدَّل من إعدادات الميزانية.</p>}
         </div>
         <div className="mf">
-          <button className={`btn ${tone}`} disabled={required && !note.trim()} onClick={() => { onDone(note.trim()); onClose() }}>{cta}</button>
+          <button className={`btn ${tone}`} disabled={!ok} onClick={() => { onDone(said); onClose() }}>{cta}</button>
           <button className="btn btn-2" onClick={onClose}>تراجع</button>
         </div>
       </div>

@@ -35,6 +35,8 @@ import { planReadings } from './readings'
 import { PhaseTree } from './PhaseTree'
 import { PlanBar } from './PlanBar'
 import { PlanActionDock, planActionsFor } from './PlanActionDock'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { planOutcome, planChangeOutcome } from '@/data/shared/outcome'
 
 /* Names inside the fan's sectors · who holds each step, like the project's roles */
 const STEP_LABEL: Record<string, string> = {
@@ -269,8 +271,10 @@ export default function PlanPage() {
               {pfT
                 ? <p className="sub mt-2">خطة محفظة · {asEntity ? p.projectName : <Link className="lnk" to={ROUTES.portfolio(pfT.id)}>{p.projectName}</Link>} · {p.entityName}</p>
                 : <Related plain={asEntity} links={[{ kind: 'project', id: p.projectId, label: p.projectName }, { kind: 'entity', id: p.entityId, label: p.entityName }]} />}
-              <div className="gt-tag">
+              <div className="gt-tag rowf gp-2">
                 <Tag tone="mute">{planStageLabel(p.stage)}</Tag>
+                {/* Client sheet 24 Oct (#95) · the plan's outcome once it ends */}
+                <OutcomeTag outcome={planOutcome(p.stage)} />
               </div>
 
               {(pr || pfT) && (
@@ -566,9 +570,14 @@ export default function PlanPage() {
                         <li key={c.id}>
                           <div className="plchg-h">
                             <Tag tone={c.mode === 'cancel' ? 'no' : 'mute'}>{c.mode === 'cancel' ? 'طلب إلغاء' : 'طلب تعديل'}</Tag>
-                            <Tag tone={c.state === 'approved' ? 'ok' : c.state === 'rejected' ? 'no' : 'warn'}>
-                              {c.state === 'approved' ? 'معتمَد' : c.state === 'rejected' ? 'مرفوض' : c.state === 'returned' ? 'أُعيد للاستكمال' : c.state === 'toAgreement' ? 'بانتظار ملحق الاتفاقية' : atSup ? 'بانتظار مشرف المنح' : 'بانتظار مدير المنح'}
-                            </Tag>
+                            {/* Client sheet 24 Oct (#95) · a decided request reads its outcome (مكتمل · مرفوض) */}
+                            {planChangeOutcome(c.state)
+                              ? <><OutcomeTag outcome={planChangeOutcome(c.state)} />{c.state === 'approved' && <span className="sub">معتمَد</span>}</>
+                              : (
+                                <Tag tone="warn">
+                                  {c.state === 'returned' ? 'أُعيد للاستكمال' : c.state === 'toAgreement' ? 'بانتظار ملحق الاتفاقية' : atSup ? 'بانتظار مشرف المنح' : 'بانتظار مدير المنح'}
+                                </Tag>
+                              )}
                             <span className="sub"><DateText>{c.at}</DateText> · {c.by}</span>
                             {c.state === 'approved' && c.toVersion && <span className="sub">ألغى النسخة <Num>{ver(c.fromVersion ?? c.toVersion - 1)}</Num> وأنشأ <Num>{ver(c.toVersion)}</Num></span>}
                           </div>

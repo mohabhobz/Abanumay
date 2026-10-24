@@ -19,6 +19,8 @@ import {
 } from '@/data/partners/store'
 import { Said } from '@/features/partners/parts'
 import type { Reading } from '@/components/assistant/reading'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { subOutcome } from '@/data/shared/outcome'
 
 /* A portfolio's sub-project on a page of its own (client 20 Oct · #17 – #20 · #27).
 
@@ -122,6 +124,8 @@ export default function SubProjectPage() {
               </p>
               <div className="gt-tag rowf gp-2">
                 <Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}{x.state === 'closing' && x.ready ? ' · النتائج عند المشرف' : ''}</Tag>
+                {/* Client sheet 24 Oct (#95) · the sub-project's outcome once it ends */}
+                <OutcomeTag outcome={subOutcome(x.state)} />
                 <span className="sub">عند {holder}</span>
               </div>
             </div>

@@ -19,6 +19,8 @@ import { RecoveryCard } from '../parts'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readCase } from '@/data/recordReadings'
 import { cancelOpenRequests, usePayments } from '@/data/payments/store'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { caseOutcome } from '@/data/shared/outcome'
 
 /* A distress case · 10.9.
 
@@ -89,7 +91,8 @@ export default function CasePage() {
                 <Mono>{c.id}</Mono> · {asEntity ? c.entityName : <Link className="tlink" to={ROUTES.project(c.projectId)}>{c.projectId}</Link>} ·
                 فُتحت <DateText>{c.openedAt}</DateText>
               </p>
-              <div className="gt-tag"><Tag tone={CASE_STAGE_TONE[c.stage]}>{CASE_STAGE_SAY[c.stage]}</Tag></div>
+              {/* Client sheet 24 Oct (#95) · the case's outcome once it ends */}
+              <div className="gt-tag rowf gp-2"><Tag tone={CASE_STAGE_TONE[c.stage]}>{CASE_STAGE_SAY[c.stage]}</Tag><OutcomeTag outcome={caseOutcome(c.stage)} /></div>
             </div>
           </header>
 

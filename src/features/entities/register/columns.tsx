@@ -6,6 +6,8 @@ import {
   type RegRequest,
 } from '@/data/mock/registration'
 import type { Col as TCol, GroupBy } from '@/components/table'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { OUTCOME_SAY, regOutcome } from '@/data/shared/outcome'
 
 /* Registration request inbox columns - same contract as the other tables.
 
@@ -48,6 +50,15 @@ export const COLS: Col[] = [
     def: true,
     cell: (r) => <Tag tone={REG_TONE[r.state]}>{REG_STATE_SAY[r.state]}</Tag>,
     text: (r) => REG_STATE_SAY[r.state],
+  },
+  /* Client sheet 24 Oct (#95) · the procedure's outcome · مكتمل / مرفوض / ملغي, empty while under way ·
+     offered in the column picker */
+  {
+    key: 'outcome',
+    w: 104,
+    label: 'النتيجة',
+    cell: (r) => <OutcomeTag outcome={regOutcome(r.state)} />,
+    text: (r) => { const o = regOutcome(r.state); return o ? OUTCOME_SAY[o] : '' },
   },
   {
     key: 'partner',

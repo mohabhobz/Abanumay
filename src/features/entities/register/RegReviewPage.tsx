@@ -30,6 +30,8 @@ import { duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
 import { meOf, readRole, roleByKey } from '@/data/roles'
 import { REG_STAGES } from '@/data/mock/registration'
 import { ENTITY_RULES } from '@/data/entities/rules'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { regOutcome } from '@/data/shared/outcome'
 
 /* Registration request review - system admin's screen.
 
@@ -235,7 +237,10 @@ export default function RegReviewPage() {
                 <Mono>{r.id}</Mono> · {r.type} · {REG_STATE_WHO[r.state]}
               </p>
             </div>
-            <Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag>
+            {/* Client sheet 24 Oct (#95) · a decided request reads its outcome beside its state */}
+            {regOutcome(r.state)
+              ? <span className="rowf gp-2"><OutcomeTag outcome={regOutcome(r.state)} /><Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag></span>
+              : <Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag>}
           </header>
 
           <Tabs items={REQ_TABS} active={tab} onChange={(x) => setQ({ tab: x === 'data' ? undefined : x })} />

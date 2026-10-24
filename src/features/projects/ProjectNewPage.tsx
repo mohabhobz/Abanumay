@@ -17,11 +17,13 @@ import {
 import { REQUEST_DOCS, pickSupervisor, submitRequest } from '@/data/intake/flow'
 import { draftKey, draftOf, dropDraft, saveDraft } from '@/data/intake/drafts'
 import { CYCLE, inPeriod, openFields } from '@/data/intake/cycle'
+import { supportAvailability } from '@/data/budget/store'
 import { entityById } from '@/data/mock/entities'
 import { externalParties, isStrategic, proposeRoute, typeAllowed } from '@/data/partners/store'
 import { useRole } from '@/hooks/useRole'
 import { OutputsEditor } from './OutputsEditor'
-import { parseOutputs } from '@/data/intake/flow'
+import { parseOutputs, stagesOf } from '@/data/intake/flow'
+import { StagesEditor } from './StagesEditor'
 import { WEEKDAYS, foundationWeek, workDaysOf } from '@/data/intake/cycle'
 
 /* Create a project - rule 31.
@@ -56,18 +58,29 @@ const OTHER = 'أخرى'
 
 /** One field - same `.fld` used in every other form in the system. */
 function PField({
-  f, value, parent, entitySlot, onChange,
+  f, value, parent, entitySlot, bounds, onChange,
 }: {
   f: PFieldDef
   value: string
   parent: string
   entitySlot?: boolean
+  /** The project's expected start and end · the execution stages are held inside them */
+  bounds?: { from?: string; to?: string }
   onChange: (x: string) => void
 }) {
   const opts = optionsFor(f, parent)
+  /* Client 24 Oct (#86) · the field and goal lists follow the budget · an option without an allocation
+     stays listed, disabled with its reason, and a thin one carries a hint · the switch is in the budget
+     settings («ربط خيارات الدعم في البوابة بالميزانية») */
+  const budgetOpts = (f.key === 'field' || f.key === 'goal')
+    ? opts.map((x) => {
+      const a = f.key === 'field' ? supportAvailability(x) : supportAvailability(parent, x)
+      return { value: x, label: a.hint ? `${x} · ${a.hint}` : x, off: a.ok ? undefined : a.reason }
+    })
+    : opts
 
   return (
-    <label className={`regf${f.kind === 'long' || f.kind === 'multi' || f.kind === 'outputs' || f.kind === 'weekdays' ? ' regf-w' : ''}`}>
+    <label className={`regf${f.kind === 'long' || f.kind === 'multi' || f.kind === 'outputs' || f.kind === 'weekdays' || f.kind === 'stages' ? ' regf-w' : ''}`}>
       <span className="lb">
         {f.label}
         {f.req && <b className="regf-r" aria-label="إلزامي">*</b>}
@@ -89,7 +102,7 @@ function PField({
       ) : f.kind === 'select' ? (
         <FieldSelect
           value={value}
-          options={opts}
+          options={budgetOpts}
           disabled={Boolean(f.dependsOn) && !parent}
           onChange={onChange}
           label={f.label}
@@ -144,6 +157,8 @@ function PField({
         </span>
       ) : f.kind === 'outputs' ? (
         <OutputsEditor list={parseOutputs(value)} onChange={(x) => onChange(JSON.stringify(x))} />
+      ) : f.kind === 'stages' ? (
+        <StagesEditor list={stagesOf(value)} from={bounds?.from} to={bounds?.to} onChange={(x) => onChange(JSON.stringify(x))} />
       ) : f.kind === 'weekdays' ? (
         /* v3 · 3.4.15 · the project's own execution days · the foundation's week until the entity picks */
         <span className="pmulti">
@@ -211,7 +226,7 @@ const ENTITY_DOCS = REQUEST_DOCS.filter((d) => d.audience === 'entity')
 
 export default function ProjectNewPage() {
   const navigate = useNavigate()
-  const { user } = useRole()
+  const { user, role } = useRole()
   const { values: v, set } = useQueryParams<Params>(KEYS)
   /* `?as=entity` · the entity applying from its portal (0.2.1 · 3.2.5): its own record is fixed,
      so the «الجهة» station drops out. Without it, a supervisor files the request on its behalf. */
@@ -270,7 +285,11 @@ export default function ProjectNewPage() {
     [val, STAGES, docs],
   )
   const endAt = endOf(val)
-  const assignee = val.field ? pickSupervisor(val.field, val.goal ?? '') : null
+  /* Client sheet 24 Oct (#93) · a supervisor filing inside the system owns the request · otherwise the
+     domain's rule assigns it (#89) */
+  const selfOwner = !asEntity && role.key === 'supervisor' ? user.name : ''
+  const assignee = selfOwner || (val.field ? pickSupervisor(val.field, val.goal ?? '') : null)
+  const rule = val.field ? CYCLE.domains[val.field]?.distribution : undefined
   const portalOpen = inPeriod()
   const missing = Object.values(shortBy).flat()
   const canSend = missing.length === 0 && issues.length === 0
@@ -293,7 +312,8 @@ export default function ProjectNewPage() {
   const send = () => {
     /* 13.2.2 · a portfolio isn't a project · it's created on its own page with the partner fixed */
     if (val.ptype === 'محفظة') { navigate(`${ROUTES.portfolioNew}?entity=${val.entityId}${asEntity ? '&as=partner' : ''}`); return }
-    const id = submitRequest({ ...val, endAt, ...(draft ? { draftAt: draft.createdAt } : {}) }, Object.keys(docs), asEntity ? entityById(val.entityId)?.name ?? user.name : user.name, asEntity)
+    const stages = stagesOf(val.stages).filter((x) => x.name.trim())
+    const id = submitRequest({ ...val, endAt, stages: stages.length ? JSON.stringify(stages) : '', ...(selfOwner ? { filedBySupervisor: selfOwner } : {}), ...(draft ? { draftAt: draft.createdAt } : {}) }, Object.keys(docs), asEntity ? entityById(val.entityId)?.name ?? user.name : user.name, asEntity)
     /* Batch 7 · partners#4 · the form records the routing as a proposal · the executive decides it */
     /* v3 · BPD-011 · the party named in the form · one of the external reference records */
     const party = externalParties().find((e) => e.name === val.platform)
@@ -416,6 +436,7 @@ export default function ProjectNewPage() {
                       value={val[f.key] ?? ''}
                       parent={f.dependsOn ? val[f.dependsOn] ?? '' : ''}
                       entitySlot={f.key === 'entityId'}
+                      bounds={f.kind === 'stages' ? { from: val.startAt, to: val.endAt } : undefined}
                       onChange={(x) => setField(f.key, x)}
                     />
                   ))}
@@ -436,11 +457,13 @@ export default function ProjectNewPage() {
                     {' '}· تُحسب من التاريخين، وأيام التنفيذ المختارة{workDaysOf(val.execDays) ? ` (${workDaysOf(val.execDays)!.map((d) => WEEKDAYS[d]).join('، ')})` : ''} للعلم ولا تغيّر المدة.
                   </p>
                 )}
-                {tab === 'what' && val.field && (
+                {tab === 'what' && (val.field || selfOwner) && (
                   <p className="sub cnote">
-                    {assignee
-                      ? <>يُسند الطلب عند إرساله إلى <b>{assignee}</b> · بقاعدة توزيع المجال.</>
-                      : <>توزيع المجال يدوي · يُسند مدير المنح الطلب بعد إرساله.</>}
+                    {selfOwner
+                      ? <>تسجّله أنت من داخل النظام · فتكون <b>مالك المشروع</b> تلقائيًا.</>
+                      : assignee
+                        ? <>يُسند الطلب عند إرساله إلى <b>{assignee}</b> · {rule === 'fixed' ? 'المشرف المحدّد لمجال' : 'بقاعدة توزيع مجال'} «{val.field}».</>
+                        : <>توزيع المجال يدوي · يُسند مدير المنح الطلب بعد إرساله.</>}
                   </p>
                 )}
 
@@ -449,7 +472,7 @@ export default function ProjectNewPage() {
                   .filter((i) => stage.fields.some((f) => f.key.startsWith(i.key)) ||
                     ((tab === 'who' || (asEntity && tab === 'what')) && ['archived', 'cap', 'inactive', 'docs-exp', 'bank'].includes(i.key)) ||
                     (tab === 'what' && (i.key === 'field' || i.key === 'period')) ||
-                    (tab === 'when' && i.key === 'dates') ||
+                    (tab === 'when' && (i.key === 'dates' || i.key.startsWith('stages-'))) ||
                     (tab === 'money' && i.key === 'per'))
                   .map((i) => (
                     <p key={i.key} className="bad cnote">

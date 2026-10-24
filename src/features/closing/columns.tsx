@@ -8,6 +8,8 @@ import {
 import { closeSayOf } from '@/data/closing/store'
 import type { CloseRow } from '@/types/domain'
 import type { Col as TCol, GroupBy } from '@/components/table'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { OUTCOME_SAY, closeOutcome } from '@/data/shared/outcome'
 
 /* Closing table columns - same contract as projects, agreements, and plans.
 
@@ -65,6 +67,15 @@ export const COLS: Col[] = [
     def: true,
     cell: (c) => <Tag tone={CLOSE_TONE[c.stage]}>{closeSayOf(c)}</Tag>,
     text: (c) => closeSayOf(c),
+  },
+  /* Client sheet 24 Oct (#95) · the procedure's outcome · مكتمل / مرفوض / ملغي, empty while under way ·
+     offered in the column picker */
+  {
+    key: 'outcome',
+    w: 104,
+    label: 'النتيجة',
+    cell: (c) => <OutcomeTag outcome={closeOutcome(c.stage)} />,
+    text: (c) => { const o = closeOutcome(c.stage); return o ? OUTCOME_SAY[o] : '' },
   },
   {
     key: 'missing',

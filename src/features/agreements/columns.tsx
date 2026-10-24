@@ -17,6 +17,8 @@ import type { Col as TCol, GroupBy } from '@/components/table'
    of requiring the supervisor to open every agreement to find out. */
 
 import { HEAT_TONE } from '@/lib/tone'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { OUTCOME_SAY, agreementOutcome } from '@/data/shared/outcome'
 export type Col = TCol<AgreementRow>
 
 const HEAT_SAY = { ok: 'في المدة', late: 'متأخرة', stuck: 'متعثرة' } as const
@@ -101,6 +103,15 @@ export const COLS: Col[] = [
     def: true,
     cell: (a) => <span className="sub">{agrStageSay(a)}</span>,
     text: (a) => agrStageSay(a),
+  },
+  /* Client sheet 24 Oct (#95) · the procedure's outcome · مكتمل / مرفوض / ملغي, empty while under way ·
+     offered in the column picker */
+  {
+    key: 'outcome',
+    w: 104,
+    label: 'النتيجة',
+    cell: (a) => <OutcomeTag outcome={agreementOutcome(a.stage)} />,
+    text: (a) => { const o = agreementOutcome(a.stage); return o ? OUTCOME_SAY[o] : '' },
   },
   {
     key: 'heat',

@@ -18,6 +18,8 @@ import type { Col as TCol, GroupBy } from '@/components/table'
    is pending, the card says which one. */
 
 import { HEAT_TONE } from '@/lib/tone'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { OUTCOME_SAY, payOutcome } from '@/data/shared/outcome'
 export type Col = TCol<PayRequest>
 
 const HEAT_SAY = { ok: 'في المدة', late: 'متأخر', stuck: 'متعثر' } as const
@@ -108,6 +110,15 @@ export const COLS: Col[] = [
     def: true,
     cell: (r) => <span className="sub">{payStateLabel(r.state)}</span>,
     text: (r) => payStateLabel(r.state),
+  },
+  /* Client sheet 24 Oct (#95) · the procedure's outcome · مكتمل / مرفوض / ملغي, empty while under way ·
+     offered in the column picker */
+  {
+    key: 'outcome',
+    w: 104,
+    label: 'النتيجة',
+    cell: (r) => <OutcomeTag outcome={payOutcome(r.state)} />,
+    text: (r) => { const o = payOutcome(r.state); return o ? OUTCOME_SAY[o] : '' },
   },
   {
     key: 'heat',

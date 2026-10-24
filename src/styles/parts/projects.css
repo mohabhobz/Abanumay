@@ -175,6 +175,23 @@
 .outs-r{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) auto;gap:var(--sp-3);align-items:center}
 .outs-r .iact{grid-column:4}
 .outs-add{align-self:flex-start}
+/* Client sheet 24 Oct (#92) · the execution stages in the request · per stage its number, name and
+   description on one line, and its two expected dates under them, each named beside its field */
+.stgs{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0}
+.stgs-r{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) var(--h-md);gap:var(--sp-3);align-items:center}
+.stgs-r>.stgs-d1{grid-column:2}
+.stgs-r>:last-child{grid-column:4;grid-row:1}
+.stgs-n{white-space:nowrap}
+.stgs-d{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.stgs-d>.sub{flex:none;font-size:var(--fs-1)}
+.stgs-d>:last-child{flex:1;min-width:0}
+@media (max-width:720px){
+  .stgs-r{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .stgs-r>.stgs-n{grid-column:1;grid-row:1}
+  .stgs-r>:last-child{grid-column:2;grid-row:1;justify-self:end}
+  .stgs-r>.fld{grid-column:1/-1}
+  .stgs-r>.stgs-d,.stgs-r>.stgs-d1{grid-column:1/-1}
+}
 .outs-ro{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2);font-size:var(--fs-2);line-height:var(--lh-text)}
 @media (max-width:720px){.outs-r{grid-template-columns:minmax(0,1fr) auto}.outs-r .fld:first-child{grid-column:1/-1}}
 /* v3 · 3.2.10 · the entity corrects a returned request in place, under its row */

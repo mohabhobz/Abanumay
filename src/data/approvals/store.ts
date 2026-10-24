@@ -8,12 +8,12 @@ import type { DecisionAction, ProjectRow } from '@/types/domain'
 import type { LogEvent, LogField } from '@/data/mock/log'
 import { SOURCE_OF } from '@/data/mock/log'
 import { projectRows } from '@/data/mock/projects'
-import { EXT_PRE_STAGE, stageMeta } from '@/data/mock/taxonomy'
+import { EXT_PRE_STAGE, GOALS_BY_FIELD, stageMeta } from '@/data/mock/taxonomy'
 import { entityById } from '@/data/mock/entities'
 import { capOf, type ApprovalRow } from '@/data/approval'
 import { ACTS_FOR, HOLDER_LABEL, nextOf, type Holder } from '@/data/holders'
 import type { RoleKey } from '@/data/roles'
-import { TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
+import { CYCLE, TODAY, fundingBlock, goalFunded } from '@/data/intake/cycle'
 import { dayOf, localDayOf, stampNow, timeOf } from '@/data/clock'
 import { flowOf, intakeLog, orgOutputsOf, outputLine, setOwnHold, setRecommendHook, setSupervisorAmountHook, startFromEvent } from '@/data/intake/flow'
 import { nextSeq, replayTogether, type Stamped } from '@/data/opclock'
@@ -155,7 +155,15 @@ export interface AppFlow {
   coverage?: Coverage
   briefs: Brief[]
   events: LogEvent[]
+  /** Client 24 Oct (#82) · the funding source the grants manager names for the project, from its line's budget */
+  source?: { code: string; name: string; by: string; at: string }
+  /** Client 24 Oct (#82 – #84) · beneficiaries fixed at a level, oldest first */
+  benefs?: BenefChange[]
+  /** Client 24 Oct (#82 – #84) · a level's notes on its decision · not mandatory notes, not for the entity */
+  levelNotes?: LevelNote[]
 }
+export interface BenefChange { level: Holder; by: string; at: string; from: number; to: number; reason: string; session?: string }
+export interface LevelNote { id: string; level: Holder; text: string; by: string; at: string }
 
 const FLOWS = new Map<string, AppFlow>()
 export const SESSIONS: Session[] = []
@@ -396,7 +404,10 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
   const up = (lvl: Holder, approving: boolean) => upBlockers(p, lvl, approving)[0]
   /* v3 · 12.2.1 · a portfolio always needs a plan · an external project never has one in the system */
   const pk = planKind(p)
-  const planChoice = { label: 'الخطة', options: pk === 'external' ? [{ value: 'no', label: 'لا يتطلب خطة · مشروع خارجي' }] : pk === 'portfolio' ? [{ value: 'yes', label: 'يتطلب خطة · محفظة' }] : [{ value: 'yes', label: 'يتطلب خطة' }, { value: 'no', label: 'لا يتطلب خطة' }] }
+  /* Client 24 Oct (#82) · decided already in «خيارات الاعتماد» · the bar carries that one choice */
+  const planChoice = { label: 'الخطة', options: pk === 'external' ? [{ value: 'no', label: 'لا يتطلب خطة · مشروع خارجي' }] : pk === 'portfolio' ? [{ value: 'yes', label: 'يتطلب خطة · محفظة' }]
+    : f.needsPlan !== undefined && holder === 'manager' ? [f.needsPlan ? { value: 'yes', label: 'يتطلب خطة' } : { value: 'no', label: 'لا يتطلب خطة' }]
+      : [{ value: 'yes', label: 'يتطلب خطة' }, { value: 'no', label: 'لا يتطلب خطة' }] }
 
   if (holder === 'supervisor') {
     const back = flowOf(p.id).returnNote
@@ -472,6 +483,12 @@ export function seatOptions(p: ProjectRow, holder: Holder, viewer: RoleKey, me: 
 type Op = { at: string } & Stamped & (
   | { op: 'decide'; id: string; level: Holder; verdict: Verdict; note: string; by: string; needsPlan?: boolean; target?: Rec['target']; keepHold?: boolean; criterion?: string }
   | { op: 'amount'; id: string; level: Holder; to: number; reason: string; by: string; session?: string }
+  | { op: 'plan'; id: string; level: Holder; needs: boolean; by: string }
+  | { op: 'source'; id: string; code: string; name: string; by: string }
+  | { op: 'benef'; id: string; level: Holder; to: number; reason: string; by: string; session?: string }
+  | { op: 'levelNote'; id: string; note: LevelNote }
+  | { op: 'reown'; id: string; owner: string; reason: string; by: string }
+  | { op: 'rehouse'; id: string; track: string; field: string; goal: string; owner?: string; reason: string; by: string }
   | { op: 'cover'; id: string; by: string }
   | { op: 'brief'; id: string; brief: Brief }
   | { op: 'cond'; id: string; cond: Condition }
@@ -698,6 +715,75 @@ const applyOp = (o: Op) => {
       /* The levels before see it at once */
       notify([...new Set([p.owner ?? 'مشرف المنح', 'مدير المنح', ...(o.level === 'committee' || o.level === 'board' ? ['المدير التنفيذي'] : [])])].filter((x) => x !== o.by), p.id,
         `عُدّل مبلغ الدعم · ${p.name}`, `${HOLDER_LABEL[o.level]} · ${nf.format(from)} ← ${nf.format(o.to)} · ${o.reason}`)
+      return
+    }
+    /* Client 24 Oct (#82 – #84 · #90) · the options a deciding level takes with its decision */
+    case 'plan': {
+      const f = appFlowOf(o.id)
+      const before = f.needsPlan
+      f.needsPlan = o.needs
+      event(o.id, { action: `${HOLDER_LABEL[o.level]} · قرار الخطة`, by: o.by, dept: HOLDER_LABEL[o.level], fields: [
+        { k: 'قبل', v: before === undefined ? 'لم يُقرَّر' : before ? 'يتطلب خطة' : 'لا يتطلب خطة' },
+        { k: 'بعد', v: o.needs ? 'يتطلب خطة' : 'لا يتطلب خطة', strong: true },
+      ] })
+      return
+    }
+    case 'source': {
+      const f = appFlowOf(o.id)
+      const before = f.source?.name
+      f.source = { code: o.code, name: o.name, by: o.by, at: opDay() }
+      event(o.id, { action: 'مدير المنح · مصدر التمويل', by: o.by, dept: HOLDER_LABEL.manager, fields: [
+        ...(before ? [{ k: 'قبل', v: before }] : []), { k: 'مصدر التمويل', v: o.name, strong: true },
+      ] })
+      return
+    }
+    case 'benef': {
+      const p = row(o.id)
+      if (!p) return
+      const f = appFlowOf(o.id)
+      const from = p.beneficiaries
+      if (from === o.to) return
+      ;(f.benefs ??= []).push({ level: o.level, by: o.by, at: opDay(), from, to: o.to, reason: o.reason, session: o.session })
+      p.beneficiaries = o.to
+      event(o.id, {
+        action: `${HOLDER_LABEL[o.level]} · تعديل عدد المستفيدين`, by: o.by, tone: 'warn', dept: HOLDER_LABEL[o.level],
+        actor: o.level === 'committee' || o.level === 'board' ? 'committee' : 'staff',
+        fields: [{ k: 'العدد السابق', v: nf.format(from) }, { k: 'العدد الجديد', v: nf.format(o.to), strong: true }, { k: 'المبررات', v: o.reason }],
+      })
+      return
+    }
+    case 'levelNote': {
+      const f = appFlowOf(o.id)
+      ;(f.levelNotes ??= []).push(o.note)
+      event(o.id, { action: `${HOLDER_LABEL[o.note.level]} · ملاحظة على القرار`, by: o.note.by, dept: HOLDER_LABEL[o.note.level], fields: [{ k: 'الملاحظة', v: o.note.text, strong: true }] })
+      return
+    }
+    case 'reown': {
+      const p = row(o.id)
+      if (!p) return
+      const from = p.owner
+      if (from === o.owner) return
+      p.owner = o.owner
+      event(o.id, { action: 'تعديل مشرف المنح', by: o.by, tone: 'warn', fields: [
+        { k: 'من', v: from ?? 'بلا مشرف' }, { k: 'إلى', v: o.owner, strong: true }, { k: 'المجال', v: `${p.field} · دون تغيير` }, { k: 'السبب', v: o.reason },
+      ] })
+      notify([o.owner], p.id, `أُسند إليك · ${p.name}`, `بدل ${from ?? 'بلا مشرف'} · ${o.reason}`, ROUTES.project(p.id))
+      return
+    }
+    case 'rehouse': {
+      const p = row(o.id)
+      if (!p) return
+      const from = { track: p.track, field: p.field, goal: p.goal, owner: p.owner }
+      p.track = o.track; p.field = o.field; p.goal = o.goal
+      if (o.owner) p.owner = o.owner
+      event(o.id, { action: `${HOLDER_LABEL[p.holder ?? 'manager']} · إعادة تسكين المشروع`, by: o.by, tone: 'warn', dept: HOLDER_LABEL[p.holder ?? 'manager'], fields: [
+        { k: 'من', v: `${from.track} · ${from.field} · ${from.goal}` },
+        { k: 'إلى', v: `${o.track} · ${o.field} · ${o.goal}`, strong: true },
+        ...(o.owner && o.owner !== from.owner ? [{ k: 'مشرف المنح', v: `${from.owner ?? 'بلا مشرف'} ← ${o.owner}` }] : []),
+        { k: 'السبب', v: o.reason },
+        { k: 'الربط المالي', v: 'يُعاد توزيعه على بند الهدف الجديد من «الارتباط المالي»' },
+      ] })
+      if (o.owner && o.owner !== from.owner) notify([o.owner], p.id, `أُسند إليك · ${p.name}`, `إعادة تسكين إلى ${o.field} · ${o.reason}`, ROUTES.project(p.id))
       return
     }
     case 'cover': {
@@ -1029,6 +1115,79 @@ export function changeAmount(p: ProjectRow, level: Holder, to: number, reason: s
   return []
 }
 
+/* ── Client 24 Oct (#82 – #84 · #90) · «خيارات الاعتماد» · what each deciding level may change with its
+   decision · the grants manager: the plan, the funding source, re-housing, the supervisor, the amount,
+   the beneficiaries and his notes · the executive director, the committee and the board: the amount,
+   the beneficiaries and their notes · every change lands on the project's log with before and after ── */
+
+/** The level the viewer decides at now · undefined when the project isn't at his seat */
+export function optionSeat(p: ProjectRow, viewer: RoleKey): Holder | undefined {
+  if (p.stage !== 'دراسة المشروع' || !p.holder) return undefined
+  if (p.holder === 'manager' && viewer === 'grants-manager') return 'manager'
+  if (p.holder === 'exec' && viewer === 'ceo') return 'exec'
+  if (p.holder === 'committee' && APPROVAL_RULES.committeeBy.includes(viewer)) return 'committee'
+  if (p.holder === 'board' && APPROVAL_RULES.boardBy.includes(viewer)) return 'board'
+  return undefined
+}
+const atSeat = (p: ProjectRow, level: Holder) => p.stage === 'دراسة المشروع' && (p.holder ?? 'supervisor') === level
+
+export function setPlanNeed(p: ProjectRow, needs: boolean, me: string): string[] {
+  if (!atSeat(p, 'manager')) return ['قرار الخطة لمدير المنح والمشروع عنده']
+  const pk = planKind(p)
+  if (pk === 'portfolio' && !needs) return ['المحفظة تتطلب خطة دائمًا']
+  if (pk === 'external' && needs) return ['المشروع الخارجي بلا خطة في النظام']
+  if (appFlowOf(p.id).needsPlan === needs) return []
+  run({ op: 'plan', id: p.id, level: 'manager', needs, by: me, at: now() })
+  return []
+}
+export function setFundingSource(p: ProjectRow, code: string, name: string, me: string): string[] {
+  if (!atSeat(p, 'manager')) return ['مصدر التمويل لمدير المنح والمشروع عنده']
+  if (!code) return ['اختر مصدر التمويل']
+  if (appFlowOf(p.id).source?.code === code) return []
+  run({ op: 'source', id: p.id, code, name, by: me, at: now() })
+  return []
+}
+export function changeBeneficiaries(p: ProjectRow, level: Holder, to: number, reason: string, me: string, session?: string): string[] {
+  if (level === 'supervisor' || level === 'confirm') return ['يُعدَّل عدد المستفيدين من مستويات الاعتماد']
+  if (!atSeat(p, level)) return ['المشروع ليس عند هذه المحطة']
+  if (!(to > 0)) return ['أدخل عدد المستفيدين']
+  if (to === p.beneficiaries) return ['العدد لم يتغيّر']
+  if (!reason.trim()) return ['اكتب مبررات تعديل عدد المستفيدين']
+  run({ op: 'benef', id: p.id, level, to, reason: reason.trim(), by: me, session, at: now() })
+  return []
+}
+export function addLevelNote(p: ProjectRow, level: Holder, text: string, me: string): string[] {
+  if (!atSeat(p, level)) return ['المشروع ليس عند هذه المحطة']
+  if (!text.trim()) return ['اكتب الملاحظة']
+  run({ op: 'levelNote', id: p.id, note: { id: `ln-${id6()}`, level, text: text.trim(), by: me, at: dayOf(stampNow()) }, at: now() })
+  return []
+}
+/** #90 · the supervisor alone changes · the field, its tracks and goals stay as they are */
+export function reownProject(p: ProjectRow, owner: string, reason: string, me: string, viewer: RoleKey): string[] {
+  const studying = p.stage === 'دراسة المشروع'
+  const mayMgr = viewer === 'grants-manager'
+  const maySup = viewer === 'supervisor' && studying && (p.holder ?? 'supervisor') === 'supervisor' && (p.owner === me || actsAs(me, 'supervisor'))
+  if (!mayMgr && !maySup) return ['يعدّل المشرف مشرف المنح المالك أو مدير المنح']
+  if (!(CYCLE.domains[p.field]?.supervisors ?? []).includes(owner)) return ['اختر مشرفًا من مشرفي المجال نفسه']
+  if (owner === p.owner) return ['المشرف لم يتغيّر']
+  if (!reason.trim()) return ['اكتب سبب تعديل المشرف']
+  run({ op: 'reown', id: p.id, owner, reason: reason.trim(), by: me, at: now() })
+  return []
+}
+/** #82 · #90 · re-house at the grants manager's seat · a new field takes one of its own supervisors */
+export function rehouseProject(p: ProjectRow, to: { track: string; field: string; goal: string; owner?: string }, reason: string, me: string): string[] {
+  if (!atSeat(p, 'manager')) return ['إعادة التسكين لمدير المنح والمشروع عنده']
+  if (!to.track || !to.field || !to.goal) return ['اختر المسار والمجال والهدف']
+  if (!(GOALS_BY_FIELD[to.field] ?? []).includes(to.goal)) return ['الهدف ليس من أهداف المجال']
+  const fieldMoved = to.field !== p.field
+  if (fieldMoved && !to.owner) return ['تعديل المجال يتبعه اختيار مشرف من مشرفي المجال الجديد']
+  if (to.owner && !(CYCLE.domains[to.field]?.supervisors ?? []).includes(to.owner)) return ['المشرف ليس من مشرفي المجال']
+  if (!fieldMoved && to.goal === p.goal && to.track === p.track && (!to.owner || to.owner === p.owner)) return ['لم يتغيّر شيء']
+  if (!reason.trim()) return ['اكتب سبب إعادة التسكين']
+  run({ op: 'rehouse', id: p.id, track: to.track, field: to.field, goal: to.goal, owner: to.owner && to.owner !== p.owner ? to.owner : undefined, reason: reason.trim(), by: me, at: now() })
+  return []
+}
+
 /** v3 · 6.4.3 · what the balance leaves uncovered for a body's approval · '' = covered */
 export function sessionShort(p: ProjectRow): string {
   return fundingIssues(p.id, supportAmount(p))[0] ?? ''
@@ -1155,7 +1314,7 @@ export function castVote(_sessionId: string, _projectId: string, _member: string
   return ['لا تصويت للأعضاء في النظام · يسجّل المدير التنفيذي قرار الجهة النهائي مع المحضر (قرار المؤسسة)']
 }
 export const attachMinutes = (sessionId: string, projectId: string, file: string, by: string) => run({ op: 'minutes', sessionId, projectId, file, by, at: now() })
-export const decideInSession = (sessionId: string, projectId: string, outcome: Outcome, note: string, by: string, target?: Holder, payPlan?: SessionItem['payPlan'], amount?: { to: number; reason: string }): string[] => {
+export const decideInSession = (sessionId: string, projectId: string, outcome: Outcome, note: string, by: string, target?: Holder, payPlan?: SessionItem['payPlan'], amount?: { to: number; reason: string }, extra?: { benef?: { to: number; reason: string }; note?: string }): string[] => {
   const p = row(projectId)
   const s = sessionById(sessionId)
   if (!p || !s) return ['الجلسة أو المشروع غير موجود']
@@ -1169,6 +1328,9 @@ export const decideInSession = (sessionId: string, projectId: string, outcome: O
   const pre = sessionItemBlockers(s, it, outcome, moved?.to)
   if (pre.length) return pre
   if (moved && !moved.reason.trim()) return ['اكتب مبررات تعديل المبلغ']
+  /* Client 24 Oct (#84) · the body may fix the beneficiaries with its decision, with its reason */
+  const benef = extra?.benef && extra.benef.to > 0 && extra.benef.to !== p.beneficiaries && (outcome === 'approve' || outcome === 'refer') ? extra.benef : undefined
+  if (benef && !benef.reason.trim()) return ['اكتب مبررات تعديل عدد المستفيدين']
   /* A referral carries the hold up · a raise it can't hold is refused (7.2.2) · only an approval is
      recorded uncovered (6.4.3) */
   if (outcome === 'refer' && moved && moved.to > supportAmount(p)) { const w = resizeIssue(p.id, moved.to); if (w) return [w] }
@@ -1178,6 +1340,8 @@ export const decideInSession = (sessionId: string, projectId: string, outcome: O
     const why = changeAmount(p, s.body, amount.to, amount.reason, by, sessionId)
     if (why.length) return why
   }
+  if (benef) run({ op: 'benef', id: p.id, level: s.body, to: benef.to, reason: benef.reason.trim(), by, session: sessionId, at: now() })
+  if (extra?.note?.trim()) run({ op: 'levelNote', id: p.id, note: { id: `ln-${id6()}`, level: s.body, text: extra.note.trim(), by, at: dayOf(stampNow()) }, at: now() })
   if (outcome === 'approve' || outcome === 'refer') syncHold(p, by)
   /* Batch 7 · a multi-year project's held years leave too · v3 · 6.4.11 · 7.4.11 · a return keeps the
      hold whatever the stage it goes back to · only a refusal releases it */

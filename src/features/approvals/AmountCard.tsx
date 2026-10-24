@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Tag, icons } from '@/components/ui'
+import { DateText, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { ProjectRow } from '@/types/domain'
-import { HOLDER_LABEL, holderOf } from '@/data/holders'
+import { HOLDER_LABEL } from '@/data/holders'
 import { flowOf } from '@/data/intake/flow'
 import { meOf, readRole } from '@/data/roles'
 import { HOLD_STAGE_SAY, useBudget } from '@/data/budget/store'
-import { appFlowOf, changeAmount, completeCoverage, finPosition, supportAmount, useApprovals, type FinPosition } from '@/data/approvals/store'
+import { appFlowOf, completeCoverage, supportAmount, useApprovals, type FinPosition } from '@/data/approvals/store'
 
 /* v3 · the support amount on the approval path and the money behind it.
 
@@ -49,13 +49,8 @@ export function AmountCard({ row }: { row: ProjectRow }) {
   const role = readRole()
   const me = meOf(role)
   const f = appFlowOf(row.id)
-  const holder = holderOf(row)
   const st = flowOf(row.id).study
   const amount = supportAmount(row)
-  const fin = finPosition(row)
-  const seat = row.stage === 'دراسة المشروع' && ((holder === 'manager' && role === 'grants-manager') || (holder === 'exec' && role === 'ceo'))
-  const [to, setTo] = useState(0)
-  const [why, setWhy] = useState('')
   const [said, setSaid] = useState<string[]>([])
   const cov = f.coverage
   const mayCover = cov && !cov.done && (role === 'ceo' || role === 'grants-manager')
@@ -83,27 +78,7 @@ export function AmountCard({ row }: { row: ProjectRow }) {
           ))}
         </ul>
       )}
-      {seat && (
-        <>
-          <div className="regfields mt-2">
-            <label className="regf">
-              <span className="lb">المبلغ الجديد</span>
-              <MoneyField value={to ? String(to) : ''} label="مبلغ الدعم الجديد" onChange={(x) => setTo(Number(x) || 0)} />
-            </label>
-            <label className="regf regf-w">
-              <span className="lb">مبررات التعديل<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبررات تعديل المبلغ" placeholder="مثال: خفض بند التجهيزات بعد مقارنة التكلفة بالمجال" /></span>
-            </label>
-          </div>
-          <div className="apv-row">
-            <button className="btn btn-2 btn-sm" disabled={!(to > 0) || !why.trim() || to === amount} onClick={() => { const w = changeAmount(row, holder!, to, why, me); setSaid(w); if (!w.length) { setTo(0); setWhy('') } }}>
-              ثبّت المبلغ الجديد
-            </button>
-            {fin && <span className="sub">الحد الأعلى الممكن للزيادة <Money sm>{fin.maxRaise}</Money> · يُحدَّث الحجز تلقائيًا</span>}
-          </div>
-          {said.length > 0 && <ul className="apv-sig">{said.map((x) => <li key={x} className="no"><Icon name={icons.alert} size="sm" /><span>{x}</span></li>)}</ul>}
-        </>
-      )}
+      {/* Client 24 Oct · the seat changes the amount from «خيارات الاعتماد» · this card keeps its trail */}
       {cov && (
         <div className="apv-rec mt-2">
           <div className="apv-rec-h">
@@ -119,7 +94,7 @@ export function AmountCard({ row }: { row: ProjectRow }) {
             </div>
           )}
           {cov.done && <p className="sub cnote">نفذ ماليًا · <Person name={cov.done.by} /> · <DateText>{cov.done.at}</DateText></p>}
-          {said.length > 0 && !seat && <ul className="apv-sig">{said.map((x) => <li key={x} className="no"><Icon name={icons.alert} size="sm" /><span>{x}</span></li>)}</ul>}
+          {said.length > 0 && <ul className="apv-sig">{said.map((x) => <li key={x} className="no"><Icon name={icons.alert} size="sm" /><span>{x}</span></li>)}</ul>}
         </div>
       )}
       {f.briefs.length > 0 && (

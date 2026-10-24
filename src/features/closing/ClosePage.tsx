@@ -35,6 +35,8 @@ import { projectById } from '@/data/mock/projects'
 import { closeReadings } from './readings'
 import { CloseActionDock } from './CloseActionDock'
 import { SealedTitle } from '@/components/soul'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { closeOutcome } from '@/data/shared/outcome'
 
 /* Closing page.
 
@@ -257,8 +259,10 @@ export default function ClosePage() {
                 )}
               </p>
               <Related plain={asEntity} links={[{ kind: 'project', id: c.projectId, label: c.projectName }, { kind: 'entity', id: c.entityId, label: c.entityName }]} />
-              <div className="gt-tag">
+              <div className="gt-tag rowf gp-2">
                 <Tag tone="mute">{closeSayOf(c)}</Tag>
+                {/* Client sheet 24 Oct (#95) · the closing's outcome once it ends */}
+                <OutcomeTag outcome={closeOutcome(c.stage)} />
               </div>
 
               {pr && (

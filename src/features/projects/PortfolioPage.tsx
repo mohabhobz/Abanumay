@@ -31,6 +31,8 @@ import { SESSIONS } from '@/data/approvals/store'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { Checks, Said, SlotsEditor } from '@/features/partners/parts'
 import type { Reading } from '@/components/assistant/reading'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { portfolioOutcome } from '@/data/shared/outcome'
 
 /* A portfolio · a strategic partner's parent record with sub-projects under it (BPD-013).
 
@@ -155,6 +157,8 @@ export default function PortfolioPage() {
               </p>
               <div className="gt-tag rowf gp-2">
                 <Tag tone={PF_STAGE_TONE[pf.stage]}>{PF_STAGE_SAY[pf.stage]}</Tag>
+                {/* Client sheet 24 Oct (#95) · the portfolio's outcome once it ends */}
+                <OutcomeTag outcome={portfolioOutcome(pf.stage)} />
                 <Tag tone="mute">دفعات على مستوى المحفظة</Tag>
               </div>
             </div>

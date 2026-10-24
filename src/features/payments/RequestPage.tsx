@@ -29,6 +29,8 @@ import { PayeeCard } from './PayeeCard'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readPayRequest } from '@/data/recordReadings'
 import { PROXY_ROLES, actOnPay, basisOfRequest, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
+import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { payOutcome } from '@/data/shared/outcome'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
 
@@ -283,6 +285,8 @@ export default function RequestPage() {
             <Tag tone={asEntity ? ent.tone : 'mute'}>
               {asEntity ? ent.label : meta?.label ?? 'مغلق'}
             </Tag>
+            {/* Client sheet 24 Oct (#95) · the request's outcome once it ends */}
+            <OutcomeTag outcome={payOutcome(r.state)} />
             {r.state !== 'paid' && r.state !== 'closed' && !asEntity && (
               <span className="sub">
                 عند {payStateWho(r.state)} من <Num>{days}</Num> {nounAfter(days, NOUN.day)}

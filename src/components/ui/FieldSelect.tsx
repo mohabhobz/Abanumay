@@ -81,9 +81,11 @@ export function FieldSelect({
             <MenuOpt
               key={optValue(o)}
               on={optValue(o) === value}
+              off={typeof o !== 'string' && Boolean(o.off)}
+              title={typeof o !== 'string' ? o.off : undefined}
               onPick={() => { onChange(optValue(o)); setOpen(false) }}
             >
-              {optLabel(o)}
+              {optLabel(o)}{typeof o !== 'string' && o.off && <span className="sub"> · {o.off}</span>}
             </MenuOpt>
           ))}
         </MenuPanel>
