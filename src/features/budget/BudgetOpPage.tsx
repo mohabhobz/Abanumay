@@ -5,7 +5,7 @@ import { suggestNext } from '@/data/shared/agent'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  BackTo, Blockers, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Person, Riyal, StepArc, Tag, icons,
+  BackTo, DateText, DockWhy, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Person, Riyal, StepArc, Tag, icons,
   type GateStep,
 } from '@/components/ui'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -13,7 +13,7 @@ import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, nf } from '@/lib/format'
+import { NOUN, isolate, nf } from '@/lib/format'
 import {
   docSources, docTitle, fiscalYears, leavesOf, lineUsable, moneyOf, pathOf, yearById, type BudgetDoc,
 } from '@/data/mock/budgetTree'
@@ -349,13 +349,7 @@ export default function BudgetOpPage() {
               ) : null}
 
               {/* Blockers, impact and the approval path · in the main column, the end column is the assistant's alone */}
-              {(editable || myStep === 'exec') && (
-                <Blockers
-                  title={editable ? 'ما يمنع الإرسال' : 'ما يمنع التنفيذ'}
-                  items={issues.map((t) => ({ text: t, why: 'تحقّق النظام' }))}
-                  ready={editable ? 'الأرصدة والسياسة تسمح · الطلب جاهز للإرسال.' : 'الأرصدة ما زالت تسمح · يُنفَّذ عند اعتمادك.'}
-                />
-              )}
+              {/* Client 23 Oct · «ما يمنع» opens from the action bar · not a card in the page */}
               {impact.length > 0 && existing?.state !== 'executed' && (
                 <Glass>
                   <Head title="الأثر عند التنفيذ" />
@@ -385,8 +379,8 @@ export default function BudgetOpPage() {
           <div className="chrome decbar payact">
             <div className="rowf gp-3 payact-w">
               <span className="decsent">
-                {editable ? (issues.length ? <>{issues.length} ملاحظة قبل الإرسال</> : <>جاهز · <Money>{f.amount}</Money></>)
-                  : myStep && existing ? <>بانتظار قرارك · <b>{okSay(myStep, existing.amount)}</b></>
+                {editable ? (issues.length ? <>جاهز بعد المعالجة<DockWhy n={issues.length} noun={NOUN.note} items={issues.map((t) => ({ text: t, why: 'تحقّق النظام' }))} /></> : <>جاهز · <Money>{f.amount}</Money></>)
+                  : myStep && existing ? <>بانتظار قرارك · <b>{okSay(myStep, existing.amount)}</b>{myStep === 'exec' && issues.length > 0 && <DockWhy n={issues.length} noun={NOUN.note} title="ما يمنع التنفيذ" items={issues.map((t) => ({ text: t, why: 'تحقّق النظام' }))} />}</>
                     : existing?.state === 'executed' ? 'نُفِّذ · انعكس على أرصدة البنود وسجل الحركات'
                       : existing ? <>بانتظار <b>{whoActs(existing.state) || 'المُعِدّ'}</b></> : null}
               </span>

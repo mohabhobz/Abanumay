@@ -227,7 +227,7 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
                 </div>
                 {a.description && <div className="lgbody">{isolate(a.description)}</div>}
                 <div className="lgby">
-                  <span className="lgwho">{a.by}</span>
+                  <span className="lgwho"><Person name={a.by} size="md" quiet={false} /></span>
                   <span className="lgkind sub">المصدر: {a.source}</span>
                   <span className="pc-sp" />
                   <Link className="lnk" to={`${ROUTES.projectTab(projectId, 'log')}#ev-${a.id}`}>

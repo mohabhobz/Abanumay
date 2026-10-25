@@ -46,7 +46,7 @@ export interface PersonProps {
   name: string | null | undefined
   /** Text shown when there is no person (no owner · unassigned) */
   empty?: string
-  /** 28px by default · `lg` = 34 for the decision bar and the account menu */
+  /** 28px by default · `md` = 32 in sections and logs · `lg` = 34 for the decision bar and the account menu */
   size?: 'sm' | 'md' | 'lg'
   /** Face only, no name · for narrow cells */
   bare?: boolean
@@ -57,7 +57,8 @@ export interface PersonProps {
 /** Face only · reuses the same `.av`/`.pht` box as the account menu */
 export function Face({ name, size = 'sm' }: { name: string; size?: PersonProps['size'] }) {
   const p = person(name)
-  const box = size === 'lg' ? '34' : size === 'md' ? '30' : '28'
+  /* Client 24 Oct · `md` is the 32 the client asked for beside a name in a section or a log */
+  const box = size === 'lg' ? '34' : size === 'md' ? '32' : '28'
   const title = p.title ? `${p.name}، ${p.title}` : p.name
   if (p.photo) return <img className={`pht pht-${box}`} src={p.photo} alt="" title={title} />
   return <Initials text={p.initial} box={box} title={title} />

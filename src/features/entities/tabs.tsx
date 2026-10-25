@@ -1,16 +1,17 @@
 import { accountEvents } from '@/data/entities/auth'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, KV, Mono, Num, Person, Tabs, Tag, icons } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Icon, KV, Mono, Num, OrgName, Person, Tabs, Tag, icons } from '@/components/ui'
 import { DataTable, nextSort, readCols, sortRows, type ColSort } from '@/components/table'
 import { COLS, rowHref } from '@/features/projects/list/columns'
 import { DONE, DROPPED, LIVE } from '@/data/status'
 import { DocFile, DocList } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
-import { NOUN, nounAfter, units } from '@/lib/format'
+import { NOUN, nounAfter, readDate, units } from '@/lib/format'
 import { ENTITY_DOCS_TOTAL } from '@/data/repository'
 import type { EntityDetail, EntityEvent } from '@/data/mock/entityDetail'
 import type { EntityRow, ProjectRow } from '@/types/domain'
 import { AddBank, BankActions } from './EntityActions'
+import { BankCertReplace, BankEdit, EntityDocReplace, EntityEdit } from './EditSections'
 import { useState } from 'react'
 import { useRole } from '@/hooks/useRole'
 import { entityEvalSummary, entityLessons, saveEntityLessons, useClosing } from '@/data/closing/store'
@@ -52,7 +53,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
   return (
     <>
       <Glass>
-        <Head title="التعريف" meta="من سجل الجهة في النظام" />
+        <Head title="التعريف" meta={<span className="rowf gp-2"><span className="sub">من سجل الجهة في النظام</span><EntityEdit e={e} d={d} section="id" /></span>} />
         <KV
           rows={[
             /* Client 24 Oct · what the header already shows (name, code, classification, licence,
@@ -68,11 +69,11 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
       <Glass>
         <Head
           title="سريان الصلاحيات"
-          meta={
+          meta={<span className="rowf gp-2">{
             d.licenseExpired || d.boardExpired
               ? <Tag tone="no">يوقف التعاقد</Tag>
               : <Tag tone="ok">سارية</Tag>
-          }
+          }<EntityEdit e={e} d={d} section="dates" /></span>}
         />
         <KV
           rows={[
@@ -105,7 +106,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
       </Glass>
 
       <Glass>
-        <Head title="الاتصال" />
+        <Head title="الاتصال" meta={<EntityEdit e={e} d={d} section="contact" />} />
         <KV
           rows={[
             { k: 'الهاتف', v: <Mono>{d.phone}</Mono> },
@@ -117,16 +118,16 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
       </Glass>
 
       <Glass>
-        <Head title="الأشخاص" meta="المدير التنفيذي ومدخل البيانات" />
+        <Head title="الأشخاص" meta={<span className="rowf gp-2"><span className="sub">المدير التنفيذي ومدخل البيانات</span><EntityEdit e={e} d={d} section="people" /></span>} />
         <KV
           rows={[
             /* A card titled "People" - the avatar here isn't decoration, it is the card's content.
                These two aren't in the staff directory (entity names are generated), so they fall
                back to their initials - the correct shape for a person with no profile in the
                system. */
-            { k: 'المدير التنفيذي', v: <Person name={d.directorName} quiet={false} /> },
+            { k: 'المدير التنفيذي', v: <Person name={d.directorName} size="md" quiet={false} /> },
             { k: 'جوال المدير', v: <Mono>{d.directorMobile}</Mono> },
-            { k: 'مدخل البيانات', v: <Person name={d.clerkName} quiet={false} /> },
+            { k: 'مدخل البيانات', v: <Person name={d.clerkName} size="md" quiet={false} /> },
             { k: 'جوال مدخل البيانات', v: <Mono>{d.clerkMobile}</Mono> },
             { k: 'بريد مدخل البيانات', v: <Mono>{d.clerkEmail}</Mono> },
           ]}
@@ -192,15 +193,14 @@ export function EntityDocsTab({ d, entityId }: { d: EntityDetail; entityId: stri
       )}
       <DocList
         label="مستندات الجهة وصلاحيتها"
-        heads={['تاريخ الرفع', 'نهاية الصلاحية']}
         rows={d.docs.map((x) => ({
-          name: `${x.name}.pdf`,
+          name: x.file ?? `${x.name}.pdf`,
+          /* Client 24 Oct · the dates read under the name, so the row has room for «استبدال» */
+          meta: [x.at ? `رُفع ${readDate(x.at)}` : '', x.expires ? `ينتهي ${readDate(x.expires)}` : ''].filter(Boolean).join(' · ') || undefined,
           uploaded: x.uploaded,
           expired: x.expired,
-          extra: [
-            x.at ? <DateText>{x.at}</DateText> : null,
-            x.expires ? <DateText>{x.expires}</DateText> : null,
-          ],
+          /* Client 24 Oct · an uploaded document is replaced in place · a missing one is uploaded */
+          action: <EntityDocReplace entityId={entityId} doc={x.name} has={x.uploaded} />,
         }))}
       />
     </Glass>
@@ -233,16 +233,17 @@ export function EntityBanksTab({ d, entityId }: { d: EntityDetail; entityId: str
         <Glass key={b.id}>
           <Head
             title={b.bank}
-            meta={
+            meta={<span className="rowf gp-2">
               <Tag tone={b.status === 'مفعل' ? 'ok' : b.status === 'غير مفعل' ? 'no' : 'warn'}>
                 {b.status}
               </Tag>
-            }
+              <BankEdit entityId={entityId} b={b} />
+            </span>}
           />
           <KV
             rows={[
               { k: 'الاسم المختصر', v: b.shortName },
-              { k: 'اسم الحساب البنكي', v: b.accountName },
+              { k: 'اسم الحساب البنكي', v: <OrgName name={b.accountName} /> },
               { k: 'رقم الآيبان', v: <Mono>{b.iban}</Mono> },
             ]}
           />
@@ -255,7 +256,7 @@ export function EntityBanksTab({ d, entityId }: { d: EntityDetail; entityId: str
           )}
 
           <div className="col-s flush mt-3">
-            <DocFile name={b.certificate} meta="الشهادة البنكية" />
+            <span className="rowf gp-2"><DocFile name={b.certificate} meta="الشهادة البنكية" /><BankCertReplace entityId={entityId} b={b} /></span>
             {b.attachment && <DocFile name={b.attachment} meta="المرفق" />}
           </div>
           <BankActions entityId={entityId} b={b} />
@@ -323,7 +324,8 @@ export function EntityLogTab({ d, entityId }: { d: EntityDetail; entityId?: stri
             </div>
 
             <div className="lgby">
-              <span className={`lgwho ${WHO[ev.kind]}`}>{ev.by}</span>
+              {/* Client 24 Oct · the name with its face, 32 */}
+              <span className={`lgwho ${WHO[ev.kind]}`}><Person name={ev.by} size="md" quiet={false} /></span>
             </div>
 
             {ev.fields && (

@@ -38,6 +38,8 @@ export interface EntityRules {
   registerBy: RoleKey[]
   /** v3 · 2.4.10 · changes the entity a running project is tied to */
   relinkEntityBy: RoleKey[]
+  /** Client 24 Oct · edits the entity's data from each section's «تعديل» · the admin always may */
+  editBy?: RoleKey[]
   /** Use per-supervisor assignment of open requests · off removes «إسناد المراجعة» (open question 9) */
   assignOn: boolean
   /** Ceiling on one batch of notices or data requests */
@@ -76,6 +78,7 @@ const DEFAULT: EntityRules = {
   assignBy: ['grants-manager'],
   registerBy: ['supervisor', 'grants-manager'],
   relinkEntityBy: ['grants-manager'],
+  editBy: ['supervisor', 'grants-manager'],
   assignOn: true,
   bulkMax: 200,
   approvalFields: ['name', 'type', 'licensor', 'licenseNo', 'region', 'city', 'licenseEndsAt', 'boardEndsAt'],

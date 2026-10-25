@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { DateText, Num, Person } from '@/components/ui'
 import { DocFile, UploadButton } from '@/components/docs'
-import { dropMore, extrasOf, uploadMore, useFlow } from '@/data/intake/flow'
+import { dropMore, extrasOf, replaceMore, uploadMore, useFlow } from '@/data/intake/flow'
 import { nf } from '@/lib/format'
 
 /* Client 21 Oct (#32) · «مرفقات أخرى» · one sub-section with any number of documents, added in one
@@ -41,10 +41,14 @@ export function OtherDocs({ projectId, me, asEntity, canUpload }: { projectId: s
                   <td><DocFile name={x.name} download /></td>
                   <td className="n"><span className="num">{sizeSay(x.size)}</span></td>
                   <td><DateText>{x.at}</DateText></td>
-                  <td><Person name={x.by} /></td>
+                  <td><Person name={x.by} size="md" /></td>
                   <td>
-                    {canUpload && x.by === me
-                      ? <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${x.name}`} onClick={() => setSaid(dropMore(projectId, x.id, me)[0] ?? '')}>احذف</button>
+                    {/* Client 24 Oct · «استبدال» beside the uploader's «احذف» */}
+                    {canUpload
+                      ? <span className="dact">
+                          <UploadButton label={`استبدال ${x.name}`} text="استبدال" accept={ACCEPT} maxMb={50} onPick={(fl) => replaceMore(projectId, x.id, { name: fl.name, size: fl.size }, me)} />
+                          {x.by === me && <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${x.name}`} onClick={() => setSaid(dropMore(projectId, x.id, me)[0] ?? '')}>احذف</button>}
+                        </span>
                       : <span className="sub" aria-hidden="true"> </span>}
                   </td>
                 </tr>

@@ -17,7 +17,7 @@ import {
 import { AnalysisCard } from '@/components/assistant'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { EntityFlow } from './EntityFlow'
-import { AdminEditCard, EntityActionDock, EntityRequestsTab, EntityStatusCard } from './EntityActions'
+import { EntityActionDock, EntityRequestsTab, EntityStatusCard } from './EntityActions'
 import { useEntityFlow, viewArchived } from '@/data/entities/store'
 import { meOf, readRole } from '@/data/roles'
 import { readEntity } from '@/data/readings'
@@ -158,7 +158,7 @@ export default function EntityPage() {
                   no account, no users, no license cycle · its file reads only what was recorded */}
               {active === 'data' && !entity.external && <EntityStatusCard e={entity} />}
               {active === 'data' && <PartnerCard entityId={entity.id} />}
-              {active === 'data' && (entity.external ? <ExternalRecordTab e={entity} /> : <><AdminEditCard e={entity} /><EntityDataTab e={entity} d={detail} /></>)}
+              {active === 'data' && (entity.external ? <ExternalRecordTab e={entity} /> : <EntityDataTab e={entity} d={detail} />)}
               {active === 'docs' && <EntityDocsTab d={detail} entityId={entity.id} />}
               {active === 'banks' && <EntityBanksTab d={detail} entityId={entity.id} />}
               {active === 'projects' && <EntityEvalCard entityId={entity.id} />}

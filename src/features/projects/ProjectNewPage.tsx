@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { textIssues } from '@/lib/textCheck'
 import { useNavigate } from 'react-router-dom'
 import {
-  DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, Blockers, DockWhy, blockerCount, CheckChip, FieldMultiSelect } from '@/components/ui'
+  DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, DockWhy, blockerCount, CheckChip, FieldMultiSelect } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { blockerReadings } from '@/features/shared/blockerReadings'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -547,10 +547,7 @@ export default function ProjectNewPage() {
                 </Glass>
               )}
 
-              <Blockers
-                items={blocks}
-                ready="كل الحقول الإلزامية مكتملة · الطلب جاهز للإرسال."
-              />
+              {/* Client 23 Oct · «ما يمنع الإرسال» opens from the action bar · not a card in the page */}
             </div>
 
             <AssistantAside
@@ -578,7 +575,7 @@ export default function ProjectNewPage() {
                           forgotten. */}
                       الاكتمال <b className="num">{sayPct(pct)}</b>
                       {blocks.length
-                        ? <DockWhy n={blockerCount(blocks)} />
+                        ? <DockWhy n={blockerCount(blocks)} items={blocks} />
                         : <><span className="decsep" />جاهز للإرسال</>}
                       {draft && <><span className="decsep" />{saved ? 'حُفظت المسودة' : 'مسودة محفوظة'} <DateText>{draft.savedAt.slice(0, 10)}</DateText>
                         <button type="button" className="btn btn-ghost btn-sm" onClick={freshStart}>ابدأ من جديد</button></>}

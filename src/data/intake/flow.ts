@@ -187,6 +187,8 @@ type Op = Stamped & (
   /* Client 21 Oct (#32) · several «other» files in one pick · and the uploader's removal */
   | { op: 'docMore'; id: string; files: { name: string; size: number }[]; by: string; internal?: boolean }
   | { op: 'docDrop'; id: string; doc: string; by: string }
+  /* Client 24 Oct · an «other» attachment replaced in place · the old file stays in the log */
+  | { op: 'docSwap'; id: string; doc: string; name: string; size: number; by: string }
   | { op: 'study'; id: string; study: Omit<Study, 'at' | 'version' | 'field'> }
   | { op: 'recommend'; id: string; by: string }
   | { op: 'complete'; id: string; note: string; by: string }
@@ -522,6 +524,15 @@ function applyOp(o: Op) {
       event(o.id, { action: 'حذف مرفق', by: o.by, actor: o.by === p!.entityName ? 'entity' : 'staff', fields: [{ k: 'المرفق', v: was.name }] })
       break
     }
+    case 'docSwap': {
+      const f = flowOf(o.id)
+      const was = (f.extras ?? []).find((x) => x.id === o.doc)
+      if (!was) break
+      const old = was.name
+      was.name = o.name; was.size = o.size; was.at = opDay(); was.by = o.by
+      event(o.id, { action: 'استبدال مرفق', by: o.by, actor: o.by === p!.entityName ? 'entity' : 'staff', fields: [{ k: 'الملف السابق', v: old }, { k: 'الملف الجديد', v: o.name }], files: [o.name] })
+      break
+    }
     case 'doc': {
       const f = flowOf(o.id)
       /* Batch 8 · 3.4.37 · a replacement reads as one, with the file it replaced */
@@ -849,6 +860,7 @@ export const uploadMore = (id: string, files: { name: string; size: number }[], 
   if (files.length) run({ op: 'docMore', id, files, by, internal })
 }
 /** Only the person who added a file removes it · refused (returns why) otherwise */
+export const replaceMore = (id: string, doc: string, file: { name: string; size: number }, by: string) => run({ op: 'docSwap', id, doc, name: file.name, size: file.size, by })
 export const dropMore = (id: string, doc: string, by: string): string[] => {
   const x = extrasOf(id).find((d) => d.id === doc)
   if (!x) return ['المرفق غير موجود']

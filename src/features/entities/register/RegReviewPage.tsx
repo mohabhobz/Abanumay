@@ -7,9 +7,9 @@ import { useMemo, useState } from 'react'
 import { registrationAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  Blockers, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Steps, Tabs, Tag,
+  DateText, EditButton, EditModal, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, OrgName, Person, Steps, Tabs, Tag, type EditField,
   blockerCount, type Blocker, type StepItem, CheckChip } from '@/components/ui'
-import { DocFile, DocList } from '@/components/docs'
+import { DocFile, DocList, UploadButton } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -25,10 +25,11 @@ import {
   docRequired, licenseClash, partnerKind, regMissingDocs, regRequestById, type RegRejectReason,
 } from '@/data/mock/registration'
 import { AssistantAside } from '@/features/shared/AssistantAside'
-import { canDecide, decideRegistration, fieldLabel, regHistory, returnRegistration, useEntityFlow } from '@/data/entities/store'
+import { canAdminEdit, canDecide, decideRegistration, editRegistration, fieldLabel, regHistory, returnRegistration, useEntityFlow } from '@/data/entities/store'
+import { Modal } from '@/features/entities/SelectionActions'
 import { duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
 import { meOf, readRole, roleByKey } from '@/data/roles'
-import { REG_STAGES } from '@/data/mock/registration'
+import { BANKS, REG_STAGES, citiesOf } from '@/data/mock/registration'
 import { ENTITY_RULES } from '@/data/entities/rules'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { regOutcome } from '@/data/shared/outcome'
@@ -72,7 +73,7 @@ const OUT_SAY: Record<Outcome, string> = {
 export default function RegReviewPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  useEntityFlow()
+  const flowV = useEntityFlow()
   useDocReads() /* 2.6.4 · the documents' content once it's read */
   const r = id ? regRequestById(id) : undefined
   /* Client 23 Oct · the decision is picked in the dock, its reason in a popup */
@@ -87,6 +88,9 @@ export default function RegReviewPage() {
   /* v3 · 2.4.6 · legible documents · the system can only measure size, so the reviewer confirms
      reading them · approval waits for it */
   const [legible, setLegible] = useState(false)
+  /* Client 23 Oct (the recording · 37:02) · «ما يمنع» opens in a popup from the action bar · every action on the screen sits in the bar, never inside a block */
+  const [stopOpen, setStopOpen] = useState(false)
+  const [editing, setEditing] = useState<'def' | 'contact' | string | null>(null)
   const role = readRole()
   const me = meOf(role)
   const mayApprove = canDecide('approve', role)
@@ -96,18 +100,18 @@ export default function RegReviewPage() {
   /* A wrong request ID is not the same as an empty request - same lesson learned on the
      disbursement screen: a screen that renders fine on `undefined` still looks "healthy", so every
      check tool returns green while measuring the wrong screen. */
-  const missingDocs = useMemo(() => (r ? regMissingDocs(r) : []), [r])
+  const missingDocs = useMemo(() => (r ? regMissingDocs(r) : []), [r, flowV])
   const clash = useMemo(
     () => (r ? licenseClash(r.licenseNo, r.type, entityRows.filter((e) => e.id !== r.entityId)) : null),
-    [r],
+    [r, flowV],
   )
   /* What the request carries that a person must look at (2.4.5 · 2.4.6 · 2.4.10) */
-  const dups = useMemo(() => (r && r.state !== 'approved' ? duplicates(r, r.banks, { exceptReq: r.id }) : []), [r])
-  const stale = useMemo(() => (r ? expiredDocs({ licenseEndsAt: r.licenseEndsAt, boardEndsAt: r.boardEndsAt }, r.docs) : []), [r])
+  const dups = useMemo(() => (r && r.state !== 'approved' ? duplicates(r, r.banks, { exceptReq: r.id }) : []), [r, flowV])
+  const stale = useMemo(() => (r ? expiredDocs({ licenseEndsAt: r.licenseEndsAt, boardEndsAt: r.boardEndsAt }, r.docs) : []), [r, flowV])
   const badFormat = useMemo(() => (r
     ? REG_STAGES.flatMap((st) => st.fields).map((f) => ({ f, e: formatIssue(f.key, f.kind, String((r as unknown as Record<string, unknown>)[f.key] ?? '')) }))
       .filter((x) => x.e && !/X/.test(String((r as unknown as Record<string, unknown>)[x.f.key] ?? '')))
-    : []), [r])
+    : []), [r, flowV])
   const warnFiles = r?.files ? Object.entries(r.files).filter(([, f]) => f.warn) : []
 
   if (!r) {
@@ -153,7 +157,7 @@ export default function RegReviewPage() {
      stands on, and where to see it */
   const noBank = r.banks.length > 0 && r.banks.every((b) => bankNo[b.id])
   const see = (to: string, at: string) => (
-    <button type="button" className="lnk" onClick={() => { setQ({ tab: to === 'data' ? undefined : to }); setTimeout(() => document.getElementById(at)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 0) }}>عرض</button>
+    <button type="button" className="lnk" onClick={() => { setStopOpen(false); setQ({ tab: to === 'data' ? undefined : to }); setTimeout(() => document.getElementById(at)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 0) }}>عرض</button>
   )
   const stops: Blocker[] = [
     ...(clash ? [{ head: 'رقم الترخيص', text: <>مسجَّل لـ«{clash.name}» بنفس التصنيف</>, why: see('data', 'rg-def') }] : []),
@@ -163,9 +167,44 @@ export default function RegReviewPage() {
     ...dups.map((d) => ({ head: d.label, text: <>مكرَّر مع «{d.who}»</>, why: see('data', 'rg-def') })),
     ...badIban.map((b) => ({ head: `آيبان ${b.bankName}`, text: 'غير صحيح · ارفض الحساب أو أعد الطلب لتصحيحه', why: see('data', 'rg-banks') })),
     ...(noBank ? [{ head: 'الحسابات البنكية', text: 'لا حساب مقبول · يلزم حساب واحد على الأقل', why: see('data', 'rg-banks') }] : []),
-    ...(open && !legible ? [{ head: 'الوثائق النظامية', text: 'لم يُؤكَّد وضوحها وقراءتها بعد · يؤكّدها المراجع بعلامة الفحص', why: see('data', 'rg-check') }] : []),
+    ...(open && !legible ? [{ head: 'الوثائق النظامية', text: 'لم يُؤكَّد وضوحها وقراءتها بعد · يؤكّدها المراجع بعلامة الفحص أدناه' }] : []),
   ]
   const nStop = blockerCount(stops)
+  /* Client 24 Oct · each section's «تعديل» · the reviewer corrects the request's own data in a popup ·
+     open requests only · whoever holds «تعديل بيانات الجهة» */
+  const canEdit = !decided && canAdminEdit(readRole())
+  const saveEdit = (changes: { key: string; label: string; from: string; to: string }[], reason: string) => editRegistration(r.id, changes, reason, me, readRole())
+  const optsOf = (k: string) => REG_STAGES.flatMap((st) => st.fields).find((x) => x.key === k)?.options ?? []
+  const rv = (k: string) => String((r as unknown as Record<string, unknown>)[k] ?? '')
+  const editFields = (sec: string): EditField[] => {
+    if (sec === 'def') return [
+      { key: 'name', label: 'اسم الجهة', value: rv('name'), required: true },
+      { key: 'type', label: 'تصنيف الجهة', kind: 'select', options: optsOf('type'), value: rv('type'), required: true },
+      { key: 'licensor', label: 'جهة الإشراف الفني', kind: 'select', options: optsOf('licensor'), value: rv('licensor') },
+      { key: 'licenseNo', label: 'رقم الترخيص', kind: 'digits', value: rv('licenseNo'), required: true },
+      { key: 'region', label: 'المنطقة', kind: 'select', options: optsOf('region'), value: rv('region') },
+      { key: 'city', label: 'المحافظة / المدينة', kind: 'select', dependsOn: { key: 'region', options: citiesOf }, value: rv('city') },
+      { key: 'foundedAt', label: 'تاريخ التأسيس', kind: 'date', value: rv('foundedAt') },
+      { key: 'licenseEndsAt', label: 'نهاية الترخيص', kind: 'date', value: rv('licenseEndsAt') },
+      { key: 'boardEndsAt', label: 'نهاية تكليف المجلس', kind: 'date', value: rv('boardEndsAt') },
+    ]
+    if (sec === 'contact') return [
+      { key: 'mobile', label: 'جوال الجهة', kind: 'tel', value: rv('mobile') },
+      { key: 'email', label: 'البريد الإلكتروني', kind: 'email', value: rv('email') },
+      { key: 'directorName', label: 'المدير التنفيذي', value: rv('directorName') },
+      { key: 'clerkName', label: 'مدخل البيانات', value: rv('clerkName') },
+      { key: 'clerkMobile', label: 'جوال مدخل البيانات', kind: 'tel', value: rv('clerkMobile') },
+      { key: 'clerkEmail', label: 'بريد مدخل البيانات', kind: 'email', value: rv('clerkEmail') },
+    ]
+    const b = r.banks.find((x) => `bank:${x.id}` === sec)
+    if (!b) return []
+    return [
+      { key: `bank:${b.id}:bankName`, label: 'اسم البنك', kind: 'select', options: BANKS, value: b.bankName, required: true },
+      { key: `bank:${b.id}:bankHolder`, label: 'اسم الحساب', value: b.bankHolder, required: true },
+      { key: `bank:${b.id}:shortName`, label: 'الاسم المختصر', value: b.shortName },
+      { key: `bank:${b.id}:iban`, label: 'رقم الآيبان', value: b.iban, required: true, hint: 'SA ثم 22 رقمًا · لا يتكرر في حساب مفعّل لجهة أخرى' },
+    ]
+  }
   const pick = (p: PickedReason) => {
     if (ask === 'return') { returnRegistration(r.id, pickedSay(p), flag, me); setTaken('return') }
     else if (ask === 'reject') { decideRegistration(r.id, 'reject', pickedSay(p), bankNo, me, codeOf(p)); setTaken('reject') }
@@ -247,11 +286,6 @@ export default function RegReviewPage() {
 
           <div className="g2">
             <div className="col">
-              {/* Client 23 Oct · what stops the request, named field by field · the data tab carries it in
-                  «ما يمنع الاعتماد» itself, the other tabs read it here */}
-              {open && nStop > 0 && tab !== 'data' && (
-                <Blockers title="الطلب متوقف للأسباب أدناه" items={stops} noun={STOP_NOUN} ready="" />
-              )}
               {tab === 'data' && (
                 <>
               {/* Note: the verification card sits above the data on purpose - the reviewer needs
@@ -261,92 +295,11 @@ export default function RegReviewPage() {
                   «الطلب متوقف للأسباب أدناه» and lists the blockers by field, each with where to fix it;
                   what passed folds under them, and the advisory notes (wording, the governance claim)
                   sit apart since they never block */}
-              <Glass id="rg-check">
-                <Head
-                  title="ما يمنع الاعتماد"
-                  meta={nStop > 0 ? <Tag tone="warn"><Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)}</Tag> : <Tag tone="ok">لا مانع</Tag>}
-                />
-                {nStop > 0 ? (
-                  <>
-                    <p className="sub cnote">{open ? 'الطلب متوقف للأسباب أدناه · عالجها، أو أعد الطلب للجهة لتصحيحها' : 'كان الطلب متوقفًا للأسباب أدناه'}</p>
-                    <ul className="blockers mt-2">
-                      {stops.map((b, k) => (
-                        <li key={k}>
-                          <Icon name={icons.alert} size="sm" />
-                          <span>{b.head && <><b>{b.head}</b> · </>}{b.text}</span>
-                          {b.why && <span className="payq-r">{b.why}</span>}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : (
-                  <p className="sub cnote">{decided ? 'لم يكن على الطلب مانع عند القرار.' : 'اكتملت الفحوص · لا شيء يمنع الاعتماد.'}</p>
-                )}
-                {/* v3 · 2.4.6 · legible and readable · the reviewer's own check, kept beside the blockers ·
-                    the size warning is a hint, the reading is the check */}
-                <label className="rowf gp-2 mt-3">
-                  <input type="checkbox" checked={legible} disabled={!open} onChange={(x) => setLegible(x.target.checked)} />
-                  <span>
-                    راجعتُ الوثائق النظامية وهي واضحة ومقروءة
-                    {warnFiles.length > 0 && <> · <span className="bad">{warnFiles.map(([k, f]) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k}: ${f.warn}`).join(' · ')}</span></>}
-                  </span>
-                </label>
-                {(() => {
-                  const passed = [
-                    ...(!clash ? [<>رقم الترخيص <Mono>{r.licenseNo}</Mono> غير مكرَّر في هذا التصنيف</>] : []),
-                    ...(!badIban.length ? ['كل الحسابات المقبولة آيبانها صحيح'] : []),
-                    ...(!missingDocs.length ? ['كل المستندات الإلزامية لهذا التصنيف مرفوعة'] : []),
-                    ...(!stale.length ? ['الترخيص وقرار تكليف المجلس ساريان'] : []),
-                    ...(!dups.length ? ['الاسم والبريد والجوال والآيبان غير مكرّرة'] : []),
-                    ...(!badFormat.length ? ['صيغ الحقول صحيحة'] : []),
-                  ]
-                  if (!passed.length) return null
-                  return (
-                    <details className="mt-3" open={nStop === 0}>
-                      <summary className="lnk">تحقّق بالفعل · <Num>{passed.length}</Num></summary>
-                      <ul className="payq-ck mt-2">
-                        {passed.map((x, k) => (
-                          <li key={k} className="ok">
-                            <Icon name={icons.check} size="sm" />
-                            <span>{x}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  )
-                })()}
-                {/* Batch 8 · the wording notes and the governance claim · for the reviewer's eye, never a blocker */}
-                {(() => {
-                  const found = REG_STAGES.flatMap((st) => st.fields ?? []).filter((f) => f.kind === 'text')
-                    .flatMap((f) => textIssues(String((r as unknown as Record<string, unknown>)[f.key] ?? '')).map((x) => `${f.label}: ${x.say}${x.fixed !== undefined ? ` (المقترح «${x.fixed}»)` : ''}`))
-                  return (
-                    <>
-                      <p className="lb mt-3">للعلم · لا تمنع الاعتماد</p>
-                      <ul className="payq-ck mt-1">
-                        <li className={found.length ? 'no' : 'ok'}>
-                          <Icon name={found.length ? icons.info : icons.check} size="sm" />
-                          <span>{found.length ? <>ملاحظات الصياغة: {found.join(' · ')}</> : 'لا أخطاء إملائية ولا تنسيقية في النصوص'}</span>
-                        </li>
-                        <li className="ok">
-                          <Icon name={icons.info} size="sm" />
-                          <span>
-                            درجة الحوكمة{' '}
-                            {r.governanceClaim > 0
-                              ? <><span className="num">{r.governanceClaim}</span> · <b>إقرار الجهة</b> لا تقييم المؤسسة</>
-                              : <>أُقرّت بصفر · النظام يطلب ذلك عند عدم إجراء التقييم</>}
-                          </span>
-                        </li>
-                      </ul>
-                    </>
-                  )
-                })()}
-              </Glass>
-
               <Glass id="rg-def">
-                <Head title="التعريف" meta="كما أقرّت به الجهة" />
+                <Head title="التعريف" meta={<span className="rowf gp-2"><span className="sub">كما أقرّت به الجهة</span>{canEdit && <EditButton onClick={() => setEditing('def')} />}</span>} />
                 <KV
                   rows={[
-                    { k: 'اسم الجهة', v: r.name },
+                    { k: 'اسم الجهة', v: <OrgName name={r.name} /> },
                     /* Note: the entity never sees this type - it's set automatically because it
                        comes from the portal. The reviewer must see it because it gates conditions
                        in later steps, and it's the only thing on the page that isn't the entity's
@@ -381,7 +334,7 @@ export default function RegReviewPage() {
               </Glass>
 
               <Glass>
-                <Head title="الاتصال والأشخاص" meta="مدخل البيانات يصله اسم المستخدم" />
+                <Head title="الاتصال والأشخاص" meta={<span className="rowf gp-2"><span className="sub">مدخل البيانات يصله اسم المستخدم</span>{canEdit && <EditButton onClick={() => setEditing('contact')} />}</span>} />
                 <KV
                   rows={[
                     { k: 'جوال الجهة', v: <Mono>{r.mobile}</Mono> },
@@ -391,8 +344,8 @@ export default function RegReviewPage() {
                       k: 'البريد الإلكتروني',
                       v: <a className="tlink" href={`mailto:${r.email}`}><Mono>{r.email}</Mono></a>,
                     },
-                    { k: 'المدير التنفيذي', v: <Person name={r.directorName} quiet={false} /> },
-                    { k: 'مدخل البيانات', v: <Person name={r.clerkName} quiet={false} /> },
+                    { k: 'المدير التنفيذي', v: <Person name={r.directorName} size="md" quiet={false} /> },
+                    { k: 'مدخل البيانات', v: <Person name={r.clerkName} size="md" quiet={false} /> },
                     { k: 'جوال مدخل البيانات', v: <Mono>{r.clerkMobile}</Mono> },
                     {
                       k: 'بريد مدخل البيانات',
@@ -422,12 +375,17 @@ export default function RegReviewPage() {
                       <div className="rgbank-b">
                         <div className="rgbank-t">
                           <b>{b.bankName}</b>
-                          <span className="sub">· {b.bankHolder}</span>
+                          <span className="sub">·</span> <OrgName name={b.bankHolder} quiet />
+                          <span className="pc-sp" />
+                          {canEdit && <EditButton onClick={() => setEditing(`bank:${b.id}`)} />}
                         </div>
                         <div className="sub"><Mono>{b.iban}</Mono></div>
-                        {b.doc
-                          ? <DocFile name={b.doc} meta={BANK_DOC_LABEL} />
-                          : <span className="bad">{BANK_DOC_LABEL} ناقصة</span>}
+                        <span className="rowf gp-2">
+                          {b.doc
+                            ? <DocFile name={b.doc} meta={BANK_DOC_LABEL} />
+                            : <span className="bad">{BANK_DOC_LABEL} ناقصة</span>}
+                          {canEdit && <UploadButton label={`${b.doc ? 'استبدال' : 'ارفع'} ${BANK_DOC_LABEL}`} text={b.doc ? 'استبدال' : 'ارفع'} onPick={(fl) => saveEdit([{ key: `bank:${b.id}:doc`, label: `${BANK_DOC_LABEL} · ${b.bankName}`, from: b.doc ?? '', to: fl.name }], '')} />}
+                        </span>
                         {open && mayApprove && (
                           <label className="regf mt-2">
                             <span className="lb">قرار الحساب</span>
@@ -520,10 +478,13 @@ export default function RegReviewPage() {
                   label="مستندات طلب التسجيل وحالتها"
                   rows={[...REG_DOCS].sort((a, b) => Number(r.docs.includes(b.key)) - Number(r.docs.includes(a.key)))
                     .map((d) => ({
-                      name: `${d.label}.pdf`,
+                      name: r.files?.[d.key]?.name ?? `${d.label}.pdf`,
                       uploaded: r.docs.includes(d.key),
                       required: docRequired(d, r.type),
                       meta: docRequired(d, r.type) ? 'إلزامي لهذا التصنيف' : 'اختياري',
+                      /* Client 24 Oct · an uploaded document is replaced · a missing one uploaded by the reviewer */
+                      action: canEdit ? <UploadButton label={`${r.docs.includes(d.key) ? 'استبدال' : 'ارفع'} ${d.label}`} text={r.docs.includes(d.key) ? 'استبدال' : 'ارفع'}
+                        onPick={(fl) => saveEdit([{ key: `file:${d.key}`, label: d.label, from: r.files?.[d.key]?.name ?? (r.docs.includes(d.key) ? `${d.label}.pdf` : ''), to: fl.name }], '')} /> : undefined,
                     }))}
                 />
               </Glass>
@@ -559,7 +520,7 @@ export default function RegReviewPage() {
                         <span className="pc-sp" />
                         <span className="lgtime sub"><DateText>{ev.at.slice(0, 10)}</DateText> · <Num>{ev.at.slice(11, 16) || '09:00'}</Num></span>
                       </div>
-                      <div className="lgby"><span className="lgwho">{ev.by}</span></div>
+                      <div className="lgby"><span className="lgwho"><Person name={ev.by} size="md" quiet={false} /></span></div>
                       {ev.fields && (
                         <div className="lgfields">
                           {ev.fields.map((f) => (
@@ -661,22 +622,115 @@ export default function RegReviewPage() {
                   {mayApprove && (
                     <button
                       className="btn btn-p"
-                      disabled={blocked || noBank}
-                      title={nStop ? 'نواقص تمنع الاعتماد: ' + stops.map((x) => `${x.head} · ${typeof x.text === 'string' ? x.text : ''}`).join('\n') : /* doc rule 2 */ 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم'}
-                      onClick={() => { decideRegistration(r.id, 'approve', '', bankNo, me); setTaken('approve') }}
+                      title={nStop ? 'يفتح ما يمنع الاعتماد' : /* doc rule 2 */ 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم'}
+                      onClick={() => { if (blocked || noBank) { setStopOpen(true); return } decideRegistration(r.id, 'approve', '', bankNo, me); setTaken('approve') }}
                     >
                       اعتماد وتفعيل
                     </button>
                   )}
                 </div>
                 {mayApprove && nStop > 0 && (
-                  <span className="sub">قبل الاعتماد: <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)} · <a className="lnk" href="#rg-stop" onClick={(e) => { e.preventDefault(); document.querySelector('.screen')?.scrollTo({ top: 0, behavior: 'smooth' }) }}>الأسباب أعلى الصفحة</a></span>
+                  <button type="button" className="lnk" onClick={() => setStopOpen(true)}>ما يمنع الاعتماد · <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)}</button>
                 )}
                 </div>
               </>
             )}
           </div>
         </div>
+        {stopOpen && (
+          <Modal wide title={`ما يمنع الاعتماد · ${r.name}`} icon={icons.alert} onClose={() => setStopOpen(false)}
+            foot={<>
+              {open && mayApprove && (
+                <button type="button" className="btn btn-p" disabled={blocked || noBank} title={nStop ? 'عالج ما يمنع الاعتماد أولًا' : undefined}
+                  onClick={() => { setStopOpen(false); decideRegistration(r.id, 'approve', '', bankNo, me); setTaken('approve') }}>اعتماد وتفعيل</button>
+              )}
+              <button type="button" className="btn btn-2" onClick={() => setStopOpen(false)}>إغلاق</button>
+            </>}>
+                {nStop > 0 ? (
+                  <>
+                    <p className="sub cnote">{open ? 'الطلب متوقف للأسباب أدناه · عالجها، أو أعد الطلب للجهة لتصحيحها' : 'كان الطلب متوقفًا للأسباب أدناه'}</p>
+                    <ul className="blockers mt-2">
+                      {stops.map((b, k) => (
+                        <li key={k}>
+                          <Icon name={icons.alert} size="sm" />
+                          <span>{b.head && <><b>{b.head}</b> · </>}{b.text}</span>
+                          {b.why && <span className="payq-r">{b.why}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="sub cnote">{decided ? 'لم يكن على الطلب مانع عند القرار.' : 'اكتملت الفحوص · لا شيء يمنع الاعتماد.'}</p>
+                )}
+                {/* v3 · 2.4.6 · legible and readable · the reviewer's own check, kept beside the blockers ·
+                    the size warning is a hint, the reading is the check */}
+                <label className="rowf gp-2 mt-3">
+                  <input type="checkbox" checked={legible} disabled={!open} onChange={(x) => setLegible(x.target.checked)} />
+                  <span>
+                    راجعتُ الوثائق النظامية وهي واضحة ومقروءة
+                    {warnFiles.length > 0 && <> · <span className="bad">{warnFiles.map(([k, f]) => `${REG_DOCS.find((d) => d.key === k)?.label ?? k}: ${f.warn}`).join(' · ')}</span></>}
+                  </span>
+                </label>
+                {(() => {
+                  const passed = [
+                    ...(!clash ? [<>رقم الترخيص <Mono>{r.licenseNo}</Mono> غير مكرَّر في هذا التصنيف</>] : []),
+                    ...(!badIban.length ? ['كل الحسابات المقبولة آيبانها صحيح'] : []),
+                    ...(!missingDocs.length ? ['كل المستندات الإلزامية لهذا التصنيف مرفوعة'] : []),
+                    ...(!stale.length ? ['الترخيص وقرار تكليف المجلس ساريان'] : []),
+                    ...(!dups.length ? ['الاسم والبريد والجوال والآيبان غير مكرّرة'] : []),
+                    ...(!badFormat.length ? ['صيغ الحقول صحيحة'] : []),
+                  ]
+                  if (!passed.length) return null
+                  return (
+                    <details className="mt-3" open={nStop === 0}>
+                      <summary className="lnk">تحقّق بالفعل · <Num>{passed.length}</Num></summary>
+                      <ul className="payq-ck mt-2">
+                        {passed.map((x, k) => (
+                          <li key={k} className="ok">
+                            <Icon name={icons.check} size="sm" />
+                            <span>{x}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )
+                })()}
+                {/* Batch 8 · the wording notes and the governance claim · for the reviewer's eye, never a blocker */}
+                {(() => {
+                  const found = REG_STAGES.flatMap((st) => st.fields ?? []).filter((f) => f.kind === 'text')
+                    .flatMap((f) => textIssues(String((r as unknown as Record<string, unknown>)[f.key] ?? '')).map((x) => `${f.label}: ${x.say}${x.fixed !== undefined ? ` (المقترح «${x.fixed}»)` : ''}`))
+                  return (
+                    <>
+                      <p className="lb mt-3">للعلم · لا تمنع الاعتماد</p>
+                      <ul className="payq-ck mt-1">
+                        <li className={found.length ? 'no' : 'ok'}>
+                          <Icon name={found.length ? icons.info : icons.check} size="sm" />
+                          <span>{found.length ? <>ملاحظات الصياغة: {found.join(' · ')}</> : 'لا أخطاء إملائية ولا تنسيقية في النصوص'}</span>
+                        </li>
+                        <li className="ok">
+                          <Icon name={icons.info} size="sm" />
+                          <span>
+                            درجة الحوكمة{' '}
+                            {r.governanceClaim > 0
+                              ? <><span className="num">{r.governanceClaim}</span> · <b>إقرار الجهة</b> لا تقييم المؤسسة</>
+                              : <>أُقرّت بصفر · النظام يطلب ذلك عند عدم إجراء التقييم</>}
+                          </span>
+                        </li>
+                      </ul>
+                    </>
+                  )
+                })()}
+          </Modal>
+        )}
+        {editing && (
+          <EditModal
+            title={editing === 'def' ? 'تعديل التعريف' : editing === 'contact' ? 'تعديل الاتصال والأشخاص' : 'تعديل الحساب البنكي'}
+            fields={editFields(editing)}
+            note="تعديل المراجِع على بيانات الطلب · يُسجَّل في سجل الطلب بالقيمة قبله وبعده."
+            onClose={() => setEditing(null)}
+            onSave={(changes, _v, reason) => saveEdit(changes, reason)}
+          />
+        )}
         {ask && (
           <ReasonDialog
             kind={ask === 'return' ? 'regReturn' : 'regReject'}

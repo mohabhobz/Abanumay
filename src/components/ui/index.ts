@@ -14,7 +14,7 @@ export {
 export { CeilingLadder } from './CeilingLadder'
 export { Steps, type StepItem, type StepState, type StepsProps } from './Steps'
 /* Warning: "blocks submission" · one single version (used to be three) */
-export { Blockers, DockWhy, blockerCount, type Blocker } from './Blockers'
+export { Blockers, DockWhy, StopsPopup, blockerCount, type Blocker } from './Blockers'
 export {
   SearchBox, Select, MultiSelect, GroupPicker, Toggle, Segments, Pager, PageSize, PAGE_SIZES, ViewToggle,
   type SelectProps, type MultiSelectProps, type SegItem, type SelectOption,
@@ -27,3 +27,6 @@ export { DateField, type DateFieldProps } from './DateField'
 /* Warning: the one panel · every list in the system renders from it */
 export { MenuPanel, MenuOpt, CheckMark, type MenuPanelProps, type MenuOptProps } from './menu'
 export { CheckChip, type CheckChipProps } from './CheckChip'
+/* Client 24 Oct · one editor for every data section · its «تعديل» button */
+export { EditModal, EditButton, type EditField, type EditChange, type EditKind, type EditModalProps } from './EditModal'
+export { OrgName } from './OrgName'

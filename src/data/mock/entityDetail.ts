@@ -37,6 +37,8 @@ export interface EntityDoc {
   expires?: string
   /** Expired while still marked as uploaded · worse than missing since it passes at a glance */
   expired?: boolean
+  /** Client 24 Oct · the file a replacement put in place */
+  file?: string
 }
 
 export interface BankAccount {
@@ -374,11 +376,14 @@ function withOverlay(e: EntityRow, d: EntityDetail): EntityDetail {
   out.licenseExpired = e.licenseEndsAt < today
   out.docs = (o.docs ?? d.docs).map((x) => {
     const r = o.renewed[x.name]
-    return r ? { name: x.name, uploaded: true, at: r.at, expires: r.expires, expired: Boolean(r.expires && r.expires < today) } : x
+    return r ? { name: x.name, uploaded: true, at: r.at, expires: r.expires, expired: Boolean(r.expires && r.expires < today), file: r.file } : x
   })
   out.banks = [...(o.banks ?? d.banks), ...o.addedBanks].filter((b) => !o.deletedBanks?.includes(b.id)).map((b) => {
     const s = o.bankStatus[b.id]
-    return s ? { ...b, status: s.status, reason: s.reason } : b
+    /* Client 24 Oct · the account's edited details */
+    const ed = o.bankEdits?.[b.id] ?? {}
+    const x = { ...b, ...ed }
+    return s ? { ...x, status: s.status, reason: s.reason } : x
   })
   out.log = [...o.events, ...(o.banks ? [] : d.log)]
   if (o.events[0]) out.updatedAt = o.events[0].at

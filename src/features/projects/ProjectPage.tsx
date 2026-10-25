@@ -65,6 +65,7 @@ import { isDropped, statusLine, statusOf, subStatusOf } from '@/data/status'
 import { projectOutcome } from '@/data/shared/outcome'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { OTHER } from '@/data/intake/reasons'
+import { SPLIT, canEditProject, projectEditEvents, projectEdited, useProjectEdits } from '@/data/projects/edits'
 
 /** Number of days the current process has been open - from the action log. */
 const OPEN_DAYS = 87
@@ -120,12 +121,28 @@ function ownContent(id: string): Partial<typeof fixtures.project> {
   return out
 }
 
+/** Client 24 Oct · the project's own content as its section edits left it */
+function editedContent(id: string): Partial<typeof fixtures.project> {
+  const v = projectEdited(id)
+  const out: Partial<typeof fixtures.project> = {}
+  if (v.idea !== undefined) out.idea = v.idea
+  if (v.mainGoal !== undefined) out.mainGoal = v.mainGoal
+  if (v.goals !== undefined) out.goals = SPLIT(v.goals)
+  if (v.rationale !== undefined) out.rationale = SPLIT(v.rationale)
+  if (v.audiences !== undefined) out.audiences = SPLIT(v.audiences)
+  if (v.managerName !== undefined || v.managerPhone !== undefined) {
+    out.manager = { ...fixtures.project.manager, ...(v.managerName !== undefined ? { name: v.managerName } : {}), ...(v.managerPhone !== undefined ? { phone: v.managerPhone } : {}) }
+  }
+  return out
+}
+
 export default function ProjectPage() {
   const { id, tab } = useParams<{ id: string; tab?: string }>()
   const navigate = useNavigate()
   const mobile = useIsMobile()
   /* v3 · 2.4.10 · a move to another entity redraws the page */
   useEntityFlow()
+  useProjectEdits()
 
   /**
    * The same project's row from the list.
@@ -171,6 +188,8 @@ export default function ProjectPage() {
         /* Batch 7 · approvals#8 · the project's own idea, objectives and phases where it has them ·
            the request as sent, and the approved plan · the fixture stays the fallback for a seeded row */
         ...ownContent(row.id),
+        /* Client 24 Oct · what the data tab's «تعديل» changed · over the request's own content */
+        ...editedContent(row.id),
       }
     : fixtures.project
 
@@ -385,9 +404,9 @@ export default function ProjectPage() {
 
   /* Manual activities join the same timeline, so the log stays the one place to read history. */
   const fullLog = useMemo(
-    () => [...(row ? [...approvalEvents(row.id), ...flowEvents(row.id), ...planDecisionEvents(row.id)].sort((a, b) => b.at.localeCompare(a.at) || b.time.localeCompare(a.time)) : []), ...withActivities(log, activityList)],
+    () => [...(row ? [...approvalEvents(row.id), ...flowEvents(row.id), ...planDecisionEvents(row.id), ...projectEditEvents(row.id)].sort((a, b) => b.at.localeCompare(a.at) || b.time.localeCompare(a.time)) : []), ...withActivities(log, activityList)],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [log, activityList, row, flow?.events.length],
+    [log, activityList, row, flow?.events.length, projectEditEvents(row?.id ?? '').length],
   )
 
   const analysis = useMemo(
@@ -511,6 +530,7 @@ export default function ProjectPage() {
               {active === 'data' && (
                 <DataTab
                   project={project}
+                  editBy={!asEntity && canEditProject(role.key, me.name, row) ? me.name : undefined}
                   code={code}
                   /* Re-audit 7 Oct · the routing card and the data tab read the same type */
                   type={row?.platform ? `مشروع لجهة خارجية · ${row.platform}` : row?.partnerType === 'مستقل' ? 'مشروع مستقل' : type}
@@ -615,7 +635,7 @@ export default function ProjectPage() {
                   onAdd={activities.add}
                 />
               )}
-              {active === 'log' && <LogTab events={fullLog} entityName={entity.name} />}
+              {active === 'log' && <LogTab events={fullLog} entityName={entity.name} entityLogo={entityRow?.logo} />}
               {/* What can change at this stage · in the main column, the end column is the assistant's alone */}
               {/* v3 · 3.4.19 · the entity reads the main status alone · the seat and the internal stage are the institution's */}
             </div>

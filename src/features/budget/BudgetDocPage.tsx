@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { readAllocation, readBudgetAdvice } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  Blockers, DateField, BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, MultiSelect, Nil, Num,
+  DateField, BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, MultiSelect, Nil, Num,
   Face, Person, Riyal, Tag, DockWhy,
 } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -356,14 +356,7 @@ export default function BudgetDocPage() {
 
               {/* Rules, approvals and limits · in the main column, the end column is the assistant's alone */}
               {/* Rules - shown, not enforced · only while the budget can still change */}
-              {editable && <Blockers
-                items={[
-                  ...head.map((t) => ({ text: t, why: 'بيانات الميزانية' })),
-                  ...issues.map((i) => ({ text: i.text, why: i.why })),
-                ]}
-                empty={nodes.length === 0 && head.length === 0 ? 'الشجرة فاضية · أضف أول بند تحت الجذر، والتحقّق يبدأ من أول بند.' : undefined}
-                ready="كل أب يساوي مجموع أبنائه، وكل بند في مكانه ومصدره · الميزانية جاهزة للإرسال."
-              />}
+              {/* Client 23 Oct · «ما يمنع الإرسال» opens from the action bar · not a card in the page */}
 
               {existing && <FlowCard state={existing.state} events={eventsOf(existing.id)} />}
 
@@ -591,7 +584,7 @@ export default function BudgetDocPage() {
                         {headReady && root ? <>الإجمالي <Money>{doc.total}</Money></> : 'أكمل اسم الميزانية وسنتها ومصدرها ومبلغها'}
                         {headReady && nodes.length === 0
                           ? <><span className="decsep" /><span className="sub">أضف أول بند قبل الإرسال</span></>
-                          : <DockWhy n={issues.length + head.length} noun={NOUN.note} />}
+                          : <DockWhy n={issues.length + head.length} noun={NOUN.note} items={[...head.map((t) => ({ text: t, why: 'بيانات الميزانية' })), ...issues.map((i) => ({ text: i.text, why: i.why }))]} />}
                       </>
                     : live ? <>معتمدة ومفعّلة · متاحة لربط المشاريع والحجز<span className="decsep" /><span className="sub">تتغيّر مبالغها بطلب عملية</span></>
                       : myStep ? <>بانتظار قرارك · <b>{STEP_SAY[myStep].ok}</b> أو إعادتها بملاحظة</>

@@ -15,7 +15,7 @@ import {
 import { ENTITY_DOCS } from '@/data/mock/taxonomy'
 import type { RoleKey } from '@/data/roles'
 import { ENTITY_RULES, fileField, needsApproval } from './rules'
-import { licenseDup, setEntityIbans, todayIso } from './validate'
+import { ibanOwner, licenseDup, setEntityIbans, todayIso } from './validate'
 import { ROUTES } from '@/app/routes'
 
 /* Beneficiary entities and their registration (BPD-002) · the actions.
@@ -42,6 +42,8 @@ export interface EntityOverlay {
   docs?: EntityDoc[]
   /** Renewed copies, by document name */
   renewed: Record<string, { at: string; expires?: string; file: string }>
+  /** Client 24 Oct · an account's edited details by its id */
+  bankEdits?: Record<string, Record<string, string>>
   events: EntityEvent[]
   /** The reason given with the last status decision */
   statusReason?: string
@@ -190,7 +192,11 @@ type Op = { at: string } & (
   | { op: 'bankAdd'; entityId: string; bank: BankAccount; by: string }
   | { op: 'updSave'; req: Omit<UpdateRequest, 'events' | 'state' | 'createdAt' | 'submittedAt'>; send: boolean }
   | { op: 'updDecide'; id: string; outcome: 'approve' | 'reject' | 'return'; note: string; by: string; bankNo?: Record<string, string> }
-  | { op: 'adminEdit'; entityId: string; changes: Change[]; reason: string; by: string }
+  | { op: 'adminEdit'; entityId: string; changes: Change[]; reason: string; by: string; admin?: boolean }
+  /* Client 24 Oct · an account's details edited, a document replaced, a request's data corrected by the reviewer */
+  | { op: 'bankEdit'; entityId: string; bankId: string; changes: Change[]; reason: string; by: string }
+  | { op: 'docReplace'; entityId: string; doc: string; file: string; reason: string; by: string; replace?: boolean }
+  | { op: 'regEdit'; id: string; changes: Change[]; reason: string; by: string }
 )
 
 const KEY = 'ab-entity-ops'
@@ -692,11 +698,47 @@ const apply = (x: Op) => {
       if (!e || !x.changes.length) break
       const from = e.activation
       for (const c of x.changes) applyChange(e, c)
-      entityEvent(e.id, { kind: 'edit', action: 'تعديل مباشر من مدير النظام', by: x.by, at, note: x.reason || undefined,
+      entityEvent(e.id, { kind: 'edit', action: x.admin === false ? 'تعديل بيانات الجهة' : 'تعديل مباشر من مدير النظام', by: x.by, at, note: x.reason || undefined,
         fields: x.changes.map((c) => ({ k: c.label, v: `${c.from || '—'} ← ${c.to || '—'}` })) })
       settle(e, at)
       if (from !== e.activation) entityEvent(e.id, { kind: 'accept', action: 'تغيّر حالة الحساب بعد التعديل', by: 'النظام', at, fields: [{ k: 'حالة الحساب', v: `${from} ← ${e.activation}` }] })
       enote(e.name, 'update', 'عدّلت المؤسسة بيانات جهتك', x.changes.map((c) => c.label).join('، '), at, ROUTES.entityPortal)
+      break
+    }
+    case 'bankEdit': {
+      const o = overlayOf(x.entityId)
+      /* kept as edits by account · the file applies them over whichever account it holds (its own,
+         an added one, or a generated one) */
+      o.bankEdits = { ...(o.bankEdits ?? {}), [x.bankId]: { ...(o.bankEdits?.[x.bankId] ?? {}), ...Object.fromEntries(x.changes.map((c) => [c.key, c.to])) } }
+      entityEvent(x.entityId, { kind: 'bank', action: 'تعديل بيانات حساب بنكي', by: x.by, at, note: x.reason || undefined,
+        fields: x.changes.map((c) => ({ k: c.label, v: `${c.from || '—'} ← ${c.to || '—'}` })) })
+      break
+    }
+    case 'docReplace': {
+      const o = overlayOf(x.entityId)
+      const prev = o.renewed[x.doc]
+      o.renewed[x.doc] = { at: day(at), expires: prev?.expires, file: x.file }
+      o.fields.updatedAt = todayIso()
+      entityEvent(x.entityId, { kind: 'doc', action: prev || x.replace ? 'استبدال مستند' : 'رفع مستند', by: x.by, at, note: x.reason || undefined,
+        fields: [{ k: 'المستند', v: x.doc }, { k: 'الملف الجديد', v: x.file }] })
+      break
+    }
+    case 'regEdit': {
+      const r = regRows.find((y) => y.id === x.id)
+      if (!r) break
+      const rec = r as unknown as Record<string, unknown>
+      for (const c of x.changes) {
+        if (c.key.startsWith('file:')) {
+          const k = c.key.slice(5)
+          r.files = { ...(r.files ?? {}), [k]: { name: c.to, size: 0 } }
+          if (!r.docs.includes(k)) r.docs = [...r.docs, k]
+        } else if (c.key.startsWith('bank:')) {
+          const [, id, k] = c.key.split(':')
+          const b = r.banks.find((y) => y.id === id)
+          if (b) (b as unknown as Record<string, unknown>)[k] = c.to
+        } else rec[c.key] = typeof rec[c.key] === 'number' ? Number(c.to) || 0 : c.to
+      }
+      r.events = [...(r.events ?? []), { kind: 'draft', action: 'تعديل بيانات الطلب من المراجِع', by: x.by, at, note: [x.reason, x.changes.map((c) => `${c.label}: ${c.from || '—'} ← ${c.to || '—'}`).join(' · ')].filter(Boolean).join(' · ') }]
       break
     }
     case 'updDecide': {
@@ -837,14 +879,16 @@ export const requestsOfEntity = (entityId: string): { kind: 'reg' | 'upd'; id: s
 export const ADMIN_EDIT_FIELDS: { key: string; label: string; kind: 'text' | 'date' | 'digits' | 'select' | 'tel' | 'email' | 'url' }[] = [
   ...['name', 'type', 'licensor', 'licenseNo', 'region', 'city', 'licenseEndsAt', 'boardEndsAt'].map((k) => ({ key: k, label: fileField(k)?.label ?? k, kind: fileField(k)?.kind ?? 'text' })),
   { key: 'governance', label: 'درجة تقييم الحوكمة', kind: 'text' },
+  { key: 'foundedAt', label: 'تاريخ التأسيس', kind: 'date' },
   ...['phone', 'mobile', 'email', 'website', 'directorName', 'directorMobile', 'clerkName', 'clerkMobile', 'clerkEmail'].map((k) => ({ key: k, label: fileField(k)?.label ?? k, kind: fileField(k)?.kind ?? 'text' })),
 ]
-/** Who edits the file directly · the system admin (super admin) */
-export const canAdminEdit = (role: RoleKey | string): boolean => role === 'admin'
+/** Who edits the file directly · the system admin (super admin), and since 24 Oct whoever holds
+    «تعديل بيانات الجهة» in the entity rules · each section's «تعديل» */
+export const canAdminEdit = (role: RoleKey | string): boolean => role === 'admin' || (ENTITY_RULES.editBy ?? ['supervisor', 'grants-manager']).includes(role as RoleKey)
 /** The direct edit · refused only for a licence another entity holds · never for a document close to
     its expiry (that guard is the entity's own update request's) */
 export function adminEditEntity(entityId: string, changes: { key: string; from: string; to: string }[], reason: string, by: string, role: RoleKey | string): string[] {
-  if (!canAdminEdit(role)) return ['التعديل المباشر لمدير النظام']
+  if (!canAdminEdit(role)) return ['تعديل بيانات الجهة لصاحب الصلاحية في قواعد الجهات']
   const e = entityRows.find((y) => y.id === entityId)
   if (!e) return ['الجهة غير موجودة']
   const list = changes.filter((c) => c.to !== c.from)
@@ -852,7 +896,7 @@ export function adminEditEntity(entityId: string, changes: { key: string; from: 
   const ask = Object.fromEntries(list.map((c) => [c.key, c.to]))
   const dup = licenseDup(e.id, { licenseNo: ask.licenseNo ?? e.licenseNo, type: ask.type ?? e.type })
   if (dup && (ask.licenseNo || ask.type)) return [`رقم الترخيص والتصنيف مسجَّلان لـ«${dup.who}»`]
-  run({ op: 'adminEdit', entityId, reason: reason.trim(), by, at: now(),
+  run({ op: 'adminEdit', entityId, reason: reason.trim(), by, at: now(), admin: role === 'admin',
     changes: list.map((c) => ({ ...c, label: ADMIN_EDIT_FIELDS.find((f) => f.key === c.key)?.label ?? c.key, direct: true })) })
   return []
 }
@@ -921,6 +965,40 @@ export const assignReview = (reqs: { reqId: string; entityId: string }[], to: st
 
 export const logExport = (ids: string[], cols: number, scope: string, by: string, batch?: Omit<Batch, 'at' | 'by' | 'act' | 'ok'>) =>
   run({ op: 'export', ids, cols, scope, by, batch, at: now() })
+
+/** Client 24 Oct · an account's details from its «تعديل» · the IBAN stays unique among active accounts */
+export function editBank(entityId: string, bankId: string, changes: Omit<Change, 'direct'>[], reason: string, by: string, role: RoleKey | string): string[] {
+  if (!canAdminEdit(role) && !ENTITY_RULES.bankBy.includes(role as RoleKey)) return ['تعديل الحساب لصاحب صلاحية «إدارة الحسابات البنكية»']
+  const iban = changes.find((c) => c.key === 'iban')?.to
+  if (iban !== undefined) {
+    const clean = iban.replace(/\s/g, '').toUpperCase()
+    if (!/^SA\d{22}$/.test(clean)) return ['الآيبان غير صحيح · SA ثم 22 رقمًا']
+    const other = ibanOwner(clean, entityId)
+    if (other) return [`الآيبان مفعّل لجهة أخرى · ${other}`]
+  }
+  run({ op: 'bankEdit', entityId, bankId, changes: changes.map((c) => ({ ...c, direct: true })), reason, by, at: now() })
+  return []
+}
+
+/** Client 24 Oct · «المرفقات المرفوعة · خيار استبدال» · the file's new copy, the old one stays in the log */
+export const replaceEntityDoc = (entityId: string, doc: string, file: string, reason: string, by: string, replace = true) =>
+  run({ op: 'docReplace', entityId, doc, file, reason, by, replace, at: now() })
+
+/** Client 24 Oct · the reviewer corrects a registration request's data from its section's «تعديل» */
+export function editRegistration(id: string, changes: Omit<Change, 'direct'>[], reason: string, by: string, role: RoleKey | string): string[] {
+  if (!canAdminEdit(role)) return ['تعديل بيانات الطلب لصاحب الصلاحية في قواعد الجهات']
+  const r = regRows.find((y) => y.id === id)
+  if (!r) return ['الطلب غير موجود']
+  if (r.state === 'approved' || r.state === 'rejected') return ['الطلب مُبتّ فيه · تُعدَّل بيانات الجهة من ملفها']
+  for (const c of changes.filter((x) => x.key.startsWith('bank:') && x.key.endsWith(':iban'))) {
+    const clean = c.to.replace(/\s/g, '').toUpperCase()
+    if (!/^SA\d{22}$/.test(clean)) return [`${c.label} · الآيبان غير صحيح`]
+    const other = ibanOwner(clean)
+    if (other) return [`${c.label} · مفعّل لجهة أخرى · ${other}`]
+  }
+  run({ op: 'regEdit', id, changes: changes.map((c) => ({ ...c, direct: true })), reason, by, at: now() })
+  return []
+}
 
 export const deleteBank = (entityId: string, bankId: string, reason: string, by: string) =>
   run({ op: 'bankDelete', entityId, bankId, reason, by, at: now() })

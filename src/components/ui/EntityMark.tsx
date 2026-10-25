@@ -10,8 +10,8 @@ import { icons } from './icons'
  * not "this is a person."
  * The name is always shown next to it, so this is decorative for screen readers (`aria-hidden`).
  */
-export function EntityMark({ logo, size = 'md' }: { logo?: string; size?: 'md' | 'lg' }) {
-  const cls = `ec-init ec-mark${size === 'lg' ? ' ec-init-lg' : ''}`
+export function EntityMark({ logo, size = 'md' }: { logo?: string; size?: 'sm' | 'md' | 'lg' }) {
+  const cls = `ec-init ec-mark${size === 'lg' ? ' ec-init-lg' : size === 'sm' ? ' ec-init-sm' : ''}`
   if (logo) {
     return (
       <span className={`${cls} ec-logo`} aria-hidden="true">
@@ -21,7 +21,7 @@ export function EntityMark({ logo, size = 'md' }: { logo?: string; size?: 'md' |
   }
   return (
     <span className={cls} aria-hidden="true">
-      <Icon name={icons.entity} size={size === 'lg' ? 'lg' : 'md'} />
+      <Icon name={icons.entity} size={size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md'} />
     </span>
   )
 }

@@ -18,11 +18,11 @@ export function EntityRulesTab() {
   const [d, setD] = useState<EntityRules>(() => structuredClone(ENTITY_RULES))
   const dirty = JSON.stringify(d) !== JSON.stringify(saved)
   const put = <K extends keyof EntityRules>(k: K, v: EntityRules[K]) => setD((x) => ({ ...x, [k]: v }))
-  const roles = (k: 'approveBy' | 'returnBy' | 'updateBy' | 'statusBy' | 'suspendBy' | 'revokeBy' | 'archiveBy' | 'bankBy' | 'askBy' | 'notifyBy' | 'assignBy' | 'registerBy' | 'relinkEntityBy', label: string, note: string) => (
+  const roles = (k: 'approveBy' | 'returnBy' | 'updateBy' | 'statusBy' | 'suspendBy' | 'revokeBy' | 'archiveBy' | 'bankBy' | 'askBy' | 'notifyBy' | 'assignBy' | 'registerBy' | 'relinkEntityBy' | 'editBy', label: string, note: string) => (
     <li className="itk-sup">
       <span className="cfgl"><b>{label}</b><span className="sub">{note}</span></span>
       <span className="pc-sp" />
-      <MultiSelect all="لا أحد" values={d[k]} options={ROLE_OPTS} onChange={(v) => put(k, v as RoleKey[])} />
+      <MultiSelect all="لا أحد" values={d[k] ?? []} options={ROLE_OPTS} onChange={(v) => put(k, v as RoleKey[])} />
     </li>
   )
 
@@ -84,6 +84,7 @@ export function EntityRulesTab() {
           {roles('archiveBy', 'أرشفة الجهة', 'تُمنع ما دام لها مشروع قائم أو دفعة أو طلب مفتوح')}
           {roles('bankBy', 'إدارة الحسابات البنكية', 'إضافة وتعطيل · والحذف فقط لحساب غير مسجَّل في مشروع ولا تاريخ مالي عليه')}
           {roles('registerBy', 'التسجيل المباشر للجهة', 'جهة شريكة أو كيان استراتيجي دون البوابة')}
+          {roles('editBy', 'تعديل بيانات الجهة', 'من «تعديل» في كل قسم من ملف الجهة وطلباتها · ومدير النظام دائمًا')}
           {roles('relinkEntityBy', 'تعديل الجهة المرتبطة بمشروع', 'عند تكرار بيانات الجهات · يُحدَّث الارتباط في كل سجلات المشروع')}
         </ul>
       </Glass>

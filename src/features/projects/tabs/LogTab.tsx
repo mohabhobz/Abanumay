@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { DateText, Empty, Glass, Head, Icon, Mono, SearchBox, Select, icons } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Icon, Mono, OrgName, Person, SearchBox, Select, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import type { ActorKind, LogEvent } from '@/data/mock/log'
 import { HOLDER_LABEL } from '@/data/holders'
@@ -8,6 +8,8 @@ import { person } from '@/data/people'
 export interface LogTabProps {
   events: LogEvent[]
   entityName: string
+  /** The entity's logo beside its name in the log */
+  entityLogo?: string
 }
 
 /**
@@ -82,7 +84,7 @@ const levelOf = (e: LogEvent): string => {
  * places them there — a follow-up that says "second payment requirement" is
  * the reason for the disbursement authorization that comes after it.
  */
-export function LogTab({ events, entityName }: LogTabProps) {
+export function LogTab({ events, entityName, entityLogo }: LogTabProps) {
   const [view, setView] = useState<Cat | 'all'>('all')
   const [order, setOrder] = useState<Order>('newest')
   const [open, setOpen] = useState<Set<string>>(new Set())
@@ -198,8 +200,9 @@ export function LogTab({ events, entityName }: LogTabProps) {
                   {e.followUp && <div className="lgbody">{e.action}</div>}
 
                   <div className="lgby">
+                    {/* Client 24 Oct · the actor with its face or its entity's mark, 32 */}
                     <span className={`lgwho k-${e.actor}`}>
-                      {e.actor === 'entity' ? entityName : e.by}
+                      {e.actor === 'entity' ? <OrgName name={entityName} logo={entityLogo} /> : e.actor === 'staff' ? <Person name={e.by} size="md" quiet={false} /> : e.by}
                     </span>
                     <span className="lgkind sub">{e.manual ? 'إدخال يدوي' : levelOf(e)}</span>
                     {e.source && <span className="lgsrc sub">المصدر: {e.source}</span>}

@@ -27,10 +27,12 @@ export interface UploadButtonProps {
   maxMb?: number
   /** Client 21 Oct · several files in one pick · each one is checked, the accepted ones arrive together */
   onPickMany?: (files: File[]) => void
+  /** Client 24 Oct · the button's word · «استبدال» on a file already uploaded */
+  text?: string
 }
 
 export function UploadButton({
-  onPick, label, accept = '.pdf,.jpg,.jpeg,.png', maxMb = 10, onPickMany,
+  onPick, label, accept = '.pdf,.jpg,.jpeg,.png', maxMb = 10, onPickMany, text = 'ارفع',
 }: UploadButtonProps) {
   const [err, setErr] = useState('')
   return (
@@ -61,7 +63,7 @@ export function UploadButton({
         }}
       />
       <Icon name={icons.upload} size="sm" />
-      ارفع
+      {text}
     </label>
     {err && <span className="bad" role="alert">{err}</span>}
     </>

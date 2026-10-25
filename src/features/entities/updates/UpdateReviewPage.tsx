@@ -3,7 +3,7 @@ import { suggestNext } from '@/data/shared/agent'
 import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Blockers, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tabs, Tag, blockerCount, type Blocker } from '@/components/ui'
+import { StopsPopup, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tabs, Tag, blockerCount, type Blocker } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -53,6 +53,7 @@ export default function UpdateReviewPage() {
   const [bankNo, setBankNo] = useState<Record<string, string>>({})
   /* v3 · 2.4.6 · renewed documents are read and confirmed legible before approval */
   const [legible, setLegible] = useState(false)
+  const [stopOpen, setStopOpen] = useState(false)
   const role = readRole()
   const me = meOf(role)
   const may = canDecide('update', role)
@@ -132,7 +133,7 @@ export default function UpdateReviewPage() {
 
           <div className="g2">
             <div className="col">
-              {open && nStop > 0 && <Blockers title="الطلب متوقف للأسباب أدناه" items={stops} noun={STOP_NOUN} ready="" />}
+              {/* Client 23 Oct · «ما يمنع الاعتماد» opens from the action bar (approve, or its count) · not a card in the page */}
               {tab === 'data' && (
                 <>
               <Glass>
@@ -251,7 +252,7 @@ export default function UpdateReviewPage() {
                         <span className="pc-sp" />
                         <span className="lgtime sub"><DateText>{ev.at.slice(0, 10)}</DateText> · <Num>{ev.at.slice(11, 16) || '09:00'}</Num></span>
                       </div>
-                      <div className="lgby"><span className="lgwho">{ev.by}</span></div>
+                      <div className="lgby"><span className="lgwho"><Person name={ev.by} size="md" quiet={false} /></span></div>
                       {ev.fields && (
                         <div className="lgfields">
                           {ev.fields.map((f) => <div className="lgf" key={f.k}><span className="lgf-k">{f.k}</span><span className="lgf-v">{isolate(f.v)}</span></div>)}
@@ -315,19 +316,19 @@ export default function UpdateReviewPage() {
                     </button>
                     <button
                       className="btn btn-p"
-                      disabled={blocked}
-                      title={blocked ? 'نواقص تمنع الاعتماد: ' + stops.map((x) => `${x.head} · ${typeof x.text === 'string' ? x.text : ''}`).join('\n') : 'تُطبَّق التعديلات وتُحفظ القيم السابقة في سجل الجهة'}
-                      onClick={() => decideUpdate(u.id, 'approve', '', me, bankNo)}
+                      title={blocked ? 'يفتح ما يمنع الاعتماد' : 'تُطبَّق التعديلات وتُحفظ القيم السابقة في سجل الجهة'}
+                      onClick={() => { if (blocked) { setStopOpen(true); return } decideUpdate(u.id, 'approve', '', me, bankNo) }}
                     >
                       اعتماد وتطبيق
                     </button>
                   </div>
-                  {nStop > 0 && <span className="sub">قبل الاعتماد: <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)} · الأسباب أعلى الصفحة</span>}
+                  {nStop > 0 && <button type="button" className="lnk" onClick={() => setStopOpen(true)}>ما يمنع الاعتماد · <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)}</button>}
                 </div>
               </>
             )}
           </div>
         </div>
+        {stopOpen && <StopsPopup title={`ما يمنع الاعتماد · ${u.entityName}`} items={stops} noun={STOP_NOUN} onClose={() => setStopOpen(false)} />}
         {ask && (
           <ReasonDialog
             kind={ask === 'return' ? 'updReturn' : 'updReject'}

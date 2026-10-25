@@ -1,4 +1,9 @@
-import { Glass, Head, KV, Mono, Num, Riyal, Stat, Timeline } from '@/components/ui'
+import { useState } from 'react'
+import { EditButton, EditModal, Glass, Head, KV, Mono, Num, Person, Riyal, Stat, Timeline, type EditField } from '@/components/ui'
+import { REGIONS } from '@/data/mock/taxonomy'
+import { citiesOf } from '@/data/mock/registration'
+import { TARGET_GROUPS } from '@/data/mock/settings'
+import { editProject } from '@/data/projects/edits'
 import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, pct, readDate, units } from '@/lib/format'
 import type { Project, ProjectType } from '@/types/domain'
 
@@ -10,13 +15,43 @@ export interface DataTabProps {
   type: ProjectType | string
   /** Client sheet 24 Oct (#96) · «نسبة اكتمال المشروع» from its plan · absent without a plan */
   completion?: { pct: number; accepted: number; total: number; exec: number | null }
+  /** Client 24 Oct · who edits the project's data · each section's «تعديل» saves under this name */
+  editBy?: string
 }
+
+type Section = 'def' | 'idea' | 'scope'
 
 /** Project data — the basics: summary, concept, phases and scope. */
 export function DataTab({
-  project: P, type, completion,
+  project: P, type, completion, editBy,
 }: DataTabProps) {
   const perBeneficiary = costPerBeneficiary(P.amountRequested, P.beneficiaries)
+  /* Client 24 Oct · each section of the data carries its «تعديل» · the popup holds the section's
+     fields, filled · the idea and its goals are editable too · saved to the project's log */
+  const [editing, setEditing] = useState<Section | null>(null)
+  const edit = (s: Section) => (editBy ? <EditButton onClick={() => setEditing(s)} /> : null)
+  const fieldsOf = (s: Section): EditField[] => {
+    if (s === 'def') return [
+      { key: 'managerName', label: 'اسم مدير المشروع', value: P.manager.name },
+      { key: 'managerPhone', label: 'جوال مدير المشروع', kind: 'tel', value: P.manager.phone },
+      { key: 'startAt', label: 'تاريخ بدء التنفيذ المتوقع', kind: 'date', value: P.startDate },
+      { key: 'endAt', label: 'الانتهاء المتوقع', kind: 'date', value: P.endDate ?? addDays(P.startDate, P.durationDays) },
+      { key: 'tags', label: 'الوسوم', kind: 'lines', value: P.tags, hint: 'وسم في كل سطر' },
+    ]
+    if (s === 'idea') return [
+      { key: 'idea', label: 'فكرة المشروع', kind: 'textarea', value: P.idea, required: true },
+      { key: 'mainGoal', label: 'الهدف العام', kind: 'textarea', value: P.mainGoal },
+      { key: 'goals', label: 'الأهداف التفصيلية', kind: 'lines', value: P.goals },
+      { key: 'rationale', label: 'المسوغات', kind: 'lines', value: P.rationale },
+    ]
+    return [
+      { key: 'region', label: 'المنطقة', kind: 'select', options: REGIONS, value: P.region, required: true },
+      { key: 'city', label: 'المدينة', kind: 'select', dependsOn: { key: 'region', options: citiesOf }, value: P.city, required: true },
+      { key: 'beneficiaries', label: 'عدد المستفيدين', kind: 'number', value: String(P.beneficiaries), required: true },
+      { key: 'audiences', label: 'الفئة المستهدفة', kind: 'multi', options: TARGET_GROUPS, value: P.audiences },
+    ]
+  }
+  const TITLE: Record<Section, string> = { def: 'تعديل التعريف', idea: 'تعديل فكرة المشروع', scope: 'تعديل النطاق والأثر' }
 
   return (
     <>
@@ -51,7 +86,7 @@ export function DataTab({
       </div>
 
       <Glass>
-        <Head title="التعريف" />
+        <Head title="التعريف" meta={edit('def')} />
         <KV
           rows={[
             /* Client 24 Oct · what another tab shows isn't repeated here · the entity (and moving the
@@ -62,7 +97,7 @@ export function DataTab({
             { k: 'المجال', v: P.field },
             { k: 'الهدف', v: P.goal },
             /* Client 23 Oct · the contact card left the tab · the project manager stays, one line */
-            { k: 'مدير المشروع', v: <span>{P.manager.name} · <Mono>{P.manager.phone}</Mono></span> },
+            { k: 'مدير المشروع', v: <span className="kvpair"><Person name={P.manager.name} size="md" quiet={false} /><Mono>{P.manager.phone}</Mono></span> },
             ...(P.originalChoice ? [{ k: 'اختيار الجهة الأصلي', v: <span className="sub">{P.originalChoice} · قبل التحويل</span> }] : []),
             /* The two dates sit side by side: "330 days" alone doesn't say when it ends,
                and the end date is what determines whether the project crosses the
@@ -89,7 +124,7 @@ export function DataTab({
 
 
       <Glass>
-        <Head title="فكرة المشروع" meta="من نموذج التقديم" />
+        <Head title="فكرة المشروع" meta={<span className="rowf gp-2"><span className="sub">من نموذج التقديم</span>{edit('idea')}</span>} />
         <p className="prose">{isolate(P.idea)}</p>
 
         <div className="well" style={{ padding: 'var(--sp-5) 0 0', marginTop: 'var(--sp-5)' }}>
@@ -114,7 +149,7 @@ export function DataTab({
       </Glass>}
 
       <Glass>
-        <Head title="النطاق والأثر" meta="مطابقة لنموذج التقديم" />
+        <Head title="النطاق والأثر" meta={<span className="rowf gp-2"><span className="sub">مطابقة لنموذج التقديم</span>{edit('scope')}</span>} />
         <KV
           rows={[
             { k: 'المنطقة والمدينة', v: `${P.region} · ${P.city}` },
@@ -172,6 +207,15 @@ export function DataTab({
       </Glass>
 
       {/* Meeting 20 Oct · the chain card is gone · the tabs reach the same records */}
+      {editing && editBy && (
+        <EditModal
+          title={`${TITLE[editing]} · ${P.name}`}
+          fields={fieldsOf(editing)}
+          note="يُطبَّق التعديل على بيانات المشروع فورًا · ويُسجَّل في سجل المشروع بالقيمة قبله وبعده."
+          onClose={() => setEditing(null)}
+          onSave={(changes, v, reason) => editProject(P.id, editing, changes.map((c) => (Array.isArray(v[c.key]) ? { ...c, to: (v[c.key] as string[]).join('\n') } : c)), reason, editBy)}
+        />
+      )}
     </>
   )
 }

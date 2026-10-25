@@ -207,8 +207,9 @@ export function RequestDocsCard({ row, me, asEntity, canUpload }: { row: Project
                   meta: file ? `${d.label} · ${file.by}` : undefined,
                   uploaded: Boolean(file),
                   required: d.required,
-                  action: canUpload && !file && (g === 'internal' ? !asEntity : true)
-                    ? <UploadButton label={`ارفع ${d.label}`} onPick={up(d.key)} accept=".pdf,.xlsx,.docx,.jpg,.png" />
+                  /* Client 24 Oct · an uploaded file is replaced in place · the old one stays in the log */
+                  action: canUpload && (g === 'internal' ? !asEntity : true)
+                    ? <UploadButton label={`${file ? 'استبدال' : 'ارفع'} ${d.label}`} text={file ? 'استبدال' : 'ارفع'} onPick={up(d.key)} accept=".pdf,.xlsx,.docx,.jpg,.png" />
                     : undefined,
                 }
               })}

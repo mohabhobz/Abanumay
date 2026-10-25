@@ -3,7 +3,7 @@ import { readTemplate } from '@/data/shared/ai'
 import { MISSING_ITEM, NOUN, nounAfter } from '@/lib/format'
 import { useNavigate } from 'react-router-dom'
 import {
-  CheckMark, BackTo, Blockers, DateText, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
+  CheckMark, BackTo, DateText, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
 } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { blockerReadings } from '@/features/shared/blockerReadings'
@@ -442,10 +442,7 @@ export default function AgreementNewPage() {
                   انتقال الاتفاقية بين محطاتها <b>لا يغيّر حالة المشروع</b>{/* doc rule 25 */}.
                 </p>
               </Glass>
-              <Blockers
-                items={blocks}
-                ready="كل الخطوات مكتملة · الاتفاقية جاهزة للإرسال إلى مدير المنح."
-              />
+              {/* Client 23 Oct · «ما يمنع الإرسال» opens from the action bar · not a card in the page */}
             </div>
 
             {/* The end column is the assistant's alone · it reads what blocks sending */}
@@ -473,7 +470,7 @@ export default function AgreementNewPage() {
                   </>
                 )}
                 {said.length > 0 && <><span className="decsep" /><span className="bad">{said[0]}</span></>}
-                <DockWhy n={blockerCount(blocks)} />
+                <DockWhy n={blockerCount(blocks)} items={blocks} />
               </span>
             </div>
             <div className="rowf gp-2">
