@@ -1,7 +1,13 @@
+import { LogTab } from '@/features/projects/tabs'
+import { fileMoves, recordLog } from '@/features/shared/recordLog'
+import { RecordFiles } from '@/features/shared/RecordFiles'
+import { RecordEntityCard, RecordProjectCard } from '@/features/shared/RecordParties'
+import { useFiles } from '@/data/shared/files'
+import { PayActivities } from './PayActivities'
+import { payActOps, usePayActs } from '@/data/payments/payActs'
 import { NextStep } from '@/components/assistant/NextStep'
 import { extDocsOf, isExternalParty } from '@/data/partners/store'
 import { suggestNext } from '@/data/shared/agent'
-import { Related } from '@/components/related/Related'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { readFiles, readNeeds } from '@/data/shared/ai'
@@ -16,11 +22,11 @@ import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { DocFile } from '@/components/docs'
 import { assistFor } from '@/data/mock/assistant'
-import { PAY_LIMIT, PAY_STATES, payRequestById, payStateWho } from '@/data/mock/disbursements'
+import { payRequestById, payStateWho } from '@/data/mock/disbursements'
 import { isolate, NOUN, nounAfter, pct, readDate } from '@/lib/format'
 import {
   PAY_PROOFS,
-  bankIssues, banksOf, entityStateOf,
+  bankIssues, banksOf,
 } from '@/data/mock/payEntity'
 import type { PayRequest } from '@/types/domain'
 import { ActionDock } from './ActionDock'
@@ -28,8 +34,7 @@ import { PayExceptions } from './PayExceptions'
 import { PayeeCard } from './PayeeCard'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readPayRequest } from '@/data/recordReadings'
-import { PROXY_ROLES, actOnPay, basisOfRequest, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
-import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { PROXY_ROLES, actOnPay, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
 import { PlanTab } from '@/features/projects/tabs/PlanTab'
 import { FundingTab } from '@/features/projects/tabs/FundingTab'
 import { planOfProject } from '@/data/mock/plans'
@@ -120,6 +125,19 @@ function ladderFor(r: PayRequest): GateStep[] {
   return steps
 }
 
+/* Client 27 Oct · linking and unlinking plan activities reads in the payment's log */
+const actMoves = (r: PayRequest) => {
+  const plan = planOfProject(r.projectId)
+  const nameOf = (id: string) => plan?.phases.flatMap((ph) => ph.activities).find((a) => a.id === id)?.name ?? id
+  const actor = (by: string) => (by === r.entityName ? 'entity' as const : 'staff' as const)
+  return payActOps(r.id).flatMap((o) => [
+    ...(o.added.length ? [{ at: o.at, by: o.by, what: `ربط ${o.added.length === 1 ? 'نشاطًا' : `${o.added.length} أنشطة`} من الخطة بالدفعة`, dept: 'الأنشطة',
+      actor: actor(o.by), fields: [{ k: 'الأنشطة', v: o.added.map(nameOf).join(' · ') }] }] : []),
+    ...(o.dropped.length ? [{ at: o.at, by: o.by, what: `ألغى ربط ${o.dropped.length === 1 ? 'نشاط' : `${o.dropped.length} أنشطة`} بالدفعة`, dept: 'الأنشطة',
+      actor: actor(o.by), fields: [{ k: 'الأنشطة', v: o.dropped.map(nameOf).join(' · ') }] }] : []),
+  ])
+}
+
 export default function RequestPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
@@ -127,6 +145,9 @@ export default function RequestPage() {
   const [params, setParams] = useSearchParams()
   const asEntity = params.get('as') === 'entity'
   const ver = usePayments()
+  /* the log re-reads when a file is added or removed on the payment */
+  useFiles()
+  usePayActs()
   useDocReads() /* re-read the attachments once their content is in */
   const r = payRequestById(id)
   const [note, setNote] = useState('')
@@ -171,7 +192,6 @@ export default function RequestPage() {
     )
   }
 
-  const days = Math.round(r.hoursInState / 24)
   /* the arc's hollow center · who holds the request now, like the agreement's */
   const center: { k: string; t: string; rest: ReactNode[] } =
     r.state === 'paid'
@@ -179,8 +199,6 @@ export default function RequestPage() {
       : r.state === 'closed'
         ? { k: 'توقّف مسار الصرف', t: 'مغلق · رفض نهائي', rest: [] }
         : { k: 'صاحب الإجراء الآن', t: payStateWho(r.state), rest: [] }
-  const limitDays = Math.round(PAY_LIMIT[r.state] / 24)
-  const meta = PAY_STATES.find((s) => s.key === r.state)
   const blocked = r.checks.filter((c) => !c.ok)
   const bankOk = r.bank.active
   const actions = payActions(r, role.key, asEntity)
@@ -209,9 +227,6 @@ export default function RequestPage() {
   const after = r.spent + r.asked
   const left = r.state === 'paid' ? r.granted - after : grantLeft(r.projectId, r.id) - r.asked
 
-  /* H-3 - status from the entity's point of view - not a hook, so it belongs here normally. */
-  const ent = entityStateOf(r.state)
-
   /* v3 · 9.2.10 · the permit exists once the supervisor created it */
   const permitOn = Boolean(r.permitAt)
   const orderNo = `PO-${r.id.replace('SR-', '')}`
@@ -219,12 +234,15 @@ export default function RequestPage() {
   const prow = projectById(r.projectId)
   const tabs: TabItem[] = [
     { slug: 'data', label: 'بيانات الدفعة' },
-    { slug: 'needs', label: 'المتطلبات والمرفقات', count: r.docs.length || undefined },
+    { slug: 'needs', label: 'المتطلبات' },
     ...(asEntity ? [] : [{ slug: 'order', label: 'أمر الصرف والتحويل' }]),
-    { slug: 'agreement', label: isExternalParty(r.entityId) ? 'الوثيقة الخارجية' : 'الاتفاقية' },
     { slug: 'plan', label: 'الخطة' },
     ...(asEntity ? [] : [{ slug: 'funding', label: 'الربط المالي' }]),
-    { slug: 'log', label: 'سجل تدقيق الدفعة', count: r.log.length || undefined },
+    { slug: 'project', label: 'المشروع' },
+    { slug: 'entity', label: 'الجهة' },
+    /* Client 27 Oct · the attachments and the log close every record's tabs */
+    { slug: 'files', label: 'المرفقات', count: r.docs.length || undefined },
+    { slug: 'log', label: 'سجل الدفعة', count: r.log.length || undefined },
   ]
   const tab = tabs.find((t) => t.slug === params.get('tab'))?.slug ?? 'data'
   const goTab = (slug: string) => {
@@ -258,7 +276,6 @@ export default function RequestPage() {
                 <Mono>{r.id}</Mono> · {r.entityName} ·{' '}
                 الدفعة <Num>{r.no}</Num> من <Num>{r.of}</Num>
               </p>
-              <Related plain={asEntity} links={[{ kind: 'project', id: r.projectId, label: r.projectName }, { kind: 'entity', id: r.entityId, label: r.entityName }, !!r.agreement?.id && { kind: 'agreement', id: r.agreement.id, label: r.agreement.id }]} />
 
               <div className="pamt">
                 <div className="lb">{permitOn ? 'قيمة إذن الصرف' : 'قيمة الدفعة'}</div>
@@ -284,6 +301,7 @@ export default function RequestPage() {
                 holderKey={center.k}
                 holder={center.t}
                 rest={center.rest}
+                outcome={payOutcome(r.state)}
               />
             </div>
           </header>
@@ -296,33 +314,17 @@ export default function RequestPage() {
             </Glass>
           )}
 
-          {/* Status bar - who it's with, how long, against their threshold. */}
-          <div className="prow">
-            <Tag tone={asEntity ? ent.tone : 'mute'}>
-              {asEntity ? ent.label : meta?.label ?? 'مغلق'}
-            </Tag>
-            {/* Client sheet 24 Oct (#95) · the request's outcome once it ends */}
-            <OutcomeTag outcome={payOutcome(r.state)} />
-            {r.state !== 'paid' && r.state !== 'closed' && !asEntity && (
-              <span className="sub">
-                عند {payStateWho(r.state)} من <Num>{days}</Num> {nounAfter(days, NOUN.day)}
-                {limitDays > 0 && <> · حدّ المرحلة <Num>{limitDays}</Num> {nounAfter(limitDays, NOUN.day)}</>}
-              </span>
-            )}
-            {r.state === 'paid' && r.paidAt && (
-              <span className="sub">صُرفت في <DateText>{r.paidAt}</DateText></span>
-            )}
-            {asEntity && ent.act && <span className="sub">{ent.act}</span>}
-            <span className="pc-sp" />
-            <Person name={r.owner} />
-            {/* 9.2.9 · whoever raised them completes them · the entity, or the authority for an external party (9.4.5) */}
-            {mayResubmit(r) && (r.origin === 'proxy' ? !asEntity && PROXY_ROLES.includes(role.key) : asEntity) && (
+          {/* Client 27 Oct · the status row is gone · the arc names who holds the request and its outcome,
+              the log carries every move · only the entity's resubmit action stays */}
+          {mayResubmit(r) && (r.origin === 'proxy' ? !asEntity && PROXY_ROLES.includes(role.key) : asEntity) && (
+            <div className="prow">
+              <span className="pc-sp" />
+              {/* 9.2.9 · whoever raised them completes them · the entity, or the authority for an external party (9.4.5) */}
               <ButtonLink variant="p" size="sm" to={`${ROUTES.paymentEdit(r.id)}${asEntity ? '?as=entity' : ''}`}>
                 أكمل المتطلبات وأعد رفعها
               </ButtonLink>
-            )}
-            {!asEntity && r.state === 'returned' && r.origin !== 'proxy' && <span className="sub">عند الجهة لاستكمالها</span>}
-          </div>
+            </div>
+          )}
 
           {/* Client sheet 26 Oct (#107) · the payment's record reads in pinned tabs, the project's
               component: its data · requirements and attachments · the order and the transfer · the
@@ -425,47 +427,6 @@ export default function RequestPage() {
               </>}
 
               {tab === 'needs' && <>
-                {/* The conditions blocking progress - each with its rule cited. */}
-                <Glass>
-                  <Head
-                    title="متطلبات الدفعة وشروطها"
-                    meta={
-                      blocked.length || !bankOk
-                        ? <Tag tone="warn">
-                            <Num>{blocked.length + (bankOk ? 0 : 1)}</Num> غير مستوفى
-                          </Tag>
-                        : <Tag tone="ok">مستوفاة</Tag>
-                    }
-                  />
-                  {r.condition && (
-                    <div className="payq-cond">
-                      <span className="lb">شروط الدفعة</span>
-                      <span>{isolate(r.condition)}</span>
-                    </div>
-                  )}
-                  {/* Client meeting 20 Oct · what the payment rests on */}
-                  {basisOfRequest(r) && (
-                    <div className="payq-cond">
-                      <span className="lb">أساس الدفعة</span>
-                      <span>{basisOfRequest(r)}</span>
-                    </div>
-                  )}
-                  <ul className="payq-ck">
-                    {r.checks.map((c) => (
-                      <li key={c.rule} className={c.ok ? 'ok' : 'no'}>
-                        <Icon name={c.ok ? icons.check : icons.alert} size="sm" />
-                        <span>{c.label}</span>
-                        {/* doc rule c.rule */}
-                      </li>
-                    ))}
-                    <li className={bankOk ? 'ok' : 'no'}>
-                      <Icon name={bankOk ? icons.check : icons.alert} size="sm" />
-                      <span>{r.bank.name}{bankOk ? '' : ' · الحساب غير نشط'}</span>
-                      <span className="payq-r">الحساب المعتمد</span>
-                    </li>
-                  </ul>
-                </Glass>
-
                 {/* Attachments - rule 21: tied to the request, not stored elsewhere. */}
                 <Glass>
                   <Head
@@ -480,6 +441,10 @@ export default function RequestPage() {
                     </div>
                   ) : <Empty title="لا مرفقات على الدفعة بعد." />}
                 </Glass>
+
+                {/* Client 27 Oct · the plan activities this payment rests on, in place of its requirements and conditions */}
+                <PayActivities r={r} me={asEntity ? r.entityName : user.name}
+                  canEdit={r.state !== 'paid' && r.state !== 'closed' && (asEntity || role.key === 'supervisor')} />
               </>}
 
               {tab === 'order' && <>
@@ -551,39 +516,41 @@ export default function RequestPage() {
                 </Glass>
               </>}
 
-              {tab === 'agreement' && (
-                /* Rule 10 - the agreement and its validity shown on the request. */
-                isExternalParty(r.entityId) ? (
+              {tab === 'project' && <RecordProjectCard projectId={r.projectId} projectName={r.projectName} />}
+              {/* Rule 10 · the agreement and its validity, read on the entity's card now its own tab is gone */}
+              {tab === 'entity' && <>
+                <RecordEntityCard entityId={r.entityId} entityName={r.entityName} />
+                {/* Rule 10 · the agreement and its validity · its summary with a way into it, like the plan tab's */}
+                {isExternalParty(r.entityId) ? (
                   <Glass>
                     <Head title="الوثيقة الخارجية" meta={<Tag tone="mute">جهة خارجية</Tag>} />
-                    <KV
-                      rows={[
-                        { k: 'الوثيقة', v: extDocsOf(r.projectId).length ? extDocsOf(r.projectId).map((d) => d.file).join(' · ') : <span className="sub">لم تُسجَّل وثيقة بعد</span> },
-                        { k: 'المشروع', v: <Link className="tlink" to={ROUTES.project(r.projectId)}><Mono>{r.projectId}</Mono></Link> },
-                        { k: 'الجهة', v: <Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link> },
-                      ]}
-                    />
+                    <KV rows={[{ k: 'الوثيقة', v: extDocsOf(r.projectId).length ? extDocsOf(r.projectId).map((d) => d.file).join(' · ') : <span className="sub">لم تُسجَّل وثيقة بعد</span> }]} />
                   </Glass>
                 ) : (
                   <Glass>
-                    <Head
-                      title="الاتفاقية"
-                      meta={r.agreement.active ? <Tag tone="ok">سارية</Tag> : <Tag tone="no">غير سارية</Tag>}
-                    />
-                    <KV
-                      rows={[
-                        { k: 'رقم الاتفاقية', v: asEntity ? <Mono>{r.agreement.id}</Mono> : <Link className="tlink" to={ROUTES.agreement(r.agreement.id)}><Mono>{r.agreement.id}</Mono></Link> },
-                        { k: 'تنتهي في', v: <DateText>{r.agreement.endsAt}</DateText> },
-                        { k: 'قيمة المنحة', v: <Money sm>{r.granted}</Money> },
-                        { k: 'الدفعة', v: <><Num>{r.no}</Num> من <Num>{r.of}</Num> · مستحقة <DateText>{r.dueAt}</DateText></> },
-                        { k: 'قيمة الدفعة المعتمدة', v: <Money sm>{r.due}</Money> },
-                        /* 9.1.input-3 - the representative authorized to sign, from the agreement in force */
-                        ...(r.rep ? [{ k: 'ممثل الجهة المخوّل', v: <>{r.rep.name} <span className="sub">· {r.rep.title}</span></> }] : []),
-                      ]}
-                    />
+                    <Head title="الاتفاقية" meta={r.agreement.active ? <Tag tone="ok">سارية</Tag> : <Tag tone="no">غير سارية</Tag>} />
+                    <KV rows={[
+                      { k: 'رقم الاتفاقية', v: <Mono>{r.agreement.id}</Mono> },
+                      { k: 'تنتهي في', v: <DateText>{r.agreement.endsAt}</DateText> },
+                      { k: 'قيمة المنحة', v: <Money sm>{r.granted}</Money> },
+                      { k: 'الدفعة', v: <><Num>{r.no}</Num> من <Num>{r.of}</Num> · مستحقة <DateText>{r.dueAt}</DateText></> },
+                      { k: 'قيمة الدفعة المعتمدة', v: <Money sm>{r.due}</Money> },
+                      /* 9.1.input-3 - the representative authorized to sign, from the agreement in force */
+                      ...(r.rep ? [{ k: 'ممثل الجهة المخوّل', v: <>{r.rep.name} <span className="sub">· {r.rep.title}</span></> }] : []),
+                    ]} />
+                    {/* Client 27 Oct · the card's actions on its own foot, as on the plan tab */}
+                    {!asEntity && (
+                      <div className="cardfoot">
+                        <ButtonLink to={ROUTES.agreement(r.agreement.id)} variant="p">
+                          افتح الاتفاقية
+                          <Icon name={icons.chevron} size="sm" />
+                        </ButtonLink>
+                        <ButtonLink to={ROUTES.agreements} variant="2">صندوق الاتفاقيات</ButtonLink>
+                      </div>
+                    )}
                   </Glass>
-                )
-              )}
+                )}
+              </>}
 
               {tab === 'plan' && <PlanTab plan={planOfProject(r.projectId)} granted={r.granted} />}
 
@@ -609,35 +576,19 @@ export default function RequestPage() {
                 {prow && <FundingTab row={prow} />}
               </>}
 
-              {tab === 'log' && (
-                /* Audit log - rule 16 - with a notification on every transition (rule 17). */
-                <Glass>
-                  <Head title="سجل تدقيق الدفعة" meta={<span className="sub"><Num>{r.log.length}</Num> {nounAfter(r.log.length, NOUN.entry)}</span>} />
-                  <ol className="paylog">
-                    {[...r.log].reverse().map((e, i) => (
-                      <li key={`${e.step}-${i}`}>
-                        {/* doc · step e.step */}
-                        <div className="paylog-b">
-                          <div className="paylog-t">{e.what}</div>
-                          <div className="sub">
-                            {e.who}
-                            {e.role !== e.who && <> · {e.role}</>}
-                            <span className="pc-dot" />
-                            <DateText>{e.at}</DateText>
-                          </div>
-                          {e.note && <div className="paylog-n">{isolate(e.note)}</div>}
-                          {e.notified && (
-                            <div className="paylog-i sub">
-                              <Icon name={icons.send} size="sm" />
-                              إشعار · {e.notified}
-                            </div>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                </Glass>
-              )}
+              {tab === 'files' && <RecordFiles record={`pay:${r.id}`} me={asEntity ? r.entityName : user.name} canUpload={r.state !== 'paid'}
+                seed={r.docs.map((d) => ({ name: d.name, meta: `${d.kind} · ${d.size} · ${d.at}` }))} />}
+              {/* the payment's log · rule 16 · each transition with its notification (rule 17) */}
+              {/* Client 27 Oct · every move on the payment · its workflow transitions and the files added on it */}
+              {tab === 'log' && <LogTab title="سجل الدفعة" entityName={r.entityName} events={recordLog(`pay-${r.id}`, 'الدفعات', [
+                ...r.log.map((e) => ({
+                  at: e.at, by: e.who, what: e.what, note: e.note, dept: e.role !== e.who ? e.role : undefined,
+                  actor: e.who === 'النظام' || e.who === 'الذكاء الاصطناعي' ? 'system' as const : e.who === r.entityName || e.role === 'الجهة المستفيدة' ? 'entity' as const : 'staff' as const,
+                  fields: e.notified ? [{ k: 'الإشعار', v: e.notified }] : [],
+                })),
+                ...fileMoves(`pay:${r.id}`, r.entityName),
+                ...actMoves(r),
+              ].sort((a, b) => a.at.localeCompare(b.at)))} />}
             </div>
 
             <AssistantAside suggest={actions.length > 0 ? <NextStep s={nextPlan} exec={nextExec} /> : undefined} title="قراءة الدفعة" cta="اقرأ الدفعة" empty="لا ملاحظات على هذه الدفعة الآن." readings={readings} />

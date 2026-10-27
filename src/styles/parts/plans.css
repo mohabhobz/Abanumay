@@ -4,14 +4,16 @@
    screens rather than wrapping a row into a block */
 .acttbl-w{padding:0 var(--sp-4) var(--sp-4)}
 .acttbl{min-width:calc(var(--sp-12) * 9)}
-.acttbl col.c-name{width:19%}
-.acttbl col.c-ev{width:12%}
+.acttbl col.c-name{width:17%}
+/* Client 27 Oct · the activity's classification (its phase) as a column */
+.acttbl col.c-cat{width:10%}
+.acttbl col.c-ev{width:10%}
 .acttbl col.c-d{width:11%}
 .acttbl col.c-st{width:10%}
 .acttbl col.c-att{width:11%}
 .acttbl col.c-vf{width:10%}
 .acttbl col.c-nt{width:7%}
-.acttbl col.c-act{width:19%}
+.acttbl col.c-act{width:15%}
 .acttbl td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* two-line cells · the name over its serial, the evidence list, start over end */
 .acttbl td.acttbl-2{white-space:normal;height:auto;padding-block:var(--sp-3);line-height:var(--lh-ui)}
@@ -44,3 +46,6 @@
 .acttbl-d>.sub{font-size:var(--fs-1)}
 .bad-ink{color:var(--warn-ink)}
 .acttbl tbody tr td.acttbl-2>*{display:block}
+
+/* Client 27 Oct · the activities' filters above the one list */
+.acttbl-f{margin-block-end:var(--sp-2)}

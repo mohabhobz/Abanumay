@@ -3,7 +3,7 @@ import { activationTone } from '@/lib/tone'
 import { useEffect, useMemo, useRef } from 'react'
 import { expiryAhead } from '@/data/shared/ai'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { EntityMark, Icon, icons, Mono, Num, Tabs, Tag } from '@/components/ui'
+import { EntityMark, Mono, Num, Tabs, Tag } from '@/components/ui'
 import { Crumbs } from '@/components/shell'
 import { PartnerCard } from '@/features/partners/parts'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -108,34 +108,19 @@ export default function EntityPage() {
               <div className="ehead-id">
                 <EntityMark logo={entity.logo} size="lg" />
                 <div style={{ minWidth: 0 }}>
-                  {/* Client 23 Oct · the account's standing sits beside the name, in its colour · the one
-                      place it is shown on the file · its cause reads on hover and in «حالة الجهة» */}
+                  {/* Client 27 Oct · the account's standing sits above the name, larger, in its colour · its cause
+                      reads on hover and in «حالة الجهة» */}
+                  {!entity.external && <div className="ehead-st ehead-st-top" title={accountWhy(entity) || undefined}><Tag tone={activationTone(accountSay(entity))}>{accountSay(entity)}</Tag></div>}
                   <div className="ehead-t">
                     <h1 className="ptitle">{entity.name}</h1>
-                    {!entity.external && <span className="ehead-st" title={accountWhy(entity) || undefined}><Tag tone={activationTone(accountSay(entity))}>{accountSay(entity)}</Tag></span>}
                   </div>
-                  {/* Code and classification lead: they are the entity's identity in the list too,
-                      under the same names, so the two screens read as one record. */}
+                  {/* Client 27 Oct · the header keeps the entity's identity · its code and name · the
+                      classification, licence, region, city, licensor and governance read in «التعريف» */}
                   <div className="ehead-m sub">
                     <Mono>{entityCode(entity.id, entity.registeredAt)}</Mono>
-                    <span className="pc-dot" />
-                    <span>تصنيف الجهة: <b className="ehead-v">{entity.type}</b></span>
-                    <span className="pc-dot" />
-                    <span>الترخيص <Mono>{entity.licenseNo}</Mono></span>
-                    <span className="pc-dot" />
-                    <Icon name={icons.pinMap} size="sm" /> {entity.region} · {entity.city}
-                  </div>
-                  <div className="ehead-m mt-4">
-                    {/* 13 Oct · audit UI-038 · under the name, on the text's edge, not the logo's · The page header isn't a card's status field - tags here are neutral, and colored
-                        detail lives in the tab cards. */}
-                    <Tag tone="mute">الحوكمة: {entity.governance}</Tag>
                     {/* Client 21 Oct (#14) · the entity's overall evaluation · the average of its closed projects ·
                         this record is the staff's · the entity's portal never shows it */}
                     {evalSum.avg !== null && <Tag tone="mute">متوسط تقييم الجهة <Num>{evalSum.avg}</Num> من 100 · <Num>{evalSum.n}</Num> {nounAfter(evalSum.n, NOUN.project)}</Tag>}
-                    {/* An expired license blocks contracting, so it belongs in the header, not inside a
-                        tab - the decision is made from the top. */}
-                    {detail.licenseExpired && !entity.external && <Tag tone="mute">الترخيص منتهٍ</Tag>}
-                    <span className="sub">{entity.licensor}</span>
                   </div>
                 </div>
               </div>

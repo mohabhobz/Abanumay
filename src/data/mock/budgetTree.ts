@@ -172,6 +172,9 @@ export interface BudgetNode {
    */
   showLabel: boolean
   kind: LineKind
+  /** Client 27 Oct · what the line stands for in the classification · a track, a field or a goal ·
+      its name is then picked from the budget settings' list */
+  category?: 'track' | 'field' | 'goal'
   /** `null` for the tree root alone · that's "primary - 0" in the document */
   parentId: string | null
   /** Allocated amount */

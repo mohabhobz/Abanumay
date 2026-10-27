@@ -55,8 +55,13 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
         <Head title="التعريف" meta={<EntityEdit e={e} d={d} section="id" />} />
         <KV
           rows={[
-            /* Client 24 Oct · what the header already shows (name, code, classification, licence,
-               licensor, region and city, governance) isn't repeated in the tab */
+            /* Client 27 Oct · the entity's definition lives here · the header keeps only its code and name */
+            { k: 'تصنيف الجهة', v: e.type },
+            { k: 'رقم الترخيص', v: <span className="kvpair"><Mono>{e.licenseNo}</Mono>{d.licenseExpired && !e.external && <Tag tone="no">منتهٍ</Tag>}</span> },
+            { k: 'المنطقة', v: e.region },
+            { k: 'المدينة', v: e.city || '—' },
+            { k: 'جهة الترخيص', v: e.licensor || '—' },
+            { k: 'الحوكمة', v: e.governance || '—' },
             { k: 'تاريخ التأسيس', v: <DateText>{d.foundedAt}</DateText> },
             { k: 'تاريخ التسجيل في المؤسسة', v: <DateText>{e.registeredAt}</DateText> },
           ]}

@@ -1,3 +1,6 @@
+import { LogTab } from '@/features/projects/tabs'
+import { recordLog } from '@/features/shared/recordLog'
+import { RecordFiles } from '@/features/shared/RecordFiles'
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
@@ -33,7 +36,7 @@ import { subOutcome } from '@/data/shared/outcome'
    · the grants manager · approves, rejects, or returns it to the supervisor for completion
    The partner opens the same page with `?as=partner`. */
 
-type TabKey = 'data' | 'plan' | 'results' | 'log'
+type TabKey = 'data' | 'plan' | 'results' | 'files' | 'log'
 type Act = { key: string; label: string; kind: string; needsNote?: boolean; run: (note: string) => string[] }
 
 export default function SubProjectPage() {
@@ -158,7 +161,9 @@ export default function SubProjectPage() {
                   { slug: 'data', label: 'البيانات' },
                   { slug: 'plan', label: 'المخرجات ومراحل التنفيذ' },
                   { slug: 'results', label: 'النتائج' },
-                  { slug: 'log', label: 'السجل', count: x.log?.length ?? 0 },
+                  /* Client 27 Oct · the attachments and the log close every record's tabs */
+                  { slug: 'files', label: 'المرفقات' },
+                  { slug: 'log', label: 'سجل المشروع الفرعي', count: x.log?.length ?? 0 },
                 ]}
                 active={tab}
                 onChange={(s) => setTab(s as TabKey)}
@@ -167,21 +172,9 @@ export default function SubProjectPage() {
               {tab === 'data' && <DataCard pf={pf} x={x} edit={entity && !['rejected', 'excluded', 'done'].includes(x.state)} by={by} />}
               {tab === 'plan' && <PlanCard x={x} />}
               {tab === 'results' && <ResultsCard pf={pf} x={x} recording={recording} by={by} />}
-              {tab === 'log' && (
-                <Glass>
-                  <Head title="سجلّ المشروع الفرعي" />
-                  {x.log?.length ? (
-                    <ul className="plchg">
-                      {x.log.slice().reverse().map((a, i) => (
-                        <li key={`${a.at}-${i}`}>
-                          <div className="plchg-h"><Tag tone="mute"><DateText>{a.at}</DateText></Tag><span className="sub">{a.by}</span></div>
-                          <p className="plchg-t">{isolate(a.what)}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : <Empty title="لا سجل بعد." />}
-                </Glass>
-              )}
+              {tab === 'files' && <RecordFiles record={`sub:${pf.id}/${x.id}`} me={by} canUpload={!['rejected', 'excluded'].includes(x.state)}
+                seed={[...x.files.map((n) => ({ name: n, meta: 'مرفقات الطلب' })), ...(x.results?.files ?? []).map((n) => ({ name: n, meta: 'مرفقات النتائج' }))]} />}
+              {tab === 'log' && <LogTab title="سجل المشروع الفرعي" events={recordLog(`sub-${x.id}`, 'المشاريع الفرعية', x.log ?? [])} entityName={entityName(pf)} />}
             </div>
 
             <AssistantAside title="قراءة المشروع الفرعي" cta="اقرأ المشروع" empty="المشروع الفرعي في مساره · لا ملاحظات." readings={readings} ask={!asPartner} />

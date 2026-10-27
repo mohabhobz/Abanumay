@@ -218,8 +218,6 @@ export const PROJECT_TABS = [
   { slug: 'funding', label: 'الربط المالي' },
   { slug: 'entity', label: 'الجهة' },
   { slug: 'history', label: 'المشاريع السابقة' },
-  /* Client 21 Oct (#31) · every document of the project in one place, its own tab */
-  { slug: 'attachments', label: 'المرفقات' },
   { slug: 'agreement', label: 'الاتفاقية' },
   { slug: 'plan', label: 'الخطة' },
   { slug: 'payments', label: 'الدفعات' },
@@ -229,6 +227,9 @@ export const PROJECT_TABS = [
   { slug: 'follow-ups', label: 'المتابعات' },
   /* Manual activities sit right before the log: they are added here and read there. */
   { slug: 'activities', label: 'الفعاليات' },
+  /* Client 21 Oct (#31) · every document of the project in one place, its own tab · client 27 Oct ·
+     the attachments and the log close every record's tabs, in the same place */
+  { slug: 'attachments', label: 'المرفقات' },
   { slug: 'log', label: 'سجل المشروع' },
   /* client 21 Oct (#2) · «المراسلات» left the tabs · the correspondence is a floating chat on the page */
 ] as const
@@ -243,11 +244,12 @@ export type ProjectTabSlug = (typeof PROJECT_TABS)[number]['slug']
  */
 export const ENTITY_TABS = [
   { slug: 'data', label: 'بيانات الجهة' },
-  { slug: 'docs', label: 'المستندات' },
   { slug: 'banks', label: 'الحسابات البنكية' },
   { slug: 'projects', label: 'مشاريعها' },
   /* 2.4.1 · its registration and update requests, each with its own history */
   { slug: 'requests', label: 'طلباتها' },
+  /* Client 27 Oct · the entity's documents are its attachments · they and the log close the tabs */
+  { slug: 'docs', label: 'المرفقات' },
   { slug: 'log', label: 'سجل الجهة' },
 ] as const
 

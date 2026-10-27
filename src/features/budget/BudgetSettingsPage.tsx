@@ -1,4 +1,4 @@
-import { TaxonomyTab } from './TaxonomyTab'
+import { FieldsTab, GoalsTab, TracksTab } from './TaxonomyTab'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FormField, FieldBox, Button, FieldMultiSelect,
@@ -26,8 +26,10 @@ const TABS = [
   { slug: 'years', label: 'السنوات المالية' },
   { slug: 'sources', label: 'مصادر التمويل' },
   { slug: 'directions', label: 'التوجهات الاستراتيجية' },
-  /* Client sheet 26 Oct (#112) */
-  { slug: 'taxonomy', label: 'المسارات والمجالات والأهداف' },
+  /* Client sheet 26 Oct (#112) · client 27 Oct · one tab per level, in the funding sources' shape */
+  { slug: 'tracks', label: 'المسارات' },
+  { slug: 'fields', label: 'المجالات' },
+  { slug: 'goals', label: 'الأهداف' },
   { slug: 'limits', label: 'حدود الصلاحيات' },
   { slug: 'rules', label: 'قواعد الاعتماد والمناقلة' },
 ] as const
@@ -54,7 +56,7 @@ const TABS = [
 export default function BudgetSettingsPage() {
   const navigate = useNavigate()
   const { values: v, set } = useQueryParams<Params>(KEYS)
-  const tab = TABS.some((t) => t.slug === v.tab) ? (v.tab as string) : TABS[0].slug
+  const tab = TABS.some((t) => t.slug === v.tab) ? (v.tab as string) : v.tab === 'taxonomy' ? 'tracks' : TABS[0].slug
   useBudget()
   const dock = useDockSlot()
 
@@ -76,7 +78,9 @@ export default function BudgetSettingsPage() {
           {tab === 'years' && <YearsTab />}
           {tab === 'sources' && <SourcesTab />}
           {tab === 'directions' && <DirectionsTab />}
-          {tab === 'taxonomy' && <TaxonomyTab />}
+          {tab === 'tracks' && <TracksTab />}
+          {tab === 'fields' && <FieldsTab />}
+          {tab === 'goals' && <GoalsTab />}
           {tab === 'limits' && <LimitsTab />}
           {tab === 'rules' && <RulesTab />}
         </div>

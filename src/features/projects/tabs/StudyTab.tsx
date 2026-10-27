@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  FormField, FieldBox, Button, DateText, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Money, MoneyField, Num, Person, Switch, Tag,
+  FormField, FieldBox, Button, DateText, FieldSelect, Glass, Head, KV, Mono, Money, MoneyField, Num, Person, Switch, Tag,
 } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { NOUN, isolate, nounAfter, pct, projectCode } from '@/lib/format'
 import type { ProjectRow } from '@/types/domain'
 import { CRITERIA, GROUP_SAY, studyScore, type Criterion } from '@/data/intake/criteria'
-import { domainBudget, fitOf, similarProjects } from '@/data/intake/insight'
+import { domainBudget } from '@/data/intake/insight'
 import { consultantByKey, consultantsFor } from '@/data/intake/consultants'
 import {
-  adviceCode, flowOf, forwardBlockers, referConsultant, referralOpen, saveStudy, type Recommendation, type Study } from '@/data/intake/flow'
+  adviceCode, flowOf, forwardBlockers, referConsultant, referralOpen, saveStudy, type Study } from '@/data/intake/flow'
 import { FundingPlanCard } from '@/features/budget/FundingPlan'
 import { fixtures } from '@/data/repository'
 import { PRIORITY_SAY, PRIORITY_TONE, priorityLog, priorityOf, setPriority, usePriority, type Priority } from '@/data/intake/priority'
@@ -54,10 +54,9 @@ const notesOf = (s?: Study): string => {
   return [s.technical && `الدراسة الفنية: ${s.technical}`, s.admin && `الدراسة الإدارية: ${s.admin}`].filter(Boolean).join('\n')
 }
 
-/* Client 21 Oct (#19) · the study reads top to bottom in the order the supervisor works it:
-   the project's definition · the exclusion criteria · the study criteria · the financial plan ·
-   the domain's budget and the priority · the assistant's reading · the recommendation · the
-   foundation's outputs last. Everything that used to sit in a side block is in this one column. */
+/* Client 21 Oct (#19) · client 27 Oct · the study reads top to bottom: the recommendation first (the
+   study's result, with the priority) · the project's definition · the exclusion criteria · the study
+   criteria · the financial plan · the goal's budget · the foundation's outputs last. */
 export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; editable: boolean }) {
   const f = flowOf(row.id)
   const blank: Omit<Study, 'at' | 'version' | 'field'> = {
@@ -82,6 +81,85 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
 
   return (
     <>
+      <Glass>
+        {/* Client 27 Oct · the study's result opens the tab · the supervisor's recorded recommendation in
+            its colour, the priority with it · the recommendation itself is taken from the decision bar
+            («توصية بالموافقة» · «توصية بالرفض»), so the card no longer repeats those two options, and
+            the budget figures live in the goal's budget card below */}
+        <Head title="التوصية" />
+        <p className="stdy-rec">
+          <span className="lb">توصية المشرف</span>
+          {f.study?.recommendation === 'approve' ? <Tag tone="ok">توصية بالموافقة</Tag>
+            : f.study?.recommendation === 'reject' ? <Tag tone="no">توصية بالرفض</Tag>
+            : <span className="sub">لم تُسجَّل بعد</span>}
+        </p>
+        <div className="regfields mt-3">
+          {d.recommendation !== 'reject' && (
+            <FormField label="المبلغ الموصى به">
+              <MoneyField
+                value={d.amount}
+                label="المبلغ الموصى به"
+                disabled={!editable}
+                onChange={(v) => set('amount', Math.min(row.amountRequested, Number(v) || 0))}
+              />
+            </FormField>
+          )}
+          {/* v3 · 3.2.19 · 3.4.25 · the reason from the settings list, or «أخرى» with its text */}
+          {d.recommendation === 'reject' && (
+            <FormField label="سبب التوصية بالرفض" required>
+              <FieldSelect value={d.rejectReason ?? ''} label="سبب التوصية بالرفض" placeholder="اختر السبب" disabled={!editable}
+                options={[...REJECT_REASONS, OTHER].map((x) => ({ value: x, label: x }))} onChange={(v) => set('rejectReason', v)} />
+            </FormField>
+          )}
+          {d.recommendation === 'reject' && d.rejectReason === OTHER && (
+            <FormField label="السبب" required>
+              <FieldBox><input value={d.rejectOther ?? ''} disabled={!editable} aria-label="سبب آخر" onChange={(e) => set('rejectOther', e.target.value)} /></FieldBox>
+            </FormField>
+          )}
+          <PriorityField row={row} me={me} editable={editable} />
+          {/* v3 · 3.2.17 · meeting 20 Oct · the supervisor classifies the project during the study ·
+              regular, for an external party, or a portfolio (a portfolio takes its path after approval) */}
+          <FormField label="تصنيف المشروع">
+            <FieldSelect value={d.classification ?? 'مشروع عادي'} label="تصنيف المشروع" disabled={!editable}
+              options={CLASSES.map((x) => ({ value: x.value, label: x.label }))}
+              onChange={(v) => set('classification', v as NonNullable<Study['classification']>)} />
+            {d.classification === 'محفظة' && !isStrategic(row.entityId) && <span className="sub regf-h">الجهة ليست شريكًا استراتيجيًا بعد</span>}
+          </FormField>
+          <FormField label="المبررات" required wide>
+            <FieldBox area>
+              <textarea
+                rows={3}
+                value={d.justification}
+                disabled={!editable}
+                onChange={(e) => set('justification', e.target.value)}
+                aria-label="مبررات التوصية"
+                placeholder="لماذا هذه التوصية · تظهر لمدير المنح كما هي"
+              />
+            </FieldBox>
+          </FormField>
+          {/* #25 · the supervisor writes the special conditions in the study · every approver reads them */}
+          <ConditionsField row={row} me={me} editable={editable} />
+          {/* Meeting 20 Oct · the consultant is an option of the study, not a fixed block */}
+          <div className="regf-w">
+            <Switch
+              label="يحتاج رأي مستشار"
+              on={Boolean(d.needsConsultant || f.referral)}
+              disabled={!editable || Boolean(f.referral)}
+              lockNote={f.referral ? 'أُحيل المشروع إلى مستشار' : undefined}
+              onChange={(v) => set('needsConsultant', v)}
+            />
+            {(d.needsConsultant || f.referral) && <ConsultantPick row={row} me={me} editable={editable} />}
+          </div>
+        </div>
+        {editable && (
+          <div className="regfoot">
+            <span className="decsent">{msg || (blockers.length ? `قبل الإحالة: ${blockers[0]}` : 'جاهزة للإحالة من شريط القرار')}</span>
+            <span className="pc-sp" />
+            <Button type="button" variant="p" onClick={save}>احفظ الدراسة</Button>
+          </div>
+        )}
+      </Glass>
+
       <DefinitionCard row={row} />
       {f.returnNote && (
         <Glass>
@@ -178,98 +256,8 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
       {/* 3.2.14 · 3.2.15 · the supervisor decides the project's financial term in the study */}
       <FundingPlanCard row={row} amount={asked} editable={editable} me={me} />
 
-      <div className="g2-in">
-        <DomainBudgetCard row={row} asked={asked} />
-        <PriorityCard row={row} me={me} editable={editable} />
-      </div>
+      <DomainBudgetCard row={row} asked={asked} />
 
-      <AssistReadingCard row={row} />
-
-      <Glass>
-        <Head title="التوصية" />
-        {/* #22 · the budget beside the recommendation · no scrolling back up to the domain's card */}
-        <BudgetStrip row={row} asked={asked} />
-        <div className="cfgchips mt-3" role="radiogroup" aria-label="التوصية">
-          {(['approve', 'reject'] as Recommendation[]).map((r) => (
-            <Button plain
-              key={r}
-              type="button"
-              role="radio"
-              aria-checked={d.recommendation === r}
-              className={`cfgchip${d.recommendation === r ? ' on' : ''}`}
-              disabled={!editable || (r === 'approve' && excluded.length > 0 && d.recommendation !== 'approve')}
-              title={r === 'approve' && excluded.length ? 'معيار استبعاد منطبق' : undefined}
-              onClick={() => set('recommendation', r)}
-            >
-              {r === 'approve' ? 'توصية بالموافقة' : 'توصية بالرفض'}
-            </Button>
-          ))}
-        </div>
-        <div className="regfields mt-3">
-          {d.recommendation === 'approve' && (
-            <FormField label="المبلغ الموصى به">
-              <MoneyField
-                value={d.amount}
-                label="المبلغ الموصى به"
-                disabled={!editable}
-                onChange={(v) => set('amount', Math.min(row.amountRequested, Number(v) || 0))}
-              />
-            </FormField>
-          )}
-          {/* v3 · 3.2.19 · 3.4.25 · the reason from the settings list, or «أخرى» with its text */}
-          {d.recommendation === 'reject' && (
-            <FormField label="سبب التوصية بالرفض" required>
-              <FieldSelect value={d.rejectReason ?? ''} label="سبب التوصية بالرفض" placeholder="اختر السبب" disabled={!editable}
-                options={[...REJECT_REASONS, OTHER].map((x) => ({ value: x, label: x }))} onChange={(v) => set('rejectReason', v)} />
-            </FormField>
-          )}
-          {d.recommendation === 'reject' && d.rejectReason === OTHER && (
-            <FormField label="السبب" required>
-              <FieldBox><input value={d.rejectOther ?? ''} disabled={!editable} aria-label="سبب آخر" onChange={(e) => set('rejectOther', e.target.value)} /></FieldBox>
-            </FormField>
-          )}
-          {/* v3 · 3.2.17 · meeting 20 Oct · the supervisor classifies the project during the study ·
-              regular, for an external party, or a portfolio (a portfolio takes its path after approval) */}
-          <FormField label="تصنيف المشروع">
-            <FieldSelect value={d.classification ?? 'مشروع عادي'} label="تصنيف المشروع" disabled={!editable}
-              options={CLASSES.map((x) => ({ value: x.value, label: x.label }))}
-              onChange={(v) => set('classification', v as NonNullable<Study['classification']>)} />
-            {d.classification === 'محفظة' && !isStrategic(row.entityId) && <span className="sub regf-h">الجهة ليست شريكًا استراتيجيًا بعد</span>}
-          </FormField>
-          <FormField label="المبررات" required wide>
-            <FieldBox area>
-              <textarea
-                rows={3}
-                value={d.justification}
-                disabled={!editable}
-                onChange={(e) => set('justification', e.target.value)}
-                aria-label="مبررات التوصية"
-                placeholder="لماذا هذه التوصية · تظهر لمدير المنح كما هي"
-              />
-            </FieldBox>
-          </FormField>
-          {/* #25 · the supervisor writes the special conditions in the study · every approver reads them */}
-          <ConditionsField row={row} me={me} editable={editable} />
-          {/* Meeting 20 Oct · the consultant is an option of the study, not a fixed block */}
-          <div className="regf-w">
-            <Switch
-              label="يحتاج رأي مستشار"
-              on={Boolean(d.needsConsultant || f.referral)}
-              disabled={!editable || Boolean(f.referral)}
-              lockNote={f.referral ? 'أُحيل المشروع إلى مستشار' : undefined}
-              onChange={(v) => set('needsConsultant', v)}
-            />
-            {(d.needsConsultant || f.referral) && <ConsultantPick row={row} me={me} editable={editable} />}
-          </div>
-        </div>
-        {editable && (
-          <div className="regfoot">
-            <span className="decsent">{msg || (blockers.length ? `قبل الإحالة: ${blockers[0]}` : 'جاهزة للإحالة من شريط القرار')}</span>
-            <span className="pc-sp" />
-            <Button type="button" variant="p" onClick={save}>احفظ الدراسة</Button>
-          </div>
-        )}
-      </Glass>
 
       {/* #18 · the foundation's outputs close the study · edited here only */}
       <OrgOutputsCard row={row} />
@@ -314,77 +302,29 @@ function DefinitionCard({ row }: { row: ProjectRow }) {
   )
 }
 
-/** #22 · the four budget figures as one compact row · shown beside the recommendation */
-function BudgetStrip({ row, asked }: { row: ProjectRow; asked: number }) {
-  useBudget()
-  const budget = domainBudget(row)
-  if (!budget) return <p className="sub cnote">لا بند لمجال «{row.field}» في ميزانية السنة المعتمدة.</p>
-  const after = budget.money.available - asked
-  return (
-    <dl className="stdy-bud" aria-label="ميزانية المجال">
-      <div><dt>المخصص</dt><dd><Money>{budget.money.allocated}</Money></dd></div>
-      <div><dt>المعتمد</dt><dd><Money>{budget.money.held + budget.money.paid}</Money></dd></div>
-      <div><dt>المتاح الآن</dt><dd><Money>{budget.money.available}</Money></dd></div>
-      <div className={after < 0 ? 'bad' : undefined}><dt>بعد هذه التوصية</dt><dd>{after >= 0 ? <Money>{after}</Money> : <Tag tone="warn">يتجاوز المتاح</Tag>}</dd></div>
-    </dl>
-  )
-}
-
-/** The domain's budget · the line the request draws on */
+/** Client 27 Oct · the budget the request draws on · the project's money comes from its goal's line,
+    so the card names the whole path (track · field · goal) and reads the goal's figures */
 function DomainBudgetCard({ row, asked }: { row: ProjectRow; asked: number }) {
   useBudget()
   const budget = domainBudget(row)
+  const money = budget?.goal?.money
   return (
     <Glass>
-      <Head title="ميزانية المجال" meta={<span className="sub">{budget?.label ?? row.field}</span>} />
-      {budget ? (
-        <>
-          <KV
-            rows={[
-              { k: 'المخصص', v: <Money>{budget.money.allocated}</Money> },
-              { k: 'المحجوز والمصروف', v: <Money>{budget.money.held + budget.money.paid}</Money> },
-              { k: 'المتاح الآن', v: <b><Money>{budget.money.available}</Money></b> },
-              { k: 'بعد هذا الطلب', v: budget.money.available - asked >= 0 ? <Money>{budget.money.available - asked}</Money> : <Tag tone="warn">يتجاوز المتاح</Tag> },
-            ]}
-          />
-          {budget.goal && <p className="sub cnote">بند الهدف «{budget.goal.label}» متاح فيه <Money>{budget.goal.money.available}</Money></p>}
-        </>
-      ) : (
-        <p className="sub cnote">لا بند لهذا المجال في ميزانية السنة المعتمدة.</p>
-      )}
-    </Glass>
-  )
-}
-
-/** The assistant's reading · the fit signals and similar projects · a support, not a decision */
-function AssistReadingCard({ row }: { row: ProjectRow }) {
-  const fit = fitOf(row)
-  const similar = similarProjects(row)
-  return (
-    <Glass>
-      <Head title="قراءة المساعد" meta={<Tag tone={fit.score >= 70 ? 'ok' : 'warn'}>التوافق {pct(fit.score)}</Tag>} />
-      <div className="stdy-read">
-        <ul className="payq-ck">
-          {fit.signals.map((s) => (
-            <li key={s.text} className={s.tone === 'ok' ? 'ok' : 'no'}>
-              <Icon name={s.tone === 'ok' ? icons.check : icons.alert} size="sm" />
-              <span>{s.text}</span>
-            </li>
-          ))}
-        </ul>
-        <div>
-          <h3 className="stdy-h">مشاريع مشابهة</h3>
-          <ul className="stdy-sim">
-            {similar.map((p) => (
-              <li key={p.id}>
-                <Link className="tlink trim1" to={ROUTES.project(p.id)}>{p.name}</Link>
-                <span className="sub">{p.entityName} · <Money>{p.amountGranted || p.amountRequested}</Money> · {p.statusGroup}</span>
-              </li>
-            ))}
-            {similar.length === 0 && <li className="sub">لا مشاريع في الهدف نفسه بعد.</li>}
-          </ul>
-        </div>
-      </div>
+      <Head title="ميزانية الهدف" />
+      <KV
+        rows={[
+          { k: 'المسار', v: row.track },
+          { k: 'المجال', v: row.field },
+          { k: 'الهدف', v: row.goal },
+          ...(money ? [
+            { k: 'المخصص', v: <Money>{money.allocated}</Money> },
+            { k: 'المحجوز والمصروف', v: <Money>{money.held + money.paid}</Money> },
+            { k: 'المتاح الآن', v: <b><Money>{money.available}</Money></b> },
+            { k: 'بعد هذا الطلب', v: money.available - asked >= 0 ? <Money>{money.available - asked}</Money> : <Tag tone="warn">يتجاوز المتاح</Tag> },
+          ] : []),
+        ]}
+      />
+      {!money && <p className="sub cnote">لا بند للهدف «{row.goal}» في ميزانية السنة المعتمدة.</p>}
     </Glass>
   )
 }
@@ -469,8 +409,9 @@ function ConsultantPick({ row, me, editable }: { row: ProjectRow; me: string; ed
   )
 }
 
-/** Batch 8 · the request's priority · set by hand or computed, by the foundation's decision */
-function PriorityCard({ row, me, editable }: { row: ProjectRow; me: string; editable: boolean }) {
+/** Batch 8 · the request's priority · set by hand or computed, by the foundation's decision ·
+    client 27 Oct · a field of the recommendation, not a card of its own */
+function PriorityField({ row, me, editable }: { row: ProjectRow; me: string; editable: boolean }) {
   usePriority()
   const pr = priorityOf(row.id)
   const [level, setLevel] = useState<Priority>(pr.level ?? 'medium')
@@ -478,19 +419,18 @@ function PriorityCard({ row, me, editable }: { row: ProjectRow; me: string; edit
   const [bad, setBad] = useState('')
   const log = priorityLog(row.id)
   return (
-    <Glass>
-      <Head title="الأولوية" meta={pr.level ? <Tag tone={PRIORITY_TONE[pr.level]}>{pr.say}</Tag> : <span className="sub">{pr.say}</span>} />
-      {pr.level && <p className="sub cnote">{pr.basis}</p>}
+    <FormField label="الأولوية" wide as="div" after={<span className="stdy-pr">{pr.level ? <Tag tone={PRIORITY_TONE[pr.level]}>{pr.say}</Tag> : <span className="sub">{pr.say}</span>}</span>}>
+      {pr.level && <span className="sub regf-h">{pr.basis}</span>}
       {pr.mode === 'manual' && editable && (
-        <div className="apv-row mt-2">
+        <div className="apv-row">
           <FieldSelect label="الأولوية" value={level} options={(Object.keys(PRIORITY_SAY) as Priority[]).map((k) => ({ value: k, label: PRIORITY_SAY[k] }))} onChange={(v) => setLevel(v as Priority)} />
           <FieldBox><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب الأولوية" placeholder="السبب" /></FieldBox>
           <Button type="button" variant="2" size="sm" onClick={() => { const out = setPriority(row.id, level, why, me); setBad(out[0] ?? ''); if (!out.length) setWhy('') }}>حدّد الأولوية</Button>
-          {bad && <span className="bad" role="alert">{bad}</span>}
         </div>
       )}
-      {log.length > 1 && <p className="sub cnote">تغيّرت <Num>{log.length}</Num> مرات · السابقة {PRIORITY_SAY[log.at(-2)!.level]}</p>}
-    </Glass>
+      {bad && <span className="bad regf-h" role="alert">{bad}</span>}
+      {log.length > 1 && <span className="sub regf-h">تغيّرت <Num>{log.length}</Num> مرات · السابقة {PRIORITY_SAY[log.at(-2)!.level]}</span>}
+    </FormField>
   )
 }
 

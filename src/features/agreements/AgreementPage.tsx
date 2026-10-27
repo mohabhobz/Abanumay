@@ -1,10 +1,8 @@
 import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
-import { Related } from '@/components/related/Related'
 import { useState } from 'react'
 import { readClauses } from '@/data/shared/ai'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { HEAT_TONE } from '@/lib/tone'
 import { FormField, FieldBox, Modal, ModalHead, Button, EditButton, type TabItem, Tabs, DockActions,
   BackTo, CheckMark, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person,
   StepArc, Tag, type GateStep,
@@ -15,7 +13,7 @@ import { useRole } from '@/hooks/useRole'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
 import { isolate, nf, NOUN, nounAfter } from '@/lib/format'
-import { AGR_LIMIT, agrHeat, agrPaymentsBalance, agreementById } from '@/data/mock/agreements'
+import { AGR_LIMIT, agrPaymentsBalance, agreementById } from '@/data/mock/agreements'
 import { KINDS, TEMPLATES, toPayments, type DraftPay } from '@/data/mock/agreementNew'
 import { useBudget } from '@/data/budget/store'
 import {
@@ -28,9 +26,12 @@ import { AgrActionDock } from './AgrActionDock'
 import { OtpPanel } from '@/features/entities/OtpPanel'
 import { entityById } from '@/data/mock/entities'
 import { ScheduleEditor, asDraft } from './ScheduleEditor'
-import { AgreementTextCard, AnnexesCard, ClausesCard, IssuesCard, ReviewCard, SignaturesCard, VersionsCard } from './parts'
+import { AgreementTextCard, AnnexesCard, ClausesCard, SignaturesCard, VersionsCard } from './parts'
 import { AssistantAside } from '@/features/shared/AssistantAside'
-import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { LogTab } from '@/features/projects/tabs'
+import { RecordEntityCard, RecordProjectCard } from '@/features/shared/RecordParties'
+import { RecordFiles } from '@/features/shared/RecordFiles'
+import type { LogEvent } from '@/data/mock/log'
 import { agreementOutcome } from '@/data/shared/outcome'
 
 /* A single agreement · every station of the flow on one screen (BPD-008).
@@ -153,8 +154,6 @@ function AgreementView({ a }: { a: AgreementRow }) {
   const ladder = ladderFor(a)
   const actions = agrActions(a, role.key, asEntity)
   const holder = agrHolder(a)
-  const heat = agrHeat(a)
-  const days = Math.round(a.hoursInStage / 24)
   const balance = agrPaymentsBalance({ ...a, payments })
   const reserved = reservedOf(a)
   const gap = a.amount - reserved
@@ -195,7 +194,12 @@ function AgreementView({ a }: { a: AgreementRow }) {
     { slug: 'data', label: 'بيانات الاتفاقية' },
     { slug: 'pay', label: 'جدول الدفعات', count: payments.length || undefined },
     { slug: 'versions', label: 'الإصدارات والملاحق', count: (a.docs.length + (asEntity ? 0 : f.versions.length)) || undefined },
-    ...(asEntity ? [] : [{ slug: 'log', label: 'سجل التدقيق', count: a.log.length || undefined }]),
+    /* Client 27 Oct · the project and the entity read in tabs, as on the other records · the
+       agreement's own log in the projects' log shape (the audit log tab is gone) */
+    { slug: 'project', label: 'المشروع' },
+    { slug: 'entity', label: 'الجهة' },
+    { slug: 'files', label: 'المرفقات' },
+    ...(asEntity ? [] : [{ slug: 'log', label: 'سجل الاتفاقية', count: a.log.length || undefined }]),
   ]
   const tab = tabs.find((t) => t.slug === params.get('tab'))?.slug ?? 'data'
   const goTab = (slug: string) => {
@@ -218,31 +222,21 @@ function AgreementView({ a }: { a: AgreementRow }) {
                 {a.version > 1 && <> · الإصدار <span className="num">{a.version}</span></>}
                 {f.inForce !== undefined && f.inForce !== a.version && <> · النافذ الإصدار <span className="num">{f.inForce}</span></>}
               </p>
-              <Related plain={asEntity} links={[{ kind: 'project', id: a.projectId, label: a.projectName }, { kind: 'entity', id: a.entityId, label: a.entityName }]} />
               <div className="pamt">
                 <div className="lb">قيمة المنحة</div>
                 <div className="v"><Money sm>{a.amount}</Money></div>
-                <div className="sub">
-                  {gap === 0
-                    ? <>على <Num>{payments.length}</Num> {nounAfter(payments.length, NOUN.payment)}</>
-                    : <span className="bad">المحجوز <Mono>{nf.format(reserved)}</Mono> · فرق <Mono>{nf.format(Math.abs(gap))}</Mono></span>}
-                </div>
+                {/* Client 27 Oct · the payment count left the header (the schedule tab counts them) · a
+                    value that differs from the budget hold still says so here */}
+                {gap !== 0 && <div className="sub"><span className="bad">المحجوز <Mono>{nf.format(reserved)}</Mono> · فرق <Mono>{nf.format(Math.abs(gap))}</Mono></span></div>}
               </div>
             </div>
             <div className="pgates">
-              <StepArc steps={ladder} compact={mobile} aria={`مسار اعتماد الاتفاقية، ${center.t}`} holderKey={center.k} holder={center.t} rest={center.rest} />
+              <StepArc steps={ladder} compact={mobile} aria={`مسار اعتماد الاتفاقية، ${center.t}`} holderKey={center.k} holder={center.t} rest={center.rest} outcome={agreementOutcome(a.stage)} />
             </div>
           </header>
 
-          <div className="prow">
-            <Tag tone={heat === 'ok' ? (a.stage === 'active' ? 'ok' : a.stage === 'returned' ? 'warn' : 'mute') : HEAT_TONE[heat]}>{agrStageSay(a)}</Tag>
-            {/* Client sheet 24 Oct (#95) · the agreement's outcome once its approval ends */}
-            <OutcomeTag outcome={agreementOutcome(a.stage)} />
-            {holder && <span className="sub">عند {HOLDER_SAY[holder]} منذ <Num>{days}</Num> {nounAfter(days, NOUN.day)}</span>}
-            {a.stage === 'active' && a.activeAt && <span className="sub">فُعّلت في <DateText>{a.activeAt}</DateText></span>}
-            <span className="pc-sp" />
-            <Person name={a.owner} />
-          </div>
+          {/* Client 27 Oct · the status row under the header is gone · the arc names who holds the
+              agreement now, and its final outcome once it ends · the preparer reads in the data tab */}
 
           {asEntity && signing && holder === 'entity' && (
             <Glass>
@@ -278,6 +272,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
                     { k: 'النموذج', v: a.kind === 'ورقية' ? (f.paperCopy ?? 'نسخة ورقية') : a.template },
                     { k: 'الإصدار', v: <><Num>{a.version}</Num>{f.inForce !== undefined && <> · النافذ <Num>{f.inForce}</Num></>}</> },
                     { k: 'بدء الإعداد', v: <DateText>{a.openedAt}</DateText> },
+                    { k: 'معد الاتفاقية · مشرف المنح', v: <Person name={a.owner} /> },
                     { k: 'ممثل الجهة', v: <>{a.signer.name} <span className="sub">· {a.signer.title}</span></> },
                   ]} />
                 </Glass>
@@ -291,13 +286,8 @@ function AgreementView({ a }: { a: AgreementRow }) {
 
                 <ClausesCard clauses={edit ? clauses : f.clauses} onChange={edit ? setClauses : undefined} />
 
-                {/* What supports the decision */}
-                {!asEntity && a.stage !== 'active' && a.stage !== 'cancelled' && (
-                  <IssuesCard issues={issues} ready="الاتفاقية مكتملة." />
-                )}
-                {!asEntity && a.stage !== 'active' && a.stage !== 'cancelled' && (
-                  <ReviewCard hints={hints} onAdd={edit ? (c) => setClauses((xs) => [...xs, c]) : undefined} onTemplate={edit && kind === 'إلكترونية' ? setTemplate : undefined} />
-                )}
+                {/* Client 27 Oct · the completeness check and the assistant's review cards are gone · what
+                    stops sending still reads in the assistant aside and on the decision bar */}
 
                 <AgreementTextCard parts={text} />
 
@@ -338,28 +328,14 @@ function AgreementView({ a }: { a: AgreementRow }) {
                 )}
               </>}
 
-              {tab === 'log' && (
-                <Glass>
-                  <Head title="سجل التدقيق" meta={<span className="sub"><Num>{a.log.length}</Num> {nounAfter(a.log.length, NOUN.entry)}</span>} />
-                  <ol className="paylog">
-                    {[...a.log].reverse().map((e, i) => (
-                      <li key={`${e.step}-${i}`}>
-                        {/* doc · step e.step */}
-                        <div className="paylog-b">
-                          <div className="paylog-t">{e.what}</div>
-                          <div className="sub">
-                            {e.who}{e.role !== e.who && <> · {e.role}</>}
-                            <span className="pc-dot" /><DateText>{e.at}</DateText>
-                            {e.version > 1 && <><span className="pc-dot" />الإصدار <span className="num">{e.version}</span></>}
-                          </div>
-                          {e.note && <div className="paylog-n">{isolate(e.note)}</div>}
-                          {e.notified && <div className="paylog-i sub"><Icon name={icons.send} size="sm" />إشعار · {e.notified}</div>}
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                </Glass>
+              {tab === 'project' && <RecordProjectCard projectId={a.projectId} projectName={a.projectName} />}
+              {tab === 'entity' && <RecordEntityCard entityId={a.entityId} entityName={a.entityName} extra={[{ k: 'ممثل الجهة في الاتفاقية', v: <>{a.signer.name} <span className="sub">· {a.signer.title}</span></> }]} />}
+              {tab === 'files' && (
+                <RecordFiles record={`agreement:${a.id}`} me={asEntity ? a.entityName : user.name} canUpload={a.stage !== 'cancelled'}
+                  seed={[...a.docs.map((d) => ({ name: d.name, meta: d.kind })), ...(f.paperCopy ? [{ name: f.paperCopy, meta: 'النسخة الورقية الموقّعة' }] : [])]} />
               )}
+
+              {tab === 'log' && <LogTab title="سجل الاتفاقية" events={agreementLog(a)} entityName={a.entityName} entityLogo={entityById(a.entityId)?.logo} />}
             </div>
 
             <AssistantAside
@@ -432,4 +408,26 @@ function AgreementView({ a }: { a: AgreementRow }) {
       </div>
     </AppLayout>
   )
+}
+
+/** Client 27 Oct · the agreement's events in the projects' log shape · newest first */
+function agreementLog(a: AgreementRow): LogEvent[] {
+  return [...a.log].reverse().map((e, i): LogEvent => ({
+    id: `ag-${a.id}-${a.log.length - i}`,
+    action: e.what,
+    dept: e.role,
+    by: e.who,
+    actor: e.who === a.signer.name || e.who === a.entityName ? 'entity' : 'staff',
+    at: e.at,
+    time: '',
+    days: 0,
+    hours: 0,
+    limit: 0,
+    fields: [
+      ...(e.note ? [{ k: 'الملاحظة', v: e.note }] : []),
+      ...(e.version > 1 ? [{ k: 'الإصدار', v: String(e.version) }] : []),
+      ...(e.notified ? [{ k: 'الإشعار', v: e.notified }] : []),
+    ],
+    tone: 'mute',
+  }))
 }

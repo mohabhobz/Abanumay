@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, StatRow,
-  Empty, Glass, GroupPicker, Icon, MultiSelect, Num, SearchBox, Segments, Stat,
+import { Button,
+  Empty, Glass, GroupPicker, Icon, MultiSelect, SearchBox, Segments,
   Toggle, ViewToggle, icons,
 } from '@/components/ui'
-import { countOf, NOUN, nounAfter, pct } from '@/lib/format'
+import { countOf, NOUN, nounAfter } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useStickyGroup } from '@/hooks/useStickyGroup'
@@ -29,7 +29,7 @@ import { PlanCard } from './PlanCard'
 import { COLS, GROUPS } from './columns'
 import { OUTCOME_PICK_SAY, planOutcome, outcomeMatches, outcomeOptions, type OutcomePick } from '@/data/shared/outcome'
 
-const KEYS = ['q', 'stage', 'owner', 'wait', 'late', 'stuck', 'entity', 'res', 'view', 'group', 'adv', 'ord'] as const
+const KEYS = ['q', 'stage', 'chg', 'owner', 'wait', 'late', 'stuck', 'entity', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
 
 /* Plans inbox - the most significant gap found in the audit.
@@ -48,7 +48,7 @@ type Params = Record<(typeof KEYS)[number], string | undefined>
    the library, no composition written just for this screen. */
 
 /* What's above doesn't count toward the advanced-filters badge. */
-const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'stage', 'wait', 'late', 'stuck']
+const NOT_FILTERS: (keyof Params)[] = ['q', 'view', 'group', 'adv', 'stage', 'chg', 'wait', 'late', 'stuck']
 
 export default function PlansPage() {
   const { values: v, set, clear, activeCount } = useQueryParams<Params>(KEYS)
@@ -68,6 +68,8 @@ export default function PlansPage() {
     [],
   )
 
+  /* Client 27 Oct · «طلبات التعديل» · the plans with a change or cancel request still open */
+  const openChange = (p: PlanRow) => (p.changes ?? []).some((c) => c.state === 'waiting' || c.state === 'returned' || c.state === 'toAgreement')
   const match = (p: PlanRow, skipStage = false, skipRes = false): boolean => {
     /* Client sheet 24 Oct (#95) · the procedure's outcome */
     if (!skipRes && !outcomeMatches(planOutcome(p.stage), readList(v.res))) return false
@@ -76,6 +78,7 @@ export default function PlansPage() {
     const owners = readList(v.owner)
     const ents = readList(v.entity)
     if (!skipStage && stages.length && !stages.includes(p.stage)) return false
+    if (!skipStage && v.chg === '1' && !openChange(p)) return false
     if (owners.length && !owners.includes(p.owner)) return false
     if (ents.length && !ents.includes(p.entityName)) return false
     if (v.wait === '1' && waitingReview(p).length === 0) return false
@@ -111,7 +114,7 @@ export default function PlansPage() {
     const base = planRows.filter((p) => match(p, true))
     const m = new Map<PlanStage, number>()
     for (const p of base) m.set(p.stage, (m.get(p.stage) ?? 0) + 1)
-    return { m, total: base.length }
+    return { m, total: base.length, changes: base.filter(openChange).length }
   }, [v.owner, v.entity, v.wait, v.late, v.stuck, v.q, v.res])
 
   useStickyGroup('plans', v.group, (x) => set({ group: x }))
@@ -191,38 +194,11 @@ export default function PlansPage() {
             empty="لا توجد في النطاق الحالي أنشطة بانتظار المراجعة أو متأخّرة."
           />
 
-          {/* Note: the spec has no indicators for this module - these four are derived from its own
-              rules, and logged elsewhere as placeholders, the same way the disbursement indicators
-              have an empty target. */}
-          <StatRow title="مؤشرات الخطط">
-            <Stat
-              label="أنشطة بانتظار مراجعتك"
-              value={<Num>{k.waiting}</Num>}
-              unit="نشاطًا"
-            />
-            <Stat
-              label="الخطط الملتزمة بجدولها"
-              value={<Num>{pct(k.onTrackPct)}</Num>}
-              hint={/* doc BPD-012 */ "أداء الجدول ≥ 0.95"}
-              bar={{ w: `${k.onTrackPct}%`, c: 'var(--teal)' }}
-            />
-            <Stat
-              label="الأنشطة المتأخّرة"
-              value={<Num>{pct(k.latePct)}</Num>}
-              note={`${k.late} من ${countOf(k.acts, NOUN.activity)}`}
-              bar={{ w: `${k.latePct}%`, c: 'var(--warn)' }}
-            />
-            <Stat
-              label="متوسط مدة اعتماد الخطة"
-              value={<Num>{k.approveDays}</Num>}
-              unit="يومًا"
-              hint="من فتح الخطة حتى تثبيت النسخة المرجعية"
-            />
-          </StatRow>
+          {/* Client 27 Oct · the plans' indicator row is gone from the list */}
 
           <Segments
-            active={readList(v.stage).length === 1 ? readList(v.stage)[0] : ''}
-            onChange={(x) => set({ stage: writeList(x ? [x] : []) })}
+            active={v.chg === '1' ? 'changes' : readList(v.stage).length === 1 ? readList(v.stage)[0] : ''}
+            onChange={(x) => set(x === 'changes' ? { chg: '1', stage: undefined } : { chg: undefined, stage: writeList(x ? [x] : []) })}
             items={[
               { key: '', label: 'كل الخطط', count: counts.total },
               ...PLAN_STAGES.map((s) => ({
@@ -230,6 +206,7 @@ export default function PlansPage() {
                 label: s.label,
                 count: counts.m.get(s.key) ?? 0,
               })),
+              { key: 'changes', label: 'طلبات التعديل', count: counts.changes },
             ]}
           />
 

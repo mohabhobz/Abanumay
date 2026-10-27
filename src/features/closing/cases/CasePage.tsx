@@ -1,3 +1,6 @@
+import { LogTab } from '@/features/projects/tabs'
+import { recordLog } from '@/features/shared/recordLog'
+import { RecordFiles } from '@/features/shared/RecordFiles'
 import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { useState } from 'react'
@@ -12,7 +15,7 @@ import { isolate } from '@/lib/format'
 import {
   CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, actOnCase, attachCaseDoc, caseActions, caseById, caseStops,
   settleCase, stopPhase, useClosing,
-  OUTCOME_SAY, caseFinalIsMgr, cancelBlockers, DIRECT_PATH,
+  OUTCOME_SAY, cancelBlockers, DIRECT_PATH,
 } from '@/data/closing/store'
 import { RecoveryCard } from '../parts'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -35,7 +38,7 @@ export default function CasePage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const caseTab = params.get('tab') === 'log' ? 'log' : 'data'
+  const caseTab = params.get('tab') === 'log' ? 'log' : params.get('tab') === 'files' ? 'files' : 'data'
   const asEntity = params.get('as') === 'entity'
   const { role, user } = useRole()
   useClosing()
@@ -98,7 +101,7 @@ export default function CasePage() {
           )}
 
           {/* Client 26 Oct · every record reads its data and its log in tabs */}
-          <Tabs items={[{ slug: 'data', label: 'بيانات الحالة' }, { slug: 'log', label: 'سجل الحالة', count: c.log.length || undefined }]} active={caseTab}
+          <Tabs items={[{ slug: 'data', label: 'بيانات الحالة' }, { slug: 'files', label: 'المرفقات' }, { slug: 'log', label: 'سجل الحالة', count: c.log.length || undefined }]} active={caseTab}
             onChange={(x) => { const n = new URLSearchParams(params); if (x === 'data') n.delete('tab'); else n.set('tab', x); setParams(n, { replace: true }) }} />
 
           <div className="g2">
@@ -179,17 +182,8 @@ export default function CasePage() {
 
               {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'case', id: c.id }} asEntity={asEntity} />}
               </>}
-              {caseTab === 'log' && <Glass>
-                <Head title="سجلّ الحالة" meta={<span className="sub">{c.kind === 'direct' ? DIRECT_PATH.join(' · ') : <>مشرف المنح · مدير المنح{caseFinalIsMgr(c) ? '' : ' · المدير التنفيذي'}</>}</span>} />
-                <ul className="plchg">
-                  {c.log.map((a, i) => (
-                    <li key={`${a.at}-${i}`}>
-                      <div className="plchg-h"><Tag tone="mute"><DateText>{a.at}</DateText></Tag><span className="sub">{a.by}</span></div>
-                      <p className="plchg-t">{isolate(a.what)}</p>
-                    </li>
-                  ))}
-                </ul>
-              </Glass>}
+              {caseTab === 'files' && <RecordFiles record={`case:${c.id}`} me={asEntity ? c.entityName : user.name} canUpload />}
+              {caseTab === 'log' && <LogTab title="سجل الحالة" events={recordLog(`case-${c.id}`, 'حالات الإغلاق', c.log)} entityName={c.entityName} />}
             </div>
 
             <AssistantAside suggest={actions.length > 0 ? <NextStep s={nextPlan} exec={nextExec} /> : undefined} title="قراءة الحالة" cta="اقرأ الحالة" empty="لا ملاحظات على هذه الحالة الآن." readings={readCase(c)} ask={!asEntity} />

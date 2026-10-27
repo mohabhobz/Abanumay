@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, StatRow,
-  Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
+import { Button,
+  Empty, Glass, Icon, icons, MultiSelect, GroupPicker, SearchBox, Segments, Select,
   Toggle, ViewToggle,
   Riyal,
 } from '@/components/ui'
-import { countOf, nf, NOUN, nounAfter, pct } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useStickyGroup } from '@/hooks/useStickyGroup'
@@ -218,35 +218,7 @@ export default function AgreementsPage() {
             empty="لا توجد اتفاقية موقوفة عن الاعتماد في النطاق الحالي."
           />
 
-          {/* Note: these four are the document's four indicators, not four arbitrary numbers - the
-              "target value" column is empty for all of them, so the number shown is a value, not a
-              status. */}
-          <StatRow title="مؤشرات الاتفاقيات">
-            <Stat
-              label="متوسط مدة إعداد الاتفاقية"
-              value={k.prepDays === null ? '—' : <Num>{k.prepDays}</Num>}
-              unit={k.prepDays === null ? undefined : 'يومًا'}
-              hint={/* doc KPI 1 */ "من فتح الاتفاقية حتى سريانها"}
-            />
-            <Stat
-              label="المنجزة ضمن المدة المستهدفة"
-              value={k.inTarget === null ? '—' : <Num>{pct(k.inTarget)}</Num>}
-              hint={/* doc KPI 2 */ `المدة المستهدفة ${countOf(k.target, NOUN.day)}`}
-              bar={k.inTarget === null ? undefined : { w: `${k.inTarget}%`, c: 'var(--teal)' }}
-            />
-            <Stat
-              label="متوسط مدة دورة الاعتماد"
-              value={k.cycleDays === null ? '—' : <Num>{k.cycleDays}</Num>}
-              unit={k.cycleDays === null ? undefined : 'يومًا'}
-              hint={/* doc KPI 3 */ "من الإرسال حتى اكتمال الاعتمادات"}
-            />
-            <Stat
-              label="المعادة للتعديل"
-              value={k.returnedPct === null ? '—' : <Num>{pct(k.returnedPct)}</Num>}
-
-              bar={k.returnedPct === null ? undefined : { w: `${k.returnedPct}%`, c: 'var(--warn)' }}
-            />
-          </StatRow>
+          {/* Client 27 Oct · the KPI row is gone · the list reads like the other lists (quick read, then the list) */}
 
           <Segments
             active={readList(v.stage).length === 1 ? readList(v.stage)[0] : ''}

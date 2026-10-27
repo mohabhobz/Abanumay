@@ -62,3 +62,6 @@
 .lf-row.lf-still:hover{background:none}
 /* The standing reads at the title's scale, not a list tag's · a larger type in the same tag */
 .ehead-st>.tag{font-size:var(--fs-3);line-height:var(--lh-md);padding-inline:var(--sp-4)}
+/* Client 27 Oct · the entity's standing above its name · a larger pill in its status colour */
+.ehead-st-top{display:flex;margin-block-end:var(--sp-2)}
+.ehead-st-top>.tag{font-size:var(--fs-4);line-height:var(--lh-md);padding:var(--sp-1) var(--sp-5)}

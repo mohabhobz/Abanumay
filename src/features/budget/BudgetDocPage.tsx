@@ -1,3 +1,6 @@
+import { LogTab } from '@/features/projects/tabs'
+import { recordLog } from '@/features/shared/recordLog'
+import { RecordFiles } from '@/features/shared/RecordFiles'
 import { budgetDocOutcome } from '@/data/shared/outcome'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { useMemo, useState } from 'react'
@@ -25,7 +28,7 @@ import {
 import { LEVEL_SAY, type Level } from '@/data/budget/rules'
 import { NodeModal } from './doc/NodeModal'
 import { LineActModal } from './doc/LineActModal'
-import { FlowCard, NoteModal } from './doc/DocFlow'
+import { NoteModal } from './doc/DocFlow'
 import { DocRequests, LedgerCard, SourceLedgerCard } from './doc/DocLedger'
 
 /* Budget - create, edit, review and run, one screen.
@@ -218,7 +221,8 @@ export default function BudgetDocPage() {
     { slug: 'data', label: 'بيانات الميزانية' },
     { slug: 'lines', label: 'بنود الميزانية', count: doc.nodes.length || undefined },
     ...(existing && existing.state === 'approved' ? [{ slug: 'ledger', label: 'الحركات والطلبات' }] : []),
-    ...(existing ? [{ slug: 'log', label: 'السجل', count: eventsOf(existing.id).length || undefined }] : []),
+    /* Client 27 Oct · the attachments and the log close every record's tabs */
+    ...(existing ? [{ slug: 'files', label: 'المرفقات' }, { slug: 'log', label: 'سجل الميزانية', count: eventsOf(existing.id).length || undefined }] : []),
   ]
   const docTab = docTabs.find((t) => t.slug === (query.get('tab') ?? (focus ? 'ledger' : 'data')))?.slug ?? 'data'
   const goDocTab = (slug: string) => {
@@ -553,7 +557,8 @@ export default function BudgetDocPage() {
             </>
           )}
 
-          {docTab === 'log' && existing && <FlowCard state={existing.state} events={eventsOf(existing.id)} />}
+          {docTab === 'files' && existing && <RecordFiles record={`budget:${existing.id}`} me={me} canUpload />}
+          {docTab === 'log' && existing && <LogTab title="سجل الميزانية" events={recordLog(`bg-${existing.id}`, 'الميزانية', eventsOf(existing.id).map((e) => ({ at: e.at, by: e.by, what: e.text, note: e.note })), true)} entityName="" />}
         </div>
 
         {/* Footer - by state and by role */}

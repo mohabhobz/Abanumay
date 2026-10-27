@@ -1,3 +1,6 @@
+import { LogTab } from '@/features/projects/tabs'
+import { recordLog } from '@/features/shared/recordLog'
+import { RecordFiles } from '@/features/shared/RecordFiles'
 import { holds } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { payBlock } from '@/data/entities/store'
@@ -116,7 +119,9 @@ export default function PortfolioPage() {
       { slug: 'pays', label: 'الدفعات' },
       { slug: 'close', label: 'الإغلاق' },
     ] : []),
-    { slug: 'log', label: 'السجل' },
+    /* Client 27 Oct · the attachments and the log close every record's tabs */
+    { slug: 'files', label: 'المرفقات' },
+    { slug: 'log', label: 'سجل المحفظة' },
   ]
   /* the study is where a portfolio waiting on the supervisor or a body stands · the sub-projects once it's approved */
   const fallback = !asPartner && ['supervisor', 'manager', 'ceo', 'committee', 'board'].includes(pf.stage) ? 'study' : post ? 'subs' : 'data'
@@ -218,19 +223,9 @@ export default function PortfolioPage() {
                 </>
               )}
 
-              {on('log') && (
-                <Glass>
-                  <Head title="سجلّ المحفظة" />
-                  <ul className="plchg">
-                    {pf.log.slice().reverse().map((a, i) => (
-                      <li key={`${a.at}-${i}`}>
-                        <div className="plchg-h"><Tag tone="mute"><DateText>{a.at}</DateText></Tag><span className="sub">{a.by}</span></div>
-                        <p className="plchg-t">{isolate(a.what)}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </Glass>
-              )}
+              {on('files') && <RecordFiles record={`portfolio:${pf.id}`} me={asPartner ? entityName(pf) : user.name} canUpload={pf.stage !== 'cancelled' && pf.stage !== 'closed'}
+                seed={pf.files.map((n) => ({ name: n, meta: 'مرفقات المحفظة' }))} />}
+              {on('log') && <LogTab title="سجل المحفظة" events={recordLog(`pf-${pf.id}`, 'المحافظ', pf.log)} entityName={entityName(pf)} />}
             </div>
 
             <AssistantAside title="قراءة المحفظة" cta="اقرأ المحفظة" empty="المحفظة في مسارها · لا ملاحظات." readings={readings} ask={!asPartner} />

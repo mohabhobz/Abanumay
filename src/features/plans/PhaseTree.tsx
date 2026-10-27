@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react'
-import { ButtonLabel, FormField, FieldBox, Modal, ModalHead, Button, DateField, DateText, Icon, Money, Mono, Num, Tag, icons } from '@/components/ui'
-import { phaseDone } from '@/data/mock/plans'
-import { pct } from '@/lib/format'
+import { ButtonLabel, FormField, FieldBox, Modal, ModalHead, Button, DateField, DateText, Icon, MultiSelect, Mono, Num, Tag, icons } from '@/components/ui'
 import type { PlanActivity, PlanPhase } from '@/types/domain'
 import { NoteTrail } from '@/components/notes'
-import { isStuck } from '@/data/plans/store'
 import { PROGRESS_SAY, PROGRESS_TONE, VERIFY_SAY, actSerial, progressOf, verifyOf } from '@/data/plans/timing'
 
 /* Phase and activity tree - the plan's core.
@@ -17,8 +14,8 @@ import { PROGRESS_SAY, PROGRESS_TONE, VERIFY_SAY, actSerial, progressOf, verifyO
    note trail) moved behind the row's «المرفقات» link, into a sheet that opens over the plan and
    closes back to one line.
 
-   Note: a phase collapses over its activities. A phase with pending work opens on its own (the
-   page decides), because the question here is "which activity is pending", not "how many phases".
+   Client 27 Oct · the phase sections are gone · the activities read as one list, the phase is the
+   activity's own «التصنيف» (a column of its data) and a filter over the list, with the execution status.
 
    Note: the execution status is read from the dates and the plan settings (delay and stall
    margins), and «مكتمل» is the entity's word · the supervisor's check is its own column, so
@@ -34,8 +31,6 @@ export interface PhaseTreeProps {
   canReview: boolean
   /** The entity can update its activity - the entity's own portal. */
   canClaim?: boolean
-  open: Set<string>
-  onToggle: (id: string) => void
   onAccept?: (actId: string) => void
   onReject?: (actId: string) => void
   onClaim?: (actId: string) => void
@@ -58,122 +53,110 @@ export interface PhaseTreeProps {
 const missingOf = (a: PlanActivity) => a.needs.filter((n) => !a.evidence.some((e) => e.kind === n))
 
 export function PhaseTree(props: PhaseTreeProps) {
-  const { phases, planId = '', live, canReview, canClaim, open, onToggle, onAccept, onReject, onClaim, onStart, focus } = props
+  const { phases, planId = '', live, canReview, canClaim, onAccept, onReject, onClaim, onStart, focus } = props
   const [sheet, setSheet] = useState<string | null>(null)
-  const all = phases.flatMap((ph) => ph.activities)
-  const cur = sheet ? all.find((a) => a.id === sheet) : undefined
+  const [cats, setCats] = useState<string[]>([])
+  const [sts, setSts] = useState<string[]>([])
+  const rows = phases.flatMap((ph) => ph.activities.map((a) => ({ a, cat: ph.name || 'بلا تصنيف' })))
+  const catOptions = [...new Set(rows.map((r) => r.cat))]
+  const stOptions = (Object.keys(PROGRESS_SAY) as (keyof typeof PROGRESS_SAY)[]).filter((k) => rows.some((r) => progressOf(r.a) === k))
+  const shown = rows.filter((r) => (!cats.length || cats.includes(r.cat)) && (!sts.length || sts.includes(progressOf(r.a))))
+  const cur = sheet ? rows.find((r) => r.a.id === sheet) : undefined
 
   return (
     <div className="phtree">
-      {phases.map((ph, i) => {
-        const done = phaseDone(ph)
-        const shut = !open.has(ph.id)
-        const queue = ph.activities.filter((a) => a.state === 'claimed').length
-        const late = ph.activities.filter((a) => progressOf(a) === 'late').length
-        const stuck = ph.activities.filter((a) => isStuck(a)).length
+      <div className="acttbl-f rowf gp-2">
+        <MultiSelect label="التصنيف" values={cats} all="كل التصنيفات" options={catOptions} onChange={setCats} />
+        <MultiSelect label="حالة الإنجاز" values={sts} all="كل الحالات" options={stOptions.map((k) => ({ value: k, label: PROGRESS_SAY[k] }))} onChange={setSts} />
+        <span className="pc-sp" />
+        <span className="sub"><Num>{shown.length}</Num> من <Num>{rows.length}</Num></span>
+      </div>
+      {shown.length === 0 ? (
+        <p className="sub cnote acttbl-empty">{rows.length ? 'لا أنشطة تطابق الفلاتر.' : 'الخطة بلا أنشطة.'}</p>
+      ) : (
+        <div className="tblwrap acttbl-w">
+          <table className="tbl acttbl">
+            <colgroup>
+              <col className="c-name" /><col className="c-cat" /><col className="c-ev" /><col className="c-d" />
+              <col className="c-st" /><col className="c-att" /><col className="c-vf" /><col className="c-nt" /><col className="c-act" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th><span className="th-t">النشاط · م</span></th>
+                <th><span className="th-t">التصنيف</span></th>
+                <th><span className="th-t">الشاهد</span></th>
+                <th><span className="th-t">البدء · الانتهاء</span></th>
+                <th><span className="th-t">حالة الإنجاز</span></th>
+                <th><span className="th-t">المرفقات</span></th>
+                <th><span className="th-t">تحقق المشرف</span></th>
+                <th><span className="th-t">ملاحظات</span></th>
+                <th><span className="th-t vis-h">الإجراء</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map(({ a, cat }) => {
+                const st = progressOf(a)
+                const vf = verifyOf(a)
+                const missing = missingOf(a)
+                const notes = a.notes ?? []
+                const lastNote = notes.at(-1)
+                return (
+                  <tr key={a.id} id={`act-${a.id}`} className={a.id === focus ? 'on' : undefined}>
+                    {/* the serial rides under the name · ten narrow columns cut both of them */}
+                    <td className="acttbl-2"><b className="acttbl-n" title={a.name}>{a.name}</b><Mono>{actSerial(planId, a.id)}</Mono></td>
+                    <td><span className="trim1" title={cat}>{cat}</span></td>
+                    <td className="acttbl-2"><span className="sub" title={a.needs.join(' · ')}>{a.needs.length ? a.needs.join(' · ') : 'بلا شاهد'}</span></td>
+                    {/* Client 27 Oct · the start, then «حتى» the end on its own quieter line */}
+                    <td className="acttbl-2 acttbl-d"><span><DateText>{a.from}</DateText></span><span className="sub">حتى <DateText>{a.to}</DateText></span></td>
+                    <td><Tag tone={PROGRESS_TONE[st]}>{PROGRESS_SAY[st]}</Tag></td>
+                    <td className="acttbl-2">
+                      <Button plain type="button" className="tlink acttbl-l" onClick={() => setSheet(a.id)}
+                        aria-label={`المرفقات · ${a.name}`}>
+                        <Num>{a.evidence.length}</Num> {a.evidence.length === 1 ? 'مرفق' : 'مرفقات'}
+                      </Button>
+                      {missing.length > 0 && <span className="sub bad-ink">ينقص <Num>{missing.length}</Num></span>}
+                    </td>
+                    <td>{vf ? <Tag tone={vf === 'ok' ? 'ok' : vf === 'no' ? 'no' : 'warn'}>{VERIFY_SAY[vf]}</Tag> : <span className="sub">—</span>}</td>
+                    <td>
+                      {notes.length > 0
+                        ? <Button plain type="button" className="tlink acttbl-l" title={lastNote?.say} onClick={() => setSheet(a.id)}><Num>{notes.length}</Num> · {lastNote?.say}</Button>
+                        : <span className="sub">—</span>}
+                    </td>
+                    <td>
+                      <span className="acttbl-a">
+                        {live && canReview && a.state === 'claimed' && (
+                          <>
+                            <Button type="button" variant="p" size="sm" disabled={missing.length > 0}
+                              title={missing.length ? `ينقص: ${missing.join(' · ')}` : 'يُحتسب إنجازًا من لحظة القبول'}
+                              onClick={() => onAccept?.(a.id)}>اقبل النشاط</Button>
+                            <Button type="button" variant="2" size="sm" onClick={() => onReject?.(a.id)}>أعده بملاحظة</Button>
+                          </>
+                        )}
+                        {live && canClaim && a.state === 'todo' && onStart && st !== 'notYet' && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => onStart(a.id)}>ابدأ</Button>
+                        )}
+                        {live && canClaim && (a.state === 'doing' || a.state === 'todo' || a.state === 'rejected') && (
+                          <Button type="button" variant="2" size="sm" disabled={missing.length > 0}
+                            title={missing.length ? 'ارفع الشواهد المطلوبة من «المرفقات» أولًا' : 'يذهب لمشرف المنح للتحقق ولا يُحتسب قبل قبوله'}
+                            onClick={() => onClaim?.(a.id)}>مكتمل</Button>
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-        return (
-          <section className="phase" key={ph.id}>
-            <Button plain type="button" className="phase-h" aria-expanded={!shut} onClick={() => onToggle(ph.id)}>
-              <Icon name={shut ? icons.chevronDown : icons.chevronUp} size="sm" />
-              <span className="phase-n num">{i + 1}</span>
-              <span className="phase-t">{ph.name || 'مرحلة بلا اسم'}</span>
-              <span className="phase-d sub"><DateText>{ph.from}</DateText> ← <DateText>{ph.to}</DateText></span>
-              <span className="phase-c"><Money sm>{ph.cost}</Money></span>
-              {/* Percentage of the accepted amount alone - rule 14. */}
-              <Tag tone={done === 100 ? 'ok' : done > 0 ? 'teal' : 'mute'}>{pct(done)}</Tag>
-              {queue > 0 && <span className="sub"><b><Num>{queue}</Num></b> بانتظار</span>}
-              {late > 0 && <span className="sub"><b><Num>{late}</Num></b> متأخّر</span>}
-              {stuck > 0 && <span className="sub"><b><Num>{stuck}</Num></b> متعثّر</span>}
-            </Button>
-
-            {!shut && (ph.activities.length === 0 ? (
-              <p className="sub cnote acttbl-empty">المرحلة بلا أنشطة.</p>
-            ) : (
-              <div className="tblwrap acttbl-w">
-                <table className="tbl acttbl">
-                  <colgroup>
-                    <col className="c-name" /><col className="c-ev" /><col className="c-d" />
-                    <col className="c-st" /><col className="c-att" /><col className="c-vf" /><col className="c-nt" /><col className="c-act" />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th><span className="th-t">النشاط · م</span></th>
-                      <th><span className="th-t">الشاهد</span></th>
-                      <th><span className="th-t">البدء · الانتهاء</span></th>
-                      <th><span className="th-t">حالة الإنجاز</span></th>
-                      <th><span className="th-t">المرفقات</span></th>
-                      <th><span className="th-t">تحقق المشرف</span></th>
-                      <th><span className="th-t">ملاحظات</span></th>
-                      <th><span className="th-t vis-h">الإجراء</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ph.activities.map((a) => {
-                      const st = progressOf(a)
-                      const vf = verifyOf(a)
-                      const missing = missingOf(a)
-                      const notes = a.notes ?? []
-                      const lastNote = notes.at(-1)
-                      return (
-                        <tr key={a.id} id={`act-${a.id}`} className={a.id === focus ? 'on' : undefined}>
-                          {/* the serial rides under the name · ten narrow columns cut both of them */}
-                          <td className="acttbl-2"><b className="acttbl-n" title={a.name}>{a.name}</b><Mono>{actSerial(planId, a.id)}</Mono></td>
-                          <td className="acttbl-2"><span className="sub" title={a.needs.join(' · ')}>{a.needs.length ? a.needs.join(' · ') : 'بلا شاهد'}</span></td>
-                          {/* Client 27 Oct · the start, then «حتى» the end on its own quieter line */}
-                          <td className="acttbl-2 acttbl-d"><span><DateText>{a.from}</DateText></span><span className="sub">حتى <DateText>{a.to}</DateText></span></td>
-                          <td><Tag tone={PROGRESS_TONE[st]}>{PROGRESS_SAY[st]}</Tag></td>
-                          <td className="acttbl-2">
-                            <Button plain type="button" className="tlink acttbl-l" onClick={() => setSheet(a.id)}
-                              aria-label={`المرفقات · ${a.name}`}>
-                              <Num>{a.evidence.length}</Num> {a.evidence.length === 1 ? 'مرفق' : 'مرفقات'}
-                            </Button>
-                            {missing.length > 0 && <span className="sub bad-ink">ينقص <Num>{missing.length}</Num></span>}
-                          </td>
-                          <td>{vf ? <Tag tone={vf === 'ok' ? 'ok' : vf === 'no' ? 'no' : 'warn'}>{VERIFY_SAY[vf]}</Tag> : <span className="sub">—</span>}</td>
-                          <td>
-                            {notes.length > 0
-                              ? <Button plain type="button" className="tlink acttbl-l" title={lastNote?.say} onClick={() => setSheet(a.id)}><Num>{notes.length}</Num> · {lastNote?.say}</Button>
-                              : <span className="sub">—</span>}
-                          </td>
-                          <td>
-                            <span className="acttbl-a">
-                              {live && canReview && a.state === 'claimed' && (
-                                <>
-                                  <Button type="button" variant="p" size="sm" disabled={missing.length > 0}
-                                    title={missing.length ? `ينقص: ${missing.join(' · ')}` : 'يُحتسب إنجازًا من لحظة القبول'}
-                                    onClick={() => onAccept?.(a.id)}>اقبل النشاط</Button>
-                                  <Button type="button" variant="2" size="sm" onClick={() => onReject?.(a.id)}>أعده بملاحظة</Button>
-                                </>
-                              )}
-                              {live && canClaim && a.state === 'todo' && onStart && st !== 'notYet' && (
-                                <Button type="button" variant="ghost" size="sm" onClick={() => onStart(a.id)}>ابدأ</Button>
-                              )}
-                              {live && canClaim && (a.state === 'doing' || a.state === 'todo' || a.state === 'rejected') && (
-                                <Button type="button" variant="2" size="sm" disabled={missing.length > 0}
-                                  title={missing.length ? 'ارفع الشواهد المطلوبة من «المرفقات» أولًا' : 'يذهب لمشرف المنح للتحقق ولا يُحتسب قبل قبوله'}
-                                  onClick={() => onClaim?.(a.id)}>مكتمل</Button>
-                              )}
-                            </span>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ))}
-          </section>
-        )
-      })}
-
-      {cur && <ActSheet a={cur} serial={actSerial(planId, cur.id)} {...props} onClose={() => setSheet(null)} />}
+      {cur && <ActSheet a={cur.a} cat={cur.cat} serial={actSerial(planId, cur.a.id)} {...props} onClose={() => setSheet(null)} />}
     </div>
   )
 }
 
 /** #33 · an activity's attachments, its execution data and its notes · over the plan, not under the row */
-function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me = '', onData, onClose }: PhaseTreeProps & { a: PlanActivity; serial: string; onClose: () => void }) {
+function ActSheet({ a, cat, serial, live, canClaim, onUpload, onDrop, onComment, me = '', onData, onClose }: PhaseTreeProps & { a: PlanActivity; cat: string; serial: string; onClose: () => void }) {
   const edit = Boolean(live && canClaim && a.state !== 'accepted' && a.state !== 'claimed')
   const extra = a.evidence.filter((e) => !a.needs.includes(e.kind))
   /* Escape closes the sheet like every other overlay in the system */
@@ -186,6 +169,7 @@ function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me =
     <Modal label={`مرفقات النشاط · ${a.name}`} onClose={onClose}>
         <ModalHead icon={icons.upload} title={a.name}>
           <span className="sub mono">{serial}</span>
+          <Tag tone="mute">{cat}</Tag>
         </ModalHead>
         <div className="mb col">
           <h4 className="fnd-h">المرفقات</h4>

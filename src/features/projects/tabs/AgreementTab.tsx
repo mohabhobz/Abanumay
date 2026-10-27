@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { payHref } from '@/features/agreements/ScheduleEditor'
-import { Button, DateText, Empty, Glass, Head, Icon, Money, Mono, Num, Steps, Tag, icons } from '@/components/ui'
+import { Button, ButtonLink, DateText, Empty, Glass, Head, Icon, Money, Mono, Num, Steps, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { DocFile } from '@/components/docs'
 import type { AgreementDetail, PaymentDetail } from '@/data/mock/detail'
@@ -116,6 +116,15 @@ export function AgreementTab({
             <Icon name={icons.doc} size="sm" />
             اطبع الاتفاقية
           </Button>
+        </div>
+
+        {/* Client 27 Oct · a way into the agreement, on the card's own foot as on the plan tab */}
+        <div className="cardfoot">
+          <ButtonLink to={ROUTES.agreement(A.no)} variant="p">
+            افتح الاتفاقية
+            <Icon name={icons.chevron} size="sm" />
+          </ButtonLink>
+          <ButtonLink to={ROUTES.agreements} variant="2">صندوق الاتفاقيات</ButtonLink>
         </div>
       </Glass>
 

@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePayments } from '@/data/payments/store'
 import { useRole } from '@/hooks/useRole'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Button, StatRow,
-  Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
+import { Button,
+  Empty, Glass, Icon, icons, MultiSelect, GroupPicker, SearchBox, Segments, Select,
   Toggle, ViewToggle,
   Riyal,
 } from '@/components/ui'
-import { countOf, nf, NOUN, nounAfter, pct, REQUEST_NOUN } from '@/lib/format'
+import { countOf, nf, NOUN, nounAfter, REQUEST_NOUN } from '@/lib/format'
 import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
@@ -24,7 +24,7 @@ import { readPayments } from '@/data/readings'
 import { OWNERS } from '@/data/mock/taxonomy'
 import { entityById } from '@/data/mock/entities'
 import {
-  BANK_STATES, PAY_STATES, PAY_TARGET_DAYS, payBlocked, payHeat, payKpi, payRequests,
+  BANK_STATES, PAY_STATES, payBlocked, payHeat, payKpi, payRequests,
 } from '@/data/mock/disbursements'
 import type { PayRequest, PayState } from '@/types/domain'
 import type { Sheet } from '@/lib/export'
@@ -248,7 +248,7 @@ export default function PaymentsPage() {
       label,
       value,
       text:
-        key === 'state' ? PAY_STATES.find((s) => s.key === value)?.label ?? value
+        key === 'state' ? (value === 'closed' ? 'المرفوضة' : PAY_STATES.find((s) => s.key === value)?.label ?? value)
         : key === 'entity' ? entityLabel(value)
         : key === 'res' ? OUTCOME_PICK_SAY[value as OutcomePick] ?? value
         : value,
@@ -300,40 +300,7 @@ export default function PaymentsPage() {
             empty="لا توجد دفعة موقوفة أو متأخرة في النطاق الحالي."
           />
 
-          {/* Note: these four cards are the spec's own four indicators (9.8), not four cards chosen
-              freely. Two of them used to be indicators and two were inbox size (open requests and
-              their value) - meaning two of the process's own indicators were missing, with their
-              spot taken by numbers already readable from the title line. Size moved back to the
-              title line, and the four are now the actual four.
-
-              The "target value" column is empty in the spec for all four - so the number displays
-              as a value, not a status, and isn't colored success or failure until the institution
-              provides targets. */}
-          <StatRow title="مؤشرات الصرف" id="pay-kpi">
-            <Stat
-              label="متوسط مدة معالجة الطلب"
-              value={<Num>{ks.avgDays}</Num>}
-              unit="يومًا"
-            />
-            <Stat
-              label="المنجزة ضمن المدة المستهدفة"
-              value={<Num>{pct(ks.inTarget)}</Num>}
-              hint={/* doc KPI 2 */ `المدة المستهدفة ${countOf(PAY_TARGET_DAYS, NOUN.day)}`}
-              bar={{ w: `${ks.inTarget}%`, c: 'var(--teal)' }}
-            />
-            <Stat
-              label="متوسط مدة تنفيذ الصرف المالي"
-              value={<Num>{ks.financeDays}</Num>}
-              unit="يومًا"
-              hint={/* doc KPI 3 */ "من اعتماد مدير المنح حتى التحويل"}
-            />
-            <Stat
-              label="الالتزام بجدول الدفعات"
-              value={<Num>{pct(ks.onSchedule)}</Num>}
-
-              bar={{ w: `${ks.onSchedule}%`, c: 'var(--lime)' }}
-            />
-          </StatRow>
+          {/* Client 27 Oct · the payments' indicator row is gone from the list */}
 
           {/* Stage tabs - same tab row as other inboxes, each tab counted within the current scope. */}
           <Segments
@@ -346,6 +313,8 @@ export default function PaymentsPage() {
                 label: s.label,
                 count: counts.m.get(s.key) ?? 0,
               })),
+              /* Client 27 Oct · the finally rejected requests (rule 15 · kept on record) close the tabs */
+              { key: 'closed', label: 'المرفوضة', count: counts.m.get('closed') ?? 0 },
             ]}
           />
 

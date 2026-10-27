@@ -10,6 +10,8 @@ export interface LogTabProps {
   entityName: string
   /** The entity's logo beside its name in the log */
   entityLogo?: string
+  /** The card's title · «سجل المشروع» unless the log is another record's */
+  title?: string
 }
 
 /**
@@ -28,8 +30,10 @@ const CATS: { key: Cat; label: string }[] = [
   { key: 'procedure', label: 'أخرى' },
 ]
 
-const MONEY = /إذن صرف|صرف الدفعة|سند القبض|سند القيد/
-const DECISION = /اعتماد|دعم|رفض|معتذر|توصية|إرجاع|رفع المشروع|قبول/
+/* Client 27 Oct · the payment's log reads its permit, order and transfer as money, and its
+   approvals and returns («اعتمد» · «أعاد» · «ألغى») as decisions */
+const MONEY = /إذن صرف|إذن الصرف|أمر الصرف|التحويل|صرف الدفعة|سند القبض|سند القيد/
+const DECISION = /اعتماد|اعتمد|دعم|رفض|معتذر|توصية|إرجاع|أعاد|ألغى|رفع المشروع|قبول/
 
 const catOf = (e: LogEvent): Cat => {
   if (e.manual) return 'activity'
@@ -84,7 +88,7 @@ const levelOf = (e: LogEvent): string => {
  * places them there — a follow-up that says "second payment requirement" is
  * the reason for the disbursement authorization that comes after it.
  */
-export function LogTab({ events, entityName, entityLogo }: LogTabProps) {
+export function LogTab({ events, entityName, entityLogo, title = 'سجل المشروع' }: LogTabProps) {
   const [view, setView] = useState<Cat | 'all'>('all')
   const [order, setOrder] = useState<Order>('newest')
   const [open, setOpen] = useState<Set<string>>(new Set())
@@ -130,7 +134,7 @@ export function LogTab({ events, entityName, entityLogo }: LogTabProps) {
     <Glass>
       {/* One order control, where the header used to restate the order as text. */}
       <Head
-        title="سجل المشروع"
+        title={title}
         meta={
           <Select
             icon={icons.sort}
@@ -206,7 +210,8 @@ export function LogTab({ events, entityName, entityLogo }: LogTabProps) {
                     </span>
                     <span className="lgkind sub">{e.manual ? 'إدخال يدوي' : levelOf(e)}</span>
                     {e.source && <span className="lgsrc sub">المصدر: {e.source}</span>}
-                    {!e.followUp && !e.manual && (
+                    {/* Client 27 Oct · a log without stage limits (the agreement, the plan, the payment…) shows no duration */}
+                    {!e.followUp && !e.manual && e.limit > 0 && (
                       <span className={`lgdur${late ? ' late' : ''}`}>
                         <Mono>{e.days}</Mono> يومًا ·{' '}
                         <Mono>{e.hours}</Mono> من <Mono>{e.limit}</Mono> ساعة

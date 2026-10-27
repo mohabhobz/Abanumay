@@ -9344,3 +9344,8 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .fht.fho.ok{background:rgba(var(--okC),.12);color:var(--ok-tag);box-shadow:inset 0 0 0 1px rgba(var(--okC),.30)}
 .fht.fho.no{background:rgba(var(--noC),.10);color:var(--no-tag);box-shadow:inset 0 0 0 1px rgba(var(--noC),.22)}
 .fht.fho.mute{background:rgba(var(--edgeC),.08);color:var(--mute-ink);box-shadow:inset 0 0 0 1px var(--edge-1)}
+/* Client 27 Oct · the balance check's level picker sits on the cumulative gap's row, at its end */
+.bgchk-h{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-3)}
+.bgchk-h>.bgchk-l{margin:0}
+/* Client 27 Oct · a record's status in its own card · a larger pill (the plan's «حالة التنفيذ») */
+.stbig>.tag{font-size:var(--fs-4);line-height:var(--lh-md);padding:var(--sp-1) var(--sp-5)}

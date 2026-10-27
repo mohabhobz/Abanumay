@@ -7,14 +7,14 @@ import { BUDGET_STATE_SAY, budgetTone, docTitle, yearById } from '@/data/mock/bu
 import { allBudgets } from '@/data/mock/chain'
 import { BUDGET_REQS, lineDeps, mayAct, shareSay, useBudget } from '@/data/budget/store'
 import { readRole } from '@/data/roles'
-import { docSources, fundSources } from '@/data/mock/budgetTree'
+import { docSources, fundSources, moneyOf } from '@/data/mock/budgetTree'
 import { PageActions } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import {
   CYCLES, PLAN_LEVELS, cycleById, imbalances, leaves,
   parentCount, type Imbalance, type PlanNode } from '@/data/budgetPlan'
-import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from './BudgetCharts'
+import { FieldSpend, SpendGauge, YearSpend } from './BudgetCharts'
 import { GapPeek } from './GapPeek'
 
 /**
@@ -144,7 +144,15 @@ export default function BudgetPage() {
             </ul>
           </Glass>
 
-          <Summary cycle={cycle} goals={goals.length} />
+          {/* Client 27 Oct · «ملخص الميزانية» · one summary per funding source · a picked source shows its
+              own, «كل مصادر التمويل» shows every source's, each named · a cycle with no budget
+              documents yet keeps the cycle's own figures */}
+          {(() => {
+            const per = sourceSummaries(cycle.id.slice(0, 4), src)
+            return per.length
+              ? per.map((x) => <Summary key={x.code} title={`ملخص الميزانية · ${x.name}`} fig={x} />)
+              : <Summary title="ملخص الميزانية" fig={cycle} goals={goals.length} />
+          })()}
 
           {root ? (
             <>
@@ -157,7 +165,7 @@ export default function BudgetPage() {
                   <YearSpend />
                 </div>
                 <FieldSpend />
-                <PlanCoverage />
+                {/* Client 27 Oct · the per-field achievement plan chart is gone from the budget page */}
               </section>
 
               {/* Client sheet 26 Oct (#111) · the allocation tree section is gone from the budget page · each budget opens its own tree */}
@@ -178,13 +186,45 @@ export default function BudgetPage() {
 
 /* Cycle bar */
 
-function Summary({ cycle, goals }: { cycle: ReturnType<typeof cycleById>; goals: number }) {
+/** A summary's figures · the cycle's, or one funding source's within it */
+interface Figures { alloc: number; approved: number; reserved: number; spent: number }
+
+/** Each funding source's figures in the cycle's year · read from the year's budget documents · a
+    document split across sources gives each source its share of the document's money · approved
+    documents only, a budget still on its approval path isn't money yet */
+function sourceSummaries(year: string, only: string): (Figures & { code: string; name: string })[] {
+  const docs = allBudgets.filter((d) => yearById(d.yearId)?.name === year && d.state === 'approved')
+  if (!docs.length) return []
+  return fundSources
+    .filter((f) => !only || f.code === only)
+    .map((f) => {
+      const out = { code: f.code, name: f.name, alloc: 0, approved: 0, reserved: 0, spent: 0 }
+      for (const d of docs) {
+        const share = docSources(d).find((x) => x.code === f.code)
+        if (!share || !d.total) continue
+        const ratio = share.amount / d.total
+        const m = d.nodes.filter((n) => n.parentId === null).reduce((a, n) => {
+          const x = moneyOf(d.nodes, n.id)
+          return { held: a.held + x.held, paid: a.paid + x.paid, committed: a.committed + x.committed }
+        }, { held: 0, paid: 0, committed: 0 })
+        out.alloc += share.amount
+        out.reserved += Math.round(m.held * ratio)
+        out.spent += Math.round(m.paid * ratio)
+        out.approved += Math.round((m.held + m.paid + m.committed) * ratio)
+      }
+      return out
+    })
+    .filter((x) => x.alloc > 0 || only === x.code)
+}
+
+function Summary({ title, fig: cycle, goals = 0 }: { title: string; fig: Figures; goals?: number }) {
   const over = cycle.alloc - cycle.approved < 0
   const usePct = cycle.alloc ? Math.round((cycle.spent / cycle.alloc) * 100) : 0
   const commitPct = cycle.alloc ? Math.round((cycle.approved / cycle.alloc) * 100) : 0
 
   return (
     <Glass className="bgsum">
+      <Head title={title} />
       <div className="bgsum-g">
         <Cell k="المخصص" v={cycle.alloc} />
         <Cell k="المعتمد" v={cycle.approved} tone={over ? 'no' : undefined} />
@@ -232,6 +272,13 @@ function Cell({ k, v, tone }: { k: string; v: number; tone?: 'ok' | 'no' }) {
  */
 const TOP = 5
 
+type GapLevel = 'all' | 'tracks' | 'fields'
+const GAP_LEVELS: { key: GapLevel; label: string }[] = [
+  { key: 'all', label: 'الجميع' },
+  { key: 'tracks', label: 'على مستوى المسارات' },
+  { key: 'fields', label: 'على مستوى المجالات' },
+]
+
 function Balance({
   gaps, parents, root,
 }: {
@@ -242,8 +289,14 @@ function Balance({
   const [all, setAll] = useState(false)
   /* The item open in the panel - the click responds in place instead of scrolling the page down. */
   const [peek, setPeek] = useState<Imbalance | null>(null)
-  const shown = all ? gaps : gaps.slice(0, TOP)
-  const total = gaps.reduce((s, x) => s + Math.abs(x.gap), 0)
+  /* Client 27 Oct · the check reads at one level or both · «الجميع» lists the cycle, then the tracks,
+     then the fields, each group in its own order (largest gap first) */
+  const [lvl, setLvl] = useState<GapLevel>('all')
+  const picked = lvl === 'tracks' ? gaps.filter((x) => x.level === 1)
+    : lvl === 'fields' ? gaps.filter((x) => x.level === 2)
+      : [...gaps.filter((x) => x.level === 0), ...gaps.filter((x) => x.level === 1), ...gaps.filter((x) => x.level >= 2)]
+  const shown = all ? picked : picked.slice(0, TOP)
+  const total = picked.reduce((s, x) => s + Math.abs(x.gap), 0)
 
   if (gaps.length === 0) {
     return (
@@ -262,9 +315,20 @@ function Balance({
       />
 
       <Glass className="bgchk">
-        <p className="bgchk-l">
-          الفارق التراكمي <b className="bad"><Money sm>{total}</Money></b>
-        </p>
+        <div className="bgchk-h">
+          <p className="bgchk-l">
+            الفارق التراكمي <b className="bad"><Money sm>{total}</Money></b>
+          </p>
+          <span className="cfgchips" role="radiogroup" aria-label="مستوى فحص التوازن">
+            {GAP_LEVELS.map((x) => (
+              <Button plain key={x.key} type="button" role="radio" aria-checked={lvl === x.key}
+                className={`cfgchip${lvl === x.key ? ' on' : ''}`} onClick={() => { setLvl(x.key); setAll(false) }}>
+                {x.label}
+              </Button>
+            ))}
+          </span>
+        </div>
+        {picked.length === 0 && <p className="sub cnote">لا بند غير متوازن على هذا المستوى.</p>}
 
         <ul className="bglist">
             {shown.map((x) => (
@@ -306,10 +370,10 @@ function Balance({
           />
         )}
 
-        {gaps.length > TOP && (
+        {picked.length > TOP && (
           <Button variant="2" size="sm" className="bgchk-t" onClick={() => setAll((x) => !x)}>
             <Icon name={all ? icons.chevronUp : icons.chevronDown} size="sm" />
-            {all ? 'اعرض أقل' : `اعرض المزيد (${gaps.length - TOP})`}
+            {all ? 'اعرض أقل' : `اعرض المزيد (${picked.length - TOP})`}
           </Button>
         )}
       </Glass>

@@ -1,6 +1,5 @@
 import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
-import { Related } from '@/components/related/Related'
 import { mayApprovePlan } from '@/data/plans/auth'
 import { useMemo, useRef, useState } from 'react'
 import { forecastPlan } from '@/data/shared/ai'
@@ -24,7 +23,7 @@ import {
   planCounts, planExecution, planSpi, planStageLabel, planStageWho, spiSay,
   waitingReview } from '@/data/mock/plans'
 import {
-  acceptActivityBy, claimActivityBy, commentOn, saveActivityData, decideChangeBy, dropEvidence, mayDraft, projectWindow,
+  acceptActivityBy, claimActivityBy, commentOn, saveActivityData, decideChangeBy, dropEvidence, mayDraft,
   rejectActivityBy, reviewPlan, sendPlanFor, startActivity, stuckActivities, uploadEvidence, usePlans,
   planLogOf, annexAfter, execStop, planGrantOf, planTargetOf, forwardChange, planVersions, diffPhases } from '@/data/plans/store'
 import { PlanDecisionCard } from './PlanDecisionCard'
@@ -35,6 +34,11 @@ import { PhaseTree } from './PhaseTree'
 import { PlanBar } from './PlanBar'
 import { PlanActionDock, planActionsFor } from './PlanActionDock'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { RecordEntityCard, RecordProjectCard } from '@/features/shared/RecordParties'
+import { RecordFiles } from '@/features/shared/RecordFiles'
+import { LogTab } from '@/features/projects/tabs'
+import type { LogEvent } from '@/data/mock/log'
+import { entityById } from '@/data/mock/entities'
 import { planOutcome, planChangeOutcome } from '@/data/shared/outcome'
 
 /* Names inside the fan's sectors · who holds each step, like the project's roles */
@@ -70,7 +74,7 @@ const STEP_CAP: Record<string, string> = {
 export default function PlanPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const { role, user } = useRole()
   const mobile = useIsMobile()
   /* Note: the same screen through two lenses, not two screens. The entity and the supervisor look
@@ -84,7 +88,6 @@ export default function PlanPage() {
   const [said, setSaid] = useState('')
   const [focus, setFocus] = useState<string | undefined>()
   const [tick, setTick] = useState(0)
-  const [open, setOpen] = useState<Set<string>>(new Set())
   const [reject, setReject] = useState<{ id: string; note: string } | null>(null)
   /* #37 · the plan card's two tabs · the active version, then the cancelled versions and the requests */
   /* a request waiting on the supervisor or the grants manager opens the requests tab · that's where their step is */
@@ -99,19 +102,6 @@ export default function PlanPage() {
   const aside = useRef<HTMLDivElement>(null)
   useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
 
-  /* Note: a phase with pending work expands on its own - collapsed-by-default is right for tables
-     (their question is "how many") and wrong here (the question is "which activity"). */
-  const first = useMemo(() => {
-    if (!p) return new Set<string>()
-    const s = new Set<string>()
-    for (const ph of p.phases) {
-      const busy = ph.activities.some((a) => a.state !== 'accepted')
-      if (busy) s.add(ph.id)
-    }
-    return s.size ? s : new Set(p.phases.map((x) => x.id))
-  }, [p])
-
-  const shown = open.size ? open : first
 
   const readings = useMemo(
     () => {
@@ -162,7 +152,6 @@ export default function PlanPage() {
   const live = p.stage === 'active' || p.stage === 'done'
   const actions = planActionsFor(role.key, p.stage, asEntity, user.name)
   const stuck = stuckActivities(p)
-  const win = projectWindow(p.projectId)
   const who = asEntity ? p.entityName : user.name
   const canDraft = mayDraft(p, asEntity) || (!asEntity && role.key === 'supervisor' && (p.stage === 'draft' || p.stage === 'returned'))
   const cost = p.phases.reduce((s, ph) => s + ph.cost, 0)
@@ -243,6 +232,26 @@ export default function PlanPage() {
     return out ?? []
   }
 
+  /* Client 27 Oct · the plan reads in tabs like every record · its execution, its phases and
+     activities, the project, the entity, the attachments and the plan's log, the last two on every
+     record in the same place */
+  const logs = planLogOf(p.id)
+  const tabs = [
+    { slug: 'data', label: 'حالة التنفيذ' },
+    { slug: 'phases', label: 'الأنشطة', count: p.phases.reduce((n, ph) => n + ph.activities.length, 0) || undefined },
+    { slug: 'project', label: 'المشروع' },
+    { slug: 'entity', label: 'الجهة' },
+    { slug: 'files', label: 'المرفقات' },
+    ...(asEntity ? [] : [{ slug: 'log', label: 'سجل الخطة', count: logs.length || undefined }]),
+  ]
+  const tab = tabs.find((t) => t.slug === params.get('tab'))?.slug ?? 'data'
+  const goTab = (slug: string) => {
+    const next = new URLSearchParams(params)
+    if (slug === 'data') next.delete('tab'); else next.set('tab', slug)
+    setParams(next, { replace: true })
+  }
+  const evidence = p.phases.flatMap((ph) => ph.activities.flatMap((a) => (a.evidence ?? []).map((e) => ({ name: e.fileName, meta: `${a.name} · ${e.kind} · ${e.by}` }))))
+
   return (
     <AppLayout assistantContext={assistFor.page(`خطة ${p.projectName}`)}>
       <div className="viewstack hasdock">
@@ -263,23 +272,13 @@ export default function PlanPage() {
                     {p.approvedBy && <> · اعتمدها {p.approvedBy}{p.approvedAs ? ` (${p.approvedAs})` : ''}</>}</>
                   : 'لم تُعتمد بعد'}
               </p>
-              {pfT
-                ? <p className="sub mt-2">خطة محفظة · {asEntity ? p.projectName : <Link className="lnk" to={ROUTES.portfolio(pfT.id)}>{p.projectName}</Link>} · {p.entityName}</p>
-                : <Related plain={asEntity} links={[{ kind: 'project', id: p.projectId, label: p.projectName }, { kind: 'entity', id: p.entityId, label: p.entityName }]} />}
-              <div className="gt-tag rowf gp-2">
-                <Tag tone="mute">{planStageLabel(p.stage)}</Tag>
-                {/* Client sheet 24 Oct (#95) · the plan's outcome once it ends */}
-                <OutcomeTag outcome={planOutcome(p.stage)} />
-              </div>
+              {/* Client 27 Oct · the project and the entity read in their tabs · the status reads in «حالة التنفيذ» */}
+              {pfT && <p className="sub mt-2">خطة محفظة · {asEntity ? p.projectName : <Link className="lnk" to={ROUTES.portfolio(pfT.id)}>{p.projectName}</Link>}</p>}
 
               {(pr || pfT) && (
                 <div className="pamt">
                   <div className="lb">{pfT ? 'قيمة المحفظة' : 'قيمة المنحة'}</div>
                   <div className="v"><Money sm>{grant || pr?.amountRequested || 0}</Money></div>
-                  <div className="sub">
-                    تكلفة المراحل <Num>{cost}</Num> · <Num>{p.phases.length}</Num> {nounAfter(p.phases.length, NOUN.phase)}
-                    {win.days > 0 && <> · مدة المشروع <Num>{win.days}</Num> يومًا</>}
-                  </div>
                 </div>
               )}
             </div>
@@ -292,6 +291,7 @@ export default function PlanPage() {
                 holderKey={holder.k}
                 holder={holder.t}
                 rest={holderRest}
+                outcome={planOutcome(p.stage)}
               />
             </div>
           </header>
@@ -320,15 +320,19 @@ export default function PlanPage() {
             </Glass>
           )}
 
+          <Tabs items={tabs} active={tab} onChange={goTab} />
+
+          {tab !== 'phases' && (
           <div className="g2">
             <div className="col">
+              {tab === 'data' && <>
               {/* === Header - on track or not === */}
               <Glass>
                 <Head
                   title="حالة التنفيذ"
-                  meta={live
+                  meta={<span className="stbig">{live
                     ? <Tag tone={say.tone === 'mute' ? 'mute' : say.tone}>{say.say}</Tag>
-                    : <span className="sub">لم تبدأ</span>}
+                    : <Tag tone={p.stage === 'cancelled' ? 'no' : p.stage === 'returned' ? 'warn' : 'mute'}>{planStageLabel(p.stage)}</Tag>}</span>}
                 />
 
                 {live && (
@@ -379,7 +383,15 @@ export default function PlanPage() {
                   </>
                 )}
               </Glass>
+              {/* The plan decision and what can change · in the main column, the end column is the assistant's alone */}
+              {!asEntity && !pfT && <PlanDecisionCard projectId={p.projectId} approved />}
+              </>}
 
+              {tab === 'project' && <RecordProjectCard projectId={p.projectId} projectName={p.projectName} />}
+              {tab === 'entity' && <RecordEntityCard entityId={p.entityId} entityName={p.entityName} />}
+              {tab === 'files' && <RecordFiles record={`plan:${p.id}`} me={who} canUpload={p.stage !== 'cancelled'} seed={evidence} />}
+              {/* Cross · the plan's history · every operation in order, who and when (12.4.30) */}
+              {tab === 'log' && <LogTab title="سجل الخطة" events={planLogEvents(p.id, logs)} entityName={p.entityName} entityLogo={entityById(p.entityId)?.logo} />}
             </div>
 
             {/* Side column - one sticky card, like the project page. */}
@@ -396,15 +408,17 @@ export default function PlanPage() {
               />
             </div>
           </div>
+          )}
           {/* client 20 Oct (#31) · the activity table runs the full width · ten columns beside the reading column were cut */}
           {/* === Phases and activities · client 20 Oct (#36 · #37) ===
               One card, two tabs: the active version of the plan, and everything that came
               before it · the versions an approved change cancelled and the requests on the plan.
               Only one version is ever active. The requests to change or cancel the plan start
               from the card's head, for the entity, the supervisor and the manager. */}
+          {tab === 'phases' && (
           <Glass>
             <Head
-              title="المراحل والأنشطة"
+              title="الأنشطة"
               meta={
                 <span className="rowf gp-2">
                   <span className="sub">
@@ -449,14 +463,7 @@ export default function PlanPage() {
                 onDrop={(actId, evId) => { dropEvidence(p.id, actId, evId, who); setTick((x) => x + 1) }}
                 onStart={(actId) => { const e = startActivity(p.id, actId, who); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
                 onData={(actId, d) => { const e = saveActivityData(p.id, actId, d, who); setTick((x) => x + 1); return e }}
-                open={shown}
                 focus={focus}
-                onToggle={(phId) => setOpen(() => {
-                  const next = new Set(shown)
-                  if (next.has(phId)) next.delete(phId)
-                  else next.add(phId)
-                  return next
-                })}
                 onAccept={(actId) => { const e = acceptActivityBy(p.id, actId, user.name); if (e.length) setSaid(e[0]!); setTick((x) => x + 1) }}
                 onReject={(actId) => setReject({ id: actId, note: '' })}
                 /* The entity comments under its own name, the institution under the signed-in
@@ -600,21 +607,6 @@ export default function PlanPage() {
               </>
             )}
           </Glass>
-          {/* The plan decision and what can change · in the main column, the end column is the assistant's alone */}
-          {!asEntity && !pfT && <PlanDecisionCard projectId={p.projectId} approved />}
-          {/* Cross · the plan's history · every operation in order, who and when (12.4.30) */}
-          {!asEntity && planLogOf(p.id).length > 0 && (
-            <Glass>
-              <Head title="سجل الخطة" meta={<span className="sub"><Num>{planLogOf(p.id).length}</Num> عملية</span>} />
-              <ul className="xs-notes">
-                {planLogOf(p.id).slice(0, 12).map((e, i) => (
-                  <li key={`${e.at}-${i}`}>
-                    <b>{e.what}</b>
-                    <span className="sub">{e.by} · <DateText>{e.at.slice(0, 10)}</DateText>{e.note ? ` · ${e.note}` : ''}</span>
-                  </li>
-                ))}
-              </ul>
-            </Glass>
           )}
 
         </div>
@@ -680,4 +672,20 @@ export default function PlanPage() {
       </div>
     </AppLayout>
   )
+}
+
+/** Client 27 Oct · the plan's operations in the projects' log shape · newest first */
+function planLogEvents(planId: string, logs: { at: string; by: string; what: string; note?: string }[]): LogEvent[] {
+  return [...logs].reverse().map((e, i): LogEvent => ({
+    id: `pl-${planId}-${logs.length - i}`,
+    action: e.what,
+    dept: 'خطط المشاريع',
+    by: e.by,
+    actor: 'staff',
+    at: e.at.slice(0, 10),
+    time: e.at.length > 10 ? e.at.slice(11, 16) : '',
+    days: 0, hours: 0, limit: 0,
+    fields: e.note ? [{ k: 'الملاحظة', v: e.note }] : [],
+    tone: 'mute',
+  }))
 }

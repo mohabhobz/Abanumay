@@ -1,3 +1,6 @@
+import { LogTab } from '@/features/projects/tabs'
+import { recordLog } from '@/features/shared/recordLog'
+import { RecordFiles } from '@/features/shared/RecordFiles'
 import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { closeScore } from '@/data/shared/ai'
@@ -28,7 +31,7 @@ import {
 import {
   actOnClosing, approverFor, attachDoc, closeActions, closeSayOf, closeStops, evalScore, sendClosingReport, useClosing, type CloseAct,
 } from '@/data/closing/store'
-import { ExceptionCard, FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RedirectCard, ReopenCard, RequirementsCard, VersionsCard } from './parts'
+import { ExceptionCard, FeedbackCard, FinanceCard, RecoveryCard, RedirectCard, ReopenCard, RequirementsCard, VersionsCard } from './parts'
 import { ReportFiles, TargetActual } from './report'
 import { closeKindSay } from './reportData'
 import { projectById } from '@/data/mock/projects'
@@ -232,7 +235,9 @@ export default function ClosePage() {
     { slug: 'eval', label: 'التقييم' },
     { slug: 'needs', label: 'المتطلبات والمالية' },
     { slug: 'versions', label: 'الإصدارات' },
-    { slug: 'log', label: 'السجل' },
+    /* Client 27 Oct · the attachments and the log close every record's tabs */
+    { slug: 'files', label: 'المرفقات' },
+    { slug: 'log', label: 'سجل الإغلاق' },
   ]
   const tab = tabs.find((t) => t.slug === params.get('tab'))?.slug ?? 'report'
   const goTab = (slug: string) => {
@@ -459,7 +464,13 @@ export default function ClosePage() {
 
               {/* Versions with their content and the two separate logs - rules 11, 15, 17 and 19 */}
               {tab === 'versions' && <VersionsCard c={c} />}
-              {tab === 'log' && <LogsCard c={c} />}
+              {tab === 'files' && <RecordFiles record={`close:${c.id}`} me={asEntity ? c.entityName : user.name} canUpload={c.stage !== 'closed'}
+                seed={[...Object.values(c.report?.files ?? {}).map((n) => ({ name: n, meta: 'مستندات التقرير الختامي' })), ...(c.report?.uploads ?? []).map((u) => ({ name: u.name, meta: 'ملفات التنفيذ' }))]} />}
+              {/* the two cycles' entries in one log · each named by its cycle */}
+              {tab === 'log' && <LogTab title="سجل الإغلاق" entityName={c.entityName} events={recordLog(`cl-${c.id}`, 'الإغلاق', [
+                ...c.audit.map((a) => ({ ...a, dept: 'دورة التقرير الختامي' })),
+                ...(c.evalAudit ?? []).map((a) => ({ ...a, dept: 'دورة تقييم المشروع' })),
+              ].sort((x, y) => x.at.localeCompare(y.at)))} />}
 
 
               {/* Correspondence · client 21 Oct (#2) · a floating chat over the page instead of a card at

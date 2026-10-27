@@ -45,6 +45,16 @@ export function FundingTab({ row }: { row: ProjectRow }) {
         <Stat label={l?.stage === 'closed' ? 'أُعيد للبنود' : 'المتبقي'} value={<Num>{l?.stage === 'closed' ? rep?.totals.released ?? 0 : rep?.totals.remaining ?? 0}</Num>} unit={<Riyal />} />
       </StatRow>
 
+      {/* Client 27 Oct · the budget path the project sits on · track, field and goal */}
+      <Glass>
+        <Head title="بند الميزانية" />
+        <KV rows={[
+          { k: 'المسار', v: row.track },
+          { k: 'المجال', v: row.field },
+          { k: 'الهدف', v: row.goal },
+        ]} />
+      </Glass>
+
       {rep && rep.rows.length > 0 && (
         <Glass>
           <Head title="أثر الربط على البنود" />

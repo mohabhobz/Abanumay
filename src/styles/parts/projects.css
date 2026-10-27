@@ -203,3 +203,7 @@
 /* Client 27 Oct · a sub-section's title row carries its add action at the row's end */
 .stdy-hr{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin:0 0 var(--sp-3)}
 .stdy-hr>.stdy-h{margin:0}
+/* Client 27 Oct · the supervisor's recorded recommendation under the card's title · its name, then the tag in its colour */
+.stdy-rec{display:flex;align-items:center;gap:var(--sp-3);margin:0}
+.stdy-rec>.lb{color:var(--t2)}
+.stdy-pr{margin-inline-start:var(--sp-2)}

@@ -7,3 +7,14 @@
 .paycheckl-ack{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-3);
   font-size:var(--fs-2);line-height:var(--lh-ui);cursor:pointer}
 .paycheckl-ack input{flex:none;accent-color:var(--solid);width:var(--sp-5);height:var(--sp-5)}
+
+/* Client 27 Oct · «الأنشطة المتعلقة بالدفعة» · the plan's activities with a pick column */
+.payacts{min-width:calc(var(--sp-12) * 7)}
+.payacts col.c-chk{width:var(--sp-8)}
+.payacts col.c-name{width:28%}
+.payacts col.c-cat{width:14%}
+.payacts col.c-d{width:19%}
+.payacts col.c-st{width:19%}
+.payacts col.c-pay{width:13%}
+.payacts tr.on td{background:color-mix(in srgb, var(--teal) 6%, transparent)}
+.payacts-save{padding:var(--sp-3) var(--sp-4) var(--sp-4);border-top:1px solid var(--edge-f)}

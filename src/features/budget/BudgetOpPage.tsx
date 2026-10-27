@@ -1,3 +1,6 @@
+import { LogTab } from '@/features/projects/tabs'
+import { recordLog } from '@/features/shared/recordLog'
+import { RecordFiles } from '@/features/shared/RecordFiles'
 import { budgetReqOutcome } from '@/data/shared/outcome'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { NextStep } from '@/components/assistant/NextStep'
@@ -24,7 +27,7 @@ import {
   type BudgetRequest, type ReqKind,
 } from '@/data/budget/store'
 import { BUDGET_RULES, noReviewStep } from '@/data/budget/rules'
-import { History, NoteModal } from './doc/DocFlow'
+import { NoteModal } from './doc/DocFlow'
 
 /* A budget operation request (1.3) · transfer between two lines of one budget, an increase, or a
    decrease · prepared, then the grants manager, finance and the executive director in turn.
@@ -89,7 +92,7 @@ type Form = Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt'
 export default function BudgetOpPage() {
   const { id } = useParams()
   const [q, setQ] = useSearchParams()
-  const opTab = q.get('tab') === 'log' ? 'log' : 'data'
+  const opTab = q.get('tab') === 'log' ? 'log' : q.get('tab') === 'files' ? 'files' : 'data'
   const navigate = useNavigate()
   const mobile = useIsMobile()
   useBudget()
@@ -222,7 +225,7 @@ export default function BudgetOpPage() {
 
           {/* Client 26 Oct · every record reads its data and its log in tabs */}
           {existing && (
-            <Tabs items={[{ slug: 'data', label: 'بيانات الطلب' }, { slug: 'log', label: 'سجل الطلب', count: existing.events.length || undefined }]} active={opTab}
+            <Tabs items={[{ slug: 'data', label: 'بيانات الطلب' }, { slug: 'files', label: 'المرفقات' }, { slug: 'log', label: 'سجل الطلب', count: existing.events.length || undefined }]} active={opTab}
               onChange={(x) => { const n = new URLSearchParams(q); if (x === 'data') n.delete('tab'); else n.set('tab', x); setQ(n, { replace: true }) }} />
           )}
 
@@ -349,12 +352,8 @@ export default function BudgetOpPage() {
                 </Glass>
               )}
               </>}
-              {opTab === 'log' && existing && (
-                <Glass>
-                  <Head title="سجل الطلب" />
-                  <History events={existing.events} />
-                </Glass>
-              )}
+              {opTab === 'files' && existing && <RecordFiles record={`budgetop:${existing.id}`} me={me} canUpload seed={existing.files.map((n) => ({ name: n, meta: 'مرفقات الطلب' }))} />}
+              {opTab === 'log' && existing && <LogTab title="سجل الطلب" events={recordLog(`bo-${existing.id}`, 'طلبات الميزانية', existing.events.map((e) => ({ at: e.at, by: e.by, what: e.text, note: e.note })))} entityName="" />}
             </div>
 
             <AssistantAside

@@ -20,10 +20,10 @@ import { readRole, roleByKey } from '@/data/roles'
 import { appFlowOf, payPlanOf } from '@/data/approvals/store'
 import { useBudget } from '@/data/budget/store'
 import {
-  agrIssues, agrReview, agreementText, createAgreement, nextAgreementId, reservedOf, templateClauses, windowOf, type Clause,
+  agrIssues, agreementText, createAgreement, nextAgreementId, reservedOf, templateClauses, windowOf, type Clause,
 } from '@/data/agreements/store'
 import { ScheduleEditor } from './ScheduleEditor'
-import { AgreementTextCard, AnnexesCard, ClausesCard, ReviewCard } from './parts'
+import { AgreementTextCard, AnnexesCard, ClausesCard } from './parts'
 
 /* Agreement setup screen.
 
@@ -111,7 +111,6 @@ export default function AgreementNewPage() {
     ...(opt?.blocked ? [{ key: 'project', say: `«${opt.name}» ${opt.blocked}.`, rule: /* doc 8.2.1 */ '' }] : []),
     ...agrIssues(draft),
   ] : []
-  const hints = projectId ? agrReview(draft) : []
   const text = projectId ? agreementText(draft) : []
 
   const make = (send: boolean) => {
@@ -401,7 +400,6 @@ export default function AgreementNewPage() {
           {tab === 'text' && project && (
             <>
               <AgreementTextCard parts={text} />
-              <ReviewCard hints={hints} onAdd={(c) => setClauses((xs) => [...xs, c])} onTemplate={kind === 'إلكترونية' ? setTemplate : undefined} />
             </>
           )}
 

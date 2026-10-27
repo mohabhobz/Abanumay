@@ -6,6 +6,19 @@ import {
   type BudgetDoc, type BudgetNode, type LineKind, type SourceShare } from '@/data/mock/budgetTree'
 import { CYCLE } from '@/data/intake/cycle'
 import { DIRECTIONS, sourceName } from '@/data/budget/store'
+import { FIELDS_BY_TRACK, GOALS_BY_FIELD, TRACKS } from '@/data/mock/taxonomy'
+import { addTaxon, useTaxonomy, type TaxonLevel } from '@/data/budget/taxonomy'
+
+/* Client 27 Oct · «فئة البند» · a line that stands for a track, a field or a goal takes its name
+   from the budget settings' list · under a track the fields are that track's, under a field the
+   goals are that field's · «أضف اسمًا جديدًا» writes a name the list doesn't have, and saving adds it
+   to the settings under the value above it */
+const CATEGORY_SAY: Record<TaxonLevel, string> = { track: 'مسار', field: 'مجال', goal: 'هدف' }
+const NEW_NAME = '__new'
+const allFields = () => [...new Set(Object.values(FIELDS_BY_TRACK).flat())]
+const allGoals = () => [...new Set(Object.values(GOALS_BY_FIELD).flat())]
+const categoryOf = (label: string): TaxonLevel | '' =>
+  TRACKS.includes(label as (typeof TRACKS)[number]) ? 'track' : allFields().includes(label) ? 'field' : allGoals().includes(label) ? 'goal' : ''
 
 /* Add or edit a line · one modal for both, same fields, same rules, same messages.
 
@@ -34,7 +47,10 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
   const up0 = under ? nodes.find((k) => k.id === under) : undefined
   const many = docSources(doc).length > 1
 
+  useTaxonomy()
+  const [nCat, setNCat] = useState<TaxonLevel | ''>(x?.category ?? (x ? categoryOf(x.label) : ''))
   const [nLabel, setNLabel] = useState(x?.label ?? '')
+  const [typed, setTyped] = useState(false)
   const [nKind, setNKind] = useState<LineKind>(x?.kind ?? (nodes.length === 0 ? 'base' : kindUnder(up0?.kind)))
   const [nAmount, setNAmount] = useState(x ? String(x.allocated) : '')
   const [nParent, setNParent] = useState(x?.parentId ?? under ?? '')
@@ -96,14 +112,27 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
   const dirs = DIRECTIONS.filter((d) => doc.directionIds?.includes(d.id))
   const domain = nKind === 'main' && nParent !== '' && nodes.find((k) => k.id === nParent)?.kind === 'main'
 
+  /* the classification value above the line · a field's track, a goal's field */
+  const upLabel = nParent ? nodes.find((k) => k.id === nParent)?.label ?? '' : ''
+  const parentValue = nCat === 'field' && TRACKS.includes(upLabel as (typeof TRACKS)[number]) ? upLabel
+    : nCat === 'goal' && allFields().includes(upLabel) ? upLabel : ''
+  const names: string[] = nCat === 'track' ? [...TRACKS]
+    : nCat === 'field' ? (parentValue ? FIELDS_BY_TRACK[parentValue] ?? [] : allFields())
+      : nCat === 'goal' ? (parentValue ? GOALS_BY_FIELD[parentValue] ?? [] : allGoals()) : []
+  const fresh = Boolean(nCat) && Boolean(nLabel.trim()) && !names.includes(nLabel.trim())
+  /* a new field or goal joins the settings under the value above it · without one it stays this line's name only */
+  const joins = fresh && (nCat === 'track' || Boolean(parentValue))
+
   const save = () => {
     if (blocked || !nLabel.trim()) return
+    if (joins) addTaxon(nCat as TaxonLevel, nLabel.trim(), nCat === 'track' ? undefined : parentValue)
     const parentId = nParent || null
     const alias = nAlias.trim() || undefined
     const prev = x
     onSave({
       ...(prev ?? { id: `n-${Date.now()}`, available: amount }),
       label: nLabel.trim(),
+      category: nCat || undefined,
       alias,
       showLabel: nShow,
       active: nActive,
@@ -128,12 +157,40 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
         </ModalHead>
 
         <div className="mb col">
-          <FormField label="اسم البند" required>
-            <FieldBox>
-              <input value={nLabel} onChange={(e) => setNLabel(e.target.value)} placeholder="مثال: مسار التعليم" aria-label="اسم البند" />
-            </FieldBox>
-
+          <FormField label="فئة البند" as="div">
+            <FieldSelect
+              value={nCat}
+              label="فئة البند"
+              placeholder="بلا فئة"
+              options={(Object.keys(CATEGORY_SAY) as TaxonLevel[]).map((k) => ({ value: k, label: CATEGORY_SAY[k] }))}
+              onChange={(v) => { setNCat(v as TaxonLevel | ''); setTyped(false); if (!x) setNLabel('') }}
+            />
           </FormField>
+
+          {nCat && !typed && !fresh ? (
+            <FormField label="اسم البند" required as="div">
+              <FieldSelect
+                value={nLabel}
+                label="اسم البند"
+                placeholder={`اختر ${CATEGORY_SAY[nCat]} من الإعدادات`}
+                options={[...names.map((n) => ({ value: n, label: n })), { value: NEW_NAME, label: `أضف ${CATEGORY_SAY[nCat]} جديدًا` }]}
+                onChange={(v) => { if (v === NEW_NAME) { setTyped(true); setNLabel('') } else setNLabel(v) }}
+              />
+            </FormField>
+          ) : (
+            <FormField label="اسم البند" required>
+              <FieldBox>
+                <input value={nLabel} onChange={(e) => setNLabel(e.target.value)} placeholder={nCat ? `اسم ${CATEGORY_SAY[nCat]} جديد` : 'مثال: مسار التعليم'} aria-label="اسم البند" />
+              </FieldBox>
+              {nCat && (
+                <span className="sub regf-h">
+                  {joins ? `يُضاف إلى ${CATEGORY_SAY[nCat] === 'مسار' ? 'المسارات' : CATEGORY_SAY[nCat] === 'مجال' ? 'المجالات' : 'الأهداف'} في إعدادات الميزانية${parentValue ? ` تحت «${parentValue}»` : ''} عند الحفظ · `
+                    : fresh ? `لا يُضاف إلى الإعدادات · البند الذي يتبعه ليس ${nCat === 'field' ? 'مسارًا' : 'مجالًا'} من القائمة · ` : ''}
+                  <Button plain type="button" className="lnk" onClick={() => { setTyped(false); setNLabel('') }}>اختر من القائمة</Button>
+                </span>
+              )}
+            </FormField>
+          )}
 
           {/* Public-facing name · not a translation of the name, a different name for a different
               purpose: the internal one is written for accounting, the entity reads this one. */}
